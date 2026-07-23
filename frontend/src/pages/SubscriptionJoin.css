@@ -1,0 +1,16 @@
+.subscription-join-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.subscription-join-message {
+  padding: var(--space-section-gap) 4px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body);
+  text-align: center;
+}
+
+.subscription-join-service-name {
+  color: var(--color-primary);
+  font-weight: 700;
+}

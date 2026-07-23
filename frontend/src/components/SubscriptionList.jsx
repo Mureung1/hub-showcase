@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getSubscriptions } from '../lib/subscriptions'
 import SubscriptionListItem from './SubscriptionListItem'
+import LoginRequired from './LoginRequired'
 import './SubscriptionList.css'
 
 const SubscriptionList = () => {
@@ -26,12 +27,7 @@ const SubscriptionList = () => {
   }
 
   if (status === 'unauthorized') {
-    return (
-      <div className="subscription-list-message">
-        <p>로그인 후 구독 서비스 목록을 확인할 수 있어요.</p>
-        <a href="/api/auth/google" className="link-btn">로그인하러 가기</a>
-      </div>
-    )
+    return <LoginRequired message="로그인 후 구독 서비스 목록을 확인할 수 있어요." />
   }
 
   if (status === 'error') {

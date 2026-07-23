@@ -1,8 +1,10 @@
-.page-title {
-  font-size: var(--font-size-h1);
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 var(--space-section-gap);
+.back-link {
+  display: inline-block;
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  margin-bottom: var(--space-inline-gap);
 }
 
 .subscription-form {
@@ -78,20 +80,6 @@
 .subscription-form .btn-primary {
   margin-top: 4px;
   border: none;
-}
-
-.success-message {
-  font-size: var(--font-size-body-lg);
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0 0 var(--space-card-gap);
-}
-
-.success-amount {
-  font-size: var(--font-size-h2);
-  font-weight: 800;
-  color: var(--color-primary);
-  margin: 0 0 var(--space-section-gap);
 }
 
 .form-error {

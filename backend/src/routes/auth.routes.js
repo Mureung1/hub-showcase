@@ -33,7 +33,11 @@ router.get('/google/callback', async (req, res, next) => {
       create: profile,
     })
     const token = signAccessToken(user)
-    res.redirect(`${process.env.FRONTEND_URL}/oauth/callback#token=${token}&joinedSubId=null`)
+
+    const { state } = req.query
+    const redirect = state ? `/join/${encodeURIComponent(state)}` : '/'
+
+    res.redirect(`${process.env.FRONTEND_URL}/oauth/callback#token=${token}&redirect=${encodeURIComponent(redirect)}`)
   } catch (e) {
     next(e)
   }

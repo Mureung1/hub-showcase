@@ -1,0 +1,14 @@
+.login-required {
+  padding: var(--space-section-gap) 4px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body);
+  text-align: center;
+}
+
+.login-required .link-btn {
+  display: inline-block;
+  margin-top: var(--space-inline-gap);
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+}

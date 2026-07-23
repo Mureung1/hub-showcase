@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { getSubscription } from '../lib/subscriptions'
 import { getServiceColor } from '../lib/serviceColor'
 import RoleBadge from '../components/RoleBadge'
+import LoginRequired from '../components/LoginRequired'
 import './SubscriptionDetail.css'
 
 const SubscriptionDetail = () => {
@@ -10,6 +11,34 @@ const SubscriptionDetail = () => {
   const [status, setStatus] = useState('loading')
   const [subscription, setSubscription] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyLink = async (joinUrl) => {
+    try {
+      await navigator.clipboard.writeText(joinUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // 클립보드 접근이 막힌 환경 — 화면에 보이는 링크 텍스트로 수동 복사 가능
+    }
+  }
+
+  const handleKakaoShare = (joinUrl, serviceName) => {
+    if (!window.Kakao?.isInitialized()) return
+
+    // 템플릿 링크가 `http://localhost:5173/${path}` 형태(도메인 뒤 슬래시가 이미 고정)라
+    // path 변수에는 선행 슬래시 없이 넘겨야 함 (join/12)
+    const path = new URL(joinUrl).pathname.replace(/^\//, '')
+
+    window.Kakao.Share.sendCustom({
+      templateId: Number(import.meta.env.VITE_KAKAO_SHARE_TEMPLATE_ID),
+      // 카카오 디벨로퍼스 콘솔 메시지 템플릿에 정의한 변수명과 일치해야 함
+      templateArgs: {
+        serviceName,
+        path,
+      },
+    })
+  }
 
   useEffect(() => {
     getSubscription(id)
@@ -19,7 +48,9 @@ const SubscriptionDetail = () => {
       })
       .catch((error) => {
         setErrorMessage(error.message)
-        if (error.status === 404) {
+        if (error.status === 401) {
+          setStatus('unauthorized')
+        } else if (error.status === 404) {
           setStatus('notfound')
         } else if (error.status === 403) {
           setStatus('forbidden')
@@ -33,6 +64,8 @@ const SubscriptionDetail = () => {
 
   if (status === 'loading') {
     content = <p className="subscription-detail-message">불러오는 중...</p>
+  } else if (status === 'unauthorized') {
+    content = <LoginRequired message="로그인 후 파티 상세 정보를 확인할 수 있어요." />
   } else if (status === 'notfound') {
     content = <p className="subscription-detail-message">존재하지 않는 파티예요.</p>
   } else if (status === 'forbidden') {
@@ -87,6 +120,19 @@ const SubscriptionDetail = () => {
 
             <p className="detail-section-title">파티원 초대 링크</p>
             <p className="detail-join-url">{joinUrl}</p>
+            <div className="link-action-row">
+              <button type="button" className="copy-link-btn" onClick={() => handleCopyLink(joinUrl)}>
+                {copied ? '복사됨' : '링크 복사'}
+              </button>
+              <button
+                type="button"
+                className="kakao-share-btn"
+                onClick={() => handleKakaoShare(joinUrl, serviceName)}
+              >
+                카카오톡 공유
+              </button>
+            </div>
+
           </div>
         )}
       </>

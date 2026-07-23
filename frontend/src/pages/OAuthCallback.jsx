@@ -14,7 +14,8 @@ const OAuthCallback = () => {
     const token = params.get('token')
     if (token) {
       setToken(token)
-      navigate('/', { replace: true })
+      const redirect = params.get('redirect') || '/'
+      navigate(redirect, { replace: true })
     }
   }, [navigate])
 
