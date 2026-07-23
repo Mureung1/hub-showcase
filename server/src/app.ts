@@ -314,7 +314,10 @@ app.post('/api/curate', async (req: Request, res: Response) => {
 1. 최우선 연관성 필터링 (Relevance Filtering): OVG 기준을 평가하기에 앞서, 수집된 50편의 논문 중 사용자의 현재 연구 질문("${query}")을 해결하는 데 직접적으로 연관된(Relevant) 논문인지 최우선으로 필터링하라.
 2. OVG 3대 학술 평가 (Originality, Validity, Generalizability): 연관성이 확보된 후보군 중 OVG 점수가 가장 뛰어난 논문(최대 5편)을 최종 선별하라.
 3. 저자명 정제 (Authors Cleansing): 저자명(authors) 배열의 각 문자열에서 'Prof.', 'Dr.', 'Ph.D.', 'MD' 등의 모든 직함/학위/소속 표식을 완전히 제거하라. 또한 수집 데이터 노이즈로 인해 동일 저자명이 중복 결합된 경우(예: 'John Doe John Doe', 'Wael AbdAlmageed Wael AbdAlmageed')에는 이를 단일 영문 성명('John Doe', 'Wael AbdAlmageed')으로 완전히 압축하여 반환하라.
-4. 구체적 채널명 약어 압축 (Channel Acronym): S2 API가 제공한 venue 정보를 최우선으로 참고하되, 채널명(channel)은 DB 50자 제약을 위해 반드시 공식 약체(Acronym 및 Short Name)를 사용하여 50자 이내로 극단적으로 압축하여 반환하라. (예: 'International Journal of Research in Applied Science & Engineering Technology' ➡️ 'IJRASET', 'IEEE Transactions on Pattern Analysis and Machine Intelligence' ➡️ 'IEEE TPAMI')
+4. 채널명(Channel) 3단계 정제 및 압축 프로토콜:
+   - 1순위 (공식 이니셜 약어 우선): CVPR, JMIR, SIGCSE, ACL, NeurIPS, IEEE TPAMI 등 해당 학계에서 널리 통용되는 공식 이니셜 약어(Acronym)가 존재하는 경우, 무조건 해당 공식 약어만 단독 출력하라.
+   - 2순위 (기계적 마침표 축약 금지): 'Journal -> J.', 'Applied -> Appl.' 같이 마침표(.)를 부착하는 기계적/임의적 단어 슬라이싱 축약 방식은 절대 사용하지 말라.
+   - 3순위 (환각 방지 및 핵심 키워드 추출): 공식 약어가 존재하지 않으면서 50자를 초과하는 경우, 존재하지 않는 이니셜을 임의로 환각(Hallucination)하여 지어내지 말라. 대신 'Journal of', 'International Conference on', 'Transactions on', 'the', 'for' 등의 불용어를 제거하고 출처를 명확히 식별할 수 있는 핵심 고유 명사 키워드만 남겨 50자 이내로 압축하라.
 5. 원문 링크 포함 (URL Preservation): 각 논문의 원문 접근 링크(url)를 반드시 포함하여 반환하라.
 6. XAI 근거 및 인사이트 작성: 선별된 논문들에 대하여 왜 사용자의 질문에 부합하는지 reasoning과 insights(background, coreMethod, quantitativeResult)를 한국어로 명확히 기술하라.
 7. 예외 수량 반환 지침: 만약 수집된 50편의 논문 중 사용자의 질문과 직접적으로 연관된 논문이 5편 미만이라면, 억지로 5편을 채우지 말고 연관성이 확실히 검증된 논문(예: 1~4편)만 선별하여 반환하라. 연관된 논문이 아예 없다면 빈 배열([])을 반환해도 좋다.
