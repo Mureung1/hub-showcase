@@ -1110,6 +1110,20 @@ class BridgeWorker:
         self,
         attempt: BrowserLoginAttempt,
     ) -> LoginSettlementOutcome:
+        async with attempt.settlement_lock:
+            if self._login_attempt is not attempt or attempt.status != "pending":
+                return LoginSettlementOutcome.SETTLED
+            completion_task = attempt.completion_task
+        if (
+            completion_task is not None
+            and completion_task is not asyncio.current_task()
+        ):
+            self._cancel_login_task(completion_task)
+            await asyncio.gather(completion_task, return_exceptions=True)
+            async with attempt.settlement_lock:
+                if attempt.completion_task is completion_task:
+                    attempt.completion_task = None
+
         fatal_code: str | None = None
         try:
             account_state = await self._fresh_account_state()

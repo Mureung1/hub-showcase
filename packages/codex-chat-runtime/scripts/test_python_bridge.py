@@ -1866,6 +1866,152 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     finally:
                         bridge.cleanup()
 
+    def test_expiry_rejection_chatgpt_terminal_unregisters_completion_waiter(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-python-bridge-account-expiry-chatgpt-"
+        ) as temp:
+            root = Path(temp)
+            (root / "account-state").write_text("signed_out", encoding="utf-8")
+            (root / "login-mode").write_text(
+                "delayed-success",
+                encoding="utf-8",
+            )
+            (root / "defer-login-cancel").touch()
+            (root / "login-cancel-outcome").write_text(
+                "failure",
+                encoding="utf-8",
+            )
+            bridge = self._account_bridge(
+                root,
+                "--login-attempt-timeout-ms",
+                "200",
+            )
+            try:
+                bridge.send(
+                    {
+                        "bridgeRequestId": "start",
+                        "command": "start_browser_login",
+                        "attemptId": "attempt-expiry-chatgpt",
+                    }
+                )
+                self.assertEqual(bridge.receive()["status"], "pending")
+                bridge.send(
+                    {
+                        "bridgeRequestId": "cancel",
+                        "command": "cancel_browser_login",
+                        "attemptId": "attempt-expiry-chatgpt",
+                    }
+                )
+                self._wait_for_journal_method(
+                    bridge,
+                    "account/login/cancel",
+                )
+                expiry_deadline = time.monotonic() + 0.35
+                while time.monotonic() < expiry_deadline:
+                    time.sleep(0.01)
+
+                (root / "account-state").write_text("chatgpt", encoding="utf-8")
+                (root / "release-login-cancel").touch()
+                cancel = bridge.receive()
+                self.assertEqual(cancel["status"], "already_settled")
+                terminal = self._poll_login_attempt(
+                    bridge,
+                    "attempt-expiry-chatgpt",
+                    "completed",
+                )
+                self.assertNotIn("error", terminal)
+                methods = self._wait_for_journal_method(
+                    bridge,
+                    "account/read",
+                )
+                self.assertEqual(
+                    sum(
+                        message.get("method") == "account/login/cancel"
+                        for message in methods
+                    ),
+                    1,
+                )
+                self.assertEqual(
+                    sum(message.get("method") == "account/read" for message in methods),
+                    1,
+                )
+
+                (root / "complete-login").touch()
+                completion_deadline = time.monotonic() + 3
+                while (
+                    root / "complete-login"
+                ).is_file() and time.monotonic() < completion_deadline:
+                    time.sleep(0.01)
+                self.assertFalse((root / "complete-login").is_file())
+                status_request_ids = {
+                    f"status-after-late-{index}" for index in range(4)
+                }
+                self._send_frames(
+                    bridge,
+                    *(
+                        {
+                            "bridgeRequestId": request_id,
+                            "command": "read_browser_login_attempt",
+                            "attemptId": "attempt-expiry-chatgpt",
+                        }
+                        for request_id in sorted(status_request_ids)
+                    ),
+                )
+                frames = self._receive_until_requests(
+                    bridge,
+                    status_request_ids,
+                )
+                self.assertTrue(all(frame["status"] == "completed" for frame in frames))
+                time.sleep(0.1)
+                methods = self._read_journal_messages(bridge)
+                self.assertEqual(
+                    sum(message.get("method") == "account/read" for message in methods),
+                    1,
+                )
+
+                bridge.send(
+                    {
+                        "bridgeRequestId": "release",
+                        "command": "release_browser_login_attempt",
+                        "attemptId": "attempt-expiry-chatgpt",
+                    }
+                )
+                self.assertEqual(bridge.receive()["status"], "released")
+                for name in (
+                    "defer-login-cancel",
+                    "login-cancel-outcome",
+                    "release-login-cancel",
+                ):
+                    (root / name).unlink()
+                bridge.send(
+                    {
+                        "bridgeRequestId": "next-start",
+                        "command": "start_browser_login",
+                        "attemptId": "attempt-after-late",
+                    }
+                )
+                self.assertEqual(bridge.receive()["status"], "pending")
+                bridge.send(
+                    {
+                        "bridgeRequestId": "next-release",
+                        "command": "release_browser_login_attempt",
+                        "attemptId": "attempt-after-late",
+                    }
+                )
+                self.assertEqual(bridge.receive()["status"], "released")
+                bridge.send({"bridgeRequestId": "close", "command": "close"})
+                self.assertEqual(bridge.receive()["type"], "close_ack")
+                bridge.wait()
+                self.assertTrue(bridge.child_pid_path.is_file())
+                wait_for_process_exit(
+                    int(bridge.child_pid_path.read_text(encoding="utf-8")),
+                    time.monotonic() + 2,
+                )
+            finally:
+                bridge.cleanup()
+
     def test_single_flight_cancel_is_bounded_on_timeout_eof_and_close(
         self,
     ) -> None:
