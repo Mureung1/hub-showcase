@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import {
   lstat,
   mkdir,
@@ -99,6 +100,188 @@ test('every durable create boundary leaves evidence-backed owned incomplete stat
   }
 })
 
+test('marker-authorized resume repairs only a truncated prefix of its app-owned temporary state', async () => {
+  const fixture = await createPlanFixture('truncated-owned-temp')
+  const admission = createSemesterWorkspaceAdmissionForTesting({
+    fault(point) {
+      if (point === 'after_state_temp_write') {
+        throw new Error(`fault:${point}`)
+      }
+    },
+  })
+  const inspected = await admission.inspect(fixture.intent)
+  assert.equal(inspected.outcome, 'new_target')
+  if (inspected.outcome !== 'new_target') assert.fail('plan required')
+
+  try {
+    await assert.rejects(
+      admission.apply(inspected.plan),
+      /fault:after_state_temp_write/,
+    )
+    const temporaryPath = await findTemporaryStatePath(
+      inspected.plan.canonicalRoot,
+    )
+    const completeBytes = await readFile(temporaryPath)
+    const partialBytes = completeBytes.subarray(
+      0,
+      Math.floor(completeBytes.byteLength / 2),
+    )
+    await writeFile(temporaryPath, partialBytes)
+
+    const recovering = createSemesterWorkspaceAdmission()
+    const recovery = await recovering.inspect({
+      kind: 'resume_owned',
+      setupId: inspected.plan.planId,
+      canonicalRoot: inspected.plan.canonicalRoot,
+    })
+    assert.equal(recovery.outcome, 'owned_incomplete')
+    if (recovery.outcome !== 'owned_incomplete') {
+      assert.fail('truncated owned temp must issue a resume plan')
+    }
+    assert.equal((await readFile(temporaryPath)).equals(partialBytes), true)
+
+    assert.equal((await recovering.apply(recovery.plan)).outcome, 'resumed')
+    assert.equal(
+      (
+        await readFile(
+          path.join(
+            inspected.plan.canonicalRoot,
+            '.ay-ple',
+            'workspace-state.json',
+          ),
+        )
+      ).equals(completeBytes),
+      true,
+    )
+    await assert.rejects(lstat(temporaryPath), { code: 'ENOENT' })
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('marker authorization never repairs non-prefix or symlink temporary bytes', async () => {
+  for (const candidate of ['non_prefix', 'symlink'] as const) {
+    const fixture = await createPlanFixture(`unknown-temp-${candidate}`)
+    const admission = createSemesterWorkspaceAdmissionForTesting({
+      fault(point) {
+        if (point === 'after_state_temp_write') {
+          throw new Error(`fault:${point}`)
+        }
+      },
+    })
+    const inspected = await admission.inspect(fixture.intent)
+    assert.equal(inspected.outcome, 'new_target', candidate)
+    if (inspected.outcome !== 'new_target') assert.fail('plan required')
+
+    try {
+      await assert.rejects(
+        admission.apply(inspected.plan),
+        /fault:after_state_temp_write/,
+      )
+      const temporaryPath = await findTemporaryStatePath(
+        inspected.plan.canonicalRoot,
+      )
+      const sentinel = Buffer.from(`unknown-${candidate}-bytes`, 'utf8')
+      const preservedPath =
+        candidate === 'non_prefix'
+          ? temporaryPath
+          : path.join(
+              fixture.intent.parent.canonicalParent,
+              `${candidate}-target.bin`,
+            )
+      if (candidate === 'non_prefix') {
+        await writeFile(temporaryPath, sentinel)
+      } else {
+        await writeFile(preservedPath, sentinel)
+        await rm(temporaryPath)
+        await symlink(preservedPath, temporaryPath)
+      }
+
+      assert.deepEqual(
+        await createSemesterWorkspaceAdmission().inspect({
+          kind: 'resume_owned',
+          setupId: inspected.plan.planId,
+          canonicalRoot: inspected.plan.canonicalRoot,
+        }),
+        { outcome: 'collision', readOnly: false },
+        candidate,
+      )
+      assert.equal(
+        (await readFile(preservedPath)).equals(sentinel),
+        true,
+        candidate,
+      )
+    } finally {
+      await fixture.cleanup()
+    }
+  }
+})
+
+test('resume file-syncs a dirty complete temporary state before no-clobber publish', async () => {
+  const fixture = await createPlanFixture('dirty-complete-temp')
+  const admission = createSemesterWorkspaceAdmissionForTesting({
+    fault(point) {
+      if (point === 'after_state_temp_write') {
+        throw new Error(`fault:${point}`)
+      }
+    },
+  })
+  const inspected = await admission.inspect(fixture.intent)
+  assert.equal(inspected.outcome, 'new_target')
+  if (inspected.outcome !== 'new_target') assert.fail('plan required')
+
+  try {
+    await assert.rejects(
+      admission.apply(inspected.plan),
+      /fault:after_state_temp_write/,
+    )
+    const temporaryPath = await findTemporaryStatePath(
+      inspected.plan.canonicalRoot,
+    )
+    const completeBytes = await readFile(temporaryPath)
+    const ordering: string[] = []
+    const recovering = createSemesterWorkspaceAdmissionForTesting({
+      fault(point) {
+        if (
+          point === 'after_state_temp_file_sync' ||
+          point === 'before_state_publish'
+        ) {
+          ordering.push(point)
+        }
+      },
+    })
+    const recovery = await recovering.inspect({
+      kind: 'resume_owned',
+      setupId: inspected.plan.planId,
+      canonicalRoot: inspected.plan.canonicalRoot,
+    })
+    assert.equal(recovery.outcome, 'owned_incomplete')
+    if (recovery.outcome !== 'owned_incomplete') {
+      assert.fail('dirty complete temp must issue a resume plan')
+    }
+
+    assert.equal((await recovering.apply(recovery.plan)).outcome, 'resumed')
+    assert.deepEqual(ordering, [
+      'after_state_temp_file_sync',
+      'before_state_publish',
+    ])
+    assert.equal(
+      (
+        await readFile(
+          path.join(
+            inspected.plan.canonicalRoot,
+            '.ay-ple',
+            'workspace-state.json',
+          ),
+        )
+      ).equals(completeBytes),
+      true,
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('faults after ownership evidence unlink leave a fully admitted workspace, never half-valid success', async () => {
   for (const failAt of [
     'after_evidence_unlink',
@@ -129,6 +312,138 @@ test('faults after ownership evidence unlink leave a fully admitted workspace, n
     } finally {
       await fixture.cleanup()
     }
+  }
+})
+
+test('post-evidence-unlink same-shape state rewrites fail exact final byte and hash binding', async () => {
+  const rewrites = [
+    {
+      name: 'minified bytes',
+      rewrite(bytes: Buffer) {
+        return Buffer.from(
+          JSON.stringify(JSON.parse(bytes.toString('utf8'))),
+          'utf8',
+        )
+      },
+    },
+    {
+      name: 'different canonical whitespace hash',
+      rewrite(bytes: Buffer) {
+        return Buffer.from(
+          `${JSON.stringify(JSON.parse(bytes.toString('utf8')), null, 4)}\n`,
+          'utf8',
+        )
+      },
+    },
+  ] as const
+
+  for (const rewrite of rewrites) {
+    const fixture = await createPlanFixture(
+      `final-bytes-${rewrite.name.replaceAll(' ', '-')}`,
+    )
+    let plannedBytes = Buffer.alloc(0)
+    let changedBytes = Buffer.alloc(0)
+    const admission = createSemesterWorkspaceAdmissionForTesting({
+      async fault(point) {
+        if (point !== 'after_evidence_unlink') return
+        const statePath = path.join(
+          fixture.intent.parent.canonicalParent,
+          fixture.intent.leafName,
+          '.ay-ple',
+          'workspace-state.json',
+        )
+        plannedBytes = await readFile(statePath)
+        changedBytes = rewrite.rewrite(plannedBytes)
+        await writeFile(statePath, changedBytes)
+      },
+    })
+    const inspected = await admission.inspect(fixture.intent)
+    assert.equal(inspected.outcome, 'new_target', rewrite.name)
+    if (inspected.outcome !== 'new_target') assert.fail('plan required')
+
+    try {
+      assert.deepEqual(
+        await admission.apply(inspected.plan),
+        { outcome: 'conflict' },
+        rewrite.name,
+      )
+      assert.deepEqual(
+        JSON.parse(changedBytes.toString('utf8')),
+        JSON.parse(plannedBytes.toString('utf8')),
+        rewrite.name,
+      )
+      assert.notEqual(sha256(changedBytes), sha256(plannedBytes), rewrite.name)
+      assert.equal(
+        (
+          await readFile(
+            path.join(
+              inspected.plan.canonicalRoot,
+              '.ay-ple',
+              'workspace-state.json',
+            ),
+          )
+        ).equals(changedBytes),
+        true,
+        rewrite.name,
+      )
+    } finally {
+      await fixture.cleanup()
+    }
+  }
+})
+
+test('resumed apply also rejects a same-shape post-evidence-unlink rewrite', async () => {
+  const fixture = await createPlanFixture('resumed-final-byte-binding')
+  const admission = createSemesterWorkspaceAdmissionForTesting({
+    fault(point) {
+      if (point === 'before_evidence_unlink') {
+        throw new Error(`fault:${point}`)
+      }
+    },
+  })
+  const inspected = await admission.inspect(fixture.intent)
+  assert.equal(inspected.outcome, 'new_target')
+  if (inspected.outcome !== 'new_target') assert.fail('plan required')
+
+  try {
+    await assert.rejects(
+      admission.apply(inspected.plan),
+      /fault:before_evidence_unlink/,
+    )
+    const statePath = path.join(
+      inspected.plan.canonicalRoot,
+      '.ay-ple',
+      'workspace-state.json',
+    )
+    const plannedBytes = await readFile(statePath)
+    let changedBytes = Buffer.alloc(0)
+    const recovering = createSemesterWorkspaceAdmissionForTesting({
+      async fault(point) {
+        if (point !== 'after_evidence_unlink') return
+        changedBytes = Buffer.from(
+          JSON.stringify(JSON.parse(plannedBytes.toString('utf8'))),
+          'utf8',
+        )
+        await writeFile(statePath, changedBytes)
+      },
+    })
+    const recovery = await recovering.inspect({
+      kind: 'resume_owned',
+      setupId: inspected.plan.planId,
+      canonicalRoot: inspected.plan.canonicalRoot,
+    })
+    assert.equal(recovery.outcome, 'owned_incomplete')
+    if (recovery.outcome !== 'owned_incomplete') {
+      assert.fail('resume plan required')
+    }
+
+    assert.deepEqual(await recovering.apply(recovery.plan), {
+      outcome: 'conflict',
+    })
+    assert.notEqual(sha256(changedBytes), sha256(plannedBytes))
+    assert.equal((await readFile(statePath)).equals(changedBytes), true)
+  } finally {
+    await fixture.cleanup()
   }
 })
 
@@ -653,4 +968,19 @@ async function createPlanFixture(leafName: string): Promise<{
     },
     cleanup: () => rm(fixtureRoot, { force: true, recursive: true }),
   }
+}
+
+async function findTemporaryStatePath(root: string): Promise<string> {
+  const productRoot = path.join(root, '.ay-ple')
+  const candidates = (await readdir(productRoot)).filter(
+    (entry) =>
+      entry.startsWith('.workspace-state.json.') &&
+      entry.endsWith('.tmp'),
+  )
+  assert.equal(candidates.length, 1)
+  return path.join(productRoot, candidates[0]!)
+}
+
+function sha256(bytes: Uint8Array): string {
+  return createHash('sha256').update(bytes).digest('hex')
 }

@@ -363,7 +363,9 @@ async function inspectOwnedResume(
   let rootIdentity: FileIdentity
   try {
     rootIdentity = await directoryIdentity(intent.canonicalRoot)
-    await assertOwnedIncompleteTopology(planned)
+    await assertOwnedIncompleteTopology(planned, {
+      allowRepairableTemporary: true,
+    })
   } catch (error) {
     return error instanceof ApplyFailure && error.outcome === 'unavailable'
       ? { outcome: 'unavailable', readOnly: false }
@@ -477,7 +479,9 @@ async function applyResume(
     context.runtimeAuthority,
   )
   await assertStoredAdmissionMarker(context.planned)
-  await assertOwnedIncompleteTopology(context.planned)
+  await assertOwnedIncompleteTopology(context.planned, {
+    allowRepairableTemporary: true,
+  })
   const workspace = await finishOwnedScaffold(
     context.planned,
     context.runtimeAuthority,
@@ -499,20 +503,29 @@ async function finishOwnedScaffold(
   const inbox = path.join(root, 'inbox')
   const courses = path.join(root, 'courses')
   await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-  await assertOwnedIncompleteTopology(planned)
+  await assertOwnedIncompleteTopology(planned, {
+    allowRepairableTemporary: resuming,
+  })
 
   await createOrVerifyOwnedDirectory(inbox, resuming)
   await inject(options, 'after_inbox_directory_create')
   await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-  await assertOwnedIncompleteTopology(planned)
+  await assertOwnedIncompleteTopology(planned, {
+    allowRepairableTemporary: resuming,
+  })
   await createOrVerifyOwnedDirectory(courses, resuming)
   await inject(options, 'after_courses_directory_create')
   await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-  await assertOwnedIncompleteTopology(planned)
+  await assertOwnedIncompleteTopology(planned, {
+    allowRepairableTemporary: resuming,
+  })
   await syncDirectory(root)
   await inject(options, 'after_required_directories')
   await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-  await assertOwnedIncompleteTopology(planned, true)
+  await assertOwnedIncompleteTopology(planned, {
+    allowRepairableTemporary: resuming,
+    requireDirectories: true,
+  })
 
   const statePath = path.join(
     root,
@@ -539,26 +552,14 @@ async function finishOwnedScaffold(
       throw new ApplyFailure('unavailable')
     }
     if (temporary.status === 'present') {
-      if (await regularFileHasExactBytes(
+      if (!resuming) throw new ApplyFailure('conflict')
+      await prepareExistingTemporaryState(
         temporaryPath,
-        planned.aggregateBytes,
-      )) {
-        // A complete app-owned temporary file can be published as-is.
-      } else if (await regularFileIsEmpty(temporaryPath)) {
-        const handle = await openExistingWritableFile(temporaryPath)
-        try {
-          await handle.writeFile(planned.aggregateBytes)
-          await inject(options, 'after_state_temp_write')
-          await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-          await handle.sync()
-          await inject(options, 'after_state_temp_file_sync')
-          await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-        } finally {
-          await handle.close()
-        }
-      } else {
-        throw new ApplyFailure('conflict')
-      }
+        planned,
+        root,
+        runtimeAuthority,
+        options,
+      )
     } else {
       const handle = await openExclusiveFile(temporaryPath)
       try {
@@ -576,7 +577,9 @@ async function finishOwnedScaffold(
     }
     await inject(options, 'before_state_publish')
     await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-    await assertOwnedIncompleteTopology(planned, true)
+    await assertOwnedIncompleteTopology(planned, {
+      requireDirectories: true,
+    })
     try {
       await link(temporaryPath, statePath)
     } catch (error) {
@@ -587,13 +590,17 @@ async function finishOwnedScaffold(
     }
     await inject(options, 'after_state_publish')
     await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-    await assertOwnedIncompleteTopology(planned, true)
+    await assertOwnedIncompleteTopology(planned, {
+      requireDirectories: true,
+    })
   }
 
   await syncDirectory(productRoot)
   await inject(options, 'after_state_directory_sync')
   await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-  await assertOwnedIncompleteTopology(planned, true)
+  await assertOwnedIncompleteTopology(planned, {
+    requireDirectories: true,
+  })
   if (await pathExists(temporaryPath)) {
     if (
       !(await regularFileHasExactBytes(
@@ -619,12 +626,16 @@ async function finishOwnedScaffold(
   )
   await inject(options, 'after_state_readback')
   await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-  await assertOwnedIncompleteTopology(planned, true)
+  await assertOwnedIncompleteTopology(planned, {
+    requireDirectories: true,
+  })
 
   await assertStoredAdmissionMarker(planned)
   await inject(options, 'before_evidence_unlink')
   await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-  await assertOwnedIncompleteTopology(planned, true)
+  await assertOwnedIncompleteTopology(planned, {
+    requireDirectories: true,
+  })
   await unlink(path.join(productRoot, evidenceFileName))
   await inject(options, 'after_evidence_unlink')
   await assertOwnedRuntimeAuthority(root, runtimeAuthority)
@@ -642,7 +653,20 @@ async function finishOwnedScaffold(
     throw new ApplyFailure('conflict')
   }
   await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-  return final.workspace
+  const finalStateBytes = await readRegularFile(
+    path.join(
+      root,
+      evidence.authority.ownedScaffoldPlan.state.relativePath,
+    ),
+  )
+  if (
+    sha256(finalStateBytes) !== evidence.authority.aggregateSha256 ||
+    !finalStateBytes.equals(planned.aggregateBytes)
+  ) {
+    throw new ApplyFailure('conflict')
+  }
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+  return admittedWorkspace(root, planned.aggregate)
 }
 
 async function readExpectedOwnedWorkspace(
@@ -652,7 +676,9 @@ async function readExpectedOwnedWorkspace(
   const evidence = planned.evidence
   const root = evidence.authority.canonicalRoot
   await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-  await assertOwnedIncompleteTopology(planned, true)
+  await assertOwnedIncompleteTopology(planned, {
+    requireDirectories: true,
+  })
   for (const directory of ['inbox', 'courses']) {
     if (!(await isRegularDirectory(path.join(root, directory)))) {
       throw new ApplyFailure('conflict')
@@ -1069,7 +1095,10 @@ async function assertStoredAdmissionMarker(
 
 async function assertOwnedIncompleteTopology(
   planned: DecodedAdmissionEvidence,
-  requireDirectories = false,
+  options: {
+    readonly allowRepairableTemporary?: boolean
+    readonly requireDirectories?: boolean
+  } = {},
 ): Promise<void> {
   const root = planned.evidence.authority.canonicalRoot
   const rootEntries = await readDirectoryEntries(root)
@@ -1096,7 +1125,9 @@ async function assertOwnedIncompleteTopology(
       throw new ApplyFailure('unavailable')
     }
     if (outcome.status === 'absent') {
-      if (requireDirectories) throw new ApplyFailure('conflict')
+      if (options.requireDirectories) {
+        throw new ApplyFailure('conflict')
+      }
       continue
     }
     if (
@@ -1134,10 +1165,17 @@ async function assertOwnedIncompleteTopology(
         candidatePath,
         planned.aggregateBytes,
       )
-      const recognizedEmptyTemporary =
+      const recognizedRepairableTemporary =
+        options.allowRepairableTemporary === true &&
         candidate === temporaryName &&
-        (await regularFileIsEmpty(candidatePath))
-      if (!exact && !recognizedEmptyTemporary) {
+        (await regularFileIsStrictPrefix(
+          candidatePath,
+          planned.aggregateBytes,
+        ))
+      if (
+        !exact &&
+        !recognizedRepairableTemporary
+      ) {
         throw new ApplyFailure('conflict')
       }
     }
@@ -1311,11 +1349,82 @@ async function openExclusiveFile(filePath: string) {
   )
 }
 
-async function openExistingWritableFile(filePath: string) {
-  return open(
-    filePath,
-    fsConstants.O_WRONLY | fsConstants.O_NOFOLLOW,
-  )
+async function prepareExistingTemporaryState(
+  temporaryPath: string,
+  planned: DecodedAdmissionEvidence,
+  root: string,
+  runtimeAuthority: OwnedRuntimeAuthority,
+  options: SemesterWorkspaceAdmissionTestOptions,
+): Promise<void> {
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+  await assertStoredAdmissionMarker(planned)
+  let handle
+  try {
+    handle = await open(
+      temporaryPath,
+      fsConstants.O_RDWR | fsConstants.O_NOFOLLOW,
+    )
+  } catch (error) {
+    if (
+      hasErrnoCode(error, 'ELOOP') ||
+      hasErrnoCode(error, 'ENOENT')
+    ) {
+      throw new ApplyFailure('conflict')
+    }
+    throw error
+  }
+  try {
+    const stats = await handle.stat()
+    if (
+      !stats.isFile() ||
+      stats.nlink !== 1 ||
+      stats.size > planned.aggregateBytes.byteLength
+    ) {
+      throw new ApplyFailure('conflict')
+    }
+    const currentBytes = await handle.readFile()
+    const exact = currentBytes.equals(planned.aggregateBytes)
+    const repairable = isStrictBufferPrefix(
+      currentBytes,
+      planned.aggregateBytes,
+    )
+    if (!exact && !repairable) {
+      throw new ApplyFailure('conflict')
+    }
+    if (repairable) {
+      await handle.truncate(0)
+      await writeBufferAtStart(handle, planned.aggregateBytes)
+      await inject(options, 'after_state_temp_write')
+      await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+      await assertStoredAdmissionMarker(planned)
+    }
+    await handle.sync()
+    await inject(options, 'after_state_temp_file_sync')
+    await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+    await assertStoredAdmissionMarker(planned)
+  } finally {
+    await handle.close()
+  }
+}
+
+async function writeBufferAtStart(
+  handle: Awaited<ReturnType<typeof open>>,
+  bytes: Buffer,
+): Promise<void> {
+  let offset = 0
+  while (offset < bytes.byteLength) {
+    const { bytesWritten } = await handle.write(
+      bytes,
+      offset,
+      bytes.byteLength - offset,
+      offset,
+    )
+    if (bytesWritten <= 0) {
+      throw new TypeError('Unable to write workspace state.')
+    }
+    offset += bytesWritten
+  }
+  await handle.truncate(bytes.byteLength)
 }
 
 async function readRegularFile(
@@ -1354,13 +1463,40 @@ async function regularFileHasExactBytes(
   }
 }
 
-async function regularFileIsEmpty(filePath: string): Promise<boolean> {
+async function regularFileIsStrictPrefix(
+  filePath: string,
+  expectedBytes: Buffer,
+): Promise<boolean> {
+  let handle
   try {
-    const bytes = await readRegularFile(filePath)
-    return bytes.byteLength === 0
+    handle = await open(
+      filePath,
+      fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
+    )
+    const stats = await handle.stat()
+    if (
+      !stats.isFile() ||
+      stats.nlink !== 1 ||
+      stats.size >= expectedBytes.byteLength
+    ) {
+      return false
+    }
+    return isStrictBufferPrefix(await handle.readFile(), expectedBytes)
   } catch {
     return false
+  } finally {
+    await handle?.close()
   }
+}
+
+function isStrictBufferPrefix(
+  candidate: Buffer,
+  expected: Buffer,
+): boolean {
+  return (
+    candidate.byteLength < expected.byteLength &&
+    expected.subarray(0, candidate.byteLength).equals(candidate)
+  )
 }
 
 async function syncDirectory(directory: string): Promise<void> {
