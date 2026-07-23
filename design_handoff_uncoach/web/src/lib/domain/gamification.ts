@@ -66,6 +66,29 @@ export function computeStreak(history: SessionRecord[]): StreakInfo {
   return { current, best, trainedToday: last === today };
 }
 
+/** 오늘 포함 최근 7일 내 세션 수(일수 아님 — 같은 날 여러 세션도 각각). ts 없는 기록 제외. */
+export function sessionsThisWeek(history: SessionRecord[]): number {
+  const DAY = 86400000;
+  const windowStart = dayStart(Date.now()) - 6 * DAY;
+  return history.filter((h) => h.ts && dayStart(h.ts) >= windowStart).length;
+}
+
+/** 마지막 훈련일로부터 지난 일수(오늘=0, 어제=1). 기록·ts 없으면 null. */
+export function daysSinceLastSession(history: SessionRecord[]): number | null {
+  const DAY = 86400000;
+  const days = history.filter((h) => h.ts).map((h) => dayStart(h.ts!));
+  if (days.length === 0) return null;
+  return Math.round((dayStart(Date.now()) - Math.max(...days)) / DAY);
+}
+
+/** 홈 화면 넛지 문구 — 마지막 훈련 이후 경과에 따라 독려 메시지. */
+export function homeNudge(history: SessionRecord[]): string {
+  const d = daysSinceLastSession(history);
+  if (d === null) return '첫 훈련을 시작해볼까요?';
+  if (d === 0) return '오늘도 훈련을 마쳤어요. 좋아요!';
+  return `${d}일째 쉬는 중 — 다시 시작해볼까요?`;
+}
+
 // --- 배지 ---
 
 export interface Badge {
@@ -85,6 +108,13 @@ export const BADGES: Badge[] = [
   { id: 'streak-7', icon: '🔥', label: '일주일 연속', desc: '7일 연속 훈련', check: (s) => computeStreak(s.history).best >= 7 },
   { id: 'streak-30', icon: '🔥', label: '한 달 연속', desc: '30일 연속 훈련', check: (s) => computeStreak(s.history).best >= 30 },
   { id: 'assets-5', icon: '✨', label: '표현 수집가', desc: '잘 쓴 표현 5개 수집', check: (s) => s.assets.length >= 5 },
+  {
+    id: 'perfect-3',
+    icon: '💯',
+    label: '완벽주의자',
+    desc: '만점(100점) 세션 3회 달성',
+    check: (s) => s.history.filter((h) => totalOf(h.scores) === 100).length >= 3,
+  },
   {
     id: 'balanced',
     icon: '⚖️',
