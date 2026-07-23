@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 
-import type { AdmittedSemesterWorkspace } from './contract.js'
+import { createSemesterWorkspaceAdmission } from './admission.js'
 import {
   captureCanonicalWorkspaceBundleSource,
   materializeWorkspaceBundle,
@@ -203,24 +203,35 @@ async function createFixture() {
   const root = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-workspace-context-test-'),
   )
-  const workspacePath = path.join(root, 'workspace')
-  await mkdir(path.join(workspacePath, '.ay-ple'), { recursive: true })
-  await mkdir(path.join(workspacePath, 'courses'))
-  await mkdir(path.join(workspacePath, 'inbox'))
-  const canonicalRoot = await realpath(workspacePath)
-  const workspace: AdmittedSemesterWorkspace = {
-    canonicalRoot,
-    workspaceId: 'workspace_context',
-    formatVersion: 3,
-    manifest: {
-      workspaceId: 'workspace_context',
-      semester: {
-        yearLevel: 2,
-        term: { key: 'spring', displayName: '1학기' },
-      },
-      courses: [],
+  const canonicalParent = await realpath(root)
+  const parentStats = await import('node:fs/promises').then(({ lstat }) =>
+    lstat(canonicalParent, { bigint: true }),
+  )
+  const admission = createSemesterWorkspaceAdmission()
+  const inspected = await admission.inspect({
+    kind: 'create',
+    parent: {
+      selectionId: 'selection_context',
+      canonicalParent,
+      parentDevice: String(parentStats.dev),
+      parentInode: String(parentStats.ino),
     },
+    semester: {
+      yearLevel: 2,
+      term: { key: 'spring', displayName: '1학기' },
+    },
+    leafName: 'workspace',
+  })
+  assert.equal(inspected.outcome, 'new_target')
+  if (inspected.outcome !== 'new_target') {
+    assert.fail('expected fresh context workspace target')
   }
+  const applied = await admission.apply(inspected.plan)
+  assert.equal(applied.outcome, 'created')
+  if (applied.outcome !== 'created') {
+    assert.fail('expected admitted context workspace')
+  }
+  const workspace = applied.workspace
   return {
     workspace,
     cleanup: () => rm(root, { force: true, recursive: true }),

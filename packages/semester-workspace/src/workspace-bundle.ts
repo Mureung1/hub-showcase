@@ -13,6 +13,9 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 import {
+  createSemesterWorkspaceAdmission,
+} from './admission.js'
+import {
   decodeWorkspaceBundleDescriptor,
   type AdmittedSemesterWorkspace,
   type VerifiedBundleFile,
@@ -231,20 +234,23 @@ export async function materializeWorkspaceBundle(input: {
   readonly workspace: AdmittedSemesterWorkspace
   readonly source: VerifiedBundleSource
 }): Promise<WorkspaceBundleMutationResult> {
-  return writeMissingBundleFiles(input)
+  return writeMissingBundleFiles(input, false)
 }
 
 export async function recoverMissingWorkspaceBundle(input: {
   readonly workspace: AdmittedSemesterWorkspace
   readonly source: VerifiedBundleSource
 }): Promise<WorkspaceBundleMutationResult> {
-  return writeMissingBundleFiles(input)
+  return writeMissingBundleFiles(input, true)
 }
 
-async function writeMissingBundleFiles(input: {
-  readonly workspace: AdmittedSemesterWorkspace
-  readonly source: VerifiedBundleSource
-}): Promise<WorkspaceBundleMutationResult> {
+async function writeMissingBundleFiles(
+  input: {
+    readonly workspace: AdmittedSemesterWorkspace
+    readonly source: VerifiedBundleSource
+  },
+  allowPartialRecovery: boolean,
+): Promise<WorkspaceBundleMutationResult> {
   let snapshot: SnapshotFile[]
   try {
     snapshot = validateSnapshot(input.source)
@@ -253,6 +259,12 @@ async function writeMissingBundleFiles(input: {
   }
   const before = await verifyWorkspaceBundle(input)
   if (before.status !== 'missing') return before
+  if (
+    !allowPartialRecovery &&
+    before.missing.length !== snapshot.length
+  ) {
+    return before
+  }
 
   const written: string[] = []
   try {
@@ -383,10 +395,41 @@ async function inspectWorkspaceRoot(
         conflicts: [{ relativePath: '.', reason: 'symlink' }],
       }
     }
+    const inspection = await createSemesterWorkspaceAdmission().inspect({
+      kind: 'reopen',
+      canonicalRoot,
+    })
+    if (
+      (inspection.outcome !== 'admitted' &&
+        inspection.outcome !== 'already_ready') ||
+      !sameAdmittedWorkspace(workspace, inspection.workspace)
+    ) {
+      return { status: 'unavailable' }
+    }
     return { status: 'verified', canonicalRoot }
   } catch {
     return { status: 'unavailable' }
   }
+}
+
+function sameAdmittedWorkspace(
+  left: AdmittedSemesterWorkspace,
+  right: AdmittedSemesterWorkspace,
+): boolean {
+  return (
+    left.canonicalRoot === right.canonicalRoot &&
+    left.workspaceId === right.workspaceId &&
+    left.manifest.workspaceId === right.manifest.workspaceId &&
+    left.manifest.workspaceId === left.workspaceId &&
+    left.manifest.semester.yearLevel ===
+      right.manifest.semester.yearLevel &&
+    left.manifest.semester.term.key ===
+      right.manifest.semester.term.key &&
+    left.manifest.semester.term.displayName ===
+      right.manifest.semester.term.displayName &&
+    left.manifest.courses.length === 0 &&
+    right.manifest.courses.length === 0
+  )
 }
 
 async function inspectSkillTree(input: {

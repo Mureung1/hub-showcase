@@ -22,6 +22,7 @@ import type {
   AdmittedSemesterWorkspace,
   VerifiedBundleSource,
 } from './contract.js'
+import { createSemesterWorkspaceAdmission } from './admission.js'
 import {
   WorkspaceBundleSourceError,
   captureCanonicalWorkspaceBundleSource,
@@ -204,6 +205,23 @@ test('missing declared file is recovered only through explicit absent-only recov
     assert.equal(missing.status, 'missing')
     if (missing.status !== 'missing') assert.fail('expected missing bundle')
     assert.deepEqual(missing.missing, ['AGENTS.md'])
+    assert.equal(
+      (
+        await materializeWorkspaceBundle({
+          workspace: fixture.workspace,
+          source,
+        })
+      ).status,
+      'missing',
+    )
+    await assert.rejects(lstat(agentsPath), (error: unknown) => {
+      return (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'ENOENT'
+      )
+    })
 
     const recovered = await recoverMissingWorkspaceBundle({
       workspace: fixture.workspace,
@@ -216,7 +234,7 @@ test('missing declared file is recovered only through explicit absent-only recov
   }
 })
 
-for (const drift of ['modified', 'extra', 'symlink'] as const) {
+for (const drift of ['modified', 'extra', 'symlink', 'mode'] as const) {
   test(`${drift} workspace drift is preserved as manual recovery`, async () => {
     const fixture = await createFixture()
     try {
@@ -235,11 +253,13 @@ for (const drift of ['modified', 'extra', 'symlink'] as const) {
       } else if (drift === 'extra') {
         preservedPath = path.join(path.dirname(skillPath), 'student-note.md')
         await writeFile(preservedPath, 'student extra byte\n')
-      } else {
+      } else if (drift === 'symlink') {
         const external = path.join(fixture.root, 'student-skill.md')
         await writeFile(external, 'student symlink target byte\n')
         await unlink(skillPath)
         await symlink(external, skillPath, 'file')
+      } else {
+        await chmod(skillPath, 0o600)
       }
       const before = await readEntryBytes(preservedPath)
 
@@ -284,6 +304,29 @@ test('a caller-mutated snapshot is rejected without touching workspace bytes', a
   }
 })
 
+test('a fabricated admitted handle cannot authorize bundle mutation', async () => {
+  const fixture = await createFixture()
+  try {
+    const unadmittedRoot = path.join(fixture.root, 'unadmitted')
+    await mkdir(unadmittedRoot)
+    const fabricated: AdmittedSemesterWorkspace = {
+      ...fixture.workspace,
+      canonicalRoot: await realpath(unadmittedRoot),
+    }
+    const source = await captureCanonicalWorkspaceBundleSource()
+
+    const result = await materializeWorkspaceBundle({
+      workspace: fabricated,
+      source,
+    })
+
+    assert.equal(result.status, 'unavailable')
+    assert.deepEqual(await readdir(unadmittedRoot), [])
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 function fileBytes(
   source: VerifiedBundleSource,
   relativePath: string,
@@ -299,24 +342,33 @@ async function createFixture() {
   const root = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-workspace-bundle-test-'),
   )
-  const workspacePath = path.join(root, 'workspace')
-  await mkdir(path.join(workspacePath, '.ay-ple'), { recursive: true })
-  await mkdir(path.join(workspacePath, 'courses'))
-  await mkdir(path.join(workspacePath, 'inbox'))
-  const canonicalRoot = await realpath(workspacePath)
-  const workspace: AdmittedSemesterWorkspace = {
-    canonicalRoot,
-    workspaceId: 'workspace_test',
-    formatVersion: 3,
-    manifest: {
-      workspaceId: 'workspace_test',
-      semester: {
-        yearLevel: 2,
-        term: { key: 'spring', displayName: '1학기' },
-      },
-      courses: [],
+  const canonicalRoot = await realpath(root)
+  const parentStats = await lstat(canonicalRoot, { bigint: true })
+  const admission = createSemesterWorkspaceAdmission()
+  const inspected = await admission.inspect({
+    kind: 'create',
+    parent: {
+      selectionId: 'selection_bundle',
+      canonicalParent: canonicalRoot,
+      parentDevice: String(parentStats.dev),
+      parentInode: String(parentStats.ino),
     },
+    semester: {
+      yearLevel: 2,
+      term: { key: 'spring', displayName: '1학기' },
+    },
+    leafName: 'workspace',
+  })
+  assert.equal(inspected.outcome, 'new_target')
+  if (inspected.outcome !== 'new_target') {
+    assert.fail('expected fresh workspace target')
   }
+  const applied = await admission.apply(inspected.plan)
+  assert.equal(applied.outcome, 'created')
+  if (applied.outcome !== 'created') {
+    assert.fail('expected admitted workspace')
+  }
+  const workspace = applied.workspace
   return {
     root,
     workspace,
