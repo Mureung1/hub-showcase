@@ -66,6 +66,15 @@ export interface GymDto {
   externalLink?: string | null;
   distanceKm?: number;
   trainers?: TrainerDto[];
+  matchScore?: number;
+  matchReasons?: string[];
+}
+
+export interface RecommendedGymDto extends GymDto {
+  distanceKm: number;
+  matchScore: number;
+  matchReasons: string[];
+  trainers: TrainerDto[];
 }
 
 export interface ListGymsQuery {

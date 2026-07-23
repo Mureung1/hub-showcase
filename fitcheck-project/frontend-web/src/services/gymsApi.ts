@@ -34,6 +34,8 @@ interface ApiGym {
   isActive: boolean;
   createdAt: string;
   distanceKm?: number;
+  matchScore?: number;
+  matchReasons?: string[];
   category?: string | null;
   source?: string;
   externalLink?: string | null;
@@ -86,6 +88,27 @@ export interface SyncNearbyParams {
   lng: number;
   radiusKm?: number;
   areaLabel?: string;
+}
+
+export interface FetchRecommendedParams {
+  lat: number;
+  lng: number;
+  radiusKm?: number;
+  page?: number;
+  limit?: number;
+}
+
+export interface InterestWeight {
+  label: string;
+  count: number;
+  weight: number;
+}
+
+export interface InterestProfile {
+  totalViews: number;
+  topBodyParts: InterestWeight[];
+  topGoals: InterestWeight[];
+  primaryLevel: string | null;
 }
 
 const GYM_TYPES: GymPlace['type'][] = [
@@ -182,6 +205,8 @@ export function mapApiGymToGymPlace(
     source,
     externalLink: api.externalLink ?? undefined,
     category: api.category ?? undefined,
+    matchScore: api.matchScore,
+    matchReasons: api.matchReasons,
   };
 }
 
@@ -260,5 +285,39 @@ export async function syncNearbyGyms(
     synced: res.data.synced,
     queries: res.data.queries,
     meta: res.data.meta,
+  };
+}
+
+interface RecommendedGymsResponse {
+  success: boolean;
+  data: ApiGym[];
+  meta: ListGymsResponse['meta'];
+  interestProfile: InterestProfile;
+}
+
+export async function fetchRecommendedGyms(
+  params: FetchRecommendedParams,
+): Promise<{
+  gyms: GymPlace[];
+  interestProfile: InterestProfile;
+  meta: ListGymsResponse['meta'];
+}> {
+  const search = new URLSearchParams();
+  search.set('lat', String(params.lat));
+  search.set('lng', String(params.lng));
+  search.set('radiusKm', String(params.radiusKm ?? 3));
+  if (params.page) search.set('page', String(params.page));
+  if (params.limit) search.set('limit', String(params.limit));
+
+  const res = await apiGet<RecommendedGymsResponse>(
+    `/api/v1/gyms/recommended?${search.toString()}`,
+  );
+
+  const gyms = res.data.map((gym) => mapApiGymToGymPlace(gym, params.lat, params.lng));
+
+  return {
+    gyms,
+    interestProfile: res.interestProfile,
+    meta: res.meta,
   };
 }

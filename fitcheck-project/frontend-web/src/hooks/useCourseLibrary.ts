@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from 'react';
+import { getAccessToken } from '../services/authToken';
+import { recordCourseWatchOnServer, syncLocalCourseViews } from '../services/coursesApi';
 
 const STORAGE_KEY = 'fitcheck-user-courses';
 
@@ -75,6 +77,19 @@ export function recordWatch(courseId: string) {
       ...rest,
     ].slice(0, 30),
   });
+
+  if (getAccessToken()) {
+    void recordCourseWatchOnServer(courseId).catch(() => {
+      // 오프라인·비인증 등은 로컬 기록만 유지
+    });
+  }
+}
+
+export async function syncCourseLibraryToServer(): Promise<void> {
+  if (!getAccessToken()) return;
+  const current = readState();
+  if (current.watchHistory.length === 0) return;
+  await syncLocalCourseViews(current.watchHistory);
 }
 
 export function useCourseLibrary() {

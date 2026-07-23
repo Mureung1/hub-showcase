@@ -4,6 +4,7 @@ import {
   listGyms,
   listTrainersByGymId,
 } from '../services/gyms.service.js';
+import { listRecommendedGyms } from '../services/gymRecommendation.service.js';
 import { syncNearbyGymsFromNaver } from '../services/gymsSync.service.js';
 import { GYM_TYPES } from '../types/gym.js';
 import { sendError, sendListSuccess, sendSuccess } from '../utils/response.js';
@@ -97,6 +98,49 @@ export async function getGymTrainers(req: Request, res: Response) {
     }
 
     return sendSuccess(res, trainers);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : '서버 오류가 발생했습니다.';
+    return sendError(res, 500, 'INTERNAL_ERROR', message);
+  }
+}
+
+export async function getRecommendedGyms(req: Request, res: Response) {
+  try {
+    const lat = parseOptionalFloat(req.query.lat);
+    const lng = parseOptionalFloat(req.query.lng);
+    const radiusKm = parseOptionalFloat(req.query.radiusKm) ?? 3;
+
+    if (lat === undefined || lng === undefined) {
+      return sendError(
+        res,
+        400,
+        'VALIDATION_ERROR',
+        'lat과 lng가 필요합니다.',
+      );
+    }
+
+    const page = parsePositiveInt(req.query.page, 1);
+    const limit = parsePositiveInt(req.query.limit, 20, 50);
+
+    const result = await listRecommendedGyms({
+      userId: req.userId,
+      lat,
+      lng,
+      radiusKm,
+      page,
+      limit,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: result.data,
+      meta: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+      },
+      interestProfile: result.interestProfile,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : '서버 오류가 발생했습니다.';
     return sendError(res, 500, 'INTERNAL_ERROR', message);

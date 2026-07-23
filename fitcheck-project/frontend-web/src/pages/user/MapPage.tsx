@@ -6,7 +6,7 @@ import GymBottomSheet from '../../features/map/GymBottomSheet';
 import NaverMapView from '../../features/map/NaverMapView';
 import { reverseGeocodeAreaLabel } from '../../features/map/reverseGeocode';
 import { useUserLocation } from '../../features/map/useUserLocation';
-import { syncNearbyGyms } from '../../services/gymsApi';
+import { syncNearbyGyms, fetchRecommendedGyms } from '../../services/gymsApi';
 import '../../features/map/map.css';
 
 export default function MapPage() {
@@ -16,6 +16,7 @@ export default function MapPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [syncInfo, setSyncInfo] = useState('');
+  const [matchHint, setMatchHint] = useState('');
   const { location, status, message, locateToken, requestLocation } = useUserLocation();
 
   useEffect(() => {
@@ -28,24 +29,51 @@ export default function MapPage() {
 
       try {
         const areaLabel = await reverseGeocodeAreaLabel(location.lat, location.lng);
-        const result = await syncNearbyGyms({
+        const syncResult = await syncNearbyGyms({
           lat: location.lat,
           lng: location.lng,
           radiusKm: 3,
           areaLabel,
         });
 
+        let gymsToShow = syncResult.gyms;
+
+        try {
+          const recommended = await fetchRecommendedGyms({
+            lat: location.lat,
+            lng: location.lng,
+            radiusKm: 3,
+            limit: 50,
+          });
+          gymsToShow = recommended.gyms;
+
+          const profile = recommended.interestProfile;
+          if (profile.totalViews > 0) {
+            const bodyPart = profile.topBodyParts[0]?.label;
+            const goal = profile.topGoals[0]?.label;
+            if (bodyPart && goal) {
+              setMatchHint(`${bodyPart}·${goal} 강좌 시청 기반으로 매칭했습니다.`);
+            } else {
+              setMatchHint('PT 강좌 시청 기록을 반영해 순위를 정렬했습니다.');
+            }
+          } else {
+            setMatchHint('강좌를 시청하면 취향에 맞는 헬스장 순위가 올라갑니다.');
+          }
+        } catch {
+          setMatchHint('');
+        }
+
         if (cancelled) return;
 
-        setGyms(result.gyms);
+        setGyms(gymsToShow);
         setSelectedGymId((prev) => {
-          if (prev && result.gyms.some((gym) => gym.id === prev)) return prev;
-          return result.gyms[0]?.id ?? null;
+          if (prev && gymsToShow.some((gym) => gym.id === prev)) return prev;
+          return gymsToShow[0]?.id ?? null;
         });
 
-        if (result.synced > 0) {
-          setSyncInfo(`네이버에서 ${result.synced}곳을 찾아 저장했습니다.`);
-        } else if (result.gyms.length === 0) {
+        if (syncResult.synced > 0) {
+          setSyncInfo(`네이버에서 ${syncResult.synced}곳을 찾아 저장했습니다.`);
+        } else if (gymsToShow.length === 0) {
           setSyncInfo('주변 3km 내 헬스장을 찾지 못했습니다. 위치를 바꿔 다시 시도해 보세요.');
         }
       } catch (err) {
@@ -83,12 +111,12 @@ export default function MapPage() {
       />
 
       <div className="map-locate-stack">
-        {(message || syncInfo) && (
+        {(message || syncInfo || matchHint) && (
           <p
             className={`map-locate-banner map-locate-banner-${status}`}
             role="status"
           >
-            {syncInfo || message}
+            {syncInfo || matchHint || message}
           </p>
         )}
         {error && (
