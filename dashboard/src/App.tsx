@@ -52,6 +52,9 @@ export default function App({ projects }: AppProps) {
     }
   };
 
+  const cardFeatureTags = (project: Project) => project.featureTags.slice(0, 3);
+  const cardTechStack = (project: Project) => project.techStack.slice(0, 4);
+
   return (
     <>
       <header className="camp-banner">
@@ -100,17 +103,19 @@ export default function App({ projects }: AppProps) {
 
                 {project.featureTags.length > 0 && (
                   <div className="tags" aria-label="기능 태그">
-                    {project.featureTags.map((tag) => (
+                    {cardFeatureTags(project).map((tag) => (
                       <span className="tag" key={tag}>{tag}</span>
                     ))}
+                    {project.featureTags.length > 3 && <span className="tag tag-more">+{project.featureTags.length - 3}</span>}
                   </div>
                 )}
 
                 {project.techStack.length > 0 && (
                   <div className="tech-stack" aria-label="기술">
-                    {project.techStack.map((tech) => (
+                    {cardTechStack(project).map((tech) => (
                       <span className="tech" key={tech}>{tech}</span>
                     ))}
+                    {project.techStack.length > 4 && <span className="tech tech-more">+{project.techStack.length - 4}</span>}
                   </div>
                 )}
 
