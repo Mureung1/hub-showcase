@@ -73,6 +73,47 @@ const analysisSchema = {
   },
 };
 
+const submissionFeedbackSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "overall",
+    "strengths",
+    "improvements",
+    "revisions",
+    "portfolioPoints",
+  ],
+  properties: {
+    overall: {
+      type: "string",
+    },
+    strengths: {
+      type: "array",
+      minItems: 2,
+      maxItems: 4,
+      items: { type: "string" },
+    },
+    improvements: {
+      type: "array",
+      minItems: 2,
+      maxItems: 4,
+      items: { type: "string" },
+    },
+    revisions: {
+      type: "array",
+      minItems: 2,
+      maxItems: 4,
+      items: { type: "string" },
+    },
+    portfolioPoints: {
+      type: "array",
+      minItems: 2,
+      maxItems: 4,
+      items: { type: "string" },
+    },
+  },
+};
+
 export const generateCareerAnalysis = async ({ user, spec }) => {
   const openai = getOpenAIClient();
 
@@ -113,6 +154,61 @@ export const generateCareerAnalysis = async ({ user, spec }) => {
 
   if (!outputText) {
     throw new Error("AI 분석 결과를 생성하지 못했습니다.");
+  }
+
+  return {
+    result: JSON.parse(outputText),
+    rawResponse: response,
+  };
+};
+
+export const generateSubmissionFeedback = async ({ submission, artifactEvidence }) => {
+  const openai = getOpenAIClient();
+
+  const response = await openai.responses.create({
+    model: env.openaiModel,
+    input: [
+      {
+        role: "developer",
+        content:
+          "너는 대학생과 주니어 취업 준비생의 미션 결과물을 평가하는 커리어 코치다. 제출 링크나 파일에서 읽은 실제 결과물 내용, 사용자의 제출 설명, 미션 정보를 함께 보고 한국어 피드백을 작성한다. 과장하지 말고, 결과물에서 확인 가능한 근거를 중심으로 강점과 수정 제안을 구체적으로 작성한다. 링크 접근 실패나 파일 추출 실패가 있으면 그 한계를 반영해 말하되, 사용자를 탓하지 않는다.",
+      },
+      {
+        role: "user",
+        content: JSON.stringify(
+          {
+            mission: {
+              id: submission.missionId,
+              title: submission.missionTitle || submission.mission?.title || "",
+              description: submission.mission?.description || "",
+            },
+            submission: {
+              submittedUrl: submission.submittedUrl,
+              submittedDescription: submission.submittedDescription,
+              submittedFileName: submission.submittedFileName,
+              submittedFileType: submission.submittedFileType,
+            },
+            artifactEvidence,
+          },
+          null,
+          2
+        ),
+      },
+    ],
+    text: {
+      format: {
+        type: "json_schema",
+        name: "submission_feedback",
+        strict: true,
+        schema: submissionFeedbackSchema,
+      },
+    },
+  });
+
+  const outputText = response.output_text;
+
+  if (!outputText) {
+    throw new Error("AI 피드백 결과를 생성하지 못했습니다.");
   }
 
   return {

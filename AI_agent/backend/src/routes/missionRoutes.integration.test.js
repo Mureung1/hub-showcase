@@ -272,10 +272,9 @@ test(
     assert.equal(saveFeedbackData.ok, true);
     assert.equal(saveFeedbackData.submission.missionId, feedbackMissionId);
     assert.equal(typeof saveFeedbackData.feedback.overall, "string");
-    assert.match(
-      saveFeedbackData.feedback.portfolioPoints[0],
-      /Feedback Integration Mission/
-    );
+    assert.ok(saveFeedbackData.feedback.overall.length > 0);
+    assert.ok(saveFeedbackData.feedback.portfolioPoints.length > 0);
+    assert.equal(typeof saveFeedbackData.feedback.portfolioPoints[0], "string");
 
     const secondGetResponse = await fetch(`${baseUrl}/api/feedback/latest`, {
       headers,

@@ -1,14 +1,35 @@
 import { prisma } from "../db/prisma.js";
+import { env } from "../config/env.js";
+import { collectSubmissionArtifactEvidence } from "./artifactContentService.js";
+import { generateSubmissionFeedback } from "./openaiService.js";
 
-export const createSubmissionFeedback = (submission) => {
+const summarizeArtifactEvidence = (artifactEvidence = []) => {
+  const readableEvidence = artifactEvidence.filter((evidence) => evidence.text);
+
+  if (readableEvidence.length > 0) {
+    return `실제 결과물 내용 ${readableEvidence.length}건을 읽고 평가했습니다.`;
+  }
+
+  if (artifactEvidence.length > 0) {
+    return `제출 링크/파일을 직접 열람하려 했지만 ${artifactEvidence
+      .map((evidence) => evidence.reason)
+      .filter(Boolean)
+      .join(" / ")} 제출 설명을 함께 기준으로 평가했습니다.`;
+  }
+
+  return "제출 설명과 미션 정보를 기준으로 평가했습니다.";
+};
+
+export const createSubmissionFeedback = (submission, artifactEvidence = []) => {
   const hasUrl = Boolean(submission?.submittedUrl);
   const hasFile = Boolean(submission?.submittedFileName);
   const hasDescription =
     String(submission?.submittedDescription || "").trim().length >= 80;
+  const evidenceSummary = summarizeArtifactEvidence(artifactEvidence);
 
   return {
     overall:
-      "미션 결과물이 제출 형식에 맞게 정리되었습니다. 다음 단계에서는 문제 정의, 수행 과정, 결과를 더 명확히 연결하면 포트폴리오 완성도가 올라갑니다.",
+      `${evidenceSummary} 미션 결과물이 제출 형식에 맞게 정리되었습니다. 다음 단계에서는 문제 정의, 수행 과정, 결과를 더 명확히 연결하면 포트폴리오 완성도가 올라갑니다.`,
     strengths: [
       hasUrl
         ? "외부에서 확인 가능한 링크를 제출해 결과물 접근성이 좋습니다."
@@ -32,7 +53,31 @@ export const createSubmissionFeedback = (submission) => {
       "문제 정의와 개선 결과를 숫자, 비교, 화면 캡처 중 하나로 보강하면 좋습니다.",
       "사용한 도구와 배운 점을 별도 섹션으로 분리하면 면접 답변에도 활용하기 쉽습니다.",
     ],
+    evidenceSummary,
   };
+};
+
+export const createAiSubmissionFeedback = async (submission) => {
+  const artifactEvidence = await collectSubmissionArtifactEvidence(submission);
+
+  try {
+    if (!env.openaiFeedbackEnabled) {
+      throw new Error("OPENAI_FEEDBACK_ENABLED=false");
+    }
+
+    const { result } = await generateSubmissionFeedback({
+      submission,
+      artifactEvidence,
+    });
+
+    return {
+      ...result,
+      evidenceSummary: summarizeArtifactEvidence(artifactEvidence),
+    };
+  } catch (error) {
+    console.warn(`AI submission feedback fallback: ${error.message}`);
+    return createSubmissionFeedback(submission, artifactEvidence);
+  }
 };
 
 export const parseStoredFeedback = (value) => {
@@ -112,7 +157,7 @@ export const saveLatestFeedback = async (userId) => {
     throw error;
   }
 
-  const feedback = createSubmissionFeedback(submission);
+  const feedback = await createAiSubmissionFeedback(submission);
   const updatedSubmission = await prisma.userMission.update({
     where: {
       id: submission.id,

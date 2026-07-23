@@ -684,11 +684,12 @@ Request body:
     "updatedAt": "2026-07-23T00:00:00.000Z"
   },
   "feedback": {
-    "overall": "미션 결과물이 제출 형식에 맞게 정리되었습니다.",
+    "overall": "실제 결과물 내용 1건을 읽고 평가했습니다. 미션 결과물이 제출 형식에 맞게 정리되었습니다.",
     "strengths": ["외부에서 확인 가능한 링크를 제출해 결과물 접근성이 좋습니다."],
     "improvements": ["문제를 왜 해결하려 했는지 한 문장으로 먼저 정리해 주세요."],
     "revisions": ["결과물 설명을 문제 정의, 수행 과정, 결과, 배운 점 순서로 나눠 보완하세요."],
-    "portfolioPoints": ["수행 미션 경험을 프로젝트 제목으로 정리할 수 있습니다."]
+    "portfolioPoints": ["수행 미션 경험을 프로젝트 제목으로 정리할 수 있습니다."],
+    "evidenceSummary": "실제 결과물 내용 1건을 읽고 평가했습니다."
   }
 }
 ```
@@ -697,6 +698,7 @@ Request body:
 
 - 제출 결과물이 없으면 `submission`과 `feedback`은 `null`이다.
 - 제출 결과물은 있지만 아직 저장된 피드백이 없으면 `feedback`은 `null`이다.
+- 저장된 피드백은 사용자별 최신 제출 결과물에 연결된다.
 
 ### 최신 제출 피드백 저장
 
@@ -721,10 +723,20 @@ Request body:
     "strengths": [],
     "improvements": [],
     "revisions": [],
-    "portfolioPoints": []
+    "portfolioPoints": [],
+    "evidenceSummary": "실제 결과물 내용 1건을 읽고 평가했습니다."
   }
 }
 ```
+
+특이사항:
+
+- 서버는 제출 URL의 공개 `http/https` 텍스트/HTML 콘텐츠를 읽어 OpenAI 피드백 입력에 포함한다.
+- `localhost`, 사설 IP처럼 내부망으로 보이는 URL은 서버에서 열람하지 않는다.
+- 제출 파일은 `text/plain`, `text/html`, `application/json`, `application/xml`, `image/svg+xml`처럼 텍스트로 읽을 수 있는 형식만 본문 평가에 포함한다.
+- PDF, 이미지, 비공개 Notion/GitHub 링크처럼 서버가 직접 읽을 수 없는 결과물은 제출 설명과 미션 정보를 기준으로 보완 평가한다.
+- `OPENAI_API_KEY`가 없거나 OpenAI 호출이 실패하면 기존 제출 정보 기반 피드백으로 fallback한다.
+- `OPENAI_FEEDBACK_ENABLED=false`로 설정하면 직접 OpenAI 평가를 끄고 fallback 피드백만 생성한다.
 
 주요 실패:
 

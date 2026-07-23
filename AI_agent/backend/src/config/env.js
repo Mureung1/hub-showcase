@@ -8,6 +8,7 @@ export const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
   openaiApiKey: process.env.OPENAI_API_KEY || "",
   openaiModel: process.env.OPENAI_MODEL || "gpt-5.4-nano",
+  openaiFeedbackEnabled: process.env.OPENAI_FEEDBACK_ENABLED !== "false",
   careerNetApiKey: process.env.CAREER_NET_API_KEY || "",
   publicDataApiKey: process.env.PUBLIC_DATA_API_KEY || "",
   searchCacheTtlMs: Number(process.env.SEARCH_CACHE_TTL_MS || 10 * 60 * 1000),
