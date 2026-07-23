@@ -62,3 +62,12 @@ Photo Navigation 서비스의 API, 로그인, DB, 파일 업로드 작업은 이
 - [ ] DB RLS가 데이터 소유자와 관리자 권한을 제한하는가?
 - [ ] 업로드 이미지 형식, 크기, 저장 경로를 검증하는가?
 - [ ] 권한 없는 요청이 `401` 또는 `403`이 되는 테스트가 있는가?
+
+## 8. Maps Client ID and Pages Deployment
+
+- Maps Web Dynamic Map의 **Client ID는 브라우저에서 지도 SDK를 불러오기 위해 공개될 수 있는 식별자**다. Client Secret이 아니다.
+- Client ID는 NCP 콘솔에서 `localhost`와 `yf560.github.io`처럼 필요한 Web 서비스 URL로 제한한다.
+- 로컬에서는 `apps/web/.env.local`, Pages 빌드에서는 GitHub Actions Secret `VITE_NAVER_MAPS_CLIENT_ID`만 사용한다.
+- Client ID도 코드·문서·커밋에 직접 기록하지 않는다. `.env.example`에는 빈 변수명만 둔다.
+- Client Secret, Supabase `service_role`, AWS 접근 키는 프론트엔드와 Vite 환경 변수에 절대 넣지 않는다.
+- 배포 워크플로는 `npm run security:check`을 먼저 통과해야 빌드를 수행한다. 배포 직전 `git diff --check`와 추적 파일 검사를 한 번 더 수행한다.

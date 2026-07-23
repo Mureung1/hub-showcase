@@ -1,1166 +1,420 @@
 <!doctype html>
 <html lang="ko">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>포토 내비게이션 MVP 기획 정리</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="포토 내비게이션 MVP PRD 및 실행 요약" />
+    <title>포토 내비게이션 | MVP PRD + 실행 요약</title>
     <style>
       :root {
-        color-scheme: light;
-        --bg: #f5f7f4;
-        --paper: #ffffff;
-        --ink: #17211b;
+        --green: #03c75a;
+        --green-dark: #008a3e;
+        --green-pale: #eefbf3;
+        --ink: #1b2520;
         --muted: #66736b;
-        --line: #dce5dc;
-        --green: #13a463;
-        --green-dark: #0c7548;
-        --mint: #dff6ea;
-        --blue: #e7f1ff;
-        --yellow: #fff4d4;
-        --red: #ffe8e1;
-        --shadow: 0 16px 40px rgba(29, 50, 38, 0.12);
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR",
-          Arial, sans-serif;
-        background: var(--bg);
+        --line: #dce5df;
+        --surface: #ffffff;
+        --canvas: #f5f7f5;
+        --nav-width: 248px;
+        font-family: Pretendard, "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         color: var(--ink);
-        line-height: 1.55;
+        background: var(--canvas);
+        font-synthesis: none;
       }
 
-      .page {
-        max-width: 1180px;
-        margin: 0 auto;
-        padding: 42px 20px 72px;
-      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body { margin: 0; min-width: 320px; line-height: 1.58; }
+      a { color: inherit; }
+      code { padding: 1px 5px; border: 1px solid #dfe7e1; border-radius: 4px; background: #f6f9f7; font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
 
-      .hero {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 22px;
-        align-items: stretch;
-        margin-bottom: 22px;
-      }
-
-      .hero-copy,
-      .phone-panel,
-      .section {
-        background: var(--paper);
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        box-shadow: var(--shadow);
-      }
-
-      .hero-copy {
-        padding: 34px 32px;
-      }
-
-      .eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 14px;
-        color: var(--green-dark);
-        font-weight: 750;
-        font-size: 14px;
-      }
-
-      .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--green);
-      }
-
-      h1,
-      .hero-subtitle,
-      h2,
-      h3 {
-        margin: 0;
-        letter-spacing: 0;
-      }
-
-      h1 {
-        font-size: clamp(32px, 5vw, 56px);
-        line-height: 1.08;
-      }
-
-      h2 {
-        font-size: 24px;
-        margin-bottom: 14px;
-      }
-
-      h3 {
-        font-size: 17px;
-        margin-bottom: 8px;
-      }
-
-      .hero-subtitle {
-        font-size: 27px;
-        margin-bottom: 8px;
-      }
-
-      p {
-        margin: 0;
-      }
-
-      .lead {
-        margin-top: 30px;
-        color: var(--muted);
-        font-size: 24px;
-      }
-
-      .hero-tags {
+      .document-header {
+        position: sticky;
+        z-index: 20;
+        top: 0;
+        height: 60px;
         display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 22px;
-      }
-
-      .tag {
-        display: inline-flex;
         align-items: center;
-        min-height: 30px;
-        padding: 5px 10px;
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        background: #fafdfa;
-        color: #35443a;
-        font-size: 13px;
-        font-weight: 650;
-      }
-
-      .tag.strong {
-        border-color: rgba(19, 164, 99, 0.34);
-        background: var(--mint);
-        color: var(--green-dark);
-        font-weight: 800;
-      }
-
-      .phone-panel {
-        padding: 18px;
-        display: grid;
-        place-items: center;
-      }
-
-      .phone {
-        width: min(100%, 310px);
-        aspect-ratio: 9 / 18.6;
-        border-radius: 30px;
-        background: #101712;
-        padding: 10px;
-        box-shadow: 0 18px 40px rgba(14, 28, 19, 0.24);
-      }
-
-      .phone-screen {
-        position: relative;
-        height: 100%;
-        overflow: hidden;
-        border-radius: 22px;
-        background: #dfeedd;
-      }
-
-      .map {
-        position: absolute;
-        inset: 0;
-        background:
-          linear-gradient(70deg, transparent 0 45%, rgba(255, 214, 113, 0.9) 46% 51%, transparent 52%),
-          linear-gradient(130deg, transparent 0 36%, #ffffff 37% 40%, transparent 41%),
-          linear-gradient(25deg, transparent 0 58%, #ffffff 59% 62%, transparent 63%),
-          linear-gradient(90deg, rgba(255,255,255,0.82) 1px, transparent 1px),
-          linear-gradient(rgba(255,255,255,0.82) 1px, transparent 1px),
-          #cfe7bf;
-        background-size: auto, auto, auto, 38px 38px, 38px 38px, auto;
-      }
-
-      .map-label {
-        position: absolute;
-        color: rgba(44, 85, 52, 0.78);
-        font-size: 12px;
-        font-weight: 750;
-      }
-
-      .pin {
-        position: absolute;
-        width: 30px;
-        height: 30px;
-        border-radius: 50% 50% 50% 8px;
-        transform: rotate(-45deg);
-        background: var(--green);
-        box-shadow: 0 6px 18px rgba(19, 164, 99, 0.35);
-      }
-
-      .pin::after {
-        content: "";
-        position: absolute;
-        inset: 8px;
-        border-radius: 50%;
-        background: white;
-      }
-
-      .bottom-card {
-        position: absolute;
-        left: 12px;
-        right: 12px;
-        bottom: 12px;
-        padding: 14px;
-        border-radius: 16px;
-        background: rgba(255, 255, 255, 0.94);
-        box-shadow: 0 14px 36px rgba(20, 38, 28, 0.18);
-      }
-
-      .thumb {
-        width: 72px;
-        height: 72px;
-        border-radius: 12px;
-        background:
-          radial-gradient(circle at 36% 42%, #f7cab7 0 6px, transparent 7px),
-          radial-gradient(circle at 58% 41%, #f7cab7 0 6px, transparent 7px),
-          linear-gradient(to top, #2e7b57 0 28%, transparent 29%),
-          linear-gradient(155deg, transparent 0 43%, rgba(255,255,255,.82) 44% 48%, transparent 49%),
-          linear-gradient(#9fd0ff, #d9f1ff 46%, #8fc46d 47%);
-        flex: 0 0 auto;
-      }
-
-      .card-row {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-      }
-
-      .mini-title {
-        font-size: 16px;
-        font-weight: 800;
-      }
-
-      .mini-sub {
-        margin-top: 3px;
-        color: var(--muted);
-        font-size: 12px;
-      }
-
-      .button {
-        display: inline-flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 40px;
-        padding: 8px 14px;
-        border-radius: 10px;
-        background: var(--green);
-        color: white;
-        font-size: 14px;
-        font-weight: 750;
-      }
-
-      .bottom-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 12px;
-      }
-
-      .section {
-        padding: 28px;
-        margin-top: 18px;
-      }
-
-      .visual-showcase {
-        display: grid;
-        grid-template-columns: minmax(0, 1.28fr) minmax(280px, 0.72fr);
-        gap: 18px;
-        align-items: center;
-      }
-
-      .mockup-frame {
-        overflow: hidden;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: #fff;
-      }
-
-      .mockup-frame img {
-        display: block;
-        width: 100%;
-        height: auto;
-      }
-
-      .hash-cloud {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 14px;
-      }
-
-      .hash-group {
-        margin-top: 14px;
-      }
-
-      .metric {
-        display: grid;
-        gap: 6px;
-      }
-
-      .metric strong {
-        color: var(--green-dark);
-        font-size: 28px;
-        line-height: 1;
-      }
-
-      .grid {
-        display: grid;
-        gap: 14px;
-      }
-
-      .grid.cols-2 {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .grid.cols-3 {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-
-      .grid.cols-4 {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-      }
-
-      .card {
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        padding: 16px;
-        background: #fff;
-      }
-
-      .card.green {
-        background: var(--mint);
-        border-color: #b7e6ca;
-      }
-
-      .card.blue {
-        background: var(--blue);
-        border-color: #c7dcf5;
-      }
-
-      .card.yellow {
-        background: var(--yellow);
-        border-color: #ead99d;
-      }
-
-      .card.red {
-        background: var(--red);
-        border-color: #f4c6b8;
-      }
-
-      .muted {
-        color: var(--muted);
-        font-size: 14px;
-      }
-
-      .flow {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-        margin-top: 14px;
-      }
-
-      .flow-step {
-        position: relative;
-        padding: 18px;
-        min-height: 142px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: #fff;
-      }
-
-      .step-number {
-        width: 30px;
-        height: 30px;
-        display: inline-grid;
-        place-items: center;
-        border-radius: 50%;
-        background: var(--green);
-        color: white;
-        font-weight: 800;
-        margin-bottom: 10px;
-      }
-
-      .table-wrap {
-        overflow-x: auto;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 760px;
-        background: white;
-      }
-
-      th,
-      td {
-        padding: 12px 14px;
+        justify-content: space-between;
+        padding: 0 28px;
         border-bottom: 1px solid var(--line);
-        vertical-align: top;
-        text-align: left;
-        font-size: 14px;
+        background: #fffffff2;
+        backdrop-filter: blur(10px);
       }
 
-      th {
-        background: #f0f6f1;
-        color: #223b2b;
-        font-weight: 800;
-      }
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 14px; }
+      .brand-mark { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; color: #fff; background: var(--green); font-size: 12px; }
+      .header-meta { color: var(--muted); font-size: 12px; }
 
-      tr:last-child td {
-        border-bottom: 0;
-      }
+      .layout { display: grid; grid-template-columns: var(--nav-width) minmax(0, 1fr); max-width: 1480px; margin: 0 auto; }
+      .side-nav { position: sticky; top: 60px; align-self: start; height: calc(100vh - 60px); padding: 29px 18px; border-right: 1px solid var(--line); overflow: auto; }
+      .side-nav p { margin: 0 0 12px; color: #859087; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+      .side-nav a { display: block; padding: 7px 10px; border-radius: 6px; color: #526057; font-size: 13px; text-decoration: none; }
+      .side-nav a:hover { color: var(--green-dark); background: var(--green-pale); }
+      .side-nav .nav-group { margin-top: 18px; }
 
-      code {
-        padding: 2px 6px;
-        border-radius: 6px;
-        background: #edf4ef;
-        color: #24422f;
-        font-family: "SFMono-Regular", Consolas, monospace;
-        font-size: 0.92em;
-      }
+      main { width: min(100%, 1060px); margin: 0 auto; padding: 42px 46px 80px; }
+      section { scroll-margin-top: 84px; }
+      .section { margin-top: 58px; }
+      .section-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 22px; }
+      .section-number { color: var(--green); font-size: 12px; font-weight: 900; letter-spacing: .08em; }
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { max-width: 740px; margin-bottom: 18px; font-size: clamp(34px, 5vw, 54px); letter-spacing: 0; line-height: 1.15; }
+      h2 { margin: 0; font-size: 25px; letter-spacing: 0; }
+      h3 { margin-bottom: 8px; font-size: 16px; }
+      .section-copy { max-width: 760px; color: var(--muted); font-size: 15px; }
 
-      pre {
-        margin: 0;
-        padding: 16px;
-        overflow: auto;
-        border-radius: 8px;
-        background: #0f1c15;
-        color: #e8f7ec;
-        font-size: 13px;
-        line-height: 1.5;
-      }
+      .hero { padding: 38px 0 44px; border-bottom: 1px solid var(--line); }
+      .eyebrow { display: flex; align-items: center; gap: 7px; margin-bottom: 14px; color: var(--green-dark); font-size: 13px; font-weight: 800; }
+      .eyebrow::before { width: 8px; height: 8px; border-radius: 50%; background: var(--green); content: ""; }
+      .hero-lead { max-width: 720px; margin-bottom: 28px; color: #516057; font-size: 18px; line-height: 1.65; }
+      .doc-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+      .doc-grid div { min-height: 78px; padding: 14px 16px; border-right: 1px solid var(--line); }
+      .doc-grid div:last-child { border-right: 0; }
+      .doc-grid span { display: block; margin-bottom: 3px; color: var(--muted); font-size: 11px; font-weight: 700; }
+      .doc-grid strong { font-size: 14px; }
 
-      .task-board {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 14px;
-      }
+      .status { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+      .done { color: #04783a; background: #e4f9ec; }
+      .local { color: #986500; background: #fff4d7; }
+      .planned { color: #5c6870; background: #edf0f0; }
+      .decision { color: #6f4da3; background: #f2eaff; }
 
-      .task-list {
-        display: grid;
-        gap: 8px;
-        margin-top: 12px;
-      }
+      .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .summary-card { min-height: 168px; padding: 21px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+      .summary-card.highlight { border-color: #bce9cc; background: var(--green-pale); }
+      .summary-card p { margin: 0; color: var(--muted); font-size: 14px; }
+      .summary-card strong { display: block; margin-bottom: 8px; font-size: 17px; }
+      .summary-card .status { margin-bottom: 11px; }
 
-      .task {
-        padding: 10px 12px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: white;
-        font-size: 14px;
-      }
+      .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+      .metric { padding: 17px; border-top: 3px solid var(--green); background: var(--surface); }
+      .metric b { display: block; margin-bottom: 6px; font-size: 14px; }
+      .metric span { display: block; color: var(--muted); font-size: 12px; }
+      .metric em { display: block; margin-top: 10px; color: #849087; font-size: 11px; font-style: normal; }
 
-      .priority {
-        display: inline-flex;
-        align-items: center;
-        min-height: 24px;
-        padding: 2px 8px;
-        margin-bottom: 8px;
-        border-radius: 999px;
-        background: #eef8f1;
-        color: var(--green-dark);
-        font-size: 12px;
-        font-weight: 800;
-      }
+      .split { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+      .plain-list { margin: 0; padding: 0; list-style: none; }
+      .plain-list li { position: relative; padding: 10px 0 10px 19px; border-bottom: 1px solid var(--line); font-size: 14px; }
+      .plain-list li::before { position: absolute; left: 1px; top: 17px; width: 7px; height: 7px; border-radius: 50%; background: var(--green); content: ""; }
+      .plain-list.out li::before { background: #a3ada7; }
+      .decision-log { margin-top: 20px; padding: 19px 21px; border-left: 4px solid var(--green); background: #f7faf8; }
+      .decision-log b { display: block; margin-bottom: 4px; font-size: 14px; }
+      .decision-log p { margin: 0; color: var(--muted); font-size: 13px; }
 
-      .screen-strip {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-      }
+      .flow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; align-items: stretch; }
+      .flow-step { position: relative; min-height: 105px; padding: 14px 11px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
+      .flow-step:not(:last-child)::after { position: absolute; z-index: 2; right: -7px; top: 50%; width: 7px; height: 7px; border-top: 1px solid #91a097; border-right: 1px solid #91a097; transform: translateY(-50%) rotate(45deg); background: var(--canvas); content: ""; }
+      .flow-step b { display: block; margin-bottom: 5px; color: var(--green-dark); font-size: 13px; }
+      .flow-step span { color: var(--muted); font-size: 11px; line-height: 1.4; }
 
-      .screen-card {
-        min-height: 220px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        overflow: hidden;
-        background: white;
-      }
+      .requirement-table { width: 100%; border-collapse: collapse; border-top: 2px solid #6b776f; background: var(--surface); font-size: 13px; }
+      .requirement-table th, .requirement-table td { padding: 13px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+      .requirement-table th { color: #4e5b53; background: #f5f7f5; font-size: 12px; }
+      .requirement-table td:first-child { font-weight: 800; }
 
-      .screen-top {
-        height: 130px;
-        position: relative;
-        background:
-          linear-gradient(160deg, rgba(19, 164, 99, 0.22), transparent 44%),
-          linear-gradient(#dff1ff, #eff8ff 46%, #95c978 47%);
-      }
+      .media-panel { margin-top: 20px; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+      .media-panel img { display: block; width: 100%; height: auto; background: #eef2ef; }
+      .media-caption { padding: 12px 16px; color: var(--muted); font-size: 12px; }
+      .visual-grid { display: grid; grid-template-columns: 1.12fr .88fr; gap: 14px; margin-top: 20px; }
+      .visual-grid .media-panel { margin-top: 0; }
 
-      .stage {
-        position: absolute;
-        left: 18%;
-        right: 14%;
-        bottom: 35px;
-        height: 36px;
-        border: 3px solid rgba(18, 87, 58, 0.7);
-        border-bottom: 0;
-        transform: skewX(-8deg);
-      }
+      .pipeline { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 12px; align-items: center; }
+      .pipeline-column { padding: 20px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+      .pipeline-column h3 { color: var(--green-dark); }
+      .pipeline-column ol { margin: 0; padding-left: 19px; color: var(--muted); font-size: 13px; }
+      .pipeline-column li { margin: 7px 0; }
+      .pipeline-arrow { color: var(--green); font-size: 30px; font-weight: 300; text-align: center; }
+      .comparison-list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 16px; }
+      .comparison-list div { padding: 11px 8px; border: 1px solid #d9e6dc; border-radius: 6px; color: #42604c; background: #f8fcf9; font-size: 12px; font-weight: 700; text-align: center; }
 
-      .person {
-        position: absolute;
-        bottom: 12px;
-        width: 22px;
-        height: 42px;
-        border-radius: 14px 14px 6px 6px;
-        background: #203b2b;
-      }
+      .architecture { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; align-items: stretch; }
+      .architecture .node { min-height: 108px; padding: 16px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); text-align: center; }
+      .architecture .node b { display: block; margin-bottom: 6px; color: var(--green-dark); font-size: 13px; }
+      .architecture .node span { display: block; color: var(--muted); font-size: 11px; }
+      .architecture .arrow { display: grid; place-items: center; color: #819087; font-size: 22px; }
+      .entity-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+      .entity { padding: 15px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
+      .entity b { display: block; margin-bottom: 7px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; }
+      .entity span { color: var(--muted); font-size: 12px; }
 
-      .person::before {
-        content: "";
-        position: absolute;
-        left: 5px;
-        top: -13px;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #f2c4aa;
-      }
+      details { margin-top: 16px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
+      summary { padding: 14px 16px; cursor: pointer; color: #34443a; font-size: 13px; font-weight: 800; }
+      .details-content { padding: 0 16px 17px; color: var(--muted); font-size: 13px; }
+      .api-table td code { white-space: nowrap; }
+      pre { overflow: auto; margin: 10px 0 0; padding: 15px; border-radius: 6px; color: #dff6e7; background: #193027; font-family: "SFMono-Regular", Consolas, monospace; font-size: 12px; line-height: 1.55; }
 
-      .person.one {
-        left: 41%;
-      }
+      .security-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+      .security-item { padding: 17px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
+      .security-item b { display: block; margin-bottom: 7px; color: var(--green-dark); font-size: 14px; }
+      .security-item span { color: var(--muted); font-size: 12px; }
 
-      .person.two {
-        left: 52%;
-        background: #356bb0;
-      }
+      .timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+      .week { padding: 16px; border-top: 4px solid #cbd5ce; background: var(--surface); }
+      .week.done-week { border-color: var(--green); }
+      .week b { display: block; margin-bottom: 7px; font-size: 14px; }
+      .week span { color: var(--muted); font-size: 12px; }
+      .week small { display: block; margin-top: 12px; color: var(--green-dark); font-weight: 800; }
+      .risk-table td:nth-child(2) { color: var(--muted); }
+      .open-issues { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .issue { padding: 16px; border: 1px solid #eadab8; border-radius: 7px; background: #fffaf0; }
+      .issue b { display: block; margin-bottom: 6px; color: #73510a; font-size: 14px; }
+      .issue span { color: #766c58; font-size: 12px; }
 
-      .overlay-line {
-        position: absolute;
-        left: 13%;
-        right: 11%;
-        bottom: 31px;
-        height: 48px;
-        border: 2px dashed rgba(8, 178, 113, 0.86);
-        border-bottom: 1px solid rgba(8, 178, 113, 0.65);
-      }
-
-      .screen-body {
-        padding: 9px;
-      }
-
-      .caption {
-        margin-top: 14px;
-        color: var(--muted);
-        font-size: 14px;
-      }
+      .footer { margin-top: 62px; padding-top: 20px; border-top: 1px solid var(--line); color: #88938d; font-size: 11px; }
 
       @media (max-width: 900px) {
-        .hero,
-        .grid.cols-2,
-        .grid.cols-3,
-        .grid.cols-4,
-        .flow,
-        .task-board,
-        .visual-showcase,
-        .screen-strip {
-          grid-template-columns: 1fr;
-        }
+        .layout { display: block; }
+        .side-nav { position: static; width: 100%; height: auto; padding: 13px 18px; border-right: 0; border-bottom: 1px solid var(--line); white-space: nowrap; overflow: auto; }
+        .side-nav p, .side-nav .nav-group { display: none; }
+        .side-nav a { display: inline-block; padding: 6px 8px; }
+        main { padding: 32px 24px 60px; }
+        .doc-grid, .metric-grid, .security-grid, .timeline { grid-template-columns: repeat(2, 1fr); }
+        .flow { grid-template-columns: repeat(4, 1fr); }
+        .visual-grid { grid-template-columns: 1fr; }
+        .architecture { grid-template-columns: 1fr 24px 1fr; }
+        .architecture .arrow:nth-of-type(4) { display: none; }
+      }
 
-        .hero-copy {
-          padding: 24px;
-        }
+      @media (max-width: 620px) {
+        .document-header { height: 53px; padding: 0 15px; }
+        .header-meta { display: none; }
+        .side-nav { top: 53px; }
+        main { padding: 28px 16px 48px; }
+        .hero { padding-top: 19px; }
+        .doc-grid, .summary-grid, .split, .metric-grid, .security-grid, .timeline, .open-issues, .entity-grid { grid-template-columns: 1fr; }
+        .doc-grid div { border-right: 0; border-bottom: 1px solid var(--line); }
+        .doc-grid div:last-child { border-bottom: 0; }
+        .flow { grid-template-columns: 1fr 1fr; }
+        .flow-step:not(:last-child)::after { display: none; }
+        .pipeline { grid-template-columns: 1fr; }
+        .pipeline-arrow { transform: rotate(90deg); }
+        .comparison-list { grid-template-columns: 1fr 1fr; }
+        .architecture { grid-template-columns: 1fr; }
+        .architecture .arrow { transform: rotate(90deg); }
+        .requirement-table { display: block; overflow-x: auto; white-space: nowrap; }
+      }
+
+      @media print {
+        .document-header, .side-nav { display: none; }
+        .layout { display: block; }
+        main { width: 100%; padding: 0; }
+        .section { break-inside: avoid; }
       }
     </style>
   </head>
   <body>
-    <main class="page">
-      <section class="hero">
-        <div class="hero-copy">
-          <div class="eyebrow"><span class="dot"></span> Naver Maps 기반 Photo Navigation MVP</div>
-          <h1>포토 네비게이션<br /></h1>
-          <div class="hero-subtitle"><strong>SNS에서 본 그 구도, 지도에서 찾아 찍자</strong></div>
-          <p class="lead">
-          지도에서 포토스팟과 프레임을 고르면, 
-          예시 사진과 배경 윤곽 오버레이를 따라 원하는 구도의 사진을 쉽게 찍을 수 있도록 안내합니다.<br /><br />
-          </p>
-          <div class="hero-tags">
-            <span class="tag strong">#포토내비게이션</span>
-            <span class="tag">#지도기반촬영</span>
-            <span class="tag">#포토스팟추천</span>
-            <span class="tag">#배경윤곽오버레이</span>
-            <span class="tag">#4주MVP</span>
-          </div>
-        </div>
-      </section>
+    <header class="document-header">
+      <div class="brand"><span class="brand-mark">P</span> Photo Navigation <span style="color:#98a39d">/</span> MVP PRD</div>
+      <div class="header-meta">v0.2 · Week 2 · Last updated 2026-07-16</div>
+    </header>
 
-      <section class="section">
-        <div class="visual-showcase">
-          <div class="mockup-frame">
-            <img src="assets/photo-navigation-flow.png" alt="대구 야외음악당 커플샷 포토 내비게이션 UI 플로우 목업" />
+    <div class="layout">
+      <nav class="side-nav" aria-label="문서 목차">
+        <p>DOCUMENT</p>
+        <a href="#overview">01. 문서 개요</a>
+        <a href="#summary">02. 실행 요약</a>
+        <a href="#goals">03. 목표와 검증</a>
+        <a href="#scope">04. 범위와 의사결정</a>
+        <a href="#experience">05. 사용자 경험</a>
+        <a href="#guide">06. 프레임·구도 비교</a>
+        <div class="nav-group">
+          <p>DELIVERY</p>
+          <a href="#spec">07. 개발 명세</a>
+          <a href="#security">08. 보안과 배포</a>
+          <a href="#execution">09. 실행 계획</a>
+        </div>
+      </nav>
+
+      <main>
+        <section class="hero" id="overview">
+          <div class="eyebrow">MVP PRODUCT REQUIREMENTS DOCUMENT</div>
+          <h1>포토 내비게이션<br />MVP PRD + 실행 요약</h1>
+          <p class="hero-lead">사용자가 원하는 사진을 찍을 수 있도록 <strong>장소, 촬영 지점, 프레임, 배경 가이드, 촬영 결과 비교</strong>를 하나의 흐름으로 연결하는 지도 기반 웹앱입니다.</p>
+          <div class="doc-grid" aria-label="문서 개요">
+            <div><span>PROJECT OWNER</span><strong>N030 김병조</strong></div>
+            <div><span>DOCUMENT STATUS</span><strong><span class="status local">Week 2 / In Development</span></strong></div>
+            <div><span>TARGET RELEASE</span><strong>Week 4 Demo</strong></div>
+            <div><span>DELIVERABLE</span><strong>Web App MVP</strong></div>
           </div>
-          <div>
-            <h2>핵심 화면 시나리오</h2>
-            <p class="muted">
-              이 MVP가 보여줘야 하는 장면은 하나입니다. 사용자가 지도에서 포토스팟을 고르고,
-              커플 프레임을 선택한 뒤, 무대 배경 윤곽과 인물 위치를 맞춰 촬영하고,
-              결과를 예시 사진과 비교하는 흐름입니다.
-            </p>
-            <div class="hash-cloud" aria-label="핵심 키워드">
-              <span class="tag strong">#대구야외음악당</span>
-              <span class="tag">#무대배경투샷</span>
-              <span class="tag">#브이셀카</span>
-              <span class="tag">#촬영지점120m</span>
-              <span class="tag">#NE45도</span>
-              <span class="tag">#촬영후비교</span>
+        </section>
+
+        <section class="section" id="summary">
+          <div class="section-header"><span class="section-number">02</span><h2>실행 요약</h2></div>
+          <p class="section-copy">이 문서는 무엇을 만들고, 현재 어디까지 왔으며, 다음에 어떤 결정을 해야 하는지 빠르게 판단하기 위한 MVP 기준 문서입니다.</p>
+          <div class="summary-grid">
+            <article class="summary-card"><strong>사용자 문제</strong><p>예쁜 장소에 가도 어디에서 어떤 방향으로 찍어야 원하는 사진이 나오는지 알기 어렵습니다. SNS 사진은 결과만 보여주고 촬영 지점과 구도는 알려주지 않습니다.</p></article>
+            <article class="summary-card highlight"><strong>제안하는 해결</strong><p>지도에서 포토스팟과 프레임을 고르고, 예시 사진의 오버레이를 따라 촬영하게 합니다. AI는 사진을 대신 만드는 것이 아니라 촬영 안내를 돕는 역할입니다.</p></article>
+            <article class="summary-card"><span class="status decision">핵심 결정</span><strong>프레임은 등록 시 한 번 생성</strong><p>예시 사진을 등록할 때만 Overlay Agent로 가이드를 만들고, 사용자 촬영 때는 저장된 가이드를 재사용합니다.</p></article>
+            <article class="summary-card"><span class="status local">현재 성과</span><strong>지도·프레임·카메라 흐름 구현</strong><p>React 화면, 실제 네이버 지도, 포토스팟 마커, 상세 정보, 프레임 선택, 브라우저 카메라 흐름을 연결했습니다. 다음 핵심 작업은 DB 수직 슬라이스입니다.</p></article>
+          </div>
+        </section>
+
+        <section class="section" id="goals">
+          <div class="section-header"><span class="section-number">03</span><h2>제품 목표와 검증 기준</h2></div>
+          <div class="split">
+            <div>
+              <h3>핵심 가설</h3>
+              <p class="section-copy">사용자는 사진을 못 찍는 것이 아니라, <strong>어디에서 어떤 구도로 찍어야 하는지</strong> 몰라 원하는 결과를 얻지 못한다. 지도 기반 탐색과 간단한 오버레이 가이드가 이 문제를 줄일 수 있다.</p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="visual-showcase">
-          <div>
-            <h2>네이버 지도 위 UI 콘셉트</h2>
-            <p class="muted">
-              실제 구현은 네이버 지도 앱 안에서 동작하는 방식이 아니라, 우리 웹앱 안에
-              네이버 지도 JavaScript API를 띄우고 그 위에 포토스팟 마커와 하단 카드를 얹는 구조입니다.
-              복잡한 프레임 선택, 카메라 오버레이, 결과 비교는 지도 화면이 아니라 별도 화면으로 분리합니다.
-            </p>
-            <div class="hash-cloud" aria-label="지도 구현 키워드">
-              <span class="tag strong">Naver Maps JS API</span>
-              <span class="tag">Custom Marker</span>
-              <span class="tag">Bottom Sheet</span>
-              <span class="tag">Camera Overlay</span>
+            <div>
+              <h3>대상 사용자</h3>
+              <p class="section-copy">여행·데이트·일상 외출 중 SNS에서 본 구도를 따라 찍고 싶지만, 촬영 지점과 구도를 찾는 데 어려움을 느끼는 모바일 사용자.</p>
             </div>
           </div>
-          <div class="mockup-frame">
-            <img src="assets/naver-map-ui-concept.png" alt="네이버 지도 위에 포토스팟 UI를 얹은 포토 네비게이션 콘셉트" />
+          <div class="metric-grid" style="margin-top:20px">
+            <div class="metric"><b>첫 촬영 완료 시간</b><span>지도 진입부터 첫 촬영 결과 확인까지 걸린 시간</span><em>사용성 테스트 후 목표값 확정</em></div>
+            <div class="metric"><b>흐름 완료율</b><span>스팟 선택 → 프레임 → 촬영까지 완료한 비율</span><em>사용성 테스트 후 목표값 확정</em></div>
+            <div class="metric"><b>재촬영 의향</b><span>다른 프레임을 선택해 다시 촬영하려는 의사</span><em>사용성 테스트 후 목표값 확정</em></div>
+            <div class="metric"><b>오버레이 도움 인식</b><span>구도를 맞추는 데 가이드가 도움이 됐다는 응답</span><em>사용성 테스트 후 목표값 확정</em></div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="section">
-        <h2>핵심 사용자 플로우</h2>
-
-         <div class="screen-strip">
-          <article class="screen-card">
-            <div class="screen-top">
-              <span class="pin" style="left: 45%; top: 46px"></span>
-            </div>
-            <div class="screen-body">
-              <div class="step-number">1</div>
-              <h3>지도에서 스팟 선택</h3>
-              <p class="muted">네이버 지도 위에 표시된 포토 스팟 마커를 선택합니다.</p>
-            </div>
-          </article>
-
-          <article class="screen-card">
-            <div class="screen-top">
-              <div class="stage"></div>
-              <div class="person one"></div>
-              <div class="person two"></div>
-            </div>
-            <div class="screen-body">
-              <div class="step-number">2</div>
-              <h3>프레임 선택</h3>
-              <p class="muted">같은 장소 안에서 브이 셀카, 무대 배경 투샷, 손잡고 전신, 노을 실루엣등을 고릅니다.</p>
-            </div>
-          </article>
-
-          <article class="screen-card">
-            <div class="screen-top">
-              <div class="stage"></div>
-              <div class="overlay-line"></div>
-              <div class="person one"></div>
-              <div class="person two"></div>
-            </div>
-            <div class="screen-body">
-              <div class="step-number">3</div>
-              <h3>오버레이 촬영</h3>
-              <p class="muted">인물 위치와 뒤 배경 스팟의 특징 윤곽을 함께 맞춘 뒤 촬영합니다.</p>
-            </div>
-          </article>
-
-          <article class="screen-card">
-            <div class="screen-top">
-              <div class="stage"></div>
-              <div class="person one"></div>
-              <div class="person two"></div>
-              <div style="position:absolute;right:14px;top:14px;padding:6px 8px;border-radius:10px;background:white;color:#0c7548;font-weight:850;">84점</div>
-            </div>
-            <div class="screen-body">
-              <div class="step-number">4</div>
-              <h3>결과 비교</h3>
-              <p class="muted">예시 사진과 내 사진을 비교하고 간단한 피드백을 제공합니다.</p>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section class="section">
-        <h2>기능 분리</h2>
-        <div class="grid cols-3">
-          <article class="card green">
-            <span class="priority">필수</span>
-            <h3>지도 / 포토스팟 탐색</h3>
-            <p class="muted">네이버 지도 표시, 현재 위치, 포토스팟 마커, 하단 카드, 거리순 정렬.</p>
-          </article>
-          <article class="card green">
-            <span class="priority">필수</span>
-            <h3>프레임 선택</h3>
-            <p class="muted">장소별 촬영 프레임, 예시 이미지, 포즈, 촬영 방향, 추천 시간대.</p>
-          </article>
-          <article class="card green">
-            <span class="priority">핵심</span>
-            <h3>카메라 Overlay</h3>
-            <p class="muted">카메라 프리뷰 위에 배경 윤곽, 인물 가이드, 수평선, 투명도 조절.</p>
-          </article>
-          <article class="card blue">
-            <span class="priority">발표 효과</span>
-            <h3>촬영 후 비교</h3>
-            <p class="muted">예시 vs 내 사진, 유사도 점수, 피드백 칩, 다시 찍기, 저장.</p>
-          </article>
-          <article class="card blue">
-            <span class="priority">운영</span>
-            <h3>데이터 등록</h3>
-            <p class="muted">초기에는 seed 데이터로 충분하고, 이후 관리자 권한으로 확장.</p>
-          </article>
-          <article class="card yellow">
-            <span class="priority">선택 AI</span>
-            <h3>Agent / CV</h3>
-            <p class="muted">촬영 팁 생성, 결과 피드백 문구, 간단한 이미지 유사도 평가.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="section">
-        <h2>네이버 지도 연결 방식</h2>
-        <div class="grid cols-3">
-          <article class="card green">
-            <h3>지도 메인</h3>
-            <p class="muted">네이버 지도 JS SDK로 지도 화면을 띄우고, 현재 위치와 주변 포토스팟 마커를 표시합니다.</p>
-          </article>
-          <article class="card blue">
-            <h3>커스텀 UI</h3>
-            <p class="muted">마커 클릭 시 HTML/CSS 하단 카드로 장소명, 거리, 태그, 프레임 고르기 버튼을 보여줍니다.</p>
-          </article>
-          <article class="card yellow">
-            <h3>촬영 화면 분리</h3>
-            <p class="muted">지도는 탐색과 진입에만 사용하고, 카메라 오버레이는 별도 화면에서 처리합니다.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="section">
-        <h2>전체 데이터 흐름</h2>
-        <div class="flow">
-          <div class="flow-step">
-            <div class="step-number">1</div>
-            <h3>스팟 표시</h3>
-            <p class="muted">DB의 <code>places</code>, <code>photo_spots</code> 좌표를 지도 마커로 표시.</p>
+        <section class="section" id="scope">
+          <div class="section-header"><span class="section-number">04</span><h2>MVP 범위와 의사결정</h2></div>
+          <div class="split">
+            <div><h3>이번 MVP에 포함</h3><ul class="plain-list"><li>지도, 현재 위치·거리 표시</li><li>공식·후보 포토스팟 탐색과 상세 정보</li><li>프레임 선택, 카메라 오버레이, 촬영 결과 비교</li><li>후보 제안 UI, 좋아요·관리자 검토 상태</li></ul></div>
+            <div><h3>이번 MVP에서 제외</h3><ul class="plain-list out"><li>실시간 자세 교정과 AR 화살표 안내</li><li>매 촬영마다 새 레이아웃을 생성하는 Vision 처리</li><li>자동 후보 승인과 완전한 의미 기반 사진 유사도</li><li>실제 로그인·소셜 기능의 전체 구현</li></ul></div>
           </div>
-          <div class="flow-step">
-            <div class="step-number">2</div>
-            <h3>프레임 조회</h3>
-            <p class="muted">선택한 포토스팟의 <code>shot_frames</code> 목록을 불러옵니다.</p>
+          <div class="decision-log"><b>결정 로그 · 사진-사진 비교보다 가이드-가이드 비교를 우선</b><p>원본 사진은 날씨, 조명, 옷, 배경 인물에 따라 크게 달라집니다. 기준 프레임과 촬영 사진에서 인물 위치·크기·수평선·배경선을 추출해 비교하면 사용자가 맞추려는 “구도”에 집중할 수 있습니다. 점수 구현 전에는 예시와 결과를 나란히 보여주는 비교 화면을 기본 결과로 제공합니다.</p></div>
+        </section>
+
+        <section class="section" id="experience">
+          <div class="section-header"><span class="section-number">05</span><h2>사용자 경험과 요구사항</h2></div>
+          <div class="flow" aria-label="핵심 사용자 흐름">
+            <div class="flow-step"><b>지도 탐색</b><span>현재 위치와 공식·후보 스팟을 확인</span></div>
+            <div class="flow-step"><b>스팟 선택</b><span>마커와 목록 선택 상태를 동기화</span></div>
+            <div class="flow-step"><b>상세 확인</b><span>장소, 주소, 촬영 팁, 후보 상태</span></div>
+            <div class="flow-step"><b>프레임 선택</b><span>1인·커플 등 원하는 예시 구도 선택</span></div>
+            <div class="flow-step"><b>카메라 실행</b><span>선택한 프레임의 오버레이로 촬영</span></div>
+            <div class="flow-step"><b>결과 비교</b><span>예시와 촬영 결과를 나란히 확인</span></div>
+            <div class="flow-step"><b>구도 일치도</b><span>후속 단계에서 가이드 비교 점수 제공</span></div>
           </div>
-          <div class="flow-step">
-            <div class="step-number">3</div>
-            <h3>오버레이 촬영</h3>
-            <p class="muted">예시 사진과 <code>overlay_image_url</code>을 카메라 화면 위에 표시.</p>
+
+          <div class="visual-grid">
+            <div class="media-panel">
+              <img src="assets/photo-navigation-flow.png" alt="포토 내비게이션 지도 탐색부터 촬영 결과까지의 UI 흐름" />
+              <div class="media-caption">기존 UI 시나리오: 지도 탐색 → 프레임 선택 → 오버레이 촬영 → 결과 비교</div>
+            </div>
+            <div class="media-panel">
+              <img src="assets/naver-map-ui-concept.png" alt="네이버 지도 위 포토스팟 마커와 바텀시트 UI 콘셉트" />
+              <div class="media-caption">지도 위에는 서비스 고유의 마커·탭·바텀시트를 얹고, 실제 지도 이동과 선택 상태는 동기화한다.</div>
+            </div>
           </div>
-          <div class="flow-step">
-            <div class="step-number">4</div>
-            <h3>결과 비교</h3>
-            <p class="muted">촬영 결과를 <code>captures</code>에 저장하고 점수/피드백을 제공합니다.</p>
+
+          <div style="overflow:auto; margin-top:24px">
+            <table class="requirement-table">
+              <thead><tr><th>기능</th><th>사용자 행동</th><th>완료 조건</th><th>현재 상태</th></tr></thead>
+              <tbody>
+                <tr><td>지도·마커</td><td>공식 또는 후보 스팟을 확인하고 선택</td><td>선택 마커와 목록 상태가 일치</td><td><span class="status done">완료</span></td></tr>
+                <tr><td>검색·지도 이동</td><td>장소명·주소로 검색 결과 선택</td><td>해당 스팟 선택 및 지도 중심 이동</td><td><span class="status local">로컬 구현</span></td></tr>
+                <tr><td>현재 위치·거리</td><td>위치 권한을 허용</td><td>현재 위치와 스팟까지 거리 표시, 거절 시 안내</td><td><span class="status planned">예정</span></td></tr>
+                <tr><td>프레임·카메라</td><td>프레임 선택 후 촬영</td><td>선택 프레임 오버레이와 촬영 결과 확인</td><td><span class="status done">완료</span></td></tr>
+                <tr><td>후보 참여</td><td>후보 제안 또는 좋아요</td><td>제안·좋아요가 DB에 저장되고 검토 상태 표시</td><td><span class="status planned">UI/목 데이터</span></td></tr>
+                <tr><td>구도 일치도</td><td>촬영 후 비교 결과 확인</td><td>기준 가이드와 촬영 가이드의 비교 결과 제공</td><td><span class="status planned">예정</span></td></tr>
+              </tbody>
+            </table>
           </div>
-        </div>
-      </section>
+        </section>
 
-  
-      <section class="section">
-        <h2>해시태그 전략</h2>
-        <p class="muted" style="margin-bottom: 14px">
-          해시태그는 단순한 장식이 아니라, 포토스팟을 탐색하고 프레임을 필터링하는 데이터 구조로 사용합니다.
-          사용자는 긴 설명보다 태그 조합으로 원하는 사진을 빠르게 고를 수 있습니다.
-        </p>
-        <div class="grid cols-3">
-          <article class="card green">
-            <h3>장소 태그</h3>
-            <p class="muted">지역, 랜드마크, 접근성 기준으로 탐색합니다.</p>
-            <div class="hash-cloud">
-              <span class="tag">#대구</span>
-              <span class="tag">#두류공원</span>
-              <span class="tag">#야외음악당</span>
-              <span class="tag">#네이버1784</span>
+        <section class="section" id="guide">
+          <div class="section-header"><span class="section-number">06</span><h2>프레임 등록과 구도 비교 명세</h2></div>
+          <p class="section-copy">가이드 생성은 운영 과정에서 수행하고, 사용자 촬영 시에는 저장된 가이드를 사용합니다. 이 분리는 사용자 대기 시간을 줄이고 프레임 품질을 운영자가 검수할 수 있게 합니다.</p>
+          <div class="pipeline">
+            <article class="pipeline-column"><h3>프레임 등록 단계</h3><ol><li>운영자가 예시 사진을 등록</li><li>Overlay Agent가 <code>guide_json</code> 초안 생성</li><li>사람이 좌표와 윤곽을 검수</li><li>reference 이미지, overlay PNG, guide JSON 저장</li></ol></article>
+            <div class="pipeline-arrow">→</div>
+            <article class="pipeline-column"><h3>사용자 촬영 단계</h3><ol><li>저장된 프레임과 오버레이 선택</li><li>카메라에서 구도를 맞춰 촬영</li><li>촬영 사진에서 비교용 가이드 추출</li><li>기준 가이드와 비교하거나 좌우 결과 확인</li></ol></article>
+          </div>
+          <div class="comparison-list" aria-label="구도 비교 요소"><div>인물 수</div><div>인물 위치·크기</div><div>수평선 높이</div><div>배경 대표선</div><div>사진 비율·방향</div></div>
+        </section>
+
+        <section class="section" id="spec">
+          <div class="section-header"><span class="section-number">07</span><h2>개발 명세</h2></div>
+          <h3>시스템 구성</h3>
+          <div class="architecture" aria-label="시스템 아키텍처">
+            <div class="node"><b>React + Vite</b><span>지도, 화면 상태, 카메라 UI</span></div><div class="arrow">→</div>
+            <div class="node"><b>Express API</b><span>검색 프록시, 검증, 권한 처리</span></div><div class="arrow">→</div>
+            <div class="node"><b>Supabase</b><span>PostgreSQL, Storage, RLS</span></div>
+          </div>
+          <h3 style="margin-top:28px">핵심 데이터 모델</h3>
+          <div class="entity-grid">
+            <div class="entity"><b>users</b><span>사용자 프로필과 역할. 로그인·관리자 기능 도입 시 사용.</span></div>
+            <div class="entity"><b>photo_spots</b><span>장소명, 좌표, 주소, 상태, 대표 이미지, 후보·공식 구분.</span></div>
+            <div class="entity"><b>photo_frames</b><span>spot_id, reference URL, overlay URL, 촬영 팁, <code>guide_json</code>.</span></div>
+            <div class="entity"><b>proposals</b><span>후보 제안 위치, 상태, 작성자, 관리자 검토 결과.</span></div>
+            <div class="entity"><b>proposal_images</b><span>후보 제안에 연결된 Storage 이미지 URL과 정렬 순서.</span></div>
+            <div class="entity"><b>likes</b><span>후보 스팟 또는 프레임에 대한 사용자 좋아요. 중복 방지 유니크 제약 필요.</span></div>
+          </div>
+
+          <details>
+            <summary>API 계약 보기</summary>
+            <div class="details-content">
+              <table class="requirement-table api-table"><thead><tr><th>상태</th><th>메서드</th><th>경로</th><th>책임</th></tr></thead><tbody>
+                <tr><td><span class="status done">기본 구조</span></td><td>GET</td><td><code>/health</code></td><td>Express API 상태 확인</td></tr>
+                <tr><td><span class="status done">기본 구조</span></td><td>GET</td><td><code>/api/places/search?q=</code></td><td>서버 환경변수로 네이버 지역 검색을 호출하고 필요한 장소 정보만 반환</td></tr>
+                <tr><td><span class="status planned">예정</span></td><td>GET</td><td><code>/api/photo-spots</code></td><td>공식·후보 포토스팟 목록과 지도 좌표 조회</td></tr>
+                <tr><td><span class="status planned">예정</span></td><td>GET</td><td><code>/api/photo-spots/:id</code></td><td>상세 정보와 연결된 프레임 조회</td></tr>
+                <tr><td><span class="status planned">예정</span></td><td>POST</td><td><code>/api/proposals</code></td><td>인증된 사용자의 후보 제안 생성</td></tr>
+                <tr><td><span class="status planned">예정</span></td><td>POST / DELETE</td><td><code>/api/photo-spots/:id/likes</code></td><td>인증된 사용자 기준 좋아요 생성·취소</td></tr>
+              </tbody></table>
             </div>
-          </article>
-          <article class="card blue">
-            <h3>촬영 의도 태그</h3>
-            <p class="muted">사용자가 원하는 사진의 분위기와 인물 구도를 고릅니다.</p>
-            <div class="hash-cloud">
-              <span class="tag">#커플샷</span>
-              <span class="tag">#전신샷</span>
-              <span class="tag">#셀카</span>
-              <span class="tag">#노을</span>
+          </details>
+
+          <details>
+            <summary>DB SQL 초안 보기</summary>
+            <div class="details-content">
+              <p>실제 마이그레이션 전 구조 검토용 초안입니다. 사진 파일 자체는 DB에 넣지 않고 Storage URL을 저장합니다.</p>
+              <pre>photo_spots(id, name, kind, latitude, longitude, address, status, cover_image_url)
+photo_frames(id, photo_spot_id, people_type, reference_image_url, overlay_url, guide_json, shooting_tip)
+proposals(id, user_id, latitude, longitude, frame_type, status, reviewed_by)
+proposal_images(id, proposal_id, storage_path, sort_order)
+likes(id, user_id, photo_spot_id, created_at)
+
+UNIQUE (likes.user_id, likes.photo_spot_id)</pre>
             </div>
-          </article>
-          <article class="card yellow">
-            <h3>촬영 난이도 태그</h3>
-            <p class="muted">MVP에서는 추천순, 쉬운순, 비교용 프레임에 바로 연결합니다.</p>
-            <div class="hash-cloud">
-              <span class="tag">#초보추천</span>
-              <span class="tag">#배경정렬</span>
-              <span class="tag">#삼분할</span>
-              <span class="tag">#재촬영추천</span>
-            </div>
-          </article>
-        </div>
-        <div class="card" style="margin-top: 14px">
-          <h3>DB 반영 방식</h3>
-          <p class="muted">
-            <code>shot_frames.tags</code>를 <code>text[]</code> 또는 별도 <code>tags</code>,
-            <code>shot_frame_tags</code> 테이블로 분리합니다. 4주 MVP는 <code>text[]</code>로 시작하고,
-            필터와 추천이 복잡해지면 정규화하는 방식이 현실적입니다.
-          </p>
-        </div>
-      </section>
+          </details>
+        </section>
 
-      <section class="section">
-        <h2>API 설계 맛보기</h2>
-        <p class="muted" style="margin-bottom: 14px">
-          MVP에서 가장 중요한 API는 지도에서 선택한 포토스팟에 연결된 촬영 프레임 목록을 내려주는 API입니다.
-        </p>
-        <pre><code>GET /api/photo-spots/{photoSpotId}/shot-frames
+        <section class="section" id="security">
+          <div class="section-header"><span class="section-number">08</span><h2>보안과 배포 원칙</h2></div>
+          <div class="security-grid">
+            <div class="security-item"><b>Maps Client ID</b><span>브라우저 SDK 로드에 필요한 공개 식별자. NCP 콘솔에서 <code>localhost</code>, <code>yf560.github.io</code> 등 허용 도메인으로 제한.</span></div>
+            <div class="security-item"><b>Client Secret</b><span>네이버 지역 검색용 비밀값. <code>apps/api/.env</code>와 서버 배포 환경에만 저장. Vite와 GitHub Pages에 포함 금지.</span></div>
+            <div class="security-item"><b>Supabase 권한</b><span>브라우저에는 공개 키만 사용하고 RLS를 활성화. <code>service_role</code>은 Express 서버에서만 사용.</span></div>
+            <div class="security-item"><b>배포 분리</b><span>GitHub Pages는 정적 React 배포. 지역 검색·DB·업로드는 별도 Express 서버 배포 대상으로 관리.</span></div>
+          </div>
+          <div class="decision-log"><b>비밀값 배포 원칙</b><p><code>.env</code>는 Git ignore 상태로 유지합니다. GitHub Actions Secret은 빌드·배포 과정에서만 주입하며, Client Secret을 <code>VITE_*</code> 변수나 정적 번들에 넣지 않습니다.</p></div>
+        </section>
 
-Response
-{
-  "photoSpotId": "spot_daegu_music_hall_lawn",
-  "photoSpotName": "대구 야외음악당 잔디광장",
-  "frames": [
-    {
-      "id": "frame_couple_stage_v",
-      "title": "무대 배경 커플샷",
-      "frameType": "couple",
-      "difficulty": "easy",
-      "tags": ["커플샷", "무대배경", "초보추천"],
-      "sampleImageUrl": "/assets/samples/daegu-stage-couple.jpg",
-      "overlayImageUrl": "/assets/overlays/daegu-stage-couple-overlay.png",
-      "guideText": "무대 지붕선을 오버레이 상단 곡선에 맞춰보세요."
-    }
-  ]
-}</code></pre>
-      </section>
+        <section class="section" id="execution">
+          <div class="section-header"><span class="section-number">09</span><h2>실행 계획과 리스크</h2></div>
+          <div class="timeline">
+            <div class="week done-week"><b>Week 1 · 기획</b><span>문제 정의, UI 설계, 클릭형 프로토타입, 백로그·이슈 정리</span><small>완료</small></div>
+            <div class="week done-week"><b>Week 2 · 화면 연결</b><span>React, 네이버 지도, 스팟·프레임, 카메라, Express 기본 구조</span><small>진행 중</small></div>
+            <div class="week"><b>Week 3 · 수직 슬라이스</b><span>Supabase 초기 데이터, 조회 API, 목 데이터 교체, 지도 반영</span><small>다음 목표</small></div>
+            <div class="week"><b>Week 4 · 검증</b><span>후보 참여, 결과 비교, 사용성 테스트, 데모 안정화</span><small>예정</small></div>
+          </div>
+          <h3 style="margin-top:29px">다음 주 완료 조건</h3>
+          <div class="decision-log"><b>Supabase 초기 포토스팟 데이터 → Express 조회 API → React 지도 마커·상세 갱신</b><p>화면 요청부터 서버 처리, DB 저장·조회, 화면 갱신까지 한 번의 수직 슬라이스를 실제 데이터로 완성합니다.</p></div>
+          <div style="overflow:auto; margin-top:24px"><table class="requirement-table risk-table"><thead><tr><th>리스크</th><th>영향</th><th>대응</th></tr></thead><tbody>
+            <tr><td>위치 권한 거절</td><td>거리·현재 위치 안내를 제공할 수 없음</td><td>지도 탐색은 유지하고, 위치 기능을 켤 수 있는 안내만 제공</td></tr>
+            <tr><td>키 노출</td><td>외부 API 오용 및 보안 사고</td><td>Secret 서버 분리, 허용 도메인, 배포 전 비밀값 검사</td></tr>
+            <tr><td>이미지 업로드</td><td>저장 비용·부적절한 파일·개인정보 위험</td><td>형식·크기 검증, UUID 경로, 승인 전 비공개 처리</td></tr>
+            <tr><td>구도 점수 품질</td><td>사용자 기대와 실제 점수의 불일치</td><td>좌우 비교를 기본 제공하고 점수는 단계적으로 추가</td></tr>
+            <tr><td>MVP 범위 확대</td><td>4주 내 핵심 흐름 미완성</td><td>실시간 AR·자동 승인·고도화 AI는 명시적으로 제외</td></tr>
+          </tbody></table></div>
+          <h3 style="margin-top:29px">결정이 필요한 항목</h3>
+          <div class="open-issues">
+            <div class="issue"><b>장소 검색의 역할</b><span>네이버 지역 검색은 대표 장소 정보를 보완하고, 촬영 좌표와 프레임은 서비스 DB를 기준으로 관리한다.</span></div>
+            <div class="issue"><b>구도 점수 초기 기준</b><span>좌우 비교를 먼저 검증한 뒤, 인물·수평선·배경선의 가중치와 점수 기준을 정한다.</span></div>
+            <div class="issue"><b>관리자 검토 범위</b><span>4주 MVP에서는 후보 제안의 AI 자동 승인이 아닌 관리자 검토 상태 흐름만 구현한다.</span></div>
+          </div>
+        </section>
 
-      <section class="section">
-        <h2>DB 모델</h2>
-        <p class="muted" style="margin-bottom: 14px">
-          데이터는 <code>장소 → 촬영 지점 → 촬영 프레임 → 오버레이 자산 → 촬영 결과</code>로 이어지는 구조가 적합합니다.
-        </p>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>테이블</th>
-                <th>역할</th>
-                <th>주요 필드</th>
-                <th>MVP 판단</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>places</code></td>
-                <td>큰 장소 단위</td>
-                <td><code>name</code>, <code>region</code>, <code>address</code>, <code>lat</code>, <code>lng</code>, <code>thumbnail_url</code></td>
-                <td>필수</td>
-              </tr>
-              <tr>
-                <td><code>photo_spots</code></td>
-                <td>사용자가 서거나 촬영하는 지점</td>
-                <td><code>place_id</code>, <code>name</code>, <code>lat</code>, <code>lng</code>, <code>bearing</code>, <code>recommended_time</code></td>
-                <td>필수</td>
-              </tr>
-              <tr>
-                <td><code>shot_frames</code></td>
-                <td>프레임/구도 선택 단위</td>
-                <td><code>photo_spot_id</code>, <code>title</code>, <code>tags</code>, <code>sample_image_url</code>, <code>overlay_image_url</code>, <code>guide_text</code></td>
-                <td>필수</td>
-              </tr>
-              <tr>
-                <td><code>overlay_assets</code></td>
-                <td>배경/인물/삼분할 등 오버레이 레이어</td>
-                <td><code>shot_frame_id</code>, <code>asset_type</code>, <code>asset_url</code>, <code>opacity</code>, <code>z_index</code></td>
-                <td>선택. 토글형 Overlay면 추천</td>
-              </tr>
-              <tr>
-                <td><code>captures</code></td>
-                <td>사용자가 촬영한 결과</td>
-                <td><code>shot_frame_id</code>, <code>image_url</code>, <code>similarity_score</code>, <code>feedback_json</code></td>
-                <td>결과 비교를 넣으면 필요</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="section">
-        <h2>SQL 초안</h2>
-        <pre><code>create table places (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  region text,
-  address text,
-  lat double precision not null,
-  lng double precision not null,
-  description text,
-  thumbnail_url text,
-  created_at timestamptz default now()
-);
-
-create table photo_spots (
-  id uuid primary key default gen_random_uuid(),
-  place_id uuid references places(id) on delete cascade,
-  name text not null,
-  description text,
-  lat double precision not null,
-  lng double precision not null,
-  bearing integer,
-  distance_hint text,
-  difficulty text,
-  recommended_time text,
-  thumbnail_url text,
-  popularity_score integer default 0,
-  created_at timestamptz default now()
-);
-
-create table shot_frames (
-  id uuid primary key default gen_random_uuid(),
-  photo_spot_id uuid references photo_spots(id) on delete cascade,
-  title text not null,
-  description text,
-  frame_type text,
-  tags text[] default '{}',
-  sample_image_url text,
-  overlay_image_url text,
-  guide_text text,
-  pose_guide text,
-  composition_guide text,
-  difficulty text,
-  sort_order integer default 0,
-  created_at timestamptz default now()
-);
-
-create table captures (
-  id uuid primary key default gen_random_uuid(),
-  session_id text,
-  shot_frame_id uuid references shot_frames(id) on delete set null,
-  image_url text,
-  similarity_score integer,
-  feedback_json jsonb,
-  created_at timestamptz default now()
-);</code></pre>
-      </section>
-
-      <section class="section">
-        <h2>초기 Seed 데이터 범위</h2>
-        <div class="grid cols-2">
-          <article class="card">
-            <h3>대구 데모 권역</h3>
-            <p class="muted">
-              대구 야외음악당, 두류공원, 2.28 자유광장, 대구문화예술회관, 이월드,
-              앞산 전망대, 김광석 다시그리기길, 수성못, 계산성당 중 일부
-            </p>
-          </article>
-          <article class="card">
-            <h3>네이버 1784 데모 권역</h3>
-            <p class="muted">
-              네이버 1784 정문, 정자동 카페거리, 탄천 산책로, 분당 중앙공원, 정자역 일대 등
-            </p>
-          </article>
-        </div>
-        <div class="card green" style="margin-top: 14px">
-          <h3>MVP용 데이터량</h3>
-          <p class="muted">
-            발표 시연에 맞춰 <code>places</code> 4~7개, <code>photo_spots</code> 10~12개,
-            <code>shot_frames</code> 15~20개 준비 예정입니다.
-          </p>
-        </div>
-      </section>
-
-      <section class="section">
-        <h2>콘텐츠 수집 / 운영 방식</h2>
-        <div class="grid cols-3">
-          <article class="card green">
-            <h3>초기 운영</h3>
-            <p class="muted">
-              직접 대구와 네이버 1784 주변의 대표 사진 스팟을 등록합니다.
-            </p>
-          </article>
-          <article class="card blue">
-            <h3>프레임 제작</h3>
-            <p class="muted">
-              예시 사진 1장, 배경 윤곽 PNG/SVG, 인물 위치 가이드, 촬영 방향과 거리 힌트를 한 세트로 관리합니다.
-            </p>
-          </article>
-          <article class="card yellow">
-            <h3>확장 운영</h3>
-            <p class="muted">
-              사용자가 촬영 결과를 업로드하면 관리자 검수 후 새 예시 프레임으로 등록하는 구조로 확장할 수 있습니다.
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section class="section">
-        <h2>Task 분리</h2>
-        <div class="task-board">
-          <article class="card green">
-            <h3>Now: MVP 필수</h3>
-            <div class="task-list">
-              <div class="task">React/Vite 프로젝트 세팅</div>
-              <div class="task">네이버 지도 JS SDK 연결</div>
-              <div class="task">Supabase 테이블 생성</div>
-              <div class="task">포토스팟 seed 데이터 입력</div>
-              <div class="task">지도 마커 + 하단 카드</div>
-              <div class="task">프레임 선택 화면</div>
-            </div>
-          </article>
-          <article class="card blue">
-            <h3>Next: 핵심 경험</h3>
-            <div class="task-list">
-              <div class="task">브라우저 카메라 권한 요청</div>
-              <div class="task">카메라 프리뷰 표시</div>
-              <div class="task">Overlay 이미지 레이어 표시</div>
-              <div class="task">배경/인물/삼분할 토글</div>
-              <div class="task">투명도 조절</div>
-              <div class="task">Canvas 캡처</div>
-            </div>
-          </article>
-          <article class="card yellow">
-            <h3>Later: 발표 완성도</h3>
-            <div class="task-list">
-              <div class="task">예시 vs 내 사진 비교</div>
-              <div class="task">더미 또는 간단 유사도 점수</div>
-              <div class="task">피드백 칩 표시</div>
-              <div class="task">촬영 결과 저장</div>
-              <div class="task">LLM 촬영 팁 생성</div>
-              <div class="task">관리자 등록 화면</div>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section class="section">
-        <h2>구상해야 할 핵심 UI</h2>
-        <div class="grid cols-3">
-          <article class="card green">
-            <h3>지도 메인 화면</h3>
-            <p class="muted">지도, 현재 위치, 포토스팟 마커, 하단 포토스팟 카드.</p>
-          </article>
-          <article class="card green">
-            <h3>프레임 선택 화면</h3>
-            <p class="muted">커플샷, 전신샷, 노을샷 등 촬영 프레임 카드 목록.</p>
-          </article>
-          <article class="card green">
-            <h3>카메라 오버레이</h3>
-            <p class="muted">카메라 프리뷰, 배경 윤곽, 인물 위치 가이드, 촬영 버튼.</p>
-          </article>
-          <article class="card blue">
-            <h3>결과 비교 화면</h3>
-            <p class="muted">예시 사진과 내 사진, 유사도 점수, 피드백, 다시 찍기.</p>
-          </article>
-          <article class="card blue">
-            <h3>포토스팟 상세</h3>
-            <p class="muted">장소명, 추천 시간대, 거리, 해시태그, 대표 예시 사진.</p>
-          </article>
-          <article class="card yellow">
-            <h3>데이터 등록</h3>
-            <p class="muted">MVP에서는 seed 데이터로 시작하고, 이후 운영 관리 기능으로 확장.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="section">
-        <h2>검증 지표</h2>
-        <div class="grid cols-4">
-          <article class="card metric">
-            <strong>N분</strong>
-            <h3>첫 촬영까지</h3>
-            <p class="muted">스팟 선택부터 첫 사진 촬영까지 걸리는 시간.</p>
-          </article>
-          <article class="card metric">
-            <strong>N%</strong>
-            <h3>재촬영 의향</h3>
-            <p class="muted">오버레이가 다시 찍고 싶게 만드는지 확인.</p>
-          </article>
-          <article class="card metric">
-            <strong>n/N</strong>
-            <h3>구도 이해도</h3>
-            <p class="muted">어디에 서고 무엇을 맞춰야 하는지 이해했는지.</p>
-          </article>
-          <article class="card metric">
-            <strong>1개</strong>
-            <h3>핵심 가설</h3>
-            <p class="muted">지도와 오버레이만으로 원하는 사진에 가까워지는가.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="section">
-        <h2>4주 구현 로드맵</h2>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>주차</th>
-                <th>목표</th>
-                <th>산출물</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>1주차</td>
-                <td>문제 정의, 데이터 설계, 네이버 지도 연결</td>
-                <td>지도 화면, DB schema, seed 데이터 초안</td>
-              </tr>
-              <tr>
-                <td>2주차</td>
-                <td>포토스팟 상세과 프레임 선택 구현</td>
-                <td>마커 선택, 하단 카드, 프레임 목록</td>
-              </tr>
-              <tr>
-                <td>3주차</td>
-                <td>카메라 Overlay와 촬영 구현</td>
-                <td>카메라 프리뷰, 오버레이 토글, 캡처</td>
-              </tr>
-              <tr>
-                <td>4주차</td>
-                <td>결과 비교, 피드백, 발표 시나리오 정리</td>
-                <td>비교 화면, 점수/피드백, 데모 플로우</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="section">
-        <h2>최종 범위 판단</h2>
-        <div class="grid cols-3">
-          <article class="card green">
-            <h3>반드시 구현</h3>
-            <p class="muted">네이버 지도, 포토스팟 마커, 프레임 선택, 카메라 Overlay, 결과 비교.</p>
-          </article>
-          <article class="card yellow">
-            <h3>있으면 좋음</h3>
-            <p class="muted">Supabase Storage 저장, 유사도 점수, LLM 촬영 팁, 관리자 등록.</p>
-          </article>
-          <article class="card red">
-            <h3>이번엔 제외</h3>
-            <p class="muted">실시간 AI 코칭, AR 공간 인식, 자동 포토스팟 수집, SNS 연동, 로그인.</p>
-          </article>
-        </div>
-      </section>
-    </main>
+        <footer class="footer">
+          <strong>Photo Navigation MVP</strong> · 프로토타입: <a href="https://yf560.github.io/hub/photo-navigation/" target="_blank" rel="noreferrer">yf560.github.io/hub/photo-navigation</a> · 저장소: <a href="https://github.com/yf560/hub" target="_blank" rel="noreferrer">github.com/yf560/hub</a>
+        </footer>
+      </main>
+    </div>
   </body>
 </html>

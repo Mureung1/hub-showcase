@@ -2,6 +2,15 @@ export function clamp(value, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
 }
 
+export const POSE_SEGMENTS = [
+  ["left_shoulder", "right_shoulder"],
+  ["left_shoulder", "left_elbow"], ["left_elbow", "left_wrist"],
+  ["right_shoulder", "right_elbow"], ["right_elbow", "right_wrist"],
+  ["left_shoulder", "left_hip"], ["right_shoulder", "right_hip"], ["left_hip", "right_hip"],
+  ["left_hip", "left_knee"], ["left_knee", "left_ankle"],
+  ["right_hip", "right_knee"], ["right_knee", "right_ankle"],
+];
+
 export function createPersonFrame(landmarks, index) {
   const visible = landmarks.filter((point) => (point.visibility ?? 1) >= 0.45);
   if (visible.length < 4) return null;
@@ -58,13 +67,61 @@ export function scaleFrames(frames, scalePercent) {
   });
 }
 
-export function createGuide({ personFrames, horizonY = 0.62, backgroundLines = [] }) {
+export function createGuide({
+  personFrames,
+  personOutlines = [],
+  personPoses = [],
+  horizonY = 0.62,
+  backgroundLines = [],
+  analysisMeta = {},
+}) {
   return {
-    version: 1,
+    version: 3,
     backgroundLines,
     horizonY: clamp(horizonY),
     personFrames,
+    personOutlines,
+    personPoses,
+    poseSegments: POSE_SEGMENTS,
+    analysisMeta,
   };
+}
+
+export function scaleOutlines(outlines, frames, scalePercent) {
+  const ratio = scalePercent / 100;
+  return outlines.map((outline, index) => {
+    const frame = frames[index];
+    if (!frame) return outline;
+    const centerX = frame.x + frame.width / 2;
+    const centerY = frame.y + frame.height / 2;
+    return {
+      ...outline,
+      contours: outline.contours.map((contour) => contour.map(([x, y]) => [
+        clamp(centerX + (x - centerX) * ratio),
+        clamp(centerY + (y - centerY) * ratio),
+      ])),
+    };
+  });
+}
+
+export function scalePoses(poses, frames, scalePercent) {
+  const ratio = scalePercent / 100;
+  return poses.map((pose, index) => {
+    const frame = frames[index];
+    if (!frame) return pose;
+    const centerX = frame.x + frame.width / 2;
+    const centerY = frame.y + frame.height / 2;
+    return {
+      ...pose,
+      keypoints: Object.fromEntries(Object.entries(pose.keypoints).map(([name, [x, y]]) => [
+        name,
+        [
+          clamp(centerX + (x - centerX) * ratio),
+          clamp(centerY + (y - centerY) * ratio),
+        ],
+      ])),
+    };
+  });
 }
 
 export function withAdjustments(guide, { frameScale, horizonPercent }) {
@@ -72,5 +129,7 @@ export function withAdjustments(guide, { frameScale, horizonPercent }) {
     ...guide,
     horizonY: clamp(horizonPercent / 100),
     personFrames: scaleFrames(guide.personFrames, frameScale),
+    personOutlines: scaleOutlines(guide.personOutlines ?? [], guide.personFrames, frameScale),
+    personPoses: scalePoses(guide.personPoses ?? [], guide.personFrames, frameScale),
   };
 }

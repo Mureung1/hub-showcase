@@ -1,5 +1,14 @@
-# API Server
+# Photo Navigation API
 
-Photo Navigation의 실제 Express API 서버를 구현할 공간입니다.
+네이버 지역 검색의 Client Secret을 브라우저에 노출하지 않기 위한 Express 프록시입니다.
 
-다음 수직 슬라이스에서 `POST /shoot-plans`와 `GET /shoot-plans`를 추가해 Supabase와 연결합니다.
+```bash
+cp .env.example .env
+npm install
+npm run dev
+```
+
+- `GET /health`: 서버 상태 확인
+- `GET /api/places/search?q=두류공원`: 네이버 지역 검색 결과를 서비스에 필요한 형태로 반환
+
+`NAVER_SEARCH_CLIENT_SECRET`은 `.env`에만 저장하고 GitHub Pages나 Vite 환경변수에 넣지 않습니다.
