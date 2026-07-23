@@ -3,7 +3,8 @@ import { useAppState } from '../context/AppStateContext.jsx'
 import PageHeader from '../components/PageHeader.jsx'
 import Card from '../components/Card.jsx'
 import PillButton from '../components/PillButton.jsx'
-import MeetingForm, { defaultFormValues } from '../components/MeetingForm.jsx'
+import MeetingForm from '../components/MeetingForm.jsx'
+import { defaultFormValues } from '../utils/meetingFormDefaults.js'
 import { createMeeting } from '../api/meetings.js'
 
 export default function MeetingCreatePage() {
