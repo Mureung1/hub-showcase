@@ -37,6 +37,18 @@ const MAJOR_DATA = {
           },
         },
       },
+      "인공지능컴퓨팅전공": {
+        totalCredits: 130,
+        majorCredits: 51,
+        generalCredits: 30,
+        hasTracks: false,
+      },
+      "플랫폼소프트웨어전공": {
+        totalCredits: 130,
+        majorCredits: 51,
+        generalCredits: 30,
+        hasTracks: false,
+      },
     },
   },
 };

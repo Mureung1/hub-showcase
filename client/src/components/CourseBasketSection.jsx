@@ -11,7 +11,7 @@ function CourseBasketSection({ courses, selectedIds, onToggle }) {
               onClick={() => onToggle(course.id)}
             >
               <span className="course-name">{course.name}</span>
-              <span className="course-tag">{course.category}</span>
+              <span className="course-tag">{course.department} · {course.grade}학년 · {course.category}</span>
               <span className="course-credit">{course.credits}학점</span>
               <button type="button" className="course-add" aria-label="담기">
                 +
