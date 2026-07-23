@@ -224,6 +224,6 @@ sequenceDiagram
 
 ### 알려진 제약
 
-- `profile` 자체는 Supabase에 저장은 되지만, 프론트는 그걸 DB에서 다시 조회하지 않고 자소서 초안 요청 시 그대로 재전송한다(T10에서 단순함을 우선해 결정) — 이 구조 자체는 그대로 남아있다(이슈 [#26](https://github.com/dohyeon-k/hub/issues/26)). 다만 새로고침하면 다 날아가던 문제는 별개로 해결했다: `step`/`profile`/`profileId`/`jobs`/`selectedJob`/`isDraftSaved`/`authHeader`를 `sessionStorage`에 저장해뒀다가 마운트 시 복원한다(라우터 라이브러리 없이, URL 변경 없이). 라우터 도입(URL 딥링크, 브라우저 뒤로가기 등)은 여전히 범위 밖 — `CLAUDE.md`에 "라우터 라이브러리는 쓰지 않는다"고 결정돼 있고, 지금 문제(새로고침 복원)엔 필요하지 않다고 판단했다.
+- 라우터 라이브러리는 쓰지 않기로 한 결정(`CLAUDE.md`)에 따라 URL 딥링크·브라우저 뒤로가기는 지원하지 않는다. 대신 새로고침하면 화면 상태가 다 날아가던 문제는 `step`/`profileId`/`jobs`/`selectedJob`/`isDraftSaved`/`authHeader`를 `sessionStorage`에 저장해뒀다가 마운트 시 복원하는 것으로 해결했다. (참고로 자소서 초안 생성 시 프론트가 `profile` 전체를 재전송하던 구조는 이슈 [#26](https://github.com/dohyeon-k/hub/issues/26)으로 개선해, 이제 서버가 `profileId`로 Supabase에서 직접 재조회한다.)
 - 공고 데이터는 아직 목업(`postings.json`)이다 — 실제 크롤링 연동은 진행 중(이슈 [#23](https://github.com/dohyeon-k/hub/issues/23)).
 - 배포됐다 — 프론트엔드는 [Vercel](https://hub-two-rosy.vercel.app), 백엔드는 [Render](https://hub-071a.onrender.com)(이슈 [#25](https://github.com/dohyeon-k/hub/issues/25)). Render 무료 티어 특성상 일정 시간 요청이 없으면 서버가 잠들었다가 첫 요청에 재기동 지연이 있을 수 있다.
