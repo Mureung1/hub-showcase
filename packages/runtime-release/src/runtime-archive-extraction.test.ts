@@ -1282,3 +1282,108 @@ test('post-extraction verifier rejects tree, mode, manifest, and legal roster dr
     })
   }
 })
+
+test('binds archive and staging filesystem preconditions before verified output', async (t) => {
+  await t.test('archive symlink', async () => {
+    await withFixture(async (fixture) => {
+      const original = `${fixture.layout.archive.path}.original`
+      await rename(fixture.layout.archive.path, original)
+      await symlink(original, fixture.layout.archive.path)
+      await assertArchiveError(
+        () => extractFixture(fixture),
+        'runtime_cache_unsafe',
+      )
+      assert.deepEqual(await readdir(fixture.staging.path), [])
+    })
+  })
+
+  await t.test('archive digest drift', async () => {
+    await withFixture(async (fixture) => {
+      const drifted = Buffer.from(fixture.archiveBytes)
+      drifted[Math.floor(drifted.byteLength / 2)] ^= 1
+      await writeFile(fixture.layout.archive.path, drifted)
+      await assertArchiveError(
+        () => extractFixture(fixture),
+        'runtime_integrity_failed',
+      )
+      assert.deepEqual(await readdir(fixture.staging.path), [])
+    })
+  })
+
+  await t.test('archive truncation', async () => {
+    await withFixture(async (fixture) => {
+      await writeFile(
+        fixture.layout.archive.path,
+        fixture.archiveBytes.subarray(
+          0,
+          fixture.archiveBytes.byteLength - 1,
+        ),
+      )
+      await assertArchiveError(
+        () => extractFixture(fixture),
+        'runtime_integrity_failed',
+      )
+      assert.deepEqual(await readdir(fixture.staging.path), [])
+    })
+  })
+
+  await t.test('archive mutation between passes', async () => {
+    await withFixture(async (fixture) => {
+      const drifted = Buffer.from(fixture.archiveBytes)
+      drifted[Math.floor(drifted.byteLength / 2)] ^= 1
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            afterPrescan: async () => {
+              await writeFile(fixture.layout.archive.path, drifted)
+            },
+          }),
+        'runtime_integrity_failed',
+      )
+      assert.deepEqual(await readdir(fixture.staging.path), [])
+    })
+  })
+
+  await t.test('canonical manifest byte argument drift', async () => {
+    await withFixture(async (fixture) => {
+      await assertArchiveError(
+        () =>
+          extractVerifiedRuntimeArchive({
+            admission: fixture.admission,
+            canonicalManifestBytes: Buffer.concat([
+              fixture.canonicalManifestBytes,
+              Buffer.from('\n'),
+            ]),
+            layout: fixture.layout,
+            mutationAuthority: fixture.mutationAuthority,
+            staging: fixture.staging,
+          }),
+        'runtime_integrity_failed',
+      )
+      assert.deepEqual(await readdir(fixture.staging.path), [])
+    })
+  })
+
+  await t.test('nonempty staging root', async () => {
+    await withFixture(async (fixture) => {
+      const sentinel = path.join(fixture.staging.path, 'existing')
+      await writeFile(sentinel, 'preserve\n')
+      await assertArchiveError(
+        () => extractFixture(fixture),
+        'runtime_cache_unsafe',
+      )
+      assert.equal(await readFile(sentinel, 'utf8'), 'preserve\n')
+    })
+  })
+
+  await t.test('staging mode drift', async () => {
+    await withFixture(async (fixture) => {
+      await chmod(fixture.staging.path, 0o755)
+      await assertArchiveError(
+        () => extractFixture(fixture),
+        'runtime_cache_unsafe',
+      )
+      assert.deepEqual(await readdir(fixture.staging.path), [])
+    })
+  })
+})

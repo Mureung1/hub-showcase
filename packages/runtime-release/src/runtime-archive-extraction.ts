@@ -4,12 +4,10 @@ import { createHash } from 'node:crypto'
 import { constants } from 'node:fs'
 import type { BigIntStats } from 'node:fs'
 import {
-  chmod,
   lstat,
   mkdir,
   open,
   readdir,
-  readFile,
   readlink,
   realpath,
   rmdir,
@@ -500,6 +498,11 @@ async function openVerifiedArchive(
       constants.O_RDONLY | constants.O_NOFOLLOW,
     )
   } catch (error) {
+    if (isNodeError(error) && error.code === 'ELOOP') {
+      throw runtimeAuthorityError('runtime_cache_unsafe', {
+        kind: 'runtime_archive_path_is_symlink',
+      })
+    }
     throw runtimeAuthorityError('runtime_storage_unavailable', {
       kind: 'runtime_archive_open_failed',
       cause: error,
@@ -555,13 +558,14 @@ async function runArchivePass(
     allowUnknownFormat: false,
     filenameEncoding: 'utf8',
   })
+  const entryTasks = new Set<Promise<void>>()
   // streamx may emit the upstream destroy error after Node's pipeline has
   // removed its temporary listener. Keep one observer for that late event;
   // pipeline still owns the rejection delivered to this pass.
   parser.on('error', () => undefined)
   parser.on('entry', (header, entry, next) => {
     entry.on('error', () => undefined)
-    void handleArchiveEntry({
+    const task = handleArchiveEntry({
       header,
       entry,
       next,
@@ -572,7 +576,12 @@ async function runArchivePass(
       pathGraph,
       entryNumber: ++entryCount,
       parserDestroyed: () => parser.destroyed,
-    }).catch(() => undefined)
+    })
+    entryTasks.add(task)
+    void task.then(
+      () => entryTasks.delete(task),
+      () => entryTasks.delete(task),
+    )
   })
   const archiveStream = archive.createReadStream({
     start: 0,
@@ -591,6 +600,7 @@ async function runArchivePass(
     stream.on('error', () => undefined)
   }
 
+  let passError: RuntimeReleaseAuthorityError | undefined
   try {
     await pipeline(
       archiveStream,
@@ -601,7 +611,18 @@ async function runArchivePass(
       parser,
     )
   } catch (error) {
-    throw normalizeArchivePassError(error)
+    passError = normalizeArchivePassError(error)
+  }
+  const entryResults = await Promise.allSettled([...entryTasks])
+  const rejectedEntry = entryResults.find(
+    (
+      result,
+    ): result is PromiseRejectedResult =>
+      result.status === 'rejected',
+  )
+  if (passError !== undefined) throw passError
+  if (rejectedEntry !== undefined) {
+    throw normalizeArchivePassError(rejectedEntry.reason)
   }
 
   if (
@@ -1096,38 +1117,57 @@ async function createOwnedDirectory(
       cause: error,
     })
   }
-  const initialStats = await lstat(directory, { bigint: true })
-  const initialIdentity = identityFromStats(initialStats)
-  if (
-    !initialStats.isDirectory() ||
-    initialStats.isSymbolicLink() ||
-    initialIdentity.ownerUid !== expectedOwnerUid ||
-    initialIdentity.device !== expectedDevice
-  ) {
+  let directoryHandle: FileHandle
+  try {
+    directoryHandle = await open(
+      directory,
+      constants.O_RDONLY |
+        constants.O_NOFOLLOW |
+        constants.O_DIRECTORY,
+    )
+  } catch (error) {
     throw runtimeAuthorityError('runtime_recovery_required', {
-      kind: 'runtime_archive_new_directory_identity_invalid',
+      kind: 'runtime_archive_new_directory_open_failed',
+      cause: error,
     })
   }
-  created.push({
-    path: directory,
-    identity: initialIdentity,
-    type: 'directory',
-  })
+  let identity: RuntimeFileSystemIdentity
   try {
-    await chmod(directory, mode)
+    const initialStats = await directoryHandle.stat({ bigint: true })
+    identity = identityFromStats(initialStats)
+    if (
+      !initialStats.isDirectory() ||
+      initialStats.isSymbolicLink() ||
+      identity.ownerUid !== expectedOwnerUid ||
+      identity.device !== expectedDevice
+    ) {
+      throw runtimeAuthorityError('runtime_recovery_required', {
+        kind: 'runtime_archive_new_directory_identity_invalid',
+      })
+    }
+    created.push({
+      path: directory,
+      identity,
+      type: 'directory',
+    })
+    await directoryHandle.chmod(mode)
+    assertOwnedDirectoryStats(
+      await directoryHandle.stat({ bigint: true }),
+      directory,
+      expectedOwnerUid,
+      expectedDevice,
+      mode,
+      'runtime_archive_directory',
+    )
   } catch (error) {
+    if (error instanceof RuntimeReleaseAuthorityError) throw error
     throw runtimeAuthorityError('runtime_storage_unavailable', {
       kind: 'runtime_archive_directory_mode_failed',
       cause: error,
     })
+  } finally {
+    await directoryHandle.close().catch(() => undefined)
   }
-  const identity = await inspectOwnedDirectory(
-    directory,
-    expectedOwnerUid,
-    expectedDevice,
-    mode,
-    'runtime_archive_directory',
-  )
   await assertIdentity(
     parentPath,
     parentIdentity,
@@ -1366,6 +1406,16 @@ async function verifyMaterializedRuntime(input: {
     input,
     observed,
   )
+  await assertIdentity(
+    input.runtimeRoot,
+    runtimeIdentity,
+    'runtime_archive_recipient_identity_changed',
+  )
+  await assertIdentity(
+    input.stagingRoot,
+    input.stagingIdentity,
+    'runtime_staging_identity_changed',
+  )
   if (
     observed.size !== input.plan.entries.size ||
     [...input.plan.entries.keys()].some(
@@ -1391,14 +1441,6 @@ async function verifyMaterializedRuntime(input: {
   ) {
     throw runtimeAuthorityError('runtime_integrity_failed', {
       kind: 'runtime_archive_top_level_roster_mismatch',
-    })
-  }
-  const materializedManifest = await readFile(
-    path.join(input.runtimeRoot, 'manifest.json'),
-  )
-  if (!materializedManifest.equals(input.canonicalManifestBytes)) {
-    throw runtimeAuthorityError('runtime_integrity_failed', {
-      kind: 'runtime_archive_canonical_manifest_mismatch',
     })
   }
   for (const selected of [
@@ -1444,7 +1486,7 @@ async function visitMaterializedDirectory(
     const absolute = containedRuntimePath(runtimeRoot, relative)
     const stats = await lstat(absolute, { bigint: true })
     if (expected.type === 'directory') {
-      assertOwnedDirectoryStats(
+      const directoryIdentity = assertOwnedDirectoryStats(
         stats,
         absolute,
         input.expectedOwnerUid,
@@ -1458,26 +1500,22 @@ async function visitMaterializedDirectory(
         input,
         observed,
       )
+      await assertIdentity(
+        absolute,
+        directoryIdentity,
+        'runtime_archive_extracted_directory_changed',
+      )
       continue
     }
     if (expected.type === 'file') {
-      assertOwnedFileStats(
-        stats,
+      await verifyMaterializedFile(
         absolute,
-        input.expectedOwnerUid,
-        input.stagingIdentity.device,
-        fileMode(expected),
+        expected,
+        input,
+        relative === 'manifest.json'
+          ? input.canonicalManifestBytes
+          : undefined,
       )
-      const bytes = await readFile(absolute)
-      if (
-        bytes.byteLength !== expected.bytes ||
-        sha256(bytes) !== expected.sha256
-      ) {
-        throw runtimeAuthorityError('runtime_integrity_failed', {
-          kind: 'runtime_archive_extracted_file_mismatch',
-          path: relative,
-        })
-      }
       continue
     }
     assertOwnedSymlinkStats(
@@ -1504,6 +1542,86 @@ async function visitMaterializedDirectory(
     if (!isContained(runtimeRoot, resolved)) {
       throw unsafeArchive('runtime_archive_symlink_target_unsafe')
     }
+  }
+}
+
+async function verifyMaterializedFile(
+  absolute: string,
+  expected: RuntimeManifestFileEntry | ArchiveManifestEntry,
+  input: Parameters<typeof verifyMaterializedRuntime>[0],
+  exactBytes: Buffer | undefined,
+): Promise<void> {
+  let handle: FileHandle
+  try {
+    handle = await open(
+      absolute,
+      constants.O_RDONLY | constants.O_NOFOLLOW,
+    )
+  } catch (error) {
+    throw runtimeAuthorityError('runtime_integrity_failed', {
+      kind: 'runtime_archive_extracted_file_open_failed',
+      path: expected.path,
+      cause: error,
+    })
+  }
+  try {
+    const initialStats = await handle.stat({ bigint: true })
+    const identity = assertOwnedFileStats(
+      initialStats,
+      absolute,
+      input.expectedOwnerUid,
+      input.stagingIdentity.device,
+      fileMode(expected),
+    )
+    if (initialStats.size !== BigInt(expected.bytes)) {
+      throw runtimeAuthorityError('runtime_integrity_failed', {
+        kind: 'runtime_archive_extracted_file_size_mismatch',
+        path: expected.path,
+      })
+    }
+    const hash = createHash('sha256')
+    let bytes = 0
+    const stream = handle.createReadStream({ autoClose: false })
+    stream.on('error', () => undefined)
+    for await (const value of stream) {
+      const chunk = Buffer.from(value)
+      const nextBytes = safeAdd(
+        bytes,
+        chunk.byteLength,
+        'runtime_archive_extracted_file_bound_overflow',
+      )
+      if (nextBytes > expected.bytes) {
+        throw runtimeAuthorityError('runtime_integrity_failed', {
+          kind: 'runtime_archive_extracted_file_size_mismatch',
+          path: expected.path,
+        })
+      }
+      if (
+        exactBytes !== undefined &&
+        !chunk.equals(exactBytes.subarray(bytes, nextBytes))
+      ) {
+        throw runtimeAuthorityError('runtime_integrity_failed', {
+          kind: 'runtime_archive_canonical_manifest_mismatch',
+        })
+      }
+      bytes = nextBytes
+      hash.update(chunk)
+    }
+    const finalStats = await handle.stat({ bigint: true })
+    if (
+      bytes !== expected.bytes ||
+      hash.digest('hex') !== expected.sha256 ||
+      !sameIdentity(identityFromStats(finalStats), identity) ||
+      finalStats.size !== initialStats.size ||
+      Number(finalStats.mode & 0o7777n) !== fileMode(expected)
+    ) {
+      throw runtimeAuthorityError('runtime_integrity_failed', {
+        kind: 'runtime_archive_extracted_file_mismatch',
+        path: expected.path,
+      })
+    }
+  } finally {
+    await handle.close().catch(() => undefined)
   }
 }
 
