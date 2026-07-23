@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "title": "아맞다! (Amadda)",
+  "summary": "저장한 링크를 개인 보관함에 정리하고, 나중에 맥락으로 빠르게 찾아 열람할 수 있는 인사이트 관리 서비스입니다.",
+  "githubUser": "ppre1ude",
+  "demoUrl": "https://hub-ppre1udes-projects.vercel.app",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/home.webp"
+  ],
+  "problem": "유용한 글과 자료를 저장해두어도, 시간이 지나며 저장 맥락이 흐려져 실제로 다시 열람할 때 찾기 어렵고 재탐색 비용이 늘어납니다.",
+  "targetUsers": [
+    "정보를 수집해두고 나중에 다시 찾아보는 개인 사용자",
+    "웹/모바일에서 링크를 빠르게 저장하는 사용자"
+  ],
+  "features": [
+    "Google 로그인 기반 개인 보관함에서 링크, 제목, 설명, 메모, 카테고리를 함께 저장합니다.",
+    "모바일 공유, Chrome 확장, 웹 URL 입력으로 수집 경로를 통합합니다.",
+    "저장 시 부여한 라벨·메모를 반영해 검색과 `꺼내보기` 정렬 품질을 개선합니다.",
+    "저장 항목에서 원문 열기, 메모 수정, 삭제까지 한 흐름으로 처리합니다."
+  ],
+  "featureTags": [
+    "개인 인사이트 저장",
+    "맥락 기반 재검색",
+    "멀티 채널 수집",
+    "저장 항목 정리"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Vite",
+    "Express",
+    "Supabase",
+    "Tailwind CSS",
+    "TanStack Query",
+    "Zustand"
+  ],
+  "techHighlights": [
+    "클라이언트는 React와 WDS 컴포넌트를 중심으로 저장·조회 UI를 구성했습니다.",
+    "Express API와 Supabase 저장소를 통해 사용자별 보관함(검색, 메모, 권한)을 운영합니다.",
+    "Chrome 확장, 모바일 공유, 웹 입력 경로에서 동일한 백엔드 계약으로 수집 흐름을 통합했습니다."
+  ],
+  "developmentWithAI": "요구사항 정리와 문장 정제, 실행 계획 수립 단계에서 코딩 어시스턴트를 활용해 작업 속도와 정합성을 높였습니다.",
+  "agent": {
+    "summary": "요구사항을 기능 단위로 쪼개고, 가이드 확인 후 `showcase` 산출물을 구성했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Codex",
+        "purpose": "요청 수렴, 파일 구성, 실무적 문구 정제"
+      },
+      {
+        "type": "skill",
+        "name": "browser",
+        "purpose": "showcase 작성 가이드의 샘플 형식과 항목 규칙 확인"
+      }
+    ],
+    "workflows": [
+      {
+        "name": "showcase 산출물 준비 Workflow",
+        "steps": [
+          "샘플 가이드 형식 확인",
+          "showcase.json 작성",
+          "썸네일/스크린샷 준비",
+          "main 브랜치에서 커밋"
+        ]
+      }
+    ]
+  }
+}
