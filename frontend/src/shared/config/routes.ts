@@ -4,4 +4,5 @@ export const ROUTES = {
   RECENT_ANALYSIS: '/recent-analyses',
   MARKET_NEWS: '/market-news',
   MARKET_CALENDAR: '/market-calendar',
+  INVESTMENT_STUDY: '/investment-study',
 } as const

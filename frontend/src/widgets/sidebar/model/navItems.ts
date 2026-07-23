@@ -37,6 +37,6 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     id: 'study',
     title: '학습',
-    items: [{ id: 'investment-study', label: '투자 공부', icon: BookOpen }],
+    items: [{ id: 'investment-study', label: '투자 공부', icon: BookOpen, to: ROUTES.INVESTMENT_STUDY }],
   },
 ]
