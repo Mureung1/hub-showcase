@@ -411,6 +411,7 @@ async function joinOrCreateResolverFlight(
     }
 
     const flight = createResolverFlight(
+      context,
       key,
       bootstrapped,
     )
@@ -422,6 +423,7 @@ async function joinOrCreateResolverFlight(
 }
 
 function createResolverFlight(
+  context: ResolverContext,
   key: string,
   bootstrapped: ResolverBootstrap,
 ): ResolverFlight {
