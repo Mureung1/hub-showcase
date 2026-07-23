@@ -3,6 +3,8 @@ import "./styles/theme.css";
 import "./styles/App.css";
 import stocks from "./data/kospiStocks.json";
 import NewsSection from "./components/NewsSection";
+import AIAnalysis from "./components/AIAnalysis";
+
 
 function App() {
   const [stockPrice, setStockPrice] = useState(null);
@@ -15,7 +17,11 @@ function App() {
   const [exchangeRate, setExchangeRate] = useState(null);
   const [exchangeLoading, setExchangeLoading] = useState(true);
   const [exchangeError, setExchangeError] = useState("");
+  const [news, setNews] = useState([]);
 
+  const [financialData, setFinancialData] = useState([]);
+  const [financialLoading, setFinancialLoading] = useState(false);
+  const [financialError, setFinancialError] = useState("");
   const filteredStocks = stocks.filter((stock) => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
@@ -131,6 +137,189 @@ useEffect(() => {
     clearInterval(intervalId);
   };
 }, []);
+useEffect(() => {
+  let isMounted = true;
+
+  async function fetchNews() {
+    try {
+      const response = await fetch(
+        `http://localhost:3001/api/news?query=${encodeURIComponent(
+          selectedStock.name
+        )}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "뉴스 조회 실패");
+      }
+
+      if (isMounted) {
+        setNews(data.news || []);
+      }
+    } catch (error) {
+      console.error("뉴스 조회 오류:", error);
+
+      if (isMounted) {
+        setNews([]);
+      }
+    }
+  }
+
+  fetchNews();
+
+  return () => {
+    isMounted = false;
+  };
+}, [selectedStock]);
+
+useEffect(() => {
+  let isMounted = true;
+
+  async function fetchFinancialData() {
+    try {
+      setFinancialLoading(true);
+      setFinancialError("");
+
+      const response = await fetch(
+        `http://localhost:3001/api/financials?stockCode=${selectedStock.code}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "재무데이터 조회에 실패했습니다."
+        );
+      }
+
+      const sourceData = Array.isArray(data)
+        ? data
+        : Array.isArray(data.financials)
+          ? data.financials
+          : [];
+
+      const convertedData = sourceData.map((item) => ({
+        ...item,
+        year: String(item.year ?? ""),
+        sales: Number(
+          String(item.sales ?? 0).replaceAll(",", "")
+        ) || 0,
+        operatingProfit: Number(
+          String(item.operatingProfit ?? 0).replaceAll(",", "")
+        ) || 0,
+        netIncome: Number(
+          String(item.netIncome ?? 0).replaceAll(",", "")
+        ) || 0,
+        assets: Number(
+          String(item.assets ?? 0).replaceAll(",", "")
+        ) || 0,
+        liabilities: Number(
+          String(item.liabilities ?? 0).replaceAll(",", "")
+        ) || 0,
+        equity: Number(
+          String(item.equity ?? 0).replaceAll(",", "")
+        ) || 0,
+      }));
+
+      if (isMounted) {
+        setFinancialData(convertedData);
+      }
+    } catch (error) {
+      console.error("재무데이터 조회 오류:", error);
+
+      if (isMounted) {
+        setFinancialError(error.message);
+        setFinancialData([]);
+      }
+    } finally {
+      if (isMounted) {
+        setFinancialLoading(false);
+      }
+    }
+  }
+
+  fetchFinancialData();
+
+  return () => {
+    isMounted = false;
+  };
+}, [selectedStock.code]);
+const [selectedFinancialYear, setSelectedFinancialYear] =
+  useState("2026");
+
+const selectedFinancialData =
+  financialData.find(
+    (item) =>
+      String(item.year).replace(/[^0-9]/g, "").slice(0, 4) ===
+      selectedFinancialYear
+  ) ??
+  financialData[financialData.length - 1] ??
+  null;
+
+const formatTrillion = (value) => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue)) {
+    return null;
+  }
+
+  return numberValue / 1_000_000_000_000;
+};
+
+const chartItems = selectedFinancialData
+  ? [
+      {
+        label: "매출",
+        value: formatTrillion(selectedFinancialData.sales),
+      },
+      {
+        label: "영업이익",
+        value: formatTrillion(
+          selectedFinancialData.operatingProfit
+        ),
+      },
+      {
+        label: "순이익",
+        value: formatTrillion(
+          selectedFinancialData.netIncome
+        ),
+      },
+      {
+        label: "자산",
+        value: formatTrillion(selectedFinancialData.assets),
+      },
+      {
+        label: "부채",
+        value: formatTrillion(
+          selectedFinancialData.liabilities
+        ),
+      },
+      {
+        label: "자본",
+        value: formatTrillion(selectedFinancialData.equity),
+      },
+    ]
+  : [];
+
+const maximumChartValue = Math.max(
+  ...chartItems.map((item) => item.value ?? 0),
+  1
+);
+
+const financialYears = financialData
+  .map((item) =>
+    String(item.year).replace(/[^0-9]/g, "").slice(0, 4)
+  )
+  .filter(
+    (year, index, array) =>
+      year && array.indexOf(year) === index
+  )
+  .sort((a, b) => Number(b) - Number(a));
   return (
     <div className="app-layout">
       <aside className="sidebar">
@@ -272,61 +461,95 @@ useEffect(() => {
 
           <article className="card stat-card">
             <span>투자의견</span>
-            <strong>BUY</strong>
-            <em className="up">목표가 320,000원</em>
+      
           </article>
         </section>
 
         <section className="dashboard-grid">
           <article className="card chart-card">
             <div className="card-title-row">
-              <h2>재무추이 차트</h2>
-              <select defaultValue="2026-4Q">
-                <option>2026-4Q</option>
-                <option>2026-3Q</option>
-                <option>2026-2Q</option>
-                <option>2026-1Q</option>
-                <option>2025-4Q</option>
-                <option>2025-3Q</option>
-                <option>2025-2Q</option>
-                <option>2025-1Q</option>
-                <option>2024-4Q</option>
-                <option>2024-3Q</option>
-                <option>2024-2Q</option>
-                <option>2024-1Q</option>
-                <option>2023-4Q</option>
-                <option>2023-3Q</option>
-                <option>2023-2Q</option>
-                <option>2023-1Q</option>
-              </select>
+             
+          
+            
             </div>
 
-            <div className="finance-chart">
-              {[
-                { label: "매출", value: 302, height: "88%" },
-                { label: "영업이익", value: 35, height: "48%" },
-                { label: "순이익", value: 26, height: "38%" },
-                { label: "자산", value: 455, height: "100%" },
-                { label: "부채", value: 92, height: "58%" },
-                { label: "자본", value: 363, height: "92%" },
-              ].map((item) => (
-                <div className="chart-column" key={item.label}>
-                  <div className="chart-value">{item.value}조</div>
-                  <div className="chart-bar-wrap">
-                    <div className="chart-bar" style={{ height: item.height }} />
-                  </div>
-                  <div className="chart-label">{item.label}</div>
-                </div>
-              ))}
-            </div>
+      <div className="financial-chart-header">
+  <h2>재무추이 차트</h2>
+
+  <select
+    value={selectedFinancialYear}
+    onChange={(event) =>
+      setSelectedFinancialYear(event.target.value)
+    }
+    className="financial-year-select"
+  >
+    {financialYears.map((year) => (
+      <option key={year} value={year}>
+        {year}년
+      </option>
+    ))}
+  </select>
+</div>
+
+{financialLoading ? (
+  <div className="finance-chart chart-state">
+    재무데이터를 불러오는 중입니다.
+  </div>
+) : financialError ? (
+  <div className="finance-chart chart-state chart-error">
+    {financialError}
+  </div>
+) : chartItems.length === 0 ? (
+  <div className="finance-chart chart-state">
+    표시할 재무데이터가 없습니다.
+  </div>
+) : (
+  <div className="finance-chart">
+    {chartItems.map((item) => {
+      const height =
+        item.value === null
+          ? 0
+          : Math.max(
+              (Math.abs(item.value) / maximumChartValue) * 100,
+              4
+            );
+
+      return (
+        <div className="chart-column" key={item.label}>
+          <div className="chart-value">
+            {item.value === null
+              ? "-"
+              : `${item.value.toLocaleString("ko-KR", {
+                  maximumFractionDigits: 1,
+                })}조`}
+          </div>
+
+          <div className="chart-bar-wrap">
+            <div
+              className="chart-bar"
+              style={{
+                height: `${Math.min(height, 100)}%`,
+              }}
+            />
+          </div>
+
+          <div className="chart-label">{item.label}</div>
+        </div>
+      );
+    })}
+  </div>
+)}
           </article>
 
           <article className="card">
             <h2>AI 분석</h2>
-            <p className="analysis-text">
-              최근 실적 회복세와 반도체 업황 개선으로 중장기 성장 가능성이
-              있습니다. 다만 단기 주가 변동성과 환율 리스크는 주의가 필요합니다.
-            </p>
+               <AIAnalysis
+  selectedStock={selectedStock}
+  stockPrice={stockPrice}
+  financialData={null}
+  news={news}
+
+/>
           </article>
 
           <article className="card">
@@ -350,7 +573,8 @@ useEffect(() => {
           <article className="card">
             <h2>최신 뉴스</h2>
               <div className="news-card">
-  <NewsSection selectedStock={selectedStock} />
+  <NewsSection  news={news}
+  selectedStock={selectedStock} />
             </div>
           </article>
         </section>
