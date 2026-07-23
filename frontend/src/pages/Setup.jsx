@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveStoreInfo, getLatestStore } from '../api/client';
+import ErrorBanner from '../components/ErrorBanner';
+import SuccessBanner from '../components/SuccessBanner';
 
 export default function Setup() {
   const navigate = useNavigate();
@@ -95,6 +97,18 @@ export default function Setup() {
             <p className="text-sm text-[#737791]">가게 정보를 입력하세요</p>
           </div>
 
+          <ErrorBanner
+            message={error}
+            onClose={() => setError(null)}
+            autoClose={true}
+          />
+
+          <SuccessBanner
+            message={success ? '✓ 시작 준비 완료! 곧 대시보드로 이동합니다' : null}
+            onClose={() => setSuccess(false)}
+            autoClose={true}
+          />
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* 가게명 */}
             <div>
@@ -134,20 +148,6 @@ export default function Setup() {
                 <option value="기타">✨ 기타</option>
               </select>
             </div>
-
-            {/* 에러 메시지 */}
-            {error && (
-              <div className="bg-[#FFE2E5] text-[#FF5B5B] p-3 rounded-xl text-sm font-medium">
-                {error}
-              </div>
-            )}
-
-            {/* 성공 메시지 */}
-            {success && (
-              <div className="bg-[#DCFCE7] text-[#00B074] p-3 rounded-xl text-sm font-medium">
-                ✓ 시작 준비 완료!
-              </div>
-            )}
 
             {/* 제출 버튼 */}
             <button

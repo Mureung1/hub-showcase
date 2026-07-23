@@ -9,6 +9,8 @@ import {
   startGeneration,
   pollGenerationStatus
 } from '../api/client';
+import ErrorBanner from '../components/ErrorBanner';
+import SuccessBanner from '../components/SuccessBanner';
 
 export default function Generate() {
   const navigate = useNavigate();
@@ -63,15 +65,15 @@ export default function Generate() {
 
   const handleStartGeneration = async () => {
     if (!selectedImageId) {
-      setUploadError('이미지를 먼저 선택하세요');
+      setGenerationError('이미지를 먼저 선택하세요');
       return;
     }
     if (purpose.length === 0) {
-      alert('프로모션 목적을 최소 1개 이상 선택하세요');
+      setGenerationError('프로모션 목적을 최소 1개 이상 선택하세요');
       return;
     }
     if (!mood) {
-      alert('비디오 무드를 선택하세요');
+      setGenerationError('비디오 무드를 선택하세요');
       return;
     }
 
@@ -345,6 +347,17 @@ export default function Generate() {
       <div>
         <h2 className="text-2xl font-bold mb-2 text-[#151D48]">영상 생성하기</h2>
 
+        {/* 에러 배너 */}
+        <ErrorBanner
+          message={uploadError || generationError || storeError}
+          onClose={() => {
+            setUploadError(null);
+            setGenerationError(null);
+            setStoreError(null);
+          }}
+          autoClose={true}
+        />
+
         {/* 선택된 트렌드 표시 */}
         {selectedTrend && (
           <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-2xl">
@@ -361,13 +374,6 @@ export default function Generate() {
               현재 가게: <strong>{currentStore.store_name}</strong>
               {currentStore.category && ` (${currentStore.category})`}
             </p>
-          </div>
-        )}
-
-        {/* 가게 정보 로드 에러 */}
-        {storeError && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl">
-            <p className="text-sm text-red-600">{storeError}</p>
           </div>
         )}
 

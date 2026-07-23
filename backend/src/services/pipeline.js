@@ -277,12 +277,20 @@ async function runStep2(jobId) {
       throw new Error(result.message || 'KoBERT 처리 실패');
     }
 
-    // 3. DB 업데이트
+    // 3. DB 업데이트 (primary + options 모두 저장)
     const duration = Date.now() - startTime;
+    const captionOptions = result.caption_options || [];
+
+    console.log(`[Step 2] 생성된 자막 옵션: ${captionOptions.length}개`);
+    captionOptions.forEach((opt, i) => {
+      console.log(`  ${i+1}. [${opt.similarity}] ${opt.text}`);
+    });
+
     await supabase
       .from('generation_jobs')
       .update({
-        step2_caption: result.caption,
+        step2_caption: result.primary_caption || result.caption,  // primary 자막
+        step2_caption_options: JSON.stringify(captionOptions),  // 모든 옵션 저장
         step2_hashtags: result.hashtags,
         step2_similarity_score: result.similarity_score || 0.85,
         progress: 50,
@@ -516,15 +524,16 @@ async function runStep4(jobId) {
       hashtags
     });
 
-    // 2. FFmpeg Python 스크립트 실행
+    // 2. FFmpeg 향상된 스크립트 실행 (Ken Burns + 자막 애니메이션)
     let result;
     try {
-      const pythonScriptPath = path.resolve(__dirname, '../../ai-pipeline/ffmpeg_render.py');
-      console.log('[Step 4] FFmpeg 스크립트 경로:', pythonScriptPath);
+      const pythonScriptPath = path.resolve(__dirname, '../../ai-pipeline/ffmpeg_render_enhanced.py');
+      console.log('[Step 4] FFmpeg 향상된 렌더러 사용:', pythonScriptPath);
       console.log('[Step 4] 입력값:', {
         imageUrl: imageUrl || 'null',
         audioUrl: audioUrl || 'null',
-        caption
+        caption,
+        effects: ['ken_burns_zoom', 'subtitle_fade_animation']
       });
 
       const { stdout, stderr } = await execFileAsync('python', [

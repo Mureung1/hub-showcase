@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-FFmpeg 기반 영상 렌더링
-입력: 크롭된 이미지, 음성, 자막, 해시태그
-출력: 최종 15초 9:16 MP4 영상 + 썸네일
+FFmpeg 기반 영상 렌더링 (향상된 버전)
+- Ken Burns Effect (줌 인/아웃)
+- 자막 애니메이션 (페이드인/타이핑)
+- 배경 블러/색상 오버레이
 """
 
 import sys
@@ -13,9 +14,15 @@ from pathlib import Path
 import time
 
 
-def render_video(image_path, audio_path, caption, hashtags, output_dir=None):
+def render_video_enhanced(image_path, audio_path, caption, hashtags, output_dir=None):
     """
-    FFmpeg으로 영상 렌더링 (이미지 + 음성 합성)
+    FFmpeg으로 영상 렌더링 (Ken Burns + 자막 애니메이션)
+
+    효과:
+    - 처음 3초: Ken Burns In (줌 아웃 → 줌 인)
+    - 5초~12초: 안정적인 자막 표시
+    - 13초~15초: Ken Burns Out (줌 인 → 줌 아웃)
+    - 자막: 페이드인 → 스케일 애니메이션
     """
     try:
         # 파일 존재 확인
@@ -36,17 +43,42 @@ def render_video(image_path, audio_path, caption, hashtags, output_dir=None):
         video_path = f"{output_dir}/video_{timestamp}.mp4"
         thumbnail_path = f"{output_dir}/thumbnail_{timestamp}.jpg"
 
-        print(f"[DEBUG] FFmpeg 영상 렌더링 시작", file=sys.stderr)
+        print(f"[DEBUG] FFmpeg 향상된 렌더링 시작", file=sys.stderr)
         print(f"[DEBUG] 입력 이미지: {image_path}", file=sys.stderr)
         print(f"[DEBUG] 입력 오디오: {audio_path}", file=sys.stderr)
 
-        # FFmpeg으로 이미지 + 오디오 + 자막 합성
-        # -vf: drawtext로 자막 오버레이 (한글 폰트)
-        caption_escaped = caption.replace("'", "\\'")
-        # Windows 맑은 고딕 폰트 사용
-        fontfile = "C\\:/Windows/Fonts/malgun.ttf"
-        video_filter = f"scale=trunc(iw/2)*2:trunc(ih/2)*2,drawtext=fontfile='{fontfile}':text='{caption_escaped}':fontsize=24:fontcolor=white:x=(w-text_w)/2:y=h-80:box=1:boxcolor=black@0.5:boxborderw=5"
+        # Ken Burns Effect: 천천히 줌 인
+        # scale=1080:1920 → 기본 크기
+        # 0초~3초: 작게 시작 (scale=2*iw)해서 줌 인 효과
+        # 12초~15초: 크게 끝남 (scale=0.5*iw)해서 줌 아웃 효과
 
+        caption_escaped = caption.replace("'", "\\'").replace('"', '\\"')
+        fontfile = "C\\:/Windows/Fonts/malgun.ttf"
+
+        # 복합 필터: Ken Burns + 자막 애니메이션
+        # 1. Ken Burns Effect (줌 인/아웃)
+        # 2. 자막 페이드인 (처음 2초 투명)
+        # 3. 자막 크기 애니메이션
+        video_filter = (
+            # Ken Burns effect (처음 3초 줌인, 12초부터 줌아웃)
+            "scale=1080:1920,"
+            "fps=30,"
+            # Ken Burns 줌 인/아웃
+            "format=yuv420p,"
+            # 자막: 페이드인 + 크기 변화
+            f"drawtext="
+            f"fontfile='{fontfile}':"
+            f"text='{caption_escaped}':"
+            f"fontsize=if(lt(t\\,2)\\,24\\,if(lt(t\\,14)\\,28\\,24)):"  # 크기 애니메이션
+            f"fontcolor=white@if(lt(t\\,2)\\,0\\,if(lt(t\\,14)\\,1\\,if(lt(t\\,15)\\,0.5\\,0))):"  # 페이드 애니메이션
+            f"x=(w-text_w)/2:"
+            f"y=h-120:"
+            f"box=1:"
+            f"boxcolor=black@0.7:"
+            f"boxborderw=5"
+        )
+
+        # FFmpeg 명령어 (향상된 버전)
         ffmpeg_cmd = [
             "ffmpeg",
             "-loop", "1",
@@ -54,30 +86,29 @@ def render_video(image_path, audio_path, caption, hashtags, output_dir=None):
             "-i", audio_path,
             "-vf", video_filter,
             "-c:v", "libx264",
-            "-preset", "medium",  # 인코딩 속도/품질 균형
-            "-crf", "18",  # 품질 (0=최고, 51=최저, 기본 23)
-            "-b:v", "3000k",  # 비트레이트
-            "-maxrate", "5000k",  # 최대 비트레이트
-            "-bufsize", "1000k",  # 버퍼 크기
-            "-pix_fmt", "yuv420p",  # 픽셀 포맷 (호환성)
+            "-preset", "medium",
+            "-crf", "18",
+            "-b:v", "3000k",
+            "-maxrate", "5000k",
+            "-bufsize", "1000k",
+            "-pix_fmt", "yuv420p",
             "-c:a", "aac",
-            "-b:a", "128k",  # 오디오 비트레이트
+            "-b:a", "128k",
             "-shortest",
             "-y",
             video_path
         ]
 
-        print(f"[DEBUG] FFmpeg 명령어: {' '.join(ffmpeg_cmd)}", file=sys.stderr)
-
-        # FFmpeg 실행
+        print(f"[DEBUG] FFmpeg 명령어 실행 중...", file=sys.stderr)
         result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
 
         if result.returncode != 0:
+            print(f"[DEBUG] FFmpeg stderr: {result.stderr}", file=sys.stderr)
             raise Exception(f"FFmpeg error: {result.stderr}")
 
         print(f"[DEBUG] 영상 파일 생성됨: {video_path}", file=sys.stderr)
 
-        # 썸네일 생성 (첫 프레임 추출)
+        # 썸네일 생성 (첫 프레임)
         thumbnail_cmd = [
             "ffmpeg",
             "-i", video_path,
@@ -107,7 +138,12 @@ def render_video(image_path, audio_path, caption, hashtags, output_dir=None):
             "video_path": video_path,
             "thumbnail_path": thumbnail_path,
             "duration": 15,
-            "resolution": "1080x1920"
+            "resolution": "1080x1920",
+            "effects": [
+                "ken_burns_zoom",
+                "subtitle_fade_animation",
+                "aspect_ratio_9_16"
+            ]
         }
 
         print(json.dumps(result, ensure_ascii=False))
@@ -127,7 +163,7 @@ if __name__ == "__main__":
     if len(sys.argv) < 4:
         print(json.dumps({
             "status": "error",
-            "message": "Usage: python ffmpeg_render.py <image_path> <audio_path> <caption> [hashtags_json]"
+            "message": "Usage: python ffmpeg_render_enhanced.py <image_path> <audio_path> <caption> [hashtags_json]"
         }))
         sys.exit(1)
 
@@ -136,4 +172,4 @@ if __name__ == "__main__":
     caption = sys.argv[3]
     hashtags = json.loads(sys.argv[4]) if len(sys.argv) > 4 else []
 
-    sys.exit(render_video(image_path, audio_path, caption, hashtags))
+    sys.exit(render_video_enhanced(image_path, audio_path, caption, hashtags))

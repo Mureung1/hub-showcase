@@ -125,7 +125,7 @@ def generate_hashtags(trend_hashtag, product_label, store_category):
 
 
 def generate_caption(trend_hashtag, product_label, store_category):
-    """최적화된 자막 생성"""
+    """다양한 자막 옵션 생성"""
     try:
         # 자막 후보 생성
         caption_candidates = generate_captions(
@@ -135,26 +135,33 @@ def generate_caption(trend_hashtag, product_label, store_category):
         )
 
         # 각 후보의 유사도 계산
-        similarities = []
-        for caption in caption_candidates:
+        caption_options = []
+        for i, caption in enumerate(caption_candidates):
             sim = calculate_similarity(trend_hashtag, caption)
-            similarities.append((caption, sim))
+            caption_options.append({
+                "id": f"caption_{i+1}",
+                "text": caption,
+                "similarity": round(sim, 3),
+                "rank": i + 1
+            })
 
-        # 가장 유사도 높은 자막 선택
-        best_caption, best_similarity = max(similarities, key=lambda x: x[1])
+        # 유사도순으로 정렬
+        caption_options.sort(key=lambda x: x['similarity'], reverse=True)
+
+        # 가장 유사도 높은 자막을 primary로 설정
+        best_caption = caption_options[0]['text']
+        best_similarity = caption_options[0]['similarity']
 
         # 추가 해시태그 생성
         hashtags = generate_hashtags(trend_hashtag, product_label, store_category)
 
         result = {
             "status": "success",
-            "caption": best_caption,
+            "primary_caption": best_caption,  # 기본 자막 (최고 유사도)
+            "caption_options": caption_options[:5],  # 상위 5개 옵션 제공
             "hashtags": hashtags,
             "similarity_score": round(best_similarity, 3),
-            "all_candidates": [
-                {"caption": c, "similarity": round(s, 3)}
-                for c, s in similarities
-            ]
+            "total_options": len(caption_options)
         }
 
         print(json.dumps(result, ensure_ascii=False))

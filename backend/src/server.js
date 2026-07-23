@@ -97,6 +97,56 @@ app.post('/api/admin/reset', async (req, res) => {
   }
 });
 
+// Seed 데이터 로드 (개발용)
+app.post('/api/admin/seed', async (req, res) => {
+  try {
+    const supabase = getSupabaseClient();
+
+    console.log('[Seed 데이터] 로드 시작...');
+
+    // 1. 트렌드 키워드
+    const trendKeywords = [
+      { keyword: '#신메뉴', category: '음식', search_volume: 15000, platform: 'instagram' },
+      { keyword: '#카페', category: '카페', search_volume: 25000, platform: 'instagram' },
+      { keyword: '#디저트', category: '음식', search_volume: 18000, platform: 'tiktok' },
+      { keyword: '#라떼', category: '음료', search_volume: 8500, platform: 'instagram' }
+    ];
+    await supabase.from('trend_keywords').insert(trendKeywords).select();
+
+    // 2. 샘플 가게
+    const stores = [
+      { store_name: '카페 에스프레소', category: '카페', location: '서울 강남구', signature_menu: '핸드드립 커피' },
+      { store_name: '라면왕', category: '음식점', location: '서울 명동', signature_menu: '신라면' },
+      { store_name: '디저트팜', category: '베이커리', location: '부산 해운대', signature_menu: '생크림 케이크' }
+    ];
+    const { data: storeData } = await supabase.from('store_info').insert(stores).select();
+
+    // 3. 발행 기록
+    const publishedVideos = [
+      { video_id: 1, store_id: storeData?.[0]?.store_id, platform: 'draft', title: '신 블루베리 라떼', hashtags: '#라떼 #신메뉴' },
+      { video_id: 2, store_id: storeData?.[0]?.store_id, platform: 'instagram', title: '핸드드립 커피', hashtags: '#커피 #카페' }
+    ];
+    await supabase.from('published_videos').insert(publishedVideos).select();
+
+    console.log('[✅ Seed 데이터 로드 완료]');
+
+    res.status(200).json({
+      status: 'ok',
+      message: 'Seed data loaded successfully',
+      data: {
+        trends: trendKeywords.length,
+        stores: storeData?.length || 0,
+        published_videos: publishedVideos.length
+      }
+    });
+  } catch (error) {
+    console.error('[❌ Seed 데이터 로드 실패]', error);
+    res.status(500).json({
+      error: error.message
+    });
+  }
+});
+
 app.use('/api/store', storeRoutes);
 app.use('/api/trends', trendsRoutes);
 app.use('/api/upload', uploadRoutes);
