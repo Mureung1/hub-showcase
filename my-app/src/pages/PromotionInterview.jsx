@@ -12,7 +12,7 @@ import ReviewQuestion from "../components/interview/ReviewQuestion";
 
 // design-reference/post_write.html(선택형 질문)과 WIREFRAME.md의 사진/텍스트/날짜
 // 질문 유형 예시를 이어붙인 시나리오. 실제로는 백엔드 인터뷰 API가 선택지에 따라
-// 다음 질문을 동적으로 내려주는 구조라(docs/api-spec.md 참고), 지금은 3개 경로를
+// 다음 질문을 동적으로 내려주는 구조라(../../../docs/api-spec.md 참고), 지금은 3개 경로를
 // 프론트에 하드코딩해두고 백엔드 연동 시점(Day8~9)에 API 응답으로 교체한다.
 const PURPOSE_STEP = {
   id: "purpose",
