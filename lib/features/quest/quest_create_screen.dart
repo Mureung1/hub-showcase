@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analytics/analytics_logger.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/reward_chip.dart';
+import '../../models/analytics_event.dart';
 import '../../models/difficulty.dart';
 import '../../providers/providers.dart';
 
@@ -79,6 +81,17 @@ class _QuestCreateScreenState extends ConsumerState<QuestCreateScreen> {
             difficulty: _difficulty,
             deadline: _deadline,
           );
+
+      // 직접 등록 계측 — 저장이 성공한 뒤(트랜잭션 밖) 부가로 남긴다.
+      // 실패해도 등록 자체를 막지 않는다(logEvent가 삼킨다).
+      ref.logEvent(
+        uid,
+        AnalyticsEvent.questRegistered(
+          at: DateTime.now(),
+          count: 1,
+          source: 'manual',
+        ),
+      );
 
       if (!mounted) return;
 

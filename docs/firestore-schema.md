@@ -12,6 +12,7 @@ users/{uid}                                # 사용자
   ├─ quests/{questId}                       # 퀘스트
   ├─ achievements/{achievementId}           # 성취 기록 (3주차)
   ├─ proofs/{questId}                        # 인증 사진 base64 (3주차)
+  ├─ events/{eventId}                        # 성공 지표 이벤트 로그 (4주차)
   └─ inventory/{itemId}                     # 보유 아이템 (4주차)
 
 items/{itemId}                              # 공개 아이템 카탈로그 (4주차, 읽기 전용)
@@ -125,6 +126,15 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 - **고아 자식은 숨기지 않는다.** 부모 문서를 못 찾는 자식은 깊이 0의 뿌리로 올려 그린다 — 목표 문서를 못 찾아도 퀘스트를 숨기지 않는 것과 같은 원칙이다. 순환 참조(a→b→a)에도 목록이 멈추지 않고 항목을 잃지 않는다.
 - **부모 자동 완료는 하지 않는다.** 자식을 전부 끝내도 `stuck` 부모는 `doneCount`에 들어가지 않아 그룹 진행률이 100%가 되지 않는다. 자동 완료는 곧 `completeQuest()` 트랜잭션(= 보상 지급)을 사용자가 누르지 않았는데 태우는 일이라, 보상 정책 변경으로 따로 결정할 문제다.
 
+#### 계보 삭제 — `deleteQuests(uid, questIds)` (4주차 B-5b)
+
+재분해 원본을 지울 때 그 하위 계보까지 **한 번에** 지운다. 부모만 지우면 자식이 고아로 남기 때문이다.
+
+- **저장소는 트리를 모른다.** 지울 ID 집합은 **화면**이 `descendantIds(quests, rootId)`(`lib/models/quest_group.dart`)로 계산한다 — `arrangeQuestTree()`와 **같은 부모-자식 맵**을 써서 고아·순환 방어를 그대로 물려받는다. 저장소는 "이 ID들을 원자적으로 지운다"만 책임진다(`createQuests`와 대칭). `descendantIds`는 rootId 자신을 포함하지 않으므로 화면이 `{rootId, ...descendants}`로 합쳐 넘긴다.
+- **원자성**: Firestore는 batch, InMemory는 스테이징 후 스트림 **1회** 방출. "부모는 지워졌는데 자식은 남은" 중간 상태가 없다. 없는 ID는 무시한다(삭제는 멱등).
+- **삭제는 지급된 코인·XP를 회수하지 않는다.** 퀘스트 문서의 `rewardedAt`은 함께 사라지지만, 이미 `users/{uid}`의 `coin`·`xp`에 반영된 값은 건드리지 않는다. 회수는 `completeQuest()` 트랜잭션의 역연산이라 별개 결정이고 이 범위가 아니다 — 계보에 완료된 자식이 섞여 함께 지워질 때도 마찬가지다.
+- **완료(보상받음) 퀘스트는 수정·삭제 진입 자체가 없다.** 완료 카드엔 `⋮` 메뉴가 뜨지 않아, 위 "완료된 자식 동반 삭제"는 오직 미완료 부모를 지울 때 그 계보에 완료된 자식이 섞인 경우에만 발생한다.
+
 **하위호환**: `status` 도입 전 문서는 `done: true/false`만 갖고 있다. `Quest.fromJson`은 `status`가 없으면 `done`으로 폴백하므로 **마이그레이션 없이 기존 문서가 그대로 읽힌다.**
 
 #### 파싱 경로가 3개다 (의도된 비대칭)
@@ -187,6 +197,31 @@ final drafts = QuestDraft.parseList(aiJson['quests']);
 **왜 별도 컬렉션인가**: 이미지 바이트를 quest·achievement 문서에 넣으면 목록을 조회할 때마다 수십 KB가 딸려와 읽기 비용이 폭증한다. 사진은 필요한 화면에서만 이 문서를 읽는다. achievement에는 **유무 플래그(`hasPhoto`)만** 둔다.
 
 **원자성**: proof 문서 쓰기는 `completeQuest()`의 **같은 트랜잭션**에 들어가고, 보상이 실제 지급되는 경로에서만 실행된다(재완료는 쓰지 않는다). proof ref의 ID는 트랜잭션 밖에서 `.doc(proofDoc(...))`로 만든다(read가 아니므로 read-before-write 규칙과 무관 — achievementRef와 같은 패턴).
+
+### `users/{uid}/events/{eventId}` — 성공 지표 이벤트 로그 (4주차)
+
+`docs/plan.md`의 지표 3개(**도전 시작률 · 재분해 복귀율 · 7일 리텐션**)를 나중에 로그만으로 산출하기 위한 **append-only 이벤트 스트림**. 데이터만 쌓고 지표 화면은 만들지 않는다 — 산출은 `lib/core/analytics/metrics.dart`의 **순수 함수 + 테스트**가 "이렇게 계산된다"를 증명한다. (Firebase Analytics를 쓰지 않는 이유: 네이티브 플러그인이 한글 경로 빌드 이슈를 되살리고, 기존 저장소 추상화 패턴과 어긋난다. 사용자 결정 2026-07-23.)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `type` | string | **필수.** 이벤트 종류 6종 중 하나. 모르는 값이면 파싱에서 버린다 |
+| `at` | timestamp | **필수.** 서버 시각(`FieldValue.serverTimestamp`)으로 확정. 경계에서 `DateTime`으로 정규화 |
+| `params` | map | 부가 스냅샷. **지표 계산에는 쓰이지 않는다**(디버깅·확장용) |
+
+**이벤트 6종과 발생 지점:**
+
+| `type` | 발생 지점 | `params` |
+|--------|-----------|----------|
+| `signup` | `ensureUser`가 문서를 **최초 생성**할 때 1회 | — |
+| `appOpen` | 세션 시작, **KST 날짜당 1회**(`recordAttendance`의 `isNewDay` 재사용) | `dateKey` |
+| `questRegistered` | `createQuest`(직접)·`createQuests`(AI 분해). **재분해 제외** | `count`, `source`(`ai`\|`manual`) |
+| `questCompleted` | `completeQuest`가 **실제 지급**할 때. 재완료(`reward==null`)는 제외 | `questId` |
+| `questStuck` | `setStatus`로 `stuck` 표시 | `questId` |
+| `questRedecomposed` | `parentQuestId`가 달린 재분해 자식 등록 | `parentQuestId`, `count` |
+
+**로그 실패는 기능을 막지 않는다(경계).** 계측은 부가 기능이라 `log`는 **어떤 실패도 위로 던지지 않는다**(Firestore 구현은 `try/catch`로 삼키고, InMemory는 `failWith`가 있어도 던지지 않는다). 그리고 로그는 **완료·등록 트랜잭션/batch 안에 넣지 않는다** — 로그 실패가 지급·등록을 롤백시키거나, 지급이 실패했는데 로그만 남아 지표가 오염되면 안 되기 때문이다. 그래서 **성공한 뒤** 화면/notifier 계층(`core/analytics/analytics_logger.dart`의 `logEvent` 확장)에서 별도로 부른다. 조회 `fetchEvents`는 반대로 실패를 드러낸다(산출·테스트용).
+
+**파싱 정책**은 `achievements`와 같다 — 목록은 관대하게(`tryParse`로 깨진 문서만 버림), 단건은 `type`·`at`이 없으면 엄격하게 버린다(둘이 없으면 어떤 지표에도 기여할 수 없다).
 
 ### `users/{uid}/inventory/{itemId}` — 4주차
 

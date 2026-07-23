@@ -8,6 +8,7 @@ import 'providers/providers.dart';
 import 'repositories/decompose/fake_quest_decomposer.dart';
 import 'repositories/decompose/remote_quest_decomposer.dart';
 import 'repositories/firestore/firebase_auth_repository.dart';
+import 'repositories/firestore/firestore_analytics_repository.dart';
 import 'repositories/firestore/firestore_goal_repository.dart';
 import 'repositories/firestore/firestore_quest_repository.dart';
 import 'repositories/firestore/firestore_user_repository.dart';
@@ -45,6 +46,9 @@ Future<Widget> _buildApp() async {
         userRepositoryProvider.overrideWithValue(FirestoreUserRepository()),
         questRepositoryProvider.overrideWithValue(FirestoreQuestRepository()),
         goalRepositoryProvider.overrideWithValue(FirestoreGoalRepository()),
+        analyticsRepositoryProvider.overrideWithValue(
+          FirestoreAnalyticsRepository(),
+        ),
         // 키가 있으면 실제 Gemini Flash 분해, 없으면 데모 모드(가짜 AI가 그럴듯한
         // 한글 퀘스트를 낸다). 키는 --dart-define=GEMINI_API_KEY=... 로 주입한다.
         questDecomposerProvider.overrideWithValue(

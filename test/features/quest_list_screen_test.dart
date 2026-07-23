@@ -9,6 +9,7 @@ import 'package:one_step/core/widgets/state_views.dart';
 import 'package:one_step/features/quest/quest_list_screen.dart';
 import 'package:one_step/features/quest/widgets/goal_group_section.dart';
 import 'package:one_step/features/quest/widgets/quest_complete_dialog.dart';
+import 'package:one_step/features/quest/widgets/quest_edit_dialog.dart';
 import 'package:one_step/features/quest/widgets/quest_memo_sheet.dart';
 import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/difficulty.dart';
@@ -736,6 +737,241 @@ void main() {
       // 'AI로 목표 나누기' 버튼과 겹치지 않는다 — find.text는 완전 일치다.
       expect(find.text('AI'), findsOneWidget);
       expect(find.text('직접'), findsOneWidget);
+    });
+  });
+
+  group('퀘스트 수정·삭제 — 더보기 메뉴 (B-5b)', () {
+    /// 카드 `⋮` 메뉴를 열고 특정 항목을 누른다.
+    Future<void> openMenu(WidgetTester tester, String questTitle) async {
+      await tester.tap(find.byTooltip('$questTitle 더보기'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('미완료 카드 메뉴에 수정·삭제가 보인다', (tester) async {
+      await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [Quest(id: 'q1', title: '수정할 퀘스트')],
+      );
+      await tester.pumpAndSettle();
+
+      await openMenu(tester, '수정할 퀘스트');
+
+      expect(find.text('제목·난이도 수정'), findsOneWidget);
+      expect(find.text('삭제'), findsOneWidget);
+    });
+
+    testWidgets('★ 완료 카드에는 더보기 메뉴가 없다 (수정·삭제 진입 불가 — 회귀 방어)', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: [
+          Quest(
+            id: 'q1',
+            title: '완료된 퀘스트',
+            status: QuestStatus.done,
+            completedAt: DateTime(2026, 1, 1),
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+      // 완료 그룹은 기본 접힘이라 카드를 펼쳐 렌더시킨 뒤 확인한다.
+      await expandGroup(tester);
+
+      // 완료 카드엔 ⋮ 자체가 없다 → 수정·삭제로 갈 문이 없다.
+      // (재완료로 난이도를 올려 추가 보상을 노리는 유효화 차단.)
+      expect(find.byTooltip('완료된 퀘스트 더보기'), findsNothing);
+    });
+
+    testWidgets('★ 제목·난이도를 바꿔 저장하면 updateQuest로 반영된다', (tester) async {
+      final repo = await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(id: 'q1', title: '원래 제목', difficulty: Difficulty.easy),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      await openMenu(tester, '원래 제목');
+      await tester.tap(find.text('제목·난이도 수정'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuestEditDialog), findsOneWidget);
+
+      await tester.enterText(find.byType(TextFormField), '바뀐 제목');
+      await tester.tap(find.text('어려움'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.pumpAndSettle();
+
+      // 저장소에 반영된다(앱 재실행 동치).
+      final saved = (await repo.fetchQuests('test-uid')).single;
+      expect(saved.title, '바뀐 제목');
+      expect(saved.difficulty, Difficulty.hard);
+      // 화면에도 반영.
+      expect(find.text('바뀐 제목'), findsOneWidget);
+    });
+
+    testWidgets('난이도를 바꾸면 예상 보상 미리보기가 갱신된다', (tester) async {
+      await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(id: 'q1', title: '미리보기 퀘스트', difficulty: Difficulty.easy),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      await openMenu(tester, '미리보기 퀘스트');
+      await tester.tap(find.text('제목·난이도 수정'));
+      await tester.pumpAndSettle();
+
+      // 쉬움 = 코인3 / XP5 (다이얼로그 미리보기 + 카드 둘 다 보인다).
+      expect(find.text('+3'), findsWidgets);
+      expect(find.text('XP +5'), findsWidgets);
+
+      // 어려움으로 바꾸면 다이얼로그 미리보기가 10/20으로 갱신된다.
+      await tester.tap(find.text('어려움'));
+      await tester.pumpAndSettle();
+      expect(find.text('+10'), findsWidgets);
+      expect(find.text('XP +20'), findsWidgets);
+    });
+
+    testWidgets('제목을 비우면 저장 버튼이 비활성이고 저장소는 그대로다', (tester) async {
+      final repo = await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [Quest(id: 'q1', title: '지울 제목')],
+      );
+      await tester.pumpAndSettle();
+
+      await openMenu(tester, '지울 제목');
+      await tester.tap(find.text('제목·난이도 수정'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField), '   ');
+      await tester.pumpAndSettle();
+
+      final saveButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, '저장'),
+      );
+      expect(saveButton.onPressed, isNull);
+
+      // 강제로 취소하고 저장소가 그대로인지 확인.
+      await tester.tap(find.widgetWithText(TextButton, '취소'));
+      await tester.pumpAndSettle();
+      expect((await repo.fetchQuests('test-uid')).single.title, '지울 제목');
+    });
+
+    testWidgets('자식 없는 퀘스트 삭제는 일반 확인 후 단건만 지운다', (tester) async {
+      final repo = await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(id: 'q1', title: '혼자 퀘스트', order: 0),
+          Quest(id: 'q2', title: '남을 퀘스트', order: 1),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      await openMenu(tester, '혼자 퀘스트');
+      await tester.tap(find.text('삭제'));
+      await tester.pumpAndSettle();
+
+      // 자식이 없으면 하위 삭제 경고 문구가 없다.
+      expect(find.textContaining('하위 퀘스트'), findsNothing);
+
+      await tester.tap(find.widgetWithText(FilledButton, '삭제'));
+      await tester.pumpAndSettle();
+
+      expect((await repo.fetchQuests('test-uid')).map((q) => q.id), ['q2']);
+    });
+
+    testWidgets('★ 자식 있는 부모 삭제 시 경고에 자식 수가 뜨고, 확인하면 계보가 모두 사라진다', (
+      tester,
+    ) async {
+      final repo = await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(
+            id: 'p',
+            title: '재분해 원본',
+            goalId: 'g1',
+            status: QuestStatus.stuck,
+            order: 0,
+          ),
+          Quest(
+            id: 'c1',
+            title: '자식1',
+            goalId: 'g1',
+            parentQuestId: 'p',
+            order: 1,
+          ),
+          Quest(
+            id: 'c2',
+            title: '자식2',
+            goalId: 'g1',
+            parentQuestId: 'p',
+            order: 2,
+          ),
+        ],
+        goals: const [Goal(id: 'g1', text: '공모전 지원하기')],
+      );
+      await tester.pumpAndSettle();
+
+      await openMenu(tester, '재분해 원본');
+      await tester.tap(find.text('삭제'));
+      await tester.pumpAndSettle();
+
+      // 경고가 하위 2개도 함께 삭제된다고 밝힌다.
+      expect(find.textContaining('하위 퀘스트 2개'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(FilledButton, '삭제'));
+      await tester.pumpAndSettle();
+
+      // 부모·자식 모두 사라진다.
+      expect(await repo.fetchQuests('test-uid'), isEmpty);
+    });
+
+    testWidgets('★ 삭제를 취소하면 아무것도 지워지지 않는다', (tester) async {
+      final repo = await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(
+            id: 'p',
+            title: '원본',
+            goalId: 'g1',
+            status: QuestStatus.stuck,
+            order: 0,
+          ),
+          Quest(
+            id: 'c1',
+            title: '자식',
+            goalId: 'g1',
+            parentQuestId: 'p',
+            order: 1,
+          ),
+        ],
+        goals: const [Goal(id: 'g1', text: '목표')],
+      );
+      await tester.pumpAndSettle();
+
+      await openMenu(tester, '원본');
+      await tester.tap(find.text('삭제'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(TextButton, '취소'));
+      await tester.pumpAndSettle();
+
+      // 부모·자식 모두 그대로다.
+      final remaining = await repo.fetchQuests('test-uid');
+      expect(remaining.map((q) => q.id).toSet(), {'p', 'c1'});
     });
   });
 

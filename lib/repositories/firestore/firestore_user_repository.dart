@@ -48,7 +48,7 @@ class FirestoreUserRepository implements UserRepository {
   }
 
   @override
-  Future<AppUser> ensureUser(String uid) {
+  Future<EnsureUserResult> ensureUser(String uid) {
     return guard(() async {
       final ref = _doc(uid);
 
@@ -57,11 +57,14 @@ class FirestoreUserRepository implements UserRepository {
       // 그러면 나중 write가 {xp:0, level:1, coin:0}을 다시 써서
       // **이미 지급된 코인·XP를 0으로 되돌린다.**
       // 3주차의 트랜잭션 기반 보상 지급과 정면으로 충돌하는 경로라 여기서 막는다.
-      return _db.runTransaction<AppUser>((transaction) async {
+      return _db.runTransaction<EnsureUserResult>((transaction) async {
         final snapshot = await transaction.get(ref);
 
         if (snapshot.exists) {
-          return AppUser.fromJson(uid, decodeDoc(snapshot.data()));
+          return (
+            user: AppUser.fromJson(uid, decodeDoc(snapshot.data())),
+            created: false,
+          );
         }
 
         final user = AppUser.initial(uid);
@@ -69,7 +72,10 @@ class FirestoreUserRepository implements UserRepository {
           ...user.toJson(),
           'createdAt': FieldValue.serverTimestamp(),
         });
-        return user;
+        // created=true는 signup 계측의 근거다. 로그는 이 트랜잭션 안에서 부르지
+        // 않는다 — 계측 실패가 문서 생성을 롤백시키면 안 되기 때문이다. session
+        // provider가 이 신호를 보고 트랜잭션 밖에서 로그를 남긴다.
+        return (user: user, created: true);
       });
     });
   }

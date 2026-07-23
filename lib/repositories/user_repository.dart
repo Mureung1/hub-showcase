@@ -1,6 +1,16 @@
 import '../core/constants/reward_rules.dart';
 import '../models/app_user.dart';
 
+/// [UserRepository.ensureUser]의 결과.
+///
+/// 사용자 문서를 돌려주면서 **이번 호출에서 처음 만들어졌는지**([created])를 함께
+/// 알린다. 이게 필요한 이유는 성공 지표 `signup` 이벤트가 "문서 최초 생성 시 1회"
+/// 라서다 — `AppUser`만 보면 신규인지 기존인지 구분할 수 없다(기존 신규 사용자도
+/// 값이 초기값과 같을 수 있다). `AttendanceResult.isNewDay`가 접속 이벤트의
+/// 첫날 판정을 넘겨주는 것과 같은 자리다. 로그 자체는 트랜잭션 밖(session provider)
+/// 에서 이 신호를 보고 부른다.
+typedef EnsureUserResult = ({AppUser user, bool created});
+
 /// 사용자 문서 읽기·쓰기.
 ///
 /// 구현체는 실패 시 반드시 `AppFailure`를 던진다.
@@ -15,7 +25,10 @@ abstract interface class UserRepository {
 
   /// 문서가 없으면 만든다. 여러 번 불러도 안전하다(멱등).
   /// 최초 접속 시 `users/{uid}` 자동 생성이 이걸로 이뤄진다.
-  Future<AppUser> ensureUser(String uid);
+  ///
+  /// 반환의 [EnsureUserResult.created]는 **이번 호출이 문서를 만들었는지**다
+  /// (`signup` 계측의 근거). 이미 있던 문서면 false.
+  Future<EnsureUserResult> ensureUser(String uid);
 
   /// 오늘의 출석을 기록하고, 7일 연속이면 보너스를 **같은 트랜잭션에서** 지급한다.
   ///

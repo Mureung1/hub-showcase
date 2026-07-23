@@ -46,15 +46,16 @@ class InMemoryUserRepository implements UserRepository {
   }
 
   @override
-  Future<AppUser> ensureUser(String uid) async {
+  Future<EnsureUserResult> ensureUser(String uid) async {
     _check();
     final existing = _users[uid];
-    if (existing != null) return existing;
+    if (existing != null) return (user: existing, created: false);
 
-    final created = AppUser.initial(uid).copyWith(createdAt: _clock());
-    _users[uid] = created;
+    final user = AppUser.initial(uid).copyWith(createdAt: _clock());
+    _users[uid] = user;
     _controller.add(uid);
-    return created;
+    // created=true = 이번 호출이 문서를 만들었다(signup 계측 신호).
+    return (user: user, created: true);
   }
 
   /// Firestore 트랜잭션과 **같은 의미**의 출석 기록.

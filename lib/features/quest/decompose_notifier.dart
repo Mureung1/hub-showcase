@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analytics/analytics_logger.dart';
 import '../../core/constants/decompose_limits.dart';
 import '../../core/error/app_failure.dart';
+import '../../models/analytics_event.dart';
 import '../../models/difficulty.dart';
 import '../../models/quest_draft.dart';
 import '../../providers/providers.dart';
@@ -498,6 +500,16 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
               goalId: target.goalId,
               parentQuestId: target.questId,
             );
+        // 재분해 등록 계측 — batch 성공 뒤(트랜잭션 밖). parentQuestId가 달린
+        // 등록이라 questRegistered가 아니라 questRedecomposed다(「재분해 복귀율」 분자).
+        ref.logEvent(
+          uid,
+          AnalyticsEvent.questRedecomposed(
+            at: DateTime.now(),
+            parentQuestId: target.questId,
+            count: current.drafts.length,
+          ),
+        );
         state = const AsyncValue.data(null);
         return true;
       }
@@ -509,6 +521,15 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
       await ref
           .read(questRepositoryProvider)
           .createQuests(uid, current.drafts, goalId: goal.id);
+      // AI 분해 등록 계측 — batch 성공 뒤(트랜잭션 밖). 재분해가 아닌 신규 등록이다.
+      ref.logEvent(
+        uid,
+        AnalyticsEvent.questRegistered(
+          at: DateTime.now(),
+          count: current.drafts.length,
+          source: 'ai',
+        ),
+      );
       // 성공: 상태를 초기(null)로 리셋한다 — 화면 pop 후 재진입이 깨끗하도록.
       state = const AsyncValue.data(null);
       return true;

@@ -22,6 +22,10 @@ abstract final class FirestorePaths {
 
   static String achievements(String uid) => 'users/$uid/achievements';
 
+  /// 성공 지표 이벤트 로그 (4주차). 데이터만 쌓고 지표 화면은 만들지 않는다 —
+  /// 산출은 `core/analytics/metrics.dart` 순수 함수가 담당한다.
+  static String events(String uid) => 'users/$uid/events';
+
   static String inventory(String uid) => 'users/$uid/inventory';
 
   /// 공개 아이템 카탈로그 (4주차 상점). 읽기 전용.
