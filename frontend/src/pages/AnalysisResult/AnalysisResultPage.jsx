@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { saveEvents } from "../../api/analysisApi";
+import { saveEvents, checkDuplicate } from "../../api/analysisApi";
 import "./AnalysisResultPage.css";
 
 function AnalysisResultPage() {
@@ -214,6 +214,31 @@ function AnalysisResultPage() {
     setSuccess("");
 
     try {
+      // 중복 검사
+      try {
+        const duplicateResult = await checkDuplicate(selectedEventsList);
+
+        if (duplicateResult.hasDuplicates && duplicateResult.data.length > 0) {
+          const duplicateList = duplicateResult.data
+            .map(d => `${d.name} (${d.startDate})`)
+            .join(", ");
+
+          const confirmed = window.confirm(
+            `다음 일정이 이미 등록되어 있습니다:\n${duplicateList}\n\n그래도 등록하시겠습니까?`
+          );
+
+          if (!confirmed) {
+            setIsSaving(false);
+            return;
+          }
+        }
+      } catch (duplicateErr) {
+        setError("중복 검사 중 오류가 발생했습니다.");
+        setTimeout(() => setError(""), 3000);
+        setIsSaving(false);
+        return;
+      }
+
       // 백엔드 API 호출
       await saveEvents(selectedEventsList);
 
