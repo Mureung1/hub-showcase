@@ -309,7 +309,7 @@ export default function ProjectIntro() {
           <section className="panel">
             {resultPage === 1 && (
             <>
-            <p className="eyebrow">Result</p>
+            <p className="eyebrow-script">Result</p>
             <h2>나의 공부 성향 요약</h2>
             <p>{result.summary}</p>
 
@@ -344,7 +344,7 @@ export default function ProjectIntro() {
               ))}
             </div>
 
-            <div className="two-col">
+            <div className="result-stack">
               <div className="result-card">
                 <h3>MBTI 입력 출처</h3>
                 <p>
@@ -440,14 +440,24 @@ export default function ProjectIntro() {
             </div>
 
             <div className="result-layout">
-              <div className="result-card">
-                <h3>핵심 행동지표</h3>
-                <div className="score-list">
-                  {topScores.map(([key, value]) => (
-                    <ScoreBar key={key} label={SCORE_LABELS[key]} value={value} />
-                  ))}
+              <div className="result-col">
+                <div className="result-card">
+                  <h3>핵심 행동지표</h3>
+                  <div className="score-list">
+                    {topScores.map(([key, value]) => (
+                      <ScoreBar key={key} label={SCORE_LABELS[key]} value={value} />
+                    ))}
+                  </div>
+                  <p className="hint">점수는 사용자를 평가하거나 남과 비교하는 값이 아니라, 오늘 어떤 방식을 먼저 시도해볼지 추천 방향을 정하는 신호입니다.</p>
                 </div>
-                <p className="hint">점수는 사용자를 평가하거나 남과 비교하는 값이 아니라, 오늘 어떤 방식을 먼저 시도해볼지 추천 방향을 정하는 신호입니다.</p>
+                <div className="result-card">
+                  <h3>피해야 할 공부 방식</h3>
+                  <ul>{result.avoidList.map((item) => <li key={item}>{item}</li>)}</ul>
+                </div>
+                <div className="result-card">
+                  <h3>스트레스 신호</h3>
+                  <ul>{result.stressSignals.map((item) => <li key={item}>{item}</li>)}</ul>
+                </div>
               </div>
               <div className="result-card">
                 <h3>추천 공부법 TOP 3</h3>
@@ -537,17 +547,6 @@ export default function ProjectIntro() {
                   </p>
                 </div>
               )}
-            </div>
-
-            <div className="two-col">
-              <div className="result-card">
-                <h3>피해야 할 공부 방식</h3>
-                <ul>{result.avoidList.map((item) => <li key={item}>{item}</li>)}</ul>
-              </div>
-              <div className="result-card">
-                <h3>스트레스 신호</h3>
-                <ul>{result.stressSignals.map((item) => <li key={item}>{item}</li>)}</ul>
-              </div>
             </div>
 
             <div className="feedback-card">
@@ -649,7 +648,7 @@ export default function ProjectIntro() {
           <section className="panel">
             {routinePage === 1 && (
             <>
-            <p className="eyebrow">Routine</p>
+            <p className="eyebrow-script">Routine</p>
             <h2>{result.routine.title}</h2>
             <p>{result.routine.estimatedMinutes}분 안에 끝나는 작은 루틴으로 먼저 시도해볼 수 있습니다.</p>
 
