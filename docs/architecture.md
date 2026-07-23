@@ -29,56 +29,57 @@ CareerSignal은 채용공고와 근거 자료를 직무 단위로 분석해 통�
 ## 3. 전체 시스템 구성
 
 ```mermaid
-flowchart LR
-    subgraph ANALYSIS["분석 실행"]
-        CHANGE["데이터 변경"] --> ORCHESTRATOR["분석 오케스트레이터"]
-        SOURCES["기업 채용 페이지·공식 자료·공공 표준·외부 전략 자료"] --> KNOWLEDGE["데이터·지식 에이전트"]
-        ORCHESTRATOR --> KNOWLEDGE
-        KNOWLEDGE --> KNOWLEDGE_STORE[("Raw·Wiki·벡터·지식 그래프")]
+flowchart TB
+    SOURCES["기업 채용 페이지·공식 자료<br/>공공 표준·외부 전략 자료"] --> KNOWLEDGE["데이터·지식 에이전트"]
+    CHANGE["데이터 변경"] --> ORCHESTRATOR["분석 오케스트레이터<br/>영향 범위·실행 순서 결정"]
+    ORCHESTRATOR --> KNOWLEDGE
+    KNOWLEDGE --> RAW_STORE[("Raw 원문·출처 저장소")]
+    KNOWLEDGE --> WIKI_STORE[("Wiki·청크·벡터 인덱스")]
+    KNOWLEDGE --> GRAPH_STORE[("지식 그래프")]
 
-        ORCHESTRATOR --> STATISTICS["통계 분석 에이전트"]
-        ORCHESTRATOR --> INTERPRETATION["채용공고 해석 에이전트"]
-        ORCHESTRATOR --> STRATEGY["합격 전략 에이전트"]
-        ORCHESTRATOR --> ROADMAP["준비 로드맵 에이전트"]
+    RAW_STORE --> RETRIEVAL["Hybrid RAG 조회 계층<br/>SQL·키워드·벡터·그래프"]
+    WIKI_STORE --> RETRIEVAL
+    GRAPH_STORE --> RETRIEVAL
 
-        KNOWLEDGE_STORE --> STATISTICS
-        KNOWLEDGE_STORE --> INTERPRETATION
-        KNOWLEDGE_STORE --> STRATEGY
-        KNOWLEDGE_STORE --> ROADMAP
+    ORCHESTRATOR --> STATISTICS["통계 분석 에이전트"]
+    RETRIEVAL --> STATISTICS
+    STATISTICS --> STATISTICS_OUT[("통계 분석 결과")]
 
-        STATISTICS --> STATISTICS_OUT[("통계 분석 결과")]
-        STATISTICS_OUT --> INTERPRETATION
-        STATISTICS_OUT --> STRATEGY
-        STATISTICS_OUT --> ROADMAP
+    ORCHESTRATOR --> INTERPRETATION["채용공고 해석 에이전트"]
+    RETRIEVAL --> INTERPRETATION
+    STATISTICS_OUT --> INTERPRETATION
+    INTERPRETATION --> INTERPRETATION_OUT[("채용공고 해석 결과")]
 
-        INTERPRETATION --> INTERPRETATION_OUT[("채용공고 해석 결과")]
-        INTERPRETATION_OUT --> STRATEGY
-        INTERPRETATION_OUT --> ROADMAP
+    ORCHESTRATOR --> STRATEGY["합격 전략 에이전트"]
+    RETRIEVAL --> STRATEGY
+    STATISTICS_OUT --> STRATEGY
+    INTERPRETATION_OUT --> STRATEGY
+    STRATEGY --> STRATEGY_OUT[("체크리스트·합격 전략")]
 
-        STRATEGY --> STRATEGY_OUT[("체크리스트·합격 전략")]
-        STRATEGY_OUT --> ROADMAP
-        ROADMAP --> ROADMAP_OUT[("기본 로드맵·학습 전략")]
+    ORCHESTRATOR --> ROADMAP["준비 로드맵 에이전트"]
+    RETRIEVAL --> ROADMAP
+    STATISTICS_OUT --> ROADMAP
+    INTERPRETATION_OUT --> ROADMAP
+    STRATEGY_OUT --> ROADMAP
+    ROADMAP --> ROADMAP_OUT[("기본 로드맵·학습 전략")]
 
-        STATISTICS_OUT --> VERIFIER["통합 Verifier"]
-        INTERPRETATION_OUT --> VERIFIER
-        STRATEGY_OUT --> VERIFIER
-        ROADMAP_OUT --> VERIFIER
-        VERIFIER --> ACTIVE[("활성 분석 버전")]
-    end
+    STATISTICS_OUT --> VERIFIER["통합 Verifier"]
+    INTERPRETATION_OUT --> VERIFIER
+    STRATEGY_OUT --> VERIFIER
+    ROADMAP_OUT --> VERIFIER
+    VERIFIER --> ACTIVE[("활성 분석 버전")]
 
-    subgraph RUNTIME["사용자 조회"]
-        USER["사용자"] --> UI["React · product"]
-        UI --> API["Express · server"]
-        ACTIVE --> API
-        UI --> CHECKS["범위별 체크 상태"]
-        ACTIVE --> COMPOSER["준비 현황·로드맵 조합기"]
-        CHECKS --> COMPOSER
-        COMPOSER --> API
-        API --> UI
-    end
+    ACTIVE --> API["Express · server"]
+    ACTIVE --> COMPOSER["준비 현황·로드맵 조합기"]
+    CHECKS["범위별 체크 상태"] --> COMPOSER
+    COMPOSER --> API
+    API --> UI["React · product"]
+    UI --> USER["사용자"]
 ```
 
-분석 에이전트는 자료와 앞 단계 산출물을 조회해 결과와 검증된 관계를 버전별로 저장한다. 데이터·지식 에이전트는 원문 기반 노드·관계를 구축하고, 통계 분석·채용공고 해석·합격 전략·준비 로드맵 에이전트는 자기 산출물에서 파생된 관계를 같은 분석 버전에 기록한다. 일반 사용자 조회와 체크 상태 조합은 검증을 통과한 활성 분석 버전만 사용한다.
+Raw 원문·출처, Wiki·청크·벡터 인덱스, 지식 그래프는 서로 다른 논리 저장 영역이다. 세 영역은 하나의 Supabase 안에서 테이블·인덱스 책임을 분리하며, 공통 지식 조회 계층이 범위와 자료 등급에 맞춰 SQL·키워드·벡터·그래프 탐색을 조합한다. 별도 그래프 DB는 저장소 접근 계층을 유지한 채 필요할 때 교체할 수 있다.
+
+분석 에이전트는 공통 지식 조회 계층과 앞 단계 산출물을 조회해 결과와 검증된 관계를 같은 분석 버전에 저장한다. 데이터·지식 에이전트는 원문 기반 노드·관계를 구축하고, 통계 분석·채용공고 해석·합격 전략·준비 로드맵 에이전트는 자기 산출물에서 파생된 관계를 기록한다. 각 결과 원통은 같은 분석 산출물 저장 영역의 단계별 결과를 나타낸다. 일반 사용자 조회와 체크 상태 조합은 검증을 통과한 활성 분석 버전만 사용한다.
 
 ## 4. 구성요소와 책임
 
@@ -93,9 +94,12 @@ flowchart LR
 | 준비 로드맵 에이전트 | 기본 프로젝트 로드맵, 학습 전략, 선수 관계 생성 | 사용 | 데이터 갱신 | `agent/` |
 | 분석 오케스트레이터 | 변경 영향 범위 계산, 실행 순서 제어, 검증과 버전 활성화 | 미사용 | 데이터 갱신 | `agent/` |
 | 준비 현황·로드맵 조합기 | 체크 상태에 따른 집계와 프로젝트·학습 순서 재조합 | 미사용 | 사용자 요청 | `server/` |
-| 단계별·통합 Verifier | 에이전트별 입력·출력과 분석 버전 전체의 수치·근거·연결 일관성 검사 | 규칙 중심, 필요 시 LLM | 에이전트 실행·버전 활성화 전 | `agent/` |
+| 단계별 Verifier | 각 에이전트 입력·출력의 스키마·수치·근거·범위 검사 | 규칙 중심, 필요 시 LLM | 각 에이전트 내부 | `agent/` |
+| 통합 Verifier | 필수 산출물 전체의 버전·식별자·근거 연결을 검사하고 활성화 가능 여부 반환 | 규칙 중심, 필요 시 LLM | 버전 활성화 전 | `agent/` |
 
 에이전트는 목표를 달성하기 위해 검색 도구와 DB 조회를 선택하고 결과가 부족하면 재검색한다. 분석 오케스트레이터와 Express 조합기는 사전에 정의된 의존성과 규칙을 결정적으로 실행한다.
+
+통합 Verifier는 독립 에이전트가 아니라 분석 오케스트레이터가 모든 필수 단계 뒤에 호출하는 최종 검증 구성요소다. 통합 검증을 통과한 산출물 집합만 직무 단위 활성 분석 버전으로 전환한다.
 
 ## 5. 데이터 갱신과 에이전트 실행
 
@@ -231,7 +235,8 @@ Supabase는 다음 논리 영역을 저장한다.
 | --- | --- |
 | 원천 자료 | `raw_sources`, 공고 원문, URL, 작성자·게시일·수집일, 신뢰도, 원문 해시 |
 | 정형 공고 | 직무·기업·기업군·요구사항·기술·라벨·근거 문장 |
-| 검색 지식 | `source_chunks`, 임베딩, Wiki 페이지, 엔티티·관계 |
+| Wiki·벡터 검색 | `source_chunks`, Wiki 페이지, 임베딩, 검색 필터와 원문 청크 연결 |
+| 지식 그래프 | 직무·공고·요구사항·역량·근거·준비 항목의 노드와 버전별 엣지 |
 | 분석 실행 | 데이터·모델·프롬프트 버전, 실행 범위, 상태, 비용, 오류 |
 | 분석 산출물 | 통계, 공고 해석, 합격 전략, 기본 준비 로드맵 |
 | 근거 연결 | 산출물 주장과 원문 청크·통계 항목·그래프 노드의 연결 |
