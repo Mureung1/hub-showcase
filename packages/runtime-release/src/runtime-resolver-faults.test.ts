@@ -1,4 +1,10 @@
 import assert from 'node:assert/strict'
+import {
+  mkdir,
+  readFile,
+  writeFile,
+} from 'node:fs/promises'
+import path from 'node:path'
 import test from 'node:test'
 
 import type {
@@ -1114,6 +1120,97 @@ test('resolver follows one HTTPS redirect and rejects redirect or encoding drift
           'checking_cache',
           'downloading',
         ])
+        assert.equal(transport.requests.length, 1)
+        transport.assertExhausted()
+      } finally {
+        await harness.cleanup()
+      }
+    })
+  }
+})
+
+test('resolver propagates access-denied and unsafe-archive failures without fallback, publish, or ready', async (t) => {
+  for (const scenario of [
+    {
+      code: 'runtime_access_denied',
+      name: '403 access denied',
+      unsafeArchive: false,
+    },
+    {
+      code: 'runtime_archive_unsafe',
+      name: 'unsafe archive extraction',
+      unsafeArchive: true,
+    },
+  ] as const) {
+    await t.test(scenario.name, async () => {
+      const fixture = await createRuntimeResolverReleaseFixture()
+      const transport = new ScriptedArchiveTransport(
+        scenario.unsafeArchive
+          ? [exactArchiveResponse(fixture.archiveBytes)]
+          : [{ statusCode: 403 }],
+      )
+      let publishes = 0
+      const harness = await createScriptedDownloadHarness(
+        fixture.admissionInput,
+        transport,
+        {
+          ...(scenario.unsafeArchive
+            ? {
+                extract: async () => {
+                  throw runtimeAuthorityError(
+                    'runtime_archive_unsafe',
+                    { kind: 'scripted_unsafe_archive' },
+                  )
+                },
+              }
+            : {}),
+          publish: async () => {
+            publishes += 1
+            return harness.generation
+          },
+        },
+      )
+      const priorRoot = path.join(
+        harness.cache.layout.namespaces.generations,
+        '0.0.9',
+        'darwin-arm64',
+        'f'.repeat(64),
+        'runtime',
+      )
+      const marker = path.join(priorRoot, 'synthetic-prior')
+      const progress: RuntimeResolveProgress[] = []
+      try {
+        await mkdir(priorRoot, {
+          mode: 0o700,
+          recursive: true,
+        })
+        await writeFile(marker, 'must remain untouched\n')
+
+        await assert.rejects(
+          harness.bundle.resolver.resolve({
+            appDataRoot: harness.appDataRoot,
+            signal: new AbortController().signal,
+            report: (entry) => progress.push(entry),
+          }),
+          hasFailureCode(scenario.code),
+        )
+
+        assert.equal(publishes, 0)
+        assert.equal(
+          await readFile(marker, 'utf8'),
+          'must remain untouched\n',
+        )
+        assert.deepEqual(
+          uniquePhases(progress),
+          scenario.unsafeArchive
+            ? [
+                'checking_cache',
+                'downloading',
+                'verifying_archive',
+                'installing',
+              ]
+            : ['checking_cache', 'downloading'],
+        )
         assert.equal(transport.requests.length, 1)
         transport.assertExhausted()
       } finally {
