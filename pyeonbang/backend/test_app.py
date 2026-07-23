@@ -200,5 +200,35 @@ class PyeonbangTestCase(unittest.TestCase):
         conn.close()
         self.assertEqual(count, 0)
 
+    def test_upload_invalid_price(self):
+        """잘못된 가격 입력 시 400 에러 반환 검증 테스트"""
+        data1 = {
+            'image': (io.BytesIO(b"dummy image bytes"), 'test1.jpg'),
+            'price': '-500',
+            'intent_tab': 'combo'
+        }
+        response = self.app.post('/upload', data=data1, content_type='multipart/form-data')
+        self.assertEqual(response.status_code, 400)
+        result = json.loads(response.data)
+        self.assertEqual(result['status'], 'fail')
+
+        data2 = {
+            'image': (io.BytesIO(b"dummy image bytes"), 'test1.jpg'),
+            'price': 'abc',
+            'intent_tab': 'combo'
+        }
+        response = self.app.post('/upload', data=data2, content_type='multipart/form-data')
+        self.assertEqual(response.status_code, 400)
+
+    def test_add_history_invalid_payload(self):
+        """유효하지 않은 히스토리 저장 요청 시 400 에러 반환 검증 테스트"""
+        payload = {'product_name': '', 'price': 1000}
+        response = self.app.post('/api/history', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+
+        payload = {'product_name': '테스트', 'price': 0}
+        response = self.app.post('/api/history', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+
 if __name__ == '__main__':
     unittest.main()

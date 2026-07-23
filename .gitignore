@@ -1,0 +1,4 @@
+venv/
+pyeonbang/venv/
+*.pyc
+__pycache__/
