@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@ay-ple/runtime-release": "0.0.0",
-    "@ay-ple/semester-workspace": "0.0.0"
+    "@ay-ple/semester-workspace": "0.0.0",
+    "@ay-ple/server": "0.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",
