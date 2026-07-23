@@ -9,11 +9,14 @@ import {
 
 const MAX_REVIEWS = 15
 
-function validateReviews(reviews) {
+export function validateReviews(reviews) {
   if (!Array.isArray(reviews) || reviews.length === 0) {
     throw new ApiError(400, 'EMPTY_INPUT', '리뷰를 먼저 입력해주세요.')
   }
-  const valid = reviews.map((r) => String(r).trim()).filter(Boolean)
+  const valid = reviews
+    .filter((r) => typeof r === 'string')
+    .map((r) => r.trim())
+    .filter(Boolean)
   if (valid.length === 0) {
     throw new ApiError(400, 'NO_VALID_REVIEW', '유효한 리뷰가 없어요.')
   }
