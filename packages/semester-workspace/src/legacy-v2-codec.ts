@@ -10,7 +10,26 @@ const proposalSummaryMaxBytes = 2 * 1024
 const evidenceQuoteMaxBytes = 16 * 1024
 const actionPathMaxBytes = 16 * 1024
 
+export class SemesterWorkspaceV2CodecError extends TypeError {
+  constructor() {
+    super('The current SemesterWorkspace v2 aggregate is invalid.')
+    this.name = 'SemesterWorkspaceV2CodecError'
+  }
+}
+
 export function isDecoderValidCurrentV2(value: unknown): boolean {
+  try {
+    decodeCurrentSemesterWorkspaceV2(value)
+    return true
+  } catch (error) {
+    if (error instanceof SemesterWorkspaceV2CodecError) return false
+    throw error
+  }
+}
+
+export function decodeCurrentSemesterWorkspaceV2(
+  value: unknown,
+): CurrentSemesterWorkspaceV2 {
   if (
     !isExactRecord(value, [
       'assignments',
@@ -37,12 +56,16 @@ export function isDecoderValidCurrentV2(value: unknown): boolean {
     !isExecutionGuardOrNull(value.executionGuard) ||
     !isSourceRecoveryOrNull(value.sourceRecovery)
   ) {
-    return false
+    throw new SemesterWorkspaceV2CodecError()
   }
-  return hasCurrentV2Invariants(value as CurrentV2Record)
+  const decoded = value as CurrentSemesterWorkspaceV2
+  if (!hasCurrentV2Invariants(decoded)) {
+    throw new SemesterWorkspaceV2CodecError()
+  }
+  return decoded
 }
 
-type CurrentV2Record = Record<string, unknown> & {
+export type CurrentSemesterWorkspaceV2 = Record<string, unknown> & {
   readonly workspaceId: string
   readonly confirmedRevision: number
   readonly course: Record<string, unknown> | null
@@ -367,7 +390,9 @@ function isSourceRecoveryOrNull(value: unknown): boolean {
   )
 }
 
-function hasCurrentV2Invariants(store: CurrentV2Record): boolean {
+function hasCurrentV2Invariants(
+  store: CurrentSemesterWorkspaceV2,
+): boolean {
   if (
     store.sourceRecovery &&
     !sourcesMatchMaterials(
@@ -518,8 +543,10 @@ function hasCurrentV2Invariants(store: CurrentV2Record): boolean {
       if (
         !run ||
         run.actionId !== store.executionGuard.operationId ||
-        JSON.stringify(run.sourceBaseline) !==
-          JSON.stringify(store.executionGuard.selectedMaterials) ||
+        !hasSameSourceBaseline(
+          run.sourceBaseline,
+          store.executionGuard.selectedMaterials,
+        ) ||
         JSON.stringify(run.nativeCorrelation) !==
           JSON.stringify(store.executionGuard.nativeCorrelation) ||
         (unfinished.length === 1 && unfinished[0]?.id !== run.id)
@@ -737,6 +764,8 @@ function hasSameInvocation(
   left: Record<string, unknown>,
   right: Record<string, unknown>,
 ): boolean {
+  const leftBaseline = left.sourceBaseline
+  const rightBaseline = right.sourceBaseline
   return [
     'courseId',
     'requestedSkillName',
@@ -746,7 +775,27 @@ function hasSameInvocation(
     'recipeDigest',
     'argumentsDigest',
   ].every((key) => left[key] === right[key]) &&
-    JSON.stringify(left.sourceBaseline) === JSON.stringify(right.sourceBaseline)
+    hasSameSourceBaseline(leftBaseline, rightBaseline)
+}
+
+function hasSameSourceBaseline(
+  left: unknown,
+  right: unknown,
+): boolean {
+  return (
+    Array.isArray(left) &&
+    Array.isArray(right) &&
+    left.length === right.length &&
+    left.every((source, index) => {
+      const other = right[index]
+      return (
+        isRecord(source) &&
+        isRecord(other) &&
+        source.rawMaterialId === other.rawMaterialId &&
+        source.digest === other.digest
+      )
+    })
+  )
 }
 
 function sourcesMatchMaterials(

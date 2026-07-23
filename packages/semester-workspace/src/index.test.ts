@@ -17,6 +17,14 @@ test('semester workspace package exposes the B1a codec and admission Module', ()
     typeof semesterWorkspace.decodeSemesterWorkspaceV3Bytes,
     'function',
   )
+  assert.equal(
+    typeof semesterWorkspace.decodeCurrentSemesterWorkspaceV2,
+    'function',
+  )
+  assert.equal(
+    'createSemesterWorkspaceAdmissionForTesting' in semesterWorkspace,
+    false,
+  )
 })
 
 test('canonical workspace resource root contains only the S0 non-release marker', async () => {

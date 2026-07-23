@@ -4,7 +4,10 @@ import type {
   SemesterIdentity,
   SemesterWorkspaceV3,
 } from './contract.js'
-import { isDecoderValidCurrentV2 } from './legacy-v2-codec.js'
+import {
+  decodeCurrentSemesterWorkspaceV2,
+  SemesterWorkspaceV2CodecError,
+} from './legacy-v2-codec.js'
 
 const workspaceStateMaxBytes = 1024 * 1024
 const meaningfulTextMaxBytes = 512
@@ -27,9 +30,6 @@ export type SemesterWorkspaceStateClassification =
 export function classifySemesterWorkspaceStateBytes(
   bytes: Uint8Array,
 ): SemesterWorkspaceStateClassification {
-  if (bytes.byteLength > workspaceStateMaxBytes) {
-    return { status: 'incompatible' }
-  }
   let value: unknown
   try {
     value = JSON.parse(
@@ -38,17 +38,25 @@ export function classifySemesterWorkspaceStateBytes(
   } catch {
     return { status: 'incompatible' }
   }
-  try {
-    return {
-      status: 'current_v3',
-      aggregate: decodeSemesterWorkspaceV3(value),
+  if (bytes.byteLength <= workspaceStateMaxBytes) {
+    try {
+      return {
+        status: 'current_v3',
+        aggregate: decodeSemesterWorkspaceV3(value),
+      }
+    } catch (error) {
+      if (!(error instanceof SemesterWorkspaceCodecError)) throw error
     }
-  } catch (error) {
-    if (!(error instanceof SemesterWorkspaceCodecError)) throw error
   }
-  return isDecoderValidCurrentV2(value)
-    ? { status: 'legacy_v2' }
-    : { status: 'incompatible' }
+  try {
+    decodeCurrentSemesterWorkspaceV2(value)
+    return { status: 'legacy_v2' }
+  } catch (error) {
+    if (error instanceof SemesterWorkspaceV2CodecError) {
+      return { status: 'incompatible' }
+    }
+    throw error
+  }
 }
 
 export function createInitialSemesterWorkspaceV3(input: {

@@ -29,9 +29,10 @@ import type {
 import {
   classifySemesterWorkspaceStateBytes,
   createInitialSemesterWorkspaceV3,
-  decodeSemesterWorkspaceV3,
+  decodeSemesterWorkspaceV3Bytes,
   encodeSemesterWorkspaceV3,
   isSemesterIdentity,
+  isWorkspaceId,
 } from './v3-codec.js'
 
 const productDirectoryName = '.ay-ple'
@@ -41,23 +42,34 @@ const directoryMode = 0o700
 const fileMode = 0o600
 const leafNameMaxBytes = 255
 const opaqueIdentityMaxBytes = 512
-const admissionFileMaxBytes = 1024 * 1024
+const admissionMarkerMaxBytes = 1024 * 1024
 const evidenceKind = 'ay-ple.workspace-admission-evidence'
 
-export type WorkspaceAdmissionFaultPoint =
+type WorkspaceAdmissionFaultPoint =
   | 'before_root_reservation'
   | 'after_root_reservation'
+  | 'after_marker_create'
+  | 'after_marker_write'
+  | 'after_marker_file_sync'
+  | 'after_marker_directory_sync'
+  | 'after_inbox_directory_create'
+  | 'after_courses_directory_create'
   | 'after_required_directories'
+  | 'after_state_temp_create'
   | 'after_state_temp_write'
-  | 'after_state_file_sync'
+  | 'after_state_temp_file_sync'
   | 'before_state_publish'
   | 'after_state_publish'
   | 'after_state_directory_sync'
+  | 'after_state_temp_unlink'
+  | 'after_state_temp_unlink_directory_sync'
   | 'before_state_readback'
   | 'after_state_readback'
-  | 'after_evidence_removal'
+  | 'before_evidence_unlink'
+  | 'after_evidence_unlink'
+  | 'after_evidence_directory_sync'
 
-export type SemesterWorkspaceAdmissionOptions = {
+type SemesterWorkspaceAdmissionTestOptions = {
   readonly fault?: (
     point: WorkspaceAdmissionFaultPoint,
   ) => void | Promise<void>
@@ -69,34 +81,66 @@ type FileIdentity = {
   readonly birthtimeNs: string
 }
 
+type OwnedScaffoldPlan = {
+  readonly formatVersion: 1
+  readonly directories: readonly [
+    typeof productDirectoryName,
+    'courses',
+    'inbox',
+  ]
+  readonly state: {
+    readonly relativePath: '.ay-ple/workspace-state.json'
+    readonly temporaryRelativePath: string
+    readonly bytes: number
+    readonly sha256: string
+  }
+}
+
+type AdmissionAuthority = {
+  readonly setupNonce: string
+  readonly operation: 'create'
+  readonly canonicalRoot: string
+  readonly parent: WorkspaceParentAuthority
+  readonly leafName: string
+  readonly workspaceId: string
+  readonly aggregateBytesBase64: string
+  readonly aggregateSha256: string
+  readonly ownedScaffoldPlan: OwnedScaffoldPlan
+  readonly ownedScaffoldPlanSha256: string
+}
+
 type AdmissionEvidence = {
   readonly kind: typeof evidenceKind
-  readonly formatVersion: 1
+  readonly formatVersion: 2
   readonly setupId: string
   readonly authorityDigest: string
-  readonly canonicalRoot: string
-  readonly rootIdentity: FileIdentity
+  readonly authority: AdmissionAuthority
+}
+
+type DecodedAdmissionEvidence = {
+  readonly evidence: AdmissionEvidence
+  readonly markerBytes: Buffer
+  readonly markerSha256: string
   readonly aggregate: SemesterWorkspaceV3
-  readonly aggregateSha256: string
-  readonly temporaryStateFileName: string
+  readonly aggregateBytes: Buffer
+}
+
+type OwnedRuntimeAuthority = {
+  readonly parent: WorkspaceParentAuthority
+  readonly rootIdentity: FileIdentity
 }
 
 type CreatePlanContext = {
   readonly kind: 'create'
   readonly plan: AuthorityBoundWorkspacePlan
-  readonly parent: WorkspaceParentAuthority
-  readonly leafName: string
-  readonly aggregate: SemesterWorkspaceV3
-  readonly aggregateBytes: Buffer
-  readonly aggregateSha256: string
-  readonly temporaryStateFileName: string
-  rootIdentity?: FileIdentity
+  readonly planned: DecodedAdmissionEvidence
 }
 
 type ResumePlanContext = {
   readonly kind: 'resume_owned'
   readonly plan: AuthorityBoundWorkspacePlan
-  readonly evidence: AdmissionEvidence
+  readonly planned: DecodedAdmissionEvidence
+  readonly runtimeAuthority: OwnedRuntimeAuthority
 }
 
 type PlanContext = CreatePlanContext | ResumePlanContext
@@ -114,7 +158,18 @@ type RootClassification =
   | { readonly status: 'unavailable' }
 
 export function createSemesterWorkspaceAdmission(
-  options: SemesterWorkspaceAdmissionOptions = {},
+): SemesterWorkspaceAdmission {
+  return createSemesterWorkspaceAdmissionModule({})
+}
+
+export function createSemesterWorkspaceAdmissionForTesting(
+  options: SemesterWorkspaceAdmissionTestOptions,
+): SemesterWorkspaceAdmission {
+  return createSemesterWorkspaceAdmissionModule(options)
+}
+
+function createSemesterWorkspaceAdmissionModule(
+  options: SemesterWorkspaceAdmissionTestOptions,
 ): SemesterWorkspaceAdmission {
   const plans = new Map<string, PlanContext>()
 
@@ -193,38 +248,16 @@ async function inspectCreate(
     return { outcome: 'unavailable', readOnly: false }
   }
 
-  const planId = `workspace_plan_${randomHex()}`
-  const aggregate = createInitialSemesterWorkspaceV3({
-    workspaceId: `workspace_${randomHex()}`,
-    semester: intent.semester,
-  })
-  const aggregateBytes = encodeSemesterWorkspaceV3(aggregate)
-  const aggregateSha256 = sha256(aggregateBytes)
-  const temporaryStateFileName =
-    `.${stateFileName}.${randomHex()}.tmp`
-  const authorityDigest = sha256Canonical({
-    operation: 'create',
-    planId,
-    canonicalRoot: target,
+  const { plan, planned } = planCreateAdmission({
     parent: intent.parent,
     leafName: intent.leafName,
-    aggregateSha256,
-  })
-  const plan = {
-    planId,
-    operation: 'create',
     canonicalRoot: target,
-    authorityDigest,
-  } satisfies AuthorityBoundWorkspacePlan
-  plans.set(planId, {
+    semester: intent.semester,
+  })
+  plans.set(plan.planId, {
     kind: 'create',
     plan,
-    parent: cloneParentAuthority(intent.parent),
-    leafName: intent.leafName,
-    aggregate,
-    aggregateBytes,
-    aggregateSha256,
-    temporaryStateFileName,
+    planned,
   })
   return { outcome: 'new_target', plan }
 }
@@ -298,23 +331,8 @@ async function inspectOwnedResume(
     return { outcome: 'unavailable', readOnly: false }
   }
 
-  const evidence = await readAdmissionEvidence(intent.canonicalRoot)
-  const remembered = plans.get(intent.setupId)
-  const createContext =
-    remembered?.kind === 'create' &&
-    remembered.plan.canonicalRoot === intent.canonicalRoot &&
-    remembered.rootIdentity
-      ? remembered
-      : undefined
-  const effectiveEvidence =
-    evidence ??
-    (createContext
-      ? evidenceFromCreateContext(
-          createContext,
-          createContext.rootIdentity!,
-        )
-      : null)
-  if (!effectiveEvidence) {
+  const planned = await readAdmissionEvidence(intent.canonicalRoot)
+  if (!planned) {
     if (
       classification.status === 'legacy_v2' ||
       classification.status === 'incompatible'
@@ -330,21 +348,32 @@ async function inspectOwnedResume(
     return { outcome: 'collision', readOnly: false }
   }
   if (
-    effectiveEvidence.setupId !== intent.setupId ||
-    effectiveEvidence.canonicalRoot !== intent.canonicalRoot ||
-    !(await rootMatchesIdentity(
-      intent.canonicalRoot,
-      effectiveEvidence.rootIdentity,
-    ))
+    planned.evidence.setupId !== intent.setupId ||
+    planned.evidence.authority.canonicalRoot !== intent.canonicalRoot ||
+    (await inspectCanonicalParent(
+      planned.evidence.authority.parent,
+    )) !== 'current'
   ) {
     return { outcome: 'collision', readOnly: false }
+  }
+  let rootIdentity: FileIdentity
+  try {
+    rootIdentity = await directoryIdentity(intent.canonicalRoot)
+    await assertOwnedIncompleteTopology(planned)
+  } catch (error) {
+    return error instanceof ApplyFailure && error.outcome === 'unavailable'
+      ? { outcome: 'unavailable', readOnly: false }
+      : { outcome: 'collision', readOnly: false }
   }
 
   const planId = `workspace_resume_${randomHex()}`
   const authorityDigest = sha256Canonical({
     operation: 'resume_owned',
     planId,
-    evidence: effectiveEvidence,
+    canonicalRoot: intent.canonicalRoot,
+    markerSha256: planned.markerSha256,
+    createAuthorityDigest: planned.evidence.authorityDigest,
+    rootIdentity,
   })
   const plan = {
     planId,
@@ -355,16 +384,22 @@ async function inspectOwnedResume(
   plans.set(planId, {
     kind: 'resume_owned',
     plan,
-    evidence: effectiveEvidence,
+    planned,
+    runtimeAuthority: {
+      parent: cloneParentAuthority(planned.evidence.authority.parent),
+      rootIdentity,
+    },
   })
   return { outcome: 'owned_incomplete', plan }
 }
 
 async function applyCreate(
   context: CreatePlanContext,
-  options: SemesterWorkspaceAdmissionOptions,
+  options: SemesterWorkspaceAdmissionTestOptions,
 ): Promise<WorkspaceApplyResult> {
-  const parent = await inspectCanonicalParent(context.parent)
+  assertPlannedCreateContext(context)
+  const parentAuthority = context.planned.evidence.authority.parent
+  const parent = await inspectCanonicalParent(parentAuthority)
   if (parent === 'unavailable') throw new ApplyFailure('unavailable')
   if (parent !== 'current') throw new ApplyFailure('authority_changed')
   const target = await lstatOutcome(context.plan.canonicalRoot)
@@ -372,6 +407,7 @@ async function applyCreate(
   if (target.status === 'unavailable') throw new ApplyFailure('unavailable')
 
   await inject(options, 'before_root_reservation')
+  await assertParentAuthorityCurrent(parentAuthority)
   try {
     await mkdir(context.plan.canonicalRoot, { mode: directoryMode })
   } catch (error) {
@@ -381,38 +417,66 @@ async function applyCreate(
     throw error
   }
   const rootIdentity = await directoryIdentity(context.plan.canonicalRoot)
-  context.rootIdentity = rootIdentity
-  const evidence = evidenceFromCreateContext(context, rootIdentity)
-  const productRoot = productRootPath(context.plan.canonicalRoot)
-  await mkdir(productRoot, { mode: directoryMode })
-  await writeExclusiveSyncedFile(
-    path.join(productRoot, evidenceFileName),
-    encodeAdmissionEvidence(evidence),
-  )
-  await syncDirectory(productRoot)
-  await syncDirectory(context.plan.canonicalRoot)
-  await syncDirectory(context.parent.canonicalParent)
   await inject(options, 'after_root_reservation')
+  const runtimeAuthority = {
+    parent: cloneParentAuthority(parentAuthority),
+    rootIdentity,
+  } satisfies OwnedRuntimeAuthority
+  await assertOwnedRuntimeAuthority(
+    context.planned.evidence.authority.canonicalRoot,
+    runtimeAuthority,
+  )
 
-  const workspace = await finishOwnedScaffold(evidence, options, false)
+  const productRoot = productRootPath(context.plan.canonicalRoot)
+  try {
+    await mkdir(productRoot, { mode: directoryMode })
+  } catch (error) {
+    if (hasErrnoCode(error, 'EEXIST')) {
+      throw new ApplyFailure('conflict')
+    }
+    throw error
+  }
+  await assertOwnedRuntimeAuthority(
+    context.plan.canonicalRoot,
+    runtimeAuthority,
+  )
+  await writeAdmissionMarker(
+    path.join(productRoot, evidenceFileName),
+    context.planned.markerBytes,
+    context.plan.canonicalRoot,
+    runtimeAuthority,
+    options,
+  )
+  await syncDirectory(context.plan.canonicalRoot)
+  await syncDirectory(parentAuthority.canonicalParent)
+  await assertOwnedRuntimeAuthority(
+    context.plan.canonicalRoot,
+    runtimeAuthority,
+  )
+
+  const workspace = await finishOwnedScaffold(
+    context.planned,
+    runtimeAuthority,
+    options,
+    false,
+  )
   return { outcome: 'created', workspace }
 }
 
 async function applyResume(
   context: ResumePlanContext,
-  options: SemesterWorkspaceAdmissionOptions,
+  options: SemesterWorkspaceAdmissionTestOptions,
 ): Promise<WorkspaceApplyResult> {
-  if (
-    !(await rootMatchesIdentity(
-      context.plan.canonicalRoot,
-      context.evidence.rootIdentity,
-    ))
-  ) {
-    throw new ApplyFailure('authority_changed')
-  }
-  await assertOwnedIncompleteEntries(context.evidence)
+  assertPlannedResumeContext(context)
+  await assertOwnedRuntimeAuthority(
+    context.plan.canonicalRoot,
+    context.runtimeAuthority,
+  )
+  await assertStoredAdmissionMarker(context.planned)
+  await assertOwnedIncompleteTopology(context.planned)
   const workspace = await finishOwnedScaffold(
-    context.evidence,
+    context.planned,
+    context.runtimeAuthority,
     options,
     true,
   )
@@ -420,33 +484,49 @@ async function applyResume(
 }
 
 async function finishOwnedScaffold(
-  evidence: AdmissionEvidence,
-  options: SemesterWorkspaceAdmissionOptions,
+  planned: DecodedAdmissionEvidence,
+  runtimeAuthority: OwnedRuntimeAuthority,
+  options: SemesterWorkspaceAdmissionTestOptions,
   resuming: boolean,
 ): Promise<AdmittedSemesterWorkspace> {
-  const root = evidence.canonicalRoot
+  const evidence = planned.evidence
+  const root = evidence.authority.canonicalRoot
   const productRoot = productRootPath(root)
   const inbox = path.join(root, 'inbox')
   const courses = path.join(root, 'courses')
-  if (resuming) {
-    await ensureOwnedDirectory(inbox)
-    await ensureOwnedDirectory(courses)
-  } else {
-    await mkdir(inbox, { mode: directoryMode })
-    await mkdir(courses, { mode: directoryMode })
-  }
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+  await assertOwnedIncompleteTopology(planned)
+
+  await createOrVerifyOwnedDirectory(inbox, resuming)
+  await inject(options, 'after_inbox_directory_create')
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+  await assertOwnedIncompleteTopology(planned)
+  await createOrVerifyOwnedDirectory(courses, resuming)
+  await inject(options, 'after_courses_directory_create')
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+  await assertOwnedIncompleteTopology(planned)
   await syncDirectory(root)
   await inject(options, 'after_required_directories')
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+  await assertOwnedIncompleteTopology(planned, true)
 
-  const statePath = path.join(productRoot, stateFileName)
+  const statePath = path.join(
+    root,
+    evidence.authority.ownedScaffoldPlan.state.relativePath,
+  )
   const temporaryPath = path.join(
-    productRoot,
-    evidence.temporaryStateFileName,
+    root,
+    evidence.authority.ownedScaffoldPlan.state.temporaryRelativePath,
   )
   const state = await lstatOutcome(statePath)
   if (state.status === 'unavailable') throw new ApplyFailure('unavailable')
   if (state.status === 'present') {
-    if (!(await regularFileHasBytes(statePath, evidence.aggregateSha256))) {
+    if (
+      !(await regularFileHasExactBytes(
+        statePath,
+        planned.aggregateBytes,
+      ))
+    ) {
       throw new ApplyFailure('conflict')
     }
   } else {
@@ -455,27 +535,44 @@ async function finishOwnedScaffold(
       throw new ApplyFailure('unavailable')
     }
     if (temporary.status === 'present') {
-      if (
-        !(await regularFileHasBytes(
-          temporaryPath,
-          evidence.aggregateSha256,
-        ))
-      ) {
+      if (await regularFileHasExactBytes(
+        temporaryPath,
+        planned.aggregateBytes,
+      )) {
+        // A complete app-owned temporary file can be published as-is.
+      } else if (await regularFileIsEmpty(temporaryPath)) {
+        const handle = await openExistingWritableFile(temporaryPath)
+        try {
+          await handle.writeFile(planned.aggregateBytes)
+          await inject(options, 'after_state_temp_write')
+          await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+          await handle.sync()
+          await inject(options, 'after_state_temp_file_sync')
+          await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+        } finally {
+          await handle.close()
+        }
+      } else {
         throw new ApplyFailure('conflict')
       }
     } else {
-      const bytes = encodeSemesterWorkspaceV3(evidence.aggregate)
       const handle = await openExclusiveFile(temporaryPath)
       try {
-        await handle.writeFile(bytes)
+        await inject(options, 'after_state_temp_create')
+        await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+        await handle.writeFile(planned.aggregateBytes)
         await inject(options, 'after_state_temp_write')
+        await assertOwnedRuntimeAuthority(root, runtimeAuthority)
         await handle.sync()
-        await inject(options, 'after_state_file_sync')
+        await inject(options, 'after_state_temp_file_sync')
+        await assertOwnedRuntimeAuthority(root, runtimeAuthority)
       } finally {
         await handle.close()
       }
     }
     await inject(options, 'before_state_publish')
+    await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+    await assertOwnedIncompleteTopology(planned, true)
     try {
       await link(temporaryPath, statePath)
     } catch (error) {
@@ -485,83 +582,95 @@ async function finishOwnedScaffold(
       throw error
     }
     await inject(options, 'after_state_publish')
+    await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+    await assertOwnedIncompleteTopology(planned, true)
   }
 
   await syncDirectory(productRoot)
   await inject(options, 'after_state_directory_sync')
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+  await assertOwnedIncompleteTopology(planned, true)
   if (await pathExists(temporaryPath)) {
     if (
-      !(await regularFileHasBytes(
+      !(await regularFileHasExactBytes(
         temporaryPath,
-        evidence.aggregateSha256,
+        planned.aggregateBytes,
       ))
     ) {
       throw new ApplyFailure('conflict')
     }
     await unlink(temporaryPath)
+    await inject(options, 'after_state_temp_unlink')
+    await assertOwnedRuntimeAuthority(root, runtimeAuthority)
     await syncDirectory(productRoot)
+    await inject(options, 'after_state_temp_unlink_directory_sync')
+    await assertOwnedRuntimeAuthority(root, runtimeAuthority)
   }
 
   await inject(options, 'before_state_readback')
-  const readback = await readExpectedOwnedWorkspace(evidence)
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+  const readback = await readExpectedOwnedWorkspace(
+    planned,
+    runtimeAuthority,
+  )
   await inject(options, 'after_state_readback')
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+  await assertOwnedIncompleteTopology(planned, true)
 
-  const storedEvidence = await readAdmissionEvidence(root)
-  if (
-    !storedEvidence ||
-    canonicalJson(storedEvidence) !== canonicalJson(evidence)
-  ) {
-    throw new ApplyFailure('conflict')
-  }
+  await assertStoredAdmissionMarker(planned)
+  await inject(options, 'before_evidence_unlink')
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+  await assertOwnedIncompleteTopology(planned, true)
   await unlink(path.join(productRoot, evidenceFileName))
+  await inject(options, 'after_evidence_unlink')
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
   await syncDirectory(productRoot)
+  await inject(options, 'after_evidence_directory_sync')
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
   await syncDirectory(root)
-  await inject(options, 'after_evidence_removal')
 
   const final = await classifyRoot(root)
   if (
     final.status !== 'current_v3' ||
     final.hasEvidence ||
-    final.workspace.workspaceId !== readback.workspaceId
+    canonicalJson(final.workspace) !== canonicalJson(readback)
   ) {
     throw new ApplyFailure('conflict')
   }
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
   return final.workspace
 }
 
 async function readExpectedOwnedWorkspace(
-  evidence: AdmissionEvidence,
+  planned: DecodedAdmissionEvidence,
+  runtimeAuthority: OwnedRuntimeAuthority,
 ): Promise<AdmittedSemesterWorkspace> {
-  if (
-    !(await rootMatchesIdentity(
-      evidence.canonicalRoot,
-      evidence.rootIdentity,
-    ))
-  ) {
-    throw new ApplyFailure('authority_changed')
-  }
+  const evidence = planned.evidence
+  const root = evidence.authority.canonicalRoot
+  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+  await assertOwnedIncompleteTopology(planned, true)
   for (const directory of ['inbox', 'courses']) {
-    if (!(await isRegularDirectory(path.join(evidence.canonicalRoot, directory)))) {
+    if (!(await isRegularDirectory(path.join(root, directory)))) {
       throw new ApplyFailure('conflict')
     }
   }
   const statePath = path.join(
-    productRootPath(evidence.canonicalRoot),
-    stateFileName,
+    root,
+    evidence.authority.ownedScaffoldPlan.state.relativePath,
   )
   const bytes = await readRegularFile(statePath)
-  if (sha256(bytes) !== evidence.aggregateSha256) {
+  if (!bytes.equals(planned.aggregateBytes)) {
     throw new ApplyFailure('conflict')
   }
   const classification = classifySemesterWorkspaceStateBytes(bytes)
   if (
     classification.status !== 'current_v3' ||
     canonicalJson(classification.aggregate) !==
-      canonicalJson(evidence.aggregate)
+      canonicalJson(planned.aggregate)
   ) {
     throw new ApplyFailure('conflict')
   }
-  return admittedWorkspace(evidence.canonicalRoot, classification.aggregate)
+  return admittedWorkspace(root, classification.aggregate)
 }
 
 async function classifyRoot(
@@ -643,10 +752,307 @@ async function classifyRoot(
   }
 }
 
-async function assertOwnedIncompleteEntries(
-  evidence: AdmissionEvidence,
+async function readAdmissionEvidence(
+  canonicalRoot: string,
+): Promise<DecodedAdmissionEvidence | null> {
+  const markerPath = path.join(
+    productRootPath(canonicalRoot),
+    evidenceFileName,
+  )
+  const outcome = await lstatOutcome(markerPath)
+  if (outcome.status !== 'present') return null
+  if (!outcome.stats.isFile() || outcome.stats.isSymbolicLink()) return null
+  try {
+    return decodeAdmissionEvidenceBytes(
+      await readRegularFile(markerPath, admissionMarkerMaxBytes),
+    )
+  } catch {
+    return null
+  }
+}
+
+function planCreateAdmission(input: {
+  readonly parent: WorkspaceParentAuthority
+  readonly leafName: string
+  readonly canonicalRoot: string
+  readonly semester: SemesterIdentity
+}): {
+  readonly plan: AuthorityBoundWorkspacePlan
+  readonly planned: DecodedAdmissionEvidence
+} {
+  const setupNonce = randomHex()
+  const aggregate = createInitialSemesterWorkspaceV3({
+    workspaceId: `workspace_${randomHex()}`,
+    semester: input.semester,
+  })
+  const aggregateBytes = encodeSemesterWorkspaceV3(aggregate)
+  const aggregateSha256 = sha256(aggregateBytes)
+  const ownedScaffoldPlan = {
+    formatVersion: 1,
+    directories: [productDirectoryName, 'courses', 'inbox'],
+    state: {
+      relativePath: '.ay-ple/workspace-state.json',
+      temporaryRelativePath:
+        `.ay-ple/.${stateFileName}.${setupNonce}.tmp`,
+      bytes: aggregateBytes.byteLength,
+      sha256: aggregateSha256,
+    },
+  } as const satisfies OwnedScaffoldPlan
+  const authority = {
+    setupNonce,
+    operation: 'create',
+    canonicalRoot: input.canonicalRoot,
+    parent: cloneParentAuthority(input.parent),
+    leafName: input.leafName,
+    workspaceId: aggregate.manifest.workspaceId,
+    aggregateBytesBase64: aggregateBytes.toString('base64'),
+    aggregateSha256,
+    ownedScaffoldPlan,
+    ownedScaffoldPlanSha256: sha256Canonical(ownedScaffoldPlan),
+  } as const satisfies AdmissionAuthority
+  const authorityDigest = sha256Canonical(authority)
+  const setupId =
+    `workspace_plan_${setupNonce}_${authorityDigest}`
+  const evidence = {
+    kind: evidenceKind,
+    formatVersion: 2,
+    setupId,
+    authorityDigest,
+    authority,
+  } as const satisfies AdmissionEvidence
+  const markerBytes = encodeAdmissionEvidence(evidence)
+  return {
+    plan: {
+      planId: setupId,
+      operation: 'create',
+      canonicalRoot: input.canonicalRoot,
+      authorityDigest,
+    },
+    planned: {
+      evidence,
+      markerBytes,
+      markerSha256: sha256(markerBytes),
+      aggregate,
+      aggregateBytes,
+    },
+  }
+}
+
+function decodeAdmissionEvidenceBytes(
+  markerBytes: Buffer,
+): DecodedAdmissionEvidence {
+  if (markerBytes.byteLength > admissionMarkerMaxBytes) {
+    throw new TypeError('Invalid workspace admission evidence.')
+  }
+  const value = JSON.parse(
+    new TextDecoder('utf-8', { fatal: true }).decode(markerBytes),
+  ) as unknown
+  if (
+    !isExactRecord(value, [
+      'authority',
+      'authorityDigest',
+      'formatVersion',
+      'kind',
+      'setupId',
+    ]) ||
+    value.kind !== evidenceKind ||
+    value.formatVersion !== 2 ||
+    !isOpaqueIdentity(value.setupId) ||
+    !isSha256(value.authorityDigest)
+  ) {
+    throw new TypeError('Invalid workspace admission evidence.')
+  }
+  const authority = decodeAdmissionAuthority(value.authority)
+  const authorityDigest = sha256Canonical(authority)
+  const setupId =
+    `workspace_plan_${authority.setupNonce}_${authorityDigest}`
+  if (
+    value.authorityDigest !== authorityDigest ||
+    value.setupId !== setupId
+  ) {
+    throw new TypeError('Invalid workspace admission evidence.')
+  }
+  const aggregateBytes = Buffer.from(
+    authority.aggregateBytesBase64,
+    'base64',
+  )
+  if (
+    aggregateBytes.toString('base64') !==
+      authority.aggregateBytesBase64 ||
+    sha256(aggregateBytes) !== authority.aggregateSha256 ||
+    aggregateBytes.byteLength !==
+      authority.ownedScaffoldPlan.state.bytes ||
+    authority.aggregateSha256 !==
+      authority.ownedScaffoldPlan.state.sha256
+  ) {
+    throw new TypeError('Invalid workspace admission evidence.')
+  }
+  const aggregate = decodeSemesterWorkspaceV3Bytes(aggregateBytes)
+  if (aggregate.manifest.workspaceId !== authority.workspaceId) {
+    throw new TypeError('Invalid workspace admission evidence.')
+  }
+  const evidence = {
+    kind: evidenceKind,
+    formatVersion: 2,
+    setupId,
+    authorityDigest,
+    authority,
+  } as const satisfies AdmissionEvidence
+  const canonicalMarkerBytes = encodeAdmissionEvidence(evidence)
+  if (!markerBytes.equals(canonicalMarkerBytes)) {
+    throw new TypeError('Invalid workspace admission evidence.')
+  }
+  return {
+    evidence,
+    markerBytes: canonicalMarkerBytes,
+    markerSha256: sha256(canonicalMarkerBytes),
+    aggregate,
+    aggregateBytes,
+  }
+}
+
+function decodeAdmissionAuthority(value: unknown): AdmissionAuthority {
+  if (
+    !isExactRecord(value, [
+      'aggregateBytesBase64',
+      'aggregateSha256',
+      'canonicalRoot',
+      'leafName',
+      'operation',
+      'ownedScaffoldPlan',
+      'ownedScaffoldPlanSha256',
+      'parent',
+      'setupNonce',
+      'workspaceId',
+    ]) ||
+    typeof value.setupNonce !== 'string' ||
+    !/^[0-9a-f]{32}$/.test(value.setupNonce) ||
+    value.operation !== 'create' ||
+    !isCanonicalAbsolutePath(value.canonicalRoot) ||
+    !isValidParentAuthority(value.parent as WorkspaceParentAuthority) ||
+    !isSafeLeafName(value.leafName) ||
+    !isWorkspaceId(value.workspaceId) ||
+    typeof value.aggregateBytesBase64 !== 'string' ||
+    !isSha256(value.aggregateSha256) ||
+    !isSha256(value.ownedScaffoldPlanSha256)
+  ) {
+    throw new TypeError('Invalid workspace admission evidence.')
+  }
+  const parent = cloneParentAuthority(
+    value.parent as WorkspaceParentAuthority,
+  )
+  const expectedRoot = path.join(parent.canonicalParent, value.leafName)
+  if (
+    expectedRoot !== value.canonicalRoot ||
+    !isStrictChild(parent.canonicalParent, value.canonicalRoot)
+  ) {
+    throw new TypeError('Invalid workspace admission evidence.')
+  }
+  const ownedScaffoldPlan = decodeOwnedScaffoldPlan(
+    value.ownedScaffoldPlan,
+    value.setupNonce,
+  )
+  if (
+    sha256Canonical(ownedScaffoldPlan) !==
+    value.ownedScaffoldPlanSha256
+  ) {
+    throw new TypeError('Invalid workspace admission evidence.')
+  }
+  return {
+    setupNonce: value.setupNonce,
+    operation: 'create',
+    canonicalRoot: value.canonicalRoot,
+    parent,
+    leafName: value.leafName,
+    workspaceId: value.workspaceId,
+    aggregateBytesBase64: value.aggregateBytesBase64,
+    aggregateSha256: value.aggregateSha256,
+    ownedScaffoldPlan,
+    ownedScaffoldPlanSha256: value.ownedScaffoldPlanSha256,
+  }
+}
+
+function decodeOwnedScaffoldPlan(
+  value: unknown,
+  setupNonce: string,
+): OwnedScaffoldPlan {
+  if (
+    !isExactRecord(value, ['directories', 'formatVersion', 'state']) ||
+    value.formatVersion !== 1 ||
+    !Array.isArray(value.directories) ||
+    canonicalJson(value.directories) !==
+      canonicalJson([productDirectoryName, 'courses', 'inbox']) ||
+    !isExactRecord(value.state, [
+      'bytes',
+      'relativePath',
+      'sha256',
+      'temporaryRelativePath',
+    ]) ||
+    value.state.relativePath !== '.ay-ple/workspace-state.json' ||
+    value.state.temporaryRelativePath !==
+      `.ay-ple/.${stateFileName}.${setupNonce}.tmp` ||
+    !Number.isSafeInteger(value.state.bytes) ||
+    Number(value.state.bytes) <= 0 ||
+    !isSha256(value.state.sha256)
+  ) {
+    throw new TypeError('Invalid workspace admission evidence.')
+  }
+  return {
+    formatVersion: 1,
+    directories: [productDirectoryName, 'courses', 'inbox'],
+    state: {
+      relativePath: '.ay-ple/workspace-state.json',
+      temporaryRelativePath: value.state.temporaryRelativePath,
+      bytes: Number(value.state.bytes),
+      sha256: value.state.sha256,
+    },
+  }
+}
+
+function encodeAdmissionEvidence(evidence: AdmissionEvidence): Buffer {
+  return Buffer.from(`${JSON.stringify(evidence, null, 2)}\n`, 'utf8')
+}
+
+async function assertStoredAdmissionMarker(
+  planned: DecodedAdmissionEvidence,
 ): Promise<void> {
-  const rootEntries = await readdir(evidence.canonicalRoot)
+  const markerPath = path.join(
+    productRootPath(planned.evidence.authority.canonicalRoot),
+    evidenceFileName,
+  )
+  let markerBytes: Buffer
+  try {
+    markerBytes = await readRegularFile(
+      markerPath,
+      admissionMarkerMaxBytes,
+    )
+  } catch {
+    throw new ApplyFailure('conflict')
+  }
+  if (!markerBytes.equals(planned.markerBytes)) {
+    throw new ApplyFailure('conflict')
+  }
+  try {
+    const decoded = decodeAdmissionEvidenceBytes(markerBytes)
+    if (
+      decoded.markerSha256 !== planned.markerSha256 ||
+      decoded.evidence.authorityDigest !==
+        planned.evidence.authorityDigest
+    ) {
+      throw new ApplyFailure('conflict')
+    }
+  } catch (error) {
+    if (error instanceof ApplyFailure) throw error
+    throw new ApplyFailure('conflict')
+  }
+}
+
+async function assertOwnedIncompleteTopology(
+  planned: DecodedAdmissionEvidence,
+  requireDirectories = false,
+): Promise<void> {
+  const root = planned.evidence.authority.canonicalRoot
+  const rootEntries = await readDirectoryEntries(root)
   if (
     rootEntries.some(
       (entry) =>
@@ -657,103 +1063,65 @@ async function assertOwnedIncompleteEntries(
   ) {
     throw new ApplyFailure('conflict')
   }
-  const productRoot = productRootPath(evidence.canonicalRoot)
-  const productEntries = await readdir(productRoot)
+  const productRoot = productRootPath(root)
+  if (!(await isRegularDirectory(productRoot))) {
+    throw new ApplyFailure('conflict')
+  }
+  await assertStoredAdmissionMarker(planned)
+
+  for (const directoryName of ['inbox', 'courses'] as const) {
+    const directory = path.join(root, directoryName)
+    const outcome = await lstatOutcome(directory)
+    if (outcome.status === 'unavailable') {
+      throw new ApplyFailure('unavailable')
+    }
+    if (outcome.status === 'absent') {
+      if (requireDirectories) throw new ApplyFailure('conflict')
+      continue
+    }
+    if (
+      !outcome.stats.isDirectory() ||
+      outcome.stats.isSymbolicLink() ||
+      (await readDirectoryEntries(directory)).length !== 0
+    ) {
+      throw new ApplyFailure('conflict')
+    }
+  }
+
+  const temporaryName = path.basename(
+    planned.evidence.authority.ownedScaffoldPlan.state
+      .temporaryRelativePath,
+  )
+  const productEntries = await readDirectoryEntries(productRoot)
   if (
     productEntries.some(
       (entry) =>
         entry !== evidenceFileName &&
         entry !== stateFileName &&
-        entry !== evidence.temporaryStateFileName,
+        entry !== temporaryName,
     )
   ) {
     throw new ApplyFailure('conflict')
   }
-}
-
-async function readAdmissionEvidence(
-  canonicalRoot: string,
-): Promise<AdmissionEvidence | null> {
-  const markerPath = path.join(
-    productRootPath(canonicalRoot),
-    evidenceFileName,
-  )
-  const outcome = await lstatOutcome(markerPath)
-  if (outcome.status !== 'present') return null
-  if (!outcome.stats.isFile() || outcome.stats.isSymbolicLink()) return null
-  try {
-    return decodeAdmissionEvidence(
-      JSON.parse(
-        new TextDecoder('utf-8', { fatal: true }).decode(
-          await readRegularFile(markerPath),
-        ),
-      ),
-    )
-  } catch {
-    return null
+  for (const candidate of [stateFileName, temporaryName]) {
+    const candidatePath = path.join(productRoot, candidate)
+    const outcome = await lstatOutcome(candidatePath)
+    if (outcome.status === 'unavailable') {
+      throw new ApplyFailure('unavailable')
+    }
+    if (outcome.status === 'present') {
+      const exact = await regularFileHasExactBytes(
+        candidatePath,
+        planned.aggregateBytes,
+      )
+      const recognizedEmptyTemporary =
+        candidate === temporaryName &&
+        (await regularFileIsEmpty(candidatePath))
+      if (!exact && !recognizedEmptyTemporary) {
+        throw new ApplyFailure('conflict')
+      }
+    }
   }
-}
-
-function evidenceFromCreateContext(
-  context: CreatePlanContext,
-  rootIdentity: FileIdentity,
-): AdmissionEvidence {
-  return {
-    kind: evidenceKind,
-    formatVersion: 1,
-    setupId: context.plan.planId,
-    authorityDigest: context.plan.authorityDigest,
-    canonicalRoot: context.plan.canonicalRoot,
-    rootIdentity,
-    aggregate: context.aggregate,
-    aggregateSha256: context.aggregateSha256,
-    temporaryStateFileName: context.temporaryStateFileName,
-  }
-}
-
-function decodeAdmissionEvidence(value: unknown): AdmissionEvidence {
-  if (
-    !isExactRecord(value, [
-      'aggregate',
-      'aggregateSha256',
-      'authorityDigest',
-      'canonicalRoot',
-      'formatVersion',
-      'kind',
-      'rootIdentity',
-      'setupId',
-      'temporaryStateFileName',
-    ]) ||
-    value.kind !== evidenceKind ||
-    value.formatVersion !== 1 ||
-    !isOpaqueIdentity(value.setupId) ||
-    !isSha256(value.authorityDigest) ||
-    !isCanonicalAbsolutePath(value.canonicalRoot) ||
-    !isFileIdentity(value.rootIdentity) ||
-    !isSha256(value.aggregateSha256) ||
-    !isSafeTemporaryStateName(value.temporaryStateFileName)
-  ) {
-    throw new TypeError('Invalid workspace admission evidence.')
-  }
-  const aggregate = decodeSemesterWorkspaceV3(value.aggregate)
-  if (sha256(encodeSemesterWorkspaceV3(aggregate)) !== value.aggregateSha256) {
-    throw new TypeError('Invalid workspace admission evidence.')
-  }
-  return {
-    kind: evidenceKind,
-    formatVersion: 1,
-    setupId: value.setupId,
-    authorityDigest: value.authorityDigest,
-    canonicalRoot: value.canonicalRoot,
-    rootIdentity: value.rootIdentity,
-    aggregate,
-    aggregateSha256: value.aggregateSha256,
-    temporaryStateFileName: value.temporaryStateFileName,
-  }
-}
-
-function encodeAdmissionEvidence(evidence: AdmissionEvidence): Buffer {
-  return Buffer.from(`${JSON.stringify(evidence, null, 2)}\n`, 'utf8')
 }
 
 async function inspectCanonicalParent(
@@ -784,7 +1152,102 @@ async function inspectCanonicalParent(
   }
 }
 
-async function ensureOwnedDirectory(directory: string): Promise<void> {
+function assertPlannedCreateContext(
+  context: CreatePlanContext,
+): void {
+  let decoded: DecodedAdmissionEvidence
+  try {
+    decoded = decodeAdmissionEvidenceBytes(context.planned.markerBytes)
+  } catch {
+    throw new ApplyFailure('authority_changed')
+  }
+  if (
+    context.plan.operation !== 'create' ||
+    context.plan.planId !== decoded.evidence.setupId ||
+    context.plan.canonicalRoot !==
+      decoded.evidence.authority.canonicalRoot ||
+    context.plan.authorityDigest !==
+      decoded.evidence.authorityDigest ||
+    decoded.markerSha256 !== context.planned.markerSha256 ||
+    !decoded.aggregateBytes.equals(context.planned.aggregateBytes)
+  ) {
+    throw new ApplyFailure('authority_changed')
+  }
+}
+
+function assertPlannedResumeContext(
+  context: ResumePlanContext,
+): void {
+  const expectedDigest = sha256Canonical({
+    operation: 'resume_owned',
+    planId: context.plan.planId,
+    canonicalRoot: context.plan.canonicalRoot,
+    markerSha256: context.planned.markerSha256,
+    createAuthorityDigest:
+      context.planned.evidence.authorityDigest,
+    rootIdentity: context.runtimeAuthority.rootIdentity,
+  })
+  if (
+    context.plan.operation !== 'resume_owned' ||
+    context.plan.canonicalRoot !==
+      context.planned.evidence.authority.canonicalRoot ||
+    context.plan.authorityDigest !== expectedDigest
+  ) {
+    throw new ApplyFailure('authority_changed')
+  }
+}
+
+async function assertParentAuthorityCurrent(
+  authority: WorkspaceParentAuthority,
+): Promise<void> {
+  const current = await inspectCanonicalParent(authority)
+  if (current === 'unavailable') {
+    throw new ApplyFailure('unavailable')
+  }
+  if (current !== 'current') {
+    throw new ApplyFailure('authority_changed')
+  }
+}
+
+async function assertOwnedRuntimeAuthority(
+  root: string,
+  authority: OwnedRuntimeAuthority,
+): Promise<void> {
+  await assertParentAuthorityCurrent(authority.parent)
+  if (!(await rootMatchesIdentity(root, authority.rootIdentity))) {
+    throw new ApplyFailure('authority_changed')
+  }
+}
+
+async function writeAdmissionMarker(
+  markerPath: string,
+  markerBytes: Buffer,
+  root: string,
+  authority: OwnedRuntimeAuthority,
+  options: SemesterWorkspaceAdmissionTestOptions,
+): Promise<void> {
+  const handle = await openExclusiveFile(markerPath)
+  try {
+    await inject(options, 'after_marker_create')
+    await assertOwnedRuntimeAuthority(root, authority)
+    await handle.writeFile(markerBytes)
+    await inject(options, 'after_marker_write')
+    await assertOwnedRuntimeAuthority(root, authority)
+    await handle.sync()
+    await inject(options, 'after_marker_file_sync')
+    await assertOwnedRuntimeAuthority(root, authority)
+  } finally {
+    await handle.close()
+  }
+  await syncDirectory(path.dirname(markerPath))
+  await inject(options, 'after_marker_directory_sync')
+  await assertOwnedRuntimeAuthority(root, authority)
+}
+
+async function createOrVerifyOwnedDirectory(
+  directory: string,
+  resuming: boolean,
+): Promise<void> {
   const current = await lstatOutcome(directory)
   if (current.status === 'absent') {
     try {
@@ -792,7 +1255,10 @@ async function ensureOwnedDirectory(directory: string): Promise<void> {
       return
     } catch (error) {
       if (!hasErrnoCode(error, 'EEXIST')) throw error
+      if (!resuming) throw new ApplyFailure('conflict')
     }
+  } else if (!resuming) {
+    throw new ApplyFailure('conflict')
   }
   if (
     current.status !== 'present' ||
@@ -803,16 +1269,11 @@ async function ensureOwnedDirectory(directory: string): Promise<void> {
   }
 }
 
-async function writeExclusiveSyncedFile(
-  filePath: string,
-  bytes: Uint8Array,
-): Promise<void> {
-  const handle = await openExclusiveFile(filePath)
+async function readDirectoryEntries(directory: string): Promise<string[]> {
   try {
-    await handle.writeFile(bytes)
-    await handle.sync()
-  } finally {
-    await handle.close()
+    return await readdir(directory)
+  } catch {
+    throw new ApplyFailure('unavailable')
   }
 }
 
@@ -827,7 +1288,17 @@ async function openExclusiveFile(filePath: string) {
   )
 }
 
-async function readRegularFile(filePath: string): Promise<Buffer> {
+async function openExistingWritableFile(filePath: string) {
+  return open(
+    filePath,
+    fsConstants.O_WRONLY | fsConstants.O_NOFOLLOW,
+  )
+}
+
+async function readRegularFile(
+  filePath: string,
+  maxBytes?: number,
+): Promise<Buffer> {
   const handle = await open(
     filePath,
     fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
@@ -835,7 +1306,12 @@ async function readRegularFile(filePath: string): Promise<Buffer> {
   try {
     const stats = await handle.stat()
     if (!stats.isFile()) throw new TypeError('Expected a regular file.')
-    if (stats.size > admissionFileMaxBytes) {
+    if (
+      (maxBytes !== undefined && stats.size > maxBytes) ||
+      (maxBytes === undefined &&
+        stats.size > 128 * 1024 * 1024 &&
+        stats.blocks * 512 < stats.size / 2)
+    ) {
       throw new AdmissionFileTooLarge()
     }
     return await handle.readFile()
@@ -844,12 +1320,21 @@ async function readRegularFile(filePath: string): Promise<Buffer> {
   }
 }
 
-async function regularFileHasBytes(
+async function regularFileHasExactBytes(
   filePath: string,
-  expectedSha256: string,
+  expectedBytes: Buffer,
 ): Promise<boolean> {
   try {
-    return sha256(await readRegularFile(filePath)) === expectedSha256
+    return (await readRegularFile(filePath)).equals(expectedBytes)
+  } catch {
+    return false
+  }
+}
+
+async function regularFileIsEmpty(filePath: string): Promise<boolean> {
+  try {
+    const bytes = await readRegularFile(filePath)
+    return bytes.byteLength === 0
   } catch {
     return false
   }
@@ -1024,25 +1509,6 @@ function isOpaqueIdentity(value: unknown): value is string {
   )
 }
 
-function isFileIdentity(value: unknown): value is FileIdentity {
-  return (
-    isExactRecord(value, ['birthtimeNs', 'device', 'inode']) &&
-    typeof value.device === 'string' &&
-    /^[0-9]+$/.test(value.device) &&
-    typeof value.inode === 'string' &&
-    /^[0-9]+$/.test(value.inode) &&
-    typeof value.birthtimeNs === 'string' &&
-    /^[0-9]+$/.test(value.birthtimeNs)
-  )
-}
-
-function isSafeTemporaryStateName(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    /^\.workspace-state\.json\.[0-9a-f]{32}\.tmp$/.test(value)
-  )
-}
-
 function isSha256(value: unknown): value is string {
   return typeof value === 'string' && /^[0-9a-f]{64}$/.test(value)
 }
@@ -1067,7 +1533,7 @@ function productRootPath(root: string): string {
 }
 
 async function inject(
-  options: SemesterWorkspaceAdmissionOptions,
+  options: SemesterWorkspaceAdmissionTestOptions,
   point: WorkspaceAdmissionFaultPoint,
 ): Promise<void> {
   if (!options.fault) return
