@@ -83,3 +83,7 @@ flowchart LR
     style SERVER fill:#ffffff,stroke:#a9a9a9,stroke-width:1px
     style DATABASE fill:#ffffff,stroke:#a9a9a9,stroke-width:1px
 ```
+
+## 프로젝트 문서
+
+- [서비스 구조 및 데이터 흐름](docs/SERVICE_ARCHITECTURE.md)
