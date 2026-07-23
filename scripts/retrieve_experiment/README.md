@@ -128,6 +128,15 @@ override하며, 고정 모델 리비전 외의 임의 원격 모델은 이 실�
 `results/exploration_report.md`, 기계 판독 결과는
 `results/exploration_result.json`에 있다.
 
+## Task 4 Gemini 승인 게이트
+
+Task 3 결과만으로 Gemini 비교는 필수가 아니지만, 로컬 모델과 관리형 모델의
+오류 차이를 학습하기 위한 제한된 합성 비교 가치는 남아 있다.
+
+`gemini_approval_request.md`에 최신 안정 모델, 고정 projection, 문서·query 수,
+예상 token·비용, cache 정책과 선택지를 기록했다. 사용자 승인 전에는 Gemini
+adapter 구현, API key 접근과 외부 호출을 진행하지 않는다.
+
 ## 지표와 랭킹 계약
 
 `Recall@5`는 이 실험의 기존 제품 계약에 맞춰 상위 5개 안에 관련도 1 이상인

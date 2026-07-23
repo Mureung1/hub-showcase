@@ -521,6 +521,18 @@ npx tsc --noEmit -p tsconfig.node.json
 
 승인받은 뒤에만 Gemini adapter와 runner를 구현·실행한다.
 
+**진행 상태:**
+
+- [x] 로컬 E5 결과와 Gemini 비교 가치를 검토한다.
+- [x] 최신 안정 모델·종료 일정·공식 가격을 다시 확인한다.
+- [x] 문서 72개·query 45개의 projection과 SHA-256을 고정한다.
+- [x] 예상 token·비용·cache 정책을 승인 요청서에 기록한다.
+- [ ] Paid Tier, Free Tier 또는 비교 보류 중 사용자 결정을 받는다.
+- [ ] 승인받은 범위에서만 Gemini adapter와 runner를 구현·실행한다.
+
+승인 요청서는
+`scripts/retrieve_experiment/gemini_approval_request.md`에 보존한다.
+
 ### Task 5: 조건부 브라우저 benchmark
 
 로컬 E5가 파일럿 후보일 때만 수행한다. 후보가 아니면 생략 이유를 보고서에 남긴다.
@@ -629,4 +641,4 @@ catch-all로 오류를 삼키고 다음 입력으로 넘어가지 않는다.
 | 2026-07-23 | 모든 유료 외부 API와 민감 데이터 작업은 사용자 명시 승인 후 실행          |
 | 2026-07-23 | 합성 탐색 뒤 로컬 E5 하이브리드를 개인 데이터 파일럿 후보로 유지          |
 
-**현재 상태:** Task 0부터 Task 3까지 완료했다. 하이브리드는 semantic check에서 현행 대비 3승·2무·0패였고 critical miss가 없었지만, 현행 어휘 검색의 negative 오탐을 그대로 유지했다. 이 결과는 개인 데이터 파일럿 후보 판정일 뿐 운영 도입 근거가 아니다. 다음 단계는 Gemini 비교 필요성을 사용자와 판단하는 Task 4이며, 외부 API token과 개인 데이터는 아직 사용하지 않았다.
+**현재 상태:** Task 0부터 Task 3까지 완료했다. 하이브리드는 semantic check에서 현행 대비 3승·2무·0패였고 critical miss가 없었지만, 현행 어휘 검색의 negative 오탐을 그대로 유지했다. 이 결과는 개인 데이터 파일럿 후보 판정일 뿐 운영 도입 근거가 아니다. Task 4의 Gemini 비교 승인 요청서를 작성했으며 Paid Tier, Free Tier 또는 비교 보류 결정을 기다린다. 외부 API key 접근, 호출과 개인 데이터 사용은 아직 발생하지 않았다.
