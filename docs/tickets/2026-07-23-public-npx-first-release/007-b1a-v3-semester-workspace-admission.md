@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -36,19 +36,41 @@
 
 ## Acceptance Criteria
 
-- [ ] `inspect`가 모든 outcome을 write 0으로 분류하고 `new_target`만 authority-bound create plan으로 승격할 수 있다.
-- [ ] `apply`가 nonexistent final leaf를 exclusive reserve하고 exact minimal tree와 strict v3 aggregate를 no-clobber로 만든다.
-- [ ] Year level은 positive safe integer, term은 bounded custom-capable key/display, workspace ID는 opaque safe grammar로 검증된다.
-- [ ] Publish 뒤 fresh read/strict decode와 root identity 검증을 통과한 경우에만 admitted handle이 반환된다.
-- [ ] Existing empty/non-empty target, target race, unsafe root relation, symlink와 permission failure가 overwrite 없이 stable outcome으로 끝난다.
-- [ ] Current v2, malformed/future state와 unknown bytes의 before/after byte identity가 같고 automatic v3 sidecar/migration이 없다.
-- [ ] Fault injection의 create/write/sync/rename/readback 경계에서 admitted, evidence-backed owned incomplete 또는 evidence publish 전 preserved collision만 남고 half-valid success는 없다.
+- [x] `inspect`가 모든 outcome을 write 0으로 분류하고 `new_target`만 authority-bound create plan으로 승격할 수 있다.
+- [x] `apply`가 nonexistent final leaf를 exclusive reserve하고 exact minimal tree와 strict v3 aggregate를 no-clobber로 만든다.
+- [x] Year level은 positive safe integer, term은 bounded custom-capable key/display, workspace ID는 opaque safe grammar로 검증된다.
+- [x] Publish 뒤 fresh read/strict decode와 root identity 검증을 통과한 경우에만 admitted handle이 반환된다.
+- [x] Existing empty/non-empty target, target race, unsafe root relation, symlink와 permission failure가 overwrite 없이 stable outcome으로 끝난다.
+- [x] Current v2, malformed/future state와 unknown bytes의 before/after byte identity가 같고 automatic v3 sidecar/migration이 없다.
+- [x] Fault injection의 create/write/sync/rename/readback 경계에서 admitted, evidence-backed owned incomplete 또는 evidence publish 전 preserved collision만 남고 half-valid success는 없다.
 
 ## Verification
 
-- Targeted test or command: `packages/semester-workspace`의 codec/admission unit·filesystem fault tests와 current v2 preservation fixtures
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `git diff --check`
-- Manual or live smoke: Temporary existing parent 아래 new leaf create/reopen과 v2 read-only inspection을 확인한다. 기존 사용자 directory를 fixture로 사용하지 않는다.
+| Gate | Result |
+| --- | --- |
+| Package admission·durability | `npm test -w @ay-ple/semester-workspace` — `37/37` green. Strict v3 codec, write-free inspection, exclusive/no-clobber create, 17개 durability fault window, marker/HMAC recovery, hard-link·same-shape rewrite rejection과 returned-plan alias 회귀를 포함한다. |
+| Package compile | `npm run typecheck -w @ay-ple/semester-workspace`; `npm run build -w @ay-ple/semester-workspace` — green |
+| Current-v2 parity·preservation | Package-owned fixed roster 426개(`ready` 414, `incompatible` 12)의 `>1 MiB`, retry source-order, 16-case guard-order와 408-case evidence-order를 shared decoder와 Server open regression이 함께 통과했다. State와 unknown entry의 before/after byte identity가 유지됐다. |
+| Server regression | `npm test -w @ay-ple/server` — `124/124` green; fixed-vector Server open regression — `1/1` green; Server typecheck·build green |
+| Root gates | Reviewed combined tip `13c4b30a67a96c9dff111ecfda51fff0fe579e70`에서 `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `npm run check:docs-links`; `git diff --check` — green. Docs link result는 active 28, historical 2다. |
+| Bounded smoke | Temporary parent에서 `create: created → reopen: admitted`, opaque `setupPlanId` equality, Server current v2 `ready`, package v2 `legacy_migration_required`와 original byte identity를 확인한 뒤 fixture를 정리했다. |
+| Independent reviews | Final combined tip의 Standards review와 Spec review가 각각 `GREEN`, remaining finding `0`이다. Prior returned-plan alias P2 remediation도 두 review 범위에 포함됐다. |
+
+## Result
+
+| Evidence | Result |
+| --- | --- |
+| Reviewed B implementation tip | `22c46d4ec229b1f8952f65e17a2e5c4d581c0d1a` |
+| C serialization implementation | `b4ee7626cbb74fc49c80f1fe872b312499571f5e` |
+| Returned-plan alias remediation | `f797ed8bea773e6bc7a57edb6bd1578c8c8e47ca` |
+| Fixed combined reviewed tip | `13c4b30a67a96c9dff111ecfda51fff0fe579e70` |
+| Independent review range | `22c46d4ec229b1f8952f65e17a2e5c4d581c0d1a..13c4b30a67a96c9dff111ecfda51fff0fe579e70` |
+| Standards review | `GREEN` — findings `0` |
+| Spec review | `GREEN` — findings `0` |
+
+Strict v3 `SemesterWorkspaceAdmission`은 existing parent 아래 absent leaf만 exclusive scaffold하고, fresh disk authority와 exact bytes를 확인한 뒤에만 admitted handle을 발급한다. Private `describe(plan)` binding, caller/internal plan authority 분리와 shared current-v2 decoder는 Browser contract를 넓히지 않으며 existing v2·unknown bytes를 read-only로 보존한다.
+
+Parent Spec은 이 디렉터리의 후속 implementation ticket이 남아 있으므로 incomplete 상태를 유지한다.
 
 ## Candidate Evidence
 
@@ -79,7 +101,7 @@ Current v2 compatibility/Spec review green을 보존하면서 후속 filesystem/
 | Root gates | `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `git diff --check 269a3555d3adf52bf520b3de0b99c7cb3fee3ae7...HEAD` — green |
 | Docs gate | `npm run check:docs-links` — active 28, historical 2 green |
 | Bounded manual smoke | Fresh temporary parent에서 `create: created → reopen: admitted`; final-state alias 추가 뒤 `linkedReopen: collision`, `aliasesPreserved: true`; current v2는 `legacy_migration_required`, `v2ByteIdentity: true`; temporary root cleanup 완료 |
-| Independent re-review | Pending — 새 fixed candidate는 filesystem/durability re-review만 필요하다. Current v2 compatibility/Spec review green은 위 unchanged parity gate로 보존한다. |
+| Independent re-review | Final combined tip `13c4b30a67a96c9dff111ecfda51fff0fe579e70`의 Standards review와 Spec review가 각각 `GREEN`, remaining finding `0`이다. |
 
 C-only follow-up은 다음 exact delta다. 이 lane에서는 C-owned Server source, manifest, lockfile과 README를 수정하지 않는다.
 
@@ -138,7 +160,7 @@ C-only follow-up은 다음 exact delta다. 이 lane에서는 C-owned Server sour
 | Server gates | `npm test -w @ay-ple/server` — `124/124` green; fixed-vector Server open regression — `1/1` green; `npm run typecheck -w @ay-ple/server`; `npm run build -w @ay-ple/server` — green |
 | Root·docs gates | `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `npm run check:docs-links`; `git diff --check 22c46d4ec229b1f8952f65e17a2e5c4d581c0d1a...HEAD` — green. Docs link result는 active 28, historical 2다. |
 | Bounded smoke | Temporary parent에서 `create: created → reopen: admitted`, opaque `setupPlanId` equality, Server v2 `ready`, package v2 `legacy_migration_required`, v2 byte identity를 확인하고 fixture를 정리했다. |
-| Coordinator review | Pending — Standards P2 remediation을 반영했다. Coordinator가 새 candidate를 re-review하고 acceptance checkbox와 Ticket state를 닫는다. |
+| Coordinator review | Complete — Standards P2 remediation을 포함한 final combined tip의 두 independent review가 `GREEN`이어서 Ticket closeout을 승인했다. |
 
 ## Blocked By
 
