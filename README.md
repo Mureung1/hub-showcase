@@ -44,7 +44,7 @@
 |------|------|
 | [`CLAUDE.md`](./CLAUDE.md) | 에이전트·개발 맥락 (구조, 컨벤션, 결정 사항) |
 | [`docs/plan.md`](./docs/plan.md) | 기획서 (문제 정의, MVP 범위, 화면 흐름) |
-| [`docs/checklist.md`](./docs/checklist.md) | 주차별 개발 체크리스트 |
+| [`docs/week2_plan.md`](./docs/week2_plan.md) / [`docs/week3_plan.md`](./docs/week3_plan.md) | 주차별 계획·진행 현황 |
 | [이번 주 개발 대시보드](https://github.com/syd348/hub/issues?q=is%3Aissue%20milestone%3A%22Week%202%20Vertical%20Slice%22%20sort%3Acreated-asc) | Week 2 이슈 카드 보드 |
 | [`prototype/gov_subsidy_home_wireframe.html`](./prototype/gov_subsidy_home_wireframe.html) | UI/UX 와이어프레임 |
 | [`.cursor/skills/gov-subsidy-design/`](./.cursor/skills/gov-subsidy-design/) | 디자인 구현 Skill |
