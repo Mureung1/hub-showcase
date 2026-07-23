@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "title": "콕 — ADHD 친화적 할 일 관리 Agent",
+  "summary": "할 일을 작게 쪼개고, 하나에만 집중하게 돕고, 힘들 때 Agent가 개입하는 ADHD 친화적 할 일 관리 앱입니다.",
+  "githubUser": "imjyong(황지영)",
+  "demoUrl": "",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/brain-dump.webp",
+    "screenshots/one-focus.webp",
+    "screenshots/timer.webp"
+  ],
+  "problem": "ADHD 특성이 있으면 할 일이 커 보일수록 시작 자체가 안 되고, 미룬 걸 벌점처럼 보여주는 앱은 오히려 이탈로 이어집니다. 콕은 Agent가 대신 작게 쪼개고, 미룬 것도 죄책감 없이 다시 배치해주는 방식으로 이 문제를 완화합니다.",
+  "targetUsers": [
+    "ADHD 특성이 있어 할 일을 시작하기 어려워하는 사람",
+    "할 일을 미룰 때 죄책감을 느껴 관리 앱을 이탈하게 되는 사람"
+  ],
+  "features": [
+    "두서없이 적은 할 일을 25분 이내 마이크로스텝으로 자동 분할하고 분류(청소/정리, 연락 등 7종)합니다.",
+    "오늘 할 일 하나에만 집중하는 One-Focus View와 남은 시간 비율만큼 물이 차오르는 타이머를 보여줍니다.",
+    "별도 DB 없이 Notion을 데이터 저장소로 써서, 완료 여부까지 Notion에 영구적으로 기록합니다.",
+    "\"나 지금 힘들어\" 버튼을 누르면 Agent가 반복 회피 패턴·남은 시간을 보고 휴식/재분할/미루기 중 무엇을 제안할지 판단합니다(설계 완료, 구현 진행 중)."
+  ],
+  "featureTags": [
+    "Brain Dump 자동 분할",
+    "One-Focus View",
+    "Notion 연동",
+    "Agent 개입 루프"
+  ],
+  "techStack": [
+    "Next.js",
+    "React",
+    "Vercel AI SDK",
+    "Solar (Upstage)",
+    "Notion API"
+  ],
+  "techHighlights": [
+    "Vercel AI SDK의 generateObject로 자유 텍스트를 정해진 JSON 스키마의 마이크로스텝 배열(제목·예상시간·분류·일정)로 변환합니다.",
+    "Notion API가 database 단위 조회에서 data source 단위 조회로 바뀐 변경사항에 직접 대응하는 범용 read/write 헬퍼를 작성했습니다.",
+    "화면이 방금 만든 결과를 메모리에만 두지 않고, Notion에서 완료 안 된 오늘 스텝만 실행 순서대로 다시 읽어와 순회하도록 연결했습니다."
+  ],
+  "developmentWithAI": "저는 문제 정의와 화면 흐름, 완료 기준을 정했습니다. Claude Code가 이슈 단위로 구현하고, 별도 GPT 세션이 완료조건·계약 문서와 대조해 코드를 교차 검토했습니다. 저는 리뷰 결과를 확인하고, 실제 Notion/AI 모델 호출로 동작을 검증하며 다음 작업으로 넘어갔습니다.",
+  "agent": {
+    "summary": "이슈 등록부터 구현, 교차 리뷰, PR까지 전 과정을 Task/Checklist/Skill 계약 문서와 Agent 워크플로우로 관리했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "구현 Agent (Claude Code)",
+        "purpose": "이슈 단위로 완료조건(Checklist)·계약(Skill) 문서를 먼저 읽고 구현한 뒤, 실행 전략을 먼저 설명하고 승인받습니다."
+      },
+      {
+        "type": "agent",
+        "name": "리뷰 Agent (GPT)",
+        "purpose": "구현된 코드를 완료조건·계약 문서와 대조해 재현 검증하고, 승인 또는 수정요청을 판정합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "GitHub 이슈 등록(할 일 + 완료조건)",
+          "완료조건(Checklist)·계약(Skill) 문서 확인",
+          "구현 전략(파일 역할·데이터 흐름·이유) 먼저 보여주고 승인받기",
+          "브랜치 생성 후 구현",
+          "npm run verify로 자동 검증"
+        ]
+      },
+      {
+        "name": "교차 리뷰 Workflow",
+        "steps": [
+          "구현 보고를 report_claude.md에 기록",
+          "GPT 세션에 전달해 리뷰 요청",
+          "승인/수정요청 판정을 report_gpt.md에 기록",
+          "수정요청이면 반영 후 재검토, 승인되면 PR 생성"
+        ]
+      }
+    ]
+  }
+}
