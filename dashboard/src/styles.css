@@ -43,7 +43,7 @@ a,
   align-items: center;
   overflow: hidden;
   border-bottom: 1px solid #d9dfdc;
-  background: #fbfcfa;
+  background: #f4f4f4;
 }
 
 .camp-banner span {
@@ -65,7 +65,6 @@ a,
   height: 100%;
   object-fit: cover;
   object-position: center;
-  mix-blend-mode: multiply;
 }
 
 .page {
