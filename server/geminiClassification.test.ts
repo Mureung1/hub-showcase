@@ -12,8 +12,13 @@ describe("validateGeminiClassification", () => {
       validateGeminiClassification({
         categoryMain: "개발",
         categorySub: "프로그래밍",
+        displayTitle: "React와 TypeScript 개발 가이드",
       })
-    ).toEqual({ categoryMain: "개발", categorySub: "프로그래밍" });
+    ).toEqual({
+      categoryMain: "개발",
+      categorySub: "프로그래밍",
+      displayTitle: "React와 TypeScript 개발 가이드",
+    });
   });
 
   it("미분류의 소분류를 null로 정규화한다", () => {
@@ -21,8 +26,13 @@ describe("validateGeminiClassification", () => {
       validateGeminiClassification({
         categoryMain: "미분류",
         categorySub: "기타",
+        displayTitle: "저장한 웹 콘텐츠",
       })
-    ).toEqual({ categoryMain: "미분류", categorySub: null });
+    ).toEqual({
+      categoryMain: "미분류",
+      categorySub: null,
+      displayTitle: "저장한 웹 콘텐츠",
+    });
   });
 
   it.each([
@@ -39,7 +49,11 @@ describe("validateGeminiClassification", () => {
 describe("createGeminiClassifier", () => {
   it("Gemini SDK에 메타데이터와 Structured Output 설정을 전달한다", async () => {
     const generateContent = vi.fn().mockResolvedValue({
-      text: JSON.stringify({ categoryMain: "개발", categorySub: "프로그래밍" }),
+      text: JSON.stringify({
+        categoryMain: "개발",
+        categorySub: "프로그래밍",
+        displayTitle: "React TypeScript 학습 가이드",
+      }),
     });
     const classifier = createGeminiClassifier(
       "test-key",
@@ -60,7 +74,11 @@ describe("createGeminiClassifier", () => {
           ogType: "article",
         },
       })
-    ).resolves.toEqual({ categoryMain: "개발", categorySub: "프로그래밍" });
+    ).resolves.toEqual({
+      categoryMain: "개발",
+      categorySub: "프로그래밍",
+      displayTitle: "React TypeScript 학습 가이드",
+    });
 
     expect(generateContent).toHaveBeenCalledWith({
       model: "test-model",
@@ -79,7 +97,11 @@ describe("createGeminiClassifier", () => {
 
   it("이미지와 텍스트를 Gemini inline data 요청에 함께 전달한다", async () => {
     const generateContent = vi.fn().mockResolvedValue({
-      text: JSON.stringify({ categoryMain: "여행", categorySub: "관광지" }),
+      text: JSON.stringify({
+        categoryMain: "여행",
+        categorySub: "관광지",
+        displayTitle: "제주도 관광지 여행 사진",
+      }),
     });
     const classifier = createGeminiClassifier(
       "test-key",
@@ -115,8 +137,13 @@ describe("createGeminiClassifier", () => {
       validateGeminiClassification({
         categoryMain: "콘텐츠",
         categorySub: null,
+        displayTitle: "오늘 읽을 주요 콘텐츠",
       })
-    ).toEqual({ categoryMain: "콘텐츠", categorySub: null });
+    ).toEqual({
+      categoryMain: "콘텐츠",
+      categorySub: null,
+      displayTitle: "오늘 읽을 주요 콘텐츠",
+    });
   });
 
   it("Gemini 응답이 비어 있으면 실패한다", async () => {
@@ -161,11 +188,16 @@ describe("classifyWithFallback", () => {
     const geminiRequest = vi.fn().mockResolvedValue({
       categoryMain: "콘텐츠",
       categorySub: "기사",
+      displayTitle: "React 개발 동향 정리",
     });
 
     await expect(
       classifyWithFallback({ content: "React 개발 자료" }, geminiRequest)
-    ).resolves.toEqual({ categoryMain: "콘텐츠", categorySub: "기사" });
+    ).resolves.toEqual({
+      categoryMain: "콘텐츠",
+      categorySub: "기사",
+      displayTitle: "React 개발 동향 정리",
+    });
   });
 
   it("Gemini 응답이 유효하지 않으면 기존 규칙을 사용한다", async () => {
@@ -174,7 +206,11 @@ describe("classifyWithFallback", () => {
         { content: "React TypeScript 공부 자료" },
         async () => ({ categoryMain: "잘못된 분류", categorySub: "기타" })
       )
-    ).resolves.toEqual({ categoryMain: "개발", categorySub: "프로그래밍" });
+    ).resolves.toEqual({
+      categoryMain: "개발",
+      categorySub: "프로그래밍",
+      displayTitle: "React TypeScript 공부 자료",
+    });
   });
 
   it("Gemini API 오류가 발생하면 기존 규칙을 사용한다", async () => {
@@ -182,13 +218,21 @@ describe("classifyWithFallback", () => {
       classifyWithFallback({ content: "다이어트 운동 루틴" }, async () => {
         throw new Error("Gemini unavailable");
       })
-    ).resolves.toEqual({ categoryMain: "건강", categorySub: "운동" });
+    ).resolves.toEqual({
+      categoryMain: "건강",
+      categorySub: "운동",
+      displayTitle: "다이어트 운동 루틴",
+    });
   });
 
   it("Gemini 없이도 기존 규칙을 사용한다", async () => {
     await expect(
       classifyWithFallback({ content: "https://youtu.be/example" })
-    ).resolves.toEqual({ categoryMain: "영상", categorySub: "유튜브" });
+    ).resolves.toEqual({
+      categoryMain: "영상",
+      categorySub: "유튜브",
+      displayTitle: "유튜브 관련 콘텐츠",
+    });
   });
 
   it("Gemini와 규칙 모두 분류하지 못하면 미분류와 null을 반환한다", async () => {
@@ -199,7 +243,11 @@ describe("classifyWithFallback", () => {
           throw new Error("Gemini unavailable");
         }
       )
-    ).resolves.toEqual({ categoryMain: "미분류", categorySub: null });
+    ).resolves.toEqual({
+      categoryMain: "미분류",
+      categorySub: null,
+      displayTitle: "분류 단서가 없는 문장",
+    });
   });
 
   it("이미지만 있을 때 Gemini 호출 실패 시 파일명으로 분류하지 않는다", async () => {
@@ -213,7 +261,11 @@ describe("classifyWithFallback", () => {
           throw new Error("Gemini unavailable");
         }
       )
-    ).resolves.toEqual({ categoryMain: "미분류", categorySub: null });
+    ).resolves.toEqual({
+      categoryMain: "미분류",
+      categorySub: null,
+      displayTitle: "저장한 이미지",
+    });
   });
 
   it("유효한 Gemini 이미지 분류를 사용한다", async () => {
@@ -223,9 +275,17 @@ describe("classifyWithFallback", () => {
           content: "산책 중 찍은 사진",
           image: { data: "base64-image", mimeType: "image/jpeg" },
         },
-        async () => ({ categoryMain: "여행", categorySub: "풍경" })
+        async () => ({
+          categoryMain: "여행",
+          categorySub: "풍경",
+          displayTitle: "산책길 풍경 여행 사진",
+        })
       )
-    ).resolves.toEqual({ categoryMain: "여행", categorySub: "풍경" });
+    ).resolves.toEqual({
+      categoryMain: "여행",
+      categorySub: "풍경",
+      displayTitle: "산책길 풍경 여행 사진",
+    });
   });
 
   it("이미지 응답 검증 실패 시 함께 입력한 텍스트로 fallback한다", async () => {
@@ -237,6 +297,10 @@ describe("classifyWithFallback", () => {
         },
         async () => ({ categoryMain: "잘못된 분류", categorySub: null })
       )
-    ).resolves.toEqual({ categoryMain: "건강", categorySub: "운동" });
+    ).resolves.toEqual({
+      categoryMain: "건강",
+      categorySub: "운동",
+      displayTitle: "운동 루틴",
+    });
   });
 });

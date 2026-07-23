@@ -71,14 +71,26 @@ vi.mock("@supabase/supabase-js", () => ({
   }),
 }));
 
+vi.mock("./metadata", () => ({
+  extractPageMetadata: vi.fn().mockResolvedValue({
+    url: "https://youtu.be/example",
+    title: "테스트 영상",
+    description: null,
+    ogTitle: null,
+    ogDescription: null,
+    ogSiteName: "YouTube",
+    ogType: "video",
+  }),
+}));
+
 let app: Express;
 
 beforeAll(async () => {
   process.env.SUPABASE_URL = "https://project.supabase.co";
   process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
   process.env.SUPABASE_STORAGE_BUCKET = "later-images";
-  delete process.env.GEMINI_API_KEY;
-  delete process.env.GEMINI_MODEL;
+  process.env.GEMINI_API_KEY = "";
+  process.env.GEMINI_MODEL = "";
   ({ app } = await import("./index"));
 });
 
@@ -135,7 +147,7 @@ describe("items API", () => {
     expect(database.upload).toHaveBeenCalledOnce();
     expect(database.inserted).toMatchObject({
       type: "image",
-      title: "이미지",
+      title: "저장한 이미지",
       content: null,
       source_platform: "manual",
       category_main: "미분류",

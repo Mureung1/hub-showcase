@@ -161,7 +161,7 @@ app.post("/api/items", handleImageUpload, async (request, response) => {
   const urlDetected = isUrl(trimmed);
   const sourcePlatform = urlDetected ? getSourcePlatform(trimmed) : "manual";
   let metadata: PageMetadata | null = null;
-  if (urlDetected && geminiClassifier) {
+  if (urlDetected) {
     try {
       metadata = await extractPageMetadata(trimmed);
     } catch (error) {
@@ -175,7 +175,7 @@ app.post("/api/items", handleImageUpload, async (request, response) => {
           mimeType: request.file.mimetype,
         }
       : null;
-  const { categoryMain, categorySub } = await classifyWithFallback(
+  const { categoryMain, categorySub, displayTitle } = await classifyWithFallback(
     { content: trimmed, metadata, image: classificationImage },
     geminiClassifier
   );
@@ -200,7 +200,7 @@ app.post("/api/items", handleImageUpload, async (request, response) => {
         original_url: urlDetected ? trimmed : null,
         image_url: imageUrl,
         content: trimmed || null,
-        title: urlDetected ? trimmed : trimmed.slice(0, 50) || "이미지",
+        title: displayTitle,
         source_platform: sourcePlatform,
         category_main: categoryMain,
         category_sub: categorySub,

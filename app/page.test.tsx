@@ -70,9 +70,10 @@ describe("Home image input", () => {
 
   it("이미지 저장 요청을 FormData로 보내고 성공 후 상태를 초기화한다", async () => {
     const fetchMock = vi.mocked(fetch);
-    fetchMock
-      .mockResolvedValueOnce({ ok: true, json: async () => [] } as Response)
-      .mockResolvedValueOnce({ ok: true, json: async () => savedItem } as Response);
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => savedItem,
+    } as Response);
 
     const { container } = render(<Home />);
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
@@ -84,8 +85,8 @@ describe("Home image input", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    const request = fetchMock.mock.calls[1][1];
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const request = fetchMock.mock.calls[0][1];
     expect(request?.body).toBeInstanceOf(FormData);
     expect((request?.body as FormData).get("content")).toBe("여행 사진");
     expect((request?.body as FormData).get("image")).toBe(image);

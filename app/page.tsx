@@ -2,21 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import ItemCard from "./ItemCard";
 import {
   apiBaseUrl,
   getRequestErrorMessage,
   readApiError,
-  type DeleteItemResponse,
-  type Item,
 } from "../lib/items";
 import { getImageValidationError } from "../lib/image";
 
 export default function Home() {
   const [input, setInput] = useState("");
   const [saving, setSaving] = useState(false);
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -32,24 +27,6 @@ export default function Home() {
     setImagePreviewUrl(previewUrl);
     return () => URL.revokeObjectURL(previewUrl);
   }, [selectedImage]);
-
-  async function fetchItems() {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`${apiBaseUrl}/api/items`);
-      if (!response.ok) throw new Error(await readApiError(response));
-      setItems(await response.json());
-    } catch (requestError) {
-      setError(getRequestErrorMessage(requestError, "저장 목록을 불러오지 못했습니다."));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    fetchItems();
-  }, []);
 
   async function handleSave() {
     if (!input.trim() && !selectedImage) return;
@@ -73,8 +50,7 @@ export default function Home() {
             body: JSON.stringify({ content: input.trim() }),
           });
       if (!response.ok) throw new Error(await readApiError(response));
-      const savedItem: Item = await response.json();
-      setItems((currentItems) => [savedItem, ...currentItems]);
+      await response.json();
       setInput("");
       setSelectedImage(null);
       setImageError(null);
@@ -103,36 +79,6 @@ export default function Home() {
     setSelectedImage(null);
     setImageError(null);
     if (imageInputRef.current) imageInputRef.current.value = "";
-  }
-
-  async function updateItem(id: number, title: string) {
-    try {
-      const response = await fetch(`${apiBaseUrl}/api/items/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
-      });
-      if (!response.ok) throw new Error(await readApiError(response));
-      const updatedItem: Item = await response.json();
-      setItems((currentItems) =>
-        currentItems.map((item) => (item.id === updatedItem.id ? updatedItem : item))
-      );
-    } catch (requestError) {
-      throw new Error(getRequestErrorMessage(requestError, "항목을 수정하지 못했습니다."));
-    }
-  }
-
-  async function deleteItem(id: number) {
-    try {
-      const response = await fetch(`${apiBaseUrl}/api/items/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw new Error(await readApiError(response));
-      const result: DeleteItemResponse = await response.json();
-      setItems((currentItems) => currentItems.filter((item) => item.id !== result.id));
-    } catch (requestError) {
-      throw new Error(getRequestErrorMessage(requestError, "항목을 삭제하지 못했습니다."));
-    }
   }
 
   return (
@@ -216,31 +162,7 @@ export default function Home() {
         </button>
       </section>
 
-      {/* 최근 저장 */}
-      <section>
-        <h2 className="text-sm font-medium text-muted mb-3">최근 저장</h2>
-
-        {loading && <p className="text-sm text-muted">불러오는 중...</p>}
-
-        {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
-
-        {!loading && items.length === 0 && (
-          <p className="text-sm text-muted">
-            아직 저장한 게 없어요. 위 입력창에 링크나 텍스트를 붙여넣어보세요.
-          </p>
-        )}
-
-        <ul className="space-y-3">
-          {items.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              onUpdate={updateItem}
-              onDelete={deleteItem}
-            />
-          ))}
-        </ul>
-      </section>
+      {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
 
       {/* 하단 네비게이션 */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-creamDeep">

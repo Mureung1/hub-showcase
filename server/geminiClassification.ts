@@ -20,6 +20,11 @@ type AllowedMainCategory = (typeof allowedMainCategories)[number];
 type GeminiClassification = {
   categoryMain: AllowedMainCategory;
   categorySub: string | null;
+  displayTitle: string;
+};
+
+export type ContentAnalysis = Classification & {
+  displayTitle: string;
 };
 
 export type ClassificationImage = {
@@ -36,12 +41,18 @@ export type ClassificationInput = {
 export type GeminiRequest = (input: ClassificationInput) => Promise<unknown>;
 
 const MAX_SUBCATEGORY_LENGTH = 30;
+const MAX_DISPLAY_TITLE_LENGTH = 60;
 const koreanSubcategoryPattern = /^[가-힣][가-힣0-9 ()·/&+-]*$/;
+const displayTitlePattern = /[가-힣A-Za-z0-9]/;
 
-export function validateGeminiClassification(value: unknown): Classification | null {
+export function validateGeminiClassification(value: unknown): ContentAnalysis | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const candidate = value as Record<string, unknown>;
-  if (Object.keys(candidate).some((key) => key !== "categoryMain" && key !== "categorySub")) {
+  if (
+    Object.keys(candidate).some(
+      (key) => key !== "categoryMain" && key !== "categorySub" && key !== "displayTitle"
+    )
+  ) {
     return null;
   }
   if (
@@ -50,11 +61,20 @@ export function validateGeminiClassification(value: unknown): Classification | n
   ) {
     return null;
   }
+  if (typeof candidate.displayTitle !== "string") return null;
+  const displayTitle = candidate.displayTitle.trim();
+  if (
+    displayTitle.length < 2 ||
+    displayTitle.length > MAX_DISPLAY_TITLE_LENGTH ||
+    !displayTitlePattern.test(displayTitle)
+  ) {
+    return null;
+  }
   if (candidate.categoryMain === "미분류") {
-    return { categoryMain: "미분류", categorySub: null };
+    return { categoryMain: "미분류", categorySub: null, displayTitle };
   }
   if (candidate.categorySub === null) {
-    return { categoryMain: candidate.categoryMain, categorySub: null };
+    return { categoryMain: candidate.categoryMain, categorySub: null, displayTitle };
   }
   if (typeof candidate.categorySub !== "string") return null;
   const categorySub = candidate.categorySub.trim();
@@ -64,14 +84,40 @@ export function validateGeminiClassification(value: unknown): Classification | n
   return {
     categoryMain: candidate.categoryMain,
     categorySub,
+    displayTitle,
   };
 }
 
-function normalizeRuleFallback(content: string): Classification {
+function getFallbackTitle(input: ClassificationInput, classification: Classification) {
+  const metadataTitle = input.metadata?.ogTitle?.trim() || input.metadata?.title?.trim();
+  if (metadataTitle) return metadataTitle.slice(0, MAX_DISPLAY_TITLE_LENGTH);
+  if (input.content && !/^https?:\/\//i.test(input.content)) {
+    return input.content.trim().slice(0, MAX_DISPLAY_TITLE_LENGTH);
+  }
+  if (input.image) {
+    const subject =
+      classification.categorySub ??
+      (classification.categoryMain === "미분류" ? null : classification.categoryMain);
+    return subject ? `${subject} 관련 이미지` : "저장한 이미지";
+  }
+  if (classification.categorySub) return `${classification.categorySub} 관련 콘텐츠`;
+  if (classification.categoryMain !== "미분류") {
+    return `${classification.categoryMain} 관련 콘텐츠`;
+  }
+  return "저장한 웹 콘텐츠";
+}
+
+function normalizeRuleFallback(input: ClassificationInput): ContentAnalysis {
+  const content = input.content;
   const fallback = classifyContent(content);
-  return fallback.categoryMain === "미분류"
+  const classification =
+    fallback.categoryMain === "미분류"
     ? { categoryMain: "미분류", categorySub: null }
     : fallback;
+  return {
+    ...classification,
+    displayTitle: getFallbackTitle(input, classification),
+  };
 }
 
 const systemInstruction = `You classify saved content for the Later application.
@@ -80,6 +126,9 @@ When an image is provided, classify its visible content and meaning, never its f
 When text and an image are both provided, consider both together.
 Prefer Later's existing broad category system and avoid overly specific categories.
 Select exactly one main category and a short Korean subcategory, or null when the subcategory is unclear.
+Create displayTitle as a concise, natural Korean card title that summarizes the subject and content type.
+Use a specific title such as "AWS SAA-C03 자격증 준비 가이드", not a vague title such as "개발 관련 글".
+Keep displayTitle between 8 and 30 Korean-readable characters when possible. Never use a raw URL as displayTitle.
 Use the actual subject, preferring visible image content, title, and description over the site name.
 If evidence is insufficient, use categoryMain "미분류" and categorySub null.
 Return only data matching the supplied JSON schema.`;
@@ -89,8 +138,9 @@ const classificationSchema = {
   properties: {
     categoryMain: { type: "string", enum: [...allowedMainCategories] },
     categorySub: { type: ["string", "null"] },
+    displayTitle: { type: "string" },
   },
-  required: ["categoryMain", "categorySub"],
+  required: ["categoryMain", "categorySub", "displayTitle"],
   additionalProperties: false,
 };
 
@@ -152,7 +202,7 @@ export function createConfiguredGeminiClassifier(
 export async function classifyWithFallback(
   input: ClassificationInput,
   geminiRequest?: GeminiRequest | null
-): Promise<Classification> {
+): Promise<ContentAnalysis> {
   if (geminiRequest) {
     try {
       const geminiClassification = validateGeminiClassification(await geminiRequest(input));
@@ -164,7 +214,7 @@ export async function classifyWithFallback(
       console.warn("Gemini 분류 실패, 규칙 기반 분류를 사용합니다:", error);
     }
   }
-  const fallback = normalizeRuleFallback(input.content);
+  const fallback = normalizeRuleFallback(input);
   console.info(
     `콘텐츠 분류 출처: ${
       fallback.categoryMain === "미분류" ? "unclassified" : "rule-based"

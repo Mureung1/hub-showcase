@@ -93,23 +93,6 @@ export default function CategoriesPage() {
     setSelectedSub("전체");
   }
 
-  async function updateItem(id: number, title: string) {
-    try {
-      const response = await fetch(`${apiBaseUrl}/api/items/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
-      });
-      if (!response.ok) throw new Error(await readApiError(response));
-      const updatedItem: Item = await response.json();
-      setItems((currentItems) =>
-        currentItems.map((item) => (item.id === updatedItem.id ? updatedItem : item))
-      );
-    } catch (requestError) {
-      throw new Error(getRequestErrorMessage(requestError, "항목을 수정하지 못했습니다."));
-    }
-  }
-
   async function deleteItem(id: number) {
     try {
       const response = await fetch(`${apiBaseUrl}/api/items/${id}`, {
@@ -224,7 +207,6 @@ export default function CategoriesPage() {
                   <ItemCard
                     key={item.id}
                     item={item}
-                    onUpdate={updateItem}
                     onDelete={deleteItem}
                   />
                 ))}
