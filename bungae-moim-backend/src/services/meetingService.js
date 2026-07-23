@@ -528,9 +528,25 @@ async function updateMeeting(meetingId, hostId, body) {
   if (row.is_past) {
     throw new ApiError('VALIDATION_ERROR', '종료된 모임은 수정할 수 없습니다');
   }
-  // (정원 가드 + status 재계산 — Task 3)
+  // 참여자 영향 가드 + flash status 재계산에 쓸 확정 인원. 기준은 코드베이스 전체와
+  // 동일하게 IN ('confirmed','approved') (flash엔 approved가 없어 결과는 confirmed만과 같다).
+  let confirmedCount = 0;
+  if (row.type === 'flash') {
+    const countRes = await pool.query(
+      `SELECT COUNT(*)::int AS n FROM meeting_participants
+        WHERE meeting_id = $1 AND status IN ('confirmed','approved')`,
+      [meetingId]
+    );
+    confirmedCount = countRes.rows[0].n;
+    if (fields.capacity < confirmedCount) {
+      throw new ApiError('VALIDATION_ERROR', '정원은 현재 확정 인원보다 적을 수 없습니다');
+    }
+  }
   // (adultOnly 켜기 가드 — Task 4)
-  const nextStatus = row.status;
+  // flash는 정원 변경으로 마감 여부가 바뀔 수 있어 status를 다시 맞춘다(표시 정합성).
+  // cancelled는 상태 가드에서 이미 걸러졌다. small은 fullness로 closed가 되지 않으므로 그대로.
+  const nextStatus =
+    row.type === 'flash' ? (confirmedCount >= fields.capacity ? 'closed' : 'recruiting') : row.status;
 
   const { rows } = await pool.query(
     `UPDATE meetings SET

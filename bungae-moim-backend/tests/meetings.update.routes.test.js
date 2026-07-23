@@ -139,4 +139,81 @@ describe('PATCH /api/meetings/:id', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
+
+  it('flash 정원을 확정 인원보다 적게 줄이면 400', async () => {
+    const { agent, userId } = await loginAgent('u-h9');
+    const meetingId = await insertMeeting(userId, {
+      type: 'flash', capacity: 4, endAt: null, startAt: '2030-03-03T19:00:00+09:00', status: 'recruiting',
+    });
+    const a1 = await createUser('u-p9a');
+    const a2 = await createUser('u-p9b');
+    await insertParticipant(meetingId, a1, 'confirmed');
+    await insertParticipant(meetingId, a2, 'confirmed');
+
+    const body = {
+      type: 'flash', title: '수정', category: '운동', description: 'x',
+      regionSido: '서울특별시', regionSigungu: '강남구', regionEupmyeondong: null,
+      startAt: '2030-03-03T20:00:00+09:00', endAt: null, capacity: 1, adultOnly: false,
+      openChatUrl: 'https://open.kakao.com/o/edited',
+    };
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(body);
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('flash 정원을 확정 인원 이상으로 두면 200', async () => {
+    const { agent, userId } = await loginAgent('u-h10');
+    const meetingId = await insertMeeting(userId, {
+      type: 'flash', capacity: 4, endAt: null, startAt: '2030-03-03T19:00:00+09:00', status: 'recruiting',
+    });
+    await insertParticipant(meetingId, await createUser('u-p10'), 'confirmed');
+
+    const body = {
+      type: 'flash', title: '수정', category: '운동', description: 'x',
+      regionSido: '서울특별시', regionSigungu: '강남구', regionEupmyeondong: null,
+      startAt: '2030-03-03T20:00:00+09:00', endAt: null, capacity: 2, adultOnly: false,
+      openChatUrl: 'https://open.kakao.com/o/edited',
+    };
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(body);
+    expect(res.status).toBe(200);
+    expect(res.body.data.capacity).toBe(2);
+  });
+
+  it('꽉 찬(closed) flash 정원을 늘리면 status가 recruiting으로 재계산', async () => {
+    const { agent, userId } = await loginAgent('u-h11');
+    const meetingId = await insertMeeting(userId, {
+      type: 'flash', capacity: 2, endAt: null, startAt: '2030-03-03T19:00:00+09:00', status: 'closed',
+    });
+    await insertParticipant(meetingId, await createUser('u-p11a'), 'confirmed');
+    await insertParticipant(meetingId, await createUser('u-p11b'), 'confirmed');
+
+    const body = {
+      type: 'flash', title: '수정', category: '운동', description: 'x',
+      regionSido: '서울특별시', regionSigungu: '강남구', regionEupmyeondong: null,
+      startAt: '2030-03-03T20:00:00+09:00', endAt: null, capacity: 5, adultOnly: false,
+      openChatUrl: 'https://open.kakao.com/o/edited',
+    };
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(body);
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('recruiting');
+  });
+
+  it('recruiting flash 정원을 확정 인원과 같게 줄이면 status가 closed로 재계산', async () => {
+    const { agent, userId } = await loginAgent('u-h12');
+    const meetingId = await insertMeeting(userId, {
+      type: 'flash', capacity: 4, endAt: null, startAt: '2030-03-03T19:00:00+09:00', status: 'recruiting',
+    });
+    await insertParticipant(meetingId, await createUser('u-p12a'), 'confirmed');
+    await insertParticipant(meetingId, await createUser('u-p12b'), 'confirmed');
+
+    const body = {
+      type: 'flash', title: '수정', category: '운동', description: 'x',
+      regionSido: '서울특별시', regionSigungu: '강남구', regionEupmyeondong: null,
+      startAt: '2030-03-03T20:00:00+09:00', endAt: null, capacity: 2, adultOnly: false,
+      openChatUrl: 'https://open.kakao.com/o/edited',
+    };
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(body);
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('closed');
+  });
 });
