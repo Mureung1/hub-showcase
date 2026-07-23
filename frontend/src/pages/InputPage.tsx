@@ -83,6 +83,7 @@ function InputPage() {
   const [showJson, setShowJson] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [progress, setProgress] = useState(0)
 
   // 한 번 제출한 뒤에는 입력이 바뀔 때마다 다시 검증해서, 값을 채우면 빨간 표시가 즉시 사라지도록 함.
   // 제출 전에는 검증을 실행하지 않으므로 처음에는 빨갛게 표시되지 않음.
@@ -91,6 +92,27 @@ function InputPage() {
       setValidationErrors(validateForm(formState))
     }
   }, [formState, hasSubmitted])
+
+  // 분석 진행 상태 진행바 업데이트 타이머
+  useEffect(() => {
+    let interval: any
+    if (isSubmitting) {
+      setProgress(0)
+      interval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev < 50) return prev + 5
+          if (prev < 80) return prev + 2
+          if (prev < 95) return prev + 0.5
+          return prev
+        })
+      }, 300)
+    } else {
+      setProgress(0)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isSubmitting])
 
   function handleFieldChange<K extends keyof ProjectFormState>(field: K, value: ProjectFormState[K]) {
     setFormState((prev) => ({ ...prev, [field]: value }))
@@ -331,11 +353,17 @@ function InputPage() {
         </div>
       </section>
 
-      <div className="submit-row">
+      <div className="submit-row" style={{ flexDirection: 'column', gap: 'var(--space-md)' }}>
         {submitError && <span className="error-text">{submitError}</span>}
         <button type="button" className="btn btn-primary" onClick={handleSubmit} disabled={isSubmitting}>
           {isSubmitting ? '분석 중...' : '분석 시작'}
         </button>
+        {isSubmitting && (
+          <div className="progress-container">
+            <div className="progress-bar" style={{ width: `${Math.round(progress)}%` }} />
+            <p className="progress-label">분석이 진행 중입니다... ({Math.round(progress)}%)</p>
+          </div>
+        )}
       </div>
 
       <section className="json-panel" style={{ marginTop: 'var(--space-lg)' }}>

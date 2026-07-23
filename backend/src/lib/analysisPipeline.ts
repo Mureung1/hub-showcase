@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import { tagHypothesesFromTranscript, EvidenceTagRecord, HypothesisRef } from './hypothesisTagger';
 import { generateVerificationResult, VerificationResultRecord } from './verificationResult';
+import { runWithTimeoutAndRetry } from './timeoutRetry';
 
 interface HypothesisRow {
   id: string;
@@ -36,13 +37,18 @@ export async function runAnalysisPipeline(params: {
   // 1단계: 인터뷰별로 전사문을 가설에 분류. evidence_tags에는 인터뷰별로 즉시 INSERT됨.
   const evidenceTags: EvidenceTagRecord[] = [];
   for (const interview of interviews) {
-    if (!interview.transcript?.trim()) continue;
+    const transcript = interview.transcript;
+    if (!transcript?.trim()) continue;
 
-    const tagged = await tagHypothesesFromTranscript({
-      interviewId: interview.id,
-      transcript: interview.transcript,
-      hypotheses: hypothesisRefs,
-    });
+    const tagged = await runWithTimeoutAndRetry(
+      () =>
+        tagHypothesesFromTranscript({
+          interviewId: interview.id,
+          transcript,
+          hypotheses: hypothesisRefs,
+        }),
+      { timeoutMs: 60000, maxRetries: 2 },
+    );
     evidenceTags.push(...tagged);
   }
 
@@ -58,12 +64,16 @@ export async function runAnalysisPipeline(params: {
         badge_label: tag.badge_label,
       }));
 
-    const result = await generateVerificationResult({
-      hypothesisId: hypothesis.id,
-      cause: hypothesis.cause,
-      effect: hypothesis.effect,
-      evidence: evidenceForHypothesis,
-    });
+    const result = await runWithTimeoutAndRetry(
+      () =>
+        generateVerificationResult({
+          hypothesisId: hypothesis.id,
+          cause: hypothesis.cause,
+          effect: hypothesis.effect,
+          evidence: evidenceForHypothesis,
+        }),
+      { timeoutMs: 60000, maxRetries: 2 },
+    );
     verificationResults.push(result);
 
     const { error: updateError } = await supabase
