@@ -2,9 +2,9 @@
 
 ## Wayfinder state
 
-- State: active
+- State: ready-for-spec
 - Surface: local-wayfinder-map
-- Next actor: /wayfinder
+- Next actor: /to-spec
 
 ## Destination
 
@@ -50,6 +50,7 @@ Node와 npm이 설치된 supported macOS arm64에서 repository·system Python·
 - [Landing의 product promise와 install truth를 검증한다](tickets/013-landing-install-truth.md) — C Open field guide의 제품 서사를 골격으로 B의 exact release card·execution path·trust adjacency를 결합하고, release-generated command·size·link와 bounded failure·rollback 표시 경계를 채택했다.
 - [최종 병렬 delivery contract와 integration protocol을 정한다](tickets/014-final-parallel-delivery-contracts.md) — 세 commit의 immutable contract spine, coordinator 1명+최대 3명의 exclusive lane writer, A-held transition lease와 B-owned Ready commit·native-context guard, serial Server composition, G-owned RC generator·coordinator-only clean assembly와 fixed-SHA single merge queue를 고정했다. 구현 DAG는 Ticket 015→016 결정 뒤 repository-only deterministic setup→provider-free packed bootstrap→live OAuth→승인 publication gate로 수렴한다.
 - [Public source·npm·Runtime publication gate를 확정한다](tickets/015-publication-release-gates.md) — Fixed RC와 detached 사용자 승인 뒤 public source→private application draft staging→immutable Runtime→CI-built exact npm provenance/readback을 거치며, publish credential 폐기는 모든 GAT-injected outcome의 orthogonal barrier이고 `npm green ∧ all GAT retired`에서만 actual public smoke→immutable application binding ledger→Pages current sentinel로 승격한다. Sentinel-backed conditional README와 recoverable receipt epoch로 부분 상태를 정직하게 reconcile하며 실패한 npm version·release identity를 재사용하지 않는다.
+- [Clean-machine product smoke protocol을 확정한다](tickets/016-clean-machine-smoke-protocol.md) — Scripted resolver·deterministic setup·packed black-box·prepublication live·exact public의 다섯 evidence class를 candidate digest로 묶고, pre-Ready native config·Skill guard와 I2 ephemeral instruction-source conformance, 실제 public bytes의 clean Mac first-run→Ready relaunch·cleanup을 결정론적 fault matrix와 분리한 release gate를 고정했다.
 
 ## Not yet specified
 
