@@ -25,12 +25,15 @@ import {
 } from './runtime-release-authority.js'
 import {
   createRuntimeCacheLayout,
+  createRuntimeQuarantineIdentity,
   createRuntimeStagingIdentity,
   inspectRuntimeCacheRoot,
   revalidateRuntimeCacheRootForMutation,
 } from './runtime-cache-authority.js'
 import {
+  inspectPublishedRuntimeGeneration,
   publishVerifiedRuntimeGeneration,
+  quarantineOwnedRuntimeGeneration,
   verifyPublishedRuntimeGeneration,
   verifyRuntimeGenerationTree,
 } from './runtime-generation.js'
@@ -166,6 +169,57 @@ test('publishes a staging receipt before rename and requires fresh tree readback
       (error: unknown) =>
         error instanceof RuntimeReleaseAuthorityError &&
         error.failure.code === 'runtime_integrity_failed',
+    )
+
+    const inspection = await inspectPublishedRuntimeGeneration({
+      admission: fixture.admission,
+      canonicalManifestBytes: fixture.canonicalManifestBytes,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+    })
+    assert.equal(inspection.kind, 'owned-invalid')
+    assert.equal(
+      inspection.kind === 'owned-invalid'
+        ? inspection.authority.roster
+        : undefined,
+      'complete',
+    )
+    if (inspection.kind !== 'owned-invalid') {
+      assert.fail('Expected an owned invalid generation')
+    }
+    const transactionNonce = '8'.repeat(32)
+    const controller = new AbortController()
+    const quarantine = await quarantineOwnedRuntimeGeneration(
+      {
+        admission: fixture.admission,
+        authority: inspection.authority,
+        canonicalManifestBytes: fixture.canonicalManifestBytes,
+        layout: fixture.layout,
+        mutationAuthority: fixture.mutationAuthority,
+        signal: controller.signal,
+        transactionNonce,
+      },
+      {
+        afterRename: async () => {
+          controller.abort()
+        },
+      },
+    )
+    assert.equal(quarantine.cancelledAfterCommit, true)
+    assert.equal(
+      await pathExists(fixture.layout.generation.root),
+      false,
+    )
+    assert.equal(
+      await pathExists(
+        createRuntimeQuarantineIdentity(
+          fixture.layout,
+          transactionNonce,
+          'generation',
+        ).path,
+      ),
+      true,
     )
   } finally {
     await rm(fixture.root, { recursive: true, force: true })

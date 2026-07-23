@@ -23,6 +23,7 @@ import type {
 } from './runtime-archive-extraction.js'
 import {
   createRuntimeGenerationVerificationReceipt,
+  createRuntimeQuarantineIdentity,
   revalidateRuntimeCacheRootForMutation,
 } from './runtime-cache-authority.js'
 import type {
@@ -58,6 +59,37 @@ export type PublishedRuntimeGenerationSnapshot = {
    * runtime_cancelled without reporting ready.
    */
   readonly cancelledAfterCommit: boolean
+}
+
+export type RuntimeGenerationQuarantineAuthority = {
+  readonly kind: 'runtime_generation_quarantine_authority'
+  readonly generationIdentity: RuntimeFileSystemIdentity
+  readonly receipt: RuntimeGenerationVerificationReceipt
+  readonly roster: 'complete' | 'missing-runtime'
+}
+
+export type RuntimeGenerationInspection =
+  | {
+      readonly kind: 'absent'
+    }
+  | {
+      readonly kind: 'verified'
+      readonly generation: PublishedRuntimeGenerationSnapshot
+    }
+  | {
+      readonly kind: 'owned-invalid'
+      readonly authority: RuntimeGenerationQuarantineAuthority
+    }
+
+export type RuntimeGenerationQuarantineResult = {
+  readonly kind: 'runtime_generation_quarantined'
+  readonly cancelledAfterCommit: boolean
+}
+
+export type RuntimeGenerationQuarantineTestOptions = {
+  readonly beforeRename?: () => Promise<void>
+  readonly afterRename?: () => Promise<void>
+  readonly afterSync?: () => Promise<void>
 }
 
 export type RuntimeGenerationPublishInput = {
@@ -233,13 +265,28 @@ export async function verifyPublishedRuntimeGeneration(input: {
   readonly mutationAuthority: RuntimeCacheMutationAuthority
   readonly signal: AbortSignal
 }): Promise<PublishedRuntimeGenerationSnapshot | undefined> {
+  const inspection = await inspectPublishedRuntimeGeneration(input)
+  if (inspection.kind === 'absent') return undefined
+  if (inspection.kind === 'verified') return inspection.generation
+  throw runtimeAuthorityError('runtime_integrity_failed', {
+    kind: 'runtime_generation_owned_invalid',
+  })
+}
+
+export async function inspectPublishedRuntimeGeneration(input: {
+  readonly admission: RuntimeReleaseAdmission
+  readonly canonicalManifestBytes: Uint8Array
+  readonly layout: RuntimeCacheLayout
+  readonly mutationAuthority: RuntimeCacheMutationAuthority
+  readonly signal: AbortSignal
+}): Promise<RuntimeGenerationInspection> {
   assertCommonBindings(input)
   assertNotCancelled(input.signal)
   const cache = await revalidateGenerationAuthority(input)
   const generationStats = await lstatIfPresent(
     input.layout.generation.root,
   )
-  if (generationStats === undefined) return undefined
+  if (generationStats === undefined) return { kind: 'absent' }
   const generationIdentity = assertOwnedDirectoryStats({
     expectedDevice: cache.generationNamespace.device,
     expectedMode: 0o700,
@@ -252,11 +299,22 @@ export async function verifyPublishedRuntimeGeneration(input: {
     input.layout.generation.root,
     'runtime_generation_final_noncanonical',
   )
-  await assertExactRoster(
+  const roster = await readDirectoryRoster(
     input.layout.generation.root,
-    GENERATION_ROOT_ROSTER,
     'runtime_generation_final_roster_invalid',
   )
+  const completeRoster = sameStringArray(
+    roster,
+    GENERATION_ROOT_ROSTER,
+  )
+  const missingRuntimeRoster = sameStringArray(roster, [
+    'receipt.json',
+  ])
+  if (!completeRoster && !missingRuntimeRoster) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_generation_final_roster_ambiguous',
+    })
+  }
   const expectedReceipt =
     createRuntimeGenerationVerificationReceipt(
       input.layout,
@@ -268,14 +326,44 @@ export async function verifyPublishedRuntimeGeneration(input: {
     expectedReceipt,
     receiptPath: input.layout.generation.receiptPath,
   })
-  const tree = await verifyRuntimeGenerationTree({
-    admission: input.admission,
-    canonicalManifestBytes: input.canonicalManifestBytes,
-    expectedDevice: generationIdentity.device,
-    expectedOwnerUid: cache.expectedOwnerUid,
-    runtimeRoot: input.layout.generation.runtimeRoot,
-    signal: input.signal,
-  })
+  const authority: RuntimeGenerationQuarantineAuthority = {
+    kind: 'runtime_generation_quarantine_authority',
+    generationIdentity,
+    receipt,
+    roster: completeRoster ? 'complete' : 'missing-runtime',
+  }
+  if (missingRuntimeRoster) {
+    await assertOwnedGenerationAuthorityStable({
+      cache,
+      generationIdentity,
+      input,
+      receipt,
+      roster,
+    })
+    return { kind: 'owned-invalid', authority }
+  }
+  let tree: RuntimeGenerationTreeVerificationSnapshot
+  try {
+    tree = await verifyRuntimeGenerationTree({
+      admission: input.admission,
+      canonicalManifestBytes: input.canonicalManifestBytes,
+      expectedDevice: generationIdentity.device,
+      expectedOwnerUid: cache.expectedOwnerUid,
+      runtimeRoot: input.layout.generation.runtimeRoot,
+      signal: input.signal,
+    })
+  } catch (error) {
+    if (isCancellationError(error)) throw error
+    if (!isIntegrityError(error)) throw error
+    await assertOwnedGenerationAuthorityStable({
+      cache,
+      generationIdentity,
+      input,
+      receipt,
+      roster,
+    })
+    return { kind: 'owned-invalid', authority }
+  }
   assertNotCancelled(input.signal)
   await assertGenerationReadbackStable({
     cache,
@@ -285,14 +373,202 @@ export async function verifyPublishedRuntimeGeneration(input: {
     runtimeIdentity: tree.runtimeIdentity,
   })
   return {
-    kind: 'published_runtime_generation_snapshot',
-    generationIdentity,
-    receipt,
-    runtime: verifiedRuntime(input.admission, input.layout),
-    runtimeIdentity: tree.runtimeIdentity,
-    tree: tree.tree,
-    cancelledAfterCommit: false,
+    kind: 'verified',
+    generation: {
+      kind: 'published_runtime_generation_snapshot',
+      generationIdentity,
+      receipt,
+      runtime: verifiedRuntime(input.admission, input.layout),
+      runtimeIdentity: tree.runtimeIdentity,
+      tree: tree.tree,
+      cancelledAfterCommit: false,
+    },
   }
+}
+
+/**
+ * Moves only the exact app-owned invalid generation previously returned by
+ * inspection. Generation and quarantine directories are revalidated before
+ * the cooperative-lease rename, then both namespace mutations are synced and
+ * read back before cancellation can be surfaced.
+ */
+export async function quarantineOwnedRuntimeGeneration(
+  input: {
+    readonly admission: RuntimeReleaseAdmission
+    readonly authority: RuntimeGenerationQuarantineAuthority
+    readonly canonicalManifestBytes: Uint8Array
+    readonly layout: RuntimeCacheLayout
+    readonly mutationAuthority: RuntimeCacheMutationAuthority
+    readonly signal: AbortSignal
+    readonly transactionNonce: string
+  },
+  testOptions: RuntimeGenerationQuarantineTestOptions = {},
+): Promise<RuntimeGenerationQuarantineResult> {
+  assertCommonBindings(input)
+  assertTransactionNonce(input.transactionNonce)
+  assertNotCancelled(input.signal)
+
+  const observed = await inspectPublishedRuntimeGeneration(input)
+  if (
+    observed.kind !== 'owned-invalid' ||
+    !sameGenerationQuarantineAuthority(
+      observed.authority,
+      input.authority,
+    )
+  ) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_generation_quarantine_authority_changed',
+    })
+  }
+
+  const cache = await revalidateGenerationAuthority(input)
+  const quarantine = createRuntimeQuarantineIdentity(
+    input.layout,
+    input.transactionNonce,
+    'generation',
+  )
+  await assertPathAbsent(
+    quarantine.path,
+    'runtime_generation_quarantine_destination_exists',
+  )
+  await assertOwnedGenerationAuthorityStable({
+    cache,
+    generationIdentity: input.authority.generationIdentity,
+    input,
+    receipt: input.authority.receipt,
+    roster: generationRoster(input.authority.roster),
+  })
+  await testOptions.beforeRename?.()
+  await assertOwnedGenerationAuthorityStable({
+    cache,
+    generationIdentity: input.authority.generationIdentity,
+    input,
+    receipt: input.authority.receipt,
+    roster: generationRoster(input.authority.roster),
+  })
+  await assertPathAbsent(
+    quarantine.path,
+    'runtime_generation_quarantine_destination_changed',
+  )
+  assertNotCancelled(input.signal)
+
+  let commitStarted = false
+  try {
+    commitStarted = true
+    await rename(input.layout.generation.root, quarantine.path)
+    await testOptions.afterRename?.()
+    await syncOwnedDirectory({
+      expectedIdentity: cache.generationParent,
+      expectedMode: 0o700,
+      path: path.dirname(input.layout.generation.root),
+    })
+    await syncOwnedDirectory({
+      expectedIdentity: cache.quarantineNamespace,
+      expectedMode: 0o700,
+      path: input.layout.namespaces.quarantine,
+    })
+    await testOptions.afterSync?.()
+    await assertGenerationQuarantineReadback({
+      authority: input.authority,
+      cache,
+      input,
+      quarantinePath: quarantine.path,
+    })
+    return {
+      kind: 'runtime_generation_quarantined',
+      cancelledAfterCommit: input.signal.aborted,
+    }
+  } catch (error) {
+    if (!commitStarted && error instanceof RuntimeReleaseAuthorityError) {
+      throw error
+    }
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_generation_quarantine_incomplete',
+      cause: error,
+    })
+  }
+}
+
+async function assertGenerationQuarantineReadback(input: {
+  readonly authority: RuntimeGenerationQuarantineAuthority
+  readonly cache: GenerationAuthoritySnapshot
+  readonly input: {
+    readonly admission: RuntimeReleaseAdmission
+    readonly layout: RuntimeCacheLayout
+    readonly mutationAuthority: RuntimeCacheMutationAuthority
+  }
+  readonly quarantinePath: string
+}): Promise<void> {
+  const current = await revalidateGenerationAuthority(input.input)
+  assertSameGenerationAuthoritySnapshot(input.cache, current)
+  await assertPathAbsent(
+    input.input.layout.generation.root,
+    'runtime_generation_present_after_quarantine',
+  )
+  await inspectOwnedDirectory({
+    expectedDevice: input.cache.quarantineNamespace.device,
+    expectedIdentity: input.authority.generationIdentity,
+    expectedMode: 0o700,
+    expectedOwnerUid: input.cache.expectedOwnerUid,
+    path: input.quarantinePath,
+    evidenceKind: 'runtime_generation_quarantine_identity_invalid',
+  })
+  await assertCanonicalDirectory(
+    input.quarantinePath,
+    'runtime_generation_quarantine_noncanonical',
+  )
+  await assertExactRoster(
+    input.quarantinePath,
+    generationRoster(input.authority.roster),
+    'runtime_generation_quarantine_roster_invalid',
+  )
+  await readAndVerifyReceipt({
+    expectedDevice: input.authority.generationIdentity.device,
+    expectedOwnerUid: input.cache.expectedOwnerUid,
+    expectedReceipt: input.authority.receipt,
+    receiptPath: path.join(input.quarantinePath, 'receipt.json'),
+  })
+  assertSameGenerationAuthoritySnapshot(
+    input.cache,
+    await revalidateGenerationAuthority(input.input),
+  )
+}
+
+async function assertOwnedGenerationAuthorityStable(input: {
+  readonly cache: GenerationAuthoritySnapshot
+  readonly generationIdentity: RuntimeFileSystemIdentity
+  readonly input: {
+    readonly admission: RuntimeReleaseAdmission
+    readonly layout: RuntimeCacheLayout
+    readonly mutationAuthority: RuntimeCacheMutationAuthority
+  }
+  readonly receipt: RuntimeGenerationVerificationReceipt
+  readonly roster: readonly string[]
+}): Promise<void> {
+  await revalidateGenerationAuthority(input.input)
+  await inspectOwnedDirectory({
+    expectedDevice: input.cache.generationNamespace.device,
+    expectedIdentity: input.generationIdentity,
+    expectedMode: 0o700,
+    expectedOwnerUid: input.cache.expectedOwnerUid,
+    path: input.input.layout.generation.root,
+    evidenceKind: 'runtime_generation_owned_identity_changed',
+  })
+  const currentRoster = await readDirectoryRoster(
+    input.input.layout.generation.root,
+    'runtime_generation_owned_roster_changed',
+  )
+  if (!sameStringArray(input.roster, currentRoster)) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_generation_owned_roster_changed',
+    })
+  }
+  await readAndVerifyReceipt({
+    expectedDevice: input.generationIdentity.device,
+    expectedOwnerUid: input.cache.expectedOwnerUid,
+    expectedReceipt: input.receipt,
+    receiptPath: input.input.layout.generation.receiptPath,
+  })
 }
 
 async function assertGenerationReadbackStable(input: {
@@ -340,6 +616,7 @@ type GenerationAuthoritySnapshot = {
   readonly expectedOwnerUid: number
   readonly generationNamespace: RuntimeFileSystemIdentity
   readonly generationParent: RuntimeFileSystemIdentity
+  readonly quarantineNamespace: RuntimeFileSystemIdentity
 }
 
 async function revalidateGenerationAuthority(input: {
@@ -363,9 +640,15 @@ async function revalidateGenerationAuthority(input: {
   )
   const generationNamespace =
     current.snapshot.namespaceIdentities.generations
-  if (generationNamespace === undefined) {
+  const quarantineNamespace =
+    current.snapshot.namespaceIdentities.quarantine
+  if (
+    generationNamespace === undefined ||
+    quarantineNamespace === undefined ||
+    generationNamespace.device !== quarantineNamespace.device
+  ) {
     throw runtimeAuthorityError('runtime_cache_unsafe', {
-      kind: 'runtime_generation_namespace_missing',
+      kind: 'runtime_generation_namespaces_invalid',
     })
   }
   const generationParent = await inspectOwnedDirectory({
@@ -383,6 +666,7 @@ async function revalidateGenerationAuthority(input: {
     expectedOwnerUid: current.snapshot.expectedOwnerUid,
     generationNamespace,
     generationParent,
+    quarantineNamespace,
   }
 }
 
@@ -416,8 +700,26 @@ function assertCommonBindings(input: {
   readonly layout: RuntimeCacheLayout
   readonly mutationAuthority: RuntimeCacheMutationAuthority
 }): void {
+  const expectedGenerationRoot = path.join(
+    input.layout.cacheRoot,
+    'generations',
+    input.admission.identity.releaseId,
+    input.admission.identity.target,
+    input.admission.identity.archiveSha256,
+  )
   if (
+    input.mutationAuthority.kind !==
+      'runtime_cache_mutation_authority' ||
+    input.mutationAuthority.snapshot.appDataRoot !==
+      input.layout.appDataRoot ||
+    input.mutationAuthority.snapshot.cacheRoot !==
+      input.layout.cacheRoot ||
     !sameRelease(input.layout.identity, input.admission.identity) ||
+    input.layout.namespaces.generations !==
+      path.join(input.layout.cacheRoot, 'generations') ||
+    input.layout.namespaces.quarantine !==
+      path.join(input.layout.cacheRoot, 'quarantine') ||
+    input.layout.generation.root !== expectedGenerationRoot ||
     input.layout.generation.runtimeRoot !==
       path.join(input.layout.generation.root, 'runtime') ||
     input.layout.generation.receiptPath !==
@@ -429,6 +731,59 @@ function assertCommonBindings(input: {
   ) {
     throw runtimeAuthorityError('runtime_cache_unsafe', {
       kind: 'runtime_generation_binding_invalid',
+    })
+  }
+}
+
+function assertSameGenerationAuthoritySnapshot(
+  left: GenerationAuthoritySnapshot,
+  right: GenerationAuthoritySnapshot,
+): void {
+  if (
+    left.expectedOwnerUid !== right.expectedOwnerUid ||
+    !sameIdentity(
+      left.generationNamespace,
+      right.generationNamespace,
+    ) ||
+    !sameIdentity(left.generationParent, right.generationParent) ||
+    !sameIdentity(
+      left.quarantineNamespace,
+      right.quarantineNamespace,
+    )
+  ) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_generation_cache_authority_changed',
+    })
+  }
+}
+
+function sameGenerationQuarantineAuthority(
+  left: RuntimeGenerationQuarantineAuthority,
+  right: RuntimeGenerationQuarantineAuthority,
+): boolean {
+  return (
+    left.kind === right.kind &&
+    left.roster === right.roster &&
+    sameIdentity(
+      left.generationIdentity,
+      right.generationIdentity,
+    ) &&
+    encodeReceipt(left.receipt).equals(encodeReceipt(right.receipt))
+  )
+}
+
+function generationRoster(
+  roster: RuntimeGenerationQuarantineAuthority['roster'],
+): readonly string[] {
+  return roster === 'complete'
+    ? GENERATION_ROOT_ROSTER
+    : ['receipt.json']
+}
+
+function assertTransactionNonce(value: string): void {
+  if (!/^[0-9a-f]{32}$/u.test(value)) {
+    throw runtimeAuthorityError('runtime_cache_unsafe', {
+      kind: 'runtime_generation_quarantine_nonce_invalid',
     })
   }
 }
@@ -663,6 +1018,19 @@ async function assertExactRoster(
   expected: readonly string[],
   evidenceKind: string,
 ): Promise<void> {
+  const entries = await readDirectoryRoster(directory, evidenceKind)
+  const orderedExpected = [...expected].sort(compareUnicodeCodePoints)
+  if (!sameStringArray(entries, orderedExpected)) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: evidenceKind,
+    })
+  }
+}
+
+async function readDirectoryRoster(
+  directory: string,
+  evidenceKind: string,
+): Promise<string[]> {
   let entries: string[]
   try {
     entries = (await readdir(directory)).sort(compareUnicodeCodePoints)
@@ -672,17 +1040,7 @@ async function assertExactRoster(
       cause: error,
     })
   }
-  const orderedExpected = [...expected].sort(compareUnicodeCodePoints)
-  if (
-    entries.length !== orderedExpected.length ||
-    entries.some(
-      (entry, index) => entry !== orderedExpected[index],
-    )
-  ) {
-    throw runtimeAuthorityError('runtime_recovery_required', {
-      kind: evidenceKind,
-    })
-  }
+  return entries
 }
 
 async function assertPathAbsent(
@@ -832,6 +1190,16 @@ function sameTree(
   )
 }
 
+function sameStringArray(
+  left: readonly string[],
+  right: readonly string[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((value, index) => value === right[index])
+  )
+}
+
 function isContained(root: string, candidate: string): boolean {
   const relative = path.relative(root, candidate)
   return (
@@ -869,6 +1237,20 @@ function assertNotCancelled(signal: AbortSignal): void {
       kind: 'runtime_generation_cancelled',
     })
   }
+}
+
+function isCancellationError(error: unknown): boolean {
+  return (
+    error instanceof RuntimeReleaseAuthorityError &&
+    error.failure.code === 'runtime_cancelled'
+  )
+}
+
+function isIntegrityError(error: unknown): boolean {
+  return (
+    error instanceof RuntimeReleaseAuthorityError &&
+    error.failure.code === 'runtime_integrity_failed'
+  )
 }
 
 function isNodeError(
