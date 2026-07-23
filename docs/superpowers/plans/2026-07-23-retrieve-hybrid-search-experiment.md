@@ -493,9 +493,9 @@ npx tsc --noEmit -p tsconfig.node.json
 
 **Steps:**
 
-- [ ] insight 72개와 query 45개를 모델 실행 전에 고정한다.
-- [ ] calibration/check, lexical/semantic/negative 분포를 검증한다.
-- [ ] 관련도 label과 fixture hash를 고정한다.
+- [x] insight 72개와 query 45개를 모델 실행 전에 고정한다.
+- [x] calibration/check, lexical/semantic/negative 분포를 검증한다.
+- [x] 관련도 label과 fixture hash를 고정한다.
 - [ ] 현행·local semantic·local hybrid를 실행한다.
 - [ ] `k=60`과 `k=10`에서 결론이 뒤집히는지 확인한다.
 - [ ] 수치와 query별 오류 사례를 함께 보고한다.
