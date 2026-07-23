@@ -35,9 +35,10 @@ export async function notifyDealCreated(deal, storeName) {
     await notificationRepo.insertMany({ userIds, dealId: deal.id, title, body })
 
     const push = await sendToUsers(userIds, { title, body, dealId: deal.id })
-    console.log(
-      `알림: 대상 ${targets.length}명, 푸시 ${push.skipped ? '비활성' : `${push.sent}건 발송`}`,
-    )
+    const pushLog = push.skipped
+      ? '비활성'
+      : `성공 ${push.sent} / 실패 ${push.failed ?? 0}${push.cleaned ? ` / 무효 토큰 ${push.cleaned}건 정리` : ''}`
+    console.log(`알림: 대상 ${targets.length}명, 푸시 ${pushLog}`)
 
     return { targetCount: targets.length, push }
   } catch (err) {

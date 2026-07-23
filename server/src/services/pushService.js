@@ -8,6 +8,21 @@ const DEAD_TOKEN_CODES = [
 ]
 
 /*
+ * 정리해야 할 죽은 토큰인지 판정.
+ *
+ * messaging/invalid-argument는 토큰이 아니라 페이로드가 잘못됐을 때도 나온다.
+ * 코드만 보고 지우면 발송 코드 버그 하나로 전체 기기 토큰이 삭제될 수 있어,
+ * 메시지가 토큰을 지목할 때만 정리한다(애매하면 남겨두는 쪽이 안전).
+ */
+function isDeadToken(error) {
+  if (!error) return false
+  if (DEAD_TOKEN_CODES.includes(error.code)) return true
+  return (
+    error.code === 'messaging/invalid-argument' && /registration token/i.test(error.message ?? '')
+  )
+}
+
+/*
  * 대상 사용자들의 기기로 푸시 발송 (T-13).
  * 푸시가 비활성(키 미설정)이거나 실패해도 호출부를 막지 않는다 — 인앱 알림이 폴백.
  */
@@ -31,7 +46,7 @@ export async function sendToUsers(userIds, { title, body, dealId }) {
   // 무효 토큰은 즉시 정리해 다음 발송에서 빠지게 한다
   const dead = []
   res.responses.forEach((r, i) => {
-    if (!r.success && DEAD_TOKEN_CODES.includes(r.error?.code)) dead.push(tokens[i])
+    if (!r.success && isDeadToken(r.error)) dead.push(tokens[i])
   })
   if (dead.length > 0) await deviceTokenRepo.removeTokens(dead)
 
