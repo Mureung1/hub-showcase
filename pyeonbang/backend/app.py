@@ -53,9 +53,30 @@ def init_db():
     conn.commit()
     conn.close()
 
-# 앱 데코레이터를 쓰지 않고 context 환경에서 최초 DB 테이블 구성
-with app.app_context():
-    init_db()
+def calculate_grade(price, protein):
+    """
+    3단계 가성비 검증 로직
+    1단계: 건강 방어선 (단백질 10g 미만) -> 3등급 (주의)
+    2단계: 지갑 방어선 (가격 6,500원 초과) -> 3등급 (지갑 경고)
+    3단계: 프로틴 가성비 지수 ((단백질 / 가격) * 1000)
+           >= 6.5 -> 1등급 (갓성비) (green)
+           >= 5.0 -> 2등급 (보통) (yellow)
+           < 5.0 -> 3등급 (주의) (red)
+    """
+    score = round((protein / price) * 1000, 2) if price and price > 0 else 0.0
+
+    if protein < 10:
+        return score, "3등급 (주의/간식)", "red", "단백질이 10g 미만으로 가성비 및 건강 관리에 부적합합니다."
+    
+    if price > 6500:
+        return score, "3등급 (지갑 경고)", "red", "편의점 한 끼 지출 상한선(6,500원)을 초과한 과소비 경고 대상입니다."
+
+    if score >= 6.5:
+        return score, "1등급 (갓성비)", "green", f"1,000원당 단백질 {score}g으로 최고의 갓성비 단백질 제품입니다!"
+    elif score >= 5.0:
+        return score, "2등급 (보통)", "yellow", f"1,000원당 단백질 {score}g으로 적정한 영양 가성비 제품입니다."
+    else:
+        return score, "3등급 (주의)", "red", f"1,000원당 단백질 {score}g으로 단백질 가성비가 떨어집니다."
 
 @app.route('/')
 def home():
@@ -254,6 +275,16 @@ def upload_image():
             "desc": "1,000원당 단백질 함량이 6.5g 이상인 최고의 갓성비 단백질 제품입니다!"
         }
 
+    custom_price = request.form.get('price')
+    if custom_price is not None and custom_price.strip() != '':
+        try:
+            custom_price_int = int(custom_price)
+            if custom_price_int <= 0:
+                return jsonify({'status': 'fail', 'message': '가격은 1원 이상이어야 합니다.'}), 400
+            mock_data["price"] = custom_price_int
+        except ValueError:
+            return jsonify({'status': 'fail', 'message': '유효한 숫자 가격을 입력해 주세요.'}), 400
+
     # 파일 저장 (프론트엔드 미리보기용)
     try:
         original_filename = file.filename
@@ -340,9 +371,8 @@ def upload_image():
         if any(k in mock_data["name"] for k in soup_keywords):
             sodium_tip = "국물을 반만 남겨도 나트륨 섭취를 최대 50% 줄일 수 있어요! 면 위주로 가볍게 드시는 것을 추천합니다. 😉"
         
-    # 가성비 공식에 따른 스코어 계산
-    score = (mock_data["protein"] / mock_data["price"]) * 1000
-    score = round(score, 2)
+    # 3단계 가성비 검증 로직으로 동적 등급 및 설명 산출
+    score, grade, grade_type, desc = calculate_grade(mock_data["price"], mock_data["protein"])
 
     # 데이터베이스에 분석 결과 영구 저장
     try:
@@ -356,7 +386,7 @@ def upload_image():
         """, (
             mock_data["name"], mock_data["brand"], mock_data["price"], mock_data["kcal"],
             mock_data["carbs"], mock_data["protein"], mock_data["fat"], mock_data.get("sodium", 0), mock_data.get("sugar", 0),
-            score, mock_data["rating"], mock_data["grade_type"], mock_data["desc"],
+            score, grade, grade_type, desc,
             comment, sodium_tip, saved_price, saved_calories
         ))
         conn.commit()
@@ -377,9 +407,9 @@ def upload_image():
         'sugar': mock_data.get("sugar", 0),
         'type': mock_data.get("type", "meal"),
         'score': score,
-        'grade': mock_data["rating"],
-        'grade_type': mock_data["grade_type"],
-        'desc': mock_data["desc"],
+        'grade': grade,
+        'grade_type': grade_type,
+        'desc': desc,
         'comment': comment,
         'sodium_tip': sodium_tip,
         'saved_price': saved_price,
@@ -429,6 +459,14 @@ def add_history():
         if not data:
             return jsonify({'status': 'fail', 'message': '요청 데이터가 유효하지 않습니다.'}), 400
             
+        product_name = data.get("product_name")
+        if not product_name:
+            return jsonify({'status': 'fail', 'message': '제품명은 필수 항목입니다.'}), 400
+
+        price = data.get("price")
+        if price is None or not isinstance(price, (int, float)) or price <= 0:
+            return jsonify({'status': 'fail', 'message': '유효한 가격(1원 이상)이 필요합니다.'}), 400
+
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
