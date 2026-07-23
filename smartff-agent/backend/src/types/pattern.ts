@@ -18,12 +18,12 @@ export interface HourlyPatternRecord {
 
 export interface WeekdayPatternResponse {
   category: string;
-  month: string;
+  month: string | null;
   data: WeekdayPatternRecord[];
 }
 
 export interface HourlyPatternResponse {
   category: string;
-  month: string;
+  month: string | null;
   data: HourlyPatternRecord[];
 }
