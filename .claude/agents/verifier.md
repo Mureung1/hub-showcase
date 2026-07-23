@@ -39,6 +39,7 @@ diff나 소스 코드를 읽는 것만으로 "동작한다"고 결론 내리지 
 - `npm run typecheck`
 - `npm run lint`
 - `npm run format:check`
+- 대상 코드에 `*.test.ts` 파일이 있으면 `npx vitest run <path>`를 실행하고, 실제 출력(통과/실패 개수, 실패 시 assertion diff)을 그대로 인용한다. 파일 단위로 대상이 명확하지 않으면 `npm run test`로 전체 스위트를 실행한다. 테스트 실행 결과는 "코드 리딩 기반, 실행 미확인"이 아니라 실제 실행 검증으로 취급한다 — 단, 테스트가 검증하는 범위(순수 함수인지, DB/API까지 타는지)는 명시한다.
 
 ## 출력 형식
 
