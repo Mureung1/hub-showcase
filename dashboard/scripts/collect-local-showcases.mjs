@@ -46,7 +46,7 @@ async function copyImage({ branch, relativePath, outputDir, slug, readBranchFile
 function fillWithDummyProjects(projects, minimumCount = 16) {
   const result = [...projects];
   const template = projects[0];
-  const thumbnailUrl = template?.thumbnailUrl ?? './dummy-thumbnail.webp';
+  const thumbnailUrl = template?.thumbnailUrl ?? './dummy-thumbnail.svg';
   const screenshotUrls = template?.screenshotUrls?.length
     ? template.screenshotUrls
     : [thumbnailUrl];
@@ -210,7 +210,7 @@ if (isDirectRun) {
 
   console.log(`${result.projectCount}개 프로젝트를 수집했습니다.`);
   if (result.errors.length > 0) {
-    console.error(JSON.stringify(result.errors, null, 2));
-    process.exitCode = 1;
+    console.warn(`자료가 올바르지 않아 ${result.errors.length}개 브랜치를 제외했습니다.`);
+    console.warn(JSON.stringify(result.errors, null, 2));
   }
 }

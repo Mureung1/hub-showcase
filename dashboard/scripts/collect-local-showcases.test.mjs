@@ -62,3 +62,23 @@ test('유효한 브랜치의 JSON과 이미지만 공개 자료로 만든다', a
   );
   assert.equal(thumbnail, 'thumbnail');
 });
+
+test('잘못된 showcase 자료가 있어도 더미 자료로 계속 만든다', async () => {
+  const outputDir = await mkdtemp(path.join(os.tmpdir(), 'showcase-invalid-'));
+
+  try {
+    const result = await collectLocalShowcases({
+      branches: ['broken-project'],
+      outputDir,
+      readBranchFile: async () => Buffer.from('{"title":'),
+    });
+
+    assert.equal(result.realProjectCount, 0);
+    assert.equal(result.projectCount, 16);
+    assert.equal(result.dummyProjectCount, 16);
+    assert.equal(result.skippedInvalid, 1);
+    assert.equal(result.projects[0].thumbnailUrl, './dummy-thumbnail.svg');
+  } finally {
+    await rm(outputDir, { recursive: true, force: true });
+  }
+});

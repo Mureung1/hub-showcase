@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title">
+  <title id="title">프로젝트 이미지 준비 중</title>
+  <rect width="1200" height="675" fill="#e7ece9"/>
+  <path d="M0 530h1200v145H0z" fill="#d8e2dc"/>
+  <text x="600" y="330" fill="#687572" font-family="sans-serif" font-size="34" text-anchor="middle">이미지 준비 중</text>
+</svg>
