@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import AuthStatus from './AuthStatus.tsx'
+import { CalendarIcon, CameraIcon, HomeIcon, SettingsIcon, UsersIcon } from './icons.tsx'
 
 const NAV_ITEMS = [
-  { to: '/', icon: '🏠', label: '홈' },
-  { to: '/record', icon: '📷', label: '기록' },
-  { to: '/calendar', icon: '📅', label: '캘린더' },
-  { to: '/rooms', icon: '👥', label: '친구 방' },
-  { to: '/settings', icon: '⚙️', label: '설정' },
+  { to: '/', Icon: HomeIcon, label: '홈' },
+  { to: '/record', Icon: CameraIcon, label: '기록' },
+  { to: '/calendar', Icon: CalendarIcon, label: '캘린더' },
+  { to: '/rooms', Icon: UsersIcon, label: '친구 방' },
+  { to: '/settings', Icon: SettingsIcon, label: '설정' },
 ]
 
 type LayoutProps = {
@@ -28,19 +29,19 @@ function Layout({ title, children, hideNav = false }: LayoutProps) {
 
       {!hideNav && (
         <nav className="sticky bottom-0 flex w-full border-t border-border bg-card">
-          {NAV_ITEMS.map((item) => (
+          {NAV_ITEMS.map(({ to, Icon, label }) => (
             <NavLink
               className={({ isActive }) =>
                 `flex flex-1 flex-col items-center gap-[3px] py-2.5 pb-3 text-[11px] ${
                   isActive ? 'font-semibold text-accent' : 'text-muted'
                 }`
               }
-              end={item.to === '/'}
-              key={item.to}
-              to={item.to}
+              end={to === '/'}
+              key={to}
+              to={to}
             >
-              <span className="text-lg">{item.icon}</span>
-              {item.label}
+              <Icon className="h-5 w-5" />
+              {label}
             </NavLink>
           ))}
         </nav>
