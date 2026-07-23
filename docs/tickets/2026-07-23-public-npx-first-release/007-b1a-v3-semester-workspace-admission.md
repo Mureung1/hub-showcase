@@ -50,6 +50,27 @@
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `git diff --check`
 - Manual or live smoke: Temporary existing parent 아래 new leaf create/reopen과 v2 read-only inspection을 확인한다. 기존 사용자 directory를 fixture로 사용하지 않는다.
 
+## Candidate Evidence
+
+독립 filesystem/durability 및 current v2 compatibility review 전 candidate 증거다. Ticket state와 acceptance checkbox는 Coordinator review가 끝날 때까지 변경하지 않는다.
+
+| Evidence | Result |
+| --- | --- |
+| Fixed handoff | `269a3555d3adf52bf520b3de0b99c7cb3fee3ae7` |
+| Claim commit | `d73fa8a180083092f2cbcce44f892d8dada844a9` |
+| Implementation commit | `8eafbc197bb4568fe65d680f8de8df9eb404827b` |
+| Package codec/admission/fault gate | `npm test -w @ay-ple/semester-workspace` — `15/15` green |
+| Package compile gates | `npm run typecheck -w @ay-ple/semester-workspace`; `npm run build -w @ay-ple/semester-workspace` — green |
+| V3 conformance | Exact initial aggregate encode/fresh decode, positive safe integer `yearLevel`, bounded custom-capable term, opaque workspace ID, extra/nonempty/default drift rejection이 green |
+| Admission conformance | Inspect entry mutation 0, exclusive absent leaf, authority drift·existing empty·symlink·permission failure, minimal `.ay-ple/workspace-state.json` + `inbox/` + `courses/`, fresh reopen이 green |
+| Durability conformance | Root reservation, temp write, file sync, no-clobber hard-link publish, directory sync와 readback fault 9개 지점이 cross-instance `owned_incomplete → resumed → admitted` 또는 complete admitted로 수렴. Publish race와 post-publish drift bytes는 보존하고 success를 반환하지 않음 |
+| V2/incompatible preservation | Fixture SHA-256 `b753a066ff3ea3e56a560f8dd89d16fec14dab71d5aa795f927a57197118ffa9`; decoder-valid current v2는 `legacy_migration_required/readOnly`, malformed·future는 `incompatible/readOnly`; state와 unknown entry before/after byte identity green |
+| Root gates | `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `git diff --check 269a3555d3adf52bf520b3de0b99c7cb3fee3ae7...HEAD` — green |
+| Bounded manual smoke | Fresh temporary parent에서 `created → admitted` reopen, exact minimal tree, current v2 `legacy_migration_required/readOnly`와 byte identity `true`; temporary root cleanup 완료 |
+| Independent review | Pending — filesystem/durability reviewer와 current v2 compatibility reviewer가 fixed candidate range를 검토해야 함 |
+
+C-only follow-up은 두 가지다. 첫째, frozen `AuthorityBoundWorkspacePlan`은 B2a가 admission 전에 `PendingSetupReceipt.workspace.workspaceId`와 expected initial aggregate digest를 채울 private plan description을 제공하지 않는다. B2a가 digest를 역추론하지 않도록 Coordinator가 reviewed serial `contractTipSha`에서 caller-supplied identity 또는 Server-private plan description seam을 추가해야 한다. 둘째, 현재 동작을 소유하는 `packages/semester-workspace/README.md`는 이 lane의 `writablePaths` 밖이므로 integration에서 B1a 구현 상태와 명령을 반영해야 한다.
+
 ## Blocked By
 
 - [003-spine-s2-server-composition-stabilization.md](003-spine-s2-server-composition-stabilization.md) — Spine S2 — Server composition을 분리하고 Browser fail-closed oracle을 닫는다
