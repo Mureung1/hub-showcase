@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Trash2, RotateCcw, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getLatestStore, getPublishHistory } from '../api/client';
+import ErrorBanner from '../components/ErrorBanner';
+import SuccessBanner from '../components/SuccessBanner';
 
 export default function Archive() {
   const navigate = useNavigate();
@@ -10,6 +12,8 @@ export default function Archive() {
   const [currentStore, setCurrentStore] = useState(null);
   const [filterPlatform, setFilterPlatform] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   // Mock 영상 데이터
   const mockVideos = [
@@ -88,11 +92,13 @@ export default function Archive() {
             }
           } catch (publishError) {
             console.warn('발행 이력 로드 실패, Mock 데이터 사용:', publishError);
+            setError('발행 이력 조회에 실패했습니다. Mock 데이터를 표시합니다.');
             setVideos(mockVideos);
           }
         }
-      } catch (error) {
-        console.error('데이터 로드 실패:', error);
+      } catch (err) {
+        console.error('데이터 로드 실패:', err);
+        setError('데이터를 불러오는 중 오류가 발생했습니다.');
         setVideos(mockVideos);
       } finally {
         setLoading(false);
@@ -132,6 +138,20 @@ export default function Archive() {
 
   return (
     <div className="space-y-8">
+      {/* 에러 배너 */}
+      <ErrorBanner
+        message={error}
+        onClose={() => setError(null)}
+        autoClose={true}
+      />
+
+      {/* 성공 배너 */}
+      <SuccessBanner
+        message={successMessage}
+        onClose={() => setSuccessMessage(null)}
+        autoClose={true}
+      />
+
       {/* 헤더 */}
       <div>
         <h1 className="text-3xl font-bold text-[#151D48]">보관함</h1>

@@ -38,7 +38,7 @@ def load_image(image_path):
         return None
 
 def detect_and_crop(image_path, output_dir=None):
-    """YOLOv8로 상품 감지 및 크롭"""
+    """YOLOv8로 상품 감지 및 9:16 세로 영상 크롭"""
     try:
         # 이미지 로드
         image = load_image(image_path)
@@ -52,19 +52,33 @@ def detect_and_crop(image_path, output_dir=None):
         # 출력 디렉토리 생성
         Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-        # YOLOv8 모델 로드 (첫 실행 시 다운로드)
-        model = YOLO('yolov8n.pt')  # nano 모델 (빠름)
+        h, w = image.shape[:2]
+        print(f"[DEBUG] 원본 이미지 크기: {w}x{h}", file=sys.stderr)
 
-        # 객체 감지
-        results = model(image, conf=0.5)
+        # YOLOv8 모델 로드 (small 모델: 더 정확함)
+        model = YOLO('yolov8s.pt')  # small 모델 (정확도 향상)
+
+        # 객체 감지 (높은 confidence threshold)
+        results = model(image, conf=0.65)  # 더 정확한 감지
 
         if len(results) == 0 or len(results[0].boxes) == 0:
-            # 감지된 객체 없음 → 중앙 크롭 (기본 처리)
-            h, w = image.shape[:2]
-            x1, y1 = int(w * 0.1), int(h * 0.1)
-            x2, y2 = int(w * 0.9), int(h * 0.9)
+            # 감지된 객체 없음 → 중앙 9:16 크롭
+            print("[DEBUG] 객체 감지 실패, 중앙 크롭 사용", file=sys.stderr)
+            center_x, center_y = w // 2, h // 2
+
+            # 9:16 비율로 크롭
+            target_width = int(h * 9 / 16)  # 세로 기준으로 너비 계산
+            if target_width > w:
+                target_width = w
+
+            x1 = max(0, center_x - target_width // 2)
+            x2 = min(w, x1 + target_width)
+            if x2 - x1 < target_width:
+                x1 = max(0, x2 - target_width)
+
+            y1, y2 = 0, h
             confidence = 0.5
-            label = "full_frame"
+            label = "center_crop_9_16"
         else:
             # 가장 큰 객체 선택
             boxes = results[0].boxes
@@ -79,24 +93,48 @@ def detect_and_crop(image_path, output_dir=None):
             confidence = float(largest_box.conf[0])
             label = model.names[int(largest_box.cls[0])]
 
-            # 패딩 추가 (10% 마진)
-            h, w = image.shape[:2]
-            pad_x = int((x2 - x1) * 0.1)
-            pad_y = int((y2 - y1) * 0.1)
+            print(f"[DEBUG] 감지된 객체: {label} (신뢰도: {confidence:.3f})", file=sys.stderr)
+
+            # 패딩 추가 (15% 마진 - 더 넉넉하게)
+            pad_x = int((x2 - x1) * 0.15)
+            pad_y = int((y2 - y1) * 0.15)
             x1 = max(0, x1 - pad_x)
             y1 = max(0, y1 - pad_y)
             x2 = min(w, x2 + pad_x)
             y2 = min(h, y2 + pad_y)
 
+            # 9:16 비율로 맞추기
+            crop_h = y2 - y1
+            target_w = int(crop_h * 9 / 16)
+            crop_w = x2 - x1
+
+            if crop_w > target_w:
+                # 너비가 크면 중앙 부분 사용
+                excess = crop_w - target_w
+                x1 += excess // 2
+                x2 = x1 + target_w
+            elif crop_w < target_w:
+                # 너비가 부족하면 양쪽 확장
+                deficit = target_w - crop_w
+                x1 = max(0, x1 - deficit // 2)
+                x2 = min(w, x1 + target_w)
+                if x2 - x1 < target_w:
+                    x1 = max(0, x2 - target_w)
+
         # 이미지 크롭
         cropped = image[y1:y2, x1:x2]
 
-        # 크롭된 이미지 저장
+        # 크롭된 이미지 고품질로 저장
         import time
         timestamp = int(time.time() * 1000)
         output_filename = f"cropped_{timestamp}.jpg"
         output_path = Path(output_dir) / output_filename
-        cv2.imwrite(str(output_path), cropped)
+
+        # JPEG 고품질 저장 (품질: 95)
+        cv2.imwrite(str(output_path), cropped, [cv2.IMWRITE_JPEG_QUALITY, 95])
+
+        crop_h, crop_w = cropped.shape[:2]
+        print(f"[DEBUG] 크롭 완료: {crop_w}x{crop_h} (비율: {crop_w/crop_h:.2f})", file=sys.stderr)
 
         # 결과 반환
         result = {
@@ -109,6 +147,11 @@ def detect_and_crop(image_path, output_dir=None):
                 "y1": int(y1),
                 "x2": int(x2),
                 "y2": int(y2)
+            },
+            "cropped_dimensions": {
+                "width": crop_w,
+                "height": crop_h,
+                "aspect_ratio": round(crop_w / crop_h, 3)
             }
         }
 

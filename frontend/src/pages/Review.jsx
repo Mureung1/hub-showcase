@@ -2,6 +2,8 @@ import { Share2, Instagram, Play, Loader } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { publishVideo, saveDraftVideo, getLatestStore, getGenerationResult } from '../api/client';
+import ErrorBanner from '../components/ErrorBanner';
+import SuccessBanner from '../components/SuccessBanner';
 
 export default function Review() {
   const navigate = useNavigate();
@@ -185,17 +187,17 @@ export default function Review() {
         </div>
 
         {/* 상태 메시지 */}
-        {publishSuccess && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl">
-            <p className="text-sm text-green-700">✅ {publishSuccess}</p>
-          </div>
-        )}
+        <ErrorBanner
+          message={publishError}
+          onClose={() => setPublishError(null)}
+          autoClose={true}
+        />
 
-        {publishError && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl">
-            <p className="text-sm text-red-700">❌ {publishError}</p>
-          </div>
-        )}
+        <SuccessBanner
+          message={publishSuccess}
+          onClose={() => setPublishSuccess(null)}
+          autoClose={true}
+        />
 
         {loading ? (
           <div className="flex items-center justify-center py-20">

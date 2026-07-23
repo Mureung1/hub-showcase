@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "title": "ShortsGen - AI 쇼츠 자동 생성 대시보드",
+  "summary": "소상공인을 위한 AI 기반 숏폼(릴스/쇼츠/틱톡) 콘텐츠 자동 생성 서비스. 상품 사진 1장만으로 트렌드 분석, 자동 크롭, 음성/자막 생성, 영상 렌더링까지 완자동으로 처리하여 Instagram/TikTok에 한 클릭 발행",
+  "githubUser": "minzzi65",
+  "demoUrl": "",
+  "thumbnail": "showcase/thumbnail.webp",
+  "screenshots": [
+    "showcase/screenshots/home.webp",
+    "showcase/screenshots/generate.webp",
+    "showcase/screenshots/review.webp",
+    "showcase/screenshots/archive.webp"
+  ],
+  "problem": "SNS(릴스/쇼츠/틱톡) 트렌드는 몇 주 단위로 급격하게 변하지만, 소상공인 사장님들은 본업(가게 운영)으로 인해 트렌드를 추적하고 영상을 제작할 시간과 리소스가 절대적으로 부족합니다. 결과적으로 매출로 이어질 수 있는 SNS 마케팅 기회를 놓치고 있습니다.",
+  "targetUsers": [
+    "소상공인 (카페, 음식점, 소매점)",
+    "시간이 부족한 사업 운영자",
+    "SNS 마케팅이 필요하지만 편집 기술이 없는 사람",
+    "트렌드에 빠르게 대응해야 하는 소규모 비즈니스"
+  ],
+  "features": [
+    {
+      "name": "실시간 트렌드 분석",
+      "description": "Naver DataLab에서 실시간 트렌드 키워드를 크롤링하고 KoBERT로 의미 매칭"
+    },
+    {
+      "name": "AI 자동 크롭",
+      "description": "YOLOv8으로 상품 사진의 주요 객체를 감지하고 최적 구도로 자동 크롭"
+    },
+    {
+      "name": "한국어 자막 자동 생성",
+      "description": "KoBERT 기반 트렌드-업종 문맥 매칭으로 자연스러운 자막 자동 생성"
+    },
+    {
+      "name": "음성 합성",
+      "description": "gTTS를 사용한 한국어 음성 자동 생성 및 TTS 음성 내레이션"
+    },
+    {
+      "name": "영상 렌더링",
+      "description": "FFmpeg으로 이미지+음성+자막 자동 합성하여 9:16 최적화 15초 영상 생성"
+    },
+    {
+      "name": "한 클릭 발행",
+      "description": "완성된 영상을 Instagram/TikTok에 자동으로 발행하고 이력 관리"
+    },
+    {
+      "name": "보관함 관리",
+      "description": "생성한 모든 영상의 발행 이력과 성과 지표를 한 곳에서 관리"
+    }
+  ],
+  "featureTags": [
+    "AI 자동화",
+    "KoBERT",
+    "YOLOv8",
+    "FFmpeg",
+    "영상 생성",
+    "SNS 마케팅",
+    "트렌드 분석",
+    "한국어 NLP",
+    "이미지 처리",
+    "TTS"
+  ],
+  "techStack": [
+    {
+      "category": "Frontend",
+      "technologies": ["React 18", "Vite", "Tailwind CSS", "Lucide Icons"]
+    },
+    {
+      "category": "Backend",
+      "technologies": ["Node.js", "Express", "Supabase (PostgreSQL)"]
+    },
+    {
+      "category": "AI & Media",
+      "technologies": ["YOLOv8", "KoBERT", "gTTS", "FFmpeg"]
+    },
+    {
+      "category": "Data",
+      "technologies": ["Supabase", "PostgreSQL"]
+    }
+  ],
+  "techHighlights": [
+    {
+      "name": "KoBERT 의미 매칭",
+      "description": "단순 텍스트 매칭을 넘어 '디저트'와 '달콤한 간식' 같은 유사한 문맥을 이해하는 한국어 특화 NLP 모델로 실시간 트렌드와 가게 정보의 코사인 유사도 연산"
+    },
+    {
+      "name": "YOLOv8 자동 크롭",
+      "description": "사용자가 업로드한 사진에서 주요 상품(음식, 인테리어 등)을 자동으로 감지하고 가장 먹음직스러운 구도로 스마트 크롭 처리"
+    },
+    {
+      "name": "FFmpeg 자막 오버레이",
+      "description": "이미지+음성+자막을 자동 합성하며 한글 폰트(맑은 고딕)를 사용한 한국어 자막을 9:16 최적화 영상에 오버레이"
+    },
+    {
+      "name": "Destination CTR 최적화",
+      "description": "초반 2~3초의 강력한 후킹과 명확한 행동 유도(CTA)를 자동 삽입하여 '목적지 클릭(프로필 링크 이동)' 전환율 극대화"
+    }
+  ],
+  "developmentWithAI": "Claude Code와 Claude AI를 사용하여 전체 파이프라인 설계, 버그 수정, 기능 구현을 진행했습니다. YOLOv8 경로 이슈, FFmpeg 폰트 설정, 데이터베이스 스키마 최적화 등 복잡한 문제들을 AI의 도움으로 빠르게 해결하고 반복 개선했습니다.",
+  "agent": {
+    "summary": "Claude Code의 multi-agent 워크플로우를 사용하여 복잡한 AI 파이프라인과 프론트엔드-백엔드 통합 작업을 효율적으로 처리",
+    "agentTools": [
+      "File Read/Write (코드 분석 및 수정)",
+      "Bash 커맨드 (Python 스크립트 실행 및 테스트)",
+      "Git (버전 관리 및 커밋)",
+      "PowerShell (환경 설정)",
+      "Grep (코드 검색 및 분석)"
+    ],
+    "workflows": [
+      {
+        "name": "AI 파이프라인 구현",
+        "description": "YOLOv8 이미지 크롭 → KoBERT 자막 생성 → gTTS 음성 생성 → FFmpeg 렌더링의 4단계 파이프라인을 순차적으로 구현하고 각 단계별 에러 디버깅"
+      },
+      {
+        "name": "버그 수정 반복 사이클",
+        "description": "문제 발생 → 원인 분석(로그 검토, 코드 탐색) → 해결책 구현 → 테스트 → 커밋의 반복적인 사이클로 안정적인 파이프라인 완성"
+      },
+      {
+        "name": "프론트-백엔드 통합",
+        "description": "React 컴포넌트에서 Backend API 호출 → 데이터 흐름 추적 → UI 상태 관리 → 에러 처리를 일관성 있게 구현"
+      }
+    ]
+  }
+}
