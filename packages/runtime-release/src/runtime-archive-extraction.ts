@@ -5,14 +5,9 @@ import { constants } from 'node:fs'
 import type { BigIntStats } from 'node:fs'
 import {
   lstat,
-  mkdir,
   open,
   readdir,
-  readlink,
   realpath,
-  rmdir,
-  symlink,
-  unlink,
 } from 'node:fs/promises'
 import type { FileHandle } from 'node:fs/promises'
 import path from 'node:path'
@@ -44,6 +39,12 @@ import {
   runtimeAuthorityError,
 } from './runtime-release-authority.js'
 import type { RuntimeReleaseAdmission } from './runtime-release-authority.js'
+import {
+  RuntimeDirectoryCapability,
+} from './runtime-archive-directory-capability.js'
+import type {
+  RuntimeCapabilityStats,
+} from './runtime-archive-directory-capability.js'
 
 const TAR_BLOCK_BYTES = 512
 const TAR_TRAILER_BYTES = TAR_BLOCK_BYTES * 2
@@ -92,8 +93,11 @@ type RuntimeArchivePlan = {
 }
 
 type ObservedEntry = {
-  readonly path: string
+  directoryCapability?: RuntimeDirectoryCapability
   readonly identity: RuntimeFileSystemIdentity
+  readonly leaf: string
+  readonly parent: RuntimeDirectoryCapability
+  readonly relativePath: string
   readonly type: 'directory' | 'file' | 'symlink'
 }
 
@@ -109,9 +113,8 @@ type ArchivePassMode =
   | {
       readonly kind: 'materialize'
       readonly runtimeRoot: string
-      readonly stagingIdentity: RuntimeFileSystemIdentity
       readonly created: ObservedEntry[]
-      readonly identities: Map<string, RuntimeFileSystemIdentity>
+      readonly capabilities: Map<string, RuntimeDirectoryCapability>
       readonly testOptions: RuntimeArchiveExtractionTestOptions
     }
 
@@ -142,11 +145,34 @@ export type RuntimeArchiveExtractionInput = {
  */
 export type RuntimeArchiveExtractionTestOptions = {
   readonly afterPrescan?: () => Promise<void>
+  /**
+   * Runs after the directory worker has verified its kernel-held cwd and
+   * immediately before the direct-leaf create/unlink operation.
+   */
+  readonly afterParentCapabilityCheck?: (input: {
+    readonly operation: 'cleanup' | 'create'
+    readonly path: string
+    readonly type: 'directory' | 'file' | 'symlink'
+  }) => Promise<void>
   readonly beforeEntryMaterialization?: (input: {
     readonly path: string
     readonly type: 'directory' | 'file' | 'symlink'
   }) => Promise<void>
+  readonly beforeFinalFileVerification?: (input: {
+    readonly path: string
+  }) => Promise<void>
   readonly beforeFinalVerification?: () => Promise<void>
+  readonly beforeStorageOperation?: (input: {
+    readonly operation:
+      | 'directory_create'
+      | 'directory_chmod'
+      | 'file_create'
+      | 'file_write'
+      | 'file_chmod'
+      | 'file_sync'
+      | 'symlink_create'
+    readonly path: string
+  }) => Promise<void>
 }
 
 /**
@@ -171,6 +197,8 @@ export async function extractVerifiedRuntimeArchive(
   const stagingIdentity = await inspectOwnedEmptyStaging(input)
   const archive = await openVerifiedArchive(input)
   const created: ObservedEntry[] = []
+  const retainedCapabilities: RuntimeDirectoryCapability[] = []
+  let stagingCapability: RuntimeDirectoryCapability | undefined
   let runtimeRoot: string | undefined
 
   try {
@@ -186,43 +214,53 @@ export async function extractVerifiedRuntimeArchive(
       input,
       stagingIdentity,
     )
+    stagingCapability = await openDirectoryCapability({
+      absolutePath: input.staging.path,
+      identity: stagingIdentity,
+      mode: 0o700,
+      evidenceKind: 'runtime_staging_capability_unavailable',
+    })
+    retainedCapabilities.push(stagingCapability)
 
     runtimeRoot = path.join(
       input.staging.path,
       RUNTIME_RECIPIENT_NAME,
     )
-    const runtimeIdentity = await createOwnedDirectory(
-      runtimeRoot,
-      0o700,
-      input.mutationAuthority.snapshot.expectedOwnerUid,
-      stagingIdentity.device,
-      input.staging.path,
-      stagingIdentity,
+    const runtimeCapability = await createOwnedDirectory({
+      absolutePath: runtimeRoot,
       created,
+      expectedDevice: stagingIdentity.device,
+      expectedOwnerUid:
+        input.mutationAuthority.snapshot.expectedOwnerUid,
+      leaf: RUNTIME_RECIPIENT_NAME,
+      mode: 0o700,
+      parent: stagingCapability,
+      relativePath: '',
+      retainedCapabilities,
       testOptions,
-    )
-    const identities = new Map<string, RuntimeFileSystemIdentity>([
-      ['', runtimeIdentity],
+    })
+    const capabilities = new Map<string, RuntimeDirectoryCapability>([
+      ['', runtimeCapability],
     ])
     for (const directory of plan.directories) {
-      const identity = await createPlannedDirectory(
+      const capability = await createPlannedDirectory(
         directory,
         runtimeRoot,
         input,
         stagingIdentity,
-        identities,
+        capabilities,
         created,
+        retainedCapabilities,
         testOptions,
       )
-      identities.set(directory.path, identity)
+      capabilities.set(directory.path, capability)
     }
 
     await runArchivePass(archive, input, plan, {
       kind: 'materialize',
       runtimeRoot,
-      stagingIdentity,
       created,
-      identities,
+      capabilities,
       testOptions,
     })
     await createPlannedSymlinks(
@@ -230,20 +268,32 @@ export async function extractVerifiedRuntimeArchive(
       runtimeRoot,
       input,
       stagingIdentity,
-      identities,
+      capabilities,
       created,
       testOptions,
     )
     await testOptions.beforeFinalVerification?.()
+    await assertFinalExtractionAuthority({
+      input,
+      stagingCapability,
+      stagingIdentity,
+    })
     const verified = await verifyMaterializedRuntime({
       admission: input.admission,
       canonicalManifestBytes,
+      capabilities,
       plan,
       runtimeRoot,
-      stagingRoot: input.staging.path,
+      stagingCapability,
       stagingIdentity,
       expectedOwnerUid:
         input.mutationAuthority.snapshot.expectedOwnerUid,
+      testOptions,
+    })
+    await assertFinalExtractionAuthority({
+      input,
+      stagingCapability,
+      stagingIdentity,
     })
     return {
       kind: 'runtime_verified_staging',
@@ -261,12 +311,17 @@ export async function extractVerifiedRuntimeArchive(
       },
     }
   } catch (error) {
-    if (runtimeRoot !== undefined) {
+    if (
+      runtimeRoot !== undefined &&
+      stagingCapability !== undefined
+    ) {
       try {
         await cleanupCreatedEntries(
           created,
           input.staging.path,
           stagingIdentity,
+          stagingCapability,
+          testOptions,
         )
       } catch (cleanupError) {
         throw runtimeAuthorityError('runtime_recovery_required', {
@@ -279,6 +334,13 @@ export async function extractVerifiedRuntimeArchive(
     throw normalizeExtractionError(error)
   } finally {
     await archive.close().catch(() => undefined)
+    await Promise.all(
+      [...retainedCapabilities]
+        .reverse()
+        .map((capability) =>
+          capability.close().catch(() => undefined),
+        ),
+    )
   }
 }
 
@@ -436,6 +498,42 @@ async function assertMutationAuthority(
   ) {
     throw runtimeAuthorityError('runtime_cache_unsafe', {
       kind: 'runtime_archive_cache_authority_invalid',
+    })
+  }
+}
+
+async function assertFinalExtractionAuthority(input: {
+  readonly input: RuntimeArchiveExtractionInput
+  readonly stagingCapability: RuntimeDirectoryCapability
+  readonly stagingIdentity: RuntimeFileSystemIdentity
+}): Promise<void> {
+  await assertMutationAuthority(input.input)
+  let capabilityStats: RuntimeCapabilityStats
+  let pathStats: BigIntStats
+  try {
+    ;[capabilityStats, pathStats] = await Promise.all([
+      input.stagingCapability.statDirectory(),
+      lstat(input.input.staging.path, { bigint: true }),
+    ])
+  } catch (error) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_staging_final_authority_unavailable',
+      cause: error,
+    })
+  }
+  const pathIdentity = identityFromStats(pathStats)
+  if (
+    capabilityStats.type !== 'directory' ||
+    capabilityStats.mode !== 0o700 ||
+    capabilityStats.nlink < 1 ||
+    !sameIdentity(capabilityStats.identity, input.stagingIdentity) ||
+    !pathStats.isDirectory() ||
+    pathStats.isSymbolicLink() ||
+    Number(pathStats.mode & 0o7777n) !== 0o700 ||
+    !sameIdentity(pathIdentity, input.stagingIdentity)
+  ) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_staging_final_authority_changed',
     })
   }
 }
@@ -620,10 +718,10 @@ async function runArchivePass(
     ): result is PromiseRejectedResult =>
       result.status === 'rejected',
   )
-  if (passError !== undefined) throw passError
   if (rejectedEntry !== undefined) {
     throw normalizeArchivePassError(rejectedEntry.reason)
   }
+  if (passError !== undefined) throw passError
 
   if (
     archiveMeter.bytes() !==
@@ -826,6 +924,7 @@ async function handleArchiveEntry(input: {
     input.next()
   } catch (error) {
     if (!input.parserDestroyed()) input.next(error)
+    throw error
   }
 }
 
@@ -1014,7 +1113,11 @@ function isSafeSymlinkTarget(
 async function consumeAndVerifyFile(
   entry: Readable,
   expected: RuntimeManifestFileEntry | ArchiveManifestEntry,
-  output: FileHandle | undefined,
+  output:
+    | {
+        write(chunk: Buffer): Promise<void>
+      }
+    | undefined,
 ): Promise<void> {
   const hash = createHash('sha256')
   let bytes = 0
@@ -1057,15 +1160,16 @@ async function createPlannedDirectory(
   runtimeRoot: string,
   input: RuntimeArchiveExtractionInput,
   stagingIdentity: RuntimeFileSystemIdentity,
-  identities: Map<string, RuntimeFileSystemIdentity>,
+  capabilities: Map<string, RuntimeDirectoryCapability>,
   created: ObservedEntry[],
+  retainedCapabilities: RuntimeDirectoryCapability[],
   testOptions: RuntimeArchiveExtractionTestOptions,
-): Promise<RuntimeFileSystemIdentity> {
+): Promise<RuntimeDirectoryCapability> {
   const parentPath = path.posix.dirname(directory.path)
-  const parentIdentity = identities.get(
+  const parent = capabilities.get(
     parentPath === '.' ? '' : parentPath,
   )
-  if (parentIdentity === undefined) {
+  if (parent === undefined) {
     throw runtimeAuthorityError('runtime_recovery_required', {
       kind: 'runtime_archive_parent_identity_missing',
     })
@@ -1074,106 +1178,283 @@ async function createPlannedDirectory(
     runtimeRoot,
     directory.path,
   )
-  return createOwnedDirectory(
+  return createOwnedDirectory({
     absolutePath,
-    directory.mode,
-    input.mutationAuthority.snapshot.expectedOwnerUid,
-    stagingIdentity.device,
-    parentPath === '.'
-      ? runtimeRoot
-      : containedRuntimePath(runtimeRoot, parentPath),
-    parentIdentity,
     created,
+    expectedDevice: stagingIdentity.device,
+    expectedOwnerUid:
+      input.mutationAuthority.snapshot.expectedOwnerUid,
+    leaf: path.posix.basename(directory.path),
+    mode: directory.mode,
+    parent,
+    relativePath: directory.path,
+    retainedCapabilities,
     testOptions,
-    directory.path,
-  )
+  })
 }
 
 async function createOwnedDirectory(
-  directory: string,
-  mode: 0o700 | 0o755,
-  expectedOwnerUid: number,
-  expectedDevice: string,
-  parentPath: string,
-  parentIdentity: RuntimeFileSystemIdentity,
-  created: ObservedEntry[],
-  testOptions: RuntimeArchiveExtractionTestOptions,
-  relativePath = '',
-): Promise<RuntimeFileSystemIdentity> {
-  await testOptions.beforeEntryMaterialization?.({
-    path: relativePath,
+  input: {
+    readonly absolutePath: string
+    readonly created: ObservedEntry[]
+    readonly expectedDevice: string
+    readonly expectedOwnerUid: number
+    readonly leaf: string
+    readonly mode: 0o700 | 0o755
+    readonly parent: RuntimeDirectoryCapability
+    readonly relativePath: string
+    readonly retainedCapabilities: RuntimeDirectoryCapability[]
+    readonly testOptions: RuntimeArchiveExtractionTestOptions
+  },
+): Promise<RuntimeDirectoryCapability> {
+  await input.testOptions.beforeEntryMaterialization?.({
+    path: input.relativePath,
     type: 'directory',
   })
-  await assertIdentity(
-    parentPath,
-    parentIdentity,
-    'runtime_archive_parent_changed',
+  const createdDirectory = await runStorageOperation(
+    input.testOptions,
+    'directory_create',
+    input.relativePath,
+    'runtime_archive_directory_create_failed',
+    () =>
+      input.parent.createDirectory(
+        input.leaf,
+        input.mode,
+        () =>
+          input.testOptions.afterParentCapabilityCheck?.({
+            operation: 'create',
+            path: input.relativePath,
+            type: 'directory',
+          }) ?? Promise.resolve(),
+      ),
   )
-  try {
-    await mkdir(directory, { mode })
-  } catch (error) {
-    throw runtimeAuthorityError('runtime_storage_unavailable', {
-      kind: 'runtime_archive_directory_create_failed',
-      cause: error,
-    })
+  const identity = assertNewCapabilityEntry(
+    createdDirectory.stats,
+    input.absolutePath,
+    'directory',
+    input.expectedOwnerUid,
+    input.expectedDevice,
+  )
+  const observedEntry: ObservedEntry = {
+    identity,
+    leaf: input.leaf,
+    parent: input.parent,
+    relativePath: input.relativePath,
+    type: 'directory',
   }
-  let directoryHandle: FileHandle
+  input.created.push(observedEntry)
+  let handleOpen = true
+  let finalStats: RuntimeCapabilityStats
   try {
-    directoryHandle = await open(
-      directory,
-      constants.O_RDONLY |
-        constants.O_NOFOLLOW |
-        constants.O_DIRECTORY,
+    finalStats = await runStorageOperation(
+      input.testOptions,
+      'directory_chmod',
+      input.relativePath,
+      'runtime_archive_directory_mode_failed',
+      () =>
+        input.parent.finishDirectory(
+          createdDirectory.handle,
+          input.mode,
+        ),
     )
+    handleOpen = false
+  } finally {
+    if (handleOpen) {
+      await input.parent
+        .closeHandle(createdDirectory.handle)
+        .catch(() => undefined)
+    }
+  }
+  assertCapabilityEntry(
+    finalStats,
+    input.absolutePath,
+    'directory',
+    input.expectedOwnerUid,
+    input.expectedDevice,
+    input.mode,
+    identity,
+    'runtime_archive_new_directory_identity_invalid',
+  )
+  const capability = await openDirectoryCapability({
+    absolutePath: input.absolutePath,
+    identity,
+    mode: input.mode,
+    evidenceKind: 'runtime_archive_new_directory_open_failed',
+  })
+  input.retainedCapabilities.push(capability)
+  observedEntry.directoryCapability = capability
+  return capability
+}
+
+async function openDirectoryCapability(input: {
+  readonly absolutePath: string
+  readonly identity: RuntimeFileSystemIdentity
+  readonly mode: 0o700 | 0o755
+  readonly evidenceKind: string
+}): Promise<RuntimeDirectoryCapability> {
+  try {
+    return await RuntimeDirectoryCapability.open(input)
   } catch (error) {
     throw runtimeAuthorityError('runtime_recovery_required', {
-      kind: 'runtime_archive_new_directory_open_failed',
+      kind: input.evidenceKind,
       cause: error,
     })
   }
-  let identity: RuntimeFileSystemIdentity
+}
+
+async function runStorageOperation<T>(
+  testOptions: RuntimeArchiveExtractionTestOptions,
+  operation:
+    | 'directory_create'
+    | 'directory_chmod'
+    | 'file_create'
+    | 'file_write'
+    | 'file_chmod'
+    | 'file_sync'
+    | 'symlink_create',
+  entryPath: string,
+  evidenceKind: string,
+  action: () => Promise<T>,
+): Promise<T> {
   try {
-    const initialStats = await directoryHandle.stat({ bigint: true })
-    identity = identityFromStats(initialStats)
-    if (
-      !initialStats.isDirectory() ||
-      initialStats.isSymbolicLink() ||
-      identity.ownerUid !== expectedOwnerUid ||
-      identity.device !== expectedDevice
-    ) {
-      throw runtimeAuthorityError('runtime_recovery_required', {
-        kind: 'runtime_archive_new_directory_identity_invalid',
-      })
-    }
-    created.push({
-      path: directory,
-      identity,
-      type: 'directory',
+    await testOptions.beforeStorageOperation?.({
+      operation,
+      path: entryPath,
     })
-    await directoryHandle.chmod(mode)
-    assertOwnedDirectoryStats(
-      await directoryHandle.stat({ bigint: true }),
-      directory,
-      expectedOwnerUid,
-      expectedDevice,
-      mode,
-      'runtime_archive_directory',
-    )
+    return await action()
   } catch (error) {
     if (error instanceof RuntimeReleaseAuthorityError) throw error
     throw runtimeAuthorityError('runtime_storage_unavailable', {
-      kind: 'runtime_archive_directory_mode_failed',
+      kind: evidenceKind,
+      path: entryPath,
       cause: error,
     })
-  } finally {
-    await directoryHandle.close().catch(() => undefined)
   }
-  await assertIdentity(
-    parentPath,
-    parentIdentity,
-    'runtime_archive_parent_changed',
+}
+
+function assertNewCapabilityEntry(
+  stats: RuntimeCapabilityStats,
+  absolutePath: string,
+  expectedType: 'directory' | 'file' | 'symlink',
+  expectedOwnerUid: number,
+  expectedDevice: string,
+): RuntimeFileSystemIdentity {
+  if (
+    !matchesCapabilityEntry({
+      stats,
+      expectedType,
+      expectedOwnerUid,
+      expectedDevice,
+    })
+  ) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_archive_new_entry_identity_invalid',
+      path: absolutePath,
+      stats,
+    })
+  }
+  return stats.identity
+}
+
+function assertCapabilityEntry(
+  stats: RuntimeCapabilityStats,
+  absolutePath: string,
+  expectedType: 'directory' | 'file' | 'symlink',
+  expectedOwnerUid: number,
+  expectedDevice: string,
+  expectedMode: number,
+  expectedIdentity: RuntimeFileSystemIdentity,
+  evidenceKind: string,
+): RuntimeFileSystemIdentity {
+  if (
+    !matchesCapabilityEntry({
+      stats,
+      expectedType,
+      expectedOwnerUid,
+      expectedDevice,
+      expectedMode,
+      expectedIdentity,
+    })
+  ) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: evidenceKind,
+      path: absolutePath,
+      stats,
+    })
+  }
+  return stats.identity
+}
+
+function assertVerifiedCapabilityEntry(
+  stats: RuntimeCapabilityStats,
+  absolutePath: string,
+  expectedType: 'directory' | 'file' | 'symlink',
+  expectedOwnerUid: number,
+  expectedDevice: string,
+  expectedMode?: number,
+  expectedIdentity?: RuntimeFileSystemIdentity,
+): RuntimeFileSystemIdentity {
+  if (
+    !matchesCapabilityEntry({
+      stats,
+      expectedType,
+      expectedOwnerUid,
+      expectedDevice,
+      expectedMode,
+      expectedIdentity,
+    })
+  ) {
+    throw runtimeAuthorityError('runtime_integrity_failed', {
+      kind: 'runtime_archive_extracted_entry_identity_invalid',
+      path: absolutePath,
+      stats,
+    })
+  }
+  return stats.identity
+}
+
+function matchesCapabilityEntry(input: {
+  readonly stats: RuntimeCapabilityStats
+  readonly expectedType: 'directory' | 'file' | 'symlink'
+  readonly expectedOwnerUid: number
+  readonly expectedDevice: string
+  readonly expectedMode?: number
+  readonly expectedIdentity?: RuntimeFileSystemIdentity
+}): boolean {
+  const {
+    stats,
+    expectedType,
+    expectedOwnerUid,
+    expectedDevice,
+    expectedMode,
+    expectedIdentity,
+  } = input
+  return (
+    stats.type === expectedType &&
+    stats.identity.ownerUid === expectedOwnerUid &&
+    stats.identity.device === expectedDevice &&
+    (expectedMode === undefined || stats.mode === expectedMode) &&
+    (expectedIdentity === undefined ||
+      sameIdentity(stats.identity, expectedIdentity)) &&
+    (expectedType === 'directory'
+      ? stats.nlink >= 1
+      : stats.nlink === 1)
   )
-  return identity
+}
+
+async function observeCapability<T>(
+  evidenceKind: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await operation()
+  } catch (error) {
+    if (error instanceof RuntimeReleaseAuthorityError) throw error
+    throw runtimeAuthorityError('runtime_storage_unavailable', {
+      kind: evidenceKind,
+      cause: error,
+    })
+  }
 }
 
 async function materializeFile(
@@ -1187,86 +1468,103 @@ async function materializeFile(
     type: 'file',
   })
   const parentRelative = path.posix.dirname(expected.path)
-  const parentIdentity = mode.identities.get(
+  const parent = mode.capabilities.get(
     parentRelative === '.' ? '' : parentRelative,
   )
-  if (parentIdentity === undefined) {
+  if (parent === undefined) {
     throw runtimeAuthorityError('runtime_recovery_required', {
       kind: 'runtime_archive_file_parent_missing',
     })
   }
-  const parentPath =
-    parentRelative === '.'
-      ? mode.runtimeRoot
-      : containedRuntimePath(mode.runtimeRoot, parentRelative)
-  await assertIdentity(
-    input.staging.path,
-    mode.stagingIdentity,
-    'runtime_staging_identity_changed',
-  )
-  await assertIdentity(
-    parentPath,
-    parentIdentity,
-    'runtime_archive_parent_changed',
-  )
   const filePath = containedRuntimePath(
     mode.runtimeRoot,
     expected.path,
   )
-  let output: FileHandle
+  const leaf = path.posix.basename(expected.path)
+  const opened = await runStorageOperation(
+    mode.testOptions,
+    'file_create',
+    expected.path,
+    'runtime_archive_file_create_failed',
+    () =>
+      parent.openFile(
+        leaf,
+        fileMode(expected),
+        () =>
+          mode.testOptions.afterParentCapabilityCheck?.({
+            operation: 'create',
+            path: expected.path,
+            type: 'file',
+          }) ?? Promise.resolve(),
+      ),
+  )
+  const identity = assertNewCapabilityEntry(
+    opened.stats,
+    filePath,
+    'file',
+    input.mutationAuthority.snapshot.expectedOwnerUid,
+    parent.identity.device,
+  )
+  mode.created.push({
+    identity,
+    leaf,
+    parent,
+    relativePath: expected.path,
+    type: 'file',
+  })
+  let handleOpen = true
   try {
-    output = await open(
-      filePath,
-      constants.O_WRONLY |
-        constants.O_CREAT |
-        constants.O_EXCL |
-        constants.O_NOFOLLOW,
-      fileMode(expected),
+    await consumeAndVerifyFile(entry, expected, {
+      write: async (chunk) => {
+        const bytesWritten = await runStorageOperation(
+          mode.testOptions,
+          'file_write',
+          expected.path,
+          'runtime_archive_file_write_failed',
+          () => parent.writeFile(opened.handle, chunk),
+        )
+        if (bytesWritten !== chunk.byteLength) {
+          throw runtimeAuthorityError(
+            'runtime_storage_unavailable',
+            {
+              kind: 'runtime_archive_file_short_write',
+              path: expected.path,
+            },
+          )
+        }
+      },
+    })
+    await runStorageOperation(
+      mode.testOptions,
+      'file_chmod',
+      expected.path,
+      'runtime_archive_file_mode_failed',
+      () => parent.chmodFile(opened.handle, fileMode(expected)),
     )
-  } catch (error) {
-    throw runtimeAuthorityError('runtime_storage_unavailable', {
-      kind: 'runtime_archive_file_create_failed',
-      cause: error,
-    })
-  }
-  try {
-    const initialStats = await output.stat({ bigint: true })
-    const initialIdentity = identityFromStats(initialStats)
-    if (
-      !initialStats.isFile() ||
-      initialStats.isSymbolicLink() ||
-      initialIdentity.ownerUid !==
-        input.mutationAuthority.snapshot.expectedOwnerUid ||
-      initialIdentity.device !== mode.stagingIdentity.device
-    ) {
-      throw runtimeAuthorityError('runtime_recovery_required', {
-        kind: 'runtime_archive_new_file_identity_invalid',
-      })
-    }
-    mode.created.push({
-      path: filePath,
-      identity: initialIdentity,
-      type: 'file',
-    })
-    await consumeAndVerifyFile(entry, expected, output)
-    await output.chmod(fileMode(expected))
-    await output.sync()
-    const stats = await output.stat({ bigint: true })
-    assertOwnedFileStats(
+    await runStorageOperation(
+      mode.testOptions,
+      'file_sync',
+      expected.path,
+      'runtime_archive_file_sync_failed',
+      () => parent.syncFile(opened.handle),
+    )
+    const stats = await parent.finishFile(opened.handle)
+    handleOpen = false
+    assertCapabilityEntry(
       stats,
       filePath,
+      'file',
       input.mutationAuthority.snapshot.expectedOwnerUid,
-      mode.stagingIdentity.device,
+      parent.identity.device,
       fileMode(expected),
+      identity,
+      'runtime_archive_new_file_identity_invalid',
     )
   } finally {
-    await output.close().catch(() => undefined)
+    if (handleOpen) {
+      await parent.closeHandle(opened.handle).catch(() => undefined)
+    }
   }
-  await assertIdentity(
-    parentPath,
-    parentIdentity,
-    'runtime_archive_parent_changed',
-  )
 }
 
 async function createPlannedSymlinks(
@@ -1274,7 +1572,7 @@ async function createPlannedSymlinks(
   runtimeRoot: string,
   input: RuntimeArchiveExtractionInput,
   stagingIdentity: RuntimeFileSystemIdentity,
-  identities: Map<string, RuntimeFileSystemIdentity>,
+  capabilities: Map<string, RuntimeDirectoryCapability>,
   created: ObservedEntry[],
   testOptions: RuntimeArchiveExtractionTestOptions,
 ): Promise<void> {
@@ -1284,28 +1582,14 @@ async function createPlannedSymlinks(
       type: 'symlink',
     })
     const parentRelative = path.posix.dirname(expected.path)
-    const parentIdentity = identities.get(
+    const parent = capabilities.get(
       parentRelative === '.' ? '' : parentRelative,
     )
-    if (parentIdentity === undefined) {
+    if (parent === undefined) {
       throw runtimeAuthorityError('runtime_recovery_required', {
         kind: 'runtime_archive_symlink_parent_missing',
       })
     }
-    const parentPath =
-      parentRelative === '.'
-        ? runtimeRoot
-        : containedRuntimePath(runtimeRoot, parentRelative)
-    await assertIdentity(
-      input.staging.path,
-      stagingIdentity,
-      'runtime_staging_identity_changed',
-    )
-    await assertIdentity(
-      parentPath,
-      parentIdentity,
-      'runtime_archive_parent_changed',
-    )
     const destination = containedRuntimePath(
       runtimeRoot,
       expected.path,
@@ -1317,36 +1601,39 @@ async function createPlannedSymlinks(
     if (!isContained(runtimeRoot, lexicalTarget)) {
       throw unsafeArchive('runtime_archive_symlink_target_unsafe')
     }
-    const resolvedTarget = await realpath(lexicalTarget).catch(
-      (error: unknown) => {
-        throw runtimeAuthorityError('runtime_integrity_failed', {
-          kind: 'runtime_archive_symlink_target_missing',
-          cause: error,
-        })
-      },
+    assertPlannedSymlinkTarget(plan, expected)
+    const leaf = path.posix.basename(expected.path)
+    const stats = await runStorageOperation(
+      testOptions,
+      'symlink_create',
+      expected.path,
+      'runtime_archive_symlink_create_failed',
+      () =>
+        parent.createSymlink(
+          leaf,
+          expected.target,
+          () =>
+            testOptions.afterParentCapabilityCheck?.({
+              operation: 'create',
+              path: expected.path,
+              type: 'symlink',
+            }) ?? Promise.resolve(),
+        ),
     )
-    if (!isContained(runtimeRoot, resolvedTarget)) {
-      throw unsafeArchive('runtime_archive_symlink_target_unsafe')
-    }
-    try {
-      await symlink(expected.target, destination)
-    } catch (error) {
-      throw runtimeAuthorityError('runtime_storage_unavailable', {
-        kind: 'runtime_archive_symlink_create_failed',
-        cause: error,
-      })
-    }
-    const identity = await inspectOwnedSymlink(
+    const identity = assertNewCapabilityEntry(
+      stats,
       destination,
+      'symlink',
       input.mutationAuthority.snapshot.expectedOwnerUid,
       stagingIdentity.device,
     )
-    created.push({ path: destination, identity, type: 'symlink' })
-    await assertIdentity(
-      parentPath,
-      parentIdentity,
-      'runtime_archive_parent_changed',
-    )
+    created.push({
+      identity,
+      leaf,
+      parent,
+      relativePath: expected.path,
+      type: 'symlink',
+    })
   }
 }
 
@@ -1378,43 +1665,136 @@ function orderSymlinks(
   return ordered
 }
 
+function assertPlannedSymlinkTarget(
+  plan: RuntimeArchivePlan,
+  symlink: RuntimeManifestSymlinkEntry,
+): void {
+  const visited = new Set<string>([symlink.path])
+  let target = resolvePlannedSymlinkTarget(
+    symlink.path,
+    symlink.target,
+  )
+  while (true) {
+    const targetEntry = plan.entries.get(target)
+    if (targetEntry === undefined) {
+      throw runtimeAuthorityError('runtime_integrity_failed', {
+        kind: 'runtime_archive_symlink_target_missing',
+        path: symlink.path,
+      })
+    }
+    if (targetEntry.type !== 'symlink') return
+    if (visited.has(targetEntry.path)) {
+      throw unsafeArchive(
+        'runtime_archive_symlink_cycle',
+        symlink.path,
+      )
+    }
+    visited.add(targetEntry.path)
+    target = resolvePlannedSymlinkTarget(
+      targetEntry.path,
+      targetEntry.target,
+    )
+  }
+}
+
+function resolvePlannedSymlinkTarget(
+  entryPath: string,
+  target: string,
+): string {
+  if (!isSafeSymlinkTarget(entryPath, target)) {
+    throw unsafeArchive(
+      'runtime_archive_symlink_target_unsafe',
+      entryPath,
+    )
+  }
+  const resolved = path.posix.normalize(
+    path.posix.join(path.posix.dirname(entryPath), target),
+  )
+  if (
+    resolved === '.' ||
+    resolved === '..' ||
+    resolved.startsWith('../') ||
+    path.posix.isAbsolute(resolved)
+  ) {
+    throw unsafeArchive(
+      'runtime_archive_symlink_target_unsafe',
+      entryPath,
+    )
+  }
+  return resolved
+}
+
 async function verifyMaterializedRuntime(input: {
   readonly admission: RuntimeReleaseAdmission
   readonly canonicalManifestBytes: Buffer
+  readonly capabilities: ReadonlyMap<
+    string,
+    RuntimeDirectoryCapability
+  >
   readonly plan: RuntimeArchivePlan
   readonly runtimeRoot: string
-  readonly stagingRoot: string
+  readonly stagingCapability: RuntimeDirectoryCapability
   readonly stagingIdentity: RuntimeFileSystemIdentity
   readonly expectedOwnerUid: number
+  readonly testOptions: RuntimeArchiveExtractionTestOptions
 }): Promise<{ readonly runtimeIdentity: RuntimeFileSystemIdentity }> {
-  await assertIdentity(
-    input.stagingRoot,
-    input.stagingIdentity,
-    'runtime_staging_identity_changed',
+  const runtimeCapability = input.capabilities.get('')
+  if (runtimeCapability === undefined) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_archive_recipient_capability_missing',
+    })
+  }
+  const stagingRuntime = await observeCapability(
+    'runtime_archive_recipient_parent_observation_failed',
+    () =>
+      input.stagingCapability.inspectLeaf(
+        RUNTIME_RECIPIENT_NAME,
+      ),
   )
-  const runtimeIdentity = await inspectOwnedDirectory(
+  if (stagingRuntime === undefined) {
+    throw runtimeAuthorityError('runtime_integrity_failed', {
+      kind: 'runtime_archive_recipient_missing',
+    })
+  }
+  const runtimeIdentity = assertVerifiedCapabilityEntry(
+    stagingRuntime,
     input.runtimeRoot,
+    'directory',
     input.expectedOwnerUid,
     input.stagingIdentity.device,
     0o700,
-    'runtime_archive_recipient',
+    runtimeCapability.identity,
+  )
+  assertVerifiedCapabilityEntry(
+    await observeCapability(
+      'runtime_archive_recipient_observation_failed',
+      () => runtimeCapability.statDirectory(),
+    ),
+    input.runtimeRoot,
+    'directory',
+    input.expectedOwnerUid,
+    input.stagingIdentity.device,
+    0o700,
+    runtimeCapability.identity,
   )
   const observed = new Set<string>()
   await visitMaterializedDirectory(
-    input.runtimeRoot,
     '',
+    runtimeCapability,
     input,
     observed,
   )
-  await assertIdentity(
+  assertVerifiedCapabilityEntry(
+    await observeCapability(
+      'runtime_archive_recipient_observation_failed',
+      () => runtimeCapability.statDirectory(),
+    ),
     input.runtimeRoot,
+    'directory',
+    input.expectedOwnerUid,
+    input.stagingIdentity.device,
+    0o700,
     runtimeIdentity,
-    'runtime_archive_recipient_identity_changed',
-  )
-  await assertIdentity(
-    input.stagingRoot,
-    input.stagingIdentity,
-    'runtime_staging_identity_changed',
   )
   if (
     observed.size !== input.plan.entries.size ||
@@ -1426,9 +1806,12 @@ async function verifyMaterializedRuntime(input: {
       kind: 'runtime_archive_extracted_roster_mismatch',
     })
   }
-  const topLevel = (await readdir(input.runtimeRoot)).sort(
-    compareUnicodeCodePoints,
-  )
+  const topLevel = [
+    ...(await observeCapability(
+      'runtime_archive_top_level_observation_failed',
+      () => runtimeCapability.readDirectory(),
+    )),
+  ].sort(compareUnicodeCodePoints)
   if (
     topLevel.length !== REQUIRED_RUNTIME_TOP_LEVEL.length ||
     topLevel.some(
@@ -1459,18 +1842,17 @@ async function verifyMaterializedRuntime(input: {
 }
 
 async function visitMaterializedDirectory(
-  runtimeRoot: string,
   relativeRoot: string,
+  capability: RuntimeDirectoryCapability,
   input: Parameters<typeof verifyMaterializedRuntime>[0],
   observed: Set<string>,
 ): Promise<void> {
-  const directory =
-    relativeRoot === ''
-      ? runtimeRoot
-      : containedRuntimePath(runtimeRoot, relativeRoot)
-  const names = (await readdir(directory)).sort(
-    compareUnicodeCodePoints,
-  )
+  const names = [
+    ...(await observeCapability(
+      'runtime_archive_directory_observation_failed',
+      () => capability.readDirectory(),
+    )),
+  ].sort(compareUnicodeCodePoints)
   for (const name of names) {
     const relative = relativeRoot
       ? path.posix.join(relativeRoot, name)
@@ -1483,137 +1865,149 @@ async function visitMaterializedDirectory(
       })
     }
     observed.add(relative)
-    const absolute = containedRuntimePath(runtimeRoot, relative)
-    const stats = await lstat(absolute, { bigint: true })
+    const absolute = containedRuntimePath(input.runtimeRoot, relative)
+    const stats = await observeCapability(
+      'runtime_archive_entry_observation_failed',
+      () => capability.inspectLeaf(name),
+    )
+    if (stats === undefined) {
+      throw runtimeAuthorityError('runtime_integrity_failed', {
+        kind: 'runtime_archive_extracted_entry_missing',
+        path: relative,
+      })
+    }
     if (expected.type === 'directory') {
-      const directoryIdentity = assertOwnedDirectoryStats(
+      const childCapability = input.capabilities.get(relative)
+      if (childCapability === undefined) {
+        throw runtimeAuthorityError('runtime_recovery_required', {
+          kind: 'runtime_archive_directory_capability_missing',
+          path: relative,
+        })
+      }
+      const directoryIdentity = assertVerifiedCapabilityEntry(
         stats,
         absolute,
+        'directory',
         input.expectedOwnerUid,
         input.stagingIdentity.device,
         expected.mode,
-        'runtime_archive_extracted_directory',
+        childCapability.identity,
+      )
+      assertVerifiedCapabilityEntry(
+        await observeCapability(
+          'runtime_archive_directory_observation_failed',
+          () => childCapability.statDirectory(),
+        ),
+        absolute,
+        'directory',
+        input.expectedOwnerUid,
+        input.stagingIdentity.device,
+        expected.mode,
+        directoryIdentity,
       )
       await visitMaterializedDirectory(
-        runtimeRoot,
         relative,
+        childCapability,
         input,
         observed,
       )
-      await assertIdentity(
+      assertVerifiedCapabilityEntry(
+        await observeCapability(
+          'runtime_archive_directory_observation_failed',
+          () => childCapability.statDirectory(),
+        ),
         absolute,
+        'directory',
+        input.expectedOwnerUid,
+        input.stagingIdentity.device,
+        expected.mode,
         directoryIdentity,
-        'runtime_archive_extracted_directory_changed',
       )
       continue
     }
     if (expected.type === 'file') {
       await verifyMaterializedFile(
+        capability,
+        name,
         absolute,
         expected,
         input,
-        relative === 'manifest.json'
-          ? input.canonicalManifestBytes
-          : undefined,
       )
       continue
     }
-    assertOwnedSymlinkStats(
-      stats,
+    const observedSymlink = await observeCapability(
+      'runtime_archive_symlink_observation_failed',
+      () => capability.readSymlink(name),
+    )
+    assertVerifiedCapabilityEntry(
+      observedSymlink.stats,
       absolute,
+      'symlink',
       input.expectedOwnerUid,
       input.stagingIdentity.device,
     )
-    if ((await readlink(absolute)) !== expected.target) {
+    if (observedSymlink.target !== expected.target) {
       throw runtimeAuthorityError('runtime_integrity_failed', {
         kind: 'runtime_archive_extracted_symlink_mismatch',
         path: relative,
       })
     }
-    const resolved = await realpath(absolute).catch(
-      (error: unknown) => {
-        throw runtimeAuthorityError('runtime_integrity_failed', {
-          kind: 'runtime_archive_extracted_symlink_dangling',
-          path: relative,
-          cause: error,
-        })
-      },
-    )
-    if (!isContained(runtimeRoot, resolved)) {
-      throw unsafeArchive('runtime_archive_symlink_target_unsafe')
-    }
+    assertPlannedSymlinkTarget(input.plan, expected)
   }
 }
 
 async function verifyMaterializedFile(
+  parent: RuntimeDirectoryCapability,
+  leaf: string,
   absolute: string,
   expected: RuntimeManifestFileEntry | ArchiveManifestEntry,
   input: Parameters<typeof verifyMaterializedRuntime>[0],
-  exactBytes: Buffer | undefined,
 ): Promise<void> {
-  let handle: FileHandle
+  const opened = await observeCapability(
+    'runtime_archive_extracted_file_open_failed',
+    () => parent.openVerifiedFile(leaf),
+  )
+  let handleOpen = true
   try {
-    handle = await open(
+    const identity = assertVerifiedCapabilityEntry(
+      opened.stats,
       absolute,
-      constants.O_RDONLY | constants.O_NOFOLLOW,
-    )
-  } catch (error) {
-    throw runtimeAuthorityError('runtime_integrity_failed', {
-      kind: 'runtime_archive_extracted_file_open_failed',
-      path: expected.path,
-      cause: error,
-    })
-  }
-  try {
-    const initialStats = await handle.stat({ bigint: true })
-    const identity = assertOwnedFileStats(
-      initialStats,
-      absolute,
+      'file',
       input.expectedOwnerUid,
       input.stagingIdentity.device,
       fileMode(expected),
     )
-    if (initialStats.size !== BigInt(expected.bytes)) {
+    if (opened.stats.size !== String(expected.bytes)) {
       throw runtimeAuthorityError('runtime_integrity_failed', {
         kind: 'runtime_archive_extracted_file_size_mismatch',
         path: expected.path,
       })
     }
-    const hash = createHash('sha256')
-    let bytes = 0
-    const stream = handle.createReadStream({ autoClose: false })
-    stream.on('error', () => undefined)
-    for await (const value of stream) {
-      const chunk = Buffer.from(value)
-      const nextBytes = safeAdd(
-        bytes,
-        chunk.byteLength,
-        'runtime_archive_extracted_file_bound_overflow',
-      )
-      if (nextBytes > expected.bytes) {
-        throw runtimeAuthorityError('runtime_integrity_failed', {
-          kind: 'runtime_archive_extracted_file_size_mismatch',
-          path: expected.path,
-        })
-      }
-      if (
-        exactBytes !== undefined &&
-        !chunk.equals(exactBytes.subarray(bytes, nextBytes))
-      ) {
-        throw runtimeAuthorityError('runtime_integrity_failed', {
-          kind: 'runtime_archive_canonical_manifest_mismatch',
-        })
-      }
-      bytes = nextBytes
-      hash.update(chunk)
-    }
-    const finalStats = await handle.stat({ bigint: true })
+    await input.testOptions.beforeFinalFileVerification?.({
+      path: expected.path,
+    })
+    const verified = await observeCapability(
+      'runtime_archive_extracted_file_read_failed',
+      () =>
+        parent.hashVerifiedFile(opened.handle, expected.bytes),
+    )
+    handleOpen = false
+    assertVerifiedCapabilityEntry(
+      verified.stats,
+      absolute,
+      'file',
+      input.expectedOwnerUid,
+      input.stagingIdentity.device,
+      fileMode(expected),
+      identity,
+    )
     if (
-      bytes !== expected.bytes ||
-      hash.digest('hex') !== expected.sha256 ||
-      !sameIdentity(identityFromStats(finalStats), identity) ||
-      finalStats.size !== initialStats.size ||
-      Number(finalStats.mode & 0o7777n) !== fileMode(expected)
+      verified.bytes !== expected.bytes ||
+      verified.sha256 !== expected.sha256 ||
+      (expected.path === 'manifest.json' &&
+        (verified.bytes !== input.canonicalManifestBytes.byteLength ||
+          verified.sha256 !==
+            sha256(input.canonicalManifestBytes)))
     ) {
       throw runtimeAuthorityError('runtime_integrity_failed', {
         kind: 'runtime_archive_extracted_file_mismatch',
@@ -1621,7 +2015,9 @@ async function verifyMaterializedFile(
       })
     }
   } finally {
-    await handle.close().catch(() => undefined)
+    if (handleOpen) {
+      await parent.closeHandle(opened.handle).catch(() => undefined)
+    }
   }
 }
 
@@ -1629,31 +2025,33 @@ async function cleanupCreatedEntries(
   created: readonly ObservedEntry[],
   stagingRoot: string,
   stagingIdentity: RuntimeFileSystemIdentity,
+  stagingCapability: RuntimeDirectoryCapability,
+  testOptions: RuntimeArchiveExtractionTestOptions,
 ): Promise<void> {
-  await assertIdentity(
-    stagingRoot,
-    stagingIdentity,
-    'runtime_staging_identity_changed',
-  )
   for (const entry of [...created].reverse()) {
-    const stats = await lstat(entry.path, { bigint: true }).catch(
-      (error: unknown) => {
-        if (isNodeError(error) && error.code === 'ENOENT') return undefined
-        throw error
-      },
+    await entry.directoryCapability?.close()
+    await entry.parent.removeEntry(
+      entry.leaf,
+      entry.type,
+      entry.identity,
+      () =>
+        testOptions.afterParentCapabilityCheck?.({
+          operation: 'cleanup',
+          path: entry.relativePath,
+          type: entry.type,
+        }) ?? Promise.resolve(),
     )
-    if (stats === undefined) continue
-    const actual = identityFromStats(stats)
-    if (
-      !sameIdentity(entry.identity, actual) ||
-      (entry.type === 'directory' && !stats.isDirectory()) ||
-      (entry.type === 'file' && !stats.isFile()) ||
-      (entry.type === 'symlink' && !stats.isSymbolicLink())
-    ) {
-      throw new Error('Created staging entry identity changed')
-    }
-    if (entry.type === 'directory') await rmdir(entry.path)
-    else await unlink(entry.path)
+  }
+  const stats = await stagingCapability.statDirectory()
+  if (
+    stats.type !== 'directory' ||
+    stats.mode !== 0o700 ||
+    !sameIdentity(stats.identity, stagingIdentity)
+  ) {
+    throw new Error('Runtime staging capability changed')
+  }
+  if ((await stagingCapability.readDirectory()).length !== 0) {
+    throw new Error('Runtime staging cleanup left residue')
   }
   await assertIdentity(
     stagingRoot,
@@ -1709,64 +2107,6 @@ function assertOwnedDirectoryStats(
     throw runtimeAuthorityError('runtime_cache_unsafe', {
       kind: `${evidenceKind}_identity_invalid`,
       path: directory,
-    })
-  }
-  return identity
-}
-
-function assertOwnedFileStats(
-  stats: BigIntStats,
-  filePath: string,
-  expectedOwnerUid: number,
-  expectedDevice: string,
-  expectedMode: 0o644 | 0o755,
-): RuntimeFileSystemIdentity {
-  const identity = identityFromStats(stats)
-  const mode = Number(stats.mode & 0o7777n)
-  if (
-    !stats.isFile() ||
-    stats.isSymbolicLink() ||
-    identity.ownerUid !== expectedOwnerUid ||
-    identity.device !== expectedDevice ||
-    mode !== expectedMode
-  ) {
-    throw runtimeAuthorityError('runtime_integrity_failed', {
-      kind: 'runtime_archive_extracted_file_identity_invalid',
-      path: filePath,
-    })
-  }
-  return identity
-}
-
-async function inspectOwnedSymlink(
-  linkPath: string,
-  expectedOwnerUid: number,
-  expectedDevice: string,
-): Promise<RuntimeFileSystemIdentity> {
-  const stats = await lstat(linkPath, { bigint: true })
-  return assertOwnedSymlinkStats(
-    stats,
-    linkPath,
-    expectedOwnerUid,
-    expectedDevice,
-  )
-}
-
-function assertOwnedSymlinkStats(
-  stats: BigIntStats,
-  linkPath: string,
-  expectedOwnerUid: number,
-  expectedDevice: string,
-): RuntimeFileSystemIdentity {
-  const identity = identityFromStats(stats)
-  if (
-    !stats.isSymbolicLink() ||
-    identity.ownerUid !== expectedOwnerUid ||
-    identity.device !== expectedDevice
-  ) {
-    throw runtimeAuthorityError('runtime_integrity_failed', {
-      kind: 'runtime_archive_extracted_symlink_identity_invalid',
-      path: linkPath,
     })
   }
   return identity

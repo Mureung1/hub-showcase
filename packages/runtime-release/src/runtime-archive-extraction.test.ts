@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import {
   chmod,
+  link,
   lstat,
   mkdir,
   mkdtemp,
@@ -1193,6 +1194,230 @@ test('contains staging and parent races with no-follow and no-clobber writes', a
   })
 })
 
+test('retains directory capabilities across exact check-use ancestor races', async (t) => {
+  await t.test('file creation keeps exact-leaf no-clobber', async () => {
+    await withFixture(async (fixture) => {
+      const outside = path.join(fixture.root, 'outside-direct-leaf')
+      const destination = path.join(
+        fixture.staging.path,
+        'runtime/NOTICE',
+      )
+      await writeFile(outside, 'direct leaf canary\n')
+      let raced = false
+
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            afterParentCapabilityCheck: async (entry) => {
+              if (
+                !raced &&
+                entry.operation === 'create' &&
+                entry.type === 'file' &&
+                entry.path === 'NOTICE'
+              ) {
+                raced = true
+                await symlink(outside, destination)
+              }
+            },
+          }),
+        'runtime_recovery_required',
+      )
+
+      assert.equal(raced, true)
+      assert.equal(await readFile(outside, 'utf8'), 'direct leaf canary\n')
+      assert.equal((await lstat(destination)).isSymbolicLink(), true)
+    })
+  })
+
+  await t.test('directory creation', async () => {
+    await withFixture(async (fixture) => {
+      const runtimeRoot = path.join(fixture.staging.path, 'runtime')
+      const bundle = path.join(runtimeRoot, 'bundle')
+      const saved = path.join(fixture.root, 'bundle-saved')
+      const outside = path.join(fixture.root, 'outside-directory-create')
+      const canary = path.join(outside, 'canary')
+      await mkdir(outside, { mode: 0o700 })
+      await writeFile(canary, 'directory canary\n')
+      let raced = false
+
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            afterParentCapabilityCheck: async (entry) => {
+              if (
+                !raced &&
+                entry.operation === 'create' &&
+                entry.type === 'directory' &&
+                entry.path === 'bundle/bridge'
+              ) {
+                raced = true
+                await rename(bundle, saved)
+                await symlink(outside, bundle)
+              }
+            },
+          }),
+        'runtime_recovery_required',
+      )
+
+      assert.equal(raced, true)
+      assert.deepEqual(await readdir(outside), ['canary'])
+      assert.equal(await readFile(canary, 'utf8'), 'directory canary\n')
+    })
+  })
+
+  await t.test('file creation', async () => {
+    await withFixture(async (fixture) => {
+      const runtimeRoot = path.join(fixture.staging.path, 'runtime')
+      const bridge = path.join(runtimeRoot, 'bundle/bridge')
+      const saved = path.join(fixture.root, 'bridge-capability-saved')
+      const outside = path.join(fixture.root, 'outside-file-create')
+      const canary = path.join(outside, 'canary')
+      await mkdir(outside, { mode: 0o700 })
+      await writeFile(canary, 'file canary\n')
+      let raced = false
+
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            afterParentCapabilityCheck: async (entry) => {
+              if (
+                !raced &&
+                entry.operation === 'create' &&
+                entry.type === 'file' &&
+                entry.path === 'bundle/bridge/worker.py'
+              ) {
+                raced = true
+                await rename(bridge, saved)
+                await symlink(outside, bridge)
+              }
+            },
+          }),
+        'runtime_recovery_required',
+      )
+
+      assert.equal(raced, true)
+      assert.deepEqual(await readdir(outside), ['canary'])
+      assert.equal(await readFile(canary, 'utf8'), 'file canary\n')
+    })
+  })
+
+  await t.test('symlink creation', async () => {
+    await withFixture(async (fixture) => {
+      const runtimeRoot = path.join(fixture.staging.path, 'runtime')
+      const bin = path.join(runtimeRoot, 'bundle/python/bin')
+      const saved = path.join(fixture.root, 'bin-capability-saved')
+      const outside = path.join(fixture.root, 'outside-symlink-create')
+      const canary = path.join(outside, 'canary')
+      await mkdir(outside, { mode: 0o700 })
+      await writeFile(canary, 'symlink canary\n')
+      let raced = false
+
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            afterParentCapabilityCheck: async (entry) => {
+              if (
+                !raced &&
+                entry.operation === 'create' &&
+                entry.type === 'symlink' &&
+                entry.path === 'bundle/python/bin/python3'
+              ) {
+                raced = true
+                await rename(bin, saved)
+                await symlink(outside, bin)
+              }
+            },
+          }),
+        'runtime_recovery_required',
+      )
+
+      assert.equal(raced, true)
+      assert.deepEqual(await readdir(outside), ['canary'])
+      assert.equal(await readFile(canary, 'utf8'), 'symlink canary\n')
+    })
+  })
+
+  await t.test('cleanup unlink', async () => {
+    await withFixture(async (fixture) => {
+      const runtimeRoot = path.join(fixture.staging.path, 'runtime')
+      const saved = path.join(fixture.root, 'runtime-cleanup-saved')
+      const outside = path.join(fixture.root, 'outside-cleanup')
+      const canary = path.join(outside, 'canary')
+      const outsideNotice = path.join(outside, 'NOTICE')
+      await mkdir(outside, { mode: 0o700 })
+      await writeFile(canary, 'cleanup canary\n')
+      let raced = false
+
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            beforeFinalVerification: async () => {
+              throw new Error('force capability cleanup')
+            },
+            afterParentCapabilityCheck: async (entry) => {
+              if (
+                !raced &&
+                entry.operation === 'cleanup' &&
+                entry.type === 'file' &&
+                entry.path === 'NOTICE'
+              ) {
+                raced = true
+                await link(path.join(runtimeRoot, 'NOTICE'), outsideNotice)
+                await rename(runtimeRoot, saved)
+                await symlink(outside, runtimeRoot)
+              }
+            },
+          }),
+        'runtime_recovery_required',
+      )
+
+      assert.equal(raced, true)
+      assert.deepEqual(
+        (await readdir(outside)).sort(compareUnicodeCodePoints),
+        ['NOTICE', 'canary'],
+      )
+      assert.equal(await readFile(outsideNotice, 'utf8'), 'AY-PLE notice\n')
+      assert.equal(await readFile(canary, 'utf8'), 'cleanup canary\n')
+    })
+  })
+
+  await t.test('cleanup refuses a swapped direct leaf', async () => {
+    await withFixture(async (fixture) => {
+      const runtimeRoot = path.join(fixture.staging.path, 'runtime')
+      const notice = path.join(runtimeRoot, 'NOTICE')
+      const outside = path.join(fixture.root, 'outside-cleanup-leaf')
+      await writeFile(outside, 'cleanup leaf canary\n')
+      let raced = false
+
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            beforeFinalVerification: async () => {
+              throw new Error('force direct-leaf cleanup')
+            },
+            afterParentCapabilityCheck: async (entry) => {
+              if (
+                !raced &&
+                entry.operation === 'cleanup' &&
+                entry.type === 'file' &&
+                entry.path === 'NOTICE'
+              ) {
+                raced = true
+                await unlink(notice)
+                await link(outside, notice)
+              }
+            },
+          }),
+        'runtime_recovery_required',
+      )
+
+      assert.equal(raced, true)
+      assert.equal(await readFile(outside, 'utf8'), 'cleanup leaf canary\n')
+      assert.equal(await readFile(notice, 'utf8'), 'cleanup leaf canary\n')
+    })
+  })
+})
+
 test('post-extraction verifier rejects tree, mode, manifest, and legal roster drift', async (t) => {
   const cases: readonly {
     readonly name: string
@@ -1278,6 +1503,79 @@ test('post-extraction verifier rejects tree, mode, manifest, and legal roster dr
             }),
           row.expectedCode,
         )
+      })
+    })
+  }
+
+  await t.test('external hardlink appears during final file verification', async () => {
+    await withFixture(async (fixture) => {
+      const outsideAlias = path.join(fixture.root, 'NOTICE-alias')
+      let linked = false
+
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            beforeFinalFileVerification: async (entry) => {
+              if (!linked && entry.path === 'NOTICE') {
+                linked = true
+                await link(
+                  path.join(fixture.staging.path, 'runtime/NOTICE'),
+                  outsideAlias,
+                )
+              }
+            },
+          }),
+        'runtime_integrity_failed',
+      )
+
+      assert.equal(linked, true)
+      assert.equal(await readFile(outsideAlias, 'utf8'), 'AY-PLE notice\n')
+    })
+  })
+
+  await t.test('staging mode changes immediately before final verification', async () => {
+    await withFixture(async (fixture) => {
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            beforeFinalVerification: async () => {
+              await chmod(fixture.staging.path, 0o777)
+            },
+          }),
+        'runtime_recovery_required',
+      )
+      assert.equal((await stat(fixture.staging.path)).mode & 0o7777, 0o777)
+    })
+  })
+})
+
+test('maps materialization storage operation failures without masking integrity', async (t) => {
+  for (const operation of [
+    'directory_create',
+    'directory_chmod',
+    'file_create',
+    'file_write',
+    'file_chmod',
+    'file_sync',
+    'symlink_create',
+  ] as const) {
+    await t.test(operation, async () => {
+      await withFixture(async (fixture) => {
+        let injected = false
+        await assertArchiveError(
+          () =>
+            extractFixture(fixture, {
+              beforeStorageOperation: async (entry) => {
+                if (!injected && entry.operation === operation) {
+                  injected = true
+                  throw new Error(`injected ${operation} failure`)
+                }
+              },
+            }),
+          'runtime_storage_unavailable',
+        )
+        assert.equal(injected, true)
+        assert.deepEqual(await readdir(fixture.staging.path), [])
       })
     })
   }
