@@ -206,10 +206,8 @@ function decodeLaunch(
   requireSelectedFile(entries, bridgeEntrypoint, false)
   requireSelectedFile(entries, nativeExecutable, true)
   if (
-    !entries.some(
-      (entry) =>
-        entry.path === sitePackages ||
-        entry.path.startsWith(`${sitePackages}/`),
+    !entries.some((entry) =>
+      entry.path.startsWith(`${sitePackages}/`),
     )
   ) {
     throw invalidManifest()

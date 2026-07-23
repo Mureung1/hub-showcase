@@ -603,6 +603,73 @@ test('canonical topology requires exact root files, license subtree, and termina
   )
 })
 
+test('launch site_packages requires a nonempty descendant subtree', () => {
+  const fixture = createReleaseFixture()
+  const withoutSitePackages = fixture.entries.filter(
+    (entry) =>
+      !entry.path.startsWith(
+        `${fixture.manifest.launch.site_packages}/`,
+      ),
+  )
+  const launchOverride = {
+    native_executable: fixture.manifest.launch.python_executable,
+  }
+  const hostileCases = [
+    {
+      name: 'exact regular file',
+      entries: withAdditionalEntries(withoutSitePackages, [
+        manifestFile(fixture.manifest.launch.site_packages, '9'),
+      ]),
+    },
+    {
+      name: 'exact symlink',
+      entries: withAdditionalEntries(withoutSitePackages, [
+        {
+          path: fixture.manifest.launch.site_packages,
+          target: 'bridge',
+          type: 'symlink',
+        },
+      ]),
+    },
+    {
+      name: 'missing or empty subtree',
+      entries: withoutSitePackages,
+    },
+  ]
+  for (const hostileCase of hostileCases) {
+    assert.throws(
+      () =>
+        admitRuntimeRelease(
+          admissionInput({
+            manifestBytes: manifestBytesWithEntries(
+              fixture,
+              hostileCase.entries,
+              launchOverride,
+            ),
+          }),
+        ),
+      RuntimeReleaseAuthorityError,
+      `${hostileCase.name} must be rejected`,
+    )
+  }
+
+  const validEntries = withAdditionalEntries(
+    withoutSitePackages,
+    [manifestFile('bundle/site-packages/module.py', 'a')],
+  )
+  assert.doesNotThrow(() =>
+    admitRuntimeRelease(
+      admissionInput({
+        manifestBytes: manifestBytesWithEntries(
+          fixture,
+          validEntries,
+          launchOverride,
+        ),
+      }),
+    ),
+  )
+})
+
 test('application, target, archive, and manifest mismatch invoke no downstream effect', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'runtime-admission-red-'))
   let effectCalls = 0
@@ -749,6 +816,12 @@ function withAdditionalEntries(
 function manifestBytesWithEntries(
   fixture: ReturnType<typeof createReleaseFixture>,
   unsortedEntries: readonly FixtureEntry[],
+  launchOverrides: Partial<{
+    readonly python_executable: string
+    readonly bridge_entrypoint: string
+    readonly site_packages: string
+    readonly native_executable: string
+  }> = {},
 ): Buffer {
   const entries = [...unsortedEntries].sort((left, right) =>
     compareCodePoints(left.path, right.path),
@@ -758,6 +831,10 @@ function manifestBytesWithEntries(
   )
   return encodeManifest({
     ...fixture.manifest,
+    launch: {
+      ...fixture.manifest.launch,
+      ...launchOverrides,
+    },
     payload: {
       ...treeEvidence(entries),
       entries,
