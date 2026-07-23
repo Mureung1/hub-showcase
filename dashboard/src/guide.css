@@ -30,20 +30,32 @@
 }
 
 .guide-steps {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-bottom: 28px;
 }
 
+.guide-steps::before {
+  position: absolute;
+  top: 27px;
+  right: 16.5%;
+  left: 16.5%;
+  height: 1px;
+  background: #cfe8d9;
+  content: "";
+}
+
 .guide-steps div {
   display: flex;
+  position: relative;
+  z-index: 1;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  padding: 14px 16px;
-  border: 1px solid #d3dbd7;
-  border-radius: 10px;
-  background: #fbfcfa;
+  padding: 0 8px;
+  background: #f3f5f3;
 }
 
 .guide-steps strong {
@@ -204,6 +216,21 @@
 
   .guide-steps {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .guide-steps::before {
+    top: 13px;
+    right: auto;
+    bottom: 13px;
+    left: 21px;
+    width: 1px;
+    height: auto;
+  }
+
+  .guide-steps div {
+    justify-content: flex-start;
+    padding: 0;
   }
 
   .guide-section {
