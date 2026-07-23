@@ -4,12 +4,22 @@ import { useAuthState } from '@/hooks/useAuth'
 import { getCustomer, refreshCustomerRiskStats } from '@/services/customers'
 import { listIncidents, createIncident } from '@/services/incidents'
 import { listReservations, transitionReservationStatus } from '@/services/reservations'
-import type { Incident } from '@/types/schema'
+import type { Incident, CustomerSearchResult, FirestoreTimestamp } from '@/types/schema'
 import RiskBadge from '@/components/RiskBadge'
 import RiskAlertBanner from '@/components/RiskAlertBanner'
 import IncidentModal from '@/components/IncidentModal'
 import Button from '@/components/ui/Button'
 import { toast } from 'sonner'
+
+function toDateString(value: FirestoreTimestamp): string {
+  if (value && typeof value === 'object' && 'toDate' in value) {
+    const ts = value as { toDate: () => Date }
+    if (typeof ts.toDate === 'function') {
+      return ts.toDate().toISOString().split('T')[0]
+    }
+  }
+  return new Date(value as unknown as Date).toISOString().split('T')[0]
+}
 
 interface TimelineEvent {
   id: string
@@ -22,7 +32,7 @@ interface TimelineEvent {
 const CustomerDetail = () => {
   const { id } = useParams()
   const { user } = useAuthState()
-  const [customer, setCustomer] = useState<any | null>(null)
+  const [customer, setCustomer] = useState<CustomerSearchResult | null>(null)
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
   const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -58,7 +68,7 @@ const CustomerDetail = () => {
           })),
           ...incidentsData.map((inc) => ({
             id: inc.memo,
-            date: new Date(inc.occurredAt as any).toISOString().split('T')[0],
+            date: toDateString(inc.occurredAt),
             type: getIncidentTypeLabel(inc.type),
             icon: '⚠️',
             memo: inc.memo,
@@ -121,7 +131,7 @@ const CustomerDetail = () => {
       })),
       ...incidentsData.map((inc) => ({
         id: inc.memo,
-        date: new Date(inc.occurredAt as any).toISOString().split('T')[0],
+        date: toDateString(inc.occurredAt),
         type: getIncidentTypeLabel(inc.type),
         icon: '⚠️',
         memo: inc.memo,
