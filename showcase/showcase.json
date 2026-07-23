@@ -1,0 +1,32 @@
+{
+  "githubUser": "Min0504(채민석)",
+  "title": "ShowUp — 소상공인을 위한 노쇼·악성 고객 이력 관리 및 위험도 경고 웹서비스",
+  "description": "예약제로 운영하는 소상공인이 노쇼·폭언·분쟁 같은 문제 고객을 반복해서 겪으면서도, 어떤 고객이 위험한지 기록하고 예약 전에 확인할 수단이 없어 같은 피해를 계속 반복하는 문제를 해결합니다. 고객 이벤트 기록(방문/노쇼/취소 + 악성 행동 사건 기록)과 위험도 조회 + 자동 경고 기능을 제공합니다. 전화번호 뒤 4자리/이름으로 검색하면 3등급 위험도(안심/주의/위험)가 표시되고, 노쇼 3회 이상 또는 폭언 사건 1회 이상 시 강제 경고 배너가 표시됩니다.",
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Vite",
+    "Tailwind CSS",
+    "Firebase (Auth / Firestore / Hosting)",
+    "React Hook Form + Zod",
+    "TanStack Query",
+    "Zustand",
+    "Hermes Agent + Ollama Pro 모델 (AI 에이전트 4세션 개발)"
+  ],
+  "features": [
+    "고객 이벤트 기록 — 예약 상태(방문/노쇼/취소) 원터치 버튼 + 악성 행동 사건 기록(카테고리 4종 + 사실 메모)",
+    "위험도 조회 + 자동 경고 — 전화 뒤 4자리/이름 검색, 3등급(안심/주의/위험), 노쇼 3회+ 또는 abuse 1회+ 시 강제 경고 배너",
+    "가게 단위 데이터 격리 — Firestore Security Rules로 ownerUid 검증, 타 가게 접근 차단",
+    "전화번호 마스킹 — 원본 저장, 화면 표시는 항상 010-****-1234 마스킹",
+    "대시보드 — 오늘 예약 수, 방문/노쇼 수, 월 노쇼율, 주의 고객 Top 5",
+    "코드 스플리팅 — React.lazy + Suspense, 메인 청크 8KB (gzip 3KB)"
+  ],
+  "screenshots": [
+    "screenshots/dashboard.png",
+    "screenshots/customers.png",
+    "screenshots/reservations.png",
+    "screenshots/landing.png"
+  ],
+  "demoUrl": "https://showup-project.web.app",
+  "githubUrl": "https://github.com/Min0504/hub/tree/N167_채민석/apps/showup"
+}
