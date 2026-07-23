@@ -144,35 +144,60 @@ npm run dev
 
 ## 🔧 아키텍처
 
-```
-┌─────────────────────────────────────┐
-│      User Browser (Vercel)          │
-│  https://hub-g4ih.vercel.app        │
-│  - React + Firebase Auth             │
-│  - Calendar sync UI                  │
-│  - Room creation/join UI             │
-│  - Restaurant search & AI reco       │
-└────────────────┬────────────────────┘
-                 │ (HTTP API)
-                 ▼
-┌─────────────────────────────────────┐
-│     Express.js Backend (Render)     │
-│  https://hub-o4vk.onrender.com      │
-│  - /api/auth/* (Firebase)            │
-│  - /api/schedule/sync/* (Calendar)   │
-│  - /api/rooms/* (Room CRUD)          │
-│  - /api/restaurants/* (Search+AI)    │
-└────────┬────────────────────────────┘
-         │
-    ┌────┴─────────────────────────────┐
-    ▼                                   ▼
-┌──────────────────┐          ┌─────────────────┐
-│  MongoDB Atlas   │          │  External APIs  │
-│  - Users         │          │  - Google Cal   │
-│  - Rooms         │          │  - Naver Search │
-│  - Schedules     │          │  - Gemini AI    │
-│  - Profiles      │          │  - Apple CalDAV │
-└──────────────────┘          └─────────────────┘
+```mermaid
+flowchart TD
+    %% 프론트엔드 영역 (React)
+    subgraph Frontend
+        UI[사용자 UI: 시간표, 방 정보 입력 등]
+        State[상태 관리: Room, Schedule, Auth 등]
+        
+        UI -->|사용자 인터랙션/입력| State
+        State -.->|위치 좌표 변환 - 직접 호출| ExtNominatim((Nominatim API))
+    end
+
+    %% 백엔드 영역 (Express)
+    subgraph Backend
+        API_Auth["/api/auth/* (이메일 인증)"]
+        API_Sync["/api/schedule/sync/* (캘린더 동기화)"]
+        API_Rest["/api/restaurants/* (맛집 검색/추천)"]
+        API_Rooms["/api/rooms/* (방 생성/조회)"]
+    end
+
+    %% 데이터베이스 영역 (MongoDB)
+    subgraph Database
+        Col_User[(User Collection)]
+        Col_Room[(Room Collection)]
+        Col_Schedule[(Schedule Collection)]
+    end
+
+    %% 외부 API 영역
+    subgraph ExternalAPIs
+        ExtMail((Gmail SMTP))
+        ExtGCal((Google Calendar))
+        ExtICal((Apple CalDAV))
+        ExtEvery((Everytime API))
+        ExtNaver((Naver Search))
+        ExtGemini((Google Gemini))
+    end
+
+    %% 1 & 2. Frontend -> Backend Data Flow
+    State ==>|이메일/코드 전송| API_Auth
+    State ==>|accessToken/url 전달| API_Sync
+    State ==>|검색어, 위경도 전달| API_Rest
+    State ==>|방 생성/참여/확정| API_Rooms
+
+    %% 3. Backend -> Database Connection
+    API_Rooms -->|방장/참여자 정보 저장| Col_User
+    API_Rooms -->|방 상세 정보 저장| Col_Room
+    API_Rooms -->|유저의 빈 시간 기록| Col_Schedule
+
+    %% 4. Backend -> External APIs
+    API_Auth --->|인증 번호 메일| ExtMail
+    API_Sync --->|일정 데이터 요청| ExtGCal
+    API_Sync --->|일정 데이터 요청| ExtICal
+    API_Sync --->|시간표 스크래핑| ExtEvery
+    API_Rest --->|주변 맛집 검색| ExtNaver
+    API_Rest --->|방 조건 기반 메뉴 AI 추천| ExtGemini
 ```
 
 ---

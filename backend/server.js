@@ -857,6 +857,10 @@ app.post('/api/rooms/:id/confirm', async (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
