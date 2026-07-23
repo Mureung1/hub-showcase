@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { prisma } from '../db.js'
 import { SPLIT_TYPE_BY_DAYS_PER_WEEK, SPLIT_DAY_TYPES } from '../splitPresets.js'
-import { violatesAdjacentAreaRule } from '../scheduleConstraints.js'
+import { violatesAdjacentAreaRule, findArrangementViolation } from '../scheduleConstraints.js'
 
 export const onboardingRouter = Router()
 
@@ -19,8 +19,14 @@ const FIXED_ARRANGEMENTS = {
   },
 }
 
-function getDayArrangement(splitType, daysPerWeek) {
+export function getDayArrangement(splitType, daysPerWeek) {
   if (splitType === 'PPL') {
+    // 7일은 3개 주기(Push/Pull/Legs)로 꽉 채우면 7%3=1이라 월요일과 일요일이
+    // 항상 같은 카테고리로 겹친다(순환 인접 위반). 목요일을 강제 휴식으로 비워
+    // 앞 3일(월화수)과 뒤 3일(금토일)을 완전히 분리된 두 번의 3일 주기로 만든다.
+    if (daysPerWeek === 7) {
+      return { MON: 'Push', TUE: 'Pull', WED: 'Legs', FRI: 'Push', SAT: 'Pull', SUN: 'Legs' }
+    }
     const cycle = ['Push', 'Pull', 'Legs']
     const arrangement = {}
     for (let i = 0; i < daysPerWeek; i++) {
@@ -53,6 +59,11 @@ onboardingRouter.post('/onboarding', async (req, res) => {
 
   if (!dayArrangement) {
     return res.status(400).json({ error: `daysPerWeek=${daysPerWeek}에 대한 배치 규칙이 없습니다.` })
+  }
+
+  const violatingDay = findArrangementViolation({ dayArrangement, splitType })
+  if (violatingDay) {
+    return res.status(400).json({ error: `${violatingDay} 요일이 인접 요일과 부위가 겹칩니다.` })
   }
 
   const user = await prisma.user.findFirst()

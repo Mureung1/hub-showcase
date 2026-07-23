@@ -25,7 +25,13 @@ painReportsRouter.post('/pain-reports', async (req, res) => {
       routineDayExercise.exerciseId,
       painBodyPart,
     )
-    const candidates = found.candidates.map((c) => ({ id: c.id, name: c.name }))
+    const candidates = found.candidates.map((c) => ({
+      id: c.id,
+      name: c.name,
+      imagePath: c.imagePath,
+      imageLicenseAuthor: c.imageLicenseAuthor,
+      imageSourceUrl: c.imageSourceUrl,
+    }))
 
     // 대체가 필요하고 후보가 있으면, 그중 하나를 LLM이 추천으로 고른다.
     let recommendedExerciseId = null

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { postJson } from '@/lib/api'
 
 const DAY_OPTIONS = [1, 2, 3, 4, 5, 6, 7]
 
@@ -8,21 +9,14 @@ function Onboarding() {
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError(null)
-    fetch('/api/onboarding', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ daysPerWeek: selectedDays }),
-    })
-      .then((res) => res.json().then((json) => ({ ok: res.ok, json })))
-      .then(({ ok, json }) => {
-        if (!ok) {
-          setError(json.error)
-          return
-        }
-        navigate('/onboarding/review')
-      })
+    const result = await postJson('/api/onboarding', { daysPerWeek: selectedDays })
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    navigate('/onboarding/review')
   }
 
   return (

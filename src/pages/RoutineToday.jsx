@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useRoutineToday } from '@/hooks/useRoutineToday'
+import { postJson } from '@/lib/api'
 import Sidebar from '@/components/Sidebar'
 import WeekStrip from '@/components/WeekStrip'
 import SessionCard from '@/components/SessionCard'
@@ -12,13 +13,9 @@ function RoutineToday() {
 
   const postSessionAction = async (action) => {
     setActionError(null)
-    const res = await fetch(`/api/sessions/${data.routineDayId}/${action}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    })
-    if (!res.ok) {
-      setActionError((await res.json()).error)
+    const result = await postJson(`/api/sessions/${data.routineDayId}/${action}`)
+    if (!result.ok) {
+      setActionError(result.error)
       return
     }
     refetch()
