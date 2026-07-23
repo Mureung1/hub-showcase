@@ -6,6 +6,10 @@ import { getProfile } from './api/profile';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Onboarding from './pages/Onboarding';
+import Home from './pages/Home';
+import Article from './pages/Article';
+import ComingSoon from './pages/ComingSoon';
+import AppLayout from './layouts/AppLayout';
 
 function PrivateRoute() {
   const { status } = useAuth();
@@ -13,8 +17,7 @@ function PrivateRoute() {
   return status === 'authenticated' ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
-function PlaceholderHome() {
-  const { user, signOut } = useAuth();
+function OnboardingGate({ children }) {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
 
@@ -30,18 +33,7 @@ function PlaceholderHome() {
 
   if (checking) return null;
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-stack-md bg-surface">
-      <p className="font-body-lg text-body-lg text-on-surface">로그인 성공 — 홈은 7/19에 구현 예정</p>
-      <p className="font-body-md text-body-md text-on-surface-variant">{user?.email}</p>
-      <button
-        onClick={signOut}
-        className="bg-btn-gray text-on-surface rounded-lg px-4 py-2 font-body-md"
-      >
-        로그아웃
-      </button>
-    </div>
-  );
+  return children;
 }
 
 function App() {
@@ -53,7 +45,26 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route element={<PrivateRoute />}>
             <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/" element={<PlaceholderHome />} />
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<OnboardingGate><Home /></OnboardingGate>} />
+              <Route path="/articles/:id" element={<OnboardingGate><Article /></OnboardingGate>} />
+              <Route
+                path="/trend"
+                element={<OnboardingGate><ComingSoon title="트렌드" description="스트레치 목표 — 아직 준비 중이에요." /></OnboardingGate>}
+              />
+              <Route
+                path="/insight"
+                element={<OnboardingGate><ComingSoon title="인사이트" description="7/23 구현 예정 — 아직 준비 중이에요." /></OnboardingGate>}
+              />
+              <Route
+                path="/mypage"
+                element={<OnboardingGate><ComingSoon title="마이페이지" description="아직 준비 중이에요." /></OnboardingGate>}
+              />
+              <Route
+                path="/settings"
+                element={<OnboardingGate><ComingSoon title="설정" description="아직 준비 중이에요." /></OnboardingGate>}
+              />
+            </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

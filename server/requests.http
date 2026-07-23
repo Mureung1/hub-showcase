@@ -60,3 +60,33 @@ Authorization: Bearer {{token}}
 
 ### 토큰 없이 조회 — 401 unauthorized가 정상
 GET {{baseUrl}}/api/profile
+
+### 내 관심 키워드 기준 기사 피드 — 처음엔 네이버에서 가져오느라 좀 걸림, 응답의 기사 id를 아래 요청들에 복사해서 씀
+GET {{baseUrl}}/api/articles?limit=5
+Authorization: Bearer {{token}}
+
+### 기사 상세 — 처음 조회 시 본문 크롤링(약간 느림), 재조회부턴 캐시라 빠름
+# :id 자리를 위 피드 응답에서 복사한 실제 article id로 바꿔서 보낼 것
+GET {{baseUrl}}/api/articles/여기에_article_id
+Authorization: Bearer {{token}}
+
+### 읽음 처리 — read_history UPSERT, 다시 보내면 read_at만 갱신됨
+POST {{baseUrl}}/api/articles/여기에_article_id/read
+Authorization: Bearer {{token}}
+
+### 북마크 추가
+POST {{baseUrl}}/api/bookmarks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "articleId": "여기에_article_id"
+}
+
+### 내 북마크 목록
+GET {{baseUrl}}/api/bookmarks
+Authorization: Bearer {{token}}
+
+### 북마크 해제
+DELETE {{baseUrl}}/api/bookmarks/여기에_article_id
+Authorization: Bearer {{token}}
