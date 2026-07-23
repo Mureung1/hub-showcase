@@ -148,6 +148,10 @@ button {
   font-size: 14px;
 }
 
+.refresh-button {
+  width: fit-content;
+}
+
 .customer-main {
   flex: 1;
   padding: 6px 20px 24px;
@@ -511,6 +515,20 @@ button {
   margin-top: 4px;
   color: #70675f;
   font-size: 14px;
+}
+
+.award-result {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #eef7f2;
+  color: #201915;
+}
+
+.award-result p {
+  margin: 0;
+  color: #5d5148;
 }
 
 @media (min-width: 720px) {
