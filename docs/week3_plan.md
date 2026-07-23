@@ -202,7 +202,7 @@ isProject: false
 | 응답 필드 부족 (`qualifications`/`documents`/`method`/`contact`) | `Subsidy` 타입 다수 필드에 대응 API 필드 없음 | 이번 주는 원문 링크 안내 위주로 채우고, AI 요약/정교한 파싱은 로드맵 4주차 항목으로 후순위 → [이슈 #44](https://github.com/syd348/hub/issues/44)로 등록 (2026-07-23) |
 | 매칭 조건 필터 (업종/지역) | API가 구조화된 업종/지역 코드를 주지 않음 (해시태그 정도) | 이번 주는 수집·저장까지만. 조건 필터 고도화는 3주차 매칭 알고리즘 이슈로 이관 → [이슈 #43](https://github.com/syd348/hub/issues/43)으로 등록 (2026-07-23) |
 | 크롤러 실행 위치 | `server/` 안 vs 별도 `crawler/` 워크스페이스 | CLAUDE.md 디렉토리 구조대로 `crawler/` 분리, GitHub Actions cron이 직접 실행 (서버 상시 구동 불필요) |
-| 기존 샘플 데이터(`sample-subsidies.ts`) | 언제 대체하나 | 이번 주는 실데이터 upsert 파이프라인 검증까지만, 완전 대체는 검증 후 별도 판단 |
+| 기존 샘플 데이터(`sample-subsidies.ts`) | 언제 대체하나 | **결정 완료 (2026-07-23)**: Supabase `subsidies`에서 샘플 8건(`id: '1'~'8'`) 삭제, 실사용 리스트는 크롤링 데이터만 노출. 코드(`sample-subsidies.ts`/`mockSubsidies.ts`/`db:seed`)는 Supabase·네트워크 장애 시 fallback 용도로 유지(재시드는 안 함) |
 | cron 실행 주기 | 하루 1회 vs 여러 번 | 공고 갱신 빈도가 낮을 것으로 예상 — 하루 1회로 시작, 필요시 조정 |
 
 ## 진행 방식
