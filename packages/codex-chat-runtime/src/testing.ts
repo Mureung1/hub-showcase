@@ -26,6 +26,8 @@ import type {
   CodexBrowserLoginCancellation,
   CodexBrowserLoginRelease,
   CodexBrowserLoginStartResult,
+  CodexEffectiveConfig,
+  CodexEffectiveSkill,
   CodexLogoutResult,
   CodexRuntimeCloseResult,
   CodexRuntimeRole,
@@ -70,6 +72,8 @@ export type DeterministicCodexChatRuntimeCall =
       readonly input: { readonly attemptId: string }
     }
   | { readonly operation: 'logout' }
+  | { readonly operation: 'readEffectiveConfig' }
+  | { readonly operation: 'listEffectiveSkills' }
   | { readonly operation: 'startThread'; readonly input?: StartThreadInput }
   | {
       readonly operation: 'startTurn'
@@ -127,6 +131,10 @@ export type DeterministicCodexChatRuntimeOptions = {
   readonly browserLoginCancellations?: readonly DeterministicValue<CodexBrowserLoginCancellation>[]
   readonly browserLoginReleases?: readonly DeterministicValue<CodexBrowserLoginRelease>[]
   readonly logouts?: readonly DeterministicValue<CodexLogoutResult>[]
+  readonly effectiveConfigs?: readonly DeterministicValue<CodexEffectiveConfig>[]
+  readonly effectiveSkills?: readonly DeterministicValue<
+    readonly CodexEffectiveSkill[]
+  >[]
   readonly threadIds?: readonly CodexThreadId[]
   readonly productTurns?: readonly DeterministicCodexProductTurn[]
   readonly turns?: readonly DeterministicCodexChatTurn[]
@@ -164,6 +172,10 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
   private readonly browserLoginCancellations: DeterministicValue<CodexBrowserLoginCancellation>[]
   private readonly browserLoginReleases: DeterministicValue<CodexBrowserLoginRelease>[]
   private readonly logouts: DeterministicValue<CodexLogoutResult>[]
+  private readonly effectiveConfigs: DeterministicValue<CodexEffectiveConfig>[]
+  private readonly effectiveSkills: DeterministicValue<
+    readonly CodexEffectiveSkill[]
+  >[]
   private readonly threadIds: CodexThreadId[]
   private readonly productTurns: DeterministicCodexProductTurn[]
   private readonly turns: DeterministicCodexChatTurn[]
@@ -195,6 +207,8 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     ]
     this.browserLoginReleases = [...(options.browserLoginReleases ?? [])]
     this.logouts = [...(options.logouts ?? [])]
+    this.effectiveConfigs = [...(options.effectiveConfigs ?? [])]
+    this.effectiveSkills = [...(options.effectiveSkills ?? [])]
     this.threadIds = [...(options.threadIds ?? [])]
     this.productTurns = (options.productTurns ?? []).map((turn) => ({
       input: cloneProductTurnInput(turn.input),
@@ -334,6 +348,32 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
       'logout',
       input.signal,
       () => ({ status: 'error', error: runtimeClosingFailure() }),
+    )
+  }
+
+  async readEffectiveConfig(input: {
+    readonly signal: AbortSignal
+  }): Promise<CodexEffectiveConfig> {
+    this.callLog.push({ operation: 'readEffectiveConfig' })
+    this.requireOpen()
+    this.requireWorkspaceRole()
+    return this.runNativeContextValue(
+      this.effectiveConfigs,
+      'effective config read',
+      input.signal,
+    )
+  }
+
+  async listEffectiveSkills(input: {
+    readonly signal: AbortSignal
+  }): Promise<readonly CodexEffectiveSkill[]> {
+    this.callLog.push({ operation: 'listEffectiveSkills' })
+    this.requireOpen()
+    this.requireWorkspaceRole()
+    return this.runNativeContextValue(
+      this.effectiveSkills,
+      'effective Skill list',
+      input.signal,
     )
   }
 
@@ -565,6 +605,33 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     }
   }
 
+  private async runNativeContextValue<T>(
+    values: DeterministicValue<T>[],
+    description: string,
+    signal: AbortSignal,
+  ): Promise<T> {
+    if (signal.aborted) throw nativeContextAbortedError()
+    const scripted = values.shift()
+    if (scripted === undefined) {
+      throw new Error(`No deterministic ${description} remains`)
+    }
+    let rejectAbort!: (error: CodexChatRuntimeError) => void
+    const aborted = new Promise<never>((_resolve, reject) => {
+      rejectAbort = reject
+    })
+    const onAbort = () => rejectAbort(nativeContextAbortedError())
+    signal.addEventListener('abort', onAbort, { once: true })
+    if (signal.aborted) onAbort()
+    try {
+      return await Promise.race([
+        Promise.resolve(scripted).then((value) => structuredClone(value)),
+        aborted,
+      ])
+    } finally {
+      signal.removeEventListener('abort', onAbort)
+    }
+  }
+
   private closeForAccountAbort(): void {
     this.clearAllInteractions()
     this.activeTurns.clear()
@@ -782,6 +849,14 @@ function cloneProductActivity(
 
 function runtimeClosingFailure(): CodexAccountFailure {
   return { code: 'runtime_closing', retryable: true }
+}
+
+function nativeContextAbortedError(): CodexChatRuntimeError {
+  return new CodexChatRuntimeError({
+    code: 'native_context_aborted',
+    displayMessage: 'The Codex native context query was cancelled.',
+    unknownOutcome: false,
+  })
 }
 
 function accountFailureError(failure: CodexAccountFailure): CodexChatRuntimeError {

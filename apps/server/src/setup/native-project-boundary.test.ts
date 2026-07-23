@@ -35,14 +35,6 @@ test('hostile ancestor and user context are excluded by the exact native boundar
       nativeContext: createNativeContextPort(fixture.workspace, journal),
     })
 
-    assert.deepEqual(boundary.launch, {
-      cwd: fixture.workspace.canonicalRoot,
-      environment: {
-        HOME: fixture.controlledHome,
-        CODEX_HOME: fixture.controlledCodexHome,
-      },
-      configOverrides: ['project_root_markers=[]'],
-    })
     assert.equal((await boundary.verify()).status, 'verified')
     assert.deepEqual(journal, [
       'readEffectiveConfig',
@@ -65,6 +57,152 @@ test('hostile ancestor and user context are excluded by the exact native boundar
       await readFile(path.join(fixture.hostileUserHome, 'AGENTS.md')),
       fixture.hostileUserBytes,
     )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('overlapping verification callers share one atomic native context generation', async () => {
+  const fixture = await createFixture()
+  try {
+    let releaseConfig!: () => void
+    const configBlocked = new Promise<void>((resolve) => {
+      releaseConfig = resolve
+    })
+    let configReads = 0
+    let skillReads = 0
+    const exactSkill = {
+      name: 'ay-ple-first-assignment',
+      enabled: true,
+      sourceRoot: path.join(
+        fixture.workspace.canonicalRoot,
+        skillRoot,
+      ),
+    }
+    const boundary = createWorkspaceNativeProjectBoundary({
+      workspace: fixture.workspace,
+      controlledHome: fixture.controlledHome,
+      controlledCodexHome: fixture.controlledCodexHome,
+      nativeContext: {
+        async readEffectiveConfig() {
+          configReads += 1
+          await configBlocked
+          return {
+            projectRootMarkers: [],
+            globalInstructionsFile: null,
+          }
+        },
+        async listEffectiveSkills() {
+          skillReads += 1
+          return [
+            exactSkill,
+            {
+              name: 'hostile',
+              enabled: true,
+              sourceRoot: '/ambient/.agents/skills/hostile',
+            },
+          ]
+        },
+      },
+    })
+
+    const first = boundary.verify()
+    const second = boundary.verify()
+    releaseConfig()
+
+    assert.deepEqual(await Promise.all([first, second]), [
+      { status: 'blocked', reason: 'skill_conflict' },
+      { status: 'blocked', reason: 'skill_conflict' },
+    ])
+    assert.equal(configReads, 1)
+    assert.equal(skillReads, 1)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('separate boundaries sharing one native port cannot mix hostile generations', async () => {
+  const fixture = await createFixture()
+  try {
+    const exactSkill = {
+      name: 'ay-ple-first-assignment',
+      enabled: true,
+      sourceRoot: path.join(
+        fixture.workspace.canonicalRoot,
+        skillRoot,
+      ),
+    }
+    const snapshots = [
+      {
+        config: {
+          projectRootMarkers: [],
+          globalInstructionsFile: null,
+        },
+        skills: [
+          exactSkill,
+          {
+            name: 'hostile',
+            enabled: true,
+            sourceRoot: '/ambient/.agents/skills/hostile',
+          },
+        ],
+      },
+      {
+        config: {
+          projectRootMarkers: ['.git'],
+          globalInstructionsFile: null,
+        },
+        skills: [exactSkill],
+      },
+    ] as const
+    const snapshotBySignal = new WeakMap<
+      AbortSignal,
+      (typeof snapshots)[number]
+    >()
+    let configReads = 0
+    let skillReads = 0
+    const nativeContext: CodexNativeContextPort = {
+      async readEffectiveConfig({ signal }) {
+        const snapshot = snapshots[configReads]
+        configReads += 1
+        assert.ok(snapshot)
+        snapshotBySignal.set(signal, snapshot)
+        return snapshot.config
+      },
+      async listEffectiveSkills({ signal }) {
+        skillReads += 1
+        const snapshot = snapshotBySignal.get(signal)
+        assert.ok(snapshot)
+        return snapshot.skills
+      },
+    }
+    const createBoundary = () =>
+      createWorkspaceNativeProjectBoundary({
+        workspace: fixture.workspace,
+        controlledHome: fixture.controlledHome,
+        controlledCodexHome: fixture.controlledCodexHome,
+        nativeContext,
+      })
+
+    const results = await Promise.all([
+      createBoundary().verify(),
+      createBoundary().verify(),
+    ])
+
+    assert.equal(
+      results.every((result) => result.status === 'blocked'),
+      true,
+    )
+    assert.deepEqual(
+      results
+        .map((result) =>
+          result.status === 'blocked' ? result.reason : 'verified',
+        )
+        .sort(),
+      ['config_conflict', 'skill_conflict'],
+    )
+    assert.equal(configReads, 2)
+    assert.equal(skillReads, 2)
   } finally {
     await fixture.cleanup()
   }
@@ -149,7 +287,7 @@ for (const failure of [
   {
     operation: 'readEffectiveConfig',
     reason: 'config_conflict',
-    expectedJournal: ['readEffectiveConfig'],
+    expectedJournal: ['readEffectiveConfig', 'listEffectiveSkills'],
   },
   {
     operation: 'listEffectiveSkills',
@@ -309,7 +447,6 @@ for (const controlledConflict of [
   'home/AGENTS.md',
   'home/.agents/skills/canary/SKILL.md',
   'codex-home/AGENTS.override.md',
-  'codex-home/skills/canary/SKILL.md',
 ] as const) {
   test(`controlled root conflict ${controlledConflict} is preserved and blocks before native queries`, async () => {
     const fixture = await createFixture()
@@ -336,6 +473,101 @@ for (const controlledConflict of [
     }
   })
 }
+
+test('official Codex system Skill cache is preserved and admitted through the effective roster', async () => {
+  const fixture = await createFixture()
+  try {
+    const target = path.join(
+      fixture.controlledCodexHome,
+      'skills',
+      '.system',
+      'bundled',
+      'SKILL.md',
+    )
+    await mkdir(path.dirname(target), { recursive: true })
+    const bytes = Buffer.from('official system Skill cache\n')
+    await writeFile(target, bytes)
+    const journal: NativeJournalEntry[] = []
+    const boundary = createWorkspaceNativeProjectBoundary({
+      workspace: fixture.workspace,
+      controlledHome: fixture.controlledHome,
+      controlledCodexHome: fixture.controlledCodexHome,
+      nativeContext: createNativeContextPort(fixture.workspace, journal),
+    })
+
+    assert.deepEqual(await boundary.verify(), { status: 'verified' })
+    assert.deepEqual(await readFile(target), bytes)
+    assert.deepEqual(journal, [
+      'readEffectiveConfig',
+      'listEffectiveSkills',
+    ])
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('legacy user Skill in controlled Codex home is preserved and blocked by the effective roster', async () => {
+  const fixture = await createFixture()
+  try {
+    const skillRoot = path.join(
+      fixture.controlledCodexHome,
+      'skills',
+      'canary',
+    )
+    const target = path.join(skillRoot, 'SKILL.md')
+    await mkdir(skillRoot, { recursive: true })
+    const bytes = Buffer.from('controlled Codex user Skill\n')
+    await writeFile(target, bytes)
+    const journal: NativeJournalEntry[] = []
+    const exactSkill = {
+      name: 'ay-ple-first-assignment',
+      enabled: true,
+      sourceRoot: path.join(
+        fixture.workspace.canonicalRoot,
+        '.agents',
+        'skills',
+        'ay-ple-first-assignment',
+      ),
+    }
+    const boundary = createWorkspaceNativeProjectBoundary({
+      workspace: fixture.workspace,
+      controlledHome: fixture.controlledHome,
+      controlledCodexHome: fixture.controlledCodexHome,
+      nativeContext: {
+        async readEffectiveConfig() {
+          journal.push('readEffectiveConfig')
+          return {
+            projectRootMarkers: [],
+            globalInstructionsFile: null,
+          }
+        },
+        async listEffectiveSkills() {
+          journal.push('listEffectiveSkills')
+          return [
+            exactSkill,
+            {
+              name: 'canary',
+              enabled: true,
+              sourceRoot: skillRoot,
+            },
+          ]
+        },
+      },
+    })
+
+    assert.deepEqual(await boundary.verify(), {
+      status: 'blocked',
+      reason: 'skill_conflict',
+    })
+    assert.deepEqual(await readFile(target), bytes)
+    assert.deepEqual(journal, [
+      'readEffectiveConfig',
+      'listEffectiveSkills',
+    ])
+  } finally {
+    await fixture.cleanup()
+  }
+})
 
 type NativeJournalEntry =
   | 'readEffectiveConfig'

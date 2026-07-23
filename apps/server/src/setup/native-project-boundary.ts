@@ -14,13 +14,12 @@ import {
   type WorkspaceNativeContextSnapshot,
 } from '@ay-ple/semester-workspace'
 
-export type WorkspaceNativeLaunch = {
+type WorkspaceControlledRoots = {
   readonly cwd: string
   readonly environment: {
     readonly HOME: string
     readonly CODEX_HOME: string
   }
-  readonly configOverrides: readonly ['project_root_markers=[]']
 }
 
 export type WorkspaceNativeBoundaryVerification =
@@ -29,7 +28,6 @@ export type WorkspaceNativeBoundaryVerification =
 
 export interface WorkspaceNativeProjectBoundary {
   readonly workspace: AdmittedSemesterWorkspace
-  readonly launch: WorkspaceNativeLaunch
   verify(): Promise<WorkspaceNativeBoundaryVerification>
 }
 
@@ -40,76 +38,105 @@ export function createWorkspaceNativeProjectBoundary(input: {
   readonly nativeContext: CodexNativeContextPort
 }): WorkspaceNativeProjectBoundary {
   const workspace = cloneWorkspace(input.workspace)
-  const launch = deepFreezeLaunch({
+  const controlledRoots = deepFreezeControlledRoots({
     cwd: workspace.canonicalRoot,
     environment: {
       HOME: input.controlledHome,
       CODEX_HOME: input.controlledCodexHome,
     },
-    configOverrides: ['project_root_markers=[]'],
   })
+  let verificationInFlight:
+    | Promise<WorkspaceNativeBoundaryVerification>
+    | undefined
 
   return {
     workspace,
-    launch,
-    async verify(): Promise<WorkspaceNativeBoundaryVerification> {
-      const rootVerification = await verifyControlledRoots(launch)
-      if (rootVerification.status === 'blocked') {
-        return rootVerification
-      }
-      const staticContext = await verifyWorkspaceStaticContext(
+    verify(): Promise<WorkspaceNativeBoundaryVerification> {
+      if (verificationInFlight) return verificationInFlight
+      const verification = verifyWorkspaceNativeProjectBoundary({
         workspace,
-      )
-      if (staticContext.status === 'blocked') return staticContext
-
-      const controller = new AbortController()
-      let config: CodexEffectiveConfig
-      try {
-        config = cloneEffectiveConfig(
-          await input.nativeContext.readEffectiveConfig({
-            signal: controller.signal,
-          }),
-        )
-      } catch {
-        return { status: 'blocked', reason: 'config_conflict' }
-      }
-      let skills: readonly CodexEffectiveSkill[]
-      try {
-        skills = cloneEffectiveSkills(
-          await input.nativeContext.listEffectiveSkills({
-            signal: controller.signal,
-          }),
-        )
-      } catch {
-        return { status: 'blocked', reason: 'skill_conflict' }
-      }
-      const native = cloneNativeSnapshot({ config, skills })
-      const verified = createWorkspaceContextGuard().verify({
-        workspace,
-        native,
+        controlledRoots,
+        nativeContext: input.nativeContext,
+      }).finally(() => {
+        if (verificationInFlight === verification) {
+          verificationInFlight = undefined
+        }
       })
-      if (verified.status === 'blocked') return verified
-      const finalRootVerification = await verifyControlledRoots(launch)
-      if (finalRootVerification.status === 'blocked') {
-        return finalRootVerification
-      }
-      const finalStaticContext =
-        await verifyWorkspaceStaticContext(workspace)
-      if (finalStaticContext.status === 'blocked') {
-        return finalStaticContext
-      }
-      return { status: 'verified' }
+      verificationInFlight = verification
+      return verification
     },
   }
 }
 
+async function verifyWorkspaceNativeProjectBoundary(input: {
+  readonly workspace: AdmittedSemesterWorkspace
+  readonly controlledRoots: WorkspaceControlledRoots
+  readonly nativeContext: CodexNativeContextPort
+}): Promise<WorkspaceNativeBoundaryVerification> {
+  const rootVerification = await verifyControlledRoots(
+    input.controlledRoots,
+  )
+  if (rootVerification.status === 'blocked') return rootVerification
+  const staticContext = await verifyWorkspaceStaticContext(input.workspace)
+  if (staticContext.status === 'blocked') return staticContext
+
+  const controller = new AbortController()
+  const configRead = input.nativeContext.readEffectiveConfig({
+    signal: controller.signal,
+  })
+  const skillsRead = input.nativeContext.listEffectiveSkills({
+    signal: controller.signal,
+  })
+  const [configOutcome, skillsOutcome] = await Promise.allSettled([
+    configRead,
+    skillsRead,
+  ])
+  if (configOutcome.status === 'rejected') {
+    return { status: 'blocked', reason: 'config_conflict' }
+  }
+  let config: CodexEffectiveConfig
+  try {
+    config = cloneEffectiveConfig(configOutcome.value)
+  } catch {
+    return { status: 'blocked', reason: 'config_conflict' }
+  }
+  if (skillsOutcome.status === 'rejected') {
+    return { status: 'blocked', reason: 'skill_conflict' }
+  }
+  let skills: readonly CodexEffectiveSkill[]
+  try {
+    skills = cloneEffectiveSkills(skillsOutcome.value)
+  } catch {
+    return { status: 'blocked', reason: 'skill_conflict' }
+  }
+  const native = cloneNativeSnapshot({ config, skills })
+  const verified = createWorkspaceContextGuard().verify({
+    workspace: input.workspace,
+    native,
+  })
+  if (verified.status === 'blocked') return verified
+  const finalRootVerification = await verifyControlledRoots(
+    input.controlledRoots,
+  )
+  if (finalRootVerification.status === 'blocked') {
+    return finalRootVerification
+  }
+  const finalStaticContext = await verifyWorkspaceStaticContext(
+    input.workspace,
+  )
+  if (finalStaticContext.status === 'blocked') {
+    return finalStaticContext
+  }
+  return { status: 'verified' }
+}
+
 async function verifyControlledRoots(
-  launch: WorkspaceNativeLaunch,
+  controlledRoots: WorkspaceControlledRoots,
 ): Promise<WorkspaceContextVerification> {
   const roots = [
-    launch.cwd,
-    launch.environment.HOME,
-    launch.environment.CODEX_HOME,
+    controlledRoots.cwd,
+    controlledRoots.environment.HOME,
+    controlledRoots.environment.CODEX_HOME,
   ]
   if (new Set(roots).size !== roots.length) {
     return { status: 'blocked', reason: 'config_conflict' }
@@ -132,44 +159,46 @@ async function verifyControlledRoots(
 
   const conflicts = [
     {
-      target: path.join(launch.environment.HOME, 'AGENTS.md'),
-      reason: 'instruction_conflict',
-    },
-    {
       target: path.join(
-        launch.environment.HOME,
-        'AGENTS.override.md',
-      ),
-      reason: 'instruction_conflict',
-    },
-    {
-      target: path.join(launch.environment.HOME, '.agents'),
-      reason: 'skill_conflict',
-    },
-    {
-      target: path.join(launch.environment.HOME, '.codex'),
-      reason: 'config_conflict',
-    },
-    {
-      target: path.join(
-        launch.environment.CODEX_HOME,
+        controlledRoots.environment.HOME,
         'AGENTS.md',
       ),
       reason: 'instruction_conflict',
     },
     {
       target: path.join(
-        launch.environment.CODEX_HOME,
+        controlledRoots.environment.HOME,
         'AGENTS.override.md',
       ),
       reason: 'instruction_conflict',
     },
     {
-      target: path.join(launch.environment.CODEX_HOME, '.agents'),
+      target: path.join(controlledRoots.environment.HOME, '.agents'),
       reason: 'skill_conflict',
     },
     {
-      target: path.join(launch.environment.CODEX_HOME, 'skills'),
+      target: path.join(controlledRoots.environment.HOME, '.codex'),
+      reason: 'config_conflict',
+    },
+    {
+      target: path.join(
+        controlledRoots.environment.CODEX_HOME,
+        'AGENTS.md',
+      ),
+      reason: 'instruction_conflict',
+    },
+    {
+      target: path.join(
+        controlledRoots.environment.CODEX_HOME,
+        'AGENTS.override.md',
+      ),
+      reason: 'instruction_conflict',
+    },
+    {
+      target: path.join(
+        controlledRoots.environment.CODEX_HOME,
+        '.agents',
+      ),
       reason: 'skill_conflict',
     },
   ] as const
@@ -351,10 +380,9 @@ function isBoundedString(
   )
 }
 
-function deepFreezeLaunch(
-  launch: WorkspaceNativeLaunch,
-): WorkspaceNativeLaunch {
-  Object.freeze(launch.environment)
-  Object.freeze(launch.configOverrides)
-  return Object.freeze(launch)
+function deepFreezeControlledRoots(
+  roots: WorkspaceControlledRoots,
+): WorkspaceControlledRoots {
+  Object.freeze(roots.environment)
+  return Object.freeze(roots)
 }

@@ -6,7 +6,7 @@ Explicit current workspace directory와 official SDK 기반 Codex Runtime을 하
 
 `src/account-runtime/contract.ts`는 Spine S1의 private `AccountRuntimeTransitionLease`와 coordinator Interface만 고정한다. Account 전환 중 app-wide admission을 닫고 Runtime을 교체하는 동작과 setup route composition은 아직 구현하지 않는다.
 
-현재 구현의 `SemesterWorkspaceController`는 chooser·development materializer가 넘긴 directory를 current v2 store로 열고 internal `ready`를 판정한다. Server는 exact workspace dependency인 [`@ay-ple/semester-workspace`](../../packages/semester-workspace/README.md)의 shared current-v2 decoder를 사용하지만, B1a admission을 product controller·setup route에 아직 조합하지 않는다. First-run setup, durable workspace registry, Runtime transition과 `Semester Ready`도 구현되지 않았다. 따라서 이 README의 current `ready workspace`는 [domain glossary](../../CONTEXT.md)의 `Semester Ready`와 같지 않으며, adopted target은 [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)가 소유한다.
+현재 구현의 `SemesterWorkspaceController`는 chooser·development materializer가 넘긴 directory를 current v2 store로 열고 internal `ready`를 판정한다. Server는 exact workspace dependency인 [`@ay-ple/semester-workspace`](../../packages/semester-workspace/README.md)의 shared current-v2 decoder를 사용하고, v3 admitted handle용 native project boundary도 구현했지만 이 두 세대를 product controller·setup route에 아직 조합하지 않는다. First-run setup, durable workspace registry, Runtime transition과 `Semester Ready`도 구현되지 않았다. 따라서 이 README의 current `ready workspace`는 [domain glossary](../../CONTEXT.md)의 `Semester Ready`와 같지 않으며, adopted target은 [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)가 소유한다.
 
 ## Canonical 시작과 root 소유권
 
@@ -47,11 +47,19 @@ Materializer가 발급한 ownership marker가 있는 exact leaf만 재생성할 
 
 `SemesterWorkspaceController.nativeCwd()`는 current active internal-`ready` directory의 canonical root만 반환한다. Ready snapshot에 recovery marker가 있으면 같은 `cwd` authority는 유지하되 product mutation admission이 복구 전까지 새 work를 닫는다. `incompatible/readOnly`, cancel·invalid selection은 Runtime start 전에 fail closed한다. Browser snapshot에 absolute root를 노출하지 않는다. Adopted target에서는 Server-owned admission이 app-created root와 `WorkspaceManifest`를 먼저 검증해야 한다.
 
+## V3 native project boundary
+
+`src/setup/native-project-boundary.ts`는 admitted v3 `SemesterWorkspace`와 controlled `HOME`·`CODEX_HOME`, Runtime의 `CodexNativeContextPort`를 입력으로 받는 Server-private gate다. Disjoint canonical roots, managed instruction/Skill bundle의 static conflict와 native effective config의 empty project marker·Skill roster를 검증한다. Exact native `cwd`·CLI config spelling과 App Server launch는 Runtime이 단독 소유한다. Server는 `config/read`, `skills/list` 또는 raw App Server JSON-RPC shape를 알지 않으며, Runtime이 projection한 `CodexEffectiveConfig`·`CodexEffectiveSkill`만 strict clone·decode한다.
+
+Boundary는 config·Skill read를 첫 `await` 전에 같은 `AbortSignal`로 함께 요청하고 겹치는 동일 boundary 검증을 coalesce한다. Runtime은 signal별 read pair를 한 one-shot native App Server snapshot으로 묶고 full process-group reap 뒤 결과를 반환하므로 서로 다른 verification generation이 섞이지 않는다. Official `system` Skill은 Runtime에서 shape를 검증한 뒤 effective roster에서 제외한다. 따라서 Codex가 controlled `CODEX_HOME/skills/.system`에 관리하는 system cache는 root conflict가 아니며 보존한다. 반면 `CODEX_HOME/skills`의 legacy user Skill, admin Skill 또는 workspace bundle 밖에서 발견된 repo Skill은 high-level roster에 남아 exact-one managed Skill 조건을 깨므로 boundary가 fail closed한다. Controlled `HOME`·`CODEX_HOME`의 global `AGENTS.md`·`AGENTS.override.md`와 ambient `.agents`는 계속 static conflict다.
+
+이 boundary의 성공은 first-run setup이나 `Semester Ready`를 뜻하지 않는다. Current Server application은 v3 admission, bundle materialization, native verification, account Runtime transition과 Ready registry commit을 하나의 approved setup transaction으로 아직 조합하지 않았고, current product actions도 이 gate를 admission에 사용하지 않는다.
+
 ## Workspace-local durable store
 
 Workspace의 app-owned store는 current canonical `formatVersion: 2` 하나를 지원한다. [ADR 0013](../../docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)이 이 format을 첫 durable compatibility baseline으로 채택한다.
 
-Current v2 aggregate는 stable workspace ID와 한 Course identity도 소유한다. 새 `WorkspaceManifest`를 곁에 추가해 같은 identity를 두 곳에서 authoritative하게 만들 수 없다. [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)의 adopted target은 같은 physical seam을 explicit v3 single aggregate로 전환해 logical `WorkspaceManifest`만 identity를 소유하게 한다. 아직 구현되지 않았으며 current v2 bytes를 자동 scaffold·adopt·reset하지 않는다.
+Current v2 aggregate는 stable workspace ID와 한 Course identity도 소유한다. 새 `WorkspaceManifest`를 곁에 추가해 같은 identity를 두 곳에서 authoritative하게 만들 수 없다. [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)의 adopted target은 같은 physical seam을 explicit v3 single aggregate로 전환해 logical `WorkspaceManifest`만 identity를 소유하게 한다. V3 codec·admission은 workspace package에 구현됐지만 current Server controller·product API는 아직 이를 사용하지 않으며 current v2 bytes를 자동 scaffold·adopt·reset하지 않는다.
 
 | 영역 | Current behavior |
 | --- | --- |

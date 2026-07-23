@@ -14,13 +14,14 @@
 | Current v2 | Package root의 `decodeCurrentSemesterWorkspaceV2`가 current v2 structural/invariant validation의 shared decoder다. Valid serialization은 rewrite 없이 legacy read-only outcome이며 malformed/future bytes는 incompatible read-only outcome이다. |
 | Bundle source | `resources/workspace/`의 root `AGENTS.md`와 `.agents/skills/ay-ple-first-assignment/SKILL.md` 두 파일만 canonical complete-tree source다. Capture는 exact mode·byte·roster를 mutation 전에 검증하고 immutable snapshot과 descriptor/tree digest를 반환한다. |
 | Bundle materialization | Admitted v3 workspace에 missing file만 absent-only·no-clobber로 설치한다. Missing declared file은 explicit recovery할 수 있지만 modified·extra·symlink·special-mode drift는 bytes를 보존하고 `manual_recovery_required`로 닫는다. |
-| Static context | Declared Skill 밖의 `.agents/skills/` sibling, root `AGENTS.override.md`와 workspace-local `.codex/`를 보존하면서 action eligibility를 fail closed한다. Native effective config/Skill 검증과 action-time admission composition은 Server가 이 package의 snapshot과 guard를 소비해 수행한다. |
+| Static context | Declared Skill 밖의 `.agents/skills/` sibling, root `AGENTS.override.md`와 workspace-local `.codex/`를 보존하면서 action eligibility를 fail closed한다. |
+| Effective native context | `createWorkspaceContextGuard()`는 Runtime이 official App Server에서 읽어 high-level projection한 config·Skill snapshot을 exact workspace bundle과 비교한다. Fixed empty project marker, global instruction 부재와 exact-one managed repo Skill을 요구한다. Official `system` Skill은 Runtime projection에서 제외되므로 `CODEX_HOME/skills/.system` cache는 이 package의 conflict 대상이 아니며, user·admin 또는 추가 repo Skill은 roster mismatch로 차단된다. Server native boundary가 static·effective gate를 조합한다. |
 
 Admission marker에는 raw `setupPlanId`나 `setupId`를 기록하지 않는다. Opaque plan token은 marker의 `setupPlanBinding` HMAC key로만 사용하며 `authorityDigest`, marker/scaffold/aggregate digest와 absolute target authority는 Server-private이다. `describe()`도 `setupId`를 만들지 않는다. Durable transaction ID 발급과 Browser-safe projection은 후속 setup Module의 책임이다.
 
 `./testing/legacy-v2-parity-vectors`는 package-owned fixed current-v2 compatibility roster를 제공하는 test-only subpath다. Package decoder와 Server open regression이 같은 426개 expected outcome을 소비하므로 Server source를 package test oracle로 역수입하지 않는다.
 
-Canonical resource root에는 위 두 managed file만 있다. Bundle 설치 성공은 Course·자료·academic action availability, durable setup transaction, Runtime transition 또는 `Semester Ready`를 뜻하지 않는다.
+Canonical resource root에는 위 두 managed file만 있다. Bundle 설치나 Server native boundary 검증 성공은 Course·자료·academic action availability, durable setup transaction, Runtime transition 또는 `Semester Ready`를 뜻하지 않는다. First-run setup·Ready composition은 아직 이 Module 밖의 후속 integration이다.
 
 ## 검증
 
@@ -32,4 +33,4 @@ npm run typecheck -w @ay-ple/semester-workspace
 npm run build -w @ay-ple/semester-workspace
 ```
 
-Unit·filesystem suite는 v3 conformance, write-free inspection, exclusive create, no-clobber publish, private plan binding, current-v2 preservation, cross-instance recovery, durability fault boundary와 bundle complete-tree/source drift·missing-only recovery·static context conflict를 검증한다.
+Unit·filesystem suite는 v3 conformance, write-free inspection, exclusive create, no-clobber publish, private plan binding, current-v2 preservation, cross-instance recovery, durability fault boundary와 bundle complete-tree/source drift·missing-only recovery·static context conflict, high-level native config·Skill snapshot guard를 검증한다.

@@ -111,6 +111,149 @@ test('deterministic runtime reports account not-ready without starting native wo
   ])
 })
 
+test('deterministic runtime returns isolated native-context projections and records calls', async () => {
+  const scriptedConfig = {
+    projectRootMarkers: ['.git'],
+    globalInstructionsFile: '/deterministic/workspace/AGENTS.md',
+  }
+  const scriptedSkills = [
+    {
+      name: 'ay-ple-first-assignment',
+      enabled: true,
+      sourceRoot:
+        '/deterministic/workspace/.agents/skills/ay-ple-first-assignment',
+    },
+  ]
+  const runtime = new DeterministicCodexChatRuntime({
+    effectiveConfigs: [scriptedConfig],
+    effectiveSkills: [scriptedSkills],
+  })
+  const signal = new AbortController().signal
+
+  const config = await runtime.readEffectiveConfig({ signal })
+  const skills = await runtime.listEffectiveSkills({ signal })
+
+  assert.deepEqual(config, scriptedConfig)
+  assert.deepEqual(skills, scriptedSkills)
+  assert.notEqual(config, scriptedConfig)
+  assert.notEqual(config.projectRootMarkers, scriptedConfig.projectRootMarkers)
+  assert.notEqual(skills, scriptedSkills)
+  assert.notEqual(skills[0], scriptedSkills[0])
+
+  const returnedMarkers = config.projectRootMarkers as string[]
+  const returnedSkills = skills as Array<{ enabled: boolean }>
+  returnedMarkers.push('package.json')
+  returnedSkills[0]!.enabled = false
+  assert.deepEqual(scriptedConfig.projectRootMarkers, ['.git'])
+  assert.equal(scriptedSkills[0]!.enabled, true)
+  assert.deepEqual(runtime.calls, [
+    { operation: 'readEffectiveConfig' },
+    { operation: 'listEffectiveSkills' },
+  ])
+})
+
+test('deterministic native-context calls honor AbortSignal without closing the runtime', async () => {
+  const runtime = new DeterministicCodexChatRuntime({
+    effectiveConfigs: [
+      new Promise(() => undefined),
+      {
+        projectRootMarkers: [],
+        globalInstructionsFile: null,
+      },
+    ],
+    threadIds: ['thread-after-abort'],
+  })
+  const controller = new AbortController()
+  const pending = runtime.readEffectiveConfig({ signal: controller.signal })
+
+  assert.equal(await settlesBeforeImmediate(pending), false)
+  controller.abort()
+  await assert.rejects(pending, (error: unknown) => {
+    assert.ok(error instanceof CodexChatRuntimeError)
+    assert.equal(error.code, 'native_context_aborted')
+    assert.equal(
+      error.displayMessage,
+      'The Codex native context query was cancelled.',
+    )
+    assert.equal(error.unknownOutcome, false)
+    return true
+  })
+
+  assert.deepEqual(
+    await runtime.readEffectiveConfig({
+      signal: new AbortController().signal,
+    }),
+    {
+      projectRootMarkers: [],
+      globalInstructionsFile: null,
+    },
+  )
+  assert.deepEqual(await runtime.startThread(), {
+    threadId: 'thread-after-abort',
+  })
+})
+
+test('deterministic native-context calls reject a pre-aborted signal before consuming a script', async () => {
+  const runtime = new DeterministicCodexChatRuntime({
+    effectiveSkills: [
+      [
+        {
+          name: 'workspace-skill',
+          enabled: true,
+          sourceRoot: '/deterministic/workspace/.agents/skills/workspace-skill',
+        },
+      ],
+    ],
+  })
+  const aborted = new AbortController()
+  aborted.abort()
+
+  await assert.rejects(
+    () => runtime.listEffectiveSkills({ signal: aborted.signal }),
+    (error: unknown) => {
+      assert.ok(error instanceof CodexChatRuntimeError)
+      assert.equal(error.code, 'native_context_aborted')
+      assert.equal(error.unknownOutcome, false)
+      return true
+    },
+  )
+  assert.deepEqual(
+    await runtime.listEffectiveSkills({
+      signal: new AbortController().signal,
+    }),
+    [
+      {
+        name: 'workspace-skill',
+        enabled: true,
+        sourceRoot: '/deterministic/workspace/.agents/skills/workspace-skill',
+      },
+    ],
+  )
+})
+
+test('deterministic native-context calls reject a closed runtime before consuming scripts', async () => {
+  let scriptConsumed = false
+  const scriptedConfig = observeConsumption(
+    { projectRootMarkers: [], globalInstructionsFile: null },
+    () => {
+      scriptConsumed = true
+    },
+  )
+  const runtime = new DeterministicCodexChatRuntime({
+    effectiveConfigs: [scriptedConfig],
+  })
+  await runtime.close()
+
+  await assert.rejects(
+    () =>
+      runtime.readEffectiveConfig({
+        signal: new AbortController().signal,
+      }),
+    /closed/,
+  )
+  assert.equal(scriptConsumed, false)
+})
+
 test('deterministic account runtime preserves role, delayed status, duplicate terminal reads, and close result', async () => {
   let settleStatus!: (value: {
     readonly status: 'completed'
@@ -333,15 +476,30 @@ test('deterministic account operations abort delayed scripts and close the Runti
 })
 
 test('deterministic auth-only runtime denies every workspace family before consuming scripts', async () => {
+  let nativeScriptsConsumed = 0
+  const untouchedConfig = observeConsumption(
+    { projectRootMarkers: [], globalInstructionsFile: null },
+    () => {
+      nativeScriptsConsumed += 1
+    },
+  )
+  const untouchedSkills = observeConsumption([], () => {
+    nativeScriptsConsumed += 1
+  })
   const runtime = new DeterministicCodexChatRuntime({
     role: {
       role: 'auth-only',
       bootstrapCwd: '/deterministic/bootstrap',
     },
+    effectiveConfigs: [untouchedConfig],
+    effectiveSkills: [untouchedSkills],
     threadIds: ['thread-must-remain-unused'],
   })
+  const signal = new AbortController().signal
 
   const workspaceOperations = [
+    () => runtime.readEffectiveConfig({ signal }),
+    () => runtime.listEffectiveSkills({ signal }),
     () => runtime.startThread(),
     () =>
       runtime.startThread({
@@ -376,6 +534,8 @@ test('deterministic auth-only runtime denies every workspace family before consu
   assert.deepEqual(
     runtime.calls.map(({ operation }) => operation),
     [
+      'readEffectiveConfig',
+      'listEffectiveSkills',
       'startThread',
       'startThread',
       'startTurn',
@@ -386,6 +546,7 @@ test('deterministic auth-only runtime denies every workspace family before consu
       'releaseThread',
     ],
   )
+  assert.equal(nativeScriptsConsumed, 0)
 })
 
 test('deterministic runtime preserves native turn identity and event FIFO', async () => {
@@ -1121,6 +1282,18 @@ async function settlesBeforeImmediate<T>(promise: Promise<T>): Promise<boolean> 
     ),
     new Promise<false>((resolve) => setImmediate(() => resolve(false))),
   ])
+}
+
+function observeConsumption<T>(
+  value: T,
+  onConsume: () => void,
+): PromiseLike<T> {
+  return {
+    then(onfulfilled, onrejected) {
+      onConsume()
+      return Promise.resolve(value).then(onfulfilled, onrejected)
+    },
+  }
 }
 
 async function collect<T>(events: AsyncIterable<T>): Promise<T[]> {

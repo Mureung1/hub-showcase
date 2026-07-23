@@ -123,6 +123,10 @@ export async function startCodexChatProcessTreeTestFixture(options: {
       releaseBrowserLoginAttempt: (input) =>
         spawned!.runtime.releaseBrowserLoginAttempt(input),
       logout: (input) => spawned!.runtime.logout(input),
+      readEffectiveConfig: (input) =>
+        spawned!.runtime.readEffectiveConfig(input),
+      listEffectiveSkills: (input) =>
+        spawned!.runtime.listEffectiveSkills(input),
       startThread: (input?: StartThreadInput) =>
         input === undefined
           ? spawned!.runtime.startThread()

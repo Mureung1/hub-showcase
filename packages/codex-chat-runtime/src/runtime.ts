@@ -23,6 +23,8 @@ import {
   type StartTurnInput,
 } from './contract.js'
 import {
+  type CodexEffectiveConfig,
+  type CodexEffectiveSkill,
   CODEX_BROWSER_LOGIN_ATTEMPT_TIMEOUT_MS,
   type CodexAccountFailure,
   type CodexAccountFailureCode,
@@ -66,6 +68,10 @@ import {
   BoundedStderrCapture,
   type BoundedStderrSnapshot,
 } from './bounded-stderr.js'
+import {
+  NativeContextGenerationCoordinator,
+  type NativeContextProbeRunner,
+} from './native-context-coordinator.js'
 import type { VerifiedProductionBundle } from './production-bundle.js'
 import { SerializedBridgeWriter } from './serialized-writer.js'
 
@@ -144,6 +150,7 @@ const ACCOUNT_FAILURE_MESSAGES: Readonly<
 
 const RUNTIME_ROLE_DENIED_MESSAGE =
   'The auth-only Codex runtime does not allow workspace operations.'
+const RUNTIME_CLOSING_MESSAGE = 'The Codex runtime is closing.'
 const WORKSPACE_ROOT_MISMATCH_MESSAGE =
   'The requested workspace does not match this Codex runtime.'
 
@@ -190,6 +197,8 @@ interface StartVerifiedCodexChatRuntimeCommonOptions {
   readonly deadlines?: Partial<NodeRuntimeDeadlines>
   /** Package-private exact-local test isolation; production honors managed config. */
   readonly disableManagedConfigForTest?: true
+  /** Package-private native-context generation seam; production callers omit this. */
+  readonly nativeContextProbeRunnerOverride?: NativeContextProbeRunner
   /** Package-private actual-child seam; production callers omit this. */
   readonly launchArgsOverride?: readonly string[]
   readonly journalPath?: string
@@ -336,12 +345,25 @@ export async function startVerifiedCodexChatRuntime(
     ...spawnOptions,
     stdio: ['pipe', 'pipe', 'pipe'],
   })
+  const nativeContext =
+    role.role === 'workspace'
+      ? new NativeContextGenerationCoordinator({
+          bundle: options.bundle,
+          workspace: role.workspaceRoot,
+          environment,
+          application,
+          disableManagedConfigForTest: options.disableManagedConfigForTest,
+          runProbe: options.nativeContextProbeRunnerOverride,
+          signalProcessGroupOverride: options.signalProcessGroupOverride,
+        })
+      : undefined
   const runtime = new NodeCodexChatRuntime(
     child,
     role,
     budgets,
     deadlines,
     options.signalProcessGroupOverride ?? signalDetachedProcessGroup,
+    nativeContext,
   )
   try {
     await runtime.waitUntilReady()
@@ -376,6 +398,9 @@ class NodeCodexChatRuntime implements CodexManagedRuntime {
     processGroupId: number,
     signal: NodeJS.Signals,
   ) => void
+  private readonly nativeContext:
+    | NativeContextGenerationCoordinator
+    | undefined
   private readonly framer = new NdjsonBridgeFramer()
   private readonly spawned = createDeferred<void>()
   private readonly ready = createDeferred<void>()
@@ -409,12 +434,14 @@ class NodeCodexChatRuntime implements CodexManagedRuntime {
       processGroupId: number,
       signal: NodeJS.Signals,
     ) => void,
+    nativeContext: NativeContextGenerationCoordinator | undefined,
   ) {
     this.child = child
     this.role = Object.freeze({ ...role })
     this.budgets = budgets
     this.deadlines = deadlines
     this.processGroupSignaler = processGroupSignaler
+    this.nativeContext = nativeContext
     this.aggregateQueueBudget = new AggregateOperationQueueBudget(
       budgets.aggregateMaxFrames,
       budgets.aggregateMaxBytes,
@@ -542,6 +569,34 @@ class NodeCodexChatRuntime implements CodexManagedRuntime {
     return result.account.state === 'chatgpt'
       ? { state: 'ready' }
       : { state: 'not_ready', reason: 'authentication_required' }
+  }
+
+  readEffectiveConfig(input: {
+    readonly signal: AbortSignal
+  }): Promise<CodexEffectiveConfig> {
+    const denied = this.workspaceOperationDenied()
+    if (denied) return Promise.reject(denied)
+    requireExactInputKeys(input, ['signal'], 'Native config read input')
+    requireAbortSignal(input.signal)
+    const unavailable = this.unavailableError()
+    if (unavailable) return Promise.reject(unavailable)
+    return this.observeNativeContext(
+      this.nativeContext!.readEffectiveConfig(input),
+    )
+  }
+
+  listEffectiveSkills(input: {
+    readonly signal: AbortSignal
+  }): Promise<readonly CodexEffectiveSkill[]> {
+    const denied = this.workspaceOperationDenied()
+    if (denied) return Promise.reject(denied)
+    requireExactInputKeys(input, ['signal'], 'Native Skill list input')
+    requireAbortSignal(input.signal)
+    const unavailable = this.unavailableError()
+    if (unavailable) return Promise.reject(unavailable)
+    return this.observeNativeContext(
+      this.nativeContext!.listEffectiveSkills(input),
+    )
   }
 
   readAccount(input: {
@@ -1096,6 +1151,31 @@ class NodeCodexChatRuntime implements CodexManagedRuntime {
     })
   }
 
+  private async observeNativeContext<T>(operation: Promise<T>): Promise<T> {
+    try {
+      return await operation
+    } catch (error) {
+      if (
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'runtime_cleanup_failed'
+      ) {
+        this.failRuntime(error)
+      }
+      if (
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'native_context_aborted' &&
+        this.state === 'closing'
+      ) {
+        throw new CodexChatRuntimeError({
+          code: 'runtime_closing',
+          displayMessage: RUNTIME_CLOSING_MESSAGE,
+          unknownOutcome: false,
+        })
+      }
+      throw error
+    }
+  }
+
   private async closeOnce(): Promise<void> {
     if (this.state === 'closed') return
     if (this.state === 'failed') {
@@ -1472,17 +1552,29 @@ class NodeCodexChatRuntime implements CodexManagedRuntime {
   ): Promise<{ readonly escalated: boolean }> {
     if (!graceful) this.cleanupEscalationRequested = true
     if (this.cleanupPromise) return this.cleanupPromise
-    this.cleanupPromise = this.cleanupProcessTree(graceful).then(
-      (outcome) => outcome,
-      () => {
-        const error = this.cleanupError()
-        this.settleRuntimeFailure(error)
-        this.cleanupClosed.reject(error)
-        throw error
-      },
-    )
+    this.cleanupPromise = this.finishCleanup(graceful)
     void this.cleanupPromise.catch(() => undefined)
     return this.cleanupPromise
+  }
+
+  private async finishCleanup(
+    graceful: boolean,
+  ): Promise<{ readonly escalated: boolean }> {
+    const [processOutcome, nativeContextOutcome] =
+      await Promise.allSettled([
+        this.cleanupProcessTree(graceful),
+        this.nativeContext?.close() ?? Promise.resolve(),
+      ])
+    if (
+      processOutcome.status === 'rejected' ||
+      nativeContextOutcome.status === 'rejected'
+    ) {
+      const error = this.cleanupError()
+      this.settleRuntimeFailure(error)
+      this.cleanupClosed.reject(error)
+      throw error
+    }
+    return processOutcome.value
   }
 
   private async cleanupProcessTree(

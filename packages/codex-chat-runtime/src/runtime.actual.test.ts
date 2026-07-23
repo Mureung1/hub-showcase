@@ -20,6 +20,8 @@ import {
 } from './index.js'
 import type { CodexBrowserLoginAttempt } from './index.js'
 import type { CodexProductActivity } from './contract.js'
+import type { NativeContextProbeRunner } from './native-context-coordinator.js'
+import { NativeContextProbeError } from './native-context-probe.js'
 import { verifyProductionBundle } from './production-bundle.js'
 import {
   startVerifiedCodexChatRuntime,
@@ -136,6 +138,283 @@ test('projects native account readiness without starting a thread or turn', asyn
   }
 })
 
+test('projects one atomic native-context generation through the managed Runtime', async () => {
+  let calls = 0
+  const harness = await startNativeContextHarness(
+    'native-context-pair',
+    async (options) => {
+      calls += 1
+      assert.equal(options.workspace, harness.workspace)
+      assert.deepEqual(options.environment, harness.environment)
+      assert.deepEqual(options.application, {
+        name: 'ay-ple',
+        title: 'AY-PLE',
+        version: '0.1.0-preview.1',
+      })
+      return {
+        config: {
+          projectRootMarkers: [],
+          globalInstructionsFile: null,
+        },
+        skills: [
+          {
+            name: 'ay-ple-first-assignment',
+            enabled: true,
+            sourceRoot: join(
+              harness.workspace,
+              '.agents',
+              'skills',
+              'ay-ple-first-assignment',
+            ),
+          },
+        ],
+      }
+    },
+  )
+  try {
+    const signal = new AbortController().signal
+    assert.deepEqual(
+      await harness.runtime.readEffectiveConfig({
+        signal,
+      }),
+      {
+        projectRootMarkers: [],
+        globalInstructionsFile: null,
+      },
+    )
+    assert.deepEqual(
+      await harness.runtime.listEffectiveSkills({
+        signal,
+      }),
+      [
+        {
+          name: 'ay-ple-first-assignment',
+          enabled: true,
+          sourceRoot: join(
+            harness.workspace,
+            '.agents',
+            'skills',
+            'ay-ple-first-assignment',
+          ),
+        },
+      ],
+    )
+    assert.equal(calls, 1)
+    assert.deepEqual(await harness.runtime.startThread(), {
+      threadId: 'thread-1',
+    })
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('runs the pinned managed Runtime and native-context sidecar provider-free', async () => {
+  const root = await mkdtemp(
+    join(tmpdir(), 'ay-ple-managed-native-context-pinned-'),
+  )
+  roots.push(root)
+  const workspace = join(root, 'workspace')
+  await mkdir(workspace)
+  const environment = await createEnvironmentRoots(root)
+  const skillRoot = join(
+    workspace,
+    '.agents',
+    'skills',
+    'ay-managed-native-context',
+  )
+  await mkdir(skillRoot, { recursive: true })
+  await writeFile(
+    join(skillRoot, 'SKILL.md'),
+    [
+      '---',
+      'name: ay-managed-native-context',
+      'description: Managed provider-free native context smoke.',
+      '---',
+      '',
+      '# Managed native context',
+      '',
+    ].join('\n'),
+    'utf8',
+  )
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    role: {
+      role: 'workspace',
+      workspaceRoot: await realpath(workspace),
+    },
+    application: {
+      name: 'ay-ple',
+      title: 'AY-PLE',
+      version: '0.1.0-preview.1',
+    },
+    environment,
+  })
+  try {
+    const signal = new AbortController().signal
+    assert.deepEqual(await harness.runtime.readEffectiveConfig({ signal }), {
+      projectRootMarkers: [],
+      globalInstructionsFile: null,
+    })
+    assert.deepEqual(await harness.runtime.listEffectiveSkills({ signal }), [
+      {
+        name: 'ay-managed-native-context',
+        enabled: true,
+        sourceRoot: await realpath(skillRoot),
+      },
+    ])
+  } finally {
+    await harness.runtime.close()
+    await harness.closed
+  }
+})
+
+test('managed Runtime close aborts and awaits an in-flight native-context generation', async () => {
+  const started = deferred<AbortSignal>()
+  const cleanup = deferred<void>()
+  const harness = await startNativeContextHarness(
+    'native-context-close',
+    async (options) => {
+      started.resolve(options.signal)
+      await new Promise<void>((resolvePromise) => {
+        options.signal.addEventListener('abort', () => resolvePromise(), {
+          once: true,
+        })
+      })
+      await cleanup.promise
+      throw new NativeContextProbeError({ code: 'aborted' })
+    },
+  )
+  const read = harness.runtime.readEffectiveConfig({
+    signal: new AbortController().signal,
+  })
+  const probeSignal = await started.promise
+  let closeSettled = false
+  const close = harness.runtime.close().finally(() => {
+    closeSettled = true
+  })
+
+  assert.equal(probeSignal.aborted, true)
+  await Promise.resolve()
+  assert.equal(closeSettled, false)
+  cleanup.resolve()
+  await assert.rejects(
+    () => read,
+    (error: unknown) => {
+      assert.ok(error instanceof CodexChatRuntimeError)
+      assert.equal(error.code, 'runtime_closing')
+      assert.equal(error.unknownOutcome, false)
+      return true
+    },
+  )
+  await close
+  assert.equal(closeSettled, true)
+})
+
+test('native-context cleanup ambiguity becomes the managed Runtime terminal', async () => {
+  const harness = await startNativeContextHarness(
+    'native-context-cleanup-failure',
+    async () => {
+      throw new NativeContextProbeError({ code: 'cleanup_failed' })
+    },
+  )
+
+  await assert.rejects(
+    () =>
+      harness.runtime.readEffectiveConfig({
+        signal: new AbortController().signal,
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof CodexChatRuntimeError)
+      assert.equal(error.code, 'runtime_cleanup_failed')
+      assert.equal(error.unknownOutcome, false)
+      return true
+    },
+  )
+  assert.equal((await harness.terminal).code, 'runtime_cleanup_failed')
+  assert.deepEqual(
+    await harness.runtime.close({
+      signal: new AbortController().signal,
+    }),
+    {
+      status: 'ambiguous',
+      processTreeGone: false,
+    },
+  )
+  await assert.rejects(harness.closed, (error: unknown) => {
+    assert.ok(error instanceof CodexChatRuntimeError)
+    assert.equal(error.code, 'runtime_cleanup_failed')
+    return true
+  })
+  await waitForPidExit(harness.nativeChildPidPath)
+  await waitForProcessGroupExit(harness.child.pid as number)
+})
+
+test('native cleanup failure waits for delayed main process cleanup before closing', async () => {
+  const root = await mkdtemp(
+    join(tmpdir(), 'ay-ple-native-cleanup-join-'),
+  )
+  roots.push(root)
+  const workspace = join(root, 'workspace')
+  await mkdir(workspace)
+  const processJournalPath = join(root, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    role: {
+      role: 'workspace',
+      workspaceRoot: workspace,
+    },
+    application: {
+      name: 'ay-ple',
+      title: 'AY-PLE',
+      version: '0.1.0-preview.1',
+    },
+    environment: await createEnvironmentRoots(root),
+    nativeContextProbeRunnerOverride: async () => {
+      throw new NativeContextProbeError({ code: 'cleanup_failed' })
+    },
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=stubborn-close',
+      `--process-journal=${processJournalPath}`,
+    ],
+    deadlines: {
+      gracefulCloseMs: 50,
+      terminateMs: 50,
+      postKillMs: 250,
+    },
+  })
+  const processJournal = await readProcessJournal(processJournalPath)
+  let closedSettled = false
+  const observedClosed = harness.closed.finally(() => {
+    closedSettled = true
+  })
+  void observedClosed.catch(() => undefined)
+
+  await assert.rejects(
+    () =>
+      harness.runtime.readEffectiveConfig({
+        signal: new AbortController().signal,
+      }),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'runtime_cleanup_failed',
+  )
+  await new Promise<void>((resolvePromise) =>
+    setImmediate(resolvePromise),
+  )
+  assert.equal(closedSettled, false)
+
+  await assert.rejects(
+    observedClosed,
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'runtime_cleanup_failed',
+  )
+  assert.equal(closedSettled, true)
+  await waitForProcessGroupExit(processJournal.processGroupId)
+  await waitForProcessExit(processJournal.descendantPid)
+})
+
 test('starts an immutable auth-only Runtime with exact application identity and denies workspace families before native write', async () => {
   const harness = await startAccountHarness('auth-only-role')
   try {
@@ -191,6 +470,8 @@ test('starts an immutable auth-only Runtime with exact application identity and 
       () => harness.runtime.cancelUserInput({ interactionId: 'interaction' }),
       () => harness.runtime.interrupt({ threadId: 'thread', turnId: 'turn' }),
       () => harness.runtime.releaseThread({ threadId: 'thread' }),
+      () => harness.runtime.readEffectiveConfig({ signal }),
+      () => harness.runtime.listEffectiveSkills({ signal }),
     ]
     for (const operation of deniedOperations) {
       await assert.rejects(operation, (error: unknown) => {
@@ -2742,6 +3023,58 @@ async function startHarness(
   })
 }
 
+async function startNativeContextHarness(
+  label: string,
+  runProbe: NativeContextProbeRunner,
+): Promise<
+  SpawnedCodexChatRuntime & {
+    readonly workspace: string
+    readonly environment: {
+      readonly home: string
+      readonly codexHome: string
+      readonly codexSqliteHome: string
+      readonly tempDirectory: string
+    }
+  }
+> {
+  const root = await mkdtemp(
+    join(tmpdir(), `ay-ple-node-native-context-${label}-`),
+  )
+  roots.push(root)
+  const workspace = join(root, 'workspace')
+  await mkdir(workspace)
+  const environment = await createEnvironmentRoots(root)
+  const journalPath = join(root, 'journal.json')
+  const nativeChildPidPath = join(root, 'native-child.pid')
+  const spawned = await startVerifiedCodexChatRuntime({
+    bundle,
+    role: {
+      role: 'workspace',
+      workspaceRoot: workspace,
+    },
+    application: {
+      name: 'ay-ple',
+      title: 'AY-PLE',
+      version: '0.1.0-preview.1',
+    },
+    environment,
+    nativeContextProbeRunnerOverride: runProbe,
+    launchArgsOverride: [
+      bundle.pythonExecutable,
+      '-B',
+      FAKE_APP_SERVER,
+      journalPath,
+      nativeChildPidPath,
+    ],
+    journalPath,
+    nativeChildPidPath,
+  })
+  return Object.assign(spawned, {
+    workspace: await realpath(workspace),
+    environment,
+  })
+}
+
 async function startAccountHarness(
   label: string,
   bridgeArgsOverride: readonly string[] = [],
@@ -2908,6 +3241,20 @@ function accountExpiry(): string {
   return new Date(
     Date.now() + CODEX_BROWSER_LOGIN_ATTEMPT_TIMEOUT_MS - 1_000,
   ).toISOString()
+}
+
+function deferred<T>(): {
+  readonly promise: Promise<T>
+  resolve(value: T): void
+} {
+  let resolvePromise!: (value: T) => void
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve
+  })
+  return {
+    promise,
+    resolve: resolvePromise,
+  }
 }
 
 async function pollAccountAttempt(
