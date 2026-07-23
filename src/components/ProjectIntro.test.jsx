@@ -55,6 +55,124 @@ function mockSuccessfulSave(fetchMock, planOverrides = {}) {
     .mockResolvedValueOnce(jsonResponse({ data: { ...savedStudyPlan, ...planOverrides } }))
 }
 
+async function openExamSelection(user) {
+  const menuList = document.querySelector('.menu-list')
+  const examMenuButton = within(menuList).getAllByRole('button')[1]
+  await user.click(examMenuButton)
+}
+
+function getToeicExamCard() {
+  return screen
+    .getAllByRole('button')
+    .find((button) => within(button).queryByRole('heading', { name: 'TOEIC' }))
+}
+
+describe('ProjectIntro exam selection next action', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.restoreAllMocks()
+  })
+
+  afterEach(() => {
+    cleanup()
+    localStorage.clear()
+    vi.restoreAllMocks()
+  })
+
+  test('moves to the service introduction screen after the previous button is clicked', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn())
+
+    render(<ProjectIntro />)
+
+    await openExamSelection(user)
+    await user.click(screen.getByRole('button', { name: '이전' }))
+
+    expect(screen.getByText('STEP 1/5')).toBeInTheDocument()
+    expect(document.querySelector('.feature-section')).toBeInTheDocument()
+    expect(document.querySelector('.exam-section')).not.toBeInTheDocument()
+  })
+
+  test('disables the next button before an exam is selected', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn())
+
+    render(<ProjectIntro />)
+
+    await openExamSelection(user)
+
+    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled()
+  })
+
+  test('enables the next button after TOEIC is selected', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn())
+
+    render(<ProjectIntro />)
+
+    await openExamSelection(user)
+    await user.click(getToeicExamCard())
+
+    expect(screen.getByRole('button', { name: '다음' })).toBeEnabled()
+  })
+
+  test('stays on the exam selection screen immediately after TOEIC is selected', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn())
+
+    render(<ProjectIntro />)
+
+    await openExamSelection(user)
+    await user.click(getToeicExamCard())
+
+    expect(document.querySelector('.exam-section')).toBeInTheDocument()
+    expect(document.querySelector('.form-section')).not.toBeInTheDocument()
+  })
+
+  test('marks the selected TOEIC card as selected for assistive technology', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn())
+
+    render(<ProjectIntro />)
+
+    await openExamSelection(user)
+    const toeicCard = getToeicExamCard()
+
+    await user.click(toeicCard)
+
+    expect(toeicCard).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('shows a check mark on the selected TOEIC card', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn())
+
+    render(<ProjectIntro />)
+
+    await openExamSelection(user)
+    const toeicCard = getToeicExamCard()
+
+    await user.click(toeicCard)
+
+    expect(within(toeicCard).getByText('✓')).toBeInTheDocument()
+  })
+
+  test('moves to the information input screen after the next button is clicked', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn())
+
+    render(<ProjectIntro />)
+
+    await openExamSelection(user)
+    await user.click(getToeicExamCard())
+    await user.click(screen.getByRole('button', { name: '다음' }))
+
+    expect(screen.getByText('STEP 3/5')).toBeInTheDocument()
+    expect(document.querySelector('.form-section')).toBeInTheDocument()
+    expect(document.querySelector('.exam-section')).not.toBeInTheDocument()
+  })
+})
+
 describe('ProjectIntro saved study plan restore', () => {
   beforeEach(() => {
     localStorage.clear()

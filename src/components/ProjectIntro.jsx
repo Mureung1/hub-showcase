@@ -225,7 +225,14 @@ function ProjectIntro() {
         </header>
 
         {activeScreen === 'intro' && <IntroScreen />}
-        {activeScreen === 'exam' && <ExamSelection selectedExam={selectedExam} onSelectExam={handleSelectExam} />}
+        {activeScreen === 'exam' && (
+          <ExamSelection
+            selectedExam={selectedExam}
+            onPrevious={() => setActiveScreen('intro')}
+            onNext={() => setActiveScreen('info')}
+            onSelectExam={handleSelectExam}
+          />
+        )}
         {activeScreen === 'info' && (
           <InfoInput
             errorMessage={errorMessage}
@@ -466,7 +473,9 @@ function IntroScreen() {
   )
 }
 
-function ExamSelection({ selectedExam, onSelectExam }) {
+function ExamSelection({ selectedExam, onNext, onPrevious, onSelectExam }) {
+  const [hasSelectedExam, setHasSelectedExam] = useState(false)
+
   return (
     <section className="exam-section">
       <div className="section-head">
@@ -475,22 +484,43 @@ function ExamSelection({ selectedExam, onSelectExam }) {
       </div>
 
       <div className="exam-grid">
-        {EXAMS.map((exam) => (
-          <button
-            className={`exam-card ${selectedExam === exam.name ? 'exam-card-selected' : ''}`}
-            key={exam.name}
-            type="button"
-            onClick={() => onSelectExam(exam.name)}
-          >
-            <h3 className="exam-title">{exam.name}</h3>
-            <p className="exam-description">{exam.description}</p>
-            <ul className="exam-meta">
-              {exam.tags.map((tag) => (
-                <li key={tag}>{tag}</li>
-              ))}
-            </ul>
-          </button>
-        ))}
+        {EXAMS.map((exam) => {
+          const isSelected = selectedExam === exam.name
+
+          return (
+            <button
+              aria-pressed={isSelected}
+              className={`exam-card ${isSelected ? 'exam-card-selected' : ''}`}
+              key={exam.name}
+              type="button"
+              onClick={() => {
+                setHasSelectedExam(true)
+                onSelectExam(exam.name)
+              }}
+            >
+              {isSelected && (
+                <span aria-hidden="true" className="exam-card-check">
+                  ✓
+                </span>
+              )}
+              <h3 className="exam-title">{exam.name}</h3>
+              <p className="exam-description">{exam.description}</p>
+              <ul className="exam-meta">
+                {exam.tags.map((tag) => (
+                  <li key={tag}>{tag}</li>
+                ))}
+              </ul>
+            </button>
+          )
+        })}
+      </div>
+      <div className="form-actions">
+        <button className="secondary-action" type="button" onClick={onPrevious}>
+          이전
+        </button>
+        <button className="primary-action" type="button" disabled={!hasSelectedExam || !selectedExam} onClick={onNext}>
+          다음
+        </button>
       </div>
     </section>
   )
