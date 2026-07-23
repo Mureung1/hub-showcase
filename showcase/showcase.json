@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "title": "WeatherPilot(웨더파일럿)",
+  "summary": "날씨 데이터로 소상공인의 매출을 지키는 자율 마케팅 에이전트입니다. AI가 날씨·매출을 분석해 마케팅 문구·쿠폰을 미리 만들어 두고, 사장님은 검토·승인만 합니다.",
+  "githubUser": "shyang0319(양서형)",
+  "demoUrl": "https://weatherpilot-web.vercel.app",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/home.webp",
+    "screenshots/review.webp",
+    "screenshots/performance.webp"
+  ],
+  "problem": "동네 카페·식당 매출은 날씨에 크게 좌우되지만, 1인 운영 사장님에게는 매일 날씨를 확인해 판매 전략을 세우고 홍보 문구를 쓸 시간과 전문성이 없습니다. 이들에게 필요한 것은 더 좋은 마케팅 툴이 아니라 '마케팅을 신경 쓰지 않아도 되는 상태', 즉 의사결정 대행입니다.",
+  "targetUsers": [
+    "날씨에 따라 매출이 출렁이는 동네 카페·식당 사장님",
+    "마케팅에 쓸 시간과 전문성이 없는 1인 운영 소상공인"
+  ],
+  "features": [
+    "매일 아침 크론(06:30)이 날씨와 매출을 분석해, 매출 하락이 예상되는 날에만 마케팅 제안을 미리 만들어 둡니다.",
+    "기상청 + OpenWeatherMap 두 소스를 가중 병합한 앙상블 날씨로 정확도를 높이고, 한쪽 장애 시 자동 폴백합니다.",
+    "이 가게의 실매출 이력으로 '비 오는 날 평균 −18%' 같은 매장 맞춤 진단을 계산해 보여줍니다.",
+    "LLM(Groq)이 매장 톤에 맞춘 마케팅 문구·쿠폰 초안을 생성하고, 사장님은 승인 / 수정 / 반려 버튼만 누릅니다.",
+    "승인된 제안은 법적 필터(수신동의·(광고) 표기·야간 차단)를 거쳐 문자로 발송되고, 쿠폰 사용을 추적해 캠페인이 실제로 만든 매출을 실측합니다."
+  ],
+  "featureTags": [
+    "날씨 기반 AI 제안",
+    "승인 후 발송",
+    "쿠폰 성과 실측"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Vite",
+    "Node.js",
+    "Express",
+    "Supabase (PostgreSQL)",
+    "Groq LLM",
+    "Vitest",
+    "Vercel",
+    "Render"
+  ],
+  "techHighlights": [
+    "기상청·OpenWeatherMap 이중 소스를 가중 평균으로 병합하고 장애 시 자동 폴백하는 날씨 앙상블 파이프라인을 구현했습니다.",
+    "정보통신망법 요건(수신동의·(광고) 표기·야간 발송 차단→예약 전환)과 LLM 가드레일(할인율 상한·금지어)을 UI가 아닌 서버에서 강제해 자율 에이전트가 우회할 수 없게 했습니다.",
+    "npm workspaces 모노레포의 공용 타입(packages/shared)으로 FE·BE API 계약을 컴파일 타임에 맞추고, 서버 테스트 100개(Vitest)와 GitHub Actions CI로 회귀를 자동 검증합니다."
+  ],
+  "developmentWithAI": "저는 무엇을 안 만들지(실연동 / 대체 구현 / 모의) 스코프를 먼저 정하고, 작업마다 '할인율 21% 입력 시 서버가 400을 반환한다' 수준의 완료 기준(DoD)을 썼습니다. AI(Claude Code)는 그 기준에 맞춰 코드 대부분을 작성했고, 저는 테스트 100개·배포 환경 실측·하루 3번 스크럼으로 결과를 검증하며 실물에 맞춰 계획을 고쳐 썼습니다.",
+  "agent": {
+    "summary": "Claude Code를 개발 파트너로 두고, CLAUDE.md 프로젝트 규칙과 커스텀 Skill, 자동화 Workflow로 기획부터 구현·테스트·커밋까지 진행했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Claude Code 개발 Agent",
+        "purpose": "CLAUDE.md의 프로젝트 규칙(스타일링 제약·구현 스코프·컨벤션)을 읽고, 완료 기준에 맞춰 기능을 구현하고 테스트를 작성합니다."
+      },
+      {
+        "type": "skill",
+        "name": "weatherpilot-design Skill",
+        "purpose": "디자인 토큰(색·타이포·간격)과 카드/알약 컴포넌트 규칙을 정의해, 화면을 만들 때마다 일관된 톤을 유지합니다."
+      },
+      {
+        "type": "skill",
+        "name": "security-review Skill",
+        "purpose": "PR 전에 변경사항의 보안 취약점(시크릿 노출·인젝션 등)을 점검합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "주간계획·백로그에 스펙과 완료 기준(DoD) 작성",
+          "Claude Code에 구현 발주",
+          "코드 작성 + Vitest 테스트 추가",
+          "완료 기준 충족 확인",
+          "배포 환경(Vercel·Render)에서 실측 검증"
+        ]
+      },
+      {
+        "name": "커밋 자동화 Workflow",
+        "steps": [
+          "'커밋해줘' 한마디로 실행",
+          "git add 후 스테이징 파일 시크릿(.env·API 키) 자동 점검",
+          "diff를 보고 컨벤션(feat/fix/...)에 맞는 커밋 메시지 작성",
+          "N111_양서형 브랜치로 push"
+        ]
+      }
+    ]
+  }
+}
