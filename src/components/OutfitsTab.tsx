@@ -1,24 +1,25 @@
 import React, { useState } from "react";
 import { ClothingItem, WeatherType, DestinationType, SituationType, SavedOutfit } from "../types";
 import { PRODUCT_CATALOG } from "../data/productCatalog";
-import { Sun, Cloud, CloudRain, Snowflake, Coffee, GraduationCap, Briefcase, Sparkles, Home, Heart, Dumbbell, Gamepad2, RefreshCw, Save, ChevronRight, Terminal, Star, Trash2, Plus, Settings, Search } from "lucide-react";
+import { Sun, Cloud, CloudRain, Snowflake, Coffee, GraduationCap, Briefcase, Sparkles, Home, Heart, Dumbbell, Gamepad2, RefreshCw, Save, ChevronRight, Terminal, Star, Trash2, Plus, Settings, Search, MessageCircle, Send } from "lucide-react";
 import DynamicPixelCharacter from "./DynamicPixelCharacter";
 
 interface OutfitsTabProps {
   closet: ClothingItem[];
   savedStyles: SavedOutfit[];
+  isLoggedIn: boolean;
   onSaveOutfit: (outfit: SavedOutfit) => void;
   onDeleteOutfit: (id: string) => void;
   onAddItem?: (item: ClothingItem) => void;
 }
 
-export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDeleteOutfit, onAddItem }: OutfitsTabProps) {
+export default function OutfitsTab({ closet, savedStyles, isLoggedIn, onSaveOutfit, onDeleteOutfit, onAddItem }: OutfitsTabProps) {
   const [subTab, setSubTab] = useState<"recommend" | "saved">("recommend");
 
   // Selection states
-  const [weather, setWeather] = useState<string>("sun");
-  const [destination, setDestination] = useState<string>("cafe");
-  const [situation, setSituation] = useState<string>("date");
+  const [weather, setWeather] = useState<string>("");
+  const [destination, setDestination] = useState<string>("");
+  const [situation, setSituation] = useState<string>("");
   const [recommendMode, setRecommendMode] = useState<"my_closet" | "new_outfit">("my_closet");
 
   // Loading states
@@ -32,6 +33,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
 
   // Recommendation outputs
   const [resultOutfit, setResultOutfit] = useState<SavedOutfit | null>(null);
+  const [revisionRequest, setRevisionRequest] = useState("");
 
   // Dynamic pixel character states
   const [pixelCharacter, setPixelCharacter] = useState<{
@@ -171,12 +173,47 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
     return `${weather} 날씨와 ${destination} 장소, ${situation} 상황을 다시 분석했습니다.\n직전 코디와 다른 아이템을 중심으로 새 조합을 구성했습니다.\n이번 추천 아이템: ${names || "선택 가능한 아이템이 없습니다."}\n재추천 완료: ${new Date().toLocaleTimeString("ko-KR")}`;
   };
 
+  const getClientHardExcludedIds = (instruction: string, items: ClothingItem[]) => {
+    const normalized = instruction.toLowerCase();
+    const excludesBlack =
+      /(제외|빼고|말고|싫|피해|없이|않)/i.test(normalized) &&
+      /(검정|검은색|블랙|black)/i.test(normalized);
+
+    if (!excludesBlack) return new Set<string>();
+
+    return new Set(
+      items
+        .filter((item) => {
+          const searchable = [item.name, ...(item.colors || [])].join(" ").toLowerCase();
+          return /(검정|검은색|블랙|black)/i.test(searchable);
+        })
+        .map((item) => item.id)
+    );
+  };
+
   // Run Recommendation Request
-  const handleRecommend = async (isRetry: boolean = false) => {
+  const handleRecommend = async (isRetry: boolean = false, userInstruction: string = "") => {
+    if (!weather.trim()) {
+      window.alert("날씨 값을 선택해주세요.");
+      return;
+    }
+
+    if (!destination.trim()) {
+      window.alert("장소 값을 선택해주세요.");
+      return;
+    }
+
+    if (!situation.trim()) {
+      window.alert("상황 값을 선택해주세요.");
+      return;
+    }
+
     const previousItems = isRetry ? resultOutfit?.items : undefined;
     const previousItemIds = previousItems
       ? Object.values(previousItems).filter(Boolean).map((item) => item!.id)
       : [];
+    const clientExcludedClosetIds = getClientHardExcludedIds(userInstruction, closet);
+    const clientExcludedCatalogIds = getClientHardExcludedIds(userInstruction, PRODUCT_CATALOG);
 
     if (isRetry) {
       setIsRecommending(true);
@@ -218,7 +255,8 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
           closet,
           mode: recommendMode,
           retrySeed: `${Date.now()}-${Math.random()}`,
-          excludeItemIds: previousItemIds
+          excludeItemIds: previousItemIds,
+          userInstruction: userInstruction.trim().slice(0, 500)
         })
       });
 
@@ -232,7 +270,12 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
       let recommendedOutfit: SavedOutfit;
 
       if (data.isNewOutfit) {
-        const excludedCatalogIds = new Set(previousItemIds);
+        const excludedCatalogIds = new Set([...previousItemIds, ...clientExcludedCatalogIds]);
+        if (Array.isArray(data.excludedItemIds)) {
+          data.excludedItemIds.forEach((id: unknown) => {
+            if (typeof id === "string") excludedCatalogIds.add(id);
+          });
+        }
         PRODUCT_CATALOG.forEach((catalogItem) => {
           const isOwned = closet.some((closetItem) =>
             closetItem.id === catalogItem.id ||
@@ -277,16 +320,24 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
           destination: destination as DestinationType,
           situation: situation as SituationType,
           items: selectedItems,
-          stylistNote: isRetry ? buildRetryStylistNote(selectedItems) : (data.stylistNote || "> SYSTEM: New outfit compiled successfully."),
+          stylistNote: data.stylistNote || (isRetry ? buildRetryStylistNote(selectedItems) : "> SYSTEM: New outfit compiled successfully."),
           savedAt: new Date().toISOString()
         };
       } else {
+        const hardExcludedItemIds = new Set<string>(
+          Array.isArray(data.excludedItemIds)
+            ? data.excludedItemIds.filter((id: unknown): id is string => typeof id === "string")
+            : []
+        );
+        clientExcludedClosetIds.forEach((id) => hardExcludedItemIds.add(id));
         const pickClosetItem = (
           category: ClothingItem["category"],
           recommendedId: string | undefined,
           previousId: string | undefined
         ) => {
-          const categoryItems = closet.filter((item) => item.category === category);
+          const categoryItems = closet.filter((item) =>
+            item.category === category && !hardExcludedItemIds.has(item.id)
+          );
           const alternatives = categoryItems.filter((item) => item.id !== previousId);
           const recommendedItem = categoryItems.find((item) => item.id === recommendedId);
 
@@ -317,19 +368,22 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
           destination: destination as DestinationType,
           situation: situation as SituationType,
           items: selectedItems,
-          stylistNote: isRetry ? buildRetryStylistNote(selectedItems) : (data.stylistNote || "> SYSTEM: Core compiled successfully."),
+          stylistNote: data.stylistNote || (isRetry ? buildRetryStylistNote(selectedItems) : "> SYSTEM: Core compiled successfully."),
           savedAt: new Date().toISOString()
         };
       }
 
       generateRandomCharacter();
       setResultOutfit(recommendedOutfit);
+      if (userInstruction.trim()) {
+        setRevisionRequest("");
+      }
       setLoadingStep(100);
     } catch (err) {
       console.error("AI Stylist Error:", err);
 
       if (recommendMode === "new_outfit") {
-        const excludedIds = new Set(previousItemIds);
+        const excludedIds = new Set([...previousItemIds, ...clientExcludedCatalogIds]);
         PRODUCT_CATALOG.forEach((catalogItem) => {
           if (closet.some((closetItem) =>
             closetItem.id === catalogItem.id ||
@@ -373,7 +427,9 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
 
       if (recommendMode === "my_closet") {
         const pickLocalClosetItem = (category: ClothingItem["category"], previousId?: string) => {
-          const categoryItems = closet.filter((item) => item.category === category);
+          const categoryItems = closet.filter((item) =>
+            item.category === category && !clientExcludedClosetIds.has(item.id)
+          );
           const alternatives = categoryItems.filter((item) => item.id !== previousId);
           const pool = alternatives.length > 0 ? alternatives : categoryItems;
           return pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : undefined;
@@ -415,7 +471,20 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
     }
   };
 
+  const handleRevisionSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const instruction = revisionRequest.trim();
+
+    if (!instruction || isRecommending) return;
+    void handleRecommend(true, instruction);
+  };
+
   const handleSaveToDiary = () => {
+    if (!isLoggedIn) {
+      alert("로그인을 해야지 저장할 수 있습니다");
+      return;
+    }
+
     if (resultOutfit) {
       onSaveOutfit(resultOutfit);
       alert("스타일이 코디 다이어리에 성공적으로 저장되었습니다! 💖");
@@ -1067,6 +1136,40 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                       <span className="cursor-blink"></span>
                     </div>
                   </div>
+
+                  {/* Conversational outfit revision */}
+                  <form
+                    onSubmit={handleRevisionSubmit}
+                    className="border-2 border-primary bg-primary/5 p-4 shadow-[4px_4px_0_0_#000] space-y-3"
+                  >
+                    <label htmlFor="outfit-revision-request" className="flex items-center gap-2 font-headline-md text-sm font-bold text-primary">
+                      <MessageCircle size={16} />
+                      AI에게 코디 수정 요청하기
+                    </label>
+                    <p className="text-xs text-on-surface-variant">
+                      마음에 들지 않는 부분이나 원하는 스타일을 문장으로 알려주세요.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        id="outfit-revision-request"
+                        type="text"
+                        value={revisionRequest}
+                        onChange={(event) => setRevisionRequest(event.target.value)}
+                        disabled={isRecommending}
+                        maxLength={500}
+                        placeholder='예: "검은색 옷은 제외하고 추천해줘"'
+                        className="min-w-0 flex-1 bg-surface border-2 border-outline px-3 py-3 text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary disabled:opacity-50"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isRecommending || !revisionRequest.trim()}
+                        className="px-5 py-3 bg-primary text-on-primary border-2 border-primary font-headline-md text-sm font-bold flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed active:translate-x-[2px] active:translate-y-[2px]"
+                      >
+                        {isRecommending ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                        <span>{isRecommending ? "수정 중..." : "수정 요청 보내기"}</span>
+                      </button>
+                    </div>
+                  </form>
 
                   {/* Save action buttons */}
                   <div className="flex flex-col sm:flex-row gap-4">

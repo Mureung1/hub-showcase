@@ -277,13 +277,15 @@ export default function App() {
   };
 
   const handleSaveOutfit = (outfit: SavedOutfit) => {
+    if (!isUserLoggedIn()) {
+      return;
+    }
+
     const updated = [outfit, ...savedStyles];
     setSavedStyles(updated);
-    const storageKey = currentUserId ? `pmc_user_${currentUserId}_saved_styles` : "pmc_guest_saved_styles";
+    const storageKey = `pmc_user_${currentUserId}_saved_styles`;
     localStorage.setItem(storageKey, JSON.stringify(updated));
-    if (isUserLoggedIn()) {
-      syncUserDataToSupabase({ saved_styles: updated });
-    }
+    syncUserDataToSupabase({ saved_styles: updated });
   };
 
   const handleDeleteOutfit = (id: string) => {
@@ -669,6 +671,7 @@ export default function App() {
             <OutfitsTab
               closet={closet}
               savedStyles={savedStyles}
+              isLoggedIn={isUserLoggedIn()}
               onSaveOutfit={handleSaveOutfit}
               onDeleteOutfit={handleDeleteOutfit}
               onAddItem={handleAddItem}
