@@ -216,4 +216,47 @@ describe('PATCH /api/meetings/:id', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe('closed');
   });
+
+  it('adultOnly 켤 때 미성년 참여자가 있으면 400', async () => {
+    const { agent, userId } = await loginAgent('u-h13');
+    const meetingId = await insertMeeting(userId, { type: 'small', adultOnly: false });
+    const minor = await createUser('u-p13', { birthDate: '2015-01-01' }); // 미성년
+    await insertParticipant(meetingId, minor, 'approved');
+
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(smallBody({ adultOnly: true }));
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('adultOnly 켤 때 생년월일 미입력 참여자가 있으면 400', async () => {
+    const { agent, userId } = await loginAgent('u-h14');
+    const meetingId = await insertMeeting(userId, { type: 'small', adultOnly: false });
+    const noBirth = await createUser('u-p14', { birthDate: null });
+    await insertParticipant(meetingId, noBirth, 'approved');
+
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(smallBody({ adultOnly: true }));
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('adultOnly 켤 때 활성 참여자가 전원 성인이면 200', async () => {
+    const { agent, userId } = await loginAgent('u-h15');
+    const meetingId = await insertMeeting(userId, { type: 'small', adultOnly: false });
+    const adult = await createUser('u-p15', { birthDate: '1990-01-01' });
+    await insertParticipant(meetingId, adult, 'approved');
+
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(smallBody({ adultOnly: true }));
+    expect(res.status).toBe(200);
+    expect(res.body.data.adultOnly).toBe(true);
+  });
+
+  it('미성년이 rejected/cancelled면 활성 아님 → adultOnly 켜기 200', async () => {
+    const { agent, userId } = await loginAgent('u-h16');
+    const meetingId = await insertMeeting(userId, { type: 'small', adultOnly: false });
+    const minor = await createUser('u-p16', { birthDate: '2015-01-01' });
+    await insertParticipant(meetingId, minor, 'rejected');
+
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(smallBody({ adultOnly: true }));
+    expect(res.status).toBe(200);
+  });
 });
