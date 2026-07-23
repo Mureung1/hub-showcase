@@ -83,6 +83,48 @@ test('inspect is write-free and apply exclusively creates a fresh-decodable mini
   }
 })
 
+test('caller mutation of the returned create plan cannot alias internal authority', async () => {
+  const parent = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-v3-admission-plan-alias-'),
+  )
+  try {
+    const authority = await parentAuthority(parent)
+    const admission = createSemesterWorkspaceAdmission()
+    const before = await readdir(parent)
+    const inspection = await admission.inspect({
+      kind: 'create',
+      parent: authority,
+      semester: {
+        yearLevel: 2,
+        term: { key: '1', displayName: '1학기' },
+      },
+      leafName: 'mutated-plan',
+    })
+
+    assert.equal(inspection.outcome, 'new_target')
+    if (inspection.outcome !== 'new_target') {
+      assert.fail('a valid absent leaf must produce a create plan')
+    }
+    const pristinePlan = { ...inspection.plan }
+    const mutablePlan = inspection.plan as {
+      authorityDigest: string
+    }
+    mutablePlan.authorityDigest = '0'.repeat(64)
+
+    assert.equal(admission.describe(inspection.plan), null)
+    assert.ok(admission.describe(pristinePlan))
+    assert.deepEqual(await admission.apply(inspection.plan), {
+      outcome: 'authority_changed',
+    })
+    assert.deepEqual(await readdir(parent), before)
+    await assert.rejects(lstat(path.join(parent, 'mutated-plan')), {
+      code: 'ENOENT',
+    })
+  } finally {
+    await rm(parent, { force: true, recursive: true })
+  }
+})
+
 test('cold reopen rejects a hard-linked current state and preserves both aliases', async () => {
   const parent = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-v3-admission-hard-link-'),

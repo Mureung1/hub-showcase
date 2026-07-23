@@ -189,6 +189,17 @@ test('the preplanned root marker privately binds authority to a digest-free opaq
       }),
       { outcome: 'collision', readOnly: false },
     )
+    const pristineResumePlan = { ...resumed.plan }
+    const mutableResumePlan = resumed.plan as {
+      authorityDigest: string
+    }
+    mutableResumePlan.authorityDigest = '0'.repeat(64)
+    assert.deepEqual(await resumedAdmission.apply(resumed.plan), {
+      outcome: 'authority_changed',
+    })
+    assert.deepEqual(await readMarker(inspection.plan), markerBytes)
+    const resumedApply = await resumedAdmission.apply(pristineResumePlan)
+    assert.equal(resumedApply.outcome, 'resumed')
   } finally {
     await fixture.cleanup()
   }

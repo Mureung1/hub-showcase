@@ -308,7 +308,7 @@ async function inspectCreate(
   })
   plans.set(plan.planId, {
     kind: 'create',
-    plan,
+    plan: cloneAuthorityBoundWorkspacePlan(plan),
     planned,
   })
   return { outcome: 'new_target', plan }
@@ -440,7 +440,7 @@ async function inspectOwnedResume(
   } satisfies AuthorityBoundWorkspacePlan
   plans.set(planId, {
     kind: 'resume_owned',
-    plan,
+    plan: cloneAuthorityBoundWorkspacePlan(plan),
     planned,
     runtimeAuthority: {
       parent: cloneParentAuthority(planned.evidence.authority.parent),
@@ -1925,6 +1925,17 @@ function cloneParentAuthority(
   parent: WorkspaceParentAuthority,
 ): WorkspaceParentAuthority {
   return { ...parent }
+}
+
+function cloneAuthorityBoundWorkspacePlan(
+  plan: AuthorityBoundWorkspacePlan,
+): AuthorityBoundWorkspacePlan {
+  return {
+    planId: plan.planId,
+    operation: plan.operation,
+    canonicalRoot: plan.canonicalRoot,
+    authorityDigest: plan.authorityDigest,
+  }
 }
 
 function samePlan(
