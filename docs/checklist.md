@@ -5,18 +5,20 @@
 일일 실행 기록은 [daily-log.md](daily-log.md), Task 목록·상태는 [backlog.md](backlog.md), 계약은 [skills.md](skills.md).
 
 ## C01 [T01] Notion 연동 기반
-- [ ] `app/lib/notion.js`에서 Notion 클라이언트가 환경변수(토큰·DB ID)로 초기화된다
-- [ ] 임의의 DB에 대해 read/write 헬퍼가 왕복 동작한다 (한 줄 쓰고 다시 읽기 성공)
-- [ ] 토큰 미설정 시 500이 아니라 사용자에게 온보딩을 안내하는 에러로 처리된다
+- [x] `app/lib/notion.js`에서 Notion 클라이언트가 환경변수(토큰·DB ID)로 초기화된다
+- [x] 임의의 DB에 대해 read/write 헬퍼가 왕복 동작한다 (한 줄 쓰고 다시 읽기 성공)
+- [x] 토큰 미설정 시 500이 아니라 사용자에게 온보딩을 안내하는 에러로 처리된다
 
 ## C02 [T02] Brain Dump category 확장 + 저장
-- [ ] `brainDumpSchema`에 `category`가 고정 셋 7개 `z.enum`으로 들어간다
-- [ ] 분할 결과가 S1 계약(title·estimatedMinutes·category)대로 반환된다
-- [ ] 분할된 마이크로스텝이 Notion에 저장되고 다시 조회된다
+- [x] `brainDumpSchema`에 `category`가 고정 셋 7개 `z.enum`으로 들어간다
+- [x] 분할 결과가 S1 계약(title·estimatedMinutes·category·scheduledDate)대로 반환된다
+- [x] 분할된 마이크로스텝이 `scheduledDate`(기본값 오늘)를 포함해 Notion에 저장되고 다시 조회된다
 
 ## C03 [T03] One-Focus View 실데이터
 - [ ] 하드코딩 `task` 문자열이 제거되고 저장된 마이크로스텝을 순서대로 보여준다
+- [ ] 노션에서 읽어올 때 `scheduledDate`가 오늘 이하인 스텝만 필터링된다
 - [ ] 한 스텝 완료 시 다음 스텝으로 넘어가고, 마지막 스텝 후 완료 화면으로 간다
+- [ ] Notion Steps DB에 `Done`(체크박스) 속성이 추가되고, 완료 시 그 스텝이 `Done=true`로 갱신되어 다시 조회해도 유지된다
 
 ## C04 [T04] Timer 지속성
 - [ ] 타이머 도중 새로고침해도 남은 시간이 유지된다 (시작 시각 기준 재계산)
@@ -47,11 +49,28 @@
 ## C10 [T10] 개인화
 - [ ] 판단 호출 시 최근 로그(전체 + 같은 category)가 프롬프트에 포함된다
 - [ ] 같은 tool을 반복 거절한 이력이 있으면 다른 tool을 우선 시도하는 게 관찰된다
+- [ ] Notion Steps DB에 `ActualMinutes`·`StartedAt`·`CompletedAt`·`PostponeCount` 속성이 추가되고, 스텝 진행에 따라 채워진다
+- [ ] 판단 호출 시 위 행동 패턴 속성(예상 대비 실제 소요 시간, 미룬 횟수 등)이 프롬프트에 참고 정보로 포함된다
 
 ## C11 [T11] Agent 평가
 - [ ] "개입했어야 하는 상황" 정답 세트가 파일로 존재한다
 - [ ] AgentLog를 읽어 Precision(accepted/전체)·Recall(정답 대비 개입)을 계산하는 스크립트가 수치를 출력한다
 
 ## C12 [T12] 화면 디자인 보완
-- [ ] 타이머 화면에서 남은 시간 비율만큼 물이 차오르는 효과가 실제로 동작한다
-- [ ] 화면 디자인이 원래 화면 흐름 디자인과 비교했을 때 캐릭터 요소를 포함해 개선된다
+- [x] 타이머 화면에서 남은 시간 비율만큼 물이 차오르는 효과가 실제로 동작한다
+- [x] 화면 디자인이 원래 화면 흐름 디자인과 비교했을 때 캐릭터 요소를 포함해 개선된다
+
+## C13 [T13] 모델 비교·결정
+- [ ] Solar/GPT-4o-mini/Claude Haiku/Gemini Flash 중 최소 3개 이상에 동일한 입력 문장 5개 이상을 넣어 microsteps 결과를 비교한 기록이 문서로 있다
+- [ ] 비교 결과를 바탕으로 어떤 모델을 쓸지 결정하고 근거를 기록했다
+- [ ] 결정한 모델이 Solar가 아니면 app/lib/solar.js 및 관련 코드가 그 모델로 교체된다
+
+## C14 [T14] Brain Dump 일정 확인 멀티턴
+- [ ] 입력한 할 일에 기한이 없으면 되묻는 질문이 생성된다
+- [ ] 질문·답변이 2턴을 넘기지 않고 scheduledDate 또는 우선순위가 확정된다
+- [ ] 확정된 값이 Notion에 반영되어 다시 조회했을 때 유지된다
+
+## C15 [T15] 타이머 종료 시 완료 확인 + Agent 판단 연장
+- [ ] 타이머가 0이 되면 완료 여부를 확인하는 화면이 뜬다
+- [ ] "아니오" 선택 시 Agent가 연장 분을 판단해 반환하고, 그 시간만큼 타이머가 재시작된다
+- [ ] 반환된 연장 분이 정수이고, 판단 근거(reason)가 함께 기록된다

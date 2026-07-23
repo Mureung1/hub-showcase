@@ -15,9 +15,10 @@
 
 - **경로**: `POST /api/brain-dump`
 - **입력**: `{ text: string }` (비어있으면 400)
-- **출력**: `{ microsteps: MicroStep[] }`, `MicroStep = { title: string, estimatedMinutes: int(1..25), category: task_category }`
-- **제약**: `microsteps.length >= 1`. 각 스텝은 바로 실행 가능한 한 문장. 순서 = 실행 순서. `category`는 고정 셋 중 하나(`z.enum` 강제).
+- **출력**: `{ microsteps: MicroStep[] }`, `MicroStep = { title: string, estimatedMinutes: int(1..25), category: task_category, scheduledDate: date }`
+- **제약**: `microsteps.length >= 1`. 각 스텝은 바로 실행 가능한 한 문장. 순서 = 실행 순서. `category`는 고정 셋 중 하나(`z.enum` 강제). `scheduledDate`는 생성 시점 오늘 날짜가 기본값이며, 모델이 판단하지 않고 서버에서 채운다(`postpone_task` 실행 시에만 갱신됨, S2 참고).
 - **모델**: Solar (`solar-pro2`) via `generateObject`.
+- **확장(T14, 미구현)**: 입력에 기한이 없는 항목이 있으면, 응답에 `followUpQuestion: string | null`을 추가로 반환할 수 있다. 값이 있으면 사용자에게 그 질문을 보여주고 답변을 다시 S1에 넣어 재호출한다. 최대 2턴까지만 허용(3턴째부터는 질문 없이 기본값으로 확정). 확정된 기한/우선순위는 `scheduledDate`에 반영.
 
 ## S2 — "힘들어" 루프 판단
 
@@ -63,3 +64,11 @@
 - **출력**: `{ precision: number, recall: number, n: int }` 콘솔 출력.
 - **정의**: `precision = accepted / 전체 제안 수` (AgentLog만으로 계산). `recall = 개입한 정답 상황 / 전체 정답 상황` (정답 세트 필요).
 - **제약**: AgentLog를 읽기만 한다. 평가 전용 필드를 AgentLog 스키마에 추가하지 않는다.
+
+## S6 — 타이머 종료 시 연장 판단
+
+- **경로**: `POST /api/timer-extend`
+- **입력**: `{ currentStep: MicroStep, extendCount: number }` (`extendCount`는 이 스텝에서 이미 연장한 횟수, cold start는 0)
+- **출력**: `{ extendMinutes: int(1..25), reason: string }`
+- **제약**: `extendMinutes`는 고정 계단이 아니라 모델이 `extendCount`·`estimatedMinutes` 등을 보고 직접 판단(`suggest_break`과 동일 패턴). `reason`은 한 줄, 사용자에게 보이는 판단 근거.
+- **비고**: S2("힘들어" 루프)와 트리거가 다르다(타이머 종료 vs 사용자의 명시적 "힘들어" 액션). `agent-design.md`(Feat-4 동결 설계)는 이 스킬의 근거로 삼지 않는다.

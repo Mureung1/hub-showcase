@@ -21,8 +21,8 @@ TODO 앱과 캘린더는 이미 많습니다. 하지만 정작 어려운 것은 
 | [Wiki](https://github.com/imjyong/hub/wiki) | 상세 기획서, 발표 자료, 환경 설정, 개발 프로세스, 트러블 슈팅 등 |
 | [docs/prototype/](docs/prototype/) | 순수 HTML·CSS 프로토타입 (디자인 보드 · 화이트 노이즈 테마 · ADHD 기능 제안) |
 | [docs/instructions.md](docs/instructions.md) | Agent 작업 절차서 — 어떤 문서를 언제 읽고 갱신할지 |
-| [docs/backlog.md](docs/backlog.md) | 구현 Task(T01~T12) 순서·선행조건·상태 |
-| [docs/checklist.md](docs/checklist.md) | 검증 완료조건(C01~C11) — Task별 acceptance criteria |
+| [docs/backlog.md](docs/backlog.md) | 구현 Task(T01~T15) 순서·선행조건·상태 |
+| [docs/checklist.md](docs/checklist.md) | 검증 완료조건(C01~C15) — Task별 acceptance criteria |
 | [docs/skills.md](docs/skills.md) | 스킬 계약(S1~S5) — 입력·출력·제약 단일 진실 소스 |
 | [docs/etc/agent-design.md](docs/etc/agent-design.md) | "나 지금 힘들어" Agent 루프 설계(동결) |
 | [docs/report/](docs/report/) | 구현/리뷰 append-only 보고 시스템 + 점검 절차 |
@@ -49,8 +49,8 @@ hub/
 ├── public/                    # 정적 파일 (이미지 등)
 ├── docs/
 │   ├── instructions.md       # Agent 작업 절차서 (문서 지도 + 시작/종료 절차)
-│   ├── backlog.md            # 구현 Task T01~T12 (순서·선행조건·상태)
-│   ├── checklist.md          # 검증 완료조건 C01~C11 (acceptance criteria)
+│   ├── backlog.md            # 구현 Task T01~T15 (순서·선행조건·상태)
+│   ├── checklist.md          # 검증 완료조건 C01~C15 (acceptance criteria)
 │   ├── skills.md             # 스킬 계약 S1~S5 (입력·출력·제약 단일 진실 소스)
 │   ├── prerequisites.md      # 사용자 준비물 (API key·Notion 토큰 등)
 │   ├── dev-plan.md           # 개발 로드맵 — 진행 순서, 우선순위, 백로그, 기술 스택
