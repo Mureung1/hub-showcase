@@ -5,5 +5,4 @@ export type AyPleApplicationScaffold = {
   readonly packageName: 'ay-ple'
   readonly runtimeRelease: RuntimeReleaseScaffold
   readonly semesterWorkspace: SemesterWorkspaceScaffold
-  readonly serverPackage: '@ay-ple/server'
 }
