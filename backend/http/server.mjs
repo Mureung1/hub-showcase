@@ -10,6 +10,8 @@ import { handleLearningProgressApiRequest } from './learningProgressRoutes.mjs'
 import { handleMistakeNoteApiRequest } from './mistakeNoteRoutes.mjs'
 import { handleCodeRunApiRequest } from './codeRunRoutes.mjs'
 import { loadCurriculumTracks } from '../modules/curriculum/adapters/jsonCurriculumCatalogRepository.mjs'
+import { createInMemoryGeneratedCurriculumRepository } from '../modules/curriculum/adapters/inMemoryGeneratedCurriculumRepository.mjs'
+import { createSqliteGeneratedCurriculumRepository } from '../modules/curriculum/adapters/sqliteGeneratedCurriculumRepository.mjs'
 import { createInMemoryGitLabAttemptRepository } from '../modules/git-lab/adapters/inMemoryGitLabAttemptRepository.mjs'
 import { createSqliteGitLabAttemptRepository } from '../modules/git-lab/adapters/sqliteGitLabAttemptRepository.mjs'
 import { createInMemoryLearningProgressRepository } from '../modules/learning-progress/adapters/inMemoryLearningProgressRepository.mjs'
@@ -37,6 +39,7 @@ export function createCurriculumAgentApp({
   progressRepository = createInMemoryLearningProgressRepository(),
   mistakeNoteRepository = createInMemoryMistakeNoteRepository(),
   gitLabAttemptRepository = createInMemoryGitLabAttemptRepository(),
+  generatedCurriculumRepository = createInMemoryGeneratedCurriculumRepository(),
   knowledgeChunks = [],
   logger = console,
 } = {}) {
@@ -62,6 +65,7 @@ export function createCurriculumAgentApp({
         progressRepository,
         mistakeNoteRepository,
         gitLabAttemptRepository,
+        generatedCurriculumRepository,
         knowledgeChunks,
         logger,
       }
@@ -115,6 +119,7 @@ export function createRuntimeRepositories(env = process.env) {
       progressRepository: createInMemoryLearningProgressRepository(),
       mistakeNoteRepository: createInMemoryMistakeNoteRepository(),
       gitLabAttemptRepository: createInMemoryGitLabAttemptRepository(),
+      generatedCurriculumRepository: createInMemoryGeneratedCurriculumRepository(),
     }
   }
 
@@ -125,6 +130,7 @@ export function createRuntimeRepositories(env = process.env) {
     progressRepository: createSqliteLearningProgressRepository(database),
     mistakeNoteRepository: createSqliteMistakeNoteRepository(database),
     gitLabAttemptRepository: createSqliteGitLabAttemptRepository(database),
+    generatedCurriculumRepository: createSqliteGeneratedCurriculumRepository(database),
   }
 }
 

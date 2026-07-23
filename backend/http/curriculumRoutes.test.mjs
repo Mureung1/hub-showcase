@@ -118,4 +118,63 @@ describe('curriculum routes', () => {
 
     expect(result).toMatchObject({ status: 500, body: { error: 'agent_configuration_error' } })
   })
+
+  it('persists recommended curriculum plan to repository and supports GET/DELETE /api/curriculum/generated', async () => {
+    const recommendationProvider = vi.fn(async () => recommendation)
+    const generatedCurriculumRepository = {
+      stored: null,
+      getLatest() {
+        return this.stored
+      },
+      save(snapshot) {
+        this.stored = snapshot
+        return snapshot
+      },
+      reset() {
+        this.stored = null
+      },
+    }
+
+    const recommendResult = await handleCurriculumApiRequest({
+      method: 'POST',
+      url: curriculumRecommendationPath,
+      bodyText: JSON.stringify({ goal: 'Learn Express APIs' }),
+      tracks,
+      config: { provider: 'developer', model: 'gemini-flash-latest', apiKey: 'test-key' },
+      recommendationProvider,
+      generatedCurriculumRepository,
+      logger: { error: vi.fn() },
+    })
+
+    expect(recommendResult).toMatchObject({ status: 200 })
+    expect(generatedCurriculumRepository.getLatest()).toMatchObject({
+      goal: 'Learn Express APIs',
+      plan: { id: 'backend-curriculum-plan' },
+    })
+
+    const getResult = await handleCurriculumApiRequest({
+      method: 'GET',
+      url: '/api/curriculum/generated',
+      generatedCurriculumRepository,
+    })
+
+    expect(getResult).toMatchObject({
+      status: 200,
+      body: {
+        generatedCurriculum: {
+          goal: 'Learn Express APIs',
+          plan: { id: 'backend-curriculum-plan' },
+        },
+      },
+    })
+
+    const deleteResult = await handleCurriculumApiRequest({
+      method: 'DELETE',
+      url: '/api/curriculum/generated',
+      generatedCurriculumRepository,
+    })
+
+    expect(deleteResult).toMatchObject({ status: 200, body: { ok: true } })
+    expect(generatedCurriculumRepository.getLatest()).toBeNull()
+  })
 })

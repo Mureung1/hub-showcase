@@ -3,6 +3,7 @@ import { recommendCurriculum } from '../modules/curriculum/application/recommend
 import { createCorsHeaders, parseJsonBody } from '../shared/http.mjs'
 
 export const curriculumRecommendationPath = '/api/curriculum/recommend'
+export const generatedCurriculumPath = '/api/curriculum/generated'
 
 export async function handleCurriculumApiRequest({
   method,
@@ -11,6 +12,7 @@ export async function handleCurriculumApiRequest({
   tracks,
   config,
   recommendationProvider,
+  generatedCurriculumRepository,
   knowledgeChunks = [],
   logger = console,
 }) {
@@ -18,6 +20,42 @@ export async function handleCurriculumApiRequest({
 
   if (method === 'OPTIONS') {
     return { status: 204, body: null, headers: createCorsHeaders() }
+  }
+
+  if (pathname === generatedCurriculumPath) {
+    if (method === 'GET') {
+      const generatedCurriculum = generatedCurriculumRepository?.getLatest() ?? null
+
+      return { status: 200, body: { generatedCurriculum }, headers: createCorsHeaders() }
+    }
+
+    if (method === 'POST') {
+      const parsedBody = parseJsonBody(bodyText)
+
+      if (!parsedBody.ok) {
+        return {
+          status: 400,
+          body: { error: 'invalid_json', message: '요청 JSON을 확인해주세요.' },
+          headers: createCorsHeaders(),
+        }
+      }
+
+      const snapshot = generatedCurriculumRepository?.save(parsedBody.value) ?? null
+
+      return { status: 200, body: { generatedCurriculum: snapshot }, headers: createCorsHeaders() }
+    }
+
+    if (method === 'DELETE') {
+      generatedCurriculumRepository?.reset()
+
+      return { status: 200, body: { ok: true }, headers: createCorsHeaders() }
+    }
+
+    return {
+      status: 405,
+      body: { error: 'method_not_allowed', message: '지원하지 않는 HTTP 메서드입니다.' },
+      headers: { ...createCorsHeaders(), Allow: 'GET, POST, DELETE, OPTIONS' },
+    }
   }
 
   if (pathname !== curriculumRecommendationPath) {
@@ -52,6 +90,16 @@ export async function handleCurriculumApiRequest({
 
   try {
     const plan = await recommendCurriculum({ goal, tracks, config, recommendationProvider, knowledgeChunks })
+
+    if (generatedCurriculumRepository) {
+      generatedCurriculumRepository.save({
+        id: plan.id,
+        goal,
+        plan,
+        generatedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+    }
 
     return { status: 200, body: { plan }, headers: createCorsHeaders() }
   } catch (error) {

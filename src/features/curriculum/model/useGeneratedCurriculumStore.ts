@@ -16,6 +16,7 @@ type PersistedGeneratedCurriculum = Partial<GeneratedCurriculumSnapshot>
 
 type GeneratedCurriculumStore = {
   generatedCurriculum: GeneratedCurriculumSnapshot | null
+  hydrateGeneratedCurriculum: (snapshot: GeneratedCurriculumSnapshot | null) => void
   saveGeneratedCurriculum: (goal: string, plan: GeneratedCurriculumPlan) => void
   resetGeneratedCurriculum: () => void
 }
@@ -178,6 +179,15 @@ export function resolveGeneratedCurriculumPlan(
 
 export const useGeneratedCurriculumStore = create<GeneratedCurriculumStore>((set) => ({
   generatedCurriculum: readStoredGeneratedCurriculum(),
+  hydrateGeneratedCurriculum: (snapshot) => {
+    if (snapshot) {
+      persistGeneratedCurriculum(snapshot)
+    } else if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(storageKey)
+    }
+
+    set({ generatedCurriculum: snapshot })
+  },
   saveGeneratedCurriculum: (goal, plan) => {
     const snapshot = createSnapshot(goal, plan)
     persistGeneratedCurriculum(snapshot)
