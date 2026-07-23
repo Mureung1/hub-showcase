@@ -4,8 +4,12 @@
   "summary": "학기 폴더의 공지와 수업 자료를 읽고, 원본 근거가 연결된 학기 정보 변경안을 학생에게 제안하는 local-first AI 학업 앱입니다.",
   "githubUser": "swh3467(하성욱)",
   "demoUrl": "",
-  "thumbnail": "thumbnail.png",
-  "screenshots": [],
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/source-selection.webp",
+    "screenshots/evidence-review.webp",
+    "screenshots/accepted-assignment.webp"
+  ],
   "problem": "대학생의 학기 자료는 LMS 공지, 강의계획서, PDF, 메모처럼 여러 형식과 위치에 흩어져 있습니다. 학생은 자료를 저장한 뒤에도 과제명, 마감, 제출 방식과 시험 일정을 다시 읽고 캘린더나 할 일 앱으로 옮겨야 합니다. 기존 AI 도구에 자료를 물어보더라도 답변의 근거를 다시 원문과 대조해야 하고, 대화에서 얻은 정보가 신뢰할 수 있는 학기 상태로 남지 않는 문제가 있습니다. AY-PLE는 학생이 선택한 자료를 AI가 읽고 연결하되, 원본 근거가 포함된 변경안을 먼저 보여주고 학생이 확인한 내용만 학기 정보에 반영합니다.",
   "targetUsers": [
     "공지와 강의 자료를 여러 곳에서 관리하는 대학생",
