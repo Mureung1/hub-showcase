@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import {
+  lstat,
   mkdir,
   mkdtemp,
   readFile,
@@ -204,9 +205,7 @@ async function createFixture() {
     path.join(tmpdir(), 'ay-ple-workspace-context-test-'),
   )
   const canonicalParent = await realpath(root)
-  const parentStats = await import('node:fs/promises').then(({ lstat }) =>
-    lstat(canonicalParent, { bigint: true }),
-  )
+  const parentStats = await lstat(canonicalParent, { bigint: true })
   const admission = createSemesterWorkspaceAdmission()
   const inspected = await admission.inspect({
     kind: 'create',
