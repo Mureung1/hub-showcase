@@ -47,7 +47,7 @@ Report the ticket goal, checkbox state, prerequisites, verified criteria, remain
 
 ## Analyze mode
 
-Inspect the current code and report the intended outcome, prerequisite or document conflicts, affected behavior, likely files, smallest implementation approach, failure cases, verification commands, and unresolved user decisions.
+Inspect the current code and report the intended outcome, prerequisite or document conflicts, affected behavior, likely files, smallest implementation approach, failure cases, verification commands, and unresolved user decisions. For every testable behavior, define a TDD test contract: test level, success/failure/boundary cases, target test location, and the command expected to fail in Red. State the reason when TDD is not applicable.
 
 Do not edit files, check boxes, or append history. Do not implement automatically after analysis. End the report by asking the user to choose exactly one next action:
 
@@ -56,13 +56,13 @@ Do not edit files, check boxes, or append history. Do not implement automaticall
 
 The analyst never performs either choice. After the user chooses, pass the analysis and choice to the configured implementer.
 
-The handoff must contain the ticket ID and original request, prerequisites and current state, verified document and code facts, included and excluded scope, smallest implementation approach, success/error/empty states, risks, completion criteria, validation commands, and selected mode.
+The handoff must contain the ticket ID and original request, prerequisites and current state, verified document and code facts, included and excluded scope, smallest implementation approach, success/error/empty states, risks, completion criteria, validation commands, TDD test contract or skip reason, and selected mode.
 
 When `analyst` was explicitly invoked, never combine analysis and implementation or route implementation to the root/main agent.
 
 ## Guide mode
 
-This mode belongs to the configured implementer. Require the analyst handoff and explicit user choice when analyst routing was used. Do not edit files, check boxes, append history, commit, or push. Give exactly one implementation step at a time. Each step must state the target file and location, purpose, intended code or behavior, validation command, and completion signal. After the user reports completion, inspect the diff and give either a correction or the next step. Never mark the ticket complete until the user explicitly delegates implementation or asks for completion handling.
+This mode belongs to the configured implementer. Require the analyst handoff and explicit user choice when analyst routing was used. Do not edit files, check boxes, append history, commit, or push. Give exactly one implementation step at a time. For a testable behavior, begin with a test-only Red step and require the user to confirm that the targeted test fails for the expected missing behavior; then give the minimum Green implementation step. Suggest refactoring only after Green when it improves the requested change. Each step must state the target file and location, purpose, intended code or behavior, validation command, and completion signal. After the user reports completion, inspect the diff and give either a correction or the next step. Never mark the ticket complete until the user explicitly delegates implementation or asks for completion handling.
 
 ## Implement mode
 
@@ -70,12 +70,14 @@ This mode belongs to the configured implementer. Require the analyst handoff and
 
 1. Confirm all material prerequisites are complete.
 2. Preserve existing user changes and limit edits to the ticket.
-3. Implement the smallest complete vertical slice described by the criteria.
-4. Run the repository's actual relevant validation commands.
-5. Review the diff against every completion criterion.
-6. Mark only criteria supported by code or verification as `[x]`.
-7. Mark the parent ticket `[x]` only when every criterion is complete and no required work remains.
-8. Never Commit or Push unless the user explicitly requests it.
+3. For every testable behavior in the handoff, write or update the focused test first and run it to confirm Red. Stop when the failure is unrelated to the intended missing behavior.
+4. Implement the smallest complete vertical slice needed to make the Red test Green.
+5. Refactor only after Green and only when it improves the requested change.
+6. Run the repository's actual relevant validation commands.
+7. Review the diff against every completion criterion.
+8. Mark only criteria supported by code or verification as `[x]`.
+9. Mark the parent ticket `[x]` only when every criterion is complete and no required work remains.
+10. Never Commit or Push unless the user explicitly requests it.
 
 Partial progress is valid, but the parent ticket must stay open. Do not hide failed or unavailable validation.
 

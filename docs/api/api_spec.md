@@ -269,6 +269,8 @@ Authorization: Bearer firebase-id-token
 - 외부 요청에 timeout과 redirect 횟수 제한을 적용한다.
 - 외부 응답 크기와 AI에 전달하는 추출 본문 길이를 제한한다.
 - HTML 전체를 AI에 그대로 전달하지 않고 레시피 관련 텍스트만 추출한다.
+- 임의의 공개 제3자 YouTube 영상은 자막 자동 수집을 지원하지 않는다. 공식 YouTube Data API의 메타데이터만으로는 레시피 원문을 얻을 수 없고 자막에는 OAuth 및 영상 편집자 권한이 필요하므로, 비공식 스크래핑이나 내부 엔드포인트를 사용하지 않는다.
+- YouTube URL 수집 실패에는 새 전용 오류 코드나 OAuth 계약을 추가하지 않고 기존 `URL_FETCH_FAILED` 422 및 직접 입력 안내를 사용한다.
 
 구체적인 timeout, redirect 횟수, 응답 크기와 본문 길이는 URL 수집 구현 시 환경 설정으로 확정하고 README에 기록한다.
 
