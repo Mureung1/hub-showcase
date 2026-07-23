@@ -70,7 +70,7 @@ button {
 
 .category-tab {
   position: relative;
-  cursor: pointer;
+  cursor: pointer !important;
   padding: 0 0 13px;
   border: 0;
   background: transparent;
