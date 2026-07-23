@@ -48,6 +48,26 @@ Exact application이 어떤 Runtime byte만 선택할 수 있는지와 그 gener
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `git diff --check`
 - Manual or live smoke: 없음. Network·archive mutation은 이 slice에서 의도적으로 없다.
 
+## Candidate Verification Receipt
+
+Independent Runtime-delivery/security review 전 candidate-only receipt다. Ticket state는 `claimed`, Acceptance Criteria는 unchecked로 유지한다.
+
+| Evidence | Candidate result |
+| --- | --- |
+| Fixed base | `269a3555d3adf52bf520b3de0b99c7cb3fee3ae7` |
+| Claim commit | `eafd0ea70d9a0387ca64e639ff0045acdbfcad8e` |
+| Implementation commit | `30f591fb434b585988eed1f5c5baf383fca2f439` |
+| Descriptor/manifest admission | `npm test -w @ay-ple/runtime-release` — 32/32 green. Missing/extra/unknown/type/range, application·target·contract·resource identity, roster와 byte binding drift를 fail closed한다. |
+| No-effect ordering | Application, target, archive와 canonical manifest mismatch 각각이 admission 뒤 effect callback 0회·filesystem tree mutation 0으로 종료한다. D1a source에는 HTTP/download/extraction 구현이 없다. |
+| Cache authority | Content-addressed archive/partial/generation/staging/quarantine/lease/receipt path가 `runtime-cache/v1` 아래에서 충돌 없이 고정된다. App-data/cache root의 canonical path, owner UID, exact `0700`, no-symlink ancestor, same-device natural identity와 unknown residue를 read-only로 판정한다. |
+| Stable failure boundary | S1 `runtime_*` allowlist만 caller-safe `failure`에 사용하며 raw URL/path/digest/nested cause는 private structured `evidence`에만 남는다. |
+| Package checks | `npm test -w @ay-ple/runtime-release`; `npm run typecheck -w @ay-ple/runtime-release`; `npm run build -w @ay-ple/runtime-release` green |
+| Root checks | `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `git diff --check` green |
+| Writable-scope proof | Fixed base 이후 변경은 이 ticket과 `packages/runtime-release/src/**`의 D1a implementation/tests뿐이다. S1 `src/contract.ts`, root/workspace manifest와 lockfile은 변경하지 않았다. |
+| Safe TAR prerequisite | `tar-stream@3.2.0`, `@types/tar-stream@3.1.4` exact resolution green. `package-lock.json` SHA-256는 S0 evidence와 같은 `6dcc45c4d2aac146b925850f98a61a890e5f54360151598c3ccbf22040ba12ab`이다. Ticket 010을 위한 C-only manifest/lock delta는 필요 없다. |
+| Documentation follow-up | `packages/runtime-release/README.md`는 이 lane의 writable path가 아니므로 수정하지 않았다. Independent review·integration 뒤 Coordinator가 S1-only current-state 문구를 D1a current fact로 갱신해야 한다. |
+| Review state | Independent Runtime-delivery/security review와 C manifest/lock authority review 대기 |
+
 ## Blocked By
 
 - [003-spine-s2-server-composition-stabilization.md](003-spine-s2-server-composition-stabilization.md) — Spine S2 — Server composition을 분리하고 Browser fail-closed oracle을 닫는다
