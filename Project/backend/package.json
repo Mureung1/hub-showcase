@@ -8,6 +8,7 @@
     "start": "node src/server.js",
     "db:sync": "node src/scripts/syncAndSeed.js",
     "db:reset": "node src/scripts/syncAndSeed.js --reset",
+    "db:migrate": "node src/scripts/migrateNotificationsAndPickupPlace.js",
     "check": "node --check src/server.js && node --check src/app.js && node --check src/scripts/syncAndSeed.js",
     "test": "jest --runInBand"
   },
@@ -19,10 +20,14 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.11.5",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^9.0.3",
     "sequelize": "^6.37.5"
   },
   "jest": {
-    "setupFiles": ["<rootDir>/src/tests/setup.js"]
+    "setupFiles": [
+      "<rootDir>/src/tests/setup.js"
+    ]
   },
   "devDependencies": {
     "jest": "^30.4.2",

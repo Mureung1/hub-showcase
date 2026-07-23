@@ -1,6 +1,7 @@
 const { GroupPurchase, UserGroupPurchase, User, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const AppError = require('../utils/appError');
+const { notifyParticipantsOfStatus } = require('./notification.service');
 
 async function listGroupPurchases(filters = {}) {
   const where = {};
@@ -92,6 +93,7 @@ async function createGroupPurchase(data) {
     targetParticipants,
     pickupLatitude,
     pickupLongitude,
+    pickupPlace,
     pickupTimeSlot,
     category,
     deadlineAt,
@@ -124,6 +126,7 @@ async function createGroupPurchase(data) {
     perPersonPrice,
     pickupLatitude: pickupLatitude || 37.5665,
     pickupLongitude: pickupLongitude || 126.978,
+    pickupPlace,
     pickupTimeSlot,
     category,
     deadlineAt: deadlineAt || new Date(Date.now() + 1000 * 60 * 60 * 24),
@@ -132,7 +135,7 @@ async function createGroupPurchase(data) {
 }
 
 async function joinGroupPurchase(groupPurchaseId, userId) {
-  return sequelize.transaction(async (transaction) => {
+  const result = await sequelize.transaction(async (transaction) => {
     const groupPurchase = await GroupPurchase.findByPk(groupPurchaseId, {
       transaction,
       lock: transaction.LOCK.UPDATE,
@@ -157,6 +160,10 @@ async function joinGroupPurchase(groupPurchaseId, userId) {
       groupPurchase: { id: groupPurchase.id, currentParticipants, targetParticipants: groupPurchase.targetParticipants, status },
     };
   });
+  if (result.groupPurchase.status === 'COMPLETED') {
+    await notifyParticipantsOfStatus(groupPurchaseId, 'COMPLETED');
+  }
+  return result;
 }
 
 async function cancelGroupPurchaseJoin(groupPurchaseId, userId) {
@@ -205,7 +212,7 @@ const nextStatuses = {
 };
 
 async function updateGroupPurchaseStatus(groupPurchaseId, hostId, nextStatus) {
-  return sequelize.transaction(async (transaction) => {
+  const result = await sequelize.transaction(async (transaction) => {
     const groupPurchase = await GroupPurchase.findByPk(groupPurchaseId, {
       transaction,
       lock: transaction.LOCK.UPDATE,
@@ -233,6 +240,8 @@ async function updateGroupPurchaseStatus(groupPurchaseId, hostId, nextStatus) {
     await groupPurchase.update({ status: nextStatus }, { transaction });
     return { id: groupPurchase.id, status: groupPurchase.status };
   });
+  await notifyParticipantsOfStatus(groupPurchaseId, nextStatus);
+  return result;
 }
 
 async function markGroupPurchaseReceipt(groupPurchaseId, userId) {
