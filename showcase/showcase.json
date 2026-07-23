@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "title": "Scholar-Sync AI",
+  "summary": "Scholar-Sync AI",
+  "githubUser": "Alexarius(김지욱)",
+  "demoUrl": "",
+  "thumbnail": "showcase/thumbnail.png",
+  "screenshots": [],
+  "problem": "Flood of Academic papers",
+  "targetUsers": [],
+  "features": ["match% curation", "abstract summary"],
+  "featureTags": ["match% curation", "abstract summary"],
+  "techStack": [],
+  "techHighlights": [],
+  "developmentWithAI": "Vertical slice TDD with Antigravity CLI",
+  "agent": {
+    "summary": "",
+    "agentTools": [],
+    "workflows": []
+  }
+}
