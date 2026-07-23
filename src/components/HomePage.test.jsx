@@ -3,6 +3,10 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import HomePage from "./HomePage.jsx";
 import { apiFetch } from "../lib/api";
+import {
+  FOCUS_SESSION_KEY,
+  createFocusSession,
+} from "../lib/focusSession.js";
 
 vi.mock("../lib/api", () => ({
   apiFetch: vi.fn(),
@@ -55,13 +59,24 @@ vi.mock("./NudgeModal", () => ({
 }));
 
 vi.mock("./FocusMode", () => ({
-  default: ({ taskId, microTask, entryLevel }) => (
+  default: ({
+    taskId,
+    startedAt,
+    microTask,
+    entryLevel,
+    onSessionCompleted,
+    onStop,
+  }) => (
     <div
       data-testid="focus-mode"
       data-task-id={taskId}
+      data-started-at={startedAt ?? ""}
       data-micro-task={microTask ?? ""}
       data-entry-level={entryLevel ?? ""}
-    />
+    >
+      <button onClick={() => onSessionCompleted?.()}>complete-session</button>
+      <button onClick={() => onStop?.()}>stop-session</button>
+    </div>
   ),
 }));
 
@@ -156,6 +171,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
     apiFetch.mockReset();
+    sessionStorage.clear();
   });
 
   afterEach(() => {
@@ -253,9 +269,123 @@ describe("HomePage response-driven nudge scheduling", () => {
     expect(focus).toHaveAttribute("data-task-id", "a");
     expect(focus).toHaveAttribute("data-micro-task", "open one paragraph");
     expect(focus).toHaveAttribute("data-entry-level", "2");
+    expect(JSON.parse(sessionStorage.getItem(FOCUS_SESSION_KEY))).toEqual({
+      version: 1,
+      taskId: "a",
+      startedAt: NOW.getTime() + 3_000,
+      entryLevel: 2,
+      microTask: "open one paragraph",
+    });
 
     await advance(60_000);
     expect(api.callsFor("a")).toBe(1);
+  });
+
+  it("stores a null-metadata session when Focus starts from a Task card", async () => {
+    setupApi([makeTask({ id: "a", level: 1 })]);
+    await renderHome();
+
+    fireEvent.click(screen.getByTestId("task-a"));
+
+    expect(screen.getByTestId("focus-mode")).toHaveAttribute(
+      "data-task-id",
+      "a",
+    );
+    expect(JSON.parse(sessionStorage.getItem(FOCUS_SESSION_KEY))).toEqual({
+      version: 1,
+      taskId: "a",
+      startedAt: NOW.getTime(),
+      entryLevel: null,
+      microTask: null,
+    });
+  });
+
+  it("removes the stored session when Focus reports completion success", async () => {
+    setupApi([makeTask({ id: "a", level: 1 })]);
+    await renderHome();
+    fireEvent.click(screen.getByTestId("task-a"));
+    expect(sessionStorage.getItem(FOCUS_SESSION_KEY)).not.toBeNull();
+
+    fireEvent.click(screen.getByText("complete-session"));
+
+    expect(sessionStorage.getItem(FOCUS_SESSION_KEY)).toBeNull();
+    expect(screen.getByTestId("focus-mode")).toBeInTheDocument();
+  });
+
+  it("removes the stored session and closes Focus after a successful stop", async () => {
+    setupApi([makeTask({ id: "a", level: 1 })]);
+    await renderHome();
+    fireEvent.click(screen.getByTestId("task-a"));
+    expect(sessionStorage.getItem(FOCUS_SESSION_KEY)).not.toBeNull();
+
+    fireEvent.click(screen.getByText("stop-session"));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(sessionStorage.getItem(FOCUS_SESSION_KEY)).toBeNull();
+    expect(screen.queryByTestId("focus-mode")).not.toBeInTheDocument();
+  });
+
+  it("restores a valid active Focus session before scheduling its notification", async () => {
+    const api = setupApi([makeTask({ id: "a", level: 1 })]);
+    const session = createFocusSession({
+      taskId: "a",
+      startedAt: NOW.getTime() - 125_000,
+      entryLevel: 2,
+      microTask: "open one paragraph",
+    });
+    sessionStorage.setItem(FOCUS_SESSION_KEY, JSON.stringify(session));
+
+    await renderHome();
+
+    const focus = screen.getByTestId("focus-mode");
+    expect(focus).toHaveAttribute("data-task-id", "a");
+    expect(focus).toHaveAttribute(
+      "data-started-at",
+      String(NOW.getTime() - 125_000),
+    );
+    expect(focus).toHaveAttribute("data-micro-task", "open one paragraph");
+    expect(focus).toHaveAttribute("data-entry-level", "2");
+
+    await advance(60_000);
+    expect(api.callsFor("a")).toBe(0);
+  });
+
+  it("removes corrupted storage and stays on the normal Home screen", async () => {
+    sessionStorage.setItem(FOCUS_SESSION_KEY, "{broken");
+    setupApi([makeTask({ id: "a", level: 1 })]);
+
+    await renderHome();
+
+    expect(sessionStorage.getItem(FOCUS_SESSION_KEY)).toBeNull();
+    expect(screen.queryByTestId("focus-mode")).not.toBeInTheDocument();
+    expect(screen.getByTestId("task-a")).toBeInTheDocument();
+  });
+
+  it("does not overwrite a valid session for another active Task", async () => {
+    setupApi([
+      makeTask({ id: "a", level: 1 }),
+      makeTask({ id: "b", level: 1 }),
+    ]);
+    await renderHome();
+    const existing = createFocusSession({
+      taskId: "a",
+      startedAt: NOW.getTime() - 10_000,
+      entryLevel: 2,
+      microTask: "existing step",
+    });
+    sessionStorage.setItem(FOCUS_SESSION_KEY, JSON.stringify(existing));
+
+    fireEvent.click(screen.getByTestId("task-b"));
+
+    expect(screen.getByTestId("focus-mode")).toHaveAttribute(
+      "data-task-id",
+      "a",
+    );
+    expect(JSON.parse(sessionStorage.getItem(FOCUS_SESSION_KEY))).toEqual(
+      existing,
+    );
   });
 
   it("keeps the current level while the user is editing a reason", async () => {

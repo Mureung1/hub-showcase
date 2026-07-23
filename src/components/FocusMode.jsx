@@ -11,11 +11,25 @@ function formatElapsed(totalSeconds) {
   return `${mm}:${ss}`;
 }
 
+function calculateElapsed(startedAt) {
+  if (!Number.isFinite(startedAt)) return 0;
+  return Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+}
+
 // microTask/entryLevel은 Lv2 모달에서 "이것부터 시작하기"로 진입했을 때만 채워진다.
 // 홈 카드를 직접 클릭해 들어온 기존 경로는 둘 다 null이라 해당 블록을 그대로 생략한다.
-function FocusMode({ taskId, title, microTask = null, entryLevel = null, onComplete, onStop }) {
+function FocusMode({
+  taskId,
+  title,
+  startedAt,
+  microTask = null,
+  entryLevel = null,
+  onSessionCompleted,
+  onComplete,
+  onStop,
+}) {
   const navigate = useNavigate();
-  const [elapsed, setElapsed] = useState(0);
+  const [elapsed, setElapsed] = useState(() => calculateElapsed(startedAt));
   const [errorMessage, setErrorMessage] = useState(null);
   const [phase, setPhase] = useState("focus"); // "focus" | "completed"
   const [feedback, setFeedback] = useState(null); // { value, saved } — 선택/저장 상태 표시용
@@ -26,13 +40,14 @@ function FocusMode({ taskId, title, microTask = null, entryLevel = null, onCompl
     // 완료 화면에서는 집중 시간이 더 이상 흐르지 않도록 멈춘다(Completion에 표시할
     // "집중 시간"이 화면을 보고 있는 동안 계속 늘어나면 안 되므로).
     if (phase !== "focus") return;
+    setElapsed(calculateElapsed(startedAt));
     const intervalId = setInterval(() => {
-      setElapsed((prev) => prev + 1);
+      setElapsed(calculateElapsed(startedAt));
     }, 1000);
 
     // cleanup: 컴포넌트가 사라지거나 완료로 전환될 때 타이머를 반드시 해제
     return () => clearInterval(intervalId);
-  }, [phase]);
+  }, [phase, startedAt]);
 
   async function recordEvent(eventType, extra = {}) {
     await apiFetch(`/api/tasks/${taskId}/events`, {
@@ -58,9 +73,12 @@ function FocusMode({ taskId, title, microTask = null, entryLevel = null, onCompl
     setIsCompleting(true);
     try {
       setErrorMessage(null);
+      const durationSeconds = calculateElapsed(startedAt);
       // entryLevel/microTask는 STEP1에서 이미 넘겨받은 값 그대로 스냅샷으로
       // 저장한다(재생성하지 않음) — History가 이 시점 값을 그대로 보여줘야 한다.
-      await recordEvent("done", { durationSeconds: elapsed, entryLevel, microTask });
+      await recordEvent("done", { durationSeconds, entryLevel, microTask });
+      setElapsed(durationSeconds);
+      onSessionCompleted?.();
       setPhase("completed");
     } catch (err) {
       console.error(err);
