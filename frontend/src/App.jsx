@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ProjectIntro from './components/ProjectIntro.jsx'
 import CertPlanner from './components/CertPlanner.jsx'
+import ProgressDashboard from './components/ProgressDashboard.jsx'
 
 function App() {
   const [view, setView] = useState('planner')
@@ -17,6 +18,13 @@ function App() {
         </button>
         <button
           type="button"
+          className={`app__tab ${view === 'dashboard' ? 'app__tab--active' : ''}`}
+          onClick={() => setView('dashboard')}
+        >
+          진행 상황
+        </button>
+        <button
+          type="button"
           className={`app__tab ${view === 'intro' ? 'app__tab--active' : ''}`}
           onClick={() => setView('intro')}
         >
@@ -24,7 +32,11 @@ function App() {
         </button>
       </nav>
 
-      <div className="app__content">{view === 'planner' ? <CertPlanner /> : <ProjectIntro />}</div>
+      <div className="app__content">
+        {view === 'planner' && <CertPlanner />}
+        {view === 'dashboard' && <ProgressDashboard />}
+        {view === 'intro' && <ProjectIntro />}
+      </div>
     </div>
   )
 }

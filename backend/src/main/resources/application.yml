@@ -9,11 +9,16 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: none
+  kafka:
+    bootstrap-servers: ${DEVPULSE_KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
+    consumer:
+      group-id: devpulse
+      auto-offset-reset: earliest
 
 mybatis:
   configuration:
     map-underscore-to-camel-case: true
 
 devpulse:
-  saramin:
-    api-key: ${DEVPULSE_SARAMIN_API_KEY:}
+  alio:
+    api-key: ${DEVPULSE_ALIO_API_KEY:}

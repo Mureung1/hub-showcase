@@ -174,18 +174,138 @@ Wiki_Home.md FR-3: 직무별 자격증 언급 빈도·강조도를 집계해 랭
 - [x] `./gradlew compileJava` 빌드 성공, 삭제된 QueryDsl 파일에 대한 잔여 참조 없음 (grep 확인)
 - [x] `QuerydslConfig`(JPAQueryFactory 빈)는 FR-5용으로 보존, 스키마(V1/V2) 변경 없음
 
+**알려진 이슈 (verifier 검증 중 발견, 이번 슬라이스 범위 밖)**
+- MyBatis 강조도 집계 쿼리에서 `total_posting_count=0`일 때 division-by-zero(500) 발생 — 사람인 API 실연동(다음 슬라이스) 시 반드시 방어 로직 필요
+
+---
+
+## Issue 9. 진행 상황 대시보드 (FR-5)
+
+**요구사항**
+기획서_v1.md 기능3 / Wiki_Home.md FR-5: 계획한 경로 대비 취득 완료/준비 중/예정 상태를 추적하고, QueryDsl로 동적 필터 조회. Issue 8에서 QueryDsl(`QuerydslConfig`)을 "FR-5용으로 보존"하며 남겨뒀던 것을 이번에 처음 실사용.
+
+**범위 결정** — planner 서브에이전트 검토 후 사용자 승인:
+- User/인증 없음 — `user_id` 컬럼 대신 `certification_progress.certification_id`에 `UNIQUE` 제약을 걸어 암묵적 단일 사용자를 표현 (인증 도입 시 `UNIQUE(user_id, certification_id)`로 확장 가능)
+- "경로" 대신 "자격증" 단위 추적 — Issue 7(경로 DB 저장)이 아직 없어 "계획한 경로" 개념 자체가 DB에 없음. 사용자가 직접 입력하는 `target_date`를 "개인이 세운 계획의 대리물"로 사용
+- 진행 상태는 자기 선언 데이터라 지어낸 데이터 문제가 없음(Issue 6과 다름) — Issue 1~4, Issue 8처럼 DB까지 가는 수직 슬라이스로 진행, 이번 세션에서 DB→API→프론트→검증 전체 완성
+
+**작업 단계**
+- [x] `V3__certification_progress.sql` 마이그레이션 (`UNIQUE(certification_id)`)
+- [x] `CertificationProgress` 엔티티, `ProgressStatus` enum, JPA+QueryDsl 레포지토리(`search` 동적 필터 — status 다중값·targetDate range)
+- [x] `UrgencyLevel`(OVERDUE/IMMINENT/UPCOMING/NONE, Service에서 targetDate 기준 계산, `EmphasisLevel`과 동일 패턴) + `CertificationProgressService`(생성/조회/수정, 중복·미존재 예외)
+- [x] `GET /api/certifications`, `GET/POST/PATCH /api/certification-progress` API, `ApiExceptionHandler`에 404×2/409 매핑 추가, `WebCorsConfig`에 POST/PATCH 허용 추가
+- [x] 프론트 3번째 탭('진행 상황') — `ProgressDashboard`/`ProgressAddForm`/`ProgressList`/`ProgressCard`, `useCertificationOptions`/`useCertificationProgress` 훅. 상태(완료=accent/준비중=accent-warn/예정=중립)와 임박도(지남·임박=danger/여유=warn)를 별도 축으로 분리해 3색 팔레트 재사용
+- [x] JUnit 테스트 — `CertificationProgressServiceTest`(urgency 계산 8종 + 예외 2종), `CertificationProgressQuerydslRepositoryTest`(필터 없음/status/날짜range, 실제 Postgres 대상)
+
+**중요 발견 — `@EnableJpaRepositories` basePackages 버그 수정**
+QueryDsl 커스텀 구현체(`*QuerydslRepositoryImpl`)가 `repository.querydsl` 패키지에 있는데 `@EnableJpaRepositories(basePackages = "...repository.jpa")`가 그 패키지를 스캔 범위에서 빠뜨리고 있었음 — Spring Data가 커스텀 구현체를 못 찾고 메서드명을 파생 쿼리로 잘못 해석해 부팅 실패(`No property 'search' found`). `git show b8fa50f`로 직접 확인 — Issue 1~4 커밋 시점에도 동일하게 `basePackages`가 `repository.jpa`만 지정돼 있었고 구조적으로 이미 존재하던 버그였음. 다만 당시 메서드명이 `findByJobTitle(String jobTitle)`이라 `CertificationMention.jobTitle`과 일치하는 유효한 파생 쿼리로도 해석돼, Spring Data가 커스텀 구현체 대신 자체 생성한 쿼리로 조용히 대체됨(에러 없음, 응답 데이터도 동일 — 차이는 의도한 `fetchJoin` 최적화 없이 N+1 가능성 정도). `search()`라는 파생 쿼리로 해석 불가능한 메서드명을 처음 도입한 이번에 실패로 드러남. Issue 8이 그 구현체를 삭제(MyBatis로 교체)해서 Issue 8 push 시점엔 이미 이 버그의 영향 대상이 없었음 — 실사용자가 체감할 기능 오류는 없었던 것으로 판단. `DevpulseApplication`의 `basePackages`에 `repository.querydsl`을 추가해 해결.
+
+**후속 개선 메모**: `@EnableJpaRepositories` basePackages를 패키지별로 나열하는 대신 상위 패키지(`com.punchman.devpulse.repository`) 통째로 지정하는 방식으로 리팩터링 고려 — 새 QueryDsl 구현체 패키지 추가 시 누락 방지. (MyBatis 매퍼는 `Repository` 마커 인터페이스를 상속하지 않아 이렇게 스캔 범위를 넓혀도 안전)
+
+**완료 기준**
+- [x] `./gradlew test` 전체 26개 테스트 통과 (pathfinder 12 + MyBatis 3 + Progress Service 8 + Progress QueryDsl 3)
+- [x] curl로 POST(성공 201/400/404/409)·PATCH(성공 200/404)·GET(필터 조합) 전부 확인
+- [x] Playwright로 실제 브라우저 구동 — 자격증 추가 → 카드 반영 → 상태 변경(select) → 필터 칩 동작까지 전체 사이클 확인, 콘솔 에러 없음
+- [x] 기존 랭킹 탭(`GET /api/certification?jobTitle=`) 회귀 없음 확인
+- [x] `./gradlew compileJava`, `npm run build` 통과
+
+---
+
+## Issue 10. Kafka 파이프라인 기초 셋업
+
+**요구사항**
+CLAUDE.md/Wiki_Home.md: 채용공고 수집→정규화→집계 파이프라인을 Kafka로 비동기 분리. 사람인 API 승인 대기가 계속돼 외부 API와 무관한 인프라 작업으로 진행.
+
+**범위 결정**
+- Wiki_Home.md 5절 구현 매핑 표를 다시 확인한 결과 Kafka 홉은 "수집→정규화" 구간 1개뿐 (`jobposting.collected`) — 집계(3단계)는 Kafka 없이 `certification_mention`을 MyBatis로 직접 조회(Issue 8에서 이미 구현). "3단계 파이프라인 = 3개 토픽"이 아니라 **토픽 1개**가 맞음
+- 프로듀서 코드는 이번엔 만들지 않음 — 발행 주체가 될 collector(사람인 Feign)가 아직 없음. 토픽 이름 상수(`KafkaTopics`)만 지금 만들어 미래 프로듀서와 지금 컨슈머가 공유
+- 컨슈머 페이로드는 사람인 응답 스키마 미확정이라 `String`(원본 JSON)으로 둠 — Issue 6/9와 같은 원칙(검증 안 된 스키마를 미리 고정하지 않음)
+
+**작업 단계**
+- [x] `docker-compose.yml`에 Kafka 서비스 추가 (KRaft 모드, `apache/kafka:3.8.0`, Zookeeper 불필요)
+- [x] `spring-kafka` 의존성, `application.yml`에 `spring.kafka.bootstrap-servers`/`consumer` 설정 추가
+- [x] `kafka/KafkaTopics.java`(토픽 이름 상수), `kafka/KafkaTopicConfig.java`(`NewTopic` 빈, 앱 기동 시 자동 생성)
+- [x] `normalizer/JobPostingCollectedConsumer.java` — `@KafkaListener` 빈 뼈대, 수신 로그만 남김
+- [x] README.md에 `docker compose up -d`(Postgres+Kafka), `DEVPULSE_KAFKA_BOOTSTRAP_SERVERS` 환경변수 안내 추가
+
+**알려진 이슈 — 호스트 포트 9092 충돌**
+로컬 Windows 환경에서 호스트 포트 9092가 Hyper-V 동적 포트 예약 범위(9061-9160, `netsh interface ipv4 show excludedportrange protocol=tcp`로 확인)와 겹쳐 바인딩이 거부됨(`bind: An attempt was made to access a socket in a way forbidden by its access permissions`) — Postgres가 5433으로 옮긴 것과 동일한 종류의 문제. 호스트 포트를 19092로 리맵해 해결(`DEVPULSE_KAFKA_BOOTSTRAP_SERVERS` 기본값도 `localhost:19092`로 변경). 컨테이너 내부 리스너 자체는 여전히 9092.
+
+**설계 노트 — 리스너 2개로 분리한 이유**
+`KAFKA_ADVERTISED_LISTENERS`를 호스트 접속 주소(`localhost:19092`) 하나로만 두면, `docker exec`로 컨테이너 내부에서 `kafka-topics.sh` 등 CLI 도구를 돌릴 때 그 주소가 컨테이너 안에서는 존재하지 않아 연결이 안 됨(광고 리스너는 브로커가 클라이언트에게 "이후 요청은 이 주소로 하라"고 알려주는 값이라, 호스트용 주소 하나로는 호스트 접속과 컨테이너 내부 접속을 동시에 만족 못 함). PLAINTEXT(호스트용, 19092)와 INTERNAL(컨테이너 내부 도구용, 9094) 두 리스너로 분리해서 둘 다 되게 함.
+
+**알려진 이슈 — 볼륨 미설정**
+Kafka 컨테이너에 볼륨 미설정 — 현재는 빈 컨슈머라 무관하지만, 실제 정규화 파이프라인이 붙으면 컨테이너 재생성 시 토픽/오프셋 초기화로 메시지 유실 가능. 파이프라인 연결 시 볼륨 마운트 추가 필요.
+
+**완료 기준**
+- [x] `docker compose up -d` — Postgres+Kafka 둘 다 정상 기동 (`docker logs devpulse-kafka`에 에러 없음, "Kafka Server started")
+- [x] `./gradlew bootRun` 기동 로그에서 `KafkaAdmin`이 `jobposting.collected` 토픽 자동 생성, 컨슈머가 파티션(`jobposting.collected-0`) 정상 할당받음 확인
+- [x] `docker exec devpulse-kafka kafka-topics.sh --bootstrap-server localhost:9094 --list`로 토픽 존재 재확인
+- [x] `docker exec ... kafka-console-producer.sh`로 테스트 메시지 수동 발행 → 애플리케이션 로그에 컨슈머의 수신 로그 라인이 실제로 찍히는 것까지 확인 (프로듀서 코드 없이 배선 자체가 동작함을 검증하는 유일한 방법)
+- [x] `./gradlew test` 전체 26개 테스트 통과 (Kafka 컨슈머가 포함된 Spring 컨텍스트로 재부팅되는 `@SpringBootTest` 테스트들도 정상 통과 — 컨텍스트 로딩 자체에 문제없음을 추가로 확인)
+- [x] 기존 랭킹/진행 상황 API 회귀 없음 확인
+- [x] `./gradlew compileJava` 빌드 성공
+
+**이번엔 하지 않은 것 (다음 백로그 항목으로 분리)**
+- 프로듀서 코드 (collector 패키지, 사람인 Feign 연동과 함께)
+- 실제 정규화 로직 (룰 기반 매칭 + LLM 배치)
+- 컨슈머 재시도/DLQ/에러 핸들링 정책 (실제 메시지 스키마 확정 후 설계)
+
+---
+
+## Issue 11. ALIO 채용정보 API 연동 (수집 + 원문 저장)
+
+**요구사항**
+사람인 → ALIO(공공기관 채용정보 공개시스템) 완전 전환 확정(사용자 결정). CLAUDE.md/Wiki_Home.md/README.md의 "사람인" 표기 전부 ALIO로 갱신. `POST https://opendata.alio.go.kr/new/odaApiMng/recrutInquiryAjaxList.do` 연동으로 Kafka(Issue 10)가 예고했던 "프로듀서가 나올 때 같이 만든다"를 완성 — 이 프로젝트 최초의 실제 외부 API 연동.
+
+**범위 결정**
+- Issue 6 원칙(검증 안 된 스키마를 지어내지 않음)을 반영: 요청 파라미터(`key`/`pageNo`/`numOfRows`/`recrutPbancTtl`/`ongoingYn`/`pbancBgngYmd`/`pbancEndYmd`)와 응답 필드는 사용자 확인값 그대로 사용, 응답 envelope 구조는 원래 미확인 가정으로 설계
+- **구현 중 셀트 검증으로 실제로 밝혀진 것** (인증키 없이도 이 엔드포인트가 응답한다는 것을 발견해서 직접 호출 가능했음 — 사용자의 실제 키 테스트 전에 상당 부분을 셀프 검증함):
+  - envelope 구조 확정: `{"data": {"result": [...], "resultCode":, "totalCount":, "resultMsg":}, "pathParam": "recrut"}` — 가정이 아니라 실제 확인, 코드에 반영 완료
+  - `pbancBgngYmd`/`pbancEndYmd` 포맷은 `yyyy-MM-dd`가 아니라 `yyyyMMdd`였음(사용자가 말한 스펙과 실제가 다름) — 요청/응답 양쪽 모두 확인, 코드 수정 완료
+  - `recrutPblntSn`은 JSON 숫자형(예: `302988`)이라 `Long`으로 수정, 저장 시 문자열 변환
+  - **미해결 발견**: `recrutPbancTtl`을 요청 파라미터로 보내도 제목 필터링이 안 되는 것으로 관찰됨 — "채용", "모집", "연구원" 등 부분 키워드는 물론 실제 공고의 **전체 제목 그대로**("2026년 직원 채용(3차) 공고")를 보내도 0건. `ongoingYn`/`pbancBgngYmd`/`pbancEndYmd`는 서버 측에서 정상적으로 필터링됨을 직접 확인(totalCount 변화로 검증). 즉 지금 코드에서 jobTitle을 이 파라미터로 보내는 방식은 **거의 항상 0건을 반환할 가능성이 높음** — 정확한 제목 검색 파라미터명을 ALIO 개발문서에서 재확인 필요(사용자에게 공식 문서 접근 권한 있음)
+- 강조도 필드 없음 — "공고 안의 특정 자격증 언급" 단위 속성이라 공고 원문 엔티티 레벨에 자리가 없음(Issue 8 원칙과 동일선상)
+
+**작업 단계**
+- [x] `V4__job_posting.sql`, `domain/JobPosting.java`, `repository/jpa/JobPostingRepository.java`
+- [x] `collector/alio` 패키지 — `AlioRecrutItem`, `AlioResponseParser`(envelope 파싱), `AlioResponseFilter`(ongoingYn+최근 3개월 방어 필터), `AlioFormEncoder`, `AlioRecruitInquiryClient`(vanilla feign-core), `AlioClientConfig`, `AlioJobPostingCollectorService`(오케스트레이션+Kafka 발행)
+- [x] `kafka/JobPostingCollectedEvent`, `POST /api/job-postings/collect?jobTitle=` 온디맨드 트리거
+- [x] `JobPostingCollectedConsumer`를 로그 전용에서 `JobPostingIngestService`(upsert) 호출로 교체
+- [x] `application.yml`의 `devpulse.saramin.api-key` → `devpulse.alio.api-key`(`DEVPULSE_ALIO_API_KEY`)
+- [x] CLAUDE.md/README.md/Wiki_Home.md 사람인→ALIO 갱신 (grep으로 잔여 0건 확인)
+- [x] JUnit 테스트 14종 (`AlioFormEncoderTest` 4, `AlioResponseFilterTest` 6, `AlioResponseParserTest` 3 — 실제 캡처한 응답 원문을 픽스처로 사용, `JobPostingCollectedConsumerTest` 1 — 실제 로컬 Kafka+Postgres로 프로듀서→컨슈머→DB 저장 전체 확인)
+
+**완료 기준**
+- [x] `./gradlew test` 전체 40개 테스트 통과
+- [x] `./gradlew compileJava`, `npm run build`(프론트 변경 없음 확인) 성공
+- [x] 실제 `opendata.alio.go.kr` 호출로 envelope 구조·필드 타입·날짜 포맷을 직접 확인·보정 (인증키 없이도 응답이 와서 셀프 검증 가능했음 — 원래 계획한 "사용자가 결과 공유" 프로토콜보다 더 많은 것을 이번에 직접 검증함)
+- [x] Kafka 프로듀서(`AlioJobPostingCollectorService`)→컨슈머(`JobPostingCollectedConsumer`)→DB(`JobPostingIngestService`) 전체 경로 실제 이벤트로 검증
+- [ ] **사용자 확인 필요**: `recrutPbancTtl` 제목 필터가 실제로 왜 0건만 반환하는지 ALIO 개발문서로 확인 — 정확한 검색 파라미터명이 다를 가능성. 확인 전까지는 `/api/job-postings/collect`가 대부분의 jobTitle에 대해 0건을 수집할 것으로 예상됨(구조적 버그 아님, 파라미터명 재확인 필요)
+- [x] 기존 랭킹/진행 상황 API 회귀 없음 확인 (`job_posting` 테이블 신규 추가만, 기존 스키마 변경 없음)
+
+**이번엔 하지 않은 것**
+- 에러 매핑(Feign 실패 시 502 등), 재시도/DLQ 정책
+- 자격증 추출(정규화, FR-2) — `preferenceDetail`(prefCn 원문) 파싱은 다음 이슈
+- 주기 재수집(`@Scheduled`) — 온디맨드 트리거만
+- `recrutPbancTtl` 대체 파라미터 조사 (사용자 확인 대기)
+
 ---
 
 ## 백로그 (다음 슬라이스 이후, 우선순위순)
 
 | Task | 설명 | 우선순위 | 예상 시점 | 상태 |
 |---|---|---|---|---|
-| 워크넷/사람인 Collector | Feign 클라이언트, 채용공고 실제 수집 | P0 | 다음 슬라이스 | Todo |
-| 자격증 정규화 에이전트 | 룰 기반 1차 매칭 + 애매 항목 LLM 배치 정규화 | P0 | 다음 슬라이스 | Todo |
+| ALIO Collector | Feign 클라이언트, 채용공고 실제 수집 + Kafka 프로듀서/컨슈머 원문 저장. **주의**: MyBatis 집계 쿼리가 `total_posting_count=0`일 때 division-by-zero(500)를 던짐 — 실 데이터 수집 전 방어 로직 필요 (Issue 8 참고) | P0 | - | Done (Issue 11) |
+| `recrutPbancTtl` 검색 파라미터 재확인 | 제목 키워드/전체 제목 모두 0건 반환 — ALIO 개발문서로 정확한 검색 파라미터명 확인 필요 (Issue 11에서 발견) | P0 | 다음 슬라이스 | Todo |
+| 자격증 정규화 에이전트 | 룰 기반 1차 매칭 + 애매 항목 LLM 배치 정규화, `JobPostingCollectedConsumer`(Issue 11)의 `preferenceDetail`(prefCn 원문) 파싱 + 전용 DTO 정의 | P0 | 다음 슬라이스 | Todo |
 | 강조도 분류 (필수/우대/낮음) | 문맥 기반 분류 로직으로 고도화 (현재는 단순 규칙) | P1 | 다음 슬라이스 | Todo |
 | MyBatis 집계 쿼리 | 언급 빈도·강조도 join 집계 → 랭킹 | P1 | - | Done (Issue 8) |
+| Kafka 파이프라인 분리 | `jobposting.collected` 토픽·컨슈머 뼈대, docker-compose 인프라 | P1 | - | Done (Issue 10) |
 | Java 그래프 알고리즘 (경로 최적화) | 선수조건 그래프 구성, 위상정렬, 순환탐지 | P1 | - | Done (Issue 6) |
-| Issue 7. 경로 최적화 DB/서비스/API 연동 | `certification_prerequisite` 테이블, 엔티티, `CertificationPathService`, `CertificationPathController` — pathfinder 결과를 실제 DB 데이터와 연결 | P1 | 다음 슬라이스 | Todo |
-| Kafka 파이프라인 분리 | 수집→정규화→집계 비동기화 (동기 흐름 검증 후) | P2 | 추후 | Todo |
+| 진행 상황 대시보드 (QueryDsl 동적 필터) | 자격증 단위 완료/준비중/예정 추적, QueryDsl 첫 실사용 | P1 | - | Done (Issue 9) |
+| Issue 7. 경로 최적화 DB/서비스/API 연동 | `certification_prerequisite` 테이블, 엔티티, `CertificationPathService`, `CertificationPathController` — pathfinder 결과를 실제 DB 데이터와 연결. 완성되면 Issue 9의 `target_date`를 경로 기반 스케줄과 연동 검토 | P1 | 다음 슬라이스 | Todo |
+| 랭킹 API에 certificationId 추가 | `CertificationRankingResponse`에 id 노출 — 랭킹 카드 → 진행 상황 크로스탭 "추적하기" 연동의 선행 조건 (Issue 9에서 범위 밖으로 분리) | P2 | 추후 | Todo |
+| 컨슈머 재시도/DLQ 정책 | `JobPostingCollectedConsumer` 에러 핸들링 — 실제 메시지 스키마 확정 후 설계 (Issue 10에서 범위 밖으로 분리) | P2 | 추후 | Todo |
 | 통합 테스트 · 예외처리 고도화 | 전체 파이프라인 e2e 확인 | P2 | 추후 | Todo |
 | 최종 문서화 · 데모 준비 | README/위키 최신화, 발표 자료 | P2 | 추후 | Todo |

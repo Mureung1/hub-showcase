@@ -11,5 +11,24 @@ services:
     volumes:
       - devpulse-postgres-data:/var/lib/postgresql/data
 
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: devpulse-kafka
+    ports:
+      # 호스트 9092는 Windows Hyper-V 동적 포트 예약 범위(9061-9160)와 겹쳐 바인딩이 거부됨 — 19092로 리맵 (Postgres가 5433으로 옮긴 것과 동일한 이유)
+      - "19092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      # INTERNAL 리스너: docker exec로 컨테이너 안에서 kafka-topics.sh 등 CLI 도구를 쓸 때용.
+      # PLAINTEXT(호스트 앱용) 광고 주소는 컨테이너 내부에서 안 열려서, 같은 주소 하나로 호스트/컨테이너 내부 접속을 동시에 못 만족함.
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,INTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:19092,INTERNAL://localhost:9094
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
 volumes:
   devpulse-postgres-data:

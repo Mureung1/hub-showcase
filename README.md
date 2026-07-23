@@ -23,20 +23,26 @@
   - MyBatis — 자격증 언급 빈도·강조도 집계
   - Java 그래프 알고리즘 — 자격증 취득 경로 최적화 (위상 정렬)
   - Kafka — 공고 수집→정규화→집계 파이프라인 비동기 분리
-  - Feign — 사람인 API, 무료 LLM API 호출
+  - Feign — ALIO Open API, 무료 LLM API 호출
 - **DB**: PostgreSQL, Flyway
-- **데이터 소스**: 사람인 Open API — 커뮤니티 게시글 크롤링은 하지 않음
+- **데이터 소스**: ALIO(공공기관 채용정보 공개시스템) Open API — 커뮤니티 게시글 크롤링은 하지 않음
 
 ## 실행 방법
+
+### 인프라 (PostgreSQL, Kafka)
+```bash
+docker compose up -d
+```
 
 ### Backend
 ```bash
 cd backend
 ./gradlew bootRun
 ```
-API 키는 환경변수로 주입:
+환경변수로 주입 (기본값은 로컬 docker-compose 기준):
 ```bash
-export DEVPULSE_SARAMIN_API_KEY=your_key
+export DEVPULSE_ALIO_API_KEY=your_key
+export DEVPULSE_KAFKA_BOOTSTRAP_SERVERS=localhost:19092
 ```
 
 ### Frontend
