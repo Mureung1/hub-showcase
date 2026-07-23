@@ -1,19 +1,20 @@
 # CI/CD 파이프라인
 
-> **상태: CI 재설치·실물 확인 대기, Vercel Production Branch·Preview 배포 확인 (2026-07-20).** `main`의 `verify` required check 설정은 남아 있지만 `0bb4e6e`에서 `ci.yml`이 추적 제거되어 현재 push에는 check를 생성할 워크플로가 없다. Vercel Production은 `N166_진현지`를 배포하며, 비프로덕션 `t17-preview-t19`의 deployment `5516596997`도 `Preview / success`다. CI 재추적은 구조 변경 승인 대기이고 Production·Preview의 JavaScript 후 S0 실물 확인도 남아 있다.
+> **상태: T17 배포 기반 완료 (2026-07-21), 공유 저장소 CI 미사용 결정 반영 (2026-07-22).** Node·로컬 전체 검증, Vercel Git 연동, Production Branch `N166_진현지`, 비프로덕션 Preview와 두 환경의 S0 실물 확인을 완료했다. `ci.yml`은 사용자 지시에 따라 로컬 전용으로 유지하고 공유 저장소에는 추적·업로드하지 않는다. `main`의 `verify` required check 설정에는 현재 producer가 없으므로 원격 CI 강제 상태로 표현하지 않는다.
 
 ## 전체 흐름
 
 ```
-로컬 커밋 (훅: 일괄 스테이징 차단 + oxlint)
-   → push → GitHub Actions CI (린트 → 클라이언트+API 타입체크 → 빌드 → 테스트)
-      → PR (과제 템플릿 + 리뷰)
-         → 머지 → Vercel 자동 배포 (Production 활성, Preview 실물 검증 대기)
+로컬 변경
+   → 관련 테스트 + 전체 test·lint·build·API 타입검사
+      → 로컬 커밋 훅 (일괄 스테이징 차단 + oxlint)
+         → push → Vercel Git 자동 배포
+            → 비프로덕션 Preview 검토 / Production Branch 배포
 ```
 
-목표 검증 구조는 세 겹이다: **로컬 훅**(커밋 순간) → **CI**(push/PR마다, 깨끗한 환경에서 재현) → **배포 전 프리뷰**(머지 전 실물 확인). 현재 로컬 훅과 Vercel Production/Preview 자동 배포는 동작한다. 과거 CI run은 성공했지만 현재 기본·Preview 브랜치 커밋 트리에는 `ci.yml`이 없으며 SHA `86d5b9f`에도 Actions run은 0건이다. 따라서 아래 CI 표는 재설치할 목표 계약이고, 설치 완료로 표현하지 않는다.
+현재 검증 구조는 **로컬 관련·전체 게이트** → **로컬 훅** → **Vercel Preview 실물 확인**이다. Vercel Production/Preview 자동 배포는 동작한다. 과거 GitHub Actions run은 성공했지만 현재 기본·Preview 브랜치 커밋 트리에는 `ci.yml`이 없으며, 사용자 결정에 따라 이를 다시 추적하지 않는다. 따라서 아래 표는 로컬에 보존된 CI 설계 참고일 뿐 현재 원격 강제 상태가 아니다.
 
-## CI 설계 — GitHub Actions (`.github/workflows/ci.yml`, 재설치 승인 대기)
+## CI 설계 참고 — GitHub Actions (`.github/workflows/ci.yml`, 로컬 전용)
 
 | 항목 | 내용 |
 |---|---|
@@ -21,11 +22,11 @@
 | 런타임 | Vite 8 호환 Node(`^20.19.0 || >=22.12.0`)를 저장소와 CI에서 같은 버전으로 고정 |
 | 단계 | `npm ci` → `npm run lint` → 클라이언트+API 타입검사 → `npm run build` → `npm test` |
 | API 경계 | T18에서 `tsconfig.api.json`과 API 핸들러 테스트를 추가했다. 재설치할 워크플로에는 `npm run typecheck:api`를 명시적으로 포함해야 함 |
-| 통과 기준 | 전 단계 성공 + 대상 브랜치의 required status check 지정. 워크플로 파일 존재만으로 원격 강제라고 부르지 않음 |
+| 통과 기준 | 원격 도입을 별도로 승인한 경우에만 전 단계 성공 + 대상 브랜치의 required status check를 함께 확인 |
 
-기존 `auto-merge.yml`(과제 제공 워크플로 — 매일 13:00 UTC에 비-main 타겟 PR 자동 머지)은 건드리지 않는다. CI를 도입할 때 required status check가 자동 머지에도 적용되는지 확인한다. 워크플로 추가는 원격 동작을 바꾸는 구조 변경이므로 별도 제안·승인 후 수행하고, 실제 GitHub Actions 성공과 브랜치 규칙을 확인한 뒤에만 설치 완료로 기록한다.
+기존 `auto-merge.yml`(과제 제공 워크플로 — 매일 13:00 UTC에 비-main 타겟 PR 자동 머지)은 건드리지 않는다. 향후 사용자가 원격 CI 도입을 새로 승인할 때만 required status check와 자동 머지 상호작용을 다시 확인한다. 실제 GitHub Actions 성공과 브랜치 규칙을 확인하기 전에는 설치 완료로 기록하지 않는다.
 
-현재 로컬 `ci.yml`은 `.gitignore`의 `.github/workflows/` 규칙에 의해 제외된다. 재설치 승인 시 해당 제외 규칙을 제거하고 `ci.yml`만 명시적으로 추적한 뒤 비프로덕션 push에서 `verify` 성공을 확인한다.
+현재 로컬 `ci.yml`은 `.gitignore`의 `.github/workflows/ci.yml` 규칙에 의해 제외된다. 이 상태가 현재 사용자 결정이며 T17 완료를 되돌리는 대기 항목이 아니다.
 
 ## 브랜치 · PR (과제 컨벤션)
 
@@ -48,12 +49,12 @@
 ### T17 실행 체크리스트 (그 시점에 이 표대로)
 
 1. Node 버전을 저장소에 고정하고 깨끗한 환경에서 `npm ci`·전체 검증 재현
-2. 별도 승인 후 CI 추가, 실제 성공 실행과 required status check·자동 머지 관계 확인
+2. 공유 저장소 CI는 사용자 지시에 따라 적용 제외. 로컬 전용 파일·전체 검증 절차와 `verify` producer 부재 제약을 기록
 3. Vercel에 GitHub 저장소 연결, 프레임워크 Vite 자동 감지 확인
-4. Production Branch 지정 + 프리뷰 배포 동작 확인 (목 상태 1차 배포 — CHECKLIST T17)
+4. Production Branch 지정 + 프리뷰 배포 동작과 두 환경의 S0 실물 확인 (CHECKLIST T17 완료)
 5. `/api/interaction`의 same-origin 요청과 `waitUntil()` background write를 Preview에서 검증하고 보존 기간·집계 query를 기록(T24). 원문·후보·사용자/세션 ID는 저장하지 않음
 6. `GEMINI_API_KEY` 환경변수 등록은 T20(실 provider 전환) 시점에 Preview부터 수행. T18 provider 비종속 프록시 기반에는 키를 요구하지 않음
-7. 배포된 프리뷰 URL을 PR에 첨부해 리뷰어가 실물을 확인하고, COMPETITIVE_VALIDATION의 T22 짧은 사람 대상 비교는 같은 버전의 고정 URL에서만 수행. T20 실 provider 품질 진행 전 무참여자 모델 벤치마크는 T25 통과 콘텐츠 버전을 별도로 고정
+7. 배포된 프리뷰 URL을 PR에 첨부해 리뷰어가 실물을 확인한다. T22는 기술 배포와 분리한 후속 외부 가치 검증이며, 향후 재개할 때만 승인된 공개 Production SHA 동결 방식으로 같은 버전을 유지한다. T20 실 provider 품질 진행 전 무참여자 모델 벤치마크는 T25 통과 콘텐츠 버전을 별도로 고정
 
 ## 이후 단계 (MVP Out)
 

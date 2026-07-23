@@ -14,6 +14,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:smoke": "tsx scripts/db-smoke.ts",
     "db:smoke:interaction": "tsx scripts/interaction-smoke.ts",
+    "harness:check": "node scripts/harness-state-check.mjs",
     "retrieval:eval": "tsx scripts/retrieval-eval.ts",
     "retrieval:coverage:review": "node --import tsx scripts/retrieval-coverage-review.ts --write",
     "retrieval:coverage:review:check": "node --import tsx scripts/retrieval-coverage-review.ts --check",

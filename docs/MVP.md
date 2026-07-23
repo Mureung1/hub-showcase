@@ -54,7 +54,7 @@
 
 신규 구현 항목: CHECKLIST T25~T33에 T34(카드별 guided context 흐름) · T35(검수 예시 retrieval offline 실험)을 추가한다.
 
-## MVP 완료 기준 (Definition of Done)
+## 기술 MVP 완료 기준 (Definition of Done)
 
 - 4개 시나리오 각각에서 "방식 → 관계 → 상황 카드 → 질문 1개(또는 바로 기본 초안/직접 설명) → 톤 3개 → 복사"가 모바일에서 동작한다. 기본 초안 결과는 같은 카드 context로, guided 실패 fallback은 같은 answer로 AI 재시작할 수 있고 더 구체적일 때만 직접 설명으로 이동한다.
 - API 실패 시 재시도 UI가 노출됨 (목 단계에서는 강제 실패 케이스로 확인)
@@ -62,8 +62,13 @@
 - `/api/generate`가 브라우저에 provider 키를 노출하지 않고 guided/manual AI의 단일 호출→구조화 검증을 수행하며, 카드 질문 ID를 서버 정본으로 해석함
 - DB migration과 서버 데이터 계층 테스트가 통과하고, T30 핵심 네 테이블과 `retrieval_examples`에 허용 필드만 존재하며 사용자 원문·생성 문구·query vector·영구 사용자 ID가 저장되지 않음
 - 실 AI 입력 화면에서 외부 provider 전송과 당시 보존 조건이 안내됨
-- `RESEARCH_REVIEW.md`의 문헌 근거·과해석 경계를 반영하고, T25 대표 12문구 뒤 `COMPETITIVE_VALIDATION.md`의 무참여자 모델 벤치마크가 **`Provisional Go`를 통과함**. 이 판정은 provider 비종속 서버·DB 기반 구현을 막지 않으며, Iterate/No-go면 T20 실 provider 품질 진행과 T22~T23 출시 판정을 보류함
-- T22의 긴 인터뷰 없는 외부 과업에서 평소 ChatGPT/Gemini와 유효 짝비교를 완료한 대학생 5명을 확보하고 카드 4개 중 3개 이상과 실 AI 1개 무도움 완료·시간·개인정보 이해·“내 말 같다”를 기록함 (PRODUCT_REVIEW)
-- 카드 경로는 T22에서 평소 쓰는 ChatGPT/Gemini와 비교하고, 실 AI 경로는 답냥이 단독 사용성을 검증해 **최종 `Go`를 통과함**. Iterate/No-go면 T23·출시를 보류하고, 그 전에는 범용 AI 대비 우월성을 주장하지 않음
+- `RESEARCH_REVIEW.md`의 문헌 근거·과해석 경계를 반영하고, T25 대표 12문구 뒤 `COMPETITIVE_VALIDATION.md`의 무참여자 모델 벤치마크가 **`Provisional Go`를 통과함**. 이 판정은 실 provider 품질 진행 기준이며 실제 사용자의 속도·선택·이해를 증명하지 않음
 - `/api/interaction`과 `interaction_events`가 5개 allowlist event만 best-effort 기록하고 원문·후보·수정문·IP·user/session/device ID를 받거나 저장하지 않음 (SPEC 7장)
+- T23에서 공개 Production·실기기·카카오톡 인앱 복사 폴백을 기술 검증하고, T31에서 guided context·Three.js fallback·server-only provider/DB·migration·원문 비저장을 통합 재검증함
 - 테스트 통과 (AGENTS.md: 테스트 없이 완료 선언 금지)
+
+## 후속 외부 가치 검증 (T22)
+
+- 평소 ChatGPT/Gemini와 유효 짝비교를 완료한 대학생 5명의 카드 4개 중 3개 이상과 실 AI 1개 무도움 완료·시간·개인정보 이해·“내 말 같다”를 기록한다.
+- 카드 경로는 평소 사용 도구와 비교하고 실 AI 경로는 답냥이 단독 사용성을 검증해 `Go | Iterate | No-go`를 판정한다.
+- 2026-07-23 사용자 결정으로 현재 실행하지 않으며 판정은 `Pending`이다. T23·T31 기술 완료를 막지 않지만, 실행 전에는 사용자 검증 완료·범용 AI 대비 우위·실제 선택을 주장하지 않는다.
