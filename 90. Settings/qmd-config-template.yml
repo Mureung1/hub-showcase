@@ -2,9 +2,12 @@
 # Actual location qmd reads: ~/.config/qmd/index.yml
 # This file is version-controlled in the vault as a template / documentation copy.
 #
-# Usage:
-#   cp "90. Settings/qmd-config-template.yml" ~/.config/qmd/index.yml
-#   qmd update && qmd embed
+# Windows installation:
+#   npm install -g @tobilu/qmd
+#   New-Item -ItemType Directory -Force "$HOME/.config/qmd"
+#   Copy-Item "90. Settings/qmd-config-template.yml" "$HOME/.config/qmd/index.yml"
+#   qmd update
+#   qmd embed
 #
 # Korean embedding model (set in ~/.zshrc):
 #   export QMD_EMBED_MODEL="hf:Qwen/Qwen3-Embedding-0.6B-GGUF/Qwen3-Embedding-0.6B-Q8_0.gguf"
@@ -21,7 +24,7 @@ global_context: |
 
 collections:
   wiki:
-    path: C:/Users/kym70/OneDrive/Desktop/cmds-llm-wiki-work/cmds-llm-wiki/20. Wiki
+    path: C:/Users/user/Desktop/cmds-llm-wiki/20. Wiki
     pattern: "**/*.md"
     context:
       "/": "LLM-maintained wiki pages. The primary synthesized knowledge layer."
@@ -31,7 +34,7 @@ collections:
       "/24. Maps": "Map of Content (MOC) — topic-based indexes."
 
   raw_sources:
-    path: C:/Users/kym70/OneDrive/Desktop/cmds-llm-wiki-work/cmds-llm-wiki/10. Raw Sources
+    path: C:/Users/user/Desktop/cmds-llm-wiki/10. Raw Sources
     pattern: "**/*.md"
     context:
       "/": "Immutable source documents — Wiki references these via `source:` frontmatter."
@@ -42,7 +45,12 @@ collections:
       "/15. Clippings": "Short snippets and excerpts."
 
   queries:
-    path: C:/Users/kym70/OneDrive/Desktop/cmds-llm-wiki-work/cmds-llm-wiki/30. Queries
+    path: C:/Users/user/Desktop/cmds-llm-wiki/30. Queries
     pattern: "**/*.md"
     context:
       "/": "Synthesized query results — compounding wiki artifacts per Karpathy's pattern."
+
+models:
+  embed: hf:Qwen/Qwen3-Embedding-0.6B-GGUF/Qwen3-Embedding-0.6B-Q8_0.gguf
+  generate: hf:tobil/qmd-query-expansion-1.7B-gguf/qmd-query-expansion-1.7B-q4_k_m.gguf
+  rerank: hf:ggml-org/Qwen3-Reranker-0.6B-Q8_0-GGUF/qwen3-reranker-0.6b-q8_0.gguf
