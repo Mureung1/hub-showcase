@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Today, { type TodayState } from './Today'
 import type { TodayArticle } from '../api/types'
 
@@ -30,6 +30,7 @@ function makeTodayArticle(fields: {
   sourceName: string
   officialExcerpt: string
   readingTimeMinutes: number
+  thumbnailUrl?: string | null
 }): TodayArticle {
   return {
     id: fields.id,
@@ -42,7 +43,7 @@ function makeTodayArticle(fields: {
     interestTags: [{ id: 'interest-1', name: 'IT·개발' }],
     officialExcerpt: fields.officialExcerpt,
     translatedExcerpt: null,
-    thumbnailUrl: null,
+    thumbnailUrl: fields.thumbnailUrl ?? null,
     readingTimeMinutes: fields.readingTimeMinutes,
     language: 'ko',
     accessType: 'free',
@@ -64,6 +65,7 @@ const ARTICLE_B = makeTodayArticle({
   sourceName: 'Toss Tech',
   officialExcerpt: 'B 글의 소개문',
   readingTimeMinutes: 8,
+  thumbnailUrl: 'https://example.com/thumb-b.jpg',
 })
 const ARTICLE_C = makeTodayArticle({
   id: '40000000-0000-0000-0000-000000000003',
@@ -119,7 +121,7 @@ describe('Today', () => {
       />,
     )
 
-    await userEvent.click(screen.getByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(screen.getByRole('button', { name: /읽고 미션 받기/ }))
 
     expect(onOpenArticle).toHaveBeenCalledExactlyOnceWith(ARTICLE_A.id)
   })
@@ -146,7 +148,7 @@ describe('Today', () => {
     )
 
     await userEvent.click(screen.getByRole('button', { name: new RegExp(ARTICLE_B.title) }))
-    await userEvent.click(screen.getByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(screen.getByRole('button', { name: /읽고 미션 받기/ }))
 
     expect(onOpenArticle).toHaveBeenCalledExactlyOnceWith(ARTICLE_B.id)
   })
@@ -160,9 +162,9 @@ describe('Today', () => {
 
     await userEvent.click(screen.getByRole('button', { name: new RegExp(ARTICLE_B.title) }))
 
-    const compactButtons = within(container.querySelector('.today-more-list') as HTMLElement).getAllByRole(
-      'button',
-    )
+    const compactButtons = within(
+      container.querySelector('.today-recommendation-list') as HTMLElement,
+    ).getAllByRole('button')
     expect(compactButtons).toHaveLength(2)
     expect(compactButtons[0]).toHaveAccessibleName(new RegExp(ARTICLE_A.title))
     expect(compactButtons[1]).toHaveAccessibleName(new RegExp(ARTICLE_C.title))
@@ -197,9 +199,9 @@ describe('Today', () => {
     const featureCard = screen.getAllByRole('article')[0]
     expect(featureCard).toHaveTextContent(ARTICLE_C.title)
 
-    const compactButtons = within(container.querySelector('.today-more-list') as HTMLElement).getAllByRole(
-      'button',
-    )
+    const compactButtons = within(
+      container.querySelector('.today-recommendation-list') as HTMLElement,
+    ).getAllByRole('button')
     expect(compactButtons).toHaveLength(2)
     expect(compactButtons[0]).toHaveAccessibleName(new RegExp(ARTICLE_A.title))
     expect(compactButtons[1]).toHaveAccessibleName(new RegExp(ARTICLE_B.title))
@@ -286,7 +288,9 @@ describe('Today', () => {
     )
     expect(screen.getAllByRole('article')).toHaveLength(2)
     expect(
-      within(container.querySelector('.today-more-list') as HTMLElement).getAllByRole('button'),
+      within(container.querySelector('.today-recommendation-list') as HTMLElement).getAllByRole(
+        'button',
+      ),
     ).toHaveLength(1)
   })
 
@@ -298,7 +302,127 @@ describe('Today', () => {
     )
     expect(screen.getAllByRole('article')).toHaveLength(3)
     expect(
-      within(container.querySelector('.today-more-list') as HTMLElement).getAllByRole('button'),
+      within(container.querySelector('.today-recommendation-list') as HTMLElement).getAllByRole(
+        'button',
+      ),
     ).toHaveLength(2)
+  })
+
+  it('shows a real thumbnail image when thumbnailUrl is present', () => {
+    const { container } = render(
+      <Today state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B], emptyStateMessage: null }} />,
+    )
+    const image = container.querySelector(
+      '.today-recommendation-thumbnail',
+    ) as HTMLImageElement | null
+    expect(image?.tagName).toBe('IMG')
+    expect(image?.src).toBe(ARTICLE_B.thumbnailUrl)
+  })
+
+  it('renders no thumbnail element or reserved space when thumbnailUrl is null', () => {
+    const { container } = render(
+      <Today state={{ status: 'success', items: [ARTICLE_A, ARTICLE_C], emptyStateMessage: null }} />,
+    )
+    expect(container.querySelector('.today-recommendation-thumbnail')).not.toBeInTheDocument()
+    expect(
+      container.querySelector('.today-recommendation-card--with-thumbnail'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not squish the interest badge when sourceName is long', () => {
+    const longSourceArticle = makeTodayArticle({
+      id: '40000000-0000-0000-0000-000000000004',
+      title: 'D 글',
+      sourceName: '우아한형제들 기술블로그',
+      officialExcerpt: 'D 글의 소개문',
+      readingTimeMinutes: 4,
+    })
+    const { container } = render(
+      <Today
+        state={{ status: 'success', items: [ARTICLE_A, longSourceArticle], emptyStateMessage: null }}
+      />,
+    )
+
+    const recommendation = within(
+      container.querySelector('.today-recommendation-list') as HTMLElement,
+    )
+    expect(recommendation.getByText('우아한형제들 기술블로그')).toBeInTheDocument()
+    expect(recommendation.getByText('IT·개발')).toBeInTheDocument()
+  })
+
+  it('keeps the full title text in the DOM for long recommendation titles', () => {
+    const longTitleArticle = makeTodayArticle({
+      id: '40000000-0000-0000-0000-000000000004',
+      title: '아주 길고 긴 추천 글 제목입니다 아주 길고 긴 추천 글 제목입니다 아주 길고 긴 추천 글 제목입니다',
+      sourceName: '요즘IT',
+      officialExcerpt: 'D 글의 소개문',
+      readingTimeMinutes: 4,
+    })
+    render(
+      <Today
+        state={{ status: 'success', items: [ARTICLE_A, longTitleArticle], emptyStateMessage: null }}
+      />,
+    )
+
+    expect(screen.getByText(longTitleArticle.title)).toBeInTheDocument()
+  })
+
+  it('still selects a recommended article as the feature when it has no thumbnail', async () => {
+    render(
+      <ControlledToday
+        state={{ status: 'success', items: [ARTICLE_A, ARTICLE_C], emptyStateMessage: null }}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(ARTICLE_C.title) }))
+
+    expect(screen.getAllByRole('article')[0]).toHaveTextContent(ARTICLE_C.title)
+  })
+
+  it('shows the settings-less header with the 오늘의 깸 title', () => {
+    render(<Today state={{ status: 'success', items: [ARTICLE_A], emptyStateMessage: null }} />)
+    expect(screen.getByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /설정/ })).not.toBeInTheDocument()
+  })
+
+  it('uses mascot-my.png as a decorative header image', () => {
+    render(<Today state={{ status: 'success', items: [ARTICLE_A], emptyStateMessage: null }} />)
+    const mascot = document.querySelector('img[alt=""]')
+    expect(mascot).not.toBeNull()
+    expect(mascot?.getAttribute('src')).toContain('mascot-my')
+  })
+
+  it('shows the 나의 깸 tab and calls onGoToMyGgaem when clicked', async () => {
+    const onGoToMyGgaem = vi.fn()
+    render(
+      <Today
+        state={{ status: 'success', items: [ARTICLE_A], emptyStateMessage: null }}
+        onGoToMyGgaem={onGoToMyGgaem}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: '나의 깸' }))
+
+    expect(onGoToMyGgaem).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows 오늘의 깸 as the active bottom tab label', () => {
+    render(<Today state={{ status: 'success', items: [ARTICLE_A], emptyStateMessage: null }} />)
+    expect(screen.getByRole('button', { name: '오늘의 깸' })).toBeInTheDocument()
+  })
+
+  describe('with the system time fixed at 2026-07-21T16:00:00Z (KST 2026-07-22 Wednesday)', () => {
+    beforeEach(() => {
+      vi.setSystemTime(new Date('2026-07-21T16:00:00Z'))
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('shows the real current KST date in the "7월 22일 수요일" format', () => {
+      render(<Today state={{ status: 'success', items: [ARTICLE_A], emptyStateMessage: null }} />)
+      expect(screen.getByText('7월 22일 수요일')).toBeInTheDocument()
+    })
   })
 })

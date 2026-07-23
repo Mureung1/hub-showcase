@@ -104,6 +104,21 @@ describe('App startup', () => {
     vi.mocked(api.getInterests).mockReset()
   })
 
+  it('shows the common loading screen while initializing', async () => {
+    let resolveUserInterests: ((value: { hasCompletedOnboarding: boolean; interests: [] }) => void) | undefined
+    vi.mocked(api.getUserInterests).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveUserInterests = resolve
+        }),
+    )
+    render(<App />)
+
+    expect(await screen.findByRole('status')).toHaveTextContent('깸을 준비하고 있어요')
+
+    resolveUserInterests?.({ hasCompletedOnboarding: true, interests: [] })
+  })
+
   it('shows onboarding when hasCompletedOnboarding is false', async () => {
     vi.mocked(api.getUserInterests).mockResolvedValue({
       hasCompletedOnboarding: false,
@@ -129,7 +144,108 @@ describe('App startup', () => {
       interests: [],
     })
     render(<App />)
-    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
+  })
+
+  it('shows an error without infinite loading when initialization fails', async () => {
+    vi.mocked(api.getUserInterests).mockRejectedValue(new Error('boom'))
+    render(<App />)
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+})
+
+describe('Onboarding to Today content loading flow', () => {
+  const INTEREST: import('./api/types').Interest = {
+    id: 'interest-1',
+    name: 'IT·개발',
+    displayOrder: 1,
+    launchStatus: 'active',
+    riskLevel: 'low',
+    emptyStateMessage: null,
+  }
+
+  beforeEach(() => {
+    vi.mocked(api.getUserInterests).mockReset()
+    vi.mocked(api.getInterests).mockReset()
+    vi.mocked(api.replaceUserInterests).mockReset()
+    vi.mocked(api.getTodayArticles).mockReset()
+    vi.mocked(api.getUserInterests).mockResolvedValue({
+      hasCompletedOnboarding: false,
+      interests: [],
+    })
+    vi.mocked(api.getInterests).mockResolvedValue([INTEREST])
+  })
+
+  it('shows the content loading screen while the today fetch for an existing user is in flight', async () => {
+    vi.mocked(api.getUserInterests).mockReset()
+    vi.mocked(api.getUserInterests).mockResolvedValue({
+      hasCompletedOnboarding: true,
+      interests: [],
+    })
+    let resolveToday: ((value: { items: []; emptyStateMessage: null }) => void) | undefined
+    vi.mocked(api.getTodayArticles).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveToday = resolve
+        }),
+    )
+    render(<App />)
+
+    expect(await screen.findByText('관심사에 맞는 오늘의 글을 고르고 있어요')).toBeInTheDocument()
+
+    resolveToday?.({ items: [], emptyStateMessage: null })
+    expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
+  })
+
+  it('shows the content loading screen immediately on CTA click, before the save request resolves', async () => {
+    let resolveSave: ((value: { interestIds: string[] }) => void) | undefined
+    vi.mocked(api.replaceUserInterests).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve
+        }),
+    )
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'IT·개발' }))
+    await userEvent.click(screen.getByRole('button', { name: /깸 시작하기/ }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('관심사에 맞는 오늘의 글을 고르고 있어요')
+
+    resolveSave?.({ interestIds: [INTEREST.id] })
+  })
+
+  it('keeps showing the same content loading screen through save success and the today fetch', async () => {
+    vi.mocked(api.replaceUserInterests).mockResolvedValue({ interestIds: [INTEREST.id] })
+    let resolveToday: ((value: { items: []; emptyStateMessage: null }) => void) | undefined
+    vi.mocked(api.getTodayArticles).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveToday = resolve
+        }),
+    )
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'IT·개발' }))
+    await userEvent.click(screen.getByRole('button', { name: /깸 시작하기/ }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('관심사에 맞는 오늘의 글을 고르고 있어요')
+
+    resolveToday?.({ items: [], emptyStateMessage: null })
+    expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
+  })
+
+  it('returns to onboarding with the selection kept and does not fetch today content when saving fails', async () => {
+    vi.mocked(api.replaceUserInterests).mockRejectedValue(new Error('network'))
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'IT·개발' }))
+    await userEvent.click(screen.getByRole('button', { name: /깸 시작하기/ }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/다시 시도/)
+    expect(screen.getByRole('button', { name: 'IT·개발' })).toHaveAttribute('aria-pressed', 'true')
+    expect(api.getTodayArticles).not.toHaveBeenCalled()
   })
 })
 
@@ -148,11 +264,29 @@ describe('Today article intro flow', () => {
     })
   })
 
+  it('shows the common loading screen while ArticleDetail is being fetched', async () => {
+    let resolveArticleDetail: ((value: ArticleDetail) => void) | undefined
+    vi.mocked(api.getArticleDetail).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveArticleDetail = resolve
+        }),
+    )
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
+
+    expect(await screen.findByText('오늘의 글을 불러오고 있어요')).toBeInTheDocument()
+
+    resolveArticleDetail?.(ARTICLE_A_DETAIL)
+    expect(await screen.findByText(ARTICLE_A_DETAIL.title)).toBeInTheDocument()
+  })
+
   it('calls getArticleDetail with the feature article id when its CTA is clicked', async () => {
     vi.mocked(api.getArticleDetail).mockResolvedValue(ARTICLE_A_DETAIL)
     render(<App />)
 
-    await userEvent.click(await screen.findByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
 
     expect(api.getArticleDetail).toHaveBeenCalledExactlyOnceWith(ARTICLE_A.id)
   })
@@ -166,7 +300,7 @@ describe('Today article intro flow', () => {
     render(<App />)
 
     await userEvent.click(await screen.findByRole('button', { name: new RegExp(ARTICLE_B.title) }))
-    await userEvent.click(await screen.findByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
 
     expect(api.getArticleDetail).toHaveBeenCalledExactlyOnceWith(ARTICLE_B.id)
   })
@@ -175,12 +309,12 @@ describe('Today article intro flow', () => {
     vi.mocked(api.getArticleDetail).mockResolvedValue(ARTICLE_A_DETAIL)
     render(<App />)
 
-    await userEvent.click(await screen.findByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
     expect(await screen.findByText(ARTICLE_A_DETAIL.title)).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: /뒤로가기/ }))
 
-    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
     expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
   })
 
@@ -188,7 +322,7 @@ describe('Today article intro flow', () => {
     vi.mocked(api.getArticleDetail).mockRejectedValue(new Error('boom'))
     render(<App />)
 
-    await userEvent.click(await screen.findByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
 
     expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /다시 시도/ })).toBeInTheDocument()
@@ -199,7 +333,7 @@ describe('Today article intro flow', () => {
     vi.mocked(api.getArticleDetail).mockResolvedValueOnce(ARTICLE_A_DETAIL)
     render(<App />)
 
-    await userEvent.click(await screen.findByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
     await screen.findByRole('alert')
     await userEvent.click(screen.getByRole('button', { name: /다시 시도/ }))
 
@@ -208,7 +342,7 @@ describe('Today article intro flow', () => {
     expect(api.getArticleDetail).toHaveBeenNthCalledWith(2, ARTICLE_A.id)
   })
 
-  it('completes the full flow: select feature, open article, open original, start mission, change mission, save, and return to today', async () => {
+  it('completes the full flow: select feature, open article, open original, start mission, change mission, save, and go to MyGgaem', async () => {
     vi.mocked(api.getTodayArticles).mockResolvedValue({
       items: [ARTICLE_A, ARTICLE_B],
       emptyStateMessage: null,
@@ -226,29 +360,36 @@ describe('Today article intro flow', () => {
     })
     render(<App />)
 
-    await userEvent.click(await screen.findByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
 
     expect(await screen.findByText(ARTICLE_A_DETAIL.title)).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('link', { name: /원문 읽으러 가기/ }))
-    await userEvent.click(await screen.findByRole('button', { name: /미션 시작하기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /깸 작성하기/ }))
 
-    await userEvent.selectOptions(screen.getByRole('combobox'), 'rebuttal')
+    await userEvent.click(screen.getByRole('button', { name: '반박' }))
     expect(screen.getByText('이 주장에 반대한다면?')).toBeInTheDocument()
 
     await userEvent.type(screen.getByRole('textbox'), '나는 동의하지 않는다.')
     await userEvent.click(screen.getByRole('button', { name: /기록 남기기/ }))
 
-    expect(await screen.findByText('생각을 기록했어요.')).toBeInTheDocument()
+    expect(await screen.findByText('오늘의 깸 완료!')).toBeInTheDocument()
     expect(api.createMissionRecord).toHaveBeenCalledExactlyOnceWith({
       articleId: ARTICLE_A_DETAIL.id,
       missionType: 'rebuttal',
       userAnswer: '나는 동의하지 않는다.',
     })
 
-    await userEvent.click(screen.getByRole('button', { name: /오늘의 깸으로/ }))
+    await userEvent.click(screen.getByRole('button', { name: /나의 깸에서 보기/ }))
 
-    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '나의 깸' })).toBeInTheDocument()
+    expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
+    expect(api.createMissionRecord).toHaveBeenCalledTimes(1)
+
+    await userEvent.click(screen.getByRole('button', { name: '오늘의 깸' }))
+
+    expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
+    expect(screen.queryByText('글 소개')).not.toBeInTheDocument()
     expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
   })
 
@@ -263,12 +404,12 @@ describe('Today article intro flow', () => {
     await userEvent.click(await screen.findByRole('button', { name: new RegExp(ARTICLE_B.title) }))
     expect(screen.getAllByRole('article')[0]).toHaveTextContent(ARTICLE_B.title)
 
-    await userEvent.click(screen.getByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(screen.getByRole('button', { name: /읽고 미션 받기/ }))
     expect(await screen.findByText(ARTICLE_A_DETAIL.title)).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: /뒤로가기/ }))
 
-    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
     expect(screen.getAllByRole('article')[0]).toHaveTextContent(ARTICLE_B.title)
     expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
   })
@@ -372,7 +513,7 @@ describe('Today and MyGgaem tab navigation', () => {
       vi.mocked(api.getMissionRecordsCalendar).mockClear()
       vi.mocked(api.getMissionRecords).mockClear()
 
-      await userEvent.click(screen.getByRole('button', { name: '다음 달' }))
+      await userEvent.click(screen.getByRole('button', { name: /^다음 달/ }))
 
       await vi.waitFor(() => {
         expect(api.getMissionRecordsCalendar).toHaveBeenCalledExactlyOnceWith('2026-08')
@@ -387,7 +528,7 @@ describe('Today and MyGgaem tab navigation', () => {
       vi.mocked(api.getMissionRecordsCalendar).mockClear()
       vi.mocked(api.getMissionRecords).mockClear()
 
-      await userEvent.click(screen.getByRole('button', { name: '이전 달' }))
+      await userEvent.click(screen.getByRole('button', { name: /^이전 달/ }))
 
       await vi.waitFor(() => {
         expect(api.getMissionRecords).toHaveBeenCalledExactlyOnceWith('2026-02-28')
@@ -401,7 +542,7 @@ describe('Today and MyGgaem tab navigation', () => {
       await screen.findByRole('heading', { name: '나의 깸' })
       vi.mocked(api.getMissionRecords).mockClear()
 
-      await userEvent.click(screen.getByRole('button', { name: '이전 달' }))
+      await userEvent.click(screen.getByRole('button', { name: /^이전 달/ }))
 
       await vi.waitFor(() => {
         expect(api.getMissionRecords).toHaveBeenCalledExactlyOnceWith('2024-02-29')
@@ -415,7 +556,7 @@ describe('Today and MyGgaem tab navigation', () => {
       vi.mocked(api.getMissionRecordsCalendar).mockClear()
       vi.mocked(api.getMissionRecords).mockClear()
 
-      await userEvent.click(screen.getByRole('button', { name: '이전 달' }))
+      await userEvent.click(screen.getByRole('button', { name: /^이전 달/ }))
 
       await vi.waitFor(() => {
         expect(api.getMissionRecordsCalendar).toHaveBeenCalledExactlyOnceWith('2025-12')
@@ -525,14 +666,14 @@ describe('Today and MyGgaem tab navigation', () => {
       expect(screen.getByRole('article')).toHaveTextContent('새 날짜의 기록')
     })
 
-    it('returns to Today from the 오늘의 글 tab without refetching getTodayArticles', async () => {
+    it('returns to Today from the 오늘의 깸 tab without refetching getTodayArticles', async () => {
       await openMyGgaem()
       await screen.findByRole('heading', { name: '나의 깸' })
       expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
 
-      await userEvent.click(screen.getByRole('button', { name: /오늘의 글/ }))
+      await userEvent.click(screen.getByRole('button', { name: '오늘의 깸' }))
 
-      expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+      expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
       expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
     })
   })

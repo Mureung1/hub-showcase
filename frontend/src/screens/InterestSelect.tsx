@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import type { Interest, ReplaceUserInterestsResponse } from '../api/types'
+import ContentLoadingScreen from '../components/ContentLoadingScreen'
 import './InterestSelect.css'
 
 // 한 번에 고를 수 있는 관심사 개수.
 const MAX_SELECTION = 3
 
 // 처음에 보여줄 관심사 개수. displayOrder가 이 순번을 나눈다.
-const INITIAL_VISIBLE_COUNT = 10
+const INITIAL_VISIBLE_COUNT = 11
 
 type InterestSelectProps = {
   interests: Interest[]
@@ -61,6 +62,15 @@ export default function InterestSelect({
     }
   }
 
+  if (isSaving) {
+    return (
+      <ContentLoadingScreen
+        message="관심사에 맞는 오늘의 글을 고르고 있어요"
+        description="잠시만요, 곧 준비돼요"
+      />
+    )
+  }
+
   return (
     <div className="app-shell">
       <header className="screen-header" />
@@ -104,7 +114,7 @@ export default function InterestSelect({
           })}
         </div>
 
-        {!showAll && (
+        {!showAll && hiddenCount > 0 && (
           <button
             type="button"
             className="more-button"

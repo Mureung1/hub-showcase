@@ -55,10 +55,12 @@ function renderMyGgaem(overrides: Partial<MyGgaemProps> = {}) {
 }
 
 describe('MyGgaem', () => {
-  it('renders the displayed month and weekday header', () => {
+  it('renders the current month pill and weekday header', () => {
     renderMyGgaem()
 
-    expect(screen.getByText('2026.07')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: '현재 표시 월 2026년 7월' }),
+    ).toBeInTheDocument()
     expect(screen.getByText('일')).toBeInTheDocument()
     expect(screen.getByText('월')).toBeInTheDocument()
     expect(screen.getByText('화')).toBeInTheDocument()
@@ -132,11 +134,49 @@ describe('MyGgaem', () => {
     const onNextMonth = vi.fn()
     renderMyGgaem({ onPrevMonth, onNextMonth })
 
-    await userEvent.click(screen.getByRole('button', { name: '이전 달' }))
-    await userEvent.click(screen.getByRole('button', { name: '다음 달' }))
+    await userEvent.click(screen.getByRole('button', { name: '이전 달 2026년 6월' }))
+    await userEvent.click(screen.getByRole('button', { name: '다음 달 2026년 8월' }))
 
     expect(onPrevMonth).toHaveBeenCalledExactlyOnceWith()
     expect(onNextMonth).toHaveBeenCalledExactlyOnceWith()
+  })
+
+  it('shows three month pills with accessible names that include the year', () => {
+    renderMyGgaem({ displayMonth: '2026-07' })
+
+    expect(screen.getByRole('button', { name: '이전 달 2026년 6월' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: '현재 표시 월 2026년 7월' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '다음 달 2026년 8월' })).toBeInTheDocument()
+  })
+
+  it('marks the current month pill as non-interactive and current', () => {
+    renderMyGgaem({ displayMonth: '2026-07' })
+
+    const currentPill = screen.getByRole('button', { name: '현재 표시 월 2026년 7월' })
+    expect(currentPill).toBeDisabled()
+    expect(currentPill).toHaveAttribute('aria-current', 'date')
+  })
+
+  it('computes correct year-crossing accessible names at a year boundary (December)', () => {
+    renderMyGgaem({ displayMonth: '2026-12' })
+
+    expect(screen.getByRole('button', { name: '이전 달 2026년 11월' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: '현재 표시 월 2026년 12월' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '다음 달 2027년 1월' })).toBeInTheDocument()
+  })
+
+  it('computes correct year-crossing accessible names at a year boundary (January)', () => {
+    renderMyGgaem({ displayMonth: '2026-01' })
+
+    expect(screen.getByRole('button', { name: '이전 달 2025년 12월' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: '현재 표시 월 2026년 1월' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '다음 달 2026년 2월' })).toBeInTheDocument()
   })
 
   it('shows a stamp class for each of the four firstMissionType values', () => {
@@ -175,6 +215,21 @@ describe('MyGgaem', () => {
     expect(
       screen.getByRole('button', { name: /21일.*연결.*3개/ }),
     ).toBeInTheDocument()
+  })
+
+  it('shows a legend with all four mission types, each with a decorative color swatch and a text label', () => {
+    const { container } = renderMyGgaem()
+
+    const items = container.querySelectorAll('.myggaem-legend-item')
+    expect(items).toHaveLength(4)
+    expect(screen.getByText('질문')).toBeInTheDocument()
+    expect(screen.getByText('반박')).toBeInTheDocument()
+    expect(screen.getByText('연결')).toBeInTheDocument()
+    expect(screen.getByText('표현')).toBeInTheDocument()
+
+    container.querySelectorAll('.myggaem-legend-swatch').forEach((swatch) => {
+      expect(swatch).toHaveAttribute('aria-hidden', 'true')
+    })
   })
 
   it('renders each selected-date record as a separate card, including repeats of the same article, in API order', () => {
@@ -241,6 +296,31 @@ describe('MyGgaem', () => {
     expect(card).toHaveTextContent('10:00')
   })
 
+  it.each([
+    ['question', 'myggaem-mission-type--question'],
+    ['rebuttal', 'myggaem-mission-type--rebuttal'],
+    ['connection', 'myggaem-mission-type--connection'],
+    ['expression', 'myggaem-mission-type--expression'],
+  ] as const)('applies the %s color modifier to the mission type badge', (missionType, expectedClass) => {
+    const items = [
+      makeRecordItem({
+        id: '50000000-0000-0000-0000-000000000001',
+        articleId: '40000000-0000-0000-0000-000000000001',
+        articleTitle: 'A 글',
+        sourceName: '요즘IT',
+        missionType,
+        missionPrompt: '질문',
+        userAnswer: '생각',
+        createdAt: '2026-07-21T01:00:00Z',
+        originalUrl: 'https://example.com/a',
+        urlStatus: 'active',
+      }),
+    ]
+    const { container } = renderMyGgaem({ recordsState: { status: 'success', items } })
+
+    expect(container.querySelector(`.myggaem-mission-type.${expectedClass}`)).not.toBeNull()
+  })
+
   it('shows an active original link with the correct href, target, and rel', () => {
     const items = [
       makeRecordItem({
@@ -293,10 +373,17 @@ describe('MyGgaem', () => {
     },
   )
 
-  it('shows a label announcing the selected date', () => {
-    renderMyGgaem({ selectedDate: '2026-07-21' })
+  it('shows a label with the actual date when the selected date is not today', () => {
+    renderMyGgaem({ selectedDate: '2026-07-21', today: '2026-07-22' })
 
     expect(screen.getByText('2026.07.21 기록')).toBeInTheDocument()
+  })
+
+  it('shows "오늘의 기록" when the selected date is today', () => {
+    renderMyGgaem({ selectedDate: '2026-07-22', today: '2026-07-22' })
+
+    expect(screen.getByText('오늘의 기록')).toBeInTheDocument()
+    expect(screen.queryByText('2026.07.22 기록')).not.toBeInTheDocument()
   })
 
   it('shows the calendar loading indicator', () => {
@@ -365,15 +452,21 @@ describe('MyGgaem', () => {
     expect(screen.getByRole('button', { name: /21일.*연결.*1개/ })).toBeInTheDocument()
   })
 
-  it('shows 나의 깸 as the current tab and calls onGoToToday from the 오늘의 글 tab', async () => {
+  it('shows 나의 깸 as the current tab and calls onGoToToday from the 오늘의 깸 tab', async () => {
     const onGoToToday = vi.fn()
     renderMyGgaem({ onGoToToday })
 
-    const myGgaemTab = screen.getByRole('button', { name: /나의 깸/ })
+    const myGgaemTab = screen.getByRole('button', { name: '나의 깸' })
     expect(myGgaemTab).toHaveAttribute('aria-current', 'page')
 
-    await userEvent.click(screen.getByRole('button', { name: /오늘의 글/ }))
+    await userEvent.click(screen.getByRole('button', { name: '오늘의 깸' }))
     expect(onGoToToday).toHaveBeenCalledExactlyOnceWith()
+  })
+
+  it('does not show the old 오늘의 글 tab label', () => {
+    renderMyGgaem()
+
+    expect(screen.queryByText('오늘의 글')).not.toBeInTheDocument()
   })
 
   it('does not render body text, sentence lists, AI summary, or a mission answer input', () => {

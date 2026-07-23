@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChevronLeft, ExternalLink } from 'lucide-react'
 import Mission from './Mission'
 import type { ArticleDetail, ContentType, CreateMissionRecordRequest, MissionRecord } from '../api/types'
 import './ArticleIntro.css'
@@ -24,12 +25,14 @@ type ArticleIntroProps = {
   state: ArticleIntroState
   onBack: () => void
   onSubmitMission?: (request: CreateMissionRecordRequest) => Promise<MissionRecord>
+  onGoToMyGgaem?: () => void
 }
 
 export default function ArticleIntro({
   state,
   onBack,
   onSubmitMission = () => Promise.reject(new Error('onSubmitMission not provided')),
+  onGoToMyGgaem = () => {},
 }: ArticleIntroProps) {
   const [hasOpenedOriginal, setHasOpenedOriginal] = useState(false)
   const [screen, setScreen] = useState<'intro' | 'mission'>('intro')
@@ -40,20 +43,26 @@ export default function ArticleIntro({
         article={state.article}
         onBack={() => setScreen('intro')}
         onSubmit={onSubmitMission}
-        onGoToToday={onBack}
+        onGoToMyGgaem={onGoToMyGgaem}
       />
     )
   }
 
   return (
     <div className="app-shell">
-      <header className="screen-header">
-        <button type="button" className="article-intro-back" onClick={onBack}>
-          뒤로가기
+      <header className="article-intro-header">
+        <button
+          type="button"
+          className="article-intro-back"
+          aria-label="뒤로가기"
+          onClick={onBack}
+        >
+          <ChevronLeft aria-hidden="true" />
         </button>
+        <span className="article-intro-header-label">오늘의 글</span>
       </header>
 
-      <main className="screen-main">
+      <main className="article-intro-main">
         {state.status === 'loading' && <p role="status">글을 불러오고 있어요...</p>}
 
         {state.status === 'error' && (
@@ -86,47 +95,64 @@ export default function ArticleIntro({
               {state.article.officialExcerpt ?? '제공된 글 소개가 없어요.'}
             </p>
 
-            {state.article.urlStatus === 'active' ? (
-              <a
-                className="btn-primary"
-                href={state.article.originalUrl}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => setHasOpenedOriginal(true)}
-              >
-                원문 읽으러 가기
-              </a>
-            ) : (
-              <>
-                <p className="article-intro-url-notice">
-                  {URL_STATUS_NOTICE[state.article.urlStatus]}
-                </p>
-                <button type="button" className="btn-primary" disabled>
-                  원문 읽으러 가기
-                </button>
-              </>
+            {state.article.urlStatus !== 'active' && (
+              <p className="article-intro-url-notice">
+                {URL_STATUS_NOTICE[state.article.urlStatus]}
+              </p>
             )}
 
             {state.article.urlStatus === 'active' && hasOpenedOriginal && (
               <div className="article-intro-mission-prompt">
                 <p>원문을 읽고 돌아오셨나요?</p>
                 <p>이제 짧게 생각을 남겨볼까요?</p>
-                <button type="button" className="btn-primary" onClick={() => setScreen('mission')}>
-                  미션 시작하기
-                </button>
-                <a
-                  className="article-intro-back"
-                  href={state.article.originalUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  원문 다시 보기
-                </a>
               </div>
             )}
           </>
         )}
       </main>
+
+      {state.status === 'success' && (
+        <footer className="article-intro-footer">
+          {state.article.urlStatus !== 'active' && (
+            <button type="button" className="btn-primary" disabled>
+              원문 읽으러 가기
+            </button>
+          )}
+
+          {state.article.urlStatus === 'active' && !hasOpenedOriginal && (
+            <a
+              className="btn-primary"
+              href={state.article.originalUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setHasOpenedOriginal(true)}
+            >
+              원문 읽으러 가기
+              <ExternalLink aria-hidden="true" />
+            </a>
+          )}
+
+          {state.article.urlStatus === 'active' && hasOpenedOriginal && (
+            <div className="article-intro-visited-actions">
+              <a
+                className="article-intro-secondary-cta"
+                href={state.article.originalUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                원문 다시 읽기
+              </a>
+              <button
+                type="button"
+                className="btn-primary article-intro-mission-cta"
+                onClick={() => setScreen('mission')}
+              >
+                깸 작성하기
+              </button>
+            </div>
+          )}
+        </footer>
+      )}
     </div>
   )
 }
