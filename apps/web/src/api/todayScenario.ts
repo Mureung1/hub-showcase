@@ -94,7 +94,8 @@ export function scenarioFromApi(
 
   const delta = todayImpactPct(diagnosis, weather);
   const flat = Math.round(delta * 100) === 0;
-  const down = delta < 0;
+  // 반올림상 0%(flat)는 하락으로 보지 않는다 — "평균과 비슷" 문구에 down 배지가 붙는 모순 방지.
+  const down = !flat && delta < 0;
   const baseline = diagnosis.baselineRevenue;
   const predSales = Math.round(baseline * (1 + delta));
   const target = Math.round(baseline * (1 + Math.max(delta, DEFENSE_FLOOR)));
