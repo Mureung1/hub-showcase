@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: prototype
-- State: open
+- State: claimed
 - Blocked by: [첫 public preview의 성공 여정을 고정한다](004-first-public-preview-success-journey.md), [Public repository authority와 license를 확정한다](005-public-repository-authority-and-license.md), [npx production composition을 고른다](006-npx-production-composition.md), [Runtime release delivery·integrity·versioning을 정한다](007-runtime-release-delivery-integrity.md), [Browser-launched Codex OAuth lifecycle을 설계한다](008-browser-oauth-lifecycle.md), [Semester Ready 완료와 후속 여정 진입 표면을 검증한다](012-semester-ready-first-action.md)
 
 ## Question
