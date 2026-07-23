@@ -1097,3 +1097,62 @@
 - 사용자가 이전에 "`.github` 폴더 내용은 공유 저장소에 push하지 말라"고 지시했었는데, `79a9478`(이번 세션 이전 커밋)이 `.gitignore`의 `.github/workflows/` 제외 규칙을 지우고 `ci.yml`을 추적·push한 상태였다. 오늘 세션에서 그 위에 계속 작업하면서 이 지시를 다시 확인하지 않고 지나쳤다.
 - 사용자 확인 후 `git rm --cached .github/workflows/ci.yml`로 추적만 제거하고(로컬 파일은 유지), `.gitignore`에 `.github/workflows/ci.yml` 규칙을 복원했다. 과제 제공 워크플로 `auto-merge.yml`과 `pull_request_template.md`·`ISSUE_TEMPLATE/*`는 건드리지 않았다(사용자가 명시적으로 유지 요청).
 - CHECKLIST T17 문구에서 "`ci.yml` 재설치로 `verify` Actions run 복구" 표현을 제거해 실제 상태(로컬 전용 유지)와 맞췄다.
+
+## 2026-07-22 (T28·T29·T36 후속 — 사용자 피드백 반영)
+- 방식·관계 카드의 오른쪽 진행 화살표를 상단 `발자국 n/4`와 같은 기존 `public/paw.png` 마스크 아이콘으로 바꿨다. 뒤로가기의 왼쪽 화살표는 방향 이해를 위해 유지했다.
+- `어느 톤으로 보낼까냥?` 결과 전환에서 생성 냥이→관계 냥이 에셋이 바뀔 때 `key`로 단일 Canvas까지 재생성되던 원인을 제거했다. Canvas DOM은 유지하고 텍스처만 바꾸며, 새 에셋 준비 중 정적 폴백은 즉시 나타나고 준비 완료 뒤에만 사라지게 했다. WebGL·렌더 실패 뒤에는 현재 탭 동안 정적 폴백을 유지한다.
+- T36의 후보 직접 수정은 제거하지 않고 기존 최대 600자 계약을 유지했다. 제한을 알 수 있도록 현재 글자 수/600을 시각적으로 표시하고 textarea 설명에 연결했으며, 수정문 비전송·원문 복원·복사 동작은 바꾸지 않았다.
+- "첨부된 이미지" 피드백의 대상이 좌측 브랜드 패널의 `긴 설명 없이 빠른 선택`·`관계별 말투`·`비교할 수 있는 세 가지 톤` 장식 칩임을 확인했다. 비상호작용 정보가 한 줄 소개와 실제 오른쪽 흐름을 반복하고 모바일에서는 숨겨져 목적이 불명확하므로 제거해 브랜드·한 줄 설명·캐릭터에 집중시켰다. 상황별 고양이 디테일에 대한 긍정 피드백은 현재 에셋을 유지하는 근거로 기록했다.
+- CatStage·App 관련 88개와 전체 41파일 350개 테스트, lint, production build, `git diff --check`를 통과했다. 인앱 브라우저는 사용 가능한 backend가 없어 320×568·375×667 실화면 확인을 실행하지 못했으며 다음 사용자/브라우저 실물 확인 대상으로 남겼다.
+
+## 2026-07-22 (진행 발자국 기준 정정)
+- 사용자가 말한 "맨 처음의 고양이 발바닥"은 첨부한 두 발 이미지가 아니라 기존 화면 상단 `발자국 n/4`의 작은 파란 발자국 아이콘임을 확인했다. 방식·관계 카드도 같은 `public/paw.png`를 CSS 마스크로 재사용하고 별도로 만든 긴 발 파생 에셋은 제거했다.
+- DOM 선택 흐름과 뒤로가기 방향 표시는 바꾸지 않았으며 사용자 제공 원본 두 장은 모두 변경하지 않았다.
+
+## 2026-07-22 (T26 결정적 템플릿 엔진·fallback 완료)
+### 컴파일 자산·검증 규칙
+- T25 승인 288문구를 24개 의미 프레임과 12개 말투×톤 규칙으로 옮기고, 정본 순서의 96세트·288문구를 만드는 순수 컴파일러를 추가했다. 말투 말끝·문장부호, intent 화행, tone 2 완화, tone 3 간결성 경계를 컴파일 단계에서 검사한다.
+- bundle version은 `t25-approved-2026-07-21.1`, review status는 `approved`로 고정했다. manifest는 24/96/288 수치·문구별 provenance·소문자 SHA-256 checksum `4ac4ea33750c42164fac4b14d6b43071de122fccf3c5136868beb7ba6261c69f`를 가진다.
+- `templates:generate`가 Git TypeScript·JSON 산출물을 재생성하고 `templates:check`가 1 byte라도 drift하면 실패한다. 컴파일 288개는 T25 검수지와 byte 단위로 같다.
+### 런타임·장애 fallback·DB 경계
+- `templateCandidatesFor` 런타임 원천을 generated artifact 하나로 전환하고 중복 288문구 상수를 제거했다. 기존 `Candidate[] | null`, tone 1→2→3, 호출마다 새 후보 객체와 생성 API 0회 계약을 유지했다. Backend/Frontend 교차검토로 브라우저 번들에 compiler·frames·`node:crypto`가 연결되지 않음도 확인했다.
+- guided AI timeout·429·500은 같은 관계×상황×말투 키의 기본 초안으로 fallback하고 세부 답 미반영을 안내한다. manual AI 실패·취소는 기본 초안으로 강제 전환하지 않는 것을 App 회귀 테스트로 고정했다.
+- approved manifest와 유효한 검수 시각만 `template_versions` active 입력으로 변환하며, DB 입력 allowlist에는 version·checksum·review status/time만 남기고 템플릿 본문·사용자 원문을 제외했다. 실제 검수 시각은 정본에 없어 임의로 만들거나 DB에 쓰지 않았다.
+### 검증·완료 판정
+- T26 관련 5파일 110테스트와 전체 43파일 365테스트, `templates:generate`, `templates:check`, `typecheck:api`, lint, production build, `git diff --check`, `any` 금지 검사가 통과했다. 빌드의 기존 CatCanvas 500 kB 경고만 비차단으로 남았다.
+- 화면·카피 변경은 없어 신규 실화면 검증은 비적용으로 판정했다. 실제 DB 등록·커밋·push·배포는 수행하지 않았다. 상세 근거: [T26 계획서](../harness/tasks/T26-deterministic-template-engine/plan.md)·[검증 보고서](../harness/tasks/T26-deterministic-template-engine/verification.md).
+
+## 2026-07-22 (T32 개인 말투 선호·카드 기본값 분리와 S3 전환)
+- 카드 진입 때 관계 기본 말투를 `speechStyleId`에 저장하던 동작을 제거했다. 이제 이 값은 사용자가 직접 설명 또는 정적 결과에서 명시적으로 고른 선호만 나타내며, 명시 선호가 없는 카드·guided 경로는 조회 시 관계 기본값(`professor=seumnida`, 나머지 `haeyo`)을 사용한다.
+- 신규 직접 설명은 네 말투 중 하나를 직접 고르기 전 생성할 수 없다. 명시 선택은 관계·카드·모드 이동과 30분 탭 세션에서 유지되고, 전체 초기화·만료·오염값은 미선택으로 복구한다. 말투가 없는 유효한 구세션 카드 결과는 저장 후보를 신뢰하지 않고 관계 기본 generated 후보로 다시 조회한다.
+- `source=template` S3에만 `말투 바꾸기` 4지선다를 추가했다. 같은 관계×상황의 T26 검수 세 후보를 API·로딩·런타임 어미 변환 없이 즉시 교체하고 복사 완료·직접 편집·이전 초안 표시를 초기화한다. 현재 말투는 live text로 전달하며 `source=ai`에는 전환을 노출하지 않는다.
+- 관련 4파일 109개와 전체 43파일 367개 테스트, 프론트·API 타입검사, `templates:check`, lint, production build, `git diff --check`, AGENTS/CLAUDE 미러, 대상 `any` 금지 검사가 통과했다. 기존 jsdom `scrollTo` 로그와 lazy CatCanvas 500kB 경고만 비차단으로 유지됐다.
+- Browser 스킬의 bootstrap troubleshooting까지 수행했으나 사용 가능한 backend 목록이 `[]`여서 320×568·375×667 무가로넘침과 실제 Tab·방향키 검증은 실행하지 못했다. 이 필수 증거 전까지 CHECKLIST T32는 미체크로 유지한다. 상세 근거: [T32 계획서](../harness/tasks/T32-speech-style-presets/plan.md)·[검증 보고서](../harness/tasks/T32-speech-style-presets/verification.md).
+- 이후 사용자가 320×568·375×667 화면과 키보드 동작의 수동 확인 완료를 보고했다. 원시 캡처는 저장하지 않고 사용자 확인을 근거로 AC-10과 CHECKLIST T32를 완료 처리했으며, VoiceOver/NVDA 조합별 전수 확인은 T22 범위로 유지한다.
+
+## 2026-07-22 (T33 교수·조교 이메일 형식 마감 보완)
+- 사용자가 승인한 T33 마감 계획에 따라 감사·후속 3후보의 감사 과반복과 답변이 필요 없는데 `확인해 주시면`을 붙인 문구를 제거했다. 동기화된 18후보 검토표도 같이 갱신했으며 자연스러움·전송 가능성은 자동 합격 처리하지 않고 사용자 검토로 남겼다.
+- 세 이메일 후보와 아홉 복사 버튼의 접근 이름에 `정석 / 더 정중하게 / 더 간결하게` 톤 문맥을 포함해 화면 읽기에서도 서로 구분했다. 표시 라벨·복사 동작·서버·DB 계약은 바꾸지 않았다.
+- T33 관련 2파일 94개와 전체 43파일 368개 테스트, 프론트·API 타입검사, `templates:check`, lint, production build, `git diff --check`, AGENTS/CLAUDE 미러, 대상 `any` 금지 검사가 통과했다. 기존 jsdom `scrollTo` 로그와 CatCanvas 500kB 경고만 비차단으로 남았다.
+- CHECKLIST T33은 18후보 사용자 문구 검토와 320×568·375×667·모바일 키보드·카카오톡 인앱 복사 폴백 확인 전까지 미완료로 유지한다.
+- 이후 사용자가 18후보 문구와 320×568·375×667·모바일 키보드·카카오톡 인앱 복사 폴백을 모두 확인했다고 보고했다. 이 확인을 AC-9·10 증거로 기록하고 CHECKLIST T33을 완료 처리했다.
+
+## 2026-07-22 (T34 guided context 마감 검증 재개)
+- T33 완료 후 의존이 충족된 다음 항목으로 T34를 재개했다. 공유 계약·UI·서버·fallback이 이미 구현되어 있어 중복 구현하지 않고 남은 문구·Production·모바일 증거만 마감한다.
+- `guidedContext.ts`의 24질문·72옵션 질문·label·prompt fact를 담은 `guided-context-review-draft.md`를 만들고, 정본과 한 글자라도 다르면 실패하는 동기화 테스트를 추가했다. 작성 과정에서 옮김 오탈자를 테스트가 발견해 정본과 동기화했다.
+- Production `/api/generate`에 실제 사용자 원문·식별자가 없는 `groupwork + schedule + ask_availability` 합성 `guided_ai` 요청을 1회 전송했다. HTTP 200·`source=ai`·tone 1/2/3이 반환됐고 특정 날짜·시간을 지어내지 않았다. `situationSummary`·`warning`은 SPEC 2장의 허용된 선택 메타데이터며 UI 선택 요약은 계속 로컬 label로 구성한다.
+- 전체 43파일 369개 테스트, 프론트·API 타입검사, `templates:check`, `db:check`, lint, production build가 통과했다. 기존 jsdom `scrollTo` 로그와 CatCanvas 500kB 경고만 비차단으로 남았다.
+- Browser 연결 문서의 troubleshooting까지 적용했지만 사용 가능한 backend 목록은 `[]`였다. CHECKLIST T34는 24질문·72옵션 사용자 문구 검토와 guided 320×568·375×667·키보드·스크린리더 수동 확인 전까지 미완료로 유지한다.
+- 이후 사용자가 24질문·72옵션 문구와 320×568·375×667·키보드·스크린리더를 모두 확인했다고 보고했다. 이 확인을 AC-2·7·9 증거로 기록하고 CHECKLIST T34를 완료 처리했다.
+
+## 2026-07-22 (T35 retrieval 실험 외부 gate 재개)
+- T16·T19·T30·T34 의존 완료를 확인하고 기존 비운영 retrieval 구현을 재검증했다. 공식 Voyage의 `query/document`·1024차원 float 출력과 pgvector의 ANN 없는 exact cosine `<=>` 계약이 현재 adapter·repository와 일치했다.
+- T35 관련 11파일 43개와 전체 43파일 369개 테스트, API 타입검사, `templates:check`, `db:check`, lint, production build를 통과했다. 합성 evaluator는 8 example set·24후보, covered 8/48, activation-ready 0/48, generation quality `null`, `productionEligible=false`를 다시 반환했다.
+- 개발 DB migration을 재실행하고 명시적 확인값을 사용한 core smoke로 `retrieval_examples` 포함 여섯 테이블을 확인했다. 실 Voyage→합성 document 임시 적재→query exact top-2→자체 행 삭제를 재현하는 `retrieval:smoke` 명령과 `.env.example` 안내를 추가했다.
+- 현재 환경에 `VOYAGE_API_KEY`·`VOYAGE_EMBEDDING_MODEL`이 없어 smoke는 외부 호출 전에 guard로 중단됐다. coverage 충분 검수 corpus도 없어 실제 생성 A/B를 수행할 수 없으므로 CHECKLIST T35와 운영 `/api/generate` static selector를 그대로 유지한다.
+- 사용자가 이후 프로젝트에서 읽고 다른 사람에게 설명할 수 있도록 `docs/RETRIEVAL.md`를 새 정본으로 작성했다. Voyage·Gemini·Neon의 역할 분리, 현재 운영과 offline 경로, 코드 지도, 전송·저장 경계, `voyage-4-lite` 비용 계산, vector 저장 크기, latency·fallback·coverage, 실행 명령, 면접·포트폴리오 설명 문장을 한 문서에 정리하고 AGENTS/CLAUDE 참고 목록에 연결했다.
+- 이후 사용자가 비프로덕션 Voyage key를 설정했다. 구형 `voyage-3.5-lite`로 시작했으나 현재 무료·권장 범위의 `voyage-4-lite`로 바로잡고 실 document/query→Neon exact top-2 smoke를 통과했다. 단건 document 호출은 smoke 직후 429를 만나 공식 배열 입력 기반 batch로 변경했다. T35 관련 11파일 45개·전체 43파일 371개 테스트와 API 타입·lint·build·템플릿·DB gate가 통과했고, 최초 catalog 적재 `8/0` 뒤 재실행 `0/8`로 idempotency를 실증했다. 최종 개발 DB에는 `reviewed-seeds-v1 + voyage-4-lite` 8행만 있고 smoke 임시 행은 없다.
+- `/seed` 절차에 따라 4관계×6목적×2방식의 48개 cell별 두 상황을 [coverage corpus 검토 초안](../harness/tasks/T35-retrieval-experiment/coverage-corpus-review-draft.md)에 먼저 정리했다. 기존 검수 8세트를 표시했고 신규 필요량은 88세트·264후보다. 이 목록은 사용자 승인 전 초안이므로 메시지 본문 작성이나 approved corpus 반영은 하지 않았다.
+- 사용자가 `진행`으로 48 cell 상황 목록을 승인했다. 기존 approved 8세트는 변경하지 않고 신규 88세트·264후보를 `coverageCandidateDraft.ts`에 `draft`로 작성했다. 수량·48×2 coverage·ID/문구 중복·reply/ initiate·tone·길이·금지 항목·정중함 하한선 자동 검사와 세트 내용 동일성 수동 재검토를 통과했다.
+- 작성 순서가 검수자에게 노출되지 않도록 96세트의 후보 순서를 결정적으로 섞은 [블라인드 검수지](../harness/tasks/T35-retrieval-experiment/coverage-corpus-blind-review.md)와 별도 정답표를 생성했다. 신규 후보는 제3자 톤 정렬·288개 전송 가능성 판정 전까지 DB에 적재하거나 approved/운영 retrieval로 승격하지 않는다.
+- retrieval 디렉터리 9파일 35개와 전체 44파일 375개 테스트, 프론트/API 타입검사, 템플릿·DB·검수지 drift check, lint, production build, `git diff --check`, AGENTS/CLAUDE mirror, 대상 `any` 검사를 통과했다. 기존 jsdom `scrollTo` 로그와 CatCanvas 500 kB 초과 경고만 비차단으로 남았다.

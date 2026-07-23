@@ -94,6 +94,31 @@ describe('CatStage', () => {
     expect(container.querySelector('.cat-stage')).toHaveAttribute('data-state', 'selected')
   })
 
+  it('생성 에셋으로 전환해도 준비된 Canvas를 다시 만들지 않는다', async () => {
+    enableWebGL()
+    const { container, rerender } = render(
+      <CatStage
+        assetSrc="/cats/professor-cat-stage.webp"
+        generatingAssetSrc="/cats/dabnyangi-thinking.webp"
+        state="selected"
+      />,
+    )
+
+    await waitFor(() => expect(container.querySelector('.cat-stage')).toHaveAttribute('data-renderer', 'webgl'))
+    const canvas = container.querySelector('canvas')
+
+    rerender(
+      <CatStage
+        assetSrc="/cats/professor-cat-stage.webp"
+        generatingAssetSrc="/cats/dabnyangi-thinking.webp"
+        state="generating"
+      />,
+    )
+
+    await waitFor(() => expect(container.querySelector('.cat-stage')).toHaveAttribute('data-renderer', 'webgl'))
+    expect(container.querySelector('canvas')).toBe(canvas)
+  })
+
   it('모션 축소 설정에서는 WebGL이 있어도 Canvas를 만들지 않는다', () => {
     mockMatchMedia(true)
     enableWebGL()

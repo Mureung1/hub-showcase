@@ -51,7 +51,10 @@ function ScenarioSelect({ headingRef, mode, selectedScenarioId, onBack, onSelect
               </span>
             </span>
             <small>{scenario.summary}</small>
-            <span className="scenario-card-cta">{scenario.helper}에게 이어 말하기 →</span>
+            <span className="scenario-card-cta">
+              <span>{scenario.helper}에게 이어 말하기</span>
+              <span aria-hidden="true" className="scenario-card-paw" />
+            </span>
           </button>
         ))}
       </div>

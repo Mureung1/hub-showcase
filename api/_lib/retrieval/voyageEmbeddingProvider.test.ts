@@ -5,9 +5,9 @@ import {
 } from './embedding.js'
 import { createVoyageEmbeddingProvider } from './voyageEmbeddingProvider.js'
 
-const validEmbedding = () => {
+const validEmbedding = (firstValue = 1) => {
   const embedding = Array.from({ length: retrievalEmbeddingDimensions }, () => 0)
-  embedding[0] = 1
+  embedding[0] = firstValue
   return embedding
 }
 
@@ -22,7 +22,7 @@ describe('Voyage embedding adapter', () => {
     'sends %s input_type and validates a 1024-dimension embedding',
     async (inputType) => {
       const fetchImplementation = vi.fn<typeof fetch>(() =>
-        Promise.resolve(jsonResponse({ data: [{ embedding: validEmbedding() }] })),
+        Promise.resolve(jsonResponse({ data: [{ embedding: validEmbedding(), index: 0 }] })),
       )
       const provider = createVoyageEmbeddingProvider({
         apiKey: 'test-secret',
@@ -44,6 +44,39 @@ describe('Voyage embedding adapter', () => {
       })
     },
   )
+
+  it('embeds multiple documents in one request and restores input order by response index', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>(() =>
+      Promise.resolve(
+        jsonResponse({
+          data: [
+            { embedding: validEmbedding(2), index: 1 },
+            { embedding: validEmbedding(1), index: 0 },
+          ],
+        }),
+      ),
+    )
+    const provider = createVoyageEmbeddingProvider({
+      apiKey: 'test-secret',
+      fetchImplementation,
+      model: 'voyage-test-model',
+    })
+
+    const embedMany = provider.embedMany
+    if (!embedMany) throw new Error('Batch embedding support missing')
+    const embeddings = await embedMany({
+      inputs: ['첫 문서', '둘째 문서'],
+      inputType: 'document',
+    })
+
+    expect(embeddings).toHaveLength(2)
+    expect(embeddings.map((embedding) => embedding[0])).toEqual([1, 2])
+    expect(fetchImplementation).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(String(fetchImplementation.mock.calls[0]?.[1]?.body))).toMatchObject({
+      input: ['첫 문서', '둘째 문서'],
+      input_type: 'document',
+    })
+  })
 
   it.each([
     [400, 'client_error'],
@@ -88,8 +121,9 @@ describe('Voyage embedding adapter', () => {
 
   it.each([
     { data: [] },
-    { data: [{ embedding: [1] }] },
-    { data: [{ embedding: Array.from({ length: 1024 }, () => 0) }] },
+    { data: [{ embedding: [1], index: 0 }] },
+    { data: [{ embedding: Array.from({ length: 1024 }, () => 0), index: 0 }] },
+    { data: [{ embedding: validEmbedding(), index: 1 }] },
   ])('rejects malformed embeddings', async (body) => {
     const provider = createVoyageEmbeddingProvider({
       apiKey: 'test-secret',

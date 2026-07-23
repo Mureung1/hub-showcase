@@ -21,10 +21,12 @@ function ModeSelect({ headingRef, onChoose }: ModeSelectProps) {
         <button className="mode-card" onClick={() => onChoose('reply')} type="button">
           <strong>답장할래요</strong>
           <span>받은 말에 답하거나 자주 쓰는 답장을 골라요</span>
+          <span aria-hidden="true" className="mode-card-paw" />
         </button>
         <button className="mode-card" onClick={() => onChoose('initiate')} type="button">
           <strong>먼저 연락할래요</strong>
           <span>먼저 꺼낼 말을 상황에 맞춰 골라요</span>
+          <span aria-hidden="true" className="mode-card-paw" />
         </button>
       </div>
     </div>

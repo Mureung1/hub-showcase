@@ -53,17 +53,16 @@ function CatStage({ assetSrc, generatingAssetSrc, state }: CatStageProps) {
   const activeAssetSrc = state === 'generating' && generatingAssetSrc ? generatingAssetSrc : assetSrc
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(getReducedMotionPreference)
   const [canvasReadyAsset, setCanvasReadyAsset] = useState<string | null>(null)
-  const [canvasFailedAsset, setCanvasFailedAsset] = useState<string | null>(null)
+  const [canvasFailed, setCanvasFailed] = useState(false)
   const [assetFailedSrc, setAssetFailedSrc] = useState<string | null>(null)
   const stageRef = useRef<HTMLDivElement>(null)
 
   const markCanvasFailed = () => {
     setCanvasReadyAsset(null)
-    setCanvasFailedAsset(activeAssetSrc)
+    setCanvasFailed(true)
   }
 
   const canvasReady = canvasReadyAsset === activeAssetSrc
-  const canvasFailed = canvasFailedAsset === activeAssetSrc
   const assetFailed = assetFailedSrc === activeAssetSrc
   const shouldRenderCanvas =
     supportsWebGL() && !isLowPowerDevice() && !prefersReducedMotion && !canvasFailed && !assetFailed
@@ -77,12 +76,12 @@ function CatStage({ assetSrc, generatingAssetSrc, state }: CatStageProps) {
     const handleContextLost = (event: Event) => {
       event.preventDefault()
       setCanvasReadyAsset(null)
-      setCanvasFailedAsset(activeAssetSrc)
+      setCanvasFailed(true)
     }
 
     stage.addEventListener('webglcontextlost', handleContextLost, true)
     return () => stage.removeEventListener('webglcontextlost', handleContextLost, true)
-  }, [activeAssetSrc])
+  }, [])
 
   // WebGLRenderer 생성 실패는 R3F 내부에서 커밋 이후 마이크로태스크로 재던져 동기 렌더 오류를
   // 잡는 ErrorBoundary를 우회하고 unhandledrejection으로만 드러난다. window 전역에서 함께 감시해
@@ -96,7 +95,7 @@ function CatStage({ assetSrc, generatingAssetSrc, state }: CatStageProps) {
     const handleWindowError = (event: ErrorEvent) => {
       if (isWebGLFailure(event.message) || isWebGLFailure(event.error?.message)) {
         setCanvasReadyAsset(null)
-        setCanvasFailedAsset(activeAssetSrc)
+        setCanvasFailed(true)
       }
     }
 
@@ -104,7 +103,7 @@ function CatStage({ assetSrc, generatingAssetSrc, state }: CatStageProps) {
       const reason = event.reason
       if (isWebGLFailure(reason?.message) || isWebGLFailure(reason)) {
         setCanvasReadyAsset(null)
-        setCanvasFailedAsset(activeAssetSrc)
+        setCanvasFailed(true)
       }
     }
 
@@ -114,7 +113,7 @@ function CatStage({ assetSrc, generatingAssetSrc, state }: CatStageProps) {
       window.removeEventListener('error', handleWindowError)
       window.removeEventListener('unhandledrejection', handleUnhandledRejection)
     }
-  }, [activeAssetSrc, shouldRenderCanvas])
+  }, [shouldRenderCanvas])
 
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return
@@ -152,7 +151,7 @@ function CatStage({ assetSrc, generatingAssetSrc, state }: CatStageProps) {
       />
       {assetFailed && <span className="cat-stage-badge">냥</span>}
       {shouldRenderCanvas && (
-        <CanvasErrorBoundary key={activeAssetSrc} onError={markCanvasFailed}>
+        <CanvasErrorBoundary onError={markCanvasFailed}>
           <Suspense fallback={null}>
             <LazyCatCanvas
               assetSrc={activeAssetSrc}

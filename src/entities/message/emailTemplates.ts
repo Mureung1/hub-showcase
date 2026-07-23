@@ -161,17 +161,17 @@ const buildThanksFollowup: EmailCandidateBuilder = (input) => [
   candidate(
     1,
     identitySubject(input, '감사 및 후속 연락드립니다'),
-    `${greetingLine(input)}\n${identityLine(input)}\n\n감사 말씀과 후속 내용을 전하고자 메일드립니다.\n${input.details}\n다시 한번 감사드립니다.\n\n${closingLines(input)}`,
+    `${greetingLine(input)}\n${identityLine(input)}\n\n지난번에 안내해 주신 내용과 관련해 후속 연락드립니다.\n${input.details}\n\n${closingLines(input)}`,
   ),
   candidate(
     2,
     `감사·후속 연락 | ${input.department} ${input.studentId} ${input.studentName}`,
-    `${greetingLine(input)}\n${identityLine(input)}\n\n감사 인사와 후속 내용을 전하고자 메일드립니다.\n${input.details}\n확인해 주시면 감사하겠습니다.\n\n읽어주셔서 감사합니다.\n${input.studentName} 드림`,
+    `${greetingLine(input)}\n${identityLine(input)}\n\n지난번에 안내해 주신 내용과 관련해 후속 소식을 전하고자 메일드립니다.\n${input.details}\n바쁘신 가운데 읽어주셔서 감사합니다.\n\n${input.studentName} 드림`,
   ),
   candidate(
     3,
     `${input.department} ${input.studentId} | 감사 말씀드립니다`,
-    `${greetingLine(input)}\n${identityLine(input)}\n\n감사 및 후속 연락드립니다.\n${input.details}\n감사합니다.\n\n${input.studentName} 드림`,
+    `${greetingLine(input)}\n${identityLine(input)}\n\n${input.details}\n\n감사합니다.\n${input.studentName} 드림`,
   ),
 ]
 

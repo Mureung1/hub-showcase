@@ -1,3 +1,7 @@
+/// <reference types="node" />
+
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { scenarios, situationCardsFor } from './message'
 import {
@@ -51,5 +55,20 @@ describe('guided 맥락 카탈로그', () => {
         { questionId: 'cq.groupwork.schedule.focus', optionId: 'co.groupwork.schedule.ask_availability' },
       ]),
     ).toBeNull()
+  })
+
+  it('사용자 검토표가 24질문·72옵션 정본과 동기화된다', () => {
+    const reviewDraft = readFileSync(
+      resolve('harness/tasks/T34-guided-context-flow/guided-context-review-draft.md'),
+      'utf8',
+    )
+
+    for (const question of guidedContextQuestions) {
+      expect(reviewDraft).toContain(`### ${question.scenarioId} / ${question.situationId}`)
+      expect(reviewDraft).toContain(question.prompt)
+      for (const option of question.options) {
+        expect(reviewDraft).toContain(`- ${option.label} — ${option.promptFact}`)
+      }
+    }
   })
 })

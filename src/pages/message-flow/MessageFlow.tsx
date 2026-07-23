@@ -392,10 +392,14 @@ const loadFlowState = (): FlowState => {
       return { ...savedFlow, step: 'context', candidates: [], resultRoute: null, fallbackReason: null }
     }
 
-    if (savedFlow.step === 'result' && savedFlow.speechStyleId === null) {
+    if (
+      savedFlow.step === 'result' &&
+      savedFlow.resultRoute === 'manual_ai' &&
+      savedFlow.speechStyleId === null
+    ) {
       return {
         ...savedFlow,
-        step: savedFlow.resultRoute === 'manual_ai' ? 'manual' : 'situation',
+        step: 'manual',
         candidates: [],
         emailCandidates: [],
       }
@@ -406,13 +410,14 @@ const loadFlowState = (): FlowState => {
       savedFlow.source === 'template' &&
       (savedFlow.resultRoute === 'template_fallback' || savedFlow.fallbackReason === 'guided_generation_failed') &&
       savedFlow.selectedScenarioId &&
-      savedFlow.selectedSituationId &&
-      savedFlow.speechStyleId
+      savedFlow.selectedSituationId
     ) {
+      const restoredSpeechStyleId =
+        savedFlow.speechStyleId ?? defaultSpeechStyleFor(savedFlow.selectedScenarioId)
       const restoredTemplateCandidates = templateCandidatesFor(
         savedFlow.selectedScenarioId,
         savedFlow.selectedSituationId,
-        savedFlow.speechStyleId,
+        restoredSpeechStyleId,
       )
       if (!restoredTemplateCandidates) {
         return { ...savedFlow, step: 'context', candidates: [], resultRoute: null, fallbackReason: null }
@@ -503,7 +508,11 @@ function MessageFlow({
   }, [resultUpdateAnnouncement, step])
 
   const selectedScenario = scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? null
-  const selectedSpeechStyle = speechStyles.find((style) => style.id === speechStyleId) ?? null
+  const effectiveSpeechStyleId = selectedScenarioId
+    ? speechStyleId ?? defaultSpeechStyleFor(selectedScenarioId)
+    : null
+  const selectedSpeechStyle =
+    speechStyles.find((style) => style.id === effectiveSpeechStyleId) ?? null
   const selectedContextQuestion =
     selectedScenarioId && selectedSituationId
       ? guidedContextQuestionFor(selectedScenarioId, selectedSituationId)
@@ -761,7 +770,6 @@ function MessageFlow({
       setSelectedContextAnswer(null)
     }
     setSelectedScenarioId(scenario.id)
-    setSpeechStyleId(defaultSpeechStyleFor(scenario.id))
     setStep('situation')
   }
 
@@ -776,7 +784,6 @@ function MessageFlow({
     discardResult()
     setSelectedSituationId(situationId)
     setSelectedContextAnswer(null)
-    setSpeechStyleId(defaultSpeechStyleFor(selectedScenarioId))
     setStep('context')
   }
 
@@ -845,7 +852,6 @@ function MessageFlow({
     const templateCandidates = templateCandidatesFor(selectedScenarioId, selectedSituationId, safeSpeechStyleId)
     if (!templateCandidates) return false
 
-    setSpeechStyleId(safeSpeechStyleId)
     setSource('template')
     setCandidates(templateCandidates)
     clearCurrentResultPresentation()
@@ -890,7 +896,6 @@ function MessageFlow({
     } else {
       setSelectedContextAnswer(answer)
     }
-    setSpeechStyleId(safeSpeechStyleId)
     setGenerationStatus('loading')
     setGenerationError(null)
 
@@ -1142,6 +1147,32 @@ function MessageFlow({
     void generateFromManual(true)
   }
 
+  const changeTemplateSpeechStyle = (nextSpeechStyleId: SpeechStyleId) => {
+    if (
+      !selectedScenarioId ||
+      !selectedSituationId ||
+      source !== 'template' ||
+      isPreviousResultShown
+    ) {
+      return
+    }
+
+    const nextCandidates = templateCandidatesFor(
+      selectedScenarioId,
+      selectedSituationId,
+      nextSpeechStyleId,
+    )
+    if (!nextCandidates) return
+
+    cancelGeneration()
+    setSpeechStyleId(nextSpeechStyleId)
+    setCandidates(nextCandidates)
+    clearCurrentResultPresentation()
+    setPreviousResult(null)
+    setIsResultContextOpen(false)
+    setPendingContextAnswer(null)
+  }
+
   const showCurrentResult = () => {
     setIsPreviousResultShown(false)
     setCopiedTone(null)
@@ -1253,11 +1284,6 @@ function MessageFlow({
           <span className="eyebrow">대학생 메시지 작성 도우미</span>
           <h1 id="service-title">답냥이</h1>
           <p>꺼내기 어려운 말, 관계를 아는 냥이와 빠르게 골라봐요.</p>
-          <ul className="brand-points" aria-label="답냥이 특징">
-            <li>긴 설명 없이 빠른 선택</li>
-            <li>관계별 말투</li>
-            <li>비교할 수 있는 세 가지 톤</li>
-          </ul>
         </div>
       </section>
 
@@ -1421,6 +1447,23 @@ function MessageFlow({
               title="어느 톤으로 보낼까냥?"
             />
             <div className="result-bundle">
+              {source === 'template' &&
+                !isPreviousResultShown &&
+                selectedSituationId &&
+                effectiveSpeechStyleId &&
+                selectedSpeechStyle && (
+                  <div className="result-speech-style-panel">
+                    <SpeechStyleSelect
+                      onSelect={changeTemplateSpeechStyle}
+                      scenarioId={selectedScenario.id}
+                      selectedSpeechStyleId={effectiveSpeechStyleId}
+                      variant="result"
+                    />
+                    <p aria-atomic="true" aria-live="polite">
+                      현재 {selectedSpeechStyle.label} 세 문장이에요. 다른 말투를 고르면 바로 바뀌어요.
+                    </p>
+                  </div>
+                )}
               {resultUpdateAnnouncement && !isPreviousResultShown && (
                 <p aria-atomic="true" aria-live="polite" className="result-update-notice" role="status">
                   <strong>{resultUpdateAnnouncement}</strong>

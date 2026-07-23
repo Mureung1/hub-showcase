@@ -57,6 +57,7 @@ function ResultCard({
   const editorRef = useRef<HTMLTextAreaElement | null>(null)
   const wasEditingRef = useRef(false)
   const toneDescriptionId = `result-tone-${candidate.toneLevel}`
+  const editCountId = `result-edit-count-${candidate.toneLevel}`
   const displayedTextHasPlaceholder = hasPlaceholder(displayedText)
 
   useEffect(() => {
@@ -114,6 +115,7 @@ function ResultCard({
       </div>
       {editing ? (
         <textarea
+          aria-describedby={`${toneDescriptionId} ${editCountId}`}
           aria-label={`${candidate.toneLabel} 초안 직접 수정`}
           className="result-edit-textarea"
           disabled={disabled}
@@ -127,6 +129,11 @@ function ResultCard({
         />
       ) : (
         <p ref={(element) => setTextRef(candidate.toneLevel, element)}>{renderCandidateText(displayedText)}</p>
+      )}
+      {editing && (
+        <p className="result-edit-count" id={editCountId}>
+          {displayedText.length} / {candidateMaxLength}자
+        </p>
       )}
       {editing && displayedText.trim().length === 0 && (
         <p className="result-edit-error" role="alert">

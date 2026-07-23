@@ -20,13 +20,32 @@ type RecordValue = Record<string, unknown>
 const isRecord = (value: unknown): value is RecordValue =>
   typeof value === 'object' && value !== null
 
-const embeddingFromResponse = (value: unknown): number[] => {
-  if (!isRecord(value) || !Array.isArray(value.data) || value.data.length !== 1) {
+const embeddingsFromResponse = (value: unknown, expectedCount: number): number[][] => {
+  if (!isRecord(value) || !Array.isArray(value.data) || value.data.length !== expectedCount) {
     throw new EmbeddingProviderError('invalid_response')
   }
-  const item = value.data[0]
-  if (!isRecord(item)) throw new EmbeddingProviderError('invalid_response')
-  return validateEmbedding(item.embedding)
+
+  const indexedEmbeddings: Array<number[] | undefined> = Array.from({
+    length: expectedCount,
+  })
+  for (const item of value.data) {
+    if (
+      !isRecord(item) ||
+      !Number.isInteger(item.index) ||
+      typeof item.index !== 'number' ||
+      item.index < 0 ||
+      item.index >= expectedCount ||
+      indexedEmbeddings[item.index]
+    ) {
+      throw new EmbeddingProviderError('invalid_response')
+    }
+    indexedEmbeddings[item.index] = validateEmbedding(item.embedding)
+  }
+
+  return indexedEmbeddings.map((embedding) => {
+    if (!embedding) throw new EmbeddingProviderError('invalid_response')
+    return embedding
+  })
 }
 
 const failureForStatus = (status: number) => {
@@ -48,61 +67,84 @@ export const createVoyageEmbeddingProvider = (
     throw new EmbeddingProviderError('client_error')
   }
 
+  const requestEmbeddings = async (
+    inputs: readonly string[],
+    inputType: 'document' | 'query',
+    signal?: AbortSignal,
+  ) => {
+    const normalizedInputs = inputs.map((input) => input.trim())
+    if (
+      normalizedInputs.length === 0 ||
+      normalizedInputs.length > 1_000 ||
+      normalizedInputs.some((input) => !input)
+    ) {
+      throw new EmbeddingProviderError('client_error')
+    }
+    if (signal?.aborted) throw new EmbeddingProviderError('aborted')
+
+    const controller = new AbortController()
+    let timedOut = false
+    const abortFromCaller = () => controller.abort()
+    signal?.addEventListener('abort', abortFromCaller, { once: true })
+    const timeout = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, timeoutMs)
+
+    try {
+      const response = await fetchImplementation(voyageEmbeddingsEndpoint, {
+        body: JSON.stringify({
+          input: normalizedInputs,
+          input_type: inputType,
+          model,
+          output_dimension: retrievalEmbeddingDimensions,
+          output_dtype: 'float',
+          truncation: false,
+        }),
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          'content-type': 'application/json',
+        },
+        method: 'POST',
+        signal: controller.signal,
+      })
+
+      if (!response.ok) {
+        throw new EmbeddingProviderError(failureForStatus(response.status))
+      }
+
+      let body: unknown
+      try {
+        body = await response.json()
+      } catch {
+        throw new EmbeddingProviderError('invalid_response')
+      }
+      return embeddingsFromResponse(body, normalizedInputs.length)
+    } catch (error) {
+      if (error instanceof EmbeddingProviderError) throw error
+      if (timedOut) throw new EmbeddingProviderError('timeout')
+      if (signal?.aborted) throw new EmbeddingProviderError('aborted')
+      throw new EmbeddingProviderError('transient')
+    } finally {
+      clearTimeout(timeout)
+      signal?.removeEventListener('abort', abortFromCaller)
+    }
+  }
+
   return {
     dimensions: retrievalEmbeddingDimensions,
     model,
     async embed(request) {
-      const input = request.input.trim()
-      if (!input) throw new EmbeddingProviderError('client_error')
-      if (request.signal?.aborted) throw new EmbeddingProviderError('aborted')
-
-      const controller = new AbortController()
-      let timedOut = false
-      const abortFromCaller = () => controller.abort()
-      request.signal?.addEventListener('abort', abortFromCaller, { once: true })
-      const timeout = setTimeout(() => {
-        timedOut = true
-        controller.abort()
-      }, timeoutMs)
-
-      try {
-        const response = await fetchImplementation(voyageEmbeddingsEndpoint, {
-          body: JSON.stringify({
-            input: [input],
-            input_type: request.inputType,
-            model,
-            output_dimension: retrievalEmbeddingDimensions,
-            output_dtype: 'float',
-            truncation: false,
-          }),
-          headers: {
-            authorization: `Bearer ${apiKey}`,
-            'content-type': 'application/json',
-          },
-          method: 'POST',
-          signal: controller.signal,
-        })
-
-        if (!response.ok) {
-          throw new EmbeddingProviderError(failureForStatus(response.status))
-        }
-
-        let body: unknown
-        try {
-          body = await response.json()
-        } catch {
-          throw new EmbeddingProviderError('invalid_response')
-        }
-        return embeddingFromResponse(body)
-      } catch (error) {
-        if (error instanceof EmbeddingProviderError) throw error
-        if (timedOut) throw new EmbeddingProviderError('timeout')
-        if (request.signal?.aborted) throw new EmbeddingProviderError('aborted')
-        throw new EmbeddingProviderError('transient')
-      } finally {
-        clearTimeout(timeout)
-        request.signal?.removeEventListener('abort', abortFromCaller)
-      }
+      const [embedding] = await requestEmbeddings(
+        [request.input],
+        request.inputType,
+        request.signal,
+      )
+      if (!embedding) throw new EmbeddingProviderError('invalid_response')
+      return embedding
+    },
+    embedMany(request) {
+      return requestEmbeddings(request.inputs, request.inputType, request.signal)
     },
   }
 }
