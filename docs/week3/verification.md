@@ -54,9 +54,11 @@
       `workflow_dispatch` 수동 실행 지원
 - [x] `[코드]` `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`/`BIZINFO_API_KEY`를 GitHub repo
       secrets로 등록, 워크플로우에서 env로 주입
-- [ ] `[CI]` 실제 워크플로우 1회 성공 실행 — **PR 머지 후 확인 필요** (`workflow_dispatch`는
-      default 브랜치에 워크플로우 파일이 있어야 API로 트리거 가능해서, 이 PR 머지 전에는
-      검증 불가능했음)
+- [x] `[CI]` 실제 워크플로우 1회 성공 실행 — **완료 (2026-07-23)**. PR #38 머지 후
+      `gh workflow run crawler.yml --ref main`으로 수동 트리거,
+      [실행 #29983403708](https://github.com/syd348/hub/actions/runs/29983403708) `success`.
+      로그에서 `[crawler] 5건 upsert 완료` 확인 — CI 환경에서도 secrets 정상 주입, API 호출
+      + Supabase upsert 전부 성공
 
 ## 6. 자동 검사
 
