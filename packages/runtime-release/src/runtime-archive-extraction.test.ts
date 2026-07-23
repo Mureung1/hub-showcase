@@ -556,20 +556,25 @@ function writeTarChecksum(tarBytes: Buffer, headerOffset: number): void {
 async function assertArchiveError(
   action: () => Promise<unknown>,
   expectedCode: string,
-): Promise<void> {
+): Promise<RuntimeReleaseAuthorityError> {
+  let observed: RuntimeReleaseAuthorityError | undefined
   await assert.rejects(action, (error: unknown) => {
     assert.equal(error instanceof RuntimeReleaseAuthorityError, true)
+    observed = error as RuntimeReleaseAuthorityError
     assert.equal(
-      (error as RuntimeReleaseAuthorityError).failure.code,
+      observed.failure.code,
       expectedCode,
     )
     return true
   })
+  assert.ok(observed)
+  return observed
 }
 
 function extractFixture(
   fixture: RuntimeArchiveFixture,
   testOptions: RuntimeArchiveExtractionTestOptions = {},
+  signal?: AbortSignal,
 ) {
   return extractVerifiedRuntimeArchive(
     {
@@ -577,6 +582,7 @@ function extractFixture(
       canonicalManifestBytes: fixture.canonicalManifestBytes,
       layout: fixture.layout,
       mutationAuthority: fixture.mutationAuthority,
+      signal,
       staging: fixture.staging,
     },
     testOptions,
@@ -663,6 +669,185 @@ test('extracts one canonical archive into an exact verified staging tree', async
       )).mode & 0o7777,
       0o755,
     )
+  })
+})
+
+test('cancellation stops extraction before recipient mutation after prescan', async () => {
+  await withFixture(async (fixture) => {
+    const cancellation = new AbortController()
+    let materializationStarted = false
+
+    await assertArchiveError(
+      () =>
+        extractFixture(
+          fixture,
+          {
+            afterPrescan: async () => {
+              cancellation.abort()
+            },
+            beforeEntryMaterialization: async () => {
+              materializationStarted = true
+            },
+          },
+          cancellation.signal,
+        ),
+      'runtime_cancelled',
+    )
+
+    assert.equal(materializationStarted, false)
+    assert.deepEqual(await readdir(fixture.staging.path), [])
+  })
+})
+
+test('cancellation interrupts a prescan file chunk before recipient mutation', async () => {
+  await withFixture(async (fixture) => {
+    const cancellation = new AbortController()
+    const observedChunks: string[] = []
+
+    await assertArchiveError(
+      () =>
+        extractFixture(
+          fixture,
+          {
+            beforeArchiveEntryChunk: async (entry) => {
+              observedChunks.push(`${entry.pass}:${entry.path}`)
+              if (
+                entry.pass === 'prescan' &&
+                entry.path === 'manifest.json'
+              ) {
+                cancellation.abort()
+              }
+            },
+          },
+          cancellation.signal,
+        ),
+      'runtime_cancelled',
+    )
+
+    assert.ok(observedChunks.includes('prescan:manifest.json'))
+    assert.deepEqual(await readdir(fixture.staging.path), [])
+  })
+})
+
+test('cancellation before a materialized file write preserves retryable staging residue', async () => {
+  await withFixture(async (fixture) => {
+    const cancellation = new AbortController()
+    let cancelledWritePath: string | undefined
+
+    const error = await assertArchiveError(
+      () =>
+        extractFixture(
+          fixture,
+          {
+            beforeStorageOperation: async (operation) => {
+              if (
+                cancelledWritePath === undefined &&
+                operation.operation === 'file_write'
+              ) {
+                cancelledWritePath = operation.path
+                cancellation.abort()
+              }
+            },
+          },
+          cancellation.signal,
+        ),
+      'runtime_cancelled',
+    )
+
+    assert.equal(error.failure.retryable, true)
+    assert.equal(cancelledWritePath, 'manifest.json')
+    assert.deepEqual(await readdir(fixture.staging.path), ['runtime'])
+    assert.equal(
+      (
+        await stat(
+          path.join(fixture.staging.path, 'runtime/manifest.json'),
+        )
+      ).size,
+      0,
+    )
+  })
+})
+
+test('cancellation checkpoints stop directory, symlink, and final file work', async (t) => {
+  await t.test('before recipient directory creation', async () => {
+    await withFixture(async (fixture) => {
+      const cancellation = new AbortController()
+
+      const error = await assertArchiveError(
+        () =>
+          extractFixture(
+            fixture,
+            {
+              beforeEntryMaterialization: async (entry) => {
+                if (entry.type === 'directory' && entry.path === '') {
+                  cancellation.abort()
+                }
+              },
+            },
+            cancellation.signal,
+          ),
+        'runtime_cancelled',
+      )
+
+      assert.equal(error.failure.retryable, true)
+      assert.deepEqual(await readdir(fixture.staging.path), [])
+    })
+  })
+
+  await t.test('before symlink creation', async () => {
+    await withFixture(async (fixture) => {
+      const cancellation = new AbortController()
+      const symlinkPath = path.join(
+        fixture.staging.path,
+        'runtime/bundle/python/bin/python3',
+      )
+
+      await assertArchiveError(
+        () =>
+          extractFixture(
+            fixture,
+            {
+              beforeEntryMaterialization: async (entry) => {
+                if (entry.type === 'symlink') cancellation.abort()
+              },
+            },
+            cancellation.signal,
+          ),
+        'runtime_cancelled',
+      )
+
+      await assert.rejects(
+        readlink(symlinkPath),
+        (error: unknown) =>
+          error instanceof Error &&
+          'code' in error &&
+          error.code === 'ENOENT',
+      )
+    })
+  })
+
+  await t.test('before final file hash', async () => {
+    await withFixture(async (fixture) => {
+      const cancellation = new AbortController()
+      const verificationPaths: string[] = []
+
+      await assertArchiveError(
+        () =>
+          extractFixture(
+            fixture,
+            {
+              beforeFinalFileVerification: async (entry) => {
+                verificationPaths.push(entry.path)
+                cancellation.abort()
+              },
+            },
+            cancellation.signal,
+          ),
+        'runtime_cancelled',
+      )
+
+      assert.deepEqual(verificationPaths, ['NOTICE'])
+    })
   })
 })
 

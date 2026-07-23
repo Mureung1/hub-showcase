@@ -100,7 +100,10 @@ type ArchivePathGraphNode = {
 }
 
 type ArchivePassMode =
-  | { readonly kind: 'prescan' }
+  | {
+      readonly kind: 'prescan'
+      readonly testOptions: RuntimeArchiveExtractionTestOptions
+    }
   | {
       readonly kind: 'materialize'
       readonly runtimeRoot: string
@@ -157,6 +160,11 @@ export type RuntimeMaterializedTreeVerificationSnapshot = {
  */
 export type RuntimeArchiveExtractionTestOptions = {
   readonly afterPrescan?: () => Promise<void>
+  readonly beforeArchiveEntryChunk?: (input: {
+    readonly chunkBytes: number
+    readonly pass: 'prescan' | 'materialize'
+    readonly path: string
+  }) => Promise<void>
   /**
    * Runs after the directory worker has verified its kernel-held cwd and
    * immediately before the direct-leaf create operation.
@@ -222,14 +230,17 @@ export async function extractVerifiedRuntimeArchive(
       archive,
       input,
       plan,
-      { kind: 'prescan' },
+      { kind: 'prescan', testOptions },
     )
     await testOptions.afterPrescan?.()
+    assertExtractionNotCancelled(input.signal)
     await assertMutationAuthority(input)
+    assertExtractionNotCancelled(input.signal)
     await assertOwnedEmptyStagingIdentity(
       input,
       stagingIdentity,
     )
+    assertExtractionNotCancelled(input.signal)
     stagingCapability = await openDirectoryCapability({
       absolutePath: input.staging.path,
       identity: stagingIdentity,
@@ -237,6 +248,7 @@ export async function extractVerifiedRuntimeArchive(
       evidenceKind: 'runtime_staging_capability_unavailable',
     })
     retainedCapabilities.push(stagingCapability)
+    assertExtractionNotCancelled(input.signal)
 
     runtimeRoot = path.join(
       input.staging.path,
@@ -253,12 +265,14 @@ export async function extractVerifiedRuntimeArchive(
       parent: stagingCapability,
       relativePath: '',
       retainedCapabilities,
+      signal: input.signal,
       testOptions,
     })
     const capabilities = new Map<string, RuntimeDirectoryCapability>([
       ['', runtimeCapability],
     ])
     for (const directory of plan.directories) {
+      assertExtractionNotCancelled(input.signal)
       const capability = await createPlannedDirectory(
         directory,
         runtimeRoot,
@@ -271,12 +285,14 @@ export async function extractVerifiedRuntimeArchive(
       capabilities.set(directory.path, capability)
     }
 
+    assertExtractionNotCancelled(input.signal)
     await runArchivePass(archive, input, plan, {
       kind: 'materialize',
       runtimeRoot,
       capabilities,
       testOptions,
     })
+    assertExtractionNotCancelled(input.signal)
     await createPlannedSymlinks(
       plan,
       runtimeRoot,
@@ -285,12 +301,15 @@ export async function extractVerifiedRuntimeArchive(
       capabilities,
       testOptions,
     )
+    assertExtractionNotCancelled(input.signal)
     await testOptions.beforeFinalVerification?.()
+    assertExtractionNotCancelled(input.signal)
     await assertFinalExtractionAuthority({
       input,
       stagingCapability,
       stagingIdentity,
     })
+    assertExtractionNotCancelled(input.signal)
     const verified = await verifyMaterializedRuntime({
       admission: input.admission,
       canonicalManifestBytes,
@@ -304,11 +323,13 @@ export async function extractVerifiedRuntimeArchive(
       signal: input.signal,
       testOptions,
     })
+    assertExtractionNotCancelled(input.signal)
     await assertFinalExtractionAuthority({
       input,
       stagingCapability,
       stagingIdentity,
     })
+    assertExtractionNotCancelled(input.signal)
     return {
       kind: 'runtime_staging_verification_snapshot',
       release: input.admission.identity,
@@ -325,6 +346,16 @@ export async function extractVerifiedRuntimeArchive(
       },
     }
   } catch (error) {
+    if (isExtractionCancellation(error)) {
+      if (recipientMutationStarted) {
+        throw runtimeAuthorityError('runtime_cancelled', {
+          kind: 'runtime_staging_cancelled_residue_preserved',
+          stagingPath: input.staging.path,
+          cause: error,
+        })
+      }
+      throw error
+    }
     if (recipientMutationStarted) {
       throw runtimeAuthorityError('runtime_recovery_required', {
         kind: 'runtime_staging_residue_preserved',
@@ -379,6 +410,7 @@ export async function verifyMaterializedRuntimeTree(
     0o700,
     'runtime_generation_parent',
   )
+  assertExtractionNotCancelled(input.signal)
   const runtimeIdentity = await inspectOwnedDirectory(
     input.runtimeRoot,
     input.expectedOwnerUid,
@@ -386,6 +418,7 @@ export async function verifyMaterializedRuntimeTree(
     0o700,
     'runtime_generation_runtime',
   )
+  assertExtractionNotCancelled(input.signal)
   const retainedCapabilities: RuntimeDirectoryCapability[] = []
   try {
     const parentCapability = await openDirectoryCapability({
@@ -395,6 +428,7 @@ export async function verifyMaterializedRuntimeTree(
       evidenceKind: 'runtime_generation_parent_open_failed',
     })
     retainedCapabilities.push(parentCapability)
+    assertExtractionNotCancelled(input.signal)
     const runtimeCapability = await openDirectoryCapability({
       absolutePath: input.runtimeRoot,
       identity: runtimeIdentity,
@@ -402,6 +436,7 @@ export async function verifyMaterializedRuntimeTree(
       evidenceKind: 'runtime_generation_runtime_open_failed',
     })
     retainedCapabilities.push(runtimeCapability)
+    assertExtractionNotCancelled(input.signal)
     const capabilities = new Map<string, RuntimeDirectoryCapability>([
       ['', runtimeCapability],
     ])
@@ -427,6 +462,7 @@ export async function verifyMaterializedRuntimeTree(
       retainedCapabilities.push(capability)
       capabilities.set(directory.path, capability)
     }
+    assertExtractionNotCancelled(input.signal)
     const verified = await verifyMaterializedRuntime({
       admission: input.admission,
       canonicalManifestBytes,
@@ -446,6 +482,7 @@ export async function verifyMaterializedRuntimeTree(
       })
     }
     await input.testOptions?.beforeFinalPathRebind?.()
+    assertExtractionNotCancelled(input.signal)
     const reboundRuntime =
       await parentCapability.inspectLeaf(RUNTIME_RECIPIENT_NAME)
     if (
@@ -802,6 +839,7 @@ async function runArchivePass(
   plan: RuntimeArchivePlan,
   mode: ArchivePassMode,
 ): Promise<void> {
+  assertExtractionNotCancelled(input.signal)
   const observed = new Set<string>()
   const pathGraph = createArchivePathGraph()
   let entryCount = 0
@@ -809,11 +847,13 @@ async function runArchivePass(
     limit: input.admission.descriptor.archive.bytes,
     hash: true,
     overflowKind: 'runtime_archive_compressed_bound_exceeded',
+    signal: input.signal,
   })
   const tarMeter = createMeter({
     limit: plan.tarBytes,
     hash: false,
     overflowKind: 'runtime_archive_expanded_bound_exceeded',
+    signal: input.signal,
   })
   const parser = extract({
     allowUnknownFormat: false,
@@ -850,7 +890,10 @@ async function runArchivePass(
     autoClose: false,
   })
   const gunzip = createGunzip()
-  const rawHeaderAudit = createRawTarHeaderAudit(plan.entries.size)
+  const rawHeaderAudit = createRawTarHeaderAudit(
+    plan.entries.size,
+    input.signal,
+  )
   for (const stream of [
     archiveStream,
     archiveMeter.stream,
@@ -863,18 +906,31 @@ async function runArchivePass(
 
   let passError: RuntimeReleaseAuthorityError | undefined
   try {
-    await pipeline(
-      archiveStream,
-      archiveMeter.stream,
-      gunzip,
-      tarMeter.stream,
-      rawHeaderAudit,
-      parser,
-    )
+    if (input.signal === undefined) {
+      await pipeline(
+        archiveStream,
+        archiveMeter.stream,
+        gunzip,
+        tarMeter.stream,
+        rawHeaderAudit,
+        parser,
+      )
+    } else {
+      await pipeline(
+        archiveStream,
+        archiveMeter.stream,
+        gunzip,
+        tarMeter.stream,
+        rawHeaderAudit,
+        parser,
+        { signal: input.signal },
+      )
+    }
   } catch (error) {
-    passError = normalizeArchivePassError(error)
+    passError = normalizeArchivePassError(error, input.signal)
   }
   const entryResults = await Promise.allSettled([...entryTasks])
+  assertExtractionNotCancelled(input.signal)
   const rejectedEntry = entryResults.find(
     (
       result,
@@ -882,9 +938,13 @@ async function runArchivePass(
       result.status === 'rejected',
   )
   if (rejectedEntry !== undefined) {
-    throw normalizeArchivePassError(rejectedEntry.reason)
+    throw normalizeArchivePassError(
+      rejectedEntry.reason,
+      input.signal,
+    )
   }
   if (passError !== undefined) throw passError
+  assertExtractionNotCancelled(input.signal)
 
   if (
     archiveMeter.bytes() !==
@@ -911,7 +971,10 @@ async function runArchivePass(
   }
 }
 
-function createRawTarHeaderAudit(expectedEntryCount: number): Transform {
+function createRawTarHeaderAudit(
+  expectedEntryCount: number,
+  signal: AbortSignal | undefined,
+): Transform {
   let pending = Buffer.alloc(0)
   let bodyBlocks = 0
   let entryCount = 0
@@ -919,8 +982,10 @@ function createRawTarHeaderAudit(expectedEntryCount: number): Transform {
   return new Transform({
     transform(chunk: Buffer, _encoding, callback) {
       try {
+        assertExtractionNotCancelled(signal)
         pending = Buffer.concat([pending, chunk])
         while (pending.byteLength >= TAR_BLOCK_BYTES) {
+          assertExtractionNotCancelled(signal)
           const block = pending.subarray(0, TAR_BLOCK_BYTES)
           pending = pending.subarray(TAR_BLOCK_BYTES)
           if (bodyBlocks > 0) {
@@ -956,6 +1021,12 @@ function createRawTarHeaderAudit(expectedEntryCount: number): Transform {
       }
     },
     flush(callback) {
+      try {
+        assertExtractionNotCancelled(signal)
+      } catch (error) {
+        callback(error as Error)
+        return
+      }
       if (
         pending.byteLength !== 0 ||
         bodyBlocks !== 0 ||
@@ -1049,6 +1120,7 @@ async function handleArchiveEntry(input: {
   readonly parserDestroyed: () => boolean
 }): Promise<void> {
   try {
+    assertExtractionNotCancelled(input.input.signal)
     if (input.entryNumber > input.plan.entries.size) {
       throw unsafeArchive('runtime_archive_entry_count_exceeded')
     }
@@ -1068,11 +1140,14 @@ async function handleArchiveEntry(input: {
     assertSafeHeader(input.header, expected)
     if (expected.type === 'file') {
       if (input.mode.kind === 'prescan') {
-        await consumeAndVerifyFile(
-          input.entry,
+        await consumeAndVerifyFile({
+          entry: input.entry,
           expected,
-          undefined,
-        )
+          output: undefined,
+          pass: input.mode.kind,
+          signal: input.input.signal,
+          testOptions: input.mode.testOptions,
+        })
       } else {
         await materializeFile(
           input.entry,
@@ -1082,8 +1157,9 @@ async function handleArchiveEntry(input: {
         )
       }
     } else {
-      await consumeEmptyEntry(input.entry)
+      await consumeEmptyEntry(input.entry, input.input.signal)
     }
+    assertExtractionNotCancelled(input.input.signal)
     input.next()
   } catch (error) {
     if (!input.parserDestroyed()) input.next(error)
@@ -1273,49 +1349,66 @@ function isSafeSymlinkTarget(
   )
 }
 
-async function consumeAndVerifyFile(
-  entry: Readable,
-  expected: RuntimeManifestFileEntry | ArchiveManifestEntry,
-  output:
+async function consumeAndVerifyFile(input: {
+  readonly entry: Readable
+  readonly expected: RuntimeManifestFileEntry | ArchiveManifestEntry
+  readonly output:
     | {
         write(chunk: Buffer): Promise<void>
       }
-    | undefined,
-): Promise<void> {
+    | undefined
+  readonly pass: 'prescan' | 'materialize'
+  readonly signal: AbortSignal | undefined
+  readonly testOptions: RuntimeArchiveExtractionTestOptions
+}): Promise<void> {
+  assertExtractionNotCancelled(input.signal)
   const hash = createHash('sha256')
   let bytes = 0
-  for await (const value of entry) {
+  for await (const value of input.entry) {
     const chunk = Buffer.from(value)
+    await input.testOptions.beforeArchiveEntryChunk?.({
+      chunkBytes: chunk.byteLength,
+      pass: input.pass,
+      path: input.expected.path,
+    })
+    assertExtractionNotCancelled(input.signal)
     bytes = safeAdd(
       bytes,
       chunk.byteLength,
       'runtime_archive_file_bound_overflow',
     )
-    if (bytes > expected.bytes) {
+    if (bytes > input.expected.bytes) {
       throw unsafeArchive('runtime_archive_file_bound_exceeded')
     }
     hash.update(chunk)
-    if (output !== undefined) await output.write(chunk)
+    if (input.output !== undefined) await input.output.write(chunk)
   }
+  assertExtractionNotCancelled(input.signal)
   if (
-    bytes !== expected.bytes ||
-    hash.digest('hex') !== expected.sha256
+    bytes !== input.expected.bytes ||
+    hash.digest('hex') !== input.expected.sha256
   ) {
     throw runtimeAuthorityError('runtime_integrity_failed', {
       kind: 'runtime_archive_entry_integrity_mismatch',
-      path: expected.path,
+      path: input.expected.path,
     })
   }
 }
 
-async function consumeEmptyEntry(entry: Readable): Promise<void> {
+async function consumeEmptyEntry(
+  entry: Readable,
+  signal: AbortSignal | undefined,
+): Promise<void> {
+  assertExtractionNotCancelled(signal)
   let bytes = 0
   for await (const value of entry) {
+    assertExtractionNotCancelled(signal)
     bytes += Buffer.byteLength(value)
     if (bytes > 0) {
       throw unsafeArchive('runtime_archive_non_file_has_content')
     }
   }
+  assertExtractionNotCancelled(signal)
 }
 
 async function createPlannedDirectory(
@@ -1350,6 +1443,7 @@ async function createPlannedDirectory(
     parent,
     relativePath: directory.path,
     retainedCapabilities,
+    signal: input.signal,
     testOptions,
   })
 }
@@ -1364,6 +1458,7 @@ async function createOwnedDirectory(
     readonly parent: RuntimeDirectoryCapability
     readonly relativePath: string
     readonly retainedCapabilities: RuntimeDirectoryCapability[]
+    readonly signal: AbortSignal | undefined
     readonly testOptions: RuntimeArchiveExtractionTestOptions
   },
 ): Promise<RuntimeDirectoryCapability> {
@@ -1371,8 +1466,10 @@ async function createOwnedDirectory(
     path: input.relativePath,
     type: 'directory',
   })
+  assertExtractionNotCancelled(input.signal)
   const createdDirectory = await runStorageOperation(
     input.testOptions,
+    input.signal,
     'directory_create',
     input.relativePath,
     'runtime_archive_directory_create_failed',
@@ -1380,12 +1477,14 @@ async function createOwnedDirectory(
       input.parent.createDirectory(
         input.leaf,
         input.mode,
-        () =>
-          input.testOptions.afterParentCapabilityCheck?.({
+        async () => {
+          await input.testOptions.afterParentCapabilityCheck?.({
             operation: 'create',
             path: input.relativePath,
             type: 'directory',
-          }) ?? Promise.resolve(),
+          })
+          assertExtractionNotCancelled(input.signal)
+        },
       ),
   )
   const identity = assertNewCapabilityEntry(
@@ -1400,6 +1499,7 @@ async function createOwnedDirectory(
   try {
     finalStats = await runStorageOperation(
       input.testOptions,
+      input.signal,
       'directory_chmod',
       input.relativePath,
       'runtime_archive_directory_mode_failed',
@@ -1410,6 +1510,7 @@ async function createOwnedDirectory(
         ),
     )
     handleOpen = false
+    assertExtractionNotCancelled(input.signal)
   } finally {
     if (handleOpen) {
       await input.parent
@@ -1433,6 +1534,7 @@ async function createOwnedDirectory(
     mode: input.mode,
     evidenceKind: 'runtime_archive_new_directory_open_failed',
   })
+  assertExtractionNotCancelled(input.signal)
   input.retainedCapabilities.push(capability)
   return capability
 }
@@ -1455,6 +1557,7 @@ async function openDirectoryCapability(input: {
 
 async function runStorageOperation<T>(
   testOptions: RuntimeArchiveExtractionTestOptions,
+  signal: AbortSignal | undefined,
   operation:
     | 'directory_create'
     | 'directory_chmod'
@@ -1468,10 +1571,12 @@ async function runStorageOperation<T>(
   action: () => Promise<T>,
 ): Promise<T> {
   try {
+    assertExtractionNotCancelled(signal)
     await testOptions.beforeStorageOperation?.({
       operation,
       path: entryPath,
     })
+    assertExtractionNotCancelled(signal)
     return await action()
   } catch (error) {
     if (error instanceof RuntimeReleaseAuthorityError) throw error
@@ -1618,6 +1723,7 @@ async function materializeFile(
     path: expected.path,
     type: 'file',
   })
+  assertExtractionNotCancelled(input.signal)
   const parentRelative = path.posix.dirname(expected.path)
   const parent = mode.capabilities.get(
     parentRelative === '.' ? '' : parentRelative,
@@ -1634,6 +1740,7 @@ async function materializeFile(
   const leaf = path.posix.basename(expected.path)
   const opened = await runStorageOperation(
     mode.testOptions,
+    input.signal,
     'file_create',
     expected.path,
     'runtime_archive_file_create_failed',
@@ -1641,12 +1748,14 @@ async function materializeFile(
       parent.openFile(
         leaf,
         fileMode(expected),
-        () =>
-          mode.testOptions.afterParentCapabilityCheck?.({
+        async () => {
+          await mode.testOptions.afterParentCapabilityCheck?.({
             operation: 'create',
             path: expected.path,
             type: 'file',
-          }) ?? Promise.resolve(),
+          })
+          assertExtractionNotCancelled(input.signal)
+        },
       ),
   )
   const identity = assertNewCapabilityEntry(
@@ -1658,28 +1767,37 @@ async function materializeFile(
   )
   let handleOpen = true
   try {
-    await consumeAndVerifyFile(entry, expected, {
-      write: async (chunk) => {
-        const bytesWritten = await runStorageOperation(
-          mode.testOptions,
-          'file_write',
-          expected.path,
-          'runtime_archive_file_write_failed',
-          () => parent.writeFile(opened.handle, chunk),
-        )
-        if (bytesWritten !== chunk.byteLength) {
-          throw runtimeAuthorityError(
-            'runtime_storage_unavailable',
-            {
-              kind: 'runtime_archive_file_short_write',
-              path: expected.path,
-            },
+    await consumeAndVerifyFile({
+      entry,
+      expected,
+      output: {
+        write: async (chunk) => {
+          const bytesWritten = await runStorageOperation(
+            mode.testOptions,
+            input.signal,
+            'file_write',
+            expected.path,
+            'runtime_archive_file_write_failed',
+            () => parent.writeFile(opened.handle, chunk),
           )
-        }
+          if (bytesWritten !== chunk.byteLength) {
+            throw runtimeAuthorityError(
+              'runtime_storage_unavailable',
+              {
+                kind: 'runtime_archive_file_short_write',
+                path: expected.path,
+              },
+            )
+          }
+        },
       },
+      pass: mode.kind,
+      signal: input.signal,
+      testOptions: mode.testOptions,
     })
     await runStorageOperation(
       mode.testOptions,
+      input.signal,
       'file_chmod',
       expected.path,
       'runtime_archive_file_mode_failed',
@@ -1687,11 +1805,13 @@ async function materializeFile(
     )
     await runStorageOperation(
       mode.testOptions,
+      input.signal,
       'file_sync',
       expected.path,
       'runtime_archive_file_sync_failed',
       () => parent.syncFile(opened.handle),
     )
+    assertExtractionNotCancelled(input.signal)
     const stats = await parent.finishFile(opened.handle)
     handleOpen = false
     assertCapabilityEntry(
@@ -1720,10 +1840,12 @@ async function createPlannedSymlinks(
   testOptions: RuntimeArchiveExtractionTestOptions,
 ): Promise<void> {
   for (const expected of orderSymlinks(plan.symlinks)) {
+    assertExtractionNotCancelled(input.signal)
     await testOptions.beforeEntryMaterialization?.({
       path: expected.path,
       type: 'symlink',
     })
+    assertExtractionNotCancelled(input.signal)
     const parentRelative = path.posix.dirname(expected.path)
     const parent = capabilities.get(
       parentRelative === '.' ? '' : parentRelative,
@@ -1748,6 +1870,7 @@ async function createPlannedSymlinks(
     const leaf = path.posix.basename(expected.path)
     const stats = await runStorageOperation(
       testOptions,
+      input.signal,
       'symlink_create',
       expected.path,
       'runtime_archive_symlink_create_failed',
@@ -1755,14 +1878,17 @@ async function createPlannedSymlinks(
         parent.createSymlink(
           leaf,
           expected.target,
-          () =>
-            testOptions.afterParentCapabilityCheck?.({
+          async () => {
+            await testOptions.afterParentCapabilityCheck?.({
               operation: 'create',
               path: expected.path,
               type: 'symlink',
-            }) ?? Promise.resolve(),
+            })
+            assertExtractionNotCancelled(input.signal)
+          },
         ),
     )
+    assertExtractionNotCancelled(input.signal)
     assertNewCapabilityEntry(
       stats,
       destination,
@@ -2127,6 +2253,7 @@ async function verifyMaterializedFile(
     await input.testOptions.beforeFinalFileVerification?.({
       path: expected.path,
     })
+    assertExtractionNotCancelled(input.signal)
     const verified = await observeCapability(
       'runtime_archive_extracted_file_read_failed',
       () =>
@@ -2201,6 +2328,15 @@ function assertExtractionNotCancelled(
       kind: 'runtime_archive_extraction_cancelled',
     })
   }
+}
+
+function isExtractionCancellation(
+  error: unknown,
+): error is RuntimeReleaseAuthorityError {
+  return (
+    error instanceof RuntimeReleaseAuthorityError &&
+    error.failure.code === 'runtime_cancelled'
+  )
 }
 
 function assertVerifiedMaterializedFileRead(input: {
@@ -2340,6 +2476,7 @@ function createMeter(input: {
   readonly limit: number
   readonly hash: boolean
   readonly overflowKind: string
+  readonly signal: AbortSignal | undefined
 }): {
   readonly stream: Transform
   readonly bytes: () => number
@@ -2350,6 +2487,7 @@ function createMeter(input: {
   const stream = new Transform({
     transform(chunk: Buffer, _encoding, callback) {
       try {
+        assertExtractionNotCancelled(input.signal)
         bytes = safeAdd(bytes, chunk.byteLength, input.overflowKind)
         if (bytes > input.limit) {
           callback(unsafeArchive(input.overflowKind))
@@ -2473,7 +2611,14 @@ function unsafeArchive(
 
 function normalizeArchivePassError(
   error: unknown,
+  signal: AbortSignal | undefined,
 ): RuntimeReleaseAuthorityError {
+  if (signal?.aborted === true) {
+    return runtimeAuthorityError('runtime_cancelled', {
+      kind: 'runtime_archive_extraction_cancelled',
+      cause: error,
+    })
+  }
   if (error instanceof RuntimeReleaseAuthorityError) return error
   return runtimeAuthorityError('runtime_integrity_failed', {
     kind: 'runtime_archive_parse_failed',
