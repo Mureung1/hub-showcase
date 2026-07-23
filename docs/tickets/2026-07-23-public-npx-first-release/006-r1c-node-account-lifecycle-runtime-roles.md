@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -49,6 +49,15 @@ Node Runtime이 frozen `CodexAccountLifecycle`을 구현하고 생성 시 `auth-
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `git diff --check`
 - Manual or live smoke: 없음. Fake App Server actual-child matrix로 account-only denial과 full cleanup을 확인한다.
 
+## Claim Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Exact corrective handoff | `9b4507f52113549f61dc156c028a460f11b9210c` |
+| Atomic Runtime boundary | Reviewed R1b Python bridge와 canonical production Runtime serialization을 포함하지만 Node account decoder가 아직 old readiness frame을 기대해 `validate:node-runtime`가 red인 staging tip이다. R1b와 R1c는 이 branch에서 green pair로 만든 뒤 함께 integration에 반영한다. |
+| Predecessor evidence | R1b fixed reviewed tip `4332b086f994764e5ab7a494733ebc5d46071824`; Python bridge 39/39, Ruff, production Runtime materialization/verification green |
+| Claim scope | Frozen `account-contract.ts`, shared manifest·lockfile, Server/Browser와 sibling lane을 변경하지 않고 ticket의 `writablePaths`만 사용한다. |
+
 ## Blocked By
 
 - [005-r1b-bounded-python-account-bridge.md](005-r1b-bounded-python-account-bridge.md) — R1b — bounded Python account bridge를 구현한다
@@ -73,7 +82,7 @@ Node Runtime이 frozen `CodexAccountLifecycle`을 구현하고 생성 시 `auth-
 | owner | `R` — Runtime |
 | branch | `codex/public-preview-r1c-node-account` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/r1c-node-account` |
-| handoffSha | Claim 시 coordinator가 005의 fixed reviewed SHA를 integration branch에 `--no-ff` merge하고 predecessor 및 integration Runtime/root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `9b4507f52113549f61dc156c028a460f11b9210c` — reviewed R1b와 canonical Runtime serialization을 보존한 corrective staging tip이다. Node incompatibility 때문에 integration은 의도적으로 아직 진전시키지 않았으며 R1b+R1c를 atomic하게 검증한다. |
 | writablePaths | `packages/codex-chat-runtime/src/**` 중 implementation·test files (`account-contract.ts`와 다른 S1 frozen contract 제외); Runtime type tests; account actual-child fixtures; `docs/tickets/2026-07-23-public-npx-first-release/006-r1c-node-account-lifecycle-runtime-roles.md` |
 | consumedContracts | S1 frozen `CodexAccountLifecycle`·Runtime role contract, R1b strict bridge account family와 current Runtime supervisor invariants |
 | predecessorEvidence | 005 fixed reviewed SHA, bridge attempt/race/leak/cleanup receipt와 exact SDK/production Runtime verification |
