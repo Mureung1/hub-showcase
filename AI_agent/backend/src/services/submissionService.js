@@ -34,6 +34,7 @@ const publicSubmissionFields = (submission) => {
     missionId: submission.missionId,
     missionTitle: submission.missionTitle || submission.mission?.title || "",
     status: submission.status,
+    checkedItems: submission.checkedItems || [],
     submittedUrl: submission.submittedUrl,
     submittedDescription: submission.submittedDescription,
     submittedFileName: submission.submittedFileName,

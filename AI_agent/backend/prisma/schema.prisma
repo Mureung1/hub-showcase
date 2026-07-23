@@ -81,6 +81,7 @@ model UserMission {
   missionId            String
   status               String    @default("pending")
   missionTitle         String?
+  checkedItems         String[]  @default([])
   submittedUrl         String?
   submittedDescription String?
   submittedFileName    String?

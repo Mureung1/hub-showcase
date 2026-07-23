@@ -528,6 +528,80 @@ Query:
 - `keyword`가 비어 있으면 빈 배열을 반환한다.
 - 커리어넷 API 키가 없으면 fallback 전공 목록에서 검색한다.
 
+## 미션 진행 API
+
+### 미션 진행 상태 조회
+
+- Method: `GET`
+- Path: `/api/missions/:missionId/progress`
+- 인증: 필요
+- 사용 화면: 미션 상세 체크리스트
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "progress": {
+    "id": "clx...",
+    "userId": "clx...",
+    "missionId": "it-service-mvp",
+    "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+    "status": "in_progress",
+    "checkedItems": ["문제 정의", "입력 폼"],
+    "submittedAt": null,
+    "createdAt": "2026-07-23T00:00:00.000Z",
+    "updatedAt": "2026-07-23T00:00:00.000Z"
+  }
+}
+```
+
+진행 상태가 없으면 `progress`는 `null`이다.
+
+### 미션 진행 상태 저장
+
+- Method: `PATCH`
+- Path: `/api/missions/:missionId/progress`
+- 인증: 필요
+- 사용 화면: 미션 상세 체크리스트
+
+Request body:
+
+```json
+{
+  "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+  "missionSummary": "작은 문제를 MVP로 정의하고 구현합니다.",
+  "checkedItems": ["문제 정의", "입력 폼"],
+  "checklistItems": ["문제 정의", "입력 폼", "DB 저장", "README 작성"]
+}
+```
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "progress": {
+    "id": "clx...",
+    "userId": "clx...",
+    "missionId": "it-service-mvp",
+    "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+    "status": "in_progress",
+    "checkedItems": ["문제 정의", "입력 폼"],
+    "submittedAt": null,
+    "createdAt": "2026-07-23T00:00:00.000Z",
+    "updatedAt": "2026-07-23T00:00:00.000Z"
+  }
+}
+```
+
+특이사항:
+
+- 체크 항목이 없으면 `status`는 `pending`으로 저장한다.
+- 체크 항목이 있으면 `status`는 `in_progress`로 저장한다.
+- 전체 체크리스트 항목이 모두 체크되면 `status`는 `completed`로 저장한다.
+- 이미 제출된 미션은 진행 상태 저장 시에도 `submitted` 상태를 유지한다.
+
 ## 헬스체크 API
 
 ### 서버 상태 확인
@@ -551,8 +625,6 @@ Query:
 다음 기능은 Prisma 모델 또는 화면 초안은 있으나 백엔드 라우트가 아직 없다.
 
 - 미션 추천 목록 조회
-- 사용자별 미션 시작/진행 상태 저장
-- 미션 결과물 URL 또는 파일 업로드
 - AI 피드백 저장/조회
 - 포트폴리오 자동 생성
 
