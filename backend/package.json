@@ -10,7 +10,7 @@
     "lint": "oxlint",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -30,6 +30,7 @@
     "nodemon": "^3.1.14",
     "oxlint": "^1.73.0",
     "prettier": "^3.9.4",
-    "prisma": "^7.8.0"
+    "prisma": "^7.8.0",
+    "vitest": "^4.1.10"
   }
 }

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { prisma } from '../config/prismaClient.js'
 import { validateSchoolEmail } from '../utils/validateSchoolEmail.js'
 import { env } from '../config/env.js'
+import { createUniqueInviteCode } from '../services/inviteCodeService.js'
 
 const SALT_ROUNDS = 10
 const JWT_EXPIRES_IN = '7d'
@@ -66,6 +67,9 @@ export async function signup(req, res) {
     // 나이를 바탕으로 출생연도 대략 계산
     const birthYear = new Date().getFullYear() - ageNumber
 
+    // 5-1. 중복되지 않는 초대 코드 발급
+    const inviteCode = await createUniqueInviteCode()
+
     // 6. DB에 사용자 저장 (is_verified는 우선 false)
     const user = await prisma.user.create({
       data: {
@@ -78,6 +82,7 @@ export async function signup(req, res) {
         schoolName,
         schoolEmail,
         isVerified: false,
+        inviteCode,
       },
     })
 

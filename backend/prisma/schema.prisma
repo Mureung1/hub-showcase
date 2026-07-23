@@ -24,6 +24,7 @@ model User {
   gender       String   @db.VarChar(10)
   birthYear    Int      @map("birth_year")
   schoolName   String   @map("school_name") @db.VarChar(100)
+  inviteCode   String?  @unique @map("invite_code") @db.VarChar(50)
   createdAt    DateTime @default(now()) @map("created_at")
 
   // 관계
@@ -35,6 +36,13 @@ model User {
   chatMessages      ChatMessage[]
   reportsMade       Report[]            @relation("Reporter")
   reportsReceived   Report[]            @relation("ReportTarget")
+
+  candidateChatRoomsAsUser1 CandidateChatRoom[]    @relation("CandidateChatRoomUser1")
+  candidateChatRoomsAsUser2 CandidateChatRoom[]    @relation("CandidateChatRoomUser2")
+  candidateChatMessagesSent CandidateChatMessage[] @relation("CandidateChatMessageSender")
+
+  teamInvitesSent     TeamInvite[] @relation("TeamInviteFrom")
+  teamInvitesReceived TeamInvite[] @relation("TeamInviteTo")
 
   @@map("users")
 }
@@ -114,6 +122,7 @@ model DatingTeam {
 
   leader  User               @relation("TeamLeader", fields: [leaderId], references: [userId])
   members DatingTeamMember[]
+  invites TeamInvite[]
 
   @@map("dating_teams")
 }
@@ -206,4 +215,63 @@ model Report {
   target   User @relation("ReportTarget", fields: [targetId], references: [userId])
 
   @@map("reports")
+}
+
+// ==========================================
+// 9. candidate_chat_rooms / candidate_chat_messages
+//    동성 매칭 후보끼리 매칭 확정 전 초대 코드 교환용 임시 채팅
+//    (매칭 확정 후 채팅은 기존 matches 기반 ChatRoom/ChatMessage 그대로 사용)
+// ==========================================
+model CandidateChatRoom {
+  id        BigInt   @id @default(autoincrement())
+  // user1Id에는 항상 둘 중 작은 userId를 저장한다 (중복 방 생성 방지를 위한 정렬 규칙).
+  // DB 레벨에서 강제하지 않고 애플리케이션 로직에서 보장한다.
+  user1Id   BigInt   @map("user1_id")
+  user2Id   BigInt   @map("user2_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user1    User                   @relation("CandidateChatRoomUser1", fields: [user1Id], references: [userId])
+  user2    User                   @relation("CandidateChatRoomUser2", fields: [user2Id], references: [userId])
+  messages CandidateChatMessage[]
+
+  @@unique([user1Id, user2Id])
+  @@map("candidate_chat_rooms")
+}
+
+model CandidateChatMessage {
+  id         BigInt   @id @default(autoincrement())
+  chatRoomId BigInt   @map("chat_room_id")
+  senderId   BigInt   @map("sender_id")
+  content    String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  chatRoom CandidateChatRoom @relation(fields: [chatRoomId], references: [id])
+  sender   User              @relation("CandidateChatMessageSender", fields: [senderId], references: [userId])
+
+  @@map("candidate_chat_messages")
+}
+
+// ==========================================
+// 10. team_invites - 과팅 팀 초대 (코드로 팀원 초대)
+// ==========================================
+enum InviteStatus {
+  pending
+  accepted
+  rejected
+}
+
+model TeamInvite {
+  id         BigInt       @id @default(autoincrement())
+  fromUserId BigInt       @map("from_user_id")
+  toUserId   BigInt       @map("to_user_id")
+  // 초대 시점엔 비어있고, 수락 시점에 채워짐
+  teamId     BigInt?      @map("team_id")
+  status     InviteStatus @default(pending)
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  fromUser User        @relation("TeamInviteFrom", fields: [fromUserId], references: [userId])
+  toUser   User        @relation("TeamInviteTo", fields: [toUserId], references: [userId])
+  team     DatingTeam? @relation(fields: [teamId], references: [teamId])
+
+  @@map("team_invites")
 }
