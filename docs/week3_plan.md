@@ -168,13 +168,37 @@ isProject: false
 > [`docs/week3/full-coverage-plan.md`](week3/full-coverage-plan.md)에 정리하고
 > [이슈 #40](https://github.com/syd348/hub/issues/40)으로 등록함 (아직 미구현).
 
+## 후속 이슈 (#43·#44) — 3~4주차 범위 작업, `Week 3 Crawler Pipeline` 마일스톤에 등록 (2026-07-23)
+
+리스크 표 검토 중 완료 기준이 있는 미착수 작업 2건을 이슈로 등록했다. 아직 시작 전.
+
+### [#43] 매칭 조건 필터 + 점수 알고리즘 구현
+- **목표**: 온보딩 프로필(업종/지역/직원수/연매출/업력) 기준 조건 필터링 + 매칭 점수 계산
+- **작업**
+  - [ ] `subsidies` 스키마에 업종/지역 등 구조화 컬럼 추가 여부 결정
+  - [ ] 프로필-지원금 조건 비교 로직 구현 (필터 또는 가중치)
+  - [ ] `match` 점수를 조건 부합도 기반으로 계산 (현재 mock 고정값/크롤러 중립값 50 대체)
+  - [ ] 크롤러의 `trgetNm` 등 실데이터 필드 활용 여부 검토
+- **완료 기준**: 업종/지역 조건에 맞는 지원금만 필터링되고, 조건 부합도에 따라 `match` 점수가
+  실제로 계산되어 반환된다.
+
+### [#44] bsnsSumryCn 구조화 추출 (amount/qualifications/documents)
+- **목표**: 크롤러가 가져오는 사업개요(`bsnsSumryCn`)에서 지원금액·자격요건·서류를 추출해
+  #28~#30에서 정한 fallback 문구를 실제 값으로 대체
+- **작업**
+  - [ ] 정규식 규칙 파싱 vs Claude API 추출 방식 결정
+  - [ ] `amount` 추출 (실패 시 기존 fallback 유지)
+  - [ ] `qualifications[]`/`documents[]` 추출
+  - [ ] 추출 정확도 검증 방법 정하고 실제 수집 데이터로 확인
+- **완료 기준**: 크롤러가 수집한 공고 중 일정 비율 이상에서 fallback 문구 대신 실제 값이 채워진다.
+
 ## 리스크 / 결정 필요
 
 | 항목 | 내용 | 제안 방침 |
 |------|------|-----------|
 | API 키 승인 소요 시간 | 개인 신청은 즉시 발급, 기업 신청만 1~2일 | 낮은 리스크로 재평가. 개인 신청으로 진행, 그래도 월요일 최우선 처리 |
-| 응답 필드 부족 (`qualifications`/`documents`/`method`/`contact`) | `Subsidy` 타입 다수 필드에 대응 API 필드 없음 | 이번 주는 원문 링크 안내 위주로 채우고, AI 요약/정교한 파싱은 로드맵 2주차 항목으로 후순위 |
-| 매칭 조건 필터 (업종/지역) | API가 구조화된 업종/지역 코드를 주지 않음 (해시태그 정도) | 이번 주는 수집·저장까지만. 조건 필터 고도화는 3주차 매칭 알고리즘 이슈로 이관 |
+| 응답 필드 부족 (`qualifications`/`documents`/`method`/`contact`) | `Subsidy` 타입 다수 필드에 대응 API 필드 없음 | 이번 주는 원문 링크 안내 위주로 채우고, AI 요약/정교한 파싱은 로드맵 4주차 항목으로 후순위 → [이슈 #44](https://github.com/syd348/hub/issues/44)로 등록 (2026-07-23) |
+| 매칭 조건 필터 (업종/지역) | API가 구조화된 업종/지역 코드를 주지 않음 (해시태그 정도) | 이번 주는 수집·저장까지만. 조건 필터 고도화는 3주차 매칭 알고리즘 이슈로 이관 → [이슈 #43](https://github.com/syd348/hub/issues/43)으로 등록 (2026-07-23) |
 | 크롤러 실행 위치 | `server/` 안 vs 별도 `crawler/` 워크스페이스 | CLAUDE.md 디렉토리 구조대로 `crawler/` 분리, GitHub Actions cron이 직접 실행 (서버 상시 구동 불필요) |
 | 기존 샘플 데이터(`sample-subsidies.ts`) | 언제 대체하나 | 이번 주는 실데이터 upsert 파이프라인 검증까지만, 완전 대체는 검증 후 별도 판단 |
 | cron 실행 주기 | 하루 1회 vs 여러 번 | 공고 갱신 빈도가 낮을 것으로 예상 — 하루 1회로 시작, 필요시 조정 |
@@ -188,3 +212,4 @@ Week 2와 동일하게 `issue-workflow` 스킬 흐름을 따른다: 계획 문�
 - **라벨**: `week-3`(기존 라벨 설명 오류 수정), `area:crawler`(신규 추가)
 - **이슈**: [#28](https://github.com/syd348/hub/issues/28) [#29](https://github.com/syd348/hub/issues/29) [#30](https://github.com/syd348/hub/issues/30) [#31](https://github.com/syd348/hub/issues/31) [#32](https://github.com/syd348/hub/issues/32) 생성 완료 (2026-07-22)
   — 순번은 GitHub 실제 이슈 번호(#28~#32)를 그대로 사용 (PR이 번호를 함께 소비해 #13~#17과 어긋나므로 실제 번호로 통일)
+  + 후속 발견 이슈 [#40](https://github.com/syd348/hub/issues/40) [#43](https://github.com/syd348/hub/issues/43) [#44](https://github.com/syd348/hub/issues/44)도 같은 마일스톤에 편입 (2026-07-23)

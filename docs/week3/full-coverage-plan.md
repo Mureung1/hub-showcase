@@ -4,6 +4,8 @@ Week 3(#28~#32)에서 만든 크롤러 파이프라인은 "동작 확인"이 목
 작게 잡혀 있었다. 실제로 지원 중인 공고를 다 반영하려면 수집 범위를 넓혀야 한다는 걸 실행해보고
 나서 알게 됐다 — 이 문서는 그 후속 작업 계획이다.
 
+> **완료 (2026-07-23)**: 아래 "현재 상태"는 착수 전 스냅샷, "구현 완료" 섹션이 실제 결과다.
+
 ## 현재 상태 (2026-07-23)
 
 - **완료된 것 (#28~#32, 전부 머지됨)**
@@ -37,55 +39,52 @@ Week 3(#28~#32)에서 만든 크롤러 파이프라인은 "동작 확인"이 목
 관찰했지만, 공식 문서로 보장된 건 아니다. `run` 모드가 "최근 N건 = 새 공고 놓치지 않음"이
 성립하려면 이 가정이 계속 맞아야 한다 — 아래 리스크 표 참고.
 
-## 앞으로 구현해야 할 것
+## 구현 완료 (2026-07-23, 이슈 #40)
 
-### 1. 공통 파이프라인 함수로 리팩터
+### 1. 공통 파이프라인 함수로 리팩터 — 완료
+- [x] `crawler/src/pipeline.ts` 신규 — `processAnnouncements()`(map → 마감 제외 → upsert), `index.ts`/`backfill.ts`가 공유
 
-- `crawler/src/index.ts`의 "map → 마감 제외 → upsert" 로직을 `backfill`과 `run`이 공유할 수 있게
-  분리 (예: `pipeline.ts` 또는 `index.ts` 내 export 함수)
-- `bizinfo-client.ts`의 `fetchAnnouncements()`는 이미 페이지 단위 함수라 그대로 재사용 가능
+### 2. `backfill` 스크립트 신규 작성 — 완료
+- [x] `crawler/src/backfill.ts` — `pageIndex` 1부터 증가, 응답이 `PAGE_UNIT`(200)보다 적으면 마지막
+      페이지로 간주하고 중단
+- [x] 페이지 단위로 upsert (중간 실패해도 이미 처리한 페이지는 반영됨)
+- [x] 페이지 사이 300ms 지연
+- [x] 진행 상황 로그 (`[backfill] page N: ... (누적 X/Y건)`)
+- [x] `crawler/package.json`에 `"backfill": "tsx src/backfill.ts"` 추가
 
-### 2. `backfill` 스크립트 신규 작성
+### 3. `run`(cron) 배치 크기 조정 — 완료
+- [x] `index.ts`의 `pageUnit`을 `5` → `200`으로 변경, `pipeline.ts` 공용 로직 사용하도록 재작성
 
-- `pageIndex`를 1부터 증가시키며 반복 호출, 응답이 빈 배열이거나 `pageUnit`보다 적게 오면 마지막
-  페이지로 간주하고 중단
-- 페이지마다 map → 마감 제외 → upsert (한 번에 다 모았다가 upsert하지 않고 페이지 단위로 처리 —
-  중간에 실패해도 이미 처리한 페이지는 남도록)
-- API에 부담 안 주려고 페이지 사이 짧은 지연(예: 200~300ms) 추가
-- 진행 상황 로그: `[backfill] N/1433건 처리 중...` 같은 식으로 실시간 확인 가능하게
-- `crawler/package.json`에 `"backfill": "tsx src/backfill.ts"` 스크립트 추가
+### 4. 검증 — 완료, 그리고 중요한 버그 하나 더 발견/수정
+- [x] 실제 `npm run backfill -w @hub/crawler` 실행 → **1500건 전부 조회, 1500건 upsert, 마감
+      제외 0건** (API가 이미 활성 공고 위주로 주는 것으로 보임). 재실행해도 동일 수치 —
+      upsert idempotent 확인
+- [x] **대량 실데이터에서 새 버그 발견**: `reqstMthPapersCn`(접수방법)이 없는 공고가 실제로
+      존재해 `normalizeWhitespace()`에서 크래시. 5~13건 규모 테스트로는 안 보였던 문제.
+      `BizinfoAnnouncement`의 `reqstMthPapersCn`/`refrncNm`/`excInsttNm`/`trgetNm`을
+      optional로 정정하고, `mapper.ts`에 fallback 처리 추가 (테스트 2건 추가, 총 35건 통과)
+- [x] **더 심각한 버그 발견/수정**: 백필로 DB가 1508건(샘플 8 + 실데이터 1500)이 됐는데
+      `GET /api/subsidies`가 **1000건까지만** 반환. PostgREST가 `.range()` 없이는 기본
+      1000행 제한을 건다는 걸 이번에 처음 확인 — `server/src/db/subsidies-repo.ts`의
+      `loadAll()`을 1000건씩 페이지네이션 순회하도록 수정, `curl` 확인 결과 1508건 정상 반환
+- [x] GitHub Actions cron(`run`, pageUnit=200)은 별도 재트리거 없이 다음 스케줄(매일
+      00:00 UTC)에 자동으로 새 로직 반영됨
 
-### 3. `run`(기존 cron 실행) 배치 크기 조정
-
-- `index.ts`의 `pageUnit`을 `5` → `200`(제안값, 아래 리스크 표에서 최종 확정)으로 변경
-- 매일 최근 200건만 훑는 구조가 되므로, 이미 DB에 있는 공고는 upsert가 그냥 같은 값으로
-  덮어쓰기(변화 없음), 새 공고만 추가됨
-
-### 4. 검증
-
-- `backfill` 실행 후 `GET /api/subsidies` 또는 직접 DB 쿼리로 실제 upsert된 건수 확인
-  (마감 지난 공고 제외된 수 vs 전체 1433건 대비 비율도 로그로 남기면 좋음)
-- `backfill` 재실행해도 중복이 안 생기는지(idempotent) 재확인 — 기존 `upsertSubsidies()`가
-  `onConflict: 'id'`라 이론상 안전하지만, 대량 페이지네이션에서도 동일하게 동작하는지 실제로 확인
-- `run`(200건) 실행 후에도 정상 동작하는지 확인, GitHub Actions cron도 재트리거해서 확인
-
-### 5. 문서화
-
-- `docs/week3_plan.md` 또는 새 이슈(#33 등)로 정식 등록할지, 아니면 이 문서 하나로 충분한지 결정
-- 완료되면 `docs/week3/verification.md`에 backfill 실행 결과(총 upsert 건수, 마감 제외 건수) 추가 기록
+### 5. 문서화 — 진행 중
+- [x] 이슈 #40으로 등록됨 (Week 3 마일스톤 편입)
+- [ ] `docs/week3/verification.md`에 이번 backfill 결과 + 두 버그 수정 내용 추가 기록
 
 ## 리스크 / 결정 필요
 
-| 항목 | 내용 | 결정 필요 |
+| 항목 | 내용 | 상태 |
 |------|------|-----------|
-| `run` 모드 배치 크기 | 200건으로 제안했지만 근거는 "적당히 커 보여서" 수준 | 실제 하루에 새로 올라오는 공고 수를 며칠 관찰하고 조정할지, 지금은 200으로 확정하고 갈지 |
-| API 정렬 순서 미보장 | "최신순"이라는 관찰만 있고 공식 보장 없음 | `run` 모드가 새 공고를 놓칠 가능성을 감수할지, 아니면 `run`도 훨씬 더 큰 배치(예: 500)로 안전 마진을 둘지 |
-| backfill 소요 시간 | 1433건 ÷ pageUnit(예: 200) ≈ 8번 호출, 지연 포함해도 수 초~수십 초 예상이지만 실측 안 함 | 실행해보고 너무 오래 걸리면 pageUnit을 더 키울지 |
-| 마감 지난 공고를 backfill 때도 계속 거를지 | 지금 방침은 `dday < 0`이면 무조건 제외 | 과거 이력 데이터로 남겨두고 싶은 경우가 있을지 (지금은 서비스 목적상 불필요하다고 판단, 재확인 필요) |
-| GitHub Actions 실행 시간/비용 | backfill을 cron에 넣지 않고 수동 1회만 실행 | 맞는 방향인지, 아니면 backfill도 워크플로우로 노출해둘지(`workflow_dispatch` input으로 모드 선택 등) |
+| `run` 모드 배치 크기 | 200건으로 제안했지만 근거는 "적당히 커 보여서" 수준 | 200으로 확정하고 진행. 실제 하루 신규 공고 수는 며칠 cron 로그 관찰 후 재조정 |
+| API 정렬 순서 미보장 | "최신순"이라는 관찰만 있고 공식 보장 없음 | 여전히 미해결 — `run`이 새 공고를 놓칠 가능성 남아있음. 문제 되면 배치를 키우거나 정기 백필로 보완 |
+| backfill 소요 시간 | 1500건 ÷ 200 = 8번 호출 | **실측 완료** — 지연(300ms) 포함 수십 초 내 완료, 문제없는 수준 |
+| 마감 지난 공고를 backfill 때도 계속 거를지 | `dday < 0`이면 무조건 제외 | 이번 백필에선 마감 제외 0건 — 실제로 활성 공고 위주로 오는 것으로 보여 당장은 이슈 아님 |
+| GitHub Actions 실행 시간/비용 | backfill을 cron에 넣지 않고 수동 1회만 실행 | 유지 — backfill은 최초 1회 + 향후 필요시 수동 실행, cron은 `run`(일일 200건)만 담당 |
 
 ## 이번 문서의 범위
 
-이 문서는 **계획만** 담고 있고, 실제 코드 구현은 아직 시작 안 했다.
-[이슈 #40](https://github.com/syd348/hub/issues/40)으로 등록됨 — `issue-workflow` 스킬대로
-묶음 단위 승인 받으며 진행할 예정.
+[이슈 #40](https://github.com/syd348/hub/issues/40)으로 등록돼 구현 완료됨 (2026-07-23).
+`docs/week3/verification.md`에 최종 검증 기록 추가 예정.

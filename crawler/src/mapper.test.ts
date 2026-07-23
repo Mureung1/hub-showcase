@@ -105,4 +105,15 @@ describe('mapAnnouncementToSubsidy', () => {
     )
     expect(result.how).toBe('이메일 접수 - 담당자: a@example.com - 담당자2: b@example.com')
   })
+
+  it('reqstMthPapersCn이 없으면 method는 "기타", how는 안내 문구로 대체된다', () => {
+    const result = mapAnnouncementToSubsidy({ ...baseAnnouncement, reqstMthPapersCn: undefined }, NOW)
+    expect(result.method).toBe('기타')
+    expect(result.how).toBe('공고문 원문에서 확인해주세요')
+  })
+
+  it('refrncNm이 없으면 contact는 안내 문구로 대체된다', () => {
+    const result = mapAnnouncementToSubsidy({ ...baseAnnouncement, refrncNm: undefined }, NOW)
+    expect(result.contact).toBe('공고문 원문 참조')
+  })
 })
