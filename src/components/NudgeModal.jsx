@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { LEVEL_META } from "../lib/levelMeta";
-import { isLockedToStart } from "../lib/nudgeMessages";
+import { isLockedToStart, buildNudgeMessage } from "../lib/nudgeMessages";
 import ReasonCheckpoint from "./ReasonCheckpoint";
 import NudgeMessage from "./NudgeMessage";
 import FreeTextPrompt from "./FreeTextPrompt";
@@ -19,12 +19,40 @@ function NudgeModal({
   onClose,
   checkpointLevel,
   onReconfirmReason,
+  onAddToCalendar,
   completedTasks = [],
 }) {
   const meta = LEVEL_META[task.level];
 
   // Lv4(마감 임박)에서는 "지금 시작하기"만 남기고 닫기·체크포인트 등 다른 선택지를 잠근다.
   const lockedToStart = isLockedToStart(task.level);
+
+  // Lv2 microTask 고정: getMicrotask()가 내부적으로 랜덤 선택을 하므로, 다른 task의
+  // tick으로 인한 부모 리렌더 등으로 이 컴포넌트가 다시 렌더돼도 매번 새 문구가
+  // 나오지 않도록 이 모달 인스턴스(=같은 task.id) 안에서 한 번만 계산해 고정한다.
+  // NudgeModal은 HomePage에서 key={modalTask.id}로 렌더되므로, task.id가 바뀌면
+  // 인스턴스 자체가 새로 생겨 이 ref도 자연스럽게 초기화된다.
+  const lv2MessageRef = useRef(null);
+  if (task.level === 2 && lv2MessageRef.current === null) {
+    lv2MessageRef.current = buildNudgeMessage(2, task, completedTasks);
+  }
+  const frozenLv2Message = task.level === 2 ? lv2MessageRef.current : null;
+
+  // "지금 시작하기" → 고정된 Lv2 microTask를 포함한 focusSession을 그대로 Focus까지 전달한다.
+  function handleStart() {
+    if (task.level === 2 && frozenLv2Message) {
+      onStart({
+        taskId: task.id,
+        title: task.title,
+        startedAt: new Date().toISOString(),
+        entryLevel: 2,
+        microTask: frozenLv2Message.microtask,
+        reason: task.reason,
+      });
+    } else {
+      onStart();
+    }
+  }
 
   // 재확인에 응답하면 체크포인트를 접고 평소 넛지 메시지로 넘어간다.
   const [checkpointAnswered, setCheckpointAnswered] = useState(false);
@@ -65,9 +93,16 @@ function NudgeModal({
 
         {task.level === 2 && <FreeTextPrompt />}
 
-        <NudgeMessage task={task} onStart={onStart} completedTasks={completedTasks} />
+        <NudgeMessage
+          task={task}
+          onStart={handleStart}
+          completedTasks={completedTasks}
+          overrideMessage={frozenLv2Message}
+        />
 
-        {task.level === 4 && <CalendarSlotCard task={task} />}
+        {task.level === 4 && (
+          <CalendarSlotCard task={task} onAddToCalendar={onAddToCalendar} />
+        )}
       </div>
     </div>
   );

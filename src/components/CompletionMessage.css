@@ -4,3 +4,36 @@
   color: #fff;
   margin: 4px 0 24px;
 }
+
+.completion-summary {
+  margin: 0 0 24px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: left;
+}
+
+.completion-summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+}
+
+.completion-summary-row + .completion-summary-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.completion-summary-row dt {
+  font-size: 13px;
+  color: #9fb0bc;
+}
+
+.completion-summary-row dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #eaf0f4;
+  text-align: right;
+}

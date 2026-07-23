@@ -7,11 +7,14 @@ const FEEDBACK_OPTIONS = [
   { value: "annoying", label: "귀찮았음" },
 ];
 
-function FeedbackButtons({ onSelect }) {
-  const [selected, setSelected] = useState(null);
+// selectedValue: 부모가 저장 상태까지 함께 관리하고 싶을 때 넘기는 controlled 값.
+// 넘기지 않으면(기존 사용처) 내부 state로만 동작해 기존 동작을 그대로 유지한다.
+function FeedbackButtons({ onSelect, selectedValue }) {
+  const [internalSelected, setInternalSelected] = useState(null);
+  const selected = selectedValue !== undefined ? selectedValue : internalSelected;
 
   function handleClick(value) {
-    setSelected(value);
+    setInternalSelected(value);
     onSelect?.(value);
   }
 

@@ -3,10 +3,10 @@ import { NavLink } from "react-router-dom";
 import { subscribeToPush } from "../lib/pushSubscribe";
 import "./Navbar.css";
 
-// 홈/할일 등록만 실제 라우트로 연결한다 — 히스토리는 화면 자체가 아직 없어 탭만 두고 비활성 표시.
 const NAV_LINKS = [
   { to: "/home", label: "홈" },
   { to: "/register", label: "할일 등록" },
+  { to: "/history", label: "히스토리" },
 ];
 
 // 알림 권한 상태별 버튼 표시 — content-as-data.
@@ -65,10 +65,6 @@ function Navbar() {
               {label}
             </NavLink>
           ))}
-          {/* 클릭해도 아무 일 없도록 NavLink가 아니라 비활성 span으로 둔다 (히스토리 화면 미구현) */}
-          <span className="nav-link nav-link-disabled" aria-disabled="true">
-            히스토리
-          </span>
         </div>
         <button
           className={

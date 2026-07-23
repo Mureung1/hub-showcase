@@ -81,7 +81,40 @@ router.post("/", async (req, res) => {
 
 router.post("/:id/events", async (req, res) => {
   const { id } = req.params;
-  const { eventType } = req.body;
+  const { eventType, durationSeconds, entryLevel, microTask } = req.body;
+
+  // done 완료 스냅샷(#STEP2 Completion→History) 검증 — 세 값 모두 선택값이라 안
+  // 보내도 되지만, 보냈다면 형식은 맞아야 한다. Task.level/skipCount는 완료 시
+  // 0으로 리셋되므로 이 시점에 받은 값을 그대로 스냅샷으로 남겨야 한다.
+  if (eventType === "done") {
+    if (
+      durationSeconds !== undefined &&
+      durationSeconds !== null &&
+      (!Number.isInteger(durationSeconds) || durationSeconds < 0)
+    ) {
+      res.status(400).json({
+        error: {
+          code: "invalid_duration",
+          message: "durationSeconds는 0 이상의 정수여야 합니다.",
+        },
+      });
+      return;
+    }
+
+    if (
+      entryLevel !== undefined &&
+      entryLevel !== null &&
+      (!Number.isInteger(entryLevel) || entryLevel < 0 || entryLevel > 4)
+    ) {
+      res.status(400).json({
+        error: {
+          code: "invalid_entry_level",
+          message: "entryLevel은 0~4 범위의 정수여야 합니다.",
+        },
+      });
+      return;
+    }
+  }
 
   try {
     // 클라이언트의 폴링 tick이 삭제와 경합할 수 있다(삭제 직전에 이미 전송된 요청).
@@ -103,15 +136,31 @@ router.post("/:id/events", async (req, res) => {
     const task = await prisma.$transaction(async (tx) => {
       const currentTask = await tx.task.findUniqueOrThrow({ where: { id } });
 
-      await tx.taskEvent.create({
-        data: {
-          taskId: id,
-          eventType,
-          occurredAt: new Date(),
-        },
-      });
-
       if (eventType === "done") {
+        // status 전환을 먼저 선점한 요청만 완료 이벤트와 streak를 기록한다.
+        // 동시 요청은 행 잠금 뒤 조건을 다시 평가하므로 한 요청만 count=1을 얻는다.
+        const claimed = await tx.task.updateMany({
+          where: { id, status: { not: "done" } },
+          data: { status: "done", skipCount: 0, level: 0 },
+        });
+
+        // 이미 완료된 요청은 첫 완료 결과를 그대로 성공으로 반환한다.
+        // 새 이벤트를 만들거나 기존 완료 스냅샷/streak를 덮어쓰지 않는다.
+        if (claimed.count === 0) {
+          return tx.task.findUniqueOrThrow({ where: { id } });
+        }
+
+        await tx.taskEvent.create({
+          data: {
+            taskId: id,
+            eventType,
+            occurredAt: new Date(),
+            durationSeconds: durationSeconds ?? null,
+            entryLevel: entryLevel ?? null,
+            microTask: microTask ? microTask : null,
+          },
+        });
+
         const wasFirstTry = currentTask.skipCount === 0;
 
         await tx.appState.upsert({
@@ -120,11 +169,16 @@ router.post("/:id/events", async (req, res) => {
           update: { streak: wasFirstTry ? { increment: 1 } : 0 },
         });
 
-        return tx.task.update({
-          where: { id },
-          data: { status: "done", skipCount: 0, level: 0 },
-        });
+        return tx.task.findUniqueOrThrow({ where: { id } });
       }
+
+      await tx.taskEvent.create({
+        data: {
+          taskId: id,
+          eventType,
+          occurredAt: new Date(),
+        },
+      });
 
       if (eventType === "stopped") {
         const nextSkipCount = Math.max(0, Math.floor(currentTask.skipCount / 2));
