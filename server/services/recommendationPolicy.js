@@ -89,7 +89,10 @@ function getPriorityScore(daysRemaining, tags) {
             : daysRemaining <= 30
               ? 10
               : 0;
-  const nutritionScore = tags.filter((tag) => tag.startsWith("nutrition:")).length * 5;
+  const nutritionScore = Math.min(
+    10,
+    tags.filter((tag) => tag.startsWith("nutrition:")).length * 5,
+  );
   const processingPenalty = tags.includes("processing:instant")
     ? 10
     : tags.includes("processing:processed")
