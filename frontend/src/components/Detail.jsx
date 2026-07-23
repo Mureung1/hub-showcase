@@ -1,15 +1,26 @@
 import { Link, Navigate, useOutletContext } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { getRecommendation } from '../api/index.js'
 import { DIFFICULTY_META, LANGUAGE_CLASSES, TAG_CLASSES, formatStars } from '../utils/format.js'
 
-// 6 · 추천 상세 — 첫 기여 공통 가이드 (이슈별 데이터 아님)
-const GUIDE = [
-  '레포를 포크하고 로컬에 클론해요.',
-  '이슈 본문과 코멘트를 읽고 수정 범위를 파악해요.',
-  '변경 후 동작을 확인하고 PR을 올려요.',
-]
-
 function Detail() {
-  const { selectedItem } = useOutletContext()
+  const { recommendation, selectedItem } = useOutletContext()
+
+  // 이슈 LLM 분석(#6)은 상세 진입 시점에만 지연 생성 — 목록 화면의 recommendation/selectedItem
+  // state는 건드리지 않고 이 화면 안에서만 결과를 들고 있는다(재방문 시 재요청은 캐시 정책이 알아서 처리)
+  const { data, isLoading } = useQuery({
+    queryKey: ['recommendationAnalysis', recommendation?.id, selectedItem?.repoFullName, selectedItem?.issueNumber],
+    queryFn: () =>
+      getRecommendation(recommendation.id, {
+        repoFullName: selectedItem.repoFullName,
+        issueNumber: selectedItem.issueNumber,
+      }),
+    enabled: Boolean(recommendation?.id && selectedItem),
+    staleTime: 5 * 60 * 1000,
+  })
+  const analyzed = data?.items.find(
+    (item) => item.repoFullName === selectedItem?.repoFullName && item.issueNumber === selectedItem?.issueNumber,
+  )
 
   if (!selectedItem) {
     return <Navigate to="/result" replace />
@@ -65,14 +76,39 @@ function Detail() {
             <p>{selectedItem.repoDescription}</p>
           </>
         )}
+
+        {analyzed?.issueSummary && (
+          <>
+            <h3>이슈 요약</h3>
+            <p>{analyzed.issueSummary}</p>
+          </>
+        )}
+        {analyzed?.requiredSkills?.length > 0 && (
+          <div className="tags">
+            {analyzed.requiredSkills.map((skill) => (
+              <span key={skill} className="tag">
+                {skill}
+              </span>
+            ))}
+          </div>
+        )}
+
         <h3>기여 시작 가이드</h3>
-        <ol className="guide">
-          {GUIDE.map((item, index) => (
-            <li key={item} data-n={index + 1}>
-              {item}
-            </li>
-          ))}
-        </ol>
+        {isLoading ? (
+          <p className="d-analyzing">
+            <span className="spinner" /> 이슈를 분석하고 있어요
+          </p>
+        ) : analyzed?.guide?.length > 0 ? (
+          <ol className="guide">
+            {analyzed.guide.map((step, index) => (
+              <li key={step} data-n={index + 1}>
+                {step}
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="d-analyzing">분석 준비 중이에요. 이슈 본문을 직접 확인해보셔도 좋아요.</p>
+        )}
       </div>
 
       <div className="d-actions">

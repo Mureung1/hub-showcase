@@ -775,6 +775,14 @@ h1.d-title {
   display: grid;
   place-items: center;
 }
+.d-analyzing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-tertiary);
+  font-size: 14.5px;
+  margin: 10px 0 0;
+}
 .d-actions {
   display: flex;
   gap: 10px;
