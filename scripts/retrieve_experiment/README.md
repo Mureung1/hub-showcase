@@ -30,16 +30,16 @@ Gemini 등 외부 API 호출과 개인 데이터 사용은 아직 포함되지 �
 
 로컬 공급자는 다음 설정을 코드에 고정한다.
 
-| 항목             | 값                                           |
-| ---------------- | -------------------------------------------- |
-| 공급자           | `transformers-js@4.2.0:cpu:q8`               |
-| 모델             | `Xenova/multilingual-e5-small`               |
-| 모델 리비전      | `761b726dd34fb83930e26aab4e9ac3899aa1fa78` |
-| 가중치 형식      | q8                                           |
-| 벡터 차원        | 384                                          |
-| Node 실행 장치   | CPU                                          |
-| query 입력       | `query: {정규화된 입력}`                     |
-| passage 입력     | `passage: {정규화된 입력}`                   |
+| 항목           | 값                                         |
+| -------------- | ------------------------------------------ |
+| 공급자         | `transformers-js@4.2.0:cpu:q8`             |
+| 모델           | `Xenova/multilingual-e5-small`             |
+| 모델 리비전    | `761b726dd34fb83930e26aab4e9ac3899aa1fa78` |
+| 가중치 형식    | q8                                         |
+| 벡터 차원      | 384                                        |
+| Node 실행 장치 | CPU                                        |
+| query 입력     | `query: {정규화된 입력}`                   |
+| passage 입력   | `passage: {정규화된 입력}`                 |
 
 Node용 Transformers.js 4.2.0은 `wasm` 실행 장치를 지원하지 않아 CPU ONNX
 런타임을 사용한다. 이 결과는 브라우저 WebAssembly·WebGPU 성능을 의미하지
@@ -83,14 +83,14 @@ override하며, 고정 모델 리비전 외의 임의 원격 모델은 이 실�
 2026-07-23에 fixture를 먼저 커밋한 뒤 고정 리비전의 로컬 E5를 실행했다.
 모델 실행에는 외부 API, 유료 token과 개인 데이터를 사용하지 않았다.
 
-| 항목 | 값 |
-| --- | --- |
-| corpus | 합성 insight 72개 |
-| query | lexical·semantic·negative 각 15개, 합계 45개 |
-| corpus SHA-256 | `91eb31bf622438b4a8319c7dd389761edaf006928c7ccca8c0da03f74c958c41` |
-| query SHA-256 | `3384643d0d6eef83330720be5c76dcc2a7f29378b6f7afc4207ee956a2bbd183` |
-| manifest SHA-256 | `4d08ca6eaee0e678460d902cc77076e2d0348e385eeb7e75453f4aa1642b12b5` |
-| 선택 semantic threshold | `0.8276954665016152` |
+| 항목                    | 값                                                                 |
+| ----------------------- | ------------------------------------------------------------------ |
+| corpus                  | 합성 insight 72개                                                  |
+| query                   | lexical·semantic·negative 각 15개, 합계 45개                       |
+| corpus SHA-256          | `91eb31bf622438b4a8319c7dd389761edaf006928c7ccca8c0da03f74c958c41` |
+| query SHA-256           | `3384643d0d6eef83330720be5c76dcc2a7f29378b6f7afc4207ee956a2bbd183` |
+| manifest SHA-256        | `4d08ca6eaee0e678460d902cc77076e2d0348e385eeb7e75453f4aa1642b12b5` |
+| 선택 semantic threshold | `0.8276954665016152`                                               |
 
 선택 threshold는 외부의 임의 기본값이 아니다. Negative calibration 질의의
 상위 cosine 점수에서 50·90·100 분위 후보만 만들고, 그중 최대값을 선택해 같은
@@ -98,12 +98,12 @@ override하며, 고정 모델 리비전 외의 임의 원격 모델은 이 실�
 0으로 만들었지만 positive Recall@5를 `0.9`에서 `0.8`로 낮춘 보수적인
 절충이다.
 
-| 점검 영역 | 현행 어휘 검색 | 로컬 E5 의미 검색 | 로컬 E5 하이브리드 k=60 |
-| --- | ---: | ---: | ---: |
-| semantic check Recall@5 | 0.600000 | 0.600000 | 0.800000 |
-| semantic check MRR@6 | 0.300000 | 0.600000 | 0.566667 |
-| semantic check nDCG@6 | 0.334704 | 0.511144 | 0.555389 |
-| negative check 평균 반환 수 | 0.200000 | 0.000000 | 0.200000 |
+| 점검 영역                   | 현행 어휘 검색 | 로컬 E5 의미 검색 | 로컬 E5 하이브리드 k=60 |
+| --------------------------- | -------------: | ----------------: | ----------------------: |
+| semantic check Recall@5     |       0.600000 |          0.600000 |                0.800000 |
+| semantic check MRR@6        |       0.300000 |          0.600000 |                0.566667 |
+| semantic check nDCG@6       |       0.334704 |          0.511144 |                0.555389 |
+| negative check 평균 반환 수 |       0.200000 |          0.000000 |                0.200000 |
 
 판정 질문에 대한 관찰은 다음과 같다.
 
@@ -162,12 +162,14 @@ check의 query당 평균 반환 수도 Gemini 의미 검색 0.6, 하이브리드
 
 아래 수치는 캐시 증거와 취소 관찰 방식을 보강한 뒤 다시 실행한 최종 기록이며, 이 절의 이전 수치를 대체합니다.
 
-| 항목 | Desktop Chrome 150.0.7871.181 | Android Chrome 148.0.7778.215 |
-| --- | ---: | ---: |
-| cold load | 23,504.955ms | 93,470.220ms |
-| cache load | 2,393.105ms | 8,375.790ms |
-| cache 첫 query | 118.600ms | 374.850ms |
-| cache warm p50 / p95 | 결과 JSON 참조 | 결과 JSON 참조 |
+| 항목                 | Desktop Chrome 150.0.7871.181 | Android Chrome 148.0.7778.215 |
+| -------------------- | ----------------------------: | ----------------------------: |
+| cold load            |                  34,108.635ms |                  79,932.855ms |
+| cache load           |                   2,294.865ms |                   5,984.910ms |
+| cache 첫 query       |                      52.910ms |                     216.210ms |
+| cache warm p50 / p95 |                결과 JSON 참조 |                결과 JSON 참조 |
+
+메모리 API는 원래 `performance` receiver로 호출했다. cache 단계 첫 query 경계에서는 Desktop 1,118,233 bytes, Android 1,088,856 bytes를 관측했고, 다른 경계는 10초 제한에서 `null`로 기록했다. 이 값은 단계 경계 관측치일 뿐 연속 peak가 아니다.
 
 두 플랫폼 모두 고정 revision의 `config.json`, `tokenizer.json`, `tokenizer_config.json`, `model_quantized.onnx` Cache Storage 항목을 확인했다. cache 단계의 CDP 원격 모델 요청은 각각 0건이며, 따라서 `cacheHitVerified`는 `true`다. 취소는 cache 준비 뒤 기존 progress callback의 첫 신호에서 Worker를 종료했고, 새 Worker의 ready·첫 query·warm 20회·384차원 복구를 모두 확인했다. WASM 크기는 Cache Storage의 `content-length` 단일 관측으로 4,732,131 bytes를 기록했다.
 
@@ -179,7 +181,7 @@ npx vitest run scripts/retrieve_experiment/tests/browser_benchmark_contract.test
 npx tsc --noEmit -p tsconfig.node.json
 ```
 
-전용 계약 테스트는 10개 모두 통과했고, 타입 검사는 오류 없이 완료됐다.
+전용 계약 테스트는 12개 모두 통과했고, 타입 검사는 오류 없이 완료됐다.
 
 2026-07-23에 제품 앱과 분리한 localhost COOP/COEP 페이지에서 실제 Chrome을
 측정했다. 고정 모델 `Xenova/multilingual-e5-small`, revision
@@ -187,14 +189,14 @@ npx tsc --noEmit -p tsconfig.node.json
 Transformers.js WASM backend로만 실행했다. 개인 데이터·API key·Gemini 호출은
 사용하지 않았다.
 
-| 항목 | Desktop Chrome 150.0.7871.181 | Android Chrome 148.0.7778.215 |
-| --- | ---: | ---: |
-| cold load | 30,272.365ms | 65,525.245ms |
-| cache load | 2,315.080ms | 11,694.190ms |
-| cold 첫 query | 142.625ms | 1,108.960ms |
-| cache 첫 query | 50.590ms | 515.955ms |
-| cache warm p50 / p95 | 13.735 / 27.410ms | 55.505 / 116.780ms |
-| Cache Storage delta | 159,017,472 bytes | 159,017,472 bytes |
+| 항목                 | Desktop Chrome 150.0.7871.181 | Android Chrome 148.0.7778.215 |
+| -------------------- | ----------------------------: | ----------------------------: |
+| cold load            |                  30,272.365ms |                  65,525.245ms |
+| cache load           |                   2,315.080ms |                  11,694.190ms |
+| cold 첫 query        |                     142.625ms |                   1,108.960ms |
+| cache 첫 query       |                      50.590ms |                     515.955ms |
+| cache warm p50 / p95 |             13.735 / 27.410ms |            55.505 / 116.780ms |
+| Cache Storage delta  |             159,017,472 bytes |             159,017,472 bytes |
 
 progress callback으로 관측한 모델은 118,308,185 bytes, tokenizer는
 17,083,173 bytes, 기타 파일은 658 bytes다. ONNX WASM 파일은 callback에서
@@ -205,10 +207,10 @@ Worker 전체 실행, 다른 tab으로 2초 이상 이동한 `hidden → visible
 384차원 복구 query를 두 플랫폼에서 모두 확인했다.
 
 두 브라우저 모두 `navigator.gpu`는 지원하지만 실제 backend는 `wasm`이다.
-`measureUserAgentSpecificMemory`는 Desktop의
-`--enable-blink-features=ForceEagerMeasureMemory` 설정을 포함해 실제 호출이
-실패해 모든 단계의 bytes와 peak를 `null`로 남겼다. 따라서 메모리 값은 만들지
-않았으며 연속 peak도 주장하지 않는다. 모든 원시 관측값과 한계는
+`measureUserAgentSpecificMemory`는 원래 `performance` receiver로 호출했다. cache 단계
+첫 query 경계에서는 Desktop 1,118,233 bytes, Android 1,088,856 bytes를 관측했고, 다른
+경계는 10초 제한에서 `null`로 기록했다. 이 값은 단계 경계 관측치일 뿐 연속 peak가 아니다.
+모든 원시 관측값과 한계는
 `results/browser_benchmark_result.json` 및
 `results/browser_benchmark_report.md`에 있다.
 

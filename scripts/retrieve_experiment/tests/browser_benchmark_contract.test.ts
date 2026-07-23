@@ -143,6 +143,26 @@ describe('브라우저 벤치마크 계약', () => {
     expect(renderBrowserBenchmarkReport(result)).toBe(reportText);
   });
 
+  it('UA 메모리 API를 원래 receiver로 호출한다', async () => {
+    const receiver = {
+      bytes: 2468,
+      async measureUserAgentSpecificMemory() {
+        return { bytes: this.bytes };
+      },
+    };
+
+    await expect(
+      measureMemoryAtBoundary({
+        measureUserAgentSpecificMemory: receiver.measureUserAgentSpecificMemory,
+        measureUserAgentSpecificMemoryReceiver: receiver,
+        timeoutMs: 100,
+      })
+    ).resolves.toMatchObject({
+      bytes: 2468,
+      source: 'measureUserAgentSpecificMemory',
+    });
+  });
+
   it('취소 뒤 새 Worker의 cache benchmark를 기록한다', async () => {
     const runner = await readFile(
       'scripts/retrieve_experiment/run_browser_benchmark.ts',
@@ -158,5 +178,17 @@ describe('브라우저 벤치마크 계약', () => {
 
     expect(cancellation).toBeGreaterThan(-1);
     expect(cacheBenchmark).toBeGreaterThan(cancellation);
+  });
+
+  it('캐시 증명 실패를 measured 결과로 확정하지 않는다', async () => {
+    const runner = await readFile(
+      'scripts/retrieve_experiment/run_browser_benchmark.ts',
+      'utf8'
+    );
+    const failure = runner.indexOf('if (!cacheEvidence.cacheHitVerified)');
+    const measuredResult = runner.indexOf('return {', failure);
+
+    expect(failure).toBeGreaterThan(-1);
+    expect(measuredResult).toBeGreaterThan(failure);
   });
 });

@@ -17,10 +17,12 @@ const ANDROID_DEBUG_PORT = 9223;
 const ANDROID_SERIAL = 'emulator-5554';
 const CHROME_PATH =
   'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const ADB_PATH =
-  'C:\\Users\\cjh51\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe';
 const BENCHMARK_PATH = '/';
 const BENCHMARK_URL = `http://localhost:${BENCHMARK_PORT}${BENCHMARK_PATH}`;
+const SIMPLE_EVALUATION_TIMEOUT_MS = 30_000;
+const CANCELLATION_EVALUATION_TIMEOUT_MS = 90_000;
+const RECOVERY_QUERY_EVALUATION_TIMEOUT_MS = 300_000;
+const MEASURE_EVALUATION_TIMEOUT_MS = 1_800_000;
 const RESULT_PATH = resolve(
   'scripts/retrieve_experiment/results/browser_benchmark_result.json'
 );
@@ -302,15 +304,16 @@ async function runDesktopBenchmark(): Promise<DeviceResult> {
 }
 
 async function runAndroidBenchmark(): Promise<DeviceResult> {
+  let adbPath: string | undefined;
   let browser: CdpConnection | undefined;
   let page: CdpConnection | undefined;
   let reverseCreated = false;
   let forwardCreated = false;
   try {
-    await fs.access(ADB_PATH);
-    reverseCreated = await createReverseIfAbsent();
-    forwardCreated = await createForwardIfAbsent();
-    await adb([
+    adbPath = await resolveAdbPath();
+    reverseCreated = await createReverseIfAbsent(adbPath);
+    forwardCreated = await createForwardIfAbsent(adbPath);
+    await adb(adbPath, [
       '-s',
       ANDROID_SERIAL,
       'shell',
@@ -332,8 +335,8 @@ async function runAndroidBenchmark(): Promise<DeviceResult> {
   } finally {
     page?.close();
     browser?.close();
-    if (forwardCreated) {
-      await adb([
+    if (forwardCreated && adbPath !== undefined) {
+      await adb(adbPath, [
         '-s',
         ANDROID_SERIAL,
         'forward',
@@ -341,8 +344,8 @@ async function runAndroidBenchmark(): Promise<DeviceResult> {
         `tcp:${ANDROID_DEBUG_PORT}`,
       ]).catch(() => undefined);
     }
-    if (reverseCreated) {
-      await adb([
+    if (reverseCreated && adbPath !== undefined) {
+      await adb(adbPath, [
         '-s',
         ANDROID_SERIAL,
         'reverse',
@@ -415,7 +418,8 @@ async function measurePageStages(
   );
   const cold = await evaluate<Record<string, unknown>>(
     page,
-    'window.browserBenchmark.measure()'
+    'window.browserBenchmark.measure()',
+    MEASURE_EVALUATION_TIMEOUT_MS
   );
   const cacheStorageEvidence = await evaluate<Record<string, unknown>>(
     page,
@@ -433,12 +437,14 @@ async function measurePageStages(
   }
   const cancellation = await evaluate<Record<string, unknown>>(
     page,
-    'window.browserBenchmark.startAndCancelWorker()'
+    'window.browserBenchmark.startAndCancelWorker()',
+    CANCELLATION_EVALUATION_TIMEOUT_MS
   );
   const cacheNetworkCursor = page.eventCursor();
   const cache = await evaluate<Record<string, unknown>>(
     page,
-    'window.browserBenchmark.measure()'
+    'window.browserBenchmark.measure()',
+    MEASURE_EVALUATION_TIMEOUT_MS
   );
   const cacheRemoteModelRequestCount = countRemoteModelRequests(
     page.eventsSince(cacheNetworkCursor)
@@ -451,24 +457,35 @@ async function measurePageStages(
       cacheEntryVerification.cacheHitVerified &&
       cacheRemoteModelRequestCount === 0,
   };
+  if (!cacheEvidence.cacheHitVerified) {
+    throw new Error('cache 단계의 모델 캐시 증명을 확인하지 못했습니다.');
+  }
 
   await evaluate(page, 'window.browserBenchmark.resetVisibilityEvents()');
   const background = await browser.call('Target.createTarget', {
     url: 'about:blank',
   });
-  await delay(2100);
-  await browser.call('Target.activateTarget', { targetId: pageId });
-  await delay(500);
-  const visibilityEvents = await evaluate<readonly string[]>(
-    page,
-    'window.browserBenchmark.visibilityEvents()'
-  );
-  const recoveryVector = await evaluate<readonly number[]>(
-    page,
-    'window.browserBenchmark.queryAfterVisibility()'
-  );
   const backgroundTargetId = String(background.targetId);
-  await browser.call('Target.closeTarget', { targetId: backgroundTargetId });
+  let visibilityEvents: readonly string[];
+  let recoveryVector: readonly number[];
+  try {
+    await delay(2100);
+    await browser.call('Target.activateTarget', { targetId: pageId });
+    await delay(500);
+    visibilityEvents = await evaluate<readonly string[]>(
+      page,
+      'window.browserBenchmark.visibilityEvents()'
+    );
+    recoveryVector = await evaluate<readonly number[]>(
+      page,
+      'window.browserBenchmark.queryAfterVisibility()',
+      RECOVERY_QUERY_EVALUATION_TIMEOUT_MS
+    );
+  } finally {
+    await browser
+      .call('Target.closeTarget', { targetId: backgroundTargetId })
+      .catch(() => undefined);
+  }
 
   return {
     browserVersion: String(version.product ?? version.revision ?? '관측 불가'),
@@ -507,7 +524,7 @@ async function measurePageStages(
 async function evaluate<T>(
   page: CdpConnection,
   expression: string,
-  timeoutMs = 240_000
+  timeoutMs = SIMPLE_EVALUATION_TIMEOUT_MS
 ): Promise<T> {
   const response = await page.call(
     'Runtime.evaluate',
@@ -559,12 +576,33 @@ async function waitForEndpoints(
   throw new Error('30초 안에 대상 Chrome의 DevTools 페이지를 찾지 못했습니다.');
 }
 
-async function adb(args: readonly string[]): Promise<void> {
-  await adbOutput(args);
+async function resolveAdbPath(): Promise<string> {
+  const executable = process.platform === 'win32' ? 'adb.exe' : 'adb';
+  const sdkRoots = [process.env.ANDROID_SDK_ROOT, process.env.ANDROID_HOME];
+  for (const sdkRoot of sdkRoots) {
+    if (sdkRoot === undefined || sdkRoot === '') {
+      continue;
+    }
+    const candidate = join(sdkRoot, 'platform-tools', executable);
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {
+      // 다음 Android SDK 환경 변수 또는 PATH를 확인한다.
+    }
+  }
+  return executable;
 }
 
-async function adbOutput(args: readonly string[]): Promise<string> {
-  const { stdout } = await execFileAsync(ADB_PATH, [...args], {
+async function adb(adbPath: string, args: readonly string[]): Promise<void> {
+  await adbOutput(adbPath, args);
+}
+
+async function adbOutput(
+  adbPath: string,
+  args: readonly string[]
+): Promise<string> {
+  const { stdout } = await execFileAsync(adbPath, [...args], {
     timeout: 15_000,
     windowsHide: true,
   }).catch((error) => {
@@ -573,9 +611,14 @@ async function adbOutput(args: readonly string[]): Promise<string> {
   return stdout;
 }
 
-async function createReverseIfAbsent(): Promise<boolean> {
+async function createReverseIfAbsent(adbPath: string): Promise<boolean> {
   const local = `tcp:${BENCHMARK_PORT}`;
-  const mappings = await adbOutput(['-s', ANDROID_SERIAL, 'reverse', '--list']);
+  const mappings = await adbOutput(adbPath, [
+    '-s',
+    ANDROID_SERIAL,
+    'reverse',
+    '--list',
+  ]);
   const existing = mappings
     .split(/\r?\n/u)
     .find((line) => line.split(/\s+/u).at(-2) === local);
@@ -585,14 +628,19 @@ async function createReverseIfAbsent(): Promise<boolean> {
     }
     throw new Error(`기존 ADB reverse 매핑이 ${local} 포트를 사용합니다.`);
   }
-  await adb(['-s', ANDROID_SERIAL, 'reverse', local, local]);
+  await adb(adbPath, ['-s', ANDROID_SERIAL, 'reverse', local, local]);
   return true;
 }
 
-async function createForwardIfAbsent(): Promise<boolean> {
+async function createForwardIfAbsent(adbPath: string): Promise<boolean> {
   const local = `tcp:${ANDROID_DEBUG_PORT}`;
   const remote = 'localabstract:chrome_devtools_remote';
-  const mappings = await adbOutput(['-s', ANDROID_SERIAL, 'forward', '--list']);
+  const mappings = await adbOutput(adbPath, [
+    '-s',
+    ANDROID_SERIAL,
+    'forward',
+    '--list',
+  ]);
   const existing = mappings
     .split(/\r?\n/u)
     .find((line) => line.split(/\s+/u).at(-2) === local);
@@ -602,7 +650,7 @@ async function createForwardIfAbsent(): Promise<boolean> {
     }
     throw new Error(`기존 ADB forward 매핑이 ${local} 포트를 사용합니다.`);
   }
-  await adb(['-s', ANDROID_SERIAL, 'forward', local, remote]);
+  await adb(adbPath, ['-s', ANDROID_SERIAL, 'forward', local, remote]);
   return true;
 }
 

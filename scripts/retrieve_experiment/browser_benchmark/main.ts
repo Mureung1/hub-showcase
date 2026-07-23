@@ -129,15 +129,22 @@ window.browserBenchmark = {
       type: 'module',
     });
     return await new Promise<CancellationObservation>((resolve, reject) => {
+      let settled = false;
       const timeoutId = window.setTimeout(() => {
         worker.terminate();
-        reject(
-          new Error(
-            '취소 Worker의 첫 진행 신호를 기다리다 시간 초과되었습니다.'
+        settle(() =>
+          reject(
+            new Error(
+              '취소 Worker의 첫 진행 신호를 기다리다 시간 초과되었습니다.'
+            )
           )
         );
       }, 60_000);
       const settle = (callback: () => void) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
         window.clearTimeout(timeoutId);
         callback();
       };
@@ -157,16 +164,23 @@ window.browserBenchmark = {
             return;
           }
           if (message.type === 'error') {
+            worker.terminate();
             settle(() =>
               reject(new Error('취소 Worker 초기화에 실패했습니다.'))
             );
           }
         }
       );
-      worker.addEventListener('error', () =>
-        settle(() => reject(new Error('취소 Worker 실행에 실패했습니다.')))
-      );
-      worker.postMessage({ type: 'initialize' });
+      worker.addEventListener('error', () => {
+        worker.terminate();
+        settle(() => reject(new Error('취소 Worker 실행에 실패했습니다.')));
+      });
+      try {
+        worker.postMessage({ type: 'initialize' });
+      } catch {
+        worker.terminate();
+        settle(() => reject(new Error('취소 Worker 시작에 실패했습니다.')));
+      }
     });
   },
   visibilityEvents() {
@@ -414,6 +428,7 @@ async function measureMemory(): Promise<MemoryMeasurement> {
     heapBytes: performanceWithMemory.memory?.totalJSHeapSize,
     measureUserAgentSpecificMemory:
       performanceWithMemory.measureUserAgentSpecificMemory,
+    measureUserAgentSpecificMemoryReceiver: performanceWithMemory,
     timeoutMs: 10_000,
   });
 }

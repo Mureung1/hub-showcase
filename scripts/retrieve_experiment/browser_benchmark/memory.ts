@@ -11,6 +11,7 @@ export type MemoryMeasurement = Readonly<{
 export type MemoryMeasurementOptions = Readonly<{
   heapBytes?: number;
   measureUserAgentSpecificMemory?: () => Promise<Readonly<{ bytes: number }>>;
+  measureUserAgentSpecificMemoryReceiver?: object;
   timeoutMs: number;
 }>;
 
@@ -21,6 +22,8 @@ export async function measureMemoryAtBoundary(
   if (measureUserAgentSpecificMemory !== undefined) {
     return await measureUserAgentMemory({
       measureUserAgentSpecificMemory,
+      measureUserAgentSpecificMemoryReceiver:
+        options.measureUserAgentSpecificMemoryReceiver,
       timeoutMs: options.timeoutMs,
     });
   }
@@ -43,12 +46,13 @@ export async function measureMemoryAtBoundary(
 }
 
 async function measureUserAgentMemory(
-  options: Required<
-    Pick<
-      MemoryMeasurementOptions,
-      'measureUserAgentSpecificMemory' | 'timeoutMs'
-    >
-  >
+  options: Readonly<{
+    measureUserAgentSpecificMemory: NonNullable<
+      MemoryMeasurementOptions['measureUserAgentSpecificMemory']
+    >;
+    measureUserAgentSpecificMemoryReceiver?: object;
+    timeoutMs: number;
+  }>
 ): Promise<MemoryMeasurement> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timedOut = new Promise<MemoryMeasurement>((resolvePromise) => {
@@ -60,20 +64,22 @@ async function measureUserAgentMemory(
       });
     }, options.timeoutMs);
   });
-  const measurement = options.measureUserAgentSpecificMemory().then(
-    ({ bytes }) => ({
-      bytes,
-      limitation:
-        '단계 경계에서 측정한 UA 특정 메모리이며 연속 peak가 아닙니다.',
-      source: 'measureUserAgentSpecificMemory' as const,
-    }),
-    () => ({
-      bytes: null,
-      limitation:
-        'UA 특정 메모리 측정 API가 거부되어 peak를 추정하지 않았습니다.',
-      source: 'unavailable' as const,
-    })
-  );
+  const measurement = options.measureUserAgentSpecificMemory
+    .bind(options.measureUserAgentSpecificMemoryReceiver)()
+    .then(
+      ({ bytes }) => ({
+        bytes,
+        limitation:
+          '단계 경계에서 측정한 UA 특정 메모리이며 연속 peak가 아닙니다.',
+        source: 'measureUserAgentSpecificMemory' as const,
+      }),
+      () => ({
+        bytes: null,
+        limitation:
+          'UA 특정 메모리 측정 API가 거부되어 peak를 추정하지 않았습니다.',
+        source: 'unavailable' as const,
+      })
+    );
 
   try {
     return await Promise.race([measurement, timedOut]);
