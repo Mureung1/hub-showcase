@@ -66,6 +66,15 @@
 - [x] `npm test` — 4 files, 33 tests 통과
 - [x] `npm run lint` (client + server + crawler) 통과
 
+## 7. 전체 수집 backfill (#40)
+
+- [x] `[코드]` `crawler/src/pipeline.ts` 공용화, `crawler/src/backfill.ts` 신규 (페이지네이션
+      순회 + 페이지별 upsert)
+- [x] `[API]` `npm run backfill -w @hub/crawler` 실행 → **1500건 전부 조회/upsert, 마감 제외
+      0건**. 재실행해도 동일 수치(idempotent 확인)
+- [x] `[DB]` `GET /api/subsidies` → `total: 1508`(샘플 8 + 실데이터 1500) 확인
+- [x] `[코드]` `npm test` — 2건 추가(총 35건) 통과, `npm run lint`/`build` 통과
+
 ---
 
 ## 발견한 이슈 (수정 완료)
@@ -77,6 +86,13 @@
 2. **`reqstBeginEndDe` 비-날짜 텍스트** — #29에서 발견, #30에서 처리 완료 (위 3번 참고).
 3. **`dday < 0`(마감 지난 공고) 필터링 위치** — #30 PR에서 미해결로 남겼던 질문. #31에서
    "매핑은 순수 변환만, 필터링은 파이프라인(`index.ts`)의 책임"으로 결론.
+4. **`reqstMthPapersCn`/`refrncNm` 등이 없는 공고 존재** — #40 백필(1500건 규모)에서 처음 발견.
+   기존 5~13건 규모 테스트로는 안 보였던 문제. `BizinfoAnnouncement`의 해당 필드들을
+   optional로 정정하고 `mapper.ts`에 fallback 추가.
+5. **`GET /api/subsidies`가 1000건까지만 반환** — PostgREST가 `.range()` 없이는 기본 1000행
+   제한을 건다는 걸 DB가 1508건이 되고서야 처음 확인. `subsidies-repo.ts`의 `loadAll()`을
+   1000건씩 페이지네이션 순회하도록 수정, curl로 1508건 정상 반환 확인. 지금까지 8~13건
+   규모로만 테스트해서 전혀 몰랐던 제약이었음.
 
 ## 남은 리스크 / 다음에 볼 것
 

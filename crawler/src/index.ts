@@ -1,24 +1,21 @@
 import { fetchAnnouncements } from './bizinfo-client.js'
-import { mapAnnouncementToSubsidy } from './mapper.js'
-import { upsertSubsidies } from './upsert.js'
+import { processAnnouncements } from './pipeline.js'
 
 /**
- * 크롤러 실행 스크립트 (이슈 #31).
+ * 일일 크롤러 실행 스크립트 (cron 대상, 이슈 #32/#40).
  * 실행: npm run run -w @hub/crawler
- * bizinfo API 조회 -> Subsidy 정규화 -> 이미 마감된 공고 제외 -> Supabase upsert.
+ * 최근 공고 위주로만 조회한다 — 전체 백필은 backfill.ts 참고.
  */
+const DAILY_PAGE_UNIT = 200
+
 async function main(): Promise<void> {
-  const items = await fetchAnnouncements({ pageIndex: 1, pageUnit: 5 })
-  const subsidies = items.map((item) => mapAnnouncementToSubsidy(item))
+  const items = await fetchAnnouncements({ pageIndex: 1, pageUnit: DAILY_PAGE_UNIT })
+  const { upserted, expired } = await processAnnouncements(items)
 
-  const active = subsidies.filter((s) => s.dday >= 0)
-  const expiredCount = subsidies.length - active.length
-  if (expiredCount > 0) {
-    console.log(`[crawler] 이미 마감된 공고 ${expiredCount}건 제외`)
+  if (expired > 0) {
+    console.log(`[crawler] 이미 마감된 공고 ${expired}건 제외`)
   }
-
-  const { count } = await upsertSubsidies(active)
-  console.log(`[crawler] ${count}건 upsert 완료`)
+  console.log(`[crawler] ${upserted}건 upsert 완료`)
 }
 
 main().catch((err) => {

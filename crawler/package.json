@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "run": "tsx src/index.ts",
+    "backfill": "tsx src/backfill.ts",
     "build": "tsc",
     "lint": "oxlint src"
   },

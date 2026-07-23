@@ -37,17 +37,32 @@ function applySort(items: Subsidy[], sort: SortOption): Subsidy[] {
   }
 }
 
+/** PostgREST가 .range() 없이는 최대 1000행까지만 반환하므로, 페이지 단위로 순회해 전부 가져온다 */
+const PAGE_SIZE = 1000
+
 /** Supabase에서 전체 row를 읽어 Subsidy[]로 변환. 실패 시 fallback 반환 */
 async function loadAll(): Promise<Subsidy[]> {
-  const { data, error } = await supabase
-    .from(SUBSIDIES_TABLE)
-    .select('*')
-    .order('id', { ascending: true })
-  if (error) {
-    console.error('[subsidies-repo] Supabase 조회 실패, 샘플 데이터로 대체:', error.message)
-    return FALLBACK
+  const rows: SubsidyRow[] = []
+  let from = 0
+
+  for (;;) {
+    const { data, error } = await supabase
+      .from(SUBSIDIES_TABLE)
+      .select('*')
+      .order('id', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+
+    if (error) {
+      console.error('[subsidies-repo] Supabase 조회 실패, 샘플 데이터로 대체:', error.message)
+      return FALLBACK
+    }
+
+    rows.push(...(data as SubsidyRow[]))
+    if (data.length < PAGE_SIZE) break
+    from += PAGE_SIZE
   }
-  return (data as SubsidyRow[]).map(rowToSubsidy)
+
+  return rows.map(rowToSubsidy)
 }
 
 /** 전체 목록 (정렬 적용) */
