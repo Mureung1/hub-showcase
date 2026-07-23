@@ -28,8 +28,10 @@ const CLOSE_TIMEOUT_MS = 2_000
 /**
  * Node does not expose Darwin openat/unlinkat directory descriptors. One
  * dedicated child therefore retains each admitted directory as its
- * kernel-held cwd. The worker accepts only validated direct leaves, so
- * ancestor rename or symlink substitution cannot redirect an operation
+ * kernel-held cwd. Mutation destinations are validated direct leaves. The
+ * cross-directory link operation additionally opens and identity-binds its
+ * absolute source read-only before a no-clobber direct-leaf link, so ancestor
+ * rename or symlink substitution cannot redirect a destination operation
  * into an unrelated directory.
  */
 type EntryType = 'directory' | 'file' | 'symlink'
