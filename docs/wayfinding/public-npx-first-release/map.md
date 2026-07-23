@@ -2,9 +2,9 @@
 
 ## Wayfinder state
 
-- State: ready-for-spec
+- State: complete
 - Surface: local-wayfinder-map
-- Next actor: /to-spec
+- Next actor: /to-tickets
 
 ## Destination
 
@@ -70,4 +70,4 @@ Node와 npm이 설치된 supported macOS arm64에서 repository·system Python·
 
 ## Resulting spec
 
-아직 없음.
+- [AY-PLE public npx 첫 출시](../../specs/2026-07-23-public-npx-first-release.md) — `ready-for-ticketing`
