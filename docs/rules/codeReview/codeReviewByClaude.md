@@ -14,51 +14,33 @@
 
 ## 심각도: 치명 (동작이 실제로 깨지거나 데이터/권한이 새는 것)
 
-### 1. `generateSlots` 종료시각 포함 변경이 `24:00` 슬롯을 만들어 제출 불가 상태를 유발 (미커밋 변경)
+### 1. `24:00` 슬롯의 생성·제출 검증 규칙 불일치
 
-`shared/src/schedule.ts:65`의 `minutes < endMinutes` → `minutes <= endMinutes` 변경(작업트리 미커밋)과
-`client/src/components/TimeRangeSlider.tsx:19`의 옵션 목록(`00:00`~`24:00`, 49개)이 충돌한다.
+- [x] 완료
 
-재현 확인:
+**문제 상황:** 시간 선택 UI와 `generateSlots`는 `24:00` 칸을 생성하지만, `scheduleSlotSchema`는 `24:00`을 거부했다. 따라서 사용자가 해당 칸을 선택하면 응답 제출 API가 400을 반환했다.
 
-```
-generateSlots('2026-07-20','2026-07-20','23:00','24:00')
-→ [23:00, 23:30, "24:00"]
-scheduleSlotSchema.safeParse({ date, time: "24:00" }) → false
-submitResponseRequestSchema.safeParse(...)            → false
-```
-
-`scheduleSlotSchema`(`shared/src/schedule.ts:6`)의 정규식은 `([01]\d|2[0-3])`이라 `24:00`을 거부한다.
-즉 **종료 시간을 24:00으로 약속을 만들면 그리드에 24:00 칸이 그려지고, 그 칸을 선택해 제출하면 서버가 400("입력값을 확인해주세요")** 을 돌려준다. 사용자는 원인을 알 방법이 없다.
-
-- `createAppointmentRequestSchema`(`shared/src/appointments.ts:9-10`)는 `timeStart`/`timeEnd`를 `z.string().min(1)`로만 검증해서 `24:00`이 그대로 통과한다.
-- 선택지: `TimeRangeSlider` 옵션에서 `24:00` 제거 / `scheduleSlotSchema`가 `24:00` 허용 / `timeEnd`를 exclusive로 되돌리기 — 셋 중 하나로 계약을 통일해야 한다.
+**해결 방법:** `24:00`을 실제 선택 가능한 슬롯으로 사용하기로 정하고, `scheduleSlotSchema`가 `24:00`을 허용하도록 검증 규칙을 통일했다. `24:00`은 통과하고 `24:30`은 거부하는 테스트를 추가했다.
 
 ### 2. 참여자 ID가 무인증으로 전부 노출 → 남의 응답 조회·덮어쓰기·투표 마감까지 가능
 
-- `GET /api/appointments/:id/participants`(`server/src/routes/results.ts:86`)는 인증 없이 **모든 참여자의 `id` + `name` + 완료여부**를 반환한다(`server/src/lib/results.ts:90-94`의 `getParticipantsResponseStatus`가 `id`를 포함).
-- `requireParticipant`(`server/src/routes/responses.ts:19-37`)는 "그 participantId가 이 약속 소속인가"만 확인하고 **호출자가 본인인지는 검증하지 않는다.**
-- `requireAdminParticipant`(`server/src/routes/results.ts:16-40`)도 role만 확인하고 비밀번호를 재확인하지 않는다.
+- [x] 완료 (보류 결정)
 
-결과적으로 **약속 링크만 아는 사람이면 누구나**:
+**문제 상황:** 참여자 목록 API가 인증 없이 모든 `participantId`를 반환한다. 서버는 요청자가 해당 참여자 본인인지 확인하지 않으므로, ID를 이용해 다른 사람의 응답을 조회·수정하거나 관리자 ID로 약속을 마감할 수 있다.
 
-1. `/participants`로 전원의 participantId 수집
-2. 임의 참여자의 응답 GET / PUT(덮어쓰기)
-3. admin의 id로 `PUT .../close` 호출해 투표 강제 마감
+**처리 결정:** 근본적으로 해결하려면 서버 세션을 발급하고 모든 중요 API에서 사용자와 권한을 확인해야 한다. 현재 서비스 범위에서는 인증 시스템 도입에 필요한 변경이 크므로 이번 작업에서는 보류하고 넘어간다. 실제 공개 서비스로 확장할 때 다시 검토한다.
 
-`docs/rules/checklist/1주차-Day4-일정입력-저장-기능개발.md:47`에 "participantId만 알면 재인증 없이 호출 가능"이 *알려진 한계*로 적혀 있으나, 그때의 전제는 "participantId는 본인만 안다"였다.
-subTask2에서 추가한 `/participants` 엔드포인트가 그 전제를 깨뜨렸으므로 **새로 생긴 문제**다.
-최소한 응답 페이로드에서 `id`를 빼거나(이름 + 완료여부만 필요), 관리자 인증 뒤로 숨겨야 한다.
+**학습 메모:** 클라이언트가 준 id를 인가 근거로 믿으면 안 됨(IDOR) — 식별자(공개) ≠ 증명(비밀 토큰). 세션 토큰은 "그 비밀을 가졌는지"를 확인하는 것이고, 로그아웃·비번변경은 서버가 토큰을 폐기해야 확실하다(클라이언트 삭제만으론 부족).
 
 ### 3. Supabase 기본 행 제한(1000행)으로 결과 집계가 조용히 틀려질 수 있음
 
-`server/src/lib/results.ts:26-30`, `80-83`은 `responses` 전체 행을 페이지네이션 없이 가져온다.
-Supabase(PostgREST)는 기본 `max-rows`가 1000이라 그 이상은 **에러 없이 잘려서** 돌아온다.
+- [x] 완료
 
-한 참여자당 슬롯 수는 최대 31일 × 48 = 1488개다. 즉 **참여자 1명이 넓은 범위를 다 선택하기만 해도 1000행을 넘길 수 있고**, 그 순간 `aggregateSlotCounts`의 가능/선호 인원과 `countCompletedParticipants`의 완료 인원이 조용히 틀린 값이 된다. 결과 화면이 서비스의 핵심 산출물이므로 영향이 크다.
+**문제 상황:** 서버가 `responses` 전체를 끌어와 JS로 집계했는데, PostgREST 기본 1000행 제한에 조용히 잘려(슬롯 최대 1488개) 가능/선호·완료 인원이 틀린 값이 될 수 있었다.
 
-- 집계는 클라이언트로 전부 끌어오지 말고 SQL 쪽(RPC/뷰의 `group by date, time`)에서 하거나, 최소한 `.range()` 페이지네이션이 필요하다.
-- `getParticipantsResponseStatus`(`server/src/lib/results.ts:80`)는 distinct id만 필요한데 응답 행 전체를 가져오는 점에서 같은 문제 + 낭비다.
+**해결 방법:** 집계를 DB로 옮겼다. `0005` 마이그레이션에 `group by` 집계 함수 3개를 만들고 서버는 `db.rpc()`로 결과만 받는다. 함수가 `jsonb` 한 덩어리를 반환해 1000행 제한과도 무관하다. 통합 테스트로 검증했다. (예전 구현은 `past-notes.md`)
+
+**학습 메모:** 계산은 데이터가 있는 DB에서 한다(push computation to the data) — DB는 저장소일 뿐 아니라 계산 엔진. 필터·집계·조인은 DB, 업무 판단은 서버. 구현은 🅰 앱 SQL(직접 연결, PostgREST 우회) vs 🅱 DB 함수/RPC(마이그레이션 필요) 중 🅱 선택. RPC 결과에도 1000행 제한이 걸려 `jsonb_agg`로 회피했다.
 
 ### 4. `Modal`의 useEffect가 매 리렌더마다 포커스를 훔침
 
