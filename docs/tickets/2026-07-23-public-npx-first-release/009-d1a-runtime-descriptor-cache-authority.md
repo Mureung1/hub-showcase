@@ -57,16 +57,19 @@ Independent Runtime-delivery/security review 전 candidate-only receipt다. Tick
 | Fixed base | `269a3555d3adf52bf520b3de0b99c7cb3fee3ae7` |
 | Claim commit | `eafd0ea70d9a0387ca64e639ff0045acdbfcad8e` |
 | Implementation commit | `30f591fb434b585988eed1f5c5baf383fca2f439` |
-| Descriptor/manifest admission | `npm test -w @ay-ple/runtime-release` — 32/32 green. Missing/extra/unknown/type/range, application·target·contract·resource identity, roster와 byte binding drift를 fail closed한다. |
+| Security-review correction commit | `64fc17b1ca1f3354fc9408aefaecac12459addae` — initial independent Runtime-delivery/security RED의 D-owned finding을 교정한다. |
+| Descriptor/manifest admission | `npm test -w @ay-ple/runtime-release` — 43/43 green. Missing/extra/unknown/type/range, application·target·contract·resource identity, roster와 byte binding drift뿐 아니라 repository query/fragment/userinfo-like segment/noncanonical path를 effect 전에 fail closed한다. |
 | No-effect ordering | Application, target, archive와 canonical manifest mismatch 각각이 admission 뒤 effect callback 0회·filesystem tree mutation 0으로 종료한다. D1a source에는 HTTP/download/extraction 구현이 없다. |
-| Cache authority | Content-addressed archive/partial/generation/staging/quarantine/lease/receipt path가 `runtime-cache/v1` 아래에서 충돌 없이 고정된다. App-data/cache root의 canonical path, owner UID, exact `0700`, no-symlink ancestor, same-device natural identity와 unknown residue를 read-only로 판정한다. |
-| Stable failure boundary | S1 `runtime_*` allowlist만 caller-safe `failure`에 사용하며 raw URL/path/digest/nested cause는 private structured `evidence`에만 남는다. |
+| Canonical manifest hardening | Exact root regular files, `licenses/` subtree, terminal in-roster symlink resolution과 loop/dangling rejection을 검증한다. macOS-compatible comparison은 `ß/ss`, `Σ/ς`, canonical normalization equivalence를 collision으로 거절하면서 accent 차이는 보존한다. |
+| Cache authority | Content-addressed archive/partial/generation/staging/quarantine/lease/receipt path가 `runtime-cache/v1` 아래에서 충돌 없이 고정된다. App-data/cache parent/root/namespace의 `(dev, ino)`, owner UID, exact `0700` including special-bit mask, no-symlink ancestor와 same-device identity를 observation 전후에 bind한다. Mutation 전에는 retained snapshot을 `revalidateRuntimeCacheRootForMutation`으로 다시 확인하며 rename·symlink substitution probe를 `runtime_recovery_required`로 닫는다. |
+| Stable failure boundary | S1 `runtime_*` allowlist만 caller-safe `failure`에 사용한다. Raw URL/path/digest/nested cause는 ECMAScript private field에 남고 `diagnosticEvidence()`로만 명시적으로 접근하며 `Object.keys(error)`와 `JSON.stringify(error)`에는 노출되지 않는다. |
 | Package checks | `npm test -w @ay-ple/runtime-release`; `npm run typecheck -w @ay-ple/runtime-release`; `npm run build -w @ay-ple/runtime-release` green |
 | Root checks | `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `git diff --check` green |
 | Writable-scope proof | Fixed base 이후 변경은 이 ticket과 `packages/runtime-release/src/**`의 D1a implementation/tests뿐이다. S1 `src/contract.ts`, root/workspace manifest와 lockfile은 변경하지 않았다. |
 | Safe TAR prerequisite | `tar-stream@3.2.0`, `@types/tar-stream@3.1.4` exact resolution green. `package-lock.json` SHA-256는 S0 evidence와 같은 `6dcc45c4d2aac146b925850f98a61a890e5f54360151598c3ccbf22040ba12ab`이다. Ticket 010을 위한 C-only manifest/lock delta는 필요 없다. |
+| C-only frozen contractTip request | D writable scope에서 제외된 `packages/runtime-release/src/contract.ts`의 `isGitHubRepositoryUrl`/archive URL semantic decode를 C가 강화해야 한다. Exact `https://github.com/<owner>/<repo>` authority와 canonical path만 허용하고 username/password/port/query/fragment, percent/dot normalization, userinfo-like segment와 noncanonical release path를 거절해야 한다. `contract.test.ts`에는 repository와 archive 각각의 query·fragment·userinfo·dot-segment hostile fixture 및 exact release URL binding을 추가하고, reviewed fixed `contractTipSha`를 D1a integration과 010 claim 전에 Coordinator에게 전달한다. D1a admission은 그 전에도 같은 semantic defense를 effect 앞에서 중복 적용한다. |
 | Documentation follow-up | `packages/runtime-release/README.md`는 이 lane의 writable path가 아니므로 수정하지 않았다. Independent review·integration 뒤 Coordinator가 S1-only current-state 문구를 D1a current fact로 갱신해야 한다. |
-| Review state | Independent Runtime-delivery/security review와 C manifest/lock authority review 대기 |
+| Review state | Initial independent Runtime-delivery/security review RED를 교정했다. 새 fixed candidate에 대한 Runtime-delivery/security review와 C authority review 재실행 대기 |
 
 ## Blocked By
 
