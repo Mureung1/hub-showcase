@@ -37,6 +37,16 @@ interface CaffeineIntakeInput {
   consumedAt: string;
 }
 
+// #20 — 조정 화면 슬라이더로 "이 밤은 이 값으로 고정해서 다시 최적화" 요청을 표현한다.
+// nightIndex는 응답 recommendedSchedule.nights[]/caffeineDoses[]와 같은 인덱스(0 = 오늘 밤).
+interface NightOverrideInput {
+  nightIndex: number;
+  bedTime?: string;
+  wakeTime?: string;
+  caffeineTime?: string;
+  caffeineAmountMg?: number;
+}
+
 interface ScheduleCalculateRequestBody {
   exams: ExamInput[];
   habitualBedTime: string;
@@ -45,6 +55,7 @@ interface ScheduleCalculateRequestBody {
   caffeineSensitivity: CaffeineSensitivity;
   healthProfile: HealthProfile;
   minSleepHours?: number;
+  nightOverrides: NightOverrideInput[];
 }
 
 const HH_MM = /^\d{1,2}:\d{2}$/;
@@ -100,6 +111,25 @@ function validateRequestBody(body: unknown): { data: ScheduleCalculateRequestBod
 
   const minSleepHours = typeof b.minSleepHours === "number" ? b.minSleepHours : undefined;
 
+  const nightOverridesRaw = Array.isArray(b.nightOverrides) ? b.nightOverrides : [];
+  for (const override of nightOverridesRaw as Record<string, unknown>[]) {
+    if (!override || typeof override.nightIndex !== "number" || !Number.isInteger(override.nightIndex) || override.nightIndex < 0) {
+      return { error: "nightOverrides[].nightIndex는 0 이상의 정수여야 합니다." };
+    }
+    if (override.bedTime !== undefined && (typeof override.bedTime !== "string" || Number.isNaN(new Date(override.bedTime).getTime()))) {
+      return { error: "nightOverrides[].bedTime은 유효한 ISO 날짜 문자열이어야 합니다." };
+    }
+    if (override.wakeTime !== undefined && (typeof override.wakeTime !== "string" || Number.isNaN(new Date(override.wakeTime).getTime()))) {
+      return { error: "nightOverrides[].wakeTime은 유효한 ISO 날짜 문자열이어야 합니다." };
+    }
+    if (override.caffeineTime !== undefined && (typeof override.caffeineTime !== "string" || Number.isNaN(new Date(override.caffeineTime).getTime()))) {
+      return { error: "nightOverrides[].caffeineTime은 유효한 ISO 날짜 문자열이어야 합니다." };
+    }
+    if (override.caffeineAmountMg !== undefined && (typeof override.caffeineAmountMg !== "number" || override.caffeineAmountMg < 0)) {
+      return { error: "nightOverrides[].caffeineAmountMg는 0 이상의 숫자여야 합니다." };
+    }
+  }
+
   return {
     data: {
       exams: b.exams as ExamInput[],
@@ -109,6 +139,7 @@ function validateRequestBody(body: unknown): { data: ScheduleCalculateRequestBod
       caffeineSensitivity: b.caffeineSensitivity,
       healthProfile: hp as unknown as HealthProfile,
       minSleepHours,
+      nightOverrides: nightOverridesRaw as NightOverrideInput[],
     },
   };
 }
@@ -119,7 +150,7 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     res.status(400).json({ error: validation.error });
     return;
   }
-  const { exams, habitualBedTime, habitualWakeTime, todayCaffeineIntakes, caffeineSensitivity, healthProfile, minSleepHours } =
+  const { exams, habitualBedTime, habitualWakeTime, todayCaffeineIntakes, caffeineSensitivity, healthProfile, minSleepHours, nightOverrides } =
     validation.data;
 
   const nowIso = new Date().toISOString();
@@ -135,6 +166,13 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
     return;
+  }
+
+  for (const override of nightOverrides) {
+    if (override.nightIndex >= timeline.numNights) {
+      res.status(400).json({ error: `nightOverrides[].nightIndex(${override.nightIndex})가 시험기간 밤 개수(${timeline.numNights})를 벗어났습니다.` });
+      return;
+    }
   }
 
   let halfLifeHours: number;
@@ -175,6 +213,26 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     plannedDoses,
     amountOptionsMg: CANDIDATE_DOSE_MG_OPTIONS,
   });
+
+  // #20 — 후보 그리드 중 잠근 밤의 축만 값 하나짜리 배열로 바꿔치기한다. 로컬 탐색은
+  // 축 길이가 1이면 그 축을 절대 옮기지 않으므로(neighborIndex), 알고리즘은 그대로 두고
+  // "이 밤은 이 값 고정, 나머지는 재최적화"를 얻을 수 있다.
+  for (const override of nightOverrides) {
+    const { nightIndex } = override;
+    if (override.bedTime !== undefined) {
+      candidates.nightBedOptions[nightIndex] = [toContinuousCoordinate(nowIso, override.bedTime)];
+    }
+    if (override.wakeTime !== undefined) {
+      candidates.nightWakeOptions[nightIndex] = [toContinuousCoordinate(nowIso, override.wakeTime)];
+    }
+    if (override.caffeineTime !== undefined) {
+      const amountMg = candidates.doseAmountOptions[nightIndex][0];
+      candidates.doseOptions[nightIndex] = [{ time: toContinuousCoordinate(nowIso, override.caffeineTime), amountMg }];
+    }
+    if (override.caffeineAmountMg !== undefined) {
+      candidates.doseAmountOptions[nightIndex] = [override.caffeineAmountMg];
+    }
+  }
 
   const fixedDoses: CaffeineDose[] = todayCaffeineIntakes.map((intake) => ({
     time: toContinuousCoordinate(nowIso, intake.consumedAt),
