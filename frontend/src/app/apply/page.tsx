@@ -11,8 +11,7 @@ export default async function ApplyPage({
   searchParams: Promise<{ position?: string }>;
 }) {
   const { position: id } = await searchParams;
-  const position = id ? getPosition(id) : undefined;
-  const company = position?.company ?? "채용";
+  const position = id ? await getPosition(id) : undefined;  const company = position?.company ?? "채용";
 
   return (
     <AppShell

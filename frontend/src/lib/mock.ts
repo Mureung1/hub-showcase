@@ -195,15 +195,17 @@ export const CREDENTIALS: Credential[] = [
 ];
 
 /* ── 데이터 접근 함수 (실제 API로 교체할 지점) ── */
-
-export function listPositions(): Position[] {
+// ── 변경 후 ──
+export async function listPositions(): Promise<Position[]> {
   return [...POSITIONS].sort((a, b) => b.fitScore - a.fitScore);
 }
 
-export function getPosition(id: string): PositionDetail | undefined {
+export async function getPosition(id: string): Promise<PositionDetail | undefined> {
   return POSITIONS.find((p) => p.id === id);
 }
 
+/** 목업에선 계산할 게 없다. data.ts 의 시그니처를 맞추기 위한 no-op. */
+export async function recalculate(): Promise<void> {}
 export const GENERATED_DOCS: Record<string, { resume: string; letter: string }> =
   {
     "toss-backend-platform": {

@@ -11,13 +11,9 @@ import { calcFitScore, fitLabel, fitTone } from "@/lib/fit";
 import { getPosition } from "@/lib/mock";
 
 /** F5 — 포지션 상세 + 방향 제시 (디자인.md 6.4) */
-export default async function PositionDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function PositionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const position = getPosition(id);
+  const position = await getPosition(id);
   if (!position) notFound();
 
   const total = calcFitScore(position.requirements);
