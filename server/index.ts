@@ -4,8 +4,8 @@ import dotenv from "dotenv";
 import express from "express";
 import {
   classifyWithFallback,
-  createOpenAiClassifier,
-} from "./llmClassification";
+  createConfiguredGeminiClassifier,
+} from "./geminiClassification";
 import { extractPageMetadata, type PageMetadata } from "./metadata";
 
 dotenv.config({ path: "server/.env", quiet: true });
@@ -17,12 +17,7 @@ const itemColumns =
 const configuredOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:3000")
   .split(",")
   .map((origin) => origin.trim());
-const openAiApiKey = process.env.OPENAI_API_KEY?.trim();
-const openAiModel = process.env.OPENAI_MODEL?.trim();
-const llmClassifier =
-  openAiApiKey && openAiModel
-    ? createOpenAiClassifier(openAiApiKey, openAiModel)
-    : null;
+const geminiClassifier = createConfiguredGeminiClassifier();
 
 app.use(
   cors({
@@ -145,7 +140,7 @@ app.post("/api/items", async (request, response) => {
   const urlDetected = isUrl(trimmed);
   const sourcePlatform = urlDetected ? getSourcePlatform(trimmed) : "manual";
   let metadata: PageMetadata | null = null;
-  if (urlDetected && llmClassifier) {
+  if (urlDetected && geminiClassifier) {
     try {
       metadata = await extractPageMetadata(trimmed);
     } catch (error) {
@@ -154,7 +149,7 @@ app.post("/api/items", async (request, response) => {
   }
   const { categoryMain, categorySub } = await classifyWithFallback(
     { content: trimmed, metadata },
-    llmClassifier
+    geminiClassifier
   );
 
   try {
