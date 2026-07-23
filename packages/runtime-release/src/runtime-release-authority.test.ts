@@ -514,6 +514,14 @@ test('macOS filename equivalence rejects fold collisions while preserving accent
       manifestFile('licenses/ς', 'a'),
     ]),
     withAdditionalFiles(fixture.entries, [
+      manifestFile('licenses/ẞ', '9'),
+      manifestFile('licenses/ss', 'a'),
+    ]),
+    withAdditionalFiles(fixture.entries, [
+      manifestFile('licenses/ẞ', '9'),
+      manifestFile('licenses/ß', 'a'),
+    ]),
+    withAdditionalFiles(fixture.entries, [
       manifestFile('licenses/café-copy', '9'),
       manifestFile('licenses/cafe\u0301-copy', 'a'),
     ]),
@@ -548,6 +556,56 @@ test('segment-wise macOS path graph rejects folded ancestor ambiguity', () => {
       entries: withAdditionalFiles(fixture.entries, [
         manifestFile('licenses/Alpha/a', '9'),
         manifestFile('licenses/alpha/b', 'a'),
+      ]),
+    },
+    {
+      name: 'capital sharp-s file ancestor inserted first',
+      entries: withAdditionalFiles(fixture.entries, [
+        manifestFile('licenses/ss', '9'),
+        manifestFile('licenses/ẞ/nested', 'a'),
+      ]),
+    },
+    {
+      name: 'capital sharp-s file ancestor inserted last',
+      entries: withAdditionalFiles(fixture.entries, [
+        manifestFile('licenses/ẞ', '9'),
+        manifestFile('licenses/ss/nested', 'a'),
+      ]),
+    },
+    {
+      name: 'capital sharp-s symlink ancestor inserted first',
+      entries: withAdditionalEntries(fixture.entries, [
+        {
+          path: 'licenses/ss',
+          target: 'openai/LICENSE',
+          type: 'symlink',
+        },
+        manifestFile('licenses/ẞ/nested', '9'),
+      ]),
+    },
+    {
+      name: 'capital sharp-s symlink ancestor inserted last',
+      entries: withAdditionalEntries(fixture.entries, [
+        {
+          path: 'licenses/ẞ',
+          target: 'openai/LICENSE',
+          type: 'symlink',
+        },
+        manifestFile('licenses/ss/nested', '9'),
+      ]),
+    },
+    {
+      name: 'capital sharp-s implicit directory versus sharp-s',
+      entries: withAdditionalFiles(fixture.entries, [
+        manifestFile('licenses/ẞ/a', '9'),
+        manifestFile('licenses/ß/b', 'a'),
+      ]),
+    },
+    {
+      name: 'capital sharp-s implicit directory versus ss',
+      entries: withAdditionalFiles(fixture.entries, [
+        manifestFile('licenses/ẞ/a', '9'),
+        manifestFile('licenses/ss/c', 'b'),
       ]),
     },
     {
@@ -602,6 +660,39 @@ test('segment-wise macOS path graph rejects folded ancestor ambiguity', () => {
       }),
     ),
   )
+})
+
+test('all runtime non-idempotent full-case folds close as manifest collisions', () => {
+  const fixture = createReleaseFixture()
+  const nonIdempotent = scanNonIdempotentFullCaseFolds()
+  assert.equal(
+    nonIdempotent.some((candidate) => candidate.codePoint === 0x1e9e),
+    true,
+  )
+  for (const candidate of nonIdempotent) {
+    assert.throws(
+      () =>
+        admitRuntimeRelease(
+          admissionInput({
+            manifestBytes: manifestBytesWithEntries(
+              fixture,
+              withAdditionalFiles(fixture.entries, [
+                manifestFile(
+                  `licenses/${candidate.character}`,
+                  '9',
+                ),
+                manifestFile(
+                  `licenses/${candidate.fixedPoint}`,
+                  'a',
+                ),
+              ]),
+            ),
+          }),
+        ),
+      RuntimeReleaseAuthorityError,
+      `U+${candidate.codePoint.toString(16)} must close to one identity`,
+    )
+  }
 })
 
 test('canonical topology requires exact root files, license subtree, and terminal symlinks', () => {
@@ -933,6 +1024,46 @@ function compareCodePoints(left: string, right: string): number {
     }
   }
   return leftPoints.length - rightPoints.length
+}
+
+function scanNonIdempotentFullCaseFolds(): readonly {
+  readonly character: string
+  readonly codePoint: number
+  readonly fixedPoint: string
+}[] {
+  const result: Array<{
+    readonly character: string
+    readonly codePoint: number
+    readonly fixedPoint: string
+  }> = []
+  for (let codePoint = 0; codePoint <= 0x10ffff; codePoint += 1) {
+    if (codePoint >= 0xd800 && codePoint <= 0xdfff) continue
+    const character = String.fromCodePoint(codePoint)
+    const once = fullCaseFoldStep(character)
+    const fixedPoint = boundedFullCaseFold(character)
+    if (once !== fixedPoint) {
+      result.push({
+        character,
+        codePoint,
+        fixedPoint,
+      })
+    }
+  }
+  return result
+}
+
+function boundedFullCaseFold(value: string): string {
+  let current = value
+  for (let pass = 0; pass < 8; pass += 1) {
+    const folded = fullCaseFoldStep(current)
+    if (folded === current) return current
+    current = folded
+  }
+  assert.fail('Runtime Unicode full-case fold did not converge')
+}
+
+function fullCaseFoldStep(value: string): string {
+  return value.toUpperCase().toLowerCase()
 }
 
 function withoutKey<

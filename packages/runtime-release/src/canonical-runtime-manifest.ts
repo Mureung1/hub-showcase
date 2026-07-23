@@ -17,6 +17,8 @@ const MACOS_FILENAME_COLLATOR = new Intl.Collator('und', {
   sensitivity: 'accent',
 })
 
+const MAX_FULL_CASE_FOLD_PASSES = 8
+
 type JsonObject = Record<string, unknown>
 
 type RuntimeManifestPathGraphNode = {
@@ -501,7 +503,13 @@ function assertSafeManifestPathGraph(
 }
 
 function macOSFilenameComparisonKey(value: string): string {
-  return value.toUpperCase().toLowerCase()
+  let current = value
+  for (let pass = 0; pass < MAX_FULL_CASE_FOLD_PASSES; pass += 1) {
+    const folded = current.toUpperCase().toLowerCase()
+    if (folded === current) return current
+    current = folded
+  }
+  throw invalidManifest()
 }
 
 function assertSafeSymlinkTargets(
