@@ -90,6 +90,20 @@
   letter-spacing: -0.03em;
 }
 
+.guide-instructions ol {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding-left: 22px;
+  color: #53615f;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.guide-instructions strong {
+  color: #182536;
+}
+
 .guide-section p {
   margin: 8px 0 0;
   color: #687572;
@@ -138,15 +152,33 @@
   font-weight: 700;
 }
 
-.guide-example details {
+.example-editor {
+  display: block;
+  width: 100%;
+  min-height: 420px;
   margin-top: 18px;
+  padding: 16px;
+  resize: vertical;
+  border: 1px solid #cbd4d0;
+  border-radius: 9px;
+  outline: 0;
+  background: #182536;
+  color: #e9f2ee;
+  font: 12px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-.guide-example summary {
-  color: #126d49;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 750;
+.example-editor:focus {
+  border-color: #19a86a;
+  box-shadow: 0 0 0 3px rgb(25 168 106 / 12%);
+}
+
+.example-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  color: #16885a;
+  font-size: 12px;
 }
 
 .guide-validator {

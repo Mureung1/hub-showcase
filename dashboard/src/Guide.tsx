@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import Ajv from 'ajv/dist/2020.js';
 import schema from '../schemas/showcase.schema.json';
 import exampleShowcase from '../../showcase/showcase.example.json';
@@ -18,7 +18,9 @@ function formatErrors(errors: typeof validate.errors) {
 }
 
 export default function Guide() {
-  const exampleText = useMemo(() => JSON.stringify(exampleShowcase, null, 2), []);
+  const [exampleText, setExampleText] = useState(() => JSON.stringify(exampleShowcase, null, 2));
+  const [sampleOpen, setSampleOpen] = useState(false);
+  const [copyState, setCopyState] = useState('');
   const [jsonText, setJsonText] = useState('');
   const [result, setResult] = useState<{ ok: boolean; messages: string[] } | null>(null);
 
@@ -38,6 +40,12 @@ export default function Guide() {
     }
   };
 
+  const copyExample = async () => {
+    await navigator.clipboard.writeText(exampleText);
+    setCopyState('복사했습니다.');
+    window.setTimeout(() => setCopyState(''), 1800);
+  };
+
   return (
     <main className="guide-page">
       <header className="guide-header">
@@ -46,10 +54,12 @@ export default function Guide() {
         <p>예시 파일을 복사하고, 프로젝트 내용을 바꾼 뒤 형식을 검사하세요.</p>
       </header>
 
-      <section className="guide-steps" aria-label="작성 순서">
-        <div><strong>1</strong><span>예시 복사</span></div>
-        <div><strong>2</strong><span>내용 수정</span></div>
-        <div><strong>3</strong><span>JSON 검사</span></div>
+      <section className="guide-section guide-instructions">
+        <h2>먼저 확인하세요</h2>
+        <ol>
+          <li><strong>showcase.json을 PR에 포함하세요.</strong></li>
+          <li><strong>아래 규칙에 따라 파일을 작성하세요.</strong></li>
+        </ol>
       </section>
 
       <section className="guide-section guide-folder">
@@ -77,20 +87,33 @@ export default function Guide() {
         <div className="section-heading">
           <div>
             <h2>예시 JSON</h2>
-            <p>필요한 부분만 바꿔서 사용합니다.</p>
+            <p>샘플을 열어 필요한 부분을 바꿔서 사용합니다.</p>
           </div>
-          <button type="button" onClick={() => setJsonText(exampleText)}>검사창에 넣기</button>
+          <button type="button" onClick={() => setSampleOpen((open) => !open)}>
+            {sampleOpen ? '샘플 닫기' : '샘플 열어보기'}
+          </button>
         </div>
-        <details>
-          <summary>전체 예시 보기</summary>
-          <pre>{exampleText}</pre>
-        </details>
+        {sampleOpen && (
+          <>
+            <textarea
+              className="example-editor"
+              value={exampleText}
+              onChange={(event) => setExampleText(event.target.value)}
+              spellCheck={false}
+              aria-label="showcase JSON 샘플"
+            />
+            <div className="example-actions">
+              <button type="button" onClick={copyExample}>내용 복사</button>
+              {copyState && <span>{copyState}</span>}
+            </div>
+          </>
+        )}
       </section>
 
       <section className="guide-section guide-validator">
         <div className="section-heading">
           <div>
-            <h2>마지막으로 확인하기</h2>
+            <h2>JSON 형식 확인하기</h2>
             <p>내용의 좋고 나쁨이 아니라 작성 형식만 확인합니다.</p>
           </div>
           <button type="button" onClick={() => { setJsonText(''); setResult(null); }}>지우기</button>
