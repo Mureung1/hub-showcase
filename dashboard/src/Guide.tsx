@@ -7,6 +7,28 @@ import './guide.css';
 const ajv = new Ajv({ allErrors: true });
 const validate = ajv.compile(schema);
 
+const emptyShowcase = {
+  schemaVersion: 1,
+  title: '',
+  summary: '',
+  problem: '',
+  targetUsers: [],
+  features: [],
+  featureTags: [],
+  techStack: [],
+  techHighlights: [],
+  githubUser: '',
+  developmentWithAI: '',
+  demoUrl: '',
+  thumbnail: '',
+  screenshots: [],
+  agent: {
+    summary: '',
+    agentTools: [],
+    workflows: [],
+  },
+};
+
 function formatErrors(errors: typeof validate.errors) {
   return (errors ?? []).map((error) => {
     const path = error.instancePath || '/';
@@ -47,7 +69,8 @@ export default function Guide() {
   };
 
   const downloadEmptyShowcase = () => {
-    const blob = new Blob([], { type: 'application/json' });
+    const content = `${JSON.stringify(emptyShowcase, null, 2)}\n`;
+    const blob = new Blob([content], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
