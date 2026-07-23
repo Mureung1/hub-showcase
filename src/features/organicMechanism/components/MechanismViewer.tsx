@@ -33,7 +33,11 @@ export default function MechanismViewer({ title, reactions }: MechanismViewerPro
         <Panel title={`organic / ${reaction.id}.tsx`} className="relative">
           <ChapterAssistant context={`${player.currentStep.title}: ${player.currentStep.description}`} />
           <div className="flex justify-center py-4">
-            <MechanismStepViewer step={player.currentStep} showDebugIndices={showDebugIndices} />
+            <MechanismStepViewer
+              step={player.currentStep}
+              visibleArrowCount={player.visibleArrowCount}
+              showDebugIndices={showDebugIndices}
+            />
           </div>
 
           <MechanismControls

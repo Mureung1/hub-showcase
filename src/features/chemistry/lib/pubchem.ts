@@ -25,6 +25,29 @@ export async function smilesToCid(smiles: string): Promise<number | null> {
   }
 }
 
+export interface CompoundInfo {
+  /** 분자식 (예: C2H6O) — PubChem MolecularFormula */
+  formula: string | null
+  /** IUPAC 이름 (예: ethanol) */
+  iupacName: string | null
+}
+
+export async function fetchCompoundInfo(cid: number): Promise<CompoundInfo> {
+  const url = `${BASE_URL}/compound/cid/${cid}/property/MolecularFormula,IUPACName/JSON`
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return { formula: null, iupacName: null }
+    const data = await res.json()
+    const props = data?.PropertyTable?.Properties?.[0] ?? {}
+    return {
+      formula: props.MolecularFormula ?? null,
+      iupacName: props.IUPACName ?? null,
+    }
+  } catch {
+    return { formula: null, iupacName: null }
+  }
+}
+
 export async function fetchSdf3d(cid: number): Promise<string | null> {
   const url = `${BASE_URL}/compound/cid/${cid}/record/SDF/?record_type=3d`
   try {
