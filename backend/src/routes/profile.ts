@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { pool } from "../db";
 import { requireAuth } from "../middleware/auth";
+import { isValidBirthYear } from "../utils/validation";
 
 export const profileRouter = Router();
 
@@ -34,6 +35,11 @@ profileRouter.put("/", requireAuth, async (req, res) => {
     typeof weightKg !== "number"
   ) {
     res.status(400).json({ error: "gender, birthYear, heightCm, weightKg는 필수입니다." });
+    return;
+  }
+
+  if (!isValidBirthYear(birthYear)) {
+    res.status(400).json({ error: "출생연도가 올바르지 않습니다." });
     return;
   }
 
