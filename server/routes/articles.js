@@ -1,10 +1,43 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const supabase = require('../services/supabase');
 const auth = require('../middleware/auth');
 const { searchNews } = require('../services/naver');
 const { fetchArticleBody } = require('../services/scraper');
+const { summarizeArticle, simplifyArticle } = require('../services/openai');
 
 const router = express.Router();
+
+const SIMPLIFY_LEVELS = ['easy', 'medium'];
+
+const summaryLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'rate_limited' },
+});
+
+// :id, :id/summary 둘 다 본문이 필요해서 공용으로 뺌 — content 없으면 스크래핑해서 채워준다
+async function getArticleWithContent(id) {
+  const { data: article, error } = await supabase
+    .from('articles')
+    .select('id, title, source, content, url, published_at')
+    .eq('id', id)
+    .single();
+
+  if (error || !article) return null;
+
+  if (!article.content) {
+    const content = await fetchArticleBody(article.url);
+    if (content) {
+      await supabase.from('articles').update({ content }).eq('id', article.id);
+      article.content = content;
+    }
+  }
+
+  return article;
+}
 
 function hostnameOf(url) {
   try {
@@ -108,32 +141,85 @@ router.get('/', auth, async (req, res) => {
 });
 
 router.get('/:id', auth, async (req, res) => {
-  const { data: article, error } = await supabase
-    .from('articles')
-    .select('id, title, source, content, url, published_at')
-    .eq('id', req.params.id)
-    .single();
+  const article = await getArticleWithContent(req.params.id);
 
-  if (error || !article) {
+  if (!article) {
     return res.status(404).json({ error: 'not_found' });
-  }
-
-  let content = article.content;
-  if (!content) {
-    content = await fetchArticleBody(article.url);
-    if (content) {
-      await supabase.from('articles').update({ content }).eq('id', article.id);
-    }
   }
 
   res.json({
     id: article.id,
     title: article.title,
-    content: content || null,
+    content: article.content || null,
     source: article.source,
     publishedAt: article.published_at,
-    terms: [], // 용어 해설(article_terms)은 7/22 예정 — 지금은 빈 배열
+    terms: [], // 용어 해설(article_terms)은 다음 커밋에서
   });
+});
+
+router.get('/:id/summary', auth, summaryLimiter, async (req, res) => {
+  const { data: cached, error: cacheError } = await supabase
+    .from('article_summaries')
+    .select('content')
+    .eq('article_id', req.params.id)
+    .maybeSingle();
+
+  if (cacheError) {
+    return res.status(500).json({ error: 'db_connection_failed' });
+  }
+
+  if (cached) {
+    return res.json({ content: cached.content });
+  }
+
+  const article = await getArticleWithContent(req.params.id);
+  if (!article || !article.content) {
+    return res.status(404).json({ error: 'not_found' });
+  }
+
+  const content = await summarizeArticle(article.content);
+
+  await supabase
+    .from('article_summaries')
+    .insert({ article_id: req.params.id, content });
+
+  res.json({ content });
+});
+
+router.get('/:id/simplify', auth, summaryLimiter, async (req, res) => {
+  const { level } = req.query;
+
+  if (!SIMPLIFY_LEVELS.includes(level)) {
+    return res.status(400).json({ error: 'invalid_request' });
+  }
+
+  const { data: cached, error: cacheError } = await supabase
+    .from('summaries')
+    .select('content')
+    .eq('article_id', req.params.id)
+    .eq('difficulty_level', level)
+    .maybeSingle();
+
+  if (cacheError) {
+    return res.status(500).json({ error: 'db_connection_failed' });
+  }
+
+  if (cached) {
+    return res.json({ level, content: cached.content });
+  }
+
+  const article = await getArticleWithContent(req.params.id);
+  if (!article || !article.content) {
+    return res.status(404).json({ error: 'not_found' });
+  }
+
+  const content = await simplifyArticle(article.content, level);
+
+  await supabase
+    .from('summaries')
+    .insert({ article_id: req.params.id, difficulty_level: level, content });
+
+  res.json({ level, content });
 });
 
 router.post('/:id/read', auth, async (req, res) => {

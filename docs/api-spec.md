@@ -27,10 +27,11 @@
 | `GET /api/articles?page=&limit=` | 메인 피드 (내 관심 키워드 기준) | ✅ | - | `[{ id, title, source, thumbnailUrl, publishedAt, keywords }]` |
 | `GET /api/articles/:id` | 기사 상세 (본문 + 용어 목록) | ✅ | - | `{ id, title, content, source, publishedAt, terms: [{ term, explanation }] }` |
 | `POST /api/articles/:id/read` | 읽음 처리 (UPSERT read_history) | ✅ | - | `{ success: true }` |
-| `GET /api/articles/:id/summary?level=easy\|medium\|hard` | 난이도별 요약 (캐시 우선, 없으면 OpenAI 호출) | ✅ | - | `{ level, content }` |
+| `GET /api/articles/:id/summary` | AI 요약 (난이도 구분 없음, 캐시 우선) | ✅ | - | `{ content }` |
+| `GET /api/articles/:id/simplify?level=easy\|medium` | 쉽게 설명 — 원문을 해당 난이도로 다시 쓴 글 (캐시 우선) | ✅ | - | `{ level, content }` |
 | `GET /api/articles/:id/related` *(스트레치)* | 연관 기사 추천 (임베딩 유사도) | ✅ | - | `[{ id, title, similarity }]` |
 
-`summary`, `related`는 AI/DB 부하 있는 엔드포인트라 `express-rate-limit` 적용.
+`summary`, `simplify`, `related`는 AI/DB 부하 있는 엔드포인트라 `express-rate-limit` 적용.
 
 ## 북마크 (`routes/bookmarks.js`)
 
