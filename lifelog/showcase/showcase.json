@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "title": "LifeLog",
+  "summary": "ChatGPT 대화 기록을 분석해 고민과 감정의 흐름을 타임라인으로 보여주는 회고 웹 서비스",
+  "githubUser": "dabinnida(백다빈)",
+  "demoUrl": "",
+  "thumbnail": "",
+  "screenshots": [],
+  "problem": "기록의 중요성은 커지고 있지만 많은 사람들이 일기를 꾸준히 쓰지 못한다. 반면 ChatGPT와의 대화에는 고민, 목표, 감정이 자연스럽게 남아있다.",
+  "targetUsers": [],
+  "features": [
+    "홈 화면 - 이번 달 AI 한 줄 요약 및 자주 언급된 키워드 카드",
+    "타임라인 화면 - 키워드별로 시간순 흐름과 우세 감정 확인",
+    "월별 기록 - 그 달의 고민, 목표, 감정을 모달로 확인"
+  ],
+  "featureTags": [],
+  "techStack": ["React", "Node.js", "Express", "Supabase", "Gemini API"],
+  "techHighlights": [],
+  "developmentWithAI": "",
+  "agent": {
+    "summary": "",
+    "agentTools": [],
+    "workflows": []
+  }
+}
