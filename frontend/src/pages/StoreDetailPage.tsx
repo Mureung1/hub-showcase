@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { createReview, getReviews } from '../api/reviews'
+import { createReview, getReviews, toggleReviewLike } from '../api/reviews'
 import ReviewCard from '../components/ReviewCard'
 import ReviewForm from '../components/ReviewForm'
 import SearchBar from '../components/SearchBar'
@@ -33,6 +33,8 @@ function StoreDetailPage() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [isLoadingReviews, setIsLoadingReviews] = useState(true)
   const [reviewsError, setReviewsError] = useState('')
+  const [likeError, setLikeError] = useState('')
+  const [pendingLikeIds, setPendingLikeIds] = useState<Set<string>>(new Set())
   const waitingTimes = reviews.flatMap((review) =>
     review.waitingMinutes === null ? [] : [review.waitingMinutes],
   )
@@ -43,6 +45,10 @@ function StoreDetailPage() {
             waitingTimes.length,
         )
       : null
+  const reviewsWithMineFirst = [...reviews].sort(compareReviewsWithMineFirst)
+  const matchedReviews = [...reviews].sort(compareMatchedReviews)
+  const featuredReviewId = reviewsWithMineFirst.find((review) => !review.isMine)?.id
+  const featuredMatchedReviewId = matchedReviews.find((review) => !review.isMine)?.id
 
   useEffect(() => {
     if (!storeId) return
@@ -72,6 +78,35 @@ function StoreDetailPage() {
     const savedReview = await createReview(input, store!)
     setReviews((current) => [savedReview, ...current])
     setActiveTab('reviews')
+  }
+
+  const handleReviewLike = async (reviewId: string) => {
+    setLikeError('')
+    setPendingLikeIds((current) => new Set(current).add(reviewId))
+    try {
+      const result = await toggleReviewLike(reviewId)
+      setReviews((current) =>
+        current.map((review) =>
+          review.id === reviewId
+            ? {
+                ...review,
+                likedByMe: result.liked,
+                likeCount: result.likeCount,
+              }
+            : review,
+        ),
+      )
+    } catch (reason) {
+      setLikeError(
+        reason instanceof Error ? reason.message : '리뷰 공감 처리에 실패했습니다.',
+      )
+    } finally {
+      setPendingLikeIds((current) => {
+        const next = new Set(current)
+        next.delete(reviewId)
+        return next
+      })
+    }
   }
 
   if (!store || store.id !== storeId) {
@@ -153,20 +188,50 @@ function StoreDetailPage() {
         </nav>
 
         <section className="store-detail-page__panel" aria-live="polite">
+          {likeError && <p role="alert">{likeError}</p>}
           {activeTab === 'reviews' && isLoadingReviews && <p>리뷰를 불러오는 중...</p>}
           {activeTab === 'reviews' && reviewsError && <p role="alert">{reviewsError}</p>}
           {activeTab === 'reviews' && !isLoadingReviews && !reviewsError && (reviews.length === 0 ? (
             <p>아직 등록된 리뷰가 없습니다.</p>
           ) : (
             <div className="store-detail-page__reviews">
-              {reviews.map((review) => (
-                <ReviewCard review={review} key={review.id} />
+              {reviewsWithMineFirst.map((review, index) => (
+                <ReviewCard
+                  review={review}
+                  key={review.id}
+                  isFeatured={review.id === featuredReviewId}
+                  separateAfter={shouldSeparateAfter(reviewsWithMineFirst, index)}
+                  isLikePending={pendingLikeIds.has(review.id)}
+                  onLike={handleReviewLike}
+                />
               ))}
             </div>
           ))}
 
-          {activeTab === 'matchedReviews' && (
-            <p>취향 유사도 기능을 준비하고 있습니다.</p>
+          {activeTab === 'matchedReviews' && isLoadingReviews && (
+            <p>맞춤 리뷰를 불러오는 중...</p>
+          )}
+          {activeTab === 'matchedReviews' && reviewsError && (
+            <p role="alert">{reviewsError}</p>
+          )}
+          {activeTab === 'matchedReviews' && !isLoadingReviews && !reviewsError && (
+            matchedReviews.length === 0 ? (
+              <p>아직 등록된 리뷰가 없습니다.</p>
+            ) : (
+              <div className="store-detail-page__reviews">
+                {matchedReviews.map((review, index) => (
+                  <ReviewCard
+                    review={review}
+                    key={review.id}
+                    showTasteMatch
+                    isFeatured={review.id === featuredMatchedReviewId}
+                    separateAfter={shouldSeparateAfter(matchedReviews, index)}
+                    isLikePending={pendingLikeIds.has(review.id)}
+                    onLike={handleReviewLike}
+                  />
+                ))}
+              </div>
+            )
           )}
 
           {activeTab === 'write' && (
@@ -175,6 +240,37 @@ function StoreDetailPage() {
         </section>
       </main>
     </div>
+  )
+}
+
+function compareReviewsWithMineFirst(left: Review, right: Review) {
+  if (left.isMine !== right.isMine) return left.isMine ? -1 : 1
+  return (
+    right.likeCount - left.likeCount ||
+    Date.parse(right.createdAt) - Date.parse(left.createdAt)
+  )
+}
+
+function compareMatchedReviews(left: Review, right: Review) {
+  if (left.isMine !== right.isMine) return left.isMine ? -1 : 1
+
+  const leftHasMatch = left.tasteMatchPercent !== undefined
+  const rightHasMatch = right.tasteMatchPercent !== undefined
+  if (leftHasMatch !== rightHasMatch) return leftHasMatch ? -1 : 1
+
+  const matchDifference =
+    (right.tasteMatchPercent ?? 0) - (left.tasteMatchPercent ?? 0)
+  return (
+    matchDifference ||
+    right.likeCount - left.likeCount ||
+    Date.parse(right.createdAt) - Date.parse(left.createdAt)
+  )
+}
+
+function shouldSeparateAfter(reviews: Review[], index: number) {
+  return Boolean(
+    reviews[index]?.isMine &&
+    (index === reviews.length - 1 || !reviews[index + 1]?.isMine),
   )
 }
 

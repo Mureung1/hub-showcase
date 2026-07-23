@@ -6,6 +6,7 @@ export type AuthSession = {
   user: {
     id: string
     email: string
+    name: string
   }
 }
 
@@ -35,11 +36,24 @@ export type SignupResult = {
   }
 }
 
-export async function signup(name: string, email: string, password: string) {
+export type SignupPreferences = {
+  spicy: number
+  valueForMoney: number
+  atmosphere: number
+  waiting: number
+  quietness: number
+}
+
+export async function signup(
+  name: string,
+  email: string,
+  password: string,
+  preferences: SignupPreferences,
+) {
   const response = await fetch('/api/auth/signup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ name, email, password, preferences }),
   })
   const data = (await response.json()) as SignupResult & { message: string }
 
@@ -62,4 +76,8 @@ export function getAuthSession(): AuthSession | null {
   } catch {
     return null
   }
+}
+
+export function logout() {
+  window.localStorage.removeItem(AUTH_STORAGE_KEY)
 }

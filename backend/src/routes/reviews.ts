@@ -148,6 +148,7 @@ router.get("/", async (req: Request, res: Response) => {
   }
 
   const userIds = [...new Set(reviews.map((review) => review.user_id))];
+  const reviewIds = reviews.map((review) => review.id);
   const { data: profiles, error: profilesError } = userIds.length
     ? await supabase.from("profiles").select("id, nickname").in("id", userIds)
     : { data: [], error: null };
@@ -159,8 +160,75 @@ router.get("/", async (req: Request, res: Response) => {
     (profiles ?? []).map((profile) => [profile.id, profile.nickname]),
   );
 
+  const accessToken = getBearerToken(req);
+  let viewerUserId: string | undefined;
+  const tasteMatchByUserId = new Map<string, number>();
+  const likeCountByReviewId = new Map<string, number>();
+  const likedReviewIds = new Set<string>();
+
+  if (accessToken && userIds.length > 0) {
+    const { data: viewerData, error: viewerError } =
+      await supabase.auth.getUser(accessToken);
+
+    if (!viewerError && viewerData.user) {
+      viewerUserId = viewerData.user.id;
+      tasteMatchByUserId.set(viewerUserId, 100);
+
+      const userSupabase = createAuthenticatedSupabase(accessToken);
+      const { data: similarities, error: similaritiesError } =
+        await userSupabase.rpc("get_preference_similarities", {
+          author_ids: userIds,
+        });
+
+      if (similaritiesError) {
+        sendDatabaseError(
+          res,
+          "취향 유사도를 계산하지 못했습니다.",
+          similaritiesError,
+        );
+        return;
+      }
+
+      for (const similarity of similarities ?? []) {
+        tasteMatchByUserId.set(
+          similarity.author_id,
+          similarity.taste_match_percent,
+        );
+      }
+
+      const { data: likeSummaries, error: likeSummariesError } =
+        await userSupabase.rpc("get_review_like_summaries", {
+          review_ids: reviewIds,
+        });
+
+      if (likeSummariesError) {
+        sendDatabaseError(
+          res,
+          "리뷰 공감 정보를 불러오지 못했습니다.",
+          likeSummariesError,
+        );
+        return;
+      }
+
+      for (const summary of likeSummaries ?? []) {
+        likeCountByReviewId.set(summary.review_id, Number(summary.like_count));
+        if (summary.liked_by_me) likedReviewIds.add(summary.review_id);
+      }
+    }
+  }
+
   res.json(
-    reviews.map((review) => mapReviewResponse(review, kakaoPlaceId, nicknames.get(review.user_id))),
+    reviews.map((review) =>
+      mapReviewResponse(
+        review,
+        kakaoPlaceId,
+        nicknames.get(review.user_id),
+        viewerUserId,
+        tasteMatchByUserId.get(review.user_id),
+        likeCountByReviewId.get(review.id) ?? 0,
+        likedReviewIds.has(review.id),
+      ),
+    ),
   );
 });
 
@@ -262,7 +330,11 @@ router.post("/", async (req: Request, res: Response) => {
     storeId: review.store_id,
     kakaoPlaceId: store.kakaoPlaceId,
     authorId: review.user_id,
-    authorName: userData.user.email ?? "사용자",
+    authorName: getUserNickname(userData.user.user_metadata),
+    isMine: true,
+    tasteMatchPercent: 100,
+    likeCount: 0,
+    likedByMe: false,
     rating: review.overall_rating,
     tasteRating: review.taste_rating,
     valueRating: review.value_rating,
@@ -276,10 +348,21 @@ router.post("/", async (req: Request, res: Response) => {
   });
 });
 
+function getUserNickname(metadata: Record<string, unknown> | undefined) {
+  const nickname = metadata?.nickname;
+  return typeof nickname === "string" && nickname.trim().length > 0
+    ? nickname.trim()
+    : "사용자";
+}
+
 function mapReviewResponse(
   review: Record<string, unknown>,
   kakaoPlaceId: string,
   nickname?: string,
+  viewerUserId?: string,
+  tasteMatchPercent?: number,
+  likeCount = 0,
+  likedByMe = false,
 ) {
   return {
     id: review.id,
@@ -287,6 +370,10 @@ function mapReviewResponse(
     kakaoPlaceId,
     authorId: review.user_id,
     authorName: nickname ?? "사용자",
+    isMine: review.user_id === viewerUserId,
+    tasteMatchPercent,
+    likeCount,
+    likedByMe,
     rating: review.overall_rating,
     tasteRating: review.taste_rating,
     valueRating: review.value_rating,
@@ -299,6 +386,38 @@ function mapReviewResponse(
     updatedAt: review.updated_at,
   };
 }
+
+router.post("/:reviewId/like", async (req: Request, res: Response) => {
+  const accessToken = getBearerToken(req);
+  if (!accessToken) {
+    res.status(401).json({ message: "공감하려면 로그인이 필요합니다." });
+    return;
+  }
+
+  const { data: userData, error: userError } =
+    await supabase.auth.getUser(accessToken);
+  if (userError || !userData.user) {
+    res.status(401).json({ message: "로그인 정보가 만료되었습니다." });
+    return;
+  }
+
+  const userSupabase = createAuthenticatedSupabase(accessToken);
+  const { data, error } = await userSupabase
+    .rpc("toggle_review_like", { target_review_id: req.params.reviewId })
+    .single();
+
+  if (error || !data) {
+    sendDatabaseError(
+      res,
+      "리뷰 공감을 처리하지 못했습니다.",
+      error ?? { message: "공감 처리 결과가 없습니다." },
+    );
+    return;
+  }
+
+  const result = data as { liked: boolean; like_count: number | string };
+  res.json({ liked: result.liked, likeCount: Number(result.like_count) });
+});
 
 function isOptionalRating(value: unknown): value is number | null {
   return (

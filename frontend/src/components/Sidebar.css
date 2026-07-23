@@ -122,6 +122,91 @@
   padding: 18px 4px 0;
   border-top: 1px solid var(--sidebar-border);
   border-radius: 0 0 12px 12px;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.tastefit-sidebar__profile-area {
+  position: relative;
+  width: 100%;
+  margin-top: auto;
+}
+
+.tastefit-sidebar__profile-area .tastefit-sidebar__profile {
+  margin-top: 0;
+}
+
+.tastefit-sidebar__logout-popover {
+  position: absolute;
+  bottom: 6px;
+  left: calc(100% + 18px);
+  z-index: 70;
+  width: 238px;
+  padding: 18px;
+  box-sizing: border-box;
+  border: 1px solid #e7ddd3;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(60, 45, 35, .16);
+  text-align: left;
+}
+
+.tastefit-sidebar__logout-popover::before {
+  position: absolute;
+  bottom: 28px;
+  left: -7px;
+  width: 12px;
+  height: 12px;
+  border-bottom: 1px solid #e7ddd3;
+  border-left: 1px solid #e7ddd3;
+  background: #fff;
+  content: '';
+  transform: rotate(45deg);
+}
+
+.tastefit-sidebar__logout-popover strong {
+  display: block;
+  font-size: 14px;
+}
+
+.tastefit-sidebar__logout-popover p {
+  margin: 7px 0 16px;
+  color: var(--sidebar-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.tastefit-sidebar__logout-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.tastefit-sidebar__logout-actions button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #ded6cb;
+  border-radius: 9px;
+  background: #fff;
+  color: #5e574e;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.tastefit-sidebar__logout-actions .tastefit-sidebar__logout-confirm {
+  border-color: #c47f65;
+  background: #c47f65;
+  color: #fff;
+}
+
+.tastefit-sidebar__logout-actions button:focus-visible {
+  outline: 3px solid rgba(196, 127, 101, .25);
+  outline-offset: 2px;
 }
 
 .tastefit-sidebar__avatar {
@@ -186,7 +271,7 @@
   }
 
   .tastefit-sidebar__brand,
-  .tastefit-sidebar__profile {
+    .tastefit-sidebar__profile-area {
     display: none;
   }
 

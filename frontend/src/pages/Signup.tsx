@@ -1,18 +1,32 @@
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signup } from '../api/auth'
+import PersonalType, {
+  type TastePreferences,
+} from './PersonalType'
 import './Login.css'
+
+const INITIAL_PREFERENCES: TastePreferences = {
+  spicy: 5,
+  valueForMoney: 5,
+  atmosphere: 5,
+  waiting: 5,
+  quietness: 5,
+}
 
 export default function Signup() {
   const navigate = useNavigate()
+  const [step, setStep] = useState<1 | 2>(1)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [preferences, setPreferences] =
+    useState<TastePreferences>(INITIAL_PREFERENCES)
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleNext = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
 
@@ -21,9 +35,19 @@ export default function Signup() {
       return
     }
 
+    setStep(2)
+  }
+
+  const handleSignup = async (selectedPreferences: TastePreferences) => {
+    setError('')
     setIsSubmitting(true)
     try {
-      const result = await signup(name.trim(), email.trim(), password)
+      const result = await signup(
+        name.trim(),
+        email.trim(),
+        password,
+        selectedPreferences,
+      )
       navigate('/login', { replace: true, state: { message: result.message } })
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '회원가입에 실패했습니다.')
@@ -32,9 +56,36 @@ export default function Signup() {
     }
   }
 
+  if (step === 2) {
+    return (
+      <PersonalType
+        compact
+        values={preferences}
+        submitLabel="회원가입 완료하기"
+        isSubmitting={isSubmitting}
+        onChange={setPreferences}
+        onBack={() => {
+          setError('')
+          setStep(1)
+        }}
+        onSubmit={handleSignup}
+      />
+    )
+  }
+
   return (
     <main className="login-page">
       <section className="login-card login-card--signup" aria-labelledby="signup-title">
+        <ol className="signup-progress" aria-label="회원가입 진행 단계">
+          <li className="signup-progress__item signup-progress__item--active">
+            <span>1</span> 계정 정보
+          </li>
+          <li className="signup-progress__line" aria-hidden="true" />
+          <li className="signup-progress__item">
+            <span>2</span> 취향 설정
+          </li>
+        </ol>
+
         <div className="login-card__heading">
           <span className="login-card__eyebrow">나만의 맛집 취향 찾기</span>
           <h1 id="signup-title" className="login-card__logo">
@@ -43,7 +94,7 @@ export default function Signup() {
           <p>회원 정보를 입력해 계정을 만들어 주세요.</p>
         </div>
 
-        <form className="login-form" onSubmit={handleSubmit}>
+        <form className="login-form" onSubmit={handleNext}>
           <label className="login-form__field">
             <span>이름</span>
             <input value={name} minLength={2} required autoComplete="name" onChange={(event) => setName(event.target.value)} placeholder="이름을 입력해주세요" />
@@ -63,8 +114,8 @@ export default function Signup() {
 
           {error && <p className="login-form__error" role="alert">{error}</p>}
 
-          <button className="login-form__submit" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? '가입 중...' : '회원가입'}
+          <button className="login-form__submit" type="submit">
+            다음: 취향 설정
           </button>
         </form>
 
