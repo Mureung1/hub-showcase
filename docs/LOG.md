@@ -1137,3 +1137,11 @@
 - CHECKLIST T33은 18후보 사용자 문구 검토와 320×568·375×667·모바일 키보드·카카오톡 인앱 복사 폴백 확인 전까지 미완료로 유지한다.
 - 이후 사용자가 18후보 문구와 320×568·375×667·모바일 키보드·카카오톡 인앱 복사 폴백을 모두 확인했다고 보고했다. 이 확인을 AC-9·10 증거로 기록하고 CHECKLIST T33을 완료 처리했다.
 
+## 2026-07-22 (T34 guided context 마감 검증 재개)
+- T33 완료 후 의존이 충족된 다음 항목으로 T34를 재개했다. 공유 계약·UI·서버·fallback이 이미 구현되어 있어 중복 구현하지 않고 남은 문구·Production·모바일 증거만 마감한다.
+- `guidedContext.ts`의 24질문·72옵션 질문·label·prompt fact를 담은 `guided-context-review-draft.md`를 만들고, 정본과 한 글자라도 다르면 실패하는 동기화 테스트를 추가했다. 작성 과정에서 옮김 오탈자를 테스트가 발견해 정본과 동기화했다.
+- Production `/api/generate`에 실제 사용자 원문·식별자가 없는 `groupwork + schedule + ask_availability` 합성 `guided_ai` 요청을 1회 전송했다. HTTP 200·`source=ai`·tone 1/2/3이 반환됐고 특정 날짜·시간을 지어내지 않았다. `situationSummary`·`warning`은 SPEC 2장의 허용된 선택 메타데이터며 UI 선택 요약은 계속 로컬 label로 구성한다.
+- 전체 43파일 369개 테스트, 프론트·API 타입검사, `templates:check`, `db:check`, lint, production build가 통과했다. 기존 jsdom `scrollTo` 로그와 CatCanvas 500kB 경고만 비차단으로 남았다.
+- Browser 연결 문서의 troubleshooting까지 적용했지만 사용 가능한 backend 목록은 `[]`였다. CHECKLIST T34는 24질문·72옵션 사용자 문구 검토와 guided 320×568·375×667·키보드·스크린리더 수동 확인 전까지 미완료로 유지한다.
+- 이후 사용자가 24질문·72옵션 문구와 320×568·375×667·키보드·스크린리더를 모두 확인했다고 보고했다. 이 확인을 AC-2·7·9 증거로 기록하고 CHECKLIST T34를 완료 처리했다.
+

@@ -1,14 +1,14 @@
 # 작업 계획: T34 — 구조화 카드 맥락·guided AI 흐름
 
-> 상태: 부분 완료
+> 상태: 완료
 >
 > 작성일: 2026-07-20
 >
-> 최종 갱신일: 2026-07-20
+> 최종 갱신일: 2026-07-22
 >
-> 현재 단계: 코드·자동 회귀 완료, 실 provider·실브라우저 gate 대기
+> 현재 단계: 모든 AC 통과·CHECKLIST 완료 반영
 >
-> 다음 행동: T20~T21 실 provider 품질과 T31 모바일·접근성 통합 검증
+> 다음 행동: 없음
 >
 > CHECKLIST 항목: T34
 
@@ -32,14 +32,14 @@
 
 ## 2. 의존성·정본 확인
 
-- 의존: T2·T3·T5·T7~T9·T12·T18·T19 완료, T32 코드 기반 존재. T25 문구와 T20~T21 실 provider 품질은 미완료이므로 fallback 문구와 mock guided 결과를 검수 완료로 표현하지 않는다.
+- 의존: T2·T3·T5·T7~T9·T12·T18·T19·T20·T21·T25·T32가 완료되어 T34 착수·마감 조건을 충족한다. T33 이메일 회귀도 2026-07-22 완료했다.
 - CHECKLIST 직접 참조: T7·T8·T12·T18·T19·T25·T32, SPEC 1~4장, SCREENS S2/S3, EDGE_CASES 1-3·1-5·2-3·2-5·2-6.
 - 추가 정본: `docs/AI_DESIGN.md`, `docs/MVP.md`, `docs/PRD.md`.
 - 변경하지 않는 계약: 자유 대화형 챗봇 아님, 자율 agent loop 없음, 후보 3개 toneLevel 순서, 서버 structured output·validator, 템플릿 런타임 어미 변환 금지, 원문 비저장.
 
 ## 3. 작업트리 기준선
 
-- 시작 상태: T25 결정적 컴파일러/DB 승인 경계와 앞서 승인된 S2 병렬 경로 문서가 미커밋 상태다.
+- 재개 상태: T34 공유 계약·UI·서버·fallback 코드는 이미 존재하고 관련 7파일 165테스트가 통과한다. 중복 구현 없이 남은 검증 gate만 마감한다.
 - 반드시 보존: `.agents/skills/continue-dabnyangi-task/`, `T25 대표 문구 평가 설문지(응답) - 설문지 응답 시트1.csv`, `tmp/`; `.github/workflows/`는 커밋 제외.
 - PM 소유: AGENTS/CLAUDE 동기화, SPEC·SCREENS·MVP·PRD·AI_DESIGN·CHECKLIST, 공유 ContextSpec/request 계약, 하네스·LOG, 최종 통합.
 - 제품 디자이너: 질문/option 카탈로그·신뢰 카피와 읽기 전용 최종 검토.
@@ -50,11 +50,11 @@
 
 | 요소 | 계획 |
 | --- | --- |
-| 맥락 | 현재 카드의 속도는 유지하되 고정 문구가 개인화로 오인되는 문제를 구조화 질문과 정직한 결과 요약으로 해결한다. |
-| 구체성 | `GuidedContextSpec`, question/option catalog, 세 경로 request union, S2 context step, server prompt resolver, deterministic fallback을 추가한다. |
-| 역할·예시 | `groupwork/contribution_check`에서 `진행 상황만 확인 / 제출 시점도 물어보기`를 고르면 서버가 ID를 정본 설명으로 해석한다. 기한 값이 없으면 날짜를 만들지 않고 필요 시 자리 표시자를 유지한다. |
-| 단계화 | ① 질문/타입 계약 → ② UI 상태·fallback → ③ handler/prompt → ④ metrics/privacy → ⑤ 교차 검토·전체 검증 순으로 진행한다. |
-| 검증 | 24조합 coverage, invalid ID, guided 성공/실패 fallback, API 호출 수, 결과 요약, 직접 설명·이메일 회귀, 모바일·키보드·스크린리더를 확인한다. |
+| 맥락 | React 19·TypeScript 6·Vite 8과 기존 서버 계약을 유지한다. 새 기능·라이브러리·`any`·구조 변경 없이 이미 구현된 guided 흐름이 실제 사용 가능하다는 증거를 완성한다. |
+| 구체성 | `guidedContext.ts`의 24질문·72옵션을 사용자 검토표와 테스트로 동기화한다. 기존 `GenerationRequest`, `GuidedContextStep`, handler/prompt/fallback은 변경하지 않고 명확한 문구 결함이 발견될 때만 해당 문구·테스트를 최소 수정한다. |
+| 역할·예시 | `groupwork + schedule + co.groupwork.schedule.ask_availability`는 ID만 서버에 보내고, 서버가 `상대가 가능한 시간을 질문하되 특정 후보 시간은 만들지 않는다`로 해석해 tone 1·2·3을 생성한다. UI label·transcript·받은 원문은 전송하지 않는다. |
+| 단계화 | ① 현재 관련 회귀 기준선 → ② 검토표·동기화 검사 → ③ Production `guided_ai` 1회 정상 왕복 → ④ 전체 자동 gate → ⑤ 사용자 24질문·모바일·키보드·스크린리더 확인 → ⑥ CHECKLIST·LOG 마감. |
+| 검증 | 24/72 coverage·review drift, unknown/mismatched ID 거절, option 탭 1회 호출, 같은 카드 fallback, 원문·UI 문구 비전송, 직접 설명·이메일·세션 회귀, 320/375 무넘침·option 전체 폭·초점·live status를 확인한다. 자동은 관련·전체 Vitest, 프론트/API 타입, `templates:check`, DB check, lint, build, diff·미러·대상 `any` 게이트를 적용한다. |
 
 ## 5. 변경 경계와 위험
 
@@ -68,13 +68,14 @@
 | 날짜 | 상태 | 승인 또는 변경 내용 | 근거 |
 | --- | --- | --- | --- |
 | 2026-07-20 | 승인됨 | 카드를 고정 템플릿의 최종 선택이 아니라 상황 구조화 시작점으로 전환하고 핵심 질문 1개 뒤 AI 세 톤 생성, 템플릿 fallback 유지 | 사용자 `진행합니다` 및 제품 설계 전수 검토 |
+| 2026-07-22 | 재개 | 이미 구현된 T34를 중복하지 않고 실 provider·사람 문구·모바일 증거만 마감 | 사용자 `확인완료 진행`, 관련 7파일 165테스트 기준선 통과 |
 
 ## 7. 진행·인계
 
-- 마지막으로 끝낸 단계: 기존 카드 즉시 템플릿·직접 설명 AI 이원 경로와 개인 말투 초안.
-- 현재 작업 중인 단계: 질문 카탈로그·공유 request·서버 신뢰 경계·프론트 상태 전이와 자동 회귀까지 구현 완료.
-- 다음 행동: 실 provider에서 guided prompt 품질·오류 왕복을 확인하고 320×568·375×667 실제 화면, 키보드·스크린리더 증거를 확보한다.
-- 보류 사유와 재개 조건: 운영 provider가 아직 연결되지 않았고 현재 실행 환경에서 실브라우저 증거를 확보하지 못했다. T20~T21과 T31에서 재개한다.
+- 마지막으로 끝낸 단계: 정본과 byte 단위로 동기화되는 24질문·72옵션 사용자 검토표를 작성했다. Production `guided_ai` 합성 요청 1회가 HTTP 200·tone 1/2/3을 반환했고 특정 시간을 지어내지 않았다.
+- 현재 작업 중인 단계: 없음. T34 완료.
+- 다음 행동: 상위 CHECKLIST의 다음 착수 가능 항목으로 이동한다.
+- 보류 사유와 재개 조건: 없음.
 
 | 날짜 | 진행·결정 | 근거·영향 |
 | --- | --- | --- |
@@ -82,3 +83,6 @@
 | 2026-07-20 | 질문 수 1개로 고정 | 3~4탭 기본 흐름과 모바일 인지 부담을 유지하는 제품 설계 결정 |
 | 2026-07-20 | 템플릿 결과→AI 전환 추가 | 기본 초안이 마음에 들지 않아도 관계·카드·빠른 답변을 다시 선택하지 않도록 사용자 피드백 반영 |
 | 2026-07-20 | 코드·자동 회귀 통과 | 질문 24개·option 72개, 세 route, 서버 정본 해석, fallback·재시도와 전체 35파일 289개 검증. 실 provider·실브라우저 gate는 유지 |
+| 2026-07-22 | 마감 검증 재개 | 관련 7파일 165개 기준선과 검토표 동기화 테스트 통과. Production `guided_ai` 합성 요청은 HTTP 200으로 세 톤과 허용된 선택 메타데이터만 반환 |
+| 2026-07-22 | 전체 자동 gate 통과 | 전체 43파일 369개, 프론트·API 타입, `templates:check`, `db:check`, lint, production build 통과. 기존 jsdom `scrollTo`·CatCanvas 500kB 경고만 비차단 |
+| 2026-07-22 | 사용자 확인·완료 | 24질문·72옵션 문구와 320×568·375×667·키보드·스크린리더 확인 완료를 사용자가 보고. AC-2·7·9와 CHECKLIST T34 완료 |
