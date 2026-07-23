@@ -32,8 +32,7 @@ export function PositionCard({ position, rank }: { position: Position; rank: num
           {position.company} · {position.location} · {position.experience}
         </span>
         <span className="mt-2 flex flex-wrap gap-1.5">
-          {position.tags.map((t) => (
-            <Badge key={t}>{t}</Badge>
+          {(position.tags ?? []).map((t) => (            <Badge key={t}>{t}</Badge>
           ))}
         </span>
       </span>

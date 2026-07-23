@@ -32,7 +32,7 @@ export default function PositionsPage() {
                 positions: [...positions].sort((a, b) => b.fitScore - a.fitScore),
             });
         } catch (err) {
-            if (err instanceof ApiError && err.status === 401) {
+            if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
                 router.replace("/login");
                 return;
             }
