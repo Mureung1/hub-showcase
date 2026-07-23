@@ -1,5 +1,8 @@
 # CLAUDE.md
 
+## 기본 규칙
+- 커밋하지 말 것
+
 ## 언어 규칙
 - 모든 결과값과 설명은 반드시 한글로 작성한다.
 - 코드 주석, 커밋 메시지, 사용자 응답 등 모든 텍스트 출력은 한글을 기본으로 한다.
@@ -64,6 +67,15 @@ cd frontend && npm run typecheck
 **Privacy:**
 - Never log raw profile values (residence, income bracket, major) anywhere — console, files, error tracking
 - Use anonymized user IDs or derived codes for debugging
+
+**Frontend Page Routing (중요):**
+- 인증 후 페이지들(Dashboard, Calendar, Scraps, Settings, GitHub 등)은 App.tsx에서 독립적으로 렌더링됨
+- **문제:** 각 페이지가 독립적인 레이아웃 구조(사이드바 포함)를 가지면, 페이지 전환 시 사이드바가 매번 재렌더링되어 상태가 유지되지 않음
+- **해결책:** 새 페이지 추가 시 다음 두 가지 패턴 중 선택
+  1. **권장:** 기존 페이지처럼 App.tsx의 currentPage 타입에만 추가하고, 페이지는 내용만 담당. 사이드바는 각 페이지에 포함되지만, 동일한 구조 유지
+  2. **선택:** 향후 BaseLayout 컴포넌트를 만들어서 사이드바를 한 곳에서 관리하고, 각 페이지는 메인 컨텐츠만 제공
+- **현재 상태:** 모든 페이지(Dashboard, Calendar, Scraps, GitHub)가 각각 사이드바 코드를 포함하고 있음
+- **주의:** 사이드바의 네비게이션 항목 추가 시 DashboardLayout과 GithubReposPage 등 모든 페이지 파일에서 동일하게 업데이트해야 함. 누락하면 일부 페이지에서만 새 항목이 보임
 
 ## Implementation Sequence
 
@@ -148,3 +160,199 @@ chore(deps): bump prisma to 5.14
 - `docs/plan.md` — full feature breakdown & rationale
 - `docs/checklist.md` — stage-by-stage tasks
 - `docs/design.md` - **design system (colors, typography, layout, components). Read this before writing any UI code.**
+
+---
+
+## 11단계: GitHub 인기 저장소 요약 페이지
+
+### 아키텍처 (독립적 서비스)
+
+```
+GitHub Trending Repos
+      ↓
+LLM Abstraction Layer (llmService.ts)
+      ↓
+GitHub Service (githubService.ts)
+      ↓
+Database (GithubRepo, UserGithubStar)
+```
+
+**특징:**
+- ✅ Posting/Eligibility 스키마와 무관
+- ✅ 완전히 분리된 테이블 (GithubRepo, UserGithubStar)
+- ✅ 별도 라우터 (`/api/github/...`)
+- ✅ LLM 제공자 쉽게 전환 가능
+
+### LLM 추상화 계층 (llmService.ts)
+
+**지원하는 제공자:**
+1. **Ollama** (기본값, 로컬)
+   - 모델: `qwen2.5:7b`
+   - 실행: `ollama serve` (localhost:11434)
+   - 속도: 3-5초/요청
+
+2. **Claude** (API)
+   - 모델: `claude-3-5-sonnet-20241022`
+   - 환경변수: `CLAUDE_API_KEY`
+   - 비용: 유료
+
+3. **LlamaCPP** (로컬)
+   - URL: `localhost:8000`
+   - 가벼움
+
+4. **OpenAI** (API)
+   - 모델: `gpt-4o-mini`
+   - 환경변수: `OPENAI_API_KEY`
+
+**제공자 전환 방법:**
+```bash
+# .env에서 한 줄만 변경
+LLM_PROVIDER="ollama"  # 또는 claude, llamacpp, openai
+```
+
+**새 제공자 추가:**
+1. llmService.ts에서 `callYourProvider()` 메서드 추가
+2. switch문에 케이스 추가
+3. `.env` 예시 업데이트
+끝! (5분 작업)
+
+### GitHub Service (githubService.ts)
+
+**핵심 메서드:**
+- `fetchTrendingRepos(language?, limit)` — GitHub API에서 검색
+- `fetchReadme(owner, repo)` — README 파일 추출
+- `summarizeRepo(repo)` — LLM으로 한국어 요약 + 핵심 포인트
+- `saveRepo()` — DB 저장 (요약 포함)
+- `collectAndSummarizeRepos()` — 일괄 수집 (백그라운드)
+
+**데이터 흐름:**
+```
+GitHub API
+  ↓ (별, 설명, 주언어)
+GitHub Service
+  ↓ (fetchReadme)
+README 파일 가져오기
+  ↓ (LLM 처리)
+한국어 요약 생성
+summaryBullets 추출 (3-5개)
+  ↓
+DB 저장 (GithubRepo)
+```
+
+### API 엔드포인트 (/api/github)
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| GET | `/trending` | 인기 저장소 (기본 20개) |
+| GET | `/language/:lang` | 언어별 저장소 |
+| GET | `/search?q=...` | 저장소 검색 |
+| GET | `/:githubId` | 저장소 상세 |
+| POST | `/collect` | 수집 및 요약 (백그라운드) |
+| GET | `/llm/status` | LLM 상태 확인 |
+| POST | `/summarize` | 텍스트 요약 테스트 |
+
+**쿼리 파라미터:**
+```
+/api/github/trending?limit=50&language=python
+/api/github/language/javascript?limit=10
+/api/github/search?q=react&limit=20
+```
+
+### 로컬 LLM 설정 (Ollama)
+
+**설치 (Mac M2):**
+```bash
+# 1. 다운로드: https://ollama.ai
+# 2. 모델 다운로드 (첫 실행 시 3-5분)
+ollama pull qwen2.5:7b
+
+# 3. 서버 실행 (항상 켜져있어야 함)
+ollama serve
+
+# 4. 확인
+curl http://localhost:11434/api/tags
+```
+
+**메모리 사용:**
+- Qwen2.5 7B: ~8GB RAM (M2 16GB에서 충분)
+- 다른 모델: 3B (~3GB), 32B (~32GB 불가)
+
+### 환경 변수 설정
+
+```bash
+# LLM 제공자 선택
+LLM_PROVIDER="ollama"  # ollama | claude | llamacpp | openai
+
+# Ollama (로컬)
+OLLAMA_BASE_URL="http://localhost:11434"
+OLLAMA_MODEL="qwen2.5:7b"
+
+# Claude (API)
+CLAUDE_API_KEY="sk-..."
+
+# LlamaCPP (로컬)
+LLAMACPP_BASE_URL="http://localhost:8000"
+
+# OpenAI (API)
+OPENAI_API_KEY="sk-..."
+
+# GitHub API (토큰 선택, 없어도 작동하지만 rate limit 60/hr)
+GITHUB_TOKEN="ghp_..."
+```
+
+### 프로젝트 구조
+
+```
+backend/
+├─ src/
+│  ├─ services/
+│  │  ├─ llmService.ts (★ 핵심: LLM 추상화)
+│  │  ├─ githubService.ts (★ GitHub API + LLM)
+│  │  └─ ...
+│  ├─ routes/
+│  │  ├─ github.ts (★ API 엔드포인트)
+│  │  └─ ...
+│  └─ index.ts (github 라우터 등록됨)
+└─ prisma/
+   └─ schema.prisma (GithubRepo, UserGithubStar 모델 추가됨)
+
+frontend/
+├─ src/
+│  ├─ pages/
+│  │  └─ GithubReposPage.tsx (★ 새로 만들기)
+│  ├─ components/
+│  │  └─ RepoCard.tsx (★ 새로 만들기)
+│  └─ utils/
+│     └─ githubApi.ts (★ API 클라이언트)
+└─ App.tsx (라우터에 /github 경로 추가)
+```
+
+### 확장성 고려사항
+
+**LLM 추상화:**
+- ✅ 제공자 전환이 한 줄 변경 (.env)
+- ✅ 새 제공자 추가가 5분 (메서드 추가)
+- ✅ 비즈니스 로직은 LLM과 무관
+
+**데이터 모델:**
+- ✅ GithubRepo는 독립적 (기존 Posting과 무관)
+- ✅ summaryBullets는 배열 (확장 가능)
+- ✅ UserGithubStar로 향후 사용자 상호작용 추가 가능
+
+**API:**
+- ✅ 카테고리/필터링 자유 (기존 postings API와 동일 패턴)
+- ✅ 검색/정렬 기본 제공
+
+### 주의사항
+
+**절대 하지 말 것:**
+- ❌ LLM 제공자를 라우터에 하드코딩 (llmService.ts에서만 관리)
+- ❌ README를 그대로 DB에 저장 (용량 초과) — 최소 크기로 자르기
+- ❌ GitHub API 토큰 .env에 하드코딩 (보안 위험)
+- ❌ LLM 응답을 캐싱 없이 매번 생성 (속도 저하)
+
+**성능 최적화:**
+- ✅ GithubRepo에 `lastFetchedAt` 인덱스 추가됨
+- ✅ 배치 수집은 백그라운드 실행 (POST /api/github/collect)
+- ✅ 요약은 저장 시 생성 (조회 시 아님)
+- ✅ Rate Limit 고려: GitHub API는 60/hr (토큰 없음) → 1000/hr (토큰 있음)

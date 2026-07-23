@@ -7,6 +7,7 @@ import postingsRoutes from './routes/postings.js'
 import calendarRoutes from './routes/calendar.js'
 import calendarEventsRoutes from './routes/calendarEvents.js'
 import scrapsRoutes from './routes/scraps.js'
+import githubRoutes from './routes/github.js'
 import { startNotificationScheduler } from './services/notificationService.js'
 
 dotenv.config()
@@ -40,6 +41,7 @@ app.use('/api/postings', postingsRoutes)
 app.use('/api/calendar', calendarRoutes)
 app.use('/api/calendar-events', calendarEventsRoutes)
 app.use('/api/scraps', scrapsRoutes)
+app.use('/api/github', githubRoutes)
 
 // 헬스 체크
 app.get('/health', (req, res) => {

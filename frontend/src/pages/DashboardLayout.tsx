@@ -14,7 +14,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
 ]
 
 interface DashboardLayoutProps {
-  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings') => void
+  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings' | 'github') => void
 }
 
 export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps) {
@@ -318,6 +318,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
             { label: '⊞ 대시보드', page: 'dashboard' as const },
             { label: '♡ 내 스크랩', page: 'scraps' as const },
             { label: '📅 캘린더', page: 'calendar' as const },
+            { label: '⭐ GitHub 저장소', page: 'github' as const },
             { label: '⚙ 환경설정', page: 'settings' as const },
           ].map((item, i) => (
             <div

@@ -6,10 +6,11 @@ import DashboardLayout from './pages/DashboardLayout'
 import CalendarPage from './pages/CalendarPage'
 import ScrapListPage from './pages/ScrapListPage'
 import SettingsPage from './pages/SettingsPage'
+import GithubReposPage from './pages/GithubReposPage'
 import { tokenManager, authApi } from './utils/apiClient'
 import { initializePushNotifications } from './utils/pushNotification'
 
-type AppPage = 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings'
+type AppPage = 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings' | 'github'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<AppPage>('auth')
@@ -130,6 +131,9 @@ function App() {
 
       {/* 6. 설정 페이지 */}
       {currentPage === 'settings' && <SettingsPage setCurrentPage={saveCurrentPage} />}
+
+      {/* 7. GitHub 인기 저장소 페이지 */}
+      {currentPage === 'github' && <GithubReposPage setCurrentPage={saveCurrentPage} />}
     </>
   )
 

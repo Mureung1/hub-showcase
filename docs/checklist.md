@@ -374,11 +374,93 @@
 
 ---
 
+## 11단계 — GitHub 인기 저장소 요약 페이지 (독립적 서비스)
+
+### 11-A: 백엔드 (LLM 추상화 + GitHub API)
+
+- [x] Prisma 스키마 확장 (GithubRepo, UserGithubStar 모델)
+  - [x] GithubRepo: githubId, owner, name, description, stars, forks, language, readme, summary, summaryBullets
+  - [x] UserGithubStar: userId-repoId 매핑 (향후 사용자 관심도)
+  - [x] 마이그레이션 완료
+- [x] LLM 추상화 서비스 (llmService.ts)
+  - [x] Ollama 지원 (기본값)
+  - [x] Claude API 지원
+  - [x] LlamaCPP 지원
+  - [x] OpenAI 지원
+  - [x] 새 제공자 추가 쉬운 구조
+  - [x] summarizeReadme(), translateToKorean(), extractBulletPoints() 메서드
+- [x] GitHub Service (githubService.ts)
+  - [x] fetchTrendingRepos(language?, limit) - GitHub API에서 인기 repo 검색
+  - [x] fetchReadme(owner, repo) - README 파일 가져오기
+  - [x] summarizeRepo() - README를 LLM으로 한국어 요약
+  - [x] saveRepo() - DB에 저장 (요약 포함)
+  - [x] getTrendingRepos() - DB에서 조회
+  - [x] getReposByLanguage() - 언어별 조회
+  - [x] searchRepos() - 저장소 검색
+- [x] GitHub 라우터 (github.ts)
+  - [ ] GET /api/github/trending - 인기 저장소 조회
+  - [ ] GET /api/github/language/:lang - 언어별 저장소
+  - [ ] GET /api/github/:githubId - 저장소 상세
+  - [ ] GET /api/github/search?q=... - 검색
+  - [ ] POST /api/github/collect - 수집 및 요약 (백그라운드)
+  - [ ] GET /api/github/llm/status - LLM 상태 확인
+  - [ ] POST /api/github/summarize - 텍스트 요약 API (테스트)
+- [x] 백엔드 index.ts에 라우터 등록
+- [x] .env에 LLM 설정 추가
+
+### 11-B: 로컬 LLM 설치 (Ollama + Qwen2.5)
+
+- [ ] Ollama 다운로드 (Mac M2 버전: https://ollama.ai)
+- [ ] ollama pull qwen2.5:7b 실행 (첫 실행 시 3-5분)
+- [ ] ollama serve 실행 (백그라운드 - 항상 켜져있어야 함)
+- [ ] localhost:11434 에서 API 확인
+
+### 11-C: 프론트엔드 페이지
+
+- [ ] GithubReposPage.tsx 생성
+  - [ ] 레이아웃 (DashboardLayout 참고)
+  - [ ] repo 카드 그리드
+  - [ ] 정렬/필터링 옵션 (별 순, 언어별 등)
+  - [ ] 무한 스크롤 또는 페이지네이션
+- [ ] RepoCard.tsx 컴포넌트
+  - [ ] repo 제목, 설명, 별 개수
+  - [ ] 한국어 요약 (3-4줄)
+  - [ ] 핵심 포인트 (bullet points)
+  - [ ] GitHub 링크, 주언어 태그
+- [ ] githubApi.ts (API 클라이언트)
+  - [ ] getTrendingRepos()
+  - [ ] getReposByLanguage()
+  - [ ] searchRepos()
+  - [ ] getRepoDetail()
+- [ ] 네비게이션 통합
+  - [ ] 사이드바에 "GitHub Repos" 메뉴 추가
+  - [ ] 라우터에 /github 경로 추가
+
+### 11-D: 테스트 및 최적화
+
+- [ ] API 테스트 (Postman/curl)
+  - [ ] GET /api/github/trending
+  - [ ] GET /api/github/language/typescript
+  - [ ] GET /api/github/search?q=react
+- [ ] LLM 요약 품질 확인
+  - [ ] Ollama vs Claude 비교 (동일한 README로)
+  - [ ] 한국어 정확도 검증
+  - [ ] 속도 측정 (Ollama: 3-5초)
+- [ ] UI 테스트
+  - [ ] 카드 표시 확인
+  - [ ] 필터링/검색 동작 확인
+  - [ ] 반응형 디자인 검증
+- [ ] 성능 최적화
+  - [ ] 캐싱 (Redis 또는 DB TTL)
+  - [ ] 배치 수집 스케줄링 (node-cron)
+
+---
+
 ## 배포 및 마무리
 
 - [ ] Frontend Vercel 배포 설정
 - [ ] Backend Railway/Render 배포 설정
 - [ ] 환경 변수 (.env) 프로덕션 세팅
 - [ ] DB 마이그레이션 프로덕션 반영
-- [ ] 배포 후 전체 플로우 QA (회원가입 → 프로필 등록 → 캘린더 → 필터링 → 스크랩 → 환경설정)
+- [ ] 배포 후 전체 플로우 QA (회원가입 → 프로필 등록 → 캘린더 → 필터링 → 스크랩 → 환경설정 → GitHub Repos)
 - [ ] 발표용 데모 시나리오 스크립트 작성
