@@ -42,7 +42,7 @@ async function goToExam(user, examName) {
 
 async function fillCommonFields(user) {
   await user.type(screen.getByLabelText('시험일'), '2026-08-31')
-  await user.type(screen.getByLabelText('하루 가용 시간(분)'), '120')
+  await user.type(screen.getByLabelText('하루 공부 시간(분)'), '120')
 }
 
 async function saveForm(user) {
