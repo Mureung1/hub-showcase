@@ -142,6 +142,39 @@ for (const drift of [
   })
 }
 
+test('package source verifier rejects and preserves special permission bits', async () => {
+  const fixture = await createFixture()
+  try {
+    const sourceRoot = path.join(fixture.root, 'source-special-mode')
+    await cp(fixture.canonicalSourceRoot, sourceRoot, {
+      recursive: true,
+      verbatimSymlinks: true,
+    })
+    const skillPath = path.join(sourceRoot, declaredSkillPath)
+    await chmod(skillPath, 0o4644)
+    const beforeBytes = await readFile(skillPath)
+    const beforeMode = (await lstat(skillPath)).mode & 0o7777
+    assert.equal(beforeMode, 0o4644)
+    const workspaceBefore = await completeTree(
+      fixture.workspace.canonicalRoot,
+    )
+
+    await assert.rejects(
+      captureWorkspaceBundleSourceAt(sourceRoot),
+      WorkspaceBundleSourceError,
+    )
+
+    assert.deepEqual(await readFile(skillPath), beforeBytes)
+    assert.equal((await lstat(skillPath)).mode & 0o7777, beforeMode)
+    assert.deepEqual(
+      await completeTree(fixture.workspace.canonicalRoot),
+      workspaceBefore,
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('materializer uses the immutable verified snapshot after source bytes drift', async () => {
   const fixture = await createFixture()
   try {
@@ -280,6 +313,60 @@ for (const drift of ['modified', 'extra', 'symlink', 'mode'] as const) {
     }
   })
 }
+
+test('installed special permission bits block materialize and recovery without byte drift', async () => {
+  const fixture = await createFixture()
+  try {
+    const source = await captureCanonicalWorkspaceBundleSource()
+    assert.equal(
+      (
+        await materializeWorkspaceBundle({
+          workspace: fixture.workspace,
+          source,
+        })
+      ).status,
+      'verified',
+    )
+    const skillPath = path.join(
+      fixture.workspace.canonicalRoot,
+      declaredSkillPath,
+    )
+    await chmod(skillPath, 0o4644)
+    const beforeBytes = await readFile(skillPath)
+    const beforeMode = (await lstat(skillPath)).mode & 0o7777
+    assert.equal(beforeMode, 0o4644)
+
+    const verified = await verifyWorkspaceBundle({
+      workspace: fixture.workspace,
+      source,
+    })
+    const materialized = await materializeWorkspaceBundle({
+      workspace: fixture.workspace,
+      source,
+    })
+    const recovered = await recoverMissingWorkspaceBundle({
+      workspace: fixture.workspace,
+      source,
+    })
+
+    for (const result of [verified, materialized, recovered]) {
+      assert.equal(result.status, 'manual_recovery_required')
+      if (result.status !== 'manual_recovery_required') {
+        assert.fail('expected manual recovery')
+      }
+      assert.deepEqual(result.conflicts, [
+        {
+          relativePath: declaredSkillPath,
+          reason: 'mode',
+        },
+      ])
+    }
+    assert.deepEqual(await readFile(skillPath), beforeBytes)
+    assert.equal((await lstat(skillPath)).mode & 0o7777, beforeMode)
+  } finally {
+    await fixture.cleanup()
+  }
+})
 
 test('a caller-mutated snapshot is rejected without touching workspace bytes', async () => {
   const fixture = await createFixture()

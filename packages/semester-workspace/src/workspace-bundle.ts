@@ -39,6 +39,7 @@ const canonicalResourceRoot = new URL(
   import.meta.url,
 )
 const bundleFileMode = 0o644
+const bundleFileModeMask = 0o7777
 const bundleDirectoryMode = 0o700
 
 const workspaceBundleDescriptor: WorkspaceBundleDescriptor = {
@@ -548,7 +549,7 @@ async function inspectDeclaredFile(input: {
     })
     return
   }
-  if ((stats.mode & 0o777) !== bundleFileMode) {
+  if ((stats.mode & bundleFileModeMask) !== bundleFileMode) {
     input.conflicts.push({
       relativePath: input.relativePath,
       reason: 'mode',
@@ -695,7 +696,7 @@ async function readExactRegularFile(
     !stats.isFile() ||
     stats.isSymbolicLink() ||
     stats.nlink !== 1 ||
-    (stats.mode & 0o777) !== bundleFileMode
+    (stats.mode & bundleFileModeMask) !== bundleFileMode
   ) {
     throw sourceInvalid()
   }
@@ -719,7 +720,8 @@ async function readNoFollowRegularFile(target: string): Promise<Buffer> {
     if (
       !before.isFile() ||
       before.nlink !== 1n ||
-      (before.mode & 0o777n) !== BigInt(bundleFileMode)
+      (before.mode & BigInt(bundleFileModeMask)) !==
+        BigInt(bundleFileMode)
     ) {
       throw new Error('not an owned regular file')
     }
@@ -728,7 +730,8 @@ async function readNoFollowRegularFile(target: string): Promise<Buffer> {
     if (
       !after.isFile() ||
       after.nlink !== 1n ||
-      (after.mode & 0o777n) !== BigInt(bundleFileMode) ||
+      (after.mode & BigInt(bundleFileModeMask)) !==
+        BigInt(bundleFileMode) ||
       before.dev !== after.dev ||
       before.ino !== after.ino ||
       before.size !== after.size ||
