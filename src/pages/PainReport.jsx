@@ -65,6 +65,7 @@ function ExerciseReplacementRow({ routineDayId, painBodyPart, result }) {
   const [selectedId, setSelectedId] = useState(recommendedExerciseId)
   const [confirmedName, setConfirmedName] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [confirmError, setConfirmError] = useState(null)
 
   if (!needsReplacement) {
     return (
@@ -91,6 +92,7 @@ function ExerciseReplacementRow({ routineDayId, painBodyPart, result }) {
 
   const handleConfirm = () => {
     setSubmitting(true)
+    setConfirmError(null)
     fetch('/api/pain-reports/confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -102,10 +104,14 @@ function ExerciseReplacementRow({ routineDayId, painBodyPart, result }) {
         isManualOverride: !isRecommendedSelected,
       }),
     })
-      .then((res) => res.json())
-      .then(() => {
-        setConfirmedName(selectedCandidate.name)
+      .then((res) => res.json().then((json) => ({ ok: res.ok, json })))
+      .then(({ ok, json }) => {
         setSubmitting(false)
+        if (!ok) {
+          setConfirmError(json.error)
+          return
+        }
+        setConfirmedName(selectedCandidate.name)
       })
       .catch(() => setSubmitting(false))
   }
@@ -150,13 +156,18 @@ function ExerciseReplacementRow({ routineDayId, painBodyPart, result }) {
           ✓ {withInstrumentalParticle(confirmedName)} 반영 완료
         </span>
       ) : (
-        <button
-          onClick={handleConfirm}
-          disabled={submitting || !selectedId}
-          className="rounded-pill bg-accent px-5 py-2 text-[13px] font-bold text-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {submitting ? '반영 중...' : '이 운동으로 확정'}
-        </button>
+        <>
+          <button
+            onClick={handleConfirm}
+            disabled={submitting || !selectedId}
+            className="rounded-pill bg-accent px-5 py-2 text-[13px] font-bold text-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {submitting ? '반영 중...' : '이 운동으로 확정'}
+          </button>
+          {confirmError && (
+            <p className="mt-2 text-[12px] text-text-secondary">⚠ {confirmError}</p>
+          )}
+        </>
       )}
     </div>
   )
