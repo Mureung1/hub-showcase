@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { createRecommendationService } from "../server/services/recommendationService.js";
 
@@ -129,5 +129,32 @@ test("추천 가능한 재료가 없으면 Gemini를 호출하지 않고 422 오
   await assert.rejects(
     () => service.recommend(request),
     (error) => error.code === "NO_AVAILABLE_INGREDIENTS" && error.status === 422,
+  );
+});
+
+test("Supabase 재료 조회 실패를 503 서비스 오류로 변환한다", async () => {
+  const service = createRecommendationService({
+    supabaseClient: {
+      from(table) {
+        assert.equal(table, "ingredients");
+        return {
+          select() {
+            return Promise.resolve({
+              data: null,
+              error: new Error("mock database failure"),
+            });
+          },
+        };
+      },
+    },
+    geminiClient: { generate() { throw new Error("호출되면 안 됩니다"); } },
+    cacheStore: { get: async () => null },
+  });
+
+  await assert.rejects(
+    () => service.recommend(request),
+    (error) => error.code === "INGREDIENTS_UNAVAILABLE"
+      && error.status === 503
+      && error.cause instanceof Error,
   );
 });

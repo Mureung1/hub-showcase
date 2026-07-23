@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { getAllowedStorageOptions, getSuggestedShelfLifeDays, getSuggestedUseByDate } from "../src/data/shelfLifeRules.js";
 import { getDaysRemaining, getExpirationStatus } from "../src/utils/expiration.js";

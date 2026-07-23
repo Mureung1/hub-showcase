@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import {
   buildRecommendationPrompt,
@@ -84,6 +84,59 @@ test("무료 사용 한도 오류를 재시도 가능한 서비스 오류로 변
     () => client.generate({ request, ingredientContext }),
     (error) => error instanceof GeminiRecommendationError
       && error.code === "GEMINI_RATE_LIMITED"
+      && error.retryable === true,
+  );
+});
+
+test("인증 실패를 재시도할 수 없는 서비스 오류로 변환한다", async () => {
+  const fetchImpl = async () => new Response(JSON.stringify({ error: { message: "unauthorized" } }), {
+    status: 401,
+    headers: { "Content-Type": "application/json" },
+  });
+  const client = createGeminiRecommendationClient({ apiKey: "test-key", model: "test-model", fetchImpl });
+
+  await assert.rejects(
+    () => client.generate({ request, ingredientContext }),
+    (error) => error instanceof GeminiRecommendationError
+      && error.code === "GEMINI_AUTH_ERROR"
+      && error.status === 503
+      && error.retryable === false,
+  );
+});
+
+test("요청 시간 초과를 재시도 가능한 서비스 오류로 변환한다", async () => {
+  const fetchImpl = async () => {
+    const error = new Error("timeout");
+    error.name = "TimeoutError";
+    throw error;
+  };
+  const client = createGeminiRecommendationClient({ apiKey: "test-key", model: "test-model", fetchImpl });
+
+  await assert.rejects(
+    () => client.generate({ request, ingredientContext }),
+    (error) => error instanceof GeminiRecommendationError
+      && error.code === "GEMINI_TIMEOUT"
+      && error.status === 503
+      && error.retryable === true,
+  );
+});
+
+test("잘못된 JSON 응답을 재시도 가능한 형식 오류로 변환한다", async () => {
+  const fetchImpl = async () => new Response(JSON.stringify({
+    id: "interaction-invalid-json",
+    model: "test-model",
+    steps: [{
+      type: "model_output",
+      content: [{ type: "text", text: "not-json" }],
+    }],
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+  const client = createGeminiRecommendationClient({ apiKey: "test-key", model: "test-model", fetchImpl });
+
+  await assert.rejects(
+    () => client.generate({ request, ingredientContext }),
+    (error) => error instanceof GeminiRecommendationError
+      && error.code === "GEMINI_INVALID_RESPONSE"
+      && error.status === 502
       && error.retryable === true,
   );
 });

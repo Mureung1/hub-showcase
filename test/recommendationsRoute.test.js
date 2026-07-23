@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import test from "node:test";
+import { test } from "vitest";
 
 import express from "express";
 
