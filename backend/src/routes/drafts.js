@@ -12,10 +12,20 @@ async function loadPosting(postingId) {
   return postings.find((p) => p.id === postingId);
 }
 
+function toProfile(row) {
+  return {
+    major: row.major,
+    doubleMajor: row.double_major,
+    minor: row.minor,
+    certificates: row.certificates,
+    experience: row.experience,
+  };
+}
+
 router.post("/:id/draft", async (req, res) => {
-  const { profile, profileId } = req.body;
-  if (!profile || !profileId) {
-    res.status(400).json({ error: "profile과 profileId는 필수입니다." });
+  const { profileId } = req.body;
+  if (!profileId) {
+    res.status(400).json({ error: "profileId는 필수입니다." });
     return;
   }
 
@@ -28,21 +38,29 @@ router.post("/:id/draft", async (req, res) => {
       return;
     }
 
+    const [{ data: profileRow, error: profileError }, { data: savedDraft, error: selectError }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", profileId).maybeSingle(),
+      supabase.from("drafts").select("answers").eq("profile_id", profileId).eq("posting_id", postingId).maybeSingle(),
+    ]);
+
+    if (profileError) {
+      throw profileError;
+    }
+    if (selectError) {
+      throw selectError;
+    }
+
+    if (!profileRow) {
+      res.status(404).json({ error: `프로필을 찾을 수 없습니다: ${profileId}` });
+      return;
+    }
+
+    const profile = toProfile(profileRow);
+
     const essayQuestions = posting.essayQuestions.map((q) => ({
       ...q,
       analysis: analyzeEssayQuestion(q.question, profile),
     }));
-
-    const { data: savedDraft, error: selectError } = await supabase
-      .from("drafts")
-      .select("answers")
-      .eq("profile_id", profileId)
-      .eq("posting_id", postingId)
-      .maybeSingle();
-
-    if (selectError) {
-      throw selectError;
-    }
 
     if (savedDraft) {
       res.status(200).json({

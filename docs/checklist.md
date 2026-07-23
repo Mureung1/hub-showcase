@@ -46,6 +46,7 @@
 - [x] T15. `[P0]` 전체 시나리오 End-to-End 점검 (plan.md 6단계 시나리오 기준) (이슈 #18) — 3주차 본작업(T9~T14)이 화요일 하루 만에 끝나서 코드가 안정된 김에 이번 주로 당김. Playwright 한 스크립트로 5케이스(입력 오류·정상 6단계 전체·추천 0건·네트워크 에러·stale-error/경쟁상태 회귀 확인) 검증, 콘솔 에러 없음. `npm test`+oxlint 최종 재확인. 처음엔 ANTHROPIC_API_KEY 없이 폴백 경로로 검증했고, 이후 실제 키/결제 준비 후 curl로 재확인 — 추천 이유·자소서 초안 모두 템플릿이 아닌 실제 Claude(`claude-haiku-4-5`) 생성 문장으로 정상 응답함 확인
 - [x] T16. `[P0]` 데모/발표 준비 (README 갱신, 실행 방법 정리) (이슈 #19) — 아키텍처 다이어그램 갱신·Project 보드 링크는 수요일에 이미 끝났고, README "실행 방법" 섹션(백엔드/프론트엔드 설치·환경변수·실행 커맨드, 테스트 실행 커맨드)을 목요일에 추가해 DoD 3가지 전부 완료
 - 4주차 스코프 확장 논의는 수요일에 일부 실현됨(자소서 초안 Supabase 영속화, 위 참고). 실제 채용 공고 크롤링(이슈 #23)과 배포(이슈 #25)도 별도 이슈로 등록해 트래킹 중
+- [x] profile 재조회 구조 개선 (이슈 #26, 목요일 완료). 자소서 초안 생성 시 프론트가 `profile` 전체를 재전송하던 것을, 서버가 `profileId`로 Supabase `profiles` 테이블을 직접 재조회하도록 변경 — 클라이언트 값을 그대로 신뢰하던 구조를 해소하고 `profileId`를 실제로 의미 있게 씀. `drafts` 테이블 조회와 병렬(`Promise.all`)로 실행해 지연을 최소화. `src/App.jsx`에서 이제 쓰이지 않는 `profile` state도 함께 제거(sessionStorage 대상에서도 제외). curl 4케이스(정상/400/404/저장된 초안 재조회) + verification-agent로 브라우저 전체 흐름 재검증, 콘솔 에러 없음
 - [~] 배포 (이슈 #25, 목요일 착수). 크롤링과 배포 중 더 쉬운 배포부터 진행하기로 결정. **백엔드는 완료** — Render에 배포 성공(`https://hub-071a.onrender.com`, Region Singapore, 브랜치 `work`), 환경변수 전부 등록, curl로 인증 없음(401)/정상 인증(200) 검증까지 완료. **프론트엔드는 중단** — Vercel에서 설정(Vite 프리셋, 빌드 커맨드, `VITE_API_BASE_URL` 환경변수, Production Branch를 `main`→`work`로 정정)까지는 끝냈으나, 재배포 트리거 직전 Vercel 계정에서 "Authentication failed" 로그인 오류 발생. Vercel "Account recovery and appeals" 양식 제출, 복구 후 재배포 이어서 진행 예정
 
 ---

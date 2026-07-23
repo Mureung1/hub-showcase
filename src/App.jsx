@@ -25,7 +25,6 @@ function App() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [step, setStep] = useState(initialSession.step ?? 'input');
-  const [profile, setProfile] = useState(initialSession.profile ?? null);
   const [profileId, setProfileId] = useState(initialSession.profileId ?? null);
   const [jobs, setJobs] = useState(initialSession.jobs ?? []);
   const [selectedJob, setSelectedJob] = useState(initialSession.selectedJob ?? null);
@@ -45,12 +44,12 @@ function App() {
     try {
       sessionStorage.setItem(
         SESSION_STORAGE_KEY,
-        JSON.stringify({ authHeader, step, profile, profileId, jobs, selectedJob, isDraftSaved }),
+        JSON.stringify({ authHeader, step, profileId, jobs, selectedJob, isDraftSaved }),
       );
     } catch {
       // 세션 저장 실패(프라이빗 모드 용량 제한 등)는 새로고침 복원만 못 하는 것이라 무시한다
     }
-  }, [authHeader, step, profile, profileId, jobs, selectedJob, isDraftSaved]);
+  }, [authHeader, step, profileId, jobs, selectedJob, isDraftSaved]);
 
   async function handleLogin(id, password) {
     setIsLoggingIn(true);
@@ -72,7 +71,6 @@ function App() {
 
     try {
       const { profileId: newProfileId, recommendations } = await submitProfile(submittedProfile);
-      setProfile(submittedProfile);
       setProfileId(newProfileId);
       setJobs(recommendations);
       setStep('list');
@@ -95,7 +93,7 @@ function App() {
     setSaveDraftError('');
 
     try {
-      const { essayQuestions, isSaved } = await generateDraft(job.id, profileId, profile);
+      const { essayQuestions, isSaved } = await generateDraft(job.id, profileId);
       setSelectedJob({ ...job, essayQuestions });
       setIsDraftSaved(isSaved);
       setStep('draft');
