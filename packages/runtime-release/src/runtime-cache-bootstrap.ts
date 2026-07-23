@@ -6,6 +6,7 @@ import {
   lstat,
   mkdir,
   open,
+  readdir,
   realpath,
 } from 'node:fs/promises'
 import type { FileHandle } from 'node:fs/promises'
@@ -13,6 +14,7 @@ import path from 'node:path'
 
 import {
   createRuntimeCacheLayout,
+  createRuntimeStagingIdentity,
   inspectRuntimeCacheRoot,
   revalidateRuntimeCacheRootForMutation,
 } from './runtime-cache-authority.js'
@@ -20,6 +22,7 @@ import type {
   RuntimeCacheLayout,
   RuntimeCacheMutationAuthority,
   RuntimeFileSystemIdentity,
+  RuntimeStagingIdentity,
 } from './runtime-cache-authority.js'
 import {
   RuntimeReleaseAuthorityError,
@@ -55,6 +58,9 @@ export type RuntimeCacheBootstrapTestOptions = {
     readonly parent: string
   }) => Promise<void>
 }
+
+export type RuntimeStagingRootTestOptions =
+  RuntimeCacheBootstrapTestOptions
 
 /**
  * Materializes only the stable Runtime cache hierarchy. The app data root
@@ -98,6 +104,7 @@ export async function bootstrapRuntimeCache(
     parent,
     signal: input.signal,
     testOptions,
+    allowExisting: true,
   })
   const cacheRoot = await ensureOwnedDirectChild({
     directory: layout.cacheRoot,
@@ -106,6 +113,7 @@ export async function bootstrapRuntimeCache(
     parent,
     signal: input.signal,
     testOptions,
+    allowExisting: true,
   })
 
   const namespaceIdentities: Partial<
@@ -124,6 +132,7 @@ export async function bootstrapRuntimeCache(
       parent: cacheRoot,
       signal: input.signal,
       testOptions,
+      allowExisting: true,
     })
     namespaceIdentities[namespace] = child.identity
   }
@@ -150,6 +159,7 @@ export async function bootstrapRuntimeCache(
     parent: generationNamespace,
     signal: input.signal,
     testOptions,
+    allowExisting: true,
   })
   const generationParentPath = path.dirname(
     layout.generation.root,
@@ -169,6 +179,7 @@ export async function bootstrapRuntimeCache(
     parent: releaseParent,
     signal: input.signal,
     testOptions,
+    allowExisting: true,
   })
   assertNotCancelled(input.signal)
 
@@ -229,6 +240,85 @@ export async function bootstrapRuntimeCache(
   }
 }
 
+/**
+ * Creates one exclusive owner-only staging root after the resolver owns the
+ * digest lease. Existing same-name residue is never reused.
+ */
+export async function createOwnedRuntimeStagingRoot(
+  input: {
+    readonly layout: RuntimeCacheLayout
+    readonly mutationAuthority: RuntimeCacheMutationAuthority
+    readonly signal: AbortSignal
+    readonly transactionNonce: string
+  },
+  testOptions: RuntimeStagingRootTestOptions = {},
+): Promise<RuntimeStagingIdentity> {
+  assertNotCancelled(input.signal)
+  if (
+    input.mutationAuthority.kind !==
+      'runtime_cache_mutation_authority' ||
+    input.mutationAuthority.snapshot.appDataRoot !==
+      input.layout.appDataRoot ||
+    input.mutationAuthority.snapshot.cacheRoot !==
+      input.layout.cacheRoot
+  ) {
+    throw runtimeAuthorityError('runtime_cache_unsafe', {
+      kind: 'runtime_staging_cache_binding_invalid',
+    })
+  }
+  const staging = createRuntimeStagingIdentity(
+    input.layout,
+    input.transactionNonce,
+  )
+  const authority =
+    await revalidateRuntimeCacheRootForMutation(
+      input.mutationAuthority.snapshot,
+    )
+  const stagingNamespace =
+    authority.snapshot.namespaceIdentities.staging
+  if (stagingNamespace === undefined) {
+    throw runtimeAuthorityError('runtime_cache_unsafe', {
+      kind: 'runtime_staging_namespace_missing',
+    })
+  }
+  const created = await ensureOwnedDirectChild({
+    directory: staging.path,
+    expectedDevice: stagingNamespace.device,
+    expectedOwnerUid: authority.snapshot.expectedOwnerUid,
+    parent: {
+      identity: stagingNamespace,
+      path: input.layout.namespaces.staging,
+    },
+    signal: input.signal,
+    testOptions,
+    allowExisting: false,
+  })
+  await assertOwnedEmptyDirectory(staging.path)
+  assertNotCancelled(input.signal)
+  const current = await revalidateRuntimeCacheRootForMutation(
+    authority.snapshot,
+  )
+  const currentStagingNamespace =
+    current.snapshot.namespaceIdentities.staging
+  if (
+    currentStagingNamespace === undefined ||
+    !sameIdentity(currentStagingNamespace, stagingNamespace)
+  ) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_staging_namespace_changed',
+    })
+  }
+  await inspectOwnedCanonicalDirectory({
+    directory: staging.path,
+    expectedDevice: currentStagingNamespace.device,
+    expectedIdentity: created.identity,
+    expectedOwnerUid: current.snapshot.expectedOwnerUid,
+    evidenceKind: 'runtime_staging_root_changed',
+  })
+  await assertOwnedEmptyDirectory(staging.path)
+  return staging
+}
+
 type OwnedDirectory = {
   readonly identity: RuntimeFileSystemIdentity
   readonly path: string
@@ -241,6 +331,7 @@ async function ensureOwnedDirectChild(input: {
   readonly parent: OwnedDirectory
   readonly signal: AbortSignal
   readonly testOptions: RuntimeCacheBootstrapTestOptions
+  readonly allowExisting: boolean
 }): Promise<OwnedDirectory> {
   assertDirectChild(input.parent.path, input.directory)
   assertNotCancelled(input.signal)
@@ -257,7 +348,20 @@ async function ensureOwnedDirectChild(input: {
     await mkdir(input.directory, { mode: 0o700 })
     created = true
   } catch (error) {
-    if (!isNodeError(error) || error.code !== 'EEXIST') {
+    if (
+      !isNodeError(error) ||
+      error.code !== 'EEXIST' ||
+      !input.allowExisting
+    ) {
+      if (
+        isNodeError(error) &&
+        error.code === 'EEXIST' &&
+        !input.allowExisting
+      ) {
+        throw runtimeAuthorityError('runtime_recovery_required', {
+          kind: 'runtime_staging_root_already_exists',
+        })
+      }
       throw runtimeAuthorityError('runtime_storage_unavailable', {
         kind: 'runtime_cache_directory_create_failed',
         cause: error,
@@ -440,6 +544,25 @@ async function syncOwnedDirectory(
     })
   } finally {
     await handle?.close().catch(() => undefined)
+  }
+}
+
+async function assertOwnedEmptyDirectory(
+  directory: string,
+): Promise<void> {
+  let entries: string[]
+  try {
+    entries = await readdir(directory)
+  } catch (error) {
+    throw runtimeAuthorityError('runtime_storage_unavailable', {
+      kind: 'runtime_staging_roster_unavailable',
+      cause: error,
+    })
+  }
+  if (entries.length !== 0) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_staging_roster_not_empty',
+    })
   }
 }
 

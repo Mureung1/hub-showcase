@@ -20,6 +20,7 @@ import {
 } from './runtime-release-authority.js'
 import {
   bootstrapRuntimeCache,
+  createOwnedRuntimeStagingRoot,
 } from './runtime-cache-bootstrap.js'
 
 const NAMESPACE_NAMES = [
@@ -212,6 +213,74 @@ test('cancelled bootstrap leaves only owned retryable directories', async () => 
       await readdir(completed.layout.cacheRoot),
       NAMESPACE_NAMES,
     )
+  })
+})
+
+test('staging creation is exclusive, empty, durable, and lease-scoped by its caller', async () => {
+  await withAppDataRoot(async (appDataRoot) => {
+    const bootstrapped = await bootstrapRuntimeCache({
+      admission: fixtureAdmission(),
+      appDataRoot,
+      signal: new AbortController().signal,
+    })
+    const staging = await createOwnedRuntimeStagingRoot({
+      layout: bootstrapped.layout,
+      mutationAuthority: bootstrapped.mutationAuthority,
+      signal: new AbortController().signal,
+      transactionNonce: '1'.repeat(32),
+    })
+    const stats = await lstat(staging.path, { bigint: true })
+    assert.equal(stats.isDirectory(), true)
+    assert.equal(stats.isSymbolicLink(), false)
+    assert.equal(Number(stats.mode & 0o7777n), 0o700)
+    assert.equal(Number(stats.uid), currentUid())
+    assert.deepEqual(await readdir(staging.path), [])
+
+    await assert.rejects(
+      createOwnedRuntimeStagingRoot({
+        layout: bootstrapped.layout,
+        mutationAuthority: bootstrapped.mutationAuthority,
+        signal: new AbortController().signal,
+        transactionNonce: '1'.repeat(32),
+      }),
+      hasFailureCode('runtime_recovery_required'),
+    )
+    assert.deepEqual(await readdir(staging.path), [])
+  })
+})
+
+test('staging cancellation after create preserves only an owned empty retryable root', async () => {
+  await withAppDataRoot(async (appDataRoot) => {
+    const bootstrapped = await bootstrapRuntimeCache({
+      admission: fixtureAdmission(),
+      appDataRoot,
+      signal: new AbortController().signal,
+    })
+    const controller = new AbortController()
+    const transactionNonce = '2'.repeat(32)
+    await assert.rejects(
+      createOwnedRuntimeStagingRoot(
+        {
+          layout: bootstrapped.layout,
+          mutationAuthority: bootstrapped.mutationAuthority,
+          signal: controller.signal,
+          transactionNonce,
+        },
+        {
+          afterDirectoryCreate: async () => {
+            controller.abort()
+          },
+        },
+      ),
+      hasFailureCode('runtime_cancelled'),
+    )
+    const staging = path.join(
+      bootstrapped.layout.namespaces.staging,
+      `${bootstrapped.layout.identity.archiveSha256}-${transactionNonce}`,
+    )
+    const stats = await lstat(staging, { bigint: true })
+    assert.equal(Number(stats.mode & 0o7777n), 0o700)
+    assert.deepEqual(await readdir(staging), [])
   })
 })
 
