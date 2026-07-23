@@ -13,8 +13,8 @@ type Subscription = {
   bg: string
 }
 
-function getNextBillingInfo(billingDay: number) {
-  const today = new Date()
+export function getNextBillingInfo(billingDay: number, now: Date = new Date()) {
+  const today = now
   const y = today.getFullYear()
   const m = today.getMonth()
   const startOfToday = new Date(y, m, today.getDate())
