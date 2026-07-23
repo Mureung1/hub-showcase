@@ -13,6 +13,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"server/**/*.ts\" \"shared/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"server/**/*.ts\" \"shared/**/*.ts\"",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -41,6 +43,7 @@
     "tailwindcss": "^4.3.2",
     "tsx": "^4.23.0",
     "typescript": "^7.0.2",
-    "vite": "^8.1.1"
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10"
   }
 }
