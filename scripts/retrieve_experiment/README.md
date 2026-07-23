@@ -164,9 +164,9 @@ check의 query당 평균 반환 수도 Gemini 의미 검색 0.6, 하이브리드
 
 | 항목 | Desktop Chrome 150.0.7871.181 | Android Chrome 148.0.7778.215 |
 | --- | ---: | ---: |
-| cold load | 27,052.550ms | 65,790.345ms |
-| cache load | 2,207.335ms | 10,918.060ms |
-| cache 첫 query | 30.980ms | 737.185ms |
+| cold load | 23,504.955ms | 93,470.220ms |
+| cache load | 2,393.105ms | 8,375.790ms |
+| cache 첫 query | 118.600ms | 374.850ms |
 | cache warm p50 / p95 | 결과 JSON 참조 | 결과 JSON 참조 |
 
 두 플랫폼 모두 고정 revision의 `config.json`, `tokenizer.json`, `tokenizer_config.json`, `model_quantized.onnx` Cache Storage 항목을 확인했다. cache 단계의 CDP 원격 모델 요청은 각각 0건이며, 따라서 `cacheHitVerified`는 `true`다. 취소는 cache 준비 뒤 기존 progress callback의 첫 신호에서 Worker를 종료했고, 새 Worker의 ready·첫 query·warm 20회·384차원 복구를 모두 확인했다. WASM 크기는 Cache Storage의 `content-length` 단일 관측으로 4,732,131 bytes를 기록했다.
@@ -179,7 +179,7 @@ npx vitest run scripts/retrieve_experiment/tests/browser_benchmark_contract.test
 npx tsc --noEmit -p tsconfig.node.json
 ```
 
-전용 계약 테스트는 9개 모두 통과했고, 타입 검사는 오류 없이 완료됐다.
+전용 계약 테스트는 10개 모두 통과했고, 타입 검사는 오류 없이 완료됐다.
 
 2026-07-23에 제품 앱과 분리한 localhost COOP/COEP 페이지에서 실제 Chrome을
 측정했다. 고정 모델 `Xenova/multilingual-e5-small`, revision

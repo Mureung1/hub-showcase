@@ -422,14 +422,6 @@ async function measurePageStages(
     'window.browserBenchmark.inspectTransformersCache()'
   );
   await page.call('Network.setCacheDisabled', { cacheDisabled: false });
-  const cacheNetworkCursor = page.eventCursor();
-  const cache = await evaluate<Record<string, unknown>>(
-    page,
-    'window.browserBenchmark.measure()'
-  );
-  const cacheRemoteModelRequestCount = countRemoteModelRequests(
-    page.eventsSince(cacheNetworkCursor)
-  );
   const cacheEntries = Array.isArray(cacheStorageEvidence.entries)
     ? cacheStorageEvidence.entries.filter(isCacheEntry)
     : [];
@@ -442,6 +434,14 @@ async function measurePageStages(
   const cancellation = await evaluate<Record<string, unknown>>(
     page,
     'window.browserBenchmark.startAndCancelWorker()'
+  );
+  const cacheNetworkCursor = page.eventCursor();
+  const cache = await evaluate<Record<string, unknown>>(
+    page,
+    'window.browserBenchmark.measure()'
+  );
+  const cacheRemoteModelRequestCount = countRemoteModelRequests(
+    page.eventsSince(cacheNetworkCursor)
   );
   const cacheEvidence = {
     ...cacheEntryVerification,

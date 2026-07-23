@@ -142,4 +142,21 @@ describe('브라우저 벤치마크 계약', () => {
 
     expect(renderBrowserBenchmarkReport(result)).toBe(reportText);
   });
+
+  it('취소 뒤 새 Worker의 cache benchmark를 기록한다', async () => {
+    const runner = await readFile(
+      'scripts/retrieve_experiment/run_browser_benchmark.ts',
+      'utf8'
+    );
+    const cancellation = runner.indexOf(
+      "'window.browserBenchmark.startAndCancelWorker()'"
+    );
+    const cacheBenchmark = runner.indexOf(
+      'const cache = await evaluate<Record<string, unknown>>(',
+      cancellation
+    );
+
+    expect(cancellation).toBeGreaterThan(-1);
+    expect(cacheBenchmark).toBeGreaterThan(cancellation);
+  });
 });
