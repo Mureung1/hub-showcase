@@ -4,6 +4,7 @@
 const supabase = require('./db');
 const { requiredCoursesByDepartment } = require('../data/requiredCourses');
 const { courseTiersByDepartment } = require('../data/courseTiers');
+const { parseTimes } = require('../utils/parseTimes');
 
 const API_URL =
   'https://knuin.knu.ac.kr/public/web/stddm/lsspr/syllabus/lectPlnInqr/selectListLectPlnInqr';
@@ -80,19 +81,6 @@ async function fetchLectures(target) {
 function toSemester(estblYear, estblSmstrSctnm) {
   const term = estblSmstrSctnm.startsWith('1') ? '1' : '2';
   return `${estblYear}-${term}`;
-}
-
-// "화 09:00 ~ 10:30,목 10:30 ~ 12:00" → [{day:"화", start:"09:00", end:"10:30"}, ...]
-function parseTimes(lssnsRealTimeInfo) {
-  if (!lssnsRealTimeInfo) return [];
-  return lssnsRealTimeInfo.split(',').map((chunk) => {
-    const trimmed = chunk.trim();
-    const spaceIdx = trimmed.indexOf(' ');
-    const day = trimmed.slice(0, spaceIdx);
-    const range = trimmed.slice(spaceIdx + 1);
-    const [start, end] = range.split('~').map((s) => s.trim());
-    return { day, start, end };
-  });
 }
 
 // 같은 전공필수 과목이 분반(crse_no의 -001/-002...)별로 여러 행 존재하는 경우,
