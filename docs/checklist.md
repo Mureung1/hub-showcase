@@ -4,16 +4,16 @@
 2주차 작업 분해는 git 이력 참고 (`docs/backlog.md` 0번 항목에 요약).
 
 ## 테스트 인프라
-- [ ] Vitest 설치·설정 (`vite.config.js`에 test 옵션 추가)
-- [ ] React 컴포넌트 테스트용 `@testing-library/react` 설치
-- [ ] `npm run test` 스크립트 추가
+- [x] Vitest 설치·설정 (`vite.config.js`에 test 옵션 추가)
+- [x] React 컴포넌트 테스트용 `@testing-library/react` 설치
+- [x] `npm test` 스크립트 추가
 
 ## TDD — "오늘 체크인 여부" 로직
-- [ ] 테스트 먼저 작성: `hasCheckedInToday(lastCheck)` — 오늘 날짜의 기록이면 true, 아니면 false
-- [ ] 테스트 실패 확인(RED)
-- [ ] 최소 구현으로 테스트 통과(GREEN)
-- [ ] `TideCheck.jsx`에 연결 — 이미 체크인했으면 슬라이더 폼 대신 완료 화면부터 보여주기
-- [ ] 리팩터링(필요 시)
+- [x] 테스트 먼저 작성: `hasCheckedInToday(lastCheck)` — 오늘 날짜의 기록이면 true, 아니면 false → `src/hasCheckedInToday.test.js` (7개 케이스)
+- [x] 테스트 실패 확인(RED) — 스텁이 항상 false를 반환해 "true여야 하는" 케이스 3개 실패 확인
+- [x] 최소 구현으로 테스트 통과(GREEN) — 7/7 통과
+- [x] `TideCheck.jsx`에 연결 — 이미 체크인했으면 슬라이더 폼 대신 완료 화면부터 보여주기
+- [x] 리팩터링 — 함수가 단순해 추가 정리 없음
 
 ## 에러 처리 강화
 - [x] GET `/api/tide-checks/latest` 실패 시 화면에 안내 문구 표시 (404는 정상 케이스로 제외)
@@ -26,11 +26,11 @@
 - [x] 설명하며 발견한 gap 기록 (Episodes/ChatView는 아직 mock, TideCheck만 실제 DB 연결) — 오늘 그룹 세션에서 이 그림으로 직접 설명
 
 ## Agent 산출물
-- [ ] 테스트코드 생성 Skill 문서 작성 (`.claude/skills/`)
-- [ ] 코드 검증 Agent 문서 작성 (`docs/agents/`) — 기능 검증 Agent와 역할 구분
-- [ ] 코드 검증 Agent로 이번 주 작업 실제 점검, 로그 기록
-- [ ] 나만의 개발 워크플로우 문서화
+- [x] 테스트코드 생성 Skill 문서 작성 → `.claude/skills/tidenote-test-writer/SKILL.md`
+- [x] 코드 검증 Agent 문서 작성 → `docs/agents/code-verification-agent.md` — 기능 검증 Agent와 역할 구분 표 포함
+- [x] 코드 검증 Agent로 이번 주 작업 실제 점검, 로그 기록 (🔴 없음, 🟡 1건 기록)
+- [ ] 나만의 개발 워크플로우 문서화 — 금요일
 
 ## 검증
-- [ ] TDD로 만든 기능 테스트 통과 확인 (`npm run test`)
-- [ ] 코드 검증 Agent로 전체 점검
+- [x] TDD로 만든 기능 테스트 통과 확인 (`npm test`) — 7/7 pass
+- [x] 코드 검증 Agent로 전체 점검
