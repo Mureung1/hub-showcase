@@ -163,6 +163,12 @@
   font-size: 12px;
 }
 
+.portfolio-meta .favorite-button.on {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+
 @media (max-width: 720px) {
   .portfolio-filters {
     grid-template-columns: 1fr;

@@ -2,7 +2,7 @@ import { config, isSupabaseConfigured } from "../config/env.js";
 import { ServiceError } from "../errors/ServiceError.js";
 
 const TABLE = "portfolios";
-const META_COLUMNS = "id,name,title,theme_slug,theme_name,created_at";
+const META_COLUMNS = "id,name,title,theme_slug,theme_name,is_favorite,created_at";
 const DETAIL_COLUMNS = `${META_COLUMNS},html`;
 const REQUEST_TIMEOUT_MS = 8000;
 
@@ -13,6 +13,7 @@ function mapRow(row, includeHtml = false) {
     title: row.title || "",
     themeSlug: row.theme_slug,
     themeName: row.theme_name,
+    isFavorite: Boolean(row.is_favorite),
     createdAt: row.created_at,
   };
 
@@ -121,6 +122,27 @@ export async function getPortfolio(id, fetchImpl) {
   }
   if (rows.length === 0)
     throw new ServiceError("저장된 포트폴리오를 찾을 수 없습니다.", 404);
+
+  return mapRow(rows[0], true);
+}
+
+export async function updatePortfolioFavorite(id, isFavorite, fetchImpl) {
+  const rows = await request(
+    `/rest/v1/${TABLE}?id=eq.${encodeURIComponent(id)}&select=${DETAIL_COLUMNS}`,
+    {
+      method: "PATCH",
+      headers: headers("return=representation"),
+      body: JSON.stringify({ is_favorite: isFavorite }),
+    },
+    fetchImpl,
+  );
+
+  if (!Array.isArray(rows)) {
+    throw new ServiceError("Supabase 즐겨찾기 응답 형식이 올바르지 않습니다.", 502);
+  }
+  if (rows.length === 0) {
+    throw new ServiceError("저장된 포트폴리오를 찾을 수 없습니다.", 404);
+  }
 
   return mapRow(rows[0], true);
 }

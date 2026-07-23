@@ -63,6 +63,7 @@ Supabase에 저장합니다. 목록에서는 가벼운 메타데이터만 받고
 
 ## 문서
 
+- 🧪 [즐겨찾기 토글 TDD · Skill · 검증 Agent 기록](docs/tdd-favorite-2026-07-23.md)
 - 🗺️ [데이터 흐름·아키텍처 설명 자료](docs/architecture-and-data-flow-2026-07-22.md)
 - 🗓️ **[3주차 주간 계획](docs/WEEK3_PLAN.md)** · [GitHub Project 보드](https://github.com/users/dolphin1404/projects/2)
 - 🗄️ [Supabase 서버 재시작 영속성 검증](docs/supabase-persistence-verification-2026-07-21.md)

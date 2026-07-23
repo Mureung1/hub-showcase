@@ -5,6 +5,7 @@ import {
   createPortfolio,
   getPortfolio,
   listPortfolios,
+  updatePortfolioFavorite,
 } from "../src/services/portfolios.service.js";
 
 const ROW = {
@@ -14,6 +15,7 @@ const ROW = {
   theme_slug: "minimal-clean",
   theme_name: "Minimal Clean",
   html: "<!doctype html><html></html>",
+  is_favorite: false,
   created_at: "2026-07-14T00:00:00.000Z",
 };
 
@@ -55,6 +57,23 @@ test("최근 목록은 HTML을 제외한 메타데이터로 변환한다", async
   assert.equal(result.length, 1);
   assert.equal(result[0].name, "김지우");
   assert.equal("html" in result[0], false);
+});
+
+test("즐겨찾기 값을 PATCH하고 camelCase 결과로 변환한다", async () => {
+  let request;
+  const fetchMock = async (url, options) => {
+    request = { url, options };
+    return new Response(JSON.stringify([{ ...ROW, is_favorite: true }]), {
+      status: 200,
+    });
+  };
+
+  const result = await updatePortfolioFavorite(ROW.id, true, fetchMock);
+
+  assert.match(request.url, /portfolios\?id=eq\.11111111/);
+  assert.equal(request.options.method, "PATCH");
+  assert.deepEqual(JSON.parse(request.options.body), { is_favorite: true });
+  assert.equal(result.isFavorite, true);
 });
 
 test("상세 조회 결과가 없으면 404를 반환한다", async () => {

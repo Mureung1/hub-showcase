@@ -17,8 +17,9 @@ npm run dev            # node --watch, http://localhost:4000
 
 ## Supabase 설정
 
-1. Supabase 프로젝트의 SQL Editor에서
-   [`supabase/migrations/202607140001_create_portfolios.sql`](../supabase/migrations/202607140001_create_portfolios.sql)을 실행한다.
+1. Supabase 프로젝트의 SQL Editor에서 다음 migration을 순서대로 실행한다.
+   - [`202607140001_create_portfolios.sql`](../supabase/migrations/202607140001_create_portfolios.sql)
+   - [`202607230001_add_portfolio_favorite.sql`](../supabase/migrations/202607230001_add_portfolio_favorite.sql)
 2. Project Settings의 Data API URL과 서버용 secret key를 `server/.env`에 넣는다.
 3. `GET /api/health`의 `databaseConfigured`가 `true`인지 확인한다.
 
@@ -32,13 +33,14 @@ SUPABASE_SECRET_KEY=sb_secret_xxxxxxxx
 
 ## 엔드포인트
 
-| Method | Path                       | 설명                                               |
-| ------ | -------------------------- | -------------------------------------------------- |
-| GET    | `/api/health`              | `{ status, aiConfigured, databaseConfigured }`     |
-| POST   | `/api/generate`            | body `{ cvMarkdown, designMarkdown }` → `{ html }` |
-| POST   | `/api/portfolios`          | 생성 결과 저장 → `201 { portfolio }`               |
-| GET    | `/api/portfolios?limit=10` | 최근 저장 결과 메타데이터 조회                     |
-| GET    | `/api/portfolios/:id`      | 저장 결과 HTML 상세 조회                           |
+| Method | Path                           | 설명                                               |
+| ------ | ------------------------------ | -------------------------------------------------- |
+| GET    | `/api/health`                  | `{ status, aiConfigured, databaseConfigured }`     |
+| POST   | `/api/generate`                | body `{ cvMarkdown, designMarkdown }` → `{ html }` |
+| POST   | `/api/portfolios`              | 생성 결과 저장 → `201 { portfolio }`               |
+| GET    | `/api/portfolios?limit=10`     | 최근 저장 결과 메타데이터 조회                     |
+| GET    | `/api/portfolios/:id`          | 저장 결과 HTML 상세 조회                           |
+| PATCH  | `/api/portfolios/:id/favorite` | body `{ isFavorite }` → 즐겨찾기 상태 변경         |
 
 - 키 미설정 시 `/api/generate` 는 `503` 과 안내 메시지를 반환한다(서버는 정상 기동).
 - Supabase 미설정은 `503`, Data API 실패는 `502`, 잘못된 입력은 `400`으로 구분한다.
