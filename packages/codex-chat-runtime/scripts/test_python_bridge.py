@@ -1764,6 +1764,108 @@ class PythonBridgeActualChildTests(unittest.TestCase):
             finally:
                 bridge.cleanup()
 
+    def test_cancel_rejection_at_expiry_fail_closes_one_settlement(self) -> None:
+        for close_requested in (False, True):
+            with self.subTest(close_requested=close_requested):
+                with tempfile.TemporaryDirectory(
+                    prefix="ay-ple-python-bridge-account-expiry-rejection-"
+                ) as temp:
+                    root = Path(temp)
+                    (root / "account-state").write_text(
+                        "signed_out",
+                        encoding="utf-8",
+                    )
+                    (root / "defer-login-cancel").touch()
+                    (root / "login-cancel-outcome").write_text(
+                        "failure",
+                        encoding="utf-8",
+                    )
+                    bridge = self._account_bridge(
+                        root,
+                        "--login-attempt-timeout-ms",
+                        "200",
+                    )
+                    try:
+                        bridge.send(
+                            {
+                                "bridgeRequestId": "start",
+                                "command": "start_browser_login",
+                                "attemptId": "attempt-expiry-rejection",
+                            }
+                        )
+                        self.assertEqual(bridge.receive()["status"], "pending")
+                        bridge.send(
+                            {
+                                "bridgeRequestId": "cancel",
+                                "command": "cancel_browser_login",
+                                "attemptId": "attempt-expiry-rejection",
+                            }
+                        )
+                        self._wait_for_journal_method(
+                            bridge,
+                            "account/login/cancel",
+                        )
+                        bridge.send(
+                            {
+                                "bridgeRequestId": "status-before-deadline",
+                                "command": "read_browser_login_attempt",
+                                "attemptId": "attempt-expiry-rejection",
+                            }
+                        )
+                        self.assertEqual(bridge.receive()["status"], "pending")
+                        bridge.send(
+                            {
+                                "bridgeRequestId": "release-joined",
+                                "command": "release_browser_login_attempt",
+                                "attemptId": "attempt-expiry-rejection",
+                            }
+                        )
+
+                        expiry_deadline = time.monotonic() + 0.35
+                        while time.monotonic() < expiry_deadline:
+                            methods = [
+                                message.get("method")
+                                for message in self._read_journal_messages(bridge)
+                            ]
+                            self.assertEqual(
+                                methods.count("account/login/cancel"),
+                                1,
+                            )
+                            time.sleep(0.01)
+
+                        if close_requested:
+                            bridge.send(
+                                {
+                                    "bridgeRequestId": "close",
+                                    "command": "close",
+                                }
+                            )
+                        (root / "release-login-cancel").touch()
+                        fatal = bridge.receive()
+                        self.assertEqual(fatal["type"], "fatal")
+                        self.assertEqual(fatal["code"], "sdk_operation_failed")
+                        self.assertNotIn(
+                            "raw-login-cancel-provider-secret",
+                            json.dumps(fatal, sort_keys=True),
+                        )
+                        methods = [
+                            message.get("method")
+                            for message in self._read_journal_messages(bridge)
+                        ]
+                        self.assertEqual(
+                            methods.count("account/login/cancel"),
+                            1,
+                        )
+                        self.assertGreaterEqual(methods.count("account/read"), 1)
+                        bridge.wait()
+                        self.assertTrue(bridge.child_pid_path.is_file())
+                        wait_for_process_exit(
+                            int(bridge.child_pid_path.read_text(encoding="utf-8")),
+                            time.monotonic() + 2,
+                        )
+                    finally:
+                        bridge.cleanup()
+
     def test_single_flight_cancel_is_bounded_on_timeout_eof_and_close(
         self,
     ) -> None:

@@ -150,6 +150,7 @@ class BrowserLoginAttempt:
         default=None,
         repr=False,
     )
+    expiry_settlement_requested: bool = False
     settlement_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
 
 
@@ -967,6 +968,8 @@ class BridgeWorker:
         async with attempt.settlement_lock:
             if self._login_attempt is not attempt or attempt.status != "pending":
                 return True
+            if terminal_status == "expired":
+                attempt.expiry_settlement_requested = True
             settlement_task = attempt.settlement_task
             owns_settlement = settlement_task is None
             if settlement_task is None:
@@ -1034,8 +1037,12 @@ class BridgeWorker:
                     timeout=self._account_operation_timeout,
                 )
             except JsonRpcError:
-                outcome = LoginSettlementOutcome.REJECTED
-                return outcome
+                async with attempt.settlement_lock:
+                    expiry_settlement_requested = attempt.expiry_settlement_requested
+                if not expiry_settlement_requested:
+                    outcome = LoginSettlementOutcome.REJECTED
+                    return outcome
+                return await self._settle_expired_login_after_cancel_rejection(attempt)
             except asyncio.TimeoutError:
                 if not self._closing:
                     self.trigger_fatal("sdk_operation_timeout")
@@ -1097,6 +1104,40 @@ class BridgeWorker:
                 if attempt.settlement_task is asyncio.current_task():
                     attempt.settlement_task = None
                     attempt.settlement_target = None
+                    attempt.expiry_settlement_requested = False
+
+    async def _settle_expired_login_after_cancel_rejection(
+        self,
+        attempt: BrowserLoginAttempt,
+    ) -> LoginSettlementOutcome:
+        fatal_code: str | None = None
+        try:
+            account_state = await self._fresh_account_state()
+        except asyncio.TimeoutError:
+            account_state = "unavailable"
+            fatal_code = "sdk_operation_timeout"
+        except TransportClosedError:
+            account_state = "unavailable"
+            fatal_code = "sdk_transport_failed"
+        except Exception:
+            account_state = "unavailable"
+            fatal_code = "sdk_operation_failed"
+
+        async with attempt.settlement_lock:
+            if self._login_attempt is not attempt or attempt.status != "pending":
+                return LoginSettlementOutcome.SETTLED
+            if account_state == "chatgpt":
+                attempt.status = "completed"
+                attempt.error_code = None
+            else:
+                attempt.status = "failed"
+                attempt.error_code = "login_failed"
+            self._cancel_login_task(attempt.expiry_task)
+
+        if account_state == "chatgpt":
+            return LoginSettlementOutcome.SETTLED
+        self.trigger_fatal(fatal_code or "sdk_operation_failed")
+        return LoginSettlementOutcome.FAILED
 
     async def _release_browser_login_attempt(
         self,
