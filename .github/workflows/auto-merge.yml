@@ -61,6 +61,15 @@ jobs:
               await github.rest.pulls.merge({ ...repo, pull_number: pr.number, merge_method: "merge" });
             }
 
+            async function getChangedFiles(pr) {
+              const files = await github.paginate(github.rest.pulls.listFiles, {
+                ...repo,
+                pull_number: pr.number,
+                per_page: 100,
+              });
+              return files.map(file => file.filename);
+            }
+
             // ---------- predicates ----------
             const hasLabel = (pr, labelName) =>
               pr.labels.nodes.some(l => l.name.toLowerCase() === labelName);
@@ -71,6 +80,7 @@ jobs:
             const isChangesRequested = (pr) => pr.reviews?.nodes?.[0]?.state === "CHANGES_REQUESTED";
             const isConflicting      = (pr) => pr.mergeable === "CONFLICTING";
             const isUnknown          = (pr) => pr.mergeable === "UNKNOWN";
+            const hasWorkflowChanges = (pr) => pr.changedFiles?.some(file => file.startsWith(".github/workflows/"));
 
             // ---------- actions ----------
             async function closeMain(pr) {
@@ -106,6 +116,13 @@ jobs:
               }
             }
 
+            async function deferWorkflowChanges(pr) {
+              await comment(
+                pr,
+                ".github/workflows 파일 변경이 포함되어 있어 자동 병합을 보류합니다. 프로젝트 코드와 showcase 폴더만 남긴 뒤 다시 PR을 보내주세요."
+              );
+            }
+
             async function mergeIfReady(pr) {
               try {
                 await mergePR(pr);
@@ -119,6 +136,7 @@ jobs:
             const rules = [
               { name: "main 브랜치 타겟 → close", match: isTargetingMain, run: closeMain },
               { name: "review 라벨 → 스킵", match: hasReviewLabel, run: skipReviewLabel },
+              { name: "Workflow 파일 변경 → 연기", match: hasWorkflowChanges, run: deferWorkflowChanges },
               { name: "변경 요청 상태 → 연기", match: isChangesRequested, run: deferChangesRequested },
               { name: "머지 상태 확인 중 → 스킵", match: isUnknown, run: skipUnknown },
               { name: "충돌 → close", match: isConflicting, run: closeOnConflict }
@@ -130,6 +148,10 @@ jobs:
               owner: repo.owner,
               name: repo.repo,
             });
+
+            for (const { node: pr } of list) {
+              pr.changedFiles = await getChangedFiles(pr);
+            }
 
             for (const { node: pr } of list) {
               const rule = rules.find(r => r.match(pr)) ?? defaultRule;
