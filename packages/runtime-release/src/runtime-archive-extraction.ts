@@ -92,15 +92,6 @@ type RuntimeArchivePlan = {
   readonly tarBytes: number
 }
 
-type ObservedEntry = {
-  directoryCapability?: RuntimeDirectoryCapability
-  readonly identity: RuntimeFileSystemIdentity
-  readonly leaf: string
-  readonly parent: RuntimeDirectoryCapability
-  readonly relativePath: string
-  readonly type: 'directory' | 'file' | 'symlink'
-}
-
 type ArchivePathGraphNode = {
   readonly segment: string
   readonly comparisonKey: string
@@ -113,7 +104,6 @@ type ArchivePassMode =
   | {
       readonly kind: 'materialize'
       readonly runtimeRoot: string
-      readonly created: ObservedEntry[]
       readonly capabilities: Map<string, RuntimeDirectoryCapability>
       readonly testOptions: RuntimeArchiveExtractionTestOptions
     }
@@ -147,10 +137,10 @@ export type RuntimeArchiveExtractionTestOptions = {
   readonly afterPrescan?: () => Promise<void>
   /**
    * Runs after the directory worker has verified its kernel-held cwd and
-   * immediately before the direct-leaf create/unlink operation.
+   * immediately before the direct-leaf create operation.
    */
   readonly afterParentCapabilityCheck?: (input: {
-    readonly operation: 'cleanup' | 'create'
+    readonly operation: 'create'
     readonly path: string
     readonly type: 'directory' | 'file' | 'symlink'
   }) => Promise<void>
@@ -196,10 +186,10 @@ export async function extractVerifiedRuntimeArchive(
   await assertMutationAuthority(input)
   const stagingIdentity = await inspectOwnedEmptyStaging(input)
   const archive = await openVerifiedArchive(input)
-  const created: ObservedEntry[] = []
   const retainedCapabilities: RuntimeDirectoryCapability[] = []
   let stagingCapability: RuntimeDirectoryCapability | undefined
   let runtimeRoot: string | undefined
+  let recipientMutationStarted = false
 
   try {
     await runArchivePass(
@@ -226,9 +216,9 @@ export async function extractVerifiedRuntimeArchive(
       input.staging.path,
       RUNTIME_RECIPIENT_NAME,
     )
+    recipientMutationStarted = true
     const runtimeCapability = await createOwnedDirectory({
       absolutePath: runtimeRoot,
-      created,
       expectedDevice: stagingIdentity.device,
       expectedOwnerUid:
         input.mutationAuthority.snapshot.expectedOwnerUid,
@@ -249,7 +239,6 @@ export async function extractVerifiedRuntimeArchive(
         input,
         stagingIdentity,
         capabilities,
-        created,
         retainedCapabilities,
         testOptions,
       )
@@ -259,7 +248,6 @@ export async function extractVerifiedRuntimeArchive(
     await runArchivePass(archive, input, plan, {
       kind: 'materialize',
       runtimeRoot,
-      created,
       capabilities,
       testOptions,
     })
@@ -269,7 +257,6 @@ export async function extractVerifiedRuntimeArchive(
       input,
       stagingIdentity,
       capabilities,
-      created,
       testOptions,
     )
     await testOptions.beforeFinalVerification?.()
@@ -311,25 +298,12 @@ export async function extractVerifiedRuntimeArchive(
       },
     }
   } catch (error) {
-    if (
-      runtimeRoot !== undefined &&
-      stagingCapability !== undefined
-    ) {
-      try {
-        await cleanupCreatedEntries(
-          created,
-          input.staging.path,
-          stagingIdentity,
-          stagingCapability,
-          testOptions,
-        )
-      } catch (cleanupError) {
-        throw runtimeAuthorityError('runtime_recovery_required', {
-          kind: 'runtime_staging_cleanup_ambiguous',
-          stagingPath: input.staging.path,
-          cause: cleanupError,
-        })
-      }
+    if (recipientMutationStarted) {
+      throw runtimeAuthorityError('runtime_recovery_required', {
+        kind: 'runtime_staging_residue_preserved',
+        stagingPath: input.staging.path,
+        cause: error,
+      })
     }
     throw normalizeExtractionError(error)
   } finally {
@@ -1161,7 +1135,6 @@ async function createPlannedDirectory(
   input: RuntimeArchiveExtractionInput,
   stagingIdentity: RuntimeFileSystemIdentity,
   capabilities: Map<string, RuntimeDirectoryCapability>,
-  created: ObservedEntry[],
   retainedCapabilities: RuntimeDirectoryCapability[],
   testOptions: RuntimeArchiveExtractionTestOptions,
 ): Promise<RuntimeDirectoryCapability> {
@@ -1180,7 +1153,6 @@ async function createPlannedDirectory(
   )
   return createOwnedDirectory({
     absolutePath,
-    created,
     expectedDevice: stagingIdentity.device,
     expectedOwnerUid:
       input.mutationAuthority.snapshot.expectedOwnerUid,
@@ -1196,7 +1168,6 @@ async function createPlannedDirectory(
 async function createOwnedDirectory(
   input: {
     readonly absolutePath: string
-    readonly created: ObservedEntry[]
     readonly expectedDevice: string
     readonly expectedOwnerUid: number
     readonly leaf: string
@@ -1235,14 +1206,6 @@ async function createOwnedDirectory(
     input.expectedOwnerUid,
     input.expectedDevice,
   )
-  const observedEntry: ObservedEntry = {
-    identity,
-    leaf: input.leaf,
-    parent: input.parent,
-    relativePath: input.relativePath,
-    type: 'directory',
-  }
-  input.created.push(observedEntry)
   let handleOpen = true
   let finalStats: RuntimeCapabilityStats
   try {
@@ -1282,7 +1245,6 @@ async function createOwnedDirectory(
     evidenceKind: 'runtime_archive_new_directory_open_failed',
   })
   input.retainedCapabilities.push(capability)
-  observedEntry.directoryCapability = capability
   return capability
 }
 
@@ -1505,13 +1467,6 @@ async function materializeFile(
     input.mutationAuthority.snapshot.expectedOwnerUid,
     parent.identity.device,
   )
-  mode.created.push({
-    identity,
-    leaf,
-    parent,
-    relativePath: expected.path,
-    type: 'file',
-  })
   let handleOpen = true
   try {
     await consumeAndVerifyFile(entry, expected, {
@@ -1573,7 +1528,6 @@ async function createPlannedSymlinks(
   input: RuntimeArchiveExtractionInput,
   stagingIdentity: RuntimeFileSystemIdentity,
   capabilities: Map<string, RuntimeDirectoryCapability>,
-  created: ObservedEntry[],
   testOptions: RuntimeArchiveExtractionTestOptions,
 ): Promise<void> {
   for (const expected of orderSymlinks(plan.symlinks)) {
@@ -1620,20 +1574,13 @@ async function createPlannedSymlinks(
             }) ?? Promise.resolve(),
         ),
     )
-    const identity = assertNewCapabilityEntry(
+    assertNewCapabilityEntry(
       stats,
       destination,
       'symlink',
       input.mutationAuthority.snapshot.expectedOwnerUid,
       stagingIdentity.device,
     )
-    created.push({
-      identity,
-      leaf,
-      parent,
-      relativePath: expected.path,
-      type: 'symlink',
-    })
   }
 }
 
@@ -2019,50 +1966,6 @@ async function verifyMaterializedFile(
       await parent.closeHandle(opened.handle).catch(() => undefined)
     }
   }
-}
-
-async function cleanupCreatedEntries(
-  created: readonly ObservedEntry[],
-  stagingRoot: string,
-  stagingIdentity: RuntimeFileSystemIdentity,
-  stagingCapability: RuntimeDirectoryCapability,
-  testOptions: RuntimeArchiveExtractionTestOptions,
-): Promise<void> {
-  for (const entry of [...created].reverse()) {
-    await entry.directoryCapability?.close()
-    const removed = await entry.parent.removeEntry(
-      entry.leaf,
-      entry.type,
-      entry.identity,
-      () =>
-        testOptions.afterParentCapabilityCheck?.({
-          operation: 'cleanup',
-          path: entry.relativePath,
-          type: entry.type,
-        }) ?? Promise.resolve(),
-    )
-    if (!removed) {
-      throw new Error(
-        'Recorded runtime staging entry disappeared during cleanup',
-      )
-    }
-  }
-  const stats = await stagingCapability.statDirectory()
-  if (
-    stats.type !== 'directory' ||
-    stats.mode !== 0o700 ||
-    !sameIdentity(stats.identity, stagingIdentity)
-  ) {
-    throw new Error('Runtime staging capability changed')
-  }
-  if ((await stagingCapability.readDirectory()).length !== 0) {
-    throw new Error('Runtime staging cleanup left residue')
-  }
-  await assertIdentity(
-    stagingRoot,
-    stagingIdentity,
-    'runtime_staging_identity_changed',
-  )
 }
 
 async function inspectOwnedDirectory(

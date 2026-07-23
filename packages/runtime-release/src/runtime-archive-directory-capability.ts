@@ -10,9 +10,7 @@ import {
   open,
   readdir,
   readlink,
-  rmdir,
   symlink,
-  unlink,
 } from 'node:fs/promises'
 import type { BigIntStats } from 'node:fs'
 import type { FileHandle } from 'node:fs/promises'
@@ -112,12 +110,6 @@ type WorkerOperation =
       readonly kind: 'hash_verified_file'
       readonly handle: number
       readonly byteLimit: number
-    }
-  | {
-      readonly kind: 'remove_entry'
-      readonly leaf: string
-      readonly entryType: EntryType
-      readonly identity: RuntimeFileSystemIdentity
     }
   | {
       readonly kind: 'shutdown'
@@ -399,23 +391,6 @@ export class RuntimeDirectoryCapability {
       readonly sha256: string
       readonly stats: RuntimeCapabilityStats
     }>
-  }
-
-  removeEntry(
-    leaf: string,
-    entryType: EntryType,
-    identity: RuntimeFileSystemIdentity,
-    onChecked: () => Promise<void>,
-  ): Promise<boolean> {
-    return this.#request(
-      {
-        kind: 'remove_entry',
-        leaf,
-        entryType,
-        identity,
-      },
-      onChecked,
-    ) as Promise<boolean>
   }
 
   async close(): Promise<void> {
@@ -777,10 +752,6 @@ async function executeWorkerOperation(input: {
   assertLeaf(operation.leaf)
   await assertWorkerDirectory(input.configuration)
 
-  if (operation.kind === 'remove_entry') {
-    if (!(await isExactRemovableEntry(operation))) return false
-  }
-
   const proceed = await waitForDecision(
     input.id,
     input.decisions,
@@ -829,34 +800,10 @@ async function executeWorkerOperation(input: {
       await lstat(operation.leaf, { bigint: true }),
     )
   } else {
-    if (!(await isExactRemovableEntry(operation))) return false
-    if (operation.entryType === 'directory') {
-      await rmdir(operation.leaf)
-    } else {
-      await unlink(operation.leaf)
-    }
-    if ((await lstatIfPresent(operation.leaf)) !== undefined) {
-      throw new Error('Created staging entry removal was not observed')
-    }
-    value = true
+    throw new Error('Runtime directory capability operation is invalid')
   }
   await assertWorkerDirectory(input.configuration)
   return value
-}
-
-async function isExactRemovableEntry(
-  operation: Extract<WorkerOperation, { kind: 'remove_entry' }>,
-): Promise<boolean> {
-  const current = await lstatIfPresent(operation.leaf)
-  if (current === undefined) return false
-  const evidence = statsEvidence(current)
-  if (
-    evidence.type !== operation.entryType ||
-    !sameIdentity(evidence.identity, operation.identity)
-  ) {
-    throw new Error('Created staging entry identity changed')
-  }
-  return true
 }
 
 function waitForDecision(
