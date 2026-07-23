@@ -39,12 +39,59 @@ function MyLibrary({ savedPapers, handleRemovePaper }: MyLibraryProps) {
                 <div className="paper-meta library-card-meta">
                   <span className="paper-channel">{item.channel}</span> • <span className="paper-year">{item.year}</span>
                 </div>
-                <button 
-                  className="remove-btn library-remove-btn" 
-                  onClick={() => handleRemovePaper(item.paperId)}
-                >
-                  서재에서 제거
-                </button>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '10px', alignItems: 'stretch' }}>
+                  {item.url && (
+                    <a 
+                      href={item.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="archive-btn"
+                      style={{
+                        flex: 1,
+                        height: 'auto',
+                        margin: 0,
+                        alignSelf: 'stretch',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textDecoration: 'none',
+                        textAlign: 'center',
+                        backgroundColor: 'rgba(77, 171, 247, 0.1)',
+                        border: '1px solid #4dabf7',
+                        borderColor: '#4dabf7',
+                        color: '#4dabf7',
+                        fontSize: '11px',
+                        padding: '6px 12px',
+                        whiteSpace: 'nowrap',
+                        boxSizing: 'border-box',
+                        borderRadius: '4px'
+                      }}
+                    >
+                      📖 원문 보기
+                    </a>
+                  )}
+                  <button 
+                    className="remove-btn library-remove-btn" 
+                    onClick={() => handleRemovePaper(item.paperId)}
+                    style={{
+                      flex: 1,
+                      height: 'auto',
+                      margin: 0,
+                      alignSelf: 'stretch',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      padding: '6px 12px',
+                      fontSize: '11px',
+                      whiteSpace: 'nowrap',
+                      boxSizing: 'border-box',
+                      border: '1px solid transparent'
+                    }}
+                  >
+                    🗑️ 서재에서 제거
+                  </button>
+                </div>
               </div>
             </div>
           ))}

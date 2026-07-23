@@ -34,9 +34,10 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
 
       setSavingIds(prev => [...prev, paper.paperId]);
 
-      // DB 인서트 에러 방지를 위해 insights 필드를 제외하고 스키마에 필요한 필드만 Payload 구성 (userId 병합)
-      const { paperId, title, authors, channel, year, matchScore } = paper;
-      const paperPayload = { paperId, title, authors, channel, year, matchScore, userId };
+      // DB 인서트 에러 방지를 위해 insights 필드를 제외하고 스키마에 필요한 필드만 Payload 구성 (userId 병합, authors 배열 안전 변환, url 연동)
+      const { paperId, title, authors, channel, year, matchScore, url } = paper;
+      const formattedAuthors = Array.isArray(authors) ? authors.join(', ') : authors;
+      const paperPayload = { paperId, title, authors: formattedAuthors, channel, year, matchScore, userId, url: url || '' };
 
       const response = await fetch('http://localhost:5000/api/library', {
         method: 'POST',
@@ -102,23 +103,37 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
                   {paper.matchScore}% Match
                 </div>
                 <h3 className="paper-title">{paper.title}</h3>
-                <p className="paper-authors">{paper.authors}</p>
+                <p className="paper-authors">{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p>
                 <div className="paper-meta">
                   <span className="paper-channel">{paper.channel}</span> • <span className="paper-year">{paper.year}</span>
                 </div>
                 
-                {/* 보관 버튼 추가 */}
-                <button 
-                  className="archive-btn save-paper-btn" 
-                  onClick={(e) => {
-                    e.stopPropagation(); // 카드 클릭 이벤트 전파 차단
-                    handleSavePaper(paper);
-                  }}
-                  disabled={savingIds.includes(paper.paperId)}
-                  style={{ marginTop: '10px', padding: '6px 12px', fontSize: '11px' }}
-                >
-                  {savingIds.includes(paper.paperId) ? '보관 중...' : '내 서재 보관'}
-                </button>
+                {/* 보관 및 원문보기 버튼 액션 그룹 (50:50 대칭 세로 높이 동기화 및 CSS 강제 리셋) */}
+                <div className="card-action-group" style={{ display: 'flex', gap: '8px', marginTop: '10px', alignItems: 'stretch' }}>
+                  <button 
+                    className="archive-btn save-paper-btn" 
+                    onClick={(e) => {
+                      e.stopPropagation(); // 카드 클릭 이벤트 전파 차단
+                      handleSavePaper(paper);
+                    }}
+                    disabled={savingIds.includes(paper.paperId)}
+                    style={{ flex: 1, height: 'auto', margin: 0, alignSelf: 'stretch', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 12px', fontSize: '11px', whiteSpace: 'nowrap', boxSizing: 'border-box', border: '1px solid transparent' }}
+                  >
+                    {savingIds.includes(paper.paperId) ? '💾 보관 중...' : '💾 내 서재 보관'}
+                  </button>
+                  {paper.url && (
+                    <a 
+                      href={paper.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="archive-btn"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ flex: 1, height: 'auto', margin: 0, alignSelf: 'stretch', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 12px', fontSize: '11px', whiteSpace: 'nowrap', boxSizing: 'border-box', textDecoration: 'none', color: '#4dabf7', borderColor: '#4dabf7', backgroundColor: 'rgba(77, 171, 247, 0.1)', border: '1px solid #4dabf7', borderRadius: '4px' }}
+                    >
+                      📖 원문 보기
+                    </a>
+                  )}
+                </div>
               </div>
             ))
           )}
@@ -158,14 +173,28 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
                 </div>
               </div>
               
-              <button 
-                id="add-to-library-btn" 
-                className="archive-btn"
-                onClick={() => handleSavePaper(selectedPaper)}
-                disabled={savingIds.includes(selectedPaper.paperId)}
-              >
-                {savingIds.includes(selectedPaper.paperId) ? '보관 중...' : '내 서재 보관'}
-              </button>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '12px', alignItems: 'stretch' }}>
+                <button 
+                  id="add-to-library-btn" 
+                  className="archive-btn"
+                  onClick={() => handleSavePaper(selectedPaper)}
+                  disabled={savingIds.includes(selectedPaper.paperId)}
+                  style={{ flex: 1, height: 'auto', margin: 0, alignSelf: 'stretch', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 12px', fontSize: '11px', whiteSpace: 'nowrap', boxSizing: 'border-box', border: '1px solid transparent' }}
+                >
+                  {savingIds.includes(selectedPaper.paperId) ? '💾 보관 중...' : '💾 내 서재 보관'}
+                </button>
+                {selectedPaper.url && (
+                  <a 
+                    href={selectedPaper.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="archive-btn"
+                    style={{ flex: 1, height: 'auto', margin: 0, alignSelf: 'stretch', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 12px', fontSize: '11px', whiteSpace: 'nowrap', boxSizing: 'border-box', textDecoration: 'none', color: '#4dabf7', borderColor: '#4dabf7', backgroundColor: 'rgba(77, 171, 247, 0.1)', border: '1px solid #4dabf7', borderRadius: '4px' }}
+                  >
+                    📖 원문 보기
+                  </a>
+                )}
+              </div>
             </div>
           ) : (
             <div className="insight-panel" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -181,13 +210,26 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
                 <p className="empty-result" style={{ fontSize: '11px' }}>보관된 논문이 없습니다.</p>
               ) : (
                 savedPapers.map((item) => (
-                  <li key={item.paperId} className="library-item">
-                    <span className="library-paper-title" title={item.title}>
+                  <li key={item.paperId} className="library-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="library-paper-title" title={item.title} style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '8px' }}>
                       {item.title}
                     </span>
-                    <button className="remove-btn" onClick={() => handleRemovePaper(item.paperId)}>
-                      제거
-                    </button>
+                    <div className="library-btn-group" style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                      {item.url && (
+                        <a 
+                          href={item.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="remove-btn"
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', color: '#4dabf7', borderColor: '#4dabf7', backgroundColor: 'rgba(77, 171, 247, 0.1)', border: '1px solid #4dabf7', whiteSpace: 'nowrap' }}
+                        >
+                          📖 원문
+                        </a>
+                      )}
+                      <button className="remove-btn" onClick={() => handleRemovePaper(item.paperId)}>
+                        제거
+                      </button>
+                    </div>
                   </li>
                 ))
               )}
