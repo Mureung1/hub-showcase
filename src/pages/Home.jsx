@@ -21,6 +21,7 @@ import FilterChipGroup from '../components/FilterChipGroup'
 import mascotWave from '../assets/mascot-wave.png'
 // 임시 목업 일러스트 — 최종본 아님, 나중에 교체 예정 (checklist.md 참고)
 import kkinniCharacter from '../assets/끼니캐릭터.png'
+import mascotKkini from '../assets/마스코트-끼니 - 여백 줄임.png'
 
 const SORT_OPTIONS = [
   { id: 'price-asc', label: '가격 낮은순' },
@@ -44,6 +45,9 @@ function Home() {
   const [selectedSort, setSelectedSort] = useState(null)
   const [likedIds, setLikedIds] = useState(() => loadLikedRecipes())
   const [showLikedOnly, setShowLikedOnly] = useState(false)
+  // 추천 fetch가 아직 안 끝났는지("loading") 구분하는 상태 — 이게 없으면 초기값(빈 배열)과
+  // "불러왔는데 결과 없음"이 똑같아 보여서, fetch가 끝나기도 전에 "못 찾았어요" 카드가 먼저 뜬다.
+  const [status, setStatus] = useState('loading')
 
   function handleToggleLike(recipeId) {
     setLikedIds((prev) => {
@@ -65,6 +69,7 @@ function Home() {
       setReadyRecipes([])
       setShoppingRecipes([])
       setOtherRecipes([])
+      setStatus('done')
       return
     }
 
@@ -79,11 +84,13 @@ function Home() {
         setReadyRecipes(ready)
         setShoppingRecipes(shopping)
         setOtherRecipes(others)
+        setStatus('done')
       })
       .catch(() => {
         setReadyRecipes([])
         setShoppingRecipes([])
         setOtherRecipes([])
+        setStatus('done')
       })
   }, [])
 
@@ -100,10 +107,11 @@ function Home() {
   const filteredAll = applyFilters(allRecipesByPrice)
   const hasAnyMatch = readyRecipes.length > 0 || shoppingRecipes.length > 0
   const hasFilteredMatch = filteredReady.length > 0 || filteredShopping.length > 0
-  // 가진 재료로는 아무것도 못 찾았을 때만 컷오프(부족 3개 이상)를 풀어서 그나마 가까운 후보를 보여줌
-  const closestRecipes = hasAnyMatch ? [] : getClosestRecipes(applyFilters(otherRecipes), 3)
+  // 가진 재료로는 아무것도 못 찾았을 때만 컷오프(부족 3개 이상)를 풀어서 그나마 가까운 후보를 보여줌.
+  // status가 'done'이 되기 전(fetch 진행 중)엔 otherRecipes가 아직 불완전한 스냅샷이라 계산하지 않는다.
+  const closestRecipes = status === 'done' && !hasAnyMatch ? getClosestRecipes(applyFilters(otherRecipes), 3) : []
   // 기준 재료 자체가 없어(보유 재료 0개, 또는 조미료만 보유) closestRecipes조차 못 만들 때 보여줄 최후의 대체 후보
-  const quickRecipes = !hasAnyMatch && closestRecipes.length === 0 ? getQuickRecipes(filteredAll, 3) : []
+  const quickRecipes = status === 'done' && !hasAnyMatch && closestRecipes.length === 0 ? getQuickRecipes(filteredAll, 3) : []
 
   return (
     <div className="min-h-screen bg-bg-cream">
@@ -141,7 +149,14 @@ function Home() {
           </div>
         </div>
 
-        {!hasAnyMatch && closestRecipes.length === 0 && (
+        {status === 'loading' && (
+          <div className="mt-4 flex items-center justify-center gap-2 px-8">
+            <img src={mascotKkini} alt="" className="w-10 select-none" />
+            <p className="font-display text-sm text-text-secondary">기니가 냉장고 재료로 만들 요리를 찾는 중...</p>
+          </div>
+        )}
+
+        {status === 'done' && !hasAnyMatch && closestRecipes.length === 0 && (
           <section className="mt-4 px-8">
             <div className="flex flex-col items-center gap-3 rounded-card border border-border bg-bg-surface px-6 py-8 text-center shadow-sm">
               <img src={kkinniCharacter} alt="" className="w-28 select-none" />
