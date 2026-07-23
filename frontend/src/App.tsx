@@ -180,6 +180,15 @@ function ArticleIntroContainer({
     }
   }, [articleId])
 
+  if (state.status === 'loading') {
+    return (
+      <ContentLoadingScreen
+        message="오늘의 글을 불러오고 있어요"
+        description="잠시만요, 곧 준비돼요"
+      />
+    )
+  }
+
   return (
     <ArticleIntro
       state={state}

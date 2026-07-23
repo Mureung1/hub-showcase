@@ -144,7 +144,7 @@ describe('App startup', () => {
       interests: [],
     })
     render(<App />)
-    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
   })
 
   it('shows an error without infinite loading when initialization fails', async () => {
@@ -195,7 +195,7 @@ describe('Onboarding to Today content loading flow', () => {
     expect(await screen.findByText('관심사에 맞는 오늘의 글을 고르고 있어요')).toBeInTheDocument()
 
     resolveToday?.({ items: [], emptyStateMessage: null })
-    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
   })
 
   it('shows the content loading screen immediately on CTA click, before the save request resolves', async () => {
@@ -233,7 +233,7 @@ describe('Onboarding to Today content loading flow', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('관심사에 맞는 오늘의 글을 고르고 있어요')
 
     resolveToday?.({ items: [], emptyStateMessage: null })
-    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
   })
 
   it('returns to onboarding with the selection kept and does not fetch today content when saving fails', async () => {
@@ -264,11 +264,29 @@ describe('Today article intro flow', () => {
     })
   })
 
+  it('shows the common loading screen while ArticleDetail is being fetched', async () => {
+    let resolveArticleDetail: ((value: ArticleDetail) => void) | undefined
+    vi.mocked(api.getArticleDetail).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveArticleDetail = resolve
+        }),
+    )
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
+
+    expect(await screen.findByText('오늘의 글을 불러오고 있어요')).toBeInTheDocument()
+
+    resolveArticleDetail?.(ARTICLE_A_DETAIL)
+    expect(await screen.findByText(ARTICLE_A_DETAIL.title)).toBeInTheDocument()
+  })
+
   it('calls getArticleDetail with the feature article id when its CTA is clicked', async () => {
     vi.mocked(api.getArticleDetail).mockResolvedValue(ARTICLE_A_DETAIL)
     render(<App />)
 
-    await userEvent.click(await screen.findByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
 
     expect(api.getArticleDetail).toHaveBeenCalledExactlyOnceWith(ARTICLE_A.id)
   })
@@ -282,7 +300,7 @@ describe('Today article intro flow', () => {
     render(<App />)
 
     await userEvent.click(await screen.findByRole('button', { name: new RegExp(ARTICLE_B.title) }))
-    await userEvent.click(await screen.findByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
 
     expect(api.getArticleDetail).toHaveBeenCalledExactlyOnceWith(ARTICLE_B.id)
   })
@@ -291,12 +309,12 @@ describe('Today article intro flow', () => {
     vi.mocked(api.getArticleDetail).mockResolvedValue(ARTICLE_A_DETAIL)
     render(<App />)
 
-    await userEvent.click(await screen.findByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
     expect(await screen.findByText(ARTICLE_A_DETAIL.title)).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: /뒤로가기/ }))
 
-    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
     expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
   })
 
@@ -304,7 +322,7 @@ describe('Today article intro flow', () => {
     vi.mocked(api.getArticleDetail).mockRejectedValue(new Error('boom'))
     render(<App />)
 
-    await userEvent.click(await screen.findByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
 
     expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /다시 시도/ })).toBeInTheDocument()
@@ -315,7 +333,7 @@ describe('Today article intro flow', () => {
     vi.mocked(api.getArticleDetail).mockResolvedValueOnce(ARTICLE_A_DETAIL)
     render(<App />)
 
-    await userEvent.click(await screen.findByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
     await screen.findByRole('alert')
     await userEvent.click(screen.getByRole('button', { name: /다시 시도/ }))
 
@@ -342,12 +360,12 @@ describe('Today article intro flow', () => {
     })
     render(<App />)
 
-    await userEvent.click(await screen.findByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /읽고 미션 받기/ }))
 
     expect(await screen.findByText(ARTICLE_A_DETAIL.title)).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('link', { name: /원문 읽으러 가기/ }))
-    await userEvent.click(await screen.findByRole('button', { name: /미션 시작하기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /깸 작성하기/ }))
 
     await userEvent.selectOptions(screen.getByRole('combobox'), 'rebuttal')
     expect(screen.getByText('이 주장에 반대한다면?')).toBeInTheDocument()
@@ -364,7 +382,7 @@ describe('Today article intro flow', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /오늘의 깸으로/ }))
 
-    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
     expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
   })
 
@@ -379,12 +397,12 @@ describe('Today article intro flow', () => {
     await userEvent.click(await screen.findByRole('button', { name: new RegExp(ARTICLE_B.title) }))
     expect(screen.getAllByRole('article')[0]).toHaveTextContent(ARTICLE_B.title)
 
-    await userEvent.click(screen.getByRole('button', { name: /글 살펴보기/ }))
+    await userEvent.click(screen.getByRole('button', { name: /읽고 미션 받기/ }))
     expect(await screen.findByText(ARTICLE_A_DETAIL.title)).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: /뒤로가기/ }))
 
-    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
     expect(screen.getAllByRole('article')[0]).toHaveTextContent(ARTICLE_B.title)
     expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
   })
@@ -648,7 +666,7 @@ describe('Today and MyGgaem tab navigation', () => {
 
       await userEvent.click(screen.getByRole('button', { name: /오늘의 글/ }))
 
-      expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+      expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
       expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
     })
   })

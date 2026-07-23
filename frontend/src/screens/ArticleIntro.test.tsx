@@ -65,6 +65,13 @@ describe('ArticleIntro', () => {
     expect(onRetry).toHaveBeenCalledTimes(1)
   })
 
+  it('shows the "오늘의 글" header label, not "오늘의 글 요약"', () => {
+    render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
+
+    expect(screen.getByText('오늘의 글')).toBeInTheDocument()
+    expect(screen.queryByText('오늘의 글 요약')).not.toBeInTheDocument()
+  })
+
   it('shows title, source, reading time, and officialExcerpt on success', () => {
     render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
 
@@ -83,6 +90,14 @@ describe('ArticleIntro', () => {
     expect(link).toHaveAttribute('rel', expect.stringContaining('noreferrer'))
   })
 
+  it('shows only the 원문 읽으러 가기 CTA in the footer before the original link is visited', () => {
+    render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
+
+    expect(screen.getByRole('link', { name: /원문 읽으러 가기/ })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /원문 다시 읽기/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /깸 작성하기/ })).not.toBeInTheDocument()
+  })
+
   it('shows a fallback message when officialExcerpt is null', () => {
     const articleWithoutExcerpt = makeArticleDetail({
       id: ARTICLE.id,
@@ -99,7 +114,14 @@ describe('ArticleIntro', () => {
     expect(screen.getByText('제공된 글 소개가 없어요.')).toBeInTheDocument()
   })
 
-  it('shows a paywalled notice and disables the CTA', () => {
+  it('does not paraphrase officialExcerpt into a numbered summary', () => {
+    render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
+
+    expect(screen.queryByText(/3줄 요약/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/AI 요약/)).not.toBeInTheDocument()
+  })
+
+  it('shows a paywalled notice and a disabled CTA button, not a link', () => {
     const paywalled = makeArticleDetail({
       id: ARTICLE.id,
       title: ARTICLE.title,
@@ -113,6 +135,7 @@ describe('ArticleIntro', () => {
     expect(screen.getByText(/유료 콘텐츠/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /원문 읽으러 가기/ })).toBeDisabled()
     expect(screen.queryByRole('link', { name: /원문 읽으러 가기/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /깸 작성하기/ })).not.toBeInTheDocument()
   })
 
   it('shows a broken link notice and disables the CTA', () => {
@@ -128,6 +151,7 @@ describe('ArticleIntro', () => {
 
     expect(screen.getByText(/링크에 문제/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /원문 읽으러 가기/ })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /깸 작성하기/ })).not.toBeInTheDocument()
   })
 
   it('shows a removed article notice and disables the CTA', () => {
@@ -143,6 +167,7 @@ describe('ArticleIntro', () => {
 
     expect(screen.getByText(/삭제/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /원문 읽으러 가기/ })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /깸 작성하기/ })).not.toBeInTheDocument()
   })
 
   it('goes back to today when the back button is clicked', async () => {
@@ -168,25 +193,42 @@ describe('ArticleIntro', () => {
   it('does not show the mission start CTA before the original link is clicked', () => {
     render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
 
-    expect(screen.queryByRole('button', { name: /미션 시작하기/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /깸 작성하기/ })).not.toBeInTheDocument()
   })
 
-  it('shows the mission start CTA after the original link is clicked', async () => {
+  it('replaces the footer with a two-button row after the original link is clicked', async () => {
     render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
 
     await userEvent.click(screen.getByRole('link', { name: /원문 읽으러 가기/ }))
 
     expect(screen.getByText('원문을 읽고 돌아오셨나요?')).toBeInTheDocument()
     expect(screen.getByText('이제 짧게 생각을 남겨볼까요?')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /미션 시작하기/ })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /원문 다시 보기/ })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /원문 읽으러 가기/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /깸 작성하기/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /원문 다시 읽기/ })).toBeInTheDocument()
   })
 
-  it('shows the mission screen with the recommended prompt when mission start is clicked', async () => {
+  it('uses the same originalUrl, new tab, and noreferrer for both original-article links', async () => {
+    render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
+
+    const firstVisitLink = screen.getByRole('link', { name: /원문 읽으러 가기/ })
+    expect(firstVisitLink).toHaveAttribute('href', ARTICLE.originalUrl)
+    expect(firstVisitLink).toHaveAttribute('target', '_blank')
+    expect(firstVisitLink).toHaveAttribute('rel', expect.stringContaining('noreferrer'))
+
+    await userEvent.click(firstVisitLink)
+
+    const revisitLink = screen.getByRole('link', { name: /원문 다시 읽기/ })
+    expect(revisitLink).toHaveAttribute('href', ARTICLE.originalUrl)
+    expect(revisitLink).toHaveAttribute('target', '_blank')
+    expect(revisitLink).toHaveAttribute('rel', expect.stringContaining('noreferrer'))
+  })
+
+  it('shows the mission screen with the recommended prompt when 깸 작성하기 is clicked', async () => {
     render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
 
     await userEvent.click(screen.getByRole('link', { name: /원문 읽으러 가기/ }))
-    await userEvent.click(screen.getByRole('button', { name: /미션 시작하기/ }))
+    await userEvent.click(screen.getByRole('button', { name: /깸 작성하기/ }))
 
     expect(screen.getByText(ARTICLE.recommendedMission.prompt)).toBeInTheDocument()
   })
@@ -195,10 +237,22 @@ describe('ArticleIntro', () => {
     render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
 
     await userEvent.click(screen.getByRole('link', { name: /원문 읽으러 가기/ }))
-    await userEvent.click(screen.getByRole('button', { name: /미션 시작하기/ }))
+    await userEvent.click(screen.getByRole('button', { name: /깸 작성하기/ }))
     await userEvent.click(screen.getByRole('button', { name: /뒤로가기/ }))
 
     expect(screen.getByText(ARTICLE.title)).toBeInTheDocument()
     expect(screen.queryByText(ARTICLE.recommendedMission.prompt)).not.toBeInTheDocument()
+  })
+
+  it('keeps the visited-footer state (원문 다시 읽기 / 깸 작성하기) after returning from mission', async () => {
+    render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
+
+    await userEvent.click(screen.getByRole('link', { name: /원문 읽으러 가기/ }))
+    await userEvent.click(screen.getByRole('button', { name: /깸 작성하기/ }))
+    await userEvent.click(screen.getByRole('button', { name: /뒤로가기/ }))
+
+    expect(screen.getByRole('link', { name: /원문 다시 읽기/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /깸 작성하기/ })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /^원문 읽으러 가기/ })).not.toBeInTheDocument()
   })
 })
