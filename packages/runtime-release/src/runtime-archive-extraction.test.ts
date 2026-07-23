@@ -616,6 +616,10 @@ test('extracts one canonical archive into an exact verified staging tree', async
       regularFileBytes: 149,
       symlinkCount: 1,
     })
+    assert.equal(
+      verified.kind,
+      'runtime_staging_verification_snapshot',
+    )
     assert.equal(verified.stagingRoot, fixture.staging.path)
     assert.equal(
       verified.runtimeRoot,
@@ -1003,7 +1007,7 @@ test('bounds gzip and TAR expansion and rejects corrupt archives before write', 
   }
 })
 
-test('creates symlinks last and cleans owned staging after injected faults', async (t) => {
+test('creates symlinks last and preserves owned staging after injected faults', async (t) => {
   await t.test('symlinks last', async () => {
     await withFixture(async (fixture) => {
       const order: Array<{
@@ -1040,9 +1044,9 @@ test('creates symlinks last and cleans owned staging after injected faults', asy
               }
             },
           }),
-        'runtime_integrity_failed',
+        'runtime_recovery_required',
       )
-      assert.deepEqual(await readdir(fixture.staging.path), [])
+      assert.deepEqual(await readdir(fixture.staging.path), ['runtime'])
     })
   })
 
@@ -1055,9 +1059,9 @@ test('creates symlinks last and cleans owned staging after injected faults', asy
               throw new Error('injected verifier fault')
             },
           }),
-        'runtime_storage_unavailable',
+        'runtime_recovery_required',
       )
-      assert.deepEqual(await readdir(fixture.staging.path), [])
+      assert.deepEqual(await readdir(fixture.staging.path), ['runtime'])
     })
   })
 })
@@ -1156,7 +1160,11 @@ test('contains staging and parent races with no-follow and no-clobber writes', a
       )
       assert.equal(raced, true)
       assert.deepEqual(await readdir(outside), [])
-      assert.deepEqual(await readdir(saved), [])
+      assert.deepEqual(await readdir(saved), ['worker.py'])
+      assert.equal(
+        await readFile(path.join(saved, 'worker.py'), 'utf8'),
+        'print("bridge")\n',
+      )
     })
   })
 
@@ -1337,128 +1345,94 @@ test('retains directory capabilities across exact check-use ancestor races', asy
     })
   })
 
-  await t.test('cleanup unlink', async () => {
-    await withFixture(async (fixture) => {
-      const runtimeRoot = path.join(fixture.staging.path, 'runtime')
-      const saved = path.join(fixture.root, 'runtime-cleanup-saved')
-      const outside = path.join(fixture.root, 'outside-cleanup')
-      const canary = path.join(outside, 'canary')
-      const outsideNotice = path.join(outside, 'NOTICE')
-      await mkdir(outside, { mode: 0o700 })
-      await writeFile(canary, 'cleanup canary\n')
-      let raced = false
+})
 
-      await assertArchiveError(
-        () =>
-          extractFixture(fixture, {
-            beforeFinalVerification: async () => {
-              throw new Error('force capability cleanup')
-            },
-            afterParentCapabilityCheck: async (entry) => {
-              if (
-                !raced &&
-                entry.operation === 'cleanup' &&
-                entry.type === 'file' &&
-                entry.path === 'NOTICE'
-              ) {
-                raced = true
-                await link(path.join(runtimeRoot, 'NOTICE'), outsideNotice)
-                await rename(runtimeRoot, saved)
-                await symlink(outside, runtimeRoot)
-              }
-            },
-          }),
-        'runtime_recovery_required',
-      )
+test('failure after recipient writes preserves all staging residue', async () => {
+  await withFixture(async (fixture) => {
+    const runtimeRoot = path.join(fixture.staging.path, 'runtime')
+    const notice = path.join(runtimeRoot, 'NOTICE')
+    const userFile = path.join(runtimeRoot, 'user-residue')
 
-      assert.equal(raced, true)
-      assert.deepEqual(
-        (await readdir(outside)).sort(compareUnicodeCodePoints),
-        ['NOTICE', 'canary'],
-      )
-      assert.equal(await readFile(outsideNotice, 'utf8'), 'AY-PLE notice\n')
-      assert.equal(await readFile(canary, 'utf8'), 'cleanup canary\n')
-    })
+    let failureCode: string | undefined
+    try {
+      await extractFixture(fixture, {
+        beforeFinalVerification: async () => {
+          await writeFile(userFile, 'user bytes\n')
+          throw new Error('force cleanup after extraction')
+        },
+      })
+    } catch (error) {
+      assert.equal(error instanceof RuntimeReleaseAuthorityError, true)
+      failureCode = (error as RuntimeReleaseAuthorityError).failure.code
+    }
+
+    assert.deepEqual(
+      {
+        failureCode,
+        noticeBytes: await readFile(notice, 'utf8').catch(
+          (error: unknown) => {
+            if (
+              error instanceof Error &&
+              'code' in error &&
+              error.code === 'ENOENT'
+            ) {
+              return undefined
+            }
+            throw error
+          },
+        ),
+        userBytes: await readFile(userFile, 'utf8'),
+      },
+      {
+        failureCode: 'runtime_recovery_required',
+        noticeBytes: 'AY-PLE notice\n',
+        userBytes: 'user bytes\n',
+      },
+    )
   })
+})
 
-  await t.test('cleanup refuses a swapped direct leaf', async () => {
-    await withFixture(async (fixture) => {
-      const runtimeRoot = path.join(fixture.staging.path, 'runtime')
-      const notice = path.join(runtimeRoot, 'NOTICE')
-      const outside = path.join(fixture.root, 'outside-cleanup-leaf')
-      await writeFile(outside, 'cleanup leaf canary\n')
-      let raced = false
+test('final verification rejects same-name replacement after file open', async () => {
+  await withFixture(async (fixture) => {
+    const runtimeRoot = path.join(fixture.staging.path, 'runtime')
+    const notice = path.join(runtimeRoot, 'NOTICE')
+    const openedNotice = path.join(fixture.root, 'opened-NOTICE')
+    let failureCode: string | undefined
+    let returnedKind: string | undefined
+    let replaced = false
 
-      await assertArchiveError(
-        () =>
-          extractFixture(fixture, {
-            beforeFinalVerification: async () => {
-              throw new Error('force direct-leaf cleanup')
-            },
-            afterParentCapabilityCheck: async (entry) => {
-              if (
-                !raced &&
-                entry.operation === 'cleanup' &&
-                entry.type === 'file' &&
-                entry.path === 'NOTICE'
-              ) {
-                raced = true
-                await unlink(notice)
-                await link(outside, notice)
-              }
-            },
-          }),
-        'runtime_recovery_required',
-      )
+    try {
+      const result = await extractFixture(fixture, {
+        beforeFinalFileVerification: async (entry) => {
+          if (!replaced && entry.path === 'NOTICE') {
+            replaced = true
+            await rename(notice, openedNotice)
+            await writeFile(notice, 'user bytes!!!\n', { mode: 0o644 })
+          }
+        },
+      })
+      returnedKind = result.kind
+    } catch (error) {
+      assert.equal(error instanceof RuntimeReleaseAuthorityError, true)
+      failureCode = (error as RuntimeReleaseAuthorityError).failure.code
+    }
 
-      assert.equal(raced, true)
-      assert.equal(await readFile(outside, 'utf8'), 'cleanup leaf canary\n')
-      assert.equal(await readFile(notice, 'utf8'), 'cleanup leaf canary\n')
-    })
-  })
-
-  await t.test('cleanup requires a recorded file to still exist', async () => {
-    await withFixture(async (fixture) => {
-      const runtimeRoot = path.join(fixture.staging.path, 'runtime')
-      const notice = path.join(runtimeRoot, 'NOTICE')
-      const movedNotice = path.join(fixture.root, 'NOTICE-moved')
-
-      await assertArchiveError(
-        () =>
-          extractFixture(fixture, {
-            beforeFinalVerification: async () => {
-              await rename(notice, movedNotice)
-              throw new Error('force cleanup after file rename')
-            },
-          }),
-        'runtime_recovery_required',
-      )
-
-      assert.equal(await readFile(movedNotice, 'utf8'), 'AY-PLE notice\n')
-    })
-  })
-
-  await t.test('cleanup requires the recorded runtime root to still exist', async () => {
-    await withFixture(async (fixture) => {
-      const runtimeRoot = path.join(fixture.staging.path, 'runtime')
-      const movedRuntimeRoot = path.join(
-        fixture.root,
-        'runtime-cleanup-moved',
-      )
-
-      await assertArchiveError(
-        () =>
-          extractFixture(fixture, {
-            beforeFinalVerification: async () => {
-              await rename(runtimeRoot, movedRuntimeRoot)
-              throw new Error('force cleanup after runtime root rename')
-            },
-          }),
-        'runtime_recovery_required',
-      )
-
-      assert.deepEqual(await readdir(movedRuntimeRoot), [])
-    })
+    assert.deepEqual(
+      {
+        failureCode,
+        openedBytes: await readFile(openedNotice, 'utf8'),
+        replaced,
+        replacementBytes: await readFile(notice, 'utf8'),
+        returnedKind,
+      },
+      {
+        failureCode: 'runtime_recovery_required',
+        openedBytes: 'AY-PLE notice\n',
+        replaced: true,
+        replacementBytes: 'user bytes!!!\n',
+        returnedKind: undefined,
+      },
+    )
   })
 })
 
@@ -1472,7 +1446,7 @@ test('post-extraction verifier rejects tree, mode, manifest, and legal roster dr
   }[] = [
     {
       name: 'modified payload file',
-      expectedCode: 'runtime_integrity_failed',
+      expectedCode: 'runtime_recovery_required',
       mutate: (runtimeRoot) =>
         writeFile(
           path.join(runtimeRoot, 'bundle/bridge/worker.py'),
@@ -1481,7 +1455,7 @@ test('post-extraction verifier rejects tree, mode, manifest, and legal roster dr
     },
     {
       name: 'reviewed mode drift',
-      expectedCode: 'runtime_integrity_failed',
+      expectedCode: 'runtime_recovery_required',
       mutate: (runtimeRoot) =>
         chmod(
           path.join(runtimeRoot, 'bundle/python/bin/python3.10'),
@@ -1490,7 +1464,7 @@ test('post-extraction verifier rejects tree, mode, manifest, and legal roster dr
     },
     {
       name: 'canonical manifest drift',
-      expectedCode: 'runtime_integrity_failed',
+      expectedCode: 'runtime_recovery_required',
       mutate: async (runtimeRoot) => {
         const manifestPath = path.join(runtimeRoot, 'manifest.json')
         const bytes = await readFile(manifestPath)
@@ -1506,7 +1480,7 @@ test('post-extraction verifier rejects tree, mode, manifest, and legal roster dr
     },
     {
       name: 'modified provenance',
-      expectedCode: 'runtime_integrity_failed',
+      expectedCode: 'runtime_recovery_required',
       mutate: (runtimeRoot) =>
         writeFile(
           path.join(runtimeRoot, 'provenance/inputs.json'),
@@ -1569,7 +1543,7 @@ test('post-extraction verifier rejects tree, mode, manifest, and legal roster dr
               }
             },
           }),
-        'runtime_integrity_failed',
+        'runtime_recovery_required',
       )
 
       assert.equal(linked, true)
@@ -1593,7 +1567,7 @@ test('post-extraction verifier rejects tree, mode, manifest, and legal roster dr
   })
 })
 
-test('maps materialization storage operation failures without masking integrity', async (t) => {
+test('preserves staging after materialization storage operation failures', async (t) => {
   for (const operation of [
     'directory_create',
     'directory_chmod',
@@ -1616,10 +1590,13 @@ test('maps materialization storage operation failures without masking integrity'
                 }
               },
             }),
-          'runtime_storage_unavailable',
+          'runtime_recovery_required',
         )
         assert.equal(injected, true)
-        assert.deepEqual(await readdir(fixture.staging.path), [])
+        assert.deepEqual(
+          await readdir(fixture.staging.path),
+          operation === 'directory_create' ? [] : ['runtime'],
+        )
       })
     })
   }
@@ -1680,9 +1657,9 @@ test('binds archive and staging filesystem preconditions before verified output'
               await writeFile(fixture.layout.archive.path, drifted)
             },
           }),
-        'runtime_integrity_failed',
+        'runtime_recovery_required',
       )
-      assert.deepEqual(await readdir(fixture.staging.path), [])
+      assert.deepEqual(await readdir(fixture.staging.path), ['runtime'])
     })
   })
 
