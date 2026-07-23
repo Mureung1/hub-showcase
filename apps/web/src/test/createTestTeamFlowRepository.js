@@ -13,12 +13,7 @@ export const testTeamFlowRepository = {
   load() {
     return Promise.resolve(clone({
       projects: initialProjects,
-      members: initialMembers.map((member) => ({
-        ...member,
-        kind: member.id === CURRENT_USER_ID ? 'user' : 'manual',
-        authUserId: member.id === CURRENT_USER_ID ? 'auth-user-1' : null,
-        email: member.id === CURRENT_USER_ID ? 'user@example.com' : '',
-      })),
+      members: initialMembers,
       tasks: initialTasks,
       notes: initialNotes,
       resources: initialResources,
@@ -61,10 +56,6 @@ export const testTeamFlowRepository = {
 
   deleteTask(taskId) {
     return Promise.resolve({ taskId })
-  },
-
-  createMember(projectId, input) {
-    return Promise.resolve({ projectId, member: { id: nextId('member'), projectId, kind: 'manual', authUserId: null, email: '', isAi: false, ...input } })
   },
 
   updateMember(memberId, patch) {

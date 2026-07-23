@@ -7,7 +7,6 @@ import styles from './MembersPage.module.css'
 
 export function MemberRemovalModal({ member, taskCount, isCurrentUser, onClose }) {
   const { actions } = useTeamFlow()
-  const linkedUser = member.kind === 'user' || Boolean(member.authUserId)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -24,7 +23,7 @@ export function MemberRemovalModal({ member, taskCount, isCurrentUser, onClose }
     }
   }
 
-  const actionLabel = linkedUser ? (isCurrentUser ? '프로젝트 나가기' : '협업자 내보내기') : '담당자 삭제'
+  const actionLabel = isCurrentUser ? '프로젝트 나가기' : '협업자 내보내기'
   return (
     <Modal
       title={actionLabel}
@@ -38,7 +37,7 @@ export function MemberRemovalModal({ member, taskCount, isCurrentUser, onClose }
     >
       <div className={styles.removalCopy}>
         <strong>{member.name}</strong>
-        {taskCount > 0 ? <p role="alert">담당 중인 할 일 {taskCount}개를 다른 담당자에게 재배정한 뒤 다시 시도해 주세요.</p> : linkedUser ? <p>{isCurrentUser ? '나가면 이 프로젝트에 더 이상 접근할 수 없습니다.' : '내보내면 이 사용자는 프로젝트에 더 이상 접근할 수 없습니다.'}</p> : <p>삭제한 담당자는 복구할 수 없습니다.</p>}
+        {taskCount > 0 ? <p role="alert">담당 중인 할 일 {taskCount}개를 다른 협업자에게 재배정한 뒤 다시 시도해 주세요.</p> : <p>{isCurrentUser ? '나가면 이 프로젝트에 더 이상 접근할 수 없습니다.' : '내보내면 이 사용자는 프로젝트에 더 이상 접근할 수 없습니다.'}</p>}
         {error ? <p className={forms.error} role="alert">{error}</p> : null}
       </div>
     </Modal>

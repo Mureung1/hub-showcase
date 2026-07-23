@@ -15,7 +15,8 @@ const colors = {
 
 export function TaskCreateModal({ projectId, members, onClose }) {
   const { actions } = useTeamFlow()
-  const [values, setValues] = useState({ title: '', assigneeId: members[0]?.id ?? '', dueDate: '', status: TASK_STATUS.NOT_STARTED, description: '' })
+  const collaborators = members.filter(isAssignableCollaborator)
+  const [values, setValues] = useState({ title: '', assigneeId: collaborators[0]?.id ?? '', dueDate: '', status: TASK_STATUS.NOT_STARTED, description: '' })
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -50,11 +51,15 @@ export function TaskCreateModal({ projectId, members, onClose }) {
       <form id="new-task-form" className={forms.form} onSubmit={submit} aria-busy={submitting}>
         {submitError ? <p role="alert" className={forms.error}>{submitError}</p> : null}
         <label className={forms.field}><span className={forms.label}>할 일 제목 <em>*</em></span><input autoFocus className={`${forms.input} ${errors.title ? forms.errorInput : ''}`} value={values.title} onChange={(event) => set('title', event.target.value)} placeholder="할 일을 입력하세요" aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? 'task-title-error' : undefined} />{errors.title ? <span id="task-title-error" className={forms.error}>{errors.title}</span> : null}</label>
-        <label className={forms.field}><span className={forms.label}>담당자 <em>*</em></span><select className={forms.select} value={values.assigneeId} onChange={(event) => set('assigneeId', event.target.value)} aria-invalid={Boolean(errors.assigneeId)} aria-describedby={errors.assigneeId ? 'task-assignee-error' : undefined}>{members.map((member) => <option key={member.id} value={member.id}>{member.name}{member.isAi ? ' (AI)' : ''}</option>)}</select>{errors.assigneeId ? <span id="task-assignee-error" className={forms.error}>{errors.assigneeId}</span> : null}</label>
+        <label className={forms.field}><span className={forms.label}>담당 팀원 <em>*</em></span><select className={forms.select} value={values.assigneeId} onChange={(event) => set('assigneeId', event.target.value)} aria-invalid={Boolean(errors.assigneeId)} aria-describedby={errors.assigneeId ? 'task-assignee-error' : undefined}>{collaborators.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select>{errors.assigneeId ? <span id="task-assignee-error" className={forms.error}>{errors.assigneeId}</span> : null}</label>
         <label className={forms.field}><span className={forms.label}>마감일 <em>*</em></span><input type="date" className={`${forms.input} ${errors.dueDate ? forms.errorInput : ''}`} value={values.dueDate} onChange={(event) => set('dueDate', event.target.value)} aria-invalid={Boolean(errors.dueDate)} aria-describedby={errors.dueDate ? 'task-due-date-error' : undefined} />{errors.dueDate ? <span id="task-due-date-error" className={forms.error}>{errors.dueDate}</span> : null}</label>
         <div className={forms.field}><span className={forms.label}>진행 상태 <em>*</em></span><div className={`${forms.choiceGrid} ${forms.choiceGridTwo}`}>{TASK_STATUS_ORDER.map((status) => { const [color, background] = colors[status]; return <button key={status} type="button" aria-pressed={values.status === status} className={`${forms.choice} ${values.status === status ? forms.choiceActive : ''}`} style={{ '--choice-color': color, '--choice-background': background }} onClick={() => set('status', status)}>{TASK_STATUS_LABEL[status]}</button> })}</div></div>
         <label className={forms.field}><span className={forms.label}>설명 <span className={forms.optional}>(선택)</span></span><textarea className={forms.textarea} value={values.description} onChange={(event) => set('description', event.target.value)} placeholder="간단한 설명을 입력하세요" /></label>
       </form>
     </Modal>
   )
+}
+
+function isAssignableCollaborator(member) {
+  return !member.isAi && (member.kind === 'user' || Boolean(member.authUserId))
 }

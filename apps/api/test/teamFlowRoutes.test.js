@@ -125,10 +125,9 @@ const repository = {
   createProject: async (input) => ({ ...project, ...input }),
   updateProject: async (_id, patch) => ({ ...project, ...patch }),
   deleteProject: async () => projectId,
-  createMember: async (_id, input) => ({ ...member, ...input }),
   updateMember: async (_id, input) => ({ ...member, ...input }),
   deleteMember: async (id) => {
-    if (id === blockedMemberId) throw new TeamFlowConflictError('배정된 할 일이 있어 담당자를 삭제할 수 없습니다.')
+    if (id === blockedMemberId) throw new TeamFlowConflictError('마지막 협업자는 프로젝트에서 제거할 수 없습니다.')
     return id
   },
   createTask: async (input) => ({ ...task, ...input, isNew: true }),
@@ -265,21 +264,12 @@ test('projects can be fully updated and deleted', async () => {
   assert.deepEqual(await deleteResponse.json(), { projectId })
 })
 
-test('manual members can be created, updated and deleted with conflicts reported', async () => {
-  const input = { name: '박코덱스', initial: '박', role: '개발', description: '', color: '#3a6898' }
-  const createResponse = await request(`/api/projects/${projectId}/members`, { method: 'POST', body: input })
-  assert.equal(createResponse.status, 201)
-
+test('collaborators can update their project details and leave, but the last collaborator cannot be removed', async () => {
   const updateResponse = await request(`/api/members/${memberId}`, {
-    method: 'PATCH', body: { ...input, role: '백엔드 개발' },
+    method: 'PATCH', body: { role: '백엔드 개발', description: '', color: '#3a6898' },
   })
   assert.equal(updateResponse.status, 200)
   assert.equal((await updateResponse.json()).member.role, '백엔드 개발')
-
-  const linkedUserUpdate = await request(`/api/members/${memberId}`, {
-    method: 'PATCH', body: { role: '협업 개발', description: '', color: '#3a6898' },
-  })
-  assert.equal(linkedUserUpdate.status, 200)
 
   const deleteResponse = await request(`/api/members/${memberId}`, { method: 'DELETE' })
   assert.equal(deleteResponse.status, 200)
@@ -288,6 +278,14 @@ test('manual members can be created, updated and deleted with conflicts reported
   const conflictResponse = await request(`/api/members/${blockedMemberId}`, { method: 'DELETE' })
   assert.equal(conflictResponse.status, 409)
   assert.equal((await conflictResponse.json()).error.code, 'CONFLICT')
+})
+
+test('manual assignee creation route is unavailable', async () => {
+  const response = await request(`/api/projects/${projectId}/members`, {
+    method: 'POST',
+    body: { name: '더 이상 생성할 수 없는 담당자', initial: '담', role: '개발', description: '', color: '#3a6898' },
+  })
+  assert.equal(response.status, 404)
 })
 
 test('tasks can be created, fully or partially updated, and deleted', async () => {

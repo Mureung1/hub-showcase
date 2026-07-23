@@ -112,24 +112,17 @@ export function createApiTeamFlowRepository({
       return { projectId: payload.projectId }
     },
 
-    async createMember(projectId, input) {
-      const payload = await authenticatedRequest(`/api/projects/${projectId}/members`, {
-        method: 'POST', body: JSON.stringify(input),
-      }, '팀원을 추가하지 못했습니다.')
-      return { projectId, member: payload.member }
-    },
-
     async updateMember(memberId, patch) {
       const payload = await authenticatedRequest(`/api/members/${memberId}`, {
         method: 'PATCH', body: JSON.stringify(patch),
-      }, '담당자를 수정하지 못했습니다.')
+      }, '협업자 정보를 수정하지 못했습니다.')
       return { memberId, patch: payload.member }
     },
 
     async deleteMember(memberId) {
       const payload = await authenticatedRequest(`/api/members/${memberId}`, {
         method: 'DELETE',
-      }, '담당자를 삭제하지 못했습니다.')
+      }, '협업자를 제거하지 못했습니다.')
       return {
         memberId: payload.memberId,
         projectId: payload.projectId,
@@ -289,7 +282,6 @@ export function createDemoTeamFlowRepository({
     createProject: readOnly,
     updateProject: readOnly,
     deleteProject: readOnly,
-    createMember: readOnly,
     updateMember: readOnly,
     deleteMember: readOnly,
     createInvitation: readOnly,

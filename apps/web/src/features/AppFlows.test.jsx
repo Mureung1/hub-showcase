@@ -158,6 +158,9 @@ describe('connected prototype flows', () => {
     await user.click(screen.getByRole('button', { name: /새 할 일/ }))
     const titleInput = screen.getByLabelText(/할 일 제목/)
     expect(titleInput).toHaveFocus()
+    const assigneeSelect = screen.getByLabelText(/담당 팀원/)
+    expect(within(assigneeSelect).getByRole('option', { name: '김민지' })).toBeInTheDocument()
+    expect(within(assigneeSelect).queryByRole('option', { name: '자료조사 AI' })).not.toBeInTheDocument()
     await user.type(titleInput, '연결 테스트 업무')
     fireEvent.change(screen.getByLabelText(/마감일/), { target: { value: '2026-07-30' } })
     await user.click(screen.getByRole('button', { name: '할 일 추가' }))
@@ -192,6 +195,13 @@ describe('connected prototype flows', () => {
     expect(screen.queryByRole('dialog', { name: '할 일 상세' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '연결 테스트 업무 상세 보기' })).not.toBeInTheDocument()
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40')
+  })
+
+  test('shows collaborators without the removed manual assignee controls', async () => {
+    renderApp('/projects/1/members')
+    expect(await screen.findByRole('heading', { name: '팀원 관리' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '담당자 추가' })).not.toBeInTheDocument()
+    expect(screen.queryByText('로그인 계정 없이 할 일을 배정하기 위한 프로젝트 내 담당자입니다.')).not.toBeInTheDocument()
   })
 
   test('creates a note from a template, edits it, and previews unsafe markup as text', async () => {
@@ -367,18 +377,6 @@ describe('connected prototype flows', () => {
     expect(boardTask.closest('section')).toHaveTextContent('검토 중')
     await user.click(screen.getByRole('link', { name: '대시보드' }))
     expect(await screen.findByRole('progressbar')).toHaveAttribute('aria-valuenow', '30')
-  })
-
-  test('adds a project member and reflects it on the project screen', async () => {
-    const user = userEvent.setup()
-    renderApp('/projects/1/members')
-    expect(await screen.findByRole('heading', { name: '팀원 관리' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: '팀원 추가' }))
-    const dialog = screen.getByRole('dialog', { name: '팀원 추가' })
-    await user.type(screen.getByLabelText(/이름/), '박코덱스')
-    await user.type(screen.getByLabelText(/역할/), '프론트엔드 개발')
-    await user.click(within(dialog).getByRole('button', { name: '팀원 추가' }))
-    expect(await screen.findByRole('heading', { name: '박코덱스' })).toBeInTheDocument()
   })
 
   test('navigates folders and creates a file in a selected Drive-like location', async () => {

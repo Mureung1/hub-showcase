@@ -33,7 +33,6 @@ export const PROJECT_ICON = Object.freeze({
 })
 
 export const MEMBER_KIND = Object.freeze({
-  MANUAL: 'manual',
   USER: 'user',
 })
 
@@ -48,7 +47,7 @@ export const INVITATION_STATUS = Object.freeze({
 /** @typedef {'layers' | 'rocket' | 'code' | 'palette' | 'megaphone' | 'book'} ProjectIcon */
 /** @typedef {'not_started' | 'in_progress' | 'in_review' | 'completed'} TaskStatus */
 /** @typedef {'folder' | 'document' | 'link' | 'image'} ResourceType */
-/** @typedef {'manual' | 'user'} MemberKind */
+/** @typedef {'user'} MemberKind */
 /** @typedef {'pending' | 'accepted' | 'rejected' | 'cancelled'} InvitationStatus */
 
 /**

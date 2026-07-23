@@ -85,23 +85,6 @@ function validateProject(body, { partial = false } = {}) {
   return Object.keys(fields).length ? { fields } : { value }
 }
 
-function validateMember(body) {
-  const value = {
-    name: cleanString(body?.name),
-    initial: cleanString(body?.initial),
-    role: cleanString(body?.role),
-    description: cleanString(body?.description),
-    color: cleanString(body?.color) || '#3a6898',
-  }
-  const fields = {}
-  if (!value.name || value.name.length > 80) fields.name = '이름은 1자 이상 80자 이하여야 합니다.'
-  if (!value.initial || Array.from(value.initial).length > 4) fields.initial = '이니셜은 1자 이상 4자 이하여야 합니다.'
-  if (!value.role || value.role.length > 120) fields.role = '역할은 1자 이상 120자 이하여야 합니다.'
-  if (value.description.length > 500) fields.description = '소개는 500자 이하여야 합니다.'
-  if (!/^#[0-9a-f]{6}$/i.test(value.color)) fields.color = '색상 값을 확인해 주세요.'
-  return Object.keys(fields).length ? { fields } : { value }
-}
-
 function validateMemberPatch(body) {
   const value = {
     role: cleanString(body?.role),
@@ -112,14 +95,6 @@ function validateMemberPatch(body) {
   if (!value.role || value.role.length > 120) fields.role = '역할은 1자 이상 120자 이하여야 합니다.'
   if (value.description.length > 500) fields.description = '소개는 500자 이하여야 합니다.'
   if (!/^#[0-9a-f]{6}$/i.test(value.color)) fields.color = '색상 값을 확인해 주세요.'
-  if (hasOwn(body, 'name')) {
-    value.name = cleanString(body.name)
-    if (!value.name || value.name.length > 80) fields.name = '이름은 1자 이상 80자 이하여야 합니다.'
-  }
-  if (hasOwn(body, 'initial')) {
-    value.initial = cleanString(body.initial)
-    if (!value.initial || Array.from(value.initial).length > 4) fields.initial = '이니셜은 1자 이상 4자 이하여야 합니다.'
-  }
   return Object.keys(fields).length ? { fields } : { value }
 }
 
@@ -372,15 +347,6 @@ export function createTeamFlowRouter({ authVerifier, repositoryFactory, demoRepo
     return asyncRoute(async () => {
       const result = await request.teamFlow.repository.cancelInvitation(request.params.invitationId)
       response.status(200).json({ invitationId: result.invitationId ?? request.params.invitationId })
-    })(request, response)
-  })
-
-  router.post('/projects/:projectId/members', async (request, response) => {
-    if (!validId(response, 'projectId', request.params.projectId)) return
-    const validation = validateMember(request.body)
-    if (validation.fields) return validationError(response, validation.fields)
-    return asyncRoute(async () => {
-      response.status(201).json({ member: await request.teamFlow.repository.createMember(request.params.projectId, validation.value) })
     })(request, response)
   })
 

@@ -11,12 +11,12 @@ export const initialProjects = [
 ]
 
 export const initialMembers = [
-  { id: CURRENT_USER_ID, name: '이주환', initial: '이', role: '개발 / 프로젝트 관리', description: '전체 프론트엔드 개발 및 일정 관리 담당', isAi: false, color: '#3a6898' },
-  { id: 'member-2', name: '김민지', initial: '김', role: '서비스 기획 / PM', description: '문제 정의, 요구사항 명세서 작성 및 전반적인 프로젝트 기획', isAi: false, color: '#8a4e68' },
-  { id: 'member-3', name: '박서준', initial: '박', role: '자료조사 / 마케팅', description: '시장 조사, 유사 서비스 분석 및 마케팅 전략 수립', isAi: false, color: '#2e7878' },
-  { id: 'member-5', name: '최지우', initial: '최', role: 'UI/UX 디자인', description: '디자인 시스템 구축, 와이어프레임 및 하이파이 프로토타입 제작', isAi: false, color: '#3d7a54' },
-  { id: 'member-6', name: '정태호', initial: '정', role: '백엔드 개발 / 인프라', description: 'API 서버 아키텍처 설계 및 클라우드 인프라(AWS) 구축', isAi: false, color: '#48688a' },
-  { id: AI_MEMBER_ID, name: '자료조사 AI', initial: 'AI', role: '자료조사 · AI 팀원', description: '사람 팀원과 동일한 방식으로 역할을 배정받는 AI입니다. 공유 노트와 자료를 바탕으로 요약, 번역, 리서치 결과를 도출합니다.', isAi: true, color: '#6b4ca8' },
+  { id: CURRENT_USER_ID, authUserId: 'auth-user-1', email: 'user@example.com', kind: 'user', name: '이주환', initial: '이', role: '개발 / 프로젝트 관리', description: '전체 프론트엔드 개발 및 일정 관리 담당', isAi: false, color: '#3a6898' },
+  { id: 'member-2', authUserId: 'auth-user-2', email: 'minji@example.com', kind: 'user', name: '김민지', initial: '김', role: '서비스 기획 / PM', description: '문제 정의, 요구사항 명세서 작성 및 전반적인 프로젝트 기획', isAi: false, color: '#8a4e68' },
+  { id: 'member-3', authUserId: 'auth-user-3', email: 'seojun@example.com', kind: 'user', name: '박서준', initial: '박', role: '자료조사 / 마케팅', description: '시장 조사, 유사 서비스 분석 및 마케팅 전략 수립', isAi: false, color: '#2e7878' },
+  { id: 'member-5', authUserId: 'auth-user-5', email: 'jiwoo@example.com', kind: 'user', name: '최지우', initial: '최', role: 'UI/UX 디자인', description: '디자인 시스템 구축, 와이어프레임 및 하이파이 프로토타입 제작', isAi: false, color: '#3d7a54' },
+  { id: 'member-6', authUserId: 'auth-user-6', email: 'taeho@example.com', kind: 'user', name: '정태호', initial: '정', role: '백엔드 개발 / 인프라', description: 'API 서버 아키텍처 설계 및 클라우드 인프라(AWS) 구축', isAi: false, color: '#48688a' },
+  { id: AI_MEMBER_ID, authUserId: null, email: '', kind: 'user', name: '자료조사 AI', initial: 'AI', role: '자료조사 · AI 팀원', description: '사람 팀원과 동일한 방식으로 역할을 배정받는 AI입니다. 공유 노트와 자료를 바탕으로 요약, 번역, 리서치 결과를 도출합니다.', isAi: true, color: '#6b4ca8' },
 ]
 
 const task = (id, projectId, title, assigneeId, dueDate, status, description) => ({

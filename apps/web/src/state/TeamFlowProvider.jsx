@@ -49,14 +49,6 @@ function reducer(state, action) {
         ...state,
         tasks: state.tasks.map((task) => task.id === action.taskId ? { ...task, isNew: false } : task),
       }
-    case 'memberCreated':
-      return {
-        ...state,
-        members: [...state.members, action.member],
-        projects: state.projects.map((project) => project.id === action.projectId
-          ? { ...project, memberIds: [...project.memberIds, action.member.id] }
-          : project),
-      }
     case 'memberUpdated':
       return {
         ...state,
@@ -224,12 +216,6 @@ export function TeamFlowProvider({ children, repository }) {
     return result.taskId
   }, [repository])
 
-  const addMember = useCallback(async (projectId, input) => {
-    const result = await repository.createMember(projectId, input)
-    dispatch({ type: 'memberCreated', ...result })
-    return result.member
-  }, [repository])
-
   const updateMember = useCallback(async (memberId, patch) => {
     const result = await repository.updateMember(memberId, patch)
     dispatch({ type: 'memberUpdated', ...result })
@@ -359,7 +345,6 @@ export function TeamFlowProvider({ children, repository }) {
       createTask,
       updateTask,
       deleteTask,
-      addMember,
       updateMember,
       deleteMember,
       createInvitation,
@@ -378,7 +363,7 @@ export function TeamFlowProvider({ children, repository }) {
       registerBeforeLeave,
       flushPending,
     },
-  }), [state, reload, reloadOnEntry, createProject, updateProject, deleteProject, createTask, updateTask, deleteTask, addMember, updateMember, deleteMember, createInvitation, acceptInvitation, rejectInvitation, cancelInvitation, createNote, updateNote, deleteNote, createResource, uploadResource, updateResource, deleteResource, getResourceDownloadUrl, updateAiSettings, registerBeforeLeave, flushPending])
+  }), [state, reload, reloadOnEntry, createProject, updateProject, deleteProject, createTask, updateTask, deleteTask, updateMember, deleteMember, createInvitation, acceptInvitation, rejectInvitation, cancelInvitation, createNote, updateNote, deleteNote, createResource, uploadResource, updateResource, deleteResource, getResourceDownloadUrl, updateAiSettings, registerBeforeLeave, flushPending])
 
   if (state.loadError) {
     return (

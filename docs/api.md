@@ -20,7 +20,6 @@ Authorization: Bearer <access_token>
 | `GET` | `/api/bootstrap` | 필요 | 로그인 사용자의 초기 데이터 조회 |
 | `POST` | `/api/projects` | 필요 | 프로젝트 생성 |
 | `PATCH` | `/api/projects/:projectId` | 필요 | 프로젝트 기간 변경 |
-| `POST` | `/api/projects/:projectId/members` | 필요 | 프로젝트 담당자 추가 |
 | `POST` | `/api/tasks` | 필요 | 할 일 생성 |
 | `PATCH` | `/api/tasks/:taskId` | 필요 | 할 일 상태 변경 |
 | `DELETE` | `/api/tasks/:taskId` | 필요 | 할 일 삭제 |
@@ -137,40 +136,9 @@ API 서버가 실행 중인지 확인합니다.
 }
 ```
 
-### `POST /api/projects/:projectId/members`
-
-프로젝트에 담당자를 추가합니다.
-
-```json
-{
-  "name": "이주환",
-  "initial": "이",
-  "role": "프론트엔드 개발",
-  "description": "React 화면 담당",
-  "color": "#3a6898"
-}
-```
-
-성공: `201 Created`
-
-```json
-{
-  "member": {
-    "id": "22222222-2222-4222-8222-222222222222",
-    "name": "이주환",
-    "initial": "이",
-    "role": "프론트엔드 개발",
-    "description": "React 화면 담당",
-    "avatarUrl": "",
-    "color": "#3a6898",
-    "isAi": false
-  }
-}
-```
-
 ### `POST /api/tasks`
 
-새 할 일을 생성합니다.
+새 할 일을 생성합니다. `assigneeId`에는 초대를 수락한 프로젝트 협업 팀원의 ID만 사용할 수 있습니다.
 
 ```json
 {

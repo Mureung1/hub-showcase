@@ -464,31 +464,14 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
       return data.id
     },
 
-    async createMember(projectId, input) {
-      const { data, error } = await supabase.rpc('add_project_member', {
-        p_project_id: projectId,
-        p_name: input.name,
-        p_initial: input.initial,
-        p_role: input.role,
-        p_description: input.description,
-        p_color: input.color,
-      })
-      if (error) throwDatabaseError('담당자 생성', error)
-      const row = unwrapRpcRow(data)
-      if (!row) storeError('담당자 생성')
-      return mapMember(row)
-    },
-
     async updateMember(memberId, patch) {
       const { data, error } = await supabase.rpc('update_project_member', {
         p_member_id: memberId,
-        p_name: patch.name ?? null,
-        p_initial: patch.initial ?? null,
         p_role: patch.role,
         p_description: patch.description,
         p_color: patch.color,
       })
-      if (error) throwDatabaseError('담당자 수정', error)
+      if (error) throwDatabaseError('협업자 정보 수정', error)
       const row = unwrapRpcRow(data)
       if (!row) throw new TeamFlowNotFoundError()
       return mapMember(row)
@@ -498,7 +481,7 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
       const { data, error } = await supabase.rpc('remove_project_member', {
         p_member_id: memberId,
       })
-      if (error) throwDatabaseError('담당자 삭제', error)
+      if (error) throwDatabaseError('협업자 제거', error)
       const row = unwrapRpcRow(data)
       if (typeof row === 'string') return { memberId: row }
       if (row?.memberId) return row
