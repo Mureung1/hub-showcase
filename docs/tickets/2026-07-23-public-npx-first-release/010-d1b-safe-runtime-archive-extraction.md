@@ -87,15 +87,16 @@ Verified archive byte를 final cache generation과 격리된 staging root에만 
 | --- | --- |
 | fixed handoff | `1bacf08625a7df70b12fa1cee7ecff9f09907b49` |
 | claim commit | `aea0750ce441102b57fd121b6a27a34228af1b25` — `docs: claim safe runtime archive extraction` |
-| candidate code commits | `1d5a9136d21d54c5f271aeef7c07373702312dee` — canonical pre-scan/extraction/verifier; `ec385e753b2cc0708ac699e5089b41993a3ea1e7` — hostile corpus·bound·fault/race hardening; `b2480fbeb41a3a3026ea37d7c660bbb7f8b2fd5c` — no-follow filesystem verification·entry-task join·precondition hardening |
-| candidate code tip | `b2480fbeb41a3a3026ea37d7c660bbb7f8b2fd5c` |
-| valid receipt | descriptor-bound archive를 owned empty staging의 `<staging>/runtime`에 추출하고 canonical `manifest.json`, exact 7-entry top-level roster, complete 8-file/1-symlink payload, `149` regular bytes, reviewed mode와 symlink target을 독립 disk walk로 재검증한 `runtime_verified_staging` |
-| synthetic corpus | D1b behavior case `63/63`: positive `2`, negative `61`; unsafe/corrupt archive pre-scan case `40/40`은 recipient write `0`; fault `2`, race/no-clobber `5`, post-tree/legal drift `7`, archive/staging precondition `7`은 cleanup 또는 `runtime_recovery_required` containment를 확인 |
-| package gates | `npm test -w @ay-ple/runtime-release` → `135/135`; `npm run typecheck -w @ay-ple/runtime-release` → green; `npm run build -w @ay-ple/runtime-release` → green |
+| candidate code commits | `1d5a9136d21d54c5f271aeef7c07373702312dee` — canonical pre-scan/extraction/verifier; `ec385e753b2cc0708ac699e5089b41993a3ea1e7` — hostile corpus·bound·fault/race hardening; `b2480fbeb41a3a3026ea37d7c660bbb7f8b2fd5c` — no-follow filesystem verification·entry-task join·precondition hardening; `94dac5a0408cf5fabce511f10504e26824930aa8` — retained directory capability와 final authority·hardlink·storage-fault correction |
+| candidate code tip | `94dac5a0408cf5fabce511f10504e26824930aa8` |
+| valid receipt | descriptor-bound archive를 owned empty staging의 `<staging>/runtime`에 추출하고 canonical `manifest.json`, exact 7-entry top-level roster, complete 8-file/1-symlink payload, `149` regular bytes, reviewed mode·single-link regular file·symlink target과 final staging `0700` authority를 capability walk로 재검증한 `runtime_verified_staging` |
+| security correction | Node가 Darwin `openat`/`unlinkat` directory descriptor를 노출하지 않는 경계를 dedicated child의 kernel-held cwd capability로 닫았다. 각 owned directory의 exact `(dev, ino, uid, mode)` handshake, one-segment IPC operation, descriptor write/chmod/sync/stat/hash, nested capability handshake와 retained parent-cwd cleanup만 사용하며 absolute path mutation fallback은 없다. |
+| synthetic corpus | Package 전체 `152/152`; unsafe/corrupt archive pre-scan case `40/40`은 recipient write `0`을 유지한다. 추가 exact seam은 capability check/use create·cleanup race `6/6`, final hardlink/staging-authority drift `2/2`, materialization storage operation mapping `7/7`이며 outside canary·alias를 보존하고 ambiguous cleanup은 `runtime_recovery_required`로 닫는다. |
+| package gates | `npm test -w @ay-ple/runtime-release` → `152/152`; `npm run typecheck -w @ay-ple/runtime-release` → green; `npm run build -w @ay-ple/runtime-release` → green; compiled `dist/runtime-archive-directory-capability.js` self-fork smoke → green |
 | repository gates | `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `git diff --check` → 모두 green |
 | dependency/lock | `tar-stream@3.2.0`, `@types/tar-stream@3.1.4`; `package-lock.json` SHA-256 `6dcc45c4d2aac146b925850f98a61a890e5f54360151598c3ccbf22040ba12ab` 유지 |
-| frozen/diff boundary | `src/contract.ts`, package manifest, lockfile, shared frozen contract, transport/resume/resolver orchestration 변경 없음; handoff 대비 diff는 Ticket 010과 `runtime-archive-extraction.ts`·`.test.ts`만 포함 |
-| review status | author self-review와 gates만 완료. Independent archive-security review와 acceptance/closeout은 미실행 |
+| frozen/diff boundary | `src/contract.ts`, package manifest, lockfile, package README, shared frozen contract, transport/resume/resolver orchestration 변경 없음; correction fixed point `3194a2f3e8fcaa3a36b89a2e1c1ef278f804fd25` 대비 code diff는 `runtime-archive-directory-capability.ts`, `runtime-archive-extraction.ts`와 `.test.ts`만 포함 |
+| review status | prior independent archive-security finding을 author가 교정하고 package/root gates를 재실행했다. Exact correction tip의 independent re-review와 acceptance/closeout은 미실행 |
 
 ### C handoff
 
@@ -103,3 +104,4 @@ Verified archive byte를 final cache generation과 격리된 staging root에만 
 - 호출 전에 descriptor-bound archive를 cache archive path에 owner-only `0600` regular file로, staging root를 같은 filesystem의 owner-only `0700` empty directory로 준비한다.
 - 성공 결과의 `runtimeRoot`는 `<staging>/runtime`이다. Durable receipt, fsync/atomic generation publish, quarantine·repair와 resolver orchestration은 계속 C 소유다.
 - Publisher archive는 manifest에서 유도한 directory entry를 모두 명시하고 regular file·directory·symlink만 사용한다. Directory `0755`, manifest/payload reviewed mode, symlink `0777`, canonical octal size와 TAR trailer 2 block을 사용하며 PAX/GNU extension·xattr·ACL·sparse·hardlink·special entry를 만들지 않는다.
+- Reviewed D1b를 integration한 뒤 C-owned `packages/runtime-release/README.md`의 “extraction 미구현” 현재 사실을 갱신한다. `extractVerifiedRuntimeArchive()`와 source-internal retained-cwd capability boundary가 구현됐지만 transport, publish, quarantine·repair와 resolver orchestration은 계속 미구현이라는 경계를 기록한다.
