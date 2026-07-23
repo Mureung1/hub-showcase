@@ -56,6 +56,11 @@ export function describeRequirement(category, job, spec) {
   return ''
 }
 
+// 컴퓨터활용능력은 판정에 반영되지 않는 참고 항목이라 별도 라벨만 변환한다 (#23).
+export function describeComputerSkill(hasComputerSkill) {
+  return hasComputerSkill ? '보유' : '미보유'
+}
+
 // POST /api/gap-analysis 응답의 jobList 원소({job, checks, overallMatch})를 결과 화면이 바로 그릴 수 있는 형태로 변환한다.
 export function buildJobDisplay({ job, checks, overallMatch }, spec) {
   const status = pickPrimaryStatus(checks)
@@ -65,6 +70,7 @@ export function buildJobDisplay({ job, checks, overallMatch }, spec) {
     company: job.company,
     job_category: job.job_category,
     is_intern: job.is_intern,
+    has_computer_skill: spec.has_computer_skill,
     overallMatch,
     status: status.key,
     statusLabel: status.label,
