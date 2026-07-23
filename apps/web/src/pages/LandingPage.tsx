@@ -1,4 +1,3 @@
-import type { RepositoryAnalysisResult } from "@ptop/contracts";
 import { DemoPreview } from "../components/DemoPreview";
 import { FeatureList } from "../components/FeatureList";
 import { LandingHero } from "../components/LandingHero";
@@ -7,23 +6,16 @@ import { ResourceLinks } from "../components/ResourceLinks";
 import { SectionHeading } from "../components/SectionHeading";
 import { WorkflowSection } from "../components/WorkflowSection";
 import { coreFeatures, futureFeatures } from "../data/landingContent";
-import { RepositoryAnalyzer } from "../features/repository-analysis/RepositoryAnalyzer";
-import type { ReflectionDraft } from "../features/reflection/reflection";
-
 type LandingPageProps = {
-  onAnalysisComplete: (result: RepositoryAnalysisResult, reflectionDraft: ReflectionDraft) => void;
+  onEnterWorkspace: () => void;
 };
 
-export function LandingPage({ onAnalysisComplete }: LandingPageProps) {
+export function LandingPage({ onEnterWorkspace }: LandingPageProps) {
   return (
     <>
-      <LandingHero />
+      <LandingHero onEnterWorkspace={onEnterWorkspace} />
       <DemoPreview />
       <WorkflowSection />
-
-      <section className="analyzer-section" id="analyzer" aria-label="Repository 분석">
-        <RepositoryAnalyzer onAnalysisComplete={onAnalysisComplete} />
-      </section>
 
       <Overview />
 

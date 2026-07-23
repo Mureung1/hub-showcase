@@ -2,13 +2,19 @@ import type { RepositoryAnalysisResult } from "@ptop/contracts";
 import { useState } from "react";
 import { AnalysisPage } from "./pages/AnalysisPage";
 import { LandingPage } from "./pages/LandingPage";
+import { WorkspacePage } from "./pages/WorkspacePage";
 import { SiteHeader } from "./components/SiteHeader";
 import type { ReflectionDraft } from "./features/reflection/reflection";
 
-type AppView = "landing" | "analysis";
+type AppView = "landing" | "workspace" | "analysis";
+
+function getInitialView(): AppView {
+  const preview = new URLSearchParams(window.location.search).get("preview");
+  return import.meta.env.DEV && preview === "workspace" ? "workspace" : "landing";
+}
 
 export function App() {
-  const [view, setView] = useState<AppView>("landing");
+  const [view, setView] = useState<AppView>(getInitialView);
   const [analysisResult, setAnalysisResult] = useState<RepositoryAnalysisResult | null>(null);
   const [reflectionDraft, setReflectionDraft] = useState<ReflectionDraft | null>(null);
 
@@ -26,29 +32,34 @@ export function App() {
     window.scrollTo({ top: 0, behavior: "auto" });
   };
 
-  const showAnalyzer = () => {
-    if (view !== "landing") {
-      setView("landing");
-      setAnalysisResult(null);
-      setReflectionDraft(null);
-    }
-
-    window.requestAnimationFrame(() => {
-      document.getElementById("analyzer")?.scrollIntoView({ behavior: "smooth" });
-    });
+  const showWorkspace = () => {
+    setView("workspace");
+    setAnalysisResult(null);
+    setReflectionDraft(null);
+    window.scrollTo({ top: 0, behavior: "auto" });
   };
 
   return (
     <>
-      <SiteHeader onHome={showLanding} onOpenAnalyzer={showAnalyzer} />
-      <main className="page ptop-container" id={view === "landing" ? "top" : "analysis"}>
+      {view !== "workspace" && (
+        <SiteHeader onHome={showLanding} onOpenWorkspace={showWorkspace} />
+      )}
+      <main
+        className={view === "workspace" ? "workspace-main" : "page ptop-container"}
+        id={view}
+      >
         {view === "landing" ? (
-          <LandingPage onAnalysisComplete={showAnalysis} />
+          <LandingPage onEnterWorkspace={showWorkspace} />
+        ) : view === "workspace" ? (
+          <WorkspacePage
+            onBackToLanding={showLanding}
+            onAnalysisComplete={showAnalysis}
+          />
         ) : analysisResult && reflectionDraft ? (
           <AnalysisPage
             result={analysisResult}
             reflectionDraft={reflectionDraft}
-            onBackToLanding={showLanding}
+            onBackToWorkspace={showWorkspace}
           />
         ) : null}
       </main>
