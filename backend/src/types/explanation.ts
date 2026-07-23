@@ -13,6 +13,12 @@ export interface DisposalExplanation {
   reason: string
 }
 
+// 토글 클릭 시 재요청 없이 즉시 전환할 수 있도록 한/영을 한 번에 생성한다.
+export interface BilingualDisposalExplanation {
+  ko: DisposalExplanation
+  en: DisposalExplanation
+}
+
 export interface ExplanationClient {
-  generateExplanation(govItemName: string, method: string): Promise<DisposalExplanation>
+  generateExplanation(govItemName: string, method: string): Promise<BilingualDisposalExplanation>
 }
