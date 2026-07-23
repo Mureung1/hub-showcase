@@ -328,6 +328,40 @@ button {
   margin: 0;
 }
 
+.agent-section {
+  padding: 20px;
+  border: 1px solid #bfe2ce;
+  border-radius: 12px;
+  background: #eef9f2;
+}
+
+.agent-section h3 {
+  color: #126d49;
+}
+
+.agent-groups {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.agent-group {
+  padding-top: 14px;
+  border-top: 1px solid #cfe8d9;
+}
+
+.agent-group h4 {
+  margin: 0 0 6px;
+  color: #126d49;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.agent-group ul {
+  margin: 0;
+}
+
 .detail-section ul {
   margin: 0;
   padding-left: 18px;

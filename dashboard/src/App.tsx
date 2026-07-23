@@ -34,13 +34,6 @@ type AppProps = {
 
 export default function App({ projects }: AppProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const selectedAgentTags = selectedProject
-    ? [
-      ...(selectedProject.agent?.agents ?? []),
-      ...(selectedProject.agent?.skills ?? []),
-      ...(selectedProject.agent?.workflows ?? []),
-    ].slice(0, 8)
-    : [];
   const selectedScreenshots = selectedProject?.screenshotUrls ?? selectedProject?.screenshots ?? [];
 
   const openProject = (project: Project) => setSelectedProject(project);
@@ -183,15 +176,35 @@ export default function App({ projects }: AppProps) {
                 </section>
               )}
 
-              {selectedProject.agent && (selectedProject.agent.summary || selectedAgentTags.length > 0) && (
-                <section className="detail-section">
+              {selectedProject.agent && (
+                selectedProject.agent.summary
+                || (selectedProject.agent.agents?.length ?? 0) > 0
+                || (selectedProject.agent.skills?.length ?? 0) > 0
+                || (selectedProject.agent.workflows?.length ?? 0) > 0
+              ) && (
+                <section className="detail-section agent-section">
                   <h3>Agent 활용</h3>
                   {selectedProject.agent.summary && <p>{selectedProject.agent.summary}</p>}
-                  {selectedAgentTags.length > 0 && (
-                    <div className="tags detail-tags">
-                      {selectedAgentTags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}
-                    </div>
-                  )}
+                  <div className="agent-groups">
+                    {selectedProject.agent.agents && selectedProject.agent.agents.length > 0 && (
+                      <div className="agent-group">
+                        <h4>Agents</h4>
+                        <ul>{selectedProject.agent.agents.map((agent) => <li key={agent}>{agent}</li>)}</ul>
+                      </div>
+                    )}
+                    {selectedProject.agent.skills && selectedProject.agent.skills.length > 0 && (
+                      <div className="agent-group">
+                        <h4>Skills</h4>
+                        <ul>{selectedProject.agent.skills.map((skill) => <li key={skill}>{skill}</li>)}</ul>
+                      </div>
+                    )}
+                    {selectedProject.agent.workflows && selectedProject.agent.workflows.length > 0 && (
+                      <div className="agent-group">
+                        <h4>Workflows</h4>
+                        <ul>{selectedProject.agent.workflows.map((workflow) => <li key={workflow}>{workflow}</li>)}</ul>
+                      </div>
+                    )}
+                  </div>
                 </section>
               )}
 
