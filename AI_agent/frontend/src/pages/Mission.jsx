@@ -25,6 +25,8 @@ const trackLabels = {
 function Mission() {
   const session = getSession();
   const user = getUser();
+  const userId = session?.id || "";
+  const userMajor = user?.major || "";
   const [targetRole, setTargetRole] = useState("");
   const [inferredTrack, setInferredTrack] = useState("business");
   const [missions, setMissions] = useState([]);
@@ -37,7 +39,7 @@ function Mission() {
   );
 
   useEffect(() => {
-    if (!session) {
+    if (!userId) {
       return;
     }
 
@@ -53,7 +55,7 @@ function Mission() {
 
         const nextTargetRole = savedAnalysis?.targetRole || savedSpec?.targetRole || "";
         const recommendations = await getRecommendedMissions({
-          major: user?.major,
+          major: userMajor,
           targetRole: nextTargetRole,
           skills: savedSpec?.skills,
         });
@@ -82,7 +84,7 @@ function Mission() {
     return () => {
       isMounted = false;
     };
-  }, [session, user?.major]);
+  }, [userId, userMajor]);
 
   if (!session) {
     return (
