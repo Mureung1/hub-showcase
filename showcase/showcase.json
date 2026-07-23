@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "title": "알리장",
+  "summary": "AI가 오늘의 홍보 전략을 먼저 제안하고, 브랜드를 이해한 뒤 콘텐츠 작성부터 예약 발행과 운영 분석까지 함께하는 소상공인 맞춤 AI 홍보 에이전트",
+  "githubUser": "nahyun2(최나현)",
+  "demoUrl": "https://",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/dashboard.webp",
+    "screenshots/inventory.webp"
+  ],
+  "problem": "많은 소상공인들은 온라인 홍보의 중요성을 알고 있지만 시간 부족과 마케팅 전문성 부족으로 인해 꾸준한 블로그 운영에 어려움을 겪고 있다.",
+  "targetUsers": [
+    "매장을 운영하는 소상공인"
+  ],
+  "features": [
+    "서비스 접속 시 블로그 운영 현황과 계절·업종 트렌드를 분석해 오늘의 홍보 전략을 먼저 제안합니다.",
+    "대화형 AI 인터뷰로 브랜드 프로필을 만들고, 이를 기준으로 홍보글과 공지사항을 작성합니다.",
+    "홍보글 작성 시 SEO 키워드, 해시태그, 발행 시간을 함께 추천합니다.",
+    "블로그 건강도를 점수화하고 모든 추천에 이유와 예상 효과를 함께 제공합니다."
+  ],
+  "featureTags": [
+    "오늘의 AI 브리핑",
+    "브랜드 프로필 생성",
+    "AI 홍보글 작성",
+    "AI 공지사항 작성",
+    "예약 발행"
+  ],
+  "techStack": [
+    "React",
+    "Vite",
+    "Tailwind CSS",
+    "Express",
+    "Supabase"
+  ],
+  "techHighlights": [
+    "React Router로 대시보드, 홍보글·공지사항 작성 화면을 라우팅하고 Tailwind CSS로 디자인 시스템을 구현합니다.",
+    "Express API와 Supabase를 연결해 브랜드 프로필, 홍보글, 공지사항 데이터를 저장하고 조회합니다.",
+    "브랜드·홍보글·공지사항 인터뷰 플로우를 서비스 단위로 분리해 대화형 AI 인터뷰를 구현합니다."
+  ],
+  "developmentWithAI": "저는 서비스 기획과 화면 구조(PROJECT.md, WIREFRAME.md, DESIGN.md)를 정했습니다. AI는 화면과 API를 구현하고 테스트 코드를 작성했습니다. 저는 결과를 실행하고 문서와 대조하며 검증했습니다.",
+  "agent": {
+    "summary": "화면 구현, 테스트 작성, 기능 검증, 커밋 메시지 작성까지 Skill과 Agent를 함께 사용했습니다.",
+    "agentTools": [
+      {
+        "type": "skill",
+        "name": "design-system Skill",
+        "purpose": "WIREFRAME.md와 DESIGN.md를 참고해 화면 레이아웃과 색상·타이포 토큰을 일관되게 적용합니다."
+      },
+      {
+        "type": "skill",
+        "name": "test-codegen Skill",
+        "purpose": "server 소스 파일에 대해 vitest+supertest 테스트를 TESTING.md 컨벤션에 맞게 생성합니다."
+      },
+      {
+        "type": "agent",
+        "name": "code-verifier Agent",
+        "purpose": "구현된 기능이 docs/api-spec.md 요구사항과 일치하는지 검증하고, 테스트가 부족하면 보완한 뒤 발견한 버그를 직접 수정합니다."
+      },
+      {
+        "type": "skill",
+        "name": "commit-log Skill",
+        "purpose": "변경 내용에 맞는 type을 골라 저장소 커밋 규칙에 맞는 커밋 메시지를 작성합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "화면·기능 개발 Workflow",
+        "steps": [
+          "PROJECT.md/WIREFRAME.md로 화면 요구사항 정의",
+          "design-system Skill로 컴포넌트 구현",
+          "server API 구현",
+          "test-codegen Skill로 테스트 작성 및 실행",
+          "commit-log Skill로 커밋"
+        ]
+      },
+      {
+        "name": "기능 검증 Workflow",
+        "steps": [
+          "code-verifier Agent에게 기능 검증 요청",
+          "docs/api-spec.md 대조 및 테스트 커버리지 확인",
+          "발견된 버그 수정",
+          "회귀 테스트 재실행"
+        ]
+      }
+    ]
+  }
+}
