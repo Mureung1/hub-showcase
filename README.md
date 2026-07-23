@@ -54,9 +54,16 @@ ABCDEF는 AI Agent 기술을 활용하여 교실의 학습 격차를 없애는 �
 ```
 ABCDEF/
 ├── frontend/                        (순수 html/css/js, 빌드 도구 없음)
-│   ├── index.html
+│   ├── index.html                   (세 페이지 마크업. 동작은 data-* 속성으로 표시)
 │   ├── css/style.css
-│   └── js/main.js
+│   └── js/                          (아래 순서대로 로드되는 일반 스크립트)
+│       ├── session.js               (로그인한 사용자 상태)
+│       ├── graph.js                 (함수식 파서 + SVG 그래프)
+│       ├── api.js                   (백엔드 API 호출)
+│       ├── ui.js                    (공통 토스트·모달)
+│       ├── teacher.js               (선생님 화면)
+│       ├── student.js               (학생 화면)
+│       └── app.js                   (진입점: 페이지 전환·로그인·버튼 연결)
 │
 ├── backend/                         (Express)
 │   ├── server.js                    (엔트리: 프론트 서빙 + /api + 5000 포트)
@@ -65,7 +72,7 @@ ABCDEF/
 │   └── src/
 │       ├── routes.js                (전체 API 라우트)
 │       ├── db.js                    (Supabase 데이터 접근)
-│       └── ai.js                    (Ollama 채점)
+│       └── ai.js                    (Ollama 채점·추천·튜터 대화)
 │
 ├── DESIGN.md                        (UI/UX 디자인 가이드)
 └── README.md

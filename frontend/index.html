@@ -8,7 +8,13 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Login Page -->
+    <!--
+        화면은 세 페이지(.page)로 나뉘고, 한 번에 하나만 .active 로 보인다.
+        버튼 동작은 data-action / data-tab / data-role 속성으로 표시하고,
+        실제 연결은 js/app.js 에서 한다.
+    -->
+
+    <!-- ===== 로그인 ===== -->
     <div id="login-page" class="page active">
         <div class="container">
             <div class="card login-card">
@@ -20,54 +26,32 @@
                     </div>
                 </div>
 
-                <!-- Login role tabs -->
                 <div class="login-tabs">
-                    <button class="login-tab active" data-role="teacher" onclick="switchLoginTab('teacher')">
-                        선생님
-                    </button>
-                    <button class="login-tab" data-role="student" onclick="switchLoginTab('student')">
-                        학생
-                    </button>
+                    <button class="login-tab active" data-role="teacher">선생님</button>
+                    <button class="login-tab" data-role="student">학생</button>
                 </div>
 
-                <!-- Teacher login form -->
                 <div id="teacher-login" class="login-form active">
                     <div class="form-group">
-                        <label class="form-label">선생님 로그인</label>
-                        <input
-                            type="text"
-                            id="teacher-name"
-                            class="form-input"
-                            placeholder="선생님 이름"
-                        >
+                        <label class="form-label" for="teacher-name">선생님 로그인</label>
+                        <input type="text" id="teacher-name" class="form-input" placeholder="선생님 이름">
                     </div>
-                    <button class="btn btn-primary w-full" onclick="loginAsTeacher()">
+                    <button class="btn btn-primary w-full" data-action="login-teacher">
                         선생님으로 로그인
                     </button>
                 </div>
 
-                <!-- Student login form -->
                 <div id="student-login" class="login-form">
                     <div class="form-group">
-                        <label class="form-label">학생 로그인</label>
-                        <input
-                            type="text"
-                            id="student-name"
-                            class="form-input"
-                            placeholder="학생 이름"
-                        >
-                        <input
-                            type="text"
-                            id="classroom-id"
-                            class="form-input"
-                            placeholder="교실 ID (선생님이 알려준 ID)"
-                            style="margin-top: 8px;"
-                        >
-                        <p class="form-label" style="color: var(--text-secondary); margin-top: 8px; font-size: 11px;">
+                        <label class="form-label" for="student-name">학생 로그인</label>
+                        <input type="text" id="student-name" class="form-input" placeholder="학생 이름">
+                        <input type="text" id="classroom-id" class="form-input mt-8"
+                               placeholder="교실 ID (선생님이 알려준 ID)">
+                        <p class="form-hint">
                             💡 팁: 선생님 페이지에서 교실 ID를 확인하고 입력해주세요.
                         </p>
                     </div>
-                    <button class="btn btn-primary w-full" onclick="loginAsStudent()">
+                    <button class="btn btn-primary w-full" data-action="login-student">
                         학생으로 로그인
                     </button>
                 </div>
@@ -75,7 +59,7 @@
         </div>
     </div>
 
-    <!-- Teacher Dashboard Page -->
+    <!-- ===== 선생님 ===== -->
     <div id="teacher-page" class="page">
         <header class="topbar">
             <div class="topbar-inner">
@@ -87,31 +71,29 @@
                     </div>
                 </div>
                 <nav class="nav-tabs">
-                    <button class="tab active" onclick="switchTab('dashboard')">대시보드</button>
-                    <button class="tab" onclick="switchTab('evaluation')">평가 관리</button>
-                    <button class="tab" onclick="switchTab('students')">학생 관리</button>
+                    <button class="tab active" data-tab="dashboard">대시보드</button>
+                    <button class="tab" data-tab="evaluation">평가 관리</button>
+                    <button class="tab" data-tab="students">학생 관리</button>
                 </nav>
                 <div class="topbar-actions">
                     <div class="classroom-chip">
                         <span class="chip-label">교실 ID</span>
                         <span id="classroom-id-display">-</span>
-                        <button id="copy-btn" class="chip-copy" onclick="copyClassroomId()">복사</button>
+                        <button id="copy-btn" class="chip-copy" data-action="copy-classroom-id">복사</button>
                     </div>
-                    <button class="btn btn-secondary" onclick="logout()">로그아웃</button>
+                    <button class="btn btn-secondary" data-action="logout">로그아웃</button>
                 </div>
             </div>
         </header>
 
         <div class="container">
-            <!-- Dashboard Tab -->
+            <!-- 대시보드 탭 -->
             <div id="dashboard-tab" class="tab-content active">
-                <!-- Hero -->
                 <div class="page-hero">
                     <div class="eyebrow">Classroom</div>
                     <h2 class="section-title">반 전체 현황</h2>
                 </div>
 
-                <!-- Statistics Cards -->
                 <div class="grid grid-cols-3">
                     <div class="stat-card">
                         <div class="stat-value" id="stat-students">0</div>
@@ -127,7 +109,6 @@
                     </div>
                 </div>
 
-                <!-- Students Table -->
                 <div class="section-head">
                     <div class="eyebrow">성취도</div>
                     <h2 class="section-title">학생별 평가</h2>
@@ -135,25 +116,23 @@
                 <table class="table" id="students-table">
                     <thead>
                         <tr>
-                            <th style="flex: 1.5;">학생</th>
-                            <th style="flex: 2;">진행 상태</th>
-                            <th style="flex: 1; text-align: right;">이해도</th>
+                            <th>학생</th>
+                            <th>진행 상태</th>
+                            <th class="text-right">이해도</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
             </div>
 
-            <!-- Evaluation Tab -->
+            <!-- 평가 관리 탭 -->
             <div id="evaluation-tab" class="tab-content">
                 <div class="page-hero">
                     <div class="eyebrow">평가</div>
                     <h2 class="section-title">평가 관리</h2>
                 </div>
-                <div style="margin-bottom: 20px;">
-                    <button class="btn btn-primary" onclick="addTestQuestion()">
-                        새 질문 추가
-                    </button>
+                <div class="section-toolbar">
+                    <button class="btn btn-primary" data-action="add-question">새 질문 추가</button>
                 </div>
                 <div class="section-head">
                     <div class="eyebrow">목록</div>
@@ -162,16 +141,14 @@
                 <div id="questions-list"></div>
             </div>
 
-            <!-- Students Tab -->
+            <!-- 학생 관리 탭 -->
             <div id="students-tab" class="tab-content">
                 <div class="page-hero">
                     <div class="eyebrow">학생</div>
                     <h2 class="section-title">학생 관리</h2>
                 </div>
-                <div style="margin-bottom: 20px;">
-                    <button class="btn btn-primary" onclick="addTestStudent()">
-                        새 학생 추가
-                    </button>
+                <div class="section-toolbar">
+                    <button class="btn btn-primary" data-action="add-student">새 학생 추가</button>
                 </div>
                 <div class="section-head">
                     <div class="eyebrow">목록</div>
@@ -180,10 +157,10 @@
                 <table class="table" id="all-students-table">
                     <thead>
                         <tr>
-                            <th style="flex: 2;">이름</th>
-                            <th style="flex: 1;">진행률</th>
-                            <th style="flex: 1;">정답/총문제</th>
-                            <th style="flex: 1;">관리</th>
+                            <th>이름</th>
+                            <th>진행률</th>
+                            <th>정답/총문제</th>
+                            <th>관리</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -192,7 +169,7 @@
         </div>
     </div>
 
-    <!-- Student Page -->
+    <!-- ===== 학생 ===== -->
     <div id="student-page" class="page">
         <header class="topbar">
             <div class="topbar-inner">
@@ -204,13 +181,12 @@
                     </div>
                 </div>
                 <div class="topbar-actions">
-                    <button class="btn btn-secondary" onclick="logout()">로그아웃</button>
+                    <button class="btn btn-secondary" data-action="logout">로그아웃</button>
                 </div>
             </div>
         </header>
 
         <div class="container">
-            <!-- Progress Indicator -->
             <div class="progress-container">
                 <div class="progress-label">
                     <span>진행 상황</span>
@@ -221,10 +197,9 @@
                 </div>
             </div>
 
-            <!-- Questions -->
+            <!-- 질문 카드는 js/student.js 가 채운다 -->
             <div id="questions-container"></div>
 
-            <!-- Next Steps -->
             <div class="card">
                 <div class="card-title">심화 학습</div>
                 <p class="card-text">
@@ -235,6 +210,13 @@
         </div>
     </div>
 
-    <script src="js/main.js"></script>
+    <!-- 아래 순서대로 로드된다: 공용 → 화면별 → 진입점 -->
+    <script src="js/session.js"></script>
+    <script src="js/graph.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/teacher.js"></script>
+    <script src="js/student.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
