@@ -73,6 +73,31 @@
   opacity: 1;
 }
 
+.addButton {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #07003d;
+  border-radius: 8px;
+  padding: 0 16px;
+  background: #07003d;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.addButton:hover {
+  background: #112b5f;
+  box-shadow: 0 12px 24px rgb(7 0 61 / 14%);
+  transform: translateY(-1px);
+}
+
 .panel {
   min-width: 0;
   overflow: hidden;
@@ -244,6 +269,16 @@
 .table tbody tr:hover {
   background: #f8fbff;
 }
+
+.clickableRow {
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.clickableRow:hover {
+  background: #edf5ff !important;
+}
+
 
 .table td:first-child,
 .table th:first-child {

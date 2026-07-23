@@ -2,7 +2,7 @@ import { createBrowserRouter } from 'react-router'
 import { AppShell } from './AppShell'
 import { GitLabPage } from '../features/git-lab'
 import { LearningWorkspace } from '../features/learning-workspace'
-import { MistakeNotesPage } from '../features/mistake-notes'
+import { AddMistakeNotePage, MistakeNotesPage } from '../features/mistake-notes'
 import { ProfileSetup } from '../features/profile'
 import { TodayLearningHub } from '../features/today-learning'
 import IntroPage from '../pages/IntroPage'
@@ -34,6 +34,10 @@ export const router = createBrowserRouter([
       {
         path: '/mistake-notes',
         element: <MistakeNotesPage />,
+      },
+      {
+        path: '/mistake-notes/new',
+        element: <AddMistakeNotePage />,
       },
     ],
   },

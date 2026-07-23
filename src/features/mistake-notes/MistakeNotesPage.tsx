@@ -7,6 +7,7 @@ import {
   type MistakeNoteStatus,
 } from './model/useMistakeNoteStore'
 import { deleteMistakeNote, getMistakeNotes, updateMistakeNoteStatus } from './api/mistakeNoteClient'
+import { MistakeNoteDetailModal } from './components/MistakeNoteDetailModal'
 import styles from './MistakeNotesPage.module.css'
 import { createMistakeReviewPath, getMistakeNoteSourceLabel } from './mistakeNoteRoutes'
 type MistakeFilter = 'all' | MistakeNoteStatus
@@ -26,11 +27,16 @@ export default function MistakeNotesPage() {
   const reopenMistake = useMistakeNoteStore((state) => state.reopenMistake)
   const removeMistake = useMistakeNoteStore((state) => state.removeMistake)
   const [filter, setFilter] = useState<MistakeFilter>('all')
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null)
 
   const sortedNotes = useMemo(() => sortMistakeNotes(notes), [notes])
   const filteredNotes = useMemo(
     () => sortedNotes.filter((note) => filter === 'all' || note.status === filter),
     [filter, sortedNotes],
+  )
+  const selectedNote = useMemo(
+    () => notes.find((note) => note.id === selectedNoteId) ?? null,
+    [notes, selectedNoteId],
   )
   const openCount = notes.filter((note) => note.status === 'open').length
   const resolvedCount = notes.filter((note) => note.status === 'resolved').length
@@ -96,9 +102,9 @@ export default function MistakeNotesPage() {
           <button type="button" disabled title="후속 기능">
             내보내기
           </button>
-          <button type="button" disabled title="후속 기능">
+          <Link className={styles.addButton} to="/mistake-notes/new">
             + 새 오답 추가
-          </button>
+          </Link>
         </div>
       </header>
 
@@ -153,7 +159,11 @@ export default function MistakeNotesPage() {
                 const reviewPath = createMistakeReviewPath(note)
 
                 return (
-                  <tr key={note.id}>
+                  <tr
+                    key={note.id}
+                    className={styles.clickableRow}
+                    onClick={() => setSelectedNoteId(note.id)}
+                  >
                     <td>
                       <strong>{note.lessonTitle}</strong>
                       <span>{note.lessonId}</span>
@@ -167,7 +177,11 @@ export default function MistakeNotesPage() {
                     <td>{formatDate(note.createdAt)}</td>
                     <td>{note.reviewedAt ? formatDate(note.reviewedAt) : '-'}</td>
                     <td>
-                      <Link className={styles.actionButton} to={reviewPath}>
+                      <Link
+                        className={styles.actionButton}
+                        to={reviewPath}
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         다시 풀기
                       </Link>
                     </td>
@@ -179,18 +193,33 @@ export default function MistakeNotesPage() {
                     <td>
                       <div className={styles.rowActions}>
                         {note.status === 'open' ? (
-                          <button type="button" onClick={() => handleStatusChange(note, 'resolved')}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleStatusChange(note, 'resolved')
+                            }}
+                          >
                             해결
                           </button>
                         ) : (
-                          <button type="button" onClick={() => handleStatusChange(note, 'open')}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleStatusChange(note, 'open')
+                            }}
+                          >
                             다시 열기
                           </button>
                         )}
                         <button
                           className={styles.deleteButton}
                           type="button"
-                          onClick={() => handleRemoveMistake(note.id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRemoveMistake(note.id)
+                          }}
                         >
                           삭제
                         </button>
@@ -224,6 +253,13 @@ export default function MistakeNotesPage() {
           </div>
         </footer>
       </section>
+
+      <MistakeNoteDetailModal
+        note={selectedNote}
+        onClose={() => setSelectedNoteId(null)}
+        onStatusChange={handleStatusChange}
+        onDelete={handleRemoveMistake}
+      />
     </main>
   )
 }

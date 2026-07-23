@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest'
 import type { MistakeNote } from './model/useMistakeNoteStore'
 import { createMistakeReviewPath, getMistakeNoteSourceLabel } from './mistakeNoteRoutes'
 
+
+
 const baseNote: Pick<MistakeNote, 'source' | 'lessonId'> = {
   source: 'git-lab',
   lessonId: '1-2',
 }
+
 
 describe('mistakeNoteRoutes', () => {
   it('creates a Git Lab review path', () => {

@@ -18,7 +18,7 @@ ICU는 `I CODE U`의 약자이며, 사용자가 오늘 무엇을 공부해야 �
 - Workspace 코드 입력 영역에 Monaco Editor 도입
 - Workspace 실행 버튼을 Express 기반 `/api/code/run`에 연결
 - Git Branching Lab 구현
-- Mistake Notes 목록 화면 구현
+- Mistake Notes 목록 화면, 수동 작성 페이지(/mistake-notes/new) 및 상세 보기 모달(MistakeNoteDetailModal) 구현
 - Profile Setup 구현
 - 생성 커리큘럼 snapshot 공유 상태 구현
 - Today Hub에서 생성한 커리큘럼을 Workspace로 연결
