@@ -45,6 +45,10 @@ function SimulationPage({
   const [activeIndex, setActiveIndex] = useState(() => loadActiveIndex(loadScenarios().length));
   const [courseModalScenarioId, setCourseModalScenarioId] = useState(null);
 
+  // 과목 담기 모달에서 보여줄 학년 (기본 1학년) — 화면 표시 전용 필터, 담긴 과목엔 영향 없음
+  const [modalGrade, setModalGrade] = useState(1);
+  const modalVisibleCourses = basketCourses.filter((c) => c.grade === modalGrade);
+
   // scenarios/activeIndex가 바뀔 때마다 자동으로 localStorage에 저장 (새로고침해도 유지)
   useEffect(() => {
     localStorage.setItem(SCENARIOS_STORAGE_KEY, JSON.stringify(scenarios));
@@ -289,8 +293,21 @@ function SimulationPage({
             <h2 className="req-modal-title">{courseModalScenario.name}에 담을 과목을 선택해주세요</h2>
             <p className="req-modal-sub">과목을 클릭하면 담기/빼기가 바로 반영돼요.</p>
 
+            <div className="grade-filter">
+              {[1, 2, 3, 4].map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  className={`grade-filter-item ${modalGrade === g ? 'active' : ''}`}
+                  onClick={() => setModalGrade(g)}
+                >
+                  {g}학년
+                </button>
+              ))}
+            </div>
+
             <CourseBasketSection
-              courses={basketCourses}
+              courses={modalVisibleCourses}
               selectedIds={courseModalScenario.courseIds}
               onToggle={(courseId) => toggleScenarioCourse(courseModalScenario.id, courseId)}
             />

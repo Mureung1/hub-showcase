@@ -6,7 +6,9 @@ import NavBar from './components/NavBar';
 import SimulationPage from './pages/SimulationPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import { evaluateTrackRequirements } from './utils/gradRequirements';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+const COURSES_URL = 'http://localhost:4000/api/courses';
 
 function App() {
   // 상단 탭 (홈 / 수강 바구니 / 시뮬레이션 / 챗봇)
@@ -37,21 +39,47 @@ function App() {
   return saved ? JSON.parse(saved) : null;
 });
 
-  const basketCourses = [
-  { id: 1, name: '운영체제', category: '전공필수', credits: 3 },
-  { id: 2, name: '소프트웨어설계', category: '전공', credits: 3 },
-  { id: 3, name: '데이터통신', category: '전공', credits: 3 },
-  { id: 4, name: '인공지능', category: '전공', credits: 3 },
-  { id: 5, name: '데이터베이스', category: '전공', credits: 3 },
-  { id: 6, name: 'SW융합설계1', category: '종합설계', credits: 3 },
-  { id: 7, name: '기업과정신과 벤처창업', category: '창업교과목', credits: 3 },
-  { id: 8, name: '서양의 역사와 문화', category: '교양', credits: 3 },
-  { id: 9, name: '세계문화와다양성', category: '일반선택', credits: 3 },
-];
-  
+  const [basketCourses, setBasketCourses] = useState([]);
+
+  // 수강 바구니 화면에 어느 학년 과목을 보여줄지 (기본 1학년) — 학점 계산과는 무관, 화면 표시 전용 필터
+  const [selectedGrade, setSelectedGrade] = useState(1);
+  const visibleCourses = basketCourses.filter((c) => c.grade === selectedGrade);
+
   const [selectedIds, setSelectedIds] = useState([]);
 
   const API_URL = 'http://localhost:4000/api/basket';
+
+  // 마운트 시 실제 교과목 목록을 서버(학사 데이터 기반)에서 불러온다
+  useEffect(() => {
+    async function fetchCourses() {
+      try {
+        const res = await fetch(COURSES_URL);
+        const data = await res.json();
+        setBasketCourses(data);
+      } catch (err) {
+        console.error('과목 목록 불러오기 실패:', err);
+      }
+    }
+    fetchCourses();
+  }, []);
+
+  // 마운트 시 서버에 이미 저장된 과목들을 불러와 선택 상태에 반영
+  // (basketCourses가 위 fetchCourses로 비동기로 채워지므로, 그 값이 갱신될 때마다 다시 매칭한다)
+  useEffect(() => {
+    async function fetchBasketItems() {
+      try {
+        const res = await fetch(API_URL);
+        const items = await res.json();
+        const matchedIds = items
+          .map((item) => basketCourses.find((c) => c.name === item.course_name)?.id)
+          .filter((id) => id !== undefined);
+        setSelectedIds([...new Set(matchedIds)]);
+      } catch (err) {
+        console.error('바구니 불러오기 실패:', err);
+      }
+    }
+    fetchBasketItems();
+  }, [basketCourses]);
 
   function handleMajorConfirm(info) {
   setGradInfo(info);
@@ -186,34 +214,49 @@ if (gapList.length === 0) gapList.push('모든 요건을 충족했어요 🎉');
             </button>
           </div>
 
-          {(submitted || progressSubmitted) && (
-            <div className="req-summary-bar">
-              {submitted && (
-                <div className="req-summary-group">
-                  [졸업요건] 총 {submitted.total}학점 · 전공 {submitted.major}학점 · 교양 {submitted.general}학점
-                  <button type="button" className="req-summary-edit" onClick={resetMajor}>
-                    학과 다시 선택
+          <div className="basket-toolbar">
+            {(submitted || progressSubmitted) && (
+              <div className="req-summary-bar">
+                {submitted && (
+                  <div className="req-summary-group">
+                    [졸업요건] 총 {submitted.total}학점 · 전공 {submitted.major}학점 · 교양 {submitted.general}학점
+                    <button type="button" className="req-summary-edit" onClick={resetMajor}>
+                      학과 다시 선택
+                    </button>
+                  </div>
+                )}
+
+                {submitted && progressSubmitted && (
+                  <span className="req-summary-sep">/</span>
+                )}
+
+                {progressSubmitted && (
+                  <button
+                    type="button"
+                    className="req-summary-group"
+                    onClick={() => setShowProgressModal(true)}
+                  >
+                    [현재까지] 총 {progressSubmitted.total}학점 · 전공 {progressSubmitted.major}학점 · 교양 {progressSubmitted.general}학점
                   </button>
-                </div>
-              )}
+                )}
+              </div>
+            )}
 
-              {submitted && progressSubmitted && (
-                <span className="req-summary-sep">/</span>
-              )}
-
-              {progressSubmitted && (
+            <div className="grade-filter">
+              {[1, 2, 3, 4].map((g) => (
                 <button
+                  key={g}
                   type="button"
-                  className="req-summary-group"
-                  onClick={() => setShowProgressModal(true)}
+                  className={`grade-filter-item ${selectedGrade === g ? 'active' : ''}`}
+                  onClick={() => setSelectedGrade(g)}
                 >
-                  [현재까지] 총 {progressSubmitted.total}학점 · 전공 {progressSubmitted.major}학점 · 교양 {progressSubmitted.general}학점
+                  {g}학년
                 </button>
-              )}
+              ))}
             </div>
-          )}
+          </div>
           <CourseBasketSection
-            courses={basketCourses}
+            courses={visibleCourses}
             selectedIds={selectedIds}
             onToggle={toggleCourse}
           />
