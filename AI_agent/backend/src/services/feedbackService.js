@@ -5,9 +5,23 @@ import { generateSubmissionFeedback } from "./openaiService.js";
 
 const summarizeArtifactEvidence = (artifactEvidence = []) => {
   const readableEvidence = artifactEvidence.filter((evidence) => evidence.text);
+  const mediaEvidence = artifactEvidence.filter(
+    (evidence) => evidence.status === "attached" && ["image", "pdf"].includes(evidence.modality)
+  );
 
   if (readableEvidence.length > 0) {
-    return `실제 결과물 내용 ${readableEvidence.length}건을 읽고 평가했습니다.`;
+    const mediaSummary =
+      mediaEvidence.length > 0 && env.openaiFileFeedbackEnabled
+        ? ` 이미지/PDF ${mediaEvidence.length}건도 평가 입력에 포함했습니다.`
+        : "";
+
+    return `텍스트/코드 결과물 내용 ${readableEvidence.length}건을 읽고 평가했습니다.${mediaSummary}`;
+  }
+
+  if (mediaEvidence.length > 0) {
+    return env.openaiFileFeedbackEnabled
+      ? `이미지/PDF 결과물 ${mediaEvidence.length}건을 평가 입력에 포함했습니다.`
+      : "이미지/PDF 결과물이 제출되었지만 파일 직접 평가는 꺼져 있어 제출 설명과 미션 정보를 기준으로 평가했습니다.";
   }
 
   if (artifactEvidence.length > 0) {

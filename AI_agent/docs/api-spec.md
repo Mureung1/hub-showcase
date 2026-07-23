@@ -733,10 +733,12 @@ Request body:
 
 - 서버는 제출 URL의 공개 `http/https` 텍스트/HTML 콘텐츠를 읽어 OpenAI 피드백 입력에 포함한다.
 - `localhost`, 사설 IP처럼 내부망으로 보이는 URL은 서버에서 열람하지 않는다.
-- 제출 파일은 `text/plain`, `text/html`, `application/json`, `application/xml`, `image/svg+xml`처럼 텍스트로 읽을 수 있는 형식만 본문 평가에 포함한다.
-- PDF, 이미지, 비공개 Notion/GitHub 링크처럼 서버가 직접 읽을 수 없는 결과물은 제출 설명과 미션 정보를 기준으로 보완 평가한다.
+- 제출 파일은 텍스트/코드 파일(`txt`, `md`, `csv`, `json`, `html`, `xml`, `js`, `jsx`, `ts`, `tsx`, `py`, `java`, `c`, `cpp`, `cs`, `sql`, `css`)을 텍스트로 읽어 평가 입력에 포함한다.
+- `OPENAI_FILE_FEEDBACK_ENABLED=true`이면 직접 업로드한 이미지/PDF와 직접 이미지/PDF로 열리는 공개 링크도 OpenAI 평가 입력에 포함한다.
+- 비공개 Notion/GitHub 링크, 지원하지 않는 문서 파일, 접근할 수 없는 첨부 파일은 제출 설명과 미션 정보를 기준으로 보완 평가한다.
 - `OPENAI_API_KEY`가 없거나 OpenAI 호출이 실패하면 기존 제출 정보 기반 피드백으로 fallback한다.
 - `OPENAI_FEEDBACK_ENABLED=false`로 설정하면 직접 OpenAI 평가를 끄고 fallback 피드백만 생성한다.
+- 업로드 파일 기본 제한은 5MB이며 `SUBMISSION_FILE_MAX_BYTES`로 조정할 수 있다.
 
 주요 실패:
 

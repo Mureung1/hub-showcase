@@ -2,9 +2,10 @@
 
 ## 현재 상태
 
-- `/upload` 화면은 2MB 이하 파일을 브라우저에서 Data URL로 읽는다.
+- `/upload` 화면은 기본 5MB 이하 파일을 브라우저에서 Data URL로 읽는다.
 - `POST /api/submissions`는 파일명, MIME 타입, Data URL 문자열을 `UserMission`에 저장한다.
 - 피드백/포트폴리오 화면은 저장된 Data URL을 다운로드 링크로 다시 보여준다.
+- AI 피드백은 텍스트/코드 파일을 텍스트로 읽고, `OPENAI_FILE_FEEDBACK_ENABLED=true`일 때 이미지/PDF도 OpenAI 평가 입력에 포함한다.
 
 ## 장점
 
@@ -30,6 +31,8 @@
 
 ## 현재 결정
 
-- 지금은 MVP 안정성을 위해 기존 2MB Data URL 저장 방식을 유지한다.
+- 지금은 MVP 안정성을 위해 5MB 이하 Data URL 저장 방식을 유지한다.
+- 지원 우선순위는 텍스트/코드, 이미지, PDF까지로 제한한다.
+- Office 문서, HWP, 압축 파일, 영상/음성은 별도 추출/검사 설계 전까지 평가 대상에서 제외한다.
 - 실제 파일 저장소 도입은 별도 작업으로 분리한다.
 - 도입 시 DB 마이그레이션과 Supabase Storage 버킷 정책을 먼저 설계한다.

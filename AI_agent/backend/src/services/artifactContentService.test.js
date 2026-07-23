@@ -19,15 +19,41 @@ describe("artifact content helpers", () => {
     assert.equal(evidence.text, text);
   });
 
-  it("skips binary submitted file data", () => {
+  it("extracts code file data even when browser MIME type is generic", () => {
+    const text = "const result = 'career mission';";
+    const evidence = extractSubmittedFileText({
+      submittedFileName: "mission.js",
+      submittedFileType: "application/octet-stream",
+      submittedFileData: `data:application/octet-stream;base64,${Buffer.from(text).toString("base64")}`,
+    });
+
+    assert.equal(evidence.status, "extracted");
+    assert.equal(evidence.text, text);
+  });
+
+  it("attaches PDF submitted file data for OpenAI file evaluation", () => {
     const evidence = extractSubmittedFileText({
       submittedFileName: "result.pdf",
       submittedFileType: "application/pdf",
       submittedFileData: "data:application/pdf;base64,JVBERi0x",
     });
 
-    assert.equal(evidence.status, "skipped");
-    assert.match(evidence.reason, /텍스트로 읽을 수 없는 파일 형식/);
+    assert.equal(evidence.status, "attached");
+    assert.equal(evidence.modality, "pdf");
+    assert.equal(evidence.fileData, "JVBERi0x");
+  });
+
+  it("attaches image submitted file data for OpenAI vision evaluation", () => {
+    const imageData = "data:image/png;base64,iVBORw0KGgo=";
+    const evidence = extractSubmittedFileText({
+      submittedFileName: "screen.png",
+      submittedFileType: "image/png",
+      submittedFileData: imageData,
+    });
+
+    assert.equal(evidence.status, "attached");
+    assert.equal(evidence.modality, "image");
+    assert.equal(evidence.imageUrl, imageData);
   });
 
   it("blocks localhost URLs before fetching", async () => {

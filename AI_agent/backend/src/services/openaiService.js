@@ -162,8 +162,80 @@ export const generateCareerAnalysis = async ({ user, spec }) => {
   };
 };
 
+const createSubmissionFeedbackContent = ({ submission, artifactEvidence = [] }) => {
+  const metadataEvidence = artifactEvidence.map((evidence) => ({
+    source: evidence.source,
+    status: evidence.status,
+    modality: evidence.modality || "text",
+    reason: evidence.reason,
+    url: evidence.url,
+    fileName: evidence.fileName,
+    contentType: evidence.contentType,
+    text: evidence.text,
+  }));
+  const content = [
+    {
+      type: "input_text",
+      text: JSON.stringify(
+        {
+          mission: {
+            id: submission.missionId,
+            title: submission.missionTitle || submission.mission?.title || "",
+            description: submission.mission?.description || "",
+          },
+          submission: {
+            submittedUrl: submission.submittedUrl,
+            submittedDescription: submission.submittedDescription,
+            submittedFileName: submission.submittedFileName,
+            submittedFileType: submission.submittedFileType,
+          },
+          artifactEvidence: metadataEvidence,
+          fileFeedbackEnabled: env.openaiFileFeedbackEnabled,
+        },
+        null,
+        2
+      ),
+    },
+  ];
+
+  if (!env.openaiFileFeedbackEnabled) {
+    return content;
+  }
+
+  artifactEvidence.forEach((evidence) => {
+    if (evidence.modality === "image" && evidence.imageUrl) {
+      content.push({
+        type: "input_image",
+        image_url: evidence.imageUrl,
+        detail: "auto",
+      });
+    }
+
+    if (evidence.modality === "pdf" && evidence.fileUrl) {
+      content.push({
+        type: "input_file",
+        file_url: evidence.fileUrl,
+        filename: evidence.fileName || "submitted-result.pdf",
+        detail: "auto",
+      });
+    }
+
+    if (evidence.modality === "pdf" && evidence.fileData) {
+      content.push({
+        type: "input_file",
+        file_data: evidence.fileData,
+        filename: evidence.fileName || "submitted-result.pdf",
+        detail: "auto",
+      });
+    }
+  });
+
+  return content;
+};
+
 export const generateSubmissionFeedback = async ({ submission, artifactEvidence }) => {
   const openai = getOpenAIClient();
+  const userContent = createSubmissionFeedbackContent({ submission, artifactEvidence });
 
   const response = await openai.responses.create({
     model: env.openaiModel,
@@ -171,28 +243,11 @@ export const generateSubmissionFeedback = async ({ submission, artifactEvidence 
       {
         role: "developer",
         content:
-          "너는 대학생과 주니어 취업 준비생의 미션 결과물을 평가하는 커리어 코치다. 제출 링크나 파일에서 읽은 실제 결과물 내용, 사용자의 제출 설명, 미션 정보를 함께 보고 한국어 피드백을 작성한다. 과장하지 말고, 결과물에서 확인 가능한 근거를 중심으로 강점과 수정 제안을 구체적으로 작성한다. 링크 접근 실패나 파일 추출 실패가 있으면 그 한계를 반영해 말하되, 사용자를 탓하지 않는다.",
+          "너는 대학생과 주니어 취업 준비생의 미션 결과물을 평가하는 커리어 코치다. 제출 링크, 텍스트, 코드, 이미지, PDF에서 확인 가능한 실제 결과물 내용과 사용자의 제출 설명, 미션 정보를 함께 보고 한국어 피드백을 작성한다. 과장하지 말고, 결과물에서 확인 가능한 근거를 중심으로 강점과 수정 제안을 구체적으로 작성한다. 링크 접근 실패나 파일 추출 실패가 있으면 그 한계를 반영해 말하되, 사용자를 탓하지 않는다.",
       },
       {
         role: "user",
-        content: JSON.stringify(
-          {
-            mission: {
-              id: submission.missionId,
-              title: submission.missionTitle || submission.mission?.title || "",
-              description: submission.mission?.description || "",
-            },
-            submission: {
-              submittedUrl: submission.submittedUrl,
-              submittedDescription: submission.submittedDescription,
-              submittedFileName: submission.submittedFileName,
-              submittedFileType: submission.submittedFileType,
-            },
-            artifactEvidence,
-          },
-          null,
-          2
-        ),
+        content: userContent,
       },
     ],
     text: {

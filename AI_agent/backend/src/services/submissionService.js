@@ -1,4 +1,5 @@
 import { prisma } from "../db/prisma.js";
+import { env } from "../config/env.js";
 
 const normalizeSubmissionInput = (input) => ({
   missionId: String(input?.missionId || "").trim(),
@@ -21,6 +22,19 @@ const isValidUrl = (value) => {
   } catch {
     return false;
   }
+};
+
+const getSubmittedFileSizeBytes = (fileData) => {
+  const value = String(fileData || "");
+
+  if (!value) {
+    return 0;
+  }
+
+  const payload = value.includes(",") ? value.slice(value.indexOf(",") + 1) : value;
+  const padding = payload.endsWith("==") ? 2 : payload.endsWith("=") ? 1 : 0;
+
+  return Math.max(0, Math.floor((payload.length * 3) / 4) - padding);
 };
 
 const publicSubmissionFields = (submission) => {
@@ -65,6 +79,14 @@ export const saveSubmission = async ({ userId, submission }) => {
 
   if (!isValidUrl(data.submittedUrl)) {
     const error = new Error("결과물 링크는 http 또는 https 주소로 입력해 주세요.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (getSubmittedFileSizeBytes(data.submittedFileData) > env.submissionFileMaxBytes) {
+    const error = new Error(
+      `파일은 ${Math.floor(env.submissionFileMaxBytes / 1024 / 1024)}MB 이하만 제출할 수 있습니다.`
+    );
     error.statusCode = 400;
     throw error;
   }
