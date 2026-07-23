@@ -3,11 +3,21 @@ import { useState } from 'react';
 function LoginScreen({ onLogin, isLoggingIn, loginError }) {
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
+  const [validationError, setValidationError] = useState('');
 
   function handleSubmit(event) {
     event.preventDefault();
+
+    if (id.trim() === '' || password.trim() === '') {
+      setValidationError('아이디와 비밀번호를 모두 입력해주세요.');
+      return;
+    }
+
+    setValidationError('');
     onLogin(id, password);
   }
+
+  const displayedError = validationError || loginError;
 
   return (
     <section className="card">
@@ -38,7 +48,7 @@ function LoginScreen({ onLogin, isLoggingIn, loginError }) {
           />
         </div>
 
-        {loginError && <p className="error-text">{loginError}</p>}
+        {displayedError && <p className="error-text">{displayedError}</p>}
 
         <button type="submit" className="btn-primary btn-block" disabled={isLoggingIn}>
           {isLoggingIn ? '확인하는 중...' : '로그인'}
