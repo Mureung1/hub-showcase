@@ -66,6 +66,10 @@
 - 2026-07-23 꼬마비로드갯민숭달팽이 Stage 2 production candidate motion sheet 10종을 생성하고 review set에 연결: `public/assets/lumi/sea-bunny-slug-stage-2-production-candidates/sea-bunny-slug-stage-2-*-sheet-v1.png`, contact sheet `public/assets/_review/sea-bunny-slug-stage-2-production-candidates-contact.png`. 1차 눈검수상 `focused`의 스캔 FX와 `hanging`의 흡착부는 사용자 검수 후 v2 후보 가능성 있음
 
 - 2026-07-23 꼬마비로드갯민숭달팽이 `hanging`은 한쪽 귀로 대롱대롱 매달리는 v2, `climbing`은 엉덩이만 보이는 정후면 대신 긴 등면이 보이는 rear 3/4 top-back v2로 재생성하고 review set을 v2 파일로 연결
+- 2026-07-23 TDD 우선 확장 도메인 규칙 추가: 성장/보상/능력치, stage 해금/회귀, interaction object rect/resize/progress, pet locomotion, pixelizer plan, blink/sound policy, public quest/gesture policy를 RED -> GREEN 흐름으로 테스트화
+- 2026-07-23 Pet Behavior State Machine 추가: 상황 기반 후보 생성, deterministic weighted behavior selection, persona별 weight 조정, behavior state -> animation state mapping을 테스트로 고정
+- 2026-07-23 ManagerBehaviorIntent 경계 추가: LLM이 줄 수 있는 `behaviorStyle`, `tone`, `line`, `suggestedBehaviorBias`를 정규화하고 unknown behavior, invalid style, 과도한 weightDelta를 fallback/clamp 처리
+- 2026-07-23 ManagerBehaviorAdapter 추가: raw manager intent를 정규화한 뒤 현재 BehaviorContext와 결합해 weighted behavior와 animation state를 결정하는 도메인 경계를 TDD로 고정
 
 ## 검증
 
@@ -100,6 +104,7 @@
 - 2026-07-21 Supabase 실제 DB 검증 통과: `GET /api/health` -> `supabase`, `POST /api/quest-events` -> `201 Created`, `GET /api/quest-events?limit=5` -> `200 OK`, `GET /api/manager-context` -> `200 OK`
 - 2026-07-22 asset/animation 검증 통과: `npm.cmd run typecheck`, `npm.cmd run verify:sprites`, `npm.cmd run build`
 - 2026-07-23 canonical manager asset 검증 통과: `npm.cmd run verify:sprites`, `npm.cmd run typecheck`
+- 2026-07-23 TDD 도메인 규칙 검증 통과: `npm.cmd test`, `npm.cmd run typecheck`, `npm.cmd run build`, `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
 - 로컬 skill 설치 확인: Superpowers, 하네스 workflow skills, `project-learning-agent`
 - React 화면은 정적 HTML 기준으로 큰 flow/state 차이는 줄였고, 남은 시각 차이는 사용자가 직접 화면을 보며 추가 점검 예정
 
@@ -109,9 +114,9 @@
 - 2순위: #6 / `T-701` 확장 기능 asset/data manifest 설계를 정리하고, 캐릭터 animation, icon hover, theme, reward, sound, projection mode, interaction object가 같은 naming/runtime 규칙을 쓰도록 검증
 - 3순위: `T-702`, `T-710`, `T-713` 캐릭터 생동감 작업을 진행해 Lumi Canvas animation, 서비스 진입/종료 blink focus, cyber-purr 사운드 후보를 연결
 - 4순위: `T-724` Single-plane Pepper projection mode를 브라우저에서 확인하고, Pixel TV 우클릭 속성, 변환/원복, projection-connected icon, `?projection=pepper` Lumi glow 화면을 검증
-- 5순위: `T-703`, `T-717`, `T-712` 성장/보상 구조를 설계하고 Quest Event metadata와 Stage 회귀/능력치 증가를 연결
-- 6순위: `T-709`, `T-711` Persona/LLM 매니저 adapter를 rule fallback과 함께 분리
-- 7순위: `T-714`, `T-715`, `T-716` 상호작용 오브젝트 prototype을 object rect, anchor point, state machine 기준으로 시작
+- 5순위: TDD로 만든 `T-703`, `T-717`, `T-712` 성장/보상 도메인 규칙을 Quest Event metadata와 UI에 연결
+- 6순위: TDD로 만든 `ManagerBehaviorIntent`, `ManagerBehaviorAdapter`, Pet Behavior State Machine을 ManagerContext/ruleBasedAgent/LLM API와 React animation state에 연결
+- 7순위: TDD로 만든 interaction object, pet locomotion, behavior state machine을 실제 사다리/평지/창탈출 UI prototype에 연결
 - 8순위: `T-708`, `T-721`, `T-722`, `T-723` 월드/실험 기능을 별도 prototype으로 검증
 - React 화면은 이미 `WindowFrame`, `ProfileWizard`, `DesktopShell`, `QuestWindow`, `ManagerWindow`, `JournalWindow` 중심으로 분리되어 있고, 다음 분리는 UI 파일 추가보다 `useQuestFlow`, `useQuestLogSync`, `usePixelTvMode` 같은 상태 hook 단위가 우선
 - 기록 노트 API 로딩/빈 상태/실패 상태 polish

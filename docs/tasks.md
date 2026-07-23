@@ -89,14 +89,14 @@
 | T-706 | P1 | Backlog | 기억 조각 구현 | 완료/복구 Quest Event가 기록 노트 또는 월드에 memory fragment로 표시된다 | db-schema.md |
 | T-707 | P1 | Backlog | 사운드 feedback 구현 | 완료/복구/레벨업 사운드가 muted 기본값과 함께 동작한다 | future-expansion-plan.md |
 | T-708 | P1 | Backlog | 하루의 흐름 web theme 구현 | 시간대와 퀘스트 상태가 배경/루미 idle/theme state에 반영된다 | future-expansion-plan.md |
-| T-709 | P1 | Backlog | 개인화 AI 매니저 adapter 구현 | ManagerContext 기반 대사/추천 adapter와 rule fallback이 분리된다 | agent-design.md |
+| T-709 | P1 | In Progress | 개인화 AI 매니저 adapter 구현 | ManagerBehaviorIntent 정규화와 behavior adapter가 TDD로 추가됐고, ManagerContext/LLM API 연결과 React animation state 연결이 남았다 | agent-design.md |
 | T-710 | P1 | Review | blink focus scene 구현 | 서비스 진입과 서비스 나가기 직전에 눈 깜빡임/blur/fade overlay가 동작하고, 새로고침 시에는 재생되지 않으며 reduced-motion fallback이 있다. 브라우저 시각 확인이 남았다 | dynamic-asset-requirements.md |
-| T-711 | P1 | Backlog | 전자 매니저 Persona와 제한 선택지 설계 | 직접 선택과 간접 선택이 구분되고, LLM은 Persona 경계 안에서 대사/추천을 생성한다 | future-expansion-plan.md |
-| T-712 | P1 | Backlog | 퀘스트 능력치 growth 설계 | Quest Event metadata가 성실성, 끈기, 창의성, 지식, 힘, 민첩함, 체력, 매력 등 stat delta로 매핑된다 | db-schema.md |
+| T-711 | P1 | In Progress | 전자 매니저 Persona와 제한 선택지 설계 | `balanced/adventurous/shy` behaviorStyle이 Pet Behavior State Machine weight에 반영되고, 직접/간접 선택 UI 연결이 남았다 | future-expansion-plan.md |
+| T-712 | P1 | In Progress | 퀘스트 능력치 growth 설계 | 퀘스트 타입/결과별 stat delta 도메인 규칙이 TDD로 추가됐고, Quest Event metadata 저장/표시 연결이 남았다 | db-schema.md |
 | T-713 | P1 | Backlog | cyber-purr 사운드 탐색 및 적용 후보 정리 | 전자/사이버틱한 기본 고롱고롱 사운드 후보와 mute/fallback 기준이 정리된다 | dynamic-asset-requirements.md |
-| T-714 | P2 | Backlog | 사다리 interaction prototype | 사다리 오브젝트를 세로 resize할 수 있고, 루미가 올라가는 중 resize되어도 progress ratio 기준으로 위치가 유지된다 | dynamic-asset-requirements.md |
-| T-715 | P2 | Backlog | 평지 interaction prototype | 평지 오브젝트는 가로 resize만 가능하고, 루미가 점프/착지하거나 사다리에서 옮겨갈 수 있다 | dynamic-asset-requirements.md |
-| T-716 | P2 | Backlog | 창탈출 interaction prototype | 루미가 창 밖 desktop overlay layer로 나와 이동하는 prototype이 동작한다 | future-expansion-plan.md |
+| T-714 | P2 | In Progress | 사다리 interaction prototype | 사다리 resize/progress와 접근/등반 behavior state가 TDD로 추가됐고, UI object layer 연결이 남았다 | dynamic-asset-requirements.md |
+| T-715 | P2 | In Progress | 평지 interaction prototype | 평지 resize/jump 가능 거리와 jump behavior state가 TDD로 추가됐고, UI object layer 연결이 남았다 | dynamic-asset-requirements.md |
+| T-716 | P2 | In Progress | 창탈출 interaction prototype | window escape edge와 desktop-overlay layer 전환 규칙이 TDD로 추가됐고, 화면 overlay 연결이 남았다 | future-expansion-plan.md |
 | T-717 | P2 | Backlog | Stage 회귀 엔드 컨텐츠 설계 | 해금한 Stage 1~4 외형 중 원하는 모습으로 회귀/장착할 수 있는 구조가 정의된다 | future-expansion-plan.md |
 
 ## 3~4주차 P2: 승격 실험 기능

@@ -2230,9 +2230,14 @@ label {
 }
 
 .sprite-review-page {
+  width: 100vw;
+  height: 100vh;
   min-height: 100vh;
-  padding: 24px;
-  overflow: auto;
+  padding: 24px 24px 40px;
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
   color: #1f1f1f;
   background: #1f2933;
 }
