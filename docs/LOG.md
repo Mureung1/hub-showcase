@@ -1156,3 +1156,54 @@
 - 사용자가 `진행`으로 48 cell 상황 목록을 승인했다. 기존 approved 8세트는 변경하지 않고 신규 88세트·264후보를 `coverageCandidateDraft.ts`에 `draft`로 작성했다. 수량·48×2 coverage·ID/문구 중복·reply/ initiate·tone·길이·금지 항목·정중함 하한선 자동 검사와 세트 내용 동일성 수동 재검토를 통과했다.
 - 작성 순서가 검수자에게 노출되지 않도록 96세트의 후보 순서를 결정적으로 섞은 [블라인드 검수지](../harness/tasks/T35-retrieval-experiment/coverage-corpus-blind-review.md)와 별도 정답표를 생성했다. 신규 후보는 제3자 톤 정렬·288개 전송 가능성 판정 전까지 DB에 적재하거나 approved/운영 retrieval로 승격하지 않는다.
 - retrieval 디렉터리 9파일 35개와 전체 44파일 375개 테스트, 프론트/API 타입검사, 템플릿·DB·검수지 drift check, lint, production build, `git diff --check`, AGENTS/CLAUDE mirror, 대상 `any` 검사를 통과했다. 기존 jsdom `scrollTo` 로그와 CatCanvas 500 kB 초과 경고만 비차단으로 남았다.
+
+## 2026-07-23 (ORCH-2 task-first 선택적 멀티에이전트 마이그레이션)
+- 공개 Codex·OpenCode·OpenClaw 운영 원칙과 저장소 실제 상태를 비교한 제안을 사용자가 승인했다. T항목은 의존성·완료조건 단위로 유지하고, 구현은 하나의 사용자 결과를 만드는 실행 묶음 안에서만 선택적으로 위임하도록 AGENTS/CLAUDE·하네스·오케스트레이션 스킬을 갱신했다.
+- 기본은 PM 단독 실행이며 위임은 독립 산출물·고정 계약·읽기 전용 또는 비중첩 쓰기·순효율 네 게이트를 모두 통과해야 한다. 읽기 중심 병렬화를 우선하고 writer는 최대 2명, 하위 에이전트 중첩은 금지하며 PM만 공유 계약·CHECKLIST·LOG·최종 통합을 소유한다.
+- `npm run harness:check`를 추가해 plan/verification 쌍, 허용 상태명, CHECKLIST와 T 작업 완료 상태를 검사한다. self-test 4건이 실패 감지를 확인했고, 수정 전 드리프트 16건을 검출한 뒤 T17·T25·T32~T36 기록을 정규화해 실제 22개 작업 폴더가 통과했다. T17의 공유 저장소 CI 미사용·로컬 전용 결정도 CICD와 하네스에 동기화했다.
+- 전체 44파일 375테스트, oxlint, TypeScript/Vite build, skill validator, AGENTS/CLAUDE mirror, 링크, `git diff --check`를 통과했다. 기존 jsdom `scrollTo` 로그와 CatCanvas 500 kB 경고만 비차단으로 남았다. 제품 코드·런타임 멀티에이전트·의존성·배포·사용자 소유 미추적 파일은 변경하지 않았다.
+- 실제 효율은 다음 적합 작업 2~3건에서 활성 worker, 실제 병렬 구간, 인계·충돌·재작업을 기록한 뒤 재평가한다. 그 전에는 `.codex/agents` 상시 프로필이나 worktree 자동화를 추가하지 않는다. 상세 근거: [ORCH-2 계획서](../harness/tasks/2026-07-23-task-focused-orchestration/plan.md)·[검증 보고서](../harness/tasks/2026-07-23-task-focused-orchestration/verification.md).
+
+## 2026-07-23 (ORCH-2 이전·현재 작업 방식 비교 명문화)
+- 사용자의 요청에 따라 role-first 이전 방식과 task-first 현재 방식을 `harness/README.md`의 비교표로 명문화했다. 출발점, T항목 해석, 기본 실행, 네 위임 게이트, 읽기 우선 병렬화, writer 상한, 평면 에이전트 구조, task-local 맥락, 효율 기록, custom agent/worktree 보류, 상태 자동 검사의 차이를 한곳에서 확인할 수 있게 했다.
+- PM 단일 통합, 공유 계약·CHECKLIST·LOG 소유, 동일 파일 동시 수정 금지, 제품 `/api/generate` 단일 런타임처럼 바뀌지 않은 경계도 함께 기록했다.
+
+## 2026-07-23 (T22 외부 DoD 검증 실행 준비)
+- `/task-start` 의존성 순서에서 가장 이른 미완료 항목인 T22를 선택했다. 직접 의존 T21과 콘텐츠·실 provider 기반은 완료됐지만, CHECKLIST에 명시된 대학생 참여자 5명이 없어 사람 대상 결과를 만들거나 완료 처리하지 않았다.
+- 기존 `COMPETITIVE_VALIDATION.md`의 과업·교차 배정·기록 스키마·블라인드 루브릭·판정 임계값을 다시 설계하지 않고, 버전 동결→자동·접근성 사전점검→5명 세션→비식별화→블라인드 검수→Gate 집계 순서를 [T22 계획서](../harness/tasks/T22-dod-external-task/plan.md)와 [현장 실행 체크리스트](../harness/tasks/T22-dod-external-task/execution-kit.md)로 연결했다.
+- 실제 원문·실명·학교·계정 식별자·원시 참여자 행은 Git에 넣지 않고, 유효 paired 5명 미만이면 `Pending`을 유지하도록 중지 조건을 고정했다. [검증 보고서](../harness/tasks/T22-dod-external-task/verification.md)는 외부 참여자·고정 Preview·접근성·독립 평가가 남아 있어 `보류`로 기록했고 CHECKLIST T22는 미체크 상태를 유지했다.
+- `npm run harness:check`는 23개 작업 폴더(16 T항목·7 비-T)의 상태 정합성을 통과했고, 직접 참조 정본·T22 문서 경로와 `git diff --check`도 통과했다. 현재 작업트리의 내부 사전점검으로 전체 44파일 375테스트, API 타입검사, lint, `tsc -b` 포함 production build도 통과했다. 기존 jsdom `scrollTo` 로그와 CatCanvas 500 kB 초과 경고만 비차단으로 남았으며, 이 결과는 고정 Preview 버전에서 다시 수행해야 하는 T22 최종 증거를 대체하지 않는다.
+- 최신 GitHub Production deployment `5564774983`이 현재 HEAD `b9d6b2563d666b57a39894d74c106090dc301329`로 성공했고 공개 `https://dabnyang.vercel.app/`이 HTTP 200임을 확인했다. 고유 Vercel deployment URL은 로그인으로 이동해 외부 참여자에게 바로 쓸 수 없다. 고정 Preview 대신 공개 도메인의 Production push를 세션 기간 멈추고 deployment ID·SHA를 매번 재확인하는 대안을 제안 상태로 남겼으며, 사용자 승인 전에는 최종 실행 방식으로 확정하지 않는다.
+- Browser 스킬의 연결·복구 절차를 적용했지만 사용 가능한 backend 목록이 `[]`여서 키보드·초점·스크린리더 실화면 검증은 수행하지 못했다. 소스 기반 자동검증으로 대체하지 않고 수동 gate를 유지했다.
+- 모집 문안, 비식별 자격 확인, 자발적 참여 확인, 진행자 통일 문구, 종료 안내를 [T22 참여자 안내문](../harness/tasks/T22-dod-external-task/participant-brief.md)으로 추가했다. 이는 법적·연구윤리 심의 완료 문서가 아니며 실제 연락·보상·응답과 개인정보는 Git 밖의 접근 제한 기록으로 분리한다.
+- 사용자는 외부 세션을 재개할 경우 공개 Production 도메인을 사용하고 세션 기간 deployment SHA를 동결하는 방식을 승인했지만, 대학생 5명 과업 자체는 진행하지 않기로 결정했다. 모집·세션·실제 동결은 수행하지 않고 T22를 미완료·`Pending`으로 유지했으며 사용자 검증이나 경쟁 우위를 주장하지 않는다.
+- `/task-start`로 다음 항목을 재계산하면 T23은 T22, T31은 T22·T23에 의존해 현재 착수할 수 없다. T35도 제3자 블라인드 검수 결과가 없어 다음 생성 A/B로 갈 수 없다. 이 의존성을 바꾸지 않는 한 바로 실행 가능한 미완료 T항목은 없다.
+
+## 2026-07-23 (T22 외부 가치 검증·기술 MVP 배포 분리 승인)
+- 사용자가 T22 대학생 5명 과업을 실행하지 않은 채 계속 진행하는 구조 변경안을 승인했다. T22 기준·실행 킷·개인정보 경계는 삭제하지 않고 후속 외부 가치 검증으로 `Pending`·미완료 유지한다.
+- T23은 T17·T20·T21·T29·T32·T33·T34·T36을 직접 의존하는 기술 배포·실기기 확인으로, T31은 T23·T29·T30·T34를 의존하는 기술 MVP 통합 DoD로 분리했다. T22는 두 항목의 완료 의존성이 아니다.
+- PRD·MVP·CHECKLIST·PLAN·PRODUCT_REVIEW·COMPETITIVE_VALIDATION·CICD와 T22 하네스를 동기화했다. 기술 MVP 완료는 대학생 검증 완료, 범용 AI 대비 우위, 실제 사용자 선택·효율의 근거가 아니며 해당 주장은 T22 실행 전까지 금지한다.
+
+## 2026-07-23 (T23 기술 배포·실기기 검증 착수)
+- 새 직접 의존 T17·T20·T21·T29·T32·T33·T34·T36 완료를 확인하고 [T23 계획서](../harness/tasks/T23-technical-deployment-device/plan.md)로 착수했다. 검증 전후 Production deployment는 `5564774983`, SHA `b9d6b2563d666b57a39894d74c106090dc301329`, state `success`로 같았다.
+- 공개 Production `/`은 HTTP 200과 `답냥이 — 대학생 메시지 작성 도우미` title을 반환했다. 같은 build의 JS 351,097 bytes·CSS 33,955 bytes·지연 CatCanvas 882,646 bytes가 모두 HTTP 200이며 로컬 `dist`의 provider·DB·Voyage secret marker는 0건이다.
+- 실제 원문 없는 `guided_ai(groupwork/schedule/ask_availability)`와 `manual_ai(professor/initiate/ask)` 합성 요청을 각각 1회 보냈다. 둘 다 HTTP 200·`source=ai`·tone 1/2/3 세 후보를 반환했고, guided는 임의 날짜·시간을 추가하지 않았다.
+- 전체 44파일 375테스트, App+generation handler 집중 2파일 111테스트, API 타입검사, template drift, Drizzle check, lint, `tsc -b` 포함 production build, 하네스 24폴더, `git diff --check`가 통과했다. 기존 jsdom `scrollTo` 로그와 CatCanvas 500 kB 경고만 비차단이다.
+- Browser 연결을 재시도했지만 사용 가능한 backend가 없어 Production 320×568·375×667 실화면과 모바일·카카오톡 인앱 복사를 실행하지 못했다. 자동 테스트나 이전 버전의 사용자 확인으로 대체하지 않고 [검증 보고서](../harness/tasks/T23-technical-deployment-device/verification.md)를 `보류`, CHECKLIST T23을 미체크로 유지했다.
+- 실제 정보 없이 확인할 수 있도록 카드 guided·결과 다듬기, template/manual·키보드, 교수 이메일 세 복사, 카카오톡 인앱 fallback의 네 시나리오와 합성 입력을 [T23 실기기 체크리스트](../harness/tasks/T23-technical-deployment-device/manual-checklist.md)로 고정했다.
+- 이후 사용자가 320×568 카드·guided·다듬기, 375×667 template/manual·키보드, 모바일 이메일 세 복사, 카카오톡 인앱 복사 fallback을 모두 통과했다고 확인했다. 기기·OS·브라우저 버전과 원시 캡처는 별도 수집하지 않았음을 증거 한계로 남기고, 이 사용자 보고와 기존 자동·Production 증거를 합쳐 T23 및 AC-1~AC-9를 완료 처리했다.
+
+## 2026-07-23 (T31 기술 MVP 통합 검증 — Preview gate 보류)
+- T23·T29·T30·T34 완료를 확인하고 [T31 계획서](../harness/tasks/T31-technical-mvp-integration/plan.md)로 기술 MVP 통합 검증을 시작했다. 제품 코드·API·DB schema·배포 설정은 바꾸지 않았다.
+- 전체 44파일 375테스트와 App·Cat·generation/interaction 계약·sink 집중 9파일 173테스트, API 타입검사, template/DB/retrieval drift·offline evaluator, lint, production build를 통과했다. evaluator는 8/48 covered·activation-ready 0/48·`productionEligible=false`로 운영 retrieval 비활성을 다시 확인했다.
+- 개발 Neon migration 재실행과 guarded core·interaction smoke가 통과했다. 여섯 public table, generation background sink 임시 metadata 행, interaction 4건 집계가 일치했고 테스트 행은 자체 정리됐다. `src`와 `dist`의 DB/provider key·server import, production 생성 경로의 retrieval/agent loop, 대상 명시적 `any`는 0건이었다.
+- Production deployment `5564774983`은 HEAD와 같은 `b9d6b2563d666b57a39894d74c106090dc301329`·success를 유지했다. 개인정보 없는 manual 합성 요청 1건은 HTTP 200·`source=ai`·tone 1/2/3을 반환했지만 로컬 개발 DB 시간창에는 새 metric 행이 없어, Production DB 분리와 background write 실패를 구분할 수 없었다.
+- 최신 Preview는 deployment `5516621084`, SHA `c13f209eaa88bbb213ae0d0d6f2784254a734e1e`로 현재 통합 SHA보다 오래됐다. 승인 없는 branch push·새 배포는 수행하지 않았고, 현재 SHA Preview의 실제 `/api/generate`와 `waitUntil()` DB 반영 AC-6이 남아 [검증 보고서](../harness/tasks/T31-technical-mvp-integration/verification.md)를 `보류`, CHECKLIST T31을 미체크로 유지했다.
+- 이후 사용자가 비프로덕션 branch push를 승인해 현재 HEAD를 `codex/t31-preview-check`로 push했다. 원격 branch는 생성됐지만 Vercel이 이미 Production에 존재하는 동일 SHA를 새 Preview deployment로 등록하지 않았고 새 Vercel commit status도 생기지 않았다. 브라우저 재배포는 사용 가능한 backend가 없어 실행하지 못했으며, 제품 tree를 바꾸지 않는 빈 배포 트리거 커밋은 별도 커밋 승인을 받기 전 생성하지 않았다.
+- 사용자가 빈 trigger commit을 승인했다. 현재 더러운 작업트리와 분리한 임시 worktree에서 `76bcea5 chore: Preview 검증 트리거`를 만들었고 부모와 tree SHA `ea335bc9987fe4600c82315ad19fad27f0ac4967`가 같음을 확인한 뒤 임시 branch에만 push했다. Vercel status는 2026-07-23T06:58:05Z success가 됐고 branch alias가 생성됐다.
+- Preview branch URL은 Vercel Authentication으로 302 이동하며 로컬에는 protection bypass 자격이 없고 사용 가능한 Browser backend도 없었다. 실제 `/api/generate`와 `waitUntil()` DB 반영은 사용자가 로그인된 Preview에서 합성 `friend/initiate/decline` 생성 1건을 실행한 뒤 `2026-07-23T07:00:36Z` 이후 metadata 행을 조회하는 단계로 남겼다. 임시 worktree는 push 뒤 제거했고 Production branch·현재 작업트리는 바꾸지 않았다.
+- 사용자가 보호된 Preview에서 지정 manual AI 세 후보 생성을 완료했다고 보고했다. 그러나 `2026-07-23T07:00:36Z` 이후 개발 DB의 `friend/initiate/decline` 조건 행과 같은 시각 이후 `generation_runs` 전체를 각각 조회한 결과 모두 0건이었다. 원문·생성문은 조회·저장하지 않았다.
+- 따라서 Preview build·실 AI 생성은 통과했지만 `waitUntil()` background write는 통과로 처리하지 않았다. Preview `DATABASE_URL`의 적용 범위·대상 DB를 Vercel에서 값 노출 없이 확인하고, 필요하면 수정·재배포한 뒤 `2026-07-23T07:09:18Z` 이후 같은 합성 요청을 재실행하는 조건으로 T31을 `보완 필요`·미완료 유지했다.
+- 사용자가 Vercel에는 `GEMINI_API_KEY`만 있었음을 확인하고 `DATABASE_URL`을 Preview에 추가했다. 재배포 과정에서 `api/generate.ts`·`api/interaction.ts`의 `process`를 찾지 못하는 TS2591이 발생했다. 저장소에는 `@types/node`와 `tsconfig.api.json` Node types가 이미 있었지만 Vercel 함수 빌더가 읽는 루트 `tsconfig.json`에는 Node 타입이 없었다.
+- 사용자 승인 후 루트 `tsconfig.json`에 `types: ["node"]`만 추가했다. root showConfig, API 타입검사, 전체 44파일 375테스트, lint, production build가 통과했다. 현재 작업트리와 분리한 Preview worktree에서 `tsconfig.json` 한 파일만 `4d44c40 fix: Vercel API Node 타입 인식`으로 커밋·push했고, 같은 스냅샷의 API 타입·lint·build도 통과했다.
+- 새 Vercel Preview status는 2026-07-23T09:25:26Z success가 되어 TS2591 빌드 실패가 해소됐다. 보호된 Preview의 최신 runtime 생성과 `waitUntil()` DB write는 사용자가 `2026-07-23T09:29:11Z` 이후 합성 요청 1건을 다시 실행한 뒤 확인하도록 남겼고, 임시 worktree는 제거했다.
