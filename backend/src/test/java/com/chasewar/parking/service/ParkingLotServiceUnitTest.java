@@ -56,7 +56,7 @@ class ParkingLotServiceUnitTest {
         @Test
         void fail_notFound() {
             // given
-            given(parkingLotRepository.findById(anyLong()))
+            given(parkingLotRepository.findDetailById(anyLong()))
                     .willReturn(Optional.empty());
 
             // when & then

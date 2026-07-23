@@ -1,8 +1,8 @@
 package com.chasewar.parking.dto;
 
-import com.chasewar.parking.domain.ParkingLot;
-import com.chasewar.parking.domain.vo.Fee;
-import com.chasewar.parking.domain.vo.OperatingHours;
+import com.chasewar.parking.domain.vo.RealtimeStatus;
+import com.chasewar.parking.repository.dto.ParkingLotDetailProjection;
+import java.time.LocalDateTime;
 
 public record ParkingLotDetailResponse(
         Long id,
@@ -13,22 +13,53 @@ public record ParkingLotDetailResponse(
         String operType,
         Integer totalSlots,
         String payType,
-        Fee fee,
-        OperatingHours operatingHours
+        FeeResponse fee,
+        OperatingHoursResponse operatingHours,
+        RealtimeResponse realtimeInfo
 ) {
 
-    public static ParkingLotDetailResponse from(ParkingLot parkingLot) {
+    public static ParkingLotDetailResponse from(ParkingLotDetailProjection projection) {
         return new ParkingLotDetailResponse(
-                parkingLot.getId(),
-                parkingLot.getName(),
-                parkingLot.getAddress(),
-                parkingLot.getTel(),
-                parkingLot.getParkingKind().name(),
-                parkingLot.getOperType().name(),
-                parkingLot.getTotalSlots(),
-                parkingLot.getPayType().name(),
-                parkingLot.getFee(),
-                parkingLot.getOperatingHours()
+                projection.id(),
+                projection.name(),
+                projection.address(),
+                projection.tel(),
+                projection.parkingKind().name(),
+                projection.operType().name(),
+                resolveTotalSlots(projection),
+                projection.payType().name(),
+                FeeResponse.from(projection.fee()),
+                OperatingHoursResponse.from(projection.operatingHours()),
+                RealtimeResponse.from(projection)
         );
+    }
+
+    private static Integer resolveTotalSlots(ParkingLotDetailProjection projection) {
+        if (projection.realtimeTotalSlots() != null) {
+            return projection.realtimeTotalSlots();
+        }
+
+        return projection.totalSlots();
+    }
+
+    public record RealtimeResponse(
+            int availableSlots,
+            int totalSlots,
+            String status,
+            LocalDateTime sourceUpdatedAt
+    ) {
+
+        private static RealtimeResponse from(ParkingLotDetailProjection projection) {
+            if (projection.availableSlots() == null) {
+                return null;
+            }
+
+            return new RealtimeResponse(
+                    projection.availableSlots(),
+                    projection.realtimeTotalSlots(),
+                    RealtimeStatus.of(projection.availableSlots(), projection.realtimeTotalSlots()).name(),
+                    projection.sourceUpdatedAt()
+            );
+        }
     }
 }

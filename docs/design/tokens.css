@@ -6,14 +6,18 @@
   --brand-weak: #e7f9ef;
 
   /* 상태색 */
-  --ok-text: #16a34a;
-  --ok-bg: #dcfce7; /* 여유 */
+  --ok-text: #2563eb;
+  --ok-bg: #dbeafe; /* 여유 (파랑 — 무료 초록과 겹치지 않게) */
   --warn-text: #ca8a04;
   --warn-bg: #fef9c3; /* 보통 */
   --busy-text: #ef4444;
   --busy-bg: #fee2e2; /* 혼잡 */
   --none-text: #6b7280;
   --none-bg: #f3f4f6; /* 정보없음 */
+
+  /* 요금 (무료는 브랜드 초록 재사용, 유료는 주황 — 상태색·무료와 겹치지 않게) */
+  --pay-paid-text: #ea580c;
+  --pay-paid-bg: #ffedd5; /* 유료 */
 
   /* 중립 */
   --text: #1f2937;

@@ -207,7 +207,7 @@ button {
 
 .card-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;   /* 제목·배지를 위쪽 기준으로 정렬(배지가 세로로 쌓여도 첫 줄 맞춤) */
   justify-content: space-between;
   gap: var(--s2);
 }
@@ -219,9 +219,9 @@ button {
 
 .tags {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
+  flex-direction: column;   /* 배지를 항상 세로로 쌓아 제목 길이와 무관하게 통일 */
+  align-items: flex-end;     /* 오른쪽 정렬 */
+  flex-shrink: 0;            /* 제목이 길어도 배지 영역은 줄어들지 않음 */
   gap: 6px;
 }
 
@@ -234,14 +234,17 @@ button {
 }
 
 /* 무료: 브랜드 틴트 / 유료: 중립 — 실시간 상태색(ok/warn/busy)과 의미 충돌을 피한다 */
+/* 요금 배지. 무료 = 초록(브랜드색), 유료 = 파랑.
+   유료를 파랑으로 두어 상태색(초록/노랑/빨강/회색)·미제공(회색)과 색이 겹치지 않게 한다.
+   색 값은 tokens.css에서 참조. */
 .badge--free {
   color: var(--brand);
   background: var(--brand-weak);
 }
 
 .badge--paid {
-  color: var(--none-text);
-  background: var(--none-bg);
+  color: var(--pay-paid-text);
+  background: var(--pay-paid-bg);
 }
 
 .card-sub {
@@ -443,4 +446,96 @@ button {
 
 .info-row .value {
   font-weight: 600;
+}
+
+/* ===== 실시간 상태 뱃지 (검색 카드) ===== */
+/* modifier(ok/warn/busy/none)별 색은 디자인 토큰(tokens.css)을 그대로 쓴다. */
+.badge--ok {
+  color: var(--ok-text);
+  background: var(--ok-bg);
+}
+
+.badge--warn {
+  color: var(--warn-text);
+  background: var(--warn-bg);
+}
+
+.badge--busy {
+  color: var(--busy-text);
+  background: var(--busy-bg);
+}
+
+.badge--none {
+  color: var(--none-text);
+  background: var(--none-bg);
+}
+
+/* ===== 실시간 카드 (상세 화면) ===== */
+.rt-card {
+  margin: 0 var(--s5) var(--s4);
+  padding: var(--s4);
+  background: var(--brand-weak);
+  border-radius: var(--r-card);
+}
+
+/* 실시간 미제공 주차장: 강조 배경 대신 회색 톤 */
+.rt-card--none {
+  background: var(--none-bg);
+}
+
+.rt-head {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rt-none-text {
+  margin-top: var(--s2);
+  font-size: 14px;
+  color: var(--none-text);
+}
+
+.rt-num {
+  margin: var(--s2) 0 var(--s1);
+  font-size: 30px;
+  font-weight: 800;
+}
+
+/* 가용 대수 숫자 색 = 혼잡 상태색 */
+.rt-num--ok {
+  color: var(--ok-text);
+}
+
+.rt-num--warn {
+  color: var(--warn-text);
+}
+
+.rt-num--busy {
+  color: var(--busy-text);
+}
+
+.rt-num--none {
+  color: var(--none-text);
+}
+
+.rt-num .rt-unit {
+  margin-left: 4px;
+  font-size: 17px;
+}
+
+.rt-num .rt-total {
+  margin-left: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.rt-updated {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.rt-note {
+  margin-top: var(--s3);
+  font-size: 12px;
+  color: var(--text-muted);
 }
