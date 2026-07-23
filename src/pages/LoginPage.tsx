@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login, setToken } from '../api/client.ts'
+import Layout from '../components/Layout.tsx'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -27,32 +28,37 @@ function LoginPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-sm px-6 py-16">
-      <h1 className="text-center text-2xl">로그인</h1>
-      <form className="mt-8 flex flex-col gap-4" onSubmit={handleSubmit}>
-        <label className="flex flex-col gap-1 text-sm">
-          이메일
+    <Layout hideNav title="로그인">
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+        <div>
+          <label className="mb-1.5 block text-[13px] font-semibold text-heading" htmlFor="email">
+            이메일
+          </label>
           <input
-            className="rounded-lg border border-border bg-card px-3 py-2"
+            className="w-full rounded-xl border border-border bg-card px-3.5 py-3 text-sm text-heading"
+            id="email"
             onChange={(e) => setEmail(e.target.value)}
             required
             type="email"
             value={email}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          비밀번호
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[13px] font-semibold text-heading" htmlFor="password">
+            비밀번호
+          </label>
           <input
-            className="rounded-lg border border-border bg-card px-3 py-2"
+            className="w-full rounded-xl border border-border bg-card px-3.5 py-3 text-sm text-heading"
+            id="password"
             onChange={(e) => setPassword(e.target.value)}
             required
             type="password"
             value={password}
           />
-        </label>
+        </div>
         {error && <p className="text-sm text-accent">{error}</p>}
         <button
-          className="rounded-lg bg-accent px-4 py-2 text-white disabled:opacity-50"
+          className="w-full rounded-full bg-accent px-5 py-[13px] text-[15px] font-semibold text-white disabled:opacity-50"
           disabled={isSubmitting}
           type="submit"
         >
@@ -62,7 +68,7 @@ function LoginPage() {
       <p className="mt-4 text-center text-sm text-muted">
         계정이 없으신가요? <Link className="text-accent" to="/signup">회원가입</Link>
       </p>
-    </main>
+    </Layout>
   )
 }
 

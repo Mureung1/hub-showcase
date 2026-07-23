@@ -4,6 +4,8 @@ import { getMe, getToken } from '../api/client.ts'
 type CurrentUser = {
   id: string
   email: string
+  name: string
+  nickname: string
 }
 
 export function useCurrentUser() {

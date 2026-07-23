@@ -25,6 +25,40 @@
 | 소규모 친구 방 | 3~6명 클로즈드 그룹, 완료 여부만 공유  |
 | AI 데일리 케어 | 기록 분위기에 맞춘 응원/제안 메시지 |
 
+## 🏗 아키텍처
+
+```mermaid
+flowchart LR
+  subgraph FE["React (화면)"]
+    Home["HomePage<br/>(오늘의 챌린지 + 기록 상태)"]
+    Login["LoginPage"]
+    Signup["SignupPage"]
+    Record["RecordPage<br/>(사진+메모 업로드)"]
+  end
+
+  subgraph BE["Express (서버)"]
+    AuthAPI["/auth/signup<br/>/auth/login<br/>/auth/me"]
+    ChallengeAPI["GET /challenges/today"]
+    RecordAPI["POST /records<br/>GET /records/today"]
+  end
+
+  subgraph DB["Supabase (Postgres, Prisma)"]
+    Users[("users")]
+    Challenges[("challenges")]
+    Records[("records")]
+  end
+
+  Signup -- "fetch 회원가입" --> AuthAPI
+  Login -- "fetch 로그인(JWT 발급)" --> AuthAPI
+  Home -- "fetch 챌린지 조회" --> ChallengeAPI
+  Home -- "fetch 기록 여부 조회" --> RecordAPI
+  Record -- "fetch 기록 업로드(FormData)" --> RecordAPI
+
+  AuthAPI -- "select/insert" --> Users
+  ChallengeAPI -- "select/upsert" --> Challenges
+  RecordAPI -- "select/insert" --> Records
+```
+
 ## 🛠 기술 스택
 
 **Frontend (웹앱)**: React 19 · Vite 8 · TypeScript · Tailwind CSS v4 · oxlint  
