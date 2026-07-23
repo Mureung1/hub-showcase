@@ -45,3 +45,9 @@ apps/showup/security/**/*.mjs
 .superpowers/
 *.zip
 ~$*
+
+# Firebase hosting cache
+.firebase/
+
+# CodeGraph
+.codegraph
