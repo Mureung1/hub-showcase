@@ -33,3 +33,16 @@ def _call_judge(topic: str, papers: list[dict]) -> dict:
     """판단(judge) LLM 호출. 실패해도 예외 없이 fallback을 반환한다."""
     prompt = _build_judge_prompt(topic, papers)
     return tools.ask_llm_json(prompt, fallback={"picked": [], "excluded": []})
+
+
+def _validate_coverage(papers: list[dict], result: dict) -> dict:
+    """picked+excluded가 후보 전체를 덮는지 검증하고, 누락된 index를 "판단 누락"으로 채운다."""
+    picked = result.get("picked", [])
+    excluded = list(result.get("excluded", []))  # 원본을 변형하지 않기 위해 복사
+
+    covered = {item["index"] for item in picked} | {item["index"] for item in excluded}
+    missing = sorted(set(range(len(papers))) - covered)
+
+    excluded += [{"index": idx, "reason": "판단 누락"} for idx in missing]
+
+    return {"picked": picked, "excluded": excluded}
