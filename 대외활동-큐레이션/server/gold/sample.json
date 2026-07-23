@@ -12,8 +12,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -21,8 +19,6 @@
       "majors": [],
       "regions": "?",
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     }
   },
@@ -39,8 +35,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -48,8 +42,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     }
   },
@@ -66,8 +58,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": 19,
-      "ageMax": 39,
       "forUniv": true
     },
     "gold": {
@@ -75,8 +65,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": 19,
-      "ageMax": 39,
       "forUniv": true
     }
   },
@@ -93,8 +81,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -102,8 +88,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     }
   },
@@ -120,8 +104,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -129,8 +111,6 @@
       "majors": "?",
       "regions": "?",
       "enrollment": "?",
-      "ageMin": "?",
-      "ageMax": "?",
       "forUniv": true
     },
     "라벨링_메모": "링커리어 API는 대상(targets)만 주고 나이·지역·전공·학년을 안 줘서 forUniv만 확정 가능. 나머지는 원문 상세 없이는 판단 불가라 ?로 둠 (수집기 한계)"
@@ -148,8 +128,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -157,8 +135,6 @@
       "majors": "?",
       "regions": "?",
       "enrollment": "?",
-      "ageMin": "?",
-      "ageMax": "?",
       "forUniv": true
     },
     "라벨링_메모": "링커리어 API는 대상(targets)만 주고 나이·지역·전공·학년을 안 줘서 forUniv만 확정 가능. 나머지는 원문 상세 없이는 판단 불가라 ?로 둠 (수집기 한계)"
@@ -176,8 +152,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -185,8 +159,6 @@
       "majors": "?",
       "regions": "?",
       "enrollment": "?",
-      "ageMin": "?",
-      "ageMax": "?",
       "forUniv": true
     },
     "라벨링_메모": "링커리어 API는 대상(targets)만 주고 나이·지역·전공·학년을 안 줘서 forUniv만 확정 가능. 나머지는 원문 상세 없이는 판단 불가라 ?로 둠 (수집기 한계)"
@@ -204,8 +176,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -213,8 +183,6 @@
       "majors": "?",
       "regions": "?",
       "enrollment": "?",
-      "ageMin": "?",
-      "ageMax": "?",
       "forUniv": true
     },
     "라벨링_메모": "링커리어 API는 대상(targets)만 주고 나이·지역·전공·학년을 안 줘서 forUniv만 확정 가능. 나머지는 원문 상세 없이는 판단 불가라 ?로 둠 (수집기 한계)"
@@ -232,8 +200,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -241,10 +207,9 @@
       "majors": "?",
       "regions": "?",
       "enrollment": "?",
-      "ageMin": "?",
-      "ageMax": "?",
       "forUniv": "?"
-    }
+    },
+    "라벨링_메모": "위비티 상세페이지에 자격요건 있으나 수집기가 목록만 긁어 미확보. url 확인 필요 -> ?로 둠"
   },
   {
     "id": "13d22b1f-5945-4723-a1b2-d0177755c0ae",
@@ -259,8 +224,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -268,10 +231,9 @@
       "majors": "?",
       "regions": "?",
       "enrollment": "?",
-      "ageMin": "?",
-      "ageMax": "?",
       "forUniv": "?"
-    }
+    },
+    "라벨링_메모": "위비티 상세페이지에 자격요건 있으나 수집기가 목록만 긁어 미확보. url 확인 필요 -> ?로 둠"
   },
   {
     "id": "7f7e1767-e57a-4230-bdd9-f85162454f42",
@@ -286,8 +248,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -295,10 +255,9 @@
       "majors": "?",
       "regions": "?",
       "enrollment": "?",
-      "ageMin": "?",
-      "ageMax": "?",
       "forUniv": "?"
-    }
+    },
+    "라벨링_메모": "위비티 상세페이지에 자격요건 있으나 수집기가 목록만 긁어 미확보. url 확인 필요 -> ?로 둠"
   },
   {
     "id": "b45387e5-9a6e-4b3e-867e-f17ecb223749",
@@ -313,19 +272,16 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
       "grades": "?",
       "majors": "?",
       "regions": "?",
-      "enrollment": "?",
-      "ageMin": "?",
-      "ageMax": "?",
-      "forUniv": "?"
-    }
+      "enrollment": [],
+      "forUniv": true
+    },
+    "라벨링_메모": "위비티 상세페이지에 '재학생·휴학생·졸업예정자 포함' 명시. 수집기는 상세를 안 긁어서 놓침(고칠 수 있는 한계)"
   },
   {
     "id": "e5bd39f1-19d6-473b-bbc0-a0998b00ff87",
@@ -342,8 +298,6 @@
         "부산"
       ],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -351,10 +305,9 @@
       "majors": "?",
       "regions": "?",
       "enrollment": "?",
-      "ageMin": "?",
-      "ageMax": "?",
       "forUniv": "?"
-    }
+    },
+    "라벨링_메모": "부산청년플랫폼 통합공지는 재직자/공무원시험/영재교육원 등 대학생 대외활동 아닌 노이즈 다수. 수집기가 전부 forUniv=true+부산으로 하드코딩해 오분류 -> 실제 대상 판단 필요, ?로 둠"
   },
   {
     "id": "d2363b6a-0f55-4746-8055-133faaa0da2a",
@@ -371,8 +324,6 @@
         "부산"
       ],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -380,10 +331,9 @@
       "majors": "?",
       "regions": "?",
       "enrollment": "?",
-      "ageMin": "?",
-      "ageMax": "?",
       "forUniv": "?"
-    }
+    },
+    "라벨링_메모": "부산청년플랫폼 통합공지는 재직자/공무원시험/영재교육원 등 대학생 대외활동 아닌 노이즈 다수. 수집기가 전부 forUniv=true+부산으로 하드코딩해 오분류 -> 실제 대상 판단 필요, ?로 둠"
   },
   {
     "id": "93ec34cc-f482-4eb9-a2c8-6e26132f55f8",
@@ -400,8 +350,6 @@
         "부산"
       ],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -409,10 +357,9 @@
       "majors": "?",
       "regions": "?",
       "enrollment": "?",
-      "ageMin": "?",
-      "ageMax": "?",
       "forUniv": "?"
-    }
+    },
+    "라벨링_메모": "부산청년플랫폼 통합공지는 재직자/공무원시험/영재교육원 등 대학생 대외활동 아닌 노이즈 다수. 수집기가 전부 forUniv=true+부산으로 하드코딩해 오분류 -> 실제 대상 판단 필요, ?로 둠"
   },
   {
     "id": "2f8b1092-3014-40d4-8ba9-46b8f6dfd19a",
@@ -429,8 +376,6 @@
         "부산"
       ],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": true
     },
     "gold": {
@@ -438,10 +383,9 @@
       "majors": "?",
       "regions": "?",
       "enrollment": "?",
-      "ageMin": "?",
-      "ageMax": "?",
       "forUniv": "?"
-    }
+    },
+    "라벨링_메모": "부산청년플랫폼 통합공지는 재직자/공무원시험/영재교육원 등 대학생 대외활동 아닌 노이즈 다수. 수집기가 전부 forUniv=true+부산으로 하드코딩해 오분류 -> 실제 대상 판단 필요, ?로 둠"
   },
   {
     "id": "dcbe7f1d-3ea7-4dfb-a962-3fbf30ee3153",
@@ -456,8 +400,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": 15,
-      "ageMax": 34,
       "forUniv": true
     },
     "gold": {
@@ -465,8 +407,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": 15,
-      "ageMax": 34,
       "forUniv": true
     }
   },
@@ -483,8 +423,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": 18,
-      "ageMax": 39,
       "forUniv": true
     },
     "gold": {
@@ -492,8 +430,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": 18,
-      "ageMax": 39,
       "forUniv": false
     }
   },
@@ -510,8 +446,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": 15,
-      "ageMax": 34,
       "forUniv": true
     },
     "gold": {
@@ -519,8 +453,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": null,
-      "ageMax": null,
       "forUniv": "?"
     }
   },
@@ -537,8 +469,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": 15,
-      "ageMax": 34,
       "forUniv": true
     },
     "gold": {
@@ -546,8 +476,6 @@
       "majors": [],
       "regions": [],
       "enrollment": [],
-      "ageMin": 15,
-      "ageMax": 34,
       "forUniv": false
     }
   }

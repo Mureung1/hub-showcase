@@ -1,6 +1,6 @@
 // 온통청년 청년정책 수집기. 크롤링이 아니라 API 호출이라 구조화 JSON을 받는다. (docs/데이터-수집.md)
-// 나이·지역이 이미 구조 필드로 와서 규칙 매핑만으로 충분하다(LLM 불필요). 전공·학년은 청년정책 특성상
-// 대부분 무관(대학생 전용 프로그램이 아니라 청년 전반 대상)이라 빈 배열로 둔다.
+// 지역이 이미 구조 필드로 와서 규칙 매핑만으로 충분하다(LLM 불필요). 전공·학년은 청년정책 특성상
+// 대부분 무관(대학생 전용 프로그램이 아니라 청년 전반 대상)이라 빈 배열로 둔다. 나이는 매칭에서 안 써서 안 뽑는다.
 import { fileURLToPath } from "url";
 
 const BASE = "https://www.youthcenter.go.kr";
@@ -54,19 +54,15 @@ async function callApi(pageNum, pageSize) {
   return json.result;
 }
 
-// 한 페이지. 반환: { totalCount, items:[{ plcyNo, title, org, deadline, ageMin, ageMax, regions, text, sourceUrl }] }
+// 한 페이지. 반환: { totalCount, items:[{ plcyNo, title, org, deadline, regions, text, sourceUrl }] }
 export async function fetchList(pageNum = 1, pageSize = 100) {
   const result = await callApi(pageNum, pageSize);
   const items = (result.youthPolicyList || []).map((p) => {
-    const minAge = Number(p.sprtTrgtMinAge) || 0;
-    const maxAge = Number(p.sprtTrgtMaxAge) || 0;
     return {
       plcyNo: p.plcyNo,
       title: (p.plcyNm || "").trim(),
       org: p.sprvsnInstCdNm || "",
       deadline: parseDeadline(p.aplyYmd),
-      ageMin: minAge > 0 ? minAge : null,
-      ageMax: maxAge > 0 ? maxAge : null,
       regions: deriveRegions(p.zipCd),
       text: (p.plcySprtCn || p.plcyExplnCn || "").replace(/\s+/g, " ").trim(),
       mclsfNm: p.mclsfNm || "", // 중분류(실측: "교육비지원" 등). 장학 성격 판별에 씀 - collect.js
@@ -94,7 +90,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { totalCount, items } = await fetchList(1, 20);
   console.log(`온통청년 청년정책 총 ${totalCount}건 (이번 페이지 ${items.length}건)\n`);
   for (const it of items.slice(0, 8)) {
-    console.log(`- ${it.title.slice(0, 35)} | 지역:${it.regions.join(",") || "전국"} | 나이:${it.ageMin ?? "?"}~${it.ageMax ?? "?"} | 마감:${it.deadline ?? "상시"}`);
+    console.log(`- ${it.title.slice(0, 35)} | 지역:${it.regions.join(",") || "전국"} | 마감:${it.deadline ?? "상시"}`);
   }
   const busan = items.filter((it) => it.regions.includes("부산"));
   console.log(`\n부산 포함 정책: ${busan.length}건`);

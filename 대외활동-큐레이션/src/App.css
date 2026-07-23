@@ -33,6 +33,59 @@
   color: var(--muted);
 }
 
+/* 히어로: 다크 퍼플 카드, 말 거는 제목, 오른쪽 둥근 캐릭터 */
+.hero {
+  margin: 20px 0 0;
+  padding: 26px 28px;
+  background: linear-gradient(135deg, var(--dark) 0%, #3a2b63 100%);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.hero-text {
+  flex: 1;
+  min-width: 0;
+}
+.hero-title {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-wrap: balance;
+}
+.hero-sub {
+  margin: 0 0 14px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #c9bfe8;
+}
+.hero-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.hero-badge {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--violet);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.hero-fresh {
+  font-size: 0.85rem;
+  color: #a99fce;
+}
+@media (max-width: 520px) {
+  .hero { padding: 22px; }
+  .hero-title { font-size: 1.25rem; }
+}
+
 /* 조건 입력 패널 */
 .panel {
   margin: 24px 0;

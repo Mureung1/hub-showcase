@@ -20,8 +20,6 @@
 // @property {string[]} eligibility.majors      허용 전공(canonical 8), [] = 무관
 // @property {string[]} eligibility.regions     허용 지역(canonical 13), [] = 무관
 // @property {string[]} eligibility.enrollment  허용 재학상태, [] = 무관
-// @property {number|null} eligibility.ageMin   최소 만 나이, null = 무관
-// @property {number|null} eligibility.ageMax   최대 만 나이, null = 무관
 // @property {number|null} eligibility.incomeMax 소득분위 상한(이하), null = 무관
 // @property {number|null} eligibility.gpaMin   최소 학점(이상), null = 무관
 // @property {string} eligibilityText           원문 자격요건 문장 (판정 근거)

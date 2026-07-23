@@ -6,6 +6,7 @@ import { CATEGORIES } from "../constants";
 import ConditionPanel from "../components/ConditionPanel";
 import ResultSection from "../components/ResultSection";
 import Card from "../components/Card";
+import Hero from "../components/Hero";
 
 // 홈 화면. App이 가진 state를 Outlet context(props)로 받아서 조건 입력 + 결과를 보여준다.
 export default function HomePage() {
@@ -30,8 +31,13 @@ export default function HomePage() {
 
   const openDetail = (item) => navigate(`/activity/${item.id}`);
 
+  // 히어로용: 마감 안 지난 전체 공고 수(규모)와 마지막 수집 시각(신선도). 필터와 무관하게 전체 기준.
+  const liveCount = c.postings.filter((a) => !isPast(a.deadline)).length;
+  const lastCollected = c.postings.reduce((max, a) => (a.collectedAt > max ? a.collectedAt : max), "");
+
   return (
     <>
+      <Hero count={liveCount} updatedAt={lastCollected} />
       <ConditionPanel
         profile={c.profile} setField={c.setField}
         showScholarship={c.showScholarship} setShowScholarship={c.setShowScholarship}
@@ -55,7 +61,7 @@ export default function HomePage() {
             <div className="summary">
               <span className="s-eligible">가능 {eligible.length}</span>
               <span className="s-review">확인 필요 {review.length}</span>
-              <span className="s-near">거의 가능 {near.length}</span>
+              {near.length > 0 && <span className="s-near">거의 가능 {near.length}</span>}
             </div>
             <select className="sort-select" value={c.sortBy} onChange={(e) => c.setSortBy(e.target.value)}>
               <option value="deadline">마감 임박순</option>

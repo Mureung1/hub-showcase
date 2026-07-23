@@ -4,7 +4,7 @@
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 
-const FIELDS = ["grades", "majors", "regions", "enrollment", "ageMin", "ageMax", "forUniv"];
+const FIELDS = ["grades", "majors", "regions", "enrollment", "forUniv"];
 
 function toSet(value) {
   if (value == null) return new Set();

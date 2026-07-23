@@ -17,16 +17,14 @@ function currentExtracted(eligibility) {
     majors: eligibility?.majors ?? [],
     regions: eligibility?.regions ?? [],
     enrollment: eligibility?.enrollment ?? [],
-    ageMin: eligibility?.ageMin ?? null,
-    ageMax: eligibility?.ageMax ?? null,
     forUniv: eligibility?.forUniv ?? null,
   };
 }
 
-// 사람이 채울 빈 정답칸. "?"는 "아직 안 채움" 표시다 - null은 나이 등에서 "진짜 무관"이라는 유효한
+// 사람이 채울 빈 정답칸. "?"는 "아직 안 채움" 표시다 - null은 "진짜 무관"이라는 유효한
 // 답이라 겹치면 안 되고, 그래서 값이 없다는 표시로 null 대신 "?"를 쓴다(채점 스크립트가 "?"만 건너뜀).
 function emptyGold() {
-  return { grades: "?", majors: "?", regions: "?", enrollment: "?", ageMin: "?", ageMax: "?", forUniv: "?" };
+  return { grades: "?", majors: "?", regions: "?", enrollment: "?", forUniv: "?" };
 }
 
 async function run() {
