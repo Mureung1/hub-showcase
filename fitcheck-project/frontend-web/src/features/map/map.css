@@ -288,6 +288,22 @@
   padding: 0.25rem 0.55rem;
 }
 
+.gym-match-badge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #e50914, #ff6b35);
+  border-radius: var(--radius-pill);
+  padding: 0.25rem 0.55rem;
+}
+
+.gym-match-reason {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 .gym-sheet-list {
   list-style: none;
   margin: 0;

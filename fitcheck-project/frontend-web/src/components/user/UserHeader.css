@@ -106,6 +106,24 @@
   color: var(--text-secondary);
 }
 
+.user-header-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.user-header-logout:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
 @media (min-width: 768px) {
   .user-top-nav {
     display: flex;

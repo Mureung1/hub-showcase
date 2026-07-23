@@ -1,55 +1,52 @@
-import type { MealLog } from '../../data/userMock';
+import type { MealLog } from '../../types/meal';
 import './meals.css';
 
 interface MealTimelineItemProps {
   meal: MealLog;
 }
 
-const STATUS_CLASS = {
-  good: 'badge-green',
-  warn: 'badge-yellow',
-  info: 'badge-purple',
-} as const;
-
-const STATUS_LABEL = {
-  good: '균형',
-  warn: '주의',
-  info: '참고',
-} as const;
-
 export default function MealTimelineItem({ meal }: MealTimelineItemProps) {
+  const title = meal.memo?.trim() || `${meal.mealType} 식단`;
+  const aiEstimated =
+    Boolean(meal.aiFeedback) ||
+    (Boolean(meal.imageUrl) &&
+      (meal.macros.kcal > 0 || meal.macros.carb > 0 || meal.macros.protein > 0 || meal.macros.fat > 0));
+
   return (
     <article className="meal-item panel">
+      {meal.imageUrl ? (
+        <img src={meal.imageUrl} alt={title} className="meal-item-photo" />
+      ) : null}
+
       <div className="meal-item-header">
         <div>
-          <span className="meal-time">{meal.time}</span>
-          <h3>{meal.title}</h3>
+          <span className="meal-type-label">{meal.mealType}</span>
+          {meal.time ? <span className="meal-time">{meal.time}</span> : null}
+          {aiEstimated ? <span className="meal-ai-badge">AI 추정</span> : null}
+          <h3>{title}</h3>
         </div>
-        <span className={`status-badge ${STATUS_CLASS[meal.status]}`}>
-          {STATUS_LABEL[meal.status]}
-        </span>
       </div>
 
       <div className="meal-macros">
         <div>
-          <strong>{meal.calories}</strong>
+          <strong>{meal.macros.kcal}</strong>
           <span>kcal</span>
         </div>
         <div>
-          <strong>{meal.carbs}g</strong>
+          <strong>{meal.macros.carb}g</strong>
           <span>탄수화물</span>
         </div>
         <div>
-          <strong>{meal.protein}g</strong>
+          <strong>{meal.macros.protein}g</strong>
           <span>단백질</span>
         </div>
         <div>
-          <strong>{meal.fat}g</strong>
+          <strong>{meal.macros.fat}g</strong>
           <span>지방</span>
         </div>
       </div>
 
-      <p className="meal-feedback">{meal.feedback}</p>
+      {meal.aiFeedback ? <p className="meal-feedback">{meal.aiFeedback}</p> : null}
     </article>
   );
 }
