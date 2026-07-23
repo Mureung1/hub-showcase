@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "sync:catalog": "tsx scripts/syncGovCatalog.ts",
     "sync:districts": "tsx scripts/syncRegionDistricts.ts",
-    "sync:item-names-en": "tsx scripts/syncItemNamesEn.ts"
+    "sync:item-names-en": "tsx scripts/syncItemNamesEn.ts",
+    "sync:region-names-en": "tsx scripts/syncRegionNamesEn.ts"
   },
   "keywords": [],
   "author": "",
