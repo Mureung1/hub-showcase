@@ -561,15 +561,18 @@ function requireSafeBrowserAuthUrl(value: unknown): string {
   } catch {
     throw new BridgeProtocolError('invalid_frame')
   }
-  const authority = text.slice('https://'.length).split(/[/?#]/u, 1)[0]
+  const authority = /^https:\/\/([^/?#]+)(?:[/?#]|$)/u.exec(text)?.[1]
   if (
+    text !== text.trim() ||
     parsed.protocol !== 'https:' ||
     (parsed.hostname !== 'auth.openai.com' &&
       parsed.hostname !== 'chatgpt.com') ||
+    authority !== parsed.hostname ||
     parsed.username !== '' ||
     parsed.password !== '' ||
+    parsed.port !== '' ||
     parsed.hash !== '' ||
-    authority.includes(':')
+    authority === undefined
   ) {
     throw new BridgeProtocolError('invalid_frame')
   }

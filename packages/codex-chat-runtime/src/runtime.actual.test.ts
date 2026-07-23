@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import {
+  chmod,
   mkdir,
   mkdtemp,
   readFile,
   realpath,
   rm,
+  symlink,
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -244,6 +246,138 @@ test('starts an immutable auth-only Runtime with exact application identity and 
     await waitForPidExit(harness.nativeChildPidPath)
     await waitForProcessGroupExit(harness.child.pid as number)
   }
+})
+
+test('rejects unsafe auth-only bootstrap and overlapping controlled roots before spawn', async (t) => {
+  const cases = [
+    [
+      'nonempty bootstrap',
+      async (root: string) => {
+        const bootstrapCwd = join(root, 'bootstrap')
+        await mkdir(bootstrapCwd, { mode: 0o700 })
+        await writeFile(join(bootstrapCwd, 'unexpected'), '')
+        return {
+          bootstrapCwd,
+          environment: await createOwnerOnlyEnvironmentRoots(root),
+        }
+      },
+    ],
+    [
+      'permissive bootstrap mode',
+      async (root: string) => {
+        const bootstrapCwd = join(root, 'bootstrap')
+        await mkdir(bootstrapCwd, { mode: 0o700 })
+        await chmod(bootstrapCwd, 0o755)
+        return {
+          bootstrapCwd,
+          environment: await createOwnerOnlyEnvironmentRoots(root),
+        }
+      },
+    ],
+    [
+      'permissive controlled root mode',
+      async (root: string) => {
+        const bootstrapCwd = join(root, 'bootstrap')
+        await mkdir(bootstrapCwd, { mode: 0o700 })
+        const environment = await createOwnerOnlyEnvironmentRoots(root)
+        await chmod(environment.codexHome, 0o755)
+        return { bootstrapCwd, environment }
+      },
+    ],
+    [
+      'bootstrap symlink',
+      async (root: string) => {
+        const target = join(root, 'bootstrap-target')
+        const bootstrapCwd = join(root, 'bootstrap')
+        await mkdir(target, { mode: 0o700 })
+        await symlink(target, bootstrapCwd)
+        return {
+          bootstrapCwd,
+          environment: await createOwnerOnlyEnvironmentRoots(root),
+        }
+      },
+    ],
+    [
+      'overlapping roots',
+      async (root: string) => {
+        const environment = await createOwnerOnlyEnvironmentRoots(root)
+        const bootstrapCwd = join(environment.home, 'bootstrap')
+        await mkdir(bootstrapCwd, { mode: 0o700 })
+        return { bootstrapCwd, environment }
+      },
+    ],
+  ] as const
+
+  for (const [label, arrange] of cases) {
+    await t.test(label, async () => {
+      const root = await mkdtemp(join(tmpdir(), 'ay-ple-node-auth-invalid-'))
+      roots.push(root)
+      const { bootstrapCwd, environment } = await arrange(root)
+      const processJournalPath = join(root, 'process-journal.json')
+      let spawned: SpawnedCodexChatRuntime | undefined
+      try {
+        await assert.rejects(
+          async () => {
+            spawned = await startVerifiedCodexChatRuntime({
+              bundle,
+              role: { role: 'auth-only', bootstrapCwd },
+              application: {
+                name: 'ay-ple',
+                title: 'AY-PLE',
+                version: '0.1.0-preview.1',
+              },
+              environment,
+              bridgeEntrypointOverride: FAKE_NODE_WORKER,
+              bridgeArgsOverride: [
+                '--scenario=response-hang',
+                `--process-journal=${processJournalPath}`,
+              ],
+            })
+          },
+          TypeError,
+        )
+      } finally {
+        await spawned?.runtime.close().catch(() => undefined)
+      }
+      await assert.rejects(
+        readFile(processJournalPath),
+        (error: unknown) =>
+          (error as NodeJS.ErrnoException).code === 'ENOENT',
+      )
+    })
+  }
+})
+
+test('rejects noncanonical application SemVer before spawning auth-only Runtime', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'ay-ple-node-app-version-'))
+  roots.push(root)
+  const bootstrapCwd = join(root, 'bootstrap')
+  await mkdir(bootstrapCwd, { mode: 0o700 })
+  const processJournalPath = join(root, 'process-journal.json')
+
+  await assert.rejects(
+    startVerifiedCodexChatRuntime({
+      bundle,
+      role: { role: 'auth-only', bootstrapCwd },
+      application: {
+        name: 'ay-ple',
+        title: 'AY-PLE',
+        version: '1.0.0-01',
+      },
+      environment: await createOwnerOnlyEnvironmentRoots(root),
+      bridgeEntrypointOverride: FAKE_NODE_WORKER,
+      bridgeArgsOverride: [
+        '--scenario=response-hang',
+        `--process-journal=${processJournalPath}`,
+      ],
+    }),
+    TypeError,
+  )
+  await assert.rejects(
+    readFile(processJournalPath),
+    (error: unknown) =>
+      (error as NodeJS.ErrnoException).code === 'ENOENT',
+  )
 })
 
 test('projects delayed login completion, sticky status, release, logout, and fresh null readback without private identity', async () => {
@@ -1794,6 +1928,47 @@ test('escalates one close through SIGTERM and SIGKILL until the process group di
       error.code === 'runtime_close_timeout' &&
       !error.unknownOutcome,
   )
+  await harness.closed
+  await waitForProcessGroupExit(processJournal.processGroupId)
+  await waitForProcessExit(processJournal.descendantPid)
+})
+
+test('account close overload consumes a stubborn close failure after complete process-tree reap', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'ay-ple-node-account-close-'))
+  roots.push(root)
+  const bootstrapCwd = join(root, 'bootstrap')
+  await mkdir(bootstrapCwd, { mode: 0o700 })
+  const processJournalPath = join(root, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    role: { role: 'auth-only', bootstrapCwd },
+    application: {
+      name: 'ay-ple',
+      title: 'AY-PLE',
+      version: '0.1.0-preview.1',
+    },
+    environment: await createOwnerOnlyEnvironmentRoots(root),
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=stubborn-close',
+      `--process-journal=${processJournalPath}`,
+    ],
+    deadlines: {
+      gracefulCloseMs: 50,
+      terminateMs: 50,
+      postKillMs: 250,
+    },
+  })
+  const processJournal = await readProcessJournal(processJournalPath)
+
+  assert.deepEqual(
+    await harness.runtime.close({
+      signal: new AbortController().signal,
+    }),
+    { status: 'closed', processTreeGone: true },
+  )
+  await new Promise<void>((resolvePromise) => setImmediate(resolvePromise))
+  assert.equal((await harness.terminal).code, 'runtime_close_timeout')
   await harness.closed
   await waitForProcessGroupExit(processJournal.processGroupId)
   await waitForProcessExit(processJournal.descendantPid)

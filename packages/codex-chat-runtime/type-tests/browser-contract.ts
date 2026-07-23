@@ -20,6 +20,9 @@ import type { CodexAccountLifecycle as BrowserAccountLifecycle } from '../src/co
 // @ts-expect-error Browser callers must not receive process-owned Runtime roles.
 import type { CodexRuntimeRole as BrowserRuntimeRole } from '../src/contract.js'
 
+// @ts-expect-error Browser callers must not receive the managed process Runtime.
+import type { CodexManagedRuntime as BrowserManagedRuntime } from '../src/contract.js'
+
 declare const browserRuntime: BrowserCodexChatRuntime
 declare const accountLifecycle: CodexAccountLifecycle
 declare const managedRuntime: CodexManagedRuntime
@@ -38,6 +41,7 @@ void chatRuntime.startThread()
 void productRuntime.startThread(privateThreadInput)
 void runtimeRole
 void (null as unknown as BrowserAccountLifecycle)
+void (null as unknown as BrowserManagedRuntime)
 void (null as unknown as BrowserRuntimeRole)
 
 // @ts-expect-error Browser Chat runtime accepts no private thread configuration.

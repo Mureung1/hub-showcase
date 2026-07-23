@@ -1012,6 +1012,7 @@ class NodeCodexChatRuntime implements CodexManagedRuntime {
     this.closePromise ??= this.closeOnce()
     if (input.signal.aborted) escalate()
     try {
+      await this.closePromise.catch(() => undefined)
       await this.closed
       return { status: 'closed', processTreeGone: true }
     } catch {
@@ -1855,7 +1856,7 @@ function validateApplicationIdentity(
   }
   requireBoundedString(identity.version, 'Application version', 128)
   if (
-    !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u.test(
+    !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u.test(
       identity.version,
     )
   ) {

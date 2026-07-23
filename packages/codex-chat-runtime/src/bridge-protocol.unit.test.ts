@@ -241,6 +241,14 @@ test('rejects account frames with private, unsafe, or non-exact fields', () => {
     },
     {
       type: 'result',
+      bridgeRequestId: 'start',
+      command: 'start_browser_login',
+      status: 'pending',
+      attemptId: 'attempt-safe',
+      authUrl: ' https://auth.openai.com:444/codex/test-login',
+    },
+    {
+      type: 'result',
       bridgeRequestId: 'status',
       command: 'read_browser_login_attempt',
       status: 'failed',
