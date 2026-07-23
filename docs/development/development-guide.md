@@ -3,6 +3,7 @@
 ## 기술 스택
 
 - Frontend: React + Vite
+- Game UI: Phaser + Tiled
 - Backend: NestJS
 - Monorepo: npm workspaces
 - Shared contracts: `packages/contracts`
@@ -31,6 +32,50 @@ Project
 ├─ AGENTS.md
 └─ README.md
 ```
+
+## Frontend 기능 구조
+
+`apps/web`은 화면 종류가 아니라 기능 단위로 나눈다. React는 인증, 모달, API 상태와 접근성을 담당하고 Phaser는 맵 렌더링, 이동, 충돌과 상호작용 감지만 담당한다.
+
+```text
+apps/web/src/
+├─ app/                         # 최상위 화면 전환과 provider
+├─ components/                  # 여러 기능에서 공유하는 작은 UI
+├─ features/
+│  ├─ auth/
+│  ├─ landing/
+│  ├─ repository-analysis/
+│  ├─ reflection/
+│  └─ workspace/
+│     ├─ WorkspaceGame.tsx      # React와 Phaser의 연결 지점
+│     ├─ workspace.css
+│     ├─ components/            # prompt, fallback list 등 React UI
+│     ├─ game/
+│     │  ├─ createWorkspaceGame.ts
+│     │  ├─ WorkspaceScene.ts
+│     │  ├─ InputManager.ts
+│     │  └─ InteractionManager.ts
+│     └─ model/                 # 이벤트와 에셋 경로 타입
+├─ lib/                         # 외부 서비스 client
+└─ styles/                      # token, reset, 공통 layout
+```
+
+### React와 Phaser 경계
+
+- Phaser Scene은 Repository API, Supabase, 인증 상태를 직접 호출하지 않는다.
+- Phaser는 `interaction-changed`, `open-new-analysis`처럼 UI 의도를 나타내는 이벤트만 React에 전달한다.
+- React는 이벤트를 받아 모달을 열고 기존 분석 기능을 호출한다.
+- 모달이 열리면 React가 게임 입력을 멈추고, 닫히면 입력과 focus를 복원한다.
+- 배포 base path가 `/hub/`이므로 게임 에셋 경로는 `import.meta.env.BASE_URL`을 기준으로 만든다.
+
+## 파일 책임 분리 기준
+
+- 파일 하나는 한 가지 변경 이유를 갖도록 한다.
+- 컴포넌트가 화면 렌더링, API 호출, 저장, 게임 입력을 함께 담당하면 기능별 hook, service 또는 manager로 분리한다.
+- Phaser Scene에는 scene lifecycle과 orchestration만 두고 입력·충돌 대상 선택·이벤트 변환은 별도 모듈로 분리한다.
+- 전역 `style.css`에 새 기능 스타일을 계속 추가하지 않는다. 작업실 스타일은 `features/workspace/workspace.css`처럼 기능 가까이에 둔다.
+- 단순히 파일 길이를 줄이기 위한 wrapper는 만들지 않는다. 독립적으로 테스트하거나 교체할 수 있는 책임만 분리한다.
+- 공통 컴포넌트는 실제로 두 곳 이상에서 같은 의미로 사용될 때 `components/`로 이동한다.
 
 ## NestJS API 기능 구조
 
@@ -86,6 +131,9 @@ NestJS는 Express보다 초기 구조가 무겁지만, module, controller, servi
 - API 실패, 빈 입력, 잘못된 URL 같은 상태를 명시적으로 처리한다.
 - 주석은 복잡한 의사결정이 있는 곳에만 짧게 남긴다.
 - 불필요한 추상화보다 현재 기능 흐름을 읽기 쉽게 유지한다.
+- Phaser 객체와 React 상태 사이에는 직렬화 가능한 이벤트 payload만 전달한다.
+- game event 이름과 payload는 TypeScript union으로 관리한다.
+- 외부 에셋을 추가할 때 `docs/research/game-asset-license.md`를 함께 갱신한다.
 
 ## 커밋 컨벤션
 
@@ -104,3 +152,5 @@ NestJS는 Express보다 초기 구조가 무겁지만, module, controller, servi
 - 배포 설정은 `apps/web`과 `apps/api`의 root directory를 명확히 지정한다.
 - Agent는 임의로 `client/`, `server/` 구조를 새로 만들지 말고 `apps/web`, `apps/api` 구조를 우선한다.
 - `.github/` 디렉토리와 GitHub Actions workflow는 사용자의 명시 요청 없이 수정하지 않는다.
+- UI 변경 전 `docs/design/design-system.md`와 `docs/design/game-workspace-design.md`를 확인한다.
+- Scene이나 하나의 React 컴포넌트에 분석, 회고, 인증, 게임 로직을 한꺼번에 넣지 않는다.
