@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -29,47 +30,104 @@ class QuestDeleteDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+
+    // 프로젝트 다이얼로그 관례(`Dialog` + 직접 레이아웃)를 따른다 — 수정
+    // 다이얼로그와 동일한 하단 Row + Expanded 2개 버튼 배치를 공유한다.
+    return Dialog(
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('삭제할까요?', style: theme.textTheme.titleLarge),
+            AppSpacing.gapMd,
+            Text(questTitle, style: theme.textTheme.bodyLarge),
+            AppSpacing.gapMd,
+
+            // 경고를 둥근 박스로 감싸 본문과 구분한다.
+            _WarningBox(childCount: childCount),
+            AppSpacing.gapLg,
+
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('취소'),
+                  ),
+                ),
+                AppSpacing.gapWSm,
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: scheme.error,
+                      foregroundColor: scheme.onError,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('삭제'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 삭제 경고를 둥근 틴트 박스로 감싼다.
+///
+/// 자식 있는 재분해 원본은 파괴 규모가 크므로 `errorContainer` 틴트 + 경고
+/// 아이콘으로 강조하고, 단건 삭제는 중립 틴트로 과하지 않게 둔다.
+class _WarningBox extends StatelessWidget {
+  const _WarningBox({required this.childCount});
+
+  final int childCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final hasChildren = childCount > 0;
 
-    return AlertDialog(
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
-      title: const Text('삭제할까요?'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
+    final background = hasChildren
+        ? scheme.errorContainer
+        : scheme.surfaceContainerLow;
+    final foreground = hasChildren
+        ? scheme.onErrorContainer
+        : scheme.onSurfaceVariant;
+
+    final message = hasChildren
+        // 재분해 원본 — 함께 사라질 계보 수를 밝힌다. 이걸 안 알리면
+        // 사용자는 하위 퀘스트가 조용히 없어진 걸 나중에야 발견한다.
+        ? '이 퀘스트를 지우면 재분해한 하위 퀘스트 $childCount개도 함께 삭제돼요. 되돌릴 수 없어요.'
+        : '삭제하면 되돌릴 수 없어요.';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: AppRadius.mdAll,
+      ),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            questTitle,
-            style: theme.textTheme.bodyLarge,
-          ),
-          AppSpacing.gapSm,
-          Text(
-            hasChildren
-                // 재분해 원본 — 함께 사라질 계보 수를 밝힌다. 이걸 안 알리면
-                // 사용자는 하위 퀘스트가 조용히 없어진 걸 나중에야 발견한다.
-                ? '이 퀘스트를 지우면 재분해한 하위 퀘스트 $childCount개도 함께 삭제돼요. '
-                      '되돌릴 수 없어요.'
-                : '삭제하면 되돌릴 수 없어요.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
+          if (hasChildren) ...[
+            Icon(Symbols.warning, size: 20, fill: 1, color: foreground),
+            AppSpacing.gapWSm,
+          ],
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(color: foreground),
             ),
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('취소'),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: scheme.error,
-            foregroundColor: scheme.onError,
-          ),
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('삭제'),
-        ),
-      ],
     );
   }
 }

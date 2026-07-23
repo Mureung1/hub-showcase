@@ -75,77 +75,100 @@ class _QuestEditDialogState extends State<QuestEditDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return AlertDialog(
+    // 프로젝트 다이얼로그 관례(`Dialog` + 직접 레이아웃)를 따른다. AlertDialog의
+    // actions(OverflowBar)는 폭이 좁으면 버튼을 세로로 쌓아 취소가 저장 위로
+    // 올라가므로, 하단 Row + Expanded 2개로 항상 가로 배치를 보장한다.
+    return Dialog(
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
-      title: const Text('퀘스트 수정'),
-      // AlertDialog가 content 폭을 경계지어 준다 — 필드·미리보기가 그 폭을 채운다.
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextFormField(
-              controller: _titleController,
-              autofocus: true,
-              maxLength: 60,
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(labelText: '제목'),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return '제목을 입력해 주세요.';
-                }
-                return null;
-              },
-              onFieldSubmitted: (_) {
-                if (_canSave) _save();
-              },
-            ),
-            AppSpacing.gapSm,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('퀘스트 수정', style: theme.textTheme.titleLarge),
+              AppSpacing.gapMd,
 
-            Text('난이도', style: theme.textTheme.titleMedium),
-            AppSpacing.gapSm,
-            SegmentedButton<Difficulty>(
-              segments: [
-                for (final d in Difficulty.values)
-                  ButtonSegment(value: d, label: Text(d.label)),
-              ],
-              selected: {_difficulty},
-              onSelectionChanged: (selection) =>
-                  setState(() => _difficulty = selection.first),
-            ),
-            AppSpacing.gapMd,
-
-            // 난이도를 바꾸면 예상 보상도 함께 바뀐다(등록 화면과 같은 미리보기).
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: AppRadius.mdAll,
+              TextFormField(
+                controller: _titleController,
+                autofocus: true,
+                maxLength: 60,
+                textInputAction: TextInputAction.done,
+                decoration: const InputDecoration(labelText: '제목'),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return '제목을 입력해 주세요.';
+                  }
+                  return null;
+                },
+                onFieldSubmitted: (_) {
+                  if (_canSave) _save();
+                },
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              AppSpacing.gapSm,
+
+              Text('난이도', style: theme.textTheme.titleMedium),
+              AppSpacing.gapSm,
+              // 좁은 다이얼로그 폭에서 왼쪽 쏠림 없이 가로를 꽉 채운다 — 세그먼트가
+              // 폭을 균등 분할해 등록 화면과 시각적으로 일관된다.
+              SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<Difficulty>(
+                  segments: [
+                    for (final d in Difficulty.values)
+                      ButtonSegment(value: d, label: Text(d.label)),
+                  ],
+                  selected: {_difficulty},
+                  onSelectionChanged: (selection) =>
+                      setState(() => _difficulty = selection.first),
+                ),
+              ),
+              AppSpacing.gapMd,
+
+              // 난이도를 바꾸면 예상 보상도 함께 바뀐다(등록 화면과 같은 미리보기).
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: AppRadius.mdAll,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('예상 보상', style: theme.textTheme.labelMedium),
+                    RewardChip(reward: rewardFor(_difficulty)),
+                  ],
+                ),
+              ),
+              AppSpacing.gapLg,
+
+              // 취소·저장을 가로로 나란히. Expanded 2개라 폭이 좁아도 세로로 쌓이지
+              // 않는다(수정·삭제 다이얼로그가 동일 배치를 공유한다).
+              Row(
                 children: [
-                  Text('예상 보상', style: theme.textTheme.labelMedium),
-                  RewardChip(reward: rewardFor(_difficulty)),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('취소'),
+                    ),
+                  ),
+                  AppSpacing.gapWSm,
+                  Expanded(
+                    child: FilledButton(
+                      // 제목이 비어 있으면 눌리지 않는다.
+                      onPressed: _canSave ? _save : null,
+                      child: const Text('저장'),
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('취소'),
-        ),
-        FilledButton(
-          // 제목이 비어 있으면 눌리지 않는다.
-          onPressed: _canSave ? _save : null,
-          child: const Text('저장'),
-        ),
-      ],
     );
   }
 }
