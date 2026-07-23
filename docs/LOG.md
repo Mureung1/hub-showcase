@@ -1122,3 +1122,11 @@
 - T26 관련 5파일 110테스트와 전체 43파일 365테스트, `templates:generate`, `templates:check`, `typecheck:api`, lint, production build, `git diff --check`, `any` 금지 검사가 통과했다. 빌드의 기존 CatCanvas 500 kB 경고만 비차단으로 남았다.
 - 화면·카피 변경은 없어 신규 실화면 검증은 비적용으로 판정했다. 실제 DB 등록·커밋·push·배포는 수행하지 않았다. 상세 근거: [T26 계획서](../harness/tasks/T26-deterministic-template-engine/plan.md)·[검증 보고서](../harness/tasks/T26-deterministic-template-engine/verification.md).
 
+## 2026-07-22 (T32 개인 말투 선호·카드 기본값 분리와 S3 전환)
+- 카드 진입 때 관계 기본 말투를 `speechStyleId`에 저장하던 동작을 제거했다. 이제 이 값은 사용자가 직접 설명 또는 정적 결과에서 명시적으로 고른 선호만 나타내며, 명시 선호가 없는 카드·guided 경로는 조회 시 관계 기본값(`professor=seumnida`, 나머지 `haeyo`)을 사용한다.
+- 신규 직접 설명은 네 말투 중 하나를 직접 고르기 전 생성할 수 없다. 명시 선택은 관계·카드·모드 이동과 30분 탭 세션에서 유지되고, 전체 초기화·만료·오염값은 미선택으로 복구한다. 말투가 없는 유효한 구세션 카드 결과는 저장 후보를 신뢰하지 않고 관계 기본 generated 후보로 다시 조회한다.
+- `source=template` S3에만 `말투 바꾸기` 4지선다를 추가했다. 같은 관계×상황의 T26 검수 세 후보를 API·로딩·런타임 어미 변환 없이 즉시 교체하고 복사 완료·직접 편집·이전 초안 표시를 초기화한다. 현재 말투는 live text로 전달하며 `source=ai`에는 전환을 노출하지 않는다.
+- 관련 4파일 109개와 전체 43파일 367개 테스트, 프론트·API 타입검사, `templates:check`, lint, production build, `git diff --check`, AGENTS/CLAUDE 미러, 대상 `any` 금지 검사가 통과했다. 기존 jsdom `scrollTo` 로그와 lazy CatCanvas 500kB 경고만 비차단으로 유지됐다.
+- Browser 스킬의 bootstrap troubleshooting까지 수행했으나 사용 가능한 backend 목록이 `[]`여서 320×568·375×667 무가로넘침과 실제 Tab·방향키 검증은 실행하지 못했다. 이 필수 증거 전까지 CHECKLIST T32는 미체크로 유지한다. 상세 근거: [T32 계획서](../harness/tasks/T32-speech-style-presets/plan.md)·[검증 보고서](../harness/tasks/T32-speech-style-presets/verification.md).
+- 이후 사용자가 320×568·375×667 화면과 키보드 동작의 수동 확인 완료를 보고했다. 원시 캡처는 저장하지 않고 사용자 확인을 근거로 AC-10과 CHECKLIST T32를 완료 처리했으며, VoiceOver/NVDA 조합별 전수 확인은 T22 범위로 유지한다.
+

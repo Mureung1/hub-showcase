@@ -1099,6 +1099,31 @@
   line-height: 1.4;
 }
 
+.result-speech-style-panel {
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 14px;
+}
+
+.speech-style-fieldset--result {
+  margin-top: 0;
+}
+
+.speech-style-fieldset--result .speech-style-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.speech-style-fieldset--result .speech-style-option {
+  padding-block: 8px;
+}
+
+.result-speech-style-panel > p {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .purpose-list {
   display: flex;
   flex-wrap: wrap;
@@ -1974,6 +1999,10 @@
   }
 
   .situation-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .speech-style-fieldset--result .speech-style-list {
     grid-template-columns: minmax(0, 1fr);
   }
 

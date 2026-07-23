@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import App from './App'
 import MessageFlow from '../pages/message-flow'
+import { templateCandidatesFor } from '../entities/message/situationTemplates'
 import type { InteractionEvent } from '../shared/interaction'
 
 afterEach(() => {
@@ -140,6 +141,7 @@ describe('App', () => {
     await waitFor(() => expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3))
     expect(screen.getByLabelText('선택한 내용')).toHaveTextContent('선배·동기 · 일정 조율 · 가능한 시간 묻기')
     expect(screen.getByText('현재는 AI 연결 전 검증용 예시 후보입니다.')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: '말투 바꾸기' })).toBeNull()
   })
 
   it('guided AI 실패 fallback은 기존 후보를 보존하며 같은 ID로 재시도한다', async () => {
@@ -542,6 +544,50 @@ describe('App', () => {
     expect(screen.getByRole('list', { name: '말 고르기 4/4단계' })).toBeInTheDocument()
   })
 
+  it('바로 초안 결과의 말투를 API 없이 같은 상황의 검수 후보로 즉시 바꾼다', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }))
+    const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const { container } = render(<MessageFlow interactionReporter={() => undefined} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    chooseProfessorMessenger()
+    openTemplateDraft('감사·확인')
+
+    const defaultCandidates = templateCandidatesFor('professor', 'thanks_check', 'seumnida')
+    const changedCandidates = templateCandidatesFor('professor', 'thanks_check', 'yongyong')
+    expect(defaultCandidates).not.toBeNull()
+    expect(changedCandidates).not.toBeNull()
+    expect(screen.getByRole('group', { name: '말투 바꾸기' }).querySelectorAll('input[type="radio"]')).toHaveLength(
+      4,
+    )
+    expect(screen.getByRole('radio', { name: /습니다체/ })).toBeChecked()
+    expect(Array.from(container.querySelectorAll('.result-card > p'), (element) => element.textContent)).toEqual(
+      defaultCandidates?.map((candidate) => candidate.text),
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: '복사' })[0])
+    await waitFor(() => expect(screen.getByRole('button', { name: '복사됨 ✓' })).toBeInTheDocument())
+    fireEvent.click(screen.getAllByRole('button', { name: '직접 수정' })[1])
+    expect(screen.getByLabelText('더 부드럽게 초안 직접 수정')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('radio', { name: /용용체/ }))
+
+    expect(screen.getByRole('radio', { name: /용용체/ })).toBeChecked()
+    expect(screen.getByText('현재 용용체 세 문장이에요. 다른 말투를 고르면 바로 바뀌어요.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '복사됨 ✓' })).toBeNull()
+    expect(screen.queryByLabelText('더 부드럽게 초안 직접 수정')).toBeNull()
+    expect(Array.from(container.querySelectorAll('.result-card > p'), (element) => element.textContent)).toEqual(
+      changedCandidates?.map((candidate) => candidate.text),
+    )
+    expect(screen.getByText(/교수님·조교님에 맞춰 용용체로/)).toBeInTheDocument()
+    expect(container.querySelector('[aria-busy="true"]')).toBeNull()
+    expect(fetchSpy).not.toHaveBeenCalled()
+
+    const storedValue = JSON.parse(window.sessionStorage.getItem('dabnyangi:flow') ?? '{}') as Record<string, unknown>
+    expect(storedValue.speechStyleId).toBe('yongyong')
+  })
+
   it('노출되는 모든 상황 카드는 선택한 말투로 API 없이 세 개의 템플릿 후보를 반환한다', () => {
     const templateRoutes = [
       {
@@ -672,6 +718,7 @@ describe('App', () => {
     expect(screen.getByText('메시지 목적을 골라주세요.')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
+    chooseHaeyoSpeechStyle()
 
     fireEvent.change(screen.getByLabelText('받은 메시지 붙여넣기'), {
       target: { value: '과제 기한 연장 문의 주셔서 확인했습니다.' },
@@ -697,16 +744,20 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: '일정 조율' })).toBeNull()
   })
 
-  it('바로 초안 결과의 secondary CTA는 직접 설명으로 이어진다', () => {
+  it('기본 말투로 본 바로 초안에서 직접 설명으로 가면 말투를 명시적으로 고르게 한다', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     chooseProfessorMessenger()
-    chooseHaeyoSpeechStyle()
     openTemplateDraft('결석·과제 문의')
     fireEvent.click(screen.getByRole('button', { name: '내 상황을 직접 설명하기' }))
 
     expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: /습니다체/ })).toBeChecked()
+    for (const radio of screen.getAllByRole('radio')) {
+      expect(radio).not.toBeChecked()
+    }
+    fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
+    expect(screen.getByText('평소 쓰는 말투를 골라주세요.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeDisabled()
   })
 
   it('AI 결과의 입력 내용 수정하기는 목적과 입력이 보존된 직접 설명 화면으로 돌아간다', async () => {
@@ -758,6 +809,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
     fireEvent.click(screen.getByRole('button', { name: '내 상황을 직접 설명하기' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
+    chooseHaeyoSpeechStyle()
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '동아리 회의 시간을 확인하고 싶어요.' },
     })
@@ -823,6 +875,7 @@ describe('App', () => {
     expect(screen.getByRole('heading', { level: 2, name: '어느 톤으로 보낼까냥?' })).toBeInTheDocument()
     expect(screen.getByText(/선배·동기에 맞춰 요체로 같은 뜻을 세 가지 톤으로 준비했어요/)).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3)
+    expect(screen.queryByRole('group', { name: '말투 바꾸기' })).toBeNull()
   })
 
   it('생성 실패 시 입력을 유지하고 다시 시도 동선을 보여준다', async () => {
@@ -1032,14 +1085,20 @@ describe('App', () => {
 
     openTemplateDraft('결석·과제 문의')
     expect(screen.getByText(/교수님·조교님에 맞춰 습니다체로/)).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /습니다체/ })).toBeChecked()
+    const storedValue = JSON.parse(window.sessionStorage.getItem('dabnyangi:flow') ?? '{}') as Record<string, unknown>
+    expect(storedValue.speechStyleId).toBeNull()
   })
 
-  it('직접 설명에서는 관계 안전 기본 말투를 보여주고 사용자가 바꿀 수 있다', () => {
+  it('새 탭의 직접 설명에서는 기본 선택 없이 사용자가 말투를 명시적으로 고른다', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     chooseProfessorMessenger()
     fireEvent.click(screen.getByRole('button', { name: '내 상황을 직접 설명하기' }))
-    expect(screen.getByRole('radio', { name: /습니다체/ })).toBeChecked()
+    for (const radio of screen.getAllByRole('radio')) {
+      expect(radio).not.toBeChecked()
+    }
+    expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeDisabled()
     fireEvent.click(screen.getByRole('radio', { name: /용용체/ }))
     expect(screen.getByRole('radio', { name: /용용체/ })).toBeChecked()
   })
@@ -1067,7 +1126,7 @@ describe('App', () => {
     expect(screen.getByRole('radio', { name: /용용체/ })).toBeInTheDocument()
   })
 
-  it('관계를 바꾸면 카드 경로의 관계 안전 기본 말투로 다시 맞춘다', () => {
+  it('사용자가 고른 말투는 관계를 바꾸고 카드 경로로 이동해도 유지한다', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /연인냥/ }))
@@ -1079,7 +1138,11 @@ describe('App', () => {
     chooseProfessorMessenger()
 
     const storedValue = JSON.parse(window.sessionStorage.getItem('dabnyangi:flow') ?? '{}') as Record<string, unknown>
-    expect(storedValue.speechStyleId).toBe('seumnida')
+    expect(storedValue.speechStyleId).toBe('yongyong')
+
+    openTemplateDraft('감사·확인')
+    expect(screen.getByRole('radio', { name: /용용체/ })).toBeChecked()
+    expect(screen.getByText(/교수님·조교님에 맞춰 용용체로/)).toBeInTheDocument()
   })
 
   it('선택한 상황 질문과 진행 위치를 30분 세션에 복구한다', () => {
@@ -1565,6 +1628,46 @@ describe('App', () => {
     expect(screen.queryByText('기본 구세션 문장')).toBeNull()
   })
 
+  it('명시 말투가 없는 유효한 구세션 카드 결과는 관계 기본 검수 후보로 복구한다', () => {
+    const storedCandidates = templateCandidatesFor('professor', 'thanks_check', 'yongyong')
+    expect(storedCandidates).not.toBeNull()
+    window.sessionStorage.setItem(
+      'dabnyangi:flow',
+      JSON.stringify({
+        step: 'result',
+        mode: 'initiate',
+        selectedScenarioId: 'professor',
+        contactChannel: 'messenger',
+        selectedSituationId: 'thanks_check',
+        selectedContextAnswer: null,
+        selectedPurposeId: null,
+        speechStyleId: null,
+        receivedMessage: '',
+        situation: '',
+        candidates: storedCandidates,
+        emailCandidates: [],
+        source: 'template',
+        resultRoute: 'template_fallback',
+        fallbackReason: null,
+        savedAt: Date.now(),
+      }),
+    )
+
+    const { container } = render(<App />)
+    const expectedCandidates = templateCandidatesFor('professor', 'thanks_check', 'seumnida')
+
+    expect(screen.getByRole('heading', { level: 2, name: '어느 톤으로 보낼까냥?' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /습니다체/ })).toBeChecked()
+    expect(Array.from(container.querySelectorAll('.result-card > p'), (element) => element.textContent)).toEqual(
+      expectedCandidates?.map((candidate) => candidate.text),
+    )
+    const restoredValue = JSON.parse(window.sessionStorage.getItem('dabnyangi:flow') ?? '{}') as Record<
+      string,
+      unknown
+    >
+    expect(restoredValue.speechStyleId).toBeNull()
+  })
+
   it('생성 중에는 입력 영역에 aria-busy와 진행을 가장하지 않는 대기 문구를 보여준다', async () => {
     const { container } = render(<MessageFlow mockGenerationCase="delay" />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
@@ -1621,7 +1724,12 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
     fireEvent.click(screen.getByRole('button', { name: '내 상황을 직접 설명하기' }))
-    expect(screen.getByRole('radio', { name: /요체/ })).toBeChecked()
+    for (const radio of screen.getAllByRole('radio')) {
+      expect(radio).not.toBeChecked()
+    }
+    fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
+    expect(screen.getByText('평소 쓰는 말투를 골라주세요.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeDisabled()
   })
 
   it('클립보드를 쓸 수 없으면 후보 텍스트를 선택해 복사를 이어갈 수 있게 한다', async () => {
