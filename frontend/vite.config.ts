@@ -9,6 +9,7 @@ export default defineConfig({
       '/auth': 'http://localhost:3000',
       '/ingredients': 'http://localhost:3000',
       '/products': 'http://localhost:3000',
+      '/profile': 'http://localhost:3000',
     },
   },
 })

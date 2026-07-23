@@ -11,6 +11,11 @@ interface UserRow {
   password: string;
   name: string | null;
   created_at: Date;
+  gender: "male" | "female" | "other" | null;
+  birth_year: number | null;
+  is_pregnant_or_lactating: boolean | null;
+  height_cm: number | null;
+  weight_kg: number | null;
 }
 
 authRouter.post("/signup", async (req, res) => {
@@ -33,12 +38,22 @@ authRouter.post("/signup", async (req, res) => {
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const result = await pool.query<UserRow>(
-    "INSERT INTO users (email, password, name) VALUES ($1, $2, $3) RETURNING id, email, name, created_at",
+    "INSERT INTO users (email, password, name) VALUES ($1, $2, $3) RETURNING id, email, name, created_at, gender, birth_year, is_pregnant_or_lactating, height_cm, weight_kg",
     [email, hashedPassword, name ?? null]
   );
 
   const user = result.rows[0];
-  res.status(201).json({ id: user.id, email: user.email, name: user.name, created_at: user.created_at });
+  res.status(201).json({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    created_at: user.created_at,
+    gender: user.gender,
+    birthYear: user.birth_year,
+    isPregnantOrLactating: user.is_pregnant_or_lactating,
+    heightCm: user.height_cm,
+    weightKg: user.weight_kg,
+  });
 });
 
 authRouter.post("/login", async (req, res) => {
@@ -62,5 +77,17 @@ authRouter.post("/login", async (req, res) => {
     expiresIn: "7d",
   });
 
-  res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+  res.json({
+    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      gender: user.gender,
+      birthYear: user.birth_year,
+      isPregnantOrLactating: user.is_pregnant_or_lactating,
+      heightCm: user.height_cm,
+      weightKg: user.weight_kg,
+    },
+  });
 });

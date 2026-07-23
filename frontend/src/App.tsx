@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AuthForm } from './components/AuthForm';
+import { Onboarding } from './components/Onboarding';
 import { Home } from './components/Home';
 import { Header } from './components/Header';
 import { Analysis } from './components/Analysis';
@@ -75,6 +76,13 @@ function App() {
     setAuth(result);
   }
 
+  function handleProfileComplete(updatedUser: AuthUser) {
+    if (!auth) return;
+    const next: StoredAuth = { ...auth, user: updatedUser };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    setAuth(next);
+  }
+
   function handleLogout() {
     localStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem(FLOW_STORAGE_KEY);
@@ -117,23 +125,27 @@ function App() {
   }
 
   return (
-    <div className={auth ? 'phone' : 'phone center-screen'}>
-      {auth ? (
+    <div className={auth && auth.user.gender != null ? 'phone' : 'phone center-screen'}>
+      {auth && auth.user.gender == null ? (
+        <Onboarding token={auth.token} onComplete={handleProfileComplete} />
+      ) : auth ? (
         <>
           <Header screen={screen} userEmail={auth.user.email} onLogout={handleLogout} />
-          {screen === 'home' && <Home onStart={handleStart} />}
-          {screen === 'analysis' && (
-            <Analysis symptoms={symptoms} onNext={handleAnalysisNext} />
-          )}
-          {screen === 'overlap' && (
-            <Overlap supplements={supplements} onNext={() => setScreen('recommend')} />
-          )}
-          {screen === 'recommend' && (
-            <Recommend ingredientIds={recommendedIngredientIds} onSelect={handleSelectProduct} />
-          )}
-          {screen === 'detail' && (
-            <Detail product={selectedProduct} onBuy={handleBuy} onRestart={handleRestart} />
-          )}
+          <div className="phone-content">
+            {screen === 'home' && <Home onStart={handleStart} />}
+            {screen === 'analysis' && (
+              <Analysis symptoms={symptoms} onNext={handleAnalysisNext} />
+            )}
+            {screen === 'overlap' && (
+              <Overlap supplements={supplements} onNext={() => setScreen('recommend')} />
+            )}
+            {screen === 'recommend' && (
+              <Recommend ingredientIds={recommendedIngredientIds} onSelect={handleSelectProduct} />
+            )}
+            {screen === 'detail' && (
+              <Detail product={selectedProduct} onBuy={handleBuy} onRestart={handleRestart} />
+            )}
+          </div>
         </>
       ) : (
         <AuthForm onLoggedIn={handleLoggedIn} />
