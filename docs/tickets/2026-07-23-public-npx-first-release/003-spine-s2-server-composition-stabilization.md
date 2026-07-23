@@ -46,6 +46,21 @@ Public host와 후속 feature router가 개발 entrypoint나 TCP listener를 재
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
 - Manual or live smoke: Provider-free current workbench를 1440×900 desktop에서 열어 fail-closed trace와 clean shutdown을 확인한다.
 
+## Candidate Verification Receipt
+
+Independent Server architecture review와 current First Assignment Browser regression review 전 candidate 상태다. Acceptance Criteria와 ticket state는 reviewer 판정 전까지 변경하지 않는다.
+
+| Evidence | Result |
+| --- | --- |
+| Fixed base | `27d399d56e58331e3f37215b8deabfcbc14971bd` |
+| Implementation candidate | `8bf12743b5f866f61049f910160380a17c743ad4` |
+| Server composition | Server workspace `119/119`; listener-independent factory, import side-effect, TCP lifecycle와 signal lifecycle focused tests green |
+| Current-workbench oracle | Targeted Browser trace `1/1`; unselected evidence, quote mismatch, stale base 후 confirmed revision·Assignment·StatePatch·UserConfirmation이 모두 0이며, 한 번의 UI Reject 이후 active duplicate와 terminal late Review가 durable snapshot과 native answer count를 바꾸지 않음 |
+| Browser regression | `npm run test:e2e -w @ay-ple/chat-shell` — Chromium desktop 1440×900 `32/32` |
+| Entrypoint and shutdown | `npm run test:product-entrypoint` green; verified ignored production Runtime artifact로 `npm run test:product-shutdown-actual -w @ay-ple/server` `2/2` |
+| Runtime artifact precondition | 최초 actual shutdown 실행은 이 worktree에 ignored production Runtime artifact가 없어 Runtime readiness 단계에서 fail closed함. Main clone의 기존 materialized tree를 clone-local로 복제한 뒤 `verify:production-runtime`이 roster SHA-256 `4b72a60735d6b6d1489bab9fa937889f296ba2268c3fc0c433ba84ca10b36b7a`로 green이고 actual shutdown 재실행이 green |
+| Root gates | `npm test` green (Server `119/119`, Chat Shell unit `40/40` 포함); `npm run typecheck`; `npm run build`; Chat Shell lint; docs links active `28`·historical `2`; `git diff --check` 모두 green |
+
 ## Blocked By
 
 - [002-spine-s1-frozen-contracts-fixtures.md](002-spine-s1-frozen-contracts-fixtures.md) — Spine S1 — frozen contract와 fixture를 고정한다
