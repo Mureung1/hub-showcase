@@ -11,6 +11,9 @@ export function validateShowcase(input) {
 
   const errors = (validate.errors ?? []).map(({ instancePath, message, params }) => {
     const missingProperty = params.missingProperty ? `/${params.missingProperty}` : '';
+    if (params.allowedValues) {
+      return `${instancePath || '/'} ${message}. 허용값: ${params.allowedValues.join(', ')}`;
+    }
     return `${instancePath || missingProperty || '/'} ${message}`;
   });
 
