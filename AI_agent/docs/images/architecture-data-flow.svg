@@ -84,7 +84,7 @@
   <text x="685" y="400" class="box-text">/api/analysis</text>
   <text x="685" y="421" class="box-text">/api/feedback/latest</text>
   <text x="685" y="442" class="box-text">/api/portfolio/latest</text>
-  <text x="685" y="463" class="box-text">/api/missions/:id/progress</text>
+  <text x="685" y="463" class="box-text">/api/missions/recommendations</text>
   <text x="685" y="484" class="box-text">/api/submissions</text>
   <text x="685" y="505" class="box-text">/api/jobs, qualifications</text>
   <text x="685" y="512" class="small">보호 API는 requireAuth 사용</text>

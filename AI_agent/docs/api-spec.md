@@ -530,6 +530,52 @@ Query:
 
 ## 미션 진행 API
 
+### 미션 추천 목록 조회
+
+- Method: `GET`
+- Path: `/api/missions/recommendations`
+- 인증: 필요
+- 사용 화면: 미션 추천
+
+Query:
+
+| 이름 | 필수 | 설명 |
+| --- | --- | --- |
+| `major` | 아니오 | 사용자 전공 |
+| `targetRole` | 아니오 | 목표 직무 |
+| `skills` | 아니오 | 보유 기술 / 활용 도구 |
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "inferredTrack": "it",
+  "missions": [
+    {
+      "id": "it-service-mvp",
+      "tracks": ["it", "engineering", "data"],
+      "roles": ["개발", "프론트엔드", "백엔드", "AI", "데이터"],
+      "title": "작은 문제를 해결하는 서비스 MVP 구현",
+      "difficulty": "중간",
+      "duration": "5~7일",
+      "skills": ["React", "API 연동", "DB 저장", "배포"],
+      "deliverable": "GitHub 저장소, 실행 화면, 구현 과정 README",
+      "summary": "사용자 입력이 저장되고 다시 조회되는 작은 웹 기능을 끝까지 구현합니다.",
+      "guide": ["해결할 사용자 문제를 한 문장으로 정의합니다."],
+      "checklist": ["문제 정의", "입력 폼", "DB 저장"],
+      "references": ["React form", "Express API", "Prisma + PostgreSQL"]
+    }
+  ]
+}
+```
+
+특이사항:
+
+- `major`, `targetRole`, `skills`를 합쳐 커리어 트랙을 추론한다.
+- 목표 직무 또는 트랙과 매칭되는 미션을 우선 추천한다.
+- 매칭 결과가 없으면 범용 미션을 fallback으로 반환한다.
+
 ### 미션 진행 상태 조회
 
 - Method: `GET`
@@ -777,7 +823,6 @@ Request body:
 
 다음 기능은 Prisma 모델 또는 화면 초안은 있으나 백엔드 라우트가 아직 없다.
 
-- 미션 추천 목록 조회
 
 구현 전 별도 API 초안을 작성하고, 프론트엔드 화면과 응답 형식을 맞춘 뒤 라우트를 추가한다.
 

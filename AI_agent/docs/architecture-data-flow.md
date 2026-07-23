@@ -23,7 +23,7 @@ flowchart LR
     analysisRoutes["/api/analysis\nGET /me, POST /"]
     feedbackRoutes["/api/feedback\nGET/POST /latest"]
     portfolioRoutes["/api/portfolio\nGET/POST /latest"]
-    missionRoutes["/api/missions\nGET/PATCH /:missionId/progress"]
+    missionRoutes["/api/missions\nGET /recommendations\nGET/PATCH /:missionId/progress"]
     submissionRoutes["/api/submissions\nGET /me, GET /latest, POST /"]
     careerRoutes["/api/jobs\n/api/qualifications\n/api/schools\n/api/majors"]
     requireAuth["requireAuth\nAuthorization: Bearer JWT 검증"]
@@ -35,6 +35,7 @@ flowchart LR
     analysisService["analysisService\n스펙 검증, 최신 분석 캐시"]
     feedbackService["feedbackService\n피드백 생성, 저장/조회"]
     portfolioService["portfolioService\n포트폴리오 초안 생성, 저장/조회"]
+    missionRecommendationService["missionRecommendationService\n추천 트랙 추론, 미션 추천"]
     missionProgressService["missionProgressService\n체크리스트 진행 상태 upsert"]
     submissionService["submissionService\n결과물 제출/조회"]
     searchServices["job/school/qualification services\n외부 API + fallback 검색"]
@@ -85,6 +86,7 @@ flowchart LR
   analysisRoutes --> analysisService
   feedbackRoutes --> feedbackService
   portfolioRoutes --> portfolioService
+  missionRoutes --> missionRecommendationService
   missionRoutes --> missionProgressService
   submissionRoutes --> submissionService
   careerRoutes --> searchServices
@@ -121,7 +123,7 @@ flowchart LR
   classDef external fill:#fff7ed,stroke:#f97316,color:#0f172a;
   class pages,protected,authStorage,apiClient,mockData client;
   class cors,authRoutes,specRoutes,analysisRoutes,feedbackRoutes,portfolioRoutes,missionRoutes,submissionRoutes,careerRoutes,requireAuth server;
-  class userService,specService,analysisService,feedbackService,portfolioService,missionProgressService,submissionService,searchServices,openaiService,emailService service;
+  class userService,specService,analysisService,feedbackService,portfolioService,missionRecommendationService,missionProgressService,submissionService,searchServices,openaiService,emailService service;
   class dbUser,dbSpec,dbAnalysis,dbMission,dbUserMission db;
   class smtp,openai,careerNet,qnet external;
 ```

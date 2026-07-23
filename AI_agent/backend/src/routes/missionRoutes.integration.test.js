@@ -106,6 +106,31 @@ test(
 );
 
 test(
+  "mission recommendation API returns recommended missions from context",
+  { skip: !runIntegrationTests },
+  async () => {
+    const token = createAuthToken(user);
+    const params = new URLSearchParams({
+      major: "컴퓨터공학과",
+      targetRole: "백엔드 개발자",
+      skills: "React, API, DB",
+    });
+    const response = await fetch(`${baseUrl}/api/missions/recommendations?${params}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const data = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(data.ok, true);
+    assert.equal(data.inferredTrack, "it");
+    assert.ok(data.missions.length > 0);
+    assert.equal(data.missions[0].id, "it-service-mvp");
+  }
+);
+
+test(
   "portfolio API saves and reads a draft for the latest submitted mission",
   { skip: !runIntegrationTests },
   async () => {
