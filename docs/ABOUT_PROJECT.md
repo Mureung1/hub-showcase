@@ -159,7 +159,8 @@ PET의 재활용 품질을 높이기 위해서는 라벨과 내용물을 제거�
 - **정적 UI 문구**(버튼/제목/안내 문구): `frontend/src/i18n/{ko,en}.ts`의 타입 안전한 사전(`en.ts`가 `satisfies Record<keyof typeof ko, string>`로 번역 누락을 컴파일 타임에 잡음) + `LanguageContext`(localStorage에 저장돼 페이지를 이동해도 선택한 언어가 유지됨). `PageHeader`가 토글 버튼을 직접 렌더링하므로 `PageHeader`를 쓰는 모든 화면이 자동으로 토글을 갖는다.
 - **정부 데이터 기반 설명 텍스트**(`DisposalRule.steps`/`parts`/`commonMistakes`/`reason`): `geminiExplanationClient`가 한/영을 한 번의 호출로 함께 생성해 캐시(`stepsEn`/`partsEn`/`commonMistakesEn`/`reasonEn`)하므로 토글 클릭 시 네트워크 재요청이 없다. 이전에 한국어만 캐시되어 있던 기존 항목은 다음 조회 시 영어 필드만 백필되고 한국어 생성 시각(`explainedAt`)은 그대로 유지된다. 번역 대상은 공식 데이터를 가공한 설명 텍스트뿐이며, 영어 버전도 새 규정이 아니라 한국어 설명의 번역이라는 CLAUDE.md 원칙을 프롬프트로 강제한다.
 - **품목명 검색**: `Item.nameEn` 컬럼(731개 카탈로그 전체를 `syncItemNamesEn.ts`로 일괄 번역)을 추가해 `searchItems`가 `name OR nameEn`으로 매칭 — 영어 키워드 검색이 한국어 품목과 자연스럽게 연결된다("battery" → 건전지류, "plastic" → 비닐/플라스틱류 등, 실제 카탈로그로 검증 완료).
-- **아직 남은 갭**: `RegionRule.categories[category].method`(지역별 배출방법 원문 텍스트)는 아직 영어 번역이 없어 영어 모드에서도 한국어로 표시됨. 영어 검색이 0건일 때 LLM이 한국어 후보를 추론해 재검색하는 폴백도 아직 없음(현재는 `nameEn` 사전 매칭만). `BulkyPage`/`PointsPage`(아직 빈 스텁)와 시/도·구/군·동 등 실제 행정구역 지명 자체의 번역은 범위 밖 — 지명 번역은 UI 문구 번역과 전혀 다른 별도 작업이다.
+- **지역 선택기 지명 표기**(시/도/구/군/동/읍/면): 품목명 번역과 달리 "의미 번역"이 아니라 "표준 로마자 표기"가 필요한 문제라, 규칙 기반 로마자 변환 라이브러리를 먼저 검증했으나 실제 지명("강릉시")을 잘못 표기하는 결함을 발견하고 기각 — 대신 이미 검증된 Gemini 기반 패턴을 재사용했다. 데이터가 로컬에 전량 동기화되어 있는지 여부에 따라 캐싱 전략을 나눔: `RegionDistrict.ctpvNmEn`/`sggNmEn`은 `Item.nameEn`과 동일하게 배치 스크립트(`syncRegionNamesEn.ts`)로 일괄 채움(16개 시/도 + 226개 구/군), `RegionZoneName`(신규 모델)은 동/읍/면이 전량 동기화되어 있지 않아 실제로 조회된 이름만 지연 캐시한다(지역과 무관하게 텍스트 자체로 전국 재사용). "Gyeonggi-do", "Haeundae-gu", "Gangneung-si" 등 실제 지명으로 검증 완료.
+- **아직 남은 갭**: `RegionRule.categories[category].method`(지역별 배출방법 원문 텍스트)는 아직 영어 번역이 없어 영어 모드에서도 한국어로 표시됨. 영어 검색이 0건일 때 LLM이 한국어 후보를 추론해 재검색하는 폴백도 아직 없음(현재는 `nameEn` 사전 매칭만). `BulkyPage`/`PointsPage`(아직 빈 스텁)는 범위 밖.
 
 ---
 
