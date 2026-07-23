@@ -93,45 +93,54 @@ export default function ItemCard({ item, onUpdate, onDelete }: ItemCardProps) {
           </div>
         </div>
       ) : (
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm text-ink font-medium break-words">
-              {item.title || "(제목 없음)"}
-            </p>
-            <p className="text-xs text-muted">
-              {item.source_platform ?? "manual"} ·{" "}
-              {new Date(item.created_at).toLocaleDateString("ko-KR")}
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-2">
-            <span
-              className={`text-xs rounded-full px-2 py-1 font-medium transition-colors ${getCategoryStyle(
-                item.category_main
-              )}`}
-            >
-              {item.category_main ?? "미분류"} · {item.category_sub ?? "기타"}
-            </span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setDraftTitle(item.title ?? "");
-                  setActionError(null);
-                  setEditing(true);
-                }}
-                disabled={isPending}
-                className="text-xs text-muted hover:text-ink disabled:opacity-50"
+        <div>
+          {item.image_url && (
+            <img
+              src={item.image_url}
+              alt={item.title || "저장된 이미지"}
+              className="mb-3 max-h-64 w-full rounded-lg object-cover"
+            />
+          )}
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-ink font-medium break-words">
+                {item.title || "(제목 없음)"}
+              </p>
+              <p className="text-xs text-muted">
+                {item.source_platform ?? "manual"} ·{" "}
+                {new Date(item.created_at).toLocaleDateString("ko-KR")}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              <span
+                className={`text-xs rounded-full px-2 py-1 font-medium transition-colors ${getCategoryStyle(
+                  item.category_main
+                )}`}
               >
-                수정
-              </button>
-              <button
-                type="button"
-                onClick={deleteItem}
-                disabled={isPending}
-                className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
-              >
-                {pendingAction === "delete" ? "삭제 중..." : "삭제"}
-              </button>
+                {item.category_main ?? "미분류"} · {item.category_sub ?? "기타"}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftTitle(item.title ?? "");
+                    setActionError(null);
+                    setEditing(true);
+                  }}
+                  disabled={isPending}
+                  className="text-xs text-muted hover:text-ink disabled:opacity-50"
+                >
+                  수정
+                </button>
+                <button
+                  type="button"
+                  onClick={deleteItem}
+                  disabled={isPending}
+                  className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
+                >
+                  {pendingAction === "delete" ? "삭제 중..." : "삭제"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

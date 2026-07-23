@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import ItemCard from "./ItemCard";
 import {
@@ -10,6 +10,7 @@ import {
   type DeleteItemResponse,
   type Item,
 } from "../lib/items";
+import { getImageValidationError } from "../lib/image";
 
 export default function Home() {
   const [input, setInput] = useState("");
@@ -17,6 +18,20 @@ export default function Home() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!selectedImage) {
+      setImagePreviewUrl(null);
+      return;
+    }
+    const previewUrl = URL.createObjectURL(selectedImage);
+    setImagePreviewUrl(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [selectedImage]);
 
   async function fetchItems() {
     setLoading(true);
@@ -37,25 +52,57 @@ export default function Home() {
   }, []);
 
   async function handleSave() {
-    if (!input.trim()) return;
+    if (!input.trim() && !selectedImage) return;
     setSaving(true);
     setError(null);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/items`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: input.trim() }),
-      });
+      const response = selectedImage
+        ? await fetch(`${apiBaseUrl}/api/items`, {
+            method: "POST",
+            body: (() => {
+              const formData = new FormData();
+              formData.append("content", input.trim());
+              formData.append("image", selectedImage);
+              return formData;
+            })(),
+          })
+        : await fetch(`${apiBaseUrl}/api/items`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: input.trim() }),
+          });
       if (!response.ok) throw new Error(await readApiError(response));
       const savedItem: Item = await response.json();
       setItems((currentItems) => [savedItem, ...currentItems]);
       setInput("");
+      setSelectedImage(null);
+      setImageError(null);
+      if (imageInputRef.current) imageInputRef.current.value = "";
     } catch (requestError) {
       setError(getRequestErrorMessage(requestError, "항목을 저장하지 못했습니다."));
     } finally {
       setSaving(false);
     }
+  }
+
+  function selectImage(file: File | undefined) {
+    if (!file) return;
+    const validationError = getImageValidationError(file);
+    if (validationError) {
+      setImageError(validationError);
+      setSelectedImage(null);
+      if (imageInputRef.current) imageInputRef.current.value = "";
+      return;
+    }
+    setImageError(null);
+    setSelectedImage(file);
+  }
+
+  function removeImage() {
+    setSelectedImage(null);
+    setImageError(null);
+    if (imageInputRef.current) imageInputRef.current.value = "";
   }
 
   async function updateItem(id: number, title: string) {
@@ -113,20 +160,47 @@ export default function Home() {
             onKeyDown={(e) => {
               if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                 e.preventDefault();
-                if (!saving && input.trim()) void handleSave();
+                if (!saving && (input.trim() || selectedImage)) void handleSave();
               }
             }}
             placeholder="링크나 텍스트를 붙여넣으세요"
             rows={3}
             className="w-full resize-none outline-none text-sm text-ink placeholder:text-muted bg-transparent"
           />
+          {imagePreviewUrl && selectedImage && (
+            <div className="mt-3 rounded-xl border border-creamDeep bg-cream/40 p-2">
+              <img
+                src={imagePreviewUrl}
+                alt="선택한 이미지 미리보기"
+                className="max-h-48 w-full rounded-lg object-cover"
+              />
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <span className="truncate text-xs text-muted">{selectedImage.name}</span>
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  className="shrink-0 text-xs text-red-500 hover:text-red-700"
+                >
+                  이미지 제거
+                </button>
+              </div>
+            </div>
+          )}
+          {imageError && <p className="mt-2 text-xs text-red-600">{imageError}</p>}
           <div className="flex items-center justify-between mt-2">
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(event) => selectImage(event.target.files?.[0])}
+            />
             <button
               type="button"
               className="flex items-center gap-1 text-xs text-muted border border-creamDeep rounded-full px-3 py-1.5"
-              onClick={() => alert("이미지 업로드는 곧 연결될 예정이에요")}
+              onClick={() => imageInputRef.current?.click()}
             >
-              📎 이미지
+              📎 {selectedImage ? "이미지 변경" : "이미지"}
             </button>
             <span className="text-xs text-muted">스크린샷도 저장돼요</span>
           </div>
@@ -135,7 +209,7 @@ export default function Home() {
         <button
           type="button"
           onClick={handleSave}
-          disabled={saving || !input.trim()}
+          disabled={saving || (!input.trim() && !selectedImage)}
           className="w-full mt-4 bg-accent hover:bg-accentDark disabled:opacity-50 text-white font-medium rounded-xl2 py-3.5 transition-colors"
         >
           {saving ? "저장하는 중..." : "저장"}

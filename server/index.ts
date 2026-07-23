@@ -6,18 +6,26 @@ import {
   classifyWithFallback,
   createConfiguredGeminiClassifier,
 } from "./geminiClassification";
+import { handleImageUpload } from "./imageUpload";
+import {
+  getStoragePathFromPublicUrl,
+  removeItemImage,
+  uploadItemImage,
+} from "./imageStorage";
 import { extractPageMetadata, type PageMetadata } from "./metadata";
+import { isSupportedImageType } from "../lib/image";
 
 dotenv.config({ path: "server/.env", quiet: true });
 
 const app = express();
 const port = Number(process.env.PORT) || 4000;
 const itemColumns =
-  "id, title, original_url, source_platform, category_main, category_sub, created_at";
+  "id, title, content, original_url, image_url, source_platform, category_main, category_sub, created_at";
 const configuredOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:3000")
   .split(",")
   .map((origin) => origin.trim());
 const geminiClassifier = createConfiguredGeminiClassifier();
+const storageBucket = process.env.SUPABASE_STORAGE_BUCKET?.trim();
 
 app.use(
   cors({
@@ -129,14 +137,27 @@ app.get("/api/items", async (_request, response) => {
   }
 });
 
-app.post("/api/items", async (request, response) => {
+app.post("/api/items", handleImageUpload, async (request, response) => {
   const content = request.body?.content;
-  if (typeof content !== "string" || !content.trim()) {
-    response.status(400).json({ error: "content는 비어 있지 않은 문자열이어야 합니다." });
+  if (content !== undefined && typeof content !== "string") {
+    response.status(400).json({ error: "content는 문자열이어야 합니다." });
     return;
   }
 
-  const trimmed = content.trim();
+  const trimmed = typeof content === "string" ? content.trim() : "";
+  if (!trimmed && !request.file) {
+    response.status(400).json({ error: "content 또는 image가 필요합니다." });
+    return;
+  }
+  if (request.file && !storageBucket) {
+    response.status(500).json({ error: "Supabase Storage 버킷이 설정되지 않았습니다." });
+    return;
+  }
+  if (request.file && !isSupportedImageType(request.file.mimetype)) {
+    response.status(415).json({ error: "지원하지 않는 이미지 형식입니다." });
+    return;
+  }
+
   const urlDetected = isUrl(trimmed);
   const sourcePlatform = urlDetected ? getSourcePlatform(trimmed) : "manual";
   let metadata: PageMetadata | null = null;
@@ -147,18 +168,39 @@ app.post("/api/items", async (request, response) => {
       console.warn("메타데이터 추출 실패, 원문으로 분류를 계속합니다:", error);
     }
   }
+  const classificationImage =
+    request.file && isSupportedImageType(request.file.mimetype)
+      ? {
+          data: request.file.buffer.toString("base64"),
+          mimeType: request.file.mimetype,
+        }
+      : null;
   const { categoryMain, categorySub } = await classifyWithFallback(
-    { content: trimmed, metadata },
+    { content: trimmed, metadata, image: classificationImage },
     geminiClassifier
   );
 
+  let uploadedImagePath: string | null = null;
   try {
-    const { data, error } = await getSupabase()
+    const supabase = getSupabase();
+    let imageUrl: string | null = null;
+    if (request.file && storageBucket && isSupportedImageType(request.file.mimetype)) {
+      const uploadedImage = await uploadItemImage(supabase, storageBucket, {
+        buffer: request.file.buffer,
+        mimetype: request.file.mimetype,
+      });
+      uploadedImagePath = uploadedImage.path;
+      imageUrl = uploadedImage.publicUrl;
+    }
+
+    const { data, error } = await supabase
       .from("items")
       .insert({
-        type: urlDetected ? "link" : "text",
+        type: request.file ? "image" : urlDetected ? "link" : "text",
         original_url: urlDetected ? trimmed : null,
-        title: urlDetected ? trimmed : trimmed.slice(0, 50),
+        image_url: imageUrl,
+        content: trimmed || null,
+        title: urlDetected ? trimmed : trimmed.slice(0, 50) || "이미지",
         source_platform: sourcePlatform,
         category_main: categoryMain,
         category_sub: categorySub,
@@ -170,9 +212,19 @@ app.post("/api/items", async (request, response) => {
     if (error) throw error;
     response.status(201).json(data);
   } catch (error) {
+    if (uploadedImagePath && storageBucket) {
+      try {
+        await removeItemImage(getSupabase(), storageBucket, uploadedImagePath);
+      } catch (cleanupError) {
+        console.error("저장 실패 후 이미지 정리 실패:", cleanupError);
+      }
+    }
     console.error("item 저장 실패:", error);
     response.status(500).json({
-      error: getErrorMessage(error, "항목을 저장하지 못했습니다."),
+      error:
+        request.file && !uploadedImagePath
+          ? "이미지를 Supabase Storage에 업로드하지 못했습니다."
+          : getErrorMessage(error, "항목을 저장하지 못했습니다."),
     });
   }
 });
@@ -230,17 +282,28 @@ app.delete("/api/items/:id", async (request, response) => {
   }
 
   try {
-    const { data, error } = await getSupabase()
+    const supabase = getSupabase();
+    const { data, error } = await supabase
       .from("items")
       .delete()
       .eq("id", id)
-      .select("id")
+      .select("id, image_url")
       .maybeSingle();
 
     if (error) throw error;
     if (!data) {
       response.status(404).json({ error: "항목을 찾을 수 없습니다." });
       return;
+    }
+    if (data.image_url && storageBucket) {
+      const imagePath = getStoragePathFromPublicUrl(data.image_url, storageBucket);
+      if (imagePath) {
+        try {
+          await removeItemImage(supabase, storageBucket, imagePath);
+        } catch (error) {
+          console.error("삭제된 항목의 이미지 정리 실패:", error);
+        }
+      }
     }
     response.json({ success: true, id: data.id });
   } catch (error) {
@@ -251,6 +314,10 @@ app.delete("/api/items/:id", async (request, response) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Express server listening on http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== "test") {
+  app.listen(port, () => {
+    console.log(`Express server listening on http://localhost:${port}`);
+  });
+}
+
+export { app };

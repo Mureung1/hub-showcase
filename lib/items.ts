@@ -1,7 +1,9 @@
 export type Item = {
   id: number;
   title: string | null;
+  content: string | null;
   original_url: string | null;
+  image_url: string | null;
   source_platform: string | null;
   category_main: string | null;
   category_sub: string | null;

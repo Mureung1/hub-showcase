@@ -10,8 +10,8 @@ describe("validateGeminiClassification", () => {
   it("허용된 Gemini 분류를 내부 형식으로 변환한다", () => {
     expect(
       validateGeminiClassification({
-        category_main: "개발",
-        category_sub: "프로그래밍",
+        categoryMain: "개발",
+        categorySub: "프로그래밍",
       })
     ).toEqual({ categoryMain: "개발", categorySub: "프로그래밍" });
   });
@@ -19,19 +19,18 @@ describe("validateGeminiClassification", () => {
   it("미분류의 소분류를 null로 정규화한다", () => {
     expect(
       validateGeminiClassification({
-        category_main: "미분류",
-        category_sub: "기타",
+        categoryMain: "미분류",
+        categorySub: "기타",
       })
     ).toEqual({ categoryMain: "미분류", categorySub: null });
   });
 
   it.each([
     null,
-    { category_main: "음식", category_sub: "한식" },
-    { category_main: "개발", category_sub: null },
-    { category_main: "개발", category_sub: "programming" },
-    { category_main: "개발", category_sub: "가".repeat(31) },
-    { category_main: "개발", category_sub: "프로그래밍", explanation: "설명" },
+    { categoryMain: "음식", categorySub: "한식" },
+    { categoryMain: "개발", categorySub: "programming" },
+    { categoryMain: "개발", categorySub: "가".repeat(31) },
+    { categoryMain: "개발", categorySub: "프로그래밍", explanation: "설명" },
   ])("유효하지 않은 응답을 거부한다: %o", (value) => {
     expect(validateGeminiClassification(value)).toBeNull();
   });
@@ -40,7 +39,7 @@ describe("validateGeminiClassification", () => {
 describe("createGeminiClassifier", () => {
   it("Gemini SDK에 메타데이터와 Structured Output 설정을 전달한다", async () => {
     const generateContent = vi.fn().mockResolvedValue({
-      text: JSON.stringify({ category_main: "개발", category_sub: "프로그래밍" }),
+      text: JSON.stringify({ categoryMain: "개발", categorySub: "프로그래밍" }),
     });
     const classifier = createGeminiClassifier(
       "test-key",
@@ -61,17 +60,63 @@ describe("createGeminiClassifier", () => {
           ogType: "article",
         },
       })
-    ).resolves.toEqual({ category_main: "개발", category_sub: "프로그래밍" });
+    ).resolves.toEqual({ categoryMain: "개발", categorySub: "프로그래밍" });
 
     expect(generateContent).toHaveBeenCalledWith({
       model: "test-model",
-      contents: expect.stringContaining('"original_content":"https://example.com/article"'),
+      contents: [
+        {
+          text: expect.stringContaining('"original_content":"https://example.com/article"'),
+        },
+      ],
       config: expect.objectContaining({
         systemInstruction: expect.stringContaining("untrusted"),
         responseMimeType: "application/json",
         responseJsonSchema: expect.any(Object),
       }),
     });
+  });
+
+  it("이미지와 텍스트를 Gemini inline data 요청에 함께 전달한다", async () => {
+    const generateContent = vi.fn().mockResolvedValue({
+      text: JSON.stringify({ categoryMain: "여행", categorySub: "관광지" }),
+    });
+    const classifier = createGeminiClassifier(
+      "test-key",
+      "test-model",
+      { models: { generateContent } } as never
+    );
+
+    await classifier({
+      content: "제주도에서 찍은 사진",
+      image: {
+        data: "base64-image",
+        mimeType: "image/png",
+      },
+    });
+
+    expect(generateContent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contents: [
+          { text: expect.stringContaining("제주도에서 찍은 사진") },
+          {
+            inlineData: {
+              data: "base64-image",
+              mimeType: "image/png",
+            },
+          },
+        ],
+      })
+    );
+  });
+
+  it("소분류가 불명확한 정상 응답의 null을 유지한다", () => {
+    expect(
+      validateGeminiClassification({
+        categoryMain: "콘텐츠",
+        categorySub: null,
+      })
+    ).toEqual({ categoryMain: "콘텐츠", categorySub: null });
   });
 
   it("Gemini 응답이 비어 있으면 실패한다", async () => {
@@ -114,8 +159,8 @@ describe("createConfiguredGeminiClassifier", () => {
 describe("classifyWithFallback", () => {
   it("유효한 Gemini 분류를 가장 먼저 사용한다", async () => {
     const geminiRequest = vi.fn().mockResolvedValue({
-      category_main: "콘텐츠",
-      category_sub: "기사",
+      categoryMain: "콘텐츠",
+      categorySub: "기사",
     });
 
     await expect(
@@ -127,7 +172,7 @@ describe("classifyWithFallback", () => {
     await expect(
       classifyWithFallback(
         { content: "React TypeScript 공부 자료" },
-        async () => ({ category_main: "잘못된 분류", category_sub: "기타" })
+        async () => ({ categoryMain: "잘못된 분류", categorySub: "기타" })
       )
     ).resolves.toEqual({ categoryMain: "개발", categorySub: "프로그래밍" });
   });
@@ -155,5 +200,43 @@ describe("classifyWithFallback", () => {
         }
       )
     ).resolves.toEqual({ categoryMain: "미분류", categorySub: null });
+  });
+
+  it("이미지만 있을 때 Gemini 호출 실패 시 파일명으로 분류하지 않는다", async () => {
+    await expect(
+      classifyWithFallback(
+        {
+          content: "",
+          image: { data: "base64-image", mimeType: "image/jpeg" },
+        },
+        async () => {
+          throw new Error("Gemini unavailable");
+        }
+      )
+    ).resolves.toEqual({ categoryMain: "미분류", categorySub: null });
+  });
+
+  it("유효한 Gemini 이미지 분류를 사용한다", async () => {
+    await expect(
+      classifyWithFallback(
+        {
+          content: "산책 중 찍은 사진",
+          image: { data: "base64-image", mimeType: "image/jpeg" },
+        },
+        async () => ({ categoryMain: "여행", categorySub: "풍경" })
+      )
+    ).resolves.toEqual({ categoryMain: "여행", categorySub: "풍경" });
+  });
+
+  it("이미지 응답 검증 실패 시 함께 입력한 텍스트로 fallback한다", async () => {
+    await expect(
+      classifyWithFallback(
+        {
+          content: "운동 루틴",
+          image: { data: "base64-image", mimeType: "image/webp" },
+        },
+        async () => ({ categoryMain: "잘못된 분류", categorySub: null })
+      )
+    ).resolves.toEqual({ categoryMain: "건강", categorySub: "운동" });
   });
 });
