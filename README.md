@@ -72,7 +72,7 @@ flowchart LR
 
 ## 공개 데모
 
-- 공개 URL: https://mbti-study-routine-demo.byounggwan94.chatgpt.site
+- 공개 URL: https://hub-theta-brown.vercel.app
 
 방문자는 별도의 포트폴리오식 소개 페이지를 거치지 않고, 첫 화면에서 바로 MBTI 선택과 공부·스트레스 설문 흐름을 시작할 수 있습니다.
 
