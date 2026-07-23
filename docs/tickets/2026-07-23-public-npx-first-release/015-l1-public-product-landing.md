@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -71,7 +71,7 @@ AY-PLE의 public homepage가 `한 학기를 함께 관리하는 AY`라는 제품
 | owner | `L` — Landing |
 | branch | `codex/public-preview-l1-landing` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/l1-landing` |
-| handoffSha | Claim 시 coordinator가 003의 fixed reviewed `spineTipSha`와 required integration gates가 green임을 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·branch name·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `27b8b77d8d4b4bd16a0c1589e7accb8550954eb3` — Coordinator가 전달한 clean integration HEAD다. Blocker 003은 `State: completed`이고 fixed reviewed `spineTipSha` `c2e95616d8ac2461844525c69a7e0d714da3e710` 및 root green receipt가 이 handoff ancestry에 포함됨을 claim 전에 확인했다. |
 | writablePaths | `apps/landing/src/**`; `apps/landing/public/**`; `docs/tickets/2026-07-23-public-npx-first-release/015-l1-public-product-landing.md`. `apps/landing/package.json`, root manifest/lock와 deployment surface는 제외한다. |
 | consumedContracts | S1 Landing release-display fixture and decoder; package compatibility and Runtime descriptor display fields; C+B prototype verdict; ADR 0015 trust-link boundary |
 | predecessorEvidence | 003 fixed reviewed SHA와 `spineTipSha`, S1 display fixture conformance, root four-gate receipt |
