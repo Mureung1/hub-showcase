@@ -7,10 +7,10 @@
 
 표시 정류장:
 - 경북대학교북문앞 | OSM node 8246940160 | 35.8931152, 128.6101698 | https://www.openstreetmap.org/node/8246940160
-- 경북대학교정문건너 | OSM node 8251323187 | 35.885017, 128.6145636 | https://www.openstreetmap.org/node/8251323187
 - 경북대학교 경상대학건너 | OSM node 8251323189 | 35.8884188, 128.6167499 | https://www.openstreetmap.org/node/8251323189
+- 경북대학교정문건너 | OSM node 8251323187 | 35.885017, 128.6145636 | https://www.openstreetmap.org/node/8251323187
 
 데이터: OpenStreetMap contributors
 라이선스: Open Database License (ODbL) 1.0
 저작권 안내: https://www.openstreetmap.org/copyright
-자산 생성일: 2026-07-16
+자산 생성일: 2026-07-22

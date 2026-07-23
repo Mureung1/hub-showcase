@@ -1,0 +1,507 @@
+{
+  "schemaVersion": 1,
+  "operationDate": "20250801",
+  "generatedAt": "2026-07-22T08:15:36.147Z",
+  "campuses": {
+    "knu-daegu": {
+      "region": {
+        "ctpvCd": "27",
+        "sggCd": "27230",
+        "label": "대구광역시 북구"
+      },
+      "publicStopCount": 591,
+      "stops": {
+        "osm-node-8246940160": {
+          "status": "mapped-exact",
+          "mapping": {
+            "campusId": "knu-daegu",
+            "ctpvCd": "27",
+            "sggCd": "27230",
+            "sttnId": "7021025800",
+            "sourceName": "경북대학교북문앞",
+            "matchedBy": "exact-normalized",
+            "verifiedAt": "2026-07-22T08:15:41.782Z"
+          },
+          "candidates": []
+        },
+        "osm-node-8251323187": {
+          "status": "mapped-exact",
+          "mapping": {
+            "campusId": "knu-daegu",
+            "ctpvCd": "27",
+            "sggCd": "27230",
+            "sttnId": "7011010300",
+            "sourceName": "경북대학교정문건너",
+            "matchedBy": "exact-normalized",
+            "verifiedAt": "2026-07-22T08:15:41.791Z"
+          },
+          "candidates": []
+        },
+        "osm-node-8251323189": {
+          "status": "mapped-exact",
+          "mapping": {
+            "campusId": "knu-daegu",
+            "ctpvCd": "27",
+            "sggCd": "27230",
+            "sttnId": "7011010200",
+            "sourceName": "경북대학교경상대학건너",
+            "matchedBy": "exact-normalized",
+            "verifiedAt": "2026-07-22T08:15:41.803Z"
+          },
+          "candidates": []
+        }
+      }
+    },
+    "pnu-jangjeon": {
+      "region": {
+        "ctpvCd": "26",
+        "sggCd": "26410",
+        "label": "부산광역시 금정구"
+      },
+      "publicStopCount": 544,
+      "stops": {
+        "osm-node-5033898890": {
+          "status": "ambiguous",
+          "candidates": [
+            {
+              "sttnId": "2642179",
+              "name": "부산대정문",
+              "arsNo": "~",
+              "neighborhood": "장전동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "2642180",
+              "name": "부산대정문",
+              "arsNo": "~",
+              "neighborhood": "장전동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "2601323",
+              "name": "부산대학정문",
+              "arsNo": "~",
+              "neighborhood": "장전동",
+              "similarity": 0.667
+            },
+            {
+              "sttnId": "2621295",
+              "name": "부산대학정문",
+              "arsNo": "~",
+              "neighborhood": "장전동",
+              "similarity": 0.667
+            },
+            {
+              "sttnId": "2621716",
+              "name": "부산외대정문",
+              "arsNo": "~",
+              "neighborhood": "남산동",
+              "similarity": 0.667
+            }
+          ]
+        },
+        "pnu-shuttle-busan-university-station": {
+          "status": "ambiguous",
+          "candidates": [
+            {
+              "sttnId": "2601237",
+              "name": "부산대역",
+              "arsNo": "~",
+              "neighborhood": "장전동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "2642176",
+              "name": "부산대역",
+              "arsNo": "~",
+              "neighborhood": "부곡동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "2642178",
+              "name": "부산대역",
+              "arsNo": "~",
+              "neighborhood": "장전동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "4800779",
+              "name": "부산대역(부곡2동)",
+              "arsNo": "~",
+              "neighborhood": "부곡동",
+              "similarity": 0.6
+            },
+            {
+              "sttnId": "4800784",
+              "name": "부산대역(부곡2동)",
+              "arsNo": "~",
+              "neighborhood": "부곡동",
+              "similarity": 0.6
+            }
+          ]
+        },
+        "pnu-shuttle-dawn-field-library": {
+          "status": "unmapped",
+          "candidates": [
+            {
+              "sttnId": "2643879",
+              "name": "새벽벌도서관.상남국제회관",
+              "arsNo": "~",
+              "neighborhood": "장전동",
+              "similarity": 0.625
+            },
+            {
+              "sttnId": "2643880",
+              "name": "새벽벌도서관.상남국제회관",
+              "arsNo": "~",
+              "neighborhood": "장전동",
+              "similarity": 0.625
+            },
+            {
+              "sttnId": "2641580",
+              "name": "금샘도서관",
+              "arsNo": "~",
+              "neighborhood": "부곡동",
+              "similarity": 0.444
+            },
+            {
+              "sttnId": "2641587",
+              "name": "금샘도서관",
+              "arsNo": "~",
+              "neighborhood": "부곡동",
+              "similarity": 0.444
+            },
+            {
+              "sttnId": "2641588",
+              "name": "금샘도서관",
+              "arsNo": "~",
+              "neighborhood": "부곡동",
+              "similarity": 0.444
+            }
+          ]
+        }
+      }
+    },
+    "jnu-yongbong": {
+      "region": {
+        "ctpvCd": "29",
+        "sggCd": "29170",
+        "label": "광주광역시 북구"
+      },
+      "publicStopCount": 623,
+      "stops": {
+        "osm-node-13199974255": {
+          "status": "ambiguous",
+          "candidates": [
+            {
+              "sttnId": "00001204",
+              "name": "전남대사거리(서)",
+              "arsNo": "~",
+              "neighborhood": "신안동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "00001205",
+              "name": "전남대사거리(서)",
+              "arsNo": "~",
+              "neighborhood": "신안동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "00001206",
+              "name": "전남대사거리(동)",
+              "arsNo": "~",
+              "neighborhood": "신안동",
+              "similarity": 0.833
+            },
+            {
+              "sttnId": "00001207",
+              "name": "전남대사거리(동)",
+              "arsNo": "~",
+              "neighborhood": "중흥동",
+              "similarity": 0.833
+            },
+            {
+              "sttnId": "00001210",
+              "name": "전남대",
+              "arsNo": "~",
+              "neighborhood": "신안동",
+              "similarity": 0.5
+            }
+          ]
+        },
+        "osm-node-9352302501": {
+          "status": "ambiguous",
+          "candidates": [
+            {
+              "sttnId": "00001199",
+              "name": "전남대스포츠센터",
+              "arsNo": "~",
+              "neighborhood": "용봉동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "00001200",
+              "name": "전남대스포츠센터",
+              "arsNo": "~",
+              "neighborhood": "용봉동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "00001210",
+              "name": "전남대",
+              "arsNo": "~",
+              "neighborhood": "신안동",
+              "similarity": 0.444
+            },
+            {
+              "sttnId": "00001211",
+              "name": "전남대",
+              "arsNo": "~",
+              "neighborhood": "신안동",
+              "similarity": 0.444
+            },
+            {
+              "sttnId": "00001201",
+              "name": "전남대동문",
+              "arsNo": "~",
+              "neighborhood": "용봉동",
+              "similarity": 0.364
+            }
+          ]
+        },
+        "osm-node-9352302461": {
+          "status": "ambiguous",
+          "candidates": [
+            {
+              "sttnId": "00000289",
+              "name": "도로교통공단대신파크",
+              "arsNo": "~",
+              "neighborhood": "용봉동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "00000290",
+              "name": "도로교통공단대신파크",
+              "arsNo": "~",
+              "neighborhood": "용봉동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "00000514",
+              "name": "각화무등파크",
+              "arsNo": "~",
+              "neighborhood": "두암동",
+              "similarity": 0.143
+            },
+            {
+              "sttnId": "00000515",
+              "name": "각화무등파크",
+              "arsNo": "~",
+              "neighborhood": "각화동",
+              "similarity": 0.143
+            },
+            {
+              "sttnId": "00000677",
+              "name": "산업인력공단",
+              "arsNo": "~",
+              "neighborhood": "오룡동",
+              "similarity": 0.143
+            }
+          ]
+        }
+      }
+    },
+    "jejunu-ara": {
+      "region": {
+        "ctpvCd": "50",
+        "sggCd": "50110",
+        "label": "제주특별자치도 제주시"
+      },
+      "publicStopCount": 1966,
+      "stops": {
+        "osm-node-11338570540": {
+          "status": "ambiguous",
+          "candidates": [
+            {
+              "sttnId": "0000200",
+              "name": "제주대학교",
+              "arsNo": "~",
+              "neighborhood": "아라일동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "0000201",
+              "name": "제주대학교",
+              "arsNo": "~",
+              "neighborhood": "아라이동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "0004824",
+              "name": "제주대학교",
+              "arsNo": "~",
+              "neighborhood": "아라이동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "0000120",
+              "name": "제주대학교병원",
+              "arsNo": "~",
+              "neighborhood": "아라일동",
+              "similarity": 0.8
+            },
+            {
+              "sttnId": "0000121",
+              "name": "제주대학교병원",
+              "arsNo": "~",
+              "neighborhood": "아라일동",
+              "similarity": 0.8
+            }
+          ]
+        },
+        "osm-node-11338570532": {
+          "status": "ambiguous",
+          "candidates": [
+            {
+              "sttnId": "0000206",
+              "name": "제주대학교입구",
+              "arsNo": "~",
+              "neighborhood": "아라일동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "0000207",
+              "name": "제주대학교입구",
+              "arsNo": "~",
+              "neighborhood": "아라일동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "0000696",
+              "name": "제주대학교입구",
+              "arsNo": "~",
+              "neighborhood": "아라일동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "0000200",
+              "name": "제주대학교",
+              "arsNo": "~",
+              "neighborhood": "아라일동",
+              "similarity": 0.8
+            },
+            {
+              "sttnId": "0000201",
+              "name": "제주대학교",
+              "arsNo": "~",
+              "neighborhood": "아라이동",
+              "similarity": 0.8
+            }
+          ]
+        },
+        "osm-node-11338570535": {
+          "status": "ambiguous",
+          "candidates": [
+            {
+              "sttnId": "0000120",
+              "name": "제주대학교병원",
+              "arsNo": "~",
+              "neighborhood": "아라일동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "0000121",
+              "name": "제주대학교병원",
+              "arsNo": "~",
+              "neighborhood": "아라일동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "0003486",
+              "name": "제주대학교병원정문",
+              "arsNo": "~",
+              "neighborhood": "아라일동",
+              "similarity": 0.857
+            },
+            {
+              "sttnId": "0000200",
+              "name": "제주대학교",
+              "arsNo": "~",
+              "neighborhood": "아라일동",
+              "similarity": 0.8
+            },
+            {
+              "sttnId": "0000201",
+              "name": "제주대학교",
+              "arsNo": "~",
+              "neighborhood": "아라이동",
+              "similarity": 0.8
+            }
+          ]
+        }
+      }
+    },
+    "cnu-daejeon": {
+      "region": {
+        "ctpvCd": "30",
+        "sggCd": "30200",
+        "label": "대전광역시 유성구"
+      },
+      "publicStopCount": 809,
+      "stops": {
+        "osm-node-12141510069": {
+          "status": "mapped-manual",
+          "mapping": {
+            "campusId": "cnu-daejeon",
+            "ctpvCd": "30",
+            "sggCd": "30200",
+            "sttnId": "8002722",
+            "sourceName": "충남대학교",
+            "matchedBy": "manual",
+            "verifiedAt": "2026-07-22T08:12:00.000Z",
+            "verification": {
+              "osmRef": "42590",
+              "publicArsNo": "42590"
+            }
+          },
+          "candidates": []
+        },
+        "osm-node-12778500235": {
+          "status": "mapped-manual",
+          "mapping": {
+            "campusId": "cnu-daejeon",
+            "ctpvCd": "30",
+            "sggCd": "30200",
+            "sttnId": "8005589",
+            "sourceName": "충남대산학연",
+            "matchedBy": "manual",
+            "verifiedAt": "2026-07-22T08:12:00.000Z",
+            "verification": {
+              "osmRef": "42630",
+              "publicArsNo": "42630"
+            }
+          },
+          "candidates": []
+        },
+        "osm-node-5674035548": {
+          "status": "mapped-manual",
+          "mapping": {
+            "campusId": "cnu-daejeon",
+            "ctpvCd": "30",
+            "sggCd": "30200",
+            "sttnId": "8005587",
+            "sourceName": "충남대도서관",
+            "matchedBy": "manual",
+            "verifiedAt": "2026-07-22T08:12:00.000Z",
+            "verification": {
+              "osmRef": "42660",
+              "publicArsNo": "42660"
+            }
+          },
+          "candidates": []
+        }
+      }
+    }
+  }
+}

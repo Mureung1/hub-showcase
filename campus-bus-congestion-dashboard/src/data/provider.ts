@@ -1,6 +1,6 @@
 import type { Campus } from '../types';
 
-export type ProviderStatus = 'ready' | 'pending';
+export type ProviderStatus = 'ready' | 'partial' | 'pending';
 
 export interface BusDataProvider {
   id: string;

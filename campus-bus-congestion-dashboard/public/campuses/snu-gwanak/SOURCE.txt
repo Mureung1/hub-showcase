@@ -6,11 +6,11 @@
 검색어: 서울대학교 관악캠퍼스, 관악구
 
 표시 정류장:
-- 서울대입구역3번출구 | OSM node 357899513 | 37.4806596, 126.9525244 | https://www.openstreetmap.org/node/357899513
+- 서울대입구역 | OSM node 357899513 | 37.4806596, 126.9525244 | https://www.openstreetmap.org/node/357899513
 - 서울대정문 | OSM node 357899388 | 37.4656789, 126.9483062 | https://www.openstreetmap.org/node/357899388
-- 기숙사삼거리 | OSM node 11560054597 | 37.4606454, 126.956646 | https://www.openstreetmap.org/node/11560054597
+- 관악사삼거리 | OSM node 11560054597 | 37.4606454, 126.956646 | https://www.openstreetmap.org/node/11560054597
 
 데이터: OpenStreetMap contributors
 라이선스: Open Database License (ODbL) 1.0
 저작권 안내: https://www.openstreetmap.org/copyright
-자산 생성일: 2026-07-16
+자산 생성일: 2026-07-22
