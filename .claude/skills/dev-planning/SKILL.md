@@ -53,9 +53,12 @@ description: Development and product-planning ground rules for "We should do..".
 - 인증: 커스텀 JWT (access 15분 + refresh 30일). refresh token은 해시로 DB에 저장해 즉시 무효화 가능하게 하고, 클라이언트에는 httpOnly 쿠키로 전달. Supabase Auth 등 외부 인증 서비스로 대체하지 않기.
 
 ## PR 작성
+- 기능 하나당 개별 브랜치를 만들어 작업한다 — 여러 기능을 한 브랜치에 몰아넣지 않기.
+- 작업 시작 전 GitHub Issue를 먼저 등록하고, PR에서 그 이슈를 참조(closes #N)한다.
 - 필수 양식: @.github/pull_request_template.md — `주요 작업 리스트` / `내가 설명할 수 있는 부분` / `아직 이해 못 한 부분` / `새로 알게 된 것` 4개 섹션을 채운다.
 - 타이틀: `[루카스아이디_실명] - 이번 작업 한 문장 요약` (예: `[N100_윤솔빈] 주문정보 페이지 개발`).
 - `## 요약`/`## 테스트 계획` 같은 임의 형식으로 대체하지 않기 — 항상 이 템플릿을 채운다.
+- 작업이 끝나면 `docs/개발백로그.md`의 해당 Task 상태를 갱신한다 — 완료 여부, 새로 발견한 제약, 관련 이슈 번호까지 반영.
 
 ## 하지 말 것
 - 앱 이름 · 두두 이름 변경.

@@ -30,6 +30,7 @@ roomItemsRouter.get('/', asyncHandler(async (_req, res) => {
     colorCustomizable: item.colorCustomizable,
     placeable: item.placeable,
     wallMounted: item.wallMounted,
+    repeatable: item.repeatable,
   })))
 }))
 
@@ -60,7 +61,7 @@ roomItemsRouter.put('/:inventoryId/layout', asyncHandler(async (req, res) => {
     res.status(403).json({ error: '가지고 있지 않은 아이템은 방에 놓을 수 없어요.' })
     return
   }
-  res.json({ x: result.x, y: result.y })
+  res.json({ x: result.x, y: result.y, placedAt: result.placedAt })
 }))
 
 roomItemsRouter.delete('/:inventoryId/layout', asyncHandler(async (req, res) => {

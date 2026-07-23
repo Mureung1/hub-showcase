@@ -1,7 +1,7 @@
 import { prisma } from '../db.js'
 
 export type PlaceResult =
-  | { status: 'ok'; x: number; y: number }
+  | { status: 'ok'; x: number; y: number; placedAt: string }
   | { status: 'not_owned' }
 
 // 벽 영역으로 취급하는 y좌표(0~100 퍼센트) 범위 — 창문·별 장식·선반 장식처럼 wallMounted 아이템은 이 범위 밖에 못 놓는다.
@@ -16,12 +16,14 @@ export async function placeRoomItem(userId: string, inventoryId: string, x: numb
 
   const clampedY = owned.item.wallMounted ? Math.min(WALL_BAND.max, Math.max(WALL_BAND.min, y)) : y
 
+  // 다시 놓을 때마다 placedAt을 갱신해야 간식류의 "1시간 후 자동 제거"가 재배치 시점부터 다시 시작된다.
+  const placedAt = new Date()
   await prisma.userRoomLayout.upsert({
     where: { inventoryId },
-    update: { x, y: clampedY },
-    create: { userId, inventoryId, x, y: clampedY },
+    update: { x, y: clampedY, placedAt },
+    create: { userId, inventoryId, x, y: clampedY, placedAt },
   })
-  return { status: 'ok', x, y: clampedY }
+  return { status: 'ok', x, y: clampedY, placedAt: placedAt.toISOString() }
 }
 
 export async function removeRoomItemPlacement(userId: string, inventoryId: string) {
@@ -40,5 +42,6 @@ export async function getRoomLayout(userId: string) {
     color: entry.inventory.color,
     x: entry.x,
     y: entry.y,
+    placedAt: entry.placedAt.toISOString(),
   }))
 }

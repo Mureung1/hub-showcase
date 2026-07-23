@@ -144,6 +144,8 @@ export type RoomItem = {
   placeable: boolean
   // 벽 영역에만 놓을 수 있는 아이템인지 여부(창문·벽 장식 등). true면 배치 시 y좌표가 벽 영역으로 제한된다.
   wallMounted: boolean
+  // 색 구분 없이도 같은 아이템을 여러 개 살 수 있는지 여부(간식류). false면 색이 같으면 1개만 소유 가능.
+  repeatable: boolean
 }
 
 // 내가 실제로 소유한 인스턴스 한 개 — 같은 itemId라도 색이 다르면 별도 인스턴스(별도 id)로 존재한다.
@@ -158,6 +160,7 @@ export type RoomInventoryItem = {
   colorCustomizable: boolean
   placeable: boolean
   wallMounted: boolean
+  repeatable: boolean
   color: string | null
 }
 
@@ -168,6 +171,8 @@ export type RoomLayoutEntry = {
   color: string | null
   x: number
   y: number
+  // 배치된 시각(ISO) — 간식류는 이 시각으로부터 1시간이 지나면 자동으로 방에서 제거된다.
+  placedAt: string
 }
 
 export type FriendPost = {

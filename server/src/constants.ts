@@ -35,14 +35,20 @@ export const HANDLE_PATTERN = /^[a-zA-Z0-9_]{3,20}$/
 // colorCustomizable: 본체 색을 사용자가 AVATAR_PALETTE 중에서 고를 수 있음(게임기) /
 // placeable: 마이홈 방 안에 물리적으로 놓을 수 있음(헤드폰은 착용만 하고 놓지 않음) /
 // wallMounted: 벽 영역에만 놓을 수 있음(창문·별 장식·선반 장식 — 화분은 방 어디든 자유롭게 놓을 수 있다) /
-// equipSlot: equippable이 true인 아이템이 DodoAppearance의 어느 슬롯에 장착되는지(헤드폰은 accessory). equippable이 false면 항상 null.
+// equipSlot: equippable이 true인 아이템이 DodoAppearance의 어느 슬롯에 장착되는지(헤드폰은 accessory). equippable이 false면 항상 null /
+// repeatable: 색 구분 없이도 같은 아이템을 여러 개 살 수 있음(간식류 — 소비성 아이템이라 개수 제한이 없다).
 export const ROOM_ITEMS = [
-  { id: 'item-game-console', name: '게임기', cost: 300, type: 'FURNITURE', iconKey: 'game-console', equippable: false, interactable: true, colorCustomizable: true, placeable: true, wallMounted: false, equipSlot: null },
-  { id: 'item-pillow', name: '베개', cost: 300, type: 'FURNITURE', iconKey: 'pillow', equippable: false, interactable: true, colorCustomizable: false, placeable: true, wallMounted: false, equipSlot: null },
-  { id: 'item-headphones', name: '헤드폰', cost: 300, type: 'FURNITURE', iconKey: 'headphones', equippable: true, interactable: false, colorCustomizable: true, placeable: false, wallMounted: false, equipSlot: 'ACCESSORY' },
-  { id: 'item-table', name: '테이블', cost: 350, type: 'FURNITURE', iconKey: 'table', equippable: false, interactable: false, colorCustomizable: true, placeable: true, wallMounted: false, equipSlot: null },
-  { id: 'item-window', name: '창문', cost: 500, type: 'WINDOW_VIEW', iconKey: 'window', equippable: false, interactable: false, colorCustomizable: false, placeable: true, wallMounted: true, equipSlot: null },
-  { id: 'item-plant', name: '화분', cost: 200, type: 'FURNITURE', iconKey: 'plant', equippable: false, interactable: true, colorCustomizable: false, placeable: true, wallMounted: false, equipSlot: null },
-  { id: 'item-wall-star', name: '별 장식', cost: 150, type: 'FURNITURE', iconKey: 'wall-star', equippable: false, interactable: false, colorCustomizable: true, placeable: true, wallMounted: true, equipSlot: null },
-  { id: 'item-wall-shelf', name: '선반 장식', cost: 150, type: 'FURNITURE', iconKey: 'wall-shelf', equippable: false, interactable: false, colorCustomizable: false, placeable: true, wallMounted: true, equipSlot: null },
+  { id: 'item-game-console', name: '게임기', cost: 300, type: 'FURNITURE', iconKey: 'game-console', equippable: false, interactable: true, colorCustomizable: true, placeable: true, wallMounted: false, equipSlot: null, repeatable: false },
+  { id: 'item-pillow', name: '베개', cost: 300, type: 'FURNITURE', iconKey: 'pillow', equippable: false, interactable: true, colorCustomizable: false, placeable: true, wallMounted: false, equipSlot: null, repeatable: false },
+  { id: 'item-headphones', name: '헤드폰', cost: 300, type: 'FURNITURE', iconKey: 'headphones', equippable: true, interactable: false, colorCustomizable: true, placeable: false, wallMounted: false, equipSlot: 'ACCESSORY', repeatable: false },
+  { id: 'item-table', name: '테이블', cost: 350, type: 'FURNITURE', iconKey: 'table', equippable: false, interactable: false, colorCustomizable: true, placeable: true, wallMounted: false, equipSlot: null, repeatable: false },
+  { id: 'item-window', name: '창문', cost: 500, type: 'WINDOW_VIEW', iconKey: 'window', equippable: false, interactable: false, colorCustomizable: false, placeable: true, wallMounted: true, equipSlot: null, repeatable: false },
+  { id: 'item-plant', name: '화분', cost: 200, type: 'FURNITURE', iconKey: 'plant', equippable: false, interactable: true, colorCustomizable: false, placeable: true, wallMounted: false, equipSlot: null, repeatable: false },
+  { id: 'item-wall-star', name: '별 장식', cost: 150, type: 'FURNITURE', iconKey: 'wall-star', equippable: false, interactable: false, colorCustomizable: true, placeable: true, wallMounted: true, equipSlot: null, repeatable: false },
+  { id: 'item-wall-shelf', name: '선반 장식', cost: 150, type: 'FURNITURE', iconKey: 'wall-shelf', equippable: false, interactable: false, colorCustomizable: false, placeable: true, wallMounted: true, equipSlot: null, repeatable: false },
+  // 간식류 — 구매하면 자동으로 방에 배치된다(테이블이 있으면 그 위, 없으면 바닥). 프론트 useRoomShopManager의 FOOD_ICON_KEYS 참고.
+  { id: 'item-fried-egg', name: '계란후라이', cost: 50, type: 'FURNITURE', iconKey: 'fried-egg', equippable: false, interactable: true, colorCustomizable: false, placeable: true, wallMounted: false, equipSlot: null, repeatable: true },
+  { id: 'item-toast', name: '토스트', cost: 50, type: 'FURNITURE', iconKey: 'toast', equippable: false, interactable: true, colorCustomizable: false, placeable: true, wallMounted: false, equipSlot: null, repeatable: true },
+  { id: 'item-pancake', name: '핫케이크', cost: 50, type: 'FURNITURE', iconKey: 'pancake', equippable: false, interactable: true, colorCustomizable: false, placeable: true, wallMounted: false, equipSlot: null, repeatable: true },
+  { id: 'item-rice', name: '밥', cost: 50, type: 'FURNITURE', iconKey: 'rice', equippable: false, interactable: true, colorCustomizable: false, placeable: true, wallMounted: false, equipSlot: null, repeatable: true },
 ] as const

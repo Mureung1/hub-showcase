@@ -287,8 +287,17 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 .myhome-placed-item:has(.myhome-plant) { width: 90px; height: 135px; transform: translate(-50%, -50%); }
 /* 별 장식만 요청에 따라 원래 크기의 1.5배로. */
 .myhome-placed-item:has(.myhome-wall-star) { width: 50px; height: 50px; transform: translate(-50%, -50%) scale(1.5); }
+/* 간식류는 테이블·다른 가구·두두·말풍선보다도 위(최우선)에 그려져야 한다.
+   방에 놓였을 때만 다른 아이템의 1.5배 크기로 보이게, 그리고 거기서 다시 1.5배(= 원래의 2.25배, scale(1.125 × 1.5))로 키운다.
+   filter는 이미 꺼져 있어(간식류만 filter:none) 외곽선이 ::before/::after 자체 box-shadow뿐이라,
+   scale을 더 키워도 아이콘과 외곽선이 같은 비율로 커질 뿐 외곽선만 두꺼워지는 문제는 재발하지 않는다(상점 아이콘 자체 크기는 그대로 둔다). */
+.myhome-placed-item:has(.shop-item-fried-egg),
+.myhome-placed-item:has(.shop-item-toast),
+.myhome-placed-item:has(.shop-item-pancake),
+.myhome-placed-item:has(.shop-item-rice) { z-index: 6; transform: translate(-50%, -50%) scale(1.6875); }
 
-.shop-item-console, .shop-item-pillow, .shop-item-headphones, .shop-item-table {
+.shop-item-console, .shop-item-pillow, .shop-item-headphones, .shop-item-table,
+.shop-item-fried-egg, .shop-item-toast, .shop-item-pancake, .shop-item-rice {
   width: 48px; height: 48px; flex: 0 0 auto; position: relative; display: block;
   clip-path: polygon(8px 0, 40px 0, 40px 8px, 48px 8px, 48px 40px, 40px 40px, 40px 48px, 8px 48px, 8px 40px, 0 40px, 0 8px, 8px 8px);
   filter: drop-shadow(4px 0 0 var(--scheduler-ink)) drop-shadow(-4px 0 0 var(--scheduler-ink)) drop-shadow(0 4px 0 var(--scheduler-ink)) drop-shadow(0 -4px 0 var(--scheduler-ink));
@@ -317,6 +326,71 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 .shop-item-table { filter: drop-shadow(1.5px 0 0 var(--scheduler-ink)) drop-shadow(-1.5px 0 0 var(--scheduler-ink)) drop-shadow(0 1.5px 0 var(--scheduler-ink)) drop-shadow(0 -1.5px 0 var(--scheduler-ink)); }
 .shop-item-table::before { content: ''; position: absolute; width: 34px; height: 8px; top: 11px; left: 7px; background: var(--item-color, var(--scheduler-coral)); box-shadow: inset 0 0 0 1px var(--scheduler-ink); }
 .shop-item-table::after { content: ''; position: absolute; width: 4px; height: 20px; top: 19px; left: 10px; background: var(--scheduler-ink); box-shadow: 24px 0 0 var(--scheduler-ink); }
+
+/* 간식류 4종 — 계란후라이(흰자+노른자), 토스트(빵 조각+구운 자국), 핫케이크(층층이 쌓인 팬케이크+시럽), 밥(그릇+밥)
+   배경 없이 음식 모양 그래픽만 보이게 한다.
+   공용 filter:drop-shadow 외곽선(297번째 줄)은 배경(사각형)이 있을 때 그 사각형 실루엣을 따라 그려지도록 설계된 것이라,
+   배경을 지우면 대신 ::before/::after 모양의 실루엣을 따라 그려져 겹outline(뭉친 두꺼운 테두리)이 생긴다.
+   그래서 간식류는 공용 외곽선을 끄고, 각 ::before/::after 자체의 inset box-shadow 테두리만 쓴다. */
+.shop-item-fried-egg, .shop-item-toast, .shop-item-pancake, .shop-item-rice { filter: none; }
+.shop-item-fried-egg { background: transparent; }
+/* 흰자 외곽선은 가로로 긴 타원으로. */
+.shop-item-fried-egg::before {
+  content: ''; position: absolute; width: 34px; height: 26px; top: 11px; left: 7px; background: var(--scheduler-cream);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--scheduler-ink);
+}
+.shop-item-fried-egg::after {
+  content: ''; position: absolute; width: 12px; height: 12px; top: 18px; left: 18px; background: #fff0ad; border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--scheduler-ink);
+}
+/* 토스트: 레퍼런스(c59ae5f9145c839f004bdc737c79eaa8.jpg) 그대로 — 식빵(크러스트) 위에 계란후라이(흰자 타원 + 노른자)가
+   대부분을 덮고, 그 밑으로 토마토/허브 고명이 살짝 삐져나온 구성. 빵은 공용 노치 사각형(297번째 줄) 그대로 쓴다.
+   빵과 계란흰자가 같은 cream색이라 구분이 안 되고 통째로 빵덩어리처럼 보이던 것을, 빵은 노란끼 도는
+   크러스트색으로 바꾸고 계란흰자는 더 키워서 빵 테두리가 얇게 보이도록 수정. */
+.shop-item-toast {
+  background: #eec27a;
+  /* 계란(::before/::after)은 건드리지 않고 빵 모양만 작게 — 공용 clip-path(297번째 줄)를 축소된 버전으로 덮어쓴다. */
+  clip-path: polygon(14px 9px, 34px 9px, 34px 14px, 39px 14px, 39px 34px, 34px 34px, 34px 39px, 14px 39px, 14px 34px, 9px 34px, 9px 14px, 14px 14px);
+}
+.shop-item-toast::before {
+  content: ''; position: absolute; width: 25px; height: 19px; top: 14.5px; left: 11.5px; background: var(--scheduler-cream);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 2px var(--scheduler-ink),
+    6px -4px 0 -8px var(--scheduler-green),
+    -5px 5px 0 -8px var(--scheduler-green);
+}
+.shop-item-toast::after {
+  content: ''; position: absolute; width: 10px; height: 10px; top: 19px; left: 19px; background: #fff0ad; border-radius: 50%;
+  box-shadow:
+    0 0 0 2px var(--scheduler-ink),
+    -10px -8px 0 -3px var(--scheduler-coral),
+    -14px 2px 0 -3px var(--scheduler-green),
+    -11px 10px 0 -3px var(--scheduler-green),
+    10px 8px 0 -3px var(--scheduler-coral);
+}
+.shop-item-pancake { background: transparent; }
+.shop-item-pancake::before {
+  content: ''; position: absolute; width: 30px; height: 7px; bottom: 8px; left: 9px; background: var(--scheduler-coral); border-radius: 4px;
+  box-shadow:
+    0 0 0 2px var(--scheduler-ink),
+    0 -9px 0 var(--scheduler-coral), 0 -9px 0 2px var(--scheduler-ink),
+    0 -18px 0 var(--scheduler-coral), 0 -18px 0 2px var(--scheduler-ink);
+}
+.shop-item-pancake::after {
+  content: ''; position: absolute; width: 4px; height: 4px; top: 9px; left: 20px; background: #fff0ad;
+  box-shadow: 6px 3px 0 #fff0ad, -4px 4px 0 #fff0ad;
+}
+.shop-item-rice { background: transparent; }
+.shop-item-rice::before {
+  content: ''; position: absolute; width: 30px; height: 16px; bottom: 9px; left: 9px; background: var(--scheduler-ink);
+  clip-path: polygon(0 0, 30px 0, 26px 16px, 4px 16px);
+}
+.shop-item-rice::after {
+  content: ''; position: absolute; width: 26px; height: 14px; bottom: 20px; left: 11px; background: var(--scheduler-cream);
+  border-radius: 13px 13px 4px 4px; box-shadow: inset 0 0 0 2px var(--scheduler-ink);
+}
 
 /* 헤드폰 착용 오버레이 — 가로선(밴드)·세로선(strut) 모두 굵기 5px로 통일. 밴드는 두두 몸통의 두 번째 굴곡
    (가장 넓은 지점, home-dodo-body clip-path의 176px 폭)까지 넓힌 곧은 막대, 다리 부분에 얇은 선(strut)을

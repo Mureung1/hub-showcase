@@ -21,7 +21,7 @@ export function fetchRoomLayout() {
 }
 
 export function placeRoomItem(inventoryId: string, x: number, y: number) {
-  return request<{ x: number; y: number }>(`/api/room-items/${inventoryId}/layout`, {
+  return request<{ x: number; y: number; placedAt: string }>(`/api/room-items/${inventoryId}/layout`, {
     method: 'PUT',
     body: JSON.stringify({ x, y }),
   })
