@@ -1,3 +1,7 @@
-export type LandingScaffold = {
-  readonly workspace: '@ay-ple/landing'
-}
+export {
+  LandingReleaseDisplayError,
+  decodeLandingReleaseDisplay,
+  type LandingReleaseDisplay,
+  type LandingReleaseLink,
+} from './release-display.js'
+export { renderLandingDocument } from './render.js'

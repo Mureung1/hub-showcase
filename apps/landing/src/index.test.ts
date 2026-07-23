@@ -3,6 +3,10 @@ import test from 'node:test'
 
 import * as landing from './index.js'
 
-test('Landing workspace exposes no rendering behavior in Spine S0', () => {
-  assert.deepEqual(Object.keys(landing), [])
+test('Landing workspace exposes only its strict display adapter and renderer', () => {
+  assert.deepEqual(Object.keys(landing).sort(), [
+    'LandingReleaseDisplayError',
+    'decodeLandingReleaseDisplay',
+    'renderLandingDocument',
+  ])
 })
