@@ -329,6 +329,35 @@ button:disabled {
   color: var(--bj-color-text-disabled);
 }
 
+.region-filters {
+  max-width: 680px;
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.region-filters select {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  color: var(--bj-color-text);
+  background: var(--bj-color-surface);
+  border: 1px solid var(--bj-color-border-strong);
+  border-radius: var(--bj-radius-md);
+}
+
+.region-filters select:focus {
+  border-color: var(--bj-color-focus);
+  outline: 3px solid color-mix(in srgb, var(--bj-color-focus) 13%, transparent);
+}
+
+.region-filters select:disabled {
+  color: var(--bj-color-text-disabled);
+  background: var(--bj-color-surface-muted);
+  cursor: not-allowed;
+}
+
 .hospital-section {
   padding-block: 32px 56px;
 }
@@ -560,6 +589,12 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: var(--bj-space-2);
+}
+
+.clinic-meta a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .clinic-waiting-band {
@@ -1458,6 +1493,10 @@ button:disabled {
 
   .search-band {
     padding-top: 28px;
+  }
+
+  .region-filters {
+    grid-template-columns: 1fr;
   }
 
   .hospital-card {

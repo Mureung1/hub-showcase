@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatKoreanMobileNumber } from "./phone.js";
+import { formatKoreanMobileNumber, formatKoreanPhoneNumber } from "./phone.js";
 
 describe("formatKoreanMobileNumber", () => {
   it("010 휴대전화 번호에 하이픈을 자동으로 넣는다", () => {
@@ -17,5 +17,15 @@ describe("formatKoreanMobileNumber", () => {
 
   it("10자리 구형 휴대전화 번호도 표시한다", () => {
     expect(formatKoreanMobileNumber("0111234567")).toBe("011-123-4567");
+  });
+});
+
+describe("formatKoreanPhoneNumber", () => {
+  it("E.164 서울 지역번호를 국내 병원 전화번호로 표시한다", () => {
+    expect(formatKoreanPhoneNumber("+82212345678")).toBe("02-1234-5678");
+  });
+
+  it("국내 형식으로 받은 병원 전화번호도 정규화한다", () => {
+    expect(formatKoreanPhoneNumber("02-1234-5678")).toBe("02-1234-5678");
   });
 });

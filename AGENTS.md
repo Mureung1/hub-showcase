@@ -105,6 +105,13 @@ Default development ports are `5173` for patients, `5174` for staff, `5175` for 
 - Ask for approval before reading from or writing to Supabase or another external system. Use development data and transaction rollback whenever possible.
 - Do not treat mock behavior or passing tests as proof of an unverified real integration.
 
+## Test Driven Development
+
+- Use the repo skill `test-driven-development` when the user requests TDD, tests first, Red-Green-Refactor, or a small rule-driven feature.
+- Confirm the feature and test scenarios before editing code.
+- Preserve explicit Red evidence, implement only enough for Green, and refactor only after the focused test passes.
+- Run `verify-feature` after the TDD cycle; passing the TDD test alone does not prove the complete feature.
+
 ## Product Comparison
 
 - Before deciding product policies or workflow details, compare the relevant public Catchtable flow when an equivalent exists.
