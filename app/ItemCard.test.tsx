@@ -13,7 +13,7 @@ const item = {
   original_url: "https://velog.io/example",
   image_url: null,
   source_platform: "web",
-  category_main: "개발",
+  category_main: "공부",
   category_sub: "클라우드",
   created_at: "2026-07-23T00:00:00.000Z",
 };
@@ -30,6 +30,7 @@ describe("ItemCard", () => {
 
     expect(screen.getByText("AWS SAA-C03 자격증 준비 가이드")).toBeInTheDocument();
     expect(screen.getByText("https://velog.io/example")).toHaveClass("text-[11px]");
+    expect(screen.queryByText("공부 · 클라우드")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "수정" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "삭제" })).toBeInTheDocument();
   });

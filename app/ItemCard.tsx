@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { Item } from "../lib/items";
-import { getCategoryStyle } from "./categoryStyles";
 
 type ItemCardProps = {
   item: Item;
@@ -63,13 +62,6 @@ export default function ItemCard({ item, onDelete }: ItemCardProps) {
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2">
-            <span
-              className={`text-xs rounded-full px-2 py-1 font-medium transition-colors ${getCategoryStyle(
-                item.category_main
-              )}`}
-            >
-              {item.category_main ?? "미분류"} · {item.category_sub ?? "기타"}
-            </span>
             <div className="flex gap-2">
               <button
                 type="button"

@@ -10,12 +10,12 @@ describe("validateGeminiClassification", () => {
   it("허용된 Gemini 분류를 내부 형식으로 변환한다", () => {
     expect(
       validateGeminiClassification({
-        categoryMain: "개발",
+        categoryMain: "공부",
         categorySub: "프로그래밍",
         displayTitle: "React와 TypeScript 개발 가이드",
       })
     ).toEqual({
-      categoryMain: "개발",
+      categoryMain: "공부",
       categorySub: "프로그래밍",
       displayTitle: "React와 TypeScript 개발 가이드",
     });
@@ -38,9 +38,18 @@ describe("validateGeminiClassification", () => {
   it.each([
     null,
     { categoryMain: "음식", categorySub: "한식" },
-    { categoryMain: "개발", categorySub: "programming" },
-    { categoryMain: "개발", categorySub: "가".repeat(31) },
-    { categoryMain: "개발", categorySub: "프로그래밍", explanation: "설명" },
+    { categoryMain: "공부", categorySub: "programming", displayTitle: "프로그래밍 공부" },
+    {
+      categoryMain: "공부",
+      categorySub: "가".repeat(31),
+      displayTitle: "프로그래밍 공부",
+    },
+    {
+      categoryMain: "공부",
+      categorySub: "프로그래밍",
+      displayTitle: "프로그래밍 공부",
+      explanation: "설명",
+    },
   ])("유효하지 않은 응답을 거부한다: %o", (value) => {
     expect(validateGeminiClassification(value)).toBeNull();
   });
@@ -50,7 +59,7 @@ describe("createGeminiClassifier", () => {
   it("Gemini SDK에 메타데이터와 Structured Output 설정을 전달한다", async () => {
     const generateContent = vi.fn().mockResolvedValue({
       text: JSON.stringify({
-        categoryMain: "개발",
+        categoryMain: "공부",
         categorySub: "프로그래밍",
         displayTitle: "React TypeScript 학습 가이드",
       }),
@@ -75,7 +84,7 @@ describe("createGeminiClassifier", () => {
         },
       })
     ).resolves.toEqual({
-      categoryMain: "개발",
+      categoryMain: "공부",
       categorySub: "프로그래밍",
       displayTitle: "React TypeScript 학습 가이드",
     });
@@ -207,7 +216,7 @@ describe("classifyWithFallback", () => {
         async () => ({ categoryMain: "잘못된 분류", categorySub: "기타" })
       )
     ).resolves.toEqual({
-      categoryMain: "개발",
+      categoryMain: "공부",
       categorySub: "프로그래밍",
       displayTitle: "React TypeScript 공부 자료",
     });

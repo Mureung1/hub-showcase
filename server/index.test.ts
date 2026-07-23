@@ -130,7 +130,7 @@ describe("items API", () => {
       title: "React 개발 문서",
       content: "React 개발 문서",
       image_url: null,
-      category_main: "개발",
+      category_main: "공부",
       category_sub: "프로그래밍",
     });
   });

@@ -6,7 +6,7 @@ import type { PageMetadata } from "./metadata";
 export const allowedMainCategories = [
   "영상",
   "콘텐츠",
-  "개발",
+  "공부",
   "쇼핑",
   "SNS",
   "건강",
@@ -127,7 +127,8 @@ When text and an image are both provided, consider both together.
 Prefer Later's existing broad category system and avoid overly specific categories.
 Select exactly one main category and a short Korean subcategory, or null when the subcategory is unclear.
 Create displayTitle as a concise, natural Korean card title that summarizes the subject and content type.
-Use a specific title such as "AWS SAA-C03 자격증 준비 가이드", not a vague title such as "개발 관련 글".
+Use broad main categories so similar learning topics stay grouped under "공부".
+Use a specific title such as "AWS SAA-C03 자격증 준비 가이드", not a vague title such as "공부 관련 글".
 Keep displayTitle between 8 and 30 Korean-readable characters when possible. Never use a raw URL as displayTitle.
 Use the actual subject, preferring visible image content, title, and description over the site name.
 If evidence is insufficient, use categoryMain "미분류" and categorySub null.
