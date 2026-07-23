@@ -12,6 +12,7 @@ import type {
 interface SiteRegistrationStepProps {
   form: NoticeConfigForm
   isCrawling: boolean
+  crawlError: string | null
   notices: NoticePreview[]
   categories: DetectedCategory[]
   selectorGuideUrl: string
@@ -24,6 +25,7 @@ interface SiteRegistrationStepProps {
 export function SiteRegistrationStep({
   form,
   isCrawling,
+  crawlError,
   notices,
   categories,
   selectorGuideUrl,
@@ -129,6 +131,8 @@ export function SiteRegistrationStep({
       <button className="wide-primary" type="button" disabled={isCrawling} onClick={onTestCrawl}>
         {isCrawling ? '테스트 크롤링 중...' : '테스트 크롤링'}
       </button>
+
+      {crawlError && <p className="table-message error">{crawlError}</p>}
 
       <PreviewPanel notices={notices} categories={categories} />
 

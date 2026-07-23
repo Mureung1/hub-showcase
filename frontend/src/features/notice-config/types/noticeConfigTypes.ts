@@ -17,8 +17,10 @@ export interface NoticePreview {
 }
 
 export interface DetectedCategory {
+  categoryId?: number
   name: string
   channelId: string
+  roleId?: string | null
   roleName: string
   isActive: boolean
 }

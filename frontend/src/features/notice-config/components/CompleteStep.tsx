@@ -1,12 +1,29 @@
+import { useState } from 'react'
+import type { DiscordChannel } from '../../discord/types/discordTypes'
 import type { DetectedCategory } from '../types/noticeConfigTypes'
+
+const maxCollapsedCategoryCount = 5
 
 interface CompleteStepProps {
   siteName: string
-  activeCategories: DetectedCategory[]
+  categories: DetectedCategory[]
+  discordChannels: DiscordChannel[]
   onRestart: () => void
 }
 
-export function CompleteStep({ siteName, activeCategories, onRestart }: CompleteStepProps) {
+export function CompleteStep({
+  siteName,
+  categories,
+  discordChannels,
+  onRestart,
+}: CompleteStepProps) {
+  const [isCategoryListExpanded, setIsCategoryListExpanded] = useState(false)
+  const activeCategories = categories.filter((category) => category.isActive)
+  const channelNameMap = new Map(discordChannels.map((channel) => [channel.id, channel.name]))
+  const visibleCategories = isCategoryListExpanded
+    ? categories
+    : categories.slice(0, maxCollapsedCategoryCount)
+
   return (
     <div className="complete-main">
       <div className="success-mark" aria-hidden="true">
@@ -24,9 +41,40 @@ export function CompleteStep({ siteName, activeCategories, onRestart }: Complete
           </div>
           <div>
             <dt>활성 카테고리</dt>
-            <dd>{activeCategories.map((category) => category.name).join(', ')}</dd>
+            <dd>{activeCategories.length}개</dd>
+          </div>
+          <div>
+            <dt>비활성 카테고리</dt>
+            <dd>{categories.length - activeCategories.length}개</dd>
           </div>
         </dl>
+      </section>
+
+      <section className="summary-card">
+        <h2>카테고리 연결</h2>
+        <div className="complete-category-list">
+          {visibleCategories.map((category) => (
+            <article className="complete-category-item" key={category.name}>
+              <div>
+                <strong>{category.name}</strong>
+                <span className={category.isActive ? 'active' : 'inactive'}>
+                  {category.isActive ? '활성' : '비활성'}
+                </span>
+              </div>
+              <p>{channelNameMap.get(category.channelId) || '채널 미확인'}</p>
+              <p>{category.roleName || `IRIS-${category.name}`}</p>
+            </article>
+          ))}
+        </div>
+        {categories.length > maxCollapsedCategoryCount && (
+          <button
+            className="summary-toggle-button"
+            type="button"
+            onClick={() => setIsCategoryListExpanded((current) => !current)}
+          >
+            {isCategoryListExpanded ? '접기' : `전체 보기 (${categories.length}개)`}
+          </button>
+        )}
       </section>
 
       <section className="command-card">

@@ -116,6 +116,121 @@ npm run db:check
 
 ---
 
+## Manual Test Data
+
+### Day9 Admin API Integration
+
+Verified date:
+
+- 2026-07-23
+
+Discord:
+
+- guildId: `1524226987332206632`
+- available channels: `일반공지`, `장학`, `학사`, `글솝`, `건의사항`
+- note: `건의사항`은 알림 채널로 사용하지 않는다.
+
+Notice site:
+
+- siteName: `경북대학교 컴퓨터학부`
+- url: `https://cse.knu.ac.kr/bbs/board.php?bo_table=sub5_1&lang=kor`
+
+Selectors:
+
+- listSelector: `.basic_tbl_head tbody > tr`
+- titleSelector: `.bo_tit a`
+- linkSelector: `.bo_tit a`
+- dateSelector: `.td_datetime`
+- categorySelector: `.bo_cate_link`
+- categoryListSelector: `#bo_cate a`
+
+Expected result:
+
+- 테스트 크롤링 성공
+- 최근 공지 preview 1개 이상 표시
+- 감지 카테고리 1개 이상 표시
+- Discord 채널 목록 조회 성공
+- 설정 저장 후 새로고침 시 기존 설정 조회 성공
+- 기존 설정에서 카테고리만 수정하면 `PATCH /notice-config/categories` 호출
+- 사이트 정보 또는 selector 재테스트 후 저장하면 `PUT /notice-config` 호출
+- 설정 삭제 UI로 삭제하면 사이트 등록 단계로 복귀
+
+Notes:
+
+- 외부 사이트 DOM이 바뀌면 selector가 깨질 수 있다.
+- 테스트 전 기존 설정이 있으면 DELETE API로 초기화한다.
+
+Git Bash commands:
+
+Check whether MySQL is already running:
+
+```bash
+docker ps
+```
+
+Start local MySQL if it is not running:
+
+```bash
+docker compose up -d
+```
+
+Start the Backend dev server:
+
+```bash
+cd backend
+npm run dev
+```
+
+Start the Frontend dev server in another terminal:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Check Backend health:
+
+```bash
+curl -s "http://localhost:3000/api/health" | jq
+```
+
+Check Discord channels for the test guild:
+
+```bash
+curl -s "http://localhost:3000/api/admin/1524226987332206632/discord/channels" | jq
+```
+
+Reset existing notice config before a fresh test:
+
+```bash
+curl -s -X DELETE "http://localhost:3000/api/admin/1524226987332206632/notice-config" | jq
+```
+
+Check saved notice config:
+
+```bash
+curl -s "http://localhost:3000/api/admin/1524226987332206632/notice-config" | jq
+```
+
+Admin page:
+
+```text
+http://localhost:5173/admin/1524226987332206632
+```
+
+Manual browser checklist:
+
+- 빈 입력으로 테스트 크롤링을 실행하면 입력 안내 메시지가 표시된다.
+- 테스트 크롤링 전 `카테고리 설정` 탭을 클릭하면 이동 제한 안내가 표시된다.
+- 테스트 크롤링 성공 후 최근 공지는 `YYYY.MM.DD · 공지 바로가기` 형식으로 표시된다.
+- 신규 설정 저장은 `POST /api/admin/{guildId}/notice-config`를 호출한다.
+- 새로고침 후 기존 설정이 있으면 카테고리 설정 단계로 진입한다.
+- 기존 설정에서 카테고리만 수정하면 `PATCH /api/admin/{guildId}/notice-config/categories`를 호출한다.
+- 사이트 정보 또는 selector를 수정하고 테스트 크롤링을 다시 실행한 뒤 저장하면 `PUT /api/admin/{guildId}/notice-config`를 호출한다.
+- 사이드바의 설정 삭제 UI로 삭제하면 `DELETE /api/admin/{guildId}/notice-config`를 호출하고 사이트 등록 단계로 복귀한다.
+
+---
+
 # Directory Structure
 
 IRIS는 도메인 기준으로 코드를 나누고, 각 도메인 내부에 controller, service, repository, route, type 파일을 둔다.

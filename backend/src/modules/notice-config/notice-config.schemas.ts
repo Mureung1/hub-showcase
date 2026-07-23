@@ -1,27 +1,27 @@
 import { z } from 'zod'
 
 export const guildParamsSchema = z.object({
-  guildId: z.string().min(1),
+  guildId: z.string().trim().min(1),
 })
 
 export const testCrawlBodySchema = z.object({
-  name: z.string().min(1),
-  url: z.string().url(),
-  listSelector: z.string().min(1),
-  titleSelector: z.string().min(1),
-  linkSelector: z.string().min(1),
-  dateSelector: z.string().min(1),
-  categorySelector: z.string().min(1),
-  categoryListSelector: z.string().min(1),
+  name: z.string().trim().min(1),
+  url: z.string().trim().url(),
+  listSelector: z.string().trim().min(1),
+  titleSelector: z.string().trim().min(1),
+  linkSelector: z.string().trim().min(1),
+  dateSelector: z.string().trim().min(1),
+  categorySelector: z.string().trim().min(1),
+  categoryListSelector: z.string().trim().min(1),
 })
 
 export const saveNoticeConfigBodySchema = z.object({
   site: testCrawlBodySchema,
   categories: z.array(
     z.object({
-      name: z.string().min(1),
-      channelId: z.string().min(1),
-      roleName: z.string().optional(),
+      name: z.string().trim().min(1),
+      channelId: z.string().trim().min(1),
+      roleName: z.string().trim().optional(),
       isActive: z.boolean(),
     }),
   ).min(1),
@@ -31,8 +31,8 @@ export const updateNoticeCategoriesBodySchema = z.object({
   categories: z.array(
     z.object({
       categoryId: z.number().int().positive(),
-      channelId: z.string().min(1),
-      roleName: z.string().optional(),
+      channelId: z.string().trim().min(1),
+      roleName: z.string().trim().optional(),
       isActive: z.boolean(),
     }),
   ).min(1),

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "title": "IRIS (디스코드 기반 대학 공지 알리미)",
+  "summary": "대학 공지를 Discord에서 카테고리, 키워드 별로 받아볼 수 있는 공지 알림 서비스입니다.",
+  "githubUser": "codeHyeon(강현서)",
+  "demoUrl": "",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [],
+  "problem": "대학 공지는 언제 올라올지 알기 어려워 사용자가 사이트를 반복해서 확인해야 합니다. 하지만 새 공지를 확인해도 자신에게 필요한 내용이 아닐 때가 많습니다.",
+  "targetUsers": [
+    "학교 공지를 반복해서 확인하기 피곤하지만 필요한 공지는 놓치고 싶지 않은 학생",
+    "학과·동아리·스터디 Discord 서버에서 공지 알림을 운영하려는 관리자"
+  ],
+  "features": [
+    "관리자 페이지에서 공지 사이트 등록",
+    "관리자 페이지에서 카테고리·채널·역할 설정",
+    "Discord 명령어로 카테고리 구독과 키워드 알림 관리",
+    "카테고리별 새 공지를 연결된 Discord 채널로 알림",
+    "등록한 키워드가 포함된 새 공지를 개인 DM으로 알림"
+  ],
+  "featureTags": [
+    "공지 사이트 설정",
+    "카테고리, 키워드 구독/알림",
+    "Discord 명령어"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Express",
+    "Prisma",
+    "MySQL",
+    "discord.js",
+    "Cheerio"
+  ],
+  "techHighlights": [
+    "Axios와 Cheerio로 공지 사이트 HTML을 가져와 CSS Selector 기반으로 공지 제목, 링크, 날짜, 카테고리를 추출합니다.",
+    "Prisma와 MySQL로 Discord 서버별 공지 사이트 설정, 카테고리, 공지 이력, 구독, 키워드를 관리합니다.",
+    "discord.js로 채널 조회, Role 생성/수정/삭제, Slash Command 기반 관리자 설정 흐름을 연결합니다."
+  ],
+  "developmentWithAI": "MVP 범위와 테스트 시나리오를 정하고 실제 동작을 검증했습니다. AI Agent는 기능 단위 구현 계획, 코드 작성, 오류 원인 분석, 문서 갱신을 도왔습니다.",
+  "agent": {
+    "summary": "기획 정리, 기능 구현, 테스트 체크리스트 작성, 문서 갱신에 AI Agent를 활용했습니다.",
+    "agentTools": [],
+    "workflows": []
+  }
+}

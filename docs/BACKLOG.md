@@ -70,6 +70,8 @@
 - [x] notice-config 저장/조회/삭제 API 구현
 - [x] notice-config 교체/카테고리 수정 API 구현
 - [x] Discord 채널 조회 및 Role 생성/수정/삭제 구현
+- [x] Admin Web 실제 API 연동
+- [x] Admin Web 기존 설정 조회/수정/삭제 흐름 구현
 
 ## 진행 중
 
@@ -144,9 +146,9 @@
 - [x] 사이트 등록 화면 구현
 - [x] 테스트 크롤링 결과 미리보기 구현
 - [x] 카테고리 설정 화면 구현
-- [ ] 기존 설정 조회 및 수정 흐름 구현
+- [x] 기존 설정 조회 및 수정 흐름 구현
 - [x] 설정 완료 화면 구현
-- [ ] 설정 삭제 UI 구현
+- [x] 설정 삭제 UI 구현
 - [ ] Vercel preview 배포 확인
 - [x] Frontend API base URL 환경 변수 연결 확인
 - [x] Discord Bot 초대 링크 환경 변수 연결

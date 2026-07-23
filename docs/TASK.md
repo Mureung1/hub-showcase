@@ -347,20 +347,24 @@
 ## 할 일
 
 - [x] frontend 공통 API client 작성
-- [ ] notice-config test crawl API 함수 작성
-- [ ] notice-config save/read/delete API 함수 작성
+- [x] notice-config test crawl API 함수 작성
+- [x] notice-config save/read/delete API 함수 작성
 - [x] Discord channels API 함수 작성
-- [ ] mock test crawl 함수 제거 또는 fallback 처리
-- [ ] 사이트 등록 화면 테스트 크롤링 API 연동
+- [x] mock test crawl 함수 제거 또는 fallback 처리
+- [x] 사이트 등록 화면 테스트 크롤링 API 연동
 - [x] 카테고리 설정 화면 Discord 채널 API 연동
-- [ ] 설정 저장/조회 API 연동
-- [ ] loading/error/success 상태 처리
+- [x] 설정 저장/조회 API 연동
+- [x] 카테고리 설정 PATCH API 연동
+- [x] 설정 삭제 API UI 연동
+- [x] loading/error/success 상태 처리
 - [x] Frontend API base URL 환경 변수 연결 확인
-- [ ] 관리자 flow end-to-end 수동 테스트
+- [x] 관리자 flow end-to-end 수동 테스트
 
 ## 이슈
 
-- 없음
+- 기존 설정의 카테고리만 수정하는 경우 전체 설정 교체(`PUT`)가 아니라 카테고리 부분 수정(`PATCH`)을 호출하도록 분기함.
+- 외부에서 설정이 삭제된 stale 화면 상태에서 저장/삭제 시 404를 감지해 사이트 등록 단계로 복구하도록 처리함.
+- selector 입력값 앞뒤 공백은 Backend schema에서 trim 정규화하도록 보완함.
 
 ## 이월
 
@@ -377,23 +381,25 @@
 
 ## 할 일
 
-- [ ] 설정 삭제 UI 구현
-- [ ] 저장/다음 버튼 상태 문구 정리
-- [ ] 기존 설정 조회 후 form 채우기 보완
-- [ ] 설정 완료 화면 요약 보완
-- [ ] 모바일/데스크톱 반응형 점검
-- [ ] 주요 실패 케이스 UI 점검
+- [x] 설정 삭제 UI 구현
+- [x] 저장/다음 버튼 상태 문구 정리
+- [x] 기존 설정 조회 후 form 채우기 보완
+- [x] 설정 완료 화면 요약 보완
+- [x] 모바일/데스크톱 반응형 1차 점검
+- [x] 주요 실패 케이스 UI 점검
 - [ ] Fork `personal-deploy` Frontend CI 및 Vercel 배포 workflow 작성
 - [ ] Vercel preview 배포 확인
 - [ ] Frontend preview smoke test
 
 ## 이슈
 
-- 없음
+- Frontend preview 배포와 CI/Vercel workflow는 별도 배포 단계에서 진행한다.
 
 ## 이월
 
-- 없음
+- Fork `personal-deploy` Frontend CI 및 Vercel 배포 workflow 작성
+- Vercel preview 배포 확인
+- Frontend preview smoke test
 
 ---
 

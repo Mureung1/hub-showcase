@@ -161,6 +161,7 @@ POST /api/admin/{guildId}/selector-help-requests
 
 기존 설정이 없을 때 최초 생성 시 사용
 사이트 등록과 카테고리 설정은 마지막 저장 시 한 번에 반영
+Frontend 관리자 flow에서는 테스트 크롤링 성공 후 최초 저장할 때 이 API를 호출합니다.
 
 ```http
 POST /api/admin/{guildId}/notice-config
@@ -306,6 +307,7 @@ GET /api/admin/{guildId}/notice-config
 현재 Discord 서버에 등록된 공지 사이트와 카테고리 설정을 새로운 설정으로 전체 교체합니다.
 관리자가 사이트 URL 또는 Selector를 변경하고, 테스트 크롤링을 통해 새 카테고리를 감지한 뒤 최종 저장할 때 사용합니다.
 site 정보는 수정하고, category 설정은 새로 감지된 카테고리 목록 기준으로 다시 저장합니다.
+Frontend 관리자 flow에서는 기존 설정이 있는 상태에서 사이트 정보 또는 Selector를 수정하고 테스트 크롤링을 다시 실행한 뒤 저장할 때 이 API를 호출합니다.
 
 ```http
 PUT /api/admin/{guildId}/notice-config
@@ -383,6 +385,7 @@ PUT /api/admin/{guildId}/notice-config
 - Discord 채널
 - 역할 이름
 - 활성화 여부
+Frontend 관리자 flow에서는 기존 설정 조회로 `categoryId`가 있는 카테고리의 채널, Role 이름, 활성화 여부만 수정할 때 이 API를 호출합니다.
 
 ```http
 PATCH /api/admin/{guildId}/notice-config/categories

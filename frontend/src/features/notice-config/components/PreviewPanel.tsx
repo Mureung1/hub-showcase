@@ -30,11 +30,28 @@ export function PreviewPanel({ notices, categories }: PreviewPanelProps) {
             <span>{notice.category}</span>
             <h3>{notice.title}</h3>
             <p>
-              {notice.date} · {notice.link}
+              {formatNoticeDate(notice.date)} ·{' '}
+              <a href={notice.link} target="_blank" rel="noreferrer">
+                공지 바로가기
+              </a>
             </p>
           </article>
         ))}
       </div>
     </section>
   )
+}
+
+function formatNoticeDate(date: string) {
+  const parsedDate = new Date(date)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return date
+  }
+
+  const year = parsedDate.getFullYear()
+  const month = String(parsedDate.getMonth() + 1).padStart(2, '0')
+  const day = String(parsedDate.getDate()).padStart(2, '0')
+
+  return `${year}.${month}.${day}`
 }

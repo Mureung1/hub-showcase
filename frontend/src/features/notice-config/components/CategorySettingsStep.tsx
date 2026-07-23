@@ -7,6 +7,7 @@ interface CategorySettingsStepProps {
   discordChannels: DiscordChannel[]
   isLoadingChannels: boolean
   channelLoadError: string | null
+  canGoNext: boolean
   saveStatus: SaveStatus
   onCategoryChange: (
     categoryName: string,
@@ -23,6 +24,7 @@ export function CategorySettingsStep({
   discordChannels,
   isLoadingChannels,
   channelLoadError,
+  canGoNext,
   saveStatus,
   onCategoryChange,
   onPrevious,
@@ -78,21 +80,33 @@ export function CategorySettingsStep({
               </button>
             </div>
           ))}
+          {categories.length === 0 && (
+            <p className="table-message">
+              감지된 카테고리가 없습니다. 사이트 등록에서 테스트 크롤링을 먼저 진행해주세요.
+            </p>
+          )}
         </div>
       </section>
 
       <p className="notice-box">활성화 OFF인 카테고리는 구독 및 알림 대상에서 제외됩니다.</p>
 
       <div className="admin-actions">
-        <button type="button" onClick={onPrevious}>
-          이전
-        </button>
+        <div className="left-actions">
+          <button type="button" onClick={onPrevious}>
+            이전
+          </button>
+        </div>
         <div className="right-actions">
           <SaveStatusText status={saveStatus} />
-          <button className="primary-action" type="button" onClick={onSave}>
+          <button
+            className="primary-action"
+            type="button"
+            disabled={categories.length === 0 || saveStatus === 'saving'}
+            onClick={onSave}
+          >
             {saveStatus === 'saving' ? '저장 중...' : '저장'}
           </button>
-          <button className="primary-action" type="button" disabled={saveStatus !== 'saved'} onClick={onNext}>
+          <button className="primary-action" type="button" disabled={!canGoNext} onClick={onNext}>
             다음 →
           </button>
         </div>
@@ -103,7 +117,11 @@ export function CategorySettingsStep({
 
 function SaveStatusText({ status }: { status: SaveStatus }) {
   if (status === 'dirty') {
-    return <span className="save-status warning">저장하지 않은 변경사항이 있습니다.</span>
+    return (
+      <span className="save-status warning">
+        저장하지 않은 변경사항이 있습니다. 변경사항을 반영하려면 저장해주세요.
+      </span>
+    )
   }
 
   if (status === 'saving') {
@@ -112,6 +130,10 @@ function SaveStatusText({ status }: { status: SaveStatus }) {
 
   if (status === 'saved') {
     return <span className="save-status success">저장되었습니다.</span>
+  }
+
+  if (status === 'error') {
+    return <span className="save-status error">저장에 실패했습니다. 입력값을 확인해주세요.</span>
   }
 
   return null

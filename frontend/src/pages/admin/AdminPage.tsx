@@ -1,15 +1,21 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { ApiError } from '../../api/httpClient'
 import { getDiscordChannels } from '../../features/discord/api/discordApi'
 import type { DiscordChannel } from '../../features/discord/types/discordTypes'
 import { CategorySettingsStep } from '../../features/notice-config/components/CategorySettingsStep'
 import { CompleteStep } from '../../features/notice-config/components/CompleteStep'
+import { DeleteNoticeConfigModal } from '../../features/notice-config/components/DeleteNoticeConfigModal'
 import { GuidePanel } from '../../features/notice-config/components/GuidePanel'
 import { SiteRegistrationStep } from '../../features/notice-config/components/SiteRegistrationStep'
+import { submitSelectorHelpRequestMock } from '../../features/notice-config/api/mockNoticeConfigApi'
 import {
-  saveNoticeConfigMock,
-  submitSelectorHelpRequestMock,
-  testCrawlMock,
-} from '../../features/notice-config/api/mockNoticeConfigApi'
+  deleteNoticeConfig,
+  getNoticeConfig,
+  replaceNoticeConfig,
+  saveNoticeConfig,
+  testNoticeConfigCrawl,
+  updateNoticeCategories,
+} from '../../features/notice-config/api/noticeConfigApi'
 import type {
   AdminStep,
   SaveStatus,
@@ -49,13 +55,16 @@ function AdminPage({ guildId }: AdminPageProps) {
   const [discordChannels, setDiscordChannels] = useState<DiscordChannel[]>([])
   const [isLoadingChannels, setIsLoadingChannels] = useState(true)
   const [channelLoadError, setChannelLoadError] = useState<string | null>(null)
+  const [hasExistingConfig, setHasExistingConfig] = useState(false)
+  const [hasSavedConfig, setHasSavedConfig] = useState(false)
+  const [hasRetestedSite, setHasRetestedSite] = useState(false)
   const [isCrawling, setIsCrawling] = useState(false)
+  const [crawlError, setCrawlError] = useState<string | null>(null)
+  const [categoryStepHint, setCategoryStepHint] = useState<string | null>(null)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
-
-  const activeCategories = useMemo(
-    () => categories.filter((category) => category.isActive),
-    [categories],
-  )
 
   const updateForm = (field: keyof NoticeConfigForm, value: string) => {
     setForm((current) => ({
@@ -63,6 +72,51 @@ function AdminPage({ guildId }: AdminPageProps) {
       [field]: value,
     }))
   }
+
+  const resetNoticeConfigFlow = () => {
+    setStep('site')
+    setNotices([])
+    setCategories([])
+    setHasExistingConfig(false)
+    setHasSavedConfig(false)
+    setHasRetestedSite(false)
+    setCategoryStepHint(null)
+    setSaveStatus('idle')
+  }
+
+  useEffect(() => {
+    let isCurrent = true
+
+    async function loadNoticeConfig() {
+      try {
+        const noticeConfig = await getNoticeConfig(guildId)
+
+        if (!isCurrent) {
+          return
+        }
+
+        setForm(noticeConfig.form)
+        setCategories(noticeConfig.categories)
+        setHasExistingConfig(true)
+        setHasSavedConfig(true)
+        setHasRetestedSite(false)
+        setStep('categories')
+        setSaveStatus('saved')
+      } catch {
+        if (isCurrent) {
+          setHasExistingConfig(false)
+          setHasSavedConfig(false)
+          setHasRetestedSite(false)
+        }
+      }
+    }
+
+    void loadNoticeConfig()
+
+    return () => {
+      isCurrent = false
+    }
+  }, [guildId])
 
   useEffect(() => {
     let isCurrent = true
@@ -99,11 +153,26 @@ function AdminPage({ guildId }: AdminPageProps) {
 
   const handleTestCrawl = async () => {
     setIsCrawling(true)
-    const result = await testCrawlMock(form)
-    setNotices(result.notices)
-    setCategories(fillMissingChannelIds(result.categories, discordChannels))
-    setSaveStatus('dirty')
-    setIsCrawling(false)
+    setCrawlError(null)
+
+    try {
+      const result = await testNoticeConfigCrawl(guildId, form)
+
+      setNotices(result.notices)
+      setCategories(fillMissingChannelIds(result.categories, discordChannels))
+      setCategoryStepHint(null)
+      setHasRetestedSite(true)
+      setSaveStatus('dirty')
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 400) {
+        setCrawlError('사이트 정보와 Selector를 모두 입력한 뒤 테스트 크롤링을 실행해주세요.')
+        return
+      }
+
+      setCrawlError(getErrorMessage(error, '테스트 크롤링에 실패했습니다. 입력값을 확인해주세요.'))
+    } finally {
+      setIsCrawling(false)
+    }
   }
 
   const updateCategory = (
@@ -126,12 +195,94 @@ function AdminPage({ guildId }: AdminPageProps) {
 
   const handleSave = async () => {
     setSaveStatus('saving')
-    await saveNoticeConfigMock({ form, categories })
-    setSaveStatus('saved')
+
+    try {
+      if (hasExistingConfig) {
+        if (hasRetestedSite) {
+          await replaceNoticeConfig(guildId, { form, categories })
+          await syncSavedNoticeConfig()
+        } else {
+          const result = await updateNoticeCategories(guildId, categories)
+
+          setCategories(result.categories)
+        }
+      } else {
+        await saveNoticeConfig(guildId, { form, categories })
+        setHasExistingConfig(true)
+        await syncSavedNoticeConfig()
+      }
+
+      setHasSavedConfig(true)
+      setHasRetestedSite(false)
+      setSaveStatus('saved')
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        resetNoticeConfigFlow()
+        setCrawlError('기존 설정이 삭제되었습니다. 사이트 등록부터 다시 진행해주세요.')
+        return
+      }
+
+      setSaveStatus('error')
+    }
+  }
+
+  const syncSavedNoticeConfig = async () => {
+    const noticeConfig = await getNoticeConfig(guildId)
+
+    setForm(noticeConfig.form)
+    setCategories(noticeConfig.categories)
   }
 
   const handleSelectorHelpRequest = async (request: SelectorHelpRequest) => {
     await submitSelectorHelpRequestMock(request)
+  }
+
+  const openDeleteModal = () => {
+    setDeleteError(null)
+    setIsDeleteModalOpen(true)
+  }
+
+  const closeDeleteModal = () => {
+    if (isDeleting) {
+      return
+    }
+
+    setIsDeleteModalOpen(false)
+    setDeleteError(null)
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    setDeleteError(null)
+
+    try {
+      await deleteNoticeConfig(guildId)
+      setIsDeleteModalOpen(false)
+      resetNoticeConfigFlow()
+      setCrawlError('기존 설정이 삭제되었습니다. 사이트 등록부터 다시 진행해주세요.')
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        setIsDeleteModalOpen(false)
+        resetNoticeConfigFlow()
+        setCrawlError('기존 설정이 이미 삭제되었습니다. 사이트 등록부터 다시 진행해주세요.')
+        return
+      }
+
+      setDeleteError(getErrorMessage(error, '설정 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.'))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const openCategoryStep = () => {
+    if (categories.length === 0) {
+      setStep('site')
+      setCategoryStepHint('테스트 크롤링 후 이동할 수 있습니다.')
+      return
+    }
+
+    setCategoryStepHint(null)
+    setStep('categories')
   }
 
   const renderMain = () => {
@@ -140,6 +291,7 @@ function AdminPage({ guildId }: AdminPageProps) {
         <SiteRegistrationStep
           form={form}
           isCrawling={isCrawling}
+          crawlError={crawlError}
           notices={notices}
           categories={categories}
           selectorGuideUrl={selectorGuideUrl}
@@ -158,6 +310,7 @@ function AdminPage({ guildId }: AdminPageProps) {
           discordChannels={discordChannels}
           isLoadingChannels={isLoadingChannels}
           channelLoadError={channelLoadError}
+          canGoNext={categories.length > 0 && hasSavedConfig}
           saveStatus={saveStatus}
           onCategoryChange={updateCategory}
           onPrevious={() => setStep('site')}
@@ -170,7 +323,8 @@ function AdminPage({ guildId }: AdminPageProps) {
     return (
       <CompleteStep
         siteName={form.siteName || 'IRIS Notice'}
-        activeCategories={activeCategories}
+        categories={categories}
+        discordChannels={discordChannels}
         onRestart={() => setStep('site')}
       />
     )
@@ -194,10 +348,16 @@ function AdminPage({ guildId }: AdminPageProps) {
           <button
             className={step !== 'site' ? 'side-item active' : 'side-item'}
             type="button"
-            onClick={() => setStep(categories.length > 0 ? 'categories' : 'site')}
+            onClick={openCategoryStep}
           >
             카테고리 설정
           </button>
+          {categoryStepHint && <p className="side-hint">{categoryStepHint}</p>}
+          {hasExistingConfig && (
+            <button className="side-danger-item" type="button" onClick={openDeleteModal}>
+              설정 삭제
+            </button>
+          )}
         </aside>
 
         <section className={step === 'complete' ? 'admin-content complete-content' : 'admin-content'}>
@@ -206,6 +366,15 @@ function AdminPage({ guildId }: AdminPageProps) {
 
         {step !== 'complete' && <GuidePanel step={step} />}
       </section>
+
+      {isDeleteModalOpen && (
+        <DeleteNoticeConfigModal
+          isDeleting={isDeleting}
+          deleteError={deleteError}
+          onClose={closeDeleteModal}
+          onConfirm={handleDelete}
+        />
+      )}
     </main>
   )
 }
@@ -220,4 +389,12 @@ function fillMissingChannelIds(categories: DetectedCategory[], channels: Discord
     ...category,
     channelId: channelIds.has(category.channelId) ? category.channelId : fallbackChannelId,
   }))
+}
+
+function getErrorMessage(error: unknown, fallbackMessage: string) {
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return fallbackMessage
 }
