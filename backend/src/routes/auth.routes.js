@@ -33,7 +33,27 @@ router.get('/google/callback', async (req, res, next) => {
       create: profile,
     })
     const token = signAccessToken(user)
-    res.redirect(`${process.env.FRONTEND_URL}/oauth/callback#token=${token}&joinedSubId=null`)
+
+    let joinedSubId = null
+    const { state } = req.query
+    if (state) {
+      const subscription = await prisma.subscription.findUnique({ where: { id: state } })
+      if (subscription) {
+        joinedSubId = subscription.id
+        if (subscription.ownerId !== user.id) {
+          const existingMembership = await prisma.partyMember.findUnique({
+            where: { subscriptionId_userId: { subscriptionId: subscription.id, userId: user.id } },
+          })
+          if (!existingMembership) {
+            await prisma.partyMember.create({
+              data: { subscriptionId: subscription.id, userId: user.id },
+            })
+          }
+        }
+      }
+    }
+
+    res.redirect(`${process.env.FRONTEND_URL}/oauth/callback#token=${token}&joinedSubId=${joinedSubId ?? 'null'}`)
   } catch (e) {
     next(e)
   }

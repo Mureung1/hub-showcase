@@ -149,4 +149,48 @@ router.get('/:id', requireAuth, async (req, res, next) => {
   }
 })
 
+router.post('/:id/join', requireAuth, async (req, res, next) => {
+  try {
+    const subscription = await prisma.subscription.findUnique({
+      where: { id: req.params.id },
+    })
+
+    if (!subscription) {
+      const err = new Error('존재하지 않는 파티입니다.')
+      err.status = 404
+      return next(err)
+    }
+
+    const existingMembership = await prisma.partyMember.findUnique({
+      where: {
+        subscriptionId_userId: {
+          subscriptionId: subscription.id,
+          userId: req.user.id,
+        },
+      },
+    })
+
+    if (existingMembership) {
+      const err = new Error('이미 파티원으로 등록되어 있습니다.')
+      err.status = 409
+      return next(err)
+    }
+
+    const member = await prisma.partyMember.create({
+      data: {
+        subscriptionId: subscription.id,
+        userId: req.user.id,
+      },
+    })
+
+    res.status(201).json({
+      memberId: member.id,
+      subscriptionId: member.subscriptionId,
+      userId: member.userId,
+    })
+  } catch (e) {
+    next(e)
+  }
+})
+
 export default router
