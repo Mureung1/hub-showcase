@@ -112,6 +112,11 @@ export default function Reader() {
     // 건너뛴다(llmService.js의 saveTermsToVocabulary와 동일한 패턴) — 저장
     // 실패를 setError로 올리면 방금 다 읽은 리더뷰가 에러 화면으로 덮인다.
     if (user) {
+      // 저장 성공/실패와 무관하게 판단버튼 영역 도달 = 완독 확정이므로 비동기
+      // 호출 전에 먼저 잠근다. saveDecision 응답을 기다리는 동안 사용자가
+      // 라우트를 이동해 unmount cleanup이 먼저 실행되면 decisionId: null로
+      // 중복 기록되는 race condition 방지.
+      readLoggedRef.current = true
       saveDecision({
         url,
         title: article.title,
@@ -122,12 +127,12 @@ export default function Reader() {
       })
         .then((saved) => {
           setToastMessage("✅ 인사이트 노트에 저장되었습니다.")
-          // 판단까지 마쳤다는 것은 판단버튼 영역에 도달했다는 뜻이므로
-          // 완독도 함께 기록하고, decisionId로 FK 연결한다.
-          readLoggedRef.current = true
           return logArticleRead({ url, title: article.title, decisionId: saved.id }).catch(() => {})
         })
-        .catch((err) => setError(err.message))
+        .catch((err) => {
+          setError(err.message)
+          return logArticleRead({ url, title: article.title, decisionId: null }).catch(() => {})
+        })
     }
 
     setPendingDecision(null)
