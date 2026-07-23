@@ -187,6 +187,36 @@ describe("createGeminiClassifier", () => {
       "Gemini가 분류 결과를 반환하지 않았습니다."
     );
   });
+
+  it("Gemini의 일시적인 503 오류는 재시도한다", async () => {
+    const temporaryError = Object.assign(new Error("high demand"), { status: 503 });
+    const generateContent = vi
+      .fn()
+      .mockRejectedValueOnce(temporaryError)
+      .mockResolvedValueOnce({
+        text: JSON.stringify({
+          categoryMain: "공부",
+          categorySub: "개발도구",
+          displayTitle: "Orca IDE 개발 환경 소개",
+          summary: "Orca IDE의 주요 기능과 개발 활용 방법을 소개하는 영상입니다.",
+        }),
+      });
+    const wait = vi.fn().mockResolvedValue(undefined);
+    const classifier = createGeminiClassifier(
+      "test-key",
+      "test-model",
+      { models: { generateContent } } as never,
+      wait
+    );
+
+    await expect(
+      classifier({ content: "https://www.youtube.com/watch?v=orca" })
+    ).resolves.toMatchObject({
+      displayTitle: "Orca IDE 개발 환경 소개",
+    });
+    expect(generateContent).toHaveBeenCalledTimes(2);
+    expect(wait).toHaveBeenCalledWith(400);
+  });
 });
 
 describe("createConfiguredGeminiClassifier", () => {

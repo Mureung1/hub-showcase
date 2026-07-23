@@ -55,6 +55,44 @@ describe("assertSafeHttpUrl", () => {
 });
 
 describe("extractPageMetadata", () => {
+  it("YouTube는 큰 HTML 대신 oEmbed에서 영상 제목을 가져온다", async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          title: "Orca IDE로 개발 생산성 높이기",
+          author_name: "개발 채널",
+        }),
+        { headers: { "content-type": "application/json" } }
+      )
+    );
+
+    const result = await extractPageMetadata(
+      "https://www.youtube.com/watch?v=orca-example",
+      {
+        fetchImpl,
+        resolveAddresses: publicDns,
+        maxBytes: 1_000,
+      }
+    );
+
+    expect(result).toMatchObject({
+      title: "Orca IDE로 개발 생산성 높이기",
+      ogTitle: "Orca IDE로 개발 생산성 높이기",
+      ogSiteName: "YouTube",
+      ogType: "video",
+    });
+    expect(fetchImpl).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hostname: "www.youtube.com",
+        pathname: "/oembed",
+      }),
+      expect.objectContaining({
+        redirect: "manual",
+        headers: expect.objectContaining({ Accept: "application/json" }),
+      })
+    );
+  });
+
   it("HTML만 제한된 크기로 읽는다", async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
       new Response("<title>테스트</title>", {

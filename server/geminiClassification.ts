@@ -225,11 +225,22 @@ function formatInput({ content, metadata, image }: ClassificationInput) {
 }
 
 type GeminiClient = Pick<GoogleGenAI, "models">;
+type Wait = (milliseconds: number) => Promise<void>;
+
+function isRetryableGeminiError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const status = (error as { status?: unknown }).status;
+  return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+}
 
 export function createGeminiClassifier(
   apiKey: string,
   model: string,
-  client: GeminiClient = new GoogleGenAI({ apiKey })
+  client: GeminiClient = new GoogleGenAI({ apiKey }),
+  wait: Wait = (milliseconds) =>
+    new Promise((resolve) => {
+      setTimeout(resolve, milliseconds);
+    })
 ): GeminiRequest {
   return async (input) => {
     const contents: Array<
@@ -243,16 +254,25 @@ export function createGeminiClassifier(
         },
       });
     }
-    const response = await client.models.generateContent({
-      model,
-      contents,
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseJsonSchema: classificationSchema,
-      },
-    });
-    if (!response.text) throw new Error("Gemini가 분류 결과를 반환하지 않았습니다.");
+    let response: Awaited<ReturnType<GeminiClient["models"]["generateContent"]>> | null = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        response = await client.models.generateContent({
+          model,
+          contents,
+          config: {
+            systemInstruction,
+            responseMimeType: "application/json",
+            responseJsonSchema: classificationSchema,
+          },
+        });
+        break;
+      } catch (error) {
+        if (attempt === 2 || !isRetryableGeminiError(error)) throw error;
+        await wait(400 * 2 ** attempt);
+      }
+    }
+    if (!response?.text) throw new Error("Gemini가 분류 결과를 반환하지 않았습니다.");
     return JSON.parse(response.text) as GeminiClassification;
   };
 }
