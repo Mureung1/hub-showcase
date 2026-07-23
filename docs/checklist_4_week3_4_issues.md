@@ -154,8 +154,10 @@
 **설명**: 스펙 입력 폼에서는 이미 "판정에 미반영" 문구와 함께 입력받고 있지만(`#7`), 결과 화면 어디에도 이 값이 다시 보이지 않는다. 우대 항목이라는 취지를 살리려면 공고 상세 모달에서라도 참고 정보로 노출하는 게 자연스럽다.
 
 **완료 기준**
-- [ ] `JobDetailModal`에 사용자가 입력한 컴퓨터활용능력 보유 여부 표시 (다른 5개 항목과 구분되는 "참고용" 스타일 — 충족/미충족 판정 색상 사용 금지)
-- [ ] "판정에 포함되지 않는 참고 정보"라는 문구 함께 표시
+- [x] `JobDetailModal`에 사용자가 입력한 컴퓨터활용능력 보유 여부 표시 (다른 5개 항목과 구분되는 "참고용" 스타일 — 충족/미충족 판정 색상 사용 금지)
+- [x] "판정에 포함되지 않는 참고 정보"라는 문구 함께 표시
+
+**완료 (2026-07-23, 커밋 `bbc6a48`)**. TDD로 진행: `describeComputerSkill(hasComputerSkill)` 순수 함수를 `src/lib/gapAnalysis.js`에 추가하기 전에 `src/lib/gapAnalysis.test.js`로 red 테스트부터 작성(`true`→`'보유'`/`false`→`'미보유'` 2케이스만 — `has_computer_skill`은 Context 기본값이 `false`인 체크박스 제어값이라 undefined/null 방어 케이스는 프로젝트 컨벤션대로 스코프 아웃), 구현 후 green 확인. `buildJobDisplay`에 `has_computer_skill: spec.has_computer_skill` 필드를 추가해 `JobDetailModal`이 `job` prop 하나로 계속 동작하게 함(기존 checklist/statusLabel과 동일 패턴). `.checklist-row-reference`(점선 테두리+회색 배경)로 시각적으로 분리, ok/no 색상 미사용. `ResultPage`/`BookmarksPage` 둘 다 `buildJobDisplay`를 거치므로 두 화면 모두 코드 수정 없이 자동 적용됨.
 
 ---
 
