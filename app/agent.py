@@ -68,6 +68,12 @@ def judge(topic: str, papers: list[dict]) -> dict:
     }
 
 
+def _iterate_picked(papers: list[dict], picked: list[dict]):
+    """도구 선택(select_tool) 대상 논문을 1부터 순서대로 하나씩 꺼낸다."""
+    for i, item in enumerate(picked, start=1):
+        yield i, papers[item["index"]]
+
+
 if __name__ == "__main__":
     import argparse
 
