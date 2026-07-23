@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "title": "DropCast - 대안자산 가격 예측 및 트레이딩",
+  "summary": "한정판 스니커즈, 스트릿웨어 등 대안 자산의 미래 리셀가를 가상 포인트로 예측하고 Polymarket 스타일로 트레이딩하는 서비스입니다.",
+  "githubUser": "Qkdgodchl",
+  "demoUrl": "",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/home.webp"
+  ],
+  "problem": "한정판 스니커즈와 tcg 등 대안 자산의 시세 변동성이 크지만, 시장 참여자들의 집단지성과 실시간 예측 데이터를 한눈에 확인하고 리스크 없이 시뮬레이션해볼 수 있는 도구가 부족합니다.",
+  "targetUsers": [
+    "tcg 및 대안 자산 리셀 시장 참여자",
+    "Polymarket 스타일의 예측 마켓과 집단지성 데이터에 관심 있는 유저",
+    "가상 포인트로 시세 변동을 리스크 없이 시뮬레이션하고 싶은 투자자"
+  ],
+  "features": [
+    "SNKRDUNK 랭킹 기반 대안 자산의 미래 리셀가를 가상 포인트로 예측합니다.",
+    "유저들의 배팅액 비율에 따라 5¢~95¢ 범위에서 실시간 주가(Share Price)와 배당률이 자동 산출됩니다.",
+    "매주 일요일 및 발매 당일 23:59 KREAM 종가를 기준으로 정산하여 승자에게 포인트를 환급합니다.",
+    "포인트 배팅 선택기(100, 200, 500, 1,000 pts)를 통해 손쉽게 지분을 매수하고 관리합니다."
+  ],
+  "featureTags": [
+    "예측 마켓",
+    "대안 자산",
+    "실시간 트레이딩"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Express",
+    "Prisma",
+    "MySQL",
+    "Puppeteer",
+    "Node-Cron"
+  ],
+  "techHighlights": [
+    "배팅 비중(UP/DOWN)에 따라 주가를 5¢~95¢로 동적 산출하는 Polymarket 주가 알고리즘을 구현했습니다.",
+    "Puppeteer 기반 KREAM 종가 수집 및 Node-Cron 자동 정산 엔진 파이프라인을 구축했습니다.",
+    "Prisma 기반 DB Self-Healing 파이프라인을 구축하여 초기 실행 시 30개 정제 상품을 자동 시딩합니다."
+  ],
+  "developmentWithAI": "저는 대안 자산 예측 마켓 아이디어와 핵심 기능(Polymarket 주가 연동, 정산 로직)을 정의했습니다. AI 에이전트는 요구사항을 기반으로 프론트엔드/백엔드 아키텍처와 정산 파이프라인 코드를 작성하였으며, 저는 실행 및 디버깅을 통해 결과를 검증하고 수정했습니다.",
+  "agent": {
+    "summary": "기획부터 Brutalist Dark UI 개발, Express/Prisma 정산 엔진 구축까지 Agent와 Skill을 함께 사용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "개발 계획 Agent",
+        "purpose": "Polymarket 주가 산출 및 정산 로직 요구사항을 작업 단위로 분할하고 구현 순서를 정합니다."
+      },
+      {
+        "type": "skill",
+        "name": "프론트엔드 UI 작성 Skill",
+        "purpose": "Brutalist Dark 디자인 스타일을 적용한 React 컴포넌트를 작성합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "DropCast 기능 개발 Workflow",
+        "steps": [
+          "기능 명세 및 정산 정책 작성",
+          "DB 스키마 및 REST API 명세 설계",
+          "React UI 컴포넌트 작성",
+          "Express 백엔드 및 크롤러/정산 엔진 구축",
+          "CDN 핫링크 우회 및 DB Self-Healing 검증",
+          "통합 테스트 및 정산 동작 확인"
+        ]
+      }
+    ]
+  }
+}
