@@ -183,4 +183,24 @@ describe("market analysis service", () => {
 
     expect(Object.keys(result)).toEqual(["연남", "홍대", "합정"]);
   });
+
+  it("requests every supported market with the same selected category and period", async () => {
+    const requested: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => {
+        requested.push(url);
+        return Promise.resolve(new Response(JSON.stringify(analysis), { status: 200 }));
+      }),
+    );
+
+    await loadMarketComparison(markets, "카페", new AbortController().signal, {
+      allowDemoSnapshot: false,
+      period: "20251",
+    });
+
+    expect(requested).toHaveLength(3);
+    expect(requested.every((url) => url.includes("category=%EC%B9%B4%ED%8E%98"))).toBe(true);
+    expect(requested.every((url) => url.includes("period=20251"))).toBe(true);
+  });
 });

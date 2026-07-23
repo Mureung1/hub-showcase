@@ -8,8 +8,9 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
 from uuid import UUID, uuid4
@@ -30,12 +31,29 @@ CaptureType = Literal[
 JobStatus = Literal["uploaded", "queued", "running", "blocked", "failed", "ready"]
 StageStatus = Literal["pending", "running", "passed", "blocked", "failed"]
 WorkerMode = Literal["host", "docker"]
+PrivacyReviewStatus = Literal["pending", "approved", "rejected"]
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".heic"}
 VIDEO_SUFFIXES = {".mp4", ".mov", ".mkv"}
 CHUNK_SIZE = 1024 * 1024
 MAX_TOTAL_BYTES = 8 * 1024 * 1024 * 1024
 MIN_GPU_MEMORY_MB = 6_000
+MAX_PLY_HEADER_BYTES = 64 * 1024
+MAX_PLY_VERTICES = 50_000_000
+MEDIA_PROBE_TIMEOUT_SECONDS = 10
+TERMINAL_JOB_STATUSES = {"blocked", "failed", "ready"}
+_execution_lock = threading.Lock()
+_active_scene_jobs: set[str] = set()
+
+
+class SceneResourceLimitError(ValueError):
+    """A public Scene request exceeded an intentionally small service limit."""
+
+    status_code: int = 429
+
+
+class SceneUploadTooLargeError(SceneResourceLimitError):
+    status_code = 413
 
 
 class SceneInputFile(BaseModel):
@@ -71,6 +89,9 @@ class SceneJob(BaseModel):
     blocked_reason: str | None = None
     next_action: str | None = None
     asset_url: str | None = None
+    privacy_review_status: PrivacyReviewStatus = "pending"
+    is_anonymized: bool = False
+    privacy_reviewed_at: str | None = None
     camera_pose: SceneCameraPose | None = None
     commands: list[list[str]] = Field(default_factory=list)
 
@@ -125,9 +146,18 @@ def validate_file_set(capture_type: CaptureType, filenames: list[str]) -> None:
 
 def validate_gaussian_ply(path: Path) -> None:
     with path.open("rb") as stream:
-        header = stream.read(64 * 1024)
-    if not header.startswith(b"ply\n") or b"end_header" not in header:
+        header = stream.read(MAX_PLY_HEADER_BYTES)
+    header_end = header.find(b"end_header\n")
+    if not header.startswith(b"ply\n") or header_end < 0:
         raise ValueError("Asset is not a valid PLY file.")
+    if b"format binary_little_endian 1.0" not in header:
+        raise ValueError("PLY must use binary_little_endian format.")
+    vertex_match = re.search(rb"^element vertex (\d+)$", header, flags=re.MULTILINE)
+    if vertex_match is None:
+        raise ValueError("PLY is missing an element vertex declaration.")
+    vertex_count = int(vertex_match.group(1))
+    if vertex_count < 1 or vertex_count > MAX_PLY_VERTICES:
+        raise ValueError("PLY vertex count is outside the supported limit.")
     required = (
         b"element vertex",
         b"property float opacity",
@@ -137,6 +167,62 @@ def validate_gaussian_ply(path: Path) -> None:
     missing = [item.decode("ascii") for item in required if item not in header]
     if missing:
         raise ValueError(f"PLY is missing Gaussian properties: {', '.join(missing)}")
+    minimum_payload_bytes = vertex_count * len(required) * 4
+    if path.stat().st_size < header_end + len(b"end_header\n") + minimum_payload_bytes:
+        raise ValueError("PLY payload is shorter than its declared Gaussian vertex data.")
+
+
+def validate_capture_content(path: Path, capture_type: CaptureType) -> None:
+    """Reject renamed text/binary files before a GPU worker receives them."""
+    if capture_type == "gaussian_ply":
+        validate_gaussian_ply(path)
+        return
+    with path.open("rb") as stream:
+        header = stream.read(32)
+    suffix = path.suffix.lower()
+    if suffix in {".jpg", ".jpeg"}:
+        valid = header.startswith(b"\xff\xd8\xff")
+    elif suffix == ".png":
+        valid = header.startswith(b"\x89PNG\r\n\x1a\n")
+    elif suffix == ".heic":
+        valid = header[4:8] == b"ftyp" and header[8:12] in {b"heic", b"heix", b"hevc", b"hevx"}
+    elif suffix in {".mp4", ".mov"}:
+        valid = header[4:8] == b"ftyp"
+    elif suffix == ".mkv":
+        valid = header.startswith(b"\x1aE\xdf\xa3")
+    else:
+        valid = False
+    if not valid:
+        raise ValueError(f"Capture content does not match {suffix or 'the declared'} file type.")
+
+
+def probe_video_file(
+    path: Path,
+    *,
+    timeout_seconds: int = MEDIA_PROBE_TIMEOUT_SECONDS,
+    runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+) -> None:
+    """Use ffprobe with a bounded subprocess call before a video reaches Nerfstudio."""
+    command = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration:stream=codec_type,width,height,nb_frames",
+        "-of",
+        "json",
+        str(path),
+    ]
+    try:
+        result = runner(
+            command, capture_output=True, text=True, timeout=timeout_seconds, check=False
+        )
+    except subprocess.TimeoutExpired as error:
+        raise ValueError("Video probe timed out.") from error
+    except OSError as error:
+        raise ValueError("Video probe is unavailable.") from error
+    if result.returncode != 0:
+        raise ValueError("Video decoder probe rejected the capture.")
 
 
 def file_sha256(path: Path) -> str:
@@ -226,8 +312,30 @@ def import_gaussian_asset(
         stage.finished_at = utc_now()
         stage.message = "Completed on an external GPU worker."
     job.status = "ready"
-    job.asset_url = f"/api/v1/scenes/jobs/{job.id}/asset"
     job.camera_pose = camera_pose
+    return store.save(job)
+
+
+def approve_anonymized_asset(store: SceneJobStore, job_id: str) -> SceneJob:
+    """Publish a ready asset only after a trusted privacy review has approved it."""
+    job = store.load(job_id)
+    asset = store.job_dir(job.id) / "asset" / "scene.ply"
+    if job.status != "ready" or not asset.is_file():
+        raise ValueError("Only ready jobs with a generated asset can be approved.")
+    job.privacy_review_status = "approved"
+    job.is_anonymized = True
+    job.privacy_reviewed_at = utc_now()
+    job.asset_url = f"/api/v1/scenes/jobs/{job.id}/asset"
+    return store.save(job)
+
+
+def reject_scene_asset(store: SceneJobStore, job_id: str) -> SceneJob:
+    """Record a privacy rejection without leaving a public asset URL behind."""
+    job = store.load(job_id)
+    job.privacy_review_status = "rejected"
+    job.is_anonymized = False
+    job.privacy_reviewed_at = utc_now()
+    job.asset_url = None
     return store.save(job)
 
 
@@ -273,6 +381,19 @@ class SceneJobStore:
         (self.job_dir(job_id) / "input").mkdir(parents=True, exist_ok=False)
         return self.save(job)
 
+    def list_jobs(self) -> list[SceneJob]:
+        if not self.root.exists():
+            return []
+        jobs: list[SceneJob] = []
+        for directory in self.root.iterdir():
+            if not directory.is_dir():
+                continue
+            try:
+                jobs.append(self.load(directory.name))
+            except (FileNotFoundError, ValueError):
+                continue
+        return jobs
+
     def set_stage(
         self, job: SceneJob, name: str, status: StageStatus, message: str | None = None
     ) -> SceneJob:
@@ -291,10 +412,14 @@ async def save_uploads(
     store: SceneJobStore,
     job: SceneJob,
     uploads: list[UploadFile],
+    *,
+    max_total_bytes: int = MAX_TOTAL_BYTES,
+    max_storage_bytes: int | None = None,
 ) -> SceneJob:
     names = [safe_name(upload.filename, index) for index, upload in enumerate(uploads, start=1)]
     validate_file_set(job.capture_type, names)
     total_size = 0
+    existing_storage = scene_storage_bytes(store)
     destination = store.job_dir(job.id) / "input"
     saved: list[SceneInputFile] = []
     try:
@@ -306,12 +431,22 @@ async def save_uploads(
                 while chunk := await upload.read(CHUNK_SIZE):
                     size += len(chunk)
                     total_size += len(chunk)
-                    if total_size > MAX_TOTAL_BYTES:
-                        raise ValueError("Capture files exceed the 8GB job limit.")
+                    if total_size > max_total_bytes:
+                        raise SceneUploadTooLargeError(
+                            "Capture files exceed the configured job limit."
+                        )
+                    if (
+                        max_storage_bytes is not None
+                        and existing_storage + total_size > max_storage_bytes
+                    ):
+                        raise SceneResourceLimitError("Scene storage quota reached. Retry later.")
                     digest.update(chunk)
                     stream.write(chunk)
             if size == 0:
                 raise ValueError(f"Capture file is empty: {name}")
+            validate_capture_content(path, job.capture_type)
+            if job.capture_type.endswith("video"):
+                probe_video_file(path)
             saved.append(
                 SceneInputFile(
                     name=path.name,
@@ -327,6 +462,89 @@ async def save_uploads(
     job.files = saved
     store.set_stage(job, "validate", "passed", f"Validated {len(saved)} input file(s).")
     return store.save(job)
+
+
+def parse_job_time(value: str) -> datetime:
+    return datetime.fromisoformat(value).astimezone(UTC)
+
+
+def scene_storage_bytes(store: SceneJobStore) -> int:
+    if not store.root.exists():
+        return 0
+    return sum(path.stat().st_size for path in store.root.rglob("*") if path.is_file())
+
+
+def enforce_scene_creation_limits(
+    store: SceneJobStore,
+    *,
+    max_storage_bytes: int,
+    rate_window_seconds: int,
+    max_jobs_per_window: int,
+    max_active_jobs: int,
+    now: datetime | None = None,
+) -> None:
+    """Apply anonymous service limits until owner-based quotas can be enforced."""
+    current = now or datetime.now(UTC)
+    jobs = store.list_jobs()
+    window_start = current - timedelta(seconds=rate_window_seconds)
+    recent_count = sum(parse_job_time(job.created_at) >= window_start for job in jobs)
+    if recent_count >= max_jobs_per_window:
+        raise SceneResourceLimitError("Scene job rate limit reached. Retry later.")
+    active_count = sum(job.status in {"queued", "running"} for job in jobs)
+    if active_count >= max_active_jobs:
+        raise SceneResourceLimitError("Scene job capacity reached. Retry later.")
+    if scene_storage_bytes(store) >= max_storage_bytes:
+        raise SceneResourceLimitError("Scene storage quota reached. Retry later.")
+
+
+def retry_scene_job(
+    store: SceneJobStore,
+    job_id: str,
+    *,
+    cooldown_seconds: int,
+    now: datetime | None = None,
+) -> SceneJob:
+    job = store.load(job_id)
+    if job.status in {"queued", "running"}:
+        raise SceneResourceLimitError("Scene job is already queued or running.")
+    if job.status not in {"blocked", "failed"}:
+        raise ValueError("Only blocked or failed Scene jobs can be retried.")
+    current = now or datetime.now(UTC)
+    if current < parse_job_time(job.updated_at) + timedelta(seconds=cooldown_seconds):
+        raise SceneResourceLimitError("Scene job retry cooldown is active. Retry later.")
+    job.status = "queued"
+    job.blocked_reason = None
+    job.next_action = None
+    return store.save(job)
+
+
+def cleanup_expired_scene_jobs(
+    store: SceneJobStore,
+    *,
+    retention_hours: int,
+    now: datetime | None = None,
+) -> list[str]:
+    current = now or datetime.now(UTC)
+    cutoff = current - timedelta(hours=retention_hours)
+    removed: list[str] = []
+    for job in store.list_jobs():
+        if job.status in TERMINAL_JOB_STATUSES and parse_job_time(job.updated_at) < cutoff:
+            shutil.rmtree(store.job_dir(job.id), ignore_errors=True)
+            removed.append(job.id)
+    return removed
+
+
+def claim_scene_execution(job_id: str, *, max_workers: int) -> bool:
+    with _execution_lock:
+        if job_id in _active_scene_jobs or len(_active_scene_jobs) >= max_workers:
+            return False
+        _active_scene_jobs.add(job_id)
+        return True
+
+
+def release_scene_execution(job_id: str) -> None:
+    with _execution_lock:
+        _active_scene_jobs.discard(job_id)
 
 
 def toolchain_status(
@@ -522,8 +740,24 @@ def export_scene_asset(
         shutil.copy2(ply_files[0], final_asset)
 
 
-def run_scene_job(job_id: str, root: Path | None = None) -> SceneJob:
+def run_scene_job(
+    job_id: str, root: Path | None = None, *, max_workers: int | None = None
+) -> SceneJob:
     store = SceneJobStore(root)
+    worker_limit = max_workers or get_settings().scene_worker_concurrency
+    if not claim_scene_execution(job_id, max_workers=worker_limit):
+        job = store.load(job_id)
+        job.status = "blocked"
+        job.blocked_reason = "scene_worker_capacity_reached"
+        job.next_action = "Retry after another Scene job completes."
+        return store.save(job)
+    try:
+        return _run_scene_job(store, job_id)
+    finally:
+        release_scene_execution(job_id)
+
+
+def _run_scene_job(store: SceneJobStore, job_id: str) -> SceneJob:
     job = store.load(job_id)
     capability = toolchain_status()
     if not capability.ready:
@@ -540,7 +774,6 @@ def run_scene_job(job_id: str, root: Path | None = None) -> SceneJob:
         run_pipeline_stage(store, job, "train", commands[1], directory, log_path, capability)
         export_scene_asset(store, job, directory, log_path, capability)
         job.status = "ready"
-        job.asset_url = f"/api/v1/scenes/jobs/{job.id}/asset"
         return store.save(job)
     except (subprocess.CalledProcessError, OSError, RuntimeError) as error:
         running_stage = next((stage for stage in job.stages if stage.status == "running"), None)

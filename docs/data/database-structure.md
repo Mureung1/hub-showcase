@@ -2,9 +2,9 @@
 
 문서 상태: current
 
-문서 기준일: 2026-07-16
+문서 기준일: 2026-07-22
 
-이 문서는 LocalTwin의 canonical SQLite와 목표 runtime PostgreSQL의 테이블 관계를 설명하는
+이 문서는 LocalTwin의 canonical SQLite와 공개 runtime PostgreSQL의 테이블 관계를 설명하는
 DB 구조 원본이다. 데이터가 어디에서 왔는지는 [데이터 소스 매핑](./data-source-mapping.md),
 Front·API·DB 전체 연결은 [시스템 아키텍처](../development/architecture.md)를 기준으로 한다.
 
@@ -31,10 +31,11 @@ flowchart TB
         LICENSE["permit_businesses<br/>인허가·영업상태"]
     end
 
-    PG["4. Supabase PostgreSQL<br/>target runtime DB"]
+    DEVPG["4. development Supabase PostgreSQL<br/>migration · seed · integration verification"]
+    PG["5. production Supabase PostgreSQL<br/>public runtime DB"]
     BACKGROUND["admin-area background facts<br/>인구 · 사업체 · 비가중 상권 참고관계"]
-    API["5. FastAPI · SQLAlchemy"]
-    WEB["6. React<br/>검색 · 지도 · 분석"]
+    API["6. Render FastAPI · SQLAlchemy"]
+    WEB["7. Vercel React<br/>검색 · 지도 · 분석"]
 
     SBDC --> IMPORT
     SEOUL --> IMPORT
@@ -51,17 +52,19 @@ flowchart TB
     M --> GEOMETRY
     M --> LINKS
     POINTS --> LINKS
-    CANONICAL --> PG
+    CANONICAL --> DEVPG --> PG
     IMPORT --> BACKGROUND
+    BACKGROUND --> DEVPG
     BACKGROUND --> PG
     PG --> API
     API --> WEB
 ```
 
 현재 실제 bulk data는 `product/data/processed/localtwin.db`에 적재됐다. 같은 9개 core table을
-정의한 SQLAlchemy model과 Alembic migration을 실제 Supabase PostgreSQL에 적용했다. KOSIS
-배경 통계 3개 table은 검증된 raw JSON·XLSX에서 PostgreSQL에 별도로 적재한다. 기존 SQLite 전체
-seed는 core 9개 table만 계속 담당하므로 KOSIS 추가가 DB-001 재실행 계약을 바꾸지 않는다.
+정의한 SQLAlchemy model과 Alembic migration을 development와 production Supabase PostgreSQL에
+적용했다. KOSIS 배경 통계 3개 table은 검증된 raw JSON·XLSX에서 PostgreSQL에 별도로 적재한다.
+기존 SQLite 전체 seed는 core 9개 table만 계속 담당하므로 KOSIS 추가가 DB-001 재실행 계약을
+바꾸지 않는다.
 
 ## 2. 현재 ERD
 
@@ -284,7 +287,7 @@ flowchart LR
 
 ## 4. Table별 역할과 행의 기준
 
-| Table | 한 행의 의미, grain | Primary Key | 주요 Foreign Key | 2026-07-16 development Supabase rows |
+| Table | 한 행의 의미, grain | Primary Key | 주요 Foreign Key | 2026-07-16 development seed reference rows |
 | --- | --- | --- | --- | ---: |
 | `data_sources` | 한 번 수집한 공식 source snapshot | `snapshot_id` | - | 12 |
 | `markets` | 서울시 상권 하나 | `market_code` | `source_snapshot_id` | 1,650 |
@@ -309,16 +312,17 @@ uv run --directory product/apps/api python -m localtwin_api.canonical_db --stats
 ### 4.1 같은 schema를 사용하는 환경
 
 - canonical SQLite는 공식 데이터의 정제 결과와 회귀 검증 기준이다.
-- 현재 Supabase PostgreSQL은 개발·통합 검증 환경이다.
-- KOSIS 배경 통계는 raw snapshot 검증 후 전용 importer로 development Supabase에 추가한다.
+- development Supabase PostgreSQL은 migration·seed·통합 검증 환경이다.
+- KOSIS 배경 통계는 raw snapshot 검증 후 전용 importer로 development와 production Supabase에 추가한다.
 - 따라서 SQLite와 PostgreSQL은 core 9개 table을 공유하지만 PostgreSQL에는 배경 통계 3개
   table이 더 있다.
-- 운영용 Supabase PostgreSQL은 공개 배포 시 별도 project로 생성한다.
-- Alembic revision을 개발용에서 먼저 검증한 뒤 운영용에 같은 순서로 적용한다.
+- production Supabase PostgreSQL은 공개 Render API가 조회하는 별도 project다.
+- Alembic revision을 development에서 먼저 검증한 뒤 production에 같은 순서로 적용한다.
 - 개발용과 운영용은 credential과 데이터를 공유하지 않으며, 운영 데이터를 개발 DB로 복사하는 것을 기본값으로 삼지 않는다.
 
 따라서 SQLite에서 성공한 것만으로 운영 배포를 승인하지 않는다. PostgreSQL dialect, FK,
-transaction과 API 동작은 development Supabase에서 확인한 뒤 production으로 승격한다.
+transaction과 API 동작은 development Supabase에서 확인한 뒤 production으로 승격하며, 공개
+Vercel Web은 Render FastAPI를 거쳐 production Supabase만 조회한다.
 
 ## 5. 이 관계로 구성한 이유
 
@@ -391,9 +395,9 @@ bbox 후보 9,035 / polygon 미포함 4,487 / 경계점 0
 - 일반·휴게음식점 인허가 전체 pagination 후에만 영업 상태 결합률을 판단한다.
 - KOSIS 행정동 통계는 점포 위치가 아닌 배경 수요로 별도 관리한다.
 
-DATA-009 B단계에서는 이 개별 점포 수를 서울시 상권·업종별 공식 집계와 비교해 기준기간과
-업종 체계 차이를 보고한다. 서울 전체 polygon 확장은 이 프로젝트 기간의 검색 범위가 아니며,
-필요성이 별도로 승인되기 전에는 수행하지 않는다.
+DATA-009 B단계는 이 개별 점포 수를 서울시 상권·업종별 공식 `20254` 집계와 비교해
+기준기간과 업종 체계 차이를 보고했다. 서울 전체 polygon 확장은 이 프로젝트 기간의 검색
+범위가 아니며, 필요성이 별도로 승인되기 전에는 수행하지 않는다.
 
 ### 6.1 KOSIS 행정동 배경 인구
 

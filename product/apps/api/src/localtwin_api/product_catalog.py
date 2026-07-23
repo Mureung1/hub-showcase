@@ -23,6 +23,13 @@ CATEGORY_CODES: dict[Category, tuple[str, ...]] = {
     "편의점": ("CS300002",),
 }
 
+CATEGORY_NAME_TERMS: dict[Category, tuple[str, ...]] = {
+    "카페": ("카페", "커피"),
+    "음식점": ("음식점", "한식", "중식", "일식", "분식", "주점"),
+    "베이커리": ("베이커리", "제과", "빵", "도넛"),
+    "편의점": ("편의점",),
+}
+
 
 class SupportedMarket(BaseModel):
     key: str

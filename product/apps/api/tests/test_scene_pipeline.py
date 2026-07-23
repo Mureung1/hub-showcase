@@ -9,10 +9,12 @@ from localtwin_api.scene_pipeline import (
     SceneInputFile,
     SceneJobStore,
     ToolchainStatus,
+    approve_anonymized_asset,
     build_execution_command,
     build_pipeline_commands,
     import_gaussian_asset,
     load_nerfstudio_camera_pose,
+    reject_scene_asset,
     run_scene_job,
     safe_name,
     save_uploads,
@@ -91,14 +93,16 @@ def test_job_store_rejects_path_traversal(tmp_path: Path) -> None:
 def test_upload_saves_hash_and_bytes_in_job_directory(tmp_path: Path) -> None:
     store = SceneJobStore(tmp_path)
     job = store.create("shop", "images")
-    upload = UploadFile(filename="../shop image.jpg", file=io.BytesIO(b"capture"))
+    upload = UploadFile(filename="../shop image.jpg", file=io.BytesIO(b"\xff\xd8\xffcapture"))
 
     saved = asyncio.run(save_uploads(store, job, [upload]))
 
     assert saved.files[0].name == "001-shop-image.jpg"
-    assert saved.files[0].size_bytes == 7
+    assert saved.files[0].size_bytes == 10
     assert len(saved.files[0].sha256) == 64
-    assert (store.job_dir(job.id) / "input" / saved.files[0].name).read_bytes() == b"capture"
+    assert (
+        store.job_dir(job.id) / "input" / saved.files[0].name
+    ).read_bytes() == b"\xff\xd8\xffcapture"
 
 
 def test_job_blocks_before_training_when_worker_is_not_ready(
@@ -106,7 +110,7 @@ def test_job_blocks_before_training_when_worker_is_not_ready(
 ) -> None:
     store = SceneJobStore(tmp_path)
     job = store.create("shop", "images")
-    upload = UploadFile(filename="shop.jpg", file=io.BytesIO(b"capture"))
+    upload = UploadFile(filename="shop.jpg", file=io.BytesIO(b"\xff\xd8\xffcapture"))
     asyncio.run(save_uploads(store, job, [upload]))
     unavailable = ToolchainStatus(
         ready=False,
@@ -137,8 +141,7 @@ def test_import_gaussian_asset_creates_ready_local_job(tmp_path: Path) -> None:
         b"property float opacity\n"
         b"property float scale_0\n"
         b"property float rot_0\n"
-        b"end_header\n"
-        b"placeholder"
+        b"end_header\n" + b"\x00" * 16
     )
     job_root = tmp_path / "jobs"
 
@@ -146,15 +149,30 @@ def test_import_gaussian_asset_creates_ready_local_job(tmp_path: Path) -> None:
 
     assert job.status == "ready"
     assert job.capture_type == "gaussian_ply"
+    assert job.privacy_review_status == "pending"
+    assert job.is_anonymized is False
+    assert job.asset_url is None
     assert all(stage.status == "passed" for stage in job.stages)
     assert (job_root / job.id / "asset" / "scene.ply").read_bytes() == source.read_bytes()
+
+    approved = approve_anonymized_asset(SceneJobStore(job_root), job.id)
+
+    assert approved.privacy_review_status == "approved"
+    assert approved.is_anonymized is True
+    assert approved.asset_url == f"/api/v1/scenes/jobs/{job.id}/asset"
+
+    rejected = reject_scene_asset(SceneJobStore(job_root), job.id)
+
+    assert rejected.privacy_review_status == "rejected"
+    assert rejected.is_anonymized is False
+    assert rejected.asset_url is None
 
 
 def test_import_gaussian_asset_rejects_plain_point_cloud(tmp_path: Path) -> None:
     source = tmp_path / "point-cloud.ply"
     source.write_bytes(b"ply\nformat ascii 1.0\nelement vertex 1\nend_header\n")
 
-    with pytest.raises(ValueError, match="Gaussian properties"):
+    with pytest.raises(ValueError, match="binary_little_endian"):
         import_gaussian_asset(source, "invalid", tmp_path / "jobs")
 
 

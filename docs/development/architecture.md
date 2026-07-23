@@ -1,7 +1,7 @@
 # LocalTwin 시스템 아키텍처
 
 문서 상태: current
-최종 갱신: 2026-07-15
+최종 갱신: 2026-07-22
 
 이 문서는 LocalTwin의 Front, Back, Data와 외부 서비스가 어떻게 연결되는지 설명하는 아키텍처 원본이다. 구현된 현재 구조와 4주 개발 후 목표 구조를 구분한다.
 
@@ -12,7 +12,7 @@
 - 상권 분석은 P0, 3D 현장 탐색은 P1로 둔다.
 - API는 단일 FastAPI를 유지하고, Phase 2 제품 runtime DB는 Supabase PostgreSQL을 사용한다.
 - Phase 1 canonical SQLite는 폐기하지 않고 반복 가능한 import 원본과 결과 검증 기준으로 유지한다.
-- 현재 Supabase project는 개발·통합 검증용으로 사용하고, 공개 배포 전에 별도 운영 project를 만든다.
+- development와 production Supabase project를 분리하고, 공개 API는 production project만 사용한다.
 - 분석 결과에는 source, period, unit과 method 근거를 함께 제공한다.
 
 ## 2. 현재 구현 구조
@@ -21,50 +21,54 @@
 flowchart LR
   user["사용자"]
 
-  subgraph front["Front"]
+  subgraph front["Vercel Front"]
     web["React + Vite + TypeScript"]
     map["MapLibre LocalTwin 지도"]
-    fallback["Canonical deploy snapshot"]
+    bootstrap["지원 범위 bootstrap\n선택지 전용 · 분석값 대체 안 함"]
   end
 
-  subgraph back["Back"]
-    api["FastAPI\nmarket · score · scene API"]
-    marketRepo["Canonical market repository"]
-    collector["서울 Open API 수집기"]
-    sceneWorker["Nerfstudio host / Docker worker\nprocess · train · export"]
+  subgraph back["Render Back"]
+    api["FastAPI\nsearch · analysis · nearby · score API"]
+    marketRepo["SQLAlchemy repository"]
+    sceneGate["Scene API gate\nproduction default 404"]
   end
 
-  subgraph data["Data"]
+  subgraph runtime["Production runtime"]
+    pg[("production Supabase PostgreSQL")]
+  end
+
+  subgraph pipeline["Import · verification"]
+    public["서울시 · 공공데이터포털 · KOSIS"]
     raw["product/data/raw\nJSON + manifest"]
-    db[("canonical SQLite")]
+    canonical[("canonical SQLite\n정제 · 품질검사 · 회귀 기준")]
+    devpg[("development Supabase PostgreSQL")]
+  end
+
+  subgraph mapData["Map · scene assets"]
     osm["OpenStreetMap / Overpass"]
-    mapdata["상권별 LocalTwin GeoJSON"]
-    seoul["서울 열린데이터광장"]
+    geojson["상권별 LocalTwin GeoJSON"]
     sceneJobs["product/data/scenes/jobs\ninput · job.json · PLY"]
   end
 
   user --> web
+  bootstrap --> web
   web --> map
-  db --> fallback --> web
-  osm --> mapdata --> map
-  collector --> seoul
-  collector --> raw
-  web -->|"upload · poll"| api
-  web -->|"market query"| api
-  raw --> db
-  api --> marketRepo --> db
-  api --> sceneWorker
-  sceneWorker --> sceneJobs
-  sceneJobs -->|"Spark viewer"| web
+  osm --> geojson --> map
+  web -->|"HTTPS JSON"| api
+  api --> marketRepo --> pg
+  web -. "선택 위치" .-> sceneGate
+  public --> raw --> canonical --> devpg
+  devpg -->|"검증된 migration · seed 승격"| pg
+  sceneGate -. "비공개 asset" .-> sceneJobs
 ```
 
 현재 확인된 상태:
 
 | 영역  | 구현 상태                                                             | 제한                                            |
 | ----- | --------------------------------------------------------------------- | ----------------------------------------------- |
-| Front | 자체 지도, 실제 검색 input·상태·선택 흐름과 API/canonical 분석 adapter를 가진 React 웹 | 반경은 아직 지도 탐색 범위이며 공간 재집계 전 |
-| Back  | FastAPI market/score/search API, 기본 비활성 Scene API와 Supabase SQLAlchemy repository | 반경별 공간 query와 실제 서비스 배포 미구현 |
-| Data  | 537,489개 점포를 포함한 canonical SQLite, 3개 polygon·4,548개 점포 연결, 동일한 개발용 Supabase 9개 table | 운영용 Supabase, 공식 밀집 집계 비교와 주기적 자동 갱신 미구현 |
+| Front | Vercel의 React 웹, MapLibre 지도, 실제 검색·분석 state와 API readiness UI | 반경은 아직 지도 탐색 범위이며 공간 재집계 전 |
+| Back  | Render FastAPI market/score/search/nearby API, production Supabase SQLAlchemy repository, 기본 차단 Scene API | 반경별 공간 query와 주기적 자동 갱신 미구현 |
+| Data  | 537,489개 점포를 포함한 canonical SQLite, development·production Supabase, 3개 polygon·4,548개 점포 연결 | 공식 밀집 집계 비교와 주기적 자동 갱신 미구현 |
 | 3D    | 촬영물 job, host/Docker worker, Nerfstudio pipeline과 Spark viewer | 공식 sample 학습·export·viewer만 검증됨. 사용자 촬영물과 privacy gate 미검증 |
 
 ## 3. Phase 2 목표 구조
@@ -165,9 +169,9 @@ flowchart LR
 
 | 계층     | 현재 사용                                       | Phase 2 목표                               | 후속 후보                                   |
 | -------- | ----------------------------------------------- | ------------------------------------------- | ----------------------------------------------- |
-| Front    | React, Vite, TypeScript, MapLibre, 실제 검색과 API/snapshot 분석 adapter | 반경 query·filter URL 동기화와 source-aware 상태 확장 | 대규모 Layer가 필요할 때 deck.gl 검토           |
-| Back     | FastAPI market/score/search/scene endpoint, Uvicorn, SQLAlchemy repository | 반경 API와 service 배포 | 부하가 확인된 뒤 worker/cache 검토 |
-| Data     | raw manifest, 9개 table canonical SQLite, SQLAlchemy/Alembic, 3개 상권 공간 관계를 가진 개발용 Supabase | 공식 밀집 비교와 공개 배포 전 운영용 Supabase 승격 | 다지역 공간 질의가 필요할 때 PostGIS 검토 |
+| Front    | React, Vite, TypeScript, MapLibre, 실제 검색·분석 API와 readiness 상태 | 반경 query·filter URL 동기화와 source-aware 상태 확장 | 대규모 Layer가 필요할 때 deck.gl 검토           |
+| Back     | Render FastAPI market/score/search/nearby endpoint, Uvicorn, SQLAlchemy repository | 반경 API와 provider 관찰성 | 부하가 확인된 뒤 worker/cache 검토 |
+| Data     | raw manifest, 9개 table canonical SQLite, SQLAlchemy/Alembic, development·production Supabase | 공식 밀집 비교와 자동 갱신 정책 | 다지역 공간 질의가 필요할 때 PostGIS 검토 |
 | Analysis | score 1.0.0과 실제 DB peer percentile          | 추가 지표로 confidence coverage 개선       | 충분한 데이터 이후 예측 모델 검토               |
 | 3D       | upload/job API, Nerfstudio pipeline, Spark/Three.js viewer | CUDA worker에서 실제 scene 1개 학습·익명화 검증 | 혼잡도 mesh overlay와 pipeline 고도화           |
 | Quality  | pytest, Vitest, TypeScript, lint, 문서 검사     | 평가 script와 시연 smoke test               | 필요 시 E2E 자동화                              |
@@ -189,22 +193,21 @@ Import/verification
 
 ### 6.1 DB 환경 분리 결정
 
-현재 생성하고 전체 seed를 검증한 Supabase project는 `development` 환경이다. 공개 사용자의
-데이터를 받는 운영 DB는 아직 만들지 않았다. 공개 배포 Gate에서 별도의 `production`
-Supabase project를 만들고, 개발 환경에서 검증된 Alembic revision과 seed 절차만 동일하게
-적용한다.
+development와 production Supabase project를 모두 분리해 사용한다. development에서는
+migration·seed·통합 검증을 수행하고, 공개 Render API는 production Supabase만 조회한다.
+production에는 development에서 검증된 Alembic revision과 seed 절차만 적용한다.
 
 ```text
 canonical SQLite
   공식 snapshot 정제 · import 원본 · row count 회귀 기준
         |
         v
-development Supabase (현재 존재)
+development Supabase
   migration · seed · FastAPI/React 통합 · smoke test
         |
         v  검증된 migration과 seed 절차만 승격
-production Supabase (공개 배포 시 생성)
-  실제 배포 API 전용 runtime DB
+production Supabase (현재 공개 API 사용)
+  Render API 전용 runtime DB
 ```
 
 분리 이유:
@@ -215,10 +218,10 @@ production Supabase (공개 배포 시 생성)
 - 장애가 발생하면 개발용 DB를 계속 수정하는 대신 검증된 revision과 배포 단위로 원인을 추적할 수 있다.
 
 SQLite와 Supabase를 각각 개발·운영 DB로 나누는 구조는 아니다. SQLite는 데이터 pipeline의
-canonical 기준이고, 실제 서비스 동작은 PostgreSQL과 같은 특성을 가진 개발용 Supabase에서
-먼저 검증한다. 환경별 URL·password·key는 서로 공유하지 않는다.
+canonical 기준이고, 실제 서비스 동작은 production Supabase에서 수행한다. 변경은 개발용
+Supabase에서 먼저 검증하며 환경별 URL·password·key는 서로 공유하지 않는다.
 
-제품은 `product/vercel.json`에서 `product/apps/web/dist`만 배포하고, 문서는 루트 `vercel.json`에서 `dist/docs-site`만 배포한다. 루트 `.vercelignore`는 Vercel source upload를 `docs/`, 문서 build script, `package.json`, `vercel.json`으로 제한한다. 따라서 ignored raw data, canonical DB, Scene asset과 제품 source는 build 이전 upload 단계에도 포함하지 않는다. 제품의 Docs 링크는 `VITE_DOCS_URL` 또는 현재 문서 URL을 사용하므로 같은 artifact의 `/docs`에 의존하지 않는다. 공공데이터 인증키와 수집기는 브라우저 bundle에 넣지 않으며 Scene route는 SEC-001의 제품 기본 차단을 유지한다. 실제 공개 제품 URL 생성은 별도 배포 Task에서 수행한다.
+제품은 `product/vercel.json`에서 `product/apps/web/dist`만 Vercel에 배포하고, Render는 FastAPI를 별도 배포한다. 문서는 루트 `vercel.json`에서 `dist/docs-site`만 별도 배포한다. raw data, canonical DB, Scene asset과 제품 source는 문서 artifact에 포함하지 않는다. 제품의 Docs 링크는 `VITE_DOCS_URL`을 사용하므로 같은 artifact의 `/docs`에 의존하지 않는다. 공공데이터 인증키와 수집기는 브라우저 bundle에 넣지 않으며 Scene route는 SEC-001의 제품 기본 차단을 유지한다.
 
 ## 7. 이번 구조에서 하지 않는 것
 
@@ -254,3 +257,4 @@ canonical 기준이고, 실제 서비스 동작은 PostgreSQL과 같은 특성�
 | 2026-07-15 | bulk canonical data와 PostgreSQL local 전환 경로 반영 | 실제 Supabase 적용 전 로컬 구현과 운영 완료를 구분하기 위해 |
 | 2026-07-15 | 개발용·운영용 Supabase project 분리 결정 | schema·seed 검증이 공개 사용자 데이터와 credential에 영향을 주지 않게 하기 위해 |
 | 2026-07-15 | 3개 상권 공간 결합과 Supabase 검색 API·React 연결 | 실제 점포 검색에서 지도·분석 화면까지 최소 vertical slice를 완성하기 위해 |
+| 2026-07-22 | 공개 Vercel·Render·production Supabase 흐름과 API readiness 반영 | 현재 공개 서비스 경로와 canonical SQLite의 검증 역할을 구조도에서 정확히 구분하기 위해 |

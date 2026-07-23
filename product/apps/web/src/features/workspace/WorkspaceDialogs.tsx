@@ -228,7 +228,10 @@ export function WorkspaceDialogs({ model }: { model: ProductWorkspaceModel }) {
             </div>
           }
         >
-          <SceneWorkspace onClose={() => model.panels.setSceneOpen(false)} />
+          <SceneWorkspace
+            onClose={() => model.panels.setSceneOpen(false)}
+            restoreFocusExternally={model.panels.restoreSceneFocus}
+          />
         </Suspense>
       )}
     </>

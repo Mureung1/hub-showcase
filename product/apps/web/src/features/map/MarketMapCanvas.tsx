@@ -13,6 +13,7 @@ import {
 } from "./baseMap";
 import { SelectedMarketBoundary } from "./SelectedMarketBoundary";
 import { SupportedRegionOverlays } from "./SupportedRegionOverlays";
+import type { MapBounds } from "./supportedRegions";
 import type { SelectedStorefront } from "./storefronts/SelectedStorefrontLayer";
 
 const SelectedStorefrontLayer = lazy(() =>
@@ -21,11 +22,29 @@ const SelectedStorefrontLayer = lazy(() =>
   })),
 );
 
+function readMapBounds(map: {
+  getBounds: () => {
+    getWest: () => number;
+    getSouth: () => number;
+    getEast: () => number;
+    getNorth: () => number;
+  };
+}): MapBounds {
+  const bounds = map.getBounds();
+  return {
+    west: bounds.getWest(),
+    south: bounds.getSouth(),
+    east: bounds.getEast(),
+    north: bounds.getNorth(),
+  };
+}
+
 type MarketMapCanvasProps = {
   market: Market;
   marketId: string;
   mapRef: RefObject<MapRef | null>;
   onVisibleCenterChange: (center: [number, number]) => void;
+  onVisibleBoundsChange: (bounds: MapBounds) => void;
   mapMode: MapMode;
   baseBuildingsVisible: boolean;
   baseBuildingsRendered: boolean;
@@ -119,6 +138,7 @@ export function MarketMapCanvas({
   marketId,
   mapRef,
   onVisibleCenterChange,
+  onVisibleBoundsChange,
   mapMode,
   baseBuildingsVisible,
   baseBuildingsRendered,
@@ -165,10 +185,14 @@ export function MarketMapCanvas({
         dragPan
         scrollZoom
         touchZoomRotate
-        onLoad={(event) => event.target.on("styleimagemissing", addMissingStyleImageFallback)}
+        onLoad={(event) => {
+          event.target.on("styleimagemissing", addMissingStyleImageFallback);
+          onVisibleBoundsChange(readMapBounds(event.target));
+        }}
         onMove={(event) =>
           onVisibleCenterChange([event.viewState.longitude, event.viewState.latitude])
         }
+        onMoveEnd={(event) => onVisibleBoundsChange(readMapBounds(event.target))}
       >
         <Layer
           id={BASE_BUILDING_LAYER_ID}

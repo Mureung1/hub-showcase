@@ -649,7 +649,7 @@ OSM POI label과 후보 점포 prefab 표시 전환
 Docs Home 복귀
 ```
 
-현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 선택 상권은 canonical polygon을 따라 노란 core·glow·halo 경계로 표시한다. 지원 지역에서는 기본 건물과 LocalTwin 건물을 동시에 렌더링하지 않는다. 선택한 지원 업종은 공유 GLB body·category atlas·procedural attachment를 조합한 custom 3D marker 한 개로 표시한다. 주변 HTML marker는 선택 marker 105m 안에서 제거하고 desktop 최대 12개·mobile 최대 6개로 제한한다. 선택 시 지도는 16.8 zoom으로 이동하고 300m 중심 표식은 투명 ring과 바깥 label로 바뀌어 3D를 가리지 않는다. MAP-004의 asset cache까지 연결됐지만 복수 점포 건물 묶음과 회전·reduced-motion 성능 검증이 남아 있으므로 전체 Task는 계속 진행 중이다.
+현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 Render FastAPI가 production Supabase PostgreSQL을 조회하며, API가 준비되지 않은 동안에는 분석 수치를 검증 snapshot으로 대체하지 않는다. 선택 상권은 canonical polygon을 따라 노란 core·glow·halo 경계로 표시한다. LocalTwin 기본 경로에서 화면 viewport가 지원 Overlay를 조금이라도 포함하면 기본 building extrusion을 숨겨 전용 건물과 중복 렌더링하지 않는다. 이 규칙은 제출용 `/en` 데모에는 적용하지 않는다. 선택한 지원 업종은 공유 GLB body·category atlas·procedural attachment를 조합한 custom 3D marker 한 개로 표시한다. 주변 HTML marker는 선택 marker 105m 안에서 제거하고 desktop 최대 12개·mobile 최대 6개로 제한한다. 선택 시 지도는 16.8 zoom으로 이동하고 300m 중심 표식은 투명 ring과 바깥 label로 바뀌어 3D를 가리지 않는다. MAP-004의 asset cache까지 연결됐지만 복수 점포 건물 묶음과 회전·reduced-motion 성능 검증이 남아 있으므로 전체 Task는 계속 진행 중이다.
 
 ### 14.1 후속 이동형 반경 분석
 

@@ -5,8 +5,8 @@ import { useWorkspacePanels } from "./useWorkspacePanels";
 
 describe("useWorkspacePanels", () => {
   it("starts desktop panels open and compact panels closed", () => {
-    const desktop = renderHook(() => useWorkspacePanels(false));
-    const compact = renderHook(() => useWorkspacePanels(true));
+    const desktop = renderHook(() => useWorkspacePanels(false, true));
+    const compact = renderHook(() => useWorkspacePanels(true, true));
 
     expect(desktop.result.current.filtersOpen).toBe(true);
     expect(desktop.result.current.inspectorOpen).toBe(true);
@@ -15,7 +15,7 @@ describe("useWorkspacePanels", () => {
   });
 
   it("closes the active evidence dialog with Escape", () => {
-    const { result } = renderHook(() => useWorkspacePanels(false));
+    const { result } = renderHook(() => useWorkspacePanels(false, true));
     act(() => result.current.setEvidenceOpen(true));
 
     act(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));

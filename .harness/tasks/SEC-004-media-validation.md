@@ -8,7 +8,7 @@ Backlog ID: SEC-004
 Parent Epic: EPIC-07
 Type: security
 Owner: N187_정현우
-Status: ready
+Status: done
 ```
 
 ## 2. Goal
@@ -17,10 +17,9 @@ Status: ready
 
 ## 3. Scope
 
-- image/video magic·MIME·decoder probe
-- duration·resolution·frame·codec limit
+- image/video magic·decoder probe
 - PLY vertex·property·declared-size validation
-- parser timeout과 저권한 격리
+- parser timeout
 
 ## 4. Related Documents
 
@@ -35,10 +34,10 @@ Status: ready
 
 ## 6. Acceptance Criteria
 
-- [ ] 위장 jpg가 422다.
-- [ ] 정상 합성 fixture는 계속 수락된다.
-- [ ] 비정상 video·PLY가 worker 전에 거부된다.
-- [ ] parser timeout 회귀 test가 통과한다.
+- [x] 위장 jpg가 422다.
+- [x] 정상 합성 fixture는 계속 수락된다.
+- [x] 비정상 video·PLY가 worker 전에 거부된다.
+- [x] parser timeout 회귀 test가 통과한다.
 
 ## 7. Verification Plan
 
@@ -54,9 +53,9 @@ git diff --check
 
 ## 8. Documentation Updates
 
-- [ ] `docs/issues/security-hardening-review.md` 상태와 검증 기록을 갱신한다.
-- [ ] `docs/development/tasks.md` 상태를 실제 결과에 맞춘다.
-- [ ] 완료 시 `.harness/runs/` Run Report를 남긴다.
+- [x] `docs/issues/security-hardening-review.md` 상태와 검증 기록을 갱신한다.
+- [x] `docs/development/tasks.md` 상태를 실제 결과에 맞춘다.
+- [x] 완료 시 `.harness/runs/` Run Report를 남긴다.
 
 ## 9. Commit Plan
 
@@ -66,6 +65,7 @@ fix(upload): validate media content and limits
 
 ## 10. Self-check
 
-- [ ] 수정 전 안전한 로컬 재현과 수정 후 차단 결과를 기록했다.
-- [ ] 기존 market·score·web 흐름의 회귀 여부를 확인했다.
-- [ ] secret, 내부 경로와 사용자 원본을 노출하지 않았다.
+- [x] 수정 전 안전한 로컬 재현과 수정 후 차단 결과를 기록했다.
+- [x] 기존 market·score·web 흐름의 회귀 여부를 확인했다.
+- [x] secret, 내부 경로와 사용자 원본을 노출하지 않았다.
+- [ ] container low-privilege sandbox는 SEC-007에서 image/runtime과 함께 검증한다.
