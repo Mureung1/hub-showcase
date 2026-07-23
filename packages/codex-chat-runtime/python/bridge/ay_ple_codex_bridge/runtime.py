@@ -8,10 +8,12 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
+from urllib.parse import urlsplit
 
 from openai_codex import (
     ApprovalMode,
     AsyncCodex,
+    AsyncChatgptLoginHandle,
     AsyncThread,
     AsyncTurnHandle,
     AsyncUserInputRequest,
@@ -46,14 +48,19 @@ from .protocol import (
     BoundedOutputBuffer,
     AnswerUserInputCommand,
     BridgeCommand,
+    CancelBrowserLoginCommand,
     CancelUserInputCommand,
     CloseCommand,
     InterruptCommand,
+    LogoutCommand,
     OutputBufferOverflow,
     ProtocolViolation,
     RequestLeaseTable,
+    ReadBrowserLoginAttemptCommand,
     ReadAccountCommand,
+    ReleaseBrowserLoginAttemptCommand,
     ReleaseThreadCommand,
+    StartBrowserLoginCommand,
     StartThreadCommand,
     StartProductTurnCommand,
     StartTurnCommand,
@@ -62,16 +69,25 @@ from .protocol import (
 
 
 SAFE_MESSAGES = {
+    "account_read_failed": "The Codex account could not be read.",
     "active_turn": "The thread already has an active turn.",
     "active_turn_limit": "The bridge active-turn limit was reached.",
     "interaction_not_pending": "The user-input interaction is not pending.",
     "invalid_user_input_answer": "The user-input answer is invalid.",
     "live_thread_limit": "The bridge live-thread limit was reached.",
+    "login_attempt_not_found": "The browser login attempt was not found.",
+    "login_cancel_failed": "The browser login attempt could not be cancelled.",
+    "login_failed": "The browser login attempt failed.",
+    "login_start_failed": "The browser login attempt could not be started.",
+    "logout_failed": "The Codex account could not be signed out.",
     "operation_limit": "The bridge pending-operation limit was reached.",
     "sdk_request_failed": "Codex rejected the requested operation.",
     "unknown_thread": "The native thread is not live in this bridge.",
     "unknown_turn": "The native turn is not active in this bridge.",
 }
+
+AUTH_URL_MAX_BYTES = 16 * 1024
+AUTH_URL_HOSTS = frozenset({"auth.openai.com", "chatgpt.com"})
 
 
 @dataclass(slots=True)
@@ -113,6 +129,19 @@ class InteractionRecord:
     settlement_done: asyncio.Event = field(default_factory=asyncio.Event)
 
 
+@dataclass(slots=True)
+class BrowserLoginAttempt:
+    attempt_id: str
+    handle: AsyncChatgptLoginHandle = field(repr=False)
+    auth_url: str
+    status: str = "pending"
+    error_code: str | None = None
+    settlement_target: str | None = None
+    completion_task: asyncio.Task[None] | None = field(default=None, repr=False)
+    expiry_task: asyncio.Task[None] | None = field(default=None, repr=False)
+    settlement_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
+
+
 def _error_code(error: Any) -> str:
     info = getattr(error, "codex_error_info", None)
     root = getattr(info, "root", None)
@@ -132,6 +161,30 @@ def _skill_extra_roots(skill_path: str | None) -> tuple[str, ...]:
     if skill_path is None:
         return ()
     return (os.path.dirname(skill_path),)
+
+
+def _safe_browser_auth_url(value: object) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError("managed browser login URL is missing")
+    try:
+        if len(value.encode("utf-8", errors="strict")) > AUTH_URL_MAX_BYTES:
+            raise ValueError("managed browser login URL is too large")
+        if any(ord(character) < 0x20 or ord(character) == 0x7F for character in value):
+            raise ValueError("managed browser login URL contains control characters")
+        parsed = urlsplit(value)
+        port = parsed.port
+    except (UnicodeEncodeError, ValueError) as exc:
+        raise ValueError("managed browser login URL is invalid") from exc
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname not in AUTH_URL_HOSTS
+        or port is not None
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.fragment
+    ):
+        raise ValueError("managed browser login URL is unsafe")
+    return value
 
 
 def project_notification(
@@ -289,8 +342,15 @@ class BridgeWorker:
         active_turn_limit: int,
         pending_operation_limit: int,
         control_operation_reserve: int,
+        account_operation_timeout_ms: int,
+        login_attempt_timeout_ms: int,
     ) -> None:
-        if live_thread_limit < 1 or active_turn_limit < 1:
+        if (
+            live_thread_limit < 1
+            or active_turn_limit < 1
+            or account_operation_timeout_ms < 1
+            or login_attempt_timeout_ms < 1
+        ):
             raise ValueError("bridge limits must be positive")
         self._codex = codex
         self._workspace = workspace
@@ -300,10 +360,15 @@ class BridgeWorker:
         self._threads: dict[str, ThreadRecord] = {}
         self._turns: dict[str, TurnRecord] = {}
         self._interactions: dict[str, InteractionRecord] = {}
+        self._login_attempt: BrowserLoginAttempt | None = None
+        self._last_released_login_attempt_id: str | None = None
         self._operations: dict[asyncio.Task[None], str] = {}
         self._user_input_collector: asyncio.Task[None] | None = None
         self._thread_start_lock = asyncio.Lock()
         self._turn_start_lock = asyncio.Lock()
+        self._login_start_lock = asyncio.Lock()
+        self._account_operation_timeout = account_operation_timeout_ms / 1000
+        self._login_attempt_timeout = login_attempt_timeout_ms / 1000
         self._request_leases = RequestLeaseTable(
             total_limit=pending_operation_limit,
             control_reserve=control_operation_reserve,
@@ -321,7 +386,15 @@ class BridgeWorker:
 
     @property
     def has_pending_work(self) -> bool:
-        return bool(self._operations or self._turns or self._interactions)
+        return bool(
+            self._operations
+            or self._turns
+            or self._interactions
+            or (
+                self._login_attempt is not None
+                and self._login_attempt.status == "pending"
+            )
+        )
 
     async def initialize(self) -> None:
         try:
@@ -351,6 +424,8 @@ class BridgeWorker:
             command,
             (
                 ReadAccountCommand,
+                StartBrowserLoginCommand,
+                LogoutCommand,
                 StartThreadCommand,
                 StartTurnCommand,
                 StartProductTurnCommand,
@@ -376,6 +451,16 @@ class BridgeWorker:
     def dispatch(self, command: BridgeCommand) -> None:
         if isinstance(command, ReadAccountCommand):
             coroutine = self._read_account(command)
+        elif isinstance(command, StartBrowserLoginCommand):
+            coroutine = self._start_browser_login(command)
+        elif isinstance(command, ReadBrowserLoginAttemptCommand):
+            coroutine = self._read_browser_login_attempt(command)
+        elif isinstance(command, CancelBrowserLoginCommand):
+            coroutine = self._cancel_browser_login(command)
+        elif isinstance(command, ReleaseBrowserLoginAttemptCommand):
+            coroutine = self._release_browser_login_attempt(command)
+        elif isinstance(command, LogoutCommand):
+            coroutine = self._logout(command)
         elif isinstance(command, StartThreadCommand):
             coroutine = self._start_thread(command)
         elif isinstance(command, StartTurnCommand):
@@ -565,23 +650,398 @@ class BridgeWorker:
 
     async def _read_account(self, command: ReadAccountCommand) -> None:
         try:
-            account = await self._codex.account()
+            state = await self._fresh_account_state()
         except Exception as exc:
-            self._sdk_failure(command.bridge_request_id, exc)
-            return
-        if account.requires_openai_auth and account.account is None:
-            self._result(
+            self._account_request_failure(
                 command.bridge_request_id,
-                command.command,
-                state="not_ready",
-                reason="authentication_required",
+                "account_read_failed",
+                exc,
             )
             return
         self._result(
             command.bridge_request_id,
             command.command,
-            state="ready",
+            account={"state": state},
         )
+
+    async def _fresh_account_state(self) -> str:
+        account = await asyncio.wait_for(
+            self._codex.account(refresh_token=True),
+            timeout=self._account_operation_timeout,
+        )
+        if account.account is None:
+            return "signed_out"
+        account_type = getattr(account.account.root, "type", None)
+        if account_type == "chatgpt":
+            return "chatgpt"
+        return "unsupported"
+
+    def _account_request_failure(
+        self,
+        request_id: str,
+        code: str,
+        exc: BaseException,
+    ) -> None:
+        if isinstance(exc, (asyncio.TimeoutError, TransportClosedError)):
+            self.trigger_fatal(
+                "sdk_transport_failed"
+                if isinstance(exc, TransportClosedError)
+                else "sdk_operation_timeout"
+            )
+            return
+        self._operation_error(request_id, code)
+
+    async def _start_browser_login(
+        self,
+        command: StartBrowserLoginCommand,
+    ) -> None:
+        async with self._login_start_lock:
+            current = self._login_attempt
+            if current is not None:
+                if (
+                    current.attempt_id == command.attempt_id
+                    and current.status == "pending"
+                ):
+                    self._result(
+                        command.bridge_request_id,
+                        command.command,
+                        status="pending",
+                        attemptId=current.attempt_id,
+                        authUrl=current.auth_url,
+                    )
+                else:
+                    self._operation_error(
+                        command.bridge_request_id,
+                        "login_start_failed",
+                    )
+                return
+            try:
+                handle = await asyncio.wait_for(
+                    self._codex.login_chatgpt(),
+                    timeout=self._account_operation_timeout,
+                )
+            except Exception as exc:
+                self._account_request_failure(
+                    command.bridge_request_id,
+                    "login_start_failed",
+                    exc,
+                )
+                return
+            try:
+                auth_url = _safe_browser_auth_url(handle.auth_url)
+            except ValueError:
+                self.trigger_fatal("sdk_operation_failed")
+                return
+            attempt = BrowserLoginAttempt(
+                attempt_id=command.attempt_id,
+                handle=handle,
+                auth_url=auth_url,
+            )
+            self._login_attempt = attempt
+            self._last_released_login_attempt_id = None
+            attempt.completion_task = asyncio.create_task(
+                self._watch_browser_login_completion(attempt)
+            )
+            attempt.expiry_task = asyncio.create_task(
+                self._expire_browser_login(attempt)
+            )
+            self._result(
+                command.bridge_request_id,
+                command.command,
+                status="pending",
+                attemptId=attempt.attempt_id,
+                authUrl=attempt.auth_url,
+            )
+
+    async def _watch_browser_login_completion(
+        self,
+        attempt: BrowserLoginAttempt,
+    ) -> None:
+        try:
+            completion = await attempt.handle.wait()
+        except asyncio.CancelledError:
+            raise
+        except TransportClosedError:
+            if not self._closing:
+                self.trigger_fatal("sdk_transport_failed")
+            return
+        except Exception:
+            if not self._closing:
+                async with attempt.settlement_lock:
+                    if (
+                        self._login_attempt is attempt
+                        and attempt.settlement_target is None
+                    ):
+                        attempt.status = "failed"
+                        attempt.error_code = "login_failed"
+                        self._cancel_login_task(attempt.expiry_task)
+            return
+
+        try:
+            account_state = await self._fresh_account_state()
+        except Exception as exc:
+            if isinstance(exc, TransportClosedError) and not self._closing:
+                self.trigger_fatal("sdk_transport_failed")
+                return
+            account_state = "unavailable"
+
+        async with attempt.settlement_lock:
+            if self._login_attempt is not attempt:
+                return
+            if account_state == "chatgpt":
+                attempt.status = "completed"
+                attempt.error_code = None
+            elif attempt.status == "pending" and attempt.settlement_target is None:
+                attempt.status = "failed"
+                attempt.error_code = "login_failed"
+            elif completion.success and account_state == "unavailable":
+                attempt.status = "failed"
+                attempt.error_code = "login_failed"
+            if attempt.status != "pending":
+                self._cancel_login_task(attempt.expiry_task)
+
+    async def _expire_browser_login(self, attempt: BrowserLoginAttempt) -> None:
+        try:
+            await asyncio.sleep(self._login_attempt_timeout)
+            await self._settle_cancelled_login(
+                attempt,
+                terminal_status="expired",
+            )
+        except asyncio.CancelledError:
+            raise
+
+    async def _read_browser_login_attempt(
+        self,
+        command: ReadBrowserLoginAttemptCommand,
+    ) -> None:
+        attempt = self._login_attempt
+        if attempt is None or attempt.attempt_id != command.attempt_id:
+            self._operation_error(
+                command.bridge_request_id,
+                "login_attempt_not_found",
+            )
+            return
+        fields: dict[str, Any] = {
+            "attemptId": attempt.attempt_id,
+            "status": attempt.status,
+        }
+        if attempt.status == "failed":
+            fields["error"] = {
+                "code": attempt.error_code or "login_failed",
+                "retryable": True,
+            }
+        self._result(
+            command.bridge_request_id,
+            command.command,
+            **fields,
+        )
+
+    async def _cancel_browser_login(
+        self,
+        command: CancelBrowserLoginCommand,
+    ) -> None:
+        attempt = self._login_attempt
+        if attempt is None or attempt.attempt_id != command.attempt_id:
+            self._operation_error(
+                command.bridge_request_id,
+                "login_attempt_not_found",
+            )
+            return
+        if attempt.status != "pending":
+            self._result(
+                command.bridge_request_id,
+                command.command,
+                status="already_settled",
+                attemptId=attempt.attempt_id,
+            )
+            return
+        if not await self._settle_cancelled_login(
+            attempt,
+            terminal_status="cancelled",
+            failure_request_id=command.bridge_request_id,
+            failure_code="login_cancel_failed",
+        ):
+            return
+        self._result(
+            command.bridge_request_id,
+            command.command,
+            status=(
+                "already_settled" if attempt.status == "completed" else "cancelled"
+            ),
+            attemptId=attempt.attempt_id,
+        )
+
+    async def _settle_cancelled_login(
+        self,
+        attempt: BrowserLoginAttempt,
+        *,
+        terminal_status: str,
+        failure_request_id: str | None = None,
+        failure_code: str = "login_cancel_failed",
+    ) -> bool:
+        async with attempt.settlement_lock:
+            if self._login_attempt is not attempt or attempt.status != "pending":
+                return True
+            attempt.settlement_target = terminal_status
+            try:
+                await asyncio.wait_for(
+                    attempt.handle.cancel(),
+                    timeout=self._account_operation_timeout,
+                )
+            except Exception as exc:
+                if not self._closing:
+                    if isinstance(exc, (asyncio.TimeoutError, TransportClosedError)):
+                        self.trigger_fatal(
+                            "sdk_transport_failed"
+                            if isinstance(exc, TransportClosedError)
+                            else "sdk_operation_timeout"
+                        )
+                    elif failure_request_id is not None:
+                        attempt.settlement_target = None
+                        self._operation_error(failure_request_id, failure_code)
+                    else:
+                        self.trigger_fatal("sdk_operation_failed")
+                return False
+
+        completion_task = attempt.completion_task
+        if (
+            completion_task is not None
+            and completion_task is not asyncio.current_task()
+            and not completion_task.done()
+        ):
+            try:
+                await asyncio.wait_for(
+                    asyncio.shield(completion_task),
+                    timeout=self._account_operation_timeout,
+                )
+            except asyncio.TimeoutError:
+                if not self._closing:
+                    self.trigger_fatal("sdk_operation_timeout")
+                return False
+
+        try:
+            account_state = await self._fresh_account_state()
+        except Exception as exc:
+            if not self._closing:
+                self.trigger_fatal(
+                    "sdk_transport_failed"
+                    if isinstance(exc, TransportClosedError)
+                    else "sdk_operation_failed"
+                )
+            return False
+
+        async with attempt.settlement_lock:
+            if self._login_attempt is not attempt:
+                return True
+            if account_state == "chatgpt":
+                attempt.status = "completed"
+                attempt.error_code = None
+            else:
+                attempt.status = terminal_status
+                attempt.error_code = None
+            attempt.settlement_target = None
+            self._cancel_login_task(attempt.expiry_task)
+        return True
+
+    async def _release_browser_login_attempt(
+        self,
+        command: ReleaseBrowserLoginAttemptCommand,
+    ) -> None:
+        attempt = self._login_attempt
+        if attempt is None:
+            if self._last_released_login_attempt_id == command.attempt_id:
+                self._result(
+                    command.bridge_request_id,
+                    command.command,
+                    status="already_released",
+                    attemptId=command.attempt_id,
+                )
+            else:
+                self._operation_error(
+                    command.bridge_request_id,
+                    "login_attempt_not_found",
+                )
+            return
+        if attempt.attempt_id != command.attempt_id:
+            self._operation_error(
+                command.bridge_request_id,
+                "login_attempt_not_found",
+            )
+            return
+        if not await self._release_login_attempt(
+            attempt,
+            failure_request_id=command.bridge_request_id,
+            failure_code="login_cancel_failed",
+        ):
+            return
+        self._result(
+            command.bridge_request_id,
+            command.command,
+            status="released",
+            attemptId=command.attempt_id,
+        )
+
+    async def _release_login_attempt(
+        self,
+        attempt: BrowserLoginAttempt,
+        *,
+        failure_request_id: str | None = None,
+        failure_code: str = "login_cancel_failed",
+    ) -> bool:
+        if attempt.status == "pending" and not await self._settle_cancelled_login(
+            attempt,
+            terminal_status="cancelled",
+            failure_request_id=failure_request_id,
+            failure_code=failure_code,
+        ):
+            return False
+        self._cancel_login_task(attempt.expiry_task)
+        completion_task = attempt.completion_task
+        if (
+            completion_task is not None
+            and completion_task is not asyncio.current_task()
+            and not completion_task.done()
+        ):
+            completion_task.cancel()
+            await asyncio.gather(completion_task, return_exceptions=True)
+        if self._login_attempt is attempt:
+            self._login_attempt = None
+            self._last_released_login_attempt_id = attempt.attempt_id
+        return True
+
+    async def _logout(self, command: LogoutCommand) -> None:
+        attempt = self._login_attempt
+        if attempt is not None and not await self._release_login_attempt(
+            attempt,
+            failure_request_id=command.bridge_request_id,
+            failure_code="logout_failed",
+        ):
+            return
+        try:
+            await asyncio.wait_for(
+                self._codex.logout(),
+                timeout=self._account_operation_timeout,
+            )
+            account_state = await self._fresh_account_state()
+        except Exception as exc:
+            self._account_request_failure(
+                command.bridge_request_id,
+                "logout_failed",
+                exc,
+            )
+            return
+        if account_state != "signed_out":
+            self._operation_error(command.bridge_request_id, "logout_failed")
+            return
+        self._result(
+            command.bridge_request_id,
+            command.command,
+            status="signed_out",
+        )
+
+    def _cancel_login_task(self, task: asyncio.Task[None] | None) -> None:
+        if task is not None and task is not asyncio.current_task() and not task.done():
+            task.cancel()
 
     def _active_turn_count(self) -> int:
         return sum(
@@ -1051,6 +1511,9 @@ class BridgeWorker:
             ]
             if stream_tasks:
                 await asyncio.gather(*stream_tasks, return_exceptions=True)
+        attempt = self._login_attempt
+        if attempt is not None:
+            await self._release_login_attempt(attempt)
         await self._stop_user_input_collector()
         self._clear_interactions()
         try:
@@ -1072,6 +1535,7 @@ class BridgeWorker:
 
     async def close_after_idle_eof(self) -> None:
         self._closing = True
+        await self._abandon_login_attempt()
         await self._stop_user_input_collector()
         self._clear_interactions()
         if self._initialized:
@@ -1080,6 +1544,7 @@ class BridgeWorker:
         self._output.finish_without_frame()
 
     async def shutdown_after_fatal(self) -> None:
+        await self._abandon_login_attempt()
         await self._stop_user_input_collector()
         self._clear_interactions()
         if self._initialized:
@@ -1097,6 +1562,22 @@ class BridgeWorker:
         for task in tasks:
             if not task.done():
                 task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _abandon_login_attempt(self) -> None:
+        attempt = self._login_attempt
+        self._login_attempt = None
+        if attempt is None:
+            return
+        self._cancel_login_task(attempt.expiry_task)
+        completion_task = attempt.completion_task
+        self._cancel_login_task(completion_task)
+        tasks = [
+            task
+            for task in (attempt.expiry_task, completion_task)
+            if task is not None and task is not asyncio.current_task()
+        ]
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
 

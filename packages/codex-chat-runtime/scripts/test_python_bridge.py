@@ -34,6 +34,7 @@ BUNDLE = PACKAGE_ROOT / ".artifacts" / "production-runtime-darwin-arm64" / "bund
 BUNDLE_PYTHON = BUNDLE / "python" / "bin" / "python3.10"
 BUNDLE_SITE_PACKAGES = BUNDLE / "site-packages"
 WORKER = BUNDLE / "bridge" / "worker.py"
+TRACKED_WORKER = BRIDGE_SOURCE / "worker.py"
 FAKE_SERVER = Path(__file__).with_name("fake_python_bridge_app_server.py")
 
 
@@ -43,6 +44,7 @@ class BridgeProcess:
         root: Path,
         *extra_args: str,
         read_stdout: bool = True,
+        worker_path: Path = WORKER,
     ) -> None:
         if not BUNDLE_PYTHON.is_file() or not BUNDLE_SITE_PACKAGES.is_dir():
             raise AssertionError(
@@ -54,7 +56,7 @@ class BridgeProcess:
             [
                 str(BUNDLE_PYTHON),
                 "-B",
-                str(WORKER),
+                str(worker_path),
                 "--workspace",
                 str(root),
                 "--site-packages",
@@ -428,6 +430,50 @@ class ProtocolUnitTests(unittest.TestCase):
 
 
 class PythonBridgeActualChildTests(unittest.TestCase):
+    def _account_bridge(self, root: Path, *extra_args: str) -> BridgeProcess:
+        return BridgeProcess(
+            root,
+            *extra_args,
+            worker_path=TRACKED_WORKER,
+        )
+
+    def _read_journal_messages(self, bridge: BridgeProcess) -> list[dict[str, Any]]:
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            if bridge.journal.is_file():
+                value = json.loads(bridge.journal.read_text(encoding="utf-8"))
+                messages = value.get("messages")
+                if isinstance(messages, list):
+                    return messages
+            time.sleep(0.01)
+        raise AssertionError("timed out waiting for fake App Server journal")
+
+    def _poll_login_attempt(
+        self,
+        bridge: BridgeProcess,
+        attempt_id: str,
+        expected_status: str,
+    ) -> dict[str, Any]:
+        deadline = time.monotonic() + 3
+        sequence = 0
+        while time.monotonic() < deadline:
+            bridge.send(
+                {
+                    "bridgeRequestId": f"status-{sequence}",
+                    "command": "read_browser_login_attempt",
+                    "attemptId": attempt_id,
+                }
+            )
+            frame = bridge.receive()
+            if frame.get("status") == expected_status:
+                return frame
+            self.assertEqual(frame.get("status"), "pending")
+            sequence += 1
+            time.sleep(0.02)
+        raise AssertionError(
+            f"timed out waiting for login attempt state {expected_status}"
+        )
+
     def _inject_response(
         self,
         root: Path,
@@ -610,6 +656,490 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                 bridge.wait()
             finally:
                 bridge.cleanup()
+
+    def test_account_login_start_is_immediate_bounded_and_status_is_sticky(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-python-bridge-account-delayed-"
+        ) as temp:
+            root = Path(temp)
+            (root / "account-state").write_text("signed_out", encoding="utf-8")
+            (root / "login-mode").write_text("delayed-success", encoding="utf-8")
+            bridge = self._account_bridge(root)
+            frames: list[dict[str, Any]] = []
+            try:
+                bridge.send({"bridgeRequestId": "read", "command": "read_account"})
+                frames.append(bridge.receive())
+                self.assertEqual(
+                    frames[-1],
+                    {
+                        "type": "result",
+                        "bridgeRequestId": "read",
+                        "command": "read_account",
+                        "account": {"state": "signed_out"},
+                    },
+                )
+
+                started_at = time.monotonic()
+                start = {
+                    "bridgeRequestId": "start",
+                    "command": "start_browser_login",
+                    "attemptId": "attempt-delayed",
+                }
+                bridge.send(start)
+                frames.append(bridge.receive())
+                self.assertLess(time.monotonic() - started_at, 1)
+                self.assertEqual(
+                    frames[-1],
+                    {
+                        "type": "result",
+                        "bridgeRequestId": "start",
+                        "command": "start_browser_login",
+                        "status": "pending",
+                        "attemptId": "attempt-delayed",
+                        "authUrl": "https://auth.openai.com/codex/test-login",
+                    },
+                )
+
+                duplicate = {**start, "bridgeRequestId": "duplicate"}
+                bridge.send(duplicate)
+                frames.append(bridge.receive())
+                self.assertEqual(
+                    frames[-1],
+                    {
+                        **frames[-2],
+                        "bridgeRequestId": "duplicate",
+                    },
+                )
+                login_starts = [
+                    message
+                    for message in self._read_journal_messages(bridge)
+                    if message.get("method") == "account/login/start"
+                ]
+                self.assertEqual(len(login_starts), 1)
+
+                for request_id in ("pending-1", "pending-2"):
+                    bridge.send(
+                        {
+                            "bridgeRequestId": request_id,
+                            "command": "read_browser_login_attempt",
+                            "attemptId": "attempt-delayed",
+                        }
+                    )
+                    frames.append(bridge.receive())
+                    self.assertEqual(frames[-1]["status"], "pending")
+
+                (root / "complete-login").touch()
+                frames.append(
+                    self._poll_login_attempt(
+                        bridge,
+                        "attempt-delayed",
+                        "completed",
+                    )
+                )
+                bridge.send(
+                    {
+                        "bridgeRequestId": "completed-again",
+                        "command": "read_browser_login_attempt",
+                        "attemptId": "attempt-delayed",
+                    }
+                )
+                frames.append(bridge.receive())
+                self.assertEqual(frames[-1]["status"], "completed")
+
+                bridge.send(
+                    {
+                        "bridgeRequestId": "release",
+                        "command": "release_browser_login_attempt",
+                        "attemptId": "attempt-delayed",
+                    }
+                )
+                frames.append(bridge.receive())
+                self.assertEqual(frames[-1]["status"], "released")
+                bridge.send(
+                    {
+                        "bridgeRequestId": "release-again",
+                        "command": "release_browser_login_attempt",
+                        "attemptId": "attempt-delayed",
+                    }
+                )
+                frames.append(bridge.receive())
+                self.assertEqual(frames[-1]["status"], "already_released")
+
+                serialized = json.dumps(frames, sort_keys=True)
+                journal = bridge.journal.read_text(encoding="utf-8")
+                for private_value in (
+                    "native-login-secret",
+                    "student-private@example.com",
+                    "raw-provider-secret",
+                    "private-refresh-token",
+                    "auth.json",
+                ):
+                    self.assertNotIn(private_value, serialized)
+                    self.assertNotIn(private_value, journal)
+
+                bridge.send({"bridgeRequestId": "close", "command": "close"})
+                self.assertEqual(bridge.receive()["type"], "close_ack")
+                bridge.wait()
+            finally:
+                bridge.cleanup()
+
+    def test_cancel_completion_race_and_expiry_converge_with_fresh_account_read(
+        self,
+    ) -> None:
+        cases = (
+            ("cancel-race-success", 10_000, "already_settled", "completed"),
+            ("cancelled", 100, None, "expired"),
+        )
+        for mode, timeout_ms, cancel_status, terminal_status in cases:
+            with self.subTest(mode=mode):
+                with tempfile.TemporaryDirectory(
+                    prefix=f"ay-ple-python-bridge-account-{mode}-"
+                ) as temp:
+                    root = Path(temp)
+                    (root / "account-state").write_text(
+                        "signed_out",
+                        encoding="utf-8",
+                    )
+                    (root / "login-mode").write_text(mode, encoding="utf-8")
+                    bridge = self._account_bridge(
+                        root,
+                        "--login-attempt-timeout-ms",
+                        str(timeout_ms),
+                    )
+                    try:
+                        bridge.send(
+                            {
+                                "bridgeRequestId": "start",
+                                "command": "start_browser_login",
+                                "attemptId": "attempt-race",
+                            }
+                        )
+                        self.assertEqual(bridge.receive()["status"], "pending")
+                        if cancel_status is not None:
+                            bridge.send(
+                                {
+                                    "bridgeRequestId": "cancel",
+                                    "command": "cancel_browser_login",
+                                    "attemptId": "attempt-race",
+                                }
+                            )
+                            self.assertEqual(
+                                bridge.receive()["status"],
+                                cancel_status,
+                            )
+                        terminal = self._poll_login_attempt(
+                            bridge,
+                            "attempt-race",
+                            terminal_status,
+                        )
+                        self.assertEqual(terminal["attemptId"], "attempt-race")
+                        bridge.send(
+                            {
+                                "bridgeRequestId": "status-terminal-again",
+                                "command": "read_browser_login_attempt",
+                                "attemptId": "attempt-race",
+                            }
+                        )
+                        self.assertEqual(
+                            bridge.receive()["status"],
+                            terminal_status,
+                        )
+                        methods = [
+                            message.get("method")
+                            for message in self._read_journal_messages(bridge)
+                        ]
+                        self.assertEqual(
+                            methods.count("account/login/cancel"),
+                            1,
+                        )
+                        self.assertGreaterEqual(methods.count("account/read"), 1)
+                        bridge.send(
+                            {
+                                "bridgeRequestId": "release",
+                                "command": "release_browser_login_attempt",
+                                "attemptId": "attempt-race",
+                            }
+                        )
+                        self.assertEqual(bridge.receive()["status"], "released")
+                        bridge.send({"bridgeRequestId": "close", "command": "close"})
+                        self.assertEqual(bridge.receive()["type"], "close_ack")
+                        bridge.wait()
+                    finally:
+                        bridge.cleanup()
+
+    def test_cancel_rejection_releases_request_and_preserves_pending_attempt(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-python-bridge-account-cancel-rejection-"
+        ) as temp:
+            root = Path(temp)
+            (root / "account-state").write_text("signed_out", encoding="utf-8")
+            (root / "login-mode").write_text("delayed-success", encoding="utf-8")
+            bridge = self._account_bridge(root)
+            frames: list[dict[str, Any]] = []
+            try:
+                bridge.send(
+                    {
+                        "bridgeRequestId": "start",
+                        "command": "start_browser_login",
+                        "attemptId": "attempt-cancel-rejection",
+                    }
+                )
+                frames.append(bridge.receive())
+                self.assertEqual(frames[-1]["status"], "pending")
+
+                self._inject_response(
+                    root,
+                    method="account/login/cancel",
+                    response={
+                        "error": {
+                            "code": -32602,
+                            "message": "raw-cancel-provider-secret",
+                        }
+                    },
+                )
+                bridge.send(
+                    {
+                        "bridgeRequestId": "cancel-rejected",
+                        "command": "cancel_browser_login",
+                        "attemptId": "attempt-cancel-rejection",
+                    }
+                )
+                frames.append(bridge.receive())
+                self.assertEqual(
+                    frames[-1],
+                    {
+                        "type": "error",
+                        "bridgeRequestId": "cancel-rejected",
+                        "code": "login_cancel_failed",
+                        "displayMessage": (
+                            "The browser login attempt could not be cancelled."
+                        ),
+                    },
+                )
+
+                bridge.send(
+                    {
+                        "bridgeRequestId": "status-after-rejection",
+                        "command": "read_browser_login_attempt",
+                        "attemptId": "attempt-cancel-rejection",
+                    }
+                )
+                frames.append(bridge.receive())
+                self.assertEqual(frames[-1]["status"], "pending")
+
+                (root / "complete-login").touch()
+                frames.append(
+                    self._poll_login_attempt(
+                        bridge,
+                        "attempt-cancel-rejection",
+                        "completed",
+                    )
+                )
+                bridge.send(
+                    {
+                        "bridgeRequestId": "release",
+                        "command": "release_browser_login_attempt",
+                        "attemptId": "attempt-cancel-rejection",
+                    }
+                )
+                frames.append(bridge.receive())
+                self.assertEqual(frames[-1]["status"], "released")
+                self.assertNotIn(
+                    "raw-cancel-provider-secret",
+                    json.dumps(frames, sort_keys=True),
+                )
+
+                bridge.send({"bridgeRequestId": "close", "command": "close"})
+                self.assertEqual(bridge.receive()["type"], "close_ack")
+                bridge.wait()
+            finally:
+                bridge.cleanup()
+
+    def test_login_start_rejects_non_allowlisted_auth_url_without_leaking_it(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-python-bridge-account-unsafe-auth-url-"
+        ) as temp:
+            root = Path(temp)
+            bridge = self._account_bridge(root)
+            unsafe_url = "https://attacker.invalid/raw-auth-capability"
+            try:
+                self._inject_response(
+                    root,
+                    method="account/login/start",
+                    response={
+                        "result": {
+                            "authUrl": unsafe_url,
+                            "loginId": "native-login-secret-injected",
+                            "type": "chatgpt",
+                        }
+                    },
+                )
+                bridge.send(
+                    {
+                        "bridgeRequestId": "unsafe-start",
+                        "command": "start_browser_login",
+                        "attemptId": "attempt-unsafe",
+                    }
+                )
+                fatal = bridge.receive()
+                self.assertEqual(fatal["type"], "fatal")
+                self.assertEqual(fatal["code"], "sdk_operation_failed")
+                self.assertNotIn(unsafe_url, json.dumps(fatal, sort_keys=True))
+                self.assertNotIn(
+                    "native-login-secret-injected",
+                    json.dumps(fatal, sort_keys=True),
+                )
+                bridge.wait()
+                self.assertTrue(bridge.child_pid_path.is_file())
+                wait_for_process_exit(
+                    int(bridge.child_pid_path.read_text(encoding="utf-8")),
+                    time.monotonic() + 2,
+                )
+            finally:
+                bridge.cleanup()
+
+    def test_fresh_account_projection_and_logout_require_null_readback(self) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-python-bridge-account-logout-"
+        ) as temp:
+            root = Path(temp)
+            (root / "account-state").write_text("chatgpt", encoding="utf-8")
+            bridge = self._account_bridge(root)
+            frames: list[dict[str, Any]] = []
+            try:
+                bridge.send({"bridgeRequestId": "read", "command": "read_account"})
+                frames.append(bridge.receive())
+                self.assertEqual(frames[-1]["account"], {"state": "chatgpt"})
+                bridge.send({"bridgeRequestId": "logout", "command": "logout"})
+                frames.append(bridge.receive())
+                self.assertEqual(frames[-1]["status"], "signed_out")
+                bridge.send(
+                    {"bridgeRequestId": "read-after", "command": "read_account"}
+                )
+                frames.append(bridge.receive())
+                self.assertEqual(frames[-1]["account"], {"state": "signed_out"})
+
+                methods = [
+                    message.get("method")
+                    for message in self._read_journal_messages(bridge)
+                ]
+                logout_index = methods.index("account/logout")
+                self.assertEqual(methods[logout_index + 1], "account/read")
+                serialized = json.dumps(frames, sort_keys=True)
+                self.assertNotIn("student-private@example.com", serialized)
+                self.assertNotIn("private-refresh-token", serialized)
+                bridge.send({"bridgeRequestId": "close", "command": "close"})
+                self.assertEqual(bridge.receive()["type"], "close_ack")
+                bridge.wait()
+            finally:
+                bridge.cleanup()
+
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-python-bridge-account-unsupported-"
+        ) as temp:
+            root = Path(temp)
+            (root / "account-state").write_text("unsupported", encoding="utf-8")
+            bridge = self._account_bridge(root)
+            try:
+                bridge.send({"bridgeRequestId": "read", "command": "read_account"})
+                self.assertEqual(
+                    bridge.receive()["account"],
+                    {"state": "unsupported"},
+                )
+                bridge.send({"bridgeRequestId": "close", "command": "close"})
+                self.assertEqual(bridge.receive()["type"], "close_ack")
+                bridge.wait()
+            finally:
+                bridge.cleanup()
+
+    def test_login_failure_eof_and_forced_transport_error_cleanup_are_bounded(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-python-bridge-account-failure-"
+        ) as temp:
+            root = Path(temp)
+            (root / "account-state").write_text("signed_out", encoding="utf-8")
+            (root / "login-mode").write_text("delayed-failure", encoding="utf-8")
+            bridge = self._account_bridge(root)
+            try:
+                bridge.send(
+                    {
+                        "bridgeRequestId": "start",
+                        "command": "start_browser_login",
+                        "attemptId": "attempt-failure",
+                    }
+                )
+                start = bridge.receive()
+                self.assertEqual(start["status"], "pending")
+                (root / "complete-login").touch()
+                failed = self._poll_login_attempt(
+                    bridge,
+                    "attempt-failure",
+                    "failed",
+                )
+                self.assertEqual(
+                    failed["error"],
+                    {"code": "login_failed", "retryable": True},
+                )
+                self.assertNotIn(
+                    "raw-provider-secret",
+                    json.dumps((start, failed), sort_keys=True),
+                )
+                bridge.send(
+                    {
+                        "bridgeRequestId": "release",
+                        "command": "release_browser_login_attempt",
+                        "attemptId": "attempt-failure",
+                    }
+                )
+                self.assertEqual(bridge.receive()["status"], "released")
+                bridge.send({"bridgeRequestId": "close", "command": "close"})
+                self.assertEqual(bridge.receive()["type"], "close_ack")
+                bridge.wait()
+            finally:
+                bridge.cleanup()
+
+        for mode in ("delayed-success", "forced-eof"):
+            with self.subTest(cleanup=mode):
+                with tempfile.TemporaryDirectory(
+                    prefix=f"ay-ple-python-bridge-account-cleanup-{mode}-"
+                ) as temp:
+                    root = Path(temp)
+                    (root / "account-state").write_text(
+                        "signed_out",
+                        encoding="utf-8",
+                    )
+                    (root / "login-mode").write_text(mode, encoding="utf-8")
+                    bridge = self._account_bridge(root)
+                    try:
+                        bridge.send(
+                            {
+                                "bridgeRequestId": "start",
+                                "command": "start_browser_login",
+                                "attemptId": "attempt-cleanup",
+                            }
+                        )
+                        self.assertEqual(bridge.receive()["status"], "pending")
+                        if mode == "delayed-success":
+                            assert bridge.process.stdin is not None
+                            bridge.process.stdin.close()
+                        fatal = bridge.receive()
+                        self.assertEqual(fatal["type"], "fatal")
+                        bridge.wait()
+                        self.assertTrue(bridge.child_pid_path.is_file())
+                        wait_for_process_exit(
+                            int(bridge.child_pid_path.read_text(encoding="utf-8")),
+                            time.monotonic() + 2,
+                        )
+                    finally:
+                        bridge.cleanup()
 
     def test_response_last_stream_is_acceptance_first_allowlisted_and_safe(
         self,

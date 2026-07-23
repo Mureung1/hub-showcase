@@ -57,9 +57,7 @@ class CancelBrowserLoginCommand:
 class ReleaseBrowserLoginAttemptCommand:
     bridge_request_id: str
     attempt_id: str
-    command: Literal["release_browser_login_attempt"] = (
-        "release_browser_login_attempt"
-    )
+    command: Literal["release_browser_login_attempt"] = "release_browser_login_attempt"
 
 
 @dataclass(frozen=True, slots=True)
