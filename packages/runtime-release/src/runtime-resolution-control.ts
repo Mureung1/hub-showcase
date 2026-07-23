@@ -148,9 +148,9 @@ export class RuntimeResolutionDeadline {
       })
     }
     this.#deadlineMs = startedAt + input.timeoutMs
-    this.#onCallerAbort = () => this.#abort('caller')
+    this.#onCallerAbort = () => this.#observeStop()
     if (this.#callerSignal.aborted) {
-      this.#abort('caller')
+      this.#observeStop()
     } else {
       this.#callerSignal.addEventListener(
         'abort',
@@ -176,18 +176,11 @@ export class RuntimeResolutionDeadline {
   }
 
   throwIfStopped(): void {
+    this.#observeStop()
     if (this.#abortKind === 'caller') {
       throw cancelledError()
     }
     if (this.#abortKind === 'deadline') {
-      throw deadlineError()
-    }
-    if (this.#callerSignal.aborted) {
-      this.#abort('caller')
-      throw cancelledError()
-    }
-    if (this.remainingMs() <= 0) {
-      this.#abort('deadline')
       throw deadlineError()
     }
   }
@@ -230,6 +223,7 @@ export class RuntimeResolutionDeadline {
     ) {
       return error
     }
+    this.#observeStop()
     if (this.#abortKind === 'deadline') return deadlineError()
     if (
       this.#abortKind === 'caller' ||
@@ -260,6 +254,17 @@ export class RuntimeResolutionDeadline {
     if (this.#abortKind !== undefined) return
     this.#abortKind = kind
     this.#controller.abort()
+  }
+
+  #observeStop(): void {
+    if (this.#abortKind !== undefined) return
+    if (this.remainingMs() <= 0) {
+      this.#abort('deadline')
+      return
+    }
+    if (this.#callerSignal.aborted) {
+      this.#abort('caller')
+    }
   }
 }
 
@@ -292,7 +297,13 @@ export function decodeRetryAfterDelayMs(
     return 0
   }
   const parsed = Date.parse(value)
-  if (!Number.isFinite(parsed) || parsed <= wallNowMs) return 0
+  if (
+    !Number.isFinite(parsed) ||
+    new Date(parsed).toUTCString() !== value ||
+    parsed <= wallNowMs
+  ) {
+    return 0
+  }
   return parsed - wallNowMs
 }
 
@@ -315,14 +326,12 @@ export function createRuntimeResolutionScheduler(): RuntimeResolutionScheduler {
           signal.removeEventListener('abort', onAbort)
           resolve()
         }, delayMs)
-        timer.unref()
         signal.addEventListener('abort', onAbort, {
           once: true,
         })
       }),
     arm: (delayMs, onElapsed) => {
       const timer = setTimeout(onElapsed, delayMs)
-      timer.unref()
       return () => clearTimeout(timer)
     },
   }
