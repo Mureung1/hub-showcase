@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -70,10 +70,11 @@ Persistent Python bridge가 한 개의 managed ChatGPT login attempt를 즉시 �
 | owner | `R` — Runtime |
 | branch | `codex/public-preview-r1b-python-account` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/r1b-python-account` |
-| handoffSha | Claim 시 coordinator가 004의 fixed reviewed SHA를 integration branch에 `--no-ff` merge하고 predecessor 및 integration root/Runtime gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `4d32ccc51f59b43b332b019fb13a5b3ae7a4e697` — 004의 fixed reviewed combined tip과 closeout이 반영된 clean integration HEAD. |
 | writablePaths | `packages/codex-chat-runtime/python/bridge/**`; `packages/codex-chat-runtime/scripts/test_python_bridge.py`; account lifecycle용 fake App Server scripts/fixtures; `docs/tickets/2026-07-23-public-npx-first-release/005-r1b-bounded-python-account-bridge.md` |
 | consumedContracts | S1 frozen Runtime account contract, R1a typed managed-login handle/completion/cancel seam와 official account read/logout types |
-| predecessorEvidence | 004 fixed reviewed SHA, exact SDK patch/provenance receipt와 matching-completion tests |
+| predecessorEvidence | 004 fixed reviewed combined tip `be3b0bcc2ff4c550ef0dbb035f1ca23b70f49297`, closeout `4d32ccc51f59b43b332b019fb13a5b3ae7a4e697`, exact SDK patch/provenance receipt와 matching-completion tests |
+| claimEvidence | Exact worktree·branch·HEAD를 확인했고 working tree가 clean이며 `be3b0bcc2ff4c550ef0dbb035f1ca23b70f49297`가 handoff HEAD의 ancestor임을 확인했다. |
 | requiredChecks | Bridge full tests; Ruff check/format; exact SDK verification; production Runtime before/after verification; root test/typecheck/build/Chat Shell lint; `git diff --check` |
 | reviewOwner | R1a author가 아닌 independent bridge/concurrency reviewer |
 | handoffArtifact | Reviewed fixed R1b commit SHA, strict bridge frame roster와 bounded attempt/race/cleanup test receipt |
