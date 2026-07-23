@@ -11,6 +11,7 @@ import DealDetailPage from './pages/consumer/DealDetailPage.jsx'
 import MyReservationsPage from './pages/consumer/MyReservationsPage.jsx'
 import FavoriteStoresPage from './pages/consumer/FavoriteStoresPage.jsx'
 import SettingsPage from './pages/consumer/SettingsPage.jsx'
+import NotificationsPage from './pages/consumer/NotificationsPage.jsx'
 
 // C0 진입: 이미 역할을 고른 세션이면 해당 홈으로 자동 라우팅, 아니면 역할 선택.
 function Entry() {
@@ -93,6 +94,14 @@ function App() {
         element={
           <RequireRole role="consumer">
             <SettingsPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/app/notifications"
+        element={
+          <RequireRole role="consumer">
+            <NotificationsPage />
           </RequireRole>
         }
       />

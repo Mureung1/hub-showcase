@@ -1,4 +1,5 @@
 import * as notificationRepo from '../repositories/notificationRepository.js'
+import { sendToUsers } from './pushService.js'
 
 /*
  * 알림 대상 판정 (T-11) — 기획서 §3.2의 핵심 로직.
@@ -16,8 +17,10 @@ export async function findNotificationTargets(dealId) {
 }
 
 /*
- * 딜 등록 시 알림 생성 — 인앱 알림 행을 남긴다.
- * FCM 푸시 발송은 T-13에서 이 함수 뒤에 붙인다.
+ * 딜 등록 시 알림 — 인앱 알림 행을 남기고 FCM 푸시를 보낸다 (T-11 + T-13).
+ *
+ * 인앱 알림을 먼저 저장하는 이유: 푸시는 권한 거부·미지원·발송 실패로 못 받을 수 있으므로
+ * 앱에서 확인 가능한 기록이 항상 남아야 한다(푸시는 부가, 인앱이 기준).
  * 호출부(딜 등록)의 응답을 막지 않도록 실패해도 예외를 삼키고 로그만 남긴다.
  */
 export async function notifyDealCreated(deal, storeName) {
@@ -25,17 +28,20 @@ export async function notifyDealCreated(deal, storeName) {
     const targets = await findNotificationTargets(deal.id)
     if (targets.length === 0) return { targetCount: 0 }
 
-    await notificationRepo.insertMany({
-      userIds: targets.map((t) => t.userId),
-      dealId: deal.id,
-      title: `${storeName} 마감 할인`,
-      body: `${deal.name} ${deal.originalPrice.toLocaleString()}원 → ${deal.salePrice.toLocaleString()}원`,
-    })
+    const userIds = targets.map((t) => t.userId)
+    const title = `${storeName} 마감 할인`
+    const body = `${deal.name} ${deal.originalPrice.toLocaleString()}원 → ${deal.salePrice.toLocaleString()}원`
 
-    // TODO(T-13): 여기서 device_tokens를 조회해 FCM 푸시 발송
-    return { targetCount: targets.length }
+    await notificationRepo.insertMany({ userIds, dealId: deal.id, title, body })
+
+    const push = await sendToUsers(userIds, { title, body, dealId: deal.id })
+    console.log(
+      `알림: 대상 ${targets.length}명, 푸시 ${push.skipped ? '비활성' : `${push.sent}건 발송`}`,
+    )
+
+    return { targetCount: targets.length, push }
   } catch (err) {
-    console.error('알림 생성 실패 (딜 등록은 정상 처리됨):', err.message)
+    console.error('알림 처리 실패 (딜 등록은 정상 처리됨):', err.message)
     return { targetCount: 0, failed: true }
   }
 }

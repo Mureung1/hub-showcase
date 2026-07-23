@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/client.js'
 import { getSession, clearSession } from '../../lib/session.js'
+import { onForegroundMessage } from '../../lib/firebase.js'
 import './ConsumerHomePage.css'
 
 const timeOf = (iso) =>
@@ -17,6 +18,7 @@ function ConsumerHomePage() {
   const [deals, setDeals] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [flash, setFlash] = useState(null)
 
   useEffect(() => {
     api
@@ -24,6 +26,25 @@ function ConsumerHomePage() {
       .then((res) => setDeals(res.data))
       .catch((err) => setError(err.response?.data?.message ?? '목록을 불러오지 못했습니다.'))
       .finally(() => setLoading(false))
+  }, [])
+
+  // 앱이 열려 있을 때 도착한 푸시는 브라우저가 알림을 띄우지 않으므로 인앱 배너로 보여준다
+  useEffect(() => {
+    let unsubscribe
+    onForegroundMessage((payload) => {
+      setFlash({
+        title: payload.notification?.title ?? '새 마감 할인',
+        body: payload.notification?.body ?? '',
+      })
+      // 새 딜이 등록된 것이므로 목록도 갱신한다
+      api
+        .get('/deals/nearby')
+        .then((res) => setDeals(res.data))
+        .catch(() => {})
+    }).then((fn) => {
+      unsubscribe = fn
+    })
+    return () => unsubscribe?.()
   }, [])
 
   const switchRole = () => {
@@ -39,6 +60,9 @@ function ConsumerHomePage() {
           <p className="consumer-home__sub">{session?.nickname}님 · 기준 위치 반경 이내</p>
         </div>
         <nav className="consumer-home__nav">
+          <button type="button" onClick={() => navigate('/app/notifications')}>
+            알림
+          </button>
           <button type="button" onClick={() => navigate('/app/favorites')}>
             관심 가게
           </button>
@@ -50,6 +74,18 @@ function ConsumerHomePage() {
           </button>
         </nav>
       </header>
+
+      {flash && (
+        <div className="consumer-home__flash" role="status">
+          <div>
+            <b>{flash.title}</b>
+            <span>{flash.body}</span>
+          </div>
+          <button type="button" onClick={() => setFlash(null)} aria-label="알림 닫기">
+            닫기
+          </button>
+        </div>
+      )}
 
       {loading && <p className="consumer-home__msg">불러오는 중...</p>}
       {error && <p className="consumer-home__msg consumer-home__msg--error">{error}</p>}
