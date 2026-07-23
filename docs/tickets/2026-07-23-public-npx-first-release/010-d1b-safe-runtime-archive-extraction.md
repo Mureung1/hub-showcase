@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -71,10 +71,37 @@ Verified archive byte를 final cache generation과 격리된 staging root에만 
 | owner | `D` — Runtime delivery |
 | branch | `codex/public-preview-d1b-safe-extract` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/d1b-safe-extract` |
-| handoffSha | Claim 시 coordinator가 009의 fixed reviewed SHA와 필요한 C-owned safe TAR dependency `contractTipSha`를 integration branch에 `--no-ff` 반영하고 predecessor/integration package·root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `1bacf08625a7df70b12fa1cee7ecff9f09907b49` — coordinator가 reviewed D1a closeout과 C-owned safe TAR dependency/lock을 integration branch에 `--no-ff` 반영하고 predecessor/integration gate를 green으로 확인한 exact handoff |
 | writablePaths | `packages/runtime-release/src/**` 중 archive preflight/extraction/verifier implementation·tests (`src/contract.ts`, package manifest와 lockfile 제외); malicious archive fixtures; `docs/tickets/2026-07-23-public-npx-first-release/010-d1b-safe-runtime-archive-extraction.md` |
 | consumedContracts | D1a descriptor/cache/staging authority, canonical Runtime manifest/complete-tree behavior, C-owned exact safe TAR dependency |
-| predecessorEvidence | 009 fixed reviewed SHA와 descriptor no-write/no-network receipt; safe TAR dependency/lock fixed SHA, license record와 green integration gate |
+| predecessorEvidence | 009 reviewed combined tip `5be60ccf4dc04b42898244cf5033e339c1f58e6f`와 closeout `b5ad973b44427ba35db4da62fbb6c7ec02c74fe9`가 integration에 반영됨; `tar-stream@3.2.0`, `@types/tar-stream@3.1.4`, pre-D1b lock SHA-256 `6dcc45c4d2aac146b925850f98a61a890e5f54360151598c3ccbf22040ba12ab`; coordinator-confirmed green integration gate |
 | requiredChecks | Full malicious archive matrix; staging containment/race tests; complete-tree/legal roster tests; runtime-release package test/typecheck/build; root test/typecheck/build/Chat Shell lint; `git diff --check` |
 | reviewOwner | D1a author가 아닌 independent archive-security reviewer |
 | handoffArtifact | Reviewed fixed D1b commit SHA, malicious archive corpus result와 verified-staging complete-tree receipt |
+
+## Candidate Receipt — author handoff
+
+이 receipt는 independent review 전 author candidate를 coordinator에게 전달한다. Ticket state는 `claimed`, acceptance checkbox는 모두 미완료 상태로 유지하며 review·closeout은 coordinator가 소유한다.
+
+| Evidence | Result |
+| --- | --- |
+| fixed handoff | `1bacf08625a7df70b12fa1cee7ecff9f09907b49` |
+| claim commit | `aea0750ce441102b57fd121b6a27a34228af1b25` — `docs: claim safe runtime archive extraction` |
+| candidate code commits | `1d5a9136d21d54c5f271aeef7c07373702312dee` — canonical pre-scan/extraction/verifier; `ec385e753b2cc0708ac699e5089b41993a3ea1e7` — hostile corpus·bound·fault/race hardening; `b2480fbeb41a3a3026ea37d7c660bbb7f8b2fd5c` — no-follow filesystem verification·entry-task join·precondition hardening; `94dac5a0408cf5fabce511f10504e26824930aa8` — retained directory capability와 final authority·hardlink·storage-fault correction; `0531c1b5a4a0a04c9b94b64d1f0706f07006a4e7` — missing recorded cleanup entry를 ambiguity로 승격 |
+| candidate code tip | `0531c1b5a4a0a04c9b94b64d1f0706f07006a4e7` |
+| valid receipt | descriptor-bound archive를 owned empty staging의 `<staging>/runtime`에 추출하고 canonical `manifest.json`, exact 7-entry top-level roster, complete 8-file/1-symlink payload, `149` regular bytes, reviewed mode·single-link regular file·symlink target과 final staging `0700` authority를 capability walk로 재검증한 `runtime_verified_staging` |
+| security correction | Node가 Darwin `openat`/`unlinkat` directory descriptor를 노출하지 않는 경계를 dedicated child의 kernel-held cwd capability로 닫았다. 각 owned directory의 exact `(dev, ino, uid, mode)` handshake, one-segment IPC operation, descriptor write/chmod/sync/stat/hash, nested capability handshake와 retained parent-cwd cleanup만 사용하며 absolute path mutation fallback은 없다. |
+| synthetic corpus | Package 전체 `154/154`; unsafe/corrupt archive pre-scan case `40/40`은 recipient write `0`을 유지한다. 추가 exact seam은 capability check/use create·cleanup race `8/8`, final hardlink/staging-authority drift `2/2`, materialization storage operation mapping `7/7`이다. Outside canary·alias를 보존하고 recorded file 또는 Runtime root가 cleanup 전에 사라지거나 rename된 경우도 `runtime_recovery_required`로 닫는다. |
+| package gates | `npm test -w @ay-ple/runtime-release` → `154/154`; `npm run typecheck -w @ay-ple/runtime-release` → green; `npm run build -w @ay-ple/runtime-release` → green; compiled `dist/runtime-archive-directory-capability.js` self-fork smoke → prior reviewed tip에서 green |
+| repository gates | Prior reviewed tip에서 `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`이 green이었다. Exact cleanup correction tip은 package gate, `npm run check:docs-links`, `git diff --check`를 재실행하고 full integration gate는 C에 handoff한다. |
+| dependency/lock | `tar-stream@3.2.0`, `@types/tar-stream@3.1.4`; `package-lock.json` SHA-256 `6dcc45c4d2aac146b925850f98a61a890e5f54360151598c3ccbf22040ba12ab` 유지 |
+| frozen/diff boundary | `src/contract.ts`, package manifest, lockfile, package README, shared frozen contract, transport/resume/resolver orchestration 변경 없음; correction fixed point `3194a2f3e8fcaa3a36b89a2e1c1ef278f804fd25` 대비 code diff는 `runtime-archive-directory-capability.ts`, `runtime-archive-extraction.ts`와 `.test.ts`만 포함 |
+| review status | Independent archive-security re-review는 prior capability correction tip에서 green이었다. 이후 independent Spec review가 찾은 missing cleanup entry ambiguity를 `0531c1b5a4a0a04c9b94b64d1f0706f07006a4e7`에서 교정했으며 exact correction tip의 independent re-review와 acceptance/closeout은 미실행이다. |
+
+### C handoff
+
+- C는 D1a의 exact `RuntimeReleaseAdmission`, `RuntimeCacheLayout`, `RuntimeCacheMutationAuthority`, `RuntimeStagingIdentity`와 canonical manifest bytes를 `extractVerifiedRuntimeArchive()`에 함께 전달해야 한다.
+- 호출 전에 descriptor-bound archive를 cache archive path에 owner-only `0600` regular file로, staging root를 같은 filesystem의 owner-only `0700` empty directory로 준비한다.
+- 성공 결과의 `runtimeRoot`는 `<staging>/runtime`이다. Durable receipt, fsync/atomic generation publish, quarantine·repair와 resolver orchestration은 계속 C 소유다.
+- Publisher archive는 manifest에서 유도한 directory entry를 모두 명시하고 regular file·directory·symlink만 사용한다. Directory `0755`, manifest/payload reviewed mode, symlink `0777`, canonical octal size와 TAR trailer 2 block을 사용하며 PAX/GNU extension·xattr·ACL·sparse·hardlink·special entry를 만들지 않는다.
+- Reviewed D1b를 integration한 뒤 C-owned `packages/runtime-release/README.md`의 “extraction 미구현” 현재 사실을 갱신한다. `extractVerifiedRuntimeArchive()`와 source-internal retained-cwd capability boundary가 구현됐지만 transport, publish, quarantine·repair와 resolver orchestration은 계속 미구현이라는 경계를 기록한다.
