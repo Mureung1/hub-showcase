@@ -1,0 +1,75 @@
+{
+  "title": "어학시험 학습 플래너",
+  "summary": "현재 점수, 목표 점수, 시험일, 하루 학습 시간과 취약 영역을 바탕으로 개인별 학습 계획을 만드는 서비스입니다.",
+  "githubUser": "Kate-Kim-S(김승희)",
+  "demoUrl": "",
+  "thumbnail": "",
+  "screenshots": [],
+  "problem": "어학시험을 준비하는 학습자가 현재 실력, 목표 점수, 시험일까지 남은 시간, 하루 학습 가능 시간, 취약 영역을 함께 고려해 실행 가능한 학습 계획을 세우기 어렵다는 문제를 해결합니다.",
+  "targetUsers": [
+    "TOEIC, OPIc, TOEIC Speaking, TOEFL을 준비하는 대학생과 취업 준비생",
+    "목표 점수는 있지만 매일 무엇을 얼마나 공부해야 할지 정리하기 어려운 학습자",
+    "취약 영역을 중심으로 학습 시간을 재분배하고 싶은 자기주도 학습자"
+  ],
+  "mainFeatures": [
+    "시험 유형 선택",
+    "현재 점수 또는 등급, 목표 점수 또는 등급, 시험일, 하루 학습 시간 입력",
+    "시험별 점수 규칙에 맞춘 입력값 검증",
+    "취약 영역 선택 및 시험별 영역 목록 제공",
+    "취약 영역이 있으면 학습 시간의 70%를 취약 영역에 우선 배분하는 일일 학습 계획 생성",
+    "Supabase에 학습 계획 저장",
+    "저장된 학습 계획 ID를 localStorage에 보관하고 새로고침 후 복원",
+    "Express API를 통한 학습 계획 생성 및 조회"
+  ],
+  "featureTags": [
+    "학습 플래너",
+    "어학시험",
+    "개인화 계획",
+    "취약 영역 분석",
+    "TDD",
+    "AI 협업"
+  ],
+  "techStack": [
+    "React",
+    "Vite",
+    "JavaScript",
+    "Express",
+    "Supabase",
+    "Vitest",
+    "Testing Library",
+    "jsdom"
+  ],
+  "techHighlights": [
+    "createDailyStudyPlan 함수로 시험 유형과 취약 영역에 따라 일일 학습 시간을 계산하도록 분리했습니다.",
+    "취약 영역이 일부 선택된 경우 전체 학습 시간의 70%를 취약 영역에, 30%를 일반 영역에 배분합니다.",
+    "취약 영역이 없거나 모든 영역이 취약 영역인 경우 전체 영역에 균등 배분합니다.",
+    "유효하지 않은 시험 유형, 0 이하 학습 시간, 잘못된 취약 영역 입력을 방어적으로 처리합니다.",
+    "Express API에서 학습 계획 입력값을 검증한 뒤 Supabase study_plans 테이블에 저장하고 UUID 기반 조회를 제공합니다.",
+    "프론트엔드는 저장된 studyPlanId를 localStorage에 보관해 새로고침 후에도 기존 학습 계획을 복원합니다."
+  ],
+  "developmentWithAI": [
+    "이번 주에는 작은 기능 단위로 요구사항을 정리하고 테스트를 먼저 작성하는 방식으로 개발했습니다.",
+    "tdd-feature-builder Skill을 사용해 createDailyStudyPlan 구현을 Red → Green 흐름으로 진행했습니다.",
+    "Vitest로 취약 영역 없음, 일부 취약 영역, 모든 취약 영역, 잘못된 입력, 지원하지 않는 시험 유형 등 핵심 케이스를 검증했습니다.",
+    "study-plan-validator Agent를 제작해 구현 결과, 테스트 커버리지, 예외 처리, 요구사항 반영 여부를 검증했습니다.",
+    "AI와 함께 기능 범위를 좁게 유지하고 테스트 결과를 기준으로 다음 작업을 결정하는 개발 워크플로를 문서화했습니다."
+  ],
+  "agent": {
+    "summary": "AI 에이전트를 요구사항 정리, TDD 진행, 코드 검증, 개발 흐름 문서화에 활용했습니다. 특히 createDailyStudyPlan 기능은 테스트가 먼저 실패하는 상태를 확인한 뒤 최소 구현으로 통과시키는 방식으로 완성했습니다.",
+    "agentTools": [
+      "tdd-feature-builder Skill",
+      "study-plan-validator Agent",
+      "Vitest",
+      "React Testing Library",
+      "Codex"
+    ],
+    "workflows": [
+      "요구사항과 완료 조건을 먼저 정리합니다.",
+      "기능 단위를 작게 나누고 관련 코드와 데이터 흐름을 조사합니다.",
+      "Vitest 테스트를 먼저 작성해 Red 상태를 확인합니다.",
+      "최소 구현으로 Green 상태를 만들고 필요한 예외 케이스를 보강합니다.",
+      "study-plan-validator Agent로 변경 범위, 테스트, 요구사항 반영 여부를 검증합니다.",
+      "구현한 기능과 검증 과정을 문서에 남겨 다음 작업의 기준으로 삼습니다."
+    ]
+  }
+}
