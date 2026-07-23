@@ -1,6 +1,7 @@
 import prisma from '../config/prisma.js';
 import { getAnalysis } from './analysisService.js';
-import { searchRepos, fetchReposWithIssues } from './githubService.js';
+import { searchRepos, fetchReposWithIssues, fetchIssueBody, fetchContributingGuide } from './githubService.js';
+import { analyzeIssue, rerankItems } from './llmService.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('recommendationService');
@@ -236,6 +237,40 @@ function interleaveEqualScores(items) {
     return result;
 }
 
+// 규칙 기반 상위 MAX_ITEMS건을 LLM으로 재순위(#6 3단 구조 ③ "LLM 재순위" — decisions.md 2026-07-20/07-23).
+// 트리밍(상위 MAX_ITEMS 추리기) 이후에만 적용해 비용을 목록 크기로 고정한다 — 트리밍 전 후보군(최대 24개)
+// 까지 재순위하면 "지연 생성으로 실비용 0에 수렴"이라는 #6 원칙과 충돌하기 때문.
+// LLM 호출은 건별이 아니라 배치 1번(rerankItems) — 건별 병렬 호출은 Gemini 무료 티어 분당 한도를
+// 순간적으로 다 써버려 실전에서 전멸하는 걸 확인해 배치로 바꿨다(2026-07-23, decisions.md 참조).
+// 일부 항목만 응답에 없거나 배치 자체가 실패해도 그 항목만 규칙 점수/이유를 그대로 유지한다
+async function rerankTopItems(items, analysis) {
+    const profile = { recentRepos: analysis.recentRepos, contributionHistory: analysis.contributionHistory };
+    const issueBodies = await Promise.all(items.map((item) => fetchIssueBody(item.repoFullName, item.issueNumber)));
+    const results = await rerankItems(
+        items.map((item, index) => ({
+            issueTitle: item.issueTitle,
+            issueBody: issueBodies[index],
+            labels: item.labels,
+            difficulty: item.difficulty,
+            ruleScore: item.matchScore,
+            ruleReason: item.reason,
+        })),
+        profile,
+    );
+
+    const reranked = items.map((item, index) => {
+        const result = results[index];
+        if (!result) {
+            return item;
+        }
+        return { ...item, matchScore: Math.min(100, Math.max(0, item.matchScore + result.adjustment)), reason: result.reason };
+    });
+
+    // 점수가 바뀌었으니 동점 그룹도 달라진다 — 정렬·언어 인터리브를 재적용
+    reranked.sort((a, b) => b.matchScore - a.matchScore || b.repoStars - a.repoStars);
+    return interleaveEqualScores(reranked).map((item, index) => ({ ...item, position: index }));
+}
+
 // recommendations 레코드 → 명세(Recommendation 스키마) 응답 형태
 function toRecommendationResponse(record) {
     return {
@@ -255,13 +290,88 @@ function toRecommendationResponse(record) {
             difficulty: item.difficulty,
             matchScore: item.matchScore,
             reason: item.reason,
+            // LLM 이슈 분석(#6, 지연 생성) — RecommendationItem엔 스냅샷을 안 남기고 매 조회 시 IssueCache에서 병합
+            issueSummary: null,
+            requiredSkills: null,
+            guide: null,
         })),
         createdAt: record.createdAt.toISOString(),
     };
 }
 
+// items의 (repoFullName, issueNumber)로 IssueCache를 일괄 조회해 이미 성공한 분석 결과를 병합.
+// LLM을 부르지 않는 조회 전용 경로라 호출 비용이 없다 — 모든 GET에서 항상 실행
+async function enrichWithCachedAnalysis(items) {
+    if (items.length === 0) {
+        return items;
+    }
+    const cached = await prisma.issueCache.findMany({
+        where: { OR: items.map(({ repoFullName, issueNumber }) => ({ repoFullName, issueNumber })) },
+    });
+    const byKey = new Map(cached.map((row) => [`${row.repoFullName}#${row.issueNumber}`, row]));
+
+    return items.map((item) => {
+        const row = byKey.get(`${item.repoFullName}#${item.issueNumber}`);
+        if (!row?.issueSummary) {
+            return item;
+        }
+        return { ...item, issueSummary: row.issueSummary, requiredSkills: row.requiredSkills, guide: row.guide };
+    });
+}
+
+// 이슈 1건을 LLM으로 분석하고, 성공하면 IssueCache에 영구 저장(TTL 없음) 후 결과를 병합해 반환.
+// 실패하면 필드를 null로 둔 채 그대로 반환 — 캐시에는 아무것도 남기지 않아 다음 조회가 재시도가 된다
+// (decisions.md 2026-07-21 "캐시는 성공 결과만 저장")
+async function analyzeAndCacheIssue(item) {
+    const [issueBody, contributingMd] = await Promise.all([
+        fetchIssueBody(item.repoFullName, item.issueNumber),
+        fetchContributingGuide(item.repoFullName),
+    ]);
+    const analysis = await analyzeIssue({
+        issueTitle: item.issueTitle,
+        issueBody,
+        labels: item.labels,
+        contributingMd,
+    });
+    if (!analysis) {
+        return item;
+    }
+
+    const analysisData = {
+        issueSummary: analysis.issueSummary,
+        requiredSkills: analysis.requiredSkills,
+        guide: analysis.guide,
+        analyzedAt: new Date(),
+    };
+    try {
+        // upsert인 이유: cacheReposAndIssues의 IssueCache 기록이 fire-and-forget(await 없음)이라
+        // 추천 생성 직후 바로 이슈를 열람하면 이 행이 아직 없을 수 있다 — update만 쓰면 그 경우 조용히 유실됨
+        await prisma.issueCache.upsert({
+            where: { repoFullName_issueNumber: { repoFullName: item.repoFullName, issueNumber: item.issueNumber } },
+            update: analysisData,
+            create: {
+                repoFullName: item.repoFullName,
+                issueNumber: item.issueNumber,
+                title: item.issueTitle,
+                labels: item.labels,
+                difficulty: item.difficulty,
+                url: item.issueUrl,
+                state: 'open',
+                fetchedAt: new Date(),
+                ...analysisData,
+            },
+        });
+    } catch (error) {
+        logger.warn('이슈 분석 캐시 저장 실패:', { error: error.message, repoFullName: item.repoFullName, issueNumber: item.issueNumber });
+    }
+
+    return { ...item, issueSummary: analysis.issueSummary, requiredSkills: analysis.requiredSkills, guide: analysis.guide };
+}
+
 // 저장된 추천 재조회 (GET /api/recommendations/:id). 없으면 404 RECOMMENDATION_NOT_FOUND
-export async function getRecommendationById(id) {
+// focus({ repoFullName, issueNumber })가 주어지고 해당 아이템이 아직 미분석이면 그 1건만 LLM 분석을 실행한다
+// (#6 지연 생성 — focus 없이 호출하면 캐시된 값만 병합하고 LLM은 절대 부르지 않는다, 비용 0)
+export async function getRecommendationById(id, focus = null) {
     const record = await prisma.recommendation.findUnique({
         where: { id },
         include: { items: { orderBy: { position: 'asc' } } },
@@ -272,7 +382,20 @@ export async function getRecommendationById(id) {
         notFound.code = 'RECOMMENDATION_NOT_FOUND';
         throw notFound;
     }
-    return toRecommendationResponse(record);
+
+    const response = toRecommendationResponse(record);
+    response.items = await enrichWithCachedAnalysis(response.items);
+
+    if (focus) {
+        const index = response.items.findIndex(
+            (item) => item.repoFullName === focus.repoFullName && item.issueNumber === focus.issueNumber);
+        // focus가 이 추천에 속하지 않거나 이미 분석돼 있으면 조용히 건너뛴다 — 힌트일 뿐 에러 대상이 아님
+        if (index !== -1 && !response.items[index].issueSummary) {
+            response.items[index] = await analyzeAndCacheIssue(response.items[index]);
+        }
+    }
+
+    return response;
 }
 
 // 분석 결과 + 선호 조건 → 추천 생성·저장 (openapi.yaml Recommendation 스키마)
@@ -312,11 +435,10 @@ export async function createRecommendation(githubId, preferences) {
             });
         }
     }
-    // 동점은 스타 수로 1차 정렬 후 언어 인터리브
+    // 동점은 스타 수로 1차 정렬 후 언어 인터리브 → 여기서 확정된 MAX_ITEMS건만 LLM 재순위 대상이 된다
     items.sort((a, b) => b.matchScore - a.matchScore || b.repoStars - a.repoStars);
-    const topItems = interleaveEqualScores(items)
-        .slice(0, MAX_ITEMS)
-        .map((item, index) => ({ ...item, position: index }));
+    const trimmedItems = interleaveEqualScores(items).slice(0, MAX_ITEMS);
+    const topItems = await rerankTopItems(trimmedItems, analysis);
 
     const saved = await prisma.recommendation.create({
         data: {

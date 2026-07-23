@@ -250,6 +250,38 @@ export async function fetchReposWithIssues(fullNames, issueLabels = null) {
         }));
 }
 
+// 이슈 본문 조회 (#6 LLM 분석용 — 목록 조회 GraphQL엔 본문이 없어 지연 시점에 REST로 1회 호출)
+// 삭제된 이슈 등으로 실패해도 분석 자체를 막지 않도록 빈 문자열로 폴백
+export async function fetchIssueBody(fullName, issueNumber) {
+    const [owner, repo] = fullName.split('/');
+    try {
+        const { data } = await githubRest.rest.issues.get({ owner, repo, issue_number: issueNumber });
+        return data.body ?? '';
+    } catch (error) {
+        logger.warn('이슈 본문 조회 실패 — 본문 없이 진행:', { error: error.message, fullName, issueNumber });
+        return '';
+    } finally {
+        recordGithubCall();
+    }
+}
+
+// 레포의 CONTRIBUTING.md 조회 (#6 가이드 생성 프롬프트 보강, decisions.md 2026-07-21)
+// 없는 레포가 대다수라 404는 정상 케이스로 취급해 null 반환 (에러 로그 안 남김)
+export async function fetchContributingGuide(fullName) {
+    const [owner, repo] = fullName.split('/');
+    try {
+        const { data } = await githubRest.rest.repos.getContent({ owner, repo, path: 'CONTRIBUTING.md' });
+        return Buffer.from(data.content, 'base64').toString('utf-8');
+    } catch (error) {
+        if (error.status !== 404) {
+            logger.warn('CONTRIBUTING.md 조회 실패:', { error: error.message, fullName });
+        }
+        return null;
+    } finally {
+        recordGithubCall();
+    }
+}
+
 // GitHub 사용자 프로필 원시 데이터 조회
 // 반환: { githubId, languageWeights: [{ name, weight }], recentRepos: [{ nameWithOwner, commits }](최근 1년 커밋한 본인·소속 조직 레포),
 //        contributedRepos: [{ nameWithOwner, stars }](외부 기여·평생·스타순), totals: { commits, pullRequests, issues, contributedRepos, ownRepos } }
