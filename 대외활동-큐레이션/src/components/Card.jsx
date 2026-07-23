@@ -2,7 +2,8 @@ import { daysLeft, ddayLabel } from "../deadline";
 
 // 카드 하단에 보여줄 한 줄(상태별로 다르게)
 function reasonText(item) {
-  if (item.status === "review") return `확인 필요 — ${item.eligibilityText}`;
+  // 확인 필요: 근거 원문이 있으면 붙이고, 없으면 대시 없이 "확인 필요"만(빈 대시 방지).
+  if (item.status === "review") return item.eligibilityText ? `확인 필요 — ${item.eligibilityText}` : "확인 필요";
   if (item.status === "near") {
     const f = item.failed[0];
     return `이것만 맞으면 가능: ${f.label} ${f.req} (내 조건 ${f.mine})`;

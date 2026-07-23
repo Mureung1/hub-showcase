@@ -14,15 +14,21 @@ async function getHtml(url) {
   return res.text();
 }
 
-// "D-13" -> 오늘+13일의 YYYY-MM-DD. "D-DAY"/마감임박 -> 오늘. 못 읽으면 null.
-function ddayToDate(s) {
+// Date -> "YYYY-MM-DD" (로컬 기준). toISOString은 UTC라 한국시간 자정 근처에 하루 밀릴 수 있어 안 쓴다.
+function fmtDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// "D-13" -> today+13일의 YYYY-MM-DD. "D-DAY"/마감임박 -> today. 못 읽으면 null.
+// today를 인자로 받아 결정적으로 테스트 가능(기본값은 실제 오늘이라 기존 호출부는 그대로 동작).
+export function ddayToDate(s, today = new Date()) {
   const t = (s || "").replace(/\s+/g, "");
-  if (/D-?DAY/i.test(t)) return new Date().toISOString().slice(0, 10);
+  if (/D-?DAY/i.test(t)) return fmtDate(today);
   const m = t.match(/D-(\d+)/i);
   if (!m) return null;
-  const d = new Date();
+  const d = new Date(today);           // today를 복사(원본 안 건드림)
   d.setDate(d.getDate() + parseInt(m[1]));
-  return d.toISOString().slice(0, 10);
+  return fmtDate(d);
 }
 
 // 목록 한 페이지. 반환: [{ ix, title, deadline, cats, sourceUrl }]

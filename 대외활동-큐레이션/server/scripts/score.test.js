@@ -27,13 +27,13 @@ test("배열 필드: 코드가 놓치면(미탐) 재현율만 떨어진다", () 
   assert.equal(r.regions.recall, 0);
 });
 
-test("스칼라 필드(ageMin): null(무관)도 유효한 정답으로 채점된다", () => {
-  const items = [{ 코드가_뽑은값: { ageMin: null }, gold: { ageMin: null } }];
+test("스칼라 필드(forUniv): null(무관)도 유효한 정답으로 채점된다", () => {
+  const items = [{ 코드가_뽑은값: { forUniv: null }, gold: { forUniv: null } }];
   const r = scoreEligibility(items);
   // 둘 다 무관(빈 집합)이라 예측·정답 다 없음 -> TP+FP=0, TP+FN=0 -> precision/recall은 null(계산 대상 없음)
-  assert.equal(r.ageMin.precision, null);
-  assert.equal(r.ageMin.recall, null);
-  assert.equal(r.ageMin.labeled, 1); // null도 "라벨링 됨"으로 센다("?"만 미채점)
+  assert.equal(r.forUniv.precision, null);
+  assert.equal(r.forUniv.recall, null);
+  assert.equal(r.forUniv.labeled, 1); // null도 "라벨링 됨"으로 센다("?"만 미채점)
 });
 
 test("gold가 \"?\"(미채점)인 필드는 채점에서 빠진다", () => {

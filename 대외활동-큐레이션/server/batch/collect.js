@@ -26,7 +26,7 @@ const HARD_MAX_PAGES = 15;
 // 온통청년은 상세페이지 요청 없이 한 콜에 100건씩 오는 가벼운 API라 위 상한(느린 소스 기준)을 그대로
 // 적용하면 안 된다. 실측(2649건, 20260721)보다 넉넉하게 40페이지(4000건)까지 열어둔다.
 const YOUTHCENTER_MAX_PAGES = 40;
-const base = { grades: [], majors: [], regions: [], enrollment: [], ageMin: null, ageMax: null, incomeMax: null, gpaMin: null };
+const base = { grades: [], majors: [], regions: [], enrollment: [], incomeMax: null, gpaMin: null };
 
 // 마감일 문자열(YYYY-MM-DD)이 오늘보다 이전이면 지난 것. null(상시)은 안 지난 것으로 본다.
 function isExpired(deadline) {
@@ -51,16 +51,15 @@ function isLocalGovOrg(org) {
   return (hasRegion || hasAdminWord) && !nationalSignal;
 }
 
-// 콘코: 참가대상 -> 나이·대학생 대상 여부(규칙). 나머지 자유문장은 이후 LLM.
+// 콘코: 참가대상 -> 대학생 대상 여부(규칙). 나머지 자유문장은 이후 LLM.
 function contestEligibility(target, body) {
   const t = (target || "").replace(/\s+/g, "");
   const forUniv = /누구나|일반인|대학생|대학원생|청년/.test(t);
-  const nums = ((target || "") + " " + (body || "")).match(/(\d{1,2})\s*세/g)?.map((s) => parseInt(s)) || [];
   // "영등포구민만" 처럼 한 도시에만 있는 구·군 이름이 원문에 있으면 그 시·도로 지역을 채운다(겹치는
   // 구 이름은 regionLookup.js가 알아서 빈 배열로 둔다 - 못 맞추면 무관이 아니라 확인 필요로 가야 하니
   // isLocalGovOrg 등 다른 안전장치가 여전히 커버한다).
   const regions = deriveRegionFromDistrict((target || "") + " " + (body || ""));
-  return { ...base, regions, ageMin: nums.length >= 2 ? Math.min(...nums) : null, ageMax: nums.length >= 2 ? Math.max(...nums) : null, forUniv, text: (target || "").replace(/\s+/g, " ").trim() };
+  return { ...base, regions, forUniv, text: (target || "").replace(/\s+/g, " ").trim() };
 }
 
 async function collectContestkorea() {
@@ -154,7 +153,7 @@ async function collectLinkareer() {
   return rows;
 }
 
-// 온통청년: 나이·지역이 이미 구조 필드로 와서(실측 확인) 규칙만으로 충분 - needs_review로 낮추지 않는다.
+// 온통청년: 지역이 이미 구조 필드로 와서(실측 확인) 규칙만으로 충분 - needs_review로 낮추지 않는다.
 // 중분류(mclsfNm)가 "교육비지원"이면 장학 성격이라 카테고리를 장학으로, 나머지는 지자체로 둔다.
 function youthcenterCategory(mclsfNm) {
   return mclsfNm === "교육비지원" ? "장학" : "지자체";
@@ -174,7 +173,7 @@ async function collectYouthcenter() {
       if (consecutiveExpired >= CONSECUTIVE_EXPIRED_STOP) { stop = true; break; }
       // enrollment: 참여제외대상에 "재학생"이 있으면 졸업예정만(실측 확인). forUniv는 그대로 true로
       // 두고(온통청년 자체가 청년정책 포털이라 대학생도 기본 대상), enrollment로 더 좁힌다.
-      rows.push({ title: it.title, org: it.org, category: youthcenterCategory(it.mclsfNm), track: "activity", source: "온통청년", url: it.sourceUrl, deadline: it.deadline, posted_at: today, parse_status: "curated", eligibility: { ...base, regions: it.regions, enrollment: it.enrollment, ageMin: it.ageMin, ageMax: it.ageMax, forUniv: true, text: it.text.slice(0, 300) } });
+      rows.push({ title: it.title, org: it.org, category: youthcenterCategory(it.mclsfNm), track: "activity", source: "온통청년", url: it.sourceUrl, deadline: it.deadline, posted_at: today, parse_status: "curated", eligibility: { ...base, regions: it.regions, enrollment: it.enrollment, forUniv: true, text: it.text.slice(0, 300) } });
     }
     if (stop) { console.log(`온통청년: 연속 마감 ${CONSECUTIVE_EXPIRED_STOP}건, 페이지 ${p}에서 중단`); break; }
     if (p * 100 >= totalCount) break;

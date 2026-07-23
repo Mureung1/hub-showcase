@@ -1,6 +1,6 @@
-// LLM 파싱. API·소스가 구조로 주는 값(지역, 연령, 분야)은 규칙으로 매핑하고,
+// LLM 파싱. API·소스가 구조로 주는 값(지역, 분야)은 규칙으로 매핑하고,
 // 크롤링한 자유 문장 참가조건만 LLM 에 맡긴다. 프롬프트와 강제 JSON 은 docs/schema.md 부록3.
-// 우선순위 필드(학년·전공·지역·나이)를 tool use 로 강제해서 형식 이탈 없이 뽑는다.
+// 우선순위 필드(학년·전공·지역)를 tool use 로 강제해서 형식 이탈 없이 뽑는다.
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -78,7 +78,7 @@ function normalize(values, map) {
   return [...out];
 }
 
-// 분류(track/category) + 우선순위 필드(학년·전공·지역·나이) 추출을 한 콜에 합친다.
+// 분류(track/category) + 우선순위 필드(학년·전공·지역) 추출을 한 콜에 합친다.
 // 원래 2콜(classify+extract)이었는데, 어차피 매번 둘 다 필요해서 나눌 이유가 없었다.
 // 합치면 호출 수 -> 절반, 고정 프롬프트 오버헤드(지시문 반복)도 절반으로 줄어 비용이 그만큼 준다.
 async function classifyAndExtract(rawTitle, rawText) {
@@ -98,17 +98,15 @@ async function classifyAndExtract(rawTitle, rawText) {
           enrollment_status: { type: "array", items: { type: "string", enum: ["재학", "휴학", "졸업예정"] } },
           majors: { type: "array", items: { type: "string" } },
           regions: { type: "array", items: { type: "string" } },
-          age_min: { type: ["integer", "null"] },
-          age_max: { type: ["integer", "null"] },
           found_in_text: { type: "object" },
           confidence: { type: "number" },
         },
-        required: ["track", "category", "grades", "enrollment_status", "majors", "regions", "age_min", "age_max", "found_in_text", "confidence"],
+        required: ["track", "category", "grades", "enrollment_status", "majors", "regions", "found_in_text", "confidence"],
         additionalProperties: false,
       },
     }],
     tool_choice: { type: "tool", name: "parse_posting" },
-    messages: [{ role: "user", content: `다음 공고를 분류하고, 지원에 '필수'인 자격조건만 뽑아라.\n- track: activity(대외활동·공모전·봉사) 또는 scholarship(장학·지원금)\n- category: 대외활동 / 공모전 / 봉사 / 장학 중 하나\n- track이 scholarship이면 grades/majors/regions/age 등은 빈 배열·null로 둬라(장학 필드는 이후 별도 처리).\n- 우대·우선 조건은 무시한다. 원문에 없는 조건은 추측하지 말고 빈 배열이나 null로 둔다.\n- 각 필드마다 근거가 된 원문 문장을 found_in_text에 그대로 담는다.\n- 확신이 낮으면 confidence를 0.5 이하로 준다.\n공고: """${rawTitle}\n${rawText}"""` }],
+    messages: [{ role: "user", content: `다음 공고를 분류하고, 지원에 '필수'인 자격조건만 뽑아라.\n- track: activity(대외활동·공모전·봉사) 또는 scholarship(장학·지원금)\n- category: 대외활동 / 공모전 / 봉사 / 장학 중 하나\n- track이 scholarship이면 grades/majors/regions 등은 빈 배열·null로 둬라(장학 필드는 이후 별도 처리).\n- 우대·우선 조건은 무시한다. 원문에 없는 조건은 추측하지 말고 빈 배열이나 null로 둔다.\n- 각 필드마다 근거가 된 원문 문장을 found_in_text에 그대로 담는다.\n- 확신이 낮으면 confidence를 0.5 이하로 준다.\n공고: """${rawTitle}\n${rawText}"""` }],
   });
   recordUsage(res.usage);
   const tool = res.content.find((c) => c.type === "tool_use");
@@ -129,8 +127,6 @@ export async function parse(rawTitle, rawText) {
       majors: normalize(ex.majors, MAJOR_MAP),
       regions: normalize(ex.regions, REGION_MAP),
       enrollment: ex.enrollment_status || [],
-      ageMin: ex.age_min ?? null,
-      ageMax: ex.age_max ?? null,
       incomeMax: null,
       gpaMin: null,
       text: rawText.slice(0, 300),

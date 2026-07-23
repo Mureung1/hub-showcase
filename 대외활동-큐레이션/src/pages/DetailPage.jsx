@@ -22,11 +22,6 @@ function FailEdit({ label, profile, onEdit }) {
   if (label === "지역") return <Field label="이 조건 바꾸기" value={profile.region} onChange={(v) => onEdit("region", v)} options={REGIONS} />;
   if (label === "재학상태") return <Field label="이 조건 바꾸기" value={profile.enrollment} onChange={(v) => onEdit("enrollment", v)} options={ENROLLMENTS} />;
   if (label === "소득분위") return <Field label="이 조건 바꾸기" value={profile.income} onChange={(v) => onEdit("income", v)} options={INCOMES} parse={Number} format={(v) => v + "분위"} />;
-  if (label === "나이") return (
-    <label className="field"><span className="field-label">이 조건 바꾸기</span>
-      <input type="number" min="15" max="99" value={profile.age ?? ""} onChange={(e) => onEdit("age", e.target.value === "" ? null : Number(e.target.value))} />
-    </label>
-  );
   if (label === "학점") return (
     <label className="field"><span className="field-label">이 조건 바꾸기</span>
       <input type="range" min="2" max="4.5" step="0.1" value={profile.gpa ?? 3.5} onChange={(e) => onEdit("gpa", Number(e.target.value))} />

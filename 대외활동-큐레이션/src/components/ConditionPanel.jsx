@@ -12,11 +12,6 @@ export default function ConditionPanel({ profile, setField, showScholarship, set
         <Field label="학년" value={profile.grade} onChange={(v) => setField("grade", v)} options={GRADES} parse={Number} format={(v) => v + "학년"} />
         <Field label="전공" value={profile.major} onChange={(v) => setField("major", v)} options={MAJORS} />
         <Field label="지역" value={profile.region} onChange={(v) => setField("region", v)} options={REGIONS} />
-        <label className="field">
-          <span className="field-label">나이</span>
-          <input type="number" min="15" max="99" value={profile.age ?? ""} placeholder="선택 안 함"
-            onChange={(e) => setField("age", e.target.value === "" ? null : Number(e.target.value))} />
-        </label>
         <Field label="재학 상태" value={profile.enrollment} onChange={(v) => setField("enrollment", v)} options={ENROLLMENTS} />
       </div>
 

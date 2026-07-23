@@ -9,38 +9,35 @@
 // 규칙(schema.md 핵심 규칙):
 // - 프로필에서 미선택(null)인 조건은 계산에서 제외한다. (확인 필요가 아니다)
 // - 공고 조건이 [] 또는 null 이면 무관이라 통과.
-// - 학년만 ±1 근접을 인정하고, 나머지(전공·지역·나이·소득·학점)는 맞다/틀리다로만 본다.
+// - 학년만 ±1 근접을 인정하고, 나머지(전공·지역·소득·학점)는 맞다/틀리다로만 본다.
 
 export function matchActivity(activity, profile) {
   // 원문을 못 읽은 공고는 판정하지 않고 확인 필요로 보낸다.
-  if (activity.parseStatus === "needs_review") {
+  // eligibility가 없는 공고(수집기 이상 등)도 판정할 근거가 없으니 같이 확인 필요로 보낸다(터지지 않게).
+  if (activity.parseStatus === "needs_review" || !activity.eligibility) {
     return { status: "review", failed: [] };
   }
 
   const e = activity.eligibility;
   const failed = [];
 
-  if (profile.grade != null && e.grades.length && !e.grades.includes(profile.grade)) {
+  // 배열 필드는 ?.length로 접근한다. 값이 null(수집기가 필드 하나만 빠뜨린 경우)이면 무관으로 보고
+  // 건너뛴다 - 못 읽은 걸 잘못 걸러내는 것보다 통과시키는 쪽이 안전하다(안 놓치기 원칙).
+  if (profile.grade != null && e.grades?.length && !e.grades.includes(profile.grade)) {
     const near = e.grades.some((g) => Math.abs(g - profile.grade) === 1);
     failed.push({ label: "학년", req: e.grades.map((g) => g + "학년").join("·"), mine: profile.grade + "학년", near });
   }
-  if (profile.major != null && e.majors.length && !e.majors.includes(profile.major)) {
+  if (profile.major != null && e.majors?.length && !e.majors.includes(profile.major)) {
     failed.push({ label: "전공", req: e.majors.join("·"), mine: profile.major, near: false });
   }
-  if (profile.region != null && e.regions.length && !e.regions.includes(profile.region)) {
+  if (profile.region != null && e.regions?.length && !e.regions.includes(profile.region)) {
     failed.push({ label: "지역", req: e.regions.join("·"), mine: profile.region, near: false });
   }
-  if (profile.enrollment != null && e.enrollment.length && !e.enrollment.includes(profile.enrollment)) {
+  if (profile.enrollment != null && e.enrollment?.length && !e.enrollment.includes(profile.enrollment)) {
     failed.push({ label: "재학상태", req: e.enrollment.join("·"), mine: profile.enrollment, near: false });
   }
-  if (profile.age != null && (e.ageMin != null || e.ageMax != null)) {
-    const below = e.ageMin != null && profile.age < e.ageMin;
-    const above = e.ageMax != null && profile.age > e.ageMax;
-    if (below || above) {
-      const req = `만 ${e.ageMin ?? ""}~${e.ageMax ?? ""}세`;
-      failed.push({ label: "나이", req, mine: profile.age + "세", near: false });
-    }
-  }
+  // 나이는 매칭에서 안 본다. 사용자층이 대학생(어린 편)이라 "만 15~34세 청년" 같은 조건은 늘 만족이라
+  // 사람을 거를 일이 없어 노이즈였다(제품 결정). eligibility에 ageMin/ageMax가 남아있어도 읽지 않는다.
   if (profile.income != null && e.incomeMax != null && profile.income > e.incomeMax) {
     failed.push({ label: "소득분위", req: e.incomeMax + "분위 이하", mine: profile.income + "분위", near: false });
   }
