@@ -5,4 +5,5 @@ server/dist
 .env
 .env.local
 .DS_Store
-.claude/
+.claude/*
+!.claude/skills
