@@ -22,6 +22,11 @@ server/data/*.db-journal
 server/data/*.db-wal
 server/data/*.db-shm
 
+# Playwright (#16)
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
