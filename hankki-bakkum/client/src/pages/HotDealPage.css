@@ -1,0 +1,118 @@
+/* 핫딜 피드 — hankki-design v3 (Warm Paper) */
+
+.hotdeal {
+    background: var(--bg-page);
+    min-height: 100vh;
+    padding: 24px 16px 32px;
+}
+
+.hotdeal-cap {
+    margin: -16px 0 20px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+/* 태그 필터 칩 */
+.hotdeal-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.chip {
+    border: none;
+    border-radius: var(--r-pill);
+    padding: 9px 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    background: var(--bg-section);
+    color: var(--muted);
+}
+
+.chip--on {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+/* 카드 안 태그 표시 — 핫딜은 hot 색 */
+.chip--hot {
+    background: var(--hot-soft);
+    color: var(--hot);
+    cursor: default;
+    align-self: flex-start;
+}
+
+/* 목록 */
+.hotdeal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.deal-card {
+    background: var(--bg-card);
+    border-radius: var(--r-card);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+/* 썸네일 — 선순환 결과물 */
+.deal-thumb-wrap {
+    position: relative;
+}
+
+.deal-thumb {
+    width: 100%;
+    display: block;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+}
+
+.deal-badge {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    background: var(--bg-card);
+    color: var(--primary);
+    border-radius: var(--r-pill);
+    padding: 6px 12px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-card);
+}
+
+.deal-body {
+    padding: 20px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.deal-content {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.7;
+    color: var(--body);
+    white-space: pre-wrap;
+}
+
+.deal-meta {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.hotdeal-empty {
+    color: var(--muted);
+    font-size: 0.92rem;
+    font-weight: 500;
+    line-height: 1.7;
+    text-align: center;
+    padding: 48px 0;
+}

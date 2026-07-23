@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { confirmRequest } from "../lib/api";
@@ -11,11 +11,13 @@ import "./RequestDetailPage.css";
  * ④ 요청 상세 — 신뢰 장치 집합 (기획서 5-2절)
  *  - 진행 스텝바 / 기대 예시 고정 노출 / 수정 1회 룰박스 / 식권 티켓
  *  - 지원하기(학생) → 모집중→진행중  [client 직접]
- *  - 결과물 제출(헬퍼) → 진행중→완료대기  [client 직접, 단순 전환]
+ *  - 결과물 제출(헬퍼) → 이미지 업로드 + 진행중→완료대기  [client 직접]
+ *      · 업로드한 결과물은 나중에 핫딜 썸네일로 재사용됨 (선순환 구조)
  *  - 완료 확인(양측) → server가 2건 검증 후 완료 전환 + 티켓 발급  [server 경유]
  */
 export default function RequestDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
 
   const [request, setRequest] = useState(null);
@@ -23,6 +25,8 @@ export default function RequestDetailPage() {
   const [helper, setHelper] = useState(null);
   const [myConfirmed, setMyConfirmed] = useState(false); // 내가 이미 확인했는지
   const [confirmCount, setConfirmCount] = useState(0);    // 총 확인 수
+  const [resultFile, setResultFile] = useState(null);     // 제출할 결과물 파일
+  const [resultPreview, setResultPreview] = useState(""); // 미리보기용 임시 주소
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false); // 지원/제출/확인 공용 처리중 플래그
   const [error, setError] = useState("");
@@ -92,18 +96,48 @@ export default function RequestDetailPage() {
     loadRequest();
   }
 
-  // ── 결과물 제출 (헬퍼) — 진행중→완료대기 [client 직접, 단순 전환] ──
+  // 결과물 파일 선택 — 미리보기만 만들고, 실제 업로드는 제출 버튼에서
+  function handleResultChange(e) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setResultFile(f);
+    setResultPreview(URL.createObjectURL(f));
+  }
+
+  // ── 결과물 제출 (헬퍼) — 이미지 업로드 + 진행중→완료대기 ──
   async function handleSubmitWork() {
     if (!user) return;
+    if (!resultFile) return setError("결과물 이미지를 올려주세요.");
+
     setBusy(true);
     setError("");
+
+    // 1. results 창고에 업로드
+    const path = `results/${Date.now()}_${resultFile.name}`;
+    const { error: upErr } = await supabase.storage
+      .from("results")
+      .upload(path, resultFile);
+
+    if (upErr) {
+      setBusy(false);
+      return setError("이미지 업로드 실패: " + upErr.message);
+    }
+
+    // 2. 공개 주소 받기 (버킷이 public이라 이 주소로 바로 볼 수 있음)
+    const { data: pub } = supabase.storage.from("results").getPublicUrl(path);
+
+    // 3. 결과물 주소 저장 + 상태 전환
     const { data, error: updErr } = await supabase
       .from("requests")
-      .update({ status: STATUS.PENDING_DONE })
+      .update({
+        status: STATUS.PENDING_DONE,
+        result_image_url: pub.publicUrl,
+      })
       .eq("id", id)
       .eq("status", STATUS.IN_PROGRESS)
       .eq("helper_id", user.id)
       .select();
+
     setBusy(false);
     if (updErr || !data || data.length === 0) {
       return setError("결과물 제출에 실패했어요. 다시 시도해 주세요.");
@@ -146,6 +180,35 @@ export default function RequestDetailPage() {
       <section className="card">
         <StepBar status={request.status} />
       </section>
+
+      {/* 완료 축하 — 거래가 끝난 순간의 보상감 */}
+      {request.status === STATUS.DONE && (
+        <section className="card celebrate">
+          <div className="celebrate-emoji">🎉</div>
+          <h2 className="celebrate-title">거래가 완료됐어요!</h2>
+          {isMatchedHelper ? (
+            <>
+              <p className="celebrate-text">
+                식사권 <strong>{request.reward_count ?? 0}장</strong>이 지갑에 담겼어요.<br />
+                첫 실무 결과물도 남았네요 👏
+              </p>
+              <button className="btn-primary" onClick={() => navigate("/wallet")}>
+                🎟️ 지갑에서 식사권 보기
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="celebrate-text">
+                헬퍼님께 식사권 <strong>{request.reward_count ?? 0}장</strong>을 전달했어요.<br />
+                이 결과물은 핫딜 홍보 사진으로도 쓸 수 있어요.
+              </p>
+              <button className="btn-primary" onClick={() => navigate("/hotdeal/new")}>
+                🔥 이 결과물로 핫딜 올리기
+              </button>
+            </>
+          )}
+        </section>
+      )}
 
       <section className="card">
         <div className="detail-tags">
@@ -203,6 +266,14 @@ export default function RequestDetailPage() {
         </section>
       )}
 
+      {/* 제출된 결과물 — 완료대기부터 노출 */}
+      {request.result_image_url && (
+        <section className="card">
+          <h2 className="card-title">📤 제출된 결과물</h2>
+          <img className="detail-example-img" src={request.result_image_url} alt="제출된 결과물" />
+        </section>
+      )}
+
       {/* 완료대기 — 양측 확인 현황 안내 */}
       {request.status === STATUS.PENDING_DONE && (
         <section className="card">
@@ -216,6 +287,25 @@ export default function RequestDetailPage() {
         </section>
       )}
 
+      {/* 결과물 제출 (헬퍼, 진행중) — 이미지 필수 */}
+      {canSubmitWork && (
+        <section className="card">
+          <h2 className="card-title">📤 결과물 제출</h2>
+          {resultPreview && (
+            <img className="detail-example-img" src={resultPreview} alt="결과물 미리보기"
+              style={{ marginBottom: 12 }} />
+          )}
+          <label className="file-pick">
+            {resultFile ? "📷 다시 고르기" : "📷 결과물 이미지 선택"}
+            <input type="file" accept="image/*" onChange={handleResultChange}
+              style={{ display: "none" }} />
+          </label>
+          <p className="detail-meta" style={{ margin: "10px 0 0" }}>
+            올린 결과물은 사장님의 핫딜 글에 썸네일로 쓰일 수 있어요
+          </p>
+        </section>
+      )}
+
       {error && <p className="detail-error">{error}</p>}
 
       {/* 상태·역할에 따라 버튼 하나만 노출 */}
@@ -225,7 +315,7 @@ export default function RequestDetailPage() {
         </button>
       )}
       {canSubmitWork && (
-        <button className="btn-primary" onClick={handleSubmitWork} disabled={busy}>
+        <button className="btn-primary" onClick={handleSubmitWork} disabled={busy || !resultFile}>
           {busy ? "제출 중이에요…" : "결과물 제출하기"}
         </button>
       )}

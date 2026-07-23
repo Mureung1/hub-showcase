@@ -1,5 +1,6 @@
 import { Routes, Route, NavLink } from 'react-router-dom';
 import HotDealPage from './pages/HotDealPage.jsx';
+import HotDealFormPage from './pages/HotDealFormPage.jsx';
 import TalentFeedPage from './pages/TalentFeedPage.jsx';
 import RequestDetailPage from './pages/RequestDetailPage.jsx';
 import RequestFormPage from './pages/RequestFormPage.jsx';
@@ -25,6 +26,9 @@ export default function App() {
         <main className="stage">
           <Routes>
             <Route path="/" element={<HotDealPage />} />
+            <Route path="/hotdeal/new" element={
+              <RequireAuth><HotDealFormPage /></RequireAuth>
+            } />
             <Route path="/talent" element={<TalentFeedPage />} />
             <Route path="/talent/:id" element={
               <RequireAuth><RequestDetailPage /></RequireAuth>
