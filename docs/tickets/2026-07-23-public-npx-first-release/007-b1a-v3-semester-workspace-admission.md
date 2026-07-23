@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -73,7 +73,7 @@
 | owner | `B` — Semester setup |
 | branch | `codex/public-preview-b1a-workspace-admission` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/b1a-workspace-admission` |
-| handoffSha | Claim 시 coordinator가 003 fixed `spineTipSha`를 integration branch에 반영하고 predecessor 및 integration root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `269a3555d3adf52bf520b3de0b99c7cb3fee3ae7` — coordinator가 003 fixed `spineTipSha`를 integration branch에 반영하고 predecessor 및 integration root gates를 green으로 확인한 뒤 기록한 clean integration HEAD |
 | writablePaths | `packages/semester-workspace/src/**` 중 v3 codec/admission implementation·tests (`src/contract.ts`와 S1 frozen files 제외); package-local admission fixtures; `docs/tickets/2026-07-23-public-npx-first-release/007-b1a-v3-semester-workspace-admission.md` |
 | consumedContracts | S1 frozen SemesterWorkspace contract, parent Spec exact v3 aggregate/admission outcome와 current v2 compatibility fixtures |
 | predecessorEvidence | Fixed reviewed `spineTipSha`, green root gates와 current v2/current-workbench regression evidence |
