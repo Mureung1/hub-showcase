@@ -4,13 +4,27 @@ import MoleculeInputForm, {
 } from '../../features/chemistry/components/MoleculeInputForm'
 import Structure2DViewer from '../../features/chemistry/components/Structure2DViewer'
 import Structure3DViewer from '../../features/chemistry/components/Structure3DViewer'
-import { fetchSdf3d, nameToSmiles, smilesToCid } from '../../features/chemistry/lib/pubchem'
+import {
+  fetchCompoundInfo,
+  fetchSdf3d,
+  nameToSmiles,
+  smilesToCid,
+  type CompoundInfo,
+} from '../../features/chemistry/lib/pubchem'
 import Panel from '../../components/Panel'
 import ChapterAssistant from '../../components/ChapterAssistant'
+
+const SUBSCRIPTS = '₀₁₂₃₄₅₆₇₈₉'
+/** 분자식의 숫자를 아래첨자로 (C2H6O → C₂H₆O) */
+function formatFormula(formula: string): string {
+  return formula.replace(/\d/g, (d) => SUBSCRIPTS[Number(d)])
+}
 
 export default function ChemistryPage() {
   const [smiles, setSmiles] = useState('CCO')
   const [sdf, setSdf] = useState<string | null>(null)
+  const [info, setInfo] = useState<CompoundInfo>({ formula: null, iupacName: null })
+  const [showAllCarbons, setShowAllCarbons] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -20,8 +34,14 @@ export default function ChemistryPage() {
     let cancelled = false
     async function loadDefault() {
       const cid = await smilesToCid('CCO')
-      const sdf3d = cid ? await fetchSdf3d(cid) : null
-      if (!cancelled) setSdf(sdf3d)
+      const [sdf3d, compoundInfo] = await Promise.all([
+        cid ? fetchSdf3d(cid) : Promise.resolve(null),
+        cid ? fetchCompoundInfo(cid) : Promise.resolve({ formula: null, iupacName: null }),
+      ])
+      if (!cancelled) {
+        setSdf(sdf3d)
+        setInfo(compoundInfo)
+      }
     }
     loadDefault()
     return () => {
@@ -43,10 +63,15 @@ export default function ChemistryPage() {
 
     setSmiles(resolvedSmiles)
     setSdf(null)
+    setInfo({ formula: null, iupacName: null })
 
     const cid = await smilesToCid(resolvedSmiles)
-    const sdf3d = cid ? await fetchSdf3d(cid) : null
+    const [sdf3d, compoundInfo] = await Promise.all([
+      cid ? fetchSdf3d(cid) : Promise.resolve(null),
+      cid ? fetchCompoundInfo(cid) : Promise.resolve({ formula: null, iupacName: null }),
+    ])
     setSdf(sdf3d)
+    setInfo(compoundInfo)
     setLoading(false)
   }
 
@@ -63,10 +88,40 @@ export default function ChemistryPage() {
 
       {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
 
+      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3">
+        <div>
+          <span className="text-xs text-zinc-500">분자식</span>{' '}
+          <span className="text-base font-semibold text-zinc-100">
+            {info.formula ? formatFormula(info.formula) : '—'}
+          </span>
+        </div>
+        {info.iupacName && (
+          <div>
+            <span className="text-xs text-zinc-500">이름</span>{' '}
+            <span className="text-sm text-zinc-300">{info.iupacName}</span>
+          </div>
+        )}
+        <div>
+          <span className="text-xs text-zinc-500">SMILES</span>{' '}
+          <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-200">{smiles}</code>
+        </div>
+      </div>
+
       <div className="relative mt-6 grid gap-6 sm:grid-cols-2">
-        <ChapterAssistant context={`현재 보고 있는 분자의 SMILES: ${smiles}`} />
-        <Panel title="2D 골격구조식">
-          <Structure2DViewer smiles={smiles} />
+        <ChapterAssistant
+          context={`분자식 ${info.formula ?? '(조회 중)'}, 이름 ${info.iupacName ?? '(미상)'}, SMILES ${smiles}`}
+        />
+        <Panel title={showAllCarbons ? '2D 구조식 (탄소 표시)' : '2D 골격구조식 (탄소 생략)'}>
+          <div className="mb-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setShowAllCarbons((v) => !v)}
+              className="rounded-full border border-zinc-700 px-3 py-1 text-xs font-medium text-zinc-300 transition-colors hover:border-cyan-400 hover:text-cyan-300"
+            >
+              {showAllCarbons ? '골격식으로 보기 (탄소 생략)' : '탄소 표시로 보기'}
+            </button>
+          </div>
+          <Structure2DViewer smiles={smiles} showCarbons={showAllCarbons ? 'all' : 'default'} />
         </Panel>
         <Panel title="3D 구조">
           <Structure3DViewer sdf={sdf} />

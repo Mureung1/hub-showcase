@@ -7,6 +7,8 @@ import AtomIndexDebugOverlay from './AtomIndexDebugOverlay'
 
 interface MechanismStepViewerProps {
   step: MechanismStep
+  /** 이 단계에서 지금까지 드러낼 화살표 개수(순차 표시용). 미지정 시 전체 표시. */
+  visibleArrowCount?: number
   showDebugIndices?: boolean
 }
 
@@ -15,8 +17,11 @@ const HEIGHT = 320
 
 export default function MechanismStepViewer({
   step,
+  visibleArrowCount,
   showDebugIndices = false,
 }: MechanismStepViewerProps) {
+  const visibleArrows =
+    visibleArrowCount === undefined ? step.arrows : step.arrows.slice(0, visibleArrowCount)
   // smiles-drawer's SvgDrawer wipes all children of its target <svg> on every
   // draw() call, which would rip out any React-rendered overlay nodes living
   // in the same element. So the structure is drawn into its own dedicated
@@ -38,7 +43,12 @@ export default function MechanismStepViewer({
       step.smiles,
       (tree) => {
         try {
-          const drawer = new SmilesDrawer.SvgDrawer({ width: WIDTH, height: HEIGHT })
+          // showCarbons: 'all' — 메커니즘 분자는 탄소 1~3개로 작고, 반응 중심 탄소가
+          // 골격식에선 글자 없는 빈 꼭짓점으로 그려져 "탄소를 공격" 설명과 화면이
+          // 어긋난다(실사용 피드백). 여기선 골격식을 가르치는 게 목적이 아니라 반응을
+          // 보여주는 게 목적이라 모든 탄소를 명시한다. (원자 인덱스/좌표는 라벨 표시와
+          // 무관하게 그대로라 화살표 오버레이 정렬에는 영향 없음)
+          const drawer = new SmilesDrawer.SvgDrawer({ width: WIDTH, height: HEIGHT, showCarbons: 'all' })
           drawer.draw(tree, svgEl, 'dark')
           const coords = getAtomCoords(drawer.preprocessor.graph)
           setAtomCoords(coords)
@@ -96,7 +106,7 @@ export default function MechanismStepViewer({
         height={HEIGHT}
         className="pointer-events-none absolute inset-0"
       >
-        <ArrowOverlay stepId={step.id} arrows={step.arrows} atomCoords={atomCoords} />
+        <ArrowOverlay stepId={step.id} arrows={visibleArrows} atomCoords={atomCoords} />
         {showDebugIndices && <AtomIndexDebugOverlay atomCoords={atomCoords} />}
       </svg>
       {error && <p className="mt-2 text-sm text-rose-400">{error}</p>}

@@ -3,12 +3,14 @@ import SmilesDrawer from 'smiles-drawer'
 
 interface Structure2DViewerProps {
   smiles: string
+  /** 'default'=골격식(탄소 생략), 'all'=모든 탄소 명시. 초보 배려용 토글 */
+  showCarbons?: 'default' | 'all'
 }
 
 const WIDTH = 380
 const HEIGHT = 300
 
-export default function Structure2DViewer({ smiles }: Structure2DViewerProps) {
+export default function Structure2DViewer({ smiles, showCarbons = 'default' }: Structure2DViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -16,7 +18,7 @@ export default function Structure2DViewer({ smiles }: Structure2DViewerProps) {
     if (!smiles || !canvasRef.current) return
     setError(null)
     const canvas = canvasRef.current
-    const drawer = new SmilesDrawer.Drawer({ width: WIDTH, height: HEIGHT })
+    const drawer = new SmilesDrawer.Drawer({ width: WIDTH, height: HEIGHT, showCarbons })
     SmilesDrawer.parse(
       smiles,
       (tree) => {
@@ -24,7 +26,7 @@ export default function Structure2DViewer({ smiles }: Structure2DViewerProps) {
       },
       () => setError('SMILES를 해석할 수 없습니다.'),
     )
-  }, [smiles])
+  }, [smiles, showCarbons])
 
   return (
     <div className="flex flex-col items-center">
