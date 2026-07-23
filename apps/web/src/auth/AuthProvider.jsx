@@ -95,6 +95,20 @@ export function AuthProvider({ children, client, configError = '' }) {
     return data.session?.access_token ?? null
   }, [client])
 
+  const uploadToSignedUrl = useCallback(async ({ bucket, path, token, file }) => {
+    if (!client || !state.session) throw new Error('로그인 상태를 확인한 뒤 다시 시도해 주세요.')
+    if (!file) throw new Error('업로드할 파일을 선택해 주세요.')
+
+    const { error } = await client.storage
+      .from(bucket)
+      .uploadToSignedUrl(path, token, file, {
+        cacheControl: '3600',
+        contentType: file.type || 'application/octet-stream',
+      })
+
+    if (error) throw new Error('파일을 업로드하지 못했습니다. 잠시 후 다시 시도해 주세요.')
+  }, [client, state.session])
+
   const consumeReturnTo = useCallback(() => {
     const value = globalThis.sessionStorage?.getItem(RETURN_TO_KEY) ?? '/projects'
     globalThis.sessionStorage?.removeItem(RETURN_TO_KEY)
@@ -108,9 +122,10 @@ export function AuthProvider({ children, client, configError = '' }) {
     enterGuest,
     signOut,
     getAccessToken,
+    uploadToSignedUrl,
     consumeReturnTo,
     clearError: () => setState((current) => ({ ...current, error: '' })),
-  }), [state, signInWithGoogle, enterGuest, signOut, getAccessToken, consumeReturnTo])
+  }), [state, signInWithGoogle, enterGuest, signOut, getAccessToken, uploadToSignedUrl, consumeReturnTo])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

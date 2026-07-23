@@ -1,4 +1,6 @@
-import { PROJECT_ICON } from '@teamflow/shared'
+import { randomUUID } from 'node:crypto'
+
+import { PROJECT_ICON, RESOURCE_UPLOAD } from '@teamflow/shared'
 
 const MEMBER_COLUMNS = [
   'id',
@@ -55,6 +57,11 @@ const RESOURCE_COLUMNS = [
   'description',
   'url',
   'owner_id',
+  'storage_path',
+  'original_name',
+  'mime_type',
+  'size_bytes',
+  'upload_status',
   'created_at',
   'updated_at',
 ].join(',')
@@ -104,6 +111,9 @@ function throwDatabaseError(operation, error) {
   if (/(?:INVALID_RESOURCE_URL|RESOURCE_URL_REQUIRED|FOLDER_URL_NOT_ALLOWED|FOLDER_MUST_BE_ROOT|INVALID_RESOURCE_PARENT|INVALID_RESOURCE_TYPE_CHANGE)/.test(message)) {
     const field = /URL/.test(message) ? 'url' : (/TYPE/.test(message) ? 'type' : 'parentId')
     throw new TeamFlowValidationError(undefined, { [field]: '자료 정보를 확인해 주세요.' })
+  }
+  if (message.includes('INVALID_RESOURCE_UPLOAD')) {
+    throw new TeamFlowValidationError(undefined, { file: '업로드할 파일 정보를 확인해 주세요.' })
   }
   if (error?.code === '23514') {
     throw new TeamFlowValidationError(undefined, { body: '입력값이 데이터 제약조건을 충족하지 않습니다.' })
@@ -185,6 +195,11 @@ function mapResource(row) {
     description: row.description ?? '',
     url: row.url ?? null,
     ownerId: row.owner_id ?? null,
+    storagePath: row.storage_path ?? null,
+    originalName: row.original_name ?? null,
+    mimeType: row.mime_type ?? null,
+    sizeBytes: row.size_bytes ?? null,
+    uploadStatus: row.upload_status ?? 'ready',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -279,6 +294,17 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
     return mapInvitation(row)
   }
 
+  async function removeStoredFiles(paths, operation) {
+    const uniquePaths = [...new Set(paths.filter(Boolean))]
+    if (uniquePaths.length === 0) return
+
+    const { error } = await supabase.storage
+      .from(RESOURCE_UPLOAD.BUCKET)
+      .remove(uniquePaths)
+
+    if (error) storeError(operation, error)
+  }
+
   return {
     async load() {
       const [
@@ -293,7 +319,7 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
         supabase.from('members').select(MEMBER_COLUMNS).order('created_at', { ascending: true }),
         supabase.from('tasks').select(TASK_COLUMNS).order('created_at', { ascending: false }),
         supabase.from('notes').select(NOTE_COLUMNS).order('updated_at', { ascending: false }),
-        supabase.from('resources').select(RESOURCE_COLUMNS).order('created_at', { ascending: true }),
+        supabase.from('resources').select(RESOURCE_COLUMNS).eq('upload_status', 'ready').order('created_at', { ascending: true }),
         listInvitations(),
       ])
 
@@ -417,6 +443,15 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
     },
 
     async deleteProject(projectId) {
+      const { data: files, error: filesError } = await supabase
+        .from('resources')
+        .select('storage_path')
+        .eq('project_id', projectId)
+        .not('storage_path', 'is', null)
+
+      if (filesError) throwDatabaseError('프로젝트 자료 조회', filesError)
+      await removeStoredFiles((files ?? []).map((file) => file.storage_path), '프로젝트 파일 삭제')
+
       const { data, error } = await supabase
         .from('projects')
         .delete()
@@ -595,6 +630,82 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
       return mapResource(data)
     },
 
+    async createResourceUpload(projectId, input) {
+      const resourceId = randomUUID()
+      const storagePath = `${projectId}/${resourceId}`
+      const { data: intent, error } = await supabase.rpc('create_resource_upload_intent', {
+        p_resource_id: resourceId,
+        p_project_id: projectId,
+        p_parent_id: input.parentId || null,
+        p_type: input.type,
+        p_name: input.name,
+        p_description: input.description || '',
+        p_original_name: input.originalName,
+        p_mime_type: input.mimeType,
+        p_size_bytes: input.sizeBytes,
+      })
+      const data = unwrapRpcRow(intent)
+
+      if (error) throwDatabaseError('파일 업로드 준비', error)
+      if (!data) storeError('파일 업로드 준비')
+
+      const { data: upload, error: uploadError } = await supabase.storage
+        .from(RESOURCE_UPLOAD.BUCKET)
+        .createSignedUploadUrl(storagePath)
+
+      const invalidUpload = uploadError
+        ?? ((!upload?.token || upload.path !== storagePath)
+          ? new Error('Storage가 올바른 업로드 경로와 토큰을 반환하지 않았습니다.')
+          : null)
+      if (invalidUpload) {
+        const { error: cleanupError } = await supabase
+          .from('resources')
+          .delete()
+          .eq('id', resourceId)
+        if (cleanupError) storeError('실패한 파일 업로드 정리', cleanupError)
+        storeError('파일 업로드 URL 생성', invalidUpload)
+      }
+
+      return {
+        resource: mapResource(data),
+        upload: {
+          bucket: RESOURCE_UPLOAD.BUCKET,
+          path: upload.path,
+          token: upload.token,
+        },
+      }
+    },
+
+    async completeResourceUpload(resourceId) {
+      const { data: result, error } = await supabase.rpc('complete_resource_upload', {
+        p_resource_id: resourceId,
+      })
+      const data = unwrapRpcRow(result)
+
+      if (error) throwDatabaseError('파일 업로드 완료', error)
+      if (!data) throw new TeamFlowNotFoundError()
+      return mapResource(data)
+    },
+
+    async createResourceDownloadUrl(resourceId) {
+      const { data: resource, error: resourceError } = await supabase
+        .from('resources')
+        .select(RESOURCE_COLUMNS)
+        .eq('id', resourceId)
+        .eq('upload_status', 'ready')
+        .maybeSingle()
+
+      if (resourceError) throwDatabaseError('파일 다운로드 준비', resourceError)
+      if (!resource?.storage_path) throw new TeamFlowNotFoundError()
+
+      const { data, error } = await supabase.storage
+        .from(RESOURCE_UPLOAD.BUCKET)
+        .createSignedUrl(resource.storage_path, 60, { download: resource.original_name || true })
+
+      if (error || !data?.signedUrl) storeError('파일 다운로드 URL 생성', error)
+      return { url: data.signedUrl, expiresIn: 60 }
+    },
+
     async updateResource(resourceId, patch) {
       const databasePatch = { updated_at: new Date().toISOString() }
       if (hasOwn(patch, 'parentId')) databasePatch.parent_id = patch.parentId || null
@@ -616,6 +727,16 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
     },
 
     async deleteResource(resourceId) {
+      const { data: resource, error: resourceError } = await supabase
+        .from('resources')
+        .select('id,storage_path')
+        .eq('id', resourceId)
+        .maybeSingle()
+
+      if (resourceError) throwDatabaseError('자료 삭제 준비', resourceError)
+      if (!resource) throw new TeamFlowNotFoundError()
+      await removeStoredFiles([resource.storage_path], '자료 파일 삭제')
+
       const { data, error } = await supabase
         .from('resources')
         .delete()

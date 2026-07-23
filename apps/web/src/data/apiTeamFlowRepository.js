@@ -60,6 +60,7 @@ async function requestJson(fetchImpl, url, options, fallbackMessage) {
 export function createApiTeamFlowRepository({
   fetchImpl = globalThis.fetch,
   getAccessToken,
+  uploadToSignedUrl,
   apiBaseUrl = '',
 } = {}) {
   const baseUrl = normalizeApiBaseUrl(apiBaseUrl)
@@ -73,6 +74,15 @@ export function createApiTeamFlowRepository({
       ...options?.headers,
     }
     return requestJson(fetchImpl, apiUrl(baseUrl, path), { ...options, headers }, fallbackMessage)
+  }
+
+  async function cleanupPendingResource(resourceId) {
+    try {
+      await authenticatedRequest(`/api/resources/${resourceId}`, { method: 'DELETE' }, '업로드 준비 자료를 정리하지 못했습니다.')
+    } catch {
+      // The pending row stays hidden from normal loading and can be retried or
+      // removed with the project if this immediate cleanup also fails.
+    }
   }
 
   return {
@@ -203,6 +213,42 @@ export function createApiTeamFlowRepository({
       return payload.resource
     },
 
+    async uploadResource(projectId, { file, ...input }) {
+      if (!file) throw new TeamFlowApiError('업로드할 파일을 선택해 주세요.', 'FILE_REQUIRED')
+      if (typeof uploadToSignedUrl !== 'function') {
+        throw new TeamFlowApiError('파일 업로드 기능을 초기화하지 못했습니다. 페이지를 새로고침해 주세요.', 'UPLOAD_UNAVAILABLE')
+      }
+
+      const intent = await authenticatedRequest(`/api/projects/${projectId}/resource-uploads`, {
+        method: 'POST',
+        body: JSON.stringify({
+          ...input,
+          originalName: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          sizeBytes: file.size,
+        }),
+      }, '파일 업로드를 준비하지 못했습니다.')
+
+      try {
+        await uploadToSignedUrl({ ...intent.upload, file })
+      } catch (error) {
+        await cleanupPendingResource(intent.resource.id)
+        throw error instanceof TeamFlowApiError
+          ? error
+          : new TeamFlowApiError('파일을 업로드하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'UPLOAD_FAILED')
+      }
+
+      try {
+        const completed = await authenticatedRequest(`/api/resources/${intent.resource.id}/complete-upload`, {
+          method: 'POST',
+        }, '파일 업로드를 완료하지 못했습니다.')
+        return completed.resource
+      } catch (error) {
+        await cleanupPendingResource(intent.resource.id)
+        throw error
+      }
+    },
+
     async updateResource(resourceId, patch) {
       const payload = await authenticatedRequest(`/api/resources/${resourceId}`, {
         method: 'PATCH', body: JSON.stringify(patch),
@@ -215,6 +261,12 @@ export function createApiTeamFlowRepository({
         method: 'DELETE',
       }, '자료를 삭제하지 못했습니다.')
       return { resourceId: payload.resourceId ?? resourceId }
+    },
+
+    async getResourceDownloadUrl(resourceId) {
+      return authenticatedRequest(`/api/resources/${resourceId}/download-url`, {
+        method: 'POST',
+      }, '파일 다운로드를 준비하지 못했습니다.')
     },
 
     updateAiSettings() {
@@ -251,8 +303,10 @@ export function createDemoTeamFlowRepository({
     updateNote: readOnly,
     deleteNote: readOnly,
     createResource: readOnly,
+    uploadResource: readOnly,
     updateResource: readOnly,
     deleteResource: readOnly,
+    getResourceDownloadUrl: readOnly,
     updateAiSettings: readOnly,
   }
 }

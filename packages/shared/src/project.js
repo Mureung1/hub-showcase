@@ -18,6 +18,11 @@ export const RESOURCE_TYPE = Object.freeze({
   IMAGE: 'image',
 })
 
+export const RESOURCE_UPLOAD = Object.freeze({
+  BUCKET: 'teamflow-resources',
+  MAX_BYTES: 6 * 1024 * 1024,
+})
+
 export const PROJECT_ICON = Object.freeze({
   LAYERS: 'layers',
   ROCKET: 'rocket',
@@ -133,6 +138,11 @@ export const INVITATION_STATUS = Object.freeze({
  * @property {ResourceType} type
  * @property {string | null} [parentId] Root items use null. Folders must remain at root.
  * @property {string | null} [url] External HTTP(S) URL. Required for link resources.
+ * @property {string | null} [storagePath] Private Supabase Storage object path for uploaded files.
+ * @property {string | null} [originalName] Original filename supplied by the uploader.
+ * @property {string | null} [mimeType] Browser-reported MIME type for the uploaded file.
+ * @property {number | null} [sizeBytes] Uploaded file size in bytes.
+ * @property {'pending' | 'ready'} [uploadStatus] Pending files remain hidden until Storage confirms upload.
  */
 
 /**

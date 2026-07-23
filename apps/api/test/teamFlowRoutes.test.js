@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 
+import { RESOURCE_UPLOAD } from '@teamflow/shared'
+
 import { createApp } from '../src/app.js'
 import { TeamFlowConflictError } from '../src/teamflow/teamFlowRepository.js'
 
@@ -85,6 +87,18 @@ const resource = {
   updatedAt: '2026-07-22T00:00:00.000Z',
 }
 
+const uploadedResource = {
+  ...resource,
+  type: 'document',
+  name: '분기 보고서',
+  url: null,
+  storagePath: `${projectId}/${resourceId}`,
+  originalName: 'report.pdf',
+  mimeType: 'application/pdf',
+  sizeBytes: 1024,
+  uploadStatus: 'pending',
+}
+
 const bootstrap = {
   projects: [project],
   members: [member],
@@ -124,6 +138,19 @@ const repository = {
   updateNote: async (_id, patch) => ({ ...note, ...patch }),
   deleteNote: async () => noteId,
   createResource: async (_projectId, input) => ({ ...resource, ...input }),
+  createResourceUpload: async (_projectId, input) => ({
+    resource: { ...uploadedResource, ...input },
+    upload: {
+      bucket: RESOURCE_UPLOAD.BUCKET,
+      path: uploadedResource.storagePath,
+      token: 'signed-upload-token',
+    },
+  }),
+  completeResourceUpload: async () => ({ ...uploadedResource, uploadStatus: 'ready' }),
+  createResourceDownloadUrl: async () => ({
+    url: 'https://storage.example.com/signed-download',
+    expiresIn: 60,
+  }),
   updateResource: async (_id, patch) => ({ ...resource, ...patch }),
   deleteResource: async () => resourceId,
 }
@@ -350,4 +377,56 @@ test('resource metadata validates links and supports create, update and delete',
   const deleteResponse = await request(`/api/resources/${resourceId}`, { method: 'DELETE' })
   assert.equal(deleteResponse.status, 200)
   assert.deepEqual(await deleteResponse.json(), { resourceId })
+})
+
+test('private resource uploads support intent, completion and signed downloads', async () => {
+  const intentResponse = await request(`/api/projects/${projectId}/resource-uploads`, {
+    method: 'POST',
+    body: {
+      name: ' 분기 보고서 ',
+      description: '',
+      parentId: null,
+      originalName: ' report/2026\tQ3.pdf ',
+      mimeType: 'APPLICATION/PDF',
+      sizeBytes: 1024,
+    },
+  })
+  assert.equal(intentResponse.status, 201)
+  const intent = await intentResponse.json()
+  assert.equal(intent.resource.name, '분기 보고서')
+  assert.equal(intent.resource.originalName, 'report_2026_Q3.pdf')
+  assert.equal(intent.resource.mimeType, 'application/pdf')
+  assert.equal(intent.resource.type, 'document')
+  assert.deepEqual(intent.upload, {
+    bucket: RESOURCE_UPLOAD.BUCKET,
+    path: uploadedResource.storagePath,
+    token: 'signed-upload-token',
+  })
+
+  const completionResponse = await request(`/api/resources/${resourceId}/complete-upload`, { method: 'POST' })
+  assert.equal(completionResponse.status, 200)
+  assert.equal((await completionResponse.json()).resource.uploadStatus, 'ready')
+
+  const downloadResponse = await request(`/api/resources/${resourceId}/download-url`, { method: 'POST' })
+  assert.equal(downloadResponse.status, 200)
+  assert.deepEqual(await downloadResponse.json(), {
+    url: 'https://storage.example.com/signed-download',
+    expiresIn: 60,
+  })
+})
+
+test('private resource uploads reject missing, empty and oversized file sizes', async () => {
+  for (const sizeBytes of [undefined, 0, RESOURCE_UPLOAD.MAX_BYTES + 1]) {
+    const response = await request(`/api/projects/${projectId}/resource-uploads`, {
+      method: 'POST',
+      body: {
+        name: '분기 보고서',
+        originalName: 'report.pdf',
+        mimeType: 'application/pdf',
+        ...(sizeBytes === undefined ? {} : { sizeBytes }),
+      },
+    })
+    assert.equal(response.status, 400)
+    assert.equal((await response.json()).error.code, 'VALIDATION_ERROR')
+  }
 })

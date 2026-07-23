@@ -3,8 +3,8 @@
 
 :root {
   color-scheme: light;
-  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Pretendard', 'SFMono-Regular', Consolas, monospace;
+  --font-sans: 'Pretendard', 'Pretendard Variable', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', 'SFMono-Regular', Consolas, monospace;
 
   font-family: var(--font-sans);
   font-synthesis: none;

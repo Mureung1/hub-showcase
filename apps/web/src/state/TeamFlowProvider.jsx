@@ -319,6 +319,12 @@ export function TeamFlowProvider({ children, repository }) {
     return resource
   }, [repository])
 
+  const uploadResource = useCallback(async (projectId, input) => {
+    const resource = await repository.uploadResource(projectId, input)
+    dispatch({ type: 'resourceCreated', resource })
+    return resource
+  }, [repository])
+
   const updateResource = useCallback(async (resourceId, patch) => {
     const result = await repository.updateResource(resourceId, patch)
     dispatch({ type: 'resourceUpdated', ...result })
@@ -330,6 +336,10 @@ export function TeamFlowProvider({ children, repository }) {
     dispatch({ type: 'resourceDeleted', resourceId: result.resourceId })
     return result
   }, [repository])
+
+  const getResourceDownloadUrl = useCallback((resourceId) => (
+    repository.getResourceDownloadUrl(resourceId)
+  ), [repository])
 
   const updateAiSettings = useCallback(async (projectId, patch) => {
     const result = await repository.updateAiSettings(projectId, patch)
@@ -360,13 +370,15 @@ export function TeamFlowProvider({ children, repository }) {
       updateNote,
       deleteNote,
       createResource,
+      uploadResource,
       updateResource,
       deleteResource,
+      getResourceDownloadUrl,
       updateAiSettings,
       registerBeforeLeave,
       flushPending,
     },
-  }), [state, reload, reloadOnEntry, createProject, updateProject, deleteProject, createTask, updateTask, deleteTask, addMember, updateMember, deleteMember, createInvitation, acceptInvitation, rejectInvitation, cancelInvitation, createNote, updateNote, deleteNote, createResource, updateResource, deleteResource, updateAiSettings, registerBeforeLeave, flushPending])
+  }), [state, reload, reloadOnEntry, createProject, updateProject, deleteProject, createTask, updateTask, deleteTask, addMember, updateMember, deleteMember, createInvitation, acceptInvitation, rejectInvitation, cancelInvitation, createNote, updateNote, deleteNote, createResource, uploadResource, updateResource, deleteResource, getResourceDownloadUrl, updateAiSettings, registerBeforeLeave, flushPending])
 
   if (state.loadError) {
     return (
