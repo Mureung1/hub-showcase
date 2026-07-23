@@ -14,7 +14,6 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/setupTests.js',
     globals: true,
-    exclude: ['server/**/chunker.test.js', 'node_modules/**'],
   },
 })
 
