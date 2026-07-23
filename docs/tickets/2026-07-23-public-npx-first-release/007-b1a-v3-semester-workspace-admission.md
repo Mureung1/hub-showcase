@@ -52,7 +52,7 @@
 
 ## Candidate Evidence
 
-첫 독립 filesystem/durability 및 current v2 compatibility review의 blocking finding을 반영한 full re-review candidate 증거다. Ticket state와 acceptance checkbox는 Coordinator review가 끝날 때까지 변경하지 않는다.
+첫 독립 filesystem/durability review와 current v2 compatibility/Spec review의 blocking finding을 모두 반영한 full re-review candidate 증거다. Ticket state와 acceptance checkbox는 Coordinator review가 끝날 때까지 변경하지 않는다.
 
 | Evidence | Result |
 | --- | --- |
@@ -60,51 +60,56 @@
 | Claim commit | `d73fa8a180083092f2cbcce44f892d8dada844a9` |
 | Implementation commit | `8eafbc197bb4568fe65d680f8de8df9eb404827b` |
 | Review remediation commit | `a6fe6fec3edb70353a44c920f271d91df97cdcdc` |
-| Package codec/admission/fault/parity gate | `npm test -w @ay-ple/semester-workspace` — `26/26` green |
+| Compatibility/Spec remediation commit | `65d81133e3a9c1d4606ebd501ff81f009b5c90dd` |
+| Package codec/admission/fault/parity gate | `npm test -w @ay-ple/semester-workspace` — `28/28` green |
 | Package compile gates | `npm run typecheck -w @ay-ple/semester-workspace`; `npm run build -w @ay-ple/semester-workspace` — green |
 | V3 conformance | Exact initial aggregate encode/fresh decode, positive safe integer `yearLevel`, bounded custom-capable term, opaque workspace ID, extra/nonempty/default drift rejection이 green |
 | Parent/root authority conformance | Exact `before_root_reservation` parent swap은 mutation 0으로 `authority_changed`, reservation 직후 swap은 displaced parent의 markerless root만 보존, marker fsync 뒤 swap은 displaced evidence bytes만 보존한다. Apply는 success 전까지 selected parent `(dev, ino)`와 reserved root identity를 다시 확인한다. |
-| Preplanned evidence binding | Apply 전에 `setupId`, canonical root/parent, workspace ID, exact aggregate bytes/SHA-256, canonical owned-scaffold plan/SHA-256와 exact root-marker bytes/SHA-256를 고정한다. Marker는 post-`mkdir` root identity를 포함하지 않고 `authorityDigest`를 canonical authority 전체에서 재계산한다. Workspace ID·aggregate·scaffold를 old digest와 함께 바꾼 marker는 cross-instance resume에서 `collision`이다. |
+| Opaque plan ID와 preplanned evidence binding | Create `planId`는 digest와 독립적인 `workspace_plan_<128-bit random>` token이다. Raw token은 marker에 기록하지 않고 private HMAC binding으로 canonical root/parent, workspace ID, exact aggregate bytes/SHA-256, canonical owned-scaffold plan/SHA-256와 exact marker bytes/SHA-256를 bind한다. Marker는 post-`mkdir` root identity를 포함하지 않으며 wrong token, old authority digest를 유지한 workspace ID·aggregate 변조는 cross-instance resume에서 `collision`이다. |
 | Owned-incomplete topology | Root는 `.ay-ple/`, empty `inbox/`, empty `courses/`만, product root는 exact marker·known empty/exact temp·exact final state만 허용한다. Nested file, subtree, symlink, unknown product entry와 late pre-unlink byte는 inspection/apply 모두 fail closed하고 원본 bytes를 보존한다. |
 | Durability conformance | Before/after root reservation, marker create/write/file sync/directory sync, required directory create/sync, state temp create/write/file sync, no-clobber hard-link publish, directory sync, temp unlink/sync, readback, evidence unlink/sync를 분리했다. 17개 evidence-backed window는 cross-instance `owned_incomplete → resumed → admitted`, markerless/empty-marker window는 preserved collision, evidence unlink 뒤 window는 complete admitted로 수렴한다. |
-| V2 exact donor parity | Package root가 `decodeCurrentSemesterWorkspaceV2`를 canonical shared decoder로 제공한다. Donor-valid `>1 MiB` fixture와 reordered retry `sourceBaseline` object fixture가 Server donor와 package에서 모두 current v2로 일치하고, fieldwise source equality를 사용한다. |
+| V2 exact donor parity | Package root가 `decodeCurrentSemesterWorkspaceV2`를 canonical shared decoder로 제공한다. Retry invocation의 `sourceBaseline`은 donor처럼 fieldwise 비교하지만 execution-guard baseline은 donor의 JSON/key-order-sensitive 비교를 보존한다. Patch/Assignment evidence는 donor의 fixed-field clone 순서로 normalize한 뒤 비교한다. Donor-valid `>1 MiB`, 16-case guard-order matrix와 generated 408-case evidence-order matrix가 모두 Server donor와 일치한다. |
 | V2/incompatible preservation | Fixture SHA-256 `b753a066ff3ea3e56a560f8dd89d16fec14dab71d5aa795f927a57197118ffa9`; decoder-valid current v2는 크기 1 MiB 초과도 `legacy_migration_required/readOnly`, malformed·future는 `incompatible/readOnly`; state와 unknown entry before/after byte identity green |
 | Root gates | `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `git diff --check 269a3555d3adf52bf520b3de0b99c7cb3fee3ae7...HEAD` — green |
 | Docs gate | `npm run check:docs-links` — active 28, historical 2 green |
-| Bounded manual smoke | Fresh temporary parent에서 `create: created`, `reopen: admitted`, fault recovery `recover: resumed`, current v2 `legacy_migration_required/readOnly`, `v2ByteIdentity: true`, exact root tree `[".ay-ple","courses","inbox"]`, product tree `["workspace-state.json"]`; temporary root·script cleanup 완료 |
-| Independent re-review | Pending — filesystem/durability reviewer와 current v2 compatibility reviewer가 새 fixed candidate range 전체를 다시 검토해야 함 |
+| Bounded manual smoke | Fresh temporary parent에서 `create: created`, `reopen: admitted`, fault recovery `recover: resumed`, `opaquePlanId: true`, `planIdContainsDigest: false`, `markerContainsPlanId: false`, current v2 `legacy_migration_required/readOnly`, `v2ByteIdentity: true`, exact root tree `[".ay-ple","courses","inbox"]`, product tree `["workspace-state.json"]`; temporary root cleanup 완료 |
+| Independent re-review | Pending — 이전 durability review task는 platform filtering으로 중단되었으므로 fresh filesystem/durability reviewer와 current v2 compatibility reviewer가 새 fixed candidate range 전체를 다시 검토해야 함 |
 
-C-only follow-up은 다음 exact delta다.
+C-only follow-up은 다음 exact delta다. 이 lane에서는 C-owned Server source, manifest, lockfile과 README를 수정하지 않는다.
 
-1. Reviewed serial `contractTipSha`에서 Browser에 노출하지 않는 `describe(plan)` seam을 추가해 아래 값을 admission apply 전에 그대로 제공한다. `canonicalBytesSha256`는 canonical pre-apply authority payload의 SHA-256이며 B2a는 digest나 marker를 역추론하지 않고 이 description으로 `PendingSetupReceipt`를 채운다.
+1. Reviewed serial `contractTipSha`에서 Browser에 노출하지 않는 private `describe(plan)` seam을 추가해 admission apply 전에 아래 값을 제공한다. `setupPlanId`는 정확히 random opaque `plan.planId`이고 digest나 hash에서 만들지 않는다. `setupId`는 이 description에 포함하지 않으며 B2a가 별도의 random durable transaction ID로 발급한다. `canonicalBytesSha256`, marker/bundle hash와 `authorityDigest`·`setupPlanBinding`은 Server-private이고 Browser projection에 포함하지 않는다.
 
    ```ts
    type WorkspaceAdmissionPlanDescription = {
-     readonly setupId: string
      readonly setupPlanId: string
-     readonly plan: {
-       readonly canonicalBytesSha256: string
-       readonly semester: SemesterIdentity
-       readonly target: {
-         readonly canonicalParent: string
-         readonly parentDevice: string
-         readonly parentInode: string
-         readonly leafName: string
-         readonly canonicalTarget: string
+     readonly privateBinding: {
+       readonly plan: {
+         readonly canonicalBytesSha256: string
+         readonly semester: SemesterIdentity
+         readonly target: {
+           readonly canonicalParent: string
+           readonly parentDevice: string
+           readonly parentInode: string
+           readonly leafName: string
+           readonly canonicalTarget: string
+         }
        }
-     }
-     readonly workspace: {
-       readonly workspaceId: string
-       readonly formatVersion: 3
-       readonly rootMarkerSha256: string
-       readonly ownedScaffoldPlanSha256: string
-       readonly expectedInitialAggregateSha256: string
+       readonly workspace: {
+         readonly workspaceId: string
+         readonly formatVersion: 3
+         readonly rootMarkerSha256: string
+         readonly ownedScaffoldPlanSha256: string
+         readonly expectedInitialAggregateSha256: string
+       }
      }
    }
    ```
 
-2. Integration/C가 `apps/server/src/semester-workspace-store.ts`의 duplicate current-v2 structural/invariant decoder를 package root의 `decodeCurrentSemesterWorkspaceV2`로 교체한다. Server에는 decoded value를 existing `PersistedWorkspaceState` clone으로 옮기는 narrow adapter만 남기고, package parity fixture를 Server regression input으로 소비해 두 decoder가 다시 갈라질 수 없게 한다.
-3. 현재 동작을 소유하는 `packages/semester-workspace/README.md`는 이 lane의 `writablePaths` 밖이므로 integration/C가 B1a admission, recovery, v2 shared decoder와 package 명령을 반영한다.
+   B2a의 receipt mapping은 `setupId = B2a가 발급한 opaque transaction ID`, `setupPlanId = description.setupPlanId`, `plan = description.privateBinding.plan`, `workspace = description.privateBinding.workspace`로 고정한다. `canonicalBytesSha256`나 `authorityDigest`를 두 opaque ID 중 어느 쪽에도 대입하지 않는다.
+
+2. `apps/server/package.json`의 exact workspace dependency에 `"@ay-ple/semester-workspace": "0.0.0"`을 추가하고 repository root에서 `npm install`로 `package-lock.json`을 갱신한다. Lock readback에서 `apps/server.dependencies` edge와 기존 `node_modules/@ay-ple/semester-workspace → packages/semester-workspace` workspace link를 확인한다. `npm run typecheck -w @ay-ple/server`, `npm run build -w @ay-ple/server`와 root `npm run typecheck && npm run build`로 source와 build graph가 package dependency를 실제로 닫는지 검증한다.
+3. 그 dependency가 고정된 뒤 `apps/server/src/semester-workspace-store.ts`의 duplicate current-v2 structural/invariant decoder를 package root의 `decodeCurrentSemesterWorkspaceV2`로 교체한다. JSON parse와 physical no-follow/read-only I/O는 Server에 남기고, package decoded value를 existing `PersistedWorkspaceState` clone으로 옮기는 narrow adapter만 유지한다. Current write path가 사용하는 canonical payload producer/clone은 삭제하지 않는다. Package parity test의 Server source import는 순환 oracle이 되므로 제거하고, 이번 16/408 matrix의 fixed expected outcomes를 package-owned oracle로 남긴다. Server open regression도 같은 vectors를 소비해 code removal 전후 accept/reject와 byte-preservation이 같음을 확인한 뒤에만 duplicate decode-only validator/invariant code를 제거한다.
+4. `packages/semester-workspace/README.md`에는 B1a admission/recovery, private marker/token boundary, shared current-v2 decoder와 package 명령을 반영한다. `apps/server/README.md`에는 shared decoder dependency와 narrow adapter를 current behavior로 기록하되 아직 조합되지 않은 B2 setup/Ready 상태를 구현된 것처럼 쓰지 않는다.
 
 ## Blocked By
 
