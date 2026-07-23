@@ -61,6 +61,27 @@ Admitted v3 workspace에 package-owned `AGENTS.md`와 declared built-in Skill tr
 | Predecessor conformance | V3 admission `37/37`, Server `124/124`, current-v2 fixed roster 426개와 no-write/no-clobber/original-byte preservation, package·Server compile와 root test/typecheck/build/Chat Shell lint/docs-link/diff gates가 Ticket 007 closeout에서 green으로 고정됐다. |
 | Claim scope | Frozen `src/contract.ts`, shared manifest·lockfile, Browser/UI와 sibling lane을 변경하지 않고 이 ticket의 `writablePaths`만 사용한다. |
 
+## Candidate Receipt
+
+이 receipt는 independent review 전 candidate evidence다. Ticket State는 `claimed`, Acceptance Criteria는 unchecked로 유지한다.
+
+| Evidence | Candidate result |
+| --- | --- |
+| Implementation tip | `e54e8c35c6d46f0d3691561ad6441ac0b2f2eba7` |
+| Exact ancestry | `git merge-base 7d38c8f3b4ce7944e21d1813bbb979ed1da85c70 e54e8c35c6d46f0d3691561ad6441ac0b2f2eba7`가 exact handoff `7d38c8f3b4ce7944e21d1813bbb979ed1da85c70`이다. Sibling branch merge·cherry-pick은 없다. |
+| Candidate commits | Claim `6a241639614161699a0e5c2c381b6e048499cf4f`; canonical bundle `5629cbe6a017206fe04e7e42d484714e549b9145`; admitted-workspace binding `51a346e21eefa309a784f2c9b2180850eda2b579`; admitted-context fixture correction `09029ae74c0393b8748f9a44ce89686f5afa028e`; native/action guard `58f6d00a42ceb5968d45df9eea9947bee91c40f6`; file-descriptor mode readback `80afd1846c12d8673576217cc49b8e04ece9b4c5`; malformed native-context fail-closed `e54e8c35c6d46f0d3691561ad6441ac0b2f2eba7` |
+| Canonical roster | `packages/semester-workspace/resources/workspace/AGENTS.md`와 `.agents/skills/ay-ple-first-assignment/SKILL.md` 두 file만 존재한다. Placeholder, camp/setup Skill, dogfood fixture와 materializer는 없다. |
+| Bundle identity | `bundleId=ay-ple.workspace-bundle.v1`; descriptor SHA-256 `57c51240a28aa7bc0c261cdb230ad252f2359e19bf9855c481938cca9231d757`; aggregate complete-tree SHA-256 `39c493509629055d085dcda88642ee6a4ac4286648c511781487d4ce521d8c29` |
+| Per-root identity | `AGENTS.md`: 917 bytes, file SHA-256 `f1649609dbcad300001fba1fb4170b30a92a0def63f3d815550aa895b17afdfc`, root tree SHA-256 `ff612defcbdce14bccb1a55de98cc4e91d33be721e65aa55565e042fa0b6886b`; declared Skill: 2307 bytes, file SHA-256 `91f9e683a0ae629b49b16ea2ef88a4895e763d10df911cbd16bc866ce61b3721`, root tree SHA-256 `22f6e2faa0f3256fd363291d573fa506cbd2e3e43475d16874bc75f1641fdc99` |
+| Bundle behavior | Source exact-tree/mode/link/byte verification과 immutable snapshot capture, fresh v3 admission revalidation, absent-only no-clobber write·file/directory sync, explicit missing recovery, modified·extra·symlink·mode/link/type byte preservation을 구현했다. Descriptor 밖 Skill sibling은 bundle digest 밖에 두고 static eligibility에서 막는다. |
+| Native boundary | Launch는 exact workspace `cwd`, disjoint controlled `HOME`/`CODEX_HOME`, `project_root_markers=[]`다. Private query는 `config/read(cwd, includeLayers=true)`와 `skills/list(cwds=[workspace], forceReload=true)`만 사용하고 malformed/throwing result도 closed conflict로 정규화한다. |
+| Action admission | Injected Ready를 전후 확인하고 fresh B1a reopen, bundle, static context, native effective context와 final bundle/static readback을 수행한다. Setup envelope·transition lease·current action Module은 변경하지 않았다. |
+| Focused tests | `@ay-ple/semester-workspace` 61/61 green; `@ay-ple/server` 148/148 green; 두 workspace typecheck green |
+| Repository gates | Exact implementation tip에서 `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check` green. Docs links는 active 28개, historical cutover banner 2개다. |
+| Provider-free hostile-context smoke | Built candidate로 hostile Git parent `AGENTS.md`/`.codex`/camp Skill과 hostile user Skill을 둔 뒤 admitted v3 workspace를 만들었다. Bundle·native guard·action admission은 green이었고 workspace-local `.codex` 추가 뒤 `config_conflict`/`context_not_verified`로 닫혔다. 두 guard invocation의 native query는 exact 4회였고 `thread/start=0`, `thread/resume=0`, `turn/start=0`, Skill input `0`이었다. Hostile/user/workspace canary byte는 모두 동일했고 temporary root는 정리됐다. |
+| Scope audit | Frozen `packages/semester-workspace/src/contract.ts`, shared manifest·lockfile, Browser/UI, current action Module과 sibling lane은 untouched다. Diff는 ticket의 `writablePaths`에만 있다. |
+| Downstream opaque handoff | B2/A1은 admitted `AdmittedSemesterWorkspace`, descriptor-bound `VerifiedBundleSource` snapshot, opaque native `{status:'verified'}`와 S1-frozen `WorkspaceActionAdmission` result contract만 소비할 수 있다. Ready commit·lease·Runtime transition은 이 candidate에 포함하지 않는다. |
+
 ## Blocked By
 
 - [007-b1a-v3-semester-workspace-admission.md](007-b1a-v3-semester-workspace-admission.md) — B1a — v3 SemesterWorkspace admission을 구현한다
