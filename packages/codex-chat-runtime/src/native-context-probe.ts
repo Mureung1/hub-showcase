@@ -16,7 +16,10 @@ import {
   BoundedStderrCapture,
   type BoundedStderrSnapshot,
 } from './bounded-stderr.js'
-import type { VerifiedProductionBundle } from './production-bundle.js'
+import {
+  reverifyProductionBundle,
+  type VerifiedProductionBundle,
+} from './production-bundle.js'
 import {
   decodeNativeContextConfig,
   decodeNativeContextInitialize,
@@ -41,6 +44,9 @@ const APP_SERVER_ARGS = [
 ] as const
 const SEMVER =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
+const ACTIVE_PROBE_SESSIONS = new Set<symbol>()
+const ACTIVE_PENDING_RESPONSES = new Set<PendingResponse>()
+const ACTIVE_PROCESS_GROUPS = new Set<number>()
 
 export interface NativeContextProbeApplication {
   readonly name: 'ay-ple'
@@ -117,6 +123,10 @@ export interface RunNativeContextProbeOptions {
   readonly testCommandOverride?: readonly [string, ...string[]]
   /** Package-private actual-child journal seam; production callers omit this. */
   readonly testJournalPath?: string
+  /** Package-private launch-attestation seam; production callers omit this. */
+  readonly testBundleReattestationOverride?: (
+    bundle: VerifiedProductionBundle,
+  ) => Promise<VerifiedProductionBundle>
   /** Package-private exact-local test isolation; production honors managed config. */
   readonly disableManagedConfigForTest?: true
   /** Package-private cleanup observation/fault-injection seam. */
@@ -170,14 +180,30 @@ export async function runNativeContextProbe(
     throw new NativeContextProbeError({ code: 'aborted' })
   }
 
+  let freshBundle: VerifiedProductionBundle
+  try {
+    freshBundle = await (
+      validated.testBundleReattestationOverride ??
+      reverifyProductionBundle
+    )(validated.bundle)
+  } catch (cause) {
+    throw new NativeContextProbeError({ code: 'start_failed', cause })
+  }
+  if (validated.signal.aborted) {
+    throw new NativeContextProbeError({ code: 'aborted' })
+  }
+  const launchOptions = {
+    ...validated,
+    bundle: freshBundle,
+  }
   const command = resolveCommand(
-    validated.bundle,
-    validated.testCommandOverride,
+    launchOptions.bundle,
+    launchOptions.testCommandOverride,
   )
   const spawnOptions: SpawnOptionsWithoutStdio = {
-    cwd: validated.workspace,
+    cwd: launchOptions.workspace,
     detached: true,
-    env: createChildEnvironment(validated),
+    env: createChildEnvironment(launchOptions),
   }
   let child: ChildProcessWithoutNullStreams
   try {
@@ -189,7 +215,7 @@ export async function runNativeContextProbe(
     throw new NativeContextProbeError({ code: 'start_failed', cause })
   }
 
-  const session = new NativeContextProbeSession(child, validated)
+  const session = new NativeContextProbeSession(child, launchOptions)
   return session.run()
 }
 
@@ -211,6 +237,7 @@ class NativeContextProbeSession {
   private stdoutBuffer = Buffer.alloc(0)
   private stdoutBytes = 0
   private stdoutFrames = 0
+  private readonly resourceToken = Symbol('native-context-probe')
 
   constructor(
     child: ChildProcessWithoutNullStreams,
@@ -224,13 +251,16 @@ class NativeContextProbeSession {
     })
     this.processGroupSignaler =
       options.signalProcessGroupOverride ?? signalDetachedProcessGroup
+    ACTIVE_PROBE_SESSIONS.add(this.resourceToken)
 
     child.once('spawn', () => {
       if (!Number.isSafeInteger(child.pid) || (child.pid ?? 0) <= 1) {
         this.fail('start_failed')
         return
       }
-      this.processGroupId = child.pid
+      const processGroupId = child.pid as number
+      this.processGroupId = processGroupId
+      ACTIVE_PROCESS_GROUPS.add(processGroupId)
       if (this.terminalError) {
         this.state = 'failed'
         return
@@ -352,6 +382,8 @@ class NativeContextProbeSession {
         throw this.error('cleanup_failed', cleanupCause)
       }
       throw operationError
+    } finally {
+      ACTIVE_PROBE_SESSIONS.delete(this.resourceToken)
     }
   }
 
@@ -391,15 +423,21 @@ class NativeContextProbeSession {
       timeout: setTimeout(() => this.fail(timeoutCode), timeoutMs),
     }
     this.pending = pending
+    ACTIVE_PENDING_RESPONSES.add(pending)
     try {
       await this.writeFrameOrTerminal({ id, method, params })
     } catch (cause) {
       this.fail('protocol_failed', cause)
     }
-    return Promise.race([
-      deferred.promise,
-      this.terminal.promise.then((error) => Promise.reject(error)),
-    ]).finally(() => clearTimeout(pending.timeout))
+    try {
+      return await Promise.race([
+        deferred.promise,
+        this.terminal.promise.then((error) => Promise.reject(error)),
+      ])
+    } finally {
+      clearTimeout(pending.timeout)
+      ACTIVE_PENDING_RESPONSES.delete(pending)
+    }
   }
 
   private writeFrame(frame: JsonObject): Promise<void> {
@@ -595,15 +633,18 @@ class NativeContextProbeSession {
       !force &&
       (await this.waitForTreeGone(this.options.deadlines.gracefulCloseMs))
     ) {
+      ACTIVE_PROCESS_GROUPS.delete(this.processGroupId)
       return false
     }
 
     this.signalProcessGroup('SIGTERM')
     if (await this.waitForTreeGone(this.options.deadlines.terminateMs)) {
+      ACTIVE_PROCESS_GROUPS.delete(this.processGroupId)
       return true
     }
     this.signalProcessGroup('SIGKILL')
     if (await this.waitForTreeGone(this.options.deadlines.postKillMs)) {
+      ACTIVE_PROCESS_GROUPS.delete(this.processGroupId)
       return true
     }
     throw this.error('cleanup_failed')
@@ -738,6 +779,14 @@ async function validateOptions(
   ) {
     throw new TypeError(
       'Native context test journal requires a test command override',
+    )
+  }
+  if (
+    options.testBundleReattestationOverride !== undefined &&
+    options.testCommandOverride === undefined
+  ) {
+    throw new TypeError(
+      'Native context test attestation requires a test command override',
     )
   }
   if (
@@ -977,5 +1026,11 @@ function delay(milliseconds: number): Promise<void> {
 export const nativeContextProbeTesting = Object.freeze({
   decodeConfigResult: decodeNativeContextConfig,
   decodeSkillsResult: decodeNativeContextSkills,
+  readRetainedResources: () =>
+    Object.freeze({
+      pendingResponses: ACTIVE_PENDING_RESPONSES.size,
+      processGroups: ACTIVE_PROCESS_GROUPS.size,
+      sessions: ACTIVE_PROBE_SESSIONS.size,
+    }),
   resolveCommand,
 })

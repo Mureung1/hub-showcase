@@ -89,6 +89,16 @@ export interface VerifiedProductionBundle {
   sourceCommit: string
 }
 
+interface ProductionBundleVerificationAuthority {
+  readonly artifactRoot: string
+  readonly canonicalManifestPath: string
+}
+
+const PRODUCTION_BUNDLE_AUTHORITIES = new WeakMap<
+  VerifiedProductionBundle,
+  ProductionBundleVerificationAuthority
+>()
+
 /**
  * Package-private test seam. Production callers must omit this argument so the
  * tracked canonical manifest remains the authority.
@@ -686,7 +696,7 @@ export async function verifyProductionBundle(
       ),
     ])
 
-  return {
+  const verified = Object.freeze({
     bridgeEntrypoint,
     codexPathDirectory,
     nativeExecutable,
@@ -706,5 +716,32 @@ export async function verifyProductionBundle(
     runtimeVersion: requireString(runtime, 'version', 'runtime version'),
     sitePackages,
     sourceCommit: requireString(source, 'commit', 'source commit'),
+  })
+  PRODUCTION_BUNDLE_AUTHORITIES.set(
+    verified,
+    Object.freeze({
+      artifactRoot: normalizedRoot,
+      canonicalManifestPath,
+    }),
+  )
+  return verified
+}
+
+/**
+ * Package-private launch-time re-attestation seam. The original verified
+ * object is an opaque capability: callers cannot reconstruct its complete-tree
+ * verification authority from selected paths or stale metadata.
+ */
+export async function reverifyProductionBundle(
+  bundle: VerifiedProductionBundle,
+): Promise<VerifiedProductionBundle> {
+  const authority = PRODUCTION_BUNDLE_AUTHORITIES.get(bundle)
+  if (!authority) {
+    throw new ProductionBundleVerificationError(
+      'production bundle was not issued by the verifier',
+    )
   }
+  return verifyProductionBundle(authority.artifactRoot, {
+    canonicalManifestPath: authority.canonicalManifestPath,
+  })
 }

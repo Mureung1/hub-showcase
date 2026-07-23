@@ -4,7 +4,10 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 
-import { verifyProductionBundle } from './production-bundle.js'
+import {
+  reverifyProductionBundle,
+  verifyProductionBundle,
+} from './production-bundle.js'
 
 const SOURCE_COMMIT = '8c68d4c87dc54d38861f5114e920c3de2efa5876'
 const PATCH_STACK_SHA256 =
@@ -182,6 +185,22 @@ test('verifies a complete production bundle and returns only absolute launch met
         assert.equal(path.isAbsolute(value), true)
       }
     }
+  })
+})
+
+test('fresh re-attestation rejects selected native executable drift through the complete-tree verifier', async () => {
+  await withFixture(async ({ artifactRoot, canonicalManifestPath }) => {
+    const initiallyVerified = await verifyProductionBundle(artifactRoot, {
+      canonicalManifestPath,
+    })
+    assert.equal(Object.isFrozen(initiallyVerified), true)
+
+    await writeFile(initiallyVerified.nativeExecutable, '#!/drifted-codex\n')
+
+    await assert.rejects(
+      reverifyProductionBundle(initiallyVerified),
+      /production bundle roster drift/,
+    )
   })
 })
 

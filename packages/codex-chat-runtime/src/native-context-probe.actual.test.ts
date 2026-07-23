@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import {
   mkdir,
   mkdtemp,
   readFile,
+  readdir,
   realpath,
   rm,
   writeFile,
@@ -14,12 +16,14 @@ import { fileURLToPath } from 'node:url'
 
 import {
   NativeContextProbeError,
+  nativeContextProbeTesting,
   runNativeContextProbe,
   type NativeContextProbeBudgets,
   type NativeContextProbeDeadlines,
   type RunNativeContextProbeOptions,
 } from './native-context-probe.js'
 import {
+  ProductionBundleVerificationError,
   verifyProductionBundle,
   type VerifiedProductionBundle,
 } from './production-bundle.js'
@@ -33,7 +37,6 @@ const FAKE_APP_SERVER = path.join(
   'scripts',
   'fake_native_context_app_server.mts',
 )
-const TSX_CLI = fileURLToPath(import.meta.resolve('tsx/cli'))
 const ARTIFACT_ROOT = path.join(
   PACKAGE_ROOT,
   '.artifacts',
@@ -131,11 +134,12 @@ async function createFixture(
       },
       testCommandOverride: [
         process.execPath,
-        TSX_CLI,
+        '--experimental-strip-types',
         FAKE_APP_SERVER,
         scenario,
       ],
       testJournalPath: journalPath,
+      testBundleReattestationOverride: async (candidate) => candidate,
       disableManagedConfigForTest: true,
       signalProcessGroupOverride: input.signalProcessGroupOverride,
     },
@@ -233,6 +237,53 @@ test('queries exact native context, omits system Skills, and fully reaps before 
     assert.equal(journal.stdinEnded, true)
     assert.equal(processExists(journal.pid), false)
     assert.equal(processGroupExists(journal.pid), false)
+  } finally {
+    await fixture.dispose()
+  }
+})
+
+test('repeated probes retain zero fd, task, process, route, or temp resources', async () => {
+  const fixture = await createFixture('nominal')
+  try {
+    await runNativeContextProbe(fixture.options)
+    await delay(100)
+    const baseline = await readParentResourceSnapshot(
+      fixture.options.environment.tempDirectory,
+    )
+
+    const observedPids: number[] = []
+    for (let iteration = 0; iteration < 12; iteration += 1) {
+      await runNativeContextProbe(fixture.options)
+      const journal = await fixture.readJournal()
+      observedPids.push(journal.pid)
+      assert.equal(processExists(journal.pid), false)
+      assert.equal(processGroupExists(journal.pid), false)
+      assert.deepEqual(
+        nativeContextProbeTesting.readRetainedResources(),
+        {
+          pendingResponses: 0,
+          processGroups: 0,
+          sessions: 0,
+        },
+      )
+      assert.deepEqual(
+        (
+          await readdir(fixture.options.environment.tempDirectory)
+        ).sort(),
+        baseline.tempEntries,
+      )
+    }
+
+    await delay(100)
+    const final = await readParentResourceSnapshot(
+      fixture.options.environment.tempDirectory,
+    )
+    assert.equal(observedPids.length, 12)
+    assert.equal(final.fileDescriptors, baseline.fileDescriptors)
+    assert.equal(final.pipeWraps, baseline.pipeWraps)
+    assert.equal(final.processWraps, baseline.processWraps)
+    assert.equal(final.timeouts <= baseline.timeouts, true)
+    assert.deepEqual(final.tempEntries, baseline.tempEntries)
   } finally {
     await fixture.dispose()
   }
@@ -438,6 +489,32 @@ test('maps native executable spawn failure without leaving a process', async () 
   }
 })
 
+test('fresh bundle drift fails before native spawn or protocol write', async () => {
+  const fixture = await createFixture('nominal')
+  let reattestations = 0
+  try {
+    await assert.rejects(
+      runNativeContextProbe({
+        ...fixture.options,
+        testBundleReattestationOverride: async () => {
+          reattestations += 1
+          throw new ProductionBundleVerificationError(
+            'deterministic complete-tree drift',
+          )
+        },
+      }),
+      (error: unknown) =>
+        error instanceof NativeContextProbeError &&
+        error.code === 'start_failed' &&
+        !error.unknownOutcome,
+    )
+    assert.equal(reattestations, 1)
+    await assert.rejects(readFile(fixture.journalPath), /ENOENT/)
+  } finally {
+    await fixture.dispose()
+  }
+})
+
 test('bounds retained stderr without leaking remote text into the error', async () => {
   const fixture = await createFixture('stderr-error', {
     budgets: {
@@ -536,6 +613,54 @@ async function waitForJournalMessageCount(
     await delay(10)
   }
   throw new Error('fake native context journal did not advance')
+}
+
+async function readParentResourceSnapshot(
+  tempDirectory: string,
+): Promise<{
+  readonly fileDescriptors: number
+  readonly pipeWraps: number
+  readonly processWraps: number
+  readonly tempEntries: readonly string[]
+  readonly timeouts: number
+}> {
+  const [fileDescriptors, tempEntries] = await Promise.all([
+    Promise.resolve(countOpenFileDescriptors()),
+    readdir(tempDirectory),
+  ])
+  const resources = process.getActiveResourcesInfo()
+  return {
+    fileDescriptors,
+    pipeWraps: resources.filter((resource) => resource === 'PipeWrap').length,
+    processWraps: resources.filter(
+      (resource) => resource === 'ProcessWrap',
+    ).length,
+    tempEntries: Object.freeze([...tempEntries].sort()),
+    timeouts: resources.filter((resource) => resource === 'Timeout').length,
+  }
+}
+
+function countOpenFileDescriptors(): number {
+  const output = execFileSync(
+    '/usr/sbin/lsof',
+    [
+      '-a',
+      '-p',
+      String(process.pid),
+      '-d',
+      '0-999',
+      '-Fn',
+    ],
+    {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    },
+  )
+  return new Set(
+    output
+      .split('\n')
+      .filter((line) => /^f\d+$/u.test(line)),
+  ).size
 }
 
 async function waitForProcessGone(pid: number): Promise<void> {
