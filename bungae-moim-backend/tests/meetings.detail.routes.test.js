@@ -265,4 +265,20 @@ describe('GET /api/meetings/:id', () => {
     expect(res.body.data.canApply).toBe(false);
     expect(res.body.data.blockReason).toBe('LOGIN_REQUIRED');
   });
+
+  it('미래 모임은 isPast가 false', async () => {
+    const host = await createUser('past-h1');
+    const meetingId = await insertMeeting(host, { startAt: '2030-01-01T10:00:00+09:00', endAt: null });
+    const res = await request(app).get(`/api/meetings/${meetingId}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.isPast).toBe(false);
+  });
+
+  it('지난 모임은 isPast가 true', async () => {
+    const host = await createUser('past-h2');
+    const meetingId = await insertMeeting(host, { startAt: '2020-01-01T10:00:00+09:00', endAt: null });
+    const res = await request(app).get(`/api/meetings/${meetingId}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.isPast).toBe(true);
+  });
 });

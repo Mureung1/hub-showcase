@@ -200,6 +200,7 @@ async function getMeetingDetail(meetingId, viewerId = null) {
     },
     confirmedCount: countResult.rows[0].confirmed_count,
     myParticipation,
+    isPast: row.is_past,
   };
 
   // 신청 가능 여부를 서버가 판정해 내려보낸다. FE는 이 값으로만 버튼을 결정한다(FE 독립 판정 제거).
