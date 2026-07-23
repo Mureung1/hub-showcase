@@ -13,7 +13,9 @@ public class PositionDto {
             String location,
             String experience,
             int fitScore,          // 0~100
-            String collectedAt
+            String collectedAt,
+            String sourceUrl,
+            List<String> tags
     ) {}
 
     /** 상세 — 요구조건 분해 + 방향 제시 */
@@ -26,6 +28,7 @@ public class PositionDto {
             int fitScore,
             String sourceUrl,
             String collectedAt,
+            double fulfillmentSum,        // ← 추가. Σ(가중치 × 충족도), 0~1
             List<RequirementView> requirements,
             List<String> advice
     ) {}

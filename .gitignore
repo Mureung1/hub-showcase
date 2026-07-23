@@ -5,6 +5,7 @@ application-prod.yml
 application-secret.yml
 .env
 .env.*
+.env*.local
 !.env.example
 
 # 크롤링한 실제 공고 데이터.
@@ -36,5 +37,5 @@ logs/
 node_modules/
 dist/
 .vite/
-frontend/.next/
+.next/
 .next-hub/

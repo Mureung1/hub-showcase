@@ -27,14 +27,17 @@ export interface Position {
   title: string;
   location: string;
   experience: string;
-  tags: string[];
+
   /** 적합도 점수 0~100 = Σ(가중치 × 충족도) × 100 */
   fitScore: number;
   collectedAt: string;
-  sourceUrl: string;
+  tags?: string[];
+  sourceUrl?: string;
 }
 
 export interface PositionDetail extends Position {
+  /** Σ(가중치 × 충족도), 0~1. 게이트 보정 전 값 */
+  fulfillmentSum: number;
   requirements: Requirement[];
   /** "내 이력으로 맞추는 방향" */
   advice: string[];

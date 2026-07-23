@@ -1,5 +1,6 @@
 package com.hub.matching;
 
+import java.util.Comparator;
 import com.hub.common.ApiException;
 import com.hub.credential.Credential;
 import com.hub.credential.CredentialRepository;
@@ -9,7 +10,8 @@ import com.hub.position.JobRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -47,27 +49,44 @@ public class MatchingService {
         matchScoreRepository.saveAll(scores);
     }
 
-    /** F4 — 적합도 순 목록 */
+    /**
+     * F4 — 적합도 순 목록
+     */
     @Transactional(readOnly = true)
     public List<PositionDto.Summary> listRanked(Long userId) {
         List<MatchScore> scores = matchScoreRepository.findByUserIdOrderByScoreDesc(userId);
+        if (scores.isEmpty()) return List.of();
 
-        Map<Long, JobPosting> postings = postingRepository
-                .findAllById(scores.stream().map(MatchScore::getPostingId).toList())
+        List<Long> postingIds = scores.stream().map(MatchScore::getPostingId).toList();
+
+        Map<Long, JobPosting> postings = postingRepository.findAllById(postingIds)
                 .stream()
                 .collect(Collectors.toMap(JobPosting::getId, Function.identity()));
+
+        // 공고별 태그 — 가중치 상위 3개 subject. 쿼리 한 번으로 N+1 회피.
+        Map<Long, List<String>> tagsByPosting = new HashMap<>();
+        for (Object[] row : postingRepository.findSubjectsByPostingIds(postingIds)) {
+            tagsByPosting
+                    .computeIfAbsent((Long) row[0], k -> new ArrayList<>())
+                    .add((String) row[1]);
+        }
 
         return scores.stream()
                 .map(s -> {
                     JobPosting p = postings.get(s.getPostingId());
+                    List<String> tags = tagsByPosting.getOrDefault(p.getId(), List.of())
+                            .stream().distinct().limit(3).toList();
                     return new PositionDto.Summary(
                             p.getId(), p.getCompany(), p.getTitle(), p.getLocation(),
-                            p.getExperience(), s.getScore(), DATE.format(p.getCreatedAt()));
+                            p.getExperience(), s.getScore(), DATE.format(p.getCreatedAt()),
+                            p.getSourceUrl(), tags);
                 })
                 .toList();
     }
 
-    /** F5 — 상세 + 근거 */
+    /**
+     * F5 — 상세 + 근거
+     */
     @Transactional(readOnly = true)
     public PositionDto.Detail detail(Long userId, Long postingId) {
         JobPosting posting = postingRepository.findWithRequirements(postingId)
@@ -80,21 +99,27 @@ public class MatchingService {
                 .collect(Collectors.toMap(MatchDetail::getRequirementId, Function.identity()));
 
         List<PositionDto.RequirementView> requirements = posting.getRequirements().stream()
-                .sorted((a, b) -> b.getWeight().compareTo(a.getWeight()))   // 가중치 큰 것부터
+                .sorted(Comparator.comparingDouble(
+                        r -> -(r.getWeight() == null ? 0 : r.getWeight().doubleValue())))
                 .map(req -> toView(req, byRequirement.get(req.getId())))
                 .toList();
+
+        double fulfillmentSum = requirements.stream()
+                .mapToDouble(r -> r.weight() * r.fulfillment())
+                .sum();
 
         return new PositionDto.Detail(
                 posting.getId(), posting.getCompany(), posting.getTitle(), posting.getLocation(),
                 posting.getExperience(), score.getScore(), posting.getSourceUrl(),
-                DATE.format(posting.getCreatedAt()), requirements,
+                DATE.format(posting.getCreatedAt()), fulfillmentSum, requirements,
                 AdviceGenerator.generate(requirements));
     }
 
     private PositionDto.RequirementView toView(JobRequirement req, MatchDetail detail) {
         double fulfillment = detail == null ? 0 : detail.getFulfillment().doubleValue();
         String evidence = detail == null ? "해당 이력 없음" : detail.getEvidence();
+        double weight = req.getWeight() == null ? 0 : req.getWeight().doubleValue();   // ← 변경
         return new PositionDto.RequirementView(
-                req.getName(), req.isRequired(), req.getWeight().doubleValue(), fulfillment, evidence);
+                req.getName(), req.isRequired(), weight, fulfillment, evidence);
     }
 }
