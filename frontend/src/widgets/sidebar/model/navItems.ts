@@ -31,7 +31,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: '시장',
     items: [
       { id: 'market-news', label: '시장 소식', icon: Newspaper, to: ROUTES.MARKET_NEWS },
-      { id: 'market-calendar', label: '증시 캘린더', icon: CalendarDays },
+      { id: 'market-calendar', label: '증시 캘린더', icon: CalendarDays, to: ROUTES.MARKET_CALENDAR },
     ],
   },
   {
