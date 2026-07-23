@@ -1,5 +1,6 @@
 import ArticleCard from '../components/ArticleCard'
 import type { TodayArticle } from '../api/types'
+import mascotMy from '../assets/mascot/mascot-my.png'
 import './Today.css'
 
 export type TodayState =
@@ -16,11 +17,14 @@ type TodayProps = {
   onGoToMyGgaem?: () => void
 }
 
-function formatToday(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}.${month}.${day}`
+// KST 기준 "7월 8일 화요일" 형식. 자정 근처 로컬 시간대 오차를 피하려고 Asia/Seoul을 고정한다.
+function formatTodayHeaderDate(date: Date): string {
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  }).format(date)
 }
 
 export default function Today({
@@ -30,7 +34,7 @@ export default function Today({
   onOpenArticle = () => {},
   onGoToMyGgaem = () => {},
 }: TodayProps) {
-  const today = formatToday(new Date())
+  const today = formatTodayHeaderDate(new Date())
 
   const items = state.status === 'success' ? state.items : []
   const featureArticle = items.find((article) => article.id === selectedArticleId) ?? items[0]
@@ -38,19 +42,15 @@ export default function Today({
 
   return (
     <div className="app-shell">
-      <header className="screen-header">
-        <h1>오늘의 깸</h1>
-        <button className="icon-btn" type="button" aria-label="설정">
-          <SettingsIcon />
-        </button>
+      <header className="today-header">
+        <div className="today-header-copy">
+          <h1>오늘의 깸</h1>
+          <p className="today-header-date">{today}</p>
+        </div>
+        <img className="today-mascot" src={mascotMy} alt="" aria-hidden="true" />
       </header>
 
       <main className="screen-main">
-        <p className="today-date">
-          <BookIcon />
-          {today} · 오늘의 글
-        </p>
-
         {state.status === 'loading' && <p role="status">불러오고 있어요...</p>}
 
         {state.status === 'error' && (
@@ -68,6 +68,7 @@ export default function Today({
 
         {state.status === 'success' && featureArticle && (
           <>
+            <p className="today-section-label">오늘의 글</p>
             <ArticleCard
               article={featureArticle}
               variant="feature"
@@ -77,7 +78,7 @@ export default function Today({
             {compactArticles.length > 0 && (
               <>
                 <p className="today-section-label">이런 글도 있어요</p>
-                <div className="today-more-list">
+                <div className="today-recommendation-list">
                   {compactArticles.map((article) => (
                     <ArticleCard
                       key={article.id}
@@ -93,62 +94,37 @@ export default function Today({
         )}
       </main>
 
-      <footer className="screen-footer">
-        <nav className="bottom-tabbar">
-          <button type="button" className="bottom-tab bottom-tab--active">
-            <BookIcon />
-            오늘의 글
-          </button>
-          <button type="button" className="bottom-tab" onClick={() => onGoToMyGgaem()}>
-            <LogIcon />
-            나의 깸
-          </button>
-        </nav>
+      <footer className="today-tabbar">
+        <button type="button" className="today-tab today-tab--active">
+          <HomeIcon />
+          오늘의 깸
+        </button>
+        <button type="button" className="today-tab" onClick={() => onGoToMyGgaem()}>
+          <CalendarIcon />
+          나의 깸
+        </button>
       </footer>
     </div>
   )
 }
 
-function BookIcon() {
+function HomeIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
-        d="M4 6.5c3-1.5 6-1.5 8 0 2-1.5 5-1.5 8 0v12c-3-1.5-6-1.5-8 0-2-1.5-5-1.5-8 0v-12z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
+        d="M4 11L12 4l8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1v-8Z"
+        fill="currentColor"
       />
     </svg>
   )
 }
 
-function LogIcon() {
+function CalendarIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect
-        x="5"
-        y="4"
-        width="14"
-        height="16"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
+      <rect x="4" y="5" width="16" height="15" rx="3" stroke="currentColor" strokeWidth="1.8" />
       <path
-        d="M9 4v16M5 8h4M5 12h4M5 16h4"
-        stroke="currentColor"
-        strokeWidth="1.4"
-      />
-    </svg>
-  )
-}
-
-function SettingsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
-      <path
-        d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.5 1.5M18.3 18.3l1.5 1.5M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.5-1.5M18.3 5.7l1.5-1.5"
+        d="M4 9h16M8 3v4M16 3v4"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"

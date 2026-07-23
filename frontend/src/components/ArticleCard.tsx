@@ -32,50 +32,63 @@ export default function ArticleCard({
     </>
   )
 
-  return (
-    <article className={`card${isCompact ? '' : ' today-feature-card'}`}>
-      {isCompact ? (
-        <button type="button" className="card-compact-select" onClick={onSelect}>
-          <span className="card-meta">{metaContent}</span>
-          <span className="card-title card-title--compact">{article.title}</span>
+  if (isCompact) {
+    return (
+      <article
+        className={`today-recommendation-card${
+          article.thumbnailUrl ? ' today-recommendation-card--with-thumbnail' : ''
+        }`}
+      >
+        <button type="button" className="today-recommendation-select" onClick={onSelect}>
+          <span className="today-recommendation-meta">
+            <span className="today-recommendation-source">{article.sourceName}</span>
+            {interestName && <span className="topic-tag">{interestName}</span>}
+          </span>
+          <span className="today-recommendation-title">{article.title}</span>
         </button>
-      ) : (
-        <>
-          <p className="card-meta">{metaContent}</p>
-          <h2 className="card-title">{article.title}</h2>
-        </>
+        {article.thumbnailUrl && (
+          <img
+            className="today-recommendation-thumbnail"
+            src={article.thumbnailUrl}
+            alt=""
+            aria-hidden="true"
+          />
+        )}
+      </article>
+    )
+  }
+
+  return (
+    <article className="today-feature-card">
+      <p className="card-meta">{metaContent}</p>
+      <h2 className="today-feature-title">{article.title}</h2>
+
+      {article.officialExcerpt && (
+        <p className="today-feature-excerpt">{article.officialExcerpt}</p>
       )}
 
-      {!isCompact && (
-        <>
-          {article.officialExcerpt && (
-            <p className="card-body">{article.officialExcerpt}</p>
-          )}
-
-          <div className="card-footer">
-            <span>
-              {article.readingTimeMinutes != null
-                ? `약 ${article.readingTimeMinutes}분 · 원문 그대로`
-                : '원문 그대로'}
-            </span>
-            <button type="button" className="card-link" onClick={onOpenIntro}>
-              글 살펴보기
-              <ArrowIcon />
-            </button>
-          </div>
-        </>
-      )}
+      <div className="today-feature-footer">
+        <span className="today-feature-readtime">
+          {article.readingTimeMinutes != null
+            ? `약 ${article.readingTimeMinutes}분 · 원문 그대로`
+            : '원문 그대로'}
+        </span>
+        <button type="button" className="today-feature-cta" onClick={onOpenIntro}>
+          읽고 미션 받기
+          <ArrowIcon />
+        </button>
+      </div>
     </article>
   )
 }
 
 function ArrowIcon() {
   return (
-    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
-        d="M3 8h10M9 4l4 4-4 4"
+        d="M5 12L12 5M12 5H6M12 5V11"
         stroke="currentColor"
-        strokeWidth="1.6"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
