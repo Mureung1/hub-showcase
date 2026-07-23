@@ -87,7 +87,7 @@
 - PostGIS 전환 (MVP는 Haversine 쿼리)
 - 노쇼 정책 고도화 (횟수 제한·페널티 — 현재는 단순 만료)
 - 대시보드 실시간화 (폴링 → SSE/WebSocket)
-- ESLint 도입, 서버 통합 테스트(supertest) 상시화
+- ESLint 도입, 서버 통합 테스트(supertest) 상시화 (클라이언트는 Vitest + RTL 도입됨 — RequireRole 테스트 작성)
 - 사장님 웹앱 알림(브라우저 알림) — 예약 발생 시
 - 이미지 업로드 (딜 사진 — MVP는 카테고리 아이콘/플레이스홀더로 대체)
 
