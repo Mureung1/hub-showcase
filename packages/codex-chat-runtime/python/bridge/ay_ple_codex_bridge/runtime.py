@@ -1393,6 +1393,9 @@ class BridgeWorker:
             except UserInputRequestError as exc:
                 if self._closing:
                     return
+                if exc.code == "interaction_transport_lost":
+                    self.trigger_fatal("sdk_transport_failed")
+                    return
                 if exc.code in {
                     "interaction_already_pending",
                     "interaction_capacity_exceeded",

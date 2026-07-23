@@ -1133,7 +1133,7 @@ class PythonBridgeActualChildTests(unittest.TestCase):
         cases = (
             ("timeout", None, "sdk_operation_timeout", False),
             ("unsafe-url", "unsafe-url", "sdk_operation_failed", True),
-            ("transport", "forced-eof", "sdk_operation_failed", True),
+            ("transport", "forced-eof", "sdk_transport_failed", True),
         )
         for label, outcome, fatal_code, release_start in cases:
             with self.subTest(label=label):
