@@ -49,7 +49,10 @@ proposalRouter.get("/today", async (req, res) => {
     const store = queryStoreId ? await getStoreById(queryStoreId) : await getFirstStore();
     const campaign = await getTodayCampaign(store.id, todayYmdKst());
     if (!campaign) {
-      return res.json({ proposal: null, message: "오늘 생성된 제안이 아직 없습니다" });
+      return res.json({
+        proposal: null,
+        message: "오늘 제안을 만드는 중입니다", // 기동 잡(runBootProposalJob)이 수 초 내 생성한다
+      });
     }
     // 진단은 campaigns에 저장하지 않으므로 조회 시 재계산한다(POST /generate와 동일 형태).
     const diagnosis = diagnose(await getSalesWithWeather(store.id), store.category ?? "default");

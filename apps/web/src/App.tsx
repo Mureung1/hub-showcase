@@ -64,12 +64,15 @@ export default function WeatherPilotV3() {
   useEffect(() => {
     if (MOCK_MODE) return;
     let cancelled = false;
-    (async () => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // 서버 기동 잡이 오늘 제안을 만드는 중이면 empty가 잠깐 뜬다 — 5초 간격 최대 12회 재조회.
+    const load = async (attempt: number) => {
       try {
         const [w, p] = await Promise.all([getWeatherToday(), getProposalToday()]);
         if (cancelled) return;
         if (p.proposal === null) {
           setRemote({ status: "empty", message: p.message });
+          if (attempt < 12) timer = setTimeout(() => load(attempt + 1), 5000);
         } else {
           setRemote({ status: "ready", scenario: scenarioFromApi(w.weather, p.proposal, p.diagnosis), campaignId: p.campaignId });
         }
@@ -78,9 +81,11 @@ export default function WeatherPilotV3() {
           setRemote({ status: "error", message: e instanceof Error ? e.message : "불러오기 실패" });
         }
       }
-    })();
+    };
+    load(1);
     return () => {
       cancelled = true;
+      if (timer) clearTimeout(timer);
     };
   }, []);
 
@@ -614,7 +619,7 @@ function RemoteStatus({ state }: { state: RemoteState }) {
     : "";
   const hint =
     state.status === "empty"
-      ? "서버에서 오늘 제안을 아직 만들지 않았어요. POST /proposal/generate 로 생성하거나 06:30 자동 잡을 기다리세요."
+      ? "서버가 켜지면 오늘 제안을 자동 생성해요(수 초 소요). 자동으로 다시 확인 중…"
       : state.status === "error"
         ? "서버가 켜져 있는지, VITE_API_BASE 설정을 확인하세요."
         : "";
