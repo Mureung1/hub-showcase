@@ -156,6 +156,39 @@ check의 query당 평균 반환 수도 Gemini 의미 검색 0.6, 하이브리드
 판독 결과는 `results/gemini_exploration_result.json`, 실제 요청 수·token·비용은
 `results/gemini_execution_receipt.json`에 있다.
 
+## Task 5 실제 브라우저 확인
+
+2026-07-23에 제품 앱과 분리한 localhost COOP/COEP 페이지에서 실제 Chrome을
+측정했다. 고정 모델 `Xenova/multilingual-e5-small`, revision
+`761b726dd34fb83930e26aab4e9ac3899aa1fa78`, q8, 384차원을 Worker의
+Transformers.js WASM backend로만 실행했다. 개인 데이터·API key·Gemini 호출은
+사용하지 않았다.
+
+| 항목 | Desktop Chrome 150.0.7871.181 | Android Chrome 148.0.7778.215 |
+| --- | ---: | ---: |
+| cold load | 30,272.365ms | 65,525.245ms |
+| cache load | 2,315.080ms | 11,694.190ms |
+| cold 첫 query | 142.625ms | 1,108.960ms |
+| cache 첫 query | 50.590ms | 515.955ms |
+| cache warm p50 / p95 | 13.735 / 27.410ms | 55.505 / 116.780ms |
+| Cache Storage delta | 159,017,472 bytes | 159,017,472 bytes |
+
+progress callback으로 관측한 모델은 118,308,185 bytes, tokenizer는
+17,083,173 bytes, 기타 파일은 658 bytes다. ONNX WASM 파일은 callback에서
+분리 관측되지 않아 `null`로 기록했으며 Node 파일 크기로 보완하지 않았다.
+cold에는 동일 origin Cache Storage 삭제와 CDP HTTP cache 비활성화·초기화를,
+cache에는 cold 성공 뒤 새 Worker를 사용했다. Worker 종료 취소 뒤 새 cache
+Worker 전체 실행, 다른 tab으로 2초 이상 이동한 `hidden → visible`, 그리고
+384차원 복구 query를 두 플랫폼에서 모두 확인했다.
+
+두 브라우저 모두 `navigator.gpu`는 지원하지만 실제 backend는 `wasm`이다.
+`measureUserAgentSpecificMemory`는 Desktop의
+`--enable-blink-features=ForceEagerMeasureMemory` 설정을 포함해 실제 호출이
+실패해 모든 단계의 bytes와 peak를 `null`로 남겼다. 따라서 메모리 값은 만들지
+않았으며 연속 peak도 주장하지 않는다. 모든 원시 관측값과 한계는
+`results/browser_benchmark_result.json` 및
+`results/browser_benchmark_report.md`에 있다.
+
 ## 지표와 랭킹 계약
 
 `Recall@5`는 이 실험의 기존 제품 계약에 맞춰 상위 5개 안에 관련도 1 이상인
