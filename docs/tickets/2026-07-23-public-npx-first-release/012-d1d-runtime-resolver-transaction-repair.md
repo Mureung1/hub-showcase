@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: in-progress
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: /root/d1d_resolver_repair
 
 ## Parent Spec
 
@@ -74,7 +74,7 @@
 | owner | `D` — Runtime delivery |
 | branch | `codex/public-preview-d1d-resolver-repair` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/d1d-resolver-repair` |
-| handoffSha | Claim 시 coordinator가 011의 fixed reviewed SHA를 integration branch에 `--no-ff` merge하고 predecessor 및 integration runtime-release/root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `20f0f8e5a6a3d06eb6906b8904bdd6ccc2f47f32` — coordinator가 011의 fixed reviewed SHA를 integration branch에 `--no-ff` merge하고 predecessor 및 integration runtime-release/root gates를 green으로 확인한 exact integration HEAD |
 | writablePaths | `packages/runtime-release/src/**` 중 resolver transaction/lease/repair/progress implementation·tests (`src/contract.ts`, package manifest와 lockfile 제외); resolver integration fixtures; `docs/tickets/2026-07-23-public-npx-first-release/012-d1d-runtime-resolver-transaction-repair.md` |
 | consumedContracts | S1 frozen resolver/progress/error contract; D1a descriptor/cache/lease; D1b safe staging verifier; D1c transport/partial archive |
 | predecessorEvidence | 011 fixed reviewed SHA, scripted transport/resume/cancellation receipt와 prior archive-security evidence |
