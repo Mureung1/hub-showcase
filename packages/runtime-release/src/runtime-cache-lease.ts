@@ -66,7 +66,7 @@ type InProcessFlight = {
     receipt: RuntimeGenerationVerificationReceipt,
   ) => void
   readonly testOptions: RuntimeCacheLeaseCoordinatorTestOptions
-  active: boolean
+  state: 'acquiring' | 'active' | 'settling' | 'settled'
   leaseIdentity?: RuntimeFileSystemIdentity
 }
 
@@ -121,33 +121,33 @@ export class FileRuntimeCacheLeaseCoordinator
     const existing = IN_PROCESS_FLIGHTS.get(context.key)
     if (existing !== undefined) {
       if (
-        existing.active &&
+        existing.state !== 'settled' &&
         existing.lease.path === input.lease.path &&
         sameCaller(existing.caller, caller) &&
         sameLeaseContext(existing.context, context)
       ) {
         await detachOnAbort(existing.ready, input.signal)
         assertNotCancelled(input.signal)
-        if (existing.active) {
+        if (existing.state === 'active') {
           await this.#testOptions.beforeJoinReadback?.()
-          await assertLeaseContextStable(existing.context)
-          const leaseIdentity = existing.leaseIdentity
-          if (leaseIdentity === undefined) {
-            throw runtimeAuthorityError(
-              'runtime_recovery_required',
-              {
-                kind:
-                  'runtime_cache_lease_join_authority_missing',
-              },
-            )
-          }
           try {
+            await assertLeaseContextStable(existing.context)
+            const leaseIdentity = existing.leaseIdentity
+            if (leaseIdentity === undefined) {
+              throw runtimeAuthorityError(
+                'runtime_recovery_required',
+                {
+                  kind:
+                    'runtime_cache_lease_join_authority_missing',
+                },
+              )
+            }
             await assertDurableLeaseReadback(
               existing,
               leaseIdentity,
             )
           } catch (error) {
-            if (existing.active) throw error
+            if (existing.state === 'active') throw error
           }
         }
         return {
@@ -194,7 +194,6 @@ export class FileRuntimeCacheLeaseCoordinator
     }
     const durableBytes = encodeDurableLease(durableLease)
     const flight: InProcessFlight = {
-      active: true,
       caller,
       completion,
       context,
@@ -206,6 +205,7 @@ export class FileRuntimeCacheLeaseCoordinator
       reject: rejectCompletion!,
       resolveReady: resolveReady!,
       resolve: resolveCompletion!,
+      state: 'acquiring',
       testOptions: this.#testOptions,
     }
     IN_PROCESS_FLIGHTS.set(context.key, flight)
@@ -215,6 +215,7 @@ export class FileRuntimeCacheLeaseCoordinator
         flight,
         input.signal,
       )
+      flight.state = 'active'
       flight.resolveReady()
       let handle: AcquiredLeaseHandle
       handle = {
@@ -231,7 +232,7 @@ export class FileRuntimeCacheLeaseCoordinator
       ACQUIRED_FLIGHTS.set(handle, flight)
       return handle
     } catch (error) {
-      flight.active = false
+      flight.state = 'settled'
       if (IN_PROCESS_FLIGHTS.get(context.key) === flight) {
         IN_PROCESS_FLIGHTS.delete(context.key)
       }
@@ -248,6 +249,7 @@ export class FileRuntimeCacheLeaseCoordinator
   ): Promise<void> {
     const flight = requireAcquiredFlight(handle)
     assertCompletionReceipt(flight, receipt)
+    flight.state = 'settling'
     try {
       await removeDurableLease(flight)
     } catch (error) {
@@ -269,6 +271,7 @@ export class FileRuntimeCacheLeaseCoordinator
     failure: unknown,
   ): Promise<void> {
     const flight = requireAcquiredFlight(handle)
+    flight.state = 'settling'
     let settledFailure = failure
     try {
       await removeDurableLease(flight)
@@ -497,6 +500,14 @@ async function assertDurableLeaseReadback(
       throw new Error('Runtime cache lease bytes changed')
     }
     assertLeaseFileStats(
+      await handle.stat({ bigint: true }),
+      flight,
+      expectedIdentity,
+    )
+    await handle.close()
+    handle = undefined
+    await assertLeaseContextStable(flight.context)
+    assertLeaseFileStats(
       await lstat(flight.lease.path, { bigint: true }),
       flight,
       expectedIdentity,
@@ -507,14 +518,19 @@ async function assertDurableLeaseReadback(
       cause: error,
     })
   } finally {
-    await handle?.close().catch(() => undefined)
+    if (handle !== undefined) {
+      await handle.close().catch(() => undefined)
+    }
   }
 }
 
 async function removeDurableLease(
   flight: InProcessFlight,
 ): Promise<void> {
-  if (!flight.active || flight.leaseIdentity === undefined) {
+  if (
+    flight.state !== 'settling' ||
+    flight.leaseIdentity === undefined
+  ) {
     throw new Error('Runtime cache lease is not active')
   }
   await assertDurableLeaseReadback(
@@ -676,8 +692,8 @@ function settleCompletedFlight(
   flight: InProcessFlight,
   receipt: RuntimeGenerationVerificationReceipt,
 ): void {
-  if (!flight.active) return
-  flight.active = false
+  if (flight.state === 'settled') return
+  flight.state = 'settled'
   if (IN_PROCESS_FLIGHTS.get(flight.context.key) === flight) {
     IN_PROCESS_FLIGHTS.delete(flight.context.key)
   }
@@ -688,8 +704,8 @@ function settleRejectedFlight(
   flight: InProcessFlight,
   error: unknown,
 ): void {
-  if (!flight.active) return
-  flight.active = false
+  if (flight.state === 'settled') return
+  flight.state = 'settled'
   if (IN_PROCESS_FLIGHTS.get(flight.context.key) === flight) {
     IN_PROCESS_FLIGHTS.delete(flight.context.key)
   }
@@ -700,7 +716,7 @@ function requireAcquiredFlight(
   handle: AcquiredLeaseHandle,
 ): InProcessFlight {
   const flight = ACQUIRED_FLIGHTS.get(handle)
-  if (flight === undefined || !flight.active) {
+  if (flight === undefined || flight.state !== 'active') {
     throw runtimeAuthorityError('runtime_recovery_required', {
       kind: 'runtime_cache_lease_handle_invalid',
     })

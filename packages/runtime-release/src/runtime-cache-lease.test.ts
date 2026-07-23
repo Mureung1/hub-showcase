@@ -633,6 +633,74 @@ test('failed owner settlement also propagates release-fsync recovery to joiners'
   }
 })
 
+test('one settlement owns unlink while late same-caller acquires join its completion', async () => {
+  const fixture = await createLeaseFixture()
+  const unlinkReached = deferred<void>()
+  const releaseSettlement = deferred<void>()
+  try {
+    const coordinator = new FileRuntimeCacheLeaseCoordinator({
+      afterReleaseUnlink: async () => {
+        unlinkReached.resolve()
+        await releaseSettlement.promise
+      },
+    })
+    const ownerIdentity = leaseOwner('c', 'd')
+    const acquired = await coordinator.acquireOrJoin({
+      lease: fixture.lease,
+      owner: ownerIdentity,
+      signal: new AbortController().signal,
+    })
+    if (acquired.kind !== 'acquired') {
+      assert.fail('expected lease owner')
+    }
+    const initialJoin = await coordinator.acquireOrJoin({
+      lease: fixture.lease,
+      owner: leaseOwner('c', 'e'),
+      signal: new AbortController().signal,
+    })
+    if (initialJoin.kind !== 'joined') {
+      assert.fail('expected initial joined caller')
+    }
+    const receipt = generationReceipt()
+    const completion = coordinator.complete(acquired, receipt)
+    await unlinkReached.promise
+    assert.equal(await pathExists(fixture.lease.path), false)
+
+    const lateJoin = await coordinator.acquireOrJoin({
+      lease: fixture.lease,
+      owner: leaseOwner('c', 'f'),
+      signal: new AbortController().signal,
+    })
+    if (lateJoin.kind !== 'joined') {
+      assert.fail('expected late joined caller')
+    }
+    let lateSettled = false
+    void lateJoin.completion.then(() => {
+      lateSettled = true
+    })
+    await Promise.resolve()
+    assert.equal(lateSettled, false)
+
+    await assert.rejects(
+      coordinator.fail(
+        acquired,
+        new Error('concurrent settlement must lose'),
+      ),
+      hasFailureCode('runtime_recovery_required'),
+    )
+    assert.equal(lateSettled, false)
+
+    releaseSettlement.resolve()
+    await completion
+    assert.deepEqual(await initialJoin.completion, receipt)
+    assert.deepEqual(await lateJoin.completion, receipt)
+    assert.equal(lateSettled, true)
+  } finally {
+    releaseSettlement.resolve()
+    await rm(fixture.root, { recursive: true, force: true })
+  }
+})
+
 test('a settled lease handle cannot complete or fail twice', async () => {
   const fixture = await createLeaseFixture()
   try {
@@ -697,6 +765,20 @@ function hasFailureCode(expected: string) {
       expected,
     )
     return true
+  }
+}
+
+function deferred<T>(): {
+  readonly promise: Promise<T>
+  resolve(value: T): void
+} {
+  let resolve: ((value: T) => void) | undefined
+  const promise = new Promise<T>((complete) => {
+    resolve = complete
+  })
+  return {
+    promise,
+    resolve: (value) => resolve!(value),
   }
 }
 
