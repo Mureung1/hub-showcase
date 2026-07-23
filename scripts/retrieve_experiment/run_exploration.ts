@@ -6,13 +6,16 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   EXPECTED_QUERY_COUNTS,
   validateEvaluationQueries,
+  type EvaluationInsight,
   type EvaluationQuery,
 } from './contracts';
 import type { EmbeddingCache, EmbeddingProvider } from './embedding_provider';
 import { createFileEmbeddingCache, embedWithCache } from './embedding_provider';
 import {
+  assertExternalExecutionApproved,
   createExperimentManifestHash,
   stableStringify,
+  type ExternalExecutionApproval,
   type ExperimentManifest,
 } from './experiment_manifest';
 import {
@@ -25,10 +28,14 @@ import {
 } from './fixtures/exploratory_queries';
 import { calculateRankingMetrics } from './metrics';
 import {
+  LOCAL_E5_CANDIDATE_PROFILE,
+  renderCandidateExplorationReport,
   renderExplorationReport,
+  type ExplorationCandidateProfile,
   type ExplorationCandidateResult,
   type ExplorationQueryResult,
   type ExplorationReportData,
+  type LocalExplorationCandidateId,
   type ThresholdCandidateEvaluation,
 } from './report';
 import { createLocalE5EmbeddingProvider } from './local_e5_embedding_provider';
@@ -45,15 +52,36 @@ export type CalibrationThresholdSelection = Readonly<{
   selectedThreshold: number;
 }>;
 
-export type RunExplorationOptions = Readonly<{
+export type ExplorationProjection = Readonly<{
+  hash: string;
+  createDocumentText(insight: EvaluationInsight): string;
+  createQueryText(query: EvaluationQuery): string;
+}>;
+
+export type ExternalExplorationExecution = Readonly<{
+  approval: ExternalExecutionApproval;
+  projection: ExplorationProjection;
+}>;
+
+export type RunExplorationOptions<
+  TAlternativeCandidateId extends string = LocalExplorationCandidateId,
+> = Readonly<{
   provider: EmbeddingProvider;
   cache: EmbeddingCache;
+  candidateProfile?: ExplorationCandidateProfile<TAlternativeCandidateId>;
+  externalExecution?: ExternalExplorationExecution;
 }>;
 
 export type ExplorationArtifactPaths = Readonly<{
   resultPath: string;
   reportPath: string;
 }>;
+
+export type ExplorationArtifactOptions<TAlternativeCandidateId extends string> =
+  Readonly<{
+    artifactPrefix: string;
+    candidateProfile: ExplorationCandidateProfile<TAlternativeCandidateId>;
+  }>;
 
 export function selectCalibrationThresholds(
   negativeTopScores: readonly number[]
@@ -99,13 +127,27 @@ export function applySemanticThreshold(
   return ranking.filter(({ score }) => score > threshold);
 }
 
-export async function runExploration(
-  options: RunExplorationOptions
-): Promise<ExplorationReportData> {
+export async function runExploration<
+  TAlternativeCandidateId extends string = LocalExplorationCandidateId,
+>(
+  options: RunExplorationOptions<TAlternativeCandidateId>
+): Promise<ExplorationReportData<TAlternativeCandidateId>> {
   validateFixtureHashes();
   validateEvaluationQueries(EXPLORATORY_QUERIES);
 
-  const manifest = createManifest(options.provider);
+  const candidateProfile =
+    options.candidateProfile ??
+    (LOCAL_E5_CANDIDATE_PROFILE as unknown as ExplorationCandidateProfile<TAlternativeCandidateId>);
+  const manifest = createManifest(options.provider, options.externalExecution);
+
+  if (options.externalExecution) {
+    assertExternalExecutionApproved(manifest, {
+      documentCount: EXPLORATORY_CORPUS.length,
+      queryCount: EXPLORATORY_QUERIES.length,
+      projectionHash: options.externalExecution.projection.hash,
+    });
+  }
+
   const embeddedInsights = await embedCorpus(options);
   const rawSemanticRankingByQueryId = new Map<string, RankedInsight[]>();
 
@@ -114,7 +156,9 @@ export async function runExploration(
       provider: options.provider,
       cache: options.cache,
       request: {
-        text: query.text,
+        text:
+          options.externalExecution?.projection.createQueryText(query) ??
+          query.text,
         taskType: 'query',
       },
     });
@@ -155,7 +199,8 @@ export async function runExploration(
       query,
       rawSemanticRankingByQueryId,
       thresholdSelection.selectedThreshold,
-      manifest
+      manifest,
+      candidateProfile
     )
   );
 
@@ -172,18 +217,36 @@ export async function runExploration(
   };
 }
 
-export async function writeExplorationArtifacts(
-  data: ExplorationReportData,
-  outputDirectory: string
+export async function writeExplorationArtifacts<
+  TAlternativeCandidateId extends string = LocalExplorationCandidateId,
+>(
+  data: ExplorationReportData<TAlternativeCandidateId>,
+  outputDirectory: string,
+  options?: ExplorationArtifactOptions<TAlternativeCandidateId>
 ): Promise<ExplorationArtifactPaths> {
   const resolvedOutputDirectory = resolve(outputDirectory);
-  const resultPath = join(resolvedOutputDirectory, 'exploration_result.json');
-  const reportPath = join(resolvedOutputDirectory, 'exploration_report.md');
+  const artifactPrefix = options?.artifactPrefix ?? 'exploration';
+  const resultPath = join(
+    resolvedOutputDirectory,
+    `${artifactPrefix}_result.json`
+  );
+  const reportPath = join(
+    resolvedOutputDirectory,
+    `${artifactPrefix}_report.md`
+  );
 
   await mkdir(resolvedOutputDirectory, { recursive: true });
   await Promise.all([
     writeFile(resultPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8'),
-    writeFile(reportPath, renderExplorationReport(data), 'utf8'),
+    writeFile(
+      reportPath,
+      options
+        ? renderCandidateExplorationReport(data, options.candidateProfile)
+        : renderExplorationReport(
+            data as ExplorationReportData<LocalExplorationCandidateId>
+          ),
+      'utf8'
+    ),
   ]);
 
   return {
@@ -192,7 +255,10 @@ export async function writeExplorationArtifacts(
   };
 }
 
-function createManifest(provider: EmbeddingProvider): ExperimentManifest {
+function createManifest(
+  provider: EmbeddingProvider,
+  externalExecution: ExternalExplorationExecution | undefined
+): ExperimentManifest {
   return {
     schemaVersion: 1,
     dataset: {
@@ -202,13 +268,15 @@ function createManifest(provider: EmbeddingProvider): ExperimentManifest {
       querySetHash: EXPLORATORY_QUERY_SET_HASH,
     },
     provider: {
-      kind: 'local',
+      kind: externalExecution ? 'external' : 'local',
       name: provider.providerId,
       modelId: provider.modelId,
       modelRevision: provider.modelRevision,
       embeddingDimension: provider.dimensions,
-      documentTaskType: 'passage',
-      queryTaskType: 'query',
+      documentTaskType: externalExecution
+        ? 'retrieval-document-prompt'
+        : 'passage',
+      queryTaskType: externalExecution ? 'retrieval-query-prompt' : 'query',
     },
     cache: {
       namespace: 'retrieve-exploration',
@@ -226,11 +294,16 @@ function createManifest(provider: EmbeddingProvider): ExperimentManifest {
       semantic: { ...EXPECTED_QUERY_COUNTS.semantic },
       negative: { ...EXPECTED_QUERY_COUNTS.negative },
     },
+    ...(externalExecution
+      ? {
+          externalApproval: externalExecution.approval,
+        }
+      : {}),
   };
 }
 
-async function embedCorpus(
-  options: RunExplorationOptions
+async function embedCorpus<TAlternativeCandidateId extends string>(
+  options: RunExplorationOptions<TAlternativeCandidateId>
 ): Promise<EmbeddedInsight[]> {
   const embeddedInsights: EmbeddedInsight[] = [];
 
@@ -239,7 +312,9 @@ async function embedCorpus(
       provider: options.provider,
       cache: options.cache,
       request: {
-        text: createPassageText(insight),
+        text:
+          options.externalExecution?.projection.createDocumentText(insight) ??
+          createPassageText(insight),
         taskType: 'passage',
       },
     });
@@ -304,12 +379,13 @@ function evaluateThreshold(
   };
 }
 
-function evaluateQuery(
+function evaluateQuery<TAlternativeCandidateId extends string>(
   query: EvaluationQuery,
   rawSemanticRankingByQueryId: ReadonlyMap<string, readonly RankedInsight[]>,
   threshold: number,
-  manifest: ExperimentManifest
-): ExplorationQueryResult {
+  manifest: ExperimentManifest,
+  candidateProfile: ExplorationCandidateProfile<TAlternativeCandidateId>
+): ExplorationQueryResult<TAlternativeCandidateId> {
   const lexicalRanking = rankLexically(EXPLORATORY_CORPUS, query.text);
   const semanticRanking = getThresholdedRanking(
     query.id,
@@ -331,6 +407,31 @@ function evaluateQuery(
     manifest.ranking.rrfSensitivityK
   );
   const resultLimit = manifest.ranking.resultLimit;
+  const candidates = {
+    'lexical-current': createCandidateResult(
+      lexicalRanking,
+      query,
+      resultLimit
+    ),
+    [candidateProfile.semanticCandidateId]: createCandidateResult(
+      semanticRanking,
+      query,
+      resultLimit
+    ),
+    [candidateProfile.primaryHybridCandidateId]: createCandidateResult(
+      primaryHybridRanking,
+      query,
+      resultLimit
+    ),
+    [candidateProfile.sensitivityHybridCandidateId]: createCandidateResult(
+      sensitivityHybridRanking,
+      query,
+      resultLimit
+    ),
+  } as Record<
+    'lexical-current' | TAlternativeCandidateId,
+    ExplorationCandidateResult
+  >;
 
   return {
     queryId: query.id,
@@ -338,28 +439,7 @@ function evaluateQuery(
     slice: query.slice,
     phase: query.phase,
     relevanceByInsightId: query.relevanceByInsightId,
-    candidates: {
-      'lexical-current': createCandidateResult(
-        lexicalRanking,
-        query,
-        resultLimit
-      ),
-      'semantic-local-e5': createCandidateResult(
-        semanticRanking,
-        query,
-        resultLimit
-      ),
-      'hybrid-local-e5-k60': createCandidateResult(
-        primaryHybridRanking,
-        query,
-        resultLimit
-      ),
-      'hybrid-local-e5-k10': createCandidateResult(
-        sensitivityHybridRanking,
-        query,
-        resultLimit
-      ),
-    },
+    candidates,
   };
 }
 

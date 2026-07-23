@@ -7,25 +7,71 @@ import {
 } from './metrics';
 import type { RankedInsight } from './ranking';
 
+export type LocalExplorationCandidateId =
+  'semantic-local-e5' | 'hybrid-local-e5-k60' | 'hybrid-local-e5-k10';
+
+export type GeminiExplorationCandidateId =
+  | 'semantic-gemini-embedding-2'
+  | 'hybrid-gemini-embedding-2-k60'
+  | 'hybrid-gemini-embedding-2-k10';
+
 export type ExplorationCandidateId =
-  | 'lexical-current'
-  | 'semantic-local-e5'
-  | 'hybrid-local-e5-k60'
-  | 'hybrid-local-e5-k10';
+  'lexical-current' | LocalExplorationCandidateId;
+
+type CandidateId<TAlternativeCandidateId extends string> =
+  'lexical-current' | TAlternativeCandidateId;
+
+export type ExplorationCandidateProfile<
+  TAlternativeCandidateId extends string,
+> = Readonly<{
+  reportTitle: string;
+  semanticCandidateId: TAlternativeCandidateId;
+  primaryHybridCandidateId: TAlternativeCandidateId;
+  sensitivityHybridCandidateId: TAlternativeCandidateId;
+  labels: Readonly<Record<CandidateId<TAlternativeCandidateId>, string>>;
+}>;
+
+export const LOCAL_E5_CANDIDATE_PROFILE = {
+  reportTitle: '꺼내보기 로컬 E5 합성 탐색 결과',
+  semanticCandidateId: 'semantic-local-e5',
+  primaryHybridCandidateId: 'hybrid-local-e5-k60',
+  sensitivityHybridCandidateId: 'hybrid-local-e5-k10',
+  labels: {
+    'lexical-current': '현행 어휘 검색',
+    'semantic-local-e5': '로컬 E5 의미 검색',
+    'hybrid-local-e5-k60': '로컬 E5 하이브리드 k=60',
+    'hybrid-local-e5-k10': '로컬 E5 하이브리드 k=10',
+  },
+} as const satisfies ExplorationCandidateProfile<LocalExplorationCandidateId>;
+
+export const GEMINI_CANDIDATE_PROFILE = {
+  reportTitle: '꺼내보기 Gemini Embedding 2 합성 탐색 결과',
+  semanticCandidateId: 'semantic-gemini-embedding-2',
+  primaryHybridCandidateId: 'hybrid-gemini-embedding-2-k60',
+  sensitivityHybridCandidateId: 'hybrid-gemini-embedding-2-k10',
+  labels: {
+    'lexical-current': '현행 어휘 검색',
+    'semantic-gemini-embedding-2': 'Gemini Embedding 2 의미 검색',
+    'hybrid-gemini-embedding-2-k60': 'Gemini Embedding 2 하이브리드 k=60',
+    'hybrid-gemini-embedding-2-k10': 'Gemini Embedding 2 하이브리드 k=10',
+  },
+} as const satisfies ExplorationCandidateProfile<GeminiExplorationCandidateId>;
 
 export type ExplorationCandidateResult = Readonly<{
   ranking: readonly RankedInsight[];
   metrics: RankingMetrics;
 }>;
 
-export type ExplorationQueryResult = Readonly<{
+export type ExplorationQueryResult<
+  TAlternativeCandidateId extends string = LocalExplorationCandidateId,
+> = Readonly<{
   queryId: string;
   text: string;
   slice: QuerySlice;
   phase: QueryPhase;
   relevanceByInsightId: Readonly<Record<string, RelevanceGrade>>;
   candidates: Readonly<
-    Record<ExplorationCandidateId, ExplorationCandidateResult>
+    Record<CandidateId<TAlternativeCandidateId>, ExplorationCandidateResult>
   >;
 }>;
 
@@ -36,7 +82,9 @@ export type ThresholdCandidateEvaluation = Readonly<{
   negativeMeanReturnedCount: number;
 }>;
 
-export type ExplorationReportData = Readonly<{
+export type ExplorationReportData<
+  TAlternativeCandidateId extends string = LocalExplorationCandidateId,
+> = Readonly<{
   schemaVersion: 1;
   manifest: ExperimentManifest;
   manifestHash: string;
@@ -45,47 +93,44 @@ export type ExplorationReportData = Readonly<{
     selectedThreshold: number;
     candidates: readonly ThresholdCandidateEvaluation[];
   }>;
-  queries: readonly ExplorationQueryResult[];
+  queries: readonly ExplorationQueryResult<TAlternativeCandidateId>[];
 }>;
-
-const CANDIDATE_IDS = [
-  'lexical-current',
-  'semantic-local-e5',
-  'hybrid-local-e5-k60',
-  'hybrid-local-e5-k10',
-] as const satisfies readonly ExplorationCandidateId[];
-
-const CANDIDATE_LABELS: Record<ExplorationCandidateId, string> = {
-  'lexical-current': '현행 어휘 검색',
-  'semantic-local-e5': '로컬 E5 의미 검색',
-  'hybrid-local-e5-k60': '로컬 E5 하이브리드 k=60',
-  'hybrid-local-e5-k10': '로컬 E5 하이브리드 k=10',
-};
 
 const QUERY_SLICES = ['lexical', 'semantic', 'negative'] as const;
 const QUERY_PHASES = ['calibration', 'check'] as const;
 
 export function renderExplorationReport(data: ExplorationReportData): string {
+  return renderCandidateExplorationReport(data, LOCAL_E5_CANDIDATE_PROFILE);
+}
+
+export function renderCandidateExplorationReport<
+  TAlternativeCandidateId extends string,
+>(
+  data: ExplorationReportData<TAlternativeCandidateId>,
+  profile: ExplorationCandidateProfile<TAlternativeCandidateId>
+): string {
   const sections = [
-    '# 꺼내보기 로컬 E5 합성 탐색 결과',
+    `# ${profile.reportTitle}`,
     [
       '> **해석 제한: 이 합성 평가는 통계적 우월성을 증명하지 않음.**',
       '> 작은 고정 corpus에서 실패 유형을 찾고 실제 개인 데이터 파일럿 후보를 고르기 위한 탐색 결과다.',
     ].join('\n'),
     renderManifestSection(data),
     renderThresholdSection(data),
-    renderAggregateSection(data),
-    renderComparisonSection(data),
-    renderRrfSensitivitySection(data),
-    renderCriticalMissSection(data),
-    renderNegativeSection(data),
-    renderQueryDetails(data),
+    renderAggregateSection(data, profile),
+    renderComparisonSection(data, profile),
+    renderRrfSensitivitySection(data, profile),
+    renderCriticalMissSection(data, profile),
+    renderNegativeSection(data, profile),
+    renderQueryDetails(data, profile),
   ];
 
   return `${sections.join('\n\n')}\n`;
 }
 
-function renderManifestSection(data: ExplorationReportData): string {
+function renderManifestSection<TAlternativeCandidateId extends string>(
+  data: ExplorationReportData<TAlternativeCandidateId>
+): string {
   return [
     '## 실행 계약',
     '',
@@ -102,7 +147,9 @@ function renderManifestSection(data: ExplorationReportData): string {
   ].join('\n');
 }
 
-function renderThresholdSection(data: ExplorationReportData): string {
+function renderThresholdSection<TAlternativeCandidateId extends string>(
+  data: ExplorationReportData<TAlternativeCandidateId>
+): string {
   const rows = data.threshold.candidates.map((candidate) => {
     return [
       formatScore(candidate.threshold),
@@ -127,8 +174,12 @@ function renderThresholdSection(data: ExplorationReportData): string {
   ].join('\n');
 }
 
-function renderAggregateSection(data: ExplorationReportData): string {
+function renderAggregateSection<TAlternativeCandidateId extends string>(
+  data: ExplorationReportData<TAlternativeCandidateId>,
+  profile: ExplorationCandidateProfile<TAlternativeCandidateId>
+): string {
   const rows: string[] = [];
+  const candidateIds = getCandidateIds(profile);
 
   for (const slice of QUERY_SLICES) {
     for (const phase of QUERY_PHASES) {
@@ -140,13 +191,13 @@ function renderAggregateSection(data: ExplorationReportData): string {
         continue;
       }
 
-      for (const candidateId of CANDIDATE_IDS) {
+      for (const candidateId of candidateIds) {
         const metrics = queries.map(
           (query) => query.candidates[candidateId].metrics
         );
 
         rows.push(
-          `| ${slice} | ${phase} | ${CANDIDATE_LABELS[candidateId]} | ${formatScore(mean(metrics.map(({ recallAt5 }) => recallAt5)))} | ${formatScore(mean(metrics.map(({ mrrAt6 }) => mrrAt6)))} | ${formatScore(mean(metrics.map(({ ndcgAt6 }) => ndcgAt6)))} | ${formatScore(mean(metrics.map(({ returnedResultCount }) => returnedResultCount)))} |`
+          `| ${slice} | ${phase} | ${profile.labels[candidateId]} | ${formatScore(mean(metrics.map(({ recallAt5 }) => recallAt5)))} | ${formatScore(mean(metrics.map(({ mrrAt6 }) => mrrAt6)))} | ${formatScore(mean(metrics.map(({ ndcgAt6 }) => ndcgAt6)))} | ${formatScore(mean(metrics.map(({ returnedResultCount }) => returnedResultCount)))} |`
         );
       }
     }
@@ -161,17 +212,20 @@ function renderAggregateSection(data: ExplorationReportData): string {
   ].join('\n');
 }
 
-function renderComparisonSection(data: ExplorationReportData): string {
+function renderComparisonSection<TAlternativeCandidateId extends string>(
+  data: ExplorationReportData<TAlternativeCandidateId>,
+  profile: ExplorationCandidateProfile<TAlternativeCandidateId>
+): string {
   const positiveQueries = data.queries.filter(
     ({ slice }) => slice !== 'negative'
   );
-  const rows = CANDIDATE_IDS.filter(
-    (candidateId) => candidateId !== 'lexical-current'
-  ).map((candidateId) => {
-    const summary = summarizeAgainstBaseline(positiveQueries, candidateId);
+  const rows = getCandidateIds(profile)
+    .filter((candidateId) => candidateId !== 'lexical-current')
+    .map((candidateId) => {
+      const summary = summarizeAgainstBaseline(positiveQueries, candidateId);
 
-    return `| ${CANDIDATE_LABELS[candidateId]} | ${summary.wins} | ${summary.ties} | ${summary.losses} |`;
-  });
+      return `| ${profile.labels[candidateId]} | ${summary.wins} | ${summary.ties} | ${summary.losses} |`;
+    });
 
   return [
     '## 현행 대비 query별 nDCG@6',
@@ -182,17 +236,20 @@ function renderComparisonSection(data: ExplorationReportData): string {
   ].join('\n');
 }
 
-function renderRrfSensitivitySection(data: ExplorationReportData): string {
+function renderRrfSensitivitySection<TAlternativeCandidateId extends string>(
+  data: ExplorationReportData<TAlternativeCandidateId>,
+  profile: ExplorationCandidateProfile<TAlternativeCandidateId>
+): string {
   const positiveQueries = data.queries.filter(
     ({ slice }) => slice !== 'negative'
   );
   const primary = summarizeAgainstBaseline(
     positiveQueries,
-    'hybrid-local-e5-k60'
+    profile.primaryHybridCandidateId
   );
   const sensitivity = summarizeAgainstBaseline(
     positiveQueries,
-    'hybrid-local-e5-k10'
+    profile.sensitivityHybridCandidateId
   );
   const isReversed =
     compareWinLossDirection(primary) !== compareWinLossDirection(sensitivity);
@@ -206,8 +263,12 @@ function renderRrfSensitivitySection(data: ExplorationReportData): string {
   ].join('\n');
 }
 
-function renderCriticalMissSection(data: ExplorationReportData): string {
+function renderCriticalMissSection<TAlternativeCandidateId extends string>(
+  data: ExplorationReportData<TAlternativeCandidateId>,
+  profile: ExplorationCandidateProfile<TAlternativeCandidateId>
+): string {
   const lines: string[] = [];
+  const candidateIds = getCandidateIds(profile);
 
   for (const query of data.queries) {
     const coreInsightIds = Object.entries(query.relevanceByInsightId)
@@ -219,7 +280,7 @@ function renderCriticalMissSection(data: ExplorationReportData): string {
         .map(({ insightId }) => insightId)
     );
 
-    for (const candidateId of CANDIDATE_IDS.filter(
+    for (const candidateId of candidateIds.filter(
       (id) => id !== 'lexical-current'
     )) {
       const candidateIds = new Set(
@@ -234,7 +295,7 @@ function renderCriticalMissSection(data: ExplorationReportData): string {
 
       if (missedIds.length > 0) {
         lines.push(
-          `- ${query.queryId} · ${CANDIDATE_LABELS[candidateId]} · ${missedIds.join(', ')}`
+          `- ${query.queryId} · ${profile.labels[candidateId]} · ${missedIds.join(', ')}`
         );
       }
     }
@@ -249,15 +310,18 @@ function renderCriticalMissSection(data: ExplorationReportData): string {
   ].join('\n');
 }
 
-function renderNegativeSection(data: ExplorationReportData): string {
+function renderNegativeSection<TAlternativeCandidateId extends string>(
+  data: ExplorationReportData<TAlternativeCandidateId>,
+  profile: ExplorationCandidateProfile<TAlternativeCandidateId>
+): string {
   const negativeQueries = data.queries.filter(
     ({ slice }) => slice === 'negative'
   );
   const rows = negativeQueries.flatMap((query) => {
-    return CANDIDATE_IDS.map((candidateId) => {
+    return getCandidateIds(profile).map((candidateId) => {
       const count = query.candidates[candidateId].metrics.returnedResultCount;
 
-      return `| ${query.queryId} | ${query.phase} | ${CANDIDATE_LABELS[candidateId]} | ${count} |`;
+      return `| ${query.queryId} | ${query.phase} | ${profile.labels[candidateId]} | ${count} |`;
     });
   });
 
@@ -270,11 +334,14 @@ function renderNegativeSection(data: ExplorationReportData): string {
   ].join('\n');
 }
 
-function renderQueryDetails(data: ExplorationReportData): string {
+function renderQueryDetails<TAlternativeCandidateId extends string>(
+  data: ExplorationReportData<TAlternativeCandidateId>,
+  profile: ExplorationCandidateProfile<TAlternativeCandidateId>
+): string {
   const sections = [...data.queries]
     .sort((current, next) => current.queryId.localeCompare(next.queryId))
     .map((query) => {
-      const rows = CANDIDATE_IDS.map((candidateId) => {
+      const rows = getCandidateIds(profile).map((candidateId) => {
         const result = query.candidates[candidateId];
         const ranking = result.ranking
           .slice(0, 6)
@@ -285,7 +352,7 @@ function renderQueryDetails(data: ExplorationReportData): string {
           })
           .join('<br>');
 
-        return `| ${CANDIDATE_LABELS[candidateId]} | ${ranking || '-'} | ${formatScore(result.metrics.recallAt5)} | ${formatScore(result.metrics.ndcgAt6)} |`;
+        return `| ${profile.labels[candidateId]} | ${ranking || '-'} | ${formatScore(result.metrics.recallAt5)} | ${formatScore(result.metrics.ndcgAt6)} |`;
       });
 
       return [
@@ -302,9 +369,9 @@ function renderQueryDetails(data: ExplorationReportData): string {
   return ['## Query별 결과와 오류 사례', '', ...sections].join('\n\n');
 }
 
-function summarizeAgainstBaseline(
-  queries: readonly ExplorationQueryResult[],
-  candidateId: ExplorationCandidateId
+function summarizeAgainstBaseline<TAlternativeCandidateId extends string>(
+  queries: readonly ExplorationQueryResult<TAlternativeCandidateId>[],
+  candidateId: CandidateId<TAlternativeCandidateId>
 ): QueryScoreSummary {
   return compareQueryScores(
     queries.map((query) => ({
@@ -313,6 +380,17 @@ function summarizeAgainstBaseline(
       candidateScore: query.candidates[candidateId].metrics.ndcgAt6,
     }))
   );
+}
+
+function getCandidateIds<TAlternativeCandidateId extends string>(
+  profile: ExplorationCandidateProfile<TAlternativeCandidateId>
+): readonly CandidateId<TAlternativeCandidateId>[] {
+  return [
+    'lexical-current',
+    profile.semanticCandidateId,
+    profile.primaryHybridCandidateId,
+    profile.sensitivityHybridCandidateId,
+  ];
 }
 
 function compareWinLossDirection(summary: QueryScoreSummary): number {

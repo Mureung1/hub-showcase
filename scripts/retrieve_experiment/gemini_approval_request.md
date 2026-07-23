@@ -1,11 +1,13 @@
 # Gemini 합성 탐색 비교 승인 요청
 
-**상태:** 사용자 승인 대기
+**상태:** Free Tier 실행 승인, API key 대기
 
 **작성일:** 2026-07-23
 
-이 문서는 Task 4의 승인 범위와 예상 비용을 고정한다. 승인 전에는 Gemini
-adapter를 구현하거나 API key를 읽거나 외부 API를 호출하지 않는다.
+이 문서는 Task 4의 승인 범위와 예상 비용을 고정한다. 사용자는 2026-07-23
+Free Tier 실행과 입력의 Google 제품 개선 사용 가능성에 동의했다. Adapter와
+runner는 이 범위 안에서만 구현하며 API key가 준비되기 전에는 외부 API를
+호출하지 않는다.
 
 ## 비교 가치
 
@@ -138,13 +140,18 @@ Tier 실행을 기본 제안으로 삼는다.
 
 ## 사용자 결정
 
-다음 중 하나를 명시적으로 선택해야 한다.
+**2026-07-23 결정:** Free Tier 실행 승인
 
-- Paid Tier 실행 승인: 비용 상한 `$0.01`, 입력의 제품 개선 사용 없음
-- Free Tier 실행 승인: 비용 `$0`, 입력의 제품 개선 사용 가능성 동의
-- Gemini 비교 보류
+- 비용: `$0`
+- 입력의 Google 제품 개선 사용 가능성: 동의
+- 문서 상한: 72개
+- query 상한: 45개
+- projection SHA-256:
+  `8308faf17802dcba4d599c8ac138c9bea156b1ef82640a99b4c9b0ec836785b2`
+- 승인 참조:
+  `codex-user-message-2026-07-23-free-tier-product-improvement-consent`
 
-승인 문구와 시각은 외부 실행 manifest의 `approvalReference`로 기록한다.
+개인 데이터나 더 큰 실행 범위에는 이 승인을 재사용하지 않는다.
 
 ## 공식 근거
 

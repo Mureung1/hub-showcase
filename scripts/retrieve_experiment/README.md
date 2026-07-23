@@ -134,8 +134,13 @@ Task 3 결과만으로 Gemini 비교는 필수가 아니지만, 로컬 모델과
 오류 차이를 학습하기 위한 제한된 합성 비교 가치는 남아 있다.
 
 `gemini_approval_request.md`에 최신 안정 모델, 고정 projection, 문서·query 수,
-예상 token·비용, cache 정책과 선택지를 기록했다. 사용자 승인 전에는 Gemini
-adapter 구현, API key 접근과 외부 호출을 진행하지 않는다.
+예상 token·비용과 cache 정책을 기록했다. 사용자는 2026-07-23 Free Tier
+실행과 입력의 Google 제품 개선 사용 가능성에 동의했다.
+
+승인된 projection과 범위를 강제하는 Gemini adapter·runner를 구현했으며,
+명시적 CLI 확인값과 `GEMINI_API_KEY`가 모두 없으면 네트워크 전에 중단한다.
+현재 API key가 준비되지 않아 실제 외부 호출과 Gemini 결과 생성은 대기
+상태다.
 
 ## 지표와 랭킹 계약
 
