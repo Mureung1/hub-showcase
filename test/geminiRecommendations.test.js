@@ -26,6 +26,7 @@ const ingredientContext = {
 function generatedRecipe(index) {
   return {
     name: `삼겹살 메뉴 ${index}`,
+    description: "고소한 삼겹살을 간단하게 즐기는 든든한 한 끼예요.",
     servings: 1,
     requiredIngredients: [{ name: "삼겹살", amount: 200, unit: "g" }],
     optionalIngredients: [],
@@ -37,6 +38,7 @@ function generatedRecipe(index) {
     recommendationReasons: ["보유 재료 활용"],
     nutritionTags: ["nutrition:protein"],
     nutritionSummary: "단백질 중심 메뉴",
+    substitutions: [{ ingredient: "삼겹살", alternatives: ["목살"], note: "기름을 조금 줄여 조리하세요." }],
     steps: ["재료를 손질해요.", "충분히 익혀요."],
     safetyNotes: ["고기를 충분히 익혀요."],
   };
@@ -71,6 +73,27 @@ test("Interactions API 구조화 응답을 Zod로 검증한다", async () => {
   assert.equal(requestBody.response_format.mime_type, "application/json");
   assert.ok(requestBody.response_format.schema.required.includes("recipes"));
   assert.ok(requestBody.response_format.schema.properties.recipes.items.required.includes("dishType"));
+  assert.ok(requestBody.response_format.schema.properties.recipes.items.required.includes("description"));
+  assert.ok(requestBody.response_format.schema.properties.recipes.items.required.includes("substitutions"));
+});
+
+test("대체 재료 안내가 없는 응답은 형식 오류로 거부한다", async () => {
+  const invalidRecipe = generatedRecipe(1);
+  delete invalidRecipe.substitutions;
+  const fetchImpl = async () => new Response(JSON.stringify({
+    id: "interaction-missing-substitutions",
+    model: "test-model",
+    steps: [{
+      type: "model_output",
+      content: [{ type: "text", text: JSON.stringify({ recipes: [invalidRecipe, generatedRecipe(2), generatedRecipe(3)] }) }],
+    }],
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+  const client = createGeminiRecommendationClient({ apiKey: "test-key", model: "test-model", fetchImpl });
+
+  await assert.rejects(
+    () => client.generate({ request, ingredientContext }),
+    (error) => error instanceof GeminiRecommendationError && error.code === "GEMINI_INVALID_RESPONSE",
+  );
 });
 
 test("무료 사용 한도 오류를 재시도 가능한 서비스 오류로 변환한다", async () => {

@@ -34,6 +34,7 @@ const ingredientRows = [{
 function generatedRecipe(index) {
   return {
     name: `삼겹살 메뉴 ${index}`,
+    description: "삼겹살을 간단하게 조리해 즐기는 든든한 한 끼예요.",
     servings: 1,
     requiredIngredients: [{ name: "삼겹살", amount: 200, unit: "g" }],
     optionalIngredients: [],
@@ -45,6 +46,7 @@ function generatedRecipe(index) {
     recommendationReasons: ["보유 재료 활용"],
     nutritionTags: ["nutrition:protein"],
     nutritionSummary: "단백질 중심 메뉴",
+    substitutions: [],
     steps: ["재료를 손질해요.", "충분히 익혀요."],
     safetyNotes: ["고기를 충분히 익혀요."],
   };

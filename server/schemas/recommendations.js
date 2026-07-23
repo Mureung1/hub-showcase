@@ -35,8 +35,15 @@ export const generatedIngredientSchema = z.object({
   unit: z.string().trim().min(1).max(30),
 }).strict();
 
+export const generatedSubstitutionSchema = z.object({
+  ingredient: z.string().trim().min(1).max(100),
+  alternatives: z.array(z.string().trim().min(1).max(100)).min(1).max(3),
+  note: z.string().trim().min(1).max(200),
+}).strict();
+
 export const generatedRecipeSchema = z.object({
   name: z.string().trim().min(2).max(100),
+  description: z.string().trim().min(1).max(500),
   servings: z.literal(1),
   requiredIngredients: z.array(generatedIngredientSchema).min(1).max(15),
   optionalIngredients: z.array(generatedIngredientSchema).max(10),
@@ -48,6 +55,7 @@ export const generatedRecipeSchema = z.object({
   recommendationReasons: z.array(z.string().trim().min(1).max(200)).min(1).max(3),
   nutritionTags: z.array(z.enum(NUTRITION_TAGS)).max(NUTRITION_TAGS.length),
   nutritionSummary: z.string().trim().min(1).max(300),
+  substitutions: z.array(generatedSubstitutionSchema).max(5),
   steps: z.array(z.string().trim().min(1).max(300)).min(2).max(10),
   safetyNotes: z.array(z.string().trim().min(1).max(300)).max(3),
 }).strict();
@@ -88,6 +96,7 @@ export const geminiRecommendationJsonSchema = {
         type: "object",
         properties: {
           name: stringSchema("한국어 레시피명"),
+          description: stringSchema("음식의 맛과 특징, 어떤 한 끼에 어울리는지 설명하는 짧은 소개"),
           servings: { type: "integer", description: "항상 1인분" },
           requiredIngredients: { type: "array", items: ingredientJsonSchema },
           optionalIngredients: { type: "array", items: ingredientJsonSchema },
@@ -105,6 +114,21 @@ export const geminiRecommendationJsonSchema = {
             items: { type: "string", enum: NUTRITION_TAGS },
           },
           nutritionSummary: stringSchema("숫자를 제외한 정성적인 영양 구성 설명"),
+          substitutions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                ingredient: stringSchema("대체가 필요한 원재료명"),
+                alternatives: {
+                  type: "array",
+                  items: stringSchema("대체 가능한 재료명"),
+                },
+                note: stringSchema("대체 시 맛·식감 변화 등 짧은 안내"),
+              },
+              required: ["ingredient", "alternatives", "note"],
+            },
+          },
           steps: {
             type: "array",
             items: stringSchema("초보자도 실행할 수 있는 한 단계의 조리 설명"),
@@ -116,6 +140,7 @@ export const geminiRecommendationJsonSchema = {
         },
         required: [
           "name",
+          "description",
           "servings",
           "requiredIngredients",
           "optionalIngredients",
@@ -127,6 +152,7 @@ export const geminiRecommendationJsonSchema = {
           "recommendationReasons",
           "nutritionTags",
           "nutritionSummary",
+          "substitutions",
           "steps",
           "safetyNotes",
         ],
