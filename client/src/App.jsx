@@ -22,6 +22,9 @@ function App() {
   // 활성화된 채팅방 상태 (room 객체)
   const [activeChat, setActiveChat] = useState(null);
 
+  // 검색어 상태
+  const [searchQuery, setSearchQuery] = useState('');
+
   // 새로운 채팅 시작 시 방을 생성하고 API로 저장하는 로직
   const handleStartChat = async (post, initialMessage) => {
     const generateId = () => window.crypto?.randomUUID ? window.crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -62,6 +65,8 @@ function App() {
       {/* 탭 전환 상태를 헤더에 전달 */}
       <AppHeader 
         currentTab={currentTab} 
+        searchQuery={searchQuery}
+        onSearch={(q) => setSearchQuery(q)}
         onTabChange={(tab) => {
           setCurrentTab(tab);
           setActiveChat(null);
@@ -90,6 +95,9 @@ function App() {
           ) : (
             <FeedList 
               refreshTrigger={refreshTrigger}
+              searchQuery={searchQuery}
+              onSearch={(q) => setSearchQuery(q)}
+              onClearSearch={() => setSearchQuery('')}
               onWriteClick={() => setIsModalOpen(true)} 
               onPostClick={setSelectedPost}
             />

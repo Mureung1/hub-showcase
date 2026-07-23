@@ -3,7 +3,7 @@ import PostCard from './PostCard';
 import FeedTabs from './FeedTabs';
 
 // 게시글 목록 컴포넌트
-const FeedList = ({ onWriteClick, refreshTrigger, onPostClick }) => {
+const FeedList = ({ onWriteClick, refreshTrigger, onPostClick, searchQuery = '', onSearch, onClearSearch }) => {
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -12,7 +12,7 @@ const FeedList = ({ onWriteClick, refreshTrigger, onPostClick }) => {
 
   useEffect(() => {
     fetchPosts();
-  }, [refreshTrigger, currentCategory, filters]);
+  }, [refreshTrigger, currentCategory, filters, searchQuery]);
 
   const fetchPosts = async () => {
     try {
@@ -23,6 +23,9 @@ const FeedList = ({ onWriteClick, refreshTrigger, onPostClick }) => {
       if (currentCategory !== '전체') queryParams.append('category', currentCategory);
       if (filters.status) queryParams.append('status', filters.status);
       if (filters.reward) queryParams.append('reward', filters.reward);
+      if (searchQuery && searchQuery.trim().length >= 2) {
+        queryParams.append('search', searchQuery.trim());
+      }
       
       const res = await fetch(`${apiUrl}/api/posts?${queryParams.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch posts');
@@ -30,14 +33,11 @@ const FeedList = ({ onWriteClick, refreshTrigger, onPostClick }) => {
       setPosts(data);
     } catch (err) {
       console.error('게시글 목록 조회 오류:', err);
+      setPosts([]);
     } finally {
       setIsLoading(false);
     }
   };
-
-  // 부모(App)가 "새 글 작성됐어!" 할 때 목록을 새로고침하기 위해 함수를 노출
-  // → 이건 4단계에서 App.jsx와 연결할 때 사용됩니다
-  // (현재는 FeedList 자체적으로 useEffect에서 첫 로딩 시 불러옴)
 
   return (
     <div className="feed-column" style={{
@@ -52,7 +52,45 @@ const FeedList = ({ onWriteClick, refreshTrigger, onPostClick }) => {
         onCategoryChange={setCurrentCategory}
         filters={filters}
         onFilterChange={setFilters}
+        searchQuery={searchQuery}
+        onSearch={onSearch}
       />
+
+      {/* 검색어 활성화 상태 안내 뱃지 */}
+      {searchQuery && searchQuery.trim().length >= 2 && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justify: 'space-between',
+          backgroundColor: 'var(--color-primary-light)',
+          padding: '10px 16px',
+          borderBottom: '1px solid var(--color-divider)',
+          fontSize: '14px',
+          color: 'var(--color-text-primary)'
+        }}>
+          <div>
+            <span>🔍 <strong>"{searchQuery}"</strong> 검색 결과</span>
+            <span style={{ marginLeft: '8px', color: 'var(--color-primary-cta)', fontWeight: 'bold' }}>
+              ({posts.length}건)
+            </span>
+          </div>
+          <button
+            onClick={onClearSearch}
+            style={{
+              backgroundColor: '#ffffff',
+              border: '1px solid var(--color-primary-cta)',
+              color: 'var(--color-primary-cta)',
+              borderRadius: '12px',
+              padding: '2px 10px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            검색 지우기 ✕
+          </button>
+        </div>
+      )}
 
       {/* 게시글 카드 목록 */}
       <div>
@@ -62,8 +100,32 @@ const FeedList = ({ onWriteClick, refreshTrigger, onPostClick }) => {
           </p>
         ) : posts.length === 0 ? (
           <div className="empty-state" style={{ padding: '60px 20px', textAlign: 'center' }}>
-            <div style={{ fontSize: '40px', marginBottom: '16px' }}>📝</div>
-            <div style={{ color: 'var(--color-text-secondary)', fontSize: '15px' }}>조건에 맞는 게시글이 없습니다.</div>
+            <div style={{ fontSize: '40px', marginBottom: '16px' }}>
+              {searchQuery ? '🔍' : '📝'}
+            </div>
+            <div style={{ color: 'var(--color-text-secondary)', fontSize: '15px', marginBottom: searchQuery ? '12px' : '0' }}>
+              {searchQuery 
+                ? `"${searchQuery}"에 대한 검색 결과가 없습니다.` 
+                : '조건에 맞는 게시글이 없습니다.'}
+            </div>
+            {searchQuery && (
+              <button
+                onClick={onClearSearch}
+                style={{
+                  marginTop: '8px',
+                  padding: '8px 16px',
+                  backgroundColor: 'var(--color-primary-cta)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '16px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                전체 피드 보기
+              </button>
+            )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -74,7 +136,7 @@ const FeedList = ({ onWriteClick, refreshTrigger, onPostClick }) => {
         )}
       </div>
 
-      {/* 우하단 FAB (상세 페이지가 아닐 때만 렌더링되도록 부모에서 제어됨) */}
+      {/* 우하단 FAB */}
       <button
         className="fab-btn"
         onClick={onWriteClick}

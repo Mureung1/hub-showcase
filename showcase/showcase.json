@@ -1,0 +1,81 @@
+{
+    "schemaVersion": 1,
+    "title": "meetry - 대학생 대면 소통 플랫폼",
+    "summary": "대학생들이 학내에서 1:1 대면 도움 요청과 실시간 채팅으로 소통하는 서비스입니다.",
+    "githubUser": "daehee11(안대희)",
+    "demoUrl": "https://daehee11.github.io/hub/",
+    "thumbnail": "thumbnail.webp",
+    "screenshots": [
+        "screenshots/feed.webp",
+        "screenshots/chat.webp"
+    ],
+    "problem": "대학생이 과제나 학교생활에서 즉각적인 대면 도움이 필요할 때, 부담 없이 빠르게 도와줄 사람을 찾을 창구가 부족합니다.",
+    "targetUsers": [
+        "학업이나 학교생활 중 1:1 대면 도움이 필요한 대학생",
+        "남는 시간에 다른 학생을 도와주고 싶은 대학생"
+    ],
+    "features": [
+        "도움 요청 게시글을 작성하고 피드에서 조회합니다.",
+        "1:1 채팅 신청 후 실시간 메신저로 소통합니다.",
+        "역할(방장/도우미)을 전환하며 양쪽 화면을 확인합니다."
+    ],
+    "featureTags": [
+        "실시간 채팅",
+        "도움 요청 피드",
+        "역할 전환"
+    ],
+    "techStack": [
+        "React",
+        "Vite",
+        "Express",
+        "Supabase"
+    ],
+    "techHighlights": [
+        "React Context API와 localStorage로 로그인 없이 유저를 식별하고 역할을 전환합니다.",
+        "Express와 Socket.io를 연결해 방(roomId) 단위로 실시간 메시지를 주고받습니다.",
+        "Supabase API로 채팅 메시지를 DB에 저장하고 이전 대화를 불러옵니다."
+    ],
+    "developmentWithAI": "저는 서비스 아이디어와 핵심 기능을 정했습니다. AI는 요구사항을 단계별 작업으로 나누고 코드 초안을 만들었습니다. 저는 결과를 실행하고 테스트하면서 수정했습니다.",
+    "agent": {
+        "summary": "기획부터 구현, 디자인 적용, 개발 기록까지 Agent와 Skill을 함께 사용했습니다.",
+        "agentTools": [
+            {
+                "type": "agent",
+                "name": "개발 계획 Agent",
+                "purpose": "요구사항을 단계별 작업으로 나누고 구현 순서를 정합니다."
+            },
+            {
+                "type": "skill",
+                "name": "meetry-page-builder",
+                "purpose": "디자인 가이드에 맞춰 일관된 반응형 페이지를 생성합니다."
+            },
+            {
+                "type": "skill",
+                "name": "dev-logger",
+                "purpose": "날짜별 개발 계획과 완료 내역을 dev_log.md에 기록합니다."
+            }
+        ],
+        "workflows": [
+            {
+                "name": "기능 개발 Workflow",
+                "steps": [
+                    "기능 명세 작성",
+                    "Agent에게 단계별 구현 계획 요청",
+                    "프론트엔드 컴포넌트 퍼블리싱",
+                    "Socket.io 실시간 통신 연동",
+                    "Supabase DB 저장 API 구현",
+                    "브라우저 탭 2개로 실시간 테스트"
+                ]
+            },
+            {
+                "name": "커밋 및 기록 Workflow",
+                "steps": [
+                    "git-assistant 스킬로 기능별 분할 커밋",
+                    "dev-logger 스킬로 개발 일지 업데이트",
+                    "scrum 스킬로 다음 작업 계획 정리",
+                    "최종 결과 확인"
+                ]
+            }
+        ]
+    }
+}

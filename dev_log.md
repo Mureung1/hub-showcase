@@ -103,3 +103,124 @@
   * `client/src/components/ChatRoom.jsx`
 * **완료 조건(검증 방법)**:
   * 채팅방에서 메시지를 몇 개 전송한 뒤, 브라우저를 완전히 새로고침(F5) 했을 때 로컬 스토리지가 아닌 서버 API를 통해 이전 메시지들이 정상적으로 복구되어 렌더링되는지 확인.
+
+## 2026-07-23
+
+### ✅ 1. 1:1 대화 / 커뮤니티 탭 전환 시 상단 헤더 흔들림(Layout Shift) 버그 수정 (완료)
+* **원인**: 커뮤니티 탭(피드 긴 목록)과 1:1 대화 탭(짧은 목록) 간 탭 이동 시, 수직 스크롤바 유무 차이로 인해 `position: fixed` 헤더(`AppHeader`) 및 레이아웃 전체가 좌우로 미세하게 밀리고 흔들리는 현상 발생.
+* **작업 내역**:
+  * `index.css`의 `html` 셀렉터에 `overflow-y: scroll;` 및 `scrollbar-gutter: stable;` 속성을 지정하여 스크롤바 유무에 관계없이 일정한 폭 보장.
+  * `AppHeader.jsx` 내 네비게이션 요소의 `<a>` 태그를 `<button type="button">`으로 교체하고 버튼 스타일 리셋을 적용해 앵커 링크 클릭으로 인한 예기치 않은 스크롤 스냅 방지.
+* **관련 파일**:
+  * `client/src/index.css` (수정)
+  * `client/src/components/AppHeader.jsx` (수정)
+
+### ✅ 2. 기존 피드 필터 바 검색창 활용 게시글 검색 및 2자 이상 유효성 검증 구현 (완료)
+* **목표**: 헤더에 새 검색창을 추가하는 대신, 피드 필터 영역(`FeedTabs.jsx`) 옆에 이미 존재하는 기존 검색창(`search-input`)에 통합 검색 기능 및 2자 이상 입력 검증 로직 구현.
+* **작업 내역**:
+  * **헤더 복원 (`AppHeader.jsx`)**: 헤더의 오버레이 검색창을 제거하고 단순 깔끔한 헤더 상태로 복원. (돋보기 클릭 시 피드 탭으로 이동).
+  * **피드 필터 검색바 (`FeedTabs.jsx`)**: 기존 `search-box` 내부의 `search-input`을 활용하여 검색어 상태 연동, `✕` 지우기 버튼 추가, 1글자 입력 후 검색 시 "검색어는 최소 2자 이상 입력해주세요!" 경고 툴팁 처리.
+  * **백엔드 (`server/src/app.js`)**: `GET /api/posts` API에 `search` 쿼리 파라미터를 연동하여 2자 이상 키워드로 제목/본문/태그 검색 쿼리 지원 (Mock DB 및 Supabase Cloud 모두 연동 지원).
+  * **피드 결과 UI (`FeedList.jsx` & `App.jsx`)**: 검색어 적용 시 `🔍 "{searchQuery}" 검색 결과 ({N}건)` 뱃지 노출, 결과 0건 시 빈 상태 UI 및 [전체 피드 보기] 버튼 제공.
+* **관련 파일**:
+  * `client/src/components/FeedTabs.jsx` (수정)
+  * `client/src/components/FeedList.jsx` (수정)
+  * `client/src/components/AppHeader.jsx` (수정)
+  * `client/src/App.jsx` (수정)
+  * `server/src/app.js` (수정)
+
+### ✅ 3. 게시글 작성 시 학과 태그 저장 및 피드 렌더링 누락 버그 수정 (완료)
+* **원인**: 
+  - `CreatePostModal.jsx` 및 백엔드(`app.js`)에서 학과 필드명을 `author_major`로 다루는 반면, 피드 카드(`PostCard.jsx`) 및 상세 화면(`PostDetail.jsx`)에서는 `post.major_tag`만 조회하여 학과 태그 뱃지가 화면에 누락되는 현상 발생.
+* **작업 내역**:
+  * **백엔드 및 모달**: `POST /api/posts` 수신 및 전송 시 `author_major`와 `major_tag`를 상호 호환 저장하도록 교정.
+  * **카드 및 상세 화면**: `PostCard.jsx` 및 `PostDetail.jsx`에서 `post.major_tag`와 `post.author_major`를 모두 조회하여 피드 상단 및 게시글 상세 상단에 학과 태그 뱃지가 정상적으로 노출되도록 보강.
+* **관련 파일**:
+  * `server/src/app.js` (수정)
+  * `client/src/components/CreatePostModal.jsx` (수정)
+  * `client/src/components/PostCard.jsx` (수정)
+  * `client/src/components/PostDetail.jsx` (수정)
+
+### ✅ 4. 학과/학년 태그 키워드 검색 대상 포함 개선 (완료)
+* **원인**: 
+  - 백엔드의 검색 매칭 로직(`GET /api/posts`)이 제목(`title`), 본문(`content`), 관심주제 태그(`tags`) 3개 항목만 검사하고 있었기 때문에, 학과 정보(`author_major`/`major_tag`)에 입력된 '기계공학과' 등의 단어가 '기계' 검색 키워드로 대조되지 않는 현상이었습니다.
+* **작업 내역**:
+  - `server/src/app.js`의 백엔드 검색 필터링 매칭 대상에 `author_major`, `major_tag`, `author_grade`, `grade_tag` 필드를 추가하여 '기계'만 입력해도 '기계공학과' 태그 게시글이 정확히 조회되도록 개선했습니다.
+* **관련 파일**:
+  * `server/src/app.js` (수정)
+
+### ✅ 5. 검색창 실시간 즉시 매핑(타이핑 시 자동 검색) 개선 (완료)
+* **원인**: 
+  - 검색창에 '기계'를 입력한 후 **Enter 키를 누르거나 돋보기(🔍) 아이콘을 클릭하지 않으면** 검색 요청이 백엔드로 전송되지 않고 초기 화면(전체 피드)이 그대로 남아있는 현상 발생.
+* **작업 내역**:
+  - `FeedTabs.jsx`의 `handleInputChange`를 개선하여, 키보드로 '기계' 등 2자 이상 입력하는 순간 **엔터를 치지 않아도 실시간으로 즉시 검색이 필터링**되도록 보강.
+* **관련 파일**:
+  * `client/src/components/FeedTabs.jsx` (수정)
+
+### ✅ 6. '기계공학과' 검색 시 무관한 게시글까지 함께 나오는 검색 정확도 버그 수정 (완료)
+* **원인**: 
+  - 이전 백엔드 검색 조건에 `author_grade`('1학년', '2학년' 등 학년 필드) 매칭이 포함되어 있어서, '기계공학과' 등 다른 학과 검색 시에도 학년 조건이 엉뚱하게 참(true)으로 매칭되어 무관한 1~2학년 게시글이 함께 조회되던 부작용 발생.
+  - 1글자 입력 도중에는 이전 검색어가 완전히 리셋되지 않아 화면상에 이전 결과가 멈춰있던 현상 동시 존재.
+* **작업 내역**:
+  - `server/src/app.js`에서 과도한 `author_grade` 대조를 제거하고, 오직 **게시글 제목(`title`), 본문(`content`), 학과명(`author_major`/`major_tag`), 관심주제 태그(`tags`)**만 정밀 매칭하도록 수정.
+  - `FeedTabs.jsx`에서 2자 미만 입력 시 즉각 검색어가 초기화되도록 상태 처리 보강.
+* **관련 파일**:
+  * `server/src/app.js` (수정)
+  * `client/src/components/FeedTabs.jsx` (수정)
+
+### ✅ 8. [Task 9-1] 메시지 읽음 표시 및 실시간 Socket.io 동기화 기능 구현 (완료)
+* **목표**: 1:1 대화방 내 메시지 읽음 처리, 내 말풍선 옆 안 읽음 숫자 `1` 배지 표시, 및 상대방 입장/확인 시 실시간 `1` 소멸 처리.
+* **작업 내역**:
+  * **백엔드 (`server/src/app.js`)**: 메시지 객체 스키마에 `is_read` 추가, `markAsRead` 소켓 이벤트 핸들러 구현 및 `messagesRead` 실시간 브로드캐스팅, 대화 목록 API(`GET /api/chats`)에 `unreadCount` 포함.
+  * **채팅방 (`ChatRoom.jsx`)**: 채팅방 입장 시/수신 시 `markAsRead` 소켓 발송, `messagesRead` 수신 시 `is_read: true` 갱신, 내 말풍선 왼쪽에 안 읽음 숫자 `1` 배지 렌더링.
+  * **대화 목록 (`ChatList.jsx`)**: 대화방 목록 우측에 안 읽은 메시지 수 배지 표시.
+* **관련 파일**:
+  * `server/src/app.js` (수정)
+  * `client/src/components/ChatRoom.jsx` (수정)
+  * `client/src/components/ChatList.jsx` (수정)
+
+### ✅ 9. 채팅 메시지 전송 시 중복(2번) 전송되는 버그 수정 (완료)
+* **원인**: 
+  - 백엔드 소켓 이벤트(`sendMessage`)에서 `socket.to(...)` 대신 `io.to(...)`로 브로드캐스트를 수행하여, 메시지를 전송한 나(발송자) 자신에게도 메시지가 에코 백(Echo Back)되어 클라이언트 로컬 추가 1번 + 소켓 수신 1번 총 2번 중복 표시되는 현상 발생.
+* **작업 내역**:
+  - 백엔드 `server/src/app.js`의 `sendMessage` 이벤트에서 `io.to(...)`를 `socket.to(...)`로 교정하여 나를 제외한 상대방에게만 수신 이벤트가 발송되도록 수정.
+* **관련 파일**:
+  * `server/src/app.js` (수정)
+
+### ✅ 10. [Task 9-2&3] 양방향 약속 제안, [확정하기] 및 [다시 정하기] 오프라인 약속 조율 시스템 구축 (완료)
+* **목표**: 방장과 도와주는 사람 누구나 약속 일시/장소를 제안할 수 있고, 상대 수신자가 `[확정하기]` 또는 `[다시 정하기]`로 약속을 유연하게 조율하는 반응형 UI 및 백엔드 연동.
+* **작업 내역**:
+  * **약속 모달 (`AppointmentModal.jsx`)**: 약속 장소(예: 공학관 카페) 및 일시(예: 오늘 17:00) 입력 팝업 모달 신규 구현.
+  * **백엔드 (`server/src/app.js`)**: 약속 메타데이터(`appointment_status`, `appointment_location`, `appointment_time`, `appointment_proposed_by`) 스키마 추가, `updateAppointment` 소켓 핸들러 구현 및 `appointmentUpdated` 실시간 브로드캐스팅, `GET /api/chats/:roomId` 단건 조회 API 추가.
+  * **채팅방 (`ChatRoom.jsx`)**: 상단 동적 띠 배너 UI 구현:
+    - `NONE`: `[📅 약속 잡기]` 버튼
+    - `PROPOSED` (제안자): `📍 제안중` + `[✏️ 제안 수정]` 버튼
+    - `PROPOSED` (수신자): `📍 약속 제안받음` + `[✅ 확정하기]` & `[🔄 다시 정하기]` 버튼
+    - `CONFIRMED`: `🎉 확정된 약속` 뱃지 + `[🔄 약속 다시 잡기]` 버튼
+    - 약속 제안/확정/다시정하기 동작 시 대화창 중앙에 시스템 안내 말풍선 메시지 자동 전송.
+* **관련 파일**:
+  * `client/src/components/AppointmentModal.jsx` (신규)
+  * `server/src/app.js` (수정)
+  * `client/src/components/ChatRoom.jsx` (수정)
+
+### ✅ 11. 채팅방 이탈 후 재진입 시 안 읽음(1) 수 및 약속 배너 미복구 버그 수정 (완료)
+* **원인**:
+  1. **안 읽음(1) 복구 현상**: 채팅방 재진입 시 `GET /api/chats/:roomId/messages`로 불러온 메시지 데이터의 `is_read` 값이 `false`로 들어와 로컬 상태에서 읽음 반영이 지연/누락되는 문제.
+  2. **약속 정보 미복구 현상**: 소켓 및 DB 조회 시 `roomId` 비교에서 타입 차이(`String` vs `Number`)로 인해 `mockDb` / DB의 `chats` 데이터 갱신이 누락되고, 재진입 시 API가 기존 약속 정보를 제대로 쿼리하지 못한 문제.
+* **작업 내역**:
+  * **백엔드 (`server/src/app.js`)**: 소켓 핸들러(`markAsRead`, `updateAppointment`) 및 REST API에서 `roomId` 비교를 `String(id) === String(roomId)`로 100% 보정. HTTP 읽음 처리 API `POST /api/chats/:roomId/read` 추가.
+  * **채팅방 (`ChatRoom.jsx`)**: 마운트 시 `fetchRoomData`에서 수신 메시지의 `is_read`를 로컬 상태에서 즉시 `true`로 보정 + HTTP 읽음 처리 API와 소켓 `markAsRead` 이중 보정 호출. `GET /api/chats/:roomId`로 복원한 `appointment_status`를 `appointment` state에 정확히 세팅.
+* **관련 파일**:
+  * `server/src/app.js` (수정)
+  * `client/src/components/ChatRoom.jsx` (수정)
+
+### ✅ 7. DB 스키마 차이로 인한 백엔드 500 에러 및 프론트엔드 이전 검색 상태 고정 버그 수정 (완료)
+* **원인**:
+  - Supabase 쿼리 시 DB 스키마에 존재하지 않는 컬럼(`author_major`/`major_tag`)을 `.or()` 조건절에 직접 포함시켜 백엔드에서 500 Internal Server Error가 발생함.
+  - 프론트엔드(`FeedList.jsx`)에서 500 에러 응답 수신 시 이전 `posts` 상태를 비우지 않아, 화면상에 이전 전체 목록이 그대로 멈춰서 안 바뀌던 결정적 원인 규명.
+* **작업 내역**:
+  - `server/src/app.js`: DB 스키마 호환 쿼리 후 백엔드 애플리케이션 단에서 안전하게 통합 검색 필터링을 수행하도록 수정하여 500 에러 원천 차단.
+  - `FeedList.jsx`: 예외 발생 시 이전 상태 대신 빈 배열(`setPosts([])`)로 안전 초기화하여 화면 고정 현상 제거.
+* **관련 파일**:
+  * `server/src/app.js` (수정)
+  * `client/src/components/FeedList.jsx` (수정)

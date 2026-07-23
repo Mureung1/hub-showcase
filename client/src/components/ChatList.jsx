@@ -18,7 +18,8 @@ const ChatList = ({ onSelectChat }) => {
             partnerName: r.partner_name,
             partnerGrade: r.partner_grade,
             lastMessage: r.last_message,
-            lastTime: r.last_time
+            lastTime: r.last_time,
+            unreadCount: r.unreadCount || 0
           }));
           setRooms(mappedRooms);
         } else {
@@ -74,7 +75,21 @@ const ChatList = ({ onSelectChat }) => {
                       {room.partnerGrade || '학년'}
                     </span>
                   </div>
-                  <span style={{ fontSize: '12px', color: '#999', flexShrink: 0 }}>{room.lastTime || ''}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
+                    <span style={{ fontSize: '12px', color: '#999' }}>{room.lastTime || ''}</span>
+                    {room.unreadCount > 0 && (
+                      <span style={{ 
+                        backgroundColor: 'var(--color-primary-cta)', 
+                        color: '#fff', 
+                        fontSize: '11px', 
+                        fontWeight: 'bold', 
+                        padding: '2px 7px', 
+                        borderRadius: '10px' 
+                      }}>
+                        {room.unreadCount}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div style={{ 
                   fontSize: '14px', color: 'var(--color-text-secondary)', 

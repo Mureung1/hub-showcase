@@ -11,9 +11,9 @@ const AppHeader = ({ currentTab = 'community', onTabChange }) => {
         meetry
       </div>
       <nav className="web-nav" style={{ flexShrink: 0 }}>
-        <a href="#" className={`web-nav__item ${currentTab === 'community' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); if(onTabChange) onTabChange('community'); }}>커뮤니티</a>
-        <a href="#" className={`web-nav__item ${currentTab === 'chat' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); if(onTabChange) onTabChange('chat'); }}>1:1 대화</a>
-        <a href="#" className="web-nav__item">내 프로필</a>
+        <button type="button" className={`web-nav__item ${currentTab === 'community' ? 'active' : ''}`} onClick={() => { if(onTabChange) onTabChange('community'); }}>커뮤니티</button>
+        <button type="button" className={`web-nav__item ${currentTab === 'chat' ? 'active' : ''}`} onClick={() => { if(onTabChange) onTabChange('chat'); }}>1:1 대화</button>
+        <button type="button" className="web-nav__item">내 프로필</button>
       </nav>
       <div className="app-header__actions" style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px' }}>
         {currentUser && (
@@ -34,7 +34,15 @@ const AppHeader = ({ currentTab = 'community', onTabChange }) => {
             {currentUser.role === 'host' ? '👑 방장' : '🤝 도와주는 사람'} 🔄
           </button>
         )}
-        <button className="icon-btn" title="검색">
+        <button 
+          className="icon-btn" 
+          title="검색"
+          onClick={() => {
+            if (onTabChange && currentTab !== 'community') {
+              onTabChange('community');
+            }
+          }}
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>

@@ -37,12 +37,20 @@ const PostCard = ({ post, onClick }) => {
       {/* 카드 상단: 태그 배지 + 보상 배지 */}
       <div className="feed-card-header">
         <div className="category-badges">
-          {post.major_tag && <span className="badge">#{post.major_tag}</span>}
-          {post.topic_tags && post.topic_tags.length > 0 && (
+          {(post.major_tag || post.author_major) && (post.major_tag !== '미상' && post.author_major !== '미상') && (
+            <span className="badge">#{post.major_tag || post.author_major}</span>
+          )}
+          {post.tags && post.tags.length > 0 ? (
+            post.tags
+              .filter(tag => tag !== post.major_tag && tag !== post.author_major && tag !== post.grade_tag && tag !== post.author_grade)
+              .map((tag) => (
+                <span key={tag} className="badge">#{tag}</span>
+              ))
+          ) : post.topic_tags && post.topic_tags.length > 0 ? (
             post.topic_tags.map((tag) => (
               <span key={tag} className="badge">#{tag}</span>
             ))
-          )}
+          ) : null}
         </div>
         {renderRewardBadge()}
       </div>

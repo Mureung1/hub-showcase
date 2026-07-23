@@ -55,6 +55,8 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
           tags: allTags,
           author_grade: gradeTag || '미상',
           author_major: majorTag || '미상',
+          grade_tag: gradeTag || '미상',
+          major_tag: majorTag || '미상',
           reward,
         }),
       });
