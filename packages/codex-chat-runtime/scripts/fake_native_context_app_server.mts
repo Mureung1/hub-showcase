@@ -59,10 +59,6 @@ function initializeResult(id: unknown): JsonObject {
       codexHome: process.env.CODEX_HOME,
       platformFamily: 'unix',
       platformOs: 'macos',
-      serverInfo: {
-        name: 'fake-native-context-app-server',
-        version: '0.144.4',
-      },
       userAgent: 'fake-native-context-app-server/0.144.4',
     },
   }

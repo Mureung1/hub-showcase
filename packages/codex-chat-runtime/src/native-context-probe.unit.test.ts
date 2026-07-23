@@ -4,6 +4,9 @@ import test from 'node:test'
 
 import type { VerifiedProductionBundle } from './production-bundle.js'
 import {
+  decodeNativeContextInitialize,
+} from './native-context-probe-protocol.js'
+import {
   nativeContextProbeTesting,
 } from './native-context-probe.js'
 
@@ -57,6 +60,9 @@ function skill(input: {
   readonly enabled?: unknown
   readonly path?: unknown
   readonly scope?: unknown
+  readonly shortDescription?: unknown
+  readonly interface?: unknown
+  readonly dependencies?: unknown
 } = {}): Record<string, unknown> {
   return {
     description: 'description',
@@ -72,6 +78,15 @@ function skill(input: {
         'SKILL.md',
       ),
     scope: input.scope ?? 'repo',
+    ...(Object.hasOwn(input, 'shortDescription')
+      ? { shortDescription: input.shortDescription }
+      : {}),
+    ...(Object.hasOwn(input, 'interface')
+      ? { interface: input.interface }
+      : {}),
+    ...(Object.hasOwn(input, 'dependencies')
+      ? { dependencies: input.dependencies }
+      : {}),
   }
 }
 
@@ -112,6 +127,51 @@ test('resolves the exact manifest-attested native App Server command', () => {
     ]),
     ['/usr/bin/node', '/fixture/fake.mjs'],
   )
+})
+
+test('accepts only the exact pinned initialize response', async (t) => {
+  const valid = {
+    codexHome: '/controlled/codex-home',
+    platformFamily: 'unix',
+    platformOs: 'macos',
+    userAgent: 'codex_cli_rs/0.144.4',
+  }
+
+  assert.doesNotThrow(() =>
+    decodeNativeContextInitialize(valid, '/controlled/codex-home'),
+  )
+
+  const cases: Array<[string, unknown]> = [
+    [
+      'missing user agent',
+      {
+        codexHome: valid.codexHome,
+        platformFamily: valid.platformFamily,
+        platformOs: valid.platformOs,
+      },
+    ],
+    [
+      'legacy server info',
+      { ...valid, serverInfo: { name: 'codex', version: '0.144.4' } },
+    ],
+    ['wrong Codex home', { ...valid, codexHome: '/other/home' }],
+    ['relative Codex home', { ...valid, codexHome: 'codex-home' }],
+    ['nullable platform family', { ...valid, platformFamily: null }],
+    ['non-string platform OS', { ...valid, platformOs: 144 }],
+    ['control character user agent', { ...valid, userAgent: 'bad\nagent' }],
+  ]
+  for (const [name, value] of cases) {
+    await t.test(name, () => {
+      assert.throws(
+        () =>
+          decodeNativeContextInitialize(
+            value,
+            '/controlled/codex-home',
+          ),
+        /invalid initialize response/,
+      )
+    })
+  }
 })
 
 test('projects and freezes only the high-level effective config', () => {
@@ -188,6 +248,27 @@ test('validates every Skill scope and omits only system entries', () => {
             'SKILL.md',
           ),
           scope: 'repo',
+          shortDescription: null,
+          interface: {
+            brandColor: '#32b5a4',
+            defaultPrompt: null,
+            displayName: 'Assignment',
+            iconLarge: null,
+            iconSmall: '/managed/assets/assignment-small.png',
+            shortDescription: 'Review an assignment',
+          },
+          dependencies: {
+            tools: [
+              {
+                command: null,
+                description: 'Calendar connector',
+                transport: 'mcp',
+                type: 'mcp',
+                url: null,
+                value: 'calendar',
+              },
+            ],
+          },
         }),
         skill({
           name: 'user-skill',
@@ -252,6 +333,135 @@ test('rejects Skill response drift before projection', async (t) => {
       'unexpected Skill field',
       skillsResult({
         skills: [{ ...skill(), privateField: 'must-not-cross' }],
+      }),
+    ],
+    [
+      'dependencies missing tools',
+      skillsResult({
+        skills: [skill({ dependencies: {} })],
+      }),
+    ],
+    [
+      'dependencies unexpected field',
+      skillsResult({
+        skills: [
+          skill({
+            dependencies: {
+              tools: [],
+              privateField: true,
+            },
+          }),
+        ],
+      }),
+    ],
+    [
+      'malformed dependency tool',
+      skillsResult({
+        skills: [
+          skill({
+            dependencies: {
+              tools: [{ type: 'mcp' }],
+            },
+          }),
+        ],
+      }),
+    ],
+    [
+      'dependency tool malformed optional field',
+      skillsResult({
+        skills: [
+          skill({
+            dependencies: {
+              tools: [
+                {
+                  description: 144,
+                  type: 'mcp',
+                  value: 'calendar',
+                },
+              ],
+            },
+          }),
+        ],
+      }),
+    ],
+    [
+      'dependency tool unexpected field',
+      skillsResult({
+        skills: [
+          skill({
+            dependencies: {
+              tools: [
+                {
+                  type: 'mcp',
+                  value: 'calendar',
+                  privateField: true,
+                },
+              ],
+            },
+          }),
+        ],
+      }),
+    ],
+    [
+      'interface unexpected field',
+      skillsResult({
+        skills: [
+          skill({
+            interface: {
+              displayName: 'Assignment',
+              privateField: true,
+            },
+          }),
+        ],
+      }),
+    ],
+    [
+      'interface malformed icon',
+      skillsResult({
+        skills: [
+          skill({
+            interface: {
+              iconSmall: 'relative/icon.png',
+            },
+          }),
+        ],
+      }),
+    ],
+    [
+      'interface malformed display name',
+      skillsResult({
+        skills: [
+          skill({
+            interface: {
+              displayName: 144,
+            },
+          }),
+        ],
+      }),
+    ],
+    [
+      'interface explicitly undefined field',
+      skillsResult({
+        skills: [
+          skill({
+            interface: {
+              displayName: undefined,
+            },
+          }),
+        ],
+      }),
+    ],
+    [
+      'system Skill malformed nested metadata',
+      skillsResult({
+        skills: [
+          skill({
+            scope: 'system',
+            dependencies: {
+              tools: [{ type: 'mcp' }],
+            },
+          }),
+        ],
       }),
     ],
     ['extra data entry', { data: [{}, {}] }],

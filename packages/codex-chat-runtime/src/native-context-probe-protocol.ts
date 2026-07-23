@@ -19,38 +19,21 @@ export function decodeNativeContextInitialize(
 ): void {
   if (
     !isJsonObject(value) ||
-    !hasAllowedKeys(value, [
+    !hasExactKeys(value, [
       'codexHome',
-      'serverInfo',
       'userAgent',
       'platformFamily',
       'platformOs',
     ]) ||
-    value.codexHome !== expectedCodexHome
+    value.codexHome !== expectedCodexHome ||
+    !isAbsoluteNormalizedPath(value.codexHome)
   ) {
     throw new Error('invalid initialize response')
   }
   for (const key of ['userAgent', 'platformFamily', 'platformOs'] as const) {
     const field = value[key]
-    if (
-      field !== undefined &&
-      field !== null &&
-      !isBoundedString(field, 1024, false)
-    ) {
+    if (!isBoundedString(field, 1024, false)) {
       throw new Error('invalid initialize response')
-    }
-  }
-  if (value.serverInfo !== undefined && value.serverInfo !== null) {
-    if (
-      !isJsonObject(value.serverInfo) ||
-      !hasAllowedKeys(value.serverInfo, ['name', 'version'])
-    ) {
-      throw new Error('invalid initialize response')
-    }
-    for (const field of Object.values(value.serverInfo)) {
-      if (field !== null && !isBoundedString(field, 1024, false)) {
-        throw new Error('invalid initialize response')
-      }
     }
   }
 }
@@ -148,11 +131,17 @@ export function decodeNativeContextSkills(
       typeof candidate.scope !== 'string' ||
       !SKILL_SCOPES.has(candidate.scope) ||
       !isBoundedString(candidate.description, 16 * 1024, false) ||
-      (candidate.shortDescription !== undefined &&
-        !isBoundedString(candidate.shortDescription, 16 * 1024, false)) ||
-      (candidate.dependencies !== undefined &&
-        !isJsonObject(candidate.dependencies)) ||
-      (candidate.interface !== undefined && !isJsonObject(candidate.interface))
+      !isOptionalNullable(
+        candidate,
+        'shortDescription',
+        (field) => isBoundedString(field, 16 * 1024, false),
+      ) ||
+      !isOptionalNullable(
+        candidate,
+        'dependencies',
+        isSkillDependencies,
+      ) ||
+      !isOptionalNullable(candidate, 'interface', isSkillInterface)
     ) {
       throw new Error('invalid skills/list response')
     }
@@ -250,4 +239,103 @@ function hasControlCharacter(value: string): boolean {
     if (point < 0x20 || point === 0x7f) return true
   }
   return false
+}
+
+function isOptionalNullable(
+  value: JsonObject,
+  key: string,
+  validate: (field: unknown) => boolean,
+): boolean {
+  if (!Object.hasOwn(value, key)) return true
+  const field = value[key]
+  return field === null || validate(field)
+}
+
+function isSkillInterface(value: unknown): boolean {
+  if (
+    !isJsonObject(value) ||
+    !hasAllowedKeys(value, [
+      'brandColor',
+      'defaultPrompt',
+      'displayName',
+      'iconLarge',
+      'iconSmall',
+      'shortDescription',
+    ])
+  ) {
+    return false
+  }
+  for (const key of [
+    'brandColor',
+    'defaultPrompt',
+    'displayName',
+    'shortDescription',
+  ] as const) {
+    if (
+      !isOptionalNullable(
+        value,
+        key,
+        (field) => isBoundedString(field, 16 * 1024, false),
+      )
+    ) {
+      return false
+    }
+  }
+  for (const key of ['iconLarge', 'iconSmall'] as const) {
+    if (!isOptionalNullable(value, key, isAbsoluteNormalizedPath)) {
+      return false
+    }
+  }
+  return true
+}
+
+function isSkillDependencies(value: unknown): boolean {
+  if (
+    !isJsonObject(value) ||
+    !hasExactKeys(value, ['tools']) ||
+    !Array.isArray(value.tools) ||
+    value.tools.length > 1024
+  ) {
+    return false
+  }
+  return value.tools.every(isSkillToolDependency)
+}
+
+function isSkillToolDependency(value: unknown): boolean {
+  if (
+    !isJsonObject(value) ||
+    !hasRequiredAllowedKeys(
+      value,
+      ['type', 'value'],
+      [
+        'command',
+        'description',
+        'transport',
+        'type',
+        'url',
+        'value',
+      ],
+    ) ||
+    !isBoundedString(value.type, 1024, false) ||
+    !isBoundedString(value.value, 16 * 1024, false)
+  ) {
+    return false
+  }
+  for (const key of [
+    'command',
+    'description',
+    'transport',
+    'url',
+  ] as const) {
+    if (
+      !isOptionalNullable(
+        value,
+        key,
+        (field) => isBoundedString(field, 16 * 1024, false),
+      )
+    ) {
+      return false
+    }
+  }
+  return true
 }
