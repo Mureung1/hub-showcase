@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -70,10 +70,10 @@ Pinned Official Codex Python SDK graph에서 AY-PLE이 official managed ChatGPT 
 | owner | `R` — Runtime |
 | branch | `codex/public-preview-r1a-sdk-auth` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/r1a-sdk-auth` |
-| handoffSha | Claim 시 coordinator가 003 fixed `spineTipSha`를 integration branch에 반영하고 predecessor 및 integration root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `269a3555d3adf52bf520b3de0b99c7cb3fee3ae7` — 003 fixed reviewed `spineTipSha`와 closeout이 반영된 clean integration HEAD. Coordinator가 predecessor 및 integration root gates를 green으로 확인한 뒤 이 lane을 준비했다. |
 | writablePaths | `packages/codex-chat-runtime/python/openai-codex/**`; `packages/codex-chat-runtime/upstream/patches/**`; `packages/codex-chat-runtime/upstream/PATCHES.md`; `packages/codex-chat-runtime/scripts/exact_sdk.py`; `packages/codex-chat-runtime/scripts/test_exact_sdk.py`; exact SDK focused tests; `docs/tickets/2026-07-23-public-npx-first-release/004-r1a-official-sdk-managed-auth-seam.md` |
 | consumedContracts | S1 private `CodexAccountLifecycle` intent, official generated account/login types, pinned SDK/native identity와 exact AY-PLE clientInfo input |
-| predecessorEvidence | Fixed reviewed `spineTipSha`, green root gates와 immutable current-workbench Browser oracle |
+| predecessorEvidence | Fixed reviewed `spineTipSha` `c2e95616d8ac2461844525c69a7e0d714da3e710`, completed 003 closeout `269a3555d3adf52bf520b3de0b99c7cb3fee3ae7`, green root gates와 immutable current-workbench Browser oracle |
 | requiredChecks | `validate:exact-sdk`; exact router/provenance tests; relevant production Runtime before/after verification; root test/typecheck/build/Chat Shell lint; `git diff --check` |
 | reviewOwner | R이 아닌 independent Official SDK/provenance reviewer |
 | handoffArtifact | Reviewed fixed R1a commit SHA, ordered auth patch, regenerated-source provenance와 matching-completion test receipt |
