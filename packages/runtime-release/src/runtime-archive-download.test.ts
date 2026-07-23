@@ -1541,6 +1541,54 @@ test('one transient request interruption retries the exact URL once', async () =
   }
 })
 
+test('resolver hooks receive exact Retry-After values and monotonic bytes', async () => {
+  const archiveBytes = Buffer.from('retry hook archive')
+  const fixture = await createDownloadFixture(archiveBytes)
+  const transport = new ScriptedArchiveTransport([
+    {
+      statusCode: 503,
+      headers: {
+        'retry-after': ['2', 'duplicate'],
+      },
+    },
+    {
+      statusCode: 200,
+      headers: {
+        'content-length': [String(archiveBytes.byteLength)],
+      },
+      chunks: [
+        archiveBytes.subarray(0, 5),
+        archiveBytes.subarray(5),
+      ],
+    },
+  ])
+  const retryAfterValues: string[][] = []
+  const progress: number[] = []
+
+  try {
+    await downloadVerifiedRuntimeArchive({
+      admission: fixture.admission,
+      events: {
+        beforeTransientRetry: ({ retryAfter }) => {
+          retryAfterValues.push([...retryAfter])
+        },
+        onReceivedBytes: ({ receivedBytes }) => {
+          progress.push(receivedBytes)
+        },
+      },
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+      transport,
+    })
+
+    assert.deepEqual(retryAfterValues, [['2', 'duplicate']])
+    assert.deepEqual(progress, [5, archiveBytes.byteLength])
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('one transient body interruption resumes the fsynced strong-ETag prefix', async () => {
   const archiveBytes = Buffer.from('transient stream resume archive')
   const prefixBytes = archiveBytes.subarray(0, 11)

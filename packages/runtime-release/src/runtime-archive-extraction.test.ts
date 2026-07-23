@@ -65,6 +65,7 @@ type RuntimeArchiveFixture = {
 }
 
 type RuntimeArchiveFixtureOptions = {
+  readonly noticeBytes?: Buffer
   readonly transformArchive?: (archiveBytes: Buffer) => Buffer
   readonly transformTar?: (tarBytes: Buffer) => Buffer
 }
@@ -90,9 +91,15 @@ function compareUnicodeCodePoints(left: string, right: string): number {
   return leftPoints.length - rightPoints.length
 }
 
-function fixtureEntries(): FixtureEntry[] {
+function fixtureEntries(
+  options: RuntimeArchiveFixtureOptions = {},
+): FixtureEntry[] {
   const files = [
-    ['NOTICE', 'AY-PLE notice\n', '100644'],
+    [
+      'NOTICE',
+      options.noticeBytes ?? Buffer.from('AY-PLE notice\n'),
+      '100644',
+    ],
     [
       'THIRD_PARTY_NOTICES.md',
       '# Third-party notices\n',
@@ -296,7 +303,7 @@ async function canonicalArchive(
 async function createRuntimeArchiveFixture(
   options: RuntimeArchiveFixtureOptions = {},
 ): Promise<RuntimeArchiveFixture> {
-  const entries = fixtureEntries()
+  const entries = fixtureEntries(options)
   const manifest = canonicalManifest(entries)
   const canonicalManifestBytes = Buffer.from(
     `${JSON.stringify(manifest, null, 2)}\n`,
@@ -556,20 +563,60 @@ function writeTarChecksum(tarBytes: Buffer, headerOffset: number): void {
 async function assertArchiveError(
   action: () => Promise<unknown>,
   expectedCode: string,
-): Promise<void> {
+): Promise<RuntimeReleaseAuthorityError> {
+  let observed: RuntimeReleaseAuthorityError | undefined
   await assert.rejects(action, (error: unknown) => {
     assert.equal(error instanceof RuntimeReleaseAuthorityError, true)
+    observed = error as RuntimeReleaseAuthorityError
     assert.equal(
-      (error as RuntimeReleaseAuthorityError).failure.code,
+      observed.failure.code,
       expectedCode,
     )
     return true
   })
+  assert.ok(observed)
+  return observed
+}
+
+async function within<T>(
+  action: Promise<T>,
+  milliseconds: number,
+): Promise<T> {
+  let timer: NodeJS.Timeout | undefined
+  try {
+    return await Promise.race([
+      action,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error('Timed out waiting for bounded test action'))
+        }, milliseconds)
+      }),
+    ])
+  } finally {
+    if (timer !== undefined) clearTimeout(timer)
+  }
+}
+
+function processExists(processId: number): boolean {
+  try {
+    process.kill(processId, 0)
+    return true
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      error.code === 'ESRCH'
+    ) {
+      return false
+    }
+    throw error
+  }
 }
 
 function extractFixture(
   fixture: RuntimeArchiveFixture,
   testOptions: RuntimeArchiveExtractionTestOptions = {},
+  signal?: AbortSignal,
 ) {
   return extractVerifiedRuntimeArchive(
     {
@@ -577,6 +624,7 @@ function extractFixture(
       canonicalManifestBytes: fixture.canonicalManifestBytes,
       layout: fixture.layout,
       mutationAuthority: fixture.mutationAuthority,
+      signal,
       staging: fixture.staging,
     },
     testOptions,
@@ -664,6 +712,289 @@ test('extracts one canonical archive into an exact verified staging tree', async
       0o755,
     )
   })
+})
+
+test('cancellation stops extraction before recipient mutation after prescan', async () => {
+  await withFixture(async (fixture) => {
+    const cancellation = new AbortController()
+    let materializationStarted = false
+
+    await assertArchiveError(
+      () =>
+        extractFixture(
+          fixture,
+          {
+            afterPrescan: async () => {
+              cancellation.abort()
+            },
+            beforeEntryMaterialization: async () => {
+              materializationStarted = true
+            },
+          },
+          cancellation.signal,
+        ),
+      'runtime_cancelled',
+    )
+
+    assert.equal(materializationStarted, false)
+    assert.deepEqual(await readdir(fixture.staging.path), [])
+  })
+})
+
+test('cancellation interrupts a prescan file chunk before recipient mutation', async () => {
+  await withFixture(async (fixture) => {
+    const cancellation = new AbortController()
+    const observedChunks: string[] = []
+
+    await assertArchiveError(
+      () =>
+        extractFixture(
+          fixture,
+          {
+            beforeArchiveEntryChunk: async (entry) => {
+              observedChunks.push(`${entry.pass}:${entry.path}`)
+              if (
+                entry.pass === 'prescan' &&
+                entry.path === 'manifest.json'
+              ) {
+                cancellation.abort()
+              }
+            },
+          },
+          cancellation.signal,
+        ),
+      'runtime_cancelled',
+    )
+
+    assert.ok(observedChunks.includes('prescan:manifest.json'))
+    assert.deepEqual(await readdir(fixture.staging.path), [])
+  })
+})
+
+test('cancellation before a materialized file write preserves retryable staging residue', async () => {
+  await withFixture(async (fixture) => {
+    const cancellation = new AbortController()
+    let cancelledWritePath: string | undefined
+
+    const error = await assertArchiveError(
+      () =>
+        extractFixture(
+          fixture,
+          {
+            beforeStorageOperation: async (operation) => {
+              if (
+                cancelledWritePath === undefined &&
+                operation.operation === 'file_write'
+              ) {
+                cancelledWritePath = operation.path
+                cancellation.abort()
+              }
+            },
+          },
+          cancellation.signal,
+        ),
+      'runtime_cancelled',
+    )
+
+    assert.equal(error.failure.retryable, true)
+    assert.equal(cancelledWritePath, 'manifest.json')
+    assert.deepEqual(await readdir(fixture.staging.path), ['runtime'])
+    assert.equal(
+      (
+        await stat(
+          path.join(fixture.staging.path, 'runtime/manifest.json'),
+        )
+      ).size,
+      0,
+    )
+  })
+})
+
+test('cancellation checkpoints stop directory, symlink, and final file work', async (t) => {
+  await t.test('before recipient directory creation', async () => {
+    await withFixture(async (fixture) => {
+      const cancellation = new AbortController()
+
+      const error = await assertArchiveError(
+        () =>
+          extractFixture(
+            fixture,
+            {
+              beforeEntryMaterialization: async (entry) => {
+                if (entry.type === 'directory' && entry.path === '') {
+                  cancellation.abort()
+                }
+              },
+            },
+            cancellation.signal,
+          ),
+        'runtime_cancelled',
+      )
+
+      assert.equal(error.failure.retryable, true)
+      assert.deepEqual(await readdir(fixture.staging.path), [])
+    })
+  })
+
+  await t.test('before symlink creation', async () => {
+    await withFixture(async (fixture) => {
+      const cancellation = new AbortController()
+      const symlinkPath = path.join(
+        fixture.staging.path,
+        'runtime/bundle/python/bin/python3',
+      )
+
+      await assertArchiveError(
+        () =>
+          extractFixture(
+            fixture,
+            {
+              beforeEntryMaterialization: async (entry) => {
+                if (entry.type === 'symlink') cancellation.abort()
+              },
+            },
+            cancellation.signal,
+          ),
+        'runtime_cancelled',
+      )
+
+      await assert.rejects(
+        readlink(symlinkPath),
+        (error: unknown) =>
+          error instanceof Error &&
+          'code' in error &&
+          error.code === 'ENOENT',
+      )
+    })
+  })
+
+  await t.test('before final file hash', async () => {
+    await withFixture(async (fixture) => {
+      const cancellation = new AbortController()
+      const verificationPaths: string[] = []
+
+      await assertArchiveError(
+        () =>
+          extractFixture(
+            fixture,
+            {
+              beforeFinalFileVerification: async (entry) => {
+                verificationPaths.push(entry.path)
+                cancellation.abort()
+              },
+            },
+            cancellation.signal,
+          ),
+        'runtime_cancelled',
+      )
+
+      assert.deepEqual(verificationPaths, ['NOTICE'])
+    })
+  })
+})
+
+test('cancellation during directory capability handshake reaps the spawned worker', async () => {
+  await withFixture(async (fixture) => {
+    const cancellation = new AbortController()
+    let workerProcessId: number | undefined
+
+    const error = await within(
+      assertArchiveError(
+        () =>
+          extractFixture(
+            fixture,
+            {
+              afterDirectoryCapabilitySpawn: (entry) => {
+                if (entry.path !== '') return
+                workerProcessId = entry.workerProcessId
+                cancellation.abort()
+              },
+            },
+            cancellation.signal,
+          ),
+        'runtime_cancelled',
+      ),
+      2_000,
+    )
+
+    assert.equal(error.failure.retryable, true)
+    assert.notEqual(workerProcessId, undefined)
+    assert.equal(processExists(workerProcessId!), false)
+    assert.deepEqual(await readdir(fixture.staging.path), ['runtime'])
+  })
+})
+
+test('cancellation after directory capability open retains and closes the worker', async () => {
+  await withFixture(async (fixture) => {
+    const cancellation = new AbortController()
+    let workerProcessId: number | undefined
+    const closedWorkers = new Set<number>()
+
+    const error = await within(
+      assertArchiveError(
+        () =>
+          extractFixture(
+            fixture,
+            {
+              afterDirectoryCapabilityClose: (entry) => {
+                if (entry.workerProcessId !== undefined) {
+                  closedWorkers.add(entry.workerProcessId)
+                }
+              },
+              afterDirectoryCapabilityOpen: async (entry) => {
+                if (entry.path !== '') return
+                workerProcessId = entry.workerProcessId
+                cancellation.abort()
+              },
+            },
+            cancellation.signal,
+          ),
+        'runtime_cancelled',
+      ),
+      2_000,
+    )
+
+    assert.equal(error.failure.retryable, true)
+    assert.notEqual(workerProcessId, undefined)
+    assert.equal(closedWorkers.has(workerProcessId!), true)
+    assert.equal(processExists(workerProcessId!), false)
+    assert.deepEqual(await readdir(fixture.staging.path), ['runtime'])
+  })
+})
+
+test('cancellation interrupts an in-flight final file hash in the worker', async () => {
+  await withFixture(
+    async (fixture) => {
+      const cancellation = new AbortController()
+      let hashChunks = 0
+
+      const error = await within(
+        assertArchiveError(
+          () =>
+            extractFixture(
+              fixture,
+              {
+                afterFinalFileHashChunk: async (entry) => {
+                  if (entry.path !== 'NOTICE') return
+                  hashChunks += 1
+                  cancellation.abort()
+                },
+              },
+              cancellation.signal,
+            ),
+          'runtime_cancelled',
+        ),
+        2_000,
+      )
+
+      assert.equal(error.failure.retryable, true)
+      assert.equal(hashChunks, 1)
+      assert.deepEqual(await readdir(fixture.staging.path), ['runtime'])
+    },
+    {
+      noticeBytes: Buffer.alloc(256 * 1024, 0x61),
+    },
+  )
 })
 
 test('rejects an embedded NUL in a TAR path before recipient write', async () => {
