@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import cors from "cors";
 import { createClient } from "@supabase/supabase-js";
+import { analyzeReviewSentiment, validateReviewContent } from "./server/sentimentService.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 4000);
@@ -89,7 +90,7 @@ function verifyPassword(password, user) {
 }
 
 function publicUser(user) {
-  return { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt };
+  return { id: user.id, email: user.email, name: user.name };
 }
 
 function parseCookies(request) {
@@ -113,14 +114,18 @@ async function createSession(userId) {
 }
 
 async function getAuthenticatedUser(request) {
-  const token = parseCookies(request).jr_session;
+  const authorization = String(request.headers.authorization || "");
+  const token = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
   if (!token) return null;
-  const now = Date.now();
-  const sessions = await readJsonFile(SESSIONS_FILE);
-  const session = sessions.find((item) => item.tokenHash === hashToken(token) && item.expiresAt > now);
-  if (!session) return null;
-  const users = await readJsonFile(USERS_FILE);
-  return users.find((user) => user.id === session.userId) || null;
+  if (!supabase) return null;
+  const { data: authData, error: authError } = await supabase.auth.getUser(token);
+  if (authError || !authData.user) return null;
+  const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", authData.user.id).maybeSingle();
+  return {
+    id: authData.user.id,
+    email: authData.user.email || "",
+    name: profile?.display_name || authData.user.user_metadata?.display_name || "지금리뷰 사용자",
+  };
 }
 
 function sessionCookie(token) {
@@ -179,11 +184,32 @@ async function handleProfileUpdate(request, response) {
   const body = await readRequestJson(request);
   const name = String(body.name || "").trim();
   if (name.length < 2 || name.length > 30) return sendJson(request, response, 400, { message: "이름은 2자 이상 30자 이하로 입력해 주세요." });
-  const users = await readJsonFile(USERS_FILE);
-  const index = users.findIndex((user) => user.id === authenticatedUser.id);
-  users[index] = { ...users[index], name, updatedAt: new Date().toISOString() };
-  await writeJsonFile(USERS_FILE, users);
-  return sendJson(request, response, 200, { user: publicUser(users[index]) });
+  const { error: profileError } = await supabase.from("profiles").update({ display_name: name }).eq("id", authenticatedUser.id);
+  if (profileError) return sendJson(request, response, 502, { message: "프로필을 수정하지 못했습니다." });
+  await supabase.auth.admin.updateUserById(authenticatedUser.id, { user_metadata: { display_name: name } });
+  return sendJson(request, response, 200, { user: { ...publicUser(authenticatedUser), name } });
+}
+
+async function handleReviewAnalysis(request, response) {
+  const user = await getAuthenticatedUser(request);
+  if (!user) return sendJson(request, response, 401, { message: "로그인이 필요합니다." });
+
+  try {
+    const content = validateReviewContent((await readRequestJson(request)).content);
+    const result = await analyzeReviewSentiment(content);
+    return sendJson(request, response, 200, { analysis: result });
+  } catch (error) {
+    const isValidationError = /10자 이상 1000자 이하/.test(error.message);
+    const isQuotaError = error?.status === 429 || error?.code === "insufficient_quota";
+    console.error("Review sentiment analysis failed:", error.message);
+    return sendJson(request, response, isValidationError ? 400 : isQuotaError ? 503 : 502, {
+      message: isValidationError
+        ? error.message
+        : isQuotaError
+          ? "리뷰 분석 API 사용 한도가 없습니다. OpenAI 결제 및 사용 한도를 확인해 주세요."
+          : "리뷰 분석에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
 }
 
 function clampNumber(value, fallback, min, max) {
@@ -202,14 +228,15 @@ async function handleKakaoLocalSearch(request, response, url) {
   const query = String(url.searchParams.get("query") || "").trim();
   if (!query) return sendJson(request, response, 400, { message: "검색어를 입력해 주세요." });
   const size = clampNumber(url.searchParams.get("size"), 15, 1, 15);
-  const x = Number(url.searchParams.get("x"));
-  const y = Number(url.searchParams.get("y"));
+  const hasCoordinates = url.searchParams.has("x") && url.searchParams.has("y");
+  const x = hasCoordinates ? Number(url.searchParams.get("x")) : NaN;
+  const y = hasCoordinates ? Number(url.searchParams.get("y")) : NaN;
   const radius = clampNumber(url.searchParams.get("radius"), 5000, 500, 20000);
   const kakaoUrl = new URL("https://dapi.kakao.com/v2/local/search/keyword.json");
   kakaoUrl.searchParams.set("query", query);
   kakaoUrl.searchParams.set("size", String(size));
   kakaoUrl.searchParams.set("page", String(clampNumber(url.searchParams.get("page"), 1, 1, 45)));
-  if (Number.isFinite(x) && Number.isFinite(y)) {
+  if (hasCoordinates && Number.isFinite(x) && Number.isFinite(y)) {
     kakaoUrl.searchParams.set("x", String(x));
     kakaoUrl.searchParams.set("y", String(y));
     kakaoUrl.searchParams.set("radius", String(radius));
@@ -274,11 +301,9 @@ app.get("/api/health", async (request, response) => {
   return sendJson(request, response, 200, { ok: true, database: "connected" });
 });
 
-app.post("/api/auth/signup", handleSignup);
-app.post("/api/auth/login", handleLogin);
-app.post("/api/auth/logout", handleLogout);
 app.get("/api/auth/me", handleMe);
 app.patch("/api/users/me", handleProfileUpdate);
+app.post("/api/reviews/analyze", handleReviewAnalysis);
 app.get("/api/kakao/local", (request, response) => {
   const url = new URL(request.originalUrl, `${request.protocol}://${request.get("host")}`);
   return handleKakaoLocalSearch(request, response, url);
