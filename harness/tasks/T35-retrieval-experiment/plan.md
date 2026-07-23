@@ -4,11 +4,11 @@
 >
 > 작성일: 2026-07-20
 >
-> 최종 갱신일: 2026-07-20
+> 최종 갱신일: 2026-07-22
 >
-> 현재 단계: 운영 비활성 기반·합성 평가 구현 완료, 외부 gate 대기
+> 현재 단계: coverage 신규 88세트·264후보 자체 스크리닝 완료, 제3자 블라인드 검수 대기
 >
-> 다음 행동: 실제 Voyage·개발 DB guarded smoke와 coverage 충분 corpus의 생성 A/B
+> 다음 행동: [`coverage-corpus-blind-review.md`](coverage-corpus-blind-review.md)로 96세트 톤 정렬·288후보 전송 가능성 검수
 >
 > CHECKLIST 항목: T35
 
@@ -32,7 +32,7 @@
 
 ## 2. 의존성·정본 확인
 
-- 의존: T16·T18·T19·T30 완료, T34 guided context 계약. 실 생성 품질 승격은 T20~T21과 retrieval 평가를 함께 통과해야 한다.
+- 의존: T16·T18·T19·T30·T34 완료. 실 생성 품질 승격은 T20~T21과 retrieval 평가를 함께 통과해야 한다.
 - CHECKLIST 직접 참조: T16·T19·T20·T21·T30·T34, SPEC 2~5장, AI_DESIGN, SEEDS/SEEDS_REVIEW.
 - 추가 정본: Neon/pgvector exact search와 Voyage embedding `input_type` 공식 계약. 작은 corpus에서는 exact search를 기본으로 한다.
 - 변경하지 않는 계약: corpus 원문 Git 정본, 사용자 원문 비저장, 단일 생성 provider call·결정적 validator, 자율 agent/RAG loop 없음, retrieval은 예시 선택 단계 1회뿐.
@@ -45,6 +45,7 @@
 - 백엔드/AI DB 역할: migration/schema/repository/ingestion/smoke.
 - 백엔드/AI retrieval 역할: embedding provider, selector, prompt 연결, offline 평가와 테스트.
 - 프론트엔드: retrieval 구현 세부를 알지 않으며 기존 응답 계약만 소비한다.
+- 2026-07-22 재개 기준선: 개발 DB에는 `retrieval_examples`를 포함한 여섯 테이블이 존재한다. 이후 비프로덕션 Voyage key와 `voyage-4-lite`를 설정해 실 provider·DB gate까지 통과했다.
 
 ## 4. 5요소 계획
 
@@ -68,15 +69,20 @@
 | 날짜 | 상태 | 승인 또는 변경 내용 | 근거 |
 | --- | --- | --- | --- |
 | 2026-07-20 | 승인됨 | 직접 설명/guided AI에 검수 예시 retrieval을 실험하고 static 대비 평가 통과 시에만 승격, 템플릿은 fallback 유지 | 사용자 `진행합니다` |
+| 2026-07-22 | 승인됨 | 4관계×6목적×2방식의 48 cell 상황 목록 | 사용자 `진행` |
 
 ## 7. 진행·인계
 
 - 마지막으로 끝낸 단계: T30 Neon/Drizzle metadata layer와 T19 static reviewed few-shot catalog.
-- 현재 작업 중인 단계: 코드·fake·합성 ranking gate까지 완료하고 실제 외부 연동을 보류.
-- 다음 행동: Voyage key와 비프로덕션 DB 확보 후 migration 최초/재실행, 무호출 idempotency, exact query smoke를 실행한다. 이후 48 cell×2 coverage와 non-overlap holdout으로 static 대비 생성 품질·지연·비용을 비교한다.
-- 보류 사유와 재개 조건: 실제 Voyage key·개발 DB와 coverage 충분 corpus가 없다. 현재 corpus는 activation-ready 0/48이므로 운영 selector 활성화가 불가능하다.
+- 현재 작업 중인 단계: 실 Voyage/Neon gate 뒤 사용자가 48 cell 상황을 승인했고, 기존 8세트를 보존한 신규 88세트·264후보 draft와 96세트 전수 블라인드 검수지를 작성했다.
+- 다음 행동: 제3자가 tone 라벨을 가린 96세트를 정렬하고 288후보의 전송 가능성·사실 동일성·관계 자연스러움을 판정한다. 불일치 세트 재작성 뒤 non-overlap holdout A/B를 수행한다.
+- 보류 사유와 재개 조건: 사람 블라인드 검수 결과가 필요하다. 신규 후보는 `draft`여서 현재 approved corpus는 activation-ready 0/48이며 운영 selector 활성화가 불가능하다.
 
 | 날짜 | 진행·결정 | 근거·영향 |
 | --- | --- | --- |
 | 2026-07-20 | T35 착수 | RAG를 운영 주장 전에 비교 평가하는 구조로 사용자 승인 |
 | 2026-07-20 | 운영 비활성 기반 구현 | 1024차원 metadata-only schema, exact top-2, Voyage adapter, idempotent ingestion, static fallback, 합성 evaluator 자동 검증 통과. 실 provider/DB·생성 A/B는 미실행 |
+| 2026-07-22 | 재개·개발 DB 검증 | 공식 Voyage `query/document`·1024 float와 pgvector exact cosine 계약 재확인. migration 재실행·여섯 테이블 core smoke 통과, 실 Voyage smoke 명령 추가. 키 부재와 coverage 0/48로 외부 gate 유지 |
+| 2026-07-22 | 실 Voyage·Neon gate 통과 | `voyage-4-lite` document batch+query→exact top-2→임시 행 삭제 통과. catalog 8행 최초 적재 후 재실행 `0 inserted/8 unchanged`, DB에는 정본 8행만 존재. 요청 수 제한을 발견해 8 document를 1회 batch로 전환 |
+| 2026-07-22 | coverage 상황 목록 초안 작성 | 4관계×6목적×2방식의 48 cell에 기존 8세트와 신규 상황 후보를 구분했다. `/seed` 순서에 따라 메시지 264개 작성 전 사용자 승인 대기 |
+| 2026-07-22 | 상황 승인·후보 작성 | 사용자 `진행`으로 48 cell 상황을 승인 기록. 신규 88세트·264후보를 `draft`로 작성하고 기존 8세트와 합쳐 정확히 48 cell×2임을 검사. 라벨 제거 96세트 검수지와 별도 정답표 생성 |

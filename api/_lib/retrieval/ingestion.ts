@@ -42,13 +42,33 @@ export const ingestReviewedRetrievalCatalog = async (
     entriesToInsert.push(entry)
   }
 
+  const embeddings =
+    entriesToInsert.length === 0
+      ? []
+      : dependencies.embeddingProvider.embedMany
+        ? await dependencies.embeddingProvider.embedMany({
+            inputs: entriesToInsert.map((entry) => entry.documentText),
+            inputType: 'document',
+            ...(signal ? { signal } : {}),
+          })
+        : await Promise.all(
+            entriesToInsert.map((entry) =>
+              dependencies.embeddingProvider.embed({
+                input: entry.documentText,
+                inputType: 'document',
+                ...(signal ? { signal } : {}),
+              }),
+            ),
+          )
+
+  if (embeddings.length !== entriesToInsert.length) {
+    throw new Error('Retrieval ingestion embedding count mismatch')
+  }
+
   let insertedCount = 0
-  for (const entry of entriesToInsert) {
-    const embedding = await dependencies.embeddingProvider.embed({
-      input: entry.documentText,
-      inputType: 'document',
-      ...(signal ? { signal } : {}),
-    })
+  for (const [index, entry] of entriesToInsert.entries()) {
+    const embedding = embeddings[index]
+    if (!embedding) throw new Error('Retrieval ingestion embedding missing')
     await dependencies.repository.upsertApproved({
       catalogVersion: entry.catalogVersion,
       checksum: entry.checksum,

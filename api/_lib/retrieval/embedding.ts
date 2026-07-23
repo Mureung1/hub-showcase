@@ -8,10 +8,17 @@ export type EmbeddingRequest = {
   readonly signal?: AbortSignal
 }
 
+export type EmbeddingBatchRequest = {
+  readonly inputs: readonly string[]
+  readonly inputType: EmbeddingInputType
+  readonly signal?: AbortSignal
+}
+
 export type EmbeddingProvider = {
   readonly dimensions: typeof retrievalEmbeddingDimensions
   readonly model: string
   embed: (request: EmbeddingRequest) => Promise<number[]>
+  embedMany?: (request: EmbeddingBatchRequest) => Promise<readonly number[][]>
 }
 
 export type EmbeddingProviderFailure =

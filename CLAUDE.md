@@ -52,3 +52,4 @@
 - 제품 6축 점검(가치·지속 사용·AI·UX·기술·포트폴리오): docs/PRODUCT_REVIEW.md — 내부 진단이며 완료 상태는 CHECKLIST를 따른다
 - 문헌 기반 제품·검수 근거(효과·관계·어려운 대화·구조화 UI·한국어 공손성): docs/RESEARCH_REVIEW.md — 문헌을 사용자 검증으로 표현하지 않는다
 - 범용 AI 대비 가치 검증(문헌→무참여자 모델 벤치마크→T22 짧은 과업): docs/COMPETITIVE_VALIDATION.md — 실제 결과 전에는 우월성을 주장하지 않는다
+- 검수 예시 retrieval 설명(역할·데이터 흐름·비용·성능·보안·운영): docs/RETRIEVAL.md — T35는 offline 실험이며 운영 static selector와 완료 상태는 CHECKLIST를 따른다

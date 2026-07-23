@@ -1145,3 +1145,14 @@
 - Browser 연결 문서의 troubleshooting까지 적용했지만 사용 가능한 backend 목록은 `[]`였다. CHECKLIST T34는 24질문·72옵션 사용자 문구 검토와 guided 320×568·375×667·키보드·스크린리더 수동 확인 전까지 미완료로 유지한다.
 - 이후 사용자가 24질문·72옵션 문구와 320×568·375×667·키보드·스크린리더를 모두 확인했다고 보고했다. 이 확인을 AC-2·7·9 증거로 기록하고 CHECKLIST T34를 완료 처리했다.
 
+## 2026-07-22 (T35 retrieval 실험 외부 gate 재개)
+- T16·T19·T30·T34 의존 완료를 확인하고 기존 비운영 retrieval 구현을 재검증했다. 공식 Voyage의 `query/document`·1024차원 float 출력과 pgvector의 ANN 없는 exact cosine `<=>` 계약이 현재 adapter·repository와 일치했다.
+- T35 관련 11파일 43개와 전체 43파일 369개 테스트, API 타입검사, `templates:check`, `db:check`, lint, production build를 통과했다. 합성 evaluator는 8 example set·24후보, covered 8/48, activation-ready 0/48, generation quality `null`, `productionEligible=false`를 다시 반환했다.
+- 개발 DB migration을 재실행하고 명시적 확인값을 사용한 core smoke로 `retrieval_examples` 포함 여섯 테이블을 확인했다. 실 Voyage→합성 document 임시 적재→query exact top-2→자체 행 삭제를 재현하는 `retrieval:smoke` 명령과 `.env.example` 안내를 추가했다.
+- 현재 환경에 `VOYAGE_API_KEY`·`VOYAGE_EMBEDDING_MODEL`이 없어 smoke는 외부 호출 전에 guard로 중단됐다. coverage 충분 검수 corpus도 없어 실제 생성 A/B를 수행할 수 없으므로 CHECKLIST T35와 운영 `/api/generate` static selector를 그대로 유지한다.
+- 사용자가 이후 프로젝트에서 읽고 다른 사람에게 설명할 수 있도록 `docs/RETRIEVAL.md`를 새 정본으로 작성했다. Voyage·Gemini·Neon의 역할 분리, 현재 운영과 offline 경로, 코드 지도, 전송·저장 경계, `voyage-4-lite` 비용 계산, vector 저장 크기, latency·fallback·coverage, 실행 명령, 면접·포트폴리오 설명 문장을 한 문서에 정리하고 AGENTS/CLAUDE 참고 목록에 연결했다.
+- 이후 사용자가 비프로덕션 Voyage key를 설정했다. 구형 `voyage-3.5-lite`로 시작했으나 현재 무료·권장 범위의 `voyage-4-lite`로 바로잡고 실 document/query→Neon exact top-2 smoke를 통과했다. 단건 document 호출은 smoke 직후 429를 만나 공식 배열 입력 기반 batch로 변경했다. T35 관련 11파일 45개·전체 43파일 371개 테스트와 API 타입·lint·build·템플릿·DB gate가 통과했고, 최초 catalog 적재 `8/0` 뒤 재실행 `0/8`로 idempotency를 실증했다. 최종 개발 DB에는 `reviewed-seeds-v1 + voyage-4-lite` 8행만 있고 smoke 임시 행은 없다.
+- `/seed` 절차에 따라 4관계×6목적×2방식의 48개 cell별 두 상황을 [coverage corpus 검토 초안](../harness/tasks/T35-retrieval-experiment/coverage-corpus-review-draft.md)에 먼저 정리했다. 기존 검수 8세트를 표시했고 신규 필요량은 88세트·264후보다. 이 목록은 사용자 승인 전 초안이므로 메시지 본문 작성이나 approved corpus 반영은 하지 않았다.
+- 사용자가 `진행`으로 48 cell 상황 목록을 승인했다. 기존 approved 8세트는 변경하지 않고 신규 88세트·264후보를 `coverageCandidateDraft.ts`에 `draft`로 작성했다. 수량·48×2 coverage·ID/문구 중복·reply/ initiate·tone·길이·금지 항목·정중함 하한선 자동 검사와 세트 내용 동일성 수동 재검토를 통과했다.
+- 작성 순서가 검수자에게 노출되지 않도록 96세트의 후보 순서를 결정적으로 섞은 [블라인드 검수지](../harness/tasks/T35-retrieval-experiment/coverage-corpus-blind-review.md)와 별도 정답표를 생성했다. 신규 후보는 제3자 톤 정렬·288개 전송 가능성 판정 전까지 DB에 적재하거나 approved/운영 retrieval로 승격하지 않는다.
+- retrieval 디렉터리 9파일 35개와 전체 44파일 375개 테스트, 프론트/API 타입검사, 템플릿·DB·검수지 drift check, lint, production build, `git diff --check`, AGENTS/CLAUDE mirror, 대상 `any` 검사를 통과했다. 기존 jsdom `scrollTo` 로그와 CatCanvas 500 kB 초과 경고만 비차단으로 남았다.

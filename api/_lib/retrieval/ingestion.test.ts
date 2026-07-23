@@ -12,15 +12,21 @@ const testEmbedding = () => {
 
 describe('retrieval catalog ingestion boundary', () => {
   it('embeds approved Git documents and sends only allowlisted metadata to an idempotent repository', async () => {
-    const embeddingRequests: Array<{ input: string; inputType: string }> = []
+    const embeddingBatchRequests: Array<{ inputs: readonly string[]; inputType: string }> = []
     const rows: RetrievalExampleMetadata[] = []
     const storedChecksums = new Map<string, string>()
     const provider: EmbeddingProvider = {
       dimensions: retrievalEmbeddingDimensions,
       model: 'voyage-test-model',
-      embed(request) {
-        embeddingRequests.push({ input: request.input, inputType: request.inputType })
-        return Promise.resolve(testEmbedding())
+      embed() {
+        throw new Error('Batch-capable ingestion must not use single embedding calls')
+      },
+      embedMany(request) {
+        embeddingBatchRequests.push({
+          inputs: request.inputs,
+          inputType: request.inputType,
+        })
+        return Promise.resolve(request.inputs.map(() => testEmbedding()))
       },
     }
     const repository = {
@@ -58,8 +64,12 @@ describe('retrieval catalog ingestion boundary', () => {
       insertedCount: 0,
       unchangedCount: 2,
     })
-    expect(embeddingRequests).toHaveLength(2)
-    expect(embeddingRequests.every((request) => request.inputType === 'document')).toBe(true)
+    expect(embeddingBatchRequests).toEqual([
+      {
+        inputs: catalog.map((entry) => entry.documentText),
+        inputType: 'document',
+      },
+    ])
     expect(rows).toHaveLength(2)
     expect(JSON.stringify(rows)).not.toContain(catalog[0]?.documentText)
     expect(JSON.stringify(rows)).not.toContain(catalog[1]?.documentText)

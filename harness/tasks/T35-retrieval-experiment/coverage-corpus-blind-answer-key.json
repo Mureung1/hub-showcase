@@ -1,0 +1,968 @@
+{
+  "catalogVersion": "retrieval-coverage-review-2026-07-22.1",
+  "instructions": "검수 완료 전까지 검수자에게 공개하지 않는다.",
+  "setCount": 96,
+  "candidateCount": 288,
+  "entries": [
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-groupwork-reply-ask-02",
+      "reviewSetId": "R001",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "reviewed-groupwork-reply-ask-01",
+      "reviewSetId": "R002",
+      "sourceStatus": "approved-existing"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-groupwork-initiate-ask-01",
+      "reviewSetId": "R003",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-groupwork-initiate-ask-02",
+      "reviewSetId": "R004",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-groupwork-reply-apologize-01",
+      "reviewSetId": "R005",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "draft-groupwork-reply-apologize-02",
+      "reviewSetId": "R006",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-groupwork-initiate-apologize-01",
+      "reviewSetId": "R007",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "draft-groupwork-initiate-apologize-02",
+      "reviewSetId": "R008",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-groupwork-reply-decline-01",
+      "reviewSetId": "R009",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-groupwork-reply-decline-02",
+      "reviewSetId": "R010",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-groupwork-initiate-decline-01",
+      "reviewSetId": "R011",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "draft-groupwork-initiate-decline-02",
+      "reviewSetId": "R012",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-groupwork-reply-question-01",
+      "reviewSetId": "R013",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "draft-groupwork-reply-question-02",
+      "reviewSetId": "R014",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-groupwork-initiate-question-01",
+      "reviewSetId": "R015",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-groupwork-initiate-question-02",
+      "reviewSetId": "R016",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-groupwork-reply-suggest-01",
+      "reviewSetId": "R017",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "draft-groupwork-reply-suggest-02",
+      "reviewSetId": "R018",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-groupwork-initiate-suggest-02",
+      "reviewSetId": "R019",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "reviewed-groupwork-initiate-suggest-01",
+      "reviewSetId": "R020",
+      "sourceStatus": "approved-existing"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-groupwork-reply-other-01",
+      "reviewSetId": "R021",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-groupwork-reply-other-02",
+      "reviewSetId": "R022",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-groupwork-initiate-other-01",
+      "reviewSetId": "R023",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "draft-groupwork-initiate-other-02",
+      "reviewSetId": "R024",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-professor-reply-ask-01",
+      "reviewSetId": "R025",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "draft-professor-reply-ask-02",
+      "reviewSetId": "R026",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-professor-initiate-ask-01",
+      "reviewSetId": "R027",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-professor-initiate-ask-02",
+      "reviewSetId": "R028",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-professor-reply-apologize-01",
+      "reviewSetId": "R029",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "draft-professor-reply-apologize-02",
+      "reviewSetId": "R030",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-professor-initiate-apologize-01",
+      "reviewSetId": "R031",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "draft-professor-initiate-apologize-02",
+      "reviewSetId": "R032",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-professor-reply-decline-01",
+      "reviewSetId": "R033",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-professor-reply-decline-02",
+      "reviewSetId": "R034",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-professor-initiate-decline-01",
+      "reviewSetId": "R035",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "draft-professor-initiate-decline-02",
+      "reviewSetId": "R036",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-professor-reply-question-01",
+      "reviewSetId": "R037",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "draft-professor-reply-question-02",
+      "reviewSetId": "R038",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-professor-initiate-question-01",
+      "reviewSetId": "R039",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-professor-initiate-question-02",
+      "reviewSetId": "R040",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-professor-reply-suggest-02",
+      "reviewSetId": "R041",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "reviewed-professor-reply-suggest-01",
+      "reviewSetId": "R042",
+      "sourceStatus": "approved-existing"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-professor-initiate-suggest-01",
+      "reviewSetId": "R043",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "draft-professor-initiate-suggest-02",
+      "reviewSetId": "R044",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-professor-reply-other-01",
+      "reviewSetId": "R045",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-professor-reply-other-02",
+      "reviewSetId": "R046",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-professor-initiate-other-02",
+      "reviewSetId": "R047",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "reviewed-professor-initiate-other-01",
+      "reviewSetId": "R048",
+      "sourceStatus": "approved-existing"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-senior-reply-ask-01",
+      "reviewSetId": "R049",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "draft-senior-reply-ask-02",
+      "reviewSetId": "R050",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-senior-initiate-ask-01",
+      "reviewSetId": "R051",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-senior-initiate-ask-02",
+      "reviewSetId": "R052",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-senior-reply-apologize-01",
+      "reviewSetId": "R053",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "draft-senior-reply-apologize-02",
+      "reviewSetId": "R054",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-senior-initiate-apologize-01",
+      "reviewSetId": "R055",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "draft-senior-initiate-apologize-02",
+      "reviewSetId": "R056",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-senior-reply-decline-01",
+      "reviewSetId": "R057",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-senior-reply-decline-02",
+      "reviewSetId": "R058",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-senior-initiate-decline-01",
+      "reviewSetId": "R059",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "draft-senior-initiate-decline-02",
+      "reviewSetId": "R060",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-senior-reply-question-01",
+      "reviewSetId": "R061",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "draft-senior-reply-question-02",
+      "reviewSetId": "R062",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-senior-initiate-question-02",
+      "reviewSetId": "R063",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "reviewed-senior-initiate-question-01",
+      "reviewSetId": "R064",
+      "sourceStatus": "approved-existing"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-senior-reply-suggest-01",
+      "reviewSetId": "R065",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "draft-senior-reply-suggest-02",
+      "reviewSetId": "R066",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-senior-initiate-suggest-01",
+      "reviewSetId": "R067",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "draft-senior-initiate-suggest-02",
+      "reviewSetId": "R068",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-senior-reply-other-02",
+      "reviewSetId": "R069",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "reviewed-senior-reply-other-01",
+      "reviewSetId": "R070",
+      "sourceStatus": "approved-existing"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-senior-initiate-other-01",
+      "reviewSetId": "R071",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "draft-senior-initiate-other-02",
+      "reviewSetId": "R072",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-friend-reply-ask-01",
+      "reviewSetId": "R073",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "draft-friend-reply-ask-02",
+      "reviewSetId": "R074",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-friend-initiate-ask-01",
+      "reviewSetId": "R075",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-friend-initiate-ask-02",
+      "reviewSetId": "R076",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-friend-reply-apologize-02",
+      "reviewSetId": "R077",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "reviewed-friend-reply-apologize-01",
+      "reviewSetId": "R078",
+      "sourceStatus": "approved-existing"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-friend-initiate-apologize-01",
+      "reviewSetId": "R079",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "draft-friend-initiate-apologize-02",
+      "reviewSetId": "R080",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-friend-reply-decline-01",
+      "reviewSetId": "R081",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-friend-reply-decline-02",
+      "reviewSetId": "R082",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-friend-initiate-decline-01",
+      "reviewSetId": "R083",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "draft-friend-initiate-decline-02",
+      "reviewSetId": "R084",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-friend-reply-question-01",
+      "reviewSetId": "R085",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "draft-friend-reply-question-02",
+      "reviewSetId": "R086",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-friend-initiate-question-01",
+      "reviewSetId": "R087",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-friend-initiate-question-02",
+      "reviewSetId": "R088",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-friend-reply-suggest-01",
+      "reviewSetId": "R089",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "draft-friend-reply-suggest-02",
+      "reviewSetId": "R090",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 1,
+        "다": 3
+      },
+      "exampleId": "draft-friend-initiate-suggest-02",
+      "reviewSetId": "R091",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 2,
+        "다": 1
+      },
+      "exampleId": "reviewed-friend-initiate-suggest-01",
+      "reviewSetId": "R092",
+      "sourceStatus": "approved-existing"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 3,
+        "다": 2
+      },
+      "exampleId": "draft-friend-reply-other-01",
+      "reviewSetId": "R093",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 3,
+        "나": 1,
+        "다": 2
+      },
+      "exampleId": "draft-friend-reply-other-02",
+      "reviewSetId": "R094",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 2,
+        "나": 3,
+        "다": 1
+      },
+      "exampleId": "draft-friend-initiate-other-01",
+      "reviewSetId": "R095",
+      "sourceStatus": "draft-new"
+    },
+    {
+      "candidateToneLevels": {
+        "가": 1,
+        "나": 2,
+        "다": 3
+      },
+      "exampleId": "draft-friend-initiate-other-02",
+      "reviewSetId": "R096",
+      "sourceStatus": "draft-new"
+    }
+  ]
+}
