@@ -191,150 +191,44 @@ status: active
 	- [[index]]
 - Reuse axis: 취업/포트폴리오, 강의/수업/교육, 제품/창업, 프로젝트 증거
 
-## [2026-07-12] maintenance | Status count and wiki metadata coverage
+## [2026-07-23] ingest | 김규태 Personal Operating Manual and Self-Understanding Interview
 
-- Updated status command docs to exclude `.gitkeep` placeholders from Inbox pending counts
-- Added `explored: false` and `verificationStatus: unverified` to 17 legacy Wiki/MOC pages missing Exploration Gate and verification fields
-- Updated `date modified` on touched Wiki pages to `2026-07-12`
-- Result:
-	- Inbox pending count now reports 0 real files when only `.gitkeep` placeholders exist
-	- `explored` coverage: 31/31 Wiki pages
-	- `verificationStatus` coverage: 31/31 Wiki pages
-- Note: verification values were set conservatively to `unverified`; run `/verify` for claim-level confirmation
-
-## [2026-07-12] context | Economic freedom, leverage, and reading axes
-
-- Source: user-provided clarification in Codex session
-- Updated: [[Core Context]]
-- Purpose: 영상 transcript ingest 전에 취업 포트폴리오 증거와 개인 삶의 운영 지식을 분리하고, 경제적 자유/FIRE/레버리지 및 독서/책/학습 축을 쿼리 라우팅용으로 추가
-- Key context captured:
-	- 경제적 자유는 단기 은퇴 계획이 아니라 완전한 자유를 향한 북극성
-	- 1순위 수단은 개발자 취업과 고연봉 커리어, 2순위는 투자와 자산관리
-	- 자본 레버리지를 가장 큰 레버리지로 보며, 현재 약 7천만 원, 1억 원을 첫 임계점으로 인식
-	- 투자 운영 가설은 반도체/기술주 2배 레버리지 ETF를 디벨롭몽의 웅덩이 매수법으로 장기 분할매수하는 전략
-	- 현금 20% 유지, 생활비 대출은 내년까지 추가 400만 원 범위로 제한
-	- 암호화폐는 고위험 성장자산으로 보며 전체 자산의 약 5%를 차지하고, 현재 기록 기준 비트코인 약 215만 원과 이더리움 약 113만 원을 보유
-	- Threads는 Codex 자동화 시스템으로 만든 콘텐츠/브랜드 레버리지 사례이며 반복 운영까지 포함
-	- `cuee`는 U300 전국 400개 팀 선정, 경남권 창업동아리대회 대상, 교내 창업대회 최우수상 이력이 있으며 Android accessibility 권한 심사가 주요 blocker이고 제품화 경험으로 우선 설명
-	- 상위 Wiki 제목 후보는 `경제적 자유는 나의 북극성이다`를 우선으로 둠
-	- 최근 감명 깊게 읽은 책은 롭 무어 `레버리지`와 이선 몰릭 `공동지능`
-- Reuse axis: 경제적 자유/FIRE/레버리지, 독서/책/학습, Codex 개발 워크플로, 제품/창업
-
-## [2026-07-12] inbox | YouTube inspiration bundle user reflections
-
-- Source: user-provided per-video reflections in Codex session
-- Created Inbox note: [[2026-07-12-YouTube-Inspiration-Bundle-User-Reflections]]
-- Purpose: 13개 YouTube transcript ingest 전에 영상별로 사용자가 가져가고 싶은 생각을 분리 보존해, 나중에 Raw Source/Wiki 컴파일 시 영상 요약보다 사용자 해석을 중심에 두기 위함
-- Key context captured:
-	- AI는 기존 업무 보조를 넘어 암 치료 같은 인간의 궁극적 문제 해결로 갈 수 있다는 관점
-	- 지식도 복리처럼 쌓이며, 매일 공부해 점을 만들고 나중에 연결하려는 독서 태도
-	- 첫 1억 이전의 생활습관, 소비습관, 투자습관이 이후 자산 증가의 기초가 된다는 생각
-	- FIRE 가능성을 염두에 두면 오히려 일을 더 잘할 수 있다는 관점
-	- 바이브마피아 하네스 레포를 Codex 맞춤형으로 변형한 것이 `harness`이고, 그 하네스로 만든 것이 `cuee`
-	- 멀티 에이전트 workflow에서는 직책 부여, 작은 단위 작업 분해, 추상화가 중요하다는 생각
-	- 논픽션 중심 독서에서 픽션까지 섞어 읽어야 한다는 독서 균형 과제
-	- 아직 0에서 1로 만든 것은 없지만, 개발 커리어와 제품이 세상에 알려지고 실제 사용되는 경험을 하고 싶다는 목표
-	- `경제적 자유는 나의 북극성이다`를 이번 묶음의 상위 Wiki 페이지로 확정
-	- 샘 올트먼 1인 유니콘 영상은 미래 1인 제품 가능성으로 연결
-	- 픽션 독서 후보는 `은하수를 여행하는 히치하이커를 위한 안내서`, `이방인`, `변신`
-	- `cuee`는 아직 0에서 1로 만든 경험이 아니라 0 to 1 후보 또는 초기 제품화 경험으로 기록
-- Reuse axis: 경제적 자유/FIRE/레버리지, 독서/책/학습, Codex 개발 워크플로, 제품/창업, 취업/포트폴리오
-
-## [2026-07-13] ingest | YouTube Shorts 몸값 높이는 독서법
-
-- Source: [[2026-07-13-YouTube-Shorts-몸값-높이는-독서법]]
-- Origin: `00. Inbox/01. Articles/몸값 높이는 독서법.md`
-- Collection purpose: 독서와 학습을 취업 포트폴리오보다 경제적 자유/FIRE/레버리지 축에 더 강하게 연결하기 위해 수집. 사용자는 영상의 메시지에 동의하며, 자본주의 사회에서 능력과 시장가치를 키우는 태도를 장기 자유의 기반으로 기록하려고 함
-- Raw Source 저장:
-	- `10. Raw Sources/11. Articles/2026-07-13-YouTube-Shorts-몸값-높이는-독서법.md`
+- Sources:
+	- [[2026-07-23-Kim-Gyutae-Personal-Operating-Manual-v1]]
+	- [[2026-07-23-Kim-Gyutae-Romantic-Self-Reflection-v1]]
+	- [[2026-07-23-Kim-Gyutae-Self-Understanding-Interview-v1]]
+- Origin:
+	- 사용자가 약 한 달 동안 직접 작성한 `규태 사용설명서`
+	- 특정인을 좋아하며 작성한 `새로 태어나기`에서 제3자 정보를 제거한 자기관찰 발췌
+	- Codex 인제스트 목적·모호성 질문에 대한 사용자 직접 답변
+- Collection purpose: 자기이해와 메타인지를 심화하고, 미래의 AI 에이전트가 김규태에 관한 질문에 빈말보다 사실 기반 멘토링과 행동 개선안을 제공하도록 개인화 지식으로 재사용
+- Raw Source 저장: `10. Raw Sources/15. Clippings/`
+- Privacy handling:
+	- `규태 사용설명서` 원문 전체를 `## Original Content` 아래 보존
+	- MBTI 비하 문장은 Raw Source에만 보존하고 Wiki에는 승격하지 않음
+	- `새로 태어나기` 원본의 제3자 개인정보와 구체적인 성행위 지침은 저장소에 복사하지 않음
+	- 사용자 관련 문장 47개를 원문 그대로 발췌하고 `redacted: true`로 표시
 - Mode: A standalone — mothership search skipped, `mainVaultRelated` / `mainVaultCmds` left empty
+- Wiki 페이지 생성 (12):
+	- Concepts (6): [[김규태 Motivation and Execution Pattern]], [[김규태 Breadth-to-Depth Development Pattern]], [[김규태 Stress and Recovery Pattern]], [[김규태 Leadership Pattern]], [[김규태 Attachment and Romantic Pacing Pattern]], [[김규태 Taste and Intellectual Intimacy]]
+	- Guides (5): [[김규태 Personal Operating Manual]], [[김규태 Work and Learning Operating Guide]], [[김규태 Career Values and Success Vision]], [[김규태 Relationship Values]], [[김규태 AI Mentor Response Contract]]
+	- Maps (1): [[MOC-김규태 Self Knowledge]]
 - Wiki 페이지 업데이트 (3):
-	- [[경제적 자유는 나의 북극성이다]]
-	- [[독서는 판단력과 자산관리의 기반이다]]
-	- [[레버리지를 당하지 않고 사용하는 삶]]
-- Index 업데이트:
-	- [[index]]
-- Key context captured:
-	- 이 쇼츠는 독서를 단순 취미나 취업 스펙이 아니라, 능력과 시장가치를 키워 선택권을 넓히는 수단으로 해석한다
-	- 사용자는 개발자 취업 축보다 경제적 자유/FIRE/레버리지 축에 더 강하게 연결하기를 원했다
-- Verification boundary:
-	- 영상의 시장/능력주의 주장은 외부 관점이므로 검증된 사회과학 명제가 아니라 개인 운영 관점으로 보존한다
-- Reuse axis: 경제적 자유/FIRE/레버리지, 독서/책/학습
-
-## [2026-07-14] query | Sales and psychology book recommendations
-
-- Source query: `Clippings/1등이 될 수 없다면 무기를 모아야 합니다 1.md`
-- Saved query result: [[2026-07-14-Q-sales-psychology-book-recommendations]]
-- Updated Wiki page:
-	- [[독서는 판단력과 자산관리의 기반이다]]
-- Index 업데이트:
-	- [[index]]
-- Key context captured:
-	- 사용자는 세일즈와 심리학을 사람을 모으는 능력, 사람과 사람을 설득하는 능력으로 공부하고 싶어 한다.
-	- 이 관심사는 본업 위에 상위 25% 보조 능력을 쌓는 전략이며, 독서/책/학습, 경제적 자유/FIRE/레버리지, 제품/창업 축에 연결된다.
-- Reuse axis: 독서/책/학습, 경제적 자유/FIRE/레버리지, 제품/창업
-
-## [2026-07-14] query | How to read sales and psychology books
-
-- Source query: 세일즈와 심리학 책들을 읽을 때 어떻게 해야 잘 읽을 수 있는지에 대한 사용자 질문
-- Saved query result: [[2026-07-14-Q-how-to-read-sales-psychology-books]]
-- Updated Wiki page:
-	- [[독서는 판단력과 자산관리의 기반이다]]
-- Index 업데이트:
-	- [[index]]
-- Key context captured:
-	- 세일즈/심리학 책은 요약보다 행동 실험으로 읽는다.
-	- 한 권에서 하나의 실험만 뽑고, 실제 대화·팀 운영·제품 설명·글쓰기·면접 답변에 적용한 뒤 결과를 기록한다.
-- Reuse axis: 독서/책/학습, 경제적 자유/FIRE/레버리지, 제품/창업
-
-## [2026-07-14] query | Yohan Koo LLM Wiki usage insights
-
-- Source query: 구요한 대표는 Obsidian LLM Wiki를 어떻게 사용하면 좋다고 말했는지, 강의 인사이트와 본인 활용 방식이 무엇인지에 대한 사용자 질문
-- Saved query result: [[2026-07-14-Q-yohan-koo-llm-wiki-usage-insights]]
-- Primary sources:
-	- [[2026-07-07-에이전트를-위한-지식-베이스-LLM-Wiki-활용]]
-	- [[LLM Wiki as Learning Base]]
-	- [[Mothership-Satellite Vault Pattern]]
-	- [[Agent-Readable Metadata]]
-	- [[Obsidian Tooling for LLM Wiki]]
-	- [[Human-AI Knowledge Boundary]]
-- Index 업데이트:
-	- [[index]]
-- Key context captured:
-	- LLM Wiki는 이미 아는 지식 보관소보다, 관심은 있지만 아직 설명할 수 없는 자료를 공부 가능한 형태로 만드는 학습 전초기지다.
-	- 구요한 대표는 메인 볼트와 LLM Wiki 볼트를 분리하고, Query 결과와 질문 자체를 `Queries` 폴더에 남기는 방식으로 활용한다.
-	- 메타데이터와 폴더 구조는 노트가 많아져도 필터링과 라우팅을 가능하게 하는 핵심 장치다.
-- Quality gaps:
-	- 강의 transcript의 STT 품질 때문에 인명과 일부 기술명이 흔들린다.
-	- 본 답변은 2026-07-07 강의 transcript와 기존 Wiki 컴파일 기준이며, 이후 운영 방식은 별도 확인 필요.
-- Reuse axis: Codex 개발 워크플로, 독서/책/학습, 에세이/블로그
-
-## [2026-07-12] ingest | YouTube Inspiration Bundle For Economic Freedom North Star
-
-- Source: [[2026-07-12-YouTube-Inspiration-Bundle-User-Reflections]] plus 13 YouTube transcript raw sources
-- Origin: YouTube transcript markdown files copied from Desktop into Inbox, then user reflection captured in Codex session
-- Collection purpose: 개발자로 성장해 고소득 커리어를 만들고, 자본 레버리지·AI 자동화·제품화·독서와 학습을 통해 경제적 자유라는 북극성에 가까워지기 위해 수집. 취업 포트폴리오 증거라기보다 개인 삶의 운영 지식이며, 투자/FIRE/AI/창업 관련 주장은 검증 필요 상태로 보존
-- Raw Source 저장:
-	- `10. Raw Sources/14. Transcripts/` — 13 YouTube transcript files
-	- `10. Raw Sources/15. Clippings/` — 1 user reflection file
-- Mode: A standalone — mothership search skipped, `mainVaultRelated` / `mainVaultCmds` left empty
-- Wiki 페이지 생성 (6):
-	- Maps (1): [[경제적 자유는 나의 북극성이다]]
-	- Guides (1): [[개발자 커리어로 경제적 자유에 가까워지기]]
-	- Concepts (4): [[레버리지를 당하지 않고 사용하는 삶]], [[자본 레버리지는 자유의 핵심 엔진이다]], [[AI 자동화는 개인 생산성 레버리지다]], [[독서는 판단력과 자산관리의 기반이다]]
-- Wiki 페이지 업데이트 (2):
+	- [[김규태]]
 	- [[harness]]
-	- [[cuee]]
-- Index 업데이트:
+	- [[김규태 Leadership and Teaching Evidence]]
+- System pages updated:
+	- [[Core Context]]
 	- [[index]]
 - Key context captured:
-	- 경제적 자유는 장기 북극성이며 개발자 커리어가 1순위 수단, 자본 레버리지가 2순위 수단
-	- 첫 1억 이전의 생활습관·소비습관·투자습관이 이후 자산 증가의 기초
-	- 자본 레버리지 전략은 `USD`, `QLD` 같은 반도체/기술주 2배 레버리지 ETF와 DCA/웅덩이 매수법 중심의 개인 운영 가설
-	- AI 자동화는 Codex, [[harness]], Threads 반복 운영, 멀티 에이전트 workflow와 연결
-	- [[harness]]는 바이브마피아 하네스 레포를 보고 Codex 맞춤형으로 변형한 것이며, [[cuee]]는 그 harness를 사용해 만든 초기 제품화 경험
-	- 독서는 지식 복리와 판단력의 기반이며, 논픽션 편향을 보완하기 위해 픽션도 섞어 읽을 계획
-- Verification boundary:
-	- 투자, FIRE, AI, 1인 유니콘, 파생상품 모델 관련 외부 주장은 `verificationStatus: unverified`로 보존
-	- 사용자 동기와 개인 운영 가설은 `user-original` 또는 `user-provided` 맥락으로 분리
-- Reuse axis: 경제적 자유/FIRE/레버리지, 독서/책/학습, Codex 개발 워크플로, 제품/창업, 취업/포트폴리오
+	- 빠르게 시작하는 실행력은 강하지만 깊이, 유지보수, 마감 관리가 보완 과제
+	- 성장, 돈, 인정, 가시적 사용자 반응이 강한 동기이며 지식 축적과 개발자 정체성도 독립 동기로 존재
+	- Threads 자동화는 포맷 실험, 사용자 반응 선택, 템플릿화, GitHub Actions 반복 운영으로 이어졌고 2026-07-23 사용자 자기보고 기준 팔로워 500명
+	- AI 에이전트 개발은 T자형 세로축 후보지만 아직 구체 분야가 확정되지 않음
+	- 비전·제품 방향·최종 결정은 선호하지만 일정·행정·타인 결과 관리는 보완 과제
+	- 관계에서는 솔직함, 자율성, 신뢰, 지적 친밀감을 중시하며 빠른 감정 속도와 장기 반추가 반복 패턴
+	- 동의는 자유로운 명시적 긍정과 지속적 확인을 기준으로 정규화
+	- AI는 사실, 자기보고, 해석, 본인 책임, 타인 영역, 재발 방지 행동을 분리하는 멘토 역할을 우선
+- Open question:
+	- T자형 개발 전문성의 세로축은 `AI 에이전트를 이용한 개발`로 탐색 중이며 세부 문제 영역은 미정
+- Reuse axis: 자기이해, AI 개인화, 취업/포트폴리오, Codex 개발 워크플로, 관계 메타인지
