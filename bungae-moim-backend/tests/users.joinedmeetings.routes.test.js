@@ -57,13 +57,15 @@ describe('GET /api/users/me/joined-meetings', () => {
     const { agent, userId } = await loginAgent('j-me');
     const m1 = await insertMeeting(host, { title: '대기중' });
     const m2 = await insertMeeting(host, { title: '거절됨' });
+    const m3 = await insertMeeting(host, { title: '취소됨' });
     await insertParticipant(m1, userId, 'pending', '2026-07-20T10:00:00+09:00');
     await insertParticipant(m2, userId, 'rejected', '2026-07-21T10:00:00+09:00');
+    await insertParticipant(m3, userId, 'cancelled', '2026-07-19T10:00:00+09:00');
 
     const res = await agent.get('/api/users/me/joined-meetings');
     expect(res.status).toBe(200);
     const statuses = res.body.data.items.map((it) => it.status).sort();
-    expect(statuses).toEqual(['pending', 'rejected']);
+    expect(statuses).toEqual(['cancelled', 'pending', 'rejected']);
     const one = res.body.data.items.find((it) => it.meeting.id === m1);
     expect(one.meeting.host.nickname).toBe('길동');
     expect(one.meeting.title).toBe('대기중');

@@ -85,7 +85,11 @@ describe('DELETE /api/meetings/:id', () => {
     const { agent, userId: hostId } = await loginAgent('d-h4');
     const meetingId = await insertMeeting(hostId);
     const applicant = await createUser('d-a4');
+    const pendingApplicant = await createUser('d-a4p');
+    const rejectedApplicant = await createUser('d-a4r');
     await insertParticipant(meetingId, applicant, 'approved');
+    await insertParticipant(meetingId, pendingApplicant, 'pending');
+    await insertParticipant(meetingId, rejectedApplicant, 'rejected');
 
     const res = await agent.delete(`/api/meetings/${meetingId}`);
     expect(res.status).toBe(200);
@@ -98,6 +102,13 @@ describe('DELETE /api/meetings/:id', () => {
       [meetingId, applicant]
     );
     expect(part.rows[0].status).toBe('cancelled');
+
+    const allParts = await pool.query(
+      'SELECT user_id, status FROM meeting_participants WHERE meeting_id = $1 ORDER BY user_id',
+      [meetingId]
+    );
+    expect(allParts.rows.every((r) => r.status === 'cancelled')).toBe(true);
+    expect(allParts.rows.length).toBe(3);
   });
 
   it('취소해도 참여자 신뢰도는 변하지 않는다', async () => {
