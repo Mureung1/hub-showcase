@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -71,10 +71,10 @@ Verified archive byte를 final cache generation과 격리된 staging root에만 
 | owner | `D` — Runtime delivery |
 | branch | `codex/public-preview-d1b-safe-extract` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/d1b-safe-extract` |
-| handoffSha | Claim 시 coordinator가 009의 fixed reviewed SHA와 필요한 C-owned safe TAR dependency `contractTipSha`를 integration branch에 `--no-ff` 반영하고 predecessor/integration package·root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `1bacf08625a7df70b12fa1cee7ecff9f09907b49` — coordinator가 reviewed D1a closeout과 C-owned safe TAR dependency/lock을 integration branch에 `--no-ff` 반영하고 predecessor/integration gate를 green으로 확인한 exact handoff |
 | writablePaths | `packages/runtime-release/src/**` 중 archive preflight/extraction/verifier implementation·tests (`src/contract.ts`, package manifest와 lockfile 제외); malicious archive fixtures; `docs/tickets/2026-07-23-public-npx-first-release/010-d1b-safe-runtime-archive-extraction.md` |
 | consumedContracts | D1a descriptor/cache/staging authority, canonical Runtime manifest/complete-tree behavior, C-owned exact safe TAR dependency |
-| predecessorEvidence | 009 fixed reviewed SHA와 descriptor no-write/no-network receipt; safe TAR dependency/lock fixed SHA, license record와 green integration gate |
+| predecessorEvidence | 009 reviewed combined tip `5be60ccf4dc04b42898244cf5033e339c1f58e6f`와 closeout `b5ad973b44427ba35db4da62fbb6c7ec02c74fe9`가 integration에 반영됨; `tar-stream@3.2.0`, `@types/tar-stream@3.1.4`, pre-D1b lock SHA-256 `6dcc45c4d2aac146b925850f98a61a890e5f54360151598c3ccbf22040ba12ab`; coordinator-confirmed green integration gate |
 | requiredChecks | Full malicious archive matrix; staging containment/race tests; complete-tree/legal roster tests; runtime-release package test/typecheck/build; root test/typecheck/build/Chat Shell lint; `git diff --check` |
 | reviewOwner | D1a author가 아닌 independent archive-security reviewer |
 | handoffArtifact | Reviewed fixed D1b commit SHA, malicious archive corpus result와 verified-staging complete-tree receipt |
