@@ -1,0 +1,220 @@
+.guide-page {
+  width: min(840px, 100%);
+  margin: 0 auto;
+  padding: 56px 24px 96px;
+}
+
+.guide-header {
+  padding-bottom: 30px;
+}
+
+.guide-eyebrow {
+  margin: 0 0 12px;
+  color: #16885a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.guide-header h1 {
+  margin: 0;
+  color: #182536;
+  font-size: clamp(30px, 5vw, 46px);
+  letter-spacing: -0.05em;
+}
+
+.guide-header > p:last-child {
+  margin: 14px 0 0;
+  color: #687572;
+  font-size: 15px;
+}
+
+.guide-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.guide-steps div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #d3dbd7;
+  border-radius: 10px;
+  background: #fbfcfa;
+}
+
+.guide-steps strong {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  background: #dff3e9;
+  color: #126d49;
+  font-size: 13px;
+}
+
+.guide-steps span {
+  color: #182536;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.guide-section {
+  margin-top: 16px;
+  padding: 24px;
+  border: 1px solid #d3dbd7;
+  border-radius: 14px;
+  background: #fbfcfa;
+}
+
+.guide-section h2 {
+  margin: 0;
+  color: #182536;
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+
+.guide-section p {
+  margin: 8px 0 0;
+  color: #687572;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.guide-folder pre,
+.guide-example pre {
+  margin: 16px 0 0;
+  overflow-x: auto;
+  padding: 16px;
+  border-radius: 9px;
+  background: #182536;
+  color: #e9f2ee;
+  font: 12px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.guide-rules ul {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding-left: 20px;
+  color: #53615f;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.section-heading button,
+.guide-validator button {
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border: 1px solid #cbd4d0;
+  border-radius: 7px;
+  background: #fff;
+  color: #53615f;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.guide-example details {
+  margin-top: 18px;
+}
+
+.guide-example summary {
+  color: #126d49;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.guide-validator {
+  border-color: #bfe2ce;
+  background: #eef9f2;
+}
+
+.guide-validator textarea {
+  display: block;
+  width: 100%;
+  min-height: 240px;
+  margin-top: 18px;
+  padding: 14px;
+  resize: vertical;
+  border: 1px solid #cfe8d9;
+  border-radius: 9px;
+  outline: 0;
+  background: #fff;
+  color: #182536;
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.guide-validator textarea:focus {
+  border-color: #19a86a;
+  box-shadow: 0 0 0 3px rgb(25 168 106 / 12%);
+}
+
+.guide-validator .validate-button {
+  margin-top: 12px;
+  border-color: #16885a;
+  background: #16885a;
+  color: #fff;
+}
+
+.guide-validator .validate-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.validation-result {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.validation-result.valid {
+  background: #dff3e9;
+  color: #126d49;
+}
+
+.validation-result.invalid {
+  background: #fff0ef;
+  color: #a0443c;
+}
+
+.validation-result ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .guide-page {
+    padding: 36px 16px 64px;
+  }
+
+  .guide-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-section {
+    padding: 20px;
+  }
+
+  .section-heading {
+    display: block;
+  }
+
+  .section-heading button {
+    margin-top: 14px;
+  }
+}
