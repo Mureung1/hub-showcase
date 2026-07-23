@@ -1,4 +1,4 @@
-import type { CodexProductCapableRuntime } from './runtime-contract.js'
+import type { CodexManagedRuntime } from './runtime-contract.js'
 import {
   startVerifiedCodexChatRuntime,
   type CodexChatRuntimeEnvironment,
@@ -47,6 +47,7 @@ export type {
 export type {
   AnswerUserInput,
   CancelUserInput,
+  CodexManagedRuntime,
   CodexPrivateMcpServerInput,
   CodexProductCapableRuntime,
   CodexProductSkillInput,
@@ -95,16 +96,16 @@ export async function verifyCodexChatRuntimeBundle(
 
 export function createCodexChatRuntime(
   options: CreateCodexChatRuntimeOptions,
-): Promise<CodexProductCapableRuntime>
+): Promise<CodexManagedRuntime>
 /** Compatibility overload for the current workspace-only Server caller. */
 export function createCodexChatRuntime(
   options: LegacyCreateCodexChatRuntimeOptions,
-): Promise<CodexProductCapableRuntime>
+): Promise<CodexManagedRuntime>
 export async function createCodexChatRuntime(
   options:
     | CreateCodexChatRuntimeOptions
     | LegacyCreateCodexChatRuntimeOptions,
-): Promise<CodexProductCapableRuntime> {
+): Promise<CodexManagedRuntime> {
   const bundle = await verifyProductionBundle(options.runtimeRoot)
   const spawned =
     'role' in options

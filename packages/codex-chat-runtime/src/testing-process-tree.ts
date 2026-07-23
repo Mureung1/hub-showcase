@@ -17,7 +17,7 @@ import {
 import type {
   AnswerUserInput,
   CancelUserInput,
-  CodexProductCapableRuntime,
+  CodexManagedRuntime,
   StartProductTurnInput,
   StartThreadInput,
 } from './runtime-contract.js'
@@ -39,7 +39,7 @@ export type CodexChatTestProcessTree = {
 }
 
 export interface CodexChatProcessTreeTestFixture {
-  readonly runtime: CodexProductCapableRuntime
+  readonly runtime: CodexManagedRuntime
   readProcessTree(): Promise<CodexChatTestProcessTree>
   waitForCloseRequest(): Promise<void>
   releaseClose(): Promise<void>
@@ -110,7 +110,7 @@ export async function startCodexChatProcessTreeTestFixture(options: {
       }
       return spawned!.runtime.close(input)
     }
-    const runtime: CodexProductCapableRuntime = {
+    const runtime: CodexManagedRuntime = {
       terminal: spawned.runtime.terminal,
       role: spawned.runtime.role,
       readAccount: (input) => spawned!.runtime.readAccount(input),

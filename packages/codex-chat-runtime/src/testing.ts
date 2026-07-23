@@ -14,7 +14,7 @@ import type {
 import type {
   AnswerUserInput,
   CancelUserInput,
-  CodexProductCapableRuntime,
+  CodexManagedRuntime,
   CodexProductTurn,
   StartThreadInput,
   StartProductTurnInput,
@@ -153,7 +153,7 @@ type DeterministicPendingInteraction = {
   settled: boolean
 }
 
-export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime {
+export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
   private readonly terminalDeferred = createDeferred<CodexChatRuntimeError>()
   readonly terminal = this.terminalDeferred.promise
   readonly role: CodexRuntimeRole

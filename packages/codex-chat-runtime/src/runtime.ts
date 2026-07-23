@@ -38,7 +38,7 @@ import {
 import type {
   AnswerUserInput,
   CancelUserInput,
-  CodexProductCapableRuntime,
+  CodexManagedRuntime,
   CodexProductTurn,
   StartThreadInput,
   StartProductTurnInput,
@@ -267,7 +267,7 @@ export interface CodexChatRuntimeEnvironment {
 }
 
 export interface SpawnedCodexChatRuntime {
-  readonly runtime: CodexProductCapableRuntime
+  readonly runtime: CodexManagedRuntime
   readonly child: ChildProcessWithoutNullStreams
   readonly closed: Promise<void>
   readonly terminal: Promise<CodexChatRuntimeError>
@@ -360,7 +360,7 @@ export async function startVerifiedCodexChatRuntime(
   }
 }
 
-class NodeCodexChatRuntime implements CodexProductCapableRuntime {
+class NodeCodexChatRuntime implements CodexManagedRuntime {
   readonly role: CodexRuntimeRole
   readonly closed: Promise<void>
   readonly terminal: Promise<CodexChatRuntimeError>

@@ -7,10 +7,7 @@ import type {
   CodexThreadId,
   CodexTurnId,
 } from './contract.js'
-import type {
-  CodexAccountLifecycle,
-  CodexRuntimeCloseResult,
-} from './account-contract.js'
+import type { CodexAccountLifecycle } from './account-contract.js'
 
 export type CodexProductSkillInput = {
   readonly name: string
@@ -48,17 +45,14 @@ export type CancelUserInput = {
   readonly interactionId: CodexInteractionId
 }
 
-export interface CodexProductCapableRuntime
-  extends Omit<CodexChatRuntime, 'close'>,
-    CodexAccountLifecycle {
+export interface CodexProductCapableRuntime extends CodexChatRuntime {
   startThread(): Promise<CodexChatThread>
   startThread(input: StartThreadInput): Promise<CodexChatThread>
   readAccountReadiness(): Promise<CodexAccountReadiness>
   startProductTurn(input: StartProductTurnInput): Promise<CodexProductTurn>
   answerUserInput(input: AnswerUserInput): Promise<void>
   cancelUserInput(input: CancelUserInput): Promise<void>
-  close(): Promise<void>
-  close(input: {
-    readonly signal: AbortSignal
-  }): Promise<CodexRuntimeCloseResult>
 }
+
+export type CodexManagedRuntime =
+  CodexProductCapableRuntime & CodexAccountLifecycle

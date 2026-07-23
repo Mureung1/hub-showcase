@@ -1,6 +1,7 @@
 import type {
   CodexAccountLifecycle,
   CodexChatRuntime,
+  CodexManagedRuntime,
   CodexProductCapableRuntime,
   CodexRuntimeRole,
   StartThreadInput as ProductStartThreadInput,
@@ -21,12 +22,17 @@ import type { CodexRuntimeRole as BrowserRuntimeRole } from '../src/contract.js'
 
 declare const browserRuntime: BrowserCodexChatRuntime
 declare const accountLifecycle: CodexAccountLifecycle
+declare const managedRuntime: CodexManagedRuntime
 declare const productRuntime: CodexProductCapableRuntime
 declare const chatRuntime: CodexChatRuntime
 declare const runtimeRole: CodexRuntimeRole
 declare const privateThreadInput: ProductStartThreadInput
 
 void accountLifecycle
+void managedRuntime.readAccount({
+  refreshToken: true,
+  signal: new AbortController().signal,
+})
 void browserRuntime.startThread()
 void chatRuntime.startThread()
 void productRuntime.startThread(privateThreadInput)
