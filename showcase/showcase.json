@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "title": "AI시대 사고력 깨우기 - 깸",
+  "summary": "관심사에 맞는 오늘의 글을 읽고, 사고 미션을 수행하며 자신의 생각을 날짜별로 기록하는 서비스입니다.",
+  "githubUser": "str-leshs(이은서)",
+  "demoUrl": "",
+  "thumbnail": "",
+  "screenshots": [],
+  "problem": "",
+  "targetUsers": [],
+  "features": [],
+  "featureTags": [],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "FastAPI",
+    "Python",
+    "Supabase",
+    "PostgreSQL"
+  ],
+  "techHighlights": [],
+  "developmentWithAI": "",
+  "agent": {
+    "summary": "",
+    "agentTools": [],
+    "workflows": []
+  }
+}

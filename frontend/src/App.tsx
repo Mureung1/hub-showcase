@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { flushSync } from 'react-dom'
 import InterestSelect from './screens/InterestSelect'
 import Today, { type TodayState } from './screens/Today'
 import ArticleIntro, { type ArticleIntroState } from './screens/ArticleIntro'
 import MyGgaem, { type CalendarState, type RecordsState } from './screens/MyGgaem'
+import ContentLoadingScreen from './components/ContentLoadingScreen'
 import { api } from './api/client'
 import { ensureAnonymousSession } from './lib/supabase'
 import type { Interest } from './api/types'
@@ -45,7 +47,7 @@ function App() {
   }, [])
 
   if (appState.status === 'loading') {
-    return <p role="status">불러오고 있어요...</p>
+    return <ContentLoadingScreen message="깸을 준비하고 있어요" description="잠시만요, 곧 준비돼요" />
   }
 
   if (appState.status === 'error') {
@@ -74,6 +76,18 @@ type TodayFlowState =
 // 오늘의 글과 나의 깸을 오가는 하단 탭 상태. 이 컨테이너는 탭이 바뀌어도 마운트 상태를
 // 유지하므로, todayState/flow/selectedArticleId가 나의 깸을 다녀와도 초기화되지 않는다.
 type MainTab = 'today' | 'myGgaem'
+
+// 대표 글 선택을 View Transitions API로 감싼다. 미지원 브라우저(jsdom 포함)에서는
+// document.startViewTransition이 없어 즉시 동기 갱신되므로 테스트나 폴백 동작이 기존과 같다.
+function selectArticleWithTransition(id: string, setSelectedArticleId: (id: string) => void) {
+  if (typeof document.startViewTransition !== 'function') {
+    setSelectedArticleId(id)
+    return
+  }
+  document.startViewTransition(() => {
+    flushSync(() => setSelectedArticleId(id))
+  })
+}
 
 function MainTabsContainer() {
   const [tab, setTab] = useState<MainTab>('today')
@@ -115,11 +129,24 @@ function MainTabsContainer() {
     return <MyGgaemContainer onGoToToday={() => setTab('today')} />
   }
 
+  if (todayState.status === 'loading') {
+    return (
+      <ContentLoadingScreen
+        message="관심사에 맞는 오늘의 글을 고르고 있어요"
+        description="잠시만요, 곧 준비돼요"
+      />
+    )
+  }
+
   if (flow.screen === 'articleIntro') {
     return (
       <ArticleIntroContainer
         articleId={flow.articleId}
         onBack={() => setFlow({ screen: 'today' })}
+        onGoToMyGgaem={() => {
+          setFlow({ screen: 'today' })
+          setTab('myGgaem')
+        }}
       />
     )
   }
@@ -128,7 +155,7 @@ function MainTabsContainer() {
     <Today
       state={todayState}
       selectedArticleId={selectedArticleId}
-      onSelectArticle={setSelectedArticleId}
+      onSelectArticle={(id) => selectArticleWithTransition(id, setSelectedArticleId)}
       onOpenArticle={(articleId) => setFlow({ screen: 'articleIntro', articleId })}
       onGoToMyGgaem={() => setTab('myGgaem')}
     />
@@ -139,9 +166,11 @@ function MainTabsContainer() {
 function ArticleIntroContainer({
   articleId,
   onBack,
+  onGoToMyGgaem,
 }: {
   articleId: string
   onBack: () => void
+  onGoToMyGgaem: () => void
 }) {
   const [state, setState] = useState<ArticleIntroState>({ status: 'loading' })
 
@@ -170,11 +199,21 @@ function ArticleIntroContainer({
     }
   }, [articleId])
 
+  if (state.status === 'loading') {
+    return (
+      <ContentLoadingScreen
+        message="오늘의 글을 불러오고 있어요"
+        description="잠시만요, 곧 준비돼요"
+      />
+    )
+  }
+
   return (
     <ArticleIntro
       state={state}
       onBack={onBack}
       onSubmitMission={(request) => api.createMissionRecord(request)}
+      onGoToMyGgaem={onGoToMyGgaem}
     />
   )
 }
