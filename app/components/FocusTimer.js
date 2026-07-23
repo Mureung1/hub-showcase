@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Character from "./Character";
 
 // durationMinutes: 타이머 길이(분). 기본 25분.
 // onFinish: 시간이 다 됐을 때 호출
@@ -27,6 +28,8 @@ export default function FocusTimer({ durationMinutes = 25, onFinish }) {
 
   const minutes = String(Math.floor(remainingSeconds / 60)).padStart(2, "0");
   const seconds = String(remainingSeconds % 60).padStart(2, "0");
+  const totalSeconds = durationMinutes * 60;
+  const remainingRatio = totalSeconds === 0 ? 0 : remainingSeconds / totalSeconds;
 
   return (
     <main
@@ -35,6 +38,8 @@ export default function FocusTimer({ durationMinutes = 25, onFinish }) {
         alignItems: "center",
         justifyContent: "center",
         minHeight: "100vh",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       <div
@@ -42,17 +47,37 @@ export default function FocusTimer({ durationMinutes = 25, onFinish }) {
           width: "220px",
           height: "220px",
           borderRadius: "50%",
-          border: "6px solid var(--sky-line)",
+          border: "2px solid var(--sky-line)",
+          position: "relative",
+          overflow: "hidden",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "var(--font-body)",
-          fontSize: "40px",
-          color: "var(--sky-ink)",
         }}
       >
-        {minutes}:{seconds}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            width: "100%",
+            height: `${remainingRatio * 100}%`,
+            background: "var(--sky)",
+            transition: "height 1s linear",
+          }}
+        />
+        <span
+          style={{
+            position: "relative",
+            fontFamily: "var(--font-body)",
+            fontSize: "40px",
+            color: "var(--sky-ink)",
+          }}
+        >
+          {minutes}:{seconds}
+        </span>
       </div>
+      <Character closed />
     </main>
   );
 }

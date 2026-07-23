@@ -1,3 +1,5 @@
+import Character from "./Character";
+
 // onBackHome: "홈 화면으로 돌아가기" 버튼 클릭 시 호출
 export default function RestSuggestion({ onBackHome }) {
   return (
@@ -11,6 +13,8 @@ export default function RestSuggestion({ onBackHome }) {
         padding: "24px",
         gap: "20px",
         textAlign: "center",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       <div
@@ -38,6 +42,7 @@ export default function RestSuggestion({ onBackHome }) {
       >
         ← 홈 화면으로 돌아가기
       </button>
+      <Character closed />
     </main>
   );
 }
