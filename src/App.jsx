@@ -1,44 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { supabase } from './services'
 import './App.css'
 
-const coupons = [
-  {
-    id: 'coupon-1',
-    cafeName: '데이라이트 로스터스',
-    title: '시그니처 라떼 1잔',
-    issuedAt: '2026-07-08',
-    expiresAt: '2026-07-15',
-  },
-  {
-    id: 'coupon-2',
-    cafeName: '멜로우 브루',
-    title: '아메리카노 1잔 무료',
-    issuedAt: '2026-07-06',
-    expiresAt: '2026-07-20',
-  },
-]
-
-const notifications = [
-  {
-    id: 'notice-1',
-    title: '쿠폰이 발급되었습니다',
-    detail: '데이라이트 로스터스 쿠폰을 사용할 수 있어요.',
-    isRead: false,
-  },
-  {
-    id: 'notice-2',
-    title: '쿠폰 만료일이 가까워졌습니다',
-    detail: '7월 15일까지 사용 가능한 쿠폰이 있어요.',
-    isRead: true,
-  },
-]
-
 const tabs = [
   { id: 'home', label: '홈', symbol: 'H', path: '/customer' },
-  { id: 'coupons', label: '내 쿠폰', symbol: 'C', path: '/customer/coupons' },
+  { id: 'coupons', label: '쿠폰', symbol: 'C', path: '/customer/coupons' },
   {
     id: 'notifications',
     label: '알림',
@@ -58,7 +26,7 @@ function parseMemberLookupInput(input) {
   if (!trimmedInput) {
     return {
       memberNumber: '',
-      error: '회원번호 또는 QR 값을 입력해주세요.',
+      error: '회원번호 또는 QR 값을 입력해 주세요.',
     }
   }
 
@@ -248,8 +216,8 @@ function CustomerLayout({ profile }) {
 
       <main className="customer-main">
         {activeTab === 'home' && <CustomerHome profile={profile} onLoadCustomer={setNickname} />}
-        {activeTab === 'coupons' && <CustomerCoupons />}
-        {activeTab === 'notifications' && <NotificationsView />}
+        {activeTab === 'coupons' && <CustomerCoupons profile={profile} />}
+        {activeTab === 'notifications' && <NotificationsView profile={profile} />}
         {activeTab === 'mypage' && (
           <MyPage
             nickname={nickname}
@@ -312,7 +280,7 @@ function RoleLogin() {
 
     if (error) {
       setLoginStatus('idle')
-      setLoginError('이메일 또는 비밀번호를 확인해주세요.')
+      setLoginError('이메일 또는 비밀번호를 확인해 주세요.')
       return
     }
 
@@ -360,31 +328,51 @@ function RoleLogin() {
   )
 }
 
-function CustomerCoupons() {
-  const [couponSort, setCouponSort] = useState('newest')
+function CustomerCoupons({ profile }) {
+  const [couponStatus, setCouponStatus] = useState('loading')
+  const [couponError, setCouponError] = useState('')
+  const [customerCoupons, setCustomerCoupons] = useState([])
 
-  const sortedCoupons = useMemo(() => {
-    return [...coupons].sort((first, second) => {
-      const firstDate = new Date(
-        couponSort === 'newest' ? first.issuedAt : first.expiresAt,
-      )
-      const secondDate = new Date(
-        couponSort === 'newest' ? second.issuedAt : second.expiresAt,
-      )
+  useEffect(() => {
+    const loadCoupons = async () => {
+      if (!profile?.customer_id) {
+        setCouponStatus('error')
+        setCouponError('손님 정보를 찾을 수 없습니다.')
+        return
+      }
 
-      return couponSort === 'newest'
-        ? secondDate - firstDate
-        : firstDate - secondDate
-    })
-  }, [couponSort])
+      setCouponStatus('loading')
+      setCouponError('')
 
-  return (
-    <CouponsView
-      coupons={sortedCoupons}
-      couponSort={couponSort}
-      onChangeSort={setCouponSort}
-    />
-  )
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('id, title, barcode, status, issued_at, cafes(name)')
+        .eq('customer_id', profile.customer_id)
+        .eq('status', 'issued')
+        .order('issued_at', { ascending: false })
+
+      if (error) {
+        setCouponStatus('error')
+        setCouponError('쿠폰을 불러오지 못했습니다.')
+        return
+      }
+
+      setCustomerCoupons(data ?? [])
+      setCouponStatus('idle')
+    }
+
+    loadCoupons()
+  }, [profile?.customer_id])
+
+  if (couponStatus === 'loading') {
+    return <StatusCard title="쿠폰을 불러오고 있습니다." />
+  }
+
+  if (couponStatus === 'error') {
+    return <StatusCard title={couponError} />
+  }
+
+  return <CouponsView coupons={customerCoupons} />
 }
 
 function CustomerHome({ profile, onLoadCustomer }) {
@@ -392,6 +380,7 @@ function CustomerHome({ profile, onLoadCustomer }) {
   const [customerError, setCustomerError] = useState('')
   const [customerData, setCustomerData] = useState(null)
   const [stampCards, setStampCards] = useState([])
+  const [customerRefreshKey, setCustomerRefreshKey] = useState(0)
 
   useEffect(() => {
     const loadCustomerHome = async () => {
@@ -444,7 +433,7 @@ function CustomerHome({ profile, onLoadCustomer }) {
     }
 
     loadCustomerHome()
-  }, [profile?.customer_id, onLoadCustomer])
+  }, [profile?.customer_id, onLoadCustomer, customerRefreshKey])
 
   if (customerStatus === 'loading') {
     return <StatusCard title="스탬프 정보를 불러오고 있어요" />
@@ -460,7 +449,7 @@ function CustomerHome({ profile, onLoadCustomer }) {
         <div>
           <p className="eyebrow">적립용 QR</p>
           <h2>{customerData.member_number}</h2>
-          <p>결제할 때 이 회원번호를 보여주세요</p>
+          <p>결제할 때 이 회원번호를 보여주세요.</p>
         </div>
         <div
           className="qr-code"
@@ -479,6 +468,13 @@ function CustomerHome({ profile, onLoadCustomer }) {
           <h2>내 카페 목록</h2>
           <p>{stampCards.length}곳에서 스탬프를 모으는 중</p>
         </div>
+        <button
+          className="ghost-button refresh-button"
+          type="button"
+          onClick={() => setCustomerRefreshKey((current) => current + 1)}
+        >
+          새로고침
+        </button>
         {stampCards.length === 0 ? (
           <StatusCard title="아직 연결된 카페 스탬프가 없습니다." />
         ) : (
@@ -509,63 +505,95 @@ function CustomerHome({ profile, onLoadCustomer }) {
   )
 }
 
-function CouponsView({ coupons, couponSort, onChangeSort }) {
+function CouponsView({ coupons }) {
   return (
     <section className="screen-stack">
       <div className="section-title">
-        <h2>내 쿠폰</h2>
-        <p>지금 사용할 수 있는 쿠폰만 모아봤어요</p>
+        <h2>쿠폰</h2>
+        <p>발급된 쿠폰을 확인하세요.</p>
       </div>
 
-      <div className="segmented-control" aria-label="쿠폰 정렬">
-        <button
-          className={couponSort === 'newest' ? 'active' : ''}
-          type="button"
-          onClick={() => onChangeSort('newest')}
-        >
-          최신순
-        </button>
-        <button
-          className={couponSort === 'expires' ? 'active' : ''}
-          type="button"
-          onClick={() => onChangeSort('expires')}
-        >
-          만료 임박순
-        </button>
-      </div>
-
-      <div className="card-list">
-        {coupons.map((coupon) => (
-          <article className="coupon-card" key={coupon.id}>
-            <p>{coupon.cafeName}</p>
-            <h3>{coupon.title}</h3>
-            <span>{coupon.expiresAt}까지</span>
-          </article>
-        ))}
-      </div>
+      {coupons.length === 0 ? (
+        <StatusCard title="아직 발급된 쿠폰이 없습니다." />
+      ) : (
+        <div className="card-list">
+          {coupons.map((coupon) => (
+            <article className="coupon-card" key={coupon.id}>
+              <p>{coupon.cafes?.name}</p>
+              <h3>{coupon.title}</h3>
+              <span>{coupon.barcode}</span>
+              <span>{new Date(coupon.issued_at).toLocaleDateString()}</span>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   )
 }
 
-function NotificationsView() {
+function NotificationsView({ profile }) {
+  const [noticeStatus, setNoticeStatus] = useState('loading')
+  const [noticeError, setNoticeError] = useState('')
+  const [customerNotifications, setCustomerNotifications] = useState([])
+
+  useEffect(() => {
+    const loadNotifications = async () => {
+      if (!profile?.customer_id) {
+        setNoticeStatus('error')
+        setNoticeError('손님 정보를 찾을 수 없습니다.')
+        return
+      }
+
+      setNoticeStatus('loading')
+      setNoticeError('')
+
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('id, type, message, created_at')
+        .eq('customer_id', profile.customer_id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        setNoticeStatus('error')
+        setNoticeError('알림을 불러오지 못했습니다.')
+        return
+      }
+
+      setCustomerNotifications(data ?? [])
+      setNoticeStatus('idle')
+    }
+
+    loadNotifications()
+  }, [profile?.customer_id])
+
+  if (noticeStatus === 'loading') {
+    return <StatusCard title="알림을 불러오고 있습니다." />
+  }
+
+  if (noticeStatus === 'error') {
+    return <StatusCard title={noticeError} />
+  }
+
   return (
     <section className="screen-stack">
       <div className="section-title">
         <h2>알림</h2>
-        <p>쿠폰 발급과 만료 소식을 확인하세요</p>
+        <p>스탬프와 쿠폰 소식을 확인하세요.</p>
       </div>
 
-      <div className="card-list">
-        {notifications.map((notification) => (
-          <article
-            className={notification.isRead ? 'notice-card read' : 'notice-card'}
-            key={notification.id}
-          >
-            <h3>{notification.title}</h3>
-            <p>{notification.detail}</p>
-          </article>
-        ))}
-      </div>
+      {customerNotifications.length === 0 ? (
+        <StatusCard title="아직 알림이 없습니다." />
+      ) : (
+        <div className="card-list">
+          {customerNotifications.map((notification) => (
+            <article className="notice-card" key={notification.id}>
+              <h3>{notification.type === 'coupon_issued' ? '쿠폰 발급' : '스탬프 적립'}</h3>
+              <p>{notification.message}</p>
+              <p>{new Date(notification.created_at).toLocaleString()}</p>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   )
 }
@@ -575,7 +603,7 @@ function MyPage({ nickname, onChangeNickname, onLogout }) {
     <section className="screen-stack">
       <div className="section-title">
         <h2>마이페이지</h2>
-        <p>테스트 손님 정보를 관리합니다</p>
+        <p>테스트 손님 정보를 관리합니다.</p>
       </div>
 
       <form className="profile-form">
@@ -605,6 +633,9 @@ function OwnerDashboard({ profile }) {
   const [parsedMemberNumber, setParsedMemberNumber] = useState('')
   const [lookupStatus, setLookupStatus] = useState('idle')
   const [lookupResult, setLookupResult] = useState(null)
+  const [awardStatus, setAwardStatus] = useState('idle')
+  const [awardResult, setAwardResult] = useState(null)
+  const [awardError, setAwardError] = useState('')
   const lookupInputRef = useRef(null)
 
   const handleLogout = async () => {
@@ -620,6 +651,9 @@ function OwnerDashboard({ profile }) {
     setLookupError(result.error)
     setParsedMemberNumber(result.memberNumber)
     setLookupResult(null)
+    setAwardStatus('idle')
+    setAwardResult(null)
+    setAwardError('')
 
     if (result.error) {
       setLookupStatus('idle')
@@ -684,6 +718,37 @@ function OwnerDashboard({ profile }) {
     lookupInputRef.current?.focus()
   }
 
+  const handleAwardStamp = async () => {
+    if (!lookupResult?.memberNumber) {
+      return
+    }
+
+    setAwardStatus('loading')
+    setAwardError('')
+    setAwardResult(null)
+
+    const { data, error } = await supabase.rpc('award_stamp', {
+      member_number: lookupResult.memberNumber,
+    })
+
+    if (error) {
+      setAwardStatus('error')
+      setAwardError('스탬프를 적립하지 못했습니다. 다시 시도해 주세요.')
+      lookupInputRef.current?.focus()
+      return
+    }
+
+    setAwardResult(data)
+    setLookupResult((current) => ({
+      ...current,
+      currentStamps: data.currentStamps,
+      goalStamps: data.goalStamps,
+      reward: data.reward,
+    }))
+    setAwardStatus('success')
+    lookupInputRef.current?.focus()
+  }
+
   useEffect(() => {
     const loadOwnerCafe = async () => {
       if (!profile?.cafe_id) {
@@ -739,7 +804,7 @@ function OwnerDashboard({ profile }) {
           <>
             <div className="section-title">
               <h2>{ownerCafe.name}</h2>
-              <p>스탬프 조건과 보상 내용을 확인하고 손님 QR을 스캔합니다</p>
+              <p>스탬프 조건과 보상 내용을 확인하고 손님 QR을 입력합니다.</p>
             </div>
 
             <dl className="rule-list">
@@ -807,6 +872,32 @@ function OwnerDashboard({ profile }) {
                     <dd>{lookupResult.reward}</dd>
                   </div>
                 </dl>
+                <button
+                  className="primary-button"
+                  type="button"
+                  disabled={awardStatus === 'loading'}
+                  onClick={handleAwardStamp}
+                >
+                  {awardStatus === 'loading' ? '적립 처리 중...' : '스탬프 1개 적립'}
+                </button>
+                {awardError && <p className="form-error">{awardError}</p>}
+                {awardResult && (
+                  <div className="award-result">
+                    <strong>
+                      {awardResult.couponIssued
+                        ? '쿠폰이 발급되었습니다.'
+                        : '스탬프가 적립되었습니다.'}
+                    </strong>
+                    <p>
+                      현재 {awardResult.currentStamps} / {awardResult.goalStamps}개
+                    </p>
+                    {awardResult.couponIssued && (
+                      <p>
+                        쿠폰: {awardResult.couponTitle} / {awardResult.couponBarcode}
+                      </p>
+                    )}
+                  </div>
+                )}
               </article>
             )}
           </>
@@ -825,3 +916,8 @@ function StatusCard({ title }) {
 }
 
 export default App
+
+
+
+
+
