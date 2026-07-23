@@ -92,7 +92,7 @@ const MARKET_SENTIMENTS = ["bullish", "bearish", "neutral"]
 // Claude가 "원문 그대로 복사하라"는 지시를 받고도 스마트 따옴표 치환이나
 // 공백 정규화를 하는 경우가 있다. 정확한 substring이 아니라 이런 변형을
 // 허용하는 정규식으로 바꿔 원문에서 실제 부분 문자열을 역으로 찾아낸다.
-function buildFuzzyPattern(candidateText) {
+export function buildFuzzyPattern(candidateText) {
   return candidateText
     .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
     .replace(/["'“”‘’]/g, `["'“”‘’]`)
@@ -103,7 +103,7 @@ function buildFuzzyPattern(candidateText) {
 // "복구"한다 — Reader.jsx가 paragraph.includes(s.text)로 엄격하게 매칭하므로,
 // LLM이 낸 값을 그대로 쓰면 공백·따옴표가 살짝만 달라도 프론트에서 조용히
 // 아코디언이 무력화된다(에러 없이 그냥 평문으로 렌더링됨).
-function findVerbatimMatch(paragraphs, candidateText) {
+export function findVerbatimMatch(paragraphs, candidateText) {
   let pattern
   try {
     pattern = new RegExp(buildFuzzyPattern(candidateText))
@@ -360,7 +360,7 @@ function toCard(candidate, { translation, tickers }) {
 // 점수 통과 후보 중 investmentScore 내림차순으로 최대 3건을 뽑되, 섹터가
 // 겹치면 건너뛰어 다양성을 우선한다. 서로 다른 섹터가 3개가 안 되면(예:
 // 오늘따라 전부 실적 시즌 기사) 남은 자리는 점수 순으로 채운다.
-function pickDiversifiedTop3(evaluated) {
+export function pickDiversifiedTop3(evaluated) {
   const sorted = [...evaluated].sort((a, b) => b.investmentScore - a.investmentScore)
   const picked = []
   const usedSectors = new Set()
