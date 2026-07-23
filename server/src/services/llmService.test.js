@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
-import { buildFuzzyPattern, findVerbatimMatch, parseAnalysisResponse } from "./llmService.js"
+import { buildFuzzyPattern, findVerbatimMatch, parseAnalysisResponse, pickDiversifiedTop3 } from "./llmService.js"
 
 describe("findVerbatimMatch", () => {
   afterEach(() => {
@@ -274,6 +274,112 @@ describe("parseAnalysisResponse", () => {
       expect(() => parseAnalysisResponse(makeResponse(body), paragraphs)).toThrow(
         "analyzeArticle: unexpected LLM response shape",
       )
+    })
+  })
+})
+
+describe("pickDiversifiedTop3", () => {
+  function item(label, investmentScore, sector) {
+    return { label, investmentScore, sector }
+  }
+
+  function labels(result) {
+    return result.map((r) => r.label)
+  }
+
+  describe("정상 케이스", () => {
+    it("섹터가 모두 다른 4개 후보 중 investmentScore 내림차순 상위 3개를 반환한다", () => {
+      const evaluated = [
+        item("tech", 5, "tech"),
+        item("macro", 4, "macro"),
+        item("earnings", 3, "earnings"),
+        item("semiconductor", 2, "semiconductor"),
+      ]
+      const result = pickDiversifiedTop3(evaluated)
+      expect(labels(result)).toEqual(["tech", "macro", "earnings"])
+    })
+
+    it("입력 배열이 점수순으로 정렬돼 있지 않아도 내림차순으로 정렬해 상위 3개를 고른다", () => {
+      const evaluated = [
+        item("earnings", 2, "earnings"),
+        item("tech", 5, "tech"),
+        item("semiconductor", 3, "semiconductor"),
+        item("macro", 4, "macro"),
+      ]
+      const result = pickDiversifiedTop3(evaluated)
+      expect(labels(result)).toEqual(["tech", "macro", "semiconductor"])
+    })
+  })
+
+  describe("섹터 다양성 분기", () => {
+    it("1·2등이 같은 섹터면 2등은 건너뛰고 그다음 다른 섹터를 채운다", () => {
+      const evaluated = [
+        item("tech1", 5, "tech"),
+        item("tech2", 4, "tech"),
+        item("macro", 3, "macro"),
+        item("earnings", 2, "earnings"),
+      ]
+      const result = pickDiversifiedTop3(evaluated)
+      expect(labels(result)).toEqual(["tech1", "macro", "earnings"])
+    })
+
+    it("후보 전부가 같은 섹터면 1차 선별에서 1개만 뽑히고 부족한 자리는 점수순으로 채운다", () => {
+      const evaluated = [
+        item("e1", 5, "earnings"),
+        item("e2", 4, "earnings"),
+        item("e3", 3, "earnings"),
+        item("e4", 2, "earnings"),
+      ]
+      const result = pickDiversifiedTop3(evaluated)
+      expect(labels(result)).toEqual(["e1", "e2", "e3"])
+    })
+
+    it("서로 다른 섹터가 2개뿐이면 1차 선별분이 앞에, 폴백으로 채운 항목이 뒤에 온다(점수순 재정렬 안 됨)", () => {
+      const evaluated = [item("a5", 5, "A"), item("a4", 4, "A"), item("b3", 3, "B")]
+      const result = pickDiversifiedTop3(evaluated)
+      expect(labels(result)).toEqual(["a5", "b3", "a4"])
+    })
+  })
+
+  describe("경계값", () => {
+    it("후보가 정확히 3개면 섹터가 모두 다를 때 점수 내림차순으로 전부 반환한다", () => {
+      const evaluated = [item("x", 3, "A"), item("y", 5, "B"), item("z", 1, "C")]
+      const result = pickDiversifiedTop3(evaluated)
+      expect(labels(result)).toEqual(["y", "x", "z"])
+    })
+
+    it("후보가 3개 미만이면 있는 만큼만 점수순으로 반환한다", () => {
+      const evaluated = [item("p", 2, "A"), item("q", 5, "B")]
+      const result = pickDiversifiedTop3(evaluated)
+      expect(labels(result)).toEqual(["q", "p"])
+    })
+
+    it("후보가 빈 배열이면 빈 배열을 반환한다", () => {
+      const result = pickDiversifiedTop3([])
+      expect(result).toEqual([])
+    })
+
+    it("investmentScore가 동점이면 원래 배열의 상대 순서를 유지한다", () => {
+      const evaluated = [item("first", 3, "A"), item("second", 3, "B")]
+      const result = pickDiversifiedTop3(evaluated)
+      expect(labels(result)).toEqual(["first", "second"])
+    })
+
+    it("후보가 6개 이상이어도 3개까지만 선택하고 나머지는 섹터가 달라도 버려진다", () => {
+      const evaluated = [1, 2, 3, 4, 5, 6].map((n) => item(`s${n}`, 7 - n, `sector${n}`))
+      const result = pickDiversifiedTop3(evaluated)
+      expect(labels(result)).toEqual(["s1", "s2", "s3"])
+    })
+  })
+
+  describe("순수성", () => {
+    it("원본 evaluated 배열을 변형하지 않는다", () => {
+      const evaluated = [item("low", 1, "A"), item("high", 9, "B")]
+      const originalOrder = evaluated.map((e) => e.label)
+
+      pickDiversifiedTop3(evaluated)
+
+      expect(evaluated.map((e) => e.label)).toEqual(originalOrder)
     })
   })
 })
