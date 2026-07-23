@@ -8,14 +8,14 @@ interface ProfileRow {
   id: number;
   email: string;
   name: string | null;
-  gender: "male" | "female" | "other";
+  gender: "male" | "female";
   birth_year: number;
   is_pregnant_or_lactating: boolean | null;
   height_cm: number;
   weight_kg: number;
 }
 
-const VALID_GENDERS = ["male", "female", "other"];
+const VALID_GENDERS = ["male", "female"];
 
 profileRouter.put("/", requireAuth, async (req, res) => {
   const { gender, birthYear, isPregnantOrLactating, heightCm, weightKg } = req.body as {

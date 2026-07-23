@@ -6,7 +6,7 @@ import { requireAuth } from "../middleware/auth";
 export const productsRouter = Router();
 
 interface UserProfileRow {
-  gender: "male" | "female" | "other" | null;
+  gender: "male" | "female" | null;
   birth_year: number | null;
   is_pregnant_or_lactating: boolean | null;
 }

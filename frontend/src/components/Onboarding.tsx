@@ -14,7 +14,6 @@ interface OnboardingProps {
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: 'female', label: '여성' },
   { value: 'male', label: '남성' },
-  { value: 'other', label: '기타' },
 ];
 
 export function Onboarding({ token, initialUser, onComplete, onCancel }: OnboardingProps) {

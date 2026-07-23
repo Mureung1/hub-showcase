@@ -1,4 +1,4 @@
-export type Gender = 'male' | 'female' | 'other';
+export type Gender = 'male' | 'female';
 
 export type Screen = 'home' | 'analysis' | 'overlap' | 'recommend' | 'detail';
 

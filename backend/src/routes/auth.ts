@@ -11,7 +11,7 @@ interface UserRow {
   password: string;
   name: string | null;
   created_at: Date;
-  gender: "male" | "female" | "other" | null;
+  gender: "male" | "female" | null;
   birth_year: number | null;
   is_pregnant_or_lactating: boolean | null;
   height_cm: number | null;
