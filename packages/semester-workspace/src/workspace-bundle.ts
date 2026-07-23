@@ -4,7 +4,6 @@ import { createHash } from 'node:crypto'
 import { constants as fsConstants } from 'node:fs'
 import {
   lstat,
-  mkdir,
   open,
   readdir,
   realpath,
@@ -24,6 +23,12 @@ import {
   type WorkspaceBundleEntryDescriptor,
   type WorkspaceBundleRootDescriptor,
 } from './contract.js'
+import {
+  WorkspaceBundleDirectoryCapability,
+  workspaceBundleDirectoryIdentity,
+  type WorkspaceBundleDirectCreate,
+  type WorkspaceBundleDirectoryIdentity,
+} from './workspace-bundle-directory-capability.js'
 
 const declaredSkillRoot =
   '.agents/skills/ay-ple-first-assignment'
@@ -123,6 +128,15 @@ export type WorkspaceBundleMutationResult =
   WorkspaceBundleVerification & {
     readonly written?: readonly string[]
   }
+
+export type WorkspaceBundleMutationTestOptions = {
+  /**
+   * Package-private race seam. Production callers omit this argument.
+   */
+  readonly afterParentCapabilityCheck?: (
+    operation: WorkspaceBundleDirectCreate,
+  ) => Promise<void>
+}
 
 export class WorkspaceBundleSourceError extends Error {
   readonly code = 'workspace_bundle_source_invalid'
@@ -235,14 +249,34 @@ export async function materializeWorkspaceBundle(input: {
   readonly workspace: AdmittedSemesterWorkspace
   readonly source: VerifiedBundleSource
 }): Promise<WorkspaceBundleMutationResult> {
-  return writeMissingBundleFiles(input, false)
+  return writeMissingBundleFiles(input, false, {})
+}
+
+export async function materializeWorkspaceBundleWithTestOptions(
+  input: {
+    readonly workspace: AdmittedSemesterWorkspace
+    readonly source: VerifiedBundleSource
+  },
+  testOptions: WorkspaceBundleMutationTestOptions,
+): Promise<WorkspaceBundleMutationResult> {
+  return writeMissingBundleFiles(input, false, testOptions)
 }
 
 export async function recoverMissingWorkspaceBundle(input: {
   readonly workspace: AdmittedSemesterWorkspace
   readonly source: VerifiedBundleSource
 }): Promise<WorkspaceBundleMutationResult> {
-  return writeMissingBundleFiles(input, true)
+  return writeMissingBundleFiles(input, true, {})
+}
+
+export async function recoverMissingWorkspaceBundleWithTestOptions(
+  input: {
+    readonly workspace: AdmittedSemesterWorkspace
+    readonly source: VerifiedBundleSource
+  },
+  testOptions: WorkspaceBundleMutationTestOptions,
+): Promise<WorkspaceBundleMutationResult> {
+  return writeMissingBundleFiles(input, true, testOptions)
 }
 
 async function writeMissingBundleFiles(
@@ -251,6 +285,7 @@ async function writeMissingBundleFiles(
     readonly source: VerifiedBundleSource
   },
   allowPartialRecovery: boolean,
+  testOptions: WorkspaceBundleMutationTestOptions,
 ): Promise<WorkspaceBundleMutationResult> {
   let snapshot: SnapshotFile[]
   try {
@@ -268,17 +303,57 @@ async function writeMissingBundleFiles(
   }
 
   const written: string[] = []
+  let capability: WorkspaceBundleDirectoryCapability | undefined
   try {
-    for (const relativePath of before.missing) {
+    const mutationRoot = await inspectWorkspaceRoot(input.workspace)
+    if (mutationRoot.status !== 'verified') {
+      return { ...mutationRoot, written }
+    }
+    capability = await WorkspaceBundleDirectoryCapability.open({
+      absolutePath: mutationRoot.canonicalRoot,
+      identity: mutationRoot.identity,
+    })
+    const currentDirectory: string[] = []
+    for (const relativePath of orderMutationPaths(before.missing)) {
       const file = snapshotFile(snapshot, relativePath)
-      await ensureBundleParents(
-        input.workspace.canonicalRoot,
-        relativePath,
-      )
+      const parentSegments = parentSegmentsFor(relativePath)
       if (
-        await writeAbsentFile(
-          path.join(input.workspace.canonicalRoot, relativePath),
+        !currentDirectory.every(
+          (segment, index) => parentSegments[index] === segment,
+        )
+      ) {
+        throw new Error('Bundle mutation path branches unexpectedly')
+      }
+      for (
+        let index = currentDirectory.length;
+        index < parentSegments.length;
+        index += 1
+      ) {
+        const segment = parentSegments[index]!
+        const directoryPath = parentSegments
+          .slice(0, index + 1)
+          .join('/')
+        await capability.enterDirectory(
+          segment,
+          bundleDirectoryMode,
+          () =>
+            testOptions.afterParentCapabilityCheck?.({
+              kind: 'create_directory',
+              relativePath: directoryPath,
+            }) ?? Promise.resolve(),
+        )
+        currentDirectory.push(segment)
+      }
+      if (
+        await capability.createFile(
+          path.posix.basename(relativePath),
+          bundleFileMode,
           file.bytes,
+          () =>
+            testOptions.afterParentCapabilityCheck?.({
+              kind: 'create_file',
+              relativePath,
+            }) ?? Promise.resolve(),
         )
       ) {
         written.push(relativePath)
@@ -290,6 +365,10 @@ async function writeMissingBundleFiles(
       return { ...afterFailure, written }
     }
     return { status: 'unavailable', written }
+  } finally {
+    if (capability !== undefined) {
+      await capability.close().catch(() => undefined)
+    }
   }
 
   const after = await verifyWorkspaceBundle(input)
@@ -360,7 +439,11 @@ function validateSnapshot(source: VerifiedBundleSource): SnapshotFile[] {
 async function inspectWorkspaceRoot(
   workspace: AdmittedSemesterWorkspace,
 ): Promise<
-  | { readonly status: 'verified'; readonly canonicalRoot: string }
+  | {
+      readonly status: 'verified'
+      readonly canonicalRoot: string
+      readonly identity: WorkspaceBundleDirectoryIdentity
+    }
   | Extract<
       WorkspaceBundleVerification,
       { readonly status: 'manual_recovery_required' | 'unavailable' }
@@ -377,7 +460,9 @@ async function inspectWorkspaceRoot(
     }
   }
   try {
-    const stats = await lstat(workspace.canonicalRoot)
+    const stats = await lstat(workspace.canonicalRoot, {
+      bigint: true,
+    })
     if (!stats.isDirectory() || stats.isSymbolicLink()) {
       return {
         status: 'manual_recovery_required',
@@ -407,7 +492,19 @@ async function inspectWorkspaceRoot(
     ) {
       return { status: 'unavailable' }
     }
-    return { status: 'verified', canonicalRoot }
+    const after = await lstat(canonicalRoot, { bigint: true })
+    const identity = workspaceBundleDirectoryIdentity(stats)
+    if (
+      !after.isDirectory() ||
+      after.isSymbolicLink() ||
+      !sameDirectoryIdentity(
+        identity,
+        workspaceBundleDirectoryIdentity(after),
+      )
+    ) {
+      return { status: 'unavailable' }
+    }
+    return { status: 'verified', canonicalRoot, identity }
   } catch {
     return { status: 'unavailable' }
   }
@@ -573,66 +670,6 @@ async function inspectDeclaredFile(input: {
       relativePath: input.relativePath,
       reason: 'unavailable',
     })
-  }
-}
-
-async function ensureBundleParents(
-  workspaceRoot: string,
-  relativePath: string,
-): Promise<void> {
-  const segments = path.dirname(relativePath).split('/')
-  if (segments.length === 1 && segments[0] === '.') return
-  let current = workspaceRoot
-  for (const segment of segments) {
-    current = path.join(current, segment)
-    try {
-      await mkdir(current, { mode: bundleDirectoryMode })
-      await syncDirectory(path.dirname(current))
-    } catch (error) {
-      if (!hasErrnoCode(error, 'EEXIST')) throw error
-    }
-    const stats = await lstat(current)
-    if (!stats.isDirectory() || stats.isSymbolicLink()) {
-      throw new Error('unsafe bundle parent')
-    }
-  }
-}
-
-async function writeAbsentFile(
-  target: string,
-  bytes: Buffer,
-): Promise<boolean> {
-  let handle
-  try {
-    handle = await open(
-      target,
-      fsConstants.O_CREAT |
-        fsConstants.O_EXCL |
-        fsConstants.O_WRONLY |
-        fsConstants.O_NOFOLLOW,
-      bundleFileMode,
-    )
-  } catch (error) {
-    if (hasErrnoCode(error, 'EEXIST')) return false
-    throw error
-  }
-  try {
-    await handle.chmod(bundleFileMode)
-    await handle.writeFile(bytes)
-    await handle.sync()
-  } finally {
-    await handle.close()
-  }
-  await syncDirectory(path.dirname(target))
-  return true
-}
-
-async function syncDirectory(directory: string): Promise<void> {
-  const handle = await open(directory, fsConstants.O_RDONLY)
-  try {
-    await handle.sync()
-  } finally {
-    await handle.close()
   }
 }
 
@@ -906,6 +943,32 @@ function sameStrings(
     [...actual]
       .sort()
       .every((value, index) => value === [...expected].sort()[index])
+  )
+}
+
+function orderMutationPaths(
+  relativePaths: readonly string[],
+): string[] {
+  return [...relativePaths].sort((left, right) => {
+    const depth =
+      parentSegmentsFor(left).length - parentSegmentsFor(right).length
+    return depth === 0 ? left.localeCompare(right) : depth
+  })
+}
+
+function parentSegmentsFor(relativePath: string): string[] {
+  const parent = path.posix.dirname(relativePath)
+  return parent === '.' ? [] : parent.split('/')
+}
+
+function sameDirectoryIdentity(
+  left: WorkspaceBundleDirectoryIdentity,
+  right: WorkspaceBundleDirectoryIdentity,
+): boolean {
+  return (
+    left.device === right.device &&
+    left.inode === right.inode &&
+    left.ownerUid === right.ownerUid
   )
 }
 
