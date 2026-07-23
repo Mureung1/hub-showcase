@@ -2,14 +2,18 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import {
   chmod,
+  lstat,
   mkdir,
   mkdtemp,
   readFile,
   readdir,
   readlink,
   realpath,
+  rename,
   rm,
   stat,
+  symlink,
+  unlink,
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -26,7 +30,11 @@ import {
   revalidateRuntimeCacheRootForMutation,
 } from './runtime-cache-authority.js'
 import { extractVerifiedRuntimeArchive } from './runtime-archive-extraction.js'
-import { admitRuntimeRelease } from './runtime-release-authority.js'
+import type { RuntimeArchiveExtractionTestOptions } from './runtime-archive-extraction.js'
+import {
+  RuntimeReleaseAuthorityError,
+  admitRuntimeRelease,
+} from './runtime-release-authority.js'
 
 type FixtureFile = {
   readonly bytes: Buffer
@@ -53,6 +61,11 @@ type RuntimeArchiveFixture = {
   >
   readonly root: string
   readonly staging: ReturnType<typeof createRuntimeStagingIdentity>
+}
+
+type RuntimeArchiveFixtureOptions = {
+  readonly transformArchive?: (archiveBytes: Buffer) => Buffer
+  readonly transformTar?: (tarBytes: Buffer) => Buffer
 }
 
 const TRANSACTION_NONCE = 'b'.repeat(32)
@@ -213,6 +226,7 @@ function parentDirectories(entries: readonly FixtureEntry[]): string[] {
 async function canonicalArchive(
   canonicalManifestBytes: Buffer,
   entries: readonly FixtureEntry[],
+  options: RuntimeArchiveFixtureOptions = {},
 ): Promise<Buffer> {
   const archive = pack()
   const mtime = new Date(0)
@@ -268,10 +282,19 @@ async function canonicalArchive(
   archive.finalize()
   const chunks: Buffer[] = []
   for await (const chunk of archive) chunks.push(Buffer.from(chunk))
-  return gzipSync(Buffer.concat(chunks), { level: 9 })
+  const tarBytes = Buffer.concat(chunks)
+  const archiveBytes = gzipSync(
+    options.transformTar?.(tarBytes) ?? tarBytes,
+    {
+      level: 9,
+    },
+  )
+  return options.transformArchive?.(archiveBytes) ?? archiveBytes
 }
 
-async function createRuntimeArchiveFixture(): Promise<RuntimeArchiveFixture> {
+async function createRuntimeArchiveFixture(
+  options: RuntimeArchiveFixtureOptions = {},
+): Promise<RuntimeArchiveFixture> {
   const entries = fixtureEntries()
   const manifest = canonicalManifest(entries)
   const canonicalManifestBytes = Buffer.from(
@@ -280,6 +303,7 @@ async function createRuntimeArchiveFixture(): Promise<RuntimeArchiveFixture> {
   const archiveBytes = await canonicalArchive(
     canonicalManifestBytes,
     entries,
+    options,
   )
   const descriptor = {
     schemaVersion: 1,
@@ -359,13 +383,203 @@ async function createRuntimeArchiveFixture(): Promise<RuntimeArchiveFixture> {
 
 async function withFixture(
   run: (fixture: RuntimeArchiveFixture) => Promise<void>,
+  options: RuntimeArchiveFixtureOptions = {},
 ): Promise<void> {
-  const fixture = await createRuntimeArchiveFixture()
+  const fixture = await createRuntimeArchiveFixture(options)
   try {
     await run(fixture)
   } finally {
     await rm(fixture.root, { recursive: true, force: true })
   }
+}
+
+function withEmbeddedNulInNoticeHeader(tarBytes: Buffer): Buffer {
+  const mutated = Buffer.from(tarBytes)
+  const headerOffset = findTarHeader(mutated, 'NOTICE')
+  const nameOffset = headerOffset
+  const terminatorOffset = nameOffset + Buffer.byteLength('NOTICE')
+  assert.equal(mutated[terminatorOffset], 0)
+  Buffer.from('hidden').copy(mutated, terminatorOffset + 1)
+  writeTarChecksum(mutated, headerOffset)
+  return mutated
+}
+
+function rewriteTarPath(
+  tarBytes: Buffer,
+  currentPath: string,
+  replacementPath: string,
+): Buffer {
+  const mutated = Buffer.from(tarBytes)
+  const headerOffset = findTarHeader(mutated, currentPath)
+  const encoded = Buffer.from(replacementPath)
+  assert.ok(encoded.byteLength <= 100)
+  mutated.fill(0, headerOffset, headerOffset + 100)
+  encoded.copy(mutated, headerOffset)
+  writeTarChecksum(mutated, headerOffset)
+  return mutated
+}
+
+function rewriteTarLinkTarget(
+  tarBytes: Buffer,
+  entryPath: string,
+  replacementTarget: string,
+): Buffer {
+  const mutated = Buffer.from(tarBytes)
+  const headerOffset = findTarHeader(mutated, entryPath)
+  const encoded = Buffer.from(replacementTarget)
+  assert.ok(encoded.byteLength <= 100)
+  mutated.fill(0, headerOffset + 157, headerOffset + 257)
+  encoded.copy(mutated, headerOffset + 157)
+  writeTarChecksum(mutated, headerOffset)
+  return mutated
+}
+
+function rewriteTarType(
+  tarBytes: Buffer,
+  entryPath: string,
+  typeflag: string,
+): Buffer {
+  assert.equal(Buffer.byteLength(typeflag), 1)
+  const mutated = Buffer.from(tarBytes)
+  const headerOffset = findTarHeader(mutated, entryPath)
+  mutated[headerOffset + 156] = typeflag.charCodeAt(0)
+  writeTarChecksum(mutated, headerOffset)
+  return mutated
+}
+
+function rewriteTarMode(
+  tarBytes: Buffer,
+  entryPath: string,
+  mode: number,
+): Buffer {
+  const mutated = Buffer.from(tarBytes)
+  const headerOffset = findTarHeader(mutated, entryPath)
+  const encoded = `${mode.toString(8).padStart(7, '0')}\0`
+  mutated.write(encoded, headerOffset + 100, 8, 'ascii')
+  writeTarChecksum(mutated, headerOffset)
+  return mutated
+}
+
+function duplicateTarMember(
+  tarBytes: Buffer,
+  entryPath: string,
+): Buffer {
+  const start = findTarHeader(tarBytes, entryPath)
+  const size = tarEntrySize(tarBytes, start)
+  const end = start + 512 + Math.ceil(size / 512) * 512
+  return Buffer.concat([
+    tarBytes.subarray(0, tarBytes.byteLength - 1024),
+    tarBytes.subarray(start, end),
+    tarBytes.subarray(tarBytes.byteLength - 1024),
+  ])
+}
+
+function removeTarMember(
+  tarBytes: Buffer,
+  entryPath: string,
+): Buffer {
+  const start = findTarHeader(tarBytes, entryPath)
+  const size = tarEntrySize(tarBytes, start)
+  const end = start + 512 + Math.ceil(size / 512) * 512
+  return Buffer.concat([
+    tarBytes.subarray(0, start),
+    tarBytes.subarray(end),
+  ])
+}
+
+function rewriteTarSize(
+  tarBytes: Buffer,
+  entryPath: string,
+  size: number,
+): Buffer {
+  const mutated = Buffer.from(tarBytes)
+  const headerOffset = findTarHeader(mutated, entryPath)
+  const encoded = `${size.toString(8).padStart(11, '0')} `
+  assert.equal(Buffer.byteLength(encoded), 12)
+  mutated.write(encoded, headerOffset + 124, 12, 'ascii')
+  writeTarChecksum(mutated, headerOffset)
+  return mutated
+}
+
+function corruptTarHeaderChecksum(tarBytes: Buffer): Buffer {
+  const mutated = Buffer.from(tarBytes)
+  const headerOffset = findTarHeader(mutated, 'NOTICE')
+  mutated[headerOffset + 148] ^= 1
+  return mutated
+}
+
+function corruptTarFileBytes(
+  tarBytes: Buffer,
+  entryPath: string,
+): Buffer {
+  const mutated = Buffer.from(tarBytes)
+  const headerOffset = findTarHeader(mutated, entryPath)
+  assert.ok(tarEntrySize(mutated, headerOffset) > 0)
+  mutated[headerOffset + 512] ^= 1
+  return mutated
+}
+
+function findTarHeader(tarBytes: Buffer, expectedName: string): number {
+  let offset = 0
+  while (offset + 512 <= tarBytes.byteLength) {
+    const header = tarBytes.subarray(offset, offset + 512)
+    if (header.every((byte) => byte === 0)) break
+    const terminator = header.indexOf(0, 0)
+    const name = header
+      .subarray(0, terminator === -1 ? 100 : terminator)
+      .toString('utf8')
+    if (name === expectedName) return offset
+    const size = tarEntrySize(tarBytes, offset)
+    offset += 512 + Math.ceil(size / 512) * 512
+  }
+  assert.fail(`Missing TAR header: ${expectedName}`)
+}
+
+function tarEntrySize(tarBytes: Buffer, headerOffset: number): number {
+  const sizeText = tarBytes
+    .subarray(headerOffset + 124, headerOffset + 136)
+    .toString('ascii')
+    .replace(/\0.*$/u, '')
+    .trim()
+  return Number.parseInt(sizeText || '0', 8)
+}
+
+function writeTarChecksum(tarBytes: Buffer, headerOffset: number): void {
+  const header = tarBytes.subarray(headerOffset, headerOffset + 512)
+  header.fill(0x20, 148, 156)
+  const checksum = header.reduce((total, byte) => total + byte, 0)
+  const encoded = `${checksum.toString(8).padStart(6, '0')}\0 `
+  header.write(encoded, 148, 8, 'ascii')
+}
+
+async function assertArchiveError(
+  action: () => Promise<unknown>,
+  expectedCode: string,
+): Promise<void> {
+  await assert.rejects(action, (error: unknown) => {
+    assert.equal(error instanceof RuntimeReleaseAuthorityError, true)
+    assert.equal(
+      (error as RuntimeReleaseAuthorityError).failure.code,
+      expectedCode,
+    )
+    return true
+  })
+}
+
+function extractFixture(
+  fixture: RuntimeArchiveFixture,
+  testOptions: RuntimeArchiveExtractionTestOptions = {},
+) {
+  return extractVerifiedRuntimeArchive(
+    {
+      admission: fixture.admission,
+      canonicalManifestBytes: fixture.canonicalManifestBytes,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      staging: fixture.staging,
+    },
+    testOptions,
+  )
 }
 
 async function listTree(root: string): Promise<string[]> {
@@ -445,4 +659,626 @@ test('extracts one canonical archive into an exact verified staging tree', async
       0o755,
     )
   })
+})
+
+test('rejects an embedded NUL in a TAR path before recipient write', async () => {
+  await withFixture(
+    async (fixture) => {
+      await assertArchiveError(
+        () =>
+          extractVerifiedRuntimeArchive({
+            admission: fixture.admission,
+            canonicalManifestBytes: fixture.canonicalManifestBytes,
+            layout: fixture.layout,
+            mutationAuthority: fixture.mutationAuthority,
+            staging: fixture.staging,
+          }),
+        'runtime_archive_unsafe',
+      )
+      assert.deepEqual(await readdir(fixture.staging.path), [])
+    },
+    { transformTar: withEmbeddedNulInNoticeHeader },
+  )
+})
+
+test('rejects the full hostile path graph before recipient write', async (t) => {
+  const cases: readonly {
+    readonly name: string
+    readonly transformTar: (tarBytes: Buffer) => Buffer
+  }[] = [
+    {
+      name: 'parent traversal',
+      transformTar: (tarBytes) =>
+        rewriteTarPath(tarBytes, 'NOTICE', '../escape'),
+    },
+    {
+      name: 'absolute path',
+      transformTar: (tarBytes) =>
+        rewriteTarPath(tarBytes, 'NOTICE', '/tmp/escape'),
+    },
+    {
+      name: 'empty segment',
+      transformTar: (tarBytes) =>
+        rewriteTarPath(tarBytes, 'NOTICE', 'licenses//escape'),
+    },
+    {
+      name: 'dot segment',
+      transformTar: (tarBytes) =>
+        rewriteTarPath(tarBytes, 'NOTICE', './NOTICE'),
+    },
+    {
+      name: 'platform separator',
+      transformTar: (tarBytes) =>
+        rewriteTarPath(tarBytes, 'NOTICE', '..\\escape'),
+    },
+    {
+      name: 'non-NFC Unicode',
+      transformTar: (tarBytes) =>
+        rewriteTarPath(
+          tarBytes,
+          'licenses/openai/LICENSE',
+          'licenses/cafe\u0301',
+        ),
+    },
+    {
+      name: 'exact duplicate',
+      transformTar: (tarBytes) =>
+        rewriteTarPath(
+          tarBytes,
+          'THIRD_PARTY_NOTICES.md',
+          'NOTICE',
+        ),
+    },
+    {
+      name: 'ASCII case-fold duplicate',
+      transformTar: (tarBytes) =>
+        rewriteTarPath(
+          tarBytes,
+          'THIRD_PARTY_NOTICES.md',
+          'notice',
+        ),
+    },
+    {
+      name: 'full case-fold duplicate',
+      transformTar: (tarBytes) => {
+        const first = rewriteTarPath(
+          tarBytes,
+          'NOTICE',
+          'licenses/straße',
+        )
+        return rewriteTarPath(
+          first,
+          'THIRD_PARTY_NOTICES.md',
+          'licenses/strasse',
+        )
+      },
+    },
+    {
+      name: 'folded directory identity',
+      transformTar: (tarBytes) => {
+        const first = rewriteTarPath(
+          tarBytes,
+          'bundle/bridge/worker.py',
+          'licenses/Alpha/a',
+        )
+        return rewriteTarPath(
+          first,
+          'licenses/openai/LICENSE',
+          'licenses/alpha/b',
+        )
+      },
+    },
+    {
+      name: 'file-directory prefix conflict',
+      transformTar: (tarBytes) =>
+        rewriteTarPath(tarBytes, 'NOTICE', 'bundle'),
+    },
+    {
+      name: 'symlink escape',
+      transformTar: (tarBytes) =>
+        rewriteTarLinkTarget(
+          tarBytes,
+          'bundle/python/bin/python3',
+          '../../../../../../tmp/escape',
+        ),
+    },
+    {
+      name: 'entry count overflow',
+      transformTar: (tarBytes) =>
+        duplicateTarMember(tarBytes, 'NOTICE'),
+    },
+  ]
+
+  for (const row of cases) {
+    await t.test(row.name, async () => {
+      await withFixture(
+        async (fixture) => {
+          await assertArchiveError(
+            () =>
+              extractVerifiedRuntimeArchive({
+                admission: fixture.admission,
+                canonicalManifestBytes:
+                  fixture.canonicalManifestBytes,
+                layout: fixture.layout,
+                mutationAuthority: fixture.mutationAuthority,
+                staging: fixture.staging,
+              }),
+            'runtime_archive_unsafe',
+          )
+          assert.deepEqual(await readdir(fixture.staging.path), [])
+        },
+        { transformTar: row.transformTar },
+      )
+    })
+  }
+})
+
+test('rejects hardlink, sparse, special, extension, and unsafe mode headers', async (t) => {
+  const typeCases = [
+    ['hardlink', '1'],
+    ['character device', '3'],
+    ['block device', '4'],
+    ['FIFO', '6'],
+    ['contiguous file', '7'],
+    ['PAX xattr', 'x'],
+    ['global PAX', 'g'],
+    ['GNU long path', 'L'],
+    ['GNU long link', 'K'],
+    ['GNU sparse', 'S'],
+    ['socket-like unknown type', 's'],
+  ] as const
+  const cases: readonly {
+    readonly name: string
+    readonly transformTar: (tarBytes: Buffer) => Buffer
+  }[] = [
+    ...typeCases.map(([name, typeflag]) => ({
+      name,
+      transformTar: (tarBytes: Buffer) =>
+        rewriteTarType(tarBytes, 'NOTICE', typeflag),
+    })),
+    {
+      name: 'setuid mode',
+      transformTar: (tarBytes) =>
+        rewriteTarMode(tarBytes, 'NOTICE', 0o4644),
+    },
+    {
+      name: 'setgid mode',
+      transformTar: (tarBytes) =>
+        rewriteTarMode(tarBytes, 'NOTICE', 0o2644),
+    },
+    {
+      name: 'sticky mode',
+      transformTar: (tarBytes) =>
+        rewriteTarMode(tarBytes, 'NOTICE', 0o1644),
+    },
+    {
+      name: 'unreviewed executable mode',
+      transformTar: (tarBytes) =>
+        rewriteTarMode(tarBytes, 'NOTICE', 0o755),
+    },
+  ]
+
+  for (const row of cases) {
+    await t.test(row.name, async () => {
+      await withFixture(
+        async (fixture) => {
+          await assertArchiveError(
+            () =>
+              extractVerifiedRuntimeArchive({
+                admission: fixture.admission,
+                canonicalManifestBytes:
+                  fixture.canonicalManifestBytes,
+                layout: fixture.layout,
+                mutationAuthority: fixture.mutationAuthority,
+                staging: fixture.staging,
+              }),
+            'runtime_archive_unsafe',
+          )
+          assert.deepEqual(await readdir(fixture.staging.path), [])
+        },
+        { transformTar: row.transformTar },
+      )
+    })
+  }
+})
+
+test('bounds gzip and TAR expansion and rejects corrupt archives before write', async (t) => {
+  const cases: readonly {
+    readonly name: string
+    readonly expectedCode: 'runtime_archive_unsafe' | 'runtime_integrity_failed'
+    readonly options: RuntimeArchiveFixtureOptions
+  }[] = [
+    {
+      name: 'truncated gzip',
+      expectedCode: 'runtime_integrity_failed',
+      options: {
+        transformArchive: (archiveBytes) =>
+          archiveBytes.subarray(0, archiveBytes.byteLength - 8),
+      },
+    },
+    {
+      name: 'corrupt gzip',
+      expectedCode: 'runtime_integrity_failed',
+      options: {
+        transformArchive: (archiveBytes) => {
+          const mutated = Buffer.from(archiveBytes)
+          mutated[Math.floor(mutated.byteLength / 2)] ^= 0xff
+          return mutated
+        },
+      },
+    },
+    {
+      name: 'truncated TAR',
+      expectedCode: 'runtime_integrity_failed',
+      options: {
+        transformTar: (tarBytes) =>
+          tarBytes.subarray(0, tarBytes.byteLength - 512),
+      },
+    },
+    {
+      name: 'corrupt TAR checksum',
+      expectedCode: 'runtime_integrity_failed',
+      options: { transformTar: corruptTarHeaderChecksum },
+    },
+    {
+      name: 'missing member',
+      expectedCode: 'runtime_integrity_failed',
+      options: {
+        transformTar: (tarBytes) =>
+          removeTarMember(tarBytes, 'NOTICE'),
+      },
+    },
+    {
+      name: 'modified file bytes',
+      expectedCode: 'runtime_integrity_failed',
+      options: {
+        transformTar: (tarBytes) =>
+          corruptTarFileBytes(tarBytes, 'NOTICE'),
+      },
+    },
+    {
+      name: 'modified canonical manifest bytes',
+      expectedCode: 'runtime_integrity_failed',
+      options: {
+        transformTar: (tarBytes) =>
+          corruptTarFileBytes(tarBytes, 'manifest.json'),
+      },
+    },
+    {
+      name: 'individual file bound',
+      expectedCode: 'runtime_archive_unsafe',
+      options: {
+        transformTar: (tarBytes) =>
+          rewriteTarSize(tarBytes, 'NOTICE', 0o77777777777),
+      },
+    },
+    {
+      name: 'expanded TAR bound',
+      expectedCode: 'runtime_archive_unsafe',
+      options: {
+        transformTar: (tarBytes) =>
+          Buffer.concat([tarBytes, Buffer.alloc(512)]),
+      },
+    },
+    {
+      name: 'concatenated gzip expansion',
+      expectedCode: 'runtime_archive_unsafe',
+      options: {
+        transformArchive: (archiveBytes) =>
+          Buffer.concat([archiveBytes, archiveBytes]),
+      },
+    },
+    {
+      name: 'high-ratio decompression bomb',
+      expectedCode: 'runtime_archive_unsafe',
+      options: {
+        transformTar: (tarBytes) =>
+          Buffer.concat([tarBytes, Buffer.alloc(1024 * 1024)]),
+      },
+    },
+  ]
+
+  for (const row of cases) {
+    await t.test(row.name, async () => {
+      await withFixture(
+        async (fixture) => {
+          await assertArchiveError(
+            () =>
+              extractVerifiedRuntimeArchive({
+                admission: fixture.admission,
+                canonicalManifestBytes:
+                  fixture.canonicalManifestBytes,
+                layout: fixture.layout,
+                mutationAuthority: fixture.mutationAuthority,
+                staging: fixture.staging,
+              }),
+            row.expectedCode,
+          )
+          assert.deepEqual(await readdir(fixture.staging.path), [])
+        },
+        row.options,
+      )
+    })
+  }
+})
+
+test('creates symlinks last and cleans owned staging after injected faults', async (t) => {
+  await t.test('symlinks last', async () => {
+    await withFixture(async (fixture) => {
+      const order: Array<{
+        readonly path: string
+        readonly type: 'directory' | 'file' | 'symlink'
+      }> = []
+      await extractFixture(fixture, {
+        beforeEntryMaterialization: async (entry) => {
+          order.push(entry)
+        },
+      })
+      const firstSymlink = order.findIndex(
+        (entry) => entry.type === 'symlink',
+      )
+      const lastFile = order.findLastIndex(
+        (entry) => entry.type === 'file',
+      )
+      assert.ok(firstSymlink > lastFile)
+      assert.deepEqual(
+        order.slice(firstSymlink).map((entry) => entry.type),
+        ['symlink'],
+      )
+    })
+  })
+
+  await t.test('fault during file materialization', async () => {
+    await withFixture(async (fixture) => {
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            beforeEntryMaterialization: async (entry) => {
+              if (entry.path === 'NOTICE') {
+                throw new Error('injected file fault')
+              }
+            },
+          }),
+        'runtime_integrity_failed',
+      )
+      assert.deepEqual(await readdir(fixture.staging.path), [])
+    })
+  })
+
+  await t.test('fault before final verification', async () => {
+    await withFixture(async (fixture) => {
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            beforeFinalVerification: async () => {
+              throw new Error('injected verifier fault')
+            },
+          }),
+        'runtime_storage_unavailable',
+      )
+      assert.deepEqual(await readdir(fixture.staging.path), [])
+    })
+  })
+})
+
+test('contains staging and parent races with no-follow and no-clobber writes', async (t) => {
+  await t.test('staging inode substitution after pre-scan', async () => {
+    await withFixture(async (fixture) => {
+      const original = `${fixture.staging.path}.original`
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            afterPrescan: async () => {
+              await rename(fixture.staging.path, original)
+              await mkdir(fixture.staging.path, { mode: 0o700 })
+            },
+          }),
+        'runtime_recovery_required',
+      )
+      assert.deepEqual(await readdir(original), [])
+      assert.deepEqual(await readdir(fixture.staging.path), [])
+    })
+  })
+
+  await t.test('staging symlink substitution after pre-scan', async () => {
+    await withFixture(async (fixture) => {
+      const original = `${fixture.staging.path}.original`
+      const outside = path.join(fixture.root, 'outside-staging')
+      await mkdir(outside, { mode: 0o700 })
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            afterPrescan: async () => {
+              await rename(fixture.staging.path, original)
+              await symlink(outside, fixture.staging.path)
+            },
+          }),
+        'runtime_cache_unsafe',
+      )
+      assert.deepEqual(await readdir(original), [])
+      assert.deepEqual(await readdir(outside), [])
+    })
+  })
+
+  await t.test('staging namespace substitution', async () => {
+    await withFixture(async (fixture) => {
+      const original = `${fixture.layout.namespaces.staging}.original`
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            afterPrescan: async () => {
+              await rename(
+                fixture.layout.namespaces.staging,
+                original,
+              )
+              await mkdir(fixture.layout.namespaces.staging, {
+                mode: 0o700,
+              })
+            },
+          }),
+        'runtime_recovery_required',
+      )
+      assert.deepEqual(
+        await readdir(path.join(original, path.basename(fixture.staging.path))),
+        [],
+      )
+      assert.deepEqual(
+        await readdir(fixture.layout.namespaces.staging),
+        [],
+      )
+    })
+  })
+
+  await t.test('nested parent symlink substitution', async () => {
+    await withFixture(async (fixture) => {
+      const runtimeRoot = path.join(fixture.staging.path, 'runtime')
+      const bridge = path.join(runtimeRoot, 'bundle/bridge')
+      const saved = path.join(fixture.root, 'bridge-saved')
+      const outside = path.join(fixture.root, 'outside-parent')
+      await mkdir(outside, { mode: 0o700 })
+      let raced = false
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            beforeEntryMaterialization: async (entry) => {
+              if (
+                !raced &&
+                entry.path === 'bundle/bridge/worker.py'
+              ) {
+                raced = true
+                await rename(bridge, saved)
+                await symlink(outside, bridge)
+              }
+            },
+          }),
+        'runtime_recovery_required',
+      )
+      assert.equal(raced, true)
+      assert.deepEqual(await readdir(outside), [])
+      assert.deepEqual(await readdir(saved), [])
+    })
+  })
+
+  await t.test('final component symlink no-clobber', async () => {
+    await withFixture(async (fixture) => {
+      const outside = path.join(fixture.root, 'outside-file')
+      await writeFile(outside, 'outside remains\n')
+      let planted = false
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            beforeEntryMaterialization: async (entry) => {
+              if (!planted && entry.path === 'NOTICE') {
+                planted = true
+                await symlink(
+                  outside,
+                  path.join(fixture.staging.path, 'runtime/NOTICE'),
+                )
+              }
+            },
+          }),
+        'runtime_recovery_required',
+      )
+      assert.equal(planted, true)
+      assert.equal(await readFile(outside, 'utf8'), 'outside remains\n')
+      assert.equal(
+        (
+          await lstat(
+            path.join(fixture.staging.path, 'runtime/NOTICE'),
+          )
+        ).isSymbolicLink(),
+        true,
+      )
+    })
+  })
+})
+
+test('post-extraction verifier rejects tree, mode, manifest, and legal roster drift', async (t) => {
+  const cases: readonly {
+    readonly name: string
+    readonly expectedCode:
+      | 'runtime_integrity_failed'
+      | 'runtime_recovery_required'
+    readonly mutate: (runtimeRoot: string) => Promise<void>
+  }[] = [
+    {
+      name: 'modified payload file',
+      expectedCode: 'runtime_integrity_failed',
+      mutate: (runtimeRoot) =>
+        writeFile(
+          path.join(runtimeRoot, 'bundle/bridge/worker.py'),
+          'changed bytes!!\n',
+        ),
+    },
+    {
+      name: 'reviewed mode drift',
+      expectedCode: 'runtime_integrity_failed',
+      mutate: (runtimeRoot) =>
+        chmod(
+          path.join(runtimeRoot, 'bundle/python/bin/python3.10'),
+          0o644,
+        ),
+    },
+    {
+      name: 'canonical manifest drift',
+      expectedCode: 'runtime_integrity_failed',
+      mutate: async (runtimeRoot) => {
+        const manifestPath = path.join(runtimeRoot, 'manifest.json')
+        const bytes = await readFile(manifestPath)
+        bytes[0] ^= 1
+        await writeFile(manifestPath, bytes)
+      },
+    },
+    {
+      name: 'missing NOTICE legal roster',
+      expectedCode: 'runtime_integrity_failed',
+      mutate: (runtimeRoot) =>
+        unlink(path.join(runtimeRoot, 'NOTICE')),
+    },
+    {
+      name: 'modified provenance',
+      expectedCode: 'runtime_integrity_failed',
+      mutate: (runtimeRoot) =>
+        writeFile(
+          path.join(runtimeRoot, 'provenance/inputs.json'),
+          '{"source":"drifted"}\n',
+        ),
+    },
+    {
+      name: 'extra top-level entry',
+      expectedCode: 'runtime_recovery_required',
+      mutate: (runtimeRoot) =>
+        writeFile(path.join(runtimeRoot, 'EXTRA'), 'extra\n'),
+    },
+    {
+      name: 'selected executable replaced by symlink',
+      expectedCode: 'runtime_recovery_required',
+      mutate: async (runtimeRoot) => {
+        const executable = path.join(
+          runtimeRoot,
+          'bundle/python/bin/python3.10',
+        )
+        await unlink(executable)
+        await symlink('python3', executable)
+      },
+    },
+  ]
+
+  for (const row of cases) {
+    await t.test(row.name, async () => {
+      await withFixture(async (fixture) => {
+        await assertArchiveError(
+          () =>
+            extractFixture(fixture, {
+              beforeFinalVerification: async () => {
+                await row.mutate(
+                  path.join(fixture.staging.path, 'runtime'),
+                )
+              },
+            }),
+          row.expectedCode,
+        )
+      })
+    })
+  }
 })

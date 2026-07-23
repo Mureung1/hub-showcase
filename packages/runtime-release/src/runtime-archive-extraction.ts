@@ -50,6 +50,11 @@ import type { RuntimeReleaseAdmission } from './runtime-release-authority.js'
 const TAR_BLOCK_BYTES = 512
 const TAR_TRAILER_BYTES = TAR_BLOCK_BYTES * 2
 const RUNTIME_RECIPIENT_NAME = 'runtime'
+const MACOS_FILENAME_COLLATOR = new Intl.Collator('und', {
+  usage: 'search',
+  sensitivity: 'accent',
+})
+const MAX_FULL_CASE_FOLD_PASSES = 8
 const REQUIRED_RUNTIME_TOP_LEVEL = [
   'NOTICE',
   'THIRD_PARTY_NOTICES.md',
@@ -92,6 +97,13 @@ type ObservedEntry = {
   readonly path: string
   readonly identity: RuntimeFileSystemIdentity
   readonly type: 'directory' | 'file' | 'symlink'
+}
+
+type ArchivePathGraphNode = {
+  readonly segment: string
+  readonly comparisonKey: string
+  readonly children: ArchivePathGraphNode[]
+  terminalType?: 'directory' | 'file' | 'symlink'
 }
 
 type ArchivePassMode =
@@ -527,6 +539,7 @@ async function runArchivePass(
   mode: ArchivePassMode,
 ): Promise<void> {
   const observed = new Set<string>()
+  const pathGraph = createArchivePathGraph()
   let entryCount = 0
   const archiveMeter = createMeter({
     limit: input.admission.descriptor.archive.bytes,
@@ -542,7 +555,12 @@ async function runArchivePass(
     allowUnknownFormat: false,
     filenameEncoding: 'utf8',
   })
+  // streamx may emit the upstream destroy error after Node's pipeline has
+  // removed its temporary listener. Keep one observer for that late event;
+  // pipeline still owns the rejection delivered to this pass.
+  parser.on('error', () => undefined)
   parser.on('entry', (header, entry, next) => {
+    entry.on('error', () => undefined)
     void handleArchiveEntry({
       header,
       entry,
@@ -551,20 +569,35 @@ async function runArchivePass(
       plan,
       mode,
       observed,
+      pathGraph,
       entryNumber: ++entryCount,
-    })
+      parserDestroyed: () => parser.destroyed,
+    }).catch(() => undefined)
   })
+  const archiveStream = archive.createReadStream({
+    start: 0,
+    end: input.admission.descriptor.archive.bytes - 1,
+    autoClose: false,
+  })
+  const gunzip = createGunzip()
+  const rawHeaderAudit = createRawTarHeaderAudit(plan.entries.size)
+  for (const stream of [
+    archiveStream,
+    archiveMeter.stream,
+    gunzip,
+    tarMeter.stream,
+    rawHeaderAudit,
+  ]) {
+    stream.on('error', () => undefined)
+  }
 
   try {
     await pipeline(
-      archive.createReadStream({
-        start: 0,
-        end: input.admission.descriptor.archive.bytes - 1,
-        autoClose: false,
-      }),
+      archiveStream,
       archiveMeter.stream,
-      createGunzip(),
+      gunzip,
       tarMeter.stream,
+      rawHeaderAudit,
       parser,
     )
   } catch (error) {
@@ -596,6 +629,131 @@ async function runArchivePass(
   }
 }
 
+function createRawTarHeaderAudit(expectedEntryCount: number): Transform {
+  let pending = Buffer.alloc(0)
+  let bodyBlocks = 0
+  let entryCount = 0
+  let zeroBlocks = 0
+  return new Transform({
+    transform(chunk: Buffer, _encoding, callback) {
+      try {
+        pending = Buffer.concat([pending, chunk])
+        while (pending.byteLength >= TAR_BLOCK_BYTES) {
+          const block = pending.subarray(0, TAR_BLOCK_BYTES)
+          pending = pending.subarray(TAR_BLOCK_BYTES)
+          if (bodyBlocks > 0) {
+            bodyBlocks -= 1
+          } else if (block.every((byte) => byte === 0)) {
+            zeroBlocks += 1
+            if (zeroBlocks > 2) {
+              throw unsafeArchive(
+                'runtime_archive_trailing_tar_data',
+              )
+            }
+          } else {
+            if (zeroBlocks > 0) {
+              throw unsafeArchive(
+                'runtime_archive_nonzero_after_trailer',
+              )
+            }
+            entryCount += 1
+            if (entryCount > expectedEntryCount) {
+              throw unsafeArchive(
+                'runtime_archive_entry_count_exceeded',
+              )
+            }
+            assertCanonicalTarHeader(block)
+            const size = decodeCanonicalTarSize(block)
+            bodyBlocks = Math.ceil(size / TAR_BLOCK_BYTES)
+          }
+          this.push(block)
+        }
+        callback()
+      } catch (error) {
+        callback(error as Error)
+      }
+    },
+    flush(callback) {
+      if (
+        pending.byteLength !== 0 ||
+        bodyBlocks !== 0 ||
+        zeroBlocks !== 2
+      ) {
+        callback(
+          runtimeAuthorityError('runtime_integrity_failed', {
+            kind: 'runtime_archive_tar_truncated',
+          }),
+        )
+        return
+      }
+      if (entryCount !== expectedEntryCount) {
+        callback(
+          runtimeAuthorityError('runtime_integrity_failed', {
+            kind: 'runtime_archive_member_roster_incomplete',
+          }),
+        )
+        return
+      }
+      callback()
+    },
+  })
+}
+
+function assertCanonicalTarHeader(header: Buffer): void {
+  for (const [start, end] of [
+    [0, 100],
+    [157, 257],
+    [265, 297],
+    [297, 329],
+    [345, 500],
+  ] as const) {
+    assertCanonicalTarTextField(header.subarray(start, end))
+  }
+  const typeflag = header[156]
+  if (
+    typeflag !== 0 &&
+    typeflag !== '0'.charCodeAt(0) &&
+    typeflag !== '2'.charCodeAt(0) &&
+    typeflag !== '5'.charCodeAt(0)
+  ) {
+    throw unsafeArchive('runtime_archive_tar_type_unsupported')
+  }
+}
+
+function assertCanonicalTarTextField(field: Buffer): void {
+  const firstNul = field.indexOf(0)
+  if (
+    firstNul !== -1 &&
+    field
+      .subarray(firstNul + 1)
+      .some((byte) => byte !== 0)
+  ) {
+    throw unsafeArchive(
+      'runtime_archive_tar_text_field_noncanonical',
+    )
+  }
+}
+
+function decodeCanonicalTarSize(header: Buffer): number {
+  const field = header.subarray(124, 136)
+  if (
+    field[11] !== 0x20 ||
+    field
+      .subarray(0, 11)
+      .some((byte) => byte < 0x30 || byte > 0x37)
+  ) {
+    throw unsafeArchive('runtime_archive_tar_size_noncanonical')
+  }
+  const value = Number.parseInt(
+    field.subarray(0, 11).toString('ascii'),
+    8,
+  )
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw unsafeArchive('runtime_archive_tar_size_invalid')
+  }
+  return value
+}
+
 async function handleArchiveEntry(input: {
   readonly header: Headers
   readonly entry: Readable
@@ -604,13 +762,19 @@ async function handleArchiveEntry(input: {
   readonly plan: RuntimeArchivePlan
   readonly mode: ArchivePassMode
   readonly observed: Set<string>
+  readonly pathGraph: ReturnType<typeof createArchivePathGraph>
   readonly entryNumber: number
+  readonly parserDestroyed: () => boolean
 }): Promise<void> {
   try {
     if (input.entryNumber > input.plan.entries.size) {
       throw unsafeArchive('runtime_archive_entry_count_exceeded')
     }
     const entryPath = decodeArchiveEntryPath(input.header)
+    input.pathGraph.insert(
+      entryPath,
+      input.header.type as 'directory' | 'file' | 'symlink',
+    )
     if (input.observed.has(entryPath)) {
       throw unsafeArchive('runtime_archive_duplicate_path', entryPath)
     }
@@ -640,8 +804,76 @@ async function handleArchiveEntry(input: {
     }
     input.next()
   } catch (error) {
-    input.next(error)
+    if (!input.parserDestroyed()) input.next(error)
   }
+}
+
+function createArchivePathGraph(): {
+  readonly insert: (
+    entryPath: string,
+    type: 'directory' | 'file' | 'symlink',
+  ) => void
+} {
+  const root: ArchivePathGraphNode = {
+    segment: '',
+    comparisonKey: '',
+    children: [],
+  }
+  return {
+    insert(entryPath, type) {
+      let cursor = root
+      for (const segment of entryPath.split('/')) {
+        if (
+          cursor.terminalType === 'file' ||
+          cursor.terminalType === 'symlink'
+        ) {
+          throw unsafeArchive(
+            'runtime_archive_path_prefix_conflict',
+          )
+        }
+        const comparisonKey = macOSFilenameComparisonKey(segment)
+        let child = cursor.children.find(
+          (candidate) =>
+            MACOS_FILENAME_COLLATOR.compare(
+              candidate.comparisonKey,
+              comparisonKey,
+            ) === 0,
+        )
+        if (child === undefined) {
+          child = {
+            segment,
+            comparisonKey,
+            children: [],
+          }
+          cursor.children.push(child)
+        } else if (child.segment !== segment) {
+          throw unsafeArchive(
+            'runtime_archive_path_fold_collision',
+          )
+        }
+        cursor = child
+      }
+      if (cursor.terminalType !== undefined) {
+        throw unsafeArchive('runtime_archive_duplicate_path')
+      }
+      if (type !== 'directory' && cursor.children.length > 0) {
+        throw unsafeArchive(
+          'runtime_archive_path_prefix_conflict',
+        )
+      }
+      cursor.terminalType = type
+    },
+  }
+}
+
+function macOSFilenameComparisonKey(value: string): string {
+  let current = value
+  for (let pass = 0; pass < MAX_FULL_CASE_FOLD_PASSES; pass += 1) {
+    const folded = current.toUpperCase().toLowerCase()
+    if (folded === current) return current
+    current = folded
+  }
+  throw unsafeArchive('runtime_archive_path_fold_unstable')
 }
 
 function decodeArchiveEntryPath(header: Headers): string {
@@ -858,10 +1090,34 @@ async function createOwnedDirectory(
   )
   try {
     await mkdir(directory, { mode })
-    await chmod(directory, mode)
   } catch (error) {
     throw runtimeAuthorityError('runtime_storage_unavailable', {
       kind: 'runtime_archive_directory_create_failed',
+      cause: error,
+    })
+  }
+  const initialStats = await lstat(directory, { bigint: true })
+  const initialIdentity = identityFromStats(initialStats)
+  if (
+    !initialStats.isDirectory() ||
+    initialStats.isSymbolicLink() ||
+    initialIdentity.ownerUid !== expectedOwnerUid ||
+    initialIdentity.device !== expectedDevice
+  ) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_archive_new_directory_identity_invalid',
+    })
+  }
+  created.push({
+    path: directory,
+    identity: initialIdentity,
+    type: 'directory',
+  })
+  try {
+    await chmod(directory, mode)
+  } catch (error) {
+    throw runtimeAuthorityError('runtime_storage_unavailable', {
+      kind: 'runtime_archive_directory_mode_failed',
       cause: error,
     })
   }
@@ -877,7 +1133,6 @@ async function createOwnedDirectory(
     parentIdentity,
     'runtime_archive_parent_changed',
   )
-  created.push({ path: directory, identity, type: 'directory' })
   return identity
 }
 
@@ -935,18 +1190,35 @@ async function materializeFile(
     })
   }
   try {
+    const initialStats = await output.stat({ bigint: true })
+    const initialIdentity = identityFromStats(initialStats)
+    if (
+      !initialStats.isFile() ||
+      initialStats.isSymbolicLink() ||
+      initialIdentity.ownerUid !==
+        input.mutationAuthority.snapshot.expectedOwnerUid ||
+      initialIdentity.device !== mode.stagingIdentity.device
+    ) {
+      throw runtimeAuthorityError('runtime_recovery_required', {
+        kind: 'runtime_archive_new_file_identity_invalid',
+      })
+    }
+    mode.created.push({
+      path: filePath,
+      identity: initialIdentity,
+      type: 'file',
+    })
     await consumeAndVerifyFile(entry, expected, output)
     await output.chmod(fileMode(expected))
     await output.sync()
     const stats = await output.stat({ bigint: true })
-    const identity = assertOwnedFileStats(
+    assertOwnedFileStats(
       stats,
       filePath,
       input.mutationAuthority.snapshot.expectedOwnerUid,
       mode.stagingIdentity.device,
       fileMode(expected),
     )
-    mode.created.push({ path: filePath, identity, type: 'file' })
   } finally {
     await output.close().catch(() => undefined)
   }
