@@ -1,9 +1,9 @@
 # MentorING API 명세 초안
 
-> 상태: 인증 API(회원가입/로그인/로그아웃/me) 구현 완료, 그 외는 MVP 계약 초안  
+> 상태: 아래 API 전부 구현 완료 (`server/src/routes`, `server/src/controllers`, `server/src/services` 기준)  
 > Base URL: `/api`  
 > Content-Type: `application/json`  
-> 최종 수정: 2026-07-20
+> 최종 수정: 2026-07-23
 
 ## 1. 기본 규칙
 
@@ -80,8 +80,8 @@ Authorization: Bearer <access-token>
 | `POST` | `/api/auth/login` | 불필요 | 이메일 로그인 |
 | `POST` | `/api/auth/logout` | 필요 | 현재 세션 로그아웃 |
 | `GET` | `/api/auth/me` | 필요 | 현재 사용자와 역할 조회 |
-| `PATCH` | `/api/auth/email` | 필요 | 로그인 이메일 변경 |
-| `PATCH` | `/api/auth/password` | 필요 | 로그인 비밀번호 변경 |
+
+이메일·비밀번호 변경은 별도 엔드포인트가 아니라 [프로필 수정](#52-내-멘티-프로필-수정) 요청에 포함해서 처리한다.
 
 ### 프로필과 멘토 조회
 
@@ -100,13 +100,13 @@ Authorization: Bearer <access-token>
 |---|---|---|---|
 | `POST` | `/api/applications` | 멘티 | 질문지와 선택 멘토로 신청 생성 |
 | `GET` | `/api/applications` | 멘티·멘토 | 현재 사용자의 신청 목록 조회 |
-| `GET` | `/api/applications/:applicationId` | 관계 사용자 | 신청 상세 조회 |
 | `PATCH` | `/api/applications/:applicationId/accept` | 대상 멘토 | 신청 수락 |
 | `PATCH` | `/api/applications/:applicationId/reject` | 대상 멘토 | 신청 거절 |
 | `PATCH` | `/api/meetings/:meetingId` | 확정 멘토·신청 멘티 | 면담 시간·장소 수정 |
-| `PATCH` | `/api/applications/:applicationId/complete` | 확정 멘토 | 면담 완료 처리 |
 
- 4. 인증 API
+신청 상세 단건 조회 API와 면담 완료 처리 API는 아직 구현되어 있지 않다 (신청 목록 조회 응답에 필요한 정보가 이미 포함되어 있고, 완료 처리 흐름은 MVP 이후로 미뤄졌다).
+
+## 4. 인증 API
 
 ### 4.1 멘티 회원가입
 
@@ -250,47 +250,6 @@ Authorization: Bearer <access-token>
 }
 ```
 
-### 4.6 로그인 이메일 변경
-
-`PATCH /api/auth/email`
-
-요청:
-
-```json
-{
-  "newEmail": "new-email@example.com"
-}
-```
-
-응답 `200`:
-
-```json
-{
-  "data": {
-    "email": "mentor@example.com",
-    "pendingEmail": "new-email@example.com",
-    "verificationRequired": true
-  }
-}
-```
-
-Supabase 이메일 확인 설정이 활성화된 경우 새 이메일 확인이 완료된 뒤 실제 로그인 이메일이 변경된다.
-
-### 4.7 로그인 비밀번호 변경
-
-`PATCH /api/auth/password`
-
-요청:
-
-```json
-{
-  "currentPassword": "current-password",
-  "newPassword": "new-password"
-}
-```
-
-응답 `204 No Content`
-
 ## 5. 프로필 API
 
 ### 5.1 내 멘티 프로필 조회
@@ -327,11 +286,13 @@ Supabase 이메일 확인 설정이 활성화된 경우 새 이메일 확인이 
   "school": "서울대학교",
   "major": "재료공학",
   "grade": "4",
-  "enrollmentStatus": "enrolled"
+  "enrollmentStatus": "enrolled",
+  "email": "new-email@example.com",
+  "password": "new-password"
 }
 ```
 
-이메일과 비밀번호 변경은 Supabase Auth 전용 흐름으로 별도 처리한다.
+모든 필드는 선택적으로 전달할 수 있다. `email`/`password`도 이 요청 본문에 함께 넣어 변경한다 (별도의 이메일·비밀번호 전용 엔드포인트는 없다). 이메일 중복 시 `409 EMAIL_ALREADY_EXISTS`, 형식/길이 검증 실패 시 `400 VALIDATION_ERROR`를 반환한다.
 
 ### 5.3 멘토 목록 조회
 
@@ -440,7 +401,7 @@ Express 라우트에서는 `/:mentorId`보다 `/me`를 먼저 선언해야 한�
 }
 ```
 
-모든 필드는 선택적으로 전달할 수 있지만 `availableTime`을 빈 값으로 변경할 수는 없다.
+모든 필드는 선택적으로 전달할 수 있지만 `availableTime`을 빈 값으로 변경할 수는 없다. 멘티 프로필 수정과 마찬가지로 `email`/`password`도 이 요청 본문에 함께 넣어 변경할 수 있다 (5.2절 참고).
 
 ## 6. 면담 신청 API
 
@@ -511,7 +472,9 @@ Query parameters:
     {
       "id": "application-uuid",
       "status": "confirmed",
+      "acceptedMentorId": "mentor-uuid",
       "createdAt": "2026-07-08T15:10:00+09:00",
+      "updatedAt": "2026-07-08T15:40:00+09:00",
       "mentors": [
         {
           "id": "mentor-uuid",
@@ -540,9 +503,41 @@ Query parameters:
 }
 ```
 
-멘토 응답에는 위 신청 정보와 함께 신청자의 `name`, `school`, `major`, `grade`, `enrollmentStatus`를 포함한다.
+멘토 응답은 멘티 응답과 필드 구성이 다르다. 상태를 `applicationStatus`(신청 전체 상태)와 `mentorStatus`(이 멘토 자신의 응답 상태)로 나눠서 주고, `mentors` 배열 대신 신청한 멘티 정보를 `mentee` 객체 하나로 준다.
 
+```json
+{
+  "data": [
+    {
+      "id": "application-uuid",
+      "applicationStatus": "pending",
+      "mentorStatus": "pending",
+      "acceptedMentorId": null,
+      "mentee": {
+        "id": "mentee-uuid",
+        "name": "백승주",
+        "school": "서울대학교",
+        "major": "재료공학",
+        "grade": "4",
+        "enrollmentStatus": "enrolled"
+      },
+      "questionnaire": {
+        "introduction": "재료공학과 4학년입니다.",
+        "concern": "연구실 선택 기준이 고민입니다.",
+        "goal": "대학원 준비 순서를 알고 싶습니다.",
+        "preferredTime": "화요일 19:00, 목요일 18:30"
+      },
+      "createdAt": "2026-07-16T12:00:00+09:00",
+      "updatedAt": "2026-07-16T12:00:00+09:00"
+    }
+  ],
+  "meta": {
+    "total": 1
+  }
+}
+```
 
+`meeting` 필드는 `applicationStatus`가 `confirmed` 또는 `completed`일 때만 포함된다 (멘티 응답과 동일).
 
 ### 6.3 신청 수락
 
@@ -554,9 +549,9 @@ Query parameters:
 
 - 현재 로그인 멘토가 신청 대상이어야 한다.
 - 신청 전체 상태와 해당 멘토 상태가 `pending`이어야 한다.
-- 먼저 수락한 멘토 한 명만 성공한다.
-- 신청 전체와 대상 멘토 상태 변경, `meetings` 행 생성은 하나의 트랜잭션으로 처리한다.
 - 수락과 동시에 `meetings` 행을 생성한다. `scheduled_at`, `place`는 비어 있는 상태로 시작하며, 이후 프론트엔드에서 [7.1 면담 정보 수정](#71-면담-정보-수정)으로 채운다.
+
+> **알려진 제한사항**: 신청/멘토 상태 확인과 이후 갱신이 하나의 트랜잭션이나 락으로 묶여 있지 않다 (상태를 먼저 읽고 별도로 update하는 방식). 두 멘토가 같은 신청을 동시에 수락하면 둘 다 상태 검사를 통과할 수 있고, `meetings.application_id`의 DB unique 제약 때문에 그중 한쪽만 `500`을 받는 식으로 우연히 걸러진다 — 의도적으로 설계된 동시성 제어가 아니다.
 
 응답 `200`:
 
@@ -635,29 +630,7 @@ Query parameters:
 }
 ```
 
-### 7.2 면담 완료 처리
-
-`PATCH /api/applications/:applicationId/complete`
-
-요청 본문 없음.
-
-처리 결과:
-
-- `applications.status` → `completed`
-- 수락 멘토의 `application_mentors.status` → `completed`
-- `meetings.completed_at` 기록
-
-응답 `200`:
-
-```json
-{
-  "data": {
-    "id": "application-uuid",
-    "status": "completed",
-    "completedAt": "2026-07-23T19:00:00+09:00"
-  }
-}
-```
+면담 완료 처리(`applications.status` → `completed`) API는 아직 구현되어 있지 않다.
 
 ## 8. 권한 요약
 
@@ -670,7 +643,6 @@ Query parameters:
 | 자신의 신청 조회 | 가능 | 대상 신청만 가능 |
 | 신청 수락·거절 | 불가 | 대상 멘토만 가능 |
 | 면담 정보 수정 | 자신의 신청만 가능 | 확정 멘토만 가능 |
-| 신청 완료 처리 | 불가 | 확정 멘토만 가능 |
 
 ## 9. MVP 이후 API
 

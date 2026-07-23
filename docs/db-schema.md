@@ -2,7 +2,7 @@
 
 > 상태: `supabase/migrations/`에 적용 완료 (테이블, 6절 인덱스, `updated_at` 트리거)  
 > 기준: Supabase PostgreSQL + Supabase Auth  
-> 최종 수정: 2026-07-21
+> 최종 수정: 2026-07-23
 
 ## 1. 설계 원칙
 
@@ -121,7 +121,16 @@ Supabase Auth가 관리하는 시스템 테이블이다. 애플리케이션 마�
 | `created_at` | `timestamptz` | 불가 | `now()` | 생성 시각 |
 | `updated_at` | `timestamptz` | 불가 | `now()` | 수정 시각 |
 
-MVP에서는 반복 항목을 PostgreSQL 배열로 저장한다. `career_highlights`와 `international_activities`는 각각 1개 이상 5개 이하의 항목을 저장하며, API와 DB 함수에서 배열 길이를 검증한다. 항목별 관리나 통계 기능이 필요해지면 별도 테이블로 분리한다.
+MVP에서는 반복 항목을 PostgreSQL 배열로 저장한다. `career_highlights`와 `international_activities`는 각각 1개 이상 5개 이하의 항목을 저장하며, 다음과 같이 `mentor_profiles` 테이블의 CHECK 제약으로 배열 길이를 검증한다. 항목별 관리나 통계 기능이 필요해지면 별도 테이블로 분리한다.
+
+```sql
+constraint career_highlights_length check (
+  coalesce(array_length(career_highlights, 1), 0) between 1 and 5
+),
+constraint international_activities_length check (
+  coalesce(array_length(international_activities, 1), 0) between 1 and 5
+)
+```
 
 ### 4.5 `applications`
 
@@ -146,6 +155,24 @@ MVP에서는 반복 항목을 PostgreSQL 배열로 저장한다. `career_highlig
 - `confirmed` 또는 `completed` 상태에서는 `accepted_mentor_id`가 반드시 존재해야 한다.
 - `accepted_mentor_id`는 같은 신청의 `application_mentors`에 포함된 멘토여야 한다.
 
+#### `create_application_with_mentors` DB 함수
+
+`applications`와 `application_mentors` 생성을 하나의 트랜잭션으로 묶기 위한 Postgres 함수다 (`supabase/migrations/20260722010000_create_application_with_mentors_rpc.sql`).
+
+```sql
+create or replace function create_application_with_mentors(
+  p_mentee_id uuid,
+  p_introduction text,
+  p_concern text,
+  p_goal text,
+  p_preferred_time text,
+  p_mentor_ids uuid[]
+) returns applications
+language plpgsql
+```
+
+`applications` 한 건을 insert한 뒤, `p_mentor_ids` 배열을 순회하며 `application_mentors`를 `pending` 상태로 insert하고 생성된 `applications` 행을 반환한다. 멘토 수(1~3), 중복 여부, 멘토 존재 여부, 질문지 필수값 검증은 이 함수가 아니라 호출하는 애플리케이션 계층에서 미리 끝낸다.
+
 ### 4.6 `application_mentors`
 
 하나의 신청과 최대 3명의 대상 멘토를 연결한다.
@@ -162,9 +189,9 @@ MVP에서는 반복 항목을 PostgreSQL 배열로 저장한다. `career_highlig
 
 제약 및 규칙:
 
-- 동일 신청과 멘토 조합은 중복될 수 없다.
+- 동일 신청과 멘토 조합은 중복될 수 없다 (`(application_id, mentor_id)` 복합 PK가 DB 레벨의 중복 방지 역할도 겸한다).
 - 신청 하나에는 1명 이상 3명 이하의 멘토만 연결한다.
-- 최대 3명 제한은 신청 생성 트랜잭션 또는 DB 함수에서 검사한다.
+- 최대 3명 제한, 중복 여부, 멘토 존재 여부는 **애플리케이션 계층**(`server/src/services/applications.service.js`의 `validateMentorIds`)에서 신청 생성 RPC를 호출하기 전에 검사한다. DB 함수(`create_application_with_mentors`, 4.5절 참고)는 원자적 저장만 책임지며 이 값들을 자체적으로 검증하지 않는다.
 - 한 멘토가 수락하면 해당 행을 `confirmed`로 변경하고 나머지 `pending` 행은 `rejected`로 변경한다.
 
 ### 4.7 `meetings`
@@ -200,7 +227,9 @@ MVP에서는 반복 항목을 PostgreSQL 배열로 저장한다. `career_highlig
 | `mentee_profiles` | `applications` | 1:N | RESTRICT 권장 |
 | `applications` | `application_mentors` | 1:N | CASCADE |
 | `mentor_profiles` | `application_mentors` | 1:N | RESTRICT 권장 |
+| `mentor_profiles` | `applications.accepted_mentor_id` | 1:N | 기본(NO ACTION) |
 | `applications` | `meetings` | 1:0..1 | CASCADE |
+| `mentor_profiles` | `meetings.mentor_id` | 1:N | RESTRICT |
 
 신청 이력이 있는 사용자는 즉시 물리 삭제하기보다 비활성화 또는 익명화 정책을 검토한다.
 
