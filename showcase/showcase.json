@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "title": "자취생 냉장고 레시피",
+  "summary": "냉장고 재고를 보고 → 채우고(영수증) → 요리하고 → 다시 차감되는 루프를 끊기지 않게 돌려주는 자취생 전용 냉장고 레시피 앱",
+  "githubUser": "baejh3333(배정현)",
+  "demoUrl": "",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": ["screenshots/home.webp"],
+  "problem": "요리 초보 자취생은 냉장고에 뭐가 있는지 기억하지 못하고, 어떤 재료로 뭘 해먹을 수 있는지 몰라 결국 배달·외식에 의존하게 된다. 채소 평균가도 몰라 장보기 자체가 막막하고, 남는 재료를 소진하지 못해 유통기한을 놓치는 문제도 반복된다.",
+  "targetUsers": ["자취를 시작한 요리 초보 대학생", "장보기·재료 소진 계획이 막막한 1인 가구"],
+  "features": [
+    "나만의 냉장고 재고 관리 — 유통기한 임박 알림 + 수량 부족 알림",
+    "영수증 촬영 → Naver Clova OCR 자동 인식 → 재고 자동 등록",
+    "보유 재료 기반 레시피 추천 및 난이도 필터, 검색/정렬",
+    "요리 완료 시 재고 자동 차감 (실사용량 수동 보정 가능)",
+    "최소 구매로 최대 요리 조합을 뽑아주는 추천 장보기 세트 5종 + 일주일 식단 루틴 자동 배치"
+  ],
+  "featureTags": ["냉장고 재고관리", "영수증 OCR", "레시피 추천"],
+  "techStack": ["React 19", "Vite 8", "Express 5", "Node.js", "Naver Clova OCR"],
+  "techHighlights": [
+    "frontend/backend 각자 독립 npm 패키지 + routes→controllers→store 계층 분리로 인메모리 DB를 실DB로 교체하기 쉬운 구조 설계",
+    "재료 마스터(불변 속성)와 재고(가변 상태)를 분리해 store.js에서 병합하는 데이터 모델",
+    "임박 재료 한계이득 탐욕 + 최소 구매 3-조합 탐색을 결합한 일주일 식단 알고리즘(algorithms.md)"
+  ],
+  "developmentWithAI": "기획서(product.md)·API 계약(api.md)·알고리즘 설계(algorithms.md)를 단일 소스 문서로 먼저 정리한 뒤 Claude Code 에이전트와 함께 15일 이상 반복적으로 기능을 구현·검증했습니다. 매 세션마다 코드와 문서를 대조해 정합성 감사를 진행하고, 발견된 버그와 미구현 항목을 backlog.md에 우선순위별로 기록하며 진행했습니다.",
+  "agent": {
+    "summary": "Claude Code를 페어 프로그래머로 활용해 기획 문서 기반 기능 구현, 브라우저를 통한 직접 동작 검증, 코드-문서 정합성 감사를 반복하는 워크플로우로 개발했습니다.",
+    "agentTools": [
+      { "name": "Claude Code CLI", "description": "기능 구현·리팩터링·버그 수정을 함께 진행한 에이전트" },
+      { "name": "Browser preview", "description": "실제 화면에서 동작을 검증하고 버그를 재현" },
+      { "name": "node --test", "description": "store.js의 순수 함수 단위 테스트 실행" }
+    ],
+    "workflows": [
+      { "name": "문서 기반 설계", "description": "product.md/api.md/algorithms.md 문서를 기준으로 기능을 설계한 뒤 구현" },
+      { "name": "브라우저 실동작 검증", "description": "브라우저로 실제 화면 동작을 확인하며 버그를 재현·수정" },
+      { "name": "정합성 감사", "description": "매 작업 회차마다 코드와 기획 문서를 대조해 누락·불일치 항목을 backlog.md에 기록" }
+    ]
+  }
+}
