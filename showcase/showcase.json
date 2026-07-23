@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "title": "미리캣 — 내 출근길의 보초",
+  "summary": "매일 지자체·버스조합 게시판을 대신 확인해, 내 이동 경로에 영향을 주는 우회·통제 공지를 근거와 함께 알려주는 감시 에이전트입니다.",
+  "githubUser": "jaehyun429(정재현)",
+  "demoUrl": "https://jaehyun429.github.io/hub/miricat-app.html",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/route-register.webp",
+    "screenshots/alert-channel.webp"
+  ],
+  "problem": "축제·공사·사고로 버스 우회나 도로 통제가 생기면 지자체·버스조합 게시판에 공지가 한 번 올라오고 묻힙니다. 공지가 올라온 시점과 실제로 이동하는 시점이 어긋나 있고, 확인할 게시판도 여러 곳에 흩어져 있어 사람이 매번 챙기기는 비현실적입니다.",
+  "targetUsers": [
+    "매일 같은 경로로 출퇴근하는 대중교통 이용자",
+    "고정된 통학·통근 경로가 있는 사람"
+  ],
+  "features": [
+    "출발지·도착지·시간대로 내 고정 경로를 한 번 등록합니다.",
+    "매일 관할 게시판을 대신 확인하고, 이상이 없어도 확인한 소스·시각과 함께 한 줄로 보고합니다.",
+    "내 경로에 영향을 주는 공지를 발견하면 원문 출처와 함께 경보를 보냅니다.",
+    "통제 구간과 대안 경로를 담은 리포트를 보여줍니다."
+  ],
+  "featureTags": [
+    "경로 감시",
+    "우회·통제 알림",
+    "매일 확인 보고",
+    "근거 기반 경보"
+  ],
+  "techStack": [
+    "React",
+    "Express",
+    "Supabase",
+    "Python",
+    "LangGraph",
+    "Gemini"
+  ],
+  "techHighlights": [
+    "LangGraph로 조사 그래프를 구성했습니다. Scout(게시판 수집) → 추출 ⇄ Verifier(검증 실패 시 재추출로 되돌리는 순환, 재시도 상한) 구조로 상태 기반 오케스트레이션을 구현했습니다.",
+    "Gemini 구조화 출력(response_schema)으로 비정형 공지 본문을 사건 리스트 JSON으로 추출하고, Supabase에 upsert로 저장해 같은 공지가 중복 저장되지 않게 했습니다.",
+    "예측하지 않는다는 원칙에 따라 이미 공지된 사실만 추출·매칭하고, 모든 경보에 원문 출처를 붙입니다."
+  ],
+  "developmentWithAI": "저는 문제 정의와 절대 원칙(예측 금지, 매일 보고, 원문 출처), 핵심 기능을 정했습니다. LangGraph처럼 새로 배우는 개념은 원리를 먼저 익힌 뒤 제가 직접 타이핑하며 구현했고, 이미 익힌 구조를 그대로 반복 적용하는 작업은 AI에게 맡겼습니다. AI가 만든 코드는 직접 실행·검증하며 수정했습니다.",
+  "agent": {
+    "summary": "개발 과정에서 계획·검증용 Agent와, 반복 작업을 표준화한 Skill을 Claude Code로 함께 사용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "miri-planner",
+        "purpose": "요구사항(티켓)을 일자별 작업 단위로 나누고 구현 순서를 정합니다."
+      },
+      {
+        "type": "agent",
+        "name": "miri-verifier",
+        "purpose": "추출 결과를 원문과 대조해 보고만 하고 수정은 하지 않는 검증을 수행합니다."
+      },
+      {
+        "type": "skill",
+        "name": "miri",
+        "purpose": "코드 작업 전 전체 지도를 먼저 그리고, 본체는 개발자가 직접 타이핑하는 학습 개발 루틴입니다."
+      },
+      {
+        "type": "skill",
+        "name": "miri-commit",
+        "purpose": "MIRI 티켓 번호를 붙인 한 줄 커밋 컨벤션을 지킵니다."
+      },
+      {
+        "type": "skill",
+        "name": "add-source",
+        "purpose": "새 감시 게시판 소스를 추가하고 검증하는 체크리스트입니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "학습 개발 Workflow",
+        "steps": [
+          "전체 지도 그리기 (파일 표·막힌 지점·설계 갈래)",
+          "설계 방향 선택 (A/B)",
+          "새 개념이면 학습 노트 작성",
+          "본체를 직접 타이핑",
+          "실행·검증",
+          "커밋"
+        ]
+      },
+      {
+        "name": "감시 소스 추가 Workflow",
+        "steps": [
+          "게시판에 교통 공지가 실제로 실리는지 확인",
+          "sources.py에 소스 추가 (비활성 상태로)",
+          "목록 정규식·본문 셀렉터 맞추기",
+          "그래프 한 바퀴로 수집→추출→저장 검증",
+          "활성화 후 커밋"
+        ]
+      }
+    ]
+  }
+}
