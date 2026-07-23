@@ -255,7 +255,7 @@ MVP에서는 이메일과 비밀번호로 가입하고 이메일 확인을 완�
 | `created_at` | `timestamptz` | NOT NULL | 생성 시각 |
 | `updated_at` | `timestamptz` | NOT NULL | 수정 시각 |
 
-MVP에서는 병원 가입 신청과 증빙서류 메타데이터를 mock으로 저장하고 플랫폼 관리자가 상세 신청을 승인하거나 거절합니다. 승인된 병원만 검색 결과에 노출하고 대기열을 운영할 수 있습니다.
+MVP에서는 병원 가입 신청과 증빙서류 메타데이터를 mock으로 저장하고 플랫폼 관리자가 상세 신청을 승인하거나 거절합니다. 승인된 병원만 대기열을 운영할 수 있습니다. `approval_status = approved` 조건을 실제 DB 병원 검색에 강제하는 기능은 P2입니다.
 
 ## 5. hospital_inquiries
 

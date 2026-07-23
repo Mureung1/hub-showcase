@@ -1,8 +1,13 @@
 import { Clock3, MapPin, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppHeader } from "../components/AppHeader";
 import { getApiHealth, getPatientConfig } from "../services/apiClient";
+import {
+  filterHospitalsByQuery,
+  getHospitalRegion,
+  getValidHospitalRegionFilter,
+} from "../utils/filterHospitals";
 
 type ApiState = "checking" | "connected" | "disconnected";
 const developmentHospitalId = "10000000-0000-4000-8000-000000000001";
@@ -16,6 +21,19 @@ interface MockHospital {
   estimatedMinutes: number;
   remoteOpen: boolean;
 }
+
+interface HospitalSearchState {
+  hospitals: MockHospital[];
+  province: string;
+  cityDistrict: string;
+  department: string;
+}
+
+type HospitalSearchAction =
+  | { type: "refreshHospital"; hospital: MockHospital }
+  | { type: "selectProvince"; province: string }
+  | { type: "selectCityDistrict"; cityDistrict: string }
+  | { type: "selectDepartment"; department: string };
 
 const mockHospitals: MockHospital[] = [
   {
@@ -47,12 +65,49 @@ const mockHospitals: MockHospital[] = [
   },
 ];
 
+function hospitalSearchReducer(
+  state: HospitalSearchState,
+  action: HospitalSearchAction,
+): HospitalSearchState {
+  if (action.type === "selectProvince") {
+    return { ...state, province: action.province, cityDistrict: "" };
+  }
+
+  if (action.type === "selectCityDistrict") {
+    return { ...state, cityDistrict: action.cityDistrict };
+  }
+
+  if (action.type === "selectDepartment") {
+    return { ...state, department: action.department };
+  }
+
+  const hospitals = state.hospitals.map((hospital) =>
+    hospital.id === action.hospital.id ? action.hospital : hospital,
+  );
+  const validRegion = getValidHospitalRegionFilter(hospitals, state);
+  const department = hospitals.some(
+    (hospital) => hospital.department === state.department,
+  )
+    ? state.department
+    : "";
+
+  return { ...state, hospitals, ...validRegion, department };
+}
+
 export function HospitalSearchPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [apiState, setApiState] = useState<ApiState>("checking");
-  const [hospitals, setHospitals] = useState(mockHospitals);
+  const [{ hospitals, province, cityDistrict, department }, dispatch] = useReducer(
+    hospitalSearchReducer,
+    {
+      hospitals: mockHospitals,
+      province: "",
+      cityDistrict: "",
+      department: "",
+    },
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -73,21 +128,18 @@ export function HospitalSearchPage() {
       try {
         const config = await getPatientConfig(developmentHospitalId);
         if (!active) return;
-        setHospitals((current) =>
-          current.map((hospital) =>
-            hospital.id === config.hospital.id
-              ? {
-                  id: config.hospital.id,
-                  name: config.hospital.name,
-                  department: config.hospital.department,
-                  district: config.hospital.district,
-                  waitingPatients: config.waitingPatients,
-                  estimatedMinutes: config.estimatedMinutes,
-                  remoteOpen: config.queueStatus === "open",
-                }
-              : hospital,
-          ),
-        );
+        dispatch({
+          type: "refreshHospital",
+          hospital: {
+            id: config.hospital.id,
+            name: config.hospital.name,
+            department: config.hospital.department,
+            district: config.hospital.district,
+            waitingPatients: config.waitingPatients,
+            estimatedMinutes: config.estimatedMinutes,
+            remoteOpen: config.queueStatus === "open",
+          },
+        });
       } catch {
         // The static cards remain visible while the development API is unavailable.
       }
@@ -100,16 +152,38 @@ export function HospitalSearchPage() {
     };
   }, []);
 
-  const filteredHospitals = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
-    if (!normalizedQuery) return hospitals;
-
-    return hospitals.filter((hospital) =>
-      [hospital.name, hospital.department, hospital.district].some((value) =>
-        value.toLocaleLowerCase("ko-KR").includes(normalizedQuery),
+  const provinces = useMemo(
+    () => [...new Set(hospitals.map(({ district }) => getHospitalRegion(district).province))],
+    [hospitals],
+  );
+  const cityDistricts = useMemo(
+    () =>
+      province
+        ? [
+            ...new Set(
+              hospitals
+                .map(({ district }) => getHospitalRegion(district))
+                .filter((region) => region.province === province)
+                .map((region) => region.cityDistrict),
+            ),
+          ]
+        : [],
+    [hospitals, province],
+  );
+  const departments = useMemo(
+    () => [...new Set(hospitals.map((hospital) => hospital.department))],
+    [hospitals],
+  );
+  const filteredHospitals = useMemo(
+    () =>
+      filterHospitalsByQuery(
+        hospitals,
+        query,
+        { province, cityDistrict },
+        department,
       ),
-    );
-  }, [hospitals, query]);
+    [hospitals, query, province, cityDistrict, department],
+  );
 
   const apiLabel = {
     checking: "API 확인 중",
@@ -133,6 +207,57 @@ export function HospitalSearchPage() {
                 aria-label="병원 검색"
               />
             </div>
+            <div className="region-filters">
+              <select
+                aria-label="시·도 선택"
+                value={province}
+                onChange={(event) =>
+                  dispatch({ type: "selectProvince", province: event.target.value })
+                }
+              >
+                <option value="">시·도 전체</option>
+                {provinces.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="시·군·구 선택"
+                value={cityDistrict}
+                disabled={!province}
+                onChange={(event) =>
+                  dispatch({
+                    type: "selectCityDistrict",
+                    cityDistrict: event.target.value,
+                  })
+                }
+              >
+                <option value="">시·군·구 전체</option>
+                {cityDistricts.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="대표 진료과 선택"
+                value={department}
+                onChange={(event) =>
+                  dispatch({
+                    type: "selectDepartment",
+                    department: event.target.value,
+                  })
+                }
+              >
+                <option value="">대표 진료과 전체</option>
+                {departments.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </section>
 
@@ -149,7 +274,9 @@ export function HospitalSearchPage() {
               </p>
               <h2 id="nearby-title">현재 접수 가능한 병원</h2>
             </div>
-            <span className="result-count">{filteredHospitals.length}곳</span>
+            <span className="result-count" aria-live="polite">
+              {filteredHospitals.length}곳
+            </span>
           </div>
 
           <div className="hospital-list">
@@ -195,7 +322,7 @@ export function HospitalSearchPage() {
           </div>
 
           {filteredHospitals.length === 0 && (
-            <div className="empty-state">
+            <div className="empty-state" role="status">
               <Search size={22} aria-hidden="true" />
               <p>검색 조건에 맞는 병원이 없습니다.</p>
             </div>

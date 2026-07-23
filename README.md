@@ -103,6 +103,7 @@ React는 Supabase를 인증에만 직접 사용하고, 병원과 대기열 데�
 - [개발 Task 및 백로그](./docs/tasks.md)
 - [개발 작업 체크리스트](./docs/checklist.md)
 - [개발 계획 수립 Skill](./.agents/skills/plan-development/SKILL.md)
+- [TDD 개발 Skill](./.agents/skills/test-driven-development/SKILL.md)
 - [기능 검증 Skill](./.agents/skills/verify-feature/SKILL.md)
 - [정적 프로토타입 안내](./prototype/README.md)
 - [Codex 프로젝트 지침](./AGENTS.md)
@@ -251,5 +252,5 @@ hub/
 ## 우선순위
 
 - `P0`: 인증, 원격 웨이팅, 현장 접수, 통합 대기열, 자동 mock 알림
-- `P1`: 병원 검색, 입점 mock 승인, 운영 설정, 예외 처리와 품질
-- `P2`: 실제 외부 API, 소셜 로그인, 플랫폼 관리자, 지도, 다중 대기열, Supabase Cron, 전산 연동과 외부 배포
+- `P1`: mock 병원 검색, 입점 mock 승인, 운영 설정, 예외 처리와 품질
+- `P2`: PostgreSQL 기반 병원 검색과 승인 병원 제한, 실제 외부 API, 소셜 로그인, 플랫폼 관리자, 지도, 다중 대기열, Supabase Cron, 전산 연동과 외부 배포

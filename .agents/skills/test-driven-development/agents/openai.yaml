@@ -1,0 +1,4 @@
+interface:
+  display_name: "TDD 개발"
+  short_description: "테스트부터 시작하는 Red Green Refactor 개발 절차"
+  default_prompt: "Use $test-driven-development to implement one small feature through Red, Green, and Refactor."
