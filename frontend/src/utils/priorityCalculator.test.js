@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   calculatePriorityScore,
+  creditMultiplier,
   getScoreBreakdown,
   WEIGHT_PRESETS,
 } from "./priorityCalculator.js";
@@ -54,4 +55,25 @@ test("getScoreBreakdown: 범위 밖 값(null)도 중립(50)", () => {
 test("getScoreBreakdown: 확보 가능한 공부 시간은 적을수록 높은 점수", () => {
   assert.equal(getScoreBreakdown({ availableTime: 1, daysUntil: 40 }).availableTime, 100);
   assert.equal(getScoreBreakdown({ availableTime: 5, daysUntil: 40 }).availableTime, 0);
+});
+
+// 중요도(학점) 배수: 3학점 기준 1배, 학점이 높을수록 커진다.
+test("creditMultiplier: 3학점 기준 1배, 6학점 2배, 7.5학점 2.5배", () => {
+  assert.equal(creditMultiplier(3), 1);
+  assert.equal(creditMultiplier(6), 2);
+  assert.equal(creditMultiplier(7.5), 2.5);
+});
+
+test("creditMultiplier: 값이 없거나 잘못되면 1배(기본 3학점)", () => {
+  assert.equal(creditMultiplier(undefined), 1);
+  assert.equal(creditMultiplier(0), 1);
+  assert.equal(creditMultiplier(-5), 1);
+});
+
+// 같은 기본 점수라도 학점이 높은 과목이 최종 점수가 더 높다. (사용자 예: 7.5학점 vs 5학점)
+test("최종 점수: 같은 기본 점수면 학점 높은 쪽이 더 높다", () => {
+  const base = 80;
+  const higher = Math.round(base * creditMultiplier(7.5));
+  const lower = Math.round(base * creditMultiplier(5));
+  assert.ok(higher > lower, `${higher} > ${lower}`);
 });
