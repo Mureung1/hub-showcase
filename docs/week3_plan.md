@@ -138,11 +138,19 @@ isProject: false
 ### [32/P1/금] GitHub Actions cron + 검증 문서화
 - **목표**: 크롤러가 주기적으로 자동 실행되고, 결과가 검증 문서로 남는다.
 - **작업**
-  - [ ] `.github/workflows/crawler.yml` — cron 표현식으로 주기 실행 (빈도는 결정 필요, 아래 표 참고)
-  - [ ] 실행 실패 시 로그/알림 정책 (최소: Actions 로그로 확인 가능하게)
-  - [ ] `docs/week3/verification.md` — day2/day6 검증 문서와 동일한 형식(`[코드]`/`[API]`/`[DB]`)으로
-        전체 파이프라인 검증 결과 기록
+  - [x] `.github/workflows/crawler.yml` — 매일 00:00 UTC(09:00 KST) 스케줄 + `workflow_dispatch`
+        수동 실행
+  - [x] 실행 실패 시 로그 확인 — 기본 Actions 로그로 충분 (별도 알림 없음)
+  - [x] `docs/week3/verification.md` — day2/day6 검증 문서와 동일한 형식(`[코드]`/`[API]`/`[DB]`/
+        `[CI]`)으로 전체 파이프라인(#28~#32) 검증 결과 기록
+  - [x] `.gitignore`에서 `.github/` 제거 — 그동안 워크플로우 파일이 커밋된 적 없었던 원인이었음
+        (CLAUDE.md가 설명하던 존재하지 않는 `pr-checks.yml`과 같은 원인)
+  - [x] GitHub repo secrets 등록 (`SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`/`BIZINFO_API_KEY`)
+  - [x] 캠퍼스 레포(`N106_신서연` 브랜치) PR에는 `.github/`를 포함하지 않도록 동기화 절차를
+        `.cursor/skills/issue-workflow/SKILL.md`에 문서화 (로컬 전용)
 - **완료 기준**: cron 워크플로우가 최소 1회 성공 실행되고, 결과가 문서화된다.
+  **PR 머지 후 확인 예정** — `workflow_dispatch`는 default 브랜치에 워크플로우가 있어야 트리거
+  가능해서, 이 브랜치에서는 API로 미리 실행해볼 수 없었음
 
 ---
 
