@@ -120,4 +120,23 @@ describe('PATCH /api/meetings/:id', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
+
+  it('취소된 모임은 400', async () => {
+    const { agent, userId } = await loginAgent('u-h7');
+    const meetingId = await insertMeeting(userId, { type: 'small', status: 'cancelled' });
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(smallBody());
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('종료된(지난) 모임은 400', async () => {
+    const { agent, userId } = await loginAgent('u-h8');
+    // 과거 종료 일시 → COALESCE(end_at,start_at) < now()
+    const meetingId = await insertMeeting(userId, {
+      type: 'small', startAt: '2020-01-01T10:00:00+09:00', endAt: '2020-01-01T12:00:00+09:00',
+    });
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(smallBody());
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
 });

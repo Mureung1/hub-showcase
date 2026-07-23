@@ -522,7 +522,12 @@ async function updateMeeting(meetingId, hostId, body) {
 
   const fields = validateUpdateMeeting(body, row.type);
 
-  // (상태 가드 — Task 2)
+  if (row.status === 'cancelled') {
+    throw new ApiError('VALIDATION_ERROR', '취소된 모임은 수정할 수 없습니다');
+  }
+  if (row.is_past) {
+    throw new ApiError('VALIDATION_ERROR', '종료된 모임은 수정할 수 없습니다');
+  }
   // (정원 가드 + status 재계산 — Task 3)
   // (adultOnly 켜기 가드 — Task 4)
   const nextStatus = row.status;
