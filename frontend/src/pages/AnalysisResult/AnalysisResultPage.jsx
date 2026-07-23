@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { analyzeNotice, saveEvents } from "../../api/analysisApi";
+import { useLocation, useNavigate } from "react-router-dom";
+import { saveEvents } from "../../api/analysisApi";
 import "./AnalysisResultPage.css";
 
 function AnalysisResultPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [analysisData, setAnalysisData] = useState(null);
@@ -12,10 +15,25 @@ function AnalysisResultPage() {
   const [editedData, setEditedData] = useState({});
   const [isSaving, setIsSaving] = useState(false);
 
-  // Mock: 테스트용 공지 텍스트로 분석 API 호출
+  // Dashboard에서 전달된 실제 분석 결과를 받음
   useEffect(() => {
-    loadAnalysisResult();
-  }, []);
+    if (location.state?.analysisData) {
+      const data = location.state.analysisData;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAnalysisData(data);
+
+      // 모든 일정을 기본으로 선택
+      if (data.events) {
+        const initialSelected = {};
+        data.events.forEach((_, index) => {
+          initialSelected[index] = true;
+        });
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSelectedEvents(initialSelected);
+      }
+    }
+    // location.state가 없으면 아무것도 로드하지 않음
+  }, [location.state]);
 
   // 화면 이탈 경고 (수정 모드 활성화 시)
   useEffect(() => {
@@ -209,59 +227,19 @@ function AnalysisResultPage() {
     }
   }
 
-  async function loadAnalysisResult() {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      // Mock 데이터: 해커톤 공지 (여러 일정 포함)
-      const mockText = `
-        2024 CalMe 겨울 해커톤
-
-        겨울 방학 중 진행되는 해커톤입니다.
-        팀 단위로 참가할 수 있으며, 선발된 팀에게 상품이 지급됩니다.
-
-        1. 팀 구성 및 신청: 2024년 12월 1일부터 12월 10일까지 신청 가능
-        2. 해커톤 본선: 2024년 12월 15일-16일, 09:00-18:00, 서울대학교 공학관 301호
-        3. 최종 결과물 제출: 2024년 12월 31일까지 온라인 제출
-      `;
-
-      const result = await analyzeNotice(mockText);
-      setAnalysisData(result.data);
-
-      // 모든 일정을 기본으로 선택 상태로 초기화
-      if (result.data.events) {
-        const initialSelected = {};
-        result.data.events.forEach((_, index) => {
-          initialSelected[index] = true;
-        });
-        setSelectedEvents(initialSelected);
-      }
-    } catch (err) {
-      setError(err.message || "분석에 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <section className="analysis-result-section">
-        <div className="analysis-container">
-          <p className="loading-message">분석 중입니다...</p>
-        </div>
-      </section>
-    );
-  }
-
   if (error) {
     return (
       <section className="analysis-result-section">
         <div className="analysis-container">
-          <p className="error-message">{error}</p>
-          <button className="retry-button" onClick={loadAnalysisResult}>
-            다시 시도
-          </button>
+          <div style={{ textAlign: "center", padding: "40px 20px" }}>
+            <p className="error-message">{error}</p>
+            <button
+              className="retry-button"
+              onClick={() => navigate("/dashboard")}
+            >
+              Dashboard로 이동
+            </button>
+          </div>
         </div>
       </section>
     );
@@ -271,7 +249,27 @@ function AnalysisResultPage() {
     return (
       <section className="analysis-result-section">
         <div className="analysis-container">
-          <p>분석 결과가 없습니다.</p>
+          <div style={{ textAlign: "center", padding: "40px 20px" }}>
+            <p style={{ fontSize: "16px", color: "var(--color-text-muted)", marginBottom: "20px" }}>
+              분석 결과가 없습니다. 공지를 다시 분석해주세요.
+            </p>
+            <button
+              onClick={() => navigate("/dashboard")}
+              style={{
+                padding: "10px 24px",
+                backgroundColor: "var(--color-primary)",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                fontSize: "14px",
+                fontWeight: "600",
+                cursor: "pointer",
+                fontFamily: "Inter, Pretendard, sans-serif"
+              }}
+            >
+              Dashboard로 이동
+            </button>
+          </div>
         </div>
       </section>
     );

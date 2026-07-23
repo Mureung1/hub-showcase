@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { createNotice, uploadPDF } from "../../api/noticeApi";
+import { useNavigate } from "react-router-dom";
+import { uploadPDF } from "../../api/noticeApi";
 import { analyzeNotice } from "../../api/analysisApi";
 import "./DashboardPage.css";
 
 function DashboardPage() {
+  const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState("text");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -15,14 +18,11 @@ function DashboardPage() {
   const [extractedText, setExtractedText] = useState("");
   const [isScannedOrEmpty, setIsScannedOrEmpty] = useState(false);
   const [showExtraction, setShowExtraction] = useState(false);
-  const [textAnalysisResult, setTextAnalysisResult] = useState(null);
-  const [pdfAnalysisResult, setPdfAnalysisResult] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   async function handleAnalyze() {
     setError("");
     setSuccess(false);
-    setTextAnalysisResult(null);
 
     if (!content.trim()) {
       setError("분석할 텍스트를 입력해주세요.");
@@ -33,16 +33,13 @@ function DashboardPage() {
 
     try {
       const result = await analyzeNotice(content);
-      setTextAnalysisResult(result.data);
-      setSuccess(true);
-
-      setTimeout(() => {
-        setSuccess(false);
-      }, 3000);
+      // AnalysisResultPage로 이동하며 분석 결과 전달
+      navigate("/analysis", {
+        state: { analysisData: result.data },
+      });
     } catch (err) {
       setError(err.message);
-    } finally {
-      setIsAnalyzing(false);
+      setIsAnalyzing(false); // navigate 실패 시에만 호출
     }
   }
 
@@ -51,7 +48,6 @@ function DashboardPage() {
     setPdfError("");
     setExtractedText("");
     setShowExtraction(false);
-    setPdfAnalysisResult(null);
 
     if (!file) {
       setPdfFile(null);
@@ -79,7 +75,6 @@ function DashboardPage() {
   async function handlePdfUpload() {
     setPdfError("");
     setShowExtraction(false);
-    setPdfAnalysisResult(null);
 
     if (!pdfFile) {
       setPdfError("파일을 선택해주세요.");
@@ -118,7 +113,6 @@ function DashboardPage() {
 
   async function handlePdfAnalyze() {
     setPdfError("");
-    setPdfAnalysisResult(null);
 
     if (!extractedText.trim()) {
       setPdfError("분석할 텍스트가 없습니다.");
@@ -129,15 +123,12 @@ function DashboardPage() {
 
     try {
       const result = await analyzeNotice(extractedText);
-      setPdfAnalysisResult(result.data);
-      setSuccess(true);
-
-      setTimeout(() => {
-        setSuccess(false);
-      }, 3000);
+      // AnalysisResultPage로 이동하며 분석 결과 전달
+      navigate("/analysis", {
+        state: { analysisData: result.data },
+      });
     } catch (err) {
       setPdfError(err.message);
-    } finally {
       setIsAnalyzing(false);
     }
   }
@@ -156,7 +147,6 @@ function DashboardPage() {
               setPdfFile(null);
               setExtractedText("");
               setShowExtraction(false);
-              setPdfAnalysisResult(null);
               setPdfError("");
             }}
             disabled={isLoading}
@@ -169,7 +159,6 @@ function DashboardPage() {
               setActiveTab("pdf");
               setTitle("");
               setContent("");
-              setTextAnalysisResult(null);
               setError("");
             }}
             disabled={isLoading}
@@ -215,87 +204,6 @@ function DashboardPage() {
             >
               {isAnalyzing ? "분석 중..." : "분석하기"}
             </button>
-
-            {/* 분석 결과 미리보기 */}
-            {textAnalysisResult && (
-              <div className="analysis-preview">
-                <div className="preview-section">
-                  <h3 className="preview-title">📋 일정 분석 결과</h3>
-
-                  <div className="preview-item">
-                    <label className="item-label">일정명</label>
-                    <p className="item-value">
-                      {textAnalysisResult.scheduleName || "정보 없음"}
-                    </p>
-                  </div>
-
-                  <div className="preview-item">
-                    <label className="item-label">시작일</label>
-                    <p className="item-value">
-                      {textAnalysisResult.startDate || "정보 없음"}
-                    </p>
-                  </div>
-
-                  <div className="preview-item">
-                    <label className="item-label">마감일</label>
-                    <p className="item-value">
-                      {textAnalysisResult.deadline || "정보 없음"}
-                    </p>
-                  </div>
-
-                  <div className="preview-item">
-                    <label className="item-label">장소</label>
-                    <p className="item-value">
-                      {textAnalysisResult.location || "정보 없음"}
-                    </p>
-                  </div>
-
-                  {textAnalysisResult.deliverables.length > 0 && (
-                    <div className="preview-item">
-                      <label className="item-label">제출물</label>
-                      <ul className="item-list">
-                        {textAnalysisResult.deliverables.map((item, idx) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {textAnalysisResult.materials.length > 0 && (
-                    <div className="preview-item">
-                      <label className="item-label">준비물</label>
-                      <ul className="item-list">
-                        {textAnalysisResult.materials.map((item, idx) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {textAnalysisResult.notes.length > 0 && (
-                    <div className="preview-item">
-                      <label className="item-label">안내사항</label>
-                      <ul className="item-list">
-                        {textAnalysisResult.notes.map((item, idx) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {textAnalysisResult.warnings.length > 0 && (
-                    <div className="preview-item warnings">
-                      <label className="item-label">⚠️ 알림</label>
-                      <ul className="item-list">
-                        {textAnalysisResult.warnings.map((warning, idx) => (
-                          <li key={idx}>{warning}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -373,87 +281,6 @@ function DashboardPage() {
               >
                 {isAnalyzing ? "분석 중..." : "분석하기"}
               </button>
-            )}
-
-            {/* PDF 분석 결과 미리보기 */}
-            {pdfAnalysisResult && (
-              <div className="analysis-preview">
-                <div className="preview-section">
-                  <h3 className="preview-title">📋 일정 분석 결과</h3>
-
-                  <div className="preview-item">
-                    <label className="item-label">일정명</label>
-                    <p className="item-value">
-                      {pdfAnalysisResult.scheduleName || "정보 없음"}
-                    </p>
-                  </div>
-
-                  <div className="preview-item">
-                    <label className="item-label">시작일</label>
-                    <p className="item-value">
-                      {pdfAnalysisResult.startDate || "정보 없음"}
-                    </p>
-                  </div>
-
-                  <div className="preview-item">
-                    <label className="item-label">마감일</label>
-                    <p className="item-value">
-                      {pdfAnalysisResult.deadline || "정보 없음"}
-                    </p>
-                  </div>
-
-                  <div className="preview-item">
-                    <label className="item-label">장소</label>
-                    <p className="item-value">
-                      {pdfAnalysisResult.location || "정보 없음"}
-                    </p>
-                  </div>
-
-                  {pdfAnalysisResult.deliverables.length > 0 && (
-                    <div className="preview-item">
-                      <label className="item-label">제출물</label>
-                      <ul className="item-list">
-                        {pdfAnalysisResult.deliverables.map((item, idx) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {pdfAnalysisResult.materials.length > 0 && (
-                    <div className="preview-item">
-                      <label className="item-label">준비물</label>
-                      <ul className="item-list">
-                        {pdfAnalysisResult.materials.map((item, idx) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {pdfAnalysisResult.notes.length > 0 && (
-                    <div className="preview-item">
-                      <label className="item-label">안내사항</label>
-                      <ul className="item-list">
-                        {pdfAnalysisResult.notes.map((item, idx) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {pdfAnalysisResult.warnings.length > 0 && (
-                    <div className="preview-item warnings">
-                      <label className="item-label">⚠️ 알림</label>
-                      <ul className="item-list">
-                        {pdfAnalysisResult.warnings.map((warning, idx) => (
-                          <li key={idx}>{warning}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
             )}
           </div>
         )}
