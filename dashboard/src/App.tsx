@@ -146,6 +146,7 @@ export default function App({ projects }: AppProps) {
             return (
               <button
                 className={`category-tab ${activeCategory === category.id ? 'active' : ''}`}
+                style={{ cursor: 'pointer' }}
                 type="button"
                 key={category.id}
                 aria-selected={activeCategory === category.id}
@@ -180,6 +181,7 @@ export default function App({ projects }: AppProps) {
           {filteredProjects.map((project) => (
             <article
               className="project-card"
+              style={{ cursor: 'pointer' }}
               key={project.id}
               role="button"
               tabIndex={0}
