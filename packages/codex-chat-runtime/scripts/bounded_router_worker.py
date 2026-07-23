@@ -78,6 +78,7 @@ async def _run(
                 "account/login/completed",
                 "thread/status/changed",
             ),
+            reserve_chatgpt_login_completion=True,
         )
     )
     child = None
@@ -88,6 +89,8 @@ async def _run(
         thread_a = await codex.thread_start()
         child = codex._client._sync._proc
         thread_b = await codex.thread_start()
+        completed_login = await codex.login_chatgpt()
+        completed_login_result = await completed_login.wait()
         login = await codex.login_chatgpt()
         login_waiter = asyncio.create_task(login.wait())
         tasks.append(login_waiter)
@@ -131,6 +134,11 @@ async def _run(
             "first_stalled_method": first_stalled_event.method,
             "future_global_failure": future_global_failure,
             "global_failure": global_failure,
+            "managed_login_completion": {
+                "error": completed_login_result.error,
+                "login_id": completed_login_result.login_id,
+                "success": completed_login_result.success,
+            },
             "login_failure": login_failure,
             "login_handle": {
                 "auth_url": login.auth_url,

@@ -51,25 +51,32 @@ index 377c948..dce5bd4 100644
 -        raise RuntimeError(f"unexpected ChatGPT login response: {response_root!r}")
 +        _raise_unexpected_chatgpt_response(owner._client, response_root)
 diff --git a/sdk/python/src/openai_codex/client.py b/sdk/python/src/openai_codex/client.py
-index 044a007..6fb67ca 100644
+index 044a007..b39a5ae 100644
 --- a/sdk/python/src/openai_codex/client.py
 +++ b/sdk/python/src/openai_codex/client.py
 @@ -80,0 +81 @@ _GOAL_START_TIMEOUT_S = 30.0
-+_SDK_REQUIRED_NOTIFICATION_METHODS = frozenset({"account/login/completed"})
-@@ -583,4 +584,7 @@ class CodexClient:
++_MANAGED_CHATGPT_LOGIN_NOTIFICATION_METHODS = frozenset({"account/login/completed"})
+@@ -469,0 +471 @@ class CodexConfig:
++    reserve_chatgpt_login_completion: bool = False
+@@ -583,4 +585,12 @@ class CodexClient:
 -        if self.config.opt_out_notification_methods:
 -            capabilities["optOutNotificationMethods"] = list(
 -                self.config.opt_out_notification_methods
 -            )
++        reserved_notification_methods = (
++            _MANAGED_CHATGPT_LOGIN_NOTIFICATION_METHODS
++            if self.config.reserve_chatgpt_login_completion
++            else ()
++        )
 +        opt_out_notification_methods = [
 +            method
 +            for method in self.config.opt_out_notification_methods
-+            if method not in _SDK_REQUIRED_NOTIFICATION_METHODS
++            if method not in reserved_notification_methods
 +        ]
 +        if opt_out_notification_methods:
 +            capabilities["optOutNotificationMethods"] = opt_out_notification_methods
 diff --git a/sdk/python/tests/test_client_rpc_methods.py b/sdk/python/tests/test_client_rpc_methods.py
-index 0fa11ef..804cb24 100644
+index 0fa11ef..a34e4ef 100644
 --- a/sdk/python/tests/test_client_rpc_methods.py
 +++ b/sdk/python/tests/test_client_rpc_methods.py
 @@ -16 +16 @@ from openai_codex.client import CodexClient, CodexConfig, _params_dict
@@ -77,13 +84,13 @@ index 0fa11ef..804cb24 100644
 +from openai_codex.errors import CodexError, JsonRpcError, TransportClosedError
 @@ -57 +57 @@ def _wait_for_router_waiters(
 -def test_initialize_forwards_exact_notification_opt_out_methods(
-+def test_initialize_forwards_caller_identity_and_reserves_login_completion(
++def test_initialize_preserves_opt_outs_unless_managed_login_reserves_completion(
 @@ -62,2 +62,2 @@ def test_initialize_forwards_exact_notification_opt_out_methods(
 -    def run(methods: tuple[str, ...]) -> None:
 -        client = CodexClient(CodexConfig(opt_out_notification_methods=methods))
 +    def run(config: CodexConfig) -> None:
 +        client = CodexClient(config)
-@@ -79,2 +79,13 @@ def test_initialize_forwards_exact_notification_opt_out_methods(
+@@ -79,2 +79,26 @@ def test_initialize_forwards_exact_notification_opt_out_methods(
 -    run(())
 -    run(("thread/started", "thread/status/changed"))
 +    run(CodexConfig())
@@ -99,13 +106,36 @@ index 0fa11ef..804cb24 100644
 +            ),
 +        )
 +    )
-@@ -82,0 +94,5 @@ def test_initialize_forwards_exact_notification_opt_out_methods(
++    run(
++        CodexConfig(
++            client_name="ay-ple",
++            client_title="AY-PLE",
++            client_version="0.1.0-preview.1",
++            opt_out_notification_methods=(
++                "thread/started",
++                "account/login/completed",
++                "thread/status/changed",
++            ),
++            reserve_chatgpt_login_completion=True,
++        )
++    )
+@@ -82,0 +107,5 @@ def test_initialize_forwards_exact_notification_opt_out_methods(
 +    assert captured[1]["clientInfo"] == {
 +        "name": "ay-ple",
 +        "title": "AY-PLE",
 +        "version": "0.1.0-preview.1",
 +    }
-@@ -113,0 +130,48 @@ def _assert_router_usage_zero(router: MessageRouter) -> None:
+@@ -83,0 +113,9 @@ def test_initialize_forwards_exact_notification_opt_out_methods(
++        "experimentalApi": True,
++        "optOutNotificationMethods": [
++            "thread/started",
++            "account/login/completed",
++            "thread/status/changed",
++        ],
++    }
++    assert captured[2]["clientInfo"] == captured[1]["clientInfo"]
++    assert captured[2]["capabilities"] == {
+@@ -113,0 +152,48 @@ def _assert_router_usage_zero(router: MessageRouter) -> None:
 +def test_login_completion_wait_is_scoped_to_the_exact_attempt() -> None:
 +    client = CodexClient()
 +    client.register_login_notifications("login-wanted")
