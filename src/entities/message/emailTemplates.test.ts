@@ -225,6 +225,17 @@ describe('교수·조교 이메일 정적 템플릿', () => {
     }
   })
 
+  it('감사·후속 후보는 답변을 요구하지 않고 감사 표현을 과도하게 반복하지 않는다', () => {
+    const candidates = emailTemplateCandidatesFor('thanks_followup', reviewInputs.thanks_followup) ?? []
+
+    expect(candidates).toHaveLength(3)
+    for (const candidate of candidates) {
+      expect(candidate.body).not.toContain('확인해 주시면')
+      expect(candidate.body).not.toContain('다시 한번 감사')
+      expect(candidate.body.match(/감사/g) ?? []).toHaveLength(2)
+    }
+  })
+
   it('공유 최대 길이를 넘는 입력은 거절하고 경계 길이는 허용한다', () => {
     for (const [field, maxLength] of Object.entries(emailDraftFieldMaxLengths) as Array<
       [keyof EmailDraftInput, number]

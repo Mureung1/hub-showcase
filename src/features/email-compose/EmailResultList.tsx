@@ -117,7 +117,11 @@ function EmailResultList({ candidates, onCopySucceeded }: EmailResultListProps) 
         const isAllCopyFallback = isSameTarget(fallbackTarget, allCopyTarget)
 
         return (
-          <article className="email-result-card" key={candidate.toneLevel}>
+          <article
+            aria-label={`${candidate.toneLabel} 이메일 후보`}
+            className="email-result-card"
+            key={candidate.toneLevel}
+          >
             <div className="result-meta">
               <span>{candidate.toneLabel}</span>
               {candidateHasPlaceholder && <em>빈칸을 채워주세요</em>}
@@ -151,16 +155,22 @@ function EmailResultList({ candidates, onCopySucceeded }: EmailResultListProps) 
                 const isCopied = isSameTarget(copiedTarget, target)
                 const isFallback = isSameTarget(fallbackTarget, target)
                 const isFailed = isSameTarget(copyFailedTarget, target)
+                const actionLabel = isCopied
+                  ? `${label} 복사됨 ✓`
+                  : isFallback
+                    ? `${label} 텍스트 선택됨`
+                    : isFailed
+                      ? `${label} 복사 실패`
+                      : `${label} 복사`
 
                 return (
-                  <button key={kind} onClick={() => void copyEmailPart(candidate, kind)} type="button">
-                    {isCopied
-                      ? `${label} 복사됨 ✓`
-                      : isFallback
-                        ? `${label} 텍스트 선택됨`
-                        : isFailed
-                          ? `${label} 복사 실패`
-                          : `${label} 복사`}
+                  <button
+                    aria-label={`${candidate.toneLabel} 이메일 ${actionLabel}`}
+                    key={kind}
+                    onClick={() => void copyEmailPart(candidate, kind)}
+                    type="button"
+                  >
+                    {actionLabel}
                   </button>
                 )
               })}

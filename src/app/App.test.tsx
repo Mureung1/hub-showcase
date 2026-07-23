@@ -460,8 +460,8 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: '이메일 3가지 만들기' }))
     await waitFor(() => expect(report).toHaveBeenCalledWith(expect.objectContaining({ eventName: 'result_shown' })))
 
-    fireEvent.click(screen.getAllByRole('button', { name: '제목 복사' })[0])
-    await screen.findByRole('button', { name: '제목 복사됨 ✓' })
+    fireEvent.click(screen.getAllByRole('button', { name: /이메일 제목 복사$/ })[0])
+    await screen.findByRole('button', { name: /이메일 제목 복사됨 ✓$/ })
     fireEvent.click(screen.getByRole('button', { name: '이메일 상황 다시 고르기' }))
 
     expect(report.mock.calls.flatMap(([event]) => event.eventName)).toEqual([
@@ -1272,9 +1272,17 @@ describe('App', () => {
 
     expect(screen.getByRole('heading', { level: 2, name: '어떤 이메일로 보낼까냥?' })).toBeInTheDocument()
     expect(container.querySelectorAll('.email-result-card')).toHaveLength(3)
-    expect(screen.getAllByRole('button', { name: '제목 복사' })).toHaveLength(3)
-    expect(screen.getAllByRole('button', { name: '본문 복사' })).toHaveLength(3)
-    expect(screen.getAllByRole('button', { name: '전체 메일 복사' })).toHaveLength(3)
+    expect(screen.getAllByRole('button', { name: /이메일 제목 복사$/ })).toHaveLength(3)
+    expect(screen.getAllByRole('button', { name: /이메일 본문 복사$/ })).toHaveLength(3)
+    expect(screen.getAllByRole('button', { name: /이메일 전체 메일 복사$/ })).toHaveLength(3)
+    expect(screen.getByRole('article', { name: '정석 이메일 후보' })).toBeInTheDocument()
+    expect(screen.getByRole('article', { name: '더 정중하게 이메일 후보' })).toBeInTheDocument()
+    expect(screen.getByRole('article', { name: '더 간결하게 이메일 후보' })).toBeInTheDocument()
+    for (const toneLabel of ['정석', '더 정중하게', '더 간결하게']) {
+      for (const actionLabel of ['제목 복사', '본문 복사', '전체 메일 복사']) {
+        expect(screen.getByRole('button', { name: `${toneLabel} 이메일 ${actionLabel}` })).toBeInTheDocument()
+      }
+    }
     expect(screen.getByText('정석')).toBeInTheDocument()
     expect(screen.getByText('더 정중하게')).toBeInTheDocument()
     expect(screen.getByText('더 간결하게')).toBeInTheDocument()
@@ -1309,7 +1317,7 @@ describe('App', () => {
 
     render(<App />)
     expect(screen.getByRole('heading', { level: 2, name: '어떤 이메일로 보낼까냥?' })).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: '전체 메일 복사' })).toHaveLength(3)
+    expect(screen.getAllByRole('button', { name: /이메일 전체 메일 복사$/ })).toHaveLength(3)
   })
 
   it('저장된 이메일 결과는 현재 입력과 정적 템플릿으로 다시 계산해 복구한다', () => {
@@ -1474,16 +1482,16 @@ describe('App', () => {
     const subject = resultParts?.[0]?.textContent ?? ''
     const body = resultParts?.[1]?.textContent ?? ''
 
-    fireEvent.click(screen.getAllByRole('button', { name: '제목 복사' })[0])
-    expect(await screen.findByRole('button', { name: '제목 복사됨 ✓' })).toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: /이메일 제목 복사$/ })[0])
+    expect(await screen.findByRole('button', { name: /이메일 제목 복사됨 ✓$/ })).toBeInTheDocument()
     expect(writeText).toHaveBeenNthCalledWith(1, subject)
 
-    fireEvent.click(screen.getAllByRole('button', { name: '본문 복사' })[0])
-    expect(await screen.findByRole('button', { name: '본문 복사됨 ✓' })).toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: /이메일 본문 복사$/ })[0])
+    expect(await screen.findByRole('button', { name: /이메일 본문 복사됨 ✓$/ })).toBeInTheDocument()
     expect(writeText).toHaveBeenNthCalledWith(2, body)
 
-    fireEvent.click(screen.getAllByRole('button', { name: '전체 메일 복사' })[0])
-    expect(await screen.findByRole('button', { name: '전체 메일 복사됨 ✓' })).toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: /이메일 전체 메일 복사$/ })[0])
+    expect(await screen.findByRole('button', { name: /이메일 전체 메일 복사됨 ✓$/ })).toBeInTheDocument()
     expect(writeText).toHaveBeenNthCalledWith(3, `제목: ${subject}\n\n${body}`)
     expect(screen.getByRole('status')).toHaveTextContent('복사했어요.')
   })
@@ -1499,16 +1507,16 @@ describe('App', () => {
     const subject = resultParts?.[0]?.textContent ?? ''
     const body = resultParts?.[1]?.textContent ?? ''
 
-    fireEvent.click(screen.getAllByRole('button', { name: '제목 복사' })[0])
-    expect(await screen.findByRole('button', { name: '제목 텍스트 선택됨' })).toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: /이메일 제목 복사$/ })[0])
+    expect(await screen.findByRole('button', { name: /이메일 제목 텍스트 선택됨$/ })).toBeInTheDocument()
     expect(window.getSelection()?.toString()).toBe(subject)
 
-    fireEvent.click(screen.getAllByRole('button', { name: '본문 복사' })[0])
-    expect(await screen.findByRole('button', { name: '본문 텍스트 선택됨' })).toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: /이메일 본문 복사$/ })[0])
+    expect(await screen.findByRole('button', { name: /이메일 본문 텍스트 선택됨$/ })).toBeInTheDocument()
     expect(window.getSelection()?.toString()).toBe(body)
 
-    fireEvent.click(screen.getAllByRole('button', { name: '전체 메일 복사' })[0])
-    expect(await screen.findByRole('button', { name: '전체 메일 텍스트 선택됨' })).toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: /이메일 전체 메일 복사$/ })[0])
+    expect(await screen.findByRole('button', { name: /이메일 전체 메일 텍스트 선택됨$/ })).toBeInTheDocument()
     expect(window.getSelection()?.toString()).toBe(`제목: ${subject}\n\n${body}`)
     const visibleAllCopySource = firstCard?.querySelector('.email-copy-source--visible')
     expect(visibleAllCopySource).not.toBeNull()
@@ -1531,9 +1539,9 @@ describe('App', () => {
     fillCommonEmailDetails()
     fireEvent.click(screen.getByRole('button', { name: '이메일 3가지 만들기' }))
 
-    fireEvent.click(screen.getAllByRole('button', { name: '전체 메일 복사' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: /이메일 전체 메일 복사$/ })[0])
 
-    expect(await screen.findByRole('button', { name: '전체 메일 복사 실패' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /이메일 전체 메일 복사 실패$/ })).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('복사하지 못했어요.')
   })
 
@@ -1548,7 +1556,7 @@ describe('App', () => {
 
     expect(screen.getAllByText('빈칸을 채워주세요')).toHaveLength(3)
     for (const copyName of ['제목 복사', '본문 복사', '전체 메일 복사']) {
-      fireEvent.click(screen.getAllByRole('button', { name: copyName })[0])
+      fireEvent.click(screen.getAllByRole('button', { name: new RegExp(`이메일 ${copyName}$`) })[0])
       expect(await screen.findByText('복사했어요. 보내기 전에 빈칸을 채워 보내주세요.')).toHaveAttribute(
         'role',
         'status',
