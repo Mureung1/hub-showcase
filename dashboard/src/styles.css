@@ -133,9 +133,8 @@ button {
 
 .card-content {
   display: flex;
-  min-height: 250px;
   flex-direction: column;
-  padding: 18px 18px 16px;
+  padding: 16px 18px 14px;
 }
 
 .card-meta {
@@ -228,8 +227,8 @@ button {
 }
 
 .project-card footer {
-  margin-top: auto;
-  padding-top: 16px;
+  margin-top: 14px;
+  padding-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #e1e7e3;
   color: #687572;
