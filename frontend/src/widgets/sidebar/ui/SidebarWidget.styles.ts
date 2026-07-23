@@ -14,7 +14,6 @@ export const SidebarAside = styled.aside`
   padding: ${({ theme }) => theme.space[5]} ${({ theme }) => theme.space[3]};
   background: ${({ theme }) => theme.components.sidebar.background};
   border-right: 1px solid ${({ theme }) => theme.components.sidebar.border};
-  overflow-y: auto;
 `
 
 export const LogoRow = styled.div`
@@ -50,6 +49,7 @@ export const NavSectionList = styled.nav`
   gap: ${({ theme }) => theme.space[4]};
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
 `
 
 export const NavSectionGroup = styled.div`
@@ -106,6 +106,8 @@ export const WatchlistSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.space[1]};
+  padding-top: ${({ theme }) => theme.space[4]};
+  border-top: 1px solid ${({ theme }) => theme.colors.border.subtle};
 `
 
 export const WatchlistRow = styled.div`

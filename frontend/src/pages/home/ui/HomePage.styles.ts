@@ -19,7 +19,7 @@ export const ContentWrapper = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 760px;
+  max-width: ${({ theme }) => theme.size.content.maxWidth};
   padding: ${({ theme }) => theme.space[12]} ${({ theme }) => theme.space[8]};
 `
 

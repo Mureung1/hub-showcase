@@ -2,7 +2,7 @@ import styled from '@emotion/styled'
 
 export const LayoutRoot = styled.div`
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
   background: ${({ theme }) => theme.colors.background.canvas};
 `
 
