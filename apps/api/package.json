@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase/supabase-js": "2.110.7",
     "@teamflow/shared": "*",
+    "cors": "2.8.6",
     "express": "^5.2.1"
   }
 }

@@ -18,6 +18,15 @@ export const RESOURCE_TYPE = Object.freeze({
   IMAGE: 'image',
 })
 
+export const PROJECT_ICON = Object.freeze({
+  LAYERS: 'layers',
+  ROCKET: 'rocket',
+  CODE: 'code',
+  PALETTE: 'palette',
+  MEGAPHONE: 'megaphone',
+  BOOK: 'book',
+})
+
 export const MEMBER_KIND = Object.freeze({
   MANUAL: 'manual',
   USER: 'user',
@@ -31,6 +40,7 @@ export const INVITATION_STATUS = Object.freeze({
 })
 
 /** @typedef {'not_started' | 'in_progress' | 'completed'} ProjectStatus */
+/** @typedef {'layers' | 'rocket' | 'code' | 'palette' | 'megaphone' | 'book'} ProjectIcon */
 /** @typedef {'not_started' | 'in_progress' | 'in_review' | 'completed'} TaskStatus */
 /** @typedef {'folder' | 'document' | 'link' | 'image'} ResourceType */
 /** @typedef {'manual' | 'user'} MemberKind */
@@ -58,6 +68,7 @@ export const INVITATION_STATUS = Object.freeze({
  * @property {string} name
  * @property {string} description
  * @property {ProjectStatus} status
+ * @property {ProjectIcon} iconKey
  * @property {string} startDate ISO 8601 calendar date
  * @property {string} endDate ISO 8601 calendar date
  * @property {string[]} memberIds
@@ -70,6 +81,7 @@ export const INVITATION_STATUS = Object.freeze({
  * @property {string} name
  * @property {string} description
  * @property {ProjectStatus} status
+ * @property {ProjectIcon} iconKey
  * @property {number} progress
  * @property {Member[]} members
  * @property {string} startDate
@@ -190,6 +202,15 @@ export function isTaskStatus(value) {
  */
 export function isProjectStatus(value) {
   return Object.values(PROJECT_STATUS).includes(value)
+}
+
+/**
+ * Checks whether a value is part of the shared project icon contract.
+ * @param {unknown} value
+ * @returns {value is ProjectIcon}
+ */
+export function isProjectIcon(value) {
+  return Object.values(PROJECT_ICON).includes(value)
 }
 
 /**

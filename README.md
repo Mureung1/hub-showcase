@@ -68,6 +68,10 @@ flowchart LR
 - Express는 JWT를 검증하고 같은 토큰으로 Supabase에 접근합니다. PostgreSQL RLS가 사용자별 데이터 접근을 최종 제한합니다.
 - 게스트는 인증 없이 `/api/demo`의 활성 데모 데이터만 조회할 수 있으며 변경 작업은 웹 Repository에서 차단됩니다.
 
+배포 환경에서는 React + Vite 웹을 Vercel에, Express API를 Render에 각각
+배포합니다. Supabase는 기존처럼 Google Auth와 PostgreSQL/RLS를 담당합니다.
+로컬에서는 Vite 프록시를 유지하므로 개발 실행 방식은 바뀌지 않습니다.
+
 ## Workspace
 
 - `apps/web`: React + Vite 프론트엔드
@@ -153,9 +157,16 @@ npm.cmd test
 npm.cmd run build
 ```
 
+## 배포
+
+배포 순서와 필요한 환경변수는 [Vercel + Render 배포 가이드](./docs/deployment.md)를
+따릅니다. 실제 키 값은 Vercel·Render Dashboard에만 입력하고 저장소에는
+커밋하지 않습니다.
+
 ## 프로젝트 문서
 
 - [기획서](./docs/plan.md)
 - [아키텍처 설명서](./docs/architecture.md)
 - [API 명세서](./docs/api.md)
+- [배포 가이드](./docs/deployment.md)
 - [2주차 주간 개발 계획](https://github.com/connect-AIAgentChallenge-26-1/hub/issues/700)

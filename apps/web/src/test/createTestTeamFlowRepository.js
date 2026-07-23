@@ -38,6 +38,7 @@ export const testTeamFlowRepository = {
       id: nextId('project'),
       memberIds: [CURRENT_USER_ID],
       creatorId: CURRENT_USER_ID,
+      iconKey: 'layers',
       ...input,
     })
   },

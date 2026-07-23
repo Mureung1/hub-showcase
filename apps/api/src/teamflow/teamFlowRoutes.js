@@ -1,6 +1,6 @@
 import { Router } from 'express'
 
-import { RESOURCE_TYPE, isProjectStatus, isResourceType, isTaskStatus } from '@teamflow/shared'
+import { RESOURCE_TYPE, isProjectIcon, isProjectStatus, isResourceType, isTaskStatus } from '@teamflow/shared'
 
 import { createAuthenticationMiddleware } from '../lib/auth.js'
 import {
@@ -41,7 +41,7 @@ function validHttpUrl(value) {
 function validateProject(body, { partial = false } = {}) {
   const value = {}
   const fields = {}
-  const keys = ['name', 'description', 'status', 'startDate', 'endDate']
+  const keys = ['name', 'description', 'status', 'startDate', 'endDate', 'iconKey']
   const included = keys.filter((key) => hasOwn(body, key))
   if (partial && included.length === 0) fields.body = '수정할 프로젝트 정보를 입력해 주세요.'
 
@@ -64,6 +64,10 @@ function validateProject(body, { partial = false } = {}) {
   if (!partial || hasOwn(body, 'endDate')) {
     value.endDate = body?.endDate ?? ''
     if (!calendarDate(value.endDate, true)) fields.endDate = '종료일을 확인해 주세요.'
+  }
+  if (hasOwn(body, 'iconKey')) {
+    value.iconKey = body.iconKey
+    if (!isProjectIcon(value.iconKey)) fields.iconKey = '프로젝트 아이콘을 확인해 주세요.'
   }
   if (
     hasOwn(value, 'startDate')

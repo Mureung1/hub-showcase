@@ -1,12 +1,125 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import { MarkdownPreview } from './notes/MarkdownPreview.jsx'
 import { testTeamFlowRepository } from '../test/createTestTeamFlowRepository.js'
 import { renderAuthenticatedApp as renderApp } from '../test/renderTeamFlowApp.jsx'
 
 describe('connected prototype flows', () => {
+  test('opens account details and restores focus when the panel closes', async () => {
+    const user = userEvent.setup()
+    renderApp('/projects/1')
+    expect(await screen.findByRole('heading', { name: '팀플 관리 웹서비스 (TeamFlow)' })).toBeInTheDocument()
+
+    const trigger = screen.getByRole('button', { name: '테스트 사용자 계정 메뉴' })
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+
+    await user.click(trigger)
+    const dialog = screen.getByRole('dialog', { name: '계정 및 설정' })
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(within(dialog).getByText('테스트 사용자')).toBeInTheDocument()
+    expect(within(dialog).getByText('tester@example.com')).toBeInTheDocument()
+    expect(within(dialog).getByText('Google')).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: /받은 프로젝트 초대.*0건/ })).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: '계정 및 설정' })).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: '사이드바 접기' }))
+    await user.click(screen.getByRole('button', { name: '테스트 사용자 계정 메뉴' }))
+    expect(screen.getByRole('dialog', { name: '계정 및 설정' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('heading', { name: '팀플 관리 웹서비스 (TeamFlow)' }))
+    expect(screen.queryByRole('dialog', { name: '계정 및 설정' })).not.toBeInTheDocument()
+  })
+
+  test('opens received invitations from the account panel', async () => {
+    const user = userEvent.setup()
+    const payload = await testTeamFlowRepository.load()
+    const repository = {
+      ...testTeamFlowRepository,
+      load: async () => ({
+        ...payload,
+        invitations: [{
+          id: 'received-invitation',
+          projectId: 'shared-project',
+          projectName: '초대받은 프로젝트',
+          inviteeEmail: 'tester@example.com',
+          inviterName: '초대한 사용자',
+          status: 'pending',
+          direction: 'received',
+        }],
+      }),
+    }
+    renderApp('/projects/1', repository)
+    expect(await screen.findByRole('heading', { name: '팀플 관리 웹서비스 (TeamFlow)' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '테스트 사용자 계정 메뉴' }))
+    await user.click(within(screen.getByRole('dialog', { name: '계정 및 설정' })).getByRole('button', { name: /받은 프로젝트 초대.*1건/ }))
+
+    expect(await screen.findByRole('heading', { name: '내 프로젝트' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '받은 프로젝트 초대' })).toBeInTheDocument()
+    expect(screen.getByText('초대받은 프로젝트')).toBeInTheDocument()
+  })
+
+  test('keeps project sidebar controls within dedicated touch targets', async () => {
+    const user = userEvent.setup()
+    renderApp('/projects/1')
+    expect(await screen.findByRole('heading', { name: '팀플 관리 웹서비스 (TeamFlow)' })).toBeInTheDocument()
+
+    const collapseButton = screen.getByRole('button', { name: '사이드바 접기' })
+    const logoutButton = screen.getByRole('button', { name: '로그아웃' })
+    expect(getComputedStyle(collapseButton).width).toBe('40px')
+    expect(getComputedStyle(collapseButton).height).toBe('40px')
+    expect(getComputedStyle(logoutButton).width).toBe('36px')
+    expect(getComputedStyle(logoutButton).height).toBe('36px')
+
+    await user.click(collapseButton)
+    expect(screen.getByRole('button', { name: '사이드바 펼치기' })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: '로그아웃' })).toBeInTheDocument()
+    expect(screen.queryByText('테스트 사용자')).not.toBeInTheDocument()
+  })
+
+  test('keeps the priority task card at the fully expanded panel height and shows empty panels', async () => {
+    const user = userEvent.setup()
+    const payload = await testTeamFlowRepository.load()
+    const repository = {
+      ...testTeamFlowRepository,
+      load: async () => ({
+        ...payload,
+        notes: payload.notes.filter((note) => note.projectId !== '1'),
+        resources: payload.resources.filter((resource) => resource.projectId !== '1'),
+      }),
+    }
+    const rectSpy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      bottom: 444,
+      height: 444,
+      left: 0,
+      right: 0,
+      top: 0,
+      width: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    })
+
+    try {
+      renderApp('/projects/1', repository)
+      expect(await screen.findByText('공유 노트가 없습니다.')).toBeInTheDocument()
+      expect(screen.getByText('등록된 자료가 없습니다.')).toBeInTheDocument()
+
+      const tasksCard = screen.getByRole('heading', { name: '우선 할 일' }).closest('section')
+      await waitFor(() => expect(tasksCard.style.getPropertyValue('--dashboard-expanded-side-height')).toBe('444px'))
+
+      await user.click(screen.getByRole('button', { name: /공유 노트.*0개/ }))
+      expect(tasksCard.style.getPropertyValue('--dashboard-expanded-side-height')).toBe('444px')
+    } finally {
+      rectSpy.mockRestore()
+    }
+  })
+
   test('validates and updates the project period across dashboard and project list', async () => {
     const user = userEvent.setup()
     renderApp('/projects/1')

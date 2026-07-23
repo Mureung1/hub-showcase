@@ -3,7 +3,10 @@
 
 :root {
   color-scheme: light;
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Pretendard', 'SFMono-Regular', Consolas, monospace;
+
+  font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 
@@ -27,7 +30,6 @@
   --color-status-completed-background: #e8f5ee;
   --color-status-completed-text: #1a6040;
 
-  --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
   --sidebar-width: 220px;
   --content-max-width: 920px;
   --radius-sm: 6px;

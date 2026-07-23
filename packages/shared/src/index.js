@@ -1,11 +1,13 @@
 export {
   PROJECT_STATUS,
+  PROJECT_ICON,
   INVITATION_STATUS,
   MEMBER_KIND,
   RESOURCE_TYPE,
   TASK_STATUS,
   calculateProgress,
   isProjectStatus,
+  isProjectIcon,
   isInvitationStatus,
   isMemberKind,
   isResourceType,

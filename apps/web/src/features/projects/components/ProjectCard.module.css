@@ -12,11 +12,37 @@
 }
 
 .cardButton { display: block; width: 100%; padding: 16px; border: 0; border-radius: inherit; background: transparent; color: inherit; text-align: left; }
-.settingsButton { position: absolute; right: 12px; bottom: 11px; display: grid; width: 30px; height: 30px; place-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--color-text-secondary); opacity: 0; transition: background .15s ease, color .15s ease, opacity .15s ease; }
+.settingsButton { position: absolute; z-index: 2; right: 16px; bottom: 16px; display: grid; width: 28px; height: 28px; place-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--color-text-secondary); opacity: .72; transition: background .15s ease, color .15s ease, opacity .15s ease; }
 .card:hover .settingsButton,
 .settingsButton:focus-visible { opacity: 1; }
 .settingsButton:hover { background: var(--color-surface-sunken); color: var(--color-accent); }
 .cardButtonWithSettings .period { padding-right: 34px; }
+
+.projectIconButton {
+  position: absolute;
+  z-index: 2;
+  top: 16px;
+  left: 16px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+
+.projectIconButton:hover {
+  box-shadow: 0 0 0 2px rgb(61 74 99 / 16%);
+  transform: translateY(-1px);
+}
+
+.projectIconButton:focus-visible {
+  outline-offset: 3px;
+}
 
 .card:hover {
   border-color: var(--color-border-strong);

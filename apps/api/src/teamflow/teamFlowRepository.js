@@ -1,3 +1,5 @@
+import { PROJECT_ICON } from '@teamflow/shared'
+
 const MEMBER_COLUMNS = [
   'id',
   'project_id',
@@ -19,6 +21,7 @@ const PROJECT_COLUMNS = [
   'name',
   'description',
   'status',
+  'icon_key',
   'start_date',
   'end_date',
 ].join(',')
@@ -140,6 +143,7 @@ function mapProject(row, memberIds) {
     name: row.name,
     description: row.description ?? '',
     status: row.status,
+    iconKey: row.icon_key ?? PROJECT_ICON.LAYERS,
     startDate: row.start_date ?? '',
     endDate: row.end_date ?? '',
     ...(memberIds ? { memberIds } : {}),
@@ -396,6 +400,7 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
       if (hasOwn(patch, 'name')) databasePatch.name = patch.name
       if (hasOwn(patch, 'description')) databasePatch.description = patch.description || ''
       if (hasOwn(patch, 'status')) databasePatch.status = patch.status
+      if (hasOwn(patch, 'iconKey')) databasePatch.icon_key = patch.iconKey
       if (hasOwn(patch, 'startDate')) databasePatch.start_date = patch.startDate || null
       if (hasOwn(patch, 'endDate')) databasePatch.end_date = patch.endDate || null
 

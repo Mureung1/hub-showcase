@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: teamflow-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm run start --workspace @teamflow/api
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/shared/**
+        - package.json
+        - package-lock.json
+        - .nvmrc
+    envVars:
+      - key: TEAMFLOW_SUPABASE_URL
+        sync: false
+      - key: TEAMFLOW_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: TEAMFLOW_ALLOWED_ORIGINS
+        sync: false

@@ -18,6 +18,7 @@ const project = {
   name: '실제 프로젝트',
   description: '',
   status: 'in_progress',
+  iconKey: 'layers',
   startDate: '2026-07-21',
   endDate: '2026-07-31',
   memberIds: [memberId],
@@ -219,6 +220,13 @@ test('projects can be fully updated and deleted', async () => {
   })
   assert.equal(updateResponse.status, 200)
   assert.equal((await updateResponse.json()).project.name, '수정 프로젝트')
+
+  const iconResponse = await request(`/api/projects/${projectId}`, {
+    method: 'PATCH', body: { iconKey: 'rocket' },
+  })
+  assert.equal(iconResponse.status, 200)
+  assert.equal((await iconResponse.json()).project.iconKey, 'rocket')
+  assert.equal((await request(`/api/projects/${projectId}`, { method: 'PATCH', body: { iconKey: 'unknown' } })).status, 400)
 
   const invalidPeriod = await request(`/api/projects/${projectId}`, {
     method: 'PATCH', body: { startDate: '2026-08-01', endDate: '2026-07-31' },

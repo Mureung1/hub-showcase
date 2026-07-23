@@ -40,8 +40,8 @@ describe('project overview', () => {
     await user.type(screen.getByLabelText(/설명/), '세션 상태 연동 확인')
     await user.click(screen.getByRole('button', { name: '프로젝트 만들기' }))
 
-    const cardTitle = await screen.findByRole('heading', { name: '테스트 프로젝트' })
-    await user.click(cardTitle.closest('button'))
+    await screen.findByRole('heading', { name: '테스트 프로젝트' })
+    await user.click(screen.getByRole('button', { name: '테스트 프로젝트 프로젝트 열기' }))
     expect(await screen.findByRole('heading', { name: '테스트 프로젝트' })).toBeInTheDocument()
   })
 
@@ -54,5 +54,20 @@ describe('project overview', () => {
       />,
     )
     expect(screen.getByRole('progressbar', { name: '경계값 프로젝트 진행률' })).toHaveAttribute('aria-valuenow', '100')
+  })
+
+  test('changes the project icon without opening the project', async () => {
+    const user = userEvent.setup()
+    renderApp()
+    await screen.findByRole('heading', { name: '내 프로젝트' })
+
+    await user.click(screen.getByRole('button', { name: /TeamFlow.*프로젝트 아이콘 변경/ }))
+    const dialog = screen.getByRole('dialog', { name: '프로젝트 아이콘 변경' })
+    expect(dialog).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '로켓' }))
+    await waitFor(() => expect(dialog).not.toBeInTheDocument())
+    expect(screen.getByRole('heading', { name: '내 프로젝트' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /TeamFlow.*현재 로켓/ })).toBeInTheDocument()
   })
 })

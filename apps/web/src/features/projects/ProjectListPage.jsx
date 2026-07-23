@@ -3,9 +3,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { ProjectCard } from './components/ProjectCard.jsx'
+import { ProjectIconPicker } from './components/ProjectIconPicker.jsx'
 import { ProjectSettingsModal } from './components/ProjectSettingsModal.jsx'
 import { useTeamFlow } from '../../state/useTeamFlow.js'
-import { selectProjectSummaries } from '../../state/selectors.js'
+import { selectProjectSummaries, selectReceivedInvitations } from '../../state/selectors.js'
 import styles from './ProjectListPage.module.css'
 
 /**
@@ -14,6 +15,7 @@ import styles from './ProjectListPage.module.css'
 export function ProjectListPage() {
   const [query, setQuery] = useState('')
   const [settingsProjectId, setSettingsProjectId] = useState(null)
+  const [iconProjectId, setIconProjectId] = useState(null)
   const [pendingInvitationId, setPendingInvitationId] = useState(null)
   const [invitationError, setInvitationError] = useState('')
   const { state, capabilities, readOnly, actions } = useTeamFlow()
@@ -24,10 +26,9 @@ export function ProjectListPage() {
     return selectProjectSummaries(state).filter((project) =>
       !normalized || project.name.toLocaleLowerCase('ko-KR').includes(normalized) || project.description.toLocaleLowerCase('ko-KR').includes(normalized))
   }, [query, state])
-  const receivedInvitations = useMemo(() => (state.invitations ?? []).filter((invitation) => (
-    invitation.status === 'pending' && invitation.direction !== 'sent'
-  )), [state.invitations])
+  const receivedInvitations = useMemo(() => selectReceivedInvitations(state), [state])
   const settingsProject = state.projects.find((project) => project.id === settingsProjectId) ?? null
+  const iconProject = state.projects.find((project) => project.id === iconProjectId) ?? null
 
   useEffect(() => {
     if (!readOnly) void reloadOnEntry().catch(() => {})
@@ -67,7 +68,7 @@ export function ProjectListPage() {
       </header>
 
       {!readOnly && receivedInvitations.length > 0 ? (
-        <section className={styles.invitationPanel} aria-labelledby="received-invitations-title">
+        <section id="received-invitations" className={styles.invitationPanel} aria-labelledby="received-invitations-title">
           <div className={styles.invitationHeading}>
             <div><h2 id="received-invitations-title">받은 프로젝트 초대</h2><p>초대를 수락하면 같은 프로젝트에서 바로 협업할 수 있습니다.</p></div>
             <span>{receivedInvitations.length}건</span>
@@ -98,12 +99,19 @@ export function ProjectListPage() {
         {projects.length > 0 ? (
           <div className={styles.grid}>
             {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} onSelect={() => navigate(`/projects/${project.id}`)} onSettings={capabilities.projects ? () => setSettingsProjectId(project.id) : undefined} />
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onSelect={() => navigate(`/projects/${project.id}`)}
+                onIconChange={capabilities.projects ? () => setIconProjectId(project.id) : undefined}
+                onSettings={capabilities.projects ? () => setSettingsProjectId(project.id) : undefined}
+              />
             ))}
           </div>
         ) : null}
       </div>
       {settingsProject && capabilities.projects ? <ProjectSettingsModal project={settingsProject} onClose={() => setSettingsProjectId(null)} /> : null}
+      {iconProject && capabilities.projects ? <ProjectIconPicker project={iconProject} onClose={() => setIconProjectId(null)} /> : null}
     </section>
   )
 }

@@ -6,6 +6,33 @@ export class TeamFlowApiError extends Error {
   }
 }
 
+function normalizeApiBaseUrl(value = '') {
+  const candidate = value.trim()
+  if (!candidate) return ''
+
+  let url
+  try {
+    url = new URL(candidate)
+  } catch {
+    throw new TeamFlowApiError('TeamFlow API 주소가 올바르지 않습니다.', 'INVALID_API_URL')
+  }
+
+  if (!['http:', 'https:'].includes(url.protocol)
+    || url.username
+    || url.password
+    || url.search
+    || url.hash
+    || (url.pathname !== '/' && url.pathname !== '')) {
+    throw new TeamFlowApiError('TeamFlow API 주소에는 http(s) origin만 사용할 수 있습니다.', 'INVALID_API_URL')
+  }
+
+  return url.origin
+}
+
+function apiUrl(baseUrl, path) {
+  return `${baseUrl}${path}`
+}
+
 async function readJson(response, fallbackMessage) {
   let payload
   try {
@@ -33,8 +60,11 @@ async function requestJson(fetchImpl, url, options, fallbackMessage) {
 export function createApiTeamFlowRepository({
   fetchImpl = globalThis.fetch,
   getAccessToken,
+  apiBaseUrl = '',
 } = {}) {
-  async function authenticatedRequest(url, options, fallbackMessage) {
+  const baseUrl = normalizeApiBaseUrl(apiBaseUrl)
+
+  async function authenticatedRequest(path, options, fallbackMessage) {
     const token = await getAccessToken?.()
     if (!token) throw new TeamFlowApiError('로그인이 만료되었습니다. 다시 로그인해 주세요.', 'AUTH_REQUIRED')
     const headers = {
@@ -42,7 +72,7 @@ export function createApiTeamFlowRepository({
       ...(options?.body ? { 'content-type': 'application/json' } : {}),
       ...options?.headers,
     }
-    return requestJson(fetchImpl, url, { ...options, headers }, fallbackMessage)
+    return requestJson(fetchImpl, apiUrl(baseUrl, path), { ...options, headers }, fallbackMessage)
   }
 
   return {
@@ -193,12 +223,16 @@ export function createApiTeamFlowRepository({
   }
 }
 
-export function createDemoTeamFlowRepository({ fetchImpl = globalThis.fetch } = {}) {
+export function createDemoTeamFlowRepository({
+  fetchImpl = globalThis.fetch,
+  apiBaseUrl = '',
+} = {}) {
+  const baseUrl = normalizeApiBaseUrl(apiBaseUrl)
   const readOnly = () => Promise.reject(new TeamFlowApiError('게스트 모드에서는 내용을 변경할 수 없습니다.', 'READ_ONLY'))
   return {
     refreshOnEntry: false,
     async load() {
-      return requestJson(fetchImpl, '/api/demo', undefined, '게스트 데모를 불러오지 못했습니다.')
+      return requestJson(fetchImpl, apiUrl(baseUrl, '/api/demo'), undefined, '게스트 데모를 불러오지 못했습니다.')
     },
     createProject: readOnly,
     updateProject: readOnly,
