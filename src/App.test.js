@@ -1,6 +1,21 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import App from "./App";
 
+let mockAuthUser = null;
+
+jest.mock("./supabaseClient", () => ({
+  supabase: {
+    auth: {
+      getSession: async () => ({ data: { session: mockAuthUser ? { user: mockAuthUser, access_token: "test-token" } : null } }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      signOut: async () => ({ error: null }),
+      signInWithPassword: jest.fn(),
+      signUp: jest.fn(),
+    },
+  },
+  toAppUser: (user) => user ? { id: user.id, email: user.email, name: user.user_metadata?.display_name || user.email } : null,
+}));
+
 test("실제 장소 검색을 위한 빈 지도 화면을 표시한다", () => {
   window.history.pushState({}, "", "/");
   render(<App />);
@@ -62,8 +77,9 @@ test("로그인 사용자는 별점 없이 영수증 리뷰 작성 화면을 이
   const originalFetch = global.fetch;
   global.fetch = jest.fn().mockResolvedValue({
     ok: true,
-    json: async () => ({ user: { id: "user-1", name: "테스터", email: "test@example.com" } }),
+    json: async () => ({ analysis: { bucket: "very_positive", score: 1, confidence: 0.98, keywords: ["맛있음"] } }),
   });
+  mockAuthUser = { id: "user-1", email: "test@example.com", user_metadata: { display_name: "테스터" } };
   sessionStorage.setItem("jigeum-review:selected-place", JSON.stringify({
     id: "place-1",
     title: "테스트 카페",
@@ -77,9 +93,12 @@ test("로그인 사용자는 별점 없이 영수증 리뷰 작성 화면을 이
   expect(screen.getByLabelText("리뷰 내용")).toBeInTheDocument();
   expect(screen.queryByLabelText(/별점/)).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "작성 내용 임시 저장" }));
-  expect(screen.getByRole("alert")).toHaveTextContent("영수증 이미지를 선택");
+  fireEvent.change(screen.getByLabelText("리뷰 내용"), { target: { value: "음식이 정말 맛있고 다음에도 다시 방문하고 싶어요." } });
+  fireEvent.click(screen.getByRole("button", { name: "텍스트 테스트 분석" }));
+  expect(await screen.findByRole("status")).toHaveTextContent("매우 좋음");
 
   global.fetch = originalFetch;
+  mockAuthUser = null;
   sessionStorage.removeItem("jigeum-review:selected-place");
+  localStorage.removeItem("jigeum-review:test-analyses");
 });

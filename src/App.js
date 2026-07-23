@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { Badge, Button, SearchField } from "./components/ui";
+import { supabase, toAppUser } from "./supabaseClient";
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const KAKAO_MAP_KEY = process.env.REACT_APP_KAKAO_MAP_JAVASCRIPT_KEY;
@@ -9,15 +10,52 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL
 const PLACE_STORAGE_KEY = "jigeum-review:selected-place";
 const MAP_SCREEN_STORAGE_KEY = "jigeum-review:map-screen";
 const AUTH_RETURN_STORAGE_KEY = "jigeum-review:auth-return";
+const HOME_GPS_STORAGE_KEY = "jigeum-review:home-gps";
+const TEST_ANALYSIS_STORAGE_KEY = "jigeum-review:test-analyses";
+const SENTIMENT_LABELS = {
+  very_positive: "매우 좋음",
+  positive: "좋음",
+  neutral: "보통",
+  negative: "아쉬움",
+  very_negative: "매우 아쉬움",
+};
+
+function loadTestAnalyses(placeId) {
+  try {
+    const entries = JSON.parse(localStorage.getItem(TEST_ANALYSIS_STORAGE_KEY)) || [];
+    return entries.filter((entry) => entry.placeId === placeId);
+  } catch {
+    return [];
+  }
+}
+
+function saveTestAnalysis(entry) {
+  let entries = [];
+  try { entries = JSON.parse(localStorage.getItem(TEST_ANALYSIS_STORAGE_KEY)) || []; } catch { entries = []; }
+  localStorage.setItem(TEST_ANALYSIS_STORAGE_KEY, JSON.stringify([...entries, entry]));
+}
 
 function loadMapScreenState() {
   try { return JSON.parse(sessionStorage.getItem(MAP_SCREEN_STORAGE_KEY)) || {}; } catch { return {}; }
 }
 
+function resetAndGoHome(event) {
+  event?.preventDefault();
+  sessionStorage.removeItem(PLACE_STORAGE_KEY);
+  sessionStorage.removeItem(MAP_SCREEN_STORAGE_KEY);
+  sessionStorage.removeItem(AUTH_RETURN_STORAGE_KEY);
+  sessionStorage.setItem(HOME_GPS_STORAGE_KEY, "true");
+  window.location.assign("/");
+}
+
 async function apiRequest(path, options = {}) {
+  const { data: { session } } = await supabase.auth.getSession();
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      ...(options.headers || {}),
+    },
     ...options,
   });
   const payload = await response.json();
@@ -78,10 +116,20 @@ function App() {
   });
 
   useEffect(() => {
-    apiRequest("/api/auth/me").then(({ user: nextUser }) => setUser(nextUser)).catch(() => setUser(null)).finally(() => setAuthStatus("ready"));
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(toAppUser(data.session?.user));
+      setAuthStatus("ready");
+    });
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(toAppUser(session?.user));
+      setAuthStatus("ready");
+    });
     const handlePopState = () => setRoute(getRoute());
     window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    return () => {
+      authListener.subscription.unsubscribe();
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, []);
 
   function navigate(path) {
@@ -113,7 +161,7 @@ function App() {
   }
 
   async function logout() {
-    await apiRequest("/api/auth/logout", { method: "POST", body: "{}" });
+    await supabase.auth.signOut();
     setUser(null);
     navigate("/");
   }
@@ -156,7 +204,9 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
   const [placeError, setPlaceError] = useState(() => restoredStateRef.current.placeError || "");
   const [selectedPlaceId, setSelectedPlaceId] = useState(() => restoredStateRef.current.selectedPlaceId || "");
   const [searchRadius, setSearchRadius] = useState(() => restoredStateRef.current.searchRadius || 5000);
+  const [searchScope, setSearchScope] = useState(() => restoredStateRef.current.searchScope || "nearby");
   const [locationStatus, setLocationStatus] = useState("idle");
+  const [suggestions, setSuggestions] = useState([]);
 
   useEffect(() => {
     if (!KAKAO_MAP_KEY || !mapElementRef.current) return;
@@ -169,6 +219,24 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
       map.addControl(new maps.ZoomControl(), maps.ControlPosition.RIGHT);
       mapRef.current = map;
       setMapStatus("ready");
+      if (sessionStorage.getItem(HOME_GPS_STORAGE_KEY) === "true") {
+        sessionStorage.removeItem(HOME_GPS_STORAGE_KEY);
+        if (navigator.geolocation) {
+          setLocationStatus("loading");
+          navigator.geolocation.getCurrentPosition(
+            ({ coords }) => {
+              map.setCenter(new maps.LatLng(coords.latitude, coords.longitude));
+              map.setLevel(4);
+              setLocationStatus("ready");
+            },
+            () => {
+              setLocationStatus("error");
+              setPlaceError("현재 위치 권한을 허용하면 내 주변에서 검색할 수 있습니다.");
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+          );
+        }
+      }
     }).catch((error) => { if (mounted) { setMapStatus("error"); setMapError(error.message); } });
     return () => { mounted = false; };
   }, []);
@@ -176,6 +244,27 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
   useEffect(() => {
     if (resultsRef.current) resultsRef.current.scrollTop = restoredStateRef.current.resultsScrollTop || 0;
   }, []);
+
+  useEffect(() => {
+    const query = searchInput.trim();
+    if (query.length < 2 || mapStatus !== "ready" || !mapRef.current) {
+      setSuggestions([]);
+      return undefined;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const center = mapRef.current.getCenter();
+        const params = new URLSearchParams({ query, size: "5", x: String(center.getLng()), y: String(center.getLat()), radius: "20000" });
+        let payload = await apiRequest(`/api/kakao/local?${params.toString()}`);
+        if (!(payload.items || []).length) payload = await apiRequest(`/api/kakao/local?${new URLSearchParams({ query, size: "5" }).toString()}`);
+        if (!cancelled) setSuggestions((payload.items || []).map(normalizePlace));
+      } catch {
+        if (!cancelled) setSuggestions([]);
+      }
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [searchInput, mapStatus]);
 
   function openPlaceAndPreserveMap(place) {
     const mapCenter = mapRef.current?.getCenter();
@@ -186,6 +275,7 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
       placeError,
       selectedPlaceId: place.id,
       searchRadius,
+      searchScope,
       resultsScrollTop: resultsRef.current?.scrollTop || 0,
       viewport: mapCenter ? {
         center: { lat: mapCenter.getLat(), lng: mapCenter.getLng() },
@@ -212,11 +302,10 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
     });
   }, [places, selectedPlaceId, mapStatus]);
 
-  async function handleSearchSubmit(event) {
-    event.preventDefault();
-    const query = searchInput.trim();
+  async function searchPlaces(queryValue) {
+    const query = queryValue.trim();
     if (!query) return;
-    setPlaceStatus("loading"); setPlaceError(""); setSelectedPlaceId("");
+    setSearchInput(query); setSuggestions([]); setPlaceStatus("loading"); setPlaceError(""); setSelectedPlaceId("");
     try {
       if (!mapRef.current) throw new Error("지도가 준비된 뒤 다시 검색해 주세요.");
       const center = mapRef.current.getCenter();
@@ -227,10 +316,23 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
       ))));
       setSearchRadius(radius);
       const params = new URLSearchParams({ query, size: "15", x: String(center.getLng()), y: String(center.getLat()), radius: String(radius), sort: "distance" });
-      const payload = await apiRequest(`/api/kakao/local?${params.toString()}`, { headers: {} });
-      const nextPlaces = (payload.items || []).map(normalizePlace);
+      let payload = await apiRequest(`/api/kakao/local?${params.toString()}`, { headers: {} });
+      let nextPlaces = (payload.items || []).map(normalizePlace);
+      if (!nextPlaces.length) {
+        const fallbackParams = new URLSearchParams({ query, size: "15", sort: "accuracy" });
+        payload = await apiRequest(`/api/kakao/local?${fallbackParams.toString()}`, { headers: {} });
+        nextPlaces = (payload.items || []).map(normalizePlace);
+        setSearchScope("all");
+      } else {
+        setSearchScope("nearby");
+      }
       setPlaces(nextPlaces); setSelectedPlaceId(""); setPlaceStatus("ready");
     } catch (error) { setPlaces([]); setPlaceStatus("error"); setPlaceError(error.message); }
+  }
+
+  function handleSearchSubmit(event) {
+    event.preventDefault();
+    searchPlaces(searchInput);
   }
 
   function moveToCurrentLocation() {
@@ -257,9 +359,9 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
 
   return (
     <main className="map-screen">
-      <header className="top-nav"><strong className="top-nav__brand">지금리뷰</strong><span>영수증 인증 리뷰 지도</span><AccountControl {...accountProps} /></header>
+      <header className="top-nav"><a className="top-nav__brand brand-home-link" href="/" onClick={resetAndGoHome}>지금리뷰</a><span>영수증 인증 리뷰 지도</span><AccountControl {...accountProps} /></header>
       <aside className="place-sidebar">
-        <div className="sidebar-search"><h1>어디를 찾으세요?</h1><p>현재 보고 있는 지도 주변의 식당과 카페를 검색합니다.</p><SearchField value={searchInput} onChange={(event) => setSearchInput(event.target.value)} onClear={() => setSearchInput("")} onSubmit={handleSearchSubmit} /><div className="search-scope"><span>지도 중심에서 약 {(searchRadius / 1000).toFixed(searchRadius < 1000 ? 1 : 0)}km 이내</span><button onClick={moveToCurrentLocation} type="button">{locationStatus === "loading" ? "위치 확인 중..." : "◎ 내 위치"}</button></div></div>
+        <div className="sidebar-search"><h1>어디를 찾으세요?</h1><p>현재 보고 있는 지도 주변을 먼저 검색하고, 결과가 없으면 전체 지역에서 찾습니다.</p><div className="search-autocomplete"><SearchField value={searchInput} onChange={(event) => setSearchInput(event.target.value)} onClear={() => { setSearchInput(""); setSuggestions([]); }} onSubmit={handleSearchSubmit} />{suggestions.length > 0 && <div aria-label="장소 자동완성" className="search-suggestions">{suggestions.map((place) => <button key={place.id} onClick={() => searchPlaces(place.title)} type="button"><strong>{place.title}</strong><span>{place.category} · {place.address || "주소 정보 없음"}</span></button>)}</div>}</div><div className="search-scope"><span>{searchScope === "all" ? "주변 결과가 없어 전체 지역에서 찾았어요" : `지도 중심에서 약 ${(searchRadius / 1000).toFixed(searchRadius < 1000 ? 1 : 0)}km 이내`}</span><button onClick={moveToCurrentLocation} type="button">{locationStatus === "loading" ? "위치 확인 중..." : "◎ 내 위치"}</button></div></div>
         <div className={`place-results place-results--${placeStatus} ${places.length ? "has-results" : ""}`} aria-live="polite" ref={resultsRef}>
           {placeStatus === "ready" && places.length > 0 && <div className="place-results__header"><strong>검색 결과</strong><span>{places.length}곳</span></div>}
           {placeStatus === "idle" && <div className="empty-search"><strong>검색 결과가 여기에 표시됩니다</strong><span>식당이나 카페 이름을 입력해 주세요.</span></div>}
@@ -284,8 +386,24 @@ function AuthPage({ user, onAuthenticated, onBack }) {
   async function submit(event) {
     event.preventDefault(); setStatus("loading"); setError("");
     try {
-      const payload = await apiRequest(`/api/auth/${mode === "login" ? "login" : "signup"}`, { method: "POST", body: JSON.stringify(form) });
-      onAuthenticated(payload.user);
+      if (mode === "login") {
+        const { data, error: authError } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
+        if (authError) throw authError;
+        onAuthenticated(toAppUser(data.user));
+      } else {
+        const { data, error: authError } = await supabase.auth.signUp({
+          email: form.email,
+          password: form.password,
+          options: { data: { display_name: form.name.trim() } },
+        });
+        if (authError) throw authError;
+        if (!data.session) {
+          setError("가입 확인 메일을 보냈습니다. 이메일 인증 후 로그인해 주세요.");
+          setStatus("idle");
+          return;
+        }
+        onAuthenticated(toAppUser(data.user));
+      }
     } catch (submitError) { setError(submitError.message); setStatus("idle"); }
   }
 
@@ -293,7 +411,7 @@ function AuthPage({ user, onAuthenticated, onBack }) {
     <main className="auth-page">
       <button className="auth-back" onClick={onBack} type="button">← 지도로 돌아가기</button>
       <section className="auth-card">
-        <div className="auth-brand"><span>지금리뷰</span><h1>{mode === "login" ? "다시 만나서 반가워요" : "신뢰할 수 있는 리뷰를 시작해요"}</h1><p>방문이 인증된 리뷰로 더 좋은 장소를 함께 발견합니다.</p></div>
+        <div className="auth-brand"><a className="brand-home-link" href="/" onClick={resetAndGoHome}>지금리뷰</a><h1>{mode === "login" ? "다시 만나서 반가워요" : "신뢰할 수 있는 리뷰를 시작해요"}</h1><p>방문이 인증된 리뷰로 더 좋은 장소를 함께 발견합니다.</p></div>
         <div className="auth-tabs"><button className={mode === "login" ? "is-active" : ""} onClick={() => { setMode("login"); setError(""); }} type="button">로그인</button><button className={mode === "signup" ? "is-active" : ""} onClick={() => { setMode("signup"); setError(""); }} type="button">회원가입</button></div>
         <form className="auth-form" onSubmit={submit}>
           {mode === "signup" && <label><span>이름</span><input required minLength="2" maxLength="30" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="표시할 이름" /></label>}
@@ -302,7 +420,7 @@ function AuthPage({ user, onAuthenticated, onBack }) {
           {error && <p className="auth-error" role="alert">{error}</p>}
           <Button disabled={status === "loading"} type="submit">{status === "loading" ? "처리 중..." : mode === "login" ? "로그인" : "회원가입"}</Button>
         </form>
-        <small className="auth-helper">비밀번호는 암호화된 해시로 저장되며 원문은 보관하지 않습니다.</small>
+        <small className="auth-helper">계정과 로그인 세션은 Supabase Auth로 안전하게 관리됩니다.</small>
       </section>
     </main>
   );
@@ -311,14 +429,18 @@ function AuthPage({ user, onAuthenticated, onBack }) {
 function PlaceDetailPage({ place, user, authStatus, onLogin, onLogout, onBack, onWriteReview }) {
   if (!place) return <main className="route-empty"><strong>업체 정보를 찾을 수 없습니다.</strong><p>지도에서 업체를 다시 검색해 주세요.</p><Button onClick={onBack}>지도로 돌아가기</Button></main>;
   const reviewAction = () => onWriteReview(place);
+  const testAnalyses = loadTestAnalyses(place.id);
+  const sentimentBuckets = Object.keys(SENTIMENT_LABELS);
+  const sentimentCounts = Object.fromEntries(sentimentBuckets.map((bucket) => [bucket, testAnalyses.filter((entry) => entry.bucket === bucket).length]));
+  const testTotal = testAnalyses.length;
   return (
     <main className="detail-page">
-      <aside className="detail-nav"><div><strong>지금리뷰</strong><span>Verified places</span></div><nav><button onClick={onBack} type="button">⌖ 지도 검색</button><button className="is-active" type="button">▤ 업체 리뷰</button></nav><Button onClick={reviewAction}>{user ? "영수증 리뷰 등록하기" : "로그인하고 리뷰 쓰기"}</Button></aside>
-      <div className="detail-content"><header className="detail-header"><button onClick={onBack} type="button">← 지도</button><AccountControl user={user} authStatus={authStatus} onLogin={onLogin} onLogout={onLogout} /></header>
+      <aside className="detail-nav"><div><a className="detail-nav__brand brand-home-link" href="/" onClick={resetAndGoHome}>지금리뷰</a><span>Verified places</span></div><nav><button onClick={onBack} type="button">⌖ 지도 검색</button><button className="is-active" type="button">▤ 업체 리뷰</button></nav><Button onClick={reviewAction}>{user ? "영수증 리뷰 등록하기" : "로그인하고 리뷰 쓰기"}</Button></aside>
+      <div className="detail-content"><header className="detail-header"><button onClick={onBack} type="button">← 지도</button><a className="detail-header__brand brand-home-link" href="/" onClick={resetAndGoHome}>지금리뷰</a><AccountControl user={user} authStatus={authStatus} onLogin={onLogin} onLogout={onLogout} /></header>
         <section className="place-summary"><div><Badge>{place.category || "음식점"}</Badge><h1>{place.title}</h1><p>{place.address || place.oldAddress || "주소 정보 없음"}</p></div>{place.link && <a href={place.link} rel="noreferrer" target="_blank">카카오맵에서 보기 ↗</a>}</section>
         <section className="place-facts"><div><span>전화</span><strong>{place.telephone || "등록된 전화번호 없음"}</strong></div><div><span>분류</span><strong>{place.fullCategory || place.category}</strong></div><div><span>방문 인증 리뷰</span><strong>0개</strong></div></section>
-        <section className="review-insight"><div><span>리뷰 분석</span><h2>아직 분석할 인증 리뷰가 없습니다</h2></div><p>영수증 OCR 인증을 통과한 리뷰가 등록되면 긍정·아쉬운 경험의 비율과 주요 의견이 표시됩니다.</p><div className="empty-bars" aria-hidden="true">{[1,2,3,4,5].map((item) => <span key={item} />)}</div></section>
-        <section className="review-section"><div className="review-section__header"><div><span>인증 리뷰</span><h2>방문자의 솔직한 경험</h2></div><Button onClick={reviewAction}>{user ? "리뷰 작성" : "로그인"}</Button></div><div className="review-empty"><strong>첫 번째 인증 리뷰를 기다리고 있어요</strong><p>영수증 이미지로 방문을 인증한 리뷰만 집계됩니다.</p></div></section>
+        <section className="review-insight"><div><span>리뷰 분석 {testTotal > 0 && "· 테스트 데이터"}</span><h2>{testTotal > 0 ? `텍스트 리뷰 ${testTotal}건 분석 결과` : "아직 분석할 인증 리뷰가 없습니다"}</h2></div><p>{testTotal > 0 ? "영수증 인증을 생략한 테스트 결과이며 실제 인증 리뷰 통계에는 포함되지 않습니다." : "영수증 OCR 인증을 통과한 리뷰가 등록되면 경험 분포와 주요 의견이 표시됩니다."}</p>{testTotal > 0 ? <div className="sentiment-chart">{sentimentBuckets.map((bucket) => { const percentage = Math.round((sentimentCounts[bucket] / testTotal) * 100); return <div className="sentiment-chart__item" key={bucket}><div className="sentiment-chart__track"><span style={{ height: `${Math.max(percentage, sentimentCounts[bucket] ? 8 : 0)}%` }} /></div><strong>{percentage}%</strong><small>{SENTIMENT_LABELS[bucket]}</small></div>; })}</div> : <div className="empty-bars" aria-hidden="true">{[1,2,3,4,5].map((item) => <span key={item} />)}</div>}</section>
+        <section className="review-section"><div className="review-section__header"><div><span>{testTotal > 0 ? "테스트 리뷰" : "인증 리뷰"}</span><h2>방문자의 솔직한 경험</h2></div><Button onClick={reviewAction}>{user ? "리뷰 작성" : "로그인"}</Button></div>{testTotal > 0 ? <div className="test-review-list">{[...testAnalyses].reverse().map((review) => <article className="test-review-item" key={review.id}><div><Badge>테스트</Badge><strong>{SENTIMENT_LABELS[review.bucket]}</strong><span>신뢰도 {Math.round(review.confidence * 100)}%</span></div><p>{review.content}</p>{review.keywords?.length > 0 && <small>{review.keywords.map((keyword) => `#${keyword}`).join(" ")}</small>}</article>)}</div> : <div className="review-empty"><strong>첫 번째 인증 리뷰를 기다리고 있어요</strong><p>영수증 이미지로 방문을 인증한 리뷰만 집계됩니다.</p></div>}</section>
       </div>
     </main>
   );
@@ -330,10 +452,11 @@ function ReviewWritePage({ place, onBack }) {
     if (!draftKey) return "";
     try { return JSON.parse(sessionStorage.getItem(draftKey))?.content || ""; } catch { return ""; }
   });
-  const [receiptFile, setReceiptFile] = useState(null);
+  const [, setReceiptFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
@@ -350,12 +473,28 @@ function ReviewWritePage({ place, onBack }) {
     setPreviewUrl(URL.createObjectURL(file));
   }
 
-  function saveDraft(event) {
-    event.preventDefault(); setError(""); setSaved(false);
-    if (!receiptFile) return setError("방문 인증을 위한 영수증 이미지를 선택해 주세요.");
+  async function saveDraft(event) {
+    event.preventDefault(); setError(""); setSaved(null);
     if (content.trim().length < 10) return setError("리뷰 내용을 10자 이상 작성해 주세요.");
-    sessionStorage.setItem(draftKey, JSON.stringify({ content: content.trim(), receiptName: receiptFile.name }));
-    setSaved(true);
+    setSubmitting(true);
+    try {
+      const payload = await apiRequest("/api/reviews/analyze", { method: "POST", body: JSON.stringify({ content: content.trim() }) });
+      const entry = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        placeId: place.id,
+        content: content.trim(),
+        ...payload.analysis,
+        testOnly: true,
+        createdAt: new Date().toISOString(),
+      };
+      saveTestAnalysis(entry);
+      sessionStorage.removeItem(draftKey);
+      setSaved(entry);
+    } catch (submitError) {
+      setError(submitError.message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -366,8 +505,8 @@ function ReviewWritePage({ place, onBack }) {
         <section className="receipt-step"><div><span className="step-number">1</span><div><h2>영수증 이미지</h2><p>상호명과 결제일이 잘 보이도록 촬영해 주세요.</p></div></div><label className={`receipt-upload ${previewUrl ? "has-preview" : ""}`}><input accept="image/*" onChange={selectReceipt} type="file" /><span>{previewUrl ? "다른 이미지 선택" : "영수증 이미지 선택"}</span>{previewUrl && <img alt="선택한 영수증 미리보기" src={previewUrl} />}</label></section>
         <section className="review-text-step"><div><span className="step-number">2</span><div><h2>방문 경험</h2><p>메뉴, 서비스, 분위기처럼 직접 경험한 내용을 알려주세요.</p></div></div><label><span className="sr-only">리뷰 내용</span><textarea maxLength="1000" onChange={(event) => { setContent(event.target.value); setSaved(false); }} placeholder="이 장소에서 어떤 경험을 하셨나요?" value={content} /></label><small>{content.length}/1000자 · 최소 10자</small></section>
         {error && <p className="review-form-message is-error" role="alert">{error}</p>}
-        {saved && <p className="review-form-message is-saved" role="status">작성 내용이 임시 저장되었습니다. OCR 인증 연결 후 최종 등록할 수 있습니다.</p>}
-        <div className="review-write-actions"><button onClick={onBack} type="button">취소</button><Button type="submit">작성 내용 임시 저장</Button></div>
+        {saved && <p className="review-form-message is-saved" role="status">텍스트 분석 완료: <strong>{SENTIMENT_LABELS[saved.bucket]}</strong> ({Math.round(saved.confidence * 100)}%). 테스트 그래프에 반영했습니다.</p>}
+        <div className="review-write-actions"><button onClick={onBack} type="button">{saved ? "그래프 보러 가기" : "취소"}</button><Button disabled={submitting} type="submit">{submitting ? "AI 분석 중..." : "텍스트 테스트 분석"}</Button></div>
       </form>
     </main>
   );
