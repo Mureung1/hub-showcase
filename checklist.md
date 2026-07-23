@@ -16,9 +16,9 @@
 - [ ] `Home.jsx`의 "재료 조금만 사면 돼요" 섹션에 `mascotWave` 이미지 추가 (현재 "지금 바로 만들 수 있어요" 섹션에만 있음)
 
 ## 3. 네이버 최저가 링크 실제 동작 확인
-- [ ] 백엔드 서버 켜고(`npm run dev:api`) 레시피 상세 페이지에서 부족한 재료 클릭 → `PurchaseLinkPanel`에 뜨는 네이버 최저가가 실제 상품·가격인지 확인
-- [ ] "네이버에서 더 보기" 링크(`buildNaverSearchUrl`)가 실제 네이버 쇼핑 검색 결과로 연결되는지 확인
-- [ ] 문제 있으면 버그 수정
+- [x] 백엔드 서버 켜고(`npm run dev:api`) 레시피 상세 페이지에서 부족한 재료 클릭 → `PurchaseLinkPanel`에 뜨는 네이버 최저가가 실제 상품·가격인지 확인 — 브라우저로 확인 완료
+- [x] 문제 있으면 버그 수정 — 확인 중 발견한 문제 수정: (1) 라면 4종 세트 같은 묶음상품이 최저가로 잡히는 문제 → `naverClient.js`에 `isBundleCandidate` 필터 추가(단일상품 우선, 부족하면 묶음상품으로 채움), (2) 상품명이 화면에 아예 안 보여서 묶음상품인지 클릭 전엔 알 수 없던 문제 → `PurchaseLinkPanel`에 원본 상품명(1줄 truncate) 표시 추가, (3) 개당/100g당/100ml당 단가 계산(`parseUnitPrice`) 추가해서 가격 옆에 캡션으로 표시
+- [x] "네이버에서 더 보기" 링크(`buildNaverSearchUrl`)가 실제 네이버 쇼핑 검색 결과로 연결되는지 확인 — `href`가 `search.shopping.naver.com/search/all?query=...` 형태로 정상 생성됨을 확인
 
 ## 4. 홈 화면 추천 0건일 때 빈 화면 대신 기니 카드 보여주기
 - [x] `src/data/selectors.js`에 `getQuickRecipes(recipes, limit=3)` 추가 — `cookTimeMinutes` 오름차순, 동률이면 `totalCost` 오름차순
