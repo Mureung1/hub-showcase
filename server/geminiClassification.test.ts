@@ -61,6 +61,12 @@ describe("validateGeminiClassification", () => {
       summary: "프로그래밍 공부 자료입니다.",
       explanation: "설명",
     },
+    {
+      categoryMain: "공부",
+      categorySub: "프로그래밍",
+      displayTitle: "10 Linux concepts every developer should master",
+      summary: "Linux file systems, shell commands, and permissions.",
+    },
   ])("유효하지 않은 응답을 거부한다: %o", (value) => {
     expect(validateGeminiClassification(value)).toBeNull();
   });
@@ -261,7 +267,7 @@ describe("classifyWithFallback", () => {
       categoryMain: "영상",
       categorySub: "유튜브",
       displayTitle: "유튜브 관련 콘텐츠",
-      summary: "원문에서 요약할 정보를 충분히 찾지 못했습니다.",
+      summary: "유튜브 관련 콘텐츠의 핵심 내용을 다루는 원문입니다.",
     });
   });
 
@@ -336,6 +342,36 @@ describe("classifyWithFallback", () => {
       categorySub: "운동",
       displayTitle: "운동 루틴",
       summary: "운동 루틴",
+    });
+  });
+
+  it("영어 제목과 요약은 거부하고 한국어 fallback을 사용한다", async () => {
+    await expect(
+      classifyWithFallback(
+        {
+          content: "https://x.com/example/status/1",
+          metadata: {
+            url: "https://x.com/example/status/1",
+            title: "10 Linux concepts every developer should master",
+            description: "Linux file systems, shell commands, and permissions.",
+            ogTitle: "Developer tips on X",
+            ogDescription: "A list of Linux concepts.",
+            ogSiteName: "X",
+            ogType: "article",
+          },
+        },
+        async () => ({
+          categoryMain: "공부",
+          categorySub: "리눅스",
+          displayTitle: "10 Linux concepts every developer should master",
+          summary: "Linux file systems, shell commands, and permissions.",
+        })
+      )
+    ).resolves.toEqual({
+      categoryMain: "SNS",
+      categorySub: "X",
+      displayTitle: "X 관련 콘텐츠",
+      summary: "X 관련 콘텐츠의 핵심 내용을 다루는 원문입니다.",
     });
   });
 });

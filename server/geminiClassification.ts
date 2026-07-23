@@ -47,6 +47,11 @@ const MAX_DISPLAY_TITLE_LENGTH = 60;
 const MAX_SUMMARY_LENGTH = 500;
 const koreanSubcategoryPattern = /^[가-힣][가-힣0-9 ()·/&+-]*$/;
 const displayTitlePattern = /[가-힣A-Za-z0-9]/;
+const koreanTextPattern = /[가-힣]{2,}/;
+
+function containsKoreanText(value: string) {
+  return koreanTextPattern.test(value);
+}
 
 export function validateGeminiClassification(value: unknown): ContentAnalysis | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -73,7 +78,8 @@ export function validateGeminiClassification(value: unknown): ContentAnalysis | 
   if (
     displayTitle.length < 2 ||
     displayTitle.length > MAX_DISPLAY_TITLE_LENGTH ||
-    !displayTitlePattern.test(displayTitle)
+    !displayTitlePattern.test(displayTitle) ||
+    !containsKoreanText(displayTitle)
   ) {
     return null;
   }
@@ -82,7 +88,8 @@ export function validateGeminiClassification(value: unknown): ContentAnalysis | 
   if (
     summary.length < 2 ||
     summary.length > MAX_SUMMARY_LENGTH ||
-    !displayTitlePattern.test(summary)
+    !displayTitlePattern.test(summary) ||
+    !containsKoreanText(summary)
   ) {
     return null;
   }
@@ -112,8 +119,14 @@ export function validateGeminiClassification(value: unknown): ContentAnalysis | 
 
 function getFallbackTitle(input: ClassificationInput, classification: Classification) {
   const metadataTitle = input.metadata?.ogTitle?.trim() || input.metadata?.title?.trim();
-  if (metadataTitle) return metadataTitle.slice(0, MAX_DISPLAY_TITLE_LENGTH);
-  if (input.content && !/^https?:\/\//i.test(input.content)) {
+  if (metadataTitle && containsKoreanText(metadataTitle)) {
+    return metadataTitle.slice(0, MAX_DISPLAY_TITLE_LENGTH);
+  }
+  if (
+    input.content &&
+    !/^https?:\/\//i.test(input.content) &&
+    containsKoreanText(input.content)
+  ) {
     return input.content.trim().slice(0, MAX_DISPLAY_TITLE_LENGTH);
   }
   if (input.image) {
@@ -132,12 +145,18 @@ function getFallbackTitle(input: ClassificationInput, classification: Classifica
 function getFallbackSummary(input: ClassificationInput, displayTitle: string) {
   const metadataDescription =
     input.metadata?.ogDescription?.trim() || input.metadata?.description?.trim();
-  if (metadataDescription) return metadataDescription.slice(0, MAX_SUMMARY_LENGTH);
-  if (input.content && !/^https?:\/\//i.test(input.content)) {
+  if (metadataDescription && containsKoreanText(metadataDescription)) {
+    return metadataDescription.slice(0, MAX_SUMMARY_LENGTH);
+  }
+  if (
+    input.content &&
+    !/^https?:\/\//i.test(input.content) &&
+    containsKoreanText(input.content)
+  ) {
     return input.content.trim().slice(0, MAX_SUMMARY_LENGTH);
   }
   if (input.image) return `${displayTitle}로 분류된 이미지입니다.`;
-  return "원문에서 요약할 정보를 충분히 찾지 못했습니다.";
+  return `${displayTitle}의 핵심 내용을 다루는 원문입니다.`;
 }
 
 function normalizeRuleFallback(input: ClassificationInput): ContentAnalysis {
@@ -163,6 +182,9 @@ Prefer Later's existing broad category system and avoid overly specific categori
 Select exactly one main category and a short Korean subcategory, or null when the subcategory is unclear.
 Create displayTitle as a concise, natural Korean card title that summarizes the subject and content type.
 Create summary as a useful Korean summary of the key content in 1 to 3 short sentences.
+Always write displayTitle and summary in Korean, translating English source content into Korean.
+English technical terms and proper nouns may remain only when surrounded by meaningful Korean text.
+Never copy an English page title or description directly into displayTitle or summary.
 Do not invent details that are not supported by the image, text, or metadata.
 Use broad main categories so similar learning topics stay grouped under "공부".
 Use a specific title such as "AWS SAA-C03 자격증 준비 가이드", not a vague title such as "공부 관련 글".
@@ -176,8 +198,14 @@ const classificationSchema = {
   properties: {
     categoryMain: { type: "string", enum: [...allowedMainCategories] },
     categorySub: { type: ["string", "null"] },
-    displayTitle: { type: "string" },
-    summary: { type: "string" },
+    displayTitle: {
+      type: "string",
+      description: "원문의 핵심 주제를 설명하는 짧고 자연스러운 한국어 제목",
+    },
+    summary: {
+      type: "string",
+      description: "영어 원문도 한국어로 번역해 핵심만 정리한 1~3문장 요약",
+    },
   },
   required: ["categoryMain", "categorySub", "displayTitle", "summary"],
   additionalProperties: false,

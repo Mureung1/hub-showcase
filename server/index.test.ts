@@ -116,7 +116,7 @@ describe("items API", () => {
       image_url: null,
       category_main: "영상",
       category_sub: "유튜브",
-      summary: "원문에서 요약할 정보를 충분히 찾지 못했습니다.",
+      summary: "테스트 영상의 핵심 내용을 다루는 원문입니다.",
     });
   });
 
