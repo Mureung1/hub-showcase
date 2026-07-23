@@ -4,14 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "server": "node server.js",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test:analysis": "node scripts/verify-emotion-analysis.mjs",
-    "test:supabase": "node scripts/verify-supabase-connection.mjs",
-    "test:api": "node scripts/verify-emotion-analysis-api.mjs"
-  },
+  "dev": "vite",
+  "server": "node server.js",
+  "build": "vite build",
+  "preview": "vite preview",
+  "test": "vitest",
+  "test:run": "vitest run",
+  "test:analysis": "node scripts/verify-emotion-analysis.mjs",
+  "test:supabase": "node scripts/verify-supabase-connection.mjs",
+  "test:api": "node scripts/verify-emotion-analysis-api.mjs"
+},
+  
   "dependencies": {
     "@supabase/supabase-js": "^2.110.7",
     "cors": "^2.8.6",
@@ -21,8 +24,15 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
     "@vitejs/plugin-react": "^6.0.3",
     "esbuild": "^0.28.1",
-    "vite": "^8.1.5"
+    "jsdom": "^29.1.1",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
   }
+  
+  
 }
+
