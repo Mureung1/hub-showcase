@@ -15,6 +15,7 @@ import {
   cancelParticipation,
   fetchParticipants,
   respondToApplicant,
+  deleteMeeting,
 } from '../api/meetings.js'
 
 export default function MeetingDetailPage() {
@@ -24,7 +25,6 @@ export default function MeetingDetailPage() {
     currentUser,
     isLoggedIn,
     authLoading,
-    cancelMeeting,
   } = useAppState()
 
   // 훅은 조기 return보다 앞에서 무조건 호출해야 한다(React Hooks 규칙).
@@ -63,6 +63,18 @@ export default function MeetingDetailPage() {
       setReloadKey((k) => k + 1)
     } catch (err) {
       setActionError(err.message)
+    }
+  }
+
+  // E5(모임 취소, 모임장). 성공하면 목록으로 이동한다 — 취소된 모임은 활성 목록에서 사라진다.
+  async function handleCancelMeeting() {
+    setActionError(null)
+    try {
+      await deleteMeeting(id)
+      navigate('/meetings')
+    } catch (err) {
+      setActionError(err.message)
+      setConfirmingCancel(false)
     }
   }
 
@@ -189,7 +201,7 @@ export default function MeetingDetailPage() {
   const confirmedCount = meeting.confirmedCount
   const myParticipation = meeting.myParticipation
   const pendingApplicants = getPendingApplicants(participants)
-  const isEnded = meeting.status === 'finished' || meeting.status === 'cancelled'
+  const isEnded = meeting.status === 'finished' || meeting.status === 'cancelled' || meeting.isPast
   // 서버가 openChatUrl을 내려줬다는 것 자체가 "볼 자격이 있다"는 뜻이다(E3에서 판단).
   const canSeeOpenChat = Boolean(meeting.openChatUrl)
 
@@ -330,10 +342,7 @@ export default function MeetingDetailPage() {
                 <PillButton
                   variant="accent"
                   size="sm"
-                  onClick={() => {
-                    cancelMeeting(meeting.id)
-                    setConfirmingCancel(false)
-                  }}
+                  onClick={handleCancelMeeting}
                 >
                   네, 취소할게요
                 </PillButton>
@@ -374,9 +383,11 @@ export default function MeetingDetailPage() {
                 </p>
               )}
 
-              <PillButton variant="ghost" size="sm" onClick={handleCancelParticipation}>
-                신청 취소하기
-              </PillButton>
+              {!isEnded && (
+                <PillButton variant="ghost" size="sm" onClick={handleCancelParticipation}>
+                  신청 취소하기
+                </PillButton>
+              )}
             </>
           ) : meeting.canApply ? (
             // 신청 가능: 버튼. 서버가 canApply로 판정했으므로 FE는 그대로 따른다.

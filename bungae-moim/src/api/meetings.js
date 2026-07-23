@@ -75,3 +75,8 @@ export function respondToApplicant(id, userId, status) {
     }
   )
 }
+
+// DELETE /api/meetings/:id — 모임 취소(E5, 모임장만). 성공 시 { status: 'cancelled' } 반환.
+export function deleteMeeting(id) {
+  return request(`/api/meetings/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
