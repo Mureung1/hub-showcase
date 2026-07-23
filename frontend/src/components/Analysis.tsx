@@ -57,16 +57,32 @@ export function Analysis({ symptoms, onNext }: AnalysisProps) {
       {loading && <p className="sub">분석 중이에요...</p>}
       {error && <p className="sub" style={{ color: 'var(--color-accent-pink)' }}>{error}</p>}
 
-      <div className="chip-list">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {recommendedIngredients.map((ingredient, index) => {
           const color = getChipColor(index);
           return (
-            <span className="chip-badge" key={ingredient.id}>
-              <span className="chip-icon" style={{ background: color.tint, color: color.accent }}>
+            <div
+              className="card"
+              key={ingredient.id}
+              style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}
+            >
+              <span
+                className="chip-icon"
+                style={{ background: color.tint, color: color.accent, flexShrink: 0 }}
+              >
                 <ChipIcon name={INGREDIENT_ICONS[ingredient.name] ?? 'droplet'} />
               </span>
-              <span className="chip-label">{ingredient.name}</span>
-            </span>
+              <div>
+                <p className="chip-label" style={{ margin: 0 }}>
+                  {ingredient.name}
+                </p>
+                {ingredient.description && (
+                  <p className="sub" style={{ margin: '2px 0 0' }}>
+                    {ingredient.description}
+                  </p>
+                )}
+              </div>
+            </div>
           );
         })}
       </div>
