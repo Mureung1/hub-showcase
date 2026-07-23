@@ -1,4 +1,3 @@
-// App.js 전체 코드 덮어쓰기
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
@@ -12,9 +11,7 @@ function App() {
   const [docResult, setDocResult] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
-  // 🚀 [수정] 기본 선택값을 '브리핑 페이퍼'로 변경
   const [selectedDocType, setSelectedDocType] = useState("briefing");
-
   const [selectedLaw, setSelectedLaw] = useState(null);
   const [typingTimeout, setTypingTimeout] = useState(null);
 
@@ -111,7 +108,6 @@ function App() {
     setIsLoading(true);
     setDocResult("문서를 생성 중입니다...");
     
-    // 🚀 [핵심 수정] 폼 데이터 + 판례 리스트 + 챗봇 피드백 텍스트를 한 번에 넘김! (토큰 0 소모)
     try {
       const payload = { 
         ...extractedData, 
@@ -157,6 +153,39 @@ function App() {
     }
   };
 
+  // 🚀 [신규 추가] 사건 삭제 기능
+  const handleDeleteCase = async (caseId) => {
+    if (!window.confirm("정말로 이 기록을 삭제하시겠습니까?")) return;
+    try {
+      await axios.delete(`http://127.0.0.1:8000/api/cases/${caseId}`);
+      fetchCases();
+    } catch (error) {
+      alert("삭제 실패");
+    }
+  };
+
+  // 🚀 [신규 추가] 워드 파일(.doc) 다운로드 기능 (순수 프론트엔드 처리)
+  const handleDownloadWord = (content, title) => {
+    const htmlContent = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'><title>${title}</title></head>
+      <body>
+        <div style="white-space: pre-wrap; font-family: 'Malgun Gothic', 'KoPub Batang', serif; font-size: 11pt;">
+          ${content}
+        </div>
+      </body>
+      </html>
+    `;
+    const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${title || '법률문서'}.doc`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const submitManualForm = () => setExtractedData(manualForm);
 
   const colors = {
@@ -168,7 +197,8 @@ function App() {
     textMain: '#1E293B', 
     textMuted: '#64748b',
     bgLight: '#F8FAFC', 
-    white: '#ffffff'
+    white: '#ffffff',
+    danger: '#ef4444' // 삭제 버튼용 색상
   };
 
   const inputStyle = { 
@@ -261,7 +291,6 @@ function App() {
               <div style={{ backgroundColor: colors.white, border: `1px solid ${colors.border}`, padding: '30px', borderRadius: '12px', marginBottom: '40px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
                 <h2 style={{ color: colors.snuNavyLight, marginTop: 0, fontSize: '1.25rem', marginBottom: '20px' }}>2. 3단계 맞춤형 문서 발급</h2>
                 
-                {/* 🚀 [핵심 수정] 라디오 버튼 3단계 분리 */}
                 <div style={{ marginBottom: '25px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '15px', backgroundColor: selectedDocType === "briefing" ? colors.bgLight : 'transparent', padding: '10px', borderRadius: '8px', transition: 'background 0.2s' }}>
                     <input type="radio" value="briefing" checked={selectedDocType === "briefing"} onChange={(e) => setSelectedDocType(e.target.value)} style={{ marginRight: '10px', accentColor: colors.naverGreen }} /> 
@@ -294,8 +323,20 @@ function App() {
 
             {docResult && (
               <div>
-                <h2 style={{ color: colors.snuNavyLight, fontSize: '1.25rem', marginBottom: '15px' }}>3. 완성된 법률 문서</h2>
-                <div style={{ backgroundColor: colors.white, padding: '40px', border: `1px solid ${colors.border}`, borderRadius: '12px', whiteSpace: 'pre-wrap', fontFamily: "'KoPub Batang', 'Malgun Gothic', serif", lineHeight: '1.8', height: '500px', overflowY: 'auto', marginBottom: '30px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', color: '#000' }}>{docResult}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <h2 style={{ color: colors.snuNavyLight, fontSize: '1.25rem', margin: 0 }}>3. 완성된 법률 문서</h2>
+                  
+                  {/* 🚀 [신규 추가] 워드 다운로드 버튼 */}
+                  <button 
+                    onClick={() => handleDownloadWord(docResult, extractedData?.title || '법률문서')} 
+                    style={{ padding: '8px 16px', backgroundColor: colors.snuNavy, color: colors.white, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    💾 워드(.doc)로 저장
+                  </button>
+                </div>
+                
+                <div style={{ backgroundColor: colors.white, padding: '40px', border: `1px solid ${colors.border}`, borderRadius: '12px', whiteSpace: 'pre-wrap', fontFamily: "'KoPub Batang', 'Malgun Gothic', serif", lineHeight: '1.8', height: '500px', overflowY: 'auto', marginBottom: '30px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', color: '#000' }}>
+                  {docResult}
+                </div>
 
                 <div style={{ backgroundColor: colors.bgLight, border: `1px solid ${colors.border}`, padding: '25px', borderRadius: '12px' }}>
                   <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: colors.snuNavy }}>🌟 방금 생성한 전략에 대한 피드백</h3>
@@ -380,7 +421,12 @@ function App() {
                       </span> 
                       {c.extracted_data.title || "제목 없음"}
                     </h3>
-                    <span style={{ color: colors.textMuted, fontSize: '13px' }}>{c.timestamp}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                      <span style={{ color: colors.textMuted, fontSize: '13px' }}>{c.timestamp}</span>
+                      {/* 🚀 [신규 추가] 히스토리 삭제 및 워드 다운로드 버튼 (내역 탭) */}
+                      <button onClick={() => handleDownloadWord(c.document_content, c.extracted_data.title)} style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: colors.bgLight, border: `1px solid ${colors.border}`, borderRadius: '4px', cursor: 'pointer' }}>💾 다운로드</button>
+                      <button onClick={() => handleDeleteCase(c.id)} style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: '#fee2e2', color: colors.danger, border: `1px solid #fca5a5`, borderRadius: '4px', cursor: 'pointer' }}>🗑️ 삭제</button>
+                    </div>
                   </div>
                   <div style={{ fontSize: '14px', color: colors.textMain, marginBottom: '20px', lineHeight: '1.6', backgroundColor: colors.bgLight, padding: '15px', borderRadius: '8px' }}>
                     <strong style={{ color: colors.snuNavy }}>상대방:</strong> {c.extracted_data.receiver_name} <br/>
