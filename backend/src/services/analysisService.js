@@ -1,4 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { readFile } from "fs/promises";
+import { PDFParse } from "pdf-parse";
 
 // Anthropic 클라이언트 초기화
 const client = new Anthropic({
@@ -13,7 +15,7 @@ const client = new Anthropic({
  * @returns {object} 분석 결과 (notice, events 포함)
  * @throws {Error} 텍스트가 없거나 API 호출 실패 시
  */
-export async function analyzeNotice(text) {
+export async function analyzeNotice(text, retryCount = 0) {
   if (!text || text.trim().length === 0) {
     throw new Error("분석할 텍스트가 없습니다");
   }
@@ -35,16 +37,63 @@ export async function analyzeNotice(text) {
     const responseText =
       message.content[0].type === "text" ? message.content[0].text : "";
 
-    // JSON 파싱
-    const analysisResult = JSON.parse(responseText);
+    // JSON 추출 (응답에 다른 텍스트가 섞여 있을 수 있음)
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new SyntaxError("JSON 형식을 찾을 수 없습니다");
+    }
+
+    const analysisResult = JSON.parse(jsonMatch[0]);
 
     // 응답 검증 및 정규화
     return validateAnalysisResponse(analysisResult);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      throw new Error(`API 응답을 JSON으로 파싱할 수 없습니다: ${error.message}`);
+      if (retryCount < 1) {
+        console.warn("JSON 파싱 실패, 재시도 중...");
+        return analyzeNotice(text, retryCount + 1);
+      }
+      throw new Error(
+        `API 응답을 JSON으로 파싱할 수 없습니다: ${error.message}`
+      );
     }
     throw error;
+  }
+}
+
+/**
+ * PDF 파일을 분석하여 일정 정보를 추출합니다.
+ *
+ * @param {string} filePath - PDF 파일 경로
+ * @returns {object} 분석 결과 (notice, events 포함)
+ * @throws {Error} 파일 읽기 실패 또는 분석 실패 시
+ */
+export async function analyzePDF(filePath) {
+  let parser = null;
+  try {
+    const pdfBuffer = await readFile(filePath);
+    parser = new PDFParse({ data: pdfBuffer });
+    const textResult = await parser.getText();
+    const text = (textResult.text || "").trim();
+
+    if (!text || text.length === 0) {
+      throw new Error("PDF에서 텍스트를 추출할 수 없습니다");
+    }
+
+    return await analyzeNotice(text);
+  } catch (error) {
+    if (error.message.includes("ENOENT")) {
+      throw new Error("PDF 파일을 찾을 수 없습니다");
+    }
+    throw error;
+  } finally {
+    if (parser) {
+      try {
+        await parser.destroy();
+      } catch (destroyError) {
+        // destroy 실패는 무시
+      }
+    }
   }
 }
 
