@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { MEETINGS } from '../data/mockData.js'
 import {
   exchangeOAuthCode,
   fetchMe,
@@ -48,7 +47,6 @@ function bootstrapSession() {
 }
 
 export function AppStateProvider({ children }) {
-  const [meetings, setMeetings] = useState(MEETINGS)
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [authError, setAuthError] = useState(null)
@@ -79,18 +77,6 @@ export function AppStateProvider({ children }) {
   const currentUser = user ?? GUEST_USER
 
   const value = useMemo(() => {
-    function updateMeeting(id, updater) {
-      setMeetings((prev) => prev.map((m) => (m.id === id ? updater(m) : m)))
-    }
-
-    function cancelMeeting(meetingId) {
-      updateMeeting(meetingId, (meeting) => ({
-        ...meeting,
-        status: 'cancelled',
-        participants: meeting.participants.map((p) => ({ ...p, status: 'cancelled' })),
-      }))
-    }
-
     // 구글/카카오 동의 화면으로 떠난다. 돌아오면 위 useEffect가 이어받는다.
     function login(provider) {
       setAuthError(null)
@@ -116,7 +102,6 @@ export function AppStateProvider({ children }) {
     }
 
     return {
-      meetings,
       currentUser,
       isLoggedIn,
       authLoading,
@@ -124,9 +109,8 @@ export function AppStateProvider({ children }) {
       login,
       logout,
       saveBirthDate,
-      cancelMeeting,
     }
-  }, [meetings, currentUser, isLoggedIn, authLoading, authError])
+  }, [currentUser, isLoggedIn, authLoading, authError])
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>
 }
