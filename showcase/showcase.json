@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "title": "FirstPR",
+  "summary": "GitHub 활동과 선호 조건을 분석해 첫 오픈소스 기여에 적합한 레포지토리와 이슈를 추천하는 서비스입니다.",
+  "githubUser": "kimsunho2000(김선호)",
+  "demoUrl": "https://kimsunho2000.github.io/hub/",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/landing.png",
+    "screenshots/result.png",
+    "screenshots/detail.png"
+  ],
+  "problem": "오픈소스에 기여하고 싶어도 어떤 프로젝트·이슈부터 시작해야 할지 막막해하는 개발자가 많습니다. 관심 있는 레포를 찾아도 이슈 난이도가 가늠이 안 돼 선뜻 시작하지 못합니다.",
+  "targetUsers": [
+    "오픈소스에 처음 기여해보고 싶은 주니어 개발자·개발자 지망생",
+    "자신의 기술 스택·실력 수준에 맞는 이슈를 찾고 싶은 개발자"
+  ],
+  "features": [
+    "GitHub ID의 커밋·PR·기여 이력을 분석해 기술 성향과 실력 수준(beginner/intermediate/advanced)을 파악합니다.",
+    "선호 언어·난이도·관심 주제를 입력하면 규칙 기반 점수로 레포·이슈를 추천합니다.",
+    "추천 목록을 LLM으로 재순위해 프로필과의 흥미도·이슈 명확성을 반영합니다.",
+    "상세 화면 진입 시 이슈 요약·필요 기술·기여 가이드를 LLM으로 지연 생성합니다.",
+    "추천 이유와 매칭 점수를 함께 보여줘 왜 이 이슈가 맞는지 설명합니다."
+  ],
+  "featureTags": [
+    "GitHub 프로필 분석",
+    "레포/이슈 추천",
+    "LLM 재순위"
+  ],
+  "techStack": [
+    "React 19",
+    "Vite",
+    "TanStack Query",
+    "Node.js",
+    "Express",
+    "Prisma",
+    "Supabase (PostgreSQL)",
+    "Google Gemini API"
+  ],
+  "techHighlights": [
+    "GitHub GraphQL 쿼리 1개로 레포·이슈·언어 구성을 일괄 조회해 REST 대비 API 호출 수(N+1)를 줄였습니다.",
+    "추천은 문턱(레포 건강도) → 규칙 점수(언어·난이도 매칭) → LLM 재순위(흥미·이슈 명확성) 3단 구조로 설계해, 사실 검증은 규칙이 LLM 비용·실패 리스크는 최소화하면서 정성적 판단만 LLM이 맡도록 분리했습니다.",
+    "실제 API 키로 테스트하다 LLM 재순위 요청이 전부 실패하는 걸 발견해 원인을 추적했습니다 — 병렬 요청을 배치 1건으로 줄이고, 응답을 직접 까봐서 알아낸 모델별 무료 할당량 문제를 모델 교체로 해결했습니다."
+  ],
+  "developmentWithAI": "저는 기획·화면 흐름·추천 기준·데이터 정책 같은 핵심 의사결정과 우선순위를 정했습니다. AI는 계획을 세우고 코드를 구현했으며, 테스트를 먼저 작성한 뒤 구현하는 방식으로 진행했습니다. 실제 API 키로 스모크 테스트를 하다 LLM 요청이 계속 실패하는 문제를 함께 진단해, 원인을 찾고 설계를 바꿔 해결했습니다. 저는 매 단계 결과를 검토하고 다음 방향을 결정했습니다.",
+  "agent": {
+    "summary": "기획부터 구현·테스트·실서버 검증·문서화·PR 작성까지, Plan Mode와 프로젝트 전용 Skill 8개를 함께 사용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "계획 수립 (Plan Mode)",
+        "purpose": "요구사항과 기존 코드를 탐색해 구현 계획을 세우고, 트레이드오프가 있는 지점은 확인받은 뒤 진행합니다."
+      },
+      {
+        "type": "skill",
+        "name": "code-convention",
+        "purpose": "프론트(React 19+Vite)·백엔드(Express+Prisma)의 파일 구조·네이밍·레이어 패턴·에러 처리 규칙을 docs/conventions.md 기준으로 적용합니다."
+      },
+      {
+        "type": "skill",
+        "name": "security-convention",
+        "purpose": "새 라우트·컨트롤러 작성이나 배포 설정(환경변수·CORS·헤더) 변경 시 docs/security.md의 입력 검증·예외 처리 규칙을 적용합니다."
+      },
+      {
+        "type": "skill",
+        "name": "backend-testing",
+        "purpose": "docs/testing.md 기준으로 순수 함수는 유닛테스트, 라우트는 GitHub mock + 실제 Supabase DB로 통합테스트를 작성합니다."
+      },
+      {
+        "type": "skill",
+        "name": "api-smoke-test",
+        "purpose": "새/수정된 라우트를 실제로 기동해 openapi.yaml 기준 정상·에러 케이스를 요청으로 검증하고, 좀비 프로세스 없이 서버를 정리합니다."
+      },
+      {
+        "type": "skill",
+        "name": "firstpr-ui",
+        "purpose": "docs/design.md의 색·폰트·모서리·여백 CSS 변수를 소스로 삼아 토스 스타일 UI를 만들거나 정리합니다."
+      },
+      {
+        "type": "skill",
+        "name": "explain-work",
+        "purpose": "방금 한 작업을 요약이 아니라 기능 단위로 쪼개 뭘/왜/어떻게 했는지, 더 나은 방법이 있는지까지 설명합니다."
+      },
+      {
+        "type": "skill",
+        "name": "pr-draft",
+        "purpose": "업스트림 저장소에 PR을 올리기 전, 브랜치의 커밋·diff를 분석해 PR 템플릿 형식의 제목·본문 초안을 작성합니다."
+      },
+      {
+        "type": "skill",
+        "name": "commit-message",
+        "purpose": "Conventional Commits 형식(type: 한글 설명)에 맞춰 커밋 메시지를 작성합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "요구사항·설계 결정을 docs/decisions.md에 먼저 기록",
+          "Plan Mode로 기존 코드 탐색 후 구현 계획 수립 및 확인",
+          "code-convention/security-convention 기준으로 테스트를 먼저 작성하고 구현 (TDD)",
+          "backend-testing 기준으로 유닛/통합 테스트 실행",
+          "api-smoke-test로 실서버 기동 후 정상/에러 케이스 검증",
+          "docs/log.md·checklist.md에 작업 내용 반영"
+        ]
+      },
+      {
+        "name": "커밋·리뷰 Workflow",
+        "steps": [
+          "작은 논리적 단위로 커밋 분리 (commit-message 컨벤션)",
+          "커밋마다 코드 리뷰 진행",
+          "요청 시 explain-work로 변경 근거·대안까지 상세 설명",
+          "기능 브랜치를 dev에 머지, dev를 주기적으로 main에 반영"
+        ]
+      },
+      {
+        "name": "PR 협업 Workflow",
+        "steps": [
+          "pr-draft 스킬로 .github/pull_request_template.md 형식의 PR 초안 작성",
+          "코드 리뷰 의견 반영",
+          "최종 결과 확인 후 병합"
+        ]
+      }
+    ]
+  }
+}

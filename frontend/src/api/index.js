@@ -36,9 +36,11 @@ export async function createRecommendation(githubId, preferences) {
 }
 
 // GET /api/recommendations/:id — 새로고침/재진입 시 재조회용
-export async function getRecommendation(id) {
+// repoFullName+issueNumber를 함께 보내면 상세 화면에서 그 이슈 1건만 LLM 분석을 지연 생성한다 (#6)
+export async function getRecommendation(id, { repoFullName, issueNumber } = {}) {
   try {
-    const { data } = await client.get(`/api/recommendations/${id}`)
+    const params = repoFullName && issueNumber ? { repoFullName, issueNumber } : undefined
+    const { data } = await client.get(`/api/recommendations/${id}`, { params })
     return data
   } catch (error) {
     throw toUserError(error, '추천 결과를 불러오지 못했어요. 잠시 후 다시 시도해주세요.')
