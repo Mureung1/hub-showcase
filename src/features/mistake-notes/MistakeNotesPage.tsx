@@ -96,9 +96,9 @@ export default function MistakeNotesPage() {
           <button type="button" disabled title="후속 기능">
             내보내기
           </button>
-          <button type="button" disabled title="후속 기능">
+          <Link className={styles.addButton} to="/mistake-notes/new">
             + 새 오답 추가
-          </button>
+          </Link>
         </div>
       </header>
 
