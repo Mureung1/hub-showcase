@@ -3,14 +3,21 @@
 import type { ScheduleCalculateRequest, ScheduleCalculateResponse } from '../../api/calculateSchedule';
 import { formatCups, formatKstTime, formatKstWeekday, kstDateKey } from './formatSchedule';
 
-// 기존 자리표시용 SVG와 같은 화면 크기를 유지한다(ResultPage.module.css가 이 비율에 맞춰져 있음)
-export const VIEW_WIDTH = 320;
 export const VIEW_HEIGHT = 170;
 /** 곡선이 그려지는 세로 범위. 위는 시험 라벨, 아래는 요일 라벨 자리로 비워둔다 */
 const PLOT_TOP = 18;
 const PLOT_BOTTOM = 138;
 
+// #26 — 시험기간 전체를 320px에 접어 넣으면 곡선이 뭉개져서, 기간에 비례해 가로로
+// 늘리고 스크롤로 본다. 하루당 이 폭(px)을 준다.
+const PX_PER_DAY = 150;
+// 기간이 짧을 때(1~2일) 카드보다 좁아 보이지 않도록 하는 최소 폭. 프로토타입의 320을 유지.
+const MIN_VIEW_WIDTH = 320;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export interface ChartGeometry {
+  /** #26 — 기간에 따라 달라지는 SVG 가로 폭(viewBox·실제 렌더 폭 둘 다 이 값) */
+  width: number;
   /** 곡선 자체 */
   linePath: string;
   /** 곡선 아래 채움(그라디언트용) */
@@ -27,6 +34,7 @@ export interface ChartGeometry {
 
 /** 값이 없을 때 그려도 안전한 빈 결과 */
 const EMPTY: ChartGeometry = {
+  width: MIN_VIEW_WIDTH,
   linePath: '',
   areaPath: '',
   sleepBands: [],
@@ -48,6 +56,10 @@ export function buildChartGeometry(
   const 기간 = 끝 - 시작;
   if (기간 <= 0) return EMPTY;
 
+  // 기간(며칠)에 비례해 폭을 정한다. 짧으면 최소 폭으로 카드를 꽉 채우고, 길면 그만큼 넓혀
+  // 스크롤로 본다.
+  const width = Math.max(MIN_VIEW_WIDTH, Math.round((기간 / DAY_MS) * PX_PER_DAY));
+
   const scores = points.map((p) => p.score);
   let 최소 = Math.min(...scores);
   let 최대 = Math.max(...scores);
@@ -58,7 +70,7 @@ export function buildChartGeometry(
   }
 
   /** 시각 -> 가로 좌표 */
-  const toX = (ms: number) => ((ms - 시작) / 기간) * VIEW_WIDTH;
+  const toX = (ms: number) => ((ms - 시작) / 기간) * width;
   /** 각성도 -> 세로 좌표. 점수가 높을수록 위로 가야 해서 뒤집는다 */
   const toY = (score: number) =>
     PLOT_BOTTOM - ((score - 최소) / (최대 - 최소)) * (PLOT_BOTTOM - PLOT_TOP);
@@ -68,10 +80,10 @@ export function buildChartGeometry(
   const linePath = 좌표
     .map((pt, i) => `${i === 0 ? 'M' : 'L'}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`)
     .join(' ');
-  const areaPath = `${linePath} L${VIEW_WIDTH},${PLOT_BOTTOM} L0,${PLOT_BOTTOM} Z`;
+  const areaPath = `${linePath} L${width},${PLOT_BOTTOM} L0,${PLOT_BOTTOM} Z`;
 
   // 화면 밖으로 삐져나온 구간은 잘라낸다(기간을 벗어난 밤·카페인이 있을 수 있음)
-  const 자르기 = (x: number) => Math.max(0, Math.min(VIEW_WIDTH, x));
+  const 자르기 = (x: number) => Math.max(0, Math.min(width, x));
 
   const sleepBands = (response?.recommendedSchedule.nights ?? [])
     .map((night) => {
@@ -119,5 +131,5 @@ export function buildChartGeometry(
     }
   });
 
-  return { linePath, areaPath, sleepBands, caffeineMarkers, examMarkers, dayTicks };
+  return { width, linePath, areaPath, sleepBands, caffeineMarkers, examMarkers, dayTicks };
 }
