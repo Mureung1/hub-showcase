@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: A1 writer
 
 ## Parent Spec
 
@@ -47,6 +47,17 @@ Official Codex가 소유하는 account lifecycle과 AY-PLE의 auth-only→worksp
 - Targeted test or command: `npm test -w @ay-ple/server`, AccountRuntimeCoordinator login/cancel/logout/close/Ready race matrix와 Server projection conformance test
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
 - Manual or live smoke: Live OAuth는 요구하지 않는다. R1 deterministic account fake로 auth-only→workspace transition과 process-tree disappearance를 검증한다.
+
+## Claim Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Exact handoff | `27b8b77d8d4b4bd16a0c1589e7accb8550954eb3` — coordinator가 R1 completion과 후속 reviewed integration을 반영하고 root gates를 green으로 확인한 clean integration HEAD |
+| R1 predecessor | Ticket 006 canonical integration tip `3e3e578fbd8d5f427bde6c6c6087f3789756cdba`가 exact handoff의 ancestor이며 managed account lifecycle, immutable Runtime role, process-tree close와 patch-free native-context port를 제공한다. |
+| Frozen contract tip | `apps/server/src/account-runtime/contract.ts`와 S1 Browser Account contract의 latest change는 `7332c8bc77705160e31e0ce8e53e0dec6eb2dd90`이고 exact handoff에 포함돼 있다. |
+| Observable result | Account action과 auth-only→workspace Runtime 교체가 app-wide lease 하나에서 직렬화되고, B-owned callback과 Ready readback이 성공한 뒤에만 Ready result가 반환된다. |
+| Highest practical seam | Deterministic R1 `CodexAccountLifecycle` fake와 injected Runtime factory/close/readback을 사용하는 Server account/transition race matrix. Live OAuth와 credential byte는 사용하지 않는다. |
+| Scope | Ticket의 `writablePaths`만 사용하며 frozen contract, shared manifest·lockfile, sibling branch와 Codex SDK source/patch stack을 변경하지 않는다. |
 
 ## Blocked By
 
