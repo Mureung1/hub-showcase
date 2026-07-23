@@ -121,11 +121,19 @@ isProject: false
 ### [31/P1/목] Supabase upsert 파이프라인
 - **목표**: 변환된 데이터를 `subsidies` 테이블에 실제로 채워 넣는다.
 - **작업**
-  - [ ] `supabase/schema.sql` 확장 검토 — 원본 공고 id, 원문 URL, 수집 시각 등 실데이터 특성상
-        필요한 컬럼이 있는지 (기존 `subsidies` 스키마는 샘플 데이터 기준으로 설계됨)
-  - [ ] `crawler/src/upsert.ts` — 매핑 결과를 Supabase에 upsert (`onConflict` 키 = 원본 공고 id)
-  - [ ] 기존 샘플 8건과의 공존 방식 결정 (병행 유지 vs 실데이터로 교체)
+  - [x] `supabase/schema.sql` 확장 검토 — **불필요로 판명**. `Subsidy` 타입 필드가 기존 컬럼과
+        1:1 대응해서(매핑은 #28~#30에서 이미 확정) 새 컬럼 없이 그대로 upsert 가능
+  - [x] `crawler/src/supabase.ts` — 크롤러 전용 Supabase 클라이언트 (server와 별도 워크스페이스라
+        각자 둠, 로직은 `server/src/db/supabase.ts`와 동일 패턴)
+  - [x] `crawler/src/upsert.ts` — `upsertSubsidies()`, `onConflict: 'id'`(원본 공고 `pblancId`)로
+        재수집 시 중복 방지
+  - [x] `crawler/src/index.ts` — 전체 파이프라인(fetch → map → 마감 지난 공고 제외 → upsert)으로
+        재작성, 이미 마감된(`dday < 0`) 공고는 upsert 전 필터링 (#30에서 남겨둔 미해결 질문 해소)
+  - [x] 기존 샘플 8건과의 공존 방식 — **병행 유지로 결정**. 크롤러 id(`PBLN_...`)와 샘플 id(`1`~`8`)가
+        체계가 달라 충돌 없이 자연스럽게 공존
 - **완료 기준**: 실제 API에서 가져온 데이터가 Supabase에 upsert되고 `GET /api/subsidies`로 확인된다.
+  **완료 (2026-07-23)** — `npm run run -w @hub/crawler` 실행 → 5건 upsert → `GET /api/subsidies`
+  total 8(샘플) + 5(실데이터) = 13건 확인. 재실행해도 13건 유지(중복 없음, upsert 정상 동작)
 
 ### [32/P1/금] GitHub Actions cron + 검증 문서화
 - **목표**: 크롤러가 주기적으로 자동 실행되고, 결과가 검증 문서로 남는다.

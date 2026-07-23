@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "fetch:sample": "tsx src/index.ts",
+    "run": "tsx src/index.ts",
     "build": "tsc",
     "lint": "oxlint src"
   },
   "dependencies": {
     "@hub/shared": "*",
+    "@supabase/supabase-js": "^2.110.7",
     "dotenv": "^16.4.7"
   },
   "devDependencies": {
