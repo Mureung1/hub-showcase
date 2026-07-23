@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -32,37 +32,44 @@ Public host와 후속 feature router가 개발 entrypoint나 TCP listener를 재
 
 ## Acceptance Criteria
 
-- [ ] Host-consumable Server application factory가 TCP bind, process environment resolution과 signal registration 없이 Express application·bounded close handle을 반환한다.
-- [ ] Development executable은 기존 local origin, workspace activation, listener와 signal behavior를 같은 observable result로 조립한다.
-- [ ] Import만으로 `.env` load, listener bind, Runtime spawn 또는 workspace mutation이 일어나지 않는다.
-- [ ] Product route, Origin guard, NDJSON framing, current activation과 shutdown regression test가 split 전과 같은 결과를 낸다.
-- [ ] 하나의 Browser trace가 invalid evidence/unselected source, quote mismatch, stale base와 duplicate/late Review를 거쳐 confirmed state mutation 0을 증명한다.
-- [ ] Existing lower-seam validator·Review tests와 current Browser workbench behavior가 유지된다.
-- [ ] Fixed reviewed commit과 full root green receipt가 `spineTipSha` handoff artifact로 남는다.
+- [x] Host-consumable Server application factory가 TCP bind, process environment resolution과 signal registration 없이 Express application·bounded close handle을 반환한다.
+- [x] Development executable은 기존 local origin, workspace activation, listener와 signal behavior를 같은 observable result로 조립한다.
+- [x] Import만으로 `.env` load, listener bind, Runtime spawn 또는 workspace mutation이 일어나지 않는다.
+- [x] Product route, Origin guard, NDJSON framing, current activation과 shutdown regression test가 split 전과 같은 결과를 낸다.
+- [x] 하나의 Browser trace가 invalid evidence/unselected source, quote mismatch, stale base와 duplicate/late Review를 거쳐 confirmed state mutation 0을 증명한다.
+- [x] Existing lower-seam validator·Review tests와 current Browser workbench behavior가 유지된다.
+- [x] Fixed reviewed commit과 full root green receipt가 `spineTipSha` handoff artifact로 남는다.
 
 ## Verification
 
-- Targeted test or command: Server workspace tests, `npm run test:e2e -w @ay-ple/chat-shell`, `npm run test:product-entrypoint`, actual shutdown tests
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
-- Manual or live smoke: Provider-free current workbench를 1440×900 desktop에서 열어 fail-closed trace와 clean shutdown을 확인한다.
+| Gate | Result |
+| --- | --- |
+| Focused Server lifecycle | `NODE_OPTIONS=--conditions=development npx tsx --test apps/server/src/server-application.test.ts apps/server/src/server-listener.test.ts apps/server/src/server-process-lifecycle.test.ts apps/server/src/product-development.test.ts` — `12/12` green |
+| Server workspace | `npm test -w @ay-ple/server` — `123/123` green |
+| Current-workbench oracle | Targeted Browser trace `1/1` green. Unselected evidence, quote mismatch와 stale base 뒤 confirmed revision·Assignment·StatePatch·UserConfirmation이 모두 0이고, UI Reject 뒤 active duplicate와 terminal late Review가 durable snapshot과 native answer count를 바꾸지 않음 |
+| Browser regression | `npm run test:e2e -w @ay-ple/chat-shell` — Chromium desktop 1440×900 `32/32` green |
+| Entrypoint and shutdown | `npm run test:product-entrypoint` green; `npm run test:product-shutdown-actual -w @ay-ple/server` — `2/2` green |
+| Runtime artifact precondition | Clone-local ignored production Runtime artifact를 complete-tree 검증했고 `verify:production-runtime`이 roster SHA-256 `4b72a60735d6b6d1489bab9fa937889f296ba2268c3fc0c433ba84ca10b36b7a`로 green |
+| Root gates | Review corrective implementation `cb77ca843529004d2df9c1b7b5e40960ce91c30c`에서 `npm test` green (Server `123/123`, Chat Shell unit `40/40` 포함); `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `npm run check:docs-links` active `28`·historical `2`; `git diff --check` 모두 green |
+| Coordinator manual dogfood | Reviewed tip `c2e95616d8ac2461844525c69a7e0d714da3e710`의 provider-free current workbench를 실제 Browser 1440×900 viewport에서 확인했다. 첫 세 invalid proposal은 `confirmedRevision: 0`, Assignment·StatePatch·UserConfirmation 각각 0을 유지했다. 네 번째 valid proposal을 실제 UI에서 Reject한 뒤 revision 0, Assignment 0, rejected StatePatch 정확히 1개, rejected UserConfirmation 정확히 1개였다. Console error는 없었고 Browser viewport와 Server를 정리했다. |
 
-## Candidate Verification Receipt
-
-1차 independent Server architecture review와 current First Assignment Browser regression review의 지적을 반영했고 재검토 전 candidate 상태다. Acceptance Criteria와 ticket state는 reviewer 판정 전까지 변경하지 않는다.
+## Result
 
 | Evidence | Result |
 | --- | --- |
 | Fixed base | `27d399d56e58331e3f37215b8deabfcbc14971bd` |
-| Initial implementation candidate | `8bf12743b5f866f61049f910160380a17c743ad4` |
-| Review corrective fixed point | `6f23235b2e39e278dfe8bdb554d292047ca32ffc` |
-| Review corrective candidate | `cb77ca843529004d2df9c1b7b5e40960ce91c30c` |
-| Review corrections | Factory-created `ServerApplication` 하나가 listener lifecycle을 정확히 한 번만 claim하고 double bind와 bind-after-close를 fail closed한다. Public `application.close()`는 listener intake refusal을 먼저 시작한 뒤 app/Runtime close와 listener completion을 함께 기다린다. Post-bind `log()` failure도 claimed listener를 닫고, `product-development.ts`는 Server barrel이 아니라 `server-application.ts`의 type을 직접 소비한다. Browser negative control은 private store JSON을 parse하지 않고 typed `SemesterWorkspaceController.snapshot()` authority로 runtime script를 주입한다. |
-| Server composition | Server workspace `123/123`; listener-independent factory, import side-effect, once-only TCP lifecycle, listener-first shutdown, post-bind failure cleanup과 signal lifecycle focused tests green (`12/12`) |
-| Current-workbench oracle | Targeted Browser trace `1/1`; unselected evidence, quote mismatch, stale base 후 confirmed revision·Assignment·StatePatch·UserConfirmation이 모두 0이며, 한 번의 UI Reject 이후 active duplicate와 terminal late Review가 durable snapshot과 native answer count를 바꾸지 않음 |
-| Browser regression | `npm run test:e2e -w @ay-ple/chat-shell` — Chromium desktop 1440×900 `32/32` |
-| Entrypoint and shutdown | `npm run test:product-entrypoint` green; verified ignored production Runtime artifact로 `npm run test:product-shutdown-actual -w @ay-ple/server` `2/2` |
-| Runtime artifact precondition | 최초 actual shutdown 실행은 이 worktree에 ignored production Runtime artifact가 없어 Runtime readiness 단계에서 fail closed함. Main clone의 기존 materialized tree를 clone-local로 복제한 뒤 `verify:production-runtime`이 roster SHA-256 `4b72a60735d6b6d1489bab9fa937889f296ba2268c3fc0c433ba84ca10b36b7a`로 green이고 actual shutdown 재실행이 green |
-| Root gates | Review corrective candidate에서 `npm test` green (Server `123/123`, Chat Shell unit `40/40` 포함); `npm run typecheck`; `npm run build`; Chat Shell lint; docs links active `28`·historical `2`; `git diff --check` 모두 green |
+| Ticket claim | `1141d0c272c6ce571f12b0516909778d1627a7b3` |
+| Initial implementation | `8bf12743b5f866f61049f910160380a17c743ad4` |
+| Initial candidate receipt | `6f23235b2e39e278dfe8bdb554d292047ca32ffc` |
+| Review corrective implementation | `cb77ca843529004d2df9c1b7b5e40960ce91c30c` |
+| Fixed reviewed `spineTipSha` | `c2e95616d8ac2461844525c69a7e0d714da3e710` |
+| Independent review range | `27d399d56e58331e3f37215b8deabfcbc14971bd..c2e95616d8ac2461844525c69a7e0d714da3e710` |
+| Server architecture re-review | `GREEN` |
+| Current First Assignment Browser regression re-review | `GREEN` |
+
+Listener-independent application factory, once-only TCP lifecycle claim, listener-first shutdown과 post-bind failure cleanup을 고정했다. Development entrypoint의 기존 behavior와 lower-seam regression을 유지하면서 Browser 최고 seam의 fail-closed oracle은 private store parse 없이 typed controller authority를 사용한다.
+
+Parent Spec은 이 디렉터리의 후속 implementation ticket이 남아 있으므로 incomplete 상태를 유지한다.
 
 ## Blocked By
 
