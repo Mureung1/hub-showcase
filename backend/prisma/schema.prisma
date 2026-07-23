@@ -58,6 +58,7 @@ model User {
   calendarEvents       CalendarEvent[]
   scraps               Scrap[]
   pushSubscriptions    PushSubscription[]
+  githubStars          UserGithubStar[]
 
   @@map("users")
 }
@@ -222,4 +223,62 @@ model PushSubscription {
   @@unique([userId, endpoint]) // 사용자 당 엔드포인트는 하나만
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+// GitHub 인기 저장소 (외부 서비스 통합)
+model GithubRepo {
+  id              String   @id @default(cuid())
+  githubId        Int      @unique // GitHub API ID
+  owner           String   // 소유자 (사용자/조직)
+  name            String   // 저장소명
+  fullName        String   @unique // owner/name
+  description     String?  @db.Text // 설명
+  url             String   // GitHub 링크
+
+  // 메트릭
+  stars           Int      @default(0) // Star 개수
+  forks           Int      @default(0) // Fork 개수
+  openIssues      Int      @default(0) // Open Issues
+  language        String?  // 주 언어
+
+  // 콘텐츠
+  readme          String?  @db.Text // 원본 README (마크다운)
+  readmeHtml      String?  @db.Text // HTML 렌더링 (선택)
+  summary         String?  @db.Text // 한국어 요약 (LLM 생성)
+  summaryBullets  String[] @default([]) // 핵심 포인트 (배열, 3-5개)
+
+  // 메타데이터
+  topics          String[] @default([]) // GitHub 토픽/태그
+  license         String?  // 라이선스
+  homepageUrl     String?  // 홈페이지
+
+  // 추적 정보
+  lastFetchedAt   DateTime @default(now()) // 마지막 조회
+  updatedAt       DateTime @updatedAt // 마지막 업데이트
+  createdAt       DateTime @default(now())
+
+  // 사용자 상호작용 (향후 확장)
+  userStars       UserGithubStar[]
+
+  @@index([stars])
+  @@index([language])
+  @@index([lastFetchedAt])
+  @@map("github_repos")
+}
+
+// 사용자가 관심있는 GitHub Repo (나중에 추가)
+model UserGithubStar {
+  id        String   @id @default(cuid())
+  userId    String
+  repoId    String
+  starredAt DateTime @default(now())
+
+  // Relations
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repo      GithubRepo   @relation(fields: [repoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, repoId]) // 중복 방지
+  @@index([userId])
+  @@index([repoId])
+  @@map("user_github_stars")
 }
