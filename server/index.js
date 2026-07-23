@@ -1,13 +1,13 @@
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
-import OpenAI from 'openai'
+import { GoogleGenAI } from '@google/genai'
 
 dotenv.config()
 
 const app = express()
 const port = Number(process.env.PORT || 8787)
-const model = process.env.OPENAI_MODEL || 'gpt-5.6-terra'
+const model = process.env.GEMINI_MODEL
 
 app.use(cors({ origin: true }))
 app.use(express.json({ limit: '1mb' }))
@@ -80,26 +80,36 @@ function validateAnalyzeRequest(body) {
   return ''
 }
 
+const systemInstruction =
+  '너는 대학생 첫 자취방 의사결정을 돕는 한국어 분석 도우미다. 부동산 계약의 최종 법률 판단을 대신하지 말고, 사용자가 확인해야 할 비용, 통학, 매물 신뢰도, 용어 이해 관점을 실용적으로 정리한다. 확실하지 않은 내용은 단정하지 말고 확인 필요로 표현한다.'
+
 function createPrompt({ listingInfo, userInfo }) {
-  return [
+  return JSON.stringify(
     {
-      role: 'system',
-      content:
-        '너는 대학생 첫 자취방 의사결정을 돕는 한국어 분석 도우미다. 부동산 계약의 최종 법률 판단을 대신하지 말고, 사용자가 확인해야 할 비용, 통학, 매물 신뢰도, 용어 이해 관점을 실용적으로 정리한다. 확실하지 않은 내용은 단정하지 말고 확인 필요로 표현한다.',
+      task: '사용자 정보와 매물 OCR/입력 정보를 바탕으로 자취방 의사결정 참고 분석을 구조화해서 작성해줘.',
+      userInfo,
+      listingInfo,
     },
-    {
-      role: 'user',
-      content: JSON.stringify(
-        {
-          task: '사용자 정보와 매물 OCR/입력 정보를 바탕으로 자취방 의사결정 참고 분석을 구조화해서 작성해줘.',
-          userInfo,
-          listingInfo,
-        },
-        null,
-        2,
-      ),
-    },
-  ]
+    null,
+    2,
+  )
+}
+
+function readInteractionText(result) {
+  if (result.output_text) {
+    return result.output_text
+  }
+
+  const text = result.outputs
+    ?.filter((output) => output.type === 'text')
+    .map((output) => output.text)
+    .join('')
+
+  if (!text) {
+    throw new Error('Gemini 응답 본문이 비어 있습니다.')
+  }
+
+  return text
 }
 
 app.get('/api/health', (request, response) => {
@@ -113,31 +123,31 @@ app.post('/api/analyze-listing', async (request, response) => {
     return
   }
 
-  if (!process.env.OPENAI_API_KEY) {
-    response.status(500).json({ error: 'OPENAI_API_KEY가 설정되어 있지 않습니다.' })
+  if (!process.env.GEMINI_API_KEY) {
+    response.status(500).json({ error: 'GEMINI_API_KEY가 설정되어 있지 않습니다.' })
+    return
+  }
+
+  if (!model) {
+    response.status(500).json({ error: 'GEMINI_MODEL이 설정되어 있지 않습니다.' })
     return
   }
 
   try {
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-    const result = await client.responses.create({
+    const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+    const result = await client.interactions.create({
       model,
       input: createPrompt(request.body),
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'listing_analysis',
-          schema: analysisSchema,
-          strict: true,
-        },
-      },
+      system_instruction: systemInstruction,
+      response_format: analysisSchema,
+      response_mime_type: 'application/json',
     })
 
-    response.json({ analysis: JSON.parse(result.output_text) })
+    response.json({ analysis: JSON.parse(readInteractionText(result)) })
   } catch (error) {
     const status = error?.status || 500
     const message = status === 401
-      ? 'OpenAI API 인증에 실패했습니다.'
+      ? 'Gemini API 인증에 실패했습니다.'
       : '분석 API 호출 중 오류가 발생했습니다.'
 
     response.status(status).json({ error: message })

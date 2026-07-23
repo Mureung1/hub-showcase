@@ -1,5 +1,7 @@
+import AnalysisResultPanel from '../components/listing-upload/AnalysisResultPanel'
 import FileUploadPanel from '../components/listing-upload/FileUploadPanel'
 import OcrReviewPanel from '../components/listing-upload/OcrReviewPanel'
+import { useListingAnalysis } from '../hooks/useListingAnalysis'
 import { useListingUpload } from '../hooks/useListingUpload'
 
 function ListingUploadPage({ onBack }) {
@@ -7,6 +9,7 @@ function ListingUploadPage({ onBack }) {
     error,
     fields,
     imageName,
+    imageType,
     isProcessing,
     ocrText,
     previewUrl,
@@ -18,6 +21,17 @@ function ListingUploadPage({ onBack }) {
     selectFile,
     updateField,
   } = useListingUpload()
+  const {
+    analysis,
+    error: analysisError,
+    isAnalyzing,
+    runAnalysis,
+  } = useListingAnalysis({
+    fields,
+    imageName,
+    imageType,
+    ocrText,
+  })
 
   return (
     <main className="user-info-page">
@@ -61,6 +75,23 @@ function ListingUploadPage({ onBack }) {
             saved={saved}
             savedAt={savedAt}
           />
+
+          <section className="analysis-section" aria-labelledby="analysis-title">
+            <div className="step-heading compact-heading">
+              <h2 id="analysis-title">AI 분석</h2>
+              <p>확인한 OCR 원문과 매물 정보를 사용자 조건과 함께 LLM에 보내 분석합니다.</p>
+            </div>
+
+            {analysisError && <p className="error-text" role="alert">{analysisError}</p>}
+
+            <div className="button-row align-end">
+              <button className="primary-button" type="button" onClick={runAnalysis} disabled={isAnalyzing}>
+                {isAnalyzing ? 'AI 분석 중' : 'AI 분석하기'}
+              </button>
+            </div>
+
+            <AnalysisResultPanel analysis={analysis} />
+          </section>
 
           <div className="button-row">
             <button className="secondary-button" type="button" onClick={onBack}>

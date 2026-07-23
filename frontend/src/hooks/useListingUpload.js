@@ -131,6 +131,7 @@ export function useListingUpload() {
     error,
     fields,
     imageName,
+    imageType,
     isProcessing,
     ocrText,
     previewUrl,
