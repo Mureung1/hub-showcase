@@ -14,7 +14,7 @@
 
 ## 2. 시스템 범위
 
-CareerSignal은 채용공고와 근거 자료를 직무 단위로 분석해 통계, 채용공고 해설, 합격 전략, 준비 로드맵을 생성하는 배치형 리서치 에이전트 서비스다. 분석 범위는 다음 세 단계로 구성한다.
+CareerSignal은 채용공고와 근거 자료를 직무 단위로 분석해 통계, 채용공고 해석, 합격 전략, 준비 로드맵을 생성하는 배치형 리서치 에이전트 서비스다. 분석 범위는 다음 세 단계로 구성한다.
 
 | 범위 | 식별자 | 의미 |
 | --- | --- | --- |
@@ -29,62 +29,56 @@ CareerSignal은 채용공고와 근거 자료를 직무 단위로 분석해 통�
 ## 3. 전체 시스템 구성
 
 ```mermaid
-flowchart TD
-    SOURCES["기업 채용 페이지·공식 자료·공공 표준·외부 전략 자료"] --> KNOWLEDGE["데이터·지식 에이전트"]
-    KNOWLEDGE --> RAW[("Raw 원문·출처·정형 데이터")]
-    KNOWLEDGE --> WIKI[("Wiki·청크·벡터 인덱스")]
-    KNOWLEDGE --> GRAPH[("원천·분석 지식 그래프")]
+flowchart LR
+    subgraph ANALYSIS["분석 실행"]
+        CHANGE["데이터 변경"] --> ORCHESTRATOR["분석 오케스트레이터"]
+        SOURCES["기업 채용 페이지·공식 자료·공공 표준·외부 전략 자료"] --> KNOWLEDGE["데이터·지식 에이전트"]
+        ORCHESTRATOR --> KNOWLEDGE
+        KNOWLEDGE --> KNOWLEDGE_STORE[("Raw·Wiki·벡터·지식 그래프")]
 
-    ORCH["분석 오케스트레이터"] --> KNOWLEDGE
-    ORCH --> STAT["통계 분석 에이전트"]
-    ORCH --> REVERSE["채용공고 해설 에이전트"]
-    ORCH --> CONDITION["합격 전략 에이전트"]
-    ORCH --> ROADMAP["준비 로드맵 에이전트"]
+        ORCHESTRATOR --> STATISTICS["통계 분석 에이전트"]
+        ORCHESTRATOR --> INTERPRETATION["채용공고 해석 에이전트"]
+        ORCHESTRATOR --> STRATEGY["합격 전략 에이전트"]
+        ORCHESTRATOR --> ROADMAP["준비 로드맵 에이전트"]
 
-    RAW --> STAT
-    STAT --> STAT_OUT[("통계 분석 결과")]
-    STAT_OUT --> GRAPH
+        KNOWLEDGE_STORE --> STATISTICS
+        KNOWLEDGE_STORE --> INTERPRETATION
+        KNOWLEDGE_STORE --> STRATEGY
+        KNOWLEDGE_STORE --> ROADMAP
 
-    RAW --> REVERSE
-    WIKI --> REVERSE
-    GRAPH --> REVERSE
-    STAT_OUT --> REVERSE
-    REVERSE --> REVERSE_OUT[("공고 해설 결과")]
-    REVERSE_OUT --> GRAPH
+        STATISTICS --> STATISTICS_OUT[("통계 분석 결과")]
+        STATISTICS_OUT --> INTERPRETATION
+        STATISTICS_OUT --> STRATEGY
+        STATISTICS_OUT --> ROADMAP
 
-    STAT_OUT --> CONDITION
-    REVERSE_OUT --> CONDITION
-    WIKI --> CONDITION
-    GRAPH --> CONDITION
-    CONDITION --> CONDITION_OUT[("체크리스트·합격 전략")]
-    CONDITION_OUT --> GRAPH
+        INTERPRETATION --> INTERPRETATION_OUT[("채용공고 해석 결과")]
+        INTERPRETATION_OUT --> STRATEGY
+        INTERPRETATION_OUT --> ROADMAP
 
-    STAT_OUT --> ROADMAP
-    REVERSE_OUT --> ROADMAP
-    CONDITION_OUT --> ROADMAP
-    WIKI --> ROADMAP
-    GRAPH --> ROADMAP
-    ROADMAP --> ROADMAP_OUT[("기본 로드맵·학습 전략")]
-    ROADMAP_OUT --> GRAPH
+        STRATEGY --> STRATEGY_OUT[("체크리스트·합격 전략")]
+        STRATEGY_OUT --> ROADMAP
+        ROADMAP --> ROADMAP_OUT[("기본 로드맵·학습 전략")]
 
-    STAT_OUT --> ACTIVE[("활성 분석 버전")]
-    REVERSE_OUT --> ACTIVE
-    CONDITION_OUT --> ACTIVE
-    ROADMAP_OUT --> ACTIVE
+        STATISTICS_OUT --> VERIFIER["통합 Verifier"]
+        INTERPRETATION_OUT --> VERIFIER
+        STRATEGY_OUT --> VERIFIER
+        ROADMAP_OUT --> VERIFIER
+        VERIFIER --> ACTIVE[("활성 분석 버전")]
+    end
 
-    USER["사용자"] --> UI["React · product"]
-    UI --> API["Express · server"]
-    ACTIVE --> API
-    API --> UI
-
-    UI --> CHECKS["범위별 체크 상태"]
-    CHECKS --> COMPOSER["준비 현황·로드맵 조합기"]
-    CONDITION_OUT --> COMPOSER
-    ROADMAP_OUT --> COMPOSER
-    COMPOSER --> API
+    subgraph RUNTIME["사용자 조회"]
+        USER["사용자"] --> UI["React · product"]
+        UI --> API["Express · server"]
+        ACTIVE --> API
+        UI --> CHECKS["범위별 체크 상태"]
+        ACTIVE --> COMPOSER["준비 현황·로드맵 조합기"]
+        CHECKS --> COMPOSER
+        COMPOSER --> API
+        API --> UI
+    end
 ```
 
-분석 에이전트는 자료와 앞 단계 산출물을 조회해 결과와 검증된 관계를 버전별로 저장한다. 데이터·지식 에이전트는 원문 기반 노드·관계를 구축하고, 통계 분석·채용공고 해설·합격 전략·준비 로드맵 에이전트는 자기 산출물에서 파생된 관계를 같은 분석 버전에 기록한다. 일반 사용자 조회는 에이전트를 호출하지 않고 하나의 활성 분석 버전 안에서 결과를 반환한다.
+분석 에이전트는 자료와 앞 단계 산출물을 조회해 결과와 검증된 관계를 버전별로 저장한다. 데이터·지식 에이전트는 원문 기반 노드·관계를 구축하고, 통계 분석·채용공고 해석·합격 전략·준비 로드맵 에이전트는 자기 산출물에서 파생된 관계를 같은 분석 버전에 기록한다. 일반 사용자 조회와 체크 상태 조합은 검증을 통과한 활성 분석 버전만 사용한다.
 
 ## 4. 구성요소와 책임
 
@@ -94,12 +88,12 @@ flowchart TD
 | Express API | 활성 결과 조회, 응답 조립, 체크 상태 반영, 캐싱, 오류 처리 | 미사용 | 사용자 요청 | `server/` |
 | 데이터·지식 에이전트 | 자료 발견·수집·평가, Wiki·벡터 인덱스·그래프 구축 | 사용 | 데이터 갱신 | `agent/` |
 | 통계 분석 에이전트 | 공고 요구사항 추출·정규화, 규칙 집계, 통계 해석 | 일부 사용 | 데이터 갱신 | `agent/` |
-| 채용공고 해설 에이전트 | 직무 기준선, 기업군·공고 편차, 숨은 요구, 근거와 신뢰도 생성 | 사용 | 데이터 갱신 | `agent/` |
+| 채용공고 해석 에이전트 | 직무 기준선, 기업군·공고 편차, 숨은 요구, 근거와 신뢰도 생성 | 사용 | 데이터 갱신 | `agent/` |
 | 합격 전략 에이전트 | 체크리스트와 포트폴리오·자소서·면접 전략 생성 | 사용 | 데이터 갱신 | `agent/` |
 | 준비 로드맵 에이전트 | 기본 프로젝트 로드맵, 학습 전략, 선수 관계 생성 | 사용 | 데이터 갱신 | `agent/` |
 | 분석 오케스트레이터 | 변경 영향 범위 계산, 실행 순서 제어, 검증과 버전 활성화 | 미사용 | 데이터 갱신 | `agent/` |
 | 준비 현황·로드맵 조합기 | 체크 상태에 따른 집계와 프로젝트·학습 순서 재조합 | 미사용 | 사용자 요청 | `server/` |
-| 단계별 Verifier | 입력·출력·근거·연결의 일관성 검사 | 규칙 중심, 필요 시 LLM | 에이전트 실행 | `agent/` |
+| 단계별·통합 Verifier | 에이전트별 입력·출력과 분석 버전 전체의 수치·근거·연결 일관성 검사 | 규칙 중심, 필요 시 LLM | 에이전트 실행·버전 활성화 전 | `agent/` |
 
 에이전트는 목표를 달성하기 위해 검색 도구와 DB 조회를 선택하고 결과가 부족하면 재검색한다. 분석 오케스트레이터와 Express 조합기는 사전에 정의된 의존성과 규칙을 결정적으로 실행한다.
 
@@ -110,31 +104,42 @@ sequenceDiagram
     participant Source as 데이터 변경
     participant Orchestrator as 분석 오케스트레이터
     participant Knowledge as 데이터·지식 에이전트
-    participant Stat as 통계 분석 에이전트
-    participant Reverse as 채용공고 해설 에이전트
-    participant Condition as 합격 전략 에이전트
+    participant Statistics as 통계 분석 에이전트
+    participant Interpretation as 채용공고 해석 에이전트
+    participant Strategy as 합격 전략 에이전트
     participant Roadmap as 준비 로드맵 에이전트
+    participant Verifier as 통합 Verifier
     participant DB as Supabase
 
     Source->>Orchestrator: 변경 이벤트와 데이터 버전
     Orchestrator->>Orchestrator: 직무·기업군·공고 영향 범위 계산
     Orchestrator->>Knowledge: 영향 자료 수집·지식 갱신
     Knowledge->>DB: Raw·Wiki·벡터·그래프 저장
-    Orchestrator->>Stat: 영향 직무·범위 통계 실행
-    Stat->>DB: 정형 추출·통계 결과 저장
-    Orchestrator->>Reverse: 영향 범위 공고 해설 실행
-    Reverse->>DB: 공고 해설 결과 저장
-    Orchestrator->>Condition: 영향 범위 합격 전략 실행
-    Condition->>DB: 체크리스트·합격 전략 저장
+    Orchestrator->>Statistics: 영향 직무·범위 통계 실행
+    Statistics->>DB: 정형 추출·통계 결과 저장
+    Orchestrator->>Interpretation: 영향 범위 채용공고 해석 실행
+    Interpretation->>DB: 통계·원문·공식 근거 조회
+    Interpretation->>DB: 채용공고 해석 결과 저장
+    Orchestrator->>Strategy: 영향 범위 합격 전략 실행
+    Strategy->>DB: 통계·채용공고 해석 결과 조회
+    Strategy->>DB: 체크리스트·합격 전략 저장
     Orchestrator->>Roadmap: 영향 범위 준비 로드맵 실행
+    Roadmap->>DB: 통계·채용공고 해석·합격 전략 조회
     Roadmap->>DB: 기본 로드맵·학습 전략 저장
-    Orchestrator->>DB: 전체 검증 결과 기록
-    Orchestrator->>DB: 검증된 분석 버전 활성화
+    Note over Interpretation,Roadmap: 근거가 부족하면 데이터·지식 에이전트에 조사 요청 후 재조회
+    Orchestrator->>Verifier: 분석 버전 전체 검증 요청
+    Verifier->>DB: 수치·근거·연결·스키마 검증
+    Verifier-->>Orchestrator: 검증 결과
+    alt 검증 통과
+        Orchestrator->>DB: 분석 버전 활성화
+    else 검증 실패
+        Orchestrator->>DB: 실패 기록·기존 활성 버전 유지
+    end
 ```
 
 이 다이어그램은 채용공고 변경으로 다섯 에이전트가 모두 필요한 전체 실행을 나타낸다. 분석 오케스트레이터는 변경 유형에 따라 영향이 없는 단계를 생략한다.
 
-채용공고 해설·합격 전략·준비 로드맵 에이전트는 필요한 근거가 부족하면 데이터·지식 에이전트에 조사 요청을 전달한다. 새 자료가 저장되면 요청한 에이전트가 동일 실행 안에서 검색과 생성을 반복한다. 반복 횟수와 검색 비용은 실행 정책으로 제한한다.
+채용공고 해석·합격 전략·준비 로드맵 에이전트는 필요한 근거가 부족하면 데이터·지식 에이전트에 조사 요청을 전달한다. 새 자료가 저장되면 요청한 에이전트가 동일 실행 안에서 검색과 생성을 반복한다. 반복 횟수와 검색 비용은 실행 정책으로 제한한다.
 
 ## 6. 분석 오케스트레이터
 
@@ -142,7 +147,7 @@ sequenceDiagram
 
 ### 6.1 데이터 변경별 재실행 범위
 
-| 변경 데이터 | 데이터·지식 | 통계 분석 | 채용공고 해설 | 합격 전략 | 준비 로드맵 |
+| 변경 데이터 | 데이터·지식 | 통계 분석 | 채용공고 해석 | 합격 전략 | 준비 로드맵 |
 | --- | --- | --- | --- | --- | --- |
 | 신규·수정·삭제 채용공고 | 실행 | 해당 직무·기업군·기간 | 영향 직무·기업군·공고 | 영향 범위 | 영향 범위 |
 | 공고의 직무 분류 변경 | 실행 | 이전 직무와 새 직무 | 두 직무의 영향 범위 | 두 직무의 영향 범위 | 두 직무의 영향 범위 |
@@ -168,7 +173,7 @@ sequenceDiagram
     User->>UI: 직무·기업군·공고 선택
     UI->>API: 범위별 분석 결과 요청
     API->>DB: 활성 분석 버전 조회
-    DB-->>API: 통계·공고 해설·체크리스트·전략·기본 로드맵
+    DB-->>API: 통계·공고 해석·체크리스트·전략·기본 로드맵
     API-->>UI: 화면별 응답
     User->>UI: 체크리스트 보유 상태 변경
     UI->>UI: 준비 현황 즉시 갱신
@@ -228,7 +233,7 @@ Supabase는 다음 논리 영역을 저장한다.
 | 정형 공고 | 직무·기업·기업군·요구사항·기술·라벨·근거 문장 |
 | 검색 지식 | `source_chunks`, 임베딩, Wiki 페이지, 엔티티·관계 |
 | 분석 실행 | 데이터·모델·프롬프트 버전, 실행 범위, 상태, 비용, 오류 |
-| 분석 산출물 | 통계, 공고 해설, 합격 전략, 기본 준비 로드맵 |
+| 분석 산출물 | 통계, 공고 해석, 합격 전략, 기본 준비 로드맵 |
 | 근거 연결 | 산출물 주장과 원문 청크·통계 항목·그래프 노드의 연결 |
 
 지식 그래프는 Postgres의 노드·엣지 테이블로 구성하고 pgvector의 의미 검색과 함께 사용한다. 그래프 저장소 접근 계층은 구현과 분리해 별도 그래프 DB로 교체할 수 있게 한다.
@@ -255,14 +260,14 @@ generated_at
 
 ### 10.2 분석 산출물
 
-`analysis_outputs`는 공통 식별자와 `output_type`, `payload`, 생성·검증 메타데이터를 저장한다. `output_type`은 `stats`, `posting_commentary`, `success_strategy`, `roadmap_base`를 사용한다.
+`analysis_outputs`는 공통 식별자와 `output_type`, `payload`, 생성·검증 메타데이터를 저장한다. `output_type`은 `stats`, `posting_interpretation`, `success_strategy`, `roadmap_base`를 사용한다.
 
 ### 10.3 화면 API
 
 | API | 책임 |
 | --- | --- |
 | 통계 조회 | 활성 버전의 직무·기업군 통계 반환 |
-| 채용공고 해설 조회 | 활성 버전의 직무·기업군·개별 공고 해설 반환 |
+| 채용공고 해석 조회 | 활성 버전의 직무·기업군·개별 공고 해석 반환 |
 | 합격 전략 조회 | 체크리스트와 포트폴리오·자소서·면접 전략 반환 |
 | 로드맵 조회·조합 | 기본 로드맵을 읽고 체크 상태를 적용한 프로젝트·학습 순서 반환 |
 
@@ -272,26 +277,16 @@ generated_at
 
 사용자가 입력한 공고는 통계와 직무 기준선에 포함하지 않는다. Express는 입력 길이와 요청 빈도를 제한하고 개인정보 패턴을 제거한 뒤 원문 해시와 데이터·모델·프롬프트 버전으로 동일 분석 캐시를 조회한다. 캐시가 없으면 FastAPI의 온디맨드 개별 분석을 호출한다.
 
-```mermaid
-flowchart LR
-    INPUT["사용자 공고 원문"] --> API["Express 입력 검증"]
-    API --> CACHE{"동일 분석 캐시"}
-    CACHE -->|있음| RESULT["저장된 개별 결과"]
-    CACHE -->|없음| AGENT["온디맨드 개별 분석 체인"]
-    AGENT --> STORE["보존 기간이 있는 캐시"]
-    STORE --> RESULT
-```
+로그인과 사용자별 영구 저장은 이 경로의 필수 조건이 아니다. 비로그인 사용자는 브라우저 세션과 저장 범위에서 결과와 체크 상태를 사용한다.
 
-로그인과 사용자별 영구 저장은 이 경로의 필수 조건이 아니다. 비로그인 사용자는 현재 세션과 브라우저 저장 범위에서 결과와 체크 상태를 사용한다.
-
-온디맨드 개별 분석 체인은 공고 추출·채용공고 해설·합격 전략·준비 로드맵을 실행한다. 공통 직무 통계와 지식 자산은 활성 분석 버전에서 조회하고, 사용자 입력 공고에서 생성한 결과는 서비스 통계와 공통 기준선에 반영하지 않는다.
+온디맨드 개별 분석 체인은 공고 추출·채용공고 해석·합격 전략·준비 로드맵을 실행한다. 공통 직무 통계와 지식 자산은 활성 분석 버전에서 조회하고, 사용자 입력 공고에서 생성한 결과는 서비스 통계와 공통 기준선에 반영하지 않는다.
 
 ## 12. 검증과 관측
 
 검증은 다음 세 층으로 구성한다.
 
 1. 규칙 검증: 스키마, 수치, 분모, 근거 존재, 식별자 연결, 선수 관계 순환을 검사한다.
-2. LLM 평가: 해설의 타당성, 근거 충실도, 직무 적합성을 루브릭으로 평가한다.
+2. LLM 평가: 해석의 타당성, 근거 충실도, 직무 적합성을 루브릭으로 평가한다.
 3. 사람 점검: 평가 세트와 베타 결과를 표본 검토한다.
 
 각 실행은 입력 데이터 버전, 모델·프롬프트 버전, 도구 호출, 검색 출처, 토큰·비용, 재시도, 검증 결과를 기록한다. 평가 세트와 품질 기준은 [데이터 전략](data-strategy.md)과 [에이전트 설계](agent-design.md)를 따른다.
