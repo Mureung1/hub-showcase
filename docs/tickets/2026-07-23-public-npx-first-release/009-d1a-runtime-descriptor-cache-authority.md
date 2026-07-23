@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -69,7 +69,7 @@ Exact application이 어떤 Runtime byte만 선택할 수 있는지와 그 gener
 | owner | `D` — Runtime delivery |
 | branch | `codex/public-preview-d1a-descriptor-cache` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/d1a-descriptor-cache` |
-| handoffSha | Claim 시 coordinator가 003 fixed `spineTipSha`를 integration branch에 반영하고 predecessor 및 integration root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `269a3555d3adf52bf520b3de0b99c7cb3fee3ae7` — 003 fixed reviewed `spineTipSha` `c2e95616d8ac2461844525c69a7e0d714da3e710`와 ticket closeout을 반영한 clean integration HEAD. 003의 Server·Browser·root green receipt와 S0의 exact safe TAR dependency/lock evidence를 확인했다. |
 | writablePaths | `packages/runtime-release/src/**` 중 descriptor/cache implementation·tests (`src/contract.ts`와 S1 frozen files 제외); package-local fixtures; `docs/tickets/2026-07-23-public-npx-first-release/009-d1a-runtime-descriptor-cache-authority.md` |
 | consumedContracts | S1 frozen Runtime release descriptor/error contract, S0 package graph/safe TAR lock evidence와 current complete-tree verifier behavior |
 | predecessorEvidence | Fixed reviewed `spineTipSha`, green root gates; S0 safe TAR dependency/lock record 또는 별도 C-reviewed fixed `contractTipSha` |
