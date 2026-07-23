@@ -4,7 +4,7 @@
 최초 점검: 2026-07-13
 적용 범위: LocalTwin web, API, scene worker, Vercel 정적 배포
 
-이 문서는 발견된 보안 문제를 재현하고, 조치 방향을 검토한 뒤 실제 수정과 재검증까지 추적한다. SEC-001 A단계의 제품 Scene route 기본 차단은 검증을 마쳤다. SEC-001 B단계 인증·객체 단위 인가와 SEC-002~008은 아직 계획 상태다.
+이 문서는 발견된 보안 문제를 재현하고, 조치 방향을 검토한 뒤 실제 수정과 재검증까지 추적한다. SEC-001 A단계의 제품 Scene route 기본 차단, SEC-002 privacy asset gate, SEC-003 resource limit, SEC-004 media validation은 검증을 마쳤다. SEC-001 B단계 인증·객체 단위 인가와 SEC-005~008은 아직 계획 상태다.
 
 ## 1. 안전 원칙
 
@@ -21,9 +21,9 @@
 | ID | 우선순위 | 문제 | 상태 | 완료 조건 |
 | --- | --- | --- | --- | --- |
 | SEC-001 | High | Scene API 인증·객체 단위 인가 없음 | A Verified / B Planned | 기본 제품 route는 비노출이며, 활성 환경에서도 무인증과 다른 사용자 job 접근이 차단된다 |
-| SEC-002 | High | Privacy gate가 서버에서 강제되지 않음 | Planned | 미승인 asset 다운로드가 서버에서 거부된다 |
-| SEC-003 | High | 업로드·GPU quota와 실행 제한 없음 | Planned | 크기·빈도·동시 실행·재실행 제한을 확인한다 |
-| SEC-004 | Medium | 업로드 검증이 확장자 중심 | Planned | 위장 파일과 처리 한도 초과 media를 거부한다 |
+| SEC-002 | High | Privacy gate가 서버에서 강제되지 않음 | Fixed | 미승인 asset 다운로드가 서버에서 거부된다 |
+| SEC-003 | High | 업로드·GPU quota와 실행 제한 없음 | Fixed | API 크기·빈도·저장소·실행·재시도 한도를 검증했다 |
+| SEC-004 | Medium | 업로드 검증이 확장자 중심 | Fixed | signature·PLY 선언·bounded video probe를 worker 전에 검증한다 |
 | SEC-005 | Medium | 공개 API가 worker 내부정보를 반환 | Planned | 공개 응답에서 경로·command·상세 진단을 제거한다 |
 | SEC-006 | Medium | Seoul API key가 평문 HTTP URL 경로로 전송 | Planned | HTTPS 또는 승인된 격리 대안을 적용한다 |
 | SEC-007 | Medium/Low | 공급망 고정과 container 격리 부족 | Planned | frozen install과 digest·runtime 제한을 적용한다 |
@@ -110,7 +110,7 @@ $JobId = "로컬 테스트 job UUID"
 
 ### 쉬운 설명
 
-화면의 경고문은 표지판이고 서버 검사는 자물쇠다. 현재 UI는 익명화 전 공개하지 않는다고 말하지만 서버에는 승인 상태가 없고 `main.py:122-133`은 준비된 asset을 바로 반환한다.
+화면의 경고문은 표지판이고 서버 검사는 자물쇠다. 이제 서버 job은 `pending`, `approved`, `rejected` privacy 상태와 anonymized flag를 저장하며, asset endpoint는 `ready + approved + anonymized`를 모두 만족할 때만 PLY를 반환한다.
 
 ### 안전한 재현
 
@@ -123,7 +123,7 @@ Get-Content "product/data/scenes/jobs/$JobId/job.json" |
 (Invoke-WebRequest "$Api/api/v1/scenes/jobs/$JobId/asset" -SkipHttpErrorCheck).StatusCode
 ```
 
-현재 job에는 승인 필드가 없고 ready asset은 승인 없이 `200`이다. asset이 준비되지 않아 받은 `404`는 privacy gate 검증 결과가 아니다.
+합성 PLY fixture의 pending job은 `404`, 신뢰된 내부 승인 함수로 approved·anonymized 상태가 된 동일 job은 `200`이다. 원본 input은 `input/`, 공개 후보 asset은 `asset/` 경로로 분리되고, job 응답에는 원본 경로가 없다.
 
 ### 조치와 선택 이유
 
@@ -134,17 +134,17 @@ Get-Content "product/data/scenes/jobs/$JobId/job.json" |
 
 상태를 서버 데이터에 남겨야 UI 우회나 직접 API 호출도 차단할 수 있다.
 
-- [ ] privacy 상태 모델 승인
-- [ ] `pending`, `rejected` 다운로드 차단
-- [ ] `approved` anonymized asset만 다운로드
-- [ ] 원본 경로 비노출
+- [x] privacy 상태 모델 저장
+- [x] `pending`, `rejected` 다운로드 차단
+- [x] `approved` anonymized asset만 다운로드
+- [x] 원본 경로 비노출
 - [ ] 원본 보관·삭제 기준 확정
 
 ## 6. SEC-003 — 리소스 고갈과 비용 DoS
 
 ### 쉬운 설명
 
-한 사람이 운동장의 모든 자리를 예약하면 다른 사람은 사용할 수 없다. 현재는 job당 최대 8GB를 받고 요청마다 비싼 GPU 작업을 시작할 수 있지만 사용자별 횟수와 동시 실행 상한이 없다.
+한 사람이 운동장의 모든 자리를 예약하면 다른 사람은 사용할 수 없다. 이제 Scene API에는 요청 크기, 생성 빈도, 저장소, 활성 job, worker 동시 실행과 재시도 대기 시간이 있다. 아직 인증이 없으므로 이 한도는 모든 무인증 요청이 함께 쓰는 공용 한도이며, 사용자별 quota는 SEC-001 B 이후에 적용한다.
 
 ### 안전한 재현
 
@@ -156,24 +156,24 @@ rg -n "MAX_TOTAL_BYTES|rate|quota|semaphore|cooldown|idempot|queue" `
   product/apps/api/src/localtwin_api/scene_pipeline.py
 ```
 
-현재 예상은 `MAX_TOTAL_BYTES`만 있고 rate, quota, queue 제한은 없는 것이다.
+수정 전에는 `MAX_TOTAL_BYTES`만 있었고 rate, quota, queue 제한이 없었다. 현재는 `SCENE_*` 서버 환경변수로 제한을 조정한다.
 
 ### 조치와 선택 이유
 
-- proxy와 API에 upload 크기 제한
-- 인증 사용자별 일일 job·저장량 quota
-- durable queue와 worker 동시 실행 상한
-- 중복 실행 방지와 retry cooldown
-- 만료 cleanup과 디스크 여유 공간 검사
+- API upload 크기 제한: 초과 시 `413`, 부분 job 폴더 삭제
+- 공용 생성 빈도·저장량·활성 job quota: 초과 시 `429`
+- process 내 worker 동시 실행 상한과 중복 실행 차단
+- retry cooldown과 만료 terminal job cleanup 함수
+- production proxy body limit·사용자별 quota·durable queue는 인증/배포 경계 확정 뒤 후속 작업
 
 크기 제한만으로 작은 요청 여러 개를 막을 수 없어 서로 다른 지점에 방어층을 둔다.
 
-- [ ] MVP 한도 수치 승인
-- [ ] 초과 upload `413`
-- [ ] rate/quota 초과 `429`
-- [ ] 같은 job 중복 실행 차단
-- [ ] worker 동시 실행 상한 검증
-- [ ] cleanup과 디스크 부족 검증
+- [x] 기본 한도와 환경변수 경계 기록
+- [x] 초과 upload `413`
+- [x] rate/quota 초과 `429`
+- [x] 같은 job 중복 실행 차단
+- [x] worker 동시 실행 상한·cleanup 함수 검증
+- [ ] SEC-001 B 뒤 사용자별 quota와 production proxy body limit 검증
 
 ## 7. SEC-004 — 확장자 중심 파일 검증
 
@@ -199,21 +199,22 @@ $result.status
 Remove-Item "$env:TEMP/fake.jpg"
 ```
 
-현재 예상은 실제 JPEG가 아니어도 `uploaded`다. 검증 후 `product/data/scenes/jobs/<result.id>` 테스트 폴더만 수동 삭제한다.
+수정 전에는 실제 JPEG가 아니어도 `uploaded`였다. 이제 위장 JPEG는 `422`이며 부분 job 폴더도 자동 삭제된다.
 
 ### 조치와 선택 이유
 
-- magic bytes, MIME, decoder probe를 단계적으로 검사한다.
-- video duration, resolution, frame 수와 codec을 제한한다.
-- PLY vertex 수, property type, 선언 크기를 검사한다.
-- 외부 parser를 timeout이 있는 낮은 권한의 격리 worker에서 실행한다.
+- image/video signature를 먼저 검사한다.
+- video는 `ffprobe`를 shell 없이 제한 시간으로 실행해 decoder가 거부하거나 멈춘 입력을 차단한다.
+- PLY는 binary format, vertex 수, Gaussian property와 선언된 최소 payload 크기를 검사한다.
+- API는 검사 실패 시 `422`와 함께 부분 job 폴더를 삭제한다.
 
 parser 하나만 신뢰하지 않고 입구 검증, 처리 한도, 격리를 함께 사용한다.
 
-- [ ] 위장 `.jpg`가 `422`
-- [ ] 정상 fixture는 계속 수락
-- [ ] 비정상 video·PLY 회귀 test
-- [ ] parser timeout과 sandbox 검증
+- [x] 위장 `.jpg`가 `422`
+- [x] 정상 fixture는 계속 수락
+- [x] 비정상 video·PLY 회귀 test
+- [x] parser timeout 회귀 test
+- [ ] OS 수준 low-privilege sandbox는 SEC-007 container runtime에서 검증
 
 ## 8. SEC-005 — 내부 worker 정보 노출
 

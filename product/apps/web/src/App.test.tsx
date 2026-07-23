@@ -279,6 +279,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "자동 변환 시작" })).toBeInTheDocument();
     expect(screen.getByText("GPU worker")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "13:00" })).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() => expect(screen.getByRole("button", { name: "3D 장소 닫기" })).toHaveFocus());
 
     fireEvent.click(screen.getByRole("button", { name: "18:00" }));
     expect(screen.getByRole("button", { name: "18:00" })).toHaveAttribute("aria-pressed", "true");

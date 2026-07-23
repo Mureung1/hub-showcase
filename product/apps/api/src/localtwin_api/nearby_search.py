@@ -15,18 +15,18 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from localtwin_api.db_models import DataSource, Market, MarketGeometry, StorePoint
-from localtwin_api.product_catalog import SUPPORTED_MARKET_CODES, SUPPORTED_RADII, NearbyRadius
+from localtwin_api.product_catalog import (
+    CATEGORY_NAME_TERMS,
+    SUPPORTED_MARKET_CODES,
+    SUPPORTED_RADII,
+    NearbyRadius,
+)
 
 ProductCategory = Literal["카페", "음식점", "베이커리", "편의점"]
 ALLOWED_NEARBY_RADII = SUPPORTED_RADII
 EARTH_RADIUS_METERS = 6_371_000
 MAX_RETURNED_STORES = 200
-CATEGORY_ALIASES = {
-    "카페": ("카페", "커피"),
-    "음식점": ("음식점", "한식", "중식", "일식", "분식", "주점"),
-    "베이커리": ("베이커리", "제과", "빵", "도넛"),
-    "편의점": ("편의점",),
-}
+CATEGORY_ALIASES = CATEGORY_NAME_TERMS
 
 
 class NearbyCenter(BaseModel):

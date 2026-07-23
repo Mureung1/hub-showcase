@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Literal
 from urllib.parse import parse_qs, urlparse
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PRODUCT_ROOT = Path(__file__).resolve().parents[4]
@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     scene_api_enabled: bool = False
     scene_worker_mode: Literal["host", "docker"] = "host"
     scene_docker_image: str = "ghcr.io/nerfstudio-project/nerfstudio:1.1.5"
+    scene_upload_max_bytes: int = Field(default=1 * 1024 * 1024 * 1024, ge=1)
+    scene_storage_quota_bytes: int = Field(default=10 * 1024 * 1024 * 1024, ge=1)
+    scene_rate_window_seconds: int = Field(default=60, ge=1)
+    scene_max_jobs_per_window: int = Field(default=3, ge=1)
+    scene_max_active_jobs: int = Field(default=2, ge=1)
+    scene_worker_concurrency: int = Field(default=1, ge=1)
+    scene_retry_cooldown_seconds: int = Field(default=60, ge=0)
+    scene_job_retention_hours: int = Field(default=72, ge=1)
 
     model_config = SettingsConfigDict(
         env_file=PRODUCT_ENV_FILE,

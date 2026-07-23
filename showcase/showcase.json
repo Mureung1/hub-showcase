@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "title": "LocalTwin — 설명 가능한 동네 상권 분석",
+  "summary": "서울 동네 상권을 지도와 공공데이터로 함께 읽어, 예비 창업자가 입지를 비교할 수 있게 돕는 설명 가능한 분석 도구입니다.",
+  "githubUser": "HyunKN(HyunKN)",
+  "demoUrl": "https://localtwin-product.vercel.app/",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/market-analysis.webp",
+    "screenshots/analysis-controls.webp",
+    "screenshots/location-score.webp",
+    "screenshots/competition-and-activity.webp",
+    "screenshots/population-and-evidence.webp"
+  ],
+  "problem": "입지를 고르려는 소상공인은 주변 경쟁 점포, 개·폐업, 매출, 유동인구, 인구와 데이터 기준 시점을 여러 사이트에서 따로 확인해야 합니다. 숫자만 나열하면 근거와 한계를 함께 판단하기 어렵습니다.",
+  "targetUsers": [
+    "서울에서 창업 또는 매장 이전을 검토하는 예비 소상공인",
+    "상권 근거를 빠르게 비교해야 하는 소상공인 지원 담당자"
+  ],
+  "features": [
+    "지도에서 상권 또는 직접 선택한 위치를 기준으로 100m, 300m, 500m 반경(임시)을 분석합니다.",
+    "카페, 음식점, 베이커리, 편의점별로 주변 동일 업종 점포와 밀도를 확인합니다.",
+    "경쟁, 개·폐업, 추정 매출, 시간대별 활동, 유동인구, 인구를 한 화면의 근거로 연결합니다.",
+    "입지 점수에 신뢰도, 근거, 데이터 출처, 기준 시점, 공간 단위를 함께 표시합니다.",
+    "한국어 서비스에서 배포된 API의 상권 분석 결과와 데이터 근거를 함께 확인할 수 있습니다."
+  ],
+  "featureTags": [
+    "상권 분석",
+    "입지 비교",
+    "공공데이터",
+    "지도 시각화",
+    "설명 가능한 점수"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Vite",
+    "MapLibre GL",
+    "FastAPI",
+    "SQLAlchemy",
+    "Alembic",
+    "Supabase PostgreSQL",
+    "Vercel",
+    "Render"
+  ],
+  "techHighlights": [
+    "React와 TypeScript로 지도 선택, 반경, 업종, 분석 탭을 하나의 탐색 흐름으로 연결했습니다.",
+    "MapLibre GL에 상권 경계, 반경, 주변 점포 marker, 동일 업종 밀도를 겹쳐 공간 맥락을 보여줍니다.",
+    "FastAPI와 SQLAlchemy가 검증된 상권·점포·통계 데이터를 API로 제공하고, Alembic으로 스키마 변경을 관리합니다.",
+    "Vercel 웹 서비스와 Render API를 연결해 한국어 상권 분석 서비스를 배포했습니다.",
+    "서울 공공데이터와 KOSIS 통계를 데이터 출처·기간·공간 단위와 함께 표시해 해석 가능한 결과를 유지합니다."
+  ],
+  "developmentWithAI": "저는 해결할 문제, 제출 범위, 데이터 해석 원칙과 최종 검토를 맡았습니다. Codex와 GPT-5.6은 요구사항을 검증 가능한 작업으로 분해하고, 개발 하네스와 아키텍처 경계를 정리하며, 구현·디버깅·테스트·배포·문서화의 반복 작업을 지원했습니다. 저는 매 단계에서 실제 화면과 테스트 결과를 확인하고 범위와 변경을 승인했습니다.",
+  "agent": {
+    "summary": "Codex와 GPT-5.6을 기획, 개발 하네스 설정, 구현, 검증, 공개 README와 PR 준비까지 개발 파트너로 사용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Codex + GPT-5.6 개발 Agent",
+        "purpose": "요구사항을 작은 작업과 검증 기준으로 나누고, 구현과 디버깅을 지원합니다."
+      },
+      {
+        "type": "skill",
+        "name": "개발 하네스와 작업 패킷",
+        "purpose": "작업별 목표, 비목표, 검증 명령, 실행 기록을 남겨 개발 과정을 재검토할 수 있게 합니다."
+      },
+      {
+        "type": "skill",
+        "name": "검증 및 문서화 워크플로",
+        "purpose": "타입 검사, 린트, 테스트, 빌드, 브라우저 smoke check와 공개 문서의 일관성을 점검합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "사용자 문제와 데이터 한계 정의",
+          "수용 기준과 비목표를 작업 패킷으로 작성",
+          "React, 지도, API, 데이터 경계 설계",
+          "기능 구현과 실제 화면 확인",
+          "타입 검사, 린트, 테스트, 빌드 실행",
+          "실패 원인과 개선 사항을 하네스에 기록"
+        ]
+      },
+      {
+        "name": "제출 준비 Workflow",
+        "steps": [
+          "한국어 라이브 데모의 분석 흐름 점검",
+          "공개 저장소에 README와 개발 증거 문서 정리",
+          "문서 링크와 민감 정보 노출 여부 점검",
+          "데모 흐름과 스크린샷 검토",
+          "PR에 showcase 메타데이터와 이미지를 포함"
+        ]
+      }
+    ]
+  }
+}

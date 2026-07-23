@@ -769,6 +769,11 @@ raw snapshot 보존 기간과 rollback 기준은 `DATA-007`에서 나중에 승�
 이 절과 `DATA-008`, `DATA-009`를 기준으로 완료한 polygon 공간 결합을 검증하고 전체 인허가
 확장과 공식 집계 비교를 계속한다.
 
+전체 인허가 snapshot은 실수로 대량 호출하지 않도록 기본 1페이지 sample과 분리한다.
+`localtwin_api.public_data --all-pages --sources restaurants,cafes --address 서울특별시`는
+provider가 선언한 전체 page를 수집한다. 실행 전 API key quota와 저장 공간을 확인하고,
+생성된 raw snapshot의 row count·SHA-256·적재 결과를 Run Report에 기록한다.
+
 ### 13.1 확정한 원칙
 
 ```text
@@ -872,13 +877,49 @@ foreign key violations: 0
 second import counts: unchanged
 ```
 
+같은 수치를 재실행 가능한 Markdown 표로 보려면 다음 명령을 사용한다. 표의 `Excluded`는
+`missing required + invalid coordinates + unknown markets`의 합계이며, `Duplicate keys`는
+upsert로 덮어쓴 입력 키를 별도로 기록한다.
+
+```powershell
+uv run --directory product/apps/api python -m localtwin_api.bulk_import --report-format markdown
+```
+
 `store_points`에는 대분류 10개, 중분류 75개, 소분류 247개가 있으며, 상권별 집계는
 `20251` 76,383행, `20252` 76,238행, `20253` 76,169행, `20254` 75,985행이다.
 
 `영역-상권` Shapefile은 `market_geometries` 3행으로 저장했고, `EPSG:5181 → EPSG:4326`
 변환 후 4,548개 점포를 `store_market_links`에 point-in-polygon으로 연결했다. 인허가 API
-전체 pagination과 KOSIS snapshot, 서울시 공식 업종별 집계와의 차이 보고는 아직 완료되지
-않았다. 현재 canonical 9개 table과 동일한 row count를 development Supabase에서 확인했다.
+전체 pagination은 아직 완료되지 않았다. 현재 canonical 9개 table과 동일한 row count를
+development Supabase에서 확인했다.
+
+### 13.3.2 20254 spatial·official 비교 결과
+
+`DATA-009` B단계는 상권 polygon 안에 들어온 개별 점포 수와 서울시 공식 점포-상권
+집계를 같은 product category로 나란히 보인다. 두 source의 기준일·업종 체계·polygon
+포함 규칙이 다르므로, 차이를 importer 오류로 처리하거나 임의로 맞추지 않는다.
+
+```powershell
+uv run --directory product/apps/api python -m localtwin_api.spatial_comparison --period 20254 --report-format markdown
+```
+
+| 상권 | 업종 | polygon 점포 | 공식 집계 | 차이 |
+| --- | --- | ---: | ---: | ---: |
+| 연남 `3110562` | 카페 | 41 | 61 | -20 |
+| 연남 `3110562` | 음식점 | 53 | 61 | -8 |
+| 연남 `3110562` | 베이커리 | 14 | 17 | -3 |
+| 연남 `3110562` | 편의점 | 7 | 2 | +5 |
+| 홍대 `3120103` | 카페 | 184 | 224 | -40 |
+| 홍대 `3120103` | 음식점 | 755 | 896 | -141 |
+| 홍대 `3120103` | 베이커리 | 28 | 30 | -2 |
+| 홍대 `3120103` | 편의점 | 38 | 15 | +23 |
+| 합정 `3120101` | 카페 | 66 | 64 | +2 |
+| 합정 `3120101` | 음식점 | 193 | 210 | -17 |
+| 합정 `3120101` | 베이커리 | 15 | 16 | -1 |
+| 합정 `3120101` | 편의점 | 19 | 9 | +10 |
+
+원본 총 연결 점포 수는 4,548개다. 이 표는 `CATEGORY_NAME_TERMS`의 명시적인 text
+crosswalk만 사용하며, 지원하지 않는 세부 업종을 제품의 분석 수치로 바꾸지 않는다.
 
 ### 13.4 형식 선택
 
@@ -954,9 +995,8 @@ snapshot으로 승인한다. 영역-상권 ZIP이 중심 좌표만 제공하고 
 4. 점포-상권 연결: 4,548행, FK orphan 0
 ```
 
-`DATA-009` B단계에서는 연남·홍대·합정의 업종별 개별 점포 수와 서울시 공식 집계를 비교해
-기간·업종 분류·미매칭에 따른 차이를 기록한다. 이 프로젝트 기간에는 서울 전체 검색으로
-확대하지 않으며, 다음 기능 입력은 이 3개 상권으로 제한한다.
+`DATA-009` B단계의 `20254` 비교 보고는 완료했다. 이 프로젝트 기간에는 서울 전체
+검색으로 확대하지 않으며, 다음 기능 입력은 이 3개 상권으로 제한한다.
 
 ## 14. KOSIS 행정동 배경 통계 결정
 
