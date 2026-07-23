@@ -139,7 +139,7 @@ export default function Guide() {
         <div className="section-heading">
           <div>
             <h2>showcase.json 형식 검사</h2>
-            <p>형식이 맞는지 검사해보세요.</p>
+            <p>showcase를 작성하셨으면 아래에서 검사해보세요.</p>
           </div>
           <button type="button" onClick={() => { setJsonText(''); setResult(null); }}>지우기</button>
         </div>
