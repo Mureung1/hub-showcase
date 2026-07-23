@@ -315,29 +315,32 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
         {/* 네비게이션 */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
           {[
-            { label: '⊞ 대시보드', page: 'dashboard' as const },
-            { label: '♡ 내 스크랩', page: 'scraps' as const },
-            { label: '📅 캘린더', page: 'calendar' as const },
-            { label: '⭐ GitHub 저장소', page: 'github' as const },
-            { label: '⚙ 환경설정', page: 'settings' as const },
-          ].map((item, i) => (
-            <div
-              key={i}
-              onClick={() => setCurrentPage?.(item.page)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '9px 10px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: i === 0 ? 600 : 500,
-                backgroundColor: i === 0 ? '#f5f5f5' : 'transparent',
-                transition: 'all 100ms',
-              }}>
-              <span>{item.label}</span>
-            </div>
-          ))}
+            { label: '대시보드', page: 'dashboard' as const },
+            { label: '내 스크랩', page: 'scraps' as const },
+            { label: '캘린더', page: 'calendar' as const },
+            { label: 'GitHub 저장소', page: 'github' as const },
+            { label: '환경설정', page: 'settings' as const },
+          ].map((item, i) => {
+            const isActive = item.page === 'dashboard'
+            return (
+              <div
+                key={i}
+                onClick={() => setCurrentPage?.(item.page)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '9px 10px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: isActive ? 600 : 500,
+                  backgroundColor: isActive ? '#f5f5f5' : 'transparent',
+                  transition: 'all 100ms',
+                }}>
+                <span>{item.label}</span>
+              </div>
+            )
+          })}
         </nav>
 
         {/* 스마트 추천 카드 - 7단계에서 활성화 */}

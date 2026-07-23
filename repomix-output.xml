@@ -43,6 +43,7 @@ The content is organized as follows:
 .claude/
   skills/
     design-guide.md
+    github-repos-page.md
   settings.local.json
 .github/
   workflows/
@@ -65,6 +66,8 @@ backend/
         migration.sql
       20260716081327_add_posting_event_type/
         migration.sql
+      20260723081348_add_github_repos/
+        migration.sql
       migration_lock.toml
     schema.prisma
   src/
@@ -74,6 +77,7 @@ backend/
       auth.ts
       calendar.ts
       calendarEvents.ts
+      github.ts
       postings.ts
       profile.ts
       scraps.ts
@@ -81,6 +85,8 @@ backend/
       providers/
         googleCalendarProvider.ts
       calendarService.ts
+      githubService.ts
+      llmService.ts
       matchingService.ts
       notificationService.ts
       smartMatchingService.ts
@@ -124,14 +130,18 @@ frontend/
       EventModal.tsx
       GoogleCalendarButton.tsx
       PostingCard.tsx
+      RepoCard.tsx
     pages/
       Auth.tsx
       CalendarPage.tsx
       Dashboard.tsx
       DashboardLayout.tsx
+      GithubReposPage.tsx
       ProfileSetup.tsx
       ScrapListPage.tsx
       SettingsPage.tsx
+    services/
+      githubApi.ts
     utils/
       apiClient.ts
       pushNotification.ts
@@ -173,6 +183,15 @@ shared/
   package.json
   taxonomy.json
   tsconfig.json
+showcase/
+  screenshots/
+    calendar.webp
+    dashboard.webp
+    github repo.webp
+    profile.webp
+    scrap.webp
+    setting.webp
+  showcase.json
 .gitignore
 CLAUDE.md
 README.md
@@ -238,9 +257,194 @@ This section contains the contents of the repository's files.
       "Bash(curl -s http://localhost:5173)",
       "Skill(run)",
       "Bash(curl -s -o /dev/null -w \"상태: %{http_code}\\\\n\" http://localhost:5174)",
-      "Bash(curl -s -o /dev/null -w \"상태: %{http_code}\\\\n\" http://localhost:3000/health)"
+      "Bash(curl -s -o /dev/null -w \"상태: %{http_code}\\\\n\" http://localhost:3000/health)",
+      "Bash(curl -s \"https://www.wevity.com\" -H \"User-Agent: Mozilla/5.0\")",
+      "Bash(cat)",
+      "Bash(bash /tmp/check_sites.sh)",
+      "Bash(bash /tmp/analyze_sites.sh)",
+      "Bash(bash /tmp/detailed_check.sh)",
+      "Bash(bash /tmp/api_check.sh)",
+      "Bash(bash /tmp/policy_check.sh)",
+      "Bash(bash /tmp/gnsu_check.sh)",
+      "Bash(curl -s \"https://gsnu.ac.kr\" -H \"User-Agent: Mozilla/5.0\")",
+      "Bash(bash /tmp/github_api_check.sh)",
+      "Bash(bash /tmp/test_github_api.sh)"
     ]
   }
+}
+</file>
+
+<file path="showcase/showcase.json">
+{
+  "schemaVersion": 1,
+  "title": "UniBoard - 대학생 기회 큐레이션 대시보드",
+  "summary": "대학생의 전공, 학년, 거주지역을 기반으로 맞춤형 공모전·대외활동·정책 정보를 큐레이션하고, 캘린더와 GitHub 인기 저장소를 한곳에서 관리하는 통합 대시보드입니다.",
+  "githubUser": "playedwell (khy05300@gmail.com)",
+  "demoUrl": "http://localhost:5175",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/dashboard.webp",
+    "screenshots/calendar.webp",
+    "screenshots/github-repos.webp"
+  ],
+  "problem": "대학생들이 공모전, 대외활동, 정책 정보를 여러 웹사이트에서 일일이 찾아야 하고, 개인의 상황(전공, 학년, 거주지)에 맞는 기회를 자동으로 추천받지 못합니다. 또한 일정과 마감날짜를 효과적으로 관리할 수 없습니다.",
+  "targetUsers": [
+    "대학생 (전공, 학년, 거주지역별)",
+    "학생 시간 관리를 도와주는 교육 기관",
+    "정보 큐레이션에 관심 있는 개발자"
+  ],
+  "features": [
+    "프로필 기반 맞춤형 필터링: 전공·학년·거주지역·소득분위로 관련성 높은 공고만 추천",
+    "통합 캘린더: 공모전 마감일과 개인 일정을 한눈에 관리",
+    "GitHub 인기 저장소 자동 요약: Ollama LLM으로 README를 한국어로 요약 및 핵심 포인트 추출",
+    "스크랩 및 D-Day 알림: 관심 공고를 저장하고 마감 N일 전 알림 수신",
+    "카테고리별 공고 관리: 공모전, 대외활동, 정책/지원금, 교내행사 분류"
+  ],
+  "featureTags": [
+    "맞춤형 필터링",
+    "캘린더 연동",
+    "LLM 기반 요약",
+    "D-Day 알림",
+    "실시간 크롤링"
+  ],
+  "techStack": [
+    "React 18",
+    "TypeScript",
+    "Vite",
+    "Tailwind CSS",
+    "Zustand",
+    "React Hook Form + Zod",
+    "FullCalendar.js",
+    "Express.js",
+    "Prisma ORM",
+    "PostgreSQL (Supabase)",
+    "Ollama (로컬 LLM)",
+    "Qwen2.5 7B",
+    "Python + BeautifulSoup (크롤러)",
+    "node-cron (스케줄러)",
+    "Supabase Auth (JWT)"
+  ],
+  "techHighlights": [
+    "LLM 추상화 계층 (llmService.ts): Ollama/Claude/OpenAI/LlamaCPP 간 provider 전환을 .env 한 줄로 구현",
+    "스코어링 서비스 (scoringService.ts): 사용자 프로필과 공고의 적절성을 점수화하여 필터링 로직을 라우터와 분리",
+    "멀티플랫폼 LLM 지원: 로컬 Ollama로 시작해서 추후 Claude/GPT로 쉽게 전환 가능한 구조",
+    "캘린더 이벤트 동기화: iCalendar 형식(uid, dtstart, dtend)으로 표준화하여 Google/Apple Calendar 연동 준비",
+    "GitHub 저장소 요약 파이프라인: GitHub API → README 추출 → LLM 처리 → DB 저장으로 완전 자동화"
+  ],
+  "developmentWithAI": "프로젝트 전략은 사용자가 수립했습니다. Claude Code는 요구사항을 작업 체크리스트로 분해하고, 각 단계별 백엔드/프론트엔드 구현 계획을 세웠습니다. 사용자는 계획을 검증하고, AI는 코드 초안 작성 → 사용자 테스트 → 피드백 반영 → 최종 완성의 사이클을 반복했습니다. LLM 제공자 추상화, GitHub 저장소 요약 파이프라인 등 아키텍처 결정은 사용자가 했고, AI는 구현을 가속화했습니다.",
+  "developmentPhase": "MVP 진행 중 - Phase 2 프론트엔드 완료, Phase 3 통합 테스트 예정",
+  "agent": {
+    "summary": "Claude Code를 사용하여 요구사항 분석부터 구현, 테스트, 문서화까지 전체 개발 사이클을 지원했습니다.",
+    "agentTools": [
+      {
+        "type": "primary",
+        "name": "Claude Code (Chat + Edit + Bash)",
+        "purpose": "실시간 코드 작성, 파일 편집, 명령 실행을 통한 통합 개발 환경"
+      },
+      {
+        "type": "planning",
+        "name": "요구사항 분석 및 체크리스트 생성",
+        "purpose": "CLAUDE.md와 checklist.md에 단계별 작업 리스트 작성"
+      },
+      {
+        "type": "skill",
+        "name": "github-repos-page.md (Skill 문서)",
+        "purpose": "GitHub 저장소 페이지 구현을 위한 Phase별 가이드 작성"
+      },
+      {
+        "type": "documentation",
+        "name": "CLAUDE.md 아키텍처 문서",
+        "purpose": "LLM 제공자 전환, API 엔드포인트, 환경 설정 등 프로젝트 규칙 기록"
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "Phase별 요구사항 정의 (docs/checklist.md)",
+          "아키텍처 설계 및 사용자 승인",
+          "Prisma 스키마 설계 → npx prisma migrate",
+          "백엔드 서비스 구현 (API 라우터)",
+          "프론트엔드 페이지/컴포넌트 구현",
+          "로컬 테스트 (백엔드 + 프론트엔드 동시 실행)",
+          "CLAUDE.md에 패턴 기록"
+        ]
+      },
+      {
+        "name": "프롬프트 엔지니어링 Workflow (LLM 특화)",
+        "steps": [
+          "현재 LLM 서비스 상태 분석 (llmService.ts)",
+          "프롬프트 개선 제안 (System prompt + Few-shot)",
+          "모델 옵션 평가 (Qwen vs Llama vs Mistral)",
+          ".env 변경으로 provider 전환 테스트",
+          "한국어 출력 품질 비교",
+          "최적 모델 및 프롬프트 결정"
+        ]
+      },
+      {
+        "name": "아키텍처 리팩토링 Workflow",
+        "steps": [
+          "문제 식별 (예: 페이지 전환 시 사이드바 상태 유지)",
+          "CLAUDE.md에 해결책 기록",
+          "향후 페이지 추가 시 적용할 패턴 문서화",
+          "기존 코드 리팩토링 (BaseLayout 등)"
+        ]
+      }
+    ]
+  },
+  "keyMilestones": [
+    {
+      "phase": "Phase 1",
+      "name": "환경 설정 및 기본 구조",
+      "status": "완료",
+      "details": "Ollama + Qwen2.5 7B 로컬 LLM 설정, Prisma 스키마 설계, 백엔드 기본 API 구현"
+    },
+    {
+      "phase": "Phase 2",
+      "name": "프론트엔드 페이지 구현",
+      "status": "완료",
+      "details": "GitHub 저장소 페이지 (사이드바 포함), RepoCard 컴포넌트, API 클라이언트 통합"
+    },
+    {
+      "phase": "Phase 3",
+      "name": "통합 테스트 및 최적화",
+      "status": "예정",
+      "details": "API 통합 테스트, UI 성능 최적화, LLM 프롬프트 개선"
+    },
+    {
+      "phase": "Phase 4",
+      "name": "배포 및 프로덕션 준비",
+      "status": "예정",
+      "details": "모델 선택 최적화, 라이선스 확인, Vercel/Railway 배포"
+    }
+  ],
+  "learningsAndDecisions": [
+    {
+      "topic": "LLM 제공자 추상화",
+      "decision": "llmService.ts에서 Ollama/Claude/OpenAI/LlamaCPP를 통일 인터페이스로 관리",
+      "reasoning": ".env 한 줄 변경만으로 provider 전환 가능하여 앞으로 모델 업그레이드가 용이",
+      "outcome": "새로운 모델 시도 시 코드 수정 불필요"
+    },
+    {
+      "topic": "페이지 라우팅 구조",
+      "decision": "각 페이지가 독립적으로 사이드바를 포함하는 구조 (DashboardLayout 패턴)",
+      "reasoning": "단기적으로 빠른 구현, 하지만 사이드바 네비게이션 동기화 문제 발생",
+      "outcome": "향후 BaseLayout으로 리팩토링 계획, CLAUDE.md에 패턴 문서화"
+    },
+    {
+      "topic": "한국어 LLM 선택",
+      "decision": "Qwen2.5 7B로 시작, 필요시 Llama3 또는 LLaMA-KO로 전환",
+      "reasoning": "Qwen은 중국어 최적화되어 한국어 성능 중간 수준, 프롬프트 엔지니어링으로 개선 가능",
+      "outcome": "프롬프트 개선과 모델 업그레이드를 병행하여 품질 향상 예정"
+    }
+  ],
+  "nextSteps": [
+    "Llama3 8B 또는 LLaMA-KO 7B 시도 후 한국어 성능 평가",
+    "프롬프트 엔지니어링: System prompt + Few-shot examples 추가",
+    "BaseLayout 컴포넌트로 페이지 라우팅 리팩토링",
+    "Phase 3 통합 테스트 및 사용자 피드백 수집",
+    "라이선스 확인 및 프로덕션 배포 준비"
+  ]
 }
 </file>
 
@@ -434,6 +638,206 @@ animation: heartPop 150ms ease-out;
 - **색상:** 새 색상을 추가하지 말고, 기존 팔레트에서 선택하기
 - **크기:** spacing/font-size 변수를 조합해서 사용하기
 - **확장:** 새 컴포넌트는 기존 변수로 구성 후, 필요하면 `docs/design.md`에 추가
+</file>
+
+<file path=".claude/skills/github-repos-page.md">
+---
+description: GitHub 인기 저장소 요약 페이지 구현 (Ollama + Qwen LLM)
+tags: [github, llm, frontend, backend, integration]
+---
+
+# GitHub 인기 저장소 요약 페이지 구현
+
+## 개요
+
+매달 GitHub의 인기 저장소들을 자동으로 수집하고, **로컬 LLM(Qwen2.5 7B)으로 한국어 요약**을 생성한 후, 
+대시보드에 보여주는 독립적인 서비스를 구현합니다.
+
+**핵심 특징:**
+- ✅ Ollama (로컬 LLM) + Qwen2.5로 영어 README를 한국어로 요약
+- ✅ LLM 제공자 쉽게 전환 가능 (Ollama → Claude → LlamaCPP 등)
+- ✅ 기존 Posting/Eligibility 스키마와 완전히 분리
+- ✅ 프로덕션 배포 가능한 구조
+
+---
+
+## Phase 1: 환경 준비
+
+### 1-1. Ollama 설치
+
+**목표:** 로컬 LLM 서버 (Ollama) 설치 및 Qwen2.5 7B 모델 준비
+
+**단계:**
+
+```bash
+# 1. Mac M2용 Ollama 다운로드
+# https://ollama.ai 에서 macOS 버전 다운로드
+# (또는 Homebrew: brew install ollama)
+
+# 2. Ollama 실행 (백그라운드)
+ollama serve
+
+# 3. 다른 터미널에서 Qwen2.5 7B 다운로드 (첫 실행 시 3-5분)
+ollama pull qwen2.5:7b
+
+# 4. 모델 확인
+curl http://localhost:11434/api/tags
+```
+
+**메모리 사용:**
+- Qwen2.5 7B: ~8GB RAM
+- M2 16GB에서 충분함
+
+**확인:**
+```bash
+# Ollama API 테스트
+curl http://localhost:11434/api/generate \
+  -d '{
+    "model": "qwen2.5:7b",
+    "prompt": "안녕하세요",
+    "stream": false
+  }'
+```
+
+---
+
+### 1-2. .env 확인
+
+**목표:** 백엔드에서 Ollama와 통신 가능하도록 설정 확인
+
+**확인사항:**
+```bash
+cd backend
+
+# .env 파일 확인
+cat .env | grep -A 3 "LLM_PROVIDER"
+
+# 다음 항목들이 있는지 확인:
+# LLM_PROVIDER="ollama"
+# OLLAMA_BASE_URL="http://localhost:11434"
+# OLLAMA_MODEL="qwen2.5:7b"
+```
+
+**이미 설정되어 있으니 확인만 하면 됨**
+
+---
+
+### 1-3. 백엔드 서버 시작
+
+**목표:** 백엔드 서버 실행 및 새 GitHub API 엔드포인트 확인
+
+```bash
+cd backend
+
+# 서버 시작
+npm run dev
+
+# 다른 터미널에서 확인
+curl http://localhost:3000/health
+```
+
+**기대 결과:**
+```
+🚀 서버 시작: http://localhost:3000
+🤖 LLM Service initialized: ollama (qwen2.5:7b)
+```
+
+---
+
+### 1-4. GitHub API 토큰 설정 (선택)
+
+**목표:** GitHub API Rate Limit 상향 (60/hr → 1000/hr)
+
+**선택사항:**
+```bash
+# .env에 추가 (GitHub 토큰이 없어도 작동하지만 rate limit 낮음)
+GITHUB_TOKEN="ghp_your_token_here"
+
+# 토큰 생성:
+# https://github.com/settings/tokens
+# - Permissions: public_repo (읽기 전용)
+```
+
+---
+
+## Phase 1 검증 체크리스트
+
+- [ ] Ollama 실행 중 (localhost:11434)
+- [ ] Qwen2.5 7B 모델 다운로드 완료
+- [ ] 백엔드 서버 실행 중 (localhost:3000)
+- [ ] LLM Service 초기화 로그 확인
+- [ ] curl 테스트 성공
+- [ ] .env 설정 확인
+- [ ] (선택) GitHub 토큰 설정
+
+---
+
+## Phase 1 완료 후
+
+✅ Phase 1 완료 → **Phase 2: 프론트엔드 페이지 구현**으로 이동
+
+---
+
+## 참고: LLM 제공자 전환 방법
+
+만약 Ollama 대신 다른 LLM을 사용하고 싶다면:
+
+```bash
+# .env에서 한 줄만 변경
+LLM_PROVIDER="claude"  # 또는 "llamacpp", "openai"
+
+# 각 제공자별 환경변수 설정 (CLAUDE.md 참고)
+```
+
+**새 제공자 추가하기:**
+1. `backend/src/services/llmService.ts`에서 `callYourProvider()` 메서드 추가
+2. switch문에 케이스 추가
+3. 끝!
+
+---
+
+## 트러블슈팅
+
+### Ollama 실행 안 됨
+```bash
+# 설치 확인
+which ollama
+
+# 없으면 다시 설치
+brew install ollama
+# 또는 https://ollama.ai에서 다운로드
+```
+
+### Qwen2.5 모델 다운로드 중단
+```bash
+# 다시 시도
+ollama pull qwen2.5:7b
+
+# 진행률 확인
+# 약 4.7GB 파일 다운로드
+```
+
+### 백엔드에서 Ollama 연결 불가
+```bash
+# Ollama 실행 중인지 확인
+curl http://localhost:11434/api/tags
+
+# 포트 확인
+lsof -i :11434
+
+# 방화벽 확인 (localhost는 보통 문제 없음)
+```
+
+---
+
+## 다음 단계
+
+✅ Phase 1: 환경 준비 완료
+
+👉 Phase 2: 프론트엔드 페이지 구현
+   - GithubReposPage.tsx
+   - RepoCard.tsx
+   - githubApi.ts
 </file>
 
 <file path=".github/workflows/auto-merge.yml">
@@ -808,6 +1212,75 @@ ALTER TABLE "users" ADD COLUMN     "nickname" TEXT;
 ALTER TYPE "CalendarEventType" ADD VALUE 'POSTING';
 </file>
 
+<file path="backend/prisma/migrations/20260723081348_add_github_repos/migration.sql">
+-- CreateTable
+CREATE TABLE "github_repos" (
+    "id" TEXT NOT NULL,
+    "githubId" INTEGER NOT NULL,
+    "owner" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "fullName" TEXT NOT NULL,
+    "description" TEXT,
+    "url" TEXT NOT NULL,
+    "stars" INTEGER NOT NULL DEFAULT 0,
+    "forks" INTEGER NOT NULL DEFAULT 0,
+    "openIssues" INTEGER NOT NULL DEFAULT 0,
+    "language" TEXT,
+    "readme" TEXT,
+    "readmeHtml" TEXT,
+    "summary" TEXT,
+    "summaryBullets" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "topics" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "license" TEXT,
+    "homepageUrl" TEXT,
+    "lastFetchedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "github_repos_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_github_stars" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "repoId" TEXT NOT NULL,
+    "starredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "user_github_stars_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "github_repos_githubId_key" ON "github_repos"("githubId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "github_repos_fullName_key" ON "github_repos"("fullName");
+
+-- CreateIndex
+CREATE INDEX "github_repos_stars_idx" ON "github_repos"("stars");
+
+-- CreateIndex
+CREATE INDEX "github_repos_language_idx" ON "github_repos"("language");
+
+-- CreateIndex
+CREATE INDEX "github_repos_lastFetchedAt_idx" ON "github_repos"("lastFetchedAt");
+
+-- CreateIndex
+CREATE INDEX "user_github_stars_userId_idx" ON "user_github_stars"("userId");
+
+-- CreateIndex
+CREATE INDEX "user_github_stars_repoId_idx" ON "user_github_stars"("repoId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_github_stars_userId_repoId_key" ON "user_github_stars"("userId", "repoId");
+
+-- AddForeignKey
+ALTER TABLE "user_github_stars" ADD CONSTRAINT "user_github_stars_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_github_stars" ADD CONSTRAINT "user_github_stars_repoId_fkey" FOREIGN KEY ("repoId") REFERENCES "github_repos"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
 <file path="backend/prisma/migrations/migration_lock.toml">
 # Please do not edit this file manually
 # It should be added in your version-control system (i.e. Git)
@@ -843,6 +1316,242 @@ export const verifyAuth = (req: AuthRequest, res: Response, next: NextFunction) 
     return res.status(401).json({ error: '토큰 검증 실패' })
   }
 }
+</file>
+
+<file path="backend/src/routes/github.ts">
+import { Router, Response } from 'express'
+import { githubService } from '../services/githubService'
+import { llmService } from '../services/llmService'
+import { AuthRequest, verifyAuth } from '../middleware/auth'
+
+const router = Router()
+
+/**
+ * GET /api/github/trending
+ * 인기 저장소 조회 (선택사항: 언어별, 제한 개수)
+ */
+router.get('/trending', async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 50)
+    const language = req.query.language as string
+
+    console.log(`📥 Fetching trending repos (language: ${language || 'all'}, limit: ${limit})`)
+
+    const repos = await githubService.getTrendingRepos(limit)
+
+    if (language) {
+      const filtered = repos.filter(r => r.language?.toLowerCase() === language.toLowerCase())
+      return res.json({
+        success: true,
+        count: filtered.length,
+        data: filtered,
+      })
+    }
+
+    res.json({
+      success: true,
+      count: repos.length,
+      data: repos,
+    })
+  } catch (error) {
+    console.error('❌ Error fetching trending repos:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * GET /api/github/search
+ * 저장소 검색
+ */
+router.get('/search', async (req: AuthRequest, res: Response) => {
+  try {
+    const query = req.query.q as string
+    const limit = Math.min(parseInt(req.query.limit as string) || 10, 50)
+
+    if (!query || query.length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'Query must be at least 2 characters',
+      })
+    }
+
+    const results = await githubService.searchRepos(query, limit)
+
+    res.json({
+      success: true,
+      count: results.length,
+      query,
+      data: results,
+    })
+  } catch (error) {
+    console.error('❌ Error searching repos:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * GET /api/github/:githubId
+ * 저장소 상세 조회
+ */
+router.get('/:githubId', async (req: AuthRequest, res: Response) => {
+  try {
+    const githubId = parseInt(req.params.githubId)
+
+    if (isNaN(githubId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid GitHub ID',
+      })
+    }
+
+    const repo = await githubService.getRepoById(githubId)
+
+    if (!repo) {
+      return res.status(404).json({
+        success: false,
+        error: 'Repository not found',
+      })
+    }
+
+    res.json({
+      success: true,
+      data: repo,
+    })
+  } catch (error) {
+    console.error('❌ Error fetching repo details:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * GET /api/github/language/:lang
+ * 언어별 저장소 조회
+ */
+router.get('/language/:lang', async (req: AuthRequest, res: Response) => {
+  try {
+    const language = req.params.lang
+    const limit = Math.min(parseInt(req.query.limit as string) || 10, 50)
+
+    const repos = await githubService.getReposByLanguage(language, limit)
+
+    res.json({
+      success: true,
+      language,
+      count: repos.length,
+      data: repos,
+    })
+  } catch (error) {
+    console.error('❌ Error fetching repos by language:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * POST /api/github/collect
+ * GitHub에서 인기 저장소 수집 및 요약 (관리자 전용)
+ */
+router.post('/collect', verifyAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { language, limit = 20 } = req.body
+
+    // 백그라운드에서 실행 (즉시 응답)
+    githubService.collectAndSummarizeRepos(language, limit).catch(error => {
+      console.error('❌ Background collection error:', error)
+    })
+
+    res.json({
+      success: true,
+      message: '저장소 수집이 시작되었습니다',
+      params: { language, limit },
+    })
+  } catch (error) {
+    console.error('❌ Error starting collection:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * GET /api/github/llm/status
+ * LLM 상태 확인
+ */
+router.get('/llm/status', async (req: AuthRequest, res: Response) => {
+  try {
+    const info = llmService.getInfo()
+
+    res.json({
+      success: true,
+      llm: info,
+    })
+  } catch (error) {
+    console.error('❌ Error checking LLM status:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * POST /api/github/summarize
+ * 텍스트 요약 API (테스트용)
+ */
+router.post('/summarize', verifyAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { text, type = 'summary' } = req.body
+
+    if (!text || text.length < 10) {
+      return res.status(400).json({
+        success: false,
+        error: 'Text must be at least 10 characters',
+      })
+    }
+
+    let result
+
+    switch (type) {
+      case 'summary':
+        result = await llmService.summarizeReadme(text)
+        break
+      case 'translate':
+        result = await llmService.translateToKorean(text)
+        break
+      case 'bullets':
+        const bullets = await llmService.extractBulletPoints(text, 4)
+        result = { success: true, content: bullets.join('\n'), provider: 'llm' }
+        break
+      default:
+        return res.status(400).json({
+          success: false,
+          error: 'Unknown summary type',
+        })
+    }
+
+    res.json(result)
+  } catch (error) {
+    console.error('❌ Error summarizing:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+export default router
 </file>
 
 <file path="backend/src/services/providers/googleCalendarProvider.ts">
@@ -1022,6 +1731,575 @@ export class CalendarService {
     return this.provider.getCalendars(userId)
   }
 }
+</file>
+
+<file path="backend/src/services/githubService.ts">
+/**
+ * GitHub 저장소 정보 조회 및 요약 서비스
+ * LLM과 통합하여 한국어 요약 생성
+ */
+
+import { PrismaClient } from '@prisma/client'
+import { llmService } from './llmService'
+
+const prisma = new PrismaClient()
+
+interface GithubRepoData {
+  id: number
+  owner: string
+  name: string
+  fullName: string
+  description?: string
+  url: string
+  stars: number
+  forks: number
+  openIssues: number
+  language?: string
+  topics: string[]
+  license?: string
+  homepageUrl?: string
+}
+
+interface RepoWithSummary extends GithubRepoData {
+  readme?: string
+  summary?: string
+  summaryBullets?: string[]
+}
+
+class GithubService {
+  /**
+   * GitHub API로 인기 저장소 검색 (별 순)
+   */
+  async fetchTrendingRepos(language?: string, limit: number = 20): Promise<GithubRepoData[]> {
+    const query = language ? `language:${language} stars:>1000` : 'stars:>1000'
+    const token = process.env.GITHUB_TOKEN ? `&Authorization: token ${process.env.GITHUB_TOKEN}` : ''
+
+    const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(
+      query
+    )}&sort=stars&order=desc&per_page=${limit}`
+
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        ...(token && { 'Authorization': `token ${process.env.GITHUB_TOKEN}` }),
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.statusText}`)
+    }
+
+    const data = (await response.json()) as {
+      items: Array<{
+        id: number
+        owner: { login: string }
+        name: string
+        full_name: string
+        description: string | null
+        html_url: string
+        stargazers_count: number
+        forks_count: number
+        open_issues_count: number
+        language: string | null
+        topics: string[]
+        license: { name: string } | null
+        homepage: string | null
+      }>
+    }
+
+    return data.items.map(item => ({
+      id: item.id,
+      owner: item.owner.login,
+      name: item.name,
+      fullName: item.full_name,
+      description: item.description || undefined,
+      url: item.html_url,
+      stars: item.stargazers_count,
+      forks: item.forks_count,
+      openIssues: item.open_issues_count,
+      language: item.language || undefined,
+      topics: item.topics || [],
+      license: item.license?.name || undefined,
+      homepageUrl: item.homepage || undefined,
+    }))
+  }
+
+  /**
+   * GitHub 저장소의 README 파일 가져오기
+   */
+  async fetchReadme(owner: string, repo: string): Promise<string | null> {
+    const token = process.env.GITHUB_TOKEN
+    const headers: HeadersInit = {
+      'Accept': 'application/vnd.github.v3.raw',
+      ...(token && { 'Authorization': `token ${token}` }),
+    }
+
+    // 여러 경로 시도
+    const paths = ['README.md', 'readme.md', 'README', 'Readme.md']
+
+    for (const path of paths) {
+      try {
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`
+        const response = await fetch(url, { headers })
+
+        if (response.ok) {
+          return await response.text()
+        }
+      } catch (error) {
+        // 다음 경로 시도
+        continue
+      }
+    }
+
+    return null
+  }
+
+  /**
+   * 저장소 정보 요약 (README + 메타데이터)
+   */
+  async summarizeRepo(repo: RepoWithSummary): Promise<{
+    summary: string
+    bullets: string[]
+  }> {
+    const content = `
+제목: ${repo.name}
+설명: ${repo.description || 'N/A'}
+주언어: ${repo.language || 'Unknown'}
+별: ${repo.stars}개
+포크: ${repo.forks}개
+
+${repo.readme ? `README 내용:\n${repo.readme}` : ''}
+    `
+
+    // LLM으로 요약 생성
+    const summaryResponse = await llmService.summarizeReadme(content)
+    const bulletsResponse = await llmService.extractBulletPoints(content, 4)
+
+    return {
+      summary: summaryResponse.success ? summaryResponse.content : repo.description || '',
+      bullets: bulletsResponse,
+    }
+  }
+
+  /**
+   * 저장소 정보 및 요약을 DB에 저장
+   */
+  async saveRepo(repo: RepoWithSummary): Promise<void> {
+    const { summary, bullets } = await this.summarizeRepo(repo)
+
+    await prisma.githubRepo.upsert({
+      where: { githubId: repo.id },
+      create: {
+        githubId: repo.id,
+        owner: repo.owner,
+        name: repo.name,
+        fullName: repo.fullName,
+        description: repo.description || null,
+        url: repo.url,
+        stars: repo.stars,
+        forks: repo.forks,
+        openIssues: repo.openIssues,
+        language: repo.language || null,
+        topics: repo.topics,
+        license: repo.license || null,
+        homepageUrl: repo.homepageUrl || null,
+        readme: repo.readme || null,
+        summary,
+        summaryBullets: bullets,
+        lastFetchedAt: new Date(),
+      },
+      update: {
+        stars: repo.stars,
+        forks: repo.forks,
+        openIssues: repo.openIssues,
+        description: repo.description || null,
+        readme: repo.readme || null,
+        summary,
+        summaryBullets: bullets,
+        lastFetchedAt: new Date(),
+      },
+    })
+
+    console.log(`✅ Saved: ${repo.fullName}`)
+  }
+
+  /**
+   * 인기 저장소 수집 및 요약 (일괄 처리)
+   */
+  async collectAndSummarizeRepos(language?: string, limit: number = 20): Promise<void> {
+    console.log(`📥 Fetching ${limit} trending repos...`)
+
+    // GitHub에서 인기 repo 목록 조회
+    const repos = await this.fetchTrendingRepos(language, limit)
+
+    for (let i = 0; i < repos.length; i++) {
+      const repo = repos[i]!
+
+      try {
+        console.log(`[${i + 1}/${repos.length}] Processing ${repo.fullName}...`)
+
+        // README 파일 가져오기
+        const readme = await this.fetchReadme(repo.owner, repo.name)
+
+        // DB에 저장 및 요약 생성
+        await this.saveRepo({
+          ...repo,
+          readme: readme || undefined,
+        })
+
+        // API 레이트 제한 고려 (0.5초 간격)
+        await new Promise(resolve => setTimeout(resolve, 500))
+      } catch (error) {
+        console.error(`❌ Error processing ${repo.fullName}:`, error)
+        continue
+      }
+    }
+
+    console.log('✅ Collection completed')
+  }
+
+  /**
+   * DB에서 인기 저장소 조회
+   */
+  async getTrendingRepos(limit: number = 20): Promise<any[]> {
+    return prisma.githubRepo.findMany({
+      take: limit,
+      orderBy: { stars: 'desc' },
+    })
+  }
+
+  /**
+   * 언어별 인기 저장소 조회
+   */
+  async getReposByLanguage(language: string, limit: number = 10): Promise<any[]> {
+    return prisma.githubRepo.findMany({
+      where: { language },
+      take: limit,
+      orderBy: { stars: 'desc' },
+    })
+  }
+
+  /**
+   * 저장소 상세 조회 (ID로)
+   */
+  async getRepoById(githubId: number): Promise<any> {
+    return prisma.githubRepo.findUnique({
+      where: { githubId },
+    })
+  }
+
+  /**
+   * 저장소 검색
+   */
+  async searchRepos(query: string, limit: number = 10): Promise<any[]> {
+    return prisma.githubRepo.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+          { summary: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      take: limit,
+      orderBy: { stars: 'desc' },
+    })
+  }
+}
+
+export const githubService = new GithubService()
+</file>
+
+<file path="backend/src/services/llmService.ts">
+/**
+ * LLM 추상화 서비스
+ * 여러 LLM 제공자 (Ollama, Claude, LlamaCPP 등)를 통일된 인터페이스로 관리
+ * 제공자는 .env의 LLM_PROVIDER로 쉽게 전환 가능
+ */
+
+interface LLMResponse {
+  success: boolean
+  content: string
+  error?: string
+  provider: string
+}
+
+class LLMService {
+  private provider: string
+  private model: string
+
+  constructor() {
+    this.provider = process.env.LLM_PROVIDER || 'ollama'
+    this.model = this.getModel()
+    console.log(`🤖 LLM Service initialized: ${this.provider} (${this.model})`)
+  }
+
+  private getModel(): string {
+    switch (this.provider) {
+      case 'ollama':
+        return process.env.OLLAMA_MODEL || 'qwen2.5:7b'
+      case 'claude':
+        return process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022'
+      case 'llamacpp':
+        return 'local-model' // LlamaCPP는 별도 설정 불필요
+      case 'openai':
+        return process.env.OPENAI_MODEL || 'gpt-4o-mini'
+      default:
+        return 'qwen2.5:7b'
+    }
+  }
+
+  /**
+   * README를 한국어로 요약
+   * @param readme - 원본 README (마크다운)
+   * @returns 요약된 텍스트
+   */
+  async summarizeReadme(readme: string): Promise<LLMResponse> {
+    const prompt = `다음 README의 핵심 기능과 특징을 3~5줄의 한국어로 요약해줘.
+기술 스택, 주요 기능, 사용 용도만 포함해.
+마크다운 형식은 제거하고 일반 텍스트로.
+
+[README]
+${readme.substring(0, 2000)}
+[/README]
+
+요약:`
+
+    return this.callLLM(prompt)
+  }
+
+  /**
+   * 텍스트를 한국어로 번역
+   * @param text - 원본 텍스트
+   * @returns 번역된 텍스트
+   */
+  async translateToKorean(text: string): Promise<LLMResponse> {
+    const prompt = `다음 영어 텍스트를 자연스러운 한국어로 번역해줘.
+기술 용어는 영어로 유지해도 괜찮아.
+
+[TEXT]
+${text}
+[/TEXT]
+
+번역:`
+
+    return this.callLLM(prompt)
+  }
+
+  /**
+   * 텍스트에서 핵심 포인트 추출
+   * @param text - 원본 텍스트
+   * @param count - 추출할 포인트 개수 (기본값: 3)
+   * @returns 핵심 포인트 배열
+   */
+  async extractBulletPoints(text: string, count: number = 3): Promise<string[]> {
+    const prompt = `다음 텍스트에서 ${count}개의 핵심 포인트를 한국어로 뽑아줘.
+각 포인트는 한 줄씩.
+숫자나 특수문자 없이 정의처럼 작성해줘.
+
+[TEXT]
+${text.substring(0, 1500)}
+[/TEXT]
+
+핵심 포인트 ${count}개:`
+
+    const response = await this.callLLM(prompt)
+    if (!response.success) {
+      return []
+    }
+
+    return response.content
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .slice(0, count)
+  }
+
+  /**
+   * 실제 LLM 호출 (제공자별 구현)
+   */
+  private async callLLM(prompt: string): Promise<LLMResponse> {
+    try {
+      switch (this.provider) {
+        case 'ollama':
+          return await this.callOllama(prompt)
+        case 'claude':
+          return await this.callClaude(prompt)
+        case 'llamacpp':
+          return await this.callLlamaCPP(prompt)
+        case 'openai':
+          return await this.callOpenAI(prompt)
+        default:
+          return {
+            success: false,
+            content: '',
+            error: `Unknown provider: ${this.provider}`,
+            provider: this.provider,
+          }
+      }
+    } catch (error) {
+      console.error(`❌ LLM Error (${this.provider}):`, error)
+      return {
+        success: false,
+        content: '',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        provider: this.provider,
+      }
+    }
+  }
+
+  /**
+   * Ollama API 호출 (로컬)
+   */
+  private async callOllama(prompt: string): Promise<LLMResponse> {
+    const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
+    const url = `${baseUrl}/api/generate`
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: this.model,
+        prompt,
+        stream: false,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.statusText}`)
+    }
+
+    const data = (await response.json()) as { response: string }
+    return {
+      success: true,
+      content: data.response.trim(),
+      provider: 'ollama',
+    }
+  }
+
+  /**
+   * Claude API 호출 (Anthropic)
+   */
+  private async callClaude(prompt: string): Promise<LLMResponse> {
+    const apiKey = process.env.CLAUDE_API_KEY
+    if (!apiKey) {
+      throw new Error('CLAUDE_API_KEY is not set')
+    }
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: this.model,
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Claude API error: ${response.statusText}`)
+    }
+
+    const data = (await response.json()) as {
+      content: Array<{ type: string; text: string }>
+    }
+    const content = data.content[0]?.text || ''
+
+    return {
+      success: true,
+      content: content.trim(),
+      provider: 'claude',
+    }
+  }
+
+  /**
+   * LlamaCPP API 호출 (로컬)
+   */
+  private async callLlamaCPP(prompt: string): Promise<LLMResponse> {
+    const baseUrl = process.env.LLAMACPP_BASE_URL || 'http://localhost:8000'
+    const url = `${baseUrl}/v1/completions`
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt,
+        max_tokens: 1024,
+        temperature: 0.7,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`LlamaCPP API error: ${response.statusText}`)
+    }
+
+    const data = (await response.json()) as {
+      choices: Array<{ text: string }>
+    }
+    const content = data.choices[0]?.text || ''
+
+    return {
+      success: true,
+      content: content.trim(),
+      provider: 'llamacpp',
+    }
+  }
+
+  /**
+   * OpenAI API 호출
+   */
+  private async callOpenAI(prompt: string): Promise<LLMResponse> {
+    const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY is not set')
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1024,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`)
+    }
+
+    const data = (await response.json()) as {
+      choices: Array<{ message: { content: string } }>
+    }
+    const content = data.choices[0]?.message?.content || ''
+
+    return {
+      success: true,
+      content: content.trim(),
+      provider: 'openai',
+    }
+  }
+
+  /**
+   * 현재 설정 정보 반환
+   */
+  getInfo() {
+    return {
+      provider: this.provider,
+      model: this.model,
+      status: 'ready',
+    }
+  }
+}
+
+// 싱글톤 인스턴스
+export const llmService = new LLMService()
 </file>
 
 <file path="backend/src/services/smartMatchingService.ts">
@@ -1678,159 +2956,6 @@ build/
 .vscode/
 .idea/
 *.log
-</file>
-
-<file path="crawler/config.py">
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# Wevity 크롤링 설정
-BASE_URL = "https://www.wevity.com"
-USER_AGENT = "naver-challenge-crawler (contact: khy05300@gmail.com)"
-CRAWL_DELAY = 1.5  # 요청 간 딜레이 (초)
-MAX_PAGES = 10  # 최대 페이지 수
-
-# 크롤링 대상 섹션
-SECTIONS = [
-    {"name": "공모전", "path": "?c=find&s=1"},
-    {"name": "대외활동", "path": "?c=active&s=1"},
-]
-
-# 데이터베이스 설정
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL 환경변수가 설정되지 않았습니다")
-
-# 로깅 설정
-LOG_LEVEL = "INFO"
-</file>
-
-<file path="crawler/main.py">
-#!/usr/bin/env python3
-"""
-위비티 크롤러 메인 진입점
-
-실행:
-  python main.py
-"""
-
-import sys
-import time
-from datetime import datetime
-
-# 모듈 임포트
-from config import SECTIONS, MAX_PAGES
-from scrapers.wevity import collect_ids, fetch_posting
-from parser.eligibility_parser import parse_eligibility, determine_parse_status
-from db.repository import Repository
-
-
-def main():
-    print("=" * 60)
-    print("🤖 위비티 크롤러 시작")
-    print("=" * 60)
-
-    repo = Repository()
-
-    try:
-        repo.connect()
-    except Exception as e:
-        print(f"❌ 데이터베이스 연결 실패: {e}")
-        return
-
-    total_collected = 0
-    total_errors = 0
-
-    for section in SECTIONS:
-        print(f"\n📌 섹션: {section['name']}")
-        print("-" * 60)
-
-        # 1단계: 목록 페이지에서 ID 수집
-        posting_ids = collect_ids(section["path"], max_pages=MAX_PAGES)
-
-        if not posting_ids:
-            print(f"  ⚠️  수집된 ID 없음\n")
-            continue
-
-        # 2단계: 각 공고 상세 페이지 파싱 및 DB 저장
-        for idx, posting_id in enumerate(posting_ids, 1):
-            print(f"\n[{idx}/{len(posting_ids)}] ID {posting_id}")
-
-            # 상세 페이지 파싱
-            posting_data = fetch_posting(posting_id, section=section["path"].split("=")[1].split("&")[0])
-            if not posting_data:
-                total_errors += 1
-                continue
-
-            # 원본 저장
-            raw_posting_id = repo.insert_raw_posting(
-                {
-                    "source_url": posting_data["source_url"],
-                    "raw_title": posting_data["raw_title"],
-                    "raw_text": posting_data["raw_text"],
-                    "scraped_at": datetime.utcnow(),
-                }
-            )
-
-            if not raw_posting_id:
-                total_errors += 1
-                continue
-
-            # 자격요건 파싱
-            eligibility = parse_eligibility(
-                posting_data["raw_text"], wevity_fields=posting_data.get("wevity_fields")
-            )
-            parse_status = determine_parse_status(eligibility)
-
-            # 정규화된 공고 + 자격요건 저장
-            posting_id_saved = repo.insert_posting_with_eligibility(
-                raw_posting_id,
-                {
-                    "category": "COMPETITION" if section["path"].startswith("?c=find") else "ACTIVITY",
-                    "title": posting_data["raw_title"],
-                    "host_org": posting_data.get("host_org"),
-                    "reception_end_date": posting_data.get("reception_end_date"),
-                    "source_url": posting_data["source_url"],
-                },
-                eligibility,
-                parse_status,
-            )
-
-            if posting_id_saved:
-                total_collected += 1
-                status_emoji = "✅" if parse_status == "CURATED" else "⚠️ "
-                print(f"    {status_emoji} 저장됨 (parseStatus: {parse_status})")
-            else:
-                total_errors += 1
-
-            # 요청 간 딜레이
-            time.sleep(0.5)
-
-    # 최종 통계
-    print("\n" + "=" * 60)
-    print("📊 크롤링 완료")
-    print("=" * 60)
-
-    stats = repo.get_stats()
-    print(f"총 저장된 공고: {stats.get('total_postings', 0)}개")
-    print(f"  - CURATED: {stats.get('curated', 0)}개")
-    print(f"  - NEEDS_REVIEW: {stats.get('needs_review', 0)}개")
-    print(f"수집 중 오류: {total_errors}개")
-
-    repo.close()
-
-    if total_collected > 0:
-        print("\n✅ 크롤링 성공!")
-        return 0
-    else:
-        print("\n❌ 저장된 데이터 없음")
-        return 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())
 </file>
 
 <file path="crawler/requirements.txt">
@@ -6413,6 +7538,941 @@ export function GoogleCalendarButton({ onSuccess, onError }: GoogleCalendarButto
 }
 </file>
 
+<file path="frontend/src/components/RepoCard.tsx">
+import { GithubRepo } from '../services/githubApi'
+
+interface RepoCardProps {
+  repo: GithubRepo
+  onSelect?: (repo: GithubRepo) => void
+}
+
+export default function RepoCard({ repo, onSelect }: RepoCardProps) {
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
+    return num.toString()
+  }
+
+  const getLanguageColor = (language: string | null): string => {
+    if (!language) return 'bg-gray-200'
+    const colorMap: Record<string, string> = {
+      'JavaScript': 'bg-yellow-200',
+      'TypeScript': 'bg-blue-200',
+      'Python': 'bg-blue-300',
+      'Go': 'bg-cyan-300',
+      'Rust': 'bg-orange-300',
+      'Java': 'bg-red-200',
+      'C++': 'bg-blue-400',
+      'C#': 'bg-purple-200',
+      'PHP': 'bg-indigo-200',
+    }
+    return colorMap[language] || 'bg-gray-100'
+  }
+
+  return (
+    <div
+      className="bg-white rounded-lg border border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer group"
+      onClick={() => onSelect?.(repo)}
+    >
+      {/* 헤더 */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600">
+              {repo.name}
+            </h3>
+            <p className="text-xs text-gray-500 truncate mt-1">
+              {repo.owner} / {repo.name}
+            </p>
+          </div>
+          {repo.language && (
+            <span className={`${getLanguageColor(repo.language)} px-2 py-1 rounded text-xs font-medium text-gray-800 whitespace-nowrap`}>
+              {repo.language}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* 설명 */}
+      <div className="p-4">
+        <p className="text-sm text-gray-700 line-clamp-2">
+          {repo.description || '설명 없음'}
+        </p>
+
+        {/* 요약 (있으면 표시) */}
+        {repo.summary && (
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <p className="text-xs text-gray-600 line-clamp-2 italic">
+              {repo.summary}
+            </p>
+          </div>
+        )}
+
+        {/* Bullet Points */}
+        {repo.summaryBullets && repo.summaryBullets.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {repo.summaryBullets.slice(0, 2).map((bullet, idx) => (
+              <div key={idx} className="text-xs text-gray-600 flex items-start gap-2">
+                <span className="text-blue-500 mt-1">•</span>
+                <span className="line-clamp-1">{bullet}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 통계 */}
+      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1">
+            <span className="text-yellow-400">⭐</span>
+            <span className="text-sm font-semibold text-gray-900">
+              {formatNumber(repo.stars)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-gray-600">🍴</span>
+            <span className="text-sm text-gray-600">
+              {formatNumber(repo.forks)}
+            </span>
+          </div>
+        </div>
+        {repo.homepageUrl && (
+          <a
+            href={repo.homepageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+            onClick={e => e.stopPropagation()}
+          >
+            홈페이지 ↗
+          </a>
+        )}
+      </div>
+
+      {/* GitHub 링크 */}
+      <a
+        href={repo.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block px-4 py-2 bg-gray-900 text-white text-center text-sm font-medium hover:bg-gray-800 transition-colors"
+        onClick={e => e.stopPropagation()}
+      >
+        GitHub에서 보기
+      </a>
+    </div>
+  )
+}
+</file>
+
+<file path="frontend/src/pages/GithubReposPage.tsx">
+import { useEffect, useState } from 'react'
+import { githubApi, GithubRepo } from '../services/githubApi'
+import { profileApi } from '../utils/apiClient'
+import RepoCard from '../components/RepoCard'
+
+interface GithubReposPageProps {
+  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings' | 'github') => void
+}
+
+type FilterTab = 'trending' | 'search'
+
+export default function GithubReposPage({ setCurrentPage }: GithubReposPageProps) {
+  const [repos, setRepos] = useState<GithubRepo[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedTab, setSelectedTab] = useState<FilterTab>('trending')
+  const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [llmInfo, setLlmInfo] = useState<any>(null)
+  const [selectedRepo, setSelectedRepo] = useState<GithubRepo | null>(null)
+  const [isCollecting, setIsCollecting] = useState(false)
+  const [profile, setProfile] = useState<any>(null)
+
+  const languages = ['JavaScript', 'TypeScript', 'Python', 'Go', 'Rust', 'Java', 'C++', 'C#']
+
+  const loadProfile = async () => {
+    try {
+      const response = await profileApi.fetch()
+      if (response?.id || response?.userId) {
+        setProfile(response)
+      } else if (response?.data) {
+        setProfile(response.data)
+      }
+    } catch (err: any) {
+      console.error('❌ 프로필 로드 실패:', err)
+      if (err.message?.includes('인증') || err.message?.includes('토큰')) {
+        setCurrentPage?.('auth')
+      }
+    }
+  }
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        await loadProfile()
+        const llmStatus = await githubApi.getLlmStatus()
+        if (llmStatus) {
+          setLlmInfo(llmStatus)
+        }
+        const trendingRepos = await githubApi.getTrendingRepos(20)
+        setRepos(trendingRepos)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '데이터 로드 실패')
+        console.error('❌ 초기 로드 오류:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadInitialData()
+  }, [])
+
+  const handleLanguageSelect = async (language: string | null) => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      setSelectedLanguage(language)
+      setSelectedTab('trending')
+
+      if (language) {
+        const filtered = await githubApi.getReposByLanguage(language, 20)
+        setRepos(filtered)
+      } else {
+        const trending = await githubApi.getTrendingRepos(20)
+        setRepos(trending)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '필터링 실패')
+      console.error('❌ 필터링 오류:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!searchQuery.trim()) {
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      setError(null)
+      setSelectedTab('search')
+      setSelectedLanguage(null)
+
+      const results = await githubApi.searchRepos(searchQuery, 20)
+      setRepos(results)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '검색 실패')
+      console.error('❌ 검색 오류:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCollectRepos = async () => {
+    try {
+      setIsCollecting(true)
+      setError(null)
+
+      await githubApi.collectRepos(undefined, 10)
+      alert('✅ 저장소 수집이 시작되었습니다. 잠시 후 새로고침해 주세요.')
+
+      setTimeout(async () => {
+        try {
+          const trending = await githubApi.getTrendingRepos(20)
+          setRepos(trending)
+        } catch (err) {
+          console.error('새로고침 오류:', err)
+        }
+      }, 3000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '수집 실패')
+      console.error('❌ 수집 오류:', err)
+    } finally {
+      setIsCollecting(false)
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
+      {/* ===== 좌측 사이드바 ===== */}
+      <aside style={{
+        width: '220px',
+        minWidth: '220px',
+        backgroundColor: '#fff',
+        borderRight: '1px solid #e5e7eb',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '20px 14px',
+        overflowY: 'auto',
+      }}>
+        {/* 로고 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 6px 20px' }}>
+          <div style={{ width: '28px', height: '28px', backgroundColor: '#111', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700 }}>U</span>
+          </div>
+          <span style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '-0.3px' }}>UniBoard</span>
+        </div>
+
+        {/* 프로필 박스 */}
+        <div style={{ backgroundColor: '#f8f9fa', borderRadius: '10px', padding: '12px', marginBottom: '20px' }}>
+          {profile ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>
+                    {(profile as any).nickname?.charAt(0).toUpperCase() || profile.userId?.charAt(0).toUpperCase() || '?'}
+                  </span>
+                </div>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, lineHeight: 1.3 }}>
+                    {(profile as any).nickname || profile.userId || '사용자'}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: 1.3 }}>{profile.major || '전공미정'} {profile.grade || ''}학년</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                {profile.major && (
+                  <span style={{ backgroundColor: '#ede9fe', color: '#6366f1', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '9999px' }}>
+                    {profile.major}
+                  </span>
+                )}
+                {profile.grade && (
+                  <span style={{ backgroundColor: '#f5f5f5', color: '#374151', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '9999px' }}>
+                    {profile.grade}학년
+                  </span>
+                )}
+                {profile.residenceRegion && (
+                  <span style={{ backgroundColor: '#f0fdf4', color: '#16a34a', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '9999px' }}>
+                    {profile.residenceRegion}
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: '12px', color: '#6b7280', padding: '8px 0' }}>프로필을 불러오는 중...</div>
+          )}
+        </div>
+
+        {/* 네비게이션 */}
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+          {[
+            { label: '대시보드', page: 'dashboard' as const },
+            { label: '내 스크랩', page: 'scraps' as const },
+            { label: '캘린더', page: 'calendar' as const },
+            { label: 'GitHub 저장소', page: 'github' as const },
+            { label: '환경설정', page: 'settings' as const },
+          ].map((item, i) => {
+            const isActive = item.page === 'github'
+            return (
+              <div
+                key={i}
+                onClick={() => setCurrentPage?.(item.page)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '9px 10px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: isActive ? 600 : 500,
+                  backgroundColor: isActive ? '#f5f5f5' : 'transparent',
+                  transition: 'all 100ms',
+                }}>
+                <span>{item.label}</span>
+              </div>
+            )
+          })}
+        </nav>
+
+        {/* LLM 상태 카드 */}
+        {llmInfo && (
+          <div style={{
+            marginTop: '16px',
+            backgroundColor: '#f0f9ff',
+            border: '1px solid #bae6fd',
+            borderLeft: '3px solid #0284c7',
+            borderRadius: '8px',
+            padding: '12px',
+          }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#0284c7', marginBottom: '4px' }}>🤖 LLM 서비스</div>
+            <div style={{ fontSize: '12px', color: '#0369a1', lineHeight: 1.4 }}>
+              {llmInfo.provider} ({llmInfo.model})
+            </div>
+          </div>
+        )}
+      </aside>
+
+      {/* ===== 메인 영역 ===== */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* 상단바 */}
+        <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '16px 24px', flexShrink: 0 }}>
+          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#1f2937' }}>GitHub 인기 저장소</h1>
+          <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>매월 인기있는 개발 프로젝트를 한국어로 요약했습니다</p>
+        </div>
+
+        {/* 메인 컨텐츠 */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+          {/* 검색 및 수집 */}
+          <div style={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb', padding: '20px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* 검색 폼 */}
+              <form onSubmit={handleSearch} style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="저장소명, 설명으로 검색..."
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    outline: 'none',
+                  }}
+                  onFocus={e => e.currentTarget.style.borderColor = '#3b82f6'}
+                  onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: '#2563eb',
+                    color: '#fff',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    opacity: isLoading ? 0.5 : 1,
+                    transition: 'all 200ms',
+                  }}
+                  onMouseEnter={e => !isLoading && (e.currentTarget.style.backgroundColor = '#1d4ed8')}
+                  onMouseLeave={e => !isLoading && (e.currentTarget.style.backgroundColor = '#2563eb')}
+                >
+                  검색
+                </button>
+              </form>
+
+              {/* 수집 버튼 */}
+              <button
+                onClick={handleCollectRepos}
+                disabled={isCollecting || isLoading}
+                style={{
+                  width: '100%',
+                  padding: '8px 16px',
+                  backgroundColor: '#16a34a',
+                  color: '#fff',
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  opacity: isCollecting || isLoading ? 0.5 : 1,
+                  transition: 'all 200ms',
+                }}
+                onMouseEnter={e => !isCollecting && !isLoading && (e.currentTarget.style.backgroundColor = '#15803d')}
+                onMouseLeave={e => !isCollecting && !isLoading && (e.currentTarget.style.backgroundColor = '#16a34a')}
+              >
+                {isCollecting ? '⏳ 저장소 수집 중...' : '✨ 새 저장소 수집하기'}
+              </button>
+            </div>
+          </div>
+
+          {/* 언어 필터 */}
+          <div style={{ marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: 600, color: '#1f2937', marginBottom: '12px' }}>언어별 필터</h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <button
+                onClick={() => handleLanguageSelect(null)}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  fontWeight: 500,
+                  fontSize: '13px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: selectedLanguage === null ? '#2563eb' : '#e5e7eb',
+                  color: selectedLanguage === null ? '#fff' : '#1f2937',
+                  transition: 'all 200ms',
+                }}
+              >
+                전체
+              </button>
+              {languages.map(lang => (
+                <button
+                  key={lang}
+                  onClick={() => handleLanguageSelect(lang)}
+                  style={{
+                    padding: '6px 16px',
+                    borderRadius: '20px',
+                    fontWeight: 500,
+                    fontSize: '13px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    backgroundColor: selectedLanguage === lang ? '#2563eb' : '#e5e7eb',
+                    color: selectedLanguage === lang ? '#fff' : '#1f2937',
+                    transition: 'all 200ms',
+                  }}
+                >
+                  {lang}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 에러 메시지 */}
+          {error && (
+            <div style={{ marginBottom: '20px', padding: '12px 16px', backgroundColor: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '6px' }}>
+              <p style={{ color: '#991b1b', fontWeight: 500, fontSize: '13px' }}>❌ {error}</p>
+            </div>
+          )}
+
+          {/* 로딩 상태 */}
+          {isLoading ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  border: '4px solid #dbeafe',
+                  borderTop: '4px solid #2563eb',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  margin: '0 auto 16px',
+                }}></div>
+                <p style={{ color: '#4b5563', fontSize: '13px' }}>저장소를 불러오는 중...</p>
+              </div>
+            </div>
+          ) : repos.length === 0 ? (
+            <div style={{ textAlign: 'center', minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div>
+                <p style={{ color: '#6b7280', fontSize: '15px', fontWeight: 500 }}>저장소가 없습니다</p>
+                <p style={{ color: '#9ca3af', fontSize: '13px', marginTop: '8px' }}>✨ 새 저장소 수집하기 버튼을 눌러주세요</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* 결과 수 */}
+              <div style={{ marginBottom: '16px', fontSize: '13px', color: '#6b7280' }}>
+                총 <span style={{ fontWeight: 600, color: '#1f2937' }}>{repos.length}</span>개의 저장소
+                {selectedLanguage && ` (${selectedLanguage})`}
+                {selectedTab === 'search' && ` - 검색 결과`}
+              </div>
+
+              {/* 저장소 카드 그리드 */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                gap: '16px',
+              }}>
+                {repos.map(repo => (
+                  <RepoCard
+                    key={repo.githubId}
+                    repo={repo}
+                    onSelect={setSelectedRepo}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+
+      {/* 상세 보기 모달 */}
+      {selectedRepo && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 50,
+          }}
+          onClick={() => setSelectedRepo(null)}
+        >
+          <div
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: '8px',
+              maxWidth: '700px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflowY: 'auto',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 모달 헤더 */}
+            <div style={{
+              position: 'sticky',
+              top: 0,
+              backgroundColor: '#fff',
+              borderBottom: '1px solid #e5e7eb',
+              padding: '24px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: '16px',
+            }}>
+              <div style={{ flex: 1 }}>
+                <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1f2937' }}>{selectedRepo.name}</h2>
+                <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '13px' }}>{selectedRepo.owner}/{selectedRepo.name}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '12px', fontSize: '13px' }}>
+                  {selectedRepo.language && (
+                    <span style={{ fontWeight: 500, color: '#2563eb' }}>{selectedRepo.language}</span>
+                  )}
+                  <span style={{ color: '#6b7280' }}>⭐ {selectedRepo.stars} Stars</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedRepo(null)}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '24px',
+                  fontWeight: 700,
+                  color: '#9ca3af',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 모달 컨텐츠 */}
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {selectedRepo.description && (
+                <div>
+                  <h3 style={{ fontWeight: 600, color: '#1f2937', marginBottom: '8px', fontSize: '14px' }}>설명</h3>
+                  <p style={{ color: '#374151', fontSize: '13px', lineHeight: 1.6 }}>{selectedRepo.description}</p>
+                </div>
+              )}
+
+              {selectedRepo.summary && (
+                <div>
+                  <h3 style={{ fontWeight: 600, color: '#1f2937', marginBottom: '8px', fontSize: '14px' }}>한국어 요약</h3>
+                  <p style={{ color: '#374151', fontSize: '13px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{selectedRepo.summary}</p>
+                </div>
+              )}
+
+              {selectedRepo.summaryBullets && selectedRepo.summaryBullets.length > 0 && (
+                <div>
+                  <h3 style={{ fontWeight: 600, color: '#1f2937', marginBottom: '8px', fontSize: '14px' }}>핵심 포인트</h3>
+                  <ul style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {selectedRepo.summaryBullets.map((bullet, idx) => (
+                      <li key={idx} style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#374151' }}>
+                        <span style={{ color: '#2563eb', fontWeight: 700, flexShrink: 0 }}>•</span>
+                        <span>{bullet}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div>
+                <h3 style={{ fontWeight: 600, color: '#1f2937', marginBottom: '12px', fontSize: '14px' }}>통계</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                  <div style={{ backgroundColor: '#f9fafb', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#1f2937' }}>⭐ {selectedRepo.stars}</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Stars</div>
+                  </div>
+                  <div style={{ backgroundColor: '#f9fafb', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#1f2937' }}>🍴 {selectedRepo.forks}</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Forks</div>
+                  </div>
+                  <div style={{ backgroundColor: '#f9fafb', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#1f2937' }}>📋 {selectedRepo.openIssues}</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Issues</div>
+                  </div>
+                </div>
+              </div>
+
+              {selectedRepo.topics && selectedRepo.topics.length > 0 && (
+                <div>
+                  <h3 style={{ fontWeight: 600, color: '#1f2937', marginBottom: '8px', fontSize: '14px' }}>Topics</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {selectedRepo.topics.map(topic => (
+                      <span
+                        key={topic}
+                        style={{
+                          padding: '4px 12px',
+                          backgroundColor: '#eff6ff',
+                          color: '#1e40af',
+                          borderRadius: '20px',
+                          fontSize: '12px',
+                        }}
+                      >
+                        {topic}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px', paddingTop: '16px', borderTop: '1px solid #e5e7eb' }}>
+                <a
+                  href={selectedRepo.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    flex: 1,
+                    padding: '8px 16px',
+                    backgroundColor: '#1f2937',
+                    color: '#fff',
+                    borderRadius: '6px',
+                    textAlign: 'center',
+                    fontWeight: 500,
+                    fontSize: '13px',
+                    textDecoration: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 200ms',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = '#111827'}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = '#1f2937'}
+                >
+                  GitHub 보러가기 ↗
+                </a>
+                {selectedRepo.homepageUrl && (
+                  <a
+                    href={selectedRepo.homepageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      flex: 1,
+                      padding: '8px 16px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      borderRadius: '6px',
+                      border: '1px solid #d1d5db',
+                      textAlign: 'center',
+                      fontWeight: 500,
+                      fontSize: '13px',
+                      textDecoration: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 200ms',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fff'}
+                  >
+                    홈페이지 ↗
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  )
+}
+</file>
+
+<file path="frontend/src/services/githubApi.ts">
+import { tokenManager } from '../utils/apiClient'
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
+export interface GithubRepo {
+  id: number
+  githubId: number
+  owner: string
+  name: string
+  fullName: string
+  description: string | null
+  url: string
+  stars: number
+  forks: number
+  openIssues: number
+  language: string | null
+  topics: string[]
+  license: string | null
+  homepageUrl: string | null
+  readme: string | null
+  summary: string | null
+  summaryBullets: string[]
+  lastFetchedAt: string
+}
+
+export interface GithubApiResponse<T> {
+  success: boolean
+  data?: T
+  count?: number
+  language?: string
+  query?: string
+  error?: string
+}
+
+class GithubApi {
+  async getTrendingRepos(limit: number = 20, language?: string): Promise<GithubRepo[]> {
+    try {
+      const params = new URLSearchParams()
+      params.append('limit', Math.min(limit, 50).toString())
+      if (language) {
+        params.append('language', language)
+      }
+
+      const response = await fetch(`${API_BASE}/api/github/trending?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${tokenManager.getAccessToken()}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`)
+      }
+
+      const result: GithubApiResponse<GithubRepo[]> = await response.json()
+      return result.data || []
+    } catch (error) {
+      console.error('❌ GitHub API 오류:', error)
+      throw error
+    }
+  }
+
+  async searchRepos(query: string, limit: number = 10): Promise<GithubRepo[]> {
+    try {
+      if (!query || query.length < 2) {
+        throw new Error('검색어는 최소 2글자 이상이어야 합니다')
+      }
+
+      const params = new URLSearchParams()
+      params.append('q', query)
+      params.append('limit', Math.min(limit, 50).toString())
+
+      const response = await fetch(`${API_BASE}/api/github/search?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${tokenManager.getAccessToken()}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`)
+      }
+
+      const result: GithubApiResponse<GithubRepo[]> = await response.json()
+      return result.data || []
+    } catch (error) {
+      console.error('❌ 검색 오류:', error)
+      throw error
+    }
+  }
+
+  async getReposByLanguage(language: string, limit: number = 10): Promise<GithubRepo[]> {
+    try {
+      const params = new URLSearchParams()
+      params.append('limit', Math.min(limit, 50).toString())
+
+      const response = await fetch(`${API_BASE}/api/github/language/${language}?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${tokenManager.getAccessToken()}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`)
+      }
+
+      const result: GithubApiResponse<GithubRepo[]> = await response.json()
+      return result.data || []
+    } catch (error) {
+      console.error(`❌ ${language} 저장소 조회 오류:`, error)
+      throw error
+    }
+  }
+
+  async getRepoById(githubId: number): Promise<GithubRepo | null> {
+    try {
+      const response = await fetch(`${API_BASE}/api/github/${githubId}`, {
+        headers: {
+          'Authorization': `Bearer ${tokenManager.getAccessToken()}`,
+        },
+      })
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null
+        }
+        throw new Error(`API error: ${response.statusText}`)
+      }
+
+      const result: GithubApiResponse<GithubRepo> = await response.json()
+      return result.data || null
+    } catch (error) {
+      console.error('❌ 저장소 상세 조회 오류:', error)
+      throw error
+    }
+  }
+
+  async getLlmStatus(): Promise<{
+    provider: string
+    model: string
+    status: string
+  } | null> {
+    try {
+      const response = await fetch(`${API_BASE}/api/github/llm/status`, {
+        headers: {
+          'Authorization': `Bearer ${tokenManager.getAccessToken()}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`)
+      }
+
+      const result: any = await response.json()
+      return result.llm || null
+    } catch (error) {
+      console.error('❌ LLM 상태 조회 오류:', error)
+      return null
+    }
+  }
+
+  async collectRepos(language?: string, limit: number = 20): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_BASE}/api/github/collect`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenManager.getAccessToken()}`,
+        },
+        body: JSON.stringify({
+          language,
+          limit: Math.min(limit, 50),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`)
+      }
+
+      return true
+    } catch (error) {
+      console.error('❌ 저장소 수집 오류:', error)
+      throw error
+    }
+  }
+}
+
+export const githubApi = new GithubApi()
+</file>
+
 <file path="frontend/src/utils/pushNotification.ts">
 import { tokenManager } from './apiClient'
 
@@ -9418,159 +11478,6 @@ export * from "./schemas";
 }
 </file>
 
-<file path="CLAUDE.md">
-# CLAUDE.md
-
-## 언어 규칙
-- 모든 결과값과 설명은 반드시 한글로 작성한다.
-- 코드 주석, 커밋 메시지, 사용자 응답 등 모든 텍스트 출력은 한글을 기본으로 한다.
-
-## Project Overview
-
-4-week MVP: college student information curation + scheduling dashboard.
-Filters opportunities (competitions, external activities, policies) by student profile (major/year/residence/income bracket) and recommends based on calendar availability.
-
-**Vertical slice first:** complete one category (competitions/activities) end-to-end before expanding to policies/subsidies.
-
-## Directory Structure
-/frontend       React + Vite app
-/backend        Express API server
-/crawler        Python crawler (separate service)
-/shared         Shared Zod schemas & types (imported by both frontend and backend)
-/prisma         Schema & migrations
-/docs           plan.md, checklist.md
-
-> Update this section when structure changes. Stale directory docs are worse than none.
-
-## Commands
-
-```bash
-cd frontend && npm run dev
-cd backend && npm run dev
-cd backend && npx prisma migrate dev    # after schema changes
-cd backend && npx prisma generate       # after schema changes, always
-cd crawler && python main.py
-cd backend && npm test
-cd frontend && npm run typecheck
-```
-
-## Tech Stack
-
-- **Frontend:** React 18 + TypeScript, Vite, Tailwind + shadcn/ui, Zustand, React Hook Form + Zod, React Query, FullCalendar.js, React Router
-- **Backend:** Node.js + Express + TypeScript, Prisma, Zod, JWT, node-cron
-- **DB:** PostgreSQL (Supabase)
-- **Crawler:** Python + BeautifulSoup / Playwright
-- **Deploy:** Vercel / Railway / Supabase
-
-## Architecture Rules
-
-**Scoring/filtering logic:**
-- Never inline scoring logic in route handlers
-- Always: `scoringService.calculateScore(user, posting)` — fixed interface, swappable internals
-- Reason: rule-based → LLM-based swap later without touching routers
-
-**Data:**
-- Raw crawled data and normalized data in separate tables
-- Store only: title, qualification text, deadline, source URL. Never full HTML
-- On crawler failure: preserve existing DB data, log error, retry next cycle. Never delete or zero-fill
-- New categories (policies etc.) reuse the same pipeline — no duplicate logic per category
-
-**Shared types:**
-- All Zod schemas shared via `/shared` package. Both frontend and backend import from there
-- Never copy-paste Zod schemas between frontend and backend
-
-**Calendar:**
-- Event schema: `uid`, `dtstart`, `dtend` (iCalendar standard) — for future Google/Apple Calendar sync
-
-**Privacy:**
-- Never log raw profile values (residence, income bracket, major) anywhere — console, files, error tracking
-- Use anonymized user IDs or derived codes for debugging
-
-## Implementation Sequence
-
-1. Crawling survey — confirm robots.txt, ToS, login walls, static vs JS rendering
-2. Data model (Prisma schema) — informed by crawling findings
-3. Crawler + seed data — 50–100 real postings before any UI work
-4. User profiles + auth (Supabase Auth)
-5. Filtering logic + dashboard card view — first complete vertical slice
-6. Calendar integration (FullCalendar.js) — deadline auto-sync on scrapping
-7. Smart matching — surface "you have 12hrs/week free" based on schedule gaps
-8. Scrapping + D-Day alerts (D-3, D-1)
-9. Policy/subsidy category expansion (optional)
-
-## Before Every Commit
-
-```bash
-cd backend && npm test && npm run lint && npm run typecheck
-cd frontend && npm run typecheck && npm run lint
-```
-
-Commit format: `feat(scope): description` / `fix(scope): description` / `chore(scope): description`
-
-**Minimum test coverage:** `scoringService` and eligibility parsing logic require unit tests. CRUD routes recommended but not required.
-
-## Never Do These
-
-- Violate robots.txt or ToS when crawling
-- Commit `schema.prisma` changes without running `npx prisma migrate dev`
-- Hardcode real secrets in `.env` — only update `.env.example`
-- Log raw user profile values (residence, income bracket) anywhere
-- Commit scoring/filtering logic changes without corresponding tests
-- Delete or zero-fill crawled data on crawler failure
-- Duplicate Zod schemas — use `/shared` package
-- Change code style without agreement — follow ESLint/Prettier config
-
-## When Unsure
-
-- Schema or API structure changes: explain plan first, get confirmation before proceeding
-- State assumptions explicitly before acting
-- Validate only at system boundaries (user input, external APIs) — don't add defensive checks for impossible states
-
-## Checklist Management
-
-- **Immediate Update:** As soon as a task from `docs/checklist.md` is completed, you **must immediately** update the corresponding item to checked (`[x]`) before proceeding to the next task or committing.
-- **Verification First:** Never check off an item based on guesswork. Only mark it as complete after confirming that tests, typechecks, and the actual implementation are fully verified.
-- **Granular Progress:** If a task is partially done, update the sub-items in `docs/checklist.md` right away to keep the current progress synchronized in real-time.
-
-## Conventions
-
-### Naming
-- **Components & Pages:** PascalCase — `UserProfileCard.tsx`, `DashboardPage.tsx`
-- **Hooks:** camelCase with `use` prefix — `useCalendarEvents.ts`, `usePostingFilter.ts`
-- **Utilities / Services:** camelCase — `scoringService.ts`, `formatDate.ts`
-- **Types & Interfaces:** PascalCase — `UserProfile`, `PostingCard`
-- **Constants:** UPPER_SNAKE_CASE — `MAX_IDLE_HOURS`, `DEFAULT_PAGE_SIZE`
-- **Boolean variables/props:** `is` / `has` / `should` prefix — `isLoading`, `hasError`, `shouldShowModal`
-- **Event handlers:** `handle` prefix — `handleSubmit`, `handleCardClick`
-
-### Commit messages
-Format: `type(scope): description`
-
-| Type | When to use |
-|------|-------------|
-| `feat` | New feature visible to user |
-| `fix` | Bug fix |
-| `refactor` | Code change with no behavior change |
-| `perf` | Performance improvement |
-| `test` | Add or fix tests |
-| `docs` | Documentation only |
-| `chore` | Config, deps, tooling — no src change |
-| `style` | Formatting only (whitespace, semicolons) |
-| `revert` | Revert a previous commit |
-
-Examples:
-feat(dashboard): add posting card grid view
-fix(crawler): prevent blank-fill on fetch timeout
-refactor(scoring): extract deadline overlap into pure function
-chore(deps): bump prisma to 5.14
-
-## Reference Docs
-
-- `docs/plan.md` — full feature breakdown & rationale
-- `docs/checklist.md` — stage-by-stage tasks
-- `docs/design.md` - **design system (colors, typography, layout, components). Read this before writing any UI code.**
-</file>
-
 <file path="README.md">
 # hub
 </file>
@@ -10265,6 +12172,164 @@ def normalize_wevity_fields_to_majors(field_str: str) -> List[str]:
     return MAJOR_MAPPING.get(field_str, [])
 </file>
 
+<file path="crawler/config.py">
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Wevity 크롤링 설정
+BASE_URL = "https://www.wevity.com"
+USER_AGENT = "naver-challenge-crawler (contact: khy05300@gmail.com)"
+CRAWL_DELAY = 1.5  # 요청 간 딜레이 (초)
+MAX_PAGES = 20  # 최대 페이지 수 (공모전 226개 + 대외활동 400+ 목표)
+
+# 크롤링 대상 섹션
+SECTIONS = [
+    {"name": "공모전", "path": "?c=find&s=1"},
+    {"name": "대외활동", "path": "?c=active&s=1"},
+]
+
+# 데이터베이스 설정
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL 환경변수가 설정되지 않았습니다")
+
+# 로깅 설정
+LOG_LEVEL = "INFO"
+</file>
+
+<file path="crawler/main.py">
+#!/usr/bin/env python3
+"""
+위비티 크롤러 메인 진입점
+
+실행:
+  python main.py
+"""
+
+import sys
+import time
+from datetime import datetime
+
+# 모듈 임포트
+from config import SECTIONS, MAX_PAGES
+from scrapers.wevity import collect_ids, fetch_posting
+from parser.eligibility_parser import parse_eligibility, determine_parse_status
+from db.repository import Repository
+
+
+def main():
+    print("=" * 60)
+    print("🤖 위비티 크롤러 시작")
+    print("=" * 60)
+
+    repo = Repository()
+
+    try:
+        repo.connect()
+    except Exception as e:
+        print(f"❌ 데이터베이스 연결 실패: {e}")
+        return
+
+    total_collected = 0
+    total_errors = 0
+
+    # 대외활동만 크롤링 (공모전은 이미 226개 수집됨)
+    for section in SECTIONS:
+        if "active" not in section["path"]:
+            print(f"\n⏭️  섹션 스킵: {section['name']} (이미 충분함)")
+            continue
+
+        print(f"\n📌 섹션: {section['name']}")
+        print("-" * 60)
+
+        # 1단계: 목록 페이지에서 ID 수집
+        posting_ids = collect_ids(section["path"], max_pages=MAX_PAGES)
+
+        if not posting_ids:
+            print(f"  ⚠️  수집된 ID 없음\n")
+            continue
+
+        # 2단계: 각 공고 상세 페이지 파싱 및 DB 저장
+        for idx, posting_id in enumerate(posting_ids, 1):
+            print(f"\n[{idx}/{len(posting_ids)}] ID {posting_id}")
+
+            # 상세 페이지 파싱
+            posting_data = fetch_posting(posting_id, section=section["path"].split("=")[1].split("&")[0])
+            if not posting_data:
+                total_errors += 1
+                continue
+
+            # 원본 저장
+            raw_posting_id = repo.insert_raw_posting(
+                {
+                    "source_url": posting_data["source_url"],
+                    "raw_title": posting_data["raw_title"],
+                    "raw_text": posting_data["raw_text"],
+                    "scraped_at": datetime.utcnow(),
+                }
+            )
+
+            if not raw_posting_id:
+                total_errors += 1
+                continue
+
+            # 자격요건 파싱
+            eligibility = parse_eligibility(
+                posting_data["raw_text"], wevity_fields=posting_data.get("wevity_fields")
+            )
+            parse_status = determine_parse_status(eligibility)
+
+            # 정규화된 공고 + 자격요건 저장
+            posting_id_saved = repo.insert_posting_with_eligibility(
+                raw_posting_id,
+                {
+                    "category": "COMPETITION" if section["path"].startswith("?c=find") else "ACTIVITY",
+                    "title": posting_data["raw_title"],
+                    "host_org": posting_data.get("host_org"),
+                    "reception_end_date": posting_data.get("reception_end_date"),
+                    "source_url": posting_data["source_url"],
+                },
+                eligibility,
+                parse_status,
+            )
+
+            if posting_id_saved:
+                total_collected += 1
+                status_emoji = "✅" if parse_status == "CURATED" else "⚠️ "
+                print(f"    {status_emoji} 저장됨 (parseStatus: {parse_status})")
+            else:
+                total_errors += 1
+
+            # 요청 간 딜레이
+            time.sleep(0.5)
+
+    # 최종 통계
+    print("\n" + "=" * 60)
+    print("📊 크롤링 완료")
+    print("=" * 60)
+
+    stats = repo.get_stats()
+    print(f"총 저장된 공고: {stats.get('total_postings', 0)}개")
+    print(f"  - CURATED: {stats.get('curated', 0)}개")
+    print(f"  - NEEDS_REVIEW: {stats.get('needs_review', 0)}개")
+    print(f"수집 중 오류: {total_errors}개")
+
+    repo.close()
+
+    if total_collected > 0:
+        print("\n✅ 크롤링 성공!")
+        return 0
+    else:
+        print("\n❌ 저장된 데이터 없음")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+</file>
+
 <file path="docs/plan.md">
 # [기획서] 대학생 맞춤형 올인원 정보 큐레이션 및 스케줄링 대시보드
 
@@ -10476,6 +12541,367 @@ VITE_API_BASE=http://localhost:3000/api
 
 # Google OAuth
 VITE_GOOGLE_CLIENT_ID=""
+</file>
+
+<file path="CLAUDE.md">
+# CLAUDE.md
+
+## 기본 규칙
+- 커밋하지 말 것
+
+## 언어 규칙
+- 모든 결과값과 설명은 반드시 한글로 작성한다.
+- 코드 주석, 커밋 메시지, 사용자 응답 등 모든 텍스트 출력은 한글을 기본으로 한다.
+
+## Project Overview
+
+4-week MVP: college student information curation + scheduling dashboard.
+Filters opportunities (competitions, external activities, policies) by student profile (major/year/residence/income bracket) and recommends based on calendar availability.
+
+**Vertical slice first:** complete one category (competitions/activities) end-to-end before expanding to policies/subsidies.
+
+## Directory Structure
+/frontend       React + Vite app
+/backend        Express API server
+/crawler        Python crawler (separate service)
+/shared         Shared Zod schemas & types (imported by both frontend and backend)
+/prisma         Schema & migrations
+/docs           plan.md, checklist.md
+
+> Update this section when structure changes. Stale directory docs are worse than none.
+
+## Commands
+
+```bash
+cd frontend && npm run dev
+cd backend && npm run dev
+cd backend && npx prisma migrate dev    # after schema changes
+cd backend && npx prisma generate       # after schema changes, always
+cd crawler && python main.py
+cd backend && npm test
+cd frontend && npm run typecheck
+```
+
+## Tech Stack
+
+- **Frontend:** React 18 + TypeScript, Vite, Tailwind + shadcn/ui, Zustand, React Hook Form + Zod, React Query, FullCalendar.js, React Router
+- **Backend:** Node.js + Express + TypeScript, Prisma, Zod, JWT, node-cron
+- **DB:** PostgreSQL (Supabase)
+- **Crawler:** Python + BeautifulSoup / Playwright
+- **Deploy:** Vercel / Railway / Supabase
+
+## Architecture Rules
+
+**Scoring/filtering logic:**
+- Never inline scoring logic in route handlers
+- Always: `scoringService.calculateScore(user, posting)` — fixed interface, swappable internals
+- Reason: rule-based → LLM-based swap later without touching routers
+
+**Data:**
+- Raw crawled data and normalized data in separate tables
+- Store only: title, qualification text, deadline, source URL. Never full HTML
+- On crawler failure: preserve existing DB data, log error, retry next cycle. Never delete or zero-fill
+- New categories (policies etc.) reuse the same pipeline — no duplicate logic per category
+
+**Shared types:**
+- All Zod schemas shared via `/shared` package. Both frontend and backend import from there
+- Never copy-paste Zod schemas between frontend and backend
+
+**Calendar:**
+- Event schema: `uid`, `dtstart`, `dtend` (iCalendar standard) — for future Google/Apple Calendar sync
+
+**Privacy:**
+- Never log raw profile values (residence, income bracket, major) anywhere — console, files, error tracking
+- Use anonymized user IDs or derived codes for debugging
+
+**Frontend Page Routing (중요):**
+- 인증 후 페이지들(Dashboard, Calendar, Scraps, Settings, GitHub 등)은 App.tsx에서 독립적으로 렌더링됨
+- **문제:** 각 페이지가 독립적인 레이아웃 구조(사이드바 포함)를 가지면, 페이지 전환 시 사이드바가 매번 재렌더링되어 상태가 유지되지 않음
+- **해결책:** 새 페이지 추가 시 다음 두 가지 패턴 중 선택
+  1. **권장:** 기존 페이지처럼 App.tsx의 currentPage 타입에만 추가하고, 페이지는 내용만 담당. 사이드바는 각 페이지에 포함되지만, 동일한 구조 유지
+  2. **선택:** 향후 BaseLayout 컴포넌트를 만들어서 사이드바를 한 곳에서 관리하고, 각 페이지는 메인 컨텐츠만 제공
+- **현재 상태:** 모든 페이지(Dashboard, Calendar, Scraps, GitHub)가 각각 사이드바 코드를 포함하고 있음
+- **주의:** 사이드바의 네비게이션 항목 추가 시 DashboardLayout과 GithubReposPage 등 모든 페이지 파일에서 동일하게 업데이트해야 함. 누락하면 일부 페이지에서만 새 항목이 보임
+
+## Implementation Sequence
+
+1. Crawling survey — confirm robots.txt, ToS, login walls, static vs JS rendering
+2. Data model (Prisma schema) — informed by crawling findings
+3. Crawler + seed data — 50–100 real postings before any UI work
+4. User profiles + auth (Supabase Auth)
+5. Filtering logic + dashboard card view — first complete vertical slice
+6. Calendar integration (FullCalendar.js) — deadline auto-sync on scrapping
+7. Smart matching — surface "you have 12hrs/week free" based on schedule gaps
+8. Scrapping + D-Day alerts (D-3, D-1)
+9. Policy/subsidy category expansion (optional)
+
+## Before Every Commit
+
+```bash
+cd backend && npm test && npm run lint && npm run typecheck
+cd frontend && npm run typecheck && npm run lint
+```
+
+Commit format: `feat(scope): description` / `fix(scope): description` / `chore(scope): description`
+
+**Minimum test coverage:** `scoringService` and eligibility parsing logic require unit tests. CRUD routes recommended but not required.
+
+## Never Do These
+
+- Violate robots.txt or ToS when crawling
+- Commit `schema.prisma` changes without running `npx prisma migrate dev`
+- Hardcode real secrets in `.env` — only update `.env.example`
+- Log raw user profile values (residence, income bracket) anywhere
+- Commit scoring/filtering logic changes without corresponding tests
+- Delete or zero-fill crawled data on crawler failure
+- Duplicate Zod schemas — use `/shared` package
+- Change code style without agreement — follow ESLint/Prettier config
+
+## When Unsure
+
+- Schema or API structure changes: explain plan first, get confirmation before proceeding
+- State assumptions explicitly before acting
+- Validate only at system boundaries (user input, external APIs) — don't add defensive checks for impossible states
+
+## Checklist Management
+
+- **Immediate Update:** As soon as a task from `docs/checklist.md` is completed, you **must immediately** update the corresponding item to checked (`[x]`) before proceeding to the next task or committing.
+- **Verification First:** Never check off an item based on guesswork. Only mark it as complete after confirming that tests, typechecks, and the actual implementation are fully verified.
+- **Granular Progress:** If a task is partially done, update the sub-items in `docs/checklist.md` right away to keep the current progress synchronized in real-time.
+
+## Conventions
+
+### Naming
+- **Components & Pages:** PascalCase — `UserProfileCard.tsx`, `DashboardPage.tsx`
+- **Hooks:** camelCase with `use` prefix — `useCalendarEvents.ts`, `usePostingFilter.ts`
+- **Utilities / Services:** camelCase — `scoringService.ts`, `formatDate.ts`
+- **Types & Interfaces:** PascalCase — `UserProfile`, `PostingCard`
+- **Constants:** UPPER_SNAKE_CASE — `MAX_IDLE_HOURS`, `DEFAULT_PAGE_SIZE`
+- **Boolean variables/props:** `is` / `has` / `should` prefix — `isLoading`, `hasError`, `shouldShowModal`
+- **Event handlers:** `handle` prefix — `handleSubmit`, `handleCardClick`
+
+### Commit messages
+Format: `type(scope): description`
+
+| Type | When to use |
+|------|-------------|
+| `feat` | New feature visible to user |
+| `fix` | Bug fix |
+| `refactor` | Code change with no behavior change |
+| `perf` | Performance improvement |
+| `test` | Add or fix tests |
+| `docs` | Documentation only |
+| `chore` | Config, deps, tooling — no src change |
+| `style` | Formatting only (whitespace, semicolons) |
+| `revert` | Revert a previous commit |
+
+Examples:
+feat(dashboard): add posting card grid view
+fix(crawler): prevent blank-fill on fetch timeout
+refactor(scoring): extract deadline overlap into pure function
+chore(deps): bump prisma to 5.14
+
+## Reference Docs
+
+- `docs/plan.md` — full feature breakdown & rationale
+- `docs/checklist.md` — stage-by-stage tasks
+- `docs/design.md` - **design system (colors, typography, layout, components). Read this before writing any UI code.**
+
+---
+
+## 11단계: GitHub 인기 저장소 요약 페이지
+
+### 아키텍처 (독립적 서비스)
+
+```
+GitHub Trending Repos
+      ↓
+LLM Abstraction Layer (llmService.ts)
+      ↓
+GitHub Service (githubService.ts)
+      ↓
+Database (GithubRepo, UserGithubStar)
+```
+
+**특징:**
+- ✅ Posting/Eligibility 스키마와 무관
+- ✅ 완전히 분리된 테이블 (GithubRepo, UserGithubStar)
+- ✅ 별도 라우터 (`/api/github/...`)
+- ✅ LLM 제공자 쉽게 전환 가능
+
+### LLM 추상화 계층 (llmService.ts)
+
+**지원하는 제공자:**
+1. **Ollama** (기본값, 로컬)
+   - 모델: `qwen2.5:7b`
+   - 실행: `ollama serve` (localhost:11434)
+   - 속도: 3-5초/요청
+
+2. **Claude** (API)
+   - 모델: `claude-3-5-sonnet-20241022`
+   - 환경변수: `CLAUDE_API_KEY`
+   - 비용: 유료
+
+3. **LlamaCPP** (로컬)
+   - URL: `localhost:8000`
+   - 가벼움
+
+4. **OpenAI** (API)
+   - 모델: `gpt-4o-mini`
+   - 환경변수: `OPENAI_API_KEY`
+
+**제공자 전환 방법:**
+```bash
+# .env에서 한 줄만 변경
+LLM_PROVIDER="ollama"  # 또는 claude, llamacpp, openai
+```
+
+**새 제공자 추가:**
+1. llmService.ts에서 `callYourProvider()` 메서드 추가
+2. switch문에 케이스 추가
+3. `.env` 예시 업데이트
+끝! (5분 작업)
+
+### GitHub Service (githubService.ts)
+
+**핵심 메서드:**
+- `fetchTrendingRepos(language?, limit)` — GitHub API에서 검색
+- `fetchReadme(owner, repo)` — README 파일 추출
+- `summarizeRepo(repo)` — LLM으로 한국어 요약 + 핵심 포인트
+- `saveRepo()` — DB 저장 (요약 포함)
+- `collectAndSummarizeRepos()` — 일괄 수집 (백그라운드)
+
+**데이터 흐름:**
+```
+GitHub API
+  ↓ (별, 설명, 주언어)
+GitHub Service
+  ↓ (fetchReadme)
+README 파일 가져오기
+  ↓ (LLM 처리)
+한국어 요약 생성
+summaryBullets 추출 (3-5개)
+  ↓
+DB 저장 (GithubRepo)
+```
+
+### API 엔드포인트 (/api/github)
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| GET | `/trending` | 인기 저장소 (기본 20개) |
+| GET | `/language/:lang` | 언어별 저장소 |
+| GET | `/search?q=...` | 저장소 검색 |
+| GET | `/:githubId` | 저장소 상세 |
+| POST | `/collect` | 수집 및 요약 (백그라운드) |
+| GET | `/llm/status` | LLM 상태 확인 |
+| POST | `/summarize` | 텍스트 요약 테스트 |
+
+**쿼리 파라미터:**
+```
+/api/github/trending?limit=50&language=python
+/api/github/language/javascript?limit=10
+/api/github/search?q=react&limit=20
+```
+
+### 로컬 LLM 설정 (Ollama)
+
+**설치 (Mac M2):**
+```bash
+# 1. 다운로드: https://ollama.ai
+# 2. 모델 다운로드 (첫 실행 시 3-5분)
+ollama pull qwen2.5:7b
+
+# 3. 서버 실행 (항상 켜져있어야 함)
+ollama serve
+
+# 4. 확인
+curl http://localhost:11434/api/tags
+```
+
+**메모리 사용:**
+- Qwen2.5 7B: ~8GB RAM (M2 16GB에서 충분)
+- 다른 모델: 3B (~3GB), 32B (~32GB 불가)
+
+### 환경 변수 설정
+
+```bash
+# LLM 제공자 선택
+LLM_PROVIDER="ollama"  # ollama | claude | llamacpp | openai
+
+# Ollama (로컬)
+OLLAMA_BASE_URL="http://localhost:11434"
+OLLAMA_MODEL="qwen2.5:7b"
+
+# Claude (API)
+CLAUDE_API_KEY="sk-..."
+
+# LlamaCPP (로컬)
+LLAMACPP_BASE_URL="http://localhost:8000"
+
+# OpenAI (API)
+OPENAI_API_KEY="sk-..."
+
+# GitHub API (토큰 선택, 없어도 작동하지만 rate limit 60/hr)
+GITHUB_TOKEN="ghp_..."
+```
+
+### 프로젝트 구조
+
+```
+backend/
+├─ src/
+│  ├─ services/
+│  │  ├─ llmService.ts (★ 핵심: LLM 추상화)
+│  │  ├─ githubService.ts (★ GitHub API + LLM)
+│  │  └─ ...
+│  ├─ routes/
+│  │  ├─ github.ts (★ API 엔드포인트)
+│  │  └─ ...
+│  └─ index.ts (github 라우터 등록됨)
+└─ prisma/
+   └─ schema.prisma (GithubRepo, UserGithubStar 모델 추가됨)
+
+frontend/
+├─ src/
+│  ├─ pages/
+│  │  └─ GithubReposPage.tsx (★ 새로 만들기)
+│  ├─ components/
+│  │  └─ RepoCard.tsx (★ 새로 만들기)
+│  └─ utils/
+│     └─ githubApi.ts (★ API 클라이언트)
+└─ App.tsx (라우터에 /github 경로 추가)
+```
+
+### 확장성 고려사항
+
+**LLM 추상화:**
+- ✅ 제공자 전환이 한 줄 변경 (.env)
+- ✅ 새 제공자 추가가 5분 (메서드 추가)
+- ✅ 비즈니스 로직은 LLM과 무관
+
+**데이터 모델:**
+- ✅ GithubRepo는 독립적 (기존 Posting과 무관)
+- ✅ summaryBullets는 배열 (확장 가능)
+- ✅ UserGithubStar로 향후 사용자 상호작용 추가 가능
+
+**API:**
+- ✅ 카테고리/필터링 자유 (기존 postings API와 동일 패턴)
+- ✅ 검색/정렬 기본 제공
+
+### 주의사항
+
+**절대 하지 말 것:**
+- ❌ LLM 제공자를 라우터에 하드코딩 (llmService.ts에서만 관리)
+- ❌ README를 그대로 DB에 저장 (용량 초과) — 최소 크기로 자르기
+- ❌ GitHub API 토큰 .env에 하드코딩 (보안 위험)
+- ❌ LLM 응답을 캐싱 없이 매번 생성 (속도 저하)
+
+**성능 최적화:**
+- ✅ GithubRepo에 `lastFetchedAt` 인덱스 추가됨
+- ✅ 배치 수집은 백그라운드 실행 (POST /api/github/collect)
+- ✅ 요약은 저장 시 생성 (조회 시 아님)
+- ✅ Rate Limit 고려: GitHub API는 60/hr (토큰 없음) → 1000/hr (토큰 있음)
 </file>
 
 <file path="backend/src/services/notificationService.ts">
@@ -12762,6 +15188,7 @@ import postingsRoutes from './routes/postings.js'
 import calendarRoutes from './routes/calendar.js'
 import calendarEventsRoutes from './routes/calendarEvents.js'
 import scrapsRoutes from './routes/scraps.js'
+import githubRoutes from './routes/github.js'
 import { startNotificationScheduler } from './services/notificationService.js'
 
 dotenv.config()
@@ -12795,6 +15222,7 @@ app.use('/api/postings', postingsRoutes)
 app.use('/api/calendar', calendarRoutes)
 app.use('/api/calendar-events', calendarEventsRoutes)
 app.use('/api/scraps', scrapsRoutes)
+app.use('/api/github', githubRoutes)
 
 // 헬스 체크
 app.get('/health', (req, res) => {
@@ -12819,234 +15247,6 @@ process.on('SIGINT', async () => {
   await prisma.$disconnect()
   process.exit(0)
 })
-</file>
-
-<file path="backend/prisma/schema.prisma">
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-// ============ Enums ============
-
-enum PostingCategory {
-  COMPETITION    // 공모전
-  ACTIVITY       // 대외활동
-  POLICY         // 정책/지원금
-  CAMPUS_EVENT   // 교내행사
-}
-
-enum ParseStatus {
-  CURATED        // 수동 검증됨
-  NEEDS_REVIEW   // 자동 파싱 후 검증 필요
-  FAILED         // 파싱 실패
-}
-
-enum RawPostingStatus {
-  RAW            // 원본 (파싱 전)
-  PARSED         // 파싱 완료
-  FAILED         // 파싱 실패
-}
-
-enum CalendarEventType {
-  EXAM           // 시험
-  PART_TIME      // 아르바이트
-  POSTING        // 공고 마감일
-  OTHER          // 기타
-}
-
-// ============ Models ============
-
-// Supabase Auth와 연동되는 사용자
-model User {
-  id        String   @id
-  email     String   @unique
-  password  String?  // 비밀번호 (해시)
-  nickname  String?  // 닉네임
-  createdAt DateTime @default(now())
-
-  // Google Calendar 연동
-  googleAccessToken   String?
-  googleRefreshToken  String?
-  googleConnectedAt   DateTime?
-
-  // Relations
-  profile              UserProfile?
-  calendarEvents       CalendarEvent[]
-  scraps               Scrap[]
-  pushSubscriptions    PushSubscription[]
-
-  @@map("users")
-}
-
-// 사용자 프로필 (필터링 기준)
-model UserProfile {
-  id                  String   @id @default(cuid())
-  userId              String   @unique
-  major               String?  // canonical 전공값 (HUMANITIES, IT 등)
-  grade               Int?     // 1~4
-  enrollmentStatus    String?  // 재학, 휴학, 졸업예정
-  residenceRegion     String?  // canonical 지역값 (SEOUL, GYEONGGI 등)
-  incomeBracket       Int?     // 1~10, 파생 코드값만
-  age                 Int?     // 만 나이
-  interestTags        String[] // 관심분야 배열
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_profiles")
-}
-
-// 원본 크롤링 데이터 (파싱 대상)
-model RawPosting {
-  id          String           @id @default(cuid())
-  sourceSite  String           // "wevity" 등
-  sourceUrl   String           @unique // 중복 방지 키
-  rawTitle    String
-  rawText     String           // 자유문장 (파싱 대상)
-  scrapedAt   DateTime
-  status      RawPostingStatus @default(RAW)
-  createdAt   DateTime         @default(now())
-
-  // Relations
-  posting Posting?
-
-  @@index([sourceSite])
-  @@index([status])
-  @@map("raw_postings")
-}
-
-// 정규화된 공고 (사용자 노출용)
-model Posting {
-  id                 String          @id @default(cuid())
-  rawPostingId       String?         @unique
-  category           PostingCategory
-  title              String          @db.VarChar(500)
-  hostOrg            String?         @db.VarChar(200)
-  receptionStartDate DateTime?
-  receptionEndDate   DateTime?
-  eventStartDate     DateTime?
-  eventEndDate       DateTime?
-  sourceUrl          String          @db.VarChar(1000)
-  parseStatus        ParseStatus     @default(CURATED)
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-
-  // Relations
-  rawPosting  RawPosting?  @relation(fields: [rawPostingId], references: [id], onDelete: SetNull)
-  eligibility Eligibility?
-  scraps      Scrap[]
-  calendarEvents CalendarEvent[]
-
-  @@index([category])
-  @@index([receptionEndDate])
-  @@index([parseStatus])
-  @@map("postings")
-}
-
-// 자격요건 (Posting과 1:1)
-model Eligibility {
-  id                   String   @id @default(cuid())
-  postingId            String   @unique
-  majors               String[] @default([]) // canonical 전공 배열
-  regions              String[] @default([]) // canonical 지역 배열
-  grades               Int[]    @default([]) // 1, 2, 3, 4
-  enrollmentStatuses   String[] @default([]) // 재학, 휴학, 졸업예정
-  ageMin               Int?
-  ageMax               Int?
-  incomeMax            Int?     // 소득분위 상한
-  gpaMin               Float?
-  rawEligibilityText   String   // 원문 보존 (검증/디버깅용)
-
-  // Relations
-  posting Posting @relation(fields: [postingId], references: [id], onDelete: Cascade)
-
-  @@map("eligibilities")
-}
-
-// 캘린더 이벤트 (iCalendar 표준)
-model CalendarEvent {
-  id                String            @id @default(cuid())
-  uid               String            @unique @default(cuid()) // iCalendar UID
-  userId            String
-  title             String            @db.VarChar(200)
-  type              CalendarEventType
-  dtstart           DateTime
-  dtend             DateTime
-
-  // 상세 정보 (UI 개선)
-  isAllDay          Boolean           @default(false) // 하루 종일 여부
-  startTime         String?           // HH:mm 형식 (하루종일 false일 때만)
-  endTime           String?           // HH:mm 형식 (하루종일 false일 때만)
-  memo              String?           // 메모
-
-  // 7단계 스마트 매칭 관련
-  hideFromRecommendation Boolean      @default(false) // true면 이 기간에 추천 공고 숨김
-
-  relatedPostingId  String?           // 스크랩 자동 동기화 시 연결
-  source            String            @default("manual") // manual | scrap-sync
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-
-  // Relations
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  relatedPosting    Posting?          @relation(fields: [relatedPostingId], references: [id], onDelete: SetNull)
-
-  @@index([userId])
-  @@index([dtstart, dtend])
-  @@index([hideFromRecommendation])
-  @@map("calendar_events")
-}
-
-// 스크랩 (사용자-공고 매핑)
-model Scrap {
-  id              String   @id @default(cuid())
-  userId          String
-  postingId       String
-  scrappedAt      DateTime @default(now())
-  notifyEnabled   Boolean  @default(true)
-
-  // Google Calendar 연동
-  googleEventId   String?  // Google Calendar 이벤트 ID
-
-  // Relations
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  posting         Posting  @relation(fields: [postingId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, postingId]) // 중복 스크랩 방지
-  @@index([userId])
-  @@index([postingId])
-  @@map("scraps")
-}
-
-// 웹 푸시 구독 (사용자의 디바이스 구독 정보)
-model PushSubscription {
-  id              String   @id @default(cuid())
-  userId          String
-  endpoint        String   // 푸시 서비스 엔드포인트
-  p256dh          String   // 암호화 키
-  auth            String   // 인증 키
-  subscriptionJson String   // 전체 subscription JSON 백업
-  userAgent       String?  // 디바이스 정보
-  subscribedAt    DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  // Relations
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, endpoint]) // 사용자 당 엔드포인트는 하나만
-  @@index([userId])
-  @@map("push_subscriptions")
-}
 </file>
 
 <file path="frontend/src/components/EventModal.tsx">
@@ -13726,6 +15926,293 @@ export default function EventModal({ isOpen, mode, date, endDate, event, posting
 }
 </file>
 
+<file path="backend/prisma/schema.prisma">
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ Enums ============
+
+enum PostingCategory {
+  COMPETITION    // 공모전
+  ACTIVITY       // 대외활동
+  POLICY         // 정책/지원금
+  CAMPUS_EVENT   // 교내행사
+}
+
+enum ParseStatus {
+  CURATED        // 수동 검증됨
+  NEEDS_REVIEW   // 자동 파싱 후 검증 필요
+  FAILED         // 파싱 실패
+}
+
+enum RawPostingStatus {
+  RAW            // 원본 (파싱 전)
+  PARSED         // 파싱 완료
+  FAILED         // 파싱 실패
+}
+
+enum CalendarEventType {
+  EXAM           // 시험
+  PART_TIME      // 아르바이트
+  POSTING        // 공고 마감일
+  OTHER          // 기타
+}
+
+// ============ Models ============
+
+// Supabase Auth와 연동되는 사용자
+model User {
+  id        String   @id
+  email     String   @unique
+  password  String?  // 비밀번호 (해시)
+  nickname  String?  // 닉네임
+  createdAt DateTime @default(now())
+
+  // Google Calendar 연동
+  googleAccessToken   String?
+  googleRefreshToken  String?
+  googleConnectedAt   DateTime?
+
+  // Relations
+  profile              UserProfile?
+  calendarEvents       CalendarEvent[]
+  scraps               Scrap[]
+  pushSubscriptions    PushSubscription[]
+  githubStars          UserGithubStar[]
+
+  @@map("users")
+}
+
+// 사용자 프로필 (필터링 기준)
+model UserProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  major               String?  // canonical 전공값 (HUMANITIES, IT 등)
+  grade               Int?     // 1~4
+  enrollmentStatus    String?  // 재학, 휴학, 졸업예정
+  residenceRegion     String?  // canonical 지역값 (SEOUL, GYEONGGI 등)
+  incomeBracket       Int?     // 1~10, 파생 코드값만
+  age                 Int?     // 만 나이
+  interestTags        String[] // 관심분야 배열
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+// 원본 크롤링 데이터 (파싱 대상)
+model RawPosting {
+  id          String           @id @default(cuid())
+  sourceSite  String           // "wevity" 등
+  sourceUrl   String           @unique // 중복 방지 키
+  rawTitle    String
+  rawText     String           // 자유문장 (파싱 대상)
+  scrapedAt   DateTime
+  status      RawPostingStatus @default(RAW)
+  createdAt   DateTime         @default(now())
+
+  // Relations
+  posting Posting?
+
+  @@index([sourceSite])
+  @@index([status])
+  @@map("raw_postings")
+}
+
+// 정규화된 공고 (사용자 노출용)
+model Posting {
+  id                 String          @id @default(cuid())
+  rawPostingId       String?         @unique
+  category           PostingCategory
+  title              String          @db.VarChar(500)
+  hostOrg            String?         @db.VarChar(200)
+  receptionStartDate DateTime?
+  receptionEndDate   DateTime?
+  eventStartDate     DateTime?
+  eventEndDate       DateTime?
+  sourceUrl          String          @db.VarChar(1000)
+  parseStatus        ParseStatus     @default(CURATED)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  // Relations
+  rawPosting  RawPosting?  @relation(fields: [rawPostingId], references: [id], onDelete: SetNull)
+  eligibility Eligibility?
+  scraps      Scrap[]
+  calendarEvents CalendarEvent[]
+
+  @@index([category])
+  @@index([receptionEndDate])
+  @@index([parseStatus])
+  @@map("postings")
+}
+
+// 자격요건 (Posting과 1:1)
+model Eligibility {
+  id                   String   @id @default(cuid())
+  postingId            String   @unique
+  majors               String[] @default([]) // canonical 전공 배열
+  regions              String[] @default([]) // canonical 지역 배열
+  grades               Int[]    @default([]) // 1, 2, 3, 4
+  enrollmentStatuses   String[] @default([]) // 재학, 휴학, 졸업예정
+  ageMin               Int?
+  ageMax               Int?
+  incomeMax            Int?     // 소득분위 상한
+  gpaMin               Float?
+  rawEligibilityText   String   // 원문 보존 (검증/디버깅용)
+
+  // Relations
+  posting Posting @relation(fields: [postingId], references: [id], onDelete: Cascade)
+
+  @@map("eligibilities")
+}
+
+// 캘린더 이벤트 (iCalendar 표준)
+model CalendarEvent {
+  id                String            @id @default(cuid())
+  uid               String            @unique @default(cuid()) // iCalendar UID
+  userId            String
+  title             String            @db.VarChar(200)
+  type              CalendarEventType
+  dtstart           DateTime
+  dtend             DateTime
+
+  // 상세 정보 (UI 개선)
+  isAllDay          Boolean           @default(false) // 하루 종일 여부
+  startTime         String?           // HH:mm 형식 (하루종일 false일 때만)
+  endTime           String?           // HH:mm 형식 (하루종일 false일 때만)
+  memo              String?           // 메모
+
+  // 7단계 스마트 매칭 관련
+  hideFromRecommendation Boolean      @default(false) // true면 이 기간에 추천 공고 숨김
+
+  relatedPostingId  String?           // 스크랩 자동 동기화 시 연결
+  source            String            @default("manual") // manual | scrap-sync
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // Relations
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  relatedPosting    Posting?          @relation(fields: [relatedPostingId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([dtstart, dtend])
+  @@index([hideFromRecommendation])
+  @@map("calendar_events")
+}
+
+// 스크랩 (사용자-공고 매핑)
+model Scrap {
+  id              String   @id @default(cuid())
+  userId          String
+  postingId       String
+  scrappedAt      DateTime @default(now())
+  notifyEnabled   Boolean  @default(true)
+
+  // Google Calendar 연동
+  googleEventId   String?  // Google Calendar 이벤트 ID
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posting         Posting  @relation(fields: [postingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postingId]) // 중복 스크랩 방지
+  @@index([userId])
+  @@index([postingId])
+  @@map("scraps")
+}
+
+// 웹 푸시 구독 (사용자의 디바이스 구독 정보)
+model PushSubscription {
+  id              String   @id @default(cuid())
+  userId          String
+  endpoint        String   // 푸시 서비스 엔드포인트
+  p256dh          String   // 암호화 키
+  auth            String   // 인증 키
+  subscriptionJson String   // 전체 subscription JSON 백업
+  userAgent       String?  // 디바이스 정보
+  subscribedAt    DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint]) // 사용자 당 엔드포인트는 하나만
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+// GitHub 인기 저장소 (외부 서비스 통합)
+model GithubRepo {
+  id              String   @id @default(cuid())
+  githubId        Int      @unique // GitHub API ID
+  owner           String   // 소유자 (사용자/조직)
+  name            String   // 저장소명
+  fullName        String   @unique // owner/name
+  description     String?  @db.Text // 설명
+  url             String   // GitHub 링크
+
+  // 메트릭
+  stars           Int      @default(0) // Star 개수
+  forks           Int      @default(0) // Fork 개수
+  openIssues      Int      @default(0) // Open Issues
+  language        String?  // 주 언어
+
+  // 콘텐츠
+  readme          String?  @db.Text // 원본 README (마크다운)
+  readmeHtml      String?  @db.Text // HTML 렌더링 (선택)
+  summary         String?  @db.Text // 한국어 요약 (LLM 생성)
+  summaryBullets  String[] @default([]) // 핵심 포인트 (배열, 3-5개)
+
+  // 메타데이터
+  topics          String[] @default([]) // GitHub 토픽/태그
+  license         String?  // 라이선스
+  homepageUrl     String?  // 홈페이지
+
+  // 추적 정보
+  lastFetchedAt   DateTime @default(now()) // 마지막 조회
+  updatedAt       DateTime @updatedAt // 마지막 업데이트
+  createdAt       DateTime @default(now())
+
+  // 사용자 상호작용 (향후 확장)
+  userStars       UserGithubStar[]
+
+  @@index([stars])
+  @@index([language])
+  @@index([lastFetchedAt])
+  @@map("github_repos")
+}
+
+// 사용자가 관심있는 GitHub Repo (나중에 추가)
+model UserGithubStar {
+  id        String   @id @default(cuid())
+  userId    String
+  repoId    String
+  starredAt DateTime @default(now())
+
+  // Relations
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repo      GithubRepo   @relation(fields: [repoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, repoId]) // 중복 방지
+  @@index([userId])
+  @@index([repoId])
+  @@map("user_github_stars")
+}
+</file>
+
 <file path="backend/src/routes/postings.ts">
 import { Router } from 'express'
 import { PrismaClient } from '@prisma/client'
@@ -14008,7 +16495,7 @@ import { scrapsApi, calendarEventsApi, calendarApi, Posting } from '../utils/api
 import PostingCard from '../components/PostingCard'
 
 interface ScrapListPageProps {
-  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings') => void
+  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings' | 'github') => void
 }
 
 export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
@@ -14159,28 +16646,32 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
         {/* 네비게이션 */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {[
-            { label: '⊞ 대시보드', page: 'dashboard' as const },
-            { label: '♡ 내 스크랩', page: 'scraps' as const },
-            { label: '📅 캘린더', page: 'calendar' as const },
-            { label: '⚙ 환경설정', page: 'settings' as const },
-          ].map((item, i) => (
-            <div
-              key={i}
-              onClick={() => setCurrentPage?.(item.page)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '9px 10px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: i === 1 ? 600 : 500,
-                backgroundColor: i === 1 ? '#f5f5f5' : 'transparent',
-                transition: 'all 100ms',
-              }}>
-              <span>{item.label}</span>
-            </div>
-          ))}
+            { label: '대시보드', page: 'dashboard' as const },
+            { label: '내 스크랩', page: 'scraps' as const },
+            { label: '캘린더', page: 'calendar' as const },
+            { label: 'GitHub 저장소', page: 'github' as const },
+            { label: '환경설정', page: 'settings' as const },
+          ].map((item, i) => {
+            const isActive = item.page === 'scraps'
+            return (
+              <div
+                key={i}
+                onClick={() => setCurrentPage?.(item.page)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '9px 10px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: isActive ? 600 : 500,
+                  backgroundColor: isActive ? '#f5f5f5' : 'transparent',
+                  transition: 'all 100ms',
+                }}>
+                <span>{item.label}</span>
+              </div>
+            )
+          })}
         </nav>
       </aside>
 
@@ -14464,7 +16955,7 @@ import { useEffect, useState } from 'react'
 import { profileApi, tokenManager, authPasswordApi, authAccountApi } from '../utils/apiClient'
 
 interface SettingsPageProps {
-  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings') => void
+  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings' | 'github') => void
 }
 
 interface ProfileData {
@@ -14688,28 +17179,32 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
         {/* 네비게이션 */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {[
-            { label: '⊞ 대시보드', page: 'dashboard' as const },
-            { label: '♡ 내 스크랩', page: 'scraps' as const },
-            { label: '📅 캘린더', page: 'calendar' as const },
-            { label: '⚙ 환경설정', page: 'settings' as const },
-          ].map((item, i) => (
-            <div
-              key={i}
-              onClick={() => setCurrentPage?.(item.page)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '9px 10px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: i === 3 ? 600 : 500,
-                backgroundColor: i === 3 ? '#f5f5f5' : 'transparent',
-                transition: 'all 100ms',
-              }}>
-              <span>{item.label}</span>
-            </div>
-          ))}
+            { label: '대시보드', page: 'dashboard' as const },
+            { label: '내 스크랩', page: 'scraps' as const },
+            { label: '캘린더', page: 'calendar' as const },
+            { label: 'GitHub 저장소', page: 'github' as const },
+            { label: '환경설정', page: 'settings' as const },
+          ].map((item, i) => {
+            const isActive = item.page === 'settings'
+            return (
+              <div
+                key={i}
+                onClick={() => setCurrentPage?.(item.page)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '9px 10px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: isActive ? 600 : 500,
+                  backgroundColor: isActive ? '#f5f5f5' : 'transparent',
+                  transition: 'all 100ms',
+                }}>
+                <span>{item.label}</span>
+              </div>
+            )
+          })}
         </nav>
 
         {/* 버튼 그룹 */}
@@ -15848,10 +18343,11 @@ import DashboardLayout from './pages/DashboardLayout'
 import CalendarPage from './pages/CalendarPage'
 import ScrapListPage from './pages/ScrapListPage'
 import SettingsPage from './pages/SettingsPage'
+import GithubReposPage from './pages/GithubReposPage'
 import { tokenManager, authApi } from './utils/apiClient'
 import { initializePushNotifications } from './utils/pushNotification'
 
-type AppPage = 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings'
+type AppPage = 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings' | 'github'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<AppPage>('auth')
@@ -15972,6 +18468,9 @@ function App() {
 
       {/* 6. 설정 페이지 */}
       {currentPage === 'settings' && <SettingsPage setCurrentPage={saveCurrentPage} />}
+
+      {/* 7. GitHub 인기 저장소 페이지 */}
+      {currentPage === 'github' && <GithubReposPage setCurrentPage={saveCurrentPage} />}
     </>
   )
 
@@ -16027,7 +18526,7 @@ const EVENT_COLORS = {
 }
 
 interface CalendarPageProps {
-  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings') => void
+  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings' | 'github') => void
 }
 
 export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
@@ -16424,27 +18923,31 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {[
-            { label: '⊞ 대시보드', page: 'dashboard' as const },
-            { label: '♡ 내 스크랩', page: 'scraps' as const },
-            { label: '📅 캘린더', page: 'calendar' as const },
-            { label: '⚙ 환경설정', page: 'settings' as const },
-          ].map((item, i) => (
-            <div
-              key={i}
-              onClick={() => setCurrentPage?.(item.page)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '9px 10px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: i === 2 ? 600 : 500,
-                backgroundColor: i === 2 ? '#f5f5f5' : 'transparent',
-              }}>
-              <span>{item.label}</span>
-            </div>
-          ))}
+            { label: '대시보드', page: 'dashboard' as const },
+            { label: '내 스크랩', page: 'scraps' as const },
+            { label: '캘린더', page: 'calendar' as const },
+            { label: 'GitHub 저장소', page: 'github' as const },
+            { label: '환경설정', page: 'settings' as const },
+          ].map((item, i) => {
+            const isActive = item.page === 'calendar'
+            return (
+              <div
+                key={i}
+                onClick={() => setCurrentPage?.(item.page)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '9px 10px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: isActive ? 600 : 500,
+                  backgroundColor: isActive ? '#f5f5f5' : 'transparent',
+                }}>
+                <span>{item.label}</span>
+              </div>
+            )
+          })}
         </nav>
 
         <div style={{ marginTop: 'auto', fontSize: '12px', color: '#374151', padding: '12px', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>
@@ -16699,7 +19202,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
 ]
 
 interface DashboardLayoutProps {
-  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings') => void
+  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings' | 'github') => void
 }
 
 export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps) {
@@ -17000,28 +19503,32 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
         {/* 네비게이션 */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
           {[
-            { label: '⊞ 대시보드', page: 'dashboard' as const },
-            { label: '♡ 내 스크랩', page: 'scraps' as const },
-            { label: '📅 캘린더', page: 'calendar' as const },
-            { label: '⚙ 환경설정', page: 'settings' as const },
-          ].map((item, i) => (
-            <div
-              key={i}
-              onClick={() => setCurrentPage?.(item.page)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '9px 10px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: i === 0 ? 600 : 500,
-                backgroundColor: i === 0 ? '#f5f5f5' : 'transparent',
-                transition: 'all 100ms',
-              }}>
-              <span>{item.label}</span>
-            </div>
-          ))}
+            { label: '대시보드', page: 'dashboard' as const },
+            { label: '내 스크랩', page: 'scraps' as const },
+            { label: '캘린더', page: 'calendar' as const },
+            { label: 'GitHub 저장소', page: 'github' as const },
+            { label: '환경설정', page: 'settings' as const },
+          ].map((item, i) => {
+            const isActive = item.page === 'dashboard'
+            return (
+              <div
+                key={i}
+                onClick={() => setCurrentPage?.(item.page)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '9px 10px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: isActive ? 600 : 500,
+                  backgroundColor: isActive ? '#f5f5f5' : 'transparent',
+                  transition: 'all 100ms',
+                }}>
+                <span>{item.label}</span>
+              </div>
+            )
+          })}
         </nav>
 
         {/* 스마트 추천 카드 - 7단계에서 활성화 */}
@@ -18118,13 +20625,95 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
 
 ---
 
+## 11단계 — GitHub 인기 저장소 요약 페이지 (독립적 서비스)
+
+### 11-A: 백엔드 (LLM 추상화 + GitHub API)
+
+- [x] Prisma 스키마 확장 (GithubRepo, UserGithubStar 모델)
+  - [x] GithubRepo: githubId, owner, name, description, stars, forks, language, readme, summary, summaryBullets
+  - [x] UserGithubStar: userId-repoId 매핑 (향후 사용자 관심도)
+  - [x] 마이그레이션 완료
+- [x] LLM 추상화 서비스 (llmService.ts)
+  - [x] Ollama 지원 (기본값)
+  - [x] Claude API 지원
+  - [x] LlamaCPP 지원
+  - [x] OpenAI 지원
+  - [x] 새 제공자 추가 쉬운 구조
+  - [x] summarizeReadme(), translateToKorean(), extractBulletPoints() 메서드
+- [x] GitHub Service (githubService.ts)
+  - [x] fetchTrendingRepos(language?, limit) - GitHub API에서 인기 repo 검색
+  - [x] fetchReadme(owner, repo) - README 파일 가져오기
+  - [x] summarizeRepo() - README를 LLM으로 한국어 요약
+  - [x] saveRepo() - DB에 저장 (요약 포함)
+  - [x] getTrendingRepos() - DB에서 조회
+  - [x] getReposByLanguage() - 언어별 조회
+  - [x] searchRepos() - 저장소 검색
+- [x] GitHub 라우터 (github.ts)
+  - [ ] GET /api/github/trending - 인기 저장소 조회
+  - [ ] GET /api/github/language/:lang - 언어별 저장소
+  - [ ] GET /api/github/:githubId - 저장소 상세
+  - [ ] GET /api/github/search?q=... - 검색
+  - [ ] POST /api/github/collect - 수집 및 요약 (백그라운드)
+  - [ ] GET /api/github/llm/status - LLM 상태 확인
+  - [ ] POST /api/github/summarize - 텍스트 요약 API (테스트)
+- [x] 백엔드 index.ts에 라우터 등록
+- [x] .env에 LLM 설정 추가
+
+### 11-B: 로컬 LLM 설치 (Ollama + Qwen2.5)
+
+- [ ] Ollama 다운로드 (Mac M2 버전: https://ollama.ai)
+- [ ] ollama pull qwen2.5:7b 실행 (첫 실행 시 3-5분)
+- [ ] ollama serve 실행 (백그라운드 - 항상 켜져있어야 함)
+- [ ] localhost:11434 에서 API 확인
+
+### 11-C: 프론트엔드 페이지
+
+- [ ] GithubReposPage.tsx 생성
+  - [ ] 레이아웃 (DashboardLayout 참고)
+  - [ ] repo 카드 그리드
+  - [ ] 정렬/필터링 옵션 (별 순, 언어별 등)
+  - [ ] 무한 스크롤 또는 페이지네이션
+- [ ] RepoCard.tsx 컴포넌트
+  - [ ] repo 제목, 설명, 별 개수
+  - [ ] 한국어 요약 (3-4줄)
+  - [ ] 핵심 포인트 (bullet points)
+  - [ ] GitHub 링크, 주언어 태그
+- [ ] githubApi.ts (API 클라이언트)
+  - [ ] getTrendingRepos()
+  - [ ] getReposByLanguage()
+  - [ ] searchRepos()
+  - [ ] getRepoDetail()
+- [ ] 네비게이션 통합
+  - [ ] 사이드바에 "GitHub Repos" 메뉴 추가
+  - [ ] 라우터에 /github 경로 추가
+
+### 11-D: 테스트 및 최적화
+
+- [ ] API 테스트 (Postman/curl)
+  - [ ] GET /api/github/trending
+  - [ ] GET /api/github/language/typescript
+  - [ ] GET /api/github/search?q=react
+- [ ] LLM 요약 품질 확인
+  - [ ] Ollama vs Claude 비교 (동일한 README로)
+  - [ ] 한국어 정확도 검증
+  - [ ] 속도 측정 (Ollama: 3-5초)
+- [ ] UI 테스트
+  - [ ] 카드 표시 확인
+  - [ ] 필터링/검색 동작 확인
+  - [ ] 반응형 디자인 검증
+- [ ] 성능 최적화
+  - [ ] 캐싱 (Redis 또는 DB TTL)
+  - [ ] 배치 수집 스케줄링 (node-cron)
+
+---
+
 ## 배포 및 마무리
 
 - [ ] Frontend Vercel 배포 설정
 - [ ] Backend Railway/Render 배포 설정
 - [ ] 환경 변수 (.env) 프로덕션 세팅
 - [ ] DB 마이그레이션 프로덕션 반영
-- [ ] 배포 후 전체 플로우 QA (회원가입 → 프로필 등록 → 캘린더 → 필터링 → 스크랩 → 환경설정)
+- [ ] 배포 후 전체 플로우 QA (회원가입 → 프로필 등록 → 캘린더 → 필터링 → 스크랩 → 환경설정 → GitHub Repos)
 - [ ] 발표용 데모 시나리오 스크립트 작성
 </file>
 
