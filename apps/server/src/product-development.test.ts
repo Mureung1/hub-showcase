@@ -204,3 +204,30 @@ test('canonical product startup preserves caller-owned bytes and serves an incom
     await rm(testRoot, { force: true, recursive: true })
   }
 })
+
+test('configured startup closes its claimed listener when post-bind logging fails', async () => {
+  const loggingFailure = new Error('configured startup logger failed')
+  let boundPort: number | undefined
+
+  await assert.rejects(
+    startConfiguredServerApplication({
+      environment: {},
+      host: '127.0.0.1',
+      port: 0,
+      log(message) {
+        const match = /server listening on http:\/\/127\.0\.0\.1:(\d+)$/u.exec(
+          message,
+        )
+        assert.ok(match)
+        boundPort = Number(match[1])
+        throw loggingFailure
+      },
+    }),
+    (error: unknown) => error === loggingFailure,
+  )
+
+  assert.notEqual(boundPort, undefined)
+  await assert.rejects(
+    fetch(`http://127.0.0.1:${boundPort}/api/product/bootstrap`),
+  )
+})

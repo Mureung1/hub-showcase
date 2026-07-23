@@ -1,7 +1,10 @@
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 
-import type { ServerApplication } from './server-application.js'
+import {
+  claimServerApplicationListenerLifecycle,
+  type ServerApplication,
+} from './server-application.js'
 
 export type ServerListenOptions = {
   readonly host?: string
@@ -18,6 +21,11 @@ export async function listenToServerApplication(
   options: ServerListenOptions,
 ): Promise<StartedServerListener> {
   const listener = createServer(application.app)
+  claimServerApplicationListenerLifecycle(
+    application,
+    (closeApplication) =>
+      closeListeningServerApplication(listener, closeApplication),
+  )
   try {
     await listen(listener, options.port, options.host)
     const address = listener.address()
@@ -25,11 +33,10 @@ export async function listenToServerApplication(
       throw new Error('Expected the Server application to bind a TCP port')
     }
     return {
-      application: bindListenerLifecycle(application, listener),
+      application,
       port: (address as AddressInfo).port,
     }
   } catch (error) {
-    listener.closeAllConnections()
     await application.close().catch(() => undefined)
     throw error
   }
@@ -41,44 +48,34 @@ function listen(
   host: string | undefined,
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    listener.once('error', reject)
+    const onError = (error: Error) => {
+      removeListeners()
+      reject(error)
+    }
+    const onClose = () => {
+      removeListeners()
+      reject(new Error('Server application listener closed before binding'))
+    }
+    const removeListeners = () => {
+      listener.off('error', onError)
+      listener.off('close', onClose)
+    }
+    listener.once('error', onError)
+    listener.once('close', onClose)
     listener.listen(port, host, () => {
-      listener.off('error', reject)
+      removeListeners()
       resolve()
     })
   })
-}
-
-function bindListenerLifecycle(
-  application: ServerApplication,
-  listener: Server,
-): ServerApplication {
-  let closePromise: Promise<void> | undefined
-  return {
-    app: application.app,
-    semesterWorkspace: application.semesterWorkspace,
-    close() {
-      closePromise ??= closeListeningServerApplication(listener, application)
-      return closePromise
-    },
-  }
 }
 
 async function closeListeningServerApplication(
   listener: Server,
-  application: ServerApplication,
+  closeApplication: () => Promise<void>,
 ): Promise<void> {
-  const applicationClosed = application.close().finally(() => {
+  const listenerClosed = closeListener(listener)
+  const applicationClosed = closeApplication().finally(() => {
     listener.closeAllConnections()
-  })
-  const listenerClosed = new Promise<void>((resolve, reject) => {
-    listener.close((error) => {
-      if (error) {
-        reject(error)
-        return
-      }
-      resolve()
-    })
   })
   const [applicationResult, listenerResult] = await Promise.allSettled([
     applicationClosed,
@@ -86,4 +83,20 @@ async function closeListeningServerApplication(
   ])
   if (applicationResult.status === 'rejected') throw applicationResult.reason
   if (listenerResult.status === 'rejected') throw listenerResult.reason
+}
+
+function closeListener(listener: Server): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    listener.close((error) => {
+      if (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ERR_SERVER_NOT_RUNNING') {
+          resolve()
+          return
+        }
+        reject(error)
+        return
+      }
+      resolve()
+    })
+  })
 }

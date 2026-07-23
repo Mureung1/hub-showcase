@@ -78,6 +78,21 @@ export type FailClosedProposalCase =
   | 'stale-base'
   | 'valid'
 
+type FailClosedProposalScriptCase =
+  | {
+      readonly type: 'unselected-evidence'
+      readonly material: {
+        readonly id: string
+        readonly digest: string
+      }
+    }
+  | {
+      readonly type: 'quote-mismatch'
+      readonly quote: string
+    }
+  | { readonly type: 'stale-base' }
+  | { readonly type: 'valid' }
+
 type ChatShellFixtures = {
   scenario: ChatScenario
   chatHarness: ChatShellHarness
@@ -321,6 +336,33 @@ export async function startChatShellHarness(
       ) {
         await nextApplication.semesterWorkspace?.createCourse('문제해결글쓰기')
       }
+      if (scenario === 'fail-closed-oracle') {
+        const snapshot = nextApplication.semesterWorkspace?.snapshot()
+        assert.equal(snapshot?.state, 'ready')
+        if (snapshot?.state !== 'ready') {
+          throw new Error('Expected a ready fail-closed test workspace.')
+        }
+        const negativeControl = snapshot.materials.find(
+          ({ relativePath }) => relativePath === 'unselected-control.txt',
+        )
+        assert.ok(negativeControl)
+        assert.ok(nextRuntime)
+        nextRuntime.scriptFailClosedProposals([
+          {
+            type: 'unselected-evidence',
+            material: {
+              id: negativeControl.id,
+              digest: negativeControl.digest,
+            },
+          },
+          {
+            type: 'quote-mismatch',
+            quote: '선택한 원문에 존재하지 않는 제목 근거',
+          },
+          { type: 'stale-base' },
+          { type: 'valid' },
+        ])
+      }
       runtime = nextRuntime
       return nextApplication
     }
@@ -551,6 +593,9 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   private readonly interruptSettlementReleased = deferred<void>()
   private readonly lateInteractionReleased = deferred<void>()
   private readonly reviewContinuationReleased = deferred<void>()
+  private failClosedProposalScript:
+    | readonly FailClosedProposalScriptCase[]
+    | undefined
   private reviewContinuationPaused = false
   private recoveryConflictInjected = false
   private turnOrdinal = 0
@@ -568,6 +613,15 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
 
   get failClosedProposalCases(): readonly FailClosedProposalCase[] {
     return [...this.failClosedProposalCaseLog]
+  }
+
+  scriptFailClosedProposals(
+    cases: readonly FailClosedProposalScriptCase[],
+  ): void {
+    assert.equal(this.scenario, 'fail-closed-oracle')
+    assert.equal(this.turnOrdinal, 0)
+    assert.equal(this.failClosedProposalScript, undefined)
+    this.failClosedProposalScript = structuredClone(cases)
   }
 
   async readAccountReadiness(): Promise<CodexAccountReadiness> {
@@ -1071,12 +1125,11 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     }
     const proposal = proposalFromAssignmentInput(text, overrides)
     if (this.scenario === 'fail-closed-oracle' && !overrides) {
+      const scriptedCase =
+        this.failClosedProposalScript?.[this.turnOrdinal - 1]
+      assert.ok(scriptedCase)
       this.failClosedProposalCaseLog.push(
-        await applyFailClosedProposalCase(
-          proposal,
-          this.turnOrdinal,
-          this.workspaceRoot,
-        ),
+        applyFailClosedProposalCase(proposal, scriptedCase),
       )
     }
     const response = await fetch(threadInput.mcp.url, {
@@ -1265,12 +1318,19 @@ function proposalFromAssignmentInput(
   }
 }
 
-async function applyFailClosedProposalCase(
+function applyFailClosedProposalCase(
   proposal: Record<string, unknown>,
-  turnOrdinal: number,
-  workspaceRoot: string,
-): Promise<FailClosedProposalCase> {
-  if (turnOrdinal > 3) return 'valid'
+  scriptedCase: FailClosedProposalScriptCase,
+): FailClosedProposalCase {
+  if (scriptedCase.type === 'valid') return 'valid'
+
+  if (scriptedCase.type === 'stale-base') {
+    const baseRevision = proposal.baseRevision
+    assert.ok(typeof baseRevision === 'number')
+    proposal.baseRevision = baseRevision + 1
+    return scriptedCase.type
+  }
+
   const evidence = proposal.evidence
   assert.ok(Array.isArray(evidence))
   const titleEvidence = evidence[0]
@@ -1280,43 +1340,16 @@ async function applyFailClosedProposalCase(
       !Array.isArray(titleEvidence),
   )
 
-  if (turnOrdinal === 1) {
-    const store = JSON.parse(
-      await readFile(
-        path.join(workspaceRoot, '.ay-ple', 'workspace-state.json'),
-        'utf8',
-      ),
-    ) as {
-      readonly materials?: readonly {
-        readonly digest?: unknown
-        readonly id?: unknown
-        readonly relativePath?: unknown
-      }[]
-    }
-    const control = store.materials?.find(
-      ({ relativePath }) => relativePath === 'unselected-control.txt',
-    )
-    assert.ok(control)
-    assert.ok(typeof control.id === 'string')
-    assert.ok(typeof control.digest === 'string')
+  if (scriptedCase.type === 'unselected-evidence') {
     Object.assign(titleEvidence, {
-      rawMaterialId: control.id,
-      digest: control.digest,
+      rawMaterialId: scriptedCase.material.id,
+      digest: scriptedCase.material.digest,
     })
-    return 'unselected-evidence'
+    return scriptedCase.type
   }
 
-  if (turnOrdinal === 2) {
-    Object.assign(titleEvidence, {
-      quote: '선택한 원문에 존재하지 않는 제목 근거',
-    })
-    return 'quote-mismatch'
-  }
-
-  const baseRevision = proposal.baseRevision
-  assert.ok(typeof baseRevision === 'number')
-  proposal.baseRevision = baseRevision + 1
-  return 'stale-base'
+  Object.assign(titleEvidence, { quote: scriptedCase.quote })
+  return scriptedCase.type
 }
 
 function requireMatch(value: string, pattern: RegExp): string {

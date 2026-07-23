@@ -36,6 +36,25 @@ export interface ServerApplication {
   close(): Promise<void>
 }
 
+type CloseServerApplication = () => Promise<void>
+
+type ServerApplicationListenerLifecycle = (
+  closeApplication: CloseServerApplication,
+) => Promise<void>
+
+type ServerApplicationLifecycle = {
+  closing: boolean
+  listenerClaimed: boolean
+  readonly closeApplication: CloseServerApplication
+  closeWithListener?: ServerApplicationListenerLifecycle
+  closePromise?: Promise<void>
+}
+
+const serverApplicationLifecycles = new WeakMap<
+  ServerApplication,
+  ServerApplicationLifecycle
+>()
+
 export async function createServerApplication(
   options: CreateServerAppOptions = {},
 ): Promise<ServerApplication> {
@@ -67,18 +86,55 @@ export async function createServerApplication(
     assignmentMcpHost,
     options.codexChat?.httpWriteDrainMs,
   )
-  let closePromise: Promise<void> | undefined
-
-  return {
+  let applicationClosePromise: Promise<void> | undefined
+  const closeApplication = () => {
+    productOperations?.beginShutdown()
+    codexChat.beginShutdown()
+    applicationClosePromise ??= closeServerApplication(
+      codexChat,
+      assignmentMcpHost,
+    )
+    return applicationClosePromise
+  }
+  const lifecycle: ServerApplicationLifecycle = {
+    closing: false,
+    listenerClaimed: false,
+    closeApplication,
+  }
+  const application: ServerApplication = {
     app,
     semesterWorkspace,
     close() {
-      productOperations?.beginShutdown()
-      codexChat.beginShutdown()
-      closePromise ??= closeServerApplication(codexChat, assignmentMcpHost)
-      return closePromise
+      if (lifecycle.closePromise) return lifecycle.closePromise
+      lifecycle.closing = true
+      lifecycle.closePromise = lifecycle.closeWithListener
+        ? lifecycle.closeWithListener(lifecycle.closeApplication)
+        : lifecycle.closeApplication()
+      return lifecycle.closePromise
     },
   }
+  serverApplicationLifecycles.set(application, lifecycle)
+  return application
+}
+
+export function claimServerApplicationListenerLifecycle(
+  application: ServerApplication,
+  closeWithListener: ServerApplicationListenerLifecycle,
+): void {
+  const lifecycle = serverApplicationLifecycles.get(application)
+  if (!lifecycle) {
+    throw new TypeError(
+      'The Server application was not created by createServerApplication',
+    )
+  }
+  if (lifecycle.closing) {
+    throw new Error('Server application is closing')
+  }
+  if (lifecycle.listenerClaimed) {
+    throw new Error('Server application listener lifecycle is already claimed')
+  }
+  lifecycle.listenerClaimed = true
+  lifecycle.closeWithListener = closeWithListener
 }
 
 function createServerExpressApp(

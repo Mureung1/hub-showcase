@@ -29,6 +29,7 @@ export async function startConfiguredServerApplication(
     productRuntime: productDevelopment?.runtime,
     semesterWorkspace: productDevelopment?.semesterWorkspace,
   })
+  let ownedApplication = application
   try {
     if (productDevelopment) {
       const activation = await application.semesterWorkspace?.activate()
@@ -52,10 +53,11 @@ export async function startConfiguredServerApplication(
       host,
       port: options.port ?? Number(environment.PORT ?? 3000),
     })
+    ownedApplication = started.application
     log(`server listening on http://${host}:${started.port}`)
     return started
   } catch (error) {
-    await application.close().catch(() => undefined)
+    await ownedApplication.close().catch(() => undefined)
     throw error
   }
 }

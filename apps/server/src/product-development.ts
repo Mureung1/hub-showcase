@@ -5,7 +5,7 @@ import {
   type SemesterWorkspaceDirectoryChooser,
 } from './semester-workspace.js'
 import type { ProductRuntimeBootstrap } from './codex-chat-config.js'
-import type { SemesterWorkspaceBootstrap } from './server.js'
+import type { SemesterWorkspaceBootstrap } from './server-application.js'
 
 const productionRuntimeRelativePath =
   'packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64'
