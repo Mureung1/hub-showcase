@@ -52,6 +52,7 @@ function HomePage() {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState(null); // 포커스 중인 task(= modalLocked)
+  const [focusSession, setFocusSession] = useState(null); // Lv2 모달에서 넘어온 microTask/entryLevel 등(카드 직접 클릭 시엔 null)
   const [modalTaskId, setModalTaskId] = useState(null); // 자동으로 뜬 넛지 모달 대상
   const [modalCheckpointLevel, setModalCheckpointLevel] = useState(null); // 이번 모달에 회피이유 재확인을 띄울 레벨(1|3|null)
 
@@ -223,13 +224,16 @@ function HomePage() {
   // FocusMode 종료(완료/멈추기 공통): 오버레이 닫고 목록 최신화
   function closeFocusAndRefresh() {
     setSelectedTaskId(null);
+    setFocusSession(null);
     loadTasks();
   }
 
-  // 넛지 모달에서 "지금 시작하기" → 포커스 진입(그 task는 폴링 대상에서 빠짐)
-  function handleStartFromModal() {
+  // 넛지 모달에서 "지금 시작하기" → 포커스 진입(그 task는 폴링 대상에서 빠짐).
+  // Lv2 모달은 session(microTask/entryLevel 등)을 넘겨준다 — Lv1/3/4는 인자 없이 호출된다.
+  function handleStartFromModal(session) {
     const id = modalTaskId;
     closeModal();
+    setFocusSession(session ?? null);
     setSelectedTaskId(id);
   }
 
@@ -326,6 +330,8 @@ function HomePage() {
           <FocusMode
             taskId={selectedTask.id}
             title={selectedTask.title}
+            microTask={focusSession?.microTask ?? null}
+            entryLevel={focusSession?.entryLevel ?? null}
             onComplete={closeFocusAndRefresh}
             onStop={closeFocusAndRefresh}
           />
