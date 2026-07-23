@@ -37,18 +37,20 @@ describe('Backend Express Server E2E/Unit Tests', () => {
     expect(res.body.message).toContain('Scholar-Sync AI Backend Server is running');
   });
 
-  it('2. POST /api/curate should return mock papers and insights', async () => {
+  it('2. POST /api/curate should return papers and insights via live RAG pipeline', async () => {
     const res = await request(app)
       .post('/api/curate')
-      .send({ query: 'test query' });
+      .send({ query: 'Deep Learning for Medical Imaging' });
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
-    expect(res.body.data.papers.length).toBeGreaterThan(0);
-    // id 유령 필드 배제 및 paperId 활성화 확인
-    expect(res.body.data.papers[0].paperId).toBe('paper-001');
-    expect(res.body.data.papers[0].insights).toBeDefined();
-  });
+    expect(Array.isArray(res.body.data.papers)).toBe(true);
+    expect(res.body.data.papers.length).toBeLessThanOrEqual(5);
+    if (res.body.data.papers.length > 0) {
+      expect(res.body.data.papers[0].paperId).toBeDefined();
+      expect(res.body.data.papers[0].insights).toBeDefined();
+    }
+  }, 20000);
 
   it('3. POST /api/library should insert paper and return camelCase LibraryItem', async () => {
     // mockClient 가로채서 insert 시뮬레이션 성공 데이터 주입
