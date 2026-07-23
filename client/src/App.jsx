@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { validateExpense } from "./validate";
+import { getDaysUntil, getDdayLabel } from "./dday";  
 
 // ============================================================
 // React 화면 전환 - 9개 화면 전체 연결 버전
@@ -1148,9 +1149,19 @@ function ExpenseSetup({ go }) {
                   <div style={{ fontSize: 15, fontWeight: 600, color: "#2d4030" }}>
                     {item.name}
                   </div>
-                  <div style={{ fontSize: 12, color: "#8a8478", marginTop: 3 }}>
-                    매월 {item.due_day}일 납부
-                  </div>
+                  <div style={{ fontSize: 12, color: "#8a8478", marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>매월 {item.due_day}일 납부</span>
+                    <span style={{
+                        background: "#f0ede4",
+                        color: "#8a8478",
+                        borderRadius: 6,
+                        padding: "2px 7px",
+                        fontSize: 11,
+                        fontWeight: 700,
+                      }}>
+                        {getDdayLabel(getDaysUntil(item.due_day))}
+                      </span>
+                </div>
                 </div>
                 {/* 금액 */}
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#2d4030" }}>
