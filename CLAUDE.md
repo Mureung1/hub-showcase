@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` — 프로덕션 빌드
 - `npm run preview` — 빌드 결과 로컬 미리보기
 - `npm run lint` — oxlint로 코드 검사 (`server/`, `scripts/`도 자동으로 대상에 포함됨)
-- 테스트 명령어는 아직 없음 (테스트 도구 미도입, 추후 필요해지면 추가)
+- `npm test` — Vitest로 단위·컴포넌트 테스트 실행 (`*.test.js(x)`/`*.spec.js(x)`). `@testing-library/react` + `jsdom` 조합, 설정은 `vite.config.js`의 `test` 필드와 `src/setupTests.js` 참고. 첫 테스트는 `src/data/ingredientSearch.test.js`(순수 함수 유닛 테스트) — 새 테스트를 쓸 땐 이 파일의 케이스 분류(정상/빈 값/경계값/실패) 방식을 참고
 
 ## 코드 구조
 - 진입점: `src/main.jsx`(라우터 세팅) → `src/App.jsx`(라우트 정의) → `src/pages/*`(화면 단위: Home, CategoryPage, RecipeDetailPage).

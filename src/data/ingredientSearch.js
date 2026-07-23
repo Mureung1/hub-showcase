@@ -5,7 +5,7 @@ export function searchIngredients(query, options) {
   const normalized = query.trim().toLowerCase()
   if (!normalized) return []
 
-  return options.filter((option) => {
+  return (options ?? []).filter((option) => {
     const haystacks = [option.label, option.group, ...option.matchNames]
     return haystacks.some((text) => text?.toLowerCase().includes(normalized))
   })
