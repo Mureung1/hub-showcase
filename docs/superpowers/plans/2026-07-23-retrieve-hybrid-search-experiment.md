@@ -544,8 +544,8 @@ npx tsc --noEmit -p tsconfig.node.json
 LLM이 아니라 문장과 자료를 의미 벡터로 변환하는 모델이다. `꺼내보기` 전체
 성능이나 확정된 제품 아키텍처를 검증한 것이 아니다.
 
-실측 결과 최초 준비에는 약 159MB의 Cache Storage와 Desktop 약 34초, Android
-약 80초가 필요했다. 캐시가 준비된 뒤 query embedding은 빨랐지만, 최초
+실측 결과 최초 준비에는 브라우저 origin 저장소 사용량 약 159MB와 Desktop 약
+34초, Android 약 80초가 필요했다. 캐시가 준비된 뒤 query embedding은 빨랐지만, 최초
 다운로드와 매 실행의 모델 초기화 비용을 사용자가 부담하는 방식은 제품의 사용
 맥락에 맞지 않는다고 판단했다.
 
@@ -668,8 +668,8 @@ catch-all로 오류를 삼키고 다음 입력으로 넘어가지 않는다.
 
 Task 5는 브라우저에서 의미 검색용 E5 임베딩 모델을 직접 실행하는 가정만
 검토했다. 실제 브라우저에서 모델 준비와 query embedding을 측정한 결과, warm
-query는 빨랐지만 사용자가 약 159MB의 캐시와 Desktop 약 34초, Android 약 80초의
-최초 준비 비용을 부담해야 했다. 이 방식은 채택하지 않는다. 이 결론은 서버 E5나
+query는 빨랐지만 사용자가 브라우저 저장소 약 159MB와 Desktop 약 34초, Android
+약 80초의 최초 준비 비용을 부담해야 했다. 이 방식은 채택하지 않는다. 이 결론은 서버 E5나
 관리형 임베딩 API에 적용할 수 없으며, `꺼내보기` 전체 응답 시간으로 해석해서도
 안 된다. 독립적인 결정 기록은
 `scripts/retrieve_experiment/results/client_side_e5_decision_record.md`에 있다.

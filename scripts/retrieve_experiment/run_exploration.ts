@@ -26,11 +26,10 @@ import {
   EXPLORATORY_QUERIES,
   EXPLORATORY_QUERY_SET_HASH,
 } from './fixtures/exploratory_queries';
-import { calculateRankingMetrics } from './metrics';
+import { calculateRankingMetrics, mean } from './metrics';
 import {
   LOCAL_E5_CANDIDATE_PROFILE,
   renderCandidateExplorationReport,
-  renderExplorationReport,
   type ExplorationCandidateProfile,
   type ExplorationCandidateResult,
   type ExplorationQueryResult,
@@ -63,14 +62,22 @@ export type ExternalExplorationExecution = Readonly<{
   projection: ExplorationProjection;
 }>;
 
-export type RunExplorationOptions<
-  TAlternativeCandidateId extends string = LocalExplorationCandidateId,
-> = Readonly<{
+type BaseRunExplorationOptions = Readonly<{
   provider: EmbeddingProvider;
   cache: EmbeddingCache;
-  candidateProfile?: ExplorationCandidateProfile<TAlternativeCandidateId>;
   externalExecution?: ExternalExplorationExecution;
 }>;
+
+export type RunExplorationOptions<
+  TAlternativeCandidateId extends string = LocalExplorationCandidateId,
+> = BaseRunExplorationOptions &
+  ([TAlternativeCandidateId] extends [LocalExplorationCandidateId]
+    ? Readonly<{
+        candidateProfile?: ExplorationCandidateProfile<LocalExplorationCandidateId>;
+      }>
+    : Readonly<{
+        candidateProfile: ExplorationCandidateProfile<TAlternativeCandidateId>;
+      }>);
 
 export type ExplorationArtifactPaths = Readonly<{
   resultPath: string;
@@ -135,9 +142,7 @@ export async function runExploration<
   validateFixtureHashes();
   validateEvaluationQueries(EXPLORATORY_QUERIES);
 
-  const candidateProfile =
-    options.candidateProfile ??
-    (LOCAL_E5_CANDIDATE_PROFILE as unknown as ExplorationCandidateProfile<TAlternativeCandidateId>);
+  const candidateProfile = resolveCandidateProfile(options);
   const manifest = createManifest(options.provider, options.externalExecution);
 
   if (options.externalExecution) {
@@ -217,8 +222,26 @@ export async function runExploration<
   };
 }
 
+function resolveCandidateProfile<TAlternativeCandidateId extends string>(
+  options: RunExplorationOptions<TAlternativeCandidateId>
+): ExplorationCandidateProfile<TAlternativeCandidateId> {
+  return (options.candidateProfile ??
+    LOCAL_E5_CANDIDATE_PROFILE) as ExplorationCandidateProfile<TAlternativeCandidateId>;
+}
+
 export async function writeExplorationArtifacts<
-  TAlternativeCandidateId extends string = LocalExplorationCandidateId,
+  TAlternativeCandidateId extends string,
+>(
+  data: ExplorationReportData<TAlternativeCandidateId>,
+  outputDirectory: string,
+  options: ExplorationArtifactOptions<TAlternativeCandidateId>
+): Promise<ExplorationArtifactPaths>;
+export async function writeExplorationArtifacts(
+  data: ExplorationReportData<LocalExplorationCandidateId>,
+  outputDirectory: string
+): Promise<ExplorationArtifactPaths>;
+export async function writeExplorationArtifacts<
+  TAlternativeCandidateId extends string,
 >(
   data: ExplorationReportData<TAlternativeCandidateId>,
   outputDirectory: string,
@@ -226,6 +249,10 @@ export async function writeExplorationArtifacts<
 ): Promise<ExplorationArtifactPaths> {
   const resolvedOutputDirectory = resolve(outputDirectory);
   const artifactPrefix = options?.artifactPrefix ?? 'exploration';
+  const candidateProfile =
+    options?.candidateProfile ??
+    (LOCAL_E5_CANDIDATE_PROFILE as unknown as ExplorationCandidateProfile<TAlternativeCandidateId>);
+  assertCandidateProfileMatchesData(data, candidateProfile);
   const resultPath = join(
     resolvedOutputDirectory,
     `${artifactPrefix}_result.json`
@@ -240,11 +267,7 @@ export async function writeExplorationArtifacts<
     writeFile(resultPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8'),
     writeFile(
       reportPath,
-      options
-        ? renderCandidateExplorationReport(data, options.candidateProfile)
-        : renderExplorationReport(
-            data as ExplorationReportData<LocalExplorationCandidateId>
-          ),
+      renderCandidateExplorationReport(data, candidateProfile),
       'utf8'
     ),
   ]);
@@ -253,6 +276,32 @@ export async function writeExplorationArtifacts<
     resultPath,
     reportPath,
   };
+}
+
+function assertCandidateProfileMatchesData<
+  TAlternativeCandidateId extends string,
+>(
+  data: ExplorationReportData<TAlternativeCandidateId>,
+  profile: ExplorationCandidateProfile<TAlternativeCandidateId>
+): void {
+  const expectedIds = new Set([
+    'lexical-current',
+    profile.semanticCandidateId,
+    profile.primaryHybridCandidateId,
+    profile.sensitivityHybridCandidateId,
+  ]);
+
+  for (const query of data.queries) {
+    const actualIds = Object.keys(query.candidates);
+    if (
+      actualIds.length !== expectedIds.size ||
+      actualIds.some((candidateId) => !expectedIds.has(candidateId))
+    ) {
+      throw new Error(
+        `결과 후보 ID와 보고서 profile이 일치하지 않습니다: ${query.queryId}`
+      );
+    }
+  }
 }
 
 function createManifest(
@@ -488,14 +537,6 @@ function validateFixtureHashes(): void {
 
 function createStableHash(value: unknown): string {
   return createHash('sha256').update(stableStringify(value)).digest('hex');
-}
-
-function mean(values: readonly number[]): number {
-  if (values.length === 0) {
-    return 0;
-  }
-
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 async function runExplorationCommand(): Promise<void> {

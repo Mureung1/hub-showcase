@@ -14,7 +14,7 @@
     "android": {
       "browserVersion": "Chrome/148.0.7778.215",
       "cache": {
-        "cacheStorageDeltaBytes": -159017472,
+        "originStorageUsageDeltaBytes": -159017472,
         "firstQueryMs": 216.20999999996275,
         "loadMs": 5984.910000000149,
         "memory": {
@@ -127,7 +127,7 @@
         }
       },
       "cold": {
-        "cacheStorageDeltaBytes": 159017472,
+        "originStorageUsageDeltaBytes": 159017472,
         "firstQueryMs": 262.8300000000745,
         "loadMs": 79932.85499999952,
         "memory": {
@@ -207,7 +207,7 @@
     "desktop": {
       "browserVersion": "Chrome/150.0.7871.181",
       "cache": {
-        "cacheStorageDeltaBytes": 0,
+        "originStorageUsageDeltaBytes": 0,
         "firstQueryMs": 52.90999999642372,
         "loadMs": 2294.8649999946356,
         "memory": {
@@ -320,7 +320,7 @@
         }
       },
       "cold": {
-        "cacheStorageDeltaBytes": 159017472,
+        "originStorageUsageDeltaBytes": 159017472,
         "firstQueryMs": 55.45000000298023,
         "loadMs": 34108.635000005364,
         "memory": {

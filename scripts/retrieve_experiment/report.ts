@@ -1,7 +1,14 @@
-import type { QueryPhase, QuerySlice, RelevanceGrade } from './contracts';
+import {
+  QUERY_PHASES,
+  QUERY_SLICES,
+  type QueryPhase,
+  type QuerySlice,
+  type RelevanceGrade,
+} from './contracts';
 import type { ExperimentManifest } from './experiment_manifest';
 import {
   compareQueryScores,
+  mean,
   type QueryScoreSummary,
   type RankingMetrics,
 } from './metrics';
@@ -95,9 +102,6 @@ export type ExplorationReportData<
   }>;
   queries: readonly ExplorationQueryResult<TAlternativeCandidateId>[];
 }>;
-
-const QUERY_SLICES = ['lexical', 'semantic', 'negative'] as const;
-const QUERY_PHASES = ['calibration', 'check'] as const;
 
 export function renderExplorationReport(data: ExplorationReportData): string {
   return renderCandidateExplorationReport(data, LOCAL_E5_CANDIDATE_PROFILE);
@@ -268,7 +272,7 @@ function renderCriticalMissSection<TAlternativeCandidateId extends string>(
   profile: ExplorationCandidateProfile<TAlternativeCandidateId>
 ): string {
   const lines: string[] = [];
-  const candidateIds = getCandidateIds(profile);
+  const profileCandidateIds = getCandidateIds(profile);
 
   for (const query of data.queries) {
     const coreInsightIds = Object.entries(query.relevanceByInsightId)
@@ -280,17 +284,17 @@ function renderCriticalMissSection<TAlternativeCandidateId extends string>(
         .map(({ insightId }) => insightId)
     );
 
-    for (const candidateId of candidateIds.filter(
+    for (const candidateId of profileCandidateIds.filter(
       (id) => id !== 'lexical-current'
     )) {
-      const candidateIds = new Set(
+      const candidateResultIds = new Set(
         query.candidates[candidateId].ranking
           .slice(0, 6)
           .map(({ insightId }) => insightId)
       );
       const missedIds = coreInsightIds.filter(
         (insightId) =>
-          baselineIds.has(insightId) && !candidateIds.has(insightId)
+          baselineIds.has(insightId) && !candidateResultIds.has(insightId)
       );
 
       if (missedIds.length > 0) {
@@ -395,14 +399,6 @@ function getCandidateIds<TAlternativeCandidateId extends string>(
 
 function compareWinLossDirection(summary: QueryScoreSummary): number {
   return Math.sign(summary.wins - summary.losses);
-}
-
-function mean(values: readonly number[]): number {
-  if (values.length === 0) {
-    return 0;
-  }
-
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 function formatScore(value: number): string {

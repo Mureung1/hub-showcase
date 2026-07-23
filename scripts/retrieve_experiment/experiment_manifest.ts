@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 
-import type { QueryPhase, QuerySlice } from './contracts';
+import {
+  QUERY_PHASES,
+  QUERY_SLICES,
+  type QueryPhase,
+  type QuerySlice,
+} from './contracts';
 
 export type ExperimentProvider = {
   kind: 'local' | 'external';
@@ -51,9 +56,6 @@ export type ExternalExecutionScope = {
 };
 
 const SHA_256_PATTERN = /^[a-f0-9]{64}$/u;
-const QUERY_SLICES = ['lexical', 'semantic', 'negative'] as const;
-const QUERY_PHASES = ['calibration', 'check'] as const;
-
 export function validateExperimentManifest(
   value: unknown
 ): asserts value is ExperimentManifest {

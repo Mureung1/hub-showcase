@@ -23,7 +23,7 @@ type AssetBytes = Readonly<{
 type WorkerMessage =
   | Readonly<{ type: 'ready' }>
   | Readonly<{ id: number; type: 'embedding'; vector: number[] }>
-  | Readonly<{ type: 'error' }>
+  | Readonly<{ id?: number; message: string; type: 'error' }>
   | Readonly<{
       type: 'progress';
       file: string;
@@ -45,7 +45,7 @@ type WorkerSession = Readonly<{
 }>;
 
 type BenchmarkStage = Readonly<{
-  cacheStorageDeltaBytes: number | null;
+  originStorageUsageDeltaBytes: number | null;
   firstQueryMs: number;
   loadMs: number;
   memory: Readonly<{
@@ -211,7 +211,7 @@ type CacheStorageEvidence = Readonly<{
 }>;
 
 async function measure(): Promise<BenchmarkStage> {
-  const cacheBefore = await estimateCacheBytes();
+  const originStorageUsageBefore = await estimateOriginStorageUsageBytes();
   const baseline = await measureMemory();
   const loadStartedAt = performance.now();
   const session = createWorkerSession();
@@ -237,17 +237,17 @@ async function measure(): Promise<BenchmarkStage> {
       warmQueryMs.push(performance.now() - startedAt);
     }
     const afterWarm = await measureMemory();
-    const cacheAfter = await estimateCacheBytes();
+    const originStorageUsageAfter = await estimateOriginStorageUsageBytes();
     const measurements = [baseline, afterLoad, afterFirst, afterWarm];
     const observedBytes = measurements
       .map(({ bytes }) => bytes)
       .filter((bytes): bytes is number => bytes !== null);
 
     return {
-      cacheStorageDeltaBytes:
-        cacheBefore === null || cacheAfter === null
+      originStorageUsageDeltaBytes:
+        originStorageUsageBefore === null || originStorageUsageAfter === null
           ? null
-          : cacheAfter - cacheBefore,
+          : originStorageUsageAfter - originStorageUsageBefore,
       firstQueryMs,
       loadMs,
       memory: {
@@ -314,10 +314,14 @@ function createWorkerSession(): WorkerSession {
     if (message.type === 'error') {
       stage = 'worker-error';
       updateDiagnostics();
-      const error = new Error('Worker 실행에 실패했습니다.');
+      const error = new Error(message.message);
+      if (message.id !== undefined) {
+        const pending = pendingQueries.get(message.id);
+        pendingQueries.delete(message.id);
+        pending?.reject(error);
+        return;
+      }
       readyReject(error);
-      pendingQueries.forEach(({ reject }) => reject(error));
-      pendingQueries.clear();
       return;
     }
     const pending = pendingQueries.get(message.id);
@@ -352,7 +356,7 @@ function createWorkerSession(): WorkerSession {
   };
 }
 
-async function estimateCacheBytes(): Promise<number | null> {
+async function estimateOriginStorageUsageBytes(): Promise<number | null> {
   if (navigator.storage?.estimate === undefined) {
     return null;
   }

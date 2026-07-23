@@ -69,8 +69,9 @@
 | 캐시 후 warm query p50 |       10.695ms |       54.375ms |
 | 캐시 후 warm query p95 |       15.925ms |       78.300ms |
 
-최초 실행에서 Cache Storage 증가량은 두 환경 모두 159,017,472 bytes였다.
-그중 모델 파일은 118,308,185 bytes, tokenizer는 17,083,173 bytes였다.
+최초 실행에서 브라우저 origin 전체 저장소 사용량 증가분은 두 환경 모두
+159,017,472 bytes였다. Cache Storage 항목에서 확인한 모델 파일은
+118,308,185 bytes, tokenizer는 17,083,173 bytes였다.
 
 두 환경 모두 고정 revision의 필수 캐시 항목을 확인했고, 캐시 실행 중 원격 모델
 요청은 0건이었다. Worker 취소 뒤 새 Worker의 초기화, 첫 query, warm query

@@ -1,3 +1,9 @@
+export const QUERY_SLICES = ['lexical', 'semantic', 'negative'] as const;
+export const QUERY_PHASES = ['calibration', 'check'] as const;
+
+export type QuerySlice = (typeof QUERY_SLICES)[number];
+export type QueryPhase = (typeof QUERY_PHASES)[number];
+
 export const EXPECTED_QUERY_COUNTS = {
   lexical: {
     calibration: 10,
@@ -13,8 +19,6 @@ export const EXPECTED_QUERY_COUNTS = {
   },
 } as const;
 
-export type QuerySlice = keyof typeof EXPECTED_QUERY_COUNTS;
-export type QueryPhase = keyof (typeof EXPECTED_QUERY_COUNTS)[QuerySlice];
 export type RelevanceGrade = 0 | 1 | 2;
 
 export type EvaluationInsight = {
@@ -34,9 +38,6 @@ export type EvaluationQuery = {
   phase: QueryPhase;
   relevanceByInsightId: Readonly<Record<string, RelevanceGrade>>;
 };
-
-const QUERY_SLICES = Object.keys(EXPECTED_QUERY_COUNTS) as QuerySlice[];
-const QUERY_PHASES = ['calibration', 'check'] as const satisfies QueryPhase[];
 
 export function validateEvaluationQueries(
   queries: readonly EvaluationQuery[]

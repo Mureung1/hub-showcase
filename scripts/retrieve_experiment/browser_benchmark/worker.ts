@@ -4,11 +4,11 @@ import {
   type FeatureExtractionPipeline,
 } from '@huggingface/transformers';
 
-import { BROWSER_BENCHMARK_CONFIG } from './contract';
-
-type WorkerRequest =
-  | Readonly<{ type: 'initialize' }>
-  | Readonly<{ type: 'query'; id: number; text: string }>;
+import {
+  BROWSER_BENCHMARK_CONFIG,
+  createWorkerErrorResponse,
+  type BrowserWorkerRequest,
+} from './contract';
 
 type ProgressValue = Readonly<{
   file?: unknown;
@@ -24,11 +24,14 @@ env.useBrowserCache = true;
 env.useWasmCache = true;
 env.fetch ??= fetch.bind(self);
 
-self.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
-  void handleRequest(event.data);
-});
+self.addEventListener(
+  'message',
+  (event: MessageEvent<BrowserWorkerRequest>) => {
+    void handleRequest(event.data);
+  }
+);
 
-async function handleRequest(request: WorkerRequest): Promise<void> {
+async function handleRequest(request: BrowserWorkerRequest): Promise<void> {
   try {
     if (request.type === 'initialize') {
       await getExtractor();
@@ -47,8 +50,8 @@ async function handleRequest(request: WorkerRequest): Promise<void> {
       type: 'embedding',
       vector: Array.from(output.data, Number),
     });
-  } catch {
-    self.postMessage({ type: 'error' });
+  } catch (error) {
+    self.postMessage(createWorkerErrorResponse(request, error));
   }
 }
 

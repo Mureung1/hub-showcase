@@ -14,6 +14,27 @@ export type BrowserBenchmarkConfig = Readonly<{
   revision: string;
 }>;
 
+export type BrowserWorkerRequest =
+  | Readonly<{ type: 'initialize' }>
+  | Readonly<{ type: 'query'; id: number; text: string }>;
+
+export type BrowserWorkerErrorResponse = Readonly<{
+  type: 'error';
+  id?: number;
+  message: string;
+}>;
+
+export function createWorkerErrorResponse(
+  request: BrowserWorkerRequest,
+  error: unknown
+): BrowserWorkerErrorResponse {
+  return {
+    type: 'error',
+    ...(request.type === 'query' ? { id: request.id } : {}),
+    message: error instanceof Error ? error.message : '알 수 없는 Worker 오류',
+  };
+}
+
 export function calculateNearestRankPercentile(
   samples: readonly number[],
   percentile: number

@@ -164,9 +164,9 @@ check의 query당 평균 반환 수도 Gemini 의미 검색 0.6, 하이브리드
 생성하는 LLM이 아니라 문장과 자료를 의미 벡터로 변환하는 모델이다.
 
 실제 Desktop Chrome과 Android Chrome에서 최초 모델 준비, 캐시 후 재초기화,
-query embedding, Worker 취소와 복구를 측정했다. 최초 준비에는 약 159MB의
-Cache Storage와 Desktop 약 34초, Android 약 80초가 필요했다. 모델이 준비된
-뒤의 warm query는 빨랐지만, 최초 다운로드와 초기화 비용을 사용자가 부담하는
+query embedding, Worker 취소와 복구를 측정했다. 최초 준비에는 브라우저 origin
+저장소 사용량 약 159MB와 Desktop 약 34초, Android 약 80초가 필요했다. 모델이
+준비된 뒤의 warm query는 빨랐지만, 최초 다운로드와 초기화 비용을 사용자가 부담하는
 방식은 `꺼내보기`의 사용 맥락에 맞지 않는다고 판단했다.
 
 따라서 **클라이언트 측 로컬 E5 실행 방식은 채택 후보에서 제외한다.** 이 결정은

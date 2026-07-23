@@ -5,11 +5,18 @@ import { describe, expect, it } from 'vitest';
 import {
   assertBrowserBenchmarkConfig,
   calculateNearestRankPercentile,
+  createWorkerErrorResponse,
   validateEmbeddingVector,
 } from '../browser_benchmark/contract';
 import { renderBrowserBenchmarkReport } from '../browser_benchmark/report';
 import { measureMemoryAtBoundary } from '../browser_benchmark/memory';
 import { verifyFixedModelCacheEntries } from '../browser_benchmark/cache_evidence';
+import {
+  assertCacheHitVerified,
+  assertTemporaryProfileDirectory,
+  parseCdpMessage,
+  runCancellationThenCacheBenchmark,
+} from '../browser_benchmark/runner_contract';
 
 describe('브라우저 벤치마크 계약', () => {
   it('nearest-rank 방식으로 p50과 p95를 계산한다', () => {
@@ -91,6 +98,38 @@ describe('브라우저 벤치마크 계약', () => {
     });
   });
 
+  it('UA 메모리 측정이 거부되면 JS heap 추정값으로 대체한다', async () => {
+    const measurement = await measureMemoryAtBoundary({
+      heapBytes: 4321,
+      measureUserAgentSpecificMemory: async () => {
+        throw new Error('측정 거부');
+      },
+      timeoutMs: 100,
+    });
+
+    expect(measurement).toMatchObject({
+      bytes: 4321,
+      source: 'performance.memory',
+    });
+    expect(measurement.limitation).toContain('UA 특정 메모리 측정 API가 거부');
+    expect(measurement.limitation).toContain('JS heap 추정값');
+  });
+
+  it('UA 메모리 측정이 시간 초과되면 JS heap 추정값으로 대체한다', async () => {
+    const measurement = await measureMemoryAtBoundary({
+      heapBytes: 9876,
+      measureUserAgentSpecificMemory: () => new Promise(() => undefined),
+      timeoutMs: 1,
+    });
+
+    expect(measurement).toMatchObject({
+      bytes: 9876,
+      source: 'performance.memory',
+    });
+    expect(measurement.limitation).toContain('1ms 안에 끝나지 않아');
+    expect(measurement.limitation).toContain('JS heap 추정값');
+  });
+
   it('UA 메모리 거부 사유에서 URL을 제외하고 오류 유형과 안전한 메시지를 남긴다', async () => {
     const measurement = await measureMemoryAtBoundary({
       measureUserAgentSpecificMemory: async () => {
@@ -163,32 +202,80 @@ describe('브라우저 벤치마크 계약', () => {
     });
   });
 
-  it('취소 뒤 새 Worker의 cache benchmark를 기록한다', async () => {
-    const runner = await readFile(
-      'scripts/retrieve_experiment/run_browser_benchmark.ts',
-      'utf8'
-    );
-    const cancellation = runner.indexOf(
-      "'window.browserBenchmark.startAndCancelWorker()'"
-    );
-    const cacheBenchmark = runner.indexOf(
-      'const cache = await evaluate<Record<string, unknown>>(',
-      cancellation
-    );
+  it('취소가 끝난 뒤 새 cache benchmark를 실행한다', async () => {
+    const calls: string[] = [];
+    const result = await runCancellationThenCacheBenchmark({
+      cancelWorker: async () => {
+        calls.push('cancel');
+        return { cancelled: true };
+      },
+      measureCache: async () => {
+        calls.push('cache');
+        return { loadMs: 12 };
+      },
+    });
 
-    expect(cancellation).toBeGreaterThan(-1);
-    expect(cacheBenchmark).toBeGreaterThan(cancellation);
+    expect(calls).toEqual(['cancel', 'cache']);
+    expect(result).toEqual({
+      cache: { loadMs: 12 },
+      cancellation: { cancelled: true },
+    });
   });
 
-  it('캐시 증명 실패를 measured 결과로 확정하지 않는다', async () => {
-    const runner = await readFile(
-      'scripts/retrieve_experiment/run_browser_benchmark.ts',
-      'utf8'
-    );
-    const failure = runner.indexOf('if (!cacheEvidence.cacheHitVerified)');
-    const measuredResult = runner.indexOf('return {', failure);
+  it('캐시 증명 실패를 measured 결과로 확정하지 않는다', () => {
+    expect(() =>
+      assertCacheHitVerified({
+        cacheHitVerified: false,
+      })
+    ).toThrow('캐시 증명');
+    expect(() =>
+      assertCacheHitVerified({
+        cacheHitVerified: true,
+      })
+    ).not.toThrow();
+  });
 
-    expect(failure).toBeGreaterThan(-1);
-    expect(measuredResult).toBeGreaterThan(failure);
+  it('Worker query 실패 응답에 요청 ID와 원인을 보존한다', () => {
+    expect(
+      createWorkerErrorResponse(
+        { id: 7, text: '검색어', type: 'query' },
+        new Error('임베딩 실패')
+      )
+    ).toEqual({
+      id: 7,
+      message: '임베딩 실패',
+      type: 'error',
+    });
+    expect(
+      createWorkerErrorResponse({ type: 'initialize' }, '알 수 없는 값')
+    ).toEqual({
+      message: '알 수 없는 Worker 오류',
+      type: 'error',
+    });
+  });
+
+  it('잘못된 CDP 메시지는 예외 없이 거부한다', () => {
+    expect(parseCdpMessage('{')).toBeNull();
+    expect(parseCdpMessage('{"id":1,"result":{"ok":true}}')).toEqual({
+      id: 1,
+      result: { ok: true },
+    });
+  });
+
+  it('임시 루트 바로 아래의 전용 Chrome 프로필만 삭제 대상으로 허용한다', () => {
+    expect(() =>
+      assertTemporaryProfileDirectory(
+        'C:\\Temp\\hub-retrieve-browser-benchmark-123',
+        'C:\\Temp',
+        'win32'
+      )
+    ).not.toThrow();
+    expect(() =>
+      assertTemporaryProfileDirectory(
+        'C:\\Temp\\other-profile',
+        'C:\\Temp',
+        'win32'
+      )
+    ).toThrow('삭제 대상');
   });
 });

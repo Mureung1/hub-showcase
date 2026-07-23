@@ -20,21 +20,24 @@ export async function measureMemoryAtBoundary(
 ): Promise<MemoryMeasurement> {
   const measureUserAgentSpecificMemory = options.measureUserAgentSpecificMemory;
   if (measureUserAgentSpecificMemory !== undefined) {
-    return await measureUserAgentMemory({
+    const measurement = await measureUserAgentMemory({
       measureUserAgentSpecificMemory,
       measureUserAgentSpecificMemoryReceiver:
         options.measureUserAgentSpecificMemoryReceiver,
       timeoutMs: options.timeoutMs,
     });
+    if (measurement.bytes !== null || typeof options.heapBytes !== 'number') {
+      return measurement;
+    }
+
+    return createHeapMeasurement(
+      options.heapBytes,
+      `${measurement.limitation} 대신 JS heap 추정값을 기록합니다.`
+    );
   }
 
   if (typeof options.heapBytes === 'number') {
-    return {
-      bytes: options.heapBytes,
-      limitation:
-        'performance.memory의 JS heap 추정치만 관측했으며 WASM·네이티브 메모리와 연속 peak는 포함하지 않습니다.',
-      source: 'performance.memory',
-    };
+    return createHeapMeasurement(options.heapBytes);
   }
 
   return {
@@ -42,6 +45,20 @@ export async function measureMemoryAtBoundary(
     limitation:
       '지원하는 브라우저 메모리 API가 없어 peak를 추정하지 않았습니다.',
     source: 'unavailable',
+  };
+}
+
+function createHeapMeasurement(
+  heapBytes: number,
+  prefix?: string
+): MemoryMeasurement {
+  const heapLimitation =
+    'performance.memory의 JS heap 추정치만 관측했으며 WASM·네이티브 메모리와 연속 peak는 포함하지 않습니다.';
+
+  return {
+    bytes: heapBytes,
+    limitation: prefix ? `${prefix} ${heapLimitation}` : heapLimitation,
+    source: 'performance.memory',
   };
 }
 

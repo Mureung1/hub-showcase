@@ -9,14 +9,23 @@ import { createServer } from 'vite';
 import { BROWSER_BENCHMARK_CONFIG } from './browser_benchmark/contract';
 import { verifyFixedModelCacheEntries } from './browser_benchmark/cache_evidence';
 import { renderBrowserBenchmarkReport } from './browser_benchmark/report';
+import {
+  assertCacheHitVerified,
+  assertTemporaryProfileDirectory,
+  parseCdpMessage,
+  resolveChromeExecutablePath,
+  runCancellationThenCacheBenchmark,
+} from './browser_benchmark/runner_contract';
 
 const execFileAsync = promisify(execFile);
 const BENCHMARK_PORT = 4173;
 const DESKTOP_DEBUG_PORT = 9222;
 const ANDROID_DEBUG_PORT = 9223;
 const ANDROID_SERIAL = 'emulator-5554';
-const CHROME_PATH =
-  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const CHROME_PATH = resolveChromeExecutablePath(
+  process.platform,
+  process.env.BROWSER_BENCHMARK_CHROME_PATH
+);
 const BENCHMARK_PATH = '/';
 const BENCHMARK_URL = `http://localhost:${BENCHMARK_PORT}${BENCHMARK_PATH}`;
 const SIMPLE_EVALUATION_TIMEOUT_MS = 30_000;
@@ -29,12 +38,6 @@ const RESULT_PATH = resolve(
 const REPORT_PATH = resolve(
   'scripts/retrieve_experiment/results/browser_benchmark_report.md'
 );
-
-type CdpResponse = Readonly<{
-  error?: Readonly<{ message: string }>;
-  id: number;
-  result?: Record<string, unknown>;
-}>;
 
 type CdpEvent = Readonly<{
   method: string;
@@ -88,9 +91,14 @@ class CdpConnection {
   private constructor(socket: WebSocket) {
     this.socket = socket;
     socket.addEventListener('message', (event) => {
-      const response = JSON.parse(String(event.data)) as CdpResponse & CdpEvent;
-      const pending = this.pending.get(response.id);
-      if (pending === undefined) {
+      const response = parseCdpMessage(event.data);
+      if (response === null) {
+        return;
+      }
+      const responseId = response.id;
+      const pending =
+        responseId === undefined ? undefined : this.pending.get(responseId);
+      if (responseId === undefined || pending === undefined) {
         if (typeof response.method === 'string') {
           this.events.push({
             method: response.method,
@@ -99,7 +107,7 @@ class CdpConnection {
         }
         return;
       }
-      this.pending.delete(response.id);
+      this.pending.delete(responseId);
       if (response.error !== undefined) {
         pending.reject(new Error(response.error.message));
         return;
@@ -435,17 +443,23 @@ async function measurePageStages(
       '고정 revision 모델 Cache Storage 항목이 준비되지 않았습니다.'
     );
   }
-  const cancellation = await evaluate<Record<string, unknown>>(
-    page,
-    'window.browserBenchmark.startAndCancelWorker()',
-    CANCELLATION_EVALUATION_TIMEOUT_MS
-  );
-  const cacheNetworkCursor = page.eventCursor();
-  const cache = await evaluate<Record<string, unknown>>(
-    page,
-    'window.browserBenchmark.measure()',
-    MEASURE_EVALUATION_TIMEOUT_MS
-  );
+  let cacheNetworkCursor = page.eventCursor();
+  const { cancellation, cache } = await runCancellationThenCacheBenchmark({
+    cancelWorker: () =>
+      evaluate<Record<string, unknown>>(
+        page,
+        'window.browserBenchmark.startAndCancelWorker()',
+        CANCELLATION_EVALUATION_TIMEOUT_MS
+      ),
+    measureCache: () => {
+      cacheNetworkCursor = page.eventCursor();
+      return evaluate<Record<string, unknown>>(
+        page,
+        'window.browserBenchmark.measure()',
+        MEASURE_EVALUATION_TIMEOUT_MS
+      );
+    },
+  });
   const cacheRemoteModelRequestCount = countRemoteModelRequests(
     page.eventsSince(cacheNetworkCursor)
   );
@@ -457,9 +471,7 @@ async function measurePageStages(
       cacheEntryVerification.cacheHitVerified &&
       cacheRemoteModelRequestCount === 0,
   };
-  if (!cacheEvidence.cacheHitVerified) {
-    throw new Error('cache 단계의 모델 캐시 증명을 확인하지 못했습니다.');
-  }
+  assertCacheHitVerified(cacheEvidence);
 
   await evaluate(page, 'window.browserBenchmark.resetVisibilityEvents()');
   const background = await browser.call('Target.createTarget', {
@@ -749,13 +761,7 @@ async function stopChrome(chrome: ChildProcess): Promise<void> {
 async function removeTemporaryProfile(directory: string): Promise<void> {
   const resolvedDirectory = resolve(directory);
   const temporaryRoot = resolve(tmpdir());
-  if (
-    !resolvedDirectory.startsWith(
-      `${temporaryRoot}\\hub-retrieve-browser-benchmark-`
-    )
-  ) {
-    throw new Error('임시 Chrome 프로필 삭제 대상 검증에 실패했습니다.');
-  }
+  assertTemporaryProfileDirectory(resolvedDirectory, temporaryRoot);
   await fs.rm(resolvedDirectory, {
     force: true,
     recursive: true,
