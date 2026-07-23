@@ -21,10 +21,13 @@ export async function purchaseRoomItem(userId: string, itemId: string, color?: s
     if (item.colorCustomizable && !color) return { status: 'color_required' }
     const normalizedColor = item.colorCustomizable ? color! : null
 
-    const owned = item.colorCustomizable
-      ? await tx.userInventory.findUnique({ where: { userId_itemId_color: { userId, itemId, color: normalizedColor! } } })
-      : await tx.userInventory.findFirst({ where: { userId, itemId } })
-    if (owned) return { status: 'already_owned' }
+    // repeatable 아이템(간식류)은 색 구분 없이도 개수 제한 없이 살 수 있어 소유 여부를 아예 확인하지 않는다.
+    if (!item.repeatable) {
+      const owned = item.colorCustomizable
+        ? await tx.userInventory.findUnique({ where: { userId_itemId_color: { userId, itemId, color: normalizedColor! } } })
+        : await tx.userInventory.findFirst({ where: { userId, itemId } })
+      if (owned) return { status: 'already_owned' }
+    }
 
     // 포인트 차감을 위해 PointsLedgerEntry를 트랜잭션 안에서 직접 집계해 잔액을 확인한다(같은 tx라 이 트랜잭션의 이전 쓰기까지 반영됨).
     const balanceResult = await tx.pointsLedgerEntry.aggregate({ where: { userId }, _sum: { amount: true } })
@@ -60,6 +63,7 @@ export async function getRoomInventory(userId: string) {
     colorCustomizable: entry.item.colorCustomizable,
     placeable: entry.item.placeable,
     wallMounted: entry.item.wallMounted,
+    repeatable: entry.item.repeatable,
     color: entry.color,
   }))
 }

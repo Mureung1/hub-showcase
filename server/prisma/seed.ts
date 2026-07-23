@@ -52,6 +52,7 @@ async function main() {
         placeable: item.placeable,
         wallMounted: item.wallMounted,
         equipSlot: item.equipSlot,
+        repeatable: item.repeatable,
       },
       create: item,
     })

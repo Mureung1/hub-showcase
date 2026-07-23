@@ -6,7 +6,7 @@ import type { FriendsManager } from './useFriendsManager'
 import type { DodoManager } from './useDodoManager'
 import type { HomeManager } from './useHomeManager'
 import type { ProfileManager } from './useProfileManager'
-import type { RoomShopManager } from './useRoomShopManager'
+import { FOOD_ICON_KEYS, type RoomShopManager } from './useRoomShopManager'
 import type { FriendPost, HomeVisitActionKind } from './types'
 
 const SHOP_ITEM_ICON_CLASS: Record<string, string> = {
@@ -14,6 +14,10 @@ const SHOP_ITEM_ICON_CLASS: Record<string, string> = {
   'pillow': 'shop-item-pillow',
   'headphones': 'shop-item-headphones',
   'table': 'shop-item-table',
+  'fried-egg': 'shop-item-fried-egg',
+  'toast': 'shop-item-toast',
+  'pancake': 'shop-item-pancake',
+  'rice': 'shop-item-rice',
 }
 
 // 원래 마이홈 방에 고정 붙박이로 있던 그래픽(창문·별 장식·선반 장식·화분) — 디자인은 그대로 재사용하고
@@ -56,6 +60,10 @@ const SHOP_ITEM_INTERACT_MESSAGE: Record<string, string> = {
   'pillow': '두두가 베개에 폭 안겨서 뒹굴뒹굴해요.',
   'headphones': '두두가 헤드폰을 쓰고 리듬을 타요!',
   'plant': '두두가 화분에 물을 줬어요!',
+  'fried-egg': '두두가 계란후라이를 냠냠 먹었어요!',
+  'toast': '두두가 토스트를 냠냠 먹었어요!',
+  'pancake': '두두가 핫케이크를 냠냠 먹었어요!',
+  'rice': '두두가 밥을 냠냠 먹었어요!',
 }
 
 
@@ -97,6 +105,7 @@ export function MyHomeView({ message, onInteract, homeManager, dodoManager, shop
   const { refreshDodoState } = dodoManager
   const mood = dodoManager.state?.mood ?? 3
   const [shopOpen, setShopOpen] = useState(false)
+  const [snackShopOpen, setSnackShopOpen] = useState(false)
   const roomRef = useRef<HTMLDivElement>(null)
   const draggingIdRef = useRef<string | null>(null)
 
@@ -223,10 +232,25 @@ export function MyHomeView({ message, onInteract, homeManager, dodoManager, shop
 
       <div className="myhome-actions" aria-label="두두와 상호작용">
         <button type="button" onClick={() => onInteract('두두가 기분 좋게 눈을 깜빡였어요!')}><i className="action-pat" />쓰다듬기</button>
-        <button type="button" onClick={() => onInteract('두두가 간식을 냠냠 먹었어요.')}><i className="action-snack" />간식 주기</button>
-        <button type="button" aria-expanded={shopOpen} onClick={() => setShopOpen((open) => !open)}><i className="action-dress" />꾸미기</button>
+        <button
+          type="button"
+          aria-expanded={snackShopOpen}
+          onClick={() => { setSnackShopOpen((open) => !open); setShopOpen(false) }}
+        >
+          <i className="action-snack" />간식 주기
+        </button>
+        <button
+          type="button"
+          aria-expanded={shopOpen}
+          onClick={() => { setShopOpen((open) => !open); setSnackShopOpen(false) }}
+        >
+          <i className="action-dress" />꾸미기
+        </button>
       </div>
 
+      {snackShopOpen && (
+        <RoomShopPanel shopManager={shopManager} dodoManager={dodoManager} points={points} onInteract={onInteract} onlyFood />
+      )}
       {shopOpen && <RoomShopPanel shopManager={shopManager} dodoManager={dodoManager} points={points} onInteract={onInteract} />}
 
       <div className="myhome-visitors" aria-labelledby="myhome-visitors-title">
@@ -260,17 +284,19 @@ type RoomShopPanelProps = {
   dodoManager: DodoManager
   points: number
   onInteract: (message: string) => void
+  // true면 간식류만, 기본(false)이면 간식류를 뺀 나머지(가구·벽 장식 등)만 보여준다.
+  onlyFood?: boolean
 }
 
-function RoomShopPanel({ shopManager, dodoManager, points, onInteract }: RoomShopPanelProps) {
+function RoomShopPanel({ shopManager, dodoManager, points, onInteract, onlyFood = false }: RoomShopPanelProps) {
   const [tab, setTab] = useState<'shop' | 'inventory'>('shop')
 
   return (
     <div className="room-shop-panel" aria-labelledby="room-shop-title">
       <div className="tab-page-heading">
-        <div><span>SHOP</span><h2 id="room-shop-title">마이홈 꾸미기</h2></div>
+        <div><span>{onlyFood ? 'SNACK' : 'SHOP'}</span><h2 id="room-shop-title">{onlyFood ? '간식 주기' : '마이홈 꾸미기'}</h2></div>
       </div>
-      <div className="room-shop-tabs" role="tablist" aria-label="꾸미기 메뉴">
+      <div className="room-shop-tabs" role="tablist" aria-label={onlyFood ? '간식 메뉴' : '꾸미기 메뉴'}>
         <button type="button" role="tab" aria-selected={tab === 'shop'} className={tab === 'shop' ? 'active' : ''} onClick={() => setTab('shop')}>
           상점
         </button>
@@ -280,26 +306,29 @@ function RoomShopPanel({ shopManager, dodoManager, points, onInteract }: RoomSho
       </div>
       {shopManager.notice && <p className="scheduler-notice" role="status">{shopManager.notice}</p>}
       {tab === 'shop' ? (
-        <ShopSection shopManager={shopManager} points={points} />
+        <ShopSection shopManager={shopManager} points={points} onlyFood={onlyFood} />
       ) : (
-        <InventorySection shopManager={shopManager} dodoManager={dodoManager} onInteract={onInteract} />
+        <InventorySection shopManager={shopManager} dodoManager={dodoManager} onInteract={onInteract} onlyFood={onlyFood} />
       )}
     </div>
   )
 }
 
-function ShopSection({ shopManager, points }: { shopManager: RoomShopManager; points: number }) {
+function ShopSection({ shopManager, points, onlyFood }: { shopManager: RoomShopManager; points: number; onlyFood: boolean }) {
   const { catalog, catalogLoading, inventory, purchasingId, purchase } = shopManager
   // 구매 전 색을 고르는 동안만 쓰는 임시 선택값 — 인스턴스별로 인벤토리에 쌓이므로 구매 후에도 상점 목록엔 계속 남는다.
   const [pendingColor, setPendingColor] = useState<Record<string, string>>({})
 
   if (catalogLoading) return <p className="empty-agenda">상점 목록을 불러오는 중이에요...</p>
 
+  const visibleCatalog = catalog.filter((item) => FOOD_ICON_KEYS.has(item.iconKey) === onlyFood)
+
   return (
     <div className="room-shop-list">
-      {catalog.map((item) => {
+      {visibleCatalog.map((item) => {
         const ownedColors = inventory.filter((entry) => entry.itemId === item.id).map((entry) => entry.color)
-        const isOwnedNonCustomizable = !item.colorCustomizable && ownedColors.length > 0
+        // repeatable 아이템(간식류)은 이미 가지고 있어도 계속 더 살 수 있어야 하니 "보유중"으로 막지 않는다.
+        const isOwnedNonCustomizable = !item.repeatable && !item.colorCustomizable && ownedColors.length > 0
         const availableColors = item.colorCustomizable ? AVATAR_PALETTE.filter((color) => !ownedColors.includes(color)) : []
         const allColorsOwned = item.colorCustomizable && availableColors.length === 0
         const chosenColor = item.colorCustomizable
@@ -352,16 +381,27 @@ function ShopSection({ shopManager, points }: { shopManager: RoomShopManager; po
   )
 }
 
-function InventorySection({ shopManager, dodoManager, onInteract }: { shopManager: RoomShopManager; dodoManager: DodoManager; onInteract: (message: string) => void }) {
+function InventorySection({
+  shopManager, dodoManager, onInteract, onlyFood,
+}: {
+  shopManager: RoomShopManager
+  dodoManager: DodoManager
+  onInteract: (message: string) => void
+  onlyFood: boolean
+}) {
   const { inventory, inventoryLoading, layout, placeInRoom, removeFromRoom } = shopManager
   const { appearance, equip, unequip } = dodoManager
 
   if (inventoryLoading) return <p className="empty-agenda">인벤토리를 불러오는 중이에요...</p>
-  if (inventory.length === 0) return <p className="empty-agenda">아직 가진 아이템이 없어요. 상점에서 사보세요!</p>
+
+  const visibleInventory = inventory.filter((item) => FOOD_ICON_KEYS.has(item.iconKey) === onlyFood)
+  if (visibleInventory.length === 0) {
+    return <p className="empty-agenda">{onlyFood ? '아직 준 간식이 없어요. 상점에서 사보세요!' : '아직 가진 아이템이 없어요. 상점에서 사보세요!'}</p>
+  }
 
   return (
     <div className="room-shop-list">
-      {inventory.map((item) => {
+      {visibleInventory.map((item) => {
         const isPlaced = layout.some((entry) => entry.inventoryId === item.id)
         const isEquipped = item.equippable && appearance
           ? Object.values(appearance).some((slot) => slot?.itemId === item.itemId)
@@ -374,32 +414,51 @@ function InventorySection({ shopManager, dodoManager, onInteract }: { shopManage
               <span>보유중</span>
             </div>
             <div className="room-shop-item-actions">
-              {item.interactable && (
-                <button
-                  type="button"
-                  onClick={() => onInteract(SHOP_ITEM_INTERACT_MESSAGE[item.iconKey] ?? '두두가 좋아해요!')}
-                >
-                  가지고 놀기
-                </button>
-              )}
-              {item.equippable && (
+              {FOOD_ICON_KEYS.has(item.iconKey) ? (
+                // 간식은 "가지고 놀기"/"방에 놓기"를 따로 안 두고, 먹이기(=배치+멘트)와 치우기(=배치 해제) 하나로 합친다.
                 <button
                   type="button"
                   onClick={() => {
-                    if (isEquipped) unequip(item.id)
-                    else {
-                      equip(item.id)
-                      onInteract(SHOP_ITEM_INTERACT_MESSAGE[item.iconKey] ?? '두두가 좋아해요!')
+                    if (isPlaced) {
+                      removeFromRoom(item.id)
+                    } else {
+                      placeInRoom(item.id)
+                      onInteract(SHOP_ITEM_INTERACT_MESSAGE[item.iconKey] ?? '두두가 냠냠 먹었어요!')
                     }
                   }}
                 >
-                  {isEquipped ? '장착 해제하기' : '장착하기'}
+                  {isPlaced ? '치우기' : '먹이기'}
                 </button>
-              )}
-              {item.placeable && (
-                <button type="button" onClick={() => (isPlaced ? removeFromRoom(item.id) : placeInRoom(item.id))}>
-                  {isPlaced ? '방에서 치우기' : '방에 놓기'}
-                </button>
+              ) : (
+                <>
+                  {item.interactable && (
+                    <button
+                      type="button"
+                      onClick={() => onInteract(SHOP_ITEM_INTERACT_MESSAGE[item.iconKey] ?? '두두가 좋아해요!')}
+                    >
+                      가지고 놀기
+                    </button>
+                  )}
+                  {item.equippable && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isEquipped) unequip(item.id)
+                        else {
+                          equip(item.id)
+                          onInteract(SHOP_ITEM_INTERACT_MESSAGE[item.iconKey] ?? '두두가 좋아해요!')
+                        }
+                      }}
+                    >
+                      {isEquipped ? '장착 해제하기' : '장착하기'}
+                    </button>
+                  )}
+                  {item.placeable && (
+                    <button type="button" onClick={() => (isPlaced ? removeFromRoom(item.id) : placeInRoom(item.id))}>
+                      {isPlaced ? '방에서 치우기' : '방에 놓기'}
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </article>

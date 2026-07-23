@@ -451,6 +451,8 @@ model RoomItem {
   wallMounted Boolean @default(false)
   // equippable이 true인 아이템이 DodoAppearance의 어느 슬롯에 장착되는지. equippable이 false면 항상 null.
   equipSlot RoomEquipSlot?
+  // 간식류처럼 색 구분 없이도 같은 아이템을 여러 개 살 수 있는지 여부. false(기본)면 1개만 소유 가능(색으로 구분되는 아이템은 색별로 1개).
+  repeatable Boolean @default(false)
 
   inventory            UserInventory[]
   sharedLayouts        SharedHomeLayout[]

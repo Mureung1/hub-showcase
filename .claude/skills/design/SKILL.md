@@ -16,6 +16,8 @@ description: Visual design/UI conventions for "We should do..". Read before styl
 - 가져올 것: 저해상도 도트 그래픽 느낌 — 촘촘한 픽셀 격자로 만든 계단형 곡선, 모든 형태를 두르는 일정 두께의 진한 외곽선(스트로크), 픽셀 단위 명암(하이라이트/셰이딩 블록).
 - 가져오지 않을 것: 레퍼런스의 색감(핑크/퍼블). 컬러는 항상 기존 `--scheduler-*` 팔레트를 그대로 쓴다.
 - 외곽선 적용됨: `.scheduler-logo`, `.scheduler-avatar`, `.category-filter-icon`, `.group-pixel-icon`, `.home-dodo-leg`에 `filter: drop-shadow(...)` 4방향 오프셋으로 ink색 외곽선을 둘렀음(`scheduler.css`). 레퍼런스만큼 두껍게 보이도록 34~48px 아이콘은 4px, 큰 다리 파츠는 6px, 두두 몸통은 8px 오프셋을 쓴다. 노치형 아이콘을 새로 만들 때 같은 두께 기준(아이콘류 4px)을 따를 것 — `box-shadow`가 아니라 `filter: drop-shadow`를 써야 `clip-path`로 잘린 모양의 실루엣을 따라 외곽선이 그려진다.
+- 마이홈에 놓인 아이템 크기를 키울 때는 `.myhome-placed-item:has(.shop-item-X)`에 `transform: scale(...)`을 얹어서 그 아이템만 키운다(상점 아이콘 자체 크기는 절대 건드리지 않음). 기준값: 기본 배치 스케일이 `.75`이므로 "다른 아이템의 1.5배"로 보이려면 `scale(1.125)`(게임기·간식류가 이 값), 5배면 `scale(3.75)`(테이블) 식으로 `.75 × 배율`을 쓴다.
+- `filter: drop-shadow(4px...)` 외곽선은 그 요소의 배경(채워진 사각형) 실루엣을 따라 그려지도록 만든 것 — `transform: scale()`로 아이템을 확대하면 외곽선도 그 배율만큼 같이 두꺼워져 보인다. 확대 배율이 크거나(테이블 5배 → 외곽선을 1.5px로 축소) 아이템 배경을 없앤 경우(간식류 — 배경 없이 `::before`/`::after` 모양만 보이게 할 때)엔 이 공용 외곽선을 반드시 같이 손봐야 한다. 배경이 없으면 `filter`가 대신 `::before`/`::after` 모양의 실루엣을 따라 그려져서 뭉친 두꺼운 겹outline이 생기므로, 그런 경우엔 `filter: none`으로 끄고 각 pseudo-element 자체의 `box-shadow: inset ... Npx`를 외곽선으로 쓴다(간식류 4종이 이 패턴).
 
 ## 도트/픽셀 비주얼 규칙
 - `border-radius` 대신 `clip-path: polygon(...)`로 계단형 노치. 참고: `scheduler.css`의 `.scheduler-logo`, `.scheduler-avatar`.
