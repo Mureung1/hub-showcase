@@ -80,3 +80,12 @@ export function respondToApplicant(id, userId, status) {
 export function deleteMeeting(id) {
   return request(`/api/meetings/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
+
+// PATCH /api/meetings/:id — 모임 수정(E4, 모임장만). 성공 시 수정된 모임 객체 반환.
+export function updateMeeting(id, input) {
+  return request(`/api/meetings/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
