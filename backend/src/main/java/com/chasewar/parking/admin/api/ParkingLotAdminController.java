@@ -2,6 +2,7 @@ package com.chasewar.parking.admin.api;
 
 import com.chasewar.parking.service.ParkingLotGeocodingService;
 import com.chasewar.parking.service.ParkingLotLoadService;
+import com.chasewar.parking.service.ParkingLotRealtimeLoadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +16,7 @@ public class ParkingLotAdminController {
 
     private final ParkingLotLoadService parkingLotLoadService;
     private final ParkingLotGeocodingService parkingLotGeocodingService;
+    private final ParkingLotRealtimeLoadService parkingLotRealtimeLoadService;
 
     @PostMapping("/seoul")
     public ResponseEntity<Void> loadSeoulParkingLots() {
@@ -25,6 +27,12 @@ public class ParkingLotAdminController {
     @PostMapping("/geocode")
     public ResponseEntity<Void> geocodeParkingLots() {
         parkingLotGeocodingService.geocode();
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/realtime")
+    public ResponseEntity<Void> loadParkingLotRealtime() {
+        parkingLotRealtimeLoadService.load();
         return ResponseEntity.ok().build();
     }
 }
