@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { getCustomer } from '@/services/customers'
 import { createIncidentAndRefresh, transitionReservationStatusAndRefresh } from '@/services/riskRefresh'
@@ -49,7 +49,7 @@ const CustomerDetail = () => {
     return labels[type]
   }
 
-  const loadTimeline = async (customerId: string) => {
+  const loadTimeline = useCallback(async (customerId: string) => {
     if (!user) return
     const [incidentsData, reservationsData] = await Promise.all([
       listIncidents(user.uid, customerId),
@@ -74,7 +74,7 @@ const CustomerDetail = () => {
     ]
     events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     setTimeline(events)
-  }
+  }, [user])
 
   useEffect(() => {
     const loadData = async () => {
@@ -99,7 +99,7 @@ const CustomerDetail = () => {
     }
 
     loadData()
-  }, [user, id])
+  }, [user, id, loadTimeline])
 
   const handleIncidentSubmit = async (data: { type: Incident['type']; memo: string; occurredAt: string }) => {
     if (!user || !id) return
