@@ -35,8 +35,14 @@ export interface Subsidy {
   region: string[]
 }
 
+/** GET /api/subsidies 응답 — 페이지네이션 포함 (이슈 #48) */
 export interface SubsidyListResponse {
   items: Subsidy[]
+  /** 페이지네이션 이전 전체 건수 */
   total: number
   sort: SortOption
+  page: number
+  limit: number
+  /** 다음 페이지 존재 여부 — "더보기" 버튼 노출 판단용 */
+  hasMore: boolean
 }

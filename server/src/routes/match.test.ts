@@ -6,6 +6,8 @@ vi.mock('../db/subsidies-repo.js', () => ({
   findAll: vi.fn(),
   findById: vi.fn(),
   match: vi.fn(),
+  DEFAULT_PAGE: 1,
+  DEFAULT_LIMIT: 20,
 }))
 
 vi.mock('../db/match-requests-repo.js', () => ({
@@ -50,22 +52,53 @@ beforeEach(() => {
 
 describe('POST /api/match', () => {
   it('유효한 프로필은 매칭 결과와 total을 반환한다', async () => {
-    mockMatch.mockResolvedValue([sample])
+    mockMatch.mockResolvedValue({ items: [sample], total: 1, page: 1, limit: 20, hasMore: false })
     const res = await request(app).post('/api/match').send({ profile: validProfile })
     expect(res.status).toBe(200)
     expect(res.body.total).toBe(1)
     expect(res.body.sort).toBe('match')
-    expect(mockMatch).toHaveBeenCalledWith(validProfile, 'match')
+    expect(res.body.page).toBe(1)
+    expect(res.body.limit).toBe(20)
+    expect(res.body.hasMore).toBe(false)
+    expect(mockMatch).toHaveBeenCalledWith(validProfile, 'match', 1, 20)
     expect(mockInsertMatchRequest).toHaveBeenCalledWith(validProfile, 'match')
   })
 
   it('sort 값을 함께 넘기면 repo에 전달된다', async () => {
-    mockMatch.mockResolvedValue([sample])
+    mockMatch.mockResolvedValue({ items: [sample], total: 1, page: 1, limit: 20, hasMore: false })
     const res = await request(app)
       .post('/api/match')
       .send({ profile: validProfile, sort: 'amount' })
     expect(res.status).toBe(200)
-    expect(mockMatch).toHaveBeenCalledWith(validProfile, 'amount')
+    expect(mockMatch).toHaveBeenCalledWith(validProfile, 'amount', 1, 20)
+  })
+
+  it('page/limit 값을 함께 넘기면 repo에 그대로 전달된다', async () => {
+    mockMatch.mockResolvedValue({ items: [sample], total: 25, page: 2, limit: 10, hasMore: true })
+    const res = await request(app)
+      .post('/api/match')
+      .send({ profile: validProfile, page: 2, limit: 10 })
+    expect(res.status).toBe(200)
+    expect(res.body.page).toBe(2)
+    expect(res.body.limit).toBe(10)
+    expect(res.body.hasMore).toBe(true)
+    expect(mockMatch).toHaveBeenCalledWith(validProfile, 'match', 2, 10)
+  })
+
+  it('limit이 100을 넘으면 400을 반환한다', async () => {
+    const res = await request(app)
+      .post('/api/match')
+      .send({ profile: validProfile, limit: 101 })
+    expect(res.status).toBe(400)
+    expect(mockMatch).not.toHaveBeenCalled()
+  })
+
+  it('page가 0 이하이면 400을 반환한다', async () => {
+    const res = await request(app)
+      .post('/api/match')
+      .send({ profile: validProfile, page: 0 })
+    expect(res.status).toBe(400)
+    expect(mockMatch).not.toHaveBeenCalled()
   })
 
   it('profile이 없으면 400을 반환한다', async () => {
@@ -97,7 +130,7 @@ describe('POST /api/match', () => {
   })
 
   it('매칭 요청 저장이 실패해도 조회 응답은 200을 유지한다', async () => {
-    mockMatch.mockResolvedValue([sample])
+    mockMatch.mockResolvedValue({ items: [sample], total: 1, page: 1, limit: 20, hasMore: false })
     mockInsertMatchRequest.mockRejectedValue(new Error('insert boom'))
     const res = await request(app).post('/api/match').send({ profile: validProfile })
     expect(res.status).toBe(200)

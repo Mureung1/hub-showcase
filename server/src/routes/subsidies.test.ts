@@ -6,6 +6,8 @@ vi.mock('../db/subsidies-repo.js', () => ({
   findAll: vi.fn(),
   findById: vi.fn(),
   match: vi.fn(),
+  DEFAULT_PAGE: 1,
+  DEFAULT_LIMIT: 20,
 }))
 
 import { app } from '../app.js'
@@ -37,26 +39,59 @@ beforeEach(() => {
 
 describe('GET /api/subsidies', () => {
   it('repo 결과와 total이 일치한다', async () => {
-    mockFindAll.mockResolvedValue([sample, { ...sample, id: '2' }])
+    mockFindAll.mockResolvedValue({
+      items: [sample, { ...sample, id: '2' }],
+      total: 2,
+      page: 1,
+      limit: 20,
+      hasMore: false,
+    })
     const res = await request(app).get('/api/subsidies')
     expect(res.status).toBe(200)
     expect(res.body.total).toBe(2)
     expect(res.body.items).toHaveLength(2)
+    expect(res.body.page).toBe(1)
+    expect(res.body.limit).toBe(20)
+    expect(res.body.hasMore).toBe(false)
   })
 
   it('잘못된 sort 값은 기본 정렬(match)로 처리된다', async () => {
-    mockFindAll.mockResolvedValue([sample])
+    mockFindAll.mockResolvedValue({ items: [sample], total: 1, page: 1, limit: 20, hasMore: false })
     const res = await request(app).get('/api/subsidies?sort=bogus')
     expect(res.status).toBe(200)
     expect(res.body.sort).toBe('match')
-    expect(mockFindAll).toHaveBeenCalledWith('match')
+    expect(mockFindAll).toHaveBeenCalledWith('match', 1, 20)
   })
 
   it('유효한 sort 값은 그대로 repo에 전달된다', async () => {
-    mockFindAll.mockResolvedValue([sample])
+    mockFindAll.mockResolvedValue({ items: [sample], total: 1, page: 1, limit: 20, hasMore: false })
     const res = await request(app).get('/api/subsidies?sort=deadline')
     expect(res.status).toBe(200)
-    expect(mockFindAll).toHaveBeenCalledWith('deadline')
+    expect(mockFindAll).toHaveBeenCalledWith('deadline', 1, 20)
+  })
+
+  it('page/limit 쿼리를 그대로 repo에 전달한다', async () => {
+    mockFindAll.mockResolvedValue({ items: [sample], total: 25, page: 2, limit: 10, hasMore: true })
+    const res = await request(app).get('/api/subsidies?page=2&limit=10')
+    expect(res.status).toBe(200)
+    expect(res.body.page).toBe(2)
+    expect(res.body.limit).toBe(10)
+    expect(res.body.hasMore).toBe(true)
+    expect(mockFindAll).toHaveBeenCalledWith('match', 2, 10)
+  })
+
+  it('잘못된(숫자가 아닌) page/limit 값은 기본값으로 대체된다', async () => {
+    mockFindAll.mockResolvedValue({ items: [sample], total: 1, page: 1, limit: 20, hasMore: false })
+    const res = await request(app).get('/api/subsidies?page=abc&limit=xyz')
+    expect(res.status).toBe(200)
+    expect(mockFindAll).toHaveBeenCalledWith('match', 1, 20)
+  })
+
+  it('limit이 100을 넘으면 기본값(20)으로 대체된다', async () => {
+    mockFindAll.mockResolvedValue({ items: [sample], total: 1, page: 1, limit: 20, hasMore: false })
+    const res = await request(app).get('/api/subsidies?limit=999')
+    expect(res.status).toBe(200)
+    expect(mockFindAll).toHaveBeenCalledWith('match', 1, 20)
   })
 
   it('repo가 실패하면 500을 반환한다', async () => {
@@ -83,7 +118,7 @@ describe('GET /api/subsidies/:id', () => {
   })
 
   it('빈 문자열 id 세그먼트는 목록 라우트로 처리된다', async () => {
-    mockFindAll.mockResolvedValue([sample])
+    mockFindAll.mockResolvedValue({ items: [sample], total: 1, page: 1, limit: 20, hasMore: false })
     const res = await request(app).get('/api/subsidies/')
     expect(res.status).toBe(200)
     expect(res.body.total).toBe(1)
