@@ -27,15 +27,17 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 load_dotenv(dotenv_path=ROOT / ".env")
 
 MODEL = "gemini-2.5-flash"  # 데모용 안정 flash 모델. (models.list 로 사용 가능 목록 확인 가능)
+MAX_TRIES = 2               # MIRI-14: Verifier 재시도 상한 (무한루프 방지)
 
 
 # ── State: 노드들 사이를 흐르는 공유 딕셔너리 ────────────────────────────
 class State(TypedDict):
     raw_text: str                 # 입력: 공지 원문
     extraction: Optional[dict]    # 출력: 추출된 구조화 정보
-    error: Optional[str]          # 실패 시 메시지  
+    error: Optional[str]          # 실패 시 메시지
     source: dict
     seq: str
+    tries: int                    # MIRI-14: Verifier 재시도 횟수 (상한 MAX_TRIES)
     
     
 def scout_node(state: State) -> dict:
@@ -45,9 +47,6 @@ def scout_node(state: State) -> dict:
     body = fetch_body(source, seq)  # 그 글의 본문
     return {"raw_text": body}
 
-def run(raw_text: str) -> dict:
-    """공지 원문 하나를 그래프에 넣고 결과 State를 돌려준다"""
-    return app.invoke({"raw_text": raw_text, "extraction": None, "error": None})
 
 # ── 노드: 그냥 파이썬 함수. State 읽고 -> State 업데이트(부분 dict) 반환 ──
 def extract_node(state: State) -> dict:
@@ -71,17 +70,35 @@ def extract_node(state: State) -> dict:
         return {"error": f"{type(e).__name__}: {e}"}
 
 
-# ── 그래프 조립: 노드 1개, 시작 -> extract -> 끝 ───────────────────────
+def verify_node(state: State) -> dict:
+    # MIRI-14: 추출 결과를 검사 관문에 세운다. 여기선 tries만 올리고,
+    # 통과/재시도 판정은 route_after_verify(라우터)가 맡는다.
+    return {"tries": state["tries"] + 1}
+
+
+def route_after_verify(state: State) -> str:
+    # State 보고 다음 선만 고른다(값 변경 X, 판단만). "retry"=extract로 되돌림 / "ok"=END.
+    if state["tries"] >= MAX_TRIES:
+        return "ok"                      # 상한 도달 → 포기하고 끝 (무한루프 방지)
+    ext = state.get("extraction")
+    if state.get("error") or not ext or not ext.get("events"):
+        return "retry"                   # 실패/빈 추출 → 다시 추출
+    return "ok"                          # 정상 → 끝
+
+
+# ── 그래프 조립: scout → extract ⇄ verify → 끝 (MIRI-14 순환) ─────────
 builder = StateGraph(State)
 builder.add_node("extract", extract_node)
-builder.add_node("scout", scout_node)  # MIRI-13: 보초 세우기 노드 추가)
-builder.add_edge("scout", "extract")  
+builder.add_node("scout", scout_node)    # MIRI-13: 보초 세우기 노드
+builder.add_node("verify", verify_node)  # MIRI-14: 추출 검증 관문
+builder.add_edge("scout", "extract")
+builder.add_edge("extract", "verify")    # 추출 결과는 항상 검증으로
+builder.add_conditional_edges("verify", route_after_verify, {"retry": "extract", "ok": END})
 builder.set_entry_point("scout")
-builder.add_edge("extract", END)
 app = builder.compile()
 
 
 def run(source, seq) -> dict:
     """공지 원문 하나를 그래프에 넣고 결과 State를 돌려준다."""
-    return app.invoke({"raw_text": "", "extraction": None, "error": None, "source": source, "seq": seq})
+    return app.invoke({"raw_text": "", "extraction": None, "error": None, "source": source, "seq": seq, "tries": 0})
 
