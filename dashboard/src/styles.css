@@ -54,10 +54,11 @@ button {
 .camp-banner img {
   position: absolute;
   right: max(24px, calc((100vw - 1320px) / 2 + 24px));
-  width: 360px;
+  width: 520px;
   height: 100%;
   object-fit: cover;
   object-position: center;
+  mix-blend-mode: multiply;
 }
 
 .page {
@@ -522,7 +523,7 @@ button {
 
   .camp-banner img {
     right: 12px;
-    width: 210px;
+    width: 260px;
   }
 
   .page {
