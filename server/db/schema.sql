@@ -50,6 +50,7 @@ create table article_keywords (
   unique (article_id, keyword_id)
 );
 
+-- 난이도별로 원문을 통째로 다시 쓰는 "쉽게 설명"용 (easy/medium만 씀, hard는 미사용)
 create table summaries (
   id uuid primary key default gen_random_uuid(),
   article_id uuid not null references articles(id) on delete cascade,
@@ -57,6 +58,14 @@ create table summaries (
   content text not null,
   created_at timestamptz not null default now(),
   unique (article_id, difficulty_level)
+);
+
+-- 난이도 구분 없는 단일 스타일 "AI 요약"용
+create table article_summaries (
+  id uuid primary key default gen_random_uuid(),
+  article_id uuid not null references articles(id) on delete cascade unique,
+  content text not null,
+  created_at timestamptz not null default now()
 );
 
 create table terms (
@@ -145,6 +154,7 @@ alter table user_keywords enable row level security;
 alter table articles enable row level security;
 alter table article_keywords enable row level security;
 alter table summaries enable row level security;
+alter table article_summaries enable row level security;
 alter table terms enable row level security;
 alter table article_terms enable row level security;
 alter table read_history enable row level security;

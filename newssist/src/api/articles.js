@@ -28,3 +28,19 @@ export async function markArticleRead(id) {
   if (!res.ok) throw new Error((await res.json()).error);
   return res.json();
 }
+
+export async function getArticleSummary(id) {
+  const res = await fetch(`/api/articles/${id}/summary`, {
+    headers: await authHeader(),
+  });
+  if (!res.ok) throw new Error((await res.json()).error);
+  return res.json();
+}
+
+export async function getArticleSimplified(id, level) {
+  const res = await fetch(`/api/articles/${id}/simplify?level=${level}`, {
+    headers: await authHeader(),
+  });
+  if (!res.ok) throw new Error((await res.json()).error);
+  return res.json();
+}
