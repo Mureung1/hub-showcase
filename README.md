@@ -3,8 +3,61 @@
 https://docs.google.com/presentation/d/17vEP-xWjFfviHcAl_nzCyjVUmIHb9qRV/edit?usp=sharing&ouid=100790024314221882298&rtpof=true&sd=true
 #위키링크
 https://github.com/dabinnida/hub/wiki
-# 2주차 주간 계획 노션(3주차 수정 중)
-https://app.notion.com/p/2-39cd247dcc5480258a2ac59d134c8a29
+# 3주차 주간 계획
+[https://app.notion.com/p/2-39cd247dcc5480258a2ac59d134c8a29](https://app.notion.com/p/1f4d247dcc54809caae6de69d3d37c3f?source=copy_link)
+
+
+## 아키텍처
+
+> 2026-07-22 기준. 실제로 연결된 부분과, 아직 안 된 부분(점선)을 구분해서 그렸습니다.
+
+```mermaid
+flowchart LR
+    subgraph Client["화면 React lifelog"]
+        Home["홈 화면 키워드카드 월별기록"]
+        Timeline["타임라인 화면 기간선택 카드"]
+        Modal["월별 기록 모달"]
+    end
+
+    subgraph Server["백엔드 Express 아직없음"]
+        API["API 엔드포인트 이름구조 미정"]
+    end
+
+    subgraph LLMLogic["LLM 분석로직 llmtest 안에 독립적으로만 존재"]
+        Prompt["프롬프트 조립 기존키워드 참고로직 포함"]
+    end
+
+    Gemini[("Gemini API")]
+    Supabase[("Supabase DB keywords테이블만 실제존재")]
+
+    Home -.->|"미연결"| API
+    Timeline -.->|"미연결"| API
+    Modal -.->|"미연결"| API
+    API -.->|"예정"| Prompt
+    Prompt -->|"실제호출"| Gemini
+    Gemini -->|"응답"| Prompt
+    Prompt -->|"조회저장"| Supabase
+```
+
+## 이 그림을 보고 내 말로 설명해보면
+
+지금 LifeLog는 세 개의 조각이 따로 움직이고 있는 상태입니다.
+
+1. React 화면은 완성되어 있지만, 전부 하드코딩된 더미 데이터로 보여지고 있어서 실제 서버나 DB랑은 아무 연결이 없습니다.
+2. LLM 분석 로직(llm-test)은 Gemini API와 Supabase에는 실제로 잘 연결되어 있고, 문장 하나를 넣으면 키워드를 뽑아 DB에 저장하는 것까지 확인했습니다.
+3. Express 서버가 아직 존재하지 않아서, 1번(화면)과 2번(LLM 로직)을 이어주는 다리가 없습니다.
+
+## 설명하면서 발견한 어색한 구조 / 빠진 연결
+
+- React ↔ 백엔드 연결이 전혀 없다
+- entries, monthly_records 테이블이 실제로 존재하지 않는다
+- llm-test가 독립 스크립트로만 존재한다
+
+## 다음 작업에 반영할 것
+
+1. Supabase에 entries 테이블 실제로 생성
+2. llm-test의 로직을 Express API 엔드포인트 안으로 옮기기
+3. React 화면의 더미 데이터를, 그 API를 호출하는 코드로 교체
 
 # about-me
 # AI Life Review - 기획 및 기술 설계
@@ -74,29 +127,23 @@ https://app.notion.com/p/2-39cd247dcc5480258a2ac59d134c8a29
 
 ---
 
-## 🛠 기술 스택(예정)
+## 🛠 기술 스택
 
 ### Front-End
-
-* React
-* TypeScript
-* Tailwind CSS
-* shadcn/ui
-* Framer Motion
+* React (JavaScript)
+* Vite
 
 ### Back-End
+* Node.js
+* Express
 
-* Next.js
-* Prisma
-* PostgreSQL
+### Database
+* Supabase (Postgres)
 
 ### AI
-
-* OpenAI API
-* LLM 기반 대화 분석
+* Gemini API
+* 프롬프트 기반 키워드·감정 추출 (기존 카테고리 재사용 로직 포함)
 * JSON 구조 정보 추출
-
----
 
 ## 📂 활용 데이터
 
