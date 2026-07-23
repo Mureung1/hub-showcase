@@ -5,6 +5,7 @@ import {
   lstat,
   mkdir,
   mkdtemp,
+  realpath,
   rm,
   writeFile,
 } from 'node:fs/promises'
@@ -22,6 +23,14 @@ import {
   admitRuntimeRelease,
 } from './runtime-release-authority.js'
 import {
+  createRuntimeCacheLayout,
+  createRuntimeStagingIdentity,
+  inspectRuntimeCacheRoot,
+  revalidateRuntimeCacheRootForMutation,
+} from './runtime-cache-authority.js'
+import {
+  publishVerifiedRuntimeGeneration,
+  verifyPublishedRuntimeGeneration,
   verifyRuntimeGenerationTree,
 } from './runtime-generation.js'
 
@@ -72,11 +81,179 @@ test('complete-tree verification rejects drift before a Runtime spawn', async ()
   }
 })
 
+test('publishes a staging receipt before rename and requires fresh tree readback', async () => {
+  const fixture = await createGenerationFixture()
+  try {
+    const published = await publishVerifiedRuntimeGeneration({
+      admission: fixture.admission,
+      canonicalManifestBytes: fixture.canonicalManifestBytes,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+      staging: await createStagingSnapshot(fixture),
+    })
+    const stagingStats = await lstat(
+      fixture.layout.generation.root,
+      { bigint: true },
+    )
+
+    assert.equal(
+      published.runtime.runtimeRoot,
+      fixture.layout.generation.runtimeRoot,
+    )
+    assert.equal(
+      published.receipt.generationIdentity.inode,
+      String(stagingStats.ino),
+    )
+    assert.equal(await pathExists(fixture.staging.path), false)
+    assert.equal(await pathExists(fixture.layout.generation.root), true)
+
+    const reused = await verifyPublishedRuntimeGeneration({
+      admission: fixture.admission,
+      canonicalManifestBytes: fixture.canonicalManifestBytes,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+    })
+    assert.deepEqual(reused?.runtime, published.runtime)
+
+    await writeFile(
+      path.join(
+        fixture.layout.generation.runtimeRoot,
+        'bundle/bridge/worker.py',
+      ),
+      'tampered after receipt\n',
+    )
+    await assert.rejects(
+      verifyPublishedRuntimeGeneration({
+        admission: fixture.admission,
+        canonicalManifestBytes: fixture.canonicalManifestBytes,
+        layout: fixture.layout,
+        mutationAuthority: fixture.mutationAuthority,
+        signal: new AbortController().signal,
+      }),
+      (error: unknown) =>
+        error instanceof RuntimeReleaseAuthorityError &&
+        error.failure.code === 'runtime_integrity_failed',
+    )
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('a competing final is preserved without publishing or trusting it', async () => {
+  const fixture = await createGenerationFixture()
+  try {
+    await assert.rejects(
+      publishVerifiedRuntimeGeneration(
+        {
+          admission: fixture.admission,
+          canonicalManifestBytes: fixture.canonicalManifestBytes,
+          layout: fixture.layout,
+          mutationAuthority: fixture.mutationAuthority,
+          signal: new AbortController().signal,
+          staging: await createStagingSnapshot(fixture),
+        },
+        {
+          beforeFinalAbsenceCheck: async () => {
+            await mkdir(fixture.layout.generation.root, {
+              mode: 0o700,
+            })
+            await writeFile(
+              path.join(fixture.layout.generation.root, 'foreign'),
+              'preserve me\n',
+            )
+          },
+        },
+      ),
+      (error: unknown) =>
+        error instanceof RuntimeReleaseAuthorityError &&
+        error.failure.code === 'runtime_recovery_required',
+    )
+    assert.equal(
+      await pathExists(
+        path.join(fixture.layout.generation.root, 'foreign'),
+      ),
+      true,
+    )
+    assert.equal(await pathExists(fixture.staging.path), true)
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('an abort after rename finishes strict readback without synthesizing ready', async () => {
+  const fixture = await createGenerationFixture()
+  const controller = new AbortController()
+  try {
+    const published = await publishVerifiedRuntimeGeneration(
+      {
+        admission: fixture.admission,
+        canonicalManifestBytes: fixture.canonicalManifestBytes,
+        layout: fixture.layout,
+        mutationAuthority: fixture.mutationAuthority,
+        signal: controller.signal,
+        staging: await createStagingSnapshot(fixture),
+      },
+      {
+        afterRename: async () => {
+          controller.abort()
+        },
+      },
+    )
+    assert.equal(published.cancelledAfterCommit, true)
+    assert.equal(
+      (
+        await verifyPublishedRuntimeGeneration({
+          admission: fixture.admission,
+          canonicalManifestBytes: fixture.canonicalManifestBytes,
+          layout: fixture.layout,
+          mutationAuthority: fixture.mutationAuthority,
+          signal: new AbortController().signal,
+        })
+      )?.generationIdentity.inode,
+      published.generationIdentity.inode,
+    )
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true })
+  }
+})
+
+async function createStagingSnapshot(
+  fixture: GenerationFixture,
+) {
+  const stagingTree = await verifyRuntimeGenerationTree({
+    admission: fixture.admission,
+    canonicalManifestBytes: fixture.canonicalManifestBytes,
+    expectedDevice: fixture.device,
+    expectedOwnerUid: process.getuid!(),
+    runtimeRoot: fixture.runtimeRoot,
+    signal: new AbortController().signal,
+  })
+  const stagingStats = await lstat(fixture.staging.path, {
+    bigint: true,
+  })
+  return {
+    kind: 'runtime_staging_verification_snapshot' as const,
+    release: fixture.admission.identity,
+    stagingRoot: fixture.staging.path,
+    runtimeRoot: fixture.runtimeRoot,
+    stagingIdentity: {
+      device: String(stagingStats.dev),
+      inode: String(stagingStats.ino),
+      ownerUid: Number(stagingStats.uid),
+    },
+    runtimeIdentity: stagingTree.runtimeIdentity,
+    tree: stagingTree.tree,
+  }
+}
+
 async function createGenerationFixture() {
-  const root = await mkdtemp(path.join(tmpdir(), 'ay-ple-generation-'))
-  await chmod(root, 0o700)
-  const runtimeRoot = path.join(root, 'runtime')
-  await mkdir(runtimeRoot, { mode: 0o700 })
+  const createdRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-generation-'),
+  )
+  await chmod(createdRoot, 0o700)
+  const root = await realpath(createdRoot)
   const payload = new Map<string, { bytes: Buffer; mode: 0o644 | 0o755 }>([
     ['NOTICE', { bytes: Buffer.from('AY-PLE notice\n'), mode: 0o644 }],
     [
@@ -198,6 +375,24 @@ async function createGenerationFixture() {
     runtimeContractVersion: 1,
     target: 'darwin-arm64',
   })
+  const layout = createRuntimeCacheLayout(root, admission)
+  for (const directory of [
+    path.dirname(layout.cacheRoot),
+    layout.cacheRoot,
+    ...Object.values(layout.namespaces),
+    path.join(
+      layout.namespaces.generations,
+      admission.identity.releaseId,
+    ),
+    path.dirname(layout.generation.root),
+  ]) {
+    await mkdir(directory, { recursive: true, mode: 0o700 })
+    await chmod(directory, 0o700)
+  }
+  const staging = createRuntimeStagingIdentity(layout, '1'.repeat(32))
+  await mkdir(staging.path, { mode: 0o700 })
+  const runtimeRoot = path.join(staging.path, 'runtime')
+  await mkdir(runtimeRoot, { mode: 0o700 })
   for (const [entryPath, value] of payload) {
     const destination = path.join(runtimeRoot, entryPath)
     await mkdir(path.dirname(destination), {
@@ -215,16 +410,24 @@ async function createGenerationFixture() {
     { flag: 'wx', mode: 0o644 },
   )
   const stats = await lstat(runtimeRoot, { bigint: true })
+  const inspection = await inspectRuntimeCacheRoot({
+    appDataRoot: root,
+  })
+  const mutationAuthority =
+    await revalidateRuntimeCacheRootForMutation(inspection)
   return {
     admission,
     canonicalManifestBytes,
     device: String(stats.dev),
+    layout,
+    mutationAuthority,
     regularFileBytes: entries.reduce(
       (total, entry) => total + entry.bytes,
       0,
     ),
     root,
     runtimeRoot,
+    staging,
   }
 }
 
@@ -260,4 +463,20 @@ function compareUnicodeCodePoints(left: string, right: string): number {
     }
   }
   return leftPoints.length - rightPoints.length
+}
+
+async function pathExists(targetPath: string): Promise<boolean> {
+  try {
+    await lstat(targetPath)
+    return true
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      error.code === 'ENOENT'
+    ) {
+      return false
+    }
+    throw error
+  }
 }
