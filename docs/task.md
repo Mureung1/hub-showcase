@@ -63,7 +63,7 @@
   - 푸시 권한 거부 시 인앱 폴링 폴백. Firebase 자격증명은 server/.env (커밋 금지)
   - 선행 작업: Firebase 프로젝트 생성 + 서비스 계정 키 발급
   - DoD: 딜 등록 → 조건에 맞는 기기에서 푸시 수신
-- [ ] **T-14 만료 처리** `server`
+- [x] **T-14 만료 처리** `server` — [#14](https://github.com/HappyGogildong/hub/issues/14)
   - 픽업 마감 경과 시: 딜 비활성화 + 미픽업 예약 만료 + 재고 복원(확정 정책)
   - DoD: 마감 지난 딜이 목록에서 사라지고 예약 상태가 `expired`로 전이
 - [ ] **T-15 k6 부하 테스트 — 오버셀 증명** `server` ★기술 셀링포인트
