@@ -51,3 +51,15 @@
 - 검증: `npm run verify` 통과(lint+build). 실제 `.env.local`(UPSTAGE_API_KEY·NOTION_TOKEN·NOTION_STEPS_DB_ID)로 dev 서버에서 `POST /api/brain-dump` 호출 → 5개 마이크로스텝이 title/estimatedMinutes/category/scheduledDate 전부 채워진 채 반환됨을 확인. Notion에 재조회해서 5건 전부 올바른 속성으로 저장된 것 확인, 이후 별도 스크립트로 archive 정리. `docs/checklist.md` C02 3개 전부 체크, `docs/backlog.md` T02 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신.
 - 미결: Solar가 structured output을 strict하게 지원하지 않는 점은 T13(모델 비교·결정)에서 다른 모델과 비교할 때 참고할 사항.
 - 확인: [x] 2026-07-22 18:30 GPT — 승인: C02·S1·S3 대조 및 npm run verify 재현 통과.
+
+## 2026-07-23 | T03 | One-Focus View 실데이터 연결
+- 작업: `app/lib/notion.js`에 `updatePage()` 범용 헬퍼 추가, `queryDatabase()`에 `sorts` 옵션 지원 추가. `app/api/steps/route.js`(GET) 신규 — `Done=false`이고 `ScheduledDate<=오늘`인 스텝만 생성 순서대로 조회해 Notion 페이지 id 포함 반환. `app/api/steps/complete/route.js`(POST) 신규 — id 받아서 `Done=true` 갱신. `app/page.js`가 Brain Dump 저장 직후 `/api/steps`로 다시 읽어와 진행하고, 타이머 종료 시 `/api/steps/complete` 호출 후 다음 스텝 또는 완료 화면으로 전환하도록 연결. FocusTimer 길이도 하드코딩 25분 대신 각 스텝의 실제 `estimatedMinutes`를 쓰도록 함께 고침.
+- 검증: `npm run verify` 통과. 실제 Notion으로 Brain Dump→저장→`/api/steps` 재조회(7건)→첫 스텝 완료 처리→재조회 시 6건으로 줄고 완료 처리한 id가 목록에서 빠짐을 확인. 테스트 데이터는 이후 archive 정리. `docs/checklist.md` C03 4개 전부 체크, `docs/backlog.md` T03 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신.
+- 미결: 없음
+- 확인: [x] 2026-07-23 20:44 GPT — 수정요청: 완료 API 실패 응답을 UI가 무시해 Done 영속을 보장하지 못함.
+
+## 2026-07-23 | T03 | GPT 리뷰 반영 — 완료 실패 시 다음 스텝으로 넘어가던 문제 수정
+- 작업: GPT 리뷰(수정요청)의 지적 반영. `handleStepFinish`가 `/api/steps/complete` 응답의 `ok` 상태를 확인하지 않고 무조건 다음 스텝으로 넘어가던 문제 수정. 이제 응답 실패나 네트워크 예외 시 `completeError` 상태를 세팅하고 다음 스텝으로 넘어가지 않으며, 화면에 재시도 버튼을 보여준다. 성공했을 때만 인덱스를 올리고 다음 화면으로 전환.
+- 검증: `npm run verify` 통과.
+- 미결: 없음
+- 확인: [ ]

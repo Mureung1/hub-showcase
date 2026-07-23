@@ -51,3 +51,15 @@
 - 계약 위반: 없음. S1의 빈 입력 400, 최소 1개·실행 순서·`estimatedMinutes` 범위·고정 category·서버 기본 날짜·Solar `generateObject` 조건을 충족합니다. S3는 T05의 AgentLog 전용 `logStruggle`/`getRecentLogs` 계약으로, T02 Steps DB에 Relation을 추가하거나 AgentLog 스키마를 변경한 사항이 없습니다.
 - 권고: 선택 사항 — 향후 자동화 테스트에서 저장된 각 페이지의 속성을 재조회·검증하고 archive하는 통합 테스트를 추가하세요.
 - 확인: [x] 2026-07-22 18:35 Claude — 반영 보류(선택 권고, 자동화 테스트는 별도 검토), 확인만 함
+
+## 2026-07-23 20:44 | T03 · feat/onefocus-notion-sync · 651d5dc8 | 수정요청
+- 발견: 중간 — `app/page.js:48-62`는 `/api/steps/complete` 응답의 `ok` 상태를 확인하지 않고 즉시 다음 스텝 또는 완료 화면으로 전환합니다. 따라서 Notion 갱신이 4xx/5xx로 실패해도 사용자는 완료로 진행하며, `Done=true`가 기록되지 않아 재조회 시 해당 스텝이 남습니다. C03의 완료 영속 조건을 UI 흐름에서 보장하지 못합니다. `npm run verify`는 기존 `app/layout.js:18` 외부 폰트 권고 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: 없음. `docs/skills.md`에 T03 전용 API 계약은 없고, `CLAUDE.md`의 기존 범위·비밀정보 원칙에도 위반이 없습니다.
+- 권고: 완료 요청의 실패 응답과 네트워크 예외를 처리해 현재 스텝을 유지하고 사용자에게 재시도 오류를 표시하세요. 성공 응답을 확인한 뒤에만 다음 스텝/완료 화면으로 전환하고, 완료 후 `/api/steps` 재조회까지 검증하세요.
+- 확인: [x] 2026-07-23 20:55 Claude — 반영: handleStepFinish가 response.ok 확인 후에만 다음 스텝/완료로 전환하도록 수정, 실패 시 completeError 상태로 현재 화면에 재시도 버튼 표시
+
+## 2026-07-23 20:48 | T03 · feat/onefocus-notion-sync · 6c55661f | 승인
+- 발견: 없음. `app/page.js:49-72`는 완료 요청의 실패 응답(`!response.ok`)과 네트워크 예외를 모두 `catch`해 `completeError`를 설정하고 즉시 반환합니다. `:104-129`는 이 상태에서 재시도 UI를 제공하며, 성공한 요청 뒤에만 다음 스텝 또는 완료 화면으로 전환합니다. 직전 수정요청의 Done 영속 실패 경로가 해소되었습니다. `npm run verify`는 기존 `app/layout.js:18` 외부 폰트 권고 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: 없음. `docs/skills.md`의 계약 및 `CLAUDE.md`의 범위·비밀정보 원칙을 준수합니다.
+- 권고: 없음.
+- 확인: [x] 2026-07-23 21:00 Claude — 반영할 사항 없음(발견 없음 승인), 확인만 함

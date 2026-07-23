@@ -10,7 +10,7 @@
 |---|---|---|---|---|---|---|
 | T01 | Notion 연동 기반 (토큰·DB 연결, `lib/notion.js`) | 2 | — | C01 | S3 | 완료 |
 | T02 | Brain Dump 스키마에 `category` 추가 + Notion 저장 | 2 | T01 | C02 | S1, S3 | 완료 |
-| T03 | One-Focus View를 실제 마이크로스텝 순회로 연결 | 3 | T02 | C03 | — | 대기 |
+| T03 | One-Focus View를 실제 마이크로스텝 순회로 연결 | 3 | T02 | C03 | — | 완료 |
 | T04 | Full Screen Timer 지속성 (새로고침 내구성) | 3 | T03 | C04 | — | 대기 |
 | T05 | AgentLog Notion DB 생성 + 기록/조회 `lib` | 4 | T01 | C05 | S3 | 대기 |
 | T06 | "힘들어" 루프 API route (tool 판단·reason·cold start) | 4 | T05 | C06 | S2 | 대기 |

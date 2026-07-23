@@ -22,8 +22,8 @@
 
 ## 현재 구현 상태 (작업 시 갱신)
 
-- **완료**: 화면 뼈대(6개 화면 조건부 렌더링, `docs/etc/component-tree.md`), Notion 연동 기반(`app/lib/notion.js`, T01), Brain Dump category 확장 + Notion 저장(T02) — `/api/brain-dump`가 실제로 Solar 호출 후 마이크로스텝을 Notion에 저장한다.
-- **진행/예정**: One-Focus View 실데이터 연결(T03)부터. Agent 루프(Feat-4)는 설계 동결, 미구현.
+- **완료**: 화면 뼈대(6개 화면 조건부 렌더링, `docs/etc/component-tree.md`), Notion 연동 기반(`app/lib/notion.js`, T01), Brain Dump category 확장 + Notion 저장(T02), One-Focus View 실데이터 연결(T03) — `/api/steps`로 Notion에서 오늘 할 일을 읽어와 순회하고, 완료 시 `/api/steps/complete`로 Done 갱신.
+- **진행/예정**: Full Screen Timer 지속성(T04)부터. Agent 루프(Feat-4)는 설계 동결, 미구현.
 - **아직 mock/미완**: AgentLog 미구현, "힘들어" 버튼은 여전히 고정 `RestSuggestion`로 직행.
 
 ## 현재 실행 명령
