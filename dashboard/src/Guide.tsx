@@ -75,8 +75,7 @@ export default function Guide() {
       <section className="guide-section guide-rules">
         <h2>작성할 내용</h2>
         <ul>
-          <li>`showcase.example.json`을 복사해 `showcase.json`을 만듭니다.</li>
-          <li>`category`는 작성하지 않습니다.</li>
+          <li>아래 예시 JSON을 복사해 프로젝트 최상위의 `showcase/showcase.json`으로 저장합니다.</li>
           <li>`agentTools`에는 Agent와 Skill을 함께 적습니다.</li>
           <li>`workflows`에는 개발 순서를 적습니다.</li>
           <li>`developmentWithAI`에는 AI와 함께 개발한 과정을 적습니다.</li>

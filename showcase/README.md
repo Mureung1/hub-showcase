@@ -21,6 +21,4 @@ showcase/
 }
 ```
 
-`category`는 작성하지 않습니다. 대시보드가 프로젝트 내용을 보고 분류합니다.
-
 `agentTools`에는 Agent와 Skill을 함께 적고, `workflows`에는 개발 순서를 적습니다.
