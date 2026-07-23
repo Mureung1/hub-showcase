@@ -3,6 +3,8 @@ import LoginPage from "./pages/LoginPage";
 import RecipeListPlaceholderPage from "./pages/RecipeListPlaceholderPage";
 import TransferInvitationPlaceholderPage from "./pages/TransferInvitationPlaceholderPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RecipeDraftPage from "./pages/RecipeDraftPage";
+import RecipeDraftRoute from "./components/RecipeDraftRoute";
 
 function App() {
   return (
@@ -24,6 +26,15 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/recipes/draft"
+        element={
+          <ProtectedRoute>
+            <RecipeDraftRoute>
+              <RecipeDraftPage />
+            </RecipeDraftRoute>
+          </ProtectedRoute>
+        } />
       <Route
         path="/transfer-invitations/:linkToken"
         element={

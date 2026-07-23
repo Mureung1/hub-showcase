@@ -23,21 +23,23 @@ function RecipeInputForm({ isPrepared, onCancel, onPrepare }) {
   const [rawText, setRawText] = useState("");
   const [sourceUrlError, setSourceUrlError] = useState("");
   const [inputError, setInputError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [requestError, setRequestError] = useState("");
 
   function handleSourceUrlChange(event) {
     setSourceUrl(event.target.value);
     setSourceUrlError("");
     setInputError("");
-    onPrepare(null);
+    setRequestError("");
   }
 
   function handleRawTextChange(event) {
     setRawText(event.target.value);
     setInputError("");
-    onPrepare(null);
+    setRequestError("");
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     const normalizedSourceUrl = sourceUrl.trim();
@@ -55,11 +57,28 @@ function RecipeInputForm({ isPrepared, onCancel, onPrepare }) {
       return;
     }
 
+    if (isSubmitting) {
+      return;
+    }
+
     setInputError("");
-    onPrepare({
-      sourceUrl: normalizedSourceUrl || null,
-      rawText: normalizedRawText || null,
-    });
+    setRequestError("");
+    setIsSubmitting(true);
+
+    try {
+      await onPrepare({
+        sourceUrl: normalizedSourceUrl || null,
+        rawText: normalizedRawText || null,
+      });
+    } catch (requestError) {
+      setRequestError(
+        requestError instanceof Error
+          ? requestError.message
+          : "레시피를 정리하지 못했습니다.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const fieldClassName =
@@ -123,6 +142,15 @@ function RecipeInputForm({ isPrepared, onCancel, onPrepare }) {
         </p>
       ) : null}
 
+      {requestError ? (
+        <p
+          className="mt-3 rounded-md bg-[#f8e9e3] px-3 py-2 text-xs text-[#8a3f2b]"
+          role="alert"
+        >
+          {requestError}
+        </p>
+      ) : null}
+
       {isPrepared ? (
         <p className="mt-3 rounded-md border border-[#b8aa82] bg-[#f3ecda] px-3 py-2 text-xs leading-5 text-[#5d563f]" role="status">
           입력 내용을 확인했습니다. 다음 단계에서 레시피 정리로 이어집니다.
@@ -134,6 +162,13 @@ function RecipeInputForm({ isPrepared, onCancel, onPrepare }) {
           전달받은 레시피가 있나요?{" "}
           <span className="font-semibold text-[#5d4a25]">코드 입력은 별도 화면에서 진행합니다.</span>
         </div>
+
+        {isSubmitting ? (
+          <p className="mt-3 text-xs text-[#626157]" role="status">
+            레시피를 정리하고 있습니다.
+          </p>
+        ) : null}
+
         <div className="flex justify-end gap-2.5 max-[700px]:grid max-[700px]:grid-cols-[auto_1fr]">
           <button
             type="button"
@@ -144,9 +179,10 @@ function RecipeInputForm({ isPrepared, onCancel, onPrepare }) {
           </button>
           <button
             type="submit"
+            disabled={isSubmitting}
             className="min-h-11 rounded-lg border border-[#061c16] bg-[#15332a] bg-[url(/design-assets/cookbook/leather-texture-tile.png)] bg-center bg-[length:220px] px-5 text-sm font-semibold text-[#f3e1b4]"
           >
-            레시피 정리하기
+            {isSubmitting ? "정리하는 중..." : "레시피 정리하기"}
           </button>
         </div>
       </div>
