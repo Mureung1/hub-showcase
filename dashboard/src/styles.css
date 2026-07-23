@@ -548,11 +548,15 @@ a,
 
   .camp-banner > .camp-title {
     left: 16px;
-    font-size: 19px;
+    max-width: calc(100% - 176px);
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
   }
 
   .camp-banner img {
-    width: min(360px, 52vw);
+    right: 12px;
+    width: 148px;
   }
 
   .page {
