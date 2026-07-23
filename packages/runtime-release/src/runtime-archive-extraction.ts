@@ -127,7 +127,26 @@ export type RuntimeArchiveExtractionInput = {
   readonly canonicalManifestBytes: Uint8Array
   readonly layout: RuntimeCacheLayout
   readonly mutationAuthority: RuntimeCacheMutationAuthority
+  readonly signal?: AbortSignal
   readonly staging: RuntimeStagingIdentity
+}
+
+export type RuntimeMaterializedTreeVerificationInput = {
+  readonly admission: RuntimeReleaseAdmission
+  readonly canonicalManifestBytes: Uint8Array
+  readonly expectedDevice: string
+  readonly expectedOwnerUid: number
+  readonly runtimeRoot: string
+  readonly signal: AbortSignal
+}
+
+export type RuntimeMaterializedTreeVerificationSnapshot = {
+  readonly runtimeIdentity: RuntimeFileSystemIdentity
+  readonly tree: {
+    readonly fileCount: number
+    readonly regularFileBytes: number
+    readonly symlinkCount: number
+  }
 }
 
 /**
@@ -177,6 +196,7 @@ export async function extractVerifiedRuntimeArchive(
   input: RuntimeArchiveExtractionInput,
   testOptions: RuntimeArchiveExtractionTestOptions = {},
 ): Promise<RuntimeStagingVerificationSnapshot> {
+  assertExtractionNotCancelled(input.signal)
   assertInputBindings(input)
   const canonicalManifestBytes = Buffer.from(
     input.canonicalManifestBytes,
@@ -278,6 +298,7 @@ export async function extractVerifiedRuntimeArchive(
       stagingIdentity,
       expectedOwnerUid:
         input.mutationAuthority.snapshot.expectedOwnerUid,
+      signal: input.signal,
       testOptions,
     })
     await assertFinalExtractionAuthority({
@@ -313,6 +334,127 @@ export async function extractVerifiedRuntimeArchive(
     await archive.close().catch(() => undefined)
     await Promise.all(
       [...retainedCapabilities]
+        .reverse()
+        .map((capability) =>
+          capability.close().catch(() => undefined),
+        ),
+    )
+  }
+}
+
+/**
+ * Reuses the extraction verifier against an already materialized Runtime
+ * tree. Cache reuse, generation publish readback, and the spawn boundary
+ * must all call this same complete-tree oracle rather than trust a receipt.
+ */
+export async function verifyMaterializedRuntimeTree(
+  input: RuntimeMaterializedTreeVerificationInput,
+): Promise<RuntimeMaterializedTreeVerificationSnapshot> {
+  assertExtractionNotCancelled(input.signal)
+  if (
+    !path.isAbsolute(input.runtimeRoot) ||
+    path.normalize(input.runtimeRoot) !== input.runtimeRoot ||
+    path.basename(input.runtimeRoot) !== RUNTIME_RECIPIENT_NAME
+  ) {
+    throw runtimeAuthorityError('runtime_cache_unsafe', {
+      kind: 'runtime_generation_root_invalid',
+    })
+  }
+  const canonicalManifestBytes = Buffer.from(
+    input.canonicalManifestBytes,
+  )
+  assertCanonicalManifestBytes(input.admission, canonicalManifestBytes)
+  const plan = createArchivePlan(
+    input.admission,
+    canonicalManifestBytes,
+  )
+  const parentRoot = path.dirname(input.runtimeRoot)
+  const parentIdentity = await inspectOwnedDirectory(
+    parentRoot,
+    input.expectedOwnerUid,
+    input.expectedDevice,
+    0o700,
+    'runtime_generation_parent',
+  )
+  const runtimeIdentity = await inspectOwnedDirectory(
+    input.runtimeRoot,
+    input.expectedOwnerUid,
+    input.expectedDevice,
+    0o700,
+    'runtime_generation_runtime',
+  )
+  const retainedCapabilities: RuntimeDirectoryCapability[] = []
+  try {
+    const parentCapability = await openDirectoryCapability({
+      absolutePath: parentRoot,
+      identity: parentIdentity,
+      mode: 0o700,
+      evidenceKind: 'runtime_generation_parent_open_failed',
+    })
+    retainedCapabilities.push(parentCapability)
+    const runtimeCapability = await openDirectoryCapability({
+      absolutePath: input.runtimeRoot,
+      identity: runtimeIdentity,
+      mode: 0o700,
+      evidenceKind: 'runtime_generation_runtime_open_failed',
+    })
+    retainedCapabilities.push(runtimeCapability)
+    const capabilities = new Map<string, RuntimeDirectoryCapability>([
+      ['', runtimeCapability],
+    ])
+    for (const directory of plan.directories) {
+      assertExtractionNotCancelled(input.signal)
+      const absolutePath = containedRuntimePath(
+        input.runtimeRoot,
+        directory.path,
+      )
+      const identity = await inspectOwnedDirectory(
+        absolutePath,
+        input.expectedOwnerUid,
+        input.expectedDevice,
+        0o755,
+        'runtime_generation_directory',
+      )
+      const capability = await openDirectoryCapability({
+        absolutePath,
+        identity,
+        mode: 0o755,
+        evidenceKind: 'runtime_generation_directory_open_failed',
+      })
+      retainedCapabilities.push(capability)
+      capabilities.set(directory.path, capability)
+    }
+    const verified = await verifyMaterializedRuntime({
+      admission: input.admission,
+      canonicalManifestBytes,
+      capabilities,
+      plan,
+      runtimeRoot: input.runtimeRoot,
+      stagingCapability: parentCapability,
+      stagingIdentity: parentIdentity,
+      expectedOwnerUid: input.expectedOwnerUid,
+      signal: input.signal,
+      testOptions: {},
+    })
+    assertExtractionNotCancelled(input.signal)
+    if (!sameIdentity(runtimeIdentity, verified.runtimeIdentity)) {
+      throw runtimeAuthorityError('runtime_integrity_failed', {
+        kind: 'runtime_generation_identity_changed',
+      })
+    }
+    return {
+      runtimeIdentity: verified.runtimeIdentity,
+      tree: {
+        fileCount: input.admission.manifest.payload.file_count,
+        regularFileBytes:
+          input.admission.manifest.payload.regular_file_bytes,
+        symlinkCount:
+          input.admission.manifest.payload.symlink_count,
+      },
+    }
+  } finally {
+    await Promise.all(
+      retainedCapabilities
         .reverse()
         .map((capability) =>
           capability.close().catch(() => undefined),
@@ -1686,8 +1828,10 @@ async function verifyMaterializedRuntime(input: {
   readonly stagingCapability: RuntimeDirectoryCapability
   readonly stagingIdentity: RuntimeFileSystemIdentity
   readonly expectedOwnerUid: number
+  readonly signal?: AbortSignal
   readonly testOptions: RuntimeArchiveExtractionTestOptions
 }): Promise<{ readonly runtimeIdentity: RuntimeFileSystemIdentity }> {
+  assertExtractionNotCancelled(input.signal)
   const runtimeCapability = input.capabilities.get('')
   if (runtimeCapability === undefined) {
     throw runtimeAuthorityError('runtime_recovery_required', {
@@ -1797,6 +1941,7 @@ async function visitMaterializedDirectory(
   input: Parameters<typeof verifyMaterializedRuntime>[0],
   observed: Set<string>,
 ): Promise<void> {
+  assertExtractionNotCancelled(input.signal)
   const names = [
     ...(await observeCapability(
       'runtime_archive_directory_observation_failed',
@@ -1804,6 +1949,7 @@ async function visitMaterializedDirectory(
     )),
   ].sort(compareUnicodeCodePoints)
   for (const name of names) {
+    assertExtractionNotCancelled(input.signal)
     const relative = relativeRoot
       ? path.posix.join(relativeRoot, name)
       : name
@@ -1913,6 +2059,7 @@ async function verifyMaterializedFile(
   expected: RuntimeManifestFileEntry | ArchiveManifestEntry,
   input: Parameters<typeof verifyMaterializedRuntime>[0],
 ): Promise<void> {
+  assertExtractionNotCancelled(input.signal)
   const opened = await observeCapability(
     'runtime_archive_extracted_file_open_failed',
     () => parent.openVerifiedFile(leaf),
@@ -1941,6 +2088,7 @@ async function verifyMaterializedFile(
       () =>
         parent.hashVerifiedFile(opened.handle, expected.bytes),
     )
+    assertExtractionNotCancelled(input.signal)
     handleOpen = false
     assertVerifiedMaterializedFileRead({
       absolute,
@@ -1978,6 +2126,7 @@ async function verifyMaterializedFile(
         () =>
           parent.hashVerifiedFile(rebound.handle, expected.bytes),
       )
+      assertExtractionNotCancelled(input.signal)
       reboundHandleOpen = false
       assertVerifiedMaterializedFileRead({
         absolute,
@@ -1997,6 +2146,16 @@ async function verifyMaterializedFile(
     if (handleOpen) {
       await parent.closeHandle(opened.handle).catch(() => undefined)
     }
+  }
+}
+
+function assertExtractionNotCancelled(
+  signal: AbortSignal | undefined,
+): void {
+  if (signal?.aborted === true) {
+    throw runtimeAuthorityError('runtime_cancelled', {
+      kind: 'runtime_archive_extraction_cancelled',
+    })
   }
 }
 
