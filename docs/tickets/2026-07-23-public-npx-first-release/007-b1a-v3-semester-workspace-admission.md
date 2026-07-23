@@ -52,7 +52,7 @@
 
 ## Candidate Evidence
 
-Current v2 compatibility/Spec review green을 보존하면서 후속 filesystem/durability review의 두 blocking finding까지 반영한 durability-only re-review candidate 증거다. Ticket state와 acceptance checkbox는 Coordinator review가 끝날 때까지 변경하지 않는다.
+Current v2 compatibility/Spec review green을 보존하면서 후속 filesystem/durability review의 temp hard-link ownership finding까지 반영한 durability-only re-review candidate 증거다. Ticket state와 acceptance checkbox는 Coordinator review가 끝날 때까지 변경하지 않는다.
 
 | Evidence | Result |
 | --- | --- |
@@ -62,21 +62,22 @@ Current v2 compatibility/Spec review green을 보존하면서 후속 filesystem/
 | Review remediation commit | `a6fe6fec3edb70353a44c920f271d91df97cdcdc` |
 | Compatibility/Spec remediation commit | `65d81133e3a9c1d4606ebd501ff81f009b5c90dd` |
 | Durability remediation commit | `b675111e7881b9ce338d046eac0d3fe62bd20bf5` |
-| Package codec/admission/fault/parity gate | `npm test -w @ay-ple/semester-workspace` — `33/33` green |
+| Hard-link ownership remediation commit | `229d2be0b720fa33405c516ef2a915eecfef3414` |
+| Package codec/admission/fault/parity gate | `npm test -w @ay-ple/semester-workspace` — `35/35` green |
 | Package compile gates | `npm run typecheck -w @ay-ple/semester-workspace`; `npm run build -w @ay-ple/semester-workspace` — green |
 | V3 conformance | Exact initial aggregate encode/fresh decode, positive safe integer `yearLevel`, bounded custom-capable term, opaque workspace ID, extra/nonempty/default drift rejection이 green |
 | Parent/root authority conformance | Exact `before_root_reservation` parent swap은 mutation 0으로 `authority_changed`, reservation 직후 swap은 displaced parent의 markerless root만 보존, marker fsync 뒤 swap은 displaced evidence bytes만 보존한다. Apply는 success 전까지 selected parent `(dev, ino)`와 reserved root identity를 다시 확인한다. |
 | Opaque plan ID와 preplanned evidence binding | Create `planId`는 digest와 독립적인 `workspace_plan_<128-bit random>` token이다. Raw token은 marker에 기록하지 않고 private HMAC binding으로 canonical root/parent, workspace ID, exact aggregate bytes/SHA-256, canonical owned-scaffold plan/SHA-256와 exact marker bytes/SHA-256를 bind한다. Marker는 post-`mkdir` root identity를 포함하지 않으며 wrong token, old authority digest를 유지한 workspace ID·aggregate 변조는 cross-instance resume에서 `collision`이다. |
-| Owned-incomplete topology | Root는 `.ay-ple/`, empty `inbox/`, empty `courses/`만, product root는 exact marker·known strict-prefix/exact temp·exact final state만 허용한다. Valid HMAC marker 아래 exact named temp의 strict prefix만 `owned_incomplete`로 분류하고, non-prefix·symlink·multi-link temp, nested file/subtree와 unknown entry는 repair하지 않은 채 collision으로 보존한다. |
-| Recovery durability | Resume는 no-follow로 연 regular single-link temp inode와 marker binding을 다시 확인한다. Strict prefix는 같은 검증된 inode를 truncate/write해 다시 채우고 file sync하며, 이미 complete지만 이전 write가 sync되지 않았을 수 있는 temp도 명시적으로 file sync한 뒤에만 no-clobber hard-link publish한다. Dirty complete temp trace에서 `after_state_temp_file_sync → before_state_publish` ordering이 green이다. |
+| Owned-incomplete topology | Root는 `.ay-ple/`, empty `inbox/`, empty `courses/`만, product root는 exact marker·known strict-prefix/exact temp·exact final state만 허용한다. Lone temp는 regular `nlink === 1`, publish 뒤 state+temp는 같은 `(dev, ino, birthtimeNs)`의 exact `nlink === 2` pair, temp unlink 뒤 state는 `nlink === 1`일 때만 소유 topology다. Valid HMAC marker 아래 non-prefix·symlink·unexpected multi-link temp, nested file/subtree와 unknown entry는 repair·publish·unlink하지 않은 채 collision으로 보존한다. |
+| Recovery durability | Resume는 no-follow로 연 regular single-link temp inode와 marker binding을 다시 확인한다. Strict prefix는 같은 검증된 inode를 truncate/write해 다시 채우고 file sync하며, 이미 complete지만 이전 write가 sync되지 않았을 수 있는 temp도 명시적으로 file sync한다. Create/resume가 만든 temp identity와 single-link count를 no-clobber hard-link publish 직전에 fresh reopen으로 다시 확인하고, cleanup도 exact two-name app pair만 unlink한다. Stable multi-link inspect와 `before_state_publish` link-count race는 state를 publish하지 않고 두 hard-link path를 보존한 `collision/conflict`로 끝나며, dirty complete temp ordering과 17-window recovery도 green이다. |
 | Final success binding | Evidence unlink와 directory sync 뒤 `created/resumed`를 반환하기 직전에 state를 fresh-read하고 precomputed aggregate SHA-256와 exact bytes를 모두 다시 비교한다. `after_evidence_unlink`에서 minified 또는 whitespace-only same-shape rewrite는 decode가 같아도 create/resume 모두 `conflict`이며 changed bytes를 덮어쓰지 않는다. |
 | Durability conformance | Before/after root reservation, marker create/write/file sync/directory sync, required directory create/sync, state temp create/write/file sync, no-clobber hard-link publish, directory sync, temp unlink/sync, readback, evidence unlink/sync를 분리했다. 17개 evidence-backed window는 cross-instance `owned_incomplete → resumed → admitted`, markerless/empty-marker window는 preserved collision, evidence unlink 뒤 fault window는 complete admitted로 수렴한다. |
 | V2 exact donor parity | Package root가 `decodeCurrentSemesterWorkspaceV2`를 canonical shared decoder로 제공한다. Retry invocation의 `sourceBaseline`은 donor처럼 fieldwise 비교하지만 execution-guard baseline은 donor의 JSON/key-order-sensitive 비교를 보존한다. Patch/Assignment evidence는 donor의 fixed-field clone 순서로 normalize한 뒤 비교한다. Donor-valid `>1 MiB`, 16-case guard-order matrix와 generated 408-case evidence-order matrix가 모두 Server donor와 일치한다. |
-| Compatibility/Spec review | Green candidate를 보존했다. Durability remediation은 current-v2 decoder/parity source를 바꾸지 않았고 root/package gate에서 16-case guard-order와 408-case evidence-order matrix를 다시 통과했다. |
+| Compatibility/Spec review | Green candidate를 보존했다. Durability와 hard-link ownership remediation은 current-v2 decoder/parity source를 바꾸지 않았고 root/package gate에서 16-case guard-order와 408-case evidence-order matrix를 다시 통과했다. |
 | V2/incompatible preservation | Fixture SHA-256 `b753a066ff3ea3e56a560f8dd89d16fec14dab71d5aa795f927a57197118ffa9`; decoder-valid current v2는 크기 1 MiB 초과도 `legacy_migration_required/readOnly`, malformed·future는 `incompatible/readOnly`; state와 unknown entry before/after byte identity green |
 | Root gates | `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `git diff --check 269a3555d3adf52bf520b3de0b99c7cb3fee3ae7...HEAD` — green |
 | Docs gate | `npm run check:docs-links` — active 28, historical 2 green |
-| Bounded manual smoke | Fresh temporary parent에서 torn temp `partialClassification: owned_incomplete → recover: resumed → reopen: admitted`, `exactRecoveredBytes: true`, `tempSyncBeforePublish: true`, `opaquePlanId: true`, `markerContainsPlanId: false`; same-shape post-unlink rewrite는 `conflict`, `driftSemanticEquality: true`, `driftHashChanged: true`; current v2는 `legacy_migration_required`, `v2ByteIdentity: true`; temporary root cleanup 완료 |
+| Bounded manual smoke | Fresh temporary parent에서 `create: created → reopen: admitted`; current v2는 `legacy_migration_required`, `v2ByteIdentity: true`; temporary root cleanup 완료 |
 | Independent re-review | Pending — 새 fixed candidate는 filesystem/durability re-review만 필요하다. Current v2 compatibility/Spec review green은 위 unchanged parity gate로 보존한다. |
 
 C-only follow-up은 다음 exact delta다. 이 lane에서는 C-owned Server source, manifest, lockfile과 README를 수정하지 않는다.
