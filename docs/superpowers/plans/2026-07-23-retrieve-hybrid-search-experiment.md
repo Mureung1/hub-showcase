@@ -75,8 +75,9 @@ Stage 1: 소규모 합성 탐색 평가
   - 제품 우월성 주장 금지
              |
              v
-Stage 1.5: 조건부 브라우저 확인
-  - 로컬 E5가 후보일 때만
+Stage 1.5: 클라이언트 측 의미 검색 모델 가정 검토
+  - 브라우저가 모델을 직접 실행하는 방식만 평가
+  - 실제 제품 아키텍처 검증과 구분
              |
              v
 Stage 2: 실제 개인 데이터 파일럿
@@ -536,13 +537,26 @@ npx tsc --noEmit -p tsconfig.node.json
 승인 요청서는
 `scripts/retrieve_experiment/gemini_approval_request.md`에 보존한다.
 
-### Task 5: 조건부 브라우저 benchmark
+### Task 5: 클라이언트 측 의미 검색 모델 실행 타당성 검토
 
-로컬 E5가 파일럿 후보일 때만 수행한다. 후보가 아니면 생략 이유를 보고서에 남긴다.
+이 Task는 의미 검색 후보인 `multilingual-e5-small` 임베딩 모델을 사용자의
+브라우저가 직접 다운로드하고 실행하는 방식을 가정했다. E5는 답변을 생성하는
+LLM이 아니라 문장과 자료를 의미 벡터로 변환하는 모델이다. `꺼내보기` 전체
+성능이나 확정된 제품 아키텍처를 검증한 것이 아니다.
 
-2026-07-23 후속 실측에서 Desktop Chrome 150.0.7871.181과 Android Chrome 148.0.7778.215 모두 측정에 성공했다. Worker 생성 직전부터 pipeline ready까지 재측정한 cold/cache load는 Desktop 34,108.635/2,294.865ms, Android 79,932.855/5,984.910ms다. 두 플랫폼의 고정 revision 필수 Cache Storage 항목과 cache 단계 CDP 원격 모델 요청 0건을 확인해 `cacheHitVerified: true`로 기록했다. cache 준비 뒤 첫 progress callback에서 Worker를 취소한 후 새 Worker의 ready, 첫 query, warm 20회, 384차원 복구도 모두 성공했다.
+실측 결과 최초 준비에는 약 159MB의 Cache Storage와 Desktop 약 34초, Android
+약 80초가 필요했다. 캐시가 준비된 뒤 query embedding은 빨랐지만, 최초
+다운로드와 매 실행의 모델 초기화 비용을 사용자가 부담하는 방식은 제품의 사용
+맥락에 맞지 않는다고 판단했다.
 
-메모리 API는 원래 `performance` receiver로 호출했다. cache 단계 첫 query 경계에서 Desktop 1,118,233 bytes, Android 1,088,856 bytes를 관측했고 다른 경계는 10초 제한에서 `null`로 기록했다. 단계 경계 관측치는 연속 peak가 아니다.
+따라서 클라이언트 측 로컬 E5 실행 방식은 채택 후보에서 제외한다. 이 결정은 E5와
+의미 검색 자체를 기각하지 않는다. 서버 E5와 애플리케이션 서버를 통한 관리형
+임베딩 API는 이 실험에서 평가하지 않았다.
+
+배경, 범위, 결과 해석과 결정은
+`scripts/retrieve_experiment/results/client_side_e5_decision_record.md`에,
+전체 관측값은 `browser_benchmark_report.md`와
+`browser_benchmark_result.json`에 보존한다.
 
 ### Task 6: 개인 데이터 파일럿
 
@@ -648,7 +662,14 @@ catch-all로 오류를 삼키고 다음 입력으로 넘어가지 않는다.
 | 2026-07-23 | 모든 유료 외부 API와 민감 데이터 작업은 사용자 명시 승인 후 실행          |
 | 2026-07-23 | 합성 탐색 뒤 로컬 E5 하이브리드를 개인 데이터 파일럿 후보로 유지          |
 | 2026-07-23 | Gemini Free Tier로 승인된 합성 문서 72개·query 45개 실행 완료             |
+| 2026-07-23 | 브라우저의 의미 검색 모델 직접 실행 방식은 초기 사용자 비용 때문에 기각함 |
 
 **현재 상태:** Task 0부터 Task 5까지 완료했다. 승인된 합성 문서 72개와 query 45개만 Gemini Free Tier로 실행했으며 117회 요청에서 실제 prompt token은 4,365개, 비용은 0달러였다. Semantic check에서 Gemini 의미 검색 단독은 Recall@5 1.000000, nDCG@6 0.942903으로 현행과 로컬 E5 하이브리드보다 높았지만, Gemini RRF 하이브리드는 nDCG@6 0.763331(`k=60`), 0.770573(`k=10`)으로 의미 검색 단독보다 낮았다. Negative check의 query당 평균 반환 수는 Gemini 의미 검색 0.6, 하이브리드 0.8로 현행과 로컬 E5 하이브리드의 0.2보다 많았다. 따라서 관리형 의미 모델은 후속 검토 가치가 있지만 단순 RRF 추가는 지지되지 않는다. 합성 결과는 운영 도입 근거가 아니며 개인 데이터 사용은 아직 발생하지 않았다.
 
-Task 5에서는 실제 Desktop Chrome 150.0.7871.181과 Android Chrome 148.0.7778.215를 각각 CDP와 ADB reverse를 통해 같은 localhost COOP/COEP origin에서 측정했다. `Xenova/multilingual-e5-small`의 고정 revision q8을 Worker의 실제 WASM backend로 실행했으며, desktop cold/cache load는 34,108.635/2,294.865ms, Android cold/cache load는 79,932.855/5,984.910ms였다. 두 플랫폼에서 고정 revision 필수 Cache Storage 항목과 cache 단계 CDP 원격 모델 요청 0건을 확인해 `cacheHitVerified: true`를 기록했다. cache 준비 뒤 첫 progress callback에서 Worker를 취소한 뒤 새 Worker의 ready, 첫 query, warm 20회와 `hidden → visible` 뒤 384차원 query 성공을 확인했다. `navigator.gpu` 지원과 실제 backend는 구분해 기록했다. 메모리 API는 원래 `performance` receiver로 호출했으며 cache 단계 첫 query 경계에서 Desktop 1,118,233 bytes, Android 1,088,856 bytes를 관측했다. 다른 경계는 10초 제한에서 `null`로 기록했고, 단계 경계 관측치를 연속 peak로 해석하지 않는다. WASM 크기는 Cache Storage `content-length` 단일 관측으로 4,732,131 bytes를 기록했다. 결과는 `scripts/retrieve_experiment/results/browser_benchmark_result.json`과 `scripts/retrieve_experiment/results/browser_benchmark_report.md`에 보존한다.
+Task 5는 브라우저에서 의미 검색용 E5 임베딩 모델을 직접 실행하는 가정만
+검토했다. 실제 브라우저에서 모델 준비와 query embedding을 측정한 결과, warm
+query는 빨랐지만 사용자가 약 159MB의 캐시와 Desktop 약 34초, Android 약 80초의
+최초 준비 비용을 부담해야 했다. 이 방식은 채택하지 않는다. 이 결론은 서버 E5나
+관리형 임베딩 API에 적용할 수 없으며, `꺼내보기` 전체 응답 시간으로 해석해서도
+안 된다. 독립적인 결정 기록은
+`scripts/retrieve_experiment/results/client_side_e5_decision_record.md`에 있다.

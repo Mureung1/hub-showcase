@@ -156,63 +156,27 @@ check의 query당 평균 반환 수도 Gemini 의미 검색 0.6, 하이브리드
 판독 결과는 `results/gemini_exploration_result.json`, 실제 요청 수·token·비용은
 `results/gemini_execution_receipt.json`에 있다.
 
-## Task 5 실제 브라우저 확인
+## Task 5 클라이언트 측 의미 검색 모델 타당성 검토
 
-### 후속 실측 기록
+이 Task는 `꺼내보기` 전체 성능이나 확정된 제품 아키텍처를 검증한 것이 아니다.
+의미 검색 후보인 `multilingual-e5-small` 임베딩 모델을 사용자의 브라우저가 직접
+다운로드하고 실행하는 방식을 가정한 제한적인 타당성 검토다. E5는 답변을
+생성하는 LLM이 아니라 문장과 자료를 의미 벡터로 변환하는 모델이다.
 
-아래 수치는 캐시 증거와 취소 관찰 방식을 보강한 뒤 다시 실행한 최종 기록이며, 이 절의 이전 수치를 대체합니다.
+실제 Desktop Chrome과 Android Chrome에서 최초 모델 준비, 캐시 후 재초기화,
+query embedding, Worker 취소와 복구를 측정했다. 최초 준비에는 약 159MB의
+Cache Storage와 Desktop 약 34초, Android 약 80초가 필요했다. 모델이 준비된
+뒤의 warm query는 빨랐지만, 최초 다운로드와 초기화 비용을 사용자가 부담하는
+방식은 `꺼내보기`의 사용 맥락에 맞지 않는다고 판단했다.
 
-| 항목                 | Desktop Chrome 150.0.7871.181 | Android Chrome 148.0.7778.215 |
-| -------------------- | ----------------------------: | ----------------------------: |
-| cold load            |                  34,108.635ms |                  79,932.855ms |
-| cache load           |                   2,294.865ms |                   5,984.910ms |
-| cache 첫 query       |                      52.910ms |                     216.210ms |
-| cache warm p50 / p95 |                결과 JSON 참조 |                결과 JSON 참조 |
+따라서 **클라이언트 측 로컬 E5 실행 방식은 채택 후보에서 제외한다.** 이 결정은
+E5나 의미 검색 자체를 기각한 것이 아니다. 서버 E5와 애플리케이션 서버를 통한
+관리형 임베딩 API는 별도 아키텍처 검토가 필요하다.
 
-메모리 API는 원래 `performance` receiver로 호출했다. cache 단계 첫 query 경계에서는 Desktop 1,118,233 bytes, Android 1,088,856 bytes를 관측했고, 다른 경계는 10초 제한에서 `null`로 기록했다. 이 값은 단계 경계 관측치일 뿐 연속 peak가 아니다.
-
-두 플랫폼 모두 고정 revision의 `config.json`, `tokenizer.json`, `tokenizer_config.json`, `model_quantized.onnx` Cache Storage 항목을 확인했다. cache 단계의 CDP 원격 모델 요청은 각각 0건이며, 따라서 `cacheHitVerified`는 `true`다. 취소는 cache 준비 뒤 기존 progress callback의 첫 신호에서 Worker를 종료했고, 새 Worker의 ready·첫 query·warm 20회·384차원 복구를 모두 확인했다. WASM 크기는 Cache Storage의 `content-length` 단일 관측으로 4,732,131 bytes를 기록했다.
-
-실행과 확인에는 다음 명령을 사용했다.
-
-```powershell
-npx tsx scripts/retrieve_experiment/run_browser_benchmark.ts
-npx vitest run scripts/retrieve_experiment/tests/browser_benchmark_contract.test.ts
-npx tsc --noEmit -p tsconfig.node.json
-```
-
-전용 계약 테스트는 12개 모두 통과했고, 타입 검사는 오류 없이 완료됐다.
-
-2026-07-23에 제품 앱과 분리한 localhost COOP/COEP 페이지에서 실제 Chrome을
-측정했다. 고정 모델 `Xenova/multilingual-e5-small`, revision
-`761b726dd34fb83930e26aab4e9ac3899aa1fa78`, q8, 384차원을 Worker의
-Transformers.js WASM backend로만 실행했다. 개인 데이터·API key·Gemini 호출은
-사용하지 않았다.
-
-| 항목                 | Desktop Chrome 150.0.7871.181 | Android Chrome 148.0.7778.215 |
-| -------------------- | ----------------------------: | ----------------------------: |
-| cold load            |                  30,272.365ms |                  65,525.245ms |
-| cache load           |                   2,315.080ms |                  11,694.190ms |
-| cold 첫 query        |                     142.625ms |                   1,108.960ms |
-| cache 첫 query       |                      50.590ms |                     515.955ms |
-| cache warm p50 / p95 |             13.735 / 27.410ms |            55.505 / 116.780ms |
-| Cache Storage delta  |             159,017,472 bytes |             159,017,472 bytes |
-
-progress callback으로 관측한 모델은 118,308,185 bytes, tokenizer는
-17,083,173 bytes, 기타 파일은 658 bytes다. ONNX WASM 파일은 callback에서
-분리 관측되지 않아 `null`로 기록했으며 Node 파일 크기로 보완하지 않았다.
-cold에는 동일 origin Cache Storage 삭제와 CDP HTTP cache 비활성화·초기화를,
-cache에는 cold 성공 뒤 새 Worker를 사용했다. Worker 종료 취소 뒤 새 cache
-Worker 전체 실행, 다른 tab으로 2초 이상 이동한 `hidden → visible`, 그리고
-384차원 복구 query를 두 플랫폼에서 모두 확인했다.
-
-두 브라우저 모두 `navigator.gpu`는 지원하지만 실제 backend는 `wasm`이다.
-`measureUserAgentSpecificMemory`는 원래 `performance` receiver로 호출했다. cache 단계
-첫 query 경계에서는 Desktop 1,118,233 bytes, Android 1,088,856 bytes를 관측했고, 다른
-경계는 10초 제한에서 `null`로 기록했다. 이 값은 단계 경계 관측치일 뿐 연속 peak가 아니다.
-모든 원시 관측값과 한계는
-`results/browser_benchmark_result.json` 및
-`results/browser_benchmark_report.md`에 있다.
+처음 읽는 사람을 위한 배경, 검증 범위, 결과 해석과 결정은
+`results/client_side_e5_decision_record.md`에 정리했다. 전체 관측값은
+`results/browser_benchmark_report.md`, 기계 판독 원본은
+`results/browser_benchmark_result.json`에 보존한다.
 
 ## 지표와 랭킹 계약
 
