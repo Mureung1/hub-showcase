@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -31,18 +31,29 @@
 
 ## Acceptance Criteria
 
-- [ ] 네 새 workspace가 최소 source/test/typecheck/build seam을 가지며 root install·test·typecheck·build graph에 결정론적으로 참여한다.
-- [ ] 각 package identity와 dependency direction이 유일하고 기존 app/package source를 복제하지 않는다.
-- [ ] Safe TAR parser production dependency가 `packages/runtime-release`의 exact dependency와 root lockfile에 한 번만 기록되고 설치 결과가 재현된다.
-- [ ] Root script가 새 workspace failure를 숨기지 않으며 기존 네 workspace gate의 의미와 순서를 깨뜨리지 않는다.
-- [ ] Compile-only scaffold에는 network, filesystem mutation, listener, Browser open 또는 release side effect가 없다.
-- [ ] Clean install 뒤 root baseline과 `git diff --check`가 green이다.
+- [x] 네 새 workspace가 최소 source/test/typecheck/build seam을 가지며 root install·test·typecheck·build graph에 결정론적으로 참여한다.
+- [x] 각 package identity와 dependency direction이 유일하고 기존 app/package source를 복제하지 않는다.
+- [x] Safe TAR parser production dependency가 `packages/runtime-release`의 exact dependency와 root lockfile에 한 번만 기록되고 설치 결과가 재현된다.
+- [x] Root script가 새 workspace failure를 숨기지 않으며 기존 네 workspace gate의 의미와 순서를 깨뜨리지 않는다.
+- [x] Compile-only scaffold에는 network, filesystem mutation, listener, Browser open 또는 release side effect가 없다.
+- [x] Clean install 뒤 root baseline과 `git diff --check`가 green이다.
 
 ## Verification
 
-- Targeted test or command: 새 네 workspace의 test·typecheck·build script와 safe TAR dependency resolution을 각각 실행한다.
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
-- Manual or live smoke: 없음. 이 slice의 제품 behavior는 의도적으로 0이다.
+| 범위 | Command | Outcome |
+| --- | --- | --- |
+| Clean install | `npm ci` | Green. Root lockfile에서 160 packages를 재현 설치했다. |
+| Workspace tests | `npm test -w @ay-ple/runtime-release -w @ay-ple/semester-workspace -w ay-ple -w @ay-ple/landing` | Green. 네 compile-only surface와 product behavior 0, exact app dependency roster, S0 non-release resource marker를 검증했다. |
+| Workspace typecheck | `npm run typecheck -w @ay-ple/runtime-release -w @ay-ple/semester-workspace -w ay-ple -w @ay-ple/landing` | Green. Strict ESM type graph와 `ay-ple → runtime-release + semester-workspace` compile edge를 검증했다. |
+| Workspace build | `npm run build -w @ay-ple/runtime-release -w @ay-ple/semester-workspace -w ay-ple -w @ay-ple/landing` | Green. 네 workspace의 declaration·JavaScript output을 생성했다. |
+| Dependency resolution | `npm ls tar-stream @types/tar-stream --all` | Green. `@ay-ple/runtime-release` 아래 `tar-stream@3.2.0`, `@types/tar-stream@3.1.4` exact resolution을 확인했다. |
+| Root tests | `npm test` | Green. 새 workspace를 포함한 root test roster 전체가 통과했다. |
+| Root typecheck | `npm run typecheck` | Green. 새 workspace를 포함한 root typecheck 순서 전체가 통과했다. |
+| Root build | `npm run build` | Green. Explicit clean/build roster와 기존 workspace 상대 순서를 유지한 전체 build가 통과했다. |
+| Chat Shell lint | `npm run lint -w @ay-ple/chat-shell` | Green. |
+| Documentation links | `npm run check:docs-links` | Green. Active documentation links 28개와 historical cutover banner 2개를 확인했다. |
+| Diff hygiene | `git diff --check`; `git show --check 9582a968349d87da031be92df6df9d26d549924b` | Green. |
+| Manual/live smoke | 실행하지 않음 | 이 slice의 network, filesystem mutation, listener, Browser와 release behavior는 의도적으로 0이다. |
 
 ## Blocked By
 
@@ -73,3 +84,17 @@ None — can start immediately.
 | requiredChecks | 새 workspace별 test/typecheck/build; `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `npm run check:docs-links`; `git diff --check` |
 | reviewOwner | C가 아닌 independent build/package-graph reviewer |
 | handoffArtifact | Reviewed fixed S0 commit SHA, exact lockfile digest, safe TAR dependency 선택·license 기록과 green scaffold receipt |
+
+## Result
+
+| 항목 | 결과 |
+| --- | --- |
+| Observable outcome | `packages/runtime-release`, `packages/semester-workspace`, `apps/ay-ple`, `apps/landing`이 compile-only ESM workspace로 root install·test·typecheck·build에 참여한다. Runtime download, workspace mutation, host/listener, Landing rendering과 publication behavior는 추가하지 않았다. |
+| Dependency graph | `ay-ple`의 exact workspace dependency는 `@ay-ple/runtime-release@0.0.0`, `@ay-ple/semester-workspace@0.0.0`, `@ay-ple/server@0.0.0`이다. Manifest·lockfile과 focused test가 이 edge를 소유한다. |
+| Resource root | `packages/semester-workspace/resources/workspace/**`는 `releaseResource: false`인 single S0 marker로만 track된다. Actual bundle entry를 추가하기 전에 marker를 제거해야 하며 둘은 공존할 수 없다. |
+| Implementation commits | `60174bec99661c83485287cbfbd3ce07dfd2ec4a`; `c73e66c99077f1790196adfedcc29b30116bf284`; `9582a968349d87da031be92df6df9d26d549924b` |
+| Final reviewed SHA | `9582a968349d87da031be92df6df9d26d549924b` |
+| Lockfile identity | SHA-256 `6dcc45c4d2aac146b925850f98a61a890e5f54360151598c3ccbf22040ba12ab` |
+| Safe TAR selection | `tar-stream@3.2.0` exact production dependency, MIT License. Type surface는 `@types/tar-stream@3.1.4` exact dev dependency다. Safe extraction policy 자체와 filesystem write는 이 slice에 구현하지 않았다. |
+| Independent review | Standards hard findings 0, Spec findings 0으로 green이다. Root gate roster 반복은 이 ticket이 deterministic root order를 명시적으로 소유하고 기존 repository pattern을 보존한다는 판단 아래 non-blocking으로 인정됐으며 deferred defect가 아니다. |
+| Parent state | Tickets 002–035가 아직 completed가 아니므로 parent spec은 변경하지 않았다. |
