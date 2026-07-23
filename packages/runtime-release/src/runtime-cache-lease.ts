@@ -39,7 +39,12 @@ type DurableRuntimeCacheLease = {
 }
 
 type LeaseContext = {
+  readonly appDataRoot: string
   readonly appDataIdentity: RuntimeFileSystemIdentity
+  readonly cacheParent: string
+  readonly cacheParentIdentity: RuntimeFileSystemIdentity
+  readonly cacheRoot: string
+  readonly cacheRootIdentity: RuntimeFileSystemIdentity
   readonly expectedOwnerUid: number
   readonly key: string
   readonly leaseDirectory: string
@@ -53,10 +58,14 @@ type InProcessFlight = {
   readonly durableBytes: Buffer
   readonly durableLease: DurableRuntimeCacheLease
   readonly lease: RuntimeCacheLayout['lease']
+  readonly ready: Promise<void>
+  readonly rejectReady: (error: unknown) => void
   readonly reject: (error: unknown) => void
+  readonly resolveReady: () => void
   readonly resolve: (
     receipt: RuntimeGenerationVerificationReceipt,
   ) => void
+  readonly testOptions: RuntimeCacheLeaseCoordinatorTestOptions
   active: boolean
   leaseIdentity?: RuntimeFileSystemIdentity
 }
@@ -72,9 +81,30 @@ const ACQUIRED_FLIGHTS = new WeakMap<
   InProcessFlight
 >()
 
+/**
+ * Package-private fault/race seam. Production callers must omit it.
+ */
+export type RuntimeCacheLeaseCoordinatorTestOptions = {
+  readonly afterCreateDirectorySync?: () => Promise<void>
+  readonly afterReleaseDirectorySync?: () => Promise<void>
+  readonly afterReleaseUnlink?: () => Promise<void>
+  readonly beforeJoinReadback?: () => Promise<void>
+  readonly beforeReleaseDirectorySync?: () => Promise<void>
+  readonly beforeReleaseUnlink?: () => Promise<void>
+  readonly expectedOwnerUid?: number
+}
+
 export class FileRuntimeCacheLeaseCoordinator
   implements RuntimeCacheLeaseCoordinator
 {
+  readonly #testOptions: RuntimeCacheLeaseCoordinatorTestOptions
+
+  constructor(
+    testOptions: RuntimeCacheLeaseCoordinatorTestOptions = {},
+  ) {
+    this.#testOptions = testOptions
+  }
+
   async acquireOrJoin(input: {
     readonly lease: RuntimeCacheLayout['lease']
     readonly owner: RuntimeCacheLeaseOwnerIdentity
@@ -82,7 +112,10 @@ export class FileRuntimeCacheLeaseCoordinator
   }): Promise<RuntimeCacheLeaseHandle> {
     assertOwner(input.owner)
     assertNotCancelled(input.signal)
-    const context = await inspectLeaseContext(input.lease)
+    const context = await inspectLeaseContext(
+      input.lease,
+      this.#testOptions.expectedOwnerUid,
+    )
     assertNotCancelled(input.signal)
     const caller = callerIdentity(input.owner)
     const existing = IN_PROCESS_FLIGHTS.get(context.key)
@@ -90,8 +123,33 @@ export class FileRuntimeCacheLeaseCoordinator
       if (
         existing.active &&
         existing.lease.path === input.lease.path &&
-        sameCaller(existing.caller, caller)
+        sameCaller(existing.caller, caller) &&
+        sameLeaseContext(existing.context, context)
       ) {
+        await detachOnAbort(existing.ready, input.signal)
+        assertNotCancelled(input.signal)
+        if (existing.active) {
+          await this.#testOptions.beforeJoinReadback?.()
+          await assertLeaseContextStable(existing.context)
+          const leaseIdentity = existing.leaseIdentity
+          if (leaseIdentity === undefined) {
+            throw runtimeAuthorityError(
+              'runtime_recovery_required',
+              {
+                kind:
+                  'runtime_cache_lease_join_authority_missing',
+              },
+            )
+          }
+          try {
+            await assertDurableLeaseReadback(
+              existing,
+              leaseIdentity,
+            )
+          } catch (error) {
+            if (existing.active) throw error
+          }
+        }
         return {
           kind: 'joined',
           completion: detachOnAbort(
@@ -113,6 +171,13 @@ export class FileRuntimeCacheLeaseCoordinator
     let rejectCompletion:
       | ((error: unknown) => void)
       | undefined
+    let resolveReady: (() => void) | undefined
+    let rejectReady: ((error: unknown) => void) | undefined
+    const ready = new Promise<void>((resolve, reject) => {
+      resolveReady = resolve
+      rejectReady = reject
+    })
+    void ready.catch(() => undefined)
     const completion =
       new Promise<RuntimeGenerationVerificationReceipt>(
         (resolve, reject) => {
@@ -136,8 +201,12 @@ export class FileRuntimeCacheLeaseCoordinator
       durableBytes,
       durableLease,
       lease: input.lease,
+      ready,
+      rejectReady: rejectReady!,
       reject: rejectCompletion!,
+      resolveReady: resolveReady!,
       resolve: resolveCompletion!,
+      testOptions: this.#testOptions,
     }
     IN_PROCESS_FLIGHTS.set(context.key, flight)
 
@@ -146,6 +215,7 @@ export class FileRuntimeCacheLeaseCoordinator
         flight,
         input.signal,
       )
+      flight.resolveReady()
       let handle: AcquiredLeaseHandle
       handle = {
         kind: 'acquired',
@@ -166,6 +236,7 @@ export class FileRuntimeCacheLeaseCoordinator
         IN_PROCESS_FLIGHTS.delete(context.key)
       }
       const normalized = normalizeLeaseAcquisitionError(error)
+      flight.rejectReady(normalized)
       flight.reject(normalized)
       throw normalized
     }
@@ -238,6 +309,7 @@ export class FileRuntimeCacheLeaseCoordinator
 
 async function inspectLeaseContext(
   lease: RuntimeCacheLayout['lease'],
+  expectedOwnerUidOverride?: number,
 ): Promise<LeaseContext> {
   if (
     lease.kind !== 'lease' ||
@@ -263,7 +335,8 @@ async function inspectLeaseContext(
       kind: 'runtime_cache_lease_layout_invalid',
     })
   }
-  const expectedOwnerUid = currentOwnerUid()
+  const expectedOwnerUid =
+    expectedOwnerUidOverride ?? currentOwnerUid()
   const canonicalAppDataRoot = await realpath(appDataRoot).catch(
     (error: unknown) => {
       throw runtimeAuthorityError('runtime_storage_unavailable', {
@@ -302,7 +375,12 @@ async function inspectLeaseContext(
     'runtime_cache_lease_directory',
   )
   return {
+    appDataRoot,
     appDataIdentity,
+    cacheParent,
+    cacheParentIdentity,
+    cacheRoot,
+    cacheRootIdentity,
     expectedOwnerUid,
     key:
       `${appDataIdentity.device}:${appDataIdentity.inode}:` +
@@ -317,7 +395,10 @@ async function createDurableLease(
   signal: AbortSignal,
 ): Promise<RuntimeFileSystemIdentity> {
   let handle: FileHandle | undefined
+  let commitStarted = false
   try {
+    assertNotCancelled(signal)
+    await assertLeaseContextStable(flight.context)
     assertNotCancelled(signal)
     handle = await open(
       flight.lease.path,
@@ -327,6 +408,7 @@ async function createDurableLease(
         constants.O_NOFOLLOW,
       0o600,
     )
+    commitStarted = true
     await handle.chmod(0o600)
     await handle.writeFile(flight.durableBytes)
     await handle.sync()
@@ -339,7 +421,8 @@ async function createDurableLease(
     await handle.close()
     handle = undefined
     await syncLeaseDirectory(flight)
-    assertNotCancelled(signal)
+    await flight.testOptions.afterCreateDirectorySync?.()
+    await assertLeaseContextStable(flight.context)
     await assertDurableLeaseReadback(flight, identity)
     return identity
   } catch (error) {
@@ -351,6 +434,12 @@ async function createDurableLease(
       })
     }
     if (error instanceof RuntimeReleaseAuthorityError) throw error
+    if (commitStarted) {
+      throw runtimeAuthorityError('runtime_recovery_required', {
+        kind: 'runtime_cache_lease_create_commit_failed',
+        cause: error,
+      })
+    }
     throw runtimeAuthorityError('runtime_storage_unavailable', {
       kind: 'runtime_cache_lease_create_failed',
       cause: error,
@@ -363,6 +452,7 @@ async function assertExistingLeaseIsPreserved(
 ): Promise<void> {
   let handle: FileHandle | undefined
   try {
+    await assertLeaseContextStable(flight.context)
     handle = await open(
       flight.lease.path,
       constants.O_RDONLY | constants.O_NOFOLLOW,
@@ -374,6 +464,7 @@ async function assertExistingLeaseIsPreserved(
       throw new Error('Runtime cache lease exceeds its bound')
     }
     decodeDurableLease(bytes)
+    await assertLeaseContextStable(flight.context)
   } catch (error) {
     throw runtimeAuthorityError('runtime_recovery_required', {
       kind: 'runtime_cache_lease_existing_ambiguous',
@@ -390,6 +481,7 @@ async function assertDurableLeaseReadback(
 ): Promise<void> {
   let handle: FileHandle | undefined
   try {
+    await assertLeaseContextStable(flight.context)
     handle = await open(
       flight.lease.path,
       constants.O_RDONLY | constants.O_NOFOLLOW,
@@ -399,6 +491,7 @@ async function assertDurableLeaseReadback(
       flight,
       expectedIdentity,
     )
+    await assertLeaseContextStable(flight.context)
     const bytes = await handle.readFile()
     if (!bytes.equals(flight.durableBytes)) {
       throw new Error('Runtime cache lease bytes changed')
@@ -428,8 +521,18 @@ async function removeDurableLease(
     flight,
     flight.leaseIdentity,
   )
+  await flight.testOptions.beforeReleaseUnlink?.()
+  await assertLeaseContextStable(flight.context)
+  await assertDurableLeaseReadback(
+    flight,
+    flight.leaseIdentity,
+  )
   await unlink(flight.lease.path)
+  await flight.testOptions.afterReleaseUnlink?.()
+  await flight.testOptions.beforeReleaseDirectorySync?.()
   await syncLeaseDirectory(flight)
+  await flight.testOptions.afterReleaseDirectorySync?.()
+  await assertLeaseContextStable(flight.context)
   try {
     await lstat(flight.lease.path)
     throw new Error('Runtime cache lease still exists')
@@ -444,6 +547,7 @@ async function syncLeaseDirectory(
 ): Promise<void> {
   let handle: FileHandle | undefined
   try {
+    await assertLeaseContextStable(flight.context)
     handle = await open(
       flight.context.leaseDirectory,
       constants.O_RDONLY |
@@ -465,8 +569,65 @@ async function syncLeaseDirectory(
       throw new Error('Runtime cache lease directory changed')
     }
     await handle.sync()
+    await assertLeaseContextStable(flight.context)
   } finally {
     await handle?.close().catch(() => undefined)
+  }
+}
+
+async function assertLeaseContextStable(
+  expected: LeaseContext,
+): Promise<void> {
+  try {
+    const canonicalAppDataRoot = await realpath(
+      expected.appDataRoot,
+    )
+    if (canonicalAppDataRoot !== expected.appDataRoot) {
+      throw new Error('Runtime cache app data root changed')
+    }
+    const appDataIdentity = await inspectOwnedDirectory(
+      expected.appDataRoot,
+      expected.expectedOwnerUid,
+      undefined,
+      'runtime_cache_lease_app_data_revalidation',
+    )
+    const cacheParentIdentity = await inspectOwnedDirectory(
+      expected.cacheParent,
+      expected.expectedOwnerUid,
+      appDataIdentity.device,
+      'runtime_cache_lease_parent_revalidation',
+    )
+    const cacheRootIdentity = await inspectOwnedDirectory(
+      expected.cacheRoot,
+      expected.expectedOwnerUid,
+      cacheParentIdentity.device,
+      'runtime_cache_lease_root_revalidation',
+    )
+    const leaseDirectoryIdentity = await inspectOwnedDirectory(
+      expected.leaseDirectory,
+      expected.expectedOwnerUid,
+      cacheRootIdentity.device,
+      'runtime_cache_lease_directory_revalidation',
+    )
+    if (
+      !sameIdentity(appDataIdentity, expected.appDataIdentity) ||
+      !sameIdentity(
+        cacheParentIdentity,
+        expected.cacheParentIdentity,
+      ) ||
+      !sameIdentity(cacheRootIdentity, expected.cacheRootIdentity) ||
+      !sameIdentity(
+        leaseDirectoryIdentity,
+        expected.leaseDirectoryIdentity,
+      )
+    ) {
+      throw new Error('Runtime cache lease context changed')
+    }
+  } catch (error) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_cache_lease_context_changed',
+      cause: error,
+    })
   }
 }
 
@@ -663,6 +824,30 @@ function sameCaller(
       right.applicationInstanceNonce &&
     left.processId === right.processId &&
     left.processStartIdentity === right.processStartIdentity
+  )
+}
+
+function sameLeaseContext(
+  left: LeaseContext,
+  right: LeaseContext,
+): boolean {
+  return (
+    left.appDataRoot === right.appDataRoot &&
+    left.cacheParent === right.cacheParent &&
+    left.cacheRoot === right.cacheRoot &&
+    left.expectedOwnerUid === right.expectedOwnerUid &&
+    left.key === right.key &&
+    left.leaseDirectory === right.leaseDirectory &&
+    sameIdentity(left.appDataIdentity, right.appDataIdentity) &&
+    sameIdentity(
+      left.cacheParentIdentity,
+      right.cacheParentIdentity,
+    ) &&
+    sameIdentity(left.cacheRootIdentity, right.cacheRootIdentity) &&
+    sameIdentity(
+      left.leaseDirectoryIdentity,
+      right.leaseDirectoryIdentity,
+    )
   )
 }
 
