@@ -4,7 +4,7 @@
 
 - State: claimed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: independent implementation review
 
 ## Parent Spec
 
@@ -83,6 +83,26 @@ Public host가 current working directory나 ambient environment를 신뢰하지 
 | Pre-H1a review | Runtime/semester package-root 공개면과 target guard의 fresh parent·caller-mutation·mutation-zero ordering을 각각 독립 검토했고 unresolved finding 0개로 PASS했다. |
 | Integration gates | Exact handoff에서 root `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs links와 `git diff --check`가 green이다. |
 | Scope | 이 branch는 `apps/ay-ple/src/**` 중 `host-contract.ts`를 제외한 H-owned source/tests와 이 ticket만 수정한다. Actual manifest/lock·release-generated package resources는 G lane까지 합성하지 않는다. |
+
+## Candidate Evidence
+
+이 절은 implementation candidate의 검증 범위를 기록하며 ticket 완료나 public artifact readiness를 선언하지 않는다.
+
+| Evidence | Result |
+| --- | --- |
+| Candidate | `4c3f374ae7ceccd155b7f8b821de7d2fac719920` — package resource verification, descriptor-driven compatibility, owner-only roots와 staged `D1 → C` startup을 한 production package-root surface로 조립했다. |
+| Targeted gates | `ay-ple` workspace test 92/92, typecheck와 build가 green이다. Root replacement, cancellation, bounded static traversal, package mutation과 pre-effect ordering regressions를 포함한다. |
+| Repository gates | Candidate source 기준 root `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs links와 `git diff --check`가 모두 exit 0이다. |
+| Built package roots | `@ay-ple/runtime-release`는 `RuntimeReleaseAuthorityError`, `createRuntimeResolverBundle`, `decodeRuntimeReleaseDescriptor`만, `@ay-ple/server`는 `ServerStartupCleanupError`, `createServerApplication`, `listenToServerApplication`만 노출한다. Built `ay-ple` root는 `ApplicationStartupError`, `admitApplicationStartup`만 노출한다. |
+| Local read-only smoke | macOS `26.5.2`, arm64 Node `22.22.3`, npm invocation hint `10.9.8`, `/Applications/Google Chrome.app`의 `com.google.Chrome` `150.0.7871.182`를 descriptor policy로 확인해 `ready`로 수렴했다. OAuth, external Runtime download, app-data 생성과 workspace mutation은 실행하지 않았다. |
+| Independent corrective review | Module-owned `import.meta.url`, effect-free pre-root Runtime semantic admission, five root revalidation boundaries, exact cleanup error와 bounded static traversal을 재검토해 H1a code blocker 0건으로 PASS했다. Fixed reviewed SHA는 별도 최종 review 뒤에만 정한다. |
+| Evidence class | Actual manifest/lock, release-generated resource roster와 public package가 아직 없으므로 현재 결과는 `synthetic_package_preflight`와 local compatibility evidence다. Public package authenticity나 clean-machine readiness를 주장하지 않는다. |
+
+## Known Cross-Package Residual
+
+H1a는 workspace resource tree를 descriptor-derived allowlist와 entry/depth budget으로 앞뒤 검사한다. 다만 `@ay-ple/semester-workspace`의 public `captureWorkspaceBundleSourceAt()`는 내부 recursive scan에 `AbortSignal`과 caller-supplied traversal budget을 받지 않는다. Bounded pre-scan 뒤 concurrent tree injection이 발생하면 post-scan에서 fail closed하지만 그 사이 scan work와 cancellation latency는 public donor가 제한하지 못한다.
+
+이는 H-owned private reimplementation으로 우회하지 않는다. 후속 `@ay-ple/semester-workspace` public capture seam이 bounded roster 또는 cancellation authority를 제공하면 H wrapper가 그 seam을 소비하고 이 residual을 제거한다. Static-site tree와 H-owned package descriptor traversal 자체는 현재 bounded fail-closed다.
 
 ## Delivery Handoff
 
