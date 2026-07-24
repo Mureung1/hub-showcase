@@ -15,6 +15,7 @@
   "scripts": {
     "dev": "NODE_OPTIONS=--conditions=development tsx watch src/server.ts",
     "build": "tsc",
+    "verify:package-root": "npm run build && tsx src/testing/verify-built-package-root.ts",
     "test": "NODE_OPTIONS=--conditions=development tsx --test \"src/**/*.test.ts\"",
     "test:product-shutdown-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/product-shutdown.actual.ts",
     "test:first-assignment-product-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/first-assignment-product.actual.ts",

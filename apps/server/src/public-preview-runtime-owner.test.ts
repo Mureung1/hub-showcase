@@ -1,11 +1,18 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import type {
+  CodexRuntimeRole,
+} from '@ay-ple/codex-chat-runtime'
 import {
   DeterministicCodexChatRuntime,
 } from '@ay-ple/codex-chat-runtime/testing'
+import type {
+  AdmittedSemesterWorkspace,
+} from '@ay-ple/semester-workspace'
 
 import {
+  PublicPreviewRuntimeStartError,
   createPublicPreviewRuntimeOwner,
   type PublicPreviewExpectedRuntimeBinding,
   type PublicPreviewRuntimeBootstrap,
@@ -119,6 +126,93 @@ test('a changed auth-only Runtime role is closed before owner creation fails', a
   )
 })
 
+test('an ambiguous auth-only role cleanup surfaces a stable Runtime start failure', async () => {
+  const closeCalls = { count: 0 }
+  const runtime = runtimeWithCloseSequence(
+    {
+      role: 'workspace',
+      workspaceRoot: '/unexpected/workspace',
+    },
+    closeCalls,
+    [{ status: 'ambiguous', processTreeGone: false }],
+  )
+
+  await assert.rejects(
+    createPublicPreviewRuntimeOwner(
+      runtimeBootstrap(async () => ({
+        runtimeRoot: '/verified/runtime',
+        identity: runtimeIdentity,
+      })),
+      expectedBinding,
+      async () => runtime,
+    ),
+    (error) => {
+      assert.ok(error instanceof PublicPreviewRuntimeStartError)
+      assert.equal(
+        error.code,
+        'public_preview_runtime_cleanup_ambiguous',
+      )
+      return true
+    },
+  )
+  assert.equal(closeCalls.count, 1)
+})
+
+test('a rejected workspace role cleanup stays owned for a later close retry', async () => {
+  const closeCalls = { count: 0 }
+  const authRuntime = new DeterministicCodexChatRuntime({
+    role: {
+      role: 'auth-only',
+      bootstrapCwd: '/controlled/bootstrap',
+    },
+  })
+  const changedWorkspaceRuntime = runtimeWithCloseSequence(
+    {
+      role: 'auth-only',
+      bootstrapCwd: '/unexpected/bootstrap',
+    },
+    closeCalls,
+    [
+      new Error('synthetic workspace cleanup failure'),
+      { status: 'closed', processTreeGone: true },
+    ],
+  )
+  let generation = 0
+  const owner = await createPublicPreviewRuntimeOwner(
+    runtimeBootstrap(async () => ({
+      runtimeRoot: '/verified/runtime',
+      identity: runtimeIdentity,
+    })),
+    expectedBinding,
+    async () => {
+      generation += 1
+      return generation === 1 ? authRuntime : changedWorkspaceRuntime
+    },
+  )
+  await owner.closeAuthOnly({ signal: signal() })
+
+  await assert.rejects(
+    owner.startWorkspace({
+      workspace: semesterWorkspace('3'),
+      signal: signal(),
+    }),
+    (error) => {
+      assert.ok(error instanceof PublicPreviewRuntimeStartError)
+      assert.equal(
+        error.code,
+        'public_preview_runtime_cleanup_ambiguous',
+      )
+      return true
+    },
+  )
+  assert.equal(closeCalls.count, 1)
+  assert.deepEqual(
+    await owner.closeCurrent({ signal: signal() }),
+    { status: 'closed', processTreeGone: true },
+  )
+  assert.equal(closeCalls.count, 2)
+})
+
 test('a mismatched initial release identity prevents the auth-only spawn', async () => {
   let spawnCalls = 0
 
@@ -205,4 +299,52 @@ function runtimeBootstrap(
 
 function signal(): AbortSignal {
   return new AbortController().signal
+}
+
+function semesterWorkspace(
+  digit: string,
+): AdmittedSemesterWorkspace {
+  const workspaceId = `workspace_${digit.repeat(32)}`
+  return {
+    canonicalRoot: '/semester/workspace',
+    workspaceId,
+    formatVersion: 3,
+    manifest: {
+      workspaceId,
+      semester: {
+        yearLevel: 2,
+        term: { key: '2', displayName: '2학기' },
+      },
+      courses: [],
+    },
+  }
+}
+
+function runtimeWithCloseSequence(
+  role: CodexRuntimeRole,
+  calls: { count: number },
+  outcomes: readonly (
+    | Error
+    | {
+        readonly status: 'closed'
+        readonly processTreeGone: true
+      }
+    | {
+        readonly status: 'ambiguous'
+        readonly processTreeGone: false
+      }
+  )[],
+): DeterministicCodexChatRuntime {
+  const runtime = new DeterministicCodexChatRuntime({ role })
+  const remaining = [...outcomes]
+  Object.defineProperty(runtime, 'close', {
+    value: async () => {
+      calls.count += 1
+      const outcome = remaining.shift()
+      if (!outcome) throw new Error('Unexpected Runtime close')
+      if (outcome instanceof Error) throw outcome
+      return outcome
+    },
+  })
+  return runtime
 }

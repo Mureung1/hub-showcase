@@ -127,7 +127,7 @@ Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Or
 
 ## NDJSON과 shutdown
 
-Neutral Server-private NDJSON writer는 legacy development product stream의 backpressure·disconnect와 bounded drain을 소유한다. `CodexChatService`는 Runtime terminal을 한 번 관찰하고 accepted operation의 interrupt·terminal·unknown settlement를 관리한다. `createServerApplication().close()`는 새 work·listener restart를 막고 listener close를 시작한 뒤 active command/picker/transition을 abort·drain하고 Runtime close를 한 promise로 수렴한다. Python·native process group과 pipe가 사라진 뒤에만 resolve하며 ambiguous public-preview Runtime cleanup은 성공으로 합성하지 않는다.
+Neutral Server-private NDJSON writer는 legacy development product stream의 backpressure·disconnect와 bounded drain을 소유한다. `CodexChatService`는 Runtime terminal을 한 번 관찰하고 accepted operation의 interrupt·terminal·unknown settlement를 관리한다. `createServerApplication().close()`는 새 work·listener restart를 막고 listener close를 시작한 뒤 active command/picker/transition을 abort·drain하고 Runtime close를 한 promise로 수렴한다. Python·native process group과 pipe가 사라진 뒤에만 resolve하며 ambiguous public-preview Runtime cleanup은 성공으로 합성하지 않는다. Listener bind 또는 address 확인 실패 뒤 application cleanup이 reject되면 원래 bind 오류로 덮지 않고 stable listener-start cleanup failure를 반환한다.
 
 `npm run test:product-entrypoint`는 root canonical command가 explicit `appDataRoot`와 workspace selection만으로 product API·Browser를 열고 legacy path를 무시하며 SIGINT 뒤 OS process graph와 port를 bounded하게 정리하는지 검증한다. `npm run test:product-shutdown-actual -w @ay-ple/server`는 product-capable Runtime process tree에서 listener refusal, close ordering과 child-of-child reap을 별도로 증명한다.
 
@@ -150,4 +150,7 @@ Live gate는 caller가 명시한 owner-only auth seed만 fresh `CODEX_HOME`으�
 npm run test -w @ay-ple/server
 npm run typecheck -w @ay-ple/server
 npm run build -w @ay-ple/server
+npm run verify:package-root -w @ay-ple/server
 ```
+
+`verify:package-root`는 먼저 Server를 build한 뒤 `NODE_OPTIONS`를 제거한 plain Node child에서 default-condition `@ay-ple/server`를 import한다. Runtime export가 `createServerApplication()`과 `listenToServerApplication()` 두 개뿐인지, application factory가 listener-independent인지와 close 뒤 child process가 종료되는지를 검증한다.

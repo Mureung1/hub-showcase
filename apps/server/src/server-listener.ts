@@ -16,6 +16,15 @@ export type StartedServerListener = {
   readonly port: number
 }
 
+export class ServerListenerStartError extends Error {
+  readonly code = 'server_listener_startup_cleanup_ambiguous'
+
+  constructor() {
+    super('Server listener startup cleanup was ambiguous')
+    this.name = 'ServerListenerStartError'
+  }
+}
+
 export async function listenToServerApplication(
   application: ServerApplication,
   options: ServerListenOptions,
@@ -37,7 +46,11 @@ export async function listenToServerApplication(
       port: (address as AddressInfo).port,
     }
   } catch (error) {
-    await application.close().catch(() => undefined)
+    try {
+      await application.close()
+    } catch {
+      throw new ServerListenerStartError()
+    }
     throw error
   }
 }

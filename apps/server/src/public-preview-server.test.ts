@@ -552,6 +552,83 @@ test('release bootstrap mismatches fail before owner creation, Runtime spawn or 
   }
 })
 
+test('composition snapshots validated route and display scalars before Runtime creation awaits', async () => {
+  const fixture = await createFixture({ authInitiallyConnected: true })
+  let feature: PublicPreviewFeatureComposition | undefined
+  try {
+    const origin = 'http://127.0.0.1:43123'
+    const suggestedLeafName = '2026-2학기'
+    const requiredApplicationCommand = 'npx ay-ple@0.0.1'
+    const bootstrap = fixture.bootstrap(origin)
+    let originReads = 0
+    let commandReads = 0
+    let suggestedLeaf = suggestedLeafName
+    Object.defineProperty(bootstrap, 'origin', {
+      get() {
+        originReads += 1
+        if (originReads > 1) {
+          throw new Error('origin was reread after Runtime creation')
+        }
+        return origin
+      },
+    })
+    Object.defineProperty(
+      bootstrap.setup,
+      'requiredApplicationCommand',
+      {
+        get() {
+          commandReads += 1
+          if (commandReads > 1) {
+            throw new Error(
+              'application command was reread after Runtime creation',
+            )
+          }
+          return requiredApplicationCommand
+        },
+      },
+    )
+    Object.defineProperty(bootstrap.setup, 'suggestedLeafName', {
+      get() {
+        return suggestedLeaf
+      },
+    })
+
+    feature = await createPublicPreviewFeatureComposition(
+      bootstrap,
+      {
+        async createRuntimeOwner() {
+          suggestedLeaf = ''
+          await Promise.resolve()
+          return fixture.runtimeOwner
+        },
+      },
+    )
+    const observed = await feature.adapter.observe({
+      signal: signal(),
+    })
+
+    assert.equal(feature.origin, origin)
+    assert.equal(originReads, 1)
+    assert.equal(commandReads, 1)
+    assert.equal(observed.status, 'ok')
+    assert.equal(observed.projection.setup.state, 'input_required')
+    if (observed.projection.setup.state !== 'input_required') {
+      assert.fail('input-required setup projection expected')
+    }
+    assert.equal(
+      observed.projection.setup.suggestedLeafName,
+      suggestedLeafName,
+    )
+  } finally {
+    if (feature) {
+      await feature.close({ signal: signal() })
+    } else {
+      await fixture.runtimeOwner.closeCurrent({ signal: signal() })
+    }
+    await fixture.cleanup()
+  }
+})
+
 test('unexpected adapter failures stay inside a strict safe 500 response', async () => {
   const origin = 'http://127.0.0.1:43123'
   let guardFailureCalls = 0

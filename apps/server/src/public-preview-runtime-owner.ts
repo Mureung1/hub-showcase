@@ -50,6 +50,15 @@ export type PublicPreviewExpectedRuntimeBinding = {
   }
 }
 
+export class PublicPreviewRuntimeStartError extends Error {
+  readonly code = 'public_preview_runtime_cleanup_ambiguous'
+
+  constructor() {
+    super('Public preview Runtime startup cleanup was ambiguous')
+    this.name = 'PublicPreviewRuntimeStartError'
+  }
+}
+
 export interface PublicPreviewRuntimeOwner {
   current(input: {
     readonly signal: AbortSignal
@@ -88,6 +97,9 @@ export async function createPublicPreviewRuntimeOwner(
   createRuntime: ManagedRuntimeFactory = createCodexChatRuntime,
 ): Promise<PublicPreviewRuntimeOwner> {
   const expected = cloneExpectedBinding(expectedBinding)
+  const authOnlyBootstrapCwd = input.authOnlyBootstrapCwd
+  const verifyRuntimeForSpawn =
+    input.spawn.verifyRuntimeForSpawn.bind(input.spawn)
   const application = {
     name: 'ay-ple',
     title: 'AY-PLE',
@@ -97,17 +109,15 @@ export async function createPublicPreviewRuntimeOwner(
   let current: CodexManagedRuntime | undefined = await spawnRuntime({
     role: {
       role: 'auth-only',
-      bootstrapCwd: input.authOnlyBootstrapCwd,
+      bootstrapCwd: authOnlyBootstrapCwd,
     },
     signal: new AbortController().signal,
   })
   if (
     current.role.role !== 'auth-only' ||
-    current.role.bootstrapCwd !== input.authOnlyBootstrapCwd
+    current.role.bootstrapCwd !== authOnlyBootstrapCwd
   ) {
-    await current.close({
-      signal: new AbortController().signal,
-    }).catch(() => undefined)
+    await requireSpawnedRuntimeClosed(current)
     throw new Error('The auth-only Runtime role changed')
   }
   let workspace: AdmittedSemesterWorkspace | undefined
@@ -116,7 +126,7 @@ export async function createPublicPreviewRuntimeOwner(
     readonly role: CodexRuntimeRole
     readonly signal: AbortSignal
   }): Promise<CodexManagedRuntime> {
-    const verified = await input.spawn.verifyRuntimeForSpawn({
+    const verified = await verifyRuntimeForSpawn({
       signal: spawnInput.signal,
     })
     if (
@@ -171,14 +181,15 @@ export async function createPublicPreviewRuntimeOwner(
         },
         signal,
       })
+      current = runtime
       if (
         runtime.role.role !== 'workspace' ||
         runtime.role.workspaceRoot !== nextWorkspace.canonicalRoot
       ) {
-        await runtime.close({ signal }).catch(() => undefined)
+        await requireSpawnedRuntimeClosed(runtime)
+        current = undefined
         throw new Error('The workspace Runtime role changed')
       }
-      current = runtime
       workspace = cloneWorkspace(nextWorkspace)
     },
     async readFreshWorkspaceAccount({ signal }) {
@@ -212,6 +223,22 @@ export async function createPublicPreviewRuntimeOwner(
         nativeContext: runtime,
       })
     },
+  }
+}
+
+async function requireSpawnedRuntimeClosed(
+  runtime: CodexManagedRuntime,
+): Promise<void> {
+  let result: CodexRuntimeCloseResult
+  try {
+    result = await runtime.close({
+      signal: new AbortController().signal,
+    })
+  } catch {
+    throw new PublicPreviewRuntimeStartError()
+  }
+  if (result.status !== 'closed' || !result.processTreeGone) {
+    throw new PublicPreviewRuntimeStartError()
   }
 }
 

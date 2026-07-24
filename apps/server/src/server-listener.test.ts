@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
+import { createServer as createNetServer } from 'node:net'
 import path from 'node:path'
 import test from 'node:test'
 
@@ -9,7 +10,10 @@ import {
   materializeE2eSemesterWorkspace,
 } from '../../../scripts/semester-workspace-materializer.mjs'
 import { createServerApplication } from './server-application.js'
-import { listenToServerApplication } from './server-listener.js'
+import {
+  ServerListenerStartError,
+  listenToServerApplication,
+} from './server-listener.js'
 import { configuredBootstrap } from './testing/codex-chat-test-support.js'
 
 test('the TCP listener composes around the host application and refuses intake after close', async () => {
@@ -89,6 +93,46 @@ test('a closing Server application rejects its first listener claim', async () =
     /Server application is closing/u,
   )
   await closing
+})
+
+test('listener refusal surfaces a stable failure when application cleanup rejects', async () => {
+  const blocker = createNetServer()
+  await new Promise<void>((resolve, reject) => {
+    blocker.once('error', reject)
+    blocker.listen(0, '127.0.0.1', resolve)
+  })
+  const address = blocker.address()
+  assert.ok(address && typeof address === 'object')
+  const application = await createServerApplication()
+  const closeApplication = application.close.bind(application)
+  Object.defineProperty(application, 'close', {
+    value: async () => {
+      await closeApplication()
+      throw new Error('synthetic application cleanup failure')
+    },
+  })
+
+  try {
+    await assert.rejects(
+      listenToServerApplication(application, {
+        host: '127.0.0.1',
+        port: address.port,
+      }),
+      (error) => {
+        assert.ok(error instanceof ServerListenerStartError)
+        assert.equal(
+          error.code,
+          'server_listener_startup_cleanup_ambiguous',
+        )
+        return true
+      },
+    )
+  } finally {
+    await closeApplication()
+    await new Promise<void>((resolve, reject) => {
+      blocker.close((error) => error ? reject(error) : resolve())
+    })
+  }
 })
 
 test('application close refuses listener intake before Runtime close completes', async () => {

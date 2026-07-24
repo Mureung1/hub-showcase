@@ -110,15 +110,26 @@ export async function createPublicPreviewFeatureComposition(
   input: PublicPreviewServerBootstrap,
   testing: PublicPreviewCompositionTesting = {},
 ): Promise<PublicPreviewFeatureComposition> {
-  requireLocalOrigin(input.origin)
-  const release = structuredClone(input.setup.release)
-  const bundleSource = structuredClone(input.setup.bundleSource)
+  const applicationVersion = input.applicationVersion
+  const origin = input.origin
+  const runtime = input.runtime
+  const setup = input.setup
+  const requiredApplicationCommand =
+    setup.requiredApplicationCommand
+  const suggestedLeafName = setup.suggestedLeafName
+  requireLocalOrigin(origin)
+  if (!isOpaqueValue(suggestedLeafName)) {
+    throw new TypeError(
+      'Public preview display bootstrap is inconsistent',
+    )
+  }
+  const release = structuredClone(setup.release)
+  const bundleSource = structuredClone(setup.bundleSource)
   requireCoherentReleaseBootstrap({
-    applicationVersion: input.applicationVersion,
+    applicationVersion,
     bundleSource,
     release,
-    requiredApplicationCommand:
-      input.setup.requiredApplicationCommand,
+    requiredApplicationCommand,
   })
   const expectedRuntime: PublicPreviewExpectedRuntimeBinding = {
     applicationVersion: release.application.packageVersion,
@@ -131,24 +142,24 @@ export async function createPublicPreviewFeatureComposition(
   const stateStore =
     testing.stateStore ??
     createSetupEnvelopeStore({
-      appDataRoot: input.setup.appDataRoot,
+      appDataRoot: setup.appDataRoot,
     })
   const parentSelection = createPublicPreviewParentSelectionPort({
     pick:
-      input.setup.pickParentDirectory ??
+      setup.pickParentDirectory ??
       createMacOsPublicPreviewParentPicker(),
-    userHome: input.setup.displayUserHome,
+    userHome: setup.displayUserHome,
     createSelectionId: testing.createParentSelectionId,
   })
   const presentReadyWorkspace = createReadyWorkspacePresenter({
-    userHome: input.setup.displayUserHome,
+    userHome: setup.displayUserHome,
   })
   const runtimeOwner =
     testing.runtimeOwner ??
     await (
       testing.createRuntimeOwner ??
       createPublicPreviewRuntimeOwner
-    )(input.runtime, expectedRuntime)
+    )(runtime, expectedRuntime)
   try {
     let accountAdapter: AccountRuntimeRouteAdapter | undefined
     const coordinator = createAccountRuntimeCoordinator<
@@ -218,9 +229,8 @@ export async function createPublicPreviewFeatureComposition(
       journey,
       parentSelection,
       projectionContext: {
-        suggestedLeafName: input.setup.suggestedLeafName,
-        requiredApplicationCommand:
-          input.setup.requiredApplicationCommand,
+        suggestedLeafName,
+        requiredApplicationCommand,
         readyAttested: isReadyAttested,
         presentReadyWorkspace,
       },
@@ -241,11 +251,11 @@ export async function createPublicPreviewFeatureComposition(
     }
 
     return {
-      origin: input.origin,
+      origin,
       adapter,
       router: createPublicPreviewRouter({
         adapter,
-        origin: input.origin,
+        origin,
       }),
       async admitAcademicAction() {
         const workspace = adapter.currentReadyWorkspace()
