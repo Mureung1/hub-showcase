@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
+import type { RequestListener } from 'node:http'
 import { createServer as createNetServer } from 'node:net'
 import path from 'node:path'
 import test from 'node:test'
@@ -11,6 +12,7 @@ import {
 } from '../../../scripts/semester-workspace-materializer.mjs'
 import { createServerApplication } from './server-application.js'
 import {
+  bindServerApplicationListener,
   listenToServerApplication,
 } from './server-listener.js'
 import { configuredBootstrap } from './testing/codex-chat-test-support.js'
@@ -49,6 +51,165 @@ test('the TCP listener composes around the host application and refuses intake a
     await assert.rejects(fetch(`${baseUrl}/api/product/bootstrap`))
   } finally {
     await started.application.close()
+  }
+})
+
+test('a pre-bound listener serves a bootstrap delegate before attaching one application', async () => {
+  let requestHandler: RequestListener = (_request, response) => {
+    response.statusCode = 503
+    response.setHeader('content-type', 'text/plain; charset=utf-8')
+    response.end('starting')
+  }
+  const listener = await bindServerApplicationListener({
+    host: '127.0.0.1',
+    port: 0,
+    requestHandler: (request, response) =>
+      requestHandler(request, response),
+  })
+  const baseUrl = `http://127.0.0.1:${listener.port}`
+  const application = await createServerApplication()
+
+  try {
+    const starting = await fetch(`${baseUrl}/`)
+    assert.equal(starting.status, 503)
+    assert.equal(await starting.text(), 'starting')
+
+    const attached = listener.attach(application)
+    requestHandler = application.app
+    assert.equal(attached.application, application)
+    assert.equal(attached.port, listener.port)
+    assert.throws(
+      () => listener.attach(application),
+      /already attached/u,
+    )
+
+    const ready = await fetch(`${baseUrl}/api/product/bootstrap`)
+    assert.equal(ready.status, 200)
+
+    const closeSignal = new AbortController().signal
+    assert.deepEqual(
+      await attached.close({ signal: closeSignal }),
+      { status: 'closed', processTreeGone: true },
+    )
+    await assert.rejects(fetch(`${baseUrl}/api/product/bootstrap`))
+  } finally {
+    await listener.close({
+      signal: new AbortController().signal,
+    })
+    await application.close()
+  }
+})
+
+test('a pre-bound listener can close before application attachment and rejects late attach', async () => {
+  const listener = await bindServerApplicationListener({
+    host: '127.0.0.1',
+    port: 0,
+    requestHandler: (_request, response) => {
+      response.statusCode = 503
+      response.end()
+    },
+  })
+  const application = await createServerApplication()
+  const baseUrl = `http://127.0.0.1:${listener.port}`
+
+  try {
+    assert.equal((await fetch(baseUrl)).status, 503)
+    const firstClose = listener.close({
+      signal: new AbortController().signal,
+    })
+    assert.throws(
+      () => listener.attach(application),
+      /listener is closing/u,
+    )
+    const secondClose = listener.close({
+      signal: new AbortController().signal,
+    })
+    assert.equal(secondClose, firstClose)
+    assert.deepEqual(
+      await firstClose,
+      { status: 'closed', processTreeGone: true },
+    )
+    await assert.rejects(fetch(baseUrl))
+  } finally {
+    await listener.close({
+      signal: new AbortController().signal,
+    })
+    await application.close()
+  }
+})
+
+test('a pre-bound listener preserves bind refusal without attaching an application', async () => {
+  const blocker = createNetServer()
+  await new Promise<void>((resolve, reject) => {
+    blocker.once('error', reject)
+    blocker.listen(0, '127.0.0.1', resolve)
+  })
+  const address = blocker.address()
+  assert.ok(address && typeof address === 'object')
+
+  try {
+    await assert.rejects(
+      bindServerApplicationListener({
+        host: '127.0.0.1',
+        port: address.port,
+        requestHandler: (_request, response) => {
+          response.statusCode = 503
+          response.end()
+        },
+      }),
+      (error) => {
+        assert.ok(error instanceof Error)
+        assert.equal(
+          (error as NodeJS.ErrnoException).code,
+          'EADDRINUSE',
+        )
+        return true
+      },
+    )
+  } finally {
+    await new Promise<void>((resolve, reject) => {
+      blocker.close((error) => error ? reject(error) : resolve())
+    })
+  }
+})
+
+test('a pre-bound listener cannot steal an application claimed by another listener', async () => {
+  const application = await createServerApplication()
+  const existing = await listenToServerApplication(application, {
+    host: '127.0.0.1',
+    port: 0,
+  })
+  const pending = await bindServerApplicationListener({
+    host: '127.0.0.1',
+    port: 0,
+    requestHandler: (_request, response) => {
+      response.statusCode = 503
+      response.end()
+    },
+  })
+
+  try {
+    assert.throws(
+      () => pending.attach(application),
+      /listener lifecycle is already claimed/u,
+    )
+    assert.equal(
+      (
+        await fetch(
+          `http://127.0.0.1:${existing.port}/api/product/bootstrap`,
+        )
+      ).status,
+      200,
+    )
+    assert.equal(
+      (await fetch(`http://127.0.0.1:${pending.port}/`)).status,
+      503,
+    )
+  } finally {
+    await pending.close({
+      signal: new AbortController().signal,
+    })
+    await existing.application.close()
   }
 })
 

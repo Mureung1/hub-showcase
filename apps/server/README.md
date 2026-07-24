@@ -1,6 +1,6 @@
 # @ay-ple/server
 
-Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 product lifecycle로 조합하는 Express local companion server다. `createServerApplication()`은 listener-independent application factory이며 product HTTP, 선택한 workspace graph와 bounded Runtime shutdown을 소유한다. Listener bind와 process signal은 별도 host adapter가 소유한다.
+Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 product lifecycle로 조합하는 Express local companion server다. `createServerApplication()`은 listener-independent application factory이며 product HTTP, 선택한 workspace graph와 bounded Runtime shutdown을 소유한다. Listener bind와 process signal은 별도 host adapter가 소유하되, bind-first host는 Server-owned two-phase listener capability로 기존 cleanup authority에 합류한다.
 
 `/api/product/*`의 public JSON request·response와 NDJSON frame은 dependency-free [`@ay-ple/product-contract`](../../packages/product-contract/README.md)가 소유한다. Server는 shared decoder로 mutation body를 admission하고 domain object를 public projection으로 변환한다. Express route, status·Origin guard, neutral NDJSON line writer, workspace store와 private Runtime/MCP binding은 Server에 남는다.
 
@@ -10,7 +10,7 @@ Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 p
 
 ## Public-preview application graph
 
-`@ay-ple/server` package root는 side-effect-free `createServerApplication()`, listener lifecycle 순서를 캡슐화한 `listenToServerApplication()`과 startup 실패 뒤 retryable cleanup authority를 보존하는 `ServerStartupCleanupError`를 공개한다. Host는 내부 listener claim이나 Runtime ownership을 재구성하지 않고 이 error의 `close({ signal })`로 후속 cleanup을 요청할 수 있다. Concurrent close는 같은 attempt를 공유하고 proven complete cleanup만 terminal result로 latch한다. Reject·ambiguous attempt는 shutdown과 intake 차단을 유지한 채 다음 caller signal로 다시 시도할 수 있다. `publicPreview`와 legacy `codexChat`·`productRuntime`·`semesterWorkspace` bootstrap은 한 application에서 함께 사용할 수 없다. 따라서 하나의 application graph에 두 Runtime owner나 두 workspace authority가 생기지 않는다.
+`@ay-ple/server` package root는 side-effect-free `createServerApplication()`, 일반 listener lifecycle을 캡슐화한 `listenToServerApplication()`, bind-first host를 위한 `bindServerApplicationListener()`와 startup 실패 뒤 retryable cleanup authority를 보존하는 `ServerStartupCleanupError`를 공개한다. Two-phase listener는 caller의 bootstrap request handler로 먼저 bind해 actual port를 반환하고, exact `ServerApplication` 하나를 `attach()`한 뒤에는 같은 Server-owned listener→application→Runtime cleanup graph를 사용한다. Attach 전과 후의 `close({ signal })`도 proven complete cleanup만 terminal result로 latch하며 duplicate attach와 closing 뒤 attach를 거절한다. Host는 내부 listener claim이나 Runtime ownership을 재구성하지 않는다. Reject·ambiguous attempt는 shutdown과 intake 차단을 유지한 채 다음 caller signal로 다시 시도할 수 있다. `publicPreview`와 legacy `codexChat`·`productRuntime`·`semesterWorkspace` bootstrap은 한 application에서 함께 사용할 수 없다. 따라서 하나의 application graph에 두 Runtime owner나 두 workspace authority가 생기지 않는다.
 
 Public-preview graph는 다음 순서를 소유한다.
 
@@ -153,4 +153,4 @@ npm run build -w @ay-ple/server
 npm run verify:package-root -w @ay-ple/server
 ```
 
-`verify:package-root`는 먼저 Server를 build한 뒤 `NODE_OPTIONS`를 제거한 plain Node child에서 default-condition `@ay-ple/server`를 import한다. Runtime export가 `ServerStartupCleanupError`, `createServerApplication()`, `listenToServerApplication()` 세 개뿐인지, application factory가 listener-independent인지와 close 뒤 child process가 종료되는지를 검증한다.
+`verify:package-root`는 먼저 Server를 build한 뒤 `NODE_OPTIONS`를 제거한 plain Node child에서 default-condition `@ay-ple/server`를 import한다. Runtime export가 `ServerStartupCleanupError`, `bindServerApplicationListener()`, `createServerApplication()`, `listenToServerApplication()` 네 개뿐인지, application factory가 listener-independent인지와 close 뒤 child process가 종료되는지를 검증한다.

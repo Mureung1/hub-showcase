@@ -7,7 +7,11 @@ export {
   type ServerApplication,
 } from './server-application.js'
 export {
+  bindServerApplicationListener,
   listenToServerApplication,
+  type AttachedServerApplicationListener,
+  type BindServerApplicationListenerOptions,
+  type BoundServerApplicationListener,
   type ServerListenOptions,
   type StartedServerListener,
 } from './server-listener.js'

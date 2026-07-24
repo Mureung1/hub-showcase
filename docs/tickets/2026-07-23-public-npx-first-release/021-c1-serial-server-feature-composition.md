@@ -72,6 +72,7 @@ Spine S2의 listener-independent application seam에 A-owned account route adapt
 | Current `contractTipSha` | `f24ee0850` — draft command claim을 `SetupJourney`의 공용 serial queue 안에서 수행한다. 같은 tick에도 `return_to_input`이 먼저 호출되면 durable write 없이 input으로 돌아가고, matching `approve`가 먼저면 첫 durable read·effect 전에 claim해 response loss·pre-commit read rejection 뒤 false input을 닫는다. Inverse-order regression을 포함한 `@ay-ple/semester-workspace` 166/166이 green이다. |
 | C consumption invariant | 실제로 새 opaque parent selection이 발급된 경우에만 C adapter가 matching `setupPlanId`로 `return_to_input`을 호출한다. C는 setup projection을 별도 boolean으로 재작성하지 않는다. Approval attempt 전에는 새 prepare를 위해 draft를 지울 수 있고, attempt가 시작된 뒤에는 B가 setup conflict로 닫아 durable outcome을 다시 조정하게 한다. |
 | C startup cleanup delta | `f2e993e1c` — listener bind/address 실패 뒤 cleanup ambiguity를 별도 listener error로 축소하지 않고 root `ServerStartupCleanupError`의 high-level closure로 보존한다. Coordinator·public-preview composition·application close는 concurrent caller가 attempt 하나를 공유하고 proven complete cleanup만 latch한다. Reject·ambiguous attempt 뒤에도 intake와 lease는 닫힌 채 다음 caller signal로 listener→application→Runtime cleanup을 재시도한다. Occupied-port ambiguity→retry convergence, Server 244/244, typecheck, build, exact package-root export 3개, docs links와 `git diff --check`가 green이다. |
+| H1 listener contract corrective delta | H1b integration probe에서 actual Origin 전 application composition이 불가능한 반면 기존 public listener가 application 이후에만 bind하는 cycle을 발견했다. C-owned `bindServerApplicationListener()`가 caller bootstrap handler를 한 번 bind해 actual port를 반환하고, exact application 하나를 private lifecycle claim에 attach한 뒤 caller signal 기반 listener→application→Runtime cleanup과 ambiguous retry를 그대로 재사용한다. H는 private claim이나 Server cleanup을 복제하지 않는다. |
 
 ## Completion Evidence
 
@@ -81,7 +82,7 @@ Spine S2의 listener-independent application seam에 A-owned account route adapt
 | Independent review | Server architecture/Standards와 Ticket 021·parent Spec review가 각각 unresolved finding 0개로 PASS했다. B owner review도 `f24ee0850`의 duplicate approve, read failure, response loss와 relaunch 수렴을 finding 없이 확인했다. |
 | Focused verification | `@ay-ple/server` 244/244, `@ay-ple/semester-workspace` 166/166, occupied-port cleanup retry와 exact package-root export 검증이 green이다. |
 | Repository verification | Exact candidate에서 `npm test`, root typecheck/build, Chat Shell lint, docs links와 `git diff --check`가 green이다. |
-| H1 handoff | H1은 root-exported `createServerApplication()`, `listenToServerApplication()`과 `ServerStartupCleanupError`만 소비한다. Public host preflight, static serving, dynamic listener와 Browser open은 C1에 포함하지 않는다. |
+| H1 handoff | H1은 root-exported `createServerApplication()`, 일반 `listenToServerApplication()`, bind-first `bindServerApplicationListener()`와 `ServerStartupCleanupError`만 소비한다. Public host preflight, static serving, request delegate 교체와 Browser open은 C1에 포함하지 않는다. |
 
 ## Blocked By
 
