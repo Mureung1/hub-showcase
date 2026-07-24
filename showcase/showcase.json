@@ -5,7 +5,7 @@
   "githubUser": "bricepark94(박병관)",
   "demoUrl": "https://hub-theta-brown.vercel.app",
   "thumbnail": "thumbnail.jpg",
-  "screenshots": [],
+  "screenshots": ["screenshots/home.webp"],
   "problem": "학생·수험생은 자기에게 맞는 공부법을 'MBTI 유형'만으로 단정하거나, 반대로 기준 없이 남의 방법을 따라 하다 지칩니다. 공부 성향과 피로·스트레스 신호가 한곳에 정리되지 않아, 오늘 무엇을 어떻게 공부할지 정하고 그 방식이 실제로 맞는지 확인하기 어렵습니다.",
   "targetUsers": [
     "자기에게 맞는 공부법을 찾는 학생·수험생",

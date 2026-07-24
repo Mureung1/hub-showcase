@@ -1,6 +1,6 @@
 // Step 0: 랜딩. codeit식 좌측 사이드바(서비스 overview·버그신고·데이터삭제) + 우측 콘텐츠.
-// 배경 일러스트는 사용자가 직접 그려 소유한 자작 그림(assets/study-hero.jpg, 원본 그림그린것.tiff)을
-// 상단 히어로 카드에 담아 유지한다. 상태를 갖지 않고 콜백만 받는 저결합 화면 컴포넌트.
+// 상단 히어로 카드에는 밤에 공부하는 방 일러스트(assets/study-hero.jpg)를 담는다.
+// 상태를 갖지 않고 콜백만 받는 저결합 화면 컴포넌트.
 import heroBg from "../../assets/study-hero.jpg";
 
 const FLOW = [
@@ -71,7 +71,7 @@ export function StepIntro({ hasCompleteResult, canClear, onStart, onResume, onCl
       <main className="intro-main">
         <div className="intro-main-inner">
           <div className="intro-hero-card">
-            <img src={heroBg} alt="공부·회복 루틴을 표현한 자작 일러스트" />
+            <img src={heroBg} alt="밤에 책상 앞에서 공부하는 방 풍경 일러스트" />
           </div>
 
           <p className="intro-eyebrow">Study &amp; recover routine</p>
