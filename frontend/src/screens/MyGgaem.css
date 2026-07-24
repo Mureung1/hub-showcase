@@ -1,0 +1,290 @@
+/* 헤더. 공용 .screen-header는 다른 화면과 공유하므로 전용 클래스로 둔다. */
+.myggaem-header {
+  flex: none;
+  padding: 20px 20px 6px;
+}
+
+.myggaem-header h1 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* 월 이동 pill */
+.myggaem-month-pills {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.myggaem-month-pill {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--paper-raised);
+  border: none;
+  box-shadow: inset 0 0 0 1px var(--rule);
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.myggaem-month-pill:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.myggaem-month-pill--current {
+  font-weight: 700;
+  color: #ffffff;
+  background: var(--ink);
+  box-shadow: none;
+  cursor: default;
+}
+
+.myggaem-calendar-card {
+  margin-bottom: 16px;
+  min-width: 0;
+}
+
+.myggaem-weekdays,
+.myggaem-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.myggaem-weekdays {
+  margin-bottom: 8px;
+}
+
+.myggaem-weekday {
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.myggaem-weekday--sunday {
+  color: var(--hl-rebut);
+}
+
+.myggaem-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.myggaem-day--today {
+  border: 1.5px solid var(--brand);
+}
+
+.myggaem-day--selected {
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.myggaem-day:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.myggaem-day-stamp {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.myggaem-stamp--question {
+  background: var(--hl-question);
+}
+
+.myggaem-stamp--rebuttal {
+  background: var(--hl-rebut);
+}
+
+.myggaem-stamp--connection {
+  background: var(--hl-connect);
+}
+
+.myggaem-stamp--expression {
+  background: var(--hl-express);
+}
+
+.myggaem-empty-month {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+/* 미션 유형 범례 */
+.myggaem-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 4px;
+  margin-bottom: 20px;
+}
+
+.myggaem-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.myggaem-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+}
+
+.myggaem-legend-swatch--question {
+  background: var(--hl-question);
+}
+
+.myggaem-legend-swatch--rebuttal {
+  background: var(--hl-rebut);
+}
+
+.myggaem-legend-swatch--connection {
+  background: var(--hl-connect);
+}
+
+.myggaem-legend-swatch--expression {
+  background: var(--hl-express);
+}
+
+.myggaem-legend-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.myggaem-records-label {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.myggaem-record-card {
+  margin-bottom: 12px;
+  min-width: 0;
+}
+
+.myggaem-record-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 8px;
+}
+
+.myggaem-mission-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
+  padding: 4px 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.myggaem-mission-type--question {
+  background: var(--hl-question);
+}
+
+.myggaem-mission-type--rebuttal {
+  background: var(--hl-rebut);
+}
+
+.myggaem-mission-type--connection {
+  background: var(--hl-connect);
+}
+
+.myggaem-mission-type--expression {
+  background: var(--hl-express);
+}
+
+.myggaem-record-date {
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.myggaem-record-title {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  overflow-wrap: break-word;
+}
+
+.myggaem-record-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.myggaem-record-prompt {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  overflow-wrap: break-word;
+}
+
+.myggaem-record-answer {
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+  margin-bottom: 10px;
+}
+
+.myggaem-record-url-notice {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+
+/* 하단 navigation. Today.css의 today-tabbar와 시각적으로 동일하지만,
+   Today.tsx/css를 import하지 않기 위해 MyGgaem 전용으로 다시 둔다. */
+.myggaem-tabbar {
+  flex: none;
+  display: flex;
+  background: var(--paper-raised);
+  box-shadow: inset 0 1px 0 var(--rule);
+  padding: 8px 0 calc(20px + env(safe-area-inset-bottom, 0px));
+}
+
+.myggaem-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.myggaem-tab svg {
+  width: 24px;
+  height: 24px;
+}
+
+.myggaem-tab--active {
+  color: var(--ink);
+  font-weight: 700;
+}

@@ -1,0 +1,84 @@
+.onboarding-mascot {
+  width: 72px;
+  height: 72px;
+  color: var(--brand);
+  margin-bottom: 20px;
+}
+
+.onboarding-eyebrow {
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.onboarding-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin-bottom: 12px;
+}
+
+.onboarding-desc {
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin-bottom: 16px;
+}
+
+.onboarding-limit {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-bottom: 12px;
+}
+
+.tag-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tag--selected {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.tag--selected svg {
+  width: 14px;
+  height: 14px;
+  color: #ffffff;
+}
+
+/* 3개를 다 고른 뒤의 미선택 태그. 더 고를 수 없다는 것을 보여준다. */
+.tag:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.more-button {
+  display: block;
+  margin: 16px auto 0;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

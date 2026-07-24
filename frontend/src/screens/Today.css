@@ -1,0 +1,236 @@
+/* 헤더: 좌측 제목+날짜, 우측 마스코트. 공용 .screen-header는 다른 화면과
+   공유하므로 여기서 Today 전용 클래스로 새로 정의한다. */
+.today-header {
+  flex: none;
+  min-height: 56px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.today-header-copy h1 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.today-header-date {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+.today-mascot {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+
+.today-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin: 20px 0 10px;
+}
+
+.today-section-label:first-child {
+  margin-top: 6px;
+}
+
+/* 대표 콘텐츠 카드 */
+.today-feature-card {
+  background: var(--paper-raised);
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow:
+    0 6px 20px -12px rgba(32, 36, 44, 0.25),
+    inset 0 0 0 1px var(--rule);
+  margin-bottom: 24px;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.today-feature-title {
+  margin: 0 0 12px;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.today-feature-excerpt {
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.today-feature-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.today-feature-readtime {
+  font-size: 12px;
+  color: var(--ink-soft);
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.today-feature-cta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 42px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.today-feature-cta svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* 추천 콘텐츠 목록 */
+.today-recommendation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.today-recommendation-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--paper-raised);
+  border-radius: 16px;
+  box-shadow: inset 0 0 0 1px var(--rule);
+  padding: 14px;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.today-recommendation-select {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.today-recommendation-select:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.today-recommendation-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.today-recommendation-source {
+  font-size: 11px;
+  color: var(--ink-soft);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.today-recommendation-meta .topic-tag {
+  flex: none;
+  white-space: nowrap;
+}
+
+.today-recommendation-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.today-recommendation-thumbnail {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+/* 하단 navigation: 프로토타입 기준 풀폭 flat nav. 공용 .bottom-tabbar와는
+   별개로 Today 전용으로 둔다(나의 깸 화면의 알약형 nav는 그대로 둔다). */
+.today-tabbar {
+  flex: none;
+  display: flex;
+  background: var(--paper-raised);
+  box-shadow: inset 0 1px 0 var(--rule);
+  padding: 8px 0 calc(20px + env(safe-area-inset-bottom, 0px));
+}
+
+.today-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.today-tab svg {
+  width: 24px;
+  height: 24px;
+}
+
+.today-tab--active {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* 대표/추천 카드 교체 애니메이션(View Transitions API). 미지원 브라우저는
+   App.tsx의 기능 감지로 즉시 전환되므로 아래 규칙 자체가 적용되지 않는다. */
+::view-transition-group(*) {
+  animation-duration: 260ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
