@@ -16,13 +16,12 @@ import { gzipSync } from 'node:zlib'
 import { pack } from 'tar-stream'
 
 import {
-  runtimeManifestRosterSha256,
-} from './canonical-runtime-manifest.js'
+  assembleCanonicalRuntimeManifest,
+} from './canonical-runtime-manifest-assembler.js'
 import type {
-  CanonicalRuntimeManifest,
-  RuntimeManifestEntry,
-  RuntimeManifestFileEntry,
-} from './canonical-runtime-manifest.js'
+  RuntimeRecipientAssemblyEntry,
+} from './canonical-runtime-manifest-assembler.js'
+import type { CanonicalRuntimeManifest } from './canonical-runtime-manifest.js'
 import type {
   RuntimeReleaseDescriptor,
 } from './contract.js'
@@ -158,10 +157,27 @@ export async function createRuntimeResolverReleaseFixture(
     options.launcherVersion ?? '0.1.0-preview.1'
   const releaseId = options.releaseId ?? '0.1.0'
   const entries = fixtureEntries(options)
-  const manifestValue = createCanonicalManifest(entries)
-  const canonicalManifestBytes = Buffer.from(
-    `${JSON.stringify(manifestValue, null, 2)}\n`,
-  )
+  const { canonicalManifestBytes } =
+    assembleCanonicalRuntimeManifest({
+      entries: recipientDescriptors(entries),
+      identity: {
+        native_codex_version: '0.144.4',
+        python_version: '3.10.18',
+        source_commit:
+          '8c68d4c87dc54d38861f5114e920c3de2efa5876',
+        patch_stack_sha256:
+          'ffc43da6e5e7a146016404db54968d37d849b778e5e9b04db680cac4124fc1c9',
+      },
+      inputProvenancePath: 'provenance/inputs.json',
+      launch: {
+        python_executable: 'bundle/python/bin/python3.10',
+        bridge_entrypoint: 'bundle/bridge/worker.py',
+        site_packages: 'bundle/site-packages',
+        native_executable:
+          'bundle/site-packages/codex_cli_bin/bin/codex',
+      },
+      runtimeContractVersion: 1,
+    })
   const archiveBytes = await createCanonicalArchive(
     canonicalManifestBytes,
     entries,
@@ -367,88 +383,20 @@ function fixtureEntries(
   )
 }
 
-function createCanonicalManifest(
+function recipientDescriptors(
   entries: readonly RuntimeResolverFixtureEntry[],
-): CanonicalRuntimeManifest {
-  const payload = treeEvidence(entries)
-  const bundle = treeEvidence(
-    entries.filter((entry) => entry.path.startsWith('bundle/')),
+): RuntimeRecipientAssemblyEntry[] {
+  return entries.map((entry) =>
+    entry.type === 'symlink'
+      ? { ...entry }
+      : {
+          bytes: entry.bytes.byteLength,
+          mode: entry.mode,
+          path: entry.path,
+          sha256: sha256(entry.bytes),
+          type: 'file',
+        },
   )
-  const provenance = payload.entries.find(
-    (entry) => entry.path === 'provenance/inputs.json',
-  )
-  if (provenance?.type !== 'file') {
-    throw new Error('The Runtime fixture provenance is missing.')
-  }
-  return {
-    schema_version: 2,
-    kind: 'ay_ple_runtime_release',
-    runtime_contract_version: 1,
-    target: {
-      system: 'Darwin',
-      architecture: 'arm64',
-      id: 'darwin-arm64',
-    },
-    identity: {
-      native_codex_version: '0.144.4',
-      python_version: '3.10.18',
-      source_commit: '8c68d4c87dc54d38861f5114e920c3de2efa5876',
-      patch_stack_sha256:
-        'ffc43da6e5e7a146016404db54968d37d849b778e5e9b04db680cac4124fc1c9',
-    },
-    launch: {
-      python_executable: 'bundle/python/bin/python3.10',
-      bridge_entrypoint: 'bundle/bridge/worker.py',
-      site_packages: 'bundle/site-packages',
-      native_executable:
-        'bundle/site-packages/codex_cli_bin/bin/codex',
-    },
-    payload,
-    bundle: {
-      path: 'bundle',
-      file_count: bundle.file_count,
-      regular_file_bytes: bundle.regular_file_bytes,
-      roster_sha256: bundle.roster_sha256,
-      symlink_count: bundle.symlink_count,
-    },
-    input_provenance: {
-      path: 'provenance/inputs.json',
-      sha256: provenance.sha256,
-    },
-  }
-}
-
-function treeEvidence(
-  entries: readonly RuntimeResolverFixtureEntry[],
-): CanonicalRuntimeManifest['payload'] {
-  const manifestEntries = entries.map(toManifestEntry)
-  const files = manifestEntries.filter(
-    (entry): entry is RuntimeManifestFileEntry =>
-      entry.type === 'file',
-  )
-  return {
-    entries: manifestEntries,
-    file_count: files.length,
-    regular_file_bytes: files.reduce(
-      (total, entry) => total + entry.bytes,
-      0,
-    ),
-    roster_sha256: runtimeManifestRosterSha256(manifestEntries),
-    symlink_count: manifestEntries.length - files.length,
-  }
-}
-
-function toManifestEntry(
-  entry: RuntimeResolverFixtureEntry,
-): RuntimeManifestEntry {
-  if (entry.type === 'symlink') return entry
-  return {
-    bytes: entry.bytes.byteLength,
-    mode: entry.mode,
-    path: entry.path,
-    sha256: sha256(entry.bytes),
-    type: 'file',
-  }
 }
 
 async function createCanonicalArchive(
