@@ -8,11 +8,14 @@ import {
   type ProductOperationCoordinator,
 } from '../product-operation-coordinator.js'
 
-type Account = { readonly state: 'chatgpt' | 'signed_out' }
+type Account =
+  | { readonly state: 'chatgpt' }
+  | { readonly state: 'signed_out' }
+  | { readonly state: 'unsupported' }
 type Workspace = { readonly workspaceId: string }
 type Ready = { readonly state: 'ready'; readonly revision: number }
 
-test('workspace transition holds the app-wide lease through B Ready readback', async () => {
+test('fresh ChatGPT transition holds the app-wide lease through B Ready readback', async () => {
   const events: string[] = []
   const closeAuthOnly = deferred<{
     readonly status: 'closed'
@@ -91,6 +94,56 @@ test('workspace transition holds the app-wide lease through B Ready readback', a
     'ready.read.finished',
     'logout',
   ])
+})
+
+test('rejected auth-only close latches one ambiguous close and never starts on retry', async () => {
+  const diagnosticCause = new Error('deterministic close rejection')
+  let closeCalls = 0
+  let startCalls = 0
+  let readyCommits = 0
+  const reportedCauses: unknown[] = []
+  const coordinator = createAccountRuntimeCoordinator<
+    Account,
+    Workspace,
+    Ready
+  >({
+    closeAuthOnlyRuntime: async () => {
+      closeCalls += 1
+      throw diagnosticCause
+    },
+    startWorkspaceRuntime: async () => {
+      startCalls += 1
+    },
+    readFreshWorkspaceAccount: async () => ({ state: 'chatgpt' }),
+    logoutAndReadFreshAccount: async () => ({ state: 'signed_out' }),
+    closeCurrentRuntime: async () => ({
+      status: 'ambiguous',
+      processTreeGone: false,
+    }),
+    onAuthRuntimeCloseRejected: (cause) => {
+      reportedCauses.push(cause)
+    },
+  })
+  const input = transitionInput(() => {
+    readyCommits += 1
+  })
+
+  const first = await coordinator.transitionToWorkspace(input)
+  const retry = await coordinator.transitionToWorkspace(input)
+
+  assert.deepEqual(first, {
+    status: 'failed',
+    error: {
+      code: 'auth_runtime_close_ambiguous',
+      retryable: false,
+      restartRequired: true,
+    },
+  })
+  assert.deepEqual(retry, first)
+  assert.equal(closeCalls, 1)
+  assert.equal(startCalls, 0)
+  assert.equal(readyCommits, 0)
+  assert.deepEqual(reportedCauses, [diagnosticCause])
 })
 
 test('product operation reserve-to-release lifetime atomically excludes Runtime transition', async () => {
@@ -294,6 +347,7 @@ test('fresh workspace account failure produces no false Ready and retry reuses t
   let startCalls = 0
   let readCalls = 0
   let readyCommits = 0
+  let readyReadbacks = 0
   const coordinator = createAccountRuntimeCoordinator<
     Account,
     Workspace,
@@ -320,16 +374,16 @@ test('fresh workspace account failure produces no false Ready and retry reuses t
       left.workspaceId === right.workspaceId,
   })
 
-  const first = await coordinator.transitionToWorkspace(
-    transitionInput(() => {
-      readyCommits += 1
-    }),
-  )
-  const retry = await coordinator.transitionToWorkspace(
-    transitionInput(() => {
-      readyCommits += 1
-    }),
-  )
+  const input = () =>
+    transitionInput(
+      () => {
+        readyCommits += 1
+      },
+      () => {
+        readyReadbacks += 1
+      },
+    )
+  const first = await coordinator.transitionToWorkspace(input())
 
   assert.deepEqual(first, {
     status: 'failed',
@@ -339,6 +393,9 @@ test('fresh workspace account failure produces no false Ready and retry reuses t
       restartRequired: false,
     },
   })
+  assert.equal(readyCommits, 0)
+  assert.equal(readyReadbacks, 0)
+  const retry = await coordinator.transitionToWorkspace(input())
   assert.deepEqual(retry, {
     status: 'ready',
     ready: { state: 'ready', revision: 1 },
@@ -346,7 +403,64 @@ test('fresh workspace account failure produces no false Ready and retry reuses t
   assert.equal(startCalls, 1)
   assert.equal(readCalls, 2)
   assert.equal(readyCommits, 1)
+  assert.equal(readyReadbacks, 1)
 })
+
+for (const rejectedAccount of [
+  { state: 'signed_out' as const },
+  { state: 'unsupported' as const },
+]) {
+  test(`fresh ${rejectedAccount.state} account blocks B commit and Ready readback`, async () => {
+    let startCalls = 0
+    let readyCommits = 0
+    let readyReadbacks = 0
+    const coordinator = createAccountRuntimeCoordinator<
+      Account,
+      Workspace,
+      Ready
+    >({
+      closeAuthOnlyRuntime: async () => ({
+        status: 'closed',
+        processTreeGone: true,
+      }),
+      startWorkspaceRuntime: async () => {
+        startCalls += 1
+      },
+      readFreshWorkspaceAccount: async () => rejectedAccount,
+      logoutAndReadFreshAccount: async () => ({ state: 'signed_out' }),
+      closeCurrentRuntime: async () => ({
+        status: 'closed',
+        processTreeGone: true,
+      }),
+    })
+
+    assert.deepEqual(
+      await coordinator.transitionToWorkspace({
+        workspace: { workspaceId: 'workspace_primary' },
+        signal: signal(),
+        commitReady: async () => {
+          readyCommits += 1
+          return { state: 'ready', revision: 1 }
+        },
+        readReady: async () => {
+          readyReadbacks += 1
+          return { state: 'ready', revision: 1 }
+        },
+      }),
+      {
+        status: 'failed',
+        error: {
+          code: 'account_unavailable',
+          retryable: true,
+          restartRequired: false,
+        },
+      },
+    )
+    assert.equal(startCalls, 1)
+    assert.equal(readyCommits, 0)
+    assert.equal(readyReadbacks, 0)
+  })
+}
 
 test('B Ready commit fault stays inside the lease and retry reuses the same Runtime', async () => {
   const allowCommitFailure = deferred<void>()
@@ -812,6 +926,7 @@ test('aborted queued account operation leaves the FIFO lease without running', a
 
 function transitionInput(
   onCommit: () => void = () => undefined,
+  onReadback: () => void = () => undefined,
 ): {
   readonly workspace: Workspace
   readonly signal: AbortSignal
@@ -825,7 +940,10 @@ function transitionInput(
       onCommit()
       return { state: 'ready', revision: 1 }
     },
-    readReady: async () => ({ state: 'ready', revision: 1 }),
+    readReady: async () => {
+      onReadback()
+      return { state: 'ready', revision: 1 }
+    },
   }
 }
 

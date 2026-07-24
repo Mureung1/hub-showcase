@@ -1,3 +1,5 @@
+import type { CodexFreshAccount } from '@ay-ple/codex-chat-runtime'
+
 import type {
   AccountRuntimeCoordinator,
   AccountRuntimeCoordinatorCloseResult,
@@ -15,7 +17,7 @@ type RuntimeCloseResult = {
 }
 
 export type CreateAccountRuntimeCoordinatorOptions<
-  TAccount,
+  TAccount extends CodexFreshAccount,
   TAdmittedWorkspace,
 > = AccountRuntimeCoordinatorDependencies<TAccount, TAdmittedWorkspace> & {
   readonly logoutAndReadFreshAccount: (input: {
@@ -25,6 +27,7 @@ export type CreateAccountRuntimeCoordinatorOptions<
     readonly signal: AbortSignal
   }) => Promise<RuntimeCloseResult>
   readonly hasPendingAccountAttempt?: () => boolean
+  readonly onAuthRuntimeCloseRejected?: (cause: unknown) => void
   readonly sameWorkspace?: (
     left: TAdmittedWorkspace,
     right: TAdmittedWorkspace,
@@ -51,7 +54,7 @@ type RuntimePhase<TAdmittedWorkspace> =
   | { readonly state: 'closed' }
 
 export function createAccountRuntimeCoordinator<
-  TAccount,
+  TAccount extends CodexFreshAccount,
   TAdmittedWorkspace,
   TReady,
 >(
@@ -134,9 +137,17 @@ export function createAccountRuntimeCoordinator<
         }
 
         if (phase.state === 'auth-only') {
-          const closed = await options.closeAuthOnlyRuntime({
-            signal: input.signal,
-          })
+          let closed: RuntimeCloseResult
+          try {
+            closed = await options.closeAuthOnlyRuntime({
+              signal: input.signal,
+            })
+          } catch (cause) {
+            reportAuthRuntimeCloseRejection(options, cause)
+            const error = failure('auth_runtime_close_ambiguous')
+            phase = { state: 'restart-required', failure: error }
+            return { status: 'failed', error }
+          }
           if (closed.status !== 'closed' || !closed.processTreeGone) {
             const error = failure('auth_runtime_close_ambiguous')
             phase = { state: 'restart-required', failure: error }
@@ -189,6 +200,12 @@ export function createAccountRuntimeCoordinator<
               : failure('account_unavailable'),
           }
         }
+        if (!isFreshChatGptAccount(account)) {
+          return {
+            status: 'failed',
+            error: failure('account_unavailable'),
+          }
+        }
 
         try {
           await input.commitReady({
@@ -232,6 +249,29 @@ export function createAccountRuntimeCoordinator<
       })()
       return closePromise
     },
+  }
+}
+
+function isFreshChatGptAccount<TAccount extends CodexFreshAccount>(
+  account: TAccount,
+): account is Extract<TAccount, { readonly state: 'chatgpt' }> {
+  return account.state === 'chatgpt'
+}
+
+function reportAuthRuntimeCloseRejection<
+  TAccount extends CodexFreshAccount,
+  TAdmittedWorkspace,
+>(
+  options: CreateAccountRuntimeCoordinatorOptions<
+    TAccount,
+    TAdmittedWorkspace
+  >,
+  cause: unknown,
+): void {
+  try {
+    options.onAuthRuntimeCloseRejected?.(cause)
+  } catch {
+    // Diagnostic reporting cannot weaken the restart-required latch.
   }
 }
 
