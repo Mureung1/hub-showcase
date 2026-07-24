@@ -4,11 +4,11 @@
   "summary": "전국 거점국립대 정류장의 방향별·시간대별 이용 집중도를 지도와 그래프로 비교하는 대시보드입니다.",
   "githubUser": "busandangam(김진영)",
   "demoUrl": "https://campus-flow-bus-dashboard-kr.kjh62879078.chatgpt.site",
-  "thumbnail": "thumbnail.png",
+  "thumbnail": "thumbnail.webp",
   "screenshots": [
-    "screenshots/home.png",
-    "screenshots/directions.png",
-    "screenshots/mobile.png"
+    "screenshots/home.webp",
+    "screenshots/directions.webp",
+    "screenshots/mobile.webp"
   ],
   "problem": "대학생은 등교 전 어느 정류장이 덜 붐비는지, 어느 방향의 이용량이 높은지 한눈에 알기 어렵습니다. 일반 지도는 위치만 보여주고, 공공데이터는 API 형태라 실제 이동 판단에 바로 쓰기 어렵습니다.",
   "targetUsers": [
