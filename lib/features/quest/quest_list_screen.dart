@@ -16,6 +16,9 @@ import '../../models/quest.dart';
 import '../../models/quest_group.dart';
 import '../../models/quest_status.dart';
 import '../../providers/providers.dart';
+import '../../repositories/quest_repository.dart';
+import '../home/widgets/evolve_dialog.dart';
+import '../home/widgets/level_up_dialog.dart';
 import '../shell/tab_scroll_registry.dart';
 import 'decompose_notifier.dart';
 import 'widgets/goal_group_section.dart';
@@ -103,7 +106,7 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
     // 여기서부터 실제 요청이 나간다 — 이제야 카드에 진행 표시를 켠다.
     if (mounted) setState(() => _completing.add(quest.id));
 
-    Reward? reward;
+    CompleteResult? result;
     try {
       // sessionProvider는 로그인 완료된 uid를 보장한다.
       // currentUidProvider를 read하면 AsyncLoading이라 uid가 null로 나온다.
@@ -114,16 +117,17 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
         // 완료: 상태 변경 + 메모·사진 저장 + 코인·XP(+인증 보너스) 지급 + 성취
         // 기록이 한 트랜잭션으로 처리된다. 인증은 메모 또는 사진 중 하나만 있어도
         // 성립한다. 이미 보상을 받은 퀘스트면 null이 돌아온다(재지급 없음).
-        reward = await repo.completeQuest(
+        // 지급됐다면 실지급액 + 레벨/진화 변화가 함께 담긴 결과가 온다.
+        result = await repo.completeQuest(
           uid,
           quest.id,
           memo: memoResult?.memo,
           photoBase64: memoResult?.photoBase64,
         );
-        // 실제 지급이 일어난 순간에만 계측한다 — 재완료(reward == null)는 로그하지
+        // 실제 지급이 일어난 순간에만 계측한다 — 재완료(result == null)는 로그하지
         // 않아 「도전 시작률」의 분자가 부풀려지지 않는다(rewardedAt 가드와 정합).
         // 트랜잭션 밖·성공 경로다.
-        if (reward != null) {
+        if (result != null) {
           ref.logEvent(
             uid,
             AnalyticsEvent.questCompleted(at: DateTime.now(), questId: quest.id),
@@ -149,16 +153,16 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
 
     if (!mounted) return;
 
-    // 여기 도달했으면 성공 경로다(실패는 catch에서 이미 return). reward가 null인
+    // 여기 도달했으면 성공 경로다(실패는 catch에서 이미 return). result가 null인
     // 경우는 두 갈래이고, 둘을 반드시 구분한다:
-    //   (a) done == true  + reward == null  → 완료를 눌렀는데 지급이 없었다
+    //   (a) done == true  + result == null  → 완료를 눌렀는데 지급이 없었다
     //       = 이미 보상 받은 퀘스트(재완료). 상태는 done으로 바뀌어(체크·밑줄 켜짐)
     //         completeQuest가 정상 처리했지만, rewardedAt 가드가 코인을 재지급하지 않았다.
     //         무반응이 아니라 왜 축하가 없는지를 스낵바로 알린다.
-    //   (b) done == false + reward == null  → 완료 해제. 원래 지급이 없는 동작이니
+    //   (b) done == false + result == null  → 완료 해제. 원래 지급이 없는 동작이니
     //       조용히 통과한다(안내를 띄우면 오히려 오탐이다).
-    // 축하 다이얼로그와 이 안내는 상호배타 — reward가 있으면 축하, 없으면 여기서 끝.
-    if (reward == null) {
+    // 축하 다이얼로그와 이 안내는 상호배타 — result가 있으면 축하, 없으면 여기서 끝.
+    if (result == null) {
       if (done) {
         ScaffoldMessenger.of(
           context,
@@ -166,22 +170,39 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
       }
       return;
     }
-    // 하루 코인 상한에 걸려 깎였는지는 **절삭 전 금액과 실지급액의 차이**로 안다.
-    // 절삭 전 금액은 저장소와 같은 식(questReward)으로 구하므로 두 값이 갈라지지
-    // 않는다. 표시하는 금액 자체는 저장소가 돌려준 reward 그대로다.
-    final expected = questReward(
-      quest.difficulty,
-      verified: memoResult?.isVerified ?? false,
-    );
 
+    // 완료 → (레벨업) → 진화 순으로 이어 띄운다. 각 단계는 await로 순차 진행되고,
+    // 사이마다 mounted를 확인해 연출 도중 화면을 떠나도 크래시가 없다(기존 패턴).
+    // 표시값은 전부 저장소가 준 결과 그대로다 — 화면이 재계산하지 않는다.
     await showQuestCompleteDialog(
       context,
       questTitle: quest.title,
-      reward: reward,
-      // 보너스 포함 여부는 지급한 쪽이 안다. reward 총액에서 역산하지 않는다.
+      reward: result.reward,
+      // 보너스 포함 여부·절삭액은 지급한 쪽이 안다. 총액에서 역산하지 않는다.
       verified: memoResult?.isVerified ?? false,
-      cutCoin: expected.coin - reward.coin,
+      cutCoin: result.cutCoin,
     );
+
+    // 레벨이 올랐으면 레벨업 연출을 잇는다. 다단계 상승도 from→to로 표현된다.
+    if (result.leveledUp) {
+      if (!mounted) return;
+      await showLevelUpDialog(
+        context,
+        fromLevel: result.fromLevel,
+        toLevel: result.toLevel,
+      );
+    }
+
+    // 진화 단계가 바뀌었으면 가장 강한 연출로 마무리한다.
+    // 진화가 있었다면 레벨업도 반드시 있었으므로 순서가 자연스럽다.
+    if (result.evolved) {
+      if (!mounted) return;
+      await showEvolveDialog(
+        context,
+        fromStage: result.fromStage,
+        toStage: result.toStage,
+      );
+    }
   }
 
   /// 진행 상태만 바꾼다(보상 경로와 무관).

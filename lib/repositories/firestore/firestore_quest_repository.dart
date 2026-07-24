@@ -205,7 +205,7 @@ class FirestoreQuestRepository implements QuestRepository {
   /// 지급하고(둘 다 줘도 1회), 지급이 일어난 경우에만 `achievements` 기록과 사진
   /// proof 문서를 **같은 트랜잭션**에 넣는다.
   @override
-  Future<Reward?> completeQuest(
+  Future<CompleteResult?> completeQuest(
     String uid,
     String questId, {
     String? memo,
@@ -230,7 +230,7 @@ class FirestoreQuestRepository implements QuestRepository {
       // 공백만 남는 메모는 인증으로 치지 않는다(정의는 normalizeMemo 한 곳).
       final verifiedMemo = normalizeMemo(memo);
 
-      return _db.runTransaction<Reward?>((transaction) async {
+      return _db.runTransaction<CompleteResult?>((transaction) async {
         // ⚠️ Firestore 트랜잭션 규칙: 모든 read가 모든 write보다 앞서야 한다.
         // 그래서 quest·user 두 문서를 여기서 먼저 다 읽는다. 레벨업은 현재 XP·레벨을
         // 알아야 계산되므로 user 문서 read가 추가됐다(3주차엔 coin/xp를 increment로만
@@ -342,7 +342,17 @@ class FirestoreQuestRepository implements QuestRepository {
           'completedAt': FieldValue.serverTimestamp(),
         });
 
-        return reward;
+        // 지급 전·후 레벨/단계를 함께 실어 돌려준다(레벨업·진화 연출용). 전부
+        // 이 트랜잭션에서 이미 읽고 계산한 값이라 추가 왕복이 없다. cutCoin은 절삭
+        // 전 총액(gross)과 실지급액의 차이다 — 화면이 재계산하지 않도록 여기서 준다.
+        return CompleteResult(
+          reward: reward,
+          cutCoin: gross.coin - reward.coin,
+          fromLevel: cur.level,
+          toLevel: next.level,
+          fromStage: stageOf(cur.level),
+          toStage: stageOf(next.level),
+        );
       });
     });
   }

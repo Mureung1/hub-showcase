@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:one_step/core/constants/reward_rules.dart';
 import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/core/widgets/difficulty_pill.dart';
 import 'package:one_step/core/widgets/quest_card.dart';
 import 'package:one_step/core/widgets/quest_source_chip.dart';
 import 'package:one_step/core/widgets/state_views.dart';
+import 'package:one_step/features/home/widgets/evolve_dialog.dart';
+import 'package:one_step/features/home/widgets/level_up_dialog.dart';
 import 'package:one_step/features/quest/quest_list_screen.dart';
 import 'package:one_step/features/quest/widgets/goal_group_section.dart';
 import 'package:one_step/features/quest/widgets/quest_complete_dialog.dart';
@@ -18,6 +19,7 @@ import 'package:one_step/models/quest.dart';
 import 'package:one_step/models/quest_group.dart';
 import 'package:one_step/models/quest_status.dart';
 import 'package:one_step/providers/providers.dart';
+import 'package:one_step/repositories/quest_repository.dart';
 import 'package:one_step/repositories/memory/in_memory_goal_repository.dart';
 import 'package:one_step/repositories/memory/in_memory_quest_repository.dart';
 import 'package:one_step/repositories/memory/in_memory_user_repository.dart';
@@ -32,7 +34,7 @@ class _FailingCompleteQuestRepository extends InMemoryQuestRepository {
   _FailingCompleteQuestRepository({super.seed, super.users});
 
   @override
-  Future<Reward?> completeQuest(
+  Future<CompleteResult?> completeQuest(
     String uid,
     String questId, {
     String? memo,
@@ -551,6 +553,138 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(QuestMemoSheet), findsNothing);
+    });
+  });
+
+  group('완료 → 레벨업 → 진화 순차 연출 (4주차)', () {
+    // 완료 연출을 닫으면 레벨업이, 레벨업을 닫으면 진화가 이어 뜬다.
+    // 각 연출은 앞 연출을 닫아야 나타나므로 '좋아요'가 한 번에 하나만 존재한다.
+
+    testWidgets('★ 레벨업이 있으면 완료 연출을 닫은 뒤 레벨업 연출이 뜬다', (tester) async {
+      // 쉬움 5XP → 알 단계(5/레벨)에서 Lv1 → Lv2. 진화(단계 전환)는 아니다.
+      final repo = await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(id: 'q1', title: '레벨업 퀘스트', difficulty: Difficulty.easy),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      await completeSkippingMemo(tester);
+
+      // 아직 완료 연출만 떠 있다 — 레벨업은 그 다음 단계다.
+      expect(find.byType(QuestCompleteDialog), findsOneWidget);
+      expect(find.byType(LevelUpDialog), findsNothing);
+
+      await tester.tap(find.text('좋아요'));
+      await tester.pumpAndSettle();
+
+      // 완료 연출이 닫히고 레벨업 연출이 이어진다.
+      expect(find.byType(QuestCompleteDialog), findsNothing);
+      expect(find.byType(LevelUpDialog), findsOneWidget);
+      expect(find.text('Lv.1'), findsOneWidget);
+      expect(find.text('Lv.2'), findsOneWidget);
+      // 같은 단계 안이라 진화 연출은 뜨지 않는다.
+      expect(find.byType(EvolveDialog), findsNothing);
+
+      // 레벨업 연출을 닫으면 아무 연출도 남지 않는다(진화 없음).
+      await tester.tap(find.text('좋아요'));
+      await tester.pumpAndSettle();
+      expect(find.byType(LevelUpDialog), findsNothing);
+      expect(find.byType(EvolveDialog), findsNothing);
+
+      // 저장소에도 레벨업이 반영된다(재실행 후에도 유지).
+      final user = await repo.users!.fetchUser('test-uid');
+      expect(user.level, 2);
+    });
+
+    testWidgets('★ 레벨업 + 진화가 함께면 완료 → 레벨업 → 진화 순으로 뜬다', (tester) async {
+      // Lv9(알) → 쉬움 5XP → Lv10(참새). 레벨업이면서 진화 경계를 넘는다.
+      final repo = await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(id: 'q1', title: '진화 퀘스트', difficulty: Difficulty.easy),
+        ],
+        user: const AppUser(uid: 'test-uid', level: 9, xp: 0),
+      );
+      await tester.pumpAndSettle();
+
+      await completeSkippingMemo(tester);
+
+      // 1) 완료 연출.
+      expect(find.byType(QuestCompleteDialog), findsOneWidget);
+      await tester.tap(find.text('좋아요'));
+      await tester.pumpAndSettle();
+
+      // 2) 레벨업 연출(Lv.9 → Lv.10). 진화는 아직 안 뜬다.
+      expect(find.byType(LevelUpDialog), findsOneWidget);
+      expect(find.text('Lv.9'), findsOneWidget);
+      expect(find.text('Lv.10'), findsOneWidget);
+      expect(find.byType(EvolveDialog), findsNothing);
+      await tester.tap(find.text('좋아요'));
+      await tester.pumpAndSettle();
+
+      // 3) 진화 연출(알 → 참새).
+      expect(find.byType(LevelUpDialog), findsNothing);
+      expect(find.byType(EvolveDialog), findsOneWidget);
+      expect(find.textContaining('참새'), findsWidgets);
+
+      await tester.tap(find.text('좋아요'));
+      await tester.pumpAndSettle();
+      expect(find.byType(EvolveDialog), findsNothing);
+
+      final user = await repo.users!.fetchUser('test-uid');
+      expect(user.level, 10);
+      expect(user.stage.name, '참새');
+    });
+
+    testWidgets('★ 레벨업이 없으면 완료 연출만 뜨고 성장 연출은 없다', (tester) async {
+      // 참새(Lv10, 10 XP/레벨) xp0 + 쉬움 5XP → 5 < 10이라 레벨이 그대로다.
+      await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(id: 'q1', title: '성장 없는 완료', difficulty: Difficulty.easy),
+        ],
+        user: const AppUser(uid: 'test-uid', level: 10, xp: 0),
+      );
+      await tester.pumpAndSettle();
+
+      await completeSkippingMemo(tester);
+      await tester.tap(find.text('좋아요'));
+      await tester.pumpAndSettle();
+
+      // 완료 연출을 닫으면 아무 성장 연출도 이어지지 않는다.
+      expect(find.byType(LevelUpDialog), findsNothing);
+      expect(find.byType(EvolveDialog), findsNothing);
+    });
+
+    testWidgets('재완료(이미 지급)는 어떤 연출도 띄우지 않는다', (tester) async {
+      await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: [
+          Quest(
+            id: 'q1',
+            title: '예전에 완료',
+            difficulty: Difficulty.easy,
+            status: QuestStatus.todo,
+            rewardedAt: DateTime(2026, 1, 1),
+          ),
+        ],
+        user: const AppUser(uid: 'test-uid', level: 9, xp: 0),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('완료'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuestCompleteDialog), findsNothing);
+      expect(find.byType(LevelUpDialog), findsNothing);
+      expect(find.byType(EvolveDialog), findsNothing);
+      expect(find.text('이미 완료한 퀘스트예요'), findsOneWidget);
     });
   });
 

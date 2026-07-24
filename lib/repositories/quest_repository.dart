@@ -1,5 +1,6 @@
 import 'package:characters/characters.dart';
 
+import '../core/constants/growth_rules.dart';
 import '../core/constants/proof_rules.dart';
 import '../core/constants/reward_rules.dart';
 import '../core/error/app_failure.dart';
@@ -121,8 +122,15 @@ abstract interface class QuestRepository {
   /// 같은 트랜잭션으로 남긴다(재완료는 남기지 않는다). 같은 트랜잭션이라 "보상은
   /// 줬는데 기록이 없는" 불일치가 생기지 않는다.
   ///
-  /// 반환: 이번 호출에서 **실제로 지급한** [Reward](보너스 포함).
-  /// 이미 지급된 적 있으면 `null`(상태는 done으로 맞추되 보상은 주지 않는다).
+  /// 반환: 이번 호출에서 **실제로 지급한** 보상과 그로 인한 성장을 담은
+  /// [CompleteResult]. 이미 지급된 적 있으면 `null`(상태는 done으로 맞추되
+  /// 보상은 주지 않는다 = 재완료).
+  ///
+  /// 왜 [Reward]가 아니라 [CompleteResult]인가: 화면이 완료 **직후**에 "레벨이
+  /// 올랐나 · 진화했나"를 알아야 레벨업·진화 연출을 이어 띄운다. 지급액만
+  /// 돌려주면 홈으로 돌아가 바뀐 숫자를 봐야만 성장을 눈치챌 수 있어, 가장 극적인
+  /// 순간이 무반응이 된다. 그 판단에 필요한 값(지급 전·후 레벨/단계)은 어차피
+  /// 이 트랜잭션 안에서 이미 계산되므로, 밖으로 실어 주기만 하면 된다.
   ///
   /// 퀘스트 문서가 없으면 `NotFoundFailure`, 그 밖의 실패는 다른 메서드와
   /// 동일하게 `AppFailure`로 정규화해 던진다.
@@ -130,12 +138,83 @@ abstract interface class QuestRepository {
   /// 지급 시 사용자의 현재 레벨/XP를 읽어 `applyXpGain`으로 레벨업까지 반영한다
   /// (4주차 캐릭터 성장). coin은 단순 누적, xp·level은 계산값으로 저장한다 —
   /// 그래서 `AppUser.xp`는 "누적 XP"가 아니라 "현재 레벨 내 잔여 XP"다.
-  Future<Reward?> completeQuest(
+  Future<CompleteResult?> completeQuest(
     String uid,
     String questId, {
     String? memo,
     String? photoBase64,
   });
+}
+
+/// 완료+지급이 **실제로 일어났을 때**의 결과. 재완료·미지급은 이 객체가 아니라
+/// `null`로 표현한다([QuestRepository.completeQuest]).
+///
+/// 왜 [Reward]만으로 부족한가: 화면이 완료 직후에 "레벨이 올랐나 · 진화했나"를
+/// 알아야 레벨업·진화 연출을 이어 띄운다. 예전엔 지급액만 돌려줘서, 홈으로 돌아가
+/// 바뀐 숫자를 봐야 성장을 눈치챌 수 있었다 — 가장 극적인 순간이 무반응이었다.
+///
+/// 여기 담긴 값은 전부 **저장소가 트랜잭션 안에서 이미 아는 것**이다(지급 전 레벨·
+/// 단계 vs `applyXpGain` 이후). 화면이 다시 계산하지 않는다 — 실지급액을 난이도로
+/// 재계산하지 않는 것과 같은 원칙이다.
+class CompleteResult {
+  const CompleteResult({
+    required this.reward,
+    required this.cutCoin,
+    required this.fromLevel,
+    required this.toLevel,
+    required this.fromStage,
+    required this.toStage,
+  });
+
+  /// 이번 완료로 **실제 지급된** 보상(인증 보너스 합산·하루 상한 절삭 반영).
+  final Reward reward;
+
+  /// 하루 코인 상한 때문에 깎인 코인. 0이면 절삭 없음.
+  /// 절삭 전 총액과 실지급액의 차이를 **저장소가** 계산해 실어 준다(화면 재계산 금지).
+  final int cutCoin;
+
+  /// 지급 **전** 레벨.
+  final int fromLevel;
+
+  /// 지급 **후** 레벨. 한 번에 여러 칸 오를 수 있다(다단계 상승).
+  final int toLevel;
+
+  /// 지급 전 진화 단계.
+  final CharacterStage fromStage;
+
+  /// 지급 후 진화 단계.
+  final CharacterStage toStage;
+
+  /// 편의 접근자 — 실제 지급된 코인/XP. [reward]를 그대로 위임한다
+  /// (지급액을 다시 계산하는 것이 아니라 같은 값을 가리킨다).
+  int get coin => reward.coin;
+  int get xp => reward.xp;
+
+  /// 레벨이 올랐는가(다단계 상승 포함).
+  bool get leveledUp => toLevel > fromLevel;
+
+  /// 진화 단계가 바뀌었는가. 단계 동일성은 [CharacterStage]의 == 기준이다 —
+  /// 독수리 → 이펙트 독수리처럼 이모지가 같아도 이름·임계가 다르면 진화로 친다.
+  bool get evolved => fromStage != toStage;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CompleteResult &&
+      other.reward == reward &&
+      other.cutCoin == cutCoin &&
+      other.fromLevel == fromLevel &&
+      other.toLevel == toLevel &&
+      other.fromStage == fromStage &&
+      other.toStage == toStage;
+
+  @override
+  int get hashCode =>
+      Object.hash(reward, cutCoin, fromLevel, toLevel, fromStage, toStage);
+
+  @override
+  String toString() =>
+      'CompleteResult($reward, cut $cutCoin, Lv$fromLevel→$toLevel, '
+      '${fromStage.name}→${toStage.name})';
 }
 
 /// 인증 메모를 정규화한다. 공백만 있으면 `null`(= 인증 불성립).

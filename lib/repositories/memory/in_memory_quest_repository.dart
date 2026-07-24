@@ -212,7 +212,7 @@ class InMemoryQuestRepository implements QuestRepository {
   /// 중요한 건 판단 근거를 Firestore 구현과 똑같이 맞추는 것이다 —
   /// 지급 여부는 상태도 완료 시각도 아닌 **`rewardedAt`이 null인가**로만 결정한다.
   @override
-  Future<Reward?> completeQuest(
+  Future<CompleteResult?> completeQuest(
     String uid,
     String questId, {
     String? memo,
@@ -290,6 +290,10 @@ class InMemoryQuestRepository implements QuestRepository {
       ),
     );
 
+    // 지급 전·후 레벨을 함께 담아 돌려준다(레벨업·진화 연출용). users를 주입하지
+    // 않으면 성장을 추적할 근거가 없으므로 Lv1로 고정한다(연출 없음).
+    var fromLevel = 1;
+    var toLevel = 1;
     if (userRepo != null && current != null) {
       // Firestore 구현과 같은 의미: coin은 단순 누적, xp·level은 applyXpGain으로
       // 다단계 상승·진화 경계·MAX 상한을 반영한 계산값으로 갱신한다.
@@ -299,6 +303,8 @@ class InMemoryQuestRepository implements QuestRepository {
         xp: current.xp,
         gained: reward.xp,
       );
+      fromLevel = current.level;
+      toLevel = next.level;
       userRepo.put(
         current.copyWith(
           coin: current.coin + reward.coin,
@@ -312,7 +318,16 @@ class InMemoryQuestRepository implements QuestRepository {
       );
     }
 
-    return reward;
+    // cutCoin은 절삭 전 총액(gross)과 실지급액의 차이다. 화면이 다시 계산하지
+    // 않도록 저장소가 실어 준다(Firestore 구현과 같은 계약).
+    return CompleteResult(
+      reward: reward,
+      cutCoin: gross.coin - reward.coin,
+      fromLevel: fromLevel,
+      toLevel: toLevel,
+      fromStage: stageOf(fromLevel),
+      toStage: stageOf(toLevel),
+    );
   }
 
   void dispose() => _controller.close();

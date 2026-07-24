@@ -164,7 +164,7 @@ void main() {
 
       // reward는 "이번에 준 XP"(5)로 불변. user.xp는 레벨업 후 레벨 내 잔여 XP다.
       // 쉬움 5XP는 알 단계 임계(5)와 같아 정확히 Lv2로 올라가고 잔여 XP는 0.
-      expect(reward, const Reward(coin: 3, xp: 5));
+      expect(reward!.reward, const Reward(coin: 3, xp: 5));
       final user = await users.fetchUser('u');
       expect(user.coin, 3);
       expect(user.level, 2);
@@ -182,7 +182,7 @@ void main() {
       final reward = await repo.completeQuest('u', quest.id);
 
       // 보통 10XP → 알 단계 5/레벨이라 Lv1에서 두 칸 올라 Lv3, 잔여 XP 0.
-      expect(reward, const Reward(coin: 5, xp: 10));
+      expect(reward!.reward, const Reward(coin: 5, xp: 10));
       final user = await users.fetchUser('u');
       expect(user.coin, 5);
       expect(user.level, 3);
@@ -200,7 +200,7 @@ void main() {
       final reward = await repo.completeQuest('u', quest.id);
 
       // 어려움 20XP → 알 단계 5/레벨이라 Lv1에서 네 칸 올라 Lv5, 잔여 XP 0.
-      expect(reward, const Reward(coin: 10, xp: 20));
+      expect(reward!.reward, const Reward(coin: 10, xp: 20));
       final user = await users.fetchUser('u');
       expect(user.coin, 10);
       expect(user.level, 5);
@@ -283,7 +283,7 @@ void main() {
       final first = await repo.completeQuest('u', quest.id);
       final second = await repo.completeQuest('u', quest.id);
 
-      expect(first, const Reward(coin: 10, xp: 20));
+      expect(first!.reward, const Reward(coin: 10, xp: 20));
       // 두 번째는 "이번에 지급한 보상 없음" = null.
       expect(second, isNull);
 
@@ -413,7 +413,10 @@ void main() {
         difficulty: Difficulty.normal,
       );
 
-      expect(await repo.completeQuest('u', quest.id), const Reward(coin: 5, xp: 10));
+      expect(
+        (await repo.completeQuest('u', quest.id))!.reward,
+        const Reward(coin: 5, xp: 10),
+      );
       expect(await repo.completeQuest('u', quest.id), isNull);
     });
   });
@@ -522,6 +525,118 @@ void main() {
     });
   });
 
+  group('completeQuest — CompleteResult가 레벨업·진화 변화를 담는다 (4주차 연출)', () {
+    // 반환 타입을 Reward → CompleteResult로 넓힌 이유는 화면이 완료 직후에
+    // "레벨이 올랐나 · 진화했나"를 알아야 연출을 잇기 때문이다. 그 판정
+    // (leveledUp/evolved)이 지급 전·후 레벨을 실제로 비교하는지 못 박는다 —
+    // always-true/always-false로 바꾸면 이 그룹이 깨져야 한다(뮤테이션 방어).
+    (InMemoryQuestRepository, InMemoryUserRepository) makeRepos({AppUser? seed}) {
+      final users = InMemoryUserRepository(seed: seed ?? AppUser.initial('u'));
+      final quests = InMemoryQuestRepository(users: users);
+      addTearDown(users.dispose);
+      addTearDown(quests.dispose);
+      return (quests, users);
+    }
+
+    Future<Quest> seed(InMemoryQuestRepository repo, Difficulty d) =>
+        repo.createQuest('u', title: 'x', difficulty: d);
+
+    test('★ 레벨업이 없으면 leveledUp=false, from==to (뮤테이션: 항상 true면 실패)', () async {
+      // 참새(Lv10, 10 XP/레벨) xp0에서 쉬움 5XP → 5 < 10이라 레벨이 그대로다.
+      final (repo, _) = makeRepos(seed: const AppUser(uid: 'u', level: 10, xp: 0));
+      final quest = await seed(repo, Difficulty.easy);
+
+      final result = (await repo.completeQuest('u', quest.id))!;
+
+      expect(result.leveledUp, isFalse);
+      expect(result.fromLevel, 10);
+      expect(result.toLevel, 10);
+      // 레벨이 안 올랐으니 진화도 없다.
+      expect(result.evolved, isFalse);
+    });
+
+    test('★ 큰 XP로 여러 레벨이 오르면 from<to로 표현된다 (다단계 상승)', () async {
+      // Lv1 xp0 + 어려움 20XP → 알 단계 5/레벨을 네 칸 소비 → Lv5.
+      final (repo, _) = makeRepos();
+      final quest = await seed(repo, Difficulty.hard);
+
+      final result = (await repo.completeQuest('u', quest.id))!;
+
+      expect(result.leveledUp, isTrue);
+      expect(result.fromLevel, 1);
+      expect(result.toLevel, 5);
+      // 알(Lv1~9) 안에서만 올랐으므로 진화는 아니다.
+      expect(result.evolved, isFalse);
+    });
+
+    test('★ 진화 경계(Lv9→Lv10)를 넘으면 evolved=true, 단계가 알→참새 (뮤테이션: 항상 false면 실패)', () async {
+      // Lv9(알) xp0 + 쉬움 5XP → 정확히 Lv10(참새).
+      final (repo, _) = makeRepos(seed: const AppUser(uid: 'u', level: 9, xp: 0));
+      final quest = await seed(repo, Difficulty.easy);
+
+      final result = (await repo.completeQuest('u', quest.id))!;
+
+      expect(result.evolved, isTrue);
+      expect(result.leveledUp, isTrue);
+      expect(result.fromStage.name, '알');
+      expect(result.toStage.name, '참새');
+    });
+
+    test('★ 같은 단계 안에서 레벨만 오르면 leveledUp=true지만 evolved=false', () async {
+      // Lv1(알) → Lv2(알). 레벨업과 진화 판정이 서로 독립임을 못 박는다
+      // (evolved == leveledUp로 뭉뚱그리면 이 테스트가 깨진다).
+      final (repo, _) = makeRepos();
+      final quest = await seed(repo, Difficulty.easy);
+
+      final result = (await repo.completeQuest('u', quest.id))!;
+
+      expect(result.leveledUp, isTrue);
+      expect(result.fromLevel, 1);
+      expect(result.toLevel, 2);
+      expect(result.evolved, isFalse);
+      expect(result.fromStage.name, '알');
+      expect(result.toStage.name, '알');
+    });
+
+    test('cutCoin이 결과에 실린다 (절삭 전 총액 - 실지급액)', () async {
+      // 오늘 68코인 받은 상태에서 어려움(10) 완료 → 2코인만 지급, 8 절삭.
+      // 날짜 경계에 의존하지 않도록 고정 시계로 배선한다(makeRepos의 기본 시계는
+      // '오늘'이 dailyCoinDate와 어긋날 수 있어 카운터가 만료돼 버린다).
+      final users = InMemoryUserRepository(
+        seed: const AppUser(
+          uid: 'v',
+          dailyCoinDate: '2026-07-21',
+          dailyCoinEarned: 68,
+        ),
+        clock: () => DateTime.utc(2026, 7, 21, 3),
+      );
+      final quests = InMemoryQuestRepository(
+        users: users,
+        clock: () => DateTime.utc(2026, 7, 21, 3),
+      );
+      addTearDown(users.dispose);
+      addTearDown(quests.dispose);
+      final quest = await quests.createQuest(
+        'v',
+        title: 'x',
+        difficulty: Difficulty.hard,
+      );
+
+      final result = (await quests.completeQuest('v', quest.id))!;
+
+      expect(result.reward.coin, 2);
+      expect(result.cutCoin, 8);
+    });
+
+    test('재완료는 여전히 null이다 (연출도 뜨지 않는다)', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seed(repo, Difficulty.easy);
+
+      expect(await repo.completeQuest('u', quest.id), isNotNull);
+      expect(await repo.completeQuest('u', quest.id), isNull);
+    });
+  });
+
   group('메모 인증 보너스 + 성취 기록 (3주차-B)', () {
     (InMemoryQuestRepository, InMemoryUserRepository) makeRepos() {
       final users = InMemoryUserRepository(seed: AppUser.initial('u'));
@@ -541,7 +656,7 @@ void main() {
       final reward = await repo.completeQuest('u', quest.id, memo: '초안 1장 썼다');
 
       // 보통(5/10) + 보너스(3/3) = 8/13.
-      expect(reward, const Reward(coin: 8, xp: 13));
+      expect(reward!.reward, const Reward(coin: 8, xp: 13));
       final user = await users.fetchUser('u');
       expect(user.coin, 8);
       // XP 13을 알 단계 5/레벨로 소비 → Lv3(10 소비), 잔여 XP 3.
@@ -555,7 +670,7 @@ void main() {
 
       final reward = await repo.completeQuest('u', quest.id);
 
-      expect(reward, const Reward(coin: 5, xp: 10));
+      expect(reward!.reward, const Reward(coin: 5, xp: 10));
       expect((await users.fetchUser('u')).coin, 5);
     });
 
@@ -566,7 +681,7 @@ void main() {
 
       final reward = await repo.completeQuest('u', quest.id, memo: '   ');
 
-      expect(reward, const Reward(coin: 5, xp: 10));
+      expect(reward!.reward, const Reward(coin: 5, xp: 10));
       expect((await users.fetchUser('u')).coin, 5);
 
       final saved = (await repo.fetchQuests('u')).single;
@@ -702,7 +817,7 @@ void main() {
       );
 
       // 보통(5/10) + 보너스(3/3) = 8/13. 메모 없이 사진만으로 성립한다.
-      expect(reward, const Reward(coin: 8, xp: 13));
+      expect(reward!.reward, const Reward(coin: 8, xp: 13));
       final user = await users.fetchUser('u');
       expect(user.coin, 8);
       // XP 13 → 알 단계에서 Lv3, 잔여 XP 3.
@@ -729,7 +844,7 @@ void main() {
       );
 
       // 중복이 아니다 — 보통(5/10) + 보너스(3/3) = 8/13.
-      expect(reward, const Reward(coin: 8, xp: 13));
+      expect(reward!.reward, const Reward(coin: 8, xp: 13));
       expect((await users.fetchUser('u')).coin, 8);
 
       final record = repo.achievementsOf('u').single;
@@ -784,7 +899,7 @@ void main() {
         quest.id,
         photoBase64: exact,
       );
-      expect(reward, const Reward(coin: 8, xp: 13));
+      expect(reward!.reward, const Reward(coin: 8, xp: 13));
       expect(repo.proofOf('u', quest.id), exact);
     });
 

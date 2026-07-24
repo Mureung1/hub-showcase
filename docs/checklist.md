@@ -454,12 +454,24 @@
       → `character_card.dart`가 `AppUser.equipped`를 읽어 `background` 슬롯=배경 틴트, `aura` 슬롯=오라 이모지로 반영(캐릭터가 이모지 목업이라 이 둘로 표현, 도트아트 자산 나오면 교체 예정). `equipped`가 user 문서에 영속되고 홈이 `watchUser` 구독이라 재실행 후 유지는 구조로 보장. 고아 방어: `itemById`가 null이거나 슬롯이 어긋나면 장착 없음으로 렌더. 뮤테이션(오라 미반영)으로 실패 확인. 테스트 `test/features/character_card_equip_test.dart`·`test/repositories/purchase_item_test.dart`.
 
 ### 퀘스트 완료 연출
-- [ ] 완료 시 애니메이션/피드백이 재생되고 실제 상태 변화와 동기화된다.
-- [ ] 연출 도중 화면 이탈·중복 완료가 안전하게 처리된다.
+- [x] 완료 시 애니메이션/피드백이 재생되고 실제 상태 변화와 동기화된다.
+      → `quest_complete_dialog.dart`가 트로피 scale/fade 등장 + 코인·XP 카운트업(0→실지급액) 애니메이션. 표시값은 저장소가 준 실지급액 그대로다(난이도 재계산 아님, 절삭돼도 정확). 완료 후 `user.level`이 저장소에 반영됨을 UI 테스트가 단언. 뮤테이션(카운트업 최종값 0 고정)으로 5건 실패 확인. 테스트: `test/features/growth_dialogs_test.dart` · `test/features/quest_list_screen_test.dart`
+- [x] 연출 도중 화면 이탈·중복 완료가 안전하게 처리된다.
+      → 완료 트랜잭션이 다이얼로그 **전에** 끝나므로 연출은 순수 표시용(탭하면 즉시 종료해도 보상은 이미 지급). 순차 연출(완료→레벨업→진화) 각 사이 `mounted` 체크로 화면 이탈 크래시 방지. `_pending`·`_completing` 잠금이 중복 완료를 막는다. 재완료(result==null)면 어떤 연출도 뜨지 않고 "이미 완료" 스낵바 경로 유지.
 
 ### 보상 획득 연출
-- [ ] 지급된 코인·XP 값이 연출에 정확히 반영된다.
-- [ ] 연출 생략(빠른 진행) 시에도 보상은 정상 지급된다.
+- [x] 지급된 코인·XP 값이 연출에 정확히 반영된다.
+      → 카운트업 최종값이 저장소가 준 실지급 Reward(`.coin`/`.xp`). `cutCoin`도 저장소가 계산해 실어 주고 화면은 `result.cutCoin`을 그대로 표시(재계산 제거). 하루 상한 절삭이 일어나도 표시=실지급이 어긋나지 않는다. 테스트: `test/features/daily_coin_cap_ui_test.dart`(reward.coin=2, cutCoin=8) · `growth_dialogs_test.dart`
+- [x] 연출 생략(빠른 진행) 시에도 보상은 정상 지급된다.
+      → 지급은 `completeQuest` 트랜잭션에서 끝나고 다이얼로그는 그 뒤에 뜬다. 탭 조기 종료는 애니메이션만 끝으로 점프시킬 뿐 지급에 관여하지 않는다. 구조로 보장.
+
+### 레벨업·진화 연출
+- [x] 레벨업 시 연출이 뜨고 다단계 상승도 정확히 표시된다.
+      → `completeQuest` 반환을 `Reward?` → `CompleteResult?`로 확장해(레벨/진화 변화를 실어) 화면이 완료 시점에 레벨업 여부를 안다. `level_up_dialog.dart`가 `Lv.{from} → Lv.{to}`를 표시하고, 다단계 상승(1→6 등)도 from→to로 자연 표현된다. 그린 계열(성장·완료), `streak_bonus_dialog` 시각 언어 재사용. **레벨업이 없으면 연출이 뜨지 않는다**(뮤테이션 leveledUp=>true로 2건 실패 확인). 테스트: `test/features/growth_dialogs_test.dart` · `test/features/quest_list_screen_test.dart`
+- [x] 진화 단계 도달 시 진화 연출이 뜨고, 진화 없으면 뜨지 않는다.
+      → 진화 경계(Lv9 알→Lv10 참새 등)를 넘으면 `evolve_dialog.dart`가 이전→새 단계 이모지 전환 강조 + "{단계}로 진화했어요"를 표시한다. 완료→(레벨업)→(진화) 순차. **진화가 없으면 연출이 뜨지 않는다**(뮤테이션 evolved=>true로 5건 실패 확인 — 같은 단계 내 상승·다단계도 오탐 없음). 이모지 목업 전제 유지.
+
+> **제약(정직)**: Firestore `completeQuest` 트랜잭션 경로는 자동 테스트 N/A(`fake_cloud_firestore` 미도입). InMemory와 동일 계약으로 맞췄고 반환 타입 확장(`Reward?`→`CompleteResult?`)이 지급·가드 로직을 건드리지 않았음을 diff 리뷰로 확인 — 기존 `completeQuest`와 같은 한계이며 이번 변경이 새 결함을 도입한 게 아니다. 캐릭터·진화 연출은 이모지 목업 전제(도트아트 자산 나오면 교체).
 
 ### 멈춘 퀘스트 재분해 기능
 > plan.md **기능 A의 마지막 요구사항**이자 성공 지표 「재분해 복귀율」의 근거다.
