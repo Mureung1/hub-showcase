@@ -30,6 +30,69 @@
 
 세션 기록은 자동으로 정해진 시작 위치와 사용자가 입력한 `끝난 페이지`, 선택적인 `짧은 감상`으로 구성됩니다. P2부터는 직접 입력하거나 OCR로 추출한 `마음에 남은 글귀`와 선택적인 `생각 태그`도 같은 세션에 저장합니다. 한 권의 책에 세션 기록 페이지가 쌓이고, 긴 서평은 완독 뒤 마지막 페이지에서 남깁니다.
 
+## 데이터 흐름과 아키텍처
+
+현재 구현을 기준으로 한 전체 구조입니다. 실선은 사용자의 요청과 영구 데이터 흐름, 점선은 브라우저 안에만 남는 임시 데이터 흐름입니다.
+
+```mermaid
+flowchart LR
+    user([사용자])
+
+    subgraph browser["브라우저 · React / Vite"]
+        screens["온보딩 → 책장 → 책 상세<br/>책 등록 · 세션 기록"]
+        app["App 상태 · api.js"]
+        local[("localStorage<br/>사용자 ID · 닉네임")]
+        timer[("sessionStorage<br/>진행 중인 타이머")]
+
+        screens <--> app
+        app -. "사용자 식별 저장 · 복원" .-> local
+        screens -. "타이머 저장 · 복원" .-> timer
+        timer -. "종료한 독서 시간" .-> app
+    end
+
+    subgraph server["Spring Boot API"]
+        controllers["REST Controllers<br/>users · books · records"]
+        services["UserService · BookService<br/>ReadingRecordService"]
+        jpa["Spring Data JPA"]
+        metadata["GoogleBooksClient"]
+
+        controllers --> services
+        services --> jpa
+        services --> metadata
+    end
+
+    subgraph database["MySQL"]
+        users[("users")]
+        books[("books")]
+        records[("reading_records")]
+
+        users -->|"1 : N"| books
+        users -->|"1 : N"| records
+        books -->|"1 : N"| records
+    end
+
+    google["Google Books API"]
+    flyway["Flyway migrations"]
+
+    user --> screens
+    app <-->|"HTTP JSON · 사용자/책/기록 CRUD"| controllers
+    jpa <--> users
+    jpa <--> books
+    jpa <--> records
+    metadata <-->|"도서 검색 · 판본 메타데이터"| google
+    flyway -->|"스키마 생성 · 변경"| database
+```
+
+사용자는 React 화면에서 온보딩, 책장, 책 상세와 기록 흐름을 이용합니다. 클라이언트의 모든 서버 요청은 `api.js`를 거쳐 Spring Boot 컨트롤러와 서비스로 전달되고, 영구 데이터는 JPA를 통해 MySQL의 `users`, `books`, `reading_records`에 저장됩니다. 도서 검색과 등록 때만 서버가 Google Books API를 호출하므로 API 키는 브라우저에 노출되지 않습니다. 사용자 식별 정보와 진행 중인 타이머만 브라우저 저장소에 남고, 기록 저장 뒤에는 책 상세와 세 책장 상태를 다시 조회해 서버 데이터를 화면의 기준으로 삼습니다.
+
+### 확인하며 발견한 다음 작업
+
+| 발견 | 현재 영향 | 다음 작업 |
+| --- | --- | --- |
+| 사용자 ID를 `localStorage`와 요청 값으로 신뢰합니다. | 브라우저 데이터를 지우면 기존 책장을 복구할 수 없고, 다른 사용자 ID를 알면 소유권 검사를 통과할 수 있습니다. | 계정 복구나 공유 기능 전에 서버 세션 기반 인증을 넣고 요청 본문의 `userId`를 제거합니다. |
+| 책장 진입과 기록 변경 때 상태별 책장 API를 3번 호출하고, 서버는 각 책마다 기록 수와 최신 기록을 조회합니다. | 책이 늘면 요청 수와 DB 조회 수가 함께 증가합니다. | 실제 지연이 확인되면 한 번의 책장 조회와 집계 쿼리로 합칩니다. |
+| 책 상세 화면이 URL이 아닌 React 상태로만 열립니다. | 새로고침, 브라우저 뒤로 가기, 상세 링크 공유로 같은 화면을 복원할 수 없습니다. | 상세 링크가 필요해질 때 `/books/:bookId` 경로를 화면 상태의 기준으로 만듭니다. |
+
 ## 현재 우선순위
 
 - 첫 수직 슬라이스는 `책 등록 → 읽는 중 책장 조회 → 세션 기록 저장 → 다음 시작 페이지부터 재개`입니다.
@@ -50,6 +113,7 @@
 
 ## 구현 문서
 
+- [AI Collaboration Workflow](AI_WORKFLOW.md): 3주간의 작업 순서, 사용한 Skill·Agent 역할, 발표 진행안을 정리합니다.
 - [Product PRD](client/docs/product-prd.md): Wiki P0/P1 범위를 PC 웹 MVP 요구사항으로 구체화합니다.
 - [Frontend User Flow](client/docs/user-flow.md): MVP 화면 단계와 사용자 흐름을 정리합니다.
 - [Click Unit UI Specification](client/docs/click-unit-ui-spec.md): 화면별 클릭, 모달, 상태 변화를 클릭 단위로 정의합니다.
