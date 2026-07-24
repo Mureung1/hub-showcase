@@ -46,7 +46,7 @@ describe('Gemini 합성 탐색 실행 계약', () => {
     );
     expect(embed).toHaveBeenCalledTimes(117);
     expect(embed.mock.calls[0]?.[0].text).toBe(
-      'title: React 폼 검증 패턴 | text: 메모: 팀 로그인 화면에서 입력 오류를 즉시 안내할 때 | 카테고리: 개발 | 도메인: react.example'
+      'title: React 폼 검증 패턴 | text: 메모: 팀 로그인 화면에서 입력 오류를 즉시 안내할 때 | 도메인: react.example'
     );
     expect(embed.mock.calls[72]?.[0].text).toBe(
       'task: search result | query: React 폼 검증'

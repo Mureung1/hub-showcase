@@ -70,6 +70,13 @@
   justify-items: center;
 }
 
+.library-page__filter-heading {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
 .library-page__filter > .category-filter {
   justify-content: center;
 }

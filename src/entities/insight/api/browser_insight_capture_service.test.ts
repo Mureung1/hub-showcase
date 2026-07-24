@@ -148,7 +148,7 @@ function createClient(accessToken: string | null) {
 
 function createInsight() {
   return {
-    category: null,
+    categoryId: null,
     createdAt: '2026-07-16T00:00:00.000Z',
     domain: 'example.com',
     id: '10000000-0000-4000-8000-000000000001',

@@ -4,14 +4,13 @@ import type { EvaluationInsight, EvaluationQuery } from './contracts';
 import { stableStringify } from './experiment_manifest';
 
 export const GEMINI_PROJECTION_CONTRACT = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   provider: 'gemini-embedding-2',
   outputDimensionality: 768,
   document: {
-    sourceFields: ['title', 'memo', 'category', 'domain'],
-    excludedSourceFields: ['id', 'originalUrl', 'createdAt'],
-    template:
-      'title: {title} | text: 메모: {memo} | 카테고리: {category} | 도메인: {domain}',
+    sourceFields: ['title', 'memo', 'domain'],
+    excludedSourceFields: ['id', 'category', 'originalUrl', 'createdAt'],
+    template: 'title: {title} | text: 메모: {memo} | 도메인: {domain}',
   },
   query: {
     sourceFields: ['text'],
@@ -30,7 +29,6 @@ export function createGeminiDocumentProjection(
   return [
     `title: ${insight.title}`,
     `text: 메모: ${insight.memo ?? ''}`,
-    `카테고리: ${insight.category ?? ''}`,
     `도메인: ${insight.domain}`,
   ].join(' | ');
 }

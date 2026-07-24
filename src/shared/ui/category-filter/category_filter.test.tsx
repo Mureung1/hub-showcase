@@ -20,14 +20,14 @@ import type {
 } from './category_filter';
 
 const options = [
-  { label: '전체', tone: 'slate', value: '전체' },
+  { colorKey: null, label: '전체', value: '전체' },
   {
+    colorKey: 'coral-2',
     disabled: true,
     label: '디자인',
-    tone: 'coral',
     value: '디자인',
   },
-  { label: '개발', tone: 'blue', value: '개발' },
+  { colorKey: 'blue-2', label: '개발', value: '개발' },
 ] as const satisfies readonly CategoryFilterOption[];
 
 beforeAll(() => {
@@ -93,13 +93,16 @@ describe('CategoryFilter', () => {
 
     const group = screen.getByRole('group', { name: '카테고리 필터' });
     const selectedOption = screen.getByRole('button', { name: '개발' });
-    const mark = selectedOption.querySelector('.category-filter__mark--blue');
+    const mark = selectedOption.querySelector('.category-filter__mark');
 
     expect(group.classList.contains('category-filter')).toBe(true);
     expect(selectedOption.getAttribute('aria-pressed')).toBe('true');
     expect(selectedOption.hasAttribute('aria-selected')).toBe(false);
     expect(selectedOption.getAttribute('type')).toBe('button');
     expect(mark?.getAttribute('aria-hidden')).toBe('true');
+    expect(mark?.getAttribute('style')).toContain(
+      '--category-color: var(--category-blue-2)'
+    );
     expect(screen.queryByRole('navigation')).toBeNull();
     expect(screen.queryByRole('tablist')).toBeNull();
     expect(screen.queryByRole('tab')).toBeNull();
@@ -245,9 +248,9 @@ describe('CategoryFilter', () => {
           onValueChange={onValueChange}
           options={[
             {
+              colorKey: null,
               disabled: true,
               label: '비활성',
-              tone: 'slate',
               value: 'disabled',
             },
           ]}

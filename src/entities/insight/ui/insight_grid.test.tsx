@@ -15,6 +15,27 @@ import { DesignSystemProvider } from '@/shared/ui';
 
 import { InsightGrid } from './insight_grid';
 
+const DEVELOPMENT_CATEGORY_ID = '10000000-0000-4000-8000-000000000001';
+const DESIGN_CATEGORY_ID = '10000000-0000-4000-8000-000000000002';
+const DESIGN_SYSTEMS_CATEGORY_ID = '10000000-0000-4000-8000-000000000003';
+const CATEGORIES = [
+  {
+    colorKey: 'blue-2' as const,
+    id: DEVELOPMENT_CATEGORY_ID,
+    name: '개발',
+  },
+  {
+    colorKey: 'coral-2' as const,
+    id: DESIGN_CATEGORY_ID,
+    name: '디자인',
+  },
+  {
+    colorKey: 'violet-2' as const,
+    id: DESIGN_SYSTEMS_CATEGORY_ID,
+    name: 'Design Systems',
+  },
+];
+
 beforeAll(() => {
   vi.stubGlobal(
     'ResizeObserver',
@@ -38,6 +59,11 @@ beforeAll(() => {
       removeListener: vi.fn(),
     })),
   });
+
+  Object.defineProperty(Element.prototype, 'getAnimations', {
+    configurable: true,
+    value: vi.fn(() => []),
+  });
 });
 
 afterEach(cleanup);
@@ -56,11 +82,12 @@ describe('InsightGrid', () => {
               titleOrigin: 'capture',
               title: '선택 부담을 줄이는 패턴',
               memo: '모바일 화면을 만들 때 참고하기',
-              category: '디자인',
+              categoryId: DESIGN_CATEGORY_ID,
               createdAt: '2026-07-14T00:00:00.000Z',
               updatedAt: '2026-07-14T00:00:00.000Z',
             },
           ]}
+          categories={CATEGORIES}
         />
       </DesignSystemProvider>
     );
@@ -80,7 +107,7 @@ describe('InsightGrid', () => {
     expect(document.querySelector('.insight-card__connection-clue')).toBeNull();
   });
 
-  it('does not render empty memo or category regions', () => {
+  it('shows uncategorized when an insight has no category', () => {
     render(
       <DesignSystemProvider>
         <InsightGrid
@@ -93,7 +120,7 @@ describe('InsightGrid', () => {
               titleOrigin: 'fallback',
               title: '맥락 없이 저장한 링크',
               memo: null,
-              category: null,
+              categoryId: null,
               createdAt: '2026-07-14T00:00:00.000Z',
               updatedAt: '2026-07-14T00:00:00.000Z',
             },
@@ -102,10 +129,28 @@ describe('InsightGrid', () => {
       </DesignSystemProvider>
     );
 
-    expect(screen.queryByRole('list', { name: '카테고리 목록' })).toBeNull();
+    expect(screen.getByRole('list', { name: '카테고리 목록' })).not.toBeNull();
     expect(document.querySelector('.insight-card__memo')).toBeNull();
-    expect(screen.queryByText('미분류')).toBeNull();
+    expect(screen.getByText('미분류')).not.toBeNull();
     expect(screen.queryByText('카테고리 없음')).toBeNull();
+  });
+
+  it('shows uncategorized when the linked category no longer exists', () => {
+    render(
+      <DesignSystemProvider>
+        <InsightGrid
+          insights={[
+            createInsight({
+              categoryId: '10000000-0000-4000-8000-000000000099',
+              title: '삭제된 카테고리의 링크',
+            }),
+          ]}
+          categories={CATEGORIES}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(screen.getByText('미분류')).not.toBeNull();
   });
 
   it('edits title, memo, and category without offering URL editing', async () => {
@@ -119,9 +164,10 @@ describe('InsightGrid', () => {
             createInsight({
               title: '기존 제목',
               memo: '기존 메모',
-              category: '개발',
+              categoryId: DEVELOPMENT_CATEGORY_ID,
             }),
           ]}
+          categories={CATEGORIES}
           onUpdateInsight={onUpdateInsight}
         />
       </DesignSystemProvider>
@@ -134,7 +180,7 @@ describe('InsightGrid', () => {
 
     const titleInput = screen.getByRole('textbox', { name: '제목' });
     const memoInput = screen.getByRole('textbox', { name: '한 줄 메모' });
-    const categoryInput = screen.getByRole('textbox', { name: '카테고리' });
+    const categoryInput = screen.getByRole('combobox', { name: '카테고리' });
 
     expect(document.activeElement).toBe(titleInput);
     expect(screen.queryByRole('textbox', { name: /URL/ })).toBeNull();
@@ -145,18 +191,53 @@ describe('InsightGrid', () => {
     await user.type(titleInput, '새 제목');
     await user.clear(memoInput);
     await user.type(memoInput, '새 메모');
-    await user.clear(categoryInput);
-    await user.type(categoryInput, '  Design   Systems  ');
+    await user.click(categoryInput);
+    await user.click(screen.getByRole('option', { name: 'Design Systems' }));
     await user.click(screen.getByRole('button', { name: '변경 저장' }));
 
     expect(onUpdateInsight).toHaveBeenCalledWith('insight-1', {
       title: '새 제목',
       memo: '새 메모',
-      category: '  Design   Systems  ',
+      categoryId: DESIGN_SYSTEMS_CATEGORY_ID,
     });
     expect(screen.queryByRole('button', { name: '변경 저장' })).toBeNull();
     expect(document.activeElement).toBe(
       screen.getByRole('button', { name: '수정' })
+    );
+  });
+
+  it('selects a category created from the card selector immediately', async () => {
+    const user = userEvent.setup();
+    const onUpdateInsight = vi.fn().mockResolvedValue({ ok: true } as const);
+    const onRequestCategoryCreation = vi.fn(
+      (selectCategory: (categoryId: string) => void) => {
+        selectCategory(DESIGN_SYSTEMS_CATEGORY_ID);
+      }
+    );
+
+    render(
+      <DesignSystemProvider>
+        <InsightGrid
+          insights={[createInsight({ title: '분류할 인사이트' })]}
+          onRequestCategoryCreation={onRequestCategoryCreation}
+          onUpdateInsight={onUpdateInsight}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '수정' }));
+    await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+    await user.click(
+      screen.getByRole('option', { name: '새 카테고리 만들기' })
+    );
+    await user.click(screen.getByRole('button', { name: '변경 저장' }));
+
+    expect(onRequestCategoryCreation).toHaveBeenCalledOnce();
+    expect(onUpdateInsight).toHaveBeenCalledWith(
+      'insight-1',
+      expect.objectContaining({
+        categoryId: DESIGN_SYSTEMS_CATEGORY_ID,
+      })
     );
   });
 
@@ -383,7 +464,7 @@ function createInsight(overrides: Partial<Insight> = {}): Insight {
     titleOrigin: 'fallback',
     title: 'example.com',
     memo: null,
-    category: null,
+    categoryId: null,
     createdAt: '2026-07-14T00:00:00.000Z',
     updatedAt: '2026-07-14T00:00:00.000Z',
     ...overrides,

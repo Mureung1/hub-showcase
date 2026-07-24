@@ -94,6 +94,21 @@
   gap: var(--spacing-2);
 }
 
+.save-page__category-select-value {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.save-page__category-select-mark {
+  width: var(--spacing-2);
+  height: var(--spacing-2);
+  border-radius: var(--radius-button);
+  background: var(--category-color);
+  flex: 0 0 auto;
+}
+
 button.save-page__clipboard-action {
   width: fit-content;
   min-height: 44px;

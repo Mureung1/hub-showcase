@@ -7,6 +7,30 @@ import {
 } from './apply_design_tokens';
 
 const expectedDesignTokenVariables = {
+  '--category-amber-1': '#FEF3C7',
+  '--category-amber-2': '#F59E0B',
+  '--category-amber-3': '#B45309',
+  '--category-blue-1': '#DBEAFE',
+  '--category-blue-2': '#3B82F6',
+  '--category-blue-3': '#1D4ED8',
+  '--category-coral-1': '#FEE2E2',
+  '--category-coral-2': '#F04438',
+  '--category-coral-3': '#B42318',
+  '--category-green-1': '#DCFCE7',
+  '--category-green-2': '#16A34A',
+  '--category-green-3': '#166534',
+  '--category-indigo-1': '#E0E7FF',
+  '--category-indigo-2': '#4F46E5',
+  '--category-indigo-3': '#4338CA',
+  '--category-slate-1': '#F1F5F9',
+  '--category-slate-2': '#64748B',
+  '--category-slate-3': '#334155',
+  '--category-teal-1': '#CCFBF1',
+  '--category-teal-2': '#0D9488',
+  '--category-teal-3': '#115E59',
+  '--category-violet-1': '#EDE9FE',
+  '--category-violet-2': '#7C3AED',
+  '--category-violet-3': '#6D28D9',
   '--color-amber': '#F59E0B',
   '--color-ash': '#E1E2E5',
   '--color-canvas': '#FFFFFF',
@@ -72,11 +96,11 @@ afterEach(() => {
 });
 
 describe('createDesignTokenEntries', () => {
-  it('flattens all seven token groups into 54 unique CSS variables', () => {
+  it('flattens all eight token groups into 78 unique CSS variables', () => {
     const entries = createDesignTokenEntries();
 
-    expect(entries).toHaveLength(54);
-    expect(new Set(entries.map(([name]) => name)).size).toBe(54);
+    expect(entries).toHaveLength(78);
+    expect(new Set(entries.map(([name]) => name)).size).toBe(78);
     expect(Object.fromEntries(entries)).toEqual(expectedDesignTokenVariables);
   });
 });

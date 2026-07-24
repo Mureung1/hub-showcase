@@ -95,8 +95,14 @@ export function fuseRankings(
 
 function toProductInsight(insight: EvaluationInsight): Insight {
   return {
-    ...insight,
+    categoryId: null,
+    createdAt: insight.createdAt,
+    domain: insight.domain,
+    id: insight.id,
+    memo: insight.memo,
     normalizedUrl: insight.originalUrl,
+    originalUrl: insight.originalUrl,
+    title: insight.title,
     titleOrigin: 'fallback',
     updatedAt: insight.createdAt,
   };

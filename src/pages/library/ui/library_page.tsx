@@ -3,10 +3,12 @@ import { useRef } from 'react';
 import {
   InsightGrid,
   type Insight,
+  type InsightCategoryOption,
   type InsightContextInput,
   type InsightMutationResult,
 } from '@/entities/insight';
 import {
+  Button,
   CategoryFilter,
   EmptyState,
   LoadingState,
@@ -18,14 +20,20 @@ import './library_page.css';
 
 export type LibraryPageProps = {
   activeCategory: string;
+  categories?: readonly InsightCategoryOption[];
+  categoryManagementDisabled?: boolean;
   categoryOptions: CategoryFilterOption[];
   insights: Insight[];
   loading?: boolean;
   onCategoryChange: (category: string) => void;
   onDeleteInsight: (insightId: string) => Promise<InsightMutationResult>;
+  onManageCategories?: () => void;
   onOpenSave: () => void;
   onQueryChange: (value: string) => void;
   onRetryLoad: () => void;
+  onRequestCategoryCreation?: (
+    selectCategory: (categoryId: string) => void
+  ) => void;
   onUpdateInsight: (
     insightId: string,
     context: InsightContextInput
@@ -37,14 +45,18 @@ export type LibraryPageProps = {
 
 export function LibraryPage({
   activeCategory,
+  categories = [],
+  categoryManagementDisabled = false,
   categoryOptions,
   insights,
   loading = false,
   onCategoryChange,
   onDeleteInsight,
+  onManageCategories,
   onOpenSave,
   onQueryChange,
   onRetryLoad,
+  onRequestCategoryCreation,
   onUpdateInsight,
   query,
   totalInsightCount,
@@ -53,9 +65,12 @@ export function LibraryPage({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const hasQuery = query.trim().length > 0;
   const hasLibraryInsights = totalInsightCount > 0;
+  const activeCategoryLabel =
+    categoryOptions.find((option) => option.value === activeCategory)?.label ??
+    '전체';
 
   function clearFilters() {
-    onCategoryChange('All');
+    onCategoryChange('all');
     onQueryChange('');
     searchInputRef.current?.focus();
   }
@@ -66,7 +81,7 @@ export function LibraryPage({
         <div>
           <p className="library-page__kicker">보관함</p>
           <h2 id="library-title">
-            {activeCategory === 'All' ? '전체 인사이트' : activeCategory}
+            {activeCategory === 'all' ? '전체 인사이트' : activeCategoryLabel}
           </h2>
           <p className="library-page__summary">
             카테고리와 검색으로 저장한 링크를 빠르게 찾아보세요.
@@ -77,7 +92,21 @@ export function LibraryPage({
 
       <div className="library-page__work-area">
         <div className="library-page__filter">
-          <span className="library-page__label">카테고리</span>
+          <div className="library-page__filter-heading">
+            <span className="library-page__label">카테고리</span>
+            {onManageCategories ? (
+              <Button
+                aria-label="카테고리 관리"
+                disabled={categoryManagementDisabled}
+                hierarchy="ghost"
+                onClick={onManageCategories}
+                size="small"
+                type="button"
+              >
+                관리
+              </Button>
+            ) : null}
+          </div>
           <CategoryFilter
             onValueChange={onCategoryChange}
             options={categoryOptions}
@@ -125,10 +154,13 @@ export function LibraryPage({
           />
         ) : insights.length > 0 ? (
           <InsightGrid
+            categories={categories}
+            categorySelectionDisabled={categoryManagementDisabled}
             insights={insights}
             onDeleteInsight={onDeleteInsight}
             onDeletionFocusFallback={() => searchInputRef.current?.focus()}
             onEditFocusFallback={() => searchInputRef.current?.focus()}
+            onRequestCategoryCreation={onRequestCategoryCreation}
             onUpdateInsight={onUpdateInsight}
           />
         ) : hasQuery ? (

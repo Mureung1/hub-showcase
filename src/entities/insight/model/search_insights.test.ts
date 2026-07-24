@@ -7,12 +7,23 @@ import {
   searchInsights,
 } from './search_insights';
 
+const CATEGORY_IDS = {
+  development: '10000000-0000-4000-8000-000000000001',
+  design: '10000000-0000-4000-8000-000000000002',
+  travel: '10000000-0000-4000-8000-000000000003',
+} as const;
+const CATEGORY_NAMES = new Map<string, string>([
+  [CATEGORY_IDS.development, '개발'],
+  [CATEGORY_IDS.design, '디자인'],
+  [CATEGORY_IDS.travel, '여행'],
+]);
+
 const goldenInsights: Insight[] = [
   createInsight({
     id: 'A',
     title: 'React 폼 검증',
     memo: '팀 프로젝트 로그인 구현',
-    category: '개발',
+    categoryId: CATEGORY_IDS.development,
     domain: 'react.dev',
     originalUrl: 'https://react.dev/learn/forms',
     createdAt: '2026-07-10T09:00:00Z',
@@ -21,7 +32,7 @@ const goldenInsights: Insight[] = [
     id: 'B',
     title: '로그인 UX 체크리스트',
     memo: '앱 온보딩 디자인 참고',
-    category: '디자인',
+    categoryId: CATEGORY_IDS.design,
     domain: 'medium.com',
     originalUrl: 'https://medium.com/login-ux',
     createdAt: '2026-07-11T09:00:00Z',
@@ -30,7 +41,7 @@ const goldenInsights: Insight[] = [
     id: 'C',
     title: '여행 준비',
     memo: '제주 숙소',
-    category: '여행',
+    categoryId: CATEGORY_IDS.travel,
     domain: 'blog.naver.com',
     originalUrl: 'https://blog.naver.com/travel/jeju',
     createdAt: '2026-07-09T09:00:00Z',
@@ -39,7 +50,7 @@ const goldenInsights: Insight[] = [
     id: 'D',
     title: 'WDS 버튼',
     memo: '팀 프로젝트 디자인 시스템',
-    category: '개발',
+    categoryId: CATEGORY_IDS.development,
     domain: 'wanted.co.kr',
     originalUrl: 'https://wanted.co.kr/wds/button',
     createdAt: '2026-07-12T09:00:00Z',
@@ -51,11 +62,19 @@ describe('searchInsights', () => {
     ['팀 프로젝트 로그인', ['A', 'D', 'B']],
     ['온보딩 디자인', ['B', 'D']],
     ['react', ['A']],
-    ['개발', ['D', 'A']],
   ])('ranks the golden fixture for "%s"', (query, expectedIds) => {
     expect(
       searchInsights(goldenInsights, query).map(({ insight }) => insight.id)
     ).toEqual(expectedIds);
+  });
+
+  it('검색 문맥이 이름 해석을 허용한 경우에만 카테고리명을 검색한다', () => {
+    expect(searchInsights(goldenInsights, '개발')).toEqual([]);
+    expect(
+      searchInsights(goldenInsights, '개발', {
+        getCategoryName: (categoryId) => CATEGORY_NAMES.get(categoryId) ?? null,
+      }).map(({ insight }) => insight.id)
+    ).toEqual(['D', 'A']);
   });
 
   it('normalizes Unicode, case, and whitespace and counts duplicate query tokens once', () => {
@@ -124,12 +143,15 @@ describe('searchInsights', () => {
         createInsight({
           memo: 'signal',
           title: 'signal',
-          category: 'signal',
+          categoryId: CATEGORY_IDS.development,
           domain: 'signal',
           originalUrl: 'https://signal.example/signal',
         }),
       ],
-      'signal'
+      'signal',
+      {
+        getCategoryName: () => 'signal',
+      }
     );
 
     expect(INSIGHT_SEARCH_FIELD_WEIGHTS).toEqual({
@@ -262,7 +284,7 @@ function createInsight(overrides: Partial<Insight>): Insight {
     titleOrigin: 'fallback',
     title: '자료',
     memo: null,
-    category: null,
+    categoryId: null,
     createdAt,
     updatedAt: createdAt,
     ...overrides,

@@ -1,0 +1,23 @@
+div.ui-modal[role='dialog'] {
+  border-radius: var(--radius-card);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+div.ui-modal__content {
+  min-width: 0;
+}
+
+div.ui-modal__footer {
+  display: flex;
+  padding: var(--spacing-4) var(--spacing-5) var(--spacing-5);
+  gap: var(--spacing-2);
+  justify-content: flex-end;
+}
+
+@media (max-width: 639px) {
+  div.ui-modal[role='dialog'] {
+    width: calc(100vw - var(--spacing-4));
+    max-height: calc(100vh - var(--spacing-4));
+  }
+}

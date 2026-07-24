@@ -15,7 +15,7 @@ const share: AndroidShareInput = {
 };
 
 const insight: CapturedInsight = {
-  category: null,
+  categoryId: null,
   createdAt: '2026-07-21T00:00:00.000Z',
   domain: 'example.com',
   id: 'insight-1',

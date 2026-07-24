@@ -7,6 +7,18 @@ const workflowPath = resolve(
   process.cwd(),
   '.github/workflows/supabase-migration-check.yml'
 );
+const categoryMigrationPath = resolve(
+  process.cwd(),
+  'supabase/migrations/20260724000100_add_user_categories.sql'
+);
+const categoryFinalizationMigrationPath = resolve(
+  process.cwd(),
+  'supabase/migrations/20260724000200_finalize_user_category_constraint.sql'
+);
+const categoryIndexMigrationPath = resolve(
+  process.cwd(),
+  'supabase/migrations/20260724000300_create_user_category_index.sql'
+);
 
 function readWorkflow() {
   return readFileSync(workflowPath, 'utf8');
@@ -26,7 +38,7 @@ describe('Supabase migration Pull Request 검사', () => {
     const workflow = readWorkflow();
 
     expect(workflow).toMatch(
-      /uses: actions\/checkout@[^\n]+\n\s{8}with:\n\s{10}fetch-depth: 0\n\s{10}persist-credentials: false/u
+      /uses: actions\/checkout@[^\r\n]+\r?\n\s{8}with:\r?\n\s{10}fetch-depth: 0\r?\n\s{10}persist-credentials: false/u
     );
   });
 
@@ -41,6 +53,15 @@ describe('Supabase migration Pull Request 검사', () => {
       "if: steps.changes.outputs.should_run == 'true'"
     );
     expect(workflow).toContain('supabase db start');
+    expect(workflow).toContain('--version 20260716000000');
+    expect(workflow).toContain(
+      '--sql-paths upgrade-tests/category_management_fixture.sql'
+    );
+    expect(workflow).toContain('supabase migration up --local');
+    expect(workflow).toContain(
+      'supabase/upgrade-tests/category_management.test.sql'
+    );
+    expect(workflow).toContain('supabase db reset --local');
     expect(workflow).toContain('supabase test db');
     expect(workflow).toContain('supabase stop --no-backup');
   });
@@ -55,5 +76,31 @@ describe('Supabase migration Pull Request 검사', () => {
       'supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520'
     );
     expect(workflow).toContain('version: 2.109.1');
+  });
+
+  it('운영 테이블의 외래 키 검증과 인덱스 생성을 제한된 별도 단계로 분리한다', () => {
+    const categoryMigration = readFileSync(categoryMigrationPath, 'utf8');
+    const finalizationMigration = readFileSync(
+      categoryFinalizationMigrationPath,
+      'utf8'
+    );
+    const indexMigration = readFileSync(categoryIndexMigrationPath, 'utf8');
+
+    expect(categoryMigration).toMatch(
+      /add constraint insights_category_user_id_fkey[\s\S]*references public\.categories \(id, user_id\)\s+not valid;/u
+    );
+    expect(categoryMigration).not.toContain(
+      'create index insights_category_user_id_idx'
+    );
+    expect(finalizationMigration).toContain(
+      'validate constraint insights_category_user_id_fkey'
+    );
+    expect(indexMigration).toContain("set lock_timeout = '5s'");
+    expect(indexMigration).toContain("set statement_timeout = '5s'");
+    expect(indexMigration).toContain(
+      'create index insights_category_user_id_idx'
+    );
+    expect(indexMigration).toContain('reset statement_timeout');
+    expect(indexMigration).toContain('reset lock_timeout');
   });
 });

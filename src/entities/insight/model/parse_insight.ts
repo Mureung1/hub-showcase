@@ -56,7 +56,7 @@ function hasInsightShape(value: unknown): value is Insight {
     ) &&
     isTitleOrigin(candidate.titleOrigin) &&
     isNullableString(candidate.memo) &&
-    isNullableString(candidate.category)
+    isNullableUuid(candidate.categoryId)
   );
 }
 
@@ -66,6 +66,16 @@ function hasText(value: string) {
 
 function isNullableString(value: unknown) {
   return value === null || typeof value === 'string';
+}
+
+function isNullableUuid(value: unknown): value is string | null {
+  return (
+    value === null ||
+    (typeof value === 'string' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+        value
+      ))
+  );
 }
 
 function isTitleOrigin(value: unknown): value is Insight['titleOrigin'] {

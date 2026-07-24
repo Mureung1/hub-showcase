@@ -1,17 +1,31 @@
-import type { FormEvent } from 'react';
+import type { CSSProperties, FormEvent } from 'react';
 import { ClipboardPaste, Link } from 'lucide-react';
 
-import { Button, StatusMessage, TextArea, TextField } from '@/shared/ui';
+import type { InsightCategoryOption } from '@/entities/insight';
+import {
+  categoryPalette,
+  type CategoryColorKey,
+} from '@/shared/config/design-system';
+import {
+  Button,
+  Select,
+  StatusMessage,
+  TextArea,
+  TextField,
+  type SelectOption,
+} from '@/shared/ui';
 
 import './save_page.css';
 
 export type SaveContextDraft = {
-  category: string;
+  categoryId: string | null;
   memo: string;
   title: string;
 };
 
 export type SavePageProps = {
+  categories?: readonly InsightCategoryOption[];
+  categorySelectionDisabled?: boolean;
   contextDraft: SaveContextDraft;
   contextErrorMessage?: string;
   contextSaveComplete: boolean;
@@ -25,6 +39,9 @@ export type SavePageProps = {
   onContextSkip: () => void;
   onErrorAction?: () => void;
   onPasteFromClipboard?: () => void | Promise<void>;
+  onRequestCategoryCreation?: (
+    selectCategory: (categoryId: string) => void
+  ) => void;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
   onTitleChange: (value: string) => void;
   onUrlChange: (value: string) => void;
@@ -35,6 +52,8 @@ export type SavePageProps = {
 };
 
 export function SavePage({
+  categories = [],
+  categorySelectionDisabled = false,
   contextDraft,
   contextErrorMessage,
   contextSaveComplete,
@@ -48,6 +67,7 @@ export function SavePage({
   onContextSkip,
   onErrorAction,
   onPasteFromClipboard,
+  onRequestCategoryCreation,
   onSave,
   onTitleChange,
   onUrlChange,
@@ -190,18 +210,30 @@ export function SavePage({
               width="100%"
             />
 
-            <label htmlFor="save-context-category">카테고리 (선택)</label>
-            <TextField
-              id="save-context-category"
-              onChange={(event) =>
+            <label id="save-context-category-label">카테고리 (선택)</label>
+            <Select
+              aria-labelledby="save-context-category-label"
+              disabled={categorySelectionDisabled}
+              onValueChange={(value) => {
+                if (value === CREATE_CATEGORY_VALUE) {
+                  onRequestCategoryCreation?.((categoryId) =>
+                    onContextDraftChange({ ...contextDraft, categoryId })
+                  );
+                  return;
+                }
+
                 onContextDraftChange({
                   ...contextDraft,
-                  category: event.currentTarget.value,
-                })
-              }
-              placeholder="예: 디자인 리서치"
-              value={contextDraft.category}
-              width="100%"
+                  categoryId:
+                    value === UNCATEGORIZED_CATEGORY_VALUE ? null : value,
+                });
+              }}
+              options={createCategorySelectOptions(
+                categories,
+                Boolean(onRequestCategoryCreation)
+              )}
+              renderValue={(option) => renderCategorySelectValue(option)}
+              value={contextDraft.categoryId ?? UNCATEGORIZED_CATEGORY_VALUE}
             />
 
             {contextErrorMessage ? (
@@ -249,5 +281,65 @@ export function SavePage({
         </div>
       ) : null}
     </section>
+  );
+}
+
+const UNCATEGORIZED_CATEGORY_VALUE = '__uncategorized__';
+const CREATE_CATEGORY_VALUE = '__create_category__';
+
+function createCategorySelectOptions(
+  categories: readonly InsightCategoryOption[],
+  includeCreateAction: boolean
+): SelectOption[] {
+  const options: SelectOption[] = [
+    {
+      label: '미분류',
+      leadingContent: <CategorySelectMark colorKey={null} />,
+      value: UNCATEGORIZED_CATEGORY_VALUE,
+    },
+    ...categories.map((category) => ({
+      label: category.name,
+      leadingContent: <CategorySelectMark colorKey={category.colorKey} />,
+      value: category.id,
+    })),
+  ];
+
+  if (includeCreateAction) {
+    options.push({
+      label: '새 카테고리 만들기',
+      leadingContent: <span aria-hidden="true">＋</span>,
+      value: CREATE_CATEGORY_VALUE,
+    });
+  }
+
+  return options;
+}
+
+function renderCategorySelectValue(option: SelectOption) {
+  return (
+    <span className="save-page__category-select-value">
+      {option.leadingContent}
+      <span>{option.label}</span>
+    </span>
+  );
+}
+
+function CategorySelectMark({
+  colorKey,
+}: {
+  colorKey: CategoryColorKey | null;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className="save-page__category-select-mark"
+      style={
+        {
+          '--category-color': colorKey
+            ? categoryPalette[colorKey].cssVariable
+            : 'var(--color-graphite)',
+        } as CSSProperties
+      }
+    />
   );
 }
