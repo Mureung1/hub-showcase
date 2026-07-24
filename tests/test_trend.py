@@ -37,3 +37,16 @@ def test_collect_summaries_flattens_to_five_keys():
         "method": "m1",
         "result": "r1",
     }
+
+
+def test_trend_skips_when_no_summaries(monkeypatch):
+    """성공 논문이 0편이면 LLM 호출 없이 즉시 빈 결과를 반환한다 (5-2)."""
+    # LLM 경계를 "호출되면 실패"로 막는다. trend가 여길 타면 테스트가 깨진다.
+    def _boom(prompt):
+        raise AssertionError("성공 논문 0편이면 LLM을 호출하면 안 된다")
+
+    monkeypatch.setattr("app.tools.ask_llm", _boom)
+
+    result = agent.trend("LLM agent planning", [])
+
+    assert result == {"flows": [], "gap": None}
