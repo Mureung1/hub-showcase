@@ -117,6 +117,7 @@ export async function uploadPDF(req, res) {
     });
   } catch (error) {
     // 파일이 손상되었거나 암호가 걸린 경우
+    console.error("PDF 파싱 오류:", error.message);
     let errorMessage = "PDF를 읽을 수 없습니다.";
 
     if (

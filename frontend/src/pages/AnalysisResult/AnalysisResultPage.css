@@ -398,3 +398,11 @@
     width: 100%;
   }
 }
+
+/* Input and Textarea styles */
+input,
+textarea,
+select {
+  background-color: var(--color-surface) !important;
+  color: var(--color-text) !important;
+}

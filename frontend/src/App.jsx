@@ -4,7 +4,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import LoginPage from "./pages/Login/LoginPage";
 import DashboardPage from "./pages/Dashboard/DashboardPage";
+import RegisterEventPage from "./pages/RegisterEvent/RegisterEventPage";
 import AnalysisResultPage from "./pages/AnalysisResult/AnalysisResultPage";
+import CalendarPage from "./pages/Calendar/CalendarPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import MainLayout from "./layouts/MainLayout";
 import { getUser } from "./utils/auth";
@@ -49,10 +51,26 @@ function App() {
           }
         />
         <Route
+          path="/register-event"
+          element={
+            <MainLayout>
+              <RegisterEventPage />
+            </MainLayout>
+          }
+        />
+        <Route
           path="/analysis"
           element={
             <MainLayout>
               <AnalysisResultPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <MainLayout>
+              <CalendarPage />
             </MainLayout>
           }
         />

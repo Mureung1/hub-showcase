@@ -47,11 +47,19 @@ database.exec(`
     location TEXT,
     deliverables TEXT,
     notes TEXT,
+    category TEXT DEFAULT '기타',
     is_selected BOOLEAN DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (notice_id) REFERENCES notices(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
 `);
+
+try {
+  database.exec(`ALTER TABLE events ADD COLUMN category TEXT DEFAULT '기타';`);
+} catch (e) {
+  // 컬럼이 이미 존재하는 경우 무시
+}
+
 
 export default database;

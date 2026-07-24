@@ -84,3 +84,44 @@ export async function checkDuplicate(events) {
 
   return data;
 }
+
+export async function updateEvent(eventId, eventData) {
+  const token = getToken();
+
+  const response = await fetch(`${API_BASE_URL}/api/events/${eventId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(eventData),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "일정 수정 실패");
+  }
+
+  return data;
+}
+
+export async function deleteEvent(eventId) {
+  const token = getToken();
+
+  const response = await fetch(`${API_BASE_URL}/api/events/${eventId}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "일정 삭제 실패");
+  }
+
+  return data;
+}

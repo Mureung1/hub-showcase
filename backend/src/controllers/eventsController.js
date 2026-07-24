@@ -37,8 +37,9 @@ export async function saveEventsHandler(req, res) {
             location,
             deliverables,
             notes,
+            category,
             is_selected
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         const result = stmt.run(
@@ -52,6 +53,7 @@ export async function saveEventsHandler(req, res) {
           event.location || null,
           event.deliverables?.length > 0 ? JSON.stringify(event.deliverables) : null,
           event.notes || null,
+          event.category || "기타",
           1
         );
 
@@ -98,6 +100,7 @@ export async function getEventsHandler(req, res) {
         location,
         deliverables,
         notes,
+        category,
         is_selected as isSelected,
         created_at as createdAt
       FROM events
@@ -120,6 +123,7 @@ export async function getEventsHandler(req, res) {
       location: event.location,
       deliverables: event.deliverables ? JSON.parse(event.deliverables) : [],
       notes: event.notes,
+      category: event.category || "기타",
       isSelected: event.isSelected,
       createdAt: event.createdAt,
     }));
@@ -188,6 +192,247 @@ export async function checkDuplicateHandler(req, res) {
     return res.status(500).json({
       success: false,
       message: "중복 검사 중 오류가 발생했습니다.",
+    });
+  }
+}
+
+function isValidDateFormat(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return false;
+  return /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+}
+
+function isValidTimeFormat(timeStr) {
+  if (!timeStr || typeof timeStr !== 'string') return false;
+  return /^\d{2}:\d{2}$/.test(timeStr);
+}
+
+export async function updateEventHandler(req, res) {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    const { name, startDate, endDate, deadline, time, location, deliverables, notes } = req.body;
+
+    const eventId = parseInt(id, 10);
+    if (isNaN(eventId)) {
+      return res.status(400).json({
+        success: false,
+        message: "유효하지 않은 일정 ID입니다.",
+      });
+    }
+
+    const getStmt = database.prepare("SELECT * FROM events WHERE id = ? AND user_id = ?");
+    const existingEvent = getStmt.get(eventId, userId);
+
+    if (!existingEvent) {
+      return res.status(404).json({
+        success: false,
+        message: "요청한 일정을 찾을 수 없습니다.",
+      });
+    }
+
+    const trimmedName = name ? name.trim() : null;
+    if (trimmedName === "") {
+      return res.status(400).json({
+        success: false,
+        message: "일정명은 공백만으로 구성될 수 없습니다.",
+      });
+    }
+
+    const finalName = trimmedName || existingEvent.name;
+
+    if (!finalName) {
+      return res.status(400).json({
+        success: false,
+        message: "일정명은 필수입니다.",
+      });
+    }
+
+    const finalStartDate = startDate || existingEvent.start_date;
+    const finalEndDate = endDate || existingEvent.end_date;
+    const finalDeadline = deadline || existingEvent.deadline;
+
+    if (!finalStartDate && !finalEndDate && !finalDeadline) {
+      return res.status(400).json({
+        success: false,
+        message: "시작일, 종료일, 마감일 중 최소 하나는 필수입니다.",
+      });
+    }
+
+    if (startDate && !isValidDateFormat(startDate)) {
+      return res.status(400).json({
+        success: false,
+        message: "시작일 형식은 YYYY-MM-DD여야 합니다.",
+      });
+    }
+
+    if (endDate && !isValidDateFormat(endDate)) {
+      return res.status(400).json({
+        success: false,
+        message: "종료일 형식은 YYYY-MM-DD여야 합니다.",
+      });
+    }
+
+    if (deadline && !isValidDateFormat(deadline)) {
+      return res.status(400).json({
+        success: false,
+        message: "마감일 형식은 YYYY-MM-DD여야 합니다.",
+      });
+    }
+
+    if (finalStartDate && finalEndDate && finalEndDate < finalStartDate) {
+      return res.status(400).json({
+        success: false,
+        message: "종료일은 시작일보다 이전일 수 없습니다.",
+      });
+    }
+
+    const finalTimeStart = time?.start || existingEvent.time_start;
+    const finalTimeEnd = time?.end || existingEvent.time_end;
+
+    if (time?.start && !isValidTimeFormat(time.start)) {
+      return res.status(400).json({
+        success: false,
+        message: "시작 시간 형식은 HH:MM이어야 합니다.",
+      });
+    }
+
+    if (time?.end && !isValidTimeFormat(time.end)) {
+      return res.status(400).json({
+        success: false,
+        message: "종료 시간 형식은 HH:MM이어야 합니다.",
+      });
+    }
+
+    const finalLocation = location !== undefined ? location : existingEvent.location;
+
+    let finalDeliverables = existingEvent.deliverables;
+    if (deliverables !== undefined) {
+      if (!Array.isArray(deliverables)) {
+        return res.status(400).json({
+          success: false,
+          message: "deliverables는 배열이어야 합니다.",
+        });
+      }
+      finalDeliverables = deliverables.length > 0 ? JSON.stringify(deliverables) : null;
+    }
+
+    const finalNotes = notes !== undefined ? notes : existingEvent.notes;
+
+    const updateStmt = database.prepare(`
+      UPDATE events
+      SET name = ?,
+          start_date = ?,
+          end_date = ?,
+          deadline = ?,
+          time_start = ?,
+          time_end = ?,
+          location = ?,
+          deliverables = ?,
+          notes = ?
+      WHERE id = ? AND user_id = ?
+    `);
+
+    updateStmt.run(
+      finalName,
+      finalStartDate,
+      finalEndDate,
+      finalDeadline,
+      finalTimeStart,
+      finalTimeEnd,
+      finalLocation,
+      finalDeliverables,
+      finalNotes,
+      eventId,
+      userId
+    );
+
+    const selectStmt = database.prepare(`
+      SELECT
+        id,
+        name,
+        start_date as startDate,
+        end_date as endDate,
+        deadline,
+        time_start,
+        time_end,
+        location,
+        deliverables,
+        notes,
+        is_selected as isSelected,
+        created_at as createdAt
+      FROM events
+      WHERE id = ? AND user_id = ?
+    `);
+
+    const updatedEvent = selectStmt.get(eventId, userId);
+
+    const formattedEvent = {
+      id: updatedEvent.id,
+      name: updatedEvent.name,
+      startDate: updatedEvent.startDate,
+      endDate: updatedEvent.endDate,
+      deadline: updatedEvent.deadline,
+      time: {
+        start: updatedEvent.time_start,
+        end: updatedEvent.time_end,
+      },
+      location: updatedEvent.location,
+      deliverables: updatedEvent.deliverables ? JSON.parse(updatedEvent.deliverables) : [],
+      notes: updatedEvent.notes,
+      isSelected: updatedEvent.isSelected,
+      createdAt: updatedEvent.createdAt,
+    };
+
+    return res.status(200).json({
+      success: true,
+      message: "일정이 수정되었습니다.",
+      data: formattedEvent,
+    });
+  } catch (error) {
+    console.error("일정 수정 오류:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "일정 수정 중 오류가 발생했습니다.",
+    });
+  }
+}
+
+export async function deleteEventHandler(req, res) {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    const eventId = parseInt(id, 10);
+    if (isNaN(eventId)) {
+      return res.status(400).json({
+        success: false,
+        message: "유효하지 않은 일정 ID입니다.",
+      });
+    }
+
+    const checkStmt = database.prepare("SELECT id FROM events WHERE id = ? AND user_id = ?");
+    const existingEvent = checkStmt.get(eventId, userId);
+
+    if (!existingEvent) {
+      return res.status(404).json({
+        success: false,
+        message: "요청한 일정을 찾을 수 없습니다.",
+      });
+    }
+
+    const deleteStmt = database.prepare("DELETE FROM events WHERE id = ? AND user_id = ?");
+    deleteStmt.run(eventId, userId);
+
+    return res.status(200).json({
+      success: true,
+      message: "일정이 삭제되었습니다.",
+      data: { id: eventId },
+    });
+  } catch (error) {
+    console.error("일정 삭제 오류:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "일정 삭제 중 오류가 발생했습니다.",
     });
   }
 }

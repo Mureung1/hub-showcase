@@ -25,17 +25,8 @@ dist-ssr
 
 
 # SQLite files
-*.db
 *.db-wal
 *.db-shm
 
 # Claude Code
 .claude/
-
-# Temporary uploads
-backend/uploads/
-
-# Environment variables
-.env
-.env.local
-.env.*.local

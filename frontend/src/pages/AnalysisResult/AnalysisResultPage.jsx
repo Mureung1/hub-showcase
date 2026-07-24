@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { analyzeNotice, saveEvents } from "../../api/analysisApi";
+import { useLocation, useNavigate } from "react-router-dom";
+import { saveEvents, checkDuplicate } from "../../api/analysisApi";
 import "./AnalysisResultPage.css";
 
 function AnalysisResultPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [analysisData, setAnalysisData] = useState(null);
@@ -11,11 +14,28 @@ function AnalysisResultPage() {
   const [editingEventId, setEditingEventId] = useState(null);
   const [editedData, setEditedData] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [savedEventCount, setSavedEventCount] = useState(0);
 
-  // Mock: 테스트용 공지 텍스트로 분석 API 호출
+  // Dashboard에서 전달된 실제 분석 결과를 받음
   useEffect(() => {
-    loadAnalysisResult();
-  }, []);
+    if (location.state?.analysisData) {
+      const data = location.state.analysisData;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAnalysisData(data);
+
+      // 모든 일정을 기본으로 선택
+      if (data.events) {
+        const initialSelected = {};
+        data.events.forEach((_, index) => {
+          initialSelected[index] = true;
+        });
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSelectedEvents(initialSelected);
+      }
+    }
+    // location.state가 없으면 아무것도 로드하지 않음
+  }, [location.state]);
 
   // 화면 이탈 경고 (수정 모드 활성화 시)
   useEffect(() => {
@@ -59,7 +79,12 @@ function AnalysisResultPage() {
     } else {
       // 수정 모드 시작 (현재 데이터를 임시 데이터로 복사)
       setEditingEventId(index);
-      setEditedData({ ...analysisData.events[index] });
+      const eventData = { ...analysisData.events[index] };
+      // deliverables가 없으면 빈 배열로 초기화
+      if (!eventData.deliverables) {
+        eventData.deliverables = [];
+      }
+      setEditedData(eventData);
     }
   }
 
@@ -68,6 +93,31 @@ function AnalysisResultPage() {
       ...prev,
       [field]: value,
     }));
+  }
+
+  function handleAddDeliverable() {
+    setEditedData((prev) => ({
+      ...prev,
+      deliverables: [...(prev.deliverables || []), ""],
+    }));
+  }
+
+  function handleDeleteDeliverable(index) {
+    setEditedData((prev) => ({
+      ...prev,
+      deliverables: prev.deliverables.filter((_, i) => i !== index),
+    }));
+  }
+
+  function handleDeliverableChange(index, value) {
+    setEditedData((prev) => {
+      const updatedDeliverables = [...prev.deliverables];
+      updatedDeliverables[index] = value;
+      return {
+        ...prev,
+        deliverables: updatedDeliverables,
+      };
+    });
   }
 
   function validateEventData(data) {
@@ -160,6 +210,7 @@ function AnalysisResultPage() {
       location: null,
       deliverables: [],
       notes: null,
+      category: "기타",
     };
 
     // 새 일정 추가
@@ -181,6 +232,19 @@ function AnalysisResultPage() {
     }));
   }
 
+  function handleCancel() {
+    if (editingEventId !== null) {
+      const confirmed = window.confirm(
+        "작성 중인 내용이 사라집니다. 취소하시겠습니까?"
+      );
+      if (confirmed) {
+        navigate("/register-event");
+      }
+    } else {
+      navigate("/register-event");
+    }
+  }
+
   async function handleSaveAllEvents() {
     // 선택된 일정 필터링
     const selectedEventsList = analysisData.events.filter((_, index) => selectedEvents[index]);
@@ -196,9 +260,36 @@ function AnalysisResultPage() {
     setSuccess("");
 
     try {
+      // 중복 검사
+      try {
+        const duplicateResult = await checkDuplicate(selectedEventsList);
+
+        if (duplicateResult.hasDuplicates && duplicateResult.data.length > 0) {
+          const duplicateList = duplicateResult.data
+            .map(d => `${d.name} (${d.startDate})`)
+            .join(", ");
+
+          const confirmed = window.confirm(
+            `다음 일정이 이미 등록되어 있습니다:\n${duplicateList}\n\n그래도 등록하시겠습니까?`
+          );
+
+          if (!confirmed) {
+            setIsSaving(false);
+            return;
+          }
+        }
+      } catch (duplicateErr) {
+        setError("중복 검사 중 오류가 발생했습니다.");
+        setTimeout(() => setError(""), 3000);
+        setIsSaving(false);
+        return;
+      }
+
       // 백엔드 API 호출
       await saveEvents(selectedEventsList);
 
+      setSavedEventCount(selectedEventsList.length);
+      setShowSaveConfirmation(true);
       setSuccess(`${selectedEventsList.length}개의 일정이 저장되었습니다.`);
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
@@ -209,59 +300,29 @@ function AnalysisResultPage() {
     }
   }
 
-  async function loadAnalysisResult() {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      // Mock 데이터: 해커톤 공지 (여러 일정 포함)
-      const mockText = `
-        2024 CalMe 겨울 해커톤
-
-        겨울 방학 중 진행되는 해커톤입니다.
-        팀 단위로 참가할 수 있으며, 선발된 팀에게 상품이 지급됩니다.
-
-        1. 팀 구성 및 신청: 2024년 12월 1일부터 12월 10일까지 신청 가능
-        2. 해커톤 본선: 2024년 12월 15일-16일, 09:00-18:00, 서울대학교 공학관 301호
-        3. 최종 결과물 제출: 2024년 12월 31일까지 온라인 제출
-      `;
-
-      const result = await analyzeNotice(mockText);
-      setAnalysisData(result.data);
-
-      // 모든 일정을 기본으로 선택 상태로 초기화
-      if (result.data.events) {
-        const initialSelected = {};
-        result.data.events.forEach((_, index) => {
-          initialSelected[index] = true;
-        });
-        setSelectedEvents(initialSelected);
-      }
-    } catch (err) {
-      setError(err.message || "분석에 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
+  function handleSaveConfirmationYes() {
+    setShowSaveConfirmation(false);
+    navigate("/calendar");
   }
 
-  if (isLoading) {
-    return (
-      <section className="analysis-result-section">
-        <div className="analysis-container">
-          <p className="loading-message">분석 중입니다...</p>
-        </div>
-      </section>
-    );
+  function handleSaveConfirmationNo() {
+    setShowSaveConfirmation(false);
+    navigate("/register-event");
   }
 
   if (error) {
     return (
       <section className="analysis-result-section">
         <div className="analysis-container">
-          <p className="error-message">{error}</p>
-          <button className="retry-button" onClick={loadAnalysisResult}>
-            다시 시도
-          </button>
+          <div style={{ textAlign: "center", padding: "40px 20px" }}>
+            <p className="error-message">{error}</p>
+            <button
+              className="retry-button"
+              onClick={() => navigate("/dashboard")}
+            >
+              Dashboard로 이동
+            </button>
+          </div>
         </div>
       </section>
     );
@@ -271,7 +332,27 @@ function AnalysisResultPage() {
     return (
       <section className="analysis-result-section">
         <div className="analysis-container">
-          <p>분석 결과가 없습니다.</p>
+          <div style={{ textAlign: "center", padding: "40px 20px" }}>
+            <p style={{ fontSize: "16px", color: "var(--color-text-muted)", marginBottom: "20px" }}>
+              분석 결과가 없습니다. 공지를 다시 분석해주세요.
+            </p>
+            <button
+              onClick={() => navigate("/dashboard")}
+              style={{
+                padding: "10px 24px",
+                backgroundColor: "var(--color-primary)",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                fontSize: "14px",
+                fontWeight: "600",
+                cursor: "pointer",
+                fontFamily: "Inter, Pretendard, sans-serif"
+              }}
+            >
+              Dashboard로 이동
+            </button>
+          </div>
         </div>
       </section>
     );
@@ -364,6 +445,31 @@ function AnalysisResultPage() {
                         />
                       ) : (
                         <p>{event.name}</p>
+                      )}
+                    </div>
+
+                    <div className="event-field">
+                      <label>카테고리</label>
+                      {editingEventId === index ? (
+                        <select
+                          value={editedData.category || "기타"}
+                          onChange={(e) => handleEditChange("category", e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px 12px",
+                            border: "1px solid var(--color-border)",
+                            borderRadius: "4px",
+                            fontSize: "14px",
+                            fontFamily: "Inter, Pretendard, sans-serif",
+                          }}
+                        >
+                          <option value="공모전">공모전</option>
+                          <option value="시험">시험</option>
+                          <option value="과제">과제</option>
+                          <option value="기타">기타</option>
+                        </select>
+                      ) : (
+                        <p>{event.category || "기타"}</p>
                       )}
                     </div>
 
@@ -503,16 +609,81 @@ function AnalysisResultPage() {
                       )}
                     </div>
 
-                    {event.deliverables.length > 0 && (
+                    {editingEventId === index || event.deliverables?.length > 0 ? (
                       <div className="event-field">
                         <label>제출물</label>
-                        <ul className="deliverables-list">
-                          {event.deliverables.map((item, idx) => (
-                            <li key={idx}>{item}</li>
-                          ))}
-                        </ul>
+                        {editingEventId === index ? (
+                          <div>
+                            {editedData.deliverables?.map((item, idx) => (
+                              <div
+                                key={idx}
+                                style={{
+                                  display: "flex",
+                                  gap: "8px",
+                                  marginBottom: "8px",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <input
+                                  type="text"
+                                  value={item}
+                                  onChange={(e) =>
+                                    handleDeliverableChange(idx, e.target.value)
+                                  }
+                                  placeholder="제출물 입력"
+                                  style={{
+                                    flex: 1,
+                                    padding: "8px 12px",
+                                    border: "1px solid var(--color-border)",
+                                    borderRadius: "4px",
+                                    fontSize: "14px",
+                                    fontFamily: "Inter, Pretendard, sans-serif",
+                                  }}
+                                />
+                                <button
+                                  onClick={() => handleDeleteDeliverable(idx)}
+                                  style={{
+                                    padding: "6px 10px",
+                                    backgroundColor: "#ff6b6b",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    cursor: "pointer",
+                                    fontSize: "12px",
+                                    fontWeight: "600",
+                                  }}
+                                >
+                                  삭제
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={handleAddDeliverable}
+                              style={{
+                                width: "100%",
+                                padding: "8px 12px",
+                                backgroundColor: "var(--color-primary)",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "13px",
+                                fontWeight: "600",
+                                marginTop: "8px",
+                              }}
+                            >
+                              + 제출물 추가
+                            </button>
+                          </div>
+                        ) : (
+                          <ul className="deliverables-list">
+                            {event.deliverables?.map((item, idx) => (
+                              <li key={idx}>{item}</li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
-                    )}
+                    ) : null}
 
                     {editingEventId === index || event.notes ? (
                       <div className="event-field">
@@ -600,11 +771,83 @@ function AnalysisResultPage() {
               ? "저장 중..."
               : `저장하기 (${Object.values(selectedEvents).filter(Boolean).length}개 선택됨)`}
           </button>
-          <button className="cancel-button" disabled={isSaving}>
+          <button
+            className="cancel-button"
+            onClick={handleCancel}
+            disabled={isSaving}
+          >
             취소
           </button>
         </div>
       </div>
+
+      {/* 저장 완료 팝업 */}
+      {showSaveConfirmation && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              padding: "32px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
+              maxWidth: "400px",
+              textAlign: "center",
+            }}
+          >
+            <h2 style={{ margin: "0 0 16px 0", color: "var(--color-text)" }}>
+              일정이 등록되었습니다
+            </h2>
+            <p style={{ margin: "0 0 24px 0", color: "var(--color-text-muted)", fontSize: "14px" }}>
+              {savedEventCount}개의 일정이 저장되었습니다. 캘린더로 이동하시겠습니까?
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+              <button
+                onClick={handleSaveConfirmationYes}
+                style={{
+                  padding: "10px 24px",
+                  backgroundColor: "var(--color-primary)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                }}
+              >
+                예, 캘린더로 이동
+              </button>
+              <button
+                onClick={handleSaveConfirmationNo}
+                style={{
+                  padding: "10px 24px",
+                  backgroundColor: "var(--color-surface-subtle)",
+                  color: "var(--color-text)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                }}
+              >
+                아니오, 계속 등록
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
