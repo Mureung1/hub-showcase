@@ -8,7 +8,7 @@
 
 .card.editing {
   border-color: var(--color-warning);
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  box-shadow: 0 0 0 3px var(--color-warning-light);
 }
 
 /* pinned right below the topbar — the question you're currently answering
@@ -16,13 +16,13 @@
    into the history list underneath (see CellList). */
 .card.primary {
   position: sticky;
-  top: 58px;
+  top: calc(var(--topbar-h) + var(--space-2));
   z-index: 4;
   box-shadow: 0 0 0 3px var(--color-primary-light), var(--shadow-md);
 }
 
 @media (max-width: 560px) {
-  .card.primary { top: 54px; }
+  .card.primary { top: calc(var(--topbar-h) + var(--space-1)); }
 }
 
 .titleRow {
@@ -142,13 +142,13 @@
 
 .ynYes.selected {
   border-color: var(--color-success);
-  background: rgba(34, 197, 94, 0.12);
+  background: var(--color-success-light);
   color: var(--color-success);
 }
 
 .ynNo.selected {
   border-color: var(--color-danger);
-  background: rgba(239, 68, 68, 0.12);
+  background: var(--color-danger-light);
   color: var(--color-danger);
 }
 
@@ -199,17 +199,17 @@
   font-size: var(--font-size-xs);
   font-weight: 800;
   padding: 4px 10px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   margin-bottom: var(--space-2);
 }
 
 .badgeAmber {
-  background: rgba(245, 158, 11, 0.12);
+  background: var(--color-warning-light);
   color: var(--color-warning);
 }
 
 .badgeGreen {
-  background: rgba(34, 197, 94, 0.12);
+  background: var(--color-success-light);
   color: var(--color-success);
 }
 

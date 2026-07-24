@@ -1,33 +1,53 @@
 /* ===================================================
-   TaxWiz Design System
+   TaxWiz Design System — "장부(ledger) 라이트" 토큰
+   ---------------------------------------------------
+   DESIGN.md §9.3(라이트 전환) · §7.1(AI-slop 제거) 반영본.
+   이전 토큰셋은 랜딩페이지용 "Night Sky" 다크를 데이터 입력 도구에
+   그대로 얹은 것이라, 아래 세 가지를 의도적으로 뒤집었다:
+     1) 다크 → 라이트. 숫자를 눈으로 검산하는 작업이라 고대비 밝은 화면이 맞다.
+     2) 보라/시안 그라디언트 → 따뜻한 종이색 바탕 + 잉크색 텍스트 + 단일 딥블루 액션색.
+     3) 전부 pill(9999px) → 장부/서식에 가까운 각진 반경. 둥근 건 진짜 원(점)만.
+   토큰 "이름"은 그대로 둬서 기존 CSS 모듈이 안 깨지게 했다 — 값만 갈아끼운다.
    =================================================== */
 
-/* ── Google Fonts ─────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
+/* ── Pretendard ────────────────────────────────────
+   Pretendard는 Google Fonts에 없다 — 기존 @import는 조용히 404가 나고
+   시스템 폰트로 폴백되고 있었다. 공식 배포처(jsdelivr)로 교체. */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css');
 
 /* ── Design Tokens ────────────────────────────────── */
 :root {
-  /* Colors */
-  --color-bg: #0f1117;
-  --color-surface: #1a1d27;
-  --color-surface-2: #22263a;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-hover: rgba(255, 255, 255, 0.18);
+  /* Colors — 따뜻한 중성 종이 바탕. 흔한 쿨그레이(#f8fafc)를 일부러 피했다 */
+  --color-bg: #f4f4f1;
+  --color-surface: #ffffff;
+  --color-surface-2: #eceee8;
+  --color-border: #dcded6;
+  --color-border-hover: #b9bdb0;
+  /* 표 구분선·레일 경계처럼 "구조"를 그리는 선 — surface 위에서도 보이는 진한 쪽 */
+  --color-border-strong: #c4c8ba;
 
-  --color-primary: #4f80ff;
-  --color-primary-light: rgba(79, 128, 255, 0.15);
-  --color-primary-glow: rgba(79, 128, 255, 0.4);
+  /* 액션색: 딥 씨블루. 세무 도구의 신뢰감을 노리되 AI 기본값인
+     보라→파랑 그라디언트/시안 액센트와는 겹치지 않게 잡았다 */
+  --color-primary: #10557f;
+  --color-primary-hover: #0c4364;
+  --color-primary-light: #e3edf4;
+  --color-primary-glow: rgba(16, 85, 127, 0.22);
 
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
+  --color-success: #1c7a4f;
+  --color-success-light: #e4f1ea;
+  --color-warning: #9a6300;
+  --color-warning-light: #fbf0dc;
+  --color-danger: #b4232a;
+  --color-danger-light: #fbe9e9;
 
-  --color-text-primary: #f0f2ff;
-  --color-text-secondary: rgba(240, 242, 255, 0.55);
-  --color-text-tertiary: rgba(240, 242, 255, 0.35);
+  --color-text-primary: #1b1d19;
+  --color-text-secondary: #55594f;
+  --color-text-tertiary: #82877a;
+  /* 어두운 면(primary 배경 등) 위에 얹는 글자 */
+  --color-text-on-dark: #ffffff;
 
   /* Typography */
-  --font-family: 'Pretendard', 'Apple SD Gothic Neo', system-ui, sans-serif;
+  --font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', system-ui, sans-serif;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-md: 1rem;
@@ -48,17 +68,28 @@
   --space-12: 3rem;
   --space-16: 4rem;
 
-  /* Border Radius */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  /* Border Radius — 서식/장부 느낌의 각진 값. pill은 점(dot)에만 쓴다 */
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 24px rgba(79, 128, 255, 0.25);
+  /* Shadows — 라이트 배경에서는 거의 안 보일 만큼만. 떠 있는 느낌 대신 선으로 구조를 만든다 */
+  --shadow-sm: 0 1px 2px rgba(27, 29, 25, 0.06);
+  --shadow-md: 0 4px 16px rgba(27, 29, 25, 0.10);
+  /* 이전엔 네온 glow였다 — 라이트에선 포커스 링으로 의미를 바꿔 재사용한다 */
+  --shadow-glow: 0 0 0 3px var(--color-primary-glow);
+
+  /* Layout widths — DESIGN.md §9: 화면 종류별로 폭 체계가 다르다.
+     주작업 칼럼은 절대 모니터 폭까지 늘리지 않고(가독폭 고정), 남는 폭은 보조 영역이 흡수한다 */
+  --w-page: 1440px;   /* 페이지 전체 상한 */
+  --w-read: 620px;    /* 읽기/입력 칼럼 — 이 이상 넓히지 않는다 */
+  --w-rail: 232px;    /* 위저드 좌측 토픽 네비 */
+  --w-panel: 300px;   /* 위저드 우측 실시간 패널 */
+  /* 스티키 헤더 높이 — 레일·패널·활성 셀이 이 값만큼 아래에 붙는다.
+     한 군데서 바꾸면 세 곳이 같이 따라오도록 토큰으로 뺐다 (유틸바 34 + 바 54 + 실선 2) */
+  --topbar-h: 90px;
 
   /* Transitions */
   --transition-fast: 150ms ease;
@@ -87,6 +118,12 @@ body {
   overflow-x: hidden;
 }
 
+/* 키보드 사용자에게만 보이는 포커스 링 — §8.4 키보드 우선 입력의 최소 전제 */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 /* ── Layout ───────────────────────────────────────── */
 #root {
   min-height: 100dvh;
@@ -94,11 +131,14 @@ body {
   flex-direction: column;
 }
 
+/* 이전엔 max-width: 480px로 못박혀 있어서 와이드 모니터에서 앱 전체가
+   가운데 좁은 모바일 칼럼으로 떠 있었다(§9의 출발점). 상한을 페이지 폭으로 풀고,
+   "좁게 유지할지"는 각 화면이 자기 폭 토큰으로 결정한다. */
 .app-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  max-width: 480px;
+  max-width: var(--w-page);
   width: 100%;
   margin: 0 auto;
   padding: 0 var(--space-5);

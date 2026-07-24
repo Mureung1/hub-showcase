@@ -1,0 +1,101 @@
+/* 좌측 토픽 레일 — 카드가 아니라 "얇은 세로선 + 목록"으로 그린다.
+   §7.1의 "둥근 카드만 반복" 지적에 대한 구조적 카운터포인트: 여기는 면이 아니라 선이다. */
+.rail {
+  width: var(--w-rail);
+  flex: none;
+  position: sticky;
+  top: var(--topbar-h);
+  align-self: flex-start;
+  max-height: calc(100dvh - var(--topbar-h));
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-4) var(--space-12) 0;
+  border-right: 1px solid var(--color-border);
+  scrollbar-width: thin;
+}
+
+.group + .group {
+  margin-top: var(--space-5);
+}
+
+.groupName {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-text-tertiary);
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+.groupDone {
+  color: var(--color-success);
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 7px var(--space-2);
+  border: none;
+  background: none;
+  border-left: 2px solid transparent;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  color: var(--color-text-tertiary);
+  cursor: default;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.item:not(:disabled) {
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.item:not(:disabled):hover {
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+}
+
+.done .marker {
+  color: var(--color-success);
+}
+
+/* 현재 단계만 잉크색 굵은 글씨 + 좌측 인디케이터 — 한 화면에서 눈이 처음 닿을 지점 */
+.current {
+  color: var(--color-text-primary);
+  font-weight: 700;
+  background: var(--color-surface);
+  border-left-color: var(--color-primary);
+}
+
+.current:disabled {
+  color: var(--color-text-primary);
+}
+
+.marker {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.itemLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 좁은 화면: 레일을 접는다. 진행 상황은 상단 바와 우측 패널(하단으로 이동)에 남는다 */
+@media (max-width: 1080px) {
+  .rail { display: none; }
+}

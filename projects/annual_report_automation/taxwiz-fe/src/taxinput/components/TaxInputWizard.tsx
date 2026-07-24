@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ANNUAL_TOPIC_ORDER, TOPIC_META } from '../catalog';
-import { bsSumKind, isSumKind } from '../engine';
 import { useTaxInputEngine } from '../useEngine';
 import type { TaxInputState } from '../types';
 import type { CompanyDto } from '../api';
-import { toKRW } from './formatters';
 import { TopBar } from './TopBar';
+import { TopicRail } from './TopicRail';
+import { LivePanel } from './LivePanel';
 import { ActiveCell } from './ActiveCell';
 import { AnsweredRow } from './AnsweredRow';
 import { ReviewPanel } from './ReviewPanel';
@@ -36,8 +36,8 @@ export const TaxInputWizard: React.FC<TaxInputWizardProps> = ({ company, onExit 
   }), [company.id]);
 
   const {
-    data, cells, topicKey, frontier, editingId, canGoBack, progressPct, remainingEst,
-    restoredFromDraft, commit, goBack, startEdit, clearDraft,
+    data, cells, topicKey, frontier, editingId, canGoBack, progressPct, remainingEst, visitedTopics,
+    restoredFromDraft, commit, goBack, goToTopic, startEdit, clearDraft,
   } = useTaxInputEngine(ANNUAL_TOPIC_ORDER, init, `annual:${company.id}`);
 
   const [toast, setToast] = useState<string | null>(null);
@@ -64,13 +64,28 @@ export const TaxInputWizard: React.FC<TaxInputWizardProps> = ({ company, onExit 
   const primaryCell = frontier < cells.length ? cells[frontier] : null;
   const historyReversed = cells.slice(0, Math.min(frontier, cells.length)).reverse();
 
-  const showStatusBar = topicKey.startsWith('bs:') || topicKey.startsWith('is:');
-
   return (
     <div className={styles.root}>
-      <TopBar topicKey={topicKey} progressPct={progressPct} canGoBack={canGoBack} onBack={goBack} onExit={onExit} remainingEst={remainingEst} />
+      <TopBar
+        topicKey={topicKey}
+        progressPct={progressPct}
+        canGoBack={canGoBack}
+        onBack={goBack}
+        onExit={onExit}
+        context={company.회사명}
+      />
 
-      <div className={styles.stage}>
+      {/* 3분할 (DESIGN.md §9.1): 좌 토픽 레일 · 중앙 입력 칼럼 · 우 실시간 패널.
+          중앙은 모니터 폭까지 늘리지 않고 --w-read로 고정하고, 남는 폭은 양쪽이 흡수한다. */}
+      <div className={styles.shell}>
+        <TopicRail
+          topicOrder={ANNUAL_TOPIC_ORDER}
+          topicKey={topicKey}
+          visitedTopics={visitedTopics}
+          onJump={goToTopic}
+        />
+
+        <div className={styles.stage}>
         {/* "wait" keeps exactly one topicCol mounted at a time (no absolute
             positioning needed to avoid layout overlap) — kept fast on both
             ends so 17 sequential topic swaps don't feel sluggish. */}
@@ -124,48 +139,18 @@ export const TaxInputWizard: React.FC<TaxInputWizardProps> = ({ company, onExit 
                   </AnimatePresence>
                 </div>
 
-                {showStatusBar && <StatusBar topicKey={topicKey} data={data} />}
               </>
             )}
           </motion.div>
         </AnimatePresence>
+        </div>
+
+        {/* 대차평형·손익 실시간 검산은 토픽별 하단 StatusBar에서 이 패널로 옮겼다 —
+            재무상태표 화면에서만 잠깐 보이던 걸 입력 내내 상시 노출로 승격 (§8.2) */}
+        <LivePanel data={data} progressPct={progressPct} remainingEst={remainingEst} />
       </div>
 
       {toast && <div className={styles.toast}>{toast}</div>}
-    </div>
-  );
-};
-
-const StatusBar: React.FC<{ topicKey: string; data: TaxInputState }> = ({ topicKey, data }) => {
-  if (topicKey.startsWith('bs:')) {
-    const a = bsSumKind(data, '자산');
-    const am = bsSumKind(data, '자산차감');
-    const l = bsSumKind(data, '부채');
-    const e = bsSumKind(data, '자본');
-    const L = a - am;
-    const R = l + e;
-    return (
-      <div className={styles.statusBar}>
-        <div className={[styles.statusItem, L === R ? styles.ok : styles.bad].join(' ')}>
-          <span className={styles.dot} />
-          대차평형 <span className={styles.num}>{toKRW(L)}</span> = <span className={styles.num}>{toKRW(R)}</span> 원
-        </div>
-      </div>
-    );
-  }
-  const rev = isSumKind(data, '수익');
-  const cost = isSumKind(data, '비용');
-  return (
-    <div className={styles.statusBar}>
-      <div className={[styles.statusItem, styles.ok].join(' ')}>
-        <span className={styles.dot} />
-        수익 <span className={styles.num}>{toKRW(rev)}</span>
-      </div>
-      <div className={styles.sep} />
-      <div className={[styles.statusItem, rev - cost >= 0 ? styles.ok : styles.bad].join(' ')}>
-        <span className={styles.dot} />
-        당기순이익 <span className={styles.num}>{toKRW(rev - cost)}</span> 원
-      </div>
     </div>
   );
 };

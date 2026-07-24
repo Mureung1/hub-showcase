@@ -1,13 +1,14 @@
 /* 로그인·홈·온보딩 공용 스타일 — global.css 토큰만 사용 */
 
+/* 로그인 등 "폼 한 장"짜리 화면은 좁은 칼럼이 맞다 — 홈(대시보드)만 따로 넓게 쓴다 */
 .page {
   flex: 1;
   display: flex;
   flex-direction: column;
-  max-width: 480px;
+  max-width: 420px;
   width: 100%;
   margin: 0 auto;
-  padding: var(--space-8) var(--space-5) var(--space-12);
+  padding: var(--space-12) var(--space-5);
 }
 
 .centered {
@@ -36,9 +37,8 @@
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   padding: var(--space-6);
-  box-shadow: var(--shadow-sm);
 }
 
 .field {
@@ -53,36 +53,37 @@
   font-weight: 600;
 }
 .field input {
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-hover);
+  border-radius: var(--radius-sm);
   color: var(--color-text-primary);
   font-family: var(--font-family);
   font-size: var(--font-size-md);
   padding: var(--space-3) var(--space-4);
   outline: none;
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .field input:focus {
   border-color: var(--color-primary);
+  box-shadow: var(--shadow-glow);
 }
 
+/* 로그인·온보딩의 폼 제출 버튼 — 좁은 칼럼 안이라 꽉 채우는 게 맞다 */
 .primaryBtn {
   width: 100%;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-text-on-dark);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: var(--font-size-md);
   font-weight: 700;
   padding: var(--space-4);
   cursor: pointer;
-  transition: filter var(--transition-fast), box-shadow var(--transition-fast);
+  transition: background var(--transition-fast);
 }
 .primaryBtn:hover:not(:disabled) {
-  filter: brightness(1.1);
-  box-shadow: var(--shadow-glow);
+  background: var(--color-primary-hover);
 }
 .primaryBtn:disabled {
   opacity: 0.5;
@@ -127,62 +128,297 @@
   cursor: pointer;
 }
 
-/* ── 홈 화면 ── */
-.homeHeader {
+/* ══ 홈 대시보드 (DESIGN.md §9.2) ══════════════════ */
+.home {
+  flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-6);
+  flex-direction: column;
 }
 
-.companyName {
-  font-size: var(--font-size-xl);
+/* 위저드 TopBar와 같은 유틸리티 바 — 두 화면이 같은 골격을 공유한다는 신호 */
+.utility {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-6);
+  height: 34px;
+  background: var(--color-text-primary);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: var(--font-size-xs);
+}
+
+.utilBrand {
   font-weight: 800;
-}
-
-.profileSummary {
-  color: var(--color-text-secondary);
+  letter-spacing: -0.01em;
+  color: var(--color-text-on-dark);
   font-size: var(--font-size-sm);
-  line-height: 1.7;
 }
+.utilBrand em { font-style: normal; color: #7ec0e4; }
 
-.sectionTitle {
-  font-size: var(--font-size-sm);
+.utilSpacer { flex: 1; }
+
+.utilBtn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.72);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
   font-weight: 700;
-  color: var(--color-text-secondary);
-  margin: var(--space-8) 0 var(--space-3);
+  cursor: pointer;
+  padding: 4px 0;
+}
+.utilBtn:hover { color: #fff; }
+
+.homeInner {
+  width: 100%;
+  max-width: var(--w-page);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-16);
 }
 
-.fyRow {
+.pageHead {
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.pageTitle {
+  font-size: var(--font-size-3xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.pageSub {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* 3열 그리드 위에 카드를 비대칭으로 앉힌다 — 균일 카드 반복(§7)을 피하고
+   "이번 연도 신고"가 시선의 첫 번째가 되도록 2열을 차지시킨다 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+  align-items: start;
+}
+
+/* 1행: [이번 연도 신고 ×2][회사 프로필]  2행: [신고 이력 ×2][준비물]
+   — 넓은 카드를 왼쪽에 쌓아 시선 흐름을 만들고, 오른쪽 열은 참고 정보로 고정한다 */
+.cardPrimary,
+.cardHist {
+  grid-column: span 2;
+}
+
+@media (max-width: 1080px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .cardPrimary, .cardHist { grid-column: auto; }
+  .homeInner { padding: var(--space-6) var(--space-4) var(--space-12); }
+  .utility { padding: 0 var(--space-4); }
+}
+
+/* 대시보드 카드 안의 주 액션 — 카드가 2열이라 100%로 늘리면 버튼만 거대해진다 */
+.cardBtn {
+  align-self: flex-start;
+  background: var(--color-primary);
+  color: var(--color-text-on-dark);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  padding: var(--space-3) var(--space-8);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.cardBtn:hover { background: var(--color-primary-hover); }
+
+.cardPrimary {
+  display: flex;
+  flex-direction: column;
+}
+
+.cardTitle {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  margin-bottom: var(--space-2);
-}
-.fyDates {
-  font-weight: 600;
+  gap: var(--space-2);
   font-size: var(--font-size-sm);
-}
-.fyTax {
-  font-size: var(--font-size-sm);
-  color: var(--color-primary);
   font-weight: 700;
-}
-.fyTax small {
-  color: var(--color-text-tertiary);
-  font-weight: 500;
-  margin-right: var(--space-2);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
 }
 
-.empty {
+.countBadge {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-text-tertiary);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fyRange {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 이 화면에서 제일 큰 숫자 — 대시보드의 시선 1순위 */
+.bigNum {
+  margin: var(--space-4) 0 var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.bigNumLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  font-weight: 700;
+}
+
+.bigNum strong {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+}
+
+.bigNum strong em {
+  font-style: normal;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.bigNumNote {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.muted {
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);
-  text-align: center;
-  padding: var(--space-6) 0;
+  line-height: 1.6;
+  margin: var(--space-3) 0 var(--space-5);
+}
+
+.footnote {
+  margin-top: var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: 1.55;
+}
+
+.tagList {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tagList li {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+}
+
+.defRows {
+  margin-top: var(--space-4);
+}
+
+.defRows > div {
+  display: flex;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.defRows dt {
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.defRows dd {
+  font-weight: 600;
+}
+
+/* 이력은 카드가 아니라 표로 — 숫자를 세로로 비교하는 게 목적이다 */
+.histTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.histTable th {
+  text-align: left;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-text-tertiary);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.histTable th:last-child { text-align: right; }
+
+.histTable td {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-variant-numeric: tabular-nums;
+}
+
+.histTable tr:last-child td { border-bottom: none; }
+
+.numCell {
+  text-align: right;
+  font-weight: 700;
+}
+
+.prepScroll {
+  margin-top: var(--space-4);
+  max-height: 420px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.prepSection {
+  padding: var(--space-2) 0;
+  font-size: var(--font-size-sm);
+}
+
+.prepSection b {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+}
+
+.prepSection ul {
+  list-style: none;
+  margin-top: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.prepSection li {
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--color-border);
+}
+
+.prepSection li small {
+  color: var(--color-text-tertiary);
 }
 
 /* ── 온보딩 완료 요약 ── */
@@ -211,53 +447,4 @@
   min-height: 100dvh;
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);
-}
-
-/* ── 홈: 준비물 아코디언 ── */
-.prepDetails {
-  margin-top: var(--space-6);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-}
-
-.prepDetails summary {
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  color: var(--color-text-secondary);
-}
-
-.prepDetails[open] summary {
-  margin-bottom: var(--space-3);
-  color: var(--color-text-primary);
-}
-
-.prepSection {
-  padding: var(--space-2) 0;
-  font-size: var(--font-size-sm);
-}
-
-.prepSection b {
-  color: var(--color-primary);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.04em;
-}
-
-.prepSection ul {
-  list-style: none;
-  margin-top: var(--space-1);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.prepSection li {
-  color: var(--color-text-secondary);
-  line-height: 1.55;
-}
-
-.prepSection li small {
-  color: var(--color-text-tertiary);
 }

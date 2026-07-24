@@ -65,7 +65,97 @@ These are recurring fingerprints that make an interface look mass-produced by an
 
 **Rule of thumb:** if a layout, palette, or illustration choice feels like it could belong to *any* product in *any* industry, that's the sign to make it more specific to this one.
 
+### 7.1 Confirmed hits in this project (2026-07-23 audit)
+
+This project's `taxwiz-fe` inherited the root `docs/design.md` "Night Sky" dark-fintech token set (built by generalizing an AI-generated reference image) almost verbatim onto a data-entry tool. Cross-checked against §7 above, it matches nearly every flagged pattern — not coincidentally, since it was itself produced by asking AI to generalize a stock landing-page look:
+
+- Navy/purple-gradient background + a single cyan accent (`--accent-cyan #4FC3E8`) — the #1 most-cited AI tell, present in `docs/design.md` root spec.
+- `backdrop-filter: blur(10px)` glassmorphism on the sticky `TopBar` for no functional reason.
+- Fully pill-shaped (`border-radius: 9999px`) buttons/badges used everywhere with zero sharp/flat counterpoint anywhere in the UI (mandated explicitly in the root design doc §5/§7).
+- Poppins/Quicksand as "the one font for everything."
+- Tiny uppercase `.eyebrow` label above every screen heading, applied identically every time.
+- Identical fade+slide-up (`opacity 0→1, x:28→0`) entrance animation on every topic transition in `TaxInputWizard`, same easing/duration everywhere — motion applied uniformly rather than to communicate state.
+- Gradient-fill progress bar (`linear-gradient(90deg, ...)`) as the default, rather than a flat fill.
+
+**Decision:** don't just re-hue these — swap the reference point entirely, vary motion per state, and introduce at least one deliberately non-pill/non-blurred structural element as a counterpoint. See §8 for the productivity-tool direction this should move toward instead.
+
 ---
 
+## 8. Tax Input Wizard — UX Decisions (2026-07-23)
+
+Research-backed decisions for `taxwiz-fe`'s annual tax data-entry wizard, given the actual goal: a non-technical small-business owner (소상공인) entering annual financial data once a year, where the product's whole differentiator is making tax work *feel as easy as Toss made securities trading feel* — speed and low error rate matter more than a marketing-site look.
+
+- **8.1 Step-by-step input — revised to loose grouping (2026-07-23).** Originally "keep strict one-cell-at-a-time." Revised after a follow-up research pass: a controlled usability study (PMC8190652, 20 healthcare-staff participants comparing single-page/grouped, multi-page, and conversational one-field-at-a-time digital forms for the same task) found the **grouped single-page format beat conversational one-at-a-time on usability (SUS 76 vs 57), error count (21 vs 83), and speed** — users explicitly praised being able to see and cross-check related answers together, and criticized the conversational format as unpredictable and hard to verify. This lines up with Miller's Law/chunking research and NN/g's 4 cognitive-load principles, both of which favor grouping tightly-related fields over forced atomization. New rule: **group loosely-related fields into small clusters of 2-4 items** (e.g. a "company basics" cluster: 설립연도/중소기업여부/상시근로자수) shown together on one card; transitions between clusters use the same light fade/slide already in place — don't regress to a dense table (still wins only for bulk-entry power users, not this one), and don't over-atomize into 17 single-field steps either.
+  - **Explicitly rejected: staggered-reveal animation to disguise a multi-field cluster as feeling like one field.** Researched and rejected — "labor illusion" (animation making users perceive less effort) is documented only for *wait-time* perception (e.g. fake progress bars), not for *field-count/complexity* perception; there is no evidence base for extending it that way. The nearest real analogue (the same study's conversational one-at-a-time arm) had the *worst* error rate and trust scores of the three formats tested — i.e. the mechanism this would mimic is the one that performed worst. In a trust-sensitive tax context, papering over real complexity with motion risks reading as a dark pattern once noticed. Get the "light" feeling from structure (clear section heading, whitespace, exactly-2-4-items) instead of motion.
+- **8.2 Balance-sheet equality check (자산=부채+자본) — elevate.** Treat this live cross-check as a signature feature, not an incidental status bar. Inline validation catches typos, but real errors need more visual weight — make imbalance loud (color + position), not a quiet muted line.
+- **8.3 Dark mode — reconsider.** Precision numeric-entry/proofreading work is better served by light/high-contrast screens; dark mode's real benefit is low-ambient-light reading/coding sessions, not daytime data entry. Dark-by-default here was inherited from the landing-page reference, not chosen for this task — decide explicitly rather than keep it because it "looks premium."
+- **8.4 Keyboard-first input — add.** Verify `ActiveCell` autofocuses and Enter commits + advances for every cell type, not just some. Cheap, high-leverage for repetitive sequential entry.
+- **8.5 Restrained "productivity tool" language over "marketing site" language — add.** Follow Linear/Notion/Stripe: minimalism there is ruthless prioritization for a user trying to finish a task, not decoration. Gradients/glow/blur/pill-everything read as "marketing landing page," which undercuts trust in a tool meant to say "I am handling your tax numbers correctly."
+- **8.6 Plain-language accessibility — add.** Audit every field label (e.g. "부동산임대업주업") for jargon vs. plain-language phrasing/tooltips, beyond the partial coverage already in `TOPIC_META.desc`. Target an older, non-technical small-business-owner user: larger type, strong contrast, generous click targets.
+
+---
+
+## 9. Desktop Layout — 2026-07-23
+
+`taxwiz-fe/src/styles/global.css`'s `.app-container` is hard-capped at `max-width: 480px` — on a wide desktop monitor the entire app is a narrow mobile-width column floating in dead space either side. This is the concrete cause behind the "홈 화면이 가로로 긴 화면에 최적화가 안 되어 있다" complaint. Researched how comparable products (US: TurboTax, QuickBooks Online, Mercury, Ramp, Stripe Dashboard, Linear, Notion; Korean: 자비스, 캐시노트, 세무사랑Pro, WEHAGO, 홈택스) use wide-desktop space, and decided the structure differs **by screen type**, not a single 3/4-pane template applied everywhere:
+
+- **Sequential-input screens** (Hometax's own actual filing wizard, presumably 삼쩜삼) deliberately stay close to single-column even in Korean government/tax products — "간결하고 직관적" is the explicit government UX rationale. Wide monitors don't change that a filing step is inherently linear.
+- **Dashboard/status screens** (자비스, 캐시노트, WEHAGO's landing dashboard) use card/widget grids — this is where wide-screen space gets used for genuinely separate pieces of information shown at once.
+- **The common non-trivial pattern across Linear/Notion/Stripe/Ramp/WEHAGO/세무사랑Pro**: don't stretch the primary task column to fill the monitor (Linear explicitly caps issue-content width even on ultrawide); instead let a secondary region (properties/detail panel, contextual history, drawer) grow to absorb the remaining width, present only when relevant.
+
+### 9.1 Wizard (input) screen — 3 regions
+- **Left**: full 17-topic list (TurboTax EasyStep Navigator style) — done/current/remaining state per topic, clickable to jump.
+- **Center**: the grouped-field card from §8.1 (2-4 loosely-related fields, light fade/slide between groups) — not stretched to fill the screen, kept at a comfortable reading width.
+- **Right**: persistent live panel — progress % + remaining question count, and the 자산=부채+자본 balance-sheet equality check (§8.2's signature-feature elevation lives here, loud color/position on imbalance).
+
+### 9.2 Home screen — card-grid dashboard
+Replaces the current single centered vertical list. Cards: 회사 프로필, 이번 연도 신고 현황, 준비물 체크 현황, 사업연도별 신고 이력, 홈택스 조회 — laid out as an actual grid using the freed-up width, matching the 자비스/캐시노트/WEHAGO dashboard convention rather than a stretched single column.
+
+### 9.3 Color mode — light
+Per §8.3's "reconsider dark mode": switching to a light/high-contrast palette for both screens. Precision numeric entry/proofreading is better served by bright, high-contrast screens per the earlier research pass; dark-by-default here was inherited from the landing-page reference token set, not chosen for this task.
+
+### 9.4 Scope of this pass
+Only Home + Wizard are being redesigned this round (highest-frequency, most visibly broken screens). Login/Onboarding are left as-is for now.
+
+### 9.5 Parked ideas (not in this round)
+Noted for later, explicitly deferred so as not to scope-creep this pass: (a) a fully user-customizable widget/panel dashboard along the lines of Toss Securities' desktop trading screen (tossinvest.com) — user-added/removable/rearrangeable panels via "+"/"패널 편집"; (b) expanding beyond the single tax-adjustment-engine feature into additional features (not yet specified). Revisit after the Home/Wizard mockups are reviewed.
+
+### 9.6 What actually shipped (2026-07-24)
+
+Implemented directly in code (no Figma/mockup step — Figma hit its usage cap, and reviewing the
+real screens in the dev server turned out to be faster than reviewing a static mockup):
+
+- **Token set replaced** (`src/styles/global.css`): dark "Night Sky" → light "장부(ledger)" —
+  warm neutral paper bg, ink text, single deep sea-blue action color (`#10557f`). Radii dropped
+  from pill-everywhere to 3–12px; `--radius-full` now only used for actual circles (radio dots).
+  Gradient progress fill → flat fill; `backdrop-filter` glassmorphism removed from the top bar.
+  The old `@import` pulled Pretendard from Google Fonts, **where it does not exist** — it had been
+  silently 404ing and falling back to system fonts. Now points at the official jsdelivr CDN.
+- **`.app-container` 480px cap removed**, replaced by per-screen width tokens
+  (`--w-page` / `--w-read` / `--w-rail` / `--w-panel` / `--topbar-h`).
+- **Wizard 3분할** (§9.1): new `TopicRail` (left, 17 topics grouped by section, done/current/
+  remaining, click-to-return) + new `LivePanel` (right, progress % + remaining count + balance
+  check + 손익). `useEngine` gained `visitedTopics` and `goToTopic` — **backward jumps only**;
+  forward jumps are refused because cells are generated dynamically from earlier answers, so
+  skipping ahead would desync `frontier` from the actual cell list.
+- **§8.2 elevated**: the balance check moved from a per-topic bottom `StatusBar` (visible only on
+  재무상태표/손익계산서 screens) to the always-visible right panel, with three distinct states —
+  입력 전(무채색) / 맞아요(조용한 초록) / 안 맞아요(굵은 빨강 테두리 + 차액 금액 + 어느 쪽이
+  많은지 평문 안내). The "입력 전" state exists specifically so an all-zero form doesn't report
+  "맞아요" and give false reassurance.
+- **TopBar restructured** into the government-portal skeleton (얇은 유틸리티 바 → 브랜드/현재 위치
+  행 → 진행 실선); section pills removed since the rail replaces them.
+- **Home card grid** (§9.2): 1행 [이번 연도 신고 ×2][회사 프로필], 2행 [신고 이력 ×2][준비물].
+- Dead Vite template leftovers `src/index.css` / `src/App.css` deleted (neither was imported).
+- Tests: the TDD "약 N문항 남음" test moved TopBar → LivePanel along with the feature, plus 3 new
+  balance-check tests. 14 passing, `tsc -b` clean, `oxlint` clean.
+
+**Still open from §8, deliberately not in this pass:**
+- **§8.1 (2–4개 묶음 입력)** — not done. This is an engine change (`cellsForTopic` emits one cell
+  at a time and `frontier` advances by one), not a layout change, so it needs its own pass.
+- **§8.4 (키보드 우선 입력)** — verified as **broken**: on a fresh numeric cell the input is not
+  autofocused, so Enter does not commit-and-advance. Confirmed by hand in the dev server.
+- §8.6 (평문 라벨 전수 점검) and §9.4's "Login/Onboarding은 그대로" both still stand.
+
 ### Source note
-Transcribed and cleaned up from a UI design principles infographic ("Elegance Formula — Rules for UI Design"). A few labels in the source image were cut off or partially obscured by an overlay, so wording for those items has been reconstructed based on best interpretation and grouped into the closest matching category above. Section 7 ("What NOT to Do") is compiled from current commentary on generic AI-generated design patterns (mid-2026).
+Transcribed and cleaned up from a UI design principles infographic ("Elegance Formula — Rules for UI Design"). A few labels in the source image were cut off or partially obscured by an overlay, so wording for those items has been reconstructed based on best interpretation and grouped into the closest matching category above. Section 7 ("What NOT to Do") is compiled from current commentary on generic AI-generated design patterns (mid-2026). §7.1 and §8 are from a two-subagent research pass (AI-design-tell audit + tax-productivity UX research) run against this repo's actual code/design docs on 2026-07-23. §9 (and the §8.1 revision) are from a same-day follow-up: two Explore research passes on US/global and Korean fintech/tax desktop layouts, plus one on grouped-field-with-animation UX research, done while planning the Figma redesign of Home + Wizard with the user.

@@ -1,18 +1,72 @@
-.topbar {
+.header {
   position: sticky;
   top: 0;
   z-index: 6;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+/* 유틸리티 바 — 정부 포털 골격의 맨 윗줄. 낮고 조용하게, 문맥 정보만 담는다 */
+.utility {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: 14px max(20px, calc(50% - 300px));
-  background: rgba(15, 17, 23, 0.9);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--color-border);
+  padding: 0 var(--space-6);
+  height: 34px;
+  background: var(--color-text-primary);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: var(--font-size-xs);
 }
 
-@media (max-width: 560px) {
-  .topbar { padding: 12px 14px; }
+.brand {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--color-text-on-dark);
+  font-size: var(--font-size-sm);
+}
+
+.brand em {
+  font-style: normal;
+  /* 어두운 유틸바 위에서는 딥블루가 안 읽힌다 — 밝은 쪽으로 올린 같은 색상 계열 */
+  color: #7ec0e4;
+}
+
+.context {
+  padding-left: var(--space-3);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spacer { flex: 1; }
+
+.step {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.exitBtn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.72);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  padding: 4px 0 4px var(--space-3);
+  margin-left: var(--space-1);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+}
+
+.exitBtn:hover { color: #fff; }
+
+/* 브랜드 아래 행 — 이전 버튼 + 현재 섹션 */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-6);
 }
 
 .backBtn {
@@ -20,102 +74,49 @@
   align-items: center;
   gap: 5px;
   flex: none;
-  padding: 7px 12px 7px 8px;
-  border-radius: var(--radius-full);
+  padding: 6px 11px 6px 7px;
+  border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
   font-weight: 700;
   background: none;
-  border: none;
+  border: 1px solid var(--color-border);
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .backBtn:hover:not(:disabled) {
   background: var(--color-surface-2);
+  border-color: var(--color-border-hover);
   color: var(--color-text-primary);
 }
 
 .backBtn:disabled {
-  opacity: 0.3;
+  opacity: 0.4;
   cursor: default;
 }
 
+.here {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* 진행 실선 — 헤더 하단에 붙는 2px 실선. 숫자(%)는 우측 패널이 담당한다 */
 .track {
-  flex: 1;
-  height: 7px;
-  border-radius: var(--radius-full);
+  height: 2px;
   background: var(--color-surface-2);
-  overflow: hidden;
 }
 
 .fill {
   height: 100%;
-  border-radius: var(--radius-full);
-  background: linear-gradient(90deg, var(--color-primary), #8bb4ff);
-  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--color-primary);
+  transition: width var(--transition-slow) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.pct {
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  color: var(--color-text-tertiary);
-  font-variant-numeric: tabular-nums;
-  width: 34px;
-  text-align: right;
-  flex: none;
-}
-
-.remain {
-  flex: none;
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  color: var(--color-text-tertiary);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-/* 좁은 화면에서는 진행률 바 공간을 우선한다 — eyebrow 쪽 표시가 여전히 남아 있으므로 정보 손실 없음 */
-@media (max-width: 560px) {
-  .remain { display: none; }
-}
-
-.strip {
-  padding: 9px max(20px, calc(50% - 300px)) 0;
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.strip::-webkit-scrollbar {
-  display: none;
-}
-
-@media (max-width: 560px) {
-  .strip { padding: 8px 14px 0; }
-}
-
-.pill {
-  flex: none;
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  padding: 5px 11px;
-  border-radius: var(--radius-full);
-  background: var(--color-surface-2);
-  color: var(--color-text-tertiary);
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-
-.pillActive {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  border-color: rgba(79, 128, 255, 0.35);
-}
-
-.pillDone {
-  color: var(--color-success);
+@media (max-width: 720px) {
+  .utility { padding: 0 var(--space-4); }
+  .bar { padding: var(--space-3) var(--space-4); }
+  .context { display: none; }
 }
