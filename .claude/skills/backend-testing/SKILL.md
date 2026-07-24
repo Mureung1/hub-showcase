@@ -13,7 +13,7 @@ description: 백엔드(backend/) 유닛테스트·통합테스트를 작성할 �
 2. 테스트 대상이 **순수 함수**(DB·GitHub 호출 없음)인지 **라우트/DB·외부 API를 물고 있는 로직**인지 구분한다.
    - 순수 함수 → `backend/tests/unit/<대상>.test.js`
    - 라우트 → `backend/tests/integration/<리소스>.test.js`
-3. 대상 함수가 파일 내부에 갇혀 있고 테스트할 가치가 있다면 `export`를 추가한다 (동작 변경 없는 export 추가만 — 참고: `code-convention` 스킬의 레이어 규칙과 충돌하지 않는지 확인).
+3. 대상 함수가 파일 내부에 갇혀 있고 테스트할 가치가 있다면 `export`를 추가한다 (동작 변경 없는 export 추가만 — 참고: `.claude/rules/backend-convention.md`의 레이어 규칙과 충돌하지 않는지 확인).
 4. 통합테스트는 `vi.mock('.../githubService.js', ...)`으로 GitHub 호출을 대체하고, DB는 실제 연결을 쓰되 `beforeAll`/`afterAll`로 생성·정리한다.
 5. `npm run test:backend`(루트) 또는 `backend/`에서 `npm test`로 실행해 통과를 확인한다.
 6. 새 라우트라면 `api-smoke-test` 스킬로 실제 기동 검증도 별도로 거친다 (통합테스트가 대체하지 않음).
