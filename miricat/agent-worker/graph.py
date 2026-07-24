@@ -8,11 +8,13 @@ LangGraph 뼈대(State/노드/엣지/compile/invoke)를 익히기 위한 최소 
 필요:  miricat/.env 에 GEMINI_API_KEY
 """
 
+import requests
 import os
 import pathlib
 from typing import Optional, TypedDict
 from scout import fetch_list, fetch_body
 from sources import SOURCES
+
 
 from dotenv import load_dotenv
 from google import genai
@@ -33,6 +35,7 @@ MAX_TRIES = 2               # MIRI-14: Verifier 재시도 상한 (무한루프 �
 
 # ── State: 노드들 사이를 흐르는 공유 딕셔너리 ────────────────────────────
 class State(TypedDict):
+    report: Optional[dict]
     raw_text: str                 # 입력: 공지 원문
     extraction: Optional[dict]    # 출력: 추출된 구조화 정보
     error: Optional[str]          # 실패 시 메시지
@@ -41,8 +44,8 @@ class State(TypedDict):
     tries: int                    # MIRI-14: Verifier 재시도 횟수 (상한 MAX_TRIES)
     route: Optional[dict]         # MIRI-19: 매칭 대상 내 경로 {lines, stops}
     analysis: Optional[dict]      # MIRI-19: Analyst 판정 {affected, matched}
-    
-    
+
+
 def scout_node(state: State) -> dict:
     # 러너가 넘겨준 (source, seq)로 그 글 한 건의 본문만 긁는다.
     source = state["source"]  # 받은 소스
@@ -97,16 +100,56 @@ def analyst_node(state: State) -> dict:
     return {"analysis": analyze(route, state.get("extraction") or {})}
 
 
-# ── 그래프 조립: scout → extract ⇄ verify → analyst → 끝 ──────────────
+def reporter_node(state: State) -> dict:
+    # MIRI-20: 부작용 노드 — 내 경로에 영향 있으면 디스코드로 경보를 '실제로 전송'한다.
+    analysis = state.get("analysis")
+    if not analysis or not analysis.get("affected"):
+        return {}                        # 영향 없음 → 아무것도 안 보냄 (알림 남발 금지)
+
+    webhook = os.environ.get("DISCORD_WEBHOOK_URL")
+    if not webhook:
+        return {"report": {"sent": False, "error": "DISCORD_WEBHOOK_URL 없음"}}
+
+    # 메시지 재료: 원문 URL + 내 경로와 겹친 사건들
+    source_url = state["source"]["view_url"].format(id=state["seq"])
+    matched_names = {m["event_name"] for m in analysis.get("matched", [])}
+    fields = []
+    for ev in (state.get("extraction") or {}).get("events", []):
+        if ev.get("event_name") not in matched_names:
+            continue                     # 내 경로에 안 걸린 사건은 뺀다
+        lines = ", ".join(ev.get("affected_lines") or []) or "-"
+        stops = ", ".join(ev.get("affected_stops") or []) or "-"
+        fields.append({
+            "name": ev.get("event_name", "(사건)"),
+            "value": f"기간: {ev.get('period') or '-'}\n영향 노선: {lines}\n정류장: {stops}",
+        })
+
+    embed = {
+        "title": "🚨 경보 — 내 출근 경로에 영향 공지",
+        "url": source_url,               # 제목 클릭 = 원문으로 (출처 원칙)
+        "color": 0xE4572E,               # 미리캣 경보 빨강
+        "fields": fields,
+        "footer": {"text": "미리캣 · 제목을 눌러 원문 공지를 확인하세요"},
+    }
+    try:
+        r = requests.post(webhook, json={"embeds": [embed]}, timeout=10)
+        return {"report": {"sent": r.status_code in (200, 204), "status": r.status_code}}
+    except Exception as e:
+        return {"report": {"sent": False, "error": f"{type(e).__name__}: {e}"}}
+
+
+# ── 그래프 조립: scout → extract ⇄ verify → analyst → reporter → 끝 ────
 builder = StateGraph(State)
 builder.add_node("extract", extract_node)
-builder.add_node("scout", scout_node)      # MIRI-13: 보초 세우기 노드
-builder.add_node("verify", verify_node)    # MIRI-14: 추출 검증 관문
-builder.add_node("analyst", analyst_node)  # MIRI-19: 내 경로 영향 판정
+builder.add_node("scout", scout_node)        # MIRI-13: 보초 세우기 노드
+builder.add_node("verify", verify_node)      # MIRI-14: 추출 검증 관문
+builder.add_node("analyst", analyst_node)    # MIRI-19: 내 경로 영향 판정
+builder.add_node("reporter", reporter_node)  # MIRI-20: 경보 전송(디스코드)
 builder.add_edge("scout", "extract")
-builder.add_edge("extract", "verify")      # 추출 결과는 항상 검증으로
+builder.add_edge("extract", "verify")        # 추출 결과는 항상 검증으로
 builder.add_conditional_edges("verify", route_after_verify, {"retry": "extract", "ok": "analyst"})
-builder.add_edge("analyst", END)
+builder.add_edge("analyst", "reporter")      # 판정 뒤 → 경보 전송
+builder.add_edge("reporter", END)
 builder.set_entry_point("scout")
 app = builder.compile()
 
@@ -116,6 +159,5 @@ def run(source, seq, route=None) -> dict:
     return app.invoke({
         "raw_text": "", "extraction": None, "error": None,
         "source": source, "seq": seq, "tries": 0,
-        "route": route, "analysis": None,
+        "route": route, "analysis": None, "report": None,
     })
-
