@@ -6,6 +6,8 @@ import { installServerProcessSignalHandlers } from './server-process-lifecycle.j
 export {
   createServerApplication,
   type CreateServerAppOptions,
+  type PublicPreviewServerBootstrap,
+  type PublicPreviewSetupBootstrap,
   type SemesterWorkspaceBootstrap,
   type ServerApplication,
 } from './server-application.js'

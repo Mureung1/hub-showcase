@@ -13,6 +13,16 @@ import {
 import { createProductRouter } from './product-http.js'
 import { createProductOperationCoordinator } from './product-operation-coordinator.js'
 import {
+  createPublicPreviewFeatureComposition,
+  type PublicPreviewFeatureComposition,
+  type PublicPreviewServerBootstrap,
+} from './public-preview-composition.js'
+
+export type {
+  PublicPreviewServerBootstrap,
+  PublicPreviewSetupBootstrap,
+} from './public-preview-composition.js'
+import {
   createSemesterWorkspaceController,
   type SemesterWorkspaceController,
   type SemesterWorkspaceDirectoryChooser,
@@ -21,6 +31,7 @@ import {
 export type CreateServerAppOptions = {
   codexChat?: CodexChatBootstrap
   productRuntime?: ProductRuntimeBootstrap
+  publicPreview?: PublicPreviewServerBootstrap
   semesterWorkspace?: SemesterWorkspaceBootstrap
 }
 
@@ -58,6 +69,39 @@ const serverApplicationLifecycles = new WeakMap<
 export async function createServerApplication(
   options: CreateServerAppOptions = {},
 ): Promise<ServerApplication> {
+  return createServerApplicationWithDependencies(options, {
+    createPublicPreviewFeature: createPublicPreviewFeatureComposition,
+  })
+}
+
+export function createServerApplicationForTesting(
+  options: CreateServerAppOptions,
+  dependencies: {
+    readonly createPublicPreviewFeature: typeof createPublicPreviewFeatureComposition
+  },
+): Promise<ServerApplication> {
+  return createServerApplicationWithDependencies(options, dependencies)
+}
+
+async function createServerApplicationWithDependencies(
+  options: CreateServerAppOptions,
+  dependencies: {
+    readonly createPublicPreviewFeature: typeof createPublicPreviewFeatureComposition
+  },
+): Promise<ServerApplication> {
+  if (
+    options.publicPreview &&
+    (options.codexChat ||
+      options.productRuntime ||
+      options.semesterWorkspace)
+  ) {
+    throw new TypeError(
+      'Public preview cannot share legacy workspace or Runtime authority',
+    )
+  }
+  const publicPreview = options.publicPreview
+    ? await dependencies.createPublicPreviewFeature(options.publicPreview)
+    : undefined
   const semesterWorkspace = options.semesterWorkspace
     ? createSemesterWorkspaceController(options.semesterWorkspace)
     : undefined
@@ -85,14 +129,17 @@ export async function createServerApplication(
     productOperations,
     assignmentMcpHost,
     options.codexChat?.httpWriteDrainMs,
+    publicPreview,
   )
   let applicationClosePromise: Promise<void> | undefined
   const closeApplication = () => {
     productOperations?.beginShutdown()
+    publicPreview?.beginShutdown()
     codexChat.beginShutdown()
     applicationClosePromise ??= closeServerApplication(
       codexChat,
       assignmentMcpHost,
+      publicPreview,
     )
     return applicationClosePromise
   }
@@ -145,21 +192,26 @@ function createServerExpressApp(
     | undefined,
   assignmentMcpHost: AssignmentMcpHost | undefined,
   productWriteDrainMs: number | undefined,
+  publicPreview: PublicPreviewFeatureComposition | undefined,
 ): Express {
   const app = express()
   if (assignmentMcpHost) {
     app.use('/api/product-mcp', assignmentMcpHost.router)
   }
+  if (publicPreview) {
+    app.use('/api/product/public-preview', publicPreview.router)
+  }
   app.use(
     '/api/product',
     createProductRouter(
       semesterWorkspace,
-      codexChat.origin,
+      publicPreview?.origin ?? codexChat.origin,
       productOperations,
       productWriteDrainMs,
       productOperations
         ? () => codexChat.service.readProductAccountReadiness()
         : undefined,
+      publicPreview === undefined,
     ),
   )
   return app
@@ -168,8 +220,26 @@ function createServerExpressApp(
 async function closeServerApplication(
   codexChat: CodexChatComposition,
   assignmentMcpHost: AssignmentMcpHost | undefined,
+  publicPreview: PublicPreviewFeatureComposition | undefined,
 ): Promise<void> {
-  await codexChat.close().finally(() => {
-    assignmentMcpHost?.close()
-  })
+  const closeSignal = new AbortController().signal
+  let publicPreviewResult:
+    | { readonly status: 'closed'; readonly processTreeGone: true }
+    | { readonly status: 'ambiguous'; readonly processTreeGone: false }
+    = { status: 'closed', processTreeGone: true }
+  try {
+    if (publicPreview) {
+      publicPreviewResult = await publicPreview.close({
+        signal: closeSignal,
+      })
+    }
+  } finally {
+    await codexChat.close().finally(() => assignmentMcpHost?.close())
+  }
+  if (
+    publicPreviewResult.status !== 'closed' ||
+    !publicPreviewResult.processTreeGone
+  ) {
+    throw new Error('Public preview Runtime close was ambiguous')
+  }
 }

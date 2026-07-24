@@ -36,6 +36,9 @@ test('importing the Server host seam does not load dotenv or keep a listener ali
   const sentinel = 'AY_PLE_IMPORT_SIDE_EFFECT_SENTINEL'
   const moduleUrls = [
     pathToFileURL(
+      fileURLToPath(new URL('./index.ts', import.meta.url)),
+    ).href,
+    pathToFileURL(
       fileURLToPath(new URL('./server-application.ts', import.meta.url)),
     ).href,
     pathToFileURL(fileURLToPath(new URL('./server.ts', import.meta.url))).href,
