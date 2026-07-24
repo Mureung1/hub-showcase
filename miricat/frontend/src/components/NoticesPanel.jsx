@@ -21,6 +21,31 @@ function hit(value, token) {
   const a = norm(value), b = norm(token);
   return !!a && !!b && (a === b || a.includes(b) || b.includes(a));
 }
+// ── 시간 유효성: analyst.py의 _is_current 미러 (끝난 사건은 경보 제외) ──
+const DATE_RE = /(\d{4})[.\-]\s*(\d{1,2})[.\-]\s*(\d{1,2})/;
+const MD_RE = /(\d{1,2})[.\-]\s*(\d{1,2})/;
+function eventEnd(period) {
+  const tail = (period || "").split("~").pop().trim();   // '~' 뒤 = 종료쪽
+  let y, mo, d;
+  const m = tail.match(DATE_RE);
+  if (m) {
+    [y, mo, d] = [+m[1], +m[2], +m[3]];
+  } else {
+    const md = tail.match(MD_RE);           // 종료쪽이 'M.D'뿐이면 시작 연도 빌림
+    const start = (period || "").match(DATE_RE);
+    if (!md || !start) return null;         // 종료일 못 정함 (열린 기간 등)
+    [y, mo, d] = [+start[1], +md[1], +md[2]];
+  }
+  const dt = new Date(y, mo - 1, d);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
+function isCurrent(period) {
+  if (!period) return true;
+  const end = eventEnd(period);
+  if (!end) return true;                    // 불명·열린 기간 → 보수적 유지
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return end >= today;                      // 아직 안 끝났으면 유효(다가올 것 포함)
+}
 // 경로 lines/stops("B1, 급행2") → 토큰 배열
 function routeTokens(route) {
   if (!route) return [];
@@ -33,6 +58,7 @@ function routeTokens(route) {
 function matchNotice(notice, tokens) {
   const hits = new Set();
   for (const ev of notice.extraction?.events ?? []) {
+    if (!isCurrent(ev.period)) continue;   // 끝난 사건은 매칭에서 뺀다
     for (const v of [...(ev.affected_lines || []), ...(ev.affected_stops || [])]) {
       for (const t of tokens) if (hit(v, t)) hits.add(v);
     }
