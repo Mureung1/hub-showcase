@@ -28,7 +28,7 @@ Landing·public command·Browser OAuth·새 workspace setup 여정은 제거됐�
 | --- | --- |
 | current workspace ready | chooser가 넘긴 existing current-v2 workspace를 읽고 mutation 가능한 상태다. Adopted `Semester Ready`와 같은 뜻이 아니다. |
 | 검토된 자료 반입 | 외부 폴더나 자료 묶음을 `ImportSource`로 검토한 뒤 이 action에서 사용할 자료가 workspace 안의 `RawMaterial`로 반입됐다. |
-| Course 맥락 | `WorkspaceManifest`가 이 scenario의 Course identity와 자료 관계를 소유한다. 폴더명은 identity의 기준이 아니다. |
+| Course 맥락 | current-v2 aggregate가 이 scenario의 Course identity와 자료 관계를 소유한다. |
 
 ImportSource 분석·mapping·migration 자체는 이 Review scenario가 아니라 별도 import journey가 소유한다.
 
@@ -36,7 +36,7 @@ ImportSource 분석·mapping·migration 자체는 이 Review scenario가 아니�
 
 | 항목 | 내용 |
 | --- | --- |
-| 학기 작업공간 | AY-PLE이 생성·검증한 활성 `SemesterWorkspace` |
+| 학기 작업공간 | chooser로 연 existing current-v2 workspace |
 | 과목 | 문제해결글쓰기 |
 | 자료 | TXT로 저장한 LMS 공지와 강의계획서 발췌문 |
 | action | 선택한 자료에서 과제 정보 정리 |
