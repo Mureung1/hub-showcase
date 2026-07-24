@@ -1,16 +1,25 @@
-import { runDockerfileCode, runJavaScriptCode, runPythonCode, runShellCode } from '../modules/code-runner/codeRunner.mjs'
+import {
+  runDockerfileCode,
+  runJavaScriptCode,
+  runPythonCode,
+  runShellCode,
+} from '../modules/code-runner/codeRunner.mjs'
 
 export async function handleCodeRunApiRequest({ method, url, bodyText }) {
   if (method === 'POST' && url === '/api/code/run') {
     try {
-      const { code, language } = JSON.parse(bodyText || '{}')
+      const { code, language, css } = JSON.parse(bodyText || '{}')
 
       if (!code) {
         return { status: 400, body: { error: 'Code is required' } }
       }
 
-      if (!language || language === 'javascript' || language === 'jsx') {
-        const result = await runJavaScriptCode(code, { previewOnly: language === 'jsx' })
+      if (!language || language === 'javascript' || language === 'jsx' || language === 'tsx') {
+        const result = await runJavaScriptCode(code, {
+          previewOnly: language === 'jsx' || language === 'tsx',
+          css: typeof css === 'string' ? css : '',
+          language,
+        })
         return { status: 200, body: result }
       }
 
@@ -37,7 +46,7 @@ export async function handleCodeRunApiRequest({ method, url, bodyText }) {
           error: `Execution for language '${language}' is not implemented yet.`,
         },
       }
-    } catch (e) {
+    } catch {
       return { status: 400, body: { error: 'Invalid JSON body' } }
     }
   }
