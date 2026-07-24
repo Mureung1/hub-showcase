@@ -19,6 +19,9 @@ function MainLayout({ children }) {
             <button type="button" onClick={() => navigate("/dashboard")}>
               대시보드
             </button>
+            <button type="button" onClick={() => navigate("/register-event")}>
+              일정 등록
+            </button>
             <button type="button" onClick={() => navigate("/calendar")}>
               캘린더
             </button>

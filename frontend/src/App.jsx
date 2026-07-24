@@ -4,6 +4,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import LoginPage from "./pages/Login/LoginPage";
 import DashboardPage from "./pages/Dashboard/DashboardPage";
+import RegisterEventPage from "./pages/RegisterEvent/RegisterEventPage";
 import AnalysisResultPage from "./pages/AnalysisResult/AnalysisResultPage";
 import CalendarPage from "./pages/Calendar/CalendarPage";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -46,6 +47,14 @@ function App() {
           element={
             <MainLayout>
               <DashboardPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/register-event"
+          element={
+            <MainLayout>
+              <RegisterEventPage />
             </MainLayout>
           }
         />
