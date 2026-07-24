@@ -1,6 +1,33 @@
 import { useState, useRef } from "react";
 import { Home, CalendarClock, CircleUser, Upload } from "lucide-react";
 
+// 베이지 배경(#F3EEE4)과 겹치지 않는 파스텔 팔레트
+// bg: 카드 전체 배경 / iconBg: 아이콘 원(칩 테두리) / text: 텍스트·화살표 색
+const PASTEL_PALETTE = [
+  { bg: "#FBE9E7", iconBg: "#F5CFC9", text: "#C4626B" }, // 핑크
+  { bg: "#E4EFE1", iconBg: "#D3E8CC", text: "#4C8A47" }, // 그린
+  { bg: "#E3ECFB", iconBg: "#C9DBF7", text: "#4A6FA5" }, // 블루
+  { bg: "#F1E7FB", iconBg: "#E3CEF5", text: "#8659B5" }, // 퍼플
+  { bg: "#FBF3D9", iconBg: "#F5E3B8", text: "#A9821A" }, // 옐로우
+  { bg: "#FBE4F0", iconBg: "#F5CFE3", text: "#B5568E" }, // 로즈
+  { bg: "#E1F5F0", iconBg: "#C7EAE0", text: "#2E8874" }, // 틸
+  { bg: "#FDEAD9", iconBg: "#F8D3B0", text: "#C97A3D" }, // 피치
+];
+
+// 이름(키워드명 또는 월 이름)을 기준으로 항상 같은 색을 골라주는 함수
+function getPastelColor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % PASTEL_PALETTE.length;
+  return PASTEL_PALETTE[index];
+}
+// 여러 이름을 한 번에 받아서, 인접한 항목끼리 색이 겹치지 않게 조정해주는 함수
+function getDistinctColors(names) {
+  return names.map((_, i) => PASTEL_PALETTE[i % PASTEL_PALETTE.length]);
+}
+
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
 .kw-chip{ transition: background-color .15s ease, transform .15s ease; cursor: pointer; }
 .kw-chip:hover{ transform: translateY(-1px); }
@@ -199,10 +226,40 @@ function EmoBlob({ name, size = 40 }) {
     </svg>
   );
 }
+function CatAvatar({ size = 40 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100">
+      {/* 꼬리 */}
+      <path d="M76 68 Q94 66 90 50 Q88 43 79 46" stroke="#1E1E1E" strokeWidth="9" fill="none" strokeLinecap="round" />
+      {/* 귀 */}
+      <path d="M27 38 L21 14 L42 30 Z" fill="#1E1E1E" />
+      <path d="M64 30 L72 12 L79 36 Z" fill="#1E1E1E" />
+      {/* 통통한 몸/얼굴 */}
+      <ellipse cx="50" cy="60" rx="36" ry="30" fill="#1E1E1E" />
+      {/* 눈(노란 동그라미) */}
+      <circle cx="38" cy="54" r="12" fill="#F5C842" />
+      <circle cx="62" cy="54" r="12" fill="#F5C842" />
+      <circle cx="38" cy="56" r="5.5" fill="#1E1E1E" />
+      <circle cx="62" cy="56" r="5.5" fill="#1E1E1E" />
+      <circle cx="35.5" cy="52" r="1.6" fill="#FFFFFF" />
+      <circle cx="59.5" cy="52" r="1.6" fill="#FFFFFF" />
+      {/* 코 */}
+      <path d="M46 66 L54 66 L50 71 Z" fill="#E9A8A8" />
+      {/* 입 */}
+      <path d="M50 71 Q50 75 46 75" stroke="#3A332C" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+      <path d="M50 71 Q50 75 54 75" stroke="#3A332C" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+      {/* 수염 */}
+      <line x1="10" y1="62" x2="27" y2="60" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="10" y1="70" x2="27" y2="68" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="90" y1="62" x2="73" y2="60" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="90" y1="70" x2="73" y2="68" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export default function RetrospectApp() {
   const [tab, setTab] = useState("home");
-  const [openMonth, setOpenMonth] = useState(null);
+  const [openMonth, setOpenMonth] = useState<string | null>(null);
   const [showOlder, setShowOlder] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState("p8");
   const [selectedKeyword, setSelectedKeyword] = useState("#취업고민");
@@ -255,7 +312,9 @@ export default function RetrospectApp() {
         style={{ background: "rgba(243,238,228,0.9)", backdropFilter: "blur(8px)", borderBottom: "1px solid #E7DFCF" }}
       >
         <div className="flex items-center gap-8">
-          <span style={{ color: ink, fontWeight: 800, fontSize: 16 }}>🙂 민지의 기록</span>
+          <span style={{ color: ink, fontWeight: 800, fontSize: 16, display: "flex", alignItems: "center", gap: 6 }}>
+  <CatAvatar size={20} /> 민지의 기록
+</span>
           <nav className="hidden sm:flex items-center gap-1">
             <button
               onClick={() => setTab("home")}
@@ -307,11 +366,12 @@ export default function RetrospectApp() {
             <div className="rounded-3xl px-6 py-7" style={{ background: threadSoft }}>
               <div className="flex items-center gap-3">
                 <div
-                  className="rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ width: 48, height: 48, background: thread, color: "#fff", fontSize: 22 }}
+                className="rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ width: 48, height: 48, background: threadSoft }}
                 >
-                  🙂
+                <CatAvatar size={34} />
                 </div>
+                
                 <div>
                   <div style={{ color: inkSoft, fontSize: 12 }}>2026년 7월 13일</div>
                   <h1 style={{ color: ink, fontWeight: 800, fontSize: 24 }}>Hi 민지</h1>
@@ -344,68 +404,61 @@ export default function RetrospectApp() {
               <span style={{ color: ink, fontWeight: 700, fontSize: 14.5 }}>이어지고 있는 이야기</span>
               <span style={{ color: thread, fontSize: 12.5, fontWeight: 600 }}>모두 보기</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <button
-                onClick={() => { setSelectedKeyword("#취업고민"); setTab("timeline"); }}
-                className="kw-chip kw-chip-pink rounded-2xl px-4 py-3.5 text-left"
-                style={{ background: pinkBox, border: "1.5px solid #E8B9B4", boxShadow: "0 4px 14px rgba(54,47,42,0.06)" }}
-              >
-                <div style={{ color: pinkText, fontWeight: 700, fontSize: 15 }}>#취업고민</div>
-                <div style={{ color: pinkText, opacity: 0.75, fontSize: 11, marginTop: 4 }}>12회 · 오늘</div>
-              </button>
-              <button
-                onClick={() => { setSelectedKeyword("#운동습관"); setTab("timeline"); }}
-                className="kw-chip kw-chip-green rounded-2xl px-4 py-3.5 text-left"
-                style={{ background: greenBox, border: "1.5px solid #B7D6B3", boxShadow: "0 4px 14px rgba(54,47,42,0.06)" }}
-              >
-                <div style={{ color: greenText, fontWeight: 700, fontSize: 15 }}>#운동습관</div>
-                <div style={{ color: greenText, opacity: 0.75, fontSize: 11, marginTop: 4 }}>6회 · 3일 전</div>
-              </button>
-              <button
-                onClick={() => { setSelectedKeyword("#인간관계"); setTab("timeline"); }}
-                className="kw-chip kw-chip-gray rounded-2xl px-4 py-3.5 text-left"
-                style={{ background: grayBox, border: "1.5px solid #D6D0C2", boxShadow: "0 4px 14px rgba(54,47,42,0.06)" }}
-              >
-                <div style={{ color: ink, fontWeight: 700, fontSize: 15 }}>#인간관계</div>
-                <div style={{ color: inkFaint, fontSize: 11, marginTop: 4 }}>4회 · 2주 전</div>
-              </button>
-              <button
-                onClick={() => { setSelectedKeyword("#자취"); setTab("timeline"); }}
-                className="kw-chip kw-chip-gray rounded-2xl px-4 py-3.5 text-left"
-                style={{ background: grayBox, border: "1.5px solid #D6D0C2", boxShadow: "0 4px 14px rgba(54,47,42,0.06)" }}
-              >
-                <div style={{ color: ink, fontWeight: 700, fontSize: 15 }}>#자취</div>
-                <div style={{ color: inkFaint, fontSize: 11, marginTop: 4 }}>3회 · 1개월 전</div>
-              </button>
-            </div>
+            {(() => {
+              const keywords = [
+                { name: "취업고민", count: "12회 · 오늘" },
+                { name: "운동습관", count: "6회 · 3일 전" },
+                { name: "인간관계", count: "4회 · 2주 전" },
+                { name: "자취", count: "3회 · 1개월 전" },
+              ];
+              const colors = getDistinctColors(keywords.map((k) => k.name));
+
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {keywords.map((kw, i) => (
+                    <button
+                      key={kw.name}
+                      onClick={() => { setSelectedKeyword("#" + kw.name); setTab("timeline"); }}
+                      className="kw-chip rounded-2xl px-4 py-3.5 text-left"
+                      style={{ background: colors[i].bg, border: `1.5px solid ${colors[i].iconBg}`, boxShadow: "0 4px 14px rgba(54,47,42,0.06)" }}
+                    >
+                      <div style={{ color: colors[i].text, fontWeight: 700, fontSize: 15 }}>#{kw.name}</div>
+                      <div style={{ color: colors[i].text, opacity: 0.75, fontSize: 11, marginTop: 4 }}>{kw.count}</div>
+                    </button>
+                  ))}
+                </div>
+              );
+              })()}
+                    
+            
 
             {/* monthly ledger */}
             <div style={{ color: ink, fontWeight: 700, fontSize: 14.5, marginTop: 30, marginBottom: 12 }}>
               월별 기록
             </div>
-            <div className="grid sm:grid-cols-3 gap-2.5">
-              {[
-                { k: "m07", bg: "#E9F3E5", iconBg: "#D3E8CC", icon: "#4C8A47" },
-                { k: "m06", bg: "#FBF1DC", iconBg: "#F5E3B8", icon: "#C4922E" },
-                { k: "m05", bg: "#FBE7EC", iconBg: "#F5CFD9", icon: "#C25F7D" },
-              ].map(({ k, bg, iconBg, icon }) => (
-                <button
-                  key={k}
-                  onClick={() => setOpenMonth(k)}
-                  className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 text-left"
-                  style={{ background: bg, boxShadow: "0 4px 14px rgba(54,47,42,0.06)" }}
-                >
-                  <div
-                    className="flex items-center justify-center rounded-xl flex-shrink-0"
-                    style={{ width: 34, height: 34, background: iconBg, fontSize: 15 }}
-                  >
-                    📅
-                  </div>
-                  <span style={{ color: ink, fontSize: 15, fontWeight: 700, flex: 1 }}>{monthData[k].title}</span>
-                  <span style={{ color: icon, fontSize: 18, fontWeight: 700 }}>›</span>
-                </button>
-              ))}
-            </div>
+            {(() => {
+              const months = ["m07", "m06", "m05"];
+              const colors = getDistinctColors(months.map((k) => monthData[k as keyof typeof monthData].title));
+
+              return (
+                <div className="grid sm:grid-cols-3 gap-2.5">
+                  {months.map((k, i) => (
+                    <button
+                      key={k}
+                      onClick={() => setOpenMonth(k)}
+                      className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 text-left"
+                      style={{ background: colors[i].bg, boxShadow: "0 4px 14px rgba(54,47,42,0.06)" }}
+                    >
+                      <div className="flex items-center justify-center rounded-xl flex-shrink-0" style={{ width: 34, height: 34, background: colors[i].iconBg, fontSize: 15 }}>
+                        📅
+                      </div>
+                      <span style={{ color: ink, fontSize: 15, fontWeight: 700, flex: 1 }}>{monthData[k as keyof typeof monthData].title}</span>
+                      <span style={{ color: colors[i].text, fontSize: 18, fontWeight: 700 }}>›</span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
             <button
               onClick={() => setShowOlder((v) => !v)}
               className="w-full text-center mt-3 mb-1"
