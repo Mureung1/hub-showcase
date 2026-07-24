@@ -24,14 +24,14 @@ app.get('/api/health', async (req, res) => {
 
 // 경로 등록 저장: 화면 입력을 routes 테이블에 insert.
 app.post('/api/routes', async (req, res) => {
-  const { origin_name, dest_name, depart_time } = req.body ?? {};
+  const { origin_name, dest_name, depart_time, lines, stops } = req.body ?? {};
   if (!origin_name || !dest_name) {
     return res.status(400).json({ error: 'origin_name과 dest_name은 필수입니다.' });
   }
   const name = `${origin_name} → ${dest_name}`;
   const { data, error } = await supabase
     .from('routes')
-    .insert({ name, origin_name, dest_name, depart_time: depart_time ?? null })
+    .insert({ name, origin_name, dest_name, depart_time: depart_time ?? null, lines: lines ?? null, stops: stops ?? null })
     .select()
     .single();
   if (error) return res.status(500).json({ error: error.message });
@@ -54,6 +54,17 @@ app.delete('/api/routes/:id', async (req, res) => {
   const { error } = await supabase.from('routes').delete().eq('id', id);
   if (error) return res.status(500).json({ error: error.message });
   res.status(204).end();                            // 204 = 성공, 돌려줄 내용 없음
+});
+
+// 미리캣이 확인한 공지 목록 (최신순) — Python 에이전트가 notices에 저장한 추출 결과를 화면에 보여준다.
+app.get('/api/notices', async (req, res) => {
+  const { data, error } = await supabase
+    .from('notices')
+    .select('id, source, source_url, title, extraction, collected_at')
+    .order('collected_at', { ascending: false })
+    .limit(20);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ notices: data });
 });
 
 const PORT = process.env.PORT || 8000; // Vite 프록시(/api → :8000)가 기대하는 포트

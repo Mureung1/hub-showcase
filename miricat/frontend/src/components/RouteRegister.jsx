@@ -12,10 +12,14 @@ export default function RouteRegister({ onSaved }) {
 
   // "보초 세우기" 클릭 시: 입력값을 백엔드 POST /api/routes 로 보내 저장.
   async function handleSubmit() {
+    const chosen = candidates.find((c) => c.id === selectedId);   // 고른 후보의 노선을 경로에 저장 → 공지 매칭 근거
     const res = await fetch("/api/routes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ origin_name: origin, dest_name: dest, depart_time: departTime }),
+      body: JSON.stringify({
+        origin_name: origin, dest_name: dest, depart_time: departTime,
+        lines: chosen?.lineBadge ?? "", stops: "",
+      }),
     });
     const data = await res.json();
     if (res.ok) {
