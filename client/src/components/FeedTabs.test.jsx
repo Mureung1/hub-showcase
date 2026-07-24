@@ -12,7 +12,7 @@ describe('FeedTabs Component', () => {
       render(<FeedTabs currentCategory="전체" filters={{}} onCategoryChange={vi.fn()} onFilterChange={vi.fn()} />);
       
       // 검색창 확인
-      expect(screen.getByPlaceholderText('키워드로 게시글을 검색해보세요')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/키워드로 게시글을 검색해보세요/)).toBeInTheDocument();
       // 필터 버튼 확인
       expect(screen.getByRole('button', { name: /필터/i })).toBeInTheDocument();
       // 카테고리 탭 확인
