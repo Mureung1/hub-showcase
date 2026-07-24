@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronLeft, ExternalLink } from 'lucide-react'
-import Mission from './Mission'
-import type { ArticleDetail, ContentType, CreateMissionRecordRequest, MissionRecord } from '../api/types'
+import Mission from '../mission/Mission'
+import type { ArticleDetail, ContentType, CreateMissionRecordRequest, MissionRecord } from '../../api/types'
 import './ArticleIntro.css'
 
 const CONTENT_TYPE_LABEL: Record<ContentType, string> = {

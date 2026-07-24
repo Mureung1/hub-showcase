@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import MyGgaem, { type CalendarState, type RecordsState } from './MyGgaem'
-import type { MissionRecordCalendarDay, MissionRecordListItem } from '../api/types'
+import type { MissionRecordCalendarDay, MissionRecordListItem } from '../../api/types'
 
 function makeCalendarDay(fields: {
   date: string

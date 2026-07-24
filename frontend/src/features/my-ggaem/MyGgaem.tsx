@@ -1,4 +1,4 @@
-import type { MissionRecordCalendarDay, MissionRecordListItem, MissionType } from '../api/types'
+import type { MissionRecordCalendarDay, MissionRecordListItem, MissionType } from '../../api/types'
 import './MyGgaem.css'
 
 export type CalendarState =

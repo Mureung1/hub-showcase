@@ -1,14 +1,14 @@
 import { useRef, useState } from 'react'
 import { ArrowUpRight, ChevronLeft } from 'lucide-react'
-import { ApiClientError } from '../api/client'
-import mascotComplete from '../assets/mascot/mascot-default&complete.png'
+import { ApiClientError } from '../../api/client'
+import mascotComplete from '../../assets/mascot/mascot-default&complete.png'
 import type {
   ArticleDetail,
   ContentType,
   CreateMissionRecordRequest,
   MissionRecord,
   MissionType,
-} from '../api/types'
+} from '../../api/types'
 import './Mission.css'
 
 const MISSION_TYPE_LABEL: Record<MissionType, string> = {

@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import ArticleIntro from './ArticleIntro'
-import type { ArticleDetail } from '../api/types'
+import type { ArticleDetail } from '../../api/types'
 
 function makeArticleDetail(fields: {
   id: string

@@ -1,4 +1,4 @@
-import type { TodayArticle } from '../api/types'
+import type { TodayArticle } from '../../../api/types'
 
 const SOURCE_TYPE_LABEL = {
   news: '뉴스',

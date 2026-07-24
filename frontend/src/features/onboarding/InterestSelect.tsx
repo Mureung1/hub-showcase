@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { Interest, ReplaceUserInterestsResponse } from '../api/types'
-import ContentLoadingScreen from '../components/ContentLoadingScreen'
+import type { Interest, ReplaceUserInterestsResponse } from '../../api/types'
+import ContentLoadingScreen from '../../shared/ui/ContentLoadingScreen/ContentLoadingScreen'
 import './InterestSelect.css'
 
 // 한 번에 고를 수 있는 관심사 개수.

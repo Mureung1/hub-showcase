@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Today, { type TodayState } from './Today'
-import type { TodayArticle } from '../api/types'
+import type { TodayArticle } from '../../api/types'
 
 // Today는 controlled component라 선택 상태를 직접 관리하는 테스트용 wrapper가 필요하다.
 function ControlledToday({

@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { flushSync } from 'react-dom'
-import InterestSelect from './screens/InterestSelect'
-import Today, { type TodayState } from './screens/Today'
-import ArticleIntro, { type ArticleIntroState } from './screens/ArticleIntro'
-import MyGgaem, { type CalendarState, type RecordsState } from './screens/MyGgaem'
-import ContentLoadingScreen from './components/ContentLoadingScreen'
-import { api } from './api/client'
-import { ensureAnonymousSession } from './lib/supabase'
-import type { Interest } from './api/types'
+import InterestSelect from '../features/onboarding/InterestSelect'
+import Today, { type TodayState } from '../features/today/Today'
+import ArticleIntro, { type ArticleIntroState } from '../features/article/ArticleIntro'
+import MyGgaem, { type CalendarState, type RecordsState } from '../features/my-ggaem/MyGgaem'
+import ContentLoadingScreen from '../shared/ui/ContentLoadingScreen/ContentLoadingScreen'
+import { api } from '../api/client'
+import { ensureAnonymousSession } from '../auth/supabase'
+import type { Interest } from '../api/types'
 
 type AppState =
   | { status: 'loading' }

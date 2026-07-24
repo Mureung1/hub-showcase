@@ -2,13 +2,13 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import type { ArticleDetail, TodayArticle } from './api/types'
+import type { ArticleDetail, TodayArticle } from '../api/types'
 
-vi.mock('./lib/supabase', () => ({
+vi.mock('../auth/supabase', () => ({
   ensureAnonymousSession: vi.fn().mockResolvedValue({ access_token: 'token' }),
 }))
 
-vi.mock('./api/client', () => {
+vi.mock('../api/client', () => {
   class ApiClientError extends Error {
     status: number
     code: string
@@ -33,7 +33,7 @@ vi.mock('./api/client', () => {
   }
 })
 
-import { api } from './api/client'
+import { api } from '../api/client'
 
 const ARTICLE_A: TodayArticle = {
   id: '40000000-0000-0000-0000-000000000001',
@@ -156,7 +156,7 @@ describe('App startup', () => {
 })
 
 describe('Onboarding to Today content loading flow', () => {
-  const INTEREST: import('./api/types').Interest = {
+  const INTEREST: import('../api/types').Interest = {
     id: 'interest-1',
     name: 'IT·개발',
     displayOrder: 1,

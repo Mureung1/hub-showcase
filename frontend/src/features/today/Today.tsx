@@ -1,6 +1,6 @@
-import ArticleCard from '../components/ArticleCard'
-import type { TodayArticle } from '../api/types'
-import mascotMy from '../assets/mascot/mascot-my.png'
+import ArticleCard from './components/ArticleCard'
+import type { TodayArticle } from '../../api/types'
+import mascotMy from '../../assets/mascot/mascot-my.png'
 import './Today.css'
 
 export type TodayState =

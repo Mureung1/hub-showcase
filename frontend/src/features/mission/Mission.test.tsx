@@ -2,8 +2,8 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import Mission from './Mission'
-import { ApiClientError } from '../api/client'
-import type { ArticleDetail } from '../api/types'
+import { ApiClientError } from '../../api/client'
+import type { ArticleDetail } from '../../api/types'
 
 function makeArticleDetail(): ArticleDetail {
   return {

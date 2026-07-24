@@ -1,4 +1,4 @@
-import mascotLoading from '../assets/mascot/mascot-loading.png'
+import mascotLoading from '../../../assets/mascot/mascot-loading.png'
 import './ContentLoadingScreen.css'
 
 type ContentLoadingScreenProps = {
