@@ -1,5 +1,11 @@
 import { getSupabaseClient } from '../lib/supabase.js'
+import { isDemoMode } from '../config/runtimeMode.js'
 import { createSummary } from './summaryService.js'
+import {
+  createDemoCheckin,
+  deleteDemoCheckin,
+  getDemoCheckins,
+} from './demoCheckinStore.js'
 
 function toCheckin(row) {
   return {
@@ -17,6 +23,10 @@ function toCheckin(row) {
 }
 
 export async function getCheckins() {
+  if (isDemoMode()) {
+    return getDemoCheckins()
+  }
+
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
     .from('checkins')
@@ -42,6 +52,11 @@ export async function createCheckin(entry) {
     cause: entry.cause || generatedSummary.cause,
     action: entry.action || generatedSummary.action,
   }
+
+  if (isDemoMode()) {
+    return createDemoCheckin({ ...entry, rawText, ...summary })
+  }
+
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
     .from('checkins')
@@ -67,6 +82,10 @@ export async function createCheckin(entry) {
 }
 
 export async function deleteCheckin(id) {
+  if (isDemoMode()) {
+    return deleteDemoCheckin(id)
+  }
+
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
     .from('checkins')

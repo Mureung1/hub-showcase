@@ -1,5 +1,6 @@
 import crypto from 'node:crypto'
 import { getSupabaseClient } from '../lib/supabase.js'
+import { isDemoMode } from '../config/runtimeMode.js'
 
 const BUCKET = 'checkin-photos'
 
@@ -11,6 +12,10 @@ const EXT_BY_MIME = {
 }
 
 export async function uploadCheckinPhoto(file) {
+  if (isDemoMode()) {
+    return `data:${file.mimetype};base64,${file.buffer.toString('base64')}`
+  }
+
   const supabase = getSupabaseClient()
   const ext = EXT_BY_MIME[file.mimetype] || 'bin'
   const path = `checkins/${Date.now()}-${crypto.randomUUID()}.${ext}`
