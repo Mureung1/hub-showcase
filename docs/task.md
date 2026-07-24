@@ -58,7 +58,7 @@
 - [x] **T-12 관심 설정 (M1 + M5)** `server` `client` — [#13](https://github.com/HappyGogildong/hub/issues/13)
   - M1: 가게 검색·즐겨찾기 등록(초기 진입). M5: 관심 카테고리·위치 조건(N km 슬라이더/항상)
   - DoD: 설정 값이 T-11 판정에 반영됨
-- [ ] **T-13 FCM 푸시 + 인앱 알림** `server` `client`
+- [x] **T-13 FCM 푸시 + 인앱 알림** `server` `client` — [#15](https://github.com/HappyGogildong/hub/issues/15)
   - server: firebase-admin, 토큰 등록 API, 발송. client: Firebase JS SDK + 서비스 워커, 포그라운드 인앱 알림
   - 푸시 권한 거부 시 인앱 폴링 폴백. Firebase 자격증명은 server/.env (커밋 금지)
   - 선행 작업: Firebase 프로젝트 생성 + 서비스 계정 키 발급
@@ -72,6 +72,16 @@
   - DoD: 전후 비교 결과를 docs/에 기록
 - [ ] **T-16 데모 시나리오 정리 + 폴리싱**
   - 시딩 → 등록 → 푸시 수신 → 경합 예약 → 픽업 확인까지 리허설 대본, UI 마감(DESIGN.md 토큰 준수)
+- [x] **T-17 예약 발생 알림 (사장님)** `server` `client` — [#16](https://github.com/HappyGogildong/hub/issues/16)
+  - 소비자가 예약하면 해당 가게 사장님에게 푸시 + 인앱 알림 (T-13 인프라 재사용)
+  - 예약 트랜잭션 커밋 후 발송 — 알림 실패가 예약을 되돌리지 않는다
+  - 안 읽은 알림 배지(서버 목록 기준)로 푸시를 놓쳐도 인지 가능
+  - DoD: 예약 시 사장님 기기로 푸시 수신, 대시보드 자동 갱신
+- [x] **T-18 사장님 대시보드 16:9 재구성** `client` — Backlog에서 승격
+  - 기획(visual-기획서 §03 "가로형 웹 레이아웃")대로 카운터 PC 상시 화면에 맞게 재구성
+  - 오늘 요약 타일·소진 진행률·마감 카운트다운·픽업 대기 목록·인라인 픽업 확인
+  - 서버 신규 API 없이 딜·예약 응답 조합(lib/ownerStats) + 단위 테스트
+  - DoD: 16:9에서 가로 스크롤 없음, 인라인 픽업 시 집계 즉시 갱신
 
 ---
 
@@ -88,7 +98,6 @@
 - 노쇼 정책 고도화 (횟수 제한·페널티 — 현재는 단순 만료)
 - 대시보드 실시간화 (폴링 → SSE/WebSocket)
 - ESLint 도입, 서버 통합 테스트(supertest) 상시화 (클라이언트는 Vitest + RTL 도입됨 — RequireRole 테스트 작성)
-- 사장님 웹앱 알림(브라우저 알림) — 예약 발생 시
 - 이미지 업로드 (딜 사진 — MVP는 카테고리 아이콘/플레이스홀더로 대체)
 
 ## 미결/확인 필요
