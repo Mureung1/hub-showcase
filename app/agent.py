@@ -4,6 +4,7 @@
 """
 
 import json
+from collections.abc import Generator
 
 from app import config, prompt_loader, tools
 
@@ -173,24 +174,33 @@ def _call_verify(title: str, source_text: str, summary: dict) -> dict:
     return tools.ask_llm_json(prompt, fallback={"is_good": True})
 
 
-def _verify_loop(title: str, source_text: str, summary: dict) -> tuple[dict, int]:
-    """자기 검증(verify)의 3↔4단계 왕복 루프. 채택할 요약과 재시도 횟수를 반환한다.
+def _verify_loop(
+    index: int, title: str, source_text: str, summary: dict
+) -> Generator[dict, None, tuple[dict, int]]:
+    """자기 검증(verify)의 3↔4단계 왕복 루프. retry 이벤트를 yield하고 (summary, retried)를 반환한다.
 
-    is_good이면 그 요약을 그대로 채택하고 retried 증가 없이 종료한다.
-    verify가 is_good을 빠뜨린 유효 JSON을 줄 수 있으므로 .get의 기본값도
-    통과 쪽(True)으로 둔다 — _call_verify의 fallback(파싱 실패 시)과 별개 방어.
+    is_good이면 그 요약을 그대로 채택하고 종료한다. 통과 못 하면 feedback을 담아
+    retry 이벤트를 실시간으로 흘리고(감사 기록), 그 feedback으로 3단계(요약)로
+    되돌아가 재요약한다. verify가 is_good/feedback을 빠뜨린 유효 JSON을 줄 수 있어
+    .get의 기본값으로 방어한다(is_good은 통과 쪽 True, feedback은 빈 문자열).
 
-    범위: 지금(4-3)은 통과 경로만이다. is_good=False일 때의 재요약·retry
-    이벤트(4-4)와 왕복 상한(4-5)이 이 골격에 얹히면서, 그때 이 함수는
-    retry 이벤트를 yield하는 제너레이터로 바뀐다(반환 힌트도 Generator로 갱신).
-    아직 호출자(Task 6)가 없어 그 전환은 아무것도 깨지 않는다.
+    상한: retried가 MAX_RETRY에 도달하면 더 왕복하지 않는다(CLAUDE.md 불변식 —
+    상한 없는 재시도 금지). 상한 도달 시의 "마지막 요약 채택"은 4-5(#32)가 채운다.
+    지금(4-4)은 그 자리를 raise로 명시해 조용히 틀린 값을 반환하지 않게 한다.
     """
     retried = 0
-    verdict = _call_verify(title, source_text, summary)
-    if verdict.get("is_good", True):
-        return summary, retried
-    # is_good=False: 재요약 왕복(4-4 #31)과 상한(4-5 #32)에서 이 자리를 채운다.
-    raise NotImplementedError("verify 재시도는 4-4(#31)에서 구현")
+    while True:
+        verdict = _call_verify(title, source_text, summary)
+        if verdict.get("is_good", True):
+            return summary, retried
+        if retried >= config.MAX_RETRY:
+            raise NotImplementedError("상한 소진 시 마지막 요약 채택은 4-5(#32)에서 구현")
+        retried += 1
+        feedback = verdict.get("feedback", "")
+        yield {"stage": "retry", "index": index, "attempt": retried, "feedback": feedback}
+        new_summary = _call_summarize(title, source_text, feedback)
+        if new_summary is not None:
+            summary = new_summary
 
 
 if __name__ == "__main__":
