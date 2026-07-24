@@ -21,14 +21,14 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | 영역 | 현재 product 구현 | 채택한 목표 | 후속 |
 | --- | --- | --- | --- |
 | Runtime stack | `@ay-ple/codex-chat-runtime`이 exact official source, generated SDK, standalone CPython과 native `0.144.4`를 canonical manifest로 검증한 뒤 package-local bundle만 시작한다. | Repository-local 실행은 이 package-local verified bundle을 그대로 사용한다. 별도 release resolver와 production host는 유지하지 않는다. | Runtime pin upgrade가 실제로 필요할 때의 별도 검증 |
-| Runtime state | Canonical composition이 explicit `appDataRoot` 아래 app-managed `HOME`, `CODEX_HOME`, `CODEX_SQLITE_HOME`, temp/runtime state를 계산·준비하고 root 비중첩을 검증한다. | Runtime-home pair와 기기별 state를 workspace 밖에 두고 caller wiring에서 분리한다. | macOS 기본 app data path와 runtime-home rollover 정책 |
-| Account lifecycle | Runtime package가 official managed ChatGPT Browser login·cancel·logout, fresh account read, transient attempt와 immutable `auth-only | workspace` role을 구현한다. Auth-only role은 owner-only empty bootstrap `cwd`에서 account family만 허용한다. Current Server·Browser는 account transition과 setup route를 아직 조합하지 않아 dogfood UI는 외부 device-auth helper를 사용한다. | Explicit file store를 stable app-managed `CODEX_HOME`에 두고 launch·relaunch의 fresh account read를 authority로 삼는다. Admission 뒤 같은 credential state의 workspace Runtime으로 process tree를 교체한 뒤 Ready를 commit한다. | Credential backend migration, 여러 account·auth mode와 enterprise policy가 실제로 필요할 때의 별도 결정 |
+| Runtime state | Canonical composition이 explicit `appDataRoot` 아래 app-managed `HOME`, `CODEX_SQLITE_HOME`, temp/runtime state를 계산·준비하고 caller의 전역 `CODEX_HOME`을 결합한다. | 개인용 실행은 기존 Codex 인증·설정을 재사용하고 AY-PLE 전용 auth profile을 만들지 않는다. | macOS 기본 app data path와 runtime state rollover 정책 |
+| Account lifecycle | Current dev·dogfood는 caller의 `CODEX_HOME`, 또는 미설정 시 `~/.codex`에서 fresh account를 읽는다. 별도 auth profile·device-auth helper·credential copy는 없다. Runtime package의 managed Browser login·cancel·logout과 `auth-only` role은 optional public-preview graph에 남아 있지만 current startup은 선택하지 않는다. | 개인용 실행에서는 전역 Codex account를 단일 authority로 사용한다. | Public-preview graph와 auth-only Runtime의 `keep | remove` 감사 |
 | 작업 `cwd` | Root startup·Browser activation이 chooser·development override로 연 current-v2 directory를 internal `ready`로 판정해 product thread의 exact native `cwd`로 사용한다. `CODEX_CHAT_WORKSPACE`는 manual-development selection override다. | App이 생성하고 `WorkspaceManifest` validation을 통과한 active `SemesterWorkspace`만 `cwd`가 된다. 사용자는 학기 정보와 생성 위치를 고르며 identity는 `WorkspaceManifest`가 소유한다. | Scaffold·admission 전환과 durable active workspace registry |
 | 학기 제품 상태 | Workspace current canonical v2 store가 stable workspace ID·한 Course, confirmed state·settled history·execution guard를 original-byte authority와 compare-before-rename으로 보존한다. Invalid·unsupported bytes는 `incompatible/readOnly`로 연다. | `WorkspaceManifest`가 workspace·Course identity와 관계를 단독 소유하고, app data 손실·Server restart·rollback에도 workspace만으로 확인된 상태를 다시 연다. | Current v2 identity의 explicit version transition, backup/restore·signature 정책 |
 | Native context | Runtime의 persistent bridge와 one-shot official App Server sidecar가 모두 fixed `project_root_markers=[]`, exact workspace `cwd`와 controlled environment를 사용한다. Sidecar의 `config/read`·`skills/list` raw protocol은 Runtime-private이고 Server는 atomic high-level snapshot만 소비한다. `@ay-ple/semester-workspace`의 bundle verifier와 Server native boundary는 static·effective conflict를 검사하지만 current action/setup composition에는 아직 연결되지 않았다. | Fresh setup이 workspace instruction/Skill bundle을 설치·검증하고 effective native context gate를 통과한 뒤에만 Codex action을 연다. Memory는 명시적 설정과 eligibility 확인 뒤 비권위적 맥락으로만 사용한다. | Memory 활성화·consent·rollover UX |
 | Transport·policy | Local companion이 detached Node→Python→App Server tree를 supervise한다. First Assignment product Turn은 `auto_review + workspace_write`를 explicit하게 보낸다. | Codex execution permission은 AY-PLE Review·`UserConfirmation`과 분리하고 Browser에는 allowlisted product activity만 전달한다. | Interactive native approval UX과 cloud threat model |
 
-Current product startup·install·Runtime command는 legacy env, repository `.ay-ple`, ambient auth/provider, system Python이나 `process.cwd()`를 fallback으로 사용하지 않는다. Legacy local data를 탐색·이관·삭제하지 않고 다른 clone·external root의 상태를 추론하지 않는다. Runtime role·managed account lifecycle, v3 workspace admission·bundle verifier와 native-context boundary primitive는 구현됐지만 current Server·Browser composition은 이를 first-run OAuth→scaffold→Runtime transition→Ready 흐름으로 연결하지 않는다. Current chooser·materializer와 product action은 여전히 current v2 directory를 사용하므로 internal `ready`를 adopted `Semester Ready`로 해석하지 않는다. Public application host와 Runtime release resolver workspace는 2026-07-24 hard cutover에서 제거했다.
+Current product startup·install·Runtime command는 전역 `CODEX_HOME`만 의도적으로 재사용하고 ambient provider variable, legacy env, repository `.ay-ple`, system Python이나 `process.cwd()`를 fallback으로 사용하지 않는다. Legacy local data를 탐색·이관·삭제하지 않고 다른 clone·external root의 상태를 추론하지 않는다. Runtime role·managed account lifecycle, v3 workspace admission·bundle verifier와 native-context boundary primitive는 구현됐지만 current Server·Browser composition은 이를 first-run OAuth→scaffold→Runtime transition→Ready 흐름으로 연결하지 않는다. Current chooser·materializer와 product action은 여전히 current v2 directory를 사용하므로 internal `ready`를 adopted `Semester Ready`로 해석하지 않는다. Public application host와 Runtime release resolver workspace는 2026-07-24 hard cutover에서 제거했다.
 
 ## 격리 레이어
 
@@ -36,7 +36,7 @@ Current product startup·install·Runtime command는 legacy env, repository `.ay
 | --- | --- | --- |
 | Runtime/version | `@ay-ple/codex-chat-runtime`의 tracked canonical manifest와 complete-tree verifier를 통과한 package-local Python·SDK·native bundle만 사용 | Codex state, auth와 session 분리 |
 | Runtime environment | Inherited environment 대신 explicit `HOME`, Codex homes, temp와 fixed executable path를 전달 | Container, VM 또는 별도 OS user 수준 격리 |
-| Runtime-home pair | `appDataRoot` 아래 app-managed `CODEX_HOME`과 `CODEX_SQLITE_HOME`을 함께 배치 | 학기별 memory 격리와 사용자 자료 보존 |
+| Runtime state roots | 전역 `CODEX_HOME`과 app-managed `CODEX_SQLITE_HOME`·`HOME`·temp를 명시적으로 결합 | Codex 전역 config·Skill·memory의 AY-PLE 전용 격리 |
 | Account lifecycle | Codex가 managed OAuth·credential을 소유하고 AY-PLE account Module은 fresh managed account를 Browser-safe state로만 투영 | 모든 official Browser URL의 무토큰성, provider connectivity·entitlement와 여러 account mode |
 | Workspace | App-owned admission과 `WorkspaceManifest` validation을 통과한 active `SemesterWorkspace`를 exact native `cwd`로 전달 | Auth·Runtime state 저장소 격리, 외부 `ImportSource` 분석·반입 방식 |
 | Native context | Workspace instruction/Skill bundle과 실제 native config·Skill discovery를 각각 검증한다. Persistent Runtime과 one-shot probe는 workspace root와 fixed empty project marker를 공유하고 raw App Server protocol은 Runtime-private다. Opt-in Memories는 별도 비권위적 맥락이다. | Workspace identity, official system capability, 학업 사실의 정확성, 모든 작업의 memory 생성 |
@@ -84,9 +84,10 @@ package-root/
 user-app-data/
   runtime/
     home/                     # isolated child HOME
-    codex-home/               # CODEX_HOME
     codex-sqlite-home/        # CODEX_SQLITE_HOME
     temp/                     # temporary/runtime state
+
+global-codex-home/            # caller CODEX_HOME 또는 ~/.codex
 
 chooser-selected-directory/
   AGENTS.md                  # 선택 사항, native instruction
@@ -128,8 +129,8 @@ Workspace-local store는 app data나 native session과 다른 durable authority�
 | --- | --- | --- |
 | Artifact drift | Current bundle 또는 public descriptor가 선택한 release byte가 바뀌면 검토한 Runtime과 달라진다. | Current canonical manifest와 public exact binding·complete tree를 resolve·spawn 경계에서 fail closed로 검증한다. |
 | Silent Runtime fallback | 손상·unavailable release에서 다른 cached Runtime을 고르면 application contract가 바뀐다. | Resolver는 exact release만 repair·검증하고 실패 시 닫는다. Rollback은 still-supported 이전 exact application pair를 명시적으로 실행한다. |
-| Runtime-home pair 분리 | Custom home을 잘못 조합하면 auth·SQLite 수명과 복구 책임이 갈라진다. | Product composition이 explicit appDataRoot 아래 pair와 controlled roots를 함께 계산한다. |
-| Credential authority 분열 | AY-PLE token store, global Codex home와 app-managed store를 함께 쓰면 refresh·logout·update owner가 갈라진다. | Official managed account method와 한 app-scoped store만 사용하고 AY-PLE이 credential bytes를 parse·migration하지 않는다. |
+| Runtime state root 분리 | 전역 auth/config와 app-managed SQLite의 수명·복구 책임이 다르다. | 개인용 composition은 이 차이를 의도적으로 허용하고 product state는 workspace에, transient SQLite·temp는 app data에 둔다. |
+| Credential authority 분열 | AY-PLE token store와 global Codex home를 함께 쓰면 refresh·logout owner가 갈라진다. | Current startup은 AY-PLE credential store를 만들지 않고 전역 `CODEX_HOME` 하나만 사용한다. |
 | Pre-workspace Runtime 오인 | OAuth를 위해 만든 inert cwd가 workspace처럼 thread·Skill·학업 action을 열 수 있다. | Runtime의 auth-only role이 conversation·native-context family를 native write 전에 거절한다. Public transition은 admitted workspace로 넘어갈 때 process tree를 완전히 교체·재확인해야 한다. |
 | Workspace 오선택 | Registry나 development override가 사용자 의도와 다른 root를 가리킬 수 있다. | `WorkspaceManifest` identity·schema를 재검증하고 thread 재사용 전 sticky `cwd`를 확인한다. Registry는 pointer로만 사용한다. |
 | Workspace authority 분열 | Current v2와 새 `WorkspaceManifest`가 같은 workspace·Course identity를 각각 소유하면 migration과 rollback 결과가 달라진다. | 첫 target은 `.ay-ple/workspace-state.json` 하나를 v3 aggregate authority로 사용하고 sidecar를 만들지 않는다. Current v2는 자동 migration하지 않고 bytes를 보존한 채 fail closed한다. |
@@ -138,7 +139,7 @@ Workspace-local store는 app data나 native session과 다른 durable authority�
 | Ancestor native context 혼입 | 사용자가 고른 parent가 다른 repository 안이면 Codex의 기본 project-root discovery가 상위 `AGENTS.md`, `.codex/`와 Skills를 함께 읽을 수 있다. | Persistent bridge와 one-shot probe가 fixed `project_root_markers=[]`, exact workspace `cwd`, controlled `HOME`·`CODEX_HOME`을 공유하고 exact native provider-free smoke가 effective result와 full reap을 검증한다. |
 | `ImportSource` 오인 | 기존 자료 폴더를 곧바로 workspace로 열면 외부 tree의 우연한 구조가 schema가 된다. | App-owned scaffold만 활성화하고 import 분석·mapping·apply를 별도 검토 흐름으로 둔다. |
 | Workspace authority drift | Registered TXT나 store가 Turn·Server 수명 중 바뀌면 stale authority로 덮어쓸 수 있다. | Source drift는 interrupt·explicit rebaseline, store drift는 compare-before-rename·explicit reactivation으로 원본을 보존한다. |
-| 민감 상태 혼입 | `CODEX_HOME`을 workspace에 두면 auth·session·log가 사용자 자료와 섞인다. | App data에 runtime-home pair를 두고 workspace와 분리한다. |
+| 민감 상태 혼입 | `CODEX_HOME`을 workspace에 두면 auth·session·log가 사용자 자료와 섞인다. | 전역 `CODEX_HOME`과 workspace의 root 비중첩을 검증한다. |
 | Host context 혼입 | Custom home만으로 ambient provider·environment가 모두 차단된다고 볼 수 없다. | Child environment를 allowlist로 재구성하고 exact local-provider에서 effective state를 검증한다. |
 | Sandbox 과신 | Codex sandbox와 approval은 OS process 격리가 아니다. | Local personal-device 경계로 한정하고 cloud 전환 시 별도 threat model을 작성한다. |
 | 권한 경계 혼동 | Native permission은 Codex execution을, `UserConfirmation`은 academic apply를 제어한다. | 어느 결정도 다른 결정을 암묵적으로 승인하지 않고 별도 identity·state로 다룬다. |

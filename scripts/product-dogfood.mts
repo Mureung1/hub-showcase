@@ -20,12 +20,6 @@ import { assertProductRootsDoNotOverlap } from './semester-workspace-materialize
 
 const profileMarkerName = '.ay-ple-dogfood-profile.json'
 const profileMarkerKind = 'ay-ple-persistent-dogfood-profile'
-const codexConfig = [
-  'cli_auth_credentials_store = "file"',
-  'approval_policy = "never"',
-  'sandbox_mode = "read-only"',
-  '',
-].join('\n')
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url))
 const usage =
   'Usage: npm run dogfood -- --root /absolute/path/to/profile [--adopt-existing]'
@@ -37,13 +31,11 @@ type ProductDevelopmentStarter = (options: {
 
 export type DogfoodProfile = {
   readonly appDataRoot: string
-  readonly authState: 'missing' | 'ready'
-  readonly codexHome: string
   readonly profileRoot: string
   readonly workspaceRoot: string
 }
 
-type DogfoodProfileLayout = Omit<DogfoodProfile, 'authState'>
+type DogfoodProfileLayout = DogfoodProfile
 
 export function resolveDogfoodArguments(arguments_: readonly string[]): {
   readonly adoptExisting: boolean
@@ -88,9 +80,6 @@ export async function runDogfood(options: {
   log(`Dogfood profile: ${profile.profileRoot}`)
   log(`SemesterWorkspace: ${profile.workspaceRoot} (persistent)`)
   log(`Product app data: ${profile.appDataRoot} (persistent)`)
-  if (profile.authState === 'missing') {
-    throw new Error(authenticationGuidance(profile, options.packageRoot))
-  }
   await (options.startProductDevelopment ?? runProductDevelopment)({
     arguments: ['--app-data-root', profile.appDataRoot],
     environment: {
@@ -140,10 +129,7 @@ export async function prepareDogfoodProfile(options: {
   const layout = resolveProfileLayout(canonicalProfileRoot)
   await validateProfileLayout(layout)
 
-  return {
-    ...layout,
-    authState: await resolveAuthState(layout.codexHome),
-  }
+  return layout
 }
 
 async function initializeProfile(
@@ -157,16 +143,11 @@ async function initializeProfile(
     packageRoot,
     'apps/chat-shell/e2e/fixtures/first-assignment-semester-workspace',
   )
-  await mkdir(layout.codexHome, { mode: 0o700, recursive: true })
+  await mkdir(layout.appDataRoot, { mode: 0o700 })
   await cp(sampleWorkspaceRoot, layout.workspaceRoot, {
     errorOnExist: true,
     force: false,
     recursive: true,
-  })
-  await writeFile(path.join(layout.codexHome, 'config.toml'), codexConfig, {
-    encoding: 'utf8',
-    flag: 'wx',
-    mode: 0o600,
   })
   await writeOwnershipMarker(canonicalProfileRoot)
 }
@@ -178,7 +159,6 @@ async function adoptExistingProfile(profileRoot: string): Promise<void> {
   )
   const layout = resolveProfileLayout(canonicalProfileRoot)
   await validateProfileLayout(layout)
-  await resolveAuthState(layout.codexHome)
   await writeOwnershipMarker(canonicalProfileRoot)
 }
 
@@ -186,7 +166,6 @@ function resolveProfileLayout(profileRoot: string): DogfoodProfileLayout {
   const appDataRoot = path.join(profileRoot, 'app-data')
   return {
     appDataRoot,
-    codexHome: path.join(appDataRoot, 'runtime/codex-home'),
     profileRoot,
     workspaceRoot: path.join(profileRoot, 'semester-workspace'),
   }
@@ -197,12 +176,7 @@ async function validateProfileLayout(
 ): Promise<void> {
   await Promise.all([
     canonicalDirectory(layout.appDataRoot, 'dogfood app data root'),
-    secureDirectory(layout.codexHome, 'dogfood Codex home'),
     canonicalDirectory(layout.workspaceRoot, 'dogfood SemesterWorkspace'),
-    secureRegularFile(
-      path.join(layout.codexHome, 'config.toml'),
-      'config.toml',
-    ),
   ])
 }
 
@@ -254,27 +228,6 @@ async function verifyOwnedProfile(profileRoot: string): Promise<void> {
   }
 }
 
-async function resolveAuthState(
-  codexHome: string,
-): Promise<DogfoodProfile['authState']> {
-  const authPath = path.join(codexHome, 'auth.json')
-  if (!(await pathExists(authPath))) return 'missing'
-  await secureRegularFile(authPath, 'auth.json')
-  return 'ready'
-}
-
-async function secureDirectory(
-  directory: string,
-  label: string,
-): Promise<string> {
-  const canonical = await canonicalDirectory(directory, label)
-  const stats = await lstat(directory)
-  if ((stats.mode & 0o077) !== 0) {
-    throw new TypeError(`${label} must be owner-only`)
-  }
-  return canonical
-}
-
 async function secureRegularFile(file: string, label: string): Promise<void> {
   const stats = await lstat(file)
   if (
@@ -285,26 +238,6 @@ async function secureRegularFile(file: string, label: string): Promise<void> {
     throw new TypeError(`${label} must be an owner-only regular file`)
   }
   await access(file, constants.R_OK)
-}
-
-function authenticationGuidance(
-  profile: DogfoodProfile,
-  packageRoot: string,
-): string {
-  const codexExecutable = path.join(
-    packageRoot,
-    'packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64/bundle/site-packages/codex_cli_bin/bin/codex',
-  )
-  return [
-    'Dogfood Codex authentication is missing.',
-    'Log in to this isolated profile, then rerun dogfood:',
-    `CODEX_HOME=${shellQuote(profile.codexHome)} ${shellQuote(codexExecutable)} login --device-auth`,
-    `npm run dogfood -- --root ${shellQuote(profile.profileRoot)}`,
-  ].join('\n')
-}
-
-function shellQuote(value: string): string {
-  return `'${value.replaceAll("'", `'"'"'`)}'`
 }
 
 async function canonicalCandidatePath(candidate: string): Promise<string> {

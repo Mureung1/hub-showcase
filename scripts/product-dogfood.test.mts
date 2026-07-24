@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict'
 import {
-  chmod,
-  lstat,
   mkdir,
   mkdtemp,
   readFile,
@@ -40,11 +38,6 @@ test('persistent dogfood profile prepares sample data once and preserves later w
     })
     assert.deepEqual(first, {
       appDataRoot: path.join(canonicalProfileRoot, 'app-data'),
-      authState: 'missing',
-      codexHome: path.join(
-        canonicalProfileRoot,
-        'app-data/runtime/codex-home',
-      ),
       profileRoot: canonicalProfileRoot,
       workspaceRoot: path.join(canonicalProfileRoot, 'semester-workspace'),
     })
@@ -58,21 +51,6 @@ test('persistent dogfood profile prepares sample data once and preserves later w
         'utf8',
       ),
     )
-    assert.equal(
-      await readFile(path.join(first.codexHome, 'config.toml'), 'utf8'),
-      [
-        'cli_auth_credentials_store = "file"',
-        'approval_policy = "never"',
-        'sandbox_mode = "read-only"',
-        '',
-      ].join('\n'),
-    )
-    assert.equal((await lstat(first.codexHome)).mode & 0o777, 0o700)
-    assert.equal(
-      (await lstat(path.join(first.codexHome, 'config.toml'))).mode & 0o777,
-      0o600,
-    )
-
     const productStateRoot = path.join(first.workspaceRoot, '.ay-ple')
     await mkdir(productStateRoot)
     await writeFile(
@@ -113,17 +91,12 @@ test('persistent dogfood profile prepares sample data once and preserves later w
 test('existing dogfood data requires explicit one-time adoption and remains unchanged', async () => {
   const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-dogfood-test-'))
   const profileRoot = path.join(testRoot, 'profile')
-  const codexHome = path.join(profileRoot, 'app-data/runtime/codex-home')
+  const appDataRoot = path.join(profileRoot, 'app-data')
   const workspaceRoot = path.join(profileRoot, 'semester-workspace')
 
   try {
-    await mkdir(codexHome, { mode: 0o700, recursive: true })
+    await mkdir(appDataRoot, { mode: 0o700, recursive: true })
     await mkdir(workspaceRoot)
-    await writeFile(
-      path.join(codexHome, 'config.toml'),
-      'existing = "configuration"\n',
-      { encoding: 'utf8', mode: 0o600 },
-    )
     await writeFile(
       path.join(workspaceRoot, 'existing-work.txt'),
       'preserve me\n',
@@ -140,11 +113,6 @@ test('existing dogfood data requires explicit one-time adoption and remains unch
       packageRoot: repositoryRoot,
       profileRoot,
     })
-    assert.equal(adopted.authState, 'missing')
-    assert.equal(
-      await readFile(path.join(adopted.codexHome, 'config.toml'), 'utf8'),
-      'existing = "configuration"\n',
-    )
     assert.equal(
       await readFile(
         path.join(adopted.workspaceRoot, 'existing-work.txt'),
@@ -159,41 +127,6 @@ test('existing dogfood data requires explicit one-time adoption and remains unch
         profileRoot,
       }),
       adopted,
-    )
-  } finally {
-    await rm(testRoot, { force: true, recursive: true })
-  }
-})
-
-test('dogfood authentication is ready only for an owner-only regular auth file', async () => {
-  const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-dogfood-test-'))
-  const profileRoot = path.join(testRoot, 'profile')
-
-  try {
-    const prepared = await prepareDogfoodProfile({
-      packageRoot: repositoryRoot,
-      profileRoot,
-    })
-    const authPath = path.join(prepared.codexHome, 'auth.json')
-    await writeFile(authPath, '{"secret":"not-read-by-launcher"}\n', {
-      encoding: 'utf8',
-      mode: 0o600,
-    })
-
-    assert.equal(
-      (
-        await prepareDogfoodProfile({
-          packageRoot: repositoryRoot,
-          profileRoot,
-        })
-      ).authState,
-      'ready',
-    )
-
-    await chmod(authPath, 0o644)
-    await assert.rejects(
-      prepareDogfoodProfile({ packageRoot: repositoryRoot, profileRoot }),
-      /auth.json must be an owner-only regular file/,
     )
   } finally {
     await rm(testRoot, { force: true, recursive: true })
@@ -260,37 +193,7 @@ test('dogfood CLI requires one absolute profile root and recognizes explicit ado
   )
 })
 
-test('dogfood run blocks missing auth with an isolated login command', async () => {
-  const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-dogfood-test-'))
-  const profileRoot = path.join(testRoot, 'profile')
-  let started = false
-
-  try {
-    await assert.rejects(
-      runDogfood({
-        arguments: ['--root', profileRoot],
-        environment: {},
-        log: () => undefined,
-        packageRoot: repositoryRoot,
-        startProductDevelopment: async () => {
-          started = true
-        },
-      }),
-      (error: unknown) => {
-        assert.match(String(error), /Dogfood Codex authentication is missing/)
-        assert.match(String(error), /CODEX_HOME=/)
-        assert.match(String(error), /login --device-auth/)
-        assert.match(String(error), /npm run dogfood -- --root/)
-        return true
-      },
-    )
-    assert.equal(started, false)
-  } finally {
-    await rm(testRoot, { force: true, recursive: true })
-  }
-})
-
-test('authenticated dogfood run delegates persistent roots to canonical product development', async () => {
+test('dogfood run delegates persistent roots and global Codex state to canonical product development', async () => {
   const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-dogfood-test-'))
   const profileRoot = path.join(testRoot, 'profile')
 
@@ -298,10 +201,6 @@ test('authenticated dogfood run delegates persistent roots to canonical product 
     const prepared = await prepareDogfoodProfile({
       packageRoot: repositoryRoot,
       profileRoot,
-    })
-    await writeFile(path.join(prepared.codexHome, 'auth.json'), '{}\n', {
-      encoding: 'utf8',
-      mode: 0o600,
     })
     let delegated:
       | {
@@ -312,7 +211,7 @@ test('authenticated dogfood run delegates persistent roots to canonical product 
 
     await runDogfood({
       arguments: ['--root', profileRoot],
-      environment: { KEEP_ME: 'yes' },
+      environment: { CODEX_HOME: '/global/codex-home', KEEP_ME: 'yes' },
       log: () => undefined,
       packageRoot: repositoryRoot,
       startProductDevelopment: async (options) => {
@@ -325,6 +224,7 @@ test('authenticated dogfood run delegates persistent roots to canonical product 
       prepared.appDataRoot,
     ])
     assert.equal(delegated?.environment.KEEP_ME, 'yes')
+    assert.equal(delegated?.environment.CODEX_HOME, '/global/codex-home')
     assert.equal(
       delegated?.environment.CODEX_CHAT_WORKSPACE,
       prepared.workspaceRoot,

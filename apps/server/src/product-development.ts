@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { homedir } from 'node:os'
 
 import {
   createMacOsSemesterWorkspaceChooser,
@@ -13,6 +14,7 @@ const productOrigin = 'http://127.0.0.1:4173'
 
 export type ProductDevelopmentBootstrapErrorCode =
   | 'product_app_data_root_required'
+  | 'product_codex_home_invalid'
   | 'product_mode_invalid'
   | 'product_package_root_required'
   | 'product_workspace_root_required'
@@ -61,6 +63,12 @@ export function resolveProductDevelopmentBootstrap(
     'product_workspace_root_required',
     'AY_PLE_WORKSPACE_ROOT',
   )
+  const codexHome = requireAbsoluteRoot(
+    environment.CODEX_HOME ??
+      path.join(environment.HOME ?? homedir(), '.codex'),
+    'product_codex_home_invalid',
+    'CODEX_HOME',
+  )
   const chooseDirectory =
     options.chooseDirectory ?? createMacOsSemesterWorkspaceChooser()
   let initialSelection = selectedWorkspaceRoot
@@ -71,7 +79,7 @@ export function resolveProductDevelopmentBootstrap(
       runtimeRoot: path.join(packageRoot, productionRuntimeRelativePath),
       environment: {
         home: path.join(appDataRoot, 'runtime/home'),
-        codexHome: path.join(appDataRoot, 'runtime/codex-home'),
+        codexHome,
         codexSqliteHome: path.join(appDataRoot, 'runtime/codex-sqlite-home'),
         tempDirectory: path.join(appDataRoot, 'runtime/temp'),
       },

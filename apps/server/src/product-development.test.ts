@@ -40,6 +40,7 @@ test('product development bootstrap activates and reports its explicit selected 
   const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-product-dev-test-'))
   const packageRoot = path.join(testRoot, 'package')
   const appDataRoot = path.join(testRoot, 'app-data')
+  const codexHome = path.join(testRoot, 'global-codex-home')
   const workspaceRoot = path.join(testRoot, 'semester')
 
   try {
@@ -51,6 +52,7 @@ test('product development bootstrap activates and reports its explicit selected 
       AY_PLE_PACKAGE_ROOT: packageRoot,
       AY_PLE_APP_DATA_ROOT: appDataRoot,
       AY_PLE_WORKSPACE_ROOT: workspaceRoot,
+      CODEX_HOME: codexHome,
     })
     assert.ok(product)
     assert.equal(product.selectedWorkspaceRoot, workspaceRoot)
@@ -62,7 +64,7 @@ test('product development bootstrap activates and reports its explicit selected 
       ),
       environment: {
         home: path.join(appDataRoot, 'runtime/home'),
-        codexHome: path.join(appDataRoot, 'runtime/codex-home'),
+        codexHome,
         codexSqliteHome: path.join(appDataRoot, 'runtime/codex-sqlite-home'),
         tempDirectory: path.join(appDataRoot, 'runtime/temp'),
       },
@@ -99,6 +101,7 @@ test('product development bootstrap ignores legacy runtime path authorities', ()
     AY_PLE_PACKAGE_ROOT: '/explicit/package',
     AY_PLE_APP_DATA_ROOT: '/explicit/app-data',
     AY_PLE_WORKSPACE_ROOT: '/explicit/workspace',
+    CODEX_HOME: '/global/codex-home',
     CODEX_CHAT_RUNTIME_ROOT: '/legacy/runtime',
     CODEX_CHAT_RUNTIME_HOME: '/legacy/home',
     CODEX_CHAT_CODEX_HOME: '/legacy/codex-home',
@@ -111,6 +114,19 @@ test('product development bootstrap ignores legacy runtime path authorities', ()
     '/explicit/package/packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64',
   )
   assert.equal(product?.runtime.environment.home, '/explicit/app-data/runtime/home')
+  assert.equal(product?.runtime.environment.codexHome, '/global/codex-home')
+})
+
+test('product development bootstrap falls back to the user-global Codex home', () => {
+  const product = resolveProductDevelopmentBootstrap({
+    AY_PLE_PRODUCT_MODE: '1',
+    AY_PLE_PACKAGE_ROOT: '/explicit/package',
+    AY_PLE_APP_DATA_ROOT: '/explicit/app-data',
+    AY_PLE_WORKSPACE_ROOT: '/explicit/workspace',
+    HOME: '/global/home',
+  })
+
+  assert.equal(product?.runtime.environment.codexHome, '/global/home/.codex')
 })
 
 test('canonical product startup preserves caller-owned bytes and serves an incompatible snapshot', async () => {

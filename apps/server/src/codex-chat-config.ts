@@ -171,7 +171,16 @@ async function ensureManagedRuntimeDirectories(
   productRuntime: ProductRuntimeBootstrap,
 ): Promise<void> {
   const appDataRoot = await validateDirectory(productRuntime.appDataRoot, true)
-  for (const directory of Object.values(productRuntime.environment)) {
+  await mkdir(productRuntime.environment.codexHome, {
+    mode: 0o700,
+    recursive: true,
+  })
+  await validateDirectory(productRuntime.environment.codexHome, true)
+  for (const directory of [
+    productRuntime.environment.home,
+    productRuntime.environment.codexSqliteHome,
+    productRuntime.environment.tempDirectory,
+  ]) {
     const relative = path.relative(productRuntime.appDataRoot, directory)
     if (
       relative.length === 0 ||

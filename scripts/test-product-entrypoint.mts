@@ -3,6 +3,7 @@ import { execFile, spawn, type ChildProcess } from 'node:child_process'
 import {
   access,
   lstat,
+  mkdir,
   realpath,
   stat,
 } from 'node:fs/promises'
@@ -57,6 +58,7 @@ type ProcessRecord = {
 
 type ProductRoots = {
   readonly appDataRoot: string
+  readonly codexHome: string
   readonly poisonRoot: string
   readonly semesterWorkspace: E2eSemesterWorkspace
   readonly workspaceRoot: string
@@ -102,8 +104,11 @@ async function prepareProductRoots(): Promise<ProductRoots> {
   const semesterWorkspace = await materializeE2eSemesterWorkspace()
   const runRoot = semesterWorkspace.runRoot
   const appDataRoot = path.join(runRoot, 'app-data')
+  const codexHome = path.join(runRoot, 'global-codex-home')
+  await mkdir(codexHome, { mode: 0o700 })
   return {
     appDataRoot,
+    codexHome,
     workspaceRoot: semesterWorkspace.workspaceRoot,
     poisonRoot: path.join(runRoot, 'legacy-path-poison'),
     semesterWorkspace,
@@ -157,6 +162,7 @@ async function runCanonicalProductCase(
         CODEX_CHAT_CODEX_HOME: path.join(roots.poisonRoot, 'codex-home'),
         CODEX_CHAT_SQLITE_HOME: path.join(roots.poisonRoot, 'sqlite-home'),
         CODEX_CHAT_TEMP_DIR: path.join(roots.poisonRoot, 'temp'),
+        CODEX_HOME: roots.codexHome,
       }),
       stdio: ['ignore', 'pipe', 'pipe'],
     },
@@ -187,7 +193,7 @@ async function runCanonicalProductCase(
       await assertLegacyRoutesAbsent()
       await verifyProductBrowser(initial)
 
-      await assertManagedRuntimeRoots(roots.appDataRoot)
+      await assertManagedRuntimeRoots(roots)
       await requireAbsent(
         roots.poisonRoot,
         'legacy CODEX_CHAT_* path poison root',
@@ -363,18 +369,21 @@ function assertDurableProductBootstrap(
   )
 }
 
-async function assertManagedRuntimeRoots(appDataRoot: string): Promise<void> {
+async function assertManagedRuntimeRoots(roots: ProductRoots): Promise<void> {
   for (const relativePath of [
     'runtime/home',
-    'runtime/codex-home',
     'runtime/codex-sqlite-home',
     'runtime/temp',
   ]) {
     await requireDirectory(
-      path.join(appDataRoot, relativePath),
+      path.join(roots.appDataRoot, relativePath),
       `app-managed ${relativePath}`,
     )
   }
+  await requireDirectory(
+    roots.codexHome,
+    'caller-global CODEX_HOME',
+  )
 }
 
 async function assertProductOwnershipOutput(
