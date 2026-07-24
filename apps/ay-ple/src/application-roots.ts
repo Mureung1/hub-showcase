@@ -40,6 +40,7 @@ export type PreparedApplicationRoots = {
   readonly controlledRootPaths: readonly string[]
   readonly admittedWorkspace: AdmittedSemesterWorkspace | null
   readonly admittedWorkspaceCanonicalRoot: string | null
+  revalidate(): Promise<void>
 }
 
 type ApplicationRootsTestingDependencies = {
@@ -49,6 +50,9 @@ type ApplicationRootsTestingDependencies = {
   ) => void | Promise<void>
   readonly afterControlledRootCreate?: (
     controlledRoot: string,
+  ) => void | Promise<void>
+  readonly afterOwnerOnlyPathValidation?: (
+    target: string,
   ) => void | Promise<void>
 }
 
@@ -163,12 +167,14 @@ export async function createApplicationRootsForTesting(
   const appDataIdentity = await ensureOwnerOnlyDirectory(
     appDataRoot,
     user.uid,
+    dependencies.afterOwnerOnlyPathValidation,
   )
   await dependencies.afterAppDataCreate?.(appDataRoot)
   await requireSameOwnerOnlyDirectory(
     appDataRoot,
     user.uid,
     appDataIdentity,
+    dependencies.afterOwnerOnlyPathValidation,
   )
 
   const controlled: ControlledApplicationRoots = Object.freeze({
@@ -195,11 +201,17 @@ export async function createApplicationRootsForTesting(
     controlled.codexSqliteHome,
     controlled.tempDirectory,
   ]
+  const controlledIdentities = new Map<
+    string,
+    DirectoryIdentity
+  >()
   for (const controlledRoot of controlledRootPaths) {
     const identity = await ensureOwnerOnlyDirectory(
       controlledRoot,
       user.uid,
+      dependencies.afterOwnerOnlyPathValidation,
     )
+    controlledIdentities.set(controlledRoot, identity)
     await dependencies.afterControlledRootCreate?.(
       controlledRoot,
     )
@@ -207,13 +219,30 @@ export async function createApplicationRootsForTesting(
       controlledRoot,
       user.uid,
       identity,
+      dependencies.afterOwnerOnlyPathValidation,
     )
   }
-  await requireSameOwnerOnlyDirectory(
-    appDataRoot,
-    user.uid,
-    appDataIdentity,
-  )
+  const revalidate = async (): Promise<void> => {
+    await requireSameOwnerOnlyDirectory(
+      appDataRoot,
+      user.uid,
+      appDataIdentity,
+      dependencies.afterOwnerOnlyPathValidation,
+    )
+    for (const controlledRoot of controlledRootPaths) {
+      const identity = controlledIdentities.get(controlledRoot)
+      if (identity === undefined) {
+        throw new ApplicationRootsError('unsafe_app_data_root')
+      }
+      await requireSameOwnerOnlyDirectory(
+        controlledRoot,
+        user.uid,
+        identity,
+        dependencies.afterOwnerOnlyPathValidation,
+      )
+    }
+  }
+  await revalidate()
   if (
     hasAnyOverlap([
       packageRoot,
@@ -231,6 +260,7 @@ export async function createApplicationRootsForTesting(
     controlledRootPaths: Object.freeze(controlledRootPaths),
     admittedWorkspace,
     admittedWorkspaceCanonicalRoot: workspaceRoot,
+    revalidate,
   })
 }
 
@@ -321,6 +351,9 @@ async function requireCanonicalDirectory(
 async function ensureOwnerOnlyDirectory(
   target: string,
   uid: number,
+  afterPathValidation?: (
+    target: string,
+  ) => void | Promise<void>,
 ): Promise<DirectoryIdentity> {
   try {
     await mkdir(target, { mode: 0o700 })
@@ -329,20 +362,27 @@ async function ensureOwnerOnlyDirectory(
       throw new ApplicationRootsError('unsafe_app_data_root')
     }
   }
-  return requireOwnerOnlyDirectory(target, uid)
+  return requireOwnerOnlyDirectory(
+    target,
+    uid,
+    afterPathValidation,
+  )
 }
 
 async function requireOwnerOnlyDirectory(
   target: string,
   uid: number,
+  afterPathValidation?: (
+    target: string,
+  ) => void | Promise<void>,
 ): Promise<DirectoryIdentity> {
   try {
-    const stat = await lstat(target, { bigint: true })
+    const before = await lstat(target, { bigint: true })
     if (
-      stat.isSymbolicLink() ||
-      !stat.isDirectory() ||
-      Number(stat.uid) !== uid ||
-      (stat.mode & 0o777n) !== 0o700n
+      before.isSymbolicLink() ||
+      !before.isDirectory() ||
+      Number(before.uid) !== uid ||
+      (before.mode & 0o777n) !== 0o700n
     ) {
       throw new ApplicationRootsError('unsafe_app_data_root')
     }
@@ -350,7 +390,21 @@ async function requireOwnerOnlyDirectory(
     if ((await realpath(target)) !== target) {
       throw new ApplicationRootsError('unsafe_app_data_root')
     }
-    return directoryIdentity(stat)
+    await afterPathValidation?.(target)
+    const after = await lstat(target, { bigint: true })
+    if (
+      after.isSymbolicLink() ||
+      !after.isDirectory() ||
+      Number(after.uid) !== uid ||
+      (after.mode & 0o777n) !== 0o700n ||
+      !sameDirectoryIdentity(
+        directoryIdentity(before),
+        directoryIdentity(after),
+      )
+    ) {
+      throw new ApplicationRootsError('unsafe_app_data_root')
+    }
+    return directoryIdentity(after)
   } catch (error) {
     if (error instanceof ApplicationRootsError) throw error
     throw new ApplicationRootsError('unsafe_app_data_root')
@@ -361,8 +415,15 @@ async function requireSameOwnerOnlyDirectory(
   target: string,
   uid: number,
   expected: DirectoryIdentity,
+  afterPathValidation?: (
+    target: string,
+  ) => void | Promise<void>,
 ): Promise<void> {
-  const actual = await requireOwnerOnlyDirectory(target, uid)
+  const actual = await requireOwnerOnlyDirectory(
+    target,
+    uid,
+    afterPathValidation,
+  )
   if (!sameDirectoryIdentity(actual, expected)) {
     throw new ApplicationRootsError('unsafe_app_data_root')
   }

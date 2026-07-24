@@ -79,15 +79,18 @@ export class ApplicationStartupError extends Error {
 }
 
 export type ApplicationStartupInput = {
-  readonly executableModuleUrl: string | URL
+  readonly owner: ApplicationRuntimeOwner
   readonly requiredApplicationCommand: string
   readonly suggestedLeafName: string
   readonly admittedWorkspace?: AdmittedSemesterWorkspace | null
   readonly signal: AbortSignal
 }
 
+type ApplicationStartupTestingInput = ApplicationStartupInput & {
+  readonly executableModuleUrl: string | URL
+}
+
 export type PrepareApplicationStartupInput = {
-  readonly owner: ApplicationRuntimeOwner
   readonly signal: AbortSignal
   readonly report: (progress: RuntimeResolveProgress) => void
 }
@@ -153,7 +156,10 @@ export function admitApplicationStartup(
   input: ApplicationStartupInput,
 ): Promise<ApplicationStartupAdmission> {
   return admitApplicationStartupForTesting(
-    input,
+    {
+      ...input,
+      executableModuleUrl: import.meta.url,
+    },
     productionDependencies,
   )
 }
@@ -163,7 +169,7 @@ export function admitApplicationStartup(
  * staged startup Module, never effect replacements or raw discovery probes.
  */
 export async function admitApplicationStartupForTesting(
-  input: ApplicationStartupInput,
+  input: ApplicationStartupTestingInput,
   dependencies: ApplicationStartupDependencies,
 ): Promise<ApplicationStartupAdmission> {
   const snapshot = snapshotStartupInput(input)
@@ -173,8 +179,10 @@ export async function admitApplicationStartupForTesting(
   try {
     resources = await dependencies.verifyPackageResources({
       executableModuleUrl: snapshot.executableModuleUrl,
+      signal: snapshot.signal,
     })
   } catch (error) {
+    requireNotCancelled(snapshot.signal)
     if (error instanceof ApplicationStartupError) throw error
     throw startupError(
       'package_integrity_failed',
@@ -184,6 +192,16 @@ export async function admitApplicationStartupForTesting(
   }
   requireNotCancelled(snapshot.signal)
   requireApplicationConfiguration(snapshot, resources)
+
+  let runtimeBundle: RuntimeResolverBundle
+  try {
+    runtimeBundle = dependencies.createRuntimeResolverBundle(
+      createResolverInput(resources, snapshot.owner),
+    )
+  } catch (error) {
+    throw mapRuntimeBundleAdmissionFailure(error)
+  }
+  requireNotCancelled(snapshot.signal)
 
   let user: ApplicationUserRecord
   try {
@@ -249,6 +267,7 @@ export async function admitApplicationStartupForTesting(
     dependencies,
     resources,
     roots,
+    runtimeBundle,
     startup: snapshot,
   })
 }
@@ -258,6 +277,7 @@ function createStartupAdmission(context: {
   readonly dependencies: ApplicationStartupDependencies
   readonly resources: VerifiedPackageResources
   readonly roots: PreparedApplicationRoots
+  readonly runtimeBundle: RuntimeResolverBundle
   readonly startup: StartupInputSnapshot
 }): ApplicationStartupAdmission {
   const {
@@ -265,10 +285,9 @@ function createStartupAdmission(context: {
     dependencies,
     resources,
     roots,
+    runtimeBundle,
     startup,
   } = context
-  let resolverOwner: ApplicationRuntimeOwner | undefined
-  let resolverBundle: RuntimeResolverBundle | undefined
   let preparedPromise:
     | Promise<PreparedApplicationStartup>
     | undefined
@@ -276,7 +295,6 @@ function createStartupAdmission(context: {
   const prepare = async (
     input: PrepareApplicationStartupInput,
   ): Promise<PreparedApplicationStartup> => {
-    const owner = snapshotRuntimeOwner(input.owner)
     const signal = input.signal
     const report = input.report
     if (typeof report !== 'function') {
@@ -287,31 +305,10 @@ function createStartupAdmission(context: {
       )
     }
     requireSignalsActive(startup.signal, signal)
-    if (
-      resolverOwner !== undefined &&
-      !sameRuntimeOwner(resolverOwner, owner)
-    ) {
-      throw startupError(
-        'application_configuration_invalid',
-        false,
-        'AY-PLE startup instance를 새로 실행하세요.',
-      )
-    }
     if (preparedPromise !== undefined) return preparedPromise
 
-    resolverOwner ??= owner
-    try {
-      resolverBundle ??=
-        dependencies.createRuntimeResolverBundle(
-          createResolverInput(resources, owner),
-        )
-    } catch (error) {
-      throw mapRuntimeFailure(error)
-    }
-
-    const activeBundle = resolverBundle
     const attempt = prepareRuntime({
-      bundle: activeBundle,
+      bundle: runtimeBundle,
       dependencies,
       report,
       resources,
@@ -353,6 +350,8 @@ async function prepareRuntime(input: {
     input.startup.signal,
     input.signal,
   )
+  await revalidateApplicationRoots(input.roots)
+  requireNotCancelled(lifetimeSignal)
   let runtime: VerifiedRuntime
   try {
     runtime = await input.bundle.resolver.resolve({
@@ -363,6 +362,8 @@ async function prepareRuntime(input: {
   } catch (error) {
     throw mapRuntimeFailure(error)
   }
+  requireNotCancelled(lifetimeSignal)
+  await revalidateApplicationRoots(input.roots)
   requireNotCancelled(lifetimeSignal)
   requireRuntimeIdentity(runtime, input.resources)
 
@@ -428,6 +429,8 @@ async function createBoundServer(input: {
   readonly runtime: VerifiedRuntime
   readonly startup: StartupInputSnapshot
 }): Promise<ServerApplication> {
+  await revalidateApplicationRoots(input.roots)
+  requireNotCancelled(input.lifetimeSignal)
   const release = createLaunchBinding(input.resources)
   const guardWorkspaceTarget =
     createPublicPreviewWorkspaceTargetGuard(input.roots)
@@ -455,6 +458,7 @@ async function createBoundServer(input: {
                   bundle: input.bundle,
                   lifetimeSignal: input.lifetimeSignal,
                   release,
+                  roots: input.roots,
                   runtime: input.runtime,
                   signal,
                 }),
@@ -508,6 +512,7 @@ async function verifyRuntimeForServerSpawn(input: {
   readonly bundle: RuntimeResolverBundle
   readonly lifetimeSignal: AbortSignal
   readonly release: LaunchBinding
+  readonly roots: PreparedApplicationRoots
   readonly runtime: VerifiedRuntime
   readonly signal: AbortSignal
 }): Promise<{
@@ -518,6 +523,8 @@ async function verifyRuntimeForServerSpawn(input: {
     input.lifetimeSignal,
     input.signal,
   )
+  await revalidateApplicationRoots(input.roots)
+  requireNotCancelled(spawnSignal)
   let verified: VerifiedRuntime
   try {
     verified = await input.bundle.spawnBoundary.verifyForSpawn({
@@ -527,6 +534,8 @@ async function verifyRuntimeForServerSpawn(input: {
   } catch (error) {
     throw mapRuntimeFailure(error)
   }
+  requireNotCancelled(spawnSignal)
+  await revalidateApplicationRoots(input.roots)
   requireNotCancelled(spawnSignal)
   if (verified !== input.runtime) {
     throw startupError(
@@ -636,6 +645,7 @@ function requireMatchingRuntimeIdentity(
 
 type StartupInputSnapshot = {
   readonly executableModuleUrl: string
+  readonly owner: ApplicationRuntimeOwner
   readonly requiredApplicationCommand: string
   readonly suggestedLeafName: string
   readonly admittedWorkspace: AdmittedSemesterWorkspace | null
@@ -643,7 +653,7 @@ type StartupInputSnapshot = {
 }
 
 function snapshotStartupInput(
-  input: ApplicationStartupInput,
+  input: ApplicationStartupTestingInput,
 ): StartupInputSnapshot {
   const executableModuleUrl =
     input.executableModuleUrl instanceof URL
@@ -651,6 +661,7 @@ function snapshotStartupInput(
       : input.executableModuleUrl
   return Object.freeze({
     executableModuleUrl,
+    owner: snapshotRuntimeOwner(input.owner),
     requiredApplicationCommand:
       input.requiredApplicationCommand,
     suggestedLeafName: input.suggestedLeafName,
@@ -725,17 +736,6 @@ function snapshotApplicationUser(
   return Object.freeze({ homedir, uid })
 }
 
-function sameRuntimeOwner(
-  left: ApplicationRuntimeOwner,
-  right: ApplicationRuntimeOwner,
-): boolean {
-  return (
-    left.applicationInstanceNonce ===
-      right.applicationInstanceNonce &&
-    left.processStartIdentity === right.processStartIdentity
-  )
-}
-
 function requireDynamicLocalOrigin(
   value: string,
 ): DynamicLocalOrigin {
@@ -786,6 +786,28 @@ function requireNotCancelled(signal: AbortSignal): void {
   }
 }
 
+async function revalidateApplicationRoots(
+  roots: PreparedApplicationRoots,
+): Promise<void> {
+  try {
+    await roots.revalidate()
+  } catch (error) {
+    if (error instanceof ApplicationStartupError) throw error
+    if (error instanceof ApplicationRootsError) {
+      throw startupError(
+        error.code,
+        false,
+        rootRemediation(error.code),
+      )
+    }
+    throw startupError(
+      'unsafe_app_data_root',
+      false,
+      'AY-PLE application data 위치와 권한을 확인하세요.',
+    )
+  }
+}
+
 function requireSignalsActive(
   ...signals: readonly AbortSignal[]
 ): void {
@@ -815,6 +837,24 @@ function mapRuntimeFailure(error: unknown): ApplicationStartupError {
     'runtime_recovery_required',
     true,
     'AY-PLE Runtime을 다시 준비하세요.',
+  )
+}
+
+function mapRuntimeBundleAdmissionFailure(
+  error: unknown,
+): ApplicationStartupError {
+  if (error instanceof ApplicationStartupError) return error
+  if (error instanceof RuntimeReleaseAuthorityError) {
+    return startupError(
+      'package_integrity_failed',
+      false,
+      'AY-PLE package를 다시 설치한 뒤 실행하세요.',
+    )
+  }
+  return startupError(
+    'application_startup_failed',
+    false,
+    'AY-PLE package를 다시 설치한 뒤 실행하세요.',
   )
 }
 

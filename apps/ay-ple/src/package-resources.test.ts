@@ -112,6 +112,94 @@ test('rejects malformed descriptor bytes and exact-shape drift', async (t) => {
         )
       },
     },
+    {
+      name: 'oversized declared static roster',
+      mutate: async (fixture) => {
+        const descriptor = JSON.parse(
+          await readFile(fixture.packageDescriptorPath, 'utf8'),
+        ) as {
+          staticSite: {
+            entries: Array<{
+              relativePath: string
+              type: 'file'
+              mode: '0644'
+              bytes: number
+              sha256: string
+            }>
+            completeTreeSha256: string
+          }
+        }
+        descriptor.staticSite.entries = [
+          ...Array.from({ length: 4096 }, (_, index) => ({
+            relativePath: `generated/${String(index).padStart(4, '0')}.js`,
+            type: 'file' as const,
+            mode: '0644' as const,
+            bytes: 0,
+            sha256: 'a'.repeat(64),
+          })),
+          {
+            relativePath: 'index.html',
+            type: 'file',
+            mode: '0644',
+            bytes: 0,
+            sha256: 'b'.repeat(64),
+          },
+        ]
+        descriptor.staticSite.completeTreeSha256 = sha256(
+          JSON.stringify({
+            entries: descriptor.staticSite.entries,
+          }),
+        )
+        await writeFile(
+          fixture.packageDescriptorPath,
+          JSON.stringify(descriptor),
+        )
+        assert.ok(
+          (
+            await readFile(fixture.packageDescriptorPath)
+          ).byteLength < 1_048_576,
+        )
+      },
+    },
+    {
+      name: 'over-depth declared static path',
+      mutate: async (fixture) => {
+        const descriptor = JSON.parse(
+          await readFile(fixture.packageDescriptorPath, 'utf8'),
+        ) as {
+          staticSite: {
+            entries: Array<{
+              relativePath: string
+              type: 'file'
+              mode: '0644'
+              bytes: number
+              sha256: string
+            }>
+            completeTreeSha256: string
+          }
+        }
+        const deepEntry = {
+          ...descriptor.staticSite.entries[0]!,
+          relativePath:
+            `${Array.from({ length: 33 }, () => 'a').join('/')}/app.js`,
+        }
+        descriptor.staticSite.entries = [
+          deepEntry,
+          descriptor.staticSite.entries.find(
+            ({ relativePath }) => relativePath === 'index.html',
+          )!,
+        ]
+        descriptor.staticSite.completeTreeSha256 = sha256(
+          JSON.stringify({
+            entries: descriptor.staticSite.entries,
+          }),
+        )
+        await writeFile(
+          fixture.packageDescriptorPath,
+          JSON.stringify(descriptor),
+        )
+      },
+    },
   ]
 
   for (const fixtureCase of cases) {
@@ -149,6 +237,18 @@ test('rejects missing, extra, digest-drifted, linked, and non-file resources', a
           path.join(fixture.root, 'public', 'assets', 'extra.js'),
           'extra\n',
         ),
+    },
+    {
+      name: 'unexpected hostile static subtree',
+      mutate: async (fixture) => {
+        const hostile = path.join(
+          fixture.root,
+          'public',
+          'aaa-hostile',
+        )
+        await mkdir(hostile, { mode: 0o700 })
+        await chmod(hostile, 0o000)
+      },
     },
     {
       name: 'resource digest drift',
@@ -278,6 +378,70 @@ test('rejects a resource pathname swap after reading a matching file descriptor'
       PackageResourceVerificationError,
     )
     assert.equal(swapped, true)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('rejects a static extra added during declared file capture', async () => {
+  const fixture = await createPackageFixture()
+  let injected = false
+  try {
+    await assert.rejects(
+      verifyPackageResourcesForTesting(
+        {
+          executableModuleUrl: fixture.executableModuleUrl,
+        },
+        {
+          async afterFileRead(resource) {
+            if (
+              injected ||
+              resource !== 'public/assets/app.js'
+            ) {
+              return
+            }
+            injected = true
+            await writeFile(
+              path.join(
+                fixture.root,
+                'public',
+                'assets',
+                'extra.js',
+              ),
+              'extra\n',
+            )
+          },
+        },
+      ),
+      PackageResourceVerificationError,
+    )
+    assert.equal(injected, true)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('pre-aborted verification reads no package resource', async () => {
+  const fixture = await createPackageFixture()
+  const controller = new AbortController()
+  let reads = 0
+  controller.abort()
+  try {
+    await assert.rejects(
+      verifyPackageResourcesForTesting(
+        {
+          executableModuleUrl: fixture.executableModuleUrl,
+          signal: controller.signal,
+        },
+        {
+          afterFileRead() {
+            reads += 1
+          },
+        },
+      ),
+      PackageResourceVerificationError,
+    )
+    assert.equal(reads, 0)
   } finally {
     await fixture.cleanup()
   }

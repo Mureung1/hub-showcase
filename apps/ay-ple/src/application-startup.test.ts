@@ -16,8 +16,9 @@ import {
   type ServerApplication,
 } from '@ay-ple/server'
 
-import type {
-  PreparedApplicationRoots,
+import {
+  ApplicationRootsError,
+  type PreparedApplicationRoots,
 } from './application-roots.js'
 import {
   ApplicationStartupError,
@@ -45,10 +46,14 @@ test('orders package, compatibility, roots, Runtime, and delayed Server construc
   )
   assert.deepEqual(journal, [
     'package',
+    'resolver-bundle',
     'user',
     'compatibility',
     'roots',
   ])
+  assert.equal(fixture.calls.resolverBundle, 1)
+  assert.equal(fixture.calls.resolve, 0)
+  assert.equal(fixture.calls.server, 0)
   assert.equal(admission.staticSite, fixture.staticSite)
   assert.equal(admission.appDataRoot, fixture.roots.appDataRoot)
   assert.equal(
@@ -67,16 +72,15 @@ test('orders package, compatibility, roots, Runtime, and delayed Server construc
 
   const progress: RuntimeResolveProgress[] = []
   const prepared = await admission.prepare({
-    owner: validOwner(),
     signal,
     report: (entry) => progress.push(entry),
   })
   assert.deepEqual(journal, [
     'package',
+    'resolver-bundle',
     'user',
     'compatibility',
     'roots',
-    'resolver-bundle',
     'resolve',
   ])
   assert.equal(prepared.runtime, fixture.verifiedRuntime)
@@ -88,10 +92,10 @@ test('orders package, compatibility, roots, Runtime, and delayed Server construc
   assert.equal(application, fixture.serverApplication)
   assert.deepEqual(journal, [
     'package',
+    'resolver-bundle',
     'user',
     'compatibility',
     'roots',
-    'resolver-bundle',
     'resolve',
     'server',
     'spawn-reverify',
@@ -100,6 +104,7 @@ test('orders package, compatibility, roots, Runtime, and delayed Server construc
   assert.equal(fixture.calls.resolve, 1)
   assert.equal(fixture.calls.server, 1)
   assert.equal(fixture.calls.spawnRuntime, fixture.verifiedRuntime)
+  assert.equal(fixture.calls.rootRevalidate, 5)
 
   const resolverInput = fixture.calls.resolverInput!
   assert.equal(
@@ -160,6 +165,7 @@ test('package, compatibility, and root failure stop every later effect', async (
     {
       name: 'package',
       expected: ['package'],
+      resolverBundle: 0,
       override: (
         fixture: ReturnType<typeof startupFixture>,
         journal: string[],
@@ -172,7 +178,13 @@ test('package, compatibility, and root failure stop every later effect', async (
     },
     {
       name: 'compatibility',
-      expected: ['package', 'user', 'compatibility'],
+      expected: [
+        'package',
+        'resolver-bundle',
+        'user',
+        'compatibility',
+      ],
+      resolverBundle: 1,
       override: (
         _fixture: ReturnType<typeof startupFixture>,
         journal: string[],
@@ -191,7 +203,14 @@ test('package, compatibility, and root failure stop every later effect', async (
     },
     {
       name: 'roots',
-      expected: ['package', 'user', 'compatibility', 'roots'],
+      expected: [
+        'package',
+        'resolver-bundle',
+        'user',
+        'compatibility',
+        'roots',
+      ],
+      resolverBundle: 1,
       override: (
         _fixture: ReturnType<typeof startupFixture>,
         journal: string[],
@@ -220,57 +239,50 @@ test('package, compatibility, and root failure stop every later effect', async (
         ApplicationStartupError,
       )
       assert.deepEqual(journal, fixtureCase.expected)
-      assert.equal(fixture.calls.resolverBundle, 0)
+      assert.equal(
+        fixture.calls.resolverBundle,
+        fixtureCase.resolverBundle,
+      )
       assert.equal(fixture.calls.resolve, 0)
       assert.equal(fixture.calls.server, 0)
     })
   }
 })
 
-test('validates resolver owner before constructing D1 and creates one bundle', async () => {
+test('validates the invocation owner before package reads and creates one effect-free bundle', async () => {
   const fixture = startupFixture()
   const journal: string[] = []
-  const admission = await admitApplicationStartupForTesting(
-    startupInput(),
-    successfulDependencies(fixture, journal),
-  )
 
   await assert.rejects(
-    admission.prepare({
-      owner: {
-        applicationInstanceNonce: 'NOT-HEX',
-        processStartIdentity: '',
+    admitApplicationStartupForTesting(
+      {
+        ...startupInput(),
+        owner: {
+          applicationInstanceNonce: 'NOT-HEX',
+          processStartIdentity: '',
+        },
       },
-      signal,
-      report: () => {},
-    }),
+      successfulDependencies(fixture, journal),
+    ),
     (error: unknown) =>
       error instanceof ApplicationStartupError &&
       error.failure.code === 'application_configuration_invalid',
   )
+  assert.deepEqual(journal, [])
   assert.equal(fixture.calls.resolverBundle, 0)
 
-  await admission.prepare({
-    owner: validOwner(),
-    signal,
-    report: () => {},
-  })
-  await admission.prepare({
-    owner: validOwner(),
-    signal,
-    report: () => {},
-  })
-  await assert.rejects(
-    admission.prepare({
-      owner: {
-        ...validOwner(),
-        applicationInstanceNonce: 'b'.repeat(32),
-      },
-      signal,
-      report: () => {},
-    }),
-    hasStartupCode('application_configuration_invalid'),
+  const admission = await admitApplicationStartupForTesting(
+    startupInput(),
+    successfulDependencies(fixture, journal),
   )
+  await admission.prepare({
+    signal,
+    report: () => {},
+  })
+  await admission.prepare({
+    signal,
+    report: () => {},
+  })
   assert.equal(fixture.calls.resolverBundle, 1)
   assert.equal(fixture.calls.resolve, 1)
 })
@@ -328,6 +340,225 @@ test('cancellation before package verification leaves every effect at zero', asy
   assert.equal(fixture.calls.server, 0)
 })
 
+test('cancellation during package verification preserves cancellation authority', async () => {
+  const fixture = startupFixture()
+  const controller = new AbortController()
+  const journal: string[] = []
+  const dependencies = {
+    ...successfulDependencies(fixture, journal),
+    async verifyPackageResources() {
+      journal.push('package')
+      controller.abort()
+      throw new Error('package reader observed cancellation')
+    },
+  }
+
+  await assert.rejects(
+    admitApplicationStartupForTesting(
+      {
+        ...startupInput(),
+        signal: controller.signal,
+      },
+      dependencies,
+    ),
+    hasStartupCode('runtime_cancelled'),
+  )
+  assert.deepEqual(journal, ['package'])
+  assert.equal(fixture.calls.resolverBundle, 0)
+  assert.equal(fixture.calls.server, 0)
+})
+
+test('revalidates every application root around D1, C, and spawn boundaries', async (t) => {
+  const cases = [
+    {
+      name: 'before D1 resolve',
+      failAt: 1,
+      resolverBundle: 1,
+      resolve: 0,
+      server: 0,
+    },
+    {
+      name: 'after D1 resolution',
+      failAt: 2,
+      resolverBundle: 1,
+      resolve: 1,
+      server: 0,
+    },
+    {
+      name: 'before C construction',
+      failAt: 3,
+      resolverBundle: 1,
+      resolve: 1,
+      server: 0,
+    },
+    {
+      name: 'before spawn reverify',
+      failAt: 4,
+      resolverBundle: 1,
+      resolve: 1,
+      server: 1,
+    },
+    {
+      name: 'after spawn reverify',
+      failAt: 5,
+      resolverBundle: 1,
+      resolve: 1,
+      server: 1,
+    },
+  ] as const
+
+  for (const fixtureCase of cases) {
+    await t.test(fixtureCase.name, async () => {
+      const fixture = startupFixture()
+      let revalidations = 0
+      const dependencies: ApplicationStartupDependencies = {
+        ...successfulDependencies(fixture, []),
+        async createApplicationRoots() {
+          return {
+            ...fixture.roots,
+            async revalidate() {
+              revalidations += 1
+              if (revalidations === fixtureCase.failAt) {
+                throw new ApplicationRootsError(
+                  'unsafe_app_data_root',
+                )
+              }
+            },
+          }
+        },
+      }
+      const admission = await admitApplicationStartupForTesting(
+        startupInput(),
+        dependencies,
+      )
+      let prepared:
+        | Awaited<ReturnType<typeof admission.prepare>>
+        | undefined
+      if (fixtureCase.failAt <= 2) {
+        await assert.rejects(
+          admission.prepare({
+            signal,
+            report: () => {},
+          }),
+          hasStartupCode('unsafe_app_data_root'),
+        )
+      } else {
+        prepared = await admission.prepare({
+          signal,
+          report: () => {},
+        })
+        await assert.rejects(
+          prepared.createServerAtOrigin(
+            'http://127.0.0.1:43123',
+          ),
+          hasStartupCode('unsafe_app_data_root'),
+        )
+      }
+      assert.equal(
+        fixture.calls.resolverBundle,
+        fixtureCase.resolverBundle,
+      )
+      assert.equal(fixture.calls.resolve, fixtureCase.resolve)
+      assert.equal(fixture.calls.server, fixtureCase.server)
+    })
+  }
+})
+
+test('revalidation cannot cross a newly cancelled D1, C, or spawn boundary', async (t) => {
+  const cases = [
+    {
+      name: 'before D1 resolve',
+      abortAt: 1,
+      resolve: 0,
+      server: 0,
+      spawnReverified: false,
+    },
+    {
+      name: 'after D1 resolution',
+      abortAt: 2,
+      resolve: 1,
+      server: 0,
+      spawnReverified: false,
+    },
+    {
+      name: 'before C construction',
+      abortAt: 3,
+      resolve: 1,
+      server: 0,
+      spawnReverified: false,
+    },
+    {
+      name: 'before spawn reverify',
+      abortAt: 4,
+      resolve: 1,
+      server: 1,
+      spawnReverified: false,
+    },
+    {
+      name: 'after spawn reverify',
+      abortAt: 5,
+      resolve: 1,
+      server: 1,
+      spawnReverified: true,
+    },
+  ] as const
+
+  for (const fixtureCase of cases) {
+    await t.test(fixtureCase.name, async () => {
+      const fixture = startupFixture()
+      const controller = new AbortController()
+      let revalidations = 0
+      const dependencies: ApplicationStartupDependencies = {
+        ...successfulDependencies(fixture, []),
+        async createApplicationRoots() {
+          return {
+            ...fixture.roots,
+            async revalidate() {
+              revalidations += 1
+              if (revalidations === fixtureCase.abortAt) {
+                controller.abort()
+              }
+            },
+          }
+        },
+      }
+      const admission = await admitApplicationStartupForTesting(
+        {
+          ...startupInput(),
+          signal: controller.signal,
+        },
+        dependencies,
+      )
+      if (fixtureCase.abortAt <= 2) {
+        await assert.rejects(
+          admission.prepare({
+            signal: controller.signal,
+            report: () => {},
+          }),
+          hasStartupCode('runtime_cancelled'),
+        )
+      } else {
+        const prepared = await admission.prepare({
+          signal: controller.signal,
+          report: () => {},
+        })
+        await assert.rejects(
+          prepared.createServerAtOrigin(
+            'http://127.0.0.1:43123',
+          ),
+          hasStartupCode('runtime_cancelled'),
+        )
+      }
+      assert.equal(fixture.calls.resolve, fixtureCase.resolve)
+      assert.equal(fixture.calls.server, fixtureCase.server)
+      assert.equal(
+        fixture.calls.spawnRuntime !== undefined,
+        fixtureCase.spawnReverified,
+      )
+    })
+  }
+})
+
 test('rejects resolved Runtime identity drift before Server capability exists', async () => {
   const fixture = startupFixture()
   fixture.verifiedRuntime = {
@@ -345,7 +576,6 @@ test('rejects resolved Runtime identity drift before Server capability exists', 
 
   await assert.rejects(
     admission.prepare({
-      owner: validOwner(),
       signal,
       report: () => {},
     }),
@@ -365,7 +595,6 @@ test('requires spawn reverify to return the exact VerifiedRuntime object', async
     successfulDependencies(fixture, []),
   )
   const prepared = await admission.prepare({
-    owner: validOwner(),
     signal,
     report: () => {},
   })
@@ -412,7 +641,6 @@ test('maps Runtime authority failure without diagnostic evidence', async () => {
   let failure: unknown
   try {
     await admission.prepare({
-      owner: validOwner(),
       signal,
       report: () => {},
     })
@@ -441,7 +669,6 @@ test('does not construct C before an exact dynamic loopback Origin is supplied',
     successfulDependencies(fixture, []),
   )
   const prepared = await admission.prepare({
-    owner: validOwner(),
     signal,
     report: () => {},
   })
@@ -472,7 +699,6 @@ test('foreground cancellation after Runtime resolution blocks C construction', a
     successfulDependencies(fixture, []),
   )
   const prepared = await admission.prepare({
-    owner: validOwner(),
     signal: controller.signal,
     report: () => {},
   })
@@ -513,7 +739,6 @@ test('closes a constructed Server when foreground cancellation wins the return r
     dependencies,
   )
   const prepared = await admission.prepare({
-    owner: validOwner(),
     signal: controller.signal,
     report: () => {},
   })
@@ -564,7 +789,6 @@ test('preserves post-construction cleanup authority and never creates a second S
     dependencies,
   )
   const prepared = await admission.prepare({
-    owner: validOwner(),
     signal: controller.signal,
     report: () => {},
   })
@@ -624,7 +848,6 @@ test('preserves C startup cleanup authority before any Server is returned', asyn
     dependencies,
   )
   const prepared = await admission.prepare({
-    owner: validOwner(),
     signal,
     report: () => {},
   })
@@ -665,7 +888,6 @@ test('constructs one Server for one exact Origin and rejects rebinding', async (
     successfulDependencies(fixture, []),
   )
   const prepared = await admission.prepare({
-    owner: validOwner(),
     signal,
     report: () => {},
   })
@@ -688,34 +910,81 @@ test('constructs one Server for one exact Origin and rejects rebinding', async (
 
 test('maps synchronous resolver composition failure without private cause', async () => {
   const fixture = startupFixture()
+  const journal: string[] = []
   const dependencies: ApplicationStartupDependencies = {
-    ...successfulDependencies(fixture, []),
+    ...successfulDependencies(fixture, journal),
     createRuntimeResolverBundle() {
+      journal.push('resolver-bundle')
+      fixture.calls.resolverBundle += 1
       throw new Error('/private/package/runtime descriptor secret')
     },
   }
-  const admission = await admitApplicationStartupForTesting(
-    startupInput(),
-    dependencies,
-  )
 
   let failure: unknown
   try {
-    await admission.prepare({
-      owner: validOwner(),
-      signal,
-      report: () => {},
-    })
+    await admitApplicationStartupForTesting(
+      startupInput(),
+      dependencies,
+    )
   } catch (error) {
     failure = error
   }
   assert.equal(
     failure instanceof ApplicationStartupError &&
-      failure.failure.code === 'runtime_recovery_required',
+      failure.failure.code === 'application_startup_failed',
     true,
   )
+  assert.deepEqual(journal, ['package', 'resolver-bundle'])
+  assert.equal(fixture.calls.resolverBundle, 1)
+  assert.equal(fixture.calls.resolve, 0)
+  assert.equal(fixture.calls.server, 0)
   assert.equal(JSON.stringify(failure).includes('/private'), false)
   assert.equal(JSON.stringify(failure).includes('secret'), false)
+})
+
+test('semantic Runtime admission failure precedes compatibility and persistent roots', async () => {
+  const fixture = startupFixture()
+  const journal: string[] = []
+  const dependencies: ApplicationStartupDependencies = {
+    ...successfulDependencies(fixture, journal),
+    createRuntimeResolverBundle() {
+      journal.push('resolver-bundle')
+      fixture.calls.resolverBundle += 1
+      throw new RuntimeReleaseAuthorityError(
+        {
+          code: 'runtime_incompatible',
+          retryable: false,
+          remediation: 'private descriptor detail',
+        },
+        {
+          kind: 'canonical_manifest_invalid',
+          rawPath: '/private/manifest',
+        },
+      )
+    },
+  }
+
+  let failure: unknown
+  try {
+    await admitApplicationStartupForTesting(
+      startupInput(),
+      dependencies,
+    )
+  } catch (error) {
+    failure = error
+  }
+  assert.equal(
+    failure instanceof ApplicationStartupError &&
+      failure.failure.code === 'package_integrity_failed',
+    true,
+  )
+  assert.deepEqual(journal, ['package', 'resolver-bundle'])
+  assert.equal(fixture.calls.resolve, 0)
+  assert.equal(fixture.calls.server, 0)
+  assert.equal(
+    JSON.stringify(failure).includes('/private/manifest'),
+    false,
+  )
 })
 
 function startupFixture() {
@@ -755,6 +1024,7 @@ function startupFixture() {
     },
     staticSite,
   }
+  let rootRevalidations = 0
   const roots: PreparedApplicationRoots = {
     packageRoot: resources.packageRoot,
     appDataRoot:
@@ -777,6 +1047,9 @@ function startupFixture() {
     controlledRootPaths: [],
     admittedWorkspace: null,
     admittedWorkspaceCanonicalRoot: null,
+    async revalidate() {
+      rootRevalidations += 1
+    },
   }
   let verifiedRuntime: VerifiedRuntime = {
     runtimeRoot:
@@ -815,6 +1088,9 @@ function startupFixture() {
       resolverInput: undefined as RuntimeResolverBundleInput | undefined,
       serverOptions: undefined as CreateServerAppOptions | undefined,
       spawnRuntime: undefined as VerifiedRuntime | undefined,
+      get rootRevalidate() {
+        return rootRevalidations
+      },
     },
   }
 }
@@ -879,6 +1155,7 @@ function startupInput() {
     executableModuleUrl: new URL(
       'file:///Applications/AY-PLE/package/dist/cli.js',
     ),
+    owner: validOwner(),
     requiredApplicationCommand: 'npx ay-ple@0.1.0-preview.1',
     suggestedLeafName: '2026-1-semester',
     signal,

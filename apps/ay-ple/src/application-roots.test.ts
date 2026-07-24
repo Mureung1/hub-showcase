@@ -392,6 +392,97 @@ test('detects an app-data pathname replacement after creation', async () => {
   }
 })
 
+test('final validation catches replacement of an earlier controlled root', async () => {
+  const fixture = await createRootFixture()
+  let firstControlledRoot: string | undefined
+  try {
+    await assert.rejects(
+      createApplicationRootsForTesting(
+        { packageRoot: fixture.packageRoot },
+        {
+          userInfo: () => ({
+            homedir: fixture.userHome,
+            uid: process.getuid!(),
+          }),
+          async afterControlledRootCreate(controlledRoot) {
+            firstControlledRoot ??= controlledRoot
+            if (
+              firstControlledRoot === controlledRoot ||
+              !controlledRoot.endsWith('/temp')
+            ) {
+              return
+            }
+            await rename(
+              firstControlledRoot,
+              `${firstControlledRoot}-original`,
+            )
+            await mkdir(firstControlledRoot, { mode: 0o700 })
+          },
+        },
+      ),
+      hasRootsCode('unsafe_app_data_root'),
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('revalidate rejects a controlled root replaced after preparation', async () => {
+  const fixture = await createRootFixture()
+  try {
+    const roots = await createApplicationRootsForTesting(
+      { packageRoot: fixture.packageRoot },
+      {
+        userInfo: () => ({
+          homedir: fixture.userHome,
+          uid: process.getuid!(),
+        }),
+      },
+    )
+    const controlledRoot = roots.controlled.home
+    await rename(controlledRoot, `${controlledRoot}-original`)
+    await mkdir(controlledRoot, { mode: 0o700 })
+
+    await assert.rejects(
+      roots.revalidate(),
+      hasRootsCode('unsafe_app_data_root'),
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('owner-only validation rejects replacement after its pathname walk', async () => {
+  const fixture = await createRootFixture()
+  let homeValidations = 0
+  try {
+    const roots = await createApplicationRootsForTesting(
+      { packageRoot: fixture.packageRoot },
+      {
+        userInfo: () => ({
+          homedir: fixture.userHome,
+          uid: process.getuid!(),
+        }),
+        async afterOwnerOnlyPathValidation(target) {
+          if (!target.endsWith('/runtime/home')) return
+          homeValidations += 1
+          if (homeValidations !== 4) return
+          await rename(target, `${target}-original`)
+          await mkdir(target, { mode: 0o700 })
+        },
+      },
+    )
+
+    await assert.rejects(
+      roots.revalidate(),
+      hasRootsCode('unsafe_app_data_root'),
+    )
+    assert.equal(homeValidations, 4)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('reads the OS user record without consulting HOME', () => {
   const previousHome = process.env.HOME
   process.env.HOME = '/tmp/ay-ple-poison-home'

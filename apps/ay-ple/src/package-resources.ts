@@ -6,7 +6,7 @@ import {
 import {
   lstat,
   open,
-  readdir,
+  opendir,
   realpath,
 } from 'node:fs/promises'
 import path from 'node:path'
@@ -21,6 +21,7 @@ import {
   captureWorkspaceBundleSourceAt,
   decodeWorkspaceBundleDescriptor,
   type VerifiedBundleSource,
+  type WorkspaceBundleDescriptor,
 } from '@ay-ple/semester-workspace'
 
 import {
@@ -35,6 +36,8 @@ const smallDescriptorByteLimit = 1024 * 1024
 const runtimeManifestByteLimit = 16 * 1024 * 1024
 const staticFileByteLimit = 32 * 1024 * 1024
 const staticSiteByteLimit = 128 * 1024 * 1024
+const declaredTreeEntryLimit = 4096
+const declaredTreeDepthLimit = 32
 const resourceModeMask = 0o777
 
 type ResourceFileDescriptor = {
@@ -126,6 +129,7 @@ export class PackageResourceVerificationError extends Error {
 
 export async function verifyPackageResources(input: {
   readonly executableModuleUrl: string | URL
+  readonly signal?: AbortSignal
 }): Promise<VerifiedPackageResources> {
   return verifyPackageResourcesForTesting(input, {})
 }
@@ -137,10 +141,14 @@ export async function verifyPackageResources(input: {
 export async function verifyPackageResourcesForTesting(
   input: {
     readonly executableModuleUrl: string | URL
+    readonly signal?: AbortSignal
   },
   hooks: PackageResourceVerificationHooks,
 ): Promise<VerifiedPackageResources> {
   try {
+    const signal =
+      input.signal ?? new AbortController().signal
+    requirePackageSignal(signal)
     const executableModuleUrl = snapshotModuleUrl(
       input.executableModuleUrl,
     )
@@ -157,6 +165,7 @@ export async function verifyPackageResourcesForTesting(
       },
       maximumBytes: packageDescriptorByteLimit,
       hooks,
+      signal,
     })
     const packageDescriptor = decodePackageResourceDescriptor(
       decodeJson(packageDescriptorBytes),
@@ -167,6 +176,7 @@ export async function verifyPackageResourcesForTesting(
       packageDescriptor.compatibilityDescriptor,
       smallDescriptorByteLimit,
       hooks,
+      signal,
     )
     const compatibility = deepFreeze(
       decodeApplicationCompatibilityDescriptor(
@@ -179,6 +189,7 @@ export async function verifyPackageResourcesForTesting(
       packageDescriptor.runtimeRelease.descriptor,
       smallDescriptorByteLimit,
       hooks,
+      signal,
     )
     const runtimeDescriptor = deepFreeze(
       decodeRuntimeReleaseDescriptor(
@@ -190,6 +201,7 @@ export async function verifyPackageResourcesForTesting(
       packageDescriptor.runtimeRelease.canonicalManifest,
       runtimeManifestByteLimit,
       hooks,
+      signal,
     )
     requireRuntimeBinding(
       compatibility,
@@ -202,6 +214,7 @@ export async function verifyPackageResourcesForTesting(
       packageDescriptor.workspaceBundle.descriptor,
       smallDescriptorByteLimit,
       hooks,
+      signal,
     )
     const workspaceDescriptor = decodeWorkspaceBundleDescriptor(
       decodeJson(workspaceDescriptorBytes),
@@ -210,11 +223,23 @@ export async function verifyPackageResourcesForTesting(
       compatibility,
       packageDescriptor,
     )
+    const workspaceExpectedFiles =
+      workspaceDeclaredPaths(workspaceDescriptor)
+    const workspaceTree = await captureDeclaredTreeAuthority({
+      authority,
+      expectedFiles: workspaceExpectedFiles,
+      resource: packageDescriptor.workspaceBundle.sourceRoot,
+      signal,
+    })
+    requirePackageSignal(signal)
     const workspaceSource = await captureWorkspaceBundleSourceAt(
-      containedResourcePath(
-        authority.canonicalRoot,
-        packageDescriptor.workspaceBundle.sourceRoot,
-      ),
+      workspaceTree.canonicalRoot,
+    )
+    requirePackageSignal(signal)
+    await revalidateDeclaredTreeAuthority(
+      workspaceTree,
+      workspaceExpectedFiles,
+      signal,
     )
     if (
       workspaceSource.descriptorSha256 !==
@@ -233,7 +258,9 @@ export async function verifyPackageResourcesForTesting(
       authority,
       descriptor: packageDescriptor.staticSite,
       hooks,
+      signal,
     })
+    requirePackageSignal(signal)
     await requireRootAuthority(authority)
 
     return Object.freeze({
@@ -317,6 +344,7 @@ async function readDeclaredResource(
   descriptor: ResourceFileDescriptor,
   maximumBytes: number,
   hooks: PackageResourceVerificationHooks,
+  signal: AbortSignal,
 ): Promise<Uint8Array> {
   return readResourceFile({
     authority,
@@ -327,6 +355,7 @@ async function readDeclaredResource(
     },
     maximumBytes,
     hooks,
+    signal,
   })
 }
 
@@ -340,20 +369,26 @@ async function readResourceFile(input: {
   }
   readonly maximumBytes: number
   readonly hooks: PackageResourceVerificationHooks
+  readonly signal: AbortSignal
 }): Promise<Uint8Array> {
+  requirePackageSignal(input.signal)
   await requireRootAuthority(input.authority)
+  requirePackageSignal(input.signal)
   const resourcePath = await inspectResourcePath(
     input.authority.canonicalRoot,
     input.descriptor.resource,
     'file',
   )
+  requirePackageSignal(input.signal)
   const beforePath = await lstat(resourcePath, { bigint: true })
+  requirePackageSignal(input.signal)
   const file = await open(
     resourcePath,
     fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
   )
   try {
     const beforeFile = await file.stat({ bigint: true })
+    requirePackageSignal(input.signal)
     const size = Number(beforeFile.size)
     if (
       !beforeFile.isFile() ||
@@ -370,9 +405,11 @@ async function readResourceFile(input: {
       throw invalidPackage()
     }
     const bytes = await file.readFile()
+    requirePackageSignal(input.signal)
     await input.hooks.afterFileRead?.(
       input.descriptor.resource,
     )
+    requirePackageSignal(input.signal)
     const afterFile = await file.stat({ bigint: true })
     const afterPath = await lstat(resourcePath, { bigint: true })
     await inspectResourcePath(
@@ -380,6 +417,7 @@ async function readResourceFile(input: {
       input.descriptor.resource,
       'file',
     )
+    requirePackageSignal(input.signal)
     if (
       bytes.byteLength !== size ||
       !sameIdentity(beforeFile, afterFile) ||
@@ -390,6 +428,7 @@ async function readResourceFile(input: {
       throw invalidPackage()
     }
     await requireRootAuthority(input.authority)
+    requirePackageSignal(input.signal)
     return Uint8Array.from(bytes)
   } finally {
     await file.close()
@@ -400,23 +439,17 @@ async function captureStaticSite(input: {
   readonly authority: RootAuthority
   readonly descriptor: PackageResourceDescriptor['staticSite']
   readonly hooks: PackageResourceVerificationHooks
+  readonly signal: AbortSignal
 }): Promise<VerifiedStaticSite> {
-  const staticRoot = await inspectResourcePath(
-    input.authority.canonicalRoot,
-    input.descriptor.sourceRoot,
-    'directory',
-  )
-  const actual = await listExactTree(staticRoot)
   const expectedFiles = input.descriptor.entries.map(
     ({ relativePath }) => relativePath,
   )
-  const expectedDirectories = declaredDirectories(expectedFiles)
-  if (
-    !sameStrings(actual.files, expectedFiles) ||
-    !sameStrings(actual.directories, expectedDirectories)
-  ) {
-    throw invalidPackage()
-  }
+  const staticTree = await captureDeclaredTreeAuthority({
+    authority: input.authority,
+    expectedFiles,
+    resource: input.descriptor.sourceRoot,
+    signal: input.signal,
+  })
 
   const snapshots = new Map<string, Uint8Array>()
   let totalBytes = 0
@@ -431,11 +464,17 @@ async function captureStaticSite(input: {
       },
       maximumBytes: staticFileByteLimit,
       hooks: input.hooks,
+      signal: input.signal,
     })
     totalBytes += bytes.byteLength
     if (totalBytes > staticSiteByteLimit) throw invalidPackage()
     snapshots.set(entry.relativePath, bytes)
   }
+  await revalidateDeclaredTreeAuthority(
+    staticTree,
+    expectedFiles,
+    input.signal,
+  )
   const frozenPaths = Object.freeze([...expectedFiles])
   const completeTreeSha256 = input.descriptor.completeTreeSha256
   return Object.freeze({
@@ -453,42 +492,150 @@ async function captureStaticSite(input: {
   })
 }
 
-async function listExactTree(root: string): Promise<{
-  readonly directories: readonly string[]
-  readonly files: readonly string[]
-}> {
-  const directories: string[] = []
-  const files: string[] = []
+type DeclaredTreeAuthority = {
+  readonly authority: RootAuthority
+  readonly canonicalRoot: string
+  readonly identity: FileIdentity
+  readonly resource: string
+}
 
-  async function visit(
+async function captureDeclaredTreeAuthority(input: {
+  readonly authority: RootAuthority
+  readonly expectedFiles: readonly string[]
+  readonly resource: string
+  readonly signal: AbortSignal
+}): Promise<DeclaredTreeAuthority> {
+  requirePackageSignal(input.signal)
+  await requireRootAuthority(input.authority)
+  const canonicalRoot = await inspectResourcePath(
+    input.authority.canonicalRoot,
+    input.resource,
+    'directory',
+  )
+  const before = await lstat(canonicalRoot, { bigint: true })
+  if (before.isSymbolicLink() || !before.isDirectory()) {
+    throw invalidPackage()
+  }
+  const tree = Object.freeze({
+    authority: input.authority,
+    canonicalRoot,
+    identity: fileIdentity(before),
+    resource: input.resource,
+  })
+  await requireExactDeclaredTree(
+    tree,
+    input.expectedFiles,
+    input.signal,
+  )
+  return tree
+}
+
+async function revalidateDeclaredTreeAuthority(
+  tree: DeclaredTreeAuthority,
+  expectedFiles: readonly string[],
+  signal: AbortSignal,
+): Promise<void> {
+  requirePackageSignal(signal)
+  await requireRootAuthority(tree.authority)
+  const currentRoot = await inspectResourcePath(
+    tree.authority.canonicalRoot,
+    tree.resource,
+    'directory',
+  )
+  const current = await lstat(currentRoot, { bigint: true })
+  if (
+    currentRoot !== tree.canonicalRoot ||
+    current.isSymbolicLink() ||
+    !current.isDirectory() ||
+    !sameFileIdentity(tree.identity, fileIdentity(current))
+  ) {
+    throw invalidPackage()
+  }
+  await requireExactDeclaredTree(tree, expectedFiles, signal)
+  await requireRootAuthority(tree.authority)
+  requirePackageSignal(signal)
+}
+
+async function requireExactDeclaredTree(
+  tree: Pick<DeclaredTreeAuthority, 'canonicalRoot'>,
+  expectedFilesInput: readonly string[],
+  signal: AbortSignal,
+): Promise<void> {
+  const expectedFiles = new Set(expectedFilesInput)
+  const expectedDirectories = new Set(
+    declaredDirectories(expectedFilesInput),
+  )
+  const expectedEntryCount =
+    expectedFiles.size + expectedDirectories.size
+  if (
+    expectedFiles.size !== expectedFilesInput.length ||
+    expectedEntryCount === 0 ||
+    expectedEntryCount > declaredTreeEntryLimit ||
+    [...expectedFiles, ...expectedDirectories].some(
+      (relativePath) =>
+        !isSafeRelativeResource(relativePath) ||
+        relativePath.split('/').length >
+          declaredTreeDepthLimit,
+    )
+  ) {
+    throw invalidPackage()
+  }
+
+  const seenFiles = new Set<string>()
+  const seenDirectories = new Set<string>()
+  let visitedEntries = 0
+
+  const visit = async (
     current: string,
     relativeRoot: string,
-  ): Promise<void> {
-    const names = (await readdir(current)).sort(compareCodePoints)
-    for (const name of names) {
-      const relativePath = relativeRoot
-        ? `${relativeRoot}/${name}`
-        : name
-      if (!isSafeRelativeResource(relativePath)) {
-        throw invalidPackage()
+    depth: number,
+  ): Promise<void> => {
+    requirePackageSignal(signal)
+    if (depth > declaredTreeDepthLimit) throw invalidPackage()
+    const directory = await opendir(current, { bufferSize: 1 })
+    try {
+      for await (const entry of directory) {
+        requirePackageSignal(signal)
+        visitedEntries += 1
+        if (visitedEntries > expectedEntryCount) {
+          throw invalidPackage()
+        }
+        const relativePath = relativeRoot
+          ? `${relativeRoot}/${entry.name}`
+          : entry.name
+        if (!isSafeRelativeResource(relativePath)) {
+          throw invalidPackage()
+        }
+        const target = path.join(current, entry.name)
+        const stat = await lstat(target, { bigint: true })
+        requirePackageSignal(signal)
+        if (
+          stat.isSymbolicLink() ||
+          (!expectedFiles.has(relativePath) &&
+            !expectedDirectories.has(relativePath))
+        ) {
+          throw invalidPackage()
+        }
+        if (expectedDirectories.has(relativePath)) {
+          if (!stat.isDirectory()) throw invalidPackage()
+          seenDirectories.add(relativePath)
+          await visit(target, relativePath, depth + 1)
+        } else {
+          if (!stat.isFile()) throw invalidPackage()
+          seenFiles.add(relativePath)
+        }
       }
-      const target = path.join(current, name)
-      const stat = await lstat(target, { bigint: true })
-      if (stat.isSymbolicLink()) throw invalidPackage()
-      if (stat.isDirectory()) {
-        directories.push(relativePath)
-        await visit(target, relativePath)
-      } else if (stat.isFile()) {
-        files.push(relativePath)
-      } else {
-        throw invalidPackage()
-      }
+    } finally {
+      await directory.close().catch(() => undefined)
     }
   }
-  await visit(root, '')
-  return {
-    directories: Object.freeze(directories),
-    files: Object.freeze(files),
+
+  await visit(tree.canonicalRoot, '', 1)
+  if (
+    seenFiles.size !== expectedFiles.size ||
+    seenDirectories.size !== expectedDirectories.size
+  ) {
+    throw invalidPackage()
   }
 }
 
@@ -514,23 +661,6 @@ async function inspectResourcePath(
     }
   }
   return current
-}
-
-function containedResourcePath(
-  packageRoot: string,
-  resource: string,
-): string {
-  if (!isSafeRelativeResource(resource)) throw invalidPackage()
-  const candidate = path.join(packageRoot, ...resource.split('/'))
-  const relative = path.relative(packageRoot, candidate)
-  if (
-    relative === '' ||
-    relative.startsWith(`..${path.sep}`) ||
-    path.isAbsolute(relative)
-  ) {
-    throw invalidPackage()
-  }
-  return candidate
 }
 
 async function requireRootAuthority(
@@ -611,8 +741,16 @@ function decodePackageResourceDescriptor(
     decodeStaticSiteEntry,
   )
   const entryPaths = entries.map(({ relativePath }) => relativePath)
+  const entryDirectories = declaredDirectories(entryPaths)
   if (
     entries.length === 0 ||
+    entries.length + entryDirectories.length >
+      declaredTreeEntryLimit ||
+    entryPaths.some(
+      (relativePath) =>
+        relativePath.split('/').length >
+        declaredTreeDepthLimit,
+    ) ||
     !entryPaths.includes('index.html') ||
     new Set(entryPaths).size !== entryPaths.length ||
     !sameStrings(entryPaths, [...entryPaths].sort(compareCodePoints)) ||
@@ -765,6 +903,20 @@ function declaredDirectories(
   return [...directories].sort(compareCodePoints)
 }
 
+function workspaceDeclaredPaths(
+  descriptor: WorkspaceBundleDescriptor,
+): readonly string[] {
+  return descriptor.roots
+    .flatMap((root) =>
+      root.entries.map((entry) =>
+        root.kind === 'instructions'
+          ? entry.relativePath
+          : `${root.root}/${entry.relativePath}`,
+      ),
+    )
+    .sort(compareCodePoints)
+}
+
 function decodeJson(bytes: Uint8Array): unknown {
   let encoded: string
   try {
@@ -865,6 +1017,10 @@ function isSha256(value: unknown): value is string {
 
 function isNonNegativeSafeInteger(value: unknown): value is number {
   return Number.isSafeInteger(value) && Number(value) >= 0
+}
+
+function requirePackageSignal(signal: AbortSignal): void {
+  if (signal.aborted) throw invalidPackage()
 }
 
 function sameStrings(
