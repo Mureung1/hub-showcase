@@ -11,7 +11,7 @@ function App() {
   // profile: 온보딩 5문항 답변. null이면 온보딩 미완료
   const [profile, setProfile] = useState<Profile | null>(null)
   // progress 초기값을 빈 객체로 시작하고, 마운트 시 서버에서 불러온다
-  const [progress, setProgress] = useState<Record<string, boolean>>({})
+  const [progress, setProgress] = useState<Record<string, { checked: boolean; completedAt: string | null }>>({})
   // 서버 기반 task 필터. null이면 클라이언트 condition 함수로 fallback
   const [taskIds, setTaskIds] = useState<string[] | null>(null)
   // 현재 토글 요청 중인 taskId. null이면 대기 중인 요청 없음
@@ -44,8 +44,9 @@ function App() {
   }, [])
 
   async function handleToggle(taskId: string) {
+    const original = progress[taskId] ?? { checked: false, completedAt: null }
     // 낙관적 업데이트: 서버 응답 전에 UI를 먼저 반영
-    setProgress((prev) => ({ ...prev, [taskId]: !prev[taskId] }))
+    setProgress((prev) => ({ ...prev, [taskId]: { checked: !original.checked, completedAt: null } }))
     setLoadingTaskId(taskId)
     try {
       const res = await fetch(
@@ -54,11 +55,11 @@ function App() {
       )
       if (!res.ok) throw new Error('toggle failed')
       const data = await res.json()
-      // 서버 응답값으로 낙관적 업데이트 보정
-      setProgress((prev) => ({ ...prev, [taskId]: data.checked }))
+      // 서버 응답값으로 낙관적 업데이트 보정 (completedAt 포함)
+      setProgress((prev) => ({ ...prev, [taskId]: { checked: data.checked, completedAt: data.completedAt } }))
     } catch {
       // 실패 시 낙관적 업데이트 롤백
-      setProgress((prev) => ({ ...prev, [taskId]: !prev[taskId] }))
+      setProgress((prev) => ({ ...prev, [taskId]: original }))
     } finally {
       setLoadingTaskId(null)
     }

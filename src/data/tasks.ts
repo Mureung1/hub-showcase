@@ -28,6 +28,7 @@ export const tasks: Task[] = [
     condition: () => true,
     reason: () => '모든 사업자가 공통으로 처리해야 해요',
     dueDate: (profile) => addDays(new Date(profile.closureDate), 20),
+    documents: ['폐업신고서 (홈택스 또는 세무서 비치)', '사업자등록증 원본', '신분증'],
   },
   {
     id: 'insurance-loss-report',
@@ -40,6 +41,7 @@ export const tasks: Task[] = [
     condition: (profile) => profile.hasEmployee,
     reason: () => '직원이 있다고 답하셔서 이 항목이 포함됐어요',
     dueDate: (profile) => addDays(new Date(profile.closureDate), 14),
+    documents: ['사업장 탈퇴신고서', '직원 근로계약서 사본', '마지막 급여 지급 내역'],
   },
   {
     id: 'food-service-business-report-closure',
@@ -52,6 +54,7 @@ export const tasks: Task[] = [
     lastCheckedDate: '2026-07-21',
     condition: (profile) => profile.industry === '요식업',
     reason: () => '요식업이라고 답하셔서 이 항목이 포함됐어요',
+    documents: ['영업신고증 원본', '폐업신고서 (구청 위생과 비치)', '신분증'],
   },
   {
     id: 'online-retail-report-closure',
@@ -64,6 +67,7 @@ export const tasks: Task[] = [
     lastCheckedDate: '2026-07-21',
     condition: (profile) => profile.industry === '소매업',
     reason: () => '소매업이라고 답하셔서 이 항목이 포함됐어요',
+    documents: ['통신판매업 신고증 원본', '폐지신고서 (정부24 또는 시·군·구청 비치)', '신분증'],
   },
   {
     id: 'lease-termination',
@@ -75,6 +79,7 @@ export const tasks: Task[] = [
     lastCheckedDate: '2026-07-21',
     condition: (profile) => profile.isRented,
     reason: () => '임대 사업장이라고 답하셔서 이 항목이 포함됐어요',
+    documents: ['임대차계약서 원본', '원상복구 완료 확인서 (임대인 서명)', '보증금 반환 확인 서류 (이체 내역 등)'],
   },
   {
     id: 'vat-final-return',
@@ -87,6 +92,7 @@ export const tasks: Task[] = [
     condition: () => true,
     reason: () => '모든 사업자가 공통으로 처리해야 해요',
     dueDate: (profile) => next25thOfFollowingMonth(new Date(profile.closureDate)),
+    documents: ['폐업 사실증명원 (세무서 발급)', '매출·매입 세금계산서 합계표', '신용카드 매출전표 발행 집계표'],
   },
   {
     id: 'income-tax-return',
@@ -99,6 +105,7 @@ export const tasks: Task[] = [
     condition: () => true,
     reason: () => '모든 사업자가 공통으로 처리해야 해요',
     dueDate: (profile) => may31OfNextYear(new Date(profile.closureDate)),
+    documents: ['폐업 사실증명원', '전년도 사업 소득 내역', '경비 증빙 서류 일체'],
   },
   {
     id: 'store-demolition-subsidy',
@@ -110,6 +117,7 @@ export const tasks: Task[] = [
     lastCheckedDate: '2026-07-21',
     condition: (profile) => profile.isRented,
     reason: () => '임대 사업장이라고 답하셔서 이 항목이 포함됐어요',
+    documents: ['사업자등록증 사본', '임대차계약서 사본', '철거 공사 견적서', '희망리턴패키지 신청서 (소진공 홈페이지 출력)'],
   },
   {
     id: 'reemployment-program',
@@ -121,6 +129,7 @@ export const tasks: Task[] = [
     lastCheckedDate: '2026-07-21',
     condition: () => true,
     reason: () => '모든 사용자에게 제공되는 정보예요',
+    documents: ['폐업 사실증명원 (교육 신청 시 제출)'],
   },
 ]
 

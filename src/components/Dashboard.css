@@ -52,7 +52,7 @@
 }
 
 .dashboard__sidebar {
-  width: 240px;
+  width: 280px;
   flex-shrink: 0;
   background: var(--bg-muted);
   border-right: 1px solid var(--border-soft);
@@ -207,6 +207,100 @@
   border: 1px solid #fca5a5;
   color: #b91c1c;
   font-size: 0.9rem;
+}
+
+/* 관할 세무서 찾기 */
+.dashboard__tax-office {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.dashboard__region-select {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.dashboard__tax-office-result {
+  margin-top: 0.6rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.dashboard__tax-office-result span {
+  color: var(--text-muted);
+}
+
+.dashboard__tax-office-result a {
+  font-weight: 700;
+  color: var(--text-h);
+  text-decoration: none;
+}
+
+.dashboard__tax-office-result a:hover {
+  color: var(--accent);
+}
+
+/* 관련 전화번호 */
+.dashboard__contacts {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.dashboard__contacts-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dashboard__contacts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.dashboard__contacts-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.dashboard__contacts-list span {
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard__contacts-list a {
+  font-weight: 700;
+  color: var(--text-h);
+  text-decoration: none;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.dashboard__contacts-list a:hover {
+  color: var(--accent);
 }
 
 /* 스켈레톤 */

@@ -22,4 +22,6 @@ export interface Task {
   reason: (profile: Profile) => string
   // 마감일 계산 함수. 없으면 D-day 배지를 표시하지 않음 (예: 교육 정보는 마감 없음)
   dueDate?: (profile: Profile) => Date
+  // 처리 전 준비해야 할 서류 목록. 없으면 sub-체크리스트 미표시
+  documents?: string[]
 }

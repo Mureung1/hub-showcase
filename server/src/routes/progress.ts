@@ -5,7 +5,10 @@ export const progressRouter = Router()
 
 progressRouter.get('/', async (req, res) => {
   const rows = await prisma.taskProgress.findMany({ where: { sessionId: req.sessionId } })
-  const progress = Object.fromEntries(rows.map((row) => [row.taskId, row.checked]))
+  const progress = Object.fromEntries(rows.map((row) => [
+    row.taskId,
+    { checked: row.checked, completedAt: row.checked ? row.updatedAt.toISOString() : null },
+  ]))
   res.json(progress)
 })
 
@@ -22,7 +25,11 @@ progressRouter.post('/:taskId/toggle', async (req, res) => {
     update: { checked: !existing?.checked },
   })
 
-  res.json({ taskId: row.taskId, checked: row.checked })
+  res.json({
+    taskId: row.taskId,
+    checked: row.checked,
+    completedAt: row.checked ? row.updatedAt.toISOString() : null,
+  })
 })
 
 progressRouter.post('/reset', async (req, res) => {

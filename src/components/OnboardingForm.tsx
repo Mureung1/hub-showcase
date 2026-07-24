@@ -123,17 +123,26 @@ function OnboardingForm({ onComplete, initialProfile }: OnboardingFormProps) {
             <div className="onboarding__step">
               <h1>직원이 있으세요?</h1>
               <p className="onboarding__lead">4대보험 상실신고 대상인지 확인하는 데 써요.</p>
-              <button
-                type="button"
-                className={`toggle-row${hasEmployee ? ' toggle-row--active' : ''}`}
-                aria-pressed={hasEmployee}
-                onClick={() => setHasEmployee((prev) => !prev)}
-              >
-                <span>직원이 있어요</span>
-                <span className={`switch${hasEmployee ? ' switch--on' : ''}`}>
-                  <span className="switch__knob" />
-                </span>
-              </button>
+              <div className="pill-group" role="radiogroup" aria-label="직원 유무">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={hasEmployee}
+                  className={`pill pill--flex${hasEmployee ? ' pill--selected' : ''}`}
+                  onClick={() => setHasEmployee(true)}
+                >
+                  예
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!hasEmployee}
+                  className={`pill pill--flex${!hasEmployee ? ' pill--selected' : ''}`}
+                  onClick={() => setHasEmployee(false)}
+                >
+                  아니요
+                </button>
+              </div>
             </div>
           )}
 
@@ -141,17 +150,26 @@ function OnboardingForm({ onComplete, initialProfile }: OnboardingFormProps) {
             <div className="onboarding__step">
               <h1>임대 사업장이세요?</h1>
               <p className="onboarding__lead">임대차 해지·점포철거비 지원 대상인지 확인해요.</p>
-              <button
-                type="button"
-                className={`toggle-row${isRented ? ' toggle-row--active' : ''}`}
-                aria-pressed={isRented}
-                onClick={() => setIsRented((prev) => !prev)}
-              >
-                <span>임대 사업장이에요</span>
-                <span className={`switch${isRented ? ' switch--on' : ''}`}>
-                  <span className="switch__knob" />
-                </span>
-              </button>
+              <div className="pill-group" role="radiogroup" aria-label="임대 여부">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={isRented}
+                  className={`pill pill--flex${isRented ? ' pill--selected' : ''}`}
+                  onClick={() => setIsRented(true)}
+                >
+                  예
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!isRented}
+                  className={`pill pill--flex${!isRented ? ' pill--selected' : ''}`}
+                  onClick={() => setIsRented(false)}
+                >
+                  아니요
+                </button>
+              </div>
             </div>
           )}
 
