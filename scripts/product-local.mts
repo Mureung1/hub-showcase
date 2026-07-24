@@ -151,7 +151,7 @@ export async function prepareLocalProductProfile(options: {
 
   const canonicalProfileRoot = await canonicalDirectory(
     profileRoot,
-    'dogfood profile root',
+    'local profile root',
   )
   const roots = resolveLocalProductRoots(canonicalProfileRoot, workspaceRoot)
   await validateLocalProductRoots(roots)
@@ -169,11 +169,11 @@ async function initializeProfile(profileRoot: string): Promise<void> {
 async function adoptExistingProfile(profileRoot: string): Promise<void> {
   const canonicalProfileRoot = await canonicalDirectory(
     profileRoot,
-    'dogfood profile root',
+    'local profile root',
   )
   await canonicalDirectory(
     path.join(canonicalProfileRoot, 'app-data'),
-    'dogfood app data root',
+    'local app data root',
   )
   await writeOwnershipMarker(canonicalProfileRoot)
 }
@@ -218,7 +218,7 @@ async function writeOwnershipMarker(profileRoot: string): Promise<void> {
 async function verifyOwnedProfile(profileRoot: string): Promise<void> {
   const canonicalProfileRoot = await canonicalDirectory(
     profileRoot,
-    'dogfood profile root',
+    'local profile root',
   )
   let marker: unknown
   try {

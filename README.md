@@ -39,7 +39,7 @@ npm run dev
 
 Canonical development command는 persistent app data와 existing workspace를 검증하고, `packageRoot`의 verified Runtime artifact와 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. 이 entrypoint는 별도 실행 topology를 만들지 않고 [ADR 0013](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 canonical composition에 위임합니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 materialize해야 합니다.
 
-기본 app data는 repository 기준 `../.ay-ple-dogfood`, workspace는 `../workspace/year-2-semester-2`를 사용합니다. Workspace에는 sample fixture를 복사하지 않으며 비어 있어도 정상입니다. Codex account는 caller의 전역 `CODEX_HOME`, 또는 미설정 시 `~/.codex`를 그대로 사용합니다. 이후 Server·Chat Shell 시작에서도 workspace의 사용자 자료와 `.ay-ple` 상태를 보존하고 기존 내용을 reset하지 않습니다.
+기본 profile root는 repository 기준 `../.ay-ple-dogfood`이고 실제 app data는 그 아래 `app-data/`를 사용합니다. Workspace는 `../workspace/year-2-semester-2`이며 sample fixture를 복사하지 않아 비어 있어도 정상입니다. Codex account는 caller의 전역 `CODEX_HOME`, 또는 미설정 시 `~/.codex`를 그대로 사용합니다. 이후 Server·Chat Shell 시작에서도 workspace의 사용자 자료와 `.ay-ple` 상태를 보존하고 기존 내용을 reset하지 않습니다.
 
 다른 위치가 필요하면 repository 기준 상대 경로나 absolute path로 override할 수 있습니다. 이미 수동으로 만든 app-data profile은 최초 한 번만 명시적으로 채택합니다.
 
