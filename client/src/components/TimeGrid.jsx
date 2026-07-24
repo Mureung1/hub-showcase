@@ -1,6 +1,6 @@
 import './TimeGrid.css';
 import TimeCell from './TimeCell';
-import { formatMonthDayWeekday } from '../utils/date';
+import { formatMonthDay, getWeekdayLabel } from '../utils/date';
 import { getHeatLevel } from '../utils/availability';
 
 const START_HOUR = 9;
@@ -18,7 +18,8 @@ function TimeGrid({ dates, slotStats, selectedKeys, totalMembers, onToggleCell }
         <div />
         {dates.map((date) => (
           <div key={date} className="date-header">
-            {formatMonthDayWeekday(date)}
+            <span className="date-header-day">{formatMonthDay(date)}</span>
+            <span className="date-header-weekday">{getWeekdayLabel(date)}</span>
           </div>
         ))}
       </div>

@@ -71,11 +71,20 @@ export function addDaysToDateString(dateStr, days) {
   return `${y}-${m}-${dd}`;
 }
 
-export function formatMonthDayWeekday(dateStr) {
+export function formatMonthDay(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
-  return `${m}.${day}(${DAY_NAMES[d.getDay()]})`;
+  return `${m}.${day}`;
+}
+
+export function getWeekdayLabel(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return DAY_NAMES[d.getDay()];
+}
+
+export function formatMonthDayWeekday(dateStr) {
+  return `${formatMonthDay(dateStr)}(${getWeekdayLabel(dateStr)})`;
 }
 
 export function formatMonthDaySlash(dateStr) {
