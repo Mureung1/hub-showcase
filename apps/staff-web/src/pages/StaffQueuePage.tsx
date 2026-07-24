@@ -48,10 +48,10 @@ interface StaffQueuePageProps {
   ) => Promise<NotificationReceipt>;
   onChangeQueueStatus: (status: QueueStatus) => Promise<void>;
   onSaveQueueSettings: (settings: QueueSettings) => Promise<void>;
-  onChangeStatus: (id: string, status: WaitingStatus) => void;
-  onHold: (id: string) => void;
-  onRestore: (id: string, position?: number) => void;
-  onReorder: (orderedWaitingIds: string[]) => void;
+  onChangeStatus: (id: string, status: WaitingStatus) => Promise<void>;
+  onHold: (id: string) => Promise<void>;
+  onRestore: (id: string, position?: number) => Promise<void>;
+  onReorder: (orderedWaitingIds: string[]) => Promise<void>;
   onSavePatientConfiguration: (
     inputMode: PatientInputMode,
     categories: PatientCategoryDefinition[],
@@ -93,6 +93,7 @@ export function StaffQueuePage({
   const [showQueueSettings, setShowQueueSettings] = useState(false);
   const [notificationReceipt, setNotificationReceipt] = useState<NotificationReceipt>();
   const [queueStatusError, setQueueStatusError] = useState("");
+  const [queueActionError, setQueueActionError] = useState("");
   const [isChangingQueueStatus, setIsChangingQueueStatus] = useState(false);
   const [selectedId, setSelectedId] = useState<string>();
   const [isRetryingConnection, setIsRetryingConnection] = useState(false);
@@ -112,7 +113,20 @@ export function StaffQueuePage({
     if (index < 0 || targetIndex < 0 || targetIndex >= activeIds.length) return;
     const nextIds = [...activeIds];
     [nextIds[index], nextIds[targetIndex]] = [nextIds[targetIndex]!, nextIds[index]!];
-    onReorder(nextIds);
+    void runQueueAction(() => onReorder(nextIds));
+  }
+
+  async function runQueueAction(action: () => Promise<void>) {
+    setQueueActionError("");
+    try {
+      await action();
+    } catch (error) {
+      setQueueActionError(
+        error instanceof Error
+          ? error.message
+          : "대기열 작업을 처리하지 못했습니다. 새로고침 후 다시 시도해 주세요.",
+      );
+    }
   }
 
   async function toggleRemoteRegistration() {
@@ -244,6 +258,15 @@ export function StaffQueuePage({
             </div>
           </div>
         )}
+        {queueActionError && (
+          <div className="notice notice--error" role="alert">
+            <CircleX size={20} />
+            <div>
+              <strong>대기열 작업을 처리하지 못했습니다</strong>
+              <p>{queueActionError}</p>
+            </div>
+          </div>
+        )}
         <section className="queue-metrics" aria-label="대기열 요약">
           <div>
             <UsersRound />
@@ -284,8 +307,12 @@ export function StaffQueuePage({
           activeRows={activeQueueRows}
           selectedId={selectedId}
           onOpen={setSelectedId}
-          onChangeStatus={onChangeStatus}
-          onRestore={onRestore}
+          onChangeStatus={(id, status) => {
+            void runQueueAction(() => onChangeStatus(id, status));
+          }}
+          onRestore={(id) => {
+            void runQueueAction(() => onRestore(id));
+          }}
           onMove={moveActiveWaiting}
         />
       </main>
@@ -295,9 +322,15 @@ export function StaffQueuePage({
           waiting={selected}
           activeQueueCount={activeQueueRows.length}
           onClose={() => setSelectedId(undefined)}
-          onChangeStatus={onChangeStatus}
-          onHold={onHold}
-          onRestore={onRestore}
+          onChangeStatus={(id, status) => {
+            void runQueueAction(() => onChangeStatus(id, status));
+          }}
+          onHold={(id) => {
+            void runQueueAction(() => onHold(id));
+          }}
+          onRestore={(id, position) => {
+            void runQueueAction(() => onRestore(id, position));
+          }}
           onGetNotificationHistory={onGetNotificationHistory}
         />
       )}

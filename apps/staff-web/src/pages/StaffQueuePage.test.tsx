@@ -44,6 +44,7 @@ function renderPage(
   connectionStatus: "connected" | "retrying" = "connected",
   onRetry = vi.fn(async () => undefined),
   onSaveQueueSettings = vi.fn(async () => undefined),
+  onChangeStatus = vi.fn(async () => undefined),
 ) {
   render(
     <StaffQueuePage
@@ -58,7 +59,7 @@ function renderPage(
       onAddOnsite={vi.fn()}
       onChangeQueueStatus={vi.fn()}
       onSaveQueueSettings={onSaveQueueSettings}
-      onChangeStatus={vi.fn()}
+      onChangeStatus={onChangeStatus}
       onHold={vi.fn()}
       onRestore={vi.fn()}
       onReorder={vi.fn()}
@@ -140,5 +141,26 @@ describe("StaffQueuePage 운영 설정", () => {
         maxRemoteWaitingPatients: 20,
       }),
     );
+  });
+});
+
+describe("StaffQueuePage 상태 변경 오류", () => {
+  it("잘못된 상태 전환이면 서버 오류 메시지를 화면에 표시한다", async () => {
+    const onChangeStatus = vi.fn(async () => {
+      throw new Error("현재 상태에서는 요청한 처리를 할 수 없습니다.");
+    });
+    renderPage(
+      vi.fn(async () => notifications),
+      "connected",
+      vi.fn(async () => undefined),
+      vi.fn(async () => undefined),
+      onChangeStatus,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "도착 처리" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("대기열 작업을 처리하지 못했습니다");
+    expect(alert).toHaveTextContent("현재 상태에서는 요청한 처리를 할 수 없습니다.");
   });
 });
