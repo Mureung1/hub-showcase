@@ -351,8 +351,60 @@ const rejectApplication = async (mentorId, applicationId) => {
   };
 };
 
+const completeApplication = async (mentorId, applicationId) => {
+  const application = await fetchApplicationRow(applicationId);
+
+  if (application.status !== 'confirmed') {
+    const isAlreadyCompleted = application.status === 'completed';
+    throw new ConflictError(
+      isAlreadyCompleted
+        ? '이미 완료 처리된 면담 신청입니다.'
+        : '확정 상태의 면담 신청만 완료 처리할 수 있습니다.',
+      isAlreadyCompleted ? 'APPLICATION_ALREADY_COMPLETED' : 'APPLICATION_NOT_CONFIRMED',
+    );
+  }
+
+  if (application.accepted_mentor_id !== mentorId) {
+    throw new ForbiddenError('이 면담 신청을 완료 처리할 권한이 없습니다.');
+  }
+
+  const now = new Date().toISOString();
+
+  const { data: updatedApplication, error: updateAppError } = await supabase
+    .from('applications')
+    .update({ status: 'completed' })
+    .eq('id', applicationId)
+    .select('*')
+    .single();
+
+  if (updateAppError) throw updateAppError;
+
+  const { error: updateLinkError } = await supabase
+    .from('application_mentors')
+    .update({ status: 'completed' })
+    .eq('application_id', applicationId)
+    .eq('mentor_id', mentorId);
+
+  if (updateLinkError) throw updateLinkError;
+
+  const { error: updateMeetingError } = await supabase
+    .from('meetings')
+    .update({ completed_at: now })
+    .eq('application_id', applicationId);
+
+  if (updateMeetingError) throw updateMeetingError;
+
+  return {
+    id: updatedApplication.id,
+    status: updatedApplication.status,
+    acceptedMentorId: updatedApplication.accepted_mentor_id,
+    updatedAt: updatedApplication.updated_at,
+  };
+};
+
 module.exports = {
   acceptApplication,
+  completeApplication,
   createApplication,
   listApplicationsForMentee,
   listApplicationsForMentor,

@@ -2,6 +2,7 @@ const express = require('express');
 
 const {
   acceptApplication,
+  completeApplication,
   createApplication,
   getApplications,
   rejectApplication,
@@ -16,5 +17,6 @@ router.post('/', createApplication);
 router.get('/', getApplications);
 router.patch('/:applicationId/accept', acceptApplication);
 router.patch('/:applicationId/reject', rejectApplication);
+router.patch('/:applicationId/complete', completeApplication);
 
 module.exports = router;

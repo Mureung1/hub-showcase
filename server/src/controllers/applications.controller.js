@@ -114,8 +114,36 @@ const rejectApplication = async (req, res) => {
   }
 };
 
+const completeApplication = async (req, res) => {
+  if (req.user.role !== 'mentor') {
+    return sendError(res, 403, 'FORBIDDEN', '멘토만 면담을 완료 처리할 수 있습니다.');
+  }
+
+  try {
+    const result = await applicationsService.completeApplication(
+      req.user.id,
+      req.params.applicationId,
+    );
+    return res.json({ data: result });
+  } catch (err) {
+    if (err instanceof NotFoundError) {
+      return sendError(res, 404, 'APPLICATION_NOT_FOUND', err.message);
+    }
+    if (err instanceof ForbiddenError) {
+      return sendError(res, 403, 'FORBIDDEN', err.message);
+    }
+    if (err instanceof ConflictError) {
+      return sendError(res, 409, err.code, err.message);
+    }
+
+    console.error(err);
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', '서버 내부 오류가 발생했습니다.');
+  }
+};
+
 module.exports = {
   acceptApplication,
+  completeApplication,
   createApplication,
   getApplications,
   rejectApplication,
