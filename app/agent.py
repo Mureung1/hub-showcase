@@ -105,6 +105,24 @@ def _read_source(paper: dict, need_fulltext: bool) -> tuple[str, bool]:
     return paper["abstract"], False
 
 
+def _build_summarize_prompt(title: str, source_text: str, feedback: str = "") -> str:
+    """요약(summarize) 프롬프트를 조립한다. LLM 호출은 하지 않는다.
+
+    feedback이 있으면(재시도) {feedback_block}에 verify의 지적사항을 채워 넣는다.
+    """
+    feedback_block = ""
+    if feedback:
+        feedback_block = prompt_loader.fill(
+            prompt_loader.load_feedback_block(), feedback=feedback
+        )
+    return prompt_loader.fill(
+        prompt_loader.load("summarize"),
+        title=title,
+        source_text=source_text,
+        feedback_block=feedback_block,
+    )
+
+
 if __name__ == "__main__":
     import argparse
 
