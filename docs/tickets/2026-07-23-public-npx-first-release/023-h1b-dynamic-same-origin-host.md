@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -53,6 +53,16 @@ H1a가 검증한 startup input으로 `127.0.0.1`의 OS-assigned port 하나를 b
 
 - [022-h1a-roots-compatibility-preflight.md](022-h1a-roots-compatibility-preflight.md) — H1a — Public host root와 compatibility preflight를 닫는다
 
+## Claim Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Exact handoff | `748521df86a9d900e1fd09125b8c790ebce5bc21` — H1a fixed reviewed implementation과 완료 ticket을 non-fast-forward merge한 clean integration HEAD다. |
+| Completed predecessor | Ticket 022의 fixed reviewed code `4c3f374ae7ceccd155b7f8b821de7d2fac719920`, evidence tip `4bc286216`과 closure `4582b8d0b`이 모두 exact handoff의 ancestor다. |
+| H1a contract | Production `admitApplicationStartup()`은 module-owned package authority, descriptor-driven compatibility, owner-only roots, exact `VerifiedRuntime`과 delayed `createServerAtOrigin(origin)` capability를 제공한다. |
+| Integration gates | Exact handoff에서 root `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs links와 `git diff --check`가 green이다. |
+| Scope | 이 branch는 `apps/ay-ple/src/**` 중 `host-contract.ts`를 제외한 H-owned host source/tests와 이 ticket만 수정한다. Server/UI/shared contract와 package/root manifest·lock는 수정하지 않는다. |
+
 ## Starting Points
 
 - H1a validated startup input and preflight adapter
@@ -71,7 +81,7 @@ H1a가 검증한 startup input으로 `127.0.0.1`의 OS-assigned port 하나를 b
 | owner | `H` — Public host |
 | branch | `codex/public-preview-h1b-same-origin` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/h1b-same-origin` |
-| handoffSha | Claim 시 coordinator가 022의 fixed reviewed SHA를 integration branch에 merge하고 H1a 및 integration root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·branch name·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `748521df86a9d900e1fd09125b8c790ebce5bc21` |
 | writablePaths | `apps/ay-ple/src/**` 중 `host-contract.ts` 제외; host adapter tests; `docs/tickets/2026-07-23-public-npx-first-release/023-h1b-dynamic-same-origin-host.md`. Package/root manifest·lock와 C1 Server source는 제외한다. |
 | consumedContracts | H1a validated startup inputs; S1 host contract; C1 application/close factory; U1 built assets and product Origin contract |
 | predecessorEvidence | 022 fixed reviewed SHA와 integration merge receipt, preflight/root fail-closed matrix, inherited D1/U1/C1 receipts, root four-gate receipt |
