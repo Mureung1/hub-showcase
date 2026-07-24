@@ -29,7 +29,7 @@
 - [x] 테스트코드 생성 Skill 문서 작성 → `.claude/skills/tidenote-test-writer/SKILL.md`
 - [x] 코드 검증 Agent 문서 작성 → `docs/agents/code-verification-agent.md` — 기능 검증 Agent와 역할 구분 표 포함
 - [x] 코드 검증 Agent로 이번 주 작업 실제 점검, 로그 기록 (🔴 없음, 🟡 1건 기록)
-- [ ] 나만의 개발 워크플로우 문서화 — 금요일
+- [x] 나만의 개발 워크플로우 문서화 → [docs/workflow.md](workflow.md)
 
 ## 검증
 - [x] TDD로 만든 기능 테스트 통과 확인 (`npm test`) — 7/7 pass
