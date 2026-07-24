@@ -37,9 +37,9 @@
 
 .field-label {
   display: block;
-  font-size: var(--font-size-title);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text);
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-section-title);
+  color: var(--color-section-title);
   margin-bottom: var(--space-sm);
 }
 
