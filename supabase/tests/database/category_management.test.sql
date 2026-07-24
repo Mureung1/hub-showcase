@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(8);
+select extensions.plan(9);
 
 select extensions.has_table(
   'public',
@@ -95,6 +95,17 @@ select extensions.results_eq(
   $$,
   $$ select null::uuid where false $$,
   '다른 사용자의 카테고리는 수정되지 않는다'
+);
+
+select extensions.throws_ok(
+  $$
+    select public.delete_user_category(
+      '20000000-0000-4000-8000-000000000012'
+    )
+  $$,
+  '42501',
+  '삭제할 수 있는 카테고리가 아닙니다.',
+  '다른 사용자의 카테고리는 함수로 삭제할 수 없다'
 );
 
 insert into public.insights (

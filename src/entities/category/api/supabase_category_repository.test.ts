@@ -7,11 +7,11 @@ const USER_ID = '00000000-0000-4000-8000-000000000001';
 const CATEGORY_ID = '20000000-0000-4000-8000-000000000001';
 const CATEGORY = {
   colorKey: 'blue-2' as const,
-  createdAt: '2026-07-24T00:00:00.000Z',
+  createdAt: '2026-07-24T00:00:00+00:00',
   id: CATEGORY_ID,
   name: '프론트엔드 자료',
   sortOrder: 2,
-  updatedAt: '2026-07-24T01:00:00.000Z',
+  updatedAt: '2026-07-24T01:00:00+00:00',
 };
 const ROW = {
   color_key: CATEGORY.colorKey,

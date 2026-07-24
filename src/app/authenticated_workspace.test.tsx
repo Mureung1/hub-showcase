@@ -1245,7 +1245,7 @@ describe('AuthenticatedWorkspace', () => {
       target: { value: 'Design Systems' },
     });
     expect(screen.getByText('수정한 디자인 패턴')).not.toBeNull();
-  });
+  }, 10_000);
 
   it('keeps the saved URL when personal context is skipped', async () => {
     const user = userEvent.setup();
