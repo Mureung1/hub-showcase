@@ -45,6 +45,7 @@ test('Product bootstrap starts a supervised Runtime that Server shutdown fully r
             runtimeFactoryCalls += 1
             fixture = await startCodexChatProcessTreeTestFixture({
               runtimeRoot: RUNTIME_ROOT,
+              accountState: 'chatgpt',
             })
             return fixture.runtime
           },
