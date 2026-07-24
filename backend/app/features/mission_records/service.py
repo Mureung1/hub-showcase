@@ -14,7 +14,7 @@ from app.features.mission_records.schemas import (
     MissionRecordRequest,
     MissionRecordResponse,
 )
-from app.missions import MISSION_PROMPTS
+from app.shared.mission_types import MISSION_PROMPTS
 
 KST = ZoneInfo("Asia/Seoul")
 MONTH_PATTERN = re.compile(r"^\d{4}-\d{2}$")

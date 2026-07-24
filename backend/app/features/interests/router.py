@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.db.supabase import create_admin_client
+from app.infrastructure.supabase import create_admin_client
 from app.features.interests.schemas import Interest
 
 router = APIRouter(tags=["interests"])

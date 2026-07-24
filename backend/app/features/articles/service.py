@@ -10,7 +10,7 @@ from app.features.articles.schemas import (
     TodayArticle,
     TodayArticlesResponse,
 )
-from app.missions import MISSION_PROMPTS, RECOMMENDED_MISSION_TYPE
+from app.shared.mission_types import MISSION_PROMPTS, RECOMMENDED_MISSION_TYPE
 
 ARTICLE_DETAIL_SELECT = (
     "id,title,translated_title,canonical_url,published_at,author,official_excerpt,"
