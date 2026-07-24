@@ -123,6 +123,12 @@ def _build_summarize_prompt(title: str, source_text: str, feedback: str = "") ->
     )
 
 
+def _call_summarize(title: str, source_text: str, feedback: str = "") -> dict | None:
+    """요약(summarize) LLM 호출. 파싱 실패 시 최대 SUMMARIZE_PARSE_ATTEMPTS번 재시도한다."""
+    prompt = _build_summarize_prompt(title, source_text, feedback)
+    return tools.ask_llm_json(prompt, fallback=None, attempts=config.SUMMARIZE_PARSE_ATTEMPTS)
+
+
 if __name__ == "__main__":
     import argparse
 
