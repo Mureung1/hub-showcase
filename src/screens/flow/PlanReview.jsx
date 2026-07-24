@@ -1,44 +1,56 @@
-import { useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router'
 import logo from '../../assets/logo.png'
 import { formatKorean } from '../../utils/dates'
-import {
-  DEMO_PROJECT_ID,
-  MAX_REGENERATE,
-  buildPlan,
-  fallbackProject,
-  typeLabelOf,
-} from './flowMock'
+import { getTypeById } from '../../data/templates'
+import { useApi } from '../../api/client'
 import './flow.css'
 
-/* AI 계획 검토 — 생성자 전용. 위저드 제출 직후 착지해 확정 전에 계획을 손보는 화면.
-   지금은 templates.js의 목 계획을 쓰고, 4단계에서 플래너 에이전트 응답으로 교체된다. */
+/* AI 계획 검토 — 생성자 전용. 위저드 제출 직후 착지해 확정 전에 계획을 살펴보는 화면.
+   서버(GET /api/projects/:id/plan)가 만든 실 계획을 조회해 표시한다.
+   인라인 수정은 로컬 상태로만 반영되며 저장·재생성·확정 저장은 다음 슬라이스에서 붙인다. */
 export default function PlanReview() {
   const navigate = useNavigate()
-  const { state } = useLocation()
+  const { id } = useParams()
+  const { loading, error, data, reload } = useApi(`/api/projects/${id}/plan`)
 
-  // 위저드에서 넘어온 입력이 없으면(주소창 직접 진입·새로고침) 기본값으로 렌더링
-  const project = useMemo(() => ({ ...fallbackProject(), ...(state ?? {}) }), [state])
+  // 편집용 로컬 상태 — 서버 계획이 도착하면 시드한다
+  const [plan, setPlan] = useState({ roles: [], milestones: [] })
+  const [notice, setNotice] = useState('')
 
-  const [regenCount, setRegenCount] = useState(0)
-  const [plan, setPlan] = useState(() => buildPlan(project.typeHint, 0, project.deadline))
-  const [edited, setEdited] = useState(false)
+  useEffect(() => {
+    if (data) setPlan({ roles: data.roles, milestones: data.milestones })
+  }, [data])
 
-  const roleName = (roleId) => plan.roles.find((r) => r.id === roleId)?.name ?? '미지정'
-  const remaining = MAX_REGENERATE - regenCount
-  const taskTotal = plan.milestones.reduce((sum, m) => sum + m.tasks.length, 0)
-
-  function handleRegenerate() {
-    if (remaining <= 0) return
-    if (edited && !window.confirm('직접 수정한 내용이 사라집니다. 다시 제안받을까요?')) return
-    const next = regenCount + 1
-    setRegenCount(next)
-    setPlan(buildPlan(project.typeHint, next, project.deadline))
-    setEdited(false)
+  if (loading) {
+    return (
+      <div className="flow-page">
+        <div className="flow-card flow-center">
+          <h2>계획을 불러오는 중…</h2>
+          <p className="flow-muted">역할과 일정을 준비하고 있어요.</p>
+        </div>
+      </div>
+    )
   }
 
+  if (error) {
+    return (
+      <div className="flow-page">
+        <div className="flow-card flow-center">
+          <h2>계획을 불러오지 못했습니다</h2>
+          <p className="flow-muted">{error}</p>
+          <button type="button" className="btn btn-ghost" onClick={reload}>다시 시도</button>
+        </div>
+      </div>
+    )
+  }
+
+  const project = data.project
+  const typeLabel = getTypeById(project.typeHint)?.label ?? '선택 안 함'
+  const roleName = (roleId) => plan.roles.find((r) => r.id === roleId)?.name ?? '미지정'
+  const taskTotal = plan.milestones.reduce((sum, m) => sum + m.tasks.length, 0)
+
   function editRole(roleId, name) {
-    setEdited(true)
     setPlan((p) => ({
       ...p,
       roles: p.roles.map((r) => (r.id === roleId ? { ...r, name } : r)),
@@ -46,7 +58,6 @@ export default function PlanReview() {
   }
 
   function editMilestone(milestoneId, title) {
-    setEdited(true)
     setPlan((p) => ({
       ...p,
       milestones: p.milestones.map((m) => (m.id === milestoneId ? { ...m, title } : m)),
@@ -54,7 +65,6 @@ export default function PlanReview() {
   }
 
   function editTask(milestoneId, taskId, title) {
-    setEdited(true)
     setPlan((p) => ({
       ...p,
       milestones: p.milestones.map((m) =>
@@ -65,9 +75,14 @@ export default function PlanReview() {
     }))
   }
 
+  function handleRegenerate() {
+    // 재생성(3회 제한)은 다음 슬라이스에서 서버로 구현 — 지금은 안내만
+    setNotice('“다시 제안받기”(재생성)는 다음 단계에서 제공됩니다.')
+  }
+
   function handleConfirm() {
-    // 4단계: 여기서 계획을 저장하고 서버가 초대 토큰을 발급한다
-    navigate(`/projects/${DEMO_PROJECT_ID}/invite`, { state: project })
+    // 초대 화면은 아직 목업 — 다음 슬라이스에서 계획 확정·초대 토큰 발급으로 교체
+    navigate(`/projects/${id}/invite`)
   }
 
   return (
@@ -81,7 +96,7 @@ export default function PlanReview() {
         <h1>{project.title}</h1>
         <p className="flow-muted">{project.topic}</p>
         <div className="flow-meta">
-          <span className="flow-chip">{typeLabelOf(project.typeHint)}</span>
+          <span className="flow-chip">{typeLabel}</span>
           <span className="flow-chip">마감 {formatKorean(project.deadline)}</span>
           <span className="flow-chip">{project.headcount}명</span>
           <span className="flow-chip">마일스톤 {plan.milestones.length} · 태스크 {taskTotal}</span>
@@ -89,7 +104,7 @@ export default function PlanReview() {
 
         <p className="flow-notice">
           AI가 제안한 계획입니다. 역할 이름·마일스톤·태스크를 직접 눌러 수정할 수 있어요.
-          확정하면 팀원 초대 링크가 발급되고 계획은 더 이상 다시 제안받을 수 없습니다.
+          확정하면 팀원 초대 링크가 발급됩니다.
         </p>
 
         <section className="flow-section">
@@ -152,21 +167,14 @@ export default function PlanReview() {
           </ol>
         </section>
 
+        {notice && <p className="flow-notice">{notice}</p>}
+
         <div className="flow-actions">
           <div className="regen-row">
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={handleRegenerate}
-              disabled={remaining <= 0}
-            >
+            <button type="button" className="btn btn-ghost" onClick={handleRegenerate}>
               다시 제안받기
             </button>
-            <span className="regen-count">
-              {remaining > 0
-                ? `${remaining}회 남음 (최대 ${MAX_REGENERATE}회)`
-                : '재생성 횟수를 모두 사용했습니다'}
-            </span>
+            <span className="regen-count">재생성은 다음 단계에서 제공됩니다</span>
           </div>
 
           <button type="button" className="btn btn-dark" onClick={handleConfirm}>

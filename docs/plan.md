@@ -7,7 +7,7 @@
 ## 개발 진행 체크리스트
 
 > **이 프로젝트의 살아있는 진행 현황.** 새 세션·개발 시작 시 여기부터 확인한다.
-> 완료 `[x]` · 미완 `[ ]` · 스테이지 상태 ✅완료 / 🔄일부 / ⬜예정. (최종 갱신: 2026-07-21)
+> 완료 `[x]` · 미완 `[ ]` · 스테이지 상태 ✅완료 / 🔄일부 / ⬜예정. (최종 갱신: 2026-07-24)
 
 ### 스테이지 요약
 
@@ -17,7 +17,7 @@
 | ② | 백엔드 기초 (Express·Supabase·스키마 13테이블) | ✅ |
 | ③ | 목업 시드 + 3탭 콘텐츠 (실 DB 조회) | ✅ |
 | ③.5 | 프로젝트 생성~배정 플로우 화면 5종 (목업) | ✅ |
-| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 인증만 완료 |
+| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 인증·생성/플래너 완료 |
 | ⑤ | 검증 에이전트 + 결함 수정 | ⬜ |
 
 ### 인증 — ✅ 실데이터 동작
@@ -41,9 +41,10 @@
 ### 프로젝트 생성 ~ 배정 플로우 — ⬜ 화면만 완성, BE/DB 미연결
 - [x] 화면 5종 UI (계획검토·초대·join·설문·배정결과)
 - [x] 배정 점수 로직 `src/logic/assignRoles.js` (조장도 실무 맡도록 수정 완료)
-- [ ] 프로젝트 생성 API (위저드 제출 → `projects`, 첨부 → Storage)
-- [ ] 플래너 에이전트 `server/services/planner.js` (주제·내용·첨부 → 역할·마일스톤·태스크)
-- [ ] 계획 조회/수정/재생성(3회 제한)/확정 → 초대 토큰 발급
+- [x] 프로젝트 생성 API (위저드 제출 → `projects`·멤버·기피날짜·계획 저장) — `server/routes/projects.js`. 파일 첨부 → Storage는 후속
+- [x] 플래너 에이전트 `server/services/planner.js` (주제·유형·마감일 → 역할·마일스톤·태스크, Claude 구조화 출력 + 템플릿 폴백)
+- [x] 계획 조회 API `GET /api/projects/:id/plan` (생성자 전용) — `PlanReview.jsx` 실데이터 연결
+- [ ] 계획 인라인 수정 저장 / 재생성(3회 제한) / 확정 → 초대 토큰 발급
 - [ ] join API (초대 토큰 + 닉네임, 정원·중복 검사)
 - [ ] 설문 제출 / 마감 API (정원 미달 하향)
 - [ ] 배정 실행 (`assignRoles` 서버 이식) + 설명자 에이전트 `server/services/explainer.js`
@@ -250,6 +251,12 @@
 ## 개발 로그 (결정·검증)
 
 > 작업(슬라이스/커밋 단위)마다 **왜 그렇게 구현했는지 + 어떻게 검증했는지**를 짧게 남긴다. 최신이 위로.
+
+### 2026-07-24 · 프로젝트 생성 API + 플래너 에이전트
+- **왜**: 목업(위저드 2.2초 setTimeout·PlanReview 템플릿 계획)을 실 서버 + Claude로 교체하는 첫 세로 슬라이스. 위저드 제출 → DB 저장 → 계획 검토를 실데이터로.
+- **방식**: `server/services/planner.js`가 Claude(구조화 출력 `output_config.format`, 기본 모델 `claude-opus-4-8`, 어댑티브 씽킹)로 역할·마일스톤·태스크를 생성하고, **키 없음·API 오류·검증 실패 시 `templates.js` 템플릿으로 폴백**한다 → 키 유무와 무관하게 항상 유효한 계획. `server/routes/projects.js`의 `POST /api/projects`가 projects·project_members(첫 프로젝트면 메인)·avoid_dates·roles·milestones·tasks를 저장(역할/마일스톤 **slug→uuid 매핑**으로 태스크 연결), `GET /api/projects/:id/plan`은 생성자 전용 조회. 프론트는 `apiPost`(위저드)·`useApi`(PlanReview)로 연결. **계획 수정 저장·재생성(3회)·확정→초대토큰·파일 첨부는 다음 슬라이스로 분리** — 이번엔 목 경로 제거에 집중.
+- **검증**: planner를 격리 실행해 **폴백·Claude 경로 각각** 유효 계획 생성 확인(역할 4~5개·조장 정확히 1개·모든 태스크 roleId 정합·마일스톤 날짜 범위). 서버 부팅·`/api/health` OK, 미로그인 `POST /api/projects` → 401. 인증 POST는 projects·멤버·기피날짜까지 저장 성공(컬럼명 일치 확인). `npx oxlint`·`npm run build` 통과. 임시 검증 프로젝트는 삭제(cascade)로 정리.
+- **필요 조치(사용자)**: `roles` 테이블에 emoji 컬럼 추가 — Supabase SQL Editor에서 **`alter table roles add column if not exists emoji text;`** 1회 실행. (schema.sql에도 반영해 둠.) 이후 생성→계획 저장·조회가 end-to-end로 동작한다. 컬럼 반영 후 브라우저에서 위저드→계획 검토 실데이터 표시 최종 확인 예정.
 
 ### 2026-07-22 · 인증 마무리 (라우트 가드·사용자 표시·로그아웃)
 - **왜**: 로그인은 되지만 미로그인으로 `/app`에 접속 가능, 사이드바 "게스트" 고정, 로그아웃 부재 — 인증을 제대로 닫아 이후 기능을 로그인 상태로 테스트할 토대.

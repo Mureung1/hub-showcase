@@ -68,9 +68,13 @@ create table if not exists roles (
   min_count      int  not null default 1,
   max_count      int  not null default 1,
   is_leader_role boolean not null default false,  -- '조장' 역할 표시 (프로젝트당 1개 강제는 서버 검증)
+  emoji          text,                            -- 역할 아이콘 (플래너/템플릿이 제공, 화면 표시용)
   sort_order     int  not null default 0,
   check (min_count >= 0 and max_count >= min_count)
 );
+
+-- 기존 배포(emoji 컬럼 이전 스키마)를 위한 멱등 마이그레이션 — 재실행해도 안전
+alter table roles add column if not exists emoji text;
 
 -- 6. 마일스톤
 create table if not exists milestones (

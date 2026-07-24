@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { PROJECT_TYPES } from '../../data/templates'
 import { parseDate, toDateInputValue, addDays, diffDays } from '../../utils/dates'
 import logo from '../../assets/logo.png'
-import { DEMO_PROJECT_ID, toFlowProject } from '../flow/flowMock'
+import { apiPost } from '../../api/client'
 import FileDropzone from './FileDropzone.jsx'
 import AvoidCalendar from './AvoidCalendar.jsx'
 import './CreateWizard.css'
@@ -20,11 +20,11 @@ const HEADCOUNT_MAX = 8
 
 export default function CreateWizard() {
   const navigate = useNavigate()
-  const timerRef = useRef(null)
 
   const [step, setStep] = useState(1)
-  const [phase, setPhase] = useState('form') // form | loading | done
+  const [phase, setPhase] = useState('form') // form | loading
   const [notice, setNotice] = useState('')
+  const [error, setError] = useState('')
   const [form, setForm] = useState({
     typeHint: null,
     title: '',
@@ -35,15 +35,12 @@ export default function CreateWizard() {
     headcount: 4,
   })
 
-  useEffect(() => () => clearTimeout(timerRef.current), [])
-
   const today = new Date()
   const todayStr = toDateInputValue(today)
   const minDeadline = toDateInputValue(addDays(today, 1))
 
   const totalDays = form.deadline ? diffDays(today, parseDate(form.deadline)) : 0
   const availableDays = totalDays - form.avoidDates.length
-  const typeLabel = PROJECT_TYPES.find((t) => t.id === form.typeHint)?.label ?? '선택 안 함'
 
   const stepValid = {
     1: form.title.trim().length > 0 && form.topic.trim().length > 0,
@@ -82,10 +79,28 @@ export default function CreateWizard() {
     navigate('/app/dashboard')
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
+    setError('')
     setPhase('loading')
-    // AI 플래너 연동 전 로딩 연출 — 3단계(목업)·이후 단계에서 실제 생성으로 교체
-    timerRef.current = setTimeout(() => setPhase('done'), 2200)
+    try {
+      // 파일 첨부(form.file)는 이번 단계에서 서버로 보내지 않는다(다음 슬라이스: Storage 업로드)
+      const { id } = await apiPost('/api/projects', {
+        title: form.title,
+        topic: form.topic,
+        typeHint: form.typeHint,
+        deadline: form.deadline,
+        avoidDates: form.avoidDates,
+        headcount: form.headcount,
+      })
+      navigate(`/projects/${id}/plan`)
+    } catch (err) {
+      if (err.status === 401) {
+        navigate('/login')
+        return
+      }
+      setError(err.message)
+      setPhase('form')
+    }
   }
 
   /* ---------- 제출 이후 화면 ---------- */
@@ -97,37 +112,6 @@ export default function CreateWizard() {
           <span className="spinner" aria-hidden="true" />
           <h2>AI가 계획을 생성 중입니다…</h2>
           <p className="wizard-muted">주제와 일정을 분석해 역할과 마일스톤을 설계하고 있어요.</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (phase === 'done') {
-    return (
-      <div className="wizard-page">
-        <div className="wizard-card wizard-center">
-          <span className="done-icon" aria-hidden="true">✓</span>
-          <h2>계획 초안이 준비되었습니다</h2>
-          <p className="wizard-muted">확정 전에 역할과 일정을 검토하고 수정할 수 있어요.</p>
-
-          <dl className="summary">
-            <div><dt>제목</dt><dd>{form.title}</dd></div>
-            <div><dt>과제 유형</dt><dd>{typeLabel}</dd></div>
-            <div><dt>마감일</dt><dd>{form.deadline} (D-{totalDays})</dd></div>
-            <div><dt>진행 가능 기간</dt><dd>{availableDays}일 (기피 {form.avoidDates.length}일)</dd></div>
-            <div><dt>팀원 수</dt><dd>{form.headcount}명</dd></div>
-            <div><dt>첨부</dt><dd>{form.file ? form.file.name : '없음'}</dd></div>
-          </dl>
-
-          <button
-            type="button"
-            className="btn btn-dark"
-            onClick={() =>
-              navigate(`/projects/${DEMO_PROJECT_ID}/plan`, { state: toFlowProject(form) })
-            }
-          >
-            AI 계획 검토하기
-          </button>
         </div>
       </div>
     )
@@ -286,6 +270,8 @@ export default function CreateWizard() {
             </p>
           </section>
         )}
+
+        {error && <p className="wizard-error">{error}</p>}
 
         <div className="wizard-actions">
           {step > 1 ? (
