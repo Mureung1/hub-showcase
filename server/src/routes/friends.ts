@@ -4,6 +4,8 @@ import { prisma } from '../db.js'
 import { requireAuth } from '../auth/requireAuth.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { HANDLE_PATTERN } from '../constants.js'
+import { getFriendRoomView } from '../lib/roomLayout.js'
+import { getDodoAppearance, toAppearanceResponse } from '../lib/dodoAppearance.js'
 
 function isValidVisitAction(value: unknown): value is HomeVisitAction {
   return typeof value === 'string' && (Object.values(HomeVisitAction) as string[]).includes(value)
@@ -198,6 +200,26 @@ friendsRouter.get('/:friendId/schedules', asyncHandler(async (req, res) => {
     categoryName: schedule.category.name,
     tone: schedule.category.tone,
   })))
+}))
+
+// 친구 마이홈 방문 화면에서 실제로 꾸며진 방(가구·간식 배치)과 두두 장착 상태를 읽기 전용으로 보여주기 위한 라우트.
+friendsRouter.get('/:friendId/home', asyncHandler(async (req, res) => {
+  const { friendId } = req.params
+
+  const friendship = await prisma.friendship.findUnique({
+    where: { userId_friendId: { userId: req.userId!, friendId } },
+  })
+  if (!friendship) {
+    res.status(404).json({ error: '친구가 아닌 사람의 마이홈은 방문할 수 없어요. 친구를 맺어보세요.' })
+    return
+  }
+
+  const [layout, appearance] = await Promise.all([
+    getFriendRoomView(friendId),
+    getDodoAppearance(friendId),
+  ])
+
+  res.json({ layout, appearance: toAppearanceResponse(appearance) })
 }))
 
 friendsRouter.post('/:friendId/visits', asyncHandler(async (req, res) => {

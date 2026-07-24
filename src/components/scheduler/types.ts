@@ -115,6 +115,20 @@ export type DodoAppearance = {
   accessory: EquippedSlotItem | null
 }
 
+// 친구 마이홈 방문 화면(읽기 전용)에서 실제로 배치된 아이템 하나 — 소유 인스턴스 id는 방문자에게 필요 없어서 뺐다.
+export type FriendRoomLayoutEntry = {
+  itemId: string
+  iconKey: string
+  color: string | null
+  x: number
+  y: number
+}
+
+export type FriendHomeState = {
+  layout: FriendRoomLayoutEntry[]
+  appearance: DodoAppearance
+}
+
 export type DodoDiaryEntry = {
   id: string
   date: string
@@ -136,7 +150,7 @@ export type RoomItem = {
   iconKey: string
   // 두두가 직접 착용하는 아이템(헤드폰 등)인지 여부.
   equippable: boolean
-  // 장식용이지만 두두와 상호작용 가능한 아이템(게임기, 베개 등)인지 여부.
+  // 장식용이지만 두두와 상호작용 가능한 아이템(게임기 등)인지 여부.
   interactable: boolean
   // 사용자가 본체 색을 직접 고를 수 있는 아이템인지 여부(게임기 등).
   colorCustomizable: boolean

@@ -6,7 +6,7 @@ import { requireAuth } from '../auth/requireAuth.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { buildPublicUrl } from '../lib/storage.js'
 import { computeMood, computeTodayBehavior, upsertDailyDiary } from '../lib/dodo.js'
-import { equipRoomItem, getDodoAppearance, unequipRoomItem } from '../lib/dodoAppearance.js'
+import { equipRoomItem, getDodoAppearance, toAppearanceResponse, unequipRoomItem } from '../lib/dodoAppearance.js'
 import type { EquipRoomItemResult } from '../lib/dodoAppearance.js'
 
 export const dodoRouter = Router()
@@ -23,20 +23,6 @@ function todayKey() {
 }
 
 type DiaryWithVideo = DodoDiaryEntry & { representativeVideoPost: VideoPost }
-type AppearanceWithItems = Awaited<ReturnType<typeof getDodoAppearance>>
-
-function toSlotResponse(item: AppearanceWithItems['hatItem'], color: string | null) {
-  return item ? { itemId: item.id, iconKey: item.iconKey, color } : null
-}
-
-function toAppearanceResponse(appearance: AppearanceWithItems) {
-  return {
-    hat: toSlotResponse(appearance.hatItem, appearance.hatColor),
-    glasses: toSlotResponse(appearance.glassesItem, appearance.glassesColor),
-    outfit: toSlotResponse(appearance.outfitItem, appearance.outfitColor),
-    accessory: toSlotResponse(appearance.accessoryItem, appearance.accessoryColor),
-  }
-}
 
 function readInventoryId(body: unknown): string | undefined {
   if (typeof body !== 'object' || body === null) return undefined
