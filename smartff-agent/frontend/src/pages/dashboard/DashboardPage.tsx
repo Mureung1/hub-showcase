@@ -10,14 +10,16 @@ import MarginBarList from '../../components/dashboard/MarginBarList';
 import type { MarginBarItem, WeeklyTrendPoint } from '../../types/dashboard';
 import { eunNeun } from '../../utils/korean';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 async function fetchSummary(): Promise<FinancialSummary> {
-  const res = await fetch('/api/financial/summary');
+  const res = await fetch(`${API_BASE_URL}/api/financial/summary`);
   if (!res.ok) throw new Error(`Financial API Error: ${res.status}`);
   return res.json();
 }
 
 async function fetchRecommendations(): Promise<RecommendationResponse> {
-  const res = await fetch('/api/recommendations');
+  const res = await fetch(`${API_BASE_URL}/api/recommendations`);
   if (!res.ok) throw new Error(`Recommendation API Error: ${res.status}`);
   return res.json();
 }

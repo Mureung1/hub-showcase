@@ -10,6 +10,8 @@ import MonthSelector from '../../components/financial/MonthSelector';
 import CategorySelector, { CATEGORIES } from '../../components/financial/CategorySelector';
 import ProfitStructure from '../../components/financial/ProfitStructure';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 function calcDelta(current: number, prev: number | undefined, goodWhenUp: boolean) {
   if (prev === undefined || prev === 0) return null;
   const pct = ((current - prev) / prev) * 100;
@@ -21,7 +23,7 @@ async function fetchSummary(months: number, category: string): Promise<Financial
   if (category !== '전체') {
     params.set('categories', category);
   }
-  const res = await fetch(`/api/financial/summary?${params}`);
+  const res = await fetch(`${API_BASE_URL}/api/financial/summary?${params}`);
   if (!res.ok) {
     throw new Error(`API Error: ${res.status}`);
   }
