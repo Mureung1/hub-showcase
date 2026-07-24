@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "title": "ICU (I CODE U) - AI 코딩 튜터 데스크탑 서비스",
+  "summary": "오늘의 학습 계획 수립부터 맞춤 커리큘럼 추천, Monaco 에디터 실습, 코드 실행 피드백, Git Lab 명령 학습, 오답노트 관리까지 한 흐름으로 제공하는 AI 코딩 학습 플랫폼입니다.",
+  "githubUser": "xxrin",
+  "demoUrl": "https://github.com/xxriny/hub",
+  "thumbnail": "../screenshots/0_온보딩.PNG",
+  "screenshots": [
+    "../screenshots/0_온보딩.PNG"
+  ],
+  "problem": "개념 문서, 에디터, 실습 환경, 오답 관리가 여러 도구로 파편화되어 있어 초·중급 학습자가 공부 순서를 잡기 어렵고 연속성 있는 학습 흐름을 유지하기 힘듭니다.",
+  "targetUsers": [
+    "어디서부터 학습해야 할지 막막한 개발 입문자 및 학습자",
+    "개념 학습과 코드 실습 및 실행 피드백을 한곳에서 경험하고 싶은 학습자",
+    "실습과 오답 관리를 직관적으로 회고하고 싶은 학습자"
+  ],
+  "features": [
+    "Today Learning Hub: 학습 목표 입력, 맞춤형 AI 커리큘럼 추천 및 오늘 복습 큐 제공",
+    "Learning Workspace IDE: 코드 작성, 튜터 설명, 실행 결과 및 피드백 통합 패널 제공",
+    "Git 시뮬레이터: 커리큘럼 기반 시각적 GIT 커밋 그래프 및 터미널 시뮬레이터 제공",
+    "오답노트 관리: 실패 명령/코드 자동 저장, 수동 오답 등록, 오답 상세 모달 확인 및 출처 레슨 다시 풀기 연동"
+  ],
+  "featureTags": [
+    "AI 커리큘럼 추천",
+    "코드 에디터",
+    "Git 시뮬레이터",
+    "오답노트 관리",
+    "코드 실행 피드백"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Vite",
+    "Zustand",
+    "Monaco Editor",
+    "Express",
+    "SQLite"
+  ],
+  "techHighlights": [
+    "React + Zustand 기반 실시간 학습 상태 관리 및 Monaco Editor 조화로운 IDE 레이아웃 구현",
+    "Express 기반 백엔드 API 서비스와 선택형 SQLite Repository 구조로 이중 모드(Mock/Server) 지원",
+    "Git 시뮬레이션 엔진 및 대화식 터미널 로그와 커밋 그래프 연동 개발",
+    "ICU Design Skill 및 한국어 Conventional Commit 적용으로 일관성 있는 디자인 시스템 및 코드 품질 유지"
+  ],
+  "developmentWithAI": "AI와 함께 개발 목표와 명세를 정리하고, 작업 단위별 구현 및 테스트, 디자인 가이드 준수, 백엔드 API 연동, 오답노트 모달 및 문서화까지 유기적인 pair-programming으로 개발을 완료했습니다.",
+  "agent": {
+    "summary": "Codex 개발 Agent와 Product Design, ICU Product UI, Superpowers Workflow를 활용하고, Ponytail 원칙과 RTK 검증 도구를 결합해 설계부터 구현, 테스트, 문서화, 커밋까지 일관된 개발 흐름을 운영했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Codex 개발 Agent",
+        "purpose": "요구사항 분석, 구현 계획 수립, 코드와 문서 수정, 테스트 작업을 수행합니다."
+      },
+      {
+        "type": "skill",
+        "name": "Product Design",
+        "purpose": "제품 흐름과 화면을 분석하고 사용자 중심의 디자인 방향, UI 대안, 구현 기준을 구체화합니다."
+      },
+      {
+        "type": "skill",
+        "name": "ICU Product UI",
+        "purpose": "ICU의 초보자 친화적 학습 흐름, IDE 밀도, 디자인 토큰, 접근성 기준을 작업에 연결합니다."
+      },
+      {
+        "type": "skill",
+        "name": "Superpowers Workflow",
+        "purpose": "브레인스토밍, 구현 계획, 단계별 실행, 검증과 브랜치 마무리를 체계적인 작업 순서로 연결합니다."
+      },
+      {
+        "type": "tool",
+        "name": "RTK",
+        "purpose": "Git, 테스트, lint, build 명령의 출력을 간결하게 정리해 검증 결과를 빠르게 확인합니다."
+      },
+      {
+        "type": "rule",
+        "name": "Ponytail Working Principle",
+        "purpose": "삭제, 기존 패턴 재사용, 플랫폼 기능, 설정 변경, 최소 구현 순으로 가장 작은 해결책을 선택합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 설계 및 구현 Workflow",
+        "steps": [
+          "요구사항과 기존 구현 및 문서 분석",
+          "Ponytail 원칙으로 최소 변경 범위 결정",
+          "Product Design과 ICU Product UI 기준 검토",
+          "Superpowers Workflow로 구현 계획 작성",
+          "기능 단위 구현과 관련 문서 동기화"
+        ]
+      },
+      {
+        "name": "품질 검증 및 커밋 Workflow",
+        "steps": [
+          "RTK로 Git 변경 범위 확인",
+          "Vitest와 TypeScript typecheck 실행",
+          "ESLint와 앱 및 Preview build 검증",
+          "커밋 전 변경 파일과 핵심 내용 사전 보고",
+          "한국어 Conventional Commit으로 기능 단위 기록"
+        ]
+      }
+    ]
+  }
+}
