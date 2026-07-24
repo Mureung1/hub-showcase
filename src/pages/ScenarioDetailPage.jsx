@@ -3,6 +3,16 @@ import { Link, useParams } from 'react-router-dom';
 import { fetchScenarioById } from '../services/scenariosService';
 import { fetchCommands } from '../services/commandsService';
 
+// CommandDetailPage.jsx의 ClipboardIcon/CheckIcon과 같은 스타일(feather-icon류, currentColor 스트로크)
+// — 텍스트 화살표(↓)보다 이 앱의 기존 아이콘 톤에 맞춰 자연스럽게 보이도록.
+function ChevronDownIcon() {
+    return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+        </svg>
+    );
+}
+
 function ScenarioDetailPage() {
     const { id } = useParams();
     const [scenario, setScenario] = useState(null); // BE(/api/scenarios/:id)가 내려준 시나리오 하나, 없으면(404) null
@@ -80,13 +90,21 @@ function ScenarioDetailPage() {
                     <h2 className="detail-section-title">순서대로 필요한 명령어</h2>
                     <div className="scenario-list">
                         {steps.map((command, index) => (
-                            <Link key={command.id} to={`/commands/${command.id}`} className="scenario-step">
-                                <span className="scenario-step-index">{index + 1}</span>
-                                <span>
-                                    <span className="scenario-step-name">{command.name}</span>
-                                    <p className="scenario-step-summary">{command.summary}</p>
-                                </span>
-                            </Link>
+                            <div key={command.id} className="scenario-step-group">
+                                {/* 첫 스텝 위에는 화살표가 필요 없어서 index > 0일 때만 렌더 */}
+                                {index > 0 && (
+                                    <div className="scenario-step-arrow">
+                                        <ChevronDownIcon />
+                                    </div>
+                                )}
+                                <Link to={`/commands/${command.id}`} className="scenario-step">
+                                    <span className="scenario-step-index">{index + 1}</span>
+                                    <span>
+                                        <span className="scenario-step-name">{command.name}</span>
+                                        <p className="scenario-step-summary">{command.summary}</p>
+                                    </span>
+                                </Link>
+                            </div>
                         ))}
                     </div>
                 </section>

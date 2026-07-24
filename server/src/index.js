@@ -7,7 +7,10 @@ import scenariosRouter from "./routes/scenariosRouter.js";
 
 const app = express();
 
-app.use(cors({ origin: process.env.CORS_ORIGIN }));
+// CORS_ORIGIN은 콤마로 여러 개 지정 가능 (예: Vite가 5173이 사용 중이면 5174로 자동 넘어가는 경우 대비).
+// trim()으로 콤마 뒤 공백까지 안전하게 처리.
+const allowedOrigins = process.env.CORS_ORIGIN?.split(',').map((origin) => origin.trim());
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 app.get("/api/health", (req, res) => {

@@ -72,8 +72,8 @@ export const scenarios = [
   },
   {
     id: 'compile-run-c',
-    title: 'C 프로그램 컴파일하고 실행하기',
-    description: '.c 소스 파일을 실행 파일로 만들어 돌려볼 때',
-    command_ids: ['unix-touch', 'unix-gcc', 'unix-chmod'],
+    title: 'C 프로그램 작성하고 컴파일/실행하기',
+    description: '에디터로 .c 소스 코드를 작성하고 실행 파일로 만들어 돌려볼 때',
+    command_ids: ['unix-nano', 'unix-gcc'],
   },
 ];

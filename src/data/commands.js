@@ -387,6 +387,24 @@ export const commands = [
     ],
   },
   {
+    id: 'unix-nano',
+    category: 'unix',
+    name: 'nano',
+    summary: '터미널에서 실행되는 초보자 친화적 텍스트 에디터',
+    description:
+      "GNU nano의 약자로 \"Nano's ANOther editor\"라는 재귀적 이름을 가진 텍스트 에디터다. vim/emacs와 달리 화면 하단에 사용 가능한 단축키가 항상 표시돼 있어 실습생이 처음 접하기에 부담이 적다. 저장(Ctrl+O)과 종료(Ctrl+X) 두 가지만 외워도 충분히 쓸 수 있다.",
+    options: [
+      { flag: 'Ctrl+O', desc: '현재까지 작성한 내용을 파일에 저장(Write Out), Enter로 파일명 확인' },
+      { flag: 'Ctrl+X', desc: '에디터 종료, 저장 안 한 변경 사항이 있으면 저장 여부를 먼저 물음' },
+      { flag: 'Ctrl+K', desc: '현재 줄을 잘라내기(삭제 후 다시 붙여넣기 가능하게 보관)' },
+      { flag: 'Ctrl+W', desc: '파일 내에서 문자열 검색' },
+    ],
+    examples: [
+      { command: 'nano main.c', desc: 'main.c 파일을 nano로 열어 편집 (없으면 새로 생성)' },
+      { command: 'nano +12 main.c', desc: 'main.c 파일을 12번째 줄에서 바로 열기' },
+    ],
+  },
+  {
     id: 'unix-gcc',
     category: 'unix',
     name: 'gcc',

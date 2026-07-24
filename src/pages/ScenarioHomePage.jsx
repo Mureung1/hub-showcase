@@ -39,12 +39,14 @@ function ScenarioHomePage() {
             )}
 
             {!isLoading && !error && (
-                <div className="category-select-grid">
+                <div className="scenario-menu">
                     {scenarios.map(({ id, title, description, command_ids }) => (
-                        <Link key={id} to={`/scenarios/${id}`} className="category-select-card">
-                            <h2 className="category-select-title">{title}</h2>
-                            <p className="category-select-desc">{description}</p>
-                            <span className="category-select-count">{command_ids.length}개 명령어</span>
+                        <Link key={id} to={`/scenarios/${id}`} className="scenario-menu-item">
+                            <span>
+                                <h2 className="scenario-menu-title">{title}</h2>
+                                <p className="scenario-menu-desc">{description}</p>
+                            </span>
+                            <span className="scenario-menu-count">{command_ids.length}개 명령어</span>
                         </Link>
                     ))}
                 </div>
