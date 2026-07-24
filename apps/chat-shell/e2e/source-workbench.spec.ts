@@ -375,8 +375,16 @@ test('distinguishes product loading, inactive workspace, no Course, empty materi
   mode = 'empty'
   await page.reload()
   await expect(page.getByText('과목이 아직 없습니다', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('과목 이름')).toHaveValue('')
+  await expect(page.getByRole('button', { name: '만들기' })).toBeDisabled()
   await expect(
     page.getByText('등록할 수 있는 TXT 자료가 없습니다', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByText('자료를 선택해 내용을 확인하세요', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByText('자료를 선택하세요', { exact: true }),
   ).toBeVisible()
 
   mode = 'error'

@@ -92,7 +92,7 @@ function MaterialsPane({
   readonly workbench: ReturnType<typeof useSourceWorkbench>
   readonly productChat: ReturnType<typeof useProductChat>
 }) {
-  const [courseName, setCourseName] = useState('문제해결글쓰기')
+  const [courseName, setCourseName] = useState('')
   const view = workbench.workspaceView
   const productBusy = productChat.operationPending
   const mutationPending = workbench.mutationPending || productBusy
@@ -381,7 +381,9 @@ function PreviewPane({
           <p className="eyebrow">Source preview</p>
           <h2>원본 자료</h2>
         </div>
-        <span>{selectedMaterials.length === 2 ? '선택 완료' : '자료 2개를 선택하세요'}</span>
+        <span>
+          {selectedMaterials.length > 0 ? '선택한 자료' : '자료를 선택하세요'}
+        </span>
       </header>
 
       {selectedMaterials.length > 0 ? (
@@ -405,8 +407,8 @@ function PreviewPane({
         {previewView.state === 'idle' ? (
           <div className="preview-empty-state">
             <FileText size={30} />
-            <h3>왼쪽에서 자료 두 개를 선택하세요</h3>
-            <p>선택한 TXT의 실제 원문을 이곳에서 탭으로 비교할 수 있습니다.</p>
+            <h3>자료를 선택해 내용을 확인하세요</h3>
+            <p>왼쪽 자료 목록에서 TXT를 선택하면 이곳에서 원문을 확인할 수 있습니다.</p>
           </div>
         ) : previewView.state === 'loading' ? (
           <div className="preview-empty-state" role="status">
