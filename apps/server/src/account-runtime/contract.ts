@@ -4,6 +4,7 @@ export type AccountRuntimeLeaseFailureCode =
   | 'auth_runtime_close_ambiguous'
   | 'coordinator_closed'
   | 'transition_cancelled'
+  | 'workspace_account_reauth_required'
   | 'workspace_runtime_start_failed'
 
 export type AccountRuntimeLeaseFailure = {

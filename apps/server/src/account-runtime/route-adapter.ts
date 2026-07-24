@@ -49,6 +49,7 @@ export type CreateAccountRuntimeRouteAdapterOptions = {
   readonly attemptId: () => string
   readonly now: () => Date
   readonly wait: (milliseconds: number, signal: AbortSignal) => Promise<void>
+  readonly invalidateReadyAttestation: () => void
   readonly verificationAttempts?: number
   readonly verificationIntervalMs?: number
 }
@@ -104,6 +105,14 @@ export function createAccountRuntimeRouteAdapter(
   let attemptFlight: Promise<PublicPreviewAccountProjection> | undefined
   let shuttingDown = false
 
+  const invalidateReadyForFreshAccount = (
+    account: CodexFreshAccount,
+  ): void => {
+    if (account.state !== 'chatgpt') {
+      options.invalidateReadyAttestation()
+    }
+  }
+
   const readFreshAccount = (
     requestSignal: AbortSignal,
   ): Promise<PublicPreviewAccountProjection> => {
@@ -125,6 +134,12 @@ export function createAccountRuntimeRouteAdapter(
           })
         },
       })
+      if (
+        result.status === 'completed' &&
+        result.result.status === 'ok'
+      ) {
+        invalidateReadyForFreshAccount(result.result.account)
+      }
       projection = projectAccountRead(result)
       return cloneProjection(projection)
     })()
@@ -149,6 +164,7 @@ export function createAccountRuntimeRouteAdapter(
       })
       if (read.status === 'error') break
       account = read.account
+      invalidateReadyForFreshAccount(account)
       if (account.state !== 'signed_out') break
       if (index + 1 < verificationAttempts) {
         await options.wait(verificationIntervalMs, signal)
@@ -327,6 +343,7 @@ export function createAccountRuntimeRouteAdapter(
           if (account.status === 'error') {
             return { status: 'account_error' as const }
           }
+          invalidateReadyForFreshAccount(account.account)
           if (account.account.state !== 'signed_out') {
             return {
               status: 'already_connected' as const,
@@ -533,6 +550,12 @@ export function createAccountRuntimeRouteAdapter(
             })
           } finally {
             controller.release()
+          }
+          if (
+            result.status === 'completed' &&
+            result.result.state !== 'chatgpt'
+          ) {
+            invalidateReadyForFreshAccount(result.result)
           }
           projection =
             result.status === 'completed' &&

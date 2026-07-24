@@ -254,6 +254,7 @@ test('matching pending status is idempotent and completion verifies fresh ChatGP
   )
   assert.ok(completionIndex < freshReadIndex)
   assert.ok(freshReadIndex < releaseIndex)
+  assert.equal(harness.readyInvalidations.count, 2)
 })
 
 test('cancel versus matching completion race lets fresh ChatGPT connection win', async () => {
@@ -381,6 +382,7 @@ test('completion reconciliation retries bounded fresh reads before declaring con
     PUBLIC_PREVIEW_ACCOUNT_FIXTURES.connected,
   )
   assert.deepEqual(waits, [100])
+  assert.equal(harness.readyInvalidations.count, 3)
 })
 
 test('explicit logout is lease-bound, confirms fresh signed-out, and preserves workspace state', async () => {
@@ -409,6 +411,7 @@ test('explicit logout is lease-bound, confirms fresh signed-out, and preserves w
     ['readAccount', 'logout', 'readAccount'],
   )
   assert.deepEqual(harness.workspaceState, workspaceBefore)
+  assert.equal(harness.readyInvalidations.count, 1)
 })
 
 test('unsupported and account failure observations exactly match frozen safe fixtures', async () => {
@@ -421,6 +424,7 @@ test('unsupported and account failure observations exactly match frozen safe fix
     await unsupported.adapter.observe({ signal: signal() }),
     PUBLIC_PREVIEW_ACCOUNT_FIXTURES.unsupportedAccount,
   )
+  assert.equal(unsupported.readyInvalidations.count, 1)
 
   const unavailable = createHarness({
     accountReads: [
@@ -434,6 +438,21 @@ test('unsupported and account failure observations exactly match frozen safe fix
     await unavailable.adapter.observe({ signal: signal() }),
     PUBLIC_PREVIEW_ACCOUNT_FIXTURES.unavailable,
   )
+  assert.equal(unavailable.readyInvalidations.count, 0)
+
+  const aborted = createHarness({
+    accountReads: [
+      { status: 'ok', account: { state: 'signed_out' } },
+    ],
+  })
+  const controller = new AbortController()
+  controller.abort()
+  assertProjection(
+    await aborted.adapter.observe({ signal: controller.signal }),
+    PUBLIC_PREVIEW_ACCOUNT_FIXTURES.unavailable,
+  )
+  assert.equal(aborted.readyInvalidations.count, 0)
+  assert.equal(aborted.runtime.calls.length, 0)
 })
 
 test('account retry performs another fresh managed read through the shared lease', async () => {
@@ -719,6 +738,7 @@ function createHarness(
     locator: 'workspace_locator_preserved',
     academicRevision: 7,
   }
+  const readyInvalidations = { count: 0 }
   let adapter: AccountRuntimeRouteAdapter | undefined
   const coordinator = createAccountRuntimeCoordinator<
     CodexFreshAccount,
@@ -760,6 +780,9 @@ function createHarness(
     attemptId: () => 'account_attempt_primary',
     now: () => new Date('2026-07-23T11:50:00.000Z'),
     wait: adapterOptions.wait ?? (async () => undefined),
+    invalidateReadyAttestation: () => {
+      readyInvalidations.count += 1
+    },
     verificationAttempts: adapterOptions.verificationAttempts,
     verificationIntervalMs: adapterOptions.verificationIntervalMs,
   })
@@ -767,6 +790,7 @@ function createHarness(
     adapter,
     coordinator,
     runtime,
+    readyInvalidations,
     transitionCalls,
     workspaceState,
   }

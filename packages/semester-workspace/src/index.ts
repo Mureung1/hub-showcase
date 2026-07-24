@@ -44,9 +44,15 @@ export type {
   SetupEnvelopeStoreOptions,
 } from './setup-envelope-store.js'
 export {
+  createLeaseBoundSemesterSetupJourney,
   createSemesterSetupJourney,
+  SemesterReadyValidationError,
 } from './setup-journey.js'
 export type {
+  LeaseBoundSemesterSetupJourneyOptions,
+  SemesterReadyValidationFailureReason,
+  SemesterReadyTransitionPort,
+  SemesterReadyTransitionResult,
   SemesterSetupJourneyFaultPoint,
   SemesterSetupJourneyOptions,
   SemesterSetupJourneyProjection,

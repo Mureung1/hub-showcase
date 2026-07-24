@@ -450,7 +450,10 @@ for (const rejectedAccount of [
       {
         status: 'failed',
         error: {
-          code: 'account_unavailable',
+          code:
+            rejectedAccount.state === 'signed_out'
+              ? 'workspace_account_reauth_required'
+              : 'account_unavailable',
           retryable: true,
           restartRequired: false,
         },

@@ -70,7 +70,7 @@ Official Codex가 소유하는 account lifecycle과 AY-PLE의 auth-only→worksp
 | Review finding 2 | Workspace Runtime의 fresh account가 `signed_out` 또는 `unsupported`여도 B-owned Ready callback과 readback을 호출할 수 있었다. |
 | Corrective code tip | `cad4784284793901bc54fd736f8faf9c34401cfd` — close reject를 `auth_runtime_close_ambiguous`로 변환하고 같은 failure를 latch하며, fresh `chatgpt` account만 B callback에 넘기는 A-owned refinement를 추가했다. |
 | Close regression | Rejecting close를 두 번 요청해도 close 1회, workspace Runtime start 0회, B commit 0회다. Private cause는 optional diagnostic callback에만 전달되고 reporter failure가 latch를 약화하지 않는다. |
-| Account admission regression | Fresh `chatgpt`는 B commit→Ready readback까지 같은 lease에서 성공한다. Fresh `signed_out`, `unsupported`와 thrown read는 B commit/readback 0회로 `account_unavailable` 또는 cancellation에 수렴하며 retry는 이미 시작한 같은 Runtime generation을 재사용한다. |
+| Account admission regression | Exact A1 corrective candidate에서 fresh `chatgpt`는 B commit→Ready readback까지 같은 lease에서 성공했다. Fresh `signed_out`, `unsupported`와 thrown read는 B commit/readback 0회로 `account_unavailable` 또는 cancellation에 수렴했고 retry는 이미 시작한 같은 Runtime generation을 재사용했다. Fresh `signed_out`의 current recovery classification은 아래 post-completion refinement가 대체한다. |
 | Focused verification | Account coordinator와 route adapter `33/33`; complete Server `185/185`; Server typecheck와 `git diff --check` green. |
 | Repository gates | Exact corrective code tip에서 root `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs links와 diff check가 green이다. Docs link result는 active 28, historical 2다. |
 | Scope audit | Frozen `account-runtime/contract.ts`, shared manifest·lockfile, sibling branches와 Official Codex SDK source/patch stack은 변경하지 않았다. |
@@ -85,10 +85,16 @@ Official Codex가 소유하는 account lifecycle과 AY-PLE의 auth-only→worksp
 | Exact reviewed candidate | `45595647e18b44ad5735bdd8e364e0b38bdc436d` |
 | Historical disposition | Initial feature candidate는 auth-only close reject와 non-ChatGPT fresh account admission이라는 P1 두 건으로 NOT PASS였다. Corrective implementation이 두 failure를 fail-closed 경계로 옮긴 뒤 exact candidate를 다시 검토했다. |
 | Close probes | Rejecting close와 throwing diagnostic reporter를 포함한 first+retry 전체에서 auth-only close `1`, workspace Runtime start `0`, Ready commit `0`, Ready readback `0`이다. Ambiguous result는 restart-required로 latch된다. |
-| Fresh account probes | Fresh `signed_out`와 `unsupported`는 각각 Ready commit/readback `0`이다. Thrown read 뒤 retry 전체의 workspace Runtime start는 `1`이고, fresh `chatgpt`가 확인된 뒤에만 Ready가 성공한다. |
+| Fresh account probes | Exact reviewed A1 candidate에서 fresh `signed_out`와 `unsupported`는 각각 Ready commit/readback `0`이었다. Thrown read 뒤 retry 전체의 workspace Runtime start는 `1`이고, fresh `chatgpt`가 확인된 뒤에만 Ready가 성공했다. 당시 두 non-ChatGPT 상태의 public recovery 분류는 `account_unavailable`이었으며, 아래 refinement가 fresh `signed_out`만 더 정확히 분리한다. |
 | Independent automatic evidence | Complete Server `185/185`, Server typecheck와 `git diff --check`가 exact reviewed candidate에서 green이다. |
 | Review disposition | Independent Standards와 parent Spec focused review는 P1/P2 finding `0`으로 PASS다. |
 | Completion | A1 구현과 evidence는 complete다. Canonical integration 및 아래 downstream composition은 coordinator가 소유한다. |
+
+## Post-completion Coordinator-authorized Refinement
+
+Ticket 013의 exact reviewed candidate와 completion receipt는 위 표 그대로 유지한다. B2b integration에서 workspace bytes를 보존한 reauth recovery를 Browser-safe하게 구분할 필요가 확인돼, coordinator가 A-owned `account-runtime/contract.ts`와 `coordinator.ts`의 최소 semantic refinement만 별도로 허용했다.
+
+Current transition behavior는 fresh `signed_out`를 `workspace_account_reauth_required`, fresh `unsupported`와 thrown/unavailable read를 `account_unavailable`로 분류한다. 이 refinement는 Ready callback/readback 0, already-started workspace Runtime generation reuse와 A1 lease ordering을 바꾸지 않고 recovery reason만 보존한다. Semantic classification은 `b34697d57ebefb83a5d0a2b42c0c56dd14d34731`에서 구현됐고, B2b corrective code tip `1ac52a66438b9eb8589c3c021eee41b2dfee1444`이 이를 유지하면서 성공한 fresh non-ChatGPT route 관찰의 Ready-attestation invalidation과 실제 reauth→reconnect→explicit resume seam을 추가했다. B2b fixed-SHA review가 이 downstream delta를 다시 소유한다.
 
 ## Downstream Composition Obligations
 

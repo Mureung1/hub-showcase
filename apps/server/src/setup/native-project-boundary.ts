@@ -28,7 +28,9 @@ export type WorkspaceNativeBoundaryVerification =
 
 export interface WorkspaceNativeProjectBoundary {
   readonly workspace: AdmittedSemesterWorkspace
-  verify(): Promise<WorkspaceNativeBoundaryVerification>
+  verify(input?: {
+    readonly signal?: AbortSignal
+  }): Promise<WorkspaceNativeBoundaryVerification>
 }
 
 export function createWorkspaceNativeProjectBoundary(input: {
@@ -51,12 +53,13 @@ export function createWorkspaceNativeProjectBoundary(input: {
 
   return {
     workspace,
-    verify(): Promise<WorkspaceNativeBoundaryVerification> {
+    verify(verificationInput): Promise<WorkspaceNativeBoundaryVerification> {
       if (verificationInFlight) return verificationInFlight
       const verification = verifyWorkspaceNativeProjectBoundary({
         workspace,
         controlledRoots,
         nativeContext: input.nativeContext,
+        signal: verificationInput?.signal,
       }).finally(() => {
         if (verificationInFlight === verification) {
           verificationInFlight = undefined
@@ -72,6 +75,7 @@ async function verifyWorkspaceNativeProjectBoundary(input: {
   readonly workspace: AdmittedSemesterWorkspace
   readonly controlledRoots: WorkspaceControlledRoots
   readonly nativeContext: CodexNativeContextPort
+  readonly signal?: AbortSignal
 }): Promise<WorkspaceNativeBoundaryVerification> {
   const rootVerification = await verifyControlledRoots(
     input.controlledRoots,
@@ -81,16 +85,26 @@ async function verifyWorkspaceNativeProjectBoundary(input: {
   if (staticContext.status === 'blocked') return staticContext
 
   const controller = new AbortController()
-  const configRead = input.nativeContext.readEffectiveConfig({
-    signal: controller.signal,
-  })
-  const skillsRead = input.nativeContext.listEffectiveSkills({
-    signal: controller.signal,
-  })
+  const abortNativeReads = () => {
+    controller.abort(input.signal?.reason)
+  }
+  if (input.signal?.aborted) {
+    abortNativeReads()
+  } else {
+    input.signal?.addEventListener('abort', abortNativeReads, {
+      once: true,
+    })
+  }
   const [configOutcome, skillsOutcome] = await Promise.allSettled([
-    configRead,
-    skillsRead,
-  ])
+    input.nativeContext.readEffectiveConfig({
+      signal: controller.signal,
+    }),
+    input.nativeContext.listEffectiveSkills({
+      signal: controller.signal,
+    }),
+  ]).finally(() => {
+    input.signal?.removeEventListener('abort', abortNativeReads)
+  })
   if (configOutcome.status === 'rejected') {
     return { status: 'blocked', reason: 'config_conflict' }
   }
