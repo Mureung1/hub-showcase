@@ -6,7 +6,6 @@ import ChevronIcon from '../components/ChevronIcon.jsx'
 import DateRangeExport from '../components/DateRangeExport.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import NutritionStatusPanel from '../components/NutritionStatusPanel.jsx'
-import ScreenHeader from '../components/ScreenHeader.jsx'
 import Spinner from '../components/Spinner.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { getMealsByDateRange } from '../lib/dataStore.js'
@@ -208,8 +207,8 @@ export default function Calendar() {
 
   return (
     <div style={styles.page}>
-      <ScreenHeader title="달력" subtitle="날짜별 식사 기록과 영양 상태를 확인해보세요" />
-
+      {/* 화면 제목("달력")과 설명 줄은 두지 않는다 — 하단 탭바가 이미 현재 화면을 알려주고,
+          달력 UI 자체가 무슨 화면인지 바로 보여준다. */}
       <Card>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
           <button

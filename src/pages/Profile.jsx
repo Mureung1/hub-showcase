@@ -222,10 +222,10 @@ export default function Profile() {
 
   return (
     <div style={styles.page}>
-      <ScreenHeader
-        title={isOnboarding ? '내 정보 입력' : 'MY'}
-        subtitle={isOnboarding ? '정확한 영양 분석을 위해 알려주세요' : '건강 정보와 하루 권장 섭취량을 확인해보세요'}
-      />
+      {/* 화면 제목은 온보딩(첫 입력)일 때만 둔다. MY 탭 상태에서는 하단 탭바가 이미 현재 화면을
+          알려주므로 "MY" 제목/설명 줄이 중복이지만, 온보딩은 탭 이동이 아니라 "지금 이걸 입력해달라"는
+          할 일 화면이라 제목이 역할을 한다. */}
+      {isOnboarding && <ScreenHeader title="내 정보 입력" subtitle="정확한 영양 분석을 위해 알려주세요" />}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: spacing.md }}>
         {authMode === 'user' ? (

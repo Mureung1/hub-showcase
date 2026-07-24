@@ -9,7 +9,6 @@ import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import NationalComparisonCard from '../components/NationalComparisonCard.jsx'
 import { NutrientBars } from '../components/NutritionCard.jsx'
 import ProgressBarFill from '../components/ProgressBarFill.jsx'
-import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import SourceBadge from '../components/SourceBadge.jsx'
@@ -262,8 +261,8 @@ export default function MealsPage() {
 
   return (
     <div style={styles.page}>
-      <ScreenHeader title="식단" subtitle="오늘 먹은 음식과 남은 목표를 확인해보세요" />
-
+      {/* 화면 제목("식단")과 설명 줄은 두지 않는다 — 하단 탭바가 이미 현재 화면을 알려주므로
+          중복이고, 그만큼 첫 카드를 위로 올려 한 화면에 담기는 정보를 늘린다. */}
       {recommended ? (
         <Card>
           <h2 style={{ fontSize: font.size.lg, margin: `0 0 ${spacing.lg}px` }}>오늘의 영양 섭취량</h2>

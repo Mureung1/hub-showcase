@@ -4,7 +4,6 @@ import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import NaverPlaceMap from '../components/NaverPlaceMap.jsx'
 import PlaceList from '../components/PlaceList.jsx'
-import ScreenHeader from '../components/ScreenHeader.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import Spinner from '../components/Spinner.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
@@ -350,8 +349,8 @@ export default function MapPage() {
 
   return (
     <div style={styles.page}>
-      <ScreenHeader title="지도" subtitle="오늘 부족한 영양소를 보충할 식당을 찾아보세요" />
-
+      {/* 화면 제목("지도")과 설명 줄은 두지 않는다 — 하단 탭바가 이미 현재 화면을 알려주므로
+          중복이고, 지도를 위로 올려 한 화면에 더 넓게 보여준다. */}
       <div style={{ marginBottom: spacing.md }}>
         {myPosition ? (
           <NaverPlaceMap myPosition={myPosition} places={mapPlaces} />
