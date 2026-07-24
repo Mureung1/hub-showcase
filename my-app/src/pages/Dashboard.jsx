@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import BlogHealthCard from "../components/BlogHealthCard";
 import BrandSummaryCard from "../components/BrandSummaryCard";
@@ -16,6 +16,10 @@ function Dashboard() {
   const { data: briefing, error: briefingError } = useBriefing();
   const { data: insight, error: insightError } = useInsights();
   const { data: posts, error: postsError } = usePosts();
+
+  if (brandProfileError?.code === "BRAND_PROFILE_NOT_FOUND") {
+    return <Navigate to="/onboarding" replace />;
+  }
 
   const error = brandProfileError ?? briefingError ?? insightError ?? postsError;
   if (error) {
