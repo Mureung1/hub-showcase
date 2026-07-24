@@ -42,11 +42,14 @@ router.post('/dev-login', async (req, res, next) => {
       }
     }
 
+    const mockNickname = Number(userId) === 1 ? '방장 민지' : '참여자 서준';
+    if (user.nickname !== mockNickname) await user.update({ nickname: mockNickname });
+
     const accessToken = jwt.sign({ sub: user.id }, env.jwt.accessSecret, {
       expiresIn: env.jwt.accessExpiresIn,
     });
 
-    return res.json({ success: true, data: { accessToken }, error: null });
+    return res.json({ success: true, data: { accessToken, user: { id: user.id, nickname: user.nickname } }, error: null });
   } catch (err) {
     return next(err);
   }

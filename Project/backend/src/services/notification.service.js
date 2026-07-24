@@ -17,20 +17,23 @@ async function notifyParticipantsOfStatus(groupPurchaseId, status) {
     UserGroupPurchase.findAll({ where: { groupPurchaseId }, include: [{ model: User, attributes: ['id', 'email', 'nickname'] }] }),
   ]);
   if (!purchase) return [];
+  const paymentGuide = status === 'COMPLETED' && purchase.paymentAccount
+    ? `\n입금 계좌: ${purchase.paymentAccount}\n입금 후 서비스에서 '입금 완료했어요'를 눌러 주세요.`
+    : '';
 
   return Promise.all(applications.map(async (application) => {
     const notification = await Notification.create({
       userId: application.userId,
       groupPurchaseId,
       title: template.title,
-      content: `[${purchase.title}] ${template.content}`,
+      content: `[${purchase.title}] ${template.content}${paymentGuide}`,
       type: 'EMAIL',
     });
     try {
       const result = await sendMail({
         to: application.User.email,
         subject: `[ThingDong] ${template.title}`,
-        text: `[${purchase.title}]\n${template.content}`,
+        text: `[${purchase.title}]\n${template.content}${paymentGuide}`,
       });
       if (result.sent) await notification.update({ sentAt: new Date() });
     } catch (error) {
@@ -40,4 +43,24 @@ async function notifyParticipantsOfStatus(groupPurchaseId, status) {
   }));
 }
 
-module.exports = { notifyParticipantsOfStatus };
+async function notifyHostOfPaymentReport(groupPurchaseId, application) {
+  const [purchase, host, participant] = await Promise.all([
+    GroupPurchase.findByPk(groupPurchaseId),
+    User.findByPk(application.hostId),
+    User.findByPk(application.userId),
+  ]);
+  if (!purchase || !host || !participant) return null;
+
+  const title = '참여자가 입금 완료를 신고했어요';
+  const content = `[${purchase.title}] ${participant.nickname}님이 입금 완료를 신고했습니다. 계좌 내역을 확인한 뒤 입금 확인 버튼을 눌러 주세요.`;
+  const notification = await Notification.create({ userId: host.id, groupPurchaseId, title, content, type: 'EMAIL' });
+  try {
+    const result = await sendMail({ to: host.email, subject: `[ThingDong] ${title}`, text: content });
+    if (result.sent) await notification.update({ sentAt: new Date() });
+  } catch (error) {
+    console.error('[notification] host payment report email failed:', error.message);
+  }
+  return notification;
+}
+
+module.exports = { notifyParticipantsOfStatus, notifyHostOfPaymentReport };

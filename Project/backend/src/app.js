@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const env = require('./config/env');
 const devAuthRoutes = require('./routes/devAuth.routes');
 const groupPurchaseRoutes = require('./routes/groupPurchase.routes');
+const notificationRoutes = require('./routes/notification.routes');
 const errorHandler = require('./middlewares/errorHandler');
 
 const app = express();
@@ -32,6 +33,7 @@ if (env.enableDevLogin) {
 }
 
 app.use('/group-purchases', groupPurchaseRoutes);
+app.use('/notifications', notificationRoutes);
 
 app.use(errorHandler);
 

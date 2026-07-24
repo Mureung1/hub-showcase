@@ -26,6 +26,14 @@ const GroupPurchase = sequelize.define(
       type: DataTypes.STRING(1000),
       allowNull: false,
     },
+    imageUrl: {
+      type: DataTypes.TEXT('medium'),
+      allowNull: true,
+    },
+    imageUrls: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
     totalPrice: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -39,7 +47,7 @@ const GroupPurchase = sequelize.define(
     currentParticipants: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 0,
+      defaultValue: 1,
       validate: { min: 0 },
     },
     perPersonPrice: {
@@ -59,8 +67,16 @@ const GroupPurchase = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
+    pickupDetailAddress: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
     pickupTimeSlot: {
       type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    paymentAccount: {
+      type: DataTypes.STRING(150),
       allowNull: true,
     },
     category: {
