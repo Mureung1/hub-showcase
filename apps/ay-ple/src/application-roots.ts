@@ -18,7 +18,7 @@ import type {
   PublicPreviewWorkspaceTargetGuard,
 } from '@ay-ple/server'
 
-type ApplicationUserRecord = {
+export type ApplicationUserRecord = {
   readonly homedir: string
   readonly uid: number
 }
@@ -93,8 +93,25 @@ export async function createApplicationRoots(input: {
   readonly packageRoot: string
   readonly admittedWorkspace?: AdmittedSemesterWorkspace | null
 }): Promise<PreparedApplicationRoots> {
+  return createApplicationRootsForUser(
+    input,
+    readApplicationUserRecord(),
+  )
+}
+
+/**
+ * Staged startup snapshots the OS user record before compatibility probes and
+ * gives the same authority to root provisioning after every read-only check.
+ */
+export function createApplicationRootsForUser(
+  input: {
+    readonly packageRoot: string
+    readonly admittedWorkspace?: AdmittedSemesterWorkspace | null
+  },
+  user: ApplicationUserRecord,
+): Promise<PreparedApplicationRoots> {
   return createApplicationRootsForTesting(input, {
-    userInfo: readApplicationUserRecord,
+    userInfo: () => user,
   })
 }
 
