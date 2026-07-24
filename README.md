@@ -344,7 +344,7 @@ uv run scripts/verify_supabase.py
 
 ### 품질과 협업
 
-- [구현 완료 판정 기준](docs/quality/README.md)
+- [구현 완료 판정 기준](docs/quality/verification-guide.md)
 - [RSS 수집 검증 기준](docs/quality/rss-dry-run.md)
 - [AI 에이전트 운영 전략](docs/plan/process/agent-strategy.md)
 - [AI 협업 요청 사이클](.agents/templates/README.md)
