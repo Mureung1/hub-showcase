@@ -1,73 +1,71 @@
 :root {
-  /* Background */
-  --bg-top: #f4ead9;
-  --bg-bottom: #e2d1b3;
+  /* Background — 단색 (그라데이션 제거) */
+  --bg-top: #fbf8f3;
 
-  /* Surfaces (the three card types) */
-  --surface-glass: rgba(255, 255, 255, 0.5);
-  --surface-glass-border: rgba(255, 255, 255, 0.75);
-  --surface-solid: #fdfbf7;
+  /* Surfaces */
+  --surface-glass: #ffffff;
+  --surface-glass-border: #ede7dd;
+  --surface-solid: #ffffff;
   --surface-dark: #17140f;
 
-  /* Accent (orange) */
+  /* Accent */
   --accent: #ea7a2b;
   --accent-soft: #f3a768;
-  --accent-glow: #ffc493;
 
-  /* Semantic (separate from accent) */
+  /* Semantic */
   --positive: #4a8c5f;
   --warning: #c98a1f;
 
   /* Text */
   --ink: #1c1810;
-  --ink-mute: #83786a;
+  --ink-mute: #857a6b;
   --cream: #f6efe4;
   --cream-mute: #a49a89;
 
-  --line: rgba(28, 24, 16, 0.08);
+  --line: #f3ede3;
 
-  --radius-app: 30px;
-  --radius-card: 22px;
+  --radius-card: 14px;
   --radius-pill: 999px;
+
+  /* Layout */
+  --w-wide: 1200px;
+  --w-narrow: 720px;
+  --header-h: 64px;
 
   --font-display: -apple-system, "Segoe UI Semibold", "Segoe UI", "Avenir Next", "Century Gothic", sans-serif;
   --font-body: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  --shadow-glass: 0 20px 50px rgba(90, 62, 21, 0.14);
-  --shadow-solid: 0 16px 40px rgba(90, 62, 21, 0.12);
-  --shadow-dark: 0 16px 34px rgba(0, 0, 0, 0.28);
+  /* 경계는 그림자가 아니라 보더가 담당한다. 그림자는 호버에서만. */
+  --shadow-glass: none;
+  --shadow-solid: none;
+  --shadow-dark: none;
+  --shadow-card-hover: 0 2px 8px rgba(90, 62, 21, 0.08);
 }
 
 :root[data-theme="dark"] {
-  --bg-top: #221d18;
-  --bg-bottom: #14110d;
-  --surface-glass: rgba(255, 255, 255, 0.07);
-  --surface-glass-border: rgba(255, 255, 255, 0.14);
-  --surface-solid: #221e18;
+  --bg-top: #17150f;
+  --surface-glass: #211e19;
+  --surface-glass-border: #332e26;
+  --surface-solid: #211e19;
   --surface-dark: #0e0c09;
   --ink: #f2ead9;
   --ink-mute: #a89d89;
   --cream-mute: #7d7466;
-  --line: rgba(255, 255, 255, 0.09);
-  --shadow-glass: 0 20px 50px rgba(0, 0, 0, 0.45);
-  --shadow-solid: 0 16px 40px rgba(0, 0, 0, 0.4);
-  --shadow-dark: 0 16px 34px rgba(0, 0, 0, 0.5);
+  --line: #2a251e;
+  --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg-top: #221d18;
-    --bg-bottom: #14110d;
-    --surface-glass: rgba(255, 255, 255, 0.07);
-    --surface-glass-border: rgba(255, 255, 255, 0.14);
-    --surface-solid: #221e18;
+    --bg-top: #17150f;
+    --surface-glass: #211e19;
+    --surface-glass-border: #332e26;
+    --surface-solid: #211e19;
     --surface-dark: #0e0c09;
     --ink: #f2ead9;
     --ink-mute: #a89d89;
     --cream-mute: #7d7466;
-    --line: rgba(255, 255, 255, 0.09);
-    --shadow-glass: 0 20px 50px rgba(0, 0, 0, 0.45);
-    --shadow-solid: 0 16px 40px rgba(0, 0, 0, 0.4);
-    --shadow-dark: 0 16px 34px rgba(0, 0, 0, 0.5);
+    --line: #2a251e;
+    --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.4);
   }
 }
