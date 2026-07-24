@@ -147,6 +147,26 @@ type ResumePlanContext = {
 
 type PlanContext = CreatePlanContext | ResumePlanContext
 
+export interface RestorableSemesterWorkspaceAdmission
+  extends SemesterWorkspaceAdmission {
+  restore(
+    description: WorkspaceAdmissionPlanDescription,
+  ): Promise<AuthorityBoundWorkspacePlan | null>
+}
+
+type WorkspaceAdmissionPlanEvidenceForTesting = {
+  readonly plan: AuthorityBoundWorkspacePlan
+  readonly description: WorkspaceAdmissionPlanDescription
+  readonly authorityDigest: string
+  readonly markerBytesBase64: string
+  readonly aggregateBytesBase64: string
+}
+
+const admissionPlanContexts = new WeakMap<
+  RestorableSemesterWorkspaceAdmission,
+  Map<string, PlanContext>
+>()
+
 type RootClassification =
   | {
       readonly status: 'current_v3'
@@ -160,22 +180,22 @@ type RootClassification =
   | { readonly status: 'unavailable' }
 
 export function createSemesterWorkspaceAdmission(
-): SemesterWorkspaceAdmission {
+): RestorableSemesterWorkspaceAdmission {
   return createSemesterWorkspaceAdmissionModule({})
 }
 
 export function createSemesterWorkspaceAdmissionForTesting(
   options: SemesterWorkspaceAdmissionTestOptions,
-): SemesterWorkspaceAdmission {
+): RestorableSemesterWorkspaceAdmission {
   return createSemesterWorkspaceAdmissionModule(options)
 }
 
 function createSemesterWorkspaceAdmissionModule(
   options: SemesterWorkspaceAdmissionTestOptions,
-): SemesterWorkspaceAdmission {
+): RestorableSemesterWorkspaceAdmission {
   const plans = new Map<string, PlanContext>()
 
-  return {
+  const admission: RestorableSemesterWorkspaceAdmission = {
     async inspect(intent): Promise<WorkspaceInspection> {
       if (!intent || typeof intent !== 'object') {
         return { outcome: 'unsafe', readOnly: false }
@@ -208,6 +228,12 @@ function createSemesterWorkspaceAdmissionModule(
       return describeCreatePlan(context)
     },
 
+    async restore(
+      description: WorkspaceAdmissionPlanDescription,
+    ): Promise<AuthorityBoundWorkspacePlan | null> {
+      return restoreCreatePlan(description, plans)
+    },
+
     async apply(plan): Promise<WorkspaceApplyResult> {
       const context = plans.get(plan.planId)
       if (!context || !samePlan(context.plan, plan)) {
@@ -226,6 +252,30 @@ function createSemesterWorkspaceAdmissionModule(
         return { outcome: 'unavailable' }
       }
     },
+  }
+  admissionPlanContexts.set(admission, plans)
+  return admission
+}
+
+export function readWorkspaceAdmissionPlanEvidenceForTesting(
+  admission: RestorableSemesterWorkspaceAdmission,
+  plan: AuthorityBoundWorkspacePlan,
+): WorkspaceAdmissionPlanEvidenceForTesting {
+  const context = admissionPlanContexts.get(admission)?.get(plan.planId)
+  if (
+    !context ||
+    context.kind !== 'create' ||
+    !samePlan(context.plan, plan)
+  ) {
+    throw new TypeError('Unknown workspace admission plan.')
+  }
+  return {
+    plan: cloneAuthorityBoundWorkspacePlan(context.plan),
+    description: describeCreatePlan(context),
+    authorityDigest: context.planned.evidence.authorityDigest,
+    markerBytesBase64: context.planned.markerBytes.toString('base64'),
+    aggregateBytesBase64:
+      context.planned.aggregateBytes.toString('base64'),
   }
 }
 
@@ -262,6 +312,131 @@ function describeCreatePlan(
         expectedInitialAggregateSha256: authority.aggregateSha256,
       },
     },
+  }
+}
+
+async function restoreCreatePlan(
+  description: WorkspaceAdmissionPlanDescription,
+  plans: Map<string, PlanContext>,
+): Promise<AuthorityBoundWorkspacePlan | null> {
+  const decoded = decodeRestorablePlanDescription(description)
+  if (!decoded) return null
+  const parentState = await inspectCanonicalParent(decoded.parent)
+  if (parentState !== 'current') return null
+  const targetState = await lstatOutcome(decoded.canonicalRoot)
+  if (targetState.status !== 'absent') return null
+
+  const candidate = planCreateAdmission({
+    parent: decoded.parent,
+    leafName: decoded.leafName,
+    canonicalRoot: decoded.canonicalRoot,
+    semester: decoded.semester,
+    setupPlanId: decoded.setupPlanId,
+    workspaceId: decoded.workspaceId,
+  })
+  const context = {
+    kind: 'create',
+    plan: cloneAuthorityBoundWorkspacePlan(candidate.plan),
+    planned: candidate.planned,
+  } as const satisfies CreatePlanContext
+  if (
+    canonicalJson(describeCreatePlan(context)) !==
+    canonicalJson(description)
+  ) {
+    return null
+  }
+  plans.set(context.plan.planId, context)
+  return cloneAuthorityBoundWorkspacePlan(context.plan)
+}
+
+function decodeRestorablePlanDescription(
+  value: unknown,
+): {
+  readonly setupPlanId: string
+  readonly parent: WorkspaceParentAuthority
+  readonly leafName: string
+  readonly canonicalRoot: string
+  readonly semester: SemesterIdentity
+  readonly workspaceId: string
+} | null {
+  if (
+    !isExactRecord(value, ['privateBinding', 'setupPlanId']) ||
+    !isOpaqueIdentity(value.setupPlanId) ||
+    !isExactRecord(value.privateBinding, ['plan', 'workspace']) ||
+    !isExactRecord(value.privateBinding.plan, [
+      'canonicalBytesSha256',
+      'semester',
+      'target',
+    ]) ||
+    !isSha256(value.privateBinding.plan.canonicalBytesSha256) ||
+    !isSemesterIdentity(value.privateBinding.plan.semester) ||
+    !isExactRecord(value.privateBinding.plan.target, [
+      'canonicalParent',
+      'canonicalTarget',
+      'leafName',
+      'parentDevice',
+      'parentInode',
+    ]) ||
+    !isCanonicalAbsolutePath(
+      value.privateBinding.plan.target.canonicalParent,
+    ) ||
+    !isCanonicalAbsolutePath(
+      value.privateBinding.plan.target.canonicalTarget,
+    ) ||
+    !isSafeLeafName(value.privateBinding.plan.target.leafName) ||
+    !isOpaqueIdentity(value.privateBinding.plan.target.parentDevice) ||
+    !isOpaqueIdentity(value.privateBinding.plan.target.parentInode) ||
+    path.join(
+      value.privateBinding.plan.target.canonicalParent,
+      value.privateBinding.plan.target.leafName,
+    ) !== value.privateBinding.plan.target.canonicalTarget ||
+    !isStrictChild(
+      value.privateBinding.plan.target.canonicalParent,
+      value.privateBinding.plan.target.canonicalTarget,
+    ) ||
+    !isExactRecord(value.privateBinding.workspace, [
+      'expectedInitialAggregateSha256',
+      'formatVersion',
+      'ownedScaffoldPlanSha256',
+      'rootMarkerSha256',
+      'workspaceId',
+    ]) ||
+    !isWorkspaceId(value.privateBinding.workspace.workspaceId) ||
+    value.privateBinding.workspace.formatVersion !== 3 ||
+    !isSha256(value.privateBinding.workspace.rootMarkerSha256) ||
+    !isSha256(
+      value.privateBinding.workspace.ownedScaffoldPlanSha256,
+    ) ||
+    !isSha256(
+      value.privateBinding.workspace.expectedInitialAggregateSha256,
+    )
+  ) {
+    return null
+  }
+  const target = value.privateBinding.plan.target as {
+    readonly canonicalParent: string
+    readonly canonicalTarget: string
+    readonly leafName: string
+    readonly parentDevice: string
+    readonly parentInode: string
+  }
+  const semester = value.privateBinding.plan
+    .semester as SemesterIdentity
+  const workspace = value.privateBinding.workspace as {
+    readonly workspaceId: string
+  }
+  return {
+    setupPlanId: value.setupPlanId,
+    parent: {
+      selectionId: storedParentSelectionId(value.setupPlanId),
+      canonicalParent: target.canonicalParent,
+      parentDevice: target.parentDevice,
+      parentInode: target.parentInode,
+    },
+    leafName: target.leafName,
+    canonicalRoot: target.canonicalTarget,
+    semester: cloneSemesterIdentity(semester),
+    workspaceId: workspace.workspaceId,
   }
 }
 
@@ -919,14 +1094,21 @@ function planCreateAdmission(input: {
   readonly leafName: string
   readonly canonicalRoot: string
   readonly semester: SemesterIdentity
+  readonly setupPlanId?: string
+  readonly workspaceId?: string
 }): {
   readonly plan: AuthorityBoundWorkspacePlan
   readonly planned: DecodedAdmissionEvidence
 } {
-  const setupPlanId = `workspace_plan_${randomHex()}`
-  const setupNonce = randomHex()
+  const setupPlanId =
+    input.setupPlanId ?? `workspace_plan_${randomHex()}`
+  const setupNonce = admissionSetupNonce(setupPlanId)
+  const parent = {
+    ...cloneParentAuthority(input.parent),
+    selectionId: storedParentSelectionId(setupPlanId),
+  }
   const aggregate = createInitialSemesterWorkspaceV3({
-    workspaceId: `workspace_${randomHex()}`,
+    workspaceId: input.workspaceId ?? `workspace_${randomHex()}`,
     semester: input.semester,
   })
   const aggregateBytes = encodeSemesterWorkspaceV3(aggregate)
@@ -946,7 +1128,7 @@ function planCreateAdmission(input: {
     setupNonce,
     operation: 'create',
     canonicalRoot: input.canonicalRoot,
-    parent: cloneParentAuthority(input.parent),
+    parent,
     leafName: input.leafName,
     workspaceId: aggregate.manifest.workspaceId,
     aggregateBytesBase64: aggregateBytes.toString('base64'),
@@ -2076,6 +2258,20 @@ function admissionSetupPlanBinding(input: {
       ),
     )
     .digest('hex')
+}
+
+function admissionSetupNonce(setupPlanId: string): string {
+  return sha256Canonical({
+    domain: 'ay-ple.workspace-admission.setup-nonce.v1',
+    setupPlanId,
+  }).slice(0, 32)
+}
+
+function storedParentSelectionId(setupPlanId: string): string {
+  return `selection_${sha256Canonical({
+    domain: 'ay-ple.workspace-admission.parent-selection.v1',
+    setupPlanId,
+  }).slice(0, 32)}`
 }
 
 function canonicalJson(value: unknown): string {

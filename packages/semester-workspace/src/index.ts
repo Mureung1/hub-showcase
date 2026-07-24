@@ -1,4 +1,9 @@
-export { createSemesterWorkspaceAdmission } from './admission.js'
+export {
+  createSemesterWorkspaceAdmission,
+} from './admission.js'
+export type {
+  RestorableSemesterWorkspaceAdmission,
+} from './admission.js'
 export * from './contract.js'
 export {
   decodeCurrentSemesterWorkspaceV2,
@@ -32,6 +37,11 @@ export {
   encodeSetupStateEnvelope,
   SetupEnvelopeStorageError,
   SetupStateCodecError,
+} from './setup-envelope-store.js'
+export type {
+  RecoverableSetupEnvelopeStore,
+  SetupEnvelopeStoreFaultPoint,
+  SetupEnvelopeStoreOptions,
 } from './setup-envelope-store.js'
 
 export type SemesterWorkspaceScaffold = {

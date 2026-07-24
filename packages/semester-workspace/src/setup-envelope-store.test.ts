@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { spawn } from 'node:child_process'
 import {
   chmod,
   lstat,
@@ -13,6 +14,7 @@ import {
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 import type { SetupStateEnvelope } from './contract.js'
 import {
@@ -146,6 +148,242 @@ test('existing setup without one strict current envelope is never guessed to be 
   }
 })
 
+test('initial publication never replaces a competing final directory identity or bytes', async () => {
+  const root = await ownerOnlyTempRoot('competing-final')
+  const sentinel = path.join(root, 'setup', 'sentinel.txt')
+  let competingIdentity:
+    | { readonly device: number; readonly inode: number }
+    | undefined
+  try {
+    const store = createSetupEnvelopeStore({
+      appDataRoot: root,
+      async fault(point) {
+        if (point !== 'before_temp_create' || competingIdentity) return
+        await mkdir(path.join(root, 'setup'), { mode: 0o700 })
+        await writeFile(sentinel, 'competing-owner\n', { mode: 0o600 })
+        const stats = await lstat(path.join(root, 'setup'))
+        competingIdentity = {
+          device: stats.dev,
+          inode: stats.ino,
+        }
+      },
+    })
+
+    assert.deepEqual(
+      await store.compareAndReplace({
+        expectedRevisionToken: null,
+        envelope: approvedEnvelope(1),
+      }),
+      { status: 'conflict' },
+    )
+    assert.ok(competingIdentity)
+    const after = await lstat(path.join(root, 'setup'))
+    assert.deepEqual(
+      { device: after.dev, inode: after.ino },
+      competingIdentity,
+    )
+    assert.equal(await readFile(sentinel, 'utf8'), 'competing-owner\n')
+    assert.deepEqual(await readdir(root), ['setup'])
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
+test('concurrent initial writers preserve exactly one complete winner', async () => {
+  const root = await ownerOnlyTempRoot('concurrent-initial')
+  try {
+    const stores = [
+      createSetupEnvelopeStore({ appDataRoot: root }),
+      createSetupEnvelopeStore({ appDataRoot: root }),
+    ]
+    const candidates = [approvedEnvelope(1), preparedEnvelope(2)]
+    const results = await Promise.all(
+      stores.map((store, index) =>
+        store.compareAndReplace({
+          expectedRevisionToken: null,
+          envelope: candidates[index]!,
+        }),
+      ),
+    )
+
+    assert.equal(
+      results.filter((result) => result.status === 'written').length,
+      1,
+    )
+    assert.equal(
+      results.filter((result) => result.status === 'conflict').length,
+      1,
+    )
+    const winner = results.find((result) => result.status === 'written')
+    assert.ok(winner)
+    assert.deepEqual(await stores[0]!.read(), {
+      status: 'current',
+      envelope: winner.envelope,
+      revisionToken: winner.revisionToken,
+    })
+    assert.deepEqual(
+      await readdir(path.join(root, 'setup', 'v1')),
+      ['state.json'],
+    )
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
+test('concurrent replacements cannot both claim the same observed bytes', async () => {
+  const root = await ownerOnlyTempRoot('concurrent-replacement')
+  try {
+    const baselineStore = createSetupEnvelopeStore({
+      appDataRoot: root,
+    })
+    const baseline = await baselineStore.compareAndReplace({
+      expectedRevisionToken: null,
+      envelope: approvedEnvelope(1),
+    })
+    assert.equal(baseline.status, 'written')
+    if (baseline.status !== 'written') assert.fail('baseline required')
+    const stores = [
+      createSetupEnvelopeStore({ appDataRoot: root }),
+      createSetupEnvelopeStore({ appDataRoot: root }),
+    ]
+    const candidates = [preparedEnvelope(2), approvedEnvelope(3)]
+    const results = await Promise.all(
+      stores.map((store, index) =>
+        store.compareAndReplace({
+          expectedRevisionToken: baseline.revisionToken,
+          envelope: candidates[index]!,
+        }),
+      ),
+    )
+
+    assert.equal(
+      results.filter((result) => result.status === 'written').length,
+      1,
+    )
+    assert.equal(
+      results.filter((result) => result.status === 'conflict').length,
+      1,
+    )
+    const winner = results.find((result) => result.status === 'written')
+    assert.ok(winner)
+    assert.deepEqual(await baselineStore.read(), {
+      status: 'current',
+      envelope: winner.envelope,
+      revisionToken: winner.revisionToken,
+    })
+    assert.deepEqual(
+      await readdir(path.join(root, 'setup', 'v1')),
+      ['state.json'],
+    )
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
+test('observe is read-only across an abandoned initial hard-link commit and launch reconciliation finishes it', async () => {
+  const root = await ownerOnlyTempRoot('crash-initial-hard-link')
+  try {
+    await runCrashWriter({
+      root,
+      expectedRevisionToken: null,
+      envelope: approvedEnvelope(1),
+      faultPoint: 'after_rename',
+    })
+    const versionPath = path.join(root, 'setup', 'v1')
+    const entriesBefore = (await readdir(versionPath)).sort()
+    assert.equal(entriesBefore.length, 2)
+    assert.ok(entriesBefore.includes('state.json'))
+    const temporaryName = entriesBefore.find(
+      (entry) => entry !== 'state.json',
+    )
+    assert.ok(temporaryName)
+    const [stateBefore, temporaryBefore] = await Promise.all([
+      lstat(path.join(versionPath, 'state.json')),
+      lstat(path.join(versionPath, temporaryName)),
+    ])
+    assert.equal(stateBefore.nlink, 2)
+    assert.equal(temporaryBefore.nlink, 2)
+    assert.equal(stateBefore.ino, temporaryBefore.ino)
+
+    const store = createSetupEnvelopeStore({ appDataRoot: root })
+    assert.deepEqual(await store.read(), {
+      status: 'incompatible',
+      reason: 'missing_state',
+    })
+    assert.deepEqual((await readdir(versionPath)).sort(), entriesBefore)
+
+    const reconciled = await store.reconcileAbandonedWrite()
+    assert.equal(reconciled.status, 'current')
+    if (reconciled.status !== 'current') {
+      assert.fail('launch reconciliation must finish the committed state')
+    }
+    assert.deepEqual(reconciled.envelope, approvedEnvelope(1))
+    assert.deepEqual(await readdir(versionPath), ['state.json'])
+    assert.equal(
+      (await lstat(path.join(versionPath, 'state.json'))).nlink,
+      1,
+    )
+    assert.deepEqual(await readdir(root), ['setup'])
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
+test('launch reconciliation classifies both guarded-old and renamed-new replacement crash shapes', async () => {
+  for (const faultPoint of [
+    'after_compare_guard',
+    'after_rename',
+  ] as const) {
+    const root = await ownerOnlyTempRoot(`crash-replace-${faultPoint}`)
+    try {
+      const store = createSetupEnvelopeStore({ appDataRoot: root })
+      const baseline = await store.compareAndReplace({
+        expectedRevisionToken: null,
+        envelope: approvedEnvelope(1),
+      })
+      assert.equal(baseline.status, 'written', faultPoint)
+      if (baseline.status !== 'written') assert.fail('baseline required')
+
+      await runCrashWriter({
+        root,
+        expectedRevisionToken: baseline.revisionToken,
+        envelope: preparedEnvelope(2),
+        faultPoint,
+      })
+      const versionPath = path.join(root, 'setup', 'v1')
+      const before = (await readdir(versionPath)).sort()
+      assert.ok(
+        before.includes('.state.json.compare-guard'),
+        faultPoint,
+      )
+      assert.deepEqual(await store.read(), {
+        status: 'incompatible',
+        reason: 'missing_state',
+      })
+      assert.deepEqual((await readdir(versionPath)).sort(), before)
+
+      const reconciled = await store.reconcileAbandonedWrite()
+      assert.equal(reconciled.status, 'current', faultPoint)
+      if (reconciled.status !== 'current') {
+        assert.fail('launch reconciliation must return current')
+      }
+      assert.deepEqual(
+        reconciled.envelope,
+        preparedEnvelope(2),
+        faultPoint,
+      )
+      assert.deepEqual(await readdir(versionPath), ['state.json'])
+      assert.equal(
+        (await lstat(path.join(versionPath, 'state.json'))).nlink,
+        1,
+        faultPoint,
+      )
+    } finally {
+      await rm(root, { force: true, recursive: true })
+    }
+  }
+})
+
 const stateWriteFaults = [
   'before_temp_create',
   'after_temp_create',
@@ -153,18 +391,39 @@ const stateWriteFaults = [
   'after_temp_write',
   'before_file_sync',
   'after_file_sync',
+  'before_compare_guard',
+  'after_compare_guard',
   'before_prior_compare',
   'after_prior_compare',
   'before_rename',
   'after_rename',
+  'before_temp_unlink',
+  'after_temp_unlink',
+  'before_guard_unlink',
+  'after_guard_unlink',
   'before_directory_sync',
   'after_directory_sync',
   'before_readback',
   'after_readback',
 ] as const satisfies readonly SetupEnvelopeStoreFaultPoint[]
 
-test('every initial state write fault exposes only logical empty or one complete approved envelope', async () => {
-  for (const failAt of stateWriteFaults) {
+const initialStateWriteFaults = stateWriteFaults.filter(
+  (point) =>
+    ![
+      'before_compare_guard',
+      'after_compare_guard',
+      'before_guard_unlink',
+      'after_guard_unlink',
+    ].includes(point),
+)
+
+const replacementStateWriteFaults = stateWriteFaults.filter(
+  (point) =>
+    !['before_temp_unlink', 'after_temp_unlink'].includes(point),
+)
+
+test('every initial state write fault exposes only logical empty or one complete approved envelope without residue', async () => {
+  for (const failAt of initialStateWriteFaults) {
     const root = await ownerOnlyTempRoot(`initial-${failAt}`)
     let armed = true
     const store = createSetupEnvelopeStore({
@@ -188,16 +447,30 @@ test('every initial state write fault exposes only logical empty or one complete
       const observed = await createSetupEnvelopeStore({
         appDataRoot: root,
       }).read()
-      const renamed = stateWriteFaults.indexOf(failAt) >=
-        stateWriteFaults.indexOf('after_rename')
-      if (renamed) {
+      if (observed.status === 'current') {
         assert.equal(observed.status, 'current', failAt)
-        if (observed.status !== 'current') {
-          assert.fail('renamed state must be current')
-        }
         assert.deepEqual(observed.envelope, approvedEnvelope(1), failAt)
       } else {
         assert.deepEqual(observed, { status: 'absent' }, failAt)
+      }
+      assert.equal(
+        (await readdir(root)).includes('.setup-state-writer'),
+        false,
+        failAt,
+      )
+      if (observed.status === 'current') {
+        assert.deepEqual(
+          await readdir(path.join(root, 'setup', 'v1')),
+          ['state.json'],
+          failAt,
+        )
+        assert.equal(
+          (await lstat(
+            path.join(root, 'setup', 'v1', 'state.json'),
+          )).nlink,
+          1,
+          failAt,
+        )
       }
     } finally {
       await rm(root, { force: true, recursive: true })
@@ -205,8 +478,8 @@ test('every initial state write fault exposes only logical empty or one complete
   }
 })
 
-test('every replacement write fault exposes only the prior approved or next prepared envelope', async () => {
-  for (const failAt of stateWriteFaults) {
+test('every replacement write fault exposes only the prior approved or next prepared envelope without residue', async () => {
+  for (const failAt of replacementStateWriteFaults) {
     const root = await ownerOnlyTempRoot(`replace-${failAt}`)
     try {
       const baselineStore = createSetupEnvelopeStore({
@@ -240,11 +513,28 @@ test('every replacement write fault exposes only the prior approved or next prep
       const observed = await baselineStore.read()
       assert.equal(observed.status, 'current', failAt)
       if (observed.status !== 'current') assert.fail('current required')
-      const renamed = stateWriteFaults.indexOf(failAt) >=
-        stateWriteFaults.indexOf('after_rename')
+      assert.ok(
+        [
+          JSON.stringify(approvedEnvelope(1)),
+          JSON.stringify(preparedEnvelope(2)),
+        ].includes(JSON.stringify(observed.envelope)),
+        failAt,
+      )
       assert.deepEqual(
-        observed.envelope,
-        renamed ? preparedEnvelope(2) : approvedEnvelope(1),
+        await readdir(path.join(root, 'setup', 'v1')),
+        ['state.json'],
+        failAt,
+      )
+      assert.equal(
+        (await lstat(
+          path.join(root, 'setup', 'v1', 'state.json'),
+        )).nlink,
+        1,
+        failAt,
+      )
+      assert.equal(
+        (await readdir(root)).includes('.setup-state-writer'),
+        false,
         failAt,
       )
     } finally {
@@ -261,6 +551,54 @@ async function ownerOnlyTempRoot(name: string): Promise<string> {
   )
   await chmod(root, 0o700)
   return root
+}
+
+async function runCrashWriter(input: {
+  readonly root: string
+  readonly expectedRevisionToken: string | null
+  readonly envelope: SetupStateEnvelope
+  readonly faultPoint: SetupEnvelopeStoreFaultPoint
+}): Promise<void> {
+  const worker = fileURLToPath(
+    new URL(
+      './testing/setup-envelope-store-crash-worker.ts',
+      import.meta.url,
+    ),
+  )
+  const encodedEnvelope = Buffer.from(
+    JSON.stringify(input.envelope),
+    'utf8',
+  ).toString('base64url')
+  const child = spawn(
+    fileURLToPath(
+      new URL('../../../node_modules/.bin/tsx', import.meta.url),
+    ),
+    [
+      worker,
+      input.root,
+      input.expectedRevisionToken ?? 'null',
+      input.faultPoint,
+      encodedEnvelope,
+    ],
+    {
+      cwd: fileURLToPath(new URL('../../..', import.meta.url)),
+      env: {
+        ...process.env,
+        NODE_OPTIONS: '--conditions=development',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  )
+  let stderr = ''
+  child.stderr.setEncoding('utf8')
+  child.stderr.on('data', (chunk: string) => {
+    stderr += chunk
+  })
+  const exitCode = await new Promise<number | null>((resolve, reject) => {
+    child.once('error', reject)
+    child.once('close', resolve)
+  })
+  assert.equal(exitCode, 91, stderr)
 }
 
 function approvedEnvelope(revision: number): SetupStateEnvelope {
