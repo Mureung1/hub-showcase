@@ -579,6 +579,17 @@ export function createSemesterSetupJourney(
       if (inspection.outcome !== 'owned_incomplete') {
         return recovery(receipt.setupId, 'owned_incomplete')
       }
+      if (
+        !(await admission.verifyBinding(
+          receiptDescription(receipt),
+          {
+            kind: 'plan',
+            plan: inspection.plan,
+          },
+        ))
+      ) {
+        return blocked('setup_state_conflict')
+      }
       const rootIdentity = await readRootIdentity(
         receipt.plan.target.canonicalTarget,
       )
@@ -652,6 +663,17 @@ export function createSemesterSetupJourney(
       canonicalRoot: root,
     })
     if (inspection.outcome === 'owned_incomplete') {
+      if (
+        !(await admission.verifyBinding(
+          receiptDescription(receipt),
+          {
+            kind: 'plan',
+            plan: inspection.plan,
+          },
+        ))
+      ) {
+        return blocked('setup_state_conflict')
+      }
       const result = await admission.apply(inspection.plan)
       if (result.outcome !== 'discarded') {
         return recovery(receipt.setupId, 'owned_incomplete')

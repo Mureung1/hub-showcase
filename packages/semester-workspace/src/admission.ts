@@ -397,7 +397,6 @@ async function verifyAdmissionBinding(
     const context = plans.get(subject.plan.planId)
     if (
       !context ||
-      context.kind === 'discard_owned' ||
       !samePlan(context.plan, subject.plan)
     ) {
       return false

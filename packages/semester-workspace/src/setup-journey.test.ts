@@ -652,6 +652,174 @@ test('explicit resume never applies an owned partial from a different durable re
   }
 })
 
+test('safe discard preserves an owned partial when durable receipt authority drifts', async (t) => {
+  const cases = [
+    {
+      name: 'workspace identity',
+      mutate(receipt: SetupStateEnvelope) {
+        if (receipt.state.kind !== 'pending') assert.fail()
+        return {
+          ...receipt.state.receipt,
+          workspace: {
+            ...receipt.state.receipt.workspace,
+            workspaceId: `workspace_${'f'.repeat(32)}`,
+          },
+        }
+      },
+    },
+    {
+      name: 'semester identity',
+      mutate(receipt: SetupStateEnvelope) {
+        if (receipt.state.kind !== 'pending') assert.fail()
+        return {
+          ...receipt.state.receipt,
+          plan: {
+            ...receipt.state.receipt.plan,
+            semester: {
+              yearLevel: 4,
+              term: {
+                key: 'summer',
+                displayName: '여름학기',
+              },
+            },
+          },
+        }
+      },
+    },
+    {
+      name: 'admission authority digest',
+      mutate(receipt: SetupStateEnvelope) {
+        if (receipt.state.kind !== 'pending') assert.fail()
+        return {
+          ...receipt.state.receipt,
+          workspace: {
+            ...receipt.state.receipt.workspace,
+            rootMarkerSha256: '0'.repeat(64),
+          },
+        }
+      },
+    },
+  ] as const
+
+  for (const testCase of cases) {
+    await t.test(testCase.name, async () => {
+      const fixture = await createOwnedPartialFixture(
+        `discard-binding-${testCase.name.replaceAll(' ', '-')}`,
+      )
+      try {
+        const observed = await fixture.base.store.read()
+        assert.equal(observed.status, 'current')
+        if (
+          observed.status !== 'current' ||
+          observed.envelope.state.kind !== 'pending'
+        ) {
+          assert.fail('approved receipt required')
+        }
+        const receipt = observed.envelope.state.receipt
+        const forged: SetupStateEnvelope = {
+          formatVersion: 1,
+          revision: observed.envelope.revision + 1,
+          state: {
+            kind: 'pending',
+            receipt: testCase.mutate(observed.envelope),
+          },
+        }
+        const written = await fixture.base.store.compareAndReplace({
+          expectedRevisionToken: observed.revisionToken,
+          envelope: forged,
+        })
+        assert.equal(written.status, 'written')
+        const before = await snapshotTree(fixture.target)
+
+        const result = await fixture.journey.reconcile({
+          kind: 'recover',
+          recoveryId: receipt.setupId,
+          action: 'discard',
+        })
+
+        assert.equal(result.outcome, 'setup_state_conflict')
+        assert.deepEqual(await snapshotTree(fixture.target), before)
+        assert.equal(
+          (await approvedReceipt(fixture.base.store)).lifecycle.phase,
+          'approved',
+        )
+      } finally {
+        await fixture.base.cleanup()
+      }
+    })
+  }
+})
+
+test('discard relaunch rebinds the remaining marker before continuing deletion', async () => {
+  const fixture = await createOwnedPartialFixture(
+    'discard-relaunch-binding',
+  )
+  try {
+    let interrupted = false
+    const discarding = fixture.base.createJourney({
+      fault(point) {
+        if (
+          !interrupted &&
+          point === 'after_discard_intent_commit'
+        ) {
+          interrupted = true
+          throw new Error('discard-response-lost')
+        }
+      },
+    })
+    const approved = await approvedReceipt(fixture.base.store)
+    await assert.rejects(
+      discarding.reconcile({
+        kind: 'recover',
+        recoveryId: approved.setupId,
+        action: 'discard',
+      }),
+      /discard-response-lost/,
+    )
+    const observed = await fixture.base.store.read()
+    assert.equal(observed.status, 'current')
+    if (
+      observed.status !== 'current' ||
+      observed.envelope.state.kind !== 'pending' ||
+      observed.envelope.state.receipt.lifecycle.phase !==
+        'discard_requested'
+    ) {
+      assert.fail('discard intent receipt required')
+    }
+    const forged: SetupStateEnvelope = {
+      formatVersion: 1,
+      revision: observed.envelope.revision + 1,
+      state: {
+        kind: 'pending',
+        receipt: {
+          ...observed.envelope.state.receipt,
+          workspace: {
+            ...observed.envelope.state.receipt.workspace,
+            workspaceId: `workspace_${'f'.repeat(32)}`,
+          },
+        },
+      },
+    }
+    const written = await fixture.base.store.compareAndReplace({
+      expectedRevisionToken: observed.revisionToken,
+      envelope: forged,
+    })
+    assert.equal(written.status, 'written')
+    const before = await snapshotTree(fixture.target)
+
+    const result = await fixture.base
+      .createJourney()
+      .reconcile({ kind: 'launch' })
+
+    assert.equal(result.outcome, 'setup_state_conflict')
+    assert.deepEqual(await snapshotTree(fixture.target), before)
+    const retained = await approvedReceipt(fixture.base.store)
+    assert.equal(retained.lifecycle.phase, 'discard_requested')
+  } finally {
+    await fixture.base.cleanup()
+  }
+})
+
 test('discard preserves drift, prepared workspace, and parent-swap bytes', async (t) => {
   await t.test('unknown drift before discard intent', async () => {
     const fixture = await createOwnedPartialFixture('discard-drift')
