@@ -57,8 +57,9 @@ describe("StaffQueueService development Supabase vertical slice", () => {
         if (!categorySetId) throw new Error("테스트 분류 설정 생성 결과가 없습니다.");
         const waitingRepository = new PgWaitingRepository();
         const waitingEventRepository = new PgWaitingEventRepository();
+        const notificationRepository = new PgNotificationRepository();
         const notificationService = new NotificationService(
-          new PgNotificationRepository(),
+          notificationRepository,
           new MockNotificationProvider(),
         );
         const service = new StaffQueueService(
@@ -68,6 +69,7 @@ describe("StaffQueueService development Supabase vertical slice", () => {
           new PgPatientCategoryRepository(),
           waitingRepository,
           waitingEventRepository,
+          notificationRepository,
           notificationService,
           new AutomaticNotificationService(
             waitingRepository,

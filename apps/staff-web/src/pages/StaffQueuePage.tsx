@@ -6,6 +6,7 @@ import type {
   PatientInputMode,
   PatientRegistrationInput,
   QueueStatus,
+  StaffNotificationHistoryItem,
   WaitingStatus,
 } from "@baro-jinryo/shared";
 import {
@@ -62,6 +63,11 @@ interface StaffQueuePageProps {
     categories: PatientCategoryDefinition[],
   ) => void;
   onRefresh: () => void;
+  onGetNotificationHistory: (
+    waitingId: string,
+  ) => Promise<StaffNotificationHistoryItem[]>;
+  connectionStatus: "connected" | "retrying";
+  onRetry: () => Promise<void>;
   onOpenHospitalManagement: () => void;
   onSignOut: () => Promise<void>;
 }
@@ -74,6 +80,36 @@ const statusLabels: Record<WaitingStatus, string> = {
   called: "진료실 호출",
   cancelled: "취소",
 };
+
+const notificationTypeLabels: Record<
+  StaffNotificationHistoryItem["notificationType"],
+  string
+> = {
+  remote_registered: "원격 접수 완료",
+  onsite_registered: "현장 접수 완료",
+  preparation: "방문 준비",
+  entry_requested: "입장 요청",
+  onsite_near_turn: "진료 임박",
+  cancelled: "웨이팅 취소",
+  called: "진료실 호출",
+};
+
+const notificationDeliveryLabels: Record<
+  StaffNotificationHistoryItem["deliveryStatus"],
+  string
+> = {
+  pending: "발송 대기",
+  sent: "발송 완료",
+  failed: "발송 실패",
+};
+
+const notificationDateFormatter = new Intl.DateTimeFormat("ko-KR", {
+  month: "numeric",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Asia/Seoul",
+});
 
 export function StaffQueuePage({
   entries,
@@ -91,6 +127,9 @@ export function StaffQueuePage({
   onReorder,
   onSavePatientConfiguration,
   onRefresh,
+  onGetNotificationHistory,
+  connectionStatus,
+  onRetry,
   onOpenHospitalManagement,
   onSignOut,
 }: StaffQueuePageProps) {
@@ -107,12 +146,37 @@ export function StaffQueuePage({
   const [queueStatusError, setQueueStatusError] = useState("");
   const [isChangingQueueStatus, setIsChangingQueueStatus] = useState(false);
   const [selectedId, setSelectedId] = useState<string>();
+  const [notificationHistory, setNotificationHistory] = useState<
+    StaffNotificationHistoryItem[]
+  >([]);
+  const [notificationHistoryState, setNotificationHistoryState] = useState<
+    "idle" | "loading" | "loaded" | "error"
+  >("idle");
+  const [isRetryingConnection, setIsRetryingConnection] = useState(false);
   const [restorePosition, setRestorePosition] = useState(1);
   const rows = useMemo(() => calculateQueuePositions(entries), [entries]);
   const visibleRows = rows.filter(({ entry }) => !["called", "cancelled"].includes(entry.status));
   const activeQueueRows = rows.filter(({ position }) => position !== null);
   const selected = rows.find(({ entry }) => entry.id === selectedId);
   const totalPatients = activeQueueRows.reduce((sum, { entry }) => sum + entry.patientCount, 0);
+
+  async function openWaitingDetails(waitingId: string) {
+    setSelectedId(waitingId);
+    setNotificationHistory([]);
+    setNotificationHistoryState("loading");
+    try {
+      setNotificationHistory(await onGetNotificationHistory(waitingId));
+      setNotificationHistoryState("loaded");
+    } catch {
+      setNotificationHistoryState("error");
+    }
+  }
+
+  function closeWaitingDetails() {
+    setSelectedId(undefined);
+    setNotificationHistory([]);
+    setNotificationHistoryState("idle");
+  }
 
   function moveActiveWaiting(id: string, direction: -1 | 1) {
     const activeIds = activeQueueRows.map(({ entry }) => entry.id);
@@ -169,6 +233,15 @@ export function StaffQueuePage({
     }
   }
 
+  async function retryConnection() {
+    setIsRetryingConnection(true);
+    try {
+      await onRetry();
+    } finally {
+      setIsRetryingConnection(false);
+    }
+  }
+
   return (
     <div className="staff-shell">
       <header className="staff-header">
@@ -205,6 +278,27 @@ export function StaffQueuePage({
         <a href="http://127.0.0.1:5173">환자 화면 보기</a>
       </aside>
       <main className="staff-main" id="queue">
+        {connectionStatus === "retrying" && (
+          <div className="connection-alert" role="alert">
+            <div>
+              <strong>서버 연결이 끊겼습니다.</strong>
+              <span>
+                현재 대기열을 유지하고 자동으로 다시 시도하고 있습니다.
+              </span>
+            </div>
+            <button
+              type="button"
+              disabled={isRetryingConnection}
+              onClick={() => void retryConnection()}
+            >
+              <RefreshCw
+                size={16}
+                className={isRetryingConnection ? "is-spinning" : undefined}
+              />
+              {isRetryingConnection ? "재시도 중" : "지금 다시 시도"}
+            </button>
+          </div>
+        )}
         <div className="staff-title-row">
           <div>
             <h1>통합 대기열</h1>
@@ -314,7 +408,7 @@ export function StaffQueuePage({
                   <tr
                     className={selectedId === row.entry.id ? "is-selected" : ""}
                     key={row.entry.id}
-                    onClick={() => setSelectedId(row.entry.id)}
+                    onClick={() => void openWaitingDetails(row.entry.id)}
                   >
                     <td>{row.teamNumber ? `${row.teamNumber}팀` : "-"}</td>
                     <td>{formatPositionRange(row)}</td>
@@ -412,7 +506,7 @@ export function StaffQueuePage({
             className="detail-close"
             type="button"
             aria-label="상세 닫기"
-            onClick={() => setSelectedId(undefined)}
+            onClick={closeWaitingDetails}
           >
             ×
           </button>
@@ -440,6 +534,56 @@ export function StaffQueuePage({
               <dd>{formatPositionRange(selected)}</dd>
             </div>
           </dl>
+          <section
+            className="notification-history"
+            role="region"
+            aria-labelledby="notification-history-title"
+          >
+            <h3 id="notification-history-title">알림 발송 이력</h3>
+            {notificationHistoryState === "loading" && (
+              <p>알림 이력을 불러오는 중입니다.</p>
+            )}
+            {notificationHistoryState === "error" && (
+              <p className="notification-history__error">
+                알림 이력을 불러오지 못했습니다.
+              </p>
+            )}
+            {notificationHistoryState === "loaded" &&
+              notificationHistory.length === 0 && (
+                <p>아직 발송된 알림이 없습니다.</p>
+              )}
+            {notificationHistory.length > 0 && (
+              <ul>
+                {notificationHistory.map((notification) => (
+                  <li key={notification.id}>
+                    <div>
+                      <strong>
+                        {notificationTypeLabels[notification.notificationType]}
+                      </strong>
+                      <time
+                        dateTime={notification.sentAt ?? notification.createdAt}
+                      >
+                        {notificationDateFormatter.format(
+                          new Date(
+                            notification.sentAt ?? notification.createdAt,
+                          ),
+                        )}
+                      </time>
+                    </div>
+                    <span
+                      className={`notification-history__status notification-history__status--${notification.deliveryStatus}`}
+                    >
+                      {
+                        notificationDeliveryLabels[
+                          notification.deliveryStatus
+                        ]
+                      }
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
           <div className="detail-actions">
             {selected.entry.status === "held" && (
               <label>

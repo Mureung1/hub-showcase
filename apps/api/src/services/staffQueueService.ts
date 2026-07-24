@@ -11,6 +11,7 @@ import type {
   PatientInputConfiguration,
   QueueStatus,
   QueueEntry,
+  StaffNotificationHistoryItem,
   StaffQueueState,
   WaitingStatus,
 } from "@baro-jinryo/shared";
@@ -19,6 +20,7 @@ import type { TransactionManager } from "../db/transactionManager.js";
 import { ApiError } from "../errors/apiError.js";
 import type { DailyQueueRepository } from "../repositories/dailyQueueRepository.js";
 import type { HospitalRepository } from "../repositories/hospitalRepository.js";
+import type { NotificationRepository } from "../repositories/notificationRepository.js";
 import type { PatientCategoryRepository } from "../repositories/patientCategoryRepository.js";
 import type { WaitingEventRepository } from "../repositories/waitingEventRepository.js";
 import type {
@@ -36,6 +38,10 @@ export interface StaffQueueServiceOptions {
 
 export interface StaffQueueOperations {
   getTodayQueue(hospitalId: string): Promise<StaffQueueState>;
+  getWaitingNotifications(
+    hospitalId: string,
+    waitingEntryId: string,
+  ): Promise<StaffNotificationHistoryItem[]>;
   saveNextDayConfiguration(
     hospitalId: string,
     input: PatientInputConfiguration,
@@ -81,6 +87,7 @@ export class StaffQueueService implements StaffQueueOperations {
     private readonly categoryRepository: PatientCategoryRepository,
     private readonly waitingRepository: WaitingRepository,
     private readonly waitingEventRepository: WaitingEventRepository,
+    private readonly notificationRepository: NotificationRepository,
     private readonly notificationSender: NotificationSender,
     private readonly automaticNotificationProcessor: AutomaticNotificationProcessor,
     private readonly options: StaffQueueServiceOptions,
@@ -88,6 +95,36 @@ export class StaffQueueService implements StaffQueueOperations {
 
   async getTodayQueue(hospitalId: string): Promise<StaffQueueState> {
     return this.transactionManager.run((executor) => this.buildQueueState(executor, hospitalId));
+  }
+
+  async getWaitingNotifications(
+    hospitalId: string,
+    waitingEntryId: string,
+  ): Promise<StaffNotificationHistoryItem[]> {
+    return this.transactionManager.run(async (executor) => {
+      await this.requireApprovedHospital(executor, hospitalId);
+      const waiting = await this.waitingRepository.findById(executor, waitingEntryId);
+      if (!waiting) {
+        throw new ApiError(404, "WAITING_NOT_FOUND", "대기 정보를 찾을 수 없습니다.");
+      }
+      const queue = await this.dailyQueueRepository.findById(executor, waiting.queueId);
+      if (!queue || queue.hospitalId !== hospitalId) {
+        throw new ApiError(404, "WAITING_NOT_FOUND", "대기 정보를 찾을 수 없습니다.");
+      }
+
+      const notifications = await this.notificationRepository.listByWaitingEntry(
+        executor,
+        waitingEntryId,
+      );
+      return notifications.map((notification) => ({
+        id: notification.id,
+        notificationType: notification.notificationType,
+        deliveryStatus: notification.deliveryStatus,
+        templateCode: notification.templateCode,
+        sentAt: notification.sentAt?.toISOString() ?? null,
+        createdAt: notification.createdAt.toISOString(),
+      }));
+    });
   }
 
   async saveNextDayConfiguration(

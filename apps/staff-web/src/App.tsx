@@ -23,6 +23,7 @@ import {
   changeQueueStatus,
   changeWaitingStatus,
   getStaffQueue,
+  getWaitingNotificationHistory,
   getHospitalOnboarding,
   holdWaiting,
   restoreWaiting,
@@ -49,6 +50,9 @@ const initialState: StaffQueueState = {
 function StaffApp() {
   const { session, profile, loading, signOut } = useStaffAuth();
   const [queue, setQueue] = useState(initialState);
+  const [connectionStatus, setConnectionStatus] = useState<
+    "connected" | "retrying"
+  >("connected");
   const [view, setView] = useState<"queue" | "onboarding" | "hospital-management">("queue");
   const [onboarding, setOnboarding] = useState<MockHospitalOnboardingState>({
     inquiry: null,
@@ -80,7 +84,9 @@ function StaffApp() {
     const poll = async () => {
       try {
         await refresh();
+        setConnectionStatus("connected");
       } catch (error) {
+        setConnectionStatus("retrying");
         console.error("Failed to refresh staff data", error);
       } finally {
         if (!cancelled) timer = window.setTimeout(() => void poll(), pollInterval);
@@ -92,6 +98,17 @@ function StaffApp() {
       if (timer !== undefined) window.clearTimeout(timer);
     };
   }, [refresh, session, view]);
+
+  const retryConnection = useCallback(async () => {
+    setConnectionStatus("retrying");
+    try {
+      await refresh();
+      setConnectionStatus("connected");
+    } catch (error) {
+      setConnectionStatus("retrying");
+      console.error("Failed to retry staff data", error);
+    }
+  }, [refresh]);
 
   async function updateStatus(id: string, status: WaitingStatus) {
     setQueue(await changeWaitingStatus(id, status));
@@ -157,7 +174,10 @@ function StaffApp() {
       onRestore={async (id, position) => setQueue(await restoreWaiting(id, position))}
       onReorder={async (orderedWaitingIds) => setQueue(await reorderWaitings(orderedWaitingIds))}
       onSavePatientConfiguration={updatePatientConfiguration}
-      onRefresh={refresh}
+      onRefresh={() => void retryConnection()}
+      onGetNotificationHistory={getWaitingNotificationHistory}
+      connectionStatus={connectionStatus}
+      onRetry={retryConnection}
       onOpenHospitalManagement={() => setView("hospital-management")}
       onSignOut={signOut}
     />

@@ -1,4 +1,7 @@
-import type { NotificationType } from "./domain.js";
+import type {
+  NotificationDeliveryStatus,
+  NotificationType,
+} from "./domain.js";
 
 export const notificationTemplateCodes = {
   remote_registered: "BJ_REMOTE_REGISTERED",
@@ -18,3 +21,12 @@ export type NotificationTemplateVariables = Record<
   string,
   NotificationTemplateValue
 >;
+
+export interface StaffNotificationHistoryItem {
+  id: string;
+  notificationType: NotificationType;
+  deliveryStatus: NotificationDeliveryStatus;
+  templateCode: NotificationTemplateCode;
+  sentAt: string | null;
+  createdAt: string;
+}

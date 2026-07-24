@@ -1,6 +1,7 @@
 import type {
   OnsiteRegistrationResult,
   OnsiteWaitingRegistrationInput,
+  StaffNotificationHistoryItem,
   StaffQueueState,
 } from "@baro-jinryo/shared";
 import express from "express";
@@ -27,6 +28,7 @@ function createService(
 ): StaffQueueOperations {
   return {
     getTodayQueue: vi.fn(async () => queue),
+    getWaitingNotifications: vi.fn(async () => []),
     saveNextDayConfiguration: vi.fn(async () => queue),
     registerOnsite: vi.fn(),
     setQueueStatus: vi.fn(async () => queue),
@@ -76,6 +78,33 @@ describe("staff queue routes", () => {
       .expect(200);
 
     expect(response.body).toEqual(queue);
+  });
+
+  it("선택한 대기 항목의 알림 발송 이력을 조회한다", async () => {
+    const waitingId = "30000000-0000-4000-8000-000000000001";
+    const notifications: StaffNotificationHistoryItem[] = [
+      {
+        id: "40000000-0000-4000-8000-000000000001",
+        notificationType: "entry_requested",
+        deliveryStatus: "sent",
+        templateCode: "BJ_ENTRY_REQUESTED",
+        sentAt: "2026-07-24T01:20:00.000Z",
+        createdAt: "2026-07-24T01:19:59.000Z",
+      },
+    ];
+    const getWaitingNotifications = vi.fn(async () => notifications);
+
+    const response = await request(
+      createTestApp(createService({ getWaitingNotifications })),
+    )
+      .get(`/api/staff/waitings/${waitingId}/notifications`)
+      .expect(200);
+
+    expect(getWaitingNotifications).toHaveBeenCalledWith(
+      "10000000-0000-4000-8000-000000000001",
+      waitingId,
+    );
+    expect(response.body).toEqual(notifications);
   });
 
   it("국내 전화번호를 E.164로 변환해 현장 접수 서비스에 전달한다", async () => {

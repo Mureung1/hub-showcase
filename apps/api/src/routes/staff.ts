@@ -38,6 +38,12 @@ export function createStaffRouter(
     response.json(await service.getTodayQueue(hospitalId));
   });
 
+  router.get("/waitings/:waitingId/notifications", async (request, response) => {
+    const waitingId = z.uuid().parse(request.params.waitingId);
+    const { hospitalId } = getStaffContext(response.locals);
+    response.json(await service.getWaitingNotifications(hospitalId, waitingId));
+  });
+
   router.put("/categories/next-day", async (request, response) => {
     const input = patientInputConfigurationSchema.parse(request.body);
     const { hospitalId } = getStaffContext(response.locals);

@@ -16,8 +16,9 @@ import { getClinicDate } from "../utils/clinicDate.js";
 export function createStaffQueueService(): StaffQueueService {
   const waitingRepository = new PgWaitingRepository();
   const waitingEventRepository = new PgWaitingEventRepository();
+  const notificationRepository = new PgNotificationRepository();
   const notificationService = new NotificationService(
-    new PgNotificationRepository(),
+    notificationRepository,
     new MockNotificationProvider(),
   );
   return new StaffQueueService(
@@ -27,6 +28,7 @@ export function createStaffQueueService(): StaffQueueService {
     new PgPatientCategoryRepository(),
     waitingRepository,
     waitingEventRepository,
+    notificationRepository,
     notificationService,
     new AutomaticNotificationService(
       waitingRepository,

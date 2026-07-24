@@ -1,5 +1,6 @@
 import type {
   StaffQueueState,
+  StaffNotificationHistoryItem,
   OnsiteRegistrationResult,
   MockHospitalApplicationInput,
   MockHospitalInquiryInput,
@@ -77,6 +78,14 @@ async function getAccessToken(): Promise<string | undefined> {
 
 export function getStaffQueue(): Promise<StaffQueueState> {
   return requestJson("/staff/queue");
+}
+
+export function getWaitingNotificationHistory(
+  waitingId: string,
+): Promise<StaffNotificationHistoryItem[]> {
+  return requestJson<StaffNotificationHistoryItem[]>(
+    `/staff/waitings/${waitingId}/notifications`,
+  );
 }
 
 export function getHospitalManagement(): Promise<HospitalManagementState> {
