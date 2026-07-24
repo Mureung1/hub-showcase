@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: coordinator/H1a
 
 ## Parent Spec
 
@@ -34,14 +34,14 @@ Spine S2의 listener-independent application seam에 A-owned account route adapt
 
 ## Acceptance Criteria
 
-- [ ] S2 application factory가 A-owned account router/coordinator와 B-owned setup router/SetupJourney/action-admission dependency를 명시적으로 받아 mount한다.
-- [ ] Account start/status/cancel/logout, setup observe/prepare/approve/recover와 Ready projection이 S1 exact Origin and Browser-safe contract로 round-trip한다.
-- [ ] Router composition에는 account/setup business state, workspace filesystem operation, Ready pointer write와 Runtime transition algorithm이 없다.
-- [ ] Runtime start와 every thread/resume/Turn/product action path가 B-owned workspace/action admission을 우회할 수 없는 한 composition graph로 연결된다.
-- [ ] Transition 중 incompatible command와 invalid/stale opaque command가 feature owner의 stable safe failure로 닫히고 shared adapter가 success를 합성하지 않는다.
-- [ ] Current First Assignment behavior, Origin/Host guard, NDJSON framing, product-MCP token, legacy/raw route `404`와 shutdown ordering이 regression 없이 유지된다.
-- [ ] Server producer와 Browser fixture roster equality, private-field leak scan과 all focused route/guard tests가 green이다.
-- [ ] Root four gates와 independent fixed-SHA Server architecture review가 unresolved finding 0개로 끝난다.
+- [x] S2 application factory가 A-owned account router/coordinator와 B-owned setup router/SetupJourney/action-admission dependency를 명시적으로 받아 mount한다.
+- [x] Account start/status/cancel/logout, setup observe/prepare/approve/recover와 Ready projection이 S1 exact Origin and Browser-safe contract로 round-trip한다.
+- [x] Router composition에는 account/setup business state, workspace filesystem operation, Ready pointer write와 Runtime transition algorithm이 없다.
+- [x] Runtime start와 every thread/resume/Turn/product action path가 B-owned workspace/action admission을 우회할 수 없는 한 composition graph로 연결된다.
+- [x] Transition 중 incompatible command와 invalid/stale opaque command가 feature owner의 stable safe failure로 닫히고 shared adapter가 success를 합성하지 않는다.
+- [x] Current First Assignment behavior, Origin/Host guard, NDJSON framing, product-MCP token, legacy/raw route `404`와 shutdown ordering이 regression 없이 유지된다.
+- [x] Server producer와 Browser fixture roster equality, private-field leak scan과 all focused route/guard tests가 green이다.
+- [x] Root four gates와 independent fixed-SHA Server architecture review가 unresolved finding 0개로 끝난다.
 
 ## Verification
 
@@ -72,6 +72,16 @@ Spine S2의 listener-independent application seam에 A-owned account route adapt
 | Current `contractTipSha` | `f24ee0850` — draft command claim을 `SetupJourney`의 공용 serial queue 안에서 수행한다. 같은 tick에도 `return_to_input`이 먼저 호출되면 durable write 없이 input으로 돌아가고, matching `approve`가 먼저면 첫 durable read·effect 전에 claim해 response loss·pre-commit read rejection 뒤 false input을 닫는다. Inverse-order regression을 포함한 `@ay-ple/semester-workspace` 166/166이 green이다. |
 | C consumption invariant | 실제로 새 opaque parent selection이 발급된 경우에만 C adapter가 matching `setupPlanId`로 `return_to_input`을 호출한다. C는 setup projection을 별도 boolean으로 재작성하지 않는다. Approval attempt 전에는 새 prepare를 위해 draft를 지울 수 있고, attempt가 시작된 뒤에는 B가 setup conflict로 닫아 durable outcome을 다시 조정하게 한다. |
 | C startup cleanup delta | `f2e993e1c` — listener bind/address 실패 뒤 cleanup ambiguity를 별도 listener error로 축소하지 않고 root `ServerStartupCleanupError`의 high-level closure로 보존한다. Coordinator·public-preview composition·application close는 concurrent caller가 attempt 하나를 공유하고 proven complete cleanup만 latch한다. Reject·ambiguous attempt 뒤에도 intake와 lease는 닫힌 채 다음 caller signal로 listener→application→Runtime cleanup을 재시도한다. Occupied-port ambiguity→retry convergence, Server 244/244, typecheck, build, exact package-root export 3개, docs links와 `git diff --check`가 green이다. |
+
+## Completion Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Fixed reviewed candidate | `ad1d4321f` — `f24ee0850`의 양방향 Setup command ordering과 `f2e993e1c`의 retryable startup cleanup authority를 포함한 clean candidate다. |
+| Independent review | Server architecture/Standards와 Ticket 021·parent Spec review가 각각 unresolved finding 0개로 PASS했다. B owner review도 `f24ee0850`의 duplicate approve, read failure, response loss와 relaunch 수렴을 finding 없이 확인했다. |
+| Focused verification | `@ay-ple/server` 244/244, `@ay-ple/semester-workspace` 166/166, occupied-port cleanup retry와 exact package-root export 검증이 green이다. |
+| Repository verification | Exact candidate에서 `npm test`, root typecheck/build, Chat Shell lint, docs links와 `git diff --check`가 green이다. |
+| H1 handoff | H1은 root-exported `createServerApplication()`, `listenToServerApplication()`과 `ServerStartupCleanupError`만 소비한다. Public host preflight, static serving, dynamic listener와 Browser open은 C1에 포함하지 않는다. |
 
 ## Blocked By
 
