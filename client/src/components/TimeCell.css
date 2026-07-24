@@ -1,0 +1,18 @@
+.time-cell {
+  height: 36px;
+  padding: 0;
+  background: var(--bg-page);
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform 0.1s ease;
+}
+
+.time-cell:hover {
+  transform: scale(1.05);
+}
+
+.time-cell.selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}

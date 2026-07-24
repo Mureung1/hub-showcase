@@ -45,3 +45,33 @@ export function formatLogTime(changedAt) {
 
   return `${date.getMonth() + 1}월 ${date.getDate()}일`;
 }
+
+const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+
+// 주어진 날짜가 속한 주의 월요일을 'YYYY-MM-DD'로 반환
+export function getMonday(baseDate = new Date()) {
+  const d = new Date(baseDate);
+  const day = d.getDay(); // 0(일)~6(토)
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diffToMonday);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
+export function addDaysToDateString(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
+export function formatMonthDayWeekday(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${m}.${day}(${DAY_NAMES[d.getDay()]})`;
+}
