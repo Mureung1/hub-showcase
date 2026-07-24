@@ -34,9 +34,8 @@ export function createPublicPreviewRouter(input: {
       return
     }
     if (!isAllowedMutation(request, input.origin)) {
-      await sendFailure(
+      sendFailure(
         input.adapter,
-        request,
         response,
         403,
         'command_not_allowed',
@@ -64,9 +63,8 @@ export function createPublicPreviewRouter(input: {
         await input.adapter.observe({ signal: signal.signal }),
       )
     } catch {
-      await sendFailure(
+      sendFailure(
         input.adapter,
-        request,
         response,
         500,
         'setup_unavailable',
@@ -91,9 +89,8 @@ export function createPublicPreviewRouter(input: {
       command = decodePublicPreviewCommand(request.body)
     } catch (error) {
       if (!(error instanceof ProductContractError)) throw error
-      await sendFailure(
+      sendFailure(
         input.adapter,
-        request,
         response,
         400,
         'setup_invalid_input',
@@ -112,9 +109,8 @@ export function createPublicPreviewRouter(input: {
         result,
       )
     } catch {
-      await sendFailure(
+      sendFailure(
         input.adapter,
-        request,
         response,
         500,
         'setup_unavailable',
@@ -132,9 +128,8 @@ export function createPublicPreviewRouter(input: {
       _next: NextFunction,
     ) => {
       if (response.headersSent) return
-      await sendFailure(
+      sendFailure(
         input.adapter,
-        request,
         response,
         isEntityTooLarge(error) ? 413 : 400,
         'setup_invalid_input',
@@ -154,24 +149,18 @@ function isAllowedMutation(
   return origin === undefined || origin === configuredOrigin
 }
 
-async function sendFailure(
+function sendFailure(
   adapter: PublicPreviewCommandAdapter,
-  request: Request,
   response: Response,
   status: number,
   code: PublicPreviewErrorCode,
-): Promise<void> {
+): void {
   if (response.headersSent) return
-  const signal = requestSignal(request)
-  try {
-    sendPublicPreviewResponse(
-      response,
-      status,
-      await adapter.failure({ code, signal: signal.signal }),
-    )
-  } finally {
-    signal.release()
-  }
+  sendPublicPreviewResponse(
+    response,
+    status,
+    adapter.guardFailure(code),
+  )
 }
 
 function sendPublicPreviewResponse(

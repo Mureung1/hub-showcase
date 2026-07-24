@@ -39,10 +39,7 @@ export interface PublicPreviewCommandAdapter {
     readonly command: PublicPreviewCommand
     readonly signal: AbortSignal
   }): Promise<PublicPreviewResponse>
-  failure(input: {
-    readonly code: PublicPreviewErrorCode
-    readonly signal: AbortSignal
-  }): Promise<PublicPreviewResponse>
+  guardFailure(code: PublicPreviewErrorCode): PublicPreviewResponse
   currentReadyWorkspace(): AdmittedSemesterWorkspace | null
   beginShutdown(): void
   whenIdle(): Promise<void>
@@ -241,9 +238,8 @@ export function createPublicPreviewCommandAdapter(input: {
     },
     dispatch: ({ command, signal }) =>
       runCommand(() => dispatch(command, signal)),
-    async failure({ code, signal }) {
-      return errorResponse(code, await snapshot(signal))
-    },
+    guardFailure: (code) =>
+      errorResponse(code, safeUnavailableBootstrap()),
     currentReadyWorkspace() {
       const projection = input.journey.observe()
       if (

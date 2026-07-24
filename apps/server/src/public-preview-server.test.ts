@@ -71,6 +71,41 @@ test('listener-independent public preview composes account, setup, reauth and ex
     const baseUrl = `http://127.0.0.1:${started.port}`
     try {
       const beforeObserve = await snapshotEntries(fixture.appDataRoot)
+      const beforeGuardCalls = fixture.allRuntimeCalls()
+      const guarded = await postPreview(
+        baseUrl,
+        'http://127.0.0.1:1',
+        { command: 'account.login.start' },
+        403,
+      )
+      assert.equal(guarded.status, 'error')
+      const malformed = await rawPostPreview(
+        baseUrl,
+        origin,
+        JSON.stringify({
+          command: 'account.login.start',
+          privateRuntimeId: 'runtime_private',
+        }),
+        400,
+      )
+      assert.equal(malformed.status, 'error')
+      const oversized = await rawPostPreview(
+        baseUrl,
+        origin,
+        JSON.stringify({
+          command: 'account.retry',
+          padding: 'x'.repeat(2 * 1024 * 1024),
+        }),
+        413,
+      )
+      assert.equal(oversized.status, 'error')
+      assert.deepEqual(fixture.allRuntimeCalls(), beforeGuardCalls)
+      assert.equal(fixture.pickerCalls.count, 0)
+      assert.deepEqual(
+        await snapshotEntries(fixture.appDataRoot),
+        beforeObserve,
+      )
+
       const signedOut = await getPreview(baseUrl)
       assert.equal(signedOut.status, 'ok')
       assert.equal(signedOut.projection.account.state, 'login_required')
@@ -252,34 +287,6 @@ test('listener-independent public preview composes account, setup, reauth and ex
       })
       assert.equal(resumed.projection.setup.state, 'ready')
 
-      const wrongOrigin = await postPreview(
-        baseUrl,
-        'http://127.0.0.1:1',
-        { command: 'account.logout' },
-        403,
-      )
-      assert.equal(wrongOrigin.status, 'error')
-      const malformed = await rawPostPreview(
-        baseUrl,
-        origin,
-        JSON.stringify({
-          command: 'account.logout',
-          privateRuntimeId: 'runtime_private',
-        }),
-        400,
-      )
-      assert.equal(malformed.status, 'error')
-      const oversized = await rawPostPreview(
-        baseUrl,
-        origin,
-        JSON.stringify({
-          command: 'account.retry',
-          padding: 'x'.repeat(2 * 1024 * 1024),
-        }),
-        413,
-      )
-      assert.equal(oversized.status, 'error')
-
       const activate = await fetch(
         `${baseUrl}/api/product/workspaces/activate`,
         {
@@ -312,7 +319,7 @@ test('listener-independent public preview composes account, setup, reauth and ex
           loggedOut,
           connectedAgain,
           resumed,
-          wrongOrigin,
+          guarded,
           malformed,
           oversized,
         ],
@@ -381,7 +388,7 @@ test('composition failure after Runtime ownership closes the active generation',
 
 test('unexpected adapter failures stay inside a strict safe 500 response', async () => {
   const origin = 'http://127.0.0.1:43123'
-  let failureCalls = 0
+  let guardFailureCalls = 0
   const adapter: PublicPreviewCommandAdapter = {
     async observe() {
       throw new Error('private observe failure')
@@ -389,8 +396,8 @@ test('unexpected adapter failures stay inside a strict safe 500 response', async
     async dispatch() {
       throw new Error('private dispatch failure')
     },
-    async failure({ code }) {
-      failureCalls += 1
+    guardFailure(code) {
+      guardFailureCalls += 1
       return decodePublicPreviewResponse({
         status: 'error',
         error: {
@@ -438,7 +445,7 @@ test('unexpected adapter failures stay inside a strict safe 500 response', async
         assert.equal(decoded.error.code, 'setup_unavailable')
       }
     }
-    assert.equal(failureCalls, 2)
+    assert.equal(guardFailureCalls, 2)
   } finally {
     await new Promise<void>((resolve, reject) => {
       listener.close((error) => error ? reject(error) : resolve())
