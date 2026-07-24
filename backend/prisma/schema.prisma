@@ -17,6 +17,7 @@ model User {
 
   ownedSubscriptions Subscription[]
   partyMemberships   PartyMember[]
+  settlementMembers  SettlementMember[]
 
   @@map("users")
 }
@@ -33,6 +34,7 @@ model Subscription {
   ownerId           String
   owner             User          @relation(fields: [ownerId], references: [id])
   members           PartyMember[]
+  settlements       Settlement[]
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
@@ -49,4 +51,37 @@ model PartyMember {
 
   @@unique([subscriptionId, userId])
   @@map("party_members")
+}
+
+model Settlement {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  billingMonth   String
+  createdAt      DateTime     @default(now())
+
+  members SettlementMember[]
+
+  @@unique([subscriptionId, billingMonth])
+  @@map("settlements")
+}
+
+model SettlementMember {
+  id           String                 @id @default(cuid())
+  settlementId String
+  settlement   Settlement             @relation(fields: [settlementId], references: [id])
+  userId       String
+  user         User                   @relation(fields: [userId], references: [id])
+  amount       Int
+  status       SettlementMemberStatus @default(pending)
+  doneAt       DateTime?
+  createdAt    DateTime               @default(now())
+
+  @@unique([settlementId, userId])
+  @@map("settlement_members")
+}
+
+enum SettlementMemberStatus {
+  pending
+  done
 }
