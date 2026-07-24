@@ -5,8 +5,10 @@ import type {
   CampaignStatus,
   SendCampaignRequest,
   SendCampaignResponse,
+  SnsPublishResult,
   TrackingResponse,
 } from "shared";
+import { buildSnsCaption } from "shared";
 import {
   updateCampaign,
   getCampaignById,
@@ -17,6 +19,7 @@ import {
 } from "../db/queries";
 import { planAdSend } from "../legal/filter";
 import { sendSms } from "../sms/solapi";
+import { publishToInstagram } from "../sns/instagram";
 import { aggregateTracking } from "../coupons/tracking";
 import { checkGuardrails } from "../agent/guardrails";
 
@@ -91,10 +94,21 @@ campaignsRouter.post("/:id/send", async (req, res) => {
       }
     }
 
+    // instagram 채널이면 본인 계정 실게시 시도 — Solapi 본인번호 패턴(토큰 없거나 실패하면 FE 복사 폴백).
+    let sns: SnsPublishResult | undefined;
+    if (channels.includes("instagram") && campaign.proposal) {
+      const caption = buildSnsCaption({
+        copy: campaign.edited_copy ?? campaign.proposal.copy,
+        promo: campaign.proposal.promo,
+      });
+      const result = await publishToInstagram({ caption });
+      sns = { ...result, caption };
+    }
+
     // SNS 전용(광고 문자 아님) → 법적 필터/문자 대상 아님
     if (!channels.includes("dangol")) {
       await updateCampaign(id, { status: "sent", channels });
-      const resp: SendCampaignResponse = { status: "sent", recipients: 0, couponCode: null };
+      const resp: SendCampaignResponse = { status: "sent", recipients: 0, couponCode: null, sns };
       return res.json(resp);
     }
 
@@ -116,6 +130,7 @@ campaignsRouter.post("/:id/send", async (req, res) => {
         status: "scheduled",
         recipients: plan.recipients.length,
         couponCode: null,
+        sns,
       };
       return res.json(resp);
     }
@@ -132,6 +147,7 @@ campaignsRouter.post("/:id/send", async (req, res) => {
       status: "sent",
       recipients: plan.recipients.length, // 동의 단골 수(표시용). 실발송은 테스트 번호 1건.
       couponCode: code,
+      sns,
     };
     res.json(resp);
   } catch (e) {

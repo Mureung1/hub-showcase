@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { ScenarioKey, ChannelId, Tone, Scenario, SendCampaignResponse, TrackingResponse } from "shared";
-import { buildSmsBody } from "shared";
+import { buildSmsBody, buildSnsCaption } from "shared";
 import { T, font, won, DAYS, DANGOL_TOTAL, DANGOL_CONSENT } from "./styles/tokens";
 import { SCENARIOS, CHANNELS, HISTORY } from "./mocks/scenarios";
 import { MOCK_MODE, getWeatherToday, getProposalToday, patchCampaign, sendCampaign, getTracking } from "./api/client";
@@ -61,6 +61,13 @@ export default function WeatherPilotV3() {
   const [sendResult, setSendResult] = useState<SendCampaignResponse | null>(null);
   const [sentCampaignId, setSentCampaignId] = useState("");
 
+  // UAT 계측 (4-7): 검토 진입 → 발송 완료 소요 시간. 항상 콘솔 기록, ?uat=1일 때만 화면 표시.
+  const editStartedAt = useRef<number | null>(null);
+  const [elapsedSec, setElapsedSec] = useState<number | null>(null);
+  const uat = new URLSearchParams(window.location.search).get("uat") === "1";
+  // mock 발송마다 새 id를 만들 때 쓰는 시퀀스 (Date.now 불순 호출 대신 ref 카운터 — 순수성 규칙).
+  const mockSeq = useRef(0);
+
   useEffect(() => {
     if (MOCK_MODE) return;
     let cancelled = false;
@@ -89,6 +96,19 @@ export default function WeatherPilotV3() {
     };
   }, []);
 
+  // UAT 계측 (4-7): 검토 진입(edit) 시각 기록 → 발송 완료(sent) 시 소요 시간 계산.
+  // effect 안이라 Date.now(불순) 호출이 허용된다(핸들러 내 호출은 순수성 규칙 위반).
+  useEffect(() => {
+    if (view === "edit") {
+      editStartedAt.current = Date.now();
+    } else if (view === "sent" && editStartedAt.current != null) {
+      const sec = Math.round((Date.now() - editStartedAt.current) / 100) / 10;
+      console.info(`[UAT] 검토→발송 ${sec}s`);
+      setElapsedSec(sec);
+      editStartedAt.current = null;
+    }
+  }, [view]);
+
   // 화면이 쓰는 시나리오: mock 모드는 데모 선택값, 실연동은 서버 결과(안전망으로 mock).
   const remoteScenario = remote.status === "ready" ? remote.scenario : null;
   const s: Scenario = MOCK_MODE ? SCENARIOS[scenarioKey] : (remoteScenario ?? SCENARIOS[scenarioKey]);
@@ -113,7 +133,7 @@ export default function WeatherPilotV3() {
     setChannels([...s.channels]);
     setNightMode(false);
     setDiscountPct(parseDiscountPct(s.promo));
-    setView("edit");
+    setView("edit"); // UAT 계측 시작은 view→"edit" effect에서 (핸들러 내 불순 호출 회피)
   }
   function toggleChannel(id: ChannelId) {
     setChannels((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
@@ -125,7 +145,7 @@ export default function WeatherPilotV3() {
     setSending(true);
     try {
       // mock은 발송마다 새 id로 추적 램프를 리셋, 실연동은 오늘 캠페인 id 사용.
-      const sendId = MOCK_MODE ? `mock-${Date.now()}` : campaignId;
+      const sendId = MOCK_MODE ? `mock-${(mockSeq.current += 1)}` : campaignId;
       await patchCampaign(sendId, {
         status: "approved",
         editedCopy: copy,
@@ -215,7 +235,12 @@ export default function WeatherPilotV3() {
             onBack={() => setView("dashboard")} onSend={handleSend} sending={sending}
           />
         ) : sendResult ? (
-          <SentView s={s} channels={channels} sendResult={sendResult} campaignId={sentCampaignId} onBack={() => setView("dashboard")} />
+          <SentView
+            s={s} channels={channels} sendResult={sendResult} campaignId={sentCampaignId}
+            snsCaption={buildSnsCaption({ copy, promo: { type: "할인", value: promoValue } })}
+            uat={uat} elapsedSec={elapsedSec}
+            onBack={() => setView("dashboard")}
+          />
         ) : (
           <Dashboard s={s} onReview={goEdit} />
         )}
@@ -433,18 +458,47 @@ function LegalPanel({ copy, nightMode, setNightMode }: { copy: string; nightMode
 }
 
 // ---- 발송 완료 + 쿠폰 추적 ---------------------------------------------------
-function SentView({ s, channels, sendResult, campaignId, onBack }: {
+function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapsedSec, onBack }: {
   s: Scenario;
   channels: ChannelId[];
   sendResult: SendCampaignResponse;
   campaignId: string;
+  snsCaption: string;
+  uat: boolean;
+  elapsedSec: number | null;
   onBack: () => void;
 }) {
   const dangolOn = channels.includes("dangol");
+  const igOn = channels.includes("instagram");
+  const xOn = channels.includes("x");
+  const hasSns = igOn || xOn;
   const scheduled = sendResult.status === "scheduled";
   const tracking = dangolOn && !scheduled;
   const names = channels.map((id) => CHANNELS.find((c) => c.id === id)?.label).filter(Boolean) as string[];
   const target = sendResult.recipients;
+
+  // SNS 게시 결과: instagram은 본인 계정 실게시 시도(서버), 실패·미설정·X는 문구 복사 폴백.
+  const igPosted = igOn && (sendResult.sns?.posted ?? false);
+  const permalink = sendResult.sns?.permalink;
+  const caption = sendResult.sns?.caption ?? snsCaption;
+  const [copied, setCopied] = useState(false);
+  async function copyCaption() {
+    try {
+      await navigator.clipboard.writeText(caption);
+    } catch {
+      // 클립보드 API 차단 시 폴백 (구형·http 등)
+      const ta = document.createElement("textarea");
+      ta.value = caption;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch { /* noop */ }
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
 
   // 추적: getTracking을 1초 폴링 (MOCK은 램프업, 실서버는 쿠폰 코드 누적 집계 — D5).
   const [track, setTrack] = useState<TrackingResponse | null>(null);
@@ -485,14 +539,54 @@ function SentView({ s, channels, sendResult, campaignId, onBack }: {
             ? <>{names.join(" · ")}<br />단골은 <b>내일 오전 8시 예약발송</b>으로 전환됐어요.</>
             : dangolOn
               ? <>{names.join(" · ")}<br />수신동의 단골 {target}명에게 발송했어요.</>
-              : <>{names.join(" · ")}에 게시됐어요.</>}
+              : <>{names.join(" · ")}<br />{igPosted ? "인스타그램에 게시됐어요." : "아래에서 문구를 복사해 올려주세요."}</>}
         </div>
         {sendResult.couponCode && (
           <div style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, background: T.surfaceAlt, fontSize: 12.5, color: T.ink, fontWeight: 600 }}>
             🎟️ 쿠폰 코드 <b style={{ letterSpacing: 0.5 }}>{sendResult.couponCode}</b>
           </div>
         )}
+        {uat && elapsedSec != null && (
+          <div style={{ marginTop: 10, fontSize: 11.5, color: elapsedSec <= 30 ? T.upText : T.muted }}>
+            ⏱ 검토→발송 {elapsedSec}s {elapsedSec <= 30 ? "· 30초 내 ✓" : "· 30초 초과"}
+          </div>
+        )}
       </Card>
+
+      {hasSns && (
+        <Card>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <span style={{ fontSize: 14, fontWeight: 700 }}>📷 SNS 게시</span>
+            {igPosted
+              ? <span style={{ fontSize: 11, color: T.up, fontWeight: 700 }}>게시 완료</span>
+              : <span style={{ fontSize: 11, color: T.muted, fontWeight: 700 }}>복사 후 게시</span>}
+          </div>
+
+          {igPosted && permalink && (
+            <a href={permalink} target="_blank" rel="noreferrer"
+              style={{ display: "inline-block", fontSize: 12.5, color: T.primary, fontWeight: 600, marginBottom: 10, wordBreak: "break-all" }}>
+              게시물 보기 ↗
+            </a>
+          )}
+
+          <div style={{ fontSize: 12.5, color: T.ink, lineHeight: 1.6, whiteSpace: "pre-wrap", background: T.surfaceAlt, borderRadius: 12, padding: 12, maxHeight: 160, overflowY: "auto" }}>
+            {caption}
+          </div>
+
+          <button className="wp-btn" onClick={copyCaption}
+            style={{ marginTop: 10, width: "100%", padding: "10px 12px", borderRadius: 10, cursor: "pointer", fontFamily: font, fontSize: 13, fontWeight: 700, border: `1px solid ${T.border}`, background: copied ? T.upBg : "#fff", color: copied ? T.upText : T.ink }}>
+            {copied ? "✓ 복사됐어요" : "문구 복사"}
+          </button>
+
+          <p style={{ fontSize: 11, color: T.muted, marginTop: 8, lineHeight: 1.5 }}>
+            {igPosted
+              ? "인스타그램 본인 계정에 자동 게시됐어요. 문구는 필요하면 복사해 쓰세요."
+              : igOn
+                ? "자동 게시가 안 됐어요(토큰·이미지 미설정). 문구를 복사해 직접 올려주세요."
+                : "X(트위터)는 문구를 복사해 직접 올려주세요."}
+          </p>
+        </Card>
+      )}
 
       {tracking && (
         <Card>
