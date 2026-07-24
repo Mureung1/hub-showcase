@@ -28,6 +28,13 @@ function DashboardPage() {
     fetchEvents();
   }, []);
 
+  function getUrgencyClass(daysUntil) {
+    if (daysUntil === 0 || daysUntil === 1) return "urgent";
+    if (daysUntil <= 3) return "warning";
+    if (daysUntil <= 7) return "upcoming";
+    return "normal";
+  }
+
   function getUpcomingDeadlines() {
     return events
       .filter((event) => event.deadline && isValidDeadline(event.deadline))
@@ -66,7 +73,7 @@ function DashboardPage() {
             {!isLoading && !error && upcomingDeadlines.length > 0 && (
               <div className="events-list">
                 {upcomingDeadlines.map((event) => (
-                  <div key={event.id} className="event-card">
+                  <div key={event.id} className={`event-card ${getUrgencyClass(event.daysUntil)}`}>
                     <div className="event-info">
                       <p className="event-name">{event.name}</p>
                       <p className="event-date">{event.deadline}</p>

@@ -3,11 +3,118 @@
   background-color: #e3e8ec;
   min-height: 100vh;
   box-sizing: border-box;
+  position: relative;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 20px;
+  left: 40px;
+  width: 44px;
+  height: 44px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 24px;
+  color: #000;
+  cursor: pointer;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-toggle:hover {
+  background: #f5f5f5;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.calendar-wrapper {
+  display: flex;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-top: 60px;
+}
+
+.calendar-sidebar {
+  width: 200px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+  max-height: 600px;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+  opacity: 0;
+  max-width: 0;
+  padding: 0;
+}
+
+.calendar-sidebar.open {
+  opacity: 1;
+  max-width: 200px;
+  padding: 20px;
+}
+
+.sidebar-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 15px 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #ddd;
+}
+
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+
+.category-item:hover {
+  background-color: #f0f0f0;
+}
+
+.category-item input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.category-name {
+  flex: 1;
+  font-size: 13px;
+  color: #333;
+  font-weight: 500;
+}
+
+.category-count {
+  font-size: 12px;
+  color: #999;
+  background-color: #e8e8e8;
+  padding: 2px 8px;
+  border-radius: 12px;
+  min-width: 24px;
+  text-align: center;
 }
 
 .calendar-container {
-  max-width: 900px;
-  margin: 0 auto;
+  flex: 1;
   background: #f9f9f9;
   border-radius: 8px;
   padding: 20px;
@@ -136,6 +243,7 @@
   display: flex;
   align-items: center;
   gap: 2px;
+  font-weight: 600;
 }
 
 .event-badge:hover {
@@ -149,16 +257,8 @@
   white-space: nowrap;
 }
 
-.event-badge.event-deadline {
-  background: #ef5350;
-}
-
-.event-badge.event-start {
-  background: #5c6bc0;
-}
-
-.event-badge.event-end {
-  background: #999999;
+.event-badge.event-category {
+  /* 카테고리 색상은 인라인 스타일로 적용 */
 }
 
 .calendar-message {

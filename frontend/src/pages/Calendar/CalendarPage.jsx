@@ -14,6 +14,17 @@ function CalendarPage() {
   const [editFormData, setEditFormData] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editError, setEditError] = useState("");
+  const [categories, setCategories] = useState({});
+  const [visibleCategories, setVisibleCategories] = useState({});
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // 카테고리별 색상 맵
+  const categoryColors = {
+    '공모전': '#5c6bc0',
+    '시험': '#f57c00',
+    '과제': '#43a047',
+    '기타': '#78909c',
+  };
 
   useEffect(() => {
     async function fetchEvents() {
@@ -21,7 +32,24 @@ function CalendarPage() {
       setError("");
       try {
         const response = await getEvents();
-        setEvents(response.data || []);
+        const eventData = response.data || [];
+        setEvents(eventData);
+
+        // 카테고리 추출 및 초기화
+        const categoryMap = {};
+        eventData.forEach((event) => {
+          const cat = event.category || "기타";
+          categoryMap[cat] = (categoryMap[cat] || 0) + 1;
+        });
+
+        setCategories(categoryMap);
+
+        // 모든 카테고리를 기본으로 표시
+        const visible = {};
+        Object.keys(categoryMap).forEach((cat) => {
+          visible[cat] = true;
+        });
+        setVisibleCategories(visible);
       } catch (err) {
         setError(err.message);
         setEvents([]);
@@ -158,6 +186,20 @@ function CalendarPage() {
     }
   }
 
+  function handleCategoryToggle(category) {
+    setVisibleCategories((prev) => ({
+      ...prev,
+      [category]: !prev[category],
+    }));
+  }
+
+  function getFilteredEvents() {
+    return events.filter((event) => {
+      const cat = event.category || "기타";
+      return visibleCategories[cat];
+    });
+  }
+
   function handlePrevMonth() {
     if (month === 0) {
       setYear(year - 1);
@@ -223,9 +265,10 @@ function CalendarPage() {
     const dateStr = date.toISOString().split("T")[0];
     const dayEvents = [];
     const seenKeys = new Set();
+    const filteredEvents = getFilteredEvents();
 
-    events.forEach((event, idx) => {
-      const eventKey = `${idx}`;
+    filteredEvents.forEach((event, idx) => {
+      const eventKey = `${event.id}`;
 
       if (event.deadline === dateStr && !seenKeys.has(`${eventKey}-deadline`)) {
         dayEvents.push({ ...event, eventType: "deadline", uniqueKey: `${eventKey}-deadline` });
@@ -252,7 +295,34 @@ function CalendarPage() {
 
   return (
     <section className="calendar-section">
-      <div className="calendar-container">
+      <button
+        className="sidebar-toggle"
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        type="button"
+        title="카테고리 필터"
+      >
+        ≡
+      </button>
+
+      <div className={`calendar-wrapper ${isSidebarOpen ? 'sidebar-visible' : ''}`}>
+        <div className={`calendar-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
+          <h3 className="sidebar-title">카테고리</h3>
+          <div className="category-list">
+            {Object.keys(categories).map((category) => (
+              <label key={category} className="category-item">
+                <input
+                  type="checkbox"
+                  checked={visibleCategories[category] || false}
+                  onChange={() => handleCategoryToggle(category)}
+                />
+                <span className="category-name">{category}</span>
+                <span className="category-count">{categories[category]}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="calendar-container">
         <div className="calendar-header">
           <h2>{year}년 {monthNames[month]}</h2>
           <div className="calendar-nav">
@@ -291,20 +361,24 @@ function CalendarPage() {
                   >
                     <div className="day-number">{dayObj.day}</div>
                     <div className="day-events">
-                      {dayEvents.map((event) => (
-                        <button
-                          key={event.uniqueKey}
-                          className={`event-badge event-${event.eventType}`}
-                          onClick={() => setSelectedEvent(event)}
-                          type="button"
-                        >
-                          {event.eventType === "deadline" && "📌"}
-                          {event.eventType === "start" && "▶"}
-                          {event.eventType === "end" && "■"}
-                          {" "}
-                          <span className="event-name">{event.name}</span>
-                        </button>
-                      ))}
+                      {dayEvents.map((event) => {
+                        const catColor = categoryColors[event.category] || categoryColors['기타'];
+                        return (
+                          <button
+                            key={event.uniqueKey}
+                            className="event-badge event-category"
+                            onClick={() => setSelectedEvent(event)}
+                            type="button"
+                            style={{ backgroundColor: catColor }}
+                          >
+                            {event.eventType === "deadline" && "📌"}
+                            {event.eventType === "start" && "▶"}
+                            {event.eventType === "end" && "■"}
+                            {" "}
+                            <span className="event-name">{event.name}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -443,6 +517,7 @@ function CalendarPage() {
             )}
           </>
         )}
+      </div>
       </div>
     </section>
   );

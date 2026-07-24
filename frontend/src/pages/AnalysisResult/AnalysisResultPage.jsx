@@ -178,6 +178,7 @@ function AnalysisResultPage() {
       location: null,
       deliverables: [],
       notes: null,
+      category: "기타",
     };
 
     // 새 일정 추가
@@ -197,6 +198,19 @@ function AnalysisResultPage() {
       ...prev,
       [newIndex]: true,
     }));
+  }
+
+  function handleCancel() {
+    if (editingEventId !== null) {
+      const confirmed = window.confirm(
+        "작성 중인 내용이 사라집니다. 취소하시겠습니까?"
+      );
+      if (confirmed) {
+        navigate("/register-event");
+      }
+    } else {
+      navigate("/register-event");
+    }
   }
 
   async function handleSaveAllEvents() {
@@ -387,6 +401,31 @@ function AnalysisResultPage() {
                         />
                       ) : (
                         <p>{event.name}</p>
+                      )}
+                    </div>
+
+                    <div className="event-field">
+                      <label>카테고리</label>
+                      {editingEventId === index ? (
+                        <select
+                          value={editedData.category || "기타"}
+                          onChange={(e) => handleEditChange("category", e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px 12px",
+                            border: "1px solid var(--color-border)",
+                            borderRadius: "4px",
+                            fontSize: "14px",
+                            fontFamily: "Inter, Pretendard, sans-serif",
+                          }}
+                        >
+                          <option value="공모전">공모전</option>
+                          <option value="시험">시험</option>
+                          <option value="과제">과제</option>
+                          <option value="기타">기타</option>
+                        </select>
+                      ) : (
+                        <p>{event.category || "기타"}</p>
                       )}
                     </div>
 
@@ -623,7 +662,11 @@ function AnalysisResultPage() {
               ? "저장 중..."
               : `저장하기 (${Object.values(selectedEvents).filter(Boolean).length}개 선택됨)`}
           </button>
-          <button className="cancel-button" disabled={isSaving}>
+          <button
+            className="cancel-button"
+            onClick={handleCancel}
+            disabled={isSaving}
+          >
             취소
           </button>
         </div>

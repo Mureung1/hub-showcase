@@ -77,6 +77,26 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.event-card.urgent {
+  background-color: #fffafa;
+  border-color: #dc7c7c;
+}
+
+.event-card.warning {
+  background-color: #fffafa;
+  border-color: #e5a3a3;
+}
+
+.event-card.upcoming {
+  background-color: #fffbfb;
+  border-color: #edcaca;
+}
+
+.event-card.normal {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+}
+
 .event-info {
   flex: 1;
 }
@@ -99,24 +119,25 @@
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   margin-left: 16px;
   white-space: nowrap;
+  color: #000000 !important;
 }
 
 .badge-today {
   background-color: #ffebee;
-  color: #c75b61;
+  color: #1f2937;
 }
 
 .badge-tomorrow {
   background-color: #fff3e0;
-  color: #e65100;
+  color: #1f2937;
 }
 
 .badge-future {
   background-color: #e3f2fd;
-  color: #1565c0;
+  color: #1f2937;
 }
 
 .status-message,
