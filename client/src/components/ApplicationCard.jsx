@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import ChatModal from "./ChatModal";
 import MeetingScheduleEditor from "./MeetingScheduleEditor";
 import { routePaths } from "../routes/routePaths";
 
@@ -54,6 +56,7 @@ function QuestionnaireDetails({ questionnaire }) {
 }
 
 function ApplicationCard({ application, onMeetingUpdated }) {
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const hasAgreedMeeting = agreedStatuses.has(application.status);
   const applicationMentors = application.mentors ?? [];
   const visibleMentors = hasAgreedMeeting
@@ -61,6 +64,10 @@ function ApplicationCard({ application, onMeetingUpdated }) {
       (mentor) => mentor.id === application.acceptedMentorId,
     )
     : applicationMentors;
+  const isConfirmed = application.status === "confirmed";
+  const acceptedMentor = applicationMentors.find(
+    (mentor) => mentor.id === application.acceptedMentorId,
+  );
 
   return (
     <article className="card application-card">
@@ -73,10 +80,29 @@ function ApplicationCard({ application, onMeetingUpdated }) {
             신청일 {dateFormatter.format(new Date(application.createdAt))}
           </p>
         </div>
-        <span className={`application-status application-status-${application.status}`}>
-          {statusLabels[application.status]}
-        </span>
+        <div className="application-card-header-actions">
+          {isConfirmed && (
+            <button
+              className="button button-soft chat-open-button"
+              onClick={() => setIsChatOpen(true)}
+              type="button"
+            >
+              채팅 열기
+            </button>
+          )}
+          <span className={`application-status application-status-${application.status}`}>
+            {statusLabels[application.status]}
+          </span>
+        </div>
       </header>
+
+      {isChatOpen && (
+        <ChatModal
+          applicationId={application.id}
+          onClose={() => setIsChatOpen(false)}
+          otherPartyName={acceptedMentor?.name}
+        />
+      )}
 
       <section className="application-mentor-list" aria-label="멘토 정보">
         {visibleMentors.map((mentor) => (

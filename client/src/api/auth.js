@@ -1,5 +1,10 @@
 import httpClient from './httpClient';
-import { clearAccessToken, setAccessToken } from '../utils/authStorage';
+import {
+  clearAccessToken,
+  clearRefreshToken,
+  setAccessToken,
+  setRefreshToken,
+} from '../utils/authStorage';
 
 export const signupMentee = async (payload) => {
   const response = await httpClient.post('/auth/signup/mentee', payload);
@@ -21,6 +26,11 @@ export const login = async ({ email, password }) => {
     setAccessToken(accessToken);
   }
 
+  const refreshToken = response.data?.data?.refreshToken;
+  if (refreshToken) {
+    setRefreshToken(refreshToken);
+  }
+
   return response.data;
 };
 
@@ -29,6 +39,7 @@ export const logout = async () => {
     await httpClient.post('/auth/logout');
   } finally {
     clearAccessToken();
+    clearRefreshToken();
   }
 };
 

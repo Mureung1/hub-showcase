@@ -2,8 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, login as loginRequest, logout as logoutRequest } from "../api/auth";
 import { SESSION_EXPIRED_EVENT } from "../api/httpClient";
+import supabaseClient from "../api/supabaseClient";
 import { routePaths } from "../routes/routePaths";
-import { clearAccessToken, getAccessToken } from "../utils/authStorage";
+import { clearAccessToken, getAccessToken, getRefreshToken } from "../utils/authStorage";
 
 const AuthContext = createContext(undefined);
 
@@ -21,6 +22,10 @@ export function AuthProvider({ children }) {
     getCurrentUser()
       .then((response) => {
         setCurrentUser(response.data);
+        supabaseClient?.auth.setSession({
+          access_token: getAccessToken(),
+          refresh_token: getRefreshToken(),
+        });
       })
       .catch(() => {
         clearAccessToken();
@@ -46,9 +51,13 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (credentials) => {
     const response = await loginRequest(credentials);
-    const user = response.data.user;
+    const { accessToken, refreshToken, user } = response.data;
 
     setCurrentUser(user);
+    supabaseClient?.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
 
     return user;
   }, []);
