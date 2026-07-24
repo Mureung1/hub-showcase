@@ -3,8 +3,10 @@ import { useNavigate, useParams } from 'react-router'
 import logo from '../../assets/logo.png'
 import { formatKorean } from '../../utils/dates'
 import { getTypeById } from '../../data/templates'
-import { useApi } from '../../api/client'
+import { useApi, apiPost } from '../../api/client'
 import './flow.css'
+
+const MAX_REGENERATE = 3 // DB projects.regen_count check (0~3)와 동일
 
 /* AI 계획 검토 — 생성자 전용. 위저드 제출 직후 착지해 확정 전에 계획을 살펴보는 화면.
    서버(GET /api/projects/:id/plan)가 만든 실 계획을 조회해 표시한다.
@@ -17,9 +19,14 @@ export default function PlanReview() {
   // 편집용 로컬 상태 — 서버 계획이 도착하면 시드한다
   const [plan, setPlan] = useState({ roles: [], milestones: [] })
   const [notice, setNotice] = useState('')
+  const [edited, setEdited] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (data) setPlan({ roles: data.roles, milestones: data.milestones })
+    if (data) {
+      setPlan({ roles: data.roles, milestones: data.milestones })
+      setEdited(false)
+    }
   }, [data])
 
   if (loading) {
@@ -46,11 +53,13 @@ export default function PlanReview() {
   }
 
   const project = data.project
+  const remaining = MAX_REGENERATE - project.regenCount
   const typeLabel = getTypeById(project.typeHint)?.label ?? '선택 안 함'
   const roleName = (roleId) => plan.roles.find((r) => r.id === roleId)?.name ?? '미지정'
   const taskTotal = plan.milestones.reduce((sum, m) => sum + m.tasks.length, 0)
 
   function editRole(roleId, name) {
+    setEdited(true)
     setPlan((p) => ({
       ...p,
       roles: p.roles.map((r) => (r.id === roleId ? { ...r, name } : r)),
@@ -58,6 +67,7 @@ export default function PlanReview() {
   }
 
   function editMilestone(milestoneId, title) {
+    setEdited(true)
     setPlan((p) => ({
       ...p,
       milestones: p.milestones.map((m) => (m.id === milestoneId ? { ...m, title } : m)),
@@ -65,6 +75,7 @@ export default function PlanReview() {
   }
 
   function editTask(milestoneId, taskId, title) {
+    setEdited(true)
     setPlan((p) => ({
       ...p,
       milestones: p.milestones.map((m) =>
@@ -75,14 +86,36 @@ export default function PlanReview() {
     }))
   }
 
-  function handleRegenerate() {
-    // 재생성(3회 제한)은 다음 슬라이스에서 서버로 구현 — 지금은 안내만
-    setNotice('“다시 제안받기”(재생성)는 다음 단계에서 제공됩니다.')
+  async function handleRegenerate() {
+    if (remaining <= 0) return
+    if (edited && !window.confirm('직접 수정한 내용이 사라집니다. 다시 제안받을까요?')) return
+    setNotice('')
+    setBusy(true)
+    try {
+      await apiPost(`/api/projects/${id}/regenerate`)
+      reload() // 새 계획으로 다시 조회 (편집 상태 초기화)
+    } catch (err) {
+      setNotice(err.message)
+    } finally {
+      setBusy(false)
+    }
   }
 
-  function handleConfirm() {
-    // 초대 화면은 아직 목업 — 다음 슬라이스에서 계획 확정·초대 토큰 발급으로 교체
-    navigate(`/projects/${id}/invite`)
+  async function handleConfirm() {
+    setNotice('')
+    setBusy(true)
+    try {
+      // 인라인 수정(이름/제목)을 확정과 함께 저장한 뒤 초대 토큰 발급
+      await apiPost(`/api/projects/${id}/confirm`, {
+        roles: plan.roles.map((r) => ({ id: r.id, name: r.name })),
+        milestones: plan.milestones.map((m) => ({ id: m.id, title: m.title })),
+        tasks: plan.milestones.flatMap((m) => m.tasks).map((t) => ({ id: t.id, title: t.title })),
+      })
+      navigate(`/projects/${id}/invite`)
+    } catch (err) {
+      setNotice(err.message)
+      setBusy(false)
+    }
   }
 
   return (
@@ -171,14 +204,23 @@ export default function PlanReview() {
 
         <div className="flow-actions">
           <div className="regen-row">
-            <button type="button" className="btn btn-ghost" onClick={handleRegenerate}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={handleRegenerate}
+              disabled={busy || remaining <= 0}
+            >
               다시 제안받기
             </button>
-            <span className="regen-count">재생성은 다음 단계에서 제공됩니다</span>
+            <span className="regen-count">
+              {remaining > 0
+                ? `${remaining}회 남음 (최대 ${MAX_REGENERATE}회)`
+                : '재생성 횟수를 모두 사용했습니다'}
+            </span>
           </div>
 
-          <button type="button" className="btn btn-dark" onClick={handleConfirm}>
-            이대로 확정
+          <button type="button" className="btn btn-dark" onClick={handleConfirm} disabled={busy}>
+            {busy ? '처리 중…' : '이대로 확정'}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { randomBytes } from 'node:crypto'
 import { supabase } from '../db/supabase.js'
 import { userIdFromReq } from '../lib/auth.js'
 import { generatePlan } from '../services/planner.js'
@@ -26,6 +27,75 @@ function fail(status, message) {
   const err = new Error(message)
   err.status = status
   return err
+}
+
+// 프로젝트를 조회하고 생성자 본인인지 확인한다 (아니면 403/404/401). columns에 creator_id 포함 필수.
+async function loadCreatorProject(req, columns) {
+  const user = await currentUser(req)
+  const { data: project, error } = await supabase
+    .from('projects')
+    .select(columns)
+    .eq('id', req.params.id)
+    .maybeSingle()
+  throwIf(error, '프로젝트 조회')
+  if (!project) throw fail(404, '프로젝트를 찾을 수 없습니다.')
+  if (project.creator_id !== user.id) throw fail(403, '생성자만 접근할 수 있습니다.')
+  return { user, project }
+}
+
+// 계획(역할·마일스톤·태스크)을 프로젝트에 저장한다. 생성·재생성이 공유.
+async function savePlan(projectId, plan) {
+  // 역할 — 벌크 insert 후 반환 순서(=입력 순서)로 slug→uuid 매핑
+  const { data: insertedRoles, error: er } = await supabase
+    .from('roles')
+    .insert(
+      plan.roles.map((r, i) => ({
+        project_id: projectId,
+        name: r.name,
+        description: r.description,
+        emoji: r.emoji,
+        min_count: r.min,
+        max_count: r.max,
+        is_leader_role: r.isLeader,
+        sort_order: i,
+      })),
+    )
+    .select('id')
+  throwIf(er, '역할 저장')
+  const roleIdBySlug = new Map(plan.roles.map((r, i) => [r.id, insertedRoles[i].id]))
+
+  // 마일스톤
+  const { data: insertedMs, error: em } = await supabase
+    .from('milestones')
+    .insert(
+      plan.milestones.map((m, i) => ({
+        project_id: projectId,
+        title: m.title,
+        due_date: m.dueDate,
+        sort_order: i,
+      })),
+    )
+    .select('id')
+  throwIf(em, '마일스톤 저장')
+  const msIdBySlug = new Map(plan.milestones.map((m, i) => [m.id, insertedMs[i].id]))
+
+  // 태스크 (계획 시점엔 사람이 아닌 역할에 연결)
+  const taskRows = []
+  plan.milestones.forEach((m) => {
+    m.tasks.forEach((t, j) => {
+      taskRows.push({
+        project_id: projectId,
+        milestone_id: msIdBySlug.get(m.id),
+        role_id: roleIdBySlug.get(t.roleId) ?? null,
+        title: t.title,
+        sort_order: j,
+      })
+    })
+  })
+  if (taskRows.length > 0) {
+    const { error: et } = await supabase.from('tasks').insert(taskRows)
+    throwIf(et, '태스크 저장')
+  }
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
@@ -106,57 +176,8 @@ projects.post('/api/projects', async (req, res) => {
       avoidDates: avoid,
     })
 
-    // 6) 역할 — 벌크 insert 후 반환 순서(=입력 순서)로 slug→uuid 매핑
-    const { data: insertedRoles, error: e5 } = await supabase
-      .from('roles')
-      .insert(
-        plan.roles.map((r, i) => ({
-          project_id: projectId,
-          name: r.name,
-          description: r.description,
-          emoji: r.emoji,
-          min_count: r.min,
-          max_count: r.max,
-          is_leader_role: r.isLeader,
-          sort_order: i,
-        })),
-      )
-      .select('id')
-    throwIf(e5, '역할 저장')
-    const roleIdBySlug = new Map(plan.roles.map((r, i) => [r.id, insertedRoles[i].id]))
-
-    // 7) 마일스톤
-    const { data: insertedMs, error: e6 } = await supabase
-      .from('milestones')
-      .insert(
-        plan.milestones.map((m, i) => ({
-          project_id: projectId,
-          title: m.title,
-          due_date: m.dueDate,
-          sort_order: i,
-        })),
-      )
-      .select('id')
-    throwIf(e6, '마일스톤 저장')
-    const msIdBySlug = new Map(plan.milestones.map((m, i) => [m.id, insertedMs[i].id]))
-
-    // 8) 태스크 (계획 시점엔 사람이 아닌 역할에 연결)
-    const taskRows = []
-    plan.milestones.forEach((m) => {
-      m.tasks.forEach((t, j) => {
-        taskRows.push({
-          project_id: projectId,
-          milestone_id: msIdBySlug.get(m.id),
-          role_id: roleIdBySlug.get(t.roleId) ?? null,
-          title: t.title,
-          sort_order: j,
-        })
-      })
-    })
-    if (taskRows.length > 0) {
-      const { error: e7 } = await supabase.from('tasks').insert(taskRows)
-      throwIf(e7, '태스크 저장')
-    }
+    // 6) 계획(역할·마일스톤·태스크) 저장
+    await savePlan(projectId, plan)
 
     res.status(201).json({ id: projectId })
   } catch (err) {
@@ -232,6 +253,136 @@ projects.get('/api/projects/:id/plan', async (req, res) => {
         tasks: tasks
           .filter((t) => t.milestone_id === m.id)
           .map((t) => ({ id: t.id, title: t.title, roleId: t.role_id })),
+      })),
+    })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 계획 재생성: 생성자가 계획을 다시 제안받는다 (planning 상태, 최대 3회) ──
+projects.post('/api/projects/:id/regenerate', async (req, res) => {
+  try {
+    const { project } = await loadCreatorProject(
+      req,
+      'id, title, topic, type_hint, deadline, headcount, regen_count, status, creator_id',
+    )
+    if (project.status !== 'planning') throw fail(409, '확정된 계획은 다시 제안받을 수 없습니다.')
+    if (project.regen_count >= 3) throw fail(400, '재생성 횟수(3회)를 모두 사용했습니다.')
+
+    const { data: avoid, error: ea } = await supabase
+      .from('avoid_dates')
+      .select('date')
+      .eq('project_id', project.id)
+    throwIf(ea, '기피 날짜 조회')
+
+    const plan = await generatePlan({
+      title: project.title,
+      topic: project.topic,
+      typeHint: project.type_hint,
+      deadline: project.deadline,
+      headcount: project.headcount,
+      avoidDates: avoid.map((a) => a.date),
+    })
+
+    // 기존 계획 제거 (태스크 → 마일스톤 → 역할 순) 후 새 계획 저장
+    for (const table of ['tasks', 'milestones', 'roles']) {
+      const { error } = await supabase.from(table).delete().eq('project_id', project.id)
+      throwIf(error, `${table} 삭제`)
+    }
+    await savePlan(project.id, plan)
+
+    const nextCount = project.regen_count + 1
+    const { error: eu } = await supabase
+      .from('projects')
+      .update({ regen_count: nextCount })
+      .eq('id', project.id)
+    throwIf(eu, '재생성 횟수 갱신')
+
+    res.json({ regenCount: nextCount })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 계획 확정: 인라인 수정 반영 + 초대 토큰 발급 + 모집(recruiting) 상태 전환 ──
+projects.post('/api/projects/:id/confirm', async (req, res) => {
+  try {
+    const { project } = await loadCreatorProject(req, 'id, status, invite_token, creator_id')
+
+    // 이미 확정됨 → 같은 토큰 반환 (재클릭 안전, 멱등)
+    if (project.status === 'recruiting' && project.invite_token) {
+      return res.json({ inviteToken: project.invite_token })
+    }
+    if (project.status !== 'planning') throw fail(409, '확정할 수 없는 상태입니다.')
+
+    // 인라인 수정 저장 — 이름/제목만, 프로젝트 범위로 갱신
+    const body = req.body ?? {}
+    const updates = []
+    for (const r of Array.isArray(body.roles) ? body.roles : []) {
+      if (r?.id && typeof r.name === 'string') {
+        updates.push(supabase.from('roles').update({ name: r.name }).eq('id', r.id).eq('project_id', project.id))
+      }
+    }
+    for (const m of Array.isArray(body.milestones) ? body.milestones : []) {
+      if (m?.id && typeof m.title === 'string') {
+        updates.push(supabase.from('milestones').update({ title: m.title }).eq('id', m.id).eq('project_id', project.id))
+      }
+    }
+    for (const t of Array.isArray(body.tasks) ? body.tasks : []) {
+      if (t?.id && typeof t.title === 'string') {
+        updates.push(supabase.from('tasks').update({ title: t.title }).eq('id', t.id).eq('project_id', project.id))
+      }
+    }
+    for (const { error } of await Promise.all(updates)) throwIf(error, '계획 수정 저장')
+
+    // 초대 토큰 발급 (unique 충돌 시 재시도)
+    let inviteToken = null
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const token = randomBytes(9).toString('base64url')
+      const { data: updated, error } = await supabase
+        .from('projects')
+        .update({ invite_token: token, status: 'recruiting' })
+        .eq('id', project.id)
+        .select('invite_token')
+        .single()
+      if (!error) {
+        inviteToken = updated.invite_token
+        break
+      }
+      if (error.code !== '23505') throwIf(error, '초대 토큰 발급') // 23505=unique 위반이면 재시도
+    }
+    if (!inviteToken) throw fail(500, '초대 토큰 발급에 실패했습니다. 다시 시도해 주세요.')
+
+    res.json({ inviteToken })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 초대 화면용 데이터: 초대 토큰 + 참여 현황 (생성자 전용) ──
+projects.get('/api/projects/:id/invite', async (req, res) => {
+  try {
+    const { project } = await loadCreatorProject(
+      req,
+      'id, title, headcount, status, invite_token, creator_id',
+    )
+    const { data: members, error } = await supabase
+      .from('project_members')
+      .select('nickname, user_id, joined_at')
+      .eq('project_id', project.id)
+      .order('joined_at')
+    throwIf(error, '팀원 조회')
+
+    res.json({
+      title: project.title,
+      headcount: project.headcount,
+      status: project.status,
+      inviteToken: project.invite_token,
+      joinedCount: members.length,
+      members: members.map((m) => ({
+        nickname: m.nickname,
+        isCreator: m.user_id === project.creator_id,
       })),
     })
   } catch (err) {

@@ -1,20 +1,44 @@
-import { useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router'
 import logo from '../../assets/logo.png'
-import { fallbackProject, makeInviteToken } from './flowMock'
+import { useApi } from '../../api/client'
 import './flow.css'
 
 /* 초대 링크 발급 — 계획 확정 직후 생성자가 보는 화면.
-   4단계에서 토큰은 서버가 발급하고, 참여 현황은 폴링으로 갱신된다. */
+   서버(GET /api/projects/:id/invite)가 발급한 초대 토큰·참여 현황을 조회해 표시한다.
+   팀원 합류(join)는 다음 슬라이스 — 지금 참여 현황은 생성자 1명으로 시작한다. */
 export default function InviteLink() {
   const navigate = useNavigate()
-  const { state } = useLocation()
-
-  const project = useMemo(() => ({ ...fallbackProject(), ...(state ?? {}) }), [state])
-  const token = useMemo(() => makeInviteToken(), [])
-  const link = `${window.location.origin}/join/${token}`
-
+  const { id } = useParams()
+  const { loading, error, data } = useApi(`/api/projects/${id}/invite`)
   const [copied, setCopied] = useState(false)
+
+  if (loading) {
+    return (
+      <div className="flow-page">
+        <div className="flow-card flow-center">
+          <h2>초대 정보를 불러오는 중…</h2>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flow-page">
+        <div className="flow-card flow-center">
+          <h2>초대 정보를 불러오지 못했습니다</h2>
+          <p className="flow-muted">{error}</p>
+          <button type="button" className="btn btn-ghost" onClick={() => navigate('/app/dashboard')}>
+            대시보드로 이동
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const link = `${window.location.origin}/join/${data.inviteToken}`
+  const slots = Array.from({ length: data.headcount }, (_, i) => data.members[i] ?? null)
 
   async function handleCopy() {
     try {
@@ -26,10 +50,6 @@ export default function InviteLink() {
       document.getElementById('invite-link-input')?.select()
     }
   }
-
-  // 생성자 본인은 이미 합류한 상태 → 1/n에서 시작
-  const joined = 1
-  const slots = Array.from({ length: project.headcount }, (_, i) => i < joined)
 
   return (
     <div className="flow-page">
@@ -59,12 +79,12 @@ export default function InviteLink() {
         <div className="join-status">
           <div className="join-status-head">
             <strong>참여 현황</strong>
-            <span>{joined} / {project.headcount}명</span>
+            <span>{data.joinedCount} / {data.headcount}명</span>
           </div>
           <div className="slot-list">
-            {slots.map((filled, i) => (
-              <span key={i} className={`slot${filled ? ' filled' : ''}`}>
-                {filled ? '나 (생성자)' : '대기 중'}
+            {slots.map((member, i) => (
+              <span key={i} className={`slot${member ? ' filled' : ''}`}>
+                {member ? `${member.nickname}${member.isCreator ? ' (생성자)' : ''}` : '대기 중'}
               </span>
             ))}
           </div>
@@ -77,7 +97,7 @@ export default function InviteLink() {
           <button
             type="button"
             className="btn btn-ghost"
-            onClick={() => navigate(`/join/${token}`)}
+            onClick={() => navigate(`/join/${data.inviteToken}`)}
           >
             팀원 화면 미리보기
           </button>

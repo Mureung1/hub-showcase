@@ -17,7 +17,7 @@
 | ② | 백엔드 기초 (Express·Supabase·스키마 13테이블) | ✅ |
 | ③ | 목업 시드 + 3탭 콘텐츠 (실 DB 조회) | ✅ |
 | ③.5 | 프로젝트 생성~배정 플로우 화면 5종 (목업) | ✅ |
-| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 인증·생성/플래너 완료 |
+| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 인증·생성/플래너·계획확정 완료 |
 | ⑤ | 검증 에이전트 + 결함 수정 | ⬜ |
 
 ### 인증 — ✅ 실데이터 동작
@@ -44,7 +44,7 @@
 - [x] 프로젝트 생성 API (위저드 제출 → `projects`·멤버·기피날짜·계획 저장) — `server/routes/projects.js`. 파일 첨부 → Storage는 후속
 - [x] 플래너 에이전트 `server/services/planner.js` (주제·유형·마감일 → 역할·마일스톤·태스크, Claude 구조화 출력 + 템플릿 폴백)
 - [x] 계획 조회 API `GET /api/projects/:id/plan` (생성자 전용) — `PlanReview.jsx` 실데이터 연결
-- [ ] 계획 인라인 수정 저장 / 재생성(3회 제한) / 확정 → 초대 토큰 발급
+- [x] 계획 인라인 수정 저장 / 재생성(3회 제한) / 확정 → 초대 토큰 발급 — `POST /:id/regenerate`·`/confirm`·`GET /:id/invite`, `InviteLink.jsx` 실 링크
 - [ ] join API (초대 토큰 + 닉네임, 정원·중복 검사)
 - [ ] 설문 제출 / 마감 API (정원 미달 하향)
 - [ ] 배정 실행 (`assignRoles` 서버 이식) + 설명자 에이전트 `server/services/explainer.js`
@@ -251,6 +251,11 @@
 ## 개발 로그 (결정·검증)
 
 > 작업(슬라이스/커밋 단위)마다 **왜 그렇게 구현했는지 + 어떻게 검증했는지**를 짧게 남긴다. 최신이 위로.
+
+### 2026-07-24 · 계획 확정·재생성·초대 링크 발급 (생성자 플로우 마무리)
+- **왜**: 계획 검토 화면의 "다시 제안받기"·"이대로 확정" 버튼이 목업이었다. 생성자 계획 흐름을 끝까지 실데이터로 닫아 다음 단계(join)의 전제(실 초대 토큰)를 만든다.
+- **방식**: `projects.js`에 3개 엔드포인트 추가 — `POST /:id/regenerate`(생성자·planning·regen<3 가드 → 플래너 재호출 → tasks·milestones·roles 삭제 후 재저장 → regen_count+1), `POST /:id/confirm`(인라인 수정 이름/제목 저장 → `node:crypto` 초대 토큰 발급 → status=recruiting, 이미 확정 시 같은 토큰 반환하는 **멱등**), `GET /:id/invite`(토큰·참여 현황). 생성·재생성이 공유하도록 계획 저장 로직을 **`savePlan` 헬퍼로 추출**하고, 생성자 확인은 `loadCreatorProject` 헬퍼로 통일. 프론트는 `PlanReview`가 재생성(reload)·확정(수정 동봉)·남은 횟수 표시, `InviteLink`가 `useApi`로 실 링크·현황 조회(`flowMock` 의존 제거).
+- **검증**: curl로 전 흐름 — 생성 201 → 재생성 regenCount 0→1(계획 교체) → regen_count=3에서 재생성 400 → 확정 시 역할명 수정 반영 확인 + 토큰 발급 + status=recruiting → 확정 재호출 **같은 토큰(멱등)** → `GET /invite` 토큰·joinedCount 1·생성자 표시 → 비생성자 403·미로그인 401. `oxlint`·`build` 통과. 테스트 프로젝트 cascade 삭제로 정리. (브라우저 헤드리스 워크스루는 서버 계약을 curl로 전수 검증·프론트는 기존 검증된 useApi/apiPost 패턴 재사용이라 생략 — 필요 시 실행 가능.)
 
 ### 2026-07-24 · 프로젝트 생성 API + 플래너 에이전트
 - **왜**: 목업(위저드 2.2초 setTimeout·PlanReview 템플릿 계획)을 실 서버 + Claude로 교체하는 첫 세로 슬라이스. 위저드 제출 → DB 저장 → 계획 검토를 실데이터로.
