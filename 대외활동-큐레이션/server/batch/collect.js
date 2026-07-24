@@ -7,8 +7,10 @@ import { createClient } from "@supabase/supabase-js";
 import * as contestkorea from "../sources/contestkorea.js";
 import * as wevity from "../sources/wevity.js";
 import * as busan from "../sources/busan_youth.js";
+import * as seoul from "../sources/seoul_youth.js";
 import * as linkareer from "../sources/linkareer.js";
 import * as youthcenter from "../sources/youthcenter.js";
+import * as scholarship from "../sources/scholarship.js";
 import { deriveRegionFromDistrict } from "../regionLookup.js";
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -128,6 +130,23 @@ async function collectBusan() {
   return rows;
 }
 
+// 서울 청년몽땅정보통: 부산청년플랫폼의 서울판. 게시글에 마감일이 구조 필드로 없어 needs_review로,
+// 지역은 서울로 둔다. 게시판이 작아(수십 건) 빈 페이지에서 자연히 멈춘다.
+async function collectSeoul() {
+  const rows = [];
+  for (let p = 1; p <= 10; p++) {
+    let list;
+    try { list = await seoul.fetchList(p); }
+    catch (e) { console.log(`서울: 목록(페이지 ${p}) 요청 실패(${e.message}), 여기까지만 수집`); break; }
+    if (!list.length) break;
+    for (const it of list) {
+      rows.push({ title: it.title, org: "서울시", category: "지자체", track: "activity", source: "서울청년몽땅정보통", url: it.sourceUrl, deadline: null, posted_at: today, parse_status: "needs_review", eligibility: { ...base, regions: ["서울"], forUniv: true, text: "" } });
+    }
+    await sleep(300);
+  }
+  return rows;
+}
+
 async function collectLinkareer() {
   const rows = [];
   for (const t of linkareer.TYPES) {
@@ -143,7 +162,7 @@ async function collectLinkareer() {
         if (!it.forUniv) continue; // 청소년 전용 등 대학생 대상 아니면 수집 제외
         if (it.isNoise) continue; // 친목·스포츠레저 캐주얼 동아리(이력에 안 맞음) 제외
         const parseStatus = isLocalGovOrg(it.org) ? "needs_review" : "curated";
-        rows.push({ title: it.title, org: it.org, category: t.category, track: "activity", source: "링커리어", url: it.sourceUrl, deadline: it.deadline, posted_at: today, parse_status: parseStatus, eligibility: { ...base, forUniv: true, text: "" } });
+        rows.push({ title: it.title, org: it.org, category: t.category, track: "activity", source: "링커리어", url: it.sourceUrl, deadline: it.deadline, posted_at: today, parse_status: parseStatus, eligibility: { ...base, regions: deriveRegionFromDistrict(`${it.title} ${it.org || ""}`), forUniv: true, text: "" } });
       }
       if (stop) { console.log(`링커리어(유형${t.id}): 연속 마감 ${CONSECUTIVE_EXPIRED_STOP}건, 페이지 ${p}에서 중단`); break; }
       if (p * 20 >= totalCount) break;
@@ -173,9 +192,30 @@ async function collectYouthcenter() {
       if (consecutiveExpired >= CONSECUTIVE_EXPIRED_STOP) { stop = true; break; }
       // enrollment: 참여제외대상에 "재학생"이 있으면 졸업예정만(실측 확인). forUniv는 그대로 true로
       // 두고(온통청년 자체가 청년정책 포털이라 대학생도 기본 대상), enrollment로 더 좁힌다.
-      rows.push({ title: it.title, org: it.org, category: youthcenterCategory(it.mclsfNm), track: "activity", source: "온통청년", url: it.sourceUrl, deadline: it.deadline, posted_at: today, parse_status: "curated", eligibility: { ...base, regions: it.regions, enrollment: it.enrollment, forUniv: true, text: it.text.slice(0, 300) } });
+      // 지역: zipCd에서 온 것(it.regions) + 제목·기관명에서 뽑은 것을 합친다. zipCd가 비어 무관([])으로
+      // 오는 경우가 많아, "광주청년..." 같은 제목의 지자체 정책이 전국으로 잘못 뜨는 걸 제목으로 보완한다.
+      const regions = [...new Set([...it.regions, ...deriveRegionFromDistrict(`${it.title} ${it.org || ""}`)])];
+      rows.push({ title: it.title, org: it.org, category: youthcenterCategory(it.mclsfNm), track: "activity", source: "온통청년", url: it.sourceUrl, deadline: it.deadline, posted_at: today, parse_status: "curated", eligibility: { ...base, regions, enrollment: it.enrollment, forUniv: true, text: it.text.slice(0, 300) } });
     }
     if (stop) { console.log(`온통청년: 연속 마감 ${CONSECUTIVE_EXPIRED_STOP}건, 페이지 ${p}에서 중단`); break; }
+    if (p * 100 >= totalCount) break;
+    await sleep(300);
+  }
+  return rows;
+}
+
+// 한국장학재단: 월 1회 갱신 스냅샷(1,850건). 성적·소득 기준이 자유문장이라 규칙으로 못 뽑아
+// 장학은 needs_review(확인 필요)로 두고, 성적·소득 조건을 카드 근거(text)로 보여준다.
+async function collectScholarship() {
+  const rows = [];
+  for (let p = 1; p <= 20; p++) {
+    let items, totalCount;
+    try { ({ items, totalCount } = await scholarship.fetchList(p, 100)); }
+    catch (e) { console.log(`장학재단: 목록(페이지 ${p}) 요청 실패(${e.message}), 여기까지만 수집`); break; }
+    if (!items.length) break;
+    for (const it of items) {
+      rows.push({ title: it.title, org: it.org, category: "장학", track: "scholarship", source: "한국장학재단", url: it.url, deadline: it.deadline, posted_at: today, parse_status: "needs_review", eligibility: { ...base, forUniv: true, text: it.text.slice(0, 300) } });
+    }
     if (p * 100 >= totalCount) break;
     await sleep(300);
   }
@@ -200,8 +240,8 @@ async function fetchAllTitles() {
 
 async function run() {
   // 소스 하나가 실패해도(일시적 5xx 등) 나머지 소스가 이미 모은 건 버리지 않는다(allSettled).
-  const settled = await Promise.allSettled([collectContestkorea(), collectWevity(), collectBusan(), collectLinkareer(), collectYouthcenter()]);
-  const names = ["콘코", "위비티", "부산", "링커리어", "온통청년"];
+  const settled = await Promise.allSettled([collectContestkorea(), collectWevity(), collectBusan(), collectSeoul(), collectLinkareer(), collectYouthcenter(), collectScholarship()]);
+  const names = ["콘코", "위비티", "부산", "서울", "링커리어", "온통청년", "장학재단"];
   const groups = settled.map((s, i) => {
     if (s.status === "rejected") { console.log(`${names[i]}: 전체 실패(${s.reason?.message}), 0건으로 처리`); return []; }
     return s.value;
@@ -222,7 +262,7 @@ async function run() {
 
   const { data, error } = await supabase.from("postings").upsert(rows, { onConflict: "url", ignoreDuplicates: true }).select("id");
   if (error) throw error;
-  console.log(`수집: 콘코 ${groups[0].length} + 위비티 ${groups[1].length} + 부산 ${groups[2].length} + 링커리어 ${groups[3].length} + 온통청년 ${groups[4].length} = ${all.length}건`);
+  console.log(`수집: 콘코 ${groups[0].length} + 위비티 ${groups[1].length} + 부산 ${groups[2].length} + 서울 ${groups[3].length} + 링커리어 ${groups[4].length} + 온통청년 ${groups[5].length} + 장학재단 ${groups[6].length} = ${all.length}건`);
   console.log(`제목 중복 ${dup}건 걸러냄. DB 신규 저장 ${data.length}건.`);
 }
 
