@@ -2,15 +2,13 @@
   "schemaVersion": 1,
   "title": "LocalTwin — 설명 가능한 동네 상권 분석",
   "summary": "서울 동네 상권을 지도와 공공데이터로 함께 읽어, 예비 창업자가 입지를 비교할 수 있게 돕는 설명 가능한 분석 도구입니다.",
-  "githubUser": "HyunKN(HyunKN)",
+  "githubUser": "HyunKN(정현우)",
   "demoUrl": "https://localtwin-product.vercel.app/",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/market-analysis.webp",
     "screenshots/analysis-controls.webp",
-    "screenshots/location-score.webp",
-    "screenshots/competition-and-activity.webp",
-    "screenshots/population-and-evidence.webp"
+    "screenshots/location-score.webp"
   ],
   "problem": "입지를 고르려는 소상공인은 주변 경쟁 점포, 개·폐업, 매출, 유동인구, 인구와 데이터 기준 시점을 여러 사이트에서 따로 확인해야 합니다. 숫자만 나열하면 근거와 한계를 함께 판단하기 어렵습니다.",
   "targetUsers": [
@@ -26,10 +24,8 @@
   ],
   "featureTags": [
     "상권 분석",
-    "입지 비교",
     "공공데이터",
-    "지도 시각화",
-    "설명 가능한 점수"
+    "지도 시각화"
   ],
   "techStack": [
     "React",
@@ -46,9 +42,7 @@
   "techHighlights": [
     "React와 TypeScript로 지도 선택, 반경, 업종, 분석 탭을 하나의 탐색 흐름으로 연결했습니다.",
     "MapLibre GL에 상권 경계, 반경, 주변 점포 marker, 동일 업종 밀도를 겹쳐 공간 맥락을 보여줍니다.",
-    "FastAPI와 SQLAlchemy가 검증된 상권·점포·통계 데이터를 API로 제공하고, Alembic으로 스키마 변경을 관리합니다.",
-    "Vercel 웹 서비스와 Render API를 연결해 한국어 상권 분석 서비스를 배포했습니다.",
-    "서울 공공데이터와 KOSIS 통계를 데이터 출처·기간·공간 단위와 함께 표시해 해석 가능한 결과를 유지합니다."
+    "FastAPI와 SQLAlchemy가 검증된 서울 공공데이터와 KOSIS 통계를 데이터 기반으로 상권·점포·통계 데이터를 API로 제공하고, Alembic으로 스키마 변경을 관리합니다."
   ],
   "developmentWithAI": "저는 해결할 문제, 제출 범위, 데이터 해석 원칙과 최종 검토를 맡았습니다. Codex와 GPT-5.6은 요구사항을 검증 가능한 작업으로 분해하고, 개발 하네스와 아키텍처 경계를 정리하며, 구현·디버깅·테스트·배포·문서화의 반복 작업을 지원했습니다. 저는 매 단계에서 실제 화면과 테스트 결과를 확인하고 범위와 변경을 승인했습니다.",
   "agent": {
