@@ -81,3 +81,37 @@ model RegionZoneName {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// 환경부_전국대형폐기물수거수수료정보표준데이터(tn_pubr_public_lar_was_fee_api) 전량을 그대로 캐시.
+// larWasSpcfct(규격)/mngInstNm(관리기관명)은 지자체마다 신고 성실도가 달라 약 절반의 행만 실제 값을
+// 가짐(전국 22,831건 중 규격 11,882건·관리기관명 11,127건 실측 확인, 나머지는 빈 값) — 값이 있으면
+// 그대로 보여주고 없으면 카테고리+수수료만 보여준다(빈 값을 임의로 채우지 않음, CLAUDE.md 원칙). 연
+// 1회 갱신되는 안정적인 전국 데이터라 RegionRule처럼 지연 캐시하지 않고 Item 카탈로그처럼 전량 배치
+// 동기화한다(scripts/syncBulkyWasteFees.ts, 매번 전체를 지우고 새로 채움 — 행마다 안정적인 자연키가 없어 upsert 불가).
+model BulkyWasteFee {
+  id         String   @id @default(cuid())
+  ctpvNm     String
+  sggNm      String
+  itemName   String // larWasNm
+  category   String // larWasSeNm
+  spec       String? // larWasSpcfct — 값이 있는 행만(약 52%), 없으면 null
+  paidFree   String // paidFreeYn ("유료"/"무료")
+  fee        Int
+  mngInstNm  String? // 관리기관명 — 값이 있는 행만(약 49%), 신고 사이트 URL이 없을 때 문의처 안내용
+  sourceDate String // crtrYmd — 정부 데이터 기준일자
+  fetchedAt  DateTime @default(now())
+
+  @@index([ctpvNm, sggNm, itemName])
+}
+
+// 대형폐기물 수수료 API에는 공식 신고 사이트 URL이 없어(관리기관명도 실측 결과 대부분 빈 값) 별도로
+// 수동 확인한 지자체만 시드로 관리한다 — scripts/seedBulkyWasteReportSites.ts. 없는 지자체는 URL을
+// 지어내지 않고 프론트에서 "아직 없음" 상태로 안내한다.
+model BulkyWasteReportSite {
+  id        String @id @default(cuid())
+  ctpvNm    String
+  sggNm     String
+  reportUrl String
+
+  @@unique([ctpvNm, sggNm])
+}
