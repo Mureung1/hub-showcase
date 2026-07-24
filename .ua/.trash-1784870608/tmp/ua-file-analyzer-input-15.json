@@ -1,0 +1,14 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "supabase/tests/database/mock_ai_team_member_rls.sql",
+      "language": "sql",
+      "sizeLines": 841,
+      "fileCategory": "data"
+    }
+  ],
+  "batchImportData": {
+    "supabase/tests/database/mock_ai_team_member_rls.sql": []
+  }
+}

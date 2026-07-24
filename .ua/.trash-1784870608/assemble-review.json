@@ -1,0 +1,14 @@
+{
+  "fixedSectionOk": true,
+  "nodesRecovered": 0,
+  "edgesRestored": 0,
+  "crossBatchEdgesAdded": 0,
+  "typesRemapped": 0,
+  "complexityRemapped": 0,
+  "notes": [
+    "병합 보고서의 219개 node와 509개 edge 입력·출력 수가 원본 batch 및 assembled graph와 일치했고, ID·complexity 정규화나 dangling edge 문제는 없었습니다.",
+    "121개 importMap 항목에서 확인된 193개 내부 import edge가 모두 존재해 cross-batch import 추가는 필요하지 않았습니다.",
+    "apps/web/src/test 아래의 테스트 helper 두 파일이 production으로 오인된 의미 오류를 수정했습니다. 테스트 helper에서 테스트 파일로 향하던 tested_by edge 7개를 제거하고 두 helper node의 tested tag를 제거했습니다.",
+    "수정 후 graph는 219개 node와 502개 edge이며 누락 ID, unknown type·complexity, dangling edge, 중복 node·edge가 없습니다."
+  ]
+}

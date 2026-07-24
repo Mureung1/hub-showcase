@@ -1,0 +1,237 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "apps/web/src/App.jsx",
+      "language": "javascript",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/auth/AuthCallbackPage.jsx",
+      "language": "javascript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/auth/ProtectedRoute.jsx",
+      "language": "javascript",
+      "sizeLines": 15,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/auth/useAuth.js",
+      "language": "javascript",
+      "sizeLines": 9,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/data/apiTeamFlowRepository.js",
+      "language": "javascript",
+      "sizeLines": 337,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/data/apiTeamFlowRepository.test.js",
+      "language": "javascript",
+      "sizeLines": 221,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/landing/LandingPage.jsx",
+      "language": "javascript",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/state/TeamFlowContext.js",
+      "language": "javascript",
+      "sizeLines": 3,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/state/TeamFlowProvider.jsx",
+      "language": "javascript",
+      "sizeLines": 441,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "apps/web/src/App.jsx": [
+      "apps/web/src/auth/AuthCallbackPage.jsx",
+      "apps/web/src/auth/ProtectedRoute.jsx",
+      "apps/web/src/auth/useAuth.js",
+      "apps/web/src/components/layout/AppShell.jsx",
+      "apps/web/src/components/layout/ProjectShell.jsx",
+      "apps/web/src/data/apiTeamFlowRepository.js",
+      "apps/web/src/features/ai/AiPage.jsx",
+      "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "apps/web/src/features/landing/LandingPage.jsx",
+      "apps/web/src/features/members/MembersPage.jsx",
+      "apps/web/src/features/notes/NotesPage.jsx",
+      "apps/web/src/features/projects/ProjectListPage.jsx",
+      "apps/web/src/features/resources/ResourcesPage.jsx",
+      "apps/web/src/features/tasks/MyTasksPage.jsx",
+      "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "apps/web/src/state/TeamFlowProvider.jsx"
+    ],
+    "apps/web/src/auth/AuthCallbackPage.jsx": [
+      "apps/web/src/auth/useAuth.js",
+      "apps/web/src/features/landing/LandingPage.module.css"
+    ],
+    "apps/web/src/auth/ProtectedRoute.jsx": [
+      "apps/web/src/auth/useAuth.js"
+    ],
+    "apps/web/src/auth/useAuth.js": [
+      "apps/web/src/auth/AuthContext.js"
+    ],
+    "apps/web/src/data/apiTeamFlowRepository.js": [],
+    "apps/web/src/data/apiTeamFlowRepository.test.js": [
+      "apps/web/src/data/apiTeamFlowRepository.js"
+    ],
+    "apps/web/src/features/landing/LandingPage.jsx": [
+      "apps/web/src/auth/useAuth.js",
+      "apps/web/src/features/landing/LandingPage.module.css"
+    ],
+    "apps/web/src/state/TeamFlowContext.js": [],
+    "apps/web/src/state/TeamFlowProvider.jsx": [
+      "apps/web/src/state/TeamFlowContext.js"
+    ]
+  },
+  "neighborMap": {
+    "apps/web/src/App.jsx": [
+      {
+        "path": "apps/web/src/components/layout/AppShell.jsx",
+        "batchIndex": 1,
+        "symbols": [
+          "AppShell",
+          "Brand",
+          "Account"
+        ]
+      },
+      {
+        "path": "apps/web/src/components/layout/ProjectShell.jsx",
+        "batchIndex": 1,
+        "symbols": [
+          "ProjectShell"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/ai/AiPage.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "AiPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "ProjectDashboardPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/members/MembersPage.jsx",
+        "batchIndex": 1,
+        "symbols": [
+          "MembersPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/notes/NotesPage.jsx",
+        "batchIndex": 1,
+        "symbols": [
+          "NotesPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/projects/ProjectListPage.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "ProjectListPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/resources/ResourcesPage.jsx",
+        "batchIndex": 5,
+        "symbols": [
+          "ResourcesPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/tasks/MyTasksPage.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "MyTasksPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "ProjectTasksPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/auth/AuthFlows.test.jsx",
+        "batchIndex": 2,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/main.jsx",
+        "batchIndex": 2,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/test/renderTeamFlowApp.jsx",
+        "batchIndex": 2,
+        "symbols": [
+          "authenticatedSession",
+          "createTestAuthClient",
+          "renderAuthenticatedApp"
+        ]
+      }
+    ],
+    "apps/web/src/auth/AuthCallbackPage.jsx": [
+      {
+        "path": "apps/web/src/features/landing/LandingPage.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      }
+    ],
+    "apps/web/src/auth/useAuth.js": [
+      {
+        "path": "apps/web/src/auth/AuthContext.js",
+        "batchIndex": 2,
+        "symbols": [
+          "AuthContext"
+        ]
+      },
+      {
+        "path": "apps/web/src/components/layout/AppShell.jsx",
+        "batchIndex": 1,
+        "symbols": [
+          "AppShell",
+          "Brand",
+          "Account"
+        ]
+      }
+    ],
+    "apps/web/src/features/landing/LandingPage.jsx": [
+      {
+        "path": "apps/web/src/features/landing/LandingPage.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      }
+    ],
+    "apps/web/src/state/TeamFlowContext.js": [
+      {
+        "path": "apps/web/src/state/useTeamFlow.js",
+        "batchIndex": 1,
+        "symbols": [
+          "useTeamFlow"
+        ]
+      }
+    ]
+  }
+}

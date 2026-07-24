@@ -14,6 +14,8 @@ const invitationId = '55555555-5555-4555-8555-555555555555'
 const noteId = '66666666-6666-4666-8666-666666666666'
 const resourceId = '77777777-7777-4777-8777-777777777777'
 const blockedMemberId = '88888888-8888-4888-8888-888888888888'
+const aiMemberId = '99999999-9999-4999-8999-999999999999'
+const aiRunId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 
 const project = {
   id: projectId,
@@ -39,6 +41,53 @@ const member = {
   description: '',
   color: '#3a6898',
   isAi: false,
+}
+
+const aiMember = {
+  id: aiMemberId,
+  projectId,
+  authUserId: null,
+  email: null,
+  kind: 'ai',
+  name: '자료조사 AI',
+  initial: 'AI',
+  role: '자료 조사',
+  description: '',
+  color: '#6950b8',
+  isAi: true,
+}
+
+const contextConfig = {
+  project: true,
+  notes: true,
+  tasks: true,
+  team: false,
+  resources: true,
+}
+
+const aiAgent = {
+  memberId: aiMemberId,
+  projectId,
+  instructions: '신뢰할 수 있는 자료를 구조화해 주세요.',
+  contextConfig,
+  enabled: true,
+  createdAt: '2026-07-24T00:00:00.000Z',
+  updatedAt: '2026-07-24T00:00:00.000Z',
+}
+
+const aiRun = {
+  id: aiRunId,
+  projectId,
+  aiMemberId,
+  taskId,
+  status: 'pending_review',
+  contextSnapshot: { version: 1, task: { id: taskId, title: '인증 API 테스트' } },
+  resultMarkdown: '# 모의 실행 결과',
+  errorMessage: null,
+  appliedNoteId: null,
+  createdBy: userId,
+  createdAt: '2026-07-24T00:00:00.000Z',
+  updatedAt: '2026-07-24T00:00:00.000Z',
 }
 
 const task = {
@@ -107,12 +156,11 @@ const bootstrap = {
   resources: [resource],
   invitations: [invitation],
   currentMemberIdsByProject: { [projectId]: memberId },
-  aiSettings: {},
-  aiHistory: [],
+  aiAgents: [aiAgent],
+  aiRuns: [aiRun],
   currentUserId: memberId,
-  aiMemberId: '',
   accessMode: 'authenticated',
-  capabilities: { projects: true, members: true, tasks: true, notes: true, resources: true, ai: false },
+  capabilities: { projects: true, members: true, tasks: true, notes: true, resources: true, ai: true },
 }
 
 const repository = {
@@ -152,6 +200,14 @@ const repository = {
   }),
   updateResource: async (_id, patch) => ({ ...resource, ...patch }),
   deleteResource: async () => resourceId,
+  createAiAgent: async () => ({ member: aiMember, aiAgent }),
+  updateAiAgent: async (_id, input) => ({ ...aiAgent, ...input }),
+  createAiRun: async () => aiRun,
+  applyAiRun: async () => ({
+    aiRun: { ...aiRun, status: 'applied', appliedNoteId: noteId },
+    note: { ...note, id: noteId, title: `AI 결과 · ${task.title}`, content: aiRun.resultMarkdown },
+  }),
+  rejectAiRun: async () => ({ ...aiRun, status: 'rejected' }),
 }
 
 const app = createApp({
@@ -315,6 +371,64 @@ test('tasks can be created, fully or partially updated, and deleted', async () =
   const deleteResponse = await request(`/api/tasks/${taskId}`, { method: 'DELETE' })
   assert.equal(deleteResponse.status, 200)
   assert.deepEqual(await deleteResponse.json(), { taskId })
+})
+
+test('mock AI teammate can be created, configured, run and reviewed', async () => {
+  const createResponse = await request(`/api/projects/${projectId}/ai-agent`, { method: 'POST' })
+  assert.equal(createResponse.status, 201)
+  assert.deepEqual(await createResponse.json(), { member: aiMember, aiAgent })
+
+  const settingsResponse = await request(`/api/ai-agents/${aiMemberId}`, {
+    method: 'PATCH',
+    body: {
+      instructions: '신뢰할 수 있는 자료를 구조화해 주세요.',
+      contextConfig,
+    },
+  })
+  assert.equal(settingsResponse.status, 200)
+  assert.deepEqual(await settingsResponse.json(), { aiAgent })
+
+  const runResponse = await request(`/api/ai-agents/${aiMemberId}/runs`, {
+    method: 'POST',
+    body: { taskId },
+  })
+  assert.equal(runResponse.status, 201)
+  assert.deepEqual(await runResponse.json(), { aiRun })
+
+  const applyResponse = await request(`/api/ai-runs/${aiRunId}/apply`, { method: 'POST' })
+  assert.equal(applyResponse.status, 200)
+  assert.equal((await applyResponse.json()).aiRun.status, 'applied')
+
+  const rejectResponse = await request(`/api/ai-runs/${aiRunId}/reject`, { method: 'POST' })
+  assert.equal(rejectResponse.status, 200)
+  assert.equal((await rejectResponse.json()).aiRun.status, 'rejected')
+})
+
+test('mock AI routes reject invalid ids and malformed settings before repository access', async () => {
+  assert.equal((await request('/api/projects/not-a-uuid/ai-agent', { method: 'POST' })).status, 400)
+  assert.equal((await request('/api/ai-agents/not-a-uuid', {
+    method: 'PATCH',
+    body: { instructions: '', contextConfig },
+  })).status, 400)
+  assert.equal((await request(`/api/ai-agents/${aiMemberId}`, {
+    method: 'PATCH',
+    body: {
+      instructions: 'x'.repeat(10_001),
+      contextConfig,
+    },
+  })).status, 400)
+  assert.equal((await request(`/api/ai-agents/${aiMemberId}`, {
+    method: 'PATCH',
+    body: {
+      instructions: '',
+      contextConfig: { ...contextConfig, unexpected: true },
+    },
+  })).status, 400)
+  assert.equal((await request(`/api/ai-agents/${aiMemberId}/runs`, {
+    method: 'POST',
+    body: { taskId: 'not-a-uuid' },
+  })).status, 400)
+  assert.equal((await request('/api/ai-runs/not-a-uuid/apply', { method: 'POST' })).status, 400)
 })
 
 test('shared notes support create, partial update and delete', async () => {

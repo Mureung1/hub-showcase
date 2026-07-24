@@ -1,6 +1,8 @@
-import { RESOURCE_TYPE } from '@teamflow/shared'
+import { RESOURCE_TYPE, RESOURCE_UPLOAD } from '@teamflow/shared'
 
 export const editableResourceTypes = Object.values(RESOURCE_TYPE).filter((type) => type !== RESOURCE_TYPE.FOLDER)
+
+const MAX_FILE_SIZE_LABEL = `${RESOURCE_UPLOAD.MAX_BYTES / 1024 / 1024}MB`
 
 export function isSafeHttpUrl(value) {
   if (!value) return false
@@ -10,6 +12,14 @@ export function isSafeHttpUrl(value) {
   } catch {
     return false
   }
+}
+
+export function validateUploadFile(file) {
+  if (!file) return '업로드할 파일을 선택해 주세요.'
+  if (file.size <= 0 || file.size > RESOURCE_UPLOAD.MAX_BYTES) {
+    return `파일은 1바이트 이상 ${MAX_FILE_SIZE_LABEL} 이하여야 합니다.`
+  }
+  return ''
 }
 
 export function validateResource(values) {

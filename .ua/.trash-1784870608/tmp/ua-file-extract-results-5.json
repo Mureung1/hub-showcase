@@ -1,0 +1,1225 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 6,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 6,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 6,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "apps/web/src/components/ui/ResourceIcon.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 19,
+      "nonEmptyLines": 16,
+      "functions": [
+        {
+          "name": "ResourceIcon",
+          "startLine": 16,
+          "endLine": 19,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ResourceIcon",
+          "line": 16,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/resources/AddResourceModal.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 158,
+      "nonEmptyLines": 148,
+      "functions": [
+        {
+          "name": "formatFileSize",
+          "startLine": 17,
+          "endLine": 22,
+          "params": [
+            "bytes"
+          ]
+        },
+        {
+          "name": "AddResourceModal",
+          "startLine": 24,
+          "endLine": 158,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "AddResourceModal",
+          "line": 24,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "formatFileSize",
+          "callee": "Number.isFinite",
+          "lineNumber": 18
+        },
+        {
+          "caller": "formatFileSize",
+          "callee": "(bytes / 1024).toFixed",
+          "lineNumber": 20
+        },
+        {
+          "caller": "formatFileSize",
+          "callee": "(bytes / 1024 / 1024).toFixed",
+          "lineNumber": 21
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "useTeamFlow",
+          "lineNumber": 25
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "useState",
+          "lineNumber": 26
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "useState",
+          "lineNumber": 27
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "useState",
+          "lineNumber": 28
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "useState",
+          "lineNumber": 29
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "useState",
+          "lineNumber": 30
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "validateUploadFile",
+          "lineNumber": 31
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "useCallback",
+          "lineNumber": 32
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "onClose",
+          "lineNumber": 33
+        },
+        {
+          "caller": "submit",
+          "callee": "event.preventDefault",
+          "lineNumber": 37
+        },
+        {
+          "caller": "submit",
+          "callee": "values.name.trim",
+          "lineNumber": 40
+        },
+        {
+          "caller": "submit",
+          "callee": "validateResource",
+          "lineNumber": 41
+        },
+        {
+          "caller": "submit",
+          "callee": "setError",
+          "lineNumber": 43
+        },
+        {
+          "caller": "submit",
+          "callee": "setSubmitting",
+          "lineNumber": 47
+        },
+        {
+          "caller": "submit",
+          "callee": "setError",
+          "lineNumber": 48
+        },
+        {
+          "caller": "submit",
+          "callee": "values.name.trim",
+          "lineNumber": 51
+        },
+        {
+          "caller": "submit",
+          "callee": "values.description.trim",
+          "lineNumber": 52
+        },
+        {
+          "caller": "submit",
+          "callee": "actions.uploadResource",
+          "lineNumber": 56
+        },
+        {
+          "caller": "submit",
+          "callee": "actions.createResource",
+          "lineNumber": 58
+        },
+        {
+          "caller": "submit",
+          "callee": "values.url.trim",
+          "lineNumber": 61
+        },
+        {
+          "caller": "submit",
+          "callee": "onClose",
+          "lineNumber": 64
+        },
+        {
+          "caller": "submit",
+          "callee": "setError",
+          "lineNumber": 66
+        },
+        {
+          "caller": "submit",
+          "callee": "setSubmitting",
+          "lineNumber": 70
+        },
+        {
+          "caller": "selectFile",
+          "callee": "setFile",
+          "lineNumber": 76
+        },
+        {
+          "caller": "selectFile",
+          "callee": "setValues",
+          "lineNumber": 77
+        },
+        {
+          "caller": "selectFile",
+          "callee": "current.name.trim",
+          "lineNumber": 79
+        },
+        {
+          "caller": "selectFile",
+          "callee": "setError",
+          "lineNumber": 83
+        },
+        {
+          "caller": "selectFile",
+          "callee": "validateUploadFile",
+          "lineNumber": 83
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "values.name.trim",
+          "lineNumber": 87
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "Boolean",
+          "lineNumber": 88
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "values.url.trim",
+          "lineNumber": 88
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setMode",
+          "lineNumber": 108
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setError",
+          "lineNumber": 108
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setMode",
+          "lineNumber": 112
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setError",
+          "lineNumber": 112
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "Boolean",
+          "lineNumber": 124
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "formatFileSize",
+          "lineNumber": 128
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setValues",
+          "lineNumber": 135
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setError",
+          "lineNumber": 135
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "Boolean",
+          "lineNumber": 135
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setValues",
+          "lineNumber": 140
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setError",
+          "lineNumber": 140
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setValues",
+          "lineNumber": 145
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "folders.map",
+          "lineNumber": 147
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setValues",
+          "lineNumber": 152
+        }
+      ],
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 179,
+      "nonEmptyLines": 166,
+      "functions": [
+        {
+          "name": "toValues",
+          "startLine": 17,
+          "endLine": 25,
+          "params": [
+            "resource"
+          ]
+        },
+        {
+          "name": "deletionMessage",
+          "startLine": 27,
+          "endLine": 32,
+          "params": [
+            "error",
+            "isFolder"
+          ]
+        },
+        {
+          "name": "formatFileSize",
+          "startLine": 34,
+          "endLine": 39,
+          "params": [
+            "bytes"
+          ]
+        },
+        {
+          "name": "ResourceDetailModal",
+          "startLine": 41,
+          "endLine": 179,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ResourceDetailModal",
+          "line": 41,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "deletionMessage",
+          "callee": "['FOLDER_NOT_EMPTY', 'RESOURCE_NOT_EMPTY', 'CONFLICT'].includes",
+          "lineNumber": 28
+        },
+        {
+          "caller": "formatFileSize",
+          "callee": "Number.isFinite",
+          "lineNumber": 35
+        },
+        {
+          "caller": "formatFileSize",
+          "callee": "(bytes / 1024).toFixed",
+          "lineNumber": 37
+        },
+        {
+          "caller": "formatFileSize",
+          "callee": "(bytes / 1024 / 1024).toFixed",
+          "lineNumber": 38
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "useTeamFlow",
+          "lineNumber": 42
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "Boolean",
+          "lineNumber": 44
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "useState",
+          "lineNumber": 45
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "useState",
+          "lineNumber": 46
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "useState",
+          "lineNumber": 47
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "toValues",
+          "lineNumber": 47
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "useState",
+          "lineNumber": 48
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "useState",
+          "lineNumber": 49
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "useState",
+          "lineNumber": 50
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "isSafeHttpUrl",
+          "lineNumber": 51
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "useCallback",
+          "lineNumber": 52
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "onClose",
+          "lineNumber": 53
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "useEffect",
+          "lineNumber": 56
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setValues",
+          "lineNumber": 57
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "toValues",
+          "lineNumber": 57
+        },
+        {
+          "caller": "save",
+          "callee": "event.preventDefault",
+          "lineNumber": 61
+        },
+        {
+          "caller": "save",
+          "callee": "values.name.trim",
+          "lineNumber": 63
+        },
+        {
+          "caller": "save",
+          "callee": "validateResource",
+          "lineNumber": 64
+        },
+        {
+          "caller": "save",
+          "callee": "setError",
+          "lineNumber": 66
+        },
+        {
+          "caller": "save",
+          "callee": "setSubmitting",
+          "lineNumber": 70
+        },
+        {
+          "caller": "save",
+          "callee": "setError",
+          "lineNumber": 71
+        },
+        {
+          "caller": "save",
+          "callee": "values.name.trim",
+          "lineNumber": 74
+        },
+        {
+          "caller": "save",
+          "callee": "values.description.trim",
+          "lineNumber": 74
+        },
+        {
+          "caller": "save",
+          "callee": "values.name.trim",
+          "lineNumber": 77
+        },
+        {
+          "caller": "save",
+          "callee": "values.description.trim",
+          "lineNumber": 78
+        },
+        {
+          "caller": "save",
+          "callee": "values.name.trim",
+          "lineNumber": 82
+        },
+        {
+          "caller": "save",
+          "callee": "values.description.trim",
+          "lineNumber": 83
+        },
+        {
+          "caller": "save",
+          "callee": "values.url.trim",
+          "lineNumber": 85
+        },
+        {
+          "caller": "save",
+          "callee": "actions.updateResource",
+          "lineNumber": 88
+        },
+        {
+          "caller": "save",
+          "callee": "setEditing",
+          "lineNumber": 89
+        },
+        {
+          "caller": "save",
+          "callee": "setError",
+          "lineNumber": 91
+        },
+        {
+          "caller": "save",
+          "callee": "setSubmitting",
+          "lineNumber": 93
+        },
+        {
+          "caller": "downloadFile",
+          "callee": "setDownloading",
+          "lineNumber": 98
+        },
+        {
+          "caller": "downloadFile",
+          "callee": "setError",
+          "lineNumber": 99
+        },
+        {
+          "caller": "downloadFile",
+          "callee": "actions.getResourceDownloadUrl",
+          "lineNumber": 101
+        },
+        {
+          "caller": "downloadFile",
+          "callee": "isSafeHttpUrl",
+          "lineNumber": 102
+        },
+        {
+          "caller": "downloadFile",
+          "callee": "document.createElement",
+          "lineNumber": 104
+        },
+        {
+          "caller": "downloadFile",
+          "callee": "document.body.append",
+          "lineNumber": 108
+        },
+        {
+          "caller": "downloadFile",
+          "callee": "anchor.click",
+          "lineNumber": 109
+        },
+        {
+          "caller": "downloadFile",
+          "callee": "anchor.remove",
+          "lineNumber": 110
+        },
+        {
+          "caller": "downloadFile",
+          "callee": "setError",
+          "lineNumber": 112
+        },
+        {
+          "caller": "downloadFile",
+          "callee": "setDownloading",
+          "lineNumber": 114
+        },
+        {
+          "caller": "remove",
+          "callee": "setSubmitting",
+          "lineNumber": 119
+        },
+        {
+          "caller": "remove",
+          "callee": "setError",
+          "lineNumber": 120
+        },
+        {
+          "caller": "remove",
+          "callee": "actions.deleteResource",
+          "lineNumber": 122
+        },
+        {
+          "caller": "remove",
+          "callee": "onDeleted",
+          "lineNumber": 123
+        },
+        {
+          "caller": "remove",
+          "callee": "setError",
+          "lineNumber": 125
+        },
+        {
+          "caller": "remove",
+          "callee": "deletionMessage",
+          "lineNumber": 125
+        },
+        {
+          "caller": "remove",
+          "callee": "setConfirmingDelete",
+          "lineNumber": 126
+        },
+        {
+          "caller": "remove",
+          "callee": "setSubmitting",
+          "lineNumber": 128
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setEditing",
+          "lineNumber": 134
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setError",
+          "lineNumber": 134
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "values.name.trim",
+          "lineNumber": 134
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setConfirmingDelete",
+          "lineNumber": 136
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "remove",
+          "lineNumber": 136
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setError",
+          "lineNumber": 138
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setConfirmingDelete",
+          "lineNumber": 138
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "downloadFile",
+          "lineNumber": 138
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setError",
+          "lineNumber": 138
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setEditing",
+          "lineNumber": 138
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setValues",
+          "lineNumber": 147
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setError",
+          "lineNumber": 147
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setValues",
+          "lineNumber": 149
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setError",
+          "lineNumber": 149
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "editableResourceTypes.map",
+          "lineNumber": 149
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setValues",
+          "lineNumber": 150
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setError",
+          "lineNumber": 150
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setValues",
+          "lineNumber": 152
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "folders.map",
+          "lineNumber": 152
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "setValues",
+          "lineNumber": 153
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "formatShortDate",
+          "lineNumber": 167
+        },
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "formatFileSize",
+          "lineNumber": 169
+        }
+      ],
+      "metrics": {
+        "importCount": 8,
+        "exportCount": 1,
+        "functionCount": 4,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/resources/ResourcesPage.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 119,
+      "nonEmptyLines": 110,
+      "functions": [
+        {
+          "name": "ResourcesPage",
+          "startLine": 21,
+          "endLine": 119,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ResourcesPage",
+          "line": 21,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ResourcesPage",
+          "callee": "useOutletContext",
+          "lineNumber": 22
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useTeamFlow",
+          "lineNumber": 23
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 25
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 26
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 27
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 28
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 29
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 30
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 31
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useMemo",
+          "lineNumber": 32
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "state.members.map",
+          "lineNumber": 32
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useMemo",
+          "lineNumber": 33
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "state.resources.filter",
+          "lineNumber": 33
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useMemo",
+          "lineNumber": 34
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources.filter",
+          "lineNumber": 34
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "folders.find",
+          "lineNumber": 35
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "state.resources.find",
+          "lineNumber": 36
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useEffect",
+          "lineNumber": 38
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "reloadOnEntry().catch",
+          "lineNumber": 39
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "reloadOnEntry",
+          "lineNumber": 39
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "query.trim().toLocaleLowerCase",
+          "lineNumber": 42
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "query.trim",
+          "lineNumber": 42
+        },
+        {
+          "caller": "matchesQuery",
+          "callee": "`${resource.name} ${resource.description ?? ''} ${memberById.get(resource.ownerId)?.name ?? ''}`.toLocaleLowerCase('ko-KR').includes",
+          "lineNumber": 43
+        },
+        {
+          "caller": "matchesQuery",
+          "callee": "`${resource.name} ${resource.description ?? ''} ${memberById.get(resource.ownerId)?.name ?? ''}`.toLocaleLowerCase",
+          "lineNumber": 43
+        },
+        {
+          "caller": "matchesQuery",
+          "callee": "memberById.get",
+          "lineNumber": 43
+        },
+        {
+          "caller": "byUpdatedAt",
+          "callee": "String(b.updatedAt ?? '').localeCompare",
+          "lineNumber": 45
+        },
+        {
+          "caller": "byUpdatedAt",
+          "callee": "String",
+          "lineNumber": 45
+        },
+        {
+          "caller": "byUpdatedAt",
+          "callee": "String",
+          "lineNumber": 45
+        },
+        {
+          "caller": "byUpdatedAt",
+          "callee": "String(a.updatedAt ?? '').localeCompare",
+          "lineNumber": 46
+        },
+        {
+          "caller": "byUpdatedAt",
+          "callee": "String",
+          "lineNumber": 46
+        },
+        {
+          "caller": "byUpdatedAt",
+          "callee": "String",
+          "lineNumber": 46
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "folders.filter(matchesQuery).sort",
+          "lineNumber": 48
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "folders.filter",
+          "lineNumber": 48
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources\n    .filter((resource) => resource.type !== RESOURCE_TYPE.FOLDER)\n    .filter((resource) => (resource.parentId ?? null) === currentFolderId)\n    .filter((resource) => type === 'all' || resource.type === type)\n    .filter(matchesQuery)\n    .sort",
+          "lineNumber": 50
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources\n    .filter((resource) => resource.type !== RESOURCE_TYPE.FOLDER)\n    .filter((resource) => (resource.parentId ?? null) === currentFolderId)\n    .filter((resource) => type === 'all' || resource.type === type)\n    .filter",
+          "lineNumber": 50
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources\n    .filter((resource) => resource.type !== RESOURCE_TYPE.FOLDER)\n    .filter((resource) => (resource.parentId ?? null) === currentFolderId)\n    .filter",
+          "lineNumber": 50
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources\n    .filter((resource) => resource.type !== RESOURCE_TYPE.FOLDER)\n    .filter",
+          "lineNumber": 50
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources\n    .filter",
+          "lineNumber": 50
+        },
+        {
+          "caller": "openFolder",
+          "callee": "setCurrentFolderId",
+          "lineNumber": 58
+        },
+        {
+          "caller": "openFolder",
+          "callee": "setQuery",
+          "lineNumber": 59
+        },
+        {
+          "caller": "openFolder",
+          "callee": "setType",
+          "lineNumber": 60
+        },
+        {
+          "caller": "goRoot",
+          "callee": "setCurrentFolderId",
+          "lineNumber": 64
+        },
+        {
+          "caller": "goRoot",
+          "callee": "setQuery",
+          "lineNumber": 65
+        },
+        {
+          "caller": "goRoot",
+          "callee": "setType",
+          "lineNumber": 66
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setSelectedId",
+          "lineNumber": 81
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setShowFolderCreate",
+          "lineNumber": 83
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setShowAdd",
+          "lineNumber": 84
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setQuery",
+          "lineNumber": 89
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setType",
+          "lineNumber": 91
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "Object.values(RESOURCE_TYPE).filter((value) => value !== RESOURCE_TYPE.FOLDER).map",
+          "lineNumber": 91
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "Object.values(RESOURCE_TYPE).filter",
+          "lineNumber": 91
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "Object.values",
+          "lineNumber": 91
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setNewestFirst",
+          "lineNumber": 92
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "visibleFolders.map",
+          "lineNumber": 99
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources.filter",
+          "lineNumber": 99
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "openFolder",
+          "lineNumber": 99
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setSelectedId",
+          "lineNumber": 99
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "visibleFiles.map",
+          "lineNumber": 108
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "memberById.get",
+          "lineNumber": 108
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setSelectedId",
+          "lineNumber": 108
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "event.preventDefault",
+          "lineNumber": 108
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setSelectedId",
+          "lineNumber": 108
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "formatShortDate",
+          "lineNumber": 108
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setShowFolderCreate",
+          "lineNumber": 114
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setShowAdd",
+          "lineNumber": 115
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "memberById.get",
+          "lineNumber": 116
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setSelectedId",
+          "lineNumber": 116
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setSelectedId",
+          "lineNumber": 116
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "goRoot",
+          "lineNumber": 116
+        }
+      ],
+      "metrics": {
+        "importCount": 9,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/resources/resourceValidation.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 31,
+      "nonEmptyLines": 26,
+      "functions": [
+        {
+          "name": "isSafeHttpUrl",
+          "startLine": 7,
+          "endLine": 15,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateUploadFile",
+          "startLine": 17,
+          "endLine": 23,
+          "params": [
+            "file"
+          ]
+        },
+        {
+          "name": "validateResource",
+          "startLine": 25,
+          "endLine": 31,
+          "params": [
+            "values"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "editableResourceTypes",
+          "line": 3,
+          "isDefault": false
+        },
+        {
+          "name": "isSafeHttpUrl",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "validateUploadFile",
+          "line": 17,
+          "isDefault": false
+        },
+        {
+          "name": "validateResource",
+          "line": 25,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "validateResource",
+          "callee": "values.name.trim",
+          "lineNumber": 26
+        },
+        {
+          "caller": "validateResource",
+          "callee": "values.url?.trim",
+          "lineNumber": 27
+        },
+        {
+          "caller": "validateResource",
+          "callee": "isSafeHttpUrl",
+          "lineNumber": 29
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 4,
+        "functionCount": 3,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/resources/resourceValidation.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 41,
+      "nonEmptyLines": 33,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    }
+  ]
+}

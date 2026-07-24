@@ -166,6 +166,7 @@ npm.cmd run build
 ## 프로젝트 문서
 
 - [기획서](./docs/plan.md)
+- [3주차 주간 계획](./docs/weekly-plan.md)
 - [아키텍처 설명서](./docs/architecture.md)
 - [API 명세서](./docs/api.md)
 - [배포 가이드](./docs/deployment.md)

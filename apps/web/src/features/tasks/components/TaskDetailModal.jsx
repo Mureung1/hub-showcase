@@ -33,8 +33,7 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
   const member = members.find((candidate) => candidate.id === task.assigneeId)
   const project = state.projects.find((candidate) => candidate.id === task.projectId)
   const availableMembers = members.filter((candidate) => (
-    !candidate.isAi
-    && (candidate.kind === 'user' || Boolean(candidate.authUserId))
+    (candidate.kind === 'user' || candidate.kind === 'ai')
     && (candidate.projectId ? candidate.projectId === task.projectId : project?.memberIds?.includes(candidate.id))
   ))
 

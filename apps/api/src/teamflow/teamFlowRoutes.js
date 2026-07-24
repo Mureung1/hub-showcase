@@ -13,6 +13,7 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIME_TYPE_PATTERN = /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/i
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const AI_CONTEXT_KEYS = ['notes', 'project', 'resources', 'tasks', 'team']
 
 function hasOwn(value, key) {
   return Object.prototype.hasOwnProperty.call(value ?? {}, key)
@@ -233,6 +234,45 @@ function validateInvitation(body) {
     : { fields: { email: '올바른 이메일 주소를 입력해 주세요.' } }
 }
 
+function validateAiSettings(body) {
+  const value = {
+    instructions: body?.instructions,
+    contextConfig: body?.contextConfig,
+  }
+  const fields = {}
+
+  if (typeof value.instructions !== 'string' || value.instructions.length > 10_000) {
+    fields.instructions = '역할 지시사항은 10,000자 이하여야 합니다.'
+  }
+
+  const contextKeys = (
+    value.contextConfig
+    && typeof value.contextConfig === 'object'
+    && !Array.isArray(value.contextConfig)
+  )
+    ? Object.keys(value.contextConfig).sort()
+    : []
+  const hasExactKeys = (
+    contextKeys.length === AI_CONTEXT_KEYS.length
+    && contextKeys.every((key, index) => key === AI_CONTEXT_KEYS[index])
+  )
+  if (
+    !hasExactKeys
+    || AI_CONTEXT_KEYS.some((key) => typeof value.contextConfig?.[key] !== 'boolean')
+  ) {
+    fields.contextConfig = '다섯 가지 프로젝트 컨텍스트 설정을 확인해 주세요.'
+  }
+
+  return Object.keys(fields).length ? { fields } : { value }
+}
+
+function validateAiRun(body) {
+  const taskId = cleanString(body?.taskId)
+  return UUID_PATTERN.test(taskId)
+    ? { value: { taskId } }
+    : { fields: { taskId: '할 일 ID를 확인해 주세요.' } }
+}
+
 function validationError(response, fields) {
   response.status(400).json({
     error: { code: 'VALIDATION_ERROR', message: '입력값을 확인해 주세요.', fields },
@@ -364,6 +404,57 @@ export function createTeamFlowRouter({ authVerifier, repositoryFactory, demoRepo
     return asyncRoute(async () => {
       const result = await request.teamFlow.repository.deleteMember(request.params.memberId)
       response.status(200).json(typeof result === 'string' ? { memberId: result } : result)
+    })(request, response)
+  })
+
+  router.post('/projects/:projectId/ai-agent', async (request, response) => {
+    if (!validId(response, 'projectId', request.params.projectId)) return
+    return asyncRoute(async () => {
+      response.status(201).json(await request.teamFlow.repository.createAiAgent(request.params.projectId))
+    })(request, response)
+  })
+
+  router.patch('/ai-agents/:memberId', async (request, response) => {
+    if (!validId(response, 'memberId', request.params.memberId)) return
+    const validation = validateAiSettings(request.body)
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(200).json({
+        aiAgent: await request.teamFlow.repository.updateAiAgent(
+          request.params.memberId,
+          validation.value,
+        ),
+      })
+    })(request, response)
+  })
+
+  router.post('/ai-agents/:memberId/runs', async (request, response) => {
+    if (!validId(response, 'memberId', request.params.memberId)) return
+    const validation = validateAiRun(request.body)
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(201).json({
+        aiRun: await request.teamFlow.repository.createAiRun(
+          request.params.memberId,
+          validation.value.taskId,
+        ),
+      })
+    })(request, response)
+  })
+
+  router.post('/ai-runs/:runId/apply', async (request, response) => {
+    if (!validId(response, 'runId', request.params.runId)) return
+    return asyncRoute(async () => {
+      response.status(200).json(await request.teamFlow.repository.applyAiRun(request.params.runId))
+    })(request, response)
+  })
+
+  router.post('/ai-runs/:runId/reject', async (request, response) => {
+    if (!validId(response, 'runId', request.params.runId)) return
+    return asyncRoute(async () => {
+      response.status(200).json({
+        aiRun: await request.teamFlow.repository.rejectAiRun(request.params.runId),
+      })
     })(request, response)
   })
 

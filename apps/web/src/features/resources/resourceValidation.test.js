@@ -1,7 +1,25 @@
-import { RESOURCE_TYPE } from '@teamflow/shared'
+import { RESOURCE_TYPE, RESOURCE_UPLOAD } from '@teamflow/shared'
 import { describe, expect, it } from 'vitest'
 
-import { isSafeHttpUrl, validateResource } from './resourceValidation.js'
+import { isSafeHttpUrl, validateResource, validateUploadFile } from './resourceValidation.js'
+
+const FILE_SIZE_ERROR = `파일은 1바이트 이상 ${RESOURCE_UPLOAD.MAX_BYTES / 1024 / 1024}MB 이하여야 합니다.`
+
+describe('upload file validation', () => {
+  it('requires a selected file', () => {
+    expect(validateUploadFile(null)).toBe('업로드할 파일을 선택해 주세요.')
+  })
+
+  it('rejects empty and oversized files', () => {
+    expect(validateUploadFile({ size: 0 })).toBe(FILE_SIZE_ERROR)
+    expect(validateUploadFile({ size: RESOURCE_UPLOAD.MAX_BYTES + 1 })).toBe(FILE_SIZE_ERROR)
+  })
+
+  it('accepts the inclusive file size boundaries', () => {
+    expect(validateUploadFile({ size: 1 })).toBe('')
+    expect(validateUploadFile({ size: RESOURCE_UPLOAD.MAX_BYTES })).toBe('')
+  })
+})
 
 describe('resource validation', () => {
   it('allows only http and https external URLs', () => {

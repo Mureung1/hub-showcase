@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto'
 
-import { PROJECT_ICON, RESOURCE_UPLOAD } from '@teamflow/shared'
+import { PROJECT_ICON, RESOURCE_UPLOAD, TASK_STATUS } from '@teamflow/shared'
+
+import {
+  buildMockAiContext as defaultBuildMockAiContext,
+  generateMockAiResult as defaultGenerateMockAiResult,
+} from './mockAiGenerator.js'
 
 const MEMBER_COLUMNS = [
   'id',
@@ -66,6 +71,31 @@ const RESOURCE_COLUMNS = [
   'updated_at',
 ].join(',')
 
+const AI_AGENT_COLUMNS = [
+  'member_id',
+  'project_id',
+  'instructions',
+  'context_config',
+  'enabled',
+  'created_at',
+  'updated_at',
+].join(',')
+
+const AI_RUN_COLUMNS = [
+  'id',
+  'project_id',
+  'ai_member_id',
+  'task_id',
+  'status',
+  'context_snapshot',
+  'result_markdown',
+  'error_message',
+  'applied_note_id',
+  'created_by',
+  'created_at',
+  'updated_at',
+].join(',')
+
 export class TeamFlowStoreError extends Error {
   constructor(message, options) {
     super(message, options)
@@ -105,7 +135,10 @@ function databaseErrorMessage(error) {
 
 function throwDatabaseError(operation, error) {
   const message = databaseErrorMessage(error)
-  if (message.includes('TEAMFLOW_NOT_FOUND') || /(?:PROJECT|MEMBER|INVITATION)_NOT_FOUND/.test(message)) {
+  if (
+    message.includes('TEAMFLOW_NOT_FOUND')
+    || /(?:PROJECT|MEMBER|INVITATION|TASK|AI_AGENT|AI_RUN)_NOT_FOUND/.test(message)
+  ) {
     throw new TeamFlowNotFoundError()
   }
   if (/(?:INVALID_RESOURCE_URL|RESOURCE_URL_REQUIRED|FOLDER_URL_NOT_ALLOWED|FOLDER_MUST_BE_ROOT|INVALID_RESOURCE_PARENT|INVALID_RESOURCE_TYPE_CHANGE)/.test(message)) {
@@ -220,6 +253,35 @@ function mapInvitation(row) {
   }
 }
 
+function mapAiAgent(row) {
+  return {
+    memberId: row.member_id,
+    projectId: row.project_id,
+    instructions: row.instructions ?? '',
+    contextConfig: row.context_config,
+    enabled: row.enabled,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function mapAiRun(row) {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    aiMemberId: row.ai_member_id,
+    taskId: row.task_id ?? null,
+    status: row.status,
+    contextSnapshot: row.context_snapshot,
+    resultMarkdown: row.result_markdown ?? '',
+    errorMessage: row.error_message ?? null,
+    appliedNoteId: row.applied_note_id ?? null,
+    createdBy: row.created_by ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
 function unwrapRpcRow(data) {
   return Array.isArray(data) ? data[0] : data
 }
@@ -227,6 +289,10 @@ function unwrapRpcRow(data) {
 function rpcRows(data) {
   if (!data) return []
   return Array.isArray(data) ? data : [data]
+}
+
+function rpcObject(data) {
+  return unwrapRpcRow(data)
 }
 
 function hasOwn(value, key) {
@@ -261,7 +327,14 @@ export function createSupabaseDemoRepository(supabase) {
   }
 }
 
-export function createSupabaseTeamFlowRepository(supabase, user) {
+export function createSupabaseTeamFlowRepository(
+  supabase,
+  user,
+  {
+    buildMockAiContext = defaultBuildMockAiContext,
+    generateMockAiResult = defaultGenerateMockAiResult,
+  } = {},
+) {
   async function currentProjectMemberId(projectId) {
     const { data, error } = await supabase
       .from('project_access')
@@ -313,6 +386,8 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
         tasksResult,
         notesResult,
         resourcesResult,
+        aiAgentsResult,
+        aiRunsResult,
         invitations,
       ] = await Promise.all([
         supabase.from('projects').select(PROJECT_COLUMNS).order('created_at', { ascending: false }),
@@ -320,10 +395,20 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
         supabase.from('tasks').select(TASK_COLUMNS).order('created_at', { ascending: false }),
         supabase.from('notes').select(NOTE_COLUMNS).order('updated_at', { ascending: false }),
         supabase.from('resources').select(RESOURCE_COLUMNS).eq('upload_status', 'ready').order('created_at', { ascending: true }),
+        supabase.from('ai_agents').select(AI_AGENT_COLUMNS).order('created_at', { ascending: true }),
+        supabase.from('ai_runs').select(AI_RUN_COLUMNS).order('created_at', { ascending: false }),
         listInvitations(),
       ])
 
-      const failed = [projectsResult, membersResult, tasksResult, notesResult, resourcesResult]
+      const failed = [
+        projectsResult,
+        membersResult,
+        tasksResult,
+        notesResult,
+        resourcesResult,
+        aiAgentsResult,
+        aiRunsResult,
+      ]
         .find((result) => result.error)
       if (failed) throwDatabaseError('워크스페이스 조회', failed.error)
 
@@ -354,12 +439,11 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
         tasks: tasksResult.data.map((task) => mapTask(task)),
         notes: notesResult.data.map(mapNote),
         resources: resourcesResult.data.map(mapResource),
+        aiAgents: aiAgentsResult.data.map(mapAiAgent),
+        aiRuns: aiRunsResult.data.map(mapAiRun),
         invitations,
         currentMemberIdsByProject,
-        aiSettings: {},
-        aiHistory: [],
         currentUserId: Object.values(currentMemberIdsByProject)[0] ?? '',
-        aiMemberId: '',
         accessMode: 'authenticated',
         capabilities: {
           projects: true,
@@ -367,12 +451,185 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
           tasks: true,
           notes: true,
           resources: true,
-          ai: false,
+          ai: true,
         },
       }
     },
 
     listInvitations,
+
+    async createAiAgent(projectId) {
+      const { data, error } = await supabase.rpc('create_project_ai_agent', {
+        p_project_id: projectId,
+      })
+      if (error) throwDatabaseError('AI 팀원 생성', error)
+      const result = rpcObject(data)
+      const member = result?.member
+      const aiAgent = result?.aiAgent ?? result?.ai_agent
+      if (!member || !aiAgent) storeError('AI 팀원 생성')
+      return {
+        member: mapMember(member),
+        aiAgent: mapAiAgent(aiAgent),
+      }
+    },
+
+    async updateAiAgent(memberId, input) {
+      const { data, error } = await supabase.rpc('update_ai_agent_settings', {
+        p_member_id: memberId,
+        p_instructions: input.instructions,
+        p_context_config: input.contextConfig,
+      })
+      if (error) throwDatabaseError('AI 팀원 설정 저장', error)
+      const row = rpcObject(data)
+      if (!row) throw new TeamFlowNotFoundError()
+      return mapAiAgent(row)
+    },
+
+    async createAiRun(memberId, taskId) {
+      const { data: agent, error: agentError } = await supabase
+        .from('ai_agents')
+        .select(AI_AGENT_COLUMNS)
+        .eq('member_id', memberId)
+        .maybeSingle()
+
+      if (agentError) throwDatabaseError('AI 팀원 조회', agentError)
+      if (!agent) throw new TeamFlowNotFoundError()
+      if (!agent.enabled) throw new TeamFlowConflictError('비활성화된 AI 팀원은 실행할 수 없습니다.')
+
+      const { data: task, error: taskError } = await supabase
+        .from('tasks')
+        .select(TASK_COLUMNS)
+        .eq('id', taskId)
+        .eq('project_id', agent.project_id)
+        .maybeSingle()
+
+      if (taskError) throwDatabaseError('AI 할 일 조회', taskError)
+      if (!task) throw new TeamFlowNotFoundError()
+      if (task.assignee_id !== memberId) {
+        throw new TeamFlowConflictError('AI 팀원에게 배정된 할 일만 실행할 수 있습니다.')
+      }
+      if (task.status === TASK_STATUS.COMPLETED) {
+        throw new TeamFlowConflictError('완료된 할 일은 다시 실행할 수 없습니다.')
+      }
+
+      const [
+        projectResult,
+        notesResult,
+        tasksResult,
+        membersResult,
+        resourcesResult,
+      ] = await Promise.all([
+        supabase
+          .from('projects')
+          .select(PROJECT_COLUMNS)
+          .eq('id', agent.project_id)
+          .maybeSingle(),
+        supabase
+          .from('notes')
+          .select(NOTE_COLUMNS)
+          .eq('project_id', agent.project_id)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('tasks')
+          .select(TASK_COLUMNS)
+          .eq('project_id', agent.project_id)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('members')
+          .select(MEMBER_COLUMNS)
+          .eq('project_id', agent.project_id)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('resources')
+          .select(RESOURCE_COLUMNS)
+          .eq('project_id', agent.project_id)
+          .eq('upload_status', 'ready')
+          .order('created_at', { ascending: true }),
+      ])
+
+      const failed = [
+        projectResult,
+        notesResult,
+        tasksResult,
+        membersResult,
+        resourcesResult,
+      ].find((result) => result.error)
+      if (failed) throwDatabaseError('AI 실행 컨텍스트 조회', failed.error)
+      if (!projectResult.data) throw new TeamFlowNotFoundError()
+
+      const generatorInput = {
+        instructions: agent.instructions ?? '',
+        contextConfig: agent.context_config,
+        task: mapTask(task),
+        project: mapProject(projectResult.data),
+        notes: (notesResult.data ?? []).map(mapNote),
+        tasks: (tasksResult.data ?? []).map(mapTask),
+        members: (membersResult.data ?? []).map(mapMember),
+        resources: (resourcesResult.data ?? []).map(mapResource),
+      }
+
+      let contextSnapshot
+      let generated
+      try {
+        contextSnapshot = buildMockAiContext(generatorInput)
+        generated = generateMockAiResult(generatorInput)
+      } catch {
+        contextSnapshot ??= {
+          version: 1,
+          instructions: agent.instructions ?? '',
+          task: mapTask(task),
+          contextConfig: agent.context_config,
+          context: {},
+          truncation: { generationFailed: true },
+        }
+        const message = 'Mock 결과 생성에 실패했습니다.'
+        const { data, error: failedRunError } = await supabase.rpc('create_failed_mock_ai_run', {
+          p_member_id: memberId,
+          p_task_id: taskId,
+          p_context_snapshot: contextSnapshot,
+          p_error_message: message,
+        })
+        if (failedRunError) throwDatabaseError('AI 실패 이력 저장', failedRunError)
+        const row = rpcObject(data)
+        if (!row) storeError('AI 실패 이력 저장')
+        return mapAiRun(row)
+      }
+
+      const { data, error } = await supabase.rpc('create_mock_ai_run', {
+        p_member_id: memberId,
+        p_task_id: taskId,
+        p_context_snapshot: generated.contextSnapshot,
+        p_result_markdown: generated.resultMarkdown,
+      })
+      if (error) throwDatabaseError('AI 모의 작업 실행', error)
+      const row = rpcObject(data)
+      if (!row) storeError('AI 모의 작업 실행')
+      return mapAiRun(row)
+    },
+
+    async applyAiRun(runId) {
+      const { data, error } = await supabase.rpc('apply_ai_run', {
+        p_run_id: runId,
+      })
+      if (error) throwDatabaseError('AI 실행 결과 노트 반영', error)
+      const result = rpcObject(data)
+      const aiRun = result?.aiRun ?? result?.ai_run
+      if (!aiRun) throw new TeamFlowNotFoundError()
+      return {
+        aiRun: mapAiRun(aiRun),
+        note: result.note ? mapNote(result.note) : null,
+      }
+    },
+
+    async rejectAiRun(runId) {
+      const { data, error } = await supabase.rpc('reject_ai_run', {
+        p_run_id: runId,
+      })
+      if (error) throwDatabaseError('AI 실행 결과 보류', error)
+      const row = rpcObject(data)
+      if (!row) throw new TeamFlowNotFoundError()
+      return mapAiRun(row)
+    },
 
     async createInvitation(projectId, input) {
       const { data, error } = await supabase.rpc('create_project_invitation', {

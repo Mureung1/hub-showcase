@@ -1,4 +1,5 @@
 export {
+  AI_RUN_STATUS,
   PROJECT_STATUS,
   PROJECT_ICON,
   INVITATION_STATUS,
@@ -7,6 +8,7 @@ export {
   RESOURCE_TYPE,
   TASK_STATUS,
   calculateProgress,
+  isAiRunStatus,
   isProjectStatus,
   isProjectIcon,
   isInvitationStatus,

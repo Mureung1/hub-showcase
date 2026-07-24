@@ -61,5 +61,5 @@ export function TaskCreateModal({ projectId, members, onClose }) {
 }
 
 function isAssignableCollaborator(member) {
-  return !member.isAi && (member.kind === 'user' || Boolean(member.authUserId))
+  return member.kind === 'user' || member.kind === 'ai'
 }

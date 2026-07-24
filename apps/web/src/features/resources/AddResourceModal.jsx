@@ -5,7 +5,7 @@ import forms from '../../components/ui/forms.module.css'
 import { Modal } from '../../components/ui/Modal.jsx'
 import { useTeamFlow } from '../../state/useTeamFlow.js'
 import styles from './ResourcesPage.module.css'
-import { validateResource } from './resourceValidation.js'
+import { validateResource, validateUploadFile } from './resourceValidation.js'
 
 const ADD_MODE = Object.freeze({
   FILE: 'file',
@@ -28,6 +28,7 @@ export function AddResourceModal({ projectId, folders, defaultParentId = null, o
   const [values, setValues] = useState({ name: '', description: '', url: '', parentId: defaultParentId ?? '' })
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const fileValidationError = mode === ADD_MODE.FILE ? validateUploadFile(file) : ''
   const closeModal = useCallback(() => {
     if (!submitting) onClose()
   }, [onClose, submitting])
@@ -35,13 +36,8 @@ export function AddResourceModal({ projectId, folders, defaultParentId = null, o
   async function submit(event) {
     event.preventDefault()
     const validationError = mode === ADD_MODE.FILE
-      ? (!file
-          ? '업로드할 파일을 선택해 주세요.'
-          : file.size <= 0 || file.size > RESOURCE_UPLOAD.MAX_BYTES
-            ? `파일은 1바이트 이상 ${MAX_FILE_SIZE_LABEL} 이하여야 합니다.`
-            : !values.name.trim()
-              ? '자료 이름을 입력해 주세요.'
-              : '')
+      ? (fileValidationError
+          || (!values.name.trim() ? '자료 이름을 입력해 주세요.' : ''))
       : validateResource({ ...values, type: RESOURCE_TYPE.LINK })
     if (validationError) {
       setError(validationError)
@@ -84,14 +80,12 @@ export function AddResourceModal({ projectId, folders, defaultParentId = null, o
         ? (nextFile?.name ?? '')
         : current.name,
     }))
-    setError(nextFile && (nextFile.size <= 0 || nextFile.size > RESOURCE_UPLOAD.MAX_BYTES)
-      ? `파일은 1바이트 이상 ${MAX_FILE_SIZE_LABEL} 이하여야 합니다.`
-      : '')
+    setError(nextFile ? validateUploadFile(nextFile) : '')
   }
 
   const submitDisabled = submitting
     || !values.name.trim()
-    || (mode === ADD_MODE.FILE ? !file || file.size <= 0 || file.size > RESOURCE_UPLOAD.MAX_BYTES : !values.url.trim())
+    || (mode === ADD_MODE.FILE ? Boolean(fileValidationError) : !values.url.trim())
 
   return (
     <Modal
@@ -127,7 +121,7 @@ export function AddResourceModal({ projectId, folders, defaultParentId = null, o
               type="file"
               onChange={selectFile}
               aria-describedby="resource-file-help"
-              aria-invalid={Boolean(file && (file.size <= 0 || file.size > RESOURCE_UPLOAD.MAX_BYTES))}
+              aria-invalid={Boolean(file && fileValidationError)}
             />
             <span id="resource-file-help" className={styles.fileHelp}>
               {file

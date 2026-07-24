@@ -2,9 +2,11 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  AI_RUN_STATUS,
   calculateProgress,
   INVITATION_STATUS,
   isInvitationStatus,
+  isAiRunStatus,
   isMemberKind,
   isProjectIcon,
   isProjectStatus,
@@ -58,9 +60,28 @@ test('isProjectIcon accepts only supported project icon values', () => {
 
 test('shared collaboration and resource predicates accept only contract values', () => {
   assert.equal(isMemberKind(MEMBER_KIND.USER), true)
+  assert.equal(MEMBER_KIND.AI, 'ai')
+  assert.equal(isMemberKind(MEMBER_KIND.AI), true)
   assert.equal(isMemberKind('owner'), false)
   assert.equal(isInvitationStatus(INVITATION_STATUS.PENDING), true)
   assert.equal(isInvitationStatus('expired'), false)
   assert.equal(isResourceType(RESOURCE_TYPE.LINK), true)
   assert.equal(isResourceType('file'), false)
+})
+
+test('isAiRunStatus accepts only shared AI execution states', () => {
+  assert.deepEqual(Object.values(AI_RUN_STATUS), [
+    'running',
+    'pending_review',
+    'applied',
+    'rejected',
+    'failed',
+  ])
+  assert.equal(isAiRunStatus(AI_RUN_STATUS.RUNNING), true)
+  assert.equal(isAiRunStatus(AI_RUN_STATUS.PENDING_REVIEW), true)
+  assert.equal(isAiRunStatus(AI_RUN_STATUS.APPLIED), true)
+  assert.equal(isAiRunStatus(AI_RUN_STATUS.REJECTED), true)
+  assert.equal(isAiRunStatus(AI_RUN_STATUS.FAILED), true)
+  assert.equal(isAiRunStatus('completed'), false)
+  assert.equal(isAiRunStatus(null), false)
 })

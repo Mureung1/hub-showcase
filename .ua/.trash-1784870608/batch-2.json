@@ -1,0 +1,683 @@
+{
+  "nodes": [
+    {
+      "id": "file:apps/web/src/auth/AuthContext.js",
+      "type": "file",
+      "name": "AuthContext.js",
+      "filePath": "apps/web/src/auth/AuthContext.js",
+      "summary": "로그인 session, profile, guest 상태와 인증 action을 전달하기 위한 React Context 객체를 정의합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "react"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/auth/AuthFlows.test.jsx",
+      "type": "file",
+      "name": "AuthFlows.test.jsx",
+      "filePath": "apps/web/src/auth/AuthFlows.test.jsx",
+      "summary": "Google OAuth 로그인, guest 진입, 보호 route와 logout 등 주요 인증 사용자 흐름을 검증합니다.",
+      "tags": [
+        "test",
+        "authentication",
+        "regression"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/auth/AuthFlows.test.jsx:renderWithAuth",
+      "type": "function",
+      "name": "renderWithAuth",
+      "filePath": "apps/web/src/auth/AuthFlows.test.jsx",
+      "summary": "테스트용 AuthProvider와 route를 조합해 인증 화면을 렌더링합니다.",
+      "tags": [
+        "test-utility",
+        "testing",
+        "react"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        11,
+        21
+      ]
+    },
+    {
+      "id": "file:apps/web/src/auth/AuthProvider.jsx",
+      "type": "file",
+      "name": "AuthProvider.jsx",
+      "filePath": "apps/web/src/auth/AuthProvider.jsx",
+      "summary": "Supabase session 구독과 Google OAuth, logout, guest session을 통합해 인증 상태를 React Context로 제공합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "react"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Supabase의 초기 session 조회와 auth state subscription을 React effect 수명주기 안에서 정리합니다."
+    },
+    {
+      "id": "function:apps/web/src/auth/AuthProvider.jsx:profileFromSession",
+      "type": "function",
+      "name": "profileFromSession",
+      "filePath": "apps/web/src/auth/AuthProvider.jsx",
+      "summary": "Supabase session metadata에서 화면에 사용할 사용자 profile을 정규화합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "service"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        12,
+        21
+      ]
+    },
+    {
+      "id": "function:apps/web/src/auth/AuthProvider.jsx:AuthProvider",
+      "type": "function",
+      "name": "AuthProvider",
+      "filePath": "apps/web/src/auth/AuthProvider.jsx",
+      "summary": "인증 session, Google OAuth, logout과 guest mode를 Context value로 제공합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "service"
+      ],
+      "complexity": "moderate",
+      "lineRange": [
+        23,
+        131
+      ]
+    },
+    {
+      "id": "file:apps/web/src/auth/supabaseClient.js",
+      "type": "file",
+      "name": "supabaseClient.js",
+      "filePath": "apps/web/src/auth/supabaseClient.js",
+      "summary": "브라우저 환경변수의 Supabase URL·anon key를 검증하고 인증용 client를 지연 생성하거나 주입받도록 합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "react"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/auth/supabaseClient.js:readBrowserSupabaseConfig",
+      "type": "function",
+      "name": "readBrowserSupabaseConfig",
+      "filePath": "apps/web/src/auth/supabaseClient.js",
+      "summary": "브라우저 환경변수에서 Supabase URL과 anon key를 읽고 유효성을 검사합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "service"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        6,
+        34
+      ]
+    },
+    {
+      "id": "function:apps/web/src/auth/supabaseClient.js:createBrowserSupabaseClient",
+      "type": "function",
+      "name": "createBrowserSupabaseClient",
+      "filePath": "apps/web/src/auth/supabaseClient.js",
+      "summary": "검증된 브라우저 설정으로 Supabase client를 생성합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "service"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        36,
+        45
+      ]
+    },
+    {
+      "id": "function:apps/web/src/auth/supabaseClient.js:resolveBrowserSupabaseClient",
+      "type": "function",
+      "name": "resolveBrowserSupabaseClient",
+      "filePath": "apps/web/src/auth/supabaseClient.js",
+      "summary": "주입된 client를 우선 사용하고 없으면 기본 브라우저 client를 지연 생성합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "service"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        47,
+        56
+      ]
+    },
+    {
+      "id": "file:apps/web/src/auth/supabaseClient.test.js",
+      "type": "file",
+      "name": "supabaseClient.test.js",
+      "filePath": "apps/web/src/auth/supabaseClient.test.js",
+      "summary": "브라우저 Supabase 설정 누락·형식 오류와 정상 client 생성 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "authentication",
+        "regression"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/AppFlows.test.jsx",
+      "type": "file",
+      "name": "AppFlows.test.jsx",
+      "filePath": "apps/web/src/features/AppFlows.test.jsx",
+      "summary": "실제 route와 provider를 함께 렌더링해 프로젝트·할 일·노트·자료·AI 팀원 등 핵심 사용자 흐름을 검증하는 통합 UI 테스트입니다.",
+      "tags": [
+        "test",
+        "teamflow",
+        "regression"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:apps/web/src/features/CollaborationFlows.test.jsx",
+      "type": "file",
+      "name": "CollaborationFlows.test.jsx",
+      "filePath": "apps/web/src/features/CollaborationFlows.test.jsx",
+      "summary": "협업자 초대·수락·역할 편집·제거와 프로젝트 탈퇴 같은 협업 수명주기를 검증하는 통합 테스트입니다.",
+      "tags": [
+        "test",
+        "teamflow",
+        "regression"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "type": "file",
+      "name": "MarkdownPreview.jsx",
+      "filePath": "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "summary": "노트의 제한된 Markdown heading·목록·인용·강조·inline code를 React element로 변환하는 경량 preview renderer입니다.",
+      "tags": [
+        "component",
+        "notes",
+        "react"
+      ],
+      "complexity": "simple",
+      "languageNotes": "외부 Markdown parser 없이 제한된 문법만 순차 문자열 변환으로 렌더링합니다."
+    },
+    {
+      "id": "function:apps/web/src/features/notes/MarkdownPreview.jsx:inline",
+      "type": "function",
+      "name": "inline",
+      "filePath": "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "summary": "강조·취소선·inline code 표기를 React inline element로 변환합니다.",
+      "tags": [
+        "utility",
+        "notes",
+        "javascript"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        3,
+        12
+      ]
+    },
+    {
+      "id": "function:apps/web/src/features/notes/MarkdownPreview.jsx:MarkdownPreview",
+      "type": "function",
+      "name": "MarkdownPreview",
+      "filePath": "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "summary": "줄 단위 Markdown을 heading·목록·인용·본문 element로 렌더링합니다.",
+      "tags": [
+        "component",
+        "notes",
+        "react"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        14,
+        49
+      ]
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/components/TaskDetailModal.test.jsx",
+      "type": "file",
+      "name": "TaskDetailModal.test.jsx",
+      "filePath": "apps/web/src/features/tasks/components/TaskDetailModal.test.jsx",
+      "summary": "할 일 상세 modal의 상태 변경, 저장·삭제, 오류 표시와 권한별 동작을 검증합니다.",
+      "tags": [
+        "test",
+        "task-management",
+        "regression"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/main.jsx",
+      "type": "file",
+      "name": "main.jsx",
+      "filePath": "apps/web/src/main.jsx",
+      "summary": "React root를 만들고 BrowserRouter, AuthProvider, TeamFlowProvider, App을 조합해 웹 애플리케이션을 부트스트랩합니다.",
+      "tags": [
+        "entry-point",
+        "react",
+        "routing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/test/createTestTeamFlowRepository.js",
+      "type": "file",
+      "name": "createTestTeamFlowRepository.js",
+      "filePath": "apps/web/src/test/createTestTeamFlowRepository.js",
+      "summary": "프로젝트·협업자·할 일·노트·자료·AI 실행을 메모리에서 처리하는 테스트 전용 repository 구현을 제공합니다.",
+      "tags": [
+        "test-utility",
+        "fixture",
+        "testing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "type": "file",
+      "name": "renderTeamFlowApp.jsx",
+      "filePath": "apps/web/src/test/renderTeamFlowApp.jsx",
+      "summary": "인증 session과 테스트 repository를 주입해 TeamFlow App을 원하는 route에서 렌더링하는 공통 테스트 helper입니다.",
+      "tags": [
+        "test-utility",
+        "fixture",
+        "testing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/test/renderTeamFlowApp.jsx:createTestAuthClient",
+      "type": "function",
+      "name": "createTestAuthClient",
+      "filePath": "apps/web/src/test/renderTeamFlowApp.jsx",
+      "summary": "인증 상태와 auth callback을 예측 가능하게 모사하는 테스트 client를 만듭니다.",
+      "tags": [
+        "test-utility",
+        "testing",
+        "react"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        17,
+        26
+      ]
+    },
+    {
+      "id": "function:apps/web/src/test/renderTeamFlowApp.jsx:renderAuthenticatedApp",
+      "type": "function",
+      "name": "renderAuthenticatedApp",
+      "filePath": "apps/web/src/test/renderTeamFlowApp.jsx",
+      "summary": "인증 session과 repository를 주입한 TeamFlow app을 지정 route에서 렌더링합니다.",
+      "tags": [
+        "test-utility",
+        "testing",
+        "react"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        28,
+        38
+      ]
+    },
+    {
+      "id": "file:apps/web/src/test/teamFlowFixture.js",
+      "type": "file",
+      "name": "teamFlowFixture.js",
+      "filePath": "apps/web/src/test/teamFlowFixture.js",
+      "summary": "통합 테스트가 공유하는 프로젝트, 협업자, 할 일, 노트, 자료, AI agent·run fixture를 정의합니다.",
+      "tags": [
+        "test-utility",
+        "fixture",
+        "testing"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/web/src/auth/AuthFlows.test.jsx",
+      "target": "function:apps/web/src/auth/AuthFlows.test.jsx:renderWithAuth",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/auth/AuthProvider.jsx",
+      "target": "function:apps/web/src/auth/AuthProvider.jsx:profileFromSession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/auth/AuthProvider.jsx",
+      "target": "function:apps/web/src/auth/AuthProvider.jsx:AuthProvider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/auth/AuthProvider.jsx",
+      "target": "function:apps/web/src/auth/AuthProvider.jsx:AuthProvider",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/auth/supabaseClient.js",
+      "target": "function:apps/web/src/auth/supabaseClient.js:readBrowserSupabaseConfig",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/auth/supabaseClient.js",
+      "target": "function:apps/web/src/auth/supabaseClient.js:readBrowserSupabaseConfig",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/auth/supabaseClient.js",
+      "target": "function:apps/web/src/auth/supabaseClient.js:createBrowserSupabaseClient",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/auth/supabaseClient.js",
+      "target": "function:apps/web/src/auth/supabaseClient.js:createBrowserSupabaseClient",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/auth/supabaseClient.js",
+      "target": "function:apps/web/src/auth/supabaseClient.js:resolveBrowserSupabaseClient",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/auth/supabaseClient.js",
+      "target": "function:apps/web/src/auth/supabaseClient.js:resolveBrowserSupabaseClient",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "target": "function:apps/web/src/features/notes/MarkdownPreview.jsx:inline",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "target": "function:apps/web/src/features/notes/MarkdownPreview.jsx:MarkdownPreview",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "target": "function:apps/web/src/features/notes/MarkdownPreview.jsx:MarkdownPreview",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "target": "function:apps/web/src/test/renderTeamFlowApp.jsx:createTestAuthClient",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "target": "function:apps/web/src/test/renderTeamFlowApp.jsx:createTestAuthClient",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "target": "function:apps/web/src/test/renderTeamFlowApp.jsx:renderAuthenticatedApp",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "target": "function:apps/web/src/test/renderTeamFlowApp.jsx:renderAuthenticatedApp",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/auth/AuthFlows.test.jsx",
+      "target": "file:apps/web/src/App.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/auth/AuthFlows.test.jsx",
+      "target": "file:apps/web/src/auth/AuthProvider.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/auth/AuthFlows.test.jsx",
+      "target": "file:apps/web/src/test/createTestTeamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/auth/AuthFlows.test.jsx",
+      "target": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/auth/AuthProvider.jsx",
+      "target": "file:apps/web/src/auth/AuthContext.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/auth/supabaseClient.test.js",
+      "target": "file:apps/web/src/auth/supabaseClient.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/AppFlows.test.jsx",
+      "target": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/AppFlows.test.jsx",
+      "target": "file:apps/web/src/test/createTestTeamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/AppFlows.test.jsx",
+      "target": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/CollaborationFlows.test.jsx",
+      "target": "file:apps/web/src/test/createTestTeamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/CollaborationFlows.test.jsx",
+      "target": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.test.jsx",
+      "target": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/main.jsx",
+      "target": "file:apps/web/src/App.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/main.jsx",
+      "target": "file:apps/web/src/auth/AuthProvider.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/main.jsx",
+      "target": "file:apps/web/src/auth/supabaseClient.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/main.jsx",
+      "target": "file:apps/web/src/styles/global.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/main.jsx",
+      "target": "file:apps/web/src/styles/tokens.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/test/createTestTeamFlowRepository.js",
+      "target": "file:apps/web/src/test/teamFlowFixture.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "target": "file:apps/web/src/App.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "target": "file:apps/web/src/auth/AuthProvider.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "target": "file:apps/web/src/test/createTestTeamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/auth/AuthProvider.jsx",
+      "target": "file:apps/web/src/auth/AuthFlows.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/test/createTestTeamFlowRepository.js",
+      "target": "file:apps/web/src/auth/AuthFlows.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "target": "file:apps/web/src/auth/AuthFlows.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/auth/supabaseClient.js",
+      "target": "file:apps/web/src/auth/supabaseClient.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "target": "file:apps/web/src/features/AppFlows.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/test/createTestTeamFlowRepository.js",
+      "target": "file:apps/web/src/features/AppFlows.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "target": "file:apps/web/src/features/AppFlows.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/test/createTestTeamFlowRepository.js",
+      "target": "file:apps/web/src/features/CollaborationFlows.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "target": "file:apps/web/src/features/CollaborationFlows.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "target": "file:apps/web/src/features/tasks/components/TaskDetailModal.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

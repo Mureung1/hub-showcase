@@ -1,0 +1,555 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 5,
+  "filesSkipped": [
+    "docs/agent-workflow.html"
+  ],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 5,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 0,
+      "failed": 0,
+      "skipped": 5
+    }
+  },
+  "results": [
+    {
+      "path": "docs/api.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 320,
+      "nonEmptyLines": 252,
+      "sections": [
+        {
+          "heading": "TeamFlow API 명세서",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "기본 정보",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "API 목록",
+          "level": 2,
+          "line": 14
+        },
+        {
+          "heading": "공통 상태값",
+          "level": 2,
+          "line": 32
+        },
+        {
+          "heading": "공개 API",
+          "level": 2,
+          "line": 42
+        },
+        {
+          "heading": "`GET /health`",
+          "level": 3,
+          "line": 44
+        },
+        {
+          "heading": "`GET /api/demo`",
+          "level": 3,
+          "line": 55
+        },
+        {
+          "heading": "로그인 사용자 API",
+          "level": 2,
+          "line": 59
+        },
+        {
+          "heading": "`GET /api/bootstrap`",
+          "level": 3,
+          "line": 61
+        },
+        {
+          "heading": "`POST /api/projects`",
+          "level": 3,
+          "line": 87
+        },
+        {
+          "heading": "`PATCH /api/projects/:projectId`",
+          "level": 3,
+          "line": 118
+        },
+        {
+          "heading": "`POST /api/tasks`",
+          "level": 3,
+          "line": 144
+        },
+        {
+          "heading": "`PATCH /api/tasks/:taskId`",
+          "level": 3,
+          "line": 176
+        },
+        {
+          "heading": "`DELETE /api/tasks/:taskId`",
+          "level": 3,
+          "line": 200
+        },
+        {
+          "heading": "Mock AI 팀원 API",
+          "level": 2,
+          "line": 210
+        },
+        {
+          "heading": "`POST /api/projects/:projectId/ai-agent`",
+          "level": 3,
+          "line": 214
+        },
+        {
+          "heading": "`PATCH /api/ai-agents/:memberId`",
+          "level": 3,
+          "line": 246
+        },
+        {
+          "heading": "`POST /api/ai-agents/:memberId/runs`",
+          "level": 3,
+          "line": 265
+        },
+        {
+          "heading": "`POST /api/ai-runs/:runId/apply`",
+          "level": 3,
+          "line": 277
+        },
+        {
+          "heading": "`POST /api/ai-runs/:runId/reject`",
+          "level": 3,
+          "line": 283
+        },
+        {
+          "heading": "오류 응답",
+          "level": 2,
+          "line": 289
+        },
+        {
+          "heading": "구현 위치",
+          "level": 2,
+          "line": 314
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 22
+      }
+    },
+    {
+      "path": "docs/architecture.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 127,
+      "nonEmptyLines": 86,
+      "sections": [
+        {
+          "heading": "TeamFlow 아키텍처 설명서",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "1. 한 문장으로 설명",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "2. 각 영역의 역할",
+          "level": 2,
+          "line": 14
+        },
+        {
+          "heading": "React/Vite 웹",
+          "level": 3,
+          "line": 16
+        },
+        {
+          "heading": "Express API",
+          "level": 3,
+          "line": 27
+        },
+        {
+          "heading": "Supabase",
+          "level": 3,
+          "line": 39
+        },
+        {
+          "heading": "Shared 패키지",
+          "level": 3,
+          "line": 49
+        },
+        {
+          "heading": "3. Google 로그인 흐름",
+          "level": 2,
+          "line": 53
+        },
+        {
+          "heading": "4. 로그인 사용자의 데이터 흐름",
+          "level": 2,
+          "line": 63
+        },
+        {
+          "heading": "5. 게스트 데이터 흐름",
+          "level": 2,
+          "line": 83
+        },
+        {
+          "heading": "6. 현재 영속화 범위",
+          "level": 2,
+          "line": 94
+        },
+        {
+          "heading": "7. 구조를 설명할 때 강조할 점",
+          "level": 2,
+          "line": 104
+        },
+        {
+          "heading": "8. 1분 발표 예시",
+          "level": 2,
+          "line": 112
+        },
+        {
+          "heading": "9. 주요 코드 위치",
+          "level": 2,
+          "line": 116
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 14
+      }
+    },
+    {
+      "path": "docs/deployment.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 138,
+      "nonEmptyLines": 100,
+      "sections": [
+        {
+          "heading": "TeamFlow 배포 가이드",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "배포 전에",
+          "level": 2,
+          "line": 14
+        },
+        {
+          "heading": "1. Render에 Express API 배포",
+          "level": 2,
+          "line": 32
+        },
+        {
+          "heading": "2. Vercel에 React 웹 배포",
+          "level": 2,
+          "line": 66
+        },
+        {
+          "heading": "3. 두 서비스를 서로 허용",
+          "level": 2,
+          "line": 91
+        },
+        {
+          "heading": "4. Supabase Google 로그인 주소 추가",
+          "level": 2,
+          "line": 106
+        },
+        {
+          "heading": "5. 최종 확인",
+          "level": 2,
+          "line": 128
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    },
+    {
+      "path": "docs/plan.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 215,
+      "nonEmptyLines": 214,
+      "sections": [
+        {
+          "heading": "팀플 관리 웹서비스 기획서",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "1. 프로젝트 주제",
+          "level": 2,
+          "line": 2
+        },
+        {
+          "heading": "2. 문제 정의",
+          "level": 2,
+          "line": 4
+        },
+        {
+          "heading": "3. 문제 배경",
+          "level": 2,
+          "line": 6
+        },
+        {
+          "heading": "4. 사용자 관점 동작 시나리오",
+          "level": 2,
+          "line": 15
+        },
+        {
+          "heading": "시나리오 1. 프로젝트를 처음 생성하는 경우",
+          "level": 3,
+          "line": 16
+        },
+        {
+          "heading": "시나리오 2. 팀플 진행 중 할 일을 관리하는 경우",
+          "level": 3,
+          "line": 23
+        },
+        {
+          "heading": "시나리오 3. 회의록과 자료를 정리하는 경우",
+          "level": 3,
+          "line": 30
+        },
+        {
+          "heading": "시나리오 4. AI 팀원을 활용하는 경우",
+          "level": 3,
+          "line": 36
+        },
+        {
+          "heading": "5. 핵심 기능",
+          "level": 2,
+          "line": 42
+        },
+        {
+          "heading": "기능 1. 할 일 및 역할 관리",
+          "level": 3,
+          "line": 45
+        },
+        {
+          "heading": "주요 기능",
+          "level": 4,
+          "line": 47
+        },
+        {
+          "heading": "할 일 상태",
+          "level": 4,
+          "line": 55
+        },
+        {
+          "heading": "이 기능이 중요한 이유",
+          "level": 4,
+          "line": 61
+        },
+        {
+          "heading": "기능 2. 프로젝트 대시보드",
+          "level": 3,
+          "line": 66
+        },
+        {
+          "heading": "주요 기능",
+          "level": 4,
+          "line": 68
+        },
+        {
+          "heading": "이 기능이 중요한 이유",
+          "level": 4,
+          "line": 77
+        },
+        {
+          "heading": "확장 핵심 기능. AI 팀원",
+          "level": 3,
+          "line": 82
+        },
+        {
+          "heading": "AI 팀원이 사용하는 기본 구조",
+          "level": 4,
+          "line": 86
+        },
+        {
+          "heading": "이 기능이 중요한 이유",
+          "level": 4,
+          "line": 93
+        },
+        {
+          "heading": "6. 화면 구조 UI",
+          "level": 2,
+          "line": 99
+        },
+        {
+          "heading": "1) 프로젝트 목록 화면",
+          "level": 3,
+          "line": 101
+        },
+        {
+          "heading": "주요 요소",
+          "level": 4,
+          "line": 103
+        },
+        {
+          "heading": "주요 동작",
+          "level": 4,
+          "line": 108
+        },
+        {
+          "heading": "2) 프로젝트 생성 화면",
+          "level": 3,
+          "line": 111
+        },
+        {
+          "heading": "주요 요소",
+          "level": 4,
+          "line": 113
+        },
+        {
+          "heading": "주요 동작",
+          "level": 4,
+          "line": 120
+        },
+        {
+          "heading": "3) 프로젝트 대시보드 화면",
+          "level": 3,
+          "line": 123
+        },
+        {
+          "heading": "주요 요소",
+          "level": 4,
+          "line": 125
+        },
+        {
+          "heading": "주요 동작",
+          "level": 4,
+          "line": 133
+        },
+        {
+          "heading": "4) 할 일 및 역할 관리 영역",
+          "level": 3,
+          "line": 137
+        },
+        {
+          "heading": "주요 요소",
+          "level": 4,
+          "line": 139
+        },
+        {
+          "heading": "주요 동작",
+          "level": 4,
+          "line": 146
+        },
+        {
+          "heading": "5) 자료 관리 영역",
+          "level": 3,
+          "line": 150
+        },
+        {
+          "heading": "주요 요소",
+          "level": 4,
+          "line": 152
+        },
+        {
+          "heading": "주요 동작",
+          "level": 4,
+          "line": 157
+        },
+        {
+          "heading": "6) AI 팀원 관리 영역",
+          "level": 3,
+          "line": 159
+        },
+        {
+          "heading": "주요 요소",
+          "level": 4,
+          "line": 161
+        },
+        {
+          "heading": "주요 동작",
+          "level": 4,
+          "line": 168
+        },
+        {
+          "heading": "7. 사용자 흐름",
+          "level": 2,
+          "line": 172
+        },
+        {
+          "heading": "8. 화면 단위 동작 흐름",
+          "level": 2,
+          "line": 186
+        },
+        {
+          "heading": "9. 프로토타입 계획",
+          "level": 2,
+          "line": 203
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 42
+      }
+    },
+    {
+      "path": "docs/weekly-plan.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 49,
+      "nonEmptyLines": 38,
+      "sections": [
+        {
+          "heading": "3주차 주간 계획",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "주간 목표",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "P0 — 주간 필수",
+          "level": 2,
+          "line": 12
+        },
+        {
+          "heading": "P1 — 오늘 추가 작업",
+          "level": 2,
+          "line": 26
+        },
+        {
+          "heading": "P2 — 공유",
+          "level": 2,
+          "line": 34
+        },
+        {
+          "heading": "금요일 할 일",
+          "level": 2,
+          "line": 39
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    }
+  ]
+}

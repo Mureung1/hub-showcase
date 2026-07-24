@@ -1,0 +1,21 @@
+{
+  "nodes": [
+    {
+      "id": "table:supabase/tests/database/mock_ai_team_member_rls.sql:ai_test_state",
+      "type": "table",
+      "name": "ai_test_state",
+      "filePath": "supabase/tests/database/mock_ai_team_member_rls.sql",
+      "summary": "트랜잭션 안에서 임시 사용자·프로젝트·팀원 데이터를 구성하고 Mock AI 팀원의 RLS, RPC 상태 전이, 멱등성, 격리와 제약 조건을 검증한 뒤 롤백하는 SQL 통합 테스트다.",
+      "tags": [
+        "database",
+        "test",
+        "security",
+        "rls",
+        "mock-ai"
+      ],
+      "complexity": "complex",
+      "languageNotes": "PostgreSQL 임시 함수로 성공·실패 assertion을 구현하고 하나의 트랜잭션과 ROLLBACK으로 테스트 데이터를 격리한다."
+    }
+  ],
+  "edges": []
+}

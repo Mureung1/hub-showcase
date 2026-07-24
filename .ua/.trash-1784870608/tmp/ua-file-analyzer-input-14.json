@@ -1,0 +1,184 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": ".agents/skills/teamflow-test-authoring/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 108,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/teamflow-test-authoring/agents/openai.yaml",
+      "language": "yaml",
+      "sizeLines": 7,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".claude/skills/teamflow-design/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 80,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/skills/teamflow-design/tokens.css",
+      "language": "css",
+      "sizeLines": 72,
+      "fileCategory": "markup"
+    },
+    {
+      "path": ".codex/agents/verification_agent.toml",
+      "language": "toml",
+      "sizeLines": 197,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "language": "markdown",
+      "sizeLines": 28,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".nvmrc",
+      "language": "unknown",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/components/layout/AppShell.module.css",
+      "language": "css",
+      "sizeLines": 392,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/components/ui/forms.module.css",
+      "language": "css",
+      "sizeLines": 30,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/components/ui/ui.module.css",
+      "language": "css",
+      "sizeLines": 28,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/features/ai/AiPage.module.css",
+      "language": "css",
+      "sizeLines": 536,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "language": "css",
+      "sizeLines": 50,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/features/landing/LandingPage.module.css",
+      "language": "css",
+      "sizeLines": 30,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/features/members/MembersPage.module.css",
+      "language": "css",
+      "sizeLines": 54,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/features/notes/NotesPage.module.css",
+      "language": "css",
+      "sizeLines": 78,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/features/projects/ProjectListPage.module.css",
+      "language": "css",
+      "sizeLines": 140,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/features/resources/ResourcesPage.module.css",
+      "language": "css",
+      "sizeLines": 70,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "language": "css",
+      "sizeLines": 51,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/features/tasks/components/TaskModal.module.css",
+      "language": "css",
+      "sizeLines": 25,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/test/setup.js",
+      "language": "javascript",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/vite.config.js",
+      "language": "javascript",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/shared/package.json",
+      "language": "json",
+      "sizeLines": 13,
+      "fileCategory": "config"
+    },
+    {
+      "path": "packages/shared/src/index.js",
+      "language": "javascript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/shared/src/project.js",
+      "language": "javascript",
+      "sizeLines": 296,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/shared/test/project.test.js",
+      "language": "javascript",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    ".agents/skills/teamflow-test-authoring/SKILL.md": [],
+    ".agents/skills/teamflow-test-authoring/agents/openai.yaml": [],
+    ".claude/skills/teamflow-design/SKILL.md": [],
+    ".claude/skills/teamflow-design/tokens.css": [],
+    ".codex/agents/verification_agent.toml": [],
+    ".github/pull_request_template.md": [],
+    ".nvmrc": [],
+    "apps/web/src/components/layout/AppShell.module.css": [],
+    "apps/web/src/components/ui/forms.module.css": [],
+    "apps/web/src/components/ui/ui.module.css": [],
+    "apps/web/src/features/ai/AiPage.module.css": [],
+    "apps/web/src/features/dashboard/ProjectDashboardPage.module.css": [],
+    "apps/web/src/features/landing/LandingPage.module.css": [],
+    "apps/web/src/features/members/MembersPage.module.css": [],
+    "apps/web/src/features/notes/NotesPage.module.css": [],
+    "apps/web/src/features/projects/ProjectListPage.module.css": [],
+    "apps/web/src/features/resources/ResourcesPage.module.css": [],
+    "apps/web/src/features/tasks/ProjectTasksPage.module.css": [],
+    "apps/web/src/features/tasks/components/TaskModal.module.css": [],
+    "apps/web/src/test/setup.js": [],
+    "apps/web/vite.config.js": [],
+    "packages/shared/package.json": [],
+    "packages/shared/src/index.js": [],
+    "packages/shared/src/project.js": [],
+    "packages/shared/test/project.test.js": [
+      "packages/shared/src/project.js"
+    ]
+  }
+}

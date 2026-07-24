@@ -5,7 +5,7 @@ export const AI_MEMBER_ID = 'member-ai'
 
 export const initialProjects = [
   { id: '1', name: '팀플 관리 웹서비스 (TeamFlow)', description: '부트캠프 4주 개인 프로젝트 · 팀플 정보를 한 공간에서 관리', status: PROJECT_STATUS.IN_PROGRESS, iconKey: 'layers', startDate: '2026-07-01', endDate: '2026-07-31', memberIds: ['member-1', 'member-2', 'member-5', 'member-6', AI_MEMBER_ID], creatorId: CURRENT_USER_ID },
-  { id: '2', name: '교내 창업 공모전 기획안', description: '플랫폼 비즈니스 아이디어 스케치와 팀원 역할 배분', status: PROJECT_STATUS.IN_PROGRESS, iconKey: 'megaphone', startDate: '2026-07-15', endDate: '2026-08-15', memberIds: ['member-1', 'member-2', 'member-3', AI_MEMBER_ID], creatorId: CURRENT_USER_ID },
+  { id: '2', name: '교내 창업 공모전 기획안', description: '플랫폼 비즈니스 아이디어 스케치와 팀원 역할 배분', status: PROJECT_STATUS.IN_PROGRESS, iconKey: 'megaphone', startDate: '2026-07-15', endDate: '2026-08-15', memberIds: ['member-1', 'member-2', 'member-3'], creatorId: CURRENT_USER_ID },
   { id: '3', name: '캡스톤 디자인 (졸업작품)', description: 'AI 기반 개인화 일정 추천 시스템 개발', status: PROJECT_STATUS.IN_PROGRESS, iconKey: 'code', startDate: '2026-03-02', endDate: '2026-11-30', memberIds: ['member-1', 'member-5', 'member-6'], creatorId: CURRENT_USER_ID },
   { id: '4', name: '오픈소스 컨트리뷰톤 2024', description: '프론트엔드 오픈소스 이슈 해결 및 PR 제출', status: PROJECT_STATUS.NOT_STARTED, iconKey: 'rocket', startDate: '2026-08-01', endDate: '2026-08-31', memberIds: ['member-1'], creatorId: CURRENT_USER_ID },
 ]
@@ -16,7 +16,7 @@ export const initialMembers = [
   { id: 'member-3', authUserId: 'auth-user-3', email: 'seojun@example.com', kind: 'user', name: '박서준', initial: '박', role: '자료조사 / 마케팅', description: '시장 조사, 유사 서비스 분석 및 마케팅 전략 수립', isAi: false, color: '#2e7878' },
   { id: 'member-5', authUserId: 'auth-user-5', email: 'jiwoo@example.com', kind: 'user', name: '최지우', initial: '최', role: 'UI/UX 디자인', description: '디자인 시스템 구축, 와이어프레임 및 하이파이 프로토타입 제작', isAi: false, color: '#3d7a54' },
   { id: 'member-6', authUserId: 'auth-user-6', email: 'taeho@example.com', kind: 'user', name: '정태호', initial: '정', role: '백엔드 개발 / 인프라', description: 'API 서버 아키텍처 설계 및 클라우드 인프라(AWS) 구축', isAi: false, color: '#48688a' },
-  { id: AI_MEMBER_ID, authUserId: null, email: '', kind: 'user', name: '자료조사 AI', initial: 'AI', role: '자료조사 · AI 팀원', description: '사람 팀원과 동일한 방식으로 역할을 배정받는 AI입니다. 공유 노트와 자료를 바탕으로 요약, 번역, 리서치 결과를 도출합니다.', isAi: true, color: '#6b4ca8' },
+  { id: AI_MEMBER_ID, projectId: '1', authUserId: null, email: null, kind: 'ai', name: '자료조사 AI', initial: 'AI', role: '자료 조사', description: '프로젝트 컨텍스트를 참고해 결정론적인 Mock 결과를 만드는 AI 팀원입니다.', isAi: true, color: '#3d4a63' },
 ]
 
 const task = (id, projectId, title, assigneeId, dueDate, status, description) => ({
@@ -39,7 +39,7 @@ export const initialTasks = [
   task('13', '2', '시장 규모(TAM, SAM, SOM) 리서치', 'member-3', '2026-07-22', TASK_STATUS.IN_PROGRESS, '관련 논문 및 통계청 자료 기반'),
   task('14', '2', '피치덱(Pitch Deck) 스토리라인 구성', 'member-2', '2026-07-25', TASK_STATUS.IN_PROGRESS),
   task('15', '2', '솔루션 시연용 간단한 와이어프레임', CURRENT_USER_ID, '2026-07-28', TASK_STATUS.NOT_STARTED),
-  task('16', '2', '최근 3년 창업 트렌드 및 기사 수집', AI_MEMBER_ID, '2026-07-20', TASK_STATUS.IN_REVIEW, 'SaaS 및 B2B 협업 툴 관련 기사 스크랩'),
+  task('16', '2', '최근 3년 창업 트렌드 및 기사 수집', 'member-3', '2026-07-20', TASK_STATUS.IN_REVIEW, 'SaaS 및 B2B 협업 툴 관련 기사 스크랩'),
   task('17', '2', '경쟁사 SWOT 분석', 'member-3', '2026-07-24', TASK_STATUS.NOT_STARTED),
   task('18', '3', '졸업작품 주제 선정 보고서 제출', CURRENT_USER_ID, '2026-03-15', TASK_STATUS.COMPLETED),
   task('19', '3', '지도교수님 1차 멘토링 미팅', CURRENT_USER_ID, '2026-03-20', TASK_STATUS.COMPLETED),
@@ -74,15 +74,45 @@ export const initialResources = [
   { id: 'resource-10', projectId: '3', name: 'AWS 인프라 다이어그램.png', ownerId: 'member-6', updatedAt: '2026-04-10', type: RESOURCE_TYPE.IMAGE, parentId: null },
 ]
 
-export const initialAiSettings = {
-  '1': {
-    instructions: '너는 팀플 관리 웹서비스 프로젝트의 자료조사 담당 AI 팀원이야.\n\n역할: 팀원이 요청하는 자료를 조사하고 정리해서 공유 노트에 기록해줘.\n\n작업 원칙:\n- 항상 출처를 명시할 것\n- 3개 이상의 참고 자료를 비교해서 정리할 것\n- 결과물은 마크다운 형식으로 작성할 것\n- 팀원 검토 전에는 자동으로 반영하지 않을 것',
-    context: { project: true, notes: true, resources: true, tasks: true, team: false },
-  },
-}
+export const initialAiAgents = [{
+  memberId: AI_MEMBER_ID,
+  projectId: '1',
+  instructions: '프로젝트에 저장된 정보만 사용해 자료를 구조화하고, 결과는 검토 전까지 자동 반영하지 마세요.',
+  contextConfig: { project: true, notes: true, tasks: true, team: false, resources: true },
+  enabled: true,
+  createdAt: '2026-07-08T00:00:00.000Z',
+  updatedAt: '2026-07-10T00:00:00.000Z',
+}]
 
-export const aiHistory = [
-  { id: 'history-1', title: '유사 서비스 레퍼런스 조사', result: 'Notion, Linear, Trello 비교 분석 완료. 공유 노트에 정리함.', date: '2026-07-11', status: 'applied' },
-  { id: 'history-2', title: '대학생 팀플 페인포인트 조사', result: '설문 결과 5개 패턴 도출. 검토 요청 중.', date: '2026-07-10', status: 'pending_review' },
-  { id: 'history-3', title: '경쟁사 기능 비교표 작성', result: '초안 제출했으나 기준이 부적합하여 재작업 예정.', date: '2026-07-08', status: 'rejected' },
+const mockResult = '# 모의 실행 결과\n\n## 작업 요청 요약\n- 할 일: 유사 서비스 레퍼런스 분석\n\n## 참고한 컨텍스트\n- 프로젝트 설명\n\n## Mock 작업 결과\n- 저장된 정보를 기준으로 요청을 구조화했습니다.\n\n## 제안하는 다음 행동\n1. 결과를 검토합니다.'
+
+export const initialAiRuns = [
+  {
+    id: 'ai-run-applied',
+    projectId: '1',
+    aiMemberId: AI_MEMBER_ID,
+    taskId: '5',
+    status: 'applied',
+    contextSnapshot: { task: { id: '5', title: '유사 서비스 레퍼런스 분석' } },
+    resultMarkdown: mockResult,
+    errorMessage: null,
+    appliedNoteId: 'note-2',
+    createdBy: 'auth-user-1',
+    createdAt: '2026-07-11T10:00:00.000Z',
+    updatedAt: '2026-07-11T10:10:00.000Z',
+  },
+  {
+    id: 'ai-run-rejected',
+    projectId: '1',
+    aiMemberId: AI_MEMBER_ID,
+    taskId: '5',
+    status: 'rejected',
+    contextSnapshot: { task: { id: '5', title: '유사 서비스 레퍼런스 분석' } },
+    resultMarkdown: mockResult,
+    errorMessage: null,
+    appliedNoteId: null,
+    createdBy: 'auth-user-1',
+    createdAt: '2026-07-08T10:00:00.000Z',
+    updatedAt: '2026-07-08T10:10:00.000Z',
+  },
 ]

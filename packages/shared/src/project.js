@@ -34,6 +34,15 @@ export const PROJECT_ICON = Object.freeze({
 
 export const MEMBER_KIND = Object.freeze({
   USER: 'user',
+  AI: 'ai',
+})
+
+export const AI_RUN_STATUS = Object.freeze({
+  RUNNING: 'running',
+  PENDING_REVIEW: 'pending_review',
+  APPLIED: 'applied',
+  REJECTED: 'rejected',
+  FAILED: 'failed',
 })
 
 export const INVITATION_STATUS = Object.freeze({
@@ -47,7 +56,8 @@ export const INVITATION_STATUS = Object.freeze({
 /** @typedef {'layers' | 'rocket' | 'code' | 'palette' | 'megaphone' | 'book'} ProjectIcon */
 /** @typedef {'not_started' | 'in_progress' | 'in_review' | 'completed'} TaskStatus */
 /** @typedef {'folder' | 'document' | 'link' | 'image'} ResourceType */
-/** @typedef {'user'} MemberKind */
+/** @typedef {'user' | 'ai'} MemberKind */
+/** @typedef {'running' | 'pending_review' | 'applied' | 'rejected' | 'failed'} AIRunStatus */
 /** @typedef {'pending' | 'accepted' | 'rejected' | 'cancelled'} InvitationStatus */
 
 /**
@@ -168,6 +178,33 @@ export const INVITATION_STATUS = Object.freeze({
  */
 
 /**
+ * @typedef {object} AIAgent
+ * @property {string} memberId
+ * @property {string} projectId
+ * @property {string} instructions
+ * @property {AIContext} contextConfig
+ * @property {boolean} enabled
+ * @property {string} createdAt ISO 8601 timestamp
+ * @property {string} updatedAt ISO 8601 timestamp
+ */
+
+/**
+ * @typedef {object} AIRun
+ * @property {string} id
+ * @property {string} projectId
+ * @property {string} aiMemberId
+ * @property {string | null} taskId
+ * @property {AIRunStatus} status
+ * @property {Record<string, unknown>} contextSnapshot
+ * @property {string} resultMarkdown
+ * @property {string | null} errorMessage
+ * @property {string | null} appliedNoteId
+ * @property {string | null} createdBy
+ * @property {string} createdAt ISO 8601 timestamp
+ * @property {string} updatedAt ISO 8601 timestamp
+ */
+
+/**
  * Keeps progress values inside the range accepted by the UI and API contract.
  * @param {number} progress
  * @returns {number}
@@ -238,6 +275,15 @@ export function isResourceType(value) {
  */
 export function isMemberKind(value) {
   return Object.values(MEMBER_KIND).includes(value)
+}
+
+/**
+ * Checks whether a value is part of the shared AI execution status contract.
+ * @param {unknown} value
+ * @returns {value is AIRunStatus}
+ */
+export function isAiRunStatus(value) {
+  return Object.values(AI_RUN_STATUS).includes(value)
 }
 
 /**

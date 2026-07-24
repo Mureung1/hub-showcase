@@ -1,0 +1,465 @@
+{
+  "nodes": [
+    {
+      "id": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "type": "file",
+      "name": "ProjectListPage.jsx",
+      "filePath": "apps/web/src/features/projects/ProjectListPage.jsx",
+      "summary": "로그인 상태의 프로젝트 요약과 받은 초대를 조회하고, 검색·초대 응답·프로젝트 이동·설정 및 아이콘 변경 모달을 조율하는 프로젝트 목록 화면이다.",
+      "tags": [
+        "component",
+        "project-overview",
+        "invitation",
+        "search"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "type": "file",
+      "name": "ProjectListPage.test.jsx",
+      "filePath": "apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "summary": "프로젝트 목록의 라우팅, 검색과 빈 상태, 생성 후 이동, 진행률 경계 처리, 아이콘 변경 흐름을 사용자 관점에서 검증한다.",
+      "tags": [
+        "test",
+        "integration-test",
+        "project-overview",
+        "accessibility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "type": "file",
+      "name": "ProjectCard.jsx",
+      "filePath": "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "summary": "프로젝트 상태·진행률·기간·멤버·아이콘을 접근 가능한 카드로 표시하고 열기, 아이콘 변경, 설정 동작을 노출한다.",
+      "tags": [
+        "component",
+        "project-summary",
+        "accessibility",
+        "progress"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "type": "file",
+      "name": "ProjectIcon.jsx",
+      "filePath": "apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "summary": "공유 프로젝트 아이콘 키를 Lucide 아이콘 컴포넌트로 변환하며, 알 수 없는 값은 기본 레이어 아이콘으로 대체한다.",
+      "tags": [
+        "component",
+        "icon",
+        "presentation",
+        "fallback"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "type": "file",
+      "name": "ProjectIconPicker.jsx",
+      "filePath": "apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "summary": "프로젝트 아이콘 후보를 모달에 표시하고 선택 결과를 TeamFlow 상태 액션으로 저장하며 진행 및 오류 상태를 관리한다.",
+      "tags": [
+        "component",
+        "modal",
+        "project-settings",
+        "event-handler"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/components/projectIconOptions.js",
+      "type": "file",
+      "name": "projectIconOptions.js",
+      "filePath": "apps/web/src/features/projects/components/projectIconOptions.js",
+      "summary": "프로젝트 아이콘 선택지와 아이콘 키의 한국어 표시 이름을 제공하는 프레젠테이션 유틸리티다.",
+      "tags": [
+        "utility",
+        "configuration",
+        "icon",
+        "localization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "type": "function",
+      "name": "ProjectListPage",
+      "filePath": "apps/web/src/features/projects/ProjectListPage.jsx",
+      "lineRange": [
+        15,
+        117
+      ],
+      "summary": "프로젝트와 초대를 상태에서 파생해 렌더링하고, 검색·초대 응답·페이지 이동·편집 모달의 사용자 상호작용을 연결한다.",
+      "tags": [
+        "component",
+        "page",
+        "state-management",
+        "event-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "type": "function",
+      "name": "ProjectCard",
+      "filePath": "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "lineRange": [
+        25,
+        99
+      ],
+      "summary": "프로젝트 요약 데이터를 시각화하고 진행률을 경계값으로 정규화하며 선택 가능한 카드 동작을 제공한다.",
+      "tags": [
+        "component",
+        "project-summary",
+        "accessibility",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/projects/components/ProjectIcon.jsx:ProjectIcon",
+      "type": "function",
+      "name": "ProjectIcon",
+      "filePath": "apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "lineRange": [
+        18,
+        21
+      ],
+      "summary": "프로젝트 아이콘 키에 해당하는 Lucide 아이콘을 선택해 장식용 SVG로 렌더링한다.",
+      "tags": [
+        "component",
+        "icon",
+        "presentation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/projects/components/ProjectIconPicker.jsx:ProjectIconPicker",
+      "type": "function",
+      "name": "ProjectIconPicker",
+      "filePath": "apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "lineRange": [
+        10,
+        52
+      ],
+      "summary": "아이콘 선택 UI와 비동기 저장 상태를 관리하고 성공 시 선택 모달을 닫는다.",
+      "tags": [
+        "component",
+        "modal",
+        "state-management",
+        "event-handler"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/projects/components/projectIconOptions.js:getProjectIconLabel",
+      "type": "function",
+      "name": "getProjectIconLabel",
+      "filePath": "apps/web/src/features/projects/components/projectIconOptions.js",
+      "lineRange": [
+        12,
+        14
+      ],
+      "summary": "아이콘 키의 한국어 레이블을 찾고 등록되지 않은 키에는 기본 레이어 레이블을 반환한다.",
+      "tags": [
+        "utility",
+        "lookup",
+        "localization"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/state/selectors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "target": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectCard.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "file:apps/web/src/features/projects/components/projectIconOptions.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectIconPicker.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "target": "file:apps/web/src/features/projects/components/projectIconOptions.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "target": "function:apps/web/src/features/projects/components/ProjectIcon.jsx:ProjectIcon",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "target": "function:apps/web/src/features/projects/components/ProjectIcon.jsx:ProjectIcon",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "target": "function:apps/web/src/features/projects/components/ProjectIconPicker.jsx:ProjectIconPicker",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "target": "function:apps/web/src/features/projects/components/ProjectIconPicker.jsx:ProjectIconPicker",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/projectIconOptions.js",
+      "target": "function:apps/web/src/features/projects/components/projectIconOptions.js:getProjectIconLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/projectIconOptions.js",
+      "target": "function:apps/web/src/features/projects/components/projectIconOptions.js:getProjectIconLabel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "target": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "target": "function:apps/web/src/features/projects/components/ProjectIconPicker.jsx:ProjectIconPicker",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "target": "function:apps/web/src/features/projects/components/ProjectSettingsModal.jsx:ProjectSettingsModal",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "target": "function:apps/web/src/state/selectors.js:selectReceivedInvitations",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "target": "function:apps/web/src/features/projects/components/ProjectIcon.jsx:ProjectIcon",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "target": "function:apps/web/src/features/projects/components/projectIconOptions.js:getProjectIconLabel",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "target": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/components/ProjectIconPicker.jsx:ProjectIconPicker",
+      "target": "function:apps/web/src/features/projects/components/ProjectIcon.jsx:ProjectIcon",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/components/ProjectIconPicker.jsx:ProjectIconPicker",
+      "target": "function:apps/web/src/components/ui/Modal.jsx:Modal",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/components/ProjectIconPicker.jsx:ProjectIconPicker",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

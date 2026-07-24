@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { RESOURCE_TYPE, RESOURCE_UPLOAD } from '@teamflow/shared'
+import { RESOURCE_TYPE, RESOURCE_UPLOAD, TASK_STATUS } from '@teamflow/shared'
 import { describe, expect, test, vi } from 'vitest'
 
 import { MarkdownPreview } from './notes/MarkdownPreview.jsx'
@@ -160,7 +160,7 @@ describe('connected prototype flows', () => {
     expect(titleInput).toHaveFocus()
     const assigneeSelect = screen.getByLabelText(/담당 팀원/)
     expect(within(assigneeSelect).getByRole('option', { name: '김민지' })).toBeInTheDocument()
-    expect(within(assigneeSelect).queryByRole('option', { name: '자료조사 AI' })).not.toBeInTheDocument()
+    expect(within(assigneeSelect).getByRole('option', { name: '자료조사 AI' })).toBeInTheDocument()
     await user.type(titleInput, '연결 테스트 업무')
     fireEvent.change(screen.getByLabelText(/마감일/), { target: { value: '2026-07-30' } })
     await user.click(screen.getByRole('button', { name: '할 일 추가' }))
@@ -466,21 +466,141 @@ describe('connected prototype flows', () => {
     expect(await screen.findByText('외부 문서')).toBeInTheDocument()
   })
 
-  test('saves AI settings and turns a briefing into an AI-owned task', async () => {
+  test('saves project AI settings, runs an assigned task, and applies the reviewed result', async () => {
     const user = userEvent.setup()
-    renderApp('/projects/1/ai')
+    const payload = await testTeamFlowRepository.load()
+    const aiTask = {
+      id: 'ai-open-task',
+      projectId: '1',
+      title: '경쟁 서비스 기능 비교',
+      description: '저장된 자료를 기준으로 비교표를 만듭니다.',
+      assigneeId: 'member-ai',
+      dueDate: '2026-07-30',
+      status: TASK_STATUS.NOT_STARTED,
+    }
+    const updateAiAgent = vi.fn(testTeamFlowRepository.updateAiAgent)
+    const createAiRun = vi.fn(testTeamFlowRepository.createAiRun)
+    const applyAiRun = vi.fn(testTeamFlowRepository.applyAiRun)
+    const repository = {
+      ...testTeamFlowRepository,
+      load: async () => ({ ...payload, tasks: [...payload.tasks, aiTask] }),
+      updateAiAgent,
+      createAiRun,
+      applyAiRun,
+    }
+
+    renderApp('/projects/1/ai', repository)
     expect(await screen.findByRole('heading', { name: 'AI 팀원 관리' })).toBeInTheDocument()
+    expect(screen.getByText('Mock 모드')).toBeInTheDocument()
     const instructions = screen.getByRole('textbox', { name: 'AI 역할 지시사항' })
     await user.clear(instructions)
     await user.type(instructions, '출처를 확인하고 요약해 주세요.')
-    await user.click(screen.getByRole('button', { name: '저장' }))
-    expect(await screen.findByText('역할 지시사항을 저장했습니다.')).toBeInTheDocument()
+    await user.click(screen.getByLabelText(/팀원 역할/))
+    await user.click(screen.getByRole('button', { name: '설정 저장' }))
+    expect(await screen.findByText('AI 역할과 참고 컨텍스트를 저장했습니다.')).toBeInTheDocument()
+    expect(updateAiAgent).toHaveBeenCalledWith('member-ai', {
+      instructions: '출처를 확인하고 요약해 주세요.',
+      contextConfig: {
+        project: true,
+        notes: true,
+        tasks: true,
+        team: true,
+        resources: true,
+      },
+    })
 
-    await user.type(screen.getByLabelText(/작업 제목/), 'AI 경쟁사 조사')
-    await user.click(screen.getByRole('button', { name: '브리핑 제출' }))
-    expect(await screen.findByText(/AI 담당 할 일을 생성했습니다/)).toBeInTheDocument()
-    await user.click(screen.getByRole('link', { name: '할 일' }))
-    expect(await screen.findByText('AI 경쟁사 조사')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '실행 완료' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: '모의 작업 실행' }))
+    await waitFor(() => expect(createAiRun).toHaveBeenCalledWith('member-ai', aiTask.id))
+    expect(await screen.findByRole('heading', { name: '모의 실행 결과' })).toBeInTheDocument()
+    expect(screen.getAllByText('검토 대기').length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: '검토 대기' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: '공유 노트로 반영' }))
+    await waitFor(() => expect(applyAiRun).toHaveBeenCalledTimes(1))
+    expect(screen.getAllByText('반영 완료').length).toBeGreaterThan(0)
+    await user.click(screen.getByRole('link', { name: '반영된 공유 노트 보기' }))
+    expect(await screen.findByRole('heading', { name: 'AI 결과 · Mock 작업' })).toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: 'AI 팀원' }))
+
+    await user.click(screen.getByRole('button', { name: '모의 작업 실행' }))
+    await user.click(await screen.findByRole('button', { name: '보류' }))
+    expect(screen.getAllByText('보류').length).toBeGreaterThan(0)
+  })
+
+  test('keeps project AI assignment scoped to the current project', async () => {
+    const user = userEvent.setup()
+    renderApp('/projects/2/tasks')
+    expect(await screen.findByRole('heading', { name: '할 일 관리' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /새 할 일/ }))
+    expect(within(screen.getByLabelText(/담당 팀원/)).queryByRole('option', { name: '자료조사 AI' })).not.toBeInTheDocument()
+  })
+
+  test('displays failed Mock execution history without hiding the server error', async () => {
+    const payload = await testTeamFlowRepository.load()
+    const failedRun = {
+      id: 'failed-run',
+      projectId: '1',
+      aiMemberId: 'member-ai',
+      taskId: '5',
+      status: 'failed',
+      contextSnapshot: { task: { id: '5', title: '유사 서비스 레퍼런스 분석' } },
+      resultMarkdown: '',
+      errorMessage: 'Mock 결과 생성에 실패했습니다.',
+      appliedNoteId: null,
+      createdBy: 'auth-user-1',
+      createdAt: '2026-07-24T12:00:00.000Z',
+      updatedAt: '2026-07-24T12:00:00.000Z',
+    }
+    renderApp('/projects/1/ai', {
+      ...testTeamFlowRepository,
+      load: async () => ({ ...payload, aiRuns: [failedRun, ...payload.aiRuns] }),
+    })
+    expect((await screen.findAllByText('실패')).length).toBeGreaterThanOrEqual(1)
+    expect(await screen.findByText('Mock 결과 생성에 실패했습니다.')).toBeInTheDocument()
+  })
+
+  test('adds a missing project AI to the current project', async () => {
+    const user = userEvent.setup()
+    const payload = await testTeamFlowRepository.load()
+    const withoutAi = {
+      ...payload,
+      members: payload.members.filter((member) => member.id !== 'member-ai'),
+      projects: payload.projects.map((project) => project.id === '1'
+        ? { ...project, memberIds: project.memberIds.filter((memberId) => memberId !== 'member-ai') }
+        : project),
+      tasks: payload.tasks.filter((task) => task.assigneeId !== 'member-ai'),
+      aiAgents: [],
+      aiRuns: [],
+    }
+    const createAiAgent = vi.fn(testTeamFlowRepository.createAiAgent)
+    renderApp('/projects/1/ai', {
+      ...testTeamFlowRepository,
+      load: async () => withoutAi,
+      createAiAgent,
+    })
+
+    expect(await screen.findByText('이 프로젝트에는 아직 AI 팀원이 없습니다.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '자료조사 AI 추가' }))
+    await waitFor(() => expect(createAiAgent).toHaveBeenCalledWith('1'))
+    expect(await screen.findByRole('heading', { name: '자료조사 AI' })).toBeInTheDocument()
+  })
+
+  test('keeps the guest AI teammate screen read-only', async () => {
+    const payload = await testTeamFlowRepository.load()
+    const readOnlyPayload = {
+      ...payload,
+      accessMode: 'guest',
+      capabilities: { projects: false, members: false, tasks: false, notes: false, resources: false, ai: false },
+    }
+    renderApp('/projects/1/ai', {
+      ...testTeamFlowRepository,
+      load: async () => readOnlyPayload,
+    })
+
+    expect(await screen.findByRole('heading', { name: 'AI 팀원 관리' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '설정 저장' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '모의 작업 실행' })).not.toBeInTheDocument()
   })
 
   test('redirects unsupported project URLs and safely renders markdown-like input', async () => {

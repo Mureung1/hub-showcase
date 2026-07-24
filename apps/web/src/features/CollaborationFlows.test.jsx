@@ -22,7 +22,7 @@ describe('collaboration state boundaries', () => {
         if (loadCount > 1) throw new Error('일시적인 재조회 실패')
         return {
           projects: [], members: [], tasks: [], notes: [], resources: [], invitations: [],
-          currentMemberIdsByProject: {}, aiSettings: {}, aiHistory: [], currentUserId: '', aiMemberId: '',
+          currentMemberIdsByProject: {}, aiAgents: [], aiRuns: [], currentUserId: '',
           accessMode: 'authenticated',
           capabilities: { projects: true, members: true, tasks: true, notes: true, resources: true, ai: false },
         }
@@ -60,7 +60,7 @@ describe('collaboration state boundaries', () => {
         if (loadCount > 1) throw new Error('일시적인 재조회 실패')
         return {
           projects: [], members: [], tasks: [], notes: [], resources: [], invitations: [invitation],
-          currentMemberIdsByProject: {}, aiSettings: {}, aiHistory: [], currentUserId: '', aiMemberId: '',
+          currentMemberIdsByProject: {}, aiAgents: [], aiRuns: [], currentUserId: '',
           accessMode: 'authenticated',
           capabilities: { projects: true, members: true, tasks: true, notes: true, resources: true, ai: false },
         }
@@ -95,7 +95,7 @@ describe('collaboration state boundaries', () => {
     const state = (withProject) => ({
       projects: withProject ? [project] : [], members: withProject ? [member] : [], tasks: [], notes: [], resources: [], invitations: [],
       currentMemberIdsByProject: withProject ? { [project.id]: member.id } : {},
-      aiSettings: {}, aiHistory: [], currentUserId: withProject ? member.id : '', aiMemberId: '', accessMode: 'authenticated',
+      aiAgents: [], aiRuns: [], currentUserId: withProject ? member.id : '', accessMode: 'authenticated',
       capabilities: { projects: true, members: true, tasks: true, notes: true, resources: true, ai: false },
     })
     const repository = {
@@ -191,7 +191,7 @@ describe('collaboration state boundaries', () => {
         if (loadCount > 1) {
           return {
             projects: [], members: [], tasks: [], notes: [], resources: [], invitations: [],
-            currentMemberIdsByProject: {}, aiSettings: {}, aiHistory: [], currentUserId: '', aiMemberId: '',
+            currentMemberIdsByProject: {}, aiAgents: [], aiRuns: [], currentUserId: '',
             accessMode: 'authenticated',
             capabilities: { projects: true, members: true, tasks: true, notes: true, resources: true, ai: false },
           }
@@ -199,7 +199,7 @@ describe('collaboration state boundaries', () => {
         return {
           projects: [project], members: [currentMember, otherMember], tasks: [], notes: [], resources: [], invitations: [],
           currentMemberIdsByProject: { [project.id]: currentMember.id },
-          aiSettings: {}, aiHistory: [], currentUserId: currentMember.id, aiMemberId: '', accessMode: 'authenticated',
+          aiAgents: [], aiRuns: [], currentUserId: currentMember.id, accessMode: 'authenticated',
           capabilities: { projects: true, members: true, tasks: true, notes: true, resources: true, ai: false },
         }
       },
@@ -246,8 +246,8 @@ describe('collaboration state boundaries', () => {
         if (loadCount > 1) throw new Error('일시적인 재조회 실패')
         return {
           projects: [project], members: [currentMember, otherMember], tasks: [], notes: [], resources: [], invitations: [],
-          currentMemberIdsByProject: { [project.id]: currentMember.id }, aiSettings: {}, aiHistory: [],
-          currentUserId: currentMember.id, aiMemberId: '', accessMode: 'authenticated',
+          currentMemberIdsByProject: { [project.id]: currentMember.id }, aiAgents: [], aiRuns: [],
+          currentUserId: currentMember.id, accessMode: 'authenticated',
           capabilities: { projects: true, members: true, tasks: true, notes: true, resources: true, ai: false },
         }
       },

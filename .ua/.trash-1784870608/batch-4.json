@@ -1,0 +1,676 @@
+{
+  "nodes": [
+    {
+      "id": "file:apps/web/src/App.jsx",
+      "type": "file",
+      "name": "App.jsx",
+      "filePath": "apps/web/src/App.jsx",
+      "summary": "landing·OAuth callback·guest demo·보호 route를 포함한 TeamFlow의 최상위 React route tree를 정의합니다.",
+      "tags": [
+        "entry-point",
+        "routing",
+        "component"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "React Router의 중첩 route와 경계 component로 공개·인증·guest 화면을 분리합니다."
+    },
+    {
+      "id": "function:apps/web/src/App.jsx:App",
+      "type": "function",
+      "name": "App",
+      "filePath": "apps/web/src/App.jsx",
+      "summary": "공개 landing, OAuth callback, guest demo와 보호된 TeamFlow route tree를 구성합니다.",
+      "tags": [
+        "component",
+        "teamflow",
+        "react"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        26,
+        51
+      ]
+    },
+    {
+      "id": "function:apps/web/src/App.jsx:TeamFlowBoundary",
+      "type": "function",
+      "name": "TeamFlowBoundary",
+      "filePath": "apps/web/src/App.jsx",
+      "summary": "인증·guest 상태에 맞는 repository를 선택해 TeamFlowProvider 경계를 만듭니다.",
+      "tags": [
+        "component",
+        "teamflow",
+        "react"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        53,
+        69
+      ]
+    },
+    {
+      "id": "file:apps/web/src/auth/AuthCallbackPage.jsx",
+      "type": "file",
+      "name": "AuthCallbackPage.jsx",
+      "filePath": "apps/web/src/auth/AuthCallbackPage.jsx",
+      "summary": "Supabase OAuth callback 처리 상태를 확인하고 성공 시 app으로, 실패 시 설명 가능한 오류 화면으로 전환합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "react"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/auth/AuthCallbackPage.jsx:AuthCallbackPage",
+      "type": "function",
+      "name": "AuthCallbackPage",
+      "filePath": "apps/web/src/auth/AuthCallbackPage.jsx",
+      "summary": "OAuth callback 결과를 해석해 app redirect 또는 오류 안내를 렌더링합니다.",
+      "tags": [
+        "component",
+        "authentication",
+        "react"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        13,
+        32
+      ]
+    },
+    {
+      "id": "file:apps/web/src/auth/ProtectedRoute.jsx",
+      "type": "file",
+      "name": "ProtectedRoute.jsx",
+      "filePath": "apps/web/src/auth/ProtectedRoute.jsx",
+      "summary": "인증 loading을 처리하고 로그인 사용자나 guest session만 하위 route에 접근하도록 제한합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "react"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/auth/ProtectedRoute.jsx:ProtectedRoute",
+      "type": "function",
+      "name": "ProtectedRoute",
+      "filePath": "apps/web/src/auth/ProtectedRoute.jsx",
+      "summary": "인증 또는 guest session이 있을 때만 하위 route를 렌더링합니다.",
+      "tags": [
+        "component",
+        "authentication",
+        "react"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        5,
+        15
+      ]
+    },
+    {
+      "id": "file:apps/web/src/auth/useAuth.js",
+      "type": "file",
+      "name": "useAuth.js",
+      "filePath": "apps/web/src/auth/useAuth.js",
+      "summary": "AuthContext를 읽고 Provider 외부 사용을 차단하는 인증 상태 접근용 custom hook입니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "react"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/auth/useAuth.js:useAuth",
+      "type": "function",
+      "name": "useAuth",
+      "filePath": "apps/web/src/auth/useAuth.js",
+      "summary": "AuthContext 값을 반환하고 Provider 외부 호출을 오류로 차단합니다.",
+      "tags": [
+        "hook",
+        "authentication",
+        "react"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        5,
+        9
+      ]
+    },
+    {
+      "id": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "type": "file",
+      "name": "apiTeamFlowRepository.js",
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.js",
+      "summary": "access token을 포함한 API 요청으로 프로젝트·협업자·할 일·노트·자료·AI 실행을 처리하고 guest demo용 read-only repository도 제공합니다.",
+      "tags": [
+        "repository",
+        "api-client",
+        "serialization"
+      ],
+      "complexity": "complex",
+      "languageNotes": "repository factory가 token provider와 fetch 구현을 주입받아 인증과 HTTP 처리를 테스트 가능하게 분리합니다."
+    },
+    {
+      "id": "function:apps/web/src/data/apiTeamFlowRepository.js:normalizeApiBaseUrl",
+      "type": "function",
+      "name": "normalizeApiBaseUrl",
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.js",
+      "summary": "환경에 따른 API base URL을 검증하고 trailing slash를 정규화합니다.",
+      "tags": [
+        "repository",
+        "api-client",
+        "serialization"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        9,
+        30
+      ]
+    },
+    {
+      "id": "function:apps/web/src/data/apiTeamFlowRepository.js:readJson",
+      "type": "function",
+      "name": "readJson",
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.js",
+      "summary": "HTTP 응답 JSON을 읽고 실패 상태를 TeamFlowApiError로 변환합니다.",
+      "tags": [
+        "repository",
+        "api-client",
+        "serialization"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        36,
+        48
+      ]
+    },
+    {
+      "id": "function:apps/web/src/data/apiTeamFlowRepository.js:createApiTeamFlowRepository",
+      "type": "function",
+      "name": "createApiTeamFlowRepository",
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.js",
+      "summary": "인증 API를 통해 TeamFlow 도메인 CRUD와 AI 실행을 제공하는 repository를 만듭니다.",
+      "tags": [
+        "repository",
+        "api-client",
+        "serialization"
+      ],
+      "complexity": "complex",
+      "lineRange": [
+        60,
+        298
+      ]
+    },
+    {
+      "id": "function:apps/web/src/data/apiTeamFlowRepository.js:createDemoTeamFlowRepository",
+      "type": "function",
+      "name": "createDemoTeamFlowRepository",
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.js",
+      "summary": "guest demo 데이터를 읽기 전용으로 제공하고 mutation을 차단하는 repository를 만듭니다.",
+      "tags": [
+        "repository",
+        "api-client",
+        "serialization"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        300,
+        337
+      ]
+    },
+    {
+      "id": "class:apps/web/src/data/apiTeamFlowRepository.js:TeamFlowApiError",
+      "type": "class",
+      "name": "TeamFlowApiError",
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.js",
+      "summary": "HTTP status와 응답 payload를 보존하는 API 전용 오류입니다.",
+      "tags": [
+        "error-handling",
+        "api-client",
+        "data-model"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        1,
+        7
+      ]
+    },
+    {
+      "id": "file:apps/web/src/data/apiTeamFlowRepository.test.js",
+      "type": "file",
+      "name": "apiTeamFlowRepository.test.js",
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.test.js",
+      "summary": "API base URL, 인증 header, 각 repository method의 요청·응답 mapping과 오류 정규화를 검증합니다.",
+      "tags": [
+        "test",
+        "teamflow",
+        "regression"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/landing/LandingPage.jsx",
+      "type": "file",
+      "name": "LandingPage.jsx",
+      "filePath": "apps/web/src/features/landing/LandingPage.jsx",
+      "summary": "TeamFlow 가치 제안과 Google 로그인, guest demo 진입 action을 제공하는 공개 landing 화면입니다.",
+      "tags": [
+        "component",
+        "teamflow",
+        "react"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/landing/LandingPage.jsx:LandingPage",
+      "type": "function",
+      "name": "LandingPage",
+      "filePath": "apps/web/src/features/landing/LandingPage.jsx",
+      "summary": "서비스 소개와 Google 로그인·guest demo 진입 action을 표시합니다.",
+      "tags": [
+        "component",
+        "teamflow",
+        "react"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        21,
+        56
+      ]
+    },
+    {
+      "id": "file:apps/web/src/state/TeamFlowContext.js",
+      "type": "file",
+      "name": "TeamFlowContext.js",
+      "filePath": "apps/web/src/state/TeamFlowContext.js",
+      "summary": "TeamFlow 전역 데이터와 action을 전달하기 위한 React Context 객체를 정의합니다.",
+      "tags": [
+        "state-management",
+        "react",
+        "context"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "type": "file",
+      "name": "TeamFlowProvider.jsx",
+      "filePath": "apps/web/src/state/TeamFlowProvider.jsx",
+      "summary": "인증 또는 guest repository에서 데이터를 hydrate하고 reducer와 비동기 action으로 전체 협업 상태를 관리합니다.",
+      "tags": [
+        "state-management",
+        "react",
+        "context"
+      ],
+      "complexity": "complex",
+      "languageNotes": "useReducer로 상태 전이를 집중시키고 repository mutation 뒤 dispatch하여 서버 상태와 화면 상태를 동기화합니다."
+    },
+    {
+      "id": "function:apps/web/src/state/TeamFlowProvider.jsx:reducer",
+      "type": "function",
+      "name": "reducer",
+      "filePath": "apps/web/src/state/TeamFlowProvider.jsx",
+      "summary": "hydrate와 모든 도메인 mutation action을 불변 상태 전이로 처리합니다.",
+      "tags": [
+        "reducer",
+        "state-management",
+        "event-handler"
+      ],
+      "complexity": "moderate",
+      "lineRange": [
+        5,
+        130
+      ]
+    },
+    {
+      "id": "function:apps/web/src/state/TeamFlowProvider.jsx:TeamFlowProvider",
+      "type": "function",
+      "name": "TeamFlowProvider",
+      "filePath": "apps/web/src/state/TeamFlowProvider.jsx",
+      "summary": "repository 수명주기와 비동기 action을 Context value로 묶어 하위 화면에 제공합니다.",
+      "tags": [
+        "component",
+        "state-management",
+        "react"
+      ],
+      "complexity": "complex",
+      "lineRange": [
+        160,
+        441
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "function:apps/web/src/App.jsx:App",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "function:apps/web/src/App.jsx:App",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "function:apps/web/src/App.jsx:TeamFlowBoundary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/auth/AuthCallbackPage.jsx",
+      "target": "function:apps/web/src/auth/AuthCallbackPage.jsx:AuthCallbackPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/auth/AuthCallbackPage.jsx",
+      "target": "function:apps/web/src/auth/AuthCallbackPage.jsx:AuthCallbackPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/auth/ProtectedRoute.jsx",
+      "target": "function:apps/web/src/auth/ProtectedRoute.jsx:ProtectedRoute",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/auth/ProtectedRoute.jsx",
+      "target": "function:apps/web/src/auth/ProtectedRoute.jsx:ProtectedRoute",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/auth/useAuth.js",
+      "target": "function:apps/web/src/auth/useAuth.js:useAuth",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/auth/useAuth.js",
+      "target": "function:apps/web/src/auth/useAuth.js:useAuth",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "function:apps/web/src/data/apiTeamFlowRepository.js:normalizeApiBaseUrl",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "function:apps/web/src/data/apiTeamFlowRepository.js:readJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "function:apps/web/src/data/apiTeamFlowRepository.js:createApiTeamFlowRepository",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "function:apps/web/src/data/apiTeamFlowRepository.js:createApiTeamFlowRepository",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "function:apps/web/src/data/apiTeamFlowRepository.js:createDemoTeamFlowRepository",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "function:apps/web/src/data/apiTeamFlowRepository.js:createDemoTeamFlowRepository",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "class:apps/web/src/data/apiTeamFlowRepository.js:TeamFlowApiError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "class:apps/web/src/data/apiTeamFlowRepository.js:TeamFlowApiError",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/landing/LandingPage.jsx",
+      "target": "function:apps/web/src/features/landing/LandingPage.jsx:LandingPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/landing/LandingPage.jsx",
+      "target": "function:apps/web/src/features/landing/LandingPage.jsx:LandingPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "target": "function:apps/web/src/state/TeamFlowProvider.jsx:reducer",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "target": "function:apps/web/src/state/TeamFlowProvider.jsx:TeamFlowProvider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "target": "function:apps/web/src/state/TeamFlowProvider.jsx:TeamFlowProvider",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/auth/AuthCallbackPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/auth/ProtectedRoute.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/auth/useAuth.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/components/layout/AppShell.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/ai/AiPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/landing/LandingPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/members/MembersPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/auth/AuthCallbackPage.jsx",
+      "target": "file:apps/web/src/auth/useAuth.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/auth/AuthCallbackPage.jsx",
+      "target": "file:apps/web/src/features/landing/LandingPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/auth/ProtectedRoute.jsx",
+      "target": "file:apps/web/src/auth/useAuth.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/auth/useAuth.js",
+      "target": "file:apps/web/src/auth/AuthContext.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.test.js",
+      "target": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/landing/LandingPage.jsx",
+      "target": "file:apps/web/src/auth/useAuth.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/landing/LandingPage.jsx",
+      "target": "file:apps/web/src/features/landing/LandingPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "target": "file:apps/web/src/state/TeamFlowContext.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "file:apps/web/src/data/apiTeamFlowRepository.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

@@ -20,6 +20,11 @@ Authorization: Bearer <access_token>
 | `GET` | `/api/bootstrap` | 필요 | 로그인 사용자의 초기 데이터 조회 |
 | `POST` | `/api/projects` | 필요 | 프로젝트 생성 |
 | `PATCH` | `/api/projects/:projectId` | 필요 | 프로젝트 기간 변경 |
+| `POST` | `/api/projects/:projectId/ai-agent` | 필요 | 자료조사 AI 팀원 추가 |
+| `PATCH` | `/api/ai-agents/:memberId` | 필요 | AI 역할·컨텍스트 설정 저장 |
+| `POST` | `/api/ai-agents/:memberId/runs` | 필요 | 결정론적 Mock 작업 실행 |
+| `POST` | `/api/ai-runs/:runId/apply` | 필요 | 실행 결과를 공유 노트로 반영 |
+| `POST` | `/api/ai-runs/:runId/reject` | 필요 | 실행 결과 보류 |
 | `POST` | `/api/tasks` | 필요 | 할 일 생성 |
 | `PATCH` | `/api/tasks/:taskId` | 필요 | 할 일 상태 변경 |
 | `DELETE` | `/api/tasks/:taskId` | 필요 | 할 일 삭제 |
@@ -29,6 +34,7 @@ Authorization: Bearer <access_token>
 ```text
 프로젝트: not_started | in_progress | completed
 할 일:    not_started | in_progress | in_review | completed
+AI 실행:  running | pending_review | applied | rejected | failed
 날짜:     YYYY-MM-DD
 ID:       UUID
 ```
@@ -63,18 +69,17 @@ API 서버가 실행 중인지 확인합니다.
   "tasks": [],
   "notes": [],
   "resources": [],
-  "aiSettings": {},
-  "aiHistory": [],
+  "aiAgents": [],
+  "aiRuns": [],
   "currentUserId": "member-uuid",
-  "aiMemberId": "",
   "accessMode": "authenticated",
   "capabilities": {
     "projects": true,
     "members": true,
     "tasks": true,
-    "notes": false,
-    "resources": false,
-    "ai": false
+    "notes": true,
+    "resources": true,
+    "ai": true
   }
 }
 ```
@@ -138,7 +143,7 @@ API 서버가 실행 중인지 확인합니다.
 
 ### `POST /api/tasks`
 
-새 할 일을 생성합니다. `assigneeId`에는 초대를 수락한 프로젝트 협업 팀원의 ID만 사용할 수 있습니다.
+새 할 일을 생성합니다. `assigneeId`에는 같은 프로젝트의 로그인 협업자 또는 AI 팀원 ID만 사용할 수 있습니다. AI 팀원은 프로젝트 접근 권한을 갖지 않고 담당자 관계로만 사용됩니다.
 
 ```json
 {
@@ -202,6 +207,85 @@ API 서버가 실행 중인지 확인합니다.
 { "taskId": "33333333-3333-4333-8333-333333333333" }
 ```
 
+## Mock AI 팀원 API
+
+Mock AI는 외부 AI API나 네트워크를 호출하지 않습니다. Express가 저장된 프로젝트 정보만 정규화해 같은 입력에 항상 같은 Markdown을 만들고, 결과를 먼저 `pending_review`로 저장합니다.
+
+### `POST /api/projects/:projectId/ai-agent`
+
+프로젝트에 고정된 `자료조사 AI`를 추가합니다. 프로젝트당 한 명만 허용합니다.
+
+성공: `201 Created`
+
+```json
+{
+  "member": {
+    "id": "44444444-4444-4444-8444-444444444444",
+    "projectId": "11111111-1111-4111-8111-111111111111",
+    "kind": "ai",
+    "name": "자료조사 AI",
+    "role": "자료 조사",
+    "isAi": true
+  },
+  "aiAgent": {
+    "memberId": "44444444-4444-4444-8444-444444444444",
+    "projectId": "11111111-1111-4111-8111-111111111111",
+    "instructions": "",
+    "contextConfig": {
+      "project": true,
+      "notes": true,
+      "tasks": true,
+      "team": false,
+      "resources": true
+    },
+    "enabled": true
+  }
+}
+```
+
+### `PATCH /api/ai-agents/:memberId`
+
+역할 지시사항과 다섯 컨텍스트 토글을 한 번에 저장합니다. `contextConfig`는 아래 다섯 boolean을 모두 포함해야 하며 다른 키는 허용하지 않습니다.
+
+```json
+{
+  "instructions": "프로젝트 내부 정보만 사용해 근거와 다음 행동을 정리해 주세요.",
+  "contextConfig": {
+    "project": true,
+    "notes": true,
+    "tasks": true,
+    "team": false,
+    "resources": true
+  }
+}
+```
+
+성공: `200 OK` — `{ "aiAgent": { ... } }`
+
+### `POST /api/ai-agents/:memberId/runs`
+
+AI 팀원에게 배정된 미완료 할 일을 Mock 방식으로 실행합니다.
+
+```json
+{ "taskId": "33333333-3333-4333-8333-333333333333" }
+```
+
+성공: `201 Created` — `{ "aiRun": { "status": "pending_review", ... } }`
+
+생성기는 프로젝트 설명, 공유 노트, 할 일, 팀원 역할, 자료 이름·설명 중 활성화된 컨텍스트만 사용합니다. 현재 시간·난수·외부 URL·업로드 파일 본문은 사용하지 않습니다.
+
+### `POST /api/ai-runs/:runId/apply`
+
+`pending_review` 결과를 공유 노트로 반영합니다. 같은 실행을 다시 요청해도 새 노트를 중복 생성하지 않습니다.
+
+성공: `200 OK` — `{ "aiRun": { "status": "applied", ... }, "note": { ... } }`
+
+### `POST /api/ai-runs/:runId/reject`
+
+`pending_review` 결과를 보류합니다. 이미 보류한 실행에 대한 재요청은 같은 결과를 반환합니다.
+
+성공: `200 OK` — `{ "aiRun": { "status": "rejected", ... } }`
+
 ## 오류 응답
 
 모든 오류는 `error` 객체로 반환합니다.
@@ -212,6 +296,7 @@ API 서버가 실행 중인지 확인합니다.
 | `401` | `AUTH_REQUIRED` | Bearer JWT가 없음 |
 | `401` | `INVALID_AUTH_TOKEN` | JWT가 만료됐거나 유효하지 않음 |
 | `404` | `NOT_FOUND` | 접근 가능한 데이터가 존재하지 않음 |
+| `409` | `CONFLICT` | AI 중복, 담당자·완료 상태·실행 전환 충돌 |
 | `503` | `TEAMFLOW_STORE_UNAVAILABLE` | Supabase 저장소 처리 실패 |
 
 ```json

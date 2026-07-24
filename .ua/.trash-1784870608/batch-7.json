@@ -1,0 +1,20 @@
+{
+  "nodes": [
+    {
+      "id": "pipeline:.github/workflows/auto-merge.yml",
+      "type": "pipeline",
+      "name": "auto-merge.yml",
+      "filePath": ".github/workflows/auto-merge.yml",
+      "summary": "매일 예약 실행 또는 수동 실행으로 열린 PR을 조회하고, 대상 브랜치·review 라벨·변경 요청·충돌 규칙의 우선순위에 따라 코멘트, 연기, 종료 또는 병합을 수행한다.",
+      "tags": [
+        "ci-cd",
+        "github-actions",
+        "pull-request",
+        "automation"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "YAML 단계 안의 github-script가 GraphQL 조회와 REST 변경 작업을 함께 수행한다."
+    }
+  ],
+  "edges": []
+}

@@ -1,0 +1,477 @@
+{
+  "nodes": [
+    {
+      "id": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "file",
+      "name": "ResourceIcon.jsx",
+      "filePath": "apps/web/src/components/ui/ResourceIcon.jsx",
+      "summary": "folder·link·file resource 유형을 일관된 icon으로 표시하는 공용 presentation component입니다.",
+      "tags": [
+        "component",
+        "ui",
+        "react"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/components/ui/ResourceIcon.jsx:ResourceIcon",
+      "type": "function",
+      "name": "ResourceIcon",
+      "filePath": "apps/web/src/components/ui/ResourceIcon.jsx",
+      "summary": "resource 유형에 맞는 folder·link·file icon을 렌더링합니다.",
+      "tags": [
+        "component",
+        "teamflow",
+        "react"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        16,
+        19
+      ]
+    },
+    {
+      "id": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "type": "file",
+      "name": "AddResourceModal.jsx",
+      "filePath": "apps/web/src/features/resources/AddResourceModal.jsx",
+      "summary": "link 또는 file resource의 입력·upload·validation·제출 상태를 관리해 현재 폴더에 자료를 추가합니다.",
+      "tags": [
+        "component",
+        "resources",
+        "react"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal",
+      "type": "function",
+      "name": "AddResourceModal",
+      "filePath": "apps/web/src/features/resources/AddResourceModal.jsx",
+      "summary": "link 또는 file 입력을 검증하고 upload·생성 action을 제출합니다.",
+      "tags": [
+        "component",
+        "resources",
+        "react"
+      ],
+      "complexity": "moderate",
+      "lineRange": [
+        24,
+        158
+      ]
+    },
+    {
+      "id": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "type": "file",
+      "name": "ResourceDetailModal.jsx",
+      "filePath": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "summary": "resource metadata를 편집하고 link 열기·file download·삭제 확인과 오류 처리를 제공하는 상세 modal입니다.",
+      "tags": [
+        "component",
+        "resources",
+        "react"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/resources/ResourceDetailModal.jsx:ResourceDetailModal",
+      "type": "function",
+      "name": "ResourceDetailModal",
+      "filePath": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "summary": "resource 편집·열기·download·삭제와 오류 상태를 관리합니다.",
+      "tags": [
+        "component",
+        "resources",
+        "react"
+      ],
+      "complexity": "moderate",
+      "lineRange": [
+        41,
+        179
+      ]
+    },
+    {
+      "id": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "file",
+      "name": "ResourcesPage.jsx",
+      "filePath": "apps/web/src/features/resources/ResourcesPage.jsx",
+      "summary": "자료를 폴더 계층으로 탐색하고 검색·유형 filter·수정일 정렬하며 folder·resource 생성과 상세 modal을 조정합니다.",
+      "tags": [
+        "component",
+        "resources",
+        "react"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage",
+      "type": "function",
+      "name": "ResourcesPage",
+      "filePath": "apps/web/src/features/resources/ResourcesPage.jsx",
+      "summary": "folder navigation, 검색·filter·정렬과 resource modal 흐름을 통합합니다.",
+      "tags": [
+        "component",
+        "resources",
+        "react"
+      ],
+      "complexity": "moderate",
+      "lineRange": [
+        21,
+        119
+      ]
+    },
+    {
+      "id": "file:apps/web/src/features/resources/resourceValidation.js",
+      "type": "file",
+      "name": "resourceValidation.js",
+      "filePath": "apps/web/src/features/resources/resourceValidation.js",
+      "summary": "허용 URL scheme, file 크기·형식, resource 유형별 필수 값을 검사하는 자료실 validation utility입니다.",
+      "tags": [
+        "validation",
+        "resources",
+        "security"
+      ],
+      "complexity": "simple",
+      "languageNotes": "URL parser와 allowlist를 함께 사용해 javascript 같은 위험한 scheme을 거부합니다."
+    },
+    {
+      "id": "function:apps/web/src/features/resources/resourceValidation.js:isSafeHttpUrl",
+      "type": "function",
+      "name": "isSafeHttpUrl",
+      "filePath": "apps/web/src/features/resources/resourceValidation.js",
+      "summary": "URL을 parse해 HTTP·HTTPS scheme만 안전한 link로 허용합니다.",
+      "tags": [
+        "validation",
+        "resources",
+        "security"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        7,
+        15
+      ]
+    },
+    {
+      "id": "function:apps/web/src/features/resources/resourceValidation.js:validateUploadFile",
+      "type": "function",
+      "name": "validateUploadFile",
+      "filePath": "apps/web/src/features/resources/resourceValidation.js",
+      "summary": "upload file의 크기와 허용 조건을 검사합니다.",
+      "tags": [
+        "validation",
+        "resources",
+        "security"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        17,
+        23
+      ]
+    },
+    {
+      "id": "function:apps/web/src/features/resources/resourceValidation.js:validateResource",
+      "type": "function",
+      "name": "validateResource",
+      "filePath": "apps/web/src/features/resources/resourceValidation.js",
+      "summary": "resource 유형별 필수 field와 URL·file 조건을 종합 검증합니다.",
+      "tags": [
+        "validation",
+        "resources",
+        "security"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        25,
+        31
+      ]
+    },
+    {
+      "id": "file:apps/web/src/features/resources/resourceValidation.test.js",
+      "type": "file",
+      "name": "resourceValidation.test.js",
+      "filePath": "apps/web/src/features/resources/resourceValidation.test.js",
+      "summary": "안전한 link, upload file 제한과 resource 유형별 validation 규칙의 정상·실패 사례를 검증합니다.",
+      "tags": [
+        "test",
+        "resources",
+        "regression"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "target": "function:apps/web/src/components/ui/ResourceIcon.jsx:ResourceIcon",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "target": "function:apps/web/src/components/ui/ResourceIcon.jsx:ResourceIcon",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "function:apps/web/src/features/resources/ResourceDetailModal.jsx:ResourceDetailModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "function:apps/web/src/features/resources/ResourceDetailModal.jsx:ResourceDetailModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/resourceValidation.js",
+      "target": "function:apps/web/src/features/resources/resourceValidation.js:isSafeHttpUrl",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/resourceValidation.js",
+      "target": "function:apps/web/src/features/resources/resourceValidation.js:isSafeHttpUrl",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/resourceValidation.js",
+      "target": "function:apps/web/src/features/resources/resourceValidation.js:validateUploadFile",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/resourceValidation.js",
+      "target": "function:apps/web/src/features/resources/resourceValidation.js:validateUploadFile",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/resourceValidation.js",
+      "target": "function:apps/web/src/features/resources/resourceValidation.js:validateResource",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/resourceValidation.js",
+      "target": "function:apps/web/src/features/resources/resourceValidation.js:validateResource",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "target": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/features/resources/resourceValidation.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/features/resources/resourceValidation.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/resourceValidation.test.js",
+      "target": "file:apps/web/src/features/resources/resourceValidation.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/resourceValidation.js",
+      "target": "file:apps/web/src/features/resources/resourceValidation.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}
