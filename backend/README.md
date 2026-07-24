@@ -16,6 +16,11 @@ The current backend uses Express with in-memory repositories by default. These A
 
 ```http
 POST   /api/curriculum/recommend
+GET    /api/curriculum/generated
+POST   /api/curriculum/generated
+DELETE /api/curriculum/generated
+DELETE /api/curriculum/generated/:id
+GET    /api/curriculum/history
 GET    /api/progress/today
 POST   /api/progress/missions/:missionId
 DELETE /api/progress/missions/:missionId
@@ -44,7 +49,9 @@ Request:
 { "goal": "백엔드 개발자가 되고 싶어" }
 ```
 
-The response returns a `GeneratedCurriculumPlan`-compatible `plan` for the React Today Hub and Workspace.
+The response returns a `GeneratedCurriculumPlan`-compatible `plan` for the React Today Hub and Workspace. Recommended plans are saved through the configured generated-curriculum repository.
+
+Generated curriculum snapshots can also be read, saved, cleared, or deleted individually through `/api/curriculum/generated`, while `/api/curriculum/history` returns the saved curriculum list used by the curriculum history screen.
 
 ## Code Runner API
 
@@ -69,7 +76,7 @@ The current runner supports JavaScript/JSX snippets through Node's `vm` module. 
 
 ## Module Boundaries
 
-- `backend/modules/curriculum`: matches a user goal to curriculum data and model output.
+- `backend/modules/curriculum`: matches a user goal to curriculum data and model output, then stores generated curriculum snapshots through the configured repository.
 - `backend/modules/learning-progress`: stores mission run state, attempt count, active step, completion time, and activity log.
 - `backend/modules/mistake-notes`: stores reusable mistake records from Git Lab, Workspace, algorithm, and API practice flows.
 - `backend/modules/git-lab`: records Git command attempts and can create a linked mistake note for failed attempts.
@@ -140,4 +147,4 @@ Then run:
 npm run server:curriculum
 ```
 
-The default mode still uses in-memory repositories. SQLite mode currently persists learning progress, mistake notes, and Git Lab attempts. The `generated_curriculums` table is prepared for the next step, but Today Hub generated-plan persistence is not connected yet.
+The default mode still uses in-memory repositories. SQLite mode persists learning progress, mistake notes, Git Lab attempts, and generated curriculums. Today Hub and Workspace use the generated-curriculum APIs to restore the latest plan, browse curriculum history, resume a saved plan, and delete saved plans.
