@@ -25,7 +25,7 @@ If these documents conflict, use `docs/plan.md` for product scope, `docs/feature
 - `packages/design-system/`: canonical shared CSS design tokens
 - Auth: Supabase Auth with confirmed email and password; Brevo provides Custom SMTP
 - Data: Supabase PostgreSQL through `pg`, SQL repositories, and Supabase CLI migrations
-- `prototype/`: static HTML and CSS only; do not add JavaScript or external CDNs
+- `prototype/`: archived planning reference only; do not reuse it for current implementation or add JavaScript/external CDNs
 
 The repository uses npm workspaces. Install dependencies and run aggregate checks from the repository root.
 

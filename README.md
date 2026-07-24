@@ -166,7 +166,7 @@ MVP에서는 Supabase Auth 이메일 확인에 Brevo Custom SMTP를 실제로 �
 
 ## 정적 프로토타입
 
-현재 [`prototype/`](./prototype/)은 이전 비회원·수동 방문 요청 흐름을 검증한 순수 HTML/CSS 자료입니다. 새 정책의 회원가입, 자동 2단계 알림, 현장 상태 링크와 병원 입점 신청은 아직 반영하지 않았습니다.
+현재 [`prototype/`](./prototype/)은 이전 비회원·수동 방문 요청 흐름을 검증한 보관용 HTML/CSS 자료입니다. 현재 개발·테스트·배포 대상이 아니며, 새 정책의 회원가입, 자동 2단계 알림, 현장 상태 링크와 병원 입점 신청은 반영하지 않습니다.
 
 ## 개발 환경
 
@@ -237,7 +237,7 @@ hub/
 │  ├─ web-shared/       # 웹 앱 공통 컴포넌트와 API·인증 클라이언트 기반
 │  └─ design-system/    # 공통 디자인 토큰 CSS
 ├─ docs/
-├─ prototype/
+├─ prototype/           # 초기 기획 검증용 정적 자료(개발·배포 제외)
 ├─ AGENTS.md
 ├─ package.json         # npm workspaces
 └─ .env.example
