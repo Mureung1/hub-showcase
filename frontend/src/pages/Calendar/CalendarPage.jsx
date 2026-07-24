@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getEvents } from "../../api/analysisApi";
+import { getEvents, updateEvent, deleteEvent } from "../../api/analysisApi";
 import "./CalendarPage.css";
 
 function CalendarPage() {
@@ -10,6 +10,10 @@ function CalendarPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFormData, setEditFormData] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editError, setEditError] = useState("");
 
   useEffect(() => {
     async function fetchEvents() {
@@ -28,6 +32,131 @@ function CalendarPage() {
 
     fetchEvents();
   }, []);
+
+  function handleStartEdit() {
+    setEditFormData({
+      name: selectedEvent.name || "",
+      startDate: selectedEvent.startDate || "",
+      endDate: selectedEvent.endDate || "",
+      deadline: selectedEvent.deadline || "",
+      timeStart: selectedEvent.time?.start || "",
+      timeEnd: selectedEvent.time?.end || "",
+      location: selectedEvent.location || "",
+      deliverables: selectedEvent.deliverables || [],
+      notes: selectedEvent.notes || "",
+    });
+    setIsEditing(true);
+    setEditError("");
+  }
+
+  function handleCancelEdit() {
+    setIsEditing(false);
+    setEditFormData(null);
+    setEditError("");
+  }
+
+  function handleEditInputChange(field, value) {
+    setEditFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  }
+
+  function handleDeliverableChange(index, value) {
+    const updated = [...editFormData.deliverables];
+    updated[index] = value;
+    setEditFormData((prev) => ({
+      ...prev,
+      deliverables: updated,
+    }));
+  }
+
+  function handleAddDeliverable() {
+    setEditFormData((prev) => ({
+      ...prev,
+      deliverables: [...prev.deliverables, ""],
+    }));
+  }
+
+  function handleRemoveDeliverable(index) {
+    const updated = editFormData.deliverables.filter((_, i) => i !== index);
+    setEditFormData((prev) => ({
+      ...prev,
+      deliverables: updated,
+    }));
+  }
+
+  async function handleSaveEdit() {
+    setEditError("");
+    const trimmedName = editFormData.name.trim();
+
+    if (!trimmedName) {
+      setEditError("일정명은 필수입니다.");
+      return;
+    }
+
+    if (!editFormData.startDate && !editFormData.endDate && !editFormData.deadline) {
+      setEditError("시작일, 종료일, 마감일 중 최소 하나는 필수입니다.");
+      return;
+    }
+
+    if (editFormData.startDate && editFormData.endDate && editFormData.endDate < editFormData.startDate) {
+      setEditError("종료일은 시작일보다 이전일 수 없습니다.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const payload = {
+        name: trimmedName,
+        startDate: editFormData.startDate || undefined,
+        endDate: editFormData.endDate || undefined,
+        deadline: editFormData.deadline || undefined,
+        time: {
+          start: editFormData.timeStart || undefined,
+          end: editFormData.timeEnd || undefined,
+        },
+        location: editFormData.location || undefined,
+        deliverables: editFormData.deliverables.filter((d) => d.trim()).length > 0
+          ? editFormData.deliverables.filter((d) => d.trim())
+          : undefined,
+        notes: editFormData.notes || undefined,
+      };
+
+      const result = await updateEvent(selectedEvent.id, payload);
+
+      setEvents((prev) =>
+        prev.map((e) => (e.id === selectedEvent.id ? result.data : e))
+      );
+
+      setSelectedEvent(result.data);
+      setIsEditing(false);
+      setEditFormData(null);
+    } catch (err) {
+      setEditError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleDeleteEvent() {
+    if (!window.confirm("정말 이 일정을 삭제하시겠습니까?")) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await deleteEvent(selectedEvent.id);
+      setEvents((prev) => prev.filter((e) => e.id !== selectedEvent.id));
+      setSelectedEvent(null);
+    } catch (err) {
+      setEditError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   function handlePrevMonth() {
     if (month === 0) {
@@ -187,64 +316,128 @@ function CalendarPage() {
             )}
 
             {selectedEvent && (
-              <div className="event-detail-overlay" onClick={() => setSelectedEvent(null)}>
+              <div className="event-detail-overlay" onClick={() => !isEditing && setSelectedEvent(null)}>
                 <div className="event-detail-modal" onClick={(e) => e.stopPropagation()}>
                   <div className="detail-header">
-                    <h3>{selectedEvent.name}</h3>
-                    <button type="button" className="detail-close" onClick={() => setSelectedEvent(null)}>
+                    <h3>{isEditing ? "일정 수정" : selectedEvent.name}</h3>
+                    <button type="button" className="detail-close" onClick={() => isEditing ? handleCancelEdit() : setSelectedEvent(null)} disabled={isSubmitting}>
                       ✕
                     </button>
                   </div>
                   <div className="detail-content">
-                    {selectedEvent.startDate && (
-                      <div className="detail-item">
-                        <span className="detail-label">시작일:</span>
-                        <span className="detail-value">{selectedEvent.startDate}</span>
-                      </div>
-                    )}
-                    {selectedEvent.endDate && (
-                      <div className="detail-item">
-                        <span className="detail-label">종료일:</span>
-                        <span className="detail-value">{selectedEvent.endDate}</span>
-                      </div>
-                    )}
-                    {selectedEvent.deadline && (
-                      <div className="detail-item">
-                        <span className="detail-label">마감일:</span>
-                        <span className="detail-value">{selectedEvent.deadline}</span>
-                      </div>
-                    )}
-                    {selectedEvent.time?.start && (
-                      <div className="detail-item">
-                        <span className="detail-label">시작 시간:</span>
-                        <span className="detail-value">{selectedEvent.time.start}</span>
-                      </div>
-                    )}
-                    {selectedEvent.time?.end && (
-                      <div className="detail-item">
-                        <span className="detail-label">종료 시간:</span>
-                        <span className="detail-value">{selectedEvent.time.end}</span>
-                      </div>
-                    )}
-                    {selectedEvent.location && (
-                      <div className="detail-item">
-                        <span className="detail-label">장소:</span>
-                        <span className="detail-value">{selectedEvent.location}</span>
-                      </div>
-                    )}
-                    {selectedEvent.deliverables && selectedEvent.deliverables.length > 0 && (
-                      <div className="detail-item">
-                        <span className="detail-label">제출물:</span>
-                        <span className="detail-value">{selectedEvent.deliverables.join(", ")}</span>
-                      </div>
-                    )}
-                    {selectedEvent.notes && (
-                      <div className="detail-item">
-                        <span className="detail-label">메모:</span>
-                        <span className="detail-value">{selectedEvent.notes}</span>
-                      </div>
+                    {editError && <p className="edit-error">{editError}</p>}
+
+                    {!isEditing ? (
+                      <>
+                        {selectedEvent.startDate && (
+                          <div className="detail-item">
+                            <span className="detail-label">시작일:</span>
+                            <span className="detail-value">{selectedEvent.startDate}</span>
+                          </div>
+                        )}
+                        {selectedEvent.endDate && (
+                          <div className="detail-item">
+                            <span className="detail-label">종료일:</span>
+                            <span className="detail-value">{selectedEvent.endDate}</span>
+                          </div>
+                        )}
+                        {selectedEvent.deadline && (
+                          <div className="detail-item">
+                            <span className="detail-label">마감일:</span>
+                            <span className="detail-value">{selectedEvent.deadline}</span>
+                          </div>
+                        )}
+                        {selectedEvent.time?.start && (
+                          <div className="detail-item">
+                            <span className="detail-label">시작 시간:</span>
+                            <span className="detail-value">{selectedEvent.time.start}</span>
+                          </div>
+                        )}
+                        {selectedEvent.time?.end && (
+                          <div className="detail-item">
+                            <span className="detail-label">종료 시간:</span>
+                            <span className="detail-value">{selectedEvent.time.end}</span>
+                          </div>
+                        )}
+                        {selectedEvent.location && (
+                          <div className="detail-item">
+                            <span className="detail-label">장소:</span>
+                            <span className="detail-value">{selectedEvent.location}</span>
+                          </div>
+                        )}
+                        {selectedEvent.deliverables && selectedEvent.deliverables.length > 0 && (
+                          <div className="detail-item">
+                            <span className="detail-label">제출물:</span>
+                            <span className="detail-value">{selectedEvent.deliverables.join(", ")}</span>
+                          </div>
+                        )}
+                        {selectedEvent.notes && (
+                          <div className="detail-item">
+                            <span className="detail-label">메모:</span>
+                            <span className="detail-value">{selectedEvent.notes}</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="form-group">
+                          <label>일정명</label>
+                          <input type="text" value={editFormData.name} onChange={(e) => handleEditInputChange("name", e.target.value)} disabled={isSubmitting} />
+                        </div>
+                        <div className="form-group">
+                          <label>시작일</label>
+                          <input type="date" value={editFormData.startDate} onChange={(e) => handleEditInputChange("startDate", e.target.value)} disabled={isSubmitting} />
+                        </div>
+                        <div className="form-group">
+                          <label>종료일</label>
+                          <input type="date" value={editFormData.endDate} onChange={(e) => handleEditInputChange("endDate", e.target.value)} disabled={isSubmitting} />
+                        </div>
+                        <div className="form-group">
+                          <label>마감일</label>
+                          <input type="date" value={editFormData.deadline} onChange={(e) => handleEditInputChange("deadline", e.target.value)} disabled={isSubmitting} />
+                        </div>
+                        <div className="form-row">
+                          <div className="form-group">
+                            <label>시작 시간</label>
+                            <input type="time" value={editFormData.timeStart} onChange={(e) => handleEditInputChange("timeStart", e.target.value)} disabled={isSubmitting} />
+                          </div>
+                          <div className="form-group">
+                            <label>종료 시간</label>
+                            <input type="time" value={editFormData.timeEnd} onChange={(e) => handleEditInputChange("timeEnd", e.target.value)} disabled={isSubmitting} />
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label>장소</label>
+                          <input type="text" value={editFormData.location} onChange={(e) => handleEditInputChange("location", e.target.value)} disabled={isSubmitting} />
+                        </div>
+                        <div className="form-group">
+                          <label>제출물</label>
+                          {editFormData.deliverables.map((item, idx) => (
+                            <div key={idx} className="deliverable-input">
+                              <input type="text" value={item} onChange={(e) => handleDeliverableChange(idx, e.target.value)} placeholder="제출물" disabled={isSubmitting} />
+                              <button type="button" onClick={() => handleRemoveDeliverable(idx)} disabled={isSubmitting} className="btn-remove">✕</button>
+                            </div>
+                          ))}
+                          <button type="button" onClick={handleAddDeliverable} disabled={isSubmitting} className="btn-add">+ 제출물 추가</button>
+                        </div>
+                        <div className="form-group">
+                          <label>메모</label>
+                          <textarea value={editFormData.notes} onChange={(e) => handleEditInputChange("notes", e.target.value)} disabled={isSubmitting} />
+                        </div>
+                      </>
                     )}
                   </div>
+                  {!isEditing ? (
+                    <div className="detail-actions">
+                      <button type="button" onClick={handleStartEdit} disabled={isSubmitting} className="btn-edit">수정</button>
+                      <button type="button" onClick={handleDeleteEvent} disabled={isSubmitting} className="btn-delete">일정 삭제</button>
+                    </div>
+                  ) : (
+                    <div className="detail-actions">
+                      <button type="button" onClick={handleSaveEdit} disabled={isSubmitting} className="btn-save">저장</button>
+                      <button type="button" onClick={handleCancelEdit} disabled={isSubmitting} className="btn-cancel">취소</button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
