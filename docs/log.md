@@ -10,6 +10,34 @@
 
 ---
 
+### 2026-07-24
+- 진행한 작업:
+  - 코드 컨벤션을 `.claude/skills/code-convention` 스킬에서 `.claude/rules/frontend-convention.md`·`.claude/rules/backend-convention.md`로 이전(경로별 `paths` frontmatter로 자동 로드), 관련 스킬(`security-convention`/`backend-testing`)·`CLAUDE.md`·`.claude/skills/README.md` 참조 갱신
+  - `docs/architecture.md` 문서 마감: 비어있던 "프론트엔드"(폴더 구조·라우팅·상태 관리)·"백엔드"(레이어 구조·Prisma 모델 6개) 섹션 채움, "인프라/배포"는 배포를 다음 주로 미뤄 스텁만 남김 → `docs/checklist.md` W3 architecture.md 항목 체크
+- 이슈/막힌 점:
+  - (해당 없음)
+- 다음 할 일:
+  - 발표 준비
+  - 배포·E2E 통합테스트·rate limit 엣지케이스 대응은 다음 주로 이월
+
+---
+
+### 2026-07-23
+- 진행한 작업:
+  - `validators.js`로 `isValidPreferences` 이전 + 프론트엔드 vitest 도입(`formatStars` 유닛테스트) — TDD로 선행
+  - #6 이슈 상세 LLM 분석: 목록 생성 시점엔 캐시된 값만 병합(LLM 미호출)하고, 상세 화면 진입 시 해당 이슈 1건만 지연 분석 후 `IssueCache`에 영구 저장(`GET /api/recommendations/:id`에 선택적 쿼리 파라미터 `repoFullName`/`issueNumber` 추가 — 새 엔드포인트 대신 기존 계약 유지)
+  - LLM 재순위(3단 구조 ③) 설계·구현: 목록의 10건 전체를 대상으로 병렬 호출 10회 → 분당 rate limit 초과가 실측돼 배치 호출 1회로 재설계(부분 실패 허용 `isValidBatchRerankResult`는 이슈 분석의 폴백 철학 재사용)
+  - 모델을 `gemini-2.0-flash-lite` → `gemini-flash-lite-latest`로 교체(신규 키에서 실제 200 확인 후 경량 티어 선택)
+  - 상세 화면(`Detail.jsx`)에 이슈 LLM 분석 결과 연동
+  - Week4 "재추천 다양화" 스텁 항목 추가, 대회 제출용 `showcase.json`+스크린샷 추가
+- 이슈/막힌 점:
+  - 이슈별 병렬 LLM 호출(10회)이 분당 rate limit을 실측으로 초과 → 배치 1회 호출로 재설계해 해결
+- 다음 할 일:
+  - (금) #10: E2E·배포·문서 마감 — 발표 준비 우선으로 배포/E2E는 다음 주 이월, 문서 마감(architecture.md)만 진행
+  - 재추천 다양화 세부 설계(중복 제외 저장 위치, 상한 카운트 단위)
+
+---
+
 ### 2026-07-22
 - 진행한 작업:
   - #9 착수: 프로필 화면의 언어/난이도/관심분야 칩을 정적 표시에서 실제 `useState` 토글로 전환 (`AppFlowLayout`에 `preferences` 공유 상태 추가, 백엔드 languages 최소 1개 제약에 맞춰 마지막 언어는 해제 불가하게 가드)

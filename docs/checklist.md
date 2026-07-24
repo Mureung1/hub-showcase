@@ -93,8 +93,8 @@
       - DoD: 공개 URL 접속 가능
 - [ ] **[BE] 백엔드 배포** — API 서버 + 환경변수(GitHub 토큰) 설정
       - DoD: 배포된 API로 프론트 연동 성공
-- [ ] **[공통] architecture.md 최종 확정** — 폴더구조/API/DB/배포/데이터흐름 기록
-      - DoD: [architecture.md](architecture.md) 6개 섹션 채움
+- [x] **[공통] architecture.md 최종 확정** — 폴더구조/API/DB/배포/데이터흐름 기록
+      - DoD: [architecture.md](architecture.md) 6개 섹션 채움 ✅ 2026-07-24 (프론트엔드/백엔드 섹션 채움, 인프라/배포는 다음 주로 미뤄 스텁만 남김)
 
 ## Week 4 — 스텁 (내일 정리 예정)
 - [ ] **[FE/BE] 재추천 다양화** — 같은 조건으로 다시 요청 시 새 이슈 위주로(중복 방지), 주기당 2~3회 상한
