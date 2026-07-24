@@ -56,11 +56,15 @@ function toHhmm(hhmm) {
   return `${hhmm.slice(0, 2)}:${hhmm.slice(2)}`;
 }
 
-// [순수 함수] HHMM 문자열 두 개 → 사람이 읽는 운영시간.
-//   "0000"~"2400" → "24시간", 그 외 → "09:00 ~ 18:00", 값 없으면 "정보 없음".
-function formatOperatingTime(start, end) {
-  if (!start || !end) return '정보 없음';
+// [순수 함수] HHMM 문자열 두 개 → 사람이 읽는 운영시간. 네 종류를 구분한다.
+//   null/빈값        → 정보 미제공(전화 문의/정보 없음)  ← 원본이 빈 문자열인 경우
+//   "0000"~"2400"    → "24시간"
+//   시작 == 끝(0000~0000 등) → "운영 안 함"(그 요일 휴무)  ← 미제공과 다른 의미
+//   그 외            → "09:00 ~ 18:00"
+function formatOperatingTime(start, end, tel) {
+  if (!start || !end) return fallbackText(tel);
   if (start === '0000' && end === '2400') return '24시간';
+  if (start === end) return '운영 안 함';
   return `${toHhmm(start)} ~ ${toHhmm(end)}`;
 }
 
@@ -164,9 +168,9 @@ function ParkingLotDetail() {
 
       <div className="info-card">
         <h3>운영시간</h3>
-        <InfoRow label="평일" value={formatOperatingTime(operatingHours?.weekdayStart, operatingHours?.weekdayEnd)} />
-        <InfoRow label="주말" value={formatOperatingTime(operatingHours?.weekendStart, operatingHours?.weekendEnd)} />
-        <InfoRow label="공휴일" value={formatOperatingTime(operatingHours?.holidayStart, operatingHours?.holidayEnd)} />
+        <InfoRow label="평일" value={formatOperatingTime(operatingHours?.weekdayStart, operatingHours?.weekdayEnd, tel)} />
+        <InfoRow label="주말" value={formatOperatingTime(operatingHours?.weekendStart, operatingHours?.weekendEnd, tel)} />
+        <InfoRow label="공휴일" value={formatOperatingTime(operatingHours?.holidayStart, operatingHours?.holidayEnd, tel)} />
       </div>
     </>
   );
