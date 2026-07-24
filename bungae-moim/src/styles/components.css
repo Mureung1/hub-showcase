@@ -54,7 +54,7 @@
 
 .pill-btn--primary {
   background: var(--ink);
-  color: var(--cream);
+  color: var(--on-ink);
 }
 
 .pill-btn--primary:hover {
@@ -72,7 +72,7 @@
 
 .pill-btn--ghost {
   background: transparent;
-  border: 1px solid var(--line);
+  border: 1px solid var(--ink-mute);
   color: var(--ink);
 }
 
@@ -127,7 +127,7 @@
 .pill-tab.is-active {
   background: var(--ink);
   border-color: var(--ink);
-  color: var(--cream);
+  color: var(--on-ink);
 }
 
 .pill-tab:focus-visible {

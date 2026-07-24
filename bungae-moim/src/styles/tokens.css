@@ -21,6 +21,7 @@
   --ink-mute: #857a6b;
   --cream: #f6efe4;
   --cream-mute: #a49a89;
+  --on-ink: #f6efe4;
 
   --line: #f3ede3;
 
@@ -51,6 +52,7 @@
   --ink: #f2ead9;
   --ink-mute: #a89d89;
   --cream-mute: #7d7466;
+  --on-ink: #17150f;
   --line: #2a251e;
   --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
@@ -65,6 +67,7 @@
     --ink: #f2ead9;
     --ink-mute: #a89d89;
     --cream-mute: #7d7466;
+    --on-ink: #17150f;
     --line: #2a251e;
     --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.4);
   }
