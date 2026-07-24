@@ -71,6 +71,23 @@ app.get("/api/group-buys/:id", async (request, response) => { try { const item =
 app.post("/api/group-buys", requireUser, async (request, response) => { const parsed = createSchema.safeParse(request.body); if (!parsed.success) return response.status(400).json({ error: "입력값을 확인해 주세요." }); try { const item = await groupBuyRepository.create(parsed.data, userId(request), request.user.nickname); return response.status(201).json({ groupBuy: present(withRuntimeFields(item), request) }); } catch (error) { return databaseFailure(response, error); } });
 app.patch("/api/group-buys/:id", requireUser, async (request, response) => { const parsed = updateSchema.safeParse(request.body); if (!parsed.success) return response.status(400).json({ error: "수정할 값을 확인해 주세요." }); try { const existing = await groupBuyRepository.findById(request.params.id); if (!existing) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); if (existing.ownerId !== userId(request)) return response.status(403).json({ error: "개설자만 수정할 수 있습니다." }); if (parsed.data.targetPeople && parsed.data.targetPeople < existing.currentPeople) return response.status(400).json({ error: "현재 참여 인원보다 목표 인원을 낮출 수 없습니다." }); const updated = await groupBuyRepository.update(existing.id, parsed.data); return response.json({ groupBuy: present(withRuntimeFields(updated), request) }); } catch (error) { return databaseFailure(response, error); } });
 app.post("/api/group-buys/:id/join", requireUser, async (request, response) => { const parsed = joinSchema.safeParse(request.body); if (!parsed.success) return response.status(400).json({ error: "수량과 출발 위치를 확인해 주세요." }); try { const item = await groupBuyRepository.findById(request.params.id); if (!item) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); const uid = userId(request); if (item.ownerId === uid) return response.status(409).json({ error: "내가 개설한 공동구매입니다." }); if (item.participants.some((person) => person.userId === uid)) return response.status(409).json({ error: "이미 참여한 공동구매입니다." }); if (item.status === "closed") return response.status(409).json({ error: "모집이 이미 마감되었습니다." }); const updated = await groupBuyRepository.join(item.id, uid, request.user.nickname, parsed.data); return response.json({ groupBuy: present(withRuntimeFields(updated), request) }); } catch (error) { if (error.code === "23505" || error.message === "DUPLICATE_PARTICIPANT") return response.status(409).json({ error: "이미 참여한 공동구매입니다." }); return databaseFailure(response, error); } });
+app.delete("/api/group-buys/:id/join", requireUser, async (request, response) => {
+  try {
+    const item = await groupBuyRepository.findById(request.params.id);
+    if (!item) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." });
+    const uid = userId(request);
+    if (item.ownerId === uid) return response.status(409).json({ error: "개설자는 참여를 취소할 수 없습니다." });
+    if (!item.participants.some((person) => person.userId === uid)) return response.status(409).json({ error: "참여 중인 공동구매가 아닙니다." });
+    if (item.finalPickup || item.stage !== "모집 중") return response.status(409).json({ error: "수령 장소가 확정되거나 진행 중인 공동구매는 취소할 수 없습니다." });
+    const updated = await groupBuyRepository.cancelParticipation(item.id, uid);
+    return response.json({ groupBuy: present(withRuntimeFields(updated), request) });
+  } catch (error) {
+    if (["OWNER_CANNOT_CANCEL", "PARTICIPANT_NOT_FOUND", "CANCEL_NOT_ALLOWED"].includes(error.message)) {
+      return response.status(409).json({ error: "현재 상태에서는 참여를 취소할 수 없습니다." });
+    }
+    return databaseFailure(response, error);
+  }
+});
 app.post("/api/group-buys/:id/vote", requireUser, async (request, response) => {
   try {
     const item = await groupBuyRepository.findById(request.params.id);

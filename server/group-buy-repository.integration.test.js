@@ -78,3 +78,61 @@ test("Given an open group buy, when a user joins, then membership persists and d
     await supabase.from("group_buys").delete().eq("id", created.id);
   }
 });
+
+test("Given a joined user with a vote, when participation is cancelled, then membership and vote are removed and recruitment reopens", async () => {
+  const participantUserId = `cancel-user-${Date.now()}`;
+  const created = await repository.create({
+    category: "기타",
+    deadline: "통합 테스트 참여 취소",
+    name: `참여 취소 테스트 ${Date.now()}`,
+    pickupLocation: "학생회관",
+    shippingFee: 300,
+    targetPeople: 2,
+    unitPrice: 1200,
+  }, `cancel-owner-${Date.now()}`);
+
+  try {
+    await repository.join(created.id, participantUserId, "취소 참여자", {
+      quantity: 1,
+      startLocation: "학생회관",
+    });
+    await repository.vote(created.id, participantUserId, "중앙도서관 앞");
+
+    const { error: cancelError } = await supabase.rpc(
+      "cancel_group_buy_participation",
+      {
+        participant_user_id: participantUserId,
+        target_group_buy_id: created.id,
+      },
+    );
+    assert.equal(cancelError, null);
+
+    const [{ data: stored, error: groupBuyError }, { count: participantCount, error: participantError }, { count: voteCount, error: voteError }] = await Promise.all([
+      supabase
+        .from("group_buys")
+        .select("current_people,status")
+        .eq("id", created.id)
+        .single(),
+      supabase
+        .from("group_buy_participants")
+        .select("id", { count: "exact", head: true })
+        .eq("group_buy_id", created.id)
+        .eq("user_id", participantUserId),
+      supabase
+        .from("group_buy_votes")
+        .select("id", { count: "exact", head: true })
+        .eq("group_buy_id", created.id)
+        .eq("user_id", participantUserId),
+    ]);
+
+    assert.equal(groupBuyError, null);
+    assert.equal(participantError, null);
+    assert.equal(voteError, null);
+    assert.equal(stored.current_people, 1);
+    assert.equal(stored.status, "open");
+    assert.equal(participantCount, 0);
+    assert.equal(voteCount, 0);
+  } finally {
+    await supabase.from("group_buys").delete().eq("id", created.id);
+  }
+});
