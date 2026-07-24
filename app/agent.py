@@ -208,6 +208,63 @@ def _verify_loop(
             summary = new_summary
 
 
+def _collect_summaries(successful: list[dict]) -> list[dict]:
+    """트렌드(trend) 5-1. 성공 논문에서 index+title+3키 요약을 평탄화해 모은다.
+
+    successful의 각 원소는 최소 index·title·summary(3키 dict)를 갖는다 —
+    paper_done 이벤트가 담는 필드의 부분집합이다(느슨한 계약: url·date 등
+    나머지는 보지 않는다). 성공 논문만 모아 넘기는 것은 Task 6 오케스트레이션의
+    몫이라, 실패·제외 논문은 애초에 들어오지 않는다.
+
+    summary(중첩 dict)를 **로 펼쳐 3키를 최상위로 올린다 — trend 프롬프트의
+    입력이자 완료 기준(각 원소가 index/title/contribution/method/result를
+    모두 가진다)을 충족하는 형태다.
+    """
+    return [
+        {"index": p["index"], "title": p["title"], **p["summary"]}
+        for p in successful
+    ]
+
+
+def _build_trend_prompt(topic: str, summaries: list[dict]) -> str:
+    """트렌드(trend) 프롬프트를 조립한다. LLM 호출은 하지 않는다.
+
+    summaries(dict 리스트)를 json.dumps(ensure_ascii=False)로 JSON 배열
+    문자열로 직렬화해 {summaries_json}에 채운다 — str()로 넣으면 파이썬
+    repr(홑따옴표)이 되어 JSON이 깨진다(4-1과 같은 이유). {n}에는 논문
+    편수를 넣는다(LLM은 개수를 자주 틀리므로 명시하는 방어적 중복).
+    """
+    return prompt_loader.fill(
+        prompt_loader.load("trend"),
+        topic=topic,
+        n=len(summaries),
+        summaries_json=json.dumps(summaries, ensure_ascii=False),
+    )
+
+
+def _call_trend(topic: str, summaries: list[dict]) -> dict:
+    """트렌드(trend) LLM 호출. 실패해도 예외 없이 fallback을 반환한다.
+
+    fallback은 {"flows": [], "gap": None} — 트렌드 없이 진행한다. 개별
+    요약만으로도 가치가 있으므로 판단 불가 시 억지로 흐름을 만들지 않는다.
+    """
+    prompt = _build_trend_prompt(topic, summaries)
+    return tools.ask_llm_json(prompt, fallback={"flows": [], "gap": None})
+
+
+def trend(topic: str, successful: list[dict]) -> dict:
+    """트렌드 추론(trend) 5단계 진입점. flows/gap dict를 반환한다.
+
+    성공 논문이 하나도 없으면 LLM 없이 즉시 빈 결과로 스킵한다 — 트렌드는
+    "논문 사이의 연결"이라 0편이면 물어볼 대상이 없다(호출 비용도 낭비).
+    요약이 있으면 _call_trend로 넘겨 흐름을 물어본다.
+    """
+    summaries = _collect_summaries(successful)
+    if not summaries:
+        return {"flows": [], "gap": None}
+    return _call_trend(topic, summaries)
+
+
 if __name__ == "__main__":
     import argparse
 
