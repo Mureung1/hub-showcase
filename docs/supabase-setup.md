@@ -25,7 +25,11 @@ public.emotion_analyses
 | `id` | `uuid` | 예 | 분석 기록 식별자 |
 | `session_id` | `uuid` | 예 | 브라우저별 기록 구분 |
 | `situation_text` | `text` | 예 | 사용자가 입력한 상황, 1~500자 |
-| `face_signal` | `text` | 예 | 선택한 얼굴 신호 |
+| `face_signal` | `text` | 수동 입력만 | 수동으로 선택한 얼굴 신호, 카메라 입력은 `null` |
+| `face_signal_source` | `text` | 예 | `manual` 또는 `camera` |
+| `face_signal_confidence` | `numeric(4,3)` | 아니오 | 안정화된 프로토타입 표현 신호 유사도 |
+| `face_signal_evidence` | `jsonb` | 예 | 허용된 주요 특징 이름, 최대 3개 |
+| `face_signal_heuristic_version` | `text` | 아니오 | 카메라 변환 규칙 버전 |
 | `voice_signal` | `text` | 예 | 선택한 목소리 신호 |
 | `selected_scenario` | `text` | 예 | `normal`, `tension`, `tired` |
 | `analysis_result` | `jsonb` | 예 | 점수, 상태 가능성, 판단 근거와 대응 방식 |
@@ -35,7 +39,12 @@ public.emotion_analyses
 ## 데이터 제약 조건
 
 - `situation_text`는 공백을 제외하고 1~500자여야 한다.
-- 얼굴 신호는 `neutral`, `smile`, `tense`, `downcast`, `angry` 중 하나여야 한다.
+- 수동 얼굴 신호는 `neutral`, `smile`, `tense`, `downcast`, `angry` 중 하나여야 한다.
+- 카메라 입력은 감정형 대표값을 `face_signal`에 저장하지 않고 `null`로 둔다.
+- 얼굴 신호 출처는 `manual`, `camera` 중 하나여야 한다.
+- 수동 입력에는 카메라 confidence, evidence, 휴리스틱 버전을 저장하지 않는다.
+- 카메라 입력의 confidence는 0~1이며 감정 정확도가 아닌 프로토타입 유사도다.
+- 카메라 evidence에는 서버가 허용한 특징 이름을 최대 3개만 저장한다.
 - 목소리 신호는 `normal`, `fast`, `low`, `strong`, `bright` 중 하나여야 한다.
 - 시나리오는 `normal`, `tension`, `tired` 중 하나여야 한다.
 - `analysis_result`는 JSON 객체여야 한다.
@@ -51,6 +60,25 @@ public.emotion_analyses
 
 이 SQL은 테이블이 이미 존재하면 오류를 내도록 작성했다. 기존 테이블을 자동으로 덮어쓰거나
 삭제하지 않으므로 같은 파일을 반복 실행하지 않는다.
+
+기존 테이블에 카메라 메타데이터 컬럼을 추가할 때는 전체 스키마 대신 다음 마이그레이션을 한 번
+실행한다.
+
+```text
+backend/migrations/20260724_add_face_signal_metadata.sql
+```
+
+기존 레코드는 `face_signal_source = 'manual'`로 유지되며 카메라 메타데이터는 비어 있다.
+
+카메라 입력의 감정형 대표값 저장을 중단하려면 메타데이터 마이그레이션 적용 후 다음
+마이그레이션을 한 번 실행한다.
+
+```text
+backend/migrations/20260724_make_camera_face_signal_optional.sql
+```
+
+이 마이그레이션은 기존 카메라 기록의 `face_signal`만 `null`로 변경하고, 수동 선택값과 나머지
+분석 데이터는 유지한다.
 
 ## RLS와 키 관리
 
@@ -84,6 +112,10 @@ select
   session_id,
   situation_text,
   face_signal,
+  face_signal_source,
+  face_signal_confidence,
+  face_signal_evidence,
+  face_signal_heuristic_version,
   voice_signal,
   selected_scenario,
   analysis_result,
@@ -92,6 +124,29 @@ select
 from public.emotion_analyses
 order by created_at desc
 limit 20;
+```
+
+## 카메라 개인정보 범위
+
+DB에는 수동 선택일 때만 `face_signal`을 저장한다. 카메라 입력에는 다음 제한된 요약
+메타데이터만 저장한다.
+
+```text
+face_signal_source
+face_signal_confidence
+face_signal_evidence 최대 3개
+face_signal_heuristic_version
+```
+
+다음 정보는 React에서 Express로 전송하지 않고 Supabase에도 저장하지 않는다.
+
+```text
+웹캠 영상 또는 사진
+카메라 프레임
+얼굴 랜드마크 좌표
+전체 blendshape 점수
+얼굴 변환 행렬
+카메라 장치 정보
 ```
 
 ## Server environment variables and connection check

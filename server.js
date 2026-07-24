@@ -1,17 +1,20 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import helmet from "helmet";
+import { rateLimit } from "express-rate-limit";
 import {
   isSupabaseConfigured,
   SupabaseConfigurationError
 } from "./backend/config/supabaseClient.js";
-import emotionAnalysisRouter from "./backend/features/emotion-analyses/emotionAnalysisRoutes.js";
+import {
+  createEmotionAnalysisRouter
+} from "./backend/features/emotion-analyses/emotionAnalysisRoutes.js";
 import { RequestValidationError } from "./backend/features/emotion-analyses/emotionAnalysisValidation.js";
 import { SupabaseRepositoryError } from "./backend/repositories/emotionAnalysisRepository.js";
 
 dotenv.config({ quiet: true });
 
-const app = express();
 const requestedPort = Number.parseInt(
   process.env.PORT ?? process.env.SERVER_PORT ?? "",
   10
@@ -26,9 +29,33 @@ const allowedOrigins = new Set([
     .filter(Boolean)
 ]);
 
-app.disable("x-powered-by");
-app.use(express.json({ limit: "1mb" }));
-app.use(
+export function createApp({
+  createAnalysis,
+  listAnalyses,
+  rateLimitOptions = {}
+} = {}) {
+  const app = express();
+  const apiRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 100,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    handler(request, response) {
+      response.status(429).json({
+        success: false,
+        error: {
+          code: "RATE_LIMIT_EXCEEDED",
+          message: "Too many API requests. Please try again later."
+        }
+      });
+    },
+    ...rateLimitOptions
+  });
+
+  app.disable("x-powered-by");
+  app.use(helmet());
+  app.use(express.json({ limit: "100kb" }));
+  app.use(
   "/api",
   cors({
     origin(origin, callback) {
@@ -44,12 +71,16 @@ app.use(
     },
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type"]
-  })
+  }),
+  apiRateLimiter
 );
 
-app.use("/api/emotion-analyses", emotionAnalysisRouter);
+  app.use(
+    "/api/emotion-analyses",
+    createEmotionAnalysisRouter({ createAnalysis, listAnalyses })
+  );
 
-app.use((request, response) => {
+  app.use((request, response) => {
   response.status(404).json({
     success: false,
     error: {
@@ -57,9 +88,9 @@ app.use((request, response) => {
       message: "The requested route was not found."
     }
   });
-});
+  });
 
-app.use((error, request, response, next) => {
+  app.use((error, request, response, next) => {
   if (response.headersSent) {
     next(error);
     return;
@@ -131,13 +162,20 @@ app.use((error, request, response, next) => {
       message: "An internal server error occurred."
     }
   });
-});
+  });
 
-app.listen(port, () => {
-  console.log(`Express server listening on http://localhost:${port}`);
-  console.log(
-    `Supabase configuration: ${isSupabaseConfigured() ? "ready" : "not configured"}`
-  );
-});
+  return app;
+}
+
+const app = createApp();
+
+if (process.env.NODE_ENV !== "test") {
+  app.listen(port, () => {
+    console.log(`Express server listening on http://localhost:${port}`);
+    console.log(
+      `Supabase configuration: ${isSupabaseConfigured() ? "ready" : "not configured"}`
+    );
+  });
+}
 
 export default app;

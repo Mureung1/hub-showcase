@@ -11,7 +11,7 @@ export default function ServiceHeader({ status = "waiting" }) {
   return (
     <header className="ai-card">
       <div className="ai-avatar" aria-hidden="true" />
-      <div className="ai-meta">
+      <div>
         <h1 className="ai-name">관계형 AI</h1>
         <div className={`ai-status ai-status-${status}`} role="status" aria-live="polite">
           {statusLabels[status] || status}
