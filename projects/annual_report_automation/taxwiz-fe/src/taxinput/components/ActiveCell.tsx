@@ -3,11 +3,12 @@ import { motion } from 'framer-motion';
 import { SelectCard } from '../../components/ui/SelectCard';
 import { NumberInput } from '../../components/ui/NumberInput';
 import { Tooltip } from '../../components/ui/Tooltip';
-import type { Cell } from '../engine';
+import type { Cell, CellKind } from '../engine';
 import type { TaxInputState } from '../types';
 import { GLOSSARY } from '../catalog';
 import { YmdField } from './YmdField';
 import { ShareholdersField } from './ShareholdersField';
+import { HometaxLookupButton } from './HometaxLookupButton';
 import styles from './ActiveCell.module.css';
 
 interface ActiveCellProps {
@@ -20,16 +21,28 @@ interface ActiveCellProps {
 
 const cardTransition = { duration: 0.32, ease: [0.16, 1, 0.3, 1] as const };
 
+// 타이핑으로 값을 넣는 셀만 자동 포커스한다 (§8.4). 선택형(yesno/select)은 일부러 제외 —
+// 첫 보기 버튼에 포커스를 주면 앞 질문을 Enter로 넘긴 손이 그대로 Enter를 한 번 더 눌러
+// 안 읽은 채 첫 보기가 선택돼버린다. 타이핑 필드는 Enter가 "내가 친 값 확정"이라 안전하다.
+const AUTOFOCUS_KINDS = new Set<CellKind>(['text', 'number', 'date-ymd']);
+
 export const ActiveCell: React.FC<ActiveCellProps> = ({ cell, editing, primary, data, onCommit }) => {
   const [text, setText] = useState<string>(cell.kind === 'text' || cell.kind === 'number' ? (cell.get() ?? '') : '');
   const [ymdValid, setYmdValid] = useState(false);
   const ymdBuild = useRef<() => string>(() => '');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
+  // 셀이 바뀔 때마다 body 안의 첫 입력 요소(input/select)에 포커스를 준다.
+  // 필드마다 ref를 꿰지 않고 컨테이너에서 찾는 이유: number는 NumberInput, date는 YmdField의
+  // <select>라 각각 ref 전달이 필요한데, 첫 focusable 하나만 잡으면 셋 다 커버된다.
+  // ref를 .body에 다는 건 titleRow의 도움말(?) 버튼(Tooltip)을 포커스 대상에서 빼기 위해서다.
+  // 지연(340/120)은 framer-motion 진입 애니메이션이 끝난 뒤 포커스해 스크롤 튐을 막는 기존 값.
   useEffect(() => {
-    if (cell.kind === 'text') {
-      setTimeout(() => inputRef.current?.focus(), primary ? 340 : 120);
-    }
+    if (!AUTOFOCUS_KINDS.has(cell.kind)) return;
+    const t = setTimeout(() => {
+      bodyRef.current?.querySelector<HTMLElement>('input, select, textarea')?.focus();
+    }, primary ? 340 : 120);
+    return () => clearTimeout(t);
   }, [cell.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectAndAdvance = (value: any) => {
@@ -50,7 +63,6 @@ export const ActiveCell: React.FC<ActiveCellProps> = ({ cell, editing, primary, 
       <div className={styles.inputRow}>
         <div className={styles.textBox}>
           <input
-            ref={inputRef}
             type="text"
             placeholder={cell.ph || ''}
             value={text}
@@ -85,7 +97,9 @@ export const ActiveCell: React.FC<ActiveCellProps> = ({ cell, editing, primary, 
     );
   } else if (cell.kind === 'date-ymd') {
     body = (
-      <div className={styles.inputRow}>
+      // YmdField는 자체 onKeyDown이 없어 Enter를 여기서 버블링으로 잡는다 (number 필드와 같은 방식).
+      // 유효할 때만 확정 — 년/월만 고른 미완성 상태에서 Enter가 넘어가지 않게 ymdValid로 막는다.
+      <div className={styles.inputRow} onKeyDown={(e) => { if (e.key === 'Enter' && ymdValid) onCommit(ymdBuild.current()); }}>
         <YmdField value={cell.get() || ''} onReady={(valid, build) => { setYmdValid(valid); ymdBuild.current = build; }} />
         <button type="button" className={styles.goBtn} disabled={!ymdValid} onClick={() => onCommit(ymdBuild.current())} aria-label="다음">
           <GoIcon />
@@ -121,6 +135,7 @@ export const ActiveCell: React.FC<ActiveCellProps> = ({ cell, editing, primary, 
               <span>
                 <b>{p.label}</b>
                 {p.hint && <small>{p.hint}</small>}
+                {p.hometaxGoal && <HometaxLookupButton goal={p.hometaxGoal} status={p.hometaxStatus} />}
               </span>
             </li>
           ))}
@@ -166,7 +181,7 @@ export const ActiveCell: React.FC<ActiveCellProps> = ({ cell, editing, primary, 
         {helpIcon}
       </div>
       {cell.sub && <div className={styles.sub}>{cell.sub}</div>}
-      <div className={styles.body}>
+      <div className={styles.body} ref={bodyRef}>
         {body}
         {showSkip && (
           <div className={styles.skipRow}>

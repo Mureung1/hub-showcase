@@ -141,6 +141,24 @@ export function useTaxInputEngine(
   const startEdit = useCallback((id: string) => setCursor((prev) => ({ ...prev, editingId: id })), []);
   const cancelEdit = useCallback(() => setCursor((prev) => ({ ...prev, editingId: null })), []);
 
+  // 좌측 토픽 레일에서 이미 지나온 토픽으로 되돌아가기 (DESIGN.md §9.1).
+  // **아직 안 지나온 토픽으로의 점프는 의도적으로 막는다** — 셀은 앞선 답변에 따라
+  // 동적으로 생성되므로, 건너뛴 채 앞으로 점프하면 frontier가 실제 셀 목록과 어긋난다.
+  // 되돌아갈 때의 frontier 계산은 goBack과 동일한 규칙(마지막 셀을 활성 셀로)을 쓴다.
+  const goToTopic = useCallback((topicKey: string) => {
+    setCursor((prev) => {
+      const i = prev.history.indexOf(topicKey);
+      if (i < 0) return prev; // 안 지나온 토픽 — 무시
+      const target = cellsFor(topicKey);
+      return {
+        topicKey,
+        frontier: Math.max(0, target.length - 1),
+        history: prev.history.slice(0, i),
+        editingId: null,
+      };
+    });
+  }, [cellsFor]);
+
   const canGoBack = cursor.frontier > 0 || cursor.history.length > 0 || !!cursor.editingId;
 
   const weightTotal = useMemo(() => topicWeightTotal(topicOrder), [topicOrder]);
@@ -165,8 +183,10 @@ export function useTaxInputEngine(
 
   return {
     data, cells, topicKey: cursor.topicKey, frontier: cursor.frontier, editingId: cursor.editingId,
+    /** 지나온 토픽 스택 — 좌측 레일의 "완료" 표시와 goToTopic 허용 여부가 이걸 본다 */
+    visitedTopics: cursor.history,
     canGoBack, progressPct, remainingEst, finished,
     restoredFromDraft: draft != null,
-    commit, goBack, startEdit, cancelEdit, clearDraft,
+    commit, goBack, goToTopic, startEdit, cancelEdit, clearDraft,
   };
 }

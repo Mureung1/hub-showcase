@@ -46,7 +46,9 @@ export const OnboardingPage: React.FC = () => {
     <div className={wizardStyles.root}>
       <TopBar topicKey={topicKey} topicOrder={ONBOARDING_TOPIC_ORDER} progressPct={progressPct} canGoBack={canGoBack} onBack={goBack} />
 
-      <div className={wizardStyles.stage}>
+      {/* 온보딩은 토픽이 하나뿐이라 레일/패널 없이 중앙 칼럼만 — 폭·여백 체계는 shell을 그대로 쓴다 */}
+      <div className={wizardStyles.shell}>
+        <div className={wizardStyles.stage}>
         <div className={wizardStyles.topicCol}>
           <div className={wizardStyles.topicHead}>
             <div className={wizardStyles.eyebrow}>
@@ -98,6 +100,7 @@ export const OnboardingPage: React.FC = () => {
               </AnimatePresence>
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>

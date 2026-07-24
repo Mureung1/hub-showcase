@@ -6,33 +6,57 @@
   color: var(--color-text-primary);
 }
 
+/* 3분할 셸 (DESIGN.md §9.1). 중앙 stage만 늘어나고(flex:1) 양쪽은 고정폭이라,
+   와이드 모니터에서 남는 폭은 레일/패널이 아니라 stage의 여백이 흡수한다 —
+   입력 칼럼 자체(.topicCol)는 --w-read로 잠겨 있어 가독폭을 유지한다. */
+.shell {
+  flex: 1;
+  width: 100%;
+  max-width: var(--w-page);
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+
 .stage {
   flex: 1;
+  min-width: 0;
   display: flex;
   justify-content: center;
-  padding: 0 20px;
+}
+
+/* 레일·패널이 접히는 폭부터는 원래의 단일 칼럼으로 되돌아간다 */
+@media (max-width: 1080px) {
+  .shell {
+    flex-direction: column;
+    padding: 0 var(--space-5);
+    gap: 0;
+  }
+  .stage { width: 100%; }
 }
 
 @media (max-width: 560px) {
-  .stage { padding: 0 14px; }
+  .shell { padding: 0 var(--space-4); }
 }
 
 .topicCol {
   width: 100%;
-  max-width: 600px;
-  padding: 30px 0 150px;
+  max-width: var(--w-read);
+  padding: var(--space-8) 0 var(--space-16);
 }
 
 .topicHead {
   margin-bottom: var(--space-5);
 }
 
+/* 이전엔 전 화면 공통의 작은 대문자 eyebrow였다(§7.1 지적) — 대문자 변형과
+   액센트색을 걷어내고, 현재 섹션을 알려주는 최소 라벨로만 남긴다 */
 .eyebrow {
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--color-text-tertiary);
   margin-bottom: 6px;
 }
 
@@ -40,14 +64,14 @@
   font-size: var(--font-size-2xl);
   font-weight: 700;
   letter-spacing: -0.015em;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .desc {
-  margin-top: 6px;
+  margin-top: var(--space-2);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  line-height: 1.55;
+  line-height: 1.6;
   max-width: 52ch;
 }
 
@@ -57,65 +81,28 @@
   gap: 9px;
 }
 
-.statusBar {
-  position: sticky;
-  bottom: 16px;
-  margin-top: var(--space-4);
-  display: flex;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-  padding: 12px var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-md);
-}
-
-.statusItem {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: var(--font-size-sm);
-}
-
-.dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex: none;
-}
-
-.ok .dot { background: var(--color-success); }
-.bad .dot { background: var(--color-danger); }
-
-.num {
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-}
-
-.sep {
-  width: 1px;
-  height: 14px;
-  background: var(--color-border);
-}
-
 .toast {
   position: fixed;
   left: 50%;
   bottom: 26px;
   transform: translate(-50%, 12px);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--color-text-primary);
+  color: var(--color-text-on-dark);
+  border: none;
   box-shadow: var(--shadow-md);
   padding: 11px 18px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   z-index: 50;
 }
 
+/* 제목 옆 잔여 문항 표시는 우측 패널이 접히는 좁은 화면에서만 쓰는 안전망이다 —
+   패널이 보이는 폭에서는 같은 숫자가 두 번 뜨므로 숨긴다 */
 .remainNote {
   color: var(--color-text-tertiary);
   font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0;
+}
+
+@media (min-width: 1081px) {
+  .remainNote { display: none; }
 }
