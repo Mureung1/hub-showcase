@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: coordinator
 
 ## Parent Spec
 
@@ -34,21 +34,28 @@ S1의 frozen Browser fixture만으로 Account screen, A Guided Setup, working, r
 
 ## Acceptance Criteria
 
-- [ ] Account `checking | login_required | login_starting | login_pending | verifying | connected | unsupported_account | unavailable`가 frozen fixture의 허용 action과 정확히 대응한다.
-- [ ] A Guided Setup이 학년·학기, Server-projected parent 표시값, editable leaf와 최종 `학기 공간 만들기` 승인을 명확한 primary/secondary hierarchy로 보여 준다.
-- [ ] Confirmation 화면은 승인 전 mutation을 성공처럼 표현하지 않고, working은 퍼센트나 durable phase 대신 coarse product progress만 보여 준다.
-- [ ] C가 reauth, account unavailable, proven-safe resume, restart required, release mismatch와 recovery별 allowlisted action만 렌더링한다.
-- [ ] Ready가 semester label, `Codex 연결됨`, 세 validation copy, leaf/safe display location, boundary copy와 disabled next journey를 보여 주고 Course·자료·action을 합성하지 않는다.
-- [ ] DOM, URL, Browser storage와 client log에서 raw path, durable setup/recovery identity, receipt phase, digest, Runtime/native/account private identity가 0건이다.
-- [ ] Keyboard focus, loading, empty, error와 recovery가 같은 semantic token을 사용하고 한 decision에 primary action 하나만 있다.
-- [ ] Ready title 28–36px, body 16px, helper/status 13–14px 이상 원칙을 지키며 1440×900과 1920×1080에서 핵심 status/action이 clip·overlap되지 않는다.
-- [ ] Existing post-Ready academic source/model code는 삭제하지 않지만 public first-run root에서 비활성 상태로 남는다.
+- [x] Account `checking | login_required | login_starting | login_pending | verifying | connected | unsupported_account | unavailable`가 frozen fixture의 허용 action과 정확히 대응한다.
+- [x] A Guided Setup이 학년·학기, Server-projected parent 표시값, editable leaf와 최종 `학기 공간 만들기` 승인을 명확한 primary/secondary hierarchy로 보여 준다.
+- [x] Confirmation 화면은 승인 전 mutation을 성공처럼 표현하지 않고, working은 퍼센트나 durable phase 대신 coarse product progress만 보여 준다.
+- [x] C가 reauth, account unavailable, proven-safe resume, restart required, release mismatch와 recovery별 allowlisted action만 렌더링한다.
+- [x] Ready가 semester label, `Codex 연결됨`, 세 validation copy, leaf/safe display location, boundary copy와 disabled next journey를 보여 주고 Course·자료·action을 합성하지 않는다.
+- [x] DOM, URL, Browser storage와 client log에서 raw path, durable setup/recovery identity, receipt phase, digest, Runtime/native/account private identity가 0건이다.
+- [x] Keyboard focus, loading, empty, error와 recovery가 같은 semantic token을 사용하고 한 decision에 primary action 하나만 있다.
+- [x] Ready title 28–36px, body 16px, helper/status 13–14px 이상 원칙을 지키며 1440×900과 1920×1080에서 핵심 status/action이 clip·overlap되지 않는다.
+- [x] Existing post-Ready academic source/model code는 삭제하지 않지만 public first-run root에서 비활성 상태로 남는다.
 
 ## Verification
 
-- Targeted test or command: `npm test -w @ay-ple/chat-shell`, `npm run typecheck -w @ay-ple/chat-shell`, `npm run build -w @ay-ple/chat-shell`, `npm run lint -w @ay-ple/chat-shell`
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
-- Manual or live smoke: Frozen fixture로 actual built UI를 1440×900과 1920×1080에서 열어 Account, confirmation, working, recovery와 Ready의 typography·focus·button hierarchy·overflow를 visual review한다.
+| Gate | Result |
+| --- | --- |
+| Chat Shell tests | `npm test -w @ay-ple/chat-shell` — 54/54 pass |
+| Chat Shell typecheck | `npm run typecheck -w @ay-ple/chat-shell` — pass |
+| Chat Shell build | `npm run build -w @ay-ple/chat-shell` — pass |
+| Chat Shell lint | `npm run lint -w @ay-ple/chat-shell` — pass |
+| Documentation links | Repository `scripts/check-docs-links.mts` checker — active 28, historical cutover banner 2, pass |
+| Candidate diff | `git diff --check` — pass |
+| Independent focused rereview | Exact candidate `b1f20e07ab89e51ce656adfa149dddff3f900947` — PASS, blocker 0건 |
+| Root integration gates | U1 branch에는 C1의 actual HTTP mount가 없으므로 합성하지 않았다. C1 integration 뒤 coordinator가 root test·typecheck·build·lint와 public journey E2E를 실행한다. |
 
 ## Claim Evidence
 
@@ -89,3 +96,51 @@ S1의 frozen Browser fixture만으로 Account screen, A Guided Setup, working, r
 | requiredChecks | Pure decoder/view-model and colocated UI tests; Chat Shell typecheck/build/lint; 1440×900·1920×1080 actual visual review; root four gates; docs links; `git diff --check` |
 | reviewOwner | U author가 아닌 visual reviewer와 product-contract reviewer |
 | handoffArtifact | Fixed reviewed U1 SHA, consumed fixture roster digest, Account→Guided→Compact render matrix와 two-viewport visual acceptance receipt |
+
+## Result
+
+### Candidate와 contract evidence
+
+| Evidence | Result |
+| --- | --- |
+| Initial implementation candidate | `db6ee4c79b33e8f027422f9dca6e209b903f767d` |
+| Corrective candidate | `b1f20e07ab89e51ce656adfa149dddff3f900947` |
+| Fixed reviewed candidate | `b1f20e07ab89e51ce656adfa149dddff3f900947` |
+| Consumed fixture roster digest | `d7dc6e71b1ef3429f009420a5f644565616f5cda2d847fa185fb292c6714d5d1` |
+| Browser API seam | GET `/api/product/public-preview`로 projection을 관찰하고 POST `/api/product/public-preview`로 exact command를 전달한다. Decoder는 허용되지 않은 response를 fail closed하며 기존 `/api/product/bootstrap` contract는 변경하지 않았다. |
+| Existing academic surface | 기존 academic workbench는 `AcademicWorkbench`로 보존하되 public first-run root에서 비활성화했다. |
+
+### Account → Guided → Compact render matrix
+
+| Surface | Accepted states and actions |
+| --- | --- |
+| Account | `checking`, `login_required`, `login_starting`, `login_pending`, `verifying`, `connected`, `unsupported_account`, `unavailable`와 각 projection의 allowlisted action |
+| Guided Setup | `input_required`의 학년·학기·parent·editable leaf, `confirmation_required`의 명시적 승인, `working`의 coarse progress |
+| Protected and recovery | reauth, account unavailable, proven-safe resume, restart required, release mismatch, recovery별 allowlisted action |
+| Compact Ready | semester label, `Codex 연결됨`, validation copy 세 개, leaf·safe display location, release boundary와 disabled `COMING NEXT` |
+
+### Corrective review closure
+
+| Prior finding | Closure evidence |
+| --- | --- |
+| `workspace.parent.select` 뒤 keyed remount 때문에 학기 draft가 사라졌다. | Controller가 semester draft를 소유하고 remount key를 제거했으며 projection을 pure reconciliation한다. 실제 1440×900에서 `4학년 / 2학기 / 내가 고른 학기`를 입력한 뒤 exact `workspace.parent.select` POST를 보냈고, parent가 Documents에서 School로, suggested leaf가 새 값으로 바뀐 뒤에도 draft가 보존됐다. |
+| 상태 전환 뒤 deterministic accessible focus가 없었다. | Coarse public surface/stage focus key가 바뀔 때만 main `h1`으로 focus를 옮긴다. login start→starting, input→confirmation, approve→working, recovery→working, polling→Ready를 실제로 확인했고 같은 `login_pending` poll은 focus를 빼앗지 않았다. |
+| Release command 복사 결과에 visible semantic success/failure가 없었다. | Keyboard Enter와 button focus 보존을 확인했고 `role="status"`·`aria-live="polite"` success가 보였다. 강제 rejection에서도 visible failure status가 나타났으며 pure test가 두 결과를 고정한다. |
+
+### Desktop acceptance receipt
+
+| Check | Independent result |
+| --- | --- |
+| Viewports | 1440×900과 1920×1080에서 horizontal/main overflow 0 |
+| Typography | Ready title 32px, body 16px, helper/status 13–14px |
+| Decision hierarchy | 각 decision에서 enabled primary action 하나 |
+| Recovery truth | false-Ready 0건. Ready checklist, next journey, academic workbench와 Chat을 렌더링하지 않고 허용된 경우에만 safe discard를 제공한다. |
+| Private-state boundary | DOM·URL private scan 0건, Browser storage writer/literal 0건 |
+| Runtime hygiene | Console warning/error 0건 |
+
+### Downstream obligations
+
+- C1은 GET·POST `/api/product/public-preview`를 actual Server HTTP surface에 mount하고 exact command·response envelope를 연결해야 한다. U1은 Browser consumer만 소유하며 fixture나 server result를 하드코딩하지 않는다.
+- Coordinator는 U1과 C1을 integration한 뒤 root four gates, docs links와 public journey E2E를 다시 실행한다.
+- `apps/chat-shell/e2e/**` ownership은 I에 남는다. Existing academic surface는 post-Ready journey가 구현될 때까지 public root에서 비활성 상태를 유지한다.
+- Parent Spec은 다른 release slice와 clean-machine evidence가 남아 있으므로 이 ticket 완료만으로 완료 처리하지 않는다.
