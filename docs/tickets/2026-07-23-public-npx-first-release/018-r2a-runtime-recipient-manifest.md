@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: in-progress
+- State: completed
 - Surface: local-ticket
-- Next actor: R2a canonical manifest assembler writer
+- Next actor: R2b Runtime recipient/legal/provenance writer via coordinator
 
 ## Parent Spec
 
@@ -40,14 +40,14 @@ S1이 고정한 단일 `CanonicalRuntimeManifest` authority에 Runtime-owned rec
 
 ## Acceptance Criteria
 
-- [ ] Manifest v2 decoder가 recipient payload, bundle subtree, Runtime identity·launch path, app–Runtime contract와 input provenance를 strict하게 분리한다.
-- [ ] Canonical generator가 같은 recipient tree와 identity에서 byte-identical manifest를 만들고 path ordering·JSON serialization이 host locale/time에 의존하지 않는다.
-- [ ] Verifier가 exact top-level set, manifest canonical bytes, payload count/regular bytes/symlink/type/mode/digest와 bundle subtree를 모두 검사한다.
-- [ ] Missing/extra file, byte/mode drift, unsafe or dangling link, selected executable symlink/non-executable, path escape와 recipient-vs-bundle roster mismatch가 fail closed한다.
-- [ ] Manifest self-hash를 만들지 않고 S1 descriptor가 manifest exact bytes·SHA를 pin할 수 있는 deterministic output을 제공한다.
-- [ ] Build-only input은 recipient artifact path로 오인되지 않고 source/input/builder identity를 provenance field로 표현한다.
-- [ ] Current exact Runtime verify/generate flow와 official SDK provenance가 additive v2 work 때문에 조용히 바뀌지 않는다.
-- [ ] R2b가 actual component roster와 legal tree를 주입할 수 있는 owner-private assembler와 inherited verifier seam·fixture가 handoff된다.
+- [x] Manifest v2 decoder가 recipient payload, bundle subtree, Runtime identity·launch path, app–Runtime contract와 input provenance를 strict하게 분리한다.
+- [x] Canonical generator가 같은 recipient tree와 identity에서 byte-identical manifest를 만들고 path ordering·JSON serialization이 host locale/time에 의존하지 않는다.
+- [x] Verifier가 exact top-level set, manifest canonical bytes, payload count/regular bytes/symlink/type/mode/digest와 bundle subtree를 모두 검사한다.
+- [x] Missing/extra file, byte/mode drift, unsafe or dangling link, selected executable symlink/non-executable, path escape와 recipient-vs-bundle roster mismatch가 fail closed한다.
+- [x] Manifest self-hash를 만들지 않고 S1 descriptor가 manifest exact bytes·SHA를 pin할 수 있는 deterministic output을 제공한다.
+- [x] Build-only input은 recipient artifact path로 오인되지 않고 source/input/builder identity를 provenance field로 표현한다.
+- [x] Current exact Runtime verify/generate flow와 official SDK provenance가 additive v2 work 때문에 조용히 바뀌지 않는다.
+- [x] R2b가 actual component roster와 legal tree를 주입할 수 있는 owner-private assembler와 inherited verifier seam·fixture가 handoff된다.
 
 ## Acceptance ownership
 
@@ -75,6 +75,22 @@ S1이 고정한 단일 `CanonicalRuntimeManifest` authority에 Runtime-owned rec
 | Single authority | `packages/runtime-release/src/canonical-runtime-manifest.ts`, release admission, retained-capability extracted-tree verification과 opaque `verifyForSpawn`을 read-only donor로 유지한다. |
 | Authorized delta | `packages/runtime-release/src/canonical-runtime-manifest-assembler*`, 최소 adjacent tests/fixture, Runtime package README consequence, codex Runtime synthetic input fixture/README consequence와 Ticket 018만 변경한다. |
 | Frozen surfaces | `packages/runtime-release/src/contract.ts`, 두 package의 `package.json`·`src/index.ts`, root manifest/lockfile, Official SDK source·patch stack은 수정하지 않는다. |
+
+## Closeout Receipt
+
+| Evidence | Result |
+| --- | --- |
+| Corrected candidate | `0150a8d3a34b0225cff35e0ee1958c946b009cd1` |
+| Independent review | Exact candidate review **PASS**, P0–P2 finding 0건. Production/test correction 없이 docs-only closeout을 승인했다. |
+| Assembler focused | `npm exec -w @ay-ple/runtime-release -- tsx --test src/canonical-runtime-manifest-assembler.test.ts` — 8/8 pass. |
+| S1 cross-contract | `npm test -w @ay-ple/runtime-release` — 359/359 pass. Assembler bytes가 admission·retained-capability extraction·generation·resolver와 exact-object spawn reverify를 통과했다. |
+| Runtime release compile | `npm run typecheck -w @ay-ple/runtime-release`, `npm run build -w @ay-ple/runtime-release` — green. |
+| Current production non-mutation | `npm run test:production-runtime -w @ay-ple/codex-chat-runtime` — 23/23; `npm run verify:production-runtime -w @ay-ple/codex-chat-runtime` — exact SDK verify 전·후 모두 green. Tracked/local manifest `896729ef139bb0c994ff10deefe08402a4bdc7938558dce306ac70841a751bb1`, bundle roster `ff65a20ea5d44e9b532babc4875a2dc32675c25ee8173ddd7382f7f841b0eca6`. |
+| Official SDK non-mutation | `npm run test:provenance -w @ay-ple/codex-chat-runtime` — 17/17; `npm run verify:exact-sdk -w @ay-ple/codex-chat-runtime` — 2 deterministic runs, 9 patches, source `8c68d4c87dc54d38861f5114e920c3de2efa5876`, wheel SHA-256 `34c3be1faf5f2e9feb9bfb936d1e619cd63535d97850d9ab1deadd3836e9945b`. Patched source `9ef9d9111fbe4383104ec34069911dde0e9f7ef7a8a06fa5a16851a584388d5c`, unpatched `ad3deefc4d2ea29dc289e226059d84155d1d8e2e43d4399da610a569737fec17`. |
+| Root gates | `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check` — 모두 green. Docs links active 28, historical banners 2. |
+| Canonical fixture | 3,093 bytes, SHA-256 `d2d09adeb6adc7d456b4418f30e68d285c87d7092abb864e27338541dd655421`. |
+| Local gate setup | Root `node_modules`는 같은 lockfile의 integration dependency tree에 임시 symlink한 뒤 제거했다. Exact production artifact는 matching ignored materialization을 local CoW clone했고 submodule은 exact `8c68d4c87dc54d38861f5114e920c3de2efa5876`로 initialize했다. 모두 untracked/ignored이며 candidate source에는 포함되지 않는다. |
+| Scope guard | Frozen contract·package/root manifest·lockfile, Official SDK source·patch stack과 current production manifests diff 0. Candidate 종료 시 tracked/untracked status clean. |
 
 ## Blocked By
 
@@ -104,6 +120,7 @@ S1이 고정한 단일 `CanonicalRuntimeManifest` authority에 Runtime-owned rec
 | writablePaths | `packages/runtime-release/src/canonical-runtime-manifest-assembler*`; 최소 adjacent tests/fixture; `packages/runtime-release/README.md`; 필요 시 `packages/codex-chat-runtime/manifests/fixtures/**`와 `packages/codex-chat-runtime/README.md`; Ticket 018. Existing canonical decoder/authority/extraction/resolver는 cross-contract proof에 필요한 colocated test 외 read-only donor다. |
 | consumedContracts | S1 `RuntimeReleaseDescriptor` manifest-v2 binding; current production Runtime manifest/verifier/materializer invariants; R1-complete Runtime identity and process graph |
 | predecessorEvidence | 006 fixed reviewed SHA와 integration merge receipt, exact SDK/bridge/production Runtime green evidence, latest applicable `contractTipSha`, root four-gate receipt |
+| reviewedCandidateSha | `0150a8d3a34b0225cff35e0ee1958c946b009cd1` |
 | requiredChecks | Assembler canonical/strict decoder cross-contract; existing S1 complete-tree/spawn matrix; production Runtime before/after verify; exact SDK provenance non-regression; Runtime release test/typecheck/build; root four gates; docs links; `git diff --check` |
 | reviewOwner | R author가 아닌 independent Runtime manifest/provenance reviewer |
 | handoffArtifact | Fixed reviewed R2a SHA, owner-private assembler path, existing S1 decoder/verifier owner와 canonical synthetic fixture bytes/digest consumed by R2b |
