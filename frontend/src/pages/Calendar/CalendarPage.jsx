@@ -325,6 +325,7 @@ function CalendarPage() {
                     type="checkbox"
                     checked={visibleCategories[category] || false}
                     onChange={() => handleCategoryToggle(category)}
+                    style={{ accentColor: bgColor }}
                   />
                   <span className="category-name">{category}</span>
                   <span className="category-count">{categories[category]}</span>
