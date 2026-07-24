@@ -10,7 +10,10 @@ async function request(path, { method = "GET", body, headers } = {}) {
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    throw new Error(data?.error?.message ?? `Request failed: ${res.status}`);
+    const error = new Error(data?.error?.message ?? `Request failed: ${res.status}`);
+    error.code = data?.error?.code;
+    error.status = res.status;
+    throw error;
   }
 
   return data;
