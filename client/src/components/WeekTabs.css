@@ -1,30 +1,42 @@
 .week-tabs {
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 16px;
   margin-bottom: 16px;
 }
 
-.week-tab {
-  padding: 9px 20px;
+.week-nav-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
   background: var(--bg-page);
   color: var(--text-secondary);
-  font-family: inherit;
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
-.week-tab:hover:not(.active) {
+.week-nav-btn:hover:not(:disabled) {
   color: var(--text-primary);
   border-color: var(--color-primary);
 }
 
-.week-tab.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--text-on-primary);
+.week-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.week-tabs-label {
+  min-width: 180px;
+  text-align: center;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--text-primary);
 }

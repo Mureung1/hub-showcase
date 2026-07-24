@@ -50,7 +50,9 @@ const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
 
 // 주어진 날짜가 속한 주의 월요일을 'YYYY-MM-DD'로 반환
 export function getMonday(baseDate = new Date()) {
-  const d = new Date(baseDate);
+  // 'YYYY-MM-DD' 문자열은 그냥 new Date()에 넘기면 UTC 자정으로 해석돼서
+  // 타임존에 따라 하루 밀릴 수 있어 로컬 자정으로 고정해서 파싱한다
+  const d = typeof baseDate === 'string' ? new Date(baseDate + 'T00:00:00') : new Date(baseDate);
   const day = d.getDay(); // 0(일)~6(토)
   const diffToMonday = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diffToMonday);
@@ -74,4 +76,36 @@ export function formatMonthDayWeekday(dateStr) {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${m}.${day}(${DAY_NAMES[d.getDay()]})`;
+}
+
+export function formatMonthDaySlash(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+export function daysBetween(dateStrA, dateStrB) {
+  const a = new Date(dateStrA + 'T00:00:00');
+  const b = new Date(dateStrB + 'T00:00:00');
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+
+// 프로젝트 기간(startDate~endDate)을 월요일 기준 주 단위로 나눴을 때
+// 전체 주차 수와, "오늘" 기준으로 처음에 보여줄 주차 인덱스(0부터)를 계산.
+// startDate/endDate가 없으면 오늘이 속한 주 하나만 있는 것으로 취급(1주차, 화살표 둘 다 비활성화).
+export function getWeekPlan(startDate, endDate, today = getTodayDateString()) {
+  const hasRange = Boolean(startDate && endDate);
+  const projectStartMonday = getMonday(hasRange ? startDate : today);
+  const rangeEnd = hasRange ? endDate : today;
+
+  const totalDays = daysBetween(projectStartMonday, rangeEnd) + 1;
+  const totalWeeks = Math.max(1, Math.ceil(totalDays / 7));
+
+  let initialWeekIndex = 0;
+  if (hasRange && today >= startDate && today <= endDate) {
+    const todayMonday = getMonday(today);
+    initialWeekIndex = Math.floor(daysBetween(projectStartMonday, todayMonday) / 7);
+  }
+  initialWeekIndex = Math.min(Math.max(initialWeekIndex, 0), totalWeeks - 1);
+
+  return { projectStartMonday, totalWeeks, initialWeekIndex };
 }

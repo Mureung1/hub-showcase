@@ -1,21 +1,26 @@
 import './WeekTabs.css';
 
-function WeekTabs({ weekOffset, onSelectWeek }) {
+function WeekTabs({ label, canGoPrev, canGoNext, onPrev, onNext }) {
   return (
     <div className="week-tabs">
       <button
         type="button"
-        className={`week-tab${weekOffset === 0 ? ' active' : ''}`}
-        onClick={() => onSelectWeek(0)}
+        className="week-nav-btn"
+        onClick={onPrev}
+        disabled={!canGoPrev}
+        aria-label="이전 주"
       >
-        이번 주
+        ◀
       </button>
+      <span className="week-tabs-label">{label}</span>
       <button
         type="button"
-        className={`week-tab${weekOffset === 1 ? ' active' : ''}`}
-        onClick={() => onSelectWeek(1)}
+        className="week-nav-btn"
+        onClick={onNext}
+        disabled={!canGoNext}
+        aria-label="다음 주"
       >
-        다음 주
+        ▶
       </button>
     </div>
   );

@@ -4,29 +4,50 @@ import WeekTabs from './WeekTabs';
 import TimeGrid from './TimeGrid';
 import Toast from './Toast';
 import { getAvailability, saveAvailability } from '../api/availability';
-import { getMonday, addDaysToDateString } from '../utils/date';
+import { getCurrentTeam } from '../api/teams';
+import { addDaysToDateString, formatMonthDaySlash, getWeekPlan } from '../utils/date';
 import { buildSlotStats } from '../utils/availability';
 
 // server/src/currentTeamId.js와 마찬가지로 다중 팀 전까지는 1로 고정
 const CURRENT_TEAM_ID = 1;
 
 function MeetingMatch({ members, currentMemberId }) {
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [team, setTeam] = useState(null);
+  const [weekIndex, setWeekIndex] = useState(0);
   const [weekSlots, setWeekSlots] = useState([]);
   const [selectedKeys, setSelectedKeys] = useState(() => new Set());
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const toastTimerRef = useRef(null);
 
-  const weekStart = addDaysToDateString(getMonday(), weekOffset * 7);
+  // team이 아직 안 왔거나(로딩 중) start_date/end_date가 없으면
+  // getWeekPlan이 "오늘이 속한 주 하나뿐"으로 안전하게 처리해줌
+  const { projectStartMonday, totalWeeks } = getWeekPlan(
+    team?.start_date,
+    team?.end_date
+  );
+
+  const weekStart = addDaysToDateString(projectStartMonday, weekIndex * 7);
+  const weekEnd = addDaysToDateString(weekStart, 6);
   const dates = Array.from({ length: 7 }, (_, i) => addDaysToDateString(weekStart, i));
   const slotStats = buildSlotStats(weekSlots, members);
+  const weekLabel = `${weekIndex + 1}주차 (${formatMonthDaySlash(weekStart)}~${formatMonthDaySlash(weekEnd)})`;
 
   function showToast(message) {
     setToastMessage(message);
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     toastTimerRef.current = setTimeout(() => setToastMessage(''), 2500);
   }
+
+  useEffect(() => {
+    getCurrentTeam()
+      .then((data) => {
+        setTeam(data);
+        const plan = getWeekPlan(data.start_date, data.end_date);
+        setWeekIndex(plan.initialWeekIndex);
+      })
+      .catch((err) => console.error(err));
+  }, []);
 
   async function loadAvailability() {
     const rows = await getAvailability(CURRENT_TEAM_ID, weekStart);
@@ -52,6 +73,14 @@ function MeetingMatch({ members, currentMemberId }) {
       }
       return next;
     });
+  }
+
+  function handlePrevWeek() {
+    setWeekIndex((i) => Math.max(0, i - 1));
+  }
+
+  function handleNextWeek() {
+    setWeekIndex((i) => Math.min(totalWeeks - 1, i + 1));
   }
 
   async function handleSave() {
@@ -81,7 +110,13 @@ function MeetingMatch({ members, currentMemberId }) {
   return (
     <>
       <div className="meeting-match-card">
-        <WeekTabs weekOffset={weekOffset} onSelectWeek={setWeekOffset} />
+        <WeekTabs
+          label={weekLabel}
+          canGoPrev={weekIndex > 0}
+          canGoNext={weekIndex < totalWeeks - 1}
+          onPrev={handlePrevWeek}
+          onNext={handleNextWeek}
+        />
         <TimeGrid
           dates={dates}
           slotStats={slotStats}
