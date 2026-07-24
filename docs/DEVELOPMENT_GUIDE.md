@@ -79,14 +79,18 @@ npm.cmd run dev
 
 ```text
 hub/
-├─ src/                    React 프런트엔드
-│  ├─ assets/
-│  ├─ components/          재사용 UI
-│  ├─ pages/               화면 단위 UI
-│  ├─ services/            API 호출
-│  ├─ hooks/
-│  └─ utils/
-├─ server/                 Express API
+├─ frontend/               React + Vite 프런트엔드
+│  ├─ public/              정적 파일
+│  ├─ src/
+│  │  ├─ assets/
+│  │  ├─ components/       재사용 UI
+│  │  ├─ pages/            화면 단위 UI
+│  │  ├─ services/         API 호출
+│  │  ├─ hooks/
+│  │  └─ utils/
+│  ├─ index.html
+│  └─ vite.config.js
+├─ backend/                Express API
 │  ├─ config/              환경 설정
 │  ├─ controllers/         HTTP 요청·응답
 │  ├─ routes/              API 주소
@@ -94,11 +98,14 @@ hub/
 │  ├─ repositories/        데이터 접근
 │  ├─ middleware/
 │  └─ lib/                 로거 등 공통 기반
+├─ shared/                 프런트엔드·백엔드 공통 규칙
+├─ tests/                  단위·통합 테스트
+├─ scripts/                검증 및 자동화 스크립트
 ├─ docs/                   협업 문서
-├─ public/                 정적 파일
+├─ showcase/               프로젝트 대시보드 메타데이터
 ├─ .env.example
-├─ Agent.md                Agent 실행 규칙
-└─ design.md               디자인 기준
+├─ AGENTS.md               Agent 실행 규칙
+└─ DESIGN.md               디자인 기준
 ```
 
 존재하지 않는 폴더는 관련 기능을 추가할 때 생성합니다.
