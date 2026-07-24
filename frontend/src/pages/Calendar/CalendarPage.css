@@ -92,8 +92,18 @@
 
 .category-item input[type="checkbox"] {
   cursor: pointer;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
+  appearance: none;
+  border: 2px solid #000;
+  border-radius: 3px;
+  background-color: white;
+  margin: 0;
+  transition: background-color 0.2s;
+}
+
+.category-item input[type="checkbox"]:checked {
+  background-color: currentColor;
 }
 
 .category-name {
