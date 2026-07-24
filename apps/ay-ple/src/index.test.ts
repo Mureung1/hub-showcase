@@ -4,8 +4,23 @@ import test from 'node:test'
 
 import * as ayPleApplication from './index.js'
 
-test('AY-PLE application workspace exposes no host behavior in Spine S0', () => {
-  assert.deepEqual(Object.keys(ayPleApplication), [])
+test('AY-PLE application package root exposes only staged production startup', () => {
+  assert.deepEqual(Object.keys(ayPleApplication).sort(), [
+    'ApplicationStartupError',
+    'admitApplicationStartup',
+  ])
+  assert.equal(
+    'admitApplicationStartupForTesting' in ayPleApplication,
+    false,
+  )
+  assert.equal(
+    'verifyPackageResourcesForTesting' in ayPleApplication,
+    false,
+  )
+  assert.equal(
+    'runCompatibilityPreflightForTesting' in ayPleApplication,
+    false,
+  )
 })
 
 test('AY-PLE application locks its compile-only Module dependency direction', async () => {
