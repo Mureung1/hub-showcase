@@ -19,6 +19,20 @@ export interface CoordinationCompound {
   observedColor: { label: string; hex: string }
   /** 오비탈 갈라짐 다이어그램에 대한 보충 설명(예: 단순화 여부). */
   splitNote?: string
+  /** 결정장 갈라짐 에너지(Δ, 문헌 확인됨) — cm⁻¹ 단위. 화합물 간 막대 높이를
+   * 같은 스케일에서 비교하기 위한 실측 수치(chemistry-reviewer 사전 검증 통과). */
+  deltaWavenumber_cm1: number
+  /** 흡수 밴드의 모양 — 단일 파장이 아니라 폭과 비대칭성을 가진 띠로 그리기 위한 값.
+   * peakNm: 흡수 극대 파장(문헌값). fwhmNm: 반치폭(밴드가 퍼진 정도, 클수록 넓고 흐릿하게
+   * 마스킹). skew: 밴드가 좌우 대칭이 아니라 한쪽으로 치우친 정도(여러 전이가 겹친 경우). */
+  absorptionBand: {
+    peakNm: number
+    fwhmNm: number
+    skew: 'symmetric' | 'broadTowardLonger' | 'broadTowardShorter'
+  }
+  /** 위 수치가 화면에 그려진 이상화 구조와 실제로 다른 화학종에서 측정된 값일 때,
+   * 그 출처/괴리를 명시하는 고지문. 그려진 구조와 측정 화학종이 일치하면 생략. */
+  deltaSourceNote?: string
 }
 
 // 정팔면체(octahedral): 중심 원자에서 6개 리간드가 ±x/±y/±z 축 방향으로
@@ -75,7 +89,11 @@ export const COORDINATION_COMPOUNDS: CoordinationCompound[] = [
     description:
       '중심 금속 이온(Co3+) 주위에 암모니아 리간드 6개가 정팔면체 모양으로 배위결합한 화합물입니다. 배위수(coordination number)가 6일 때 나타나는 가장 대표적인 기하구조입니다.',
     dOrbitalGroups: [3, 2],
-    observedColor: { label: '노랑-주황 (실제 문헌 확인)', hex: '#f0a536' },
+    observedColor: { label: '노랑-주황', hex: '#f0a536' },
+    // λmax=437nm, Δo=22,900cm⁻¹ (문헌 다수 일치, chemistry-reviewer 사전 검증 통과).
+    // 저스핀 d6 단일 전이(1A1g→1T1g)로 밴드가 좁고 대칭적임.
+    deltaWavenumber_cm1: 22900,
+    absorptionBand: { peakNm: 437, fwhmNm: 40, skew: 'symmetric' },
   },
   {
     id: 'tetraamminecopper',
@@ -90,8 +108,15 @@ export const COORDINATION_COMPOUNDS: CoordinationCompound[] = [
     // d 오비탈은 항상 5개. 평면사각형은 4준위로 갈라짐(아래부터 dxz·dyz 겹침 / dz² / dxy / dx²-y²)
     // = [2,1,1,1], 총 5개. (정확한 순서는 금속·리간드에 따라 달라질 수 있어 대표적 배열로 단순화)
     dOrbitalGroups: [2, 1, 1, 1],
-    observedColor: { label: '진한 파랑-보라 (실제 문헌 확인)', hex: '#3b4cca' },
+    observedColor: { label: '진한 파랑-보라', hex: '#3b4cca' },
     splitNote:
       '평면사각형은 정팔면체보다 더 잘게 4단계로 갈라집니다(d 오비탈 5개가 4준위로). 정확한 순서는 금속·리간드에 따라 달라질 수 있어 대표적 배열로 단순화해 표시합니다.',
+    // λmax≈600-620nm, Δ≈16,000-17,000cm⁻¹ (문헌 근사치, chemistry-reviewer 사전 검증 통과).
+    // Jahn-Teller 왜곡으로 여러 전이가 겹쳐 밴드가 넓고 장파장 쪽으로 치우침 — 좁은 단일
+    // 피크로 그리면 안 됨(사전 검증에서 명시적으로 지적된 조건).
+    deltaWavenumber_cm1: 16500,
+    absorptionBand: { peakNm: 610, fwhmNm: 120, skew: 'broadTowardLonger' },
+    deltaSourceNote:
+      '이 λmax/Δ 값은 화면에 그려진 이상화된 평면사각형 구조가 아니라, 실제 수용액에서 관찰되는 6배위(축 방향에 물 분자가 약하게 결합한 Jahn-Teller 왜곡 팔면체) 화학종에서 측정된 값입니다. 평면사각형은 배위수 4의 이상적 기하구조를 보여주기 위한 단순화이며, 색을 만드는 실제 흡수는 왜곡된 6배위 구조에서 일어납니다.',
   },
 ]

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import OrbitalViewer, { type OrbitalMode } from '../../features/chemistry/components/OrbitalViewer'
+import OrbitalCrossSection from '../../features/chemistry/components/OrbitalCrossSection'
+import OrbitalDensityGraph from '../../features/chemistry/components/OrbitalDensityGraph'
 import Panel from '../../components/Panel'
 import ChapterAssistant from '../../components/ChapterAssistant'
 
@@ -21,15 +22,15 @@ const P_AXIS_TABS: { id: PAxis; label: string }[] = [
 const DESCRIPTIONS: Record<MainTab, { title: string; body: string }> = {
   s: {
     title: 's 오비탈 — 구형',
-    body: '전자가 발견될 확률이 높은 3차원 영역(오비탈)입니다. s 오비탈은 방향에 따른 차이가 없어 정확히 구형이고, 핵(중심의 흰 점)을 중심으로 사방으로 고르게 퍼져 있습니다.',
+    body: '전자가 발견될 확률이 높은 3차원 영역(오비탈)입니다. s 오비탈은 방향에 따른 차이가 없어 정확히 구형입니다 — xy·xz·yz, 어느 단면으로 잘라도 완전히 같은 모양이 나오는 것이 바로 그 증거입니다.',
   },
   p: {
     title: 'p 오비탈 — 아령형, 핵을 지나는 마디',
-    body: '핵을 지나는 지점(마디, node)에서 확률이 0이 되어 두 로브로 나뉜 아령 모양입니다. px·py·pz 세 개는 서로 수직인 축을 따라 배치됩니다 — 한 번에 하나씩 보면서(위 px/py/pz 버튼) 로브 사이 마디를 확인하고, 나머지 두 축은 가는 기준선으로만 표시해 수직 관계를 참고하세요.',
+    body: '핵을 지나는 지점(마디, node)에서 확률이 0이 되어 두 로브로 나뉜 아령 모양입니다. 점선으로 표시된 마디는 이 단면에서는 선으로 보이지만, 실제로는 이 축에 수직인 평면 전체입니다. px·py·pz 세 개는 서로 수직인 축을 따라 배치되며, 위 px/py/pz 버튼으로 하나씩 확인할 수 있습니다.',
   },
   h2: {
-    title: 'H₂ — 오비탈이 겹쳐 결합이 생김',
-    body: '두 수소 원자의 1s 오비탈이 겹치면 그 사이(가운데 렌즈 모양 영역)에 전자 밀도가 높아지고, 이 겹친 부분이 두 핵을 붙잡아 시그마(σ) 결합을 만듭니다. 겹치는 영역이 반투명 구 두 개가 포개진 것만으로 더 짙게 보이는 것도 이 때문입니다.',
+    title: 'H₂ — 파동함수 보강간섭으로 늘어나는 전자밀도',
+    body: '두 수소 원자의 1s 파동함수가 같은 부호(동위상)로 겹치는 결합성 조합에서는, 단순히 두 확률밀도를 더한 것(점선, 기준선)보다 실제 밀도(실선)가 핵 사이 영역에서 더 크게 채워집니다. 색칠된 부분이 그 차이 — 파동함수의 보강간섭으로 실제로 생기는 전자밀도 증가 — 이고, 이것이 두 핵을 붙잡는 시그마(σ) 결합의 원인입니다. (위상이 반대로 겹치는 반결합 조합은 오히려 핵 사이 밀도가 줄어들며, 이 화면에서는 다루지 않습니다.)',
   },
 }
 
@@ -37,7 +38,6 @@ export default function OrbitalsPage() {
   const [mainTab, setMainTab] = useState<MainTab>('s')
   const [pAxis, setPAxis] = useState<PAxis>('x')
 
-  const mode: OrbitalMode = mainTab === 'p' ? (`p${pAxis}` as OrbitalMode) : mainTab
   const panelTitle =
     mainTab === 'p' ? `p 오비탈 (${P_AXIS_TABS.find((t) => t.id === pAxis)?.label})` : (MAIN_TABS.find((t) => t.id === mainTab)?.label ?? '')
 
@@ -93,8 +93,11 @@ export default function OrbitalsPage() {
       <div className="relative mt-6 grid gap-6 sm:grid-cols-2">
         <ChapterAssistant context={`${DESCRIPTIONS[mainTab].title}: ${DESCRIPTIONS[mainTab].body}`} />
         <Panel title={panelTitle}>
-          <OrbitalViewer mode={mode} />
-          <p className="mt-2 text-xs text-zinc-500">마우스로 드래그해 돌려보세요.</p>
+          {mainTab === 'h2' ? (
+            <OrbitalDensityGraph />
+          ) : (
+            <OrbitalCrossSection mode={mainTab === 'p' ? (`p${pAxis}` as 'px' | 'py' | 'pz') : 's'} />
+          )}
         </Panel>
         <Panel title="설명">
           <h2 className="text-sm font-semibold text-zinc-100">{DESCRIPTIONS[mainTab].title}</h2>

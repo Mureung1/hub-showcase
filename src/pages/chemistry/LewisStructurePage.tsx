@@ -28,16 +28,13 @@ export default function LewisStructurePage() {
           </div>
 
           <MechanismControls
-            playing={player.playing}
+            isFirst={player.isFirst}
             isDone={player.isDone}
             stepIndex={player.stepIndex}
             totalSteps={player.totalSteps}
-            speed={player.speed}
-            onPlay={player.play}
-            onPause={player.pause}
+            onStepBackward={player.stepBackward}
             onStepForward={player.stepForward}
             onReset={player.reset}
-            onSpeedChange={player.setSpeed}
           />
         </Panel>
       </div>

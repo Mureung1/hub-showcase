@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import MainLayout from './components/MainLayout'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
-import ChemistryPage from './pages/chemistry/ChemistryPage'
+import FunctionalGroupsPage from './pages/chemistry/FunctionalGroupsPage'
 import VseprPage from './pages/chemistry/VseprPage'
 import OrbitalsPage from './pages/chemistry/OrbitalsPage'
 import LewisStructurePage from './pages/chemistry/LewisStructurePage'
@@ -24,7 +24,7 @@ function App() {
         <Route path="login" element={<LoginPage />} />
         <Route element={<MainLayout />}>
           <Route index element={<HomePage />} />
-          <Route path="chemistry/viewer" element={<ChemistryPage />} />
+          <Route path="chemistry/functional-groups" element={<FunctionalGroupsPage />} />
           <Route path="chemistry/vsepr" element={<VseprPage />} />
           <Route path="chemistry/orbitals" element={<OrbitalsPage />} />
           <Route path="chemistry/lewis-structure" element={<LewisStructurePage />} />

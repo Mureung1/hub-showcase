@@ -2,10 +2,18 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { NAVIGATION } from '../data/navigation'
 
-interface GraphLeaf {
+// 그래프 노드 = "세부과목"(NavGroup) 수준. 단원(leaf)까지 전부 그리면 화학과처럼
+// 화면이 늘어난 학과는 부채꼴에 10개+가 매달려 읽을 수 없어진다 — 그래프는 과목까지만,
+// 단원은 사이드바/검색이 담당한다. 검색어는 단원명으로도 해당 과목 노드가 매칭된다.
+interface GraphNode {
   id: string
   label: string
+  /** 클릭 시 이동할 대표 경로(그 과목의 첫 구현 화면). 없으면 준비 중 표시 */
   to?: string
+  /** 검색 매칭용 — 과목명 + 소속 단원명 전부 */
+  searchLabels: string[]
+  /** 단원명으로 검색해 정확히 하나 걸렸을 때 Enter로 그 단원까지 바로 이동 */
+  navTargets: { label: string; to: string }[]
 }
 
 interface GraphDept {
@@ -14,71 +22,20 @@ interface GraphDept {
   angle: number
   color: string
   implemented: boolean
-  leaves: GraphLeaf[]
+  leaves: GraphNode[]
 }
 
-const REAL_DEPT_META: Record<string, { angle: number; color: string }> = {
+const DEPT_META: Record<string, { angle: number; color: string }> = {
   cs: { angle: 0, color: 'var(--dept-cs)' },
+  math: { angle: 60, color: 'var(--dept-math)' },
+  ee: { angle: 120, color: 'var(--dept-ee)' },
+  physics: { angle: 180, color: 'var(--dept-physics)' },
   chem: { angle: 240, color: 'var(--dept-chem)' },
+  bio: { angle: 300, color: 'var(--dept-bio)' },
 }
-
-const FUTURE_DEPARTMENTS: GraphDept[] = [
-  {
-    id: 'math',
-    label: '수학과',
-    angle: 60,
-    color: 'var(--dept-math)',
-    implemented: false,
-    leaves: [
-      { id: 'linalg', label: '선형대수학' },
-      { id: 'calculus', label: '미적분학' },
-      { id: 'probstat', label: '확률과통계' },
-      { id: 'discretemath', label: '이산수학' },
-    ],
-  },
-  {
-    id: 'ee',
-    label: '전자공학과',
-    angle: 120,
-    color: 'var(--dept-ee)',
-    implemented: false,
-    leaves: [
-      { id: 'circuit', label: '회로이론' },
-      { id: 'digitallogic', label: '디지털논리' },
-      { id: 'signals', label: '신호및시스템' },
-      { id: 'semicon', label: '반도체공학' },
-    ],
-  },
-  {
-    id: 'physics',
-    label: '물리학과',
-    angle: 180,
-    color: 'var(--dept-physics)',
-    implemented: false,
-    leaves: [
-      { id: 'quantum', label: '양자역학' },
-      { id: 'classmech', label: '고전역학' },
-      { id: 'emag', label: '전자기학' },
-      { id: 'thermo', label: '열역학' },
-    ],
-  },
-  {
-    id: 'bio',
-    label: '생명과학과',
-    angle: 300,
-    color: 'var(--dept-bio)',
-    implemented: false,
-    leaves: [
-      { id: 'genetics', label: '유전학' },
-      { id: 'cellbio', label: '세포생물학' },
-      { id: 'molbio', label: '분자생물학' },
-      { id: 'biochem', label: '생화학' },
-    ],
-  },
-]
 
 const CROSS_LINKS: [string, string][] = [
-  ['sort', 'discretemath'],
+  ['algorithms', 'discretemath'],
   ['physchem', 'quantum'],
   ['orgchem', 'biochem'],
 ]
@@ -123,21 +80,42 @@ export default function DepartmentGraph() {
   const [lockedDept, setLockedDept] = useState<string | null>(null)
   const [query, setQuery] = useState('')
 
-  const departments: GraphDept[] = useMemo(() => {
-    const real: GraphDept[] = NAVIGATION.map((dept) => ({
-      id: dept.id,
-      label: dept.label,
-      angle: REAL_DEPT_META[dept.id]?.angle ?? 0,
-      color: REAL_DEPT_META[dept.id]?.color ?? 'var(--dept-cs)',
-      implemented: true,
-      leaves: dept.groups.flatMap((group) => group.leaves).map((leaf) => ({
-        id: leaf.id,
-        label: leaf.shortLabel ?? leaf.label,
-        to: leaf.to,
-      })),
-    }))
-    return [...real, ...FUTURE_DEPARTMENTS]
-  }, [])
+  const departments: GraphDept[] = useMemo(
+    () =>
+      NAVIGATION.map((dept) => {
+        const meta = DEPT_META[dept.id] ?? { angle: 0, color: 'var(--dept-cs)' }
+        const implemented = !dept.planned
+        // 구현 학과: 그룹(세부과목)당 노드 1개 / 개설 예정 학과: 과목 스텁(leaf) 자체가 노드
+        const nodes: GraphNode[] = implemented
+          ? dept.groups.map((group) => {
+              const withTo = group.leaves.filter((l): l is typeof l & { to: string } => Boolean(l.to))
+              return {
+                id: group.id,
+                label: group.label,
+                to: withTo[0]?.to,
+                searchLabels: [group.label, ...group.leaves.map((l) => l.label)],
+                navTargets: withTo.map((l) => ({ label: l.label, to: l.to })),
+              }
+            })
+          : dept.groups
+              .flatMap((group) => group.leaves)
+              .map((leaf) => ({
+                id: leaf.id,
+                label: leaf.label,
+                searchLabels: [leaf.label],
+                navTargets: [],
+              }))
+        return {
+          id: dept.id,
+          label: dept.label,
+          angle: meta.angle,
+          color: meta.color,
+          implemented,
+          leaves: nodes,
+        }
+      }),
+    [],
+  )
 
   const layout = useMemo(() => {
     const trunks = new Map<string, { x: number; y: number; labelX: number; labelY: number; anchor: string }>()
@@ -183,7 +161,9 @@ export default function DepartmentGraph() {
   const search = useMemo(() => {
     if (!q) return null
     const deptNameMatch = new Set(departments.filter((d) => d.label.toLowerCase().includes(q)).map((d) => d.id))
-    const leafNameMatch = new Set(allLeaves.filter((l) => l.label.toLowerCase().includes(q)).map((l) => l.id))
+    const leafNameMatch = new Set(
+      allLeaves.filter((l) => l.searchLabels.some((s) => s.toLowerCase().includes(q))).map((l) => l.id),
+    )
     const leafDeptMatch = new Set(allLeaves.filter((l) => leafNameMatch.has(l.id)).map((l) => l.deptId))
     const matchedDepts = new Set([...deptNameMatch, ...leafDeptMatch])
     const matchedLeaves = new Set(
@@ -225,6 +205,15 @@ export default function DepartmentGraph() {
   function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key !== 'Enter' || !matchedIds) return
     const matches = allLeaves.filter((l) => matchedIds.has(l.id))
+    // 단원명 검색(예: "VSEPR")이 정확히 한 단원에 걸리면 그 단원 화면으로 바로 이동,
+    // 아니면 과목 노드 하나로 좁혀졌을 때 그 과목의 대표 화면으로 이동
+    const leafHits = matches.flatMap((node) =>
+      node.navTargets.filter((t) => t.label.toLowerCase().includes(q)),
+    )
+    if (leafHits.length === 1) {
+      navigate(leafHits[0].to)
+      return
+    }
     if (matches.length === 1 && matches[0].to) navigate(matches[0].to)
   }
 
