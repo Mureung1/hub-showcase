@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Check,
   Clock3,
@@ -12,9 +12,12 @@ import {
 } from 'lucide-react'
 
 import {
+  projectPublicPreviewFocusKey,
+  projectReleaseCommandCopyFeedback,
   type PublicPreviewAction,
   type PublicPreviewScreenModel,
   type PublicPreviewSemesterDraft,
+  type ReleaseCommandCopyOutcome,
 } from './public-preview-view-model.js'
 import {
   type PublicPreviewController,
@@ -45,6 +48,21 @@ type ReadyScreen = Extract<
 export function PublicPreviewRoot() {
   const controller = usePublicPreview()
   const screen = controller.screen
+  const mainRef = useRef<HTMLElement>(null)
+  const previousFocusKey = useRef<string | null>(null)
+  const focusKey =
+    controller.bootstrap === null
+      ? controller.initialLoading
+        ? 'loading'
+        : 'unavailable'
+      : projectPublicPreviewFocusKey(controller.bootstrap)
+
+  useEffect(() => {
+    const previous = previousFocusKey.current
+    previousFocusKey.current = focusKey
+    if (previous === null || previous === focusKey) return
+    mainRef.current?.querySelector<HTMLHeadingElement>('h1')?.focus()
+  }, [focusKey])
 
   return (
     <div
@@ -52,7 +70,7 @@ export function PublicPreviewRoot() {
       data-surface={screen?.surface ?? 'loading'}
     >
       <PublicPreviewHeader controller={controller} />
-      <main className="public-preview-main">
+      <main className="public-preview-main" ref={mainRef}>
         {controller.notice ? (
           <div
             className={`public-preview-notice is-${controller.notice.tone}`}
@@ -67,7 +85,6 @@ export function PublicPreviewRoot() {
           <AccountSurface screen={screen} controller={controller} />
         ) : screen.surface === 'guided' && screen.stage === 'input' ? (
           <GuidedInputSurface
-            key={`${screen.form.safeDisplayLocation ?? 'unselected'}:${screen.form.suggestedLeafName}`}
             screen={screen}
             controller={controller}
           />
@@ -257,11 +274,11 @@ function GuidedInputSurface({
   readonly screen: GuidedInputScreen
   readonly controller: PublicPreviewController
 }) {
-  const [draft, setDraft] = useState<PublicPreviewSemesterDraft>({
+  const draft: PublicPreviewSemesterDraft = controller.semesterDraft ?? {
     yearLevel: screen.form.yearLevelOptions[0]?.value ?? 1,
     term: screen.form.termOptions[0]?.value ?? '',
     leafName: screen.form.suggestedLeafName,
-  })
+  }
   const prepareEnabled =
     screen.form.parentName !== null &&
     screen.form.yearLevelOptions.some(
@@ -291,10 +308,10 @@ function GuidedInputSurface({
               value={draft.yearLevel}
               disabled={controller.pendingActionId !== null}
               onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
+                controller.setSemesterDraft({
+                  ...draft,
                   yearLevel: Number(event.target.value),
-                }))
+                })
               }
             >
               {screen.form.yearLevelOptions.map((option) => (
@@ -310,10 +327,10 @@ function GuidedInputSurface({
               value={draft.term}
               disabled={controller.pendingActionId !== null}
               onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
+                controller.setSemesterDraft({
+                  ...draft,
                   term: event.target.value,
-                }))
+                })
               }
             >
               {screen.form.termOptions.map((option) => (
@@ -355,10 +372,10 @@ function GuidedInputSurface({
             maxLength={80}
             disabled={controller.pendingActionId !== null}
             onChange={(event) =>
-              setDraft((current) => ({
-                ...current,
+              controller.setSemesterDraft({
+                ...draft,
                 leafName: event.target.value,
-              }))
+              })
             }
           />
           <small>선택한 상위 위치 안에 새로운 공간으로 만듭니다.</small>
@@ -559,7 +576,22 @@ function ProtectedSurface({
 }
 
 function ReleaseCommand({ command }: { readonly command: string }) {
-  const [copied, setCopied] = useState(false)
+  const [copyOutcome, setCopyOutcome] =
+    useState<ReleaseCommandCopyOutcome>('idle')
+  const feedback =
+    copyOutcome === 'idle'
+      ? null
+      : projectReleaseCommandCopyFeedback(copyOutcome)
+
+  const copyCommand = async () => {
+    setCopyOutcome('idle')
+    try {
+      await navigator.clipboard.writeText(command)
+      setCopyOutcome('success')
+    } catch {
+      setCopyOutcome('failure')
+    }
+  }
 
   return (
     <div className="public-preview-command">
@@ -568,16 +600,21 @@ function ReleaseCommand({ command }: { readonly command: string }) {
       <button
         className="public-preview-button is-secondary"
         type="button"
-        onClick={() => {
-          void navigator.clipboard.writeText(command).then(
-            () => setCopied(true),
-            () => setCopied(false),
-          )
-        }}
+        onClick={() => void copyCommand()}
       >
         <Copy size={16} aria-hidden="true" />
-        {copied ? '복사됨' : '명령 복사'}
+        명령 복사
       </button>
+      {feedback ? (
+        <p
+          className={`public-preview-copy-feedback is-${feedback.tone}`}
+          role={feedback.role}
+          aria-atomic="true"
+          aria-live={feedback.ariaLive}
+        >
+          {feedback.message}
+        </p>
+      ) : null}
     </div>
   )
 }

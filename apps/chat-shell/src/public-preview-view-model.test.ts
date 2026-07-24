@@ -9,7 +9,10 @@ import {
 
 import {
   createPublicPreviewCommand,
+  projectPublicPreviewFocusKey,
+  projectReleaseCommandCopyFeedback,
   projectPublicPreviewScreen,
+  reconcilePublicPreviewSemesterDraft,
 } from './public-preview-view-model.js'
 
 test('Account screen exposes only the command actions allowed by each frozen state', () => {
@@ -335,4 +338,117 @@ test('the frozen render roster never projects private authority into screen mode
       )
     }
   }
+})
+
+test('parent selection refresh preserves the user-owned semester draft', () => {
+  const initial = reconcilePublicPreviewSemesterDraft(
+    null,
+    PUBLIC_PREVIEW_SETUP_FIXTURES.inputRequired,
+  )
+  assert.deepEqual(initial, {
+    yearLevel: 1,
+    term: '1',
+    leafName: '2026-2학기',
+  })
+
+  const selectedByStudent = {
+    yearLevel: 4,
+    term: '2',
+    leafName: '내가 고른 학기',
+  } as const
+  const parentSelectionResponse = {
+    ...PUBLIC_PREVIEW_SETUP_FIXTURES.inputRequired,
+    parentSelection: {
+      selectionId: 'parent_selection_reselected',
+      displayName: 'School',
+      safeDisplayLocation: 'Home › School',
+    },
+  } as const
+
+  assert.deepEqual(
+    reconcilePublicPreviewSemesterDraft(
+      selectedByStudent,
+      parentSelectionResponse,
+    ),
+    selectedByStudent,
+  )
+})
+
+test('focus keys change only when the accessible surface or stage changes', () => {
+  const loginRequired = {
+    account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.loginRequired,
+    setup: PUBLIC_PREVIEW_SETUP_FIXTURES.firstConnection,
+  } as const
+  const loginStarting = {
+    account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.loginStarting,
+    setup: PUBLIC_PREVIEW_SETUP_FIXTURES.firstConnection,
+  } as const
+  const input = {
+    account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.connected,
+    setup: PUBLIC_PREVIEW_SETUP_FIXTURES.inputRequired,
+  } as const
+  const confirmation = {
+    account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.connected,
+    setup: PUBLIC_PREVIEW_SETUP_FIXTURES.confirmationRequired,
+  } as const
+  const working = {
+    account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.connected,
+    setup: PUBLIC_PREVIEW_SETUP_FIXTURES.working,
+  } as const
+  const workingPoll = {
+    account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.connected,
+    setup: {
+      ...PUBLIC_PREVIEW_SETUP_FIXTURES.working,
+      stage: 'verifying_environment',
+      displayMessage: 'AY 환경을 다시 확인하고 있습니다.',
+    },
+  } as const
+  const recovery = {
+    account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.connected,
+    setup: PUBLIC_PREVIEW_SETUP_FIXTURES.ownedIncompleteRecovery,
+  } as const
+  const ready = {
+    account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.connected,
+    setup: PUBLIC_PREVIEW_SETUP_FIXTURES.ready,
+  } as const
+
+  assert.notEqual(
+    projectPublicPreviewFocusKey(loginRequired),
+    projectPublicPreviewFocusKey(loginStarting),
+  )
+  assert.notEqual(
+    projectPublicPreviewFocusKey(input),
+    projectPublicPreviewFocusKey(confirmation),
+  )
+  assert.notEqual(
+    projectPublicPreviewFocusKey(confirmation),
+    projectPublicPreviewFocusKey(working),
+  )
+  assert.notEqual(
+    projectPublicPreviewFocusKey(recovery),
+    projectPublicPreviewFocusKey(working),
+  )
+  assert.notEqual(
+    projectPublicPreviewFocusKey(working),
+    projectPublicPreviewFocusKey(ready),
+  )
+  assert.equal(
+    projectPublicPreviewFocusKey(working),
+    projectPublicPreviewFocusKey(workingPoll),
+  )
+})
+
+test('release command copy outcomes provide visible polite live status', () => {
+  assert.deepEqual(projectReleaseCommandCopyFeedback('success'), {
+    ariaLive: 'polite',
+    message: '실행 명령을 복사했습니다.',
+    role: 'status',
+    tone: 'success',
+  })
+  assert.deepEqual(projectReleaseCommandCopyFeedback('failure'), {
+    ariaLive: 'polite',
+    message: '명령을 복사하지 못했습니다. 직접 선택해 복사해 주세요.',
+    role: 'status',
+    tone: 'failure',
+  })
 })

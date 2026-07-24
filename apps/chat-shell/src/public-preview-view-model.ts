@@ -115,11 +115,91 @@ export type PublicPreviewSemesterDraft = {
   readonly leafName: string
 }
 
+export type ReleaseCommandCopyOutcome = 'failure' | 'idle' | 'success'
+
+export type ReleaseCommandCopyFeedback = {
+  readonly ariaLive: 'polite'
+  readonly message: string
+  readonly role: 'status'
+  readonly tone: 'failure' | 'success'
+}
+
 export class PublicPreviewActionError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'PublicPreviewActionError'
   }
+}
+
+export function reconcilePublicPreviewSemesterDraft(
+  current: PublicPreviewSemesterDraft | null,
+  setup: Extract<
+    PublicPreviewSetupProjection,
+    { readonly state: 'input_required' }
+  >,
+): PublicPreviewSemesterDraft {
+  const defaultYearLevel = setup.yearLevelOptions[0]?.value ?? 1
+  const defaultTerm = setup.termOptions[0]?.value ?? ''
+  if (current === null) {
+    return {
+      yearLevel: defaultYearLevel,
+      term: defaultTerm,
+      leafName: setup.suggestedLeafName,
+    }
+  }
+  return {
+    yearLevel: setup.yearLevelOptions.some(
+      ({ value }) => value === current.yearLevel,
+    )
+      ? current.yearLevel
+      : defaultYearLevel,
+    term: setup.termOptions.some(({ value }) => value === current.term)
+      ? current.term
+      : defaultTerm,
+    leafName: current.leafName,
+  }
+}
+
+export function projectPublicPreviewFocusKey(
+  bootstrap: PublicPreviewBootstrap,
+): string {
+  const screen = projectPublicPreviewScreen(bootstrap)
+  if (screen.surface === 'account') {
+    return `account:${bootstrap.account.state}`
+  }
+  if (screen.surface === 'guided') return `guided:${screen.stage}`
+  if (screen.surface === 'ready') return 'ready'
+  if (screen.protection === 'account') {
+    return `protected:account:${bootstrap.account.state}`
+  }
+  if (bootstrap.setup.state === 'recovery_required') {
+    return `protected:recovery:${bootstrap.setup.reason}`
+  }
+  if (bootstrap.setup.state === 'transition_blocked') {
+    return `protected:transition:${bootstrap.setup.retry}`
+  }
+  if (bootstrap.setup.state === 'release_blocked') {
+    return 'protected:release'
+  }
+  return `protected:${screen.protection}`
+}
+
+export function projectReleaseCommandCopyFeedback(
+  outcome: Exclude<ReleaseCommandCopyOutcome, 'idle'>,
+): ReleaseCommandCopyFeedback {
+  return outcome === 'success'
+    ? {
+        ariaLive: 'polite',
+        message: '실행 명령을 복사했습니다.',
+        role: 'status',
+        tone: 'success',
+      }
+    : {
+        ariaLive: 'polite',
+        message: '명령을 복사하지 못했습니다. 직접 선택해 복사해 주세요.',
+        role: 'status',
+        tone: 'failure',
+      }
 }
 
 export function projectPublicPreviewScreen(

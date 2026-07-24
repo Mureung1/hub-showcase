@@ -11,6 +11,7 @@ import {
   createPublicPreviewCommand,
   projectPublicPreviewScreen,
   PublicPreviewActionError,
+  reconcilePublicPreviewSemesterDraft,
   type PublicPreviewAction,
   type PublicPreviewScreenModel,
   type PublicPreviewSemesterDraft,
@@ -27,7 +28,9 @@ export type PublicPreviewController = {
   readonly initialLoading: boolean
   readonly refreshing: boolean
   readonly pendingActionId: PublicPreviewAction['id'] | null
+  readonly semesterDraft: PublicPreviewSemesterDraft | null
   readonly notice: PublicPreviewNotice | null
+  readonly setSemesterDraft: (draft: PublicPreviewSemesterDraft) => void
   readonly runAction: (
     actionId: PublicPreviewAction['id'],
     draft?: PublicPreviewSemesterDraft,
@@ -44,6 +47,8 @@ export function usePublicPreview(): PublicPreviewController {
   const [pendingActionId, setPendingActionId] = useState<
     PublicPreviewAction['id'] | null
   >(null)
+  const [semesterDraft, setSemesterDraft] =
+    useState<PublicPreviewSemesterDraft | null>(null)
   const [notice, setNotice] = useState<PublicPreviewNotice | null>(null)
   const mounted = useRef(true)
   const requestSequence = useRef(0)
@@ -109,6 +114,23 @@ export function usePublicPreview(): PublicPreviewController {
     return () => window.clearTimeout(timeout)
   }, [bootstrap, observe, pendingActionId, refreshing])
 
+  useEffect(() => {
+    if (bootstrap?.setup.state === 'input_required') {
+      const inputSetup = bootstrap.setup
+      setSemesterDraft((current) =>
+        reconcilePublicPreviewSemesterDraft(current, inputSetup),
+      )
+      return
+    }
+    if (
+      bootstrap?.setup.state === 'ready' ||
+      (bootstrap?.setup.state === 'account_required' &&
+        bootstrap.setup.reason === 'first_connection')
+    ) {
+      setSemesterDraft(null)
+    }
+  }, [bootstrap])
+
   const runAction = useCallback(
     async (
       actionId: PublicPreviewAction['id'],
@@ -159,9 +181,17 @@ export function usePublicPreview(): PublicPreviewController {
     initialLoading,
     refreshing,
     pendingActionId,
+    semesterDraft:
+      bootstrap?.setup.state === 'input_required'
+        ? reconcilePublicPreviewSemesterDraft(
+            semesterDraft,
+            bootstrap.setup,
+          )
+        : semesterDraft,
     notice,
     runAction,
     refresh,
+    setSemesterDraft,
   }
 }
 

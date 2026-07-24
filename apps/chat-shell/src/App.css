@@ -2245,6 +2245,19 @@
   white-space: nowrap;
 }
 
+.public-preview-copy-feedback {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  color: #337149;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.public-preview-copy-feedback.is-failure {
+  color: #a14539;
+}
+
 .public-preview-ready-layout {
   display: grid;
   gap: 18px;
