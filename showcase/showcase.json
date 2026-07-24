@@ -6,13 +6,9 @@
   "demoUrl": "",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
-    "screenshots/landing.webp",
     "screenshots/filter.webp",
     "screenshots/spec.webp",
-    "screenshots/result.webp",
-    "screenshots/bookmarks.webp",
-    "screenshots/login.webp",
-    "screenshots/signup.webp"
+    "screenshots/result.webp"
   ],
   "problem": "기존 취업 플랫폼은 채용공고를 추천·검색하는 데 집중돼 있어서, 지원자 본인의 스펙 기준으로 '지금 몇 개 공고에 지원 가능한지', '무엇을 보완하면 더 많은 공고에 지원할 수 있는지'는 직접 공고를 하나씩 읽어봐야만 알 수 있습니다.",
   "targetUsers": [
@@ -29,9 +25,7 @@
   "featureTags": [
     "갭 분석",
     "채용 매칭",
-    "데이터 시각화",
-    "북마크",
-    "Supabase 인증"
+    "데이터 시각화"
   ],
   "techStack": [
     "React",
@@ -46,9 +40,7 @@
   "techHighlights": [
     "학력/경력/자격증/전공/외국어 5개 요구 카테고리에 대한 AND 매칭 갭 분석 엔진을 설계하고, '항목 1개만 보완 시 늘어나는 공고 수'를 계산하는 시뮬레이션 로직까지 구현했습니다.",
     "필터→스펙→결과 3단계 라우트 간 상태를 React Context + localStorage로 동기화해, 새로고침하거나 중간에 나갔다 돌아와도 입력한 값과 결과가 유지됩니다.",
-    "차트 라이브러리 없이 커스텀 SVG로 도넛/막대 차트를 직접 구현해, 다크모드 테마 전환 시에도 CSS 변수만으로 색이 자동으로 바뀝니다.",
-    "로그인·북마크는 Supabase Auth+Postgres로 분리하고, 로컬 SQLite에 있는 공고 데이터와 애플리케이션 레벨에서 조인해 두 저장소를 연결했습니다.",
-    "Playwright로 랜딩→필터→스펙→결과→상세 전체 플로우와 '홈(상태 보존)/초기화(전체 리셋)' 분기 시나리오를 E2E로 자동 검증합니다."
+    "차트 라이브러리 없이 커스텀 SVG로 도넛/막대 차트를 직접 구현해, 다크모드 테마 전환 시에도 CSS 변수만으로 색이 자동으로 바뀝니다."
   ],
   "developmentWithAI": "저는 기획 문서(요구사항, 화면 흐름, 이슈별 완료 기준)를 작성하고 이슈 단위로 우선순위와 스코프를 결정했습니다. AI는 이슈마다 실제 호출부와 기존 코드를 먼저 확인한 뒤 구현 계획을 세우고 코드를 작성했으며, 일부 기능은 테스트부터 작성하는 방식(red-green-refactor)으로 진행했습니다. 저는 매 기능이 끝날 때마다 브라우저에서 직접 동작을 확인하고, 필요하면 스코프를 정정하거나 피드백을 주고받으며 수정을 반복했습니다.",
   "agent": {
