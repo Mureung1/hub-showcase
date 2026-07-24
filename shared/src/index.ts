@@ -1,4 +1,5 @@
 export * from './types/match';
+export * from './regions.js';
 
 export type {
   OnboardingProfile,

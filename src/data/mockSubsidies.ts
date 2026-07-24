@@ -1,4 +1,7 @@
-import type { OnboardingProfile, SortOption, Subsidy } from '@hub/shared'
+import { REGIONS, type OnboardingProfile, type SortOption, type Subsidy } from '@hub/shared'
+
+/** 전국 대상 기관 — 크롤러가 hashtags 16개 전부를 담는 것과 동일한 규칙(이슈 #43) */
+const NATIONWIDE = [...REGIONS]
 
 /** prototype/gov_subsidy_home_wireframe.html subsidies 배열 (8건) */
 export const MOCK_SUBSIDIES: Subsidy[] = [
@@ -26,6 +29,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     how: '온라인 접수',
     where: '서울시 자영업지원센터',
     contact: '02-1234-5678',
+    region: ['서울'],
   },
   {
     id: '2',
@@ -45,6 +49,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     how: '온라인 접수',
     where: '마포구 소상공인지원센터',
     contact: '02-3153-0000',
+    region: ['서울'],
   },
   {
     id: '3',
@@ -64,6 +69,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     how: '온라인 신청 후 방문 면담',
     where: '소상공인시장진흥공단',
     contact: '1357',
+    region: NATIONWIDE,
   },
   {
     id: '4',
@@ -83,6 +89,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     how: '온라인 접수',
     where: '스마트상점 기술보급센터',
     contact: '1600-3737',
+    region: NATIONWIDE,
   },
   {
     id: '5',
@@ -102,6 +109,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     how: '온라인 접수',
     where: '한국에너지공단',
     contact: '1551-0100',
+    region: NATIONWIDE,
   },
   {
     id: '6',
@@ -121,6 +129,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     how: '온라인 신청 후 지점 방문',
     where: '소상공인시장진흥공단 지역센터',
     contact: '1357',
+    region: NATIONWIDE,
   },
   {
     id: '7',
@@ -140,6 +149,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     how: '온라인 접수',
     where: '소상공인 디지털전환 플랫폼',
     contact: '1800-2400',
+    region: NATIONWIDE,
   },
   {
     id: '8',
@@ -159,13 +169,21 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     how: '온라인 접수',
     where: '고용보험 홈페이지',
     contact: '1588-0075',
+    region: NATIONWIDE,
   },
 ]
 
+/**
+ * server/subsidies-repo.ts parseAmountForSort와 규칙 통일 — 억/천만/백만/만 단위, 소수점 인식.
+ */
 function parseAmountForSort(amount: string): number {
-  const cheonMan = amount.match(/(\d+)\s*천만/)
+  const eok = amount.match(/(\d+(?:\.\d+)?)\s*억/)
+  if (eok) return Number(eok[1]) * 10000
+  const cheonMan = amount.match(/(\d+(?:\.\d+)?)\s*천만/)
   if (cheonMan) return Number(cheonMan[1]) * 1000
-  const man = amount.match(/(\d+)\s*만/)
+  const baekMan = amount.match(/(\d+(?:\.\d+)?)\s*백만/)
+  if (baekMan) return Number(baekMan[1]) * 100
+  const man = amount.match(/(\d+(?:\.\d+)?)\s*만/)
   if (man) return Number(man[1])
   return 0
 }
