@@ -93,6 +93,8 @@ React는 Supabase를 인증에만 직접 사용하고, 병원과 대기열 데�
 
 - [GitHub Project - 개발 대시보드](https://github.com/users/DLSTODAKD/projects/1)
 - [3주차 주간 계획](./docs/weekly-plan-week3.md)
+- [3주차 작업 결과](./docs/week3-summary.md)
+- [나의 AI 개발 워크플로우](./docs/ai-workflow.md)
 - [2주차 주간 계획 기록](./docs/weekly-plan-week2.md)
 - [기획서](./docs/plan.md)
 - [시스템 기능 명세](./docs/feature-spec.md)
@@ -122,7 +124,7 @@ React는 Supabase를 인증에만 직접 사용하고, 병원과 대기열 데�
 | React·Express 개발 환경 | npm workspaces 기반 구성 완료 |
 | 개발 Task·백로그 | 4주 일정과 P0·P1·P2 범위 정리 완료 |
 | Supabase·Brevo 연동 | Seoul 개발 DB·Express·Brevo Custom SMTP 연결 완료 |
-| 실제 P0 기능 | 구현 예정 |
+| 실제 P0 기능 | 환자·직원 통합 대기열, 자동 알림·만료와 상태 동기화 구현 완료 |
 
 ## 데이터·운영 원칙
 
