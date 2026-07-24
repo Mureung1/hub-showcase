@@ -162,15 +162,19 @@ where id = '30000000-0000-4000-8000-000000000011';
 
 select extensions.results_eq(
   $$
-    select category.name
+    select
+      category.name,
+      insight.updated_at > '2026-07-01 00:00:00+00'::timestamptz
     from public.insights as insight
     join public.categories as category
       on category.id = insight.category_id
       and category.user_id = insight.user_id
     where insight.id = '30000000-0000-4000-8000-000000000011'
   $$,
-  array['개인 프로젝트'::text],
-  '구버전 category 문자열 변경은 사용자 카테고리를 만들고 category_id를 연결한다'
+  $$
+    values ('개인 프로젝트'::text, true)
+  $$,
+  '구버전 category 문자열 변경은 카테고리를 연결하고 수정 시각을 갱신한다'
 );
 
 update public.insights

@@ -394,7 +394,7 @@ begin
 end;
 $$;
 
-create trigger sync_insight_category_compatibility
+create trigger category_compatibility_sync_insight
 before insert or update on public.insights
 for each row
 execute function public.sync_insight_category_compatibility();
