@@ -7,7 +7,10 @@ const mocks = vi.hoisted(() => ({
   regionDistrictFindMany: vi.fn(),
   regionRuleFindUnique: vi.fn(),
   regionRuleUpsert: vi.fn(),
+  regionZoneNameFindMany: vi.fn(),
+  regionZoneNameUpsert: vi.fn(),
   fetchRowsBySgg: vi.fn(),
+  translateNames: vi.fn(),
 }))
 
 vi.mock('../config/prisma', () => ({
@@ -20,11 +23,19 @@ vi.mock('../config/prisma', () => ({
       findUnique: mocks.regionRuleFindUnique,
       upsert: mocks.regionRuleUpsert,
     },
+    regionZoneName: {
+      findMany: mocks.regionZoneNameFindMany,
+      upsert: mocks.regionZoneNameUpsert,
+    },
   },
 }))
 
 vi.mock('./regionApiClient', () => ({
   getRegionApiClient: () => ({ fetchRowsBySgg: mocks.fetchRowsBySgg }),
+}))
+
+vi.mock('./regionNameClient', () => ({
+  getRegionNameClient: () => ({ translateNames: mocks.translateNames }),
 }))
 
 const NOT_APPLICABLE = '해당없음'
@@ -58,12 +69,20 @@ function buildRow(overrides: Partial<GovRegionRow>): GovRegionRow {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // 기본값: RegionZoneName 캐시에 아무것도 없고, 번역은 "EN:이름" 형태로 스텁 — 이 파일의 테스트는
+  // 동 목록 파싱/확장 로직을 검증하는 게 목적이라 실제 로마자 표기 정확도는 geminiRegionNameClient
+  // 쪽에서 별도로 다룬다.
+  mocks.regionZoneNameFindMany.mockResolvedValue([])
+  mocks.translateNames.mockImplementation((names: string[]) => names.map((name) => ({ name, nameEn: `EN:${name}` })))
 })
 
 describe('getZoneOptions', () => {
   it('커버리지가 없는 구/군이면 covered:false와 같은 시/도의 대안 구/군 목록을 반환한다', async () => {
     mocks.regionDistrictFindUnique.mockResolvedValue(null)
-    mocks.regionDistrictFindMany.mockResolvedValue([{ sggNm: '해운대구' }, { sggNm: '수영구' }])
+    mocks.regionDistrictFindMany.mockResolvedValue([
+      { sggNm: '해운대구', sggNmEn: 'Haeundae-gu' },
+      { sggNm: '수영구', sggNmEn: 'Suyeong-gu' },
+    ])
 
     const result = await getZoneOptions('부산광역시', '없는구')
 
@@ -71,7 +90,10 @@ describe('getZoneOptions', () => {
       covered: false,
       dongOptions: [],
       districtWide: false,
-      alternativeDistricts: ['해운대구', '수영구'],
+      alternativeDistricts: [
+        { name: '해운대구', nameEn: 'Haeundae-gu' },
+        { name: '수영구', nameEn: 'Suyeong-gu' },
+      ],
     })
     expect(mocks.fetchRowsBySgg).not.toHaveBeenCalled()
   })
@@ -87,7 +109,12 @@ describe('getZoneOptions', () => {
 
     expect(result.covered).toBe(true)
     expect(result.districtWide).toBe(false)
-    expect(result.dongOptions).toEqual(['산격1동', '산격2동', '산격3동', '산격4동'])
+    expect(result.dongOptions).toEqual([
+      { name: '산격1동', nameEn: 'EN:산격1동' },
+      { name: '산격2동', nameEn: 'EN:산격2동' },
+      { name: '산격3동', nameEn: 'EN:산격3동' },
+      { name: '산격4동', nameEn: 'EN:산격4동' },
+    ])
   })
 
   it('구역이 단 하나뿐이면(대상지역이 구 이름 그대로인 경우 포함) districtWide로 표시하고 그 값을 유일한 dongOptions로 담는다', async () => {
@@ -100,7 +127,7 @@ describe('getZoneOptions', () => {
 
     expect(result).toEqual({
       covered: true,
-      dongOptions: ['해운대구'],
+      dongOptions: [{ name: '해운대구', nameEn: 'EN:해운대구' }],
       districtWide: true,
       alternativeDistricts: [],
     })
@@ -108,7 +135,7 @@ describe('getZoneOptions', () => {
 
   it('대상지역 필드가 과도하게 긴 안내문(정상적인 지역명이 아님)만 있으면 방어적으로 커버리지 없음 처리한다', async () => {
     mocks.regionDistrictFindUnique.mockResolvedValue({ ctpvNm: '대구광역시', sggNm: '북구' })
-    mocks.regionDistrictFindMany.mockResolvedValue([{ sggNm: '북구' }])
+    mocks.regionDistrictFindMany.mockResolvedValue([{ sggNm: '북구', sggNmEn: 'Buk-gu' }])
     const guidanceTextLeakedIntoZoneField = '북구 전역(배출방법) 1. 스티커 구입하여 배출 '.repeat(3)
     mocks.fetchRowsBySgg.mockResolvedValue([
       buildRow({ CTPV_NM: '대구광역시', SGG_NM: '북구', MNG_ZONE_TRGT_RGN_NM: guidanceTextLeakedIntoZoneField }),
@@ -117,7 +144,22 @@ describe('getZoneOptions', () => {
     const result = await getZoneOptions('대구광역시', '북구')
 
     expect(result.covered).toBe(false)
-    expect(result.alternativeDistricts).toEqual(['북구'])
+    expect(result.alternativeDistricts).toEqual([{ name: '북구', nameEn: 'Buk-gu' }])
+  })
+})
+
+describe('resolveZoneNamesEn (getZoneOptions 내부 캐시 동작)', () => {
+  it('RegionZoneName에 이미 캐시된 이름은 translateNames를 다시 호출하지 않는다', async () => {
+    mocks.regionDistrictFindUnique.mockResolvedValue({ ctpvNm: '대구광역시', sggNm: '북구' })
+    mocks.fetchRowsBySgg.mockResolvedValue([
+      buildRow({ CTPV_NM: '대구광역시', SGG_NM: '북구', MNG_ZONE_TRGT_RGN_NM: '번동' }),
+    ])
+    mocks.regionZoneNameFindMany.mockResolvedValue([{ name: '번동', nameEn: 'Beon-dong' }])
+
+    const result = await getZoneOptions('대구광역시', '북구')
+
+    expect(result.dongOptions).toEqual([{ name: '번동', nameEn: 'Beon-dong' }])
+    expect(mocks.translateNames).not.toHaveBeenCalled()
   })
 })
 

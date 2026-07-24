@@ -13,7 +13,7 @@ const selectClassName =
   'mb-[10px] w-full rounded-md border border-line bg-card px-[14px] py-[13px] text-sm text-ink disabled:opacity-50'
 
 export default function RegionSelectSheet({ initialRegion, onSave, onClose }: RegionSelectSheetProps) {
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
   const [ctpvNm, setCtpvNm] = useState(initialRegion?.ctpvNm ?? '')
   const [sggNm, setSggNm] = useState(initialRegion?.sggNm ?? '')
   const [dongNm, setDongNm] = useState(initialRegion?.dongNm ?? '')
@@ -34,12 +34,22 @@ export default function RegionSelectSheet({ initialRegion, onSave, onClose }: Re
   const needsDong = Boolean(zoneOptions?.covered && !zoneOptions.districtWide)
   const canSave = Boolean(ctpvNm && sggNm && zoneOptions?.covered && (!needsDong || dongNm))
 
+  function displayName(option: { name: string; nameEn: string | null }): string {
+    return lang === 'en' && option.nameEn ? option.nameEn : option.name
+  }
+
   function handleSave() {
     if (!canSave || !zoneOptions) return
     // districtWide일 땐 옵션이 정확히 1개뿐이므로 그 값을 그대로 쓴다 — "없음"/구 이름/수거방식 등
     // 실제로 무엇이든 백엔드 매칭 키와 일치시켜야 하므로 sggNm 같은 임의 placeholder를 쓰지 않는다.
-    const resolvedDongNm = needsDong ? dongNm : zoneOptions.dongOptions[0]
-    onSave({ ctpvNm, sggNm, dongNm: resolvedDongNm })
+    const resolvedDongNm = needsDong ? dongNm : zoneOptions.dongOptions[0].name
+    onSave({
+      ctpvNm,
+      sggNm,
+      dongNm: resolvedDongNm,
+      ctpvNmEn: provinces.find((province) => province.name === ctpvNm)?.nameEn ?? null,
+      sggNmEn: districts.find((district) => district.name === sggNm)?.nameEn ?? null,
+    })
   }
 
   return (
@@ -50,8 +60,8 @@ export default function RegionSelectSheet({ initialRegion, onSave, onClose }: Re
         <select value={ctpvNm} onChange={(event) => setCtpvNm(event.target.value)} className={selectClassName}>
           <option value="">{t('region.provincePlaceholder')}</option>
           {provinces.map((province) => (
-            <option key={province} value={province}>
-              {province}
+            <option key={province.name} value={province.name}>
+              {displayName(province)}
             </option>
           ))}
         </select>
@@ -64,8 +74,8 @@ export default function RegionSelectSheet({ initialRegion, onSave, onClose }: Re
         >
           <option value="">{t('region.districtPlaceholder')}</option>
           {districts.map((district) => (
-            <option key={district} value={district}>
-              {district}
+            <option key={district.name} value={district.name}>
+              {displayName(district)}
             </option>
           ))}
         </select>
@@ -78,8 +88,8 @@ export default function RegionSelectSheet({ initialRegion, onSave, onClose }: Re
           <select value={dongNm} onChange={(event) => setDongNm(event.target.value)} className={selectClassName}>
             <option value="">{t('region.zonePlaceholder')}</option>
             {zoneOptions?.dongOptions.map((dong) => (
-              <option key={dong} value={dong}>
-                {dong}
+              <option key={dong.name} value={dong.name}>
+                {displayName(dong)}
               </option>
             ))}
           </select>

@@ -10,9 +10,9 @@ vi.mock('../../lib/apiClient', () => ({
       Promise.resolve({
         data:
           url === '/regions/provinces'
-            ? { provinces: ['부산광역시'] }
+            ? { provinces: [{ name: '부산광역시', nameEn: 'Busan' }] }
             : url === '/regions/districts'
-              ? { districts: ['해운대구'] }
+              ? { districts: [{ name: '해운대구', nameEn: 'Haeundae-gu' }] }
               : { covered: false, districtWide: false, dongOptions: [], alternativeDistricts: [] },
       }),
   },

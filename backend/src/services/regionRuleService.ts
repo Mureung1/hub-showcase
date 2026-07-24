@@ -2,7 +2,9 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '../config/prisma'
 import { AppError } from '../middlewares/errorHandler'
 import { getRegionApiClient } from './regionApiClient'
+import { getRegionNameClient } from './regionNameClient'
 import type { GovRegionRow } from '../types/govRegionApi'
+import type { RegionNameTranslation } from '../types/regionName'
 
 const NOT_APPLICABLE = '해당없음'
 
@@ -84,31 +86,57 @@ function pickBulkWaste(rows: GovRegionRow[]): BulkWasteRule | null {
   return null
 }
 
+export interface RegionNameOption {
+  name: string
+  nameEn: string | null
+}
+
+// RegionZoneName 캐시(동/읍/면 등 세부 구역명 → 영어)에 없는 이름만 Gemini로 번역해 채우고,
+// 지역과 무관하게 텍스트 자체로 캐시하므로 전국 어디서든 같은 이름이면 재사용된다.
+async function resolveZoneNamesEn(names: string[]): Promise<RegionNameOption[]> {
+  if (names.length === 0) return []
+
+  const cached = await prisma.regionZoneName.findMany({ where: { name: { in: names } } })
+  const nameToEn = new Map(cached.map((row) => [row.name, row.nameEn]))
+
+  const missing = names.filter((name) => !nameToEn.has(name))
+  if (missing.length > 0) {
+    const translations: RegionNameTranslation[] = await getRegionNameClient().translateNames(missing)
+    for (const { name, nameEn } of translations) {
+      await prisma.regionZoneName.upsert({ where: { name }, update: { nameEn }, create: { name, nameEn } })
+      nameToEn.set(name, nameEn)
+    }
+  }
+
+  return names.map((name) => ({ name, nameEn: nameToEn.get(name) ?? null }))
+}
+
 export interface ZoneOptionsResult {
   covered: boolean
-  dongOptions: string[]
+  dongOptions: RegionNameOption[]
   // true면 동 선택 없이 바로 getRegionRule을 호출해도 됨(구 전체 단일 규정) — 실측: 해운대구 등 일부
   // 구/군은 동 단위 데이터가 아예 없고 구 전체 단일 행만 존재함.
   districtWide: boolean
   // covered가 false일 때만 채워짐 — 같은 시/도 내에 데이터가 있는 다른 구/군 목록(정확한 값을 지어내지
   // 않고 실제로 존재하는 대안을 안내하기 위함, CLAUDE.md 원칙)
-  alternativeDistricts: string[]
+  alternativeDistricts: RegionNameOption[]
 }
 
 // RegionDistrict 캐시에 실재하는 시/도 전체 목록 — 지역 선택 UI 1단계 드롭다운에 사용.
 // 하드코딩된 17개 시/도 목록 대신 실제 데이터에 존재하는 값만 보여준다 (예: 정부 데이터가 광주/전남을
 // "전남광주통합특별시"로 통합해서 표기하는 등, 표준 명칭과 다를 수 있어 실측값을 그대로 쓰는 게 안전함).
-export function getProvinces(): Promise<string[]> {
+// ctpvNmEn은 scripts/syncRegionNamesEn.ts로 일괄 채워진 값을 그대로 반환 — 아직 미실행 상태면 null.
+export function getProvinces(): Promise<RegionNameOption[]> {
   return prisma.regionDistrict
-    .findMany({ distinct: ['ctpvNm'], select: { ctpvNm: true }, orderBy: { ctpvNm: 'asc' } })
-    .then((rows) => rows.map((r) => r.ctpvNm))
+    .findMany({ distinct: ['ctpvNm'], select: { ctpvNm: true, ctpvNmEn: true }, orderBy: { ctpvNm: 'asc' } })
+    .then((rows) => rows.map((r) => ({ name: r.ctpvNm, nameEn: r.ctpvNmEn })))
 }
 
 // 시/도 안에서 데이터가 있는 구/군 전체 목록 — 지역 선택 UI 2단계 드롭다운 및 "이 구/군엔 데이터 없음" 대안 목록에 재사용.
-export function getDistrictsInProvince(ctpvNm: string): Promise<string[]> {
+export function getDistrictsInProvince(ctpvNm: string): Promise<RegionNameOption[]> {
   return prisma.regionDistrict
-    .findMany({ where: { ctpvNm }, select: { sggNm: true }, orderBy: { sggNm: 'asc' } })
-    .then((rows) => rows.map((r) => r.sggNm))
+    .findMany({ where: { ctpvNm }, select: { sggNm: true, sggNmEn: true }, orderBy: { sggNm: 'asc' } })
+    .then((rows) => rows.map((r) => ({ name: r.sggNm, nameEn: r.sggNmEn })))
 }
 
 // 시/도+구/군에 속한 모든 동 옵션을 반환 — 사용자가 동을 고르기 전 진행형 선택 UI에 사용.
@@ -147,9 +175,10 @@ export async function getZoneOptions(ctpvNm: string, sggNm: string): Promise<Zon
 
   // 구역이 단 하나뿐이면(동/읍/면 세분화가 없거나, "없음"/구 이름 자체이거나, 수거방식이 구 전체에
   // 하나뿐이거나) 사용자가 고를 필요가 없다 — 이유와 무관하게 옵션이 1개면 바로 넘어간다.
+  const sortedZoneNames = [...zoneSet].sort()
   return {
     covered: true,
-    dongOptions: [...zoneSet].sort(),
+    dongOptions: await resolveZoneNamesEn(sortedZoneNames),
     districtWide: zoneSet.size === 1,
     alternativeDistricts: [],
   }
