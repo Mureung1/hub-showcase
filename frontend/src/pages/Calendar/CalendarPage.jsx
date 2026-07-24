@@ -20,10 +20,10 @@ function CalendarPage() {
 
   // 카테고리별 색상 맵
   const categoryColors = {
-    '공모전': '#5c6bc0',
-    '시험': '#f57c00',
-    '과제': '#43a047',
-    '기타': '#78909c',
+    '공모전': '#ADD8E6',
+    '시험': '#FFB6C1',
+    '과제': '#C8E6C9',
+    '기타': '#E8E8E8',
   };
 
   useEffect(() => {
@@ -262,7 +262,10 @@ function CalendarPage() {
   }
 
   function getEventsForDate(date) {
-    const dateStr = date.toISOString().split("T")[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
     const dayEvents = [];
     const seenKeys = new Set();
     const filteredEvents = getFilteredEvents();
@@ -308,17 +311,26 @@ function CalendarPage() {
         <div className={`calendar-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
           <h3 className="sidebar-title">카테고리</h3>
           <div className="category-list">
-            {Object.keys(categories).map((category) => (
-              <label key={category} className="category-item">
-                <input
-                  type="checkbox"
-                  checked={visibleCategories[category] || false}
-                  onChange={() => handleCategoryToggle(category)}
-                />
-                <span className="category-name">{category}</span>
-                <span className="category-count">{categories[category]}</span>
-              </label>
-            ))}
+            {Object.keys(categories).map((category) => {
+              const categoryBgColors = {
+                '공모전': '#ADD8E6',
+                '시험': '#FFB6C1',
+                '과제': '#C8E6C9',
+                '기타': '#E8E8E8',
+              };
+              const bgColor = categoryBgColors[category] || '#E8E8E8';
+              return (
+                <label key={category} className="category-item" style={{ backgroundColor: bgColor }}>
+                  <input
+                    type="checkbox"
+                    checked={visibleCategories[category] || false}
+                    onChange={() => handleCategoryToggle(category)}
+                  />
+                  <span className="category-name">{category}</span>
+                  <span className="category-count">{categories[category]}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
 
