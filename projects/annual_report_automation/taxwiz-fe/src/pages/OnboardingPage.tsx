@@ -44,7 +44,7 @@ export const OnboardingPage: React.FC = () => {
 
   return (
     <div className={wizardStyles.root}>
-      <TopBar topicKey={topicKey} topicOrder={ONBOARDING_TOPIC_ORDER} progressPct={progressPct} canGoBack={canGoBack} onBack={goBack} />
+      <TopBar topicKey={topicKey} topicOrder={ONBOARDING_TOPIC_ORDER} progressPct={progressPct} canGoBack={canGoBack} onBack={goBack} remainingEst={finished ? 0 : remainingEst} />
 
       <div className={wizardStyles.stage}>
         <div className={wizardStyles.topicCol}>

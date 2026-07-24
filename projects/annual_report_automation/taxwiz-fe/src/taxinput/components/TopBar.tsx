@@ -11,9 +11,11 @@ interface TopBarProps {
   topicOrder?: string[];
   /** 더 갈 "이전"이 없을 때(첫 질문) 이전 버튼이 이걸 호출한다 — 위저드에서 홈으로 나가는 길 */
   onExit?: () => void;
+  /** 잔여 문항 추정치(useEngine.remainingEst) — 0 이하이거나 안 넘기면 표시하지 않는다 */
+  remainingEst?: number;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ topicKey, progressPct, canGoBack, onBack, topicOrder = ANNUAL_TOPIC_ORDER, onExit }) => {
+export const TopBar: React.FC<TopBarProps> = ({ topicKey, progressPct, canGoBack, onBack, topicOrder = ANNUAL_TOPIC_ORDER, onExit, remainingEst }) => {
   const sections = useMemo(
     () => [...new Set(topicOrder.map((k) => TOPIC_META[k].section))],
     [topicOrder],
@@ -40,6 +42,9 @@ export const TopBar: React.FC<TopBarProps> = ({ topicKey, progressPct, canGoBack
         </button>
         <div className={styles.track}><div className={styles.fill} style={{ width: `${progressPct}%` }} /></div>
         <span className={styles.pct}>{progressPct}%</span>
+        {remainingEst != null && remainingEst > 0 && (
+          <span className={styles.remain}>약 {remainingEst}문항 남음</span>
+        )}
       </div>
       <div className={styles.strip}>
         {sections.map((s) => {

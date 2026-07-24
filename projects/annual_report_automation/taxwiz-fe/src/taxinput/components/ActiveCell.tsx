@@ -8,6 +8,7 @@ import type { TaxInputState } from '../types';
 import { GLOSSARY } from '../catalog';
 import { YmdField } from './YmdField';
 import { ShareholdersField } from './ShareholdersField';
+import { HometaxLookupButton } from './HometaxLookupButton';
 import styles from './ActiveCell.module.css';
 
 interface ActiveCellProps {
@@ -121,6 +122,7 @@ export const ActiveCell: React.FC<ActiveCellProps> = ({ cell, editing, primary, 
               <span>
                 <b>{p.label}</b>
                 {p.hint && <small>{p.hint}</small>}
+                {p.hometaxGoal && <HometaxLookupButton goal={p.hometaxGoal} status={p.hometaxStatus} />}
               </span>
             </li>
           ))}

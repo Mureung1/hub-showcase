@@ -67,6 +67,20 @@
   flex: none;
 }
 
+.remain {
+  flex: none;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 좁은 화면에서는 진행률 바 공간을 우선한다 — eyebrow 쪽 표시가 여전히 남아 있으므로 정보 손실 없음 */
+@media (max-width: 560px) {
+  .remain { display: none; }
+}
+
 .strip {
   padding: 9px max(20px, calc(50% - 300px)) 0;
   display: flex;

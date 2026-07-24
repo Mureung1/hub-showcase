@@ -18,7 +18,7 @@ FE 작업을 다시 시작하면 먼저 확정할 것:
 2. 법인세 조정 입력 화면이 맞다면, 입력 필드는 `data/templates/*.csv`(company·balance_sheet·
    income_statement·assets·cars·adjustments·answer)의 한글 필드명과 구조를 그대로 따라가면
    된다 — `taxengine/db/schema.sql`이 이미 그 필드들을 DB 컬럼으로 매핑해뒀다
-   (`notes/DB-스키마-설계.md`).
+   (`../docs/research/DB-스키마-설계.md`).
 
 ## TODO — BE 연결 (FE 완성 후 진행)
 

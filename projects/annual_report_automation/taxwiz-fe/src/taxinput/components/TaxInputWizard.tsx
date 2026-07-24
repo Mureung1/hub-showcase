@@ -68,7 +68,7 @@ export const TaxInputWizard: React.FC<TaxInputWizardProps> = ({ company, onExit 
 
   return (
     <div className={styles.root}>
-      <TopBar topicKey={topicKey} progressPct={progressPct} canGoBack={canGoBack} onBack={goBack} onExit={onExit} />
+      <TopBar topicKey={topicKey} progressPct={progressPct} canGoBack={canGoBack} onBack={goBack} onExit={onExit} remainingEst={remainingEst} />
 
       <div className={styles.stage}>
         {/* "wait" keeps exactly one topicCol mounted at a time (no absolute

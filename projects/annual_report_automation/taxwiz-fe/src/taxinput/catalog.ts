@@ -131,7 +131,16 @@ export const GLOSSARY: Record<string, string> = {
 // ── 섹션별 "미리 준비할 것" — 머릿속에 없는 값(장부·서류에서 찾아야 하는 값)을
 // 입력하기 전에 무슨 서류가 필요한지 미리 알려준다. 섹션 첫 질문 앞에 카드로 나오고
 // (engine.ts sectionIntroCellFor), 홈 화면 "시작 전 준비물 전체 보기"에서도 재사용된다.
-export interface PrepItem { label: string; hint?: string }
+export interface PrepItem {
+  label: string;
+  hint?: string;
+  /** 홈택스 가이드 확장 프로그램에 넘길 자연어 목표 문자열 (예: '환급금 조회하고 싶어').
+   *  없으면 이 항목엔 "홈택스에서 찾기" 버튼을 안 그린다 — 존재 자체가 가용성 플래그다. */
+  hometaxGoal?: string;
+  /** 'validated' = 스파이크로 end-to-end 검증됨(환급금 조회). 미지정 시 'experimental' 취급 —
+   *  버튼 옆 "베타" 표시만 다르고 동작(확장 실행)은 동일하다. */
+  hometaxStatus?: 'validated' | 'experimental';
+}
 
 export const SECTION_PREP: Record<string, PrepItem[]> = {
   '회사 프로필': [
@@ -139,7 +148,11 @@ export const SECTION_PREP: Record<string, PrepItem[]> = {
     { label: '주주명부', hint: '지배주주와 가족·특수관계인의 지분율' },
   ],
   '연간 정보': [
-    { label: '원천납부세액명세서 · 중간예납 영수증', hint: '기납부세액 — 이미 낸 세금' },
+    // 홈택스 가이드 확장과 연결된 유일한 항목 — '환급금 조회'가 지금까지 end-to-end로 검증된
+    // 유일한 플로우라 여기 연결해뒀다. 현금영수증 조회·국세증명 발급이 검증되면 다른 항목에도
+    // hometaxGoal을 추가하면 된다 (hometax/research/PRD-chrome-extension.md §8 참고).
+    { label: '원천납부세액명세서 · 중간예납 영수증', hint: '기납부세액 — 이미 낸 세금',
+      hometaxGoal: '환급금 조회하고 싶어', hometaxStatus: 'validated' },
     { label: '자본금과적립금조정명세서(갑)', hint: '이월결손금 잔액이 적혀 있어요' },
     { label: '작년 법인세 신고서(공제·감면 항목)', hint: '세액공제·감면 받은 금액' },
   ],

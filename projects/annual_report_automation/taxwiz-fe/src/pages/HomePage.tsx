@@ -9,6 +9,7 @@ import {
 import { signOut } from '../auth/AuthContext';
 import { toKRW } from '../taxinput/components/formatters';
 import { SECTION_PREP } from '../taxinput/catalog';
+import { HometaxLookupButton } from '../taxinput/components/HometaxLookupButton';
 import styles from './pages.module.css';
 
 interface FyWithTax extends FiscalYearListItem {
@@ -107,6 +108,7 @@ export const HomePage: React.FC = () => {
                 <li key={p.label}>
                   {p.label}
                   {p.hint && <small> — {p.hint}</small>}
+                  {p.hometaxGoal && <HometaxLookupButton goal={p.hometaxGoal} status={p.hometaxStatus} />}
                 </li>
               ))}
             </ul>
