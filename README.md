@@ -190,8 +190,14 @@ npm run dev
 npm run lint
 npm run typecheck
 npm test
+npm run test:integration
 npm run build
 ```
+
+`npm test`는 외부 DB 없이 단위·컴포넌트·API 테스트를 실행합니다.
+개발용 Supabase가 필요한 DB 통합 테스트는 `npm run test:integration`으로
+분리되어 있습니다. 두 테스트를 한 번에 검증할 때는 `npm run test:all`을
+사용합니다.
 
 Supabase CLI는 프로젝트 개발 의존성으로 고정되어 있습니다.
 
