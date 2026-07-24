@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
+import FoodCategoryChips from '../components/FoodCategoryChips.jsx'
 import NaverPlaceMap from '../components/NaverPlaceMap.jsx'
 import PlaceList from '../components/PlaceList.jsx'
 import Skeleton from '../components/Skeleton.jsx'
@@ -9,6 +10,12 @@ import Spinner from '../components/Spinner.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { getCurrentPosition } from '../lib/geolocation.js'
 import { ALLERGY_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
+import {
+  filterPlacesByCategory,
+  getFoodCategory,
+  setSelectedFoodCategory,
+  useSelectedFoodCategory,
+} from '../lib/foodCategory.js'
 import { geocodeLocation, reverseGeocode } from '../lib/kakao.js'
 import { searchNaverPlaces } from '../lib/naverPlaces.js'
 import { NUTRIENT_LABELS } from '../lib/nutrition.js'
@@ -35,8 +42,14 @@ const MAX_TOTAL_PLACES = 6
 // 있다 — 사용자 좌표(또는 지정 위치) 기준 이 거리(m)를 벗어나는 결과는 아예 후보에서 제외한다.
 const MAX_DISTANCE_METERS = 3000
 
-function buildKeywordsPrompt(deficientRows) {
+// category는 foodCategory.js의 항목. 'all'이면 예전 프롬프트와 완전히 동일한 문장이 나간다 —
+// 카테고리를 고르지 않은 사용자의 결과가 이번 변경으로 달라지지 않도록.
+function buildKeywordsPrompt(deficientRows, category) {
   const nutrientText = deficientRows.map((row) => `${row.label}(${row.key}) 약 ${row.deficiency}${row.unit} 부족`).join(', ')
+  const categoryLine =
+    category.key === 'all'
+      ? ''
+      : `\n4. 사용자가 "${category.label}"을(를) 먹고 싶어 한다. 모든 키워드는 반드시 ${category.label} 범주 안에서 골라라 — 그 범주 안에서 위 영양소를 가장 잘 채워주는 유형을 고르면 된다.`
 
   return `오늘 부족한 영양소를 채울 식당을 검색하려고 해.
 부족한 영양소: ${nutrientText}.
@@ -45,7 +58,7 @@ function buildKeywordsPrompt(deficientRows) {
 1. 부족한 영양소 각각에 대해, 그 영양소를 보충하기 좋은 음식을 파는 "식당 유형" 검색 키워드를 1개씩 뽑아라(총 2~3개).
 2. 키워드끼리 서로 다른 유형이어야 한다. 백반/국밥 같은 한 가지 유형으로 몰지 마라.
    매핑 예시: 단백질→구이/고깃집/샤브샤브, 식이섬유→샐러드/비빔밥/쌈밥, 탄수화물→백반/김밥, 칼슘→두부요리.
-3. 각 키워드는 지역 장소 검색에 바로 쓸 수 있는 짧은 한국어 단어(1~4글자 상호 유형)여야 한다.
+3. 각 키워드는 지역 장소 검색에 바로 쓸 수 있는 짧은 한국어 단어(1~4글자 상호 유형)여야 한다.${categoryLine}
 
 설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
 {
@@ -55,11 +68,14 @@ function buildKeywordsPrompt(deficientRows) {
 }`
 }
 
-async function fetchSearchKeywords(deficientRows) {
-  if (deficientRows.length === 0) return [FALLBACK_SEARCH_KEYWORD]
+async function fetchSearchKeywords(deficientRows, category) {
+  // 부족 영양소가 없으면(프로필/오늘 기록 미입력) 고를 근거가 없으니 카테고리 자체를 검색어로 쓴다.
+  if (deficientRows.length === 0) {
+    return category.key === 'all' ? [FALLBACK_SEARCH_KEYWORD] : category.keywords.slice(0, 3)
+  }
 
   try {
-    const text = await geminiComplete({ prompt: buildKeywordsPrompt(deficientRows) })
+    const text = await geminiComplete({ prompt: buildKeywordsPrompt(deficientRows, category) })
     const parsed = parseJsonLoose(text)
     const keywords = (parsed?.keywords || [])
       .map((k) => (typeof k === 'string' ? k : k?.keyword))
@@ -71,7 +87,8 @@ async function fetchSearchKeywords(deficientRows) {
     console.error('search keyword generation failed:', err)
   }
 
-  // 폴백: 부족 영양소별 정적 매핑(중복 제거로 유형 분산 유지)
+  // 폴백: 카테고리를 골랐으면 그 카테고리의 검색어 풀, 아니면 부족 영양소별 정적 매핑(유형 분산 유지)
+  if (category.key !== 'all') return category.keywords.slice(0, 3)
   const mapped = [...new Set(deficientRows.map((row) => KEYWORD_FALLBACKS[row.key] || FALLBACK_SEARCH_KEYWORD))]
   return mapped.slice(0, 3)
 }
@@ -245,7 +262,29 @@ export default function MapPage() {
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [nearbyError, setNearbyError] = useState('')
   const [locationQuery, setLocationQuery] = useState('')
+  // 고른 음식 종류는 기기에 저장돼 다시 방문해도 유지된다(foodCategory.js).
+  const categoryKey = useSelectedFoodCategory()
+  const [categoryNotice, setCategoryNotice] = useState('')
+  // 지금 화면에 보이는 결과가 "어느 종류로 찾은 것인지". 종류만 바꾸고 다시 찾지 않으면 목록은 옛 종류의
+  // 결과이므로, 그 상태를 버튼 문구로 알려주고 지난 안내 문구는 감춘다.
+  const [searchedCategory, setSearchedCategory] = useState(null)
+  const staleCategory = places !== null && searchedCategory !== categoryKey
   const locateTriedRef = useRef(false)
+
+  function handleChangeCategory(key) {
+    setSelectedFoodCategory(key)
+    setNearbyError('')
+  }
+
+  // 검색 결과가 아예 없을 때의 문구. 카테고리를 골랐다면 "다른 카테고리를 선택해보세요"로 다음 행동을
+  // 알려준다 — 이 경우 결과가 없는 원인이 대개 좁힌 카테고리이기 때문.
+  function emptyResultMessage(where) {
+    const category = getFoodCategory(categoryKey)
+    if (category.key !== 'all') {
+      return `${where}에는 ${category.label} 식당이 없어요. 다른 카테고리를 선택해보세요.`
+    }
+    return `${where}에서 추천할 식당을 찾지 못했어요. 잠시 후 다시 시도해주세요.`
+  }
 
   // 탭 진입 시 바로 위치를 요청해 지도를 내 위치 중심으로 띄운다. 거부/실패 시 기본 위치로 폴백.
   useEffect(() => {
@@ -262,9 +301,13 @@ export default function MapPage() {
 
   // "내 주변에서 찾기"(현재 위치)와 "이 위치로 검색"(지정 위치)이 좌표를 얻는 방법만 다르고 이후
   // 검색 절차(키워드 생성→검색→다양화 보완→예상 섭취량 부착)는 동일해, 그 공통 절차만 여기 모았다.
+  // 반환값 { places, categoryNotice } — categoryNotice는 고른 카테고리로 결과를 못 채워 범위를
+  // 넓혔을 때만 채워진다(빈 화면 대신 이유를 말해주기 위해).
   async function searchAroundPosition({ x, y }) {
-    // 1) 부족 영양소 → 서로 다른 식당 유형 키워드 2~3개
-    const keywords = await fetchSearchKeywords(top3Rows)
+    const category = getFoodCategory(categoryKey)
+
+    // 1) 부족 영양소(+고른 음식 종류) → 서로 다른 식당 유형 키워드 2~3개
+    const keywords = await fetchSearchKeywords(top3Rows, category)
 
     // 1.5) 좌표 -> 대략적 지역명(예: "유성구"). 네이버 지역 검색은 반경 파라미터가 없어, 검색어 자체에
     // 지역명을 섞어 넣어야 "내 주변" 결과에 가까워진다. 실패해도 검색 자체는 지역명 없이 계속 진행한다.
@@ -276,38 +319,64 @@ export default function MapPage() {
     // 2) 키워드별 검색 후 병합(중복 제거)
     let results = await searchAndMerge({ x, y, keywords, regionLabel })
 
-    // 3) 한 유형으로만 몰리면 다른 유형으로 보완 검색
+    // 3) 한 유형으로만 몰리면 다른 유형으로 보완 검색. 카테고리를 골랐다면 그 카테고리 안에서 다양화한다
+    //    — '전체'용 풀(샐러드/고깃집/…)을 그대로 쓰면 고른 종류 밖으로 새어 나간다.
+    const diversityPool = category.key === 'all' ? DIVERSITY_POOL : category.keywords
     const categoryCount = new Set(results.map(categoryOf)).size
     if (results.length > 0 && categoryCount <= 1) {
-      const extraKeyword = DIVERSITY_POOL.find((k) => !keywords.includes(k))
+      const extraKeyword = diversityPool.find((k) => !keywords.includes(k))
       if (extraKeyword) {
         results = await searchAndMerge({ x, y, keywords: [extraKeyword], regionLabel, existing: results })
       }
     }
 
-    if (results.length === 0) return []
+    // 4) 고른 종류만 남긴다. 검색어를 카테고리에 맞춰도 네이버 결과에는 다른 종류가 섞여 들어오므로,
+    //    응답의 category 문자열로 한 번 더 거른다("한식을 골랐는데 중국집이 나온다"를 막는 지점).
+    let filtered = filterPlacesByCategory(category.key, results)
+    let categoryNotice = ''
 
-    // 4) 각 식당의 대표 메뉴 예상 섭취량(추천 근거) 계산해 부착 — 알레르기가 있으면 대표 메뉴 선정에 반영
+    // 5) 걸러낸 게 없으면 단계적으로 완화한다. 네이버 지역 검색은 결과 수가 적어, 영양소 키워드까지
+    //    얹으면 카테고리가 통째로 비는 일이 흔하다.
+    //    5-a) 카테고리 이름만으로 다시 검색(영양소 narrowing만 푼다 — 고른 종류는 지킨다)
+    if (filtered.length === 0 && category.key !== 'all') {
+      const relaxed = await searchAndMerge({ x, y, keywords: [category.searchTerm], regionLabel })
+      filtered = filterPlacesByCategory(category.key, relaxed)
+      //  5-b) 그래도 없는데 종류를 가리지 않은 결과는 있다면, 빈 화면 대신 그걸 보여주고 이유를 말한다.
+      if (filtered.length === 0) {
+        const anyPlaces = results.length > 0 ? results : relaxed
+        if (anyPlaces.length > 0) {
+          filtered = anyPlaces
+          categoryNotice = `근처에 ${category.label} 식당이 없어서 다른 종류를 함께 보여줘요.`
+        }
+      }
+    }
+
+    if (filtered.length === 0) return { places: [], categoryNotice: '' }
+
+    // 6) 각 식당의 대표 메뉴 예상 섭취량(추천 근거) 계산해 부착 — 알레르기가 있으면 대표 메뉴 선정에 반영
     // (예전엔 여기서 스폰서 식당 목업을 4번째 자리에 끼워 넣었지만, 식당 광고는 PRD v2.0 §6에서 이번
     //  릴리즈 스코프 아웃됐다. 광고는 식단 탭의 쿠팡 파트너스 영양제 배너 한 곳으로 통일한다.)
-    return attachExpectedIntake(results, top3Rows, allergyLabels)
+    return { places: await attachExpectedIntake(filtered, top3Rows, allergyLabels), categoryNotice }
   }
 
   async function handleFindNearby() {
     setNearbyLoading(true)
     setNearbyError('')
+    setCategoryNotice('')
     setPlaces(null)
     try {
       const { x, y } = await getCurrentPosition()
-      const results = await searchAroundPosition({ x, y })
+      const { places: results, categoryNotice } = await searchAroundPosition({ x, y })
 
       if (results.length === 0) {
-        setNearbyError('주변에서 추천할 식당을 찾지 못했어요. 잠시 후 다시 시도해주세요.')
+        setNearbyError(emptyResultMessage('주변'))
         return
       }
 
       setMyPosition({ lat: y, lng: x })
       setLocationNotice('')
+      setCategoryNotice(categoryNotice)
+      setSearchedCategory(categoryKey)
       setPlaces(results)
     } catch (err) {
       console.error('nearby search failed:', err)
@@ -326,18 +395,21 @@ export default function MapPage() {
 
     setNearbyLoading(true)
     setNearbyError('')
+    setCategoryNotice('')
     setPlaces(null)
     try {
       const { x, y, label } = await geocodeLocation(query)
-      const results = await searchAroundPosition({ x, y })
+      const { places: results, categoryNotice } = await searchAroundPosition({ x, y })
 
       if (results.length === 0) {
-        setNearbyError('이 위치 주변에서 추천할 식당을 찾지 못했어요. 잠시 후 다시 시도해주세요.')
+        setNearbyError(emptyResultMessage('이 위치 주변'))
         return
       }
 
       setMyPosition({ lat: y, lng: x })
       setLocationNotice(label ? `"${label}" 주변 결과예요.` : '')
+      setCategoryNotice(categoryNotice)
+      setSearchedCategory(categoryKey)
       setPlaces(results)
     } catch (err) {
       console.error('location search failed:', err)
@@ -363,9 +435,10 @@ export default function MapPage() {
       </div>
 
       <Card>
+        <FoodCategoryChips value={categoryKey} onChange={handleChangeCategory} disabled={nearbyLoading} />
         <AppButton onClick={handleFindNearby} disabled={nearbyLoading}>
           {nearbyLoading && <Spinner size={16} />}
-          {nearbyLoading ? '찾는 중...' : '내 주변에서 찾기'}
+          {nearbyLoading ? '찾는 중...' : staleCategory ? '이 종류로 다시 찾기' : '내 주변에서 찾기'}
         </AppButton>
         {nearbyError && <p style={styles.errorText}>{nearbyError}</p>}
       </Card>
@@ -410,7 +483,14 @@ export default function MapPage() {
       )}
 
       {!nearbyLoading && places && (
-        <PlaceList places={places} todayTotal={todayTotal} recommended={recommended} deficientRows={top3Rows} />
+        <>
+          {categoryNotice && !staleCategory && (
+            <Card style={{ background: colors.deficientSurface, boxShadow: 'none' }}>
+              <p style={{ margin: 0, color: colors.textStrong, fontSize: font.size.sm }}>{categoryNotice}</p>
+            </Card>
+          )}
+          <PlaceList places={places} todayTotal={todayTotal} recommended={recommended} deficientRows={top3Rows} />
+        </>
       )}
     </div>
   )

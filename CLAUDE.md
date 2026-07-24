@@ -114,6 +114,16 @@ rollback path — `src/pages/MapPage.jsx` now sources restaurant candidates from
 `category_name`/`place_url`/`x`=lng/`y`=lat), so neither of those needs to know which search backend
 is active.
 
+`src/lib/foodCategory.js` is the single source for the 지도 탭's "음식 종류" filter (전체/한식/중식/일식/
+양식/분식/아시안/카페·디저트): the list itself, the per-category search-keyword pool, the tokens that
+decide whether a Naver `category` string belongs to a category, and the selected value (stored per
+*device* in localStorage, following `cardSettings.js`'s reasoning — it's a screen preference, not
+account data). `MapPage` feeds the chosen category into the keyword-generation prompt, then filters
+the search results by category and, if that leaves nothing, relaxes in steps (search by the category
+name alone → fall back to uncategorized results **with an on-screen notice**) rather than silently
+showing another cuisine. `전체` keeps the exact pre-existing behavior, prompt text included.
+`src/lib/foodCategory.test.js` covers the matching/filtering rules.
+
 ### Ads: Coupang Partners supplements (real data path, placeholder links)
 
 식단(`/meals`) 탭의 "부족한 영양소는?" 가로 캐러셀(`src/components/DeficientNutrientAds.jsx`)이 유일한
