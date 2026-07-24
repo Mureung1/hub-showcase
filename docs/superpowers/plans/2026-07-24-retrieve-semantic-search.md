@@ -222,7 +222,7 @@ Expected: 3 tests PASS, 커밋 생성.
 테스트는 아래 여덟 계약만 검증한다.
 
 1. `insight_embeddings.embedding`이 768차원이다.
-2. 인사이트 생성과 제목·메모 변경은 작업을 등록한다.
+2. 인사이트 생성과 제목·메모 변경은 작업을 등록하며, 제목·메모에 구분자로 쓰일 수 있는 문자가 있어도 서로 다른 입력은 다른 `source_hash`를 만든다.
 3. 카테고리만 바꾸면 작업을 등록하지 않는다.
 4. 검색 함수는 전달된 `user_id` 외의 벡터를 반환하지 않는다.
 5. `0.59` 미만은 제외하고 동점은 최신 인사이트부터 정렬한다.
@@ -311,7 +311,7 @@ create table public.embedding_usage_reservations (
 
 네 테이블은 RLS를 활성화하고 `anon`, `authenticated`의 직접 권한을 모두 회수한다. `service_role`에 필요한 권한만 부여한다.
 
-제목·메모 변경 감지 함수는 같은 값으로 업데이트된 경우 작업을 만들지 않는다. `source_hash`는 trim한 제목과 메모를 구분자와 함께 SHA-256으로 변환한 값이며, 서버의 문서 입력 정규화와 같은 규칙을 사용한다.
+제목·메모 변경 감지 함수는 같은 값으로 업데이트된 경우 작업을 만들지 않는다. `source_hash`는 서버 문서 입력과 같은 규칙으로 제목과 메모를 정규화한 뒤, 각 값의 바이트 길이를 붙인 표현을 SHA-256으로 변환한다. 제목이나 메모에 임의의 구분자가 들어 있어도 서로 다른 두 입력이 같은 해시 원문을 만들지 않는다.
 
 ```sql
 create function public.get_insight_embedding_source_hash(
@@ -323,13 +323,20 @@ language sql
 immutable
 set search_path = ''
 as $$
+  with normalized as (
+    select
+      btrim(source_title) as title,
+      coalesce(nullif(btrim(source_memo), ''), btrim(source_title)) as body
+  )
   select encode(
     extensions.digest(
-      btrim(source_title) || E'\n---memo---\n' || coalesce(btrim(source_memo), ''),
+      octet_length(title)::text || ':' || title
+        || octet_length(body)::text || ':' || body,
       'sha256'
     ),
     'hex'
-  );
+  )
+  from normalized;
 $$;
 
 create function public.enqueue_insight_embedding()
@@ -490,8 +497,9 @@ Expected: 기존 RLS 테스트와 의미 검색 테스트 모두 PASS.
 
 - 모델 `gemini-embedding-2`와 `outputDimensionality: 768` 전달
 - 768차원이 아닌 응답 거부
-- `usageMetadata.promptTokenCount` 반환
-- 원문 입력을 오류 메시지나 로그에 포함하지 않음
+- 0 이상의 정수인 `usageMetadata.promptTokenCount`는 실제 사용량으로 반환
+- 토큰 정보가 없으면 호출을 성공으로 처리하되 사용량을 `unavailable`로 반환하고, 음수나 정수가 아닌 값은 거부
+- SDK 호출 실패와 잘못된 응답 모두 원문 입력이나 원래 오류 내용을 포함하지 않는 일반 오류로 변환
 
 중심 테스트:
 
@@ -506,7 +514,7 @@ it('768차원 벡터와 입력 토큰 수를 반환한다', async () => {
   });
 
   await expect(client.embed('검색 입력')).resolves.toEqual({
-    promptTokens: 17,
+    usage: { kind: 'actual', promptTokens: 17 },
     vector: Array(768).fill(0.01),
   });
   expect(embedContent).toHaveBeenCalledWith({
@@ -539,7 +547,7 @@ import {
 } from './retrieve_embedding.js';
 
 export type EmbeddingResult = {
-  promptTokens: number;
+  usage: { kind: 'actual'; promptTokens: number } | { kind: 'unavailable' };
   vector: number[];
 };
 
@@ -565,19 +573,37 @@ export function createGeminiEmbeddingClient({
 }: CreateGeminiEmbeddingClientOptions): GeminiEmbeddingClient {
   return {
     async embed(text) {
-      const response = await embedContent({
-        config: { outputDimensionality: RETRIEVE_EMBEDDING_DIMENSIONS },
-        contents: text,
-        model: RETRIEVE_EMBEDDING_MODEL,
-      });
+      let response: Awaited<ReturnType<EmbedContent>>;
+
+      try {
+        response = await embedContent({
+          config: { outputDimensionality: RETRIEVE_EMBEDDING_DIMENSIONS },
+          contents: text,
+          model: RETRIEVE_EMBEDDING_MODEL,
+        });
+      } catch {
+        throw new Error('Gemini embedding request failed');
+      }
+
       const vector = response.embeddings?.[0]?.values;
       const promptTokens = response.usageMetadata?.promptTokenCount;
 
-      if (!isEmbeddingVector(vector) || !Number.isInteger(promptTokens)) {
+      if (!isEmbeddingVector(vector)) {
         throw new Error('Gemini embedding response is invalid');
       }
 
-      return { promptTokens, vector };
+      if (promptTokens === undefined) {
+        return { usage: { kind: 'unavailable' }, vector };
+      }
+
+      if (!Number.isInteger(promptTokens) || promptTokens < 0) {
+        throw new Error('Gemini embedding response is invalid');
+      }
+
+      return {
+        usage: { kind: 'actual', promptTokens },
+        vector,
+      };
     },
   };
 }
@@ -591,13 +617,13 @@ export function createGoogleGeminiEmbeddingClient(apiKey: string) {
 }
 ```
 
-테스트와 운영 코드가 같은 `createGeminiEmbeddingClient` 의존성 계약을 사용한다. 운영 조립만 `createGoogleGeminiEmbeddingClient`를 호출해 SDK를 연결한다. 오류에는 입력 문장, 제목, 메모를 넣지 않는다.
+테스트와 운영 코드가 같은 `createGeminiEmbeddingClient` 의존성 계약을 사용한다. 운영 조립만 `createGoogleGeminiEmbeddingClient`를 호출해 SDK를 연결한다. SDK 오류는 원래 오류 객체를 `cause`로 연결하거나 다시 던지지 않고 일반 오류로 바꾼다. 오류와 로그에는 입력 문장, 제목, 메모를 넣지 않는다.
 
 - [ ] **Step 4: 비용 한도 정책을 서버 서비스가 사용하도록 타입으로 노출한다**
 
 Gemini 호출 하나가 사용할 수 있는 최대 입력량은 모델 한도인 8,192토큰으로 계산한다. 서버는 외부 호출을 시작하기 전에 `호출 수 × 8,192`를 `reserve_embedding_usage`로 한 번에 예약한다. 데이터베이스 함수는 해당 월의 사용량 행을 잠그고 기존 사용량과 활성 예약을 합산해 2,500만 토큰을 넘지 않을 때만 예약 ID를 반환한다.
 
-호출이 끝나면 `reconcile_embedding_usage`가 예약량을 해제하고 Gemini가 반환한 실제 `promptTokenCount`를 사용량으로 확정한다. Gemini가 토큰 수를 반환하지 않거나 호출 결과를 확인할 수 없으면 예약한 최대량을 사용한 것으로 확정한다. 만료된 예약도 다음 예약 시 최대량 사용으로 전환해 서버 중단 때문에 비용이 누락되지 않게 한다. 별도 토큰 계산 API는 호출하지 않는다.
+호출이 끝나면 `reconcile_embedding_usage`가 예약량을 해제한다. 모든 호출에서 0 이상의 실제 `promptTokenCount`를 확인했으면 그 합계를 사용량으로 확정한다. 하나라도 토큰 수를 반환하지 않았거나 호출 결과를 확인할 수 없으면 `reserved-maximum` 정산을 요청해 예약한 최대량을 사용한 것으로 확정한다. 만료된 예약도 다음 예약 시 최대량 사용으로 전환해 서버 중단 때문에 비용이 누락되지 않게 한다. 별도 토큰 계산 API는 호출하지 않는다.
 
 - [ ] **Step 5: 테스트를 통과시키고 커밋한다**
 
@@ -646,10 +672,18 @@ export type InsightEmbeddingStore = {
     threshold: number;
     userId: string;
   }): Promise<string[]>;
-  reconcileUsage(input: {
-    promptTokens: number;
-    reservationId: string;
-  }): Promise<void>;
+  reconcileUsage(
+    input:
+      | {
+          promptTokens: number;
+          reservationId: string;
+          settlement: 'actual';
+        }
+      | {
+          reservationId: string;
+          settlement: 'reserved-maximum';
+        }
+  ): Promise<void>;
   reserveUsage(
     maxTokens: number
   ): Promise<
@@ -665,7 +699,7 @@ export type InsightEmbeddingStore = {
 2. 빈 문자열과 500자 초과 입력을 거부한다.
 3. 문서 입력은 제목·메모만 사용하고 같은 `sourceHash` 작업만 완료한다.
 4. 검색은 같은 사용자와 `0.59` 기준으로 요청하며 ID 순서를 보존한다.
-5. Gemini 실패 시 기존 인사이트와 작업을 손상시키지 않고 `retrieve-failed`를 반환한다.
+5. Gemini 호출 실패 시 기존 인사이트와 작업을 손상시키지 않고 `retrieve-failed`를 반환한다. 토큰 정보만 없는 응답은 검색에 사용하되, 두 경우 모두 예약 최대량으로 정산한다.
 6. 동시에 시작한 요청은 원자적 예약 결과에 따라 하나만 Gemini 호출을 시작한다.
 
 대표 성공 흐름:
@@ -686,8 +720,14 @@ it('미처리 문서를 준비한 뒤 관련도순 ID를 반환한다', async ()
     },
   ]);
   embedder.embed
-    .mockResolvedValueOnce({ promptTokens: 10, vector: documentVector })
-    .mockResolvedValueOnce({ promptTokens: 4, vector: queryVector });
+    .mockResolvedValueOnce({
+      usage: { kind: 'actual', promptTokens: 10 },
+      vector: documentVector,
+    })
+    .mockResolvedValueOnce({
+      usage: { kind: 'actual', promptTokens: 4 },
+      vector: queryVector,
+    });
   store.match.mockResolvedValue(['insight-1', 'insight-2']);
   store.countPending.mockResolvedValue(0);
 
@@ -701,6 +741,7 @@ it('미처리 문서를 준비한 뒤 관련도순 ID를 반환한다', async ()
   expect(store.reconcileUsage).toHaveBeenCalledWith({
     promptTokens: 14,
     reservationId: 'reservation-1',
+    settlement: 'actual',
   });
 });
 ```
@@ -714,7 +755,7 @@ it('동시에 시작해도 예산을 예약한 요청만 Gemini를 호출한다'
     .mockResolvedValueOnce({ ok: true, reservationId: 'reservation-1' })
     .mockResolvedValueOnce({ ok: false, reason: 'usage-limit-reached' });
   embedder.embed.mockResolvedValue({
-    promptTokens: 4,
+    usage: { kind: 'actual', promptTokens: 4 },
     vector: queryVector,
   });
   store.match.mockResolvedValue([]);
@@ -767,11 +808,11 @@ export type InsightRetrieveResult =
 4. `(미처리 문서 수 + 쿼리 1개) × 8,192` 토큰을 원자적으로 예약하고, 한도 때문에 실패하면 외부 호출 전 중단한다.
 5. 문서는 최대 4개씩 병렬로 Gemini에 보내고, 성공 건만 벡터 저장과 작업 완료를 처리한다.
 6. 쿼리 벡터 생성이 실패하면 검색 실패로 반환한다.
-7. 모든 호출이 끝나면 예약 ID에 실제 `promptTokens` 합계를 정산한다. 결과를 확인할 수 없는 호출이 있으면 예약 최대량을 사용량으로 확정한다.
+7. 모든 호출이 끝나면 예약 ID를 반드시 정산한다. 모든 토큰 수를 확인했으면 `actual`과 실제 합계를, 호출 실패나 `unavailable`이 하나라도 있으면 `reserved-maximum`을 전달한다.
 8. `userId`, `0.59`, 모델 ID, 입력 버전으로 정확 검색한다.
 9. 남은 미처리 건수와 정렬된 ID를 반환한다.
 
-문서 하나의 실패가 다른 문서까지 취소하지 않게 `Promise.allSettled`를 사용한다. 쿼리 실패는 결과 자체를 만들 수 없으므로 전체 검색 실패다. 동시에 시작한 요청은 각각 데이터베이스 예약을 먼저 통과해야 하므로 월 사용량 잔여분을 함께 소비할 수 없다.
+문서 하나의 실패가 다른 문서까지 취소하지 않게 `Promise.allSettled`를 사용한다. 쿼리 실패는 결과 자체를 만들 수 없으므로 전체 검색 실패다. 성공·실패 응답을 반환하기 전 공통 종료 경로에서 실제 사용량 또는 예약 최대량을 정산한다. 동시에 시작한 요청은 각각 데이터베이스 예약을 먼저 통과해야 하므로 월 사용량 잔여분을 함께 소비할 수 없다.
 
 - [ ] **Step 5: service role Supabase 저장소를 구현한다**
 
@@ -1069,7 +1110,7 @@ const batch = await ai.batches.createEmbeddings({
   src: {
     inlinedRequests: documents.map((document) => ({
       config: { outputDimensionality: RETRIEVE_EMBEDDING_DIMENSIONS },
-      content: { parts: [{ text: createDocumentEmbeddingText(document) }] },
+      contents: [{ parts: [{ text: createDocumentEmbeddingText(document) }] }],
       metadata: {
         insightId: document.insightId,
         modelId: RETRIEVE_EMBEDDING_MODEL,
