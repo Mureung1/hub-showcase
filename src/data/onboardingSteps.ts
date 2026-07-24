@@ -52,6 +52,21 @@ export const REVENUE_OPTIONS: string[] = [
   '5억원 이상',
 ]
 
+/**
+ * 업력(연차) 구간 (step4 select, 이슈 #51).
+ * 실 API 300건 표본(2026-07-25) 조사 결과 지원사업 자격 조건의 컷오프가 1/3/5/7/10년에
+ * 몰려 있어 그 경계를 그대로 버킷 경계로 채택 — 추후 "업력 5년 이내" 같은 조건과 정밀 비교 가능.
+ */
+export const BUSINESS_YEARS_OPTIONS: string[] = [
+  '예비창업자',
+  '1년 미만',
+  '1~3년',
+  '3~5년',
+  '5~7년',
+  '7~10년',
+  '10년 이상',
+]
+
 /** 스텝별 질문/힌트 (step3 질문은 지역명이 동적으로 앞에 붙음) */
 export const STEP_META: Record<number, StepMeta> = {
   1: {

@@ -16,6 +16,7 @@ const EMPTY_PROFILE: OnboardingProfile = {
   district: '',
   employees: '',
   revenue: '',
+  businessYears: '',
 }
 
 export type OnboardingField = keyof OnboardingProfile

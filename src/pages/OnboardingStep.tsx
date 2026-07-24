@@ -50,7 +50,9 @@ export default function OnboardingStep() {
     if (current === 1) return isStep1Complete(profile.industry)
     if (current === 2) return isStep2Complete(profile.region)
     if (current === 3) return isStep3Complete(profile.region, profile.district)
-    if (current === 4) return isStep4Complete(profile.employees, profile.revenue)
+    if (current === 4) {
+      return isStep4Complete(profile.employees, profile.revenue, profile.businessYears ?? '')
+    }
     return false
   })()
 
