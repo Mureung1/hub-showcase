@@ -10,6 +10,7 @@
 | `docs/PRD.md` | 목표, MVP 범위, 사용자 시나리오, 화면 구조, 리스크의 기준 문서 |
 | `prototype/index.html` | 7개 화면과 데모 데이터를 담은 단일 HTML |
 | `prototype/styles.css` | 디자인 토큰, 레이아웃, 반응형, `:target` 기반 화면 전환 |
+| `showcase/showcase.json` | 외부 제출용 프로젝트 소개 데이터 (cad821e에서 루트로 이동) |
 
 ## `HARNESS/` 오케스트레이션 지도
 
