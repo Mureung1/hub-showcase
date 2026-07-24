@@ -45,3 +45,20 @@ export async function getRoomLayout(userId: string) {
     placedAt: entry.placedAt.toISOString(),
   }))
 }
+
+// 친구 마이홈 방문 화면(읽기 전용)에서 실제로 배치된 아이템을 그리기 위한 뷰.
+// 방문자는 inventoryId/placedAt을 알 필요가 없고, 대신 아이콘 렌더링에 필요한 iconKey가 있어야 한다.
+export async function getFriendRoomView(hostUserId: string) {
+  const layout = await prisma.userRoomLayout.findMany({
+    where: { userId: hostUserId },
+    include: { inventory: { include: { item: { select: { iconKey: true } } } } },
+  })
+
+  return layout.map((entry) => ({
+    itemId: entry.inventory.itemId,
+    iconKey: entry.inventory.item.iconKey,
+    color: entry.inventory.color,
+    x: entry.x,
+    y: entry.y,
+  }))
+}

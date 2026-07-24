@@ -48,6 +48,21 @@ function setSlot(userId: string, slot: RoomEquipSlot, itemId: string | null, col
   }
 }
 
+type AppearanceWithItems = Awaited<ReturnType<typeof getDodoAppearance>>
+
+function toSlotResponse(item: AppearanceWithItems['hatItem'], color: string | null) {
+  return item ? { itemId: item.id, iconKey: item.iconKey, color } : null
+}
+
+export function toAppearanceResponse(appearance: AppearanceWithItems) {
+  return {
+    hat: toSlotResponse(appearance.hatItem, appearance.hatColor),
+    glasses: toSlotResponse(appearance.glassesItem, appearance.glassesColor),
+    outfit: toSlotResponse(appearance.outfitItem, appearance.outfitColor),
+    accessory: toSlotResponse(appearance.accessoryItem, appearance.accessoryColor),
+  }
+}
+
 export type EquipRoomItemResult =
   | { status: 'ok'; appearance: Awaited<ReturnType<typeof getDodoAppearance>> }
   | { status: 'not_owned' }

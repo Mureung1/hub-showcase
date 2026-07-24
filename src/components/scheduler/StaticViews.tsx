@@ -9,9 +9,8 @@ import type { ProfileManager } from './useProfileManager'
 import { FOOD_ICON_KEYS, type RoomShopManager } from './useRoomShopManager'
 import type { FriendPost, HomeVisitActionKind } from './types'
 
-const SHOP_ITEM_ICON_CLASS: Record<string, string> = {
+export const SHOP_ITEM_ICON_CLASS: Record<string, string> = {
   'game-console': 'shop-item-console',
-  'pillow': 'shop-item-pillow',
   'headphones': 'shop-item-headphones',
   'table': 'shop-item-table',
   'fried-egg': 'shop-item-fried-egg',
@@ -22,9 +21,9 @@ const SHOP_ITEM_ICON_CLASS: Record<string, string> = {
 
 // 원래 마이홈 방에 고정 붙박이로 있던 그래픽(창문·별 장식·선반 장식·화분) — 디자인은 그대로 재사용하고
 // 상점/인벤토리 목록에서는 48px 프레임에 축소해서(.shop-fixture-frame-*), 마이홈에 배치하면 원래 크기로 보여준다.
-const ROOM_FIXTURE_ICON_KEYS = new Set(['window', 'wall-star', 'wall-shelf', 'plant'])
+export const ROOM_FIXTURE_ICON_KEYS = new Set(['window', 'wall-star', 'wall-shelf', 'plant'])
 
-function renderRoomFixture(iconKey: string, color: string | null) {
+export function renderRoomFixture(iconKey: string, color: string | null) {
   switch (iconKey) {
     case 'window':
       return <div className="myhome-window" aria-hidden="true"><i /><i /><i /></div>
@@ -57,7 +56,6 @@ function renderListIcon(iconKey: string, color: string | null) {
 
 const SHOP_ITEM_INTERACT_MESSAGE: Record<string, string> = {
   'game-console': '두두가 게임기를 붙잡고 신나게 버튼을 눌러봐요!',
-  'pillow': '두두가 베개에 폭 안겨서 뒹굴뒹굴해요.',
   'headphones': '두두가 헤드폰을 쓰고 리듬을 타요!',
   'plant': '두두가 화분에 물을 줬어요!',
   'fried-egg': '두두가 계란후라이를 냠냠 먹었어요!',
@@ -71,7 +69,7 @@ const SHOP_ITEM_INTERACT_MESSAGE: Record<string, string> = {
 // 서버(lib/roomLayout.ts)도 같은 범위로 한 번 더 clamp하지만, 드래그하는 동안 바로 시각적으로 막히도록 여기서도 적용한다.
 const WALL_BAND = { min: 5, max: 45 }
 
-function itemIconStyle(color: string | null): CSSProperties | undefined {
+export function itemIconStyle(color: string | null): CSSProperties | undefined {
   return color ? ({ '--item-color': color } as CSSProperties) : undefined
 }
 

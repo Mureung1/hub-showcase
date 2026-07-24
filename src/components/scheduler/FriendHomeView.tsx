@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import * as friendsApi from './friendsApi'
-import type { HomeVisitActionKind } from './types'
+import { ROOM_FIXTURE_ICON_KEYS, SHOP_ITEM_ICON_CLASS, itemIconStyle, renderRoomFixture } from './StaticViews'
+import type { FriendHomeState, HomeVisitActionKind } from './types'
 
 type FriendHomeViewProps = {
   friendId: string
@@ -13,6 +14,15 @@ export function FriendHomeView({ friendId, friendName, onBack }: FriendHomeViewP
   const [notice, setNotice] = useState(`${friendName}의 방에 놀러왔어요!`)
   const [messagePanelOpen, setMessagePanelOpen] = useState(false)
   const [messageDraft, setMessageDraft] = useState('')
+  const [home, setHome] = useState<FriendHomeState | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    friendsApi.fetchFriendHome(friendId)
+      .then((loaded) => { if (!cancelled) setHome(loaded) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [friendId])
 
   const sendVisit = async (action: HomeVisitActionKind, message?: string) => {
     try {
@@ -52,9 +62,6 @@ export function FriendHomeView({ friendId, friendName, onBack }: FriendHomeViewP
       </div>
 
       <div className="myhome-room">
-        <div className="myhome-window" aria-hidden="true"><i /><i /><i /></div>
-        <div className="myhome-wall-star" aria-hidden="true" />
-        <div className="myhome-shelf" aria-hidden="true"><i /><i /></div>
         <div className="myhome-rug" aria-hidden="true" />
         <div className="myhome-message" role="status">{notice}</div>
 
@@ -66,11 +73,34 @@ export function FriendHomeView({ friendId, friendName, onBack }: FriendHomeViewP
             <span className="home-dodo-cheek right" />
             <span className="home-dodo-mouth" />
           </div>
+          {home?.appearance && Object.values(home.appearance).map((slot) => {
+            if (!slot || slot.iconKey !== 'headphones') return null
+            return (
+              <div key={slot.itemId} className="home-dodo-headphones" style={itemIconStyle(slot.color)} aria-hidden="true">
+                <i className="home-dodo-headphones-band" />
+                <i className="home-dodo-headphones-strut left" />
+                <i className="home-dodo-headphones-strut right" />
+                <i className="home-dodo-headphones-cup left" />
+                <i className="home-dodo-headphones-cup right" />
+              </div>
+            )
+          })}
           <i className="home-dodo-leg left" />
           <i className="home-dodo-leg right" />
         </div>
 
-        <div className="myhome-plant" aria-hidden="true"><i /><i /><i /></div>
+        {home?.layout.map((entry, index) => (
+          <div
+            key={`${entry.itemId}-${index}`}
+            className="myhome-placed-item"
+            style={{ left: `${entry.x}%`, top: `${entry.y}%` }}
+            aria-hidden="true"
+          >
+            {ROOM_FIXTURE_ICON_KEYS.has(entry.iconKey)
+              ? renderRoomFixture(entry.iconKey, entry.color)
+              : <i className={SHOP_ITEM_ICON_CLASS[entry.iconKey] ?? ''} style={itemIconStyle(entry.color)} aria-hidden="true" />}
+          </div>
+        ))}
       </div>
 
       {messagePanelOpen && (
