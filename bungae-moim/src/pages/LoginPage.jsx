@@ -9,34 +9,38 @@ export default function LoginPage() {
 
   if (authLoading) {
     return (
-      <Card variant="glass" style={{ marginTop: 40 }}>
-        <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>로그인 상태를 확인하는 중이에요…</p>
-      </Card>
+      <div className="container--narrow">
+        <Card variant="glass" style={{ marginTop: 40 }}>
+          <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>로그인 상태를 확인하는 중이에요…</p>
+        </Card>
+      </div>
     )
   }
 
   if (isLoggedIn) {
     return (
-      <Card variant="glass">
-        <div className="eyebrow">번개모임</div>
-        <h1 className="section-title" style={{ fontSize: 22 }}>
-          이미 로그인 중이에요
-        </h1>
-        <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>
-          {currentUser.nickname}님으로 로그인되어 있어요.
-        </p>
-        <PillButton variant="primary" block onClick={() => navigate('/')}>
-          홈으로 가기
-        </PillButton>
-        <PillButton variant="ghost" size="sm" onClick={logout}>
-          로그아웃
-        </PillButton>
-      </Card>
+      <div className="container--narrow">
+        <Card variant="glass">
+          <div className="eyebrow">번개모임</div>
+          <h1 className="section-title" style={{ fontSize: 22 }}>
+            이미 로그인 중이에요
+          </h1>
+          <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>
+            {currentUser.nickname}님으로 로그인되어 있어요.
+          </p>
+          <PillButton variant="primary" block onClick={() => navigate('/')}>
+            홈으로 가기
+          </PillButton>
+          <PillButton variant="ghost" size="sm" onClick={logout}>
+            로그아웃
+          </PillButton>
+        </Card>
+      </div>
     )
   }
 
   return (
-    <>
+    <div className="container--narrow">
       <Card variant="glass" style={{ marginTop: 40 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <span className="eyebrow">번개모임</span>
@@ -80,6 +84,6 @@ export default function LoginPage() {
           것으로 간주됩니다.
         </p>
       </Card>
-    </>
+    </div>
   )
 }

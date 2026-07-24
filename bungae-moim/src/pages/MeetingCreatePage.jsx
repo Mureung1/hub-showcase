@@ -13,20 +13,20 @@ export default function MeetingCreatePage() {
 
   if (!isLoggedIn) {
     return (
-      <>
+      <div className="container--narrow">
         <PageHeader title="모임 등록" />
-        <Card variant="dark">
-          <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>모임을 등록하려면 먼저 로그인해주세요.</p>
+        <Card variant="solid">
+          <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>모임을 등록하려면 먼저 로그인해주세요.</p>
           <PillButton to="/login" variant="accent" block>
             로그인하러 가기
           </PillButton>
         </Card>
-      </>
+      </div>
     )
   }
 
   return (
-    <>
+    <div className="container--narrow">
       <PageHeader title="모임 등록" eyebrow="새 모임 만들기" />
       <MeetingForm
         initialValues={defaultFormValues()}
@@ -36,6 +36,6 @@ export default function MeetingCreatePage() {
           navigate('/meetings')
         }}
       />
-    </>
+    </div>
   )
 }

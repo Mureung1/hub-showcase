@@ -62,35 +62,35 @@ export default function MeetingEditPage() {
 
   if (!isLoggedIn) {
     return (
-      <>
+      <div className="container--narrow">
         <PageHeader title="모임 수정" />
-        <Card variant="dark">
-          <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>수정하려면 먼저 로그인해주세요.</p>
+        <Card variant="solid">
+          <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>수정하려면 먼저 로그인해주세요.</p>
           <PillButton to="/login" variant="accent" block>로그인하러 가기</PillButton>
         </Card>
-      </>
+      </div>
     )
   }
 
   if (loadError) {
     return (
-      <>
+      <div className="container--narrow">
         <PageHeader title="모임 수정" />
-        <Card variant="dark">
-          <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>모임을 불러오지 못했어요. {loadError}</p>
+        <Card variant="solid">
+          <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>모임을 불러오지 못했어요. {loadError}</p>
         </Card>
-      </>
+      </div>
     )
   }
 
   if (!meeting) {
     return (
-      <>
+      <div className="container--narrow">
         <PageHeader title="모임 수정" />
-        <Card variant="dark">
-          <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>불러오는 중…</p>
+        <Card variant="solid">
+          <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>불러오는 중…</p>
         </Card>
-      </>
+      </div>
     )
   }
 
@@ -99,15 +99,15 @@ export default function MeetingEditPage() {
 
   if (!isHost || isEnded) {
     return (
-      <>
+      <div className="container--narrow">
         <PageHeader title="모임 수정" />
-        <Card variant="dark">
-          <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>
+        <Card variant="solid">
+          <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>
             {!isHost ? '이 모임을 수정할 권한이 없어요.' : '종료되었거나 취소된 모임은 수정할 수 없어요.'}
           </p>
           <PillButton to={`/meetings/${id}`} variant="accent" block>모임으로 돌아가기</PillButton>
         </Card>
-      </>
+      </div>
     )
   }
 
@@ -118,7 +118,7 @@ export default function MeetingEditPage() {
   }
 
   return (
-    <>
+    <div className="container--narrow">
       <PageHeader title="모임 수정" eyebrow="모임 정보 수정" />
       <MeetingForm
         initialValues={meetingToFormValues(meeting)}
@@ -129,6 +129,6 @@ export default function MeetingEditPage() {
           navigate(`/meetings/${id}`)
         }}
       />
-    </>
+    </div>
   )
 }
