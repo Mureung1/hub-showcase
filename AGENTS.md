@@ -86,12 +86,14 @@ When designing, redesigning, auditing, or implementing any user-facing screen, a
 
 ## Source Of Truth
 
+- Repository-wide enforcement: `AGENTS.md`.
 - Product plan: `docs/notion/icu-product-plan-notion.md`.
 - Main MVP plan: `docs/plan.md`.
 - User flow: `docs/user-flow.md`.
-- Design and handoff: `docs/design`.
-- ICU design workflow skill: `skills/design/SKILL.md`.
-- Feature specs: `docs/features`.
+- Shared UI principles and tokens: `docs/design/design-brief.md`.
+- Screen behavior and API contracts: `docs/features`.
+- Design workflow and document routing: `skills/design/SKILL.md`.
+- Figma handoff: `docs/design/figma-handoff.md`.
 - Static prototype: `prototype.html` and `prototype.css`.
 
 ## Guardrails
@@ -101,3 +103,4 @@ When designing, redesigning, auditing, or implementing any user-facing screen, a
 - Monaco and Express are already approved for the Workspace editor and local API boundary; keep their usage scoped to those flows.
 - Prefer small, typed mock data over hardcoded screen-only strings once a UI surface becomes part of the app.
 - Keep implementation aligned with the existing ICU design direction: practical IDE structure, beginner-friendly Today Hub entry, light/dark readiness, and restrained Workday-inspired orange/cyan/deep-blue accents.
+

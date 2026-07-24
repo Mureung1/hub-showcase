@@ -120,3 +120,21 @@ type CodeRunResult = {
 - RAG 기반 튜터 응답 생성
 - 사용자별 DB 저장 강화
 - Electron IPC 연결과 desktop packaging
+
+## 화면 구성 기준
+
+- Top bar는 현재 track, step, 오늘 진행률, 남은 시간, Today 또는 학습 목록으로 돌아가는 행동을 제공합니다.
+- Curriculum panel은 오늘 단계, 현재 mission, 통과 조건, 복습 shortcut을 보여줍니다.
+- AI Tutor panel은 설명, mission, hint, code review, 공식 출처를 구분합니다.
+- Editor panel은 file tab, language, 실행 제어, Monaco editor, Preview를 제공합니다.
+- Result panel은 not run, running, compiling, rendering, passed, failed, timeout 상태를 구분합니다.
+- 실패 상태는 실패 항목, 쉬운 원인 설명, hint, 다시 실행을 함께 제공합니다.
+- 성공 상태는 통과 항목, 짧은 feedback, code review, 다음 단계 행동을 제공합니다.
+
+## 접근성 및 좁은 화면
+
+- 실행, 취소, 다시 실행, 다음 단계의 keyboard focus를 항상 표시합니다.
+- terminal과 결과 변경은 screen reader가 읽을 수 있는 status 또는 live region으로 제공합니다.
+- 오류와 성공은 색상 외에 제목과 설명으로 구분합니다.
+- 좁은 화면에서는 `튜터`, `코드`, `결과` tab 또는 같은 의미의 순차 영역으로 전환합니다.
+- 현재 mission과 실행 행동은 tab 전환 후에도 찾기 쉬운 위치를 유지합니다.
