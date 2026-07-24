@@ -1,27 +1,12 @@
 import { searchSpotifyTracks } from "../services/spotifyService.js";
+import { validateSearchQuery } from "./validateSearchQuery.js";
 
-const REQUIRED_QUERY_MESSAGE = "검색어를 입력해주세요.";
-const MIN_LENGTH_QUERY_MESSAGE = "검색어는 2글자 이상 입력해주세요.";
 const SEARCH_ERROR_MESSAGE = "음악 검색 중 오류가 발생했습니다.";
-
-function getValidatedQuery(rawQuery) {
-  if (typeof rawQuery !== "string" || rawQuery.trim().length === 0) {
-    return { errorMessage: REQUIRED_QUERY_MESSAGE };
-  }
-
-  const query = rawQuery.trim();
-
-  if (query.length < 2) {
-    return { errorMessage: MIN_LENGTH_QUERY_MESSAGE };
-  }
-
-  return { query };
-}
 
 export function createSpotifyController(searchTracks = searchSpotifyTracks) {
   return {
     async search(request, response) {
-      const validation = getValidatedQuery(request.query.q);
+      const validation = validateSearchQuery(request.query.q);
 
       if (validation.errorMessage) {
         return response.status(400).json({ message: validation.errorMessage });

@@ -18,6 +18,11 @@ export interface MusicRecord {
   emotion: string;
   recordDate: string;
   liked: boolean;
+  author: {
+    id: string;
+    nickname: string;
+    avatarUrl: string | null;
+  } | null;
 }
 
 export interface MusicRecordDraft extends SpotifyTrack {

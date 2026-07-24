@@ -12,27 +12,53 @@ create table if not exists public.music_records (
 );
 
 alter table public.music_records
+  add column if not exists user_id uuid,
   add column if not exists spotify_track_id text,
   add column if not exists album_name text,
   add column if not exists album_image_url text,
   add column if not exists external_url text;
 
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'music_records_user_id_fkey'
+      and conrelid = 'public.music_records'::regclass
+  ) then
+    alter table public.music_records
+      add constraint music_records_user_id_fkey
+      foreign key (user_id)
+      references public.profiles(id)
+      on delete cascade;
+  end if;
+end;
+$$;
+
+create index if not exists music_records_user_id_record_date_idx
+  on public.music_records (user_id, record_date desc, created_at desc)
+  where user_id is not null;
+
 alter table public.music_records enable row level security;
 
 drop policy if exists "music_records_are_publicly_readable" on public.music_records;
-create policy "music_records_are_publicly_readable"
+drop policy if exists "authenticated_users_can_read_owned_records" on public.music_records;
+drop policy if exists "authenticated_users_can_read_records" on public.music_records;
+create policy "authenticated_users_can_read_records"
 on public.music_records
 for select
-to anon, authenticated
-using (true);
+to authenticated
+using (user_id is not null);
 
 drop policy if exists "music_records_can_be_created" on public.music_records;
-create policy "music_records_can_be_created"
+drop policy if exists "authenticated_users_can_create_owned_records" on public.music_records;
+create policy "authenticated_users_can_create_owned_records"
 on public.music_records
 for insert
-to anon, authenticated
+to authenticated
 with check (
-  length(trim(song_title)) > 0
+  auth.uid() = user_id
+  and length(trim(song_title)) > 0
   and length(trim(artist_name)) > 0
   and length(trim(emotion_text)) > 0
 );

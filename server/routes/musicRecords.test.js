@@ -3,6 +3,10 @@ import { afterEach, describe, it } from "node:test";
 import { createApp } from "../app.js";
 
 const openServers = [];
+const authenticatedUser = { id: "user-1", email: "swimmer@example.com" };
+const authHeaders = {
+  Authorization: "Bearer valid-access-token",
+};
 
 afterEach(() => {
   openServers.splice(0).forEach((server) => server.close());
@@ -16,6 +20,17 @@ async function startApp(options = {}) {
   return `http://127.0.0.1:${port}`;
 }
 
+function createAuthClient({ user = authenticatedUser, error = null, calls = [] } = {}) {
+  return {
+    auth: {
+      async getUser(accessToken) {
+        calls.push(["getUser", accessToken]);
+        return { data: { user }, error };
+      },
+    },
+  };
+}
+
 function createSupabaseQuery(result, calls = []) {
   const query = {
     from(table) {
@@ -24,6 +39,10 @@ function createSupabaseQuery(result, calls = []) {
     },
     select(columns) {
       calls.push(["select", columns]);
+      return query;
+    },
+    eq(column, value) {
+      calls.push(["eq", column, value]);
       return query;
     },
     order(column, options) {
@@ -47,6 +66,7 @@ function createSupabaseQuery(result, calls = []) {
 
 const databaseRecord = {
   id: 1,
+  user_id: "user-1",
   spotify_track_id: "spotify-track-1",
   song_title: "Ditto",
   artist_name: "NewJeans",
@@ -56,10 +76,16 @@ const databaseRecord = {
   emotion_text: "오늘 하루를 위로받은 기분",
   record_date: "2026-07-16",
   created_at: "2026-07-16T10:30:00.000Z",
+  author: {
+    id: "user-1",
+    nickname: "고요한수영",
+    avatar_url: null,
+  },
 };
 
 const apiRecord = {
   id: 1,
+  userId: "user-1",
   spotifyTrackId: "spotify-track-1",
   songTitle: "Ditto",
   artistName: "NewJeans",
@@ -69,7 +95,19 @@ const apiRecord = {
   emotionText: "오늘 하루를 위로받은 기분",
   recordDate: "2026-07-16",
   createdAt: "2026-07-16T10:30:00.000Z",
+  author: {
+    id: "user-1",
+    nickname: "고요한수영",
+    avatarUrl: null,
+  },
 };
+
+function createAuthenticatedOptions(query, authCalls = []) {
+  return {
+    getSupabase: () => createAuthClient({ calls: authCalls }),
+    getAuthenticatedSupabase: () => query,
+  };
+}
 
 describe("SWIM API", () => {
   it("returns the health status", async () => {
@@ -79,40 +117,73 @@ describe("SWIM API", () => {
     assert.deepEqual(await response.json(), { status: "ok" });
   });
 
-  it("returns ordered camelCase music records", async () => {
+  it("rejects a music record request without a bearer token", async () => {
+    const baseUrl = await startApp();
+    const response = await fetch(`${baseUrl}/api/music-records`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ songTitle: "Ditto", artistName: "NewJeans", emotionText: "하루" }),
+    });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), {
+      error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." },
+    });
+  });
+
+  it("rejects an invalid bearer token", async () => {
+    const authCalls = [];
+    const baseUrl = await startApp({
+      getSupabase: () => createAuthClient({
+        user: null,
+        error: new Error("invalid token"),
+        calls: authCalls,
+      }),
+    });
+    const response = await fetch(`${baseUrl}/api/music-records`, { headers: authHeaders });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(authCalls, [["getUser", "valid-access-token"]]);
+  });
+
+  it("returns only the authenticated user's ordered music records with author data", async () => {
     const calls = [];
     const query = createSupabaseQuery({ data: [databaseRecord], error: null }, calls);
-    const baseUrl = await startApp({ getSupabase: () => query });
+    const baseUrl = await startApp(createAuthenticatedOptions(query));
 
-    const response = await fetch(`${baseUrl}/api/music-records`);
+    const response = await fetch(`${baseUrl}/api/music-records`, { headers: authHeaders });
+
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { data: [apiRecord] });
+    assert.deepEqual(calls.find(([name]) => name === "eq"), ["eq", "user_id", "user-1"]);
     assert.deepEqual(calls.filter(([name]) => name === "order"), [
       ["order", "record_date", { ascending: false }],
       ["order", "created_at", { ascending: false }],
     ]);
   });
 
-  it("returns an empty data array", async () => {
+  it("returns an empty data array for an authenticated user without records", async () => {
     const query = createSupabaseQuery({ data: [], error: null });
-    const baseUrl = await startApp({ getSupabase: () => query });
-    const response = await fetch(`${baseUrl}/api/music-records`);
+    const baseUrl = await startApp(createAuthenticatedOptions(query));
+    const response = await fetch(`${baseUrl}/api/music-records`, { headers: authHeaders });
+
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { data: [] });
   });
 
-  it("creates a trimmed Spotify-backed record with the server date", async () => {
+  it("creates a trimmed record using only the authenticated user's id", async () => {
     const calls = [];
     const query = createSupabaseQuery({ data: databaseRecord, error: null }, calls);
     const baseUrl = await startApp({
-      getSupabase: () => query,
+      ...createAuthenticatedOptions(query),
       getCurrentDate: () => "2026-07-16",
     });
 
     const response = await fetch(`${baseUrl}/api/music-records`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...authHeaders, "Content-Type": "application/json" },
       body: JSON.stringify({
+        userId: "other-user",
         spotifyTrackId: " spotify-track-1 ",
         songTitle: "  Ditto  ",
         artistName: " NewJeans ",
@@ -126,6 +197,7 @@ describe("SWIM API", () => {
     assert.equal(response.status, 201);
     assert.deepEqual(await response.json(), { data: apiRecord });
     assert.deepEqual(calls.find(([name]) => name === "insert"), ["insert", {
+      user_id: "user-1",
       spotify_track_id: "spotify-track-1",
       song_title: "Ditto",
       artist_name: "NewJeans",
@@ -137,11 +209,12 @@ describe("SWIM API", () => {
     }]);
   });
 
-  it("rejects empty required values", async () => {
-    const baseUrl = await startApp();
+  it("rejects empty required values after authentication", async () => {
+    const query = createSupabaseQuery({ data: [], error: null });
+    const baseUrl = await startApp(createAuthenticatedOptions(query));
     const response = await fetch(`${baseUrl}/api/music-records`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...authHeaders, "Content-Type": "application/json" },
       body: JSON.stringify({ songTitle: " ", artistName: "NewJeans", emotionText: "하루" }),
     });
 
@@ -153,10 +226,10 @@ describe("SWIM API", () => {
 
   it("returns the stable internal error response for a failed insert", async () => {
     const query = createSupabaseQuery({ data: null, error: new Error("database unavailable") });
-    const baseUrl = await startApp({ getSupabase: () => query });
+    const baseUrl = await startApp(createAuthenticatedOptions(query));
     const response = await fetch(`${baseUrl}/api/music-records`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...authHeaders, "Content-Type": "application/json" },
       body: JSON.stringify({ songTitle: "Ditto", artistName: "NewJeans", emotionText: "하루" }),
     });
 
