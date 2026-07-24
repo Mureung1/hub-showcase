@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ArrowUpRight, ChevronLeft } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import { ApiClientError } from '../../api/client'
 import mascotComplete from '../../assets/mascot/mascot-default&complete.png'
 import type {
@@ -9,6 +9,7 @@ import type {
   MissionType,
 } from '../../api/types'
 import { CONTENT_TYPE_LABEL, MISSION_TYPE_LABEL } from '../../shared/domain/labels'
+import ScreenHeader from '../../shared/ui/ScreenHeader/ScreenHeader'
 import './Mission.css'
 
 const MISSION_PLACEHOLDER: Record<MissionType, string> = {
@@ -95,17 +96,7 @@ export default function Mission({ article, onBack, onSubmit, onGoToMyGgaem }: Mi
 
   return (
     <div className="app-shell">
-      <header className="mission-header">
-        <button
-          type="button"
-          className="mission-back"
-          aria-label="뒤로가기"
-          onClick={onBack}
-        >
-          <ChevronLeft aria-hidden="true" />
-        </button>
-        <span className="mission-header-label">오늘의 사고 미션</span>
-      </header>
+      <ScreenHeader title="오늘의 사고 미션" onBack={onBack} />
 
       <main className="mission-main">
         <section className="mission-article-card" aria-label="오늘 읽은 글">

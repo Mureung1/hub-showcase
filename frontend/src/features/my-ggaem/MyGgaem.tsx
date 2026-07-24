@@ -4,6 +4,8 @@ import {
   MISSION_TYPE_ORDER,
   URL_STATUS_NOTICE,
 } from '../../shared/domain/labels'
+import BottomTabBar from '../../shared/ui/BottomTabBar/BottomTabBar'
+import ErrorState from '../../shared/ui/ErrorState/ErrorState'
 import './MyGgaem.css'
 
 export type CalendarState =
@@ -196,12 +198,7 @@ export default function MyGgaem({
             <p role="status">달력을 불러오고 있어요...</p>
           )}
           {calendarState.status === 'error' && (
-            <div role="alert">
-              <p>{calendarState.message}</p>
-              <button type="button" className="btn-primary" onClick={calendarState.onRetry}>
-                다시 시도
-              </button>
-            </div>
+            <ErrorState message={calendarState.message} onRetry={calendarState.onRetry} />
           )}
           {calendarState.status === 'success' && calendarState.days.length === 0 && (
             <p className="myggaem-empty-month">이 달에는 기록이 없어요.</p>
@@ -224,12 +221,7 @@ export default function MyGgaem({
 
         {recordsState.status === 'loading' && <p role="status">기록을 불러오고 있어요...</p>}
         {recordsState.status === 'error' && (
-          <div role="alert">
-            <p>{recordsState.message}</p>
-            <button type="button" className="btn-primary" onClick={recordsState.onRetry}>
-              다시 시도
-            </button>
-          </div>
+          <ErrorState message={recordsState.message} onRetry={recordsState.onRetry} />
         )}
         {recordsState.status === 'success' && recordsState.items.length === 0 && (
           <p>이 날짜에는 기록이 없어요.</p>
@@ -283,45 +275,12 @@ export default function MyGgaem({
         )}
       </main>
 
-      <footer className="myggaem-tabbar">
-        <button type="button" className="myggaem-tab" onClick={() => onGoToToday()}>
-          <MyGgaemHomeIcon />
-          오늘의 깸
-        </button>
-        <button
-          type="button"
-          className="myggaem-tab myggaem-tab--active"
-          aria-current="page"
-        >
-          <MyGgaemCalendarIcon />
-          나의 깸
-        </button>
-      </footer>
+      <BottomTabBar
+        activeTab="myGgaem"
+        onChange={(tab) => {
+          if (tab === 'today') onGoToToday()
+        }}
+      />
     </div>
-  )
-}
-
-function MyGgaemHomeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M4 11L12 4l8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1v-8Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
-
-function MyGgaemCalendarIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="4" y="5" width="16" height="15" rx="3" stroke="currentColor" strokeWidth="1.8" />
-      <path
-        d="M4 9h16M8 3v4M16 3v4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
   )
 }

@@ -1,6 +1,8 @@
 import ArticleCard from './components/ArticleCard'
 import type { TodayArticle } from '../../api/types'
 import mascotMy from '../../assets/mascot/mascot-my.png'
+import BottomTabBar from '../../shared/ui/BottomTabBar/BottomTabBar'
+import ErrorState from '../../shared/ui/ErrorState/ErrorState'
 import './Today.css'
 
 export type TodayState =
@@ -54,12 +56,7 @@ export default function Today({
         {state.status === 'loading' && <p role="status">불러오고 있어요...</p>}
 
         {state.status === 'error' && (
-          <div role="alert">
-            <p>{state.message}</p>
-            <button type="button" className="btn-primary" onClick={state.onRetry}>
-              다시 시도
-            </button>
-          </div>
+          <ErrorState message={state.message} onRetry={state.onRetry} />
         )}
 
         {state.status === 'success' && state.items.length === 0 && (
@@ -94,41 +91,12 @@ export default function Today({
         )}
       </main>
 
-      <footer className="today-tabbar">
-        <button type="button" className="today-tab today-tab--active">
-          <HomeIcon />
-          오늘의 깸
-        </button>
-        <button type="button" className="today-tab" onClick={() => onGoToMyGgaem()}>
-          <CalendarIcon />
-          나의 깸
-        </button>
-      </footer>
+      <BottomTabBar
+        activeTab="today"
+        onChange={(tab) => {
+          if (tab === 'myGgaem') onGoToMyGgaem()
+        }}
+      />
     </div>
-  )
-}
-
-function HomeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M4 11L12 4l8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1v-8Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
-
-function CalendarIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="4" y="5" width="16" height="15" rx="3" stroke="currentColor" strokeWidth="1.8" />
-      <path
-        d="M4 9h16M8 3v4M16 3v4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
   )
 }

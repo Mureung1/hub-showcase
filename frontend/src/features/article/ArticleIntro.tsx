@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { ChevronLeft, ExternalLink } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import Mission from '../mission/Mission'
 import type { ArticleDetail, CreateMissionRecordRequest, MissionRecord } from '../../api/types'
 import { CONTENT_TYPE_LABEL, URL_STATUS_NOTICE } from '../../shared/domain/labels'
+import ErrorState from '../../shared/ui/ErrorState/ErrorState'
+import ScreenHeader from '../../shared/ui/ScreenHeader/ScreenHeader'
 import './ArticleIntro.css'
 
 export type ArticleIntroState =
@@ -39,28 +41,13 @@ export default function ArticleIntro({
 
   return (
     <div className="app-shell">
-      <header className="article-intro-header">
-        <button
-          type="button"
-          className="article-intro-back"
-          aria-label="뒤로가기"
-          onClick={onBack}
-        >
-          <ChevronLeft aria-hidden="true" />
-        </button>
-        <span className="article-intro-header-label">오늘의 글</span>
-      </header>
+      <ScreenHeader title="오늘의 글" onBack={onBack} />
 
       <main className="article-intro-main">
         {state.status === 'loading' && <p role="status">글을 불러오고 있어요...</p>}
 
         {state.status === 'error' && (
-          <div role="alert">
-            <p>{state.message}</p>
-            <button type="button" className="btn-primary" onClick={state.onRetry}>
-              다시 시도
-            </button>
-          </div>
+          <ErrorState message={state.message} onRetry={state.onRetry} />
         )}
 
         {state.status === 'success' && (
