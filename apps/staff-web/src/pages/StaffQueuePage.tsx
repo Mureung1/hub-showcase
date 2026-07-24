@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PatientCategorySettingsModal } from "../components/PatientCategorySettingsModal";
-import { PatientCountStepper } from "../components/PatientCountStepper";
+import { PatientCountStepper } from "@baro-jinryo/web-shared";
 
 interface StaffQueuePageProps {
   entries: QueueEntry[];

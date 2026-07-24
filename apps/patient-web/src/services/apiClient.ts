@@ -6,6 +6,7 @@ import type {
   QueuePosition,
 } from "@baro-jinryo/shared";
 import { healthResponseSchema } from "@baro-jinryo/shared";
+import { createJsonRequester } from "@baro-jinryo/web-shared";
 import { getSupabaseClient } from "./supabaseClient";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
@@ -17,19 +18,13 @@ export interface PatientProfile {
   status: "active" | "suspended" | "withdrawn";
 }
 
-async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const { data } = await getSupabaseClient().auth.getSession();
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(data.session ? { Authorization: `Bearer ${data.session.access_token}` } : {}),
-      ...init?.headers,
-    },
-  });
-  if (!response.ok) throw new Error(`API 요청 실패: ${response.status}`);
-  return (await response.json()) as T;
-}
+const requestJson = createJsonRequester({
+  baseUrl: apiBaseUrl,
+  getAccessToken: async () => {
+    const { data } = await getSupabaseClient().auth.getSession();
+    return data.session?.access_token;
+  },
+});
 
 export async function getApiHealth(signal?: AbortSignal): Promise<HealthResponse> {
   const result = await requestJson<unknown>("/health/live", { signal: signal ?? null });
