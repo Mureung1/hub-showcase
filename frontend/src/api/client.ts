@@ -1,4 +1,4 @@
-import { getAccessToken } from '../lib/supabase'
+import { getAccessToken } from '../auth/supabase'
 import type {
   ArticleDetail,
   CreateMissionRecordRequest,
