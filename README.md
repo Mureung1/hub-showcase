@@ -30,6 +30,7 @@ hub/
   server/          product 전용 Express API
   agent/           FastAPI·LangGraph 에이전트 서비스
   docs/            기획·아키텍처·데이터·에이전트·디자인 문서
+  showcase/        챌린지 쇼케이스 메타데이터
 ```
 
 각 디렉터리는 독립 실행 환경이며 코드와 `node_modules`를 공유하지 않습니다.
@@ -86,6 +87,13 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
+Express의 통계 집계 규칙은 vitest로 검증합니다.
+
+```powershell
+cd server
+npm.cmd test
+```
+
 Express의 통계 집계는 `server/data/backend-postings.sample.json`을 Supabase에 적재한 뒤 `/api/stats?job=backend`에서 확인합니다.
 
 ## 문서
@@ -97,7 +105,7 @@ Express의 통계 집계는 `server/data/backend-postings.sample.json`을 Supaba
 - [디자인 컨셉](docs/design-concept.md): 화면 구조와 정보 위계
 - [디자인 토큰](docs/design-tokens.md): 색상·레이아웃·컴포넌트 규칙
 - [개발 백로그](docs/backlog.md): 주차별 이니셔티브·우선순위·완료 조건
-- [릴리스 체크리스트](docs/checklist.md): MVP·최종 결과물 수용 기준
+- [검증 체크리스트](docs/checklist.md): MVP·최종 결과물 수용 기준
 - [GitHub Projects](https://github.com/users/joo-hyun/projects/2): Issue 실행 상태와 일정
 - [Wiki](https://github.com/joo-hyun/hub/wiki)
 

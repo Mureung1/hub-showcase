@@ -11,6 +11,7 @@
 | 전체 서비스 구조 | 자료 수집부터 저장 결과 조회까지의 구성요소와 경계 | 이 문서 3장 |
 | 데이터·에이전트 실행 흐름 | 데이터 변경, 영향 범위 계산, 다섯 에이전트 실행과 버전 활성화 | 이 문서 5장 |
 | 에이전트 내부 구조 | 각 에이전트의 검색·생성·검증 단계와 산출물 의존성 | [에이전트 설계](agent-design.md) 5~11장 |
+| 사용자 공고 직접 입력 | 캐시 조회와 온디맨드 개별 분석 체인 | 이 문서 11장 |
 
 ## 2. 시스템 범위
 
@@ -30,47 +31,73 @@ CareerSignal은 채용공고와 근거 자료를 직무 단위로 분석해 통�
 
 ```mermaid
 flowchart TB
-    SOURCES["기업 채용 페이지·공식 자료<br/>공공 표준·외부 전략 자료"] --> KNOWLEDGE["데이터·지식 에이전트"]
-    CHANGE["데이터 변경"] --> ORCHESTRATOR["분석 오케스트레이터<br/>영향 범위·실행 순서 결정"]
-    ORCHESTRATOR --> KNOWLEDGE
-    KNOWLEDGE --> RAW_STORE[("Raw 원문·출처 저장소")]
-    KNOWLEDGE --> WIKI_STORE[("Wiki·청크·벡터 인덱스")]
-    KNOWLEDGE --> GRAPH_STORE[("지식 그래프")]
+    subgraph AGENT["배치 분석 · agent"]
+        ORCHESTRATOR["분석 오케스트레이터<br/>영향 범위·실행 순서 결정"]
+        KNOWLEDGE["데이터·지식 에이전트"]
+        RETRIEVAL["Hybrid RAG 조회 계층<br/>SQL·키워드·벡터·그래프"]
+        STATISTICS["통계 분석 에이전트"]
+        INTERPRETATION["채용공고 해석 에이전트"]
+        STRATEGY["합격 전략 에이전트"]
+        ROADMAP["준비 로드맵 에이전트"]
+        VERIFIER["통합 Verifier"]
+    end
 
-    RAW_STORE --> RETRIEVAL["Hybrid RAG 조회 계층<br/>SQL·키워드·벡터·그래프"]
+    subgraph STORE["저장소 · Supabase"]
+        RAW_STORE[("Raw 원문·출처 저장소")]
+        WIKI_STORE[("Wiki·청크·벡터 인덱스")]
+        GRAPH_STORE[("지식 그래프")]
+        STATISTICS_OUT[("통계 분석 결과")]
+        INTERPRETATION_OUT[("채용공고 해석 결과")]
+        STRATEGY_OUT[("체크리스트·합격 전략")]
+        ROADMAP_OUT[("기본 로드맵·학습 전략")]
+        ACTIVE[("활성 분석 버전")]
+    end
+
+    subgraph SERVER["조회 런타임 · server"]
+        API["Express API"]
+        COMPOSER["준비 현황·로드맵 조합기"]
+    end
+
+    SOURCES["기업 채용 페이지·공식 자료<br/>공공 표준·외부 전략 자료"] --> KNOWLEDGE
+    CHANGE["데이터 변경"] --> ORCHESTRATOR
+    ORCHESTRATOR --> KNOWLEDGE
+    KNOWLEDGE --> RAW_STORE
+    KNOWLEDGE --> WIKI_STORE
+    KNOWLEDGE --> GRAPH_STORE
+    RAW_STORE --> RETRIEVAL
     WIKI_STORE --> RETRIEVAL
     GRAPH_STORE --> RETRIEVAL
 
-    ORCHESTRATOR --> STATISTICS["통계 분석 에이전트"]
+    ORCHESTRATOR --> STATISTICS
     RETRIEVAL --> STATISTICS
-    STATISTICS --> STATISTICS_OUT[("통계 분석 결과")]
+    STATISTICS --> STATISTICS_OUT
 
-    ORCHESTRATOR --> INTERPRETATION["채용공고 해석 에이전트"]
+    ORCHESTRATOR --> INTERPRETATION
     RETRIEVAL --> INTERPRETATION
     STATISTICS_OUT --> INTERPRETATION
-    INTERPRETATION --> INTERPRETATION_OUT[("채용공고 해석 결과")]
+    INTERPRETATION --> INTERPRETATION_OUT
 
-    ORCHESTRATOR --> STRATEGY["합격 전략 에이전트"]
+    ORCHESTRATOR --> STRATEGY
     RETRIEVAL --> STRATEGY
     STATISTICS_OUT --> STRATEGY
     INTERPRETATION_OUT --> STRATEGY
-    STRATEGY --> STRATEGY_OUT[("체크리스트·합격 전략")]
+    STRATEGY --> STRATEGY_OUT
 
-    ORCHESTRATOR --> ROADMAP["준비 로드맵 에이전트"]
+    ORCHESTRATOR --> ROADMAP
     RETRIEVAL --> ROADMAP
     STATISTICS_OUT --> ROADMAP
     INTERPRETATION_OUT --> ROADMAP
     STRATEGY_OUT --> ROADMAP
-    ROADMAP --> ROADMAP_OUT[("기본 로드맵·학습 전략")]
+    ROADMAP --> ROADMAP_OUT
 
-    STATISTICS_OUT --> VERIFIER["통합 Verifier"]
+    STATISTICS_OUT --> VERIFIER
     INTERPRETATION_OUT --> VERIFIER
     STRATEGY_OUT --> VERIFIER
     ROADMAP_OUT --> VERIFIER
-    VERIFIER --> ACTIVE[("활성 분석 버전")]
+    VERIFIER --> ACTIVE
 
-    ACTIVE --> API["Express · server"]
-    ACTIVE --> COMPOSER["준비 현황·로드맵 조합기"]
+    ACTIVE --> API
+    ACTIVE --> COMPOSER
     CHECKS["범위별 체크 상태"] --> COMPOSER
     COMPOSER --> API
     API --> UI["React · product"]
@@ -120,6 +147,7 @@ sequenceDiagram
     Orchestrator->>Knowledge: 영향 자료 수집·지식 갱신
     Knowledge->>DB: Raw·Wiki·벡터·그래프 저장
     Orchestrator->>Statistics: 영향 직무·범위 통계 실행
+    Statistics->>DB: 범위별 공고 원문·정형 추출 조회
     Statistics->>DB: 정형 추출·통계 결과 저장
     Orchestrator->>Interpretation: 영향 범위 채용공고 해석 실행
     Interpretation->>DB: 통계·원문·공식 근거 조회
@@ -281,6 +309,29 @@ generated_at
 ## 11. 사용자 공고 직접 입력
 
 사용자가 입력한 공고는 통계와 직무 기준선에 포함하지 않는다. Express는 입력 길이와 요청 빈도를 제한하고 개인정보 패턴을 제거한 뒤 원문 해시와 데이터·모델·프롬프트 버전으로 동일 분석 캐시를 조회한다. 캐시가 없으면 FastAPI의 온디맨드 개별 분석을 호출한다.
+
+```mermaid
+sequenceDiagram
+    participant User as 사용자
+    participant UI as React
+    participant API as Express
+    participant Agent as FastAPI 온디맨드 체인
+    participant DB as Supabase
+
+    User->>UI: 공고 원문 입력
+    UI->>API: 개별 분석 요청
+    API->>API: 길이·빈도 제한, 개인정보 패턴 제거
+    API->>DB: 원문 해시·버전으로 동일 분석 캐시 조회
+    alt 캐시 있음
+        DB-->>API: 저장된 개별 분석 결과
+    else 캐시 없음
+        API->>Agent: 공고 추출·해석·전략·로드맵 실행
+        Agent->>DB: 활성 버전의 통계·지식 자산 조회
+        Agent->>DB: 개별 분석 결과 저장
+        Agent-->>API: 개별 분석 결과
+    end
+    API-->>UI: 채용공고 해석·합격 전략·준비 로드맵
+```
 
 로그인과 사용자별 영구 저장은 이 경로의 필수 조건이 아니다. 비로그인 사용자는 브라우저 세션과 저장 범위에서 결과와 체크 상태를 사용한다.
 
