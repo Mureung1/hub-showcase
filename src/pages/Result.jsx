@@ -13,6 +13,7 @@ import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { displayProductName, nutrientLabel, productsForNutrient } from '../data/coupangProducts.js'
 import { geminiCompleteWithRetry, parseJsonLoose } from '../lib/gemini.js'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
+import { clampExpectedForItems, enrichExpectedFromDB } from '../lib/menuNutrition.js'
 import { buildDeficiencyRows, calcAchievementPercent, isSodiumExceeded, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
 
@@ -160,7 +161,12 @@ export default function Result() {
         throw new Error('추천 결과 형식이 올바르지 않습니다.')
       }
 
-      setRecommendations(parsed.recommendations)
+      // 식당 추천(MapPage)과 동일한 보강: AI 추정 expected를 현실 범위로 보정한 뒤
+      // 식약처 DB 실측값으로 대체한다(실패 시 보정된 AI 추정 유지 — menuNutrition.js).
+      const getMenu = (rec) => rec.name
+      let recs = clampExpectedForItems(parsed.recommendations, getMenu)
+      recs = await enrichExpectedFromDB(recs, getMenu)
+      setRecommendations(recs)
     } catch (err) {
       console.error('menu recommendation failed:', err)
       setRecError('메뉴 추천을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')

@@ -17,6 +17,7 @@ import {
   useSelectedFoodCategory,
 } from '../lib/foodCategory.js'
 import { geocodeLocation, reverseGeocode } from '../lib/kakao.js'
+import { clampExpectedForItems, enrichExpectedFromDB } from '../lib/menuNutrition.js'
 import { searchNaverPlaces } from '../lib/naverPlaces.js'
 import { buildDeficiencyRows, isSodiumExceeded } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
@@ -365,7 +366,13 @@ export default function MapPage() {
     // 6) 각 식당의 대표 메뉴 예상 섭취량(추천 근거) 계산해 부착 — 알레르기·나트륨 초과를 대표 메뉴 선정에 반영
     // (예전엔 여기서 스폰서 식당 목업을 4번째 자리에 끼워 넣었지만, 식당 광고는 PRD v2.0 §6에서 이번
     //  릴리즈 스코프 아웃됐다. 광고는 식단 탭의 쿠팡 파트너스 영양제 배너 한 곳으로 통일한다.)
-    return { places: await attachExpectedIntake(filtered, top3Rows, allergyLabels, { sodiumExceeded }), categoryNotice }
+    let withExpected = await attachExpectedIntake(filtered, top3Rows, allergyLabels, { sodiumExceeded })
+    // 7) AI 추정치를 현실 범위로 보정한 뒤(1단계, 비용 0), 식약처 DB 실측값으로 보강한다
+    //    (2단계 — 병렬·캐시·타임아웃, 실패한 메뉴는 보정된 AI 추정 유지. menuNutrition.js).
+    const getMenu = (place) => place.representativeMenu
+    withExpected = clampExpectedForItems(withExpected, getMenu)
+    withExpected = await enrichExpectedFromDB(withExpected, getMenu)
+    return { places: withExpected, categoryNotice }
   }
 
   async function handleFindNearby() {
