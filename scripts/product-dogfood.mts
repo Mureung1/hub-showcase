@@ -1,7 +1,6 @@
 import { constants } from 'node:fs'
 import {
   access,
-  cp,
   lstat,
   mkdir,
   readFile,
@@ -22,7 +21,9 @@ const profileMarkerName = '.ay-ple-dogfood-profile.json'
 const profileMarkerKind = 'ay-ple-persistent-dogfood-profile'
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url))
 const usage =
-  'Usage: npm run dogfood -- --root /absolute/path/to/profile [--adopt-existing]'
+  'Usage: npm run dogfood -- [--root <profile>] [--workspace <workspace>] [--adopt-existing]'
+const defaultProfileRoot = '../.ay-ple-dogfood'
+const defaultWorkspaceRoot = '../workspace/year-2-semester-2'
 
 type ProductDevelopmentStarter = (options: {
   readonly arguments: readonly string[]
@@ -38,9 +39,11 @@ export type DogfoodProfile = {
 export function resolveDogfoodArguments(arguments_: readonly string[]): {
   readonly adoptExisting: boolean
   readonly profileRoot: string
+  readonly workspaceRoot: string
 } {
   let adoptExisting = false
   let profileRoot: string | undefined
+  let workspaceRoot: string | undefined
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index]
     if (argument === '--adopt-existing' && !adoptExisting) {
@@ -48,17 +51,26 @@ export function resolveDogfoodArguments(arguments_: readonly string[]): {
       continue
     }
     if (argument === '--root' && profileRoot === undefined) {
-      profileRoot = arguments_[index + 1]
+      const value = arguments_[index + 1]
+      if (!value) throw new Error(usage)
+      profileRoot = value
+      index += 1
+      continue
+    }
+    if (argument === '--workspace' && workspaceRoot === undefined) {
+      const value = arguments_[index + 1]
+      if (!value) throw new Error(usage)
+      workspaceRoot = value
       index += 1
       continue
     }
     throw new Error(usage)
   }
-  if (!profileRoot) throw new Error(usage)
-  if (!path.isAbsolute(profileRoot)) {
-    throw new Error('Dogfood requires an absolute profile root')
+  return {
+    adoptExisting,
+    profileRoot: profileRoot ?? defaultProfileRoot,
+    workspaceRoot: workspaceRoot ?? defaultWorkspaceRoot,
   }
-  return { adoptExisting, profileRoot }
 }
 
 export async function runDogfood(options: {
@@ -69,10 +81,19 @@ export async function runDogfood(options: {
   readonly startProductDevelopment?: ProductDevelopmentStarter
 }): Promise<void> {
   const selected = resolveDogfoodArguments(options.arguments)
+  const profileRoot = resolveFromPackageRoot(
+    options.packageRoot,
+    selected.profileRoot,
+  )
+  const workspaceRoot = resolveFromPackageRoot(
+    options.packageRoot,
+    selected.workspaceRoot,
+  )
   const profile = await prepareDogfoodProfile({
     adoptExisting: selected.adoptExisting,
     packageRoot: options.packageRoot,
-    profileRoot: selected.profileRoot,
+    profileRoot,
+    workspaceRoot,
   })
   const log = options.log ?? console.log
   log(`Dogfood profile: ${profile.profileRoot}`)
@@ -91,10 +112,12 @@ export async function prepareDogfoodProfile(options: {
   readonly adoptExisting?: boolean
   readonly packageRoot: string
   readonly profileRoot: string
+  readonly workspaceRoot: string
 }): Promise<DogfoodProfile> {
   if (
     !path.isAbsolute(options.packageRoot) ||
-    !path.isAbsolute(options.profileRoot)
+    !path.isAbsolute(options.profileRoot) ||
+    !path.isAbsolute(options.workspaceRoot)
   ) {
     throw new TypeError('Dogfood roots must be absolute directories')
   }
@@ -103,7 +126,13 @@ export async function prepareDogfoodProfile(options: {
     'package root',
   )
   const profileRoot = await canonicalCandidatePath(options.profileRoot)
+  const workspaceRoot = await canonicalDirectory(
+    options.workspaceRoot,
+    'dogfood SemesterWorkspace',
+  )
   assertProductRootsDoNotOverlap(packageRoot, profileRoot)
+  assertProductRootsDoNotOverlap(packageRoot, workspaceRoot)
+  assertProductRootsDoNotOverlap(profileRoot, workspaceRoot)
 
   const existing = await pathExists(profileRoot)
   if (existing) {
@@ -117,36 +146,23 @@ export async function prepareDogfoodProfile(options: {
       await verifyOwnedProfile(profileRoot)
     }
   } else {
-    await initializeProfile(profileRoot, packageRoot)
+    await initializeProfile(profileRoot)
   }
 
   const canonicalProfileRoot = await canonicalDirectory(
     profileRoot,
     'dogfood profile root',
   )
-  const layout = resolveProfileLayout(canonicalProfileRoot)
+  const layout = resolveProfileLayout(canonicalProfileRoot, workspaceRoot)
   await validateProfileLayout(layout)
 
   return layout
 }
 
-async function initializeProfile(
-  profileRoot: string,
-  packageRoot: string,
-): Promise<void> {
+async function initializeProfile(profileRoot: string): Promise<void> {
   await mkdir(profileRoot, { mode: 0o700 })
   const canonicalProfileRoot = await realpath(profileRoot)
-  const layout = resolveProfileLayout(canonicalProfileRoot)
-  const sampleWorkspaceRoot = path.join(
-    packageRoot,
-    'apps/chat-shell/e2e/fixtures/first-assignment-semester-workspace',
-  )
-  await mkdir(layout.appDataRoot, { mode: 0o700 })
-  await cp(sampleWorkspaceRoot, layout.workspaceRoot, {
-    errorOnExist: true,
-    force: false,
-    recursive: true,
-  })
+  await mkdir(path.join(canonicalProfileRoot, 'app-data'), { mode: 0o700 })
   await writeOwnershipMarker(canonicalProfileRoot)
 }
 
@@ -155,17 +171,22 @@ async function adoptExistingProfile(profileRoot: string): Promise<void> {
     profileRoot,
     'dogfood profile root',
   )
-  const layout = resolveProfileLayout(canonicalProfileRoot)
-  await validateProfileLayout(layout)
+  await canonicalDirectory(
+    path.join(canonicalProfileRoot, 'app-data'),
+    'dogfood app data root',
+  )
   await writeOwnershipMarker(canonicalProfileRoot)
 }
 
-function resolveProfileLayout(profileRoot: string): DogfoodProfile {
+function resolveProfileLayout(
+  profileRoot: string,
+  workspaceRoot: string,
+): DogfoodProfile {
   const appDataRoot = path.join(profileRoot, 'app-data')
   return {
     appDataRoot,
     profileRoot,
-    workspaceRoot: path.join(profileRoot, 'semester-workspace'),
+    workspaceRoot,
   }
 }
 
@@ -246,6 +267,13 @@ async function canonicalCandidatePath(candidate: string): Promise<string> {
   }
   await access(parent, constants.R_OK | constants.W_OK | constants.X_OK)
   return path.join(parent, path.basename(path.resolve(candidate)))
+}
+
+function resolveFromPackageRoot(
+  packageRoot: string,
+  candidate: string,
+): string {
+  return path.resolve(packageRoot, candidate)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
