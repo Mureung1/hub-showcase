@@ -110,11 +110,11 @@ Expected: 테이블과 함수가 없어 FAIL.
 | 공부       | slate-2 |
 | 취업       | coral-2 |
 
-나머지 이름은 24개 팔레트 순서로 반복 배정한다. 백필 동안 기존 수정 시각 트리거를 트랜잭션 안에서 비활성화하고, 이전 직후 `updated_at` 변경이나 비어 있지 않은 legacy 문자열 중 `category_id is null`인 행이 있으면 migration을 실패시킨다.
+나머지 이름은 24개 팔레트 순서로 반복 배정한다. 백필 동안 기존 수정 시각 트리거를 트랜잭션 안에서 비활성화하고, 이전 직후 `updated_at` 변경이나 비어 있지 않은 legacy 문자열 중 `category_id is null`인 행이 있으면 migration을 실패시킨다. 복합 외래 키는 먼저 `NOT VALID`로 추가한 뒤 후속 마이그레이션에서 검증한다. 고정한 Supabase CLI 2.109.1은 `CREATE INDEX CONCURRENTLY`를 마이그레이션 파이프라인에서 실행하지 못하므로, 조회 인덱스는 별도 마이그레이션으로 격리하고 잠금·실행 시간을 각각 5초로 제한해 장시간 쓰기 잠금 대신 배포 실패를 선택한다.
 
 롤링 배포 중 열린 구버전 탭을 위해 DB 호환 트리거를 둔다. 구버전의 `category` 변경은 사용자 카테고리를 찾거나 생성해 `category_id`로 연결하고, 새 버전의 `category_id` 변경·카테고리 이름 변경·삭제는 legacy 문자열에도 반영한다. 새 애플리케이션 코드는 legacy 열을 직접 읽거나 쓰지 않는다.
 
-`delete_user_category(uuid)`는 `security invoker`로 작성하고 `authenticated`만 실행한다. 호출 사용자 소유를 확인하고, 같은 사용자의 인사이트만 `category_id = null`로 바꾼 뒤 카테고리를 삭제한다. 어느 단계든 실패하면 transaction 전체를 되돌린다.
+카테고리의 `BEFORE DELETE` 트리거는 같은 사용자의 인사이트만 `category_id = null`로 바꿔 RPC와 직접 삭제 경로에 같은 정책을 적용한다. `delete_user_category(uuid)`는 `security invoker`로 작성하고 `authenticated`만 실행하며, 호출 사용자 소유를 확인한 뒤 카테고리를 삭제한다. 어느 단계든 실패하면 transaction 전체를 되돌린다.
 
 - [ ] **Step 3: 데이터베이스 테스트 실행 후 커밋**
 

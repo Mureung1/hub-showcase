@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(13);
+select extensions.plan(17);
 
 select extensions.has_table(
   'public',
@@ -17,6 +17,23 @@ select extensions.ok(
     where oid = 'public.categories'::regclass
   ),
   '카테고리 테이블에 RLS가 활성화되어 있다'
+);
+
+select extensions.ok(
+  (
+    select convalidated
+    from pg_constraint
+    where conname = 'insights_category_user_id_fkey'
+      and conrelid = 'public.insights'::regclass
+  ),
+  '인사이트와 카테고리의 복합 외래 키가 검증되어 있다'
+);
+
+select extensions.has_index(
+  'public',
+  'insights',
+  'insights_category_user_id_idx',
+  '카테고리별 인사이트 조회 인덱스가 존재한다'
 );
 
 insert into auth.users (id, email)
@@ -157,13 +174,14 @@ select extensions.results_eq(
 );
 
 update public.insights
-set category = '개인 프로젝트'
+set category = '팀프로젝트'
 where id = '30000000-0000-4000-8000-000000000011';
 
 select extensions.results_eq(
   $$
     select
       category.name,
+      category.color_key,
       insight.updated_at > '2026-07-01 00:00:00+00'::timestamptz
     from public.insights as insight
     join public.categories as category
@@ -172,9 +190,9 @@ select extensions.results_eq(
     where insight.id = '30000000-0000-4000-8000-000000000011'
   $$,
   $$
-    values ('개인 프로젝트'::text, true)
+    values ('팀프로젝트'::text, 'amber-2'::text, true)
   $$,
-  '구버전 category 문자열 변경은 카테고리를 연결하고 수정 시각을 갱신한다'
+  '구버전 팀프로젝트 문자열은 지정 색상 카테고리를 연결하고 수정 시각을 갱신한다'
 );
 
 update public.insights
@@ -200,6 +218,58 @@ select extensions.throws_ok(
   '23503',
   null,
   '다른 사용자의 카테고리를 내 인사이트에 연결할 수 없다'
+);
+
+insert into public.categories (
+  id,
+  user_id,
+  name,
+  color_key,
+  sort_order
+) values (
+  '20000000-0000-4000-8000-000000000013',
+  '00000000-0000-4000-8000-000000000011',
+  '직접 삭제',
+  'slate-2',
+  1
+);
+
+insert into public.insights (
+  id,
+  user_id,
+  original_url,
+  normalized_url,
+  domain,
+  title,
+  category_id
+) values (
+  '30000000-0000-4000-8000-000000000013',
+  '00000000-0000-4000-8000-000000000011',
+  'https://category-owner.example/direct-delete',
+  'https://category-owner.example/direct-delete',
+  'category-owner.example',
+  '직접 삭제 검증 인사이트',
+  '20000000-0000-4000-8000-000000000013'
+);
+
+select extensions.lives_ok(
+  $$
+    delete from public.categories
+    where id = '20000000-0000-4000-8000-000000000013'
+  $$,
+  '자신의 카테고리를 직접 삭제할 수 있다'
+);
+
+select extensions.results_eq(
+  $$
+    select count(*)::bigint
+    from public.insights
+    where id = '30000000-0000-4000-8000-000000000013'
+      and category_id is null
+      and category is null
+  $$,
+  array[1::bigint],
+  '직접 삭제해도 연결된 인사이트는 미분류 상태로 남는다'
 );
 
 select extensions.lives_ok(

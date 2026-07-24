@@ -232,11 +232,8 @@ $$;
 alter table public.insights
 add constraint insights_category_user_id_fkey
 foreign key (category_id, user_id)
-references public.categories (id, user_id);
-
-create index insights_category_user_id_idx
-on public.insights (category_id, user_id)
-where category_id is not null;
+references public.categories (id, user_id)
+not valid;
 
 create or replace function public.set_insights_updated_at()
 returns trigger
@@ -358,7 +355,7 @@ begin
     next_color_key := case normalized_legacy_name
       when '개발' then 'green-2'
       when '디자인' then 'blue-2'
-      when '사이드프로젝트' then 'amber-2'
+      when '팀프로젝트' then 'amber-2'
       when '공부' then 'slate-2'
       when '취업' then 'coral-2'
       else color_keys[(next_sort_order % array_length(color_keys, 1)) + 1]
@@ -422,6 +419,27 @@ for each row
 when (new.name is distinct from old.name)
 execute function public.sync_category_name_compatibility();
 
+create function public.detach_insights_before_category_delete()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  update public.insights
+  set category_id = null
+  where category_id = old.id
+    and user_id = old.user_id;
+
+  return old;
+end;
+$$;
+
+create trigger detach_insights_before_category_delete
+before delete on public.categories
+for each row
+execute function public.detach_insights_before_category_delete();
+
 create function public.delete_user_category(target_category_id uuid)
 returns void
 language plpgsql
@@ -447,11 +465,6 @@ begin
       errcode = '42501',
       message = '삭제할 수 있는 카테고리가 아닙니다.';
   end if;
-
-  update public.insights
-  set category_id = null
-  where category_id = target_category_id
-    and user_id = current_user_id;
 
   delete from public.categories
   where id = target_category_id

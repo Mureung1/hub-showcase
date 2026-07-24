@@ -1,0 +1,2 @@
+alter table public.insights
+validate constraint insights_category_user_id_fkey;
