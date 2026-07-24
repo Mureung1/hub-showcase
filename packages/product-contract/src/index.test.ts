@@ -567,7 +567,9 @@ test('Codex Turn settings decoder bounds private Runtime identifiers', () => {
   assert.deepEqual(decodeProductCodexTurnSettings(settings), settings)
   for (const invalid of [
     { ...settings, model: 'm'.repeat(257) },
+    { ...settings, model: '가'.repeat(86) },
     { ...settings, reasoningEffort: 'e'.repeat(65) },
+    { ...settings, reasoningEffort: '가'.repeat(22) },
   ]) {
     assert.throws(
       () => decodeProductCodexTurnSettings(invalid),

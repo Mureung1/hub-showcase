@@ -3,6 +3,7 @@ import {
   invalidContract,
   isExactObject,
   isNonEmptyString,
+  utf8Bytes,
 } from './contract-values.js'
 
 export type ProductCodexReasoningEffort = {
@@ -56,9 +57,9 @@ export function decodeProductCodexTurnSettings(
       'serviceTier',
     ]) ||
     !isNonEmptyString(value.model) ||
-    value.model.length > 256 ||
+    utf8Bytes(value.model) > 256 ||
     !isNonEmptyString(value.reasoningEffort) ||
-    value.reasoningEffort.length > 64 ||
+    utf8Bytes(value.reasoningEffort) > 64 ||
     (value.serviceTier !== 'default' && value.serviceTier !== 'fast')
   ) {
     throw invalidContract()
