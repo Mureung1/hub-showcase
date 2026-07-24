@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: B2b implementation agent
+- Next actor: none
 
 ## Parent Spec
 
@@ -38,23 +38,45 @@ Prepared setup이 A1의 transition lease를 통해 auth-only Runtime을 완전�
 
 ## Acceptance Criteria
 
-- [ ] `pending/prepared`가 A1 transition callback을 요청하고 auth-only close→workspace Runtime→fresh ChatGPT read→native context guard→Ready commit/readback 순서를 우회하지 않는다.
-- [ ] B callback만 `active_ready`를 atomic commit·readback하고 A1 lease는 그 readback 뒤에만 해제된다.
-- [ ] B-owned attestation은 모든 app-wide workspace transition 시작과 성공한 fresh non-ChatGPT account 관찰에서 전부 무효화된다. Workspace B transition이 실패해도 workspace A의 확인은 남지 않고, reconnect 뒤 explicit full `setup.resume` transition만 exact Ready를 다시 확인한다.
-- [ ] Package actual `SIGKILL`은 Ready commit 직전·직후의 setup envelope와 workspace bytes가 complete old-or-new durable state로 수렴하고 partial publish·workspace recreation/deletion이 없음을 증명한다.
-- [ ] Lost response와 repeated launch/resume는 deterministic A1/native callback seam에서 false Ready 없이 one Ready 또는 protected pending state로 수렴한다. Combined A1/native/Runtime OS-process topology의 crash·duplicate-process 증명은 H1d와 I0가 소유한다.
-- [ ] Same-version ready relaunch가 locator 외 v3 aggregate, bundle/static context, exact application/Runtime binding, native config/Skills와 fresh account를 모두 재검증한 뒤 wizard 없이 `ready`를 projection한다.
-- [ ] Credential 문제는 workspace와 locator를 보존한 `account_required/workspace_reauth`로 가고 reconnect 뒤 explicit resume 전에는 Ready를 복원하지 않는다.
-- [ ] Ambiguous Runtime close, account unavailable, release mismatch와 modified/extra/symlink context가 각각 allowlisted protected projection과 action으로 fail closed한다.
-- [ ] Ready projection은 semester/leaf/safe display와 coarse validation 결과만 내보내고 durable phase, path, digest, Runtime/native/account private identity를 노출하지 않는다.
-- [ ] Admitted/prepared/Ready workspace에서 discard/delete가 0건이다. Production `WorkspaceActionAdmission`이 Ready 전과 action-time failure에서 blocked를 반환하면 injected `thread/start`, `thread/resume`, `turn/start`, `SkillInput` callback count가 모두 0이고, positive Ready control에서만 callback이 live임을 증명한다.
-- [ ] B2 전체 owner-held fault/race matrix와 Server projection conformance가 green이다.
+- [x] `pending/prepared`가 A1 transition callback을 요청하고 auth-only close→workspace Runtime→fresh ChatGPT read→native context guard→Ready commit/readback 순서를 우회하지 않는다.
+- [x] B callback만 `active_ready`를 atomic commit·readback하고 A1 lease는 그 readback 뒤에만 해제된다.
+- [x] B-owned attestation은 모든 app-wide workspace transition 시작과 성공한 fresh non-ChatGPT account 관찰에서 전부 무효화된다. Workspace B transition이 실패해도 workspace A의 확인은 남지 않고, reconnect 뒤 explicit full `setup.resume` transition만 exact Ready를 다시 확인한다.
+- [x] Package actual `SIGKILL`은 Ready commit 직전·직후의 setup envelope와 workspace bytes가 complete old-or-new durable state로 수렴하고 partial publish·workspace recreation/deletion이 없음을 증명한다.
+- [x] Lost response와 repeated launch/resume는 deterministic A1/native callback seam에서 false Ready 없이 one Ready 또는 protected pending state로 수렴한다. Combined A1/native/Runtime OS-process topology의 crash·duplicate-process 증명은 H1d와 I0가 소유한다.
+- [x] Same-version ready relaunch가 locator 외 v3 aggregate, bundle/static context, exact application/Runtime binding, native config/Skills와 fresh account를 모두 재검증한 뒤 wizard 없이 `ready`를 projection한다.
+- [x] Credential 문제는 workspace와 locator를 보존한 `account_required/workspace_reauth`로 가고 reconnect 뒤 explicit resume 전에는 Ready를 복원하지 않는다.
+- [x] Ambiguous Runtime close, account unavailable, release mismatch와 modified/extra/symlink context가 각각 allowlisted protected projection과 action으로 fail closed한다.
+- [x] Ready projection은 semester/leaf/safe display와 coarse validation 결과만 내보내고 durable phase, path, digest, Runtime/native/account private identity를 노출하지 않는다.
+- [x] Admitted/prepared/Ready workspace에서 discard/delete가 0건이다. Production `WorkspaceActionAdmission`이 Ready 전과 action-time failure에서 blocked를 반환하면 injected `thread/start`, `thread/resume`, `turn/start`, `SkillInput` callback count가 모두 0이고, positive Ready control에서만 callback이 live임을 증명한다.
+- [x] B2 전체 owner-held fault/race matrix와 Server projection conformance가 green이다.
 
 ## Verification
 
-- Targeted test or command: `@ay-ple/semester-workspace` Ready/relaunch 및 package-only actual-`SIGKILL` durable-byte tests, A1 callback order·attestation invalidation·reauth/resume race matrix, native-context clean/mismatch fixtures와 B-owned Server projection conformance
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
-- Manual or live smoke: Live provider는 요구하지 않는다. Deterministic Runtime/account fake로 first Ready, credential loss·resume, release mismatch와 same-version relaunch를 isolated roots에서 검증한다.
+| Gate | Exact reviewed candidate 결과 |
+| --- | --- |
+| Targeted seam | `@ay-ple/semester-workspace` Ready/relaunch와 package-only actual-`SIGKILL` durable-byte suite, A1 callback order·all-attestation invalidation·reauth/resume race matrix, native-context clean/mismatch fixture와 B-owned Server projection conformance가 모두 green이다. |
+| `npm test` | Exit `0`. Runtime release `360` tests, Server `221` tests, semester-workspace actual-`SIGKILL` suite와 나머지 workspace/camp-demo suites가 모두 통과했다. |
+| `npm run typecheck` | Exit `0`. |
+| `npm run build` | Exit `0`. |
+| `npm run lint -w @ay-ple/chat-shell` | Exit `0`. |
+| `npm run check:docs-links` | Exit `0`; active `28`, historical banners `2`. |
+| `git diff --check` | Exit `0`. |
+| Deterministic smoke | Live provider 없이 isolated app-data/workspace roots와 deterministic Runtime/account ports로 first Ready, credential loss→reconnect→explicit resume, release mismatch와 same-version relaunch를 검증했다. |
+
+## Result
+
+Prepared setup과 same-version relaunch가 A1 transition lease 안에서 authoritative transition order를 통과한 뒤에만 exact workspace의 Ready attestation을 발행한다. 모든 app-wide workspace transition과 성공한 fresh non-ChatGPT account 관찰은 process-local attestation 전체를 폐기하고, durable Ready bytes는 보존한다. Ready Browser projection은 username substring을 포함한 private identity를 redaction하며, B2b가 소유한 durable-byte crash와 action-admission probe 범위는 아래 후속 composition 증거와 구분한다.
+
+| Evidence | Result |
+| --- | --- |
+| Core implementation | `e361d1032`, `275223103`, `b24090bdf`, `b34697d57` — lease-bound Ready commit/relaunch, process-local attestation, private Ready copy redaction과 workspace reauth classification을 구현했다. |
+| Corrective code tip | `1ac52a66438b9eb8589c3c021eee41b2dfee1444` — all-attestation invalidation, successful fresh non-ChatGPT account route 연결, logout→reconnect→explicit resume 회귀, username-substring redaction과 production admission 뒤 injected zero-action probe를 닫았다. |
+| Exact reviewed candidate | `54f66268a229c20e53ac706c80480448419a8acb` — evidence scope와 current implementation 문서를 정확히 교정한 뒤 independent fixed-SHA review를 통과한 candidate다. |
+| Independent review | Fixed point `279f7680a6be3f76e8c1a932d0d22c96cc20d651` 대비 Standards와 parent Spec 두 축 모두 PASS이며 aggregate P0/P1/P2는 `0/0/0`이다. Reviewer가 exact HEAD, merge-base, writable scope, clean status와 `git diff --check`를 다시 확인했다. |
+| C1 handoff | [Ticket 021](021-c1-serial-server-feature-composition.md)이 모든 real action route를 production `WorkspaceActionAdmission` 뒤에 직렬 조합하고 actual route no-bypass를 증명한다. Account route에는 `transition.attestation.invalidateAll()` callback을 연결한다. |
+| H1d handoff | [Ticket 025](025-h1d-browser-signal-lifecycle.md)가 production Host의 browser/signal shutdown과 process-tree lifecycle을 소유한다. B2b의 package `SIGKILL` 증거를 combined A1/native/workspace Runtime OS-process 증거로 확장해 해석하지 않는다. |
+| I0 handoff | [Ticket 026](026-i0-deterministic-setup-ready-integration.md)이 C1 composed route graph의 zero-action/no-bypass와 H1d process lifecycle을 함께 소비해 deterministic production setup→Ready integration을 검증한다. |
+| Completion | B2b 구현, 정확히 한정한 acceptance evidence와 independent review가 완료됐다. Parent Spec은 후속 release tickets가 남아 있으므로 상태를 변경하지 않는다. Canonical integration과 C1/H1d/I0 후속 증거는 coordinator가 DAG 순서로 이어간다. |
 
 ## Claim Evidence
 
