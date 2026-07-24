@@ -6,7 +6,6 @@ import { createShutdownHandler } from "./server/shutdown.js";
 import { createRecurringTask } from "./server/recurringTask.js";
 
 const SHUTDOWN_TIMEOUT_MS = 30_000;
-const WAITING_EXPIRATION_INTERVAL_MS = 60_000;
 
 async function startServer(): Promise<void> {
   await waitForDatabaseAtStartup();
@@ -17,7 +16,7 @@ async function startServer(): Promise<void> {
   });
   const expirationService = createWaitingExpirationService();
   const expirationTask = createRecurringTask({
-    intervalMs: WAITING_EXPIRATION_INTERVAL_MS,
+    intervalMs: env.BACKGROUND_JOB_INTERVAL_MS,
     task: async () => {
       const result = await expirationService.run();
       if (result.lockAcquired && (result.cancelledCount > 0 || result.movedCount > 0)) {

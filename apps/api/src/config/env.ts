@@ -21,7 +21,7 @@ const envSchema = z.object({
     .default("10000000-0000-4000-8000-000000000001"),
   ALLOW_DEV_STAFF_AUTH_BYPASS: z
     .enum(["true", "false"])
-    .default("true")
+    .default("false")
     .transform((value) => value === "true"),
   SUPABASE_URL: z.url().default("https://PROJECT_REF.supabase.co"),
   SUPABASE_PUBLISHABLE_KEY: z.string().min(1).default("sb_publishable_REPLACE_ME"),
@@ -39,6 +39,12 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
+  BACKGROUND_JOB_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .min(1_000)
+    .max(3_600_000)
+    .default(60_000),
 });
 
 export const env = envSchema.parse({
@@ -55,6 +61,7 @@ export const env = envSchema.parse({
   DB_CONNECTION_TIMEOUT_MS: process.env.DB_CONNECTION_TIMEOUT_MS,
   DB_IDLE_TIMEOUT_MS: process.env.DB_IDLE_TIMEOUT_MS,
   DB_SSL_REJECT_UNAUTHORIZED: process.env.DB_SSL_REJECT_UNAUTHORIZED,
+  BACKGROUND_JOB_INTERVAL_MS: process.env.BACKGROUND_JOB_INTERVAL_MS,
 });
 
 if (env.NODE_ENV === "production" && env.ALLOW_DEV_STAFF_AUTH_BYPASS) {
