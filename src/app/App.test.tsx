@@ -3,6 +3,10 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import App from './App'
 import MessageFlow from '../pages/message-flow'
 import { templateCandidatesFor } from '../entities/message/situationTemplates'
+import type {
+  GenerationExecutor,
+  GenerationRequest,
+} from '../shared/generation'
 import type { InteractionEvent } from '../shared/interaction'
 
 afterEach(() => {
@@ -140,7 +144,7 @@ describe('App', () => {
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3))
     expect(screen.getByLabelText('선택한 내용')).toHaveTextContent('선배·동기 · 일정 조율 · 가능한 시간 묻기')
-    expect(screen.getByText('현재는 AI 연결 전 검증용 예시 후보입니다.')).toBeInTheDocument()
+    expect(screen.getByText('개발·테스트용 예시 후보입니다.')).toBeInTheDocument()
     expect(screen.queryByRole('group', { name: '말투 바꾸기' })).toBeNull()
   })
 
@@ -171,7 +175,7 @@ describe('App', () => {
 
     await waitFor(() => expect(screen.queryByText(/방금 고른 세부 답은 반영되지 않았어요/)).toBeNull())
     expect(screen.getByLabelText('선택한 내용')).toHaveTextContent('팀플·조모임 · 일정 조율 · 가능한 시간 묻기')
-    expect(screen.getByText('현재는 AI 연결 전 검증용 예시 후보입니다.')).toBeInTheDocument()
+    expect(screen.getByText('개발·테스트용 예시 후보입니다.')).toBeInTheDocument()
   })
 
   it('guided AI 429도 다른 카드가 아닌 같은 조합의 템플릿으로 fallback한다', async () => {
@@ -728,6 +732,60 @@ describe('App', () => {
     expect(screen.getByText('23/500자')).toBeInTheDocument()
   })
 
+  it('직접 설명 자연어를 별도 형식 요구 없이 생성 executor에 그대로 전달한다', async () => {
+    let capturedRequest: GenerationRequest | undefined
+    const generationExecutor: GenerationExecutor = async (request) => {
+      capturedRequest = request
+      return {
+        ok: true,
+        response: {
+          candidates: [
+            { text: '약속을 미뤄야 할 것 같아 미안해요.', toneLabel: '기본', toneLevel: 1 },
+            {
+              text: '정말 미안하지만 약속을 조금 미뤄도 괜찮을까요?',
+              toneLabel: '더 부드럽게',
+              toneLevel: 2,
+            },
+            { text: '미안해요. 이번 약속은 미뤄야 할 것 같아요.', toneLabel: '더 분명하게', toneLevel: 3 },
+          ],
+          source: 'ai',
+        },
+      }
+    }
+    render(
+      <MessageFlow
+        generationExecutor={generationExecutor}
+        interactionReporter={() => undefined}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /연인냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '내 상황을 직접 설명하기' }))
+
+    expect(
+      screen.getByText(/평소 말하듯 적어주세요. 예: 약속을 미뤄야 해서 정중하게 사과하고 싶어요/),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/입력 내용은 Google Gemini API로 전송돼요/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '사과하기' }))
+    chooseHaeyoSpeechStyle()
+    fireEvent.change(screen.getByLabelText('상황 설명'), {
+      target: { value: '약속을 미뤄야겠다 그리고 정중하게 사과하고싶다' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '보낼 말 3가지 만들기' }))
+
+    await waitFor(() => expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3))
+    expect(capturedRequest).toEqual({
+      mode: 'initiate',
+      purpose: 'apologize',
+      route: 'manual_ai',
+      scenarioId: 'friend',
+      speechStyleId: 'haeyo',
+      situation: '약속을 미뤄야겠다 그리고 정중하게 사과하고싶다',
+    })
+    expect(screen.getByText('약속을 미뤄야 할 것 같아 미안해요.')).toBeInTheDocument()
+  })
+
   it('바로 초안 결과는 같은 관계·카드로 AI 핵심 질문에 이어진다', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
@@ -870,7 +928,7 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: '보낼 말을 만들고 있어요…' })).toBeDisabled()
     expect(screen.getByLabelText('보낼 말 후보를 준비하고 있어요')).toBeInTheDocument()
     await waitFor(() => {
-      expect(screen.getByText('현재는 AI 연결 전 검증용 예시 후보입니다.')).toBeInTheDocument()
+      expect(screen.getByText('개발·테스트용 예시 후보입니다.')).toBeInTheDocument()
     })
     expect(screen.getByRole('heading', { level: 2, name: '어느 톤으로 보낼까냥?' })).toBeInTheDocument()
     expect(screen.getByText(/선배·동기에 맞춰 요체로 같은 뜻을 세 가지 톤으로 준비했어요/)).toBeInTheDocument()
@@ -1289,7 +1347,7 @@ describe('App', () => {
     expect(container).toHaveTextContent('김민서 교수님, 안녕하세요.')
     expect(container).toHaveTextContent('면담 방식: 대면 또는 온라인')
     expect(screen.queryByRole('button', { name: '다시 만들기' })).toBeNull()
-    expect(screen.queryByText('현재는 AI 연결 전 검증용 예시 후보입니다.')).toBeNull()
+    expect(screen.queryByText('개발·테스트용 예시 후보입니다.')).toBeNull()
   })
 
   it('면담 외 이메일 상황은 가능 시간과 면담 방식 없이 공통 입력만 받는다', () => {
