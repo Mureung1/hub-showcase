@@ -26,36 +26,68 @@ function kmaJson(
   };
 }
 
+// 여러 예보 슬롯을 담은 기상청 응답 빌더 (대표 슬롯 선택 검증용).
+function kmaMultiJson(
+  slots: { time: string; values: Record<string, string> }[],
+  date = "20260724",
+  resultCode = "00",
+): unknown {
+  const item = slots.flatMap((s) =>
+    Object.entries(s.values).map(([category, fcstValue]) => ({
+      category,
+      fcstDate: date,
+      fcstTime: s.time,
+      fcstValue,
+    })),
+  );
+  return {
+    response: {
+      header: { resultCode, resultMsg: "NORMAL_SERVICE" },
+      body: { items: { item } },
+    },
+  };
+}
+
 function okResponse(json: unknown): Response {
   return { ok: true, json: async () => json } as unknown as Response;
 }
 
 describe("pickBaseDateTime", () => {
-  it("14:30 → 당일 1400 발표분", () => {
-    expect(pickBaseDateTime(new Date(2026, 6, 13, 14, 30))).toEqual({
+  // 입력은 절대시각(UTC instant)으로 구성한다 — 테스트 러너의 TZ와 무관하게 KST 벽시계 변환을 검증.
+  // (KST = UTC + 9h. 예: KST 14:30 = UTC 05:30 같은 날.)
+  it("KST 14:30(UTC 05:30) → 당일 1400 발표분", () => {
+    expect(pickBaseDateTime(new Date(Date.UTC(2026, 6, 13, 5, 30)))).toEqual({
       baseDate: "20260713",
       baseTime: "1400",
     });
   });
 
-  it("02:05 → 발표+10분 전이라 전날 2300 발표분", () => {
-    expect(pickBaseDateTime(new Date(2026, 6, 13, 2, 5))).toEqual({
+  it("KST 02:05(전날 UTC 17:05) → 발표+10분 전이라 전날 2300 발표분", () => {
+    expect(pickBaseDateTime(new Date(Date.UTC(2026, 6, 12, 17, 5)))).toEqual({
       baseDate: "20260712",
       baseTime: "2300",
     });
   });
 
-  it("02:15 → 당일 0200 발표분", () => {
-    expect(pickBaseDateTime(new Date(2026, 6, 13, 2, 15))).toEqual({
+  it("KST 02:15(전날 UTC 17:15) → 당일 0200 발표분", () => {
+    expect(pickBaseDateTime(new Date(Date.UTC(2026, 6, 12, 17, 15)))).toEqual({
       baseDate: "20260713",
       baseTime: "0200",
     });
   });
 
-  it("00:30 → 전날 2300 발표분", () => {
-    expect(pickBaseDateTime(new Date(2026, 6, 13, 0, 30))).toEqual({
+  it("KST 00:30(전날 UTC 15:30) → 전날 2300 발표분", () => {
+    expect(pickBaseDateTime(new Date(Date.UTC(2026, 6, 12, 15, 30)))).toEqual({
       baseDate: "20260712",
       baseTime: "2300",
+    });
+  });
+
+  it("[회귀] UTC 서버 04:51(=KST 13:51) → 새벽 0200이 아니라 당일 1100 발표분", () => {
+    // Render(UTC)에서 재현된 버그 시나리오: 예전엔 getHours()가 UTC 4시라 base_time 0200이 잡혔다.
+    expect(pickBaseDateTime(new Date(Date.UTC(2026, 6, 24, 4, 51)))).toEqual({
+      baseDate: "20260724",
+      baseTime: "1100",
     });
   });
 });
@@ -92,6 +124,21 @@ describe("parseKmaResponse", () => {
 
   it("resultCode가 00이 아니면 예외", () => {
     expect(() => parseKmaResponse(kmaJson({ TMP: "1" }, "03"))).toThrow(/기상청 응답 오류/);
+  });
+
+  it("[회귀] 현재(KST) 시각에 가장 가까운 슬롯을 대표로 고른다 — 새벽 슬롯 오선택 방지", () => {
+    // UTC 04:51 == KST 13:51. 새벽 0300(24°)과 오후 1400(30°)이 함께 있으면 1400을 골라야 한다.
+    const json = kmaMultiJson([
+      { time: "0300", values: { TMP: "24", REH: "90", POP: "10", PTY: "0", SKY: "1", PCP: "강수없음" } },
+      { time: "1200", values: { TMP: "28", REH: "70", POP: "20", PTY: "0", SKY: "3", PCP: "강수없음" } },
+      { time: "1300", values: { TMP: "29", REH: "68", POP: "20", PTY: "0", SKY: "3", PCP: "강수없음" } },
+      { time: "1400", values: { TMP: "30", REH: "65", POP: "30", PTY: "0", SKY: "4", PCP: "강수없음" } },
+    ]);
+    const now = new Date(Date.UTC(2026, 6, 24, 4, 51)); // == KST 13:51
+    const w = parseKmaResponse(json, now);
+    expect(w.tempC).toBe(30);
+    expect(w.baseDateTime).toBe("2026-07-24T14:00");
+    expect(w.condition).toBe("overcast"); // SKY=4 흐림
   });
 });
 

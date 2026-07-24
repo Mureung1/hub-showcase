@@ -80,6 +80,20 @@ export interface SendCampaignResponse {
   recipients: number;
   /** 발급된 쿠폰 코드 (광고 발송 시). SNS 전용이면 null. */
   couponCode: string | null;
+  /** instagram 채널 게시 결과. 채널에 instagram이 없으면 undefined. */
+  sns?: SnsPublishResult;
+}
+
+/** SNS(인스타그램) 게시 시도 결과. 실게시 성공/실패와 무관하게 caption을 담아 FE 복사 폴백에 쓴다. */
+export interface SnsPublishResult {
+  /** true = 본인 계정에 실제 게시됨(permalink 有), false = 미게시(토큰없음·오류·이미지없음) → 복사 폴백. */
+  posted: boolean;
+  /** 게시 성공 시 게시물 permalink. */
+  permalink?: string;
+  /** 게시하려던(또는 복사할) 캡션. buildSnsCaption 결과. */
+  caption: string;
+  /** 미게시 사유(로그·안내용). */
+  error?: string;
 }
 
 /** GET /campaigns/:id/tracking — 쿠폰 사용·귀속 매출. */

@@ -62,8 +62,8 @@ export const SCENARIOS: Record<ScenarioKey, Scenario> = {
 };
 
 export const CHANNELS: ChannelMeta[] = [
-  { id: "instagram", icon: "📷", label: "인스타그램", desc: "피드 자동 게시", legal: false },
-  { id: "x", icon: "𝕏", label: "X (트위터)", desc: "게시물 자동 업로드", legal: false },
+  { id: "instagram", icon: "📷", label: "인스타그램", desc: "본인 계정 자동 게시", legal: false },
+  { id: "x", icon: "𝕏", label: "X (트위터)", desc: "문구 복사 후 게시", legal: false },
   { id: "dangol", icon: "💬", label: "단골 메시지", desc: "쿠폰 포함 · 광고성 정보", legal: true },
 ];
 
