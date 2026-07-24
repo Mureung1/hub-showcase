@@ -119,7 +119,7 @@ flowchart LR
 
 **1. 환경 변수 파일 생성**
 
-프로젝트 루트에 `.env` 파일을 생성합니다:
+`backend/` 폴더에 `.env` 파일을 생성합니다:
 
 ```
 GOOGLE_API_KEY=발급받은_Gemini_API_키
@@ -131,7 +131,8 @@ USE_MOCK=false
 **2. Python 패키지 설치**
 
 ```
-pip install fastapi uvicorn langchain langchain-google-genai pydantic sqlalchemy python-dotenv requests pytest
+cd backend
+pip install -r requirements.txt
 ```
 
 ### 실행 — 로컬 개발
@@ -139,20 +140,20 @@ pip install fastapi uvicorn langchain langchain-google-genai pydantic sqlalchemy
 **터미널 1 - 백엔드:**
 
 ```
-cd C:\AI_Agent\hub
+cd C:\AI_Agent\hub\backend
 uvicorn main:app --reload --port 8000
 ```
 
 **터미널 2 - 프론트엔드:**
 
 ```
-cd C:\AI_Agent\hub
+cd C:\AI_Agent\hub\frontend
 npm run dev -- --host 127.0.0.1 --port 3000
 ```
 
 브라우저에서 `http://127.0.0.1:3000` 접속.
 
-### 실행 — Docker (MySQL 포함 전체 스택)
+### 실행 — Docker (Supabase 연결 전체 스택)
 
 ```
 cd C:\AI_Agent\hub
@@ -162,10 +163,11 @@ docker compose up --build
 ### 테스트 실행
 
 ```
-python -m pytest test_distance.py -v
+cd backend
+python -m pytest test_distance.py test_sentiment.py -v
 ```
 
-거리 계산 함수(Haversine)는 TDD로 작성되었으며, 7개의 단위 테스트로 검증됩니다.
+거리 계산 함수(Haversine)와 긍정 비율 계산 함수는 TDD로 작성되었으며, 단위 테스트로 검증됩니다.
 
 ## 데이터베이스 스키마
 

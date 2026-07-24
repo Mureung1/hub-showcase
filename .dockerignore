@@ -1,8 +1,0 @@
-__pycache__/
-*.pyc
-node_modules/
-.env
-*.db
-.git/
-.github/
-dist/
