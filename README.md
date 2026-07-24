@@ -65,6 +65,7 @@ MVP에서는 리뷰를 직접 입력하고, 완성된 답글을 복사해 배민
 ├── docs/                # PRD, 아키텍처, 도메인·구현 계약, ADR
 ├── HARNESS/             # Phase 실행·검증 하네스
 ├── prototype/           # HTML·CSS 프로토타입 (index.html, styles.css)
+├── showcase/            # 외부 제출용 프로젝트 소개 (showcase.json)
 ├── LOG.md               # 작업 로그
 └── TODO.md              # 다음 작업
 ```
