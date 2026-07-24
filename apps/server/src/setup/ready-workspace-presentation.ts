@@ -24,19 +24,25 @@ export function createReadyWorkspacePresenter(input: {
   }
   const userHome = input.userHome
   const userName = path.basename(userHome)
-  if (!isSafeSegment(userName)) {
+  if (!isPublicSafeSegment(userName)) {
     throw new TypeError('A safe user home is required')
   }
   return (workspace) => {
     const root = workspace.canonicalRoot
-    const workspaceName = path.basename(root)
+    const workspaceLeaf = path.basename(root)
     if (
       !path.isAbsolute(root) ||
       path.resolve(root) !== root ||
-      !isSafeSegment(workspaceName)
+      !isFilesystemLeaf(workspaceLeaf)
     ) {
       throw new TypeError('A safe workspace leaf is required')
     }
+    const workspaceName =
+      workspaceLeaf.toLowerCase() === userName.toLowerCase() ||
+      hasControl(workspaceLeaf) ||
+      looksPrivate(workspaceLeaf)
+        ? '학기 공간'
+        : workspaceLeaf
     const relative = path.relative(userHome, root)
     const insideHome =
       relative !== '' &&
@@ -48,7 +54,7 @@ export function createReadyWorkspacePresenter(input: {
           ...relative.split(path.sep).filter(Boolean).map(
             (segment, index, segments) =>
               index === segments.length - 1
-                ? segment
+                ? workspaceName
                 : safeBreadcrumbSegment(segment, userName),
           ),
         ].join(' › ')
@@ -124,7 +130,7 @@ function safeBreadcrumbSegment(
   userName: string,
 ): string {
   return (
-    isSafeSegment(segment) &&
+    isPublicSafeSegment(segment) &&
     segment.toLowerCase() !== userName.toLowerCase() &&
     !looksPrivate(segment)
   )
@@ -132,15 +138,18 @@ function safeBreadcrumbSegment(
     : '…'
 }
 
-function isSafeSegment(segment: string): boolean {
+function isFilesystemLeaf(segment: string): boolean {
   return (
     segment.length > 0 &&
     segment !== '.' &&
     segment !== '..' &&
     !segment.includes('/') &&
-    !segment.includes('\\') &&
-    !hasControl(segment)
+    !segment.includes('\\')
   )
+}
+
+function isPublicSafeSegment(segment: string): boolean {
+  return isFilesystemLeaf(segment) && !hasControl(segment)
 }
 
 function looksPrivate(segment: string): boolean {

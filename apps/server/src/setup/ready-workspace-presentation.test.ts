@@ -74,6 +74,30 @@ test('presenter redacts the trusted home leaf if it recurs below home', () => {
   assertSafe(result)
 })
 
+test('presenter replaces a username or private canary leaf only in Browser copy', () => {
+  const present = createReadyWorkspacePresenter({
+    userHome: '/Users/private-user',
+  })
+
+  for (const leaf of [
+    'Private-User',
+    'workspace_deadbeef',
+    'a'.repeat(64),
+    'semester\nprivate',
+  ]) {
+    const result = present(
+      workspace(`/Users/private-user/Documents/${leaf}`),
+    )
+
+    assert.deepEqual(result, {
+      semesterLabel: '2학년 2학기',
+      workspaceName: '학기 공간',
+      safeDisplayLocation: 'Home › Documents › 학기 공간',
+    })
+    assertSafe(result)
+  }
+})
+
 test('presenter canonicalizes known terms and redacts private custom term text', () => {
   const present = createReadyWorkspacePresenter({
     userHome: '/Users/private-user',
@@ -107,20 +131,13 @@ test('presenter canonicalizes known terms and redacts private custom term text',
   assertSafe(digest)
 })
 
-test('presenter rejects noncanonical, separator, and control-bearing leaves', () => {
+test('presenter rejects noncanonical roots and user homes', () => {
   const present = createReadyWorkspacePresenter({
     userHome: '/Users/private-user',
   })
 
   assert.throws(
     () => present(workspace('/Users/private-user/Documents/..')),
-    /safe workspace leaf/,
-  )
-  assert.throws(
-    () =>
-      present(
-        workspace('/Users/private-user/Documents/semester\nprivate'),
-      ),
     /safe workspace leaf/,
   )
   assert.throws(
