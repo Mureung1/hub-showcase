@@ -11,9 +11,9 @@ const availabilityRoutes = require('./routes/availabilityRoutes');
 // Supabase(Postgres) 테이블은 이미 만들어져 있으므로 매 시작마다 확인할 필요 없음.
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-app.use(cors());           // 다른 주소에서 오는 요청 허용
+app.use(cors({ origin: process.env.CLIENT_ORIGIN?.split(',') || 'http://localhost:5173' }));
 app.use(express.json());   // 요청에 담긴 JSON 데이터 읽기
 
 app.get('/', (req, res) => {
