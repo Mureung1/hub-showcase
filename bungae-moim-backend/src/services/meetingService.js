@@ -2,6 +2,8 @@ const pool = require('../config/db');
 const ApiError = require('../utils/apiError');
 const withTransaction = require('../utils/withTransaction');
 const { evaluateApplicability } = require('../utils/participation');
+const { validateUpdateMeeting } = require('../utils/validators');
+const { isAdult } = require('../utils/age');
 
 // status 필터로 허용하는 값. 임의 문자열이 그대로 SQL 조건에 들어가지 않도록 화이트리스트로 검증한다.
 const ALLOWED_STATUS_FILTERS = ['recruiting', 'closed'];
@@ -498,6 +500,86 @@ async function cancelMeeting(meetingId, hostId) {
   return { status: 'cancelled' };
 }
 
+// PATCH /api/meetings/:id — 모임 수정(E4). 모임장만.
+// 상태/정원/adultOnly 가드는 Task 2~4에서 채운다. 여기서는 조회·소유권·type 불변 검증·단순
+// 전체 교체(validateCreateMeeting 재사용)까지만 한다.
+async function updateMeeting(meetingId, hostId, body) {
+  const meetingRes = await pool.query(
+    `SELECT id, host_id, status, type, adult_only, capacity,
+            COALESCE(end_at, start_at) < now() AS is_past
+       FROM meetings WHERE id = $1`,
+    [meetingId]
+  );
+  if (meetingRes.rows.length === 0) {
+    throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
+  }
+  const row = meetingRes.rows[0];
+
+  // host_id는 bigint라 문자열("5")로 온다 — Number로 맞추지 않으면 모임장 본인도 막힌다.
+  if (Number(row.host_id) !== Number(hostId)) {
+    throw new ApiError('FORBIDDEN', '모임장만 모임을 수정할 수 있습니다');
+  }
+
+  const fields = validateUpdateMeeting(body, row.type);
+
+  if (row.status === 'cancelled') {
+    throw new ApiError('VALIDATION_ERROR', '취소된 모임은 수정할 수 없습니다');
+  }
+  if (row.is_past) {
+    throw new ApiError('VALIDATION_ERROR', '종료된 모임은 수정할 수 없습니다');
+  }
+  // 참여자 영향 가드 + flash status 재계산에 쓸 확정 인원. 기준은 코드베이스 전체와
+  // 동일하게 IN ('confirmed','approved') (flash엔 approved가 없어 결과는 confirmed만과 같다).
+  let confirmedCount = 0;
+  if (row.type === 'flash') {
+    const countRes = await pool.query(
+      `SELECT COUNT(*)::int AS n FROM meeting_participants
+        WHERE meeting_id = $1 AND status IN ('confirmed','approved')`,
+      [meetingId]
+    );
+    confirmedCount = countRes.rows[0].n;
+    if (fields.capacity < confirmedCount) {
+      throw new ApiError('VALIDATION_ERROR', '정원은 현재 확정 인원보다 적을 수 없습니다');
+    }
+  }
+  // adultOnly를 새로 켤 때만 검사. 활성 참여자 중 성인이 아닌(미성년 false 또는
+  // 생년월일 미입력 null) 사람이 있으면 거부 — 신청(F1)의 adultOnly 규칙과 일관.
+  if (row.adult_only === false && fields.adultOnly === true) {
+    const partRes = await pool.query(
+      `SELECT u.birth_date
+         FROM meeting_participants mp
+         JOIN users u ON u.id = mp.user_id
+        WHERE mp.meeting_id = $1 AND mp.status IN ('pending','confirmed','approved')`,
+      [meetingId]
+    );
+    const hasNonAdult = partRes.rows.some((r) => isAdult(r.birth_date) !== true);
+    if (hasNonAdult) {
+      throw new ApiError(
+        'VALIDATION_ERROR',
+        '미성년이거나 생년월일 미입력 참여자가 있어 성인 전용으로 바꿀 수 없습니다'
+      );
+    }
+  }
+  // flash는 정원 변경으로 마감 여부가 바뀔 수 있어 status를 다시 맞춘다(표시 정합성).
+  // cancelled는 상태 가드에서 이미 걸러졌다. small은 fullness로 closed가 되지 않으므로 그대로.
+  const nextStatus =
+    row.type === 'flash' ? (confirmedCount >= fields.capacity ? 'closed' : 'recruiting') : row.status;
+
+  const { rows } = await pool.query(
+    `UPDATE meetings SET
+       title=$2, category=$3, description=$4,
+       region_sido=$5, region_sigungu=$6, region_eupmyeondong=$7,
+       start_at=$8, end_at=$9, capacity=$10, adult_only=$11, open_chat_url=$12,
+       status=$13
+     WHERE id=$1 RETURNING *`,
+    [meetingId, fields.title, fields.category, fields.description,
+     fields.regionSido, fields.regionSigungu, fields.regionEupmyeondong,
+     fields.startAt, fields.endAt, fields.capacity, fields.adultOnly, fields.openChatUrl,
+     nextStatus]
+  );
+  return normalizeMeeting(rows[0]);
+}
+
 // GET /api/users/me/hosted-meetings — 내가 등록한 모임(G1). 취소·종료 모임도 포함한다.
 // applicantCount는 활성 신청자 전부(pending+approved+confirmed), pendingCount는 승인 대기.
 // 둘 다 취소·거절은 제외한다. COUNT(*)::int라 값은 숫자로 온다.
@@ -558,6 +640,6 @@ async function listJoinedMeetings(userId) {
 
 module.exports = {
   createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation,
-  listParticipants, respondToApplicant, cancelMeeting, listHostedMeetings, listJoinedMeetings,
+  listParticipants, respondToApplicant, cancelMeeting, updateMeeting, listHostedMeetings, listJoinedMeetings,
   normalizeMeeting, PAGE_SIZE,
 };

@@ -1,6 +1,6 @@
 /* ---- Cards ---- */
 .card {
-  border-radius: var(--radius-app);
+  border-radius: var(--radius-card);
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -10,14 +10,11 @@
 .card--glass {
   background: var(--surface-glass);
   border: 1px solid var(--surface-glass-border);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  box-shadow: var(--shadow-glass);
 }
 
 .card--solid {
   background: var(--surface-solid);
-  box-shadow: var(--shadow-solid);
+  border: 1px solid var(--surface-glass-border);
 }
 
 .card--dark {
@@ -57,7 +54,7 @@
 
 .pill-btn--primary {
   background: var(--ink);
-  color: var(--cream);
+  color: var(--on-ink);
 }
 
 .pill-btn--primary:hover {
@@ -75,7 +72,7 @@
 
 .pill-btn--ghost {
   background: transparent;
-  border: 1px solid var(--line);
+  border: 1px solid var(--ink-mute);
   color: var(--ink);
 }
 
@@ -130,7 +127,7 @@
 .pill-tab.is-active {
   background: var(--ink);
   border-color: var(--ink);
-  color: var(--cream);
+  color: var(--on-ink);
 }
 
 .pill-tab:focus-visible {
@@ -208,10 +205,10 @@
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.55);
-  border-radius: var(--radius-pill);
-  padding: 13px 18px;
+  border: 1px solid var(--surface-glass-border);
+  background: var(--surface-solid);
+  border-radius: 10px;
+  padding: 12px 14px;
   font-size: 14px;
   font-family: var(--font-body);
   color: var(--ink);
@@ -225,10 +222,10 @@
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--surface-glass-border);
+  background: var(--surface-solid);
   border-radius: var(--radius-card);
-  padding: 14px 18px;
+  padding: 14px;
   font-size: 14px;
   font-family: var(--font-body);
   color: var(--ink);
@@ -266,58 +263,94 @@
   color: var(--ink);
 }
 
-/* ---- Bottom nav ---- */
-.bottom-nav {
-  position: fixed;
-  left: 50%;
-  bottom: 16px;
-  transform: translateX(-50%);
-  width: calc(100% - 40px);
-  max-width: 400px;
-  display: flex;
-  justify-content: space-around;
-  padding: 10px 6px;
-  border-radius: var(--radius-pill);
+/* ---- Site header ---- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   background: var(--surface-glass);
-  border: 1px solid var(--surface-glass-border);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  box-shadow: var(--shadow-glass);
-  z-index: 10;
+  border-bottom: 1px solid var(--surface-glass-border);
 }
 
-.bottom-nav-link {
+.site-header-inner {
+  max-width: var(--w-wide);
+  margin: 0 auto;
+  height: var(--header-h);
+  padding: 0 20px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  font-size: 10.5px;
+  gap: 22px;
+}
+
+.site-brand {
+  font-family: var(--font-display);
   font-weight: 700;
+  font-size: 17px;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.site-header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.site-nav-link {
+  font-size: 13.5px;
+  font-weight: 600;
   color: var(--ink-mute);
   text-decoration: none;
-  padding: 6px 14px;
-  border-radius: var(--radius-pill);
-  transition: color 0.15s ease, background 0.15s ease;
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
-.bottom-nav-link.active {
+.site-nav-link:hover {
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.5);
 }
 
-:root[data-theme="dark"] .bottom-nav-link.active {
-  background: rgba(255, 255, 255, 0.1);
+.site-nav-link.active {
+  color: var(--ink);
+  font-weight: 700;
+  border-bottom-color: var(--accent);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .bottom-nav-link.active {
-    background: rgba(255, 255, 255, 0.1);
-  }
+/* 로그아웃은 button이라 브라우저 기본 스타일을 걷어내야 링크와 같아 보인다. */
+.site-nav-button {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
 }
 
-.bottom-nav-icon {
-  font-size: 17px;
-  line-height: 1;
+.site-user {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.site-user-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.site-header-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--surface-glass-border);
 }
 
 /* ---- Meeting card ---- */
@@ -325,17 +358,19 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 18px;
+  padding: 16px;
   border-radius: var(--radius-card);
   background: var(--surface-solid);
-  box-shadow: var(--shadow-solid);
+  border: 1px solid var(--surface-glass-border);
   text-decoration: none;
   color: inherit;
-  transition: transform 0.15s ease;
+  height: 100%;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .meeting-card:hover {
-  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .meeting-card-top {
@@ -379,4 +414,107 @@
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 0.95;
+}
+
+/* ---- Card grids ---- */
+.card-grid--2,
+.card-grid--3 {
+  display: grid;
+  gap: 12px;
+}
+
+.card-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.card-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* ---- 목록 페이지 2단 ---- */
+.list-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.list-filter {
+  position: sticky;
+  top: calc(var(--header-h) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.list-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.list-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---- 상세 페이지 2단 ---- */
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 18px;
+  align-items: start;
+}
+
+.detail-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-aside {
+  position: sticky;
+  top: calc(var(--header-h) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-capacity-bar {
+  height: 6px;
+  background: var(--line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.detail-capacity-fill {
+  height: 100%;
+  background: var(--accent);
+}
+
+/* ---- 좁은 화면: 1열로 접기 (데스크톱 우선, 모바일은 깨지지만 않게) ---- */
+@media (max-width: 900px) {
+  .site-nav {
+    display: none;
+  }
+
+  .site-header-inner {
+    gap: 12px;
+  }
+
+  .list-layout,
+  .detail-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .list-filter,
+  .detail-aside {
+    position: static;
+  }
+
+  .card-grid--2,
+  .card-grid--3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

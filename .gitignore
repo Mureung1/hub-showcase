@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# 브레인스토밍/SDD 스크래치 (커밋 대상 아님)
+.superpowers/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -76,90 +76,109 @@ export default function MeetingListPage() {
   }, [type, category, sido, sigungu, debouncedKeyword])
 
   return (
-    <>
+    <div className="container--wide">
       <PageHeader title="모임 찾기" eyebrow="검색" />
 
-      <Card variant="glass">
-        <PillTabs options={TYPE_OPTIONS} value={type} onChange={setType} ariaLabel="모임 유형" />
-
-        <input
-          className="field-input"
-          type="search"
-          placeholder="제목이나 설명으로 검색"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          aria-label="키워드 검색"
-        />
-
-        <div className="field-row field-row--three">
-          <select className="field-select" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="카테고리">
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <select
-            className="field-select"
-            value={sido}
-            onChange={(e) => {
-              setSido(e.target.value)
-              setSigungu('전체')
-            }}
-            aria-label="시/도"
-          >
-            <option value="전체">시/도 전체</option>
-            {Object.keys(REGIONS).map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-          <select
-            className="field-select"
-            value={sigungu}
-            onChange={(e) => setSigungu(e.target.value)}
-            aria-label="시/군/구"
-            disabled={sido === '전체'}
-          >
-            <option value="전체">시/군/구 전체</option>
-            {sigunguOptions.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </div>
-      </Card>
-
-      {loading && <div className="eyebrow">불러오는 중…</div>}
-
-      {error && (
-        <Card variant="solid">
-          <p style={{ color: 'var(--warning)', fontSize: 13.5, textAlign: 'center' }}>{error}</p>
-        </Card>
-      )}
-
-      {!loading && !error && (
-        <>
-          <div className="eyebrow">
-            {total}개의 모임
-            {total > items.length && ` · ${items.length}개 표시 중`}
+      <div className="list-layout">
+        <Card variant="glass" className="list-filter">
+          <div className="list-filter-group">
+            <span className="eyebrow">유형</span>
+            <PillTabs options={TYPE_OPTIONS} value={type} onChange={setType} ariaLabel="모임 유형" />
           </div>
 
-          {items.length === 0 && (
+          <div className="list-filter-group">
+            <span className="eyebrow">검색어</span>
+            <input
+              className="field-input"
+              type="search"
+              placeholder="제목이나 설명으로"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              aria-label="키워드 검색"
+            />
+          </div>
+
+          <div className="list-filter-group">
+            <span className="eyebrow">카테고리</span>
+            <select className="field-select" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="카테고리">
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="list-filter-group">
+            <span className="eyebrow">지역</span>
+            <select
+              className="field-select"
+              value={sido}
+              onChange={(e) => {
+                setSido(e.target.value)
+                setSigungu('전체')
+              }}
+              aria-label="시/도"
+            >
+              <option value="전체">시/도 전체</option>
+              {Object.keys(REGIONS).map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            <select
+              className="field-select"
+              value={sigungu}
+              onChange={(e) => setSigungu(e.target.value)}
+              aria-label="시/군/구"
+              disabled={sido === '전체'}
+            >
+              <option value="전체">시/군/구 전체</option>
+              {sigunguOptions.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+        </Card>
+
+        <div className="list-results">
+          {loading && <div className="eyebrow">불러오는 중…</div>}
+
+          {error && (
             <Card variant="solid">
-              <p style={{ color: 'var(--ink-mute)', fontSize: 13.5, textAlign: 'center' }}>
-                조건에 맞는 모임이 없어요. 필터를 조정해보세요.
-              </p>
+              <p style={{ color: 'var(--warning)', fontSize: 13.5, textAlign: 'center' }}>{error}</p>
             </Card>
           )}
 
-          {items.map((meeting) => (
-            <MeetingCard key={meeting.id} meeting={meeting} />
-          ))}
-        </>
-      )}
-    </>
+          {!loading && !error && (
+            <>
+              <div className="eyebrow">
+                {total}개의 모임
+                {total > items.length && ` · ${items.length}개 표시 중`}
+              </div>
+
+              {items.length === 0 && (
+                <Card variant="solid">
+                  <p style={{ color: 'var(--ink-mute)', fontSize: 13.5, textAlign: 'center' }}>
+                    조건에 맞는 모임이 없어요. 필터를 조정해보세요.
+                  </p>
+                </Card>
+              )}
+
+              {items.length > 0 && (
+                <div className="card-grid--3">
+                  {items.map((meeting) => (
+                    <MeetingCard key={meeting.id} meeting={meeting} />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }

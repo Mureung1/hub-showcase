@@ -95,6 +95,15 @@ function validateCreateMeeting(body = {}) {
   };
 }
 
+// PATCH /api/meetings/:id (E4). type은 불변이므로 기존 type과 다르면 거부하고,
+// 그 외에는 등록과 동일한 전체 검증을 재사용한다.
+function validateUpdateMeeting(body = {}, existingType) {
+  if (body.type !== existingType) {
+    throw new ApiError('VALIDATION_ERROR', '모임 유형은 변경할 수 없습니다');
+  }
+  return validateCreateMeeting(body);
+}
+
 // PATCH /api/users/me 의 birthDate 검증. 형식 + 실제 달력 날짜 + 미래 아님.
 // 형식만 맞고 존재하지 않는 날짜(2001-02-30 등)를 걸러내려고 UTC로 되짚어 확인한다.
 function validateBirthDate(body = {}) {
@@ -134,6 +143,7 @@ function validateRespondStatus(body) {
 
 module.exports = {
   validateCreateMeeting,
+  validateUpdateMeeting,
   validateBirthDate,
   validateRespondStatus,
   OPEN_CHAT_URL_PATTERN,

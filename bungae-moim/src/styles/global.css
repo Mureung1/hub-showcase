@@ -12,8 +12,7 @@ body {
   margin: 0;
   font-family: var(--font-body);
   color: var(--ink);
-  background: linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
-  background-attachment: fixed;
+  background: var(--bg-top);
 }
 
 a {
@@ -38,60 +37,34 @@ p {
   flex-direction: column;
 }
 
+/* .page는 세로 리듬만 담당한다. 폭은 각 페이지가 .container--*로 고른다. */
 .page {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 440px;
-  margin: 0 auto;
-  padding: 20px 20px 100px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   flex: 1;
+  padding: 28px 0 64px;
 }
 
-.atmosphere {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 0;
+.container--wide,
+.container--narrow {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.5;
+.container--wide {
+  max-width: var(--w-wide);
 }
 
-.orb--a {
-  width: 380px;
-  height: 380px;
-  left: -140px;
-  top: -100px;
-  background: radial-gradient(circle at 35% 30%, var(--accent-glow), transparent 70%);
-  filter: blur(45px);
-}
-
-.orb--b {
-  width: 320px;
-  height: 320px;
-  right: -120px;
-  bottom: 10%;
-  background: radial-gradient(circle at 60% 40%, var(--accent-soft), transparent 70%);
-  filter: blur(55px);
-  opacity: 0.35;
-}
-
-.orb--c {
-  width: 160px;
-  height: 160px;
-  right: 6%;
-  top: 14%;
-  background: radial-gradient(circle at 40% 35%, #ffffff, transparent 72%);
-  filter: blur(2px);
-  opacity: 0.4;
+.container--narrow {
+  max-width: var(--w-narrow);
 }
 
 .eyebrow {

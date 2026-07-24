@@ -26,7 +26,7 @@ export default function BirthDateGate() {
   }
 
   return (
-    <>
+    <div className="container--narrow">
       <PageHeader title="생년월일을 알려주세요" eyebrow="최초 1회 입력" />
       <Card variant="solid">
         <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>
@@ -46,6 +46,6 @@ export default function BirthDateGate() {
           </PillButton>
         </form>
       </Card>
-    </>
+    </div>
   )
 }

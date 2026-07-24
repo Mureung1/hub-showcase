@@ -6,7 +6,7 @@ import Card from '../components/Card.jsx'
 import PillButton from '../components/PillButton.jsx'
 import StatusPill from '../components/StatusPill.jsx'
 import TrustBadge from '../components/TrustBadge.jsx'
-import { meetingStatusMeta, participationStatusMeta, blockReasonLabel } from '../utils/status.js'
+import { meetingStatusMeta, participationStatusMeta, blockReasonLabel, isMeetingEnded } from '../utils/status.js'
 import { formatMeetingSchedule } from '../utils/date.js'
 import { getPendingApplicants, countActiveApplicants } from '../utils/meetings.js'
 import {
@@ -166,12 +166,12 @@ export default function MeetingDetailPage() {
 
   if (loading) {
     return (
-      <>
-        <PageHeader title="모임 정보를 불러오는 중" back />
+      <div className="container--narrow">
+        <PageHeader title="모임 정보를 불러오는 중" />
         <Card variant="solid">
           <p style={{ color: 'var(--ink-mute)', fontSize: 13.5 }}>잠시만 기다려 주세요.</p>
         </Card>
-      </>
+      </div>
     )
   }
 
@@ -181,8 +181,8 @@ export default function MeetingDetailPage() {
     // 새로고침 말고도 빠져나갈 수 있게 다시 시도 버튼을 준다.
     const isNotFound = errorCode === 'NOT_FOUND'
     return (
-      <>
-        <PageHeader title={isNotFound ? '모임을 찾을 수 없어요' : '일시적인 오류예요'} back />
+      <div className="container--narrow">
+        <PageHeader title={isNotFound ? '모임을 찾을 수 없어요' : '일시적인 오류예요'} />
         <Card variant="solid">
           <p style={{ color: 'var(--ink-mute)', fontSize: 13.5 }}>
             {isNotFound ? '삭제되었거나 존재하지 않는 모임이에요.' : '잠시 후 다시 시도해주세요.'}
@@ -193,7 +193,7 @@ export default function MeetingDetailPage() {
             </PillButton>
           )}
         </Card>
-      </>
+      </div>
     )
   }
 
@@ -201,75 +201,52 @@ export default function MeetingDetailPage() {
   const confirmedCount = meeting.confirmedCount
   const myParticipation = meeting.myParticipation
   const pendingApplicants = getPendingApplicants(participants)
-  const isEnded = meeting.status === 'finished' || meeting.status === 'cancelled' || meeting.isPast
+  const isEnded = isMeetingEnded(meeting)
   // 서버가 openChatUrl을 내려줬다는 것 자체가 "볼 자격이 있다"는 뜻이다(E3에서 판단).
   const canSeeOpenChat = Boolean(meeting.openChatUrl)
 
   return (
-    <>
-      <PageHeader title={meeting.type === 'flash' ? '번개모임' : '소모임'} eyebrow={meeting.category} back />
+    <div className="container--wide">
+      <PageHeader title={meeting.type === 'flash' ? '번개모임' : '소모임'} eyebrow={meeting.category} />
 
-      <Card variant="solid">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-          <h2 className="section-title" style={{ fontSize: 20, textWrap: 'balance' }}>
-            {meeting.title}
-          </h2>
-          <StatusPill tone={status.tone}>{status.label}</StatusPill>
-        </div>
+      <div className="detail-layout">
+        <div className="detail-main">
+          <Card variant="solid">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+              <h2 className="section-title" style={{ fontSize: 24, textWrap: 'balance' }}>
+                {meeting.title}
+              </h2>
+              <StatusPill tone={status.tone}>{status.label}</StatusPill>
+            </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 13.5, fontWeight: 700 }}>{meeting.host.nickname}</span>
-          <TrustBadge score={meeting.host.trustScore} />
-          {isHost && <StatusPill tone="accent">내가 만든 모임</StatusPill>}
-        </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13.5, fontWeight: 700 }}>{meeting.host.nickname}</span>
+              <TrustBadge score={meeting.host.trustScore} />
+              {isHost && <StatusPill tone="accent">내가 만든 모임</StatusPill>}
+            </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13.5, color: 'var(--ink-mute)' }}>
-          <span>🗓 {formatMeetingSchedule(meeting)}</span>
-          <span>
-            📍 {meeting.regionSigungu} {meeting.regionEupmyeondong ?? ''}
-          </span>
-          <span>
-            👥 {meeting.type === 'flash' ? `${confirmedCount}/${meeting.capacity}명 확정` : `${confirmedCount}명 참여중 (정원 없음)`}
-          </span>
-          {meeting.adultOnly && <StatusPill tone="warning">성인만 참여 가능</StatusPill>}
-        </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13.5, color: 'var(--ink-mute)' }}>
+              <span>🗓 {formatMeetingSchedule(meeting)}</span>
+              <span>
+                📍 {meeting.regionSigungu} {meeting.regionEupmyeondong ?? ''}
+              </span>
+              <span>
+                👥 {meeting.type === 'flash' ? `${confirmedCount}/${meeting.capacity}명 확정` : `${confirmedCount}명 참여중 (정원 없음)`}
+              </span>
+              {meeting.adultOnly && <StatusPill tone="warning">성인만 참여 가능</StatusPill>}
+            </div>
 
-        <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--ink)' }}>{meeting.description}</p>
-      </Card>
+            <p style={{ fontSize: 14.5, lineHeight: 1.7, color: 'var(--ink)' }}>{meeting.description}</p>
+          </Card>
 
-      {!isLoggedIn && (
-        <Card variant="dark">
-          <div className="eyebrow">참여하려면 로그인하세요</div>
-          <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>로그인 후 참여 신청과 오픈채팅 링크를 확인할 수 있어요.</p>
-          <PillButton to="/login" variant="accent" block>
-            로그인하러 가기
-          </PillButton>
-        </Card>
-      )}
-
-      {isLoggedIn && isHost && (
-        <Card variant="dark">
-          <div className="eyebrow">모임장 관리</div>
-
-          {canSeeOpenChat && (
-            <a
-              href={meeting.openChatUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="pill-btn pill-btn--accent pill-btn--block"
-            >
-              오픈채팅 열기
-            </a>
-          )}
-
-          {meeting.type === 'small' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cream-mute)' }}>
+          {isLoggedIn && isHost && meeting.type === 'small' && (
+            <Card variant="solid">
+              <span style={{ fontSize: 14, fontWeight: 700 }}>
                 신청자 {countActiveApplicants(participants)}명 · 대기중 {pendingApplicants.length}명
               </span>
 
               {participantsError && (
-                <span style={{ fontSize: 13, color: 'var(--cream-mute)' }}>
+                <span style={{ fontSize: 13, color: 'var(--ink-mute)' }}>
                   신청자 목록을 불러오지 못했어요. {participantsError}
                 </span>
               )}
@@ -277,7 +254,7 @@ export default function MeetingDetailPage() {
               {/* 빈 상태는 목록 자체가 비었을 때만. 위 카운트는 취소·거절을 빼므로,
                   카운트 기준으로 판단하면 "신청자가 없어요" 아래에 사람이 깔린다. */}
               {!participantsError && participants.length === 0 && (
-                <span style={{ fontSize: 13, color: 'var(--cream-mute)' }}>아직 신청자가 없어요.</span>
+                <span style={{ fontSize: 13, color: 'var(--ink-mute)' }}>아직 신청자가 없어요.</span>
               )}
 
               {participants.map((p) => {
@@ -291,7 +268,7 @@ export default function MeetingDetailPage() {
                       justifyContent: 'space-between',
                       gap: 8,
                       paddingBottom: 10,
-                      borderBottom: '1px solid rgba(255,255,255,0.1)',
+                      borderBottom: '1px solid var(--line)',
                     }}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -323,48 +300,48 @@ export default function MeetingDetailPage() {
                   </div>
                 )
               })}
-
-            </div>
+            </Card>
           )}
 
-          {!isEnded && !confirmingCancel && (
-            <PillButton variant="ghost" size="sm" onClick={() => setConfirmingCancel(true)}>
-              모임 취소하기
-            </PillButton>
-          )}
+          <PillButton variant="ghost" size="sm" onClick={() => navigate('/meetings')}>
+            ← 목록으로
+          </PillButton>
+        </div>
 
-          {!isEnded && confirmingCancel && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span style={{ fontSize: 13, color: 'var(--cream-mute)' }}>
-                정말 취소할까요? 참여자 전원에게 취소로 표시돼요.
+        <aside className="detail-aside">
+          <Card variant="solid">
+            <div className="eyebrow">참여 인원</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <span className="display-number" style={{ fontSize: 30, color: 'var(--accent)' }}>
+                {confirmedCount}
               </span>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <PillButton
-                  variant="accent"
-                  size="sm"
-                  onClick={handleCancelMeeting}
-                >
-                  네, 취소할게요
-                </PillButton>
-                <PillButton variant="ghost" size="sm" onClick={() => setConfirmingCancel(false)}>
-                  아니요
-                </PillButton>
-              </div>
+              <span style={{ fontSize: 14, color: 'var(--ink-mute)' }}>
+                {meeting.type === 'flash' ? `/ ${meeting.capacity}명` : '명 참여중'}
+              </span>
             </div>
+            {meeting.type === 'flash' && (
+              <div className="detail-capacity-bar">
+                <div
+                  className="detail-capacity-fill"
+                  style={{ width: `${Math.min(100, (confirmedCount / meeting.capacity) * 100)}%` }}
+                />
+              </div>
+            )}
+          </Card>
+
+          {!isLoggedIn && (
+            <Card variant="solid">
+              <div className="eyebrow">참여하려면 로그인하세요</div>
+              <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>로그인 후 참여 신청과 오픈채팅 링크를 확인할 수 있어요.</p>
+              <PillButton to="/login" variant="accent" block>
+                로그인하러 가기
+              </PillButton>
+            </Card>
           )}
-        </Card>
-      )}
 
-      {isLoggedIn && !isHost && (
-        <Card variant="dark">
-          <div className="eyebrow">참여 신청</div>
-
-          {myParticipation && ['pending', 'confirmed', 'approved'].includes(myParticipation.status) ? (
-            // 이미 참여 중: 상태 + (자격 되면) 오픈채팅 + 취소 버튼
-            <>
-              <StatusPill tone={participationStatusMeta(myParticipation.status).tone}>
-                {participationStatusMeta(myParticipation.status).label}
-              </StatusPill>
+          {isLoggedIn && isHost && (
+            <Card variant="solid">
+              <div className="eyebrow">모임장 관리</div>
 
               {canSeeOpenChat && (
                 <a
@@ -377,39 +354,89 @@ export default function MeetingDetailPage() {
                 </a>
               )}
 
-              {myParticipation.status === 'pending' && (
-                <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>
-                  모임장이 확인할 때까지 대기 상태로 유지돼요. 별도 알림은 없으니 마이페이지에서 확인해주세요.
+              {!isEnded && !confirmingCancel && (
+                <PillButton to={`/meetings/${id}/edit`} variant="ghost" size="sm">
+                  모임 수정하기
+                </PillButton>
+              )}
+
+              {!isEnded && !confirmingCancel && (
+                <PillButton variant="ghost" size="sm" onClick={() => setConfirmingCancel(true)}>
+                  모임 취소하기
+                </PillButton>
+              )}
+
+              {!isEnded && confirmingCancel && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <span style={{ fontSize: 13, color: 'var(--ink-mute)' }}>
+                    정말 취소할까요? 참여자 전원에게 취소로 표시돼요.
+                  </span>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <PillButton variant="accent" size="sm" onClick={handleCancelMeeting}>
+                      네, 취소할게요
+                    </PillButton>
+                    <PillButton variant="ghost" size="sm" onClick={() => setConfirmingCancel(false)}>
+                      아니요
+                    </PillButton>
+                  </div>
+                </div>
+              )}
+            </Card>
+          )}
+
+          {isLoggedIn && !isHost && (
+            <Card variant="solid">
+              <div className="eyebrow">참여 신청</div>
+
+              {myParticipation && ['pending', 'confirmed', 'approved'].includes(myParticipation.status) ? (
+                // 이미 참여 중: 상태 + (자격 되면) 오픈채팅 + 취소 버튼
+                <>
+                  <StatusPill tone={participationStatusMeta(myParticipation.status).tone}>
+                    {participationStatusMeta(myParticipation.status).label}
+                  </StatusPill>
+
+                  {canSeeOpenChat && (
+                    <a
+                      href={meeting.openChatUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="pill-btn pill-btn--accent pill-btn--block"
+                    >
+                      오픈채팅 열기
+                    </a>
+                  )}
+
+                  {myParticipation.status === 'pending' && (
+                    <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>
+                      모임장이 확인할 때까지 대기 상태로 유지돼요. 별도 알림은 없으니 마이페이지에서 확인해주세요.
+                    </p>
+                  )}
+
+                  {!isEnded && (
+                    <PillButton variant="ghost" size="sm" onClick={handleCancelParticipation}>
+                      신청 취소하기
+                    </PillButton>
+                  )}
+                </>
+              ) : meeting.canApply ? (
+                // 신청 가능: 버튼. 서버가 canApply로 판정했으므로 FE는 그대로 따른다.
+                <PillButton variant="accent" block onClick={handleApply}>
+                  {meeting.type === 'flash' ? '참여 신청하기' : '참여 신청하기 (모임장 승인 필요)'}
+                </PillButton>
+              ) : (
+                // 신청 불가: 서버 blockReason에 맞는 안내 문구.
+                <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>
+                  {blockReasonLabel(meeting.blockReason)}
                 </p>
               )}
 
-              {!isEnded && (
-                <PillButton variant="ghost" size="sm" onClick={handleCancelParticipation}>
-                  신청 취소하기
-                </PillButton>
+              {actionError && (
+                <p style={{ fontSize: 13, color: 'var(--warning)' }}>{actionError}</p>
               )}
-            </>
-          ) : meeting.canApply ? (
-            // 신청 가능: 버튼. 서버가 canApply로 판정했으므로 FE는 그대로 따른다.
-            <PillButton variant="accent" block onClick={handleApply}>
-              {meeting.type === 'flash' ? '참여 신청하기' : '참여 신청하기 (모임장 승인 필요)'}
-            </PillButton>
-          ) : (
-            // 신청 불가: 서버 blockReason에 맞는 안내 문구.
-            <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>
-              {blockReasonLabel(meeting.blockReason)}
-            </p>
+            </Card>
           )}
-
-          {actionError && (
-            <p style={{ fontSize: 13, color: 'var(--danger, #ffb4a2)' }}>{actionError}</p>
-          )}
-        </Card>
-      )}
-
-      <PillButton variant="ghost" size="sm" onClick={() => navigate('/meetings')}>
-        ← 목록으로
-      </PillButton>
-    </>
+        </aside>
+      </div>
+    </div>
   )
 }

@@ -1,4 +1,4 @@
-// Day5 통합 회귀 테스트: 이번 주 슬라이스(로그인 → 내 정보 → 모임 등록 → 목록 조회)가
+// Day5 통합 회귀 테스트: 이번 주 슬라이스(로그인 → 내 정보 → 모임 등록 → 모임 수정 → 목록 조회)가
 // 한 세션에서 끊김 없이 이어서 동작하는지 확인한다. 각 라우트 단위 테스트는 따로 있으므로
 // 여기서는 "여러 단계가 세션/데이터로 실제로 연결되는지"만 본다.
 jest.mock('../src/services/oauthClients');
@@ -39,7 +39,7 @@ const flashBody = {
   openChatUrl: 'https://open.kakao.com/o/slice-1',
 };
 
-describe('통합 회귀: 로그인 → 내 정보 → 모임 등록 → 목록 조회', () => {
+describe('통합 회귀: 로그인 → 내 정보 → 모임 등록 → 모임 수정 → 목록 조회', () => {
   it('한 세션에서 전체 슬라이스가 이어서 동작한다', async () => {
     const agent = await loginAgent();
 
@@ -57,12 +57,33 @@ describe('통합 회귀: 로그인 → 내 정보 → 모임 등록 → 목록 �
 
     const newId = created.body.data.id;
 
-    // 3) 목록 조회 — 방금 등록한 모임이 바로 조회되고, 목록엔 openChatUrl이 비노출
+    // 3) 모임 수정(E4) — 모임장이 방금 등록한 모임을 수정한다(제목·지역 변경, type·정원 유지).
+    const editRes = await agent
+      .patch(`/api/meetings/${newId}`)
+      .send({
+        type: 'flash',
+        title: '수정된 통합 테스트 모임',
+        category: '운동',
+        description: '수정됨',
+        regionSido: '서울특별시',
+        regionSigungu: '송파구',
+        regionEupmyeondong: null,
+        startAt: '2030-07-09T19:00:00+09:00',
+        endAt: null,
+        capacity: 4,
+        adultOnly: false,
+        openChatUrl: 'https://open.kakao.com/o/slice-1-edited',
+      });
+    expect(editRes.status).toBe(200);
+    expect(editRes.body.data.title).toBe('수정된 통합 테스트 모임');
+    expect(editRes.body.data.regionSigungu).toBe('송파구');
+
+    // 4) 목록 조회 — 수정 후에도 같은 모임이 바뀐 제목으로 조회되고, 목록엔 openChatUrl이 비노출
     const list = await agent.get('/api/meetings');
     expect(list.status).toBe(200);
     const found = list.body.data.items.find((m) => m.id === newId);
     expect(found).toBeDefined();
-    expect(found.title).toBe('통합 회귀 풋살');
+    expect(found.title).toBe('수정된 통합 테스트 모임');
     expect(found).not.toHaveProperty('openChatUrl');
   });
 
