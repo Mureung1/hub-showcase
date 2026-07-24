@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import RouteRegister from "./components/RouteRegister";
 import SavedRoutes from "./components/SavedRoutes";
+import NoticesPanel from "./components/NoticesPanel";
 import Miricat from "./components/Miricat";
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
       </div>
       <RouteRegister onSaved={loadRoutes} />
       <SavedRoutes routes={routes} onRefresh={loadRoutes} />
+      <NoticesPanel routes={routes} />
     </div>
   );
 }

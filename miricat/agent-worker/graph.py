@@ -21,6 +21,7 @@ from langgraph.graph import END, StateGraph
 
 from prompt import SYSTEM_PROMPT
 from schema import Extraction
+from analyst import analyze
 
 # 이 파일 기준 ../.env = miricat/.env (backend/index.js 와 동일 위치)
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -38,6 +39,8 @@ class State(TypedDict):
     source: dict
     seq: str
     tries: int                    # MIRI-14: Verifier 재시도 횟수 (상한 MAX_TRIES)
+    route: Optional[dict]         # MIRI-19: 매칭 대상 내 경로 {lines, stops}
+    analysis: Optional[dict]      # MIRI-19: Analyst 판정 {affected, matched}
     
     
 def scout_node(state: State) -> dict:
@@ -86,19 +89,33 @@ def route_after_verify(state: State) -> str:
     return "ok"                          # 정상 → 끝
 
 
-# ── 그래프 조립: scout → extract ⇄ verify → 끝 (MIRI-14 순환) ─────────
+def analyst_node(state: State) -> dict:
+    # MIRI-19: 추출된 사건이 '내 경로'에 영향 주는지 결정론적 판정 (LLM 아님).
+    route = state.get("route")
+    if not route:
+        return {}                        # 경로 없으면 판정 생략 (러너 기존 호출 호환)
+    return {"analysis": analyze(route, state.get("extraction") or {})}
+
+
+# ── 그래프 조립: scout → extract ⇄ verify → analyst → 끝 ──────────────
 builder = StateGraph(State)
 builder.add_node("extract", extract_node)
-builder.add_node("scout", scout_node)    # MIRI-13: 보초 세우기 노드
-builder.add_node("verify", verify_node)  # MIRI-14: 추출 검증 관문
+builder.add_node("scout", scout_node)      # MIRI-13: 보초 세우기 노드
+builder.add_node("verify", verify_node)    # MIRI-14: 추출 검증 관문
+builder.add_node("analyst", analyst_node)  # MIRI-19: 내 경로 영향 판정
 builder.add_edge("scout", "extract")
-builder.add_edge("extract", "verify")    # 추출 결과는 항상 검증으로
-builder.add_conditional_edges("verify", route_after_verify, {"retry": "extract", "ok": END})
+builder.add_edge("extract", "verify")      # 추출 결과는 항상 검증으로
+builder.add_conditional_edges("verify", route_after_verify, {"retry": "extract", "ok": "analyst"})
+builder.add_edge("analyst", END)
 builder.set_entry_point("scout")
 app = builder.compile()
 
 
-def run(source, seq) -> dict:
-    """공지 원문 하나를 그래프에 넣고 결과 State를 돌려준다."""
-    return app.invoke({"raw_text": "", "extraction": None, "error": None, "source": source, "seq": seq, "tries": 0})
+def run(source, seq, route=None) -> dict:
+    """공지 1건을 그래프에 넣고 결과 State를 돌려준다. route 주면 Analyst가 영향 판정."""
+    return app.invoke({
+        "raw_text": "", "extraction": None, "error": None,
+        "source": source, "seq": seq, "tries": 0,
+        "route": route, "analysis": None,
+    })
 
