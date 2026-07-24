@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "title": "투자분석 웹",
+  "summary": "투자 관련정보를 간편하게 볼수있는 서비스",
+  "githubUser": "jaeho227(이재호)",
+  "demoUrl": "http://localhost:5173/",
+  "thumbnail": "",
+  "screenshots": [],
+  "problem": "",
+  "targetUsers": [],
+  "features": [],
+  "featureTags": [],
+  "techStack": [],
+  "techHighlights": [],
+  "developmentWithAI": "",
+  "agent": {
+    "summary": "",
+    "agentTools": [],
+    "workflows": []
+  }
+}
