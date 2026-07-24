@@ -73,7 +73,7 @@ describe('designTokens', () => {
       'green-2': '#16A34A',
       'green-3': '#166534',
       'indigo-1': '#E0E7FF',
-      'indigo-2': '#6366F1',
+      'indigo-2': '#4F46E5',
       'indigo-3': '#4338CA',
       'slate-1': '#F1F5F9',
       'slate-2': '#64748B',
@@ -82,7 +82,7 @@ describe('designTokens', () => {
       'teal-2': '#0D9488',
       'teal-3': '#115E59',
       'violet-1': '#EDE9FE',
-      'violet-2': '#8B5CF6',
+      'violet-2': '#7C3AED',
       'violet-3': '#6D28D9',
     });
     expect(designTokens.color).toEqual({

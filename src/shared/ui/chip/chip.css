@@ -34,31 +34,8 @@ button.choice-chip[aria-disabled='true'] {
 
 span.category-tag {
   border-radius: var(--radius-button);
+  background: var(--category-color);
+  color: var(--category-foreground);
   cursor: default;
   box-shadow: none;
-}
-
-span.category-tag--amber {
-  background: var(--color-amber);
-  color: var(--color-ink);
-}
-
-span.category-tag--blue {
-  background: var(--color-electric-blue);
-  color: var(--color-canvas);
-}
-
-span.category-tag--coral {
-  background: var(--color-coral);
-  color: var(--color-ink);
-}
-
-span.category-tag--green {
-  background: var(--color-signal-green);
-  color: var(--color-canvas);
-}
-
-span.category-tag--slate {
-  background: var(--color-graphite);
-  color: var(--color-canvas);
 }

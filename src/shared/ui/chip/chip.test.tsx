@@ -165,17 +165,19 @@ describe('ChoiceChip', () => {
 });
 
 describe('CategoryTag', () => {
-  it('renders a static tag with its tone class', () => {
+  it('카테고리 색상 토큰으로 정적 태그를 렌더링한다', () => {
     render(
       <DesignSystemProvider>
-        <CategoryTag tone="coral">개발</CategoryTag>
+        <CategoryTag colorKey="coral-2">개발</CategoryTag>
       </DesignSystemProvider>
     );
 
     const tag = screen.getByText('개발').closest('.category-tag');
 
     expect(tag?.tagName).toBe('SPAN');
-    expect(tag?.classList.contains('category-tag--coral')).toBe(true);
+    expect(tag?.getAttribute('style')).toContain(
+      '--category-color: var(--category-coral-2)'
+    );
     expect(tag?.hasAttribute('role')).toBe(false);
     expect(tag?.hasAttribute('type')).toBe(false);
   });

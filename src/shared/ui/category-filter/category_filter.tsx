@@ -1,13 +1,16 @@
-import { useRef, type KeyboardEvent } from 'react';
+import { useRef, type CSSProperties, type KeyboardEvent } from 'react';
 
-import type { CategoryTone } from '@/shared/ui/chip';
+import {
+  categoryPalette,
+  type CategoryColorKey,
+} from '@/shared/config/design-system';
 
 import './category_filter.css';
 
 export type CategoryFilterOption = {
+  colorKey: CategoryColorKey | null;
   disabled?: boolean;
   label: string;
-  tone: CategoryTone;
   value: string;
 };
 
@@ -91,11 +94,20 @@ export function CategoryFilter({
         >
           <span
             aria-hidden="true"
-            className={`category-filter__mark category-filter__mark--${option.tone}`}
+            className="category-filter__mark"
+            style={getMarkStyle(option.colorKey)}
           />
           <span>{option.label}</span>
         </button>
       ))}
     </div>
   );
+}
+
+function getMarkStyle(colorKey: CategoryColorKey | null) {
+  return {
+    '--category-color': colorKey
+      ? categoryPalette[colorKey].cssVariable
+      : 'var(--color-graphite)',
+  } as CSSProperties;
 }

@@ -39,10 +39,12 @@ const CANVAS_FOREGROUND_KEYS = new Set<CategoryColorKey>([
   'blue-3',
   'coral-3',
   'green-3',
+  'indigo-2',
   'indigo-3',
   'slate-2',
   'slate-3',
   'teal-3',
+  'violet-2',
   'violet-3',
 ]);
 

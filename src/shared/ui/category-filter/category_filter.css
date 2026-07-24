@@ -61,25 +61,6 @@ button.category-filter__item:disabled {
   width: var(--spacing-2);
   height: var(--spacing-2);
   border-radius: var(--radius-button);
+  background: var(--category-color);
   flex: 0 0 auto;
-}
-
-.category-filter__mark--amber {
-  background: var(--color-amber);
-}
-
-.category-filter__mark--blue {
-  background: var(--color-electric-blue);
-}
-
-.category-filter__mark--coral {
-  background: var(--color-coral);
-}
-
-.category-filter__mark--green {
-  background: var(--color-signal-green);
-}
-
-.category-filter__mark--slate {
-  background: var(--color-graphite);
 }

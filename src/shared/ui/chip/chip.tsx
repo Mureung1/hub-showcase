@@ -2,9 +2,15 @@ import {
   forwardRef,
   type ComponentPropsWithoutRef,
   type ReactNode,
+  type CSSProperties,
 } from 'react';
 import { Chip as WdsChip } from '@wanteddev/wds';
 import clsx from 'clsx';
+
+import {
+  categoryPalette,
+  type CategoryColorKey,
+} from '@/shared/config/design-system';
 
 import './chip.css';
 
@@ -12,8 +18,6 @@ type NativeChoiceChipProps = Omit<
   ComponentPropsWithoutRef<'button'>,
   'aria-pressed' | 'color'
 >;
-
-export type CategoryTone = 'amber' | 'blue' | 'coral' | 'green' | 'slate';
 
 export type ChoiceChipProps = NativeChoiceChipProps & {
   leadingContent?: ReactNode;
@@ -53,19 +57,29 @@ export const ChoiceChip = forwardRef<HTMLButtonElement, ChoiceChipProps>(
 export function CategoryTag({
   children,
   className,
-  tone,
+  colorKey,
 }: {
   children: ReactNode;
   className?: string;
-  tone: CategoryTone;
+  colorKey: CategoryColorKey;
 }) {
+  const palette = categoryPalette[colorKey];
+  const style = {
+    '--category-color': palette.cssVariable,
+    '--category-foreground':
+      palette.foreground === 'canvas'
+        ? 'var(--color-canvas)'
+        : 'var(--color-ink)',
+  } as CSSProperties;
+
   return (
     <WdsChip
       {...STATIC_TAG_PROPS}
       as="span"
-      className={clsx('category-tag', `category-tag--${tone}`, className)}
+      className={clsx('category-tag', className)}
       disableInteraction
       size="xsmall"
+      style={style}
       variant="solid"
     >
       {children}
