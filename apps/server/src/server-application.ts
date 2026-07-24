@@ -250,7 +250,6 @@ function createServerExpressApp(
       productOperations
         ? () => codexChat.service.readProductAccountReadiness()
         : undefined,
-      true,
     ),
   )
   return app

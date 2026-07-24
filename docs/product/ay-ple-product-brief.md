@@ -42,7 +42,7 @@ AY-PLE는 새로운 범용 Agent framework를 만드는 제품이 아니다. 일
 
 | 순서 | 학생이 하는 일 | AY-PLE가 하는 일 | 결과 |
 | --- | --- | --- | --- |
-| 1 | 공식 Landing의 exact-version public `npx` 명령으로 AY-PLE을 시작하고, Codex에 연결한 뒤 학년·학기, 생성 위치와 제안된 folder name을 확인·승인한다. | 새 `SemesterWorkspace`를 scaffold하고 workspace instruction/Skill bundle 설치·validation을 끝낸다. | `학기 공간 준비 완료` 상태에서 이후 자료 반입을 시작할 수 있다. |
+| 1 | 개인 dogfood 명령으로 기존 workspace를 연다. | 전역 `CODEX_HOME`의 Codex account와 current-v2 workspace를 연결한다. | 기존 자료와 학기 상태를 그대로 사용한다. |
 | 2 | 기존 자료 폴더나 자료 묶음을 `ImportSource`로 고른다. | AY가 분석을 돕고 App이 mapping·반입 제안을 검증 가능한 형태로 준비한다. | 학생이 검토한 자료만 workspace 안의 `RawMaterial`과 Course 맥락으로 들어온다. |
 | 3 | 이번에 정리할 두 자료를 고른다. | 이번 요청에 사용할 `SourceSelection`을 준비한다. | 이번 작업의 우선 입력이 명확해진다. |
 | 4 | `선택한 자료 정리하기`를 누른다. | Recipe와 이번 입력을 `ModelingInvocation`으로 실행한다. | AY가 과제 후보와 근거를 찾는다. |
@@ -50,7 +50,7 @@ AY-PLE는 새로운 범용 Agent framework를 만드는 제품이 아니다. 일
 | 6 | 수락·수정 요청·거절한다. | 수락과 거절은 `UserConfirmation`을 확정하고, 수락만 반영한다. 수정 요청은 product decision을 확정하지 않고 feedback을 반영한 replacement `StatePatch`를 다시 검토하게 한다. | 확정된 결정과 학기 정보가 남는다. |
 | 7 | 이후 학기 정보를 조회한다. | 확인된 모델에서 일정, 요약 문서 같은 화면을 파생한다. | 원본을 다시 뒤지지 않고 학기를 운영한다. |
 
-첫 public preview의 release claim은 1단계와 같은 명령으로 다시 여는 `ready-relaunch`까지다. 자료 archive/import와 실제 학업 action은 `Semester Ready` 이후의 별도 제품 여정이며, 현재 구현된 First Assignment kernel을 새 scaffold에서 바로 사용할 수 있는 public capability로 과장하지 않는다. 이 setup·relaunch의 제품 범위는 이 Product Brief가 소유한다. macOS-first 제품·OS 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md), exact public 명령과 application↔Runtime distribution 경계는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)을 따른다.
+Public release와 first-run setup claim은 현재 제품 범위가 아니다. Landing·public `npx`·Browser OAuth·app-owned setup graph는 제거됐으며, 현재 제품은 기존 workspace에서 First Assignment kernel을 개인 dogfood하는 범위만 주장한다.
 
 ## 제품 경계
 
@@ -59,9 +59,9 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 | 층 | 책임 | 책임이 아닌 것 |
 | --- | --- | --- |
 | 사용자 | 학년·학기, workspace 생성 위치와 folder name을 최종 확인하고, 자료 반입·학업 작업·변경 제안을 검토한다. | Codex protocol, workspace schema나 프롬프트 조합을 직접 관리할 필요가 없다. |
-| AY-PLE App | Codex 연결 UX와 transient Browser-safe account projection, Browser setup journey, `SemesterWorkspace` scaffold·`WorkspaceManifest`·validation, workspace instruction/Skill bundle, 자료 반입 경계, action UI, 자료 선택, 실행 조합, `StatePatch`, 검토와 저장을 소유한다. | OAuth·token lifecycle을 직접 구현하거나 setup을 live Codex Turn에 맡기고, 외부 `ImportSource`를 임의로 workspace로 채택하거나 모든 학업 작업을 별도 workflow engine으로 소유하지 않는다. |
+| AY-PLE App | 기존 workspace의 자료 반입 경계, action UI, 자료 선택, 실행 조합, `StatePatch`, 검토와 저장을 소유한다. | OAuth·token lifecycle이나 first-run setup을 구현하고, 외부 `ImportSource`를 임의로 workspace로 채택하거나 모든 학업 작업을 별도 workflow engine으로 소유하지 않는다. |
 | AY | 학생과 소통하고 Codex의 작업을 학업 맥락에서 설명하며 변경을 제안한다. | 사용자 대신 학업 사실을 확정하지 않는다. |
-| Codex | Managed ChatGPT login·credential과 대화·작업 실행, Skills, 파일·도구 사용과 선택적인 native context를 제공하는 실행 엔진이다. | `SemesterModel`이나 학업 검토 정책의 source of truth가 아니다. |
+| Codex | 전역 `CODEX_HOME`의 기존 account로 대화·작업 실행, Skills, 파일·도구 사용과 선택적인 native context를 제공하는 실행 엔진이다. | `SemesterModel`이나 학업 검토 정책의 source of truth가 아니다. |
 
 다음 항목은 의도적으로 만들지 않는다.
 
@@ -73,17 +73,17 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 
 ## 제품 제공 형태
 
-첫 public 제품 진입점은 공식 product homepage인 Landing에서 exact-version public `npx` 명령을 복사해 실행하고, local companion과 browser UI를 여는 **macOS-first local web app**이다. Landing은 AY-PLE의 장기 제품 가치와 현재 preview capability를 구분해 보여주며 Docs, public repository와 license·trust 정보로 이어진다. Public source는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)의 clean snapshot·Apache-2.0·trust authority를 따르며, Packaged Desktop App은 이 경로를 검증한 뒤의 후속 로드맵이다.
+현재 제공 형태는 개발 checkout에서 개인 dogfood 명령으로 local companion과 browser UI를 여는 **macOS-first local web app**이다. Landing, public `npx`, packaged distribution과 public release claim은 현재 제품 surface가 아니다.
 
 [Official SDK 기반 Codex Chat Shell](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)과 First Assignment vertical은 native 실행과 학업 product boundary를 검증한 현재 kernel이다. Public `npx` 배포, Browser OAuth와 first-run setup surface는 current graph에서 제거했다. 당시 exact public command·application host·Runtime delivery·offline과 rollback 경계는 historical [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)이 보존한다.
 
-첫 preview의 `Codex 연결`은 AY-PLE이 중재하는 official Codex-managed ChatGPT Browser login이다. 학생은 official OpenAI/Codex tab에서 인증을 마친 뒤 AY-PLE tab으로 돌아오고, 앱이 fresh managed account state를 확인해 setup을 이어간다. Credential bytes는 AY-PLE product surface·API에 전달되지 않고 제품 코드가 parse하지 않으며 별도 인증 완료 receipt도 만들지 않는다. 연결 만료·logout·reauth에도 `SemesterWorkspace`와 학업 상태를 보존한다. 정확한 account·credential authority는 [ADR 0017](../adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md)이 소유한다.
+현재 `Codex 연결`은 별도 제품 UI가 아니라 caller의 전역 `CODEX_HOME`, 또는 미설정 시 `~/.codex`의 기존 account를 읽는 것으로 끝난다. 제거한 managed Browser login 설계는 historical [ADR 0017](../adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md)이 보존한다.
 
 ## 학기 작업공간과 Codex 사용 모델
 
-`SemesterWorkspace`는 학생이 학년·학기, 위치와 editable folder name을 최종 확인하면 AY-PLE이 생성하는 app-owned normalized 학기 공간이다. `WorkspaceManifest`가 학기와 Course의 정체성·관계를 소유하며 폴더명은 사람이 읽기 위한 표현이다. Mandatory setup은 Browser wizard와 App code가 소유하고 Codex `Thread`·live Turn·setup Skill을 사용하지 않는다. Fresh workspace에는 학생에게 built-in instructions·Skills로 보이는 package-owned **workspace instruction/Skill bundle**을 설치하며, App은 이를 `Semester Ready`와 같은 exact application version의 relaunch에서 검증한다. Workspace-local native context가 이 bundle을 가리거나 확장하면 첫 preview는 사용자 byte를 바꾸지 않고 Codex action을 막는다.
+App-owned normalized `SemesterWorkspace`와 `WorkspaceManifest`는 채택된 도메인 목표지만, 이를 만들고 `Semester Ready`로 전환하는 public-preview Server·Browser graph는 제거했다. Current product는 chooser가 넘긴 existing current-v2 workspace만 열며, v3 admission·setup package kernel은 executable consumer가 없는 기반이다.
 
-첫 preview의 기본 설정은 학생이 선택한 학년·학기 metadata와 workspace instruction/Skill bundle뿐이다. Default Course, timezone, locale, model, reasoning effort와 service tier는 setup 완료 조건에 넣지 않는다.
+따라서 current dogfood에는 Browser setup 완료 조건이 없다. Default Course, timezone, locale, model, reasoning effort와 service tier도 startup gate로 만들지 않는다.
 
 기존 폴더나 자료 묶음은 `SemesterWorkspace`가 아니라 외부 `ImportSource`다. 후속 반입 여정에서 분석·mapping 제안과 사용자 검토를 거쳐 workspace 안으로 들어온 뒤에만 `RawMaterial`이 된다. AY-PLE의 runtime 상태는 workspace와 분리하고, app data가 없어져도 workspace identity와 확인된 학기 상태를 다시 열 수 있어야 한다. 정확한 admission·identity 결정은 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), root 소유권은 [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), 현재·목표 실행 경로는 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 소유한다.
 
@@ -101,7 +101,7 @@ Codex의 실행과 보조 맥락은 Course, ModelingRun 또는 확인된 학업 
 
 | 범주 | 개념 | 제품 책임 |
 | --- | --- | --- |
-| setup과 작업 범위 | `SemesterWorkspace`, `WorkspaceManifest`, `Semester Ready` | 학기 공간을 생성·검증하고 이후 다시 열 수 있는 identity와 readiness를 보존한다. |
+| 작업 범위 | existing current-v2 workspace | 기존 학기 상태를 보존하며 다시 열고, public setup·`Semester Ready`를 주장하지 않는다. |
 | 자료 반입 | `ImportSource`, `Course`, `RawMaterial` | 외부 후보와 workspace 안의 검토된 자료를 구분하고 과목 맥락을 보존한다. |
 | canonical 학업 상태 | `Assignment`, `Exam`, `SemesterModel` | 확인된 학업 사실의 owner를 하나로 유지한다. |
 | 제안과 신뢰 | `EvidenceRef`, `StatePatch`, `Review`, `UserConfirmation` | 원본 근거를 보여주고 학생의 결정 뒤에만 상태를 바꾼다. |
@@ -109,7 +109,7 @@ Codex의 실행과 보조 맥락은 Course, ModelingRun 또는 확인된 학업 
 
 `TrustedState`는 별도 저장 container가 아니라 UserConfirmation을 거쳐 SemesterModel에 반영된 정보의 권한 상태다.
 
-Codex account와 credential은 이 제품 상태 표의 durable 학업 authority가 아니다. Official Runtime이 app-managed `CODEX_HOME`의 credential을 소유하고, AY-PLE App은 transient login attempt와 Browser-safe projection만 중재한다. 둘 다 workspace·Course·`ModelingRun` identity와 분리한다.
+Codex account와 credential은 이 제품 상태 표의 durable 학업 authority가 아니다. Official Runtime은 caller의 전역 `CODEX_HOME`, 또는 미설정 시 `~/.codex`를 사용하고 AY-PLE App은 login attempt나 별도 credential projection을 소유하지 않는다. Account는 workspace·Course·`ModelingRun` identity와 분리한다.
 
 ## 상태와 검토 경계
 
@@ -182,12 +182,12 @@ First Assignment vertical은 다음 kernel을 이미 증명했다.
 
 > 학생이 준비된 workspace에서 과제 자료를 선택하고 action을 시작하면, AY가 자료를 읽어 근거 있는 `Assignment` 변경 제안을 만들고, 학생이 확인한 결과만 `SemesterModel`에 반영한다.
 
-첫 public preview는 이 kernel 전체를 새 사용자에게 공개한다고 주장하는 release가 아니다. 공식 Landing에서 public `npx`로 시작해 Codex에 연결하고 app-owned `SemesterWorkspace`를 만들어 `Semester Ready`에 도달한 뒤, 같은 명령으로 안전하게 다시 여는 setup·distribution slice다.
+현재 범위는 이 kernel을 기존 workspace에서 개인 dogfood하는 것이며 새 사용자용 release·setup capability를 주장하지 않는다.
 
 | 분류 | 항목 |
 | --- | --- |
 | 구현된 kernel | TXT `RawMaterial`, Course와 `Assignment`, `ModelingRecipe → ModelingInvocation → ModelingRun` 실행 receipt, 독립된 `StatePatch → Review → UserConfirmation → 확인된 SemesterModel`, `EvidenceRef` |
-| 첫 public preview | 공식 Landing, public `npx`, verified Runtime과 official Codex-managed ChatGPT Browser login, app-owned `SemesterWorkspace` scaffold·validation, `Semester Ready`, `ready-relaunch` |
+| 현재 dogfood | 개발 checkout, 전역 `CODEX_HOME`, existing current-v2 workspace, local companion과 browser UI |
 | release claim 밖 | 자료 archive/import, Course 구성과 자료 기반 학업 action. 구현된 kernel이 있어도 새 scaffold와 잇는 public journey가 없으면 현재 capability로 광고하지 않는다. |
 | 제공 형태 | macOS에서 local companion과 browser UI를 함께 사용하는 local web app. Packaged Desktop App은 후속 |
 | runtime 전제 | First Assignment vertical에서 검증한 observable execution contract, 격리된 제품 layout과 native Codex mapping. 일반 Chat completeness를 전제로 하지 않는다. |
@@ -203,7 +203,7 @@ Multi-conversation catalog, generic transcript persistence, two-client synchroni
 
 Skills는 앱 lifecycle을 흉내 내는 단계명이 아니라 사용자가 반복해서 수행할 **학업 action의 처리 전략**을 담는다.
 
-First-run setup과 `SemesterWorkspace`의 canonical schema·validation은 App code가 소유한다. Setup Skill이나 별도의 “학기 시작 Skill”은 만들지 않는다. Workspace에 설치되는 built-in Skills는 setup orchestration이 아니라 `Semester Ready` 이후 반복 가능한 학업 action의 처리 전략이다. 후속 import에서 Agent 분석을 사용하더라도 App의 검토 가능한 operation과 사용자 승인을 우회하지 않는다.
+Current product는 first-run setup이나 별도의 “학기 시작 Skill”을 제공하지 않는다. Workspace에 설치되는 built-in Skills가 다시 채택되더라도 setup orchestration이 아니라 반복 가능한 학업 action의 처리 전략이어야 한다. 후속 import에서 Agent 분석을 사용하더라도 App의 검토 가능한 operation과 사용자 승인을 우회하지 않는다.
 
 | Recipe 예시 | Skill이 안내할 전략 | 예상 결과 |
 | --- | --- | --- |
@@ -218,7 +218,7 @@ PDF text extraction, OCR, HWP/HWPX parsing처럼 결정적으로 처리할 수 �
 - `RawMaterial`과 `SemesterModel`은 사용자의 로컬 환경에 둔다.
 - `local-first`는 `offline`을 뜻하지 않는다. Codex 실행 중 대화·Agent가 읽은 workspace content·tool result는 provider로 전송될 수 있으며, 정확한 공개 privacy 경계는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)가 소유한다.
 - app-managed runtime 상태와 secret은 Git에 포함하지 않는다.
-- OAuth credential bytes는 AY-PLE product API·Browser storage·`SemesterWorkspace`·product receipt와 public log에 넣지 않고 official Codex Runtime이 소유한다.
+- 전역 Codex credential bytes는 AY-PLE product API·Browser storage·workspace·product receipt와 log에 넣지 않고 official Codex Runtime이 소유한다.
 - 브라우저가 Codex App Server나 파일시스템에 직접 접근하지 않고 local companion server가 중재한다.
 - RawMaterial 원본은 자동 수정하거나 삭제하지 않는다.
 - Codex command/file approval과 학업 정보에 대한 `UserConfirmation`은 별개의 권한 경계다.
@@ -228,18 +228,16 @@ PDF text extraction, OCR, HWP/HWPX parsing처럼 결정적으로 처리할 수 �
 
 | 기준 | 확인할 질문 |
 | --- | --- |
-| public 진입 가능성 | 학생이 공식 Landing의 명령으로 local AY-PLE을 시작하고 현재 prerequisite와 preview 범위를 이해할 수 있는가? |
-| Codex 연결 lifecycle | Fresh login·취소·재시도·relaunch·만료 뒤 reauth·logout이 Browser-safe 상태로 수렴하고 workspace나 학업 상태를 손상하지 않는가? |
-| setup 완료성 | 학생의 생성 승인 뒤 App이 새 `SemesterWorkspace`와 workspace instruction/Skill bundle을 생성·검증하고, Course나 자료가 없어도 정확한 `Semester Ready`를 표시하는가? |
-| 재실행 지속성 | 같은 exact application version의 public 명령으로 다시 실행했을 때 중복 scaffold 없이 workspace·bundle·effective native context·account를 다시 확인하고 준비된 workspace를 여는가? |
-| release claim의 진실성 | post-Ready import와 학업 action을 현재 public capability로 과장하지 않는가? |
+| dogfood 진입 가능성 | 개발 checkout의 개인 dogfood 명령이 기존 workspace와 전역 Codex account로 local AY-PLE을 여는가? |
+| account authority | 제품이 별도 login·credential home을 만들지 않고 전역 `CODEX_HOME`을 사용하는가? |
+| 재실행 지속성 | 같은 dogfood profile로 다시 실행했을 때 기존 workspace와 학업 상태를 보존해 여는가? |
 | 학업 작업 시작 가능성 | 준비된 workspace에서 학생이 자료를 선택하고 action을 시작할 수 있는가? |
 | 실행 경계의 명확성 | Recipe, Invocation과 Run을 구분하고 한 실행 시도를 추적할 수 있는가? |
 | 근거 연결 | 제안한 과제 값이 원본 위치와 연결되는가? |
 | 검토 경계 | 확인하지 않은 값이 `SemesterModel`에 들어가지 않는가? |
 | 정정 가능성 | 학생이 제안에 쉽게 수정을 요청하거나 거절할 수 있는가? |
 | 재사용 가치 | 확인된 학기 정보를 이후 조회와 derived view에 사용할 수 있는가? |
-| 한 학기 지속성 | app-managed Codex 환경과 학기 상태를 학기 동안 계속 사용할 수 있는가? |
+| 한 학기 지속성 | 전역 Codex account와 기존 학기 상태를 학기 동안 계속 사용할 수 있는가? |
 
 ## 주요 리스크
 
@@ -253,7 +251,7 @@ PDF text extraction, OCR, HWP/HWPX parsing처럼 결정적으로 처리할 수 �
 | 기능마다 전달 방식이 제각각이라 혼란 | 사용자 의도, 즉시성, 대상 작업과 correlation 필요성을 capability matrix로 기록한다. |
 | 초기에 미래 모델을 과도하게 확정함 | 다음 vertical에서 증명되기 전까지 deferred candidate로 유지한다. |
 | 기존 자료 폴더를 workspace로 오인함 | 외부 자료는 `ImportSource`, app-owned scaffold만 `SemesterWorkspace`로 구분한다. |
-| Landing이 kernel과 public capability를 혼동함 | 구현된 내부 vertical과 새 사용자가 끝까지 도달할 수 있는 release claim을 분리한다. |
+| 제거한 public graph가 활성 계획처럼 다시 읽힘 | 현재 dogfood 계약과 historical ADR·ticket 증거를 명시적으로 분리한다. |
 
 ## 결정된 경계와 열린 질문
 
