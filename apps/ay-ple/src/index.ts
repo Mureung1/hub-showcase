@@ -14,6 +14,13 @@ export type {
   PreparedApplicationStartup,
   PrepareApplicationStartupInput,
 } from './application-startup.js'
+export {
+  startDynamicLocalApplicationHost,
+} from './dynamic-local-application-host.js'
+export type {
+  DynamicLocalApplicationHost,
+  StartDynamicLocalApplicationHostInput,
+} from './dynamic-local-application-host.js'
 
 export type AyPleApplicationScaffold = {
   readonly packageName: 'ay-ple'

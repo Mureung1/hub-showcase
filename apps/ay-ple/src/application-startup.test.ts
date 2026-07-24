@@ -84,6 +84,7 @@ test('orders package, compatibility, roots, Runtime, and delayed Server construc
     'resolve',
   ])
   assert.equal(prepared.runtime, fixture.verifiedRuntime)
+  assert.equal(prepared.staticSite, fixture.staticSite)
   assert.deepEqual(progress, [{ phase: 'ready' }])
 
   const application = await prepared.createServerAtOrigin(
