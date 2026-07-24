@@ -34,6 +34,34 @@ const curriculumModules = createCurriculumNavigation(levelsData)
 
 type MistakeCandidate = MistakeNoteInput
 
+const CLEARED_LEVELS_STORAGE_KEY = 'icu:git-lab-cleared-levels'
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'icu:git-lab-sidebar-collapsed'
+
+function loadClearedLevelIds(): string[] {
+  try {
+    const raw = localStorage.getItem(CLEARED_LEVELS_STORAGE_KEY)
+    return raw ? (JSON.parse(raw) as string[]) : []
+  } catch {
+    return []
+  }
+}
+
+function saveClearedLevelIds(ids: string[]) {
+  try {
+    localStorage.setItem(CLEARED_LEVELS_STORAGE_KEY, JSON.stringify(ids))
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+function loadInitialSidebarCollapsed(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
 export default function GitLabPage() {
   const [searchParams] = useSearchParams()
   const lessonQuery = searchParams.get('lesson')
@@ -48,7 +76,33 @@ export default function GitLabPage() {
   )
   const [showGoal, setShowGoal] = useState(true)
   const [showClearModal, setShowClearModal] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(loadInitialSidebarCollapsed)
+  const [clearedLevelIds, setClearedLevelIds] = useState<string[]>(loadClearedLevelIds)
   const [mistakeCandidate, setMistakeCandidate] = useState<MistakeCandidate | null>(null)
+
+  function toggleSidebar() {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(next))
+      } catch {
+        // Ignore storage errors
+      }
+      return next
+    })
+  }
+
+  function markLevelCleared(levelId: string) {
+    setClearedLevelIds((prev) => {
+      if (prev.includes(levelId)) {
+        return prev
+      }
+      const next = [...prev, levelId]
+      saveClearedLevelIds(next)
+      return next
+    })
+  }
+
   const addMistakeNote = useMistakeNoteStore((state) => state.addMistakeNote)
   const upsertMistakeNote = useMistakeNoteStore((state) => state.upsertMistakeNote)
   const hasOpenDuplicate = useMistakeNoteStore((state) => state.hasOpenDuplicate)
@@ -203,14 +257,19 @@ export default function GitLabPage() {
     } else if (!result.ok) {
       setMistakeCandidate(null)
     }
-    if (result.ok && nextGoalCheck.cleared && !goalCheck.cleared) {
-      nextLogs.push(createLog('success', '목표 그래프와 일치합니다.'))
-      setShowClearModal(true)
+    if (result.ok && nextGoalCheck.cleared) {
+      markLevelCleared(level.id)
+      if (!goalCheck.cleared) {
+        nextLogs.push(createLog('success', '목표 그래프와 일치합니다.'))
+        setShowClearModal(true)
+      }
     }
 
     setEngineState(result.state)
     appendLogs(nextLogs)
   }
+
+  const clearedCount = clearedLevelIds.length
 
   return (
     <section className={styles.page} aria-labelledby="git-lab-title">
@@ -220,49 +279,90 @@ export default function GitLabPage() {
           <h1 id="git-lab-title">Level {level.title}</h1>
           <p className={styles.sectionLabel}>{level.proGitSection}</p>
         </div>
-        <button className={styles.toggleButton} onClick={() => setShowGoal((value) => !value)}>
-          {showGoal ? '목표 숨기기' : '목표 보기'}
-        </button>
+        <div className={styles.headerActions}>
+          <button
+            className={styles.toggleButton}
+            onClick={toggleSidebar}
+            type="button"
+          >
+            {isSidebarCollapsed ? '사이드바 열기' : '사이드바 접기'}
+          </button>
+          <button
+            className={styles.toggleButton}
+            onClick={() => setShowGoal((value) => !value)}
+            type="button"
+          >
+            {showGoal ? '목표 숨기기' : '목표 보기'}
+          </button>
+        </div>
       </header>
 
-      <div className={styles.workspace}>
-        <nav className={styles.curriculumPanel} aria-label="Pro Git 커리큘럼 레벨">
-          <div className={styles.curriculumHeader}>
-            <strong>Pro Git Curriculum</strong>
-            <span>{getPlayableCurriculumCount()} / 28 ready</span>
-          </div>
+      <div className={isSidebarCollapsed ? `${styles.workspace} ${styles.workspaceCollapsed}` : styles.workspace}>
+        {!isSidebarCollapsed && (
+          <nav className={styles.curriculumPanel} aria-label="Pro Git 커리큘럼 레벨">
+            <div className={styles.curriculumHeader}>
+              <div className={styles.curriculumTitleGroup}>
+                <strong>Pro Git Curriculum</strong>
+                <span>
+                  {getPlayableCurriculumCount()} / 28 ready
+                  {clearedCount > 0 && (
+                    <strong className={styles.clearedCountBadge}> · {clearedCount} 완료</strong>
+                  )}
+                </span>
+              </div>
+              <button
+                className={styles.foldButton}
+                onClick={toggleSidebar}
+                title="사이드바 접기"
+                type="button"
+              >
+                접기 ✕
+              </button>
+            </div>
 
-          <div className={styles.moduleList}>
-            {curriculumModules.map((module) => (
-              <section className={styles.moduleGroup} key={module.moduleId}>
-                <div className={styles.moduleTitle}>
-                  <h2>{module.moduleTitle}</h2>
-                  <p>{module.bookRef}</p>
-                </div>
-                <div className={styles.lessonList}>
-                  {module.items.map((item) => (
-                    <button
-                      className={
-                        item.id === level.id
-                          ? `${styles.lessonButton} ${styles.currentLessonButton}`
-                          : styles.lessonButton
-                      }
-                      key={item.id}
-                      onClick={() => handleCurriculumItemClick(item)}
-                      type="button"
-                    >
-                      <span>{item.id}</span>
-                      <strong>{item.title}</strong>
-                      <small>{getLessonStatusText(item)}</small>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        </nav>
+            <div className={styles.moduleList}>
+              {curriculumModules.map((module) => (
+                <section className={styles.moduleGroup} key={module.moduleId}>
+                  <div className={styles.moduleTitle}>
+                    <h2>{module.moduleTitle}</h2>
+                    <p>{module.bookRef}</p>
+                  </div>
+                  <div className={styles.lessonList}>
+                    {module.items.map((item) => {
+                      const isCurrent = item.id === level.id
+                      const isCleared = clearedLevelIds.includes(item.id)
+                      const buttonClass = [
+                        styles.lessonButton,
+                        isCurrent ? styles.currentLessonButton : '',
+                        isCleared ? styles.clearedLessonButton : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')
 
-        <div className={styles.labMain}>
+                      return (
+                        <button
+                          className={buttonClass}
+                          key={item.id}
+                          onClick={() => handleCurriculumItemClick(item)}
+                          type="button"
+                        >
+                          <span>{item.id}</span>
+                          <strong>
+                            {item.title}
+                            {isCleared && <span className={styles.clearedCheckTag}> ✓ 완료</span>}
+                          </strong>
+                          <small>{getLessonStatusText(item)}</small>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </nav>
+        )}
+
+        <div className={showGoal ? styles.labMain : `${styles.labMain} ${styles.labMainNoGoal}`}>
           <div className={styles.terminalSlot}>
             <GitTerminalPanel logs={logs} mistakeAction={mistakeAction} onCommand={handleCommand} />
           </div>

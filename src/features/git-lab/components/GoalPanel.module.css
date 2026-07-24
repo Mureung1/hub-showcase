@@ -232,13 +232,36 @@
   font-size: 12px;
   line-height: 1.5;
 }
+.targetGraphCard {
+  border: 1px solid rgb(236 161 198 / 64%);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgb(255 255 255 / 80%);
+  box-shadow: 0 4px 16px rgb(112 43 95 / 8%);
+}
+
+.targetGraphHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.targetGraphHeader h3 {
+  margin: 0;
+  color: #102346;
+  font-size: 13px;
+  font-weight: 850;
+}
+
 .graphFrame {
-  min-height: 230px;
-  max-height: 420px;
+  min-height: 200px;
+  max-height: 380px;
   overflow: auto;
   border: 1px solid rgb(236 161 198 / 50%);
   border-radius: 8px;
-  background: rgb(255 255 255 / 64%);
+  background: rgb(255 255 255 / 90%);
 }
 
 .hiddenState {
