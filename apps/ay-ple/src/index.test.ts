@@ -8,6 +8,7 @@ test('AY-PLE application package root exposes only staged production startup', (
   assert.deepEqual(Object.keys(ayPleApplication).sort(), [
     'ApplicationStartupError',
     'admitApplicationStartup',
+    'startDynamicLocalApplicationHost',
   ])
   assert.equal(
     'admitApplicationStartupForTesting' in ayPleApplication,
@@ -19,6 +20,11 @@ test('AY-PLE application package root exposes only staged production startup', (
   )
   assert.equal(
     'runCompatibilityPreflightForTesting' in ayPleApplication,
+    false,
+  )
+  assert.equal(
+    'startDynamicLocalApplicationHostForTesting' in
+      ayPleApplication,
     false,
   )
 })
