@@ -216,7 +216,6 @@ body.hide-notes .note{display:none}
   <div class="sp"></div>
   <span class="timer" id="timer">10:00</span>
   <button class="tbtn" id="startBtn">시작</button>
-  <button class="toggle" id="noteBtn">대본 켜짐</button>
 </div>
 
 <div class="stage">
@@ -231,109 +230,10 @@ body.hide-notes .note{display:none}
     <li>Claude Code와 함께 작업을 잘게 쪼개 개발</li>
   </ul>
 </div>
-<div class="note">
-  <span class="tag">오프닝 · 40초</span>
-  <p>안녕하세요, N048 김우현입니다. 제가 만든 <b>팀플 올인원</b>을 소개하겠습니다.</p>
-  <p>대학생이면 팀 프로젝트 한 번쯤 해보셨을 텐데요. 저는 팀플을 할 때마다 <b>같은 두 가지가 항상 번거로웠습니다.</b></p>
-  <p>이 서비스는 그 두 가지를 하나로 합친 겁니다. 4주 동안 혼자 만들었고, 코드는 Claude Code가 짜고 저는 방향을 잡고 검토하는 방식으로 개발했습니다.</p>
-  <p class="q"><b>호흡</b> — 여기서 바로 다음 장으로. 자기소개 길게 끌지 말 것.</p>
-</div>
 
 <!-- 2 -->
 <div class="slide">
   <div class="num">02 / 09</div>
-  <h2>왜 만들었나</h2>
-  <div class="two">
-    <div>
-      <h3>불편했던 것</h3>
-      <ul>
-        <li>시간 맞추려면 <b>when2meet</b></li>
-        <li>할 일 나누는 건 <b>카톡</b></li>
-        <li>진행 상황은 <b>각자 메모</b></li>
-        <li>도구를 계속 오가야 함</li>
-      </ul>
-    </div>
-    <div>
-      <h3>진짜 문제</h3>
-      <ul>
-        <li>누가 뭘 얼마나 했는지 <b>안 드러남</b></li>
-        <li>무임승차가 생겨도 <b>증거가 없음</b></li>
-      </ul>
-    </div>
-  </div>
-</div>
-<div class="note">
-  <span class="tag">문제 정의 · 1분</span>
-  <p>팀플을 시작하면 먼저 <b>언제 모일지</b>를 정해야 합니다. 보통 when2meet 같은 걸 쓰죠. 그다음엔 <b>할 일을 나누는데</b> 그건 카톡에서 합니다. 진행 상황은 각자 메모에 적고요.</p>
-  <p>도구가 흩어져 있으니 계속 오가야 하고, 어디에 뭐가 있는지 헷갈립니다.</p>
-  <p>그런데 더 큰 문제는 이겁니다. <b>누가 뭘 얼마나 했는지가 기록으로 남지 않는다</b>는 것. 그래서 무임승차가 생겨도 말하기가 애매합니다. 심증은 있는데 증거가 없으니까요.</p>
-  <p>그래서 <b>회의시간 맞추기</b>와 <b>할 일 관리</b>를 한 서비스 안에 넣고, 모든 변경을 기록으로 남기자는 게 이 프로젝트의 출발점입니다.</p>
-</div>
-
-<!-- 3 -->
-<div class="slide">
-  <div class="num">03 / 09</div>
-  <h2>두 개의 기둥</h2>
-  <div class="two">
-    <div>
-      <h3>태스크 관리</h3>
-      <ul>
-        <li>할 일 · 담당자 · 마감일</li>
-        <li>팀 전체 / 내 <b>진행도</b></li>
-        <li><b>담당자만</b> 상태 변경 가능</li>
-        <li>삭제해도 남는 <b>복원 기능</b></li>
-        <li>모든 변경이 <b>활동 로그</b>에</li>
-      </ul>
-    </div>
-    <div>
-      <h3>회의시간 매칭</h3>
-      <ul>
-        <li>프로젝트 기간 <b>주차별</b> 격자</li>
-        <li>가능한 시간 클릭으로 표시</li>
-        <li>겹치는 인원 <b>히트맵</b></li>
-        <li><b>추천 시간</b> 상위 3개</li>
-      </ul>
-    </div>
-  </div>
-</div>
-<div class="note">
-  <span class="tag">기능 소개 · 1분</span>
-  <p>기능은 크게 두 개입니다.</p>
-  <p><b>왼쪽, 태스크 관리.</b> 할 일을 추가하고 담당자와 마감일을 정합니다. 팀 전체 진행도와 내 진행도를 따로 보여주고요. 여기서 중요한 건 <b>권한 규칙</b>입니다 — 담당자가 정해진 일은 담당자 본인만 상태를 바꿀 수 있습니다. 남이 마음대로 완료 처리하는 걸 막기 위해서입니다.</p>
-  <p>삭제해도 데이터가 진짜 지워지지 않고 복원할 수 있고, 모든 변경은 활동 로그에 남습니다. 아까 말한 "증거가 없다"는 문제를 여기서 해결합니다.</p>
-  <p><b>오른쪽, 회의시간 매칭.</b> 프로젝트 기간 전체를 주차별로 나눠서 보여주고, 각자 가능한 시간을 클릭합니다. 겹치는 인원이 많을수록 색이 진해지는 히트맵으로 보여주고, 가장 많이 겹치는 시간 3개를 추천해 줍니다.</p>
-  <p class="q"><b>다음 장이 시연</b> — 여기서 화면 준비.</p>
-</div>
-
-<!-- 4 -->
-<div class="slide">
-  <div class="num">04 / 09</div>
-  <h2>시연</h2>
-  <p class="sub">배포된 링크로 직접 보여드리겠습니다</p>
-  <div class="flow">
-    <div class="box">태스크 화면<small>추가 · 담당자 · 진행도</small></div>
-    <span class="arr">→</span>
-    <div class="box">권한 확인<small>남의 일 → 거부</small></div>
-    <span class="arr">→</span>
-    <div class="box">회의시간<small>클릭 → 저장 → 히트맵</small></div>
-    <span class="arr">→</span>
-    <div class="box">추천 시간<small>상위 3개</small></div>
-  </div>
-</div>
-<div class="note">
-  <span class="tag">시연 · 3분 · 가장 중요</span>
-  <p><b>순서를 지킬 것. 즉흥으로 이것저것 누르지 말 것.</b></p>
-  <p><b>1) 태스크 화면</b> — "할 일을 하나 추가해 보겠습니다." 제목 입력, 담당자 지정, 추가. 진행도 바가 움직이는 것 보여주기.</p>
-  <p><b>2) 권한</b> — "다른 사람이 담당인 일을 완료 처리해 보겠습니다." 클릭 → 토스트로 거부 메시지. <b>이게 이 프로젝트에서 제일 공들인 부분입니다</b>라고 한마디 붙이기.</p>
-  <p><b>3) 회의시간 탭</b> — 주차 화살표로 넘겨 보이기. 셀 몇 개 클릭 → 저장. 히트맵 색이 진한 칸 가리키며 "여기가 3명 모두 가능한 시간입니다."</p>
-  <p><b>4) 추천 시간</b> — 카드 클릭 → 격자에서 해당 칸 강조되는 것.</p>
-  <p class="q"><b>주의</b> — Render 무료 플랜이라 첫 요청이 30초쯤 걸림. <b>발표 시작 전에 미리 링크를 한 번 열어둘 것.</b> 안 그러면 시연 중에 멈춘 것처럼 보임.</p>
-  <p class="q"><b>안 되면</b> — 당황하지 말고 "로컬로 보여드리겠습니다" 하고 localhost로 전환.</p>
-</div>
-
-<!-- 5 -->
-<div class="slide">
-  <div class="num">05 / 09</div>
   <h2>기술 스택</h2>
   <div class="stack">
     <div class="srow">
@@ -384,13 +284,72 @@ body.hide-notes .note{display:none}
     </div>
   </div>
 </div>
-<div class="note">
-  <span class="tag">기술 스택 · 50초 · 빠르게</span>
-  <p><b>줄줄 읽지 말 것.</b> 세 가지만 짚고 넘어가기.</p>
-  <p>"프론트는 <b>React와 Vite</b>, 백엔드는 <b>Node.js와 Express</b>, DB는 <b>Supabase의 PostgreSQL</b>입니다."</p>
-  <p>"특이한 점 하나는, Supabase가 제공하는 SDK를 안 쓰고 <b>pg 라이브러리로 Postgres에 직접 연결</b>했다는 겁니다. SQL을 직접 쓰면서 DB가 어떻게 동작하는지 이해하고 싶었기 때문입니다."</p>
-  <p>"UI 라이브러리는 안 썼고, <b>CSS 변수로 디자인 시스템을 직접 만들어서</b> 색과 간격을 통일했습니다."</p>
-  <p class="q">누가 "왜 Supabase SDK 안 썼냐" 물으면 → <b>학습 목적 + SQL을 직접 통제하고 싶어서.</b> 실무라면 SDK가 더 빠를 수 있다고 인정하기.</p>
+
+<!-- 3 -->
+<div class="slide">
+  <div class="num">03 / 09</div>
+  <h2>왜 만들었나</h2>
+  <div class="two">
+    <div>
+      <h3>불편했던 것</h3>
+      <ul>
+        <li>시간 맞추려면 <b>when2meet</b></li>
+        <li>할 일 나누는 건 <b>카톡</b></li>
+        <li>진행 상황은 <b>각자 메모</b></li>
+        <li>도구를 계속 오가야 함</li>
+      </ul>
+    </div>
+    <div>
+      <h3>진짜 문제</h3>
+      <ul>
+        <li>누가 뭘 얼마나 했는지 <b>안 드러남</b></li>
+        <li>무임승차가 생겨도 <b>증거가 없음</b></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="slide">
+  <div class="num">04 / 09</div>
+  <h2>두 개의 기둥</h2>
+  <div class="two">
+    <div>
+      <h3>태스크 관리</h3>
+      <ul>
+        <li>할 일 · 담당자 · 마감일</li>
+        <li>팀 전체 / 내 <b>진행도</b></li>
+        <li><b>담당자만</b> 상태 변경 가능</li>
+        <li>삭제해도 남는 <b>복원 기능</b></li>
+        <li>모든 변경이 <b>활동 로그</b>에</li>
+      </ul>
+    </div>
+    <div>
+      <h3>회의시간 매칭</h3>
+      <ul>
+        <li>프로젝트 기간 <b>주차별</b> 격자</li>
+        <li>가능한 시간 클릭으로 표시</li>
+        <li>겹치는 인원 <b>히트맵</b></li>
+        <li><b>추천 시간</b> 상위 3개</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="slide">
+  <div class="num">05 / 09</div>
+  <h2>시연</h2>
+  <p class="sub">배포된 링크로 직접 보여드리겠습니다</p>
+  <div class="flow">
+    <div class="box">태스크 화면<small>추가 · 담당자 · 진행도</small></div>
+    <span class="arr">→</span>
+    <div class="box">권한 확인<small>남의 일 → 거부</small></div>
+    <span class="arr">→</span>
+    <div class="box">회의시간<small>클릭 → 저장 → 히트맵</small></div>
+    <span class="arr">→</span>
+    <div class="box">추천 시간<small>상위 3개</small></div>
+  </div>
 </div>
 
 <!-- 6 -->
@@ -410,13 +369,6 @@ body.hide-notes .note{display:none}
     <li>주소 연결 / 검증·권한 / SQL 쿼리로 <b>역할 분리</b></li>
   </ul>
 </div>
-<div class="note">
-  <span class="tag">아키텍처 · 1분</span>
-  <p>"구조는 단순합니다. 브라우저의 React가 서버에 요청하고, 서버가 DB에서 데이터를 가져옵니다."</p>
-  <p><b>여기서 한 가지 강조:</b> "프론트는 DB에 직접 접근하지 않습니다. 반드시 서버를 거칩니다. 브라우저 코드는 사용자가 다 볼 수 있어서, DB 접속 정보가 거기 있으면 그대로 노출되기 때문입니다."</p>
-  <p>"서버 안은 세 층으로 나눴습니다. <b>routes</b>는 어떤 주소가 어디로 갈지만 연결하고, <b>controllers</b>는 입력값 검증과 권한 확인을 하고, <b>models</b>가 실제 SQL을 실행합니다."</p>
-  <p>"이렇게 나눈 이유는, 문제가 생겼을 때 <b>어느 층을 봐야 할지 바로 알 수 있기 때문</b>입니다. 실제로 이번 주에 버그를 여러 개 잡았는데, 층이 나뉘어 있어서 찾는 시간이 짧았습니다."</p>
-</div>
 
 <!-- 7 -->
 <div class="slide">
@@ -429,15 +381,6 @@ body.hide-notes .note{display:none}
     <li>입력과 출력이 명확해서 <b>테스트 쓰기 좋은 로직</b></li>
     <li>client / server 양쪽에 같은 규칙 + <b>같은 테스트 6개씩</b></li>
   </ul>
-</div>
-<div class="note">
-  <span class="tag">핵심 · 1분 30초 · 여기서 시간 써도 됨</span>
-  <p>"프로젝트에서 가장 공들인 부분은 <b>권한 체크</b>입니다."</p>
-  <p>"규칙 자체는 간단합니다. <b>담당자가 정해진 일은 담당자만 바꿀 수 있고, 담당자가 없으면 누구나 바꿀 수 있다.</b>"</p>
-  <p>"이 로직은 <b>TDD로 개발했습니다.</b> 테스트를 먼저 쓰고, 실패하는 걸 확인한 다음, 통과하도록 코드를 짰습니다. 이 로직을 고른 이유는 <b>입력과 출력이 명확하기 때문</b>입니다. 담당자와 요청자를 넣으면 허용이냐 거부냐가 나오니까 테스트로 검증하기 좋았습니다."</p>
-  <p>"그런데 문제가 하나 있었습니다. <b>같은 규칙이 프론트와 서버 양쪽에 필요했습니다.</b> 프론트에서는 버튼을 비활성화하려고, 서버에서는 실제로 막으려고요."</p>
-  <p>"둘은 다른 환경에서 돌아서 코드를 공유할 수 없었습니다. 그래서 <b>양쪽에 같은 로직을 두되, 같은 테스트를 양쪽에 두는 방식</b>을 택했습니다. 한쪽만 바뀌면 테스트가 깨지니까 어긋나는 걸 막을 수 있습니다."</p>
-  <p class="q"><b>"왜 프론트에도 뒀냐"</b> 물으면 → 프론트는 <b>사용자 경험</b>(누를 수 없게 보여주기), 서버는 <b>실제 보안</b>. 프론트 검증은 우회 가능해서 서버가 반드시 필요.</p>
 </div>
 
 <!-- 8 -->
@@ -463,15 +406,6 @@ body.hide-notes .note{display:none}
     </div>
   </div>
 </div>
-<div class="note">
-  <span class="tag">트러블슈팅 · 1분 30초 · 질문 많이 나오는 부분</span>
-  <p>"막혔던 것 두 가지를 말씀드리겠습니다."</p>
-  <p><b>첫째, 날짜가 하루씩 밀리는 문제.</b> DB에 7월 13일로 저장했는데 화면에는 7월 12일로 나왔습니다. 원인은 DB의 날짜 타입을 자바스크립트가 읽을 때 <b>한국 시간(UTC+9)을 거치면서</b>, 세계 표준시로 바꾸는 순간 하루가 뒤로 밀리는 것이었습니다.</p>
-  <p>"흥미로운 건, <b>같은 증상이 세 곳에서 나왔는데 원인이 조금씩 달랐다</b>는 겁니다. 어떤 건 서버가 잘못 보낸 거였고, 어떤 건 값은 맞는데 화면 쪽 코드가 낡은 형식을 전제로 짜여 있었습니다. <b>증상이 같아도 원인을 확인해야 제대로 고칠 수 있다</b>는 걸 배웠습니다."</p>
-  <p><b>둘째, 좀비 프로세스.</b> 코드를 아무리 고쳐도 화면이 안 바뀌었습니다. 알고 보니 <b>6일 전에 켜둔 옛날 서버가 포트를 붙잡고</b> 계속 응답하고 있었습니다.</p>
-  <p>"그때 배운 건, 문제가 생기면 <b>'내 코드가 틀렸나'보다 '내 코드가 실행되고는 있나'를 먼저 확인해야 한다</b>는 것입니다. 이걸 제거하니까 숨어 있던 다른 문제 두 개도 같이 드러났습니다."</p>
-  <p class="q"><b>솔직하게</b> — 이 부분은 실제 겪은 거라 자신 있게 말할 것. 헤맨 걸 숨기지 말 것.</p>
-</div>
 
 <!-- 9 -->
 <div class="slide">
@@ -488,29 +422,11 @@ body.hide-notes .note{display:none}
     <li><b>다음</b> — 초대코드로 팀에 들어가는 로그인, 드래그로 시간 선택</li>
   </ul>
 </div>
-<div class="note">
-  <span class="tag">마무리 · 40초</span>
-  <p>"정리하겠습니다. 4주 동안 <b>두 개의 핵심 기능</b>을 만들었고, 로컬 DB에서 클라우드로 옮겼고, 화면을 React로 전환했고, 인터넷에 배포까지 마쳤습니다."</p>
-  <p>"앞으로는 <b>초대코드로 팀에 들어가는 기능</b>을 만들 계획입니다. 지금은 팀이 하나뿐인데, 여러 팀이 각자 쓸 수 있게 하는 게 다음 목표입니다. 회의시간 격자도 <b>드래그로 여러 칸을 한 번에</b> 고를 수 있게 하려고 합니다."</p>
-  <p>"이상입니다. 감사합니다."</p>
-  <p class="q"><b>질문 대비 — 자주 나올 것들</b></p>
-  <p class="q"><b>"AI가 다 짠 거 아니냐"</b> → 코드는 Claude Code가 썼지만 <b>설계 판단은 제가 했습니다.</b> 예를 들어 회의시간 저장을 "칸 하나씩 추가·삭제"가 아니라 <b>"그 주 전체를 통째로 교체"</b>로 정한 건 제 결정입니다. 그리고 만들 때마다 "왜 이렇게 했는지"를 물어보며 확인했습니다.</p>
-  <p class="q"><b>"테스트는 얼마나"</b> → 전체가 아니라 <b>가장 중요한 권한 로직 하나</b>에 집중했습니다. 양쪽 6개씩 12개.</p>
-  <p class="q"><b>"제일 어려웠던 건"</b> → 날짜 타임존 문제. 증상은 단순한데 원인이 여러 층에 걸쳐 있었습니다.</p>
-</div>
 
 </div>
 
 <script>
 (function(){
-  var btn=document.getElementById('noteBtn');
-  btn.addEventListener('click',function(){
-    document.body.classList.toggle('hide-notes');
-    var off=document.body.classList.contains('hide-notes');
-    btn.textContent=off?'대본 꺼짐':'대본 켜짐';
-    btn.classList.toggle('off',off);
-  });
-
   var total=600,left=total,id=null;
   var t=document.getElementById('timer'),s=document.getElementById('startBtn');
   function draw(){
