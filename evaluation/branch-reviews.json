@@ -1,0 +1,2839 @@
+{
+  "generatedAt": "2026-07-24T04:20:24.905Z",
+  "purpose": "활성 브랜치의 최종 코드와 개발 기록을 바탕으로 한 1차 검토 자료입니다. 최종 선발 자료가 아닙니다.",
+  "source": {
+    "repository": "connect-AIAgentChallenge-26-1/hub",
+    "activeBranchCount": 123,
+    "showcaseCount": 67
+  },
+  "method": [
+    "최종 브랜치 파일 구성 확인",
+    "README와 showcase.json 확인",
+    "커밋 날짜와 활동 일수 확인",
+    "Agent·Skill·Workflow 및 테스트 파일 수 확인"
+  ],
+  "limitation": "indicatorScore는 자동 정렬용 참고값입니다. 서비스 시연과 학생 인터뷰 후에 최종 판단해야 합니다.",
+  "shortlist": [
+    {
+      "rank": 1,
+      "studentNumber": "N105",
+      "branch": "N105_신명현",
+      "projectTitle": "바로진료",
+      "indicatorScore": 89,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 2,
+      "studentNumber": "N151",
+      "branch": "N151_전세원",
+      "projectTitle": "TasteFit",
+      "indicatorScore": 89,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 3,
+      "studentNumber": "N159",
+      "branch": "N159_정현우",
+      "projectTitle": "FitCheck (핏첵)",
+      "indicatorScore": 89,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 4,
+      "studentNumber": "N019",
+      "branch": "N019_김동민",
+      "projectTitle": "전자 생물 AI 매니저",
+      "indicatorScore": 82,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 5,
+      "studentNumber": "N076",
+      "branch": "N076_박동휘",
+      "projectTitle": "상권 스캐너",
+      "indicatorScore": 81,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 6,
+      "studentNumber": "N180",
+      "branch": "N180_하성욱",
+      "projectTitle": "AY-PLE",
+      "indicatorScore": 79,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 7,
+      "studentNumber": "N111",
+      "branch": "N111_양서형",
+      "projectTitle": "WeatherPilot(웨더파일럿)",
+      "indicatorScore": 78,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 8,
+      "studentNumber": "N073",
+      "branch": "N073_박건태",
+      "projectTitle": "UniRadar",
+      "indicatorScore": 77,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 9,
+      "studentNumber": "N173",
+      "branch": "N173_최서영",
+      "projectTitle": "띵동(ThingDong) - 동네 공동구매 서비스",
+      "indicatorScore": 75,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 10,
+      "studentNumber": "N082",
+      "branch": "N082_박소윤",
+      "projectTitle": "albafit — 매장 맞춤 AI 알바 훈련 서비스",
+      "indicatorScore": 74,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 11,
+      "studentNumber": "N003",
+      "branch": "N003_강성준",
+      "projectTitle": "나만의 레시피북",
+      "indicatorScore": 72,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 12,
+      "studentNumber": "N023",
+      "branch": "N023_김민서",
+      "projectTitle": "잔소리봇",
+      "indicatorScore": 72,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 13,
+      "studentNumber": "N098",
+      "branch": "N098_백승근",
+      "projectTitle": "차세워",
+      "indicatorScore": 69,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 14,
+      "studentNumber": "N176",
+      "branch": "N176_최재원",
+      "projectTitle": "아맞다! (Amadda)",
+      "indicatorScore": 69,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 15,
+      "studentNumber": "N109",
+      "branch": "N109_안대희",
+      "projectTitle": "meetry - 대학생 대면 소통 플랫폼",
+      "indicatorScore": 68,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    }
+  ],
+  "projects": [
+    {
+      "studentNumber": "N105",
+      "branch": "N105_신명현",
+      "projectTitle": "바로진료",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 89,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 56,
+        "codeFileCount": 185,
+        "testFileCount": 53,
+        "agentFileCount": 10,
+        "lastCommitDate": "2026-07-23T13:36:04Z"
+      },
+      "comments": [
+        "문제 가치: 동네 병원을 이용하는 환자는 방문 전에 실제 진료 대기 상황을 확인하거나 순번을 등록하기 어려워 병원에 먼저 도착한 뒤 장시간 현장에서 기다려야 합니다.",
+        "기능 구현: 환자가 병원을 검색하고 가족 인원에 맞춰 당일 원격 웨이팅을 등록합니다. / 환자는 현재 진료 대기 순서와 예상 시간을 확인하고 순서를 한 번 미루거나 웨이팅을 취소할 수 있습니다.",
+        "AI 협업: 계획 수립, 디자인 일관성, TDD 구현, 기능 검증 절차를 각각 Skill로 만들어 개발 과정에 반복 적용했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 56개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N151",
+      "branch": "N151_전세원",
+      "projectTitle": "TasteFit",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 89,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 14,
+        "commitsFetched": 50,
+        "codeFileCount": 494,
+        "testFileCount": 72,
+        "agentFileCount": 11,
+        "lastCommitDate": "2026-07-23T13:37:05Z"
+      },
+      "comments": [
+        "문제 가치: 기존 별점과 리뷰는 작성자마다 맛, 분위기, 가성비 등에 대한 기준이 달라 사용자가 자신에게 맞는 가게인지 판단하기 어렵습니다. 이로 인해 소비자는 많은 리뷰를 반복해서 확인해야 하고, 가게는 개인적인 취향 차이로 발생한 낮은 평가의 영향을 받을 수 있습니다.",
+        "기능 구현: 매운맛, 가성비, 분위기, 웨이팅, 조용함에 대한 사용자 취향을 1점부터 10점까지 설정합니다. / 현재 위치나 검색한 위치를 기준으로 주변 음식점과 카페를 카카오 지도에서 탐색합니다.",
+        "AI 협업: Agent와 프로젝트 전용 Design Skill, TDD Skill을 활용해 기능 계획부터 UI 구현, 추천 로직 검증과 코드 개선까지 진행했습니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 50개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N159",
+      "branch": "N159_정현우",
+      "projectTitle": "FitCheck (핏첵)",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 89,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 79,
+        "codeFileCount": 915,
+        "testFileCount": 70,
+        "agentFileCount": 10,
+        "lastCommitDate": "2026-07-23T13:35:59Z"
+      },
+      "comments": [
+        "문제 가치: 오프라인 PT는 비용이 높고, 소상공인 헬스장은 신규 회원 유치가 어렵습니다. 입문자는 혼자 운동·식단을 체계적으로 관리하기 힘들고, 전문 관리가 필요할 때 주변 헬스장을 찾기도 어렵습니다.",
+        "기능 구현: 부위·목적별 PT 강좌 VOD로 비대면 운동 가이드를 제공합니다. / Gemini Vision으로 식단 사진을 분석해 탄·단·지와 AI 피드백을 제공합니다.",
+        "AI 협업: 기획·구현·테스트·문서화까지 Cursor Agent와 함께 진행했습니다. 헬스장 매칭, 단위 테스트, showcase 작성 등을 Agent가 코드 초안을 만들고 제가 검증하는 방식으로 협업했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 79개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": null,
+      "branch": "baejh3333-del",
+      "projectTitle": "자취생 냉장고 레시피",
+      "reviewPriority": "review-next",
+      "indicatorScore": 84,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 14,
+        "commitsFetched": 40,
+        "codeFileCount": 507,
+        "testFileCount": 75,
+        "agentFileCount": 7,
+        "lastCommitDate": "2026-07-23T13:36:27Z"
+      },
+      "comments": [
+        "문제 가치: 요리 초보 자취생은 냉장고에 뭐가 있는지 기억하지 못하고, 어떤 재료로 뭘 해먹을 수 있는지 몰라 결국 배달·외식에 의존하게 된다. 채소 평균가도 몰라 장보기 자체가 막막하고, 남는 재료를 소진하지 못해 유통기한을 놓치는 문제도 반복된다.",
+        "기능 구현: 나만의 냉장고 재고 관리 — 유통기한 임박 알림 + 수량 부족 알림 / 영수증 촬영 → Naver Clova OCR 자동 인식 → 재고 자동 등록",
+        "AI 협업: Claude Code를 페어 프로그래머로 활용해 기획 문서 기반 기능 구현, 브라우저를 통한 직접 동작 검증, 코드-문서 정합성 감사를 반복하는 워크플로우로 개발했습니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 40개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N019",
+      "branch": "N019_김동민",
+      "projectTitle": "전자 생물 AI 매니저",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 82,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 43,
+        "codeFileCount": 67,
+        "testFileCount": 21,
+        "agentFileCount": 45,
+        "lastCommitDate": "2026-07-23T13:37:08Z"
+      },
+      "comments": [
+        "문제 가치: 할 일 목록은 실패가 쌓일수록 부담이 커지고, 사용자의 실패 이유와 회복 과정을 다음 행동으로 자연스럽게 이어주기 어렵습니다.",
+        "기능 구현: 프로필과 목표를 바탕으로 오늘의 퀘스트를 만들고 QuestRunner.exe 흐름으로 실행합니다. / 완료, 실패, 복구 이벤트를 Hono API와 Supabase quest_logs에 저장하고 기록 노트에서 다시 조회합니다.",
+        "AI 협업: 기획, 구현, TDD, 검증, Wiki/문서 정리를 Agent와 Skill로 나누어 진행했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 43개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N076",
+      "branch": "N076_박동휘",
+      "projectTitle": "상권 스캐너",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 81,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 14,
+        "commitsFetched": 41,
+        "codeFileCount": 2922,
+        "testFileCount": 222,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T13:34:59Z"
+      },
+      "comments": [
+        "문제 가치: 소상공인은 매장 운영만으로 바빠 경쟁 가게의 리뷰를 일일이 읽고 분석할 시간이 없고, 읽더라도 이를 실질적인 전략으로 바꾸기 어렵습니다.",
+        "기능 구현: 가게 이름 검색 후 동명 업체가 여러 곳이면 주소로 구분해 선택 / 선택한 가게 기준 주변 반경 내 같은 업종 경쟁업체 검색 (Haversine 거리 계산)",
+        "AI 협업: 계획 수립과 기능 검증을 돕는 두 개의 전용 Agent를 만들어 개발에 실제로 사용했습니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 41개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N180",
+      "branch": "N180_하성욱",
+      "projectTitle": "AY-PLE",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 79,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 3,
+        "commitsFetched": 100,
+        "codeFileCount": 200,
+        "testFileCount": 84,
+        "agentFileCount": 55,
+        "lastCommitDate": "2026-07-23T13:34:13Z"
+      },
+      "comments": [
+        "문제 가치: 대학생의 학기 자료는 LMS 공지, 강의계획서, PDF, 메모처럼 여러 형식과 위치에 흩어져 있습니다. 학생은 자료를 저장한 뒤에도 과제명, 마감, 제출 방식과 시험 일정을 다시 읽고 캘린더나 할 일 앱으로 옮겨야 합니다. 기존 AI 도구에 자료를 물어보더라도 답변의 근거를 다시 원문과 대조해야 하고, 대화에서 얻은 정보가 신뢰할 수 있는 학기 상태로 남지 않는 문제가 있습니다. AY-PLE는 학생이 선택한 자료를 AI가 읽고 연결하되, 원본 근거가 포함된 변…",
+        "기능 구현: 학생이 이번에 정리할 학기 자료를 직접 선택해 AI 작업의 입력 범위를 정합니다. / AI가 과제명과 마감 같은 정보를 찾고, 각 제안에 원본 파일과 위치를 근거로 연결합니다.",
+        "AI 협업: 아이디어와 제품 판단은 제가 내리고, Codex를 리서치, 설계, 구현과 검증 파트너로 사용했습니다. 큰 문제는 먼저 결정 질문으로 나누고, 합의한 내용은 ADR과 spec, implementation ticket으로 고정한 뒤 수직 흐름 단위로 구현했습니다.",
+        "개발 흐름: 3일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N111",
+      "branch": "N111_양서형",
+      "projectTitle": "WeatherPilot(웨더파일럿)",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 78,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 71,
+        "codeFileCount": 57,
+        "testFileCount": 14,
+        "agentFileCount": 17,
+        "lastCommitDate": "2026-07-23T13:37:24Z"
+      },
+      "comments": [
+        "문제 가치: 동네 카페·식당 매출은 날씨에 크게 좌우되지만, 1인 운영 사장님에게는 매일 날씨를 확인해 판매 전략을 세우고 홍보 문구를 쓸 시간과 전문성이 없습니다. 이들에게 필요한 것은 더 좋은 마케팅 툴이 아니라 '마케팅을 신경 쓰지 않아도 되는 상태', 즉 의사결정 대행입니다.",
+        "기능 구현: 매일 아침 크론(06:30)이 날씨와 매출을 분석해, 매출 하락이 예상되는 날에만 마케팅 제안을 미리 만들어 둡니다. / 기상청 + OpenWeatherMap 두 소스를 가중 병합한 앙상블 날씨로 정확도를 높이고, 한쪽 장애 시 자동 폴백합니다.",
+        "AI 협업: Claude Code를 개발 파트너로 두고, CLAUDE.md 프로젝트 규칙과 커스텀 Skill, 자동화 Workflow로 기획부터 구현·테스트·커밋까지 진행했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 71개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N073",
+      "branch": "N073_박건태",
+      "projectTitle": "UniRadar",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 77,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 36,
+        "codeFileCount": 117,
+        "testFileCount": 40,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T13:34:56Z"
+      },
+      "comments": [
+        "문제 가치: 대학생에게 필요한 기회 정보가 학교와 공공기관의 여러 공지 사이트에 흩어져 있어 새 글을 반복해서 확인해야 하고, 실제 지원 대상인지 판단하거나 마감 준비 작업을 관리하기 어렵습니다.",
+        "기능 구현: 사용자가 등록한 여러 공지 사이트를 한 번에 스캔하고 최신 글과 전체 글을 게시일순으로 보여줍니다. / Gemini가 공고의 지원 대상, 마감일, 제출 서류, 혜택을 구조화하고 사용자 프로필과 지원 가능성을 비교합니다.",
+        "AI 협업: 기능 구현, 디자인 일관성 유지, 테스트 우선 수정과 PR 전 검증에 Agent와 Skill을 사용했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 36개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N173",
+      "branch": "N173_최서영",
+      "projectTitle": "띵동(ThingDong) - 동네 공동구매 서비스",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 75,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 16,
+        "commitsFetched": 58,
+        "codeFileCount": 55,
+        "testFileCount": 9,
+        "agentFileCount": 14,
+        "lastCommitDate": "2026-07-23T13:35:30Z"
+      },
+      "comments": [
+        "문제 가치: 동네 공동구매는 모집 현황, 주문 진행, 픽업 정보가 채팅에 흩어져 참여자가 현재 상태를 파악하기 어렵고 방장의 관리 부담도 큽니다.",
+        "기능 구현: 공동구매 글을 등록하고 모집 인원과 1인 금액을 확인합니다. / 참여, 참여 취소, 주문 완료, 픽업 가능, 수령 완료를 상태별로 처리합니다.",
+        "AI 협업: 기능 분할, TDD, 수직 슬라이스 검증을 위한 Agent와 Skill을 만들어 개발 과정에 사용했습니다.",
+        "개발 흐름: 16일에 걸쳐 확인된 커밋 58개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N082",
+      "branch": "N082_박소윤",
+      "projectTitle": "albafit — 매장 맞춤 AI 알바 훈련 서비스",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 74,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 14,
+        "commitsFetched": 100,
+        "codeFileCount": 112,
+        "testFileCount": 16,
+        "agentFileCount": 9,
+        "lastCommitDate": "2026-07-23T13:34:48Z"
+      },
+      "comments": [
+        "문제 가치: 소상공인 매장은 알바 교체가 잦고 메뉴·규칙도 수시로 바뀌는데, 사장님은 새 알바마다 응대 기준을 반복 설명할 시간과 여력이 없습니다. 그 결과 누가 언제 일하느냐에 따라 응대 품질이 들쭉날쭉해집니다.",
+        "기능 구현: 매장 규칙을 입력하면 AI가 실전 상황 시나리오와 채점 기준(루브릭)을 자동으로 만들어줍니다. / 새 알바가 AI 손님과 실전처럼 대화 연습을 하고, 매장 기준에 맞춰 실시간 피드백을 받습니다.",
+        "AI 협업: 기획부터 구현·테스트·검증까지 Claude Code의 Plan Mode·서브에이전트·Skill을 함께 사용했습니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N003",
+      "branch": "N003_강성준",
+      "projectTitle": "나만의 레시피북",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 72,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 18,
+        "commitsFetched": 91,
+        "codeFileCount": 47,
+        "testFileCount": 9,
+        "agentFileCount": 10,
+        "lastCommitDate": "2026-07-23T13:36:55Z"
+      },
+      "comments": [
+        "문제 가치: 직접 알고 있거나 인터넷에서 발견한 레시피는 여러 장소에 흩어져 있고 형식도 일정하지 않아, 다시 찾아 실제 요리에 활용하기 어렵습니다. 가족이나 가까운 사람에게 받은 레시피도 전달한 사람과의 관계와 기억을 함께 보관하기 어렵습니다.",
+        "기능 구현: URL이나 직접 입력으로 제공한 레시피를 AI가 재료와 조리 단계로 구조화합니다. / AI가 만든 초안을 사용자가 확인하고 수정한 뒤 자신의 레시피북에 저장합니다.",
+        "AI 협업: 제품 문서와 티켓을 기준으로 Agent와 저장소 전용 Skill을 연결해 분석, 구현, 검증 이력을 관리했습니다.",
+        "개발 흐름: 18일에 걸쳐 확인된 커밋 91개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N023",
+      "branch": "N023_김민서",
+      "projectTitle": "잔소리봇",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 72,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 100,
+        "codeFileCount": 80,
+        "testFileCount": 20,
+        "agentFileCount": 7,
+        "lastCommitDate": "2026-07-23T13:33:55Z"
+      },
+      "comments": [
+        "문제 가치: 대학생은 해야 할 일을 알고 계획도 세우지만, 막막함이나 하기 싫음, 다른 유혹 등의 이유로 시작을 반복해서 미룹니다. 기존 할 일 관리 서비스는 사용자가 미루는 이유와 관계없이 동일한 알림을 제공한다는 한계가 있습니다.",
+        "기능 구현: 할 일과 예상되는 회피 이유를 함께 등록합니다. / 미루는 이유에 맞춰 지금 바로 할 수 있는 작은 첫 행동을 제안합니다.",
+        "AI 협업: GitHub Issue를 기준으로 계획, 구현, 테스트, 검토를 반복하며 AI Agent와 협업했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N098",
+      "branch": "N098_백승근",
+      "projectTitle": "차세워",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 69,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 20,
+        "commitsFetched": 93,
+        "codeFileCount": 99,
+        "testFileCount": 22,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T13:35:51Z"
+      },
+      "comments": [
+        "문제 가치: 목적지 근처에 어디에 주차할지, 지금 자리가 있는지, 주차장의 정보를 한 번에 확인하기는 어렵습니다.",
+        "기능 구현: 목적지를 검색하면 주변 주차장을 거리순으로 보여줍니다. / 각 주차장의 요금, 운영시간 등 상세 정보를 제공합니다.",
+        "AI 협업: 작성 예정",
+        "개발 흐름: 20일에 걸쳐 확인된 커밋 93개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N176",
+      "branch": "N176_최재원",
+      "projectTitle": "아맞다! (Amadda)",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 69,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 5,
+        "commitsFetched": 100,
+        "codeFileCount": 277,
+        "testFileCount": 122,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T13:38:03Z"
+      },
+      "comments": [
+        "문제 가치: 유용한 글과 자료를 저장해두어도, 시간이 지나며 저장 맥락이 흐려져 실제로 다시 열람할 때 찾기 어렵고 재탐색 비용이 늘어납니다.",
+        "기능 구현: Google 로그인 기반 개인 보관함에서 링크, 제목, 설명, 메모, 카테고리를 함께 저장합니다. / 모바일 공유, Chrome 확장, 웹 URL 입력으로 수집 경로를 통합합니다.",
+        "AI 협업: 요구사항을 기능 단위로 쪼개고, 가이드 확인 후 `showcase` 산출물을 구성했습니다.",
+        "개발 흐름: 5일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N109",
+      "branch": "N109_안대희",
+      "projectTitle": "meetry - 대학생 대면 소통 플랫폼",
+      "reviewPriority": "shortlist",
+      "indicatorScore": 68,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 60,
+        "codeFileCount": 34,
+        "testFileCount": 3,
+        "agentFileCount": 13,
+        "lastCommitDate": "2026-07-23T13:34:31Z"
+      },
+      "comments": [
+        "문제 가치: 대학생이 과제나 학교생활에서 즉각적인 대면 도움이 필요할 때, 부담 없이 빠르게 도와줄 사람을 찾을 창구가 부족합니다.",
+        "기능 구현: 도움 요청 게시글을 작성하고 피드에서 조회합니다. / 1:1 채팅 신청 후 실시간 메신저로 소통합니다.",
+        "AI 협업: 기획부터 구현, 디자인 적용, 개발 기록까지 Agent와 Skill을 함께 사용했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 60개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N157",
+      "branch": "N157_정재현",
+      "projectTitle": "미리캣 — 내 출근길의 보초",
+      "reviewPriority": "review-next",
+      "indicatorScore": 68,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 59,
+        "codeFileCount": 31,
+        "testFileCount": 0,
+        "agentFileCount": 16,
+        "lastCommitDate": "2026-07-23T13:36:43Z"
+      },
+      "comments": [
+        "문제 가치: 축제·공사·사고로 버스 우회나 도로 통제가 생기면 지자체·버스조합 게시판에 공지가 한 번 올라오고 묻힙니다. 공지가 올라온 시점과 실제로 이동하는 시점이 어긋나 있고, 확인할 게시판도 여러 곳에 흩어져 있어 사람이 매번 챙기기는 비현실적입니다.",
+        "기능 구현: 출발지·도착지·시간대로 내 고정 경로를 한 번 등록합니다. / 매일 관할 게시판을 대신 확인하고, 이상이 없어도 확인한 소스·시각과 함께 한 줄로 보고합니다.",
+        "AI 협업: 개발 과정에서 계획·검증용 Agent와, 반복 작업을 표준화한 Skill을 Claude Code로 함께 사용했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 59개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N091",
+      "branch": "N091_박창현",
+      "projectTitle": "프로젝트 기획",
+      "reviewPriority": "review-next",
+      "indicatorScore": 67,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 78,
+        "codeFileCount": 56,
+        "testFileCount": 15,
+        "agentFileCount": 7,
+        "lastCommitDate": "2026-07-23T13:37:57Z"
+      },
+      "comments": [
+        "문제 가치: 자취생은 냉장고에 어떤 재료가 있는지 잊거나 소비기한을 놓치기 쉽고, 남은 재료로 무엇을 만들 수 있는지 판단하는 데도 시간이 듭니다. 있는대로는 재료 관리와 메뉴 결정을 하나의 흐름으로 연결해 식재료 낭비와 매일의 메뉴 고민을 줄입니다.",
+        "기능 구현: 보관 위치·수량·소비기한·추천용 태그를 포함한 냉장고 재료 관리 / 소비기한과 재료 태그 우선순위를 반영한 Gemini 기반 1인분 레시피 추천",
+        "AI 협업: 냉장고 재료 조회부터 Gemini 생성, 서버 정책 검증, 사용자 화면 표시까지 이어지는 추천 파이프라인을 중심으로 개발했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 78개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N139",
+      "branch": "N139_이준섭",
+      "projectTitle": "PtoP",
+      "reviewPriority": "review-next",
+      "indicatorScore": 67,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 6,
+        "commitsFetched": 100,
+        "codeFileCount": 104,
+        "testFileCount": 26,
+        "agentFileCount": 9,
+        "lastCommitDate": "2026-07-23T13:35:20Z"
+      },
+      "comments": [
+        "문제 가치: 프로젝트를 완성한 뒤에도 내가 어떤 문제를 해결했고 어떤 판단을 했는지 Repository 기록만으로 다시 정리하기 어렵습니다.",
+        "기능 구현: GitHub Repository의 참여자와 작업 근거를 분석합니다. / 분석 중 Poppy의 짧은 질문에 답하며 개인 경험을 기록합니다.",
+        "AI 협업: 문제 정의와 사용자 흐름을 먼저 정리한 뒤 Agent와 함께 계획·구현·테스트를 반복했습니다.",
+        "개발 흐름: 6일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N118",
+      "branch": "N118_윤태용",
+      "projectTitle": "SmartFF",
+      "reviewPriority": "review-next",
+      "indicatorScore": 66,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 8,
+        "commitsFetched": 100,
+        "codeFileCount": 71,
+        "testFileCount": 7,
+        "agentFileCount": 142,
+        "lastCommitDate": "2026-07-23T14:19:41Z"
+      },
+      "comments": [
+        "문제 가치: 편의점 점주는 판매·폐기·재무 데이터를 여러 개의 엑셀 파일로 따로 확인해야 해서, 어떤 상품의 발주를 늘리고 줄여야 할지 판단하기 어렵습니다.",
+        "기능 구현: 오늘의 매출 추세, 평균 마진율, 폐기율을 한눈에 보여주는 대시보드 / 판매량·폐기율 변화를 기준으로 발주 확대/축소를 추천하는 AI 제안(Rule Engine)",
+        "AI 협업: 프로젝트 전용 Planning/Validation Agent와 Claude Code의 탐색·브라우저 자동화 기능을 함께 사용해 기획부터 구현, 검증까지 진행했습니다.",
+        "개발 흐름: 8일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N169",
+      "branch": "N169_최나현",
+      "projectTitle": "알리장",
+      "reviewPriority": "review-next",
+      "indicatorScore": 66,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 82,
+        "codeFileCount": 99,
+        "testFileCount": 11,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T14:20:23Z"
+      },
+      "comments": [
+        "문제 가치: 많은 소상공인들은 온라인 홍보의 중요성을 알고 있지만 시간 부족과 마케팅 전문성 부족으로 인해 꾸준한 블로그 운영에 어려움을 겪고 있다.",
+        "기능 구현: 서비스 접속 시 블로그 운영 현황과 계절·업종 트렌드를 분석해 오늘의 홍보 전략을 먼저 제안합니다. / 대화형 AI 인터뷰로 브랜드 프로필을 만들고, 이를 기준으로 홍보글과 공지사항을 작성합니다.",
+        "AI 협업: 화면 구현, 테스트 작성, 기능 검증, 커밋 메시지 작성까지 Skill과 Agent를 함께 사용했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 82개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N187",
+      "branch": "N187_정현우",
+      "projectTitle": "LocalTwin — 설명 가능한 동네 상권 분석",
+      "reviewPriority": "review-next",
+      "indicatorScore": 66,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 5,
+        "commitsFetched": 100,
+        "codeFileCount": 198,
+        "testFileCount": 64,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T13:37:16Z"
+      },
+      "comments": [
+        "문제 가치: 입지를 고르려는 소상공인은 주변 경쟁 점포, 개·폐업, 매출, 유동인구, 인구와 데이터 기준 시점을 여러 사이트에서 따로 확인해야 합니다. 숫자만 나열하면 근거와 한계를 함께 판단하기 어렵습니다.",
+        "기능 구현: 지도에서 상권 또는 직접 선택한 위치를 기준으로 100m, 300m, 500m 반경(임시)을 분석합니다. / 카페, 음식점, 베이커리, 편의점별로 주변 동일 업종 점포와 밀도를 확인합니다.",
+        "AI 협업: Codex와 GPT-5.6을 기획, 개발 하네스 설정, 구현, 검증, 공개 README와 PR 준비까지 개발 파트너로 사용했습니다.",
+        "개발 흐름: 5일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N166",
+      "branch": "Catsmanager",
+      "projectTitle": "답냥이",
+      "reviewPriority": "review-next",
+      "indicatorScore": 64,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 12,
+        "commitsFetched": 100,
+        "codeFileCount": 151,
+        "testFileCount": 47,
+        "agentFileCount": 16,
+        "lastCommitDate": "2026-07-23T13:35:01Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '답냥이'로 보입니다.",
+        "개발 흐름: 12일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 151개, 테스트 관련 파일 47개, Agent·Skill·Workflow 관련 파일 16개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N077",
+      "branch": "N077_박병관",
+      "projectTitle": "MBTI 공부·회복 루틴",
+      "reviewPriority": "review-next",
+      "indicatorScore": 63,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 66,
+        "codeFileCount": 42,
+        "testFileCount": 1,
+        "agentFileCount": 10,
+        "lastCommitDate": "2026-07-23T13:34:26Z"
+      },
+      "comments": [
+        "문제 가치: 학생·수험생은 자기에게 맞는 공부법을 'MBTI 유형'만으로 단정하거나, 반대로 기준 없이 남의 방법을 따라 하다 지칩니다. 공부 성향과 피로·스트레스 신호가 한곳에 정리되지 않아, 오늘 무엇을 어떻게 공부할지 정하고 그 방식이 실제로 맞는지 확인하기 어렵습니다.",
+        "기능 구현: MBTI와 공부·스트레스 설문을 함께 받아 학습 선호와 피로 패턴을 행동지표로 정리합니다. / 규칙 기반으로 오늘 시도할 공부법 TOP 3와 회복 루틴을 추천하고 근거를 보여줍니다.",
+        "AI 협업: 기획부터 구현, 디자인, 테스트, PR 작성까지 Agent와 Skill을 함께 사용했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 66개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N126",
+      "branch": "N126_이상진",
+      "projectTitle": "번개모임 · 소모임",
+      "reviewPriority": "review-next",
+      "indicatorScore": 63,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 16,
+        "commitsFetched": 98,
+        "codeFileCount": 84,
+        "testFileCount": 28,
+        "agentFileCount": 1,
+        "lastCommitDate": "2026-07-23T13:34:05Z"
+      },
+      "comments": [
+        "문제 가치: 동네에서 즉흥적으로 함께 운동하거나 취미를 즐길 사람을 구하기 어렵습니다.",
+        "기능 구현: 번개모임은 지금 바로 모일 사람을 모집하고 정원이 차면 자동으로 마감됩니다. / 소모임은 모임장이 신청자를 승인·거절해 멤버를 직접 관리합니다.",
+        "AI 협업: 브레인스토밍부터 설계·구현·리뷰·문서화까지 Agent와 Skill을 조합해 진행했습니다.",
+        "개발 흐름: 16일에 걸쳐 확인된 커밋 98개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N144",
+      "branch": "N144_인민에이",
+      "projectTitle": "AI 분리배출 도우미",
+      "reviewPriority": "review-next",
+      "indicatorScore": 63,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 17,
+        "commitsFetched": 72,
+        "codeFileCount": 81,
+        "testFileCount": 7,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T13:37:00Z"
+      },
+      "comments": [
+        "문제 가치: 한국의 분리배출 규정은 국가 공통 규정과 지자체별 규정이 뒤섞여 있고 품목별 처리 방법도 제각각이라, 외국인이나 자취생처럼 규정을 처음 접하는 사람은 애매한 품목을 어디에 버려야 할지 판단하기 어렵습니다. 인터넷 검색이나 블로그로 찾은 정보는 오래되었거나 지역이 달라 신뢰하기 어려운 경우가 많습니다.",
+        "기능 구현: 사진을 촬영하거나 업로드하면 Vision AI가 물체를 인식하고, 공공데이터포털 공식 정보를 기반으로 분리배출 방법·부품별 분리·자주 하는 실수·이유를 단계별로 안내합니다. / 사진 촬영이 어려운 경우 품목명을 직접 검색해 동일한 결과 화면을 확인할 수 있습니다.",
+        "AI 협업: 기능 단위 기획부터 구현, 테스트, PR 작성까지 커스텀 Plan-Agent와 Claude Code를 함께 사용했습니다.",
+        "개발 흐름: 17일에 걸쳐 확인된 커밋 72개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N027",
+      "branch": "N027_김민주",
+      "projectTitle": "SpecFit (스펙핏)",
+      "reviewPriority": "review-next",
+      "indicatorScore": 62,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 71,
+        "codeFileCount": 65,
+        "testFileCount": 16,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T13:35:10Z"
+      },
+      "comments": [
+        "문제 가치: 기존 취업 플랫폼은 채용공고를 추천·검색하는 데 집중돼 있어서, 지원자 본인의 스펙 기준으로 '지금 몇 개 공고에 지원 가능한지', '무엇을 보완하면 더 많은 공고에 지원할 수 있는지'는 직접 공고를 하나씩 읽어봐야만 알 수 있습니다.",
+        "기능 구현: 학력·경력·자격증·전공·외국어 성적 등 스펙을 입력하면 실제 채용공고 862건과 항목별로 대조해 지원 가능 여부를 판정합니다. / 지원 가능 비율을 도넛 차트로, 항목별로 부족한 역량을 보완했을 때 늘어나는 공고 수 순위를 막대 차트로 시각화합니다.",
+        "AI 협업: 기획과 이슈 우선순위 결정은 제가 하고, 구현 계획 수립·코드 작성·테스트·문서화는 Claude Code의 Plan 모드와 프로젝트 전용 Skill을 함께 활용했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 71개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N086",
+      "branch": "N086_박주현",
+      "projectTitle": "CareerSignal",
+      "reviewPriority": "review-next",
+      "indicatorScore": 62,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 16,
+        "commitsFetched": 100,
+        "codeFileCount": 39,
+        "testFileCount": 1,
+        "agentFileCount": 8,
+        "lastCommitDate": "2026-07-23T13:35:53Z"
+      },
+      "comments": [
+        "문제 가치: 대학생은 채용공고에 흩어진 기술과 경험의 실제 요구 수준을 비교하기 어려워 무엇을 얼마나 준비하고 포트폴리오, 자기소개서, 면접에 어떻게 연결해야 할지 판단하기 어렵습니다.",
+        "기능 구현: 여러 채용공고에서 반복되는 기술, 경험, 요구 수준과 기업군별 차이를 통계로 보여줍니다. / 직무 기준선과 비교해 기업군과 개별 채용공고의 편차, 숨은 요구와 근거 문장을 해석합니다.",
+        "AI 협업: 저는 문제 정의, 핵심 기능, 화면과 데이터 구조를 결정하고 결과를 직접 실행·검증했습니다. Codex와 Claude는 저장소의 공통 지침과 설계 문서를 바탕으로 계획 수립, 문서 정합성 점검, 코드 구현과 테스트를 지원했습니다.",
+        "개발 흐름: 16일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N106",
+      "branch": "N106_신서연",
+      "projectTitle": "소상공인 정부 지원금 큐레이터",
+      "reviewPriority": "review-next",
+      "indicatorScore": 62,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 10,
+        "commitsFetched": 100,
+        "codeFileCount": 78,
+        "testFileCount": 7,
+        "agentFileCount": 10,
+        "lastCommitDate": "2026-07-23T13:35:04Z"
+      },
+      "comments": [
+        "문제 가치: 정부24, 소상공인시장진흥공단, 지자체 등 여러 기관 사이트에 정보가 흩어져 있어, 내 조건에 맞는 지원금을 검색·비교하기가 어렵습니다.",
+        "기능 구현: 지원금 매칭 서비스 / 지원금 찾기",
+        "AI 협업: Cursor, Claude를 사용하여 개발했습니다.",
+        "개발 흐름: 10일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N149",
+      "branch": "N149_장성현",
+      "projectTitle": "Bridge",
+      "reviewPriority": "review-next",
+      "indicatorScore": 62,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 16,
+        "commitsFetched": 74,
+        "codeFileCount": 62,
+        "testFileCount": 6,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T13:38:00Z"
+      },
+      "comments": [
+        "문제 가치: 짧고 즉각적인 소통에 익숙해지며 생각을 하나의 완성된 글로 표현해본 경험이 줄고 있습니다. 완전 공개(SNS)와 완전 사적(메신저) 사이의 중간 공간이 없어, 같은 고민을 가진 낯선 사람과 천천히 글로 연결될 기회가 부족합니다.",
+        "기능 구현: 직접 타이핑으로 장문의 편지를 처음부터 끝까지 작성합니다. (붙여넣기 차단, 글자 수 표시) / 편지를 보낸 지 24시간 후, AI가 추천한 편지를 추천 이유와 함께 전달합니다.",
+        "AI 협업: 기획을 작업 단위로 쪼개고, TDD로 구현하고, 완료 기능을 검증하는 데 Claude Code의 Agent·Skill을 함께 사용했습니다.",
+        "개발 흐름: 16일에 걸쳐 확인된 커밋 74개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": null,
+      "branch": "geulcho",
+      "projectTitle": "역기획소 (respec)",
+      "reviewPriority": "review-next",
+      "indicatorScore": 62,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 78,
+        "codeFileCount": 68,
+        "testFileCount": 7,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T13:34:00Z"
+      },
+      "comments": [
+        "문제 가치: 역기획서는 게임 기획 지망생에게 사실상 필수 포트폴리오지만, 처음 쓰는 사람은 무엇을 어떤 순서로 써야 하는지 몰라 백지 앞에서 멈춥니다. 겨우 다 쓰고 나서도 봐줄 사람이 없어, 게임 내용을 '요약'만 한 문서인지 설계 '의도까지 분석'한 문서인지 스스로 판단하기 어렵습니다.",
+        "기능 구현: 직군별 템플릿과 섹션별 작성 가이드가 내장된 에디터로, 백지가 아니라 틀부터 시작합니다. / 발행하면 즉시 Gemini가 섹션별 강점·개선점과 전체 총평을 답니다(회원 전용, 일일 횟수 제한).",
+        "AI 협업: Agent 2개와 Skill 1개를 각각 계획·검증·디자인 점검에 나눠 썼습니다. 계획 수립 Agent는 주차 목표를 하루 크기 작업으로 분해하고, 기능 검증 Agent는 완성했다고 주장하는 기능을 엔드포인트로 직접 두드려 PASS/FAIL로 판정합니다. 디자인 가이드 Skill은 새 화면이 디자인 시스템에서 벗어나지 않았는지 자체 점검합니다. 세 가지 모두 프로젝트 문서(BACKLOG.md·project-plan.md·DESIGN_SYSTEM.md)를 먼저 …",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 78개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N049",
+      "branch": "N049_김유진",
+      "projectTitle": "ConGraduation",
+      "reviewPriority": "review-next",
+      "indicatorScore": 61,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 16,
+        "commitsFetched": 77,
+        "codeFileCount": 39,
+        "testFileCount": 7,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T13:35:38Z"
+      },
+      "comments": [
+        "문제 가치: 졸업을 위해서는 전공, 교양, 다중전공, 창업교과목, 현장실습, 해외대학 인정학점, 종합설계 등 다양한 요건을 충족해야 하는데, 이 과정이 복잡해서 학생들이 현재 이수 현황과 부족한 학점, 필수 과목 이수 여부를 한눈에 파악하기 어렵습니다.",
+        "기능 구현: 학과·트랙을 선택하면 졸업요건(총학점/전공/교양, 트랙별 특수요건)을 자동으로 불러옵니다. / 실제 학사 데이터를 기반으로 한 과목 목록을 학년별로 필터링해서 수강 바구니에 담고, 총학점/전공/교양 학점을 실시간으로 계산합니다.",
+        "AI 협업: 기능 구현부터 버그 수정, 테스트 작성, 실 데이터 연동까지 Claude Code와 프로젝트 전용 디자인 Skill을 함께 사용했습니다.",
+        "개발 흐름: 16일에 걸쳐 확인된 커밋 77개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N133",
+      "branch": "N133_이은서",
+      "projectTitle": "AI시대 사고력 깨우기 - 깸",
+      "reviewPriority": "review-next",
+      "indicatorScore": 61,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 8,
+        "commitsFetched": 100,
+        "codeFileCount": 111,
+        "testFileCount": 22,
+        "agentFileCount": 9,
+        "lastCommitDate": "2026-07-23T13:36:38Z"
+      },
+      "comments": [
+        "개발 흐름: 8일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N059",
+      "branch": "N059_김태윤",
+      "projectTitle": "Green Connect",
+      "reviewPriority": "review-next",
+      "indicatorScore": 60,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 83,
+        "codeFileCount": 70,
+        "testFileCount": 3,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T13:33:58Z"
+      },
+      "comments": [
+        "문제 가치: 건강기능식품 시장은 브랜드 인지도와 광고비가 큰 대기업 제품이 우선적으로 노출되고, 실제로 내 몸에 필요한 성분인지, 이미 먹고 있는 다른 제품과 성분이 겹쳐 과다 섭취 위험은 없는지는 소비자가 스스로 판단하기 어렵다. Green Connect는 기업 규모와 무관하게 성분·품질 기준만으로 제품을 추천해 이 정보 비대칭을 해소한다.",
+        "기능 구현: 증상·생활 패턴 체크리스트 기반 필요 성분 추천 / 복용 중인 영양제 입력 시 성분 중복 및 상한 섭취량 초과 여부 경고",
+        "AI 협업: Claude Code를 활용해 기획 문서(백로그, 아키텍처 문서)를 함께 정리하고, TDD 절차에 따라 테스트를 먼저 작성한 뒤 구현하는 방식으로 검증 로직을 추가했다. 또한 실제 코드를 기준으로 화면-API-DB 흐름을 다이어그램으로 재정리해 진단 기록 미저장, 인증 누락 등 실제 구현과 기획이 어긋난 지점을 발견하고 다음 작업 우선순위에 반영했다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 83개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N114",
+      "branch": "N114_유승혁",
+      "projectTitle": "하루 체크아웃",
+      "reviewPriority": "review-next",
+      "indicatorScore": 60,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 16,
+        "commitsFetched": 64,
+        "codeFileCount": 30,
+        "testFileCount": 8,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T13:35:46Z"
+      },
+      "comments": [
+        "문제 가치: 교내 학생상담센터는 무료지만 인력 부족으로 대기가 길고, 공공 지원 제도는 절차가 복잡해 학생이 스스로 찾아 이용하기 어렵습니다. 상담에 대한 심리적 부담도 있어 많은 학생이 AI 챗봇에 고민을 털어놓지만, 일반 챗봇은 과도하게 동조하고 대화가 휘발되어 자기 상태를 누적해서 파악하기 어렵습니다.",
+        "기능 구현: 하루의 감정을 자유롭게 입력하면 감정, 원인, 내일의 작은 행동 3개 카드로 정리해줍니다. / 정리된 결과를 직접 수정하고 저장해서 캘린더 형태로 기록을 모아볼 수 있습니다.",
+        "AI 협업: 기능 설계, 테스트 작성, 완료 검증까지 Skill과 Agent를 연결해서 사용했습니다.",
+        "개발 흐름: 16일에 걸쳐 확인된 커밋 64개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N017",
+      "branch": "N017_김도현",
+      "projectTitle": "진로 에이전트 서비스",
+      "reviewPriority": "review-next",
+      "indicatorScore": 59,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 71,
+        "codeFileCount": 36,
+        "testFileCount": 4,
+        "agentFileCount": 6,
+        "lastCommitDate": "2026-07-23T14:20:04Z"
+      },
+      "comments": [
+        "문제 가치: 대학생은 신입 공채·공모전·대외활동·인턴십 공고 중 자신에게 맞는 것을 고르기 어렵고, 자기소개서 문항에 맞춰 자기 경험을 정리해 쓰는 데도 어려움을 겪습니다.",
+        "기능 구현: 전공·부전공·학점·자격증·경험을 입력하면 맞춤 공고를 추천하고, 추천 이유와 주요 조건을 함께 보여줍니다. / 선택한 공고의 자소서 문항을 분석해 사용자 경험을 반영한 문항별 초안을 생성합니다.",
+        "AI 협업: 체크리스트 기반 기능 개발부터 테스트 작성, 실제 동작 검증, 배포 설정까지 Claude Code와 함께 진행했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 71개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N001",
+      "branch": "N001_강민구",
+      "projectTitle": "REFIT — AI 운동 루틴 적응 코치",
+      "reviewPriority": "review-next",
+      "indicatorScore": 58,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 84,
+        "codeFileCount": 46,
+        "testFileCount": 6,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T13:36:45Z"
+      },
+      "comments": [
+        "문제 가치: 저는 통증이나 시간 부족으로 계획한 운동을 못 할 때, 오늘 뭘 해야 할지 판단하는 데 시간을 쓰거나 판단을 미루고 그냥 스킵합니다. 통증이 생기면 어떤 운동을 빼고 무엇으로 대체해야 할지 스스로 판단해야 하고, 시간이 없어 세션을 건너뛰면 이번 주 스케줄을 어떻게 조정할지도 매번 다시 고민해야 합니다.",
+        "기능 구현: 통증 부위를 선택하면 관여 관절 필터링으로 하드 제외하고, 같은 타겟 부위의 대체 운동을 정적 운동 테이블 안에서 골라 추천합니다. / 오늘 세션을 스킵하면 이번 주 빈 휴식일 유무와 인접 세션 부위 중복 금지(48시간) 제약을 확인해 자동으로 재배치하거나 기록만 남깁니다.",
+        "AI 협업: 기획 문서 작성부터 기능 설계, TDD 구현, 버그 수정까지 Claude Code와 함께 설계서 승인 → 구현 → 검증 절차를 반복하며 개발했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 84개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N043",
+      "branch": "N043_김예린",
+      "projectTitle": "DevChat",
+      "reviewPriority": "review-next",
+      "indicatorScore": 58,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 18,
+        "commitsFetched": 93,
+        "codeFileCount": 89,
+        "testFileCount": 31,
+        "agentFileCount": 8,
+        "lastCommitDate": "2026-07-23T13:37:54Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 'DevChat'로 보입니다.",
+        "개발 흐름: 18일에 걸쳐 확인된 커밋 93개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 89개, 테스트 관련 파일 31개, Agent·Skill·Workflow 관련 파일 8개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N107",
+      "branch": "N107_신주하",
+      "projectTitle": "동네 가게 운영 도우미",
+      "reviewPriority": "review-next",
+      "indicatorScore": 58,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 12,
+        "commitsFetched": 100,
+        "codeFileCount": 107,
+        "testFileCount": 19,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T13:35:33Z"
+      },
+      "comments": [
+        "문제 가치: 매출, 재고, 공지 정보를 여러 도구에서 따로 확인해야 해서 매장 운영 현황을 한눈에 파악하기 어렵습니다.",
+        "기능 구현: 오늘의 매출과 주문 현황을 요약해서 보여줍니다. / 재고가 부족한 상품을 알려줍니다.",
+        "AI 협업: 기획부터 구현, 테스트, PR 작성까지 Agent와 Skill을 함께 사용했습니다.",
+        "개발 흐름: 12일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N158",
+      "branch": "N158_정지웅",
+      "projectTitle": "관계형 AI",
+      "reviewPriority": "review-next",
+      "indicatorScore": 58,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 13,
+        "commitsFetched": 42,
+        "codeFileCount": 51,
+        "testFileCount": 6,
+        "agentFileCount": 6,
+        "lastCommitDate": "2026-07-23T13:37:22Z"
+      },
+      "comments": [
+        "문제 가치: 감정을 표현하는 사용자는 공감과 다음 대화를 원하지만 기존 자동 응답 서비스는 감정을 단순 분류하는 데 그쳐 대화의 흐름이 쉽게 끊깁니다.",
+        "기능 구현: 상황을 입력하고 얼굴 표정과 목소리 어조를 선택할 수 있습니다. / 상황과 감정 신호를 바탕으로 감정 점수와 판단 근거를 보여줍니다.",
+        "AI 협업: 기능 계획 Agent로 작업을 분해하고, 테스트 검증 Skill의 red-green 절차와 기능 검증 Agent를 사용해 구현 결과를 점검했습니다.",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 42개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": null,
+      "branch": "maeumum",
+      "projectTitle": "소상공인 폐업 도우미",
+      "reviewPriority": "review-next",
+      "indicatorScore": 58,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 57,
+        "codeFileCount": 33,
+        "testFileCount": 9,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T13:34:29Z"
+      },
+      "comments": [
+        "문제 가치: 폐업 시 챙겨야 할 정보(폐업신고, 세무 신고, 지원금)가 홈택스·정부24·소상공인시장진흥공단 등 여러 기관에 흩어져 있습니다. 업종·직원 유무·임대 여부에 따라 필요한 절차가 다른데 이를 구분해주는 곳이 없고, 세무 신고처럼 마감이 있는 항목의 우선순위를 알려주는 도구도 없습니다.",
+        "기능 구현: 5문항 온보딩(업종/법인여부/직원유무/임대여부/폐업예정일)으로 개인 상황에 맞는 항목만 필터링합니다. / 각 항목에 '왜 나에게 해당하는지' 근거와 D-day(마감기한)를 함께 표시합니다.",
+        "AI 협업: 기능 분해부터 구현, 디자인 일관성 검토, 기능 검증까지 Agent와 Skill을 단계별로 활용했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 57개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N026",
+      "branch": "N026_김민재",
+      "projectTitle": "TideNote",
+      "reviewPriority": "review-next",
+      "indicatorScore": 57,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 35,
+        "codeFileCount": 23,
+        "testFileCount": 3,
+        "agentFileCount": 6,
+        "lastCommitDate": "2026-07-23T13:34:44Z"
+      },
+      "comments": [
+        "문제 가치: 각성이 낮은 새벽 시간대의 자기개방은 구조적으로 더 깊어지지만, 지금의 AI는 그 발화가 어떤 상태에서 만들어졌는지 기억하지 못한 채 그대로 다시 보여줍니다. 그래서 다음날 아침 자신의 새벽 대화를 낯설게 느끼는 경험이 생깁니다.",
+        "기능 구현: 하루 최소 1회, 지금 상태(Valence/Arousal)를 슬라이더로 체크인합니다. / 발화가 생성된 시점의 상태와 다시 보는 시점의 상태 격차가 크면 원문 대신 요약만 먼저 보여줍니다.",
+        "AI 협업: 계획 수립부터 기능 검증, 코드 검증, 테스트 작성까지 단계별로 Agent와 Skill을 만들어 실제로 사용했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 35개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N069",
+      "branch": "N069_류진환",
+      "projectTitle": "적합도",
+      "reviewPriority": "review-next",
+      "indicatorScore": 57,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 14,
+        "commitsFetched": 55,
+        "codeFileCount": 108,
+        "testFileCount": 1,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T13:36:01Z"
+      },
+      "comments": [
+        "문제 가치: 구직자는 수많은 공고 중 내 이력에 실제로 맞는 곳이 어디인지 판단하기 어렵고, 포지션마다 이력서를 새로 맞춰 쓰는 데 시간이 많이 듭니다.",
+        "기능 구현: 자격증, 경력, 포트폴리오 등 이력을 입력하고 관리합니다. / 이력과 공고 요구조건을 비교해 적합도를 계산하고 높은 순으로 정렬합니다.",
+        "AI 협업: 기획, 설계, 구현, 디버깅, PR 작성까지 대화형으로 AI를 사용했습니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 55개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N167",
+      "branch": "N167_채민석",
+      "projectTitle": "ShowUp — 노쇼·악성 고객 이력 관리 및 위험도 경고",
+      "reviewPriority": "review-next",
+      "indicatorScore": 57,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 14,
+        "commitsFetched": 99,
+        "codeFileCount": 66,
+        "testFileCount": 8,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T14:19:44Z"
+      },
+      "comments": [
+        "문제 가치: 예약제로 운영하는 소상공인이 노쇼·상습 지각·폭언·환불 분쟁 같은 문제 고객을 반복해서 겪으면서도, 어떤 고객이 위험한지 기록하고 예약 전에 확인할 수단이 없어 같은 피해를 계속 반복합니다.",
+        "기능 구현: 고객 이벤트 기록 — 예약 상태 원터치 + 악성 행동 사건 기록 / 위험도 조회 + 자동 경고 — 3등급 표시, 노쇼 3회+/abuse 1회+ 시 경고",
+        "AI 협업: Hermes Agent와 Ollama Pro 모델로 리드/프론트엔드/백엔드/보안 4개 세션을 분리해 역할별 개발. 각 세션이 독립적으로 작성·검증·커밋하고 리드가 통합 QA를 진행했습니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 99개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N004",
+      "branch": "N004_강현서",
+      "projectTitle": "IRIS (디스코드 기반 대학 공지 알리미)",
+      "reviewPriority": "review-next",
+      "indicatorScore": 56,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 16,
+        "commitsFetched": 70,
+        "codeFileCount": 74,
+        "testFileCount": 2,
+        "agentFileCount": 1,
+        "lastCommitDate": "2026-07-23T13:36:50Z"
+      },
+      "comments": [
+        "문제 가치: 대학 공지는 언제 올라올지 알기 어려워 사용자가 사이트를 반복해서 확인해야 합니다. 하지만 새 공지를 확인해도 자신에게 필요한 내용이 아닐 때가 많습니다.",
+        "기능 구현: 관리자 페이지에서 공지 사이트 등록 / 관리자 페이지에서 카테고리·채널·역할 설정",
+        "AI 협업: 기획 정리, 기능 구현, 테스트 체크리스트 작성, 문서 갱신에 AI Agent를 활용했습니다.",
+        "개발 흐름: 16일에 걸쳐 확인된 커밋 70개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N039",
+      "branch": "N039_김승희",
+      "projectTitle": "어학시험 학습 플래너",
+      "reviewPriority": "review-next",
+      "indicatorScore": 56,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 12,
+        "commitsFetched": 37,
+        "codeFileCount": 20,
+        "testFileCount": 4,
+        "agentFileCount": 8,
+        "lastCommitDate": "2026-07-23T13:34:18Z"
+      },
+      "comments": [
+        "문제 가치: 어학시험을 준비하는 학습자가 현재 실력, 목표 점수, 시험일까지 남은 시간, 하루 학습 가능 시간, 취약 영역을 함께 고려해 실행 가능한 학습 계획을 세우기 어렵다는 문제를 해결합니다.",
+        "AI 협업: AI 에이전트를 요구사항 정리, TDD 진행, 코드 검증, 개발 흐름 문서화에 활용했습니다. 특히 createDailyStudyPlan 기능은 테스트가 먼저 실패하는 상태를 확인한 뒤 최소 구현으로 통과시키는 방식으로 완성했습니다.",
+        "개발 흐름: 12일에 걸쳐 확인된 커밋 37개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N066",
+      "branch": "N066_남연서",
+      "projectTitle": "Newssist",
+      "reviewPriority": "review-next",
+      "indicatorScore": 56,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 75,
+        "codeFileCount": 44,
+        "testFileCount": 2,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T14:20:22Z"
+      },
+      "comments": [
+        "문제 가치: 면접이나 프로젝트를 준비하며 시사 흐름을 알고 싶어도 어떤 뉴스를 찾아봐야 할지 막막하고, 어려운 용어 때문에 기사를 읽다가 포기하게 됩니다.",
+        "기능 구현: 관심 키워드 기반 뉴스 피드 수집 및 북마크 / AI 기사 요약과, 입문/일반 난이도별로 원문을 다시 써주는 쉽게 설명 기능",
+        "AI 협업: Claude Code를 메인 코딩 어시스턴트로 사용해 기획-구현-디버깅-PR 준비까지 함께 진행했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 75개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N090",
+      "branch": "N090_박지현",
+      "projectTitle": "챌린지로그",
+      "reviewPriority": "review-next",
+      "indicatorScore": 56,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 13,
+        "commitsFetched": 66,
+        "codeFileCount": 57,
+        "testFileCount": 5,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T14:19:51Z"
+      },
+      "comments": [
+        "문제 가치: 혼자 기록하는 습관은 며칠 하다 흐지부지되기 쉽고, 기존 SNS는 전체 공개라 비교와 피로를 유발합니다. 비교 없이 함께 꾸준함을 이어갈 수 있는 방식이 필요했습니다.",
+        "기능 구현: 이메일로 회원가입하고 로그인합니다. / 매일 오전 7시 기준으로 바뀌는 오늘의 랜덤 챌린지를 확인합니다.",
+        "AI 협업: 계획 수립과 기능 검증을 각각 전담하는 서브에이전트 2개를 만들어 이번 주 개발에 사용했습니다.",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 66개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N155",
+      "branch": "N155_정사임",
+      "projectTitle": ".github, .vscode, AI_agent",
+      "reviewPriority": "review-next",
+      "indicatorScore": 56,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 75,
+        "codeFileCount": 95,
+        "testFileCount": 14,
+        "agentFileCount": 153,
+        "lastCommitDate": "2026-07-23T13:34:39Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.github, .vscode, AI_agent'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 75개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 95개, 테스트 관련 파일 14개, Agent·Skill·Workflow 관련 파일 153개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N174",
+      "branch": "N174_최서원",
+      "projectTitle": "빨래집사",
+      "reviewPriority": "review-next",
+      "indicatorScore": 56,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 8,
+        "commitsFetched": 100,
+        "codeFileCount": 49,
+        "testFileCount": 5,
+        "agentFileCount": 10,
+        "lastCommitDate": "2026-07-23T13:35:41Z"
+      },
+      "comments": [
+        "문제 가치: 무인빨래방은 운영자가 매장에 상주하지 않아, 세탁이 끝난 뒤에도 고객이 세탁물을 오랫동안 찾아가지 않는 방치 문제가 자주 발생합니다. 방치된 세탁물은 다음 손님이 기계를 쓰지 못하게 하고 매장 회전율을 떨어뜨리며 민원으로 이어집니다.",
+        "기능 구현: 전력 데이터와 도어 센서로 세탁 시작·탈수·종료·방치 여부를 사람 입력 없이 자동으로 감지합니다. / 세탁이 끝난 뒤 일정 시간 수거되지 않으면 단계적으로 수거 알림을 보내고, 그래도 방치되면 사장님에게 알립니다.",
+        "AI 협업: 기획 문서(CLAUDE.md·docs/)를 단일 진실 원천으로 두고, 역할별 Agent와 Skill을 기획부터 구현·검증까지 함께 사용했습니다.",
+        "개발 흐름: 8일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N183",
+      "branch": "N183_황지영",
+      "projectTitle": "콕 — ADHD 친화적 할 일 관리 Agent",
+      "reviewPriority": "review-next",
+      "indicatorScore": 56,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 12,
+        "commitsFetched": 59,
+        "codeFileCount": 20,
+        "testFileCount": 1,
+        "agentFileCount": 9,
+        "lastCommitDate": "2026-07-23T13:36:29Z"
+      },
+      "comments": [
+        "문제 가치: ADHD 특성이 있으면 할 일이 커 보일수록 시작 자체가 안 되고, 미룬 걸 벌점처럼 보여주는 앱은 오히려 이탈로 이어집니다. 콕은 Agent가 대신 작게 쪼개고, 미룬 것도 죄책감 없이 다시 배치해주는 방식으로 이 문제를 완화합니다.",
+        "기능 구현: 두서없이 적은 할 일을 25분 이내 마이크로스텝으로 자동 분할하고 분류(청소/정리, 연락 등 7종)합니다. / 오늘 할 일 하나에만 집중하는 One-Focus View와 남은 시간 비율만큼 물이 차오르는 타이머를 보여줍니다.",
+        "AI 협업: 이슈 등록부터 구현, 교차 리뷰, PR까지 전 과정을 Task/Checklist/Skill 계약 문서와 Agent 워크플로우로 관리했습니다.",
+        "개발 흐름: 12일에 걸쳐 확인된 커밋 59개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N006",
+      "branch": "N006_경하영",
+      "projectTitle": "자취방 청결관리사",
+      "reviewPriority": "review-next",
+      "indicatorScore": 55,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 13,
+        "commitsFetched": 38,
+        "codeFileCount": 39,
+        "testFileCount": 7,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T13:34:34Z"
+      },
+      "comments": [
+        "문제 가치: 자취생은 혼자 집 관리를 하기 위한 전문 지식이 부족하고, 문제의 원인을 모를 때 상황에 맞는 진단이 어렵다.",
+        "기능 구현: 턴제 질문으로 악취 원인 추론 / 베이지안 확률 갱신으로 정확도 향상",
+        "AI 협업: 진단 로직은 코드가 소유하고, LLM은 자유텍스트→KB어휘 변환(인식자)과 결정→문장 변환(설명자) 역할만 수행",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 38개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N129",
+      "branch": "N129_이시우",
+      "projectTitle": "CampusCart",
+      "reviewPriority": "review-next",
+      "indicatorScore": 55,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 36,
+        "codeFileCount": 38,
+        "testFileCount": 4,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T13:37:39Z"
+      },
+      "comments": [
+        "문제 가치: 대학생이 혼자 사기에는 양이 많거나 배송비가 부담되는 물건이 있어도 주변에서 함께 구매할 사람을 찾기 어렵고, 참여자마다 위치가 달라 모두에게 적당한 수령 장소를 정하기도 어렵습니다.",
+        "기능 구현: 공동구매를 만들고 모집 중인 목록을 확인할 수 있습니다. / 로그인한 사용자가 수량과 출발 위치를 선택해 공동구매에 참여할 수 있습니다.",
+        "AI 협업: 계획 Agent와 검증 Agent를 활용해 기능을 나누고, 구현 후에는 테스트와 실제 브라우저 동작을 함께 확인했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 36개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N168",
+      "branch": "N168_채민지",
+      "projectTitle": "ShortsGen - AI 쇼츠 자동 생성 대시보드",
+      "reviewPriority": "review-next",
+      "indicatorScore": 55,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 13,
+        "commitsFetched": 49,
+        "codeFileCount": 50,
+        "testFileCount": 0,
+        "agentFileCount": 6,
+        "lastCommitDate": "2026-07-23T13:37:49Z"
+      },
+      "comments": [
+        "문제 가치: SNS(릴스/쇼츠/틱톡) 트렌드는 몇 주 단위로 급격하게 변하지만, 소상공인 사장님들은 본업(가게 운영)으로 인해 트렌드를 추적하고 영상을 제작할 시간과 리소스가 절대적으로 부족합니다. 결과적으로 매출로 이어질 수 있는 SNS 마케팅 기회를 놓치고 있습니다.",
+        "기능 구현: [object Object] / [object Object]",
+        "AI 협업: Claude Code의 multi-agent 워크플로우를 사용하여 복잡한 AI 파이프라인과 프론트엔드-백엔드 통합 작업을 효율적으로 처리",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 49개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N179",
+      "branch": "N179_표정한",
+      "projectTitle": "끼니픽",
+      "reviewPriority": "review-next",
+      "indicatorScore": 55,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 11,
+        "commitsFetched": 100,
+        "codeFileCount": 61,
+        "testFileCount": 3,
+        "agentFileCount": 6,
+        "lastCommitDate": "2026-07-23T13:37:12Z"
+      },
+      "comments": [
+        "문제 가치: 기존 레시피 서비스는 재료 하나를 검색하면 요리는 알려주지만 \"냉장고에 있는 여러 재료를 동시에 소진할 수 있는 요리\"는 걸러주지 않고, 기존 가격비교 서비스는 상품 단위 최저가 비교엔 강해도 \"요리 한 그릇을 만들려면 뭘 얼마에 사야 하는지\"는 알려주지 않는다. 그 사이에서 사용자는 냉장고 앞에서 뭘 해먹을지 결정하지 못한 채 배달을 시키거나, 할인 상품에 이끌려 필요 없는 재료를 사들이고, 여러 쇼핑몰 앱을 오가며 가격을 비교하느라 시간을 쓴다.",
+        "기능 구현: 냉장고에 있는 재료를 체크하면, 보유 재료만으로 완성되는 요리와 1~2개만 더 사면 완성되는 요리를 구분해서 추천 / 음식 종류·조리 시간·가격순 필터로 추천 리스트 좁히기",
+        "AI 협업: Claude Code가 요구사항 파악부터 구현, 실제 브라우저 검증까지 개발 전 과정에 참여했다. 단순히 요청받은 코드를 작성하는 데 그치지 않고, 실제 API 응답을 직접 조사해 문제의 근본 원인을 찾아내고, 프로젝트에 이미 정의된 디자인 시스템·저장소 컨벤션(CLAUDE.md, DESIGN_SYSTEM.md)을 그대로 따르면서 기능을 확장했다.",
+        "개발 흐름: 11일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N016",
+      "branch": "HappyGogildong",
+      "projectTitle": "마감할인 — 로컬 마감 재고 매칭 플랫폼",
+      "reviewPriority": "review-next",
+      "indicatorScore": 54,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 14,
+        "commitsFetched": 44,
+        "codeFileCount": 71,
+        "testFileCount": 4,
+        "agentFileCount": 1,
+        "lastCommitDate": "2026-07-23T13:35:08Z"
+      },
+      "comments": [
+        "문제 가치: 카페·베이커리는 당일 소진해야 하는 재고를 매일 떠안지만, 마감 시점에 남은 재고를 즉시 알릴 저비용 채널이 없어 그대로 폐기됩니다. 반대로 근처 소비자는 어느 가게가 지금 마감 할인을 하는지 알 방법이 없습니다. 버려질 재고와 그것을 싸게 살 근처 사람이 서로를 실시간으로 찾지 못하는 것이 핵심 문제입니다.",
+        "기능 구현: 사장님이 마감 상품의 수량·할인가·픽업 마감 시각을 30초 만에 등록합니다. / 관심 카테고리·즐겨찾기 가게와 위치 조건에 맞는 소비자에게만 알림을 보냅니다.",
+        "AI 협업: 계획·구현·검증·학습을 역할별 서브에이전트와 스킬로 나눠 진행했고, 매 Task를 이슈 등록부터 검증·커밋까지 같은 Workflow로 처리했습니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 44개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N034",
+      "branch": "N034_김선호",
+      "projectTitle": "FirstPR",
+      "reviewPriority": "review-next",
+      "indicatorScore": 54,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 5,
+        "commitsFetched": 100,
+        "codeFileCount": 53,
+        "testFileCount": 9,
+        "agentFileCount": 10,
+        "lastCommitDate": "2026-07-23T14:19:59Z"
+      },
+      "comments": [
+        "문제 가치: 오픈소스에 기여하고 싶어도 어떤 프로젝트·이슈부터 시작해야 할지 막막해하는 개발자가 많습니다. 관심 있는 레포를 찾아도 이슈 난이도가 가늠이 안 돼 선뜻 시작하지 못합니다.",
+        "기능 구현: GitHub ID의 커밋·PR·기여 이력을 분석해 기술 성향과 실력 수준(beginner/intermediate/advanced)을 파악합니다. / 선호 언어·난이도·관심 주제를 입력하면 규칙 기반 점수로 레포·이슈를 추천합니다.",
+        "AI 협업: 기획부터 구현·테스트·실서버 검증·문서화·PR 작성까지, Plan Mode와 프로젝트 전용 Skill 8개를 함께 사용했습니다.",
+        "개발 흐름: 5일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N071",
+      "branch": "N071_문도경",
+      "projectTitle": "빨래집사",
+      "reviewPriority": "review-next",
+      "indicatorScore": 54,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 8,
+        "commitsFetched": 100,
+        "codeFileCount": 40,
+        "testFileCount": 6,
+        "agentFileCount": 9,
+        "lastCommitDate": "2026-07-23T13:35:43Z"
+      },
+      "comments": [
+        "문제 가치: 무인빨래방은 운영자가 매장에 상주하지 않아, 세탁이 끝난 뒤에도 고객이 세탁물을 오랫동안 찾아가지 않는 방치 문제가 자주 발생합니다. 방치된 세탁물은 다음 손님이 기계를 쓰지 못하게 하고 매장 회전율을 떨어뜨리며 민원으로 이어집니다.",
+        "기능 구현: 전력 데이터와 도어 센서로 세탁 시작·탈수·종료·방치 여부를 사람 입력 없이 자동으로 감지합니다. / 세탁이 끝난 뒤 일정 시간 수거되지 않으면 단계적으로 수거 알림을 보내고, 그래도 방치되면 사장님에게 알립니다.",
+        "AI 협업: 기획 문서(CLAUDE.md·docs/)를 단일 진실 원천으로 두고, 역할별 Agent와 Skill을 기획부터 구현·검증까지 함께 사용했습니다.",
+        "개발 흐름: 8일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N083",
+      "branch": "N083_박소현",
+      "projectTitle": "LLM 사용 보안 게이트웨이",
+      "reviewPriority": "review-next",
+      "indicatorScore": 54,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 16,
+        "commitsFetched": 55,
+        "codeFileCount": 44,
+        "testFileCount": 0,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T14:20:12Z"
+      },
+      "comments": [
+        "문제 가치: 업무에 ChatGPT·Claude 같은 외부 LLM을 쓰면서 프롬프트에 고객 전화번호나 사내 기밀을 그대로 담아 보내는 사고가 생길 수 있습니다. 하지만 이를 막을 지점이 없어서, 누가 어떤 내용을 보내는지 조직이 파악하기 어렵고 사후에 로그를 봐도 정보는 이미 외부로 나간 뒤입니다.",
+        "기능 구현: 프롬프트에 담긴 전화번호·이메일 같은 개인정보를 찾아 가린 뒤 LLM에 전달합니다. / 코드에 박힌 API 키·사설 IP·내부 도메인을 값만 가리고 코드 로직은 그대로 전달합니다.",
+        "AI 협업: 주간 계획 수립과 UI 작업 기준 적용에 Agent와 Skill을 사용했습니다.",
+        "개발 흐름: 16일에 걸쳐 확인된 커밋 55개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N178",
+      "branch": "N178_최현진",
+      "projectTitle": "SUBZIP · 구독 비용 정산 & AI 만족도 리포트",
+      "reviewPriority": "review-next",
+      "indicatorScore": 54,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 13,
+        "commitsFetched": 100,
+        "codeFileCount": 49,
+        "testFileCount": 3,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T13:37:14Z"
+      },
+      "comments": [
+        "문제 가치: 여러 명이 구독 계정을 공유하며 매달 직접 정산·이체를 반복해야 하고, 계정을 공유하는 경우 개인의 만족도와 실제로 부담하는 고정 지출을 파악하기 어렵습니다.",
+        "기능 구현: 결제일에 맞춰 파티장에게는 정산 시작 알림을, 파티원에게는 간편 이체 링크를 이메일과 PWA 푸시로 자동 전송합니다. / 카카오톡 공유로 초대 링크를 전달하면 구글 로그인과 동시에 자동으로 파티원으로 등록됩니다.",
+        "AI 협업: 기획 문서를 API 명세/DB 스키마로 옮기는 Agent와, 정해진 컨벤션에 따라 BE→FE를 구현하는 Skill을 연결해 기능을 개발했습니다.",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N007",
+      "branch": "N007_곽호영",
+      "projectTitle": ".claude, .github, CLAUDE.md",
+      "reviewPriority": "review-next",
+      "indicatorScore": 53,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 14,
+        "commitsFetched": 97,
+        "codeFileCount": 594,
+        "testFileCount": 142,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T13:37:29Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.claude, .github, CLAUDE.md'로 보입니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 97개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 594개, 테스트 관련 파일 142개, Agent·Skill·Workflow 관련 파일 3개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N081",
+      "branch": "N081-박세민",
+      "projectTitle": "알바노트",
+      "reviewPriority": "review-next",
+      "indicatorScore": 53,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 11,
+        "commitsFetched": 42,
+        "codeFileCount": 111,
+        "testFileCount": 2,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T13:34:15Z"
+      },
+      "comments": [
+        "문제 가치: 아르바이트 근무 현장에서는 근무 일정 변경, 대타 요청, 근무 시간 확인, 시급 계산 등 여러 관리 업무가 반복적으로 발생합니다. 하지만 이런 정보가 여러 도구나 개인 연락에 흩어져 있으면 사장님은 매장 운영 상황을 한눈에 파악하기 어렵고, 알바생은 본인 근무와 대타 요청 상태를 확인하기 번거롭습니다.",
+        "기능 구현: 선택한 매장의 월간 근무표를 달력 형태로 보여줍니다. / 날짜를 클릭하면 해당 날짜의 일간 근무표를 시간순 타임라인으로 확인할 수 있습니다.",
+        "AI 협업: 기획 정리부터 아키텍처 확인, 백로그 기반 기능 구현, 테스트 코드 작성까지 Codex와 함께 페어 개발 방식으로 진행했습니다.",
+        "개발 흐름: 11일에 걸쳐 확인된 커밋 42개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N131",
+      "branch": "N131_이영민",
+      "projectTitle": "DropCast - 대안자산 가격 예측 및 트레이딩",
+      "reviewPriority": "review-next",
+      "indicatorScore": 52,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 14,
+        "commitsFetched": 61,
+        "codeFileCount": 29,
+        "testFileCount": 0,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T13:34:08Z"
+      },
+      "comments": [
+        "문제 가치: 한정판 스니커즈와 tcg 등 대안 자산의 시세 변동성이 크지만, 시장 참여자들의 집단지성과 실시간 예측 데이터를 한눈에 확인하고 리스크 없이 시뮬레이션해볼 수 있는 도구가 부족합니다.",
+        "기능 구현: SNKRDUNK 랭킹 기반 대안 자산의 미래 리셀가를 가상 포인트로 예측합니다. / 유저들의 배팅액 비율에 따라 5¢~95¢ 범위에서 실시간 주가(Share Price)와 배당률이 자동 산출됩니다.",
+        "AI 협업: 기획부터 Brutalist Dark UI 개발, Express/Prisma 정산 엔진 구축까지 Agent와 Skill을 함께 사용했습니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 61개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N148",
+      "branch": "N148_장규영",
+      "projectTitle": "RideSplit",
+      "reviewPriority": "review-next",
+      "indicatorScore": 51,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 50,
+        "codeFileCount": 32,
+        "testFileCount": 2,
+        "agentFileCount": 1,
+        "lastCommitDate": "2026-07-23T13:34:42Z"
+      },
+      "comments": [
+        "문제 가치: 대학생은 이동이 필요한 순간 주변에 방향이 겹치는 동행자가 있어도 이를 알 방법이 없어서, 비용을 절감할 수 있는 택시 동승 기회를 놓치고 있습니다.",
+        "기능 구현: 같은 거점 조합과 희망 시간(±15분) 기준으로 동행 후보를 자동으로 보여줍니다. / 동행 신청과 상대방 수락 절차를 거쳐 그룹을 확정합니다.",
+        "AI 협업: 기능 구현은 TDD로, 배선 후 검증은 Agent로 진행했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 50개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N164",
+      "branch": "N164_주소연",
+      "projectTitle": "SpendMate",
+      "reviewPriority": "review-next",
+      "indicatorScore": 51,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 71,
+        "codeFileCount": 64,
+        "testFileCount": 10,
+        "agentFileCount": 15,
+        "lastCommitDate": "2026-07-23T13:37:27Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 'SpendMate'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 71개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 64개, 테스트 관련 파일 10개, Agent·Skill·Workflow 관련 파일 15개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": null,
+      "branch": "rusa1212",
+      "projectTitle": "사용자 맞춤 음성 대화형 서비스",
+      "reviewPriority": "review-next",
+      "indicatorScore": 51,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 12,
+        "commitsFetched": 35,
+        "codeFileCount": 28,
+        "testFileCount": 3,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T13:36:20Z"
+      },
+      "comments": [
+        "문제 가치: 이동 중이거나 휴식 시 스마트폰 화면을 보지 않고(Screen-free), 청각(오디오) 채널만을 활용하여 즉각적이고 가볍게 스트레스를 케어받고자 하는 잠재적 수요가 존재합니다.",
+        "기능 구현: 원하는 페르소나를 선택할 수 있습니다. / 페르소나 선택 후 음성만 있으면 대화할 수 있습니다.",
+        "AI 협업: 기획부터 구현, 테스트까지 Agent와 Skill을 함께 사용했습니다.",
+        "개발 흐름: 12일에 걸쳐 확인된 커밋 35개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N054",
+      "branch": "N054_김지욱",
+      "projectTitle": "Scholar-Sync AI",
+      "reviewPriority": "review-next",
+      "indicatorScore": 50,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 14,
+        "commitsFetched": 100,
+        "codeFileCount": 33,
+        "testFileCount": 6,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T13:37:46Z"
+      },
+      "comments": [
+        "문제 가치: Flood of Academic papers",
+        "기능 구현: match% curation / abstract summary",
+        "AI 협업: Vertical slice TDD with Antigravity CLI",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N092",
+      "branch": "N092_박채빈",
+      "projectTitle": "리뷰지기 — 소상공인을 위한 리뷰 관리 AI 에이전트",
+      "reviewPriority": "review-next",
+      "indicatorScore": 50,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 37,
+        "codeFileCount": 6,
+        "testFileCount": 2,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T13:37:37Z"
+      },
+      "comments": [
+        "문제 가치: 소상공인은 영업 중 쌓이는 리뷰에 일일이 답글을 달 시간이 없습니다. 리뷰는 매출에 직결되지만 여러 리뷰에 반복되는 불만과 개선점을 모아 분석하는 일은 사실상 불가능합니다. 특히 욕설·협박·환불 강요·허위 사실이 섞인 악성 리뷰를 만나면 신고 절차와 대응 방법을 몰라 그대로 방치하게 됩니다.",
+        "기능 구현: [object Object] / [object Object]",
+        "AI 협업: 리뷰지기는 리뷰 한 건이 들어오면 유형 분류 → 위험도 판정 → 답글 초안 생성 또는 대응 매뉴얼 제시까지 스스로 이어가고, 쌓인 리뷰에서는 변화를 감지해 인사이트를 만드는 에이전트입니다. 다만 답글 게시, 리뷰 신고, 법률 판단, 보상 제안은 어떤 경우에도 자동 실행하지 않고 항상 사장님의 확인과 실행을 거칩니다. 판단이 불확실하면 추측하지 않고 '확인 필요'로 닫는 것이 기본 동작입니다. (설계 확정, 구현은 하네스 Phase 1·3·5에서 진행 예정)",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 37개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N138",
+      "branch": "jsjh0526",
+      "projectTitle": "TeamFlow",
+      "reviewPriority": "review-next",
+      "indicatorScore": 50,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 14,
+        "commitsFetched": 45,
+        "codeFileCount": 171,
+        "testFileCount": 21,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T13:35:56Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 'TeamFlow'로 보입니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 45개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 171개, 테스트 관련 파일 21개, Agent·Skill·Workflow 관련 파일 4개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N152",
+      "branch": "N152_전진욱",
+      "projectTitle": "🐣 One-Step",
+      "reviewPriority": "review-next",
+      "indicatorScore": 50,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 76,
+        "codeFileCount": 4,
+        "testFileCount": 41,
+        "agentFileCount": 10,
+        "lastCommitDate": "2026-07-23T13:34:51Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '🐣 One-Step'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 76개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 4개, 테스트 관련 파일 41개, Agent·Skill·Workflow 관련 파일 10개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N181",
+      "branch": "N181_한다인",
+      "projectTitle": "빵지도 (PANG MAP)",
+      "reviewPriority": "review-next",
+      "indicatorScore": 49,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 13,
+        "commitsFetched": 31,
+        "codeFileCount": 61,
+        "testFileCount": 0,
+        "agentFileCount": 1,
+        "lastCommitDate": "2026-07-23T14:20:18Z"
+      },
+      "comments": [
+        "문제 가치: 대전엔 성심당을 비롯해 매력적인 베이커리가 많지만, 여러 곳을 하루에 돌아보려면 어떤 순서로 다녀야 이동이 최소화되는지 알기 어렵다. 기존 지도 앱은 출발지→목적지 하나의 경로 안내에 최적화돼 있어, 3~4곳을 한 번에 도는 '빵지순례' 동선은 결국 사용자가 직접 지도를 보며 감으로 순서를 짜야 했다. 빵지도는 가고 싶은 빵집들을 고르기만 하면 서버가 실제 거리를 계산해 최적 동선 후보를 바로 제시해준다.",
+        "기능 구현: 네이버지도 기반 대전 베이커리 지도 탐색 — 마커 클릭 시 주소/대표메뉴/영업시간 등 상세정보 표시 / 리스트 화면에서 이름순·내 주변 가까운 순·찜 많은 순 정렬 및 영업중 필터",
+        "AI 협업: Claude Code가 기획 문서를 근거로 프론트엔드와 백엔드를 처음부터 함께 설계·구현했다. 새 기능마다 구현 계획과 세부 결정사항(데이터 흐름, API 계약, UI 디테일)을 먼저 제안해 확인받은 뒤 코드를 작성했고, 매번 실제 개발 서버를 띄우고 브라우저에서 화면을 직접 조작해 정상 동작과 콘솔 에러 여부까지 검증한 뒤 결과를 보고했다.",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 31개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N099",
+      "branch": "N099_백승주",
+      "projectTitle": ".claude, .github, Agents.md",
+      "reviewPriority": "review-next",
+      "indicatorScore": 48,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 89,
+        "codeFileCount": 107,
+        "testFileCount": 17,
+        "agentFileCount": 7,
+        "lastCommitDate": "2026-07-23T13:36:23Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.claude, .github, Agents.md'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 89개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 107개, 테스트 관련 파일 17개, Agent·Skill·Workflow 관련 파일 7개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N134",
+      "branch": "N134_이은수",
+      "projectTitle": "동네 가게 운영 도우미",
+      "reviewPriority": "review-next",
+      "indicatorScore": 46,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 15,
+        "commitsFetched": 36,
+        "codeFileCount": 29,
+        "testFileCount": 1,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T13:37:19Z"
+      },
+      "comments": [
+        "문제 가치: 매출, 재고, 공지 정보를 여러 도구에서 따로 확인해야 해서 매장 운영 현황을 한눈에 파악하기 어렵습니다.",
+        "기능 구현: 오늘의 매출과 주문 현황을 요약해서 보여줍니다. / 재고가 부족한 상품을 알려줍니다.",
+        "AI 협업: 기획부터 구현, 테스트, PR 작성까지 Agent와 Skill을 함께 사용했습니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 36개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N153",
+      "branch": "N153_전홍찬",
+      "projectTitle": "NoticePilot",
+      "reviewPriority": "review-next",
+      "indicatorScore": 46,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 14,
+        "commitsFetched": 65,
+        "codeFileCount": 119,
+        "testFileCount": 58,
+        "agentFileCount": 1,
+        "lastCommitDate": "2026-07-22T13:35:00Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 'NoticePilot'로 보입니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 65개입니다. 마지막 변경은 2026-07-22입니다.",
+        "코드 구성: 코드 파일 119개, 테스트 관련 파일 58개, Agent·Skill·Workflow 관련 파일 1개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N012",
+      "branch": "N012_금소현",
+      "projectTitle": "We should do..",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 44,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 74,
+        "codeFileCount": 95,
+        "testFileCount": 15,
+        "agentFileCount": 6,
+        "lastCommitDate": "2026-07-23T13:35:13Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 'We should do..'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 74개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 95개, 테스트 관련 파일 15개, Agent·Skill·Workflow 관련 파일 6개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N185",
+      "branch": "N185_김진영",
+      "projectTitle": ".claude, .github, CLAUDE.md",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 44,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 9,
+        "commitsFetched": 50,
+        "codeFileCount": 132,
+        "testFileCount": 32,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-22T14:16:32Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.claude, .github, CLAUDE.md'로 보입니다.",
+        "개발 흐름: 9일에 걸쳐 확인된 커밋 50개입니다. 마지막 변경은 2026-07-22입니다.",
+        "코드 구성: 코드 파일 132개, 테스트 관련 파일 32개, Agent·Skill·Workflow 관련 파일 4개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N033",
+      "branch": "N033_김석준",
+      "projectTitle": "취미·성향 기반 대학생 매칭 플랫폼 — 우리결",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 43,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 37,
+        "codeFileCount": 131,
+        "testFileCount": 15,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T13:35:25Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '취미·성향 기반 대학생 매칭 플랫폼 — 우리결'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 37개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 131개, 테스트 관련 파일 15개, Agent·Skill·Workflow 관련 파일 3개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N068",
+      "branch": "N068_노정환",
+      "projectTitle": ".env.example, .github, .kiro",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 42,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 10,
+        "commitsFetched": 25,
+        "codeFileCount": 143,
+        "testFileCount": 29,
+        "agentFileCount": 1,
+        "lastCommitDate": "2026-07-23T06:49:55Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.env.example, .github, .kiro'로 보입니다.",
+        "개발 흐름: 10일에 걸쳐 확인된 커밋 25개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 143개, 테스트 관련 파일 29개, Agent·Skill·Workflow 관련 파일 1개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N150",
+      "branch": "N150_장우진",
+      "projectTitle": ".github, __pycache__, account.html",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 42,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 11,
+        "commitsFetched": 34,
+        "codeFileCount": 21,
+        "testFileCount": 0,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T14:20:15Z"
+      },
+      "comments": [
+        "개발 흐름: 11일에 걸쳐 확인된 커밋 34개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N132",
+      "branch": "N132_이용민",
+      "projectTitle": "2. 기획 문서 정리",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 41,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 95,
+        "codeFileCount": 96,
+        "testFileCount": 10,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T13:35:15Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '2. 기획 문서 정리'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 95개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 96개, 테스트 관련 파일 10개, Agent·Skill·Workflow 관련 파일 5개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N186",
+      "branch": "N186_이재호",
+      "projectTitle": ".github, .oxlintrc.json, index.html",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 41,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 35,
+        "codeFileCount": 56,
+        "testFileCount": 10,
+        "agentFileCount": 8,
+        "lastCommitDate": "2026-07-23T13:33:52Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.github, .oxlintrc.json, index.html'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 35개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 56개, 테스트 관련 파일 10개, Agent·Skill·Workflow 관련 파일 8개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": null,
+      "branch": "surleun",
+      "projectTitle": "GamePM Codex Workspace",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 41,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 38,
+        "codeFileCount": 0,
+        "testFileCount": 0,
+        "agentFileCount": 22,
+        "lastCommitDate": "2026-07-22T13:36:51Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 'GamePM Codex Workspace'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 38개입니다. 마지막 변경은 2026-07-22입니다.",
+        "코드 구성: 코드 파일 0개, 테스트 관련 파일 0개, Agent·Skill·Workflow 관련 파일 22개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N120",
+      "branch": "N120_이고은",
+      "projectTitle": ".github, backend, docs",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 40,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 38,
+        "codeFileCount": 450,
+        "testFileCount": 6,
+        "agentFileCount": 1,
+        "lastCommitDate": "2026-07-23T13:36:18Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.github, backend, docs'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 38개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 450개, 테스트 관련 파일 6개, Agent·Skill·Workflow 관련 파일 1개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N052",
+      "branch": "N052_김정훈",
+      "projectTitle": ".claude, .env.example, .github",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 39,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 17,
+        "commitsFetched": 86,
+        "codeFileCount": 72,
+        "testFileCount": 5,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T13:36:47Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.claude, .env.example, .github'로 보입니다.",
+        "개발 흐름: 17일에 걸쳐 확인된 커밋 86개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 72개, 테스트 관련 파일 5개, Agent·Skill·Workflow 관련 파일 5개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N103",
+      "branch": "N103_손태영",
+      "projectTitle": "동네 가게 운영 도우미",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 39,
+      "evidence": {
+        "hasShowcase": true,
+        "activityDays": 11,
+        "commitsFetched": 23,
+        "codeFileCount": 23,
+        "testFileCount": 0,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T14:20:02Z"
+      },
+      "comments": [
+        "문제 가치: 매출, 재고, 공지 정보를 여러 도구에서 따로 확인해야 해서 매장 운영 현황을 한눈에 파악하기 어렵습니다.",
+        "기능 구현: 오늘의 매출과 주문 현황을 요약해서 보여줍니다. / 재고가 부족한 상품을 알려줍니다.",
+        "AI 협업: 기획부터 구현, 테스트, PR 작성까지 Agent와 Skill을 함께 사용했습니다.",
+        "개발 흐름: 11일에 걸쳐 확인된 커밋 23개입니다. 마지막 변경은 2026-07-23입니다."
+      ]
+    },
+    {
+      "studentNumber": "N124",
+      "branch": "N124_이규원",
+      "projectTitle": "Beacon",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 39,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 16,
+        "commitsFetched": 53,
+        "codeFileCount": 62,
+        "testFileCount": 1,
+        "agentFileCount": 8,
+        "lastCommitDate": "2026-07-23T13:36:12Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 'Beacon'로 보입니다.",
+        "개발 흐름: 16일에 걸쳐 확인된 커밋 53개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 62개, 테스트 관련 파일 1개, Agent·Skill·Workflow 관련 파일 8개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N160",
+      "branch": "N160_조민훈",
+      "projectTitle": "자격증·스펙 취득 경로 플래너",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 38,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 14,
+        "commitsFetched": 35,
+        "codeFileCount": 86,
+        "testFileCount": 10,
+        "agentFileCount": 5,
+        "lastCommitDate": "2026-07-23T13:37:02Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '자격증·스펙 취득 경로 플래너'로 보입니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 35개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 86개, 테스트 관련 파일 10개, Agent·Skill·Workflow 관련 파일 5개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N117",
+      "branch": "N117_윤서준",
+      "projectTitle": ".github, Design_skill.md, files",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 36,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 55,
+        "codeFileCount": 75,
+        "testFileCount": 12,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T13:35:36Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.github, Design_skill.md, files'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 55개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 75개, 테스트 관련 파일 12개, Agent·Skill·Workflow 관련 파일 2개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N123",
+      "branch": "N123_이규민",
+      "projectTitle": ".claude, .github, cv-to-portfolio",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 36,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 13,
+        "commitsFetched": 64,
+        "codeFileCount": 53,
+        "testFileCount": 5,
+        "agentFileCount": 8,
+        "lastCommitDate": "2026-07-22T13:37:35Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.claude, .github, cv-to-portfolio'로 보입니다.",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 64개입니다. 마지막 변경은 2026-07-22입니다.",
+        "코드 구성: 코드 파일 53개, 테스트 관련 파일 5개, Agent·Skill·Workflow 관련 파일 8개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N147",
+      "branch": "N147_임현택",
+      "projectTitle": "전공 시각화 학습실",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 36,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 42,
+        "codeFileCount": 112,
+        "testFileCount": 1,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T13:37:51Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '전공 시각화 학습실'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 42개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 112개, 테스트 관련 파일 1개, Agent·Skill·Workflow 관련 파일 4개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N172",
+      "branch": "N172_최범규",
+      "projectTitle": "Briefy",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 36,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 63,
+        "codeFileCount": 47,
+        "testFileCount": 2,
+        "agentFileCount": 8,
+        "lastCommitDate": "2026-07-23T13:34:53Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 'Briefy'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 63개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 47개, 테스트 관련 파일 2개, Agent·Skill·Workflow 관련 파일 8개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N143",
+      "branch": "N143_이현빈",
+      "projectTitle": "Mealyze",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 34,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 12,
+        "commitsFetched": 100,
+        "codeFileCount": 114,
+        "testFileCount": 8,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T14:19:57Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 'Mealyze'로 보입니다.",
+        "개발 흐름: 12일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 114개, 테스트 관련 파일 8개, Agent·Skill·Workflow 관련 파일 3개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N093",
+      "branch": "N093_박채은",
+      "projectTitle": "CalMe",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 33,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 17,
+        "commitsFetched": 43,
+        "codeFileCount": 48,
+        "testFileCount": 6,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T13:35:48Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 'CalMe'로 보입니다.",
+        "개발 흐름: 17일에 걸쳐 확인된 커밋 43개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 48개, 테스트 관련 파일 6개, Agent·Skill·Workflow 관련 파일 2개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N002",
+      "branch": "N002_강민보",
+      "projectTitle": ".github, client, design.md",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 32,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 13,
+        "commitsFetched": 100,
+        "codeFileCount": 69,
+        "testFileCount": 9,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T13:35:18Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.github, client, design.md'로 보입니다.",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 69개, 테스트 관련 파일 9개, Agent·Skill·Workflow 관련 파일 3개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N042",
+      "branch": "N042_김영민",
+      "projectTitle": ".agent, .github, antigravity",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 32,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 14,
+        "commitsFetched": 49,
+        "codeFileCount": 6,
+        "testFileCount": 13,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T14:20:07Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.agent, .github, antigravity'로 보입니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 49개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 6개, 테스트 관련 파일 13개, Agent·Skill·Workflow 관련 파일 4개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N089",
+      "branch": "N089_박지은",
+      "projectTitle": ".agents, .github, README",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 31,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 13,
+        "commitsFetched": 66,
+        "codeFileCount": 51,
+        "testFileCount": 13,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T13:36:09Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.agents, .github, README'로 보입니다.",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 66개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 51개, 테스트 관련 파일 13개, Agent·Skill·Workflow 관련 파일 2개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N121",
+      "branch": "N121_이관학",
+      "projectTitle": ".claude, .env.example, .github",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 31,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 65,
+        "codeFileCount": 5,
+        "testFileCount": 8,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T13:35:23Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.claude, .env.example, .github'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 65개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 5개, 테스트 관련 파일 8개, Agent·Skill·Workflow 관련 파일 4개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N170",
+      "branch": "N170_최문기",
+      "projectTitle": "GameForge Agent",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 31,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 11,
+        "commitsFetched": 34,
+        "codeFileCount": 36,
+        "testFileCount": 1,
+        "agentFileCount": 9,
+        "lastCommitDate": "2026-07-21T13:36:11Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 'GameForge Agent'로 보입니다.",
+        "개발 흐름: 11일에 걸쳐 확인된 커밋 34개입니다. 마지막 변경은 2026-07-21입니다.",
+        "코드 구성: 코드 파일 36개, 테스트 관련 파일 1개, Agent·Skill·Workflow 관련 파일 9개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": null,
+      "branch": "NO55_김지훈",
+      "projectTitle": "GAZUA",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 31,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 13,
+        "commitsFetched": 57,
+        "codeFileCount": 37,
+        "testFileCount": 9,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T06:49:58Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 'GAZUA'로 보입니다.",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 57개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 37개, 테스트 관련 파일 9개, Agent·Skill·Workflow 관련 파일 4개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N013",
+      "branch": "N013_김경민",
+      "projectTitle": "👗 Pick My Clothes",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 30,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 43,
+        "codeFileCount": 57,
+        "testFileCount": 0,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T14:19:54Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '👗 Pick My Clothes'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 43개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 57개, 테스트 관련 파일 0개, Agent·Skill·Workflow 관련 파일 3개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N074",
+      "branch": "N074_박경호",
+      "projectTitle": ".claude, .github, claude.md",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 30,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 54,
+        "codeFileCount": 33,
+        "testFileCount": 3,
+        "agentFileCount": 4,
+        "lastCommitDate": "2026-07-23T06:50:13Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.claude, .github, claude.md'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 54개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 33개, 테스트 관련 파일 3개, Agent·Skill·Workflow 관련 파일 4개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": null,
+      "branch": "NO87_박준우",
+      "projectTitle": "잇다 (Itda) — 공강 기반 대학생 밥약 매칭 서비스",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 30,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 13,
+        "commitsFetched": 58,
+        "codeFileCount": 89,
+        "testFileCount": 2,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-22T13:35:49Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '잇다 (Itda) — 공강 기반 대학생 밥약 매칭 서비스'로 보입니다.",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 58개입니다. 마지막 변경은 2026-07-22입니다.",
+        "코드 구성: 코드 파일 89개, 테스트 관련 파일 2개, Agent·Skill·Workflow 관련 파일 3개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N041",
+      "branch": "N041",
+      "projectTitle": ".github, .history, .oxlintrc.json",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 29,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 11,
+        "commitsFetched": 26,
+        "codeFileCount": 75,
+        "testFileCount": 9,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T13:36:52Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.github, .history, .oxlintrc.json'로 보입니다.",
+        "개발 흐름: 11일에 걸쳐 확인된 커밋 26개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 75개, 테스트 관련 파일 9개, Agent·Skill·Workflow 관련 파일 2개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N35",
+      "branch": "N35_김성하",
+      "projectTitle": "개인 카페 스탬프 MVP",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 29,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 13,
+        "commitsFetched": 27,
+        "codeFileCount": 16,
+        "testFileCount": 0,
+        "agentFileCount": 7,
+        "lastCommitDate": "2026-07-20T13:35:33Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '개인 카페 스탬프 MVP'로 보입니다.",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 27개입니다. 마지막 변경은 2026-07-20입니다.",
+        "코드 구성: 코드 파일 16개, 테스트 관련 파일 0개, Agent·Skill·Workflow 관련 파일 7개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N044",
+      "branch": "N044_김예빈",
+      "projectTitle": "🍚 한끼바꿈 — 서비스 기획서",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 28,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 15,
+        "commitsFetched": 56,
+        "codeFileCount": 47,
+        "testFileCount": 2,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T14:19:47Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '🍚 한끼바꿈 — 서비스 기획서'로 보입니다.",
+        "개발 흐름: 15일에 걸쳐 확인된 커밋 56개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 47개, 테스트 관련 파일 2개, Agent·Skill·Workflow 관련 파일 2개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N038",
+      "branch": "N038_김승은",
+      "projectTitle": ".claude, .github, eslint.config.js",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 27,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 12,
+        "commitsFetched": 30,
+        "codeFileCount": 28,
+        "testFileCount": 7,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T13:36:35Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.claude, .github, eslint.config.js'로 보입니다.",
+        "개발 흐름: 12일에 걸쳐 확인된 커밋 30개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 28개, 테스트 관련 파일 7개, Agent·Skill·Workflow 관련 파일 3개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N048",
+      "branch": "N048_김우현",
+      "projectTitle": ".github, CLAUDE.md, client",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 27,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 14,
+        "commitsFetched": 88,
+        "codeFileCount": 67,
+        "testFileCount": 2,
+        "agentFileCount": 1,
+        "lastCommitDate": "2026-07-22T13:33:35Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.github, CLAUDE.md, client'로 보입니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 88개입니다. 마지막 변경은 2026-07-22입니다.",
+        "코드 구성: 코드 파일 67개, 테스트 관련 파일 2개, Agent·Skill·Workflow 관련 파일 1개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N112",
+      "branch": "N112_엄기윤",
+      "projectTitle": "🍊 리뷰 매니저 AI",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 27,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 14,
+        "commitsFetched": 49,
+        "codeFileCount": 62,
+        "testFileCount": 2,
+        "agentFileCount": 1,
+        "lastCommitDate": "2026-07-22T13:36:19Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '🍊 리뷰 매니저 AI'로 보입니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 49개입니다. 마지막 변경은 2026-07-22입니다.",
+        "코드 구성: 코드 파일 62개, 테스트 관련 파일 2개, Agent·Skill·Workflow 관련 파일 1개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N025",
+      "branch": "N025_김민솔",
+      "projectTitle": ".claude, .github, CLAUDE.md",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 26,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 11,
+        "commitsFetched": 31,
+        "codeFileCount": 60,
+        "testFileCount": 3,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T13:35:28Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.claude, .github, CLAUDE.md'로 보입니다.",
+        "개발 흐름: 11일에 걸쳐 확인된 커밋 31개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 60개, 테스트 관련 파일 3개, Agent·Skill·Workflow 관련 파일 3개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N097",
+      "branch": "dabinnida",
+      "projectTitle": ".github, BACKLOG.md, LifeLog_데모발표_N097_백다빈.pptx",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 26,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 14,
+        "commitsFetched": 41,
+        "codeFileCount": 14,
+        "testFileCount": 8,
+        "agentFileCount": 1,
+        "lastCommitDate": "2026-07-23T13:37:32Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.github, BACKLOG.md, LifeLog_데모발표_N097_백다빈.pptx'로 보입니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 41개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 14개, 테스트 관련 파일 8개, Agent·Skill·Workflow 관련 파일 1개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N036",
+      "branch": "N036_김소은",
+      "projectTitle": ".github, docs, project1",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 25,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 14,
+        "commitsFetched": 34,
+        "codeFileCount": 27,
+        "testFileCount": 1,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T13:38:06Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.github, docs, project1'로 보입니다.",
+        "개발 흐름: 14일에 걸쳐 확인된 커밋 34개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 27개, 테스트 관련 파일 1개, Agent·Skill·Workflow 관련 파일 2개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N122",
+      "branch": "N122_이권석",
+      "projectTitle": "🎵 SWIM",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 24,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 11,
+        "commitsFetched": 26,
+        "codeFileCount": 33,
+        "testFileCount": 7,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-22T13:35:42Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '🎵 SWIM'로 보입니다.",
+        "개발 흐름: 11일에 걸쳐 확인된 커밋 26개입니다. 마지막 변경은 2026-07-22입니다.",
+        "코드 구성: 코드 파일 33개, 테스트 관련 파일 7개, Agent·Skill·Workflow 관련 파일 2개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N021",
+      "branch": "N021_김동환",
+      "projectTitle": ".github, App.jsx, agents",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 23,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 9,
+        "commitsFetched": 27,
+        "codeFileCount": 20,
+        "testFileCount": 1,
+        "agentFileCount": 6,
+        "lastCommitDate": "2026-07-23T13:34:36Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.github, App.jsx, agents'로 보입니다.",
+        "개발 흐름: 9일에 걸쳐 확인된 커밋 27개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 20개, 테스트 관련 파일 1개, Agent·Skill·Workflow 관련 파일 6개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N046",
+      "branch": "N046_김예진",
+      "projectTitle": ".env.local.example, .github, api.md",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 23,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 12,
+        "commitsFetched": 43,
+        "codeFileCount": 24,
+        "testFileCount": 3,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T13:34:24Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.env.local.example, .github, api.md'로 보입니다.",
+        "개발 흐름: 12일에 걸쳐 확인된 커밋 43개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 24개, 테스트 관련 파일 3개, Agent·Skill·Workflow 관련 파일 2개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N102",
+      "branch": "N102_소경한",
+      "projectTitle": "팀플, 이지! (Team Project, Easy!)",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 23,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 12,
+        "commitsFetched": 47,
+        "codeFileCount": 41,
+        "testFileCount": 0,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-22T13:34:22Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '팀플, 이지! (Team Project, Easy!)'로 보입니다.",
+        "개발 흐름: 12일에 걸쳐 확인된 커밋 47개입니다. 마지막 변경은 2026-07-22입니다.",
+        "코드 구성: 코드 파일 41개, 테스트 관련 파일 0개, Agent·Skill·Workflow 관련 파일 2개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N128",
+      "branch": "N128_이승현",
+      "projectTitle": "커리어 코파일럿 (Career Copilot)",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 23,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 13,
+        "commitsFetched": 29,
+        "codeFileCount": 29,
+        "testFileCount": 0,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-23T13:36:40Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '커리어 코파일럿 (Career Copilot)'로 보입니다.",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 29개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 29개, 테스트 관련 파일 0개, Agent·Skill·Workflow 관련 파일 2개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N162",
+      "branch": "N162_조정민",
+      "projectTitle": ".env.example, AGENTS.md, CLAUDE.md",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 22,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 11,
+        "commitsFetched": 24,
+        "codeFileCount": 13,
+        "testFileCount": 4,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T13:36:57Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.env.example, AGENTS.md, CLAUDE.md'로 보입니다.",
+        "개발 흐름: 11일에 걸쳐 확인된 커밋 24개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 13개, 테스트 관련 파일 4개, Agent·Skill·Workflow 관련 파일 3개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N110",
+      "branch": "N110_안정연",
+      "projectTitle": ".github, eslint.config.js, exam-cram-scheduler",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 21,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 6,
+        "commitsFetched": 100,
+        "codeFileCount": 94,
+        "testFileCount": 1,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T13:36:07Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.github, eslint.config.js, exam-cram-scheduler'로 보입니다.",
+        "개발 흐름: 6일에 걸쳐 확인된 커밋 100개 이상입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 94개, 테스트 관련 파일 1개, Agent·Skill·Workflow 관련 파일 3개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N182",
+      "branch": "N182_한진호",
+      "projectTitle": "⚖️ Civil Litigation Evolutionary AI Agent",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 21,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 10,
+        "commitsFetched": 30,
+        "codeFileCount": 27,
+        "testFileCount": 2,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-23T06:50:07Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '⚖️ Civil Litigation Evolutionary AI Agent'로 보입니다.",
+        "개발 흐름: 10일에 걸쳐 확인된 커밋 30개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 27개, 테스트 관련 파일 2개, Agent·Skill·Workflow 관련 파일 3개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N010",
+      "branch": "N010_권소현",
+      "projectTitle": ".github, N010_권소현",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 20,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 9,
+        "commitsFetched": 29,
+        "codeFileCount": 41,
+        "testFileCount": 0,
+        "agentFileCount": 3,
+        "lastCommitDate": "2026-07-22T13:34:03Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.github, N010_권소현'로 보입니다.",
+        "개발 흐름: 9일에 걸쳐 확인된 커밋 29개입니다. 마지막 변경은 2026-07-22입니다.",
+        "코드 구성: 코드 파일 41개, 테스트 관련 파일 0개, Agent·Skill·Workflow 관련 파일 3개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N80",
+      "branch": "N80_박성민",
+      "projectTitle": "유닉스 & Git 명령어 사전",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 20,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 11,
+        "commitsFetched": 33,
+        "codeFileCount": 22,
+        "testFileCount": 0,
+        "agentFileCount": 2,
+        "lastCommitDate": "2026-07-22T14:16:20Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '유닉스 & Git 명령어 사전'로 보입니다.",
+        "개발 흐름: 11일에 걸쳐 확인된 커밋 33개입니다. 마지막 변경은 2026-07-22입니다.",
+        "코드 구성: 코드 파일 22개, 테스트 관련 파일 0개, Agent·Skill·Workflow 관련 파일 2개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N115",
+      "branch": "N115_유종건",
+      "projectTitle": "AI-Based Classroom : Designed Education For you (ABCDEF)",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 19,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 13,
+        "commitsFetched": 36,
+        "codeFileCount": 16,
+        "testFileCount": 0,
+        "agentFileCount": 0,
+        "lastCommitDate": "2026-07-23T13:34:03Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 'AI-Based Classroom : Designed Education For you (ABCDEF)'로 보입니다.",
+        "개발 흐름: 13일에 걸쳐 확인된 커밋 36개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 16개, 테스트 관련 파일 0개, Agent·Skill·Workflow 관련 파일 0개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    },
+    {
+      "studentNumber": "N165",
+      "branch": "N165_진미나",
+      "projectTitle": ".github, docs",
+      "reviewPriority": "needs-more-evidence",
+      "indicatorScore": 17,
+      "evidence": {
+        "hasShowcase": false,
+        "activityDays": 11,
+        "commitsFetched": 25,
+        "codeFileCount": 0,
+        "testFileCount": 0,
+        "agentFileCount": 1,
+        "lastCommitDate": "2026-07-23T13:37:34Z"
+      },
+      "comments": [
+        "프로젝트 확인: README 기준 '.github, docs'로 보입니다.",
+        "개발 흐름: 11일에 걸쳐 확인된 커밋 25개입니다. 마지막 변경은 2026-07-23입니다.",
+        "코드 구성: 코드 파일 0개, 테스트 관련 파일 0개, Agent·Skill·Workflow 관련 파일 1개를 확인했습니다.",
+        "추가 확인: showcase.json이 없어 문제 가치, 대상 사용자, AI 협업 방식은 학생 설명이 필요합니다."
+      ]
+    }
+  ]
+}
