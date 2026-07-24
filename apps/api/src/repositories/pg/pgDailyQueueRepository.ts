@@ -1,4 +1,4 @@
-import { queueStatusSchema } from "@baro-jinryo/shared";
+import { queueStatusSchema, type QueueSettings } from "@baro-jinryo/shared";
 import { z } from "zod";
 import type { DatabaseExecutor } from "../../db/databaseExecutor.js";
 import type {
@@ -80,10 +80,7 @@ export class PgDailyQueueRepository implements DailyQueueRepository {
     return result.rows[0] ? toDailyQueue(result.rows[0]) : null;
   }
 
-  async createOpen(
-    executor: DatabaseExecutor,
-    input: CreateDailyQueueInput,
-  ): Promise<DailyQueue> {
+  async createOpen(executor: DatabaseExecutor, input: CreateDailyQueueInput): Promise<DailyQueue> {
     const result = await executor.query<DailyQueueRow>(
       `
         INSERT INTO public.daily_queues
@@ -140,6 +137,32 @@ export class PgDailyQueueRepository implements DailyQueueRepository {
         RETURNING ${dailyQueueColumns}
       `,
       [queueId, status],
+    );
+    return result.rows[0] ? toDailyQueue(result.rows[0]) : null;
+  }
+
+  async updateSettings(
+    executor: DatabaseExecutor,
+    queueId: string,
+    settings: QueueSettings,
+  ): Promise<DailyQueue | null> {
+    const result = await executor.query<DailyQueueRow>(
+      `
+        UPDATE public.daily_queues
+        SET average_minutes_per_patient = $2,
+            preparation_threshold = $3,
+            entry_threshold = $4,
+            max_remote_waiting_patients = $5
+        WHERE id = $1
+        RETURNING ${dailyQueueColumns}
+      `,
+      [
+        queueId,
+        settings.averageMinutesPerPatient,
+        settings.preparationThreshold,
+        settings.entryThreshold,
+        settings.maxRemoteWaitingPatients,
+      ],
     );
     return result.rows[0] ? toDailyQueue(result.rows[0]) : null;
   }

@@ -24,6 +24,35 @@ class SequencedDatabaseExecutor implements DatabaseExecutor {
   }
 }
 
+const queueId = "9d166db8-b36f-409e-9e7b-c97d66bdb53f";
+
+function waitingRow(id: string, queueOrder: number) {
+  const now = new Date("2026-07-15T09:00:00.000Z");
+  return {
+    id,
+    queue_id: queueId,
+    account_id: null,
+    source: "onsite",
+    phone_number: "+821012345678",
+    ticket_number: String(queueOrder),
+    status: "onsite_waiting",
+    queue_order: queueOrder,
+    patient_count: 1,
+    lookup_token_hash: null,
+    patient_defer_count: 0,
+    no_show_move_count: 0,
+    preparation_notified_at: null,
+    onsite_near_turn_notified_at: null,
+    entry_requested_at: null,
+    arrival_deadline_at: null,
+    called_at: null,
+    cancelled_at: null,
+    created_at: now,
+    updated_at: now,
+    version: 1,
+  };
+}
+
 describe("PgWaitingRepository", () => {
   it("대기열 카운터와 활성 마지막 순서로 등록 위치를 발급한다", async () => {
     const executor = new SequencedDatabaseExecutor([
@@ -180,5 +209,27 @@ describe("PgWaitingRepository", () => {
     expect(executor.calls[0]?.queryText).toContain("arrival_deadline_at <= $3");
     expect(executor.calls[0]?.queryText).toContain("version = $2");
     expect(executor.calls[0]?.queryText).toContain("status = 'entry_requested'");
+  });
+
+  it("화면이 확인한 순서와 DB의 현재 순서가 다르면 순서 변경을 거절한다", async () => {
+    const firstId = "f904537c-6d56-43bc-9cf4-f33af8d5be03";
+    const secondId = "f904537c-6d56-43bc-9cf4-f33af8d5be04";
+    const executor = new SequencedDatabaseExecutor([
+      [],
+      [waitingRow(firstId, 1), waitingRow(secondId, 2)],
+    ]);
+    const repository = new PgWaitingRepository();
+
+    await expect(
+      repository.reorderActive(
+        executor,
+        queueId,
+        [secondId, firstId],
+        [firstId, secondId],
+      ),
+    ).resolves.toBe(false);
+
+    expect(executor.calls).toHaveLength(2);
+    expect(executor.calls[0]?.queryText).toContain("FOR UPDATE");
   });
 });

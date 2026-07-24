@@ -1,8 +1,10 @@
 import type {
   OnsiteRegistrationResult,
   OnsiteWaitingRegistrationInput,
+  StaffNotificationHistoryItem,
   StaffQueueState,
 } from "@baro-jinryo/shared";
+import { defaultQueueSettings } from "@baro-jinryo/shared";
 import express from "express";
 import type { RequestHandler } from "express";
 import request from "supertest";
@@ -20,16 +22,17 @@ const queue: StaffQueueState = {
   nextDayInputMode: "total_only",
   todayCategories: [],
   nextDayCategories: [],
+  settings: { ...defaultQueueSettings },
 };
 
-function createService(
-  overrides: Partial<StaffQueueOperations> = {},
-): StaffQueueOperations {
+function createService(overrides: Partial<StaffQueueOperations> = {}): StaffQueueOperations {
   return {
     getTodayQueue: vi.fn(async () => queue),
+    getWaitingNotifications: vi.fn(async () => []),
     saveNextDayConfiguration: vi.fn(async () => queue),
     registerOnsite: vi.fn(),
     setQueueStatus: vi.fn(async () => queue),
+    updateQueueSettings: vi.fn(async () => queue),
     changeWaitingStatus: vi.fn(async () => queue),
     holdWaiting: vi.fn(async () => queue),
     restoreWaiting: vi.fn(async () => queue),
@@ -62,20 +65,79 @@ describe("staff queue routes", () => {
       .send({ inputMode: "total_only", categories: [] })
       .expect(200);
 
-    expect(saveNextDayConfiguration).toHaveBeenCalledWith(
-      "10000000-0000-4000-8000-000000000001",
-      { inputMode: "total_only", categories: [] },
-    );
+    expect(saveNextDayConfiguration).toHaveBeenCalledWith("10000000-0000-4000-8000-000000000001", {
+      inputMode: "total_only",
+      categories: [],
+    });
   });
 
   it("오늘 대기열을 조회한다", async () => {
     const service = createService();
 
-    const response = await request(createTestApp(service))
-      .get("/api/staff/queue")
-      .expect(200);
+    const response = await request(createTestApp(service)).get("/api/staff/queue").expect(200);
 
     expect(response.body).toEqual(queue);
+  });
+
+  it("운영 설정을 검증해 서비스에 전달한다", async () => {
+    const updateQueueSettings = vi.fn(async () => queue);
+    const settings = {
+      averageMinutesPerPatient: 15,
+      preparationThreshold: 7,
+      entryThreshold: 4,
+      maxRemoteWaitingPatients: 30,
+    };
+
+    await request(createTestApp(createService({ updateQueueSettings })))
+      .patch("/api/staff/queue/settings")
+      .send(settings)
+      .expect(200);
+
+    expect(updateQueueSettings).toHaveBeenCalledWith(
+      "10000000-0000-4000-8000-000000000001",
+      settings,
+    );
+  });
+
+  it("운영 설정의 준비 기준이 입장 기준보다 작으면 거절한다", async () => {
+    const updateQueueSettings = vi.fn(async () => queue);
+
+    await request(createTestApp(createService({ updateQueueSettings })))
+      .patch("/api/staff/queue/settings")
+      .send({
+        averageMinutesPerPatient: 10,
+        preparationThreshold: 3,
+        entryThreshold: 4,
+        maxRemoteWaitingPatients: 20,
+      })
+      .expect(400);
+
+    expect(updateQueueSettings).not.toHaveBeenCalled();
+  });
+
+  it("선택한 대기 항목의 알림 발송 이력을 조회한다", async () => {
+    const waitingId = "30000000-0000-4000-8000-000000000001";
+    const notifications: StaffNotificationHistoryItem[] = [
+      {
+        id: "40000000-0000-4000-8000-000000000001",
+        notificationType: "entry_requested",
+        deliveryStatus: "sent",
+        templateCode: "BJ_ENTRY_REQUESTED",
+        sentAt: "2026-07-24T01:20:00.000Z",
+        createdAt: "2026-07-24T01:19:59.000Z",
+      },
+    ];
+    const getWaitingNotifications = vi.fn(async () => notifications);
+
+    const response = await request(createTestApp(createService({ getWaitingNotifications })))
+      .get(`/api/staff/waitings/${waitingId}/notifications`)
+      .expect(200);
+
+    expect(getWaitingNotifications).toHaveBeenCalledWith(
+      "10000000-0000-4000-8000-000000000001",
+      waitingId,
+    );
+    expect(response.body).toEqual(notifications);
   });
 
   it("국내 전화번호를 E.164로 변환해 현장 접수 서비스에 전달한다", async () => {
@@ -101,13 +163,10 @@ describe("staff queue routes", () => {
       })
       .expect(201);
 
-    expect(registerOnsite).toHaveBeenCalledWith(
-      "10000000-0000-4000-8000-000000000001",
-      {
-        phoneNumber: "+821012345678",
-        registration: { inputMode: "total_only", totalCount: 2 },
-      },
-    );
+    expect(registerOnsite).toHaveBeenCalledWith("10000000-0000-4000-8000-000000000001", {
+      phoneNumber: "+821012345678",
+      registration: { inputMode: "total_only", totalCount: 2 },
+    });
   });
 
   it("잘못된 전화번호와 DB patientCount 직접 입력을 거절한다", async () => {
@@ -132,10 +191,7 @@ describe("staff queue routes", () => {
       .patch("/api/staff/queue/status")
       .send({ status: "paused" })
       .expect(200);
-    expect(setQueueStatus).toHaveBeenCalledWith(
-      "10000000-0000-4000-8000-000000000001",
-      "paused",
-    );
+    expect(setQueueStatus).toHaveBeenCalledWith("10000000-0000-4000-8000-000000000001", "paused");
   });
 
   it("직원 호출 상태 변경에 병원과 직원 컨텍스트를 전달한다", async () => {
@@ -178,17 +234,19 @@ describe("staff queue routes", () => {
 
   it("활성 대기열 전체 순서 변경을 서비스에 전달한다", async () => {
     const reorderWaitings = vi.fn(async () => queue);
-    const ids = [
-      "30000000-0000-4000-8000-000000000002",
+    const expectedIds = [
       "30000000-0000-4000-8000-000000000001",
+      "30000000-0000-4000-8000-000000000002",
     ];
+    const orderedIds = [...expectedIds].reverse();
     await request(createTestApp(createService({ reorderWaitings })))
       .put("/api/staff/waitings/order")
-      .send({ orderedWaitingIds: ids })
+      .send({ expectedWaitingIds: expectedIds, orderedWaitingIds: orderedIds })
       .expect(200);
     expect(reorderWaitings).toHaveBeenCalledWith(
       "10000000-0000-4000-8000-000000000001",
-      ids,
+      expectedIds,
+      orderedIds,
       "20000000-0000-4000-8000-000000000001",
     );
   });

@@ -73,4 +73,33 @@ describe("PgDailyQueueRepository", () => {
     ).resolves.toBeNull();
     expect(executor.calls[0]?.values).toEqual([queueRow.hospital_id, queueRow.queue_date]);
   });
+
+  it("운영 설정만 갱신하고 기존 대기열은 유지한다", async () => {
+    const executor = new FakeDatabaseExecutor([
+      {
+        ...queueRow,
+        average_minutes_per_patient: 15,
+        preparation_threshold: 7,
+        max_remote_waiting_patients: 12,
+      },
+    ]);
+    const repository = new PgDailyQueueRepository();
+
+    const updated = await repository.updateSettings(executor, queueRow.id, {
+      averageMinutesPerPatient: 15,
+      preparationThreshold: 7,
+      entryThreshold: 4,
+      maxRemoteWaitingPatients: 12,
+    });
+
+    expect(updated).toMatchObject({
+      id: queueRow.id,
+      averageMinutesPerPatient: 15,
+      preparationThreshold: 7,
+      entryThreshold: 4,
+      maxRemoteWaitingPatients: 12,
+    });
+    expect(executor.calls[0]?.queryText).not.toContain("waiting_entries");
+    expect(executor.calls[0]?.values).toEqual([queueRow.id, 15, 7, 4, 12]);
+  });
 });

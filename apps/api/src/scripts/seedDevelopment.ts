@@ -9,11 +9,21 @@ const PLATFORM_ACCOUNT_ID = "20000000-0000-4000-8000-000000000003";
 const STAFF_IDENTITY_ID = "21000000-0000-4000-8000-000000000002";
 const PLATFORM_IDENTITY_ID = "21000000-0000-4000-8000-000000000003";
 
+function requireDevelopmentPassword(name: string): string {
+  const password = process.env[name];
+  if (!password || password.length < 12) {
+    throw new Error(`${name}은 12자 이상의 개발용 비밀번호로 설정해야 합니다.`);
+  }
+  return password;
+}
+
 async function seedDevelopment(): Promise<void> {
   if (process.env.NODE_ENV === "production") {
     throw new Error("production 환경에서는 개발 seed를 실행할 수 없습니다.");
   }
 
+  const staffPassword = requireDevelopmentPassword("DEVELOPMENT_STAFF_PASSWORD");
+  const platformPassword = requireDevelopmentPassword("DEVELOPMENT_PLATFORM_PASSWORD");
   const transactionManager = new PgTransactionManager(databasePool);
   await transactionManager.run(async (executor) => {
     await executor.query(
@@ -27,7 +37,7 @@ async function seedDevelopment(): Promise<void> {
           (
             '00000000-0000-0000-0000-000000000000', $1, 'authenticated',
             'authenticated', 'staff@baro-jinryo.local',
-            crypt('Staff123!', gen_salt('bf')), now(),
+            crypt($3, gen_salt('bf')), now(),
             '', '', '', '',
             '{"provider":"email","providers":["email"]}'::jsonb,
             '{"account_type":"hospital_admin","phone_number":"+821033334444"}'::jsonb,
@@ -36,7 +46,7 @@ async function seedDevelopment(): Promise<void> {
           (
             '00000000-0000-0000-0000-000000000000', $2, 'authenticated',
             'authenticated', 'platform@baro-jinryo.local',
-            crypt('Platform123!', gen_salt('bf')), now(),
+            crypt($4, gen_salt('bf')), now(),
             '', '', '', '',
             '{"provider":"email","providers":["email"]}'::jsonb,
             '{"account_type":"platform_admin","phone_number":"+821055556666"}'::jsonb,
@@ -54,7 +64,7 @@ async function seedDevelopment(): Promise<void> {
             raw_user_meta_data = EXCLUDED.raw_user_meta_data,
             updated_at = now()
       `,
-      [STAFF_ACCOUNT_ID, PLATFORM_ACCOUNT_ID],
+      [STAFF_ACCOUNT_ID, PLATFORM_ACCOUNT_ID, staffPassword, platformPassword],
     );
     await executor.query(
       `

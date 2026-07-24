@@ -9,9 +9,10 @@ import type {
   PatientInputMode,
   PatientRegistrationInput,
   QueueStatus,
+  QueueSettings,
   WaitingStatus,
 } from "@baro-jinryo/shared";
-import { defaultPatientCategories } from "@baro-jinryo/shared";
+import { defaultPatientCategories, defaultQueueSettings } from "@baro-jinryo/shared";
 import { useCallback, useEffect, useState } from "react";
 import { StaffQueuePage } from "./pages/StaffQueuePage";
 import { StaffLoginPage } from "./pages/StaffLoginPage";
@@ -23,6 +24,7 @@ import {
   changeQueueStatus,
   changeWaitingStatus,
   getStaffQueue,
+  getWaitingNotificationHistory,
   getHospitalOnboarding,
   holdWaiting,
   restoreWaiting,
@@ -30,6 +32,7 @@ import {
   saveNextDayCategories,
   submitHospitalApplication,
   submitHospitalInquiry,
+  updateQueueSettings,
   isApiClientErrorCode,
 } from "./services/apiClient";
 
@@ -44,11 +47,13 @@ const initialState: StaffQueueState = {
   nextDayInputMode: "categorized",
   todayCategories: defaultPatientCategories,
   nextDayCategories: defaultPatientCategories,
+  settings: { ...defaultQueueSettings },
 };
 
 function StaffApp() {
   const { session, profile, loading, signOut } = useStaffAuth();
   const [queue, setQueue] = useState(initialState);
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "retrying">("connected");
   const [view, setView] = useState<"queue" | "onboarding" | "hospital-management">("queue");
   const [onboarding, setOnboarding] = useState<MockHospitalOnboardingState>({
     inquiry: null,
@@ -80,7 +85,9 @@ function StaffApp() {
     const poll = async () => {
       try {
         await refresh();
+        setConnectionStatus("connected");
       } catch (error) {
+        setConnectionStatus("retrying");
         console.error("Failed to refresh staff data", error);
       } finally {
         if (!cancelled) timer = window.setTimeout(() => void poll(), pollInterval);
@@ -93,12 +100,27 @@ function StaffApp() {
     };
   }, [refresh, session, view]);
 
+  const retryConnection = useCallback(async () => {
+    setConnectionStatus("retrying");
+    try {
+      await refresh();
+      setConnectionStatus("connected");
+    } catch (error) {
+      setConnectionStatus("retrying");
+      console.error("Failed to retry staff data", error);
+    }
+  }, [refresh]);
+
   async function updateStatus(id: string, status: WaitingStatus) {
     setQueue(await changeWaitingStatus(id, status));
   }
 
   async function updateQueueStatus(status: QueueStatus) {
     setQueue(await changeQueueStatus(status));
+  }
+
+  async function saveQueueSettings(settings: QueueSettings) {
+    setQueue(await updateQueueSettings(settings));
   }
 
   async function updatePatientConfiguration(
@@ -150,14 +172,21 @@ function StaffApp() {
       patientInputMode={queue.todayInputMode}
       nextDayInputMode={queue.nextDayInputMode}
       queueStatus={queue.queueStatus}
+      settings={queue.settings}
       onAddOnsite={addOnsite}
       onChangeQueueStatus={updateQueueStatus}
+      onSaveQueueSettings={saveQueueSettings}
       onChangeStatus={updateStatus}
       onHold={async (id) => setQueue(await holdWaiting(id))}
       onRestore={async (id, position) => setQueue(await restoreWaiting(id, position))}
-      onReorder={async (orderedWaitingIds) => setQueue(await reorderWaitings(orderedWaitingIds))}
+      onReorder={async (expectedWaitingIds, orderedWaitingIds) =>
+        setQueue(await reorderWaitings(expectedWaitingIds, orderedWaitingIds))
+      }
       onSavePatientConfiguration={updatePatientConfiguration}
-      onRefresh={refresh}
+      onRefresh={() => void retryConnection()}
+      onGetNotificationHistory={getWaitingNotificationHistory}
+      connectionStatus={connectionStatus}
+      onRetry={retryConnection}
       onOpenHospitalManagement={() => setView("hospital-management")}
       onSignOut={signOut}
     />

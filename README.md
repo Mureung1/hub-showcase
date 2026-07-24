@@ -38,31 +38,58 @@
 ## 데이터 흐름과 아키텍처
 
 ```mermaid
-flowchart LR
-  subgraph users["사용자 화면"]
-    patient["환자 React<br/>:5173"]
-    staff["병원 관리자 React<br/>:5174"]
-    platform["플랫폼 관리자 React<br/>:5175"]
+flowchart TB
+  subgraph screens["1. 역할별 React 화면"]
+    direction LR
+    patient["환자<br/>:5173"]
+    staff["병원 관리자<br/>:5174"]
+    platform["플랫폼 관리자<br/>:5175"]
   end
 
-  auth["Supabase Auth<br/>로그인·세션"]
-  api["Express API :3000<br/>인증·검증·비즈니스 규칙"]
-  repository["Repository<br/>pg + SQL"]
-  db[("Supabase PostgreSQL")]
-  worker["1분 자동 만료 작업"]
-  brevo["Brevo SMTP<br/>인증 메일"]
-  mock["Mock 알림톡"]
+  client["공통 Auth · API 클라이언트"]
 
-  users -->|"회원가입·로그인"| auth
+  subgraph server["2. Express API :3000"]
+    direction LR
+    verify["인증 · 역할 · 입력 검증"]
+    service["대기열 · 병원 · 알림 규칙"]
+    repository["Repository<br/>pg · SQL"]
+    verify --> service --> repository
+  end
+
+  subgraph data["3. Supabase"]
+    direction LR
+    auth["Auth<br/>로그인 · 세션"]
+    db[("PostgreSQL<br/>업무 데이터 · 이력")]
+  end
+
+  subgraph support["4. 자동 작업 · 외부 서비스"]
+    direction LR
+    worker["1분 자동 만료"]
+    brevo["Brevo 인증 메일"]
+    mock["Mock 알림톡"]
+  end
+
+  patient --> client
+  staff --> client
+  platform --> client
+  client <-->|"JSON + Bearer token<br/>10초 Polling"| verify
+  client -->|"회원가입 · 로그인"| auth
+  verify -. "token 확인" .-> auth
+  repository <-->|"SQL · 트랜잭션"| db
   auth --> brevo
-  users -->|"JSON + Bearer token<br/>10초 Polling"| api
-  api -. "토큰 확인" .-> auth
-  api --> repository --> db
-  db --> repository --> api -->|"JSON 응답"| users
-  worker -->|"만료·마지막 이동"| api
+  worker --> service
   worker -. "advisory lock" .-> db
-  api --> mock
-  api -->|"알림 이력"| db
+  service --> mock
+
+  classDef screen fill:#eaf7f0,stroke:#15805d,color:#102a24;
+  classDef serverNode fill:#edf3fb,stroke:#376ea6,color:#13263a;
+  classDef dataNode fill:#fff6df,stroke:#a66a14,color:#3b2a10;
+  classDef supportNode fill:#f4f4f4,stroke:#737373,color:#242424;
+
+  class patient,staff,platform,client screen;
+  class verify,service,repository serverNode;
+  class auth,db dataNode;
+  class worker,brevo,mock supportNode;
 ```
 
 React는 Supabase를 인증에만 직접 사용하고, 병원과 대기열 데이터는 반드시 Express와 Repository를 거쳐 PostgreSQL에 저장합니다. 상세한 요청 흐름, 주요 테이블과 현재 발견한 보완 지점은 [데이터 흐름과 아키텍처 문서](./docs/architecture.md)에서 확인할 수 있습니다.
@@ -92,8 +119,9 @@ React는 Supabase를 인증에만 직접 사용하고, 병원과 대기열 데�
 ## 프로젝트 문서
 
 - [GitHub Project - 개발 대시보드](https://github.com/users/DLSTODAKD/projects/1)
-- [3주차 주간 계획](./docs/weekly-plan-week3.md)
-- [2주차 주간 계획 기록](./docs/weekly-plan-week2.md)
+- [2~3주차 주간 계획](./docs/weekly-plan.md)
+- [3~4주차 작업 결과](./docs/weekly-summary.md)
+- [나의 AI 개발 워크플로우](./docs/ai-workflow.md)
 - [기획서](./docs/plan.md)
 - [시스템 기능 명세](./docs/feature-spec.md)
 - [ERD](./docs/erd.md)
@@ -122,7 +150,7 @@ React는 Supabase를 인증에만 직접 사용하고, 병원과 대기열 데�
 | React·Express 개발 환경 | npm workspaces 기반 구성 완료 |
 | 개발 Task·백로그 | 4주 일정과 P0·P1·P2 범위 정리 완료 |
 | Supabase·Brevo 연동 | Seoul 개발 DB·Express·Brevo Custom SMTP 연결 완료 |
-| 실제 P0 기능 | 구현 예정 |
+| 실제 P0 기능 | 환자·직원 통합 대기열, 자동 알림·만료와 상태 동기화 구현 완료 |
 
 ## 데이터·운영 원칙
 
@@ -164,7 +192,7 @@ MVP에서는 Supabase Auth 이메일 확인에 Brevo Custom SMTP를 실제로 �
 
 ## 정적 프로토타입
 
-현재 [`prototype/`](./prototype/)은 이전 비회원·수동 방문 요청 흐름을 검증한 순수 HTML/CSS 자료입니다. 새 정책의 회원가입, 자동 2단계 알림, 현장 상태 링크와 병원 입점 신청은 아직 반영하지 않았습니다.
+현재 [`prototype/`](./prototype/)은 이전 비회원·수동 방문 요청 흐름을 검증한 보관용 HTML/CSS 자료입니다. 현재 개발·테스트·배포 대상이 아니며, 새 정책의 회원가입, 자동 2단계 알림, 현장 상태 링크와 병원 입점 신청은 반영하지 않습니다.
 
 ## 개발 환경
 
@@ -188,8 +216,14 @@ npm run dev
 npm run lint
 npm run typecheck
 npm test
+npm run test:integration
 npm run build
 ```
+
+`npm test`는 외부 DB 없이 단위·컴포넌트·API 테스트를 실행합니다.
+개발용 Supabase가 필요한 DB 통합 테스트는 `npm run test:integration`으로
+분리되어 있습니다. 두 테스트를 한 번에 검증할 때는 `npm run test:all`을
+사용합니다.
 
 Supabase CLI는 프로젝트 개발 의존성으로 고정되어 있습니다.
 
@@ -199,21 +233,21 @@ npm run db:migration:new -- <migration_name>
 npm run db:reset
 ```
 
-`supabase start`와 `db:reset`으로 로컬 전체 스택을 실행하려면 Docker 호환 컨테이너 환경이 필요합니다. `db:reset`은 migration 적용 후 `supabase/seed.sql`을 실행하며 다음 개발용 계정과 오늘의 통합 대기열을 만듭니다.
+`supabase start`와 `db:reset`으로 로컬 전체 스택을 실행하려면 Docker 호환 컨테이너 환경이 필요합니다. `db:reset`은 migration 적용 후 `supabase/seed.sql`을 실행하며 로컬 전용 개발 계정과 오늘의 통합 대기열을 만듭니다. 이 로컬 계정을 외부 Supabase 프로젝트에 사용하면 안 됩니다.
 
-| 역할 | 이메일 | 비밀번호 |
-|---|---|---|
-| 환자 | `patient@baro-jinryo.local` | `Patient123!` |
-| 병원 관리자 | `staff@baro-jinryo.local` | `Staff123!` |
-| 플랫폼 관리자 | `platform@baro-jinryo.local` | `Platform123!` |
-
-세 계정과 비밀번호는 개발 전용입니다. 연결된 Seoul 개발용 Supabase 프로젝트에는 다음 명령으로 병원·플랫폼 관리자 계정, 승인 병원과 오늘 대기열을 준비합니다.
+연결된 Seoul 개발용 Supabase 프로젝트에는 `.env`의
+`DEVELOPMENT_STAFF_PASSWORD`와 `DEVELOPMENT_PLATFORM_PASSWORD`를 12자 이상으로
+설정한 뒤 다음 명령으로 병원·플랫폼 관리자 계정, 승인 병원과 오늘 대기열을
+준비합니다. 비밀번호는 저장소나 문서에 기록하지 않습니다.
 
 ```bash
 npm run db:seed:development -w @baro-jinryo/api
 ```
 
-플랫폼 관리자 계정은 Supabase Auth 로그인이 가능하지만, P2 약식 플랫폼 관리자 웹에는 아직 로그인 화면과 권한 검사가 연결되지 않았습니다. Seoul 개발용 Supabase 프로젝트 연결과 실제 `pg` Repository 통합 테스트도 구성되어 있습니다.
+플랫폼 관리자 웹은 Supabase Auth 로그인과 `platform_admin` 권한 검사를 적용하며,
+입점 문의와 병원 정보 변경 요청을 검토할 수 있습니다. 승인 병원의 이용 중지·복구
+같은 전체 운영 기능은 P2 범위입니다. Seoul 개발용 Supabase 프로젝트 연결과 실제
+`pg` Repository 통합 테스트도 구성되어 있습니다.
 
 현재 구조:
 
@@ -226,9 +260,10 @@ hub/
 │  └─ api/              # 세 앱이 공유하는 Express API
 ├─ packages/
 │  ├─ shared/           # 공통 타입, Zod 스키마, 대기열 계산
+│  ├─ web-shared/       # 웹 앱 공통 컴포넌트와 API·인증 클라이언트 기반
 │  └─ design-system/    # 공통 디자인 토큰 CSS
 ├─ docs/
-├─ prototype/
+├─ prototype/           # 초기 기획 검증용 정적 자료(개발·배포 제외)
 ├─ AGENTS.md
 ├─ package.json         # npm workspaces
 └─ .env.example

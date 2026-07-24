@@ -13,59 +13,72 @@ Mermaid를 사용합니다. GitHub Markdown에서 바로 렌더링되고, 다이
 ## 전체 구조
 
 ```mermaid
-flowchart LR
-  patient["환자"]
-  staff["병원 관리자"]
-  platform["플랫폼 관리자"]
-
-  subgraph frontend["React + Vite 화면"]
+flowchart TB
+  subgraph frontend["1. 사용자와 역할별 React 화면"]
+    direction LR
     patientWeb["환자 웹<br/>:5173"]
     staffWeb["병원 관리자 웹<br/>:5174"]
     platformWeb["플랫폼 관리자 웹<br/>:5175"]
+    webShared["공통 클라이언트 코드<br/>Auth · API · UI"]
+
+    patientWeb --> webShared
+    staffWeb --> webShared
+    platformWeb --> webShared
   end
 
-  subgraph supabase["Supabase"]
-    auth["Auth<br/>이메일·비밀번호·세션"]
-    postgres[("PostgreSQL")]
+  subgraph backend["2. Express API :3000"]
+    direction LR
+    middleware["Middleware<br/>CORS · JSON · 요청 로그<br/>JWT · 역할 · 입력 검증"]
+    routes["Routes<br/>환자 · 병원 · 플랫폼"]
+    services["Services<br/>대기열 · 병원 · 알림 규칙"]
+    repositories["Repositories<br/>pg · SQL · 트랜잭션"]
+
+    middleware --> routes --> services --> repositories
   end
 
-  brevo["Brevo Custom SMTP<br/>인증 메일"]
-
-  subgraph api["Express API :3000"]
-    middleware["CORS · JSON · 요청 로그<br/>Bearer 토큰·역할 검증"]
-    routes["Routes<br/>patient · staff · platform"]
-    services["Services<br/>대기열·병원 관리·알림 규칙"]
-    repositories["Repositories<br/>pg + SQL"]
-    expiration["1분 자동 만료 작업<br/>PostgreSQL advisory lock"]
-    mockNotification["Mock 알림톡 Provider"]
+  subgraph supabase["3. Supabase"]
+    direction LR
+    auth["Auth<br/>이메일 · 비밀번호 · 세션"]
+    postgres[("PostgreSQL<br/>업무 데이터 · 변경 이력")]
   end
 
-  patient --> patientWeb
-  staff --> staffWeb
-  platform --> platformWeb
+  subgraph external["4. 자동 작업과 외부 서비스"]
+    direction LR
+    expiration["1분 자동 만료 작업<br/>Service 규칙 재사용"]
+    brevo["Brevo SMTP<br/>가입 인증 메일"]
+    mockNotification["Mock 알림톡<br/>발송 결과 기록"]
+  end
 
-  patientWeb -->|"회원가입·로그인"| auth
-  staffWeb -->|"회원가입·로그인"| auth
-  platformWeb -->|"로그인"| auth
-  auth -->|"인증 메일 요청"| brevo
-  brevo -->|"확인 링크"| patient
-  brevo -->|"확인 링크"| staff
-
-  patientWeb -->|"JSON 요청 + Bearer token<br/>활성 화면 10초 조회"| middleware
-  staffWeb -->|"JSON 요청 + Bearer token<br/>활성 화면 10초 조회"| middleware
-  platformWeb -->|"JSON 요청 + Bearer token<br/>10초 조회"| middleware
-  middleware --> routes --> services --> repositories
+  webShared <-->|"JSON + Bearer token<br/>10초 Polling"| middleware
+  webShared -->|"회원가입 · 로그인"| auth
   middleware -. "access token 확인" .-> auth
-  repositories -->|"트랜잭션·SQL"| postgres
-  postgres -->|"조회 결과"| repositories
-  repositories --> services -->|"JSON 응답"| frontend
+  repositories <-->|"SQL · 트랜잭션"| postgres
 
+  auth -->|"인증 메일 요청"| brevo
   expiration --> services
-  expiration -. "중복 실행 잠금" .-> postgres
+  expiration -. "advisory lock" .-> postgres
   services --> mockNotification
-  mockNotification -->|"발송 결과"| services
-  services -->|"알림 이력 저장"| repositories
+  mockNotification -->|"결과 반환"| services
+
+  classDef frontendNode fill:#eaf7f0,stroke:#15805d,color:#102a24;
+  classDef backendNode fill:#edf3fb,stroke:#376ea6,color:#13263a;
+  classDef dataNode fill:#fff6df,stroke:#a66a14,color:#3b2a10;
+  classDef externalNode fill:#f4f4f4,stroke:#737373,color:#242424;
+
+  class patientWeb,staffWeb,platformWeb,webShared frontendNode;
+  class middleware,routes,services,repositories backendNode;
+  class auth,postgres dataNode;
+  class expiration,brevo,mockNotification externalNode;
 ```
+
+그림은 위에서 아래로 읽습니다.
+
+1. 세 종류의 React 화면이 공통 Auth·API 코드를 사용합니다.
+2. 업무 요청은 Express의 Middleware, Route, Service, Repository 순서로 처리됩니다.
+3. 로그인은 Supabase Auth가, 병원·대기열과 변경 이력은 PostgreSQL이 저장합니다.
+4. 자동 만료 작업과 외부 메시지 서비스도 같은 Service 규칙을 사용합니다.
+
+실선은 요청·응답 또는 데이터 저장을, 점선은 토큰 확인과 중복 실행 잠금 같은 보조 검증을 의미합니다.
 
 ## 화면에서 DB까지 한 바퀴
 

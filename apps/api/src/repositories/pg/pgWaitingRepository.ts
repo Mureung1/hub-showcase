@@ -365,12 +365,14 @@ export class PgWaitingRepository implements WaitingRepository {
   async reorderActive(
     executor: DatabaseExecutor,
     queueId: string,
+    expectedWaitingIds: string[],
     orderedWaitingIds: string[],
   ): Promise<boolean> {
     await this.lockQueue(executor, queueId);
     const activeIds = (await this.listByQueue(executor, queueId))
       .filter(({ status }) => ["remote_waiting", "entry_requested", "onsite_waiting"].includes(status))
       .map(({ id }) => id);
+    if (!this.hasSameOrder(activeIds, expectedWaitingIds)) return false;
     if (!this.hasSameIds(activeIds, orderedWaitingIds)) return false;
     await this.moveActiveOrdersToTemporaryRange(executor, queueId);
     await this.applyActiveOrder(executor, queueId, orderedWaitingIds);
@@ -414,6 +416,10 @@ export class PgWaitingRepository implements WaitingRepository {
   private hasSameIds(actual: string[], requested: string[]): boolean {
     return actual.length === requested.length && new Set(actual).size === actual.length &&
       actual.every((id) => requested.includes(id));
+  }
+
+  private hasSameOrder(actual: string[], expected: string[]): boolean {
+    return actual.length === expected.length && actual.every((id, index) => id === expected[index]);
   }
 
   async deferRemoteToEnd(

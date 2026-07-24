@@ -25,7 +25,7 @@ If these documents conflict, use `docs/plan.md` for product scope, `docs/feature
 - `packages/design-system/`: canonical shared CSS design tokens
 - Auth: Supabase Auth with confirmed email and password; Brevo provides Custom SMTP
 - Data: Supabase PostgreSQL through `pg`, SQL repositories, and Supabase CLI migrations
-- `prototype/`: static HTML and CSS only; do not add JavaScript or external CDNs
+- `prototype/`: archived planning reference only; do not reuse it for current implementation or add JavaScript/external CDNs
 
 The repository uses npm workspaces. Install dependencies and run aggregate checks from the repository root.
 
@@ -39,8 +39,13 @@ npm run dev
 npm run lint
 npm run typecheck
 npm test
+npm run test:integration
 npm run build
 ```
+
+`npm test` must not require a network connection. Run `npm run test:integration`
+separately when the development Supabase project is available. Use
+`npm run test:all` when both test groups must pass.
 
 Default development ports are `5173` for patients, `5174` for staff, `5175` for platform administrators, and `3000` for Express.
 
@@ -138,5 +143,7 @@ Default development ports are `5173` for patients, `5174` for staff, `5175` for 
 - Run the narrowest relevant checks after each change.
 - For frontend changes, run root `npm run lint`, `npm run typecheck`, and `npm run build`.
 - For server changes, also run root `npm test`.
+- For PostgreSQL repository or DB-backed service changes, additionally run root
+  `npm run test:integration`.
 - For end-to-end queue work, verify two browser sessions: one patient view and one staff view.
 - Do not report completion while required checks are failing.
