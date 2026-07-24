@@ -73,9 +73,56 @@ describe.skipIf(!isTestDb)("GET /api/history", () => {
       durationSeconds: 90,
       entryLevel: 2,
       microTask: "첫 문장 쓰기",
+      entryMode: "intervention",
+      generationSource: "unknown",
+      memoryEvidence: null,
     });
     expect(entry.completedAt).toBeTruthy();
   });
+
+  it(
+    "신규 완료 컨텍스트를 반환하고 microTask가 없는 기존 기록은 none으로 해석한다",
+    async () => {
+      const contextualTask = await createTestTask();
+      await request(app)
+        .post(`/api/tasks/${contextualTask.id}/events`)
+        .send({
+          eventType: "done",
+          durationSeconds: 30,
+          entryLevel: 2,
+          microTask: "첫 문장 쓰기",
+          entryMode: "intervention",
+          generationSource: "gemini",
+        });
+
+      const legacyTask = await createTestTask();
+      await request(app)
+        .post(`/api/tasks/${legacyTask.id}/events`)
+        .send({ eventType: "done" });
+
+      const res = await request(app).get("/api/history");
+      const contextualEntry = res.body.data.find(
+        (entry: { taskId: string }) => entry.taskId === contextualTask.id,
+      );
+      const legacyEntry = res.body.data.find(
+        (entry: { taskId: string }) => entry.taskId === legacyTask.id,
+      );
+
+      expect(contextualEntry).toMatchObject({
+        entryMode: "intervention",
+        generationSource: "gemini",
+        memoryEvidence: null,
+      });
+      expect(legacyEntry).toMatchObject({
+        entryLevel: null,
+        microTask: null,
+        entryMode: "unknown",
+        generationSource: "none",
+        memoryEvidence: null,
+      });
+    },
+    15000,
+  );
 
   it("waiting/active 상태인 task는 포함하지 않는다 (경계)", async () => {
     const waitingTask = await createTestTask();

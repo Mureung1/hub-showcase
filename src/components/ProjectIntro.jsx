@@ -34,8 +34,6 @@ const IconTarget = () => (
   </svg>
 );
 
-// 잔소리봇 마스코트: 추후 재도입 예정 (현재 프로토타입 범위 밖)
-
 /* ---------- 콘텐츠 데이터 ---------- */
 
 const LANDING_HERO = {
@@ -75,13 +73,16 @@ function ProjectIntro() {
           </div>
 
           <div className="landing-hero-visual">
-            <span
-              className="landing-hero-emoji"
-              role="img"
-              aria-label="잔소리봇"
-            >
-              🤖
-            </span>
+            <img
+              className="landing-hero-character"
+              src="/assets/jansori-bot-landing.png"
+              alt=""
+              aria-hidden="true"
+              draggable="false"
+              onError={(event) => {
+                event.currentTarget.hidden = true;
+              }}
+            />
           </div>
         </section>
 

@@ -1,6 +1,56 @@
-import { format } from "date-fns";
 import { LEVEL_META } from "../lib/levelMeta";
+import { formatDday } from "../lib/nudgeMessages";
+import { REASON_OPTIONS } from "../lib/taskOptions";
 import "./TaskCard.css";
+
+function formatScheduledTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "시각 미정";
+
+  const hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const period = hours < 12 ? "오전" : "오후";
+  const displayHour = hours % 12 || 12;
+  return `${period} ${displayHour}:${minutes}`;
+}
+
+function formatDeadline(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "마감 미정" : formatDday(date);
+}
+
+function getReasonLabel(task) {
+  if (task.reason === "custom") {
+    return task.customReasonText?.trim() || "기타 이유";
+  }
+
+  return (
+    REASON_OPTIONS.find(({ value }) => value === task.reason)?.label ??
+    "이유 미확인"
+  );
+}
+
+function TaskDetails({ task }) {
+  return (
+    <div className="task-details">
+      <div className="task-summary">
+        <span>{task.type}</span>
+        <span className="task-summary-divider" aria-hidden="true">
+          ·
+        </span>
+        <span>{formatDeadline(task.deadline)}</span>
+        <span className="task-summary-divider" aria-hidden="true">
+          ·
+        </span>
+        <span>{formatScheduledTime(task.startTime)}</span>
+      </div>
+      <p className="task-reason">
+        <span>미루는 이유</span>
+        {getReasonLabel(task)}
+      </p>
+    </div>
+  );
+}
 
 function CheckIcon() {
   return (
@@ -84,12 +134,7 @@ function TaskCard({ task, onClick, onDelete }) {
           <p className="task-title">{task.title}</p>
           <DeleteButton title={task.title} onDelete={onDelete} />
         </div>
-        <div className="task-meta">
-          <span className="meta-chip">{task.type}</span>
-          <span className="meta-chip">
-            ⏳ 오늘 {format(new Date(task.startTime), "HH:mm")}부터 시작돼요
-          </span>
-        </div>
+        <TaskDetails task={task} />
       </div>
     );
   }
@@ -104,15 +149,20 @@ function TaskCard({ task, onClick, onDelete }) {
         <p className="task-title">{task.title}</p>
         <DeleteButton title={task.title} onDelete={onDelete} />
       </div>
+      <TaskDetails task={task} />
+      <div className="pressure-heading">
+        <span>{meta.label}</span>
+        <span>벌써 {task.skipCount}번째 알림</span>
+      </div>
       <div className="pressure-track">
         <div
           className="pressure-fill"
           style={{ width: `${(task.level / 4) * 100}%` }}
         ></div>
       </div>
-      <div className="pressure-label">
-        <span>{meta.label}</span>
-        <span>벌써 {task.skipCount}번째 알림</span>
+      <div className="next-nudge-note">
+        <span className="next-nudge-dot" aria-hidden="true"></span>
+        다음 알림 · 자동 예약
       </div>
     </div>
   );

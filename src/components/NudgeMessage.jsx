@@ -7,20 +7,37 @@ import { buildNudgeMessage } from "../lib/nudgeMessages";
 // completedTasks: Lv3 기억 기반 개입이 참조하는 세션 내 완료 이력.
 // overrideMessage: 부모(NudgeModal)가 이미 고정해둔 메시지(Lv2 microTask 고정용)가
 // 있으면 다시 계산하지 않고 그대로 사용한다.
-function NudgeMessage({ task, onStart, completedTasks = [], overrideMessage = null }) {
+function NudgeMessage({
+  task,
+  onStart,
+  completedTasks = [],
+  overrideMessage = null,
+  isGenerating = false,
+  startDisabled = false,
+}) {
   const meta = LEVEL_META[task.level];
-  const message = overrideMessage ?? buildNudgeMessage(task.level, task, completedTasks);
+  const message = isGenerating
+    ? null
+    : overrideMessage ?? buildNudgeMessage(task.level, task, completedTasks);
 
   return (
     <div className="nudge-body">
       <span className="nudge-chip">{meta.label}</span>
       <p className="nudge-message">
         <strong>{task.title}</strong>
-        {message ? `, ${message.body}` : ", 곧 이 레벨에 맞는 안내가 추가될 예정이에요."}
+        {isGenerating
+          ? ", 지금 할 수 있는 첫 행동을 찾고 있어요…"
+          : message
+            ? `, ${message.body}`
+            : ", 곧 이 레벨에 맞는 안내가 추가될 예정이에요."}
       </p>
       <div className="nudge-buttons">
-        <button className="btn nudge-primary" onClick={onStart}>
-          지금 시작하기
+        <button
+          className="btn nudge-primary"
+          onClick={onStart}
+          disabled={startDisabled}
+        >
+          {isGenerating ? "첫 행동 찾는 중…" : "지금 시작하기"}
         </button>
       </div>
     </div>

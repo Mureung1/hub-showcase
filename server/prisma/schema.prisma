@@ -54,6 +54,9 @@ model TaskEvent {
   durationSeconds Int?
   entryLevel      Int?
   microTask       String?
+  entryMode       String?
+  generationSource String?
+  memoryEvidence  Json?
 
   @@index([taskId, occurredAt])
   @@map("task_events")

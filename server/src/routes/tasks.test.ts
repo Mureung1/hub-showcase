@@ -203,6 +203,8 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
         durationSeconds: 125,
         entryLevel: 2,
         microTask: "할 일 목록에 첫 항목 하나만 적어보기",
+        entryMode: "intervention",
+        generationSource: "gemini",
       });
 
     expect(res.status).toBe(200);
@@ -214,6 +216,9 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
     expect(event?.durationSeconds).toBe(125);
     expect(event?.entryLevel).toBe(2);
     expect(event?.microTask).toBe("할 일 목록에 첫 항목 하나만 적어보기");
+    expect(event?.entryMode).toBe("intervention");
+    expect(event?.generationSource).toBe("gemini");
+    expect(event?.memoryEvidence).toBeNull();
   });
 
   it("세 값 없이 보내도(카드 직접 클릭 경로) 기존처럼 완료 처리되고 세 필드는 null로 저장된다 (회귀)", async () => {
@@ -232,6 +237,107 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
     expect(event?.durationSeconds).toBeNull();
     expect(event?.entryLevel).toBeNull();
     expect(event?.microTask).toBeNull();
+    expect(event?.entryMode).toBeNull();
+    expect(event?.generationSource).toBeNull();
+    expect(event?.memoryEvidence).toBeNull();
+  });
+
+  it(
+    "sourceDoneEventId로 실제 done 이벤트를 다시 조회해 memoryEvidence 스냅샷을 만든다",
+    async () => {
+      const sourceTask = await createTestTask();
+      await request(app)
+        .post(`/api/tasks/${sourceTask.id}/events`)
+        .send({
+          eventType: "done",
+          durationSeconds: 45,
+          entryLevel: 2,
+          microTask: "자료에서 핵심 문장 하나 적기",
+        });
+      const sourceDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: sourceTask.id, eventType: "done" },
+      });
+
+      const targetTask = await createTestTask();
+      const res = await request(app)
+        .post(`/api/tasks/${targetTask.id}/events`)
+        .send({
+          eventType: "done",
+          durationSeconds: 90,
+          entryLevel: 3,
+          microTask: "자료에서 핵심 문장 하나 적기",
+          entryMode: "intervention",
+          generationSource: "history_reuse",
+          memoryEvidence: { sourceDoneEventId: sourceDoneEvent.id },
+        });
+
+      expect(res.status).toBe(200);
+      const targetDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: targetTask.id, eventType: "done" },
+      });
+      expect(targetDoneEvent.memoryEvidence).toEqual({
+        sourceDoneEventId: sourceDoneEvent.id,
+        sourceTaskId: sourceTask.id,
+        sourceTaskTitle: sourceTask.title,
+        sourceTaskType: sourceTask.type,
+        sourceCompletedAt: sourceDoneEvent.occurredAt.toISOString(),
+        sourceMicroTask: "자료에서 핵심 문장 하나 적기",
+      });
+    },
+    15000,
+  );
+
+  it(
+    "실제 done 이벤트가 아닌 sourceDoneEventId는 거부하고 완료 전환도 롤백한다",
+    async () => {
+      const sourceTask = await createTestTask();
+      await request(app)
+        .post(`/api/tasks/${sourceTask.id}/events`)
+        .send({ eventType: "activated" });
+      const activatedEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: sourceTask.id, eventType: "activated" },
+      });
+
+      const targetTask = await createTestTask();
+      const res = await request(app)
+        .post(`/api/tasks/${targetTask.id}/events`)
+        .send({
+          eventType: "done",
+          entryLevel: 3,
+          entryMode: "intervention",
+          generationSource: "history_reuse",
+          memoryEvidence: { sourceDoneEventId: activatedEvent.id },
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe("invalid_memory_evidence");
+      expect(
+        await prisma.task.findUniqueOrThrow({ where: { id: targetTask.id } }),
+      ).toMatchObject({ status: "waiting" });
+      expect(
+        await prisma.taskEvent.count({
+          where: { taskId: targetTask.id, eventType: "done" },
+        }),
+      ).toBe(0);
+    },
+    15000,
+  );
+
+  it("memoryEvidence에 클라이언트가 만든 스냅샷 필드를 함께 보내면 거부한다", async () => {
+    const task = await createTestTask();
+
+    const res = await request(app)
+      .post(`/api/tasks/${task.id}/events`)
+      .send({
+        eventType: "done",
+        memoryEvidence: {
+          sourceDoneEventId: "some-id",
+          sourceTaskTitle: "위조된 제목",
+        },
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("invalid_memory_evidence");
   });
 
   it("이미 완료된 task에 done을 다시 보내도 성공 응답을 유지하고 이벤트를 추가하지 않는다 (멱등)", async () => {
@@ -244,6 +350,8 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
         durationSeconds: 60,
         entryLevel: 2,
         microTask: "첫 문장 쓰기",
+        entryMode: "intervention",
+        generationSource: "gemini",
       });
     const duplicate = await request(app)
       .post(`/api/tasks/${task.id}/events`)
@@ -252,6 +360,8 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
         durationSeconds: 999,
         entryLevel: 4,
         microTask: "덮어쓰면 안 되는 값",
+        entryMode: "intervention",
+        generationSource: "rule_based",
       });
 
     expect(first.status).toBe(200);
@@ -271,6 +381,8 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
     expect(events[0].durationSeconds).toBe(60);
     expect(events[0].entryLevel).toBe(2);
     expect(events[0].microTask).toBe("첫 문장 쓰기");
+    expect(events[0].entryMode).toBe("intervention");
+    expect(events[0].generationSource).toBe("gemini");
   });
 
   it(

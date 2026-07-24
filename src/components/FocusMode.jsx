@@ -11,11 +11,27 @@ function formatElapsed(totalSeconds) {
   return `${mm}:${ss}`;
 }
 
-// microTask/entryLevel은 Lv2 모달에서 "이것부터 시작하기"로 진입했을 때만 채워진다.
-// 홈 카드를 직접 클릭해 들어온 기존 경로는 둘 다 null이라 해당 블록을 그대로 생략한다.
-function FocusMode({ taskId, title, microTask = null, entryLevel = null, onComplete, onStop }) {
+function calculateElapsed(startedAt) {
+  if (!Number.isFinite(startedAt)) return 0;
+  return Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+}
+
+// Focus 세션 v2의 시작 방식과 개입 컨텍스트를 완료 스냅샷까지 그대로 전달한다.
+function FocusMode({
+  taskId,
+  title,
+  startedAt,
+  entryMode = "direct",
+  microTask = null,
+  entryLevel = null,
+  generationSource = "none",
+  memoryEvidence = null,
+  onSessionCompleted,
+  onComplete,
+  onStop,
+}) {
   const navigate = useNavigate();
-  const [elapsed, setElapsed] = useState(0);
+  const [elapsed, setElapsed] = useState(() => calculateElapsed(startedAt));
   const [errorMessage, setErrorMessage] = useState(null);
   const [phase, setPhase] = useState("focus"); // "focus" | "completed"
   const [feedback, setFeedback] = useState(null); // { value, saved } — 선택/저장 상태 표시용
@@ -26,13 +42,14 @@ function FocusMode({ taskId, title, microTask = null, entryLevel = null, onCompl
     // 완료 화면에서는 집중 시간이 더 이상 흐르지 않도록 멈춘다(Completion에 표시할
     // "집중 시간"이 화면을 보고 있는 동안 계속 늘어나면 안 되므로).
     if (phase !== "focus") return;
+    setElapsed(calculateElapsed(startedAt));
     const intervalId = setInterval(() => {
-      setElapsed((prev) => prev + 1);
+      setElapsed(calculateElapsed(startedAt));
     }, 1000);
 
     // cleanup: 컴포넌트가 사라지거나 완료로 전환될 때 타이머를 반드시 해제
     return () => clearInterval(intervalId);
-  }, [phase]);
+  }, [phase, startedAt]);
 
   async function recordEvent(eventType, extra = {}) {
     await apiFetch(`/api/tasks/${taskId}/events`, {
@@ -44,6 +61,7 @@ function FocusMode({ taskId, title, microTask = null, entryLevel = null, onCompl
   async function handleStop() {
     try {
       setErrorMessage(null);
+      // 현재 "멈추기"는 일시정지가 아니라 Focus 세션을 명시적으로 종료하는 동작이다.
       await recordEvent("stopped");
       onStop?.();
     } catch (err) {
@@ -58,9 +76,21 @@ function FocusMode({ taskId, title, microTask = null, entryLevel = null, onCompl
     setIsCompleting(true);
     try {
       setErrorMessage(null);
-      // entryLevel/microTask는 STEP1에서 이미 넘겨받은 값 그대로 스냅샷으로
-      // 저장한다(재생성하지 않음) — History가 이 시점 값을 그대로 보여줘야 한다.
-      await recordEvent("done", { durationSeconds: elapsed, entryLevel, microTask });
+      const durationSeconds = calculateElapsed(startedAt);
+      // v1 이관 세션의 unknown은 복구 상태에서만 사용한다. 서버의 신규 저장 계약에는
+      // null로 보내면 History가 microTask 유무를 기준으로 unknown을 해석한다.
+      const persistedGenerationSource =
+        generationSource === "unknown" ? null : generationSource;
+      await recordEvent("done", {
+        durationSeconds,
+        entryMode,
+        entryLevel,
+        microTask,
+        generationSource: persistedGenerationSource,
+        memoryEvidence,
+      });
+      setElapsed(durationSeconds);
+      onSessionCompleted?.();
       setPhase("completed");
     } catch (err) {
       console.error(err);

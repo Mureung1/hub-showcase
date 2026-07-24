@@ -7,6 +7,12 @@ import NudgeModal from "./NudgeModal";
 import { apiFetch, ApiError } from "../lib/api";
 import { ACTIVATION_POLL_MS, getDemoNudgeDelayMs } from "../lib/nudgeConfig";
 import { pickCheckpointLevel } from "../lib/reasonCheckpoint";
+import {
+  createFocusSession,
+  getRestorableFocusSession,
+  removeFocusSession,
+  saveFocusSession,
+} from "../lib/focusSession";
 import "./HomePage.css";
 
 // content-as-data: 칩 하나 = 라벨 + 계산 방식
@@ -52,7 +58,7 @@ function HomePage() {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState(null); // 포커스 중인 task(= modalLocked)
-  const [focusSession, setFocusSession] = useState(null); // Lv2 모달에서 넘어온 microTask/entryLevel 등(카드 직접 클릭 시엔 null)
+  const [focusSession, setFocusSession] = useState(null); // 시작 방식과 개입 action을 보존하는 Focus 세션 v2
   const [modalTaskId, setModalTaskId] = useState(null); // 자동으로 뜬 넛지 모달 대상
   const [modalCheckpointLevel, setModalCheckpointLevel] = useState(null); // 이번 모달에 회피이유 재확인을 띄울 레벨(1|3|null)
 
@@ -71,15 +77,22 @@ function HomePage() {
   // 멈추기로 레벨이 내려갔다가 같은 레벨을 재진입해도 다시 뜨지 않게 막는다.
   const reasonCheckedRef = useRef(new Map());
 
-  const loadTasks = useCallback(() => {
+  const loadTasks = useCallback(({ restoreFocus = false } = {}) => {
     return apiFetch("/api/tasks").then(({ data }) => {
+      if (restoreFocus) {
+        const restored = getRestorableFocusSession(data);
+        if (restored) {
+          setFocusSession(restored.session);
+          setSelectedTaskId(restored.task.id);
+        }
+      }
       setTasks(data);
       setIsLoading(false);
     });
   }, []);
 
   useEffect(() => {
-    loadTasks();
+    loadTasks({ restoreFocus: true });
   }, [loadTasks]);
 
   // 넛지 모달 열기/닫기 — 렌더용 state와 경합방지용 ref를 항상 함께 갱신한다.
@@ -291,20 +304,49 @@ function HomePage() {
     if (!t || t.status !== "active") closeModal();
   }, [tasks, modalTaskId, closeModal]);
 
-  // FocusMode 종료(완료/멈추기 공통): 오버레이 닫고 목록 최신화
+  // FocusMode 종료(완료/멈추기 공통): 저장 세션과 오버레이를 닫고 목록 최신화
   function closeFocusAndRefresh() {
+    removeFocusSession();
     setSelectedTaskId(null);
     setFocusSession(null);
     loadTasks();
   }
 
-  // 넛지 모달에서 "지금 시작하기" → 포커스 진입(그 task는 폴링 대상에서 빠짐).
-  // Lv2 모달은 session(microTask/entryLevel 등)을 넘겨준다 — Lv1/3/4는 인자 없이 호출된다.
+  function startFocus(task, overrides = {}) {
+    const existing = getRestorableFocusSession(stateRef.current.tasks);
+    if (existing) {
+      if (modalOpenRef.current !== null) closeModalWithoutReschedule();
+      setFocusSession(existing.session);
+      setSelectedTaskId(existing.task.id);
+      return;
+    }
+
+    const session = createFocusSession({
+      taskId: task.id,
+      entryMode: overrides.entryMode ?? "direct",
+      entryLevel: overrides.entryLevel ?? null,
+      microTask: overrides.microTask ?? null,
+      generationSource: overrides.generationSource ?? "none",
+      memoryEvidence: overrides.memoryEvidence ?? null,
+    });
+    saveFocusSession(session);
+    if (modalOpenRef.current !== null) closeModalWithoutReschedule();
+    setFocusSession(session);
+    setSelectedTaskId(task.id);
+  }
+
+  // 넛지 모달에서 "지금 시작하기" → 화면에 실제 표시된 action과 출처를
+  // 공통 세션 생성 함수에 그대로 넘긴 뒤 포커스에 진입한다.
   function handleStartFromModal(session) {
-    const id = modalTaskId;
-    closeModalWithoutReschedule();
-    setFocusSession(session ?? null);
-    setSelectedTaskId(id);
+    const task = tasks.find((candidate) => candidate.id === modalTaskId);
+    if (!task) return;
+    startFocus(task, {
+      entryMode: session?.entryMode ?? "intervention",
+      entryLevel: session?.entryLevel ?? null,
+      microTask: session?.microTask ?? null,
+      generationSource: session?.generationSource ?? "none",
+      memoryEvidence: session?.memoryEvidence ?? null,
+    });
   }
 
   // 회피 이유 재확인에서 이유를 고른 경우, avoidance_reasons에 새 행으로 저장한다.
@@ -390,7 +432,7 @@ function HomePage() {
           <TaskCard
             key={task.id}
             task={task}
-            onClick={() => setSelectedTaskId(task.id)}
+            onClick={() => startFocus(task)}
             onDelete={() => handleDeleteTask(task.id)}
           />
         ))}
@@ -400,8 +442,13 @@ function HomePage() {
           <FocusMode
             taskId={selectedTask.id}
             title={selectedTask.title}
+            startedAt={focusSession?.startedAt}
+            entryMode={focusSession?.entryMode}
             microTask={focusSession?.microTask ?? null}
             entryLevel={focusSession?.entryLevel ?? null}
+            generationSource={focusSession?.generationSource}
+            memoryEvidence={focusSession?.memoryEvidence ?? null}
+            onSessionCompleted={removeFocusSession}
             onComplete={closeFocusAndRefresh}
             onStop={closeFocusAndRefresh}
           />

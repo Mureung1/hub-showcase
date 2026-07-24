@@ -21,6 +21,13 @@ router.get("/", async (_req, res) => {
       durationSeconds: event.durationSeconds,
       entryLevel: event.entryLevel,
       microTask: event.microTask,
+      entryMode:
+        event.entryMode ??
+        (event.entryLevel !== null ? "intervention" : "unknown"),
+      generationSource:
+        event.generationSource ??
+        (event.microTask !== null ? "unknown" : "none"),
+      memoryEvidence: event.memoryEvidence,
     }));
 
     res.json({ data });

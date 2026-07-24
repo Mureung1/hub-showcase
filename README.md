@@ -17,6 +17,7 @@
 - [화면 단위 와이어프레임 (wireframe.md)](./docs/wireframe.md)
 - [디자인 컨셉 (design-concept.md)](./docs/design-concept.md)
 - [유사 서비스 리서치 (design-research.md)](./docs/design-research.md)
+- [AI Agent 협업 워크플로우 (workflow.md)](./docs/workflow.md)
 
 ## 이번 주 계획
 
@@ -37,7 +38,7 @@
 
 - 프로토타입 데모: 순수 HTML / CSS / JS (`docs/prototype.html`)
 - 실제 앱: Vite + React
-- 백엔드: Express (`server/`) — 할일/회피이유/이벤트/Push 구독 라우트 구현 중(그룹3까지 진행, Push 구독 스키마+등록 API 포함)
+- 백엔드: Express (`server/`) — 할 일·회피 이유·이벤트·마이크로태스크·Push 구독 및 발송 API 구현
 - DB: Supabase(Postgres) + Prisma
 
 ## 아키텍처
@@ -48,13 +49,20 @@
 flowchart LR
     subgraph FE["React (화면)"]
         Register["RegisterPage.jsx<br/>할 일 등록"]
-        Home["HomePage.jsx<br/>20초 폴링"]
+        Home["HomePage.jsx<br/>알림 및 개입 관리"]
+        Modal["NudgeModal.jsx<br/>첫 행동 제안"]
+        Focus["FocusMode.jsx<br/>집중 시작"]
     end
 
     subgraph SRV["Express (서버)"]
         R1["POST /api/tasks"]
         R2["POST /api/tasks/:id/events"]
+        Microtask["POST /api/microtasks"]
         Push["Push 알림 발송"]
+    end
+
+    subgraph AI["외부 AI"]
+        Gemini["Gemini API"]
     end
 
     subgraph DB["Supabase (DB)"]
@@ -68,11 +76,17 @@ flowchart LR
     end
 
     Register -->|"등록 요청"| R1
-    Home -->|"이벤트 요청"| R2
-
     R1 -->|"생성"| Task
+
+    Home -->|"이벤트 요청"| R2
     R2 -->|"레벨·횟수 수정"| Task
     R2 -->|"이벤트 기록"| Event
+
+    Modal -->|"할 일·유형·회피 이유"| Microtask
+    Microtask -->|"생성 요청"| Gemini
+    Gemini -->|"첫 행동 1개"| Microtask
+    Microtask -->|"Gemini 또는 fallback 결과"| Modal
+    Modal -->|"지금 시작하기"| Focus
 
     R2 -.->|"레벨 상승 시"| Push
     Push -->|"Web Push 전달"| SW

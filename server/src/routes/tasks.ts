@@ -1,9 +1,15 @@
 import { Router } from "express";
-import type { Task } from "@prisma/client";
+import type { Prisma, Task } from "@prisma/client";
 import { prisma } from "../db/client.js";
 import { calculateLevel } from "../lib/scoring.js";
 import { getCurrentReason } from "../db/avoidanceReasons.js";
 import { broadcastLevelUpPush } from "../lib/broadcastPush.js";
+import {
+  DoneContextValidationError,
+  parseDoneContextInput,
+  type DoneContextInput,
+  type MemoryEvidenceSnapshot,
+} from "../lib/completionSnapshot.js";
 
 const router = Router();
 
@@ -82,11 +88,28 @@ router.post("/", async (req, res) => {
 router.post("/:id/events", async (req, res) => {
   const { id } = req.params;
   const { eventType, durationSeconds, entryLevel, microTask } = req.body;
+  let doneContext: DoneContextInput = {
+    entryMode: null,
+    generationSource: null,
+    memoryEvidence: null,
+  };
 
   // done 완료 스냅샷(#STEP2 Completion→History) 검증 — 세 값 모두 선택값이라 안
   // 보내도 되지만, 보냈다면 형식은 맞아야 한다. Task.level/skipCount는 완료 시
   // 0으로 리셋되므로 이 시점에 받은 값을 그대로 스냅샷으로 남겨야 한다.
   if (eventType === "done") {
+    try {
+      doneContext = parseDoneContextInput(req.body);
+    } catch (err) {
+      if (err instanceof DoneContextValidationError) {
+        res.status(400).json({
+          error: { code: err.code, message: err.message },
+        });
+        return;
+      }
+      throw err;
+    }
+
     if (
       durationSeconds !== undefined &&
       durationSeconds !== null &&
@@ -150,6 +173,38 @@ router.post("/:id/events", async (req, res) => {
           return tx.task.findUniqueOrThrow({ where: { id } });
         }
 
+        let memoryEvidenceSnapshot: MemoryEvidenceSnapshot | null = null;
+        if (doneContext.memoryEvidence) {
+          const sourceDoneEvent = await tx.taskEvent.findUnique({
+            where: { id: doneContext.memoryEvidence.sourceDoneEventId },
+            include: {
+              task: {
+                select: { id: true, title: true, type: true },
+              },
+            },
+          });
+
+          if (
+            !sourceDoneEvent ||
+            sourceDoneEvent.eventType !== "done" ||
+            sourceDoneEvent.taskId === id
+          ) {
+            throw new DoneContextValidationError(
+              "invalid_memory_evidence",
+              "실제 완료 기록에 해당하는 sourceDoneEventId가 필요합니다.",
+            );
+          }
+
+          memoryEvidenceSnapshot = {
+            sourceDoneEventId: sourceDoneEvent.id,
+            sourceTaskId: sourceDoneEvent.task.id,
+            sourceTaskTitle: sourceDoneEvent.task.title,
+            sourceTaskType: sourceDoneEvent.task.type,
+            sourceCompletedAt: sourceDoneEvent.occurredAt.toISOString(),
+            sourceMicroTask: sourceDoneEvent.microTask,
+          };
+        }
+
         await tx.taskEvent.create({
           data: {
             taskId: id,
@@ -158,6 +213,14 @@ router.post("/:id/events", async (req, res) => {
             durationSeconds: durationSeconds ?? null,
             entryLevel: entryLevel ?? null,
             microTask: microTask ? microTask : null,
+            entryMode: doneContext.entryMode,
+            generationSource: doneContext.generationSource,
+            ...(memoryEvidenceSnapshot
+              ? {
+                  memoryEvidence:
+                    memoryEvidenceSnapshot as unknown as Prisma.InputJsonValue,
+                }
+              : {}),
           },
         });
 
@@ -238,6 +301,13 @@ router.post("/:id/events", async (req, res) => {
     const reason = await getCurrentReason(id);
     res.json({ data: withReason(task, reason) });
   } catch (err) {
+    if (err instanceof DoneContextValidationError) {
+      res.status(400).json({
+        error: { code: err.code, message: err.message },
+      });
+      return;
+    }
+
     console.error(err);
     res.status(500).json({
       error: { code: "internal_error", message: "이벤트를 저장하지 못했습니다." },
