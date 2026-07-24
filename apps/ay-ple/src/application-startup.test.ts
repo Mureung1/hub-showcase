@@ -10,9 +10,10 @@ import {
 import type {
   VerifiedBundleSource,
 } from '@ay-ple/semester-workspace'
-import type {
-  CreateServerAppOptions,
-  ServerApplication,
+import {
+  ServerStartupCleanupError,
+  type CreateServerAppOptions,
+  type ServerApplication,
 } from '@ay-ple/server'
 
 import type {
@@ -525,15 +526,26 @@ test('closes a constructed Server when foreground cancellation wins the return r
   assert.equal(closeCalls, 1)
 })
 
-test('keeps ambiguous cleanup terminal and never creates a second Server', async () => {
+test('preserves post-construction cleanup authority and never creates a second Server', async () => {
   const fixture = startupFixture()
   const controller = new AbortController()
   let closeCalls = 0
+  let retryCalls = 0
+  const cleanupError = new ServerStartupCleanupError(
+    async ({ signal: retrySignal }) => {
+      retryCalls += 1
+      assert.equal(retrySignal.aborted, false)
+      return {
+        status: 'closed',
+        processTreeGone: true,
+      }
+    },
+  )
   const ambiguousApplication: ServerApplication = {
     ...fixture.serverApplication,
     async close() {
       closeCalls += 1
-      throw new Error('/private/runtime still alive')
+      throw cleanupError
     },
   }
   const dependencies: ApplicationStartupDependencies = {
@@ -557,16 +569,93 @@ test('keeps ambiguous cleanup terminal and never creates a second Server', async
     report: () => {},
   })
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    await assert.rejects(
-      prepared.createServerAtOrigin(
-        'http://127.0.0.1:43123',
-      ),
-      hasStartupCode('application_startup_failed'),
+  let exposed: unknown
+  try {
+    await prepared.createServerAtOrigin(
+      'http://127.0.0.1:43123',
     )
+  } catch (error) {
+    exposed = error
   }
+  assert.equal(exposed, cleanupError)
+  assert.ok(exposed instanceof ServerStartupCleanupError)
+  assert.deepEqual(
+    await exposed.close({
+      signal: new AbortController().signal,
+    }),
+    {
+      status: 'closed',
+      processTreeGone: true,
+    },
+  )
+  await assert.rejects(
+    prepared.createServerAtOrigin(
+      'http://127.0.0.1:43123',
+    ),
+    (error: unknown) => error === cleanupError,
+  )
   assert.equal(fixture.calls.server, 1)
   assert.equal(closeCalls, 1)
+  assert.equal(retryCalls, 1)
+})
+
+test('preserves C startup cleanup authority before any Server is returned', async () => {
+  const fixture = startupFixture()
+  let retryCalls = 0
+  const cleanupError = new ServerStartupCleanupError(
+    async ({ signal: retrySignal }) => {
+      retryCalls += 1
+      assert.equal(retrySignal.aborted, false)
+      return {
+        status: 'closed',
+        processTreeGone: true,
+      }
+    },
+  )
+  const dependencies: ApplicationStartupDependencies = {
+    ...successfulDependencies(fixture, []),
+    async createServerApplication() {
+      fixture.calls.server += 1
+      throw cleanupError
+    },
+  }
+  const admission = await admitApplicationStartupForTesting(
+    startupInput(),
+    dependencies,
+  )
+  const prepared = await admission.prepare({
+    owner: validOwner(),
+    signal,
+    report: () => {},
+  })
+
+  let exposed: unknown
+  try {
+    await prepared.createServerAtOrigin(
+      'http://127.0.0.1:43123',
+    )
+  } catch (error) {
+    exposed = error
+  }
+  assert.equal(exposed, cleanupError)
+  assert.ok(exposed instanceof ServerStartupCleanupError)
+  assert.deepEqual(
+    await exposed.close({
+      signal: new AbortController().signal,
+    }),
+    {
+      status: 'closed',
+      processTreeGone: true,
+    },
+  )
+  await assert.rejects(
+    prepared.createServerAtOrigin(
+      'http://127.0.0.1:43123',
+    ),
+    (error: unknown) => error === cleanupError,
+  )
+  assert.equal(fixture.calls.server, 1)
+  assert.equal(retryCalls, 1)
 })
 
 test('constructs one Server for one exact Origin and rejects rebinding', async () => {

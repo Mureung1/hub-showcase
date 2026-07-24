@@ -14,6 +14,7 @@ import type {
   LaunchBinding,
 } from '@ay-ple/semester-workspace'
 import {
+  ServerStartupCleanupError,
   createServerApplication,
   type CreateServerAppOptions,
   type ServerApplication,
@@ -476,7 +477,10 @@ async function createBoundServer(input: {
     } catch (error) {
       try {
         await application.close()
-      } catch {
+      } catch (cleanupError) {
+        if (cleanupError instanceof ServerStartupCleanupError) {
+          throw cleanupError
+        }
         throw startupError(
           'application_startup_failed',
           false,
@@ -488,6 +492,7 @@ async function createBoundServer(input: {
     return application
   } catch (error) {
     if (error instanceof ApplicationStartupError) throw error
+    if (error instanceof ServerStartupCleanupError) throw error
     if (error instanceof RuntimeReleaseAuthorityError) {
       throw mapRuntimeFailure(error)
     }
