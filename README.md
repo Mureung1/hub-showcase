@@ -170,7 +170,7 @@ uv run python -m app.jobs.collect_feed --source-id <SOURCE_UUID> --save
 
 후보는 관심사 일치도, 최신성, 소스 품질을 더하고 최근 동일 소스·동일 논쟁 입장의 반복을 감점해 정렬한다. 추천 결과와 이유 문구는 생성형 AI가 아니라 결정적인 규칙으로 만든다.
 
-상세 계약은 [`docs/plan/engineering/content-pipeline.md`](docs/plan/engineering/content-pipeline.md), [`docs/plan/engineering/db-schema.md`](docs/plan/engineering/db-schema.md), [`docs/quality/rss-dry-run.md`](docs/quality/rss-dry-run.md)에서 확인할 수 있다.
+상세 계약은 [`docs/plan/engineering/content-pipeline.md`](docs/plan/engineering/content-pipeline.md), [`docs/plan/engineering/db-schema.md`](docs/plan/engineering/db-schema.md)에서 확인할 수 있다.
 
 ## AI 협업 개발 방식
 
@@ -251,9 +251,7 @@ hub-clone/
 │   │   ├── product/           # 문제·서비스·사용자 흐름
 │   │   ├── design/            # 디자인 시스템·프로토타이핑
 │   │   ├── engineering/       # API·DB·콘텐츠 파이프라인
-│   │   ├── implementation/    # 작업별 설계·구현 계획
 │   │   └── process/           # AI 협업·개발 프로세스
-│   ├── quality/               # 구현 완료 판정 기준
 │   ├── notes/                 # 결정과 설계 변경 사유
 │   └── prototype/             # 참고용 HTML 프로토타입
 ├── .agents/templates/         # AI 공통 협업 흐름
@@ -315,7 +313,7 @@ cd backend
 uv run pytest
 ```
 
-API·DB·RSS 파이프라인의 완료 판정은 [`docs/quality/`](docs/quality/)의 하네스를 따른다.
+API·DB·RSS 파이프라인은 `backend/tests/`, `supabase/tests/`, `scripts/`의 자동 검증과 각 설계 문서의 완료 기준을 함께 확인한다.
 
 주요 검증 스크립트:
 
@@ -344,7 +342,7 @@ uv run scripts/verify_supabase.py
 
 ### 품질과 협업
 
-- [구현 완료 판정 기준](docs/quality/verification-guide.md)
-- [RSS 수집 검증 기준](docs/quality/rss-dry-run.md)
 - [AI 에이전트 운영 전략](docs/plan/process/agent-strategy.md)
 - [AI 협업 요청 사이클](.agents/templates/README.md)
+
+`docs/quality/`과 `docs/plan/implementation/`은 개인 검증·구현 계획 문서로 사용하며 Git에는 올리지 않는다.

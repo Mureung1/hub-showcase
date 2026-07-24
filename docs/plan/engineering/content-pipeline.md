@@ -102,6 +102,7 @@ source_interests count >= 1
 | `content_type` | text, not null, check `article/blog/video` | `articles.content_type`과 같은 도메인 |
 | `excerpt_field` | text, not null, check `summary/description/none` | 저장을 허용한 feed 공식 소개문 필드 |
 | `default_reading_time_minutes` | integer, not null, check `1..60` | feed에 유효한 읽기 시간이 없을 때의 source 기본값 |
+| `feed_timezone` | text, nullable, 현재 `Asia/Seoul`만 허용 | timezone 정보가 없는 RSS 날짜의 source별 fallback |
 
 - `source_type`은 기존 `sources.source_type`에서 가져온다.
 - 새 source 등록은 코드 수정·배포가 아니라 `sources`, `source_interests` 행 등록과 fixture 검수로 끝난다.
@@ -162,7 +163,8 @@ RSS `content:encoded`와 Atom `content`는 원문 전문일 수 있으므로 fal
 ### 발행일
 
 - feedparser의 `published_parsed`, 없으면 `updated_parsed`를 UTC로 변환한다.
-- 값이 없거나 해석할 수 없으면 null이다. timezone 없는 문자열에 임의 source timezone을 가정하지 않는다.
+- 구조화 날짜가 없고 source에 `feed_timezone`이 설정돼 있으면 RSS 원문 `published`, 없으면 `updated`를 해당 timezone으로 해석한 뒤 UTC로 변환한다.
+- 현재 fallback은 timezone 없는 날짜를 제공하는 DEVOCEAN의 `Asia/Seoul`에만 사용한다. source에 `feed_timezone`이 없거나 원문도 해석할 수 없으면 null이다.
 - 현재 시각보다 24시간 이상 미래면 `FUTURE_PUBLISHED_AT`으로 제외한다.
 - null은 저장하되 dry-run에서 비율을 출력한다.
 
@@ -346,13 +348,15 @@ reading_time_source, quality_score, original_url
 ```bash
 supabase migration new add_rss_source_config
 supabase migration new create_ingest_rss_article
+supabase migration new add_source_feed_timezone
 ```
 
-파이프라인 migration 두 개도 같은 날 생성해 git으로 관리한다.
+파이프라인 migration은 CLI로 생성해 git으로 관리한다.
 
 1. [`20260715090747_add_rss_source_config.sql`](../../../supabase/migrations/20260715090747_add_rss_source_config.sql)은 `sources.content_type`, `excerpt_field`, `default_reading_time_minutes`와 이 문서의 check/not-null 제약을 추가한다.
 2. [`20260715090748_create_ingest_rss_article.sql`](../../../supabase/migrations/20260715090748_create_ingest_rss_article.sql)은 exact signature의 RPC, 입력 검증, item transaction, EXECUTE revoke/grant를 생성한다.
-3. 두 파일은 함께 배포하며 RPC migration이 sources migration 뒤에 적용되어야 한다.
+3. [`20260724043752_add_source_feed_timezone.sql`](../../../supabase/migrations/20260724043752_add_source_feed_timezone.sql)은 timezone 없는 RSS 날짜를 위한 nullable `sources.feed_timezone`을 추가한다.
+4. RPC migration은 source 수집 설정 migration 뒤에 적용되어야 하고, `feed_timezone` fallback은 세 번째 migration 적용 후에만 사용한다.
 
 ### 로컬 검증과 원격 적용
 
@@ -364,7 +368,7 @@ supabase db push --dry-run
 supabase db push
 ```
 
-- `db reset`으로 빈 local DB에 baseline부터 두 feature migration까지 전부 재생되는지 확인한다.
+- `db reset`으로 빈 local DB에 baseline부터 현재 migration까지 전부 재생되는지 확인한다.
 - local에서 source eligible/invalid, inserted/duplicate, tag rollback, concurrent duplicate, anon/authenticated EXECUTE 거부를 검증한다.
 - linked remote의 `migration list`와 `db push --dry-run` 결과를 사람이 검토한 뒤 한 명만 `db push`한다.
 - 원격 적용 후 sources 컬럼/check, 함수 signature·owner·ACL·`SECURITY INVOKER`, 실제 backend secret key 역할을 조회하고 security/performance advisor를 실행한다.
@@ -523,7 +527,7 @@ parse 완료 전에는 저장하지 않는다.
 - [ ] dry-run 전후 articles와 tags 행 수가 같다.
 - [ ] RPC 일부 실패 시 다른 item은 저장되지만 exit code는 1이다.
 - [ ] `published_at=null` item은 저장 가능하고 dry-run null 건수·비율에 포함되며, 추천 함수의 recency score는 `0.1`이다.
-- [ ] fresh local DB에서 기존 schema migration과 두 pipeline migration이 순서대로 재생된다.
+- [ ] fresh local DB에서 기존 schema migration과 세 pipeline migration이 순서대로 재생된다.
 - [ ] 원격 dry-run 적용 결과를 확인하기 전에는 `db push`하지 않는다.
 
 ## 19. source 등록 체크리스트
@@ -540,6 +544,7 @@ parse 완료 전에는 저장하지 않는다.
 - [ ] `sources.content_type`이 `article/blog/video` 중 실제 콘텐츠와 맞는 값이다.
 - [ ] `sources.excerpt_field`가 `summary/description/none` 중 하나이며, 선택한 필드가 원문 전문이 아니라 저장 가능한 공식 소개문인지 확인했다.
 - [ ] `sources.default_reading_time_minutes`가 `1..60`이고 source 특성에 맞다.
+- [ ] timezone 없는 RSS 날짜를 제공하는 source만 `sources.feed_timezone`을 설정하고 fixture로 UTC 변환 결과를 확인했다.
 - [ ] feedparser fixture에서 `bozo=false`, 지원 version, media/published/author fallback을 확인했다.
 - [ ] `published_at=null` 비율과 오늘의 글 노출 저하를 수용할 수 있다.
 - [ ] fixture는 실제 feed 전문 대신 최소 재현 데이터만 포함한다.

@@ -1,6 +1,6 @@
 # API 명세
 
-MVP(P0/P1) API 계약을 정의한다. 도메인 enum은 2026-07-15 기준 실제 Supabase DB의 `check` 제약을 기준으로 확인했다.
+MVP(P0/P1) API 계약을 정의한다. 도메인 enum과 구현 상태는 2026-07-24 기준 실제 Supabase migration과 FastAPI route를 기준으로 확인했다.
 
 - 데이터는 모두 `프론트 → /api (FastAPI) → Supabase` 경로를 사용한다. Auth만 프론트가 Supabase에 직접 연결한다.
 - 요청/응답 필드는 camelCase이며, snake_case 변환은 백엔드 Pydantic 스키마에서만 한다.
@@ -77,17 +77,17 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 
 ## 엔드포인트 목록
 
-| 메서드 | 경로 | 인증 | 기능 |
-| --- | --- | --- | --- |
-| GET | `/api/health` | — | 헬스체크 |
-| GET | `/api/interests` | — | 선택 가능한 관심사 목록 |
-| GET | `/api/user-interests` | 필요 | 온보딩 이력과 저장 관심사 조회 |
-| POST | `/api/user-interests` | 필요 | 관심사 전체 교체 |
-| GET | `/api/articles/today` | 필요 | 오늘의 추천 1~3개 |
-| GET | `/api/articles/{articleId}` | 필요 | 미션 화면에 표시할 글 메타데이터 조회 |
-| POST | `/api/mission-records` | 필요 | 완료된 사고 기록 저장 |
-| GET | `/api/mission-records` | 필요 | 나의 깸 날짜별 기록 목록 |
-| GET | `/api/mission-records/calendar` | 필요 | 나의 깸 월별 기록 날짜 |
+| 메서드 | 경로 | 인증 | 기능 | 상태 |
+| --- | --- | --- | --- | --- |
+| GET | `/api/health` | — | 헬스체크 | 구현됨 |
+| GET | `/api/interests` | — | 선택 가능한 관심사 목록 | 구현됨 |
+| GET | `/api/user-interests` | 필요 | 온보딩 이력과 저장 관심사 조회 | 구현됨 |
+| POST | `/api/user-interests` | 필요 | 관심사 전체 교체 | 구현됨 |
+| GET | `/api/articles/today` | 필요 | 오늘의 추천 1~3개 | 구현됨 |
+| GET | `/api/articles/{articleId}` | 필요 | 미션 화면에 표시할 글 메타데이터 조회 | 구현됨 |
+| POST | `/api/mission-records` | 필요 | 완료된 사고 기록 저장 | 구현됨 |
+| GET | `/api/mission-records` | 필요 | 나의 깸 날짜별 기록 목록 | 구현됨 |
+| GET | `/api/mission-records/calendar` | 필요 | 나의 깸 월별 기록 날짜 | 구현됨 |
 
 ---
 
@@ -225,7 +225,7 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 1. 실제 DB 함수 `get_recommended_articles(user_id, limit)`를 호출한다.
 2. 후보는 사용자 관심사 태그가 하나 이상 일치하고, 완료한 `mission_records`가 없는 글이다.
 3. `urlStatus = active`, `qualityScore >= 0.65`, 소스 `trustLevel in (high, medium)`, `defaultExposure = primary`만 허용한다.
-4. `accessType = free`를 자동 추천한다. `partial_free`는 `content-strategy.md` 최종 운영 원칙에 따라 운영자가 무료 범위를 확인해 수동 큐레이션한 글만 허용해야 한다. 현재 DB 함수가 `free`, `partial_free`를 모두 자동 허용하므로 구현 전에 함수 조건을 맞춰야 한다.
+4. `accessType = free`만 자동 추천한다. `partial_free`는 운영자가 무료 범위를 확인해 수동 큐레이션할 수 있지만 현재 자동 추천 함수에서는 제외한다.
 5. 정렬 점수는 관심사 일치 + 최신성 + 소스 품질 - 최근 14일 같은 소스 반복 - 태깅된 논쟁 주제의 같은 stance 반복이다.
 6. 동점이면 결과가 흔들리지 않도록 `published_at desc nulls last, article_id`를 보조 정렬로 추가한다.
 
