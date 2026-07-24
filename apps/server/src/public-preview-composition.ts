@@ -22,6 +22,7 @@ import {
 import {
   createPublicPreviewCommandAdapter,
   type PublicPreviewCommandAdapter,
+  type PublicPreviewWorkspaceTargetGuard,
 } from './public-preview-command-adapter.js'
 import { createPublicPreviewRouter } from './public-preview-http.js'
 import {
@@ -51,10 +52,15 @@ import {
   requireServerStartupCleanup,
 } from './server-startup-cleanup.js'
 
+export type {
+  PublicPreviewWorkspaceTargetGuard,
+} from './public-preview-command-adapter.js'
+
 export type PublicPreviewSetupBootstrap = {
   readonly appDataRoot: string
   readonly bundleSource: VerifiedBundleSource
   readonly displayUserHome: string
+  readonly guardWorkspaceTarget: PublicPreviewWorkspaceTargetGuard
   readonly release: LaunchBinding
   readonly requiredApplicationCommand: string
   readonly suggestedLeafName: string
@@ -111,8 +117,12 @@ export async function createPublicPreviewFeatureComposition(
   const requiredApplicationCommand =
     setup.requiredApplicationCommand
   const suggestedLeafName = setup.suggestedLeafName
+  const guardWorkspaceTarget = setup.guardWorkspaceTarget
   requireLocalOrigin(origin)
-  if (!isOpaqueValue(suggestedLeafName)) {
+  if (
+    !isOpaqueValue(suggestedLeafName) ||
+    typeof guardWorkspaceTarget !== 'function'
+  ) {
     throw new TypeError(
       'Public preview display bootstrap is inconsistent',
     )
@@ -223,6 +233,7 @@ export async function createPublicPreviewFeatureComposition(
     }
     const adapter = createPublicPreviewCommandAdapter({
       account: accountAdapter,
+      guardWorkspaceTarget,
       journey,
       parentSelection,
       projectionContext: {

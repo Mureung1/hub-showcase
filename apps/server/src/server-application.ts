@@ -27,6 +27,9 @@ export type {
   PublicPreviewServerBootstrap,
   PublicPreviewSetupBootstrap,
 } from './public-preview-composition.js'
+export type {
+  PublicPreviewWorkspaceTargetGuard,
+} from './public-preview-command-adapter.js'
 import {
   createSemesterWorkspaceController,
   type SemesterWorkspaceController,

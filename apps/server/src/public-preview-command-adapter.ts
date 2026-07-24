@@ -1,6 +1,7 @@
 import {
   decodePublicPreviewAccountProjection,
   decodePublicPreviewBootstrap,
+  decodePublicPreviewCommand,
   decodePublicPreviewResponse,
   decodePublicPreviewSetupProjection,
   type PublicPreviewAccountProjection,
@@ -45,8 +46,14 @@ export interface PublicPreviewCommandAdapter {
   whenIdle(): Promise<void>
 }
 
+export type PublicPreviewWorkspaceTargetGuard = (input: {
+  readonly canonicalParent: string
+  readonly leafName: string
+}) => 'allowed' | 'blocked'
+
 export function createPublicPreviewCommandAdapter(input: {
   readonly account: AccountRuntimeRouteAdapter
+  readonly guardWorkspaceTarget: PublicPreviewWorkspaceTargetGuard
   readonly journey: SetupJourney<SemesterSetupJourneyProjection>
   readonly parentSelection: PublicPreviewParentSelectionPort
   readonly projectionContext: Omit<
@@ -160,24 +167,42 @@ export function createPublicPreviewCommandAdapter(input: {
           return okResponse(await snapshot(signal))
         }
         case 'setup.prepare': {
-          const parent = input.parentSelection.current()
+          const prepareInput = Object.freeze({
+            yearLevel: command.input.yearLevel,
+            term: command.input.term,
+            parentSelectionId: command.input.parentSelectionId,
+            leafName: command.input.leafName,
+          })
+          const currentParent = input.parentSelection.current()
+          if (
+            !currentParent ||
+            currentParent.authority.selectionId !==
+              prepareInput.parentSelectionId
+          ) {
+            return errorResponse('setup_invalid_input', before)
+          }
+          const parent = await input.parentSelection.resolve(
+            prepareInput.parentSelectionId,
+          )
           if (
             !parent ||
-            parent.authority.selectionId !==
-              command.input.parentSelectionId
+            input.guardWorkspaceTarget(Object.freeze({
+              canonicalParent: parent.authority.canonicalParent,
+              leafName: prepareInput.leafName,
+            })) !== 'allowed'
           ) {
             return errorResponse('setup_invalid_input', before)
           }
           const result = await input.journey.reconcile({
             kind: 'prepare',
             input: {
-              yearLevel: command.input.yearLevel,
+              yearLevel: prepareInput.yearLevel,
               term: {
-                key: command.input.term,
-                displayName: termDisplayName(command.input.term),
+                key: prepareInput.term,
+                displayName: termDisplayName(prepareInput.term),
               },
-              parentSelectionId: command.input.parentSelectionId,
-              leafName: command.input.leafName,
+              parentSelectionId: prepareInput.parentSelectionId,
+              leafName: prepareInput.leafName,
             },
           })
           return setupResultResponse(
@@ -239,8 +264,10 @@ export function createPublicPreviewCommandAdapter(input: {
     async observe({ signal }) {
       return okResponse(await snapshot(signal))
     },
-    dispatch: ({ command, signal }) =>
-      runCommand(() => dispatch(command, signal)),
+    dispatch({ command, signal }) {
+      const ownedCommand = decodePublicPreviewCommand(command)
+      return runCommand(() => dispatch(ownedCommand, signal))
+    },
     guardFailure: (code) =>
       errorResponse(code, safeUnavailableBootstrap()),
     currentReadyWorkspace() {

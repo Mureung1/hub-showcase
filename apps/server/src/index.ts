@@ -3,6 +3,7 @@ export {
   type CreateServerAppOptions,
   type PublicPreviewServerBootstrap,
   type PublicPreviewSetupBootstrap,
+  type PublicPreviewWorkspaceTargetGuard,
   type ServerApplication,
 } from './server-application.js'
 export {

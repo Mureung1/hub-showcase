@@ -2,10 +2,12 @@ import assert from 'node:assert/strict'
 import { createServer as createHttpServer } from 'node:http'
 import { createServer as createNetServer } from 'node:net'
 import {
+  lstat,
   mkdir,
   mkdtemp,
   readdir,
   realpath,
+  rename,
   rm,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -36,6 +38,7 @@ import {
   createPublicPreviewFeatureComposition,
   type PublicPreviewFeatureComposition,
   type PublicPreviewServerBootstrap,
+  type PublicPreviewWorkspaceTargetGuard,
 } from './public-preview-composition.js'
 import type {
   PublicPreviewCommandAdapter,
@@ -196,6 +199,12 @@ test('listener-independent public preview composes account, setup, reauth and ex
       }
       const setupPlanId =
         confirmation.projection.setup.setupPlanId
+      assert.deepEqual(fixture.workspaceTargetGuardCalls, [
+        {
+          canonicalParent: fixture.canonicalParent,
+          leafName: '2026-2학기',
+        },
+      ])
 
       const stale = await postPreview(
         baseUrl,
@@ -409,6 +418,164 @@ test('listener-independent public preview composes account, setup, reauth and ex
       2,
     )
   } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('a blocked mutable workspace leaf is guarded before journey, store, or workspace mutation', async () => {
+  let blockedLeaf = 'not-blocked-yet'
+  const fixture = await createFixture({
+    authInitiallyConnected: true,
+    guardWorkspaceTarget: ({ leafName }) =>
+      leafName === blockedLeaf ? 'blocked' : 'allowed',
+  })
+  let feature: PublicPreviewFeatureComposition | undefined
+  try {
+    const bootstrap = fixture.bootstrap('http://127.0.0.1:43123')
+    feature = await fixture.createFeature(bootstrap)
+    const requestSignal = signal()
+    await feature.adapter.dispatch({
+      command: { command: 'workspace.parent.select' },
+      signal: requestSignal,
+    })
+    const selected = await feature.adapter.dispatch({
+      command: { command: 'workspace.parent.select' },
+      signal: requestSignal,
+    })
+    assert.equal(selected.projection.setup.state, 'input_required')
+    if (selected.projection.setup.state !== 'input_required') {
+      assert.fail('input-required setup projection expected')
+    }
+    const parentSelection = selected.projection.setup.parentSelection
+    assert.ok(parentSelection)
+    const beforeStore = await snapshotEntries(fixture.appDataRoot)
+    const beforeParent = await snapshotEntries(fixture.canonicalParent)
+
+    blockedLeaf = '2026-2학기'
+    const blocked = await feature.adapter.dispatch({
+      command: {
+        command: 'setup.prepare',
+        input: {
+          yearLevel: 2,
+          term: '2',
+          parentSelectionId: parentSelection.selectionId,
+          leafName: blockedLeaf,
+        },
+      },
+      signal: requestSignal,
+    })
+
+    assert.equal(blocked.status, 'error')
+    if (blocked.status !== 'error') {
+      assert.fail('blocked target must return an error')
+    }
+    assert.equal(blocked.error.code, 'setup_invalid_input')
+    assert.deepEqual(fixture.workspaceTargetGuardCalls, [
+      {
+        canonicalParent: fixture.canonicalParent,
+        leafName: '2026-2학기',
+      },
+    ])
+    assert.equal(fixture.setupTransactions.count, 0)
+    assert.deepEqual(
+      await snapshotEntries(fixture.appDataRoot),
+      beforeStore,
+    )
+    assert.deepEqual(
+      await snapshotEntries(fixture.canonicalParent),
+      beforeParent,
+    )
+    assert.equal(
+      await doesPathExist(fixture.workspaceRoot),
+      false,
+    )
+    assertNoPrivateFields([blocked], fixture)
+  } finally {
+    if (feature) {
+      await feature.close({ signal: signal() })
+    } else {
+      await fixture.runtimeOwner.closeCurrent({ signal: signal() })
+    }
+    await fixture.cleanup()
+  }
+})
+
+test('a replaced parent inode blocks prepare before target guard or mutation', async () => {
+  const fixture = await createFixture({
+    authInitiallyConnected: true,
+  })
+  let feature: PublicPreviewFeatureComposition | undefined
+  try {
+    const bootstrap = fixture.bootstrap('http://127.0.0.1:43123')
+    feature = await fixture.createFeature(bootstrap)
+    const requestSignal = signal()
+    await feature.adapter.dispatch({
+      command: { command: 'workspace.parent.select' },
+      signal: requestSignal,
+    })
+    const selected = await feature.adapter.dispatch({
+      command: { command: 'workspace.parent.select' },
+      signal: requestSignal,
+    })
+    assert.equal(selected.projection.setup.state, 'input_required')
+    if (selected.projection.setup.state !== 'input_required') {
+      assert.fail('input-required setup projection expected')
+    }
+    const parentSelection = selected.projection.setup.parentSelection
+    assert.ok(parentSelection)
+    const displacedParent = path.join(
+      path.dirname(fixture.canonicalParent),
+      'Documents-selected-inode',
+    )
+    await rename(fixture.canonicalParent, displacedParent)
+    await mkdir(fixture.canonicalParent, { mode: 0o700 })
+    const beforeStore = await snapshotEntries(fixture.appDataRoot)
+    const beforeReplacement = await snapshotEntries(
+      fixture.canonicalParent,
+    )
+    const beforeDisplaced = await snapshotEntries(displacedParent)
+
+    const blocked = await feature.adapter.dispatch({
+      command: {
+        command: 'setup.prepare',
+        input: {
+          yearLevel: 2,
+          term: '2',
+          parentSelectionId: parentSelection.selectionId,
+          leafName: '2026-2학기',
+        },
+      },
+      signal: requestSignal,
+    })
+
+    assert.equal(blocked.status, 'error')
+    if (blocked.status !== 'error') {
+      assert.fail('stale parent authority must return an error')
+    }
+    assert.equal(blocked.error.code, 'setup_invalid_input')
+    assert.equal(blocked.projection.setup.state, 'input_required')
+    assert.deepEqual(fixture.workspaceTargetGuardCalls, [])
+    assert.equal(fixture.setupTransactions.count, 0)
+    assert.deepEqual(
+      await snapshotEntries(fixture.appDataRoot),
+      beforeStore,
+    )
+    assert.deepEqual(
+      await snapshotEntries(fixture.canonicalParent),
+      beforeReplacement,
+    )
+    assert.deepEqual(
+      await snapshotEntries(displacedParent),
+      beforeDisplaced,
+    )
+    assert.equal(await doesPathExist(fixture.workspaceRoot), false)
+    assertNoPrivateFields([blocked], fixture)
+  } finally {
+    if (feature) {
+      await feature.close({ signal: signal() })
+    } else {
+      await fixture.runtimeOwner.closeCurrent({ signal: signal() })
+    }
     await fixture.cleanup()
   }
 })
@@ -950,6 +1117,7 @@ test('unexpected adapter failures stay inside a strict safe 500 response', async
 
 async function createFixture(options: {
   readonly authInitiallyConnected?: boolean
+  readonly guardWorkspaceTarget?: PublicPreviewWorkspaceTargetGuard
   readonly pickerWaitsForAbort?: boolean
 } = {}) {
   const root = await realpath(
@@ -1129,13 +1297,17 @@ async function createFixture(options: {
   const pickerCalls = { count: 0 }
   const pickerAborts = { count: 0 }
   const pickerStarted = deferred<void>()
+  const workspaceTargetGuardCalls: Array<{
+    readonly canonicalParent: string
+    readonly leafName: string
+  }> = []
   const attemptIds = [
     'account_attempt_1',
     'account_attempt_2',
     'account_attempt_3',
   ]
   let parentSelection = 0
-  let setupTransaction = 0
+  const setupTransactions = { count: 0 }
   const bootstrap = (
     origin: string,
   ): PublicPreviewServerBootstrap => ({
@@ -1168,6 +1340,10 @@ async function createFixture(options: {
       appDataRoot,
       bundleSource: source,
       displayUserHome: canonicalDisplayHome,
+      guardWorkspaceTarget(target) {
+        workspaceTargetGuardCalls.push(structuredClone(target))
+        return options.guardWorkspaceTarget?.(target) ?? 'allowed'
+      },
       release,
       requiredApplicationCommand: 'npx ay-ple@0.0.1',
       suggestedLeafName: '2026-2학기',
@@ -1196,10 +1372,14 @@ async function createFixture(options: {
     appDataRoot,
     authRuntime,
     bootstrap,
+    canonicalParent,
     pickerAborts,
     pickerCalls,
     pickerStarted,
     runtimeOwner,
+    setupTransactions,
+    workspaceRoot,
+    workspaceTargetGuardCalls,
     async createFeature(input: PublicPreviewServerBootstrap) {
       return createPublicPreviewFeatureComposition(input, {
         runtimeOwner,
@@ -1208,7 +1388,7 @@ async function createFixture(options: {
         createParentSelectionId: () =>
           `parent_selection_${++parentSelection}`,
         createSetupId: () =>
-          `setup_transaction_${++setupTransaction}`,
+          `setup_transaction_${++setupTransactions.count}`,
         now: () => new Date('2026-07-24T00:00:00.000Z'),
         wait: async () => undefined,
       })
@@ -1355,6 +1535,15 @@ function assertNoPrivateFields(
 async function snapshotEntries(root: string): Promise<readonly string[]> {
   const entries = await readdir(root, { recursive: true })
   return [...entries].sort()
+}
+
+async function doesPathExist(candidate: string): Promise<boolean> {
+  try {
+    await lstat(candidate)
+    return true
+  } catch {
+    return false
+  }
 }
 
 async function freePort(): Promise<number> {

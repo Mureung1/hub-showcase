@@ -17,7 +17,7 @@ Public-preview graph는 다음 순서를 소유한다.
 1. App package version, exact `npx ay-ple@<version>` command, Runtime release identity와 workspace bundle hash를 하나의 launch binding으로 교차 검증한다.
 2. Host가 제공한 high-level spawn capability를 매 Runtime generation 직전에 검증하고 그 결과의 release descriptor SHA-256, manifest SHA-256, release ID, target과 Runtime contract version이 같은 binding과 모두 일치할 때만 native Runtime을 만든다.
 3. Auth-only Runtime에서 managed Browser OAuth를 수행한다.
-4. Native picker의 transient opaque parent selection으로 app-owned v3 workspace를 prepare·approve한다.
+4. Native picker의 transient opaque parent selection을 prepare마다 authoritative하게 다시 확인하고, Host가 제공한 `PublicPreviewWorkspaceTargetGuard`에 `canonicalParent + leafName`만 전달한다. Guard가 허용한 target만 B-owned `SetupJourney`가 app-owned v3 workspace로 prepare·approve하며, blocked target은 store·workspace mutation 없이 Browser-safe `setup_invalid_input`으로 닫힌다.
 5. A-owned lease 안에서 auth-only close → workspace Runtime start → fresh account → native context → Ready commit/readback을 완료한다.
 6. Reconnect 뒤에는 durable Ready만으로 성공을 합성하지 않고 explicit `setup.resume`이 새 attestation을 만든 뒤에만 `Semester Ready`를 공개한다.
 

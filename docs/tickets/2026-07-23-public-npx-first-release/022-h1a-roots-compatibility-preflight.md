@@ -65,6 +65,14 @@ Public host가 current working directory나 ambient environment를 신뢰하지 
 - `docs/wayfinding/public-npx-first-release/assets/npx-production-composition-research.md`
 - `docs/adr/0006-separate-package-app-data-and-semester-workspace-roots.md`
 
+## Predecessor Contract Note
+
+- `@ay-ple/runtime-release` package root는 production Host가 필요한 descriptor decoder, caller-safe authority error, resolver bundle factory와 contract type만 공개한다. Testing factory·fault hook과 cache/transport/extraction/generation 내부 구현은 deep import하지 않는다.
+- `@ay-ple/semester-workspace` package root의 `captureWorkspaceBundleSourceAt`를 package-relative immutable workspace resource 검증에 사용한다. Testing mutation helper를 public Host contract로 올리지 않는다.
+- C-owned `PublicPreviewSetupBootstrap`은 required `PublicPreviewWorkspaceTargetGuard`를 받는다. H1a는 authoritative parent가 resolve된 뒤 전달되는 `{ canonicalParent, leafName }`만으로 package/app-data/workspace root overlap을 판단하고 `allowed | blocked`를 반환한다.
+- Guard가 `blocked`를 반환하면 Server가 B-owned `SetupJourney` 호출 전에 `setup_invalid_input`으로 닫는다. H1a는 이 seam을 우회하거나 B schema/admission logic을 복제하지 않는다.
+- 이 predecessor note는 H1a 구현·claim·완료 증거가 아니다. Ticket state는 `ready-for-agent`로 유지하며 H1a fixed SHA는 별도 review와 required checks가 끝난 뒤에만 기록한다.
+
 ## Delivery Handoff
 
 | Field | Contract |
