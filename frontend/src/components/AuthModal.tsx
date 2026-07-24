@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export interface UserSession {
   id: string;
@@ -19,6 +19,22 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
   const [username, setUsername] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -91,6 +107,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
       >
         <button
           onClick={onClose}
+          aria-label="Close modal"
           style={{
             position: 'absolute',
             top: '16px',
