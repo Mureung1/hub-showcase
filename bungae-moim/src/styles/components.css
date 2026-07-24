@@ -492,3 +492,29 @@
   height: 100%;
   background: var(--accent);
 }
+
+/* ---- 좁은 화면: 1열로 접기 (데스크톱 우선, 모바일은 깨지지만 않게) ---- */
+@media (max-width: 900px) {
+  .site-nav {
+    display: none;
+  }
+
+  .site-header-inner {
+    gap: 12px;
+  }
+
+  .list-layout,
+  .detail-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .list-filter,
+  .detail-aside {
+    position: static;
+  }
+
+  .card-grid--2,
+  .card-grid--3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
