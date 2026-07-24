@@ -1,0 +1,13 @@
+/* #27 캘린더 날짜 상세 시트 — 시트 안 리스트/빈 상태 */
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 등록된 일정이 없는 날 */
+.empty {
+  font-size: 13.5px;
+  color: var(--ink-600);
+  padding: 8px 2px 4px;
+}
