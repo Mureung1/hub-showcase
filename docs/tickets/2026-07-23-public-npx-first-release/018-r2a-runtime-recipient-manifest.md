@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: in-progress
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: R2a canonical manifest assembler writer
 
 ## Parent Spec
 
@@ -12,7 +12,7 @@
 
 ## What It Delivers
 
-Public Runtime recipient가 실제로 받는 archive root 전체와 실행 가능한 `bundle/` subtree를 서로 다른 authority로 검증할 수 있는 canonical manifest v2를 만든다. Current bundle-only manifest와 hard-coded identity에 public release 의미를 덧씌우지 않고, legal·SBOM·provenance material까지 exact roster로 수용할 additive generator·decoder·complete-tree verifier seam을 제공한다.
+S1이 고정한 단일 `CanonicalRuntimeManifest` authority에 Runtime-owned recipient·legal·provenance input을 주입하는 pure deterministic assembler를 만든다. Schema·decoder·admission·complete-tree 및 spawn-adjacent reverify는 `@ay-ple/runtime-release`가 계속 단독 소유하며, R2a는 두 번째 manifest contract나 filesystem verifier를 만들지 않는다.
 
 ## Spec Traceability
 
@@ -28,9 +28,15 @@ Public Runtime recipient가 실제로 받는 archive root 전체와 실행 가�
 - Download, wheel, source checkout와 builder처럼 recipient에게 전달되지 않는 input은 executable payload가 아니라 `input_provenance`로 구분한다.
 - Exact top-level recipient set은 `manifest.json`, `bundle/`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, `licenses/`, `sbom.spdx.json`, `provenance/`를 표현할 수 있어야 한다. 이 ticket은 actual legal evidence가 이미 complete하다고 주장하지 않는다.
 - Current manifest v1과 production materialization을 public-ready로 재해석하지 않는다. R2b가 actual legal/provenance closure를 제공하기 전에는 v2 production candidate를 release input으로 승격하지 않는다.
-- Node verifier의 containment, mode, no-symlink selected executable와 bundle complete-tree checks는 donor로 유지하되 public v2 path에서는 descriptor/manifest-driven identity를 사용한다.
+- S1 canonical decoder·admission과 retained directory capability 기반 complete-tree/spawn-adjacent verifier가 유일한 authority다. R2a assembler는 filesystem을 scan하거나 verified capability를 발급하지 않는다.
 - Generated manifest는 canonical bytes이고 extra/unknown/missing field와 path/type/mode/roster drift를 strict하게 거절한다.
 - R lane은 `packages/codex-chat-runtime/package.json`, S1 `account-contract.ts`, root manifest/lock와 다른 owner surface를 수정하지 않는다. Fixed handoff, sibling merge·cherry-pick 금지, 최대 3 writer와 C-owned shared delta 규칙을 따른다.
+
+## Corrected ownership
+
+- Abandoned branch `codex/public-preview-r2a-recipient-manifest`의 commits `6d8c96752`, `925d9c338`는 incompatible `ay_ple_runtime_recipient` schema와 pathname verifier를 만들었던 **non-candidate dual-authority exploration**이다. Merge·cherry-pick·release input으로 사용하지 않는다.
+- Corrected lane은 S1 `CanonicalRuntimeManifest` schema를 그대로 조립한다. Detailed builder/source/download input은 `input_provenance`가 가리키는 recipient payload 안의 provenance file이 소유한다.
+- Assembler가 만든 object는 기존 decoder로 self-validate한 뒤 하나의 canonical byte representation으로만 반환한다. Exact extracted-tree와 launch path의 안전성은 기존 S1 verifier와 opaque spawn authority가 판정한다.
 
 ## Acceptance Criteria
 
@@ -48,6 +54,16 @@ Public Runtime recipient가 실제로 받는 archive root 전체와 실행 가�
 - Targeted test or command: Runtime manifest v2 decoder/generator/complete-tree unit tests, `npm run test:production-runtime -w @ay-ple/codex-chat-runtime`, `npm run verify:production-runtime -w @ay-ple/codex-chat-runtime`
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
 - Manual or live smoke: 없음. Synthetic recipient trees와 current production Runtime before/after non-mutation verification이 authority다.
+
+## Claim Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Exact handoff | `50e14a218a34f2e20c42251671a290412c035ad3` |
+| Integration baseline | Coordinator가 W2와 root gates를 green으로 확인한 current integration HEAD에서 corrected lane을 열었다. |
+| Single authority | `packages/runtime-release/src/canonical-runtime-manifest.ts`, release admission, retained-capability extracted-tree verification과 opaque `verifyForSpawn`을 read-only donor로 유지한다. |
+| Authorized delta | `packages/runtime-release/src/canonical-runtime-manifest-assembler*`, 최소 adjacent tests/fixture, Runtime package README consequence, codex Runtime synthetic input fixture/README consequence와 Ticket 018만 변경한다. |
+| Frozen surfaces | `packages/runtime-release/src/contract.ts`, 두 package의 `package.json`·`src/index.ts`, root manifest/lockfile, Official SDK source·patch stack은 수정하지 않는다. |
 
 ## Blocked By
 
@@ -69,10 +85,10 @@ Public Runtime recipient가 실제로 받는 archive root 전체와 실행 가�
 | --- | --- |
 | node | `R2a` — R2 recipient identity |
 | owner | `R` — Runtime |
-| branch | `codex/public-preview-r2a-recipient-manifest` |
-| worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/r2a-recipient-manifest` |
-| handoffSha | Claim 시 coordinator가 006의 fixed reviewed SHA를 integration branch에 merge하고 R1 및 integration Runtime/root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·branch name·가짜 SHA를 쓰지 않는다. |
-| writablePaths | `packages/codex-chat-runtime/**` 중 `package.json`과 `src/account-contract.ts` 제외; Runtime source/scripts/manifests/tests/README; `docs/tickets/2026-07-23-public-npx-first-release/018-r2a-runtime-recipient-manifest.md` |
+| branch | `codex/public-preview-r2a-canonical-manifest` |
+| worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/r2a-canonical-manifest` |
+| handoffSha | `50e14a218a34f2e20c42251671a290412c035ad3` |
+| writablePaths | `packages/runtime-release/src/canonical-runtime-manifest-assembler*`; 최소 adjacent tests/fixture; `packages/runtime-release/README.md`; 필요 시 `packages/codex-chat-runtime/manifests/fixtures/**`와 `packages/codex-chat-runtime/README.md`; Ticket 018. Existing canonical decoder/authority/extraction/resolver는 cross-contract proof에 필요한 colocated test 외 read-only donor다. |
 | consumedContracts | S1 `RuntimeReleaseDescriptor` manifest-v2 binding; current production Runtime manifest/verifier/materializer invariants; R1-complete Runtime identity and process graph |
 | predecessorEvidence | 006 fixed reviewed SHA와 integration merge receipt, exact SDK/bridge/production Runtime green evidence, latest applicable `contractTipSha`, root four-gate receipt |
 | requiredChecks | Manifest v2 canonical/strict decoder and complete-tree matrix; production Runtime before/after verify; exact SDK provenance non-regression; Runtime workspace test/typecheck/build; root four gates; docs links; `git diff --check` |
