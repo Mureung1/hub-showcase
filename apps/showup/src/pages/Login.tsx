@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { signIn } from '@/services/auth'
+import { getStore, createStore } from '@/services/stores'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { toast } from 'sonner'
@@ -30,7 +31,18 @@ const Login = () => {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true)
     try {
-      await signIn({ email: data.email, password: data.password })
+      const user = await signIn({ email: data.email, password: data.password })
+
+      // 안전장치: stores 문서가 없으면 자동 생성 (회원가입 시 createStore 누락 대응)
+      const existing = await getStore(user.uid)
+      if (!existing) {
+        await createStore(user.uid, {
+          ownerUid: user.uid,
+          name: user.displayName || '가게',
+          category: 'etc',
+        })
+      }
+
       toast.success('로그인되었습니다')
       navigate('/app/dashboard')
     } catch (error) {

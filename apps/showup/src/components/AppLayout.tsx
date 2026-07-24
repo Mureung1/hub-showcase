@@ -1,18 +1,29 @@
-import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
+import { signOutUser } from '@/services/auth'
+import { toast } from 'sonner'
 
 const AppLayout = () => {
   const location = useLocation()
+  const navigate = useNavigate()
 
   const navItems = [
     { path: '/app/dashboard', label: '대시보드', icon: '🏠' },
     { path: '/app/customers', label: '고객', icon: '👥' },
     { path: '/app/reservations', label: '예약', icon: '📅' },
-    { path: '/app/more', label: '더보기', icon: '⋯' },
   ]
 
   const isActive = (path: string) => {
-    if (path === '/app/more') return false
     return location.pathname.startsWith(path)
+  }
+
+  const handleLogout = async () => {
+    try {
+      await signOutUser()
+      toast.success('로그아웃되었습니다')
+      navigate('/login', { replace: true })
+    } catch {
+      toast.error('로그아웃 실패')
+    }
   }
 
   return (
@@ -32,6 +43,13 @@ const AppLayout = () => {
               <span className="text-xs mt-1">{item.label}</span>
             </Link>
           ))}
+          <button
+            onClick={handleLogout}
+            className="flex flex-col items-center justify-center w-full h-full text-gray-500"
+          >
+            <span className="text-xl">🚪</span>
+            <span className="text-xs mt-1">로그아웃</span>
+          </button>
         </div>
       </nav>
 
@@ -58,13 +76,13 @@ const AppLayout = () => {
           ))}
         </nav>
         <div className="p-4 border-t border-gray-200">
-          <Link
-            to="/login"
-            className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-gray-50 rounded-lg w-full"
           >
             <span className="text-xl">🚪</span>
             <span className="font-medium">로그아웃</span>
-          </Link>
+          </button>
         </div>
       </aside>
 
