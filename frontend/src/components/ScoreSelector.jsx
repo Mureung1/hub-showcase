@@ -1,11 +1,11 @@
-const SCORE_OPTIONS = [1, 2, 3, 4, 5];
+const SCORE_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
 
-// "모르겠다"를 뜻하는 값. 1~5 로 딱 정하기 어려울 때 고른다.
-// 점수 계산에서는 중립(3과 동일)으로 처리해 우선순위에 유리·불리를 주지 않는다.
+// "모르겠다"를 뜻하는 값. 1~7 로 딱 정하기 어려울 때 고른다.
+// 점수 계산에서는 중립(중앙값과 동일)으로 처리해 우선순위에 유리·불리를 주지 않는다.
 export const UNKNOWN = 0;
 
 function ScoreSelector({ label, value, onChange, minLabel, maxLabel, levelLabels }) {
-  const isKnown = value >= 1 && value <= 5;
+  const isKnown = value >= 1 && value <= 7;
 
   return (
     <div className="form-group">

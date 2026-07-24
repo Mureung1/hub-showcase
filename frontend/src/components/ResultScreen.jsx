@@ -10,6 +10,20 @@ const THIS_WEEK_DAYS = 7;
 function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
   const [sortKey, setSortKey] = useState("score");
   const [onlyThisWeek, setOnlyThisWeek] = useState(false);
+  // 점수 분해 막대는 기본적으로 숨겨두고, 눌러서 펼친 과목만 보여준다.
+  const [expandedIds, setExpandedIds] = useState(() => new Set());
+
+  function toggleBreakdown(id) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
 
   const filteredSubjects = onlyThisWeek
     ? subjects.filter((subject) => {
@@ -55,7 +69,7 @@ function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
             {formatDday(getDaysUntil(recommendedSubject.examDate))}
           </p>
           <p className="recommend-reason">
-            {buildPriorityReason(recommendedSubject)}
+            {buildPriorityReason(recommendedSubject, weightKey)}
           </p>
         </div>
       ) : (
@@ -98,23 +112,36 @@ function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
 
       {rankedSubjects.length > 0 ? (
         <ul className="subject-list">
-          {rankedSubjects.map((subject, index) => (
-            <li key={subject.id} className="subject-item">
-              <div className="subject-row">
-                <span className="subject-rank">{index + 1}</span>
-                <div className="subject-main">
-                  <span className="subject-name">{subject.name}</span>
-                  <span className="subject-meta">
-                    {formatDday(getDaysUntil(subject.examDate))} · 이해도{" "}
-                    {subject.understanding} · 난이도 {subject.difficulty}
-                  </span>
+          {rankedSubjects.map((subject, index) => {
+            const isExpanded = expandedIds.has(subject.id);
+            return (
+              <li key={subject.id} className="subject-item">
+                <div className="subject-row">
+                  <span className="subject-rank">{index + 1}</span>
+                  <div className="subject-main">
+                    <span className="subject-name">{subject.name}</span>
+                    <span className="subject-meta">
+                      {formatDday(getDaysUntil(subject.examDate))} · 이해도{" "}
+                      {subject.understanding} · 난이도 {subject.difficulty}
+                    </span>
+                  </div>
+                  <PriorityBadge priorityScore={subject.priorityScore} />
+                  <span className="subject-score">{subject.priorityScore}점</span>
                 </div>
-                <PriorityBadge priorityScore={subject.priorityScore} />
-                <span className="subject-score">{subject.priorityScore}점</span>
-              </div>
-              <ScoreBreakdown subject={subject} />
-            </li>
-          ))}
+
+                <button
+                  type="button"
+                  className="breakdown-toggle"
+                  aria-expanded={isExpanded}
+                  onClick={() => toggleBreakdown(subject.id)}
+                >
+                  {isExpanded ? "점수 구성 접기 ▴" : "점수 구성 보기 ▾"}
+                </button>
+
+                {isExpanded && <ScoreBreakdown subject={subject} />}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="empty-hint">이번 주에 시험이 있는 과목이 없어요.</p>

@@ -38,6 +38,7 @@ export function scoreSubjectsLocally(subjects, weightKey) {
         grading: subject.grading,
         studyAmount: subject.studyAmount,
         availableTime: subject.availableTime,
+        previousScore: subject.previousScore,
       },
       weights
     );

@@ -7,25 +7,22 @@ import {
   WEIGHT_PRESETS,
 } from "./priorityCalculator.js";
 
-// "모르겠다"(0)는 중립(보통 3과 동일)으로 계산된다.
-test("calculatePriorityScore: 모르겠다(0)는 보통(3)과 같은 점수", () => {
+// "모르겠다"(0)는 값을 아예 안 줬을 때(중립 기본값)와 같은 점수를 낸다.
+test("calculatePriorityScore: 모르겠다(0)는 값 없음(중립)과 같은 점수", () => {
   const base = {
-    difficulty: 3,
+    difficulty: 4,
     daysUntil: 40,
     gradeWeight: 50,
-    grading: 3,
-    studyAmount: 3,
-    availableTime: 3,
+    grading: 4,
+    studyAmount: 4,
+    availableTime: 4,
   };
   const zero = calculatePriorityScore(
     { ...base, understanding: 0 },
     WEIGHT_PRESETS.balanced
   );
-  const three = calculatePriorityScore(
-    { ...base, understanding: 3 },
-    WEIGHT_PRESETS.balanced
-  );
-  assert.equal(zero, three);
+  const omitted = calculatePriorityScore({ ...base }, WEIGHT_PRESETS.balanced);
+  assert.equal(zero, omitted);
 });
 
 test("getScoreBreakdown: 모르겠다(0)인 요인은 중립 점수(50)", () => {
@@ -51,10 +48,10 @@ test("getScoreBreakdown: 범위 밖 값(null)도 중립(50)", () => {
   assert.equal(b.difficulty, 50);
 });
 
-// 확보 가능한 공부 시간은 적을수록(빠듯할수록) 높은 점수다.
+// 확보 가능한 공부 시간은 적을수록(빠듯할수록) 높은 점수다. (1~7 척도, 7이 최댓값)
 test("getScoreBreakdown: 확보 가능한 공부 시간은 적을수록 높은 점수", () => {
   assert.equal(getScoreBreakdown({ availableTime: 1, daysUntil: 40 }).availableTime, 100);
-  assert.equal(getScoreBreakdown({ availableTime: 5, daysUntil: 40 }).availableTime, 0);
+  assert.equal(getScoreBreakdown({ availableTime: 7, daysUntil: 40 }).availableTime, 0);
 });
 
 // 중요도(학점) 배수: 3학점 기준 1배, 학점이 높을수록 커진다.
@@ -76,4 +73,38 @@ test("최종 점수: 같은 기본 점수면 학점 높은 쪽이 더 높다", (
   const higher = Math.round(base * creditMultiplier(7.5));
   const lower = Math.round(base * creditMultiplier(5));
   assert.ok(higher > lower, `${higher} > ${lower}`);
+});
+
+// 이전 시험 점수는 선택 입력이다. 입력이 없으면 중립(50)으로 본다.
+test("getScoreBreakdown: 이전 시험 점수를 안 넣으면 중립(50)", () => {
+  const b = getScoreBreakdown({ difficulty: 4, daysUntil: 40 });
+  assert.equal(b.previousScore, 50);
+});
+
+// 이전 시험 점수가 높을수록(이미 잘하니) 낮은 점수를 준다.
+test("getScoreBreakdown: 이전 시험 점수가 높을수록 낮은 점수", () => {
+  assert.equal(getScoreBreakdown({ previousScore: 0, daysUntil: 40 }).previousScore, 100);
+  assert.equal(getScoreBreakdown({ previousScore: 100, daysUntil: 40 }).previousScore, 0);
+});
+
+// 같은 조건이면 이전 시험 점수가 높은 과목이 최종 우선순위 점수가 더 낮다.
+test("calculatePriorityScore: 이전 시험 점수가 높으면 우선순위가 더 낮다", () => {
+  const base = {
+    understanding: 4,
+    difficulty: 4,
+    daysUntil: 40,
+    gradeWeight: 40,
+    grading: 4,
+    studyAmount: 4,
+    availableTime: 4,
+  };
+  const highScore = calculatePriorityScore(
+    { ...base, previousScore: 95 },
+    WEIGHT_PRESETS.balanced
+  );
+  const lowScore = calculatePriorityScore(
+    { ...base, previousScore: 20 },
+    WEIGHT_PRESETS.balanced
+  );
+  assert.ok(highScore < lowScore, `${highScore} < ${lowScore}`);
 });
