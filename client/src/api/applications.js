@@ -25,3 +25,9 @@ export const rejectApplication = async ({ applicationId }) => {
 
   return response.data;
 };
+
+export const completeApplication = async ({ applicationId }) => {
+  const response = await httpClient.patch(`/applications/${applicationId}/complete`);
+
+  return response.data;
+};
