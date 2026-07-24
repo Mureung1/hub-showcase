@@ -51,3 +51,16 @@ export const updateGroupPurchaseStatus = (id, status) => {
 export const markGroupPurchaseReceipt = (id) => {
   return apiClient.patch(`/group-purchases/${id}/receipt`);
 };
+
+/** Mark the current participant's bank transfer as complete. */
+export const markGroupPurchasePayment = (id) => {
+  return apiClient.patch(`/group-purchases/${id}/payment`);
+};
+
+/** Let the host confirm a participant's self-reported payment. */
+export const confirmGroupPurchasePayment = (id, applicationId) => {
+  return apiClient.patch(`/group-purchases/${id}/payments/${applicationId}/confirm`);
+};
+
+/** Fetch notifications for the signed-in user. */
+export const getMyNotifications = () => apiClient.get('/notifications');

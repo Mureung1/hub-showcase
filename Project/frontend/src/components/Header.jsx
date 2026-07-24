@@ -1,10 +1,32 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getMyNotifications } from '../api/groupPurchase';
 import './Header.css';
 
 export default function Header({ currentPage, onNavigate }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showDevMenu, setShowDevMenu] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('currentUser') || null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const activeProfile = (currentUser === 'host' || currentUser === '호스트 (방장)')
+    ? { label: '방장 민지', image: 'https://i.pravatar.cc/160?img=47' }
+    : { label: '참여자 서준', image: 'https://i.pravatar.cc/160?img=12' };
+
+  useEffect(() => {
+    async function loadNotifications() {
+      if (!localStorage.getItem('accessToken')) {
+        setNotifications([]);
+        return;
+      }
+      try {
+        const result = await getMyNotifications();
+        if (result.success) setNotifications(result.data);
+      } catch (error) {
+        console.warn('Failed to load notifications:', error.message || error);
+      }
+    }
+    loadNotifications();
+  }, [currentUser]);
 
   const handleDevLogin = async (userId, role) => {
     try {
@@ -16,8 +38,9 @@ export default function Header({ currentPage, onNavigate }) {
       const result = await response.json();
       if (result.success) {
         localStorage.setItem('accessToken', result.data.accessToken);
-        localStorage.setItem('currentUser', role);
-        setCurrentUser(role);
+        const profileKey = result.data.user?.id === 1 ? 'host' : 'participant';
+        localStorage.setItem('currentUser', profileKey);
+        setCurrentUser(profileKey);
         alert(`개발자 로그인 성공! (${role}로 로그인됨)`);
       } else {
         alert(`로그인 실패: ${result.error?.message}`);
@@ -92,9 +115,32 @@ export default function Header({ currentPage, onNavigate }) {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <button className="td-header__action-btn" aria-label="알림">
+          <div className="td-header__notification-container">
+          <button className="td-header__action-btn" aria-label="알림" onClick={() => setShowNotifications((visible) => !visible)}>
             <span className="material-symbols-outlined">notifications</span>
+            {notifications.length > 0 && <span className="td-header__notification-badge">{notifications.length}</span>}
           </button>
+          {showNotifications && (
+            <div className="td-header__notification-dropdown">
+              <strong>알림</strong>
+              {notifications.length === 0 ? (
+                <p>새 알림이 없어요.</p>
+              ) : notifications.map((notification) => (
+                <button
+                  className="td-header__notification-item"
+                  key={notification.id}
+                  onClick={() => {
+                    setShowNotifications(false);
+                    onNavigate('detail', notification.groupPurchaseId);
+                  }}
+                >
+                  <b>{notification.title}</b>
+                  <span>{notification.content}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          </div>
           <button className="td-header__action-btn td-header__action-btn--cart" aria-label="장바구니">
             <span className="material-symbols-outlined">shopping_cart</span>
             <span className="td-header__cart-badge">2</span>
@@ -102,16 +148,16 @@ export default function Header({ currentPage, onNavigate }) {
           <div className="td-header__avatar-container">
             <button className="td-header__avatar-btn" onClick={() => setShowDevMenu(!showDevMenu)}>
               <img
-                alt="User profile"
+                alt={activeProfile.label}
                 className="td-header__avatar"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBH5QF4lRhSy93rbMYHqWnjtP2DcwWb3tlXA3P1Dqh3TshZ5sHG5j9TJfmM6T2jE7bpFRYCsem3fPpwJB9y5euSVJXzh8nK0nyGlSKgguw5tfPPLoc-b7afdViakEZezfYr4Unffy2DG6V-MkmazqzTrValdSPb4X0gRnf_WWwaOYFfRUDbYH2BH5voR-vluj7CNhRdJz9PSY3a4gMkf1_O8Qy6jz88hgD4rDHHlcDmMH9o-mtltQ0"
+                src={activeProfile.image}
               />
             </button>
             {showDevMenu && (
               <div className="td-header__dev-dropdown">
                 {currentUser ? (
                   <>
-                    <div className="td-header__dev-title">현재 로그인: <span>{currentUser}</span></div>
+                    <div className="td-header__dev-title">현재 로그인: <span>{activeProfile.label}</span></div>
                     <button className="td-header__dev-item-btn td-header__dev-item-btn--logout" onClick={handleLogout}>
                       <span className="material-symbols-outlined">logout</span>로그아웃
                     </button>

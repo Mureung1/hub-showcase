@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   cancelGroupPurchaseJoin,
+  confirmGroupPurchasePayment,
   getGroupPurchaseById,
   joinGroupPurchase,
   markGroupPurchaseReceipt,
+  markGroupPurchasePayment,
   updateGroupPurchaseStatus,
 } from '../api/groupPurchase';
 import './GroupPurchaseDetailPage.css';
@@ -42,6 +44,8 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
   const [workflowState, setWorkflowState] = useState('idle');
   const [message, setMessage] = useState('');
   const [isLiked, setIsLiked] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const galleryImages = purchase.imageUrls?.length ? purchase.imageUrls : (purchase.imageUrl ? [purchase.imageUrl] : images);
   const activeStepIndex = purchase.status === 'FAILED' ? -1 : Math.max(statusSteps.indexOf(purchase.status), 0);
   const progress = (purchase.currentParticipants / purchase.targetParticipants) * 100;
 
@@ -62,14 +66,21 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
             targetParticipants: data.targetParticipants,
             currentParticipants: data.currentParticipants,
             pickupPlace: data.pickupPlace || data.pickupTimeSlot || '지정 위치',
+            pickupDetailAddress: data.pickupDetailAddress,
             pickupLatitude: data.pickupLatitude,
             pickupLongitude: data.pickupLongitude,
+            paymentAccount: data.paymentAccount,
             description: data.description,
             productUrl: data.productUrl,
+            imageUrl: data.imageUrl,
+            imageUrls: data.imageUrls,
             status: data.status,
             viewer: data.viewer,
+            paymentSummary: data.viewer?.paymentSummary,
+            paymentParticipants: data.viewer?.paymentParticipants,
           });
           setJoinState(data.viewer?.application ? 'joined' : 'idle');
+          setIsPaymentModalOpen(Boolean(data.status === 'COMPLETED' && data.viewer?.application && !data.viewer.application.isPaid && data.paymentAccount));
           setMessage('');
         }
       } catch (err) {
@@ -78,6 +89,8 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
     }
     if (id) {
       fetchDetail();
+      const intervalId = window.setInterval(fetchDetail, 10000);
+      return () => window.clearInterval(intervalId);
     }
   }, [id]);
 
@@ -106,6 +119,7 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
         },
       }));
       setJoinState('joined');
+      if (result.data.groupPurchase.status === 'COMPLETED' && purchase.paymentAccount) setIsPaymentModalOpen(true);
       setMessage('참여 신청이 완료되었습니다!');
     } catch (error) {
       setJoinState('error');
@@ -172,6 +186,49 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
     }
   }
 
+  async function handlePayment() {
+    setWorkflowState('loading');
+    setMessage('');
+    try {
+      const result = await markGroupPurchasePayment(purchase.id);
+      if (!result.success) throw new Error(result.error?.message || '입금 완료 처리에 실패했습니다.');
+      setPurchase((current) => ({
+        ...current,
+        viewer: { ...current.viewer, application: { ...current.viewer.application, isPaid: true, isPaymentConfirmed: false } },
+      }));
+      setIsPaymentModalOpen(false);
+      setMessage('입금 완료로 기록했습니다. 방장이 확인 후 주문을 진행합니다.');
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setWorkflowState('idle');
+    }
+  }
+
+  async function handlePaymentConfirmation(applicationId) {
+    setWorkflowState('loading');
+    setMessage('');
+    try {
+      const result = await confirmGroupPurchasePayment(purchase.id, applicationId);
+      if (!result.success) throw new Error(result.error?.message || '입금 확인에 실패했습니다.');
+      setPurchase((current) => ({
+        ...current,
+        paymentParticipants: current.paymentParticipants.map((participant) => (
+          participant.id === applicationId ? { ...participant, isPaymentConfirmed: true } : participant
+        )),
+        paymentSummary: {
+          ...current.paymentSummary,
+          confirmedCount: (current.paymentSummary?.confirmedCount || 0) + 1,
+        },
+      }));
+      setMessage('입금을 확인했어요. 모든 참여자를 확인하면 주문할 수 있어요.');
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setWorkflowState('idle');
+    }
+  }
+
   return (
     <div className="td-root td-detail-page">
       <main id="top" className="td-detail-page__content">
@@ -201,14 +258,14 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
               {/* Bento Grid Images */}
               <div className="td-detail-page__gallery-bento">
                 <div className="td-detail-page__gallery-main-wrapper">
-                  <img className="td-detail-page__gallery-img" src={images[0]} alt="Fresh Avocados Crate" />
+                  <img className="td-detail-page__gallery-img" src={galleryImages[0]} alt={purchase.title} />
                 </div>
                 <div className="td-detail-page__gallery-sub-grid">
                   <div className="td-detail-page__gallery-sub-wrapper">
-                    <img className="td-detail-page__gallery-img" src={images[1]} alt="Avocado Split Halves" />
+                    <img className="td-detail-page__gallery-img" src={galleryImages[1] || galleryImages[0]} alt={purchase.title} />
                   </div>
                   <div className="td-detail-page__gallery-sub-wrapper">
-                    <img className="td-detail-page__gallery-img" src={images[2]} alt="Avocado Toast Spread" />
+                    <img className="td-detail-page__gallery-img" src={galleryImages[2] || galleryImages[0]} alt={purchase.title} />
                   </div>
                 </div>
               </div>
@@ -291,6 +348,8 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
             <div className="td-detail-page__card td-detail-page__desc-card">
               <h2 className="td-headline-md td-detail-page__section-title">상세 설명</h2>
               <div className="td-detail-page__desc-content">
+                <p className="td-detail-page__user-description">{purchase.description || '방장이 아직 상세 설명을 작성하지 않았습니다.'}</p>
+                {purchase.productUrl && <a className="td-detail-page__product-link" href={purchase.productUrl} target="_blank" rel="noreferrer">상품 페이지 열기 <span className="material-symbols-outlined">open_in_new</span></a>}
                 <p>지역 농장 공급업체에서 유기농 해스 아보카도 대용량 박스를 좋은 가격에 발견했습니다! 지금은 단단하지만 며칠 내로 완벽하게 후숙될 거예요. 저 혼자서 20개를 다 먹기에는 너무 많아서 같이 나눌 이웃 3분을 찾습니다.</p>
                 <p>도착하면 저희 아파트 1층 메인 로비에서 픽업하시면 됩니다. 가져가실 수 있도록 종이봉투는 제가 준비해둘게요.</p>
                 <ul className="td-detail-page__desc-bullets">
@@ -316,7 +375,7 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
                 <div className="td-detail-page__map-wrapper">
                   <KakaoMap latitude={purchase.pickupLatitude} longitude={purchase.pickupLongitude} height={192} />
                 </div>
-                <p className="td-body-md td-detail-page__map-text">{purchase.pickupPlace}</p>
+                <p className="td-body-md td-detail-page__map-text">{purchase.pickupPlace}{purchase.pickupDetailAddress ? ` · ${purchase.pickupDetailAddress}` : ''}</p>
               </div>
 
               {/* Host Info Card */}
@@ -358,6 +417,43 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
                   <span className="td-body-md td-detail-page__action-price-label">나의 총 결제금액</span>
                   <strong className="td-headline-md td-detail-page__action-price-value">{won(purchase.perPersonPrice)}</strong>
                 </div>
+
+                {purchase.viewer?.isHost && purchase.status === 'COMPLETED' && (
+                  <div className="td-detail-page__payment-summary">
+                    <strong>입금 관리</strong>
+                    <p className="td-body-md">신고 {purchase.paymentSummary?.reportedCount || 0}명 · 확인 {purchase.paymentSummary?.confirmedCount || 0}/{purchase.paymentSummary?.participantCount || 0}명</p>
+                    <div className="td-detail-page__payment-participants">
+                      {purchase.paymentParticipants?.map((participant) => (
+                        <div className="td-detail-page__payment-participant" key={participant.id}>
+                          <span>{participant.nickname}</span>
+                          {participant.isPaymentConfirmed ? (
+                            <span className="td-detail-page__payment-state td-detail-page__payment-state--confirmed">확인 완료</span>
+                          ) : participant.isPaid ? (
+                            <button className="td-detail-page__payment-confirm-btn" onClick={() => handlePaymentConfirmation(participant.id)} disabled={workflowState === 'loading'}>입금 확인</button>
+                          ) : (
+                            <span className="td-detail-page__payment-state">입금 대기</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {purchase.viewer?.application && purchase.status === 'COMPLETED' && !purchase.viewer.application.isPaid && (
+                  <button
+                    className="td-detail-page__action-primary-btn"
+                    onClick={() => setIsPaymentModalOpen(true)}
+                    disabled={workflowState === 'loading'}
+                  >
+                    계좌 확인 · 입금 완료하기
+                  </button>
+                )}
+
+                {purchase.viewer?.application?.isPaid && purchase.status === 'COMPLETED' && (
+                  <p className="td-detail-page__action-message td-body-md td-detail-page__action-message--success">
+                    {purchase.viewer.application.isPaymentConfirmed ? '방장이 입금을 확인했어요. 주문 진행을 기다려 주세요.' : '입금 신고가 전달됐어요. 방장의 확인을 기다려 주세요.'}
+                  </p>
+                )}
                 
                 {purchase.viewer?.isHost && hostActions[purchase.status] && (
                   <button
@@ -424,6 +520,24 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
         </div>
 
       </main>
+
+      {isPaymentModalOpen && (
+        <div className="td-detail-page__payment-modal-backdrop" role="dialog" aria-modal="true" aria-label="입금 계좌 안내">
+          <section className="td-detail-page__payment-modal">
+            <span className="material-symbols-outlined text-primary">account_balance</span>
+            <h2 className="td-headline-md">모집이 완료됐어요!</h2>
+            <p className="td-body-md">아래 방장 계좌로 {won(purchase.perPersonPrice)}을 입금해 주세요.</p>
+            <strong className="td-detail-page__payment-account">{purchase.paymentAccount || '방장에게 계좌 정보를 확인해 주세요.'}</strong>
+            <p className="td-body-sm">입금한 뒤에만 입금 완료 버튼을 눌러 주세요.</p>
+            <div className="td-detail-page__payment-modal-actions">
+              <button className="td-detail-page__payment-later-btn" onClick={() => setIsPaymentModalOpen(false)}>나중에</button>
+              <button className="td-detail-page__payment-submit-btn" onClick={handlePayment} disabled={workflowState === 'loading'}>
+                {workflowState === 'loading' ? '처리 중...' : '입금 완료했어요'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="td-detail-page__footer">
