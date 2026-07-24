@@ -153,9 +153,24 @@ real screens in the dev server turned out to be faster than reviewing a static m
 **Still open from §8, deliberately not in this pass:**
 - **§8.1 (2–4개 묶음 입력)** — not done. This is an engine change (`cellsForTopic` emits one cell
   at a time and `frontier` advances by one), not a layout change, so it needs its own pass.
-- **§8.4 (키보드 우선 입력)** — verified as **broken**: on a fresh numeric cell the input is not
-  autofocused, so Enter does not commit-and-advance. Confirmed by hand in the dev server.
 - §8.6 (평문 라벨 전수 점검) and §9.4's "Login/Onboarding은 그대로" both still stand.
+
+### 9.7 §8.4 키보드 우선 입력 — 고침 (2026-07-24)
+
+§9.6에서 "깨져 있음"으로 기록한 걸 그날 바로 고쳤다. 원인은 `ActiveCell`의 자동 포커스
+effect가 `cell.kind === 'text'`일 때만 동작하고, 숫자(`NumberInput`)·날짜(`YmdField`)는 내부
+`<input>`/`<select>`에 그 ref가 안 붙어 있던 것. 필드마다 ref를 꿰는 대신 **`.body` 컨테이너에서
+첫 입력 요소(`input, select, textarea`)를 찾아 포커스**하는 방식으로 통일 — 셋을 한 메커니즘으로
+커버하고, `.body`에 다는 덕에 titleRow의 도움말(?) 버튼은 자연히 제외된다. `date-ymd`에는 없던
+Enter 핸들러도 추가(유효할 때만 확정).
+
+**의도적으로 제외한 것: 선택형(yesno/select)은 자동 포커스하지 않는다.** 첫 보기 버튼에 포커스를
+주면 앞 질문을 Enter로 넘긴 손이 그대로 Enter를 한 번 더 눌러 안 읽은 채 첫 보기가 선택돼버린다 —
+세무 맥락에선 위험. 타이핑 필드(text/number/date)만 포커스하며, 거기서 Enter는 "내가 친 값 확정"이라
+안전하다. `AUTOFOCUS_KINDS = {text, number, date-ymd}`.
+
+검증: `ActiveCell.test.tsx` 7개(자동 포커스 3 + Enter 확정 4) 추가, 전체 21개 통과. dev 서버에서
+type→Enter→type→Enter로 숫자 시퀀스를 손을 마우스로 안 옮기고 통과하는 것까지 브라우저로 확인.
 
 ### Source note
 Transcribed and cleaned up from a UI design principles infographic ("Elegance Formula — Rules for UI Design"). A few labels in the source image were cut off or partially obscured by an overlay, so wording for those items has been reconstructed based on best interpretation and grouped into the closest matching category above. Section 7 ("What NOT to Do") is compiled from current commentary on generic AI-generated design patterns (mid-2026). §7.1 and §8 are from a two-subagent research pass (AI-design-tell audit + tax-productivity UX research) run against this repo's actual code/design docs on 2026-07-23. §9 (and the §8.1 revision) are from a same-day follow-up: two Explore research passes on US/global and Korean fintech/tax desktop layouts, plus one on grouped-field-with-animation UX research, done while planning the Figma redesign of Home + Wizard with the user.
