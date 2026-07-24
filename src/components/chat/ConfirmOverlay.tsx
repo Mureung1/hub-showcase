@@ -3,9 +3,10 @@ import type { ConfirmData } from '../../types/overlay';
 type ConfirmOverlayProps = {
   data: ConfirmData;
   onClose: () => void;
+  onUndo: () => void;
 };
 
-export default function ConfirmOverlay({ data, onClose }: ConfirmOverlayProps) {
+export default function ConfirmOverlay({ data, onClose, onUndo }: ConfirmOverlayProps) {
   return (
     <>
       <div className="overlay-dim" onClick={onClose} />
@@ -17,7 +18,7 @@ export default function ConfirmOverlay({ data, onClose }: ConfirmOverlayProps) {
         <p className="confirm-detail">{data.detail}</p>
         <div className="confirm-actions">
           {data.actions.map((action) => (
-            <button key={action.action} onClick={onClose}>
+            <button key={action.action} onClick={action.action === 'undo' ? onUndo : onClose}>
               {action.label}
             </button>
           ))}
