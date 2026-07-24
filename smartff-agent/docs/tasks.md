@@ -390,6 +390,11 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 - [ ] Product Master 자동 보정: 수동 매핑 테이블 구축
 - [ ] Rule Engine V2: 더 복잡한 규칙 추가
 - [x] FinancialService Cache Reload (V2) — 2026-07-22 "Upload → ETL 자동화" 작업에 포함되어 완료. `financialService.reloadData()` 구현, `uploadAutomationService`가 ETL 성공 시 호출. Recommendation은 캐시가 없어 자동 최신화됨
+- [ ] **Dashboard '운영 브리핑' 재설계** (2026-07-24 논의, `docs/discussion.md` Discussion 8 참고)
+  - 현재 AI 제안/위험 신호/KPI 구성 대신, 점주 업무 흐름(오늘 발주 → 내일 입고 → 내일 판매)에 맞춘 운영 브리핑 형태(이번 주 전략 / 내일 발주 체크포인트 / 위험 신호 / KPI 요약 / 데이터 기준일)로 재정의하기로 논의함
+  - 직접적인 발주 수량 추천은 하지 않음(현재 데이터 주기로는 근거 부족), 전략 수준 제안만 제공
+  - 배송편(1편/2편) 활용 편별 체크포인트는 위 "배송편 데이터 모델 확장 검토" 항목과 함께 v2 이후로 이월
+  - 아직 코드 변경 없음 — 제품 방향 논의만 기록된 상태, 착수 시 `DashboardPage.tsx`/`AIBriefCard`/`RiskAlertCard` 재구성 필요
 - [ ] Dashboard AI Insight: 자연어 분석 고도화
 - [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동) — 배포 시점에 "접속 비밀번호" 수준 경량 보호부터 우선 검토하기로 결정 (2026-07-22)
 - [ ] 프론트엔드 번들 코드 스플리팅 — `npm run build` 시 메인 청크 667KB 경고(2026-07-22 validation-agent 지적). 지금 당장 문제는 아니지만 페이지별 `React.lazy()` 분리 고려
