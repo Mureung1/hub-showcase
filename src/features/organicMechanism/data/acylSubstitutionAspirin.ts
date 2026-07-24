@@ -1,7 +1,7 @@
 import type { ReactionTemplate } from './types'
 
-export const fischerEsterificationReaction: ReactionTemplate = {
-  id: 'fischer-esterification',
+export const acylSubstitutionAspirinReaction: ReactionTemplate = {
+  id: 'acyl-substitution-aspirin',
   name: '아실화 반응 (아스피린 합성)',
   summary:
     '살리실산의 페놀성 하이드록시기가 무수아세트산과 반응해 아스피린(아세틸살리실산)이 합성되는 친핵성 아실 치환(아실화) 반응입니다. (Fischer 에스테르화는 카르복시산+알코올·산 촉매·부산물이 물인 별개 반응이며, 이 반응은 무수물을 쓰는 아실화라 그와 구분됩니다.)',

@@ -15,6 +15,8 @@ export interface NavGroup {
 export interface NavDept {
   id: string
   label: string
+  /** true면 아직 개설 전 학과 — 사이드바에선 "준비 중", 홈 그래프에선 점선·흐림으로 표시 */
+  planned?: boolean
   groups: NavGroup[]
 }
 
@@ -60,8 +62,8 @@ export const NAVIGATION: NavDept[] = [
         leaves: [
           {
             id: 'molecule-viewer',
-            label: '분자 뷰어',
-            to: '/chemistry/viewer',
+            label: '관능기 인식',
+            to: '/chemistry/functional-groups',
             iconKey: 'generalChem',
           },
           {
@@ -142,6 +144,77 @@ export const NAVIGATION: NavDept[] = [
             to: '/chemistry/physical',
             iconKey: 'physicalChem',
           },
+        ],
+      },
+    ],
+  },
+  // ---- 아래는 개설 예정 학과 (planned) ----
+  // 실제 화면은 없고, 홈 그래프의 방사형 구조와 사이드바 "준비 중" 표시에만 쓰임.
+  // 세부과목명은 각 학과의 대표 전공 과목으로 채움(가짜 단원은 만들지 않음 — 과목 수준까지만).
+  {
+    id: 'math',
+    label: '수학과',
+    planned: true,
+    groups: [
+      {
+        id: 'math-subjects',
+        label: '개설 예정',
+        leaves: [
+          { id: 'linalg', label: '선형대수학', iconKey: 'planned' },
+          { id: 'calculus', label: '미적분학', iconKey: 'planned' },
+          { id: 'probstat', label: '확률과통계', iconKey: 'planned' },
+          { id: 'discretemath', label: '이산수학', iconKey: 'planned' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'ee',
+    label: '전자공학과',
+    planned: true,
+    groups: [
+      {
+        id: 'ee-subjects',
+        label: '개설 예정',
+        leaves: [
+          { id: 'circuit', label: '회로이론', iconKey: 'planned' },
+          { id: 'digitallogic', label: '디지털논리', iconKey: 'planned' },
+          { id: 'signals', label: '신호및시스템', iconKey: 'planned' },
+          { id: 'semicon', label: '반도체공학', iconKey: 'planned' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'physics',
+    label: '물리학과',
+    planned: true,
+    groups: [
+      {
+        id: 'physics-subjects',
+        label: '개설 예정',
+        leaves: [
+          { id: 'quantum', label: '양자역학', iconKey: 'planned' },
+          { id: 'classmech', label: '고전역학', iconKey: 'planned' },
+          { id: 'emag', label: '전자기학', iconKey: 'planned' },
+          { id: 'thermo', label: '열역학', iconKey: 'planned' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'bio',
+    label: '생명과학과',
+    planned: true,
+    groups: [
+      {
+        id: 'bio-subjects',
+        label: '개설 예정',
+        leaves: [
+          { id: 'genetics', label: '유전학', iconKey: 'planned' },
+          { id: 'cellbio', label: '세포생물학', iconKey: 'planned' },
+          { id: 'molbio', label: '분자생물학', iconKey: 'planned' },
+          { id: 'biochem', label: '생화학', iconKey: 'planned' },
         ],
       },
     ],

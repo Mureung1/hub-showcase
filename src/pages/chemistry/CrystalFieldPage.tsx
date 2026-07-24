@@ -4,6 +4,8 @@ import CrystalFieldDiagram from '../../features/chemistry/components/CrystalFiel
 import Panel from '../../components/Panel'
 import ChapterAssistant from '../../components/ChapterAssistant'
 
+const MAX_DELTA_WAVENUMBER_CM1 = Math.max(...COORDINATION_COMPOUNDS.map((c) => c.deltaWavenumber_cm1))
+
 export default function CrystalFieldPage() {
   const [compoundId, setCompoundId] = useState(COORDINATION_COMPOUNDS[0].id)
   const compound =
@@ -37,14 +39,23 @@ export default function CrystalFieldPage() {
 
       <div className="relative mt-6">
         <ChapterAssistant
-          context={`${compound.label} (${compound.formula}): 결정장 갈라짐 ${compound.dOrbitalGroups.join('-')}, 실제 색 ${compound.observedColor.label}`}
+          context={`${compound.label} (${compound.formula}): 결정장 갈라짐 ${compound.dOrbitalGroups.join('-')}, Δ=${compound.deltaWavenumber_cm1}cm⁻¹, 흡수 파장 ${compound.absorptionBand.peakNm}nm, 실제 색 ${compound.observedColor.label}`}
         />
         <Panel title={`${compound.label} — 왜 색을 띠는가`}>
           <CrystalFieldDiagram
             dOrbitalGroups={compound.dOrbitalGroups}
             observedColor={compound.observedColor}
+            deltaWavenumber_cm1={compound.deltaWavenumber_cm1}
+            maxDeltaWavenumber_cm1={MAX_DELTA_WAVENUMBER_CM1}
+            absorptionBand={compound.absorptionBand}
           />
           {compound.splitNote && <p className="mt-3 text-xs text-zinc-500">{compound.splitNote}</p>}
+          {compound.deltaSourceNote && (
+            <p className="mt-2 flex gap-1.5 text-xs text-amber-500/90">
+              <span aria-hidden="true">⚠</span>
+              <span>{compound.deltaSourceNote}</span>
+            </p>
+          )}
         </Panel>
       </div>
 

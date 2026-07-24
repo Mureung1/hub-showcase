@@ -2,9 +2,9 @@ import { useState } from 'react'
 import MoleculeInputForm, {
   type InputMode,
 } from '../../features/chemistry/components/MoleculeInputForm'
-import Structure2DViewer from '../../features/chemistry/components/Structure2DViewer'
 import Structure3DViewer from '../../features/chemistry/components/Structure3DViewer'
-import { fetchSdf3d, nameToSmiles, smilesToCid } from '../../features/chemistry/lib/pubchem'
+import CoordinationFormulaCard from '../../features/chemistry/components/CoordinationFormulaCard'
+import { fetchCompoundInfo, fetchSdf3d, nameToSmiles, smilesToCid } from '../../features/chemistry/lib/pubchem'
 import {
   COORDINATION_COMPOUNDS,
   type CoordinationCompound,
@@ -20,6 +20,7 @@ export default function CoordinationGeometryPage() {
   const [activeCompound, setActiveCompound] = useState<CoordinationCompound | null>(
     DEFAULT_COMPOUND,
   )
+  const [freeFormula, setFreeFormula] = useState<string | null>(null)
   const [presetKey, setPresetKey] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,6 +29,7 @@ export default function CoordinationGeometryPage() {
     setActiveCompound(compound)
     setSmiles(compound.smiles)
     setSdf(compound.sdf)
+    setFreeFormula(null)
     setError(null)
     setPresetKey((key) => key + 1)
   }
@@ -36,6 +38,7 @@ export default function CoordinationGeometryPage() {
     setLoading(true)
     setError(null)
     setActiveCompound(null)
+    setFreeFormula(null)
 
     const resolvedSmiles = mode === 'name' ? await nameToSmiles(value) : value
 
@@ -49,8 +52,12 @@ export default function CoordinationGeometryPage() {
     setSdf(null)
 
     const cid = await smilesToCid(resolvedSmiles)
-    const sdf3d = cid ? await fetchSdf3d(cid) : null
+    const [sdf3d, info] = await Promise.all([
+      cid ? fetchSdf3d(cid) : Promise.resolve(null),
+      cid ? fetchCompoundInfo(cid) : Promise.resolve({ formula: null, iupacName: null }),
+    ])
     setSdf(sdf3d)
+    setFreeFormula(info.formula)
     setLoading(false)
   }
 
@@ -99,16 +106,19 @@ export default function CoordinationGeometryPage() {
               : `현재 보고 있는 분자의 SMILES: ${smiles}`
           }
         />
-        <Panel title="2D 구조식">
-          <Structure2DViewer smiles={smiles} />
+        <Panel title="배위 화학식">
+          {activeCompound ? (
+            <CoordinationFormulaCard compound={activeCompound} />
+          ) : (
+            <CoordinationFormulaCard freeFormula={freeFormula} />
+          )}
         </Panel>
         <Panel title="3D 구조">
           <Structure3DViewer sdf={sdf} />
           {activeCompound && (
             <p className="mt-2 text-xs text-zinc-500">
-              마우스로 드래그해 돌려보세요. 3D는 배위 기하구조(중심 금속 + 리간드 배치)를 뚜렷이
-              보여주기 위해 리간드의 수소는 생략한 배위 골격만 표시합니다 — 리간드 전체 모양은
-              왼쪽 2D 구조식에서 확인하세요.
+              마우스로 드래그해 돌려보세요. 리간드의 수소는 배위 기하구조(중심 금속 + 리간드 배치)를
+              뚜렷이 보여주기 위해 생략한 배위 골격만 표시합니다.
             </p>
           )}
         </Panel>
@@ -118,9 +128,7 @@ export default function CoordinationGeometryPage() {
         <Panel title="설명">
           {activeCompound ? (
             <>
-              <h2 className="text-sm font-semibold text-zinc-100">
-                {activeCompound.label} ({activeCompound.formula})
-              </h2>
+              <h2 className="text-sm font-semibold text-zinc-100">{activeCompound.label}</h2>
               <p className="mt-2 text-sm leading-relaxed text-zinc-400">
                 {activeCompound.description}
               </p>

@@ -87,6 +87,12 @@ const icons = {
       <circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none" />
     </svg>
   ),
+  // 개설 예정 과목 공용 아이콘 (점선 원)
+  planned: (
+    <svg {...iconProps} strokeWidth={1.3}>
+      <circle cx="8" cy="8" r="5.5" strokeDasharray="2.5 2.5" />
+    </svg>
+  ),
 }
 
 const iconMap: Record<string, ReactNode> = icons

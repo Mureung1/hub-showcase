@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/pre-push-secret-scan.sh",
+            "timeout": 30,
+            "statusMessage": "git push 전 비밀키 스캔 중..."
+          }
+        ]
+      }
+    ]
+  }
+}

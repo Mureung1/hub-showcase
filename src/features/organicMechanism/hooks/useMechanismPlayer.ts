@@ -29,43 +29,22 @@ function buildFrames(steps: MechanismStep[]): Frame[] {
 export function useMechanismPlayer(steps: MechanismStep[]) {
   const frames = useMemo(() => buildFrames(steps), [steps])
   const [frameIndex, setFrameIndex] = useState(0)
-  const [playing, setPlaying] = useState(false)
-  const [speed, setSpeed] = useState(2200)
 
   useEffect(() => {
     setFrameIndex(0)
-    setPlaying(false)
   }, [frames])
-
-  useEffect(() => {
-    if (!playing) return
-    if (frameIndex >= frames.length - 1) {
-      setPlaying(false)
-      return
-    }
-    const timer = setTimeout(() => {
-      setFrameIndex((i) => Math.min(i + 1, frames.length - 1))
-    }, speed)
-    return () => clearTimeout(timer)
-  }, [playing, frameIndex, speed, frames])
 
   const frame = frames[frameIndex] ?? frames[0]
 
   return {
     currentStep: frame.step,
     visibleArrowCount: frame.visibleArrowCount,
+    isFirst: frameIndex <= 0,
     isDone: frameIndex >= frames.length - 1,
-    playing,
     stepIndex: frameIndex,
     totalSteps: frames.length,
-    speed,
-    setSpeed,
-    play: () => setPlaying(true),
-    pause: () => setPlaying(false),
     stepForward: () => setFrameIndex((i) => Math.min(i + 1, frames.length - 1)),
-    reset: () => {
-      setFrameIndex(0)
-      setPlaying(false)
-    },
+    stepBackward: () => setFrameIndex((i) => Math.max(i - 1, 0)),
+    reset: () => setFrameIndex(0),
   }
 }
