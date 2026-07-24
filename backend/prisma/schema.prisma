@@ -115,3 +115,16 @@ model BulkyWasteReportSite {
 
   @@unique([ctpvNm, sggNm])
 }
+
+// 건전지/형광등/소형가전/종이팩 전용 수거함 위치. 1차 범위는 지도 없는 목록(Week 3 스트레치에서
+// 좌표 추가 후 지도 시각화 예정)이라 좌표는 의도적으로 제외 — scripts/seedCollectionPoints.ts로 시드 관리.
+model CollectionPoint {
+  id        String   @id @default(cuid())
+  category  String // 건전지 | 형광등 | 소형가전 | 종이팩
+  name      String
+  address   String
+  hours     String? // 운영시간 — 상시(24시간) 수거함은 값이 없을 수 있음
+  createdAt DateTime @default(now())
+
+  @@index([category])
+}
