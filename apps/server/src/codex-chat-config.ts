@@ -58,6 +58,7 @@ export interface CodexChatBootstrap extends CodexChatRuntimeEvidence {
 
 export interface ProductRuntimeBootstrap {
   readonly appDataRoot: string
+  readonly packageRoot: string
   readonly runtimeRoot: string
   readonly environment: CodexChatRuntimeEnvironment
   readonly origin: string
@@ -114,10 +115,17 @@ function sourceFromProductRuntime(
 ): CodexChatRuntimeSource {
   if (
     !path.isAbsolute(productRuntime.appDataRoot) ||
+    !path.isAbsolute(productRuntime.packageRoot) ||
     !path.isAbsolute(productRuntime.runtimeRoot) ||
     Object.values(productRuntime.environment).some(
       (value) => value.length === 0 || !path.isAbsolute(value),
-    )
+    ) ||
+    [productRuntime.appDataRoot, ...Object.values(productRuntime.environment)]
+      .some((root) => !rootsAreDisjoint([productRuntime.packageRoot, root])) ||
+    !rootsAreDisjoint([
+      productRuntime.appDataRoot,
+      productRuntime.environment.codexHome,
+    ])
   ) {
     return { kind: 'unavailable', reason: 'invalid_configuration' }
   }
@@ -149,6 +157,7 @@ function sourceFromProductRuntime(
             const activeWorkspace = workspace()
             if (
               !(await validateRuntimePaths(
+                productRuntime.packageRoot,
                 activeWorkspace,
                 productRuntime.environment,
               ))
@@ -170,7 +179,14 @@ function sourceFromProductRuntime(
 async function ensureManagedRuntimeDirectories(
   productRuntime: ProductRuntimeBootstrap,
 ): Promise<void> {
+  const packageRoot = await validateDirectory(productRuntime.packageRoot, false)
   const appDataRoot = await validateDirectory(productRuntime.appDataRoot, true)
+  const codexHomeCandidate = await canonicalCandidatePath(
+    productRuntime.environment.codexHome,
+  )
+  if (!rootsAreDisjoint([packageRoot, appDataRoot, codexHomeCandidate])) {
+    throw new TypeError('Global Codex home overlaps a product root')
+  }
   await mkdir(productRuntime.environment.codexHome, {
     mode: 0o700,
     recursive: true,
@@ -212,10 +228,12 @@ async function ensureManagedRuntimeDirectories(
 }
 
 async function validateRuntimePaths(
+  packageRoot: string,
   workspace: string,
   environment: CodexChatRuntimeEnvironment,
 ): Promise<boolean> {
   try {
+    const canonicalPackage = await validateDirectory(packageRoot, false)
     const canonicalWorkspace = await validateDirectory(workspace, false)
     const controlled = await Promise.all([
       validateDirectory(environment.home, true),
@@ -223,9 +241,24 @@ async function validateRuntimePaths(
       validateDirectory(environment.codexSqliteHome, true),
       validateDirectory(environment.tempDirectory, true),
     ])
-    return rootsAreDisjoint([canonicalWorkspace, ...controlled])
+    return rootsAreDisjoint([
+      canonicalPackage,
+      canonicalWorkspace,
+      ...controlled,
+    ])
   } catch {
     return false
+  }
+}
+
+async function canonicalCandidatePath(candidate: string): Promise<string> {
+  try {
+    return await realpath(candidate)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    const parent = path.dirname(candidate)
+    if (parent === candidate) throw error
+    return path.join(await canonicalCandidatePath(parent), path.basename(candidate))
   }
 }
 

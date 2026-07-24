@@ -5,6 +5,9 @@ import path from 'node:path'
 import test from 'node:test'
 
 import {
+  resolveCodexChatRuntimeSource,
+} from './codex-chat-config.js'
+import {
   ProductDevelopmentBootstrapError,
   resolveProductDevelopmentBootstrap,
 } from './product-development.js'
@@ -55,9 +58,17 @@ test('product development bootstrap activates and reports its explicit selected 
       CODEX_HOME: codexHome,
     })
     assert.ok(product)
+    assert.equal(
+      resolveCodexChatRuntimeSource({
+        productRuntime: product.runtime,
+        workspace: () => product.selectedWorkspaceRoot,
+      }).kind,
+      'candidate',
+    )
     assert.equal(product.selectedWorkspaceRoot, workspaceRoot)
     assert.deepEqual(product.runtime, {
       appDataRoot,
+      packageRoot,
       runtimeRoot: path.join(
         packageRoot,
         'packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64',
@@ -93,6 +104,28 @@ test('product development bootstrap activates and reports its explicit selected 
   } finally {
     await rm(testRoot, { force: true, recursive: true })
   }
+})
+
+test('product development rejects a global Codex home inside the package root', () => {
+  const product = resolveProductDevelopmentBootstrap({
+    AY_PLE_PRODUCT_MODE: '1',
+    AY_PLE_PACKAGE_ROOT: '/explicit/package',
+    AY_PLE_APP_DATA_ROOT: '/explicit/app-data',
+    AY_PLE_WORKSPACE_ROOT: '/explicit/workspace',
+    CODEX_HOME: '/explicit/package/.codex',
+  })
+  assert.ok(product)
+
+  assert.deepEqual(
+    resolveCodexChatRuntimeSource({
+      productRuntime: product.runtime,
+      workspace: () => product.selectedWorkspaceRoot,
+    }),
+    {
+      kind: 'unavailable',
+      reason: 'invalid_configuration',
+    },
+  )
 })
 
 test('product development bootstrap ignores legacy runtime path authorities', () => {

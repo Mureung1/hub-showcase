@@ -76,6 +76,7 @@ export function resolveProductDevelopmentBootstrap(
   return {
     runtime: {
       appDataRoot,
+      packageRoot,
       runtimeRoot: path.join(packageRoot, productionRuntimeRelativePath),
       environment: {
         home: path.join(appDataRoot, 'runtime/home'),

@@ -35,8 +35,6 @@ export type DogfoodProfile = {
   readonly workspaceRoot: string
 }
 
-type DogfoodProfileLayout = DogfoodProfile
-
 export function resolveDogfoodArguments(arguments_: readonly string[]): {
   readonly adoptExisting: boolean
   readonly profileRoot: string
@@ -162,7 +160,7 @@ async function adoptExistingProfile(profileRoot: string): Promise<void> {
   await writeOwnershipMarker(canonicalProfileRoot)
 }
 
-function resolveProfileLayout(profileRoot: string): DogfoodProfileLayout {
+function resolveProfileLayout(profileRoot: string): DogfoodProfile {
   const appDataRoot = path.join(profileRoot, 'app-data')
   return {
     appDataRoot,
@@ -172,7 +170,7 @@ function resolveProfileLayout(profileRoot: string): DogfoodProfileLayout {
 }
 
 async function validateProfileLayout(
-  layout: DogfoodProfileLayout,
+  layout: DogfoodProfile,
 ): Promise<void> {
   await Promise.all([
     canonicalDirectory(layout.appDataRoot, 'dogfood app data root'),

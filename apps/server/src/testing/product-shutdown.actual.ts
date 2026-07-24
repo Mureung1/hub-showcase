@@ -136,6 +136,7 @@ test('Product bootstrap recovers Runtime readiness after activating a valid work
       {
         productRuntime: {
           appDataRoot,
+          packageRoot,
           runtimeRoot: RUNTIME_ROOT,
           environment: {
             home: path.join(appDataRoot, 'runtime/home'),
