@@ -1,22 +1,24 @@
+import { NavLink } from 'react-router-dom';
+
 const NAV_ITEMS = [
-  { key: 'home', label: '홈' },
-  { key: 'basket', label: '수강 바구니' },
-  { key: 'simulation', label: '시뮬레이션' },
-  { key: 'chatbot', label: '챗봇' },
+  { to: '/', label: '홈', end: true },
+  { to: '/basket', label: '수강 바구니' },
+  { to: '/simulation', label: '시뮬레이션' },
+  { to: '/chat', label: '챗봇' },
 ];
 
-function NavBar({ activeTab, onNavigate }) {
+function NavBar() {
   return (
     <nav className="nav-bar">
       {NAV_ITEMS.map((item) => (
-        <button
-          key={item.key}
-          type="button"
-          className={`nav-item ${activeTab === item.key ? 'active' : ''}`}
-          onClick={() => onNavigate(item.key)}
+        <NavLink
+          key={item.to}
+          to={item.to}
+          end={item.end}
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
         >
           {item.label}
-        </button>
+        </NavLink>
       ))}
     </nav>
   );

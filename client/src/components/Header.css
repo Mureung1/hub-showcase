@@ -1,0 +1,45 @@
+/* ==========================================================
+   공통 헤더 (모든 페이지 최상단, 콘텐츠의 max-width와 무관하게
+   항상 뷰포트 전체 너비 기준으로 렌더링된다)
+   ========================================================== */
+.site-header {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 20px 40px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--divider);
+}
+
+.site-header .nav-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 28px;
+}
+
+/* 홈 히어로 위에 얹히는 변형 — 사진 배경 위이므로 투명 배경 + 흰색 텍스트 */
+.site-header-hero {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  background: none;
+  border-bottom: none;
+}
+.site-header-hero .nav-item {
+  color: rgba(255, 255, 255, 0.85);
+}
+.site-header-hero .nav-item.active {
+  color: #ffffff;
+}
+
+@media (max-width: 720px) {
+  .site-header {
+    padding: 16px 20px;
+  }
+  .site-header .nav-bar {
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
