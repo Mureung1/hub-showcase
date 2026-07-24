@@ -176,6 +176,8 @@ export function createLeaseBoundReadyTransition(input: {
         }
         if (callbackFailure) return { status: callbackFailure }
         switch (transitioned.error.code) {
+          case 'workspace_account_reauth_required':
+            return { status: 'reauth_required' }
           case 'account_unavailable':
             return { status: 'account_unavailable' }
           case 'transition_cancelled':

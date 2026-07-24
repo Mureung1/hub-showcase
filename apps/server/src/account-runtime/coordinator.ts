@@ -200,6 +200,12 @@ export function createAccountRuntimeCoordinator<
               : failure('account_unavailable'),
           }
         }
+        if (account.state === 'signed_out') {
+          return {
+            status: 'failed',
+            error: failure('workspace_account_reauth_required'),
+          }
+        }
         if (!isFreshChatGptAccount(account)) {
           return {
             status: 'failed',
@@ -361,6 +367,8 @@ function failure(
     case 'account_operation_active':
       return { code, retryable: true, restartRequired: false }
     case 'account_unavailable':
+      return { code, retryable: true, restartRequired: false }
+    case 'workspace_account_reauth_required':
       return { code, retryable: true, restartRequired: false }
     case 'transition_cancelled':
       return { code, retryable: true, restartRequired: false }

@@ -916,6 +916,57 @@ test('a queued same-workspace failure invalidates an earlier overlapping success
 })
 
 test('adapter maps A1 failures without inventing Ready state', async (t) => {
+  for (const testCase of [
+    {
+      name: 'fresh signed-out account',
+      account: { state: 'signed_out' as const },
+      expected: { status: 'reauth_required' as const },
+    },
+    {
+      name: 'fresh unsupported account',
+      account: { state: 'unsupported' as const },
+      expected: { status: 'account_unavailable' as const },
+    },
+  ]) {
+    await t.test(testCase.name, async () => {
+      const coordinator = createAccountRuntimeCoordinator<
+        CodexFreshAccount,
+        AdmittedSemesterWorkspace,
+        ActiveReadyPointer
+      >({
+        closeAuthOnlyRuntime: async () => ({
+          status: 'closed',
+          processTreeGone: true,
+        }),
+        startWorkspaceRuntime: async () => undefined,
+        readFreshWorkspaceAccount: async () => testCase.account,
+        logoutAndReadFreshAccount: async () => ({
+          state: 'signed_out',
+        }),
+        closeCurrentRuntime: async () => ({
+          status: 'closed',
+          processTreeGone: true,
+        }),
+        sameWorkspace,
+      })
+      let nativeCalls = 0
+      const transition = createLeaseBoundReadyTransition({
+        lease: coordinator,
+        createNativeBoundary: (candidate) =>
+          nativeBoundary(candidate, async () => {
+            nativeCalls += 1
+            return { status: 'verified' }
+          }),
+      })
+
+      assert.deepEqual(
+        await transition.transition(callbacks()),
+        testCase.expected,
+      )
+      assert.equal(nativeCalls, 0)
+    })
+  }
+
   await t.test('fresh account unavailable', async () => {
     const coordinator = createAccountRuntimeCoordinator<
       CodexFreshAccount,
