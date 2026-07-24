@@ -21,11 +21,7 @@ import {
 } from './use-source-workbench.js'
 import './App.css'
 
-export default function App() {
-  return <AcademicWorkbench />
-}
-
-export function AcademicWorkbench() {
+export default function AcademicWorkbench() {
   const workbench = useSourceWorkbench()
   const productChat = useProductChat({
     accountReadiness: workbench.accountReadiness,
