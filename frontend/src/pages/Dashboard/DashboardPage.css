@@ -28,17 +28,11 @@
   border-radius: 12px;
 }
 
-.dashboard-container h2 {
-  font-size: 28px;
+.dashboard-greeting {
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 8px;
-  color: var(--color-text);
-}
-
-.dashboard-subtitle {
-  font-size: 14px;
-  color: var(--color-text-muted);
   margin-bottom: 32px;
+  color: var(--color-text);
 }
 
 .dashboard-content {
@@ -59,12 +53,87 @@
   font-weight: 600;
   color: var(--color-text);
   margin-bottom: 16px;
+  margin-top: 0;
 }
 
-.empty-message {
-  font-size: 13px;
+.events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.event-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: box-shadow var(--transition-fast);
+}
+
+.event-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.event-info {
+  flex: 1;
+}
+
+.event-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 4px 0;
+  word-break: break-word;
+}
+
+.event-date {
+  font-size: 12px;
   color: var(--color-text-muted);
   margin: 0;
+}
+
+.event-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 16px;
+  white-space: nowrap;
+}
+
+.badge-today {
+  background-color: #ffebee;
+  color: #c75b61;
+}
+
+.badge-tomorrow {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.badge-future {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.status-message,
+.empty-message,
+.error-message {
+  font-size: 13px;
+  margin: 0;
+  padding: 12px 0;
+}
+
+.status-message,
+.empty-message {
+  color: var(--color-text-muted);
+}
+
+.error-message {
+  color: #c75b61;
 }
 
 .dashboard-actions {
