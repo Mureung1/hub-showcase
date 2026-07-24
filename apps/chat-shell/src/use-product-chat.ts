@@ -76,17 +76,18 @@ export function useProductChat(options: {
 
   const selected = materialSelection(options.selectedMaterials)
   const accountReady = options.accountReadiness?.state === 'ready'
-  const applicationReady =
-    accountReady &&
-    options.workspace?.course != null &&
-    options.workspace.recovery === null
+  const chatAvailable = isProductChatAvailable(
+    options.accountReadiness,
+    options.workspace,
+  )
+  const applicationReady = chatAvailable && options.workspace?.course != null
   const canStartAssignment =
     applicationReady &&
     selected.length === 2 &&
     !operationPending &&
     responsePending === undefined
   const canCompose =
-    applicationReady && !operationPending && responsePending === undefined
+    chatAvailable && !operationPending && responsePending === undefined
   const canSubmit = canCompose && draft.trim().length > 0
   const canInterrupt =
     operationPending &&
@@ -501,6 +502,17 @@ export function useProductChat(options: {
     cancelClarification,
     interrupt,
   }
+}
+
+export function isProductChatAvailable(
+  accountReadiness: ProductAccountReadiness | undefined,
+  workspace: ReadyProductWorkspace | undefined,
+): boolean {
+  return (
+    accountReadiness?.state === 'ready' &&
+    workspace !== undefined &&
+    workspace.recovery === null
+  )
 }
 
 type ProductResponsePending =

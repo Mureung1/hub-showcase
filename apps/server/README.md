@@ -71,7 +71,7 @@ Assignment action은 selected source를 appDataRoot staging에 byte-preserving s
 
 ## Product operation·Review authority
 
-`ProductOperationCoordinator`는 Assignment action과 free-form product Chat이 process-global active operation lease 하나를 공유하게 한다. Assignment은 native call 전 durable `ModelingRun(starting)`을 기록하고 exact managed `SkillInput`·bounded `TextInput`, active workspace `cwd`와 private MCP를 Runtime에 전달한다. Chat은 optional source selection으로 proposal context를 만들 수 있지만 `ModelingRun`을 만들지 않는다.
+`ProductOperationCoordinator`는 Assignment action과 free-form product Chat이 process-global active operation lease 하나를 공유하게 한다. Assignment은 native call 전 durable `ModelingRun(starting)`을 기록하고 exact managed `SkillInput`·bounded `TextInput`, active workspace `cwd`와 private MCP를 Runtime에 전달한다. Source를 선택하지 않은 일반 Chat은 Course 생성 전에도 workspace `cwd`에서 시작하며 academic state를 보호할 durable guard를 만들지 않는다. Course가 있는 Chat은 source/revision guard를 사용하고 optional source selection으로 proposal context를 만들 수 있지만 `ModelingRun`을 만들지 않는다.
 
 Private `propose_state_patch` MCP는 selected source·base revision·exact quote를 검증한 pending `StatePatch`만 만든다. Exact Plan question이 active patch와 bind될 때만 product Review가 된다. Accept/reject는 product transaction을 native answer보다 먼저 commit하고, revise는 `UserConfirmation` 없이 bounded feedback·fresh private request key로 replacement를 기다린다. General Plan clarification은 별도 ephemeral binding으로 answer/cancel하며 academic state를 바꾸지 않는다.
 

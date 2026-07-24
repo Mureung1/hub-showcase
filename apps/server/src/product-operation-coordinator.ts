@@ -1001,25 +1001,27 @@ export function createProductOperationCoordinator(options: {
       let streamOpened = false
       try {
         await requireAccount(operation)
-        const courseId = requireCourseId(options.controller)
-        const preparedExecution =
-          await options.controller.prepareProductChatExecution({
-            operationId,
-            courseId,
-            selectedMaterials: input.materials.map((material) => ({
-              rawMaterialId: material.id,
-              digest: material.digest,
-            })),
-          })
-        operation.chat.guardPrepared = true
-        operation.chat.scratchPath = preparedExecution.scratchPath
-        operation.redactionValues.push(
-          preparedExecution.scratchPath,
-          options.controller.nativeCwd(),
-        )
+        const courseId = currentCourseId(options.controller)
+        if (courseId) {
+          const preparedExecution =
+            await options.controller.prepareProductChatExecution({
+              operationId,
+              courseId,
+              selectedMaterials: input.materials.map((material) => ({
+                rawMaterialId: material.id,
+                digest: material.digest,
+              })),
+            })
+          operation.chat.guardPrepared = true
+          operation.chat.scratchPath = preparedExecution.scratchPath
+          operation.redactionValues.push(preparedExecution.scratchPath)
+        } else if (input.materials.length > 0) {
+          requireCourseId(options.controller)
+        }
+        operation.redactionValues.push(options.controller.nativeCwd())
         if (input.materials.length > 0) {
           const proposal = await options.controller.prepareAssignmentProposalSession({
-            courseId,
+            courseId: courseId ?? requireCourseId(options.controller),
             selectedMaterials: input.materials.map((material) => ({
               rawMaterialId: material.id,
               digest: material.digest,
@@ -1060,11 +1062,13 @@ export function createProductOperationCoordinator(options: {
         }
         operation.turn = turn
         operation.redactionValues.push(turn.threadId, turn.turnId)
-        await options.controller.bindProductChatExecution({
-          operationId,
-          threadId: turn.threadId,
-          turnId: turn.turnId,
-        })
+        if (operation.chat.guardPrepared) {
+          await options.controller.bindProductChatExecution({
+            operationId,
+            threadId: turn.threadId,
+            turnId: turn.turnId,
+          })
+        }
         if (operation.proposal) {
           await options.controller.bindAssignmentProposalSession({
             requestKey: operation.proposal.context.requestKey,
@@ -1589,14 +1593,21 @@ function findPatch(
 }
 
 function requireCourseId(controller: SemesterWorkspaceController): string {
-  const snapshot = controller.snapshot()
-  if (snapshot?.state !== 'ready' || !snapshot.course) {
+  const courseId = currentCourseId(controller)
+  if (!courseId) {
     throw new SemesterWorkspaceError(
       'course_unknown',
       'An active Course is required.',
     )
   }
-  return snapshot.course.id
+  return courseId
+}
+
+function currentCourseId(
+  controller: SemesterWorkspaceController,
+): string | undefined {
+  const snapshot = controller.snapshot()
+  return snapshot?.state === 'ready' ? snapshot.course?.id : undefined
 }
 
 function assertAssignmentRequest(

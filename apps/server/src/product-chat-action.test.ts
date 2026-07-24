@@ -22,7 +22,7 @@ import { configuredBootstrap, postJson } from './testing/codex-chat-test-support
 import { withTestServer } from './testing/test-server.js'
 import { materializeE2eSemesterWorkspace } from '../../../scripts/semester-workspace-materializer.mjs'
 
-test('Run-free Product Chat cleans its durable guard and reuses one native Thread across sequential Turns', async () => {
+test('course-free Product Chat starts before ModelingRun and reuses one native Thread across sequential Turns', async () => {
   const fixture = await createChatFixture()
   const runtime = new ProductChatRuntime()
 
@@ -33,7 +33,8 @@ test('Run-free Product Chat cleans its durable guard and reuses one native Threa
         semesterWorkspace: fixture.bootstrap,
       },
       async (baseUrl, application) => {
-        await activateCourse(application)
+        const activation = await application.semesterWorkspace?.activate()
+        assert.equal(activation?.status, 'activated')
         const traces: Record<string, unknown>[][] = []
 
         for (const text of ['이번 주 할 일을 요약해 줘.', '그중 첫 항목을 더 설명해 줘.']) {
@@ -79,11 +80,7 @@ test('Run-free Product Chat cleans its durable guard and reuses one native Threa
         for (const input of runtime.productInputs) {
           assert.equal('plan' in input, false)
           assert.ok(Buffer.byteLength(input.text, 'utf8') <= 128 * 1024)
-          const scratchPath = requireMatch(
-            input.text,
-            /Use scratch only for transient writes: ([^\n]+)/,
-          )
-          await assert.rejects(access(scratchPath))
+          assert.doesNotMatch(input.text, /Use scratch only for transient writes:/)
         }
 
         assertSafeTrace(traces.flat(), [
