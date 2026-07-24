@@ -789,12 +789,12 @@
 }
 
 .assignment-action-button strong {
-  font-size: 14px;
+  font-size: 11px;
 }
 
 .assignment-action-button small {
   margin-top: 3px;
-  font-size: var(--chat-font-min);
+  font-size: 8px;
   font-weight: 600;
   line-height: 1.45;
   opacity: 0.84;
