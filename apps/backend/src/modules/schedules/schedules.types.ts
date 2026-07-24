@@ -36,3 +36,21 @@ export type ScheduleResponse = {
 export type SchedulesResponse = {
   schedules: ScheduleResponse[];
 };
+
+export type CreateScheduleInput = {
+  storeId: string;
+  workerId: string;
+  workDate: string;
+  startTime: string;
+  endTime: string;
+  position: string | null;
+  memo: string | null;
+};
+
+export type CreateScheduleRepositoryInput = CreateScheduleInput & {
+  source: "MANUAL";
+};
+
+export type CreateScheduleResponse = {
+  schedule: ScheduleResponse;
+};

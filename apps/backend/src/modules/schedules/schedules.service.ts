@@ -1,5 +1,7 @@
-import { findSchedulesByStoreAndDateRange } from "./schedules.repository";
-import { ScheduleRecord, ScheduleResponse } from "./schedules.types";
+import { HttpError } from "../../common/errors/HttpError";
+import { findWorkerMembership } from "../workers/workers.repository";
+import { findOverlappingWorkerSchedules, findSchedulesByStoreAndDateRange, insertSchedule } from "./schedules.repository";
+import { CreateScheduleInput, ScheduleRecord, ScheduleResponse } from "./schedules.types";
 
 function toScheduleResponse(schedule: ScheduleRecord): ScheduleResponse {
   return {
@@ -31,5 +33,28 @@ export async function listStoreSchedulesByDate(storeId: string, workDate: string
 
   return {
     schedules: schedules.map(toScheduleResponse)
+  };
+}
+
+export async function createStoreSchedule(input: CreateScheduleInput) {
+  const worker = await findWorkerMembership(input.storeId, input.workerId);
+
+  if (!worker) {
+    throw new HttpError(400, "선택한 알바생이 이 매장에 소속되어 있지 않습니다.", "WORKER_NOT_IN_STORE");
+  }
+
+  const overlappingSchedules = await findOverlappingWorkerSchedules(input);
+
+  if (overlappingSchedules.length > 0) {
+    throw new HttpError(409, "이미 겹치는 근무가 있습니다.", "SCHEDULE_TIME_OVERLAP");
+  }
+
+  const schedule = await insertSchedule({
+    ...input,
+    source: "MANUAL"
+  });
+
+  return {
+    schedule: toScheduleResponse(schedule)
   };
 }

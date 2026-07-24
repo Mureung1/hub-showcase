@@ -1,5 +1,5 @@
 import { supabaseAdminClient } from "../../common/config/supabase";
-import { ScheduleRecord } from "./schedules.types";
+import { CreateScheduleRepositoryInput, ScheduleRecord } from "./schedules.types";
 
 const SCHEDULE_COLUMNS =
   "id,store_id,worker_id,work_date,start_time,end_time,position,memo,source,created_at,updated_at,profiles(id,name)";
@@ -38,4 +38,59 @@ export async function findSchedulesByStoreAndDateRange(storeId: string, fromDate
       profiles: normalizeJoinedProfile(schedule.profiles)
     };
   });
+}
+
+export async function findOverlappingWorkerSchedules(input: {
+  storeId: string;
+  workerId: string;
+  workDate: string;
+  startTime: string;
+  endTime: string;
+}) {
+  const { data, error } = await supabaseAdminClient
+    .from("schedules")
+    .select(SCHEDULE_COLUMNS)
+    .eq("store_id", input.storeId)
+    .eq("worker_id", input.workerId)
+    .eq("work_date", input.workDate)
+    .lt("start_time", input.endTime)
+    .gt("end_time", input.startTime)
+    .order("start_time", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data as unknown as ScheduleQueryRecord[]).map((schedule) => {
+    return {
+      ...schedule,
+      profiles: normalizeJoinedProfile(schedule.profiles)
+    };
+  });
+}
+
+export async function insertSchedule(input: CreateScheduleRepositoryInput) {
+  const { data, error } = await supabaseAdminClient
+    .from("schedules")
+    .insert({
+      store_id: input.storeId,
+      worker_id: input.workerId,
+      work_date: input.workDate,
+      start_time: input.startTime,
+      end_time: input.endTime,
+      position: input.position,
+      memo: input.memo,
+      source: input.source
+    })
+    .select(SCHEDULE_COLUMNS)
+    .single<ScheduleQueryRecord>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    ...data,
+    profiles: normalizeJoinedProfile(data.profiles)
+  };
 }
