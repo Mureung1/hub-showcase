@@ -406,6 +406,7 @@ module.exports = {
   acceptApplication,
   completeApplication,
   createApplication,
+  fetchApplicationRow,
   listApplicationsForMentee,
   listApplicationsForMentor,
   rejectApplication,
