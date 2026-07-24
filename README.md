@@ -7,7 +7,7 @@
 
 -> [주차별 계획](https://github.com/users/hyunjinch/projects/1)
 
-🥽 [아키텍처 다이어그램 바로가기](https://claude.ai/code/artifact/50097e6c-1b8e-470d-a021-7e9b2562cb67)
+🥽 [아키텍처 다이어그램 바로가기](https://claude.ai/code/artifact/db199641-c80a-4a54-adb8-f5252fb74faf)
 
 ## 구조
 - `frontend/` — React (Vite)

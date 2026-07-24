@@ -12,6 +12,8 @@ flowchart TB
         About["ProjectInfo\n/about"]
         New["SubscriptionForm\n/subscriptions/new"]
         Detail["SubscriptionDetail\n/subscriptions/:id"]
+        Edit["SubscriptionEdit\n/subscriptions/:id/edit"]
+        Join["SubscriptionJoin\n/join/:id"]
         NotFound["NotFound\n*"]
         OAuthCB["OAuthCallback\n/oauth/callback (Layout 밖)"]
 
@@ -19,6 +21,8 @@ flowchart TB
         Layout --> About
         Layout --> New
         Layout --> Detail
+        Layout --> Edit
+        Layout --> Join
         Layout --> NotFound
     end
 
@@ -33,7 +37,9 @@ flowchart TB
         Health["GET /api/health"]
         AuthRoutes["/api/auth\nGET /google\nGET /google/callback"]
         UsersRoutes["/api/users\nGET /me"]
-        SubsRoutes["/api/subscriptions\nPOST / · GET / · GET /:id"]
+        SubsRoutes["/api/subscriptions\nPOST / · GET / · GET /:id\nPATCH /:id · DELETE /:id"]
+        PreviewRoute["GET /api/subscriptions/:id/preview\n(인증 불필요)"]
+        JoinRoute["POST /api/subscriptions/:id/join"]
         MW["requireAuth\n(JWT, middleware/auth.js)"]
     end
 
@@ -48,10 +54,14 @@ flowchart TB
     Home --> subsJs
     Detail --> subsJs
     New --> subsJs
+    Edit --> subsJs
+    Join --> subsJs
     Layout --> authJs
     Home -. "로그인 링크(a href)" .-> AuthRoutes
 
-    subsJs -->|"GET/POST /api/subscriptions"| SubsRoutes
+    subsJs -->|"GET/POST/PATCH/DELETE /api/subscriptions..."| SubsRoutes
+    subsJs -->|"GET /:id/preview"| PreviewRoute
+    subsJs -->|"POST /:id/join"| JoinRoute
     authJs -->|"GET /api/users/me"| UsersRoutes
 
     AuthRoutes <--> Google
@@ -60,11 +70,15 @@ flowchart TB
 
     SubsRoutes --> MW
     UsersRoutes --> MW
+    JoinRoute --> MW
     MW --> Prisma
+    PreviewRoute --> Prisma
 
     Prisma --> UsersTbl
     Prisma --> SubsTbl
+    Prisma --> PartyTbl
     SubsRoutes -. "role 체크용 read" .-> PartyTbl
+    JoinRoute -. "가입 시 insert" .-> PartyTbl
 ```
 
 ## 레이어 요약
@@ -77,10 +91,12 @@ flowchart TB
 | `/about` | `ProjectInfo` | Layout 하위 |
 | `/subscriptions/new` | `SubscriptionForm` | Layout 하위 |
 | `/subscriptions/:id` | `SubscriptionDetail` | Layout 하위 |
+| `/subscriptions/:id/edit` | `SubscriptionEdit` | Layout 하위, 소유자 전용 |
+| `/join/:id` | `SubscriptionJoin` | Layout 하위, 초대 링크로 진입 |
 | `/oauth/callback` | `OAuthCallback` | Layout 밖 (OAuth 리다이렉트 전용) |
 | `*` | `NotFound` | Layout 하위 |
 
-API 호출은 `frontend/src/lib/subscriptions.js`(`createSubscription`, `getSubscriptions`, `getSubscription`)와 `frontend/src/lib/auth.js`(`fetchMe`)가 담당. 둘 다 axios 없이 순수 `fetch` 기반.
+API 호출은 `frontend/src/lib/subscriptions.js`(`createSubscription`, `getSubscriptions`, `getSubscription`, `updateSubscription`, `deleteSubscription`, `previewSubscription`, `joinSubscription`)와 `frontend/src/lib/auth.js`(`fetchMe`)가 담당. 둘 다 axios 없이 순수 `fetch` 기반.
 
 ### Backend — 라우트 (`backend/src/index.js` 마운트 기준)
 
@@ -90,6 +106,9 @@ API 호출은 `frontend/src/lib/subscriptions.js`(`createSubscription`, `getSubs
 | `GET /api/auth/google`, `GET /api/auth/google/callback` | `routes/auth.routes.js` | 불필요 (로그인 자체) |
 | `GET /api/users/me` | `routes/users.routes.js` | `requireAuth` |
 | `POST /api/subscriptions`, `GET /api/subscriptions`, `GET /api/subscriptions/:id` | `routes/subscriptions.routes.js` | `requireAuth` |
+| `PATCH /api/subscriptions/:id`, `DELETE /api/subscriptions/:id` | `routes/subscriptions.routes.js` | `requireAuth` (소유자만) |
+| `GET /api/subscriptions/:id/preview` | `routes/subscriptions.routes.js` | 불필요 (초대 링크 미리보기) |
+| `POST /api/subscriptions/:id/join` | `routes/subscriptions.routes.js` | `requireAuth` |
 
 `requireAuth`는 `backend/src/middleware/auth.js`에서 JWT(`backend/src/lib/jwt.js`)를 검증.
 
@@ -98,13 +117,16 @@ API 호출은 `frontend/src/lib/subscriptions.js`(`createSubscription`, `getSubs
 | 모델 | 테이블 | 비고 |
 | --- | --- | --- |
 | `User` | `users` | Google OAuth 시 upsert |
-| `Subscription` | `subscriptions` | 생성/목록/상세 조회 구현됨 |
-| `PartyMember` | `party_members` | 스키마·마이그레이션은 존재하지만 전용 API(참여/멤버 목록 등)는 아직 미구현 — 현재는 `subscriptions.routes.js`에서 role 체크용으로만 read |
+| `Subscription` | `subscriptions` | 생성/목록/상세/수정/삭제 구현됨 (삭제 시 파티원 데이터 트랜잭션 cascade) |
+| `PartyMember` | `party_members` | 초대 링크 가입(`POST /:id/join`) 시 insert, role 체크용 read — 목록 조회/삭제 전용 API는 아직 미구현 |
+| `Settlement` | `settlements` | 스키마만 존재, API 라우트 없음 |
+| `SettlementMember` | `settlement_members` | 스키마만 존재, API 라우트 없음 |
 
 ## docs/api-spec.md 대비 구현 범위
 
 - **1. Auth `[확정]`**: 구현된 라우트와 일치.
-- **2. Subscription `[초안]`**: 명세된 것 중 생성/목록/상세 조회만 구현. 수정/삭제/정산 관련 엔드포인트는 미구현.
-- **3. Party Member `[초안]`**: DB 테이블만 존재, API 라우트 없음.
+- **2. Subscription `[초안]`**: 등록/목록/상세/수정/삭제, 초대 링크 미리보기/가입까지 구현. 월별 실지출 대시보드 엔드포인트는 아직 미구현.
+- **3. Party Member `[초안]`**: 초대 링크를 통한 가입은 구현됨. 파티원 목록 조회/삭제 전용 API는 미구현.
+- **4. Settlement `[초안]`**: DB 스키마(`Settlement`, `SettlementMember`)만 존재, API 라우트 없음.
 
 새 기능을 구현하며 이 표가 달라지면 이 문서도 함께 갱신할 것.
