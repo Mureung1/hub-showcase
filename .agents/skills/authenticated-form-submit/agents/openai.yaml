@@ -1,0 +1,7 @@
+interface:
+  display_name: "Authenticated Form Submit"
+  short_description: "Implement safe authenticated form submission flows"
+  default_prompt: "Use $authenticated-form-submit to implement this authenticated form submission with focused Red-to-Green tests."
+
+policy:
+  allow_implicit_invocation: true
