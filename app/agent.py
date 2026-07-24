@@ -4,6 +4,7 @@
 """
 
 import json
+from collections.abc import Generator
 
 from app import config, prompt_loader, tools
 
@@ -139,6 +140,72 @@ def _call_summarize(title: str, source_text: str, feedback: str = "") -> dict | 
     """
     prompt = _build_summarize_prompt(title, source_text, feedback)
     return tools.ask_llm_json(prompt, fallback=None, attempts=config.SUMMARIZE_PARSE_ATTEMPTS)
+
+
+def _build_verify_prompt(title: str, source_text: str, summary: dict) -> str:
+    """자기 검증(verify) 프롬프트를 조립한다. LLM 호출은 하지 않는다.
+
+    summary(dict)를 JSON 문자열로 직렬화해 {summary_json}에 채운다.
+    prompt_loader.fill()은 str(value)로 치환하므로, dict를 그냥 넘기면
+    파이썬 repr(홑따옴표)이 들어가 JSON이 깨진다. json.dumps로 먼저
+    직렬화한다. ensure_ascii=False — 한글이 \\uXXXX로 이스케이프되면
+    LLM이 읽기 나빠진다(전송은 어차피 UTF-8이라 무관).
+
+    summary는 요약 성공 dict만 온다(None 아님). None 분기는 Task 6
+    오케스트레이션이 verify 호출 전에 paper_failed로 걸러낸다.
+    """
+    return prompt_loader.fill(
+        prompt_loader.load("verify"),
+        title=title,
+        source_text=source_text,
+        summary_json=json.dumps(summary, ensure_ascii=False),
+    )
+
+
+def _call_verify(title: str, source_text: str, summary: dict) -> dict:
+    """자기 검증(verify) LLM 호출. 실패해도 예외 없이 fallback을 반환한다.
+
+    fallback은 {"is_good": True} — 판단 불가 시 통과 쪽(비용이 덜 드는 쪽).
+    재시도하면 무한 루프·API 비용 위험(CLAUDE.md). 파싱 실패 시 재시도하지
+    않는다(attempts 기본값 1) — summarize의 3회 재시도와 달리 fallback이
+    이미 안전한 쪽이라 재요청할 이유가 없다.
+    """
+    prompt = _build_verify_prompt(title, source_text, summary)
+    return tools.ask_llm_json(prompt, fallback={"is_good": True})
+
+
+def _verify_loop(
+    index: int, title: str, source_text: str, summary: dict
+) -> Generator[dict, None, tuple[dict, int]]:
+    """자기 검증(verify)의 3↔4단계 왕복 루프. retry 이벤트를 yield하고 (summary, retried)를 반환한다.
+
+    is_good이면 그 요약을 그대로 채택하고 종료한다. 통과 못 하면 feedback을 담아
+    retry 이벤트를 실시간으로 흘리고(감사 기록), 그 feedback으로 3단계(요약)로
+    되돌아가 재요약한다. verify가 is_good/feedback을 빠뜨린 유효 JSON을 줄 수 있어
+    .get의 기본값으로 방어한다(is_good은 통과 쪽 True, feedback은 빈 문자열).
+
+    상한: retried가 MAX_RETRY에 도달하면 더 왕복하지 않고 마지막 요약을 그대로
+    채택한다 — 버리지 않는다. 부분 결과라도 보여주는 게 낫고("부분 실패는 정상적
+    결말"), 남은 retry 이벤트가 "이 요약은 검증을 통과 못 했다"는 감사 기록이
+    된다. 상한 없는 재시도는 CLAUDE.md 불변식 위반이다.
+
+    paper_done/paper_failed 라우팅은 이 함수의 몫이 아니다 — (summary, retried)를
+    버리지 않고 반환하는 데까지만 책임진다. 검증 소진을 실패로 볼지는 Task 6(#49)이
+    결정한다(sse-contract의 paper_failed 사유와 4-5 완료 기준의 paper_done 사이 경계).
+    """
+    retried = 0
+    while True:
+        verdict = _call_verify(title, source_text, summary)
+        if verdict.get("is_good", True):
+            return summary, retried
+        if retried >= config.MAX_RETRY:
+            return summary, retried  # 상한 소진: 마지막 요약을 그대로 채택(버리지 않는다)
+        retried += 1
+        feedback = verdict.get("feedback", "")
+        yield {"stage": "retry", "index": index, "attempt": retried, "feedback": feedback}
+        new_summary = _call_summarize(title, source_text, feedback)
+        if new_summary is not None:
+            summary = new_summary
 
 
 if __name__ == "__main__":
