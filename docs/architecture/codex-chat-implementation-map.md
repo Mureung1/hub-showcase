@@ -78,6 +78,7 @@ Persistent bridge와 workspace native-context sidecar는 모두 fixed `project_r
 | 표면 | 현재 동작 |
 | --- | --- |
 | `GET /api/product/bootstrap` | Account Readiness, coarse `operationStatus`, active workspace·Course·material, confirmed revision과 settled history를 `no-store`로 반환한다. Pending prompt·native correlation·store metadata는 제외한다. |
+| `GET /api/product/codex-settings` | 전역 Codex account가 광고한 visible model, reasoning effort 순서와 Fast availability를 Browser-safe하게 반환한다. |
 | `POST /api/product/workspaces/activate` | Current Server-owned chooser가 고른 directory를 root 불변 조건에 따라 연다. Existing current store는 original bytes를 authority로 채택하고 invalid store는 bytes-preserving read-only로 연다. App-owned scaffold·`WorkspaceManifest` admission endpoint가 아니다. |
 | `POST /api/product/courses` | Empty internal-ready current workspace에 opaque first-vertical `Course`를 만든다. |
 | `POST /api/product/materials/refresh` | 일반 bounded refresh 또는 explicit source rebaseline을 수행한다. |
@@ -93,7 +94,7 @@ Mutation은 loopback socket과 absent 또는 exact configured local Origin에서
 
 ## Runtime과 lifecycle
 
-Runtime package는 official source commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`, native `0.144.4`, standalone CPython, 아홉 단계 patched SDK와 dependency closure를 canonical manifest로 검증한다. Native-context read는 열 번째 SDK patch나 private SDK state에 의존하지 않고 official native App Server method를 AY-PLE-owned supervisor에서 strict decode한다. Product Turn은 bounded `TextInput`, optional exact `SkillInput`, native effective model·reasoning의 Plan mode를 사용한다. First Assignment와 Course-bound guarded Chat은 `auto_review + workspace_write`, Course 전 source-free Chat은 `deny_all + read_only`를 명시한다. Codex permission은 `StatePatch`를 confirmed `SemesterModel`로 반영하는 AY-PLE `UserConfirmation`과 별도다.
+Runtime package는 official source commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`, native `0.144.4`, standalone CPython, 아홉 단계 patched SDK와 dependency closure를 canonical manifest로 검증한다. Native-context read는 열 번째 SDK patch나 private SDK state에 의존하지 않고 official native App Server method를 AY-PLE-owned supervisor에서 strict decode한다. Product Turn은 bounded `TextInput`, optional exact `SkillInput`, native effective 또는 사용자가 고른 advertised model·reasoning의 Plan mode와 `default | fast` service tier를 사용한다. First Assignment와 Course-bound guarded Chat은 `auto_review + workspace_write`, Course 전 source-free Chat은 `deny_all + read_only`를 명시한다. Codex permission은 `StatePatch`를 confirmed `SemesterModel`로 반영하는 AY-PLE `UserConfirmation`과 별도다.
 
 Workspace Runtime의 sidecar와 persistent worker는 같은 verified bundle·controlled roots·application identity를 사용하며 Runtime `close()`는 둘의 complete reap을 함께 기다린다. Sidecar query·protocol failure는 persistent conversation Runtime을 곧바로 poison하지 않지만 cleanup ambiguity는 Runtime terminal로 latch된다. Public-preview 전용 `AccountRuntimeCoordinator`, auth-only→workspace transition과 Browser command drain은 Server에서 제거됐다.
 

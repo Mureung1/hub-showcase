@@ -629,6 +629,25 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     return { ...this.readiness }
   }
 
+  async readModelCatalog() {
+    return {
+      models: [
+        {
+          model: 'gpt-e2e',
+          displayName: 'GPT E2E',
+          description: 'Deterministic E2E model',
+          isDefault: true,
+          defaultReasoningEffort: 'medium',
+          supportedReasoningEfforts: [
+            { reasoningEffort: 'low', description: 'Quick' },
+            { reasoningEffort: 'medium', description: 'Balanced' },
+          ],
+          serviceTiers: ['fast'],
+        },
+      ],
+    }
+  }
+
   async startThread(input?: StartThreadInput) {
     assert.ok(input)
     this.threadInputs.push(structuredClone(input))

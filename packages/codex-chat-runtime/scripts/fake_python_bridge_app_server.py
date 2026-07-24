@@ -65,6 +65,13 @@ def _model(model: str, reasoning_effort: str, *, is_default: bool) -> dict[str, 
         "id": model,
         "isDefault": is_default,
         "model": model,
+        "serviceTiers": [
+            {
+                "description": "Faster fake processing",
+                "id": "fast",
+                "name": "Fast",
+            }
+        ],
         "supportedReasoningEfforts": [
             {
                 "description": f"Fake {reasoning_effort} effort",

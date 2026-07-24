@@ -82,6 +82,7 @@ Private `propose_state_patch` MCP는 selected source·base revision·exact quote
 | Endpoint | 동작 |
 | --- | --- |
 | `GET /api/product/bootstrap` | Account Readiness, coarse operation status, active workspace·Course·material, confirmed revision·settled history |
+| `GET /api/product/codex-settings` | Visible native model catalog, advertised reasoning effort order와 Fast availability |
 | `POST /api/product/workspaces/activate` | Current Server-owned chooser directory activation, current-store adoption과 read-only incompatible boundary. `WorkspaceManifest` scaffold endpoint가 아님 |
 | `POST /api/product/courses` | Empty internal-ready current workspace의 first-vertical Course 생성 |
 | `POST /api/product/materials/refresh` | Normal refresh 또는 explicit source rebaseline |

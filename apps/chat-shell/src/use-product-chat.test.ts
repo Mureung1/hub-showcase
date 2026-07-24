@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  createCodexTurnSettings,
   isProductChatAvailable,
   productChatMaterials,
 } from './use-product-chat.js'
@@ -20,6 +21,29 @@ test('keeps general AY Chat available before a course is created', () => {
     ),
     true,
   )
+})
+
+test('maps the selected advertised controls to one exact Codex Turn setting', () => {
+  const model = {
+    model: 'gpt-current',
+    displayName: 'GPT Current',
+    description: 'Current model',
+    isDefault: true,
+    defaultReasoningEffort: 'medium',
+    supportedReasoningEfforts: [
+      { reasoningEffort: 'low', description: 'Quick' },
+      { reasoningEffort: 'medium', description: 'Balanced' },
+    ],
+    fastModeAvailable: true,
+    fastModeDefault: false,
+  } as const
+
+  assert.deepEqual(createCodexTurnSettings(model, 'low', true), {
+    model: 'gpt-current',
+    reasoningEffort: 'low',
+    serviceTier: 'fast',
+  })
+  assert.equal(createCodexTurnSettings(model, 'unknown', false), undefined)
 })
 
 test('omits selected academic materials from course-free general Chat', () => {

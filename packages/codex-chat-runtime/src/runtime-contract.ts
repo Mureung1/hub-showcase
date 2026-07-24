@@ -26,6 +26,32 @@ export type CodexProductPermissionProfile =
   | 'read_only'
   | 'workspace_write'
 
+export type CodexModelReasoningEffort = {
+  readonly reasoningEffort: string
+  readonly description: string
+}
+
+export type CodexModelCatalogEntry = {
+  readonly model: string
+  readonly displayName: string
+  readonly description: string
+  readonly isDefault: boolean
+  readonly defaultReasoningEffort: string
+  readonly supportedReasoningEfforts: readonly CodexModelReasoningEffort[]
+  readonly serviceTiers: readonly string[]
+  readonly defaultServiceTier?: string
+}
+
+export type CodexModelCatalog = {
+  readonly models: readonly CodexModelCatalogEntry[]
+}
+
+export type CodexProductTurnSettings = {
+  readonly model: string
+  readonly reasoningEffort: string
+  readonly serviceTier: 'default' | 'fast'
+}
+
 export type StartThreadInput = {
   readonly workspace: string
   readonly mcp: CodexPrivateMcpServerInput
@@ -35,6 +61,7 @@ export type StartProductTurnInput = {
   readonly threadId: CodexThreadId
   readonly skill?: CodexProductSkillInput
   readonly permissionProfile: CodexProductPermissionProfile
+  readonly settings?: CodexProductTurnSettings
   readonly text: string
 }
 
@@ -62,7 +89,12 @@ export interface CodexProductCapableRuntime extends CodexChatRuntime {
   cancelUserInput(input: CancelUserInput): Promise<void>
 }
 
+export interface CodexModelCatalogRuntime {
+  readModelCatalog(): Promise<CodexModelCatalog>
+}
+
 export type CodexManagedRuntime =
   CodexProductCapableRuntime &
+  CodexModelCatalogRuntime &
   CodexAccountLifecycle &
   CodexNativeContextPort

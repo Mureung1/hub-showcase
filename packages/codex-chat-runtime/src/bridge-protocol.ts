@@ -6,6 +6,7 @@ import type {
   CodexBrowserLoginAttempt,
   CodexFreshAccount,
 } from './account-contract.js'
+import type { CodexModelCatalog } from './runtime-contract.js'
 
 export const MAX_BRIDGE_FRAME_BYTES = 1024 * 1024
 
@@ -16,6 +17,13 @@ type ReadAccountResultFrame = {
   readonly bridgeRequestId: string
   readonly command: 'read_account'
   readonly account: CodexFreshAccount
+}
+
+type ReadModelCatalogResultFrame = {
+  readonly type: 'result'
+  readonly bridgeRequestId: string
+  readonly command: 'read_model_catalog'
+  readonly catalog: CodexModelCatalog
 }
 
 type StartBrowserLoginResultFrame = {
@@ -128,6 +136,7 @@ type CloseAckFrame = {
 export type BridgeOutputFrame =
   | ReadyFrame
   | ReadAccountResultFrame
+  | ReadModelCatalogResultFrame
   | StartBrowserLoginResultFrame
   | ReadBrowserLoginAttemptResultFrame
   | CancelBrowserLoginResultFrame
@@ -292,6 +301,20 @@ function parseResult(frame: Record<string, unknown>): BridgeOutputFrame {
       account: parseFreshAccount(frame.account),
     }
   }
+  if (command === 'read_model_catalog') {
+    requireExactKeys(frame, [
+      'type',
+      'bridgeRequestId',
+      'command',
+      'catalog',
+    ])
+    return {
+      type: 'result',
+      bridgeRequestId,
+      command,
+      catalog: parseModelCatalog(frame.catalog),
+    }
+  }
   if (command === 'start_browser_login') {
     requireExactKeys(frame, [
       'type',
@@ -440,6 +463,94 @@ function parseResult(frame: Record<string, unknown>): BridgeOutputFrame {
     }
   }
   throw new BridgeProtocolError('invalid_frame')
+}
+
+function parseModelCatalog(value: unknown): CodexModelCatalog {
+  const record = requireRecord(value)
+  requireExactKeys(record, ['models'])
+  if (
+    !Array.isArray(record.models) ||
+    record.models.length > 128
+  ) {
+    throw new BridgeProtocolError('invalid_frame')
+  }
+  return { models: record.models.map(parseModelCatalogEntry) }
+}
+
+function parseModelCatalogEntry(
+  value: unknown,
+): CodexModelCatalog['models'][number] {
+  const record = requireRecord(value)
+  const fields = [
+    'defaultReasoningEffort',
+    'description',
+    'displayName',
+    'isDefault',
+    'model',
+    'serviceTiers',
+    'supportedReasoningEfforts',
+    ...(record.defaultServiceTier === undefined
+      ? []
+      : ['defaultServiceTier']),
+  ]
+  requireExactKeys(record, fields)
+  if (
+    typeof record.description !== 'string' ||
+    typeof record.isDefault !== 'boolean' ||
+    !Array.isArray(record.supportedReasoningEfforts) ||
+    record.supportedReasoningEfforts.length === 0 ||
+    record.supportedReasoningEfforts.length > 16 ||
+    !Array.isArray(record.serviceTiers) ||
+    !record.serviceTiers.every(
+      (tier): tier is string =>
+        typeof tier === 'string' && tier.length > 0,
+    )
+  ) {
+    throw new BridgeProtocolError('invalid_frame')
+  }
+  const entry = {
+    model: requireNonemptyString(record.model),
+    displayName: requireNonemptyString(record.displayName),
+    description: record.description,
+    isDefault: record.isDefault,
+    defaultReasoningEffort: requireNonemptyString(
+      record.defaultReasoningEffort,
+    ),
+    supportedReasoningEfforts: record.supportedReasoningEfforts.map(
+      parseModelReasoningEffort,
+    ),
+    serviceTiers: record.serviceTiers,
+    ...(record.defaultServiceTier === undefined
+      ? {}
+      : {
+          defaultServiceTier: requireNonemptyString(
+            record.defaultServiceTier,
+          ),
+        }),
+  }
+  if (
+    !entry.supportedReasoningEfforts.some(
+      ({ reasoningEffort }) =>
+        reasoningEffort === entry.defaultReasoningEffort,
+    )
+  ) {
+    throw new BridgeProtocolError('invalid_frame')
+  }
+  return entry
+}
+
+function parseModelReasoningEffort(
+  value: unknown,
+): CodexModelCatalog['models'][number]['supportedReasoningEfforts'][number] {
+  const record = requireRecord(value)
+  requireExactKeys(record, ['description', 'reasoningEffort'])
+  if (typeof record.description !== 'string') {
+    throw new BridgeProtocolError('invalid_frame')
+  }
+  return {
+    reasoningEffort: requireNonemptyString(record.reasoningEffort),
+    description: record.description,
+  }
 }
 
 function parseFreshAccount(value: unknown): CodexFreshAccount {

@@ -8,6 +8,7 @@ import {
 import {
   answerProductInteraction,
   cancelProductInteraction,
+  fetchProductCodexSettings,
   interruptProductOperation,
   ProductApiError,
   ProductStreamError,
@@ -17,6 +18,8 @@ import {
   submitProductReview,
   type ProductAccountReadiness,
   type ProductBootstrap,
+  type ProductCodexModel,
+  type ProductCodexTurnSettings,
   type ProductInteractionAnswerRequest,
   type ProductMaterialSelection,
   type ProductRawMaterial,
@@ -51,6 +54,16 @@ export function useProductChat(options: {
   const [state, setState] = useState(createInitialProductChatState)
   const stateRef = useRef(state)
   const [draft, setDraft] = useState('')
+  const [codexModels, setCodexModels] = useState<
+    readonly ProductCodexModel[]
+  >([])
+  const [codexSettingsState, setCodexSettingsState] =
+    useState<CodexSettingsState>('idle')
+  const [selectedModelId, setSelectedModelId] = useState<string>()
+  const [selectedReasoningEffort, setSelectedReasoningEffort] =
+    useState<string>()
+  const [fastMode, setFastMode] = useState(false)
+  const codexSettingsRequested = useRef(false)
   const [operationPending, setOperationPending] = useState(false)
   const operationPendingRef = useRef(false)
   const [responsePending, setResponsePending] =
@@ -95,6 +108,44 @@ export function useProductChat(options: {
     responsePending === undefined &&
     state.activeOperation?.accepted === true &&
     state.phase !== 'stopping'
+  const selectedModel = codexModels.find(
+    ({ model }) => model === selectedModelId,
+  )
+  const codexTurnSettings = createCodexTurnSettings(
+    selectedModel,
+    selectedReasoningEffort,
+    fastMode,
+  )
+  const canConfigureCodex =
+    codexSettingsState === 'loaded' &&
+    !operationPending &&
+    responsePending === undefined
+
+  useEffect(() => {
+    if (!chatAvailable || codexSettingsRequested.current) return
+    codexSettingsRequested.current = true
+    const controller = new AbortController()
+    setCodexSettingsState('loading')
+    void fetchProductCodexSettings(controller.signal).then(
+      ({ models }) => {
+        const defaultModel =
+          models.find(({ isDefault }) => isDefault) ?? models[0]
+        setCodexModels(models)
+        setSelectedModelId(defaultModel?.model)
+        setSelectedReasoningEffort(defaultModel?.defaultReasoningEffort)
+        setFastMode(defaultModel?.fastModeDefault ?? false)
+        setCodexSettingsState('loaded')
+      },
+      (error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setCodexSettingsState('failed')
+      },
+    )
+    return () => {
+      controller.abort()
+      codexSettingsRequested.current = false
+    }
+  }, [chatAvailable])
 
   async function startAssignment() {
     const course = options.workspace?.course
@@ -109,6 +160,9 @@ export function useProductChat(options: {
             recipeVersion: FIRST_ASSIGNMENT_RECIPE_VERSION,
             arguments: FIRST_ASSIGNMENT_ARGUMENTS,
             materials: selected,
+            ...(codexTurnSettings === undefined
+              ? {}
+              : { codexSettings: codexTurnSettings }),
           },
           onFrame,
           signal,
@@ -150,6 +204,9 @@ export function useProductChat(options: {
             arguments: FIRST_ASSIGNMENT_ARGUMENTS,
             materials,
             retryOfRunId: run.id,
+            ...(codexTurnSettings === undefined
+              ? {}
+              : { codexSettings: codexTurnSettings }),
           },
           onFrame,
           signal,
@@ -170,6 +227,9 @@ export function useProductChat(options: {
             options.workspace,
             options.selectedMaterials,
           ),
+          ...(codexTurnSettings === undefined
+            ? {}
+            : { codexSettings: codexTurnSettings }),
         },
         onFrame,
         signal,
@@ -492,6 +552,32 @@ export function useProductChat(options: {
     setResponsePending(undefined)
   }
 
+  function selectCodexModel(modelId: string) {
+    if (!canConfigureCodex) return
+    const model = codexModels.find((candidate) => candidate.model === modelId)
+    if (!model) return
+    setSelectedModelId(model.model)
+    setSelectedReasoningEffort(model.defaultReasoningEffort)
+    setFastMode(model.fastModeDefault)
+  }
+
+  function selectReasoningEffort(reasoningEffort: string) {
+    if (
+      !canConfigureCodex ||
+      !selectedModel?.supportedReasoningEfforts.some(
+        (option) => option.reasoningEffort === reasoningEffort,
+      )
+    ) {
+      return
+    }
+    setSelectedReasoningEffort(reasoningEffort)
+  }
+
+  function toggleFastMode(enabled: boolean) {
+    if (!canConfigureCodex || !selectedModel?.fastModeAvailable) return
+    setFastMode(enabled)
+  }
+
   return {
     state,
     draft,
@@ -503,6 +589,15 @@ export function useProductChat(options: {
     canCompose,
     canSubmit,
     canInterrupt,
+    canConfigureCodex,
+    codexModels,
+    codexSettingsState,
+    selectedModel,
+    selectedReasoningEffort,
+    fastMode,
+    selectCodexModel,
+    selectReasoningEffort,
+    toggleFastMode,
     startAssignment,
     retryAssignment,
     submitMessage,
@@ -512,6 +607,30 @@ export function useProductChat(options: {
     answerClarification,
     cancelClarification,
     interrupt,
+  }
+}
+
+type CodexSettingsState = 'idle' | 'loading' | 'loaded' | 'failed'
+
+export function createCodexTurnSettings(
+  model: ProductCodexModel | undefined,
+  reasoningEffort: string | undefined,
+  fastMode: boolean,
+): ProductCodexTurnSettings | undefined {
+  if (
+    !model ||
+    !reasoningEffort ||
+    !model.supportedReasoningEfforts.some(
+      (option) => option.reasoningEffort === reasoningEffort,
+    )
+  ) {
+    return undefined
+  }
+  return {
+    model: model.model,
+    reasoningEffort,
+    serviceTier:
+      fastMode && model.fastModeAvailable ? 'fast' : 'default',
   }
 }
 

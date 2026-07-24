@@ -5,6 +5,7 @@ import {
   decodeFirstAssignmentRequest,
   decodeFirstAssignmentRetryRequest,
   decodeProductBootstrap,
+  decodeProductCodexSettings,
   decodeProductChatRequest,
   decodeProductError,
   decodeProductInteractionAnswerRequest,
@@ -21,6 +22,7 @@ import {
   type FirstAssignmentRequest,
   type FirstAssignmentRetryRequest,
   type ProductBootstrap,
+  type ProductCodexSettings,
   type ProductChatRequest,
   type ProductInteractionAnswerRequest,
   type ProductMaterialPreview,
@@ -41,6 +43,9 @@ export type {
   ProductAccountReadiness,
   ProductAssignment,
   ProductBootstrap,
+  ProductCodexModel,
+  ProductCodexSettings,
+  ProductCodexTurnSettings,
   ProductChatRequest,
   ProductEvidenceRef,
   ProductInteractionAnswerRequest,
@@ -94,6 +99,17 @@ export async function fetchProductBootstrap(
   })
   if (!response.ok) throw await toProductApiError(response)
   return parseJsonResponse(response, decodeProductBootstrap)
+}
+
+export async function fetchProductCodexSettings(
+  signal?: AbortSignal,
+): Promise<ProductCodexSettings> {
+  const response = await fetch('/api/product/codex-settings', {
+    headers: { accept: 'application/json' },
+    signal,
+  })
+  if (!response.ok) throw await toProductApiError(response)
+  return parseJsonResponse(response, decodeProductCodexSettings)
 }
 
 export async function fetchSettledProductBootstrap(

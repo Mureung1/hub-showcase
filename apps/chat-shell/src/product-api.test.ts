@@ -4,6 +4,7 @@ import test from 'node:test'
 import {
   activateProductWorkspace,
   fetchProductBootstrap,
+  fetchProductCodexSettings,
   fetchProductMaterialPreview,
   fetchSettledProductBootstrap,
   ProductApiError,
@@ -43,6 +44,31 @@ test('decodes a ready product snapshot without persistence metadata', async (t) 
     workspace,
     history: emptyHistory(),
   })
+})
+
+test('decodes the advertised Codex model controls', async (t) => {
+  const settings = {
+    models: [
+      {
+        model: 'gpt-current',
+        displayName: 'GPT Current',
+        description: 'Current model',
+        isDefault: true,
+        defaultReasoningEffort: 'medium',
+        supportedReasoningEfforts: [
+          { reasoningEffort: 'medium', description: 'Balanced' },
+        ],
+        fastModeAvailable: true,
+        fastModeDefault: false,
+      },
+    ],
+  } as const
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () => new Response(JSON.stringify(settings), { status: 200 }),
+  )
+  assert.deepEqual(await fetchProductCodexSettings(), settings)
 })
 
 test('returns one active product snapshot without waiting for settlement', async (t) => {

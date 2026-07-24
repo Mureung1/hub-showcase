@@ -11,6 +11,7 @@ import {
   decodeFirstAssignmentRetryRequest,
   decodeProductBootstrap,
   decodeProductChatRequest,
+  decodeProductCodexSettings,
   decodeProductError,
   decodeProductMaterialRefreshResponse,
   decodeProductMaterialPreview,
@@ -32,6 +33,8 @@ test('package root exposes the exact runtime contract surface', () => {
     'decodeFirstAssignmentRetryRequest',
     'decodeProductBootstrap',
     'decodeProductChatRequest',
+    'decodeProductCodexSettings',
+    'decodeProductCodexTurnSettings',
     'decodeProductError',
     'decodeProductInteractionAnswerRequest',
     'decodeProductMaterialPreview',
@@ -490,8 +493,24 @@ test('request decoders keep the current literal and JSON envelope closed', () =>
 
   assert.deepEqual(decodeFirstAssignmentRequest(assignment), assignment)
   assert.deepEqual(
-    decodeProductChatRequest({ text: '자료를 비교해 줘', materials: [] }),
-    { text: '자료를 비교해 줘', materials: [] },
+    decodeProductChatRequest({
+      text: '자료를 비교해 줘',
+      materials: [],
+      codexSettings: {
+        model: 'gpt-current',
+        reasoningEffort: 'medium',
+        serviceTier: 'fast',
+      },
+    }),
+    {
+      text: '자료를 비교해 줘',
+      materials: [],
+      codexSettings: {
+        model: 'gpt-current',
+        reasoningEffort: 'medium',
+        serviceTier: 'fast',
+      },
+    },
   )
   for (const invalid of [
     { ...assignment, extra: true },
@@ -503,6 +522,39 @@ test('request decoders keep the current literal and JSON envelope closed', () =>
   ]) {
     assert.throws(() => decodeRequest(invalid), ProductContractError)
   }
+})
+
+test('Codex settings decoder keeps the advertised order and fast availability', () => {
+  const settings = {
+    models: [
+      {
+        model: 'gpt-current',
+        displayName: 'GPT Current',
+        description: 'Current model',
+        isDefault: true,
+        defaultReasoningEffort: 'medium',
+        supportedReasoningEfforts: [
+          { reasoningEffort: 'low', description: 'Quick' },
+          { reasoningEffort: 'medium', description: 'Balanced' },
+        ],
+        fastModeAvailable: true,
+        fastModeDefault: false,
+      },
+    ],
+  } as const
+  assert.deepEqual(decodeProductCodexSettings(settings), settings)
+  assert.throws(
+    () =>
+      decodeProductCodexSettings({
+        models: [
+          {
+            ...settings.models[0],
+            defaultReasoningEffort: 'high',
+          },
+        ],
+      }),
+    ProductContractError,
+  )
 })
 
 test('review request decoder accepts exact settled decisions and bounded revision feedback', () => {

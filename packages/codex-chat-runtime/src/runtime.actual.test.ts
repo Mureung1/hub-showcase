@@ -1091,6 +1091,38 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
       url: 'http://127.0.0.1:43127/mcp',
       token: 'private-mcp-token',
     } as const
+    assert.deepEqual(await harness.runtime.readModelCatalog(), {
+      models: [
+        {
+          model: 'current-default-model',
+          displayName: 'current-default-model',
+          description: 'Fake current-default-model',
+          isDefault: true,
+          defaultReasoningEffort: 'high',
+          supportedReasoningEfforts: [
+            {
+              reasoningEffort: 'high',
+              description: 'Fake high effort',
+            },
+          ],
+          serviceTiers: ['fast'],
+        },
+        {
+          model: 'fake-model',
+          displayName: 'fake-model',
+          description: 'Fake fake-model',
+          isDefault: false,
+          defaultReasoningEffort: 'medium',
+          supportedReasoningEfforts: [
+            {
+              reasoningEffort: 'medium',
+              description: 'Fake medium effort',
+            },
+          ],
+          serviceTiers: ['fast'],
+        },
+      ],
+    })
     const { threadId } = await harness.runtime.startThread({
       workspace,
       mcp,
@@ -1105,6 +1137,11 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
     const product = await harness.runtime.startProductTurn({
       threadId,
       permissionProfile: 'read_only',
+      settings: {
+        model: 'fake-model',
+        reasoningEffort: 'medium',
+        serviceTier: 'fast',
+      },
       text: 'Continue the product conversation.',
     })
     const iterator = product.events[Symbol.asyncIterator]()
@@ -1129,6 +1166,7 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
     )
     assert.equal(threadStart?.params?.cwd, workspace)
     assert.deepEqual(threadStart?.params?.config, {
+      features: { fast_mode: true },
       mcp_servers: {
         ay_ple: {
           default_tools_approval_mode: 'approve',
@@ -1162,7 +1200,7 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
       journal.messages
         .map(({ method }) => method)
         .filter((method) => method === 'model/list' || method === 'turn/start'),
-      ['turn/start', 'turn/start'],
+      ['model/list', 'turn/start', 'turn/start'],
     )
     assert.deepEqual(
       journal.messages
@@ -1178,6 +1216,9 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
         reasoning_effort: 'medium',
       },
     })
+    assert.equal(turnStarts[1]?.params?.model, 'fake-model')
+    assert.equal(turnStarts[1]?.params?.effort, 'medium')
+    assert.equal(turnStarts[1]?.params?.serviceTier, 'fast')
   } finally {
     await harness.runtime.close()
   }

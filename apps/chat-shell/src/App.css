@@ -674,6 +674,80 @@
   background: var(--accent);
 }
 
+.codex-turn-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr) auto;
+  gap: 6px;
+  align-items: end;
+  margin: 8px 0 0;
+  padding: 8px 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.codex-turn-controls > label:not(.fast-mode-control) {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.codex-turn-controls > label > span {
+  color: var(--muted);
+  font-size: 7px;
+  font-weight: 750;
+}
+
+.codex-turn-controls select {
+  width: 100%;
+  min-width: 0;
+  height: 27px;
+  padding: 0 22px 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--text);
+  background: #f8f6f1;
+  font-size: 8px;
+}
+
+.codex-turn-controls:disabled {
+  opacity: 0.58;
+}
+
+.fast-mode-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 27px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--muted);
+  background: #f8f6f1;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.fast-mode-control.is-enabled {
+  color: #9a6410;
+  border-color: rgba(242, 184, 75, 0.55);
+  background: rgba(242, 184, 75, 0.12);
+}
+
+.fast-mode-control input {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  accent-color: #d99a24;
+}
+
+.codex-settings-status {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 7px;
+}
+
 .composer-footnote {
   display: flex;
   align-items: center;

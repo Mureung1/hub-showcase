@@ -250,6 +250,23 @@ function createServerExpressApp(
       productOperations
         ? () => codexChat.service.readProductAccountReadiness()
         : undefined,
+      productOperations
+        ? async () => {
+            const catalog = await codexChat.service.readProductModelCatalog()
+            return {
+              models: catalog.models.map((model) => ({
+                model: model.model,
+                displayName: model.displayName,
+                description: model.description,
+                isDefault: model.isDefault,
+                defaultReasoningEffort: model.defaultReasoningEffort,
+                supportedReasoningEfforts: model.supportedReasoningEfforts,
+                fastModeAvailable: model.serviceTiers.includes('fast'),
+                fastModeDefault: model.defaultServiceTier === 'fast',
+              })),
+            }
+          }
+        : undefined,
     ),
   )
   return app

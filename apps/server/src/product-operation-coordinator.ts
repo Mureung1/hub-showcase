@@ -776,6 +776,9 @@ export function createProductOperationCoordinator(options: {
                 path: recipe.path,
               },
               permissionProfile: 'workspace_write',
+              ...(input.codexSettings === undefined
+                ? {}
+                : { settings: input.codexSettings }),
               text: renderAssignmentInput(prepared, input.arguments),
             },
             operationOptions.disconnected,
@@ -1049,6 +1052,9 @@ export function createProductOperationCoordinator(options: {
               mcp: options.mcpHost.nativeThreadConfig(operationOptions.mcpUrl),
             },
             permissionProfile: courseId ? 'workspace_write' : 'read_only',
+            ...(input.codexSettings === undefined
+              ? {}
+              : { settings: input.codexSettings }),
             text,
           },
           operationOptions.disconnected,

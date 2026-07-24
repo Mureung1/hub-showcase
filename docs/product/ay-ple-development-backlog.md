@@ -106,7 +106,7 @@
   - [ ] 같은 local companion을 여러 Browser client가 동시에 제어해야 하는 사용 흐름이 확인되면 client ownership·isolation을 별도 capability로 검증한다.
   - [ ] 채택한 Plan mode의 built-in `request_user_input` 외에 실제 command·file·network·다른 additional-input request가 발생하면 해당 native request family와 first-party behavior를 먼저 흡수하고 필요한 policy·UI만 추가한다.
   - [ ] Account plan, rate limit, token usage나 model 상태가 사용자 action에 실제로 필요해지면 읽기 전용 status surface를 추가한다.
-  - [ ] Model 선택이 실제 작업에 필요해지면 app·thread·turn 중 설정 소유 범위를 먼저 정하고 model 변경 UX를 추가한다. reasoning effort와 service tier 변경은 같은 설정 경계를 재사용할 수 있을 때 함께 검토한다. raw 후보: `model/list`, `config/read`, `config/value/write`.
+  - [x] 개인 사용에서 확인된 Model 선택 필요에 따라 Browser-session→다음 Product Turn 경계의 설정 UX를 추가했다. Official `model/list`의 visible catalog와 advertised reasoning effort 순서를 사용하고 지원 모델에만 Fast를 노출하며 Chat·Assignment·retry가 같은 선택을 재사용한다. 새로고침은 catalog default로 돌아가고 `config/read`·`config/value/write`나 전역 `config.toml` mutation은 도입하지 않았다.
   - [ ] 즉시 정정이 새 turn보다 나은 대표 case와 correlation 규칙을 확인하면 active turn 정정 UX를 추가한다. raw 후보: `turn/steer`.
   - [ ] 실제 context 부족이나 history 편집 case를 확인하면 manual compact와 fork를 각각 평가한다. raw 후보: `thread/compact/start`, `thread/fork`. Deprecated `thread/rollback`은 지원되는 대체 method가 생길 때까지 제외한다.
   - [ ] PDF text extraction과 page/range 근거를 지원하고, Assignment 계약을 재사용하는 Exam `ModelingRecipe`를 추가한다.

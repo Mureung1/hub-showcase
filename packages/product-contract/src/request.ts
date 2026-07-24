@@ -11,6 +11,10 @@ import {
   isRunId,
   utf8Bytes,
 } from './contract-values.js'
+import {
+  decodeProductCodexTurnSettings,
+  type ProductCodexTurnSettings,
+} from './codex-settings.js'
 
 export const FIRST_ASSIGNMENT_RECIPE_VERSION = '2'
 export const FIRST_ASSIGNMENT_ARGUMENTS = { timezone: 'Asia/Seoul' } as const
@@ -25,6 +29,7 @@ export type FirstAssignmentRequest = {
   readonly recipeVersion: typeof FIRST_ASSIGNMENT_RECIPE_VERSION
   readonly arguments: typeof FIRST_ASSIGNMENT_ARGUMENTS
   readonly materials: readonly ProductMaterialSelection[]
+  readonly codexSettings?: ProductCodexTurnSettings
 }
 
 export type FirstAssignmentRetryRequest = FirstAssignmentRequest & {
@@ -34,6 +39,7 @@ export type FirstAssignmentRetryRequest = FirstAssignmentRequest & {
 export type ProductChatRequest = {
   readonly text: string
   readonly materials: readonly ProductMaterialSelection[]
+  readonly codexSettings?: ProductCodexTurnSettings
 }
 
 export type CreateProductCourseRequest = {
@@ -74,13 +80,17 @@ export function decodeCreateProductCourseRequest(
 export function decodeFirstAssignmentRequest(
   value: unknown,
 ): FirstAssignmentRequest {
+  const fields = [
+    'arguments',
+    'courseId',
+    'materials',
+    'recipeVersion',
+    ...(isRecord(value) && value.codexSettings !== undefined
+      ? ['codexSettings']
+      : []),
+  ]
   if (
-    !isExactObject(value, [
-      'arguments',
-      'courseId',
-      'materials',
-      'recipeVersion',
-    ]) ||
+    !isExactObject(value, fields) ||
     !isCourseId(value.courseId) ||
     value.recipeVersion !== FIRST_ASSIGNMENT_RECIPE_VERSION ||
     !isExactObject(value.arguments, ['timezone']) ||
@@ -95,20 +105,27 @@ export function decodeFirstAssignmentRequest(
     recipeVersion: FIRST_ASSIGNMENT_RECIPE_VERSION,
     arguments: FIRST_ASSIGNMENT_ARGUMENTS,
     materials: value.materials,
+    ...(value.codexSettings === undefined
+      ? {}
+      : { codexSettings: decodeProductCodexTurnSettings(value.codexSettings) }),
   }
 }
 
 export function decodeFirstAssignmentRetryRequest(
   value: unknown,
 ): FirstAssignmentRetryRequest {
+  const fields = [
+    'arguments',
+    'courseId',
+    'materials',
+    'recipeVersion',
+    'retryOfRunId',
+    ...(isRecord(value) && value.codexSettings !== undefined
+      ? ['codexSettings']
+      : []),
+  ]
   if (
-    !isExactObject(value, [
-      'arguments',
-      'courseId',
-      'materials',
-      'recipeVersion',
-      'retryOfRunId',
-    ]) ||
+    !isExactObject(value, fields) ||
     !isRunId(value.retryOfRunId)
   ) {
     throw invalidContract()
@@ -118,14 +135,24 @@ export function decodeFirstAssignmentRetryRequest(
     courseId: value.courseId,
     materials: value.materials,
     recipeVersion: value.recipeVersion,
+    ...(value.codexSettings === undefined
+      ? {}
+      : { codexSettings: value.codexSettings }),
   })
   if (!hasValidJsonEnvelope(value)) throw invalidContract()
   return { ...request, retryOfRunId: value.retryOfRunId }
 }
 
 export function decodeProductChatRequest(value: unknown): ProductChatRequest {
+  const fields = [
+    'materials',
+    'text',
+    ...(isRecord(value) && value.codexSettings !== undefined
+      ? ['codexSettings']
+      : []),
+  ]
   if (
-    !isExactObject(value, ['materials', 'text']) ||
+    !isExactObject(value, fields) ||
     typeof value.text !== 'string' ||
     value.text.trim().length === 0 ||
     !isMaterialSelection(value.materials, 0, 2) ||
@@ -133,7 +160,13 @@ export function decodeProductChatRequest(value: unknown): ProductChatRequest {
   ) {
     throw invalidContract()
   }
-  return { text: value.text, materials: value.materials }
+  return {
+    text: value.text,
+    materials: value.materials,
+    ...(value.codexSettings === undefined
+      ? {}
+      : { codexSettings: decodeProductCodexTurnSettings(value.codexSettings) }),
+  }
 }
 
 export function decodeProductInteractionAnswerRequest(

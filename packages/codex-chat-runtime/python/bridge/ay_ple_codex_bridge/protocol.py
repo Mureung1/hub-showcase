@@ -33,6 +33,12 @@ class ReadAccountCommand:
 
 
 @dataclass(frozen=True, slots=True)
+class ReadModelCatalogCommand:
+    bridge_request_id: str
+    command: Literal["read_model_catalog"] = "read_model_catalog"
+
+
+@dataclass(frozen=True, slots=True)
 class StartBrowserLoginCommand:
     bridge_request_id: str
     attempt_id: str
@@ -95,6 +101,9 @@ class StartProductTurnCommand:
     skill_name: str | None
     skill_path: str | None
     permission_profile: Literal["read_only", "workspace_write"]
+    model: str | None
+    reasoning_effort: str | None
+    service_tier: Literal["default", "fast"] | None
     text: str
     command: Literal["start_product_turn"] = "start_product_turn"
 
@@ -137,6 +146,7 @@ class CloseCommand:
 
 BridgeCommand: TypeAlias = (
     ReadAccountCommand
+    | ReadModelCatalogCommand
     | StartBrowserLoginCommand
     | ReadBrowserLoginAttemptCommand
     | CancelBrowserLoginCommand
@@ -312,6 +322,9 @@ def decode_command_line(line: bytes) -> BridgeCommand:
     if command == "read_account":
         _require_exact_fields(value, {"bridgeRequestId", "command"})
         return ReadAccountCommand(request_id)
+    if command == "read_model_catalog":
+        _require_exact_fields(value, {"bridgeRequestId", "command"})
+        return ReadModelCatalogCommand(request_id)
     if command in {
         "start_browser_login",
         "read_browser_login_attempt",
@@ -363,10 +376,13 @@ def decode_command_line(line: bytes) -> BridgeCommand:
         }
         skill_fields = {"skillName", "skillPath"}
         permission_fields = {"permissionProfile"}
+        settings_fields = {"model", "reasoningEffort", "serviceTier"}
         fields = set(value)
         allowed_fields = (
             base_fields | permission_fields,
             base_fields | skill_fields | permission_fields,
+            base_fields | permission_fields | settings_fields,
+            base_fields | skill_fields | permission_fields | settings_fields,
         )
         if fields not in allowed_fields:
             raise ProtocolViolation("invalid_command")
@@ -378,6 +394,18 @@ def decode_command_line(line: bytes) -> BridgeCommand:
         else:
             skill_name = None
             skill_path = None
+        if fields & settings_fields:
+            model = _require_bounded_string(value.get("model"), max_bytes=256)
+            reasoning_effort = _require_bounded_string(
+                value.get("reasoningEffort"), max_bytes=64
+            )
+            service_tier = value.get("serviceTier")
+            if service_tier not in {"default", "fast"}:
+                raise ProtocolViolation("invalid_command")
+        else:
+            model = None
+            reasoning_effort = None
+            service_tier = None
         permission_profile = value.get("permissionProfile")
         if permission_profile not in {"read_only", "workspace_write"}:
             raise ProtocolViolation("invalid_command")
@@ -387,6 +415,9 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             skill_name,
             skill_path,
             permission_profile,
+            model,
+            reasoning_effort,
+            service_tier,
             _require_bounded_string(value.get("text"), max_bytes=512 * 1024),
         )
     if command == "answer_user_input":

@@ -41,6 +41,11 @@ test('course-free Product Chat starts before ModelingRun and reuses one native T
           const response = await postJson(`${baseUrl}/api/product/chat/messages`, {
             text,
             materials: [],
+            codexSettings: {
+              model: 'gpt-current',
+              reasoningEffort: 'high',
+              serviceTier: 'fast',
+            },
           })
           assert.equal(response.status, 200)
           assert.equal(
@@ -83,6 +88,11 @@ test('course-free Product Chat starts before ModelingRun and reuses one native T
           ),
           true,
         )
+        assert.deepEqual(runtime.productInputs[0]?.settings, {
+          model: 'gpt-current',
+          reasoningEffort: 'high',
+          serviceTier: 'fast',
+        })
         for (const input of runtime.productInputs) {
           assert.equal('plan' in input, false)
           assert.ok(Buffer.byteLength(input.text, 'utf8') <= 128 * 1024)
@@ -655,6 +665,10 @@ class ProductChatRuntime implements CodexProductCapableRuntime {
 
   async readAccountReadiness(): Promise<CodexAccountReadiness> {
     return { state: 'ready' }
+  }
+
+  async readModelCatalog() {
+    return { models: [] }
   }
 
   async startThread(input?: StartThreadInput) {

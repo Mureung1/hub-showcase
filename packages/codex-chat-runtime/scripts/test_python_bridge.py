@@ -372,6 +372,24 @@ class ProtocolUnitTests(unittest.TestCase):
         )
         self.assertEqual(command.permission_profile, "read_only")
 
+        configured = {
+            **read_only,
+            "model": "gpt-current",
+            "reasoningEffort": "high",
+            "serviceTier": "fast",
+        }
+        command = decode_command_line(
+            json.dumps(configured, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertEqual(command.model, "gpt-current")
+        self.assertEqual(command.reasoning_effort, "high")
+        self.assertEqual(command.service_tier, "fast")
+
+        catalog = decode_command_line(
+            b'{"bridgeRequestId":"models","command":"read_model_catalog"}\n'
+        )
+        self.assertEqual(catalog.command, "read_model_catalog")
+
         answer = decode_command_line(
             b'{"bridgeRequestId":"answer","command":"answer_user_input",'
             b'"interactionId":"interaction-1","answers":{"decision":["Accept"]}}\n'
@@ -390,6 +408,7 @@ class ProtocolUnitTests(unittest.TestCase):
                 if key != "permissionProfile"
             },
             {**text_only, "permissionProfile": "danger_full_access"},
+            {**configured, "serviceTier": "priority"},
             {
                 **product,
                 "planModel": "legacy-model",

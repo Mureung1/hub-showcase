@@ -44,6 +44,8 @@ Exact SDK의 high-level `thread_start` 기본값은 `ApprovalMode.auto_review`, 
 
 Product-capable runtime operation은 action별 permission profile을 반드시 명시한다. First Assignment와 Course-bound guarded Chat은 `permissionProfile: workspace_write`로 `ApprovalMode.auto_review + Sandbox.workspace_write`를 사용한다. Course·ModelingRun 전의 source-free 일반 Chat은 `permissionProfile: read_only`로 exact native Turn을 `ApprovalMode.deny_all + Sandbox.read_only`로 시작한다. 이 read-only profile도 Plan `collaborationMode`와 Browser-safe product activity projection을 유지한다. Native command·file permission 처리는 Codex와 official SDK가 소유하고 Browser-safe product projection은 Plan `request_user_input`만 answer/cancel 가능한 interaction으로 노출한다. 이 interaction은 AY-PLE `UserConfirmation`을 승인하지 않으며, Server·Browser가 product operation을 호출하는 admission과 Review 반영 경계는 별도로 소유한다.
 
+개인 product UI는 official `model/list`의 visible catalog를 Browser-safe하게 projection하고, 사용자가 고른 model·advertised reasoning effort와 `default | fast` service tier를 다음 Product Turn의 public SDK override로 전달한다. 선택이 없으면 native thread의 effective model·reasoning을 유지한다. Catalog order와 지원 조합은 App Server가 소유하며 app은 모델명을 하드코딩하거나 전역 `config.toml`을 쓰지 않는다.
+
 ## Runtime baseline과 배포 packaging 책임
 
 현재 local companion Chat Shell의 production runtime baseline은 다음을 구현·검증한다.

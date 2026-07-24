@@ -1,4 +1,15 @@
 export {
+  decodeProductCodexSettings,
+  decodeProductCodexTurnSettings,
+} from './codex-settings.js'
+export type {
+  ProductCodexModel,
+  ProductCodexReasoningEffort,
+  ProductCodexSettings,
+  ProductCodexTurnSettings,
+} from './codex-settings.js'
+
+export {
   PRODUCT_JSON_ENVELOPE_MAX_BYTES,
   ProductContractError,
   isProductDecisionKey,
