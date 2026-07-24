@@ -230,14 +230,37 @@ export const FOOD_DATA = [
   },
 ]
 
-// field를 가진 항목 중 foodName에 키워드가 포함되는 첫 항목. field가 없으면 매칭만 본다.
+// field를 가진 항목 중 foodName에 키워드가 포함되는 항목을 고른다.
+//
+// 선택 규칙 — "머리명사 우선": 한국어 복합 음식명은 마지막 명사가 그 음식의 정체다
+// ("카레우동"은 우동, "치킨김밥"은 김밥, "만두국"은 국). 그래서 이름에서 **가장 오른쪽에서 끝나는**
+// 키워드의 항목을 고르고, 끝 위치가 같으면 더 긴(구체적인) 키워드를 우선한다
+// (예: "김치볶음밥"에서 '김치볶음밥' > '볶음밥', "탕수육"에서 '탕수육' > '탕').
+// 그래도 같으면 테이블 순서(먼저 정의된 항목)를 따른다.
+//
+// 왜 단순 '첫 항목' 순회가 아닌가: 통합 전 세 테이블은 그룹 배치 순서가 서로 달라, 교차 그룹
+// 복합명(카레우동 등)에서 셋이 서로 다른 답을 내는 모순이 이미 있었다 — 단일 순서로는 셋을 동시에
+// 재현할 수 없어, 언어적으로 올바른 머리명사 규칙으로 통일했다(foodData.test.js가 케이스를 고정).
 function findEntry(foodName, field) {
   if (typeof foodName !== 'string' || !foodName) return null
+
+  let best = null
+  let bestEnd = -1
+  let bestLen = -1
   for (const entry of FOOD_DATA) {
     if (field && entry[field] === undefined) continue
-    if (entry.keywords.some((k) => foodName.includes(k))) return entry
+    for (const keyword of entry.keywords) {
+      const idx = foodName.lastIndexOf(keyword)
+      if (idx === -1) continue
+      const end = idx + keyword.length
+      if (end > bestEnd || (end === bestEnd && keyword.length > bestLen)) {
+        best = entry
+        bestEnd = end
+        bestLen = keyword.length
+      }
+    }
   }
-  return null
+  return best
 }
 
 // 표준 1인분 무게 범위(g). 없으면 null(호출부가 범용 범위로 폴백).

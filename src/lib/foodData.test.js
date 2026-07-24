@@ -107,6 +107,30 @@ describe('getCanonicalName — 기존 CANONICAL_MAP 매핑 보존', () => {
   })
 })
 
+describe('머리명사 규칙 — 교차 그룹 복합명은 마지막 명사가 이긴다', () => {
+  // 통합 전 세 테이블은 그룹 배치 순서가 서로 달라 이런 이름들에서 서로 다른 답을 내는 모순이
+  // 있었다(예: 치킨김밥 — portion은 치킨, canonical은 김밥). 머리명사(마지막 명사) 규칙으로 통일.
+  it('카레우동은 우동이다 (카레가 아니라)', () => {
+    expect(getPortionRange('카레우동')).toEqual({ min: 400, max: 850 })
+    expect(getCanonicalName('카레우동')).toBe('우동')
+    expect(getPlausibility('카레우동').referenceGrams).toBe(600)
+  })
+
+  it('치킨김밥은 김밥이다 (치킨이 아니라)', () => {
+    expect(getPortionRange('치킨김밥')).toEqual({ min: 150, max: 500 })
+    expect(getCanonicalName('치킨김밥')).toBe('김밥')
+  })
+
+  it('만두국은 국이다 — 만두 1인분(100~400g)이 아니라 국물 요리 범위', () => {
+    expect(getPortionRange('만두국')).toEqual({ min: 300, max: 800 })
+  })
+
+  it('끝 위치가 같으면 더 긴(구체적인) 키워드가 이긴다 — 탕수육 ≠ 탕, 김치볶음밥 ≠ 볶음밥', () => {
+    expect(getPortionRange('탕수육')).toEqual({ min: 150, max: 500 })
+    expect(getCanonicalName('김치볶음밥')).toBeNull() // 자기 자신이 표준명
+  })
+})
+
 describe('nutrition.js 경유 end-to-end (기존 동작 보존)', () => {
   it('clampEstimatedGrams: 짜장면 2000g → 900g(상한), 0g → 675g(중앙값), 미등록 음식 0g → 100g', () => {
     expect(clampEstimatedGrams(2000, '짜장면')).toBe(900)

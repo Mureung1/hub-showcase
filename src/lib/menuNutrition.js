@@ -15,15 +15,24 @@ import { clampToPlausibleNutrients, clampToStandardPlausibleNutrients, NUTRIENT_
 // 속도 문제가 생기면 false로 — 2단계(DB 조회)만 꺼지고 1단계 보정은 유지된다.
 export const USE_DB_FOR_MENU_NUTRITION = true
 
-// 개별 메뉴 DB 조회가 이보다 오래 걸리면 포기하고 AI 추정치를 유지한다.
-// (서버의 식약처 타임아웃 5초보다 짧게 잡아, 추천 전체가 붙잡히지 않게 한다.)
+// 이번 라운드에서 메뉴 DB 조회를 기다려줄 상한. 넘기면 이 라운드는 AI 추정치를 쓰되, 조회 자체는
+// 백그라운드에서 계속 진행돼 캐시를 채운다(다음 라운드는 즉시 캐시 히트). 서버의 식약처 타임아웃
+// (5초, 키 방식 재시도 포함 최대 ~10초)보다 짧아 추천 전체가 붙잡히지 않는다.
 const MENU_DB_TIMEOUT_MS = 3000
+
+// 식약처 연결 자체가 안 되는 상황(FOODDB_CONNECTION_FAILED — 일부 배포 리전)에서 검색 라운드마다
+// 타임아웃 비용을 반복 지불하지 않도록, 판명 후 일정 시간 DB 보강 전체를 건너뛰는 쿨다운.
+// 연결 실패 신호는 서버 타임아웃 후에야 도착해 그 라운드의 3초 대기에는 늦지만, 캐시된 promise가
+// 그 결과를 받아 이 값을 세팅하므로 다음 라운드부터 작동한다.
+const FOODDB_DOWN_COOLDOWN_MS = 5 * 60 * 1000
+let fooddbDownUntil = 0
 
 const NUTRIENT_KEYS = NUTRIENT_LABELS.map((n) => n.key)
 
-// 같은 메뉴명은 세션 동안 한 번만 조회하는 메모리 캐시.
-// 값: { baseValue, nutrients, grams } (조회 성공) | null (결과 없음 — 재검색해도 없으니 캐시).
-// 네트워크 오류는 캐시하지 않는다(다음 검색에서 재시도).
+// 같은 메뉴명은 세션 동안 한 번만 조회하는 메모리 캐시. **진행 중 promise를 저장**해 같은 배치에
+// 동일 대표 메뉴가 여럿이어도 중복 병렬 호출이 나가지 않는다.
+// resolve 값: { baseValue, nutrients, grams, term } (조회 성공) | null (결과 없음 — 재검색해도 없으니 유지).
+// reject(네트워크 오류)는 캐시에서 지워 다음 라운드에 재시도한다.
 const menuCache = new Map()
 
 // ── 1단계: 현실 범위 보정 ──────────────────────────────────────────────────────
@@ -66,38 +75,37 @@ function standardServingGrams(menuName) {
 }
 
 // 메뉴명 하나를 조리식 DB에서 조회(메뉴명 → 정규화 표준명 순). 식당 메뉴라 가공식품 DB는 보지 않는다.
-// state.connectionFailed: 식약처 연결 자체가 안 되면 이후 시작되는 조회·재검색을 건너뛴다.
-// (배치가 병렬로 이미 시작한 조회들은 각자 MENU_DB_TIMEOUT_MS 안에 끝나므로 전체 지연은 3초로 유계.)
-async function lookupMenuFromDB(menuName, state) {
+// 캐시에 진행 중 promise를 먼저 넣어 같은 배치의 동일 메뉴가 중복 조회되지 않게 한다.
+function lookupMenuFromDB(menuName) {
   if (menuCache.has(menuName)) return menuCache.get(menuName)
-  if (state.connectionFailed) return null
+  const promise = doLookupMenu(menuName)
+  menuCache.set(menuName, promise)
+  // 네트워크 오류는 "결과 없음"과 달리 확정이 아니므로 캐시에서 지워 다음 라운드에 재시도한다.
+  promise.catch(() => menuCache.delete(menuName))
+  return promise
+}
 
+async function doLookupMenu(menuName) {
   const attempts = [...new Set([menuName, getCanonicalName(menuName)].filter(Boolean))]
   for (const term of attempts) {
     const grams = standardServingGrams(term) ?? standardServingGrams(menuName)
-    if (!grams) continue // 표준 1인분을 모르는 음식 — AI 추정 유지가 안전하다
+    if (!grams) continue // 표준 1인분을 모르는 음식 — DB 100g값을 환산할 근거가 없어 AI 추정 유지
     try {
-      const results = await withTimeout(searchFoodDB(term, 'food'), MENU_DB_TIMEOUT_MS)
+      const results = await searchFoodDB(term, 'food')
       const match = pickBestFoodMatch(results, term, { averageExactMatches: true })
       if (match) {
         const baseValue = match.baseQuantity?.value > 0 ? match.baseQuantity.value : 100
-        const found = { baseValue, nutrients: match.nutrients, grams, term }
-        menuCache.set(menuName, found)
-        return found
+        return { baseValue, nutrients: match.nutrients, grams, term }
       }
     } catch (err) {
       if (err.code === 'FOODDB_CONNECTION_FAILED') {
-        state.connectionFailed = true
-        return null
+        // 연결 자체가 안 되는 상황 — 이후 라운드의 DB 보강을 쿨다운 동안 통째로 쉬게 한다.
+        fooddbDownUntil = Date.now() + FOODDB_DOWN_COOLDOWN_MS
       }
-      // 타임아웃·일시 오류: 이 메뉴만 포기(캐시하지 않음), 나머지는 계속
-      console.error(`menu DB lookup failed (${term}):`, err.message)
-      return null
+      throw err
     }
   }
-
-  menuCache.set(menuName, null) // 결과 없음은 세션 동안 확정 — 반복 조회 방지
-  return null
+  return null // 결과 없음은 세션 동안 확정 — 캐시에 남아 반복 조회를 막는다
 }
 
 // DB 수치(있는 키만)로 AI expected를 덮어쓰고, 최종적으로 현실 범위 보정을 한 번 더 거친다.
@@ -117,14 +125,21 @@ function mergeExpected(aiExpected, dbFound, menuName) {
 export async function enrichExpectedFromDB(items, getMenuName) {
   if (!USE_DB_FOR_MENU_NUTRITION || !items || items.length === 0) return items
 
+  // 연결 실패 쿨다운 중 — 호출 없이 즉시 (보정된) AI 추정을 유지한다.
+  if (Date.now() < fooddbDownUntil) {
+    if (import.meta.env.DEV) console.log('[메뉴영양 진단] 식약처 연결 실패 쿨다운 중 — DB 보강 건너뜀')
+    return items.map((item) => (item?.expected && getMenuName(item) ? { ...item, expectedSource: 'ai' } : item))
+  }
+
   const startedAt = Date.now()
-  const state = { connectionFailed: false }
 
   const enriched = await Promise.all(
     items.map(async (item) => {
       const menuName = getMenuName(item)
       if (!item?.expected || !menuName) return item
-      const found = await lookupMenuFromDB(menuName, state).catch(() => null)
+      // 이번 라운드의 대기만 3초로 자른다 — 조회 promise는 계속 진행돼 캐시를 채우고,
+      // 타임아웃·오류 시 이 항목은 AI 추정을 유지한다(부분 실패 허용).
+      const found = await withTimeout(lookupMenuFromDB(menuName), MENU_DB_TIMEOUT_MS).catch(() => null)
       if (!found) return { ...item, expectedSource: 'ai' }
       return { ...item, expected: mergeExpected(item.expected, found, menuName), expectedSource: 'db' }
     }),
@@ -132,10 +147,7 @@ export async function enrichExpectedFromDB(items, getMenuName) {
 
   if (import.meta.env.DEV) {
     const dbCount = enriched.filter((i) => i.expectedSource === 'db').length
-    console.log(
-      `[메뉴영양 진단] ${items.length}개 중 ${dbCount}개 식약처DB 매칭, ${Date.now() - startedAt}ms` +
-        (state.connectionFailed ? ' (식약처 연결 실패 → 나머지 AI 추정 유지)' : ''),
-    )
+    console.log(`[메뉴영양 진단] ${items.length}개 중 ${dbCount}개 식약처DB 매칭, ${Date.now() - startedAt}ms`)
   }
 
   return enriched

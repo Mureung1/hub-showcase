@@ -38,7 +38,10 @@ export async function geminiCompleteWithRetry(args) {
     try {
       return await geminiComplete(args)
     } catch (err) {
-      if (err.status === 429 && attempt < RATE_LIMIT_RETRY_DELAYS_MS.length) {
+      // 우리 프록시 자체 레이트리밋(1분/10분 윈도우, proxy.js의 고정 안내 문구)의 429는 몇 초
+      // 백오프로 풀리지 않는다 — 재시도 없이 바로 안내로 전환하고, 업스트림(OpenRouter) 429만 재시도한다.
+      const isOwnRateLimit = typeof err.message === 'string' && err.message.includes('요청이 너무 많습니다')
+      if (err.status === 429 && !isOwnRateLimit && attempt < RATE_LIMIT_RETRY_DELAYS_MS.length) {
         await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_RETRY_DELAYS_MS[attempt]))
         continue
       }

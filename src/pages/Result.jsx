@@ -169,10 +169,14 @@ export default function Result() {
 
       // 식당 추천(MapPage)과 동일한 보강: AI 추정 expected를 현실 범위로 보정한 뒤
       // 식약처 DB 실측값으로 대체한다(실패 시 보정된 AI 추정 유지 — menuNutrition.js).
+      // 이름·이유는 이미 완성됐으므로 즉시 표시하고, DB 보강은 끝나는 대로 수치만 덧입힌다 —
+      // 완성된 추천을 보강 몇 초 때문에 스켈레톤 뒤에 숨겨둘 이유가 없다.
       const getMenu = (rec) => rec.name
-      let recs = clampExpectedForItems(parsed.recommendations, getMenu)
-      recs = await enrichExpectedFromDB(recs, getMenu)
-      setRecommendations(recs)
+      const clamped = clampExpectedForItems(parsed.recommendations, getMenu)
+      setRecommendations(clamped)
+      enrichExpectedFromDB(clamped, getMenu)
+        .then(setRecommendations)
+        .catch(() => {}) // 보강 실패는 무시 — 보정된 AI 추정이 이미 화면에 있다
     } catch (err) {
       console.error('menu recommendation failed:', err)
       setRecError('메뉴 추천을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')

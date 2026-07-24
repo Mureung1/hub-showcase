@@ -202,7 +202,8 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
         `OpenRouter response_format 요청 실패(${openRouterRes.status}) — 스키마 없이 재시도:`,
         data?.error?.message || '',
       )
-      const { response_format, ...withoutSchema } = requestBody
+      const withoutSchema = { ...requestBody }
+      delete withoutSchema.response_format
       openRouterRes = await callOpenRouter(withoutSchema)
       data = await openRouterRes.json()
     }

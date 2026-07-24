@@ -93,6 +93,21 @@ describe('enrichExpectedFromDB (2단계 — 식약처 DB 보강)', () => {
     expect(out.expected).toEqual({ protein: 35 })
   })
 
+  it('같은 배치의 동일 대표 메뉴는 in-flight 중복 없이 한 번만 조회한다', async () => {
+    vi.mocked(searchFoodDB).mockResolvedValue([dbRecord('돈까스', { protein: 10 })])
+    const items = [
+      { representativeMenu: '돈까스', expected: { protein: 1 } },
+      { representativeMenu: '돈까스', expected: { protein: 2 } },
+    ]
+    const out = await enrichExpectedFromDB(items, (i) => i.representativeMenu)
+    expect(vi.mocked(searchFoodDB).mock.calls.length).toBe(1)
+    expect(out[0].expectedSource).toBe('db')
+    expect(out[1].expectedSource).toBe('db')
+    expect(out[0].expected.protein).toBe(20) // 10 × 200/100
+  })
+
+  // 주의: 이 테스트는 모듈 수준 쿨다운(fooddbDownUntil)을 세팅하므로 반드시 파일의 마지막에 둔다 —
+  // 이후 테스트가 있으면 DB 보강이 통째로 건너뛰어져 실패한다.
   it('식약처 연결 실패(FOODDB_CONNECTION_FAILED): 전 항목 AI 유지, 오류로 죽지 않는다', async () => {
     vi.mocked(searchFoodDB).mockImplementation(async () => {
       const err = new Error('식약처 API 서버에 연결할 수 없습니다')
