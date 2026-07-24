@@ -460,6 +460,7 @@ test('starts an immutable auth-only Runtime with exact application identity and 
         harness.runtime.startProductTurn({
           threadId: 'thread',
           skill: { name: 'model', path: '/managed/model/SKILL.md' },
+          permissionProfile: 'workspace_write',
           text: 'hello',
         }),
       () =>
@@ -1032,6 +1033,10 @@ test('binds isolated thread cwd to the exact workspace role before native mutati
       assert.fail('expected a workspace Runtime')
     }
     const workspace = harness.runtime.role.workspaceRoot
+    await writeFile(
+      join(dirname(harness.journalPath), 'expect-read-only-product'),
+      '',
+    )
     const mcp = {
       url: 'http://127.0.0.1:43127/mcp',
       token: 'private-mcp-token',
@@ -1190,10 +1195,19 @@ test('rejects a non-SKILL.md product skill path before native turn mutation', as
       () =>
         harness.runtime.startProductTurn({
           threadId,
+          text: 'Missing permission profile.',
+        } as StartProductTurnInput),
+      /permission profile/i,
+    )
+    assert.throws(
+      () =>
+        harness.runtime.startProductTurn({
+          threadId,
           skill: {
             name: 'assignment-modeling',
             path: '/managed/assignment-modeling/OTHER.md',
           },
+          permissionProfile: 'workspace_write',
           text: 'Review staged Markdown at /staged/assignment.md',
         }),
       TypeError,
@@ -1312,6 +1326,18 @@ test('runs a structured product turn through one pending native interaction', as
         .map(({ params }) => params),
       [{ extraRoots: ['/managed/assignment-modeling'] }],
     )
+    const nativeTurn = journal.messages.find(
+      ({ method }) => method === 'turn/start',
+    )
+    assert.equal(nativeTurn?.params?.approvalPolicy, 'on-request')
+    assert.equal(nativeTurn?.params?.approvalsReviewer, 'auto_review')
+    assert.deepEqual(nativeTurn?.params?.sandboxPolicy, {
+      excludeSlashTmp: false,
+      excludeTmpdirEnvVar: false,
+      networkAccess: false,
+      type: 'workspaceWrite',
+      writableRoots: [],
+    })
   } finally {
     await harness.runtime.close()
   }
@@ -3360,6 +3386,7 @@ function productTurnInput(threadId: string) {
       name: 'assignment-modeling',
       path: '/managed/assignment-modeling/SKILL.md',
     },
+    permissionProfile: 'workspace_write' as const,
     text: 'Review staged Markdown at /staged/assignment.md',
   }
 }

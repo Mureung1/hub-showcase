@@ -775,6 +775,7 @@ export function createProductOperationCoordinator(options: {
                 name: recipe.requestedSkillName,
                 path: recipe.path,
               },
+              permissionProfile: 'workspace_write',
               text: renderAssignmentInput(prepared, input.arguments),
             },
             operationOptions.disconnected,
@@ -1002,9 +1003,10 @@ export function createProductOperationCoordinator(options: {
       try {
         await requireAccount(operation)
         const courseId = currentCourseId(options.controller)
-        if (!courseId && input.materials.length > 0) {
-          requireCourseId(options.controller)
-        }
+        const selectedCourseId =
+          input.materials.length > 0
+            ? requireCourseId(courseId)
+            : undefined
         if (courseId) {
           const preparedExecution =
             await options.controller.prepareProductChatExecution({
@@ -1020,9 +1022,9 @@ export function createProductOperationCoordinator(options: {
           operation.redactionValues.push(preparedExecution.scratchPath)
         }
         operation.redactionValues.push(options.controller.nativeCwd())
-        if (input.materials.length > 0) {
+        if (selectedCourseId) {
           const proposal = await options.controller.prepareAssignmentProposalSession({
-            courseId: requireCourseId(options.controller),
+            courseId: selectedCourseId,
             selectedMaterials: input.materials.map((material) => ({
               rawMaterialId: material.id,
               digest: material.digest,
@@ -1046,7 +1048,7 @@ export function createProductOperationCoordinator(options: {
               workspace: options.controller.nativeCwd(),
               mcp: options.mcpHost.nativeThreadConfig(operationOptions.mcpUrl),
             },
-            ...(courseId ? {} : { permissionProfile: 'read_only' as const }),
+            permissionProfile: courseId ? 'workspace_write' : 'read_only',
             text,
           },
           operationOptions.disconnected,
@@ -1594,8 +1596,7 @@ function findPatch(
   return patch
 }
 
-function requireCourseId(controller: SemesterWorkspaceController): string {
-  const courseId = currentCourseId(controller)
+function requireCourseId(courseId: string | undefined): string {
   if (!courseId) {
     throw new SemesterWorkspaceError(
       'course_unknown',

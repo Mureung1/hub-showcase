@@ -344,6 +344,7 @@ class ProtocolUnitTests(unittest.TestCase):
             "threadId": "thread-1",
             "skillName": "assignment-modeling",
             "skillPath": "/managed/assignment-modeling/SKILL.md",
+            "permissionProfile": "workspace_write",
             "text": "Review staged Markdown",
         }
         command = decode_command_line(
@@ -360,7 +361,7 @@ class ProtocolUnitTests(unittest.TestCase):
         )
         self.assertIsNone(command.skill_name)
         self.assertIsNone(command.skill_path)
-        self.assertIsNone(command.permission_profile)
+        self.assertEqual(command.permission_profile, "workspace_write")
 
         read_only = {
             **text_only,
@@ -383,7 +384,12 @@ class ProtocolUnitTests(unittest.TestCase):
             {key: value for key, value in product.items() if key != "skillName"},
             {**product, "planModel": "legacy-model"},
             {**product, "reasoningEffort": "medium"},
-            {**text_only, "permissionProfile": "workspace_write"},
+            {
+                key: value
+                for key, value in text_only.items()
+                if key != "permissionProfile"
+            },
+            {**text_only, "permissionProfile": "danger_full_access"},
             {
                 **product,
                 "planModel": "legacy-model",

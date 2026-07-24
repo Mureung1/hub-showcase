@@ -806,6 +806,7 @@ function cloneProductTurnInput(
   return {
     threadId: input.threadId,
     ...(input.skill === undefined ? {} : { skill: { ...input.skill } }),
+    permissionProfile: input.permissionProfile,
     text: input.text,
   }
 }
@@ -818,6 +819,7 @@ function sameProductTurnInput(
     left.threadId === right.threadId &&
     left.skill?.name === right.skill?.name &&
     left.skill?.path === right.skill?.path &&
+    left.permissionProfile === right.permissionProfile &&
     left.text === right.text
   )
 }

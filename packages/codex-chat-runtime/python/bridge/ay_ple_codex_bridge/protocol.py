@@ -94,7 +94,7 @@ class StartProductTurnCommand:
     thread_id: str
     skill_name: str | None
     skill_path: str | None
-    permission_profile: Literal["read_only"] | None
+    permission_profile: Literal["read_only", "workspace_write"]
     text: str
     command: Literal["start_product_turn"] = "start_product_turn"
 
@@ -365,8 +365,6 @@ def decode_command_line(line: bytes) -> BridgeCommand:
         permission_fields = {"permissionProfile"}
         fields = set(value)
         allowed_fields = (
-            base_fields,
-            base_fields | skill_fields,
             base_fields | permission_fields,
             base_fields | skill_fields | permission_fields,
         )
@@ -381,11 +379,8 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             skill_name = None
             skill_path = None
         permission_profile = value.get("permissionProfile")
-        if "permissionProfile" in value:
-            if permission_profile != "read_only":
-                raise ProtocolViolation("invalid_command")
-        else:
-            permission_profile = None
+        if permission_profile not in {"read_only", "workspace_write"}:
+            raise ProtocolViolation("invalid_command")
         return StartProductTurnCommand(
             request_id,
             _require_nonempty_string(value.get("threadId")),

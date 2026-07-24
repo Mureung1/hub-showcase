@@ -213,9 +213,7 @@ export class CodexChatService {
       const turn = await runtime.startProductTurn({
         threadId,
         ...(input.skill === undefined ? {} : { skill: input.skill }),
-        ...(input.permissionProfile === undefined
-          ? {}
-          : { permissionProfile: input.permissionProfile }),
+        permissionProfile: input.permissionProfile,
         text: input.text,
       })
       reservation.phase = 'streaming'

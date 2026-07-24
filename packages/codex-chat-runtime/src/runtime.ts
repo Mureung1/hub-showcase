@@ -911,9 +911,7 @@ class NodeCodexChatRuntime implements CodexManagedRuntime {
         ...(skill === undefined
           ? {}
           : { skillName: skill.name, skillPath: skill.path }),
-        ...(input.permissionProfile === undefined
-          ? {}
-          : { permissionProfile: input.permissionProfile }),
+        permissionProfile: input.permissionProfile,
         text,
       }),
       (frame) => {
@@ -2115,6 +2113,12 @@ function accountFailure(code: CodexAccountFailureCode): CodexAccountFailure {
 
 function requireProductTurnInput(input: StartProductTurnInput): void {
   requireNativeId(input.threadId)
+  if (
+    input.permissionProfile !== 'read_only' &&
+    input.permissionProfile !== 'workspace_write'
+  ) {
+    throw new TypeError('Product permission profile is invalid')
+  }
   if (input.skill !== undefined) {
     if (typeof input.skill !== 'object' || input.skill === null) {
       throw new TypeError('Skill input must be an object')

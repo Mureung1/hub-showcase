@@ -22,6 +22,10 @@ export type CodexPrivateMcpServerInput = {
   readonly token: string
 }
 
+export type CodexProductPermissionProfile =
+  | 'read_only'
+  | 'workspace_write'
+
 export type StartThreadInput = {
   readonly workspace: string
   readonly mcp: CodexPrivateMcpServerInput
@@ -30,7 +34,7 @@ export type StartThreadInput = {
 export type StartProductTurnInput = {
   readonly threadId: CodexThreadId
   readonly skill?: CodexProductSkillInput
-  readonly permissionProfile?: 'read_only'
+  readonly permissionProfile: CodexProductPermissionProfile
   readonly text: string
 }
 

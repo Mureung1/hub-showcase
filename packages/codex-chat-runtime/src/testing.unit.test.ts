@@ -511,6 +511,7 @@ test('deterministic auth-only runtime denies every workspace family before consu
       runtime.startProductTurn({
         threadId: 'thread',
         skill: { name: 'model', path: '/managed/model/SKILL.md' },
+        permissionProfile: 'workspace_write',
         text: 'hello',
       }),
     () =>
@@ -606,6 +607,7 @@ test('deterministic runtime preserves native turn identity and event FIFO', asyn
 test('deterministic product turn preserves structured input and same-turn user-input continuation', async () => {
   const input = {
     threadId: 'thread-product',
+    permissionProfile: 'workspace_write',
     skill: {
       name: 'assignment-modeling',
       path: '/managed/assignment-modeling/SKILL.md',
@@ -701,6 +703,7 @@ test('deterministic product turn preserves structured input and same-turn user-i
 test('deterministic product turn supports text-only input without a requested Skill', async () => {
   const input = {
     threadId: 'thread-product',
+    permissionProfile: 'read_only',
     text: 'Continue the product conversation.',
   } as const
   const runtime = new DeterministicCodexChatRuntime({
@@ -755,6 +758,7 @@ test('deterministic product turn supports text-only input without a requested Sk
 test('deterministic product continuation rejects a scripted resolution that disagrees with cancel', async () => {
   const input = {
     threadId: 'thread-product',
+    permissionProfile: 'workspace_write',
     skill: { name: 'model', path: '/managed/model/SKILL.md' },
     text: 'Review staged Markdown.',
   } as const
@@ -815,6 +819,7 @@ test('deterministic product continuation rejects a scripted resolution that disa
 test('deterministic cleanup rejects an in-flight acknowledgement without resolved activity', async () => {
   const input = {
     threadId: 'thread-product',
+    permissionProfile: 'workspace_write',
     skill: { name: 'model', path: '/managed/model/SKILL.md' },
     text: 'Review staged Markdown.',
   } as const
@@ -870,6 +875,7 @@ test('deterministic runtime failure rejects an in-flight interaction mutation wi
     await t.test(resolution, async () => {
       const input = {
         threadId: 'thread-product',
+        permissionProfile: 'workspace_write',
         skill: { name: 'model', path: '/managed/model/SKILL.md' },
         text: 'Review staged Markdown.',
       } as const
@@ -938,6 +944,7 @@ test('deterministic runtime failure rejects an in-flight interaction mutation wi
 test('deterministic product interrupt settles its pending interaction once', async () => {
   const input = {
     threadId: 'thread-product',
+    permissionProfile: 'workspace_write',
     skill: { name: 'model', path: '/managed/model/SKILL.md' },
     text: 'Review staged Markdown.',
   } as const
@@ -1003,6 +1010,7 @@ test('deterministic product interrupt settles its pending interaction once', asy
 test('deterministic product terminal makes a pending interaction late', async () => {
   const input = {
     threadId: 'thread-product',
+    permissionProfile: 'workspace_write',
     skill: { name: 'model', path: '/managed/model/SKILL.md' },
     text: 'Review staged Markdown.',
   } as const

@@ -50,6 +50,7 @@ export type {
   CodexManagedRuntime,
   CodexPrivateMcpServerInput,
   CodexProductCapableRuntime,
+  CodexProductPermissionProfile,
   CodexProductSkillInput,
   CodexProductTurn,
   StartThreadInput,
