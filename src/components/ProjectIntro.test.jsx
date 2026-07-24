@@ -31,6 +31,15 @@ function textResponse(body, ok = true) {
 }
 
 async function goToInfo(user) {
+  const toeicCard = getToeicExamCard()
+  const hasSelectedExam = screen
+    .getAllByRole('button')
+    .some((button) => button.classList.contains('exam-card-selected'))
+
+  if (!hasSelectedExam && toeicCard && toeicCard.getAttribute('aria-pressed') === 'false') {
+    await user.click(toeicCard)
+  }
+
   await user.click(screen.getByRole('button', { name: '정보 입력' }))
 }
 
@@ -46,7 +55,19 @@ async function fillCommonFields(user) {
 }
 
 async function saveForm(user) {
-  await user.click(screen.getByRole('button', { name: '저장하고 학습 계획 보기' }))
+  await user.click(screen.getByRole('button', { name: '다음' }))
+
+  if (!document.querySelector('.diagnosis-section')) {
+    return
+  }
+
+  const weakAreaButton = document.querySelector('.weak-grid button')
+
+  if (weakAreaButton) {
+    await user.click(weakAreaButton)
+  }
+
+  await user.click(screen.getByRole('button', { name: '학습 계획 생성하기' }))
 }
 
 function mockSuccessfulSave(fetchMock, planOverrides = {}) {
@@ -57,7 +78,7 @@ function mockSuccessfulSave(fetchMock, planOverrides = {}) {
 
 async function openExamSelection(user) {
   const menuList = document.querySelector('.menu-list')
-  const examMenuButton = within(menuList).getAllByRole('button')[1]
+  const examMenuButton = within(menuList).getAllByRole('button')[0]
   await user.click(examMenuButton)
 }
 
@@ -79,17 +100,19 @@ describe('ProjectIntro exam selection next action', () => {
     vi.restoreAllMocks()
   })
 
-  test('moves to the service introduction screen after the previous button is clicked', async () => {
+  test('moves to the integrated exam selection screen after the previous button is clicked from info', async () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
     render(<ProjectIntro />)
 
     await openExamSelection(user)
+    await user.click(getToeicExamCard())
+    await user.click(screen.getByRole('button', { name: '다음' }))
     await user.click(screen.getByRole('button', { name: '이전' }))
 
     expect(screen.getByText('STEP 1/5')).toBeInTheDocument()
-    expect(document.querySelector('.feature-section')).toBeInTheDocument()
+    expect(document.querySelector('.start-layout')).toBeInTheDocument()
     expect(document.querySelector('.exam-section')).not.toBeInTheDocument()
   })
 
@@ -102,6 +125,8 @@ describe('ProjectIntro exam selection next action', () => {
     await openExamSelection(user)
 
     expect(screen.getByRole('button', { name: '다음' })).toBeDisabled()
+    expect(screen.getByText('선택 시험: 선택 전')).toBeInTheDocument()
+    expect(screen.getAllByText('선택 전').length).toBeGreaterThan(0)
   })
 
   test('enables the next button after TOEIC is selected', async () => {
@@ -125,7 +150,7 @@ describe('ProjectIntro exam selection next action', () => {
     await openExamSelection(user)
     await user.click(getToeicExamCard())
 
-    expect(document.querySelector('.exam-section')).toBeInTheDocument()
+    expect(document.querySelector('.start-exam-section')).toBeInTheDocument()
     expect(document.querySelector('.form-section')).not.toBeInTheDocument()
   })
 
@@ -143,18 +168,19 @@ describe('ProjectIntro exam selection next action', () => {
     expect(toeicCard).toHaveAttribute('aria-pressed', 'true')
   })
 
-  test('shows a check mark on the selected TOEIC card', async () => {
+  test('marks the selected TOEFL card with the selected card class', async () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
     render(<ProjectIntro />)
 
     await openExamSelection(user)
-    const toeicCard = getToeicExamCard()
+    const toeflCard = screen.getByRole('button', { name: /TOEFL/ })
 
-    await user.click(toeicCard)
+    await user.click(toeflCard)
 
-    expect(within(toeicCard).getByText('✓')).toBeInTheDocument()
+    expect(toeflCard).toHaveClass('exam-card-selected')
+    expect(toeflCard).toHaveAttribute('aria-pressed', 'true')
   })
 
   test('moves to the information input screen after the next button is clicked', async () => {
@@ -167,7 +193,7 @@ describe('ProjectIntro exam selection next action', () => {
     await user.click(getToeicExamCard())
     await user.click(screen.getByRole('button', { name: '다음' }))
 
-    expect(screen.getByText('STEP 3/5')).toBeInTheDocument()
+    expect(screen.getByText('STEP 2/5')).toBeInTheDocument()
     expect(document.querySelector('.form-section')).toBeInTheDocument()
     expect(document.querySelector('.exam-section')).not.toBeInTheDocument()
   })
@@ -292,7 +318,8 @@ describe('ProjectIntro saved study plan restore', () => {
 
     render(<ProjectIntro />)
 
-    await user.click(screen.getByRole('button', { name: '취약 영역 진단' }))
+    await user.click(getToeicExamCard())
+    await user.click(screen.getByRole('button', { name: '취약 영역' }))
 
     const lcButton = screen.getByRole('button', { name: /LC/ })
     const rcButton = screen.getByRole('button', { name: /RC/ })
@@ -323,7 +350,7 @@ describe('ProjectIntro saved study plan restore', () => {
 
     await user.click(screen.getByRole('button', { name: '시험 선택' }))
     await user.click(screen.getByRole('button', { name: /TOEFL/ }))
-    await user.click(screen.getByRole('button', { name: '취약 영역 진단' }))
+    await user.click(screen.getByRole('button', { name: '취약 영역' }))
 
     expect(screen.getByRole('button', { name: /Reading/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Listening/ })).toBeInTheDocument()
@@ -333,7 +360,7 @@ describe('ProjectIntro saved study plan restore', () => {
 
     await user.click(screen.getByRole('button', { name: '시험 선택' }))
     await user.click(screen.getByRole('button', { name: /OPIc/ }))
-    await user.click(screen.getByRole('button', { name: '취약 영역 진단' }))
+    await user.click(screen.getByRole('button', { name: '취약 영역' }))
 
     expect(screen.getByRole('button', { name: /묘사 문항/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /일상 경험 설명/ })).toBeInTheDocument()
@@ -346,7 +373,8 @@ describe('ProjectIntro saved study plan restore', () => {
 
     render(<ProjectIntro />)
 
-    await user.click(screen.getByRole('button', { name: '취약 영역 진단' }))
+    await user.click(getToeicExamCard())
+    await user.click(screen.getByRole('button', { name: '취약 영역' }))
     const lcButton = screen.getByRole('button', { name: /LC/ })
 
     await user.click(lcButton)
@@ -354,7 +382,7 @@ describe('ProjectIntro saved study plan restore', () => {
 
     await user.click(screen.getByRole('button', { name: '시험 선택' }))
     await user.click(screen.getByRole('button', { name: /TOEIC Speaking/ }))
-    await user.click(screen.getByRole('button', { name: '취약 영역 진단' }))
+    await user.click(screen.getByRole('button', { name: '취약 영역' }))
 
     const photoDescriptionButton = screen.getByRole('button', { name: /사진 묘사/ })
     expect(photoDescriptionButton).toHaveAttribute('aria-pressed', 'false')
