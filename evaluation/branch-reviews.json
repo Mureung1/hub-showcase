@@ -133,6 +133,46 @@
       "projectTitle": "meetry - 대학생 대면 소통 플랫폼",
       "indicatorScore": 68,
       "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 16,
+      "studentNumber": "N157",
+      "branch": "N157_정재현",
+      "projectTitle": "미리캣 — 내 출근길의 보초",
+      "indicatorScore": 68,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 17,
+      "studentNumber": "N091",
+      "branch": "N091_박창현",
+      "projectTitle": "프로젝트 기획",
+      "indicatorScore": 67,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 18,
+      "studentNumber": "N139",
+      "branch": "N139_이준섭",
+      "projectTitle": "PtoP",
+      "indicatorScore": 67,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 19,
+      "studentNumber": "N118",
+      "branch": "N118_윤태용",
+      "projectTitle": "SmartFF",
+      "indicatorScore": 66,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
+    },
+    {
+      "rank": 20,
+      "studentNumber": "N169",
+      "branch": "N169_최나현",
+      "projectTitle": "알리장",
+      "indicatorScore": 66,
+      "reason": "최종 코드, 개발 지속성, 테스트·AI 관련 파일, showcase 설명을 함께 확인할 후보"
     }
   ],
   "projects": [
@@ -492,7 +532,7 @@
       "studentNumber": "N157",
       "branch": "N157_정재현",
       "projectTitle": "미리캣 — 내 출근길의 보초",
-      "reviewPriority": "review-next",
+      "reviewPriority": "shortlist",
       "indicatorScore": 68,
       "evidence": {
         "hasShowcase": true,
@@ -514,7 +554,7 @@
       "studentNumber": "N091",
       "branch": "N091_박창현",
       "projectTitle": "프로젝트 기획",
-      "reviewPriority": "review-next",
+      "reviewPriority": "shortlist",
       "indicatorScore": 67,
       "evidence": {
         "hasShowcase": true,
@@ -536,7 +576,7 @@
       "studentNumber": "N139",
       "branch": "N139_이준섭",
       "projectTitle": "PtoP",
-      "reviewPriority": "review-next",
+      "reviewPriority": "shortlist",
       "indicatorScore": 67,
       "evidence": {
         "hasShowcase": true,
@@ -558,7 +598,7 @@
       "studentNumber": "N118",
       "branch": "N118_윤태용",
       "projectTitle": "SmartFF",
-      "reviewPriority": "review-next",
+      "reviewPriority": "shortlist",
       "indicatorScore": 66,
       "evidence": {
         "hasShowcase": true,
@@ -580,7 +620,7 @@
       "studentNumber": "N169",
       "branch": "N169_최나현",
       "projectTitle": "알리장",
-      "reviewPriority": "review-next",
+      "reviewPriority": "shortlist",
       "indicatorScore": 66,
       "evidence": {
         "hasShowcase": true,
