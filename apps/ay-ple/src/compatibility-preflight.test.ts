@@ -76,7 +76,7 @@ test('discovers one supported invocation in exact probe and Browser candidate or
   })
 })
 
-test('fails closed before commands when platform, architecture, or private Browser location policy drifts', async (t) => {
+test('fails closed before commands when platform, architecture, or descriptor Browser location policy drifts', async (t) => {
   const cases: Array<{
     readonly name: string
     readonly descriptor?: ApplicationCompatibilityDescriptor
@@ -131,6 +131,45 @@ test('fails closed before commands when platform, architecture, or private Brows
       assert.deepEqual(journal, [])
     })
   }
+})
+
+test('consumes Node and npm ranges from the package descriptor', async () => {
+  const journal: string[] = []
+  const descriptor = compatibility() as {
+    node: { range: string }
+    npm: { range: string }
+  }
+  descriptor.node.range = '>=23 <24'
+  descriptor.npm.range = '>=9.5 <10'
+
+  const result = await runCompatibilityPreflightForTesting(
+    {
+      descriptor:
+        descriptor as unknown as ApplicationCompatibilityDescriptor,
+      userHome: '/Users/student',
+      signal,
+    },
+    dependencies({
+      journal,
+      nodeVersion: '23.1.0',
+      npmUserAgent:
+        'npm/9.9.0 node/v23.1.0 darwin arm64',
+    }),
+  )
+
+  assert.equal(result.status, 'ready')
+  assert.equal(
+    result.status === 'ready'
+      ? result.discovered.nodeVersion
+      : '',
+    '23.1.0',
+  )
+  assert.equal(
+    result.status === 'ready'
+      ? result.discovered.npmVersion
+      : '',
+    '9.9.0',
+  )
 })
 
 test('requires one explicit npm 10.x user-agent token and never executes PATH npm', async (t) => {

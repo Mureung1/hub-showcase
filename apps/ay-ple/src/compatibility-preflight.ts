@@ -14,19 +14,6 @@ import type {
 const probeOutputByteLimit = 4096
 const probeTimeoutMs = 5000
 
-const exactBrowserLocationPolicy = [
-  {
-    name: 'Google Chrome',
-    system: '/Applications/Google Chrome.app',
-    userHomeRelative: 'Applications/Google Chrome.app',
-  },
-  {
-    name: 'Chromium',
-    system: '/Applications/Chromium.app',
-    userHomeRelative: 'Applications/Chromium.app',
-  },
-] as const
-
 export type BrowserCandidateInspection =
   | { readonly status: 'absent' }
   | { readonly status: 'invalid' }
@@ -144,11 +131,13 @@ export async function runCompatibilityPreflightForTesting(
   const inspectBrowserCandidate =
     dependencies.inspectBrowserCandidate.bind(dependencies)
 
-  if (!matchesExactBrowserLocationPolicy(descriptor)) {
+  if (!matchesStandardBrowserLocations(descriptor)) {
     return blocked(
       'unsupported_browser',
       'package Browser location policy mismatch',
-      'Google Chrome 또는 Chromium의 표준 Applications 위치',
+      descriptor.browsers
+        .map((browser) => `${browser.name}의 표준 Applications 위치`)
+        .join(' 또는 '),
       'AY-PLE package를 다시 설치하세요.',
     )
   }
@@ -211,28 +200,29 @@ export async function runCompatibilityPreflightForTesting(
   const exactNodeVersion = exactSemver(nodeVersion)
   if (
     !exactNodeVersion ||
-    compareVersions(exactNodeVersion, '22.12.0') < 0 ||
-    compareVersions(exactNodeVersion, '23.0.0') >= 0
+    !isVersionInRange(
+      exactNodeVersion,
+      descriptor.node.range,
+    )
   ) {
     return blocked(
       'unsupported_node',
       exactNodeVersion ?? '확인할 수 없음',
       descriptor.node.range,
-      'Node 22.12 이상 23 미만으로 다시 실행하세요.',
+      `Node ${descriptor.node.range} 조건으로 다시 실행하세요.`,
     )
   }
 
   const npmVersion = exactNpmVersion(npmUserAgent)
   if (
     !npmVersion ||
-    compareVersions(npmVersion, '10.0.0') < 0 ||
-    compareVersions(npmVersion, '11.0.0') >= 0
+    !isVersionInRange(npmVersion, descriptor.npm.range)
   ) {
     return blocked(
       'unsupported_npm',
       npmVersion ?? 'npm 실행 정보를 확인할 수 없음',
       descriptor.npm.range,
-      'npm 10.x의 exact npx command로 다시 실행하세요.',
+      `npm ${descriptor.npm.range}의 exact npx command로 다시 실행하세요.`,
     )
   }
 
@@ -271,8 +261,8 @@ export async function runCompatibilityPreflightForTesting(
       return {
         status: 'ready',
         discovered: {
-          os: 'darwin',
-          arch: 'arm64',
+          os: descriptor.platform.os,
+          arch: descriptor.platform.arch,
           macosVersion,
           nodeVersion: exactNodeVersion,
           npmVersion,
@@ -436,20 +426,16 @@ function snapshotUserHome(value: string): string {
   return path.normalize(value)
 }
 
-function matchesExactBrowserLocationPolicy(
+function matchesStandardBrowserLocations(
   descriptor: ApplicationCompatibilityDescriptor,
 ): boolean {
-  if (descriptor.browsers.length !== exactBrowserLocationPolicy.length) {
-    return false
-  }
-  return descriptor.browsers.every((browser, index) => {
-    const policy = exactBrowserLocationPolicy[index]
+  return descriptor.browsers.every((browser) => {
+    const applicationName = `${browser.name}.app`
     return (
-      policy !== undefined &&
-      browser.name === policy.name &&
-      browser.candidateLocations.system === policy.system &&
+      browser.candidateLocations.system ===
+        `/Applications/${applicationName}` &&
       browser.candidateLocations.userHomeRelative ===
-        policy.userHomeRelative
+        `Applications/${applicationName}`
     )
   })
 }
@@ -484,6 +470,27 @@ function exactSemver(value: string): string | null {
   return /^[0-9]+\.[0-9]+\.[0-9]+$/u.test(value)
     ? value
     : null
+}
+
+function isVersionInRange(
+  version: string,
+  range: string,
+): boolean {
+  const match =
+    /^>=([0-9]+(?:\.[0-9]+){0,2}) <([0-9]+(?:\.[0-9]+){0,2})$/u.exec(
+      range,
+    )
+  if (!match) return false
+  const minimum = normalizeVersionBound(match[1]!)
+  const maximum = normalizeVersionBound(match[2]!)
+  return (
+    compareVersions(version, minimum) >= 0 &&
+    compareVersions(version, maximum) < 0
+  )
+}
+
+function normalizeVersionBound(value: string): string {
+  return [...value.split('.'), '0', '0'].slice(0, 3).join('.')
 }
 
 function exactDottedVersion(value: string): string | null {
