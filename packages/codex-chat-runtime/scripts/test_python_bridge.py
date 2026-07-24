@@ -360,6 +360,16 @@ class ProtocolUnitTests(unittest.TestCase):
         )
         self.assertIsNone(command.skill_name)
         self.assertIsNone(command.skill_path)
+        self.assertIsNone(command.permission_profile)
+
+        read_only = {
+            **text_only,
+            "permissionProfile": "read_only",
+        }
+        command = decode_command_line(
+            json.dumps(read_only, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertEqual(command.permission_profile, "read_only")
 
         answer = decode_command_line(
             b'{"bridgeRequestId":"answer","command":"answer_user_input",'
@@ -373,6 +383,7 @@ class ProtocolUnitTests(unittest.TestCase):
             {key: value for key, value in product.items() if key != "skillName"},
             {**product, "planModel": "legacy-model"},
             {**product, "reasoningEffort": "medium"},
+            {**text_only, "permissionProfile": "workspace_write"},
             {
                 **product,
                 "planModel": "legacy-model",

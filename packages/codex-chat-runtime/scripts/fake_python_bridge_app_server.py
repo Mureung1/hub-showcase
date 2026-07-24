@@ -449,6 +449,12 @@ class FakeAppServer:
         text = _input_text(params)
         if text == "Continue the product conversation.":
             expected_input = [{"type": "text", "text": text}]
+            expected_approval_policy = "never"
+            expected_approvals_reviewer = None
+            expected_sandbox = {
+                "networkAccess": False,
+                "type": "readOnly",
+            }
         else:
             expected_input = [
                 {
@@ -461,6 +467,15 @@ class FakeAppServer:
                     "text": "Review staged Markdown at /staged/assignment.md",
                 },
             ]
+            expected_approval_policy = "on-request"
+            expected_approvals_reviewer = "auto_review"
+            expected_sandbox = {
+                "excludeSlashTmp": False,
+                "excludeTmpdirEnvVar": False,
+                "networkAccess": False,
+                "type": "workspaceWrite",
+                "writableRoots": [],
+            }
         expected_collaboration = {
             "mode": "plan",
             "settings": {
@@ -469,18 +484,11 @@ class FakeAppServer:
                 "reasoning_effort": "medium",
             },
         }
-        expected_sandbox = {
-            "excludeSlashTmp": False,
-            "excludeTmpdirEnvVar": False,
-            "networkAccess": False,
-            "type": "workspaceWrite",
-            "writableRoots": [],
-        }
         if params.get("input") != expected_input:
             raise RuntimeError(f"product input mismatch: {params.get('input')!r}")
-        if params.get("approvalPolicy") != "on-request":
+        if params.get("approvalPolicy") != expected_approval_policy:
             raise RuntimeError("product approval policy mismatch")
-        if params.get("approvalsReviewer") != "auto_review":
+        if params.get("approvalsReviewer") != expected_approvals_reviewer:
             raise RuntimeError("product approval reviewer mismatch")
         if params.get("sandboxPolicy") != expected_sandbox:
             raise RuntimeError("product sandbox mismatch")

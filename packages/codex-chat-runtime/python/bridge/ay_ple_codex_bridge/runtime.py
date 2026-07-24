@@ -1357,11 +1357,14 @@ class BridgeWorker:
             initial_model = record.handle.initial_model
             if not initial_model:
                 raise EffectiveModelResolutionError
+            read_only = command.permission_profile == "read_only"
             return await record.handle.turn(
                 turn_input,
                 cwd=record.cwd,
-                approval_mode=ApprovalMode.auto_review,
-                sandbox=Sandbox.workspace_write,
+                approval_mode=(
+                    ApprovalMode.deny_all if read_only else ApprovalMode.auto_review
+                ),
+                sandbox=Sandbox.read_only if read_only else Sandbox.workspace_write,
                 collaboration_mode=CollaborationMode(
                     mode=ModeKind.plan,
                     settings=CollaborationModeSettings(

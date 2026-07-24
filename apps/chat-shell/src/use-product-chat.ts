@@ -80,9 +80,10 @@ export function useProductChat(options: {
     options.accountReadiness,
     options.workspace,
   )
-  const applicationReady = chatAvailable && options.workspace?.course != null
+  const assignmentAvailable =
+    chatAvailable && options.workspace?.course != null
   const canStartAssignment =
-    applicationReady &&
+    assignmentAvailable &&
     selected.length === 2 &&
     !operationPending &&
     responsePending === undefined
@@ -162,7 +163,17 @@ export function useProductChat(options: {
     if (!canSubmit || !text) return
     setDraft('')
     await runOperation('chat', text, (onFrame, signal) =>
-      streamProductChat({ text, materials: selected }, onFrame, signal),
+      streamProductChat(
+        {
+          text,
+          materials: productChatMaterials(
+            options.workspace,
+            options.selectedMaterials,
+          ),
+        },
+        onFrame,
+        signal,
+      ),
     )
   }
 
@@ -513,6 +524,13 @@ export function isProductChatAvailable(
     workspace !== undefined &&
     workspace.recovery === null
   )
+}
+
+export function productChatMaterials(
+  workspace: ReadyProductWorkspace | undefined,
+  selectedMaterials: readonly ProductRawMaterial[],
+): readonly ProductMaterialSelection[] {
+  return workspace?.course ? materialSelection(selectedMaterials) : []
 }
 
 type ProductResponsePending =

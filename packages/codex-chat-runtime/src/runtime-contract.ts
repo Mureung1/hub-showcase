@@ -30,6 +30,7 @@ export type StartThreadInput = {
 export type StartProductTurnInput = {
   readonly threadId: CodexThreadId
   readonly skill?: CodexProductSkillInput
+  readonly permissionProfile?: 'read_only'
   readonly text: string
 }
 

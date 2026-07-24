@@ -77,6 +77,12 @@ test('course-free Product Chat starts before ModelingRun and reuses one native T
         assert.equal(runtime.productInputs[0]?.threadId, 'thread-private-chat')
         assert.equal(runtime.productInputs[1]?.threadId, 'thread-private-chat')
         assert.equal(runtime.productInputs.every((input) => input.skill === undefined), true)
+        assert.equal(
+          runtime.productInputs.every(
+            (input) => input.permissionProfile === 'read_only',
+          ),
+          true,
+        )
         for (const input of runtime.productInputs) {
           assert.equal('plan' in input, false)
           assert.ok(Buffer.byteLength(input.text, 'utf8') <= 128 * 1024)

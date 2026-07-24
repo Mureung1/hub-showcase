@@ -94,6 +94,7 @@ class StartProductTurnCommand:
     thread_id: str
     skill_name: str | None
     skill_path: str | None
+    permission_profile: Literal["read_only"] | None
     text: str
     command: Literal["start_product_turn"] = "start_product_turn"
 
@@ -361,20 +362,36 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             "text",
         }
         skill_fields = {"skillName", "skillPath"}
-        if set(value) == base_fields:
-            skill_name = None
-            skill_path = None
-        else:
-            _require_exact_fields(value, base_fields | skill_fields)
+        permission_fields = {"permissionProfile"}
+        fields = set(value)
+        allowed_fields = (
+            base_fields,
+            base_fields | skill_fields,
+            base_fields | permission_fields,
+            base_fields | skill_fields | permission_fields,
+        )
+        if fields not in allowed_fields:
+            raise ProtocolViolation("invalid_command")
+        if fields & skill_fields:
             skill_name = _require_bounded_string(value.get("skillName"), max_bytes=256)
             skill_path = _require_absolute_path(value.get("skillPath"))
             if os.path.basename(skill_path) != "SKILL.md":
                 raise ProtocolViolation("invalid_command")
+        else:
+            skill_name = None
+            skill_path = None
+        permission_profile = value.get("permissionProfile")
+        if "permissionProfile" in value:
+            if permission_profile != "read_only":
+                raise ProtocolViolation("invalid_command")
+        else:
+            permission_profile = None
         return StartProductTurnCommand(
             request_id,
             _require_nonempty_string(value.get("threadId")),
             skill_name,
             skill_path,
+            permission_profile,
             _require_bounded_string(value.get("text"), max_bytes=512 * 1024),
         )
     if command == "answer_user_input":

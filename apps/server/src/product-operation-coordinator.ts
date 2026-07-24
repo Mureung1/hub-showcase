@@ -1002,6 +1002,9 @@ export function createProductOperationCoordinator(options: {
       try {
         await requireAccount(operation)
         const courseId = currentCourseId(options.controller)
+        if (!courseId && input.materials.length > 0) {
+          requireCourseId(options.controller)
+        }
         if (courseId) {
           const preparedExecution =
             await options.controller.prepareProductChatExecution({
@@ -1015,13 +1018,11 @@ export function createProductOperationCoordinator(options: {
           operation.chat.guardPrepared = true
           operation.chat.scratchPath = preparedExecution.scratchPath
           operation.redactionValues.push(preparedExecution.scratchPath)
-        } else if (input.materials.length > 0) {
-          requireCourseId(options.controller)
         }
         operation.redactionValues.push(options.controller.nativeCwd())
         if (input.materials.length > 0) {
           const proposal = await options.controller.prepareAssignmentProposalSession({
-            courseId: courseId ?? requireCourseId(options.controller),
+            courseId: requireCourseId(options.controller),
             selectedMaterials: input.materials.map((material) => ({
               rawMaterialId: material.id,
               digest: material.digest,
@@ -1045,6 +1046,7 @@ export function createProductOperationCoordinator(options: {
               workspace: options.controller.nativeCwd(),
               mcp: options.mcpHost.nativeThreadConfig(operationOptions.mcpUrl),
             },
+            ...(courseId ? {} : { permissionProfile: 'read_only' as const }),
             text,
           },
           operationOptions.disconnected,

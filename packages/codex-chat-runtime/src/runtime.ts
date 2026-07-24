@@ -911,6 +911,9 @@ class NodeCodexChatRuntime implements CodexManagedRuntime {
         ...(skill === undefined
           ? {}
           : { skillName: skill.name, skillPath: skill.path }),
+        ...(input.permissionProfile === undefined
+          ? {}
+          : { permissionProfile: input.permissionProfile }),
         text,
       }),
       (frame) => {

@@ -1103,6 +1103,7 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
 
     const product = await harness.runtime.startProductTurn({
       threadId,
+      permissionProfile: 'read_only',
       text: 'Continue the product conversation.',
     })
     const iterator = product.events[Symbol.asyncIterator]()
@@ -1151,6 +1152,11 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
       turnStarts[1]?.params?.input,
       [{ type: 'text', text: 'Continue the product conversation.' }],
     )
+    assert.equal(turnStarts[1]?.params?.approvalPolicy, 'never')
+    assert.deepEqual(turnStarts[1]?.params?.sandboxPolicy, {
+      networkAccess: false,
+      type: 'readOnly',
+    })
     assert.deepEqual(
       journal.messages
         .map(({ method }) => method)

@@ -84,7 +84,7 @@ Persistent bridge와 workspace native-context sidecar는 모두 fixed `project_r
 | `GET /api/product/materials/:materialId/preview?digest=...` | Registry ID·digest와 live file을 재검증한 bounded UTF-8 preview를 반환한다. |
 | `POST /api/product/actions/first-assignment` | Exact Recipe·arguments·source 두 개를 admission한 뒤 durable Run과 curated action stream을 연다. |
 | `POST /api/product/actions/first-assignment/retry` | Prior retryable Run의 canonical input·ancestry를 검증한 뒤 새 Run·Turn·key로 한 번만 재시도한다. |
-| `POST /api/product/chat/messages` | Optional current material selection과 text로 no-Run product Chat stream을 연다. |
+| `POST /api/product/chat/messages` | Course 전에는 source를 포함하지 않은 text를 `deny_all + read_only` no-Run product Chat으로 실행한다. Course가 있으면 optional current material selection과 source/revision guard를 사용한다. |
 | `POST /api/product/operations/:operationId/interactions/:interactionId/answer|cancel` | Active 일반 Plan interaction을 same-Turn native response로 번역한다. Academic state는 바꾸지 않는다. |
 | `POST /api/product/reviews/:interactionId` | Exact Review binding의 수락·수정 요청·거절을 처리한다. 수락·거절 product transaction이 native answer보다 먼저다. |
 | `POST /api/product/operations/:operationId/interrupt` | Matching Turn의 interrupt acknowledgement를 반환하고 stream terminal을 authoritative outcome으로 유지한다. |
