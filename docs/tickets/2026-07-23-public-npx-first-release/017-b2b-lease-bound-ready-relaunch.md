@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: B2b implementation agent
 
 ## Parent Spec
 
@@ -49,6 +49,17 @@ Prepared setup이 A1의 transition lease를 통해 auth-only Runtime을 완전�
 - Targeted test or command: `@ay-ple/semester-workspace` Ready/relaunch tests, A1 callback integration race matrix, native-context clean/mismatch fixtures와 B-owned Server projection conformance
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
 - Manual or live smoke: Live provider는 요구하지 않는다. Deterministic Runtime/account fake로 first Ready, credential loss·resume, release mismatch와 same-version relaunch를 isolated roots에서 검증한다.
+
+## Claim Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Exact integration handoff | `279f7680a6be3f76e8c1a932d0d22c96cc20d651` — reviewed B2a closeout을 integration branch에 merge한 clean HEAD다. |
+| Completed predecessor | Ticket 016은 `State: completed`이고 reviewed B2a code tip `61915bcc56de32035e41947b296659e7f1ca5524`의 single-envelope store, prepared receipt와 exact workspace binding을 제공한다. |
+| A1 transition contract | Frozen `AccountRuntimeTransitionLease.transitionToWorkspace()`가 auth-only close, workspace Runtime start, fresh ChatGPT account read, B-owned `commitReady`와 independent `readReady`를 한 lease scope에 둔다. B2b는 이 Interface를 소비하며 lease나 Runtime generation을 복제하지 않는다. |
+| Observable result | Prepared receipt는 A1 lease callback 안의 native-context verification과 strict Ready commit/readback을 모두 통과한 경우에만 `active_ready`가 된다. Same-version relaunch는 locator를 authority로 쓰지 않고 workspace·bundle·release·native context·fresh account를 재검증한다. |
+| Highest practical seam | Isolated app-data/workspace roots의 production SetupJourney·State Adapter와 injected A1 lease/native-context/account fake를 함께 사용해 Ready commit fault, response loss, reauth, relaunch와 byte preservation을 검증한다. |
+| Writable scope | `packages/semester-workspace/**` 중 `package.json`·`src/contract.ts` 제외, `apps/server/src/setup/**`, `apps/server/src/workspace-admission/**`, 관련 colocated tests와 이 ticket만 수정한다. Shared contract, composition/UI, manifest·lockfile, Runtime·SDK patch는 변경하지 않는다. |
 
 ## Blocked By
 
