@@ -13,7 +13,7 @@
 //   → realtimeInfo 가 null 이면 "실시간 정보 없음"으로 표시한다.
 // ============================================================================
 
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { EmptyState, ErrorState } from '../components/ResultStates.jsx';
 import { useParkingLotDetail } from '../hooks/useParkingLotDetail.js';
 import { toRealtimeStatus } from '../utils/realtimeStatus.js';
@@ -35,10 +35,19 @@ function toLabel(labelMap, code) {
   return labelMap[code] ?? '정보 없음';
 }
 
-// [순수 함수] 금액(숫자) → "1,000원". 값이 없으면 '-'.
-//   toLocaleString(): 천 단위 콤마 자동(1000 → "1,000").
-function formatWon(won) {
-  if (won == null) return '-';
+// [값 없음 표시] 값이 없을 때: 전화번호가 있으면 '전화 문의'(사용자를 다음 행동으로 안내),
+//   없으면 '정보 없음'. 요금·운영시간 등 값이 비었을 때 공통으로 쓴다.
+function fallbackText(tel) {
+  return tel ? '전화 문의' : '정보 없음';
+}
+
+// [요금 값 있음?] 서울 API는 '미제공'을 null이 아니라 0으로 준다. 그래서 0·null 모두 '없음'으로 본다.
+function hasValue(v) {
+  return v != null && v > 0;
+}
+
+// [금액 → "1,000원"] toLocaleString(): 천 단위 콤마 자동(1000 → "1,000").
+function toWon(won) {
   return `${won.toLocaleString()}원`;
 }
 
@@ -47,11 +56,15 @@ function toHhmm(hhmm) {
   return `${hhmm.slice(0, 2)}:${hhmm.slice(2)}`;
 }
 
-// [순수 함수] HHMM 문자열 두 개 → 사람이 읽는 운영시간.
-//   "0000"~"2400" → "24시간", 그 외 → "09:00 ~ 18:00", 값 없으면 "정보 없음".
-function formatOperatingTime(start, end) {
-  if (!start || !end) return '정보 없음';
+// [순수 함수] HHMM 문자열 두 개 → 사람이 읽는 운영시간. 네 종류를 구분한다.
+//   null/빈값        → 정보 미제공(전화 문의/정보 없음)  ← 원본이 빈 문자열인 경우
+//   "0000"~"2400"    → "24시간"
+//   시작 == 끝(0000~0000 등) → "운영 안 함"(그 요일 휴무)  ← 미제공과 다른 의미
+//   그 외            → "09:00 ~ 18:00"
+function formatOperatingTime(start, end, tel) {
+  if (!start || !end) return fallbackText(tel);
   if (start === '0000' && end === '2400') return '24시간';
+  if (start === end) return '운영 안 함';
   return `${toHhmm(start)} ~ ${toHhmm(end)}`;
 }
 
@@ -130,17 +143,34 @@ function ParkingLotDetail() {
 
       <div className="info-card">
         <h3>요금 정보</h3>
-        {/* fee 객체의 각 필드로 요금 행 구성. fee?.x = fee가 없으면 에러 없이 undefined */}
-        <InfoRow label={`기본 ${fee?.basicMinutes ?? '-'}분`} value={formatWon(fee?.basicFee)} />
-        <InfoRow label={`추가 ${fee?.extraUnitMin ?? '-'}분`} value={formatWon(fee?.extraUnitFee)} />
-        <InfoRow label="일 최대" value={formatWon(fee?.dayMaxFee)} />
+        {/* 무료 주차장은 요금 항목을 나열하지 않고 '무료'만.
+            유료는 각 줄마다 값이 있으면 표시, 없으면(0·null) 전화 문의/정보 없음.
+            요금(fee)·시간(minutes)은 쌍이라 둘 다 있어야 "기본 30분 1,000원"으로 보여준다. */}
+        {payType === 'FREE' ? (
+          <InfoRow label="요금" value="무료" />
+        ) : (
+          <>
+            <InfoRow
+              label={hasValue(fee?.basicMinutes) ? `기본 ${fee.basicMinutes}분` : '기본 요금'}
+              value={hasValue(fee?.basicFee) && hasValue(fee?.basicMinutes) ? toWon(fee.basicFee) : fallbackText(tel)}
+            />
+            <InfoRow
+              label={hasValue(fee?.extraUnitMin) ? `추가 ${fee.extraUnitMin}분` : '추가 요금'}
+              value={hasValue(fee?.extraUnitFee) && hasValue(fee?.extraUnitMin) ? toWon(fee.extraUnitFee) : fallbackText(tel)}
+            />
+            <InfoRow
+              label="일 최대"
+              value={hasValue(fee?.dayMaxFee) ? toWon(fee.dayMaxFee) : fallbackText(tel)}
+            />
+          </>
+        )}
       </div>
 
       <div className="info-card">
         <h3>운영시간</h3>
-        <InfoRow label="평일" value={formatOperatingTime(operatingHours?.weekdayStart, operatingHours?.weekdayEnd)} />
-        <InfoRow label="주말" value={formatOperatingTime(operatingHours?.weekendStart, operatingHours?.weekendEnd)} />
-        <InfoRow label="공휴일" value={formatOperatingTime(operatingHours?.holidayStart, operatingHours?.holidayEnd)} />
+        <InfoRow label="평일" value={formatOperatingTime(operatingHours?.weekdayStart, operatingHours?.weekdayEnd, tel)} />
+        <InfoRow label="주말" value={formatOperatingTime(operatingHours?.weekendStart, operatingHours?.weekendEnd, tel)} />
+        <InfoRow label="공휴일" value={formatOperatingTime(operatingHours?.holidayStart, operatingHours?.holidayEnd, tel)} />
       </div>
     </>
   );
@@ -181,13 +211,16 @@ function RealtimeCard({ realtimeInfo }) {
   );
 }
 
-// 상단 뒤로가기 바. 작은 컴포넌트로 분리해 로딩/에러 등 여러 상태 화면과 공유한다.
+// 상단 바: 왼쪽 '목록으로'(뒤로가기) + 오른쪽 '홈'(첫 화면으로).
+// 작은 컴포넌트로 분리해 로딩/에러 등 여러 상태 화면과 공유한다.
 function TopBar({ onBack }) {
   return (
     <div className="topbar">
       <button type="button" className="back" onClick={onBack}>
         &lsaquo; 목록으로
       </button>
+      {/* Link to="/" : 클릭 시 새로고침 없이 홈으로 이동 */}
+      <Link className="home-link" to="/">홈</Link>
     </div>
   );
 }
