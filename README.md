@@ -1,5 +1,7 @@
 # 진로 에이전트 서비스 (링커리어 공고 추천 & 자소서 초안 Agent)
 
+**배포된 서비스**: [hub-two-rosy.vercel.app](https://hub-two-rosy.vercel.app) (Frontend, Vercel) · [hub-071a.onrender.com](https://hub-071a.onrender.com) (Backend, Render)
+
 ## 문제 정의
 
 대학생은 신입 공채·인턴십·공모전·대외활동 공고 중 자신에게 맞는 것을 고르기 어렵고, 자기소개서 문항에 맞춰 자기 경험을 정리해 쓰는 데도 어려움을 겪는다.
