@@ -1,7 +1,11 @@
 // geminiComplete() 공통 헬퍼 (프록시 /api/gemini 경유), parseJsonLoose() 응답 JSON 파싱 헬퍼
 import { fetchWithTimeout } from './fetchWithTimeout.js'
 
-export async function geminiComplete({ prompt, system, imageBase64, mimeType } = {}) {
+// schema/schemaName: OpenRouter 구조화 출력(response_format: json_schema)으로 응답 형식을 강제한다
+//   (스키마 정의는 geminiSchemas.js). 서버가 스키마 강제 실패 시 스키마 없이 재시도하므로,
+//   호출부는 여전히 parseJsonLoose + 검증 함수로 응답을 확인해야 한다.
+// temperature: 수치 추정 호출은 낮게(일관성), 추천 문구 호출은 조금 높게(다양성) — geminiSchemas.js 표 참고.
+export async function geminiComplete({ prompt, system, imageBase64, mimeType, schema, schemaName, temperature } = {}) {
   if (!prompt || typeof prompt !== 'string') {
     throw new Error('prompt is required')
   }
@@ -9,7 +13,7 @@ export async function geminiComplete({ prompt, system, imageBase64, mimeType } =
   const res = await fetchWithTimeout('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, system, imageBase64, mimeType }),
+    body: JSON.stringify({ prompt, system, imageBase64, mimeType, schema, schemaName, temperature }),
   })
 
   const data = await res.json().catch(() => null)

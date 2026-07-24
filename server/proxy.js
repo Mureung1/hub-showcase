@@ -148,7 +148,7 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
     return res.status(500).json({ error: 'OPENROUTER_API_KEY is not configured on the server' })
   }
 
-  const { prompt, system, imageBase64, mimeType } = req.body || {}
+  const { prompt, system, imageBase64, mimeType, schema, schemaName, temperature } = req.body || {}
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'prompt is required' })
   }
@@ -166,8 +166,20 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
   }
   messages.push({ role: 'user', content })
 
-  try {
-    const openRouterRes = await fetchWithRetry(OPENROUTER_URL, {
+  // 구조화 출력(json_schema)·temperature — 클라이언트(geminiSchemas.js)가 호출별로 실어 보낸다.
+  const requestBody = { model: MODEL, messages }
+  if (typeof temperature === 'number' && temperature >= 0 && temperature <= 2) {
+    requestBody.temperature = temperature
+  }
+  if (schema && typeof schema === 'object') {
+    requestBody.response_format = {
+      type: 'json_schema',
+      json_schema: { name: typeof schemaName === 'string' ? schemaName : 'result', strict: true, schema },
+    }
+  }
+
+  const callOpenRouter = (body) =>
+    fetchWithRetry(OPENROUTER_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -175,21 +187,37 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
         'HTTP-Referer': APP_REFERER,
         'X-Title': APP_TITLE,
       },
-      body: JSON.stringify({ model: MODEL, messages }),
+      body: JSON.stringify(body),
     })
 
-    const data = await openRouterRes.json()
+  try {
+    const startedAt = Date.now()
+    let openRouterRes = await callOpenRouter(requestBody)
+    let data = await openRouterRes.json()
+
+    // 스키마 강제가 원인일 수 있는 실패(4xx)면 스키마 없이 1회 재시도한다 — 모델/프로바이더가
+    // 구조화 출력을 거부해도 기능 전체가 죽지 않게. 클라이언트의 parseJsonLoose가 그 폴백을 받는다.
+    if (!openRouterRes.ok && requestBody.response_format && openRouterRes.status < 500) {
+      console.warn(
+        `OpenRouter response_format 요청 실패(${openRouterRes.status}) — 스키마 없이 재시도:`,
+        data?.error?.message || '',
+      )
+      const { response_format, ...withoutSchema } = requestBody
+      openRouterRes = await callOpenRouter(withoutSchema)
+      data = await openRouterRes.json()
+    }
 
     if (!openRouterRes.ok) {
       console.error('OpenRouter API error:', data)
       return res.status(openRouterRes.status).json({ error: data?.error?.message || 'OpenRouter API error' })
     }
 
-    // 토큰 사용량 로그 — docs/cost-analysis.md의 추정치를 실측값으로 교체할 때 이 로그를 근거로 쓴다.
+    // 토큰 사용량·응답 시간 로그 — docs/cost-analysis.md의 추정치를 실측값으로 교체할 때 근거로 쓴다.
     if (data?.usage) {
       console.log(
         `Gemini usage: prompt=${data.usage.prompt_tokens ?? '?'} completion=${data.usage.completion_tokens ?? '?'} ` +
-          `total=${data.usage.total_tokens ?? '?'} image=${imageBase64 ? 'Y' : 'N'}`,
+          `total=${data.usage.total_tokens ?? '?'} image=${imageBase64 ? 'Y' : 'N'} ` +
+          `schema=${requestBody.response_format ? 'Y' : 'N'} ${Date.now() - startedAt}ms`,
       )
     }
 

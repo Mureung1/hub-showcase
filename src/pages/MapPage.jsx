@@ -8,6 +8,7 @@ import PlaceList from '../components/PlaceList.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import Spinner from '../components/Spinner.jsx'
 import { geminiCompleteWithRetry, parseJsonLoose } from '../lib/gemini.js'
+import { EXPECTED_INTAKE_SCHEMA, GEMINI_TEMPERATURE, KEYWORDS_SCHEMA } from '../lib/geminiSchemas.js'
 import { getCurrentPosition } from '../lib/geolocation.js'
 import { ALLERGY_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
 import {
@@ -93,7 +94,12 @@ async function fetchSearchKeywords(deficientRows, category, { sodiumExceeded = f
   }
 
   try {
-    const text = await geminiCompleteWithRetry({ prompt: buildKeywordsPrompt(deficientRows, category, { sodiumExceeded }) })
+    const text = await geminiCompleteWithRetry({
+      prompt: buildKeywordsPrompt(deficientRows, category, { sodiumExceeded }),
+      schema: KEYWORDS_SCHEMA,
+      schemaName: 'search_keywords',
+      temperature: GEMINI_TEMPERATURE.keywords,
+    })
     const parsed = parseJsonLoose(text)
     const keywords = (parsed?.keywords || [])
       .map((k) => (typeof k === 'string' ? k : k?.keyword))
@@ -226,8 +232,8 @@ function buildExpectedPrompt(places, deficientRows, allergyLabels = [], { sodium
 - representativeMenu는 그 식당 카테고리에서 실제로 흔히 파는 구체적인 메뉴명이어야 한다(예: "국밥" 카테고리 → "쇠고기국밥"). 식당 이름이나 카테고리를 그대로 반복하지 마라.
 - 수치는 식품의약품안전처 한국식품영양성분 데이터베이스(국가표준식품성분표)와 한국영양학회 기준값 수준의 표준 1인분 기준으로 계산해라. (URL 조회가 아니라 네가 아는 그 DB 수준의 기준값이라는 의미다.)
 - 과대추정 금지: 통상적인 1인분 현실 범위를 벗어나면 스스로 재검토하고 보수적인 값으로 고쳐라.
-- expected에는 부족한 영양소 키(${deficientKeys})를 반드시 포함해라.
-- 사용할 수 있는 키와 단위: calories(kcal), protein(g), carbs(g), fat(g), fiber(g), sodium(mg). 값은 숫자만.
+- expected에는 부족한 영양소 키(${deficientKeys})를 반드시 숫자로 포함하고, 나머지 키도 아는 값이면 숫자로, 확신이 없으면 null로 채워라.
+- 사용할 수 있는 키와 단위: calories(kcal), protein(g), carbs(g), fat(g), fiber(g), sodium(mg).
 - place_name은 아래 목록의 이름과 정확히 같아야 한다.${allergyLine}${sodiumLine}
 
 식당 목록:
@@ -246,7 +252,12 @@ async function attachExpectedIntake(places, deficientRows, allergyLabels = [], {
   if (places.length === 0 || deficientRows.length === 0) return places
 
   try {
-    const text = await geminiCompleteWithRetry({ prompt: buildExpectedPrompt(places, deficientRows, allergyLabels, { sodiumExceeded }) })
+    const text = await geminiCompleteWithRetry({
+      prompt: buildExpectedPrompt(places, deficientRows, allergyLabels, { sodiumExceeded }),
+      schema: EXPECTED_INTAKE_SCHEMA,
+      schemaName: 'expected_intake',
+      temperature: GEMINI_TEMPERATURE.expectedIntake,
+    })
     const parsed = parseJsonLoose(text)
     const byName = new Map(
       (parsed?.places || [])

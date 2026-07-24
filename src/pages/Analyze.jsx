@@ -14,6 +14,7 @@ import { useUser } from '../context/UserContext.jsx'
 import { pickBestFoodMatch, searchFoodDB } from '../lib/fooddb.js'
 import { normalizeFoodSearchName } from '../lib/foodNameMap.js'
 import { geminiCompleteWithRetry, parseJsonLoose } from '../lib/gemini.js'
+import { GEMINI_TEMPERATURE, IDENTIFICATION_SCHEMA, LABEL_SCAN_SCHEMA } from '../lib/geminiSchemas.js'
 import { getRecommendedMealType } from '../lib/mealType.js'
 import { sumNutrients } from '../lib/mealStore.js'
 import {
@@ -221,6 +222,9 @@ async function resolveTextAnalysis(menuName, brand) {
     text = await geminiCompleteWithRetry({
       prompt: buildTextIdentificationPrompt(menuName, brand),
       system: TEXT_IDENTIFICATION_SYSTEM_PROMPT,
+      schema: IDENTIFICATION_SCHEMA,
+      schemaName: 'food_identification',
+      temperature: GEMINI_TEMPERATURE.identification,
     })
   } catch (err) {
     console.error('text meal analysis (gemini) failed:', err)
@@ -290,6 +294,9 @@ async function resolveLabelScan(photo) {
       system: LABEL_SCAN_SYSTEM_PROMPT,
       imageBase64: photo.base64,
       mimeType: photo.mimeType,
+      schema: LABEL_SCAN_SCHEMA,
+      schemaName: 'label_scan',
+      temperature: GEMINI_TEMPERATURE.labelScan,
     })
   } catch (err) {
     console.error('label scan (gemini) failed:', err)
@@ -545,6 +552,9 @@ export default function Analyze() {
           system: IDENTIFICATION_SYSTEM_PROMPT,
           imageBase64: photo.base64,
           mimeType: photo.mimeType,
+          schema: IDENTIFICATION_SCHEMA,
+          schemaName: 'food_identification',
+          temperature: GEMINI_TEMPERATURE.identification,
         })
         const identified = parseJsonLoose(text)
 

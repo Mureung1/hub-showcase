@@ -12,6 +12,7 @@ import Skeleton from '../components/Skeleton.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { displayProductName, nutrientLabel, productsForNutrient } from '../data/coupangProducts.js'
 import { geminiCompleteWithRetry, parseJsonLoose } from '../lib/gemini.js'
+import { GEMINI_TEMPERATURE, RECOMMENDATION_SCHEMA } from '../lib/geminiSchemas.js'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
 import { clampExpectedForItems, enrichExpectedFromDB } from '../lib/menuNutrition.js'
 import { buildDeficiencyRows, calcAchievementPercent, isSodiumExceeded, NUTRIENT_LABELS } from '../lib/nutrition.js'
@@ -44,8 +45,8 @@ function buildRecommendationPrompt(deficientRows, allergyLabels = [], conditionL
 2. 각 메뉴마다, 그 메뉴의 "한국 표준 1인분"을 먹었을 때 예상되는 주요 영양 섭취량을 expected 객체로 함께 계산해라.
    - 수치는 식품의약품안전처 한국식품영양성분 데이터베이스(국가표준식품성분표) 수준의 표준값 기준으로 계산해라. (URL 조회가 아니라 네가 아는 그 DB 수준의 기준값이라는 의미다.)
    - 과대추정 금지: 그 메뉴의 통상적인 1인분 현실 범위를 벗어나는 값이 나오면 스스로 재검토하고 보수적인 값으로 고쳐라.
-   - expected에는 부족한 영양소 키(${deficientKeys})를 반드시 포함하고, 필요하면 calories도 포함해도 된다.
-   - 사용할 수 있는 키와 단위: calories(kcal), protein(g), carbs(g), fat(g), fiber(g), sodium(mg). 값은 숫자만.${constraintBlock}
+   - expected에는 부족한 영양소 키(${deficientKeys})를 반드시 숫자로 포함하고, 나머지 키도 아는 값이면 숫자로, 확신이 없으면 null로 채워라.
+   - 사용할 수 있는 키와 단위: calories(kcal), protein(g), carbs(g), fat(g), fiber(g), sodium(mg).${constraintBlock}
 
 설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
 {
@@ -154,7 +155,12 @@ export default function Result() {
     setRecError('')
     try {
       const prompt = buildRecommendationPrompt(top3Rows, allergyLabels, conditionLabels, { sodiumExceeded })
-      const text = await geminiCompleteWithRetry({ prompt })
+      const text = await geminiCompleteWithRetry({
+        prompt,
+        schema: RECOMMENDATION_SCHEMA,
+        schemaName: 'menu_recommendation',
+        temperature: GEMINI_TEMPERATURE.recommendation,
+      })
       const parsed = parseJsonLoose(text)
 
       if (!isMenuRecommendationList(parsed)) {
