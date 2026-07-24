@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import * as productContract from '@ay-ple/product-contract'
-import * as productContractTesting from '@ay-ple/product-contract/testing'
 import {
   FIRST_ASSIGNMENT_ARGUMENTS,
   FIRST_ASSIGNMENT_RECIPE_VERSION,
@@ -45,12 +44,6 @@ test('package root exposes the exact runtime contract surface', () => {
     'decodeProductWorkspace',
     'decodeProductWorkspaceActivationResponse',
     'decodeProductWorkspaceResponse',
-    'decodePublicPreviewAccountProjection',
-    'decodePublicPreviewBootstrap',
-    'decodePublicPreviewCommand',
-    'decodePublicPreviewError',
-    'decodePublicPreviewResponse',
-    'decodePublicPreviewSetupProjection',
     'isProductDecisionKey',
     'isProductDigest',
     'isProductInteractionId',
@@ -58,17 +51,6 @@ test('package root exposes the exact runtime contract surface', () => {
     'isProductOperationId',
     'isProductPatchId',
     'isProductQuestionId',
-  ])
-})
-
-test('public preview fixtures are available only from the testing subpath', () => {
-  assert.deepEqual(Object.keys(productContractTesting).sort(), [
-    'PUBLIC_PREVIEW_ACCOUNT_FIXTURES',
-    'PUBLIC_PREVIEW_COMMAND_FIXTURES',
-    'PUBLIC_PREVIEW_INVALID_RESPONSE_FIXTURES',
-    'PUBLIC_PREVIEW_RESPONSE_FIXTURES',
-    'PUBLIC_PREVIEW_SCENARIO_FIXTURES',
-    'PUBLIC_PREVIEW_SETUP_FIXTURES',
   ])
 })
 

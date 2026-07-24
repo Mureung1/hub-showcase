@@ -18,7 +18,7 @@
 
 공식 Landing은 현재 제품 surface가 아니며 구현 workspace도 제거했다. Public release lane도 현재 구현 목표가 아니다. 이 문서에 남아 있는 첫 public preview·release 서술은 2026-07-23까지 검토한 historical design context이고 현재 backlog나 구현 순서를 정하지 않는다.
 
-다음 제품 목표와 기존 public-release 구현의 존치 범위는 아직 확정하지 않았다. 현재 구현을 먼저 감사하고 불필요한 surface를 줄인 뒤 별도 대화와 문서 정리로 결정한다. OAuth, auth-only Runtime, app-owned `SemesterWorkspace` setup·Ready처럼 다른 경로에서도 재사용할 수 있는 capability는 감사 전까지 제거 또는 채택으로 판정하지 않는다.
+다음 제품 목표는 아직 확정하지 않았다. 2026-07-24 구현 감사에서 Landing·public release lane에 이어 public-preview Server·Browser graph, Browser OAuth composition과 app-owned `SemesterWorkspace` setup·Ready surface를 제거했다. Current executable consumer가 없는 auth-only Runtime과 v3 workspace package primitive의 존치는 별도 pruning에서 판정한다.
 
 AY-PLE는 새로운 범용 Agent framework를 만드는 제품이 아니다. 일반적인 Codex 사용 방식 위에 학기 작업공간, 반복 가능한 학업 작업, 자료 선택, 구조화된 변경 제안, 사용자 검토를 얇게 더한다. 실행 엔진은 Codex이고, AY는 그 실행 능력을 학생이 이해할 수 있는 언어와 화면으로 제공하는 제품 속 상호작용 주체다.
 
@@ -75,7 +75,7 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 
 첫 public 제품 진입점은 공식 product homepage인 Landing에서 exact-version public `npx` 명령을 복사해 실행하고, local companion과 browser UI를 여는 **macOS-first local web app**이다. Landing은 AY-PLE의 장기 제품 가치와 현재 preview capability를 구분해 보여주며 Docs, public repository와 license·trust 정보로 이어진다. Public source는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)의 clean snapshot·Apache-2.0·trust authority를 따르며, Packaged Desktop App은 이 경로를 검증한 뒤의 후속 로드맵이다.
 
-[Official SDK 기반 Codex Chat Shell](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)과 First Assignment vertical은 native 실행과 학업 product boundary를 검증한 현재 kernel이다. Public `npx` 배포는 더 이상 채택 목표가 아니며, Browser OAuth와 first-run setup을 어떤 실행 경로에서 유지할지는 구현 감사 뒤 결정한다. 당시 exact public command·application host·Runtime delivery·offline과 rollback 경계는 historical [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)이 보존한다.
+[Official SDK 기반 Codex Chat Shell](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)과 First Assignment vertical은 native 실행과 학업 product boundary를 검증한 현재 kernel이다. Public `npx` 배포, Browser OAuth와 first-run setup surface는 current graph에서 제거했다. 당시 exact public command·application host·Runtime delivery·offline과 rollback 경계는 historical [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)이 보존한다.
 
 첫 preview의 `Codex 연결`은 AY-PLE이 중재하는 official Codex-managed ChatGPT Browser login이다. 학생은 official OpenAI/Codex tab에서 인증을 마친 뒤 AY-PLE tab으로 돌아오고, 앱이 fresh managed account state를 확인해 setup을 이어간다. Credential bytes는 AY-PLE product surface·API에 전달되지 않고 제품 코드가 parse하지 않으며 별도 인증 완료 receipt도 만들지 않는다. 연결 만료·logout·reauth에도 `SemesterWorkspace`와 학업 상태를 보존한다. 정확한 account·credential authority는 [ADR 0017](../adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md)이 소유한다.
 

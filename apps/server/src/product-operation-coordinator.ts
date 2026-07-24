@@ -34,10 +34,6 @@ import {
   type CodexProductStreamSink,
   type ProductOperationLease,
 } from './codex-chat-service.js'
-import type {
-  AccountRuntimeLeaseFailure,
-  AccountRuntimeOperationResult,
-} from './account-runtime/contract.js'
 import {
   SemesterWorkspaceError,
   StatePatchReviewError,
@@ -109,13 +105,6 @@ export type ProductOperationOptions = {
   readonly disconnected: () => boolean
   readonly mcpUrl: string
   readonly sink: ProductOperationSink
-}
-
-export interface AccountRuntimeProductOperationLease {
-  runAccountOperation<TResult>(input: {
-    readonly signal: AbortSignal
-    readonly operation: () => Promise<TResult>
-  }): Promise<AccountRuntimeOperationResult<TResult>>
 }
 
 type ActiveProductOperationBase = {
@@ -205,7 +194,6 @@ export function createProductOperationCoordinator(options: {
   readonly controller: SemesterWorkspaceController
   readonly mcpHost: AssignmentMcpHost
   readonly service: CodexChatService
-  readonly accountRuntimeLease?: AccountRuntimeProductOperationLease
 }): ProductOperationCoordinator {
   let active: ActiveProductOperation | undefined
   let shuttingDown = false
@@ -1316,64 +1304,7 @@ export function createProductOperationCoordinator(options: {
       if (active?.turn) options.service.disconnectProductTurn(active.turn)
     },
   }
-  return options.accountRuntimeLease
-    ? guardProductOperationCoordinatorWithAccountRuntimeLease(
-        coordinator,
-        options.accountRuntimeLease,
-      )
-    : coordinator
-}
-
-export function guardProductOperationCoordinatorWithAccountRuntimeLease(
-  coordinator: ProductOperationCoordinator,
-  lease: AccountRuntimeProductOperationLease,
-): ProductOperationCoordinator {
-  const waitingAdmissions = new Set<AbortController>()
-  let shuttingDown = false
-
-  const run = async (operation: () => Promise<void>): Promise<void> => {
-    if (shuttingDown) throw unavailable()
-    const admission = new AbortController()
-    waitingAdmissions.add(admission)
-    let result: AccountRuntimeOperationResult<
-      | { readonly status: 'completed' }
-      | { readonly status: 'operation_failed'; readonly error: unknown }
-    >
-    try {
-      result = await lease.runAccountOperation({
-        signal: admission.signal,
-        operation: async () => {
-          try {
-            await operation()
-            return { status: 'completed' as const }
-          } catch (error) {
-            return { status: 'operation_failed' as const, error }
-          }
-        },
-      })
-    } finally {
-      waitingAdmissions.delete(admission)
-    }
-    if (result.status === 'failed') {
-      throw presentAccountRuntimeLeaseFailure(result.error)
-    }
-    if (result.result.status === 'operation_failed') {
-      throw result.result.error
-    }
-  }
-
-  return {
-    ...coordinator,
-    startAssignment: (input, options) =>
-      run(() => coordinator.startAssignment(input, options)),
-    sendChat: (input, options) =>
-      run(() => coordinator.sendChat(input, options)),
-    beginShutdown() {
-      shuttingDown = true
-      for (const admission of waitingAdmissions) admission.abort()
-      coordinator.beginShutdown()
-    },
-  }
+  return coordinator
 }
 
 async function settlePreAcceptanceFailure(
@@ -1865,22 +1796,6 @@ function presentProductOperationError(error: unknown): ProductOperationError {
 function presentServiceError(error: unknown): ProductOperationError {
   if (error instanceof ProductOperationError) return error
   if (error instanceof CodexChatServiceError && error.code === 'active_turn') {
-    return new ProductOperationError(
-      'action_busy',
-      409,
-      '다른 Codex 작업이 진행 중입니다.',
-    )
-  }
-  return unavailable()
-}
-
-function presentAccountRuntimeLeaseFailure(
-  failure: AccountRuntimeLeaseFailure,
-): ProductOperationError {
-  if (
-    failure.code === 'account_operation_active' ||
-    failure.code === 'transition_cancelled'
-  ) {
     return new ProductOperationError(
       'action_busy',
       409,

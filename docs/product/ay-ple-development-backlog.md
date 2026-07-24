@@ -95,8 +95,9 @@
   - [ ] Landing처럼 확정적으로 제거할 surface, 학업 kernel에 재사용할 기반, historical evidence로만 보존할 artifact를 구분한다.
   - [x] Runtime resolver와 public application host는 repository-local 실행의 consumer가 없음을 확인하고 tracked graph에서 제거했다.
   - [x] Current dev·dogfood의 isolated Codex auth profile을 제거하고 caller의 전역 `CODEX_HOME`을 항상 재사용한다.
-  - [ ] Public-preview Server graph, Browser OAuth·auth-only Runtime, app-owned `SemesterWorkspace` setup·Ready를 각각 `keep | remove | undecided`로 판정하기 전에는 구현 순서나 삭제 범위를 확정하지 않는다.
-  - [ ] 감사 결과를 Product Brief, 구현 지도와 이 backlog에 먼저 반영한 뒤 다음 구현 목표를 정한다.
+  - [x] Public-preview Server·Browser graph, Account coordinator, OAuth/setup UI와 shared wire contract를 제거하고 `/api/product/*` current-v2 product graph만 남겼다.
+  - [ ] Current executable consumer가 없는 Runtime managed account·auth-only primitive와 `@ay-ple/semester-workspace` v3 admission·setup kernel은 별도 pruning에서 `keep | remove`를 판정한다.
+  - [x] 감사 결과를 구현 지도, Runtime 격리 문서와 이 backlog에 반영했다.
 
 - [ ] 확인된 사용자 필요에 따라 post-Ready capability를 순서대로 추가한다.
   - [ ] 기존 폴더와 자료 묶음을 `ImportSource`로 분석하고 mapping·반입 제안을 사용자 검토 뒤 app-owned `SemesterWorkspace`의 Course·`RawMaterial`로 만드는 첫 자료 가져오기 여정을 추가한다. 임의의 기존 폴더를 workspace로 직접 열지 않는다.

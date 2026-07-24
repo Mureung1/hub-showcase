@@ -11,8 +11,6 @@ import {
   decodeProductMaterialRefreshResponse,
   decodeProductMaterialPreview,
   decodeProductOperationFrame,
-  decodePublicPreviewCommand,
-  decodePublicPreviewResponse,
   decodeProductReviewRequest,
   decodeProductReviewResponse,
   decodeProductWorkspaceActivationResponse,
@@ -28,8 +26,6 @@ import {
   type ProductMaterialPreview,
   type ProductMaterialRefreshResponse,
   type ProductOperationFrame,
-  type PublicPreviewCommand,
-  type PublicPreviewResponse,
   type ProductRawMaterial,
   type ProductReviewRequest,
   type ProductReviewResponse,
@@ -63,16 +59,11 @@ export type {
   ProductUserConfirmation,
   ProductWorkspace,
   ProductWorkspaceActivationResponse,
-  PublicPreviewBootstrap,
-  PublicPreviewCommand,
-  PublicPreviewError,
-  PublicPreviewResponse,
   ReadyProductWorkspace,
 } from '@ay-ple/product-contract'
 
 const maxProductNdjsonLineBytes = 1024 * 1024
 const productSettlementPollMs = 100
-const publicPreviewUrl = '/api/product/public-preview'
 const safeInvalidResponse = '학기 작업공간 응답을 확인하지 못했습니다.'
 
 export class ProductApiError extends Error {
@@ -103,33 +94,6 @@ export async function fetchProductBootstrap(
   })
   if (!response.ok) throw await toProductApiError(response)
   return parseJsonResponse(response, decodeProductBootstrap)
-}
-
-export async function fetchPublicPreviewResponse(
-  signal?: AbortSignal,
-): Promise<PublicPreviewResponse> {
-  const response = await fetch(publicPreviewUrl, {
-    headers: { accept: 'application/json' },
-    signal,
-  })
-  return parsePublicPreviewResponse(response)
-}
-
-export async function executePublicPreviewCommand(
-  input: PublicPreviewCommand,
-  signal?: AbortSignal,
-): Promise<PublicPreviewResponse> {
-  const command = decodeShared(decodePublicPreviewCommand, input)
-  const response = await fetch(publicPreviewUrl, {
-    method: 'POST',
-    headers: {
-      accept: 'application/json',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(command),
-    signal,
-  })
-  return parsePublicPreviewResponse(response)
 }
 
 export async function fetchSettledProductBootstrap(
@@ -437,14 +401,6 @@ async function parseJsonResponse<T>(
   decode: (value: unknown) => T,
 ): Promise<T> {
   return decodeShared(decode, await parseJson(response))
-}
-
-async function parsePublicPreviewResponse(
-  response: Response,
-): Promise<PublicPreviewResponse> {
-  const result = await parseJsonResponse(response, decodePublicPreviewResponse)
-  if (!response.ok && result.status === 'ok') throw invalidResponse()
-  return result
 }
 
 async function parseJson(response: Response): Promise<unknown> {

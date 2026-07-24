@@ -6,7 +6,7 @@
 
 대체한 결정: 기존 `HeadlessCodexClientHost` 제품 seam과 community TypeScript fork 기반 자체 runtime 계획
 
-관련 제품 인증 결정: [ADR 0017 — 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md). 이 ADR은 official SDK·process mechanics를 계속 소유하고, managed account authority와 product lifecycle은 ADR 0017이 소유한다.
+역사적 제품 인증 결정: [ADR 0017 — 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md). 이 ADR은 official SDK·process mechanics를 계속 소유한다. ADR 0017의 public-preview managed account lifecycle은 제거됐고 현재 dev·dogfood의 account authority는 전역 `CODEX_HOME`이다.
 
 ## 맥락
 
