@@ -10,7 +10,7 @@ Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 p
 
 ## Public-preview application graph
 
-`@ay-ple/server` package root는 side-effect-free `createServerApplication()`, listener lifecycle 순서를 캡슐화한 `listenToServerApplication()`과 startup 실패 뒤 retryable cleanup authority를 보존하는 `ServerStartupCleanupError`를 공개한다. Host는 내부 listener claim이나 Runtime ownership을 재구성하지 않고, 이 error의 `close({ signal })`로 한 번의 후속 cleanup을 요청할 수 있다. `publicPreview`와 legacy `codexChat`·`productRuntime`·`semesterWorkspace` bootstrap은 한 application에서 함께 사용할 수 없다. 따라서 하나의 application graph에 두 Runtime owner나 두 workspace authority가 생기지 않는다.
+`@ay-ple/server` package root는 side-effect-free `createServerApplication()`, listener lifecycle 순서를 캡슐화한 `listenToServerApplication()`과 startup 실패 뒤 retryable cleanup authority를 보존하는 `ServerStartupCleanupError`를 공개한다. Host는 내부 listener claim이나 Runtime ownership을 재구성하지 않고 이 error의 `close({ signal })`로 후속 cleanup을 요청할 수 있다. Concurrent close는 같은 attempt를 공유하고 proven complete cleanup만 terminal result로 latch한다. Reject·ambiguous attempt는 shutdown과 intake 차단을 유지한 채 다음 caller signal로 다시 시도할 수 있다. `publicPreview`와 legacy `codexChat`·`productRuntime`·`semesterWorkspace` bootstrap은 한 application에서 함께 사용할 수 없다. 따라서 하나의 application graph에 두 Runtime owner나 두 workspace authority가 생기지 않는다.
 
 Public-preview graph는 다음 순서를 소유한다.
 
@@ -127,7 +127,7 @@ Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Or
 
 ## NDJSON과 shutdown
 
-Neutral Server-private NDJSON writer는 legacy development product stream의 backpressure·disconnect와 bounded drain을 소유한다. `CodexChatService`는 Runtime terminal을 한 번 관찰하고 accepted operation의 interrupt·terminal·unknown settlement를 관리한다. `createServerApplication().close()`는 새 work·listener restart를 막고 listener close를 시작한 뒤 active command/picker/transition을 abort·drain하고 Runtime close를 한 promise로 수렴한다. Python·native process group과 pipe가 사라진 뒤에만 resolve하며 ambiguous public-preview Runtime cleanup은 성공으로 합성하지 않는다. Composition 초기화나 초기 auth-only role 검증 중 첫 Runtime cleanup이 reject·ambiguous이면 `ServerStartupCleanupError`가 Runtime 구현을 노출하지 않는 retryable close closure를 보존한다. Listener bind 또는 address 확인 실패 뒤 application cleanup이 reject되면 원래 bind 오류로 덮지 않고 stable listener-start cleanup failure를 반환한다.
+Neutral Server-private NDJSON writer는 legacy development product stream의 backpressure·disconnect와 bounded drain을 소유한다. `CodexChatService`는 Runtime terminal을 한 번 관찰하고 accepted operation의 interrupt·terminal·unknown settlement를 관리한다. `createServerApplication().close()`는 새 work·listener restart를 막고 listener close를 시작한 뒤 active command/picker/transition을 abort·drain하고 Runtime close를 attempt별 single-flight promise로 수렴한다. Python·native process group과 pipe가 사라진 proven complete cleanup만 latch하며 ambiguous public-preview Runtime cleanup은 성공으로 합성하지 않는다. Composition 초기화, 초기 auth-only role 검증, listener bind 또는 address 확인 뒤 cleanup이 reject·ambiguous이면 같은 root-exported `ServerStartupCleanupError`가 Runtime·coordinator를 노출하지 않는 high-level retry closure를 보존한다. 후속 close는 새 caller signal로 listener와 application cleanup 전체를 다시 조정하며 product intake와 account/Runtime lease는 계속 닫혀 있다.
 
 `npm run test:product-entrypoint`는 root canonical command가 explicit `appDataRoot`와 workspace selection만으로 product API·Browser를 열고 legacy path를 무시하며 SIGINT 뒤 OS process graph와 port를 bounded하게 정리하는지 검증한다. `npm run test:product-shutdown-actual -w @ay-ple/server`는 product-capable Runtime process tree에서 listener refusal, close ordering과 child-of-child reap을 별도로 증명한다.
 

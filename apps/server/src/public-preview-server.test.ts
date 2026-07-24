@@ -438,6 +438,158 @@ test('shutdown aborts an in-flight native parent picker before waiting for comma
   }
 })
 
+test('composition close shares one attempt, retries ambiguity, and latches only proven cleanup', async () => {
+  const fixture = await createFixture({ authInitiallyConnected: true })
+  let feature: PublicPreviewFeatureComposition | undefined
+  try {
+    let closeCalls = 0
+    const closeSignals: AbortSignal[] = []
+    const runtimeOwner = withCloseCurrent(
+      fixture.runtimeOwner,
+      async (input) => {
+        closeCalls += 1
+        closeSignals.push(input.signal)
+        if (closeCalls === 1) {
+          return {
+            status: 'ambiguous',
+            processTreeGone: false,
+          }
+        }
+        return fixture.runtimeOwner.closeCurrent(input)
+      },
+    )
+    feature = await createPublicPreviewFeatureComposition(
+      fixture.bootstrap('http://127.0.0.1:43123'),
+      { runtimeOwner },
+    )
+    const firstSignal = signal()
+    const ignoredConcurrentSignal = signal()
+    const retrySignal = signal()
+
+    const first = feature.close({ signal: firstSignal })
+    const concurrent = feature.close({
+      signal: ignoredConcurrentSignal,
+    })
+    assert.equal(concurrent, first)
+    assert.deepEqual(await first, {
+      status: 'ambiguous',
+      processTreeGone: false,
+    })
+
+    const retry = feature.close({ signal: retrySignal })
+    assert.notEqual(retry, first)
+    assert.deepEqual(await retry, {
+      status: 'closed',
+      processTreeGone: true,
+    })
+    assert.equal(feature.close({ signal: signal() }), retry)
+    assert.equal(closeCalls, 2)
+    assert.deepEqual(closeSignals, [firstSignal, retrySignal])
+  } finally {
+    if (feature) {
+      await feature.close({ signal: signal() })
+    } else {
+      await fixture.runtimeOwner.closeCurrent({ signal: signal() })
+    }
+    await fixture.cleanup()
+  }
+})
+
+test('listener bind cleanup exposes one retryable high-level authority that converges after Runtime ambiguity', async () => {
+  const fixture = await createFixture({ authInitiallyConnected: true })
+  const blocker = createNetServer()
+  let feature: PublicPreviewFeatureComposition | undefined
+  let application:
+    | Awaited<ReturnType<typeof createServerApplicationForTesting>>
+    | undefined
+  await new Promise<void>((resolve, reject) => {
+    blocker.once('error', reject)
+    blocker.listen(0, '127.0.0.1', resolve)
+  })
+  const address = blocker.address()
+  assert.ok(address && typeof address === 'object')
+  try {
+    let closeCalls = 0
+    const closeSignals: AbortSignal[] = []
+    const runtimeOwner = withCloseCurrent(
+      fixture.runtimeOwner,
+      async (input) => {
+        closeCalls += 1
+        closeSignals.push(input.signal)
+        if (closeCalls === 1) {
+          return {
+            status: 'ambiguous',
+            processTreeGone: false,
+          }
+        }
+        return fixture.runtimeOwner.closeCurrent(input)
+      },
+    )
+    const bootstrap = fixture.bootstrap(
+      `http://127.0.0.1:${address.port}`,
+    )
+    application = await createServerApplicationForTesting(
+      { publicPreview: bootstrap },
+      {
+        createPublicPreviewFeature: async (input) => {
+          feature = await createPublicPreviewFeatureComposition(
+            input,
+            { runtimeOwner },
+          )
+          return feature
+        },
+      },
+    )
+    let startupError: ServerStartupCleanupError | undefined
+
+    await assert.rejects(
+      listenToServerApplication(application, {
+        host: '127.0.0.1',
+        port: address.port,
+      }),
+      (error) => {
+        assert.ok(error instanceof ServerStartupCleanupError)
+        assert.equal(
+          error.code,
+          'server_startup_cleanup_ambiguous',
+        )
+        startupError = error
+        return true
+      },
+    )
+    assert.equal(closeCalls, 1)
+    assert.ok(startupError)
+    const retrySignal = signal()
+    assert.deepEqual(
+      await startupError.close({ signal: retrySignal }),
+      { status: 'closed', processTreeGone: true },
+    )
+    assert.equal(closeCalls, 2)
+    assert.equal(closeSignals[1], retrySignal)
+    assert.deepEqual(
+      await startupError.close({ signal: signal() }),
+      { status: 'closed', processTreeGone: true },
+    )
+    assert.equal(closeCalls, 2)
+    await application.close()
+    await assert.rejects(
+      listenToServerApplication(application, {
+        host: '127.0.0.1',
+        port: 0,
+      }),
+      /Server application is closing/u,
+    )
+  } finally {
+    if (feature) {
+      await feature.close({ signal: signal() }).catch(() => undefined)
+    }
+    await new Promise<void>((resolve, reject) => {
+      blocker.close((error) => error ? reject(error) : resolve())
+    })
+    await fixture.cleanup()
+  }
+})
+
 test('composition failure after Runtime ownership closes the active generation', async () => {
   const fixture = await createFixture({ authInitiallyConnected: true })
   try {

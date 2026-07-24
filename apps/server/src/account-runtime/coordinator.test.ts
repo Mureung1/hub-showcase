@@ -837,7 +837,63 @@ test('coordinator close waits for the active lease, rejects queued work, and clo
   assert.equal(closeCalls, 1)
 })
 
-test('coordinator close maps thrown process-tree cleanup to one stable ambiguous result', async () => {
+test('coordinator close retries an ambiguous attempt with the next caller signal without reopening work', async () => {
+  let closeCalls = 0
+  const closeSignals: AbortSignal[] = []
+  const coordinator = createAccountRuntimeCoordinator<
+    Account,
+    Workspace,
+    Ready
+  >({
+    closeAuthOnlyRuntime: async () => ({
+      status: 'closed',
+      processTreeGone: true,
+    }),
+    startWorkspaceRuntime: async () => undefined,
+    readFreshWorkspaceAccount: async () => ({ state: 'chatgpt' }),
+    logoutAndReadFreshAccount: async () => ({ state: 'signed_out' }),
+    closeCurrentRuntime: async ({ signal }) => {
+      closeCalls += 1
+      closeSignals.push(signal)
+      return closeCalls === 1
+        ? { status: 'ambiguous', processTreeGone: false }
+        : { status: 'closed', processTreeGone: true }
+    },
+  })
+  const firstSignal = signal()
+  const ignoredConcurrentSignal = signal()
+  const retrySignal = signal()
+
+  const first = coordinator.close({ signal: firstSignal })
+  const concurrent = coordinator.close({
+    signal: ignoredConcurrentSignal,
+  })
+  assert.equal(concurrent, first)
+  assert.deepEqual(await first, {
+    status: 'ambiguous',
+    processTreeGone: false,
+  })
+
+  const retry = coordinator.close({ signal: retrySignal })
+  assert.notEqual(retry, first)
+  assert.deepEqual(await retry, {
+    status: 'closed',
+    processTreeGone: true,
+  })
+  assert.equal(coordinator.close({ signal: signal() }), retry)
+  assert.equal(closeCalls, 2)
+  assert.deepEqual(closeSignals, [firstSignal, retrySignal])
+  assert.deepEqual(await coordinator.logout({ signal: signal() }), {
+    status: 'failed',
+    error: {
+      code: 'coordinator_closed',
+      retryable: false,
+      restartRequired: false,
+    },
+  })
+})
+
+test('coordinator close maps a thrown cleanup to ambiguous and permits one later convergent attempt', async () => {
   let closeCalls = 0
   const coordinator = createAccountRuntimeCoordinator<
     Account,
@@ -853,7 +909,10 @@ test('coordinator close maps thrown process-tree cleanup to one stable ambiguous
     logoutAndReadFreshAccount: async () => ({ state: 'signed_out' }),
     closeCurrentRuntime: async () => {
       closeCalls += 1
-      throw new Error('deterministic process-tree ambiguity')
+      if (closeCalls === 1) {
+        throw new Error('deterministic process-tree ambiguity')
+      }
+      return { status: 'closed', processTreeGone: true }
     },
   })
 
@@ -864,8 +923,11 @@ test('coordinator close maps thrown process-tree cleanup to one stable ambiguous
     status: 'ambiguous',
     processTreeGone: false,
   })
-  assert.deepEqual(second, first)
-  assert.equal(closeCalls, 1)
+  assert.deepEqual(second, {
+    status: 'closed',
+    processTreeGone: true,
+  })
+  assert.equal(closeCalls, 2)
   assert.deepEqual(await coordinator.logout({ signal: signal() }), {
     status: 'failed',
     error: {

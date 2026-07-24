@@ -242,7 +242,7 @@ export function createAccountRuntimeCoordinator<
     close(input) {
       if (closePromise) return closePromise
       lease.beginClose()
-      closePromise = (async () => {
+      const attempt = (async () => {
         await lease.whenIdle()
         const result = await options
           .closeCurrentRuntime({ signal: input.signal })
@@ -253,7 +253,21 @@ export function createAccountRuntimeCoordinator<
         phase = { state: 'closed' }
         return result
       })()
-      return closePromise
+      closePromise = attempt
+      void attempt.then(
+        (result) => {
+          if (
+            result.status === 'ambiguous' &&
+            closePromise === attempt
+          ) {
+            closePromise = undefined
+          }
+        },
+        () => {
+          if (closePromise === attempt) closePromise = undefined
+        },
+      )
+      return attempt
     },
   }
 }

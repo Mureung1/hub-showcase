@@ -17,6 +17,11 @@ import {
   type PublicPreviewFeatureComposition,
   type PublicPreviewServerBootstrap,
 } from './public-preview-composition.js'
+import type {
+  ServerStartupCleanup,
+  ServerStartupCleanupInput,
+  ServerStartupCleanupResult,
+} from './server-startup-cleanup.js'
 
 export type {
   PublicPreviewServerBootstrap,
@@ -47,17 +52,29 @@ export interface ServerApplication {
   close(): Promise<void>
 }
 
-type CloseServerApplication = () => Promise<void>
+type CloseServerApplication = (
+  input: ServerStartupCleanupInput,
+) => Promise<void>
 
 type ServerApplicationListenerLifecycle = (
   closeApplication: CloseServerApplication,
+  input: ServerStartupCleanupInput,
 ) => Promise<void>
+
+type ServerApplicationCleanupAttemptResult =
+  | Extract<ServerStartupCleanupResult, { status: 'closed' }>
+  | (
+      Extract<ServerStartupCleanupResult, { status: 'ambiguous' }> & {
+        readonly cause: unknown
+      }
+    )
 
 type ServerApplicationLifecycle = {
   closing: boolean
   listenerClaimed: boolean
   readonly closeApplication: CloseServerApplication
   closeWithListener?: ServerApplicationListenerLifecycle
+  cleanupPromise?: Promise<ServerApplicationCleanupAttemptResult>
   closePromise?: Promise<void>
 }
 
@@ -132,16 +149,24 @@ async function createServerApplicationWithDependencies(
     publicPreview,
   )
   let applicationClosePromise: Promise<void> | undefined
-  const closeApplication = () => {
+  const closeApplication: CloseServerApplication = ({ signal }) => {
     productOperations?.beginShutdown()
     publicPreview?.beginShutdown()
     codexChat.beginShutdown()
-    applicationClosePromise ??= closeServerApplication(
+    if (applicationClosePromise) return applicationClosePromise
+    const attempt = closeServerApplication(
       codexChat,
       assignmentMcpHost,
       publicPreview,
+      signal,
     )
-    return applicationClosePromise
+    applicationClosePromise = attempt
+    void attempt.catch(() => {
+      if (applicationClosePromise === attempt) {
+        applicationClosePromise = undefined
+      }
+    })
+    return attempt
   }
   const lifecycle: ServerApplicationLifecycle = {
     closing: false,
@@ -153,11 +178,24 @@ async function createServerApplicationWithDependencies(
     semesterWorkspace,
     close() {
       if (lifecycle.closePromise) return lifecycle.closePromise
-      lifecycle.closing = true
-      lifecycle.closePromise = lifecycle.closeWithListener
-        ? lifecycle.closeWithListener(lifecycle.closeApplication)
-        : lifecycle.closeApplication()
-      return lifecycle.closePromise
+      const cleanup = cleanupServerApplication(lifecycle, {
+        signal: new AbortController().signal,
+      })
+      const close = cleanup.then((result) => {
+        if (
+          result.status !== 'closed' ||
+          !result.processTreeGone
+        ) {
+          throw result.cause
+        }
+      })
+      lifecycle.closePromise = close
+      void close.catch(() => {
+        if (lifecycle.closePromise === close) {
+          lifecycle.closePromise = undefined
+        }
+      })
+      return close
     },
   }
   serverApplicationLifecycles.set(application, lifecycle)
@@ -167,7 +205,7 @@ async function createServerApplicationWithDependencies(
 export function claimServerApplicationListenerLifecycle(
   application: ServerApplication,
   closeWithListener: ServerApplicationListenerLifecycle,
-): void {
+): ServerStartupCleanup {
   const lifecycle = serverApplicationLifecycles.get(application)
   if (!lifecycle) {
     throw new TypeError(
@@ -182,6 +220,58 @@ export function claimServerApplicationListenerLifecycle(
   }
   lifecycle.listenerClaimed = true
   lifecycle.closeWithListener = closeWithListener
+  return async (input) => {
+    const result = await cleanupServerApplication(lifecycle, input)
+    return result.status === 'closed'
+      ? result
+      : { status: 'ambiguous', processTreeGone: false }
+  }
+}
+
+function cleanupServerApplication(
+  lifecycle: ServerApplicationLifecycle,
+  input: ServerStartupCleanupInput,
+): Promise<ServerApplicationCleanupAttemptResult> {
+  if (lifecycle.cleanupPromise) return lifecycle.cleanupPromise
+  lifecycle.closing = true
+  const attempt = (async (): Promise<
+    ServerApplicationCleanupAttemptResult
+  > => {
+    try {
+      if (lifecycle.closeWithListener) {
+        await lifecycle.closeWithListener(
+          lifecycle.closeApplication,
+          input,
+        )
+      } else {
+        await lifecycle.closeApplication(input)
+      }
+      return { status: 'closed', processTreeGone: true }
+    } catch (cause) {
+      return {
+        status: 'ambiguous',
+        processTreeGone: false,
+        cause,
+      }
+    }
+  })()
+  lifecycle.cleanupPromise = attempt
+  void attempt.then(
+    (result) => {
+      if (
+        result.status === 'ambiguous' &&
+        lifecycle.cleanupPromise === attempt
+      ) {
+        lifecycle.cleanupPromise = undefined
+      }
+    },
+    () => {
+      if (lifecycle.cleanupPromise === attempt) {
+        lifecycle.cleanupPromise = undefined
+      }
+    },
+  )
+  return attempt
 }
 
 function createServerExpressApp(
@@ -221,8 +311,8 @@ async function closeServerApplication(
   codexChat: CodexChatComposition,
   assignmentMcpHost: AssignmentMcpHost | undefined,
   publicPreview: PublicPreviewFeatureComposition | undefined,
+  signal: AbortSignal,
 ): Promise<void> {
-  const closeSignal = new AbortController().signal
   let publicPreviewResult:
     | { readonly status: 'closed'; readonly processTreeGone: true }
     | { readonly status: 'ambiguous'; readonly processTreeGone: false }
@@ -230,7 +320,7 @@ async function closeServerApplication(
   try {
     if (publicPreview) {
       publicPreviewResult = await publicPreview.close({
-        signal: closeSignal,
+        signal,
       })
     }
   } finally {

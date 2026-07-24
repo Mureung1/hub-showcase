@@ -11,7 +11,6 @@ import {
 } from '../../../scripts/semester-workspace-materializer.mjs'
 import { createServerApplication } from './server-application.js'
 import {
-  ServerListenerStartError,
   listenToServerApplication,
 } from './server-listener.js'
 import { configuredBootstrap } from './testing/codex-chat-test-support.js'
@@ -95,7 +94,7 @@ test('a closing Server application rejects its first listener claim', async () =
   await closing
 })
 
-test('listener refusal surfaces a stable failure when application cleanup rejects', async () => {
+test('listener refusal preserves the bind failure after complete application cleanup', async () => {
   const blocker = createNetServer()
   await new Promise<void>((resolve, reject) => {
     blocker.once('error', reject)
@@ -104,13 +103,6 @@ test('listener refusal surfaces a stable failure when application cleanup reject
   const address = blocker.address()
   assert.ok(address && typeof address === 'object')
   const application = await createServerApplication()
-  const closeApplication = application.close.bind(application)
-  Object.defineProperty(application, 'close', {
-    value: async () => {
-      await closeApplication()
-      throw new Error('synthetic application cleanup failure')
-    },
-  })
 
   try {
     await assert.rejects(
@@ -119,16 +111,16 @@ test('listener refusal surfaces a stable failure when application cleanup reject
         port: address.port,
       }),
       (error) => {
-        assert.ok(error instanceof ServerListenerStartError)
+        assert.ok(error instanceof Error)
         assert.equal(
-          error.code,
-          'server_listener_startup_cleanup_ambiguous',
+          (error as NodeJS.ErrnoException).code,
+          'EADDRINUSE',
         )
         return true
       },
     )
   } finally {
-    await closeApplication()
+    await application.close()
     await new Promise<void>((resolve, reject) => {
       blocker.close((error) => error ? reject(error) : resolve())
     })

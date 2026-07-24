@@ -275,11 +275,25 @@ export async function createPublicPreviewFeatureComposition(
       close({ signal }) {
         if (closePromise) return closePromise
         beginShutdown()
-        closePromise = (async () => {
+        const attempt = (async () => {
           await adapter.whenIdle()
           return coordinator.close({ signal })
         })()
-        return closePromise
+        closePromise = attempt
+        void attempt.then(
+          (result) => {
+            if (
+              result.status === 'ambiguous' &&
+              closePromise === attempt
+            ) {
+              closePromise = undefined
+            }
+          },
+          () => {
+            if (closePromise === attempt) closePromise = undefined
+          },
+        )
+        return attempt
       },
     }
   } catch (error) {

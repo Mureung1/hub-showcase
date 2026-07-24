@@ -5,6 +5,10 @@ import {
   claimServerApplicationListenerLifecycle,
   type ServerApplication,
 } from './server-application.js'
+import {
+  requireServerStartupCleanup,
+  type ServerStartupCleanupInput,
+} from './server-startup-cleanup.js'
 
 export type ServerListenOptions = {
   readonly host?: string
@@ -16,24 +20,19 @@ export type StartedServerListener = {
   readonly port: number
 }
 
-export class ServerListenerStartError extends Error {
-  readonly code = 'server_listener_startup_cleanup_ambiguous'
-
-  constructor() {
-    super('Server listener startup cleanup was ambiguous')
-    this.name = 'ServerListenerStartError'
-  }
-}
-
 export async function listenToServerApplication(
   application: ServerApplication,
   options: ServerListenOptions,
 ): Promise<StartedServerListener> {
   const listener = createServer(application.app)
-  claimServerApplicationListenerLifecycle(
+  const startupCleanup = claimServerApplicationListenerLifecycle(
     application,
-    (closeApplication) =>
-      closeListeningServerApplication(listener, closeApplication),
+    (closeApplication, input) =>
+      closeListeningServerApplication(
+        listener,
+        closeApplication,
+        input,
+      ),
   )
   try {
     await listen(listener, options.port, options.host)
@@ -46,11 +45,7 @@ export async function listenToServerApplication(
       port: (address as AddressInfo).port,
     }
   } catch (error) {
-    try {
-      await application.close()
-    } catch {
-      throw new ServerListenerStartError()
-    }
+    await requireServerStartupCleanup(startupCleanup)
     throw error
   }
 }
@@ -84,10 +79,13 @@ function listen(
 
 async function closeListeningServerApplication(
   listener: Server,
-  closeApplication: () => Promise<void>,
+  closeApplication: (
+    input: ServerStartupCleanupInput,
+  ) => Promise<void>,
+  input: ServerStartupCleanupInput,
 ): Promise<void> {
   const listenerClosed = closeListener(listener)
-  const applicationClosed = closeApplication().finally(() => {
+  const applicationClosed = closeApplication(input).finally(() => {
     listener.closeAllConnections()
   })
   const [applicationResult, listenerResult] = await Promise.allSettled([
