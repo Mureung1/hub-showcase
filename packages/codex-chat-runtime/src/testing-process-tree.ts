@@ -1,4 +1,11 @@
-import { mkdir, mkdtemp, readFile, realpath, rm } from 'node:fs/promises'
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -48,6 +55,7 @@ export interface CodexChatProcessTreeTestFixture {
 
 export async function startCodexChatProcessTreeTestFixture(options: {
   readonly runtimeRoot: string
+  readonly accountState: 'chatgpt' | 'signed_out'
 }): Promise<CodexChatProcessTreeTestFixture> {
   const bundle = await verifyProductionBundle(options.runtimeRoot)
   const fixtureRoot = await mkdtemp(
@@ -77,6 +85,11 @@ export async function startCodexChatProcessTreeTestFixture(options: {
       ])
     const journalPath = path.join(fixtureRoot, 'journal.json')
     const nativeChildPidPath = path.join(fixtureRoot, 'native-child.pid')
+    await writeFile(
+      path.join(fixtureRoot, 'account-state'),
+      options.accountState,
+      'utf8',
+    )
     spawned = await startVerifiedCodexChatRuntime({
       bundle,
       workspace: canonicalWorkspace,
