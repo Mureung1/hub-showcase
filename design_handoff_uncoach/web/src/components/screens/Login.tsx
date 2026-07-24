@@ -37,27 +37,27 @@ export default function Login({ onAuthed, onGuest }: { onAuthed: () => void; onG
         <div className="w-full flex flex-col md:flex-row items-center justify-between gap-12 lg:gap-24">
           <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left">
             <div className="absolute top-8 left-8 md:top-12 md:left-12 flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-2xl">auto_awesome</span>
-              <span className="font-bold text-lg text-primary tracking-wide">uncoach-pi</span>
+              <span className="material-symbols-outlined text-primary text-[24px]">auto_awesome</span>
+              <span className="font-bold text-lg text-primary tracking-wide">언코</span>
             </div>
             <div className="mt-16 md:mt-0">
               <h1 className="font-display-lg text-display-lg text-slate-dark tracking-tight mb-4">언코</h1>
               <p className="font-body-lg text-body-lg text-slate-muted max-w-md">
-                지능형 코칭의 미래, 당신의 성장을 함께합니다.
+                당신의 언어를 배우다, 언코
               </p>
             </div>
           </div>
 
           <div className="flex-1 w-full max-w-[480px]">
-            <div className="rounded-[2rem] p-8 md:p-12 w-full bg-white/70 backdrop-blur-xl border border-white/60 shadow-xl">
-              <h2 className="font-headline-lg text-headline-lg text-slate-dark mb-8">{mode === "login" ? "Log In" : "Sign Up"}</h2>
+            <div className="rounded-[2rem] p-8 md:p-12 w-full bg-white/70 backdrop-blur-xl border border-white/60 shadow-pop">
+              <h2 className="font-headline-lg text-headline-lg text-slate-dark mb-8">{mode === "login" ? "로그인" : "회원가입"}</h2>
               <div className="flex flex-col gap-5">
                 <div className="relative">
                   <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-surface-bright/50 border border-border-light rounded-xl px-4 py-4 text-slate-dark placeholder-slate-muted focus:ring-2 focus:ring-primary/50 focus:outline-none transition-all"
-                    placeholder="Email or Phone Number"
+                    placeholder="아이디"
                     type="text"
                   />
                 </div>
@@ -67,7 +67,7 @@ export default function Login({ onAuthed, onGuest }: { onAuthed: () => void; onG
                     onChange={(e) => setPw(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && submit()}
                     className="w-full bg-surface-bright/50 border border-border-light rounded-xl px-4 py-4 pr-12 text-slate-dark placeholder-slate-muted focus:ring-2 focus:ring-primary/50 focus:outline-none transition-all"
-                    placeholder="Password"
+                    placeholder="비밀번호"
                     type={showPw ? "text" : "password"}
                   />
                   <button
@@ -75,7 +75,7 @@ export default function Login({ onAuthed, onGuest }: { onAuthed: () => void; onG
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-muted hover:text-slate-dark transition-colors"
                     type="button"
                   >
-                    <span className="material-symbols-outlined text-xl">{showPw ? "visibility" : "visibility_off"}</span>
+                    <span className="material-symbols-outlined text-[20px]">{showPw ? "visibility" : "visibility_off"}</span>
                   </button>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
@@ -87,21 +87,21 @@ export default function Login({ onAuthed, onGuest }: { onAuthed: () => void; onG
                     className="w-4 h-4 rounded accent-[var(--color-primary)] border-slate-300"
                   />
                   <label className="text-sm text-slate-muted" htmlFor="terms">
-                    I have read and agree to the <span className="text-primary">Terms of Service</span>
+                    <span className="text-primary">이용약관</span>을 확인했으며 동의합니다
                   </label>
                 </div>
                 {error && <div className="rounded-xl bg-error-container text-on-error-container px-4 py-2.5 text-sm">{error}</div>}
                 <button
                   onClick={submit}
                   disabled={busy}
-                  className="w-full bg-primary hover:bg-primary-container text-white rounded-xl py-4 font-bold text-lg mt-2 transition-all shadow-lg shadow-primary/30 active:scale-[0.98] disabled:opacity-60"
+                  className="w-full bg-primary hover:bg-primary-container text-white rounded-xl py-4 font-bold text-lg mt-2 transition-all shadow-pop active:scale-[0.98] disabled:opacity-60"
                   type="button"
                 >
-                  {busy ? "처리 중…" : mode === "login" ? "Log In" : "Sign Up"}
+                  {busy ? "처리 중…" : mode === "login" ? "로그인" : "회원가입"}
                 </button>
-                <div className="flex justify-between items-center mt-4 text-sm">
-                  <button type="button" onClick={onGuest} className="text-slate-muted hover:text-primary transition-colors">
-                    게스트로 둘러보기
+                <div className="flex justify-between items-center mt-6 text-sm">
+                  <button type="button" className="text-slate-muted hover:text-primary transition-colors">
+                    비밀번호를 잊으셨나요?
                   </button>
                   <button
                     type="button"
@@ -111,9 +111,12 @@ export default function Login({ onAuthed, onGuest }: { onAuthed: () => void; onG
                     }}
                     className="text-slate-muted hover:text-primary transition-colors"
                   >
-                    {mode === "login" ? "Don't have an account? Sign up" : "이미 계정이 있어요 — Log in"}
+                    {mode === "login" ? "회원가입" : "이미 계정이 있어요 — 로그인"}
                   </button>
                 </div>
+                <button type="button" onClick={onGuest} className="mt-2 text-center text-sm text-slate-muted hover:text-primary transition-colors">
+                  게스트로 둘러보기
+                </button>
               </div>
             </div>
           </div>

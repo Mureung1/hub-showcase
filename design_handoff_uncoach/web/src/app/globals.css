@@ -74,15 +74,23 @@
   --spacing-gutter-grid: 1.5rem;
   --spacing-padding-card: 1.25rem;
 
-  /* Font families */
-  --font-display-lg: "Hanken Grotesk", "Pretendard Variable", sans-serif;
-  --font-headline-lg: "Hanken Grotesk", "Pretendard Variable", sans-serif;
-  --font-headline-lg-mobile: "Hanken Grotesk", "Pretendard Variable", sans-serif;
-  --font-headline-md: "Hanken Grotesk", "Pretendard Variable", sans-serif;
-  --font-body-lg: "Hanken Grotesk", "Pretendard Variable", sans-serif;
-  --font-body-md: "Hanken Grotesk", "Pretendard Variable", sans-serif;
-  --font-stats-number: "Hanken Grotesk", "Pretendard Variable", sans-serif;
-  --font-label-sm: "JetBrains Mono", ui-monospace, monospace;
+  /* Elevation — 3단계로 고정한다. 카드는 card, 떠 있는 요소는 float, 강조 CTA는 pop. */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 20px rgba(15, 23, 42, 0.05);
+  --shadow-float: 0 8px 30px rgba(15, 23, 42, 0.1);
+  --shadow-pop: 0 12px 32px rgba(70, 72, 212, 0.22);
+
+  /* Font families — 한국어 UI라 한글·라틴이 한 벌인 Pretendard 하나로 통일한다.
+     (이전엔 본문 Hanken Grotesk + 라벨 JetBrains Mono라 한글이 폰트 3종으로 갈라졌음) */
+  --font-ui: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font-display-lg: var(--font-ui);
+  --font-headline-lg: var(--font-ui);
+  --font-headline-lg-mobile: var(--font-ui);
+  --font-headline-md: var(--font-ui);
+  --font-body-lg: var(--font-ui);
+  --font-body-md: var(--font-ui);
+  --font-stats-number: var(--font-ui);
+  --font-label-sm: var(--font-ui);
 
   /* Font sizes (size / line-height / weight / letter-spacing) */
   --text-display-lg: 48px;
@@ -105,9 +113,9 @@
   --text-body-md--line-height: 1.6;
   --text-body-md--font-weight: 400;
   --text-label-sm: 12px;
-  --text-label-sm--line-height: 1;
+  --text-label-sm--line-height: 1.4; /* 한글 받침이 잘리지 않도록 */
   --text-label-sm--font-weight: 500;
-  --text-label-sm--letter-spacing: 0.05em;
+  --text-label-sm--letter-spacing: 0.01em; /* 모노용 0.05em은 한글에서 과하게 벌어짐 */
   --text-stats-number: 20px;
   --text-stats-number--line-height: 1;
   --text-stats-number--font-weight: 700;
@@ -117,9 +125,24 @@ html,
 body {
   background: var(--color-background);
   color: var(--color-on-background);
-  font-family: "Hanken Grotesk", "Pretendard Variable", Pretendard, -apple-system,
-    BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
+}
+
+/* 점수·레벨·XP 같은 수치는 자리폭을 고정해 값이 바뀌어도 흔들리지 않게 */
+.font-stats-number,
+.font-display-lg {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 라벨 토큰은 크기까지 함께 가져간다.
+   font-label-sm만 붙은 곳(캘린더 요일·배지·차트 축 등)이 본문 16px로 렌더되던 문제 정리.
+   font-label-sm과 다른 text-* 크기를 함께 쓰는 곳은 현재 없다. */
+.font-label-sm {
+  font-size: var(--text-label-sm);
+  line-height: var(--text-label-sm--line-height);
+  font-weight: var(--text-label-sm--font-weight);
+  letter-spacing: var(--text-label-sm--letter-spacing);
 }
 
 /* Material Symbols Outlined 아이콘 */

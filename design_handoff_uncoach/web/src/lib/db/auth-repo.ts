@@ -45,7 +45,10 @@ export async function adoptBlobIfEmpty(ownerId: string, fromDeviceId: string): P
   if (existing.length) return;
   const dev = await sql`select data from app_state where device_id = ${fromDeviceId}`;
   if (!dev.length) return;
-  const data = dev[0].data as AppStateBlob;
+  // 훈련 기록·표현·커스텀 상황은 가져오되 프로필은 두고 온다.
+  // 게스트로 둘러본 사람이 가입한 본인이라는 보장이 없다 — 공용 기기면 남의 이름·나이·목표를
+  // 그대로 물려받는다. 프로필을 비우면 가입 직후 온보딩이 떠서 본인 정보를 직접 넣게 된다.
+  const data = { ...(dev[0].data as AppStateBlob), profile: null };
   await sql`
     insert into app_state (device_id, data, updated_at)
     values (${ownerId}, ${sql.json(data as unknown as Parameters<typeof sql.json>[0])}, now())

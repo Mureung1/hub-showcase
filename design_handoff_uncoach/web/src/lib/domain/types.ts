@@ -69,6 +69,7 @@ export interface SessionRecord {
   sid: string;        // situation id
   scores: Scores;
   ts?: number;         // epoch ms — 스트릭(연속일) 계산용. 과거 기록엔 없을 수 있음
+  title?: string;      // 상황 목록에 없는 기록(뉴스 기사 등)의 표시용 제목
 }
 
 /** 표현 자산 (잘 쓴 순간) */
@@ -84,6 +85,8 @@ export interface Profile {
   age?: string;
   gender?: string;
   goal?: string;
+  name?: string;
+  interests?: string[];
 }
 
 /** 앱 상태 blob (Postgres app_state.data / 클라이언트 저장 단위) */
@@ -106,12 +109,14 @@ export interface NewsPassage {
   sourceTitle: string;
 }
 
-/** 한 줄 요약 채점 결과 */
+/** 한 줄 요약 채점 결과 — 뉴스 루브릭 3축(각 1~3) + 축별 근거 */
 export interface SummaryResult {
   captured: string[];
   missed: string[];
   verdict: 'pass' | 'partial' | 'miss';
   coach: string;
+  scores: { grasp: number; accuracy: number; concision: number };
+  reasons: Partial<Record<'grasp' | 'accuracy' | 'concision', string>>;
 }
 
 /** 카톡 캡쳐에서 추출한 상황 정보 */

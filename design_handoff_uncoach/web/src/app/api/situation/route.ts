@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   if (!rateLimit(`situation:${clientIp(req)}`, 10, 60_000))
     return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
 
-  let body: { title?: string; who?: string; goal?: string; tension?: string };
+  let body: { title?: string; who?: string; goal?: string; tension?: string; medium?: string };
   try {
     body = await req.json();
   } catch {
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
       who: body.who,
       goal: body.goal,
       tension: body.tension,
+      medium: body.medium === "email" ? "email" : "chat",
     });
     return NextResponse.json({ situation });
   } catch (e) {

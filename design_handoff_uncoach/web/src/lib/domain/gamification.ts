@@ -8,11 +8,29 @@ export interface GamificationState {
 }
 
 // --- XP / 레벨 ---
+//
+// XP 기준 (전부 history에서 파생 — 따로 저장하지 않는다)
+//   ① 세션 점수      : 총점 그대로 0~100. 잘 쓸수록 많이 받는다.
+//   ② 새 상황 보너스 : 처음 해보는 상황마다 +20. 같은 상황 반복으로는 다시 안 준다.
+//   ③ 매일 첫 훈련   : 훈련한 날마다 +10. 하루에 몰아서 해도 한 번만.
+// ②③ 모두 "고유 개수"라서 기록 순서와 무관하게 같은 값이 나온다(재계산 안전).
 
-export const XP_PER_LEVEL = 300;
+export const XP_NEW_SITUATION = 20;
+export const XP_DAILY_FIRST = 10;
 
 export function totalXP(history: SessionRecord[]): number {
-  return history.reduce((sum, h) => sum + totalOf(h.scores), 0);
+  const score = history.reduce((sum, h) => sum + totalOf(h.scores), 0);
+  const sids = new Set(history.map((h) => h.sid)).size;
+  const days = new Set(history.filter((h) => h.ts).map((h) => dayStart(h.ts!))).size;
+  return score + sids * XP_NEW_SITUATION + days * XP_DAILY_FIRST;
+}
+
+/**
+ * 레벨 n → n+1 에 필요한 XP. 초반은 금방 오르고 뒤로 갈수록 완만해진다.
+ * Lv1→2 = 200(약 2세션), Lv5까지 누적 1,400(약 15세션), Lv10까지 5,400(약 50세션).
+ */
+export function xpForLevel(level: number): number {
+  return 100 + 100 * level;
 }
 
 export interface LevelInfo {
@@ -23,9 +41,14 @@ export interface LevelInfo {
 }
 
 export function levelInfo(xp: number): LevelInfo {
-  const level = Math.floor(xp / XP_PER_LEVEL) + 1;
-  const xpIntoLevel = xp % XP_PER_LEVEL;
-  return { level, xpIntoLevel, xpForNext: XP_PER_LEVEL, progress: xpIntoLevel / XP_PER_LEVEL };
+  let level = 1;
+  let rest = Math.max(0, xp);
+  while (rest >= xpForLevel(level)) {
+    rest -= xpForLevel(level);
+    level++;
+  }
+  const xpForNext = xpForLevel(level);
+  return { level, xpIntoLevel: rest, xpForNext, progress: rest / xpForNext };
 }
 
 // --- 스트릭 ---

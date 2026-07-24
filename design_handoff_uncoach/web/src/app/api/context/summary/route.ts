@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callGemini, extractText, parseLooseJson, GEMINI_MODEL } from "@/lib/scoring/gemini";
 import { NEWS_SUMMARY_SYSTEM } from "@/lib/scoring/context-system";
+import { clampLevel, toScores } from "@/lib/domain/news-score";
+import { totalOf } from "@/lib/domain/situations";
 import { sameOrigin, rateLimit, clientIp } from "@/lib/server/guard";
 
 export const runtime = "nodejs";
@@ -42,14 +44,24 @@ export async function POST(req: NextRequest) {
     const arr = (v: unknown): string[] => (Array.isArray(v) ? v.map((x) => String(x)).filter(Boolean) : []);
     const captured = arr(out.captured);
     const missed = arr(out.missed);
-    const verdict = ["pass", "partial", "miss"].includes(out.verdict)
-      ? out.verdict
-      : missed.length === 0
-        ? "pass"
-        : captured.length === 0
-          ? "miss"
-          : "partial";
-    return NextResponse.json({ captured, missed, verdict, coach: String(out.coach || "") });
+
+    // 루브릭 점수는 모델이 뭘 뱉든 1~3으로 자른다. 아예 안 오면 포착률로 메운다.
+    const raw = (out.scores ?? {}) as Record<string, unknown>;
+    const fallback = captured.length === 0 ? 1 : missed.length === 0 ? 3 : 2;
+    const scores = {
+      grasp: clampLevel(raw.grasp ?? fallback),
+      accuracy: clampLevel(raw.accuracy ?? fallback),
+      concision: clampLevel(raw.concision ?? fallback),
+    };
+    // verdict는 이제 3축 총점에서 파생한다 — 모델이 따로 준 판정과 점수가 어긋나지 않게.
+    const total = totalOf(toScores(scores));
+    const verdict = total >= 80 ? "pass" : total >= 50 ? "partial" : "miss";
+
+    const rs = (out.reasons ?? {}) as Record<string, unknown>;
+    const reason = (k: string) => (rs[k] ? String(rs[k]) : undefined);
+    const reasons = { grasp: reason("grasp"), accuracy: reason("accuracy"), concision: reason("concision") };
+
+    return NextResponse.json({ captured, missed, verdict, scores, reasons, coach: String(out.coach || "") });
   } catch (e) {
     const msg = (e as Error).message;
     if (msg === "NO_KEY") {
