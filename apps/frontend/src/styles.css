@@ -556,6 +556,41 @@ p {
   font-weight: 500;
 }
 
+.shift-actions,
+.shift-action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shift-actions {
+  margin-top: 10px;
+}
+
+.shift-actions .text-button {
+  min-height: 28px;
+  padding: 0;
+  font-size: 12px;
+}
+
+.text-button.danger {
+  color: #b42318;
+}
+
+.schedule-edit-form {
+  grid-column: 2 / -1;
+  padding: 14px;
+  border: 1px solid var(--color-green-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.shift-action-row .primary-button,
+.shift-action-row .secondary-button {
+  flex: 1;
+  min-height: 38px;
+}
+
 .daily-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -585,6 +620,69 @@ p {
 .daily-navigation {
   display: grid;
   gap: 10px;
+}
+
+.schedule-create-form {
+  display: grid;
+  gap: 12px;
+}
+
+.schedule-create-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.schedule-create-form label span {
+  color: var(--color-text-sub);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.schedule-create-form input,
+.schedule-create-form select,
+.schedule-create-form textarea {
+  width: 100%;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-main);
+  font-size: 14px;
+  outline: none;
+}
+
+.schedule-create-form input,
+.schedule-create-form select {
+  height: 40px;
+  padding: 0 12px;
+}
+
+.schedule-create-form textarea {
+  min-height: 82px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.schedule-create-form input:focus,
+.schedule-create-form select:focus,
+.schedule-create-form textarea:focus {
+  border-color: var(--color-primary-deep);
+  box-shadow: 0 0 0 3px rgba(217, 255, 95, 0.28);
+}
+
+.schedule-time-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.schedule-create-form .primary-button {
+  width: 100%;
+}
+
+.inline-empty-link {
+  width: fit-content;
+  min-height: 36px;
+  padding: 0 14px;
 }
 
 .today-card h2 {
