@@ -37,6 +37,16 @@ Start from these tokens unless the existing project already has a compatible tok
   --color-accent: #ff1f2d;
   --color-accent-soft: #ff6b73;
 
+  /* Info soft: 복구·긍정 액션용 연한 파랑 (완료함 화면 등) */
+  --color-info-soft-bg: #dbeafe;
+  --color-info-soft-bg-hover: #bfdbfe;
+  --color-info-soft-text: #1d4ed8;
+
+  /* Danger soft: 영구 삭제 등 파괴적 액션용 연한 빨강 */
+  --color-danger-soft-bg: #fee2e2;
+  --color-danger-soft-bg-hover: #fecaca;
+  --color-danger-soft-text: #b91c1c;
+
   /* Background */
   --color-bg: #eef3f5;
   --color-bg-soft: #dce5e9;
