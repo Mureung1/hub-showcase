@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Career Mission AI - 데모 발표</title>
+<style>
+:root {
+  --cm-bg: #f4f7fb;
+  --cm-surface: rgba(255, 255, 255, 0.84);
+  --cm-surface-strong: #ffffff;
+  --cm-surface-blue: #eff6ff;
+  --cm-text: #0f172a;
+  --cm-muted: #475569;
+  --cm-subtle: #64748b;
+  --cm-border: rgba(226, 232, 240, 0.9);
+  --cm-primary: #2563eb;
+  --cm-primary-strong: #1d4ed8;
+  --cm-cyan: #06b6d4;
+  --cm-navy: #0f172a;
+  --cm-success: #22c55e;
+  --cm-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
+  --cm-radius-sm: 10px;
+  --cm-radius-md: 14px;
+  --cm-radius-lg: 18px;
+}
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 9% 14%, rgba(37, 99, 235, 0.12), transparent 30%),
+    radial-gradient(circle at 92% 8%, rgba(6, 182, 212, 0.14), transparent 28%),
+    linear-gradient(180deg, #f8fbff 0%, var(--cm-bg) 100%);
+  color: var(--cm-text);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Pretendard, "Apple SD Gothic Neo", sans-serif;
+  word-break: keep-all;
+}
+
+.deck {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: none;
+  min-width: 0;
+  min-height: 0;
+  padding: 62px 68px 72px;
+}
+
+.slide.active {
+  display: grid;
+  animation: enter 180ms ease;
+}
+
+@keyframes enter {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.topbar {
+  position: fixed;
+  top: 18px;
+  left: 28px;
+  right: 28px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--cm-navy);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.brand img {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.deck-label {
+  color: var(--cm-subtle);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.progress {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  height: 5px;
+  background: rgba(148, 163, 184, 0.25);
+}
+
+.progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--cm-primary), var(--cm-cyan));
+  transition: width 160ms ease;
+}
+
+.center {
+  place-items: center;
+  text-align: center;
+}
+
+.split {
+  grid-template-columns: minmax(340px, 0.82fr) minmax(0, 1.18fr);
+  gap: 34px;
+  align-items: center;
+}
+
+.content {
+  min-width: 0;
+}
+
+.eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 34px;
+  align-items: center;
+  padding: 8px 13px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: 999px;
+  background: rgba(219, 234, 254, 0.86);
+  color: var(--cm-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  max-width: 1000px;
+  margin-bottom: 22px;
+  font-size: clamp(56px, 7vw, 88px);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+h2 {
+  margin-bottom: 18px;
+  font-size: clamp(34px, 4.7vw, 56px);
+  line-height: 1.06;
+  letter-spacing: 0;
+}
+
+h3 {
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+p {
+  color: var(--cm-muted);
+  font-size: 17px;
+  line-height: 1.62;
+}
+
+.lead {
+  max-width: 920px;
+  color: var(--cm-muted);
+  font-size: 22px;
+  line-height: 1.52;
+}
+
+.list {
+  display: grid;
+  gap: 13px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list li {
+  position: relative;
+  padding-left: 25px;
+  color: var(--cm-muted);
+  font-size: 18px;
+  line-height: 1.54;
+}
+
+.list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cm-primary), var(--cm-cyan));
+}
+
+.list strong {
+  color: var(--cm-text);
+}
+
+.flow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 9px 14px;
+  border: 1px solid rgba(37, 99, 235, 0.15);
+  border-radius: 999px;
+  background: var(--cm-surface-strong);
+  color: var(--cm-text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.step.primary {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--cm-primary), var(--cm-cyan));
+  color: #fff;
+}
+
+.panel,
+.card,
+.screen {
+  border: 1px solid var(--cm-border);
+  background: var(--cm-surface);
+  box-shadow: var(--cm-shadow);
+}
+
+.panel {
+  min-width: 0;
+  border-radius: var(--cm-radius-lg);
+  padding: 26px;
+}
+
+.grid {
+  display: grid;
+  gap: 14px;
+}
+
+.grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.card {
+  min-width: 0;
+  border-radius: var(--cm-radius-md);
+  padding: 20px;
+}
+
+.card p {
+  margin-bottom: 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.metric {
+  margin-bottom: 8px;
+  color: var(--cm-primary);
+  font-size: 42px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.timeline {
+  display: grid;
+  gap: 12px;
+}
+
+.timeline-row {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  padding: 15px;
+  border: 1px solid var(--cm-border);
+  border-radius: var(--cm-radius-md);
+  background: var(--cm-surface-strong);
+}
+
+.timeline-num {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--cm-radius-md);
+  background: linear-gradient(135deg, var(--cm-primary), var(--cm-cyan));
+  color: #fff;
+  font-size: 14px;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-title {
+  margin-bottom: 4px;
+  color: var(--cm-text);
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.timeline-copy {
+  margin: 0;
+  color: var(--cm-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.screen {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border-radius: 22px;
+  background: #0b1220;
+  overflow: hidden;
+}
+
+.screen img {
+  display: block;
+  width: 100%;
+  max-height: 74vh;
+  border-radius: var(--cm-radius-md);
+  background: #fff;
+  object-fit: contain;
+}
+
+.screen.short img {
+  max-height: 58vh;
+}
+
+.screen.tall img {
+  max-height: 78vh;
+}
+
+.nav {
+  position: fixed;
+  right: 28px;
+  bottom: 24px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--cm-navy);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.nav button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.counter {
+  min-width: 66px;
+  text-align: center;
+  color: var(--cm-subtle);
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  .deck {
+    height: auto;
+    min-height: 100vh;
+  }
+  .slide {
+    min-height: 100vh;
+    padding: 72px 20px 104px;
+  }
+  .split,
+  .grid-2,
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .screen img,
+  .screen.short img,
+  .screen.tall img {
+    max-height: none;
+  }
+  .topbar {
+    left: 18px;
+    right: 18px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <img src="images/presentation/image1.png" alt="Career Mission AI">
+    <span>Career Mission AI</span>
+  </div>
+</div>
+<div class="progress"><span id="progress"></span></div>
+
+<main class="deck">
+  <section class="slide active center">
+    <div class="content">
+      <div class="eyebrow">Demo Presentation</div>
+      <h1>Career Mission AI</h1>
+      <p class="lead">취업 준비생이 스펙을 입력하고, AI 분석과 맞춤 미션을 거쳐 포트폴리오까지 정리하는 서비스입니다.</p>
+      <div class="flow">
+        <span class="step primary">React + Vite</span>
+        <span class="step">Express</span>
+        <span class="step">Prisma</span>
+        <span class="step">PostgreSQL</span>
+        <span class="step">JWT</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">Problem</div>
+      <h2>문제점</h2>
+      <p class="lead">목표 직무에 맞게 준비하고 있는지 확인하기 어렵고, 결과물을 포트폴리오로 연결하는 과정도 혼자 하기 어렵습니다.</p>
+    </div>
+    <div class="grid grid-2">
+      <div class="card"><h3>역량 판단</h3><p>현재 준비 상태가 목표 직무 기준으로 어느 정도인지 알기 어렵습니다.</p></div>
+      <div class="card"><h3>실무 경험</h3><p>공부한 내용을 어떤 결과물로 만들어야 할지 애매합니다.</p></div>
+      <div class="card"><h3>피드백</h3><p>혼자 만든 결과물을 어떻게 보완해야 하는지 확인하기 어렵습니다.</p></div>
+      <div class="card"><h3>정리</h3><p>수행 경험을 자기소개서나 면접에서 말할 수 있게 구조화해야 합니다.</p></div>
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">Service Flow</div>
+      <h2>핵심 흐름</h2>
+      <p class="lead">단순히 분석 결과만 보여주는 것이 아니라, 실제로 할 미션을 추천하고 결과물을 취업 준비 자료로 남기는 흐름입니다.</p>
+      <div class="flow" style="justify-content:flex-start;">
+        <span class="step primary">스펙 등록</span>
+        <span class="step">AI 분석</span>
+        <span class="step">미션 추천</span>
+        <span class="step">피드백</span>
+        <span class="step">포트폴리오</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="timeline">
+        <div class="timeline-row">
+          <div class="timeline-num">01</div>
+          <div>
+            <div class="timeline-title">회원가입과 로그인</div>
+            <p class="timeline-copy">사용자 계정과 인증 상태를 만들고 보호 페이지 접근을 제어합니다.</p>
+          </div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-num">02</div>
+          <div>
+            <div class="timeline-title">스펙과 목표 직무 등록</div>
+            <p class="timeline-copy">전공, 학점, 경험, 기술, 목표 직무를 분석 기준 데이터로 저장합니다.</p>
+          </div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-num">03</div>
+          <div>
+            <div class="timeline-title">미션 수행과 제출</div>
+            <p class="timeline-copy">추천 미션을 수행하고 링크, 설명, 파일 UI로 결과물을 제출합니다.</p>
+          </div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-num">04</div>
+          <div>
+            <div class="timeline-title">피드백과 포트폴리오</div>
+            <p class="timeline-copy">제출 결과물을 평가하고 프로젝트 경험 형태로 다시 정리합니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">Account</div>
+      <h2>회원가입 화면</h2>
+      <ul class="list">
+        <li><strong>기본 정보 입력</strong><br>이름, 아이디, 이메일, 학교, 전공, 비밀번호를 입력합니다.</li>
+        <li><strong>학교와 학과 검색</strong><br>입력 폼과 검색 버튼을 분리해 확장 가능한 구조로 만들었습니다.</li>
+        <li><strong>다음 단계 연결</strong><br>회원가입 후 로그인과 이메일 인증 흐름으로 이어집니다.</li>
+      </ul>
+    </div>
+    <div class="screen tall">
+      <img src="images/presentation/image2.png" alt="회원가입 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">Verification</div>
+      <h2>이메일 인증과 로그인</h2>
+      <ul class="list">
+        <li><strong>이메일 인증</strong><br>회원가입 후 인증 토큰을 만들고 SMTP 메일 발송 흐름을 구성했습니다.</li>
+        <li><strong>JWT 인증</strong><br>로그인 성공 시 토큰을 발급하고 보호 API 요청에 사용합니다.</li>
+        <li><strong>보호 페이지</strong><br>로그인하지 않은 사용자는 스펙 등록, 분석, 미션 화면에 바로 접근할 수 없습니다.</li>
+      </ul>
+    </div>
+    <div class="screen short">
+      <img src="images/presentation/image3.png" alt="이메일 인증 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">My Page</div>
+      <h2>마이페이지</h2>
+      <ul class="list">
+        <li><strong>커리어 현황 확인</strong><br>회원 상태, 등록한 스펙, 목표 직무, 최근 AI 분석 결과를 한 화면에서 확인합니다.</li>
+        <li><strong>DB 저장 구조</strong><br>사용자 정보와 스펙, 분석 결과가 백엔드 API와 DB에 연결됩니다.</li>
+        <li><strong>다음 행동 버튼</strong><br>스펙 수정과 AI 분석 보기로 핵심 흐름에 다시 진입할 수 있습니다.</li>
+      </ul>
+    </div>
+    <div class="screen tall">
+      <img src="images/presentation/image4.png" alt="마이페이지 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">Spec Register</div>
+      <h2>스펙 등록</h2>
+      <ul class="list">
+        <li><strong>목표 직무 입력</strong><br>분석 기준이 되는 목표 직무를 먼저 등록합니다.</li>
+        <li><strong>핵심 스펙 저장</strong><br>학년, 학점, 자격증, 어학 점수, 프로젝트 경험, 대외활동, 보유 기술을 입력합니다.</li>
+        <li><strong>분석 화면 연결</strong><br>저장 후 AI 분석 화면으로 이동해 준비도와 부족한 역량을 확인합니다.</li>
+      </ul>
+    </div>
+    <div class="screen tall">
+      <img src="images/presentation/spec-register-updated.png" alt="스펙 등록 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">AI Analysis</div>
+      <h2>AI 분석</h2>
+      <ul class="list">
+        <li><strong>준비도 점수</strong><br>목표 직무와 등록한 스펙을 기준으로 현재 준비도를 보여줍니다.</li>
+        <li><strong>강점과 보완점</strong><br>사용자가 이미 가진 강점과 부족한 역량을 나눠서 확인합니다.</li>
+        <li><strong>추천 준비 방향</strong><br>다음에 무엇을 보완해야 하는지 우선순위 형태로 정리합니다.</li>
+      </ul>
+    </div>
+    <div class="screen tall">
+      <img src="images/presentation/analysis-updated.png" alt="AI 분석 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">Mission</div>
+      <h2>추천 미션</h2>
+      <ul class="list">
+        <li><strong>목표 직무 기반 추천</strong><br>전공, 목표 직무, 보유 기술을 기준으로 미션을 추천합니다.</li>
+        <li><strong>결과물이 남는 과제</strong><br>단순 학습이 아니라 포트폴리오로 연결할 수 있는 과제로 구성했습니다.</li>
+        <li><strong>카드형 정보</strong><br>난이도, 기간, 필요한 역량, 제출 결과물을 한눈에 볼 수 있습니다.</li>
+      </ul>
+    </div>
+    <div class="screen tall">
+      <img src="../showcase/screenshots/mission.png" alt="추천 미션 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">Mission Detail</div>
+      <h2>미션 상세와 진행 체크</h2>
+      <ul class="list">
+        <li><strong>수행 가이드</strong><br>선택한 미션을 어떻게 진행할지 단계별 안내를 제공합니다.</li>
+        <li><strong>체크리스트 상태</strong><br>체크 항목에 따라 pending, in_progress, completed 상태를 계산합니다.</li>
+        <li><strong>제출 화면 연결</strong><br>수행 후 결과물 업로드와 피드백 화면으로 이어집니다.</li>
+      </ul>
+    </div>
+    <div class="screen tall">
+      <img src="images/presentation/mission-detail-updated.png" alt="미션 상세 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">Submission</div>
+      <h2>결과물 제출</h2>
+      <ul class="list">
+        <li><strong>미션 결과 선택</strong><br>수행한 미션을 선택하고 제출할 결과물을 연결합니다.</li>
+        <li><strong>링크와 설명 입력</strong><br>GitHub, Notion, 블로그, 배포 링크와 수행 설명을 함께 작성할 수 있습니다.</li>
+        <li><strong>파일 제출 UI</strong><br>PDF, 이미지, 텍스트/코드 파일 제출 흐름을 준비했습니다.</li>
+      </ul>
+    </div>
+    <div class="screen tall">
+      <img src="images/presentation/submission-updated.png" alt="결과물 제출 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">Feedback</div>
+      <h2>AI 피드백</h2>
+      <ul class="list">
+        <li><strong>최신 제출물 기준</strong><br>사용자가 제출한 결과물을 기준으로 평가를 생성합니다.</li>
+        <li><strong>수정 방향 제공</strong><br>잘한 점, 개선할 점, 수정 제안, 포트폴리오 반영 포인트를 나눠 보여줍니다.</li>
+        <li><strong>fallback 처리</strong><br>OpenAI API가 없거나 실패해도 기본 피드백으로 흐름이 끊기지 않게 했습니다.</li>
+      </ul>
+    </div>
+    <div class="screen tall">
+      <img src="images/presentation/feedback-updated.png" alt="AI 피드백 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">Portfolio</div>
+      <h2>포트폴리오 정리</h2>
+      <ul class="list">
+        <li><strong>프로젝트 경험화</strong><br>미션 결과물을 문제 정의, 접근 방식, 결과, 배운 점으로 재구성합니다.</li>
+        <li><strong>면접과 자기소개서 연결</strong><br>수행 과정을 말로 설명할 수 있는 형태로 정리합니다.</li>
+        <li><strong>자동 생성 확장</strong><br>피드백 결과를 바탕으로 포트폴리오 초안을 더 정교하게 만들 수 있습니다.</li>
+      </ul>
+    </div>
+    <div class="screen tall">
+      <img src="images/presentation/portfolio-updated.png" alt="포트폴리오 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">Backend</div>
+      <h2>백엔드</h2>
+      <ul class="list">
+        <li><strong>Express API</strong><br>인증, 스펙, 분석, 미션, 제출, 피드백, 포트폴리오 API를 구성했습니다.</li>
+        <li><strong>Prisma + PostgreSQL</strong><br>User, UserSpec, AnalysisResult, Mission, UserMission 모델을 설계했습니다.</li>
+        <li><strong>외부 연동 준비</strong><br>OpenAI, SMTP, CareerNet, Q-Net API 호출 구조와 fallback을 준비했습니다.</li>
+      </ul>
+    </div>
+    <div class="grid grid-2">
+      <div class="card"><h3>인증</h3><p>회원가입, 로그인, 이메일 인증, JWT 보호 API</p></div>
+      <div class="card"><h3>스펙/분석</h3><p>사용자 스펙 저장, 최신 분석 결과 조회와 생성</p></div>
+      <div class="card"><h3>미션</h3><p>추천 미션 조회, 체크리스트 진행 상태 저장</p></div>
+      <div class="card"><h3>산출물</h3><p>결과물 제출, AI 피드백, 포트폴리오 초안</p></div>
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div class="content">
+      <div class="eyebrow">Validation</div>
+      <h2>검증한 부분</h2>
+      <ul class="list">
+        <li><strong>프론트 검증</strong><br>lint와 build로 화면 코드가 깨지지 않는지 확인했습니다.</li>
+        <li><strong>백엔드 테스트</strong><br>서비스 로직 테스트와 미션 진행 상태 통합 테스트를 작성했습니다.</li>
+        <li><strong>TDD 적용</strong><br>미션 체크리스트 상태 계산은 테스트를 먼저 만들고 구현했습니다.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div class="metric">검증 명령</div>
+      <div class="flow" style="justify-content:flex-start;">
+        <span class="step primary">npm run build</span>
+        <span class="step">npm run lint</span>
+        <span class="step">backend test</span>
+        <span class="step">integration test</span>
+        <span class="step">prisma validate</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide center">
+    <div class="content">
+      <div class="eyebrow">Wrap Up</div>
+      <h2>확장 예정</h2>
+      <p class="lead">회원가입부터 포트폴리오까지 이어지는 MVP 흐름을 만들었고, 백엔드와 DB 기반까지 준비했습니다.</p>
+      <div class="grid grid-2" style="max-width: 900px; margin: 26px auto 0;">
+        <div class="card"><h3>완료</h3><p>핵심 사용자 흐름과 주요 화면 구현</p></div>
+        <div class="card"><h3>완료</h3><p>Express, Prisma, JWT 기반 백엔드 구조</p></div>
+        <div class="card"><h3>다음</h3><p>성장 분석, 컨디션 체크, 휴식 추천 확장</p></div>
+        <div class="card"><h3>다음</h3><p>파일 저장, 결제/크레딧, 배포 보안 점검</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="nav">
+  <button id="prev" aria-label="이전 슬라이드">‹</button>
+  <span class="counter" id="counter">1 / 16</span>
+  <button id="next" aria-label="다음 슬라이드">›</button>
+</div>
+
+<script>
+const slides = Array.from(document.querySelectorAll(".slide"));
+const counter = document.getElementById("counter");
+const progress = document.getElementById("progress");
+const prevButton = document.getElementById("prev");
+const nextButton = document.getElementById("next");
+let current = 0;
+
+function show(index) {
+  slides[current].classList.remove("active");
+  current = Math.max(0, Math.min(index, slides.length - 1));
+  slides[current].classList.add("active");
+  counter.textContent = `${current + 1} / ${slides.length}`;
+  progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+  prevButton.disabled = current === 0;
+  nextButton.disabled = current === slides.length - 1;
+}
+
+prevButton.addEventListener("click", () => show(current - 1));
+nextButton.addEventListener("click", () => show(current + 1));
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowRight" || event.key === " ") {
+    event.preventDefault();
+    show(current + 1);
+  }
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    show(current - 1);
+  }
+  if (event.key === "Home") show(0);
+  if (event.key === "End") show(slides.length - 1);
+});
+
+show(0);
+</script>
+</body>
+</html>
