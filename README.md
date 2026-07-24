@@ -207,15 +207,12 @@ npm run db:migration:new -- <migration_name>
 npm run db:reset
 ```
 
-`supabase start`와 `db:reset`으로 로컬 전체 스택을 실행하려면 Docker 호환 컨테이너 환경이 필요합니다. `db:reset`은 migration 적용 후 `supabase/seed.sql`을 실행하며 다음 개발용 계정과 오늘의 통합 대기열을 만듭니다.
+`supabase start`와 `db:reset`으로 로컬 전체 스택을 실행하려면 Docker 호환 컨테이너 환경이 필요합니다. `db:reset`은 migration 적용 후 `supabase/seed.sql`을 실행하며 로컬 전용 개발 계정과 오늘의 통합 대기열을 만듭니다. 이 로컬 계정을 외부 Supabase 프로젝트에 사용하면 안 됩니다.
 
-| 역할 | 이메일 | 비밀번호 |
-|---|---|---|
-| 환자 | `patient@baro-jinryo.local` | `Patient123!` |
-| 병원 관리자 | `staff@baro-jinryo.local` | `Staff123!` |
-| 플랫폼 관리자 | `platform@baro-jinryo.local` | `Platform123!` |
-
-세 계정과 비밀번호는 개발 전용입니다. 연결된 Seoul 개발용 Supabase 프로젝트에는 다음 명령으로 병원·플랫폼 관리자 계정, 승인 병원과 오늘 대기열을 준비합니다.
+연결된 Seoul 개발용 Supabase 프로젝트에는 `.env`의
+`DEVELOPMENT_STAFF_PASSWORD`와 `DEVELOPMENT_PLATFORM_PASSWORD`를 12자 이상으로
+설정한 뒤 다음 명령으로 병원·플랫폼 관리자 계정, 승인 병원과 오늘 대기열을
+준비합니다. 비밀번호는 저장소나 문서에 기록하지 않습니다.
 
 ```bash
 npm run db:seed:development -w @baro-jinryo/api
