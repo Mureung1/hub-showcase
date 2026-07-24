@@ -458,3 +458,37 @@
   flex-direction: column;
   gap: 12px;
 }
+
+/* ---- 상세 페이지 2단 ---- */
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 18px;
+  align-items: start;
+}
+
+.detail-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-aside {
+  position: sticky;
+  top: calc(var(--header-h) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-capacity-bar {
+  height: 6px;
+  background: var(--line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.detail-capacity-fill {
+  height: 100%;
+  background: var(--accent);
+}
