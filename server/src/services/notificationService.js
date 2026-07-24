@@ -1,4 +1,6 @@
 import * as notificationRepo from '../repositories/notificationRepository.js'
+import * as dealRepo from '../repositories/dealRepository.js'
+import * as storeRepo from '../repositories/storeRepository.js'
 import { sendToUsers } from './pushService.js'
 
 /*
@@ -44,6 +46,48 @@ export async function notifyDealCreated(deal, storeName) {
   } catch (err) {
     console.error('알림 처리 실패 (딜 등록은 정상 처리됨):', err.message)
     return { targetCount: 0, failed: true }
+  }
+}
+
+/*
+ * 예약 발생 시 사장님 알림 (T-17).
+ *
+ * 반드시 예약 트랜잭션이 커밋된 뒤에 호출한다 — 알림 실패가 예약을 되돌리면 안 되고,
+ * 알림에 담기는 남은 재고도 확정된 값이어야 한다.
+ * 딜 등록 알림과 마찬가지로 인앱 기록을 먼저 남기고 푸시는 부가로 보낸다.
+ */
+export async function notifyReservationCreated(reservation) {
+  try {
+    const deal = await dealRepo.findById(reservation.dealId)
+    if (!deal) return { notified: false }
+
+    const store = await storeRepo.findById(deal.storeId)
+    if (!store) return { notified: false }
+
+    const title = `새 예약 · ${store.name}`
+    const body = `${deal.name} ${reservation.qty}개 예약 · 남은 수량 ${deal.remainingQty}개`
+
+    await notificationRepo.insertMany({
+      userIds: [store.ownerId],
+      dealId: deal.id,
+      title,
+      body,
+    })
+
+    const push = await sendToUsers([store.ownerId], {
+      title,
+      body,
+      dealId: deal.id,
+      link: '/owner',
+    })
+    console.log(
+      `예약 알림: 사장님 ${store.ownerId}, 푸시 ${push.skipped ? '비활성' : `성공 ${push.sent} / 실패 ${push.failed ?? 0}`}`,
+    )
+
+    return { notified: true, ownerId: store.ownerId, push }
+  } catch (err) {
+    console.error('예약 알림 실패 (예약은 정상 처리됨):', err.message)
+    return { notified: false, failed: true }
   }
 }
 

@@ -3,6 +3,7 @@ import { httpError } from '../lib/httpError.js'
 import * as dealRepo from '../repositories/dealRepository.js'
 import * as reservationRepo from '../repositories/reservationRepository.js'
 import * as storeRepo from '../repositories/storeRepository.js'
+import { notifyReservationCreated } from './notificationService.js'
 
 const CODE_ATTEMPTS = 5
 const randomCode = () => String(Math.floor(1000 + Math.random() * 9000))
@@ -22,7 +23,7 @@ export async function createReservation(userId, { dealId, qty }) {
     throw httpError(400, '수량은 1개 이상이어야 합니다.')
   }
 
-  return withTransaction(async (client) => {
+  const reservation = await withTransaction(async (client) => {
     const deal = await dealRepo.decrementStock(id, quantity, client)
 
     if (!deal) {
@@ -59,6 +60,11 @@ export async function createReservation(userId, { dealId, qty }) {
     }
     throw httpError(500, '픽업코드 발급에 실패했습니다. 다시 시도해주세요.')
   })
+
+  // 커밋 이후에 사장님 알림 (T-17) — 알림 실패가 예약을 되돌리지 않도록 await 하지 않는다
+  notifyReservationCreated(reservation)
+
+  return reservation
 }
 
 /*
@@ -93,4 +99,11 @@ export async function confirmPickup(userId, pickupCode) {
 // 내 예약 목록 (M4)
 export async function listMyReservations(userId) {
   return reservationRepo.listByUserId(userId)
+}
+
+// 사장님 — 내 가게에 들어온 예약 목록
+export async function listStoreReservations(userId) {
+  const store = await storeRepo.findByOwnerId(userId)
+  if (!store) throw httpError(403, '가게 사장님만 예약을 볼 수 있습니다.')
+  return reservationRepo.listByStoreId(store.id)
 }

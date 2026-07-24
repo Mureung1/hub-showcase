@@ -42,6 +42,19 @@ export function getPermission() {
   return typeof Notification === 'undefined' ? 'unsupported' : Notification.permission
 }
 
+// 토큰을 발급받아 서버에 등록한다 (권한이 granted인 상태에서만 호출)
+async function issueAndRegister(messaging) {
+  const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+  const token = await getToken(messaging, {
+    vapidKey: VAPID_KEY,
+    serviceWorkerRegistration: registration,
+  })
+  if (!token) return { ok: false, reason: 'no-token' }
+
+  await api.post('/device-tokens', { token })
+  return { ok: true, token }
+}
+
 /*
  * 알림 권한을 요청하고 발급받은 토큰을 서버에 등록한다.
  * 사용자가 명시적으로 버튼을 눌렀을 때만 호출한다 — 자동 요청은 브라우저가 차단·감점한다.
@@ -53,16 +66,23 @@ export async function enablePush() {
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') return { ok: false, reason: permission }
 
-  // 서비스 워커가 백그라운드 수신을 담당한다
-  const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
-  const token = await getToken(messaging, {
-    vapidKey: VAPID_KEY,
-    serviceWorkerRegistration: registration,
-  })
-  if (!token) return { ok: false, reason: 'no-token' }
+  return issueAndRegister(messaging)
+}
 
-  await api.post('/device-tokens', { token })
-  return { ok: true, token }
+/*
+ * 권한이 이미 granted인데도 서버에 토큰이 없을 수 있다(재시딩·다른 기기·최초 등록 실패).
+ * 화면 진입 시 조용히 재동기화한다 — 권한을 새로 요청하지 않으므로 팝업이 뜨지 않는다.
+ * "권한 허용 = 등록 완료"라는 착각을 막는 안전장치.
+ */
+export async function syncTokenIfGranted() {
+  if (getPermission() !== 'granted') return { ok: false, reason: 'not-granted' }
+  const messaging = await getMessagingIfSupported()
+  if (!messaging) return { ok: false, reason: 'unsupported' }
+  try {
+    return await issueAndRegister(messaging)
+  } catch {
+    return { ok: false, reason: 'error' }
+  }
 }
 
 // 앱이 열려 있을 때(포그라운드) 수신 — 브라우저가 알림을 띄우지 않으므로 인앱으로 보여준다

@@ -61,6 +61,51 @@
   color: var(--color-error);
 }
 
+/* 버튼과 Link가 나란히 서므로 폰트·여백을 맞춘다 */
+button.owner-home__pickup {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.owner-home__flash {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  background: #e8f3ff;
+  border-radius: var(--radius-md);
+}
+
+.owner-home__flash div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.owner-home__flash b {
+  font-size: 14px;
+  color: #1b64da;
+}
+
+.owner-home__flash span {
+  font-size: 13px;
+  color: var(--color-ink-2);
+}
+
+.owner-home__flash button {
+  flex: none;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--color-ink-2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
 .owner-home__empty {
   padding: 32px 0;
   color: var(--color-ink-2);

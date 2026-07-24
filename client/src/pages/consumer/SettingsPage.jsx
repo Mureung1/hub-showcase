@@ -2,11 +2,16 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/client.js'
 import { CATEGORIES } from '../../lib/constants.js'
-import { enablePush, getPermission, isPushSupported } from '../../lib/firebase.js'
+import {
+  enablePush,
+  getPermission,
+  isPushSupported,
+  syncTokenIfGranted,
+} from '../../lib/firebase.js'
 import './SettingsPage.css'
 
 const PUSH_LABEL = {
-  granted: '브라우저 알림 켜짐',
+  granted: '이 기기 알림 다시 동기화',
   denied: '브라우저 알림 차단됨',
   default: '브라우저 알림 받기',
   unsupported: '이 브라우저는 알림을 지원하지 않아요',
@@ -36,7 +41,15 @@ function SettingsPage() {
 
   useEffect(() => {
     isPushSupported().then((ok) => {
-      if (!ok) setPushState('unsupported')
+      if (!ok) {
+        setPushState('unsupported')
+        return
+      }
+      // 권한이 이미 있으면 토큰이 서버에 없을 수 있으니 조용히 재동기화한다
+      // (재시딩 등으로 토큰이 지워졌는데 버튼만 켜져 보이던 문제 방지)
+      syncTokenIfGranted().then((res) => {
+        if (res.ok) setPushMsg('이 기기로 알림을 받을 수 있어요.')
+      })
     })
   }, [])
 
@@ -116,7 +129,7 @@ function SettingsPage() {
           type="button"
           className={`settings__push${pushState === 'granted' ? ' settings__push--on' : ''}`}
           onClick={turnOnPush}
-          disabled={pushState === 'granted' || pushState === 'unsupported'}
+          disabled={pushState === 'denied' || pushState === 'unsupported'}
         >
           {PUSH_LABEL[pushState] ?? PUSH_LABEL.default}
         </button>

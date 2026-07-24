@@ -73,3 +73,22 @@ export async function listByUserId(userId, db = pool) {
     pickupDeadlineAt: row.pickup_deadline_at,
   }))
 }
+
+// 사장님 화면 — 내 가게에 들어온 예약 목록 (예약자 닉네임·상품·상태)
+export async function listByStoreId(storeId, db = pool) {
+  const { rows } = await db.query(
+    `SELECT r.*, d.name AS deal_name, d.sale_price, u.nickname
+     FROM reservations r
+     JOIN deals d ON d.id = r.deal_id
+     JOIN users u ON u.id = r.user_id
+     WHERE d.store_id = $1
+     ORDER BY r.created_at DESC`,
+    [storeId],
+  )
+  return rows.map((row) => ({
+    ...toReservation(row),
+    dealName: row.deal_name,
+    salePrice: row.sale_price,
+    nickname: row.nickname,
+  }))
+}

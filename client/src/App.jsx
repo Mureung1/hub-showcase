@@ -6,6 +6,7 @@ import OwnerHomePage from './pages/owner/OwnerHomePage.jsx'
 import StoreRegisterPage from './pages/owner/StoreRegisterPage.jsx'
 import DealRegisterPage from './pages/owner/DealRegisterPage.jsx'
 import PickupPage from './pages/owner/PickupPage.jsx'
+import StoreReservationsPage from './pages/owner/StoreReservationsPage.jsx'
 import ConsumerHomePage from './pages/consumer/ConsumerHomePage.jsx'
 import DealDetailPage from './pages/consumer/DealDetailPage.jsx'
 import MyReservationsPage from './pages/consumer/MyReservationsPage.jsx'
@@ -54,6 +55,22 @@ function App() {
         element={
           <RequireRole role="owner">
             <PickupPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/owner/notifications"
+        element={
+          <RequireRole role="owner">
+            <NotificationsPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/owner/reservations"
+        element={
+          <RequireRole role="owner">
+            <StoreReservationsPage />
           </RequireRole>
         }
       />

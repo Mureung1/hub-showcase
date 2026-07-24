@@ -25,8 +25,10 @@ function isDeadToken(error) {
 /*
  * 대상 사용자들의 기기로 푸시 발송 (T-13).
  * 푸시가 비활성(키 미설정)이거나 실패해도 호출부를 막지 않는다 — 인앱 알림이 폴백.
+ *
+ * link: 알림 클릭 시 이동할 경로. 소비자는 /app, 사장님은 /owner (T-17).
  */
-export async function sendToUsers(userIds, { title, body, dealId }) {
+export async function sendToUsers(userIds, { title, body, dealId, link = '/app' }) {
   const messaging = getMessaging()
   if (!messaging) return { sent: 0, skipped: true }
 
@@ -37,9 +39,9 @@ export async function sendToUsers(userIds, { title, body, dealId }) {
     tokens,
     notification: { title, body },
     // 알림 클릭 시 어디로 보낼지 — 서비스 워커가 이 값을 읽는다
-    data: { dealId: dealId == null ? '' : String(dealId), url: '/app' },
+    data: { dealId: dealId == null ? '' : String(dealId), url: link },
     webpush: {
-      fcmOptions: { link: '/app' },
+      fcmOptions: { link },
     },
   })
 

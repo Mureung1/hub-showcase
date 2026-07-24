@@ -2,14 +2,20 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import api from '../../api/client.js'
 import { getSession, clearSession } from '../../lib/session.js'
+import {
+  enablePush,
+  getPermission,
+  onForegroundMessage,
+  syncTokenIfGranted,
+} from '../../lib/firebase.js'
 import './OwnerHomePage.css'
 
 const timeOf = (iso) =>
   new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
 
 /*
- * 사장님 홈 (T-04·T-05). 가게 없으면 W1로 분기, 있으면 딜 목록 표시.
- * 실시간 갱신(폴링)·예약 수 표시는 W3(T-10)에서 확장.
+ * 사장님 홈 (T-04·T-05·T-10). 가게 없으면 W1로 분기, 있으면 딜 목록·예약 현황 표시.
+ * 새 예약 알림(T-17)은 푸시로 받고, 앱을 보고 있을 땐 배너로 보여준다.
  */
 function OwnerHomePage() {
   const navigate = useNavigate()
@@ -17,6 +23,8 @@ function OwnerHomePage() {
   const [store, setStore] = useState(null)
   const [deals, setDeals] = useState([])
   const [loading, setLoading] = useState(true)
+  const [pushState, setPushState] = useState(getPermission())
+  const [flash, setFlash] = useState(null)
 
   useEffect(() => {
     let timer
@@ -50,6 +58,41 @@ function OwnerHomePage() {
     }
   }, [navigate])
 
+  // 권한이 이미 있으면 토큰을 조용히 재동기화한다 (버튼만 켜져 보이고 실제론 미등록인 경우 방지)
+  useEffect(() => {
+    syncTokenIfGranted().then(() => setPushState(getPermission()))
+  }, [])
+
+  // 대시보드를 보고 있을 때 도착한 예약 알림은 배너로 띄우고 목록도 즉시 갱신한다 (T-17)
+  useEffect(() => {
+    if (!store?.id) return
+    let unsubscribe
+    onForegroundMessage((payload) => {
+      setFlash({
+        title: payload.notification?.title ?? '새 예약',
+        body: payload.notification?.body ?? '',
+      })
+      api
+        .get('/deals', { params: { storeId: store.id } })
+        .then((res) => setDeals(res.data))
+        .catch(() => {})
+    }).then((fn) => {
+      unsubscribe = fn
+    })
+    return () => unsubscribe?.()
+  }, [store?.id])
+
+  const turnOnPush = async () => {
+    const res = await enablePush()
+    setPushState(getPermission())
+    if (!res.ok && res.reason === 'denied') {
+      setFlash({
+        title: '알림이 차단돼 있어요',
+        body: '주소창 자물쇠 아이콘에서 알림을 허용으로 바꿔주세요.',
+      })
+    }
+  }
+
   const switchRole = () => {
     clearSession()
     navigate('/')
@@ -67,6 +110,17 @@ function OwnerHomePage() {
           </p>
         </div>
         <div className="owner-home__actions">
+          {pushState !== 'unsupported' && pushState !== 'denied' && (
+            <button type="button" className="owner-home__pickup" onClick={turnOnPush}>
+              {pushState === 'granted' ? '알림 재동기화' : '알림 켜기'}
+            </button>
+          )}
+          <Link className="owner-home__pickup" to="/owner/reservations">
+            예약 현황
+          </Link>
+          <Link className="owner-home__pickup" to="/owner/notifications">
+            알림
+          </Link>
           <Link className="owner-home__pickup" to="/owner/pickup">
             픽업 확인
           </Link>
@@ -75,6 +129,18 @@ function OwnerHomePage() {
           </Link>
         </div>
       </header>
+
+      {flash && (
+        <div className="owner-home__flash" role="status">
+          <div>
+            <b>{flash.title}</b>
+            <span>{flash.body}</span>
+          </div>
+          <button type="button" onClick={() => setFlash(null)} aria-label="알림 닫기">
+            닫기
+          </button>
+        </div>
+      )}
 
       {deals.length === 0 ? (
         <p className="owner-home__empty">
