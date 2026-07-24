@@ -36,8 +36,33 @@ npm run lint      # oxlint
 npm run preview   # vite preview (static preview of dist/, no API — use npm run start for that)
 ```
 
-There is no test suite/runner configured in this repo (no test script, no test files). Verify
-changes by running the app (see above) and exercising the flow in-browser.
+### Tests
+
+**Vitest + jsdom + @testing-library/react** (`vitest.config.js` merges `vite.config.js` so plugins/
+aliases stay shared; `vitest.setup.js` registers jest-dom matchers and auto-`cleanup()`s). `globals:
+true`, so `describe`/`it`/`expect` need no import. Only `src/**/*.{test,spec}.{js,jsx}` is collected —
+`android/` and `dist/` are excluded.
+
+```bash
+npm run test                                   # vitest run (one-shot)
+npm run test:watch                             # vitest (watch)
+npx vitest run src/lib/foodCategory.test.js    # a single file
+npx vitest run -t "부족 영양소"                 # a single test/describe by name
+```
+
+Test files sit **next to the code** (`src/lib/foodCategory.test.js`, `src/utils/formatNutrient.test.js`);
+`src/__tests__/` is for cross-cutting ones (`appShell.tabbar.test.jsx`) plus two `example.*` templates
+kept as starting points. Coverage is deliberately thin and concentrated on pure logic — most of the app
+is still verified by running it in-browser. Two **pre-Vitest** node-assertion scripts remain and are
+still the guards for their areas (don't rewrite them casually — they load the real serializers):
+
+```bash
+npm run check:ads   # scripts/check-ad-recommendation.mjs — ad recommendation rules
+npm run check:csv   # scripts/check-csv-roundtrip.mjs — CSV export→import roundtrip
+```
+
+The `.claude/skills/테스트-작성` skill holds this project's TDD conventions, and
+`.claude/skills/기능-검증` a post-implementation verification checklist.
 
 To exercise the Vercel serverless path (`api/index.js`) locally, use `vercel dev` — see the "Vercel
 CLI로 로컬에서 서버리스 함수 테스트하기" section of README.md. Since `server/proxy.js` loads `.env`
@@ -69,6 +94,10 @@ tradeoff, and the known CSV-download WebView limitation are in `docs/apk-build-g
 
 ## Architecture
 
+`docs/architecture.md` renders all of the below as Mermaid diagrams (system layout, photo→nutrition
+flow, auth, deployment, CSV, ads); a condensed version is embedded in README.md. Update the diagram
+in the same change that moves the code.
+
 ### One Express app, two deployment entry points
 
 All API logic (`/api/gemini`, `/api/naver-places`, `/api/reverse-geocode`, `/api/places`,
@@ -86,6 +115,10 @@ All API logic (`/api/gemini`, `/api/naver-places`, `/api/reverse-geocode`, `/api
   `server/proxy.js` restores onto `req.url` when `process.env.VERCEL` is set.
 
 Both deployments coexist in the same repo/branch; nothing needs to be picked at build time.
+
+Every `/api` route is rate-limited by IP (`express-rate-limit`): 60 req/min overall, and `/api/gemini`
+additionally 30 per 10 min because it burns paid OpenRouter tokens. Hammering the analyze flow in a
+test loop will start returning `요청이 너무 많습니다` — that's the limiter, not a bug.
 
 ### Why a proxy exists at all
 
@@ -136,7 +169,7 @@ showing another cuisine. `전체` keeps the exact pre-existing behavior, prompt 
 (`vitaminD`/`calcium`/…)가 섞여 있고, `AD_NUTRIENTS`의 `tracked` 플래그가 둘을 구분한다. `sodium`은
 한도형이라 의도적으로 없다. `COUPANG_DISCLOSURE` 문구와 AD 배지는 어떤 상태에서도 렌더링을 생략하면
 안 된다(법정 고지). 추천 로직 검증은 `npm run check:ads`
-(`scripts/check-ad-recommendation.mjs` — 이 저장소엔 테스트 러너가 없어 노드 단언 스크립트로 대신한다).
+(`scripts/check-ad-recommendation.mjs` — Vitest 도입 이전에 만든 노드 단언 스크립트라 그대로 남아 있다).
 식당 광고는 PRD v2.0 §6에서 스코프 아웃돼 관련 목업(`SPONSORED_RESTAURANTS`, `PlaceList`의 `isAd` 분기)이
 제거됐다.
 
