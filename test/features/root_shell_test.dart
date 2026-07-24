@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/theme/app_theme.dart';
+import 'package:one_step/core/widgets/quest_card.dart';
 import 'package:one_step/features/quest/quest_create_screen.dart';
 import 'package:one_step/features/quest/quest_list_screen.dart';
 import 'package:one_step/features/shop/shop_screen.dart';
@@ -172,5 +173,36 @@ void main() {
     final quests = await repo.fetchQuests(uid);
     expect(quests.single.title, '지원서 초안 쓰기');
     expect(quests.single.difficulty, Difficulty.normal);
+  });
+
+  testWidgets('홈의 진행 중 퀘스트 카드를 탭하면 오늘의 퀘스트 탭으로 이동한다', (tester) async {
+    // 홈 미리보기 카드는 완료 토글 없이 보기 전용이라, 탭하면 전체 목록을
+    // 관리할 수 있는 퀘스트 탭으로 넘어가야 한다(개별 상세가 아니라).
+    await pumpApp(
+      tester,
+      quests: const [
+        Quest(id: 'q1', title: '지원서 초안 쓰기', difficulty: Difficulty.normal, order: 0),
+      ],
+    );
+
+    // 홈에서 시작 — 목록 화면은 아직 없다.
+    expect(find.text('오늘도 한 걸음.'), findsOneWidget);
+    expect(find.byType(QuestListScreen), findsNothing);
+
+    // 미리보기 카드는 캐릭터 카드·버튼 아래라 뷰포트 밖일 수 있다. 스크롤로 올린다.
+    final card = find.widgetWithText(QuestCard, '지원서 초안 쓰기');
+    await tester.scrollUntilVisible(card, 200, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+
+    // 홈의 미리보기 카드(퀘스트 탭 진입 버튼이 아니라 카드 자체)를 탭한다.
+    await tester.tap(card);
+    await tester.pumpAndSettle();
+
+    // 오늘의 퀘스트 탭으로 전환됐다.
+    expect(find.byType(QuestListScreen), findsOneWidget);
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      1,
+    );
   });
 }

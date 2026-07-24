@@ -215,7 +215,13 @@ class _PendingQuests extends StatelessWidget {
         return Column(
           children: [
             for (final quest in preview) ...[
-              QuestCard(quest: quest),
+              // 홈 미리보기 카드는 완료 토글 없이 보기 전용이다. 탭하면 개별 상세가
+              // 아니라 **오늘의 퀘스트 탭**으로 전환한다 — 전체 목록에서 완료·관리한다
+              // ("오늘의 퀘스트" 버튼과 같은 목적지).
+              QuestCard(
+                quest: quest,
+                onTap: () => context.go('/quest'),
+              ),
               AppSpacing.gapSm,
             ],
           ],
