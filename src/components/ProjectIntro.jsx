@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { WEAK_AREAS_BY_EXAM } from '../constants/examAreas'
+import { createDailyStudyPlan } from '../utils/studyPlanGenerator'
 
 const MENU_ITEMS = [
-  { id: 'intro', label: '서비스 소개' },
-  { id: 'exam', label: '시험 선택' },
+  { id: 'intro', label: '시험 선택' },
   { id: 'info', label: '정보 입력' },
-  { id: 'diagnosis', label: '취약 영역 진단' },
+  { id: 'diagnosis', label: '취약 영역' },
   { id: 'plan', label: '학습 계획' },
+  { id: 'today', label: '오늘의 학습' },
 ]
 
 const EXAMS = [
@@ -39,6 +40,18 @@ const INITIAL_FORM_VALUES = {
   dailyStudyMinutes: '',
 }
 
+const SCORE_STATUS = {
+  hasScore: 'hasScore',
+  noScore: 'noScore',
+}
+
+const TODAY_TASKS = [
+  { id: 'review', title: '취약 영역 핵심 개념 복습', minutes: 20 },
+  { id: 'practice', title: '실전 문항 2세트 풀이', minutes: 40 },
+  { id: 'wrong-note', title: '오답 원인 3개 정리', minutes: 20 },
+  { id: 'speak-check', title: '답변 또는 지문 1개 소리 내어 점검', minutes: 20 },
+]
+
 const STUDY_PLAN_ID_STORAGE_KEY = 'studyPlanId'
 const DEFAULT_TOEFL_SCORE_SYSTEM = 'scaled'
 const TOEFL_SCORE_SYSTEMS = {
@@ -52,9 +65,14 @@ const DEFAULT_LOOKUP_ERROR_MESSAGE = '저장된 학습 계획을 다시 불러�
 
 function ProjectIntro() {
   const [activeScreen, setActiveScreen] = useState('intro')
-  const [selectedExam, setSelectedExam] = useState('TOEIC')
+  const [selectedExam, setSelectedExam] = useState('')
   const [formValues, setFormValues] = useState(INITIAL_FORM_VALUES)
   const [toeflScoreSystem, setToeflScoreSystem] = useState(DEFAULT_TOEFL_SCORE_SYSTEM)
+  const [scoreStatus, setScoreStatus] = useState(SCORE_STATUS.hasScore)
+  const [selectedWeakAreas, setSelectedWeakAreas] = useState([])
+  const [weakAreaNote, setWeakAreaNote] = useState('')
+  const [diagnosisError, setDiagnosisError] = useState('')
+  const [completedTasks, setCompletedTasks] = useState([])
   const [fieldErrors, setFieldErrors] = useState({})
   const [savedStudyPlan, setSavedStudyPlan] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -108,8 +126,21 @@ function ProjectIntro() {
     setSelectedExam(examName)
     setFormValues(INITIAL_FORM_VALUES)
     setToeflScoreSystem(DEFAULT_TOEFL_SCORE_SYSTEM)
+    setScoreStatus(SCORE_STATUS.hasScore)
+    setSelectedWeakAreas([])
+    setWeakAreaNote('')
+    setDiagnosisError('')
     setFieldErrors({})
     setErrorMessage('')
+  }
+
+  function handleScoreStatusChange(nextScoreStatus) {
+    setScoreStatus(nextScoreStatus)
+    setFieldErrors((currentErrors) => ({ ...currentErrors, currentScore: '' }))
+
+    if (nextScoreStatus === SCORE_STATUS.noScore) {
+      setFormValues((currentValues) => ({ ...currentValues, currentScore: '' }))
+    }
   }
 
   function handleToeflScoreSystemChange(scoreSystem) {
@@ -140,7 +171,7 @@ function ProjectIntro() {
       return
     }
 
-    const currentScore = formValues.currentScore.trim()
+    const currentScore = scoreStatus === SCORE_STATUS.hasScore ? formValues.currentScore.trim() : ''
     const requestBody = {
       examType: selectedExam,
       isFirstAttempt: currentScore === '',
@@ -189,6 +220,37 @@ function ProjectIntro() {
     }
   }
 
+  function handleInfoNext() {
+    setErrorMessage('')
+    setFieldErrors({})
+
+    const dailyStudyMinutes = Number(formValues.dailyStudyMinutes)
+
+    if (!Number.isInteger(dailyStudyMinutes)) {
+      setErrorMessage('하루 공부 시간은 분 단위 숫자로 입력해 주세요.')
+      return
+    }
+
+    const scoreValidationErrors = validateScoreInputs(selectedExam, toeflScoreSystem, formValues)
+
+    if (Object.keys(scoreValidationErrors).length > 0) {
+      setFieldErrors(scoreValidationErrors)
+      return
+    }
+
+    setActiveScreen('diagnosis')
+  }
+
+  function handleCreatePlan() {
+    if (selectedWeakAreas.length === 0) {
+      setDiagnosisError('취약 영역을 하나 이상 선택해 주세요.')
+      return
+    }
+
+    setDiagnosisError('')
+    handleSaveStudyPlan()
+  }
+
   return (
     <section className="project-intro">
       <nav className="top-menu" aria-label="학습 계획 화면 메뉴">
@@ -198,6 +260,7 @@ function ProjectIntro() {
             {MENU_ITEMS.map((item) => (
               <button
                 className={`menu-button ${activeScreen === item.id ? 'menu-button-active' : ''}`}
+                data-screen-id={item.id}
                 key={item.id}
                 type="button"
                 onClick={() => setActiveScreen(item.id)}
@@ -211,7 +274,7 @@ function ProjectIntro() {
 
       <div className="intro-shell">
         <header className="intro-header">
-          <span className="intro-label">STEP {MENU_ITEMS.findIndex((item) => item.id === activeScreen) + 1}/5</span>
+          <span className="intro-label">STEP {Math.min(MENU_ITEMS.findIndex((item) => item.id === activeScreen) + 1, 5)}/5</span>
           <h1>준비할 시험과 목표를 정리해 학습 흐름을 만들어 보세요</h1>
           <p className="intro-tagline">
             시험 선택부터 정보 입력, 취약 영역 진단, 학습 계획 확인까지 한 화면 안에서 차분하게 이동할 수 있는
@@ -219,16 +282,17 @@ function ProjectIntro() {
           </p>
           <div className="intro-summary">
             <span className="summary-pill">현재 화면: {screenTitle}</span>
-            <span className="summary-pill">선택 시험: {selectedExam}</span>
+            <span className="summary-pill">선택 시험: {selectedExam || '선택 전'}</span>
             <span className="summary-pill">{savedStudyPlan ? 'DB 저장 완료' : 'DB 저장 전'}</span>
           </div>
         </header>
 
-        {activeScreen === 'intro' && <IntroScreen />}
-        {activeScreen === 'exam' && (
-          <ExamSelection
+        {activeScreen === 'intro' && (
+          <StartScreen
+            formValues={formValues}
+            savedStudyPlan={savedStudyPlan}
             selectedExam={selectedExam}
-            onPrevious={() => setActiveScreen('intro')}
+            selectedWeakAreas={selectedWeakAreas}
             onNext={() => setActiveScreen('info')}
             onSelectExam={handleSelectExam}
           />
@@ -239,15 +303,48 @@ function ProjectIntro() {
             fieldErrors={fieldErrors}
             formValues={formValues}
             isSaving={isSaving}
+            scoreStatus={scoreStatus}
             selectedExam={selectedExam}
             toeflScoreSystem={toeflScoreSystem}
-            onSave={handleSaveStudyPlan}
+            onNext={handleInfoNext}
+            onPrevious={() => setActiveScreen('intro')}
+            onScoreStatusChange={handleScoreStatusChange}
             onToeflScoreSystemChange={handleToeflScoreSystemChange}
             onUpdate={updateFormValue}
           />
         )}
-        {activeScreen === 'diagnosis' && <DiagnosisScreen selectedExam={selectedExam} />}
-        {activeScreen === 'plan' && <PlanDashboard savedStudyPlan={savedStudyPlan} selectedExam={selectedExam} />}
+        {activeScreen === 'diagnosis' && (
+          <DiagnosisScreen
+            selectedExam={selectedExam}
+            selectedWeakAreas={selectedWeakAreas}
+            errorMessage={diagnosisError || errorMessage}
+            isSaving={isSaving}
+            weakAreaNote={weakAreaNote}
+            onCreatePlan={handleCreatePlan}
+            onNoteChange={setWeakAreaNote}
+            onPrevious={() => setActiveScreen('info')}
+            onToggleWeakArea={setSelectedWeakAreas}
+          />
+        )}
+        {activeScreen === 'plan' && (
+          <PlanDashboard
+            formValues={formValues}
+            savedStudyPlan={savedStudyPlan}
+            selectedExam={selectedExam}
+            selectedWeakAreas={selectedWeakAreas}
+            onEditInfo={() => setActiveScreen('info')}
+            onViewToday={() => setActiveScreen('today')}
+          />
+        )}
+        {activeScreen === 'today' && (
+          <TodayStudy
+            completedTasks={completedTasks}
+            formValues={formValues}
+            savedStudyPlan={savedStudyPlan}
+            tasks={TODAY_TASKS}
+            onToggleTask={setCompletedTasks}
+          />
+        )}
       </div>
     </section>
   )
@@ -433,6 +530,63 @@ function validateOpicScores(currentScore, targetScore, errors) {
   }
 }
 
+function StartScreen({ formValues, savedStudyPlan, selectedExam, selectedWeakAreas, onNext, onSelectExam }) {
+  return (
+    <section className="start-layout">
+      <div className="start-main">
+        <ExamSelection selectedExam={selectedExam} compact onNext={onNext} onPrevious={() => {}} onSelectExam={onSelectExam} />
+      </div>
+      <SummaryBoard
+        formValues={savedStudyPlan || formValues}
+        selectedExam={selectedExam}
+        selectedWeakAreas={selectedWeakAreas}
+      />
+    </section>
+  )
+}
+
+function SummaryBoard({ formValues, selectedExam, selectedWeakAreas }) {
+  return (
+    <aside className="summary-board" aria-label="입력 요약">
+      <div>
+        <span className="board-label">선택한 시험</span>
+        <strong>{selectedExam || '선택 전'}</strong>
+      </div>
+      <div className="summary-metric-grid">
+        <SummaryMetric label="현재 점수" value={formValues.currentScore || '아직 입력되지 않았어요'} />
+        <SummaryMetric label="목표 점수" value={formValues.targetScore || '아직 입력되지 않았어요'} />
+        <SummaryMetric
+          label="하루 학습"
+          value={formValues.dailyStudyMinutes ? `${formValues.dailyStudyMinutes}분` : '아직 입력되지 않았어요'}
+        />
+      </div>
+      <div>
+        <span className="board-label">취약 영역</span>
+        <div className="tag-list">
+          {selectedWeakAreas.length > 0 ? (
+            selectedWeakAreas.map((area) => (
+              <span className="weak-tag" key={area}>
+                {area}
+              </span>
+            ))
+          ) : (
+            <span className="empty-text">선택 전</span>
+          )}
+        </div>
+      </div>
+    </aside>
+  )
+}
+
+function SummaryMetric({ label, value }) {
+  return (
+    <div className="summary-metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  )
+}
+
 function IntroScreen() {
   return (
     <section className="feature-section">
@@ -473,11 +627,11 @@ function IntroScreen() {
   )
 }
 
-function ExamSelection({ selectedExam, onNext, onPrevious, onSelectExam }) {
-  const [hasSelectedExam, setHasSelectedExam] = useState(false)
+function ExamSelection({ compact = false, selectedExam, onNext, onPrevious, onSelectExam }) {
+  const [hasSelectedExam, setHasSelectedExam] = useState(Boolean(selectedExam))
 
   return (
-    <section className="exam-section">
+    <section className={compact ? 'start-exam-section exam-section-compact' : 'exam-section'}>
       <div className="section-head">
         <h2>시험 선택</h2>
         <p>준비할 시험을 선택하면 다음 입력 단계에서 같은 시험 기준의 정보가 저장됩니다.</p>
@@ -498,11 +652,6 @@ function ExamSelection({ selectedExam, onNext, onPrevious, onSelectExam }) {
                 onSelectExam(exam.name)
               }}
             >
-              {isSelected && (
-                <span aria-hidden="true" className="exam-card-check">
-                  ✓
-                </span>
-              )}
               <h3 className="exam-title">{exam.name}</h3>
               <p className="exam-description">{exam.description}</p>
               <ul className="exam-meta">
@@ -515,9 +664,11 @@ function ExamSelection({ selectedExam, onNext, onPrevious, onSelectExam }) {
         })}
       </div>
       <div className="form-actions">
-        <button className="secondary-action" type="button" onClick={onPrevious}>
-          이전
-        </button>
+        {!compact && (
+          <button className="secondary-action" type="button" onClick={onPrevious}>
+            이전
+          </button>
+        )}
         <button className="primary-action" type="button" disabled={!hasSelectedExam || !selectedExam} onClick={onNext}>
           다음
         </button>
@@ -531,9 +682,12 @@ function InfoInput({
   fieldErrors,
   formValues,
   isSaving,
+  scoreStatus,
   selectedExam,
   toeflScoreSystem,
-  onSave,
+  onNext,
+  onPrevious,
+  onScoreStatusChange,
   onToeflScoreSystemChange,
   onUpdate,
 }) {
@@ -559,16 +713,28 @@ function InfoInput({
         </div>
       )}
 
+      <SegmentedOptionGroup
+        ariaLabel="점수 보유 여부"
+        options={[
+          { label: '공식 또는 모의 점수가 있어요', value: SCORE_STATUS.hasScore },
+          { label: '아직 점수가 없어요', value: SCORE_STATUS.noScore },
+        ]}
+        selectedValue={scoreStatus}
+        onSelect={onScoreStatusChange}
+      />
+
       <div className={`input-grid ${selectedExam === 'OPIc' ? 'opic-score-grid' : ''}`}>
-        <ScoreField
-          errorMessage={fieldErrors.currentScore}
-          fieldName="currentScore"
-          label={selectedExam === 'OPIc' ? '현재 등급' : '현재 점수'}
-          selectedExam={selectedExam}
-          toeflScoreSystem={toeflScoreSystem}
-          value={formValues.currentScore}
-          onUpdate={onUpdate}
-        />
+        {scoreStatus === SCORE_STATUS.hasScore && (
+          <ScoreField
+            errorMessage={fieldErrors.currentScore}
+            fieldName="currentScore"
+            label={selectedExam === 'OPIc' ? '현재 등급' : '현재 점수'}
+            selectedExam={selectedExam}
+            toeflScoreSystem={toeflScoreSystem}
+            value={formValues.currentScore}
+            onUpdate={onUpdate}
+          />
+        )}
         <ScoreField
           errorMessage={fieldErrors.targetScore}
           fieldName="targetScore"
@@ -598,8 +764,11 @@ function InfoInput({
       {errorMessage && <p className="form-message form-message-error">{errorMessage}</p>}
 
       <div className="form-actions">
-        <button className="primary-action" type="button" disabled={isSaving} onClick={onSave}>
-          {isSaving ? '저장 중...' : '저장하고 학습 계획 보기'}
+        <button className="secondary-action" type="button" onClick={onPrevious}>
+          이전
+        </button>
+        <button className="primary-action" type="button" disabled={isSaving} onClick={onNext}>
+          다음
         </button>
       </div>
     </section>
@@ -697,12 +866,21 @@ function getScorePlaceholder(selectedExam, toeflScoreSystem) {
   return '예: 650'
 }
 
-function DiagnosisScreen({ selectedExam }) {
-  const [selectedWeakAreas, setSelectedWeakAreas] = useState([])
+function DiagnosisScreen({
+  errorMessage,
+  isSaving,
+  selectedExam,
+  selectedWeakAreas,
+  weakAreaNote,
+  onCreatePlan,
+  onNoteChange,
+  onPrevious,
+  onToggleWeakArea,
+}) {
   const weakAreas = WEAK_AREAS_BY_EXAM[selectedExam] || []
 
   function toggleWeakArea(area) {
-    setSelectedWeakAreas((currentAreas) => {
+    onToggleWeakArea((currentAreas) => {
       if (currentAreas.includes(area)) {
         return currentAreas.filter((selectedArea) => selectedArea !== area)
       }
@@ -712,95 +890,210 @@ function DiagnosisScreen({ selectedExam }) {
   }
 
   return (
-    <section className="diagnosis-section">
-      <div className="section-head">
-        <h2>취약 영역 진단</h2>
-        <p>{selectedExam} 학습 계획을 만들기 전 우선 보완할 영역을 가볍게 표시하는 프로토타입입니다.</p>
-      </div>
+    <section className="split-section diagnosis-section">
+      <div>
+        <div className="section-head">
+          <h2>취약 영역 진단</h2>
+          <p>{selectedExam}에서 우선 보완할 영역을 선택하고, 구체적인 어려움을 적어 주세요.</p>
+        </div>
 
-      <div className="weak-grid">
-        {weakAreas.map((area, index) => {
-          const isSelected = selectedWeakAreas.includes(area)
+        <div className="weak-grid">
+          {weakAreas.map((area, index) => {
+            const isSelected = selectedWeakAreas.includes(area)
 
-          return (
-            <button
-              aria-pressed={isSelected}
-              className={isSelected ? 'weak-card weak-card-active' : 'weak-card'}
-              key={area}
-              type="button"
-              onClick={() => toggleWeakArea(area)}
-            >
-              <span className="weak-number">0{index + 1}</span>
-              <strong>{area}</strong>
-              <span>진단 연결 예정 항목</span>
-            </button>
-          )
-        })}
+            return (
+              <button
+                aria-pressed={isSelected}
+                className={isSelected ? 'weak-card weak-card-active' : 'weak-card'}
+                key={area}
+                type="button"
+                onClick={() => toggleWeakArea(area)}
+              >
+                <span className="weak-icon" aria-hidden="true">
+                  {isSelected ? '✓' : `0${index + 1}`}
+                </span>
+                <strong>{area}</strong>
+                <span>오늘 계획에 우선 반영</span>
+              </button>
+            )
+          })}
+        </div>
+
+        <label className="input-field weak-note">
+          <span>구체적으로 어떤 점이 어렵나요?</span>
+          <textarea
+            value={weakAreaNote}
+            placeholder="예: 들은 내용을 바로 이해하기 어렵거나, 질문을 듣고 문장을 바로 만들기 어려워요."
+            onChange={(event) => onNoteChange(event.target.value)}
+          />
+        </label>
+        {errorMessage && <p className="form-message form-message-error">{errorMessage}</p>}
+        <div className="form-actions">
+          <button className="secondary-action" type="button" onClick={onPrevious}>
+            이전
+          </button>
+          <button className="primary-action" type="button" disabled={isSaving || selectedWeakAreas.length === 0} onClick={onCreatePlan}>
+            {isSaving ? '저장 중...' : '학습 계획 생성하기'}
+          </button>
+        </div>
       </div>
+      <aside className="summary-card">
+        <span className="board-label">선택 영역</span>
+        <div className="tag-list">
+          {selectedWeakAreas.length > 0 ? (
+            selectedWeakAreas.map((area) => (
+              <span className="weak-tag weak-tag-selected" key={area}>
+                {area}
+              </span>
+            ))
+          ) : (
+            <span className="empty-text">취약 영역을 선택해 주세요</span>
+          )}
+        </div>
+      </aside>
     </section>
   )
 }
 
-function PlanDashboard({ savedStudyPlan, selectedExam }) {
-  return (
-    <section className="dashboard-section">
-      <div className="section-head">
-        <h2>학습 계획</h2>
-        <p>
-          {savedStudyPlan
-            ? 'Supabase에 저장한 뒤 다시 조회한 학습 계획 정보입니다.'
-            : `${selectedExam} 목표 달성을 위한 학습 계획 결과가 이곳에 표시됩니다.`}
-        </p>
-      </div>
+function PlanDashboard({ formValues, savedStudyPlan, selectedExam, selectedWeakAreas, onEditInfo, onViewToday }) {
+  const planSource = savedStudyPlan || { ...formValues, examType: selectedExam }
+  const dailyMinutes = Number(planSource.dailyStudyMinutes) || 120
+  const dailyPlan = createDailyStudyPlan({
+    examType: selectedExam,
+    dailyStudyMinutes: dailyMinutes,
+    weakAreas: selectedWeakAreas,
+  })
+  const priorityArea = selectedWeakAreas[0] || dailyPlan[0]?.area || '기본기'
+  const daysLeft = getDaysLeft(planSource.examDate)
 
-      {savedStudyPlan ? (
-        <div className="result-panel">
-          <div className="result-item">
-            <span>시험 종류</span>
-            <strong>{savedStudyPlan.examType}</strong>
-          </div>
-          <div className="result-item">
-            <span>현재 점수</span>
-            <strong>{savedStudyPlan.currentScore || '미입력'}</strong>
-          </div>
-          <div className="result-item">
-            <span>목표 점수</span>
-            <strong>{savedStudyPlan.targetScore}</strong>
-          </div>
-          <div className="result-item">
-            <span>시험일</span>
-            <strong>{savedStudyPlan.examDate}</strong>
-          </div>
-          <div className="result-item">
-            <span>하루 공부 시간</span>
-            <strong>{savedStudyPlan.dailyStudyMinutes}분</strong>
-          </div>
-          <div className="result-item result-item-wide">
+  return (
+    <section className="split-section dashboard-section">
+      <div>
+        <div className="section-head">
+          <h2>학습 계획</h2>
+          <p>
+            {planSource.currentScore
+              ? `현재 ${planSource.currentScore}에서 목표 ${planSource.targetScore || '미입력'}을 준비하고 있으며, 시험까지 ${daysLeft} 남았습니다.`
+              : `현재 점수 없이 목표 ${planSource.targetScore || '미입력'}을 준비하고 있으며, 시험까지 ${daysLeft} 남았습니다.`}
+          </p>
+        </div>
+        <div className="result-panel compact-results">
+          <article className="result-item priority-result">
+            <span>우선 학습 영역</span>
+            <strong>{priorityArea}</strong>
+          </article>
+          <ResultItem label="현재 점수" value={planSource.currentScore || '미입력'} />
+          <ResultItem label="목표 점수" value={planSource.targetScore || '미입력'} />
+          <ResultItem label="하루 학습 시간" value={`${dailyMinutes}분`} />
+        </div>
+        <div className="bar-list">
+          {dailyPlan.map((item) => (
+            <div className="bar-row" key={item.area}>
+              <span>{item.area}</span>
+              <div className="bar-track">
+                <span style={{ width: `${Math.max(8, Math.round((item.minutes / dailyMinutes) * 100))}%` }} />
+              </div>
+              <strong>{Math.round((item.minutes / dailyMinutes) * 100)}%</strong>
+            </div>
+          ))}
+        </div>
+        <div className="form-actions">
+          <button className="secondary-action" type="button" onClick={onEditInfo}>
+            입력 정보 수정
+          </button>
+          <button className="primary-action" type="button" onClick={onViewToday}>
+            오늘의 학습 보기
+          </button>
+        </div>
+      </div>
+      <aside className="summary-card weekly-goal-card">
+        <span className="board-label">이번 주 핵심 목표</span>
+        <strong>{priorityArea} 루틴 고정</strong>
+        <p>매일 {Math.max(20, Math.round(dailyMinutes * 0.35))}분 이상을 우선 영역에 배정하고, 오답 원인을 한 줄로 남깁니다.</p>
+        {savedStudyPlan?.id && (
+          <div className="result-item saved-id">
             <span>저장된 데이터 id</span>
             <strong>{savedStudyPlan.id}</strong>
           </div>
-        </div>
-      ) : (
-        <div className="dashboard-grid">
-          <article className="dashboard-card dashboard-card-blue">
-            <span>남은 시험일</span>
-            <strong>D-42</strong>
-            <p>정보 입력 화면에서 저장하면 실제 DB 결과가 이 영역에 표시됩니다.</p>
-          </article>
-          <article className="dashboard-card">
-            <span>오늘의 학습</span>
-            <strong>읽기 40분</strong>
-            <p>저장 전 기본 예시 카드입니다.</p>
-          </article>
-          <article className="dashboard-card dashboard-card-pink">
-            <span>주간 완료율</span>
-            <strong>68%</strong>
-            <p>이후 학습 기록 기능과 연결될 예정입니다.</p>
-          </article>
-        </div>
-      )}
+        )}
+      </aside>
     </section>
   )
+}
+
+function ResultItem({ label, value }) {
+  return (
+    <div className="result-item">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  )
+}
+
+function TodayStudy({ completedTasks, formValues, savedStudyPlan, tasks, onToggleTask }) {
+  const planSource = savedStudyPlan || formValues
+  const completedCount = completedTasks.length
+  const remainingCount = tasks.length - completedCount
+  const progress = Math.round((completedCount / tasks.length) * 100)
+  const dailyMinutes = Number(planSource.dailyStudyMinutes) || tasks.reduce((total, task) => total + task.minutes, 0)
+  const daysLeft = getDaysLeft(planSource.examDate)
+
+  function toggleTask(task) {
+    onToggleTask((currentTasks) =>
+      currentTasks.includes(task.id) ? currentTasks.filter((item) => item !== task.id) : [...currentTasks, task.id],
+    )
+  }
+
+  return (
+    <section className="split-section today-section">
+      <div>
+        <div className="section-head">
+          <h2>오늘의 학습</h2>
+          <p>지금 바로 실행할 수 있는 항목만 체크리스트로 정리했습니다.</p>
+        </div>
+        <div className="task-list">
+          {tasks.map((task) => {
+            const isDone = completedTasks.includes(task.id)
+
+            return (
+              <label className={`task-item ${isDone ? 'task-item-done' : ''}`} key={task.id}>
+                <input checked={isDone} type="checkbox" onChange={() => toggleTask(task)} />
+                <span>{task.title}</span>
+                <strong>{task.minutes}분</strong>
+              </label>
+            )
+          })}
+        </div>
+      </div>
+      <aside className="summary-card progress-card">
+        <div className="circle-progress" style={{ '--progress': `${progress}%` }}>
+          <strong>{progress}%</strong>
+        </div>
+        <p>{completedCount}/{tasks.length}개 완료</p>
+        <div className="summary-metric-grid">
+          <SummaryMetric label="남은 항목" value={`${remainingCount}개`} />
+          <SummaryMetric label="총 학습 시간" value={`${dailyMinutes}분`} />
+          <SummaryMetric label="시험까지" value={daysLeft} />
+        </div>
+      </aside>
+    </section>
+  )
+}
+
+function getDaysLeft(examDate) {
+  if (!examDate) {
+    return '미입력'
+  }
+
+  const today = new Date()
+  const targetDate = new Date(`${examDate}T00:00:00`)
+  const daysLeft = Math.ceil((targetDate - today) / 86400000)
+
+  if (!Number.isFinite(daysLeft)) {
+    return '미입력'
+  }
+
+  return daysLeft >= 0 ? `D-${daysLeft}` : '종료'
 }
 
 export default ProjectIntro
