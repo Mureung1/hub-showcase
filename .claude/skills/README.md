@@ -2,9 +2,10 @@
 
 이 프로젝트(`.claude/skills/`)에 있는 스킬들을 한눈에 보는 인덱스입니다. 각 스킬의 상세 규칙은 해당 폴더의 `SKILL.md`에, 실제 적용 규칙은 대부분 `docs/*.md`에 있습니다 — 여기는 "언제 뭘 쓰는지"만 빠르게 찾기 위한 문서입니다. `CLAUDE.md`에도 각 스킬이 관련 섹션마다 연결돼 있으니, 스킬 자체를 고치면 `CLAUDE.md`의 해당 줄도 같이 갱신하세요.
 
+> 코드 컨벤션은 `.claude/rules/frontend-convention.md`, `.claude/rules/backend-convention.md`로 이전됨 (`frontend/`, `backend/` 경로 작업 시 자동 로드).
+
 | 스킬 | 언제 쓰나 | 근거 문서 |
 | --- | --- | --- |
-| [`code-convention`](code-convention/SKILL.md) | 코드를 작성·수정·리뷰할 때 (새 파일·컴포넌트·라우트·서비스·모델 포함) 항상 먼저 | [docs/conventions.md](../../docs/conventions.md) |
 | [`security-convention`](security-convention/SKILL.md) | 새 라우트/컨트롤러 작성·수정, 배포 설정(환경변수·CORS·헤더) 다룰 때 | [docs/security.md](../../docs/security.md) |
 | [`backend-testing`](backend-testing/SKILL.md) | 새 서비스 함수·라우트 추가 또는 회귀 테스트가 필요할 때 (유닛/통합테스트 작성) | [docs/testing.md](../../docs/testing.md) |
 | [`firstpr-ui`](firstpr-ui/SKILL.md) | 랜딩·화면·컴포넌트 등 UI를 만들거나 정리할 때 | [docs/design.md](../../docs/design.md) |

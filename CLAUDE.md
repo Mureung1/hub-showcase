@@ -47,7 +47,7 @@
 
 ## 코드 작성 규칙
 - 코드 작성·수정·리뷰는 [docs/conventions.md](docs/conventions.md)의 규칙(파일 구조·네이밍·레이어 패턴·에러 처리·스타일)을 따를 것
-- `code-convention` 스킬(`.claude/skills/code-convention/`)이 이 규칙을 적용하도록 구성되어 있음
+- `.claude/rules/frontend-convention.md`, `.claude/rules/backend-convention.md`가 각각 `frontend/`, `backend/` 경로 작업 시 이 규칙을 자동 적용하도록 구성되어 있음
 - 백엔드(Node.js + Express + Prisma)는 `routes → controllers → services` 레이어드 구조로 시작하고, DB 스키마는 `prisma/schema.prisma`에 정의할 것
 - 새 라우트/컨트롤러를 작성·수정하거나 배포 관련 설정(환경변수·CORS·헤더)을 다룰 때는 [docs/security.md](docs/security.md)의 규칙(예외 처리·입력 검증·배포 보안 설정)을 따를 것
 - `security-convention` 스킬(`.claude/skills/security-convention/`)이 이 규칙을 적용하도록 구성되어 있음
