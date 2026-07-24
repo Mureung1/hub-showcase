@@ -8,8 +8,8 @@ CS 실습생을 위한 Unix/Git 명령어 사전 웹앱. 기획/화면 흐름은
 |---|---|---|
 | FE | React 19 + Vite, react-router-dom | 적용됨 (`src/`) |
 | BE | Node.js + Express | 신규 (`server/`, 뼈대만 구성됨) |
-| DB | Supabase (Postgres) | Phase 2 예정 |
-| 검색엔진 | Meilisearch (Cloud) | Phase 2 예정 |
+| DB | Supabase (Postgres) | 적용됨 (`categories`/`commands`/`scenarios` 테이블) |
+| 검색엔진 | Meilisearch (Cloud) | 적용됨 (`server/src/routes/search.js`, `server/src/config/meilisearch.js`) |
 | 배포 | FE: Vercel/Netlify, BE: Render/Railway | 예정 |
 
 ## 디렉토리 구조
@@ -19,7 +19,7 @@ src/            # FE (React+Vite), 기존 그대로
 server/         # BE (Express), 별도 package.json — FE와 독립적으로 배포
   src/
     index.js       # Express 앱 진입점, 공통 에러 핸들러 포함
-    routes/        # API 라우트 (예: chat.js — AI 챗봇, 아직 미정)
+    routes/        # API 라우트 (commandsRouter.js, scenariosRouter.js, search.js. chat.js — AI 챗봇, 아직 미정)
     config/
       supabase.js   # Supabase 클라이언트 초기화
   .env.example    # 필요한 환경변수 목록 (실제 값은 server/.env, 커밋 안 함)
@@ -39,8 +39,8 @@ docs/
 ## 개발 환경
 
 - **Node 버전**: `.nvmrc` 참고 (24, 실제 설치된 버전 기준).
-- **포트**: FE `5173`(Vite 기본), BE `4000`.
-- **환경변수**: `server/.env.example` 참고. `PORT`, `CORS_ORIGIN`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `LLM_API_KEY`(AI 챗봇 API 미정으로 값 비워둠).
+- **포트**: FE `5173`(Vite 기본, 사용 중이면 5174로 자동 이동 — `CORS_ORIGIN`이 콤마로 여러 origin을 허용하도록 구성되어 있음), BE `4000`.
+- **환경변수**: `server/.env.example` 참고. `PORT`, `CORS_ORIGIN`(콤마로 다중 origin), `SUPABASE_URL`, `SUPABASE_KEY`(service_role, RLS 우회 — 서버 전용), `MEILISEARCH_HOST`/`MEILISEARCH_ADMIN_KEY`/`MEILISEARCH_SEARCH_KEY`, `LLM_API_KEY`(AI 챗봇 API 미정으로 값 비워둠), `ANTHROPIC_API_KEY`(구조화된 출력 authoring 스크립트용, `server/src/scripts/generateScenarios.js`).
 - FE 개발 시 `npm run dev` (루트), BE 개발 시 `cd server && npm install && npm run dev`.
 
 ## 디자인

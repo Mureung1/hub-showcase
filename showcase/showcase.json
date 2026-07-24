@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "title": "유닉스 & Git 명령어 사전",
+  "summary": "CS 실습생을 위한 Unix/Git 명령어 사전 웹앱입니다.",
+  "githubUser": "ParkSeong-min",
+  "demoUrl": "",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/home.webp"
+  ],
+  "problem": "방대한 매뉴얼을 뒤지는 대신, 실습에 진짜 필요한 명령어만 빠르게 찾아볼 수 있는 사전이 필요했습니다.",
+  "targetUsers": [],
+  "features": [
+    "Unix/Git 명령어 검색",
+    "명령어 상세 설명 및 예시 확인",
+    "예시 명령어 클립보드 복사"
+  ],
+  "featureTags": [
+    "명령어 검색",
+    "실습 사전"
+  ],
+  "techStack": ["React", "Vite", "Express", "Supabase", "Meilisearch"],
+  "techHighlights": [],
+  "developmentWithAI": "저는 기능 방향과 우선순위를 정하고 최종 판단을 내렸습니다. AI는 요구사항을 구현 단위로 나누고 코드 초안을 작성했습니다. 저는 실행 결과를 직접 확인하고 필요한 부분을 수정했습니다.",
+  "agent": {
+    "summary": "",
+    "agentTools": [],
+    "workflows": []
+  }
+}
