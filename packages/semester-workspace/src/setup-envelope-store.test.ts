@@ -8,7 +8,10 @@ import {
   readFile,
   readdir,
   realpath,
+  rename,
   rm,
+  symlink,
+  unlink,
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -189,6 +192,53 @@ test('initial publication never replaces a competing final directory identity or
   }
 })
 
+test('a competitor that publishes state after the prior compare keeps its identity and leaves no writer residue', async () => {
+  const root = await ownerOnlyTempRoot('competing-pre-link-state')
+  const statePath = path.join(root, 'setup', 'v1', 'state.json')
+  const competitorBytes = encodeSetupStateEnvelope(preparedEnvelope(9))
+  let competitorIdentity:
+    | { readonly device: number; readonly inode: number }
+    | undefined
+  try {
+    const store = createSetupEnvelopeStore({
+      appDataRoot: root,
+      async fault(point) {
+        if (point !== 'after_prior_compare' || competitorIdentity) return
+        await writeFile(statePath, competitorBytes, {
+          flag: 'wx',
+          mode: 0o600,
+        })
+        const stats = await lstat(statePath)
+        competitorIdentity = {
+          device: stats.dev,
+          inode: stats.ino,
+        }
+      },
+    })
+
+    assert.deepEqual(
+      await store.compareAndReplace({
+        expectedRevisionToken: null,
+        envelope: approvedEnvelope(1),
+      }),
+      { status: 'conflict' },
+    )
+    assert.ok(competitorIdentity)
+    const after = await lstat(statePath)
+    assert.deepEqual(
+      { device: after.dev, inode: after.ino },
+      competitorIdentity,
+    )
+    assert.deepEqual(await readFile(statePath), competitorBytes)
+    assert.deepEqual(await readdir(path.dirname(statePath)), [
+      'state.json',
+    ])
+    assert.deepEqual(await readdir(root), ['setup'])
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
 test('concurrent initial writers preserve exactly one complete winner', async () => {
   const root = await ownerOnlyTempRoot('concurrent-initial')
   try {
@@ -276,6 +326,176 @@ test('concurrent replacements cannot both claim the same observed bytes', async 
       ['state.json'],
     )
   } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
+test('replacement rebind preserves a post-compare competitor and removes only intent-bound residue', async () => {
+  const root = await ownerOnlyTempRoot('replacement-rebind')
+  const statePath = path.join(root, 'setup', 'v1', 'state.json')
+  const competitorPath = path.join(
+    root,
+    'setup',
+    'v1',
+    '.competitor-state',
+  )
+  const competitorBytes = encodeSetupStateEnvelope(approvedEnvelope(9))
+  let competitorIdentity:
+    | { readonly device: number; readonly inode: number }
+    | undefined
+  try {
+    const baselineStore = createSetupEnvelopeStore({
+      appDataRoot: root,
+    })
+    const baseline = await baselineStore.compareAndReplace({
+      expectedRevisionToken: null,
+      envelope: approvedEnvelope(1),
+    })
+    assert.equal(baseline.status, 'written')
+    if (baseline.status !== 'written') assert.fail('baseline required')
+    const replacingStore = createSetupEnvelopeStore({
+      appDataRoot: root,
+      async fault(point) {
+        if (point !== 'after_prior_compare' || competitorIdentity) return
+        await writeFile(competitorPath, competitorBytes, {
+          flag: 'wx',
+          mode: 0o600,
+        })
+        await rename(competitorPath, statePath)
+        const stats = await lstat(statePath)
+        competitorIdentity = {
+          device: stats.dev,
+          inode: stats.ino,
+        }
+      },
+    })
+
+    await assert.rejects(
+      replacingStore.compareAndReplace({
+        expectedRevisionToken: baseline.revisionToken,
+        envelope: preparedEnvelope(2),
+      }),
+      /setup state store is unavailable/i,
+    )
+    assert.ok(competitorIdentity)
+    const after = await lstat(statePath)
+    assert.deepEqual(
+      { device: after.dev, inode: after.ino },
+      competitorIdentity,
+    )
+    assert.deepEqual(await readFile(statePath), competitorBytes)
+    assert.deepEqual(await readdir(path.dirname(statePath)), [
+      'state.json',
+    ])
+    assert.deepEqual(await readdir(root), ['setup'])
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
+test('launch reconciliation preserves a same-name temporary inode that replaced intent-bound ownership', async () => {
+  const root = await ownerOnlyTempRoot('replaced-temp-inode')
+  try {
+    await runCrashWriter({
+      root,
+      expectedRevisionToken: null,
+      envelope: approvedEnvelope(1),
+      faultPoint: 'after_temp_create',
+    })
+    const versionPath = path.join(root, 'setup', 'v1')
+    const temporaryName = (await readdir(versionPath)).find((entry) =>
+      entry.endsWith('.tmp'),
+    )
+    assert.ok(temporaryName)
+    const temporaryPath = path.join(versionPath, temporaryName)
+    await unlink(temporaryPath)
+    await writeFile(temporaryPath, 'unknown replacement\n', {
+      mode: 0o600,
+    })
+    const replacement = await lstat(temporaryPath)
+    const before = await captureStoreTree(root)
+
+    const store = createSetupEnvelopeStore({ appDataRoot: root })
+    assert.deepEqual(await store.reconcileAbandonedWrite(), {
+      status: 'incompatible',
+      reason: 'missing_state',
+    })
+    assert.deepEqual(await captureStoreTree(root), before)
+    const after = await lstat(temporaryPath)
+    assert.equal(after.ino, replacement.ino)
+    assert.equal(
+      await readFile(temporaryPath, 'utf8'),
+      'unknown replacement\n',
+    )
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
+test('pre-existing setup and version symlinks fail closed without mutating their targets', async () => {
+  for (const unsafeAncestor of ['setup', 'version'] as const) {
+    const root = await ownerOnlyTempRoot(`symlink-${unsafeAncestor}`)
+    const external = await ownerOnlyTempRoot(
+      `symlink-target-${unsafeAncestor}`,
+    )
+    try {
+      if (unsafeAncestor === 'setup') {
+        await symlink(external, path.join(root, 'setup'))
+      } else {
+        await mkdir(path.join(root, 'setup'), { mode: 0o700 })
+        await symlink(external, path.join(root, 'setup', 'v1'))
+      }
+      const before = await captureStoreTree(external)
+      const store = createSetupEnvelopeStore({ appDataRoot: root })
+      assert.deepEqual(await store.read(), {
+        status: 'incompatible',
+        reason: 'missing_state',
+      })
+      assert.deepEqual(
+        await store.compareAndReplace({
+          expectedRevisionToken: null,
+          envelope: approvedEnvelope(1),
+        }),
+        { status: 'conflict' },
+      )
+      assert.deepEqual(await captureStoreTree(external), before)
+    } finally {
+      await rm(root, { force: true, recursive: true })
+      await rm(external, { force: true, recursive: true })
+    }
+  }
+})
+
+test('a live writer PID is only an availability hint and cannot authorize mutation', async () => {
+  const root = await ownerOnlyTempRoot('live-writer-hint')
+  let child: ReturnType<typeof spawn> | undefined
+  try {
+    child = spawnCrashWorker({
+      root,
+      expectedRevisionToken: null,
+      envelope: approvedEnvelope(1),
+      faultPoint: 'after_lease_publish',
+      mode: 'pause',
+    })
+    await waitForWorkerPause(child)
+    const before = await captureStoreTree(root)
+    const store = createSetupEnvelopeStore({ appDataRoot: root })
+
+    assert.deepEqual(await store.reconcileAbandonedWrite(), {
+      status: 'incompatible',
+      reason: 'missing_state',
+    })
+    assert.deepEqual(await captureStoreTree(root), before)
+
+    child.kill('SIGKILL')
+    await waitForChildClose(child)
+    child = undefined
+    assert.deepEqual(await store.reconcileAbandonedWrite(), {
+      status: 'absent',
+    })
+    assert.deepEqual(await readdir(root), [])
+  } finally {
+    child?.kill('SIGKILL')
     await rm(root, { force: true, recursive: true })
   }
 })
@@ -384,7 +604,186 @@ test('launch reconciliation classifies both guarded-old and renamed-new replacem
   }
 })
 
+const initialCrashEquivalencePoints = [
+  'after_lease_stage_create',
+  'after_intent_file_create',
+  'after_intent_file_write',
+  'after_intent_file_sync',
+  'after_lease_intent_sync',
+  'after_lease_publish',
+  'after_temp_create',
+  'before_temp_write',
+  'after_temp_write',
+  'before_file_sync',
+  'after_file_sync',
+  'before_rename',
+  'after_rename',
+  'after_temp_unlink',
+  'after_directory_sync',
+  'after_readback',
+  'before_lease_retire',
+  'after_lease_retire',
+  'after_ownership_unlink',
+  'after_intent_unlink',
+  'after_lease_remove',
+] as const satisfies readonly SetupEnvelopeStoreFaultPoint[]
+
+test('actual SIGKILL at every initial durable shape is observe-read-only and launch-convergent', async () => {
+  for (const faultPoint of initialCrashEquivalencePoints) {
+    const root = await ownerOnlyTempRoot(`kill-initial-${faultPoint}`)
+    try {
+      await runCrashWriter({
+        root,
+        expectedRevisionToken: null,
+        envelope: approvedEnvelope(1),
+        faultPoint,
+      })
+      const beforeObserve = await captureStoreTree(root)
+      const store = createSetupEnvelopeStore({ appDataRoot: root })
+      const observed = await store.read()
+      assert.ok(
+        observed.status === 'incompatible' ||
+          observed.status === 'current' ||
+          observed.status === 'absent',
+        faultPoint,
+      )
+      assert.deepEqual(
+        await captureStoreTree(root),
+        beforeObserve,
+        faultPoint,
+      )
+
+      const reconciled = await store.reconcileAbandonedWrite()
+      assert.ok(
+        reconciled.status === 'absent' ||
+          reconciled.status === 'current',
+        faultPoint,
+      )
+      if (reconciled.status === 'current') {
+        assert.deepEqual(
+          reconciled.envelope,
+          approvedEnvelope(1),
+          faultPoint,
+        )
+        assert.deepEqual(
+          await readdir(path.join(root, 'setup', 'v1')),
+          ['state.json'],
+          faultPoint,
+        )
+      } else {
+        assert.deepEqual(await readdir(root), [], faultPoint)
+      }
+      assert.equal(
+        (await readdir(root)).some((entry) =>
+          entry.startsWith('.setup-state-writer'),
+        ),
+        false,
+        faultPoint,
+      )
+    } finally {
+      await rm(root, { force: true, recursive: true })
+    }
+  }
+})
+
+const replacementCrashEquivalencePoints = [
+  'after_lease_stage_create',
+  'after_intent_file_create',
+  'after_intent_file_write',
+  'after_intent_file_sync',
+  'after_lease_intent_sync',
+  'after_lease_publish',
+  'after_temp_create',
+  'before_temp_write',
+  'after_temp_write',
+  'before_file_sync',
+  'after_file_sync',
+  'before_compare_guard',
+  'after_compare_guard',
+  'after_prior_compare',
+  'before_rename',
+  'after_rename',
+  'after_directory_sync',
+  'after_guard_unlink',
+  'after_readback',
+  'before_lease_retire',
+  'after_lease_retire',
+  'after_ownership_unlink',
+  'after_intent_unlink',
+  'after_lease_remove',
+] as const satisfies readonly SetupEnvelopeStoreFaultPoint[]
+
+test('actual SIGKILL at every replacement durable shape preserves one complete old-or-new envelope', async () => {
+  for (const faultPoint of replacementCrashEquivalencePoints) {
+    const root = await ownerOnlyTempRoot(`kill-replace-${faultPoint}`)
+    try {
+      const baselineStore = createSetupEnvelopeStore({
+        appDataRoot: root,
+      })
+      const baseline = await baselineStore.compareAndReplace({
+        expectedRevisionToken: null,
+        envelope: approvedEnvelope(1),
+      })
+      assert.equal(baseline.status, 'written', faultPoint)
+      if (baseline.status !== 'written') assert.fail('baseline required')
+      await runCrashWriter({
+        root,
+        expectedRevisionToken: baseline.revisionToken,
+        envelope: preparedEnvelope(2),
+        faultPoint,
+      })
+      const beforeObserve = await captureStoreTree(root)
+      const observed = await baselineStore.read()
+      assert.ok(
+        observed.status === 'incompatible' ||
+          observed.status === 'current',
+        faultPoint,
+      )
+      assert.deepEqual(
+        await captureStoreTree(root),
+        beforeObserve,
+        faultPoint,
+      )
+
+      const reconciled =
+        await baselineStore.reconcileAbandonedWrite()
+      assert.equal(reconciled.status, 'current', faultPoint)
+      if (reconciled.status !== 'current') {
+        assert.fail('replacement must retain a current envelope')
+      }
+      assert.ok(
+        [
+          JSON.stringify(approvedEnvelope(1)),
+          JSON.stringify(preparedEnvelope(2)),
+        ].includes(JSON.stringify(reconciled.envelope)),
+        faultPoint,
+      )
+      assert.deepEqual(
+        await readdir(path.join(root, 'setup', 'v1')),
+        ['state.json'],
+        faultPoint,
+      )
+      assert.equal(
+        (await lstat(
+          path.join(root, 'setup', 'v1', 'state.json'),
+        )).nlink,
+        1,
+        faultPoint,
+      )
+      assert.deepEqual(await readdir(root), ['setup'], faultPoint)
+    } finally {
+      await rm(root, { force: true, recursive: true })
+    }
+  }
+})
+
 const stateWriteFaults = [
+  'after_lease_stage_create',
+  'after_intent_file_create',
+  'after_intent_file_write',
+  'after_intent_file_sync',
+  'after_lease_intent_sync',
+  'after_lease_publish',
   'before_temp_create',
   'after_temp_create',
   'before_temp_write',
@@ -559,6 +958,27 @@ async function runCrashWriter(input: {
   readonly envelope: SetupStateEnvelope
   readonly faultPoint: SetupEnvelopeStoreFaultPoint
 }): Promise<void> {
+  const child = spawnCrashWorker({ ...input, mode: 'kill' })
+  let stderr = ''
+  child.stderr.setEncoding('utf8')
+  child.stderr.on('data', (chunk: string) => {
+    stderr += chunk
+  })
+  const exit = await waitForChildClose(child)
+  assert.ok(
+    (exit.code === null && exit.signal === 'SIGKILL') ||
+      (exit.code === 137 && exit.signal === null),
+    stderr || JSON.stringify(exit),
+  )
+}
+
+function spawnCrashWorker(input: {
+  readonly root: string
+  readonly expectedRevisionToken: string | null
+  readonly envelope: SetupStateEnvelope
+  readonly faultPoint: SetupEnvelopeStoreFaultPoint
+  readonly mode: 'kill' | 'pause'
+}): ReturnType<typeof spawn> {
   const worker = fileURLToPath(
     new URL(
       './testing/setup-envelope-store-crash-worker.ts',
@@ -579,6 +999,7 @@ async function runCrashWriter(input: {
       input.expectedRevisionToken ?? 'null',
       input.faultPoint,
       encodedEnvelope,
+      input.mode,
     ],
     {
       cwd: fileURLToPath(new URL('../../..', import.meta.url)),
@@ -589,16 +1010,82 @@ async function runCrashWriter(input: {
       stdio: ['ignore', 'pipe', 'pipe'],
     },
   )
-  let stderr = ''
-  child.stderr.setEncoding('utf8')
-  child.stderr.on('data', (chunk: string) => {
-    stderr += chunk
-  })
-  const exitCode = await new Promise<number | null>((resolve, reject) => {
+  return child
+}
+
+function waitForChildClose(
+  child: ReturnType<typeof spawn>,
+): Promise<{
+    readonly code: number | null
+    readonly signal: NodeJS.Signals | null
+  }> {
+  return new Promise((resolve, reject) => {
     child.once('error', reject)
-    child.once('close', resolve)
+    child.once('close', (code, signal) => resolve({ code, signal }))
   })
-  assert.equal(exitCode, 91, stderr)
+}
+
+function waitForWorkerPause(
+  child: ReturnType<typeof spawn>,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let output = ''
+    const timer = setTimeout(() => {
+      reject(new Error('Crash worker did not pause.'))
+      child.kill('SIGKILL')
+    }, 10_000)
+    child.once('error', reject)
+    child.stdout.setEncoding('utf8')
+    child.stdout.on('data', (chunk: string) => {
+      output += chunk
+      if (output.includes('paused\n')) {
+        clearTimeout(timer)
+        resolve()
+      }
+    })
+  })
+}
+
+async function captureStoreTree(
+  root: string,
+  relative = '',
+): Promise<readonly unknown[]> {
+  const directory = path.join(root, relative)
+  const entries = (await readdir(directory)).sort()
+  const captured: unknown[] = []
+  for (const entry of entries) {
+    const relativePath = relative
+      ? path.join(relative, entry)
+      : entry
+    const target = path.join(root, relativePath)
+    const stats = await lstat(target)
+    if (stats.isDirectory() && !stats.isSymbolicLink()) {
+      captured.push({
+        path: relativePath,
+        type: 'directory',
+        device: stats.dev,
+        inode: stats.ino,
+        entries: await captureStoreTree(root, relativePath),
+      })
+    } else if (stats.isFile() && !stats.isSymbolicLink()) {
+      captured.push({
+        path: relativePath,
+        type: 'file',
+        device: stats.dev,
+        inode: stats.ino,
+        links: stats.nlink,
+        bytes: (await readFile(target)).toString('base64'),
+      })
+    } else {
+      captured.push({
+        path: relativePath,
+        type: 'other',
+        device: stats.dev,
+        inode: stats.ino,
+      })
+    }
+  }
+  return captured
 }
 
 function approvedEnvelope(revision: number): SetupStateEnvelope {

@@ -31,7 +31,10 @@ const setupDirectoryName = 'setup'
 const versionDirectoryName = 'v1'
 const stateFileName = 'state.json'
 const writerLeaseName = '.setup-state-writer'
+const writerLeaseStagePrefix = '.setup-state-writer-stage-v1-'
+const writerLeaseRetiredPrefix = '.setup-state-writer-retired-v1-'
 const writerIntentName = 'intent.json'
+const writerOwnershipName = 'ownership.json'
 const replacementGuardName = '.state.json.compare-guard'
 const directoryMode = 0o700
 const fileMode = 0o600
@@ -39,6 +42,12 @@ const setupEnvelopeMaxBytes = 512 * 1024
 const opaqueValueMaxBytes = 512
 
 export type SetupEnvelopeStoreFaultPoint =
+  | 'after_lease_stage_create'
+  | 'after_intent_file_create'
+  | 'after_intent_file_write'
+  | 'after_intent_file_sync'
+  | 'after_lease_intent_sync'
+  | 'after_lease_publish'
   | 'before_temp_create'
   | 'after_temp_create'
   | 'before_temp_write'
@@ -59,6 +68,11 @@ export type SetupEnvelopeStoreFaultPoint =
   | 'after_directory_sync'
   | 'before_readback'
   | 'after_readback'
+  | 'before_lease_retire'
+  | 'after_lease_retire'
+  | 'after_ownership_unlink'
+  | 'after_intent_unlink'
+  | 'after_lease_remove'
 
 export type SetupEnvelopeStoreOptions = {
   readonly appDataRoot: string
@@ -90,6 +104,21 @@ type SetupWriteIntent = {
 
 type PersistedSetupWriteIntent = {
   readonly value: SetupWriteIntent
+  readonly bytes: Buffer
+  readonly identity: FileIdentity
+}
+
+type SetupWriteOwnership = {
+  readonly formatVersion: 1
+  readonly operation: SetupWriteIntent['operation']
+  readonly token: string
+  readonly setupDirectory: FileIdentity | null
+  readonly versionDirectory: FileIdentity | null
+  readonly temporaryState: FileIdentity
+}
+
+type PersistedSetupWriteOwnership = {
+  readonly value: SetupWriteOwnership
   readonly bytes: Buffer
   readonly identity: FileIdentity
 }
@@ -133,47 +162,43 @@ export function createSetupEnvelopeStore(
       const envelope = decodeSetupStateEnvelopeBytes(
         encodeSetupStateEnvelope(input.envelope),
       )
-      const lease = await acquireWriterLease(root)
-      if (!lease) return { status: 'conflict' }
-      let persistedIntent: PersistedSetupWriteIntent | undefined
-      let safeToRelease = true
+      const acquired = await acquireWriterLease(
+        root,
+        input.expectedRevisionToken === null ? 'initial' : 'replace',
+        input.expectedRevisionToken,
+        envelope,
+        options,
+      )
+      if (!acquired) return { status: 'conflict' }
+      const { lease, persistedIntent } = acquired
+      let safeToRelease = false
       try {
         const observed = await readEnvelopeAt(root, {
           allowWriterLease: lease,
         })
         if (input.expectedRevisionToken === null) {
           if (observed.status !== 'absent') {
+            safeToRelease = true
             return { status: 'conflict' }
           }
-          persistedIntent = await persistWriteIntent(
-            root,
-            lease,
-            'initial',
-            null,
-            envelope,
-          )
-          return await publishInitialEnvelope(
+          const result = await publishInitialEnvelope(
             root,
             lease,
             envelope,
             persistedIntent,
             options,
           )
+          safeToRelease = true
+          return result
         }
         if (
           observed.status !== 'current' ||
           observed.revisionToken !== input.expectedRevisionToken
         ) {
+          safeToRelease = true
           return { status: 'conflict' }
         }
-        persistedIntent = await persistWriteIntent(
-          root,
-          lease,
-          'replace',
-          observed.revisionToken,
-          envelope,
-        )
-        return await replaceEnvelope(
+        const result = await replaceEnvelope(
           root,
           lease,
           observed.revisionToken,
@@ -181,28 +206,37 @@ export function createSetupEnvelopeStore(
           persistedIntent,
           options,
         )
+        safeToRelease = true
+        return result
       } catch (error) {
-        if (persistedIntent) {
-          try {
-            safeToRelease = await reconcileWriteIntent(
-              root,
-              lease,
-              persistedIntent,
-            )
-          } catch {
-            safeToRelease = false
-          }
+        try {
+          safeToRelease = await reconcileWriteIntent(
+            root,
+            lease,
+            persistedIntent,
+          )
+        } catch {
+          safeToRelease = false
         }
         throw error
       } finally {
         if (safeToRelease) {
-          await releaseWriterLease(root, lease, persistedIntent)
+          await releaseWriterLease(
+            root,
+            lease,
+            persistedIntent,
+            options,
+          )
         }
       }
     },
 
     async reconcileAbandonedWrite(): Promise<SetupEnvelopeRead> {
       const root = await assertOwnerOnlyRoot(configuredRoot)
+      const stagesSettled = await reconcileAbandonedLeaseStages(root)
+      if (!stagesSettled) {
+        return { status: 'incompatible', reason: 'missing_state' }
+      }
       let lease: WriterLease | null
       try {
         lease = await readWriterLease(root)
@@ -564,6 +598,13 @@ async function publishInitialEnvelope(
       temporaryState,
       envelope,
       options,
+      async (identity) => {
+        await persistWriteOwnership(lease, persistedIntent, {
+          setupDirectory: setupIdentity,
+          versionDirectory: versionIdentity,
+          temporaryState: identity,
+        })
+      },
     )
     await syncDirectory(finalVersion)
     await syncDirectory(finalSetup)
@@ -579,11 +620,20 @@ async function publishInitialEnvelope(
       1,
     )
     await inject(options, 'after_prior_compare')
+    await assertDirectoryIdentity(finalSetup, setupIdentity)
+    await assertDirectoryIdentity(finalVersion, versionIdentity)
     await inject(options, 'before_rename')
     try {
       await link(temporaryState, finalState)
     } catch (error) {
       if (hasErrnoCode(error, 'EEXIST')) {
+        await assertRegularFileIdentity(
+          temporaryState,
+          temporaryIdentity,
+          1,
+        )
+        await unlink(temporaryState)
+        await syncDirectory(finalVersion)
         return { status: 'conflict' }
       }
       throw unavailable()
@@ -620,6 +670,8 @@ async function replaceEnvelope(
   options: SetupEnvelopeStoreOptions,
 ): Promise<SetupEnvelopeWriteResult> {
   const versionRoot = await assertCurrentStoreDirectories(root)
+  const setupIdentity = await directoryIdentity(path.dirname(versionRoot))
+  const versionIdentity = await directoryIdentity(versionRoot)
   const statePath = path.join(versionRoot, stateFileName)
   const temporaryPath = temporaryStatePath(
     versionRoot,
@@ -631,6 +683,13 @@ async function replaceEnvelope(
     temporaryPath,
     envelope,
     options,
+    async (identity) => {
+      await persistWriteOwnership(lease, persistedIntent, {
+        setupDirectory: null,
+        versionDirectory: null,
+        temporaryState: identity,
+      })
+    },
   )
   await syncDirectory(versionRoot)
   await inject(options, 'before_compare_guard')
@@ -666,6 +725,18 @@ async function replaceEnvelope(
     1,
   )
   await inject(options, 'after_prior_compare')
+  await assertDirectoryIdentity(path.dirname(versionRoot), setupIdentity)
+  await assertDirectoryIdentity(versionRoot, versionIdentity)
+  const finalCompared = await readStateFile(statePath, [2])
+  const finalGuard = await readStateFile(guardPath, [2])
+  if (
+    !sameIdentity(finalCompared.identity, guarded.identity) ||
+    !sameIdentity(finalGuard.identity, guarded.identity) ||
+    sha256(finalCompared.bytes) !== expectedRevisionToken ||
+    sha256(finalGuard.bytes) !== expectedRevisionToken
+  ) {
+    throw unavailable()
+  }
   await inject(options, 'before_rename')
   try {
     await rename(temporaryPath, statePath)
@@ -697,6 +768,7 @@ async function writeAndSyncExclusiveState(
   target: string,
   envelope: SetupStateEnvelope,
   options: SetupEnvelopeStoreOptions,
+  afterCreate: (identity: FileIdentity) => Promise<void>,
 ): Promise<FileIdentity> {
   const bytes = encodeSetupStateEnvelope(envelope)
   let handle
@@ -723,6 +795,7 @@ async function writeAndSyncExclusiveState(
       throw unavailable()
     }
     const identity = identityFromStats(stats)
+    await afterCreate(identity)
     await inject(options, 'after_temp_create')
     await inject(options, 'before_temp_write')
     await handle.writeFile(bytes)
@@ -768,6 +841,12 @@ async function readEnvelopeAt(
     readonly allowWriterLease?: WriterLease
   } = {},
 ): Promise<SetupEnvelopeRead> {
+  if (
+    !options.allowWriterLease &&
+    (await writerLeaseStageNames(root)).length > 0
+  ) {
+    return { status: 'incompatible', reason: 'missing_state' }
+  }
   let writerLease: WriterLease | null
   try {
     writerLease = await readWriterLease(root)
@@ -865,20 +944,112 @@ async function readStateFile(
 
 async function acquireWriterLease(
   root: string,
-): Promise<WriterLease | null> {
-  const leasePath = path.join(root, writerLeaseName)
+  operation: SetupWriteIntent['operation'],
+  expectedRevisionToken: string | null,
+  envelope: SetupStateEnvelope,
+  options: SetupEnvelopeStoreOptions,
+): Promise<{
+  readonly lease: WriterLease
+  readonly persistedIntent: PersistedSetupWriteIntent
+} | null> {
+  const token = randomHex()
+  const stageName = writerLeaseStageName(process.pid, token)
+  const stagePath = path.join(root, stageName)
+  const finalPath = path.join(root, writerLeaseName)
   try {
-    await mkdir(leasePath, { mode: directoryMode })
-  } catch (error) {
-    if (hasErrnoCode(error, 'EEXIST')) return null
+    await mkdir(stagePath, { mode: directoryMode })
+  } catch {
     throw unavailable()
   }
-  const lease = {
-    path: leasePath,
-    identity: await directoryIdentity(leasePath),
+  const stagedLease = {
+    path: stagePath,
+    identity: await directoryIdentity(stagePath),
   }
   await syncDirectory(root)
-  return lease
+  let persistedIntent: PersistedSetupWriteIntent | undefined
+  try {
+    await inject(options, 'after_lease_stage_create')
+    persistedIntent = await persistWriteIntent(
+      root,
+      stagedLease,
+      operation,
+      expectedRevisionToken,
+      envelope,
+      token,
+      options,
+    )
+    await inject(options, 'after_lease_intent_sync')
+    try {
+      await rename(stagePath, finalPath)
+    } catch (error) {
+      if (
+        hasErrnoCode(error, 'EEXIST') ||
+        hasErrnoCode(error, 'ENOTEMPTY')
+      ) {
+        await releaseWriterLease(
+          root,
+          stagedLease,
+          persistedIntent,
+        )
+        return null
+      }
+      throw unavailable()
+    }
+    const lease = {
+      path: finalPath,
+      identity: stagedLease.identity,
+    }
+    await assertDirectoryIdentity(finalPath, lease.identity)
+    await syncDirectory(root)
+    await inject(options, 'after_lease_publish')
+    return { lease, persistedIntent }
+  } catch (error) {
+    if (
+      persistedIntent &&
+      (await entryKind(finalPath)) === 'directory'
+    ) {
+      const finalLease = {
+        path: finalPath,
+        identity: stagedLease.identity,
+      }
+      await releaseWriterLease(
+        root,
+        finalLease,
+        persistedIntent,
+      ).catch(() => undefined)
+    } else if (
+      persistedIntent &&
+      (await entryKind(stagePath)) === 'directory'
+    ) {
+      await releaseWriterLease(
+        root,
+        stagedLease,
+        persistedIntent,
+      ).catch(() => undefined)
+    } else if ((await entryKind(stagePath)) === 'directory') {
+      const identity = await directoryIdentity(stagePath)
+      if (sameIdentity(identity, stagedLease.identity)) {
+        const entries = (await readdir(stagePath)).sort()
+        if (
+          entries.length === 1 &&
+          entries[0] === writerIntentName &&
+          (await isOwnedSingleLinkFile(
+            path.join(stagePath, writerIntentName),
+          ))
+        ) {
+          await unlink(path.join(stagePath, writerIntentName)).catch(
+            () => undefined,
+          )
+          await syncDirectory(stagePath).catch(() => undefined)
+        }
+        await removeEmptyDirectoryIfIdentity(stagePath, identity).catch(
+          () => undefined,
+        )
+        await syncDirectory(root).catch(() => undefined)
+      }
+    }
+    throw error
+  }
 }
 
 async function readWriterLease(
@@ -892,26 +1063,156 @@ async function readWriterLease(
   }
 }
 
+async function reconcileAbandonedLeaseStages(
+  root: string,
+): Promise<boolean> {
+  const names = await writerLeaseStageNames(root)
+  for (const name of names) {
+    const parsed = parseWriterLeaseStageName(name)
+    if (!parsed) return false
+    const stagePath = path.join(root, name)
+    let lease: WriterLease
+    try {
+      lease = {
+        path: stagePath,
+        identity: await directoryIdentity(stagePath),
+      }
+    } catch {
+      return false
+    }
+    const entries = (await readdir(stagePath)).sort()
+    if (
+      parsed.ownerPid !== process.pid &&
+      isProcessAlive(parsed.ownerPid)
+    ) {
+      return false
+    }
+    if (entries.length === 0) {
+      await removeEmptyDirectoryIfIdentity(
+        stagePath,
+        lease.identity,
+      )
+      await syncDirectory(root)
+      continue
+    }
+    if (
+      entries.some(
+        (entry) =>
+          entry !== writerIntentName &&
+          entry !== writerOwnershipName,
+      ) ||
+      !entries.includes(writerIntentName)
+    ) {
+      return false
+    }
+    const persistedIntent = await readPersistedWriteIntent(lease)
+    if (!persistedIntent) {
+      if (
+        parsed.kind !== 'stage' ||
+        entries.length !== 1 ||
+        !(await isOwnedSingleLinkFile(
+          path.join(stagePath, writerIntentName),
+        ))
+      ) {
+        return false
+      }
+      await unlink(path.join(stagePath, writerIntentName))
+      await syncDirectory(stagePath)
+      await removeEmptyDirectoryIfIdentity(
+        stagePath,
+        lease.identity,
+      )
+      await syncDirectory(root)
+      continue
+    }
+    if (
+      persistedIntent.value.ownerPid !== parsed.ownerPid ||
+      persistedIntent.value.token !== parsed.token
+    ) {
+      return false
+    }
+    await releaseWriterLease(root, lease, persistedIntent)
+  }
+  return true
+}
+
+async function writerLeaseStageNames(
+  root: string,
+): Promise<readonly string[]> {
+  return (await readdir(root))
+    .filter(
+      (entry) =>
+        entry.startsWith(writerLeaseStagePrefix) ||
+        entry.startsWith(writerLeaseRetiredPrefix),
+    )
+    .sort()
+}
+
+function writerLeaseStageName(
+  ownerPid: number,
+  token: string,
+): string {
+  return `${writerLeaseStagePrefix}${ownerPid}-${token}`
+}
+
+function writerLeaseRetiredName(
+  ownerPid: number,
+  token: string,
+): string {
+  return `${writerLeaseRetiredPrefix}${ownerPid}-${token}`
+}
+
+function parseWriterLeaseStageName(
+  name: string,
+): {
+  readonly kind: 'stage' | 'retired'
+  readonly ownerPid: number
+  readonly token: string
+} | null {
+  const prefixes = [
+    ['stage', writerLeaseStagePrefix],
+    ['retired', writerLeaseRetiredPrefix],
+  ] as const
+  const selected = prefixes.find(([, prefix]) =>
+    name.startsWith(prefix),
+  )
+  if (!selected) return null
+  const [kind, prefix] = selected
+  const match = new RegExp(
+    `^${escapeRegExp(prefix)}([1-9][0-9]*)-([0-9a-f]{32})$`,
+  ).exec(name)
+  if (!match) return null
+  const ownerPid = Number(match[1])
+  if (!Number.isSafeInteger(ownerPid)) return null
+  return { kind, ownerPid, token: match[2]! }
+}
+
 async function persistWriteIntent(
   root: string,
   lease: WriterLease,
   operation: SetupWriteIntent['operation'],
   expectedRevisionToken: string | null,
   envelope: SetupStateEnvelope,
+  token: string,
+  options: SetupEnvelopeStoreOptions,
 ): Promise<PersistedSetupWriteIntent> {
   await assertDirectoryIdentity(lease.path, lease.identity)
   const value: SetupWriteIntent = {
     formatVersion: 1,
     ownerPid: process.pid,
     operation,
-    token: randomHex(),
+    token,
     leaseIdentity: lease.identity,
     expectedRevisionToken,
     nextRevisionToken: sha256(encodeSetupStateEnvelope(envelope)),
   }
   const bytes = encodeWriteIntent(value)
   const target = path.join(lease.path, writerIntentName)
-  const identity = await writeAndSyncExclusiveBytes(target, bytes)
+  const identity = await writeAndSyncExclusiveBytes(target, bytes, {
+    afterCreate: () => inject(options, 'after_intent_file_create'),
+    afterWrite: () => inject(options, 'after_intent_file_write'),
+    afterSync: () => inject(options, 'after_intent_file_sync'),
+  })
   await syncDirectory(lease.path)
   await syncDirectory(root)
   return { value, bytes, identity }
@@ -922,10 +1223,12 @@ async function readPersistedWriteIntent(
 ): Promise<PersistedSetupWriteIntent | null> {
   try {
     await assertDirectoryIdentity(lease.path, lease.identity)
+    const entries = (await readdir(lease.path)).sort()
     if (
-      !(await hasExactDirectoryEntries(lease.path, [
-        writerIntentName,
-      ]))
+      entries.length < 1 ||
+      entries.length > 2 ||
+      entries[0] !== writerIntentName ||
+      (entries.length === 2 && entries[1] !== writerOwnershipName)
     ) {
       return null
     }
@@ -949,14 +1252,107 @@ async function readPersistedWriteIntent(
   }
 }
 
+async function persistWriteOwnership(
+  lease: WriterLease,
+  intent: PersistedSetupWriteIntent,
+  identities: Pick<
+    SetupWriteOwnership,
+    'setupDirectory' | 'temporaryState' | 'versionDirectory'
+  >,
+): Promise<PersistedSetupWriteOwnership> {
+  await assertDirectoryIdentity(lease.path, lease.identity)
+  const value: SetupWriteOwnership = {
+    formatVersion: 1,
+    operation: intent.value.operation,
+    token: intent.value.token,
+    setupDirectory: identities.setupDirectory,
+    versionDirectory: identities.versionDirectory,
+    temporaryState: identities.temporaryState,
+  }
+  const bytes = Buffer.from(`${JSON.stringify(value)}\n`, 'utf8')
+  const target = path.join(lease.path, writerOwnershipName)
+  const identity = await writeAndSyncExclusiveBytes(target, bytes)
+  await syncDirectory(lease.path)
+  return { value, bytes, identity }
+}
+
+async function readPersistedWriteOwnership(
+  lease: WriterLease,
+  intent: PersistedSetupWriteIntent,
+): Promise<PersistedSetupWriteOwnership | null> {
+  const target = path.join(lease.path, writerOwnershipName)
+  if ((await entryKind(target)) === 'absent') return null
+  try {
+    const file = await readOwnedFile(target, 16 * 1024, [1], false)
+    const value = decodeWriteOwnership(file.bytes)
+    if (
+      value.operation !== intent.value.operation ||
+      value.token !== intent.value.token
+    ) {
+      return null
+    }
+    return {
+      value,
+      bytes: file.bytes,
+      identity: file.identity,
+    }
+  } catch {
+    return null
+  }
+}
+
+function decodeWriteOwnership(bytes: Uint8Array): SetupWriteOwnership {
+  let value: unknown
+  try {
+    value = JSON.parse(
+      new TextDecoder('utf-8', { fatal: true }).decode(bytes),
+    ) as unknown
+  } catch {
+    throw unavailable()
+  }
+  if (
+    !isExactRecord(value, [
+      'formatVersion',
+      'operation',
+      'setupDirectory',
+      'temporaryState',
+      'token',
+      'versionDirectory',
+    ]) ||
+    value.formatVersion !== 1 ||
+    (value.operation !== 'initial' && value.operation !== 'replace') ||
+    !isHexToken(value.token) ||
+    (value.setupDirectory !== null &&
+      !isFileIdentity(value.setupDirectory)) ||
+    (value.versionDirectory !== null &&
+      !isFileIdentity(value.versionDirectory)) ||
+    !isFileIdentity(value.temporaryState)
+  ) {
+    throw unavailable()
+  }
+  const decoded: SetupWriteOwnership = {
+    formatVersion: 1,
+    operation: value.operation,
+    token: value.token,
+    setupDirectory: value.setupDirectory,
+    versionDirectory: value.versionDirectory,
+    temporaryState: value.temporaryState,
+  }
+  const canonical = Buffer.from(`${JSON.stringify(decoded)}\n`, 'utf8')
+  if (!canonical.equals(Buffer.from(bytes))) throw unavailable()
+  return decoded
+}
+
 async function releaseWriterLease(
   root: string,
   lease: WriterLease,
   persistedIntent?: PersistedSetupWriteIntent,
+  options?: SetupEnvelopeStoreOptions,
 ): Promise<void> {
-  await assertDirectoryIdentity(lease.path, lease.identity)
+  let releaseLease = lease
+  await assertDirectoryIdentity(releaseLease.path, releaseLease.identity)
   if (persistedIntent) {
-    const current = await readPersistedWriteIntent(lease)
+    const current = await readPersistedWriteIntent(releaseLease)
     if (
       !current ||
       !current.bytes.equals(persistedIntent.bytes) ||
@@ -964,15 +1360,55 @@ async function releaseWriterLease(
     ) {
       throw unavailable()
     }
-    await unlink(path.join(lease.path, writerIntentName))
-    await syncDirectory(lease.path)
+    if (path.basename(releaseLease.path) === writerLeaseName) {
+      if (options) await inject(options, 'before_lease_retire')
+      const retiredPath = path.join(
+        root,
+        writerLeaseRetiredName(
+          persistedIntent.value.ownerPid,
+          persistedIntent.value.token,
+        ),
+      )
+      if ((await entryKind(retiredPath)) !== 'absent') {
+        throw unavailable()
+      }
+      await rename(releaseLease.path, retiredPath)
+      releaseLease = {
+        path: retiredPath,
+        identity: releaseLease.identity,
+      }
+      await assertDirectoryIdentity(
+        releaseLease.path,
+        releaseLease.identity,
+      )
+      await syncDirectory(root)
+      if (options) await inject(options, 'after_lease_retire')
+    }
+    const ownership = await readPersistedWriteOwnership(
+      releaseLease,
+      persistedIntent,
+    )
+    if ((await entryKind(path.join(releaseLease.path, writerOwnershipName))) !==
+      'absent') {
+      if (!ownership) throw unavailable()
+      await unlink(path.join(releaseLease.path, writerOwnershipName))
+      await syncDirectory(releaseLease.path)
+      if (options) await inject(options, 'after_ownership_unlink')
+    }
+    await unlink(path.join(releaseLease.path, writerIntentName))
+    await syncDirectory(releaseLease.path)
+    if (options) await inject(options, 'after_intent_unlink')
   }
-  if (!(await hasExactDirectoryEntries(lease.path, []))) {
+  if (!(await hasExactDirectoryEntries(releaseLease.path, []))) {
     throw unavailable()
   }
-  await assertDirectoryIdentity(lease.path, lease.identity)
-  await rmdir(lease.path)
+  await assertDirectoryIdentity(
+    releaseLease.path,
+    releaseLease.identity,
+  )
+  await rmdir(releaseLease.path)
   await syncDirectory(root)
+  if (options) await inject(options, 'after_lease_remove')
 }
 
 function encodeWriteIntent(value: SetupWriteIntent): Buffer {
@@ -1038,14 +1474,27 @@ async function reconcileWriteIntent(
   ) {
     return false
   }
+  const ownership = await readPersistedWriteOwnership(
+    lease,
+    persistedIntent,
+  )
   return persistedIntent.value.operation === 'initial'
-    ? reconcileInitialWrite(root, persistedIntent.value)
-    : reconcileReplacementWrite(root, persistedIntent.value)
+    ? reconcileInitialWrite(
+        root,
+        persistedIntent.value,
+        ownership?.value ?? null,
+      )
+    : reconcileReplacementWrite(
+        root,
+        persistedIntent.value,
+        ownership?.value ?? null,
+      )
 }
 
 async function reconcileInitialWrite(
   root: string,
   intent: SetupWriteIntent,
+  ownership: SetupWriteOwnership | null,
 ): Promise<boolean> {
   const setupPath = path.join(root, setupDirectoryName)
   const setupKind = await entryKind(setupPath)
@@ -1054,11 +1503,7 @@ async function reconcileInitialWrite(
   const versionPath = path.join(setupPath, versionDirectoryName)
   const versionKind = await entryKind(versionPath)
   if (versionKind === 'absent') {
-    if (!(await hasExactDirectoryEntries(setupPath, []))) return false
-    const setupIdentity = await directoryIdentity(setupPath)
-    await removeEmptyDirectoryIfIdentity(setupPath, setupIdentity)
-    await syncDirectory(root)
-    return true
+    return false
   }
   if (versionKind !== 'directory') return false
   try {
@@ -1073,6 +1518,20 @@ async function reconcileInitialWrite(
   ) {
     return false
   }
+  if (
+    !ownership?.setupDirectory ||
+    !ownership.versionDirectory ||
+    !sameIdentity(
+      await directoryIdentity(setupPath),
+      ownership.setupDirectory,
+    ) ||
+    !sameIdentity(
+      await directoryIdentity(versionPath),
+      ownership.versionDirectory,
+    )
+  ) {
+    return false
+  }
   const temporaryPath = temporaryStatePath(versionPath, intent)
   const allowed = new Set([stateFileName, path.basename(temporaryPath)])
   const entries = await readdir(versionPath)
@@ -1084,16 +1543,42 @@ async function reconcileInitialWrite(
     temporaryPath,
     [1, 2],
   )
+  if (
+    temporary &&
+    !sameIdentity(
+      temporary.identity,
+      ownership.temporaryState,
+    )
+  ) {
+    return false
+  }
   if (temporary && !isCanonicalNextEnvelope(temporary, intent)) {
     if (temporary.linkCount !== 1) return false
     await unlink(temporaryPath)
     await syncDirectory(versionPath)
-    return rollbackEmptyInitial(root, setupPath, versionPath)
+    if (state) return true
+    return rollbackEmptyInitial(
+      root,
+      setupPath,
+      versionPath,
+      ownership,
+    )
   }
-  if (state && !isCanonicalNextEnvelope(state, intent)) return false
+  if (state && !isCanonicalNextEnvelope(state, intent)) {
+    if (temporary) {
+      await unlink(temporaryPath)
+      await syncDirectory(versionPath)
+    }
+    return true
+  }
 
   if (!state && !temporary) {
-    return rollbackEmptyInitial(root, setupPath, versionPath)
+    return rollbackEmptyInitial(
+      root,
+      setupPath,
+      versionPath,
+      ownership,
+    )
   }
   if (!state && temporary) {
     if (temporary.linkCount !== 1) return false
@@ -1138,12 +1623,20 @@ async function rollbackEmptyInitial(
   root: string,
   setupPath: string,
   versionPath: string,
+  ownership: SetupWriteOwnership,
 ): Promise<boolean> {
   if (!(await hasExactDirectoryEntries(versionPath, []))) return false
-  const versionIdentity = await directoryIdentity(versionPath)
-  const setupIdentity = await directoryIdentity(setupPath)
-  await removeEmptyDirectoryIfIdentity(versionPath, versionIdentity)
-  await removeEmptyDirectoryIfIdentity(setupPath, setupIdentity)
+  if (!ownership.setupDirectory || !ownership.versionDirectory) {
+    return false
+  }
+  await removeEmptyDirectoryIfIdentity(
+    versionPath,
+    ownership.versionDirectory,
+  )
+  await removeEmptyDirectoryIfIdentity(
+    setupPath,
+    ownership.setupDirectory,
+  )
   await syncDirectory(root)
   return (await entryKind(setupPath)) === 'absent'
 }
@@ -1151,6 +1644,7 @@ async function rollbackEmptyInitial(
 async function reconcileReplacementWrite(
   root: string,
   intent: SetupWriteIntent,
+  ownership: SetupWriteOwnership | null,
 ): Promise<boolean> {
   if (!intent.expectedRevisionToken) return false
   let versionPath: string
@@ -1184,6 +1678,16 @@ async function reconcileReplacementWrite(
     temporaryPath,
     [1],
   )
+  if (
+    temporary &&
+    (!ownership ||
+      !sameIdentity(
+        temporary.identity,
+        ownership.temporaryState,
+      ))
+  ) {
+    return false
+  }
   if (!state) return false
   if (temporary && !isCanonicalNextEnvelope(temporary, intent)) {
     await unlink(temporaryPath)
@@ -1220,7 +1724,32 @@ async function reconcileReplacementWrite(
     return true
   }
   if (
-    stateToken !== intent.expectedRevisionToken ||
+    stateToken === intent.expectedRevisionToken &&
+    guard &&
+    guardToken === intent.expectedRevisionToken &&
+    state.linkCount === 1 &&
+    guard.linkCount === 1 &&
+    !sameIdentity(state.identity, guard.identity)
+  ) {
+    if (temporary) await unlink(temporaryPath)
+    await unlink(guardPath)
+    await syncDirectory(versionPath)
+    return true
+  }
+  if (stateToken !== intent.expectedRevisionToken) {
+    if (
+      guard &&
+      (guardToken !== intent.expectedRevisionToken ||
+        guard.linkCount !== 1)
+    ) {
+      return false
+    }
+    if (temporary) await unlink(temporaryPath)
+    if (guard) await unlink(guardPath)
+    await syncDirectory(versionPath)
+    return true
+  }
+  if (
     !isCanonicalEnvelopeBytes(state.bytes)
   ) {
     return false
@@ -1363,9 +1892,23 @@ async function readOptionalOwnedFile(
   }
 }
 
+async function isOwnedSingleLinkFile(target: string): Promise<boolean> {
+  try {
+    await readOwnedFile(target, 16 * 1024, [1], false)
+    return true
+  } catch {
+    return false
+  }
+}
+
 async function writeAndSyncExclusiveBytes(
   target: string,
   bytes: Uint8Array,
+  fault: {
+    readonly afterCreate?: () => Promise<void>
+    readonly afterWrite?: () => Promise<void>
+    readonly afterSync?: () => Promise<void>
+  } = {},
 ): Promise<FileIdentity> {
   let handle
   try {
@@ -1390,8 +1933,11 @@ async function writeAndSyncExclusiveBytes(
     ) {
       throw unavailable()
     }
+    await fault.afterCreate?.()
     await handle.writeFile(bytes)
+    await fault.afterWrite?.()
     await handle.sync()
+    await fault.afterSync?.()
     return identityFromStats(stats)
   } finally {
     await handle.close()
@@ -1577,6 +2123,10 @@ function isProcessAlive(pid: number): boolean {
   } catch (error) {
     return !hasErrnoCode(error, 'ESRCH')
   }
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 async function assertOwnerOnlyRoot(configuredRoot: string): Promise<string> {

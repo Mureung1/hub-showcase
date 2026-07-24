@@ -11,6 +11,7 @@ const [
   expectedRevisionToken,
   faultPoint,
   encodedEnvelope,
+  crashMode = 'kill',
 ] = process.argv.slice(2)
 
 if (
@@ -29,7 +30,12 @@ const envelope = JSON.parse(
 const store = createSetupEnvelopeStore({
   appDataRoot,
   fault(point: SetupEnvelopeStoreFaultPoint) {
-    if (point === faultPoint) process.exit(91)
+    if (point !== faultPoint) return
+    if (crashMode === 'pause') {
+      process.stdout.write('paused\n')
+      return new Promise<void>(() => undefined)
+    }
+    process.kill(process.pid, 'SIGKILL')
   },
 })
 
