@@ -359,11 +359,20 @@
 - [x] 완료한 도전이 보관함(`/storage`)에 표시된다.
       → 보관함은 `archivedGroupsProvider`(`archived == true` 퀘스트) 기반 **폴더 그룹뷰**다. 오늘의 퀘스트와 **같은 `groupQuestsByGoal`·`GoalGroupSection`을 재사용**하되 완료 토글 없는 **보기 전용 카드**다(`storage_screen.dart`가 `archivedGroupsProvider` → `groupQuestsByGoal` → `GoalGroupSection`으로 렌더). 화면 `lib/features/storage/storage_screen.dart`는 폴더뷰로 **재작성**됐다. achievements 타임라인 방식(`watchAchievements` 경로)은 삭제하지 않고 **3단계 상세 시트용으로 남겨뒀다**. 테스트: `test/features/storage_screen_test.dart`.
 - [x] 완료 수·연속 출석 요약이 표시된다.
-      → 상단 2분할 stat(완료 = achievements 개수에서 파생, 연속 = `user.streak`). 환생 배너는 환생 미구현이라 완료 수+스트릭 요약으로 대체했다. 테스트: `test/features/storage_screen_test.dart`.
+      → `storage_screen.dart`의 `_SummaryCard`가 2분할 stat으로 완료 수·연속을 표시한다(폴더뷰 재작성 후에도 유지). 완료 수 = 보관된 퀘스트 총합(`archivedGroupsProvider` 그룹의 자식 합 — 폴더 자식·자동완료 원본 포함), 연속 = `currentUserProvider`의 `user.streak`. 환생 배너는 환생 미구현이라 이 요약으로 대체했다. 테스트: `test/features/storage_screen_test.dart`.
 - [x] 빈 상태·로딩·오류가 각각 처리된다.
-      → 공통 `EmptyView`·`SkeletonBox`·`ErrorView` 재사용(`storage_screen.dart`의 `.when(loading/error/data)`). 스트릭은 못 읽으면 0으로 떨어뜨리고 타임라인은 그대로 보인다. 테스트: `test/features/storage_screen_test.dart`.
+      → `storage_screen.dart`의 `archivedGroupsProvider.when`이 로딩→`_StorageSkeleton`, 오류→`ErrorView`, 비었을 때→`EmptyView`를 각각 그린다. 스트릭(`currentUserProvider`)은 못 읽으면 0으로 떨어뜨려 폴더뷰는 그대로 보인다. 테스트: `test/features/storage_screen_test.dart`.
 - [x] 인증(메모/사진)한 도전은 뱃지로 구분된다.
-      → 메모/사진 여부를 각각 뱃지로 표시. 사진은 **유무 뱃지(📷)만** 표시하고 썸네일은 안 읽는다 — proof 문서가 questId당 별도라 목록에서 N번 읽으면 비싸다(3주차에 문서를 분리한 이유). 탭 상세 로딩은 이번 범위 밖. 테스트: `test/features/storage_screen_test.dart`.
+      → **폴더뷰 재작성 후 목록 카드(`QuestCard`)는 메모/사진 뱃지를 더 이상 그리지 않는다.** 인증 내용(메모 전문·인증 사진)은 이제 카드를 탭해 상세 시트에서 본다(아래 「완료 기록 상세 조회」로 연결). 사진은 여전히 목록에서 미리 읽지 않고 상세를 열 때만 `fetchProof`로 조회한다(proof 문서가 questId당 별도 — 3주차 문서 분리 이유). ⚠️ **항목 문구('뱃지로 구분된다')는 타임라인 시절 표현이라 현행 폴더뷰와 어긋난다 — 문구 재검토 필요**(체크 상태는 임의로 바꾸지 않음). 테스트: `test/features/storage_screen_test.dart`·`test/features/achievement_detail_sheet_test.dart`.
+
+### 완료 기록 상세 조회
+> checklist에 항목이 없던 흐름이라 신규 섹션으로 승격했다(3단계-a). **보기 전용** — 메모/사진 수정·태그는 다음 조각(3단계-b·c). verification-agent 10/10 PASS.
+- [x] 보관함 카드를 탭하면 완료 당시 정보를 상세로 볼 수 있다.
+      → `AchievementDetailSheet`(신규 `lib/features/storage/widgets/achievement_detail_sheet.dart`)가 제목·난이도(`DifficultyPill`)·보상(`RewardChip`)·완료 날짜(KST)·메모 전문·인증 사진을 보여준다. **보기 전용**이라 수정 버튼이 없다. `storage_screen.dart`의 `_openDetail`이 카드 탭에서 `showAchievementDetailSheet`를 연다. 테스트: `test/features/achievement_detail_sheet_test.dart`·`test/features/storage_screen_test.dart`(탭→시트 열림).
+- [x] 인증 사진은 목록에서 미리 읽지 않고 상세를 열 때만 조회한다.
+      → `fetchProof(uid, questId)` 신설(인터페이스 `lib/repositories/quest_repository.dart` + Firestore·InMemory 2구현). 사진 base64가 `proofDoc/{questId}`에 있어 목록에서 N번 읽으면 비싸다(3주차 문서 분리 이유). 상세 시트가 `loadProof` 클로저로 lazy 조회한다(시트는 저장소·provider를 모름). 없으면 null(에러 아님), 저장소 실패 시 AppFailure, 깨진 base64는 "사진 없음"으로 폴백해 시트가 죽지 않는다. 테스트: `test/repositories/in_memory_quest_repository_test.dart`(fetchProof). ⚠️ Firestore `fetchProof`(특히 깨진 문서 분기)는 `fake_cloud_firestore` 미도입으로 자동 테스트 N/A — InMemory와 같은 계약으로 검증.
+- [x] 완료 날짜가 KST 기준으로 표시되고, 사진 로딩·없음·실패가 각각 처리된다.
+      → `_formatKstDate`가 `kKstOffset`(단일 정의처)를 인용해 UTC를 KST 벽시계로 변환한다(자정 근처 완료의 하루 어긋남 방지). `_ProofPhoto`의 FutureBuilder가 로딩(스피너)·사진 있음(썸네일)·없음/실패("사진 없음" 플레이스홀더)를 각각 그리고, 조회 실패에도 시트가 생존한다. 테스트: `test/features/achievement_detail_sheet_test.dart`(KST 날짜·사진 3경로·깨진 base64 방어).
 
 ### 완료 시 보관함 이동
 > checklist에 항목이 없던 흐름이라 신규 섹션으로 승격했다("오늘의 퀘스트 = 할 일, 보관함 = 끝낸 일"). verification-agent PASS. **보관함 이동은 단방향**이다(완료 실수 복구는 이번 범위 밖 — 3단계 이후 판단).

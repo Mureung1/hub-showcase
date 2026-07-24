@@ -1055,6 +1055,32 @@ void main() {
       // 재완료 경로는 proof를 다시 쓰지 않는다 — 최초 사진이 그대로 남는다.
       expect(repo.proofOf('u', quest.id), smallPhoto);
     });
+
+    test('fetchProof는 저장된 사진 base64를 돌려준다', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+      await repo.completeQuest('u', quest.id, photoBase64: smallPhoto);
+
+      expect(await repo.fetchProof('u', quest.id), smallPhoto);
+    });
+
+    test('fetchProof는 사진 없는 퀘스트에 null을 돌려준다(에러 아님)', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+      await repo.completeQuest('u', quest.id); // 사진 없이 완료
+
+      expect(await repo.fetchProof('u', quest.id), isNull);
+    });
+
+    test('fetchProof는 저장소 실패 시 AppFailure를 던진다', () async {
+      final repo = InMemoryQuestRepository(failWith: const NetworkFailure());
+      addTearDown(repo.dispose);
+
+      expect(
+        () => repo.fetchProof('u', 'q1'),
+        throwsA(isA<AppFailure>()),
+      );
+    });
   });
 
   group('createQuests — AI 분해 결과 일괄 등록', () {

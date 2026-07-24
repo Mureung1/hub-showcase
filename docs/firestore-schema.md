@@ -214,6 +214,8 @@ final drafts = QuestDraft.parseList(aiJson['quests']);
 
 **원자성**: proof 문서 쓰기는 `completeQuest()`의 **같은 트랜잭션**에 들어가고, 보상이 실제 지급되는 경로에서만 실행된다(재완료는 쓰지 않는다). proof ref의 ID는 트랜잭션 밖에서 `.doc(proofDoc(...))`로 만든다(read가 아니므로 read-before-write 규칙과 무관 — achievementRef와 같은 패턴).
 
+**조회 경로 (보관함 상세 시트, 3단계-a)**: `QuestRepository.fetchProof(uid, questId)`가 이 문서를 `get`해 `base64` 필드를 돌려준다. **목록에선 읽지 않고 상세를 열 때만** 그 퀘스트 하나를 lazy 조회한다 — 위 "별도 컬렉션인가"의 이유(목록 N번 읽기 방지)와 짝을 이룬다. 문서가 없으면(사진 없이 완료) `null`을 돌려준다(에러 아님), `base64`가 문자열이 아닌 깨진 문서도 `null`로 떨어뜨려 상세 시트가 "사진 없음"을 그린다. 그 밖의 실패는 다른 조회와 동일하게 `AppFailure`로 정규화한다.
+
 ### `users/{uid}/events/{eventId}` — 성공 지표 이벤트 로그 (4주차)
 
 `docs/plan.md`의 지표 3개(**도전 시작률 · 재분해 복귀율 · 7일 리텐션**)를 나중에 로그만으로 산출하기 위한 **append-only 이벤트 스트림**. 데이터만 쌓고 지표 화면은 만들지 않는다 — 산출은 `lib/core/analytics/metrics.dart`의 **순수 함수 + 테스트**가 "이렇게 계산된다"를 증명한다. (Firebase Analytics를 쓰지 않는 이유: 네이티브 플러그인이 한글 경로 빌드 이슈를 되살리고, 기존 저장소 추상화 패턴과 어긋난다. 사용자 결정 2026-07-23.)

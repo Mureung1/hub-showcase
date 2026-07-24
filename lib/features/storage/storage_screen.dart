@@ -8,10 +8,12 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/quest_card.dart';
 import '../../core/widgets/state_views.dart';
+import '../../models/quest.dart';
 import '../../models/quest_group.dart';
 import '../../providers/providers.dart';
 import '../quest/widgets/goal_group_section.dart';
 import '../shell/tab_scroll_registry.dart';
+import 'widgets/achievement_detail_sheet.dart';
 
 /// 보관함 — 끝낸 일이 쌓이는 곳.
 ///
@@ -44,6 +46,23 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
 
   bool _isExpanded(QuestGroup group) =>
       _expanded.putIfAbsent(group.key, () => true);
+
+  /// 보관함 카드 탭 → 완료 당시 정보(메모·사진·보상) 상세 시트(보기 전용).
+  ///
+  /// 사진 조회 클로저를 시트에 주입한다 — 시트는 uid·저장소를 모르고, proof는 목록에서
+  /// 미리 읽지 않고 **이 시트를 열 때** 그 하나만 읽는다(proofDoc이 questId당 별도라
+  /// 목록에서 N번 읽으면 비싸다 — 3주차 문서 분리 이유).
+  Future<void> _openDetail(Quest quest) {
+    return showAchievementDetailSheet(
+      context,
+      quest: quest,
+      loadProof: () async {
+        // sessionProvider는 로그인 완료된 uid를 보장한다.
+        final uid = await ref.read(sessionProvider.future);
+        return ref.read(questRepositoryProvider).fetchProof(uid, quest.id);
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,9 +144,12 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
                           _expanded[group.key] = !_isExpanded(group);
                         }),
                         // 보기 전용 카드 — 완료 토글도 `⋮` 메뉴도 없다. 보관함은
-                        // 끝낸 일을 되돌리지 않으므로 상호작용을 걷어낸다.
-                        questBuilder: (context, node) =>
-                            QuestCard(quest: node.quest),
+                        // 끝낸 일을 되돌리지 않으므로 상호작용을 걷어낸다. 탭하면
+                        // 완료 당시 메모·사진·보상을 보는 상세 시트만 연다(수정 없음).
+                        questBuilder: (context, node) => QuestCard(
+                          quest: node.quest,
+                          onTap: () => _openDetail(node.quest),
+                        ),
                       ),
                     );
                   },

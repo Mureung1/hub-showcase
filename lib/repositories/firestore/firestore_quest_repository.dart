@@ -402,4 +402,18 @@ class FirestoreQuestRepository implements QuestRepository {
         .whereType<Achievement>()
         .toList();
   }
+
+  @override
+  Future<String?> fetchProof(String uid, String questId) {
+    return guard(() async {
+      // completeQuest가 지급 경로에서만 `base64` 필드로 담는 문서다(proofDoc).
+      final snap = await _db.doc(FirestorePaths.proofDoc(uid, questId)).get();
+      // 사진 없이 완료한 퀘스트는 문서 자체가 없다 — null(에러 아님, 인터페이스 계약).
+      if (!snap.exists) return null;
+      // 값이 문자열이 아니면(깨진 문서) null로 떨어뜨린다 — 상세 시트가 "사진 없음"을
+      // 그리면 되지, 예외로 시트를 죽이지 않는다(watchQuests 관대 파싱과 같은 원칙).
+      final base64 = snap.data()?['base64'];
+      return base64 is String ? base64 : null;
+    });
+  }
 }

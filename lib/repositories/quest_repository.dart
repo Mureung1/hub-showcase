@@ -174,6 +174,18 @@ abstract interface class QuestRepository {
   /// 목록에서 N번 읽으면 비싸다(3주차에 문서를 분리한 이유). 보관함은 사진 유무
   /// 플래그([Achievement.hasPhoto])만 쓰고, 실제 사진 로딩은 이 스트림 밖의 몫이다.
   Stream<List<Achievement>> watchAchievements(String uid);
+
+  /// 인증 사진 base64를 읽는다. 없으면 `null`.
+  ///
+  /// **사진 base64는 목록에선 읽지 않고 상세에서만 읽는다.** proof 문서는 questId당
+  /// 별도라([completeQuest]가 `users/{uid}/proofs/{questId}`에 담는다) 목록에서
+  /// N번 읽으면 비싸다(3주차에 문서를 분리한 이유). 보관함 카드 상세 시트를 열 때
+  /// 그 퀘스트 **하나만** lazy 조회하는 경로다 — [watchAchievements]가 사진 유무
+  /// 플래그만 흘리고 바이트는 뺀 것과 짝을 이룬다.
+  ///
+  /// 문서가 없으면(사진을 첨부하지 않고 완료한 퀘스트) `null`을 준다 — **에러가
+  /// 아니다.** 그 밖의 실패는 다른 메서드와 동일하게 `AppFailure`로 정규화해 던진다.
+  Future<String?> fetchProof(String uid, String questId);
 }
 
 /// 완료+지급이 **실제로 일어났을 때**의 결과. 재완료·미지급은 이 객체가 아니라

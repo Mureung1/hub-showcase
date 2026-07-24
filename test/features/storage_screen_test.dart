@@ -4,6 +4,7 @@ import 'package:one_step/core/widgets/quest_card.dart';
 import 'package:one_step/core/widgets/state_views.dart';
 import 'package:one_step/features/quest/widgets/goal_group_section.dart';
 import 'package:one_step/features/storage/storage_screen.dart';
+import 'package:one_step/features/storage/widgets/achievement_detail_sheet.dart';
 import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/goal.dart';
 import 'package:one_step/models/quest.dart';
@@ -90,6 +91,36 @@ void main() {
     expect(find.byTooltip('완료 취소'), findsNothing);
     // 더보기(수정·삭제) 메뉴도 없다.
     expect(find.byTooltip('끝낸 퀘스트 더보기'), findsNothing);
+  });
+
+  testWidgets('★ 카드를 탭하면 상세 시트가 열리고 완료 당시 메모를 보여 준다', (tester) async {
+    // 메모는 카드에는 안 뜨고 상세 시트에만 뜬다 — 그 텍스트가 보이면 "시트가 실제로
+    // 그 퀘스트의 데이터로 열렸다"가 증명된다(단순 카드 렌더와 구별된다).
+    await pumpScreen(
+      tester,
+      const StorageScreen(),
+      user: const AppUser(uid: uid),
+      quests: [
+        Quest(
+          id: 'q1',
+          title: '끝낸 퀘스트',
+          status: QuestStatus.done,
+          archived: true,
+          memo: '상세에서만 보이는 메모',
+        ),
+      ],
+    );
+    await tester.pumpAndSettle();
+
+    // 탭 전에는 시트가 없다.
+    expect(find.byType(AchievementDetailSheet), findsNothing);
+    expect(find.text('상세에서만 보이는 메모'), findsNothing);
+
+    await tester.tap(find.byType(QuestCard));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AchievementDetailSheet), findsOneWidget);
+    expect(find.text('상세에서만 보이는 메모'), findsOneWidget);
   });
 
   testWidgets('보관된 퀘스트가 없으면 빈 상태를 보여 준다', (tester) async {

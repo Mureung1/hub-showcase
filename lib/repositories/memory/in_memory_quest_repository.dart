@@ -99,9 +99,20 @@ class InMemoryQuestRepository implements QuestRepository {
     return List.unmodifiable(list);
   }
 
-  /// 해당 퀘스트의 인증 사진 base64 (없으면 null). 테스트 전용 조회구.
+  /// 해당 퀘스트의 인증 사진 base64 (없으면 null). 테스트 전용 **동기** 조회구.
   /// Firestore proof 문서를 실제 네트워크 없이 검증하기 위한 것이다.
+  /// 공개 조회 경로는 [fetchProof]다 — 이건 실패 주입(`failWith`)을 타지 않는다.
   String? proofOf(String uid, String questId) => _proofs[uid]?[questId];
+
+  /// 인증 사진 base64를 읽는다(상세 시트용). 없으면 null.
+  ///
+  /// Firestore 구현과 같은 계약 — 없는 문서는 null(에러 아님), `failWith` 주입 시
+  /// [AppFailure]. 저장은 [completeQuest]가 [proofOf]와 같은 맵에 담는다.
+  @override
+  Future<String?> fetchProof(String uid, String questId) async {
+    _check();
+    return _proofs[uid]?[questId];
+  }
 
   void _check() {
     if (failWith != null) throw failWith!;
