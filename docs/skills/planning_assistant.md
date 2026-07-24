@@ -16,9 +16,12 @@
 - 세계관·시나리오·시스템 상세를 `game_overview`에 누적하지 않는다.
 - 여러 역할이 포함된 요청은 문서별 초안과 링크 변경을 묶은 다중 문서
   승인안으로 정리한다.
-- 확정되지 않은 수치, 보상, 등장 조건과 이름은 기본적으로 `TBD`로 두고
+- 비시나리오 기획의 확정되지 않은 수치, 보상, 등장 조건과 이름은 기본적으로
+  `TBD`로 두고
+  `design_creative_planner`의 `classify` Phase에서
   `docs/skills/document_completion.md`로 누락 유형을 분류한다.
-- 사용자가 창작 보완을 명시적으로 허가한 `creative_fillable`만
+- 사용자가 비시나리오 창작 보완을 명시적으로 허가한 `creative_fillable`만
+  `design_creative_planner`의 `generate_options` Phase에서
   `docs/skills/design_creative_completion.md`에 따라 복수 대안으로 제안한다.
 - 선택된 창작안도 `CP-*`로 공개하고 갱신된 Draft의 승인과 구분한다.
 - 승인 전 산출물은 Approval Queue 초안으로 작성한다.

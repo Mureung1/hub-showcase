@@ -21,13 +21,18 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 3. 프로젝트 ID, 대상 문서와 근거 파일을 명시한다.
 4. 변경 전 요약과 변경 후 초안을 분리한다.
 5. 위험도, 누락 정보, 충돌 가능성을 기록한다.
-6. `scenario` 작성·변경 항목이면 `docs/skills/scenario_review.md`의 결과를
-   `Scenario Improvement Review`에 기록하고 Draft와 분리한다.
-7. 신규·수정·재구성 Draft이면 `docs/skills/document_completion.md`의 GAP
-   분류를 `Creative Completion Review`에 기록한다.
-8. 사용자가 창작 보완을 허가한 GAP이 있으면
-   `docs/skills/design_creative_completion.md`에 따른 대안, 추천안과 상태를
-   `Creative Proposal Log`에 기록한다.
+6. `scenario` 작성·변경 항목이면 `scenario_designer` 또는 `scenario_writer`와
+   `scenario_reviewer`의 handoff를 확인한다. 일반 시나리오는
+   `Scenario Improvement Review`를 Draft와 분리하고, 독립 검수 판정과 해소된
+   필수 결과를 `Subagent Review`에 기록한다.
+7. 신규·수정·재구성 Draft이면 해당 전담 에이전트가 만든 GAP 분류를 메인
+   Codex가 검토해 `Creative Completion Review`에 기록한다. 비시나리오 일반
+   기획은 `design_creative_planner`, 일반 시나리오는 `scenario_designer`가
+   분류한다.
+8. 사용자가 비시나리오 창작 보완을 허가한 GAP이 있으면
+   `design_creative_planner`의 `generate_options` 결과에서 대안, 추천안과 상태를
+   `Creative Proposal Log`에 기록하고 메인 Codex의 허가 범위 검사를
+   `Subagent Review`에 남긴다.
 9. `restructure`이면 대상별 작업, 비교 대상, 현재 SHA-256과 적용 후 문서
    역할을 Target Operations에 기록한다.
 10. 확정 문서의 생성·삭제·이동·역할 또는 한 문장 담당 범위가 바뀌면 프로젝트
@@ -43,7 +48,8 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 
 - `Scenario Improvement Review`의 권고는 해당 항목의 승인 대상 Draft가 아니다.
 - 사용자가 권고를 선택하면 원본과 관련 문서를 다시 확인하고 선택 내용을
-  Draft와 영향 분석에 반영하며 권고 상태를 `incorporated`로 바꾸고 Decision
+  `scenario_designer`에 전달한다. 갱신된 Draft를 `scenario_reviewer`가 다시
+  검수한 뒤 영향 분석에 반영하며 권고 상태를 `incorporated`로 바꾸고 Decision
   History에 선택 이력을 남긴다. 거절된 권고는 `declined`로 기록할 수 있다.
 - 대상, 목적과 핵심 범위가 유지되면 기존 항목을 개정해 `pending`으로 돌리고,
   달라지면 기존 항목을 보존한 채 연결된 새 승인 항목을 만든다.
@@ -58,8 +64,10 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 - 사용자가 전체 또는 일부 GAP의 창작을 명시적으로 허가한 뒤에만
   `Creative Proposal Log`에 대안을 만든다.
 - 사용자가 대안을 선택하면 원본과 관련 문서를 다시 확인하고 선택안만 Draft에
-  `CP-*` 각주와 함께 반영한다. 상태는 `incorporated`로 바꾸고 Decision
-  History에 선택자, 선택일과 선택 이유를 남긴다.
+  넣도록 선택 결과를 `design_creative_planner`의 `incorporate_selection`
+  Phase에 전달한다. 메인 Codex가 `CP-*` 각주와 허가 범위를 검토한 뒤 상태를
+  `incorporated`로 바꾸고 Decision History에 선택자, 선택일과 선택 이유를
+  남긴다.
 - 선택되지 않은 대안은 Draft에 넣지 않고 Log에 보존한다. 명시적으로 제외한
   제안은 `declined`로 기록한다.
 - 대상, 목적과 핵심 범위가 유지되면 기존 항목을 개정해 `pending`으로 돌리고,
@@ -85,34 +93,38 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
    문서가 새로 생겼는지 검색한다.
 8. `restructure`이면 모든 기존 대상의 비교 결과와 모든 신규 문서의 역할
    중복 여부를 먼저 확인한다. 하나라도 불일치하면 어떤 대상도 변경하지 않는다.
-9. `Scenario Improvement Review`가 있으면 `proposed`나 `declined` 권고가
+9. `Subagent Review`가 있으면 시나리오 독립 검수의 `blocking` 또는
+   `required_revision`이 해소되었는지, 기획 창작이 사용자 허가 GAP 범위를
+   벗어나지 않았는지 확인한다. 검수 근거가 없거나 필수 결과가 남아 있으면
+   적용하지 않고 `needs_reconfirmation`으로 이동한다.
+10. `Scenario Improvement Review`가 있으면 `proposed`나 `declined` 권고가
    Draft에 섞이지 않았는지 확인한다. `incorporated` 권고도 갱신된 Draft가
    명시적으로 승인된 경우에만 적용 대상으로 본다.
-10. `Creative Proposal Log`가 있으면 `proposed`·`declined` 대안이 Draft에
+11. `Creative Proposal Log`가 있으면 `proposed`·`declined` 대안이 Draft에
     섞이지 않았는지, 모든 `incorporated` 내용에 대응하는 `CP-*` 각주가 있는지
     확인한다. 수치 제안은 `provisional`과 검증 기준이 있어야 한다.
-11. 확정 문서 목록·경로·역할·담당 범위가 바뀌면 프로젝트 루트 README와
+12. 확정 문서 목록·경로·역할·담당 범위가 바뀌면 프로젝트 루트 README와
     `design/README.md`, `game_overview`의 영향받는 갱신이 승인 범위에 있는지
     확인한다. 누락되었으면 적용하지 않고 `needs_reconfirmation`으로 이동한다.
-12. 비교 결과가 모두 일치하면 승인된 내용을 `workspace/projects/<project_slug>/design/`과
+13. 비교 결과가 모두 일치하면 승인된 내용을 `workspace/projects/<project_slug>/design/`과
     승인 범위에 포함된 프로젝트 README·색인에 반영한다.
-13. 승인 항목에 검토용 에셋이 있으면 Asset Operations를 확인하고 아래 Asset
+14. 승인 항목에 검토용 에셋이 있으면 Asset Operations를 확인하고 아래 Asset
    Promotion Rules에 따라 각 에셋을 `design/assets/`로 반영해 동일성을 검증한다.
-14. 비교 결과가 다르거나 기준 정보가 부족하면 적용을 중단하고
+15. 비교 결과가 다르거나 기준 정보가 부족하면 적용을 중단하고
    `needs_reconfirmation`으로 처리한다.
-15. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와
+16. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와
    Decision History에 기록한다.
-16. 승인 큐에서 실제 파일을 여는 근거 경로와 인라인 이미지 참조를 승인 후
+17. 승인 큐에서 실제 파일을 여는 근거 경로와 인라인 이미지 참조를 승인 후
     `design/assets/` 경로로 갱신하고, Decision Log와 Version History에도 이
     canonical 경로를 사용한다.
-17. 같은 프로젝트의 Decision Log에 적용된 CP ID와 `provisional` 항목을 포함한
+18. 같은 프로젝트의 Decision Log에 적용된 CP ID와 `provisional` 항목을 포함한
     결정 로그를 기록한다.
-18. 같은 프로젝트의 Version History에 적용된 CP ID와 `provisional` 항목을
+19. 같은 프로젝트의 Version History에 적용된 CP ID와 `provisional` 항목을
     포함한 버전 기록을 남긴다.
-19. `design/assets/` 반영, 동일성 검증과 참조 갱신이 모두 끝난 에셋만
+20. `design/assets/` 반영, 동일성 검증과 참조 갱신이 모두 끝난 에셋만
     `approvals/assets/`에서 삭제하고 Asset Operations의 적용 결과에
     canonical 경로와 검토본 삭제 완료를 기록한다.
-20. 대응하는 모든 검토용 에셋의 삭제까지 끝난 뒤 승인 큐 상태를
+21. 대응하는 모든 검토용 에셋의 삭제까지 끝난 뒤 승인 큐 상태를
     `applied`로 갱신한다.
 
 ## Asset Promotion Rules
@@ -249,7 +261,11 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 
 ## Safety Rule
 
-승인 문구가 애매하면 적용하지 않는다. 예: "괜찮네", "좋아 보임"은 명시 승인으로 보지 않는다.
+승인 문구가 애매하면 승인하거나 적용하지 않는다. 예: "괜찮네", "좋아 보임",
+"마음에 들어"는 명시 승인으로 보지 않는다. 이 경우 아무 변경도 적용하지
+않았고 현재 승인 상태를 유지했다는 사실을 사용자에게 명시적으로 안내한다.
+또한 적용하려면 대상 항목과 행동을 특정한
+`APPR-...을 승인하고 적용해줘` 같은 확인이 필요하다고 알려준다.
 다른 프로젝트의 승인 항목이나 결정 기록을 적용 근거로 사용하지 않는다.
 `restructure`는 일부 경로만 적용하지 않는다. 검증을 모두 끝낸 뒤 전체를
 적용하고 Decision Log와 Version History에 대상별 작업을 함께 기록한다.
@@ -259,5 +275,7 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 `Creative Proposal Log`의 `proposed`·`declined` 대안은 적용하지 않고,
 `incorporated` 내용도 CP 각주가 연결된 갱신 Draft가 명시적으로 승인된
 경우에만 적용한다.
+`Subagent Review`에 해소되지 않은 `blocking`·`required_revision` 결과가 있거나
+허가받지 않은 GAP의 창작이 포함된 항목은 적용하지 않는다.
 검토용 에셋이 포함된 항목은 대응하는 파일이 `design/assets/`에 검증되어 있고
 `approvals/assets/`에서 제거된 뒤에만 `applied`로 처리한다.

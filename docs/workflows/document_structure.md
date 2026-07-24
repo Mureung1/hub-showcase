@@ -26,19 +26,20 @@
 함께 갱신해야 한다. 승인 전에는 상위 시나리오가 계속 구조의 canonical
 owner다. 새 세계관 정사·시스템 규칙 제안은 별도 고위험 승인 항목으로 분리한다.
 
-일반 시나리오 문서를 신규 작성하거나 변경할 때 메인 Codex는
-`docs/skills/scenario_review.md`로 사건 구조를 검토한다. 원안 기반 Draft는
-보존하고 개선안은 승인 항목의 `Scenario Improvement Review`에 분리한다.
-사용자가 개선안을 선택하고 갱신된 Draft를 명시적으로 승인하기 전에는 해당
-권고를 `scenario`의 canonical 내용으로 보지 않는다.
+일반 시나리오 문서를 신규 작성하거나 변경할 때 `scenario_designer`는
+`docs/skills/scenario_review.md`로 원안 기반 Draft와 승인 항목의
+`Scenario Improvement Review`를 분리하고 `scenario_reviewer`가 독립
+검수한다. 사용자가 개선안을 선택하고 작성자 갱신·재검수를 거친 Draft를
+명시적으로 승인하기 전에는 해당 권고를 `scenario`의 canonical 내용으로 보지
+않는다.
 
-신규·수정·재구성 기획 Draft의 누락은
-`docs/skills/design_creative_completion.md`에 따라 분류한다. 사용자가 창작을
-허가한 공백도 현재 문서의 canonical role 안에서만 제안한다. 선택한 대안이
-다른 역할의 사실을 필요로 하면 현재 문서에 복제하지 않고 해당 owner의 연결
-승인안 또는 원자적 `restructure` 대상으로 분리한다. 일반 시나리오 구조와
-인게임 스크립트에는 각각 전용 Scenario Improvement, `CW-*`·`NR-*` 규칙을
-우선한다.
+신규·수정·재구성 비시나리오 기획 Draft의 누락은
+`design_creative_planner`가 `docs/skills/design_creative_completion.md`에 따라
+분류한다. 사용자가 창작을 허가한 정확한 GAP도 현재 문서의 canonical role
+안에서만 제안한다. 선택한 대안이 다른 역할의 사실을 필요로 하면 현재 문서에
+복제하지 않고 해당 owner의 연결 승인안 또는 원자적 `restructure` 대상으로
+분리한다. 일반 시나리오 구조와 인게임 스크립트에는 각각 전용 Scenario
+Improvement, `CW-*`·`NR-*` 규칙을 우선한다.
 
 - NPC의 정사 설정은 `world_setting`, 특정 장면에서의 행동은 `scenario`가
   소유한다.
