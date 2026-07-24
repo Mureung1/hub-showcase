@@ -95,9 +95,9 @@
 | T-712 | P1 | In Progress | 퀘스트 능력치 growth 설계 | 퀘스트 타입/결과별 stat delta 도메인 규칙이 TDD로 추가됐고, Quest Event metadata 저장/표시 연결이 남았다 | db-schema.md |
 | T-713 | P1 | Backlog | cyber-purr 사운드 탐색 및 적용 후보 정리 | 전자/사이버틱한 기본 고롱고롱 사운드 후보와 mute/fallback 기준이 정리된다 | dynamic-asset-requirements.md |
 | T-718 | P1 | Backlog | Supabase 확장 테이블 정규화 계획 | `quest_logs.metadata`에서 반복 조회가 필요한 profile, persona, stats, reward, appearance, memory, theme, device preference 데이터를 별도 테이블 후보로 승격하는 계획이 있다 | db-schema.md |
-| T-714 | P2 | In Progress | 사다리 interaction prototype | 사다리 resize/progress와 접근/등반 behavior state가 TDD로 추가됐고, UI object layer 연결이 남았다 | dynamic-asset-requirements.md |
-| T-715 | P2 | In Progress | 평지 interaction prototype | 평지 resize/jump 가능 거리와 jump behavior state가 TDD로 추가됐고, UI object layer 연결이 남았다 | dynamic-asset-requirements.md |
-| T-716 | P2 | In Progress | 창탈출 interaction prototype | window escape edge와 desktop-overlay layer 전환 규칙이 TDD로 추가됐고, 화면 overlay 연결이 남았다 | future-expansion-plan.md |
+| T-714 | P2 | Review | 사다리 interaction prototype | 사다리 desktop object, vertical resize, Lumi climbing animation 연결이 들어갔고 브라우저 위치/조작감 수동 검수가 남았다 | dynamic-asset-requirements.md |
+| T-715 | P2 | Review | 평지 interaction prototype | 평지 desktop object, horizontal resize, Lumi jump animation 연결이 들어갔고 브라우저 위치/조작감 수동 검수가 남았다 | dynamic-asset-requirements.md |
+| T-716 | P2 | Review | 창탈출 interaction prototype | window escape edge 클릭 시 desktop overlay 쪽 Lumi walk animation이 나타나며, 실제 창 밖 이동 연출 polish가 남았다 | future-expansion-plan.md |
 | T-717 | P2 | Backlog | Stage 회귀 엔드 컨텐츠 설계 | 해금한 Stage 1~4 외형 중 원하는 모습으로 회귀/장착할 수 있는 구조가 정의된다 | future-expansion-plan.md |
 
 ## 3~4주차 P2: 승격 실험 기능
@@ -152,7 +152,7 @@
 
 1. `T-702`, `T-709`, `T-711`, `T-713` 캐릭터 생동감/Persona 연결: Lumi Canvas animation, behavior adapter, Persona style, cyber-purr 사운드 후보를 묶어 "살아 있는 매니저" 느낌을 만든다.
 2. `T-703`, `T-717`, `T-712`, `T-718` 성장/보상 구조와 DB 정규화: Stage 1~4 해금, 원하는 외형으로 회귀, Quest Event metadata 기반 능력치 증가를 UI와 기록에 연결하고 반복 조회 데이터의 Supabase 테이블 승격 기준을 확정한다.
-3. `T-714`, `T-715`, `T-716` 상호작용 오브젝트: 물리엔진보다 object rect, anchor point, state machine으로 사다리/평지/창탈출 prototype을 시작한다.
+3. `T-714`, `T-715`, `T-716` 상호작용 오브젝트 수동 검수: 현재 prototype의 위치, resize 조작감, Lumi animation 연결을 브라우저에서 보고 polish 범위를 정한다.
 4. `T-708`, `T-721`, `T-722`, `T-723` 월드/실험 기능: 하루 흐름 Web theme, 현실 픽셀화 TV, 공개 퀘스트 탐색, 웹캠 손 제스처 탐색을 별도 prototype으로 검증한다.
 5. `T-724` Projection Mode 후속 검수: 기본 변환/원복 flow는 연결됐으므로 projection 화면 품질과 front/back 자동 회전 v1.5 필요 여부를 판단한다.
 

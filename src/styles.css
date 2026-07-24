@@ -1392,17 +1392,124 @@ label {
 }
 
 .window-pet-interaction .canvas-sprite-animator {
+  width: 100%;
+  height: 100%;
+}
+
+.interaction-object-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.interaction-object {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.interaction-object-hitbox {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  color: #16335c;
+  background: transparent;
+  border: 0;
+  font: inherit;
+}
+
+.interaction-object-hitbox span {
+  position: absolute;
+  left: 50%;
+  bottom: -18px;
+  transform: translateX(-50%);
+  padding: 1px 5px;
+  color: #ffffff;
+  background: rgba(49, 106, 197, 0.82);
+  border: 1px solid rgba(13, 63, 141, 0.9);
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.interaction-object.ladder {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 16px, #f7e48b 16px 20px, transparent 20px 32px),
+    linear-gradient(90deg, #8b5a2b 0 6px, transparent 6px calc(100% - 6px), #8b5a2b calc(100% - 6px));
+  filter: drop-shadow(1px 2px 0 rgba(0, 0, 0, 0.25));
+}
+
+.interaction-object.platform {
+  background:
+    linear-gradient(180deg, #fff5a8 0 35%, #d8a63f 36% 100%),
+    repeating-linear-gradient(90deg, rgba(117, 72, 26, 0.35) 0 12px, transparent 12px 24px);
+  border: 2px solid #7b4f18;
+  box-shadow: inset 1px 1px 0 #fff9d8, 2px 2px 0 rgba(0, 0, 0, 0.22);
+}
+
+.interaction-object.escape-edge {
+  width: 10px;
+  padding: 0;
+  background: repeating-linear-gradient(180deg, rgba(125, 210, 255, 0.2) 0 8px, rgba(255, 255, 255, 0.55) 8px 12px);
+  border: 1px dashed rgba(255, 255, 255, 0.65);
+  box-shadow: 0 0 10px rgba(104, 210, 255, 0.35);
+}
+
+.interaction-object.active {
+  filter: drop-shadow(0 0 5px rgba(255, 241, 118, 0.9));
+}
+
+.interaction-resize-controls {
+  position: absolute;
+  display: flex;
+  gap: 2px;
+  pointer-events: auto;
+}
+
+.interaction-resize-controls.vertical {
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.interaction-resize-controls.horizontal {
+  top: 50%;
+  right: -48px;
+  transform: translateY(-50%);
+}
+
+.interaction-resize-controls button {
+  width: 21px;
+  height: 21px;
+  padding: 0;
+  color: #ffffff;
+  background: #316ac5;
+  border: 1px solid #0d3f8d;
+  box-shadow: inset 1px 1px 0 #8db6f0, inset -1px -1px 0 #0b2f6b;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.interaction-prototype-pet {
+  position: absolute;
+  z-index: 13;
   width: 96px;
   height: 96px;
+  pointer-events: none;
+}
+
+.interaction-prototype-pet .canvas-sprite-animator {
+  width: 100%;
+  height: 100%;
+}
+
+.interaction-prototype-pet.escape_window {
+  z-index: 18;
 }
 
 .window-pet-interaction.below-quest {
   left: calc(var(--window-x) + 132px);
   top: calc(var(--window-y) + 352px);
-}
-
-.window-pet-interaction.below-quest.hanging {
-  top: calc(var(--window-y) + 43px);
 }
 
 .window-pet-interaction.beside-recovery {
@@ -2336,6 +2443,25 @@ label {
   background: #242424;
   border: 1px solid #111111;
   font-size: 12px;
+}
+
+.sprite-placement-controls button {
+  min-height: 30px;
+  padding: 4px 12px;
+  color: #ffffff;
+  background: #316ac5;
+  border: 1px solid #0d3f8d;
+  box-shadow: inset 1px 1px 0 #8db6f0, inset -1px -1px 0 #0b2f6b;
+  font: inherit;
+  font-size: 12px;
+}
+
+.sprite-placement-save-message {
+  min-width: min(100%, 300px);
+  margin: 0;
+  color: #55514a;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .sprite-placement-anchor-readout {

@@ -3,6 +3,7 @@ import type { AnimationEvent, CSSProperties, FormEvent, MouseEvent, PointerEvent
 import { CanvasSpriteAnimator } from "./components/CanvasSpriteAnimator";
 import {
   getDesktopIconAsset,
+  getPetAnimationAsset,
   getLumiAnimationAsset,
   getRenderablePetStage,
   getUnlockedPetStages,
@@ -11,15 +12,22 @@ import {
   lumiMoodToSpriteState,
   resolvePetStageFromLevel,
   type DesktopIconId,
+  type PetAnimationState,
   type LumiSpriteState,
   type PetId,
   type PetStageId,
 } from "./data/assetManifest";
 import { prependQuestLog, questLogMarks, questLogResultLabels } from "./data/questLogs";
 import type { QuestLog } from "./data/questLogs";
+import {
+  readWindowPetPlacementDrafts,
+  resolveWindowPetPosition,
+  runtimeWindowPetSlots,
+} from "./data/windowPetPlacements";
 import { createQuestEventViaApi, fetchManagerContextViaApi, fetchQuestEventsViaApi } from "./layers/storage/questLogApi";
 import type { CreateQuestEventRequest, ManagerContext } from "./layers/storage/questLogApi";
 import { createQuestLogRepository } from "./layers/storage/questLogRepository";
+import { getClimbPosition, resizeInteractionObject, type InteractionObject } from "./domain/interactionObjects";
 import { createRecoveryQuest, type Difficulty, type Quest, type QuestType } from "./domain/questLogic";
 import "./styles.css";
 
@@ -31,6 +39,7 @@ type WindowId = "quest" | "runner" | "failure" | "recovery" | "manager" | "profi
 type QuestLogSyncStatus = "idle" | "loading" | "saving" | "success" | "error";
 type BlinkFocusMode = "start_day" | "end_day";
 type PixelTvMode = "default" | "projection";
+type InteractionPrototypeMode = "idle" | "climb_ladder" | "jump_to_platform" | "escape_window";
 
 interface UserProfile {
   name: string;
@@ -57,6 +66,11 @@ interface ManagerState {
 
 
 interface WindowPosition {
+  x: number;
+  y: number;
+}
+
+interface InteractionSpritePosition {
   x: number;
   y: number;
 }
@@ -186,6 +200,20 @@ interface DesktopIconProps {
   disabled?: boolean;
 }
 
+interface InteractionObjectLayerProps {
+  activeMode: InteractionPrototypeMode;
+  objects: InteractionObject[];
+  onActivate: (mode: InteractionPrototypeMode) => void;
+  onResize: (id: string, delta: number) => void;
+}
+
+interface InteractionPrototypePetProps {
+  mode: Exclude<InteractionPrototypeMode, "idle">;
+  objects: InteractionObject[];
+  petId: PetId;
+  stage: PetStageId;
+}
+
 interface WindowPetInteractionProps {
   state: Extract<LumiSpriteState, "hanging" | "hiding">;
   petId: PetId;
@@ -218,6 +246,12 @@ const initialWindowPositions: Record<WindowId, WindowPosition> = {
   trash: { x: 895, y: 405 },
   pixelTvProperties: { x: 360, y: 185 },
 };
+
+const initialInteractionObjects: InteractionObject[] = [
+  { id: "ladder-1", type: "ladder", resizeAxis: "vertical", rect: { x: 760, y: 290, width: 38, height: 146 } },
+  { id: "platform-1", type: "platform", resizeAxis: "horizontal", rect: { x: 800, y: 282, width: 154, height: 24 } },
+  { id: "escape-edge-1", type: "window_escape_edge", resizeAxis: "none", rect: { x: 1112, y: 170, width: 10, height: 156 } },
+];
 
 const workflowWindowIds = new Set<WindowId>(["quest", "runner", "failure", "recovery", "manager", "journal"]);
 
@@ -574,6 +608,8 @@ export default function App() {
   const [exitAfterBlink, setExitAfterBlink] = useState(false);
   const [pixelTvMode, setPixelTvMode] = useState<PixelTvMode>(() => readStorage<PixelTvMode>(pixelTvModeKey, "default"));
   const [pixelTvContextMenu, setPixelTvContextMenu] = useState<DesktopContextMenuState | null>(null);
+  const [interactionObjects, setInteractionObjects] = useState<InteractionObject[]>(initialInteractionObjects);
+  const [interactionMode, setInteractionMode] = useState<InteractionPrototypeMode>("idle");
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -631,6 +667,23 @@ export default function App() {
   }
   function togglePixelTvMode() {
     setPixelTvMode((current) => (current === "projection" ? "default" : "projection"));
+  }
+  function activateInteractionMode(mode: InteractionPrototypeMode) {
+    setInteractionMode((current) => (current === mode ? "idle" : mode));
+  }
+  function resizeInteractionObjectById(id: string, delta: number) {
+    setInteractionObjects((current) =>
+      current.map((object) => {
+        if (object.id !== id) return object;
+
+        const nextRect = {
+          ...object.rect,
+          height: object.type === "ladder" ? Math.max(96, Math.min(240, object.rect.height + delta)) : object.rect.height,
+          width: object.type === "platform" ? Math.max(96, Math.min(260, object.rect.width + delta)) : object.rect.width,
+        };
+        return resizeInteractionObject(object, nextRect);
+      }),
+    );
   }
   function openPixelTvContextMenu(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -771,6 +824,7 @@ export default function App() {
 
   const showRecoveryHidingPet = questStatus === "recovery" && openWindows.includes("recovery") && questOutcomeStreak.result === "failed" && questOutcomeStreak.count >= 2;
   const showQuestHangingPet = questStatus === "draft" && openWindows.includes("quest") && questOutcomeStreak.result === "success" && questOutcomeStreak.count >= 2;
+  const showInteractionPet = interactionMode !== "idle" && !showQuestHangingPet && !showRecoveryHidingPet;
 
   if (screen === "wizard") return <main className="xp-boot-screen"><ProfileSetupWizard draft={wizardDraft} needsClarify={needsClarify} onChange={setWizardDraft} onSubmit={submitWizard} /></main>;
   if (screen === "manager-created") return <main className="xp-boot-screen"><XpWindow className="created-window" title="Manager Created" titlebarIcon="◇" onClose={undefined}><p className="created-lead">매니저가 깨어났어요.</p><div className="created-card"><DesktopPet mood="happy" petId={manager.petId} stage={managerDisplayStage} large /><div><strong>◇ 루미 ◇</strong><span>전자 생물형 페이스메이커</span><br /><small>목표를 오늘의 퀘스트로 나누고 실패하면 다음 분량을 다시 맞춰요.</small></div></div><div className="window-actions"><button className="xp-button primary" type="button" onClick={enterDesktop}>데스크톱으로 이동</button></div></XpWindow></main>;
@@ -798,13 +852,28 @@ export default function App() {
         <DesktopContextMenu x={pixelTvContextMenu.x} y={pixelTvContextMenu.y} onOpenProperties={openPixelTvProperties} />
       )}
 
+      <InteractionObjectLayer
+        activeMode={interactionMode}
+        objects={interactionObjects}
+        onActivate={activateInteractionMode}
+        onResize={resizeInteractionObjectById}
+      />
+      {showInteractionPet && (
+        <InteractionPrototypePet
+          mode={interactionMode}
+          objects={interactionObjects}
+          petId={manager.petId}
+          stage={managerDisplayStage}
+        />
+      )}
+
       {openWindows.includes("quest") && <XpWindow className="quest-window" title={questStatus === "recovery" ? "복구 퀘스트" : "오늘의 퀘스트"} {...windowChrome("quest")}><QuestWindow quest={quest} status={questStatus} previousQuestTitle={previousQuestTitle} onQuestChange={updateQuest} onAccept={acceptQuest} onOpenRunner={() => openWindow("runner")} onRecommendNext={openTodayQuest} /></XpWindow>}
       {showQuestHangingPet && <WindowPetInteraction state="hanging" petId={manager.petId} stage={managerDisplayStage} placement="below-quest" position={windowPositions.quest} zIndex={11 + openWindows.indexOf("quest")} />}
       {openWindows.includes("runner") && <XpWindow className="runner-window" title="QuestRunner.exe" {...windowChrome("runner")}><QuestRunnerWindow quest={quest} remainingTime={remainingTime} onComplete={completeQuest} onFail={startFailureFlow} /></XpWindow>}
       {openWindows.includes("failure") && <XpWindow className="failure-window" title="퀘스트가 소멸했어" {...windowChrome("failure")}><FailureWindow selectedFailureReason={selectedFailureReason} onReasonChange={setSelectedFailureReason} onCreateRecovery={createRecovery} /></XpWindow>}
       {openWindows.includes("recovery") && <XpWindow className="recovery-window" title="복구 퀘스트" {...windowChrome("recovery")}><RecoveryWindow quest={quest} onEdit={editRecovery} onAccept={acceptQuest} /></XpWindow>}
       {showRecoveryHidingPet && <WindowPetInteraction state="hiding" petId={manager.petId} stage={managerDisplayStage} placement="beside-recovery" position={windowPositions.recovery} zIndex={9 + openWindows.indexOf("recovery")} />}
-      {openWindows.includes("manager") && <XpWindow className="manager-window" title="매니저" {...windowChrome("manager")}><ManagerWindow manager={manager} petAway={showQuestHangingPet || showRecoveryHidingPet} /></XpWindow>}
+      {openWindows.includes("manager") && <XpWindow className="manager-window" title="매니저" {...windowChrome("manager")}><ManagerWindow manager={manager} petAway={showQuestHangingPet || showRecoveryHidingPet || showInteractionPet} /></XpWindow>}
       {openWindows.includes("profile") && <XpWindow className="profile-window" title="내 프로필" {...windowChrome("profile")}><ProfileWindow profile={profile} onSave={saveProfile} /></XpWindow>}
       {openWindows.includes("journal") && <XpWindow className="journal-window" title="기록 노트" {...windowChrome("journal")}><JournalWindow logs={logs} sync={logSync} /></XpWindow>}
       {openWindows.includes("trash") && <XpWindow className="trash-window" title="휴지통" {...windowChrome("trash")}><div className="empty-trash">비어 있음</div></XpWindow>}
@@ -1170,20 +1239,137 @@ function DesktopIcon({
   );
 }
 
+function InteractionObjectLayer({ activeMode, objects, onActivate, onResize }: InteractionObjectLayerProps) {
+  return (
+    <section className="interaction-object-layer" aria-label="전자 매니저 상호작용 오브젝트">
+      {objects.map((object) => {
+        const objectStyle = {
+          left: `${object.rect.x}px`,
+          top: `${object.rect.y}px`,
+          width: `${object.rect.width}px`,
+          height: `${object.rect.height}px`,
+        } as CSSProperties;
+        const mode = getInteractionModeFromObject(object);
+        const isActive = activeMode === mode;
+
+        if (object.type === "window_escape_edge") {
+          return (
+            <button
+              aria-label="창 밖으로 나가기"
+              className={`interaction-object escape-edge ${isActive ? "active" : ""}`}
+              key={object.id}
+              onClick={() => onActivate(mode)}
+              style={objectStyle}
+              type="button"
+            />
+          );
+        }
+
+        return (
+          <div className={`interaction-object ${object.type} ${isActive ? "active" : ""}`} key={object.id} style={objectStyle}>
+            <button className="interaction-object-hitbox" type="button" onClick={() => onActivate(mode)}>
+              <span>{object.type === "ladder" ? "사다리" : "평지"}</span>
+            </button>
+            {object.resizeAxis !== "none" && (
+              <div className={`interaction-resize-controls ${object.resizeAxis}`}>
+                <button type="button" aria-label="크기 줄이기" onClick={() => onResize(object.id, -24)}>
+                  {object.resizeAxis === "vertical" ? "▲" : "◀"}
+                </button>
+                <button type="button" aria-label="크기 늘리기" onClick={() => onResize(object.id, 24)}>
+                  {object.resizeAxis === "vertical" ? "▼" : "▶"}
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
+function InteractionPrototypePet({ mode, objects, petId, stage }: InteractionPrototypePetProps) {
+  const renderableStage = getRenderablePetStage(petId, stage);
+  const animationState = getInteractionAnimationState(mode);
+  const animation = getInteractionPrototypeAnimation(petId, renderableStage, animationState);
+  const position = getInteractionPetPosition(mode, objects);
+  const petStyle = {
+    left: `${position.x}px`,
+    top: `${position.y}px`,
+  } as CSSProperties;
+
+  return (
+    <div className={`interaction-prototype-pet ${mode}`} data-pet-stage={renderableStage} style={petStyle} aria-hidden="true">
+      <CanvasSpriteAnimator animation={animation} ariaLabel={`${animationState} 핑크 매니저`} forceMotion={mode === "climb_ladder"} />
+    </div>
+  );
+}
+
 function WindowPetInteraction({ state, petId, stage, placement, position, zIndex }: WindowPetInteractionProps) {
   const animation = getLumiAnimationAsset(state, petId, stage);
   const renderableStage = getRenderablePetStage(petId, stage);
+  const placementDrafts = readWindowPetPlacementDrafts((key) => window.localStorage.getItem(key));
+  const runtimeSlot = runtimeWindowPetSlots[placement];
+  const selectedPlacement = placementDrafts[runtimeSlot.motion][runtimeSlot.edge];
+  const resolvedPosition = resolveWindowPetPosition({
+    placement: selectedPlacement,
+    windowPosition: position,
+    windowSize: runtimeSlot.windowSize,
+    frameWidth: animation.frameWidth,
+    anchor: animation.anchor,
+    baseSpriteSize: 96,
+  });
   const interactionStyle = {
-    "--window-x": `${position.x}px`,
-    "--window-y": `${position.y}px`,
+    left: `${resolvedPosition.left}px`,
+    top: `${resolvedPosition.top}px`,
+    width: `${resolvedPosition.size}px`,
+    height: `${resolvedPosition.size}px`,
     zIndex,
-  } as CSSProperties & Record<"--window-x" | "--window-y", string>;
+  } as CSSProperties;
 
   return (
-    <div className={`window-pet-interaction ${placement} ${state}`} data-pet-stage={renderableStage} style={interactionStyle} aria-hidden="true">
-      <CanvasSpriteAnimator animation={animation} ariaLabel={`${state} 핑크 매니저`} />
+    <div className={`window-pet-interaction ${placement} ${state} ${resolvedPosition.layer}`} data-pet-stage={renderableStage} style={interactionStyle} aria-hidden="true">
+      <CanvasSpriteAnimator animation={animation} ariaLabel={`${state} 핑크 매니저`} mirrorX={selectedPlacement.mirrorX} />
     </div>
   );
+}
+
+function getInteractionModeFromObject(object: InteractionObject): Exclude<InteractionPrototypeMode, "idle"> {
+  if (object.type === "ladder") return "climb_ladder";
+  if (object.type === "platform") return "jump_to_platform";
+  return "escape_window";
+}
+
+function getInteractionAnimationState(mode: Exclude<InteractionPrototypeMode, "idle">): PetAnimationState {
+  if (mode === "climb_ladder") return "climbing";
+  if (mode === "jump_to_platform") return "jump";
+  return "walk";
+}
+
+function getInteractionPrototypeAnimation(petId: PetId, stage: PetStageId, state: PetAnimationState) {
+  try {
+    return getPetAnimationAsset(petId, stage, state);
+  } catch {
+    return getPetAnimationAsset(defaultLumiPetId, "stage-2", state);
+  }
+}
+
+function getInteractionPetPosition(mode: Exclude<InteractionPrototypeMode, "idle">, objects: InteractionObject[]): InteractionSpritePosition {
+  if (mode === "climb_ladder") {
+    const ladder = objects.find((object) => object.type === "ladder");
+    if (!ladder) return { x: 760, y: 290 };
+    const climbPosition = getClimbPosition(ladder.rect, 0.48);
+    return { x: climbPosition.x - 48, y: climbPosition.y - 48 };
+  }
+
+  if (mode === "jump_to_platform") {
+    const platform = objects.find((object) => object.type === "platform");
+    if (!platform) return { x: 800, y: 240 };
+    return { x: platform.rect.x + platform.rect.width / 2 - 48, y: platform.rect.y - 78 };
+  }
+
+  const escapeEdge = objects.find((object) => object.type === "window_escape_edge");
+  if (!escapeEdge) return { x: 1060, y: 210 };
+  return { x: escapeEdge.rect.x + 18, y: escapeEdge.rect.y + escapeEdge.rect.height / 2 - 48 };
 }
 
 function DesktopPet({ mood, petId, stage, large = false }: DesktopPetProps) {

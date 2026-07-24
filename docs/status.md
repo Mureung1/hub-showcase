@@ -1,6 +1,6 @@
 ﻿# 현재 진행 상황
 
-마지막 갱신: 2026-07-23
+마지막 갱신: 2026-07-24
 
 ## 완료
 
@@ -74,6 +74,8 @@
 - 2026-07-23 TDD 반복 workflow를 `.codex/agents/tdd_workflow.toml` Agent와 `.agents/skills/tdd-test-writing/SKILL.md` Skill로 분리
 - 2026-07-23 아키텍처 5장 구조도와 Supabase 확장 정규화 후보를 최신 기준으로 갱신
 - 2026-07-23 PR showcase 제출용 `showcase/showcase.json`, `thumbnail.webp`, `screenshots/home.webp` 추가
+- 2026-07-24 review tool placement 자동화: `?review=sprites`에서 맞춘 창 주변 Lumi placement를 `localStorage`에 저장하고, React runtime의 `WindowPetInteraction`이 같은 `resolveWindowPetPosition` 계산식을 사용하도록 연결
+- 2026-07-24 상호작용 오브젝트 prototype 1차 연결: 사다리/평지/창탈출 edge를 desktop object layer로 렌더링하고, 클릭/resize에 따라 Lumi가 `climbing`, `jump`, `walk` sprite animation으로 이동하는 UI 연결을 추가
 
 ## 검증
 
@@ -110,6 +112,7 @@
 - 2026-07-23 canonical manager asset 검증 통과: `npm.cmd run verify:sprites`, `npm.cmd run typecheck`
 - 2026-07-23 TDD 도메인 규칙 검증 통과: `npm.cmd test`, `npm.cmd run typecheck`, `npm.cmd run build`, `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
 - 2026-07-23 문서/하네스 최신화 검증 통과: `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
+- 2026-07-24 review placement/interaction prototype 검증 통과: `npm.cmd test`, `npm.cmd run typecheck`, `npm.cmd run build`, `npm.cmd run verify:sprites`, `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
 - 로컬 skill 설치 확인: Superpowers, 하네스 workflow skills, `project-learning-agent`
 - React 화면은 정적 HTML 기준으로 큰 flow/state 차이는 줄였고, 남은 시각 차이는 사용자가 직접 화면을 보며 추가 점검 예정
 
@@ -117,7 +120,7 @@
 
 - 1순위: 캐릭터 생동감 후속 작업. `T-713` cyber-purr 사운드 후보를 정리하고, TDD로 만든 `ManagerBehaviorIntent`, `ManagerBehaviorAdapter`, Pet Behavior State Machine을 React Lumi animation state와 연결
 - 2순위: 성장/보상 구조 연결. TDD로 만든 `T-703`, `T-717`, `T-712` 성장/보상 도메인 규칙을 Quest Event metadata, 기록 노트, 매니저 상태, 외형 선택 UI와 연결하고 `T-718` Supabase 정규화 기준을 확정
-- 3순위: 상호작용 오브젝트 prototype. TDD로 만든 interaction object, pet locomotion, behavior state machine을 실제 사다리/평지/창탈출 UI prototype에 연결
+- 3순위 후속: 상호작용 오브젝트 prototype은 화면 연결까지 들어갔으므로 브라우저에서 사다리/평지/창탈출 edge의 위치, resize 조작감, Lumi animation 위치를 수동 검수하고 object 위치/시각 품질을 조정
 - 4순위: 월드/실험 기능 prototype. `T-708`, `T-721`, `T-722`, `T-723` 하루 흐름 Web theme, 현실 픽셀화 TV, 공개 퀘스트 탐색, 웹캠 손 제스처 탐색을 별도 prototype으로 검증
 - 후속 검수: `T-724` Single-plane Pepper projection mode는 기본 flow가 연결되어 있으므로 브라우저에서 projection 화면 품질과 front/back 자동 회전 v1.5 필요 여부만 추가 판단
 - React 화면은 이미 `WindowFrame`, `ProfileWizard`, `DesktopShell`, `QuestWindow`, `ManagerWindow`, `JournalWindow` 중심으로 분리되어 있고, 다음 분리는 UI 파일 추가보다 `useQuestFlow`, `useQuestLogSync`, `usePixelTvMode` 같은 상태 hook 단위가 우선
