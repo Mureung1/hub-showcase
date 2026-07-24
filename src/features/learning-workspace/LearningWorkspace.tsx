@@ -3,13 +3,24 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { shouldUseServerApi } from '../../app/icuApiMode'
 import { createFallbackCurriculumPlan } from '../curriculum/api/curriculumClient'
-import { type GeneratedCurriculumPlan, type GeneratedCurriculumStep, type WorkspaceMode } from '../curriculum/model/curriculumGenerator'
+import {
+  type GeneratedCurriculumPlan,
+  type GeneratedCurriculumStep,
+  type WorkspaceMode,
+} from '../curriculum/model/curriculumGenerator'
 import {
   resolveGeneratedCurriculumPlan,
   useGeneratedCurriculumStore,
 } from '../curriculum/model/useGeneratedCurriculumStore'
 import { saveMissionProgress } from '../learning-progress/api/learningProgressClient'
-import { executeCode } from './api/codeRunnerClient'
+import { executeCode, type ReactPreviewBundle } from './api/codeRunnerClient'
+import {
+  PreviewCancelledError,
+  PreviewRenderError,
+  PreviewTimeoutError,
+} from './previewRequestCoordinator'
+import { useReactPreviewBridge } from './useReactPreviewBridge'
+import { WorkspaceResultsPanel } from './components/WorkspaceResultsPanel'
 import {
   useLearningProgressStore,
   type LearningActivityItem,
@@ -24,13 +35,12 @@ import {
   createWorkspaceTestCases,
   generatedMissionId,
   getInitialStepOffset,
-  getNextRunState,
   getResultMessage,
   isFinalStep,
+  toLearningRunState,
   type RunState,
   type StepState,
   type TestCase,
-  type TestState,
 } from './workspaceInteraction'
 
 type CurriculumStep = {
@@ -69,13 +79,7 @@ type CodeRunPreviewState = {
   logs: string[]
   error?: string
   result?: string | null
-}
-
-type RenderPreviewModel = {
-  canRender: boolean
-  title: string
-  buttonLabel: string
-  componentName: string
+  preview?: ReactPreviewBundle
 }
 
 type ExecutionPanelModel = {
@@ -102,7 +106,7 @@ const reactCodeLines = [
   '  const [count, setCount] = useState(initial)',
   '',
   '  return (',
-  '    <section aria-label="counter practice">',
+  '    <section className="preview-root" aria-label="counter practice">',
   '      <p>{count}</p>',
   '      <button onClick={() => setCount(count + 1)}>+1</button>',
   '    </section>',
@@ -142,9 +146,24 @@ const dockerCodeLines = [
 ]
 
 const initialActivityItems: LearningActivityItem[] = [
-  { id: 'submit-ready', time: '10:15', title: '학습 준비', detail: '오늘 미션과 참고 문서를 확인했습니다.' },
-  { id: 'hint-opened', time: '10:12', title: '힌트 확인', detail: '막히는 지점을 먼저 좁혀봅니다.' },
-  { id: 'run-started', time: '10:08', title: '테스트 실행', detail: '현재 코드 상태를 확인했습니다.' },
+  {
+    id: 'submit-ready',
+    time: '10:15',
+    title: '학습 준비',
+    detail: '오늘 미션과 참고 문서를 확인했습니다.',
+  },
+  {
+    id: 'hint-opened',
+    time: '10:12',
+    title: '힌트 확인',
+    detail: '막히는 지점을 먼저 좁혀봅니다.',
+  },
+  {
+    id: 'run-started',
+    time: '10:08',
+    title: '테스트 실행',
+    detail: '현재 코드 상태를 확인했습니다.',
+  },
 ]
 
 function stateLabel(state: StepState) {
@@ -157,18 +176,6 @@ function stateLabel(state: StepState) {
   }
 
   return '예정'
-}
-
-function testStateLabel(state: TestState) {
-  if (state === 'passed') {
-    return '통과'
-  }
-
-  if (state === 'failed') {
-    return '실패'
-  }
-
-  return '대기'
 }
 
 function createSteps(
@@ -214,7 +221,9 @@ function resolveWorkspaceMission(
       guideTitle: generatedPlan.steps[0]?.title ?? generatedPlan.title,
       guideDetail: generatedPlan.steps[0]?.detail ?? generatedPlan.summary,
       practiceDetail: generatedPlan.todayMission.detail,
-      hint: generatedPlan.steps[0]?.outcome ?? '오늘 미션을 실행한 뒤 결과와 헷갈린 지점을 짧게 기록해보세요.',
+      hint:
+        generatedPlan.steps[0]?.outcome ??
+        '오늘 미션을 실행한 뒤 결과와 헷갈린 지점을 짧게 기록해보세요.',
       criteria: [
         '오늘 단계의 핵심을 한 문장으로 설명하기',
         '예제 명령 또는 코드를 직접 실행하기',
@@ -243,15 +252,30 @@ function resolveWorkspaceMode(input: {
   const fileName = input.fileName.toLowerCase()
   const context = `${input.trackTitle ?? ''} ${input.goal ?? ''}`.toLowerCase()
 
-  if (fileName === 'dockerfile' || fileName.endsWith('.dockerfile') || context.includes('docker') || context.includes('도커')) {
+  if (
+    fileName === 'dockerfile' ||
+    fileName.endsWith('.dockerfile') ||
+    context.includes('docker') ||
+    context.includes('도커')
+  ) {
     return 'docker'
   }
 
-  if (fileName.endsWith('.sh') || context.includes('linux') || context.includes('리눅스') || context.includes('devops')) {
+  if (
+    fileName.endsWith('.sh') ||
+    context.includes('linux') ||
+    context.includes('리눅스') ||
+    context.includes('devops')
+  ) {
     return 'linux'
   }
 
-  if (fileName.endsWith('.py') || context.includes('python') || context.includes('파이썬') || context.includes('fastapi')) {
+  if (
+    fileName.endsWith('.py') ||
+    context.includes('python') ||
+    context.includes('파이썬') ||
+    context.includes('fastapi')
+  ) {
     return 'python'
   }
 
@@ -259,24 +283,27 @@ function resolveWorkspaceMode(input: {
 }
 
 function createWorkspaceModeLabel(mode: WorkspaceMode) {
-  if (mode === 'linux') return 'Linux ???'
-  if (mode === 'docker') return 'Docker ??'
-  if (mode === 'python') return 'Python ??'
-  return 'React ????'
+  if (mode === 'linux') return 'Linux 터미널'
+  if (mode === 'docker') return 'Docker 빌드'
+  if (mode === 'python') return 'Python 출력'
+  return 'React 미리보기'
 }
 
 function createWorkspaceModeDescription(mode: WorkspaceMode) {
-  if (mode === 'linux') return '??? ??? ?? ?? ??? ?????.'
-  if (mode === 'docker') return '??? ??? Dockerfile ?? ??? ?????.'
-  if (mode === 'python') return '??? ??? Python ?? ??? ?????.'
-  return '??? ??? ?? ? React ?? ??? ?????.'
+  if (mode === 'linux') return '터미널에서 셸 명령 실행 결과를 확인합니다.'
+  if (mode === 'docker') return '빌드 로그에서 Dockerfile 실행 단계를 확인합니다.'
+  if (mode === 'python') return '출력 패널에서 Python 실행 결과를 확인합니다.'
+  return '미리보기 화면에서 작성한 React 결과를 확인합니다.'
 }
 
 function createRunStateLabel(state: RunState) {
-  if (state === 'running') return '?? ?'
-  if (state === 'passed') return '??'
-  if (state === 'failed') return '??'
-  return '??'
+  if (state === 'compiling') return '컴파일 중'
+  if (state === 'rendering') return '렌더링 중'
+  if (state === 'running') return '실행 중'
+  if (state === 'passed') return '통과'
+  if (state === 'failed') return '실패'
+  if (state === 'timeout') return '시간 초과'
+  return '실행 전'
 }
 
 function createQueueMission(item: TodayQueueItem): WorkspaceMission {
@@ -294,7 +321,11 @@ function createQueueMission(item: TodayQueueItem): WorkspaceMission {
     guideDetail: item.detail,
     practiceDetail: '선택한 항목을 완료할 수 있도록 코드와 실행 결과를 함께 확인하세요.',
     hint: '정답을 바로 보기 전에 현재 코드에서 상태가 바뀌는 지점을 먼저 찾아보세요.',
-    criteria: ['미션 내용을 한 문장으로 요약', '코드 또는 문서에서 근거 확인', '완료 여부를 실행 결과로 확인'],
+    criteria: [
+      '미션 내용을 한 문장으로 요약',
+      '코드 또는 문서에서 근거 확인',
+      '완료 여부를 실행 결과로 확인',
+    ],
     sources: ['React Docs: State: A Component Memory', 'React Docs: Responding to Events'],
     codeLines: reactCodeLines,
   }
@@ -312,7 +343,10 @@ function getEditorLanguage(fileName: string) {
 }
 
 function getExecutionLanguage(fileName: string, mode: WorkspaceMode) {
-  if (mode === 'react') return fileName.toLowerCase().endsWith('.jsx') || fileName.toLowerCase().endsWith('.tsx') ? 'jsx' : 'javascript'
+  if (mode === 'react')
+    return fileName.toLowerCase().endsWith('.tsx') || fileName.toLowerCase().endsWith('.ts')
+      ? 'tsx'
+      : 'jsx'
   if (mode === 'linux') return 'shell'
   if (mode === 'docker') return 'dockerfile'
   if (mode === 'python') return 'python'
@@ -431,78 +465,6 @@ function createActiveMissionPresentation(
   }
 }
 
-function stripJsxText(value: string | undefined) {
-  return (value ?? '')
-    .replace(/\{[^}]*\}/g, '')
-    .replace(/<[^>]+>/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function extractJsxText(code: string, tagName: string) {
-  const pattern = new RegExp(`<${tagName}\\b[^>]*>([\\s\\S]*?)<\\/${tagName}>`, 'i')
-  return stripJsxText(pattern.exec(code)?.[1])
-}
-
-function createRenderPreviewModel(code: string, fileName: string, mode: WorkspaceMode): RenderPreviewModel {
-  const language = fileName.toLowerCase()
-  const canRender = mode === 'react' && (language.endsWith('.js') || language.endsWith('.jsx') || language.endsWith('.tsx'))
-
-  if (!canRender) {
-    return {
-      canRender: false,
-      title: 'Preview unavailable',
-      buttonLabel: '',
-      componentName: fileName,
-    }
-  }
-
-  const title = extractJsxText(code, 'h1') || extractJsxText(code, 'h2') || 'Welcome to my app'
-  const buttonLabel = extractJsxText(code, 'button') || '+1'
-  const componentName = /function\s+([A-Z][A-Za-z0-9_]*)/.exec(code)?.[1] ?? 'App'
-
-  return { canRender, title, buttonLabel, componentName }
-}
-
-function getIframeSrcDoc(code: string, componentName: string = 'App') {
-  const cleanCode = code
-    .replace(/import\s+(?:React,\s*)?{([^}]+)}\s+from\s+['"]react['"]/g, 'const { $1 } = window.React;')
-    .replace(/import\s+React\s+from\s+['"]react['"]/g, '')
-    .replace(/import\s+.*?\s+from\s+['"].*?['"]/g, '')
-    .replace(/export\s+default\s+/g, '')
-    .replace(/export\s+/g, '')
-
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: sans-serif; margin: 16px; background: transparent; color: #030712; }
-    button { background: #007aff; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
-    button:hover { background: #006ae6; }
-  </style>
-  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="text/babel" data-presets="react">
-    try {
-      ${cleanCode}
-
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      root.render(React.createElement(${componentName}));
-    } catch (err) {
-      document.getElementById('root').innerHTML = '<div style="color:red;white-space:pre-wrap;font-family:monospace;">' + err.message + '</div>';
-    }
-  </script>
-</body>
-</html>
-  `
-}
-
-
 function getExecutionPanelModel(mode: WorkspaceMode, fileName: string): ExecutionPanelModel {
   if (mode === 'linux') {
     return {
@@ -552,7 +514,10 @@ export default function LearningWorkspace() {
   const generatedCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
   const selectedMissionId = searchParams.get('mission') ?? generatedMissionId
-  const fallbackGeneratedPlan = useMemo(() => createFallbackCurriculumPlan(profileGoal), [profileGoal])
+  const fallbackGeneratedPlan = useMemo(
+    () => createFallbackCurriculumPlan(profileGoal),
+    [profileGoal],
+  )
   const generatedPlan = useMemo(
     () => resolveGeneratedCurriculumPlan(generatedCurriculum, fallbackGeneratedPlan),
     [fallbackGeneratedPlan, generatedCurriculum],
@@ -573,7 +538,11 @@ export default function LearningWorkspace() {
   )
 }
 
-function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }: LearningWorkspaceViewProps) {
+function LearningWorkspaceView({
+  generatedPlan,
+  hasSavedGeneratedPlan,
+  mission,
+}: LearningWorkspaceViewProps) {
   const savedProgress = useLearningProgressStore((state) => state.missions[mission.id])
   const recordRunResult = useLearningProgressStore((state) => state.recordRunResult)
   const recordMissionActivity = useLearningProgressStore((state) => state.recordMissionActivity)
@@ -592,13 +561,13 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
 
     return Boolean(savedProgress?.completedAt && isFinalStep(initialStepOffset, initialTotalSteps))
   })
-  const [activeStepOffset, setActiveStepOffset] = useState(() =>
-    savedProgress?.activeStepOffset ?? getInitialStepOffset(mission.id),
+  const [activeStepOffset, setActiveStepOffset] = useState(
+    () => savedProgress?.activeStepOffset ?? getInitialStepOffset(mission.id),
   )
   const [activityLog, setActivityLog] = useState<LearningActivityItem[]>(
     savedProgress?.activityLog.length ? savedProgress.activityLog : initialActivityItems,
   )
-  const runTimerRef = useRef<number | undefined>(undefined)
+  const runAbortControllerRef = useRef<AbortController | null>(null)
   const curriculumSteps = useMemo(
     () => createSteps(generatedPlan, mission.id, activeStepOffset),
     [activeStepOffset, generatedPlan, mission.id],
@@ -626,30 +595,35 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
   const resultMessage = missionCompleted
     ? '오늘 미션을 완료했습니다. Today Hub에서 다음 학습을 확인하세요.'
     : getResultMessage(runState, passedCount, failedCount, testCases.length)
-  const nextStepButtonLabel = missionCompleted ? '완료됨' : finalStep ? '오늘 미션 완료' : '다음 단계'
+  const nextStepButtonLabel = missionCompleted
+    ? '완료됨'
+    : finalStep
+      ? '오늘 미션 완료'
+      : '다음 단계'
   const planSummaryItems = [
     { label: '학습 목표', value: generatedPlan.goal },
     { label: '추천 트랙', value: generatedPlan.focusRole || generatedPlan.title },
     { label: '예상 기간', value: generatedPlan.estimatedDuration },
   ]
 
-  const [editorFiles, setEditorFiles] = useState<WorkspaceEditorFile[]>(() => createWorkspaceEditorFiles(activeMission))
-  const [activeFilePath, setActiveFilePath] = useState(() => createWorkspaceEditorFiles(activeMission)[0]?.path ?? '')
-  const [runPreview, setRunPreview] = useState<CodeRunPreviewState>(() => createInitialRunPreviewState())
-
-  useEffect(() => {
-    const nextFiles = createWorkspaceEditorFiles(activeMission)
-    setEditorFiles(nextFiles)
-    setActiveFilePath(nextFiles[0]?.path ?? '')
-    setRunPreview(createInitialRunPreviewState())
-    setPreviewCode(nextFiles.find((file) => /\.(jsx?|tsx?)$/i.test(file.name))?.value ?? nextFiles[0]?.value ?? '')
-  }, [activeMission])
+  const [editorFiles, setEditorFiles] = useState<WorkspaceEditorFile[]>(() =>
+    createWorkspaceEditorFiles(activeMission),
+  )
+  const [activeFilePath, setActiveFilePath] = useState(
+    () => createWorkspaceEditorFiles(activeMission)[0]?.path ?? '',
+  )
+  const [runPreview, setRunPreview] = useState<CodeRunPreviewState>(() =>
+    createInitialRunPreviewState(),
+  )
+  const { cancelPreview, iframeRef, previewUrl, renderPreview } = useReactPreviewBridge()
+  const runButtonRef = useRef<HTMLButtonElement | null>(null)
+  const isRunning = runState === 'running' || runState === 'compiling' || runState === 'rendering'
 
   const activeFile = editorFiles.find((file) => file.path === activeFilePath) ?? editorFiles[0]
   const runnableFile = editorFiles.find((file) => /\.(jsx?|tsx?)$/i.test(file.name)) ?? activeFile
   const code = activeFile?.value ?? ''
   const runnableCode = runnableFile?.value ?? code
-  const [previewCode, setPreviewCode] = useState(runnableCode)
+  const cssCode = editorFiles.find((file) => file.name.toLowerCase().endsWith('.css'))?.value ?? ''
 
   function updateActiveFile(value: string) {
     if (!activeFile) {
@@ -666,13 +640,17 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
       return
     }
 
-    const initialFile = createWorkspaceEditorFiles(activeMission).find((file) => file.path === activeFile.path)
+    const initialFile = createWorkspaceEditorFiles(activeMission).find(
+      (file) => file.path === activeFile.path,
+    )
     if (!initialFile) {
       return
     }
 
     setEditorFiles((currentFiles) =>
-      currentFiles.map((file) => (file.path === activeFile.path ? { ...file, value: initialFile.value } : file)),
+      currentFiles.map((file) =>
+        file.path === activeFile.path ? { ...file, value: initialFile.value } : file,
+      ),
     )
   }
 
@@ -680,32 +658,27 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
     () => getExecutionPanelModel(activeMission.mode, runnableFile?.name ?? activeMission.fileName),
     [activeMission.fileName, activeMission.mode, runnableFile?.name],
   )
-  const renderPreview = useMemo(
-    () => createRenderPreviewModel(previewCode, runnableFile?.name ?? activeMission.fileName, activeMission.mode),
-    [activeMission.fileName, activeMission.mode, previewCode, runnableFile?.name],
-  )
 
   const runtimeSummaryItems = [
-    { label: '?? ??', value: createWorkspaceModeLabel(activeMission.mode) },
-    { label: '?? ??', value: runnableFile?.name ?? activeMission.fileName },
-    { label: '?? ID', value: activeMission.id },
-    { label: '?? ??', value: hasSavedGeneratedPlan ? '??? ????' : '?? ??' },
+    { label: '실행 모드', value: createWorkspaceModeLabel(activeMission.mode) },
+    { label: '실행 파일', value: runnableFile?.name ?? activeMission.fileName },
+    { label: '미션 ID', value: activeMission.id },
+    { label: '계획 출처', value: hasSavedGeneratedPlan ? '저장된 커리큘럼' : '기본 학습 계획' },
   ]
 
-  const consoleLines = runPreview.logs.length > 0
-    ? runPreview.logs
-    : runPreview.status === 'idle'
-      ? ['실행하면 console.log 출력이 여기에 표시됩니다.']
-      : ['출력 없이 실행이 끝났습니다.']
-
+  const consoleLines =
+    runPreview.logs.length > 0
+      ? runPreview.logs
+      : runPreview.status === 'idle'
+        ? ['실행하면 console.log 출력이 여기에 표시됩니다.']
+        : ['출력 없이 실행이 끝났습니다.']
 
   useEffect(() => {
     return () => {
-      if (runTimerRef.current) {
-        window.clearTimeout(runTimerRef.current)
-      }
+      runAbortControllerRef.current?.abort()
+      cancelPreview()
     }
-  }, [])
+  }, [cancelPreview])
 
   function createActivity(title: string, detail: string) {
     return {
@@ -727,15 +700,14 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
     return nextLog
   }
 
-  function getServerRunState(state: RunState): LearningRunState {
-    return state === 'running' ? 'idle' : state
-  }
-
   function recordServerSyncFailure(missionId: string, stepOffset: number) {
     setActivityLog((currentLog) => {
       const nextLog = prependActivity(
         currentLog,
-        createActivity('서버 동기화 실패', '로컬 진행 기록은 저장했습니다. 백엔드를 실행한 뒤 다시 시도하세요.'),
+        createActivity(
+          '서버 동기화 실패',
+          '로컬 진행 기록은 저장했습니다. 백엔드를 실행한 뒤 다시 시도하세요.',
+        ),
       )
       recordMissionActivity({ missionId, activeStepOffset: stepOffset, activityLog: nextLog })
 
@@ -767,32 +739,62 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
   }
 
   async function handleRun() {
-    if (runTimerRef.current) {
-      window.clearTimeout(runTimerRef.current)
-    }
+    runAbortControllerRef.current?.abort()
+    cancelPreview()
+    const abortController = new AbortController()
+    const requestId = crypto.randomUUID()
+    const usesReactPreview = activeMission.mode === 'react'
+    const initialState: RunState = usesReactPreview ? 'compiling' : 'running'
+    runAbortControllerRef.current = abortController
 
-    setRunState('running')
-    setPreviewCode(runnableCode)
-    setRunPreview({ status: 'running', logs: ['코드를 실행하고 있습니다...'] })
+    setRunState(initialState)
+    setRunPreview({
+      status: initialState,
+      logs: [
+        usesReactPreview ? 'React 코드를 컴파일하고 있습니다...' : '코드를 실행하고 있습니다...',
+      ],
+    })
     setMissionCompleted(false)
     setReviewVisible(false)
-    const runLog = addActivity('테스트 실행', `${activeMission.fileName} 기준으로 백엔드에 코드를 전송하여 실행합니다.`)
+    const runLog = addActivity(
+      '테스트 실행',
+      `${activeMission.fileName} 기준으로 백엔드에 코드를 전송하여 실행합니다.`,
+    )
+    let latestLogs: string[] = []
+    let latestPreview: ReactPreviewBundle | undefined
 
     try {
-      const language = getExecutionLanguage(runnableFile?.name ?? activeMission.fileName, activeMission.mode)
-      const res = await executeCode(runnableCode, language)
+      const language = getExecutionLanguage(
+        runnableFile?.name ?? activeMission.fileName,
+        activeMission.mode,
+      )
+      const res = await executeCode(runnableCode, language, {
+        css: cssCode,
+        signal: abortController.signal,
+      })
+      if (abortController.signal.aborted) return
+
+      latestLogs = res.logs
+      latestPreview = res.preview
+      if (res.success && res.preview) {
+        setRunState('rendering')
+        setRunPreview({
+          status: 'rendering',
+          logs: [...res.logs, '실행 화면을 렌더링하고 있습니다...'],
+          preview: res.preview,
+        })
+        await renderPreview(requestId, res.preview)
+        if (abortController.signal.aborted) return
+      }
+
       const nextState = res.success ? 'passed' : 'failed'
       const detailMsg = res.success
         ? `실행이 성공했습니다. (출력: ${res.logs.length}줄)`
         : `실행 실패: ${res.error || '오류 발생'}`
-
       const nextAttemptCount = runAttemptCount + 1
       const resultLog = prependActivity(
         runLog,
-        createActivity(
-          nextState === 'passed' ? '테스트 통과' : '테스트 실패',
-          detailMsg
-        ),
+        createActivity(nextState === 'passed' ? '테스트 통과' : '테스트 실패', detailMsg),
       )
 
       setRunState(nextState)
@@ -801,6 +803,7 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
         logs: res.logs,
         error: res.error,
         result: res.result,
+        preview: res.preview,
       })
       setRunAttemptCount(nextAttemptCount)
       setActivityLog(resultLog)
@@ -819,21 +822,71 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
         activeStepOffset,
         activityLog: resultLog,
       })
-    } catch (e) {
-      setRunState('failed')
+    } catch (error) {
+      if (
+        abortController.signal.aborted ||
+        error instanceof PreviewCancelledError ||
+        (error instanceof DOMException && error.name === 'AbortError')
+      ) {
+        return
+      }
+
+      const timeout = error instanceof PreviewTimeoutError
+      const learnerFailure = timeout || error instanceof PreviewRenderError
+      const nextState: RunState = timeout ? 'timeout' : 'failed'
+      const errorMessage = error instanceof Error ? error.message : '코드 실행에 실패했습니다.'
       setRunPreview({
-        status: 'failed',
-        logs: [],
-        error: e instanceof Error ? e.message : '코드 실행에 실패했습니다.',
+        status: nextState,
+        logs: latestLogs,
+        error: errorMessage,
+        preview: latestPreview,
       })
-      const resultLog = prependActivity(runLog, createActivity('테스트 실패', '서버 또는 네트워크 오류로 코드 실행에 실패했습니다.'))
+      setRunState(nextState)
+
+      const resultLog = prependActivity(
+        runLog,
+        createActivity(
+          learnerFailure
+            ? timeout
+              ? '실행 시간 초과'
+              : '화면 렌더링 실패'
+            : '실행 환경 연결 실패',
+          learnerFailure ? errorMessage : '실행 서버 또는 Preview 앱 연결 상태를 확인해 주세요.',
+        ),
+      )
       setActivityLog(resultLog)
+
+      if (learnerFailure) {
+        const nextAttemptCount = runAttemptCount + 1
+        setRunAttemptCount(nextAttemptCount)
+        recordRunResult({
+          missionId: mission.id,
+          runState: 'failed',
+          runAttemptCount: nextAttemptCount,
+          activeStepOffset,
+          activityLog: resultLog,
+        })
+        syncMissionProgressToServer({
+          missionId: mission.id,
+          runState: 'failed',
+          runAttemptCount: nextAttemptCount,
+          activeStepOffset,
+          activityLog: resultLog,
+        })
+      }
+    } finally {
+      if (runAbortControllerRef.current === abortController) {
+        runAbortControllerRef.current = null
+      }
     }
   }
 
   function handleShowHint() {
     setHintVisible(true)
-    const nextLog = addActivity('힌트 확인', `${activeMission.title} 단계의 접근 방향을 확인했습니다.`)
+    const nextLog = addActivity(
+      '힌트 확인',
+      `${activeMission.title} 단계의 접근 방향을 확인했습니다.`,
+    )
     recordMissionActivity({
       missionId: mission.id,
       activeStepOffset,
@@ -841,7 +894,7 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
     })
     syncMissionProgressToServer({
       missionId: mission.id,
-      runState: getServerRunState(runState),
+      runState: toLearningRunState(runState),
       runAttemptCount,
       activeStepOffset,
       activityLog: nextLog,
@@ -852,7 +905,9 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
     setReviewVisible(true)
     const nextLog = addActivity(
       '코드 리뷰 요청',
-      runState === 'passed' ? '통과한 코드의 개선점을 확인했습니다.' : '리뷰 전에 실패 항목을 먼저 확인합니다.',
+      runState === 'passed'
+        ? '통과한 코드의 개선점을 확인했습니다.'
+        : '리뷰 전에 실패 항목을 먼저 확인합니다.',
     )
     recordMissionActivity({
       missionId: mission.id,
@@ -861,7 +916,7 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
     })
     syncMissionProgressToServer({
       missionId: mission.id,
-      runState: getServerRunState(runState),
+      runState: toLearningRunState(runState),
       runAttemptCount,
       activeStepOffset,
       activityLog: nextLog,
@@ -875,7 +930,10 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
 
     if (finalStep) {
       const completedAt = new Date().toISOString()
-      const nextLog = addActivity('오늘 미션 완료', '생성 커리큘럼의 오늘 학습 단계를 모두 마쳤습니다.')
+      const nextLog = addActivity(
+        '오늘 미션 완료',
+        '생성 커리큘럼의 오늘 학습 단계를 모두 마쳤습니다.',
+      )
       setMissionCompleted(true)
       setHintVisible(false)
       setReviewVisible(false)
@@ -899,12 +957,19 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
     }
 
     const nextStepOffset = Math.min(activeStepOffset + 1, totalSteps - 1)
+    const nextGeneratedStep = resolveActiveGeneratedStep(generatedPlan, nextStepOffset)
+    const nextMission = createActiveMissionPresentation(mission, nextGeneratedStep)
+    const nextFiles = createWorkspaceEditorFiles(nextMission)
     const nextLog = addActivity('다음 단계', '현재 단계를 완료하고 다음 학습 단계로 이동했습니다.')
     setActiveStepOffset(nextStepOffset)
     setRunState('idle')
     setRunAttemptCount(0)
     setHintVisible(false)
     setReviewVisible(false)
+    setEditorFiles(nextFiles)
+    setActiveFilePath(nextFiles[0]?.path ?? '')
+    setRunPreview(createInitialRunPreviewState())
+    cancelPreview()
     advanceMissionStep({
       missionId: mission.id,
       activeStepOffset: nextStepOffset,
@@ -919,28 +984,48 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
     })
   }
 
+  useEffect(() => {
+    function handleRunShortcut(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !isRunning) {
+        event.preventDefault()
+        runButtonRef.current?.click()
+      }
+    }
+
+    window.addEventListener('keydown', handleRunShortcut)
+    return () => window.removeEventListener('keydown', handleRunShortcut)
+  }, [isRunning])
+
   return (
     <section className={styles.page} aria-labelledby="workspace-title">
       <header className={styles.topbar}>
         <div className={styles.trackSummary}>
           <span className={styles.kicker}>Learning Workspace</span>
           <h1 id="workspace-title">{activeMission.title}</h1>
-          <p>{activeMission.trackTitle} · {activeMission.stepLabel}</p>
+          <p>
+            {activeMission.trackTitle} · {activeMission.stepLabel}
+          </p>
         </div>
         <nav className={styles.actions} aria-label="학습 화면 이동">
-          <Link to="/today" className={styles.secondaryButton}>오늘 학습</Link>
-          <Link to="/today#tracks-title" className={styles.secondaryButton}>학습 목록</Link>
+          <Link to="/today" className={styles.secondaryButton}>
+            오늘 학습
+          </Link>
+          <Link to="/today#tracks-title" className={styles.secondaryButton}>
+            학습 목록
+          </Link>
         </nav>
       </header>
 
-      <section className={styles.runtimeStrip} aria-label="?????? ?? ??">
+      <section className={styles.runtimeStrip} aria-label="실행 환경 요약">
         <div className={styles.runtimeStripHeader}>
           <div>
             <span>{createWorkspaceModeLabel(activeMission.mode)}</span>
             <strong>{executionPanel.title}</strong>
             <p>{createWorkspaceModeDescription(activeMission.mode)}</p>
           </div>
-          <span className={styles.runtimeState} data-state={runPreview.status}>{createRunStateLabel(runPreview.status)}</span>
+          <span className={styles.runtimeState} data-state={runPreview.status}>
+            {createRunStateLabel(runPreview.status)}
+          </span>
         </div>
         <dl className={styles.runtimeDetails}>
           {runtimeSummaryItems.map((item) => (
@@ -950,19 +1035,25 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
             </div>
           ))}
         </dl>
-        <Link className={styles.runtimePreviewLink} to="/workspace?mission=counter-mission">React ???? ???</Link>
+        <Link className={styles.runtimePreviewLink} to="/workspace?mission=counter-mission">
+          React 미리보기 연습
+        </Link>
       </section>
 
       <section className={styles.statusStrip} aria-label="학습 상태 요약">
         <article>
           <span>진행률</span>
           <strong>{progressPercent}%</strong>
-          <div><i style={{ width: `${progressPercent}%` }} /></div>
+          <div>
+            <i style={{ width: `${progressPercent}%` }} />
+          </div>
         </article>
         <article>
           <span>테스트</span>
-          <strong>{passedCount} / {testCases.length}</strong>
-          <small>{runState === 'running' ? '실행 중' : '현재 통과'}</small>
+          <strong>
+            {passedCount} / {testCases.length}
+          </strong>
+          <small>{isRunning ? createRunStateLabel(runState) : '현재 통과'}</small>
         </article>
         <article>
           <span>예상 시간</span>
@@ -972,7 +1063,15 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
         <article>
           <span>학습 상태</span>
           <strong>{missionCompleted ? '완료' : failedCount > 0 ? '점검' : '준비'}</strong>
-          <small>{runState === 'running' ? '채점 중' : missionCompleted ? '마침' : failedCount > 0 ? '개선 필요' : '시작 가능'}</small>
+          <small>
+            {isRunning
+              ? '채점 중'
+              : missionCompleted
+                ? '마침'
+                : failedCount > 0
+                  ? '개선 필요'
+                  : '시작 가능'}
+          </small>
         </article>
       </section>
 
@@ -981,13 +1080,17 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
           <section className={styles.railCard}>
             <div className={styles.railTitleRow}>
               <h2>현재 단계</h2>
-              <span>{currentStepIndex} / {totalSteps}</span>
+              <span>
+                {currentStepIndex} / {totalSteps}
+              </span>
             </div>
             <div className={styles.currentStepCard}>
               <strong>{activeMission.title}</strong>
               <p>{activeMission.fileName}</p>
               <small>{curriculumSteps[currentStepIndex - 1]?.detail}</small>
-              <div><i style={{ width: `${progressPercent}%` }} /></div>
+              <div>
+                <i style={{ width: `${progressPercent}%` }} />
+              </div>
             </div>
           </section>
 
@@ -1013,11 +1116,19 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
           <section className={styles.railCard}>
             <div className={styles.railTitleRow}>
               <h2>커리큘럼 단계</h2>
-              <span>{missionCompleted ? '완료' : stateLabel(curriculumSteps[currentStepIndex - 1]?.state ?? 'current')}</span>
+              <span>
+                {missionCompleted
+                  ? '완료'
+                  : stateLabel(curriculumSteps[currentStepIndex - 1]?.state ?? 'current')}
+              </span>
             </div>
             <ol className={styles.stepList}>
               {curriculumSteps.map((step, index) => (
-                <li className={styles.stepItem} data-state={missionCompleted ? 'done' : step.state} key={`${step.title}-${index}`}>
+                <li
+                  className={styles.stepItem}
+                  data-state={missionCompleted ? 'done' : step.state}
+                  key={`${step.title}-${index}`}
+                >
                   <span className={styles.stepIndex}>{index + 1}</span>
                   <div>
                     <strong>{step.title}</strong>
@@ -1077,7 +1188,9 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
           {reviewVisible ? (
             <article className={styles.reviewNoteCard} aria-live="polite">
               <span className={styles.sectionLabel}>코드 리뷰</span>
-              <h3>{runState === 'passed' ? '좋은 흐름입니다' : '아직 확인할 실패 항목이 있습니다'}</h3>
+              <h3>
+                {runState === 'passed' ? '좋은 흐름입니다' : '아직 확인할 실패 항목이 있습니다'}
+              </h3>
               <p>
                 {runState === 'passed'
                   ? '필수 요구사항을 만족했습니다. 다음에는 상태가 바뀌는 이유를 짧은 주석이나 설명으로 정리해보세요.'
@@ -1119,14 +1232,21 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
               ))}
             </div>
             <div className={styles.editorActions}>
-              <span className={styles.languageBadge}>{createWorkspaceModeLabel(activeMission.mode)}</span>
+              <span className={styles.languageBadge}>
+                {createWorkspaceModeLabel(activeMission.mode)}
+              </span>
               <button
                 type="button"
                 className={styles.runButton}
-                disabled={runState === 'running'}
+                disabled={isRunning}
+                ref={runButtonRef}
                 onClick={handleRun}
               >
-                {runState === 'running' ? '?? ?' : runState === 'failed' ? '?? ??' : '??'}
+                {isRunning
+                  ? createRunStateLabel(runState)
+                  : runState === 'failed' || runState === 'timeout'
+                    ? '다시 실행'
+                    : '실행'}
               </button>
             </div>
           </div>
@@ -1152,25 +1272,34 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
                 }}
               />
             </div>
-            <aside className={styles.previewPanel} data-mode={activeMission.mode} aria-label={executionPanel.ariaLabel}>
+            <aside
+              className={styles.previewPanel}
+              data-mode={activeMission.mode}
+              aria-label={executionPanel.ariaLabel}
+            >
               <div className={styles.previewToolbar}>
                 <div>
                   <span>{executionPanel.title}</span>
                   <strong>{executionPanel.statusLabel}</strong>
                 </div>
-                <div className={styles.previewActions} aria-label="?? ??">
-                  <button type="button" onClick={handleRun} disabled={runState === 'running'}>????</button>
-                  <button type="button" onClick={resetActiveFile}>???</button>
+                <div className={styles.previewActions} aria-label="실행 화면 작업">
+                  <button type="button" onClick={handleRun} disabled={isRunning}>
+                    다시 실행
+                  </button>
+                  <button type="button" onClick={resetActiveFile}>
+                    초기화
+                  </button>
                 </div>
               </div>
               <div className={styles.previewViewport} data-state={runPreview.status}>
-                {renderPreview.canRender && runPreview.status !== 'idle' ? (
-                  <div className={styles.renderedPreview} aria-label={executionPanel.ariaLabel}>
-                    <div className={styles.renderedPreviewCard}>
-                      <h2>{renderPreview.title}</h2>
-                      <button type="button">{renderPreview.buttonLabel}</button>
-                    </div>
-                  </div>
+                {activeMission.mode === 'react' ? (
+                  <iframe
+                    ref={iframeRef}
+                    className={styles.renderedPreviewFrame}
+                    title={`${runPreview.preview?.componentName ?? activeMission.title} 실행 화면`}
+                    sandbox="allow-scripts allow-same-origin"
+                    src={previewUrl}
+                  />
                 ) : (
                   <div className={styles.previewEmpty}>
                     <strong>{executionPanel.emptyTitle}</strong>
@@ -1178,12 +1307,19 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
                   </div>
                 )}
               </div>
-              <div className={styles.previewConsole} data-mode={activeMission.mode} data-state={runPreview.status} aria-live="polite">
+              <div
+                className={styles.previewConsole}
+                data-mode={activeMission.mode}
+                data-state={runPreview.status}
+                aria-live="polite"
+              >
                 <div>
                   <strong>Console</strong>
                   <span>{createRunStateLabel(runPreview.status)}</span>
                 </div>
-                {runPreview.error ? <p className={styles.previewError}>{runPreview.error}</p> : null}
+                {runPreview.error ? (
+                  <p className={styles.previewError}>{runPreview.error}</p>
+                ) : null}
                 {runPreview.result ? <p>return: {runPreview.result}</p> : null}
                 <ol>
                   {consoleLines.map((line, index) => (
@@ -1195,70 +1331,19 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
           </div>
         </section>
       </div>
-      <section className={styles.resultPanel} aria-label="실행 결과">
-        <div className={styles.resultMain}>
-          <div className={styles.resultHeader}>
-            <div>
-              <h2>테스트 결과</h2>
-              <p>{resultMessage}</p>
-            </div>
-            <div className={styles.resultBadges}>
-              <span data-state="passed">통과 {passedCount}</span>
-              <span data-state="failed">실패 {failedCount}</span>
-              <span data-state="pending">대기 {pendingCount}</span>
-            </div>
-          </div>
-
-          <div className={styles.testTable} role="table" aria-label="테스트 케이스">
-            <div role="row">
-              <span role="columnheader">케이스</span>
-              <span role="columnheader">입력</span>
-              <span role="columnheader">예상</span>
-              <span role="columnheader">실제</span>
-              <span role="columnheader">결과</span>
-            </div>
-            {testCases.map((testCase) => (
-              <div role="row" key={testCase.id}>
-                <span role="cell">{testCase.id}</span>
-                <span role="cell">{testCase.input}</span>
-                <span role="cell">{testCase.expected}</span>
-                <span role="cell">{testCase.actual}</span>
-                <span role="cell" data-state={testCase.state}>{testStateLabel(testCase.state)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <aside className={styles.helpPanel} aria-label="도움말과 활동 기록">
-          <section>
-            <h3>지금 할 수 있는 일</h3>
-            <button type="button" onClick={handleShowHint}>힌트 보기</button>
-            <button type="button" onClick={handleShowReview}>코드 리뷰 요청</button>
-            <button
-              type="button"
-              className={styles.nextStepButton}
-              disabled={!canAdvance}
-              onClick={handleAdvanceStep}
-            >
-              {nextStepButtonLabel}
-            </button>
-          </section>
-          <section>
-            <h3>활동 기록</h3>
-            <ol>
-              {activityLog.map((item) => (
-                <li key={item.id}>
-                  <time>{item.time}</time>
-                  <div>
-                    <strong>{item.title}</strong>
-                    <p>{item.detail}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </section>
-        </aside>
-      </section>
+      <WorkspaceResultsPanel
+        activityLog={activityLog}
+        canAdvance={canAdvance}
+        failedCount={failedCount}
+        nextStepButtonLabel={nextStepButtonLabel}
+        onAdvanceStep={handleAdvanceStep}
+        onShowHint={handleShowHint}
+        onShowReview={handleShowReview}
+        passedCount={passedCount}
+        pendingCount={pendingCount}
+        resultMessage={resultMessage}
+        testCases={testCases}
+      />
     </section>
   )
 }

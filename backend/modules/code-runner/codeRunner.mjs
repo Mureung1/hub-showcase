@@ -1,29 +1,40 @@
-import vm from 'node:vm'
+﻿import vm from 'node:vm'
+import { transform } from 'esbuild'
+import { assertSupportedReactPreviewImports } from './reactPreviewSource.mjs'
+import {
+  clearInterval as nodeClearInterval,
+  clearTimeout as nodeClearTimeout,
+  setInterval as nodeSetInterval,
+  setTimeout as nodeSetTimeout,
+} from 'node:timers'
 
 /**
  * Minimal Node.js-based code sandbox for local learning feedback.
  * This is not a production isolation boundary; Judge Service will harden it later.
  */
-export async function runJavaScriptCode(code, { previewOnly = false } = {}) {
+export async function runJavaScriptCode(
+  code,
+  { previewOnly = false, css = '', language = 'jsx' } = {},
+) {
   if (previewOnly) {
-    return createPreviewRunResult(code)
+    return createReactPreviewRunResult(code, { css, language })
   }
 
   const logs = []
 
   const virtualConsole = {
     log: (...args) => logs.push(args.map(String).join(' ')),
-    error: (...args) => logs.push(`[ERROR] ${args.map(String).join(' ')}`),
-    warn: (...args) => logs.push(`[WARN] ${args.map(String).join(' ')}`),
-    info: (...args) => logs.push(`[INFO] ${args.map(String).join(' ')}`),
+    error: (...args) => logs.push('[ERROR] ' + args.map(String).join(' ')),
+    warn: (...args) => logs.push('[WARN] ' + args.map(String).join(' ')),
+    info: (...args) => logs.push('[INFO] ' + args.map(String).join(' ')),
   }
 
   const context = {
     console: virtualConsole,
-    setTimeout,
-    clearTimeout,
-    setInterval,
-    clearInterval,
+    setTimeout: nodeSetTimeout,
+    clearTimeout: nodeClearTimeout,
+    setInterval: nodeSetInterval,
+    clearInterval: nodeClearInterval,
   }
 
   vm.createContext(context)
@@ -44,20 +55,63 @@ export async function runJavaScriptCode(code, { previewOnly = false } = {}) {
   }
 }
 
-function createPreviewRunResult(code) {
+async function createReactPreviewRunResult(code, { css = '', language = 'jsx' } = {}) {
   const componentName = /function\s+([A-Z][A-Za-z0-9_]*)/.exec(code)?.[1] ?? 'App'
-  const hasReturn = /return\s*\(/.test(code) || /return\s+</.test(code)
 
-  return {
-    success: hasReturn,
-    logs: hasReturn
-      ? [`${componentName} preview rendered`, 'JSX transpilation is deferred to the Judge Service phase.']
-      : [],
-    result: null,
-    error: hasReturn ? undefined : 'Preview target did not include a renderable return block.',
+  try {
+    assertSupportedReactPreviewImports(code)
+    const transformed = await transform(createReactPreviewSource(code), {
+      format: 'cjs',
+      jsx: 'automatic',
+      loader: language === 'tsx' ? 'tsx' : 'jsx',
+      target: 'es2022',
+    })
+
+    return {
+      success: true,
+      logs: [componentName + ' preview bundle transformed'],
+      result: null,
+      preview: {
+        kind: 'react',
+        code: transformed.code,
+        css,
+        componentName,
+      },
+    }
+  } catch (error) {
+    return {
+      success: false,
+      logs: [],
+      result: null,
+      error: error.message || String(error),
+    }
   }
 }
 
+function createReactPreviewSource(code) {
+  let source = code
+    .replace(/import\s+['"][^'"]+\.css['"];?/g, '')
+    .replace(
+      /import\s+.*?\s+from\s+['"](?!react(?:\/|['"]))(?!react-dom(?:\/|['"]))(?!@?vite\/)[^'"]+['"];?/g,
+      '',
+    )
+
+  let previewComponentName =
+    /export\s+default\s+function\s+([A-Z][A-Za-z0-9_]*)/.exec(source)?.[1] ??
+    /export\s+default\s+class\s+([A-Z][A-Za-z0-9_]*)/.exec(source)?.[1] ??
+    /function\s+([A-Z][A-Za-z0-9_]*)/.exec(source)?.[1] ??
+    'App'
+
+  source = source.replace(/export\s+default\s+function\s+([A-Z][A-Za-z0-9_]*)/, 'function $1')
+  source = source.replace(/export\s+default\s+class\s+([A-Z][A-Za-z0-9_]*)/, 'class $1')
+  source = source.replace(/export\s+default\s+([A-Za-z_$][\w$]*)\s*;?/g, (_, name) => {
+    previewComponentName = name
+    return ''
+  })
+  source = source.replace(/export\s+\{[^}]+\}\s*;?/g, '')
+
+  return source + '\nmodule.exports.default = ' + previewComponentName + ';'
+}
 export async function runShellCode(code) {
   const logs = []
   const lines = code
@@ -91,7 +145,7 @@ export async function runShellCode(code) {
       continue
     }
 
-    logs.push(`$ ${line}`)
+    logs.push('$ ' + line)
   }
 
   return {
@@ -109,7 +163,9 @@ export async function runDockerfileCode(code) {
     '#1 [internal] load build definition from Dockerfile',
     '#1 transferring dockerfile: 512B done',
     hasFrom ? '#2 [base] resolve base image done' : '#2 [base] missing FROM instruction',
-    hasWorkdir ? '#3 [workspace] set working directory done' : '#3 [workspace] WORKDIR not configured',
+    hasWorkdir
+      ? '#3 [workspace] set working directory done'
+      : '#3 [workspace] WORKDIR not configured',
     hasCommand ? '#4 [runtime] command configured' : '#4 [runtime] CMD or ENTRYPOINT missing',
   ]
   const success = hasFrom && hasCommand
@@ -118,7 +174,9 @@ export async function runDockerfileCode(code) {
     success,
     logs,
     result: null,
-    error: success ? undefined : 'Dockerfile must include FROM and CMD or ENTRYPOINT for this practice.',
+    error: success
+      ? undefined
+      : 'Dockerfile must include FROM and CMD or ENTRYPOINT for this practice.',
   }
 }
 

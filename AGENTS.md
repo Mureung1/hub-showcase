@@ -74,7 +74,8 @@ When designing, redesigning, auditing, or implementing any user-facing screen, a
 - Design and generated code must be user-friendly and easy to learn, especially for beginner developers using the app repeatedly.
 ## Commit Convention
 
-Use Korean Conventional Commit messages:
+- **Pre-Commit Report Rule**: `git commit`을 실행하기 전에 **반드시 사용자에게 무엇이 어떻게 변경되었는지(수정된 파일 및 변경 핵심 내역) 사전 보고**합니다.
+- Use Korean Conventional Commit messages:
 
 - `feat: ...` for product features.
 - `docs: ...` for documentation and planning.
@@ -85,12 +86,14 @@ Use Korean Conventional Commit messages:
 
 ## Source Of Truth
 
+- Repository-wide enforcement: `AGENTS.md`.
 - Product plan: `docs/notion/icu-product-plan-notion.md`.
 - Main MVP plan: `docs/plan.md`.
 - User flow: `docs/user-flow.md`.
-- Design and handoff: `docs/design`.
-- ICU design workflow skill: `skills/design/SKILL.md`.
-- Feature specs: `docs/features`.
+- Shared UI principles and tokens: `docs/design/design-brief.md`.
+- Screen behavior and API contracts: `docs/features`.
+- Design workflow and document routing: `skills/design/SKILL.md`.
+- Figma handoff: `docs/design/figma-handoff.md`.
 - Static prototype: `prototype.html` and `prototype.css`.
 
 ## Guardrails
@@ -100,3 +103,4 @@ Use Korean Conventional Commit messages:
 - Monaco and Express are already approved for the Workspace editor and local API boundary; keep their usage scoped to those flows.
 - Prefer small, typed mock data over hardcoded screen-only strings once a UI surface becomes part of the app.
 - Keep implementation aligned with the existing ICU design direction: practical IDE structure, beginner-friendly Today Hub entry, light/dark readiness, and restrained Workday-inspired orange/cyan/deep-blue accents.
+

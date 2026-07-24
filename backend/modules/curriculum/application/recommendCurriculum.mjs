@@ -4,6 +4,8 @@ import { searchKnowledgeChunks } from '../../knowledge/adapters/jsonlKnowledgeRe
 
 export async function recommendCurriculum({
   goal,
+  followUpInstruction,
+  previousPlan,
   tracks,
   config,
   recommendationProvider = runCurriculumPlannerAgent,
@@ -14,8 +16,17 @@ export async function recommendCurriculum({
     throw new Error('Curriculum goal is required')
   }
 
-  const knowledgeContext = searchKnowledgeChunks({ chunks: knowledgeChunks, query: trimmedGoal, limit: 5 })
-  const recommendation = await recommendationProvider({ goal: trimmedGoal, tracks, config, knowledgeContext })
+  const trimmedFollowUp = typeof followUpInstruction === 'string' ? followUpInstruction.trim() : undefined
+  const searchQuery = trimmedFollowUp ? `${trimmedGoal} ${trimmedFollowUp}` : trimmedGoal
+  const knowledgeContext = searchKnowledgeChunks({ chunks: knowledgeChunks, query: searchQuery, limit: 5 })
+  const recommendation = await recommendationProvider({
+    goal: trimmedGoal,
+    followUpInstruction: trimmedFollowUp,
+    previousPlan,
+    tracks,
+    config,
+    knowledgeContext,
+  })
 
   return createGeneratedCurriculumPlan({ goal: trimmedGoal, recommendation, tracks })
 }

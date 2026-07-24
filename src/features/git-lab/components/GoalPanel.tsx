@@ -55,8 +55,31 @@ export default function GoalPanel({
             <p>{description}</p>
           </div>
 
+          <div className={styles.targetGraphCard}>
+            <div className={styles.targetGraphHeader}>
+              <h3>🎯 목표 그래프 (Target Graph)</h3>
+              <span className={cleared ? styles.clearBadge : styles.pendingBadge}>
+                {cleared ? '목표 달성' : '목표 달성 필요'}
+              </span>
+            </div>
+            <div className={styles.graphFrame}>
+              <CommitGraphSvg
+                branches={branches}
+                commits={commits}
+                currentBranch={currentBranch}
+                layoutOptions={{
+                  laneGap: 104,
+                  rowGap: 78,
+                  paddingX: 54,
+                  paddingY: 50,
+                  nodeRadius: 21,
+                }}
+              />
+            </div>
+          </div>
+
           <section className={styles.lessonCard} aria-labelledby="git-lab-concept-title">
-            <h3 id="git-lab-concept-title">이번 레슨에서 볼 것</h3>
+            <h3 id="git-lab-concept-title">이번 레슨 핵심 개념</h3>
             <p>{conceptSummary}</p>
             <dl className={styles.metaList}>
               <div>
@@ -85,22 +108,8 @@ export default function GoalPanel({
               ))}
             </div>
           </section>
-
-          <div className={styles.graphFrame}>
-            <CommitGraphSvg
-              branches={branches}
-              commits={commits}
-              currentBranch={currentBranch}
-              layoutOptions={{
-                laneGap: 104,
-                rowGap: 78,
-                paddingX: 54,
-                paddingY: 50,
-                nodeRadius: 21,
-              }}
-            />
-          </div>
         </div>
+
       )}
     </aside>
   )

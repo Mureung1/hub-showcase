@@ -28,7 +28,15 @@ export const curriculumAgentResponseSchema = {
   required: ['trackId', 'levelId', 'moduleIds', 'title', 'summary', 'todayMission', 'rationale'],
 }
 
-export async function runCurriculumPlannerAgent({ goal, tracks, config, knowledgeContext = [], fetchImpl = globalThis.fetch }) {
+export async function runCurriculumPlannerAgent({
+  goal,
+  followUpInstruction,
+  previousPlan,
+  tracks,
+  config,
+  knowledgeContext = [],
+  fetchImpl = globalThis.fetch,
+}) {
   if (config.provider !== 'developer') {
     throw new Error(`Unsupported curriculum agent provider: ${config.provider}. Supported provider: developer`)
   }
@@ -41,15 +49,24 @@ export async function runCurriculumPlannerAgent({ goal, tracks, config, knowledg
     throw new Error('A fetch implementation is required to call the Gemini API.')
   }
 
-  return callDeveloperGemini({ apiKey: config.apiKey, model: config.model, goal, tracks, knowledgeContext, fetchImpl })
+  return callDeveloperGemini({
+    apiKey: config.apiKey,
+    model: config.model,
+    goal,
+    followUpInstruction,
+    previousPlan,
+    tracks,
+    knowledgeContext,
+    fetchImpl,
+  })
 }
 
-export function createDryRunPayload({ goal, tracks, config, knowledgeContext = [] }) {
+export function createDryRunPayload({ goal, followUpInstruction, previousPlan, tracks, config, knowledgeContext = [] }) {
   return {
     provider: config.provider,
     model: config.model,
     system_instruction: createSystemInstruction(),
-    input: JSON.parse(createPrompt({ goal, tracks, knowledgeContext })),
+    input: JSON.parse(createPrompt({ goal, followUpInstruction, previousPlan, tracks, knowledgeContext })),
   }
 }
 
@@ -90,6 +107,9 @@ export function createSystemInstruction() {
     'Use only the provided curriculum catalog to choose track, level, and modules.',
     'Use knowledgeContext only as official-doc grounding for rationale and learning explanation.',
     'Do not copy long knowledgeContext passages into the response.',
+    'If followUpInstruction is provided, treat it as a revision request for previousPlanSummary, not as an unrelated new plan.',
+    'When previousPlanSummary is provided, preserve the existing track, level, and modules unless the follow-up request clearly asks to change scope or sequence.',
+    'Use previousPlanSummary.steps and previousPlanSummary.todayMission as the concrete baseline for the revised curriculum.',
     'Return only valid JSON. Do not wrap the answer in markdown.',
     'Pick one track, one starting level, and exactly three modules from that level.',
     'Use Korean for title, summary, todayMission, and rationale.',
@@ -98,9 +118,16 @@ export function createSystemInstruction() {
   ].join('\n')
 }
 
-export function createPrompt({ goal, tracks, knowledgeContext = [] }) {
+export function createPrompt({ goal, followUpInstruction, previousPlan, tracks, knowledgeContext = [] }) {
   return JSON.stringify({
     userGoal: goal,
+    followUpInstruction: followUpInstruction || undefined,
+    previousPlanSummary: previousPlan ? {
+      title: previousPlan.title,
+      summary: previousPlan.summary,
+      todayMission: previousPlan.todayMission,
+      steps: previousPlan.steps,
+    } : undefined,
     catalog: createCatalog(tracks),
     knowledgeContext: createKnowledgeContext(knowledgeContext),
     constraints: {
@@ -140,14 +167,14 @@ export function extractJson(text) {
   return candidate.slice(start, end + 1)
 }
 
-async function callDeveloperGemini({ apiKey, model, goal, tracks, knowledgeContext, fetchImpl }) {
+async function callDeveloperGemini({ apiKey, model, goal, followUpInstruction, previousPlan, tracks, knowledgeContext, fetchImpl }) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
   const response = await fetchImpl(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: createSystemInstruction() }] },
-      contents: [{ role: 'user', parts: [{ text: createPrompt({ goal, tracks, knowledgeContext }) }] }],
+      contents: [{ role: 'user', parts: [{ text: createPrompt({ goal, followUpInstruction, previousPlan, tracks, knowledgeContext }) }] }],
       generationConfig: {
         temperature: 0.2,
         responseMimeType: 'application/json',

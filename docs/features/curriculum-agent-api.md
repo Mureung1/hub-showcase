@@ -18,6 +18,8 @@ Content-Type: application/json
 ```ts
 type CurriculumRecommendationRequest = {
   goal: string
+  followUpInstruction?: string
+  previousPlan?: GeneratedCurriculumPlan
 }
 ```
 

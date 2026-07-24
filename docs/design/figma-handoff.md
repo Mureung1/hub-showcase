@@ -1,133 +1,82 @@
-# DevChat Figma Handoff
+# ICU Figma Handoff
+
+## Source Documents
+
+- Shared visual rules: [design-brief.md](./design-brief.md)
+- Today behavior: [today-learning.md](../features/today-learning.md)
+- Workspace behavior: [learning-workspace.md](../features/learning-workspace.md)
+- Git Lab behavior: [git-branching-lab.md](../features/git-branching-lab.md)
+
+Figma export PNG와 렌더링된 SVG는 저장소에 보관하지 않습니다. Figma 파일과 Mermaid 원본을 source로 사용합니다.
 
 ## Frame Setup
 
-Create desktop frames at:
+- Today Learning Hub: `1440 x 1024`
+- Learning Workspace IDE: `1440 x 1024`
+- Git Branching Lab: `1440 x 1024`
 
-- `1440 x 1024` for Today Learning Hub
-- `1440 x 1024` for Learning Workspace IDE
+Empty, paused, failed, passed, modal, narrow-width 상태는 해당 feature 문서의 상태 정의를 기준으로 추가합니다.
 
-Optional later frames:
+## Frame Composition
 
-- Learning List
-- Review and Mistakes
-- Empty Today state
-- Failed test state
-- Passed test state
+### Today Learning Hub
 
-## Frames to Create First
+- app navigation
+- header와 오늘 일정 요약
+- Today's Focus
+- Today Queue
+- Learning List preview
+- Review와 Mistakes summary
 
-### 1. Today Learning Hub
+### Learning Workspace IDE
 
-Use image reference:
+- top bar
+- curriculum panel
+- AI Tutor panel
+- Monaco editor와 실행 제어
+- Preview 또는 test results
 
-- `docs/design/images/concept-01-today-learning-hub.png`
+### Git Branching Lab
 
-Frame sections:
-
-- Left navigation rail
-- Header
-- Today's focus
-- Today queue
-- Learning list preview
-- Review and mistakes summary
-- Small workspace preview
-
-### 2. Learning Workspace IDE
-
-Use image reference:
-
-- `docs/design/images/concept-03-learning-workspace-ide.png`
-
-Frame sections:
-
-- Top bar
-- Curriculum panel
-- AI tutor panel
-- Code editor panel
-- Test results panel
+- level bar와 curriculum navigation
+- terminal
+- current graph와 repository state
+- target graph와 goal feedback
 
 ## Naming
 
-- User-facing desktop app name: `ICU`
-- Meaning: `I CODE U`
-- Repository/planning name can remain `DevChat` until a broader rename is scheduled.
-
-## Design Tokens
-
-Suggested tokens based on the current React project:
-
-```text
-font.ui: Inter, system-ui, sans-serif
-font.code: SFMono-Regular, Consolas, monospace
-
-color.light.bg: #f4f6f8
-color.light.surface: #ffffff
-color.light.surfaceSubtle: #fbfcfe
-color.light.text: #172033
-color.light.textStrong: #101828
-color.light.textMuted: #64748b
-color.light.border: #d3dce8
-
-color.dark.bg: #07111f
-color.dark.surface: #0f1b2d
-color.dark.surfaceSubtle: #13243a
-color.dark.text: #e5edf7
-color.dark.textStrong: #f8fafc
-color.dark.textMuted: #94a3b8
-color.dark.border: #25364d
-
-color.brand.orange: #ff8a1c
-color.brand.pink: #f3b8d8
-color.brand.cyan: #35c8f4
-color.brand.blue: #07003d
-color.brand.navy: #112b5f
-
-color.accent: #07003d
-color.accentBright: #35c8f4
-color.editorBg: #151a24
-color.editorText: #dbe4ef
-
-radius.sm: 6
-radius.md: 8
-```
+- 사용자 노출 제품명: `ICU`
+- 저장소와 기획 이름: `DevChat`
+- frame 이름은 `ICU / <Feature> / <State> / <Theme>` 형식을 사용합니다.
+- component와 variant 이름은 React 화면의 역할과 상태 이름을 따릅니다.
 
 ## Component Candidates
 
 - App shell
-- Navigation rail item
+- Navigation item
 - Status pill
 - Progress row
-- Learning track row
-- Curriculum step item
+- Curriculum step
 - Tutor message
-- Source reference row
+- Source reference
 - Editor toolbar
 - Test result strip
-- Primary button
-- Secondary button
+- Primary and secondary button
+- Terminal log
+- Commit graph
+- Modal
 
-## Interaction Notes
+## Prototype Interactions
 
-For the first Figma pass, keep the design mostly static but represent these states:
+- `이어서 학습하기`는 Workspace의 현재 mission으로 이동합니다.
+- `실행`은 running 후 passed, failed, timeout 중 하나로 전환합니다.
+- `힌트 보기`는 현재 mission의 hint를 펼칩니다.
+- Git Lab command는 current graph와 repository state를 갱신합니다.
+- 완료 modal은 다음 학습 단계와 다시 시작 행동을 제공합니다.
 
-- active navigation item
-- current curriculum step
-- selected learning track
-- failed test result
-- primary continue/run action
+## Handoff Checklist
 
-Later prototype interactions:
-
-- `이어서 학습하기` opens workspace.
-- `학습 목록` returns to list view.
-- `실행` changes result panel from running to passed/failed.
-- `힌트 보기` expands hint block in AI tutor panel.
-
-
-## Theme Notes
-
-- Keep the Workday-like color mood as brand atmosphere, not as the dominant workspace background.
-- Use cyan and deep blue for primary actions, focus rings, progress, and selected states.
-- Use warm orange sparingly for highlights, completion, or friendly onboarding moments.
-- Dark mode must preserve code readability and should use navy/charcoal surfaces instead of pure black.
+- feature 문서의 상태와 frame 상태가 일치합니다.
+- shared token을 직접 복사하지 않고 `design-brief.md`를 참조합니다.
+- primary action, focus, empty, error, disabled 상태가 포함됩니다.
+- PNG/SVG export를 Git에 추가하지 않습니다.

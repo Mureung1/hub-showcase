@@ -63,6 +63,61 @@ describe('gemini curriculum recommendation provider', () => {
     })
   })
 
+  it('includes follow-up instruction and editable previous plan context', () => {
+    expect(
+      createDryRunPayload({
+        goal: 'I want to learn backend development',
+        followUpInstruction: 'Make this a three-week plan focused on practice.',
+        previousPlan: {
+          title: 'Backend Basics',
+          summary: 'Learn HTTP fundamentals first.',
+          todayMission: {
+            title: 'HTTP Practice',
+            detail: 'Handle GET and POST requests.',
+            durationMinutes: 30,
+            fileName: 'main.py',
+            mode: 'python',
+          },
+          steps: [
+            {
+              id: 'be-01-01',
+              title: 'HTTP Basics',
+              detail: 'Understand request and response flow.',
+              outcome: 'Can explain HTTP lifecycle.',
+              durationLabel: '1 week',
+            },
+          ],
+        },
+        tracks,
+        config: createAgentConfig({ GEMINI_API_KEY: 'test-key' }),
+      }),
+    ).toMatchObject({
+      input: {
+        followUpInstruction: 'Make this a three-week plan focused on practice.',
+        previousPlanSummary: {
+          title: 'Backend Basics',
+          summary: 'Learn HTTP fundamentals first.',
+          todayMission: {
+            title: 'HTTP Practice',
+            detail: 'Handle GET and POST requests.',
+            durationMinutes: 30,
+            fileName: 'main.py',
+            mode: 'python',
+          },
+          steps: [
+            {
+              id: 'be-01-01',
+              title: 'HTTP Basics',
+              detail: 'Understand request and response flow.',
+              outcome: 'Can explain HTTP lifecycle.',
+              durationLabel: '1 week',
+            },
+          ],
+        },
+      },
+    })
+  })
+
   it('creates a compact knowledge context for model grounding', () => {
     const longText = 'Docker '.repeat(120)
 

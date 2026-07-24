@@ -46,6 +46,12 @@
   font-weight: 750;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .toggleButton,
 .modalButton {
   min-height: 42px;
@@ -56,6 +62,13 @@
   color: #ffffff;
   cursor: pointer;
   font-weight: 850;
+  transition: background 160ms ease, transform 140ms ease;
+}
+
+.toggleButton:hover,
+.modalButton:hover {
+  background: #112b5f;
+  transform: translateY(-1px);
 }
 
 .toggleButton:focus-visible,
@@ -70,6 +83,11 @@
   grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
   gap: 20px;
   overflow: hidden;
+  transition: grid-template-columns 240ms ease;
+}
+
+.workspaceCollapsed {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .curriculumPanel,
@@ -90,10 +108,17 @@
 
 .curriculumHeader {
   min-height: 58px;
-  display: grid;
-  gap: 4px;
-  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
   border-bottom: 1px solid rgb(179 196 220 / 54%);
+}
+
+.curriculumTitleGroup {
+  display: grid;
+  gap: 3px;
 }
 
 .curriculumHeader strong {
@@ -106,6 +131,28 @@
   color: #62708a;
   font-size: 12px;
   font-weight: 750;
+}
+
+.clearedCountBadge {
+  color: #0d8a43 !important;
+  font-weight: 850 !important;
+}
+
+.foldButton {
+  border: 1px solid rgb(179 196 220 / 64%);
+  border-radius: 6px;
+  padding: 5px 10px;
+  background: #ffffff;
+  color: #5b6b84;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  transition: border-color 140ms ease, color 140ms ease;
+}
+
+.foldButton:hover {
+  border-color: #07003d;
+  color: #07003d;
 }
 
 .moduleList {
@@ -167,6 +214,20 @@
   background: #e7f6fb;
 }
 
+.clearedLessonButton {
+  border-color: rgb(13 138 67 / 36%);
+  background: rgb(235 250 241 / 76%);
+}
+
+.clearedCheckTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #0d8a43;
+  font-size: 11px;
+  font-weight: 850;
+}
+
 .lessonButton span {
   grid-row: span 2;
   display: inline-grid;
@@ -198,10 +259,15 @@
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(360px, 0.9fr) minmax(460px, 1.15fr);
-  grid-template-rows: minmax(0, 1fr) minmax(260px, 0.58fr);
+  grid-template-columns: minmax(320px, 0.95fr) minmax(380px, 1.15fr) minmax(310px, 0.9fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 20px;
   overflow: hidden;
+  transition: grid-template-columns 240ms ease;
+}
+
+.labMainNoGoal {
+  grid-template-columns: minmax(340px, 1fr) minmax(420px, 1.25fr);
 }
 
 .terminalSlot,
@@ -212,7 +278,11 @@
 }
 
 .terminalSlot {
-  grid-row: 1 / -1;
+  grid-row: 1;
+}
+
+.goalSlot {
+  grid-row: 1;
 }
 
 .terminalSlot > section,

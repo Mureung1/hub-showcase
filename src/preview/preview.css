@@ -1,0 +1,55 @@
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  color: #172033;
+  background: #f8fafc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#preview-root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  padding: 24px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.preview-waiting {
+  display: grid;
+  min-height: 240px;
+  place-content: center;
+  gap: 8px;
+  color: #64748b;
+  text-align: center;
+}
+
+.preview-waiting p {
+  margin: 0;
+}
+
+.preview-error {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-left: 3px solid #dc2626;
+  background: #fff7f7;
+  color: #991b1b;
+}
+
+.preview-error pre {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}

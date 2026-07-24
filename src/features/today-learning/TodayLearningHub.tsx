@@ -1,7 +1,13 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { shouldUseServerApi } from '../../app/icuApiMode'
-import { createFallbackCurriculumPlan, recommendCurriculum } from '../curriculum/api/curriculumClient'
+import {
+  createFallbackCurriculumPlan,
+  getGeneratedCurriculum,
+  recommendCurriculum,
+  resetGeneratedCurriculumApi,
+  saveGeneratedCurriculumApi,
+} from '../curriculum/api/curriculumClient'
 import {
   learningTracks,
   recentMistakes,
@@ -75,7 +81,9 @@ function applyQueueProgress(
     }
 
     if (activeProgressId) {
-      return item.id === activeProgressId ? { ...item, status: 'current' } : { ...item, status: item.status === 'optional' ? 'optional' : 'locked' }
+      return item.id === activeProgressId
+        ? { ...item, status: 'current' }
+        : { ...item, status: item.status === 'optional' ? 'optional' : 'locked' }
     }
 
     if (item.status === 'optional') {
@@ -119,11 +127,15 @@ function formatGeneratedAt(value: string | undefined) {
     minute: '2-digit',
   }).format(date)
 }
+
 export function TodayLearningHub() {
   const { profile } = useLearningProfileStore()
   const generatedCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
   const saveGeneratedCurriculum = useGeneratedCurriculumStore(
     (state) => state.saveGeneratedCurriculum,
+  )
+  const hydrateGeneratedCurriculum = useGeneratedCurriculumStore(
+    (state) => state.hydrateGeneratedCurriculum,
   )
   const resetGeneratedCurriculum = useGeneratedCurriculumStore(
     (state) => state.resetGeneratedCurriculum,
@@ -132,23 +144,30 @@ export function TodayLearningHub() {
   const hydrateMissionProgress = useLearningProgressStore((state) => state.hydrateMissionProgress)
   const mistakeNotes = useMistakeNoteStore((state) => state.notes)
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
-  const fallbackGeneratedPlan = useMemo(() => createFallbackCurriculumPlan(profileGoal), [profileGoal])
+  const fallbackGeneratedPlan = useMemo(
+    () => createFallbackCurriculumPlan(profileGoal),
+    [profileGoal],
+  )
   const generatedPlan = useMemo(
     () => resolveGeneratedCurriculumPlan(generatedCurriculum, fallbackGeneratedPlan),
     [fallbackGeneratedPlan, generatedCurriculum],
   )
   const [curriculumMode, setCurriculumMode] = useState<CurriculumMode>('ai')
   const [careerGoal, setCareerGoal] = useState(generatedCurriculum?.goal ?? profileGoal)
+  const [followUpText, setFollowUpText] = useState('')
   const [goalError, setGoalError] = useState('')
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus>('ready')
-  const generationTimerRef = useRef<number | undefined>(undefined)
   const activeTrackName = profile?.preferredTracks[0] ?? 'React'
   const displayName = profile?.displayName ?? '학습자'
   const dailyMinutes = profile?.dailyStudyMinutes ?? 30
   const savedGoal = generatedCurriculum?.goal ?? generatedPlan.goal
   const isGoalDraftChanged = careerGoal.trim().length > 0 && careerGoal.trim() !== savedGoal
+  const isGenerating = generationStatus === 'generating'
   const generatedAtLabel = formatGeneratedAt(generatedCurriculum?.generatedAt)
-  const generatedStateLabel = generatedCurriculum ? '최근 생성한 커리큘럼' : '프로필 기준 기본 커리큘럼'
+  const generatedStateLabel = generatedCurriculum
+    ? '최근 생성한 커리큘럼'
+    : '프로필 기준 기본 커리큘럼'
+
   useEffect(() => {
     let cancelled = false
 
@@ -162,16 +181,23 @@ export function TodayLearningHub() {
         .catch(() => {
           // Keep the mock/local screen usable when the backend is not running.
         })
+
+      void getGeneratedCurriculum({ mode: 'server' })
+        .then(({ generatedCurriculum: serverSnapshot }) => {
+          if (!cancelled && serverSnapshot) {
+            hydrateGeneratedCurriculum(serverSnapshot)
+            setCareerGoal(serverSnapshot.goal)
+          }
+        })
+        .catch(() => {
+          // Keep local state available when server is offline.
+        })
     }
 
     return () => {
       cancelled = true
-      if (generationTimerRef.current) {
-        window.clearTimeout(generationTimerRef.current)
-      }
     }
-  }, [hydrateMissionProgress])
-
+  }, [hydrateMissionProgress, hydrateGeneratedCurriculum])
 
   const now = useMemo(() => new Date(), [])
   const todayLabel = useMemo(
@@ -241,7 +267,9 @@ export function TodayLearningHub() {
     () =>
       mistakeNotes
         .filter((note) => note.status === 'open')
-        .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+        .sort(
+          (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+        )
         .slice(0, 3),
     [mistakeNotes],
   )
@@ -257,8 +285,9 @@ export function TodayLearningHub() {
     [recentOpenMistakes],
   )
 
-  function startCurriculumGeneration(goal: string) {
+  function startCurriculumGeneration(goal: string, followUpInstruction?: string) {
     const trimmedGoal = goal.trim()
+    const trimmedFollowUp = followUpInstruction?.trim()
 
     if (!trimmedGoal) {
       setGoalError('목표를 입력하면 AI가 학습 순서를 제안합니다.')
@@ -269,25 +298,29 @@ export function TodayLearningHub() {
     setGoalError('')
     setGenerationStatus('generating')
 
-    if (generationTimerRef.current) {
-      window.clearTimeout(generationTimerRef.current)
-    }
-
-    generationTimerRef.current = window.setTimeout(() => {
-      void recommendCurriculum(
-        { goal: trimmedGoal },
-        { mode: shouldUseServerApi() ? 'server' : 'mock' },
-      )
-        .then(({ plan }) => {
-          setCareerGoal(trimmedGoal)
-          saveGeneratedCurriculum(trimmedGoal, plan)
-          setGenerationStatus('ready')
-        })
-        .catch(() => {
-          setGoalError('커리큘럼을 생성하지 못했습니다. 잠시 후 다시 시도해보세요.')
-          setGenerationStatus('idle')
-        })
-    }, 2000)
+    void recommendCurriculum(
+      {
+        goal: trimmedGoal,
+        followUpInstruction: trimmedFollowUp || undefined,
+        previousPlan: generatedCurriculum?.plan,
+      },
+      { mode: shouldUseServerApi() ? 'server' : 'mock' },
+    )
+      .then(({ plan }) => {
+        setCareerGoal(trimmedGoal)
+        saveGeneratedCurriculum(trimmedGoal, plan)
+        if (shouldUseServerApi()) {
+          void saveGeneratedCurriculumApi(
+            { goal: trimmedGoal, plan, generatedAt: new Date().toISOString() },
+            { mode: 'server' },
+          ).catch(() => {})
+        }
+        setGenerationStatus('ready')
+      })
+      .catch(() => {
+        setGoalError('커리큘럼을 생성하지 못했습니다. 잠시 후 다시 시도해보세요.')
+        setGenerationStatus('idle')
+      })
   }
 
   function handleGenerateCurriculum(event: FormEvent<HTMLFormElement>) {
@@ -295,12 +328,18 @@ export function TodayLearningHub() {
     startCurriculumGeneration(careerGoal)
   }
 
-  function handleResetGeneratedCurriculum() {
-    if (generationTimerRef.current) {
-      window.clearTimeout(generationTimerRef.current)
-    }
+  function handleFollowUpSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!followUpText.trim()) return
+    startCurriculumGeneration(careerGoal, followUpText)
+    setFollowUpText('')
+  }
 
+  function handleResetGeneratedCurriculum() {
     resetGeneratedCurriculum()
+    if (shouldUseServerApi()) {
+      void resetGeneratedCurriculumApi({ mode: 'server' }).catch(() => {})
+    }
     setCareerGoal(profileGoal)
     setGoalError('')
     setGenerationStatus('ready')
@@ -387,6 +426,9 @@ export function TodayLearningHub() {
                   >
                     AI 커리큘럼 작성하기
                   </button>
+                  <Link to="/curriculum/history" className={styles.historyTabLink}>
+                    보관함 관리
+                  </Link>
                 </div>
               </div>
 
@@ -431,66 +473,115 @@ export function TodayLearningHub() {
                     <CurriculumLoading />
                   ) : (
                     <>
-                      <section className={styles.generatedSummary} aria-label="최근 생성한 커리큘럼">
-                    <div>
-                      <span>{generatedStateLabel}</span>
-                      <strong>{generatedPlan.title}</strong>
-                      <p>
-                        {generatedAtLabel} · {generatedPlan.todayMission.fileName}
-                      </p>
-                    </div>
-                    <div className={styles.generatedActions}>
-                      <Link
-                        className={styles.generatedStartLink}
-                        to="/workspace?mission=generated-first-mission"
+                      <section
+                        className={styles.generatedSummary}
+                        aria-label="최근 생성한 커리큘럼"
                       >
-                        추천 미션 시작
-                      </Link>
-                      {isGoalDraftChanged ? (
-                        <span className={styles.pendingNotice}>입력한 목표가 아직 적용되지 않았습니다.</span>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={() => startCurriculumGeneration(careerGoal)}
-                      >
-                        다시 생성
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!generatedCurriculum}
-                        onClick={handleResetGeneratedCurriculum}
-                      >
-                        초기화
-                      </button>
-                    </div>
-                  </section>
-                  <div className={styles.aiPlanHeader} data-status={generationStatus}>
-                    <strong>{generatedPlan.title}</strong>
-                    <span>{generatedPlan.summary}</span>
-                    <small>
-                      {generatedPlan.estimatedDuration} / {generatedPlan.focusRole}
-                    </small>
-                  </div>
-                  <ol className={styles.aiPlanList}>
-                    {generatedPlan.steps.map((item, index) => (
-                      <li key={item.id}>
-                        <span>{String(index + 1).padStart(2, '0')}</span>
                         <div>
-                          <strong>{item.title}</strong>
-                          <p>{item.detail}</p>
-                          <small>{item.durationLabel} · {item.outcome}</small>
+                          <span>{generatedStateLabel}</span>
+                          <strong>{generatedPlan.title}</strong>
+                          <p>
+                            {generatedAtLabel} · {generatedPlan.todayMission.fileName}
+                          </p>
                         </div>
-                      </li>
-                    ))}
-                  </ol>
-                  <div className={styles.sourceList} aria-label="추천 문서">
-                    {generatedPlan.sources.map((source) => (
-                      <article key={source.title}>
-                        <strong>{source.title}</strong>
-                        <span>{source.urlLabel}</span>
-                      </article>
-                    ))}
-                  </div>
+                        <div className={styles.generatedActions}>
+                          <Link
+                            className={styles.generatedStartLink}
+                            to="/workspace?mission=generated-first-mission"
+                          >
+                            추천 미션 시작
+                          </Link>
+                          {isGoalDraftChanged ? (
+                            <span className={styles.pendingNotice}>
+                              입력한 목표가 아직 적용되지 않았습니다.
+                            </span>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => startCurriculumGeneration(careerGoal)}
+                          >
+                            다시 생성
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!generatedCurriculum}
+                            onClick={handleResetGeneratedCurriculum}
+                          >
+                            초기화
+                          </button>
+                        </div>
+                      </section>
+                      <div className={styles.followUpSection}>
+                        <div className={styles.quickChips} aria-label="추천 후속 질문">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              startCurriculumGeneration(careerGoal, '3주 커리큘럼으로 수정해줘')
+                            }
+                          >
+                            3주 코스로 변경
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              startCurriculumGeneration(
+                                careerGoal,
+                                '어제 공부한 내용에 이어서 다음 단계를 추천해줘',
+                              )
+                            }
+                          >
+                            어제 내용 이어서
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              startCurriculumGeneration(careerGoal, '실습 30분 위주로 구성해줘')
+                            }
+                          >
+                            실습 중심 구성
+                          </button>
+                        </div>
+                        <form className={styles.followUpRow} onSubmit={handleFollowUpSubmit}>
+                          <input
+                            type="text"
+                            placeholder="후속 요청 입력 (예: 3주 과정으로 수정, 어제 내용 이어서)"
+                            value={followUpText}
+                            onChange={(event) => setFollowUpText(event.target.value)}
+                          />
+                          <button type="submit" disabled={isGenerating || !followUpText.trim()}>
+                            {isGenerating ? '수정 중' : '후속 요청'}
+                          </button>
+                        </form>
+                      </div>
+                      <div className={styles.aiPlanHeader} data-status={generationStatus}>
+                        <strong>{generatedPlan.title}</strong>
+                        <span>{generatedPlan.summary}</span>
+                        <small>
+                          {generatedPlan.estimatedDuration} / {generatedPlan.focusRole}
+                        </small>
+                      </div>
+                      <ol className={styles.aiPlanList}>
+                        {generatedPlan.steps.map((item, index) => (
+                          <li key={item.id}>
+                            <span>{String(index + 1).padStart(2, '0')}</span>
+                            <div>
+                              <strong>{item.title}</strong>
+                              <p>{item.detail}</p>
+                              <small>
+                                {item.durationLabel} · {item.outcome}
+                              </small>
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                      <div className={styles.sourceList} aria-label="추천 문서">
+                        {generatedPlan.sources.map((source) => (
+                          <article key={source.title}>
+                            <strong>{source.title}</strong>
+                            <span>{source.urlLabel}</span>
+                          </article>
+                        ))}
+                      </div>
                     </>
                   )}
                 </div>
@@ -512,11 +603,20 @@ export function TodayLearningHub() {
               <section className={styles.ringPanel} aria-labelledby="percent-title">
                 <h2 id="percent-title">목표 달성률</h2>
                 <div className={styles.ringWrap}>
-                  <div className={styles.ring} aria-label={`오늘 학습 진행률 ${completionPercent}퍼센트`} />
+                  <div
+                    className={styles.ring}
+                    aria-label={`오늘 학습 진행률 ${completionPercent}퍼센트`}
+                  />
                   <ul>
-                    <li><span /> 완료 {completionPercent}%</li>
-                    <li><span /> 진행 30%</li>
-                    <li><span /> 대기 8%</li>
+                    <li>
+                      <span /> 완료 {completionPercent}%
+                    </li>
+                    <li>
+                      <span /> 진행 30%
+                    </li>
+                    <li>
+                      <span /> 대기 8%
+                    </li>
                   </ul>
                 </div>
               </section>

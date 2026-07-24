@@ -92,12 +92,15 @@ React screen
 
 ## 다음 우선순위
 
-1. 현재 코드 변경과 문서/issue 동기화 커밋 정리
+1. **생성 커리큘럼 날짜별 관리 및 이어서 학습 (Curriculum History & Resume)**
+   - `/curriculum/history` 화면 구현
+   - 생성 시각별 커리큘럼 카드 목록 및 그룹화
+   - 과거 커리큘럼 `이어서 학습하기` (활성 플랜 복원) 및 상세 보기 모달
+   - 백엔드 REST API (`GET /api/curriculum/history`, `DELETE /api/curriculum/generated/:id`) 연동
 2. Workspace에서 Monaco 편집, 실행, 단계 진행 경험 QA
 3. 코드 실행 API의 JavaScript 성공/실패/timeout edge case 보강
 4. Git Lab의 불필요한 주석/문구 정리
 5. 커리큘럼 생성 결과와 Workspace 진행 상태의 edge case 보강
-6. backend repository를 in-memory에서 실제 저장소로 바꿀 준비
 
 ## 후속 범위
 
@@ -127,6 +130,6 @@ git diff --check
 
 - Added optional SQLite repository mode for backend persistence.
 - Enable with `ICU_REPOSITORY_MODE=sqlite` and optional `ICU_SQLITE_PATH`.
-- Current persisted data: learning progress, mistake notes, Git Lab attempts.
-- Prepared schema for generated curriculum snapshots; API wiring remains next.
+- Current persisted data: learning progress, mistake notes, Git Lab attempts, and generated curriculums.
+- Connected `generated_curriculums` table and `/api/curriculum/generated` endpoints to Today Hub and Workspace stores.
 - In-memory repositories remain the default for mock mode and tests.

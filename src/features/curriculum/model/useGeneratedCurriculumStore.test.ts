@@ -36,6 +36,7 @@ describe('useGeneratedCurriculumStore', () => {
   it('restores a generated curriculum snapshot from localStorage', async () => {
     const plan = generateMockCurriculum('백엔드 개발자가 되고 싶어')
     const snapshot: GeneratedCurriculumSnapshot = {
+      id: 'backend-curriculum-plan',
       goal: plan.goal,
       plan,
       generatedAt: '2026-07-18T09:00:00.000Z',
@@ -43,10 +44,14 @@ describe('useGeneratedCurriculumStore', () => {
     const localStorage = createLocalStorage({ [storageKey]: JSON.stringify(snapshot) })
     const { useGeneratedCurriculumStore } = await importStore(localStorage)
 
-    expect(useGeneratedCurriculumStore.getState().generatedCurriculum).toEqual(snapshot)
+    expect(useGeneratedCurriculumStore.getState().generatedCurriculum).toMatchObject({
+      goal: plan.goal,
+      plan,
+      generatedAt: '2026-07-18T09:00:00.000Z',
+    })
   })
 
-  it('persists the generated plan when saving a curriculum', async () => {
+  it('persists the generated plan when saving a curriculum and updates history', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-07-18T10:30:00.000Z'))
     const localStorage = createLocalStorage()
@@ -56,12 +61,35 @@ describe('useGeneratedCurriculumStore', () => {
     useGeneratedCurriculumStore.getState().saveGeneratedCurriculum(plan.goal, plan)
 
     const snapshot = useGeneratedCurriculumStore.getState().generatedCurriculum
-    expect(snapshot).toEqual({
+    expect(snapshot).toMatchObject({
       goal: plan.goal,
       plan,
       generatedAt: '2026-07-18T10:30:00.000Z',
     })
-    expect(localStorage.setItem).toHaveBeenCalledWith(storageKey, JSON.stringify(snapshot))
+    expect(useGeneratedCurriculumStore.getState().history).toHaveLength(1)
+  })
+
+  it('supports activating and deleting curriculum snapshots in history', async () => {
+    const localStorage = createLocalStorage()
+    const { useGeneratedCurriculumStore } = await importStore(localStorage)
+
+    const plan1 = generateMockCurriculum('React 배우기')
+    const plan2 = generateMockCurriculum('Docker 배우기')
+    plan2.id = 'docker-plan'
+
+    useGeneratedCurriculumStore.getState().saveGeneratedCurriculum(plan1.goal, plan1)
+    useGeneratedCurriculumStore.getState().saveGeneratedCurriculum(plan2.goal, plan2)
+
+    expect(useGeneratedCurriculumStore.getState().history).toHaveLength(2)
+
+    // Activate first plan
+    useGeneratedCurriculumStore.getState().activateCurriculumSnapshot(plan1.id)
+    expect(useGeneratedCurriculumStore.getState().generatedCurriculum?.plan.id).toBe(plan1.id)
+
+    // Delete active plan
+    useGeneratedCurriculumStore.getState().deleteCurriculumSnapshot(plan1.id)
+    expect(useGeneratedCurriculumStore.getState().history).toHaveLength(1)
+    expect(useGeneratedCurriculumStore.getState().generatedCurriculum?.plan.id).toBe(plan2.id)
   })
 
   it('falls back to an empty snapshot when localStorage is invalid', async () => {
@@ -75,6 +103,7 @@ describe('useGeneratedCurriculumStore', () => {
     const backendPlan = generateMockCurriculum('백엔드 개발자가 되고 싶어')
     const frontendPlan = generateMockCurriculum('React를 배우고 싶어')
     const snapshot: GeneratedCurriculumSnapshot = {
+      id: 'backend-plan',
       goal: backendPlan.goal,
       plan: backendPlan,
       generatedAt: '2026-07-18T11:00:00.000Z',
@@ -89,6 +118,7 @@ describe('useGeneratedCurriculumStore', () => {
   it('clears the generated curriculum snapshot', async () => {
     const plan = generateMockCurriculum('백엔드 개발자가 되고 싶어')
     const snapshot: GeneratedCurriculumSnapshot = {
+      id: 'backend-plan',
       goal: plan.goal,
       plan,
       generatedAt: '2026-07-18T09:00:00.000Z',
@@ -100,5 +130,6 @@ describe('useGeneratedCurriculumStore', () => {
 
     expect(localStorage.removeItem).toHaveBeenCalledWith(storageKey)
     expect(useGeneratedCurriculumStore.getState().generatedCurriculum).toBeNull()
+    expect(useGeneratedCurriculumStore.getState().history).toEqual([])
   })
 })

@@ -11,11 +11,12 @@ const env = {
 const processes = [
   startProcess('backend', ['run', 'server:curriculum']),
   startProcess('frontend', ['run', 'dev']),
+  startProcess('preview', ['run', 'dev:preview']),
 ]
 let shuttingDown = false
 
 function startProcess(label, npmArgs) {
-  const command = isWindows ? process.env.ComSpec ?? 'cmd.exe' : 'npm'
+  const command = isWindows ? (process.env.ComSpec ?? 'cmd.exe') : 'npm'
   const args = isWindows ? ['/d', '/s', '/c', ['npm', ...npmArgs].join(' ')] : npmArgs
   const child = spawn(command, args, {
     env,

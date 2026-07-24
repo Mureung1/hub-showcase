@@ -7,20 +7,28 @@ import type {
 } from './curriculumGenerator'
 
 export type GeneratedCurriculumSnapshot = {
+  id?: string
   goal: string
   plan: GeneratedCurriculumPlan
   generatedAt: string
+  updatedAt?: string
 }
 
 type PersistedGeneratedCurriculum = Partial<GeneratedCurriculumSnapshot>
 
 type GeneratedCurriculumStore = {
   generatedCurriculum: GeneratedCurriculumSnapshot | null
+  history: GeneratedCurriculumSnapshot[]
+  hydrateGeneratedCurriculum: (snapshot: GeneratedCurriculumSnapshot | null) => void
+  hydrateHistory: (history: GeneratedCurriculumSnapshot[]) => void
   saveGeneratedCurriculum: (goal: string, plan: GeneratedCurriculumPlan) => void
+  activateCurriculumSnapshot: (snapshotId: string) => void
+  deleteCurriculumSnapshot: (snapshotId: string) => void
   resetGeneratedCurriculum: () => void
 }
 
 const storageKey = 'icu.generatedCurriculum'
+const historyStorageKey = 'icu.generatedCurriculumHistory'
 const defaultMissionMinutes = 30
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -127,19 +135,23 @@ function normalizeSnapshot(snapshot: PersistedGeneratedCurriculum): GeneratedCur
   const goal = normalizeString(snapshot.goal)
   const generatedAt = normalizeString(snapshot.generatedAt)
   const plan = normalizePlan(snapshot.plan)
+  const id = normalizeString(snapshot.id) || plan?.id || `${goal}-curriculum-plan`
 
   if (!goal || !generatedAt || !plan) {
     return null
   }
 
-  return { goal, plan, generatedAt }
+  return { id, goal, plan, generatedAt, updatedAt: normalizeString(snapshot.updatedAt) }
 }
 
 function createSnapshot(goal: string, plan: GeneratedCurriculumPlan): GeneratedCurriculumSnapshot {
+  const now = new Date().toISOString()
   return {
+    id: plan.id || `${goal}-curriculum-plan`,
     goal,
     plan,
-    generatedAt: new Date().toISOString(),
+    generatedAt: now,
+    updatedAt: now,
   }
 }
 
@@ -161,12 +173,43 @@ function readStoredGeneratedCurriculum(): GeneratedCurriculumSnapshot | null {
   }
 }
 
+function readStoredHistory(): GeneratedCurriculumSnapshot[] {
+  if (typeof window === 'undefined') {
+    return []
+  }
+
+  try {
+    const rawHistory = window.localStorage.getItem(historyStorageKey)
+    if (!rawHistory) {
+      return []
+    }
+
+    const parsed = JSON.parse(rawHistory) as unknown[]
+    if (!Array.isArray(parsed)) return []
+
+    return parsed.flatMap((item) => {
+      const norm = normalizeSnapshot(item as PersistedGeneratedCurriculum)
+      return norm ? [norm] : []
+    })
+  } catch {
+    return []
+  }
+}
+
 function persistGeneratedCurriculum(snapshot: GeneratedCurriculumSnapshot) {
   if (typeof window === 'undefined') {
     return
   }
 
   window.localStorage.setItem(storageKey, JSON.stringify(snapshot))
+}
+
+function persistHistory(history: GeneratedCurriculumSnapshot[]) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.setItem(historyStorageKey, JSON.stringify(history))
 }
 
 export function resolveGeneratedCurriculumPlan(
@@ -176,18 +219,64 @@ export function resolveGeneratedCurriculumPlan(
   return snapshot?.plan ?? fallbackPlan
 }
 
-export const useGeneratedCurriculumStore = create<GeneratedCurriculumStore>((set) => ({
+const initialHistory = readStoredHistory()
+
+export const useGeneratedCurriculumStore = create<GeneratedCurriculumStore>((set, get) => ({
   generatedCurriculum: readStoredGeneratedCurriculum(),
+  history: initialHistory,
+  hydrateGeneratedCurriculum: (snapshot) => {
+    if (snapshot) {
+      persistGeneratedCurriculum(snapshot)
+    } else if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(storageKey)
+    }
+
+    set({ generatedCurriculum: snapshot })
+  },
+  hydrateHistory: (history) => {
+    persistHistory(history)
+    set({ history })
+  },
   saveGeneratedCurriculum: (goal, plan) => {
     const snapshot = createSnapshot(goal, plan)
+    const currentHistory = get().history
+    const nextHistory = [snapshot, ...currentHistory.filter((item) => (item.id || `${item.goal}-curriculum-plan`) !== snapshot.id)]
+
     persistGeneratedCurriculum(snapshot)
-    set({ generatedCurriculum: snapshot })
+    persistHistory(nextHistory)
+
+    set({ generatedCurriculum: snapshot, history: nextHistory })
+  },
+  activateCurriculumSnapshot: (snapshotId) => {
+    const target = get().history.find((item) => (item.id || `${item.goal}-curriculum-plan`) === snapshotId)
+    if (target) {
+      persistGeneratedCurriculum(target)
+      set({ generatedCurriculum: target })
+    }
+  },
+  deleteCurriculumSnapshot: (snapshotId) => {
+    const nextHistory = get().history.filter((item) => (item.id || `${item.goal}-curriculum-plan`) !== snapshotId)
+    persistHistory(nextHistory)
+
+    const activeId = get().generatedCurriculum?.id || `${get().generatedCurriculum?.goal}-curriculum-plan`
+    let nextActive = get().generatedCurriculum
+    if (activeId === snapshotId) {
+      nextActive = nextHistory[0] ?? null
+      if (nextActive) {
+        persistGeneratedCurriculum(nextActive)
+      } else if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(storageKey)
+      }
+    }
+
+    set({ history: nextHistory, generatedCurriculum: nextActive })
   },
   resetGeneratedCurriculum: () => {
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(storageKey)
+      window.localStorage.removeItem(historyStorageKey)
     }
 
-    set({ generatedCurriculum: null })
+    set({ generatedCurriculum: null, history: [] })
   },
 }))

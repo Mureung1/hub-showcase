@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import styles from './GitTerminalPanel.module.css'
 
@@ -28,6 +28,13 @@ export default function GitTerminalPanel({
   onCommand,
 }: GitTerminalPanelProps) {
   const [command, setCommand] = useState('')
+  const logListRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (logListRef.current) {
+      logListRef.current.scrollTop = logListRef.current.scrollHeight
+    }
+  }, [logs])
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -51,7 +58,7 @@ export default function GitTerminalPanel({
         <span className={styles.windowTitle}>ICU Git Terminal</span>
       </header>
 
-      <div className={styles.logList} role="log" aria-live="polite">
+      <div className={styles.logList} ref={logListRef} role="log" aria-live="polite">
         {logs.map((log) => (
           <p className={`${styles.logLine} ${styles[log.kind]}`} key={log.id}>
             {log.kind === 'command' ? '$ ' : ''}

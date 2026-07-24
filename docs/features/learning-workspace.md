@@ -25,7 +25,7 @@ Fallback 규칙:
 
 | mode | 기본 파일 | 오른쪽 패널 | 실행 언어 | v1 실행 방식 |
 | --- | --- | --- | --- | --- |
-| `react` | `App.jsx` / `app.tsx` | `Preview` | `jsx` 또는 `javascript` | JSX 구조를 학습용 preview 카드로 표시 |
+| `react` | `App.jsx` / `app.tsx` | `Preview` | `jsx` 또는 `tsx` | 별도 origin의 Preview 앱에서 React 화면을 실제 렌더링 |
 | `linux` | `ops-checklist.sh` | `Terminal` | `shell` | 주요 shell 명령을 mock terminal log로 표시 |
 | `docker` | `Dockerfile` | `Build Log` | `dockerfile` | Dockerfile 필수 instruction을 mock build log로 검증 |
 | `python` | `main.py` / `solution.py` | `Output` | `python` | print/FastAPI/function 신호를 mock output으로 표시 |
@@ -68,7 +68,8 @@ Request:
 ```ts
 type CodeRunRequest = {
   code: string
-  language: 'javascript' | 'jsx' | 'shell' | 'dockerfile' | 'python' | string
+  language: 'javascript' | 'jsx' | 'tsx' | 'shell' | 'dockerfile' | 'python' | string
+  css?: string
 }
 ```
 
@@ -80,6 +81,12 @@ type CodeRunResult = {
   logs: string[]
   error?: string
   result?: string | null
+  preview?: {
+    kind: 'react'
+    code: string
+    css: string
+    componentName: string
+  }
 }
 ```
 
@@ -88,6 +95,10 @@ type CodeRunResult = {
 - React 화면은 `src/features/learning-workspace/api/codeRunnerClient.ts`를 통해 API를 호출합니다.
 - Express route handler는 `backend/http/codeRunRoutes.mjs`에 둡니다.
 - 실행 로직은 `backend/modules/code-runner/codeRunner.mjs`에 둡니다.
+- JSX/TSX는 백엔드에서 CommonJS Preview 번들로 변환하며 React 런타임과 CSS import만 허용합니다.
+- Preview 앱은 기본적으로 `http://127.0.0.1:5174/preview.html`에서 실행해 메인 앱과 origin을 분리합니다.
+- 부모와 Preview 앱은 `requestId`가 포함된 `postMessage` 계약을 사용하고 origin, source, payload를 검증합니다.
+- React 실행은 Preview 앱이 `icu:preview-rendered`를 응답한 뒤에만 통과로 기록합니다.
 - v1 runner는 로컬 학습 피드백용 mock 실행기입니다. 보안 격리, 실제 파일 시스템, Docker daemon, Python process 실행은 Judge Service 단계에서 강화합니다.
 
 ## 진행 상태
@@ -96,6 +107,11 @@ type CodeRunResult = {
 - `running`: 실행 요청이 진행 중입니다.
 - `failed`: 실행 오류 또는 검증 실패 상태입니다.
 - `passed`: 실행이 성공한 상태입니다.
+- `compiling`: React 코드를 Preview 번들로 변환하고 있습니다.
+- `rendering`: Preview 앱의 실제 화면 렌더링 응답을 기다리고 있습니다.
+- `timeout`: Preview 앱이 5초 안에 렌더링 결과를 응답하지 않은 상태입니다.
+
+새 실행을 시작하면 이전 API 요청과 Preview 요청을 취소합니다. 늦게 도착한 응답은 현재 상태와 진도 기록을 변경하지 않습니다. 컴파일·렌더링·timeout은 학습 실패로 기록하지만 서버 연결 같은 시스템 오류는 시도 횟수에 포함하지 않습니다.
 
 ## 후속 범위
 
@@ -104,3 +120,21 @@ type CodeRunResult = {
 - RAG 기반 튜터 응답 생성
 - 사용자별 DB 저장 강화
 - Electron IPC 연결과 desktop packaging
+
+## 화면 구성 기준
+
+- Top bar는 현재 track, step, 오늘 진행률, 남은 시간, Today 또는 학습 목록으로 돌아가는 행동을 제공합니다.
+- Curriculum panel은 오늘 단계, 현재 mission, 통과 조건, 복습 shortcut을 보여줍니다.
+- AI Tutor panel은 설명, mission, hint, code review, 공식 출처를 구분합니다.
+- Editor panel은 file tab, language, 실행 제어, Monaco editor, Preview를 제공합니다.
+- Result panel은 not run, running, compiling, rendering, passed, failed, timeout 상태를 구분합니다.
+- 실패 상태는 실패 항목, 쉬운 원인 설명, hint, 다시 실행을 함께 제공합니다.
+- 성공 상태는 통과 항목, 짧은 feedback, code review, 다음 단계 행동을 제공합니다.
+
+## 접근성 및 좁은 화면
+
+- 실행, 취소, 다시 실행, 다음 단계의 keyboard focus를 항상 표시합니다.
+- terminal과 결과 변경은 screen reader가 읽을 수 있는 status 또는 live region으로 제공합니다.
+- 오류와 성공은 색상 외에 제목과 설명으로 구분합니다.
+- 좁은 화면에서는 `튜터`, `코드`, `결과` tab 또는 같은 의미의 순차 영역으로 전환합니다.
+- 현재 mission과 실행 행동은 tab 전환 후에도 찾기 쉬운 위치를 유지합니다.

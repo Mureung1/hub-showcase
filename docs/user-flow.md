@@ -2,11 +2,11 @@
 
 이 문서는 DevChat을 사용자가 어떤 순서로 경험하는지 설명합니다. 기능 목록이 아니라, 사용자가 앱을 열고 학습을 시작해 복습 기록까지 남기는 실제 흐름을 기준으로 정리합니다.
 
-## 사용자 흐름 이미지
+## 사용자 흐름 원본
 
-![ICU 사용자 흐름](./design/flows/icu-user-flow.svg)
+사용자 흐름은 [icu-user-flow.mmd](./design/flows/icu-user-flow.mmd)를 단일 원본으로 관리합니다. PNG와 SVG는 Mermaid에서 다시 만들 수 있는 파생 산출물이므로 저장소에 보관하지 않습니다.
 
-원본 Mermaid 파일은 [icu-user-flow.mmd](./design/flows/icu-user-flow.mmd), 벡터 원본은 [icu-user-flow.svg](./design/flows/icu-user-flow.svg)에 저장합니다. 현재 흐름도는 Today Hub에서 여러 학습 모듈로 진입하고, 각 모듈의 실패 기록이 공통 오답노트로 모이며, `source + lessonId`로 원래 학습으로 돌아가는 구조를 보여줍니다. 저장은 현재 mock persistence를 사용하고, 향후 Supabase 이전 지점도 함께 표시합니다.
+현재 흐름은 Today Hub에서 여러 학습 모듈로 진입하고, 각 모듈의 실패 기록이 공통 오답노트로 모이며, `source + lessonId`로 원래 학습으로 돌아가는 구조를 설명합니다. 저장은 현재 mock persistence를 사용하고 향후 Supabase 이전 지점도 함께 표시합니다.
 
 ## 1. 사용자가 겪는 시작 상황
 
