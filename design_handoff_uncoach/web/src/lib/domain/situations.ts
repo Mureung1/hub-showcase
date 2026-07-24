@@ -50,9 +50,44 @@ export function getSituation(id: string, custom: Situation[] = []): Situation | 
   return SITUATIONS.find((s) => s.id === id) || custom.find((s) => s.id === id);
 }
 
+/**
+ * 사용자 직업(role)에 맞는 상황만 반환. kind로 대화(chat)/메일(email) 구분.
+ *
+ * 예전엔 '내 직업 먼저, 나머지도 뒤에' 정렬만 해서 대학생에게 민원 응대·환자 보호자 설명이
+ * 그대로 노출됐다. 직업별 훈련이라는 전제가 깨지므로 이제 실제로 걸러낸다.
+ * 직업이 없으면(온보딩 전) 전체를 준다.
+ */
+export function situationsForRole(role: string | undefined, kind: 'chat' | 'email'): Situation[] {
+  const pool = SITUATIONS.filter((s) => (kind === 'email' ? s.medium === 'email' : s.medium !== 'email'));
+  if (!role) return pool;
+  return pool.filter((s) => (s.roles || []).includes(role));
+}
+
 /** 총점 0~100 (각 축 1~3을 가중 합산) */
 export function totalOf(scores: Scores): number {
   return Math.round(AXES.reduce((t, ax) => t + (scores[ax.key] / 3) * ax.weight, 0));
+}
+
+// --- 훈련 모드 판별 ---
+// 기록(SessionRecord)이 어느 훈련에서 나왔는지는 sid로만 알 수 있다. 화면마다 따로 판별하면
+// 뉴스처럼 상황 목록에 없는 모드가 대화로 새기 때문에 여기 한 곳에서만 결정한다.
+
+export type ModeKey = 'chat' | 'email' | 'news';
+
+/** 뉴스 훈련 기록의 sid — 카테고리 단위로 고정(기사마다 바꾸면 '새 상황' XP를 무한 획득) */
+export const newsSid = (category: string) => `news:${category}`;
+
+export const MODE_LABEL: Record<ModeKey, string> = {
+  chat: '대화 훈련',
+  email: '메일 훈련',
+  news: '뉴스 훈련',
+};
+
+export const MODE_ICON: Record<ModeKey, string> = { chat: 'forum', email: 'mail', news: 'newspaper' };
+
+export function modeOf(sid: string, sit?: Situation | null): ModeKey {
+  if (sid.startsWith('news')) return 'news';
+  return sit?.medium === 'email' ? 'email' : 'chat';
 }
 
 /** 상대 페르소나(아바타 이모지·이름·색) — rel/counterpart 키워드로 결정 */

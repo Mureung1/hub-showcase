@@ -27,19 +27,19 @@ export default function Stats({ nav }: { nav: (k: ScreenKey) => void }) {
   const nextBadges = BADGES.filter((b) => !unlocked.has(b.id)).slice(0, 3);
 
   return (
-    <DashboardLayout active="stats" name={app.profile?.role || "Profile"} nav={nav}>
+    <DashboardLayout active="stats" name={app.profile?.name || app.profile?.role} nav={nav}>
       <div className="flex flex-col lg:flex-row gap-gutter-grid">
         {/* 학습 여정 */}
         <section className="flex-[1.2] flex flex-col gap-stack-md">
           <div className="flex justify-between items-center mb-2">
             <h2 className="font-headline-md text-headline-md text-on-surface">학습 여정</h2>
-            <span className="flex items-center gap-1 text-primary font-label-sm"><span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>stars</span> Lv. {lvl.level}</span>
+            <span className="flex items-center gap-1 text-primary font-label-sm"><span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>stars</span> Lv. {lvl.level}</span>
           </div>
 
           {/* 레벨 카드 */}
-          <div className="bg-white rounded-2xl p-padding-card border border-border-light shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
+          <div className="bg-white rounded-xl p-padding-card border border-border-light shadow-card">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 rounded-2xl bg-primary text-white flex items-center justify-center shadow-md"><span className="font-display-lg text-3xl font-bold">{lvl.level}</span></div>
+              <div className="w-16 h-16 rounded-xl bg-primary text-white flex items-center justify-center shadow-card"><span className="font-display-lg text-3xl font-bold">{lvl.level}</span></div>
               <div className="flex-1">
                 <div className="flex justify-between font-label-sm text-on-surface-variant mb-1"><span>Lv. {lvl.level}</span><span>{lvl.xpIntoLevel} / {lvl.xpForNext} XP</span></div>
                 <div className="w-full bg-surface-container-high rounded-full h-2.5 overflow-hidden"><div className="h-full bg-primary rounded-full" style={{ width: `${lvl.progress * 100}%` }} /></div>
@@ -49,18 +49,19 @@ export default function Stats({ nav }: { nav: (k: ScreenKey) => void }) {
           </div>
 
           {/* 활동 기록 히트맵 */}
-          <div className="bg-white rounded-2xl p-padding-card border border-border-light shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
+          <div className="bg-white rounded-xl p-padding-card border border-border-light shadow-card">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-body-lg font-semibold text-on-surface">활동 기록</h3>
               <span className="font-label-sm text-outline">최근 5주</span>
             </div>
-            <div className="grid grid-cols-7 gap-1.5">
+            {/* aspect-square를 카드 폭에 그대로 맡기면 칸이 100px짜리 블록이 된다. 폭을 묶어둔다. */}
+            <div className="grid grid-cols-7 gap-1.5 max-w-[280px]">
               {heat.map((n, i) => <div key={i} className={"aspect-square rounded-[4px] " + heatCls(n)} title={`${n}회`} />)}
             </div>
-            <div className="flex items-center justify-end gap-1.5 mt-3 text-[11px] text-outline">
-              <span>Less</span>
+            <div className="flex items-center gap-1.5 mt-3 text-outline font-label-sm max-w-[280px] justify-end">
+              <span>적음</span>
               {["bg-surface-container-high", "bg-primary/30", "bg-primary/60", "bg-primary"].map((c) => <div key={c} className={"w-3 h-3 rounded-[3px] " + c} />)}
-              <span>More</span>
+              <span>많음</span>
             </div>
           </div>
         </section>
@@ -73,7 +74,7 @@ export default function Stats({ nav }: { nav: (k: ScreenKey) => void }) {
           </div>
 
           {/* 다음 목표 보상 */}
-          <div className="bg-white rounded-2xl p-padding-card border border-border-light shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
+          <div className="bg-white rounded-xl p-padding-card border border-border-light shadow-card">
             <h3 className="font-body-lg font-semibold text-on-surface mb-4">다음 배지</h3>
             <div className="space-y-3">
               {nextBadges.map((b) => (
@@ -88,7 +89,7 @@ export default function Stats({ nav }: { nav: (k: ScreenKey) => void }) {
           </div>
 
           {/* 배지 그리드 */}
-          <div className="bg-white rounded-2xl p-padding-card border border-border-light shadow-[0_4px_20px_rgba(15,23,42,0.05)] flex-1">
+          <div className="bg-white rounded-xl p-padding-card border border-border-light shadow-card flex-1">
             <h3 className="font-body-lg font-semibold text-on-surface mb-4">획득한 배지</h3>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
               {BADGES.map((b) => {
@@ -96,7 +97,7 @@ export default function Stats({ nav }: { nav: (k: ScreenKey) => void }) {
                 return (
                   <div key={b.id} title={b.desc} className={"flex flex-col items-center gap-1.5 rounded-xl p-3 border text-center " + (on ? "bg-chat-bg-user border-primary/30" : "bg-surface border-border-light opacity-60")}>
                     <span className="text-2xl">{on ? b.icon : "🔒"}</span>
-                    <span className={"text-[11px] font-bold " + (on ? "text-primary" : "text-on-surface-variant")}>{b.label}</span>
+                    <span className={"font-bold " + (on ? "text-primary" : "text-on-surface-variant")}>{b.label}</span>
                   </div>
                 );
               })}

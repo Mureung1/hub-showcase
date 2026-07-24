@@ -21,7 +21,7 @@ interface Store {
   assets: AssetRecord[];
   customSits: Situation[];
   saveProfile: (p: Profile) => void;
-  addSession: (sid: string, scores: Scores) => void;
+  addSession: (sid: string, scores: Scores, title?: string) => void;
   addAsset: (text: string, sid: string) => void;
   removeAsset: (id: string) => void;
   addCustomSit: (s: Situation) => void;
@@ -79,9 +79,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     assets: blob.assets,
     customSits: blob.customSits,
     saveProfile: (p) => persist({ ...blob, profile: p }),
-    addSession: (sid, scores) => {
+    addSession: (sid, scores, title) => {
       const now = new Date();
-      const rec: SessionRecord = { d: `${now.getMonth() + 1}.${now.getDate()}`, sid, scores, ts: now.getTime() };
+      const rec: SessionRecord = { d: `${now.getMonth() + 1}.${now.getDate()}`, sid, scores, ts: now.getTime(), ...(title ? { title } : {}) };
       persist({ ...blob, history: [...blob.history, rec] });
     },
     addAsset: (text, sid) => {

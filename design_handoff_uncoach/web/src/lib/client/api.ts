@@ -81,6 +81,7 @@ export async function generateSituation(input: {
   who?: string;
   goal?: string;
   tension?: string;
+  medium?: "chat" | "email";
 }): Promise<Situation> {
   const r = await fetch("/api/situation", {
     method: "POST",

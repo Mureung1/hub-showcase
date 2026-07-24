@@ -1,94 +1,71 @@
 "use client";
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useApp } from "@/lib/client/store";
-import { AXES, LEVELS, SITUATIONS, personaOf, splitBubbles } from "@/lib/domain/situations";
+import { splitBubbles, personaOf } from "@/lib/domain/situations";
+import { CHAT_COMPLAINT_SIT } from "@/lib/domain/demo-sits";
 import { scoreDraft, type ScoreResult } from "@/lib/client/api";
-import type { Situation, ThreadItem, Scores } from "@/lib/domain/types";
+import type { Situation, ThreadItem } from "@/lib/domain/types";
 import type { ScreenKey } from "@/components/AppShell";
+import ProfileChip from "@/components/stitch/ProfileChip";
+import { ScoreCard, FeedbackItem, FeedbackHeading, axisMetrics } from "@/components/stitch/Feedback";
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const now = () => new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+// 제안 답변 패턴 — 누르면 예시 초안이 입력창에 채워진다.
+const SUGGESTIONS: { label: string; draft: string }[] = [
+  { label: "정중한 사과", draft: "먼저, 불편을 드려 대단히 죄송합니다." },
+  { label: "핵심 요구 확인", draft: "어떤 부분을 가장 우선으로 해결해 드리면 될지 알려주시겠어요?" },
+  { label: "구체적 대안 제시", draft: "바로 새 제품으로 재발송하거나 전액 환불 중 원하시는 방법으로 처리해 드리겠습니다." },
+];
+const now = () => new Date().toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
 
-function recommend(role: string | undefined, exclude?: string): Situation {
-  const mine = SITUATIONS.filter((s) => (!role || !s.roles || s.roles.includes(role)) && s.id !== exclude);
-  const pool = mine.length ? mine : SITUATIONS;
-  return pool[Math.floor(Math.random() * pool.length)];
+interface Msg {
+  from: "them" | "me";
+  text: string;
+  time: string;
 }
 
-export default function Chat({ onExit }: { onExit: () => void; nav: (k: ScreenKey) => void }) {
+
+export default function Chat({ situation, onExit, nav }: { situation?: Situation; onExit: () => void; nav: (k: ScreenKey) => void }) {
+  void nav;
   const app = useApp();
-  const [sit, setSit] = useState<Situation>(() => recommend(app.profile?.role));
+  const sit = situation ?? CHAT_COMPLAINT_SIT;
   const persona = personaOf(sit);
-
-  const [draft, setDraft] = useState("");
-  const [thread, setThread] = useState<ThreadItem[]>(() =>
-    sit.opener ? [{ from: "them", text: sit.opener }] : [],
-  );
-  const [times, setTimes] = useState<string[]>(() => (sit.opener ? [now()] : []));
-  const [phase, setPhase] = useState<"write" | "scoring" | "result">("write");
+  const opener = sit.opener || "안녕하세요, 잘 부탁드립니다.";
+  const [messages, setMessages] = useState<Msg[]>([{ from: "them", text: opener, time: "10:24 AM" }]);
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
   const [attempt, setAttempt] = useState<ScoreResult | null>(null);
-  const [prevScores, setPrevScores] = useState<Scores | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const [themTyping, setThemTyping] = useState(false);
-  const chatRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }, [thread, themTyping, phase]);
-
-  function reroll() {
-    const next = recommend(app.profile?.role, sit.id);
-    setSit(next);
-    setThread(next.opener ? [{ from: "them", text: next.opener }] : []);
-    setTimes(next.opener ? [now()] : []);
-    setDraft("");
-    setAttempt(null);
-    setPrevScores(null);
-    setPhase("write");
-    setSaved(false);
-  }
-
-  async function submit() {
-    const d = draft.trim();
-    if (d.length < 2) return setError("메시지를 조금 더 써주세요.");
+  async function send() {
+    const draft = input.trim();
+    if (!draft || busy) return;
+    const thread: ThreadItem[] = messages.map((m) => ({ from: m.from, text: m.text }));
+    setMessages((cur) => [...cur, { from: "me", text: draft, time: now() }]);
+    setInput("");
+    setBusy(true);
     setError(null);
-    setPhase("scoring");
-    const sent: ThreadItem[] = [...thread, { from: "me", text: d }];
-    setThread(sent);
-    setTimes((t) => [...t, now()]);
     try {
-      const res = await scoreDraft({
-        situationId: sit.id,
-        customSit: app.customSits.some((c) => c.id === sit.id) ? sit : undefined,
-        draft: d,
-        thread,
-        profile: app.profile,
-      });
-      setPrevScores(attempt ? attempt.scores : null);
+      const res = await scoreDraft({ customSit: sit, draft, thread });
       setAttempt(res);
-      setPhase("result");
-      setSaved(false);
-      setDraft("");
-      if (res.counterpartReply) {
-        const chunks = splitBubbles(res.counterpartReply);
-        let cur = sent;
-        for (let i = 0; i < chunks.length; i++) {
-          setThemTyping(true);
-          await sleep(420 + Math.min(chunks[i].length * 16, 1100));
-          cur = [...cur, { from: "them", text: chunks[i] }];
-          setThread(cur);
-          setTimes((t) => [...t, now()]);
-          setThemTyping(false);
-          if (i < chunks.length - 1) await sleep(240);
-        }
+      const bubbles = splitBubbles(res.counterpartReply);
+      for (const b of bubbles) {
+        setMessages((cur) => [...cur, { from: "them", text: b, time: now() }]);
       }
     } catch (e) {
       setError((e as Error).message);
-      setPhase("write");
-      setThemTyping(false);
-      setThread(thread);
+    } finally {
+      setBusy(false);
+      requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }));
     }
+  }
+
+  function restart() {
+    if (busy) return;
+    setMessages([{ from: "them", text: opener, time: now() }]);
+    setInput("");
+    setAttempt(null);
+    setError(null);
   }
 
   function finish() {
@@ -96,233 +73,160 @@ export default function Chat({ onExit }: { onExit: () => void; nav: (k: ScreenKe
     onExit();
   }
 
-  const empathy = attempt ? attempt.scores.register : 0; // 격식→공감 근사
-  const solve = attempt ? attempt.scores.strategy : 0; // 전략→문제해결 근사
-
   return (
-    <div className="h-screen overflow-hidden flex flex-col bg-background text-on-background">
-      {/* 상단 바 */}
-      <header className="bg-surface/80 backdrop-blur-md border-b border-border-light flex justify-between items-center px-6 md:px-8 h-16 shrink-0">
-        <div className="flex items-center gap-4 flex-1">
-          <button aria-label="Back to Home" onClick={onExit} className="p-2 -ml-2 text-on-surface-variant hover:bg-surface-container-low rounded-full flex items-center justify-center">
+    <div className="bg-background text-on-background min-h-screen flex flex-col">
+      {/* TopAppBar */}
+      <header className="fixed top-0 right-0 left-0 z-40 flex justify-between items-center px-4 md:px-8 h-16 bg-surface/80 backdrop-blur-md border-b border-border-light">
+        <div className="flex items-center gap-3 flex-1">
+          <button onClick={onExit} className="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors flex items-center justify-center">
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
-          <div className="relative w-full max-w-md rounded-full">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-            <input className="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 text-on-surface focus:ring-0 font-body-md text-body-md" placeholder="검색..." type="text" />
-          </div>
+          <div className="font-headline-md text-headline-md text-primary hidden md:block">대화 훈련</div>
         </div>
-        <div className="flex items-center gap-4">
-          <button className="text-on-surface-variant hover:bg-surface-container-low rounded-full p-2"><span className="material-symbols-outlined">notifications</span></button>
-          <button className="text-on-surface-variant hover:bg-surface-container-low rounded-full p-2"><span className="material-symbols-outlined">apps</span></button>
+        <div className="flex items-center gap-2 md:gap-4">
+          <ProfileChip name={app.profile?.name || app.profile?.role} />
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col md:flex-row overflow-hidden bg-background">
-        {/* 대화 캔버스 */}
-        <section className="flex-1 flex flex-col h-full bg-surface-bright relative min-w-0">
+      <main className="flex-1 pt-16 h-screen flex flex-col md:flex-row bg-background">
+        {/* Center: Chat */}
+        <section className="flex-1 flex flex-col h-full bg-surface-bright relative">
           <div className="h-16 px-6 border-b border-border-light flex items-center justify-between bg-white/80 backdrop-blur z-10 shrink-0">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl bg-slate-200">{persona.emoji}</div>
+              <div className="w-10 h-10 rounded-full bg-slate-200 hidden sm:flex items-center justify-center text-xl">{persona.emoji}</div>
               <div>
-                <h2 className="font-headline-md text-headline-md text-on-surface text-lg">{persona.name} · {sit.title}</h2>
+                <h2 className="font-headline-md text-lg text-on-surface">{persona.name}</h2>
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-tertiary-container rounded-full" />
-                  <span className="font-label-sm text-label-sm text-slate-muted">현재 트레이닝 진행 중</span>
+                  <span className="font-label-sm text-label-sm text-slate-muted">현재 트레이닝 진행 중 · {sit.title}</span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={reroll} title="다른 상황" className="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full"><span className="material-symbols-outlined">refresh</span></button>
-              <button className="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full"><span className="material-symbols-outlined">more_vert</span></button>
-            </div>
+            <button
+              onClick={restart}
+              disabled={busy}
+              className="flex items-center gap-1 px-3 py-2 rounded-lg font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-[20px]">restart_alt</span>
+              <span className="hidden sm:inline">대화 다시 시작</span>
+            </button>
           </div>
 
-          <div ref={chatRef} className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
             <div className="flex justify-center">
-              <span className="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm px-3 py-1 rounded-full text-xs">
-                {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
-              </span>
+              <span className="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm px-3 py-1 rounded-full">{new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}</span>
             </div>
             <div className="flex justify-center my-4">
-              <div className="bg-primary/10 border border-primary/20 text-primary px-4 py-2 rounded-lg max-w-lg text-center font-body-md text-body-md text-sm shadow-sm flex items-start gap-2">
-                <span className="material-symbols-outlined text-base mt-0.5">smart_toy</span>
-                <span><b>시나리오 시작:</b> {sit.background || sit.tension} — {sit.goal}</span>
+              <div className="bg-primary/10 border border-primary/20 text-primary px-4 py-2 rounded-lg max-w-lg text-center font-body-md text-sm shadow-card flex items-start gap-2">
+                <span className="material-symbols-outlined text-[16px] mt-0.5">smart_toy</span>
+                <span><b>시나리오 시작:</b> {sit.title} — {sit.goal}</span>
               </div>
             </div>
 
-            {thread.map((t, i) => {
-              const them = t.from === "them";
-              return them ? (
+            {messages.map((m, i) =>
+              m.from === "them" ? (
                 <div key={i} className="flex items-end gap-3 max-w-3xl">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-200 shrink-0">{persona.emoji}</div>
-                  <div className="bg-white border border-border-light rounded-2xl rounded-bl-none px-5 py-3 shadow-sm">
-                    <p className="font-body-md text-body-md text-on-surface">{t.text}</p>
-                    <span className="font-label-sm text-label-sm text-slate-muted text-xs mt-1 block">{times[i]}</span>
+                  <div className="w-8 h-8 rounded-full bg-slate-200 shrink-0 flex items-center justify-center">{persona.emoji}</div>
+                  <div className="bg-white border border-border-light rounded-xl rounded-bl-none px-5 py-3 shadow-card">
+                    <p className="font-body-md text-body-md text-on-surface">{m.text}</p>
+                    <span className="font-label-sm text-label-sm text-slate-muted mt-1 block">{m.time}</span>
                   </div>
                 </div>
               ) : (
                 <div key={i} className="flex items-end gap-3 max-w-3xl ml-auto justify-end">
-                  <div className="bg-chat-bg-user rounded-2xl rounded-br-none px-5 py-3 shadow-sm">
-                    <p className="font-body-md text-body-md text-on-surface">{t.text}</p>
-                    <span className="font-label-sm text-label-sm text-slate-muted text-xs mt-1 block text-right">{times[i]}</span>
+                  <div className="bg-chat-bg-user rounded-xl rounded-br-none px-5 py-3 shadow-card">
+                    <p className="font-body-md text-body-md text-on-surface">{m.text}</p>
+                    <span className="font-label-sm text-label-sm text-slate-muted mt-1 block text-right">{m.time}</span>
                   </div>
                 </div>
-              );
-            })}
+              ),
+            )}
 
-            {(themTyping || phase === "scoring") && (
+            {busy && (
               <div className="flex items-end gap-3 max-w-3xl">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-200 shrink-0">{persona.emoji}</div>
-                <div className="bg-white border border-border-light rounded-2xl rounded-bl-none px-5 py-3 shadow-sm flex items-center gap-1 h-12">
+                <div className="w-8 h-8 rounded-full bg-slate-200 shrink-0 flex items-center justify-center">{persona.emoji}</div>
+                <div className="bg-white border border-border-light rounded-xl rounded-bl-none px-5 py-3 shadow-card flex items-center gap-1 h-12">
                   <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" />
                   <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
                   <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }} />
                 </div>
               </div>
             )}
+            {error && (
+              <div className="flex justify-center">
+                <div className="bg-error-container text-on-error-container px-4 py-2 rounded-lg text-sm max-w-md text-center">{error}</div>
+              </div>
+            )}
           </div>
 
+          {/* Input */}
           <div className="p-4 bg-white border-t border-border-light shrink-0">
-            {error && <div className="mb-2 rounded-lg bg-error-container text-on-error-container px-3 py-2 text-sm">{error}</div>}
-            <div className="flex items-center gap-2 bg-surface-container-low rounded-2xl p-2 border border-border-light focus-within:ring-2 focus-within:ring-primary transition-all shadow-sm">
-              <button className="p-2 text-on-surface-variant hover:text-primary"><span className="material-symbols-outlined">add_circle</span></button>
-              <button className="p-2 text-on-surface-variant hover:text-primary"><span className="material-symbols-outlined">sentiment_satisfied</span></button>
+            <div className="flex items-center gap-2 bg-surface-container-low rounded-xl p-2 border border-border-light focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all shadow-card">
+              <button className="p-2 text-on-surface-variant hover:text-primary transition-colors"><span className="material-symbols-outlined">add_circle</span></button>
+              <button className="p-2 text-on-surface-variant hover:text-primary transition-colors"><span className="material-symbols-outlined">sentiment_satisfied</span></button>
               <input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && phase !== "scoring" && !themTyping && submit()}
-                className="flex-1 bg-transparent border-none focus:ring-0 focus:outline-none font-body-md text-body-md text-on-surface py-3"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && send()}
+                className="flex-1 min-w-0 bg-transparent border-none focus:ring-0 font-body-md text-body-md text-on-surface placeholder-slate-400 py-3 focus:outline-none"
                 placeholder="메시지를 입력하여 대응을 연습하세요..."
                 type="text"
               />
-              <button
-                onClick={submit}
-                disabled={phase === "scoring" || themTyping}
-                className="p-3 bg-primary text-white rounded-xl hover:bg-primary-container transition-colors shadow-md flex items-center justify-center disabled:opacity-60"
-              >
-                <span className="material-symbols-outlined">send</span>
-              </button>
+              <button onClick={send} disabled={busy} className="p-3 bg-primary text-white rounded-xl hover:bg-primary-fixed-variant transition-colors shadow-card flex items-center justify-center disabled:opacity-60"><span className="material-symbols-outlined">send</span></button>
             </div>
           </div>
         </section>
 
-        {/* AI 코칭 패널 */}
+        {/* Right: AI Coaching */}
         <aside className="w-full md:w-96 lg:w-[400px] bg-surface-container-lowest border-l border-border-light flex flex-col h-full flex-shrink-0">
           <div className="flex border-b border-border-light bg-white shrink-0">
-            <button className="flex-1 py-4 font-label-sm text-label-sm font-semibold text-primary border-b-2 border-primary text-center">AI 코칭</button>
-            <button className="flex-1 py-4 font-label-sm text-label-sm font-medium text-on-surface-variant hover:bg-surface-container-low text-center">컨텍스트</button>
-            <button className="flex-1 py-4 font-label-sm text-label-sm font-medium text-on-surface-variant hover:bg-surface-container-low text-center">가이드라인</button>
+            <div className="flex-1 py-4 font-label-sm text-label-sm font-semibold text-primary border-b-2 border-primary text-center">AI 코칭</div>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {/* 실시간 평가 */}
-            <div className="bg-white rounded-xl border border-border-light p-4 shadow-sm">
-              <h3 className="font-headline-md text-headline-md text-sm text-on-surface mb-3 flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-lg">assessment</span> 실시간 평가
-              </h3>
-              <div className="space-y-3">
-                <Meter label="공감 능력" score={empathy} />
-                <Meter label="문제 해결" score={solve} />
-              </div>
-            </div>
+            {/* 실시간 평가 (공용) */}
+            <ScoreCard
+              title="실시간 평가"
+              total={attempt ? attempt.total : null}
+              metrics={attempt ? axisMetrics(attempt.scores) : []}
+              empty="메시지를 보내면 맥락·격식·전략 3축을 실시간으로 평가합니다."
+            />
 
-            {/* 피드백 */}
+            {/* 피드백 (공용) */}
             <div className="space-y-3">
-              <h3 className="font-label-sm text-label-sm text-slate-muted uppercase tracking-wider pl-1">피드백</h3>
-              {!attempt ? (
-                <div className="bg-surface-container-low border border-border-light rounded-xl p-4 text-sm text-on-surface-variant">
-                  메시지를 보내면 맥락·격식·전략 3축 피드백이 여기에 표시됩니다.
-                </div>
-              ) : (
+              <FeedbackHeading>피드백</FeedbackHeading>
+              {attempt ? (
                 <>
-                  <div className="bg-secondary-fixed/50 border border-secondary-fixed-dim rounded-xl p-4 shadow-sm relative overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
-                    <div className="flex gap-3">
-                      <span className="material-symbols-outlined text-primary mt-0.5">lightbulb</span>
-                      <p className="font-body-md text-body-md text-sm text-on-surface leading-relaxed">
-                        {attempt.coach}
-                        {attempt.fix && <> <b>딱 하나: {attempt.fix}</b></>}
-                      </p>
-                    </div>
-                  </div>
-                  {AXES.map((ax) => {
-                    const sc = attempt.scores[ax.key];
-                    const c = sc >= 3 ? "text-tertiary" : sc === 2 ? "text-progress-orange" : "text-error";
-                    const delta = prevScores ? sc - prevScores[ax.key] : 0;
-                    return (
-                      <div key={ax.key} className="bg-surface-container-low border border-border-light rounded-xl p-4 shadow-sm">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-body-md text-sm font-semibold text-on-surface">{ax.num} {ax.name}</span>
-                          <span className={"font-label-sm text-label-sm font-bold " + c}>
-                            {LEVELS[sc].label} {sc}/3{delta ? (delta > 0 ? ` ▲${delta}` : ` ▼${delta}`) : ""}
-                          </span>
-                        </div>
-                        {attempt.reasons?.[ax.key] && (
-                          <p className="font-body-md text-body-md text-sm text-on-surface-variant leading-relaxed">{attempt.reasons[ax.key]}</p>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {(attempt.best || AXES.reduce((t, a) => t + attempt.scores[a.key], 0) >= 8) && (
-                    <button
-                      onClick={() => {
-                        app.addAsset(attempt.best || attempt.text, sit.id);
-                        setSaved(true);
-                      }}
-                      disabled={saved}
-                      className="w-full py-2.5 rounded-lg font-label-sm text-label-sm font-bold bg-tertiary-container text-white disabled:bg-tertiary-fixed disabled:text-tertiary"
-                    >
-                      {saved ? "✓ 잘 쓴 표현으로 저장됨" : "잘 쓴 표현으로 남기기"}
-                    </button>
+                  <FeedbackItem accent="primary" icon="lightbulb" body={attempt.coach} />
+                  {attempt.fix && (
+                    <FeedbackItem
+                      accent="orange"
+                      icon="tips_and_updates"
+                      title="이렇게 고쳐보세요"
+                      body={attempt.fix + (attempt.best ? `\n\n모범 예시: ${attempt.best}` : "")}
+                    />
                   )}
                 </>
+              ) : (
+                <div className="bg-white border border-border-light border-dashed rounded-xl p-4 text-sm text-on-surface-variant text-center">아직 피드백이 없습니다. 첫 응답을 보내보세요.</div>
               )}
             </div>
 
-            {/* 제안 패턴 */}
-            <div>
-              <h3 className="font-label-sm text-label-sm text-slate-muted uppercase tracking-wider pl-1 mb-2">제안하는 답변 패턴</h3>
+            {/* Suggestions */}
+            <div className="mt-6">
+              <FeedbackHeading>제안하는 답변 패턴</FeedbackHeading>
+              <div className="h-2" />
               <div className="flex flex-wrap gap-2">
-                {["정중한 사과하기", "환불 절차 안내", "교환 절차 안내"].map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setDraft((d) => (d ? d + " " : "") + p)}
-                    className="px-3 py-1.5 bg-white border border-border-light rounded-lg font-body-md text-body-md text-sm text-on-surface hover:border-primary transition-all shadow-sm"
-                  >
-                    {p}
-                  </button>
+                {SUGGESTIONS.map((s) => (
+                  <button key={s.label} onClick={() => setInput(s.draft)} title={s.draft} className="px-3 py-1.5 bg-white border border-border-light rounded-lg font-body-md text-sm text-on-surface hover:bg-surface-container-low hover:border-primary transition-all shadow-card">{s.label}</button>
                 ))}
               </div>
             </div>
           </div>
           <div className="p-4 border-t border-border-light bg-white shrink-0">
-            <button
-              onClick={finish}
-              className="w-full py-3 bg-white border-2 border-primary text-primary rounded-xl font-label-sm text-label-sm font-bold hover:bg-primary hover:text-white transition-colors"
-            >
-              트레이닝 종료 및 결과 보기
-            </button>
+            <button onClick={finish} className="w-full py-3 bg-white border-2 border-primary text-primary rounded-xl font-label-sm text-label-sm font-bold hover:bg-primary hover:text-white transition-colors">세션 마치기</button>
           </div>
         </aside>
       </main>
-    </div>
-  );
-}
-
-function Meter({ label, score }: { label: string; score: number }) {
-  const pct = (score / 3) * 100;
-  const verdict = score >= 3 ? "Good" : score === 2 ? "Fair" : score === 1 ? "Needs Improvement" : "—";
-  const barCls = score >= 3 ? "bg-tertiary" : score === 2 ? "bg-progress-orange" : "bg-error";
-  const txtCls = score >= 3 ? "text-tertiary" : score === 2 ? "text-progress-orange" : "text-error";
-  return (
-    <div>
-      <div className="flex justify-between font-label-sm text-label-sm mb-1">
-        <span className="text-on-surface-variant">{label}</span>
-        <span className={"font-bold " + txtCls}>{verdict}</span>
-      </div>
-      <div className="w-full bg-surface-container-highest rounded-full h-1.5">
-        <div className={"h-1.5 rounded-full " + barCls} style={{ width: `${pct}%` }} />
-      </div>
     </div>
   );
 }

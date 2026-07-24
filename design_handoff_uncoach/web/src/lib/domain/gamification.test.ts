@@ -7,7 +7,9 @@ import {
   newlyUnlocked,
   sessionsThisWeek,
   daysSinceLastSession,
-  XP_PER_LEVEL,
+  xpForLevel,
+  XP_NEW_SITUATION,
+  XP_DAILY_FIRST,
 } from "./gamification";
 import type { Scores, SessionRecord, AssetRecord } from "./types";
 
@@ -16,9 +18,9 @@ const NOW = new Date(2026, 6, 23, 12, 0, 0);
 
 const scores = (v: number): Scores => ({ context: v, register: v, strategy: v });
 /** 2026-07-{day} 정오 세션. ts 없이 만들려면 withTs=false. */
-const sess = (day: number, v = 2, withTs = true): SessionRecord => ({
+const sess = (day: number, v = 2, withTs = true, sid = "pq"): SessionRecord => ({
   d: `7.${day}`,
-  sid: "pq",
+  sid,
   scores: scores(v),
   ...(withTs ? { ts: new Date(2026, 6, day, 12).getTime() } : {}),
 });
@@ -28,28 +30,53 @@ describe("totalXP", () => {
   it("빈 history는 0", () => {
     expect(totalXP([])).toBe(0);
   });
-  it("만점(100) 세션 2개면 200", () => {
-    expect(totalXP([sess(22, 3), sess(23, 3)])).toBe(200);
+  it("세션 점수 + 새 상황 보너스 + 매일 첫 훈련 보너스를 합산", () => {
+    // 같은 상황을 이틀에 걸쳐 만점 2회: 200점 + 상황 1개 + 훈련일 2일
+    expect(totalXP([sess(22, 3), sess(23, 3)])).toBe(200 + XP_NEW_SITUATION + 2 * XP_DAILY_FIRST);
+  });
+  it("같은 상황을 반복해도 새 상황 보너스는 한 번만", () => {
+    // 같은 날 같은 상황 2회: 200점 + 상황 1개 + 훈련일 1일
+    expect(totalXP([sess(23, 3), sess(23, 3)])).toBe(200 + XP_NEW_SITUATION + XP_DAILY_FIRST);
+  });
+  it("다른 상황이면 새 상황 보너스를 각각 받는다", () => {
+    expect(totalXP([sess(23, 3), sess(23, 3, true, "other")])).toBe(200 + 2 * XP_NEW_SITUATION + XP_DAILY_FIRST);
+  });
+  it("ts 없는 과거 기록엔 매일 첫 훈련 보너스가 붙지 않는다", () => {
+    expect(totalXP([sess(23, 3, false)])).toBe(100 + XP_NEW_SITUATION);
   });
 });
 
 describe("levelInfo", () => {
-  it("xp 0이면 레벨 1, 진행도 0", () => {
+  it("xp 0이면 레벨 1, 다음 레벨까지 200", () => {
     const l = levelInfo(0);
     expect(l.level).toBe(1);
     expect(l.xpIntoLevel).toBe(0);
+    expect(l.xpForNext).toBe(xpForLevel(1));
     expect(l.progress).toBe(0);
   });
-  it("정확히 한 레벨치(300)면 레벨 2로 넘어가고 잔여 0", () => {
-    const l = levelInfo(XP_PER_LEVEL);
+  it("레벨업 요구치는 레벨마다 100씩 늘어난다", () => {
+    expect(xpForLevel(1)).toBe(200);
+    expect(xpForLevel(2)).toBe(300);
+    expect(xpForLevel(9)).toBe(1000);
+  });
+  it("딱 200이면 레벨 2로 넘어가고 잔여 0", () => {
+    const l = levelInfo(200);
     expect(l.level).toBe(2);
     expect(l.xpIntoLevel).toBe(0);
+    expect(l.xpForNext).toBe(300);
   });
-  it("레벨 중간(450)이면 레벨 2, 진행도 0.5", () => {
-    const l = levelInfo(450);
+  it("레벨 2 중간(350)이면 진행도 0.5", () => {
+    const l = levelInfo(350);
     expect(l.level).toBe(2);
     expect(l.xpIntoLevel).toBe(150);
     expect(l.progress).toBeCloseTo(0.5);
+  });
+  it("누적 1,400이면 레벨 5 (200+300+400+500)", () => {
+    expect(levelInfo(1400).level).toBe(5);
+    expect(levelInfo(1399).level).toBe(4);
+  });
+  it("음수 xp도 레벨 1로 떨어뜨린다", () => {
+    expect(levelInfo(-10).level).toBe(1);
   });
 });
 
