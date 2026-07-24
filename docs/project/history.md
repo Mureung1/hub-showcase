@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-24 · BE-AI-005 · 완료
+
+- 결과: 공개 `youtube.com`, `youtu.be` URL을 검증해 YouTube Data API의 영상 제목·채널명을 출처로 사용하고, 공개 또는 자동 생성 자막을 우선 기존 OpenAI 레시피 구조화 흐름에 연결했다. 자막 조회 실패 시 `gemini-3.6-flash` 영상 분석으로 한 번 대체하며 전체 실패는 기존 `URL_FETCH_FAILED` 422와 직접 입력 안내를 유지한다.
+- 결정: `youtube-transcript-api==1.2.4`를 고정하고 검증된 video ID만 shell 없는 Python 프로세스에 전달한다. 자막 프로세스와 메타데이터 요청은 10초, Gemini는 15초 후 중단하며 자동 재시도, 프록시, 쿠키, 계정 인증과 차단 우회를 사용하지 않는다. 영상·자막·썸네일과 제공자 응답 전문은 저장하거나 로그에 남기지 않는다.
+- 시행착오: Python 테스트 파일의 초기 경로·들여쓰기 오류를 바로잡았고, stdout UTF-8 문자가 chunk 경계에서 깨지는 문제를 Red 테스트로 확인한 뒤 `StringDecoder`로 보완했다. 첫 병렬 전체 검증은 30초 제한에 걸려 백엔드와 프론트엔드 검증을 분리해 다시 실행했다.
+- 검증: 백엔드 24개 테스트, `backend npm run type-check`, `backend npm run build`, Python 단위 테스트·문법 컴파일, 프론트엔드 31개 테스트, `frontend npm run lint`, `frontend npm run build`, `git diff --check`를 통과했다.
+- 후속: `QA-CORE-001`
+- 반복 패턴: `external-provider-boundary`
+
 ## 2026-07-23 · FE-AI-002 · 완료
 
 - 결과: AI 초안의 제목, 설명, 인원, 조리 시간, 재료와 조리 단계를 편집하고 배열 항목을 추가·삭제·재정렬할 수 있다. 필수값과 숫자 범위 오류는 관련 입력에 표시되고 초점이 이동하며, AI 경고와 읽기 전용 출처를 연결해 표시한다. 취소 시 레시피 입력 화면으로 돌아가고 모바일에서는 단일 종이 폼으로 사용할 수 있다.

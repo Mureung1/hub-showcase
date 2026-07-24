@@ -335,6 +335,22 @@ QA-CORE-001 상태 알려줘
   - 검증:
     - [x] 코드·의존성·환경 변수 변경 없이 관련 문서의 지원 제외와 기존 실패 계약이 일치함을 확인한다.
 
+- [x] `BE-AI-005` 공개 YouTube 영상의 자막 우선 레시피 구조화를 구현한다.
+  - 목표: 공개 YouTube URL의 제목·채널명과 공개 자막 또는 Gemini 영상 분석 결과를 기존 OpenAI 구조화·검증 흐름에 연결한다.
+  - 선행 티켓: `BE-AI-002`, `COMMON-AI-001`
+  - 세부 작업:
+    - [x] YouTube URL과 video ID를 검증하고 공식 메타데이터를 조회한다.
+      - 완료 기준: 공개 `youtube.com`, `youtu.be` URL만 전용 경로로 분기하며, YouTube Data API의 영상 제목·채널명을 출처의 `title`, `author`로 사용한다. 썸네일은 조회·저장·표시하지 않는다.
+    - [x] 공개 또는 자동 생성 자막을 우선 수집한다.
+      - 완료 기준: 고정된 `youtube-transcript-api` Python 의존성으로 자막을 한 번만 조회하고, 프록시·쿠키·계정 인증·차단 우회·자막 저장을 사용하지 않는다. 검증된 video ID만 shell 없이 Python 프로세스에 전달하고 10초 timeout과 20,000자 출력 길이 제한을 적용한다.
+    - [x] 자막 실패 시 Gemini 영상 분석으로 대체한다.
+      - 완료 기준: `GEMINI_MODEL=gemini-3.6-flash`에는 원본 URL·제목·채널명만 전달하고 15초 timeout·무재시도를 적용한다. 자막 또는 Gemini 결과는 기존 OpenAI `RecipeDraft` 구조화·검증 단계로 전달하며 API 키·영상·자막 원문·Gemini 응답 전문은 로그에 남기지 않는다.
+    - [x] YouTube 실패 계약과 직접 입력 대체를 유지한다.
+      - 완료 기준: 메타데이터, 자막과 Gemini 경로가 모두 실패하면 기존 `URL_FETCH_FAILED` 422와 직접 입력 안내를 반환하고 URL·직접 입력 혼합 요청의 보완 정보는 유지한다.
+  - 검증:
+    - [x] YouTube Data API, Python 자막 프로세스, Gemini와 OpenAI를 모킹해 자막 성공·자막 없음·차단·timeout·Gemini 실패와 출처 매핑을 검증한다.
+    - [x] 기존 일반 URL 수집 회귀와 백엔드 test·type-check·build, 프론트엔드 test·lint·build를 확인한다.
+
 - [ ] `COMMON-AI-003` 공개 네이버 블로그 게시물의 수집 정책과 기술을 확정한다.
   - 목표: 접근 가능한 공개 네이버 블로그 게시물을 MVP 레시피 입력으로 사용하기 위한 지원 범위와 본문 수집 방식을 사용자 승인으로 결정한다.
   - 선행 티켓: `COMMON-AI-001`, `BE-AI-002`
@@ -441,10 +457,10 @@ QA-CORE-001 상태 알려줘
 
 - [ ] `QA-CORE-001` 핵심 레시피 흐름을 통합 검증한다.
   - 목표: 로그인부터 저장된 레시피 재확인까지 실제 API와 DB로 완주한다.
-  - 선행 티켓: `FE-RECIPE-004`, `BE-AI-004`
+  - 선행 티켓: `FE-RECIPE-004`, `BE-AI-004`, `BE-AI-005`
   - 세부 작업:
     - [ ] URL, 직접 입력과 혼합 입력 흐름을 각각 수행한다.
-      - 완료 기준: 직접 입력, 지원 가능한 일반 웹페이지 URL과 공개 네이버 블로그 URL을 포함한 입력 흐름이 편집 가능한 AI 초안을 반환한다. YouTube URL은 `URL_FETCH_FAILED` 422와 직접 입력 안내를 확인한다.
+      - 완료 기준: 직접 입력, 지원 가능한 일반 웹페이지 URL·공개 네이버 블로그 URL·공개 YouTube URL 입력 흐름이 편집 가능한 AI 초안을 반환한다. YouTube의 전체 처리 실패는 `URL_FETCH_FAILED` 422와 직접 입력 안내를 확인한다.
     - [ ] 초안을 수정하고 PostgreSQL에 저장한다.
       - 완료 기준: 저장 결과가 상세와 목록 재조회에서 동일하게 보인다.
     - [ ] 핵심 실패 흐름을 수행한다.

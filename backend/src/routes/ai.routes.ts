@@ -6,6 +6,11 @@ import {
 } from "../services/recipeStructure.service.js";
 
 import { collectUrlContent, UrlContentError } from "../services/urlContent.service.js";
+import {
+  collectYoutubeContentFromEnvironment,
+  isYoutubeSourceUrl,
+  YoutubeContentError,
+} from "../services/youtubeContent.service.js";
 
 const router = Router();
 const MAX_RAW_TEXT_LENGTH = 20_000;
@@ -138,7 +143,9 @@ router.post(
 
     try {
       const collectedContent = sourceUrl
-        ? await collectUrlContent(sourceUrl)
+        ? isYoutubeSourceUrl(sourceUrl)
+          ? await collectYoutubeContentFromEnvironment(sourceUrl)
+          : await collectUrlContent(sourceUrl)
         : null;
 
       const structureInput = collectedContent
@@ -156,7 +163,10 @@ router.post(
         data: result,
       });
     } catch (error) {
-      if (error instanceof UrlContentError) {
+      if (
+        error instanceof UrlContentError ||
+        error instanceof YoutubeContentError
+      ) {
         const status = error.code === "URL_FETCH_FAILED" ? 422 : 400;
 
         const message =
