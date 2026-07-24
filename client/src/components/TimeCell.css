@@ -1,7 +1,7 @@
 .time-cell {
   height: 36px;
   padding: 0;
-  background: var(--bg-page);
+  background: var(--heatmap-0);
   border: 2px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -12,7 +12,23 @@
   transform: scale(1.05);
 }
 
-.time-cell.selected {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+.time-cell.level-1 {
+  background: var(--heatmap-1);
+}
+
+.time-cell.level-2 {
+  background: var(--heatmap-2);
+}
+
+.time-cell.level-3 {
+  background: var(--heatmap-3);
+}
+
+.time-cell.level-4 {
+  background: var(--heatmap-4);
+}
+
+/* 내가 선택한 칸: 색 진하기(누가 가능한지)와 안 겹치게 테두리로만 구분 */
+.time-cell.mine {
+  border-color: var(--color-info);
 }

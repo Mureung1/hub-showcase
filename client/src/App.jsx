@@ -188,7 +188,7 @@ function App() {
             />
           </>
         ) : (
-          <MeetingMatch />
+          <MeetingMatch members={members} currentMemberId={currentMemberId} />
         )}
       </div>
       <Toast message={toastMessage} />

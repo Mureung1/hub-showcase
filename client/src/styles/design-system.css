@@ -46,6 +46,13 @@
 
   --transition-fast: 160ms ease;
   --transition-base: 280ms cubic-bezier(0.4,0,0.2,1);
+
+  /* 히트맵 격자 (회의시간 매칭) - 겹치는 인원 비율 5단계 */
+  --heatmap-0: #F2F0F4;
+  --heatmap-1: #DED9FB;
+  --heatmap-2: #BCB2F7;
+  --heatmap-3: #9384EF;
+  --heatmap-4: #6C5CE7;
 }
 
 * {

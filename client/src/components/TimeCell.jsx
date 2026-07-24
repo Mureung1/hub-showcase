@@ -1,12 +1,15 @@
 import './TimeCell.css';
 
-function TimeCell({ isSelected, onClick }) {
+function TimeCell({ level, count, names, isMine, onClick }) {
+  const title = count === 0 ? '가능한 사람이 없어요' : `${count}명 가능 (${names.join(', ')})`;
+
   return (
     <button
       type="button"
-      className={`time-cell${isSelected ? ' selected' : ''}`}
+      className={`time-cell level-${level}${isMine ? ' mine' : ''}`}
       onClick={onClick}
-      aria-pressed={isSelected}
+      title={title}
+      aria-pressed={isMine}
     />
   );
 }

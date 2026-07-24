@@ -1,6 +1,7 @@
 import './TimeGrid.css';
 import TimeCell from './TimeCell';
 import { formatMonthDayWeekday } from '../utils/date';
+import { getHeatLevel } from '../utils/availability';
 
 const START_HOUR = 9;
 const END_HOUR = 21;
@@ -10,7 +11,7 @@ function slotKey(date, hour) {
   return `${date}_${hour}`;
 }
 
-function TimeGrid({ dates, selectedKeys, onToggleCell }) {
+function TimeGrid({ dates, slotStats, selectedKeys, totalMembers, onToggleCell }) {
   return (
     <div className="time-grid">
       <div className="time-grid-header">
@@ -25,13 +26,23 @@ function TimeGrid({ dates, selectedKeys, onToggleCell }) {
       {HOURS.map((hour) => (
         <div className="time-grid-row" key={hour}>
           <div className="time-label">{hour}시</div>
-          {dates.map((date) => (
-            <TimeCell
-              key={slotKey(date, hour)}
-              isSelected={selectedKeys.has(slotKey(date, hour))}
-              onClick={() => onToggleCell(date, hour)}
-            />
-          ))}
+          {dates.map((date) => {
+            const key = slotKey(date, hour);
+            const stat = slotStats.get(key);
+            const count = stat ? stat.count : 0;
+            const names = stat ? stat.names : [];
+
+            return (
+              <TimeCell
+                key={key}
+                level={getHeatLevel(count, totalMembers)}
+                count={count}
+                names={names}
+                isMine={selectedKeys.has(key)}
+                onClick={() => onToggleCell(date, hour)}
+              />
+            );
+          })}
         </div>
       ))}
     </div>
