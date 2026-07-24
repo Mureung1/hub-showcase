@@ -4,7 +4,11 @@ create table public.emotion_analyses (
   id uuid primary key default gen_random_uuid(),
   session_id uuid not null,
   situation_text text not null,
-  face_signal text not null,
+  face_signal text,
+  face_signal_source text not null default 'manual',
+  face_signal_confidence numeric(4, 3),
+  face_signal_evidence jsonb not null default '[]'::jsonb,
+  face_signal_heuristic_version text,
   voice_signal text not null,
   selected_scenario text not null,
   analysis_result jsonb not null,
@@ -14,7 +18,41 @@ create table public.emotion_analyses (
   constraint emotion_analyses_situation_text_length_check
     check (char_length(btrim(situation_text)) between 1 and 500),
   constraint emotion_analyses_face_signal_check
-    check (face_signal in ('neutral', 'smile', 'tense', 'downcast', 'angry')),
+    check (
+      (
+        face_signal_source = 'manual'
+        and face_signal in ('neutral', 'smile', 'tense', 'downcast', 'angry')
+      )
+      or
+      (
+        face_signal_source = 'camera'
+        and face_signal is null
+      )
+    ),
+  constraint emotion_analyses_face_signal_source_check
+    check (face_signal_source in ('manual', 'camera')),
+  constraint emotion_analyses_face_signal_confidence_check
+    check (face_signal_confidence is null or face_signal_confidence between 0 and 1),
+  constraint emotion_analyses_face_signal_evidence_check
+    check (
+      jsonb_typeof(face_signal_evidence) = 'array'
+      and jsonb_array_length(face_signal_evidence) <= 3
+    ),
+  constraint emotion_analyses_face_signal_metadata_check
+    check (
+      (
+        face_signal_source = 'manual'
+        and face_signal_confidence is null
+        and face_signal_evidence = '[]'::jsonb
+        and face_signal_heuristic_version is null
+      )
+      or
+      (
+        face_signal_source = 'camera'
+        and face_signal_confidence is not null
+        and face_signal_heuristic_version ~ '^v[0-9]+$'
+      )
+    ),
   constraint emotion_analyses_voice_signal_check
     check (voice_signal in ('normal', 'fast', 'low', 'strong', 'bright')),
   constraint emotion_analyses_selected_scenario_check
@@ -39,5 +77,9 @@ comment on column public.emotion_analyses.session_id is
   '로그인 도입 전 브라우저별 기록을 구분하는 UUID';
 comment on column public.emotion_analyses.analysis_result is
   '감정 점수, 상태 가능성, 판단 근거와 대응 방식을 포함한 JSON 객체';
+comment on column public.emotion_analyses.face_signal_confidence is
+  '프로토타입 휴리스틱으로 안정화한 얼굴 표현 신호 유사도이며 감정 정확도가 아님';
+comment on column public.emotion_analyses.face_signal_evidence is
+  '서버에 허용된 주요 blendshape 특징 이름만 최대 3개 저장';
 
 commit;

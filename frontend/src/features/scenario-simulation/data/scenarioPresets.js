@@ -40,7 +40,8 @@ export const scenarioPresets = {
   }
 };
 
-export const scenarioOptions = Object.values(scenarioPresets).map(({ value, label }) => ({
-  value,
-  label
+export const scenarioOptions = SCENARIOS.map((scenario) => ({
+  value: scenarioPresets[scenario].value,
+  label: scenarioPresets[scenario].label
 }));
+import { SCENARIOS } from "../../../../../shared/contracts/emotionAnalysisContract";

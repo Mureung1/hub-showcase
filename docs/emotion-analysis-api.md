@@ -20,7 +20,14 @@ Content-Type: application/json
 {
   "sessionId": "7d7e3d50-c7a8-4d36-85fa-6a4dceca1077",
   "situationText": "I have an important presentation tomorrow.",
-  "faceSignal": "tense",
+  "faceSignal": null,
+  "faceSignalSource": "camera",
+  "faceSignalConfidence": 0.72,
+  "faceSignalEvidence": [
+    "browDownLeft",
+    "eyeSquintLeft"
+  ],
+  "faceSignalHeuristicVersion": "v1",
   "voiceSignal": "fast",
   "selectedScenario": "tension",
   "analysisResult": {
@@ -36,6 +43,18 @@ Content-Type: application/json
 
 A successful request returns HTTP `201` and the stored record as
 `data.emotionAnalysis`.
+
+`faceSignalSource` defaults to `manual` for older clients. Manual input must not include camera
+metadata. Camera input must include a confidence value between 0 and 1 and a heuristic version.
+`faceSignalEvidence` accepts at most three server-approved blendshape feature names.
+Manual input requires one allowed `faceSignal`. Camera input stores `faceSignal` as `null`; when an
+older client sends a legacy camera value, the server discards it before persistence.
+
+The confidence value is a prototype expression-signal similarity, not an emotion probability or a
+medical assessment.
+
+The client never sends webcam video, image frames, facial landmark coordinates, camera device
+information, or the full blendshape result to this API.
 
 ## List analyses for a session
 

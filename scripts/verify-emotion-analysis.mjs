@@ -2,7 +2,12 @@ import { build } from "esbuild";
 import { generateMockResponse } from "../frontend/src/features/conversation/utils/generateMockResponse.js";
 
 const bundle = await build({
-  entryPoints: ["./frontend/src/features/emotion-analysis/utils/analyzeMockEmotion.js"],
+  stdin: {
+    contents:
+      'export { analyzeMockEmotion } from "./frontend/src/features/emotion-analysis/utils/analyzeMockEmotion.js";',
+    resolveDir: process.cwd(),
+    sourcefile: "verify-emotion-analysis-entry.js"
+  },
   bundle: true,
   write: false,
   format: "esm",

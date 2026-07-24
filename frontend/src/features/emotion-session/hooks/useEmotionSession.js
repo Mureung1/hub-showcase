@@ -1,18 +1,28 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import {
-  generateMockResponse,
   mockMessages
 } from "../../conversation";
 import { analyzeMockContext } from "../../emotion-analysis";
 import { scenarioPresets } from "../../scenario-simulation";
 import {
-  createEmotionAnalysis,
-  listEmotionAnalyses
-} from "../api/emotionAnalysisApi";
-import {
   buildMessagesFromEmotionAnalyses,
   getOrCreateBrowserSessionId
 } from "../utils/browserSession";
+import {
+  createManualFaceSignalMetadata,
+  normalizeFaceSignalMetadata,
+  toFaceSignalPayload
+} from "../utils/faceSignalMetadata";
+import useManagedAsync from "./useManagedAsync";
+import useEmotionHistory from "./useEmotionHistory";
+import {
+  createEmotionAnalysisSubmission
+} from "../services/createEmotionAnalysisSubmission";
+import { SESSION_ERROR_MESSAGES } from "../constants/sessionMessages";
+import {
+  createInitialWorkflowState,
+  emotionSessionWorkflowReducer
+} from "../state/emotionSessionWorkflow";
 
 const defaultScenario = scenarioPresets.normal;
 
@@ -27,93 +37,72 @@ function createInitialResult() {
 export default function useEmotionSession() {
   const [sessionId] = useState(getOrCreateBrowserSessionId);
   const [messages, setMessages] = useState(mockMessages);
-  const [aiStatus, setAiStatus] = useState("waiting");
   const [selectedScenario, setSelectedScenario] = useState(defaultScenario);
-  const [analysisStatus, setAnalysisStatus] = useState("completed");
   const [emotionResult, setEmotionResult] = useState(createInitialResult);
-  const [analysisError, setAnalysisError] = useState("");
-  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const timerIdsRef = useRef([]);
-  const requestControllersRef = useRef(new Set());
-  const isMountedRef = useRef(true);
+  const [faceSignalMetadata, setFaceSignalMetadata] = useState(
+    createManualFaceSignalMetadata
+  );
+  const [workflow, dispatchWorkflow] = useReducer(
+    emotionSessionWorkflowReducer,
+    undefined,
+    createInitialWorkflowState
+  );
+  const {
+    aiStatus,
+    analysisStatus,
+    analysisError,
+    isSaving
+  } = workflow;
   const isSavingRef = useRef(false);
+  const {
+    schedule,
+    createController,
+    releaseController,
+    isMounted
+  } = useManagedAsync();
+  const {
+    records: restoredRecords,
+    isLoading: isHistoryLoading,
+    error: historyError
+  } = useEmotionHistory(sessionId);
   const lastAnalysisInputRef = useRef({
     situationText: "",
     faceSignal: defaultScenario.faceSignal,
+    ...toFaceSignalPayload(createManualFaceSignalMetadata()),
     voiceSignal: defaultScenario.voiceSignal,
     selectedScenario: defaultScenario.value
   });
 
   useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-      timerIdsRef.current.forEach((timerId) => window.clearTimeout(timerId));
-      requestControllersRef.current.forEach((controller) => controller.abort());
-    };
-  }, []);
+    if (historyError) {
+      dispatchWorkflow({ type: "FAILED", error: historyError });
+      return;
+    }
 
-  const schedule = (callback, delay) => {
-    const timerId = window.setTimeout(() => {
-      timerIdsRef.current = timerIdsRef.current.filter((id) => id !== timerId);
-      callback();
-    }, delay);
-    timerIdsRef.current.push(timerId);
-  };
+    if (restoredRecords?.length > 0) {
+      const latestRecord = restoredRecords[0];
+      const restoredScenario =
+        scenarioPresets[latestRecord.selectedScenario] || defaultScenario;
 
-  useEffect(() => {
-    const controller = new AbortController();
-    requestControllersRef.current.add(controller);
-
-    const restoreHistory = async () => {
-      try {
-        const records = await listEmotionAnalyses(sessionId, {
-          limit: 20,
-          signal: controller.signal
-        });
-
-        if (records.length > 0) {
-          const latestRecord = records[0];
-          const restoredScenario =
-            scenarioPresets[latestRecord.selectedScenario] || defaultScenario;
-
-          setMessages(buildMessagesFromEmotionAnalyses(records));
-          setSelectedScenario({
-            ...restoredScenario,
-            faceSignal: latestRecord.faceSignal,
-            voiceSignal: latestRecord.voiceSignal
-          });
-          setEmotionResult(latestRecord.analysisResult);
-          setAnalysisStatus("completed");
-          setAnalysisError("");
-          lastAnalysisInputRef.current = {
-            situationText: latestRecord.situationText,
-            faceSignal: latestRecord.faceSignal,
-            voiceSignal: latestRecord.voiceSignal,
-            selectedScenario: latestRecord.selectedScenario
-          };
-        }
-      } catch (error) {
-        if (error.name !== "AbortError") {
-          setAnalysisStatus("error");
-          setAnalysisError("저장된 분석 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
-        }
-      } finally {
-        requestControllersRef.current.delete(controller);
-
-        if (!controller.signal.aborted) {
-          setIsHistoryLoading(false);
-        }
-      }
-    };
-
-    restoreHistory();
-
-    return () => {
-      controller.abort();
-      requestControllersRef.current.delete(controller);
-    };
-  }, [sessionId]);
+      setMessages(buildMessagesFromEmotionAnalyses(restoredRecords));
+      setSelectedScenario({
+        ...restoredScenario,
+        faceSignal: latestRecord.faceSignal,
+        voiceSignal: latestRecord.voiceSignal
+      });
+      setEmotionResult(latestRecord.analysisResult);
+      setFaceSignalMetadata(normalizeFaceSignalMetadata(latestRecord));
+      dispatchWorkflow({ type: "ANALYSIS_COMPLETED" });
+      const restoredFaceMetadata = normalizeFaceSignalMetadata(latestRecord);
+      lastAnalysisInputRef.current = {
+        situationText: latestRecord.situationText,
+        faceSignal: latestRecord.faceSignal,
+        ...toFaceSignalPayload(restoredFaceMetadata),
+        voiceSignal: latestRecord.voiceSignal,
+        selectedScenario: latestRecord.selectedScenario
+      };
+    }
+  }, [historyError, restoredRecords]);
 
   const runAnalysis = (input = lastAnalysisInputRef.current, recentMessages = messages) =>
     analyzeMockContext({
@@ -130,24 +119,35 @@ export default function useEmotionSession() {
     const nextInput = {
       ...lastAnalysisInputRef.current,
       faceSignal: scenario.faceSignal,
+      ...toFaceSignalPayload(createManualFaceSignalMetadata()),
       voiceSignal: scenario.voiceSignal,
       selectedScenario: scenario.value
     };
     setSelectedScenario(nextScenario);
-    setAnalysisError("");
+    setFaceSignalMetadata(createManualFaceSignalMetadata());
     lastAnalysisInputRef.current = nextInput;
 
     try {
       const nextResult = runAnalysis(nextInput);
       setEmotionResult(nextResult);
-      setAnalysisStatus("completed");
+      dispatchWorkflow({ type: "ANALYSIS_COMPLETED" });
     } catch {
-      setAnalysisError("분석 중 문제가 발생했습니다. 다시 시도해 주세요.");
-      setAnalysisStatus("error");
+      dispatchWorkflow({
+        type: "FAILED",
+        error: SESSION_ERROR_MESSAGES.analysis
+      });
     }
   };
 
-  const handleAnalyze = async ({ situationText, faceSignal, voiceSignal }) => {
+  const handleAnalyze = async ({
+    situationText,
+    faceSignal,
+    faceSignalSource = "manual",
+    faceSignalConfidence = null,
+    faceSignalEvidence = [],
+    faceSignalHeuristicVersion = null,
+    voiceSignal
+  }) => {
     if (
       aiStatus !== "waiting" ||
       analysisStatus === "analyzing" ||
@@ -160,6 +160,10 @@ export default function useEmotionSession() {
     const analysisInput = {
       situationText,
       faceSignal,
+      faceSignalSource,
+      faceSignalConfidence,
+      faceSignalEvidence,
+      faceSignalHeuristicVersion,
       voiceSignal,
       selectedScenario: selectedScenario.value
     };
@@ -168,45 +172,35 @@ export default function useEmotionSession() {
     try {
       nextResult = runAnalysis(analysisInput);
     } catch {
-      setAnalysisStatus("error");
-      setAnalysisError("분석 중 문제가 발생했습니다. 다시 시도해 주세요.");
+      dispatchWorkflow({
+        type: "FAILED",
+        error: SESSION_ERROR_MESSAGES.analysis
+      });
       return false;
     }
 
     const messageId = `${sessionId}-${Date.now()}`;
     const userMessage = { id: `${messageId}-user`, role: "user", content: situationText };
-    const aiResponse = generateMockResponse(situationText, nextResult);
-
     lastAnalysisInputRef.current = analysisInput;
     setMessages((currentMessages) => [...currentMessages, userMessage]);
-    setAnalysisError("");
-    setAnalysisStatus("analyzing");
-    setAiStatus("thinking");
-    setIsSaving(true);
+    dispatchWorkflow({ type: "ANALYSIS_STARTED" });
     isSavingRef.current = true;
 
-    const controller = new AbortController();
-    requestControllersRef.current.add(controller);
+    const controller = createController();
 
     try {
-      const createdRecord = await createEmotionAnalysis(
-        {
-          sessionId,
-          situationText,
-          faceSignal,
-          voiceSignal,
-          selectedScenario: selectedScenario.value,
-          analysisResult: nextResult,
-          aiResponse
-        },
-        { signal: controller.signal }
-      );
+      const { createdRecord } = await createEmotionAnalysisSubmission({
+        sessionId,
+        analysisInput,
+        analysisResult: nextResult,
+        signal: controller.signal
+      });
 
-      if (!isMountedRef.current) return false;
+      if (!isMounted()) return false;
 
       setEmotionResult(createdRecord.analysisResult);
-      setAnalysisStatus("completed");
-      setAiStatus("speaking");
+      setFaceSignalMetadata(normalizeFaceSignalMetadata(createdRecord));
+      dispatchWorkflow({ type: "SAVE_SUCCEEDED" });
       const aiMessage = {
         id: `${messageId}-ai`,
         role: "ai",
@@ -215,40 +209,42 @@ export default function useEmotionSession() {
       setMessages((currentMessages) => [...currentMessages, aiMessage]);
 
       schedule(() => {
-        setAiStatus("waiting");
+        dispatchWorkflow({ type: "AI_FINISHED" });
       }, 1000);
       return true;
     } catch (error) {
       if (error.name === "AbortError") return false;
 
-      setAnalysisStatus("error");
-      setAnalysisError("분석 결과를 서버에 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
-      setAiStatus("waiting");
+      dispatchWorkflow({
+        type: "FAILED",
+        error: SESSION_ERROR_MESSAGES.save
+      });
       return false;
     } finally {
-      requestControllersRef.current.delete(controller);
+      releaseController(controller);
       isSavingRef.current = false;
 
-      if (isMountedRef.current) {
-        setIsSaving(false);
+      if (isMounted()) {
+        dispatchWorkflow({ type: "SAVING_FINISHED" });
       }
     }
   };
 
   const handleAnalyzeAgain = () => {
     if (analysisStatus === "analyzing" || isHistoryLoading || isSavingRef.current) return;
-    setAnalysisStatus("analyzing");
-    setAnalysisError("");
+    dispatchWorkflow({ type: "REANALYSIS_STARTED" });
 
     try {
       const nextResult = runAnalysis();
       schedule(() => {
         setEmotionResult(nextResult);
-        setAnalysisStatus("completed");
+        dispatchWorkflow({ type: "ANALYSIS_COMPLETED" });
       }, 250);
     } catch {
-      setAnalysisError("분석 중 문제가 발생했습니다. 다시 시도해 주세요.");
-      setAnalysisStatus("error");
+      dispatchWorkflow({
+        type: "FAILED",
+        error: SESSION_ERROR_MESSAGES.analysis
+      });
     }
   };
 
@@ -258,6 +254,7 @@ export default function useEmotionSession() {
     selectedScenario,
     analysisStatus,
     emotionResult,
+    faceSignalMetadata,
     analysisError,
     observation: selectedScenario.observation,
     isInputDisabled:

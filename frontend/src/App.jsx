@@ -17,6 +17,7 @@ export default function App() {
     selectedScenario,
     analysisStatus,
     emotionResult,
+    faceSignalMetadata,
     analysisError,
     observation,
     isInputDisabled,
@@ -46,6 +47,7 @@ export default function App() {
       <ConversationPanel messages={messages}>
         <EmotionInputForm
           scenarioPreset={selectedScenario}
+          faceSignalMetadata={faceSignalMetadata}
           disabled={isInputDisabled}
           onAnalyze={handleAnalyze}
         />

@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
 import dotenv from "dotenv";
+import {
+  createCameraAnalysisPayload
+} from "../test/fixtures/emotionAnalysisFixtures.js";
 
 dotenv.config({ quiet: true });
 
@@ -42,21 +45,13 @@ async function verifyApi() {
     await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+      body: JSON.stringify(createCameraAnalysisPayload({
         sessionId,
         situationText: "Task 4 API verification record",
-        faceSignal: "neutral",
         voiceSignal: "normal",
         selectedScenario: "normal",
-        analysisResult: {
-          scores: [{ key: "neutral", label: "Neutral", score: 100 }],
-          possibleStates: [],
-          evidence: ["Created by the Task 4 API verification script"],
-          responseApproach: "continue_normally",
-          needsConfirmation: false
-        },
         aiResponse: "Task 4 API verification response"
-      })
+      }))
     })
   );
 
@@ -64,6 +59,16 @@ async function verifyApi() {
   const created = createResult.payload.data?.emotionAnalysis;
   assert(created?.id, "Valid POST must return the created record ID.");
   assert(created.sessionId === sessionId, "Created record must preserve sessionId.");
+  assert(created.faceSignal === null, "Camera records must not store a legacy face signal.");
+  assert(created.faceSignalSource === "camera", "Created record must preserve camera source.");
+  assert(
+    created.faceSignalConfidence === 0.78,
+    "Created record must preserve stabilized confidence."
+  );
+  assert(
+    created.faceSignalEvidence?.length === 2,
+    "Created record must preserve the limited evidence summary."
+  );
 
   const listResult = await readJson(
     await fetch(`${endpoint}?sessionId=${sessionId}&limit=10`)
@@ -75,6 +80,11 @@ async function verifyApi() {
   assert(
     records.some((record) => record.id === created.id),
     "Valid GET must include the record created by POST."
+  );
+  const restoredRecord = records.find((record) => record.id === created.id);
+  assert(
+    restoredRecord.faceSignalHeuristicVersion === "v1",
+    "GET must restore the camera heuristic version."
   );
 
   console.log("PASS validation: invalid POST returned HTTP 400");

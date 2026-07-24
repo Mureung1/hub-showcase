@@ -1,6 +1,5 @@
 import { emotionDefinitions } from "../../../shared/constants/emotionDefinitions";
-import { faceOptions } from "../../face-signal";
-import { voiceOptions } from "../../voice-signal";
+import { faceOptions, voiceOptions } from "../../emotion-input/data/signalOptions";
 import { scenarioAnalysisPresets } from "../data/scenarioAnalysisPresets";
 import { normalizeEmotionScores } from "./normalizeEmotionScores";
 
