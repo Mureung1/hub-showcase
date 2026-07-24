@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Planner | Week 3 Wrap-up</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg: #111;
+      --panel: #181818;
+      --text: #fff;
+      --muted: #b8b8b8;
+      --line: rgba(255, 255, 255, 0.13);
+      --blue: #3B82F6;
+      --blue-soft: rgba(59, 130, 246, 0.16);
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.35;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+      background-size: 68px 68px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), transparent 86%);
+    }
+
+    .deck {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      padding: clamp(18px, 3vh, 34px) clamp(18px, 4vw, 54px);
+      display: grid;
+      place-items: center;
+    }
+
+    .viewport {
+      position: relative;
+      width: min(1180px, calc(100vw - 48px));
+      aspect-ratio: 16 / 9;
+      max-height: calc(100vh - 52px);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.018));
+      box-shadow: var(--shadow);
+    }
+
+    .slides {
+      height: 100%;
+      display: flex;
+      transition: transform 260ms ease;
+    }
+
+    section {
+      flex: 0 0 100%;
+      height: 100%;
+      padding: clamp(28px, 4.2vw, 52px) clamp(30px, 4.7vw, 58px) 96px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .section-top {
+      max-width: 760px;
+      margin-bottom: 22px;
+    }
+
+    .workflow-slide {
+      justify-content: center;
+    }
+
+    .workflow-slide .section-top {
+      margin-bottom: 26px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      color: var(--blue);
+      font-size: clamp(13px, 1.4vw, 17px);
+      font-weight: 800;
+      margin: 0 0 14px;
+      letter-spacing: 0;
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+      letter-spacing: 0;
+      line-height: 1.08;
+    }
+
+    h1 {
+      font-size: clamp(42px, 7vw, 82px);
+      max-width: 780px;
+    }
+
+    h2 {
+      font-size: clamp(36px, 4.2vw, 44px);
+      margin-bottom: 10px;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+    }
+
+    .cover-copy {
+      max-width: 710px;
+      margin-top: 20px;
+    }
+
+    .cover-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 30px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 8px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.045);
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .card {
+      min-height: 74px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .check-card,
+    .muted-card {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      align-items: center;
+      gap: 12px;
+      color: var(--text);
+      font-size: clamp(16px, 1.75vw, 18px);
+      font-weight: 760;
+    }
+
+    .icon-mark {
+      display: inline-grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      flex: 0 0 auto;
+    }
+
+    .comparison {
+      display: grid;
+      gap: 12px;
+    }
+
+    .compare-card {
+      display: grid;
+      grid-template-columns: 1fr 40px 1fr;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .compare-text {
+      font-size: clamp(18px, 2vw, 22px);
+      font-weight: 820;
+    }
+
+    .arrow {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    .step-card {
+      position: relative;
+      min-height: 132px;
+      padding: 15px 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .step-card:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      right: -10px;
+      top: 50%;
+      width: 10px;
+      height: 2px;
+      background: var(--blue);
+    }
+
+    .step-title {
+      font-size: clamp(14px, 1.45vw, 17px);
+      font-weight: 820;
+      line-height: 1.25;
+    }
+
+    .step-number {
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .footer-line {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .controls {
+      position: absolute;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: 54px auto 54px;
+      align-items: center;
+      gap: 16px;
+      z-index: 5;
+    }
+
+    .nav-button {
+      width: 54px;
+      height: 54px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.095);
+      color: var(--text);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+
+    .nav-button:disabled {
+      opacity: 0.34;
+      cursor: not-allowed;
+    }
+
+    .slide-count {
+      min-width: 82px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 2.4;
+    }
+
+    .icon-mark svg,
+    .arrow svg,
+    .nav-button svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    @media (max-width: 900px), (max-height: 640px) {
+      .deck {
+        padding: 14px;
+      }
+
+      .viewport {
+        width: min(100vw - 28px, 980px);
+        max-height: calc(100vh - 28px);
+      }
+
+      section {
+        padding: 22px 24px 82px;
+      }
+
+      .section-top {
+        margin-bottom: 14px;
+      }
+
+      .workflow-slide .section-top {
+        margin-bottom: 16px;
+      }
+
+      .grid,
+      .comparison {
+        gap: 9px;
+      }
+
+      .card {
+        min-height: 58px;
+        padding: 12px;
+      }
+
+      .workflow {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .step-card {
+        min-height: 86px;
+      }
+
+      .step-card:not(:last-child)::after {
+        display: none;
+      }
+
+      .controls {
+        bottom: 14px;
+        grid-template-columns: 48px auto 48px;
+      }
+
+      .nav-button {
+        width: 48px;
+        height: 48px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .viewport {
+        aspect-ratio: 10 / 16;
+      }
+
+      h1 {
+        font-size: clamp(36px, 10vw, 54px);
+      }
+
+      .grid.two,
+      .grid.three {
+        grid-template-columns: 1fr;
+      }
+
+      .compare-card {
+        grid-template-columns: 1fr;
+      }
+
+      .arrow {
+        transform: rotate(90deg);
+      }
+
+      .workflow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck">
+    <div class="viewport" aria-live="polite">
+      <div class="slides" id="slides">
+        <section class="cover" aria-labelledby="cover-title">
+          <div class="eyebrow"><i data-lucide="calendar-check"></i> Week 3 Wrap-up</div>
+          <h1 id="cover-title">어학 플래너<br />Study Planner</h1>
+          <p class="cover-copy">시험 목표 입력부터 취약 영역 진단, 학습 계획 생성, 오늘의 학습 화면까지 연결한 주간 정리 문서입니다.</p>
+          <div class="cover-meta" aria-label="주요 키워드">
+            <span class="pill"><i data-lucide="database"></i> DB 연결</span>
+            <span class="pill"><i data-lucide="clipboard-list"></i> 계획 생성</span>
+            <span class="pill"><i data-lucide="badge-check"></i> 43 tests</span>
+          </div>
+        </section>
+
+        <section aria-labelledby="done-title">
+          <div class="section-top">
+            <div class="eyebrow"><i data-lucide="check-circle-2"></i> Completed</div>
+            <h2 id="done-title">이번 주 한 일</h2>
+            <p>이번 주에는 사용자 입력 흐름과 학습 계획 생성까지 서비스의 핵심 루프를 연결했습니다.</p>
+          </div>
+          <div class="grid two">
+            <div class="card check-card"><span class="icon-mark"><i data-lucide="check"></i></span>DB 저장 및 조회 기능 연결</div>
+            <div class="card check-card"><span class="icon-mark"><i data-lucide="check"></i></span>시험 선택 흐름 개선</div>
+            <div class="card check-card"><span class="icon-mark"><i data-lucide="check"></i></span>시험별 점수 입력 및 검증</div>
+            <div class="card check-card"><span class="icon-mark"><i data-lucide="check"></i></span>취약 영역 진단 추가</div>
+            <div class="card check-card"><span class="icon-mark"><i data-lucide="check"></i></span>학습 계획 생성 로직 구현</div>
+            <div class="card check-card"><span class="icon-mark"><i data-lucide="check"></i></span>오늘의 학습 화면 추가</div>
+            <div class="card check-card"><span class="icon-mark"><i data-lucide="check"></i></span>테스트 코드 작성, 43 tests</div>
+          </div>
+        </section>
+
+        <section aria-labelledby="improved-title">
+          <div class="section-top">
+            <div class="eyebrow"><i data-lucide="refresh-cw"></i> Before → After</div>
+            <h2 id="improved-title">개선한 부분</h2>
+          </div>
+          <div class="comparison">
+            <div class="compare-card">
+              <div><span class="label">Before</span><div class="compare-text">시험 기본 선택</div></div>
+              <div class="arrow"><i data-lucide="arrow-right"></i></div>
+              <div><span class="label">After</span><div class="compare-text">사용자가 직접 시험 선택</div></div>
+            </div>
+            <div class="compare-card">
+              <div><span class="label">Before</span><div class="compare-text">입력 후 저장</div></div>
+              <div class="arrow"><i data-lucide="arrow-right"></i></div>
+              <div><span class="label">After</span><div class="compare-text">취약 영역 진단 후 계획 생성</div></div>
+            </div>
+            <div class="compare-card">
+              <div><span class="label">Before</span><div class="compare-text">단순 결과 화면</div></div>
+              <div class="arrow"><i data-lucide="arrow-right"></i></div>
+              <div><span class="label">After</span><div class="compare-text">학습 계획 + 오늘의 학습 화면</div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="workflow-slide" aria-labelledby="workflow-title">
+          <div class="section-top">
+            <div class="eyebrow"><i data-lucide="sparkles"></i> Workflow</div>
+            <h2 id="workflow-title">나만의 Workflow</h2>
+          </div>
+          <div class="workflow" aria-label="AI workflow">
+            <div class="step-card"><span class="step-number">01</span><span class="icon-mark"><i data-lucide="map"></i></span><div class="step-title">기획</div></div>
+            <div class="step-card"><span class="step-number">02</span><span class="icon-mark"><i data-lucide="split"></i></span><div class="step-title">기능 분리</div></div>
+            <div class="step-card"><span class="step-number">03</span><span class="icon-mark"><i data-lucide="bot"></i></span><div class="step-title">AI에게 구현 요청</div></div>
+            <div class="step-card"><span class="step-number">04</span><span class="icon-mark"><i data-lucide="play-circle"></i></span><div class="step-title">직접 실행 및 확인</div></div>
+            <div class="step-card"><span class="step-number">05</span><span class="icon-mark"><i data-lucide="shield-check"></i></span><div class="step-title">Skill을 활용한 검증</div></div>
+            <div class="step-card"><span class="step-number">06</span><span class="icon-mark"><i data-lucide="flask-conical"></i></span><div class="step-title">테스트 작성</div></div>
+            <div class="step-card"><span class="step-number">07</span><span class="icon-mark"><i data-lucide="file-text"></i></span><div class="step-title">리팩토링 및 문서화</div></div>
+          </div>
+        </section>
+
+        <section aria-labelledby="limits-title">
+          <div class="section-top">
+            <div class="eyebrow"><i data-lucide="alert-circle"></i> Retrospective</div>
+            <h2 id="limits-title">아쉬운 점</h2>
+          </div>
+          <div class="grid three">
+            <div class="card muted-card"><span class="icon-mark"><i data-lucide="save"></i></span>오늘의 학습 저장 기능 미완성</div>
+            <div class="card muted-card"><span class="icon-mark"><i data-lucide="sliders-horizontal"></i></span>개인화 추천은 아직 규칙 기반</div>
+            <div class="card muted-card"><span class="icon-mark"><i data-lucide="palette"></i></span>UI를 조금 더 다듬을 예정</div>
+          </div>
+        </section>
+
+        <section aria-labelledby="next-title">
+          <div class="section-top">
+            <div class="eyebrow"><i data-lucide="flag"></i> Next Week</div>
+            <h2 id="next-title">다음 주 계획</h2>
+            <p>Week 4는 저장, 개인화, 마무리 테스트와 문서 정리에 집중합니다.</p>
+          </div>
+          <div class="grid two">
+            <div class="card check-card"><span class="icon-mark"><i data-lucide="square"></i></span>학습 계획 개인화</div>
+            <div class="card check-card"><span class="icon-mark"><i data-lucide="square"></i></span>오늘의 학습 DB 저장</div>
+            <div class="card check-card"><span class="icon-mark"><i data-lucide="square"></i></span>UI 개선</div>
+            <div class="card check-card"><span class="icon-mark"><i data-lucide="square"></i></span>최종 테스트</div>
+            <div class="card check-card"><span class="icon-mark"><i data-lucide="square"></i></span>README 및 문서 정리</div>
+          </div>
+          <p class="footer-line">Study Planner · Week 3 Wrap-up</p>
+        </section>
+      </div>
+
+      <nav class="controls" aria-label="슬라이드 이동">
+        <button class="nav-button" id="prevBtn" type="button" aria-label="이전 슬라이드">
+          <i data-lucide="chevron-left"></i>
+        </button>
+        <div class="slide-count" id="slideCount">1 / 6</div>
+        <button class="nav-button" id="nextBtn" type="button" aria-label="다음 슬라이드">
+          <i data-lucide="chevron-right"></i>
+        </button>
+      </nav>
+    </div>
+  </main>
+
+  <script>
+    const slides = document.querySelector("#slides");
+    const slideItems = Array.from(document.querySelectorAll("section"));
+    const prevBtn = document.querySelector("#prevBtn");
+    const nextBtn = document.querySelector("#nextBtn");
+    const slideCount = document.querySelector("#slideCount");
+    let currentSlide = 0;
+
+    function updateSlide() {
+      slides.style.transform = `translateX(-${currentSlide * 100}%)`;
+      slideCount.textContent = `${currentSlide + 1} / ${slideItems.length}`;
+      prevBtn.disabled = currentSlide === 0;
+      nextBtn.disabled = currentSlide === slideItems.length - 1;
+    }
+
+    function moveSlide(direction) {
+      const nextSlide = currentSlide + direction;
+      if (nextSlide < 0 || nextSlide >= slideItems.length) return;
+      currentSlide = nextSlide;
+      updateSlide();
+    }
+
+    prevBtn.addEventListener("click", () => moveSlide(-1));
+    nextBtn.addEventListener("click", () => moveSlide(1));
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") moveSlide(-1);
+      if (event.key === "ArrowRight") moveSlide(1);
+    });
+
+    lucide.createIcons();
+    updateSlide();
+  </script>
+</body>
+</html>
