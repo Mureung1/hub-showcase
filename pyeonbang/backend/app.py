@@ -7,13 +7,56 @@ import datetime
 from flask import Flask, request, jsonify
 
 import sqlite3
+import easyocr
+from PIL import Image
+from nutrition_parser import parse_nutrition_info
 
 app = Flask(__name__)
+
+# OCR 리더기 초기화 (앱 시작 시 1회 로드)
+ocr_reader = easyocr.Reader(['ko', 'en'], gpu=False)
+
+def resize_image_if_needed(image_path, max_dim=1024):
+    """OCR 속도 최적화를 위해 이미지가 1024px 초과시 비율 유지 리사이징"""
+    try:
+        with Image.open(image_path) as img:
+            width, height = img.size
+            if max(width, height) > max_dim:
+                scale = max_dim / float(max(width, height))
+                new_w = int(width * scale)
+                new_h = int(height * scale)
+                resample = getattr(Image.Resampling, 'LANCZOS', getattr(Image, 'BICUBIC', None))
+                resized = img.resize((new_w, new_h), resample)
+                resized.save(image_path)
+    except Exception as e:
+        print(f"Resize Warning: {e}")
+
+def infer_product_name(ocr_texts):
+    """OCR 상단 텍스트 기반 상품명 추론 함수"""
+    if not ocr_texts:
+        return "촬영한 편의점 제품"
+    
+    keywords = ['라면', '닭가슴살', '도시락', '제육', '김밥', '삼각김밥', '샌드위치', '우유', '빵', '핫바', '샐러드', '마라탕', '찌개', '볶음밥', '떡볶이', '참치', '치킨', '버거']
+    
+    for text in ocr_texts[:8]:
+        text_str = str(text).strip()
+        for kw in keywords:
+            if kw in text_str and len(text_str) >= 2:
+                return text_str
+                
+    ignore_words = ['GS25', 'CU', '세븐일레븐', '이마트24', '영양정보', '원재료명', '보관방법', '유통기한', '내용량']
+    for text in ocr_texts[:5]:
+        cleaned = re.sub(r'[^가-힣a-zA-Z0-9\s]', '', str(text)).strip()
+        if len(cleaned) >= 2 and cleaned not in ignore_words:
+            return cleaned
+
+    return "촬영한 편의점 제품"
 
 # 이미지가 저장될 폴더 경로 설정 (backend 폴더 기준으로 상위의 images 폴더)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '../images')
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
 
 DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'pyeonbang.db')
 
@@ -94,214 +137,73 @@ def upload_image():
     if file.filename == '':
         return jsonify({'status': 'fail', 'message': '선택된 파일이 없습니다.'}), 400
 
-    filename = file.filename.lower()
-    
-    # 파일명 판별을 통한 Mock 데이터 매핑
-    if 'test1' in filename:
-        mock_data = {
-            "name": "오모리 김치찌개라면",
-            "brand": "GS25",
-            "price": 1800,
-            "kcal": 485,
-            "carbs": 69,
-            "protein": 8,
-            "fat": 20,
-            "sodium": 1860,
-            "sugar": 4,
-            "type": "meal",
-            "rating": "2등급 (보통)",
-            "grade_type": "yellow",
-            "desc": "1,000원당 단백질 함량이 보통인 일반 라면류 제품입니다."
-        }
-    elif 'test2' in filename:
-        mock_data = {
-            "name": "득템 닭가슴살 블랙페퍼",
-            "brand": "CU",
-            "price": 1900,
-            "kcal": 115,
-            "carbs": 1,
-            "protein": 23,
-            "fat": 2,
-            "sodium": 450,
-            "sugar": 0,
-            "type": "meal",
-            "rating": "1등급 (갓성비)",
-            "grade_type": "green",
-            "desc": "1,000원당 단백질 함량이 6.5g 이상인 최고의 갓성비 단백질 제품입니다!"
-        }
-    elif 'test3' in filename:
-        mock_data = {
-            "name": "혜자로운 집밥 제육볶음",
-            "brand": "GS25",
-            "price": 4500,
-            "kcal": 723,
-            "carbs": 97,
-            "protein": 28,
-            "fat": 25,
-            "sodium": 650,
-            "sugar": 8,
-            "type": "meal",
-            "rating": "1등급 (갓성비)",
-            "grade_type": "green",
-            "desc": "1,000원당 단백질 함량이 5.0g 이상으로 가격대비 훌륭한 영양 조합입니다."
-        }
-    elif 'test4' in filename:
-        mock_data = {
-            "name": "연세우유 말차생크림빵",
-            "brand": "CU",
-            "price": 3400,
-            "kcal": 467,
-            "carbs": 58,
-            "protein": 4,
-            "fat": 22,
-            "sodium": 260,
-            "sugar": 25,
-            "type": "snack",
-            "rating": "2등급 (보통)",
-            "grade_type": "yellow",
-            "desc": "1,000원당 단백질 함량이 보통이며, 포화지방과 당류 비율이 높습니다."
-        }
-    elif 'test5' in filename:
-        mock_data = {
-            "name": "초코별",
-            "brand": "세븐일레븐",
-            "price": 1000,
-            "kcal": 320,
-            "carbs": 43,
-            "protein": 3,
-            "fat": 15,
-            "sodium": 120,
-            "sugar": 18,
-            "type": "snack",
-            "rating": "3등급 (주의/간식)",
-            "grade_type": "red",
-            "desc": "단백질이 10g 미만인 일반 가공 스낵류로 가성비 및 건강 관리에 부적합합니다."
-        }
-    elif 'test6' in filename:
-        mock_data = {
-            "name": "고추참치 삼각김밥",
-            "brand": "CU",
-            "price": 1200,
-            "kcal": 210,
-            "carbs": 38,
-            "protein": 6,
-            "fat": 4,
-            "sodium": 580,
-            "sugar": 2,
-            "type": "meal",
-            "rating": "3등급 (주의/간식)",
-            "grade_type": "red",
-            "desc": "단백질이 10g 미만인 일반 가공식품으로 가성비 및 건강 관리에 부적합합니다."
-        }
-    elif 'test7' in filename:
-        mock_data = {
-            "name": "코카콜라 오리지널",
-            "brand": "CU",
-            "price": 1800,
-            "kcal": 140,
-            "carbs": 35,
-            "protein": 0,
-            "fat": 0,
-            "sodium": 15,
-            "sugar": 35,
-            "type": "snack",
-            "rating": "3등급 (주의/간식)",
-            "grade_type": "red",
-            "desc": "단백질이 전혀 없고 당류가 포함된 수분 보충용 음료입니다."
-        }
-    elif 'test8' in filename:
-        mock_data = {
-            "name": "990 핫바 오리지널",
-            "brand": "GS25",
-            "price": 990,
-            "kcal": 165,
-            "carbs": 8,
-            "protein": 9,
-            "fat": 11,
-            "sodium": 420,
-            "sugar": 3,
-            "type": "snack",
-            "rating": "2등급 (보통)",
-            "grade_type": "yellow",
-            "desc": "1,000원당 단백질 함량이 보통인 일반 어육 가공 제품입니다."
-        }
-    elif 'test9' in filename:
-        mock_data = {
-            "name": "1000 콘 바닐라",
-            "brand": "세븐일레븐",
-            "price": 1000,
-            "kcal": 240,
-            "carbs": 32,
-            "protein": 2,
-            "fat": 12,
-            "sodium": 80,
-            "sugar": 22,
-            "type": "snack",
-            "rating": "3등급 (주의/간식)",
-            "grade_type": "red",
-            "desc": "단백질이 10g 미만이며 당류와 지방이 풍부한 빙과류 제품입니다."
-        }
-    elif 'test10' in filename:
-        mock_data = {
-            "name": "CU 저지방 우유",
-            "brand": "CU",
-            "price": 1200,
-            "kcal": 100,
-            "carbs": 9,
-            "protein": 6,
-            "fat": 4,
-            "sodium": 110,
-            "sugar": 9,
-            "type": "snack",
-            "rating": "2등급 (보통)",
-            "grade_type": "yellow",
-            "desc": "일반 우유 대비 지방 함량을 줄인 유제품입니다."
-        }
-    else:
-        # 기본값: test2 (득템 닭가슴살 블랙페퍼)
-        mock_data = {
-            "name": "득템 닭가슴살 블랙페퍼",
-            "brand": "CU",
-            "price": 1900,
-            "kcal": 115,
-            "carbs": 1,
-            "protein": 23,
-            "fat": 2,
-            "sodium": 450,
-            "sugar": 0,
-            "type": "meal",
-            "rating": "1등급 (갓성비)",
-            "grade_type": "green",
-            "desc": "1,000원당 단백질 함량이 6.5g 이상인 최고의 갓성비 단백질 제품입니다!"
-        }
+    # 1. 파일 저장 (미리보기 및 OCR 수행)
+    try:
+        original_filename = file.filename
+        ext = os.path.splitext(original_filename)[1]
+        if not ext:
+            ext = '.jpg'
+        unique_filename = f"{int(time.time())}_{uuid.uuid4().hex[:8]}{ext}"
+        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+        file.save(file_path)
+    except Exception as e:
+        return jsonify({'status': 'fail', 'message': f'이미지 저장 실패: {str(e)}'}), 500
 
+    # 2. 가격 입력 처리
     custom_price = request.form.get('price')
+    price_val = 3000  # 기본 지정 가격
     if custom_price is not None and custom_price.strip() != '':
         try:
             custom_price_int = int(custom_price)
             if custom_price_int <= 0:
                 return jsonify({'status': 'fail', 'message': '가격은 1원 이상이어야 합니다.'}), 400
-            mock_data["price"] = custom_price_int
+            price_val = custom_price_int
         except ValueError:
             return jsonify({'status': 'fail', 'message': '유효한 숫자 가격을 입력해 주세요.'}), 400
 
-    # 파일 저장 (프론트엔드 미리보기용)
+    # 3. 이미지 리사이징 (OCR 속도 최적화) 및 EasyOCR 영양성분 파싱
     try:
-        original_filename = file.filename
-        if original_filename.lower() in ['test1.jpg', 'test2.jpg', 'test3.jpg', 'test4.jpg', 'test5.jpg', 'test6.jpg', 'test7.jpg', 'test8.jpg', 'test9.jpg', 'test10.jpg']:
-            unique_filename = original_filename
-        else:
-            ext = os.path.splitext(original_filename)[1]
-            unique_filename = f"{int(time.time())}_{uuid.uuid4().hex[:8]}{ext}"
-            
-        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-        file.save(file_path)
-        mock_data["saved_filename"] = unique_filename
+        resize_image_if_needed(file_path, max_dim=1024)
+        results = ocr_reader.readtext(file_path)
+        ocr_texts = [res[1] for res in results] if results else []
+        parsed_data = parse_nutrition_info(ocr_texts)
     except Exception as e:
-        mock_data["saved_filename"] = file.filename
+        print(f"OCR Exception: {e}")
+        parsed_data = parse_nutrition_info([])
+        ocr_texts = []
 
     intent_tab = request.form.get('intent_tab', 'meal')
-    # 시간대별 코멘트 생성
+    extracted_full_text = " ".join(ocr_texts)
+    product_name = infer_product_name(ocr_texts)
+
+    # 브랜드 자동 매핑 로직 (GS25, CU, 세븐일레븐, 이마트24 감지)
+    detected_brand = "편의점"
+    lower_text = extracted_full_text.lower()
+    if 'gs25' in lower_text or 'gs 25' in lower_text:
+        detected_brand = "GS25"
+    elif 'cu' in lower_text:
+        detected_brand = "CU"
+    elif '세븐일레븐' in lower_text or '7-eleven' in lower_text or '7eleven' in lower_text:
+        detected_brand = "세븐일레븐"
+    elif '이마트24' in lower_text or 'emart24' in lower_text or 'emart 24' in lower_text:
+        detected_brand = "이마트24"
+
+    # 4. 파싱된 데이터로 제품 정보 구축
+    data = {
+        "name": product_name,
+        "brand": detected_brand,
+        "price": price_val,
+        "kcal": parsed_data["calories"],
+        "carbs": parsed_data["carbs"],
+        "protein": parsed_data["protein"],
+        "fat": parsed_data["fat"],
+        "sodium": parsed_data["sodium"],
+        "sugar": parsed_data["sugar"],
+        "type": intent_tab,
+        "saved_filename": unique_filename
+    }
+
+    # 5. 시간대별 코멘트 생성
     now = datetime.datetime.now()
     current_minutes = now.hour * 60 + now.minute
     start_night = 21 * 60 + 30
@@ -343,14 +245,16 @@ def upload_image():
     else: # combo
         pool = night_foods if is_night else day_foods
 
-    valid_pool = [f for f in pool if f["price"] > mock_data["price"]]
+    valid_pool = [f for f in pool if f["price"] > data["price"]]
     if not valid_pool:
         selected = max(pool, key=lambda x: x["price"])
     else:
         selected = random.choice(valid_pool)
         
-    saved_price = selected["price"] - mock_data["price"]
-    saved_calories = selected["calories"] - mock_data["kcal"]
+    saved_price = selected["price"] - data["price"]
+    if saved_price < 0:
+        saved_price = 0
+    saved_calories = selected["calories"] - data["kcal"]
     if saved_calories < 0:
         saved_calories = 0
         
@@ -368,11 +272,11 @@ def upload_image():
     sodium_tip = None
     if intent_tab in ['single', 'combo']:
         soup_keywords = ['라면', '컵라면', '국물', '탕', '찌개', '짬뽕', '우동', '똠양꿍']
-        if any(k in mock_data["name"] for k in soup_keywords):
+        if any(k in extracted_full_text for k in soup_keywords):
             sodium_tip = "국물을 반만 남겨도 나트륨 섭취를 최대 50% 줄일 수 있어요! 면 위주로 가볍게 드시는 것을 추천합니다. 😉"
         
     # 3단계 가성비 검증 로직으로 동적 등급 및 설명 산출
-    score, grade, grade_type, desc = calculate_grade(mock_data["price"], mock_data["protein"])
+    score, grade, grade_type, desc = calculate_grade(data["price"], data["protein"])
 
     # 데이터베이스에 분석 결과 영구 저장
     try:
@@ -384,8 +288,8 @@ def upload_image():
                 score, grade, grade_type, desc, comment, sodium_tip, saved_price, saved_calories
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            mock_data["name"], mock_data["brand"], mock_data["price"], mock_data["kcal"],
-            mock_data["carbs"], mock_data["protein"], mock_data["fat"], mock_data.get("sodium", 0), mock_data.get("sugar", 0),
+            data["name"], data["brand"], data["price"], data["kcal"],
+            data["carbs"], data["protein"], data["fat"], data["sodium"], data["sugar"],
             score, grade, grade_type, desc,
             comment, sodium_tip, saved_price, saved_calories
         ))
@@ -396,16 +300,16 @@ def upload_image():
 
     return jsonify({
         'status': 'success',
-        'product_name': mock_data["name"],
-        'brand': mock_data["brand"],
-        'price': mock_data["price"],
-        'calories': mock_data["kcal"],
-        'carbs': mock_data["carbs"],
-        'protein': mock_data["protein"],
-        'fat': mock_data["fat"],
-        'sodium': mock_data.get("sodium", 0),
-        'sugar': mock_data.get("sugar", 0),
-        'type': mock_data.get("type", "meal"),
+        'product_name': data["name"],
+        'brand': data["brand"],
+        'price': data["price"],
+        'calories': data["kcal"],
+        'carbs': data["carbs"],
+        'protein': data["protein"],
+        'fat': data["fat"],
+        'sodium': data["sodium"],
+        'sugar': data["sugar"],
+        'type': data["type"],
         'score': score,
         'grade': grade,
         'grade_type': grade_type,
@@ -413,7 +317,9 @@ def upload_image():
         'comment': comment,
         'sodium_tip': sodium_tip,
         'saved_price': saved_price,
-        'saved_calories': saved_calories
+        'saved_calories': saved_calories,
+        'is_complete': parsed_data.get("is_complete", True),
+        'warning_messages': parsed_data.get("warning_messages", [])
     })
 
 @app.route('/api/history', methods=['GET'])
