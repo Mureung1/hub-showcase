@@ -1,24 +1,35 @@
 # 유닉스 & Git 명령어 사전
 
-CS 실습을 듣는 대학생이 유닉스/git 명령어를 몰라 헤매는 문제를 해결하기 위한 검색형 명령어 사전입니다. 핵심 기능(명령어 검색/조회)은 순수 프론트엔드로 동작하며, 명령어 데이터는 정적 JS 배열에 저장되어 있습니다. AI 챗봇 등 확장 기능을 위한 백엔드(Node.js/Express)와 DB(Supabase)는 `server/`에 뼈대만 구성된 상태입니다.
+CS 실습을 듣는 대학생이 유닉스/git 명령어를 몰라 헤매는 문제를 해결하기 위한 검색형 명령어 사전입니다. 명령어/카테고리/상황별 묶음 데이터는 Supabase(Postgres)에 저장되고, 검색은 Meilisearch로 처리하며, FE는 Express 백엔드(`server/`)를 거쳐 이 데이터를 가져옵니다. AI 챗봇 등 추가 확장 기능은 아직 미정입니다.
 
 우분투 터미널을 흉내 낸 화면(터미널 창 프레임, 컬러 프롬프트, 깜빡이는 커서) 안에서 카테고리를 고르고, 명령어를 검색하고, 클릭해서 상세 설명을 보는 흐름으로 동작합니다.
 
 ## 주요 기능
 
 - **카테고리별 명령어 목록**: Unix / Git 두 카테고리로 나눠서 진입
-- **실시간 검색**: 이름·요약·설명을 대상으로 입력 즉시 필터링, 매칭 없으면 `command not found` 스타일 에러 표시
+- **검색**: Meilisearch 기반, 이름·요약 대상 오타 허용 즉시 검색. 매칭 없으면 `command not found` 스타일 에러 표시
 - **명령어 상세 보기**: 클릭한 명령어의 설명, 주요 옵션, 터미널 실행 예시를 확인
+- **상황별 명령어 찾기**: "과제 제출하기", "권한 오류 해결하기" 같은 실습 시나리오별로 필요한 명령어를 순서대로 묶어서 확인, 명령어 상세 페이지에서도 관련 상황으로 역참조 가능
 - **터미널 콘솔 UI**: 우분투 터미널을 흉내 낸 창 프레임, 컬러 프롬프트(`user@host:~$`), 깜빡이는 커서 연출
 
 ## 화면 흐름
 
+![화면 흐름 다이어그램](docs/images/screen-flow-diagram.png)
+
 ```
-/                → 카테고리 선택 (Unix / Git)
-/unix, /git      → 검색창만 표시 → 입력 즉시 실시간 필터링
-                   → 매칭 있으면 결과 목록, 없으면 "command not found" 에러
-/commands/:id    → 명령어 상세 (설명 + 주요 옵션 + 터미널 예시)
+/                     → 카테고리 선택 (Unix / Git), "상황별로 찾아보기" 진입 버튼
+/unix, /git           → 검색창만 표시 → 입력 즉시 검색
+                        → 매칭 있으면 결과 목록, 없으면 "command not found" 에러
+/commands/:id         → 명령어 상세 (설명 + 주요 옵션 + 터미널 예시 + 관련 상황)
+/scenarios            → 상황별 명령어 묶음 목록
+/scenarios/:id        → 시나리오 상세 (순서대로 필요한 명령어)
 ```
+
+## 아키텍처 / 데이터 흐름
+
+요청이 화면(FE) → 서버(BE) → 외부 저장소(Supabase/Meilisearch)까지 실제로 어떻게 흐르는지 나타낸 다이어그램. 코드(`src/services/`, `server/src/routes|controllers|services/`)를 기준으로 그렸다. 원본 mermaid 소스는 [`docs/plan.md`](docs/plan.md) §5-1에 있다.
+
+![아키텍처 다이어그램](docs/images/architecture-diagram.png)
 
 ## 기술 스택
 
@@ -28,10 +39,10 @@ CS 실습을 듣는 대학생이 유닉스/git 명령어를 몰라 헤매는 문
 | 빌드 도구 | Vite | 적용됨 | 개발 서버(HMR) 및 프로덕션 빌드 |
 | 라우팅 | react-router-dom v7 | 적용됨 | `BrowserRouter` + 레이아웃 라우트(`Outlet`)로 화면 전환 |
 | 스타일 | Plain CSS (`src/index.css`) | 적용됨 | 별도 UI 라이브러리·CSS 프레임워크 없이 CSS 변수로 팔레트 관리 |
-| 데이터(핵심 기능) | 정적 JS 배열 (`src/data/commands.js`) | 적용됨 | 명령어 검색/조회는 여전히 BE/DB 없이 동작 |
 | 상태 관리 | React 로컬 상태 | 적용됨 | 전역 상태 관리 라이브러리 없음 (컴포넌트 범위로 충분) |
-| 백엔드 | Node.js + Express (`server/`) | 뼈대만 구성 | 확장 기능(AI 챗봇 등)용, 자세한 내용은 `CLAUDE.md` 참고 |
-| DB | Supabase (Postgres) | 예정 | 아직 미연동 |
+| 백엔드 | Node.js + Express (`server/`) | 적용됨 | `commands`/`scenarios`/`search` API 라우트. AI 챗봇은 아직 미정, 자세한 내용은 `CLAUDE.md` 참고 |
+| DB | Supabase (Postgres) | 적용됨 | `categories`/`commands`/`scenarios` 테이블 |
+| 검색엔진 | Meilisearch (Cloud) | 적용됨 | 오타 허용/즉시 검색, Express가 프록시 |
 
 ## 시작하기
 
@@ -46,15 +57,27 @@ npm run lint     # eslint 검사
 
 ```
 src/
-├── App.jsx                        # 라우터 설정
-├── data/commands.js                # 명령어 데이터 (유닉스/git)
+├── App.jsx                         # 라우터 설정
+├── data/
+│   ├── commands.js                 # 명령어 데이터 (유닉스/git) — Supabase 마이그레이션 소스
+│   └── scenarios.js                # 상황별 명령어 묶음 데이터 — Supabase 마이그레이션 소스
+├── services/                       # BE API 호출 (commandsService/scenariosService/searchService)
 ├── components/
 │   ├── TerminalFrame.jsx           # 터미널 창 레이아웃 (Outlet)
-│   └── CommandCard.jsx             # 목록 카드
+│   ├── CommandCard.jsx             # 목록 카드
+│   ├── SearchBar.jsx / SearchResultList.jsx
 └── pages/
     ├── CategoryHomePage.jsx        # 카테고리 선택 화면
     ├── CommandListPage.jsx         # 검색 + 결과 목록 화면
-    └── CommandDetailPage.jsx       # 명령어 상세 화면
+    ├── CommandDetailPage.jsx       # 명령어 상세 화면
+    ├── ScenarioHomePage.jsx        # 상황별 명령어 묶음 목록
+    └── ScenarioDetailPage.jsx      # 시나리오 상세 화면
+
+server/
+└── src/
+    ├── routes/         # commandsRouter.js, scenariosRouter.js, search.js
+    ├── controllers/, services/
+    └── scripts/         # migrateCommandsToSupabase.js, indexCommands.js
 ```
 
 ## 명령어 데이터 구조
@@ -76,11 +99,11 @@ src/
 ## 향후 확장 아이디어 (미확정)
 
 - 명령어별 중요도 표시 (가로 막대)
-- "과제 제출하기" 같은 상황별 명령어 묶음
 - AI 챗봇을 통한 명령어 질의응답
+- 셸 연동 CLI `kman`
 
 ## 개발 문서
 
 - [기획서](docs/plan.md) · [작업 체크리스트(완료 이력)](docs/checklist.md) · [Task 관리(백로그/로드맵)](docs/tasks.md)
 - [디자인 시스템](docs/design-system/DESIGN.md)
-- [GitHub Project 칸반 보드](https://github.com/users/ParkSeong-min/projects/2) (Day 1~4 이슈 진행 상황)
+- GitHub Project 칸반 보드: [Week2 - 검색 수직슬라이스](https://github.com/users/ParkSeong-min/projects/2) · [Week3 - 백로그/확장 기능](https://github.com/users/ParkSeong-min/projects/1)

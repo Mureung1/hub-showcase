@@ -49,19 +49,61 @@
 ```mermaid
 graph TD
     A[초기화면 / 카테고리 선택] --> B{검색어 입력}
+    A -->|상황별로 찾아보기| S[상황별 목록]
     B -->|입력 수행| C{명령어 매칭}
     C -->|매칭 성공| D[검색 결과 화면]
     D -->|결과 클릭| E[상세 설명 화면]
     C -->|매칭 실패| F[오류 메시지: Command not found]
+    S -->|시나리오 클릭| T[시나리오 상세 화면]
+    T -->|단계 클릭| E
+    E -->|관련 상황 배지 클릭| T
     E -->|뒤로가기| B
     F -->|뒤로가기| B
+    T -->|뒤로가기| S
 ```
 
 ```
-/                → 카테고리 선택 (Unix / Git)
-/unix, /git      → 검색창 표시 → 입력 즉시 실시간 필터링
-/commands/:id    → 명령어 상세 (설명 + 주요 옵션 + 터미널 예시)
+/                → 카테고리 선택 (Unix / Git), "상황별로 찾아보기" 진입 버튼
+/unix, /git      → 검색창 표시 → 입력 즉시 검색
+/commands/:id    → 명령어 상세 (설명 + 주요 옵션 + 터미널 예시 + 관련 상황)
+/scenarios       → 상황별 명령어 묶음 목록
+/scenarios/:id   → 시나리오 상세 (순서대로 필요한 명령어)
 ```
+
+## 5-1. 데이터 흐름 / 아키텍처 (Week 3 미션)
+
+5장이 "화면이 어떤 순서로 전환되는가"라면, 이건 "요청이 화면→서버→외부 서비스까지 실제로 어떻게 흘러가는가"를 보여준다.
+
+```mermaid
+graph LR
+    subgraph FE["FE: React + Vite (:5173)"]
+        Pages["Pages<br/>CategoryHomePage / CommandListPage /<br/>CommandDetailPage / ScenarioHomePage / ScenarioDetailPage"]
+        FEServices["services/<br/>commandsService.js · scenariosService.js · searchService.js"]
+        Pages --> FEServices
+    end
+
+    subgraph BE["BE: Express (:4000)"]
+        Routes["routes/<br/>commandsRouter · scenariosRouter · search"]
+        Controllers["controllers/"]
+        BEServices["services/"]
+        Routes --> Controllers --> BEServices
+    end
+
+    Supabase[("Supabase<br/>categories / commands / scenarios")]
+    Meilisearch[("Meilisearch Cloud<br/>commands 인덱스")]
+
+    FEServices -->|"fetch (JSON)"| Routes
+    BEServices -->|"select"| Supabase
+    BEServices -->|"검색 쿼리"| Meilisearch
+```
+
+**요청이 실제로 흐르는 경로 (예: 명령어 상세 페이지 진입 시)**
+1. `CommandDetailPage.jsx`가 `commandsService.js`의 `fetchCommandById(id)` 호출
+2. FE → BE `GET /api/commands/:id` 요청
+3. `commandsRouter.js` → `commandsController.js` → `commandsService.js`(BE) → Supabase `commands` 테이블 조회
+4. 응답이 같은 경로를 거꾸로 타고 FE state로 반영, 화면 갱신
+
+검색은 같은 구조에서 BE가 Supabase 대신 Meilisearch를 조회하는 것만 다르고(`search.js` 라우트), 시나리오는 `scenarios` 경로가 `commands` 경로와 동일한 계층으로 병렬 구성되어 있다.
 
 ## 6. 데이터 명세 (Data Schema)
 `src/data/commands.js`은 다음 구조를 준수함:
@@ -78,7 +120,7 @@ graph TD
 }
 ```
 
-**DB 전환 방향 (결정, 컬럼 상세 미정):** Supabase 이전 시 `category`는 별도 `categories` 테이블로 분리한다(현재 배열+`CATEGORY_LABELS` 이중 관리 구조 해소, 카테고리 확장 예정과도 맞음). `options`/`examples`는 항상 부모 명령어와 함께만 조회되고 독립 쿼리 요구가 없어, 정규화 대신 JSONB 컬럼으로 유지한다. 실제 컬럼 목록/타입은 아직 확정 전.
+**DB 전환 방향 (적용 완료):** Supabase 이전 시 `category`는 별도 `categories` 테이블로 분리했다(기존 배열+`CATEGORY_LABELS` 이중 관리 구조 해소). `options`/`examples`는 항상 부모 명령어와 함께만 조회되고 독립 쿼리 요구가 없어, 정규화 대신 JSONB 컬럼으로 유지했다. 같은 원칙으로 "상황별 명령어 묶음" 기능의 `scenarios` 테이블도 `command_ids`를 순서 있는 JSONB 배열로 유지(조인 테이블 없음). 실제 테이블: `categories(key, label)`, `commands(id, category, name, summary, description, options, examples)`, `scenarios(id, title, description, command_ids)`.
 
 **Meilisearch 인덱스 필드 스펙 (2주차 Day 2 확정):** 검색 인덱스는 Supabase 원본 테이블 전체를 그대로 복제하지 않고, 검색·결과카드 렌더링에 실제로 쓰이는 필드만 담는다.
 
@@ -102,7 +144,7 @@ graph TD
 | 데이터 | 정적 JS 배열 (`src/data/commands.js`) | 적용됨 | 백엔드/DB 없이 프론트엔드에서 직접 필터링 |
 | 상태 관리 | React 로컬 상태 | 적용됨 | 전역 상태 관리 라이브러리 없음 |
 | 백엔드(WAS) | Node.js + Express | Phase 2 예정 | AI 챗봇 API 연동부터 도입, FE와 동일한 JS 생태계 유지 |
-| 데이터베이스 | Supabase (PostgreSQL) | Phase 2 예정 | 무료 티어, 매니지드 Postgres라 서버리스 배포 환경에서도 데이터 영속성 보장 |
+| 데이터베이스 | Supabase (PostgreSQL) | 적용됨 | 무료 티어, 매니지드 Postgres라 서버리스 배포 환경에서도 데이터 영속성 보장. `categories`/`commands`/`scenarios` 테이블 |
 | 배포(FE) | Vercel 또는 Netlify | 예정 | git push 연동 자동배포 |
 | 배포(BE) | Render 또는 Railway | Phase 2 예정 | Express 서버 무료 호스팅 |
 | 검색엔진 | Meilisearch (Cloud) | Phase 2 예정 | 기능 A(클라이언트 단순 필터링)를 대체할 실제 검색엔진으로 확정. 오타 허용/즉시 검색 지원, Elasticsearch 대비 설정이 단순해 선택. Express가 API 키를 숨기고 검색 요청을 프록시 |
@@ -127,20 +169,23 @@ src/
 
 ## 8. 명령어 커버리지 현황
 
-현재 총 **49개** 명령어를 수록하고 있다 (Unix 28개, Git 21개).
+현재 총 **50개** 명령어를 수록하고 있다 (Unix 29개, Git 21개).
 
-### Unix (28개)
+### Unix (29개)
 
 | 분류 | 명령어 |
 |---|---|
 | 파일/디렉토리 탐색 | ls, cd, pwd, find |
 | 파일/디렉토리 조작 | mkdir, rm, cp, mv, touch |
 | 파일 내용 보기 | cat, head, tail, less, wc, grep |
+| 편집 | nano |
 | 권한 | chmod, chown, sudo, su |
 | 프로세스/시스템 | ps, kill, df, history |
 | 기타 유틸 | man, echo |
 | 컴파일 | gcc |
 | 압축 | tar, gzip |
+
+> 명령어 커버리지 재점검(`docs/checklist.md` "데이터 품질") 중 에디터 명령어가 하나도 없다는 게 발견되어 `nano`를 우선 추가했다. vim/emacs 등은 아직 미정 — GitHub #31에서 계속 논의.
 
 ### Git (21개)
 
@@ -166,8 +211,8 @@ src/
 
 동료 피드백 6건을 받았고, 각각의 반영 상태를 아래와 같이 구분한다.
 
-1. **상세설명 내 상황별 명령어 링크 연결** — [실행 후보]
-   명령어 상세 페이지에서 "이 상황이면 이 명령어도 필요" 식으로 관련 명령어를 링크로 연결하는 기능. 데이터 구조에 관련 명령어 id 배열만 추가하면 되어 구현 부담이 작고 학습 효과가 커서 우선 실행 후보.
+1. **상세설명 내 상황별 명령어 링크 연결** — [완료, GitHub #25 close]
+   명령어 상세 페이지에서 "이 상황이면 이 명령어도 필요" 식으로 관련 명령어를 링크로 연결하는 기능. 원문의 "상황별"이라는 표현이 `docs/checklist.md`의 "과제 제출하기" 상황별 명령어 묶음 아이디어(향후 확장, GitHub #35)와 사실상 같은 것으로 판단해 하나의 기능("상황별 명령어 묶음")으로 통합 구현했다 — 단순 1:1 관련 링크가 아니라, 시나리오(예: 과제 제출하기, 권한 오류 해결하기)별로 명령어를 순서대로 묶어 보여주는 형태. `scenarios` 테이블 + `/scenarios`, `/scenarios/:id` 화면 + 명령어 상세 페이지의 "관련 상황" 배지로 구현.
 
 2. **저장소(GitHub) 링크 추가** — [확인 필요]
    앱 안에 GitHub 저장소 링크를 넣자는 제안인데, 의도가 아직 불확실하다. 제안자에게 의도를 재확인한 뒤 진행 여부를 결정한다.
@@ -187,7 +232,7 @@ src/
 ## 11. 향후 확장 로드맵 (Roadmap)
 
 **[Phase 1] 필수 학습 환경 최적화 (기반 구축)**
-* 상황별 큐레이션: 과제 제출, 권한 오류 등 실습 시나리오별 명령어 묶음(Tagging) 제공. *(→ 10장 1번 피드백과 연계)*
+* ~~상황별 큐레이션: 과제 제출, 권한 오류 등 실습 시나리오별 명령어 묶음(Tagging) 제공.~~ **완료** *(→ 10장 1번 피드백, GitHub #25/#35)*
 * 태그 기반 시스템: [필수], [기초], [과제] 등 태그 시스템을 통해 중요도 및 성격 분류.
 * 중요도 시각화: 사용 빈도 및 필수성 데이터를 기반으로 한 명령어 중요도 우선순위 표기.
 
@@ -205,7 +250,7 @@ src/
 
 **기능적 요소 (Functional) — 후보 목록**
 
-AI 챗봇 Q&A, 상황별 명령어 묶음(시나리오 큐레이션), 사용자 기여함(명령어 제안/제보) + 모더레이션, 로그인/계정 시스템, 즐겨찾기, 학습 진행률, 사용 데이터 기반 추천 엔진, 검색 실패 로그, 조회수 집계, 관련 명령어 링크, 셸 연동 CLI `kman`. 각 항목의 상세/우선순위/상태는 `docs/tasks.md`, `docs/checklist.md` 참고.
+AI 챗봇 Q&A, ~~상황별 명령어 묶음(시나리오 큐레이션)~~ **완료**, 사용자 기여함(명령어 제안/제보) + 모더레이션, 로그인/계정 시스템, 즐겨찾기, 학습 진행률, 사용 데이터 기반 추천 엔진, 검색 실패 로그, 조회수 집계, ~~관련 명령어 링크~~ **완료(상황별 명령어 묶음에 통합)**, 셸 연동 CLI `kman`. 각 항목의 상세/우선순위/상태는 `docs/tasks.md`, `docs/checklist.md` 참고.
 
 **비기능적 요소 (Non-functional) — 기능 전반에 적용되는 기준**
 
