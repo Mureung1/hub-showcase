@@ -47,6 +47,9 @@ import {
 import {
   createWorkspaceActionAdmission,
 } from './setup/workspace-action-admission.js'
+import {
+  requireServerStartupCleanup,
+} from './server-startup-cleanup.js'
 
 export type PublicPreviewSetupBootstrap = {
   readonly appDataRoot: string
@@ -63,15 +66,6 @@ export type PublicPreviewServerBootstrap = {
   readonly origin: string
   readonly runtime: PublicPreviewRuntimeBootstrap
   readonly setup: PublicPreviewSetupBootstrap
-}
-
-export class PublicPreviewCompositionStartError extends Error {
-  readonly code = 'public_preview_runtime_cleanup_ambiguous'
-
-  constructor() {
-    super('Public preview Runtime cleanup was ambiguous')
-    this.name = 'PublicPreviewCompositionStartError'
-  }
 }
 
 export interface PublicPreviewFeatureComposition {
@@ -134,6 +128,9 @@ export async function createPublicPreviewFeatureComposition(
   const expectedRuntime: PublicPreviewExpectedRuntimeBinding = {
     applicationVersion: release.application.packageVersion,
     runtime: {
+      releaseDescriptorSha256:
+        release.runtime.releaseDescriptorSha256,
+      manifestSha256: release.runtime.manifestSha256,
       releaseId: release.runtime.releaseId,
       target: release.runtime.target,
       runtimeContractVersion: release.runtime.runtimeContractVersion,
@@ -294,17 +291,9 @@ export async function createPublicPreviewFeatureComposition(
 async function requireRuntimeRollback(
   runtimeOwner: PublicPreviewRuntimeOwner,
 ): Promise<void> {
-  let result
-  try {
-    result = await runtimeOwner.closeCurrent({
-      signal: new AbortController().signal,
-    })
-  } catch {
-    throw new PublicPreviewCompositionStartError()
-  }
-  if (result.status !== 'closed' || !result.processTreeGone) {
-    throw new PublicPreviewCompositionStartError()
-  }
+  await requireServerStartupCleanup((input) =>
+    runtimeOwner.closeCurrent(input),
+  )
 }
 
 function requireCoherentReleaseBootstrap(input: {

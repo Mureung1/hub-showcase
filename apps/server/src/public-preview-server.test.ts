@@ -33,7 +33,6 @@ import {
 } from '@ay-ple/semester-workspace'
 
 import {
-  PublicPreviewCompositionStartError,
   createPublicPreviewFeatureComposition,
   type PublicPreviewFeatureComposition,
   type PublicPreviewServerBootstrap,
@@ -50,6 +49,9 @@ import {
   createServerApplicationForTesting,
 } from './server-application.js'
 import { listenToServerApplication } from './server-listener.js'
+import {
+  ServerStartupCleanupError,
+} from './server-startup-cleanup.js'
 
 test('listener-independent public preview composes account, setup, reauth and explicit Ready resume without private leaks', async () => {
   const fixture = await createFixture()
@@ -209,9 +211,76 @@ test('listener-independent public preview composes account, setup, reauth and ex
         assert.equal(stale.error.code, 'command_not_allowed')
       }
 
+      const beforeParentChange = await snapshotEntries(
+        fixture.appDataRoot,
+      )
+      const changedParent = await postPreview(baseUrl, origin, {
+        command: 'workspace.parent.select',
+      })
+      assert.equal(changedParent.projection.setup.state, 'input_required')
+      if (changedParent.projection.setup.state !== 'input_required') {
+        assert.fail('new parent selection must return setup to input')
+      }
+      const changedParentSelection =
+        changedParent.projection.setup.parentSelection
+      assert.ok(changedParentSelection)
+      assert.notEqual(
+        changedParentSelection.selectionId,
+        parentSelection.selectionId,
+      )
+      assert.deepEqual(
+        await snapshotEntries(fixture.appDataRoot),
+        beforeParentChange,
+      )
+
+      const discardedDraft = await postPreview(
+        baseUrl,
+        origin,
+        {
+          command: 'setup.approve',
+          setupPlanId,
+        },
+        409,
+      )
+      assert.equal(discardedDraft.status, 'error')
+      if (discardedDraft.status === 'error') {
+        assert.equal(
+          discardedDraft.error.code,
+          'command_not_allowed',
+        )
+      }
+
+      const replacementConfirmation = await postPreview(
+        baseUrl,
+        origin,
+        {
+          command: 'setup.prepare',
+          input: {
+            yearLevel: 2,
+            term: '2',
+            parentSelectionId:
+              changedParentSelection.selectionId,
+            leafName: '2026-2학기',
+          },
+        },
+      )
+      assert.equal(
+        replacementConfirmation.projection.setup.state,
+        'confirmation_required',
+      )
+      if (
+        replacementConfirmation.projection.setup.state !==
+        'confirmation_required'
+      ) {
+        assert.fail('replacement confirmation required')
+      }
+      const replacementSetupPlanId =
+        replacementConfirmation.projection.setup.setupPlanId
+      assert.notEqual(replacementSetupPlanId, setupPlanId)
+
       const reauth = await postPreview(baseUrl, origin, {
         command: 'setup.approve',
-        setupPlanId,
+        setupPlanId: replacementSetupPlanId,
       })
       assert.equal(reauth.projection.account.state, 'login_required')
       assertWorkspaceReauth(reauth, 'awaiting_account')
@@ -316,6 +385,9 @@ test('listener-independent public preview composes account, setup, reauth and ex
           selected,
           confirmation,
           stale,
+          changedParent,
+          discardedDraft,
+          replacementConfirmation,
           reauth,
           reconnected,
           ready,
@@ -391,13 +463,21 @@ test('composition failure after Runtime ownership closes the active generation',
 test('composition surfaces ambiguous post-spawn cleanup with a stable start error', async () => {
   const fixture = await createFixture({ authInitiallyConnected: true })
   try {
+    let closeCalls = 0
     const runtimeOwner = withCloseCurrent(
       fixture.runtimeOwner,
-      async () => ({
-        status: 'ambiguous',
-        processTreeGone: false,
-      }),
+      async (input) => {
+        closeCalls += 1
+        if (closeCalls === 1) {
+          return {
+            status: 'ambiguous',
+            processTreeGone: false,
+          }
+        }
+        return fixture.runtimeOwner.closeCurrent(input)
+      },
     )
+    let startupError: ServerStartupCleanupError | undefined
     await assert.rejects(
       createPublicPreviewFeatureComposition(
         fixture.bootstrap('http://127.0.0.1:43123'),
@@ -407,16 +487,23 @@ test('composition surfaces ambiguous post-spawn cleanup with a stable start erro
         },
       ),
       (error) => {
-        assert.ok(error instanceof PublicPreviewCompositionStartError)
+        assert.ok(error instanceof ServerStartupCleanupError)
         assert.equal(
           error.code,
-          'public_preview_runtime_cleanup_ambiguous',
+          'server_startup_cleanup_ambiguous',
         )
+        startupError = error
         return true
       },
     )
+    assert.equal(closeCalls, 1)
+    assert.ok(startupError)
+    assert.deepEqual(
+      await startupError.close({ signal: signal() }),
+      { status: 'closed', processTreeGone: true },
+    )
+    assert.equal(closeCalls, 2)
   } finally {
-    await fixture.runtimeOwner.closeCurrent({ signal: signal() })
     await fixture.cleanup()
   }
 })
@@ -424,12 +511,18 @@ test('composition surfaces ambiguous post-spawn cleanup with a stable start erro
 test('composition surfaces rejected post-spawn cleanup with a stable start error', async () => {
   const fixture = await createFixture({ authInitiallyConnected: true })
   try {
+    let closeCalls = 0
     const runtimeOwner = withCloseCurrent(
       fixture.runtimeOwner,
-      async () => {
-        throw new Error('synthetic close failure')
+      async (input) => {
+        closeCalls += 1
+        if (closeCalls === 1) {
+          throw new Error('synthetic close failure')
+        }
+        return fixture.runtimeOwner.closeCurrent(input)
       },
     )
+    let startupError: ServerStartupCleanupError | undefined
     await assert.rejects(
       createPublicPreviewFeatureComposition(
         fixture.bootstrap('http://127.0.0.1:43123'),
@@ -439,16 +532,23 @@ test('composition surfaces rejected post-spawn cleanup with a stable start error
         },
       ),
       (error) => {
-        assert.ok(error instanceof PublicPreviewCompositionStartError)
+        assert.ok(error instanceof ServerStartupCleanupError)
         assert.equal(
           error.code,
-          'public_preview_runtime_cleanup_ambiguous',
+          'server_startup_cleanup_ambiguous',
         )
+        startupError = error
         return true
       },
     )
+    assert.equal(closeCalls, 1)
+    assert.ok(startupError)
+    assert.deepEqual(
+      await startupError.close({ signal: signal() }),
+      { status: 'closed', processTreeGone: true },
+    )
+    assert.equal(closeCalls, 2)
   } finally {
-    await fixture.runtimeOwner.closeCurrent({ signal: signal() })
     await fixture.cleanup()
   }
 })
@@ -798,6 +898,9 @@ async function createFixture(options: {
         verifyRuntimeForSpawn: async () => ({
           runtimeRoot: path.join(root, 'verified-runtime'),
           identity: {
+            releaseDescriptorSha256:
+              release.runtime.releaseDescriptorSha256,
+            manifestSha256: release.runtime.manifestSha256,
             releaseId: release.runtime.releaseId,
             target: release.runtime.target,
             runtimeContractVersion:
@@ -809,6 +912,9 @@ async function createFixture(options: {
     {
       applicationVersion: release.application.packageVersion,
       runtime: {
+        releaseDescriptorSha256:
+          release.runtime.releaseDescriptorSha256,
+        manifestSha256: release.runtime.manifestSha256,
         releaseId: release.runtime.releaseId,
         target: release.runtime.target,
         runtimeContractVersion: release.runtime.runtimeContractVersion,
@@ -876,6 +982,8 @@ async function createFixture(options: {
     'account_attempt_2',
     'account_attempt_3',
   ]
+  let parentSelection = 0
+  let setupTransaction = 0
   const bootstrap = (
     origin: string,
   ): PublicPreviewServerBootstrap => ({
@@ -893,6 +1001,9 @@ async function createFixture(options: {
         verifyRuntimeForSpawn: async () => ({
           runtimeRoot: path.join(root, 'unused-runtime'),
           identity: {
+            releaseDescriptorSha256:
+              release.runtime.releaseDescriptorSha256,
+            manifestSha256: release.runtime.manifestSha256,
             releaseId: release.runtime.releaseId,
             target: release.runtime.target,
             runtimeContractVersion:
@@ -943,8 +1054,9 @@ async function createFixture(options: {
         accountAttemptId: () =>
           attemptIds.shift() ?? 'account_attempt_exhausted',
         createParentSelectionId: () =>
-          'parent_selection_primary',
-        createSetupId: () => 'setup_transaction_primary',
+          `parent_selection_${++parentSelection}`,
+        createSetupId: () =>
+          `setup_transaction_${++setupTransaction}`,
         now: () => new Date('2026-07-24T00:00:00.000Z'),
         wait: async () => undefined,
       })

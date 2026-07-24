@@ -12,13 +12,17 @@ import type {
 } from '@ay-ple/semester-workspace'
 
 import {
-  PublicPreviewRuntimeStartError,
   createPublicPreviewRuntimeOwner,
   type PublicPreviewExpectedRuntimeBinding,
   type PublicPreviewRuntimeBootstrap,
 } from './public-preview-runtime-owner.js'
+import {
+  ServerStartupCleanupError,
+} from './server-startup-cleanup.js'
 
 const runtimeIdentity = {
+  releaseDescriptorSha256: '1'.repeat(64),
+  manifestSha256: '2'.repeat(64),
   releaseId: '0.144.4',
   target: 'darwin-arm64',
   runtimeContractVersion: 1,
@@ -134,8 +138,12 @@ test('an ambiguous auth-only role cleanup surfaces a stable Runtime start failur
       workspaceRoot: '/unexpected/workspace',
     },
     closeCalls,
-    [{ status: 'ambiguous', processTreeGone: false }],
+    [
+      { status: 'ambiguous', processTreeGone: false },
+      { status: 'closed', processTreeGone: true },
+    ],
   )
+  let startupError: ServerStartupCleanupError | undefined
 
   await assert.rejects(
     createPublicPreviewRuntimeOwner(
@@ -147,15 +155,22 @@ test('an ambiguous auth-only role cleanup surfaces a stable Runtime start failur
       async () => runtime,
     ),
     (error) => {
-      assert.ok(error instanceof PublicPreviewRuntimeStartError)
+      assert.ok(error instanceof ServerStartupCleanupError)
       assert.equal(
         error.code,
-        'public_preview_runtime_cleanup_ambiguous',
+        'server_startup_cleanup_ambiguous',
       )
+      startupError = error
       return true
     },
   )
   assert.equal(closeCalls.count, 1)
+  assert.ok(startupError)
+  assert.deepEqual(
+    await startupError.close({ signal: signal() }),
+    { status: 'closed', processTreeGone: true },
+  )
+  assert.equal(closeCalls.count, 2)
 })
 
 test('a rejected workspace role cleanup stays owned for a later close retry', async () => {
@@ -197,10 +212,10 @@ test('a rejected workspace role cleanup stays owned for a later close retry', as
       signal: signal(),
     }),
     (error) => {
-      assert.ok(error instanceof PublicPreviewRuntimeStartError)
+      assert.ok(error instanceof ServerStartupCleanupError)
       assert.equal(
         error.code,
-        'public_preview_runtime_cleanup_ambiguous',
+        'server_startup_cleanup_ambiguous',
       )
       return true
     },
@@ -213,26 +228,34 @@ test('a rejected workspace role cleanup stays owned for a later close retry', as
   assert.equal(closeCalls.count, 2)
 })
 
-test('a mismatched initial release identity prevents the auth-only spawn', async () => {
+test('mismatched exact Runtime digests prevent the auth-only spawn', async () => {
   let spawnCalls = 0
 
-  await assert.rejects(
-    createPublicPreviewRuntimeOwner(
-      runtimeBootstrap(async () => ({
-        runtimeRoot: '/verified/runtime',
-        identity: {
-          ...runtimeIdentity,
-          releaseId: '0.145.0',
+  for (const identity of [
+    {
+      ...runtimeIdentity,
+      releaseDescriptorSha256: '3'.repeat(64),
+    },
+    {
+      ...runtimeIdentity,
+      manifestSha256: '4'.repeat(64),
+    },
+  ]) {
+    await assert.rejects(
+      createPublicPreviewRuntimeOwner(
+        runtimeBootstrap(async () => ({
+          runtimeRoot: '/verified/runtime',
+          identity,
+        })),
+        expectedBinding,
+        async () => {
+          spawnCalls += 1
+          return new DeterministicCodexChatRuntime()
         },
-      })),
-      expectedBinding,
-      async () => {
-        spawnCalls += 1
-        return new DeterministicCodexChatRuntime()
-      },
-    ),
-    /release was not authorized/,
-  )
+      ),
+      /release was not authorized/,
+    )
+  }
   assert.equal(spawnCalls, 0)
 })
 
@@ -247,7 +270,10 @@ test('every workspace generation rechecks the expected release before spawn', as
         identity:
           verification === 1
             ? runtimeIdentity
-            : { ...runtimeIdentity, runtimeContractVersion: 2 },
+            : {
+                ...runtimeIdentity,
+                manifestSha256: '5'.repeat(64),
+              },
       }
     }),
     expectedBinding,

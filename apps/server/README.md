@@ -10,12 +10,12 @@ Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 p
 
 ## Public-preview application graph
 
-`@ay-ple/server` package root는 side-effect-free `createServerApplication()`, listener lifecycle 순서를 캡슐화한 `listenToServerApplication()`과 두 함수의 host-facing type을 공개한다. Host는 내부 listener claim 순서를 재구성하지 않는다. `publicPreview`와 legacy `codexChat`·`productRuntime`·`semesterWorkspace` bootstrap은 한 application에서 함께 사용할 수 없다. 따라서 하나의 application graph에 두 Runtime owner나 두 workspace authority가 생기지 않는다.
+`@ay-ple/server` package root는 side-effect-free `createServerApplication()`, listener lifecycle 순서를 캡슐화한 `listenToServerApplication()`과 startup 실패 뒤 retryable cleanup authority를 보존하는 `ServerStartupCleanupError`를 공개한다. Host는 내부 listener claim이나 Runtime ownership을 재구성하지 않고, 이 error의 `close({ signal })`로 한 번의 후속 cleanup을 요청할 수 있다. `publicPreview`와 legacy `codexChat`·`productRuntime`·`semesterWorkspace` bootstrap은 한 application에서 함께 사용할 수 없다. 따라서 하나의 application graph에 두 Runtime owner나 두 workspace authority가 생기지 않는다.
 
 Public-preview graph는 다음 순서를 소유한다.
 
 1. App package version, exact `npx ay-ple@<version>` command, Runtime release identity와 workspace bundle hash를 하나의 launch binding으로 교차 검증한다.
-2. Host가 제공한 high-level spawn capability를 매 Runtime generation 직전에 검증하고 그 결과의 release ID, target과 Runtime contract version이 같은 binding과 일치할 때만 native Runtime을 만든다.
+2. Host가 제공한 high-level spawn capability를 매 Runtime generation 직전에 검증하고 그 결과의 release descriptor SHA-256, manifest SHA-256, release ID, target과 Runtime contract version이 같은 binding과 모두 일치할 때만 native Runtime을 만든다.
 3. Auth-only Runtime에서 managed Browser OAuth를 수행한다.
 4. Native picker의 transient opaque parent selection으로 app-owned v3 workspace를 prepare·approve한다.
 5. A-owned lease 안에서 auth-only close → workspace Runtime start → fresh account → native context → Ready commit/readback을 완료한다.
@@ -127,7 +127,7 @@ Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Or
 
 ## NDJSON과 shutdown
 
-Neutral Server-private NDJSON writer는 legacy development product stream의 backpressure·disconnect와 bounded drain을 소유한다. `CodexChatService`는 Runtime terminal을 한 번 관찰하고 accepted operation의 interrupt·terminal·unknown settlement를 관리한다. `createServerApplication().close()`는 새 work·listener restart를 막고 listener close를 시작한 뒤 active command/picker/transition을 abort·drain하고 Runtime close를 한 promise로 수렴한다. Python·native process group과 pipe가 사라진 뒤에만 resolve하며 ambiguous public-preview Runtime cleanup은 성공으로 합성하지 않는다. Listener bind 또는 address 확인 실패 뒤 application cleanup이 reject되면 원래 bind 오류로 덮지 않고 stable listener-start cleanup failure를 반환한다.
+Neutral Server-private NDJSON writer는 legacy development product stream의 backpressure·disconnect와 bounded drain을 소유한다. `CodexChatService`는 Runtime terminal을 한 번 관찰하고 accepted operation의 interrupt·terminal·unknown settlement를 관리한다. `createServerApplication().close()`는 새 work·listener restart를 막고 listener close를 시작한 뒤 active command/picker/transition을 abort·drain하고 Runtime close를 한 promise로 수렴한다. Python·native process group과 pipe가 사라진 뒤에만 resolve하며 ambiguous public-preview Runtime cleanup은 성공으로 합성하지 않는다. Composition 초기화나 초기 auth-only role 검증 중 첫 Runtime cleanup이 reject·ambiguous이면 `ServerStartupCleanupError`가 Runtime 구현을 노출하지 않는 retryable close closure를 보존한다. Listener bind 또는 address 확인 실패 뒤 application cleanup이 reject되면 원래 bind 오류로 덮지 않고 stable listener-start cleanup failure를 반환한다.
 
 `npm run test:product-entrypoint`는 root canonical command가 explicit `appDataRoot`와 workspace selection만으로 product API·Browser를 열고 legacy path를 무시하며 SIGINT 뒤 OS process graph와 port를 bounded하게 정리하는지 검증한다. `npm run test:product-shutdown-actual -w @ay-ple/server`는 product-capable Runtime process tree에서 listener refusal, close ordering과 child-of-child reap을 별도로 증명한다.
 
@@ -153,4 +153,4 @@ npm run build -w @ay-ple/server
 npm run verify:package-root -w @ay-ple/server
 ```
 
-`verify:package-root`는 먼저 Server를 build한 뒤 `NODE_OPTIONS`를 제거한 plain Node child에서 default-condition `@ay-ple/server`를 import한다. Runtime export가 `createServerApplication()`과 `listenToServerApplication()` 두 개뿐인지, application factory가 listener-independent인지와 close 뒤 child process가 종료되는지를 검증한다.
+`verify:package-root`는 먼저 Server를 build한 뒤 `NODE_OPTIONS`를 제거한 plain Node child에서 default-condition `@ay-ple/server`를 import한다. Runtime export가 `ServerStartupCleanupError`, `createServerApplication()`, `listenToServerApplication()` 세 개뿐인지, application factory가 listener-independent인지와 close 뒤 child process가 종료되는지를 검증한다.

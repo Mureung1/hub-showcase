@@ -60,6 +60,17 @@ Spine S2의 listener-independent application seam에 A-owned account route adapt
 | Highest practical seam | Listener-independent Express application에 deterministic Account Runtime, real SetupJourney/state store와 admission probes를 조합해 exact Origin, reauth→reconnect→explicit resume, action no-bypass와 bounded close를 검증한다. Live OAuth·public Host는 사용하지 않는다. |
 | Scope correction | B는 setup HTTP router가 아니라 SetupJourney·projection·readiness·admission Modules을 소유한다. C1이 frozen Browser contract를 변경하지 않고 이 Modules을 소비하는 Server-private command adapter/router를 새 composition seam으로 소유한다. |
 
+## Owner Delta Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Earlier A/B fixed-review tip | `1dd8a5af34a23c906ce9a3293291245110ec7408` — 첫 C1 fixed review가 소비한 A/B contract tip이다. |
+| B owner delta | `9ef107374`는 explicit Ready recovery ID와 attestation-aware reauthentication projection을 B-owned SetupJourney·projection에 추가했다. Logout·reconnect의 fresh ChatGPT 관찰만으로 false Ready를 열지 않고 explicit resume를 요구하는 route/projection tests가 해당 불변조건을 고정한다. |
+| A owner delta | `1dd8a5af3`는 active login attempt 중 `refresh`가 Runtime account를 별도로 read하지 않게 해 attempt correlation과 transition lease를 보존한다. Account route adapter의 active-login refresh test가 이 race guard를 고정한다. |
+| Technical review verdict | 두 delta의 상태 전이 책임은 각각 A/B owner에 남고 C composition이 복제하지 않는 것으로 fixed review에서 유지 판정했다. 당시 unresolved corrective findings는 C-owned startup cleanup authority·exact Runtime digest binding·setup business-state 복제였으며 owner delta 자체의 rollback 사유는 없었다. |
+| Current `contractTipSha` | `92dc1c24f53f0f9a4e788438227b6026edc3a77d` — matching `setupPlanId`의 in-memory confirmation draft만 지우는 `return_to_input`을 B-owned `SetupJourney`에 추가한 current corrective contract tip이다. Invalid state·stale ID는 projection과 durable store를 바꾸지 않는다. Focused 2/2, `@ay-ple/semester-workspace` 163/163, typecheck, build와 `git diff --check`가 green인 상태에서 C가 소비한다. |
+| C consumption invariant | 실제로 새 opaque parent selection이 발급된 경우에만 C adapter가 matching `setupPlanId`로 `return_to_input`을 호출한다. C는 setup projection을 별도 boolean으로 재작성하지 않으며 새 prepare 전 이전 draft 승인 authority가 닫힌다. |
+
 ## Blocked By
 
 - [013-a1-account-runtime-transition-lease.md](013-a1-account-runtime-transition-lease.md) — A1 — Account/Runtime transition lease를 직렬화한다

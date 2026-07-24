@@ -55,15 +55,12 @@ export function createPublicPreviewCommandAdapter(input: {
   >
 }): PublicPreviewCommandAdapter {
   const activeCommands = new Set<Promise<unknown>>()
-  let forceInputProjection = false
   let shuttingDown = false
 
   const project = (
     account: PublicPreviewAccountProjection,
   ): PublicPreviewBootstrap => {
-    const privateProjection = forceInputProjection
-      ? { state: 'input_required' as const }
-      : input.journey.observe()
+    const privateProjection = input.journey.observe()
     let setup = toPublicPreviewSetupProjection(privateProjection, {
       ...input.projectionContext,
       accountConnected: account.state === 'connected',
@@ -146,10 +143,19 @@ export function createPublicPreviewCommandAdapter(input: {
           const selected = await input.parentSelection.select({ signal })
           if (
             selected &&
-            selected.authority.selectionId !== previous &&
-            input.journey.observe().state === 'confirmation_required'
+            selected.authority.selectionId !== previous
           ) {
-            forceInputProjection = true
+            const projection = input.journey.observe()
+            if (projection.state === 'confirmation_required') {
+              const result = await input.journey.reconcile({
+                kind: 'return_to_input',
+                setupPlanId: projection.setupPlanId,
+              })
+              return setupResultResponse(
+                result.outcome,
+                await snapshot(signal),
+              )
+            }
           }
           return okResponse(await snapshot(signal))
         }
@@ -162,7 +168,6 @@ export function createPublicPreviewCommandAdapter(input: {
           ) {
             return errorResponse('setup_invalid_input', before)
           }
-          forceInputProjection = false
           const result = await input.journey.reconcile({
             kind: 'prepare',
             input: {
@@ -181,7 +186,6 @@ export function createPublicPreviewCommandAdapter(input: {
           )
         }
         case 'setup.approve': {
-          forceInputProjection = false
           const result = await input.journey.reconcile({
             kind: 'approve',
             setupPlanId: command.setupPlanId,
@@ -198,7 +202,6 @@ export function createPublicPreviewCommandAdapter(input: {
         case 'setup.resume':
         case 'setup.recover.resume':
         case 'setup.recover.discard': {
-          forceInputProjection = false
           const result = await input.journey.reconcile({
             kind: 'recover',
             recoveryId: command.recoveryId,

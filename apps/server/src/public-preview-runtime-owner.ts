@@ -14,6 +14,10 @@ import {
   createWorkspaceNativeProjectBoundary,
   type WorkspaceNativeProjectBoundary,
 } from './setup/native-project-boundary.js'
+import {
+  requireServerStartupCleanup,
+  type ServerStartupCleanup,
+} from './server-startup-cleanup.js'
 
 export type PublicPreviewRuntimeEnvironment = {
   readonly home: string
@@ -27,12 +31,16 @@ export type PublicPreviewRuntimeSpawnCapability = {
     readonly signal: AbortSignal
   }): Promise<{
     readonly runtimeRoot: string
-    readonly identity: {
-      readonly releaseId: string
-      readonly target: 'darwin-arm64'
-      readonly runtimeContractVersion: number
-    }
+    readonly identity: PublicPreviewRuntimeIdentity
   }>
+}
+
+export type PublicPreviewRuntimeIdentity = {
+  readonly releaseDescriptorSha256: string
+  readonly manifestSha256: string
+  readonly releaseId: string
+  readonly target: 'darwin-arm64'
+  readonly runtimeContractVersion: number
 }
 
 export type PublicPreviewRuntimeBootstrap = {
@@ -43,20 +51,7 @@ export type PublicPreviewRuntimeBootstrap = {
 
 export type PublicPreviewExpectedRuntimeBinding = {
   readonly applicationVersion: string
-  readonly runtime: {
-    readonly releaseId: string
-    readonly target: 'darwin-arm64'
-    readonly runtimeContractVersion: number
-  }
-}
-
-export class PublicPreviewRuntimeStartError extends Error {
-  readonly code = 'public_preview_runtime_cleanup_ambiguous'
-
-  constructor() {
-    super('Public preview Runtime startup cleanup was ambiguous')
-    this.name = 'PublicPreviewRuntimeStartError'
-  }
+  readonly runtime: PublicPreviewRuntimeIdentity
 }
 
 export interface PublicPreviewRuntimeOwner {
@@ -106,6 +101,7 @@ export async function createPublicPreviewRuntimeOwner(
     version: expected.applicationVersion,
   } as const satisfies CodexRuntimeApplicationIdentity
   const environment = { ...input.environment }
+  let workspace: AdmittedSemesterWorkspace | undefined
   let current: CodexManagedRuntime | undefined = await spawnRuntime({
     role: {
       role: 'auth-only',
@@ -117,10 +113,11 @@ export async function createPublicPreviewRuntimeOwner(
     current.role.role !== 'auth-only' ||
     current.role.bootstrapCwd !== authOnlyBootstrapCwd
   ) {
-    await requireSpawnedRuntimeClosed(current)
+    await requireServerStartupCleanup(
+      cleanupSpawnedRuntime(current),
+    )
     throw new Error('The auth-only Runtime role changed')
   }
-  let workspace: AdmittedSemesterWorkspace | undefined
 
   async function spawnRuntime(spawnInput: {
     readonly role: CodexRuntimeRole
@@ -186,8 +183,9 @@ export async function createPublicPreviewRuntimeOwner(
         runtime.role.role !== 'workspace' ||
         runtime.role.workspaceRoot !== nextWorkspace.canonicalRoot
       ) {
-        await requireSpawnedRuntimeClosed(runtime)
-        current = undefined
+        await requireServerStartupCleanup(
+          cleanupSpawnedRuntime(runtime),
+        )
         throw new Error('The workspace Runtime role changed')
       }
       workspace = cloneWorkspace(nextWorkspace)
@@ -224,21 +222,22 @@ export async function createPublicPreviewRuntimeOwner(
       })
     },
   }
-}
 
-async function requireSpawnedRuntimeClosed(
-  runtime: CodexManagedRuntime,
-): Promise<void> {
-  let result: CodexRuntimeCloseResult
-  try {
-    result = await runtime.close({
-      signal: new AbortController().signal,
-    })
-  } catch {
-    throw new PublicPreviewRuntimeStartError()
-  }
-  if (result.status !== 'closed' || !result.processTreeGone) {
-    throw new PublicPreviewRuntimeStartError()
+  function cleanupSpawnedRuntime(
+    runtime: CodexManagedRuntime,
+  ): ServerStartupCleanup {
+    return async ({ signal }) => {
+      const result = await runtime.close({ signal })
+      if (
+        result.status === 'closed' &&
+        result.processTreeGone &&
+        current === runtime
+      ) {
+        current = undefined
+        workspace = undefined
+      }
+      return result
+    }
   }
 }
 
@@ -290,6 +289,8 @@ function cloneExpectedBinding(
   if (
     !isOpaqueValue(binding.applicationVersion) ||
     !isOpaqueValue(binding.runtime.releaseId) ||
+    !isSha256(binding.runtime.releaseDescriptorSha256) ||
+    !isSha256(binding.runtime.manifestSha256) ||
     binding.runtime.target !== 'darwin-arm64' ||
     !Number.isSafeInteger(binding.runtime.runtimeContractVersion) ||
     binding.runtime.runtimeContractVersion < 1
@@ -303,20 +304,23 @@ function cloneExpectedBinding(
 }
 
 function sameRuntimeIdentity(
-  actual: {
-    readonly releaseId: string
-    readonly target: 'darwin-arm64'
-    readonly runtimeContractVersion: number
-  },
+  actual: PublicPreviewRuntimeIdentity,
   expected: PublicPreviewExpectedRuntimeBinding['runtime'],
 ): boolean {
   return (
     actual !== null &&
     typeof actual === 'object' &&
+    actual.releaseDescriptorSha256 ===
+      expected.releaseDescriptorSha256 &&
+    actual.manifestSha256 === expected.manifestSha256 &&
     actual.releaseId === expected.releaseId &&
     actual.target === expected.target &&
     actual.runtimeContractVersion === expected.runtimeContractVersion
   )
+}
+
+function isSha256(value: unknown): value is string {
+  return typeof value === 'string' && /^[0-9a-f]{64}$/u.test(value)
 }
 
 function isOpaqueValue(value: unknown): value is string {

@@ -14,6 +14,7 @@ const execFileAsync = promisify(execFile)
 
 test('the Server package root exports the deep host composition seam', () => {
   assert.deepEqual(Object.keys(serverPackageRoot).sort(), [
+    'ServerStartupCleanupError',
     'createServerApplication',
     'listenToServerApplication',
   ])

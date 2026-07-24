@@ -11,7 +11,11 @@ delete environment.NODE_OPTIONS
 const source = `
   const serverRoot = await import('@ay-ple/server')
   const keys = Object.keys(serverRoot).sort()
-  const expected = ['createServerApplication', 'listenToServerApplication']
+  const expected = [
+    'ServerStartupCleanupError',
+    'createServerApplication',
+    'listenToServerApplication',
+  ]
   if (JSON.stringify(keys) !== JSON.stringify(expected)) {
     throw new Error('Unexpected built Server package root: ' + JSON.stringify(keys))
   }
