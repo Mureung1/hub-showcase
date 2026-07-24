@@ -79,11 +79,11 @@ React 구현 메모:
   캐시하지 않음)로 폴백 — 이 폴백은 `console.warn`만 남기고 별도
   모니터링/알림은 없다(운영 전환 시 보강 필요).
 - **완료(07-23):** client(Vitest+Testing Library)/server(Vitest) 단위 테스트
-  환경 구성. 컨벤션은 `.claude/skills/testing/SKILL.md` 참고. 다만 CI에서
-  자동 실행되진 않는다 — `.github/workflows/`엔 리뷰 라벨/충돌 여부만 보고
-  병합하는 `auto-merge.yml`뿐이고 테스트/린트를 게이트로 걸지 않는다.
-  `server/package.json`에도 아직 `test` 스크립트가 없어 로컬에서는
-  `server/` 안에서 `npx vitest run`으로 직접 실행해야 한다.
+  환경 구성. 컨벤션은 `.claude/skills/testing/SKILL.md` 참고. 같은 날
+  `.github/workflows/test.yml` CI를 신설해 PR/main 푸시마다 lint +
+  client/server 테스트를 게이트로 건다(`auto-merge.yml`은 리뷰 라벨/충돌
+  여부만 보는 별도 워크플로). `server/package.json`에도 `test`
+  스크립트(`vitest run`)가 추가돼 `server/` 안에서 `npm test`로 실행한다.
 - **완료(07-21):** 완독/판단수행률 분리 집계 로깅(GitHub #16) —
   `article_reads` 테이블에 완독 이벤트를 기록하고 판단 시 `decision_id`로
   FK 연결(`server/src/services/articleReadStore.js`,
