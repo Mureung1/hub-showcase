@@ -13,6 +13,7 @@ const source = `
   const keys = Object.keys(serverRoot).sort()
   const expected = [
     'ServerStartupCleanupError',
+    'bindServerApplicationListener',
     'createServerApplication',
     'listenToServerApplication',
   ]
