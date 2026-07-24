@@ -350,6 +350,16 @@
     grid-template-columns: 1fr;
   }
 
+  .staff-header {
+    padding-inline: 12px;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+  }
+
+  .staff-header .brand {
+    font-size: 0;
+  }
+
   .platform-sidebar {
     display: none;
   }
