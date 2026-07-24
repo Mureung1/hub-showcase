@@ -73,3 +73,21 @@ def test_build_trend_prompt_serializes_summaries_as_json_array():
     # topic과 n(=2)이 실제로 반영됨
     assert "LLM agent planning" in prompt
     assert "2편" in prompt
+
+
+def test_call_trend_fallback_on_broken_response(monkeypatch):
+    """LLM이 JSON이 아닌 응답을 줘도 _call_trend는 예외 없이 {"flows":[],"gap":None}을 반환한다 (5-4).
+
+    trend 고유의 사실은 "fallback 값이 하필 {"flows":[],"gap":None}"이라는 점 — 그것만 검증한다.
+    (파싱 실패를 흡수하는 ask_llm_json 메커니즘 자체는 이 래퍼를 통해 간접 실행될 뿐,
+    격리 단위 테스트(test_tools.py)는 아직 없다 — 그 갭을 채우는 건 Task 0 책임이다.)
+    """
+    monkeypatch.setattr(
+        "app.tools.ask_llm", lambda prompt: "이건 JSON이 아니라 그냥 설명문입니다."
+    )
+
+    summaries = [{"index": 1, "title": "T", "contribution": "c", "method": "m", "result": "r"}]
+    # 이 줄에 도달해 통과한다는 것 자체가 "예외 없이 반환됐다"를 증명한다(예외 시 pytest가 자동 실패).
+    result = agent._call_trend("LLM agent planning", summaries)
+
+    assert result == {"flows": [], "gap": None}
