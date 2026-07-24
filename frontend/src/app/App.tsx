@@ -8,6 +8,7 @@ import ContentLoadingScreen from '../shared/ui/ContentLoadingScreen/ContentLoadi
 import { api } from '../api/client'
 import { ensureAnonymousSession } from '../auth/supabase'
 import type { Interest } from '../api/types'
+import { getKstDateString, moveDateToMonth, shiftMonth } from '../shared/lib/date'
 
 type AppState =
   | { status: 'loading' }
@@ -218,47 +219,9 @@ function ArticleIntroContainer({
   )
 }
 
-function pad2(value: number): string {
-  return String(value).padStart(2, '0')
-}
-
-// Intl.DateTimeFormat + formatToParts로 브라우저 로컬 시간대나 locale 문자열 포맷에 기대지 않고
-// Asia/Seoul 기준 오늘 날짜(YYYY-MM-DD)를 만든다.
-function getKstTodayDateString(): string {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date())
-  const part = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
-  return `${part('year')}-${part('month')}-${part('day')}`
-}
-
-// displayMonth(YYYY-MM)에서 delta개월 이동한 월을 Date.UTC로 계산한다.
-function shiftMonth(displayMonth: string, delta: number): string {
-  const [year, month] = displayMonth.split('-').map(Number)
-  const shifted = new Date(Date.UTC(year, month - 1 + delta, 1))
-  return `${shifted.getUTCFullYear()}-${pad2(shifted.getUTCMonth() + 1)}`
-}
-
-// targetMonth(YYYY-MM)의 마지막 날짜를 Date.UTC로 계산한다.
-function lastDayOfMonth(targetMonth: string): number {
-  const [year, month] = targetMonth.split('-').map(Number)
-  return new Date(Date.UTC(year, month, 0)).getUTCDate()
-}
-
-// date(YYYY-MM-DD)의 일(day)을 유지한 채 targetMonth로 옮긴다. 대상 월에 그 일자가 없으면
-// 마지막 날로 보정한다.
-function moveDateToMonth(date: string, targetMonth: string): string {
-  const day = Number(date.split('-')[2])
-  const clampedDay = Math.min(day, lastDayOfMonth(targetMonth))
-  return `${targetMonth}-${pad2(clampedDay)}`
-}
-
 // 나의 깸 화면에 필요한 표시 월·선택 날짜·캘린더/기록 API 상태를 소유한다.
 function MyGgaemContainer({ onGoToToday }: { onGoToToday: () => void }) {
-  const [todayDate] = useState(() => getKstTodayDateString())
+  const [todayDate] = useState(() => getKstDateString())
   const [selectedDate, setSelectedDate] = useState(todayDate)
   const displayMonth = selectedDate.slice(0, 7)
 

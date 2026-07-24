@@ -1,4 +1,9 @@
-import type { MissionRecordCalendarDay, MissionRecordListItem, MissionType } from '../../api/types'
+import type { MissionRecordCalendarDay, MissionRecordListItem } from '../../api/types'
+import {
+  MISSION_TYPE_LABEL,
+  MISSION_TYPE_ORDER,
+  URL_STATUS_NOTICE,
+} from '../../shared/domain/labels'
 import './MyGgaem.css'
 
 export type CalendarState =
@@ -24,21 +29,6 @@ type MyGgaemProps = {
 }
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
-
-const MISSION_TYPE_LABEL: Record<MissionType, string> = {
-  question: '질문',
-  rebuttal: '반박',
-  connection: '연결',
-  expression: '표현',
-}
-
-const MISSION_TYPE_ORDER: MissionType[] = ['question', 'rebuttal', 'connection', 'expression']
-
-const URL_STATUS_NOTICE: Record<'paywalled' | 'broken' | 'removed', string> = {
-  paywalled: '유료 콘텐츠라 이 앱에서 바로 열 수 없어요.',
-  broken: '원문 링크에 문제가 생겼어요.',
-  removed: '원문이 삭제됐어요.',
-}
 
 function formatDateLabel(date: string): string {
   return date.replaceAll('-', '.')

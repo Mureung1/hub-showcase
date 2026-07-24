@@ -4,25 +4,12 @@ import { ApiClientError } from '../../api/client'
 import mascotComplete from '../../assets/mascot/mascot-default&complete.png'
 import type {
   ArticleDetail,
-  ContentType,
   CreateMissionRecordRequest,
   MissionRecord,
   MissionType,
 } from '../../api/types'
+import { CONTENT_TYPE_LABEL, MISSION_TYPE_LABEL } from '../../shared/domain/labels'
 import './Mission.css'
-
-const MISSION_TYPE_LABEL: Record<MissionType, string> = {
-  question: '질문',
-  rebuttal: '반박',
-  connection: '연결',
-  expression: '표현',
-}
-
-const CONTENT_TYPE_LABEL: Record<ContentType, string> = {
-  article: '아티클',
-  blog: '블로그',
-  video: '영상',
-}
 
 const MISSION_PLACEHOLDER: Record<MissionType, string> = {
   question: '글을 읽고 떠오른 궁금증을 질문 형태로 적어보세요.',

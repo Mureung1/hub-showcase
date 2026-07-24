@@ -1,20 +1,9 @@
 import { useState } from 'react'
 import { ChevronLeft, ExternalLink } from 'lucide-react'
 import Mission from '../mission/Mission'
-import type { ArticleDetail, ContentType, CreateMissionRecordRequest, MissionRecord } from '../../api/types'
+import type { ArticleDetail, CreateMissionRecordRequest, MissionRecord } from '../../api/types'
+import { CONTENT_TYPE_LABEL, URL_STATUS_NOTICE } from '../../shared/domain/labels'
 import './ArticleIntro.css'
-
-const CONTENT_TYPE_LABEL: Record<ContentType, string> = {
-  article: '아티클',
-  blog: '블로그',
-  video: '영상',
-}
-
-const URL_STATUS_NOTICE: Record<'paywalled' | 'broken' | 'removed', string> = {
-  paywalled: '유료 콘텐츠라 이 앱에서 바로 열 수 없어요.',
-  broken: '원문 링크에 문제가 생겼어요.',
-  removed: '원문이 삭제됐어요.',
-}
 
 export type ArticleIntroState =
   | { status: 'loading' }
