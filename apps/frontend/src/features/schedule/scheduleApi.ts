@@ -1,5 +1,11 @@
 import { apiRequest } from "../../shared/api";
-import { CreateScheduleInput, CreateScheduleResponse, SchedulesResponse } from "./scheduleTypes";
+import {
+  CreateScheduleInput,
+  CreateScheduleResponse,
+  SchedulesResponse,
+  UpdateScheduleInput,
+  UpdateScheduleResponse
+} from "./scheduleTypes";
 
 export async function getSchedules(accessToken: string, storeId: string, fromDate: string, toDate: string) {
   const params = new URLSearchParams({
@@ -23,5 +29,20 @@ export async function createSchedule(accessToken: string, storeId: string, input
     method: "POST",
     accessToken,
     body: input
+  });
+}
+
+export async function updateSchedule(accessToken: string, scheduleId: string, input: UpdateScheduleInput) {
+  return apiRequest<UpdateScheduleResponse>(`/schedules/${scheduleId}`, {
+    method: "PATCH",
+    accessToken,
+    body: input
+  });
+}
+
+export async function deleteSchedule(accessToken: string, scheduleId: string) {
+  return apiRequest<void>(`/schedules/${scheduleId}`, {
+    method: "DELETE",
+    accessToken
   });
 }

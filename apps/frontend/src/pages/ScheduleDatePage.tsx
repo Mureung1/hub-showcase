@@ -1,8 +1,14 @@
-import { addDays, format } from "date-fns";
+﻿import { addDays, format } from "date-fns";
 import { FormEvent, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMe } from "../features/auth";
-import { Schedule, useCreateSchedule, useDailySchedules } from "../features/schedule";
+import {
+  Schedule,
+  useCreateSchedule,
+  useDailySchedules,
+  useDeleteSchedule,
+  useUpdateSchedule
+} from "../features/schedule";
 import { useWorkers } from "../features/worker";
 import { getScheduleDatePath, ROUTES } from "../shared/routes";
 import { getSelectedStoreId } from "../shared/utils";
@@ -15,6 +21,10 @@ type ScheduleFormState = {
   endTime: string;
   position: string;
   memo: string;
+};
+
+type ScheduleEditFormState = ScheduleFormState & {
+  workDate: string;
 };
 
 const emptyScheduleForm: ScheduleFormState = {
@@ -106,8 +116,13 @@ export function ScheduleDatePage() {
   const { data, error, isLoading } = useDailySchedules(selectedStoreId, dateKey, Boolean(selectedDate));
   const { data: workersData, error: workersError, isLoading: isWorkersLoading } = useWorkers(selectedStoreId, isOwner);
   const createScheduleMutation = useCreateSchedule(selectedStoreId);
+  const updateScheduleMutation = useUpdateSchedule();
+  const deleteScheduleMutation = useDeleteSchedule();
   const [formState, setFormState] = useState<ScheduleFormState>(emptyScheduleForm);
   const [formMessage, setFormMessage] = useState<string | null>(null);
+  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
+  const [editFormState, setEditFormState] = useState<ScheduleEditFormState | null>(null);
+  const [editMessage, setEditMessage] = useState<string | null>(null);
   const schedules = sortSchedules(data?.schedules ?? []);
   const workers = workersData?.workers ?? [];
   const currentUserId = me?.profile.id;
@@ -159,6 +174,76 @@ export function ScheduleDatePage() {
         }
       }
     );
+  }
+
+  function startEditingSchedule(schedule: Schedule) {
+    setEditingScheduleId(schedule.id);
+    setEditFormState({
+      workerId: schedule.workerId,
+      workDate: schedule.workDate,
+      startTime: getInputTimeValue(schedule.startTime),
+      endTime: getInputTimeValue(schedule.endTime),
+      position: schedule.position ?? "",
+      memo: schedule.memo ?? ""
+    });
+    setEditMessage(null);
+  }
+
+  function cancelEditingSchedule() {
+    setEditingScheduleId(null);
+    setEditFormState(null);
+    setEditMessage(null);
+  }
+
+  function handleEditFormSubmit(event: FormEvent<HTMLFormElement>, scheduleId: string) {
+    event.preventDefault();
+    setEditMessage(null);
+
+    const currentEditFormState = editFormState;
+
+    if (!currentEditFormState) {
+      setEditMessage("수정할 근무 일정을 다시 선택해주세요.");
+      return;
+    }
+
+    if (!currentEditFormState.workerId) {
+      setEditMessage("알바생을 선택해주세요.");
+      return;
+    }
+
+    updateScheduleMutation.mutate(
+      {
+        scheduleId,
+        values: {
+          workerId: currentEditFormState.workerId,
+          workDate: currentEditFormState.workDate,
+          startTime: currentEditFormState.startTime,
+          endTime: currentEditFormState.endTime,
+          position: currentEditFormState.position.trim() || null,
+          memo: currentEditFormState.memo.trim() || null
+        }
+      },
+      {
+        onSuccess: () => {
+          cancelEditingSchedule();
+        }
+      }
+    );
+  }
+
+  function handleDeleteSchedule(scheduleId: string) {
+    if (!window.confirm("이 근무 일정을 삭제할까요?")) {
+      return;
+    }
+
+    setEditMessage(null);
+    deleteScheduleMutation.mutate(scheduleId, {
+      onSuccess: () => {
+        if (editingScheduleId === scheduleId) {
+          cancelEditingSchedule();
+        }
+      }
+    });
   }
 
   if (!selectedDate) {
@@ -231,22 +316,185 @@ export function ScheduleDatePage() {
             <div className="daily-timeline">
               {schedules.map((schedule) => {
                 const isMySchedule = schedule.workerId === currentUserId;
+                const editingFormState = editingScheduleId === schedule.id ? editFormState : null;
 
                 return (
                   <article className={`daily-shift ${isMySchedule ? "mine" : ""}`.trim()} key={schedule.id}>
                     <div className="timeline-marker" aria-hidden="true" />
-                    <div className="shift-time">
-                      <strong>
-                        {getTimeLabel(schedule.startTime)} - {getTimeLabel(schedule.endTime)}
-                      </strong>
-                      <span>{getHoursLabel(getScheduleDuration(schedule))}</span>
-                    </div>
-                    <div className="shift-main">
-                      <strong>{schedule.workerName}</strong>
-                      <span>{schedule.position ?? "포지션 없음"}</span>
-                      {schedule.memo ? <p>{schedule.memo}</p> : null}
-                    </div>
-                    <p className="badge">{isMySchedule ? "내 근무" : "매장"}</p>
+                    {editingFormState ? (
+                      <form className="schedule-create-form schedule-edit-form" onSubmit={(event) => handleEditFormSubmit(event, schedule.id)}>
+                        <div className="schedule-time-row">
+                          <label>
+                            <span>날짜</span>
+                            <input
+                              onChange={(event) =>
+                                setEditFormState((current) =>
+                                  current
+                                    ? {
+                                        ...current,
+                                        workDate: event.target.value
+                                      }
+                                    : current
+                                )
+                              }
+                              required
+                              type="date"
+                              value={editingFormState.workDate}
+                            />
+                          </label>
+                          <label>
+                            <span>알바생</span>
+                            <select
+                              onChange={(event) =>
+                                setEditFormState((current) =>
+                                  current
+                                    ? {
+                                        ...current,
+                                        workerId: event.target.value
+                                      }
+                                    : current
+                                )
+                              }
+                              required
+                              value={editingFormState.workerId}
+                            >
+                              <option value="">알바생 선택</option>
+                              {workers.map((worker) => (
+                                <option key={worker.userId} value={worker.userId}>
+                                  {worker.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+
+                        <div className="schedule-time-row">
+                          <label>
+                            <span>시작</span>
+                            <input
+                              onChange={(event) =>
+                                setEditFormState((current) =>
+                                  current
+                                    ? {
+                                        ...current,
+                                        startTime: event.target.value
+                                      }
+                                    : current
+                                )
+                              }
+                              required
+                              type="time"
+                              value={editingFormState.startTime}
+                            />
+                          </label>
+                          <label>
+                            <span>종료</span>
+                            <input
+                              onChange={(event) =>
+                                setEditFormState((current) =>
+                                  current
+                                    ? {
+                                        ...current,
+                                        endTime: event.target.value
+                                      }
+                                    : current
+                                )
+                              }
+                              required
+                              type="time"
+                              value={editingFormState.endTime}
+                            />
+                          </label>
+                        </div>
+
+                        <label>
+                          <span>포지션</span>
+                          <input
+                            maxLength={40}
+                            onChange={(event) =>
+                              setEditFormState((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      position: event.target.value
+                                    }
+                                  : current
+                              )
+                            }
+                            placeholder="오픈, 미들, 마감"
+                            value={editingFormState.position}
+                          />
+                        </label>
+
+                        <label>
+                          <span>메모</span>
+                          <textarea
+                            maxLength={200}
+                            onChange={(event) =>
+                              setEditFormState((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      memo: event.target.value
+                                    }
+                                  : current
+                              )
+                            }
+                            placeholder="전달할 내용"
+                            rows={3}
+                            value={editingFormState.memo}
+                          />
+                        </label>
+
+                        {updateScheduleMutation.error ? (
+                          <p className="form-error">
+                            {updateScheduleMutation.error instanceof Error
+                              ? updateScheduleMutation.error.message
+                              : "근무 일정을 수정하지 못했습니다."}
+                          </p>
+                        ) : null}
+                        {editMessage ? <p className="form-error">{editMessage}</p> : null}
+
+                        <div className="shift-action-row">
+                          <button className="primary-button" disabled={updateScheduleMutation.isPending} type="submit">
+                            {updateScheduleMutation.isPending ? "저장 중" : "저장"}
+                          </button>
+                          <button className="secondary-button" onClick={cancelEditingSchedule} type="button">
+                            취소
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <>
+                        <div className="shift-time">
+                          <strong>
+                            {getTimeLabel(schedule.startTime)} - {getTimeLabel(schedule.endTime)}
+                          </strong>
+                          <span>{getHoursLabel(getScheduleDuration(schedule))}</span>
+                        </div>
+                        <div className="shift-main">
+                          <strong>{schedule.workerName}</strong>
+                          <span>{schedule.position ?? "포지션 없음"}</span>
+                          {schedule.memo ? <p>{schedule.memo}</p> : null}
+                          {isOwner ? (
+                            <div className="shift-actions">
+                              <button className="text-button" onClick={() => startEditingSchedule(schedule)} type="button">
+                                수정
+                              </button>
+                              <button
+                                className="text-button danger"
+                                disabled={deleteScheduleMutation.isPending}
+                                onClick={() => handleDeleteSchedule(schedule.id)}
+                                type="button"
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                        <p className="badge">{isMySchedule ? "내 근무" : "매장"}</p>
+                      </>
+                    )}
                   </article>
                 );
               })}
@@ -421,3 +669,4 @@ export function ScheduleDatePage() {
     </main>
   );
 }
+

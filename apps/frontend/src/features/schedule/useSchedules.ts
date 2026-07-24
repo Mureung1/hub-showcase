@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthProvider";
-import { createSchedule, getDailySchedules, getSchedules } from "./scheduleApi";
-import { CreateScheduleInput } from "./scheduleTypes";
+import { createSchedule, deleteSchedule, getDailySchedules, getSchedules, updateSchedule } from "./scheduleApi";
+import { CreateScheduleInput, UpdateScheduleInput } from "./scheduleTypes";
 
 export function useSchedules(storeId: string | null, fromDate: string, toDate: string, enabled = true) {
   const { session } = useAuth();
@@ -34,6 +34,37 @@ export function useCreateSchedule(storeId: string | null) {
 
   return useMutation({
     mutationFn: (input: CreateScheduleInput) => createSchedule(accessToken ?? "", storeId ?? "", input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["schedules"]
+      });
+    }
+  });
+}
+
+export function useUpdateSchedule() {
+  const { session } = useAuth();
+  const accessToken = session?.access_token;
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { scheduleId: string; values: UpdateScheduleInput }) =>
+      updateSchedule(accessToken ?? "", input.scheduleId, input.values),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["schedules"]
+      });
+    }
+  });
+}
+
+export function useDeleteSchedule() {
+  const { session } = useAuth();
+  const accessToken = session?.access_token;
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (scheduleId: string) => deleteSchedule(accessToken ?? "", scheduleId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ["schedules"]

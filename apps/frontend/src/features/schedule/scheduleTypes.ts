@@ -31,3 +31,9 @@ export type CreateScheduleInput = {
 export type CreateScheduleResponse = {
   schedule: Schedule;
 };
+
+export type UpdateScheduleInput = Partial<CreateScheduleInput>;
+
+export type UpdateScheduleResponse = {
+  schedule: Schedule;
+};

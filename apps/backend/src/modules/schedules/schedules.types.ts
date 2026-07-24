@@ -54,3 +54,33 @@ export type CreateScheduleRepositoryInput = CreateScheduleInput & {
 export type CreateScheduleResponse = {
   schedule: ScheduleResponse;
 };
+
+export type UpdateScheduleInput = {
+  scheduleId: string;
+  actorUserId: string;
+  workerId?: string;
+  workDate?: string;
+  startTime?: string;
+  endTime?: string;
+  position?: string | null;
+  memo?: string | null;
+};
+
+export type UpdateScheduleRepositoryInput = {
+  scheduleId: string;
+  workerId: string;
+  workDate: string;
+  startTime: string;
+  endTime: string;
+  position: string | null;
+  memo: string | null;
+};
+
+export type UpdateScheduleResponse = {
+  schedule: ScheduleResponse;
+};
+
+export type DeleteScheduleInput = {
+  scheduleId: string;
+  actorUserId: string;
+};

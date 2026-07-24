@@ -1,5 +1,5 @@
 import { supabaseAdminClient } from "../../common/config/supabase";
-import { CreateScheduleRepositoryInput, ScheduleRecord } from "./schedules.types";
+import { CreateScheduleRepositoryInput, ScheduleRecord, UpdateScheduleRepositoryInput } from "./schedules.types";
 
 const SCHEDULE_COLUMNS =
   "id,store_id,worker_id,work_date,start_time,end_time,position,memo,source,created_at,updated_at,profiles(id,name)";
@@ -40,21 +40,49 @@ export async function findSchedulesByStoreAndDateRange(storeId: string, fromDate
   });
 }
 
+export async function findScheduleById(scheduleId: string) {
+  const { data, error } = await supabaseAdminClient
+    .from("schedules")
+    .select(SCHEDULE_COLUMNS)
+    .eq("id", scheduleId)
+    .maybeSingle<ScheduleQueryRecord>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    ...data,
+    profiles: normalizeJoinedProfile(data.profiles)
+  };
+}
+
 export async function findOverlappingWorkerSchedules(input: {
   storeId: string;
   workerId: string;
   workDate: string;
   startTime: string;
   endTime: string;
+  excludeScheduleId?: string;
 }) {
-  const { data, error } = await supabaseAdminClient
+  let query = supabaseAdminClient
     .from("schedules")
     .select(SCHEDULE_COLUMNS)
     .eq("store_id", input.storeId)
     .eq("worker_id", input.workerId)
     .eq("work_date", input.workDate)
     .lt("start_time", input.endTime)
-    .gt("end_time", input.startTime)
+    .gt("end_time", input.startTime);
+
+  if (input.excludeScheduleId) {
+    query = query.neq("id", input.excludeScheduleId);
+  }
+
+  const { data, error } = await query
     .order("start_time", { ascending: true });
 
   if (error) {
@@ -93,4 +121,40 @@ export async function insertSchedule(input: CreateScheduleRepositoryInput) {
     ...data,
     profiles: normalizeJoinedProfile(data.profiles)
   };
+}
+
+export async function updateScheduleById(input: UpdateScheduleRepositoryInput) {
+  const { data, error } = await supabaseAdminClient
+    .from("schedules")
+    .update({
+      worker_id: input.workerId,
+      work_date: input.workDate,
+      start_time: input.startTime,
+      end_time: input.endTime,
+      position: input.position,
+      memo: input.memo
+    })
+    .eq("id", input.scheduleId)
+    .select(SCHEDULE_COLUMNS)
+    .single<ScheduleQueryRecord>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    ...data,
+    profiles: normalizeJoinedProfile(data.profiles)
+  };
+}
+
+export async function deleteScheduleById(scheduleId: string) {
+  const { error } = await supabaseAdminClient
+    .from("schedules")
+    .delete()
+    .eq("id", scheduleId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }

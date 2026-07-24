@@ -1,6 +1,12 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { createStoreSchedule, listStoreSchedules, listStoreSchedulesByDate } from "./schedules.service";
+import {
+  createStoreSchedule,
+  editStoreSchedule,
+  listStoreSchedules,
+  listStoreSchedulesByDate,
+  removeStoreSchedule
+} from "./schedules.service";
 
 function isValidDateText(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -53,6 +59,40 @@ const createScheduleSchema = z
     memo: optionalTextSchema(200)
   })
   .refine((value) => value.endTime > value.startTime, {
+    message: "종료 시간은 시작 시간보다 늦어야 합니다.",
+    path: ["endTime"]
+  });
+
+const updateOptionalTextSchema = (maxLength: number) =>
+  z
+    .string()
+    .trim()
+    .max(maxLength, `${maxLength}자 이하로 입력해주세요.`)
+    .transform((value) => (value ? value : null))
+    .optional();
+
+const updateScheduleSchema = z
+  .object({
+    workerId: z.string().uuid("알바생을 선택해주세요.").optional(),
+    workDate: dateSchema.optional(),
+    startTime: timeSchema.optional(),
+    endTime: timeSchema.optional(),
+    position: updateOptionalTextSchema(40),
+    memo: updateOptionalTextSchema(200)
+  })
+  .refine(
+    (value) =>
+      value.workerId !== undefined ||
+      value.workDate !== undefined ||
+      value.startTime !== undefined ||
+      value.endTime !== undefined ||
+      value.position !== undefined ||
+      value.memo !== undefined,
+    {
+      message: "수정할 값을 입력해주세요."
+    }
+  )
+  .refine((value) => !value.startTime || !value.endTime || value.endTime > value.startTime, {
     message: "종료 시간은 시작 시간보다 늦어야 합니다.",
     path: ["endTime"]
   });
@@ -151,4 +191,69 @@ export async function createScheduleController(req: Request, res: Response) {
   });
 
   res.status(201).json(response);
+}
+
+export async function updateScheduleController(req: Request, res: Response) {
+  const scheduleId = getStringParam(req.params.scheduleId);
+
+  if (!scheduleId) {
+    res.status(400).json({
+      message: "근무 일정 ID가 필요합니다."
+    });
+    return;
+  }
+
+  if (!req.authUser) {
+    res.status(401).json({
+      message: "인증 정보가 없습니다."
+    });
+    return;
+  }
+
+  const result = updateScheduleSchema.safeParse(req.body);
+
+  if (!result.success) {
+    res.status(400).json({
+      message: result.error.issues[0]?.message ?? "입력값을 확인해주세요."
+    });
+    return;
+  }
+
+  const response = await editStoreSchedule({
+    scheduleId,
+    actorUserId: req.authUser.id,
+    workerId: result.data.workerId,
+    workDate: result.data.workDate,
+    startTime: result.data.startTime,
+    endTime: result.data.endTime,
+    position: result.data.position,
+    memo: result.data.memo
+  });
+
+  res.status(200).json(response);
+}
+
+export async function deleteScheduleController(req: Request, res: Response) {
+  const scheduleId = getStringParam(req.params.scheduleId);
+
+  if (!scheduleId) {
+    res.status(400).json({
+      message: "근무 일정 ID가 필요합니다."
+    });
+    return;
+  }
+
+  if (!req.authUser) {
+    res.status(401).json({
+      message: "인증 정보가 없습니다."
+    });
+    return;
+  }
+
+  await removeStoreSchedule({
+    scheduleId,
+    actorUserId: req.authUser.id
+  });
+
+  res.status(204).send();
 }

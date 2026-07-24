@@ -556,6 +556,41 @@ p {
   font-weight: 500;
 }
 
+.shift-actions,
+.shift-action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shift-actions {
+  margin-top: 10px;
+}
+
+.shift-actions .text-button {
+  min-height: 28px;
+  padding: 0;
+  font-size: 12px;
+}
+
+.text-button.danger {
+  color: #b42318;
+}
+
+.schedule-edit-form {
+  grid-column: 2 / -1;
+  padding: 14px;
+  border: 1px solid var(--color-green-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.shift-action-row .primary-button,
+.shift-action-row .secondary-button {
+  flex: 1;
+  min-height: 38px;
+}
+
 .daily-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
