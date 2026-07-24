@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "failure.schema.json",
+  "title": "Immutable Harness Failure Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "failure_id",
+    "attempt_id",
+    "phase_id",
+    "step_id",
+    "recorded_at",
+    "observation",
+    "diagnosis_assessment",
+    "disposition",
+    "resolution_policy",
+    "integrity_hmac"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "failure_id": { "type": "string", "pattern": "^failure-[a-f0-9]+$" },
+    "attempt_id": { "type": "string", "minLength": 1 },
+    "phase_id": { "type": "string", "minLength": 1 },
+    "step_id": { "type": "string", "minLength": 1 },
+    "recorded_at": { "type": "string", "format": "date-time" },
+    "observation": {
+      "type": "object",
+      "required": ["observation_id", "observed_at", "symptom", "source", "details"],
+      "properties": {
+        "observation_id": { "type": "string", "minLength": 1 },
+        "observed_at": { "type": "string", "format": "date-time" },
+        "symptom": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "details": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "diagnosis_assessment": {
+      "type": "object",
+      "required": ["assessment_id", "category", "statement", "status", "basis"],
+      "properties": {
+        "assessment_id": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "minLength": 1 },
+        "statement": { "type": "string", "minLength": 1 },
+        "status": {
+          "enum": ["hypothesis", "suspected", "confirmed", "refuted", "inconclusive"]
+        },
+        "basis": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "disposition": { "type": "object" },
+    "resolution_policy": { "type": "string", "minLength": 1 },
+    "integrity_hmac": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

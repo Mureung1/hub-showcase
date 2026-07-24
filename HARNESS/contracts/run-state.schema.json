@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "run-state.schema.json",
+  "title": "Harness Run State Projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "project_id",
+    "target_stage",
+    "status",
+    "created_at",
+    "updated_at",
+    "source",
+    "plan_snapshot",
+    "current",
+    "phase_states",
+    "open_failure_ids",
+    "last_event_seq",
+    "last_event_hash",
+    "integrity_hmac",
+    "integrity_key_id"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "run_id": { "type": "string", "minLength": 8 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "target_stage": { "enum": ["passed", "deployed", "observed"] },
+    "status": {
+      "enum": ["pending", "running", "verifying", "retry_wait", "blocked", "failed", "passed", "deploying", "deployed", "observing", "observed", "interrupted", "cancelled"]
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "ended_at": { "type": ["string", "null"], "format": "date-time" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_commit", "branch", "dirty_paths"],
+      "properties": {
+        "base_commit": { "type": "string" },
+        "branch": { "type": "string" },
+        "dirty_paths": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "plan_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "current": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase_id", "step_id", "attempt_id"],
+      "properties": {
+        "phase_id": { "type": ["string", "null"] },
+        "step_id": { "type": ["string", "null"] },
+        "attempt_id": { "type": ["string", "null"] }
+      }
+    },
+    "phase_states": { "type": "array", "items": { "type": "object" } },
+    "open_failure_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+    "blocked": { "type": ["object", "null"] },
+    "result": { "type": ["object", "null"] },
+    "last_event_seq": { "type": "integer", "minimum": 0 }
+    ,
+    "last_event_hash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "integrity_hmac": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "integrity_key_id": { "type": "string", "minLength": 1 }
+  }
+}
