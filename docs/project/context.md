@@ -21,7 +21,8 @@
 | `CTX-018` | 활성 | MVP AI 구조화는 OpenAI Responses API와 `gpt-5.6-luna`를 사용한다. 구조화 출력은 서버에서 다시 검증하고, AI 결과는 자동 저장하지 않으며 사용자가 수정한 저장 요청을 별도로 검증한다. | `COMMON-AI-001` |
 | `CTX-019` | 대체됨 | 직접 입력 전용 AI 구조화와 `sourceUrl` 거부 정책은 `BE-AI-002` 완료로 종료됐다. 대체 결정은 `CTX-020`이다. | `BE-AI-001`, `BE-AI-002` |
 | `CTX-020` | 활성 | AI 구조화는 직접 입력, 안전하게 수집한 URL과 두 입력의 조합을 지원한다. URL 출처는 AI가 아닌 서버가 검증된 제출 URL과 수집한 제목·작성자로 설정하며, 직접 입력만 사용하면 `source`는 `null`이다. `warnings[].field` 검증 규칙은 계속 유지한다. | `BE-AI-001`, `BE-AI-002`, `FE-AI-001` |
-| `CTX-021` | 활성 | 임의의 공개 제3자 YouTube 영상 자막은 MVP에서 자동 수집하지 않는다. 공식 YouTube Data API 메타데이터는 레시피 원문을 제공하지 않고 자막에는 OAuth 및 영상 편집자 권한이 필요하므로 비공식 스크래핑·내부 엔드포인트를 채택하지 않는다. YouTube URL 수집 실패는 기존 `URL_FETCH_FAILED` 422와 직접 입력 안내를 사용하며 새 OAuth, API 키, 환경 변수와 오류 코드를 추가하지 않는다. | `COMMON-AI-002` |
+| `CTX-021` | 대체됨 | 공개 YouTube 영상 자막 자동 수집을 지원하지 않는 정책은 `BE-AI-005` 예정 정책으로 대체됐다. | `COMMON-AI-002`, `BE-AI-005` |
+| `CTX-022` | 활성 | 공개 `youtube.com`, `youtu.be` 영상은 YouTube Data API에서 제목·채널명을 조회하고 `youtube-transcript-api`로 공개 또는 자동 생성 자막을 한 번 조회한다. 자막 조회 실패 시 `gemini-3.6-flash`가 원본 URL·제목·채널명을 분석하고, 어느 경로든 기존 OpenAI가 최종 `RecipeDraft`를 구조화·검증한다. 프록시·쿠키·계정 인증·차단 우회와 영상·자막·썸네일 저장은 사용하지 않으며, 실패는 `URL_FETCH_FAILED` 422와 직접 입력 안내로 처리한다. | `BE-AI-005` |
 
 ## 알려진 문제
 
