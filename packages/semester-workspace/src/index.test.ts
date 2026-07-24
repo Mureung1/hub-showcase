@@ -46,6 +46,10 @@ test('semester workspace package exposes admission and bundle/context Modules', 
     'function',
   )
   assert.equal(
+    typeof semesterWorkspace.createSetupEnvelopeStore,
+    'function',
+  )
+  assert.equal(
     'createSemesterWorkspaceAdmissionForTesting' in semesterWorkspace,
     false,
   )

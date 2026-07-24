@@ -26,6 +26,13 @@ export {
   createWorkspaceContextGuard,
   verifyWorkspaceStaticContext,
 } from './workspace-context.js'
+export {
+  createSetupEnvelopeStore,
+  decodeSetupStateEnvelopeBytes,
+  encodeSetupStateEnvelope,
+  SetupEnvelopeStorageError,
+  SetupStateCodecError,
+} from './setup-envelope-store.js'
 
 export type SemesterWorkspaceScaffold = {
   readonly workspace: '@ay-ple/semester-workspace'
