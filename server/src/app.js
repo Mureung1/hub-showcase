@@ -226,13 +226,11 @@ app.post('/api/posts', async (req, res) => {
     reward: reward || '없음',
     author_grade: finalGrade,
     author_major: finalMajor,
-    grade_tag: finalGrade,
-    major_tag: finalMajor,
     created_at: new Date().toISOString()
   };
 
   if (isMock) {
-    const created = { id: String(mockDb.posts.length + 1), ...newPost };
+    const created = { id: String(mockDb.posts.length + 1), grade_tag: finalGrade, major_tag: finalMajor, ...newPost };
     mockDb.posts.push(created);
     return res.status(201).json(created);
   }
@@ -246,6 +244,7 @@ app.post('/api/posts', async (req, res) => {
     if (error) throw error;
     res.status(201).json(data[0]);
   } catch (err) {
+    console.error("Supabase Post Insert Error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
