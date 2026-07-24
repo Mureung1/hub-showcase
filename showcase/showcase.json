@@ -25,9 +25,7 @@
   "featureTags": [
     "PT 강좌 VOD",
     "AI 식단 분석",
-    "헬스장 매칭",
-    "상담 신청",
-    "트레이너 대시보드"
+    "헬스장 매칭"
   ],
   "techStack": [
     "React",
@@ -42,10 +40,8 @@
   ],
   "techHighlights": [
     "React + Vite monorepo(frontend-web / backend / mobile-app)로 회원·트레이너 모드를 한 코드베이스에서 운영합니다.",
-    "Express API + Supabase(Postgres)로 강좌·헬스장·식단·상담 데이터를 관리하고, JWT 기반 인증을 적용합니다.",
     "PT 강좌 시청 기록(course_views)과 규칙 기반 매칭 점수(거리 40 + specialty 40 + 헬스장 타입 20)로 주변 헬스장을 추천합니다.",
-    "Gemini Vision API로 식단 사진의 영양소·칼로리를 추정하고 피드백 문구를 생성합니다.",
-    "Expo WebView 모바일 앱으로 frontend-web을 그대로 감싸 GPS·지도 기능을 실기기에서 테스트합니다."
+    "Gemini Vision API로 식단 사진의 영양소·칼로리를 추정하고 피드백 문구를 생성합니다."
   ],
   "developmentWithAI": "저는 문제 정의, 핵심 기능 우선순위, UX 흐름을 정했습니다. Cursor Agent는 API·DB 스키마·매칭 로직·Vitest 테스트 환경 코드 초안을 만들었고, 저는 실행·테스트·마이그레이션 적용·UI 확인을 하며 수정했습니다.",
   "agent": {

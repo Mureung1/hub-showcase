@@ -144,6 +144,11 @@
 }
 
 /* Bottom sheet */
+.user-layout .gym-sheet {
+  background: rgba(20, 20, 24, 0.96);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
 .gym-sheet {
   position: absolute;
   left: 0;

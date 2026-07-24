@@ -7,6 +7,7 @@ import { uploadMealImage, MEAL_IMAGE_ACCEPT_ATTR, validateMealImageFile } from '
 import { ApiError } from '../../services/api';
 import { MEAL_TYPES, type MealType } from '../../types/meal';
 import { todayString } from '../../utils/date';
+import { resizeMealImageForUpload } from '../../utils/resizeMealImage';
 import '../map/consult.css';
 import './mealSheet.css';
 
@@ -146,7 +147,8 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
 
   const resolveImageUrl = async (): Promise<string | null> => {
     if (!photoFile) return null;
-    return uploadMealImage(photoFile);
+    const optimized = await resizeMealImageForUpload(photoFile);
+    return uploadMealImage(optimized);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -236,11 +238,7 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
   };
 
   const sheetTitle = mode === 'photo' ? '사진으로 식단 기록' : '칼로리 직접 입력';
-  const submitLabel = submitting
-    ? mode === 'photo'
-      ? 'AI 분석·저장 중…'
-      : '저장 중…'
-    : '식단 저장';
+  const submitLabel = submitting ? '저장 중…' : '식단 저장';
 
   return createPortal(
     <div className="consult-overlay" onClick={onClose}>
@@ -257,7 +255,7 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
             <h2 id={titleId}>{sheetTitle}</h2>
             <p className="consult-sheet-sub">
               {mode === 'photo'
-                ? '사진을 올리면 서버에서 Gemini가 탄단지·칼로리·피드백을 추정합니다.'
+                ? '사진을 저장한 뒤 AI가 탄단지·칼로리·피드백을 분석합니다. 결과는 잠시 후 타임라인에 표시됩니다.'
                 : '탄단지·칼로리를 입력하고, 사진을 넣으면 AI 피드백을 받을 수 있습니다.'}
             </p>
           </div>
