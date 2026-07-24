@@ -4,6 +4,7 @@
   "description": "",
   "main": "dist/server.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
@@ -12,7 +13,9 @@
     "sync:catalog": "tsx scripts/syncGovCatalog.ts",
     "sync:districts": "tsx scripts/syncRegionDistricts.ts",
     "sync:item-names-en": "tsx scripts/syncItemNamesEn.ts",
-    "sync:region-names-en": "tsx scripts/syncRegionNamesEn.ts"
+    "sync:region-names-en": "tsx scripts/syncRegionNamesEn.ts",
+    "sync:bulky-waste-fees": "tsx scripts/syncBulkyWasteFees.ts",
+    "seed:bulky-waste-report-sites": "tsx scripts/seedBulkyWasteReportSites.ts"
   },
   "keywords": [],
   "author": "",
