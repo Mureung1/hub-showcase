@@ -281,14 +281,19 @@ Kafka 컨테이너에 볼륨 미설정 — 현재는 빈 컨슈머라 무관하�
 - [x] `./gradlew compileJava`, `npm run build`(프론트 변경 없음 확인) 성공
 - [x] 실제 `opendata.alio.go.kr` 호출로 envelope 구조·필드 타입·날짜 포맷을 직접 확인·보정 (인증키 없이도 응답이 와서 셀프 검증 가능했음 — 원래 계획한 "사용자가 결과 공유" 프로토콜보다 더 많은 것을 이번에 직접 검증함)
 - [x] Kafka 프로듀서(`AlioJobPostingCollectorService`)→컨슈머(`JobPostingCollectedConsumer`)→DB(`JobPostingIngestService`) 전체 경로 실제 이벤트로 검증
-- [ ] **사용자 확인 필요**: `recrutPbancTtl` 제목 필터가 실제로 왜 0건만 반환하는지 ALIO 개발문서로 확인 — 정확한 검색 파라미터명이 다를 가능성. 확인 전까지는 `/api/job-postings/collect`가 대부분의 jobTitle에 대해 0건을 수집할 것으로 예상됨(구조적 버그 아님, 파라미터명 재확인 필요)
+- [x] `recrutPbancTtl` 0건 원인 규명 및 수정 완료 (아래 상세)
 - [x] 기존 랭킹/진행 상황 API 회귀 없음 확인 (`job_posting` 테이블 신규 추가만, 기존 스키마 변경 없음)
+
+**해결 — `recrutPbancTtl` 0건이었던 진짜 원인**
+Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInquiryList.do.js`)의 실제 클라이언트 JS를 직접 받아 분석한 결과, 폼이 항상 15개 필드(pageNo~pbancEndYmd)를 전부 제출한다는 걸 확인했고, 우리 요청이 그중 9개(`instType`/`instClsf`/`pblntInstCd`/`ncsCdLst`/`workRgnLst`/`acbgCondLst`/`hireTypeLst`/`recrutSe`/`replmprYn`)를 **키 자체를 아예 안 보내고 있었던 것**이 원인이었다 — 빈 값이라도 키가 존재해야 서버가 검색 조건을 정상 바인딩한다. 세션 쿠키, `charset=UTF-8`, `Referer`/`Origin`/`User-Agent`/`Sec-Fetch-*`/`sec-ch-ua*` 등은 브라우저 "Copy as cURL" 캡처를 최소 헤더까지 하나씩 제거하며 이분탐색으로 전부 불필요함을 직접 증명했다(`X-Requested-With`+`Content-Type`+15개 필드만으로 재현 성공). `AlioJobPostingCollectorService.buildRequestParams()`에 9개 필드를 빈 문자열로 추가해 수정 — 인증키(`key`)를 더해 우리 코드는 총 16개 필드를 보낸다.
+
+부수적으로 발견한 것(실제 버그 아님, 기록만): 디버깅 과정에서 로컬 Git Bash 셸에 한글을 직접 타이핑해 `curl --data-urlencode`로 넘기면 UTF-8이 깨지는 걸 발견했다(`--trace-ascii`로 실제 전송 바이트 비교해 확인: `%EC%B1%84%EC%9A%A9`이어야 할 것이 `%C3%A4%BF%EB`로 깨짐). 이건 순수히 로컬 bash 셸/도구 계층의 문제이고, Java `URLEncoder.encode(value, StandardCharsets.UTF_8)`는 OS/셸 로케일과 무관하게 항상 올바른 UTF-8이라 실제 Feign 코드는 영향 없음 — 미리 퍼센트인코딩된 리터럴로 우리 앱의 `/api/job-postings/collect?jobTitle=%EC%B1%84%EC%9A%A9`를 직접 호출해 실제 ALIO 공고 41건이 수집→Kafka 발행→컨슈머→DB 저장까지 전부 성공하는 것으로 최종 검증(검증 후 테스트 데이터 삭제).
+- [x] `./gradlew test` 전체 48개 테스트 통과 재확인 (기존 40 + `AlioDateParser` TDD 8개, 이번 수정으로 인한 회귀 없음)
 
 **이번엔 하지 않은 것**
 - 에러 매핑(Feign 실패 시 502 등), 재시도/DLQ 정책
 - 자격증 추출(정규화, FR-2) — `preferenceDetail`(prefCn 원문) 파싱은 다음 이슈
 - 주기 재수집(`@Scheduled`) — 온디맨드 트리거만
-- `recrutPbancTtl` 대체 파라미터 조사 (사용자 확인 대기)
 
 ---
 
@@ -297,7 +302,7 @@ Kafka 컨테이너에 볼륨 미설정 — 현재는 빈 컨슈머라 무관하�
 | Task | 설명 | 우선순위 | 예상 시점 | 상태 |
 |---|---|---|---|---|
 | ALIO Collector | Feign 클라이언트, 채용공고 실제 수집 + Kafka 프로듀서/컨슈머 원문 저장. **주의**: MyBatis 집계 쿼리가 `total_posting_count=0`일 때 division-by-zero(500)를 던짐 — 실 데이터 수집 전 방어 로직 필요 (Issue 8 참고) | P0 | - | Done (Issue 11) |
-| `recrutPbancTtl` 검색 파라미터 재확인 | 제목 키워드/전체 제목 모두 0건 반환 — ALIO 개발문서로 정확한 검색 파라미터명 확인 필요 (Issue 11에서 발견) | P0 | 다음 슬라이스 | Todo |
+| `recrutPbancTtl` 검색 파라미터 재확인 | 원인 규명 완료 — ALIO 검색 폼이 요구하는 15개 필드 중 9개를 키째로 누락해서 발생. `AlioJobPostingCollectorService`에 반영 완료, 실제 공고 41건 수집 검증 | P0 | - | Done (Issue 11) |
 | 자격증 정규화 에이전트 | 룰 기반 1차 매칭 + 애매 항목 LLM 배치 정규화, `JobPostingCollectedConsumer`(Issue 11)의 `preferenceDetail`(prefCn 원문) 파싱 + 전용 DTO 정의 | P0 | 다음 슬라이스 | Todo |
 | 강조도 분류 (필수/우대/낮음) | 문맥 기반 분류 로직으로 고도화 (현재는 단순 규칙) | P1 | 다음 슬라이스 | Todo |
 | MyBatis 집계 쿼리 | 언급 빈도·강조도 join 집계 → 랭킹 | P1 | - | Done (Issue 8) |
@@ -309,3 +314,9 @@ Kafka 컨테이너에 볼륨 미설정 — 현재는 빈 컨슈머라 무관하�
 | 컨슈머 재시도/DLQ 정책 | `JobPostingCollectedConsumer` 에러 핸들링 — 실제 메시지 스키마 확정 후 설계 (Issue 10에서 범위 밖으로 분리) | P2 | 추후 | Todo |
 | 통합 테스트 · 예외처리 고도화 | 전체 파이프라인 e2e 확인 | P2 | 추후 | Todo |
 | 최종 문서화 · 데모 준비 | README/위키 최신화, 발표 자료 | P2 | 추후 | Todo |
+
+---
+
+## 개발 환경 메모
+
+- 로컬 Git Bash에서 `curl --data-urlencode`로 한글을 직접 타이핑하면 UTF-8이 깨질 수 있음 — 디버깅 시 퍼센트인코딩된 리터럴을 직접 쓰거나 파일로 저장해서 사용할 것 (Issue 11에서 `recrutPbancTtl` 디버깅 중 발견 — `--trace-ascii`로 실제 전송 바이트 비교해 확인)
