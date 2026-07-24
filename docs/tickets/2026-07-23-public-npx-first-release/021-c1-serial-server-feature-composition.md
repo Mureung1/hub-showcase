@@ -83,6 +83,7 @@ Spine S2의 listener-independent application seam에 A-owned account route adapt
 | Focused verification | `@ay-ple/server` 244/244, `@ay-ple/semester-workspace` 166/166, occupied-port cleanup retry와 exact package-root export 검증이 green이다. |
 | Repository verification | Exact candidate에서 `npm test`, root typecheck/build, Chat Shell lint, docs links와 `git diff --check`가 green이다. |
 | H1 handoff | H1은 root-exported `createServerApplication()`, 일반 `listenToServerApplication()`, bind-first `bindServerApplicationListener()`와 `ServerStartupCleanupError`만 소비한다. Public host preflight, static serving, request delegate 교체와 Browser open은 C1에 포함하지 않는다. |
+| H1 listener corrective fixed review | `4e5083c1957583e8ec8abbbad8c9ab37dac34276` — bind-first capability가 exact-once listener, one genuine application attach와 기존 caller-signal cleanup authority만 공개한다. Independent Server architecture, Standards와 H1b consumer review는 unresolved finding 0건으로 PASS했다. Pre-attach incomplete TCP connection의 bounded force-close를 포함한 Server 252/252, typecheck, root build, exact package-root export 4개, docs links와 `git diff --check`가 green이다. |
 
 ## Blocked By
 
