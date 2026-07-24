@@ -1,7 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthProvider";
-import { createSchedule, deleteSchedule, getDailySchedules, getSchedules, updateSchedule } from "./scheduleApi";
-import { CreateScheduleInput, UpdateScheduleInput } from "./scheduleTypes";
+import {
+  createRecurringSchedules,
+  createSchedule,
+  deleteSchedule,
+  getDailySchedules,
+  getSchedules,
+  updateSchedule
+} from "./scheduleApi";
+import { CreateRecurringSchedulesInput, CreateScheduleInput, UpdateScheduleInput } from "./scheduleTypes";
 
 export function useSchedules(storeId: string | null, fromDate: string, toDate: string, enabled = true) {
   const { session } = useAuth();
@@ -34,6 +41,21 @@ export function useCreateSchedule(storeId: string | null) {
 
   return useMutation({
     mutationFn: (input: CreateScheduleInput) => createSchedule(accessToken ?? "", storeId ?? "", input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["schedules"]
+      });
+    }
+  });
+}
+
+export function useCreateRecurringSchedules(storeId: string | null) {
+  const { session } = useAuth();
+  const accessToken = session?.access_token;
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: CreateRecurringSchedulesInput) => createRecurringSchedules(accessToken ?? "", storeId ?? "", input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ["schedules"]

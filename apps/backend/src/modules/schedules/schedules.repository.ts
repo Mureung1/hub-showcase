@@ -1,8 +1,17 @@
 import { supabaseAdminClient } from "../../common/config/supabase";
-import { CreateScheduleRepositoryInput, ScheduleRecord, UpdateScheduleRepositoryInput } from "./schedules.types";
+import {
+  BulkScheduleRepositoryInput,
+  CreateRecurringScheduleRuleRepositoryInput,
+  CreateScheduleRepositoryInput,
+  RecurringScheduleRuleRecord,
+  ScheduleRecord,
+  UpdateScheduleRepositoryInput
+} from "./schedules.types";
 
 const SCHEDULE_COLUMNS =
   "id,store_id,worker_id,work_date,start_time,end_time,position,memo,source,created_at,updated_at,profiles(id,name)";
+const RECURRING_SCHEDULE_RULE_COLUMNS =
+  "id,store_id,worker_id,weekday,start_time,end_time,start_date,end_date,position,memo,created_at,updated_at";
 
 type ScheduleQueryRecord = Omit<ScheduleRecord, "profiles"> & {
   profiles: ScheduleRecord["profiles"] | ScheduleRecord["profiles"][] | null;
@@ -121,6 +130,70 @@ export async function insertSchedule(input: CreateScheduleRepositoryInput) {
     ...data,
     profiles: normalizeJoinedProfile(data.profiles)
   };
+}
+
+export async function insertSchedules(inputs: BulkScheduleRepositoryInput[]) {
+  const { data, error } = await supabaseAdminClient
+    .from("schedules")
+    .insert(
+      inputs.map((input) => ({
+        store_id: input.storeId,
+        worker_id: input.workerId,
+        work_date: input.workDate,
+        start_time: input.startTime,
+        end_time: input.endTime,
+        position: input.position,
+        memo: input.memo,
+        source: input.source
+      }))
+    )
+    .select(SCHEDULE_COLUMNS);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data as unknown as ScheduleQueryRecord[]).map((schedule) => {
+    return {
+      ...schedule,
+      profiles: normalizeJoinedProfile(schedule.profiles)
+    };
+  });
+}
+
+export async function insertRecurringScheduleRule(input: CreateRecurringScheduleRuleRepositoryInput) {
+  const { data, error } = await supabaseAdminClient
+    .from("recurring_schedule_rules")
+    .insert({
+      store_id: input.storeId,
+      worker_id: input.workerId,
+      weekday: input.weekday,
+      start_time: input.startTime,
+      end_time: input.endTime,
+      start_date: input.startDate,
+      end_date: input.endDate,
+      position: input.position,
+      memo: input.memo
+    })
+    .select(RECURRING_SCHEDULE_RULE_COLUMNS)
+    .single<RecurringScheduleRuleRecord>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function deleteRecurringScheduleRuleById(ruleId: string) {
+  const { error } = await supabaseAdminClient
+    .from("recurring_schedule_rules")
+    .delete()
+    .eq("id", ruleId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function updateScheduleById(input: UpdateScheduleRepositoryInput) {

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import {
+  createStoreRecurringSchedules,
   createStoreSchedule,
   editStoreSchedule,
   listStoreSchedules,
@@ -57,6 +58,26 @@ const createScheduleSchema = z
     endTime: timeSchema,
     position: optionalTextSchema(40),
     memo: optionalTextSchema(200)
+  })
+  .refine((value) => value.endTime > value.startTime, {
+    message: "종료 시간은 시작 시간보다 늦어야 합니다.",
+    path: ["endTime"]
+  });
+
+const createRecurringSchedulesSchema = z
+  .object({
+    workerId: z.string().uuid("알바생을 선택해주세요."),
+    weekday: z.number().int().min(0, "요일을 선택해주세요.").max(6, "요일을 선택해주세요."),
+    startDate: dateSchema,
+    endDate: dateSchema,
+    startTime: timeSchema,
+    endTime: timeSchema,
+    position: optionalTextSchema(40),
+    memo: optionalTextSchema(200)
+  })
+  .refine((value) => value.endDate >= value.startDate, {
+    message: "종료일은 시작일보다 빠를 수 없습니다.",
+    path: ["endDate"]
   })
   .refine((value) => value.endTime > value.startTime, {
     message: "종료 시간은 시작 시간보다 늦어야 합니다.",
@@ -184,6 +205,40 @@ export async function createScheduleController(req: Request, res: Response) {
     storeId,
     workerId: result.data.workerId,
     workDate: result.data.workDate,
+    startTime: result.data.startTime,
+    endTime: result.data.endTime,
+    position: result.data.position,
+    memo: result.data.memo
+  });
+
+  res.status(201).json(response);
+}
+
+export async function createRecurringSchedulesController(req: Request, res: Response) {
+  const storeId = getStringParam(req.params.storeId);
+
+  if (!storeId) {
+    res.status(400).json({
+      message: "매장 ID가 필요합니다."
+    });
+    return;
+  }
+
+  const result = createRecurringSchedulesSchema.safeParse(req.body);
+
+  if (!result.success) {
+    res.status(400).json({
+      message: result.error.issues[0]?.message ?? "입력값을 확인해주세요."
+    });
+    return;
+  }
+
+  const response = await createStoreRecurringSchedules({
+    storeId,
+    workerId: result.data.workerId,
+    weekday: result.data.weekday,
+    startDate: result.data.startDate,
+    endDate: result.data.endDate,
     startTime: result.data.startTime,
     endTime: result.data.endTime,
     position: result.data.position,

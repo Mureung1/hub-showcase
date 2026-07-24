@@ -2,6 +2,8 @@ import { apiRequest } from "../../shared/api";
 import {
   CreateScheduleInput,
   CreateScheduleResponse,
+  CreateRecurringSchedulesInput,
+  CreateRecurringSchedulesResponse,
   SchedulesResponse,
   UpdateScheduleInput,
   UpdateScheduleResponse
@@ -26,6 +28,18 @@ export async function getDailySchedules(accessToken: string, storeId: string, wo
 
 export async function createSchedule(accessToken: string, storeId: string, input: CreateScheduleInput) {
   return apiRequest<CreateScheduleResponse>(`/stores/${storeId}/schedules`, {
+    method: "POST",
+    accessToken,
+    body: input
+  });
+}
+
+export async function createRecurringSchedules(
+  accessToken: string,
+  storeId: string,
+  input: CreateRecurringSchedulesInput
+) {
+  return apiRequest<CreateRecurringSchedulesResponse>(`/stores/${storeId}/recurring-schedules`, {
     method: "POST",
     accessToken,
     body: input

@@ -1,11 +1,14 @@
 import {
   addMonths,
+  endOfMonth,
   format,
   isSameMonth,
 } from "date-fns";
+import { FormEvent, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMe } from "../features/auth";
 import {
+  useCreateRecurringSchedules,
   getCalendarDateRange,
   getDayLabel,
   getDayTone,
@@ -18,10 +21,31 @@ import {
   sortMonthlySchedules,
   useSchedules
 } from "../features/schedule";
+import { useWorkers } from "../features/worker";
 import { getScheduleDatePath, ROUTES } from "../shared/routes";
 import { getSelectedStoreId } from "../shared/utils";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+const weekdayOptions = [
+  { value: 0, label: "일요일" },
+  { value: 1, label: "월요일" },
+  { value: 2, label: "화요일" },
+  { value: 3, label: "수요일" },
+  { value: 4, label: "목요일" },
+  { value: 5, label: "금요일" },
+  { value: 6, label: "토요일" }
+];
+
+type RecurringScheduleFormState = {
+  workerId: string;
+  weekday: string;
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  position: string;
+  memo: string;
+};
 
 function getMonthPath(date: Date) {
   return `${ROUTES.schedule}?month=${format(date, "yyyy-MM")}`;
@@ -31,15 +55,41 @@ function getTimeLabel(time: string) {
   return time.slice(0, 5);
 }
 
+function getInputTimeValue(time: string | null) {
+  return time ? time.slice(0, 5) : "";
+}
+
+function getDefaultRecurringFormState(currentMonth: Date): RecurringScheduleFormState {
+  return {
+    workerId: "",
+    weekday: "",
+    startDate: format(currentMonth, "yyyy-MM-dd"),
+    endDate: format(endOfMonth(currentMonth), "yyyy-MM-dd"),
+    startTime: "",
+    endTime: "",
+    position: "",
+    memo: ""
+  };
+}
+
 export function SchedulePage() {
   const [searchParams] = useSearchParams();
   const { data: me } = useMe();
   const selectedStoreId = getSelectedStoreId();
   const selectedStore = me?.stores.find((store) => store.id === selectedStoreId);
+  const isOwner = selectedStore?.role === "OWNER";
   const currentMonth = parseMonthParam(searchParams.get("month"));
+  const currentMonthKey = format(currentMonth, "yyyy-MM");
+  const [recurringFormState, setRecurringFormState] = useState<RecurringScheduleFormState>(() =>
+    getDefaultRecurringFormState(currentMonth)
+  );
+  const [recurringMessage, setRecurringMessage] = useState<string | null>(null);
   const { calendarDays, calendarEnd, calendarStart, fromDate, toDate } = getCalendarDateRange(currentMonth);
   const { data, error, isLoading } = useSchedules(selectedStoreId, fromDate, toDate);
+  const { data: workersData, error: workersError, isLoading: isWorkersLoading } = useWorkers(selectedStoreId, isOwner);
+  const createRecurringSchedulesMutation = useCreateRecurringSchedules(selectedStoreId);
   const schedules = data?.schedules ?? [];
+  const workers = workersData?.workers ?? [];
   const currentUserId = me?.profile.id;
   const schedulesByDate = groupSchedulesByDate(schedules);
   const { activeWorkDays, currentMonthSchedules, myMonthHours, myMonthSchedules } = getMonthlyScheduleSummary(
@@ -51,6 +101,61 @@ export function SchedulePage() {
   const upcomingSchedules = sortMonthlySchedules(currentMonthSchedules.filter((schedule) => schedule.workDate >= todayKey));
   const sideSchedules =
     upcomingSchedules.length > 0 ? upcomingSchedules.slice(0, 4) : sortMonthlySchedules(currentMonthSchedules).slice(0, 4);
+
+  useEffect(() => {
+    setRecurringFormState((current) => ({
+      ...current,
+      startDate: format(currentMonth, "yyyy-MM-dd"),
+      endDate: format(endOfMonth(currentMonth), "yyyy-MM-dd")
+    }));
+    setRecurringMessage(null);
+  }, [currentMonthKey]);
+
+  function handleRecurringWorkerChange(workerId: string) {
+    const selectedWorker = workers.find((worker) => worker.userId === workerId);
+
+    setRecurringFormState((current) => ({
+      ...current,
+      workerId,
+      startTime: getInputTimeValue(selectedWorker?.defaultWorkStartTime ?? null),
+      endTime: getInputTimeValue(selectedWorker?.defaultWorkEndTime ?? null)
+    }));
+    setRecurringMessage(null);
+  }
+
+  function handleRecurringFormSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setRecurringMessage(null);
+
+    if (!recurringFormState.workerId) {
+      setRecurringMessage("알바생을 선택해주세요.");
+      return;
+    }
+
+    if (recurringFormState.weekday === "") {
+      setRecurringMessage("요일을 선택해주세요.");
+      return;
+    }
+
+    createRecurringSchedulesMutation.mutate(
+      {
+        workerId: recurringFormState.workerId,
+        weekday: Number(recurringFormState.weekday),
+        startDate: recurringFormState.startDate,
+        endDate: recurringFormState.endDate,
+        startTime: recurringFormState.startTime,
+        endTime: recurringFormState.endTime,
+        position: recurringFormState.position.trim() || null,
+        memo: recurringFormState.memo.trim() || null
+      },
+      {
+        onSuccess: (response) => {
+          setRecurringFormState(getDefaultRecurringFormState(currentMonth));
+          setRecurringMessage(`${response.schedules.length}건의 반복 근무가 등록되었습니다.`);
+        }
+      }
+    );
+  }
 
   return (
     <main className="dashboard">
@@ -178,6 +283,189 @@ export function SchedulePage() {
               </div>
             )}
           </section>
+
+          {isOwner ? (
+            <section className="side-card">
+              <div className="card-head compact">
+                <h3>반복 근무 등록</h3>
+              </div>
+
+              {isWorkersLoading ? (
+                <div className="empty-state">
+                  <strong>알바생 조회 중</strong>
+                  <span>등록 가능한 알바생을 확인하고 있습니다.</span>
+                </div>
+              ) : null}
+
+              {workersError ? (
+                <div className="empty-state">
+                  <strong>알바생을 불러오지 못했습니다</strong>
+                  <span>{workersError instanceof Error ? workersError.message : "잠시 후 다시 시도해주세요."}</span>
+                </div>
+              ) : null}
+
+              {!isWorkersLoading && !workersError && workers.length === 0 ? (
+                <div className="empty-state">
+                  <strong>등록할 알바생이 없습니다</strong>
+                  <span>알바생 관리에서 매장 알바생을 먼저 연결해주세요.</span>
+                  <Link className="secondary-button inline-empty-link" to={ROUTES.workers}>
+                    알바생 관리
+                  </Link>
+                </div>
+              ) : null}
+
+              {workers.length > 0 ? (
+                <form className="schedule-create-form" onSubmit={handleRecurringFormSubmit}>
+                  <label>
+                    <span>알바생</span>
+                    <select
+                      onChange={(event) => handleRecurringWorkerChange(event.target.value)}
+                      required
+                      value={recurringFormState.workerId}
+                    >
+                      <option value="">알바생 선택</option>
+                      {workers.map((worker) => (
+                        <option key={worker.userId} value={worker.userId}>
+                          {worker.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>요일</span>
+                    <select
+                      onChange={(event) =>
+                        setRecurringFormState((current) => ({
+                          ...current,
+                          weekday: event.target.value
+                        }))
+                      }
+                      required
+                      value={recurringFormState.weekday}
+                    >
+                      <option value="">요일 선택</option>
+                      {weekdayOptions.map((weekday) => (
+                        <option key={weekday.value} value={weekday.value}>
+                          {weekday.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <div className="schedule-time-row">
+                    <label>
+                      <span>시작일</span>
+                      <input
+                        onChange={(event) =>
+                          setRecurringFormState((current) => ({
+                            ...current,
+                            startDate: event.target.value
+                          }))
+                        }
+                        required
+                        type="date"
+                        value={recurringFormState.startDate}
+                      />
+                    </label>
+                    <label>
+                      <span>종료일</span>
+                      <input
+                        onChange={(event) =>
+                          setRecurringFormState((current) => ({
+                            ...current,
+                            endDate: event.target.value
+                          }))
+                        }
+                        required
+                        type="date"
+                        value={recurringFormState.endDate}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="schedule-time-row">
+                    <label>
+                      <span>시작</span>
+                      <input
+                        onChange={(event) =>
+                          setRecurringFormState((current) => ({
+                            ...current,
+                            startTime: event.target.value
+                          }))
+                        }
+                        required
+                        type="time"
+                        value={recurringFormState.startTime}
+                      />
+                    </label>
+                    <label>
+                      <span>종료</span>
+                      <input
+                        onChange={(event) =>
+                          setRecurringFormState((current) => ({
+                            ...current,
+                            endTime: event.target.value
+                          }))
+                        }
+                        required
+                        type="time"
+                        value={recurringFormState.endTime}
+                      />
+                    </label>
+                  </div>
+
+                  <label>
+                    <span>포지션</span>
+                    <input
+                      maxLength={40}
+                      onChange={(event) =>
+                        setRecurringFormState((current) => ({
+                          ...current,
+                          position: event.target.value
+                        }))
+                      }
+                      placeholder="오픈, 미들, 마감"
+                      value={recurringFormState.position}
+                    />
+                  </label>
+
+                  <label>
+                    <span>메모</span>
+                    <textarea
+                      maxLength={200}
+                      onChange={(event) =>
+                        setRecurringFormState((current) => ({
+                          ...current,
+                          memo: event.target.value
+                        }))
+                      }
+                      placeholder="매주 반복 근무"
+                      rows={3}
+                      value={recurringFormState.memo}
+                    />
+                  </label>
+
+                  {createRecurringSchedulesMutation.error ? (
+                    <p className="form-error">
+                      {createRecurringSchedulesMutation.error instanceof Error
+                        ? createRecurringSchedulesMutation.error.message
+                        : "반복 근무를 등록하지 못했습니다."}
+                    </p>
+                  ) : null}
+                  {recurringMessage ? (
+                    <p className={recurringMessage.includes("등록되었습니다") ? "form-success" : "form-error"}>
+                      {recurringMessage}
+                    </p>
+                  ) : null}
+
+                  <button className="primary-button" disabled={createRecurringSchedulesMutation.isPending} type="submit">
+                    {createRecurringSchedulesMutation.isPending ? "등록 중" : "반복 근무 등록"}
+                  </button>
+                </form>
+              ) : null}
+            </section>
+          ) : null}
         </aside>
       </section>
     </main>

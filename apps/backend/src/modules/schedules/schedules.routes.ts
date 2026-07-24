@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate } from "../../common/middlewares/authenticate";
 import { requireStoreRole } from "../../common/middlewares/requireStoreRole";
 import {
+  createRecurringSchedulesController,
   createScheduleController,
   deleteScheduleController,
   listSchedulesByDateController,
@@ -11,6 +12,7 @@ import {
 
 export const schedulesRouter = Router({ mergeParams: true });
 export const scheduleItemRouter = Router();
+export const recurringSchedulesRouter = Router({ mergeParams: true });
 
 schedulesRouter.get("/", authenticate, requireStoreRole(["OWNER", "WORKER"]), listSchedulesController);
 schedulesRouter.post("/", authenticate, requireStoreRole(["OWNER"]), createScheduleController);
@@ -18,3 +20,5 @@ schedulesRouter.get("/:date", authenticate, requireStoreRole(["OWNER", "WORKER"]
 
 scheduleItemRouter.patch("/:scheduleId", authenticate, updateScheduleController);
 scheduleItemRouter.delete("/:scheduleId", authenticate, deleteScheduleController);
+
+recurringSchedulesRouter.post("/", authenticate, requireStoreRole(["OWNER"]), createRecurringSchedulesController);
