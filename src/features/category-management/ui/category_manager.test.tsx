@@ -1,4 +1,5 @@
 /* @vitest-environment jsdom */
+import type { ComponentProps } from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -144,10 +145,54 @@ describe('CategoryManager', () => {
     expect(input.getAttribute('aria-describedby')).toBe(error.id);
     expect(screen.getByRole('dialog', { name: /새 카테고리/ })).toBeTruthy();
   });
+
+  it('카테고리 저장 요청이 거부되어도 입력을 유지하고 다시 시도할 수 있다', async () => {
+    const user = userEvent.setup();
+    const createCategory = vi.fn().mockRejectedValue(new Error('network'));
+
+    renderManager({ createCategory });
+
+    await user.click(screen.getByRole('button', { name: '새 카테고리' }));
+    await user.type(screen.getByLabelText('카테고리 이름'), '개발');
+    await user.click(screen.getByRole('button', { name: '만들기' }));
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      '저장하지 못했습니다.'
+    );
+    expect(
+      (screen.getByLabelText('카테고리 이름') as HTMLInputElement).value
+    ).toBe('개발');
+    expect(
+      screen.getByRole('button', { name: '만들기' }).hasAttribute('disabled')
+    ).toBe(false);
+  });
+
+  it('카테고리 삭제 요청이 거부되어도 확인 화면에서 다시 시도할 수 있다', async () => {
+    const user = userEvent.setup();
+    const deleteCategory = vi.fn().mockRejectedValue(new Error('network'));
+
+    renderManager({
+      categories: [DEVELOPMENT_CATEGORY],
+      deleteCategory,
+    });
+
+    await user.click(screen.getByRole('button', { name: '개발 수정' }));
+    await user.click(screen.getByRole('button', { name: '카테고리 삭제' }));
+    await user.click(screen.getByRole('button', { name: '삭제하기' }));
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      '저장하지 못했습니다.'
+    );
+    expect(
+      screen
+        .getByRole('button', { name: '삭제하기' })
+        .hasAttribute('disabled')
+    ).toBe(false);
+  });
 });
 
 function renderManager(
-  overrides: Partial<React.ComponentProps<typeof CategoryManager>> = {}
+  overrides: Partial<ComponentProps<typeof CategoryManager>> = {}
 ) {
   const defaultWriteFailure = async () =>
     ({ ok: false, reason: 'write-failed' }) as const;

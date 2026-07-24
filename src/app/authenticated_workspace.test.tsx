@@ -1792,6 +1792,49 @@ describe('AuthenticatedWorkspace', () => {
     );
     expect(screen.queryByText('프론트엔드')).toBeNull();
   }, 15_000);
+
+  it('작성 중 선택한 카테고리가 삭제되면 맥락 초안을 미분류로 바꾼다', async () => {
+    const user = userEvent.setup();
+    const save = vi.fn<InsightRepository['save']>(() => ({ ok: true }));
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          categoryRepository={createCategoryRepository(TEST_CATEGORIES)}
+          repository={toAsyncRepository({
+            load: () => ({ insights: [], warnings: [] }),
+            save,
+          })}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    await user.type(
+      screen.getByRole('textbox', { name: '링크 URL' }),
+      'https://context.example/category'
+    );
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+    await user.click(screen.getByRole('combobox', { name: '카테고리 (선택)' }));
+    await user.click(screen.getByRole('option', { name: '개발' }));
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    await user.click(screen.getByRole('button', { name: '관리' }));
+    await user.click(screen.getByRole('button', { name: '개발 수정' }));
+    await user.click(screen.getByRole('button', { name: '카테고리 삭제' }));
+    await user.click(screen.getByRole('button', { name: '삭제하기' }));
+    await user.click(screen.getAllByRole('button', { name: '닫기' }).at(-1)!);
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    expect(
+      screen.getByRole('combobox', { name: '카테고리 (선택)' }).textContent
+    ).toContain('미분류');
+
+    await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
+
+    expect(save.mock.calls.at(-1)?.[0][0]?.categoryId).toBeNull();
+  }, 15_000);
 });
 
 function createInsight(overrides: Partial<Insight> = {}): Insight {

@@ -124,23 +124,27 @@ export function CategoryManager({
     setIsSubmitting(true);
 
     const input = { colorKey, name };
-    const result =
-      mode.type === 'create'
-        ? await createCategory(input)
-        : await updateCategory(mode.categoryId, input);
+    try {
+      const result =
+        mode.type === 'create'
+          ? await createCategory(input)
+          : await updateCategory(mode.categoryId, input);
 
-    setIsSubmitting(false);
+      if (!result.ok) {
+        setFailureReason(result.reason);
+        return;
+      }
 
-    if (!result.ok) {
-      setFailureReason(result.reason);
-      return;
+      if (mode.type === 'create') {
+        onCategoryCreated(result.category);
+      }
+
+      resetToList();
+    } catch {
+      setFailureReason('write-failed');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    if (mode.type === 'create') {
-      onCategoryCreated(result.category);
-    }
-
-    resetToList();
   }
 
   async function confirmDelete() {
@@ -150,15 +154,20 @@ export function CategoryManager({
 
     setFailureReason(undefined);
     setIsSubmitting(true);
-    const result = await deleteCategory(mode.categoryId);
-    setIsSubmitting(false);
+    try {
+      const result = await deleteCategory(mode.categoryId);
 
-    if (!result.ok) {
-      setFailureReason(result.reason);
-      return;
+      if (!result.ok) {
+        setFailureReason(result.reason);
+        return;
+      }
+
+      resetToList();
+    } catch {
+      setFailureReason('write-failed');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    resetToList();
   }
 
   const busy = isMutating || isSubmitting;

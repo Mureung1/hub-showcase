@@ -1,2 +1,2 @@
-export { CategoryTag, ChoiceChip } from './chip';
+export { CategoryTag, ChoiceChip, NeutralTag } from './chip';
 export type { ChoiceChipProps } from './chip';

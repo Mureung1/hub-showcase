@@ -107,7 +107,7 @@ describe('InsightGrid', () => {
     expect(document.querySelector('.insight-card__connection-clue')).toBeNull();
   });
 
-  it('does not render empty memo or category regions', () => {
+  it('shows uncategorized when an insight has no category', () => {
     render(
       <DesignSystemProvider>
         <InsightGrid
@@ -129,10 +129,28 @@ describe('InsightGrid', () => {
       </DesignSystemProvider>
     );
 
-    expect(screen.queryByRole('list', { name: '카테고리 목록' })).toBeNull();
+    expect(screen.getByRole('list', { name: '카테고리 목록' })).not.toBeNull();
     expect(document.querySelector('.insight-card__memo')).toBeNull();
-    expect(screen.queryByText('미분류')).toBeNull();
+    expect(screen.getByText('미분류')).not.toBeNull();
     expect(screen.queryByText('카테고리 없음')).toBeNull();
+  });
+
+  it('shows uncategorized when the linked category no longer exists', () => {
+    render(
+      <DesignSystemProvider>
+        <InsightGrid
+          insights={[
+            createInsight({
+              categoryId: '10000000-0000-4000-8000-000000000099',
+              title: '삭제된 카테고리의 링크',
+            }),
+          ]}
+          categories={CATEGORIES}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(screen.getByText('미분류')).not.toBeNull();
   });
 
   it('edits title, memo, and category without offering URL editing', async () => {

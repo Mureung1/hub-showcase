@@ -220,6 +220,11 @@ export function AuthenticatedWorkspace({
       setActiveCategory((currentCategory) =>
         currentCategory === categoryId ? 'all' : currentCategory
       );
+      setContextDraft((currentDraft) =>
+        currentDraft.categoryId === categoryId
+          ? { ...currentDraft, categoryId: null }
+          : currentDraft
+      );
     },
     [detachCategory]
   );

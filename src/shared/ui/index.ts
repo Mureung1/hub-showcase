@@ -7,7 +7,7 @@ export type {
   CategoryFilterOption,
   CategoryFilterProps,
 } from './category-filter';
-export { CategoryTag, ChoiceChip } from './chip';
+export { CategoryTag, ChoiceChip, NeutralTag } from './chip';
 export type { ChoiceChipProps } from './chip';
 export { DesignSystemProvider } from './design-system-provider';
 export { EmptyState } from './empty-state';

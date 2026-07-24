@@ -14,6 +14,7 @@ import {
 import {
   Button,
   CategoryTag,
+  NeutralTag,
   Select,
   TextArea,
   TextField,
@@ -299,21 +300,22 @@ export function InsightCard({
             {insight.memo ? (
               <p className="insight-card__memo">{insight.memo}</p>
             ) : null}
-            {selectedCategory ? (
-              <ul
-                className="insight-card__categories"
-                aria-label="카테고리 목록"
-              >
-                <li>
+            <ul className="insight-card__categories" aria-label="카테고리 목록">
+              <li>
+                {selectedCategory ? (
                   <CategoryTag
                     className="insight-card__category"
                     colorKey={selectedCategory.colorKey}
                   >
                     {selectedCategory.name}
                   </CategoryTag>
-                </li>
-              </ul>
-            ) : null}
+                ) : (
+                  <NeutralTag className="insight-card__category">
+                    미분류
+                  </NeutralTag>
+                )}
+              </li>
+            </ul>
           </div>
 
           {cardMode === 'deleting' ? (

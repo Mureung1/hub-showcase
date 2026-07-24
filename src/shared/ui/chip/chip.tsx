@@ -86,3 +86,24 @@ export function CategoryTag({
     </WdsChip>
   );
 }
+
+export function NeutralTag({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <WdsChip
+      {...STATIC_TAG_PROPS}
+      as="span"
+      className={clsx('neutral-tag', className)}
+      disableInteraction
+      size="xsmall"
+      variant="solid"
+    >
+      {children}
+    </WdsChip>
+  );
+}

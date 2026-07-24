@@ -32,6 +32,18 @@ describe('ChoiceChip implementation contract', () => {
     );
   });
 
+  it('connects category palette variables to the rendered tag colors', () => {
+    const categoryTagStyles = chipStyles.match(
+      /span\.category-tag\s*\{(?<declarations>[^}]*)\}/s
+    )?.groups?.declarations;
+
+    expect(chipSource).toContain("'--category-color': palette.cssVariable");
+    expect(chipSource).toContain("'--category-foreground':");
+    expect(categoryTagStyles).toMatch(
+      /background: var\(--category-color\);[^}]*color: var\(--category-foreground\);/s
+    );
+  });
+
   it('keeps every category palette foreground at 4.5 to 1 or higher', () => {
     for (const palette of Object.values(categoryPalette)) {
       const foreground =
