@@ -128,7 +128,7 @@ export async function prepareLocalProductProfile(options: {
   const profileRoot = await canonicalCandidatePath(options.profileRoot)
   const workspaceRoot = await canonicalDirectory(
     options.workspaceRoot,
-      'local SemesterWorkspace',
+    'local SemesterWorkspace',
   )
   assertProductRootsDoNotOverlap(packageRoot, profileRoot)
   assertProductRootsDoNotOverlap(packageRoot, workspaceRoot)
