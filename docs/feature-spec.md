@@ -366,6 +366,8 @@ patientCount = childCount + adultCount + seniorCount
 
 - 상태 변경에는 버전 또는 갱신 시각 기반 낙관적 잠금을 적용합니다.
 - 요청이 최신 상태와 다르면 `QUEUE_CONFLICT`를 반환합니다.
+- 순서 변경 요청은 화면이 확인한 기존 순서와 원하는 순서를 함께 보냅니다.
+- 서버는 날짜별 대기열 행을 잠근 뒤 DB의 현재 순서가 기존 순서와 다르면 `QUEUE_ORDER_CONFLICT`를 반환합니다.
 - 상태 변경, 순서 재정렬과 알림 판정은 데이터 정합성이 깨지지 않도록 트랜잭션 경계를 명확히 둡니다.
 - 중복 알림은 `(waiting_entry_id, dedupe_key)` 고유 제약으로 막습니다.
 
@@ -412,7 +414,7 @@ patientCount = childCount + adultCount + seniorCount
 | `PATCH` | `/api/staff/waitings/:waitingId/status` | 도착·호출·취소 처리 |
 | `POST` | `/api/staff/waitings/:waitingId/hold` | 활성 웨이팅 보류 |
 | `POST` | `/api/staff/waitings/:waitingId/restore` | 보류 해제와 복귀 위치 지정 |
-| `PUT` | `/api/staff/waitings/order` | 활성 통합 대기열 순서 변경 |
+| `PUT` | `/api/staff/waitings/order` | 기존 순서와 원하는 순서를 비교한 활성 통합 대기열 순서 변경 |
 
 도착 제한시간 변경과 전체 상태 이력 조회 API는 후속 작업으로 구현합니다.
 
@@ -455,6 +457,7 @@ MVP 플랫폼 관리자는 간단 입점 문의, 상세 신청의 mock 검증 �
 | `WAITING_NOT_FOUND` | 활성 웨이팅 또는 조회 토큰을 찾을 수 없음 |
 | `STATUS_LINK_INVALID` | 현장 상태 링크가 종료·무효화됨 |
 | `QUEUE_CONFLICT` | 다른 요청이 먼저 상태나 순서를 변경함 |
+| `QUEUE_ORDER_CONFLICT` | 화면 조회 이후 활성 대기 순서가 변경됨 |
 
 ### 14.6 공통 응답과 시간 규칙
 

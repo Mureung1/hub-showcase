@@ -20,6 +20,15 @@ const entry: QueueEntry = {
   deferred: false,
 };
 
+const secondEntry: QueueEntry = {
+  ...entry,
+  id: "30000000-0000-4000-8000-000000000002",
+  ticketNumber: "5",
+  source: "onsite",
+  status: "onsite_waiting",
+  registeredAt: "2026-07-24T01:01:00.000Z",
+};
+
 const notifications: StaffNotificationHistoryItem[] = [
   {
     id: "40000000-0000-4000-8000-000000000001",
@@ -45,10 +54,12 @@ function renderPage(
   onRetry = vi.fn(async () => undefined),
   onSaveQueueSettings = vi.fn(async () => undefined),
   onChangeStatus = vi.fn(async () => undefined),
+  onReorder = vi.fn(async () => undefined),
+  entries: QueueEntry[] = [entry],
 ) {
   render(
     <StaffQueuePage
-      entries={[entry]}
+      entries={entries}
       queueDate="2026-07-24"
       patientCategories={[]}
       nextDayCategories={[]}
@@ -62,7 +73,7 @@ function renderPage(
       onChangeStatus={onChangeStatus}
       onHold={vi.fn()}
       onRestore={vi.fn()}
-      onReorder={vi.fn()}
+      onReorder={onReorder}
       onSavePatientConfiguration={vi.fn()}
       onRefresh={vi.fn()}
       onGetNotificationHistory={onGetNotificationHistory}
@@ -162,5 +173,32 @@ describe("StaffQueuePage 상태 변경 오류", () => {
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("대기열 작업을 처리하지 못했습니다");
     expect(alert).toHaveTextContent("현재 상태에서는 요청한 처리를 할 수 없습니다.");
+  });
+
+  it("순서가 동시에 변경되면 현재 순서와 요청 순서를 전달하고 충돌을 표시한다", async () => {
+    const onReorder = vi.fn(async () => {
+      throw new Error("대기열이 변경되었습니다. 새로고침 후 다시 시도해 주세요.");
+    });
+    renderPage(
+      vi.fn(async () => notifications),
+      "connected",
+      vi.fn(async () => undefined),
+      vi.fn(async () => undefined),
+      vi.fn(async () => undefined),
+      onReorder,
+      [entry, secondEntry],
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "접수번호 4 한 칸 아래로" }));
+
+    await waitFor(() =>
+      expect(onReorder).toHaveBeenCalledWith(
+        [entry.id, secondEntry.id],
+        [secondEntry.id, entry.id],
+      ),
+    );
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("대기열이 변경되었습니다");
+    expect(alert).toHaveTextContent("새로고침 후 다시 시도해 주세요.");
   });
 });

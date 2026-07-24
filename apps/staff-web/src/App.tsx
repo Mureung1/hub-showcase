@@ -179,7 +179,9 @@ function StaffApp() {
       onChangeStatus={updateStatus}
       onHold={async (id) => setQueue(await holdWaiting(id))}
       onRestore={async (id, position) => setQueue(await restoreWaiting(id, position))}
-      onReorder={async (orderedWaitingIds) => setQueue(await reorderWaitings(orderedWaitingIds))}
+      onReorder={async (expectedWaitingIds, orderedWaitingIds) =>
+        setQueue(await reorderWaitings(expectedWaitingIds, orderedWaitingIds))
+      }
       onSavePatientConfiguration={updatePatientConfiguration}
       onRefresh={() => void retryConnection()}
       onGetNotificationHistory={getWaitingNotificationHistory}

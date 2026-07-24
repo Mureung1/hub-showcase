@@ -217,11 +217,22 @@ describe("StaffQueueService development Supabase vertical slice", () => {
         if (!thirdId) throw new Error("세 번째 현장 접수 결과가 없습니다.");
         const reordered = await service.reorderWaitings(
           hospitalId,
+          [secondId, thirdId],
           [thirdId, secondId],
           null,
         );
         expect(reordered.entries.filter(({ status }) => status === "onsite_waiting").map(({ id }) => id))
           .toEqual([thirdId, secondId]);
+        await expect(
+          service.reorderWaitings(
+            hospitalId,
+            [secondId, thirdId],
+            [secondId, thirdId],
+            null,
+          ),
+        ).rejects.toMatchObject({
+          code: "QUEUE_ORDER_CONFLICT",
+        });
         await service.holdWaiting(hospitalId, thirdId, null);
         const restoredAtFirst = await service.restoreWaiting(hospitalId, thirdId, null, 1);
         expect(restoredAtFirst.entries.filter(({ status }) => status === "onsite_waiting").map(({ id }) => id))

@@ -138,10 +138,13 @@ export function restoreWaiting(id: string, position?: number): Promise<StaffQueu
   });
 }
 
-export function reorderWaitings(orderedWaitingIds: string[]): Promise<StaffQueueState> {
+export function reorderWaitings(
+  expectedWaitingIds: string[],
+  orderedWaitingIds: string[],
+): Promise<StaffQueueState> {
   return requestJson("/staff/waitings/order", {
     method: "PUT",
-    body: JSON.stringify({ orderedWaitingIds }),
+    body: JSON.stringify({ expectedWaitingIds, orderedWaitingIds }),
   });
 }
 

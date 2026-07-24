@@ -74,6 +74,7 @@ export interface StaffQueueOperations {
   ): Promise<StaffQueueState>;
   reorderWaitings(
     hospitalId: string,
+    expectedWaitingIds: string[],
     orderedWaitingIds: string[],
     actorAccountId: string | null,
   ): Promise<StaffQueueState>;
@@ -398,6 +399,7 @@ export class StaffQueueService implements StaffQueueOperations {
 
   async reorderWaitings(
     hospitalId: string,
+    expectedWaitingIds: string[],
     orderedWaitingIds: string[],
     actorAccountId: string | null,
   ): Promise<StaffQueueState> {
@@ -412,6 +414,7 @@ export class StaffQueueService implements StaffQueueOperations {
       const reordered = await this.waitingRepository.reorderActive(
         executor,
         queue.id,
+        expectedWaitingIds,
         orderedWaitingIds,
       );
       if (!reordered) {

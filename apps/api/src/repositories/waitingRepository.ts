@@ -109,6 +109,7 @@ export interface WaitingRepository {
   reorderActive(
     executor: DatabaseExecutor,
     queueId: string,
+    expectedWaitingIds: string[],
     orderedWaitingIds: string[],
   ): Promise<boolean>;
   deferRemoteToEnd(

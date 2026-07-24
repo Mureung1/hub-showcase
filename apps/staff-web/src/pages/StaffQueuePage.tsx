@@ -51,7 +51,7 @@ interface StaffQueuePageProps {
   onChangeStatus: (id: string, status: WaitingStatus) => Promise<void>;
   onHold: (id: string) => Promise<void>;
   onRestore: (id: string, position?: number) => Promise<void>;
-  onReorder: (orderedWaitingIds: string[]) => Promise<void>;
+  onReorder: (expectedWaitingIds: string[], orderedWaitingIds: string[]) => Promise<void>;
   onSavePatientConfiguration: (
     inputMode: PatientInputMode,
     categories: PatientCategoryDefinition[],
@@ -113,7 +113,7 @@ export function StaffQueuePage({
     if (index < 0 || targetIndex < 0 || targetIndex >= activeIds.length) return;
     const nextIds = [...activeIds];
     [nextIds[index], nextIds[targetIndex]] = [nextIds[targetIndex]!, nextIds[index]!];
-    void runQueueAction(() => onReorder(nextIds));
+    void runQueueAction(() => onReorder(activeIds, nextIds));
   }
 
   async function runQueueAction(action: () => Promise<void>) {

@@ -234,14 +234,19 @@ describe("staff queue routes", () => {
 
   it("활성 대기열 전체 순서 변경을 서비스에 전달한다", async () => {
     const reorderWaitings = vi.fn(async () => queue);
-    const ids = ["30000000-0000-4000-8000-000000000002", "30000000-0000-4000-8000-000000000001"];
+    const expectedIds = [
+      "30000000-0000-4000-8000-000000000001",
+      "30000000-0000-4000-8000-000000000002",
+    ];
+    const orderedIds = [...expectedIds].reverse();
     await request(createTestApp(createService({ reorderWaitings })))
       .put("/api/staff/waitings/order")
-      .send({ orderedWaitingIds: ids })
+      .send({ expectedWaitingIds: expectedIds, orderedWaitingIds: orderedIds })
       .expect(200);
     expect(reorderWaitings).toHaveBeenCalledWith(
       "10000000-0000-4000-8000-000000000001",
-      ids,
+      expectedIds,
+      orderedIds,
       "20000000-0000-4000-8000-000000000001",
     );
   });

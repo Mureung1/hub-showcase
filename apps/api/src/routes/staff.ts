@@ -96,13 +96,21 @@ export function createStaffRouter(
   });
 
   router.put("/waitings/order", async (request, response) => {
-    const { orderedWaitingIds } = z
+    const { expectedWaitingIds, orderedWaitingIds } = z
       .object({
+        expectedWaitingIds: z.array(z.uuid()).min(1),
         orderedWaitingIds: z.array(z.uuid()).min(1),
       })
       .parse(request.body);
     const { hospitalId, accountId } = getStaffContext(response.locals);
-    response.json(await service.reorderWaitings(hospitalId, orderedWaitingIds, accountId));
+    response.json(
+      await service.reorderWaitings(
+        hospitalId,
+        expectedWaitingIds,
+        orderedWaitingIds,
+        accountId,
+      ),
+    );
   });
 
   return router;
