@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
@@ -98,7 +99,9 @@ export default function Calendar() {
   const currentMonthTotal = today.getFullYear() * 12 + today.getMonth()
 
   const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() })
-  const [selectedDateKey, setSelectedDateKey] = useState(null)
+  // 탭에 들어오자마자 오늘이 선택돼 있다 — 예전처럼 "날짜를 선택해보세요" 안내만 띄우고 기다리면,
+  // 대부분의 사용자가 가장 먼저 보고 싶어 하는 오늘 상태를 한 번 더 눌러야 볼 수 있다.
+  const [selectedDateKey, setSelectedDateKey] = useState(todayKey)
   const [futureNotice, setFutureNotice] = useState(false)
   const [statusVersion, setStatusVersion] = useState(0) // 수동 상태 저장 후 재조회 트리거
   const [foodListOpen, setFoodListOpen] = useState(false) // "그날 먹은 음식" 아코디언, 날짜를 새로 고를 때마다 접힘으로 초기화
@@ -178,24 +181,34 @@ export default function Calendar() {
   const selectedMeals = selectedDateKey ? monthMeals[selectedDateKey] || [] : []
   const selectedItems = selectedMeals.length > 0 ? flattenMealItems(selectedMeals) : selectedRecord?.items || []
 
+  // 오늘인데 자동 판정(분석 기록)도 수동 선택도 없는 상태 = 기록 유도 빈 상태.
+  // selectedInfo가 있으면(과거에 직접 고른 상태가 남아 있는 경우 등) 그 값을 숨기지 않고 그대로 보여준다.
+  const showTodayEmptyState = selectedDateKey === todayKey && !monthLoading && !selectedInfo
+
+  // 달을 옮기면 그 달의 1일을 고른다(이번 달로 돌아왔을 때는 오늘). 예전에는 선택을 비웠지만,
+  // 이제는 항상 한 날짜가 선택돼 있어야 아래 상세 영역이 비지 않는다.
   function goMonth(delta) {
-    setCursor((c) => {
-      const target = c.year * 12 + c.month + delta
-      if (target > currentMonthTotal) return c // 미래 달로는 이동 불가
-      return { year: Math.floor(target / 12), month: ((target % 12) + 12) % 12 }
-    })
-    setSelectedDateKey(null)
+    const target = cursor.year * 12 + cursor.month + delta
+    if (target > currentMonthTotal) return // 미래 달로는 이동 불가
+    const next = { year: Math.floor(target / 12), month: ((target % 12) + 12) % 12 }
+
+    setCursor(next)
+    // 이번 달로 돌아오면 오늘, 지난 달이면 그 달 1일을 고른다.
+    setSelectedDateKey(target === currentMonthTotal ? todayKey : toDateKey(new Date(next.year, next.month, 1)))
+    setFoodListOpen(false)
     setFutureNotice(false)
   }
 
+  // 선택을 비우는(toggle-off) 동작은 없앴다 — 안내 카드를 걷어낸 지금은 선택이 비면 달력 아래가
+  // 통째로 비어 화면이 고장 난 것처럼 보인다. 미래 날짜를 눌렀을 때도 안내만 띄우고 직전 선택은 둔다.
   function handleSelectDay(dateKey) {
     if (dateKey > todayKey) {
       setFutureNotice(true)
-      setSelectedDateKey(null)
       return
     }
     setFutureNotice(false)
-    setSelectedDateKey((prev) => (prev === dateKey ? null : dateKey))
+    if (dateKey === selectedDateKey) return
+    setSelectedDateKey(dateKey)
     setFoodListOpen(false)
   }
 
@@ -329,12 +342,6 @@ export default function Calendar() {
         </Card>
       )}
 
-      {!futureNotice && !selectedDateKey && (
-        <Card style={{ textAlign: 'center' }}>
-          <p style={{ color: colors.textSub, margin: 0 }}>날짜를 선택하면 그날의 기록과 영양 상태를 볼 수 있어요.</p>
-        </Card>
-      )}
-
       {selectedDateKey && monthLoading && (
         <Card style={{ textAlign: 'center' }}>
           <Spinner size={20} />
@@ -344,7 +351,10 @@ export default function Calendar() {
       {selectedDateKey && !monthLoading && selectedInfo?.source === 'auto' && (
         <Card style={{ background: colors.primarySurface, boxShadow: 'none' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
-            <h3 style={{ margin: 0, color: colors.textStrong }}>{selectedDateKey}</h3>
+            <h3 style={{ margin: 0, color: colors.textStrong }}>
+              {selectedDateKey}
+              {selectedDateKey === todayKey && <span style={{ color: colors.primary }}> · 오늘</span>}
+            </h3>
             <StatusBadge status={selectedInfo.status} label={`자동 판정 · ${AUTO_STATUS_LABELS[selectedInfo.status]}`} />
           </div>
 
@@ -393,10 +403,31 @@ export default function Calendar() {
         </Card>
       )}
 
-      {selectedDateKey && !monthLoading && selectedInfo?.source !== 'auto' && (
+      {/* 오늘인데 분석 기록도, 직접 고른 상태도 없는 경우 — 수동 상태 선택 대신 기록을 유도한다.
+          "오늘 뭘 먹었는지 직접 좋음/보통/나쁨으로 고르세요"보다 촬영으로 보내는 편이 자연스럽고,
+          달력에 처음 들어온 사람이 다음에 뭘 해야 할지 바로 알 수 있다. 과거 날짜는 이미 지나가서
+          촬영할 수 없으므로 기존의 수동 선택 UI를 그대로 쓴다. */}
+      {showTodayEmptyState && (
+        <Card style={{ textAlign: 'center', padding: `${spacing.xxxl}px ${spacing.xl}px` }}>
+          <p style={{ color: colors.textStrong, fontWeight: 700, marginBottom: spacing.sm }}>아직 오늘 기록이 없어요</p>
+          <p style={{ color: colors.textSub, marginBottom: spacing.lg }}>식사를 기록해보세요.</p>
+          <Link
+            to="/analyze"
+            className="tds-press"
+            style={{ ...styles.buttonPrimary, display: 'flex', textDecoration: 'none' }}
+          >
+            음식 촬영하러 가기
+          </Link>
+        </Card>
+      )}
+
+      {selectedDateKey && !monthLoading && !showTodayEmptyState && selectedInfo?.source !== 'auto' && (
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
-            <h3 style={{ margin: 0, color: colors.textStrong }}>{selectedDateKey}</h3>
+            <h3 style={{ margin: 0, color: colors.textStrong }}>
+              {selectedDateKey}
+              {selectedDateKey === todayKey && <span style={{ color: colors.primary }}> · 오늘</span>}
+            </h3>
             {selectedInfo?.source === 'manual' && (
               <StatusBadge status={selectedInfo.status} label={`내가 선택 · ${MANUAL_STATUS_LABELS[selectedInfo.status]}`} />
             )}
