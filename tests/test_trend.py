@@ -1,8 +1,6 @@
-"""트렌드 추론(trend) 테스트.
+"""트렌드 추론(trend) 테스트."""
 
-5-1(#34): 성공 논문에서 모은 요약 리스트의 각 원소가
-index/title/contribution/method/result 키를 모두 가지는지 검증한다.
-"""
+import json
 
 from app import agent
 
@@ -50,3 +48,28 @@ def test_trend_skips_when_no_summaries(monkeypatch):
     result = agent.trend("LLM agent planning", [])
 
     assert result == {"flows": [], "gap": None}
+
+
+def test_build_trend_prompt_serializes_summaries_as_json_array():
+    """summaries가 유효 JSON 배열 문자열로, 한글 이스케이프 없이 프롬프트에 들어간다 (5-3)."""
+    summaries = [
+        {"index": 1, "title": "T1", "contribution": "계층적 에이전트", "method": "m1", "result": "r1"},
+        {"index": 2, "title": "T2", "contribution": "메모리 계획", "method": "m2", "result": "r2"},
+    ]
+
+    prompt = agent._build_trend_prompt("LLM agent planning", summaries)
+
+    # 완료 기준: summaries_json이 올바른 JSON 배열 문자열로 포함된다
+    serialized = json.dumps(summaries, ensure_ascii=False)
+    assert serialized in prompt
+    parsed = json.loads(serialized)
+    assert isinstance(parsed, list) and len(parsed) == 2
+    # 한글이 이스케이프되지 않음(ensure_ascii=False)
+    assert "계층적 에이전트" in prompt
+    assert "\\uac00" not in prompt.lower()
+    # topic·n·summaries_json 자리표시자 모두 치환됨
+    for placeholder in ("{topic}", "{n}", "{summaries_json}"):
+        assert placeholder not in prompt
+    # topic과 n(=2)이 실제로 반영됨
+    assert "LLM agent planning" in prompt
+    assert "2편" in prompt
