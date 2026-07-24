@@ -1,15 +1,15 @@
 
 
-<h2>
+<h1>
   깸
   <img src="frontend/src/assets/mascot/mascot-default&amp;complete.png" alt="깸 마스코트" width="38" />
-</h2>
+</h1>
 
 > AI 시대 역행하는 나의 사고력을 깨우자!
 
 <br>
 
-#### 목차
+### 목차
 
 - [프로젝트 소개](#프로젝트-소개)
 - [핵심 사용자 흐름](#핵심-사용자-흐름)
@@ -34,14 +34,14 @@
 </div>
 
 
-### 프로젝트 소개
+## 프로젝트 소개
 
 **깸**은 관심사 기반 콘텐츠를 추천하고, 사용자가 원문을 읽은 뒤 짧은 사고 미션으로 자기 생각을 기록하게 하는 서비스다.
 
 생성형 AI가 검색·요약·글쓰기를 대신할수록 결과를 검토하고 자기 생각으로 다시 구성하는 과정은 줄어들기 쉽다. 깸은 정답이나 원문을 대신하는 AI 요약을 제공하지 않는다. 사용자가 외부 원문을 직접 읽고, 질문·반박·연결·표현 중 하나의 미션에 답하며 생각을 남기게 한다.
 
 
-### 핵심 사용자 흐름
+## 핵심 사용자 흐름
 
 현재 구현된 핵심 사용자 흐름은 다음과 같다.
 
@@ -55,7 +55,7 @@
 4. **사고 미션** — 글 전체를 대상으로 질문·반박·연결·표현 중 하나를 수행한다.
 5. **나의 깸** — 한 줄 생각을 저장하고 월별 캘린더에서 다시 확인한다.
 
-### 주요 기능
+## 주요 기능
 
 | 기능 | 설명 |
 | --- | --- | 
@@ -65,8 +65,9 @@
 | 나의 깸 | 월별 캘린더와 날짜별 목록으로 과거 사고 기록을 확인한다 | 
 | 콘텐츠 수집 | 검증된 RSS 소스에서 글을 수집하고 품질·접근성·중복을 검사한다 |
 
+---
 
-### 기술 스택
+## 기술 스택
 
 | 영역 | 기술 | 책임 |
 | --- | --- | --- |
@@ -76,7 +77,7 @@
 | Content Pipeline | feedparser, HTTPX | RSS 수집·파싱·검증 |
 | Test & Verification | Vitest, Pytest, PostgreSQL 통합 테스트 | 프론트엔드·API·DB 검증 |
 
-### 시스템 아키텍처
+## 시스템 아키텍처
 
 <p align="center">
   <img src="assets/images/system_architecture.gif" alt="깸 시스템 아키텍처" width="100%" />
@@ -92,6 +93,8 @@
 - **원문을 대체하지 않는다.** 기사 본문을 저장·재게시하지 않고 사용자를 원문 사이트로 연결한다.
 
 자세한 API·인증·키 사용 규칙은 [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)와 [`docs/plan/engineering/api-spec.md`](docs/plan/engineering/api-spec.md)를 따른다.
+
+---
 
 ### 콘텐츠 수집 및 추천 파이프라인
 
@@ -131,7 +134,9 @@ uv run python -m app.jobs.collect_feed --source-id <SOURCE_UUID> --dry-run
 uv run python -m app.jobs.collect_feed --source-id <SOURCE_UUID> --save
 ```
 
-#### 추천
+<br>
+
+### 추천
 
 추천 함수는 다음 조건으로 공용 콘텐츠 풀의 후보를 찾는다.
 
@@ -145,7 +150,9 @@ uv run python -m app.jobs.collect_feed --source-id <SOURCE_UUID> --save
 
 상세 계약은 [`docs/plan/engineering/content-pipeline.md`](docs/plan/engineering/content-pipeline.md), [`docs/plan/engineering/db-schema.md`](docs/plan/engineering/db-schema.md)에서 확인할 수 있다.
 
-### AI 협업 개발 방식
+---
+
+## AI 협업 개발 방식
 
 깸은 Codex와 Claude Code의 역할을 단계별로 분리해 사용한다. 한 AI가 설계·구현·최종 검증을 모두 담당하지 않게 하고, 다른 관점의 검토와 실행 결과를 통해 판단한다.
 
@@ -169,7 +176,9 @@ AI 협업에서 다음 원칙을 사용한다.
 - 정상 성공뿐 아니라 `401`, `422`, RLS 차단처럼 실패해야 정상인 경우도 검증한다.
 - Git·코딩·검증 규칙은 한 문서에서 관리해 도구별 지침이 달라지는 것을 막는다.
 
-#### AI 설정 구조
+<br>
+
+### AI 설정 구조
 
 | 파일·디렉터리 | 역할 |
 | --- | --- |
@@ -186,7 +195,9 @@ AI 협업에서 다음 원칙을 사용한다.
 
 현재 `.claude/rules/`, `.claude/skills/`, `.claude/agents/`, `.claude/hooks/`와 일부 `.codex/` 확장 디렉터리는 향후 설정을 위한 위치만 마련되어 있다. 실제 협업 사이클과 사용법은 [`.agents/templates/README.md`](.agents/templates/README.md), 공통 작업 규칙은 [`AGENTS.md`](AGENTS.md)에서 확인할 수 있다.
 
-### 프로젝트 구조
+---
+
+## 프로젝트 구조
 
 ```text
 hub-clone/
@@ -231,7 +242,9 @@ hub-clone/
 
 `docs/prototype/`은 구현 전 화면 검토를 위한 참고 자료이며 실제 빌드 대상이 아니다.
 
-### 로컬 개발 환경
+---
+
+## 로컬 개발 환경
 
 #### 요구 사항
 
@@ -262,33 +275,7 @@ uv run fastapi dev app/main.py
 
 API 서버는 `http://localhost:8000`에서 실행된다. 프론트엔드의 `/api` 요청은 Vite proxy를 통해 백엔드로 전달된다.
 
-### 검증
-
-#### 프론트엔드
-
-```bash
-cd frontend
-npm run typecheck
-npm run lint
-npm test
-```
-
-#### 백엔드
-
-```bash
-cd backend
-uv run pytest
-```
-
-API·DB·RSS 파이프라인은 `backend/tests/`, `supabase/tests/`, `scripts/`의 자동 검증과 각 설계 문서의 완료 기준을 함께 확인한다.
-
-주요 검증 스크립트:
-
-```bash
-uv run scripts/smoke_api.py
-uv run scripts/verify_supabase.py
-```
-
+---
 ### 프로젝트 문서
 
 #### 제품과 사용자 흐름
