@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../hooks/useAuth";
 import "./HotDealPage.css";
 
 // 기획서 8절 — Tab1 고정 태그 4종 (임의 추가 금지)
@@ -11,6 +13,8 @@ const TAGS = ["마감할인", "노쇼발생", "우천특가", "당일한정"];
  *  - 썸네일은 Tab2 완료 결과물 이미지가 재사용된 것 (선순환 구조)
  */
 export default function HotDealPage() {
+  const navigate = useNavigate();
+  const { profile } = useAuth();
   const [deals, setDeals] = useState([]);
   const [owners, setOwners] = useState({}); // { userId: nickname }
   const [activeTag, setActiveTag] = useState(null); // null = 전체
@@ -96,6 +100,13 @@ export default function HotDealPage() {
             </article>
           ))}
         </div>
+      )}
+
+      {/* 글쓰기 — 사장님에게만 (기획서 IA: 중앙 글쓰기 버튼) */}
+      {profile?.role === "owner" && (
+        <button className="hotdeal-write" onClick={() => navigate("/hotdeal/new")}>
+          ✏️ 핫딜 올리기
+        </button>
       )}
     </section>
   );

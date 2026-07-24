@@ -116,3 +116,27 @@
     text-align: center;
     padding: 48px 0;
 }
+
+/* 글쓰기 버튼 — 화면 하단에 떠 있음 (사장님 전용) */
+.hotdeal-write {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 84px;
+    /* 하단 탭바 위 */
+    z-index: 20;
+    border: none;
+    border-radius: var(--r-pill);
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 14px 24px;
+    cursor: pointer;
+    box-shadow: var(--shadow-float);
+}
+
+.hotdeal-write:active {
+    background: #dee2f8;
+}
