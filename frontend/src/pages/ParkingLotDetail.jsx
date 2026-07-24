@@ -13,7 +13,7 @@
 //   → realtimeInfo 가 null 이면 "실시간 정보 없음"으로 표시한다.
 // ============================================================================
 
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { EmptyState, ErrorState } from '../components/ResultStates.jsx';
 import { useParkingLotDetail } from '../hooks/useParkingLotDetail.js';
 import { toRealtimeStatus } from '../utils/realtimeStatus.js';
@@ -211,13 +211,16 @@ function RealtimeCard({ realtimeInfo }) {
   );
 }
 
-// 상단 뒤로가기 바. 작은 컴포넌트로 분리해 로딩/에러 등 여러 상태 화면과 공유한다.
+// 상단 바: 왼쪽 '목록으로'(뒤로가기) + 오른쪽 '홈'(첫 화면으로).
+// 작은 컴포넌트로 분리해 로딩/에러 등 여러 상태 화면과 공유한다.
 function TopBar({ onBack }) {
   return (
     <div className="topbar">
       <button type="button" className="back" onClick={onBack}>
         &lsaquo; 목록으로
       </button>
+      {/* Link to="/" : 클릭 시 새로고침 없이 홈으로 이동 */}
+      <Link className="home-link" to="/">홈</Link>
     </div>
   );
 }

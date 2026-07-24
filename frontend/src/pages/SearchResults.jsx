@@ -11,7 +11,7 @@
 //   자동으로 로딩→결과로 전환된다. 우리가 DOM을 손으로 바꾸지 않는다(선언형 UI).
 // ============================================================================
 
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import SearchBar from '../components/SearchBar.jsx';
 import ParkingLotCard from '../components/ParkingLotCard.jsx';
 import { LoadingState, EmptyState, ErrorState } from '../components/ResultStates.jsx';
@@ -71,7 +71,11 @@ function SearchResults() {
 
   return (
     <>
-      <h1 className="screen-title">검색 결과</h1>
+      {/* 상단 바: 왼쪽 제목 + 오른쪽 '홈'(첫 화면으로) */}
+      <div className="results-top">
+        <h1 className="screen-title">검색 결과</h1>
+        <Link className="home-link" to="/">홈</Link>
+      </div>
       <div className="pad">
         {/* 같은 SearchBar를 props만 다르게 재사용: 현재 검색어 채우고(defaultValue) ×버튼 표시 */}
         <SearchBar defaultValue={destination} showClear />
