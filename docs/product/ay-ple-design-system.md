@@ -1,5 +1,7 @@
 # AY-PLE Design System Direction
 
+> 2026-07-24 범위 정정: 공식 Public Landing은 현재 제품 surface에서 제외했고 구현 workspace도 제거했다. 아래 Landing 관련 지침은 2026-07-23까지의 historical design context이며 local app의 현재 시각 기준으로 적용하지 않는다. Personal/local 앱의 다음 화면 방향은 기존 구현 감사와 별도 대화 뒤 정한다.
+
 작성일: 2026-07-08
 
 최종 업데이트: 2026-07-22

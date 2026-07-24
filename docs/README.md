@@ -92,7 +92,6 @@ Root companion docs:
 | Product-only cutover·durable v2 ADR | [adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md](adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md) | public caller를 product path로 단일화하고 current v2 store를 첫 durable compatibility baseline으로 채택한 결정 |
 | App-owned SemesterWorkspace ADR | [adr/0014-create-app-owned-normalized-semester-workspaces.md](adr/0014-create-app-owned-normalized-semester-workspaces.md) | `WorkspaceManifest` authority, scaffold·admission과 `ImportSource` 경계 결정 |
 | Public repository clean snapshot ADR | [adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md](adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | Public source lineage·canonical cutover, first-party license와 trust·export authority 결정 |
-| Public npx distribution ADR | [adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md](adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md) | Exact application package와 immutable verified Runtime release의 binding·cache·rollback 경계 결정 |
 | Codex-managed product account ADR | [adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md](adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md) | Managed ChatGPT Browser OAuth, app-scoped credential authority와 pre-workspace Runtime lifecycle 결정 |
 
 ### 기술 참고
@@ -112,6 +111,7 @@ Root companion docs:
 | Runtime Harness Foundation Spec | [specs/2026-07-09-runtime-harness-codex-adapter-foundation.md](specs/2026-07-09-runtime-harness-codex-adapter-foundation.md) | 구현 완료 · 1주차 기준선 |
 | Runtime Harness Hardening Spec | [specs/2026-07-10-runtime-harness-hardening.md](specs/2026-07-10-runtime-harness-hardening.md) | 구현 완료 · tickets 001–005 완료 |
 | Codex-native Chat Shell Spec | [specs/2026-07-16-codex-native-chat-shell.md](specs/2026-07-16-codex-native-chat-shell.md) | 구현 완료 · official SDK 기반 첫 production tracer와 conformance 기록 |
+| Public npx distribution ADR | [adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md](adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md) | 중단한 public release lane의 application↔Runtime binding·cache·rollback 결정 |
 | AY-PLE 4주 제출 백로그 | [archive/2026-07-ay-ple-4-week-submission-backlog.md](archive/2026-07-ay-ple-4-week-submission-backlog.md) | 최초 캠프 제출 일정과 당시 우선순위 보존 |
 | Runtime Ownership Spike Plan | [spikes/codex-runtime-ownership/plan.md](spikes/codex-runtime-ownership/plan.md) | 실행 완료 · 당시 범위와 성공 기준 |
 | Runtime auth ADR | [adr/0001-use-file-auth-store-for-runtime-spike.md](adr/0001-use-file-auth-store-for-runtime-spike.md) | Runtime Ownership Spike의 인증 저장 결정 |

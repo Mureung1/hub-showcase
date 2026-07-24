@@ -23,7 +23,7 @@ flowchart LR
     E --> F["조회·일정·정리 문서"]
 ```
 
-> 이 문서는 완성하려는 제품 경험을 설명한다. 현재는 official SDK 기반 Runtime과 자료 선택부터 변경 제안·사용자 확인·재실행 뒤 확인된 학기 상태 조회까지의 First Assignment vertical을 구현했다. 다음 채택 목표는 이 kernel 앞에 public `npx`, Browser OAuth와 app-owned 학기 공간 setup을 연결하는 것이다. 구현된 kernel과 새 사용자가 현재 끝까지 도달할 수 있는 public capability는 구분한다.
+> 이 문서는 완성하려는 제품 경험을 설명한다. 현재는 official SDK 기반 Runtime과 자료 선택부터 변경 제안·사용자 확인·재실행 뒤 확인된 학기 상태 조회까지의 First Assignment vertical을 구현했다. 2026-07-24부터 official Landing과 public `npx` release lane은 현재 제품 목표가 아니다. 아래 public preview 서술은 historical design context로만 읽으며, personal/local 앱의 다음 목표는 기존 구현 감사와 별도 대화 뒤 정한다.
 
 ## 학생이 지금 겪는 문제
 

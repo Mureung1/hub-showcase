@@ -2,7 +2,7 @@
 
 작성일: 2026-07-07
 
-최종 업데이트: 2026-07-23
+최종 업데이트: 2026-07-24
 
 분류: 활성
 
@@ -13,6 +13,12 @@
 ## 한 줄 요약
 
 **AY-PLE(에이플)는 대학생이 한 학기 자료를 AY(에이)와 함께 정리하고, 원본 근거를 확인한 뒤 믿을 수 있는 학기 정보로 반영하는 local-first 학업 앱이다.**
+
+## 현재 범위 정정
+
+AY-PLE은 당분간 소유자 한 명이 repository checkout에서 실행하는 personal/local 앱으로 다룬다. 공식 Landing과 public `npx` 배포는 현재 제품 목표가 아니며 Landing 구현은 tracked workspace에서 제거했다. 이 문서에 남아 있는 첫 public preview·release 서술은 2026-07-23까지 검토한 historical design context이고 현재 backlog나 구현 순서를 정하지 않는다.
+
+Personal/local 앱의 다음 목표와 기존 release-only 구현의 존치 범위는 아직 확정하지 않았다. 현재 구현을 먼저 감사하고 불필요한 surface를 줄인 뒤 별도 대화와 문서 정리로 결정한다.
 
 AY-PLE는 새로운 범용 Agent framework를 만드는 제품이 아니다. 일반적인 Codex 사용 방식 위에 학기 작업공간, 반복 가능한 학업 작업, 자료 선택, 구조화된 변경 제안, 사용자 검토를 얇게 더한다. 실행 엔진은 Codex이고, AY는 그 실행 능력을 학생이 이해할 수 있는 언어와 화면으로 제공하는 제품 속 상호작용 주체다.
 

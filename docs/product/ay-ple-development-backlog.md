@@ -91,20 +91,6 @@
   - [x] 첫 action이 실제로 발생시키는 Codex approval과 일반 Plan clarification은 원래 request identity로 처리하고 학업 상태를 바꾸지 않으며, `StatePatch` Review의 built-in `request_user_input` 답변은 같은 native Turn을 이어가되 settled `UserConfirmation`만 apply authority가 되게 한다.
   - [x] 자료 선택·근거·변경 제안·Review와 오른쪽 companion이 같은 desktop product flow에서 이해 가능하게 동작하는지 1440px~1920px에서 검증했다.
 
-- [ ] 공식 Landing과 public `npx`에서 app-owned 학기 공간 setup을 완료한다. Public distribution 경계는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), 남은 release journey와 병렬 구현 seam은 [public npx 첫 출시 Wayfinder](../wayfinding/public-npx-first-release/map.md)를 implementation-ready spec으로 전환한 뒤 따른다.
-  - [ ] Public Landing에서 AY-PLE의 제품 가치, 복사 가능한 public `npx` entrypoint와 Docs·GitHub·license/trust 경로를 제공하고 현재 preview capability와 post-Ready 제품 비전을 구분한다.
-  - [ ] Exact `npx ay-ple@<release-version>`의 thin application package와 foreground host가 preflight, verified `runtimeRoot`, dynamic single-origin local companion과 Browser open을 repository checkout·system Python·consumer build 없이 조합한다.
-  - [ ] Embedded descriptor가 pin한 immutable Runtime asset을 single `RuntimeResolver`가 안전하게 download·resume·extract하고 complete-tree·legal roster를 검증해 versioned cache로 publish한다. 손상 cache는 scoped repair하고 exact launcher 실행 뒤 valid cache·archive는 network 없이 reuse·repair하되 moving catalog·silent fallback·automatic downgrade를 사용하지 않는다.
-  - [ ] Local UI가 official Codex-managed ChatGPT Browser login을 중재하고 fresh login·취소·실패·Browser reopen·relaunch·만료 뒤 reauth·explicit logout을 fresh managed account authority로 정산한다. Unsupported account는 fail closed하고 workspace와 학업 상태를 보존한다.
-  - [ ] Workspace 전 account operation은 isolated auth-only bootstrap Runtime에서만 수행하고 signal·process cleanup을 검증한다.
-  - [ ] OAuth credential bytes가 AY-PLE product Origin·API·Browser storage·workspace·receipt·public log를 통과하지 않고, 자체 token parser·auth receipt·global credential import가 없음을 deterministic·live release evidence로 확인한다.
-  - [ ] 학생이 학년·학기, 위치와 editable folder name을 최종 확인·승인하면 App code가 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md)의 normalized `SemesterWorkspace`를 exclusive scaffold·fresh validate하고 current v2와 existing directory를 bytes-preserving fail closed한다. 승인 전 draft는 durable setup state로 취급하지 않는다.
-  - [ ] [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md)와 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)의 workspace instruction/Skill bundle을 package resource에서 preverify한 뒤 fresh workspace에 no-clobber로 설치한다. Runtime·thread 생성 전, 각 product Codex action과 같은 exact application version의 relaunch에서 `AGENTS.md`, declared built-in Skill root의 exact complete tree, native project boundary와 effective native context를 다시 확인한다. Missing·modified·in-root undeclared file은 workspace data를 보존한 채 action을 막고 safe recovery로 수렴한다. Descriptor 밖 sibling은 소유·변경하지 않지만 first-preview action gate는 이를 허용하지 않는다.
-  - [ ] Admitted `SemesterWorkspace`로 bounded Runtime 전환·account 재확인을 마친 뒤에만 정확한 `학기 공간 준비 완료`를 표시한다. Setup settings와 no-Skill 범위는 [Product Brief](ay-ple-product-brief.md)의 first-preview contract를 그대로 따른다.
-  - [ ] 승인된 exact setup plan과 active workspace registry를 app data에 보존해 matching evidence는 재승인 없이 resume하고 drift·unknown entry는 safe recovery로 수렴한다. 같은 exact application version의 public 명령이 수행하는 `ready-relaunch`는 workspace admission·bundle·effective native context·account state를 다시 확인한 뒤 중복 scaffold 없이 준비된 workspace를 다시 연다.
-  - [ ] Fixed `hub` SHA의 reviewed positive allowlist로 public source를 deterministic export하고 Apache-2.0 first-party legal material, privacy·security·contribution surface와 source provenance를 검증한 final snapshot만 공개한다.
-  - [ ] 채택한 support lane의 clean-machine smoke와 source↔exact npm descriptor↔Runtime manifest·asset↔Landing command publication·provenance gate를 통과하고, mismatch·partial publication을 성공으로 처리하거나 자료 import·Course·학업 action을 현재 public capability로 과장하지 않는다.
-
 - [ ] 확인된 사용자 필요에 따라 post-Ready capability를 순서대로 추가한다.
   - [ ] 기존 폴더와 자료 묶음을 `ImportSource`로 분석하고 mapping·반입 제안을 사용자 검토 뒤 app-owned `SemesterWorkspace`의 Course·`RawMaterial`로 만드는 첫 자료 가져오기 여정을 추가한다. 임의의 기존 폴더를 workspace로 직접 열지 않는다.
   - [ ] 여러 대화를 다시 찾고 이어가는 행동이 확인되면 workspace-scoped `thread/list`·`thread/read`·`thread/resume`, 선택 상태와 최소 catalog UX를 추가한다. Rename·archive·pagination은 각각의 need가 있을 때만 포함한다.
@@ -129,6 +115,7 @@
 
 다음 항목은 raw method가 존재하거나 기술적으로 가능하다는 이유만으로 백로그에 승격하지 않는다. 새로운 사용자 case와 완료 조건이 생기면 후속 capability로 다시 검토한다.
 
+- 공식 Landing, public `npx`, Runtime publication, clean-machine release와 public repository publication 자동화. 2026-07-23까지의 계획과 구현 증거는 [public npx 첫 출시 Wayfinder](../wayfinding/public-npx-first-release/map.md)와 관련 Spec·ticket에 historical context로 보존한다.
 - ACP adapter 또는 다른 Agent engine과의 동작 일치, 범용 engine 분류와 선택 UI
 - API key 입력, external token host, device-code·Bedrock login과 여러 account 전환 UI
 - 모든 App Server event를 제품에 노출하는 범용 event bus·router와 raw item의 1:1 UI 재현
