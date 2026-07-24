@@ -6,9 +6,9 @@
 >
 > 최종 갱신일: 2026-07-23
 >
-> 현재 단계: API Node 타입 수정 Preview build 통과, 보호된 Preview 합성 생성 재실행 대기
+> 현재 단계: 실제 `/api/generate` 연결 코드 `2398e9b` 자동검증 완료, 새 Preview 배포
 >
-> 다음 행동: 사용자가 최신 Preview에서 지정 합성 manual AI 생성 1건을 실행하면 `2026-07-23T09:29:11Z` 이후 DB metadata 행 확인
+> 다음 행동: `2398e9b` 포함 스냅샷을 Preview branch에 push하고 실제 자연어 생성·DB metadata를 확인
 >
 > CHECKLIST 항목: T31
 
@@ -29,6 +29,7 @@
 | AC-8 | Production 공개 경로와 server-only 자산 검증이 같은 통합 SHA에서 통과한다. | T23 deployment·HTTP/API 증거 재확인 | 필수 |
 | AC-9 | 전체 테스트·프론트/API 타입·템플릿/DB/retrieval drift·lint·build·하네스·diff 검사가 통과한다. | 최종 자동 품질 gate | 필수 |
 | AC-10 | T22는 `Pending`, T35는 비운영 상태이며 기술 완료를 사용자 검증·범용 AI 우위로 표현하지 않는다. | CHECKLIST·MVP·검증 문구 대조 | 필수 |
+| AC-11 | 배포된 guided/manual AI 화면은 mock이 아니라 same-origin `/api/generate`를 호출하고, 자연어 상황 입력을 그대로 전달하며 실제 AI 사용·provider 전송을 정직하게 안내한다. | HTTP 생성 클라이언트·runtime selector·UI 통합 테스트, production bundle 검사, Preview 수동 생성 | 필수 |
 
 ## 2. 의존성·정본 확인
 
@@ -49,15 +50,15 @@
 | 요소 | 계획 |
 | --- | --- |
 | 맥락 | React+TypeScript/Vite, Vercel serverless, Neon+Drizzle, Gemini 단일 structured-output workflow를 검증한다. 새 라이브러리·기능·`any`·런타임 멀티에이전트를 추가하지 않는다. |
-| 구체성 | 제품 코드는 결함 발견 전 변경하지 않는다. T31 plan/verification과 LOG에 통합 AC별 증거를 연결하고, 모든 AC가 통과할 때만 CHECKLIST·PLAN을 완료 갱신한다. |
-| 역할·예시 | 개인정보 없는 `guided_ai(groupwork/schedule/ask_availability)` 또는 `manual_ai(professor/initiate/ask)` 요청 1건이 tone 1·2·3을 반환하고, `generation_runs`에는 route·scenario·status·latency 같은 메타데이터만 새 행으로 남아야 한다. template fallback은 API 0회다. |
-| 단계화 | ① 의존·SHA 동결 ② 통합 테스트·타입·drift ③ 개발 DB migration·두 smoke ④ dist 비밀·static selector·agent 부재 ⑤ 현재 SHA Preview API·background write ⑥ Production·정본·최종 gate 순서다. |
-| 검증 | 전체 테스트, API 타입, templates/DB/retrieval 검사, lint/build/harness/diff와 guarded 개발 DB smoke를 실행한다. 같은 SHA Preview가 없거나 실제 background write를 확인하지 못하면 T31을 완료하지 않고 재개 조건을 명시한다. |
+| 구체성 | 기존 서버 계약은 유지한다. `src/shared/generation`에 strict HTTP 클라이언트와 production/mock 선택 경계를 두고 `MessageFlow`의 두 AI route가 이를 사용하게 한다. mock 안내는 개발·테스트에만 남기고 직접 입력에는 자연어 예시와 Gemini 전송·서비스 원문 비저장 안내를 제공한다. |
+| 역할·예시 | `manual_ai(friend/initiate/apologize)`의 상황 `"약속을 미뤄야겠다 그리고 정중하게 사과하고싶다"`가 same-origin API에 그대로 전달되어 약속 연기·사과를 반영한 tone 1·2·3을 반환해야 한다. `template_fallback`은 계속 API 0회이고 개발·테스트는 deterministic mock을 쓴다. |
+| 단계화 | ① 의존·계약 재확인 ② strict HTTP 클라이언트 ③ Production selector·MessageFlow 연결 ④ 실제 AI·입력/provider 안내 ⑤ HTTP·UI 회귀 테스트 ⑥ 전체 품질 gate ⑦ 새 Preview UI·DB write 순서다. |
+| 검증 | 요청 직렬화, 200 응답 검증, 400/429/500·network·invalid JSON 매핑, Production API 선택과 개발/test mock 유지, exact 자연어 입력 전달, template API 0회를 자동검증한다. 전체 테스트, API 타입, templates/DB/retrieval 검사, lint/build/harness/diff와 production bundle의 `/api/generate` 포함·mock 예시 제외를 확인한다. 새 Preview 실흐름과 background write 전에는 T31을 완료하지 않는다. |
 
 ## 5. 변경 경계와 위험
 
-- 허용된 변경: T31 계획·검증·LOG, Vercel API 함수가 Node `process` 타입을 인식하도록 하는 루트 `tsconfig.json` 최소 수정, 모든 완료조건 통과 시 CHECKLIST·PLAN 상태 갱신.
-- 명시적으로 제외한 변경: 새 기능·리팩토링, T22 결과 생성, T35 approved 승격·운영 retrieval 연결, Vercel 설정 변경, 커밋·push·새 배포.
+- 허용된 변경: T31 계획·검증·LOG, strict same-origin HTTP 생성 클라이언트, Production/mock 선택 경계, `MessageFlow` 실제 AI 연결과 관련 안내 문구·테스트, 모든 완료조건 통과 시 CHECKLIST·PLAN 상태 갱신.
+- 명시적으로 제외한 변경: 새 생성 route·새 입력 형식·불필요한 리팩토링, T22 결과 생성, T35 approved 승격·운영 retrieval 연결, Vercel 설정 변경, 승인 없는 커밋·push·새 배포.
 - 구조·계약·의존성 승인이 필요한 지점: 통합 검증에서 UI/API/DB/배포 구조 변경이 필요하면 중단하고 별도 제안한다.
 - 예상 위험과 대응: 현재 SHA의 Preview가 없으며 새 Preview는 커밋·push 또는 배포 권한이 필요하다. 승인 범위 밖 외부 변경은 하지 않고 내부 검증을 끝낸 뒤 AC-6만 명확한 재개 조건으로 남긴다. DB smoke는 `DB_SMOKE_CONFIRM=t30-development-write`와 production guard를 사용해 개발 DB 임시 행만 만들고 자체 정리한다.
 
@@ -69,15 +70,16 @@
 | 2026-07-23 | 승인됨 | T23 수동 확인 뒤 다음 항목 진행 | 사용자 “모두 통과로 확인완료했습니다. 다음으로 진행” |
 | 2026-07-23 | 승인됨 | 현재 HEAD의 비프로덕션 branch push와 Preview 최종 검증 | 사용자 “승인” |
 | 2026-07-23 | 승인됨 | 루트 tsconfig Node 타입 수정·검증·Preview 재배포 | 사용자 “승인” |
+| 2026-07-24 | 승인됨 | 배포 UI의 mock을 Production same-origin `/api/generate` 연결로 교체하고 자연어 입력 안내를 바로잡음 | 사용자 “승인 그리고 실제 연결을 한겁니까?” |
 
 범위나 완료조건이 바뀌면 구현을 중단하고 이 표와 관련 항목을 갱신한 뒤 재승인받는다.
 
 ## 7. 진행·인계
 
-- 마지막으로 끝낸 단계: 전체 44파일 375테스트, 집중 9파일 173테스트, 타입·drift·lint·build, 개발 DB migration·두 smoke, Production 생성·SHA와 static selector 경계를 확인했다.
-- 현재 작업 중인 단계: 없음. 수정 Preview build가 성공했다.
-- 다음 행동: 사용자가 최신 branch alias에서 지정 `friend/initiate/decline` manual AI 생성을 1회 실행한다. 완료 보고 뒤 `2026-07-23T09:29:11Z` 이후 metadata 행을 조회한다.
-- 보류 사유와 재개 조건: Vercel Authentication 보호로 자동 요청은 불가능하다. 사용자 로그인 생성 완료 시 재개한다.
+- 마지막으로 끝낸 단계: strict HTTP client·Production selector·자연어/provider 안내와 테스트를 `2398e9b`로 커밋하고 전체 45파일 386테스트·품질 gate를 통과했다.
+- 현재 작업 중인 단계: 새 Preview 배포.
+- 다음 행동: `codex/t31-preview-check`에 push한 뒤 Vercel build 상태와 보호된 실흐름을 확인한다.
+- 보류 사유와 재개 조건: 새 Preview에서 사용자 자연어를 반영한 후보와 DB metadata write가 확인되어야 한다.
 
 | 날짜 | 진행·결정 | 근거·영향 |
 | --- | --- | --- |
@@ -98,3 +100,6 @@
 | 2026-07-23 | 재배포 빌드 결함 확인 | `api/generate.ts`·`api/interaction.ts`의 `process`가 TS2591. `@types/node`·API 전용 config는 있으나 Vercel이 읽는 root config에는 Node 타입이 없음 |
 | 2026-07-23 | Node 타입 최소 수정 | 루트 `tsconfig.json`에 `types: ["node"]` 추가. 전체 44파일 375테스트·API 타입·lint·build 통과 |
 | 2026-07-23 | 수정 Preview 배포 성공 | `4d44c40 fix: Vercel API Node 타입 인식`, `tsconfig.json` 1파일만 포함. Vercel status success(2026-07-23T09:25:26Z) |
+| 2026-07-24 | UI→API 통합 결함 확인 | 공개 Production API는 사용자 자연어 입력으로 HTTP 200·AI tone 1/2/3을 반환하지만 `MessageFlow`는 모든 guided/manual 요청을 `generateWithMock()`에만 전달하고 stale mock 안내를 표시함 |
+| 2026-07-24 | 결함 보완 승인 | Production same-origin HTTP 연결, 개발·테스트 mock 유지, 자연어 입력·provider 전송 안내와 자동검증 추가 |
+| 2026-07-24 | 코드 자동검증·커밋 | `2398e9b fix: 배포 UI를 실제 AI API에 연결`; 45파일 386테스트·타입·lint·build·bundle marker·하네스 통과 |
