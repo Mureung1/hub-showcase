@@ -3,605 +3,97 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#03c75a" />
-  <title>포토 내비게이션 2주차 개발 진행사항</title>
+  <title>포토 내비게이션 3주차 개발 진행사항</title>
   <style>
-    :root {
-      --naver: #03c75a;
-      --naver-deep: #009f47;
-      --ink: #14251c;
-      --muted: #64736b;
-      --line: #dce5df;
-      --soft: #f3f7f4;
-      --soft-green: #eaf8ef;
-      --white: #ffffff;
-      font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", system-ui, sans-serif;
-      color: var(--ink);
-      background: #e9eeeb;
-      font-synthesis: none;
-    }
-
-    * { box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
-    body { min-width: 320px; }
-    button, a { font: inherit; }
-    button { cursor: pointer; }
-
-    .deck {
-      width: 100%;
-      height: 100%;
-      display: grid;
-      place-items: center;
-      background: #e9eeeb;
-    }
-
-    .stage {
-      position: relative;
-      width: min(100vw, 1366px);
-      aspect-ratio: 16 / 9;
-      max-height: 100vh;
-      overflow: hidden;
-      background: var(--white);
-      box-shadow: 0 12px 34px rgba(20, 37, 28, 0.12);
-    }
-
-    .slide {
-      position: absolute;
-      inset: 0;
-      display: none;
-      padding: 46px 68px 50px;
-      overflow: hidden;
-      background: var(--white);
-    }
-
-    .slide.active { display: block; animation: enter 180ms ease-out; }
-    @keyframes enter { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
-
-    .section-no {
-      margin-bottom: 12px;
-      color: var(--naver-deep);
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: 0;
-    }
-
-    h1, h2, h3, p { margin-top: 0; }
-    h1 { margin-bottom: 22px; font-size: 54px; line-height: 1.13; letter-spacing: 0; }
-    h2 { margin-bottom: 28px; font-size: 36px; line-height: 1.2; letter-spacing: 0; }
-    h3 { margin-bottom: 10px; font-size: 22px; line-height: 1.35; letter-spacing: 0; }
-    p { color: var(--muted); font-size: 18px; line-height: 1.55; }
-
-    .green { color: var(--naver-deep); }
-    .muted { color: var(--muted); }
-    .mono { font-family: "SFMono-Regular", Consolas, monospace; }
-    .eyebrow { color: var(--naver-deep); font-size: 16px; font-weight: 800; }
-
-    .page-no {
-      position: absolute;
-      right: 68px;
-      bottom: 22px;
-      color: #8a9690;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .accent-line {
-      width: 54px;
-      height: 5px;
-      margin: 0 0 24px;
-      background: var(--naver);
-    }
-
-    .statement {
-      padding: 18px 22px;
-      border-left: 5px solid var(--naver);
-      background: var(--soft-green);
-      color: #183a27;
-      font-size: 21px;
-      font-weight: 750;
-      line-height: 1.5;
-    }
-
-    .plain-list {
-      display: grid;
-      gap: 15px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .plain-list li {
-      position: relative;
-      padding-left: 24px;
-      color: #2d3c34;
-      font-size: 19px;
-      line-height: 1.38;
-    }
-
-    .plain-list li::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 9px;
-      width: 9px;
-      height: 9px;
-      background: var(--naver);
-    }
-
-    .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 58px; align-items: center; }
-    .three-column { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
-
-    .cover-grid {
-      height: calc(100% - 40px);
-      display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: 64px;
-      align-items: center;
-    }
-
-    .cover-copy .service-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      margin-bottom: 26px;
-      color: var(--naver-deep);
-      font-size: 16px;
-      font-weight: 800;
-    }
-
-    .cover-copy .service-label::before { content: ""; width: 12px; height: 12px; background: var(--naver); }
-    .cover-copy .subtitle { max-width: 570px; margin-bottom: 52px; font-size: 23px; line-height: 1.52; }
-    .author { display: flex; align-items: center; gap: 13px; color: #46544c; font-size: 16px; font-weight: 750; }
-    .author::before { content: ""; width: 35px; height: 2px; background: var(--ink); }
-
-    .map-visual {
-      position: relative;
-      height: 570px;
-      overflow: hidden;
-      border: 1px solid #cfdad3;
-      background: #eef3ef;
-    }
-
-    .map-visual::before,
-    .map-visual::after {
-      content: "";
-      position: absolute;
-      background: #fff;
-      border: 1px solid #dde5df;
-      transform: rotate(-18deg);
-    }
-
-    .map-visual::before { width: 650px; height: 46px; left: -80px; top: 155px; }
-    .map-visual::after { width: 560px; height: 38px; left: 80px; top: 370px; transform: rotate(32deg); }
-    .park-shape { position: absolute; inset: 60px 54px 70px; background: #dff1d8; border: 1px solid #c7dfbf; transform: rotate(-4deg); }
-    .lake-shape { position: absolute; left: 118px; top: 175px; width: 94px; height: 144px; border-radius: 44% 56% 52% 48%; background: #bce1ed; transform: rotate(13deg); }
-    .marker { position: absolute; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50% 50% 50% 7px; transform: rotate(-45deg); color: white; background: var(--naver); border: 3px solid white; box-shadow: 0 3px 8px rgba(0, 86, 39, 0.22); }
-    .marker span { transform: rotate(45deg); font-size: 20px; }
-    .marker.one { left: 220px; top: 120px; }.marker.two { right: 110px; top: 250px; }.marker.three { left: 160px; bottom: 93px; }
-
-    .camera-guide {
-      position: absolute;
-      right: 40px;
-      bottom: 38px;
-      width: 230px;
-      height: 328px;
-      border: 3px solid var(--ink);
-      background: rgba(255, 255, 255, 0.78);
-    }
-
-    .camera-guide::before { content: ""; position: absolute; left: 25px; right: 25px; top: 70px; height: 82px; border: 3px dashed var(--naver); border-bottom: 0; border-radius: 50% 50% 0 0; }
-    .person-outline { position: absolute; bottom: 48px; width: 53px; height: 112px; border: 3px dashed var(--naver); border-radius: 45% 45% 10% 10%; }
-    .person-outline::before { content: ""; position: absolute; left: 11px; top: -39px; width: 27px; height: 27px; border: 3px dashed var(--naver); border-radius: 50%; }
-    .person-outline.left { left: 51px; }.person-outline.right { right: 51px; }
-    .shutter-dot { position: absolute; left: 50%; bottom: 10px; width: 25px; height: 25px; transform: translateX(-50%); border: 4px solid var(--ink); border-radius: 50%; background: var(--naver); }
-
-    .week-one-layout { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 68px; align-items: start; }
-    .week-one-list { columns: 2; column-gap: 36px; margin: 0; padding: 0; list-style: none; }
-    .week-one-list li { break-inside: avoid; min-height: 92px; padding: 18px 0 16px 44px; border-top: 1px solid var(--line); position: relative; font-size: 18px; line-height: 1.42; }
-    .week-one-list li::before { content: "✓"; position: absolute; left: 4px; top: 16px; color: var(--naver-deep); font-size: 23px; font-weight: 900; }
-    .week-one-layout .statement { margin-top: 14px; }
-
-    .goal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 22px; background: var(--line); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .goal { min-height: 145px; padding: 25px 24px; background: var(--white); }
-    .goal b { display: block; margin-bottom: 12px; color: var(--naver-deep); font-size: 13px; }
-    .goal span { font-size: 19px; font-weight: 750; line-height: 1.35; }
-    .transition { margin-top: 35px; display: grid; grid-template-columns: 1fr 100px 1fr; align-items: center; }
-    .transition strong { padding: 18px 0; border-bottom: 3px solid #b9c5be; font-size: 22px; text-align: center; }
-    .transition strong:last-child { color: var(--naver-deep); border-color: var(--naver); }
-    .transition i { color: var(--naver); font-size: 33px; font-style: normal; text-align: center; }
-
-    .status-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .status-table th { padding: 9px 15px; color: var(--muted); background: var(--soft); font-size: 14px; text-align: left; }
-    .status-table td { padding: 8px 15px; border-bottom: 1px solid var(--line); font-size: 16px; line-height: 1.3; }
-    .status-table th:last-child, .status-table td:last-child { width: 245px; }
-    .status { display: inline-flex; align-items: center; gap: 9px; font-weight: 750; }
-    .status::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--naver); }
-    .status.pending { color: #6d7771; }.status.pending::before { background: #aab3ae; }
-    .status.local { color: #167b43; }.status.local::before { background: #76cb98; }
-    .table-note { margin: 14px 0 0; font-size: 13px; }
-
-    .journey { position: relative; display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; margin-top: 70px; }
-    .journey::before { content: ""; position: absolute; left: 7%; right: 7%; top: 35px; height: 2px; background: #b8d8c5; }
-    .journey-step { position: relative; text-align: center; }
-    .journey-dot { position: relative; z-index: 2; width: 70px; height: 70px; display: grid; place-items: center; margin: 0 auto 22px; border: 2px solid var(--naver); border-radius: 50%; color: var(--naver-deep); background: var(--white); font-size: 23px; font-weight: 850; }
-    .journey-step.active .journey-dot { color: var(--white); background: var(--naver); }
-    .journey-step b { display: block; min-height: 48px; font-size: 17px; line-height: 1.35; }
-    .journey-step small { display: block; color: var(--muted); font-size: 13px; line-height: 1.45; }
-    .journey-summary { margin: 68px auto 0; max-width: 860px; text-align: center; font-size: 22px; font-weight: 750; }
-
-    .ui-slide { padding: 34px 48px 42px; }
-    .ui-slide .section-no { margin-bottom: 5px; }
-    .ui-slide h2 { margin-bottom: 9px; font-size: 30px; }
-    .ui-image-wrap { width: 100%; height: 480px; display: grid; place-items: center; overflow: hidden; }
-    .ui-image-wrap img { width: 100%; height: 100%; object-fit: contain; }
-    .ui-caption { display: flex; justify-content: space-between; gap: 30px; margin: 4px 18px 0; color: #46544c; font-size: 14px; }
-    .ui-caption small { color: var(--muted); font-size: 12px; }
-
-    .decision-grid { display: grid; grid-template-columns: 0.84fr 72px 1.16fr; gap: 26px; align-items: stretch; margin-top: 45px; }
-    .decision { min-height: 300px; padding: 30px 32px; border-top: 5px solid #aab4ae; background: var(--soft); }
-    .decision.adopted { border-color: var(--naver); background: var(--soft-green); }
-    .decision .decision-label { display: flex; align-items: center; gap: 10px; margin-bottom: 30px; color: #6d7771; font-size: 14px; font-weight: 800; }
-    .decision.adopted .decision-label { color: var(--naver-deep); }
-    .decision-flow { display: grid; gap: 14px; font-size: 22px; font-weight: 800; line-height: 1.35; }
-    .decision-flow i { color: #849089; font-size: 20px; font-style: normal; }
-    .decision p { margin: 28px 0 0; font-size: 16px; }
-    .decision-arrow { display: grid; place-items: center; color: var(--naver); font-size: 40px; }
-    .decision-statement { margin-top: 34px; text-align: center; color: #173a26; font-size: 22px; font-weight: 800; }
-
-    .data-layout { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 60px; align-items: stretch; }
-    .data-group { padding: 18px 0 20px; border-top: 1px solid var(--line); }
-    .data-group b { display: block; margin-bottom: 8px; color: var(--naver-deep); font-size: 17px; }
-    .data-group span { color: #46544c; font-size: 16px; line-height: 1.5; }
-    .relation { display: grid; align-content: center; gap: 18px; padding: 28px 38px; border-left: 1px solid var(--line); background: var(--soft); }
-    .entity { padding: 14px 18px; border-left: 4px solid var(--naver); background: var(--white); font-size: 18px; font-weight: 800; }
-    .relation-line { padding-left: 48px; color: var(--muted); font-size: 15px; line-height: 1.7; }
-    .storage-band { display: grid; grid-template-columns: 1fr auto 1fr; gap: 22px; align-items: center; margin-top: 27px; padding: 17px 24px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 16px; font-weight: 750; text-align: center; }
-    .storage-band i { color: var(--naver); font-size: 22px; font-style: normal; }
-
-    .architecture { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 70px; align-items: center; }
-    .architecture-flow { display: grid; gap: 0; justify-items: stretch; }
-    .arch-node { min-height: 82px; display: grid; grid-template-columns: 90px 1fr; align-items: center; padding: 15px 24px; border: 1px solid var(--line); background: var(--white); }
-    .arch-node strong { color: var(--naver-deep); font-size: 15px; }.arch-node span { font-size: 20px; font-weight: 750; }
-    .arch-arrow { height: 38px; display: grid; place-items: center; color: var(--naver); font-size: 26px; }
-    .security-list { display: grid; gap: 0; }
-    .security-item { padding: 19px 0; border-top: 1px solid var(--line); }
-    .security-item b { display: block; margin-bottom: 5px; font-size: 17px; }.security-item span { color: var(--muted); font-size: 14px; line-height: 1.45; }
-
-    .demo-layout { height: 560px; display: grid; grid-template-columns: 1fr 390px; gap: 70px; align-items: center; }
-    .demo-url { display: inline-block; margin: 18px 0 32px; padding-bottom: 8px; border-bottom: 4px solid var(--naver); color: var(--ink); font-size: 27px; font-weight: 800; text-decoration: none; }
-    .demo-features { columns: 2; column-gap: 34px; margin: 0; padding: 0; list-style: none; }
-    .demo-features li { break-inside: avoid; padding: 13px 0 13px 25px; border-top: 1px solid var(--line); position: relative; font-size: 17px; }
-    .demo-features li::before { content: ""; position: absolute; left: 2px; top: 20px; width: 8px; height: 8px; background: var(--naver); }
-    .demo-note { margin-top: 35px; font-size: 17px; font-weight: 700; }
-
-    .phone-mock { position: relative; width: 300px; height: 570px; margin: auto; overflow: hidden; border: 4px solid #1f2823; border-radius: 31px; background: white; }
-    .phone-status { height: 34px; padding: 9px 19px 0; display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; }
-    .phone-search { margin: 9px 15px; padding: 12px 15px; border: 1px solid #dde4df; border-radius: 20px; color: #839088; font-size: 12px; }
-    .phone-tabs { display: grid; grid-template-columns: 1fr 1fr; margin: 8px 27px 0; border: 1px solid var(--naver); border-radius: 16px; overflow: hidden; color: var(--naver-deep); font-size: 11px; font-weight: 800; text-align: center; }
-    .phone-tabs span { padding: 7px 3px; }.phone-tabs span:first-child { color: white; background: var(--naver); }
-    .phone-map { position: relative; height: 270px; margin-top: 8px; overflow: hidden; background: #e4f1df; }
-    .phone-map::before, .phone-map::after { content: ""; position: absolute; width: 430px; height: 22px; background: #fff; border: 1px solid #d8e1da; transform: rotate(-18deg); left: -50px; top: 82px; }
-    .phone-map::after { transform: rotate(35deg); top: 180px; }
-    .mini-marker { position: absolute; z-index: 2; width: 31px; height: 31px; display: grid; place-items: center; color: white; background: var(--naver); border: 2px solid white; border-radius: 50% 50% 50% 5px; transform: rotate(-45deg); font-size: 11px; }
-    .mini-marker i { transform: rotate(45deg); font-style: normal; }.mini-marker.a { left: 65px; top: 65px; }.mini-marker.b { right: 58px; top: 105px; }.mini-marker.c { left: 140px; bottom: 46px; }
-    .phone-sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 220px; padding: 11px 16px; border-radius: 18px 18px 0 0; background: white; border-top: 1px solid #dfe6e1; }
-    .phone-handle { width: 34px; height: 4px; margin: 0 auto 13px; background: #d8dfda; }
-    .phone-row { display: grid; grid-template-columns: 55px 1fr; gap: 10px; padding: 12px 0; border-top: 1px solid #edf1ee; }
-    .phone-thumb { height: 50px; background: #b8dc9c; border: 1px solid #a9c992; }.phone-row b { font-size: 11px; }.phone-row small { display: block; margin-top: 5px; color: #7a867f; font-size: 9px; }
-
-    .remaining-layout { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 72px; align-items: center; }
-    .priority-list { margin: 0; padding: 0; list-style: none; counter-reset: task; }
-    .priority-list li { counter-increment: task; min-height: 53px; display: grid; grid-template-columns: 45px 1fr; align-items: center; border-top: 1px solid var(--line); font-size: 17px; }
-    .priority-list li::before { content: counter(task, decimal-leading-zero); color: var(--naver-deep); font-size: 13px; font-weight: 850; }
-    .progress-shift { display: grid; grid-template-columns: 1fr; gap: 20px; }
-    .shift-stage { padding: 27px 24px; border-left: 5px solid #aeb8b2; background: var(--soft); font-size: 20px; font-weight: 800; }
-    .shift-stage:last-child { border-color: var(--naver); color: var(--naver-deep); background: var(--soft-green); }
-    .shift-arrow { color: var(--naver); font-size: 36px; text-align: center; }
-
-    .vertical-slice { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; margin-top: 72px; }
-    .slice-step { position: relative; min-height: 155px; display: grid; align-content: center; gap: 10px; padding: 22px 19px; border-top: 4px solid var(--naver); background: var(--soft-green); text-align: center; }
-    .slice-step:not(:last-child)::after { content: "→"; position: absolute; right: -23px; top: 55px; z-index: 3; color: var(--naver); font-size: 28px; }
-    .slice-step b { color: var(--naver-deep); font-size: 13px; }.slice-step span { font-size: 18px; font-weight: 800; line-height: 1.35; }
-    .next-goals { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 40px; }
-    .next-goals span { padding: 13px 8px; border-top: 1px solid var(--line); color: #445249; font-size: 13px; line-height: 1.4; text-align: center; }
-    .closing { margin-top: 38px; color: #173a26; font-size: 22px; font-weight: 800; text-align: center; }
-
-    .controls {
-      position: fixed;
-      left: 50%;
-      bottom: 14px;
-      z-index: 30;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px;
-      transform: translateX(-50%);
-      border: 1px solid rgba(180, 191, 184, 0.9);
-      background: rgba(255, 255, 255, 0.94);
-    }
-
-    .controls button, .fullscreen {
-      width: 38px;
-      height: 34px;
-      display: grid;
-      place-items: center;
-      border: 0;
-      color: #26372e;
-      background: transparent;
-      font-size: 19px;
-    }
-
-    .controls button:hover, .fullscreen:hover { color: var(--naver-deep); background: var(--soft-green); }
-    .indicator { min-width: 72px; color: #55645c; font-size: 13px; font-weight: 800; text-align: center; }
-    .fullscreen { position: fixed; top: 16px; right: 18px; z-index: 30; border: 1px solid rgba(180, 191, 184, 0.9); background: rgba(255,255,255,0.94); }
-
-    @media (max-aspect-ratio: 16/9) {
-      .stage { width: 100vw; height: auto; }
-    }
-
-    @media print {
-      html, body { overflow: visible; background: white; }
-      .deck, .stage { display: block; width: 1366px; height: auto; max-height: none; box-shadow: none; }
-      .slide { position: relative; display: block; width: 1366px; height: 768px; page-break-after: always; }
-      .controls, .fullscreen { display: none; }
-    }
+    :root { --green:#03c75a; --deep:#008c40; --ink:#15221a; --muted:#65726a; --line:#dbe4de; --soft:#f2f7f3; --mint:#e7f8ee; font-family:Pretendard,"Noto Sans KR","Apple SD Gothic Neo",Arial,sans-serif; color:var(--ink); }
+    * { box-sizing:border-box; } html,body { width:100%; height:100%; margin:0; overflow:hidden; background:#e9eeeb; } button { font:inherit; cursor:pointer; }
+    .deck { width:100%; height:100%; display:grid; place-items:center; }.stage { position:relative; width:min(100vw,1366px); max-height:100vh; aspect-ratio:16/9; overflow:hidden; background:#fff; box-shadow:0 12px 34px rgba(19,39,27,.12); }
+    .slide { position:absolute; inset:0; display:none; padding:46px 68px 50px; overflow:hidden; background:#fff; }.slide.active { display:block; animation:enter .2s ease-out; } @keyframes enter { from { opacity:0; transform:translateX(10px); } to { opacity:1; transform:translateX(0); } }
+    h1,h2,h3,p { margin-top:0; } h1 { margin-bottom:22px; font-size:58px; line-height:1.12; letter-spacing:0; } h2 { margin-bottom:25px; font-size:37px; line-height:1.2; letter-spacing:0; } h3 { margin:0; font-size:20px; line-height:1.35; } p { color:var(--muted); font-size:17px; line-height:1.55; }.section { margin-bottom:11px; color:var(--deep); font-size:13px; font-weight:800; }.green { color:var(--green); }.muted { color:var(--muted); }.mono { font-family:Consolas,"SFMono-Regular",monospace; }.page { position:absolute; right:68px; bottom:22px; color:#91a098; font-size:13px; font-weight:700; }.rule { width:54px; height:5px; margin:0 0 24px; background:var(--green); }
+    .cover { height:100%; display:grid; grid-template-columns:1fr .86fr; gap:70px; align-items:center; }.cover p { max-width:540px; font-size:23px; }.kicker { display:inline-flex; align-items:center; gap:9px; margin-bottom:24px; color:var(--deep); font-size:15px; font-weight:800; }.kicker::before { content:""; width:11px; height:11px; background:var(--green); }.author { display:flex; align-items:center; gap:13px; color:#445148; font-size:16px; font-weight:750; }.author::before { content:""; width:34px; height:2px; background:var(--ink); }.cover-photo { position:relative; height:550px; overflow:hidden; border:1px solid var(--line); background:var(--soft); }.cover-photo img { width:100%; height:100%; object-fit:contain; }.cover-stamp { position:absolute; left:22px; bottom:20px; padding:9px 12px; color:white; background:var(--green); font-size:13px; font-weight:800; }
+    .problem { display:grid; grid-template-columns:1.05fr .95fr; gap:68px; align-items:center; }.quote { padding:24px 28px; border-left:5px solid var(--green); background:var(--mint); color:#173a25; font-size:25px; font-weight:800; line-height:1.45; }.problem-list { display:grid; gap:0; }.problem-list div { padding:19px 0; border-top:1px solid var(--line); }.problem-list b { display:block; margin-bottom:5px; color:var(--deep); font-size:13px; }.problem-list span { color:#3d4b42; font-size:19px; font-weight:750; line-height:1.4; }
+    .ui-slide { padding:34px 48px 40px; }.ui-slide h2 { margin-bottom:8px; font-size:31px; }.ui-image { width:100%; height:495px; display:grid; place-items:center; overflow:hidden; }.ui-image img { width:100%; height:100%; object-fit:contain; }.candidate-slide .ui-image { height:440px; }.caption { display:flex; justify-content:space-between; gap:30px; margin:3px 15px 0; color:#526058; font-size:14px; }.caption small { color:var(--muted); }
+    .question { display:grid; grid-template-columns:1fr 1fr; gap:58px; align-items:center; }.question strong { display:block; font-size:34px; line-height:1.38; }.question-note { margin-top:25px; color:#405046; font-size:18px; line-height:1.55; }.asset-stack { display:grid; gap:13px; }.asset { display:grid; grid-template-columns:145px 1fr; align-items:center; gap:20px; padding:18px 20px; border-top:1px solid var(--line); background:var(--soft); }.asset b { color:var(--deep); font-size:14px; }.asset span { color:#3e4c43; font-size:17px; font-weight:750; }
+    .pipeline { display:grid; grid-template-columns:repeat(5,1fr); gap:13px; margin-top:50px; }.pipeline div { position:relative; min-height:208px; padding:23px 18px; border-top:5px solid var(--green); background:var(--mint); }.pipeline div:not(:last-child)::after { content:"→"; position:absolute; right:-19px; top:84px; z-index:2; color:var(--green); font-size:28px; }.pipeline b { display:block; margin-bottom:16px; color:var(--deep); font-size:13px; }.pipeline span { font-size:18px; font-weight:800; line-height:1.4; }.pipeline-note { margin:36px auto 0; color:#395046; font-size:19px; font-weight:750; text-align:center; }
+    .dataset { display:grid; grid-template-columns:.92fr 1.08fr; gap:48px; align-items:center; }.photo-triptych { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }.photo-triptych figure { position:relative; height:392px; margin:0; overflow:hidden; border:1px solid var(--line); background:var(--soft); }.photo-triptych img { width:100%; height:100%; object-fit:contain; }.photo-triptych figcaption { position:absolute; right:0; bottom:0; left:0; padding:9px; color:#fff; background:rgba(14,35,23,.78); font-size:12px; font-weight:700; }.data-list { display:grid; gap:0; }.data-list div { display:grid; grid-template-columns:110px 1fr; gap:14px; padding:18px 0; border-top:1px solid var(--line); }.data-list b { color:var(--deep); font-size:13px; }.data-list span { color:#39483e; font-size:18px; line-height:1.42; }
+    .layout-result { display:grid; grid-template-columns:1fr 1fr; gap:26px; align-items:stretch; }.photo-pair { position:relative; min-height:465px; overflow:hidden; border:1px solid var(--line); background:var(--soft); }.photo-pair img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }.photo-pair .overlay { mix-blend-mode:normal; }.label { position:absolute; z-index:2; left:15px; top:15px; padding:7px 10px; color:white; background:#22372a; font-size:13px; font-weight:800; }.result-copy { display:grid; align-content:center; gap:0; }.result-copy div { padding:18px 0; border-top:1px solid var(--line); }.result-copy b { display:block; margin-bottom:7px; color:var(--deep); font-size:13px; }.result-copy span { color:#3d4d43; font-size:19px; line-height:1.45; }
+    .editor { display:grid; grid-template-columns:1.05fr .95fr; gap:55px; align-items:center; }.editor-flow { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }.editor-flow div { min-height:184px; padding:20px 17px; border-top:4px solid var(--green); background:var(--mint); }.editor-flow b { display:block; margin-bottom:17px; color:var(--deep); font-size:13px; }.editor-flow span { font-size:17px; font-weight:800; line-height:1.4; }.json { margin:0; padding:24px; color:#dff8e7; background:#16271c; font-family:Consolas,monospace; font-size:15px; line-height:1.7; white-space:pre-wrap; }.editor-note { margin-top:25px; padding:14px 18px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); color:#3d5144; font-size:16px; font-weight:750; text-align:center; }
+    .comparison-shot { width:100%; height:420px; display:grid; place-items:center; overflow:hidden; border:1px solid var(--line); background:#f7faf8; }.comparison-shot img { width:100%; height:100%; object-fit:contain; }.compare-note { display:flex; justify-content:space-between; gap:26px; margin-top:14px; color:#435249; font-size:16px; }.compare-note b { color:var(--deep); }
+    .comparison-method { display:grid; grid-template-columns:1fr 1fr; gap:66px; align-items:center; }.flow-stack { display:grid; gap:0; }.flow-stack div { display:grid; grid-template-columns:118px 1fr; gap:16px; align-items:center; min-height:87px; padding:14px 20px; border:1px solid var(--line); background:#fff; }.flow-stack div+div { margin-top:14px; }.flow-stack b { color:var(--deep); font-size:13px; }.flow-stack span { font-size:18px; font-weight:750; line-height:1.35; }.method-list { display:grid; gap:0; }.method-list div { padding:18px 0; border-top:1px solid var(--line); }.method-list b { display:block; margin-bottom:6px; font-size:18px; }.method-list span { color:var(--muted); font-size:15px; line-height:1.45; }
+    .time-headline { max-width:930px; margin:0 auto; color:#173a25; font-size:33px; font-weight:800; line-height:1.4; text-align:center; }.time-headline span { color:var(--green); }.timelines { display:grid; gap:17px; margin-top:45px; }.timeline { display:grid; grid-template-columns:160px 1fr 145px; align-items:center; gap:20px; }.timeline b { font-size:18px; }.bar { position:relative; height:52px; overflow:hidden; background:var(--soft); }.bar i { display:block; height:100%; background:var(--green); }.bar.accurate i { width:82%; background:var(--deep); }.bar.fast i { width:22%; }.bar span { position:absolute; top:15px; right:15px; color:#fff; font-size:15px; font-style:normal; font-weight:800; }.timeline strong { color:var(--deep); font-size:30px; text-align:right; }.time-foot { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:44px; }.time-foot div { padding:20px; border-top:4px solid var(--line); background:var(--soft); color:#47574d; font-size:17px; line-height:1.45; }.time-foot div:last-child { border-color:var(--green); background:var(--mint); color:#173a25; font-weight:750; }
+    .operation { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; margin-top:40px; background:var(--line); }.operation div { min-height:242px; padding:28px 25px; background:#fff; }.operation b { display:block; margin-bottom:20px; color:var(--deep); font-size:14px; }.operation strong { display:block; margin-bottom:12px; font-size:23px; line-height:1.32; }.operation span { color:var(--muted); font-size:16px; line-height:1.48; }.architecture-line { margin-top:34px; padding:17px 22px; border-left:5px solid var(--green); background:var(--mint); color:#234530; font-size:18px; font-weight:750; }
+    .next { display:grid; grid-template-columns:repeat(5,1fr); gap:13px; margin-top:72px; }.next div { position:relative; min-height:164px; padding:23px 17px; border-top:4px solid var(--green); background:var(--mint); text-align:center; }.next div:not(:last-child)::after { content:"→"; position:absolute; right:-18px; top:56px; z-index:2; color:var(--green); font-size:27px; }.next b { display:block; margin-bottom:12px; color:var(--deep); font-size:13px; }.next span { font-size:17px; font-weight:800; line-height:1.38; }.closing { margin-top:43px; color:#173a25; font-size:22px; font-weight:800; text-align:center; }
+    .controls { position:fixed; left:50%; bottom:14px; z-index:5; display:flex; align-items:center; gap:8px; padding:6px; transform:translateX(-50%); border:1px solid #b6c3ba; background:rgba(255,255,255,.95); }.controls button,.fullscreen { width:38px; height:34px; display:grid; place-items:center; border:0; color:#26372e; background:transparent; font-size:19px; }.controls button:hover,.fullscreen:hover { color:var(--deep); background:var(--mint); }.indicator { min-width:72px; color:#54635b; font-size:13px; font-weight:800; text-align:center; }.fullscreen { position:fixed; top:16px; right:18px; z-index:5; border:1px solid #b6c3ba; background:rgba(255,255,255,.95); }
+    @media(max-width:720px){ html,body{overflow:auto}.stage{width:100%; min-height:100vh; aspect-ratio:auto}.slide{position:relative; display:block; min-height:100vh; padding:28px 20px 62px}.slide:not(.active){display:none}h1{font-size:39px}h2{font-size:28px}.cover,.problem,.question,.dataset,.layout-result,.editor,.comparison-method{grid-template-columns:1fr}.pipeline,.next{grid-template-columns:1fr}.pipeline div:not(:last-child)::after,.next div:not(:last-child)::after{display:none}.photo-triptych figure{height:260px}.controls{position:fixed}.page{right:20px}.time-foot{grid-template-columns:1fr}}
+    @media print{html,body{overflow:visible;background:#fff}.deck{display:block}.stage{width:100%;height:auto;max-height:none;aspect-ratio:auto;box-shadow:none}.slide{position:relative;display:block;min-height:100vh;page-break-after:always}.controls,.fullscreen{display:none}}
+    /* Candidate flow uses a full-width source image, so reserve a taller area instead of compressing its phone screens. */
+    .candidate-slide { padding-bottom:28px; }
+    .photo-flow-slide .ui-image { height:555px; margin-top:10px; }
+    .candidate-slide .ui-image { height:530px; margin-top:6px; overflow:visible; }
+    .candidate-slide .ui-image img { object-fit:contain; }
+    .candidate-slide .caption { margin-top:10px; }
+    .background-steps { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:32px; }
+    .background-steps > div { position:relative; min-height:202px; padding:20px 17px; border-top:5px solid var(--green); background:var(--mint); }
+    .background-steps > div:not(:last-child)::after { content:"→"; position:absolute; right:-21px; top:76px; z-index:2; color:var(--green); font-size:29px; }
+    .background-steps b { display:block; margin-bottom:13px; color:var(--deep); font-size:13px; }
+    .background-steps strong { display:block; margin-bottom:10px; font-size:19px; line-height:1.3; }
+    .background-steps span { color:#425148; font-size:15px; line-height:1.45; }
+    .background-detail-note { margin-top:25px; padding:15px 20px; border:1px solid var(--line); color:#3f5046; background:var(--soft); font-size:16px; font-weight:700; text-align:center; }
+    .mode-explainer { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:22px 0 18px; }
+    .mode-card { min-height:145px; padding:20px 23px; border:1px solid var(--line); background:var(--soft); }
+    .mode-card b { display:block; margin-bottom:8px; color:var(--deep); font-size:14px; }
+    .mode-card strong { display:block; margin-bottom:8px; font-size:22px; }
+    .mode-card span { color:#445249; font-size:16px; line-height:1.45; }
   </style>
 </head>
 <body>
-  <main class="deck" aria-label="포토 내비게이션 2주차 발표자료">
-    <div class="stage" id="stage">
-      <section class="slide active" data-title="표지">
-        <div class="cover-grid">
-          <div class="cover-copy">
-            <div class="service-label">PHOTO NAVIGATION</div>
-            <h1>포토 내비게이션<br /><span class="green">2주차 개발 진행사항</span></h1>
-            <p class="subtitle">지도에서 포토스팟을 찾고<br />원하는 프레임을 선택해 촬영하는 서비스</p>
-            <div class="author">N030 김병조</div>
-          </div>
-          <div class="map-visual" aria-label="지도와 카메라 오버레이를 결합한 시각 요소">
-            <div class="park-shape"></div><div class="lake-shape"></div>
-            <div class="marker one"><span>●</span></div><div class="marker two"><span>●</span></div><div class="marker three"><span>●</span></div>
-            <div class="camera-guide"><div class="person-outline left"></div><div class="person-outline right"></div><div class="shutter-dot"></div></div>
-          </div>
-        </div>
-        <div class="page-no">01 / 11</div>
-      </section>
+  <main class="deck"><div class="stage">
+    <section class="slide active" data-title="표지"><div class="cover"><div><div class="kicker">PHOTO NAVIGATION</div><h1>포토 내비게이션<br /><span class="green">3주차 개발 진행사항</span></h1><p>지도에서 구도를 찾고,<br />가이드를 따라 원하는 사진을 찍는 서비스</p><div class="author">N030 김병조</div></div><div class="cover-photo"><img src="./assets/week2-agent/museum-couple-reference.png" alt="대구 근대역사관 앞 커플 사진" /><span class="cover-stamp">PHOTO NAVIGATION · GUIDE DATA</span></div></div><span class="page">01 / 14</span></section>
 
-      <section class="slide" data-title="지난주 개발 현황">
-        <div class="section-no">01 · 지난주 개발 현황</div>
-        <h2>1주차: 서비스 형태를 실제로 확인 가능한 수준까지 구현</h2>
-        <div class="week-one-layout">
-          <div>
-            <div class="accent-line"></div>
-            <p class="eyebrow">1주차 핵심 결과</p>
-            <div class="statement">기획 문서가 아니라, 사용 흐름을 직접 눌러볼 수 있는 프로토타입을 만들었습니다.</div>
-          </div>
-          <ul class="week-one-list">
-            <li>포토 내비게이션 서비스 방향 확정</li>
-            <li>핵심 사용자 흐름 및 전체 UI 설계</li>
-            <li>React 기반 클릭형 프로토타입 제작</li>
-            <li>네이버 지도 기반 화면 디자인</li>
-            <li>프레임 선택, 촬영 결과 화면 구성</li>
-            <li>GitHub Pages 프로토타입 배포</li>
-            <li>4주 백로그와 GitHub 이슈 정리</li>
-          </ul>
-        </div>
-        <div class="page-no">02 / 11</div>
-      </section>
+    <section class="slide" data-title="문제 정의"><div class="section">01 · 문제 정의</div><h2>사람들이 어려워하는 것은<br />사진이 아니라 <span class="green">어디서 어떻게 찍을지</span>입니다.</h2><div class="problem"><div><div class="rule"></div><div class="quote">“SNS에서 본 그 구도, 이 장소에서는 어디에 서서 맞춰야 할까?”</div></div><div class="problem-list"><div><b>PLACE</b><span>장소는 찾았지만 촬영 위치를 모른다.</span></div><div><b>FRAME</b><span>같은 장소여도 인물 위치와 크기가 달라진다.</span></div><div><b>GUIDE</b><span>따라 할 수 있는 명확한 기준이 없다.</span></div></div></div><span class="page">02 / 13</span></section>
 
-      <section class="slide" data-title="이번 주 개발 목표">
-        <div class="section-no">02 · 이번 주 개발 목표</div>
-        <h2>2주차: 화면을 실제 기능 구조로 연결</h2>
-        <div class="goal-grid">
-          <div class="goal"><b>GOAL 01</b><span>React 핵심 화면 구현</span></div>
-          <div class="goal"><b>GOAL 02</b><span>네이버 지도 JavaScript API 연결</span></div>
-          <div class="goal"><b>GOAL 03</b><span>포토스팟·마커·상세 정보 연결</span></div>
-          <div class="goal"><b>GOAL 04</b><span>프레임 선택 후 카메라 촬영 연결</span></div>
-          <div class="goal"><b>GOAL 05</b><span>Express API 서버 기본 구조 구성</span></div>
-          <div class="goal"><b>GOAL 06</b><span>다음 주 FE → BE → DB 연결 준비</span></div>
-        </div>
-        <div class="transition"><strong>UI 프로토타입</strong><i>→</i><strong>실제 지도 · 카메라 · API 구조</strong></div>
-        <div class="page-no">03 / 11</div>
-      </section>
+    <section class="slide ui-slide photo-flow-slide" data-title="서비스 경험"><div class="section">02 · 서비스 경험</div><h2>지도 탐색부터 촬영 결과 비교까지, 하나의 흐름으로 연결</h2><div class="ui-image"><img src="./assets/week2-agent/photo-taking-flow.png" alt="지도 탐색, 스팟 상세, 프레임 선택, 오버레이 촬영, 결과 비교의 포토스팟 사진 촬영 흐름" /></div><span class="page">03 / 14</span></section>
 
-      <section class="slide" data-title="이번 주 개발 진행 현황">
-        <div class="section-no">03 · 이번 주 개발 진행 현황</div>
-        <h2>핵심 화면과 지도·카메라 흐름 구현 완료</h2>
-        <table class="status-table">
-          <thead><tr><th>작업</th><th>상태</th></tr></thead>
-          <tbody>
-            <tr><td>React 핵심 화면</td><td><span class="status">완료</span></td></tr>
-            <tr><td>네이버 지도 JavaScript API 연결</td><td><span class="status">완료</span></td></tr>
-            <tr><td>포토스팟 마커·상세 정보</td><td><span class="status">완료</span></td></tr>
-            <tr><td>공식·후보 포토스팟 전환 UI</td><td><span class="status">완료</span></td></tr>
-            <tr><td>프레임 선택 및 브라우저 카메라 촬영 흐름</td><td><span class="status">완료</span></td></tr>
-            <tr><td>검색 후 지도 이동</td><td><span class="status local">로컬 구현 · 배포 예정</span></td></tr>
-            <tr><td>Express API 서버</td><td><span class="status local">기본 구조 완료</span></td></tr>
-            <tr><td>실제 네이버 지역 검색 API 응답</td><td><span class="status pending">환경변수 설정 후 연결</span></td></tr>
-            <tr><td>Supabase DB 연결</td><td><span class="status pending">예정</span></td></tr>
-            <tr><td>구도 일치도 검사</td><td><span class="status pending">설계 확정 · 구현 예정</span></td></tr>
-          </tbody>
-        </table>
-        <p class="table-note">현재 공개 배포본은 프런트 중심 프로토타입이며, 일부 최신 로컬 변경 사항은 다음 배포에 반영됩니다.</p>
-        <div class="page-no">04 / 11</div>
-      </section>
+    <section class="slide ui-slide candidate-slide" data-title="후보 포토스팟 등록"><div class="section">03 · 후보 포토스팟 등록</div><h2>사용자가 발견한 장소도<br /><span class="green">후보 포토스팟</span>으로 서비스에 쌓입니다.</h2><div class="ui-image"><img src="./assets/week2-agent/candidate-registration-flow.png" alt="공식 포토스팟 탐색부터 후보 제안, 좋아요, 관리자 검토까지의 후보 등록 흐름" /></div><span class="page">04 / 14</span></section>
 
-      <section class="slide" data-title="완성된 사용자 흐름">
-        <div class="section-no">04 · 이번 주 완성된 부분</div>
-        <h2>지도에서 촬영 결과까지 하나의 흐름으로 연결</h2>
-        <div class="journey">
-          <div class="journey-step active"><div class="journey-dot">01</div><b>지도 탐색</b><small>공식·후보<br />스팟 탐색</small></div>
-          <div class="journey-step active"><div class="journey-dot">02</div><b>포토스팟 선택</b><small>목록과 마커<br />선택 동기화</small></div>
-          <div class="journey-step active"><div class="journey-dot">03</div><b>상세 정보</b><small>장소·주소·<br />촬영 팁 확인</small></div>
-          <div class="journey-step active"><div class="journey-dot">04</div><b>프레임 선택</b><small>1인·커플<br />구도 선택</small></div>
-          <div class="journey-step active"><div class="journey-dot">05</div><b>카메라 오버레이</b><small>예시 구도를<br />따라 촬영</small></div>
-          <div class="journey-step active"><div class="journey-dot">06</div><b>결과 확인</b><small>촬영 사진<br />확인</small></div>
-        </div>
-        <div class="journey-summary">포토스팟을 찾는 순간부터 실제 촬영까지, 화면 이동이 끊기지 않도록 구성했습니다.</div>
-        <div class="page-no">05 / 11</div>
-      </section>
+    <section class="slide" data-title="이번 주 핵심 질문"><div class="section">03 · 이번 주 핵심 질문</div><h2>예시 사진을 어떻게 앱에서 재사용할 수 있는<br /><span class="green">촬영 가이드 데이터</span>로 만들까?</h2><div class="question"><div><strong>사진 한 장을 보여주는 것만으로는 사용자가 구도를 맞추기 어렵습니다.</strong><p class="question-note">따라서 사진마다 인물 배치, 인물 실루엣, 배경 대표선을 저장한 <span class="mono">layout JSON</span>과 투명 Overlay PNG가 필요합니다.</p></div><div class="asset-stack"><div class="asset"><b>REFERENCE</b><span>기준 예시 사진</span></div><div class="asset"><b>LAYOUT JSON</b><span>인물 프레임 · 실루엣 · 배경선</span></div><div class="asset"><b>OVERLAY PNG</b><span>카메라 위에 표시할 촬영 가이드</span></div></div></div><span class="page">04 / 13</span></section>
 
-      <section class="slide ui-slide" data-title="주요 화면">
-        <div class="section-no">05 · 주요 화면</div>
-        <h2>포토스팟 탐색부터 촬영까지</h2>
-        <div class="ui-image-wrap"><img src="./assets/week2-full-ui.png" alt="지도 탐색, 후보 보기, 좋아요, 후보 제안, 관리자 검토 후 등록의 전체 UI" /></div>
-        <div class="ui-caption"><span>포토스팟 탐색, 후보 확인, 좋아요, 후보 제안, 관리자 검토 흐름을 하나의 서비스 경험으로 설계했습니다.</span><small>현재 구현 범위: 지도 탐색 → 상세 → 프레임 → 촬영 결과</small></div>
-        <div class="page-no">06 / 11</div>
-      </section>
+    <section class="slide" data-title="Overlay Agent"><div class="section">04 · Overlay Agent</div><h2>예시 사진을 분석하고, 사람이 승인 가능한<br />촬영 레이아웃으로 바꾸는 Agent</h2><div class="pipeline"><div><b>01 INPUT</b><span>장소별<br />예시 사진 업로드</span></div><div><b>02 YOLO POSE</b><span>인원 수와<br />인물 배치 추출</span></div><div><b>03 SAM2</b><span>전체 인물<br />실루엣 보조</span></div><div><b>04 REVIEW</b><span>관리자가<br />배경 대표선 검수</span></div><div><b>05 OUTPUT</b><span>layout JSON<br />Overlay PNG 저장</span></div></div><p class="pipeline-note">YOLO Pose는 인물 배치, SAM2는 인물 실루엣, 관리자는 배경 대표선을 담당합니다.</p><span class="page">05 / 13</span></section>
 
-      <section class="slide" data-title="DB 연결 계획">
-        <div class="section-no">06 · 데이터 구조 및 DB 연결 계획</div>
-        <h2>포토스팟과 촬영 프레임을 분리해 관리</h2>
-        <div class="data-layout">
-          <div>
-            <div class="data-group"><b>포토스팟</b><span>장소명, 좌표, 주소, 상태, 좋아요, 대표 이미지</span></div>
-            <div class="data-group"><b>촬영 프레임</b><span>연결 스팟, 예시 사진, 오버레이 PNG, 촬영 팁, <span class="mono">guide_json</span></span></div>
-            <div class="data-group"><b>사용자 참여</b><span>후보 제안, 좋아요, 관리자 검토 상태</span></div>
-          </div>
-          <div class="relation" aria-label="데이터 관계도">
-            <div class="entity mono">photo_spots</div>
-            <div class="relation-line mono">├─ photo_frames<br />└─ likes</div>
-            <div class="entity mono">users</div>
-            <div class="relation-line mono">└─ proposals<br />&nbsp;&nbsp;&nbsp;└─ proposal_images</div>
-          </div>
-        </div>
-        <div class="storage-band"><span>Supabase Storage<br /><small class="muted">이미지 파일</small></span><i>↔</i><span>Supabase PostgreSQL<br /><small class="muted">관계 · 상태 · 이미지 URL</small></span></div>
-        <div class="page-no">07 / 11</div>
-      </section>
+    <section class="slide" data-title="초기 데이터셋"><div class="section">05 · Agent가 만든 초기 데이터</div><h2>3개 장소, 30장 사진으로<br />포토스팟 프레임 데이터를 만들었습니다.</h2><div class="dataset"><div class="photo-triptych"><figure><img src="./assets/week2-agent/naver-stairs-couple.png" alt="네이버 1784 계단 커플 프레임" /><figcaption>네이버 1784 계단</figcaption></figure><figure><img src="./assets/week2-agent/sparkland-solo.png" alt="대구 스파크랜드 개인 프레임" /><figcaption>대구 스파크랜드</figcaption></figure><figure><img src="./assets/week2-agent/museum-couple-reference.png" alt="대구 근대역사관 커플 프레임" /><figcaption>대구 근대역사관</figcaption></figure></div><div class="data-list"><div><b>PLACE</b><span>네이버 1784 계단 · 스파크랜드 관람차 · 대구 근대역사관</span></div><div><b>POSE</b><span>장소별 커플 3개, 개인 2개 구도</span></div><div><b>PAIR</b><span>각 구도는 기준 사진과 비교 사진의 쌍으로 생성</span></div><div><b>ASSET</b><span>사진 30장 · layout JSON 30개 · Overlay PNG 30개</span></div></div></div><span class="page">06 / 13</span></section>
 
-      <section class="slide" data-title="시스템 구조와 보안">
-        <div class="section-no">07 · 현재 시스템 구조와 보안 원칙</div>
-        <h2>프런트와 비밀값을 분리한 구조</h2>
-        <div class="architecture">
-          <div class="architecture-flow">
-            <div class="arch-node"><strong>FRONTEND</strong><span>React + Vite + Naver Maps</span></div>
-            <div class="arch-arrow">↓</div>
-            <div class="arch-node"><strong>BACKEND</strong><span>Express API</span></div>
-            <div class="arch-arrow">↓</div>
-            <div class="arch-node"><strong>DATA</strong><span>Naver Local Search / Supabase</span></div>
-          </div>
-          <div>
-            <div class="security-list">
-              <div class="security-item"><b>Maps Client ID</b><span>브라우저에서 사용하되 허용 도메인을 제한</span></div>
-              <div class="security-item"><b>Client Secret</b><span>Express 서버 환경변수에만 저장</span></div>
-              <div class="security-item"><b><span class="mono">.env</span> 파일</b><span>Git ignore, GitHub Pages와 Vite 번들에 포함 금지</span></div>
-            </div>
-            <p style="margin-top:24px;font-size:14px;"><span class="mono">apps/web</span>: 지도·상세·프레임·카메라 구현<br /><span class="mono">apps/api</span>: 장소 검색 프록시 기본 구조 구현<br />Supabase: 다음 연결 대상</p>
-          </div>
-        </div>
-        <div class="page-no">08 / 11</div>
-      </section>
+    <section class="slide" data-title="인물 레이아웃 결과"><div class="section">06 · 인물 레이아웃 결과</div><h2>얼굴을 평가하지 않고,<br />사진 속 <span class="green">인물의 전체 배치</span>를 가이드로 만듭니다.</h2><div class="layout-result"><div class="photo-pair"><span class="label">기준 사진 + 인물 실루엣</span><img src="./assets/week2-agent/museum-couple-reference.png" alt="기준 사진" /><img class="overlay" src="./assets/week2-agent/museum-couple-overlay.png" alt="인물 실루엣 오버레이" /></div><div class="result-copy"><div><b>WHAT WE KEEP</b><span>머리·어깨·팔·몸통·다리의 화면 속 위치와 크기</span></div><div><b>WHAT WE EXCLUDE</b><span>얼굴 이목구비, 표정, 의상처럼 개인을 식별할 수 있는 세부 정보</span></div><div><b>WHY</b><span>자세 교정이 아니라 “이 사진처럼 어디에 서면 되는가”를 안내하기 위해서</span></div></div></div><span class="page">07 / 13</span></section>
 
-      <section class="slide" data-title="배포된 프로토타입">
-        <div class="section-no">08 · 배포된 프로토타입과 시연</div>
-        <h2>현재 확인 가능한 결과물</h2>
-        <div class="demo-layout">
-          <div>
-            <p class="eyebrow">PUBLIC PROTOTYPE</p>
-            <a class="demo-url" href="https://yf560.github.io/hub/photo-navigation/" target="_blank" rel="noreferrer">yf560.github.io/hub/photo-navigation/</a>
-            <ul class="demo-features">
-              <li>실제 네이버 지도</li><li>공식·후보 포토스팟 UI</li><li>스팟 상세 정보</li><li>프레임 선택</li><li>카메라 촬영 흐름</li><li>후보 제안 UI</li>
-            </ul>
-            <p class="demo-note">발표에서는 지도에서 스팟을 선택하고 프레임 선택 후 카메라 화면까지 직접 시연합니다.</p>
-          </div>
-          <div class="phone-mock" aria-label="네이버 지도 기반 모바일 프로토타입 목업">
-            <div class="phone-status"><span>9:41</span><span>● ● ▰</span></div><div class="phone-search">장소 검색</div><div class="phone-tabs"><span>공식 포토스팟</span><span>후보 보기</span></div>
-            <div class="phone-map"><div class="mini-marker a"><i>●</i></div><div class="mini-marker b"><i>●</i></div><div class="mini-marker c"><i>●</i></div></div>
-            <div class="phone-sheet"><div class="phone-handle"></div><div class="phone-row"><div class="phone-thumb"></div><div><b>야외음악당 잔디광장</b><small>대구 두류공원 · 공식 포토스팟</small></div></div><div class="phone-row"><div class="phone-thumb"></div><div><b>2.28 자유광장</b><small>프레임 3개 · 촬영 팁</small></div></div></div>
-          </div>
-        </div>
-        <div class="page-no">09 / 11</div>
-      </section>
-
-      <section class="slide" data-title="남은 작업">
-        <div class="section-no">09 · 남은 작업</div>
-        <h2>이제 화면을 실제 데이터로 연결</h2>
-        <div class="remaining-layout">
-          <ol class="priority-list">
-            <li>현재 위치와 스팟 거리 표시</li>
-            <li>Supabase 테이블 생성 및 초기 포토스팟 등록</li>
-            <li>Express 조회 API 구현</li>
-            <li>목 데이터를 API 응답으로 교체</li>
-            <li>후보 제안·좋아요 데이터 저장</li>
-            <li>이미지 Storage 업로드</li>
-            <li>예시 가이드와 촬영 가이드의 구도 일치도 비교</li>
-          </ol>
-          <div class="progress-shift"><div class="shift-stage">완성된 화면과 사용자 흐름</div><div class="shift-arrow">↓</div><div class="shift-stage">실제 데이터가 흐르는 서비스</div></div>
-        </div>
-        <div class="page-no">10 / 11</div>
-      </section>
-
-      <section class="slide" data-title="다음 주 목표">
-        <div class="section-no">10 · 다음 주 목표</div>
-        <h2>다음 주: FE → BE → DB 수직 슬라이스 완성</h2>
-        <div class="vertical-slice">
-          <div class="slice-step"><b>DATABASE</b><span>Supabase에<br />포토스팟 등록</span></div>
-          <div class="slice-step"><b>BACKEND</b><span>Express API<br />조회</span></div>
-          <div class="slice-step"><b>FRONTEND</b><span>React에서<br />요청</span></div>
-          <div class="slice-step"><b>MAP</b><span>지도 마커<br />표시</span></div>
-          <div class="slice-step"><b>UI</b><span>상세 정보<br />갱신</span></div>
-        </div>
-        <div class="next-goals"><span>대구 초기 데이터 저장</span><span>포토스팟 조회 API</span><span>목 데이터 교체</span><span>로딩·오류·빈 상태 검증</span><span>Express 배포 준비</span></div>
-        <div class="closing">다음 주에는 실제 DB 데이터를 지도에서 조회하는 기능 하나를 끝까지 완성하겠습니다.</div>
-        <div class="page-no">11 / 11</div>
-      </section>
-    </div>
-  </main>
-
-  <button class="fullscreen" id="fullscreen" type="button" aria-label="전체화면" title="전체화면">⛶</button>
-  <nav class="controls" aria-label="슬라이드 이동">
-    <button id="prev" type="button" aria-label="이전 슬라이드" title="이전">←</button>
-    <span class="indicator" id="indicator">1 / 11</span>
-    <button id="next" type="button" aria-label="다음 슬라이드" title="다음">→</button>
-  </nav>
-
-  <script>
-    const slides = Array.from(document.querySelectorAll(".slide"));
-    const indicator = document.getElementById("indicator");
-    const prevButton = document.getElementById("prev");
-    const nextButton = document.getElementById("next");
-    const fullscreenButton = document.getElementById("fullscreen");
-    let current = Math.max(0, Math.min(slides.length - 1, Number(location.hash.slice(1)) - 1 || 0));
-    let touchStartX = null;
-
-    function showSlide(index) {
-      current = Math.max(0, Math.min(slides.length - 1, index));
-      slides.forEach((slide, slideIndex) => slide.classList.toggle("active", slideIndex === current));
-      indicator.textContent = `${current + 1} / ${slides.length}`;
-      prevButton.disabled = current === 0;
-      nextButton.disabled = current === slides.length - 1;
-      location.hash = String(current + 1);
-      document.title = `${current + 1}. ${slides[current].dataset.title} | 포토 내비게이션 2주차`;
+    <section class="slide" data-title="배경선 편집"><div class="section">07 · 관리자 배경선 편집</div><h2>자동 분석이 애매한 배경은<br />사람이 대표선만 직접 등록합니다.</h2><div class="editor"><div class="editor-flow"><div><b>SELECT</b><span>기준 사진과 기존 layout을 불러옵니다.</span></div><div><b>DRAW</b><span>계단·건물·관람차 등 대표선 최대 5개를 등록합니다.</span></div><div><b>SAVE</b><span>수정한 layout JSON과 Overlay PNG를 같은 ID로 저장합니다.</span></div></div><pre class="json">{
+  "backgroundLines": [
+    {
+      "id": "line_uuid",
+      "start": [0.18, 0.30],
+      "end": [0.82, 0.30]
     }
+  ]
+}</pre></div><div class="editor-note">이미지 해상도와 무관한 0~1 좌표를 사용하고, 선 ID는 UUID로 고정해 수정·삭제 뒤에도 유지합니다.</div><span class="page">08 / 13</span></section>
 
-    prevButton.addEventListener("click", () => showSlide(current - 1));
-    nextButton.addEventListener("click", () => showSlide(current + 1));
-    fullscreenButton.addEventListener("click", async () => {
-      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
-      else await document.exitFullscreen();
-    });
+    <section class="slide" data-title="실제 비교 결과"><div class="section">08 · 실제 구도 비교 결과</div><h2>같은 장소에서 같은 구도를 시도한 두 사진을<br /><span class="green">인물 배치 기준</span>으로 비교했습니다.</h2><div class="comparison-shot"><img src="./assets/week2-agent/comparison-results.png" alt="대구 근대역사관 기준 사진과 비교 사진의 구도 유사도 결과" /></div><div class="compare-note"><span><b>커플 전신 V · 77.9점</b> · 위치 75.63점 · 크기 64.78점 · 포즈 92.24점</span><span><b>커플 셀카 V · 82.64점</b> · 위치 84.98점 · 크기 73.71점 · 포즈 86.58점</span></div><span class="page">09 / 13</span></section>
 
-    document.addEventListener("keydown", (event) => {
-      if (["ArrowRight", "PageDown", " "].includes(event.key)) { event.preventDefault(); showSlide(current + 1); }
-      if (["ArrowLeft", "PageUp"].includes(event.key)) { event.preventDefault(); showSlide(current - 1); }
-      if (event.key === "Home") showSlide(0);
-      if (event.key === "End") showSlide(slides.length - 1);
-    });
+    <section class="slide" data-title="구도 비교 방식"><div class="section">09 · 구도 비교 방식</div><h2>기준 사진은 저장하고,<br />사용자가 찍은 사진만 새로 분석합니다.</h2><div class="comparison-method"><div class="flow-stack"><div><b>REFERENCE</b><span>승인된 <span class="mono">layout JSON</span> 재사용</span></div><div><b>CAPTURE</b><span>촬영 사진만 YOLO Pose + SAM2 분석</span></div><div><b>COMPARE</b><span>인물 배치 60% + 배경선 40%</span></div></div><div class="method-list"><div><b>인물 배치 60%</b><span>화면 위치, 프레임 크기, 공통 포즈 키포인트를 비교합니다.</span></div><div><b>배경선 40%</b><span>인물 영역을 제외하고 대표선 주변만 ORB/RANSAC으로 비교합니다.</span></div><div><b>예외 처리</b><span>특징점이나 inlier가 부족하면 점수를 억지로 만들지 않고 재촬영을 안내합니다.</span></div></div></div><span class="page">10 / 13</span></section>
 
-    document.addEventListener("touchstart", (event) => { touchStartX = event.changedTouches[0].clientX; }, { passive: true });
-    document.addEventListener("touchend", (event) => {
-      if (touchStartX === null) return;
-      const distance = event.changedTouches[0].clientX - touchStartX;
-      if (Math.abs(distance) > 50) showSlide(current + (distance < 0 ? 1 : -1));
-      touchStartX = null;
-    }, { passive: true });
+    <section class="slide" data-title="배경선 40% 비교"><div class="section">10 · 배경선 40%는 무엇을 비교하는가</div><h2>인물 뒤의 장소가 같은 위치에 있는지도<br /><span class="green">대표선 주변만 좁게</span> 확인합니다.</h2><div class="background-steps"><div><b>01 SELECT</b><strong>등록한 대표선</strong><span>관리자가 계단 난간, 건물 모서리, 관람차 테두리처럼 구도를 잡는 선을 최대 5개 저장합니다.</span></div><div><b>02 MASK</b><strong>인물 영역 제외</strong><span>기준 사진은 저장된 실루엣, 촬영 사진은 새 SAM2 실루엣으로 인물을 비교 대상에서 뺍니다.</span></div><div><b>03 MATCH</b><strong>선 주변만 매칭</strong><span>선의 양옆 8~12% 띠 영역에서 ORB 특징점을 찾고 RANSAC으로 기준선이 촬영 사진의 어디로 이동했는지 추정합니다.</span></div><div><b>04 SCORE</b><strong>위치·각도 오차</strong><span>투영된 시작점·끝점의 거리로 위치 점수, 선의 기울기 차이로 각도 점수를 계산합니다.</span></div></div><div class="background-detail-note">선마다 <b>위치 점수 + 각도 점수</b>를 계산해 평균을 내고, 그 값을 전체 구도 점수의 <b>배경선 40%</b>로 반영합니다. 나머지 60%는 인물 위치·크기·포즈 비교입니다.</div><span class="page">11 / 15</span></section>
 
-    window.addEventListener("hashchange", () => {
-      const index = Number(location.hash.slice(1)) - 1;
-      if (Number.isInteger(index) && index !== current) showSlide(index);
-    });
+    <section class="slide" data-title="처리 시간"><div class="section">11 · 빠른 모드와 정확 모드</div><h2>촬영 직후에는 <span class="green">기다림을 줄이고</span>,<br />필요한 경우에만 더 정교하게 분석합니다.</h2><div class="mode-explainer"><div class="mode-card"><b>FAST MODE · 평균 1.6초</b><strong>YOLO Pose만 사용</strong><span>인원 수, 인물 위치와 크기, 주요 포즈를 빠르게 비교합니다. 촬영 직후 결과 화면에 먼저 보여줄 기본 모드입니다.</span></div><div class="mode-card"><b>ACCURATE MODE · 평균 6.3초</b><strong>YOLO Pose + SAM2</strong><span>인물 실루엣까지 추가로 추출합니다. 결과를 더 확인하고 싶을 때 또는 서버 비동기 분석에 쓰는 보조 모드입니다.</span></div></div><div class="timelines"><div class="timeline"><b>빠른 모드</b><div class="bar fast"><i></i><span>YOLO Pose</span></div><strong>1.6초</strong></div><div class="timeline"><b>정확 모드</b><div class="bar accurate"><i></i><span>YOLO Pose + SAM2</span></div><strong>6.3초</strong></div></div><div class="time-foot"><div>가장 느린 정확 모드 샘플은 약 <b>23초</b>까지 걸렸습니다. 그래서 기준 사진은 등록 단계에서 미리 분석합니다.</div><div>촬영 단계에서는 빠른 결과를 먼저 보여주고, 정확 결과는 완료되는 대로 갱신하는 흐름을 고려합니다.</div></div><span class="page">12 / 15</span></section>
 
-    showSlide(current);
+    <section class="slide" data-title="서비스 적용 방향"><div class="section">11 · 현실적인 서비스 적용 방향</div><h2>AI 분석은 매 촬영의 주인공이 아니라,<br />포토 내비게이션 경험을 보조하는 구조로 둡니다.</h2><div class="operation"><div><b>REGISTER</b><strong>기준 가이드는<br />미리 생성·검수</strong><span>포토스팟 등록 시 Agent가 layout JSON과 Overlay를 만들고 관리자가 승인합니다.</span></div><div><b>CAPTURE</b><strong>빠른 비교를<br />먼저 제공</strong><span>사용자 촬영 사진은 빠른 모드로 우선 분석하고 필요할 때 정확 모드를 사용합니다.</span></div><div><b>RESULT</b><strong>즉시 비교 후<br />점수는 비동기 갱신</strong><span>사진 비교 화면을 먼저 보여주고, 분석 결과는 완료되는 대로 추가합니다.</span></div></div><div class="architecture-line">현재: React/Vite + Express + 로컬 FastAPI Vision 서버 &nbsp;→&nbsp; 향후: 웹 화면, 서비스 API, 분석 서버를 역할별로 분리</div><span class="page">12 / 13</span></section>
+
+    <section class="slide" data-title="다음 주 계획"><div class="section">12 · 다음 주 계획</div><h2>다음 주에는 포토스팟 데이터 한 건을<br /><span class="green">DB부터 지도 화면까지</span> 연결합니다.</h2><div class="next"><div><b>DATABASE</b><span>Supabase에 포토스팟·프레임·layout 메타데이터 등록</span></div><div><b>STORAGE</b><span>예시 사진과 Overlay PNG 업로드</span></div><div><b>API</b><span>Express 포토스팟 조회 API 구현</span></div><div><b>MAP</b><span>목 데이터를 실제 DB 응답으로 교체</span></div><div><b>VERIFY</b><span>로딩·오류·권한 상태까지 검증</span></div></div><div class="closing">DB → API → 지도 → 포토스팟 상세 → 프레임까지 이어지는 첫 수직 슬라이스를 완성하겠습니다.</div><span class="page">13 / 13</span></section>
+  </div></main>
+  <button class="fullscreen" id="fullscreen" title="전체화면">⛶</button><nav class="controls"><button id="prev" title="이전">←</button><span class="indicator" id="indicator">1 / 14</span><button id="next" title="다음">→</button></nav>
+  <script>
+    const slides=[...document.querySelectorAll('.slide')], indicator=document.getElementById('indicator'); let current=Math.max(0,Math.min(slides.length-1,Number(location.hash.slice(1))-1||0)), touchStart=null;
+    slides.forEach((slide,index)=>{ const page=slide.querySelector('.page'); if(page) page.textContent=`${String(index+1).padStart(2,'0')} / ${String(slides.length).padStart(2,'0')}`; });
+    function show(index){ current=Math.max(0,Math.min(slides.length-1,index)); slides.forEach((slide,i)=>slide.classList.toggle('active',i===current)); indicator.textContent=`${current+1} / ${slides.length}`; location.hash=String(current+1); document.title=`${current+1}. ${slides[current].dataset.title} | 포토 내비게이션 3주차`; }
+    document.getElementById('prev').onclick=()=>show(current-1); document.getElementById('next').onclick=()=>show(current+1); document.getElementById('fullscreen').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
+    document.addEventListener('keydown',e=>{if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();show(current+1)}if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(current-1)}if(e.key==='Home')show(0);if(e.key==='End')show(slides.length-1)});
+    document.addEventListener('touchstart',e=>touchStart=e.changedTouches[0].clientX,{passive:true}); document.addEventListener('touchend',e=>{if(touchStart===null)return; const distance=e.changedTouches[0].clientX-touchStart;if(Math.abs(distance)>50)show(current+(distance<0?1:-1));touchStart=null},{passive:true}); window.addEventListener('hashchange',()=>{const index=Number(location.hash.slice(1))-1;if(Number.isInteger(index)&&index!==current)show(index)}); show(current);
   </script>
 </body>
 </html>
