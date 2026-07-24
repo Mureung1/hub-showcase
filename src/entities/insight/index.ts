@@ -1,7 +1,6 @@
 export { filterInsights } from './model/insight';
 export type {
   Insight,
-  InsightCategory,
   InsightContextInput,
   InsightMutationResult,
   InsightTitleOrigin,
@@ -40,6 +39,7 @@ export {
 export type {
   InsightSearchField,
   InsightSearchResult,
+  SearchInsightsOptions,
 } from './model/search_insights';
 export { retrieveInsights } from './model/retrieve_insights';
 export type { RetrievedInsight } from './model/retrieve_insights';

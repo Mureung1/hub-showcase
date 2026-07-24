@@ -8,7 +8,7 @@ import {
 
 const USER_ID = '00000000-0000-4000-8000-000000000001';
 const ROW = {
-  category: null,
+  category_id: null,
   created_at: '2026-07-16T00:00:00.000Z',
   domain: 'example.com',
   id: '10000000-0000-4000-8000-000000000001',
@@ -53,7 +53,7 @@ describe('createSupabaseInsightCaptureStore', () => {
       store.findByNormalizedUrl(USER_ID, 'https://example.com/article')
     ).resolves.toEqual({
       insight: {
-        category: null,
+        categoryId: null,
         createdAt: ROW.created_at,
         domain: ROW.domain,
         id: ROW.id,
@@ -87,6 +87,50 @@ describe('createSupabaseInsightCaptureStore', () => {
     await expect(
       store.findByNormalizedUrl(USER_ID, 'https://example.com/article')
     ).resolves.toEqual({ status: 'permission-denied' });
+  });
+
+  it('새 인사이트를 미분류 상태로 저장한다', async () => {
+    const single = vi.fn().mockResolvedValue({ data: ROW, error: null });
+    const select = vi.fn(() => ({ single }));
+    const insert = vi.fn(() => ({ select }));
+    const store = createSupabaseInsightCaptureStore({
+      from: vi.fn(() => ({ insert })),
+    } as unknown as SupabaseClient);
+    const input = {
+      domain: 'example.com',
+      normalizedUrl: 'https://example.com/article',
+      originalUrl: 'https://example.com/article',
+      title: 'Example article',
+      titleOrigin: 'capture' as const,
+      userId: USER_ID,
+    };
+
+    await expect(store.create(input)).resolves.toEqual({
+      insight: {
+        categoryId: null,
+        createdAt: ROW.created_at,
+        domain: ROW.domain,
+        id: ROW.id,
+        memo: null,
+        normalizedUrl: ROW.normalized_url,
+        originalUrl: ROW.original_url,
+        title: ROW.title,
+        titleOrigin: 'capture',
+        updatedAt: ROW.updated_at,
+      },
+      status: 'created',
+    });
+    expect(insert).toHaveBeenCalledWith({
+      category_id: null,
+      domain: input.domain,
+      memo: null,
+      normalized_url: input.normalizedUrl,
+      original_url: input.originalUrl,
+      schema_version: 1,
+      title: input.title,
+      title_origin: input.titleOrigin,
+      user_id: input.userId,
+    });
   });
 
   it('maps a unique conflict from insertion to a duplicate result', async () => {

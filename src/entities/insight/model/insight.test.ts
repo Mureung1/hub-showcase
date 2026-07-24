@@ -15,7 +15,7 @@ const insights: Insight[] = [
     titleOrigin: 'capture',
     title: '선택 부담을 줄이는 디자인',
     memo: '팀 프로젝트 첫 화면에 참고하기',
-    category: '디자인',
+    categoryId: '10000000-0000-4000-8000-000000000001',
     createdAt: '2026-07-14T00:00:00.000Z',
     updatedAt: '2026-07-14T00:00:00.000Z',
   },
@@ -27,7 +27,7 @@ const insights: Insight[] = [
     titleOrigin: 'capture',
     title: '팀 프로젝트 개발 가이드',
     memo: null,
-    category: '개발',
+    categoryId: '10000000-0000-4000-8000-000000000002',
     createdAt: '2026-07-14T00:00:00.000Z',
     updatedAt: '2026-07-14T00:00:00.000Z',
   },
@@ -39,7 +39,7 @@ const insights: Insight[] = [
     titleOrigin: 'fallback',
     title: '아직 분류하지 않은 링크',
     memo: null,
-    category: null,
+    categoryId: null,
     createdAt: '2026-07-14T00:00:00.000Z',
     updatedAt: '2026-07-14T00:00:00.000Z',
   },
@@ -47,13 +47,23 @@ const insights: Insight[] = [
 
 describe('filterInsights', () => {
   it('matches a category and every contained query token', () => {
-    expect(filterInsights(insights, '디자인', '팀 프로젝트')).toEqual([
-      insights[0],
-    ]);
+    expect(
+      filterInsights(
+        insights,
+        '10000000-0000-4000-8000-000000000001',
+        '팀 프로젝트'
+      )
+    ).toEqual([insights[0]]);
   });
 
   it('returns uncategorized insights in input order for an empty query', () => {
-    expect(filterInsights(insights, '미분류', '')).toEqual([insights[2]]);
+    expect(filterInsights(insights, 'uncategorized', '')).toEqual([
+      insights[2],
+    ]);
+  });
+
+  it('returns every insight for the all filter key', () => {
+    expect(filterInsights(insights, 'all', '')).toEqual(insights);
   });
 });
 
@@ -67,7 +77,7 @@ describe('Insight', () => {
       title: string;
       titleOrigin: InsightTitleOrigin;
       memo: string | null;
-      category: string | null;
+      categoryId: string | null;
       createdAt: string;
       updatedAt: string;
     }>();

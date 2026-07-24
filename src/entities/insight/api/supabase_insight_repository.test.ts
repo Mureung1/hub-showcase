@@ -5,7 +5,7 @@ import { createSupabaseInsightRepository } from './supabase_insight_repository';
 
 const USER_ID = '00000000-0000-4000-8000-000000000001';
 const INSIGHT = {
-  category: '개발',
+  categoryId: '20000000-0000-4000-8000-000000000001',
   createdAt: '2026-07-15T00:00:00.000Z',
   domain: 'example.com',
   id: '10000000-0000-4000-8000-000000000001',
@@ -18,7 +18,7 @@ const INSIGHT = {
 };
 
 const ROW = {
-  category: INSIGHT.category,
+  category_id: INSIGHT.categoryId,
   created_at: INSIGHT.createdAt,
   domain: INSIGHT.domain,
   id: INSIGHT.id,
@@ -93,6 +93,7 @@ describe('createSupabaseInsightRepository', () => {
         null,
         { ...ROW, user_id: '00000000-0000-4000-8000-000000000002' },
         { ...ROW, title: '' },
+        { ...ROW, category_id: '개발' },
       ],
       error: null,
     });
@@ -137,7 +138,7 @@ describe('createSupabaseInsightRepository', () => {
       ok: true,
     });
     expect(insert).toHaveBeenCalledWith({
-      category: INSIGHT.category,
+      category_id: INSIGHT.categoryId,
       domain: INSIGHT.domain,
       id: INSIGHT.id,
       memo: INSIGHT.memo,
@@ -212,7 +213,7 @@ describe('createSupabaseInsightRepository', () => {
       ok: true,
     });
     expect(update).toHaveBeenCalledWith({
-      category: INSIGHT.category,
+      category_id: INSIGHT.categoryId,
       memo: INSIGHT.memo,
       title: INSIGHT.title,
       title_origin: INSIGHT.titleOrigin,

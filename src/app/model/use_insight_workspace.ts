@@ -155,7 +155,7 @@ export function useInsightWorkspace({
           const normalizedTitle = normalizeOptionalText(context.title);
           const candidate: Insight = {
             ...insight,
-            category: normalizeOptionalCategory(context.category),
+            categoryId: context.categoryId,
             memo: normalizeOptionalText(context.memo),
             title: normalizedTitle ?? insight.title,
             titleOrigin: normalizedTitle ? 'user' : insight.titleOrigin,
@@ -219,10 +219,36 @@ export function useInsightWorkspace({
     [repository, runMutation]
   );
 
+  const detachCategory = useCallback(
+    (categoryId: string) => {
+      const currentState = workspaceStateRef.current;
+
+      if (
+        currentState.repository !== repository ||
+        currentState.status !== 'ready'
+      ) {
+        return;
+      }
+
+      const nextInsights = currentState.insights.map((insight) =>
+        insight.categoryId === categoryId
+          ? { ...insight, categoryId: null }
+          : insight
+      );
+
+      updateReadyState(repository, setWorkspaceState, workspaceStateRef, {
+        insights: nextInsights,
+        loadWarnings: currentState.loadWarnings,
+      });
+    },
+    [repository]
+  );
+
   const isCurrentRepository = workspaceState.repository === repository;
 
   return {
     deleteInsight,
+    detachCategory,
     insights: isCurrentRepository ? workspaceState.insights : [],
     isLoading: !isCurrentRepository || workspaceState.status === 'loading',
     isMutating,
@@ -272,10 +298,6 @@ function clearRecoverableWarnings(warnings: InsightRepositoryWarning[]) {
 
 function normalizeOptionalText(value: string) {
   return value.trim() || null;
-}
-
-function normalizeOptionalCategory(value: string) {
-  return value.trim().replace(/\s+/g, ' ') || null;
 }
 
 function getNextUpdatedAt(insight: Insight, currentTime: string) {

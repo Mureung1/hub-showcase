@@ -13,7 +13,7 @@ const insight: Insight = {
   title: 'Local-first architecture',
   titleOrigin: 'capture',
   memo: 'Keep the storage boundary replaceable.',
-  category: 'Development',
+  categoryId: '10000000-0000-4000-8000-000000000001',
   createdAt: '2026-07-14T00:00:00.000Z',
   updatedAt: '2026-07-14T00:00:00.000Z',
 };

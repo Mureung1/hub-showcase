@@ -376,7 +376,7 @@ describe('App onboarding flow', () => {
 
 function createCapturedInsight(): CapturedInsight {
   return {
-    category: null,
+    categoryId: null,
     createdAt: '2026-07-21T00:00:00.000Z',
     domain: 'example.com',
     id: '10000000-0000-4000-8000-000000000001',

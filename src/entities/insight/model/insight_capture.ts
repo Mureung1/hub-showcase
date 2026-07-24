@@ -16,7 +16,7 @@ export type InsightCaptureRequest = {
 };
 
 export type CapturedInsight = {
-  category: string | null;
+  categoryId: string | null;
   createdAt: string;
   domain: string;
   id: string;

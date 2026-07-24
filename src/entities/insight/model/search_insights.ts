@@ -23,13 +23,18 @@ export type InsightSearchResult = {
   score: number;
 };
 
+export type SearchInsightsOptions = {
+  getCategoryName?: (categoryId: string) => string | null;
+};
+
 const SEARCH_FIELDS = Object.keys(
   INSIGHT_SEARCH_FIELD_WEIGHTS
 ) as InsightSearchField[];
 
 export function searchInsights(
   insights: readonly Insight[],
-  query: string
+  query: string,
+  options: SearchInsightsOptions = {}
 ): InsightSearchResult[] {
   const queryTokens = Array.from(new Set(tokenize(query)));
 
@@ -38,7 +43,7 @@ export function searchInsights(
   }
 
   const scoredResults = insights
-    .map((insight) => scoreInsight(insight, queryTokens))
+    .map((insight) => scoreInsight(insight, queryTokens, options))
     .filter((result) => result.score > 0);
   const sortableEpochs = new Map(
     scoredResults.map(({ insight }) => [
@@ -54,14 +59,15 @@ export function searchInsights(
 
 function scoreInsight(
   insight: Insight,
-  queryTokens: string[]
+  queryTokens: string[],
+  options: SearchInsightsOptions
 ): InsightSearchResult {
   const matchedFields: InsightSearchField[] = [];
   const matchedTokenSet = new Set<string>();
   let score = 0;
 
   for (const field of SEARCH_FIELDS) {
-    const fieldValue = insight[field] ?? '';
+    const fieldValue = getSearchFieldValue(insight, field, options);
     const normalizedField = normalizeSearchText(fieldValue);
     const fieldTokens = tokenize(fieldValue);
     let fieldMatched = false;
@@ -93,6 +99,20 @@ function scoreInsight(
   );
 
   return { insight, matchedFields, matchedTokens, score };
+}
+
+function getSearchFieldValue(
+  insight: Insight,
+  field: InsightSearchField,
+  options: SearchInsightsOptions
+) {
+  if (field === 'category') {
+    return insight.categoryId && options.getCategoryName
+      ? (options.getCategoryName(insight.categoryId) ?? '')
+      : '';
+  }
+
+  return insight[field] ?? '';
 }
 
 function getMatchMultiplier(

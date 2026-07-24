@@ -1,14 +1,7 @@
-import type { CategoryTone } from '@/shared/ui';
-
 import { searchInsights } from './search_insights';
 import type { InsightTitleOrigin } from './insight_capture';
 
 export type { InsightTitleOrigin } from './insight_capture';
-
-export type InsightCategory = {
-  name: string;
-  tone: CategoryTone;
-};
 
 export type Insight = {
   id: string;
@@ -18,13 +11,13 @@ export type Insight = {
   title: string;
   titleOrigin: InsightTitleOrigin;
   memo: string | null;
-  category: string | null;
+  categoryId: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
 export type InsightContextInput = {
-  category: string;
+  categoryId: string | null;
   memo: string;
   title: string;
 };
@@ -38,14 +31,14 @@ export type InsightMutationResult =
 
 export function filterInsights(
   insights: Insight[],
-  category: string,
+  categoryFilter: string,
   query: string
 ) {
   const categoryInsights = insights.filter((insight) => {
     return (
-      category === 'All' ||
-      (category === '미분류' && insight.category === null) ||
-      insight.category === category
+      categoryFilter === 'all' ||
+      (categoryFilter === 'uncategorized' && insight.categoryId === null) ||
+      insight.categoryId === categoryFilter
     );
   });
 

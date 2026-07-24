@@ -433,7 +433,7 @@ function createInsight(overrides: Partial<Insight> = {}): Insight {
     titleOrigin: 'fallback',
     title: '자료',
     memo: null,
-    category: null,
+    categoryId: null,
     createdAt: '2026-07-14T00:00:00.000Z',
     updatedAt: '2026-07-14T00:00:00.000Z',
     ...overrides,
