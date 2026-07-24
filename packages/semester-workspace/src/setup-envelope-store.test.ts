@@ -432,6 +432,45 @@ test('launch reconciliation preserves a same-name temporary inode that replaced 
   }
 })
 
+test('launch reconciliation preserves a same-name ownership stage that no longer matches its intent', async () => {
+  const root = await ownerOnlyTempRoot('replaced-ownership-stage')
+  try {
+    await runCrashWriter({
+      root,
+      expectedRevisionToken: null,
+      envelope: approvedEnvelope(1),
+      faultPoint: 'after_ownership_stage_create',
+    })
+    const leasePath = path.join(root, '.setup-state-writer')
+    const stageName = (await readdir(leasePath)).find((entry) =>
+      entry.startsWith('.setup-state-ownership-stage-v1-'),
+    )
+    assert.ok(stageName)
+    const stagePath = path.join(leasePath, stageName)
+    await unlink(stagePath)
+    await writeFile(stagePath, 'unknown replacement\n', {
+      mode: 0o600,
+    })
+    const replacement = await lstat(stagePath)
+    const before = await captureStoreTree(root)
+
+    const store = createSetupEnvelopeStore({ appDataRoot: root })
+    assert.deepEqual(await store.reconcileAbandonedWrite(), {
+      status: 'incompatible',
+      reason: 'missing_state',
+    })
+    assert.deepEqual(await captureStoreTree(root), before)
+    const after = await lstat(stagePath)
+    assert.equal(after.ino, replacement.ino)
+    assert.equal(
+      await readFile(stagePath, 'utf8'),
+      'unknown replacement\n',
+    )
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
 test('pre-existing setup and version symlinks fail closed without mutating their targets', async () => {
   for (const unsafeAncestor of ['setup', 'version'] as const) {
     const root = await ownerOnlyTempRoot(`symlink-${unsafeAncestor}`)
@@ -611,6 +650,15 @@ const initialCrashEquivalencePoints = [
   'after_intent_file_sync',
   'after_lease_intent_sync',
   'after_lease_publish',
+  'after_initial_setup_directory_create',
+  'after_initial_version_directory_create',
+  'after_temp_open_before_ownership',
+  'after_ownership_stage_create',
+  'after_ownership_stage_write',
+  'after_ownership_stage_sync',
+  'after_ownership_publish',
+  'after_ownership_directory_sync',
+  'after_ownership_stage_unlink',
   'after_temp_create',
   'before_temp_write',
   'after_temp_write',
@@ -693,6 +741,13 @@ const replacementCrashEquivalencePoints = [
   'after_intent_file_sync',
   'after_lease_intent_sync',
   'after_lease_publish',
+  'after_temp_open_before_ownership',
+  'after_ownership_stage_create',
+  'after_ownership_stage_write',
+  'after_ownership_stage_sync',
+  'after_ownership_publish',
+  'after_ownership_directory_sync',
+  'after_ownership_stage_unlink',
   'after_temp_create',
   'before_temp_write',
   'after_temp_write',
@@ -785,6 +840,13 @@ const stateWriteFaults = [
   'after_lease_intent_sync',
   'after_lease_publish',
   'before_temp_create',
+  'after_temp_open_before_ownership',
+  'after_ownership_stage_create',
+  'after_ownership_stage_write',
+  'after_ownership_stage_sync',
+  'after_ownership_publish',
+  'after_ownership_directory_sync',
+  'after_ownership_stage_unlink',
   'after_temp_create',
   'before_temp_write',
   'after_temp_write',
@@ -806,15 +868,19 @@ const stateWriteFaults = [
   'after_readback',
 ] as const satisfies readonly SetupEnvelopeStoreFaultPoint[]
 
-const initialStateWriteFaults = stateWriteFaults.filter(
-  (point) =>
-    ![
-      'before_compare_guard',
-      'after_compare_guard',
-      'before_guard_unlink',
-      'after_guard_unlink',
-    ].includes(point),
-)
+const initialStateWriteFaults = [
+  'after_initial_setup_directory_create',
+  'after_initial_version_directory_create',
+  ...stateWriteFaults.filter(
+    (point) =>
+      ![
+        'before_compare_guard',
+        'after_compare_guard',
+        'before_guard_unlink',
+        'after_guard_unlink',
+      ].includes(point),
+  ),
+] as const satisfies readonly SetupEnvelopeStoreFaultPoint[]
 
 const replacementStateWriteFaults = stateWriteFaults.filter(
   (point) =>

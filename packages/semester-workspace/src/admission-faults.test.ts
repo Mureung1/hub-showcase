@@ -637,7 +637,7 @@ test('atomic publish refuses a raced state file and preserves every unknown byte
         setupId: inspected.plan.planId,
         canonicalRoot: inspected.plan.canonicalRoot,
       }),
-      { outcome: 'unsafe', readOnly: false },
+      { outcome: 'collision', readOnly: false },
     )
     assert.deepEqual(await readFile(statePath), sentinel)
   } finally {

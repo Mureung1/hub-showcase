@@ -43,6 +43,15 @@ export type {
   SetupEnvelopeStoreFaultPoint,
   SetupEnvelopeStoreOptions,
 } from './setup-envelope-store.js'
+export {
+  createSemesterSetupJourney,
+} from './setup-journey.js'
+export type {
+  SemesterSetupJourneyFaultPoint,
+  SemesterSetupJourneyOptions,
+  SemesterSetupJourneyProjection,
+  SemesterSetupParentSelection,
+} from './setup-journey.js'
 
 export type SemesterWorkspaceScaffold = {
   readonly workspace: '@ay-ple/semester-workspace'

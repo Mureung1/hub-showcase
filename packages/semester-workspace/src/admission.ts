@@ -10,6 +10,7 @@ import {
   open,
   readdir,
   realpath,
+  rmdir,
   unlink,
 } from 'node:fs/promises'
 import path from 'node:path'
@@ -69,6 +70,12 @@ type WorkspaceAdmissionFaultPoint =
   | 'before_evidence_unlink'
   | 'after_evidence_unlink'
   | 'after_evidence_directory_sync'
+  | 'after_discard_state_temp_unlink'
+  | 'after_discard_courses_remove'
+  | 'after_discard_inbox_remove'
+  | 'after_discard_marker_unlink'
+  | 'after_discard_product_root_remove'
+  | 'after_discard_root_remove'
 
 type SemesterWorkspaceAdmissionTestOptions = {
   readonly fault?: (
@@ -145,7 +152,17 @@ type ResumePlanContext = {
   readonly runtimeAuthority: OwnedRuntimeAuthority
 }
 
-type PlanContext = CreatePlanContext | ResumePlanContext
+type DiscardPlanContext = {
+  readonly kind: 'discard_owned'
+  readonly plan: AuthorityBoundWorkspacePlan
+  readonly planned: DecodedAdmissionEvidence
+  readonly runtimeAuthority: OwnedRuntimeAuthority
+}
+
+type PlanContext =
+  | CreatePlanContext
+  | ResumePlanContext
+  | DiscardPlanContext
 
 export interface RestorableSemesterWorkspaceAdmission
   extends SemesterWorkspaceAdmission {
@@ -208,7 +225,7 @@ function createSemesterWorkspaceAdmissionModule(
         case 'resume_owned':
           return inspectOwnedResume(intent, plans)
         case 'discard_owned':
-          return { outcome: 'unsafe', readOnly: false }
+          return inspectOwnedDiscard(intent, plans)
         default:
           return { outcome: 'unsafe', readOnly: false }
       }
@@ -242,6 +259,9 @@ function createSemesterWorkspaceAdmissionModule(
       try {
         if (context.kind === 'create') {
           return await applyCreate(context, options)
+        }
+        if (context.kind === 'discard_owned') {
+          return await applyDiscard(context, options)
         }
         return await applyResume(context, options)
       } catch (error) {
@@ -625,6 +645,83 @@ async function inspectOwnedResume(
   return { outcome: 'owned_incomplete', plan }
 }
 
+async function inspectOwnedDiscard(
+  intent: Extract<WorkspaceIntent, { kind: 'discard_owned' }>,
+  plans: Map<string, PlanContext>,
+): Promise<WorkspaceInspection> {
+  if (
+    !isOpaqueIdentity(intent.setupId) ||
+    !isCanonicalAbsolutePath(intent.canonicalRoot)
+  ) {
+    return { outcome: 'unsafe', readOnly: false }
+  }
+  const planned = await readAdmissionEvidence(
+    intent.canonicalRoot,
+    intent.setupId,
+  )
+  if (
+    !planned ||
+    planned.setupPlanId !== intent.setupId ||
+    planned.evidence.authority.canonicalRoot !== intent.canonicalRoot ||
+    (await inspectCanonicalParent(
+      planned.evidence.authority.parent,
+    )) !== 'current'
+  ) {
+    return { outcome: 'collision', readOnly: false }
+  }
+  const statePath = path.join(
+    intent.canonicalRoot,
+    planned.evidence.authority.ownedScaffoldPlan.state.relativePath,
+  )
+  if ((await lstatOutcome(statePath)).status !== 'absent') {
+    return { outcome: 'collision', readOnly: false }
+  }
+  let rootIdentity: FileIdentity
+  try {
+    rootIdentity = await directoryIdentity(intent.canonicalRoot)
+    await assertOwnedIncompleteTopology(planned, {
+      allowRepairableTemporary: true,
+    })
+    await assertExactRegularFileIdentity(
+      path.join(
+        productRootPath(intent.canonicalRoot),
+        evidenceFileName,
+      ),
+      planned.markerBytes,
+      1,
+    )
+  } catch (error) {
+    return error instanceof ApplyFailure && error.outcome === 'unavailable'
+      ? { outcome: 'unavailable', readOnly: false }
+      : { outcome: 'collision', readOnly: false }
+  }
+  const planId = `workspace_discard_${randomHex()}`
+  const authorityDigest = sha256Canonical({
+    operation: 'discard_owned',
+    planId,
+    canonicalRoot: intent.canonicalRoot,
+    markerSha256: planned.markerSha256,
+    createAuthorityDigest: planned.evidence.authorityDigest,
+    rootIdentity,
+  })
+  const plan = {
+    planId,
+    operation: 'discard_owned',
+    canonicalRoot: intent.canonicalRoot,
+    authorityDigest,
+  } satisfies AuthorityBoundWorkspacePlan
+  plans.set(planId, {
+    kind: 'discard_owned',
+    plan: cloneAuthorityBoundWorkspacePlan(plan),
+    planned,
+    runtimeAuthority: {
+      parent: cloneParentAuthority(planned.evidence.authority.parent),
+      rootIdentity,
+    },
+  })
+  return { outcome: 'owned_incomplete', plan }
+}
+
 async function applyCreate(
   context: CreatePlanContext,
   options: SemesterWorkspaceAdmissionTestOptions,
@@ -715,6 +812,113 @@ async function applyResume(
     true,
   )
   return { outcome: 'resumed', workspace }
+}
+
+async function applyDiscard(
+  context: DiscardPlanContext,
+  options: SemesterWorkspaceAdmissionTestOptions,
+): Promise<WorkspaceApplyResult> {
+  const root = context.plan.canonicalRoot
+  const productRoot = productRootPath(root)
+  const authority =
+    context.planned.evidence.authority.ownedScaffoldPlan
+  await assertOwnedRuntimeAuthority(root, context.runtimeAuthority)
+  await assertOwnedIncompleteTopology(context.planned, {
+    allowRepairableTemporary: true,
+  })
+  const statePath = path.join(root, authority.state.relativePath)
+  if ((await lstatOutcome(statePath)).status !== 'absent') {
+    throw new ApplyFailure('conflict')
+  }
+  const temporaryPath = path.join(
+    root,
+    authority.state.temporaryRelativePath,
+  )
+  const temporary = await lstatOutcome(temporaryPath)
+  if (temporary.status === 'unavailable') {
+    throw new ApplyFailure('unavailable')
+  }
+  if (temporary.status === 'present') {
+    if (
+      !temporary.stats.isFile() ||
+      temporary.stats.isSymbolicLink() ||
+      temporary.stats.nlink !== 1 ||
+      !(
+        await regularFileHasExactBytes(
+          temporaryPath,
+          context.planned.aggregateBytes,
+          1,
+        )
+      ) &&
+        !(
+          await regularFileIsStrictPrefix(
+            temporaryPath,
+            context.planned.aggregateBytes,
+          )
+        )
+    ) {
+      throw new ApplyFailure('conflict')
+    }
+    await unlink(temporaryPath)
+    await syncDirectory(productRoot)
+    await inject(options, 'after_discard_state_temp_unlink')
+  }
+  for (const directoryName of ['courses', 'inbox'] as const) {
+    const directory = path.join(root, directoryName)
+    const outcome = await lstatOutcome(directory)
+    if (outcome.status === 'unavailable') {
+      throw new ApplyFailure('unavailable')
+    }
+    if (outcome.status === 'absent') continue
+    if (
+      !outcome.stats.isDirectory() ||
+      outcome.stats.isSymbolicLink() ||
+      (await readDirectoryEntries(directory)).length !== 0
+    ) {
+      throw new ApplyFailure('conflict')
+    }
+    await assertOwnedRuntimeAuthority(root, context.runtimeAuthority)
+    await rmdir(directory)
+    await syncDirectory(root)
+    await inject(
+      options,
+      directoryName === 'courses'
+        ? 'after_discard_courses_remove'
+        : 'after_discard_inbox_remove',
+    )
+  }
+  const markerPath = path.join(productRoot, evidenceFileName)
+  await assertExactRegularFileIdentity(
+    markerPath,
+    context.planned.markerBytes,
+    1,
+  )
+  await assertOwnedRuntimeAuthority(root, context.runtimeAuthority)
+  if (
+    !(await hasExactDirectoryEntries(productRoot, [
+      evidenceFileName,
+    ]))
+  ) {
+    throw new ApplyFailure('conflict')
+  }
+  await unlink(markerPath)
+  await syncDirectory(productRoot)
+  await inject(options, 'after_discard_marker_unlink')
+  await assertOwnedRuntimeAuthority(root, context.runtimeAuthority)
+  if (!(await hasExactDirectoryEntries(productRoot, []))) {
+    throw new ApplyFailure('conflict')
+  }
+  await rmdir(productRoot)
+  await syncDirectory(root)
+  await inject(options, 'after_discard_product_root_remove')
+  await assertOwnedRuntimeAuthority(root, context.runtimeAuthority)
+  if (!(await hasExactDirectoryEntries(root, []))) {
+    throw new ApplyFailure('conflict')
+  }
+  await rmdir(root)
+  await syncDirectory(context.runtimeAuthority.parent.canonicalParent)
+  await inject(options, 'after_discard_root_remove')
+  return { outcome: 'discarded' }
 }
 
 async function finishOwnedScaffold(
@@ -2000,6 +2204,18 @@ async function syncDirectory(directory: string): Promise<void> {
   } finally {
     await handle.close()
   }
+}
+
+async function hasExactDirectoryEntries(
+  directory: string,
+  expected: readonly string[],
+): Promise<boolean> {
+  const actual = (await readDirectoryEntries(directory)).sort()
+  const sortedExpected = [...expected].sort()
+  return (
+    actual.length === sortedExpected.length &&
+    actual.every((entry, index) => entry === sortedExpected[index])
+  )
 }
 
 async function isRegularDirectory(directory: string): Promise<boolean> {
