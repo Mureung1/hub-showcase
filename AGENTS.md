@@ -9,9 +9,10 @@
 - `frontend/` — React 19 + TypeScript + Vite (5173 포트)
 - `backend/` — FastAPI + uv, Python 3.13 (8000 포트)
 - `supabase/` — DB 마이그레이션과 seed
+- `docs/README.md` — 문서 구조와 기준 문서 안내
 - `docs/DEVELOPMENT.md` — Git·코딩·검증 규칙의 단일 원본
-- `docs/plan/` — 기획·설계 문서
-- `docs/quality/` — 구현 완료 판정 기준
+- `docs/plan/` — 제품·기술 설계와 기능별 구현 계획
+- `docs/quality/` — 구현 완료 판정 기준과 검증 절차
 - `docs/notes/` — 논의 내용과 설계 변경 사유
 - `docs/prototype/` — HTML 프로토타입. 빌드 대상이 아니다.
 - `.agents/templates/` — AI 도구 공통 요청 템플릿

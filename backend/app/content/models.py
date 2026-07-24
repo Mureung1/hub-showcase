@@ -79,6 +79,7 @@ class SourceConfig:
     source_quality_score: float
     paywall_risk: str
     interest_count: int
+    feed_timezone: str | None = None
     # source_rule 태깅으로 신규 글에 그대로 복사될 관심사 (이름, 가중치).
     interests: tuple[tuple[str, float], ...] = ()
 

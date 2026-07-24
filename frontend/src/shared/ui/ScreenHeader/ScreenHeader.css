@@ -1,0 +1,30 @@
+.screen-back-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 20px 10px;
+}
+
+.screen-back-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  margin-left: -6px;
+  border: none;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.screen-back-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.screen-back-header-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}

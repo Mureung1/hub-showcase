@@ -45,6 +45,12 @@ docs/prototype/prototype2/support.js
 
 docs/design/
 
+# 구현 완료 판정 기준 (개인 참고용, 공유하지 않는다)
+docs/quality/
+
+# 기능별 구현 계획 (개인 참고용, 공유하지 않는다)
+docs/plan/implementation/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

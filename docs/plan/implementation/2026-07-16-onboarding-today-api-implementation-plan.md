@@ -89,7 +89,7 @@ Task 3 + Task 5
 
 - Modify `docs/quality/api-smoke.md`: GET/POST user interests와 today 기준
 - Modify `docs/quality/core-flow.md`: 구현 완료 상태와 실제 API 흐름
-- Modify `docs/quality/README.md`: 수집기와 신규 API 상태
+- Modify `docs/quality/verification-guide.md`: 수집기와 신규 API 상태
 
 ---
 
@@ -1564,7 +1564,7 @@ git commit -m "feat: 오늘의 깸 카드를 API에 연결"
 
 **Files:**
 - Modify: `docs/quality/core-flow.md`
-- Modify: `docs/quality/README.md`
+- Modify: `docs/quality/verification-guide.md`
 - Modify: `progress.md` locally only
 
 **Interfaces:**
@@ -1636,7 +1636,7 @@ For test users only, query `user_interests` and confirm A/B rows are separated. 
 Update:
 
 - `docs/quality/core-flow.md`: 관심사 저장을 구현 완료 흐름으로 변경하고 today loading/error/empty/list를 추가
-- `docs/quality/README.md`: RSS 수집기, 관심사 API, today API의 실제 구현 상태 반영
+- `docs/quality/verification-guide.md`: RSS 수집기, 관심사 API, today API의 실제 구현 상태 반영
 
 Do not mark DB RPC atomicity or RLS as complete unless Step 1 pgTAP and Step 5 A/B verification both passed.
 
@@ -1654,7 +1654,7 @@ Expected: no whitespace errors. Only intended QA docs are unstaged before the fi
 - [ ] **Step 8: QA 문서를 커밋한다**
 
 ```bash
-git add docs/quality/core-flow.md docs/quality/README.md
+git add docs/quality/core-flow.md docs/quality/verification-guide.md
 git commit -m "docs: 관심사와 오늘의 깸 완료 기준 갱신"
 ```
 

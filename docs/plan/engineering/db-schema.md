@@ -2,7 +2,7 @@
 
 프로젝트: `kckcammmmm` (Supabase, ap-southeast-1, PostgreSQL 17)
 사용자 식별: Supabase Anonymous Sign-in → `auth.users`를 그대로 참조 (별도 `users` 테이블 없음)
-접근 구조: FastAPI가 `service_role` 키로 항상 중개, RLS는 방어적으로 전 테이블 적용
+접근 구조: 사용자 데이터는 FastAPI가 publishable key와 사용자 JWT로 접근해 RLS를 적용하고, RSS 수집 같은 사용자와 무관한 배치 작업만 secret key로 접근
 
 ---
 
@@ -14,7 +14,7 @@
 2. **콘텐츠**: `sources`, `source_interests`, `debate_topics`, `articles`, `content_interest_tags`
 3. **사고 기록**: `mission_records`
 
-그리고 추천 로직을 담은 함수 `get_recommended_articles`가 있다.
+그리고 관심사 전체 교체, 추천, RSS 저장을 담당하는 함수 `replace_user_interests`, `get_recommended_articles`, `ingest_rss_article`이 있다.
 
 ```
 auth.users
@@ -71,6 +71,10 @@ PK는 `(user_id, interest_id)`. 사용자 1명이 관심사 여러 개를, 관�
 | active | boolean | |
 | source_quality_score | numeric, default 0.7 | `articles.quality_score` 계산 재료 |
 | paywall_risk | text (`low`/`medium`/`high`) | |
+| content_type | text (`article`/`blog`/`video`) | 수집 글에 적용할 콘텐츠 유형 |
+| excerpt_field | text (`summary`/`description`/`none`) | 저장을 허용한 feed 공식 소개문 필드 |
+| default_reading_time_minutes | integer (`1..60`) | feed에 읽기 시간이 없을 때 사용할 기본값 |
+| feed_timezone | text, nullable (`Asia/Seoul`) | timezone이 없는 RSS 날짜의 source별 fallback |
 
 소스 속성은 잘 안 바뀌고 콘텐츠는 매일 쏟아지므로, 매 글마다 신뢰도·관점을 중복 저장하지 않고 `sources`를 참조만 하도록 분리했다.
 
@@ -157,7 +161,13 @@ PK는 `(content_id, interest_id)`. 글 하나가 여러 관심사에 걸칠 수 
 
 ---
 
-## 추천 함수 — get_recommended_articles(user_id, limit)
+## DB 함수
+
+### replace_user_interests(interest_ids)
+
+사용자 JWT의 `auth.uid()`를 기준으로 관심사 1~3개를 전체 교체한다. ID 개수·중복·존재 여부·선택 가능한 `launch_status`를 검증하고, 사용자별 transaction advisory lock으로 동시 요청을 직렬화한다. `anon` 실행은 금지하고 `authenticated`, `service_role`만 실행할 수 있다.
+
+### get_recommended_articles(user_id, limit)
 
 Postgres 함수로 구현했다. 관심사 일치, 최신성, 출처 품질, 반복 패널티를 계산해 점수순으로 후보를 반환한다.
 
@@ -169,7 +179,7 @@ Postgres 함수로 구현했다. 관심사 일치, 최신성, 출처 품질, 반
 | 같은 출처 반복 패널티 | 최근 14일간 같은 출처를 읽은 횟수 × -0.1 |
 | stance 쏠림 패널티 | 논쟁 주제 글에 한해, 최근 14일간 같은 debate_topic에서 같은 stance가 65% 이상이면 -0.3 |
 
-자동 추천 대상 필터: `access_type in ('free','partial_free')`, `url_status = 'active'`, `quality_score >= 0.65`, `trust_level in ('high','medium')`, `default_exposure = 'primary'`, 이미 `mission_records`에 있는 글 제외.
+자동 추천 대상 필터: `access_type = 'free'`, `url_status = 'active'`, `quality_score >= 0.65`, `trust_level in ('high','medium')`, `default_exposure = 'primary'`, 이미 `mission_records`에 있는 글 제외.
 
 아직 구현하지 않은 것 (나중에 추가): 사용자 난이도 선호 기반 적합성 점수, 최근 안 본 source_type/perspective_type 균형 보정. 사용자 선호 난이도 데이터가 아직 없고, 균형 보정은 비율 계산이 한 단계 더 필요해서 1차 구현에서는 제외했다.
 
@@ -177,6 +187,10 @@ Postgres 함수로 구현했다. 관심사 일치, 최신성, 출처 품질, 반
 ```sql
 select * from get_recommended_articles('사용자-uuid', 3);
 ```
+
+### ingest_rss_article(source_id, article)
+
+RSS 수집기가 검증한 article 하나를 저장하고 source의 관심사 태그를 함께 생성한다. canonical URL 중복이면 기존 article과 태그를 갱신하지 않고 `duplicate`를 반환한다. 신규 article과 태그 저장은 한 transaction이며, `PUBLIC`, `anon`, `authenticated` 실행은 금지하고 backend privileged role만 실행할 수 있다.
 
 ---
 

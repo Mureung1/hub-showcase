@@ -7,7 +7,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from supabase import Client
 
 from app.core.errors import ApiError
-from app.db.supabase import create_admin_client, create_user_client
+from app.infrastructure.supabase import create_admin_client, create_user_client
 
 # auto_error=False로 두어 토큰 누락도 우리 공통 에러 형식(401)으로 처리한다.
 _bearer_scheme = HTTPBearer(auto_error=False)
