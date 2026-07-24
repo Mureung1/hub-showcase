@@ -172,11 +172,11 @@ export function renderLandingDocument(input: unknown): string {
               <span>현재 preview</span>
             </div>
             <ul class="check-list">
-              <li>Exact <code>npx</code> application 실행</li>
-              <li>Immutable verified Runtime 준비와 cache reuse</li>
-              <li>Codex-managed ChatGPT Browser 연결</li>
-              <li>새 app-owned <code>SemesterWorkspace</code> 생성</li>
-              <li><strong>학기 공간 준비 완료</strong>와 same-version relaunch</li>
+              <li><span class="list-copy">Exact <code>npx</code> application 실행</span></li>
+              <li><span class="list-copy">Immutable verified Runtime 준비와 cache reuse</span></li>
+              <li><span class="list-copy">Codex-managed ChatGPT Browser 연결</span></li>
+              <li><span class="list-copy">새 app-owned <code>SemesterWorkspace</code> 생성</span></li>
+              <li><span class="list-copy"><strong>학기 공간 준비 완료</strong>와 same-version relaunch</span></li>
             </ul>
           </article>
           <article class="promise-card next-card">
@@ -185,9 +185,9 @@ export function renderLandingDocument(input: unknown): string {
               <span>다음 제품 여정</span>
             </div>
             <ul class="arrow-list">
-              <li>첫 자료 가져오기와 archive</li>
-              <li>Course 구성과 자료 연결</li>
-              <li>과제·시험·일정을 함께 조율하는 학업 action</li>
+              <li><span class="list-copy">첫 자료 가져오기와 archive</span></li>
+              <li><span class="list-copy">Course 구성과 자료 연결</span></li>
+              <li><span class="list-copy">과제·시험·일정을 함께 조율하는 학업 action</span></li>
             </ul>
             <p class="scope-note">
               LMS·Calendar·cloud sync와 <code>.app</code>·<code>.dmg</code>는 이번

@@ -630,7 +630,12 @@ code {
 .arrow-list li {
   display: grid;
   grid-template-columns: 26px minmax(0, 1fr);
+  align-items: start;
   gap: 10px;
+}
+
+.list-copy {
+  min-width: 0;
 }
 
 .check-list li::before {

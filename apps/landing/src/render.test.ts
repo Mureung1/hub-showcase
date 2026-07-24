@@ -75,6 +75,38 @@ test('rendered interactions are keyboard-native and announce exact copy feedback
   assert.match(css, /overflow-x: clip/u)
 })
 
+test('promise list copy stays in one grid child when it contains inline emphasis', () => {
+  const html = renderLandingDocument(validLandingReleaseDisplay)
+  const promiseLists = [
+    ...html.matchAll(
+      /<ul class="(?:check-list|arrow-list)">([\s\S]*?)<\/ul>/gu,
+    ),
+  ]
+
+  assert.equal(promiseLists.length, 2)
+
+  const promiseItems = promiseLists.flatMap((list) => [
+    ...(list[1] ?? '').matchAll(/<li>([\s\S]*?)<\/li>/gu),
+  ])
+  assert.equal(promiseItems.length, 8)
+
+  for (const item of promiseItems) {
+    assert.match(
+      item[1] ?? '',
+      /^\s*<span class="list-copy">[\s\S]*<\/span>\s*$/u,
+    )
+  }
+
+  assert.match(
+    promiseItems[0]?.[1] ?? '',
+    /<span class="list-copy">Exact <code>npx<\/code> application 실행<\/span>/u,
+  )
+  assert.match(
+    promiseItems[4]?.[1] ?? '',
+    /<span class="list-copy"><strong>학기 공간 준비 완료<\/strong>와 same-version relaunch<\/span>/u,
+  )
+})
+
 test('missing or mismatched input produces no publishable document', () => {
   assert.throws(() => renderLandingDocument(undefined))
   assert.throws(() =>
