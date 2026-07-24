@@ -86,10 +86,23 @@ describe("app authentication flow", () => {
   it("includes the restored session token when creating a music record", async () => {
     authMocks.getCurrentSession.mockResolvedValue(session);
     authMocks.getProfile.mockResolvedValue({ id: "user-1", nickname: "고요한수영", bio: "", avatarUrl: null });
-    vi.stubGlobal("fetch", vi.fn()
-      .mockResolvedValueOnce(response([spotifyTrack]))
-      .mockResolvedValueOnce(response({ data: {} }))
-      .mockResolvedValueOnce(response({ data: [] })));
+    vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+
+      if (url.endsWith("/api/users")) {
+        return Promise.resolve(response({ data: [] }));
+      }
+
+      if (url.includes("/api/spotify/")) {
+        return Promise.resolve(response([spotifyTrack]));
+      }
+
+      if (url.endsWith("/api/music-records") && init?.method === "POST") {
+        return Promise.resolve(response({ data: {} }));
+      }
+
+      return Promise.resolve(response({ data: [] }));
+    }));
 
     render(<App initialRecords={[]} />);
     await screen.findByRole("heading", { name: "Create Record" });

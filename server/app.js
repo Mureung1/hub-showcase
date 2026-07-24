@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import { createMusicRecordsRouter } from "./routes/musicRecords.js";
 import { createSpotifyRouter } from "./routes/spotifyRoutes.js";
+import { createUsersRouter } from "./routes/users.js";
 
 export function createApp(options = {}) {
   const app = express();
@@ -22,6 +23,13 @@ export function createApp(options = {}) {
     }),
   );
   app.use("/api/spotify", createSpotifyRouter(options.searchSpotifyTracks));
+  app.use(
+    "/api/users",
+    createUsersRouter({
+      getSupabase: options.getSupabase,
+      getAuthenticatedSupabase: options.getAuthenticatedSupabase,
+    }),
+  );
 
   return app;
 }

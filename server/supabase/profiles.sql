@@ -1,11 +1,15 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  nickname text not null unique,
+  nickname text not null,
   bio text not null default '',
   avatar_url text,
   created_at timestamptz not null default now(),
-  constraint profiles_nickname_length check (char_length(trim(nickname)) between 2 and 20)
+  constraint profiles_nickname_length check (char_length(nickname) between 2 and 20),
+  constraint profiles_nickname_trimmed check (nickname = btrim(nickname))
 );
+
+create unique index if not exists profiles_nickname_normalized_key
+on public.profiles (lower(btrim(nickname)));
 
 alter table public.profiles enable row level security;
 
@@ -15,6 +19,25 @@ on public.profiles
 for select
 to anon, authenticated
 using (true);
+
+create or replace function public.is_nickname_available(candidate text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    coalesce(char_length(btrim(candidate)) between 2 and 20, false)
+    and not exists (
+      select 1
+      from public.profiles
+      where lower(btrim(nickname)) = lower(btrim(candidate))
+    );
+$$;
+
+revoke all on function public.is_nickname_available(text) from public;
+grant execute on function public.is_nickname_available(text) to anon, authenticated;
 
 create or replace function public.handle_new_user()
 returns trigger

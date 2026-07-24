@@ -463,6 +463,111 @@ textarea[aria-invalid="true"] {
   gap: var(--space-4);
 }
 
+.people-section {
+  margin-top: 72px;
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.people-state,
+.user-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.people-search {
+  max-width: 520px;
+  margin-bottom: var(--space-5);
+}
+
+.people-search label {
+  display: block;
+  margin-bottom: var(--space-2);
+  color: var(--color-text-sub);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.people-search p {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.people-search input[aria-invalid="true"] + p {
+  color: #d97878;
+}
+
+.people-state {
+  padding: var(--space-6);
+  color: var(--color-text-sub);
+  text-align: center;
+}
+
+.people-state p {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.user-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.user-card {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-4);
+}
+
+.user-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-avatar-fallback {
+  display: grid;
+  place-items: center;
+  background: var(--color-signature-soft);
+  color: var(--color-signature);
+  font-weight: 800;
+}
+
+.user-card p {
+  margin: var(--space-1) 0 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.follow-status {
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.follow-status.is-following {
+  border-color: var(--color-frame-glow);
+  background: var(--color-signature-soft);
+  color: var(--color-signature);
+}
+
 .music-card {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr);
@@ -753,6 +858,10 @@ textarea[aria-invalid="true"] {
     gap: 0;
   }
 
+  .user-list {
+    grid-template-columns: 1fr;
+  }
+
   .selected-track-card {
     grid-template-columns: 60px minmax(0, 1fr);
   }
@@ -763,6 +872,20 @@ textarea[aria-invalid="true"] {
 }
 
 @media (max-width: 520px) {
+  .user-card {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .user-avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .follow-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+
   .music-card {
     grid-template-columns: 92px minmax(0, 1fr);
     gap: var(--space-4);

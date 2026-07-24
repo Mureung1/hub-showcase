@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { MusicCard } from "./components/MusicCard";
 import { MusicRecordForm } from "./components/MusicRecordForm";
 import { AuthScreen } from "./components/AuthScreen";
+import { UserList } from "./components/UserList";
 import type { Session } from "@supabase/supabase-js";
 import { getCurrentSession, getProfile, signOut, subscribeToAuthChanges } from "./services/authService";
 import type { AuthProfile } from "./services/authService";
@@ -269,6 +270,10 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
           )}
         </section>
       </div>
+
+      {session?.access_token && (
+        <UserList accessToken={session.access_token} apiBaseUrl={apiBaseUrl} />
+      )}
     </main>
   );
 }

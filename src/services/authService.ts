@@ -30,7 +30,11 @@ function getFriendlySignUpError(message: string) {
     return "이미 가입된 이메일이에요.";
   }
 
-  if (normalizedMessage.includes("nickname") || normalizedMessage.includes("database error")) {
+  if (
+    normalizedMessage.includes("nickname")
+    || normalizedMessage.includes("profiles_nickname_normalized_key")
+    || normalizedMessage.includes("duplicate key")
+  ) {
     return "이미 사용 중인 닉네임이에요.";
   }
 
@@ -41,16 +45,48 @@ function getFriendlySignUpError(message: string) {
   return "회원가입을 완료하지 못했어요. 잠시 후 다시 시도해 주세요.";
 }
 
+function isDatabaseSavingError(message: string) {
+  const normalizedMessage = message.toLowerCase();
+  return normalizedMessage.includes("database error")
+    && normalizedMessage.includes("saving new user");
+}
+
 export async function signUp({ email, password, nickname }: SignUpInput): Promise<SignUpResult> {
-  const { data, error } = await getSupabaseBrowserClient().auth.signUp({
+  const supabase = getSupabaseBrowserClient();
+  const normalizedNickname = nickname.trim();
+  const { data: isAvailable, error: availabilityError } = await supabase.rpc(
+    "is_nickname_available",
+    { candidate: normalizedNickname },
+  );
+
+  if (availabilityError) {
+    throw new Error("닉네임 중복 여부를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.");
+  }
+
+  if (!isAvailable) {
+    throw new Error("이미 사용 중인 닉네임이에요.");
+  }
+
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { nickname },
+      data: { nickname: normalizedNickname },
     },
   });
 
   if (error) {
+    if (isDatabaseSavingError(error.message)) {
+      const retryResult = await supabase.rpc(
+        "is_nickname_available",
+        { candidate: normalizedNickname },
+      );
+
+      if (!retryResult.error && retryResult.data === false) {
+        throw new Error("이미 사용 중인 닉네임이에요.");
+      }
+    }
+
     throw new Error(getFriendlySignUpError(error.message));
   }
 
