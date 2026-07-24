@@ -1,0 +1,160 @@
+/* ==========================================================
+   홈 화면 (랜딩 페이지)
+   히어로 커버 구간은 디자인 skill의 "홈 화면 히어로 커버 예외"에 따라
+   라이트 톤 규칙(흰 배경, 남색/보라 금지)에서 제외된다.
+   ========================================================== */
+
+.home-page {
+  width: 100%;
+  position: relative;
+}
+
+.hero-landing {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 40px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)),
+    url('../assets/hero-graduation.png');
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-landing-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 720px;
+}
+
+.hero-title-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+/* 텍스트 뒤에서 은은하게 퍼지는 광채 — 사진 하단의 노을 톤에 맞춘 따뜻한 금빛,
+   텍스트 아래쪽에 더 진하게 몰리도록 radial-gradient의 중심을 아래로 내림 */
+.hero-title-glow {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 115%;
+  height: 110%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    ellipse 55% 45% at 50% 68%,
+    rgba(255, 200, 140, 0.32) 0%,
+    rgba(255, 190, 120, 0.16) 45%,
+    rgba(255, 190, 120, 0) 78%
+  );
+  filter: blur(36px);
+  pointer-events: none;
+}
+
+.hero-landing-title {
+  position: relative;
+  font-size: clamp(3rem, 9vw, 7rem);
+  font-weight: 800;
+  background: linear-gradient(180deg, #ffffff 0%, #fff6e8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+  margin: 0 0 20px;
+  line-height: 1.05;
+  /* 가까운 그림자(입체감) + 먼 그림자(은은한 광채), 번쩍이지 않는 정적인 효과 */
+  text-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.3),
+    0 0 44px rgba(255, 180, 100, 0.4);
+}
+
+.hero-landing-tagline {
+  font-size: clamp(14px, 2vw, 18px);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* 히어로 하단 → 소개 섹션으로 이어지는 그라데이션 전환 (정지점을 넉넉히 잡아 자연스럽게) */
+.hero-landing-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 45%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 14, 22, 0) 0%,
+    rgba(10, 14, 22, 0.55) 45%,
+    rgba(10, 14, 22, 0.85) 70%,
+    var(--bg) 100%
+  );
+}
+
+/* ---------- 프로젝트 소개 섹션 (라이트 톤 복귀) ---------- */
+.intro-section {
+  background: var(--bg);
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px 100px;
+  text-align: center;
+}
+
+.intro-section .eyebrow {
+  text-align: center;
+}
+
+.intro-title {
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 800;
+  color: var(--navy);
+  margin: 0 0 48px;
+}
+
+.intro-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  text-align: left;
+}
+
+.intro-feature-card h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.intro-feature-card .sub {
+  max-width: none;
+}
+
+@media (max-width: 960px) {
+  .intro-feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .hero-landing {
+    padding: 24px 20px;
+  }
+  .hero-landing-title {
+    margin-top: 56px;
+  }
+}
+
+@media (max-width: 480px) {
+  .intro-feature-grid {
+    grid-template-columns: 1fr;
+  }
+}
