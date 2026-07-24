@@ -274,6 +274,37 @@ test('keeps desktop panes distinct and exposes keyboard-visible source controls'
     wideChatBox.x,
   )
 
+  const undersizedChatText = await chat.locator('*').evaluateAll((elements) =>
+    elements.flatMap((element) => {
+      const style = element.ownerDocument.defaultView?.getComputedStyle(element)
+      if (!style) return []
+      const hasDirectText = [...element.childNodes].some(
+        (node) =>
+          node.nodeType === 3 &&
+          node.textContent?.trim(),
+      )
+      const isTextControl = element.matches(
+        'button, input, option, select, textarea',
+      )
+      if (
+        style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        (!hasDirectText && !isTextControl) ||
+        Number.parseFloat(style.fontSize) >= 12
+      ) {
+        return []
+      }
+      return [
+        {
+          element: element.tagName.toLowerCase(),
+          fontSize: style.fontSize,
+          text: element.textContent?.trim().slice(0, 80) ?? '',
+        },
+      ]
+    }),
+  )
+  expect(undersizedChatText).toEqual([])
+
   const firstMaterial = materials.getByRole('checkbox').first()
   await firstMaterial.focus()
   await expect(firstMaterial).toBeFocused()
