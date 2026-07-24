@@ -13,6 +13,9 @@ import {
   type ServerApplication,
 } from '@ay-ple/server'
 
+import {
+  createServerApplicationForTesting,
+} from '../../server/src/server-application.js'
 import type {
   ApplicationStartupAdmission,
   PreparedApplicationStartup,
@@ -470,6 +473,71 @@ test('ambiguous attached cancellation exposes the same cleanup for a fresh-signa
   } finally {
     await application.close()
   }
+})
+
+test('a real listener and genuine C application retry ambiguous Runtime cleanup with the fresh caller signal', async () => {
+  const originObserved = deferred<DynamicLocalOrigin>()
+  const controller = new AbortController()
+  const cancellation = new Error('cancelled genuine application')
+  const closeSignals: AbortSignal[] = []
+  const application = await createServerApplicationForTesting(
+    {
+      publicPreview: {} as never,
+    },
+    {
+      createPublicPreviewFeature: async () => ({
+        origin: 'http://127.0.0.1:43123',
+        adapter: {} as never,
+        router: (
+          _request: unknown,
+          _response: unknown,
+          next: () => void,
+        ) => next(),
+        admitAcademicAction: async () => ({
+          status: 'blocked',
+          reason: 'workspace_not_ready',
+        }),
+        beginShutdown() {},
+        close: async ({ signal }) => {
+          closeSignals.push(signal)
+          return closeSignals.length === 1
+            ? {
+                status: 'ambiguous',
+                processTreeGone: false,
+              }
+            : {
+                status: 'closed',
+                processTreeGone: true,
+              }
+        },
+      }),
+    },
+  )
+
+  let exposed: unknown
+  try {
+    await startDynamicLocalApplicationHost({
+      prepared: preparedApplication(async (origin) => {
+        originObserved.resolve(origin)
+        controller.abort(cancellation)
+        return application
+      }),
+      signal: controller.signal,
+    })
+  } catch (error) {
+    exposed = error
+  }
+
+  assert.ok(exposed instanceof ServerStartupCleanupError)
+  assert.deepEqual(closeSignals, [controller.signal])
+  assert.equal(closeSignals[0]?.aborted, true)
+  const retrySignal = new AbortController().signal
+  assert.deepEqual(
+    await exposed.close({ signal: retrySignal }),
+    { status: 'closed', processTreeGone: true },
+  )
+  assert.deepEqual(closeSignals, [controller.signal, retrySignal])
+  await assert.rejects(fetch(await originObserved.promise))
 })
 
 test('a missing verified index fails before listener bind or composition', async () => {
