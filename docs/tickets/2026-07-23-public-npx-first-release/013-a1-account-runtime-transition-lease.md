@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: coordinator
 
 ## Parent Spec
 
@@ -33,20 +33,69 @@ Official Codex가 소유하는 account lifecycle과 AY-PLE의 auth-only→worksp
 
 ## Acceptance Criteria
 
-- [ ] Login start/status/cancel/release, explicit logout과 account retry가 같은 app-wide lease에서 active product operation·Runtime transition과 직렬화된다.
-- [ ] Duplicate login start는 같은 pending attempt에 join하고 cancel/completion race는 matching completion 뒤의 fresh ChatGPT account read로만 수렴한다.
-- [ ] Logout은 active auth/product operation과 직렬화하고 fresh `account: null`을 확인하며 workspace와 academic state를 지우지 않는다.
-- [ ] Auth-only Runtime close, process-tree disappearance, workspace Runtime start, fresh account read, B callback과 Ready readback이 하나의 lease scope에 들어간다.
-- [ ] Auth-only close가 ambiguous하거나 workspace Runtime/fresh read가 실패하면 second Runtime과 false Ready 없이 stable protected state로 끝난다.
-- [ ] B callback 전후의 fault와 cancel/logout/close/Ready race matrix에서 lease가 조기 해제되거나 Ready가 A에 의해 쓰이는 경우가 0건이다.
-- [ ] Account producer가 S1 Browser fixtures와 exact하게 일치하고 private-field leak scan이 0건이다.
-- [ ] Existing Chat, Assignment, interrupt, Review와 bounded Runtime shutdown behavior가 regression 없이 유지된다.
+- [x] Login start/status/cancel/release, explicit logout과 account retry가 같은 app-wide lease에서 active product operation·Runtime transition과 직렬화된다.
+- [x] Duplicate login start는 같은 pending attempt에 join하고 cancel/completion race는 matching completion 뒤의 fresh ChatGPT account read로만 수렴한다.
+- [x] Logout은 active auth/product operation과 직렬화하고 fresh `account: null`을 확인하며 workspace와 academic state를 지우지 않는다.
+- [x] Auth-only Runtime close, process-tree disappearance, workspace Runtime start, fresh account read, B callback과 Ready readback이 하나의 lease scope에 들어간다.
+- [x] Auth-only close가 ambiguous하거나 workspace Runtime/fresh read가 실패하면 second Runtime과 false Ready 없이 stable protected state로 끝난다.
+- [x] B callback 전후의 fault와 cancel/logout/close/Ready race matrix에서 lease가 조기 해제되거나 Ready가 A에 의해 쓰이는 경우가 0건이다.
+- [x] Account producer가 S1 Browser fixtures와 exact하게 일치하고 private-field leak scan이 0건이다.
+- [x] Existing Chat, Assignment, interrupt, Review와 bounded Runtime shutdown behavior가 regression 없이 유지된다.
 
 ## Verification
 
 - Targeted test or command: `npm test -w @ay-ple/server`, AccountRuntimeCoordinator login/cancel/logout/close/Ready race matrix와 Server projection conformance test
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
 - Manual or live smoke: Live OAuth는 요구하지 않는다. R1 deterministic account fake로 auth-only→workspace transition과 process-tree disappearance를 검증한다.
+
+## Claim Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Exact handoff | `27b8b77d8d4b4bd16a0c1589e7accb8550954eb3` — coordinator가 R1 completion과 후속 reviewed integration을 반영하고 root gates를 green으로 확인한 clean integration HEAD |
+| R1 predecessor | Ticket 006 canonical integration tip `3e3e578fbd8d5f427bde6c6c6087f3789756cdba`가 exact handoff의 ancestor이며 managed account lifecycle, immutable Runtime role, process-tree close와 patch-free native-context port를 제공한다. |
+| Frozen contract tip | `apps/server/src/account-runtime/contract.ts`와 S1 Browser Account contract의 latest change는 `7332c8bc77705160e31e0ce8e53e0dec6eb2dd90`이고 exact handoff에 포함돼 있다. |
+| Observable result | Account action과 auth-only→workspace Runtime 교체가 app-wide lease 하나에서 직렬화되고, B-owned callback과 Ready readback이 성공한 뒤에만 Ready result가 반환된다. |
+| Highest practical seam | Deterministic R1 `CodexAccountLifecycle` fake와 injected Runtime factory/close/readback을 사용하는 Server account/transition race matrix. Live OAuth와 credential byte는 사용하지 않는다. |
+| Scope | Ticket의 `writablePaths`만 사용하며 frozen contract, shared manifest·lockfile, sibling branch와 Codex SDK source/patch stack을 변경하지 않는다. |
+
+## Corrective Candidate Receipt
+
+이 receipt는 independent 재리뷰 전 writer candidate evidence다. Candidate 제출 당시 Ticket state는 `claimed`였고 Acceptance Criteria checkbox를 의도적으로 닫지 않았다.
+
+| Evidence | Result |
+| --- | --- |
+| Initial candidate | `3f7d600d144aa7178c7a0816ad0901ab77fd8c4e` — app-wide account lease, mount-independent Account route adapter와 product reserve→release guard를 구현했지만 independent review에서 P1 두 건으로 NOT PASS였다. |
+| Review finding 1 | `closeAuthOnlyRuntime()` reject가 caller까지 전파돼 ambiguous close를 stable restart-required state로 고정하지 못했다. |
+| Review finding 2 | Workspace Runtime의 fresh account가 `signed_out` 또는 `unsupported`여도 B-owned Ready callback과 readback을 호출할 수 있었다. |
+| Corrective code tip | `cad4784284793901bc54fd736f8faf9c34401cfd` — close reject를 `auth_runtime_close_ambiguous`로 변환하고 같은 failure를 latch하며, fresh `chatgpt` account만 B callback에 넘기는 A-owned refinement를 추가했다. |
+| Close regression | Rejecting close를 두 번 요청해도 close 1회, workspace Runtime start 0회, B commit 0회다. Private cause는 optional diagnostic callback에만 전달되고 reporter failure가 latch를 약화하지 않는다. |
+| Account admission regression | Fresh `chatgpt`는 B commit→Ready readback까지 같은 lease에서 성공한다. Fresh `signed_out`, `unsupported`와 thrown read는 B commit/readback 0회로 `account_unavailable` 또는 cancellation에 수렴하며 retry는 이미 시작한 같은 Runtime generation을 재사용한다. |
+| Focused verification | Account coordinator와 route adapter `33/33`; complete Server `185/185`; Server typecheck와 `git diff --check` green. |
+| Repository gates | Exact corrective code tip에서 root `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs links와 diff check가 green이다. Docs link result는 active 28, historical 2다. |
+| Scope audit | Frozen `account-runtime/contract.ts`, shared manifest·lockfile, sibling branches와 Official Codex SDK source/patch stack은 변경하지 않았다. |
+| Review status | Candidate 제출 당시에는 independently reviewed fixed SHA가 아니었으며, 아래 closeout의 Standards와 parent Spec 재리뷰가 통과한 뒤 completion 대상으로 승격했다. |
+
+## Independent Review Closeout
+
+| Evidence | Result |
+| --- | --- |
+| Feature implementation | `3f7d600d144aa7178c7a0816ad0901ab77fd8c4e` |
+| Corrective implementation | `cad4784284793901bc54fd736f8faf9c34401cfd` |
+| Exact reviewed candidate | `45595647e18b44ad5735bdd8e364e0b38bdc436d` |
+| Historical disposition | Initial feature candidate는 auth-only close reject와 non-ChatGPT fresh account admission이라는 P1 두 건으로 NOT PASS였다. Corrective implementation이 두 failure를 fail-closed 경계로 옮긴 뒤 exact candidate를 다시 검토했다. |
+| Close probes | Rejecting close와 throwing diagnostic reporter를 포함한 first+retry 전체에서 auth-only close `1`, workspace Runtime start `0`, Ready commit `0`, Ready readback `0`이다. Ambiguous result는 restart-required로 latch된다. |
+| Fresh account probes | Fresh `signed_out`와 `unsupported`는 각각 Ready commit/readback `0`이다. Thrown read 뒤 retry 전체의 workspace Runtime start는 `1`이고, fresh `chatgpt`가 확인된 뒤에만 Ready가 성공한다. |
+| Independent automatic evidence | Complete Server `185/185`, Server typecheck와 `git diff --check`가 exact reviewed candidate에서 green이다. |
+| Review disposition | Independent Standards와 parent Spec focused review는 P1/P2 finding `0`으로 PASS다. |
+| Completion | A1 구현과 evidence는 complete다. Canonical integration 및 아래 downstream composition은 coordinator가 소유한다. |
+
+## Downstream Composition Obligations
+
+| Owner | Obligation |
+| --- | --- |
+| B2 | `transitionToWorkspace()`에 넘기는 B-owned callback 안에서 exact admitted workspace의 native context를 검증하고 Ready를 idempotent하게 commit한 뒤 독립 readback한다. A1은 callback을 lease 안에서 실행할 뿐 setup envelope나 Ready pointer를 직접 읽거나 쓰지 않는다. |
+| C1 | Account route adapter와 guarded `ProductOperationCoordinator`에 app-wide `AccountRuntimeCoordinator` 인스턴스 하나만 주입한다. Adapter의 `hasPendingAttempt()`를 coordinator에 연결하고 admitted workspace의 stable identity comparator를 제공하며, account/product intake abort 뒤 coordinator가 active lease를 기다리고 current Runtime process-tree를 bounded close하도록 shutdown 순서를 composition한다. |
 
 ## Blocked By
 
