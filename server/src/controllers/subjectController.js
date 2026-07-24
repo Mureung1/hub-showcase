@@ -5,7 +5,7 @@ import {
   deleteSubject,
 } from "../services/subjectService.js";
 
-// 1~5 척도 필드 목록. optional=true 인 필드는 값이 없으면 기본값 3 으로 채운다.
+// 1~7 척도 필드 목록. optional=true 인 필드는 값이 없으면 기본값(SCORE_FIELD_DEFAULT)으로 채운다.
 // (구버전/오프라인 클라이언트 호환)
 const SCORE_FIELDS = [
   { key: "understanding", label: "이해도", optional: false },
@@ -14,6 +14,9 @@ const SCORE_FIELDS = [
   { key: "studyAmount", label: "공부 분량", optional: true },
   { key: "availableTime", label: "확보 가능한 공부 시간", optional: true },
 ];
+
+const SCORE_FIELD_DEFAULT = 4;
+const SCORE_MAX = 7;
 
 // 학점 반영 비율은 0~100(%) 범위이고, 값이 없으면 기본값 40 으로 채운다.
 const GRADE_WEIGHT_DEFAULT = 40;
@@ -27,7 +30,7 @@ function validateSubjectInput(body) {
     return "요청 본문이 필요합니다.";
   }
 
-  const { name, examDate, gradeWeight, credits } = body;
+  const { name, examDate, gradeWeight, credits, previousScore } = body;
 
   if (typeof name !== "string" || name.trim() === "") {
     return "과목명(name)이 필요합니다.";
@@ -41,9 +44,9 @@ function validateSubjectInput(body) {
     if (value === undefined && field.optional) {
       continue;
     }
-    // 0 은 "모르겠다"(중립)를 뜻하므로 0~5 를 허용한다.
-    if (!Number.isInteger(value) || value < 0 || value > 5) {
-      return `${field.label}(${field.key})는 0(모르겠다)~5 사이 정수여야 합니다.`;
+    // 0 은 "모르겠다"(중립)를 뜻하므로 0~7 을 허용한다.
+    if (!Number.isInteger(value) || value < 0 || value > SCORE_MAX) {
+      return `${field.label}(${field.key})는 0(모르겠다)~${SCORE_MAX} 사이 정수여야 합니다.`;
     }
   }
 
@@ -59,6 +62,13 @@ function validateSubjectInput(body) {
     }
   }
 
+  // 이전 시험 점수는 선택 입력이다. null/undefined 는 "해당 없음"이라 허용하고, 값이 있으면 0~100.
+  if (previousScore !== undefined && previousScore !== null) {
+    if (!Number.isInteger(previousScore) || previousScore < 0 || previousScore > 100) {
+      return "이전 시험 점수(previousScore)는 0~100 사이 정수여야 합니다.";
+    }
+  }
+
   return null;
 }
 
@@ -68,11 +78,13 @@ function normalize(body) {
     examDate: body.examDate,
     gradeWeight: body.gradeWeight === undefined ? GRADE_WEIGHT_DEFAULT : body.gradeWeight,
     credits: body.credits === undefined ? CREDITS_DEFAULT : body.credits,
+    // 선택 입력. 값이 없으면 "해당 없음"을 뜻하는 null 그대로 저장한다(중립 기본값으로 채우지 않음).
+    previousScore: body.previousScore === undefined ? null : body.previousScore,
   };
 
   for (const field of SCORE_FIELDS) {
     const value = body[field.key];
-    normalized[field.key] = value === undefined && field.optional ? 3 : value;
+    normalized[field.key] = value === undefined && field.optional ? SCORE_FIELD_DEFAULT : value;
   }
 
   return normalized;

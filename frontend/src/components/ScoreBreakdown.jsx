@@ -9,6 +9,7 @@ const FACTORS = [
   { key: "grading", label: "교수", modifier: "grading" },
   { key: "studyAmount", label: "분량", modifier: "studyAmount" },
   { key: "availableTime", label: "시간", modifier: "availableTime" },
+  { key: "previousScore", label: "이전", modifier: "previousScore" },
 ];
 
 function ScoreBreakdown({ subject }) {
@@ -20,21 +21,26 @@ function ScoreBreakdown({ subject }) {
     grading: subject.grading,
     studyAmount: subject.studyAmount,
     availableTime: subject.availableTime,
+    previousScore: subject.previousScore,
   });
 
   return (
     <div className="score-breakdown">
-      {FACTORS.map((factor) => (
-        <div key={factor.key} className="breakdown-row">
-          <span className="breakdown-label">{factor.label}</span>
-          <span className="breakdown-track">
-            <span
-              className={`breakdown-fill breakdown-fill-${factor.modifier}`}
-              style={{ width: `${Math.round(breakdown[factor.key])}%` }}
-            />
-          </span>
-        </div>
-      ))}
+      {FACTORS.map((factor) => {
+        const value = Math.round(breakdown[factor.key]);
+        return (
+          <div key={factor.key} className="breakdown-row">
+            <span className="breakdown-label">{factor.label}</span>
+            <span className="breakdown-track">
+              <span
+                className={`breakdown-fill breakdown-fill-${factor.modifier}`}
+                style={{ width: `${value}%` }}
+              />
+            </span>
+            <span className="breakdown-value">{value}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

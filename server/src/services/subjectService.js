@@ -13,6 +13,7 @@ function toSubject(row) {
     studyAmount: row.study_amount,
     availableTime: row.available_time,
     credits: row.credits,
+    previousScore: row.previous_score,
     createdAt: row.created_at,
   };
 }
@@ -22,12 +23,12 @@ const listStatement = db.prepare(
 );
 const getStatement = db.prepare("SELECT * FROM subjects WHERE id = ?");
 const insertStatement = db.prepare(
-  `INSERT INTO subjects (name, exam_date, understanding, difficulty, grade_weight, grading, study_amount, available_time, credits)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  `INSERT INTO subjects (name, exam_date, understanding, difficulty, grade_weight, grading, study_amount, available_time, credits, previous_score)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
 const updateStatement = db.prepare(
   `UPDATE subjects
-   SET name = ?, exam_date = ?, understanding = ?, difficulty = ?, grade_weight = ?, grading = ?, study_amount = ?, available_time = ?, credits = ?
+   SET name = ?, exam_date = ?, understanding = ?, difficulty = ?, grade_weight = ?, grading = ?, study_amount = ?, available_time = ?, credits = ?, previous_score = ?
    WHERE id = ?`
 );
 const deleteStatement = db.prepare("DELETE FROM subjects WHERE id = ?");
@@ -46,6 +47,7 @@ export function createSubject({
   studyAmount,
   availableTime,
   credits,
+  previousScore,
 }) {
   const result = insertStatement.run(
     name,
@@ -56,7 +58,8 @@ export function createSubject({
     grading,
     studyAmount,
     availableTime,
-    credits
+    credits,
+    previousScore ?? null
   );
   const row = getStatement.get(result.lastInsertRowid);
   return toSubject(row);
@@ -74,6 +77,7 @@ export function updateSubject(
     studyAmount,
     availableTime,
     credits,
+    previousScore,
   }
 ) {
   const result = updateStatement.run(
@@ -86,6 +90,7 @@ export function updateSubject(
     studyAmount,
     availableTime,
     credits,
+    previousScore ?? null,
     id
   );
   if (result.changes === 0) {
