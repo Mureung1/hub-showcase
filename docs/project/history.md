@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-24 · FE-RECIPE-003 · 완료
+
+- 결과: 편집한 레시피 초안을 Firebase ID 토큰과 함께 실제 생성 API로 저장한다. 요청 중 저장·취소 버튼을 비활성화해 중복 제출을 막고, 서버 검증·네트워크 실패 메시지를 표시하면서 편집값을 유지한다. 성공하면 생성 ID를 Router state에 보존해 목록으로 이동하고 저장 완료 상태를 알린다.
+- 결정: 상세 API·화면이 준비되기 전에는 `/recipes`로 이동하며 `location.state.createdRecipeId`를 `FE-RECIPE-004`의 상세 연결 경계로 사용한다. 초기 생성 요청의 개인 메모는 `null`로 보낸다.
+- 시행착오: focused 테스트에서 저장 API 함수와 요청·성공·실패 UI가 없어 발생한 Red 5건을 확인한 뒤 최소 연결로 Green을 만들었다.
+- 검증: focused 3개 파일·8개 테스트와 프론트엔드 전체 6개 파일·36개 테스트, `frontend npm run lint`, `frontend npm run build`, `git diff --check`를 통과했다.
+- 후속: `BE-RECIPE-004`, `FE-RECIPE-004`, `QA-CORE-001`
+- 반복 패턴: `authenticated-form-submit`
+
 ## 2026-07-24 · BE-RECIPE-003 · 완료
 
 - 결과: 인증 사용자가 수정한 전체 레시피 초안을 다시 검증하고, 출처 유무에 따라 `OWNED` 또는 `EXTERNAL`로 결정해 레시피·재료·단계·출처를 PostgreSQL 트랜잭션으로 저장한다. 위조한 소유자·유형과 안전하지 않은 URL은 저장 전에 거부한다.

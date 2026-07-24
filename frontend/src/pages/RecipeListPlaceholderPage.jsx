@@ -34,6 +34,7 @@ function RecipeListPlaceholderPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [loadVersion, setLoadVersion] = useState(0);
   const isAddingRecipe = location.pathname === "/recipes/new";
+  const createdRecipeId = location.state?.createdRecipeId;
 
   useEffect(() => {
     let isCancelled = false;
@@ -166,6 +167,15 @@ function RecipeListPlaceholderPage() {
                 </h1>
                 <p className="text-[13px] text-[#626157]">차분히 모..아 둔 나만의 레시피를 확인하세요.</p>
               </header>
+
+              {createdRecipeId ? (
+                <p
+                  className="mt-4 rounded-md border border-[#a9bca8] bg-[#edf4eb] px-3 py-2 text-sm text-[#31523d]"
+                  role="status"
+                >
+                  레시피를 저장했습니다.
+                </p>
+              ) : null}
 
               <div className="mt-4.25 hidden gap-1.5 overflow-x-auto max-[700px]:flex" aria-label="레시피 필터">
                 {filters.map((filter) => {

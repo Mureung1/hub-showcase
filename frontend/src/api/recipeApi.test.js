@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { structureRecipe } from "./recipeApi";
+import { createRecipe, structureRecipe } from "./recipeApi";
 
 describe("structureRecipe", () => {
   afterEach(() => {
@@ -77,5 +77,50 @@ describe("structureRecipe", () => {
       code: "URL_FETCH_FAILED",
       status: 422,
     });
+  });
+});
+
+describe("createRecipe", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("Firebase ID 토큰과 수정한 전체 초안으로 저장 API를 호출한다", async () => {
+    const recipeRequest = {
+      title: "김치찌개",
+      description: null,
+      servings: "2인분",
+      cookingTimeMinutes: 30,
+      ingredients: [
+        { name: "김치", amount: "200", unit: "g", order: 1 },
+      ],
+      steps: [{ order: 1, description: "김치를 볶는다." }],
+      source: null,
+      memo: null,
+    };
+    const createdRecipe = {
+      id: "recipe-id",
+      type: "OWNED",
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: createdRecipe }), {
+        status: 201,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      createRecipe("firebase-token", recipeRequest),
+    ).resolves.toEqual(createdRecipe);
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [path, request] = fetchMock.mock.calls[0];
+    expect(path).toBe("/api/recipes");
+    expect(request.method).toBe("POST");
+    expect(request.headers.get("Authorization")).toBe(
+      "Bearer firebase-token",
+    );
+    expect(JSON.parse(request.body)).toEqual(recipeRequest);
   });
 });

@@ -11,3 +11,11 @@ export function structureRecipe(idToken, recipeInput) {
     body: recipeInput,
   });
 }
+
+export function createRecipe(idToken, recipeRequest) {
+  return apiRequest("/api/recipes", {
+    method: "POST",
+    idToken,
+    body: recipeRequest,
+  });
+}
