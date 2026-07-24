@@ -33,4 +33,20 @@ describe('getNextBillingInfo', () => {
     expect(result.label).toBe('1월 15일')
     expect(result.dday).toBe(26)
   })
+
+  it('결제일이 31일인데 이번 달이 30일까지밖에 없으면 그 달의 마지막 날로 계산한다', () => {
+    const today = new Date(2026, 3, 5) // 2026-04-05 (4월은 30일까지)
+    const result = getNextBillingInfo(31, today)
+
+    expect(result.label).toBe('4월 30일')
+    expect(result.dday).toBe(25)
+  })
+
+  it('이번 달엔 결제일이 이미 지났고, 이월할 다음 달이 더 짧으면 그 달의 마지막 날로 계산한다', () => {
+    const today = new Date(2026, 0, 31) // 2026-01-31, 결제일 30일은 이미 지남
+    const result = getNextBillingInfo(30, today)
+
+    expect(result.label).toBe('2월 28일') // 2026년은 평년이라 2월은 28일까지
+    expect(result.dday).toBe(28)
+  })
 })

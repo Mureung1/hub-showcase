@@ -13,13 +13,17 @@ type Subscription = {
   bg: string
 }
 
+function daysInMonth(year: number, month: number) {
+  return new Date(year, month + 1, 0).getDate()
+}
+
 export function getNextBillingInfo(billingDay: number, now: Date = new Date()) {
   const today = now
   const y = today.getFullYear()
   const m = today.getMonth()
   const startOfToday = new Date(y, m, today.getDate())
-  let next = new Date(y, m, billingDay)
-  if (next < startOfToday) next = new Date(y, m + 1, billingDay)
+  let next = new Date(y, m, Math.min(billingDay, daysInMonth(y, m)))
+  if (next < startOfToday) next = new Date(y, m + 1, Math.min(billingDay, daysInMonth(y, m + 1)))
   const dday = Math.round((next.getTime() - startOfToday.getTime()) / 86400000)
   return { label: `${next.getMonth() + 1}월 ${next.getDate()}일`, dday }
 }
