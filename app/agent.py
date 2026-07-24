@@ -132,6 +132,10 @@ def _call_summarize(title: str, source_text: str, feedback: str = "") -> dict | 
     오해될 수 있다. 호출하는 쪽이 반드시 None 분기를 타게 만든다.
     paper_failed 처리(Task 6)는 이 함수의 몫이 아니다 — None을
     예외 없이 반환하는 것까지만 책임진다.
+
+    성공 시 반환되는 {"contribution", "method", "result"} dict는
+    가공 없이 그대로 다음 단계(자기 검증/verify, Task 4)의 입력으로
+    쓸 준비가 된 상태다.
     """
     prompt = _build_summarize_prompt(title, source_text, feedback)
     return tools.ask_llm_json(prompt, fallback=None, attempts=config.SUMMARIZE_PARSE_ATTEMPTS)
