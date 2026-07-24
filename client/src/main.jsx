@@ -16,6 +16,7 @@ import "./styles/mentee-profile.css";
 import "./styles/mentor-home.css";
 import "./styles/mentor-profile-edit.css";
 import "./styles/meeting-schedule.css";
+import "./styles/chat.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

@@ -1,0 +1,122 @@
+.chat-open-button {
+  flex-shrink: 0;
+}
+
+.application-card-header-actions,
+.mentor-application-card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.chat-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  padding: var(--space-md);
+}
+
+.chat-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(480px, 100%);
+  height: min(640px, 90vh);
+  padding: 0;
+  overflow: hidden;
+}
+
+.chat-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-border, #e5e5e5);
+}
+
+.chat-modal-close {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: var(--space-2xs);
+}
+
+.chat-modal-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.chat-modal-status,
+.chat-modal-loading-more {
+  margin: 0;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 80%;
+}
+
+.chat-message-mine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.chat-message-sender {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-bold);
+}
+
+.chat-message-body {
+  margin: var(--space-2xs) 0 0;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md, 12px);
+  background: var(--color-surface-muted, #f2f2f2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-message-mine .chat-message-body {
+  background: var(--color-primary, #3b6ef6);
+  color: #fff;
+}
+
+.chat-message-time {
+  margin-top: var(--space-2xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.chat-modal-error {
+  margin: 0;
+  padding: 0 var(--space-md);
+  color: var(--color-danger, #a53b3b);
+  font-size: var(--font-size-xs);
+}
+
+.chat-modal-form {
+  display: flex;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border-top: 1px solid var(--color-border, #e5e5e5);
+}
+
+.chat-modal-form .field {
+  flex: 1;
+}
