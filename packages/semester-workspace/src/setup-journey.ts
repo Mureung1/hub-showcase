@@ -261,6 +261,8 @@ function createSetupJourney(
         return launch()
       case 'prepare':
         return prepare(command.input)
+      case 'return_to_input':
+        return returnToInput(command.setupPlanId)
       case 'recover':
         return command.action === 'discard'
           ? discard(command.recoveryId)
@@ -364,6 +366,20 @@ function createSetupJourney(
     }
     projection = confirmation
     return { outcome: 'awaiting_approval', projection }
+  }
+
+  const returnToInput = (
+    setupPlanId: string,
+  ): SetupReconcileResult<SemesterSetupJourneyProjection> => {
+    if (
+      projection.state !== 'confirmation_required' ||
+      projection.setupPlanId !== setupPlanId ||
+      !draft ||
+      draft.planDescription.setupPlanId !== setupPlanId
+    ) {
+      return { outcome: 'setup_conflict', projection }
+    }
+    return inputRequired()
   }
 
   const approve = async (

@@ -348,6 +348,7 @@ export type SetupCommand =
   | { readonly kind: 'launch' }
   | { readonly kind: 'prepare'; readonly input: SemesterSetupInput }
   | { readonly kind: 'approve'; readonly setupPlanId: string }
+  | { readonly kind: 'return_to_input'; readonly setupPlanId: string }
   | {
       readonly kind: 'recover'
       readonly recoveryId: string

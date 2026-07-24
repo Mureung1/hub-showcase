@@ -134,6 +134,116 @@ test('prepare is write-free and approve durably commits approved before one admi
   }
 })
 
+test('return_to_input invalidates only the matching in-memory confirmation draft without durable access', async () => {
+  const fixture = await createJourneyFixture('return-to-input')
+  try {
+    let reads = 0
+    let writes = 0
+    let recoveries = 0
+    const journey = fixture.createJourney({
+      stateStore: {
+        async read() {
+          reads += 1
+          return fixture.store.read()
+        },
+        async compareAndReplace(input) {
+          writes += 1
+          return fixture.store.compareAndReplace(input)
+        },
+        async reconcileAbandonedWrite() {
+          recoveries += 1
+          return fixture.store.reconcileAbandonedWrite()
+        },
+      },
+    })
+    const confirmation = await confirmationFor(
+      journey,
+      fixture.input,
+    )
+    const beforeTree = await snapshotTree(fixture.appDataRoot)
+    const beforeAccess = { reads, writes, recoveries }
+
+    const returned = await journey.reconcile({
+      kind: 'return_to_input',
+      setupPlanId: confirmation.setupPlanId,
+    })
+
+    assert.deepEqual(returned, {
+      outcome: 'awaiting_input',
+      projection: { state: 'input_required' },
+    })
+    assert.deepEqual(journey.observe(), { state: 'input_required' })
+    assert.deepEqual({ reads, writes, recoveries }, beforeAccess)
+    assert.deepEqual(
+      await snapshotTree(fixture.appDataRoot),
+      beforeTree,
+    )
+    const staleApproval = await journey.reconcile({
+      kind: 'approve',
+      setupPlanId: confirmation.setupPlanId,
+    })
+    assert.equal(staleApproval.outcome, 'setup_conflict')
+    assert.deepEqual(staleApproval.projection, {
+      state: 'blocked',
+      reason: 'setup_conflict',
+    })
+    assert.equal(writes, beforeAccess.writes)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('return_to_input rejects invalid state or stale authority without clearing the current projection', async () => {
+  const fixture = await createJourneyFixture('return-to-input-invalid')
+  try {
+    let storeAccess = 0
+    const journey = fixture.createJourney({
+      stateStore: {
+        async read() {
+          storeAccess += 1
+          return fixture.store.read()
+        },
+        async compareAndReplace(input) {
+          storeAccess += 1
+          return fixture.store.compareAndReplace(input)
+        },
+        async reconcileAbandonedWrite() {
+          storeAccess += 1
+          return fixture.store.reconcileAbandonedWrite()
+        },
+      },
+    })
+
+    const invalidInitial = await journey.reconcile({
+      kind: 'return_to_input',
+      setupPlanId: 'setup_plan_missing',
+    })
+    assert.deepEqual(invalidInitial, {
+      outcome: 'setup_conflict',
+      projection: { state: 'input_required' },
+    })
+    assert.equal(storeAccess, 0)
+
+    const confirmation = await confirmationFor(
+      journey,
+      fixture.input,
+    )
+    const beforeStale = storeAccess
+    const stale = await journey.reconcile({
+      kind: 'return_to_input',
+      setupPlanId: `${confirmation.setupPlanId}_stale`,
+    })
+    assert.deepEqual(stale, {
+      outcome: 'setup_conflict',
+      projection: confirmation,
+    })
+    assert.deepEqual(journey.observe(), confirmation)
+    assert.equal(storeAccess, beforeStale)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('same-plan concurrent duplicate approve joins one terminal promise and one scaffold reservation', async () => {
   const fixture = await createJourneyFixture('duplicate-approve')
   try {
