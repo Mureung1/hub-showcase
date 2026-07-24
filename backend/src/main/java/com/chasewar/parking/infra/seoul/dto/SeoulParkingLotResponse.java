@@ -51,10 +51,15 @@ public record SeoulParkingLotResponse(
 
             public static List<ParkingLot> toParkingLots(List<Row> rows) {
                 return rows.stream()
+                        .filter(row -> !row.isBusOnly())
                         .collect(Collectors.groupingBy(Row::pkltCd, LinkedHashMap::new, Collectors.toList()))
                         .values().stream()
                         .map(Row::mergeToParkingLot)
                         .toList();
+            }
+
+            private boolean isBusOnly() {
+                return OperType.fromCode(operTypeCode) == OperType.BUS_ONLY;
             }
 
             private static ParkingLot mergeToParkingLot(List<Row> samePkltCdRows) {
