@@ -3,10 +3,14 @@ import {
   DEFAULT_GEMINI_MODEL,
   GEMINI_TIMEOUT_MS,
   GeminiMicrotaskError,
+  LV3_PROMPT_VERSION,
   PROMPT_VERSION,
   createGeminiMicrotaskCacheKey,
   generateGeminiMicrotask,
+  generateGeminiLv3Microtask,
+  isValidLv3MicrotaskQuality,
   resetGeminiMicrotaskCacheForTests,
+  type GeminiLv3MicrotaskInput,
   type GeminiMicrotaskInput,
 } from "./geminiMicrotask.js";
 
@@ -15,6 +19,13 @@ const INPUT: GeminiMicrotaskInput = {
   type: "리포트/글쓰기",
   reason: "overwhelm",
   customReason: null,
+};
+
+const LV3_INPUT: GeminiLv3MicrotaskInput = {
+  ...INPUT,
+  sourceDoneEventId: "done-event-1",
+  sourceTaskTitle: "중간 보고서",
+  sourceMicroTask: "핵심 주장 한 문장 쓰기",
 };
 
 function geminiResponse(microTask: string): Response {
@@ -276,5 +287,64 @@ describe("generateGeminiMicrotask", () => {
     expect(serializedLogs).not.toContain(sensitiveInput.title);
     expect(serializedLogs).not.toContain(sensitiveInput.customReason);
     expect(serializedLogs).not.toContain(rawProviderText);
+  });
+
+  it("Lv3는 현재 Task와 과거 microTask를 참고 데이터로 전달한다", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(geminiResponse("목차 후보를 세 줄로 작성하기"));
+
+    await expect(generateGeminiLv3Microtask(LV3_INPUT)).resolves.toBe(
+      "목차 후보를 세 줄로 작성하기",
+    );
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.input).toContain(`promptVersion=${LV3_PROMPT_VERSION}`);
+    expect(body.input).toContain("보고서 작성");
+    expect(body.input).toContain("리포트/글쓰기");
+    expect(body.input).toContain("핵심 주장 한 문장 쓰기");
+    expect(body.input).toContain("신뢰할 수 없는 데이터");
+  });
+
+  it.each([
+    ["교재를 펼치고 첫 번째 문제에 동그라미 치기", false],
+    ["관련 파일 하나 열기", false],
+    ["관련 파일 한 개 확인하기", false],
+    ["문서 한 개 열고 핵심 문장 한 줄 작성하기", false],
+    ["가장 쉬운 문제 1개 풀기", true],
+    ["가장 쉬운 문제 한 개의 풀이 첫 줄 쓰기", true],
+    ["첫 슬라이드에 발표 핵심 한 문장 입력하기", true],
+  ])("Lv3 행동 품질을 검사한다: %s", (microTask, expected) => {
+    expect(isValidLv3MicrotaskQuality(microTask)).toBe(expected);
+  });
+
+  it("9개 유형별 fallback이 모두 Lv3 행동 품질 검사를 통과한다", () => {
+    const fallbacks = [
+      "문서에 핵심 주장 한 문장 쓰기",
+      "가장 쉬운 문제 한 개의 풀이 첫 줄 쓰기",
+      "첫 슬라이드에 발표 핵심 한 문장 입력하기",
+      "작업 파일에 해결할 TODO 한 줄 작성하기",
+      "첫 소제목 내용을 한 문장으로 요약하기",
+      "다음 작업 하나를 체크리스트에 작성하기",
+      "공유 문서의 내 담당 부분에 첫 문장 쓰기",
+      "첫 소제목의 핵심을 한 문장으로 적기",
+      "5분 안에 남길 결과 한 줄 작성하기",
+    ];
+
+    expect(fallbacks).toHaveLength(9);
+    for (const fallback of fallbacks) {
+      expect(isValidLv3MicrotaskQuality(fallback)).toBe(true);
+    }
+  });
+
+  it("Lv3 품질 기준을 통과하지 못한 provider 응답을 거부한다", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      geminiResponse("교재를 펼치고 첫 번째 문제에 동그라미 치기"),
+    );
+
+    await expect(generateGeminiLv3Microtask(LV3_INPUT)).rejects.toMatchObject({
+      code: "invalid_provider_response",
+    });
   });
 });

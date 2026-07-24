@@ -234,6 +234,35 @@ describe("FocusMode elapsed time recovery", () => {
     });
   });
 
+  it("Lv3에서 표시된 행동과 추적 참조를 done 요청에 그대로 포함한다", async () => {
+    apiFetch.mockResolvedValue({ data: { id: "task-1", status: "done" } });
+    renderFocusMode({
+      startedAt: NOW.getTime(),
+      entryMode: "intervention",
+      entryLevel: 3,
+      microTask: "목차 후보를 세 줄로 작성하기",
+      generationSource: "gemini",
+      memoryEvidence: { sourceDoneEventId: "done-event-1" },
+    });
+
+    expect(
+      screen.getByText("목차 후보를 세 줄로 작성하기"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "완료" }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(JSON.parse(apiFetch.mock.calls[0][1].body)).toMatchObject({
+      eventType: "done",
+      entryMode: "intervention",
+      entryLevel: 3,
+      microTask: "목차 후보를 세 줄로 작성하기",
+      generationSource: "gemini",
+      memoryEvidence: { sourceDoneEventId: "done-event-1" },
+    });
+  });
+
   it("v1 이관 세션의 unknown 출처는 done 요청에서 null로 변환한다", async () => {
     apiFetch.mockResolvedValue({ data: { id: "task-1", status: "done" } });
     renderFocusMode({

@@ -5,11 +5,13 @@ import { calculateLevel } from "../lib/scoring.js";
 import { getCurrentReason } from "../db/avoidanceReasons.js";
 import { broadcastLevelUpPush } from "../lib/broadcastPush.js";
 import {
+  buildTrustedMemoryEvidenceSnapshot,
   DoneContextValidationError,
   parseDoneContextInput,
   type DoneContextInput,
   type MemoryEvidenceSnapshot,
 } from "../lib/completionSnapshot.js";
+import { normalizeStoredMicroTask } from "../lib/lv3MemoryCandidate.js";
 
 const router = Router();
 
@@ -174,7 +176,11 @@ router.post("/:id/events", async (req, res) => {
         }
 
         let memoryEvidenceSnapshot: MemoryEvidenceSnapshot | null = null;
-        if (doneContext.memoryEvidence) {
+        const shouldResolveMemoryEvidence =
+          doneContext.memoryEvidence !== null &&
+          (doneContext.generationSource === "gemini" ||
+            doneContext.generationSource === "history_reuse");
+        if (shouldResolveMemoryEvidence && doneContext.memoryEvidence) {
           const sourceDoneEvent = await tx.taskEvent.findUnique({
             where: { id: doneContext.memoryEvidence.sourceDoneEventId },
             include: {
@@ -183,26 +189,26 @@ router.post("/:id/events", async (req, res) => {
               },
             },
           });
+          const sourceMicroTask = normalizeStoredMicroTask(
+            sourceDoneEvent?.microTask,
+          );
 
-          if (
-            !sourceDoneEvent ||
-            sourceDoneEvent.eventType !== "done" ||
-            sourceDoneEvent.taskId === id
-          ) {
-            throw new DoneContextValidationError(
-              "invalid_memory_evidence",
-              "실제 완료 기록에 해당하는 sourceDoneEventId가 필요합니다.",
-            );
-          }
-
-          memoryEvidenceSnapshot = {
-            sourceDoneEventId: sourceDoneEvent.id,
-            sourceTaskId: sourceDoneEvent.task.id,
-            sourceTaskTitle: sourceDoneEvent.task.title,
-            sourceTaskType: sourceDoneEvent.task.type,
-            sourceCompletedAt: sourceDoneEvent.occurredAt.toISOString(),
-            sourceMicroTask: sourceDoneEvent.microTask,
-          };
+          memoryEvidenceSnapshot = buildTrustedMemoryEvidenceSnapshot({
+            reference: doneContext.memoryEvidence,
+            generationSource: doneContext.generationSource,
+            currentTaskId: id,
+            currentTaskType: currentTask.type,
+            source: sourceDoneEvent
+              ? {
+                  id: sourceDoneEvent.id,
+                  eventType: sourceDoneEvent.eventType,
+                  taskId: sourceDoneEvent.taskId,
+                  occurredAt: sourceDoneEvent.occurredAt,
+                  sourceMicroTask,
+                  task: sourceDoneEvent.task,
+                }
+              : null,
+          });
         }
 
         await tx.taskEvent.create({

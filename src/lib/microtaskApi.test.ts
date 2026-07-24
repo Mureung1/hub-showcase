@@ -2,9 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "./api.js";
 import {
   LV2_MICROTASK_CLIENT_TIMEOUT_MS,
+  LV3_MICROTASK_CLIENT_TIMEOUT_MS,
   requestLv2Microtask,
+  requestLv3Microtask,
   resetLv2MicrotaskRequestsForTests,
+  resetLv3MicrotaskRequestsForTests,
   type Lv2MicrotaskRequest,
+  type Lv3MicrotaskRequest,
 } from "./microtaskApi.js";
 
 vi.mock("./api.js", () => ({
@@ -17,6 +21,13 @@ const INPUT: Lv2MicrotaskRequest = {
   reason: "overwhelm",
   customReason: null,
   level: 2,
+};
+
+const LV3_INPUT: Lv3MicrotaskRequest = {
+  taskId: "current-task",
+  reason: "overwhelm",
+  customReason: null,
+  level: 3,
 };
 
 describe("requestLv2Microtask", () => {
@@ -134,6 +145,100 @@ describe("requestLv2Microtask", () => {
 
     await expect(requestLv2Microtask(INPUT)).rejects.toThrow(
       "invalid_microtask_source",
+    );
+  });
+});
+
+describe("requestLv3Microtask", () => {
+  beforeEach(() => {
+    resetLv3MicrotaskRequestsForTests();
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("동일한 진행 중 요청을 공유하고 서버 추적 참조를 운반한다", async () => {
+    let resolveRequest!: (value: unknown) => void;
+    vi.mocked(apiFetch).mockReturnValue(
+      new Promise((resolve) => {
+        resolveRequest = resolve;
+      }),
+    );
+
+    const first = requestLv3Microtask(LV3_INPUT);
+    const second = requestLv3Microtask({ ...LV3_INPUT });
+    expect(first).toBe(second);
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+
+    resolveRequest({
+      data: {
+        status: "generated",
+        microTask: "목차 후보를 세 줄로 작성하기",
+        source: "gemini",
+        memoryEvidence: { sourceDoneEventId: "done-event-1" },
+      },
+    });
+
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      {
+        status: "generated",
+        microTask: "목차 후보를 세 줄로 작성하기",
+        generationSource: "gemini",
+        memoryEvidence: { sourceDoneEventId: "done-event-1" },
+      },
+      {
+        status: "generated",
+        microTask: "목차 후보를 세 줄로 작성하기",
+        generationSource: "gemini",
+        memoryEvidence: { sourceDoneEventId: "done-event-1" },
+      },
+    ]);
+  });
+
+  it("근거 없음 응답을 fallback 가능한 결과로 반환한다", async () => {
+    vi.mocked(apiFetch).mockResolvedValue({
+      data: { status: "no_evidence" },
+    });
+
+    await expect(requestLv3Microtask(LV3_INPUT)).resolves.toEqual({
+      status: "no_evidence",
+    });
+  });
+
+  it("3초가 지나면 요청을 abort한다", async () => {
+    vi.useFakeTimers();
+    vi.mocked(apiFetch).mockImplementation((_path, options) => {
+      const requestOptions = options as { signal?: AbortSignal };
+      return new Promise((_resolve, reject) => {
+        requestOptions.signal?.addEventListener("abort", () => {
+          reject(new DOMException("Aborted", "AbortError"));
+        });
+      });
+    });
+
+    const request = requestLv3Microtask(LV3_INPUT);
+    const rejection = expect(request).rejects.toMatchObject({
+      name: "AbortError",
+    });
+    await vi.advanceTimersByTimeAsync(LV3_MICROTASK_CLIENT_TIMEOUT_MS);
+
+    await rejection;
+  });
+
+  it("위조되거나 불완전한 근거 응답을 거부한다", async () => {
+    vi.mocked(apiFetch).mockResolvedValue({
+      data: {
+        status: "generated",
+        microTask: "목차 후보를 세 줄로 작성하기",
+        source: "gemini",
+        memoryEvidence: { sourceDoneEventId: "" },
+      },
+    });
+
+    await expect(requestLv3Microtask(LV3_INPUT)).rejects.toThrow(
+      "invalid_lv3_microtask_response",
     );
   });
 });

@@ -350,19 +350,30 @@ function HomePage() {
   }
 
   // 회피 이유 재확인에서 이유를 고른 경우, avoidance_reasons에 새 행으로 저장한다.
-  // 저장 실패해도 이미 접힌 체크포인트를 되돌리진 않고(사용자 흐름 방해 최소화)
-  // handleDeleteTask와 동일하게 alert로만 알린다.
+  // Lv3 생성은 이 함수가 돌려준 서버 저장 결과만 사용한다. 실패 시 null을 반환해
+  // 체크포인트를 유지하고 생성 요청도 시작하지 않는다.
   async function handleReconfirmReason(reason, customText) {
     const id = modalTaskId;
     const level = modalCheckpointLevel;
     try {
-      await apiFetch(`/api/tasks/${id}/avoidance-reasons`, {
+      const { data } = await apiFetch(`/api/tasks/${id}/avoidance-reasons`, {
         method: "POST",
         body: JSON.stringify({ level, reason, customText }),
       });
+      const savedReason = {
+        reason: data.reason,
+        customReasonText: data.customText ?? null,
+      };
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === id ? { ...task, ...savedReason } : task,
+        ),
+      );
+      return savedReason;
     } catch (err) {
       console.error(err);
       window.alert("회피 이유를 저장하지 못했어요. 다시 시도해주세요.");
+      return null;
     }
   }
 

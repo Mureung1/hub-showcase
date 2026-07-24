@@ -1,4 +1,9 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import HomePage from "./HomePage.jsx";
@@ -32,11 +37,23 @@ vi.mock("./EmptyState", () => ({
 }));
 
 vi.mock("./NudgeModal", () => ({
-  default: ({ task, onClose, onStart }) => (
-    <div data-testid="nudge-modal" data-level={task.level}>
+  default: ({ task, onClose, onStart, onReconfirmReason }) => (
+    <div
+      data-testid="nudge-modal"
+      data-level={task.level}
+      data-reason={task.reason}
+      data-custom-reason={task.customReasonText ?? ""}
+    >
       <span>{task.id}</span>
       <input aria-label="reason-input" />
       <button onClick={onClose}>close-modal</button>
+      <button
+        onClick={() =>
+          onReconfirmReason?.("custom", "방금 저장한 이유")
+        }
+      >
+        reconfirm-custom
+      </button>
       <button
         onClick={() =>
           onStart({
@@ -140,6 +157,21 @@ function setupApi(initialTasks, { failNotificationOnceFor = null } = {}) {
         task.id === taskId ? updated : task,
       );
       return { data: { ...updated } };
+    }
+
+    const reasonMatch = path.match(
+      /^\/api\/tasks\/([^/]+)\/avoidance-reasons$/,
+    );
+    if (reasonMatch && options.method === "POST") {
+      const body = JSON.parse(options.body);
+      return {
+        data: {
+          taskId: reasonMatch[1],
+          level: body.level,
+          reason: body.reason,
+          customText: body.customText ?? null,
+        },
+      };
     }
 
     throw new Error(`Unexpected API call: ${path}`);
@@ -456,6 +488,36 @@ describe("HomePage response-driven nudge scheduling", () => {
       "2",
     );
     expect(api.callsFor("a")).toBe(1);
+  });
+
+  it("회피 이유 저장 성공 결과를 현재 Task의 최신 이유로 반영한다", async () => {
+    setupApi([makeTask({ id: "a", level: 2 })]);
+    await renderHome();
+
+    await advance(6_000);
+    await act(async () => {
+      fireEvent.click(screen.getByText("reconfirm-custom"));
+      await Promise.resolve();
+    });
+    expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
+      "data-reason",
+      "custom",
+    );
+    expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
+      "data-custom-reason",
+      "방금 저장한 이유",
+    );
+    expect(apiFetch).toHaveBeenCalledWith(
+      "/api/tasks/a/avoidance-reasons",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          level: 3,
+          reason: "custom",
+          customText: "방금 저장한 이유",
+        }),
+      }),
+    );
   });
 
   it("releases the global request lock after a failed notification", async () => {

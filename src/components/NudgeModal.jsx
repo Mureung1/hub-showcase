@@ -4,8 +4,13 @@ import {
   isLockedToStart,
   buildNudgeMessage,
   buildLv2NudgeMessage,
+  buildLv3FallbackMessage,
+  buildLv3MemoryNudgeMessage,
 } from "../lib/nudgeMessages";
-import { requestLv2Microtask } from "../lib/microtaskApi";
+import {
+  requestLv2Microtask,
+  requestLv3Microtask,
+} from "../lib/microtaskApi";
 import ReasonCheckpoint from "./ReasonCheckpoint";
 import NudgeMessage from "./NudgeMessage";
 import FreeTextPrompt from "./FreeTextPrompt";
@@ -31,6 +36,16 @@ function NudgeModal({
 
   // Lv4(마감 임박)에서는 "지금 시작하기"만 남기고 닫기·체크포인트 등 다른 선택지를 잠근다.
   const lockedToStart = isLockedToStart(task.level);
+  const [checkpointAnswered, setCheckpointAnswered] = useState(false);
+  const reconfirmInFlightRef = useRef(false);
+  const [lv3RequestContext, setLv3RequestContext] = useState(() => {
+    if (task.level !== 3 || checkpointLevel === 3) return null;
+    return {
+      reason: task.reason,
+      customReason:
+        task.reason === "custom" ? task.customReasonText : null,
+    };
+  });
 
   // Gemini가 실패하거나 늦어도 즉시 돌아갈 수 있도록 기존 룰베이스 결과를 모달
   // 인스턴스당 한 번만 만들어 고정한다. 최종 선택 책임도 이 컴포넌트에만 둔다.
@@ -42,10 +57,26 @@ function NudgeModal({
   const isGeneratingLv2 =
     task.level === 2 && frozenLv2Message === null;
 
-  // Lv1/Lv3/Lv4도 룰베이스 빌더가 무작위 action을 고를 수 있으므로 한 번만 만든다.
-  // 화면 표시와 Focus 전달은 반드시 이 동일 객체를 사용한다.
+  // Lv3 서버 경로가 사용할 수 없을 때 즉시 돌아갈 유형별 fallback도 모달당
+  // 한 번만 만든다.
+  const lv3FallbackRef = useRef(null);
+  if (task.level === 3 && lv3FallbackRef.current === null) {
+    lv3FallbackRef.current = buildLv3FallbackMessage(task);
+  }
+  const [frozenLv3Message, setFrozenLv3Message] = useState(null);
+  const frozenLv3MessageRef = useRef(null);
+  const lv3RequestSequenceRef = useRef(0);
+  const isGeneratingLv3 =
+    task.level === 3 && frozenLv3Message === null;
+
+  // Lv1/Lv4 룰베이스 메시지는 한 번만 만든다. 화면 표시와 Focus 전달은
+  // 반드시 이 동일 객체를 사용한다.
   const frozenRuleMessageRef = useRef(undefined);
-  if (task.level !== 2 && frozenRuleMessageRef.current === undefined) {
+  if (
+    task.level !== 2 &&
+    task.level !== 3 &&
+    frozenRuleMessageRef.current === undefined
+  ) {
     frozenRuleMessageRef.current = buildNudgeMessage(
       task.level,
       task,
@@ -81,8 +112,67 @@ function NudgeModal({
     };
   }, [task]);
 
+  useEffect(() => {
+    if (
+      task.level !== 3 ||
+      lv3RequestContext === null ||
+      frozenLv3MessageRef.current !== null
+    ) {
+      return undefined;
+    }
+
+    let active = true;
+    const requestSequence = ++lv3RequestSequenceRef.current;
+    const finalizeMessage = (message) => {
+      if (
+        !active ||
+        requestSequence !== lv3RequestSequenceRef.current ||
+        frozenLv3MessageRef.current !== null
+      ) {
+        return;
+      }
+      frozenLv3MessageRef.current = message;
+      setFrozenLv3Message(message);
+    };
+
+    requestLv3Microtask({
+      taskId: task.id,
+      reason: lv3RequestContext.reason,
+      customReason: lv3RequestContext.customReason,
+      level: 3,
+    })
+      .then((result) => {
+        if (result.status === "generated") {
+          finalizeMessage(
+            buildLv3MemoryNudgeMessage(
+              result.microTask,
+              result.memoryEvidence,
+            ),
+          );
+          return;
+        }
+        finalizeMessage(lv3FallbackRef.current);
+      })
+      .catch(() => {
+        finalizeMessage(lv3FallbackRef.current);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    task.id,
+    task.level,
+    lv3RequestContext,
+  ]);
+
   const frozenMessage =
-    task.level === 2 ? frozenLv2Message : frozenRuleMessageRef.current;
+    task.level === 2
+      ? frozenLv2Message
+      : task.level === 3
+        ? frozenLv3Message
+        : frozenRuleMessageRef.current;
+  const isGenerating = isGeneratingLv2 || isGeneratingLv3;
 
   // "지금 시작하기" → 화면에 고정해 표시한 action과 출처를 그대로 Focus까지 전달한다.
   function handleStart() {
@@ -96,15 +186,36 @@ function NudgeModal({
     });
   }
 
-  // 재확인에 응답하면 체크포인트를 접고 평소 넛지 메시지로 넘어간다.
-  const [checkpointAnswered, setCheckpointAnswered] = useState(false);
   // Lv4로 올라가면(레벨업으로 열렸든, Lv3 모달이 tick으로 올라갔든) 재확인도 잠근다.
   const showCheckpoint =
     Boolean(checkpointLevel) && !checkpointAnswered && !lockedToStart;
 
-  function handleReconfirm(reason, customText) {
-    setCheckpointAnswered(true);
-    onReconfirmReason?.(reason, customText);
+  async function handleReconfirm(reason, customText) {
+    if (task.level !== 3) {
+      setCheckpointAnswered(true);
+      onReconfirmReason?.(reason, customText);
+      return;
+    }
+
+    if (reconfirmInFlightRef.current || !onReconfirmReason) return;
+    reconfirmInFlightRef.current = true;
+    try {
+      const savedReason = await onReconfirmReason(reason, customText);
+      if (!savedReason) return;
+
+      setCheckpointAnswered(true);
+      if (task.level === 3) {
+        setLv3RequestContext({
+          reason: savedReason.reason,
+          customReason:
+            savedReason.reason === "custom"
+              ? savedReason.customReasonText
+              : null,
+        });
+      }
+    } finally {
+      reconfirmInFlightRef.current = false;
+    }
   }
 
   return (
@@ -140,8 +251,8 @@ function NudgeModal({
           onStart={handleStart}
           completedTasks={completedTasks}
           overrideMessage={frozenMessage}
-          isGenerating={isGeneratingLv2}
-          startDisabled={isGeneratingLv2}
+          isGenerating={isGenerating}
+          startDisabled={isGenerating}
         />
 
         {task.level === 4 && (

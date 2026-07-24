@@ -41,12 +41,12 @@ if (!isTestDb) {
   );
 }
 
-async function createTestTask() {
+async function createTestTask(type = "개인공부") {
   const res = await request(app)
     .post("/api/tasks")
     .send({
       title: uniqueTitle(),
-      type: "개인공부",
+      type,
       startTime: new Date().toISOString(),
       deadline: new Date(Date.now() + 86400000).toISOString(),
       reason: "overwhelm",
@@ -288,7 +288,7 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
   );
 
   it(
-    "실제 done 이벤트가 아닌 sourceDoneEventId는 거부하고 완료 전환도 롤백한다",
+    "실제 done 이벤트가 아닌 sourceDoneEventId는 evidence만 버리고 완료한다",
     async () => {
       const sourceTask = await createTestTask();
       await request(app)
@@ -309,21 +309,19 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
           memoryEvidence: { sourceDoneEventId: activatedEvent.id },
         });
 
-      expect(res.status).toBe(400);
-      expect(res.body.error.code).toBe("invalid_memory_evidence");
+      expect(res.status).toBe(200);
       expect(
         await prisma.task.findUniqueOrThrow({ where: { id: targetTask.id } }),
-      ).toMatchObject({ status: "waiting" });
-      expect(
-        await prisma.taskEvent.count({
-          where: { taskId: targetTask.id, eventType: "done" },
-        }),
-      ).toBe(0);
+      ).toMatchObject({ status: "done" });
+      const doneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: targetTask.id, eventType: "done" },
+      });
+      expect(doneEvent.memoryEvidence).toBeNull();
     },
     15000,
   );
 
-  it("memoryEvidence에 클라이언트가 만든 스냅샷 필드를 함께 보내면 거부한다", async () => {
+  it("memoryEvidence에 클라이언트가 만든 스냅샷 필드를 함께 보내면 evidence만 버리고 완료한다", async () => {
     const task = await createTestTask();
 
     const res = await request(app)
@@ -336,9 +334,108 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
         },
       });
 
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe("invalid_memory_evidence");
+    expect(res.status).toBe(200);
+    const doneEvent = await prisma.taskEvent.findFirstOrThrow({
+      where: { taskId: task.id, eventType: "done" },
+    });
+    expect(doneEvent.memoryEvidence).toBeNull();
   });
+
+  it(
+    "다른 Task 유형의 done 이벤트는 memoryEvidence로 저장하지 않는다",
+    async () => {
+      const sourceTask = await createTestTask("조별과제");
+      await request(app)
+        .post(`/api/tasks/${sourceTask.id}/events`)
+        .send({
+          eventType: "done",
+          microTask: "공유 문서에 첫 문장 쓰기",
+        });
+      const sourceDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: sourceTask.id, eventType: "done" },
+      });
+      const targetTask = await createTestTask("개인공부");
+
+      const res = await request(app)
+        .post(`/api/tasks/${targetTask.id}/events`)
+        .send({
+          eventType: "done",
+          entryMode: "intervention",
+          entryLevel: 3,
+          microTask: "첫 소제목 핵심 한 문장 쓰기",
+          generationSource: "gemini",
+          memoryEvidence: { sourceDoneEventId: sourceDoneEvent.id },
+        });
+
+      expect(res.status).toBe(200);
+      const targetDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: targetTask.id, eventType: "done" },
+      });
+      expect(targetDoneEvent.memoryEvidence).toBeNull();
+    },
+    15000,
+  );
+
+  it(
+    "microTask가 없는 done 이벤트는 memoryEvidence로 저장하지 않는다",
+    async () => {
+      const sourceTask = await createTestTask();
+      await request(app)
+        .post(`/api/tasks/${sourceTask.id}/events`)
+        .send({ eventType: "done" });
+      const sourceDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: sourceTask.id, eventType: "done" },
+      });
+      const targetTask = await createTestTask();
+
+      const res = await request(app)
+        .post(`/api/tasks/${targetTask.id}/events`)
+        .send({
+          eventType: "done",
+          generationSource: "gemini",
+          memoryEvidence: { sourceDoneEventId: sourceDoneEvent.id },
+        });
+
+      expect(res.status).toBe(200);
+      const targetDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: targetTask.id, eventType: "done" },
+      });
+      expect(targetDoneEvent.memoryEvidence).toBeNull();
+    },
+    15000,
+  );
+
+  it(
+    "rule_based 완료에 첨부된 memoryEvidence는 저장하지 않는다",
+    async () => {
+      const sourceTask = await createTestTask();
+      await request(app)
+        .post(`/api/tasks/${sourceTask.id}/events`)
+        .send({
+          eventType: "done",
+          microTask: "첫 소제목 핵심 한 문장 쓰기",
+        });
+      const sourceDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: sourceTask.id, eventType: "done" },
+      });
+      const targetTask = await createTestTask();
+
+      const res = await request(app)
+        .post(`/api/tasks/${targetTask.id}/events`)
+        .send({
+          eventType: "done",
+          generationSource: "rule_based",
+          memoryEvidence: { sourceDoneEventId: sourceDoneEvent.id },
+        });
+
+      expect(res.status).toBe(200);
+      const targetDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: targetTask.id, eventType: "done" },
+      });
+      expect(targetDoneEvent.memoryEvidence).toBeNull();
+    },
+    15000,
+  );
 
   it("이미 완료된 task에 done을 다시 보내도 성공 응답을 유지하고 이벤트를 추가하지 않는다 (멱등)", async () => {
     const task = await createTestTask();
