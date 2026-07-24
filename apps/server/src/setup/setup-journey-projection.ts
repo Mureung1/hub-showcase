@@ -4,6 +4,7 @@ import {
   type PublicPreviewSetupProjection,
 } from '@ay-ple/product-contract'
 import type {
+  AdmittedSemesterWorkspace,
   SemesterSetupJourneyProjection,
 } from '@ay-ple/semester-workspace'
 
@@ -11,6 +12,14 @@ export type SetupJourneyProjectionContext = {
   readonly parentSelection: PublicPreviewParentSelection | null
   readonly suggestedLeafName: string
   readonly requiredApplicationCommand: string
+  readonly accountConnected: boolean
+  readonly presentReadyWorkspace: (
+    workspace: AdmittedSemesterWorkspace,
+  ) => {
+    readonly semesterLabel: string
+    readonly workspaceName: string
+    readonly safeDisplayLocation: string
+  }
 }
 
 const yearLevelOptions = [
@@ -85,7 +94,103 @@ export function toPublicPreviewSetupProjection(
           'AY-PLE을 종료한 뒤 같은 명령으로 다시 실행해 주세요.',
         allowedCommands: [],
       })
+    case 'workspace_reauth':
+      return context.accountConnected
+        ? decode({
+            state: 'account_required',
+            reason: 'workspace_reauth',
+            resume: 'available',
+            recoveryId: projection.recoveryId,
+            displayMessage:
+              'Codex 연결을 확인했습니다. 보존된 학기 공간 준비를 이어가세요.',
+            allowedCommands: ['setup.resume'],
+          })
+        : decode({
+            state: 'account_required',
+            reason: 'workspace_reauth',
+            resume: 'awaiting_account',
+            recoveryId: projection.recoveryId,
+            displayMessage:
+              '학기 공간은 그대로 보존되어 있습니다. Codex에 다시 연결해 주세요.',
+            allowedCommands: [],
+          })
+    case 'transition_blocked':
+      if (projection.retry === 'restart_required') {
+        return decode({
+          state: 'transition_blocked',
+          reason: 'setup_transition_unavailable',
+          retry: 'restart_required',
+          displayMessage:
+            'AY-PLE을 종료한 뒤 같은 명령으로 다시 실행해 주세요.',
+          allowedCommands: [],
+        })
+      }
+      if (!projection.recoveryId) {
+        throw new TypeError('Resumable setup transition requires an id')
+      }
+      return decode({
+        state: 'transition_blocked',
+        reason: projection.reason,
+        retry: 'resume',
+        recoveryId: projection.recoveryId,
+        displayMessage:
+          projection.reason === 'account_unavailable'
+            ? 'Codex 연결 상태를 확인한 뒤 학기 공간 준비를 다시 시도해 주세요.'
+            : '학기 공간 준비를 다시 시도해 주세요.',
+        allowedCommands: ['setup.resume'],
+      })
+    case 'ready':
+      return readyProjection(projection.workspace, context)
   }
+}
+
+function readyProjection(
+  workspace: AdmittedSemesterWorkspace,
+  context: SetupJourneyProjectionContext,
+): PublicPreviewSetupProjection {
+  const presentation = context.presentReadyWorkspace(workspace)
+  if (
+    !presentation.semesterLabel.trim() ||
+    !presentation.workspaceName.trim() ||
+    !presentation.safeDisplayLocation.trim() ||
+    hasControl(presentation.semesterLabel) ||
+    hasControl(presentation.workspaceName) ||
+    hasControl(presentation.safeDisplayLocation) ||
+    presentation.semesterLabel.includes('/') ||
+    presentation.semesterLabel.includes('\\') ||
+    presentation.workspaceName.includes('/') ||
+    presentation.workspaceName.includes('\\') ||
+    presentation.safeDisplayLocation.includes('/') ||
+    presentation.safeDisplayLocation.includes('\\') ||
+    presentation.semesterLabel.includes(workspace.canonicalRoot) ||
+    presentation.workspaceName.includes(workspace.canonicalRoot) ||
+    presentation.safeDisplayLocation.includes(workspace.canonicalRoot) ||
+    presentation.semesterLabel.includes(workspace.workspaceId) ||
+    presentation.workspaceName.includes(workspace.workspaceId) ||
+    presentation.safeDisplayLocation.includes(workspace.workspaceId)
+  ) {
+    throw new TypeError('Ready requires a safe workspace presentation')
+  }
+  return decode({
+    state: 'ready',
+    semesterLabel: presentation.semesterLabel,
+    workspaceName: presentation.workspaceName,
+    safeDisplayLocation: presentation.safeDisplayLocation,
+    checks: {
+      account: 'confirmed',
+      workspace: 'confirmed',
+      ayEnvironment: 'confirmed',
+    },
+    nextJourney: {
+      state: 'coming_next',
+      label: '첫 자료 가져오기',
+    },
+    allowedCommands: [],
+  })
+}
+
+function hasControl(value: string): boolean {
+  return /[\u0000-\u001f\u007f]/.test(value)
 }
 
 function recoveryProjection(

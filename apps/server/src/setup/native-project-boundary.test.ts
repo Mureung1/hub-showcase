@@ -121,6 +121,77 @@ test('overlapping verification callers share one atomic native context generatio
   }
 })
 
+test('abort propagates to both native reads and verification settles only after both calls clean up', async () => {
+  const fixture = await createFixture()
+  try {
+    const events: string[] = []
+    let releaseConfig!: () => void
+    let releaseSkills!: () => void
+    const configCleanup = new Promise<void>((resolve) => {
+      releaseConfig = resolve
+    })
+    const skillsCleanup = new Promise<void>((resolve) => {
+      releaseSkills = resolve
+    })
+    const nativeContext: CodexNativeContextPort = {
+      async readEffectiveConfig({ signal }) {
+        events.push('config.started')
+        await aborted(signal)
+        events.push('config.aborted')
+        await configCleanup
+        events.push('config.cleaned')
+        throw new Error('cancelled')
+      },
+      async listEffectiveSkills({ signal }) {
+        events.push('skills.started')
+        await aborted(signal)
+        events.push('skills.aborted')
+        await skillsCleanup
+        events.push('skills.cleaned')
+        throw new Error('cancelled')
+      },
+    }
+    const boundary = createWorkspaceNativeProjectBoundary({
+      workspace: fixture.workspace,
+      controlledHome: fixture.controlledHome,
+      controlledCodexHome: fixture.controlledCodexHome,
+      nativeContext,
+    })
+    const controller = new AbortController()
+    let settled = false
+    const verification = boundary
+      .verify({ signal: controller.signal })
+      .then((result) => {
+        settled = true
+        return result
+      })
+    await waitFor(() => events.length === 2)
+
+    controller.abort()
+    await waitFor(() => events.includes('skills.aborted'))
+    assert.equal(settled, false)
+    releaseConfig()
+    await waitFor(() => events.includes('config.cleaned'))
+    assert.equal(settled, false)
+    releaseSkills()
+
+    assert.deepEqual(await verification, {
+      status: 'blocked',
+      reason: 'config_conflict',
+    })
+    assert.deepEqual(events, [
+      'config.started',
+      'skills.started',
+      'config.aborted',
+      'skills.aborted',
+      'config.cleaned',
+      'skills.cleaned',
+    ])
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('separate boundaries sharing one native port cannot mix hostile generations', async () => {
   const fixture = await createFixture()
   try {
@@ -575,6 +646,22 @@ type NativeJournalEntry =
   | 'startThread'
   | 'startTurn'
   | 'Skill'
+
+function aborted(signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.resolve()
+  return new Promise((resolve) => {
+    signal.addEventListener('abort', () => resolve(), { once: true })
+  })
+}
+
+async function waitFor(predicate: () => boolean): Promise<void> {
+  const deadline = Date.now() + 5_000
+  while (Date.now() < deadline) {
+    if (predicate()) return
+    await new Promise((resolve) => setTimeout(resolve, 5))
+  }
+  assert.fail('condition was not reached')
+}
 
 function createNativeContextPort(
   workspace: AdmittedSemesterWorkspace,

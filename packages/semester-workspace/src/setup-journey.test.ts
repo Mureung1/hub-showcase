@@ -36,6 +36,7 @@ import {
 import {
   createLeaseBoundSemesterSetupJourney,
   createSemesterSetupJourney,
+  SemesterReadyValidationError,
   type SemesterReadyTransitionPort,
   type SemesterSetupJourneyOptions,
 } from './setup-journey.js'
@@ -333,6 +334,68 @@ test('actual process death at each transaction boundary converges on the durable
         assert.deepEqual(await readdir(fixture.canonicalParent), [
           fixture.input.leafName,
         ])
+      } finally {
+        await fixture.cleanup()
+      }
+    })
+  }
+})
+
+test('actual process death immediately around Ready commit converges without recreating or deleting workspace bytes', async (t) => {
+  for (const faultPoint of [
+    'before_ready_commit',
+    'after_ready_commit',
+  ] as const) {
+    await t.test(faultPoint, async () => {
+      const fixture = await createJourneyFixture(
+        `crash-${faultPoint}`,
+      )
+      try {
+        await runCrashWorker({
+          appDataRoot: fixture.appDataRoot,
+          parent: fixture.canonicalParent,
+          faultPoint,
+        })
+        const target = path.join(
+          fixture.canonicalParent,
+          fixture.input.leafName,
+        )
+        const before = await snapshotTree(target)
+        const crashed = await fixture.store.reconcileAbandonedWrite()
+        assert.equal(crashed.status, 'current')
+        if (crashed.status !== 'current') assert.fail()
+        assert.equal(
+          crashed.envelope.state.kind,
+          faultPoint === 'before_ready_commit'
+            ? 'pending'
+            : 'active_ready',
+        )
+        if (crashed.envelope.state.kind === 'pending') {
+          assert.equal(
+            crashed.envelope.state.receipt.lifecycle.phase,
+            'prepared',
+          )
+        }
+
+        const result = await fixture
+          .createLeaseJourney(passingTransition())
+          .reconcile({ kind: 'launch' })
+
+        assert.equal(
+          result.outcome,
+          faultPoint === 'before_ready_commit'
+            ? 'ready_created'
+            : 'ready_relaunch',
+        )
+        assert.equal(result.projection.state, 'ready')
+        assert.deepEqual(await snapshotTree(target), before)
+        assert.deepEqual(await readdir(fixture.canonicalParent), [
+          fixture.input.leafName,
+        ])
+        const final = await fixture.store.read()
+        assert.equal(final.status, 'current')
+        if (final.status !== 'current') assert.fail()
+        assert.equal(final.envelope.state.kind, 'active_ready')
       } finally {
         await fixture.cleanup()
       }
@@ -1487,6 +1550,152 @@ test('same-release active Ready relaunch fresh-validates without rewriting the p
   }
 })
 
+test('active Ready callback revalidates aggregate and bundle drift introduced after the relaunch precheck', async (t) => {
+  for (const drift of ['aggregate', 'bundle'] as const) {
+    await t.test(drift, async () => {
+      const fixture = await createJourneyFixture(
+        `ready-callback-drift-${drift}`,
+      )
+      try {
+        const first = fixture.createLeaseJourney(passingTransition())
+        const confirmation = await confirmationFor(first, fixture.input)
+        await first.reconcile({
+          kind: 'approve',
+          setupPlanId: confirmation.setupPlanId,
+        })
+        const before = await fixture.store.read()
+        assert.equal(before.status, 'current')
+        if (
+          before.status !== 'current' ||
+          before.envelope.state.kind !== 'active_ready'
+        ) {
+          assert.fail('active Ready required')
+        }
+        const pointer = before.envelope.state.pointer
+        const target =
+          drift === 'aggregate'
+            ? path.join(
+                pointer.workspace.canonicalRoot,
+                '.ay-ple',
+                'workspace-state.json',
+              )
+            : path.join(
+                pointer.workspace.canonicalRoot,
+                fixture.source.files[0]!.relativePath,
+              )
+        const changed = Buffer.from(`${drift} changed after precheck\n`)
+        const relaunched = fixture.createLeaseJourney({
+          async transition(input) {
+            await writeFile(target, changed)
+            try {
+              await input.commitReady()
+              assert.fail('drift must block callback attestation')
+            } catch (error) {
+              assert.equal(
+                error instanceof SemesterReadyValidationError,
+                true,
+              )
+              return { status: 'context_conflict' }
+            }
+          },
+        })
+
+        const result = await relaunched.reconcile({ kind: 'launch' })
+
+        assert.equal(result.outcome, 'recovery_required')
+        assert.deepEqual(result.projection, {
+          state: 'recovery_required',
+          recoveryId: pointer.setupId,
+          reason: 'context_conflict',
+        })
+        assert.deepEqual(await fixture.store.read(), before)
+        assert.deepEqual(await readFile(target), changed)
+      } finally {
+        await fixture.cleanup()
+      }
+    })
+  }
+})
+
+test('bundle disappearance after relaunch precheck stays missing until explicit resume repairs it', async () => {
+  const fixture = await createJourneyFixture(
+    'ready-callback-bundle-missing',
+  )
+  try {
+    const first = fixture.createLeaseJourney(passingTransition())
+    const confirmation = await confirmationFor(first, fixture.input)
+    await first.reconcile({
+      kind: 'approve',
+      setupPlanId: confirmation.setupPlanId,
+    })
+    const before = await fixture.store.read()
+    assert.equal(before.status, 'current')
+    if (
+      before.status !== 'current' ||
+      before.envelope.state.kind !== 'active_ready'
+    ) {
+      assert.fail('active Ready required')
+    }
+    const pointer = before.envelope.state.pointer
+    const missing = path.join(
+      pointer.workspace.canonicalRoot,
+      fixture.source.files[0]!.relativePath,
+    )
+    let transitions = 0
+    const relaunched = fixture.createLeaseJourney({
+      async transition(input) {
+        transitions += 1
+        if (transitions === 1) {
+          await unlink(missing)
+          try {
+            await input.commitReady()
+            assert.fail('missing bundle must block callback attestation')
+          } catch (error) {
+            assert.equal(
+              error instanceof SemesterReadyValidationError,
+              true,
+            )
+            if (!(error instanceof SemesterReadyValidationError)) {
+              assert.fail('typed Ready validation error required')
+            }
+            assert.equal(error.reason, 'bundle_missing')
+            return { status: error.reason }
+          }
+        }
+        return passingTransition().transition(input)
+      },
+    })
+
+    const protectedResult = await relaunched.reconcile({
+      kind: 'launch',
+    })
+
+    assert.deepEqual(protectedResult, {
+      outcome: 'recovery_required',
+      projection: {
+        state: 'recovery_required',
+        recoveryId: pointer.setupId,
+        reason: 'bundle_missing',
+      },
+    })
+    assert.deepEqual(await fixture.store.read(), before)
+    await assert.rejects(lstat(missing), hasCode('ENOENT'))
+
+    const resumed = await relaunched.reconcile({
+      kind: 'recover',
+      recoveryId: pointer.setupId,
+      action: 'resume',
+    })
+
+    assert.equal(resumed.outcome, 'ready_relaunch')
+    assert.equal(resumed.projection.state, 'ready')
+    assert.equal(transitions, 2)
+    assert.equal((await lstat(missing)).isFile(), true)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('account loss preserves prepared state until explicit resume succeeds', async () => {
   const fixture = await createJourneyFixture('ready-reauth')
   try {
@@ -1750,7 +1959,14 @@ function catchingCommitTransition(): SemesterReadyTransitionPort {
           ready: readback ?? committed,
         }
       } catch {
-        return { status: 'ready_commit_unknown' }
+        try {
+          return {
+            status: 'ready',
+            ready: await input.readReady(),
+          }
+        } catch {
+          return { status: 'ready_commit_unknown' }
+        }
       }
     },
   }

@@ -6,7 +6,9 @@ import type {
 } from '../contract.js'
 import { createSetupEnvelopeStore } from '../setup-envelope-store.js'
 import {
+  createLeaseBoundSemesterSetupJourney,
   createSemesterSetupJourney,
+  type SemesterSetupJourneyOptions,
   type SemesterSetupJourneyFaultPoint,
 } from '../setup-journey.js'
 import { captureCanonicalWorkspaceBundleSource } from '../workspace-bundle.js'
@@ -54,7 +56,7 @@ async function run(
       completeTreeSha256: source.completeTreeSha256,
     },
   }
-  const journey = createSemesterSetupJourney({
+  const options: SemesterSetupJourneyOptions = {
     stateStore: createSetupEnvelopeStore({ appDataRoot }),
     release,
     bundleSource: source,
@@ -75,7 +77,23 @@ async function run(
         process.kill(process.pid, 'SIGKILL')
       }
     },
-  })
+  }
+  const journey =
+    faultPoint === 'before_ready_commit' ||
+    faultPoint === 'after_ready_commit'
+      ? createLeaseBoundSemesterSetupJourney({
+          ...options,
+          readyTransition: {
+            async transition(input) {
+              await input.commitReady()
+              return {
+                status: 'ready',
+                ready: await input.readReady(),
+              }
+            },
+          },
+        })
+      : createSemesterSetupJourney(options)
   const prepared = await journey.reconcile({
     kind: 'prepare',
     input: {

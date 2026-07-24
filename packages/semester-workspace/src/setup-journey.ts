@@ -128,6 +128,7 @@ export type SemesterReadyTransitionResult =
     }
   | { readonly status: 'reauth_required' }
   | { readonly status: 'account_unavailable' }
+  | { readonly status: 'bundle_missing' }
   | { readonly status: 'context_conflict' }
   | {
       readonly status: 'transition_unavailable'
@@ -139,6 +140,7 @@ export type SemesterReadyTransitionResult =
 export interface SemesterReadyTransitionPort {
   transition(input: {
     readonly workspace: AdmittedSemesterWorkspace
+    readonly expectedReady: ActiveReadyPointer
     readonly commitReady: () => Promise<ActiveReadyPointer>
     readonly readReady: () => Promise<ActiveReadyPointer>
   }): Promise<SemesterReadyTransitionResult>
@@ -148,6 +150,22 @@ export type LeaseBoundSemesterSetupJourneyOptions =
   SemesterSetupJourneyOptions & {
     readonly readyTransition: SemesterReadyTransitionPort
   }
+
+export type SemesterReadyValidationFailureReason =
+  | 'bundle_missing'
+  | 'context_conflict'
+
+export class SemesterReadyValidationError extends Error {
+  readonly reason: SemesterReadyValidationFailureReason
+
+  constructor(
+    reason: SemesterReadyValidationFailureReason = 'context_conflict',
+  ) {
+    super('The workspace changed before Ready attestation.')
+    this.name = 'SemesterReadyValidationError'
+    this.reason = reason
+  }
+}
 
 type PreparedDraft = {
   readonly expectedRevisionToken: string | null
@@ -752,7 +770,8 @@ function createSetupJourney(
       workspace: rebound.workspace,
       expected: pointer,
       successOutcome: 'ready_relaunch',
-      commitReady: () => readExactReadyPointer(pointer),
+      commitReady: () =>
+        validateActiveReadyForCallback(pointer, rebound.workspace),
       readReady: () => readExactReadyPointer(pointer),
     })
   }
@@ -774,6 +793,7 @@ function createSetupJourney(
     try {
       transitioned = await readyTransition.transition({
         workspace: input.workspace,
+        expectedReady: input.expected,
         commitReady: input.commitReady,
         readReady: input.readReady,
       })
@@ -788,31 +808,14 @@ function createSetupJourney(
       if (!sameReadyPointer(transitioned.ready, input.expected)) {
         return blocked('setup_state_conflict')
       }
-      try {
-        const readback = await input.readReady()
-        if (!sameReadyPointer(readback, input.expected)) {
-          return blocked('setup_state_conflict')
-        }
-      } catch {
-        return transitionBlocked(
-          input.recoveryId,
-          'setup_transition_unavailable',
-          'resume',
-        )
-      }
       return ready(input.successOutcome, input.workspace)
     }
     if (transitioned.status === 'ready_commit_unknown') {
-      try {
-        await input.readReady()
-        return ready(input.successOutcome, input.workspace)
-      } catch {
-        return transitionBlocked(
-          input.recoveryId,
-          'setup_transition_unavailable',
-          'resume',
-        )
-      }
+      return transitionBlocked(
+        input.recoveryId,
+        'setup_transition_unavailable',
+        'resume',
+      )
     }
     if (transitioned.status === 'reauth_required') {
       projection = {
@@ -823,6 +826,9 @@ function createSetupJourney(
     }
     if (transitioned.status === 'context_conflict') {
       return recovery(input.recoveryId, 'context_conflict')
+    }
+    if (transitioned.status === 'bundle_missing') {
+      return recovery(input.recoveryId, 'bundle_missing')
     }
     if (transitioned.status === 'account_unavailable') {
       return transitionBlocked(
@@ -885,6 +891,9 @@ function createSetupJourney(
       workspace: currentWorkspace,
       source: options.bundleSource,
     })
+    if (bundle.status === 'missing') {
+      throw new SemesterReadyValidationError('bundle_missing')
+    }
     if (
       bundle.status !== 'verified' ||
       bundle.descriptorSha256 !==
@@ -929,6 +938,58 @@ function createSetupJourney(
       throw new Error('Ready commit did not return the exact pointer')
     }
     await inject(options, 'after_ready_commit')
+    return readExactReadyPointer(expectedPointer)
+  }
+
+  const validateActiveReadyForCallback = async (
+    expectedPointer: ActiveReadyPointer,
+    expectedWorkspace: AdmittedSemesterWorkspace,
+  ): Promise<ActiveReadyPointer> => {
+    await readExactReadyPointer(expectedPointer)
+    const admission = createAdmission()
+    const inspection = await admission.inspect({
+      kind: 'reopen',
+      canonicalRoot: expectedPointer.workspace.canonicalRoot,
+    })
+    if (
+      (inspection.outcome !== 'admitted' &&
+        inspection.outcome !== 'already_ready') ||
+      !sameWorkspace(inspection.workspace, expectedWorkspace) ||
+      !pointerMatchesWorkspace(expectedPointer, inspection.workspace)
+    ) {
+      throw new SemesterReadyValidationError()
+    }
+    const bundle = await verifyWorkspaceBundle({
+      workspace: inspection.workspace,
+      source: options.bundleSource,
+    })
+    if (bundle.status === 'missing') {
+      throw new SemesterReadyValidationError('bundle_missing')
+    }
+    if (
+      bundle.status !== 'verified' ||
+      bundle.descriptorSha256 !==
+        expectedPointer.release.bundle.descriptorSha256 ||
+      bundle.completeTreeSha256 !==
+        expectedPointer.release.bundle.completeTreeSha256 ||
+      (await verifyWorkspaceStaticContext(inspection.workspace))
+        .status !== 'verified'
+    ) {
+      throw new SemesterReadyValidationError()
+    }
+    const finalAdmission = createAdmission()
+    const rebound = await finalAdmission.inspect({
+      kind: 'reopen',
+      canonicalRoot: expectedPointer.workspace.canonicalRoot,
+    })
+    if (
+      (rebound.outcome !== 'admitted' &&
+        rebound.outcome !== 'already_ready') ||
+      !sameWorkspace(rebound.workspace, expectedWorkspace) ||
+      !pointerMatchesWorkspace(expectedPointer, rebound.workspace)
+    ) {
+      throw new SemesterReadyValidationError()
+    }
     return readExactReadyPointer(expectedPointer)
   }
 
