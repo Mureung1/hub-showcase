@@ -9,6 +9,7 @@ function CalendarPage() {
   const [events, setEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   useEffect(() => {
     async function fetchEvents() {
@@ -89,14 +90,27 @@ function CalendarPage() {
     );
   }
 
-  function hasEvent(date) {
+  function getEventsForDate(date) {
     const dateStr = date.toISOString().split("T")[0];
-    return events.some(
-      (event) =>
-        event.startDate === dateStr ||
-        event.endDate === dateStr ||
-        event.deadline === dateStr
-    );
+    const dayEvents = [];
+    const seenKeys = new Set();
+
+    events.forEach((event, idx) => {
+      const eventKey = `${idx}`;
+
+      if (event.deadline === dateStr && !seenKeys.has(`${eventKey}-deadline`)) {
+        dayEvents.push({ ...event, eventType: "deadline", uniqueKey: `${eventKey}-deadline` });
+        seenKeys.add(`${eventKey}-deadline`);
+      } else if (event.startDate === dateStr && !seenKeys.has(`${eventKey}-start`)) {
+        dayEvents.push({ ...event, eventType: "start", uniqueKey: `${eventKey}-start` });
+        seenKeys.add(`${eventKey}-start`);
+      } else if (event.endDate === dateStr && event.endDate !== event.startDate && !seenKeys.has(`${eventKey}-end`)) {
+        dayEvents.push({ ...event, eventType: "end", uniqueKey: `${eventKey}-end` });
+        seenKeys.add(`${eventKey}-end`);
+      }
+    });
+
+    return dayEvents;
   }
 
   const monthNames = [
@@ -137,22 +151,102 @@ function CalendarPage() {
             </div>
 
             <div className="calendar-grid">
-              {calendarDays.map((dayObj, index) => (
-                <div
-                  key={index}
-                  className={`calendar-day ${
-                    dayObj.isCurrentMonth ? "current" : "other"
-                  } ${isToday(dayObj.date) ? "today" : ""} ${
-                    hasEvent(dayObj.date) ? "has-event" : ""
-                  }`}
-                >
-                  <div className="day-number">{dayObj.day}</div>
-                </div>
-              ))}
+              {calendarDays.map((dayObj, index) => {
+                const dayEvents = getEventsForDate(dayObj.date);
+                return (
+                  <div
+                    key={index}
+                    className={`calendar-day ${
+                      dayObj.isCurrentMonth ? "current" : "other"
+                    } ${isToday(dayObj.date) ? "today" : ""}`}
+                  >
+                    <div className="day-number">{dayObj.day}</div>
+                    <div className="day-events">
+                      {dayEvents.map((event) => (
+                        <button
+                          key={event.uniqueKey}
+                          className={`event-badge event-${event.eventType}`}
+                          onClick={() => setSelectedEvent(event)}
+                          type="button"
+                        >
+                          {event.eventType === "deadline" && "📌"}
+                          {event.eventType === "start" && "▶"}
+                          {event.eventType === "end" && "■"}
+                          {" "}
+                          <span className="event-name">{event.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {events.length === 0 && (
               <p className="calendar-message">저장된 일정이 없습니다.</p>
+            )}
+
+            {selectedEvent && (
+              <div className="event-detail-overlay" onClick={() => setSelectedEvent(null)}>
+                <div className="event-detail-modal" onClick={(e) => e.stopPropagation()}>
+                  <div className="detail-header">
+                    <h3>{selectedEvent.name}</h3>
+                    <button type="button" className="detail-close" onClick={() => setSelectedEvent(null)}>
+                      ✕
+                    </button>
+                  </div>
+                  <div className="detail-content">
+                    {selectedEvent.startDate && (
+                      <div className="detail-item">
+                        <span className="detail-label">시작일:</span>
+                        <span className="detail-value">{selectedEvent.startDate}</span>
+                      </div>
+                    )}
+                    {selectedEvent.endDate && (
+                      <div className="detail-item">
+                        <span className="detail-label">종료일:</span>
+                        <span className="detail-value">{selectedEvent.endDate}</span>
+                      </div>
+                    )}
+                    {selectedEvent.deadline && (
+                      <div className="detail-item">
+                        <span className="detail-label">마감일:</span>
+                        <span className="detail-value">{selectedEvent.deadline}</span>
+                      </div>
+                    )}
+                    {selectedEvent.time?.start && (
+                      <div className="detail-item">
+                        <span className="detail-label">시작 시간:</span>
+                        <span className="detail-value">{selectedEvent.time.start}</span>
+                      </div>
+                    )}
+                    {selectedEvent.time?.end && (
+                      <div className="detail-item">
+                        <span className="detail-label">종료 시간:</span>
+                        <span className="detail-value">{selectedEvent.time.end}</span>
+                      </div>
+                    )}
+                    {selectedEvent.location && (
+                      <div className="detail-item">
+                        <span className="detail-label">장소:</span>
+                        <span className="detail-value">{selectedEvent.location}</span>
+                      </div>
+                    )}
+                    {selectedEvent.deliverables && selectedEvent.deliverables.length > 0 && (
+                      <div className="detail-item">
+                        <span className="detail-label">제출물:</span>
+                        <span className="detail-value">{selectedEvent.deliverables.join(", ")}</span>
+                      </div>
+                    )}
+                    {selectedEvent.notes && (
+                      <div className="detail-item">
+                        <span className="detail-label">메모:</span>
+                        <span className="detail-value">{selectedEvent.notes}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
           </>
         )}
