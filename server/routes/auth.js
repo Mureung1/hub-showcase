@@ -10,6 +10,38 @@ export const auth = Router()
 const USERNAME_RE = /^[a-zA-Z0-9_]{4,20}$/ // 4~20자 영문/숫자/밑줄
 const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/ // 8자 이상, 영문+숫자 포함
 
+// 상태 코드를 담은 에러 (catch에서 res.status로 사용)
+function fail(status, message) {
+  const err = new Error(message)
+  err.status = status
+  return err
+}
+
+// 계정 생성(검증 + bcrypt 해시 + insert). 회원가입·초대 합류가 공유한다.
+// 실패 시 status가 담긴 에러를 throw → 호출부의 catch가 res.status로 처리.
+export async function createUser(body) {
+  const name = String(body?.name ?? '').trim()
+  const username = String(body?.username ?? '').trim()
+  const email = String(body?.email ?? '').trim() || null
+  const password = String(body?.password ?? '')
+
+  if (!name) throw fail(400, '이름을 입력해 주세요.')
+  if (!USERNAME_RE.test(username)) throw fail(400, '아이디는 4~20자의 영문·숫자·밑줄만 사용할 수 있습니다.')
+  if (!PASSWORD_RE.test(password)) throw fail(400, '비밀번호는 8자 이상이며 영문과 숫자를 포함해야 합니다.')
+
+  const password_hash = await bcrypt.hash(password, 10)
+  const { data, error } = await supabase
+    .from('users')
+    .insert({ username, password_hash, name, email })
+    .select('id, username, name')
+    .single()
+  if (error) {
+    if (error.code === '23505') throw fail(409, '사용중인 아이디입니다.') // 아이디 unique 위반(가입 직전 레이스)
+    throw new Error(error.message)
+  }
+  return data
+}
+
 // 아이디 중복확인 — 회원가입 화면의 [중복확인] 버튼
 auth.get('/api/auth/check-username', async (req, res) => {
   try {
@@ -28,35 +60,11 @@ auth.get('/api/auth/check-username', async (req, res) => {
 // 회원가입 — 성공 시 자동 로그인(쿠키 발급)
 auth.post('/api/auth/signup', async (req, res) => {
   try {
-    const name = String(req.body?.name ?? '').trim()
-    const username = String(req.body?.username ?? '').trim()
-    const email = String(req.body?.email ?? '').trim() || null
-    const password = String(req.body?.password ?? '')
-
-    if (!name) return res.status(400).json({ error: '이름을 입력해 주세요.' })
-    if (!USERNAME_RE.test(username)) {
-      return res.status(400).json({ error: '아이디는 4~20자의 영문·숫자·밑줄만 사용할 수 있습니다.' })
-    }
-    if (!PASSWORD_RE.test(password)) {
-      return res.status(400).json({ error: '비밀번호는 8자 이상이며 영문과 숫자를 포함해야 합니다.' })
-    }
-
-    const password_hash = await bcrypt.hash(password, 10)
-    const { data, error } = await supabase
-      .from('users')
-      .insert({ username, password_hash, name, email })
-      .select('id, username, name')
-      .single()
-    if (error) {
-      // 23505 = Postgres unique 위반 → 가입 직전 레이스로 아이디가 선점된 경우
-      if (error.code === '23505') return res.status(409).json({ error: '사용중인 아이디입니다.' })
-      throw new Error(error.message)
-    }
-
-    setAuthCookie(res, signToken(data.id))
-    res.status(201).json({ user: data })
+    const user = await createUser(req.body)
+    setAuthCookie(res, signToken(user.id))
+    res.status(201).json({ user })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(err.status ?? 500).json({ error: err.message })
   }
 })
 

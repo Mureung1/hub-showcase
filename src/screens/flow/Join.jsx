@@ -1,58 +1,87 @@
-import { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams, useLocation } from 'react-router'
+import { useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
 import logo from '../../assets/logo.png'
-import { DEMO_PROJECT_ID, fallbackProject, makeMembers, typeLabelOf } from './flowMock'
+import { api, apiPost, useApi } from '../../api/client'
+import { getTypeById } from '../../data/templates'
 import '../Auth.css'
 import './flow.css'
 
+const USERNAME_RE = /^[a-zA-Z0-9_]{4,20}$/ // 4~20자 영문/숫자/밑줄
+const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/ // 8자 이상, 영문+숫자
+
 /* 초대 링크 착지 화면 — 팀원이 프로젝트를 확인하고 그 자리에서 가입 + 닉네임을 정한다.
-   4단계에서 토큰으로 프로젝트를 조회하고 실제 가입 API를 호출하도록 교체된다. */
+   서버(GET /api/join/:token)로 미리보기를 조회하고, POST로 가입+합류(자동 로그인)한다. */
 export default function Join() {
   const { token } = useParams()
-  const { state } = useLocation()
   const navigate = useNavigate()
-
-  const project = useMemo(() => ({ ...fallbackProject(), ...(state ?? {}) }), [state])
-
-  // 생성자 + 먼저 합류한 팀원들. 마지막 한 자리가 지금 들어온 사람 몫이다
-  const members = useMemo(() => makeMembers(project.headcount), [project.headcount])
-  const joined = Math.max(project.headcount - 1, 1)
-  const isFull = joined >= project.headcount
+  const { loading, error, data } = useApi(`/api/join/${token}`)
 
   const [showPw, setShowPw] = useState(false)
   const [form, setForm] = useState({ name: '', username: '', password: '', nickname: '' })
-  const [error, setError] = useState('')
-
-  const takenNicknames = members.slice(0, joined).map((m) => m.name)
+  const [check, setCheck] = useState({ status: 'idle', message: '' }) // idle|checking|available|taken|invalid
+  const [submitError, setSubmitError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   function patch(partial) {
-    setError('')
+    setSubmitError('')
+    if ('username' in partial) setCheck({ status: 'idle', message: '' }) // 아이디 바꾸면 이전 확인 무효
     setForm((f) => ({ ...f, ...partial }))
   }
 
-  const canSubmit =
-    form.name.trim() && form.username.trim() && form.password.length >= 8 && form.nickname.trim()
-
-  function handleSubmit(e) {
-    e.preventDefault()
-    // 4단계: 서버가 정원·닉네임 중복을 검사한다 (여기서는 같은 규칙을 화면에서 확인)
-    if (takenNicknames.includes(form.nickname.trim())) {
-      setError('이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해 주세요.')
+  async function handleCheck() {
+    const username = form.username.trim()
+    if (!USERNAME_RE.test(username)) {
+      setCheck({ status: 'invalid', message: '아이디는 4~20자의 영문·숫자·밑줄만 사용할 수 있습니다.' })
       return
     }
-    navigate(`/projects/${DEMO_PROJECT_ID}/survey`, {
-      state: { ...project, myNickname: form.nickname.trim() },
-    })
+    setCheck({ status: 'checking', message: '확인 중…' })
+    try {
+      const { available, reason } = await api(`/api/auth/check-username?username=${encodeURIComponent(username)}`)
+      setCheck(
+        available
+          ? { status: 'available', message: '사용할 수 있는 아이디입니다.' }
+          : { status: 'taken', message: reason ?? '사용중인 아이디입니다.' },
+      )
+    } catch (err) {
+      setCheck({ status: 'invalid', message: err.message })
+    }
   }
 
-  if (isFull) {
+  /* ---------- 조회 상태 분기 ---------- */
+
+  if (loading) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card auth-head">
+          <span className="auth-logo"><img src={logo} alt="" /></span>
+          <h1>불러오는 중…</h1>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card auth-head">
+          <span className="auth-logo"><img src={logo} alt="" /></span>
+          <h1>초대 링크를 확인해 주세요</h1>
+          <p>{error}</p>
+          <div className="auth-divider" />
+          <p className="auth-switch"><Link to="/">홈으로 돌아가기</Link></p>
+        </div>
+      </div>
+    )
+  }
+
+  if (data.isFull) {
     return (
       <div className="auth-page">
         <div className="auth-card auth-head">
           <span className="auth-logo"><img src={logo} alt="" /></span>
           <h1>정원이 가득 찼습니다</h1>
           <p>
-            이 프로젝트는 이미 {project.headcount}명이 모두 합류했습니다.
+            이 프로젝트는 이미 {data.headcount}명이 모두 합류했습니다.
             팀 생성자에게 문의해 주세요.
           </p>
           <div className="auth-divider" />
@@ -60,6 +89,54 @@ export default function Join() {
         </div>
       </div>
     )
+  }
+
+  /* ---------- 가입 폼 ---------- */
+
+  const typeLabel = getTypeById(data.typeHint)?.label ?? '선택 안 함'
+  const takenNicknames = data.members.map((m) => m.nickname)
+  const canSubmit =
+    form.name.trim() &&
+    USERNAME_RE.test(form.username.trim()) &&
+    PASSWORD_RE.test(form.password) &&
+    form.nickname.trim() &&
+    check.status !== 'taken' &&
+    !submitting
+
+  // 참여 슬롯: 이미 합류한 팀원 → 내 자리 → 남은 대기 자리
+  const slots = Array.from({ length: data.headcount }, (_, i) => {
+    if (i < data.members.length) {
+      const m = data.members[i]
+      return { key: i, label: `${m.nickname}${m.isCreator ? ' (생성자)' : ''}`, filled: true }
+    }
+    if (i === data.members.length) return { key: i, label: '내 자리', filled: false }
+    return { key: i, label: '대기 중', filled: false }
+  })
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const nickname = form.nickname.trim()
+    if (takenNicknames.includes(nickname)) {
+      setSubmitError('이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해 주세요.')
+      return
+    }
+    setSubmitting(true)
+    try {
+      // 성공 시 서버가 계정을 만들고 세션 쿠키를 심어 자동 로그인 → 설문으로 이동
+      const res = await apiPost(`/api/join/${token}`, {
+        name: form.name.trim(),
+        username: form.username.trim(),
+        password: form.password,
+        nickname,
+      })
+      navigate(`/projects/${res.projectId}/survey`)
+    } catch (err) {
+      if (err.status === 409 && err.message.includes('아이디')) {
+        setCheck({ status: 'taken', message: '사용중인 아이디입니다.' })
+      }
+      setSubmitError(err.message)
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -72,17 +149,15 @@ export default function Join() {
         </div>
 
         <div className="join-preview">
-          <strong>{project.title}</strong>
-          <p>{project.topic}</p>
+          <strong>{data.title}</strong>
+          <p>{data.topic}</p>
           <div className="flow-meta">
-            <span className="flow-chip">{typeLabelOf(project.typeHint)}</span>
-            <span className="flow-chip">{joined} / {project.headcount}명 합류</span>
+            <span className="flow-chip">{typeLabel}</span>
+            <span className="flow-chip">{data.joinedCount} / {data.headcount}명 합류</span>
           </div>
           <div className="slot-list">
-            {members.map((m, i) => (
-              <span key={m.id} className={`slot${i < joined ? ' filled' : ''}`}>
-                {i < joined ? `${m.name}${m.isCreator ? ' (생성자)' : ''}` : '내 자리'}
-              </span>
+            {slots.map((s) => (
+              <span key={s.key} className={`slot${s.filled ? ' filled' : ''}`}>{s.label}</span>
             ))}
           </div>
         </div>
@@ -109,15 +184,26 @@ export default function Join() {
                 <span className="field-icon" aria-hidden="true">🪪</span>
                 <input
                   id="jn-id"
-                  placeholder="사용할 아이디"
+                  placeholder="사용할 아이디 (영문·숫자 4~20자)"
                   autoComplete="username"
                   value={form.username}
                   onChange={(e) => patch({ username: e.target.value })}
                 />
               </div>
-              {/* 4단계에서 중복확인 API 연결 */}
-              <button type="button" className="check-btn">중복확인</button>
+              <button
+                type="button"
+                className="check-btn"
+                onClick={handleCheck}
+                disabled={!form.username.trim() || check.status === 'checking'}
+              >
+                중복확인
+              </button>
             </div>
+            {check.status !== 'idle' && (
+              <p className={`auth-field-msg${check.status === 'available' ? ' ok' : check.status === 'checking' ? '' : ' error'}`}>
+                {check.message}
+              </p>
+            )}
           </div>
 
           <div className="auth-field">
@@ -157,11 +243,11 @@ export default function Join() {
                 onChange={(e) => patch({ nickname: e.target.value })}
               />
             </div>
-            {error && <p className="join-error">{error}</p>}
+            {submitError && <p className="join-error">{submitError}</p>}
           </div>
 
           <button type="submit" className="btn btn-dark auth-submit" disabled={!canSubmit}>
-            가입하고 설문 시작하기
+            {submitting ? '합류 중…' : '가입하고 설문 시작하기'}
           </button>
         </form>
 
