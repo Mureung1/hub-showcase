@@ -194,9 +194,12 @@ hub-clone/
 │   ├── public/
 │   └── src/
 │       ├── api/               # FastAPI 요청과 응답 타입
-│       ├── components/        # 공통 UI 컴포넌트
-│       ├── lib/               # Supabase Auth 연결
-│       └── screens/           # 관심사·오늘의 글·미션·나의 깸 화면
+│       ├── app/               # 앱 초기화와 최상위 화면 흐름
+│       ├── assets/            # 앱에서 사용하는 이미지
+│       ├── auth/              # Supabase Auth 연결
+│       ├── features/          # 관심사·오늘의 글·미션·나의 깸 기능
+│       ├── shared/            # 공통 UI·도메인 상수·유틸
+│       └── test/              # 프론트엔드 테스트 설정
 ├── backend/                   # FastAPI API와 RSS 수집기
 │   ├── app/
 │   │   ├── api/               # 인증 의존성과 API 라우트
