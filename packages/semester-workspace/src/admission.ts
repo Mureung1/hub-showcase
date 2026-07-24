@@ -169,6 +169,18 @@ export interface RestorableSemesterWorkspaceAdmission
   restore(
     description: WorkspaceAdmissionPlanDescription,
   ): Promise<AuthorityBoundWorkspacePlan | null>
+  verifyBinding(
+    description: WorkspaceAdmissionPlanDescription,
+    subject:
+      | {
+          readonly kind: 'plan'
+          readonly plan: AuthorityBoundWorkspacePlan
+        }
+      | {
+          readonly kind: 'workspace'
+          readonly workspace: AdmittedSemesterWorkspace
+        },
+  ): Promise<boolean>
 }
 
 type WorkspaceAdmissionPlanEvidenceForTesting = {
@@ -251,6 +263,13 @@ function createSemesterWorkspaceAdmissionModule(
       return restoreCreatePlan(description, plans)
     },
 
+    async verifyBinding(
+      description,
+      subject,
+    ): Promise<boolean> {
+      return verifyAdmissionBinding(description, subject, plans)
+    },
+
     async apply(plan): Promise<WorkspaceApplyResult> {
       const context = plans.get(plan.planId)
       if (!context || !samePlan(context.plan, plan)) {
@@ -302,9 +321,15 @@ export function readWorkspaceAdmissionPlanEvidenceForTesting(
 function describeCreatePlan(
   context: CreatePlanContext,
 ): WorkspaceAdmissionPlanDescription {
-  const { authority } = context.planned.evidence
+  return describePlannedAdmission(context.planned)
+}
+
+function describePlannedAdmission(
+  planned: DecodedAdmissionEvidence,
+): WorkspaceAdmissionPlanDescription {
+  const { authority } = planned.evidence
   const semester = cloneSemesterIdentity(
-    context.planned.aggregate.manifest.semester,
+    planned.aggregate.manifest.semester,
   )
   const target = {
     canonicalParent: authority.parent.canonicalParent,
@@ -314,7 +339,7 @@ function describeCreatePlan(
     canonicalTarget: authority.canonicalRoot,
   }
   return {
-    setupPlanId: context.plan.planId,
+    setupPlanId: planned.setupPlanId,
     privateBinding: {
       plan: {
         canonicalBytesSha256: sha256Canonical({
@@ -327,11 +352,94 @@ function describeCreatePlan(
       workspace: {
         workspaceId: authority.workspaceId,
         formatVersion: 3,
-        rootMarkerSha256: context.planned.markerSha256,
+        rootMarkerSha256: planned.markerSha256,
         ownedScaffoldPlanSha256: authority.ownedScaffoldPlanSha256,
         expectedInitialAggregateSha256: authority.aggregateSha256,
       },
     },
+  }
+}
+
+async function verifyAdmissionBinding(
+  description: WorkspaceAdmissionPlanDescription,
+  subject:
+    | {
+        readonly kind: 'plan'
+        readonly plan: AuthorityBoundWorkspacePlan
+      }
+    | {
+        readonly kind: 'workspace'
+        readonly workspace: AdmittedSemesterWorkspace
+      },
+  plans: Map<string, PlanContext>,
+): Promise<boolean> {
+  const decoded = decodeRestorablePlanDescription(description)
+  if (!decoded) return false
+  if ((await inspectCanonicalParent(decoded.parent)) !== 'current') {
+    return false
+  }
+  const candidate = planCreateAdmission({
+    parent: decoded.parent,
+    leafName: decoded.leafName,
+    canonicalRoot: decoded.canonicalRoot,
+    semester: decoded.semester,
+    setupPlanId: decoded.setupPlanId,
+    workspaceId: decoded.workspaceId,
+  })
+  if (
+    canonicalJson(describePlannedAdmission(candidate.planned)) !==
+    canonicalJson(description)
+  ) {
+    return false
+  }
+
+  if (subject.kind === 'plan') {
+    const context = plans.get(subject.plan.planId)
+    if (
+      !context ||
+      context.kind === 'discard_owned' ||
+      !samePlan(context.plan, subject.plan)
+    ) {
+      return false
+    }
+    return (
+      context.planned.markerBytes.equals(
+        candidate.planned.markerBytes,
+      ) &&
+      context.planned.aggregateBytes.equals(
+        candidate.planned.aggregateBytes,
+      )
+    )
+  }
+
+  const { workspace } = subject
+  if (
+    workspace.canonicalRoot !== decoded.canonicalRoot ||
+    workspace.formatVersion !== 3 ||
+    workspace.workspaceId !== decoded.workspaceId ||
+    workspace.manifest.workspaceId !== decoded.workspaceId ||
+    workspace.manifest.semester.yearLevel !==
+      decoded.semester.yearLevel ||
+    workspace.manifest.semester.term.key !==
+      decoded.semester.term.key ||
+    workspace.manifest.semester.term.displayName !==
+      decoded.semester.term.displayName ||
+    workspace.manifest.courses.length !== 0
+  ) {
+    return false
+  }
+  try {
+    const stateBytes = await readSingleLinkRegularFile(
+      path.join(
+        workspace.canonicalRoot,
+        productDirectoryName,
+        stateFileName,
+      ),
+      admissionMarkerMaxBytes,
+    )
+    return stateBytes.equals(candidate.planned.aggregateBytes)
+  } catch {
+    return false
   }
 }
 

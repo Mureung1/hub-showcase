@@ -418,6 +418,14 @@ export function createSemesterSetupJourney(
     if (context.status !== 'verified') {
       return recovery(state.receipt.setupId, 'context_conflict')
     }
+    if (
+      !(await reopenReceiptWorkspace(
+        state.receipt,
+        createAdmission,
+      ))
+    ) {
+      return blocked('setup_state_conflict')
+    }
     projection = {
       state: 'working',
       stage: 'verifying_environment',
@@ -474,16 +482,23 @@ export function createSemesterSetupJourney(
     ) {
       return blocked('setup_release_mismatch')
     }
-    const admission = createAdmission()
-    const inspection = await admission.inspect({
-      kind: 'reopen',
-      canonicalRoot: receipt.plan.target.canonicalTarget,
-    })
-    if (inspection.outcome !== 'admitted') {
+    const workspace = await reopenReceiptWorkspace(
+      receipt,
+      createAdmission,
+    )
+    if (!workspace) {
+      const admission = createAdmission()
+      const inspection = await admission.inspect({
+        kind: 'reopen',
+        canonicalRoot: receipt.plan.target.canonicalTarget,
+      })
+      if (inspection.outcome === 'admitted') {
+        return blocked('setup_state_conflict')
+      }
       return recovery(receipt.setupId, 'owned_incomplete')
     }
     const bundle = await verifyWorkspaceBundle({
-      workspace: inspection.workspace,
+      workspace,
       source: options.bundleSource,
     })
     if (bundle.status === 'missing') {
@@ -499,10 +514,13 @@ export function createSemesterSetupJourney(
       return recovery(receipt.setupId, 'bundle_conflict')
     }
     if (
-      (await verifyWorkspaceStaticContext(inspection.workspace))
-        .status !== 'verified'
+      (await verifyWorkspaceStaticContext(workspace)).status !==
+      'verified'
     ) {
       return recovery(receipt.setupId, 'context_conflict')
+    }
+    if (!(await reopenReceiptWorkspace(receipt, createAdmission))) {
+      return blocked('setup_state_conflict')
     }
     projection = {
       state: 'working',
@@ -732,6 +750,13 @@ async function reconcileWorkspace(
       created.outcome !== 'resumed'
     ) {
       admission = createAdmission()
+    } else if (
+      !(await admission.verifyBinding(description, {
+        kind: 'workspace',
+        workspace: created.workspace,
+      }))
+    ) {
+      return null
     }
   }
   admission = createAdmission()
@@ -739,7 +764,14 @@ async function reconcileWorkspace(
     kind: 'reopen',
     canonicalRoot: receipt.plan.target.canonicalTarget,
   })
-  if (reopened.outcome === 'admitted') return reopened.workspace
+  if (reopened.outcome === 'admitted') {
+    return (await admission.verifyBinding(description, {
+      kind: 'workspace',
+      workspace: reopened.workspace,
+    }))
+      ? reopened.workspace
+      : null
+  }
 
   const resumable = await admission.inspect({
     kind: 'resume_owned',
@@ -748,16 +780,62 @@ async function reconcileWorkspace(
   })
   if (resumable.outcome === 'owned_incomplete') {
     if (!allowOwnedResume) return null
-    await admission.apply(resumable.plan)
+    if (
+      !(await admission.verifyBinding(description, {
+        kind: 'plan',
+        plan: resumable.plan,
+      }))
+    ) {
+      return null
+    }
+    const resumed = await admission.apply(resumable.plan)
+    if (
+      resumed.outcome !== 'resumed' ||
+      !(await admission.verifyBinding(description, {
+        kind: 'workspace',
+        workspace: resumed.workspace,
+      }))
+    ) {
+      return null
+    }
   } else if (resumable.outcome === 'admitted') {
-    return resumable.workspace
+    return (await admission.verifyBinding(description, {
+      kind: 'workspace',
+      workspace: resumable.workspace,
+    }))
+      ? resumable.workspace
+      : null
   }
   admission = createAdmission()
   reopened = await admission.inspect({
     kind: 'reopen',
     canonicalRoot: receipt.plan.target.canonicalTarget,
   })
-  return reopened.outcome === 'admitted' ? reopened.workspace : null
+  return reopened.outcome === 'admitted' &&
+    (await admission.verifyBinding(description, {
+      kind: 'workspace',
+      workspace: reopened.workspace,
+    }))
+    ? reopened.workspace
+    : null
+}
+
+async function reopenReceiptWorkspace(
+  receipt: PendingSetupReceipt,
+  createAdmission: () => RestorableSemesterWorkspaceAdmission,
+): Promise<AdmittedSemesterWorkspace | null> {
+  const admission = createAdmission()
+  const inspection = await admission.inspect({
+    kind: 'reopen',
+    canonicalRoot: receipt.plan.target.canonicalTarget,
+  })
+  if (inspection.outcome !== 'admitted') return null
+  return (await admission.verifyBinding(receiptDescription(receipt), {
+    kind: 'workspace',
+    workspace: inspection.workspace,
+  }))
+    ? inspection.workspace
+    : null
 }
 
 function approvedEnvelope(

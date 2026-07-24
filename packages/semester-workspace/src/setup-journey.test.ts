@@ -18,6 +18,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import {
+  createSemesterWorkspaceAdmission,
   createSemesterWorkspaceAdmissionForTesting,
 } from './admission.js'
 import type {
@@ -37,6 +38,7 @@ import {
 } from './setup-journey.js'
 import {
   captureCanonicalWorkspaceBundleSource,
+  materializeWorkspaceBundle,
   verifyWorkspaceBundle,
 } from './workspace-bundle.js'
 import { verifyWorkspaceStaticContext } from './workspace-context.js'
@@ -447,6 +449,74 @@ test('different plans, expired parent authority, and target collision fail close
   })
 })
 
+test('an approved receipt never adopts a separately admitted workspace at the same target', async () => {
+  const fixture = await createJourneyFixture('foreign-admitted-target')
+  try {
+    let interrupted = false
+    const journey = fixture.createJourney({
+      fault(point) {
+        if (!interrupted && point === 'after_approved_commit') {
+          interrupted = true
+          throw new Error('approved-response-lost')
+        }
+      },
+    })
+    const confirmation = await confirmationFor(journey, fixture.input)
+    await assert.rejects(
+      journey.reconcile({
+        kind: 'approve',
+        setupPlanId: confirmation.setupPlanId,
+      }),
+      /approved-response-lost/,
+    )
+
+    const foreignAdmission = createSemesterWorkspaceAdmission()
+    const foreignInspection = await foreignAdmission.inspect({
+      kind: 'create',
+      parent: fixture.authority,
+      semester: {
+        yearLevel: 4,
+        term: { key: 'summer', displayName: '여름학기' },
+      },
+      leafName: fixture.input.leafName,
+    })
+    assert.equal(foreignInspection.outcome, 'new_target')
+    if (foreignInspection.outcome !== 'new_target') {
+      assert.fail('foreign workspace create plan required')
+    }
+    const foreign = await foreignAdmission.apply(
+      foreignInspection.plan,
+    )
+    assert.equal(foreign.outcome, 'created')
+    if (foreign.outcome !== 'created') {
+      assert.fail('foreign admitted workspace required')
+    }
+    const before = await snapshotTree(foreign.workspace.canonicalRoot)
+
+    const result = await fixture
+      .createJourney()
+      .reconcile({ kind: 'launch' })
+
+    assert.equal(result.outcome, 'recovery_required')
+    assert.deepEqual(
+      await snapshotTree(foreign.workspace.canonicalRoot),
+      before,
+    )
+    const receipt = await approvedReceipt(fixture.store)
+    assert.equal(receipt.lifecycle.phase, 'approved')
+    assert.notEqual(
+      receipt.workspace.workspaceId,
+      foreign.workspace.workspaceId,
+    )
+    assert.notDeepEqual(
+      receipt.plan.semester,
+      foreign.workspace.manifest.semester,
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('owned partial admission exposes resumable recovery and discard commits intent before unlink', async () => {
   const fixture = await createJourneyFixture('owned-discard')
   try {
@@ -527,6 +597,58 @@ test('owned partial admission exposes resumable recovery and discard commits int
     await assert.rejects(lstat(target), hasCode('ENOENT'))
   } finally {
     await fixture.cleanup()
+  }
+})
+
+test('explicit resume never applies an owned partial from a different durable receipt binding', async () => {
+  const fixture = await createOwnedPartialFixture(
+    'owned-partial-receipt-mismatch',
+  )
+  try {
+    const observed = await fixture.base.store.read()
+    assert.equal(observed.status, 'current')
+    if (
+      observed.status !== 'current' ||
+      observed.envelope.state.kind !== 'pending'
+    ) {
+      assert.fail('approved receipt required')
+    }
+    const receipt = observed.envelope.state.receipt
+    const forged: SetupStateEnvelope = {
+      formatVersion: 1,
+      revision: observed.envelope.revision + 1,
+      state: {
+        kind: 'pending',
+        receipt: {
+          ...receipt,
+          workspace: {
+            ...receipt.workspace,
+            workspaceId: `workspace_${'f'.repeat(32)}`,
+          },
+        },
+      },
+    }
+    const written = await fixture.base.store.compareAndReplace({
+      expectedRevisionToken: observed.revisionToken,
+      envelope: forged,
+    })
+    assert.equal(written.status, 'written')
+    const before = await snapshotTree(fixture.target)
+
+    const result = await fixture.journey.reconcile({
+      kind: 'recover',
+      recoveryId: receipt.setupId,
+      action: 'resume',
+    })
+
+    assert.equal(result.outcome, 'recovery_required')
+    assert.deepEqual(await snapshotTree(fixture.target), before)
+    assert.equal(
+      (await approvedReceipt(fixture.base.store)).lifecycle.phase,
+      'approved',
+    )
+  } finally {
+    await fixture.base.cleanup()
   }
 })
 
@@ -757,6 +879,224 @@ test('prepared relaunch binds the verified bundle to the exact durable release a
     )
   } finally {
     await fixture.cleanup()
+  }
+})
+
+test('prepared relaunch rejects a separately admitted and fully bundled workspace at the same target', async () => {
+  const fixture = await createJourneyFixture('prepared-foreign-target')
+  try {
+    const journey = fixture.createJourney()
+    const confirmation = await confirmationFor(journey, fixture.input)
+    const approved = await journey.reconcile({
+      kind: 'approve',
+      setupPlanId: confirmation.setupPlanId,
+    })
+    assert.equal(
+      approved.outcome,
+      'resumed',
+      JSON.stringify(approved),
+    )
+    const receipt = await preparedReceipt(fixture.store)
+    const target = receipt.plan.target.canonicalTarget
+    await rename(target, `${target}-original`)
+
+    const foreignAdmission = createSemesterWorkspaceAdmission()
+    const foreignInspection = await foreignAdmission.inspect({
+      kind: 'create',
+      parent: fixture.authority,
+      semester: {
+        yearLevel: 4,
+        term: { key: 'summer', displayName: '여름학기' },
+      },
+      leafName: fixture.input.leafName,
+    })
+    assert.equal(foreignInspection.outcome, 'new_target')
+    if (foreignInspection.outcome !== 'new_target') {
+      assert.fail('foreign workspace create plan required')
+    }
+    const foreign = await foreignAdmission.apply(
+      foreignInspection.plan,
+    )
+    assert.equal(foreign.outcome, 'created')
+    if (foreign.outcome !== 'created') {
+      assert.fail('foreign admitted workspace required')
+    }
+    const materialized = await materializeWorkspaceBundle({
+      workspace: foreign.workspace,
+      source: fixture.source,
+    })
+    assert.equal(materialized.status, 'verified')
+    if (materialized.status !== 'verified') {
+      assert.fail('foreign workspace bundle must materialize')
+    }
+    assert.equal(
+      materialized.descriptorSha256,
+      fixture.source.descriptorSha256,
+    )
+    assert.equal(
+      materialized.completeTreeSha256,
+      fixture.source.completeTreeSha256,
+    )
+    const before = await snapshotTree(target)
+
+    const result = await fixture
+      .createJourney()
+      .reconcile({ kind: 'launch' })
+
+    assert.equal(result.outcome, 'setup_state_conflict')
+    assert.deepEqual(await snapshotTree(target), before)
+    assert.equal(
+      (await preparedReceipt(fixture.store)).workspace.workspaceId,
+      receipt.workspace.workspaceId,
+    )
+    assert.notEqual(
+      receipt.workspace.workspaceId,
+      foreign.workspace.workspaceId,
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('prepared relaunch rejects noncanonical durable receipt authority fields', async (t) => {
+  const cases = [
+    {
+      name: 'semester identity',
+      mutate(receipt: SetupStateEnvelope) {
+        if (receipt.state.kind !== 'pending') assert.fail()
+        return {
+          ...receipt.state.receipt,
+          plan: {
+            ...receipt.state.receipt.plan,
+            semester: {
+              yearLevel: 4,
+              term: {
+                key: 'summer',
+                displayName: '여름학기',
+              },
+            },
+          },
+        }
+      },
+    },
+    {
+      name: 'workspace identity',
+      mutate(receipt: SetupStateEnvelope) {
+        if (receipt.state.kind !== 'pending') assert.fail()
+        return {
+          ...receipt.state.receipt,
+          workspace: {
+            ...receipt.state.receipt.workspace,
+            workspaceId: `workspace_${'f'.repeat(32)}`,
+          },
+        }
+      },
+    },
+    {
+      name: 'plan canonical digest',
+      mutate(receipt: SetupStateEnvelope) {
+        if (receipt.state.kind !== 'pending') assert.fail()
+        return {
+          ...receipt.state.receipt,
+          plan: {
+            ...receipt.state.receipt.plan,
+            canonicalBytesSha256: '0'.repeat(64),
+          },
+        }
+      },
+    },
+    {
+      name: 'root marker digest',
+      mutate(receipt: SetupStateEnvelope) {
+        if (receipt.state.kind !== 'pending') assert.fail()
+        return {
+          ...receipt.state.receipt,
+          workspace: {
+            ...receipt.state.receipt.workspace,
+            rootMarkerSha256: '0'.repeat(64),
+          },
+        }
+      },
+    },
+    {
+      name: 'owned scaffold digest',
+      mutate(receipt: SetupStateEnvelope) {
+        if (receipt.state.kind !== 'pending') assert.fail()
+        return {
+          ...receipt.state.receipt,
+          workspace: {
+            ...receipt.state.receipt.workspace,
+            ownedScaffoldPlanSha256: '0'.repeat(64),
+          },
+        }
+      },
+    },
+    {
+      name: 'initial aggregate digest',
+      mutate(receipt: SetupStateEnvelope) {
+        if (receipt.state.kind !== 'pending') assert.fail()
+        return {
+          ...receipt.state.receipt,
+          workspace: {
+            ...receipt.state.receipt.workspace,
+            expectedInitialAggregateSha256: '0'.repeat(64),
+          },
+        }
+      },
+    },
+  ] as const
+
+  for (const testCase of cases) {
+    await t.test(testCase.name, async () => {
+      const fixture = await createJourneyFixture(
+        `prepared-authority-${testCase.name.replaceAll(' ', '-')}`,
+      )
+      try {
+        const journey = fixture.createJourney()
+        const confirmation = await confirmationFor(
+          journey,
+          fixture.input,
+        )
+        const approved = await journey.reconcile({
+          kind: 'approve',
+          setupPlanId: confirmation.setupPlanId,
+        })
+        assert.equal(approved.outcome, 'resumed')
+        const observed = await fixture.store.read()
+        assert.equal(observed.status, 'current')
+        if (
+          observed.status !== 'current' ||
+          observed.envelope.state.kind !== 'pending'
+        ) {
+          assert.fail('prepared receipt required')
+        }
+        const target =
+          observed.envelope.state.receipt.plan.target.canonicalTarget
+        const before = await snapshotTree(target)
+        const forged: SetupStateEnvelope = {
+          formatVersion: 1,
+          revision: observed.envelope.revision + 1,
+          state: {
+            kind: 'pending',
+            receipt: testCase.mutate(observed.envelope),
+          },
+        }
+        const written = await fixture.store.compareAndReplace({
+          expectedRevisionToken: observed.revisionToken,
+          envelope: forged,
+        })
+        assert.equal(written.status, 'written')
+
+        const result = await fixture
+          .createJourney()
+          .reconcile({ kind: 'launch' })
+
+        assert.equal(result.outcome, 'setup_state_conflict')
+        assert.deepEqual(await snapshotTree(target), before)
+      } finally {
+        await fixture.cleanup()
+      }
+    })
   }
 })
 
