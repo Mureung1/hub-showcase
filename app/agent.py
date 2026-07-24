@@ -92,6 +92,9 @@ def _read_source(paper: dict, need_fulltext: bool) -> tuple[str, bool]:
 
     PDF 다운로드/추출이 실패하면(fetch_fulltext가 None 반환) 예외 대신
     초록으로 자동 대체한다 — used_fulltext도 False로 되돌린다.
+
+    반환값의 source_text가 요약(summarize) 3-1(원문 가져오기)의 완료
+    기준을 그대로 충족한다 — Task 2에서 이미 만든 함수를 재사용한다.
     """
     if not need_fulltext:
         return paper["abstract"], False
