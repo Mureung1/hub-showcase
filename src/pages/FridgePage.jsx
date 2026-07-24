@@ -61,7 +61,7 @@ const CATEGORY_ICON_IMAGES = {
   'meat-seafood': meatSeafoodIcon,
 }
 
-// 진입 화면: 기니가 냉장고를 들여다보며 "어떤 재료가 있더랑?" 묻고,
+// 진입 화면: 끼니가 냉장고를 들여다보며 "어떤 재료가 있더랑?" 묻고,
 // 사용자가 아래 카드(말풍선에 대답하는 구도)에서 카테고리 탭을 골라가며 재료 칩을 고르고
 // "완료"를 누르면 홈으로 넘어간다. (prototype-v2 fridge-flow 레이아웃을 그대로 포팅)
 function FridgePage() {
@@ -93,7 +93,7 @@ function FridgePage() {
     )
     if (!hasRealIngredient) {
       const proceed = window.confirm(
-        '어라, 조미료 말고 진짜 재료는 하나도 안 골랐더랑! 이대로 가면 기니가 요리를 잘 못 찾을 수도 있어요. 그래도 홈으로 갈까요?',
+        '어라, 조미료 말고 진짜 재료는 하나도 안 골랐더랑! 이대로 가면 끼니가 요리를 잘 못 찾을 수도 있어요. 그래도 홈으로 갈까요?',
       )
       if (!proceed) return
     }
@@ -118,12 +118,12 @@ function FridgePage() {
         <div className="relative z-20 mx-auto w-full max-w-[420px] px-4">
           <img
             src={fridgePhoto}
-            alt="끼니픽 — 문 열린 냉장고를 들여다보는 기니"
+            alt="끼니픽 — 문 열린 냉장고를 들여다보는 끼니"
             className="w-full select-none"
           />
         </div>
 
-        {/* 기니의 말풍선에 대답하는 카드 — 기니 앞발이 사진 하단에 걸쳐 카드 위로 나오도록 사진 쪽 z-index를 더 높게 둠 */}
+        {/* 끼니의 말풍선에 대답하는 카드 — 끼니 앞발이 사진 하단에 걸쳐 카드 위로 나오도록 사진 쪽 z-index를 더 높게 둠 */}
         <section className="relative z-10 mx-auto -mt-2.5 w-full max-w-[820px] rounded-container border-4 border-ink bg-bg-surface p-4 shadow-[8px_8px_0_rgba(91,65,48,0.22)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">

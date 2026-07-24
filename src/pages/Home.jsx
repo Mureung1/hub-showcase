@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { mockRecipes } from '../data/mockRecipes'
 import { categories, TYPE_LABELS } from '../data/categories'
 import { TIME_FILTERS } from '../data/timeFilters'
@@ -21,7 +21,7 @@ import FilterChipGroup from '../components/FilterChipGroup'
 import mascotWave from '../assets/mascot-wave.png'
 // 임시 목업 일러스트 — 최종본 아님, 나중에 교체 예정 (checklist.md 참고)
 import kkinniCharacter from '../assets/끼니캐릭터.png'
-import mascotKkini from '../assets/마스코트-끼니 - 여백 줄임.png'
+import loadingAnimation from '../assets/로딩-애니메이션.mp4'
 
 const SORT_OPTIONS = [
   { id: 'price-asc', label: '가격 낮은순' },
@@ -37,6 +37,10 @@ const typeOptions = Object.entries(TYPE_LABELS).map(([id, label]) => ({ id, labe
 const timeOptions = TIME_FILTERS.map(({ id, label }) => ({ id, label }))
 
 function Home() {
+  const [searchParams] = useSearchParams()
+  // 헤더 "로딩" 링크(?loading=1)로 들어오면 fetch 없이 로딩 화면만 계속 보여준다 — 실제 재료를
+  // 고르지 않고도 로딩 UI를 바로 확인/작업할 수 있게 하는 개발용 진입점 (checklist.md 범위 아님).
+  const forceLoading = searchParams.get('loading') === '1'
   const [readyRecipes, setReadyRecipes] = useState([])
   const [shoppingRecipes, setShoppingRecipes] = useState([])
   const [otherRecipes, setOtherRecipes] = useState([])
@@ -58,6 +62,8 @@ function Home() {
   }
 
   useEffect(() => {
+    if (forceLoading) return // status가 초기값 'loading'에서 안 바뀌게 그대로 둔다
+
     const selectedIds = loadFridgeSelection()
     // 조미료(category: 'seasoning')는 거의 모든 레시피에 들어가 있어서 추천 매칭에 포함시키면
     // 실제로 가진 재료와 상관없이 추천 목록이 부풀려진다 — fridgeIngredients.js 상단 주석 참고.
@@ -65,34 +71,33 @@ function Home() {
       .filter((ingredient) => selectedIds.includes(ingredient.id) && ingredient.category !== 'seasoning')
       .flatMap((ingredient) => ingredient.matchNames)
 
-    if (ownedMatchNames.length === 0) {
-      setReadyRecipes([])
-      setShoppingRecipes([])
-      setOtherRecipes([])
-      setStatus('done')
-      return
-    }
+    // fetch가 너무 빨리 끝나서 "찾는 중..." 문구가 눈에 안 보이고 지나가는 문제 — 최소 노출 시간을 둬서
+    // 실제 조회 시간과 무관하게 항상 이 시간만큼은 로딩 문구가 보이게 한다.
+    const MIN_LOADING_MS = 1200
+    const minDelay = new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS))
 
-    fetch(`/api/recipes?matchNames=${ownedMatchNames.join(',')}`)
-      .then((res) => res.json())
-      .then((data) => {
-        const { ready, shopping, others } = groupRecipesByMissingIngredients(
-          data.recipes ?? [],
-          ownedMatchNames,
-          SEASONING_MATCH_NAMES,
-        )
-        setReadyRecipes(ready)
-        setShoppingRecipes(shopping)
-        setOtherRecipes(others)
-        setStatus('done')
-      })
-      .catch(() => {
+    if (ownedMatchNames.length === 0) {
+      minDelay.then(() => {
         setReadyRecipes([])
         setShoppingRecipes([])
         setOtherRecipes([])
         setStatus('done')
       })
-  }, [])
+      return
+    }
+
+    const fetchRecipes = fetch(`/api/recipes?matchNames=${ownedMatchNames.join(',')}`)
+      .then((res) => res.json())
+      .then((data) => groupRecipesByMissingIngredients(data.recipes ?? [], ownedMatchNames, SEASONING_MATCH_NAMES))
+      .catch(() => ({ ready: [], shopping: [], others: [] }))
+
+    Promise.all([fetchRecipes, minDelay]).then(([{ ready, shopping, others }]) => {
+      setReadyRecipes(ready)
+      setShoppingRecipes(shopping)
+      setOtherRecipes(others)
+      setStatus('done')
+    })
+  }, [forceLoading])
 
   function applyFilters(recipes) {
     // 정렬 기준(가격순)만 다르고 나머지(음식종류/시간) 필터 로직은 selectors.js를 그대로 재사용 —
@@ -120,6 +125,21 @@ function Home() {
       </div>
 
       <main className="mx-auto max-w-[960px] pb-8">
+        {forceLoading ? (
+          // 개발용 로딩 화면(?loading=1) — 배너·필터·전체 둘러보기 없이 로딩 표시만 확인
+          <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-8">
+            <video
+              src={loadingAnimation}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full select-none rounded-card"
+            />
+            <p className="font-display text-sm text-text-secondary">끼니가 냉장고 재료로 만들 요리를 찾는 중...</p>
+          </div>
+        ) : (
+          <>
         <PromoBanner />
 
         <div className="mt-6 flex flex-wrap gap-6 px-8">
@@ -151,8 +171,8 @@ function Home() {
 
         {status === 'loading' && (
           <div className="mt-4 flex items-center justify-center gap-2 px-8">
-            <img src={mascotKkini} alt="" className="w-10 select-none" />
-            <p className="font-display text-sm text-text-secondary">기니가 냉장고 재료로 만들 요리를 찾는 중...</p>
+            <video src={loadingAnimation} autoPlay loop muted playsInline className="w-10 select-none" />
+            <p className="font-display text-sm text-text-secondary">끼니가 냉장고 재료로 만들 요리를 찾는 중...</p>
           </div>
         )}
 
@@ -163,7 +183,7 @@ function Home() {
               <div>
                 <p className="font-display text-lg font-bold text-text-primary">어라, 딱 맞는 요리를 못 찾았더랑!</p>
                 <p className="mt-1 font-display text-sm text-text-secondary">
-                  조미료 말고 진짜 재료(채소·고기·가공식품 등)를 골라주면 기니가 딱 맞는 요리를 찾아드릴게요.
+                  조미료 말고 진짜 재료(채소·고기·가공식품 등)를 골라주면 끼니가 딱 맞는 요리를 찾아드릴게요.
                 </p>
               </div>
               <Link
@@ -301,6 +321,8 @@ function Home() {
             />
           ))}
         </ol>
+          </>
+        )}
       </main>
     </div>
   )
