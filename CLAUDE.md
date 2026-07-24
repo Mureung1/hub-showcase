@@ -72,6 +72,7 @@ Conventional Commits(`type: 영어 요약`, 예: `feat: add job recommendation f
 - `docs/variables.css` — 위 디자인 시스템을 CSS 변수(`:root`)로 옮긴 파일. 실제 스타일링 시 여기 정의된 변수를 사용한다.
 - `docs/design-skill.md` — 새 화면을 디자인/구현할 때 지켜야 할 원칙과 일관성 체크리스트. 화면을 만들고 나면 이 문서의 체크리스트로 검토한다.
 - `docs/data-model.md` — Supabase `profiles` 테이블 스키마 설계(컬럼/타입/생성 SQL, camelCase↔snake_case 매핑). T2-b 실제 생성과 T6 insert 구현의 기준 문서.
+- `docs/workflow.md` — 3주차 금요일 "워크플로우 정리와 발표" 미션 산출물. AI와 일한 기본 사이클(이슈 먼저→planning-agent로 쪼개기→구현→대상별 검증→문서 갱신), 쓴 Skill/Agent, 발표용 요약 정리.
 
 ## PR 워크플로우
 
