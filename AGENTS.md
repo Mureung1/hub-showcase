@@ -15,6 +15,8 @@
 - 디자인 시스템: @docs/design-system.md
 - 개발 환경 결정: @docs/dev-setup.md
 - 디자인 Skill: @docs/skills/trusted-place-design/SKILL.md
+- 코드 검증 Skill: @docs/skills/code-verification/SKILL.md
+- AI Agent Workflow: @docs/ai-workflow.md
 
 ## 핵심 사용자 가치
 

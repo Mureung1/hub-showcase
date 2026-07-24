@@ -11,6 +11,7 @@ jest.mock("./supabaseClient", () => ({
       signOut: async () => ({ error: null }),
       signInWithPassword: jest.fn(),
       signUp: jest.fn(),
+      updateUser: jest.fn(),
     },
   },
   toAppUser: (user) => user ? { id: user.id, email: user.email, name: user.user_metadata?.display_name || user.email } : null,
@@ -101,4 +102,28 @@ test("로그인 사용자는 별점 없이 영수증 리뷰 작성 화면을 이
   mockAuthUser = null;
   sessionStorage.removeItem("jigeum-review:selected-place");
   localStorage.removeItem("jigeum-review:test-analyses");
+});
+
+test("마이페이지에서 닉네임을 변경하고 홈과 지도 탐색을 하나로 표시한다", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ user: { id: "user-1", email: "test@example.com", name: "새닉네임" } }),
+  });
+  mockAuthUser = { id: "user-1", email: "test@example.com", user_metadata: { display_name: "테스터" } };
+  window.history.pushState({}, "", "/mypage");
+  render(<App />);
+
+  fireEvent.click(await screen.findByRole("button", { name: "닉네임 변경" }));
+  fireEvent.change(screen.getByLabelText("닉네임"), { target: { value: "새닉네임" } });
+  fireEvent.click(screen.getByRole("button", { name: "저장" }));
+
+  expect(await screen.findByRole("status")).toHaveTextContent("닉네임이 변경되었습니다.");
+  expect(screen.getByRole("heading", { name: "새닉네임" })).toBeInTheDocument();
+  expect(screen.getAllByText("홈").length).toBeGreaterThan(0);
+  expect(screen.queryByText("지도 탐색")).not.toBeInTheDocument();
+  expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/users/me"), expect.objectContaining({ method: "PATCH" }));
+
+  global.fetch = originalFetch;
+  mockAuthUser = null;
 });

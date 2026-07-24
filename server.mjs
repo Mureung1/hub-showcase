@@ -7,6 +7,7 @@ import express from "express";
 import cors from "cors";
 import { createClient } from "@supabase/supabase-js";
 import { analyzeReviewSentiment, validateReviewContent } from "./server/sentimentService.mjs";
+import { normalizeDisplayName } from "./server/profileService.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 4000);
@@ -182,8 +183,12 @@ async function handleProfileUpdate(request, response) {
   const authenticatedUser = await getAuthenticatedUser(request);
   if (!authenticatedUser) return sendJson(request, response, 401, { message: "로그인이 필요합니다." });
   const body = await readRequestJson(request);
-  const name = String(body.name || "").trim();
-  if (name.length < 2 || name.length > 30) return sendJson(request, response, 400, { message: "이름은 2자 이상 30자 이하로 입력해 주세요." });
+  let name;
+  try {
+    name = normalizeDisplayName(body.name);
+  } catch (error) {
+    return sendJson(request, response, 400, { message: error.message });
+  }
   const { error: profileError } = await supabase.from("profiles").update({ display_name: name }).eq("id", authenticatedUser.id);
   if (profileError) return sendJson(request, response, 502, { message: "프로필을 수정하지 못했습니다." });
   await supabase.auth.admin.updateUserById(authenticatedUser.id, { user_metadata: { display_name: name } });
