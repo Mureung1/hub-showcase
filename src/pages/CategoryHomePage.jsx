@@ -47,6 +47,14 @@ function CategoryHomePage() {
                 </p>
             </header>
 
+            {/* 카테고리(unix/git)가 아니라 실습 상황을 가로지르는 교차 그룹이라, 카테고리
+                그리드에 세 번째 카드로 끼워넣지 않고 별도 진입점으로 둔다. */}
+            <p className="scenario-app-desc">
+                <Link to="/scenarios" className="back-link">
+                    상황별로 찾아보기 →
+                </Link>
+            </p>
+
             {/* 카테고리 카드/링크는 라우팅일 뿐 BE 없이도 동작하므로, 개수 fetch가 로딩 중이거나
                 실패하더라도 그리드 자체는 항상 그린다 — 실패해도 못 보여줄 건 "개수" 하나뿐이다. */}
             <div className="category-select-grid">

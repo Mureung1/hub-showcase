@@ -4,6 +4,7 @@
 // 원본 파일(src/data/commands.js)은 삭제하지 않는다 — indexCommands.js가 여전히 이 파일을 참조한다.
 import 'dotenv/config';
 import { commands, CATEGORY_LABELS } from '../../../src/data/commands.js';
+import { scenarios } from '../../../src/data/scenarios.js';
 import { supabase } from '../config/supabase.js';
 
 // CATEGORY_LABELS({ unix: '유닉스 명령어', git: 'Git 명령어' })를
@@ -26,6 +27,17 @@ export function buildCommandRows(commandList) {
         description,
         options,
         examples,
+    }));
+}
+
+// scenarios.js 배열 원소를 scenarios 테이블 행 형태로 바꾸는 순수 함수.
+// command_ids는 JS 배열 그대로 넘기면 supabase-js가 JSONB로 직렬화한다(options/examples와 동일).
+export function buildScenarioRows(scenarioList) {
+    return scenarioList.map(({ id, title, description, command_ids }) => ({
+        id,
+        title,
+        description,
+        command_ids,
     }));
 }
 
@@ -55,6 +67,16 @@ async function main() {
         throw commandError;
     }
     console.log(`commands 업로드 완료: ${commandRows.length}개`);
+
+    // 3단계: scenarios 업로드. commands와 달리 FK 관계가 없어(commands 이후일 필요 없음)
+    // 순서를 맞출 필요는 없지만, commands가 먼저 들어가 있어야 화면에서 링크가 바로 유효하므로
+    // 그대로 마지막 순서를 유지한다.
+    const scenarioRows = buildScenarioRows(scenarios);
+    const { error: scenarioError } = await supabase.from('scenarios').upsert(scenarioRows);
+    if (scenarioError) {
+        throw scenarioError;
+    }
+    console.log(`scenarios 업로드 완료: ${scenarioRows.length}개`);
 }
 
 // main()이 정상적으로 끝난 경우엔 이 catch가 실행되지 않고 스크립트가 조용히 종료되고,

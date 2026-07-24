@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CATEGORY_LABELS } from '../data/commands';
 import { fetchCommandById } from '../services/commandsService';
+import { fetchScenarios } from '../services/scenariosService';
 
 function ClipboardIcon() {
     return (
@@ -26,6 +27,7 @@ function CommandDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null); // 네트워크/서버 오류 메시지 — "존재하지 않는 id"(404)와는 다른 경우
     const [copiedCommand, setCopiedCommand] = useState(null);
+    const [relatedScenarios, setRelatedScenarios] = useState([]); // 이 명령어가 속한 시나리오들("관련 상황" 섹션용)
 
     useEffect(() => {
         // id가 바뀔 때마다(다른 명령어 상세로 이동) 이전 요청의 결과(command/error)가 남아있으면
@@ -39,6 +41,13 @@ function CommandDetailPage() {
             .then((data) => setCommand(data))
             .catch((err) => setError(err.message))
             .finally(() => setIsLoading(false));
+
+        // "관련 상황"은 부가 정보라, 이 fetch가 실패해도 상세 페이지 자체(위 error)는 영향받지
+        // 않게 별도로 처리한다 — 실패하면 그냥 빈 배열로 두고 섹션이 안 보일 뿐이다(graceful degradation,
+        // 대문 화면의 BE 다운 시 개수만 실패 표시하는 것과 같은 원칙).
+        fetchScenarios()
+            .then((scenarios) => setRelatedScenarios(scenarios.filter((s) => s.command_ids.includes(id))))
+            .catch(() => setRelatedScenarios([]));
     }, [id]);
 
     const handleCopy = async (text) => {
@@ -132,6 +141,19 @@ function CommandDetailPage() {
                                     </div>
                                     <p className="example-desc">{example.desc}</p>
                                 </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {relatedScenarios.length > 0 && (
+                    <section className="detail-section">
+                        <h2 className="detail-section-title">관련 상황</h2>
+                        <div className="scenario-badge-list">
+                            {relatedScenarios.map((scenario) => (
+                                <Link key={scenario.id} to={`/scenarios/${scenario.id}`} className="scenario-badge">
+                                    {scenario.title}
+                                </Link>
                             ))}
                         </div>
                     </section>

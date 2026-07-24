@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import searchRouter from "./routes/search.js";
 import commandsRouter from "./routes/commandsRouter.js";
+import scenariosRouter from "./routes/scenariosRouter.js";
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.get("/api/health", (req, res) => {
 // 라우트는 여기부터 추가 (예: app.use("/api/chat", chatRouter))
 app.use("/api/search", searchRouter);
 app.use("/api/commands", commandsRouter);
+app.use("/api/scenarios", scenariosRouter);
 
 // 공통 에러 응답 포맷: { error: { message } }
 app.use((req, res) => {
