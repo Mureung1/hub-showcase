@@ -205,18 +205,25 @@ hub-clone/
 │   ├── public/
 │   └── src/
 │       ├── api/               # FastAPI 요청과 응답 타입
-│       ├── components/        # 공통 UI 컴포넌트
-│       ├── lib/               # Supabase Auth 연결
-│       └── screens/           # 관심사·오늘의 글·미션·나의 깸 화면
+│       ├── app/               # 앱 초기화와 최상위 화면 흐름
+│       ├── assets/            # 앱에서 사용하는 이미지
+│       ├── auth/              # Supabase Auth 연결
+│       ├── features/          # 관심사·오늘의 글·미션·나의 깸 기능
+│       ├── shared/            # 공통 UI·도메인 상수·유틸
+│       └── test/              # 프론트엔드 테스트 설정
 ├── backend/                   # FastAPI API와 RSS 수집기
 │   ├── app/
-│   │   ├── api/               # 인증 의존성과 API 라우트
-│   │   ├── content/           # RSS 수집·파싱·평가·저장 계획
+│   │   ├── api/               # 인증 의존성과 최상위 API 라우터
+│   │   ├── features/          # 글·관심사·미션 기록 기능
+│   │   ├── content/           # RSS 수집·파싱·평가·저장 파이프라인
 │   │   ├── core/              # 설정과 공통 오류
-│   │   ├── db/                # Supabase client
+│   │   ├── infrastructure/    # Supabase 등 외부 시스템 연결
 │   │   ├── jobs/              # 콘텐츠 수집 CLI
-│   │   └── schemas/           # API 요청·응답 스키마
-│   └── tests/                 # 백엔드 테스트
+│   │   └── shared/            # 기능 간 공통 타입과 응답 스키마
+│   └── tests/
+│       ├── api/               # FastAPI 엔드포인트 테스트
+│       ├── content/           # 콘텐츠 수집 파이프라인 테스트
+│       └── features/          # 기능 서비스 단위 테스트
 ├── supabase/
 │   ├── migrations/            # DB 스키마와 RPC 변경 이력
 │   ├── seeds/                 # 콘텐츠 소스 seed

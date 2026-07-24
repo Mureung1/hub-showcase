@@ -7,7 +7,7 @@ parser·scoring 등 변환 로직은 DB를 모르고, DB 접근은 이 모듈에
 from __future__ import annotations
 
 from app.content.models import PlannedItem
-from app.db.supabase import create_admin_client
+from app.infrastructure.supabase import create_admin_client
 
 
 def fetch_source_row(source_id: str) -> dict | None:
