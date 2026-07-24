@@ -17,6 +17,7 @@ export * from './v3-codec.js'
 export {
   WorkspaceBundleSourceError,
   captureCanonicalWorkspaceBundleSource,
+  captureWorkspaceBundleSourceAt,
   materializeWorkspaceBundle,
   recoverMissingWorkspaceBundle,
   verifyWorkspaceBundle,

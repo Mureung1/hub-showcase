@@ -15,7 +15,8 @@
   "scripts": {
     "build": "tsc",
     "test": "NODE_OPTIONS=--conditions=development tsx --test \"src/**/*.test.ts\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:package-root": "npm run build && tsx src/testing/verify-built-package-root.ts"
   },
   "dependencies": {
     "tar-stream": "3.2.0"

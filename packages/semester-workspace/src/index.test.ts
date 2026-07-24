@@ -26,6 +26,10 @@ test('semester workspace package exposes admission and bundle/context Modules', 
     'function',
   )
   assert.equal(
+    typeof semesterWorkspace.captureWorkspaceBundleSourceAt,
+    'function',
+  )
+  assert.equal(
     typeof semesterWorkspace.materializeWorkspaceBundle,
     'function',
   )
@@ -56,6 +60,23 @@ test('semester workspace package exposes admission and bundle/context Modules', 
   assert.equal(
     'createSemesterWorkspaceAdmissionForTesting' in semesterWorkspace,
     false,
+  )
+  assert.equal(
+    'materializeWorkspaceBundleWithTestOptions' in semesterWorkspace,
+    false,
+  )
+  assert.equal(
+    'recoverMissingWorkspaceBundleWithTestOptions' in semesterWorkspace,
+    false,
+  )
+})
+
+test('root custom bundle capture is canonical-equivalent at the package resource root', async () => {
+  const resourceRoot = new URL('../resources/workspace/', import.meta.url)
+
+  assert.deepEqual(
+    await semesterWorkspace.captureWorkspaceBundleSourceAt(resourceRoot),
+    await semesterWorkspace.captureCanonicalWorkspaceBundleSource(),
   )
 })
 
