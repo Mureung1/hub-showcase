@@ -2,6 +2,8 @@
 
 CareerSignal은 채용공고의 기준선과 편차를 해석해, 직무·기업군이 실제로 원하는 수준과 준비 방법을 알려주는 대학생 진로탐색 리서치 에이전트다.
 
+네이버 AI Agent Challenge에서 진행하는 개인 프로젝트다.
+
 - 정적 프로토타입 데모: https://careersignal-prototype.vercel.app/
 - 프로토타입 데이터는 백엔드 신입·주니어 공고 30건을 가정한 mock 리서치다.
 
