@@ -3,6 +3,7 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  readdir,
   realpath,
   rm,
   symlink,
@@ -43,6 +44,7 @@ test('persistent dogfood profile uses an empty external workspace and preserves 
       profileRoot: canonicalProfileRoot,
       workspaceRoot: canonicalWorkspaceRoot,
     })
+    assert.deepEqual(await readdir(first.workspaceRoot), [])
     const productStateRoot = path.join(first.workspaceRoot, '.ay-ple')
     await mkdir(productStateRoot)
     await writeFile(
@@ -135,18 +137,13 @@ test('existing dogfood data requires explicit one-time adoption and remains unch
 test('dogfood profile resolves a symlinked parent before package overlap checks', async () => {
   const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-dogfood-test-'))
   const packageRoot = path.join(testRoot, 'package')
-  const sampleRoot = path.join(
-    packageRoot,
-    'apps/chat-shell/e2e/fixtures/first-assignment-semester-workspace',
-  )
   const packageAlias = path.join(testRoot, 'package-alias')
   const profileRoot = path.join(packageAlias, 'profile')
   const workspaceRoot = path.join(testRoot, 'workspace')
 
   try {
-    await mkdir(sampleRoot, { recursive: true })
+    await mkdir(packageRoot)
     await mkdir(workspaceRoot)
-    await writeFile(path.join(sampleRoot, 'sample.txt'), 'sample\n', 'utf8')
     await symlink(packageRoot, packageAlias)
 
     await assert.rejects(

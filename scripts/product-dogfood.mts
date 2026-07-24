@@ -30,7 +30,7 @@ type ProductDevelopmentStarter = (options: {
   readonly environment: NodeJS.ProcessEnv
 }) => Promise<void>
 
-export type DogfoodProfile = {
+export type DogfoodRoots = {
   readonly appDataRoot: string
   readonly profileRoot: string
   readonly workspaceRoot: string
@@ -113,7 +113,7 @@ export async function prepareDogfoodProfile(options: {
   readonly packageRoot: string
   readonly profileRoot: string
   readonly workspaceRoot: string
-}): Promise<DogfoodProfile> {
+}): Promise<DogfoodRoots> {
   if (
     !path.isAbsolute(options.packageRoot) ||
     !path.isAbsolute(options.profileRoot) ||
@@ -153,10 +153,10 @@ export async function prepareDogfoodProfile(options: {
     profileRoot,
     'dogfood profile root',
   )
-  const layout = resolveProfileLayout(canonicalProfileRoot, workspaceRoot)
-  await validateProfileLayout(layout)
+  const roots = resolveDogfoodRoots(canonicalProfileRoot, workspaceRoot)
+  await validateDogfoodRoots(roots)
 
-  return layout
+  return roots
 }
 
 async function initializeProfile(profileRoot: string): Promise<void> {
@@ -178,10 +178,10 @@ async function adoptExistingProfile(profileRoot: string): Promise<void> {
   await writeOwnershipMarker(canonicalProfileRoot)
 }
 
-function resolveProfileLayout(
+function resolveDogfoodRoots(
   profileRoot: string,
   workspaceRoot: string,
-): DogfoodProfile {
+): DogfoodRoots {
   const appDataRoot = path.join(profileRoot, 'app-data')
   return {
     appDataRoot,
@@ -190,12 +190,12 @@ function resolveProfileLayout(
   }
 }
 
-async function validateProfileLayout(
-  layout: DogfoodProfile,
+async function validateDogfoodRoots(
+  roots: DogfoodRoots,
 ): Promise<void> {
   await Promise.all([
-    canonicalDirectory(layout.appDataRoot, 'dogfood app data root'),
-    canonicalDirectory(layout.workspaceRoot, 'dogfood SemesterWorkspace'),
+    canonicalDirectory(roots.appDataRoot, 'dogfood app data root'),
+    canonicalDirectory(roots.workspaceRoot, 'dogfood SemesterWorkspace'),
   ])
 }
 
