@@ -312,8 +312,8 @@ React에서는 `document.querySelector`나 직접 `addEventListener`를 사용�
 
 React UI 수정 시 기본 대상은 다음 파일입니다.
 
-- `src/App.jsx`
-- `src/App.css`
+- `frontend/src/App.jsx`
+- `frontend/src/App.css`
 
 디자인 기준 수정 시 대상은 다음 파일입니다.
 

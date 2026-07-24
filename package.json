@@ -5,17 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -n web,api -c cyan,green \"npm:dev:web\" \"npm:dev:api\"",
-    "dev:web": "vite",
-    "dev:api": "node --watch server/index.js",
-    "start": "node server/index.js",
-    "build": "vite build",
+    "dev:web": "vite --config frontend/vite.config.js",
+    "dev:api": "node --watch backend/index.js",
+    "start": "node backend/index.js",
+    "build": "vite build --config frontend/vite.config.js",
     "lint": "oxlint",
     "test": "vitest run",
     "test:watch": "vitest",
     "verify:recommendations": "node scripts/verifyRecommendations.js",
-    "preview": "vite preview"
+    "preview": "vite preview --config frontend/vite.config.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.6",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

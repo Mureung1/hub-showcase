@@ -1,6 +1,6 @@
 import { once } from "node:events";
 
-import { app } from "../server/app.js";
+import { app } from "../backend/app.js";
 
 const server = app.listen(0, "127.0.0.1");
 

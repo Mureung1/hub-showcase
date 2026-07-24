@@ -98,9 +98,9 @@ npm run build
 Codex와 페어 프로그래밍 방식으로 요구사항을 작은 작업으로 나누고, mock 데이터에서 실제 Supabase와 Gemini 연동으로 단계적으로 확장했습니다. AI가 만든 결과를 그대로 사용하지 않고 오류 시나리오와 서버 정책을 테스트로 검증했습니다.
 
 - [전체 AI 개발 Workflow](docs/AI_DEVELOPMENT_WORKFLOW.md)
-- [Agent 개발 규칙](Agent.md)
+- [Agent 개발 규칙](AGENTS.md)
 - [UI Design Skill](DESIGN_SKILL.md)
-- [UI 디자인 기준](design.md)
+- [UI 디자인 기준](DESIGN.md)
 
 ## 프로젝트 문서
 
