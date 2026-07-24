@@ -8,11 +8,11 @@
 
 성숙도: 채택
 
-관련 문서: [Codex App Server 우선 사용 ADR](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [제품 실행 경로 분리 ADR](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [app-owned SemesterWorkspace ADR](../adr/0014-create-app-owned-normalized-semester-workspaces.md), [Official Codex Python SDK ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [single Runtime graph ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [product-only cutover·durable v2 ADR](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [public npx distribution ADR](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), [Codex-managed product account ADR](../adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md), [Codex Chat 구현 지도](codex-chat-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
+관련 문서: [Codex App Server 우선 사용 ADR](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [제품 실행 경로 분리 ADR](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [app-owned SemesterWorkspace ADR](../adr/0014-create-app-owned-normalized-semester-workspaces.md), [Official Codex Python SDK ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [single Runtime graph ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [product-only cutover·durable v2 ADR](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [historical public npx distribution ADR](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), [Codex-managed product account ADR](../adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md), [Codex Chat 구현 지도](codex-chat-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
 
 ## 목적
 
-AY-PLE가 Codex App Server를 built-in local agent engine으로 사용할 때 runtime artifact, process environment, native state와 사용자 `SemesterWorkspace`를 어떻게 분리하는지 설명한다. [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)이 root 소유권을, [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md)가 workspace admission·identity authority를, [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)이 canonical product cutover와 durable current v2 보존 정책을, [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)이 public application↔Runtime binding·delivery authority를, [ADR 0017](../adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md)이 account·credential authority와 pre-workspace Runtime lifecycle을 결정한다.
+AY-PLE가 Codex App Server를 built-in local agent engine으로 사용할 때 runtime artifact, process environment, native state와 사용자 `SemesterWorkspace`를 어떻게 분리하는지 설명한다. [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)이 root 소유권을, [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md)가 workspace admission·identity authority를, [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)이 canonical product cutover와 durable current v2 보존 정책을, [ADR 0017](../adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md)이 account·credential authority와 pre-workspace Runtime lifecycle을 결정한다. [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)은 제거한 public application↔Runtime delivery의 historical 결정이다.
 
 Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저수준 기술 경계는 이 문서가 소유한다. 제품 문제와 작업 조합, package의 exact 동작, 작업 순서는 각각 Product Brief·composition, 구현 지도·package README, Development Backlog를 따른다.
 
@@ -20,7 +20,7 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 
 | 영역 | 현재 product 구현 | 채택한 목표 | 후속 |
 | --- | --- | --- | --- |
-| Runtime stack | `@ay-ple/codex-chat-runtime`이 exact official source, generated SDK, standalone CPython과 native `0.144.4`를 canonical manifest로 검증한 뒤 package-local bundle만 시작한다. | Exact application package의 embedded descriptor가 immutable Runtime release와 canonical manifest를 pin하고, single `RuntimeResolver`가 `appDataRoot`의 verified generation을 `runtimeRoot`로 반환한다. | 다른 platform, Desktop signing·notarization과 automatic updater |
+| Runtime stack | `@ay-ple/codex-chat-runtime`이 exact official source, generated SDK, standalone CPython과 native `0.144.4`를 canonical manifest로 검증한 뒤 package-local bundle만 시작한다. | Repository-local 실행은 이 package-local verified bundle을 그대로 사용한다. 별도 release resolver와 production host는 유지하지 않는다. | Runtime pin upgrade가 실제로 필요할 때의 별도 검증 |
 | Runtime state | Canonical composition이 explicit `appDataRoot` 아래 app-managed `HOME`, `CODEX_HOME`, `CODEX_SQLITE_HOME`, temp/runtime state를 계산·준비하고 root 비중첩을 검증한다. | Runtime-home pair와 기기별 state를 workspace 밖에 두고 caller wiring에서 분리한다. | macOS 기본 app data path와 runtime-home rollover 정책 |
 | Account lifecycle | Runtime package가 official managed ChatGPT Browser login·cancel·logout, fresh account read, transient attempt와 immutable `auth-only | workspace` role을 구현한다. Auth-only role은 owner-only empty bootstrap `cwd`에서 account family만 허용한다. Current Server·Browser는 account transition과 setup route를 아직 조합하지 않아 dogfood UI는 외부 device-auth helper를 사용한다. | Explicit file store를 stable app-managed `CODEX_HOME`에 두고 launch·relaunch의 fresh account read를 authority로 삼는다. Admission 뒤 같은 credential state의 workspace Runtime으로 process tree를 교체한 뒤 Ready를 commit한다. | Credential backend migration, 여러 account·auth mode와 enterprise policy가 실제로 필요할 때의 별도 결정 |
 | 작업 `cwd` | Root startup·Browser activation이 chooser·development override로 연 current-v2 directory를 internal `ready`로 판정해 product thread의 exact native `cwd`로 사용한다. `CODEX_CHAT_WORKSPACE`는 manual-development selection override다. | App이 생성하고 `WorkspaceManifest` validation을 통과한 active `SemesterWorkspace`만 `cwd`가 된다. 사용자는 학기 정보와 생성 위치를 고르며 identity는 `WorkspaceManifest`가 소유한다. | Scaffold·admission 전환과 durable active workspace registry |
@@ -28,13 +28,13 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | Native context | Runtime의 persistent bridge와 one-shot official App Server sidecar가 모두 fixed `project_root_markers=[]`, exact workspace `cwd`와 controlled environment를 사용한다. Sidecar의 `config/read`·`skills/list` raw protocol은 Runtime-private이고 Server는 atomic high-level snapshot만 소비한다. `@ay-ple/semester-workspace`의 bundle verifier와 Server native boundary는 static·effective conflict를 검사하지만 current action/setup composition에는 아직 연결되지 않았다. | Fresh setup이 workspace instruction/Skill bundle을 설치·검증하고 effective native context gate를 통과한 뒤에만 Codex action을 연다. Memory는 명시적 설정과 eligibility 확인 뒤 비권위적 맥락으로만 사용한다. | Memory 활성화·consent·rollover UX |
 | Transport·policy | Local companion이 detached Node→Python→App Server tree를 supervise한다. First Assignment product Turn은 `auto_review + workspace_write`를 explicit하게 보낸다. | Codex execution permission은 AY-PLE Review·`UserConfirmation`과 분리하고 Browser에는 allowlisted product activity만 전달한다. | Interactive native approval UX과 cloud threat model |
 
-Current product startup·install·Runtime command는 legacy env, repository `.ay-ple`, ambient auth/provider, system Python, source checkout이나 `process.cwd()`를 fallback으로 사용하지 않는다. Legacy local data를 탐색·이관·삭제하지 않고 다른 clone·external root의 상태를 추론하지 않는다. Runtime role·managed account lifecycle, v3 workspace admission·bundle verifier와 native-context boundary primitive는 구현됐지만 current Server·Browser composition은 이를 first-run OAuth→scaffold→Runtime transition→Ready 흐름으로 연결하지 않는다. Current chooser·materializer와 product action은 여전히 current v2 directory를 사용하므로 internal `ready`를 adopted `Semester Ready`로 해석하지 않는다. Public application package, embedded release binding, GitHub Runtime asset과 resolver-owned cache도 아직 구현되지 않았다.
+Current product startup·install·Runtime command는 legacy env, repository `.ay-ple`, ambient auth/provider, system Python이나 `process.cwd()`를 fallback으로 사용하지 않는다. Legacy local data를 탐색·이관·삭제하지 않고 다른 clone·external root의 상태를 추론하지 않는다. Runtime role·managed account lifecycle, v3 workspace admission·bundle verifier와 native-context boundary primitive는 구현됐지만 current Server·Browser composition은 이를 first-run OAuth→scaffold→Runtime transition→Ready 흐름으로 연결하지 않는다. Current chooser·materializer와 product action은 여전히 current v2 directory를 사용하므로 internal `ready`를 adopted `Semester Ready`로 해석하지 않는다. Public application host와 Runtime release resolver workspace는 2026-07-24 hard cutover에서 제거했다.
 
 ## 격리 레이어
 
 | 레이어 | 채택한 경계 | 보장하지 않는 것 |
 | --- | --- | --- |
-| Runtime/version | Exact application descriptor가 선택하고 complete-tree verifier를 통과한 immutable Python·SDK·native `runtimeRoot`만 사용 | Codex state, auth와 session 분리 |
+| Runtime/version | `@ay-ple/codex-chat-runtime`의 tracked canonical manifest와 complete-tree verifier를 통과한 package-local Python·SDK·native bundle만 사용 | Codex state, auth와 session 분리 |
 | Runtime environment | Inherited environment 대신 explicit `HOME`, Codex homes, temp와 fixed executable path를 전달 | Container, VM 또는 별도 OS user 수준 격리 |
 | Runtime-home pair | `appDataRoot` 아래 app-managed `CODEX_HOME`과 `CODEX_SQLITE_HOME`을 함께 배치 | 학기별 memory 격리와 사용자 자료 보존 |
 | Account lifecycle | Codex가 managed OAuth·credential을 소유하고 AY-PLE account Module은 fresh managed account를 Browser-safe state로만 투영 | 모든 official Browser URL의 무토큰성, provider connectivity·entitlement와 여러 account mode |
@@ -49,9 +49,9 @@ Current product startup·install·Runtime command는 legacy env, repository `.ay
 
 Root `npm run dev -- --app-data-root <absolute-path>`는 세 root와 Runtime artifact를 직접 조합한다. Caller가 여섯 legacy path를 맞추거나 environment에서 root model을 다시 만들지 않는다. V3 scaffold·`WorkspaceManifest` admission Module은 구현됐지만 현재 composition은 chooser·development materializer가 넘긴 directory와 current-v2 store를 사용하며, workspace registry와 public admission route를 조합하지 않는다.
 
-### 채택한 public target
+### 중단한 public target
 
-아래 표는 public setup·relaunch가 구현해야 할 target 불변 조건이다. 현재 development override가 이 조건을 충족했다는 뜻이 아니다.
+아래 표는 2026-07-23까지 public setup·relaunch target으로 검토한 historical context다. 현재 제품 목표나 구현 불변 조건이 아니다.
 
 | 입력·결과 | 불변 조건 |
 | --- | --- |
@@ -69,7 +69,7 @@ Root `npm run dev -- --app-data-root <absolute-path>`는 세 root와 Runtime art
 | Manual override | `CODEX_CHAT_WORKSPACE`는 current development materializer의 caller-owned selection input일 뿐 public workspace admission, Runtime root, app data 또는 별도 `cwd` authority가 아니다. |
 | Data loss | `appDataRoot`가 사라져도 `RawMaterial`과 confirmed·settled product state를 workspace에서 다시 열 수 있다. |
 
-Current product factory는 Runtime spawn 전과 factory 내부에서 package-local artifact·path를 다시 검증해 TOCTOU drift를 fail closed한다. Public target은 resolver 결과를 소비하되 spawn 경계에서 exact descriptor binding과 complete tree를 다시 확인한다. Child environment는 controlled root와 필수 OS directory만으로 재구성하며 ambient credential·provider·`PYTHONPATH`·dynamic loader variable를 계승하지 않는다.
+Current product factory는 Runtime spawn 전과 factory 내부에서 package-local artifact·path를 다시 검증해 TOCTOU drift를 fail closed한다. Child environment는 controlled root와 필수 OS directory만으로 재구성하며 ambient credential·provider·`PYTHONPATH`·dynamic loader variable를 계승하지 않는다.
 
 ## 제품용 directory 구조
 

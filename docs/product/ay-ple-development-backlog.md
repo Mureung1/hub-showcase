@@ -93,7 +93,8 @@
 
 - [ ] 2026-07-23 public release lane에서 추가된 구현을 감사하고 현재 제품에 필요한 범위를 다시 판정한다.
   - [ ] Landing처럼 확정적으로 제거할 surface, 학업 kernel에 재사용할 기반, historical evidence로만 보존할 artifact를 구분한다.
-  - [ ] Runtime resolver·application host, Browser OAuth·auth-only Runtime, app-owned `SemesterWorkspace` setup·Ready를 각각 `keep | remove | undecided`로 판정하기 전에는 구현 순서나 삭제 범위를 확정하지 않는다.
+  - [x] Runtime resolver와 public application host는 repository-local 실행의 consumer가 없음을 확인하고 tracked graph에서 제거했다.
+  - [ ] Browser OAuth·auth-only Runtime, app-owned `SemesterWorkspace` setup·Ready를 각각 `keep | remove | undecided`로 판정하기 전에는 구현 순서나 삭제 범위를 확정하지 않는다.
   - [ ] 감사 결과를 Product Brief, 구현 지도와 이 backlog에 먼저 반영한 뒤 다음 구현 목표를 정한다.
 
 - [ ] 확인된 사용자 필요에 따라 post-Ready capability를 순서대로 추가한다.
