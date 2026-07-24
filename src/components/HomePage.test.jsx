@@ -5,6 +5,7 @@ import HomePage from "./HomePage.jsx";
 import { apiFetch } from "../lib/api";
 import {
   FOCUS_SESSION_KEY,
+  LEGACY_FOCUS_SESSION_KEY,
   createFocusSession,
 } from "../lib/focusSession.js";
 
@@ -38,18 +39,13 @@ vi.mock("./NudgeModal", () => ({
       <button onClick={onClose}>close-modal</button>
       <button
         onClick={() =>
-          onStart(
-            task.level === 2
-              ? {
-                  taskId: task.id,
-                  title: task.title,
-                  startedAt: "2026-07-23T00:00:00.000Z",
-                  entryLevel: 2,
-                  microTask: "open one paragraph",
-                  reason: task.reason,
-                }
-              : undefined,
-          )
+          onStart({
+            entryMode: "intervention",
+            entryLevel: task.level,
+            microTask: task.level === 1 ? null : "open one paragraph",
+            generationSource: task.level === 1 ? "none" : "rule_based",
+            memoryEvidence: null,
+          })
         }
       >
         start-focus
@@ -62,8 +58,11 @@ vi.mock("./FocusMode", () => ({
   default: ({
     taskId,
     startedAt,
+    entryMode,
     microTask,
     entryLevel,
+    generationSource,
+    memoryEvidence,
     onSessionCompleted,
     onStop,
   }) => (
@@ -71,8 +70,13 @@ vi.mock("./FocusMode", () => ({
       data-testid="focus-mode"
       data-task-id={taskId}
       data-started-at={startedAt ?? ""}
+      data-entry-mode={entryMode ?? ""}
       data-micro-task={microTask ?? ""}
       data-entry-level={entryLevel ?? ""}
+      data-generation-source={generationSource ?? ""}
+      data-memory-evidence={
+        memoryEvidence ? JSON.stringify(memoryEvidence) : ""
+      }
     >
       <button onClick={() => onSessionCompleted?.()}>complete-session</button>
       <button onClick={() => onStop?.()}>stop-session</button>
@@ -267,14 +271,19 @@ describe("HomePage response-driven nudge scheduling", () => {
 
     const focus = screen.getByTestId("focus-mode");
     expect(focus).toHaveAttribute("data-task-id", "a");
+    expect(focus).toHaveAttribute("data-entry-mode", "intervention");
     expect(focus).toHaveAttribute("data-micro-task", "open one paragraph");
     expect(focus).toHaveAttribute("data-entry-level", "2");
+    expect(focus).toHaveAttribute("data-generation-source", "rule_based");
     expect(JSON.parse(sessionStorage.getItem(FOCUS_SESSION_KEY))).toEqual({
-      version: 1,
+      version: 2,
       taskId: "a",
       startedAt: NOW.getTime() + 3_000,
+      entryMode: "intervention",
       entryLevel: 2,
       microTask: "open one paragraph",
+      generationSource: "rule_based",
+      memoryEvidence: null,
     });
 
     await advance(60_000);
@@ -292,11 +301,14 @@ describe("HomePage response-driven nudge scheduling", () => {
       "a",
     );
     expect(JSON.parse(sessionStorage.getItem(FOCUS_SESSION_KEY))).toEqual({
-      version: 1,
+      version: 2,
       taskId: "a",
       startedAt: NOW.getTime(),
+      entryMode: "direct",
       entryLevel: null,
       microTask: null,
+      generationSource: "none",
+      memoryEvidence: null,
     });
   });
 
@@ -332,8 +344,11 @@ describe("HomePage response-driven nudge scheduling", () => {
     const session = createFocusSession({
       taskId: "a",
       startedAt: NOW.getTime() - 125_000,
+      entryMode: "intervention",
       entryLevel: 2,
       microTask: "open one paragraph",
+      generationSource: "rule_based",
+      memoryEvidence: null,
     });
     sessionStorage.setItem(FOCUS_SESSION_KEY, JSON.stringify(session));
 
@@ -347,6 +362,41 @@ describe("HomePage response-driven nudge scheduling", () => {
     );
     expect(focus).toHaveAttribute("data-micro-task", "open one paragraph");
     expect(focus).toHaveAttribute("data-entry-level", "2");
+    expect(focus).toHaveAttribute("data-entry-mode", "intervention");
+    expect(focus).toHaveAttribute("data-generation-source", "rule_based");
+
+    await advance(60_000);
+    expect(api.callsFor("a")).toBe(0);
+  });
+
+  it("v1 Focus 세션을 v2 unknown 출처로 이관해 복구한다", async () => {
+    const api = setupApi([makeTask({ id: "a", level: 1 })]);
+    sessionStorage.setItem(
+      LEGACY_FOCUS_SESSION_KEY,
+      JSON.stringify({
+        version: 1,
+        taskId: "a",
+        startedAt: NOW.getTime() - 125_000,
+        entryLevel: 2,
+        microTask: "legacy action",
+      }),
+    );
+
+    await renderHome();
+
+    const focus = screen.getByTestId("focus-mode");
+    expect(focus).toHaveAttribute("data-entry-mode", "intervention");
+    expect(focus).toHaveAttribute("data-entry-level", "2");
+    expect(focus).toHaveAttribute("data-micro-task", "legacy action");
+    expect(focus).toHaveAttribute("data-generation-source", "unknown");
+    expect(sessionStorage.getItem(LEGACY_FOCUS_SESSION_KEY)).toBeNull();
+    expect(
+      JSON.parse(sessionStorage.getItem(FOCUS_SESSION_KEY)),
+    ).toMatchObject({
+      version: 2,
+      generationSource: "unknown",
+      memoryEvidence: null,
+    });
 
     await advance(60_000);
     expect(api.callsFor("a")).toBe(0);
@@ -372,8 +422,11 @@ describe("HomePage response-driven nudge scheduling", () => {
     const existing = createFocusSession({
       taskId: "a",
       startedAt: NOW.getTime() - 10_000,
+      entryMode: "intervention",
       entryLevel: 2,
       microTask: "existing step",
+      generationSource: "rule_based",
+      memoryEvidence: null,
     });
     sessionStorage.setItem(FOCUS_SESSION_KEY, JSON.stringify(existing));
 

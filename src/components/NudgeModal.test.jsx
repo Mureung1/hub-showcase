@@ -56,7 +56,10 @@ describe("NudgeModal Lv.2 Gemini microTask", () => {
 
   it("모달 표시값과 onStart에 전달되는 microTask가 동일하다", async () => {
     const sentinel = "문서 파일을 열고 제목을 입력하기";
-    vi.mocked(requestLv2Microtask).mockResolvedValue(sentinel);
+    vi.mocked(requestLv2Microtask).mockResolvedValue({
+      microTask: sentinel,
+      generationSource: "gemini",
+    });
     const { onStart } = renderModal();
 
     expect(await screen.findByText(new RegExp(sentinel))).toBeInTheDocument();
@@ -64,9 +67,30 @@ describe("NudgeModal Lv.2 Gemini microTask", () => {
 
     expect(onStart).toHaveBeenCalledWith(
       expect.objectContaining({
-        taskId: TASK.id,
+        entryMode: "intervention",
         entryLevel: 2,
         microTask: sentinel,
+        generationSource: "gemini",
+        memoryEvidence: null,
+      }),
+    );
+  });
+
+  it("API가 rule_based 출처를 반환하면 action과 출처를 그대로 유지한다", async () => {
+    const sentinel = "문서 제목 한 줄 쓰기";
+    vi.mocked(requestLv2Microtask).mockResolvedValue({
+      microTask: sentinel,
+      generationSource: "rule_based",
+    });
+    const { onStart } = renderModal();
+
+    await screen.findByText(new RegExp(sentinel));
+    fireEvent.click(screen.getByRole("button", { name: "지금 시작하기" }));
+
+    expect(onStart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        microTask: sentinel,
+        generationSource: "rule_based",
       }),
     );
   });
@@ -85,10 +109,15 @@ describe("NudgeModal Lv.2 Gemini microTask", () => {
       MICROTASK_TEMPLATES["리포트/글쓰기"].overwhelm,
     ).toContain(session.microTask);
     expect(screen.getByText(new RegExp(session.microTask))).toBeInTheDocument();
+    expect(session.generationSource).toBe("rule_based");
+    expect(session.memoryEvidence).toBeNull();
   });
 
   it("custom reason code와 자유 입력을 서로 다른 필드로 요청한다", async () => {
-    vi.mocked(requestLv2Microtask).mockResolvedValue("관련 파일 하나 열기");
+    vi.mocked(requestLv2Microtask).mockResolvedValue({
+      microTask: "관련 파일 하나 열기",
+      generationSource: "gemini",
+    });
     renderModal({
       reason: "custom",
       customReasonText: "어디서 시작할지 모르겠어요",
@@ -126,9 +155,55 @@ describe("NudgeModal Lv.2 Gemini microTask", () => {
     );
 
     await act(async () => {
-      resolveRequest("제목 입력하기");
+      resolveRequest({
+        microTask: "제목 입력하기",
+        generationSource: "gemini",
+      });
       await pending;
     });
     expect(screen.getByText(/제목 입력하기/)).toBeInTheDocument();
   });
+});
+
+describe("NudgeModal 레벨별 Focus 컨텍스트", () => {
+  beforeEach(() => {
+    vi.mocked(requestLv2Microtask).mockReset();
+  });
+
+  it("Lv.1은 action 없이 intervention/none으로 시작한다", () => {
+    const { onStart } = renderModal({ level: 1, skipCount: 1 });
+
+    fireEvent.click(screen.getByRole("button", { name: "지금 시작하기" }));
+
+    expect(onStart).toHaveBeenCalledWith({
+      entryMode: "intervention",
+      entryLevel: 1,
+      microTask: null,
+      generationSource: "none",
+      memoryEvidence: null,
+    });
+  });
+
+  it.each([3, 4])(
+    "Lv.%s는 전체 메시지가 아니라 분리된 action만 rule_based로 전달한다",
+    (level) => {
+      const { onStart } = renderModal({ level, skipCount: level });
+      const message = document.querySelector(".nudge-message");
+      expect(message).not.toBeNull();
+
+      fireEvent.click(screen.getByRole("button", { name: "지금 시작하기" }));
+
+      const context = onStart.mock.calls[0][0];
+      expect(context).toMatchObject({
+        entryMode: "intervention",
+        entryLevel: level,
+        generationSource: "rule_based",
+        memoryEvidence: null,
+      });
+      expect(context.microTask).toEqual(expect.any(String));
+      expect(context.microTask.length).toBeGreaterThan(0);
+      expect(message).toHaveTextContent(context.microTask);
+      expect(context.microTask).not.toBe(message.textContent);
+    },
+  );
 });

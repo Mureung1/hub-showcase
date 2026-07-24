@@ -42,6 +42,17 @@ function NudgeModal({
   const isGeneratingLv2 =
     task.level === 2 && frozenLv2Message === null;
 
+  // Lv1/Lv3/Lv4도 룰베이스 빌더가 무작위 action을 고를 수 있으므로 한 번만 만든다.
+  // 화면 표시와 Focus 전달은 반드시 이 동일 객체를 사용한다.
+  const frozenRuleMessageRef = useRef(undefined);
+  if (task.level !== 2 && frozenRuleMessageRef.current === undefined) {
+    frozenRuleMessageRef.current = buildNudgeMessage(
+      task.level,
+      task,
+      completedTasks,
+    );
+  }
+
   useEffect(() => {
     if (task.level !== 2) return undefined;
 
@@ -54,9 +65,11 @@ function NudgeModal({
         task.reason === "custom" ? task.customReasonText : null,
       level: 2,
     })
-      .then((microTask) => {
+      .then(({ microTask, generationSource }) => {
         if (!active) return;
-        setFrozenLv2Message(buildLv2NudgeMessage(task, microTask));
+        setFrozenLv2Message(
+          buildLv2NudgeMessage(task, microTask, generationSource),
+        );
       })
       .catch(() => {
         if (!active) return;
@@ -68,21 +81,19 @@ function NudgeModal({
     };
   }, [task]);
 
-  // "지금 시작하기" → 고정된 Lv2 microTask를 포함한 focusSession을 그대로 Focus까지 전달한다.
+  const frozenMessage =
+    task.level === 2 ? frozenLv2Message : frozenRuleMessageRef.current;
+
+  // "지금 시작하기" → 화면에 고정해 표시한 action과 출처를 그대로 Focus까지 전달한다.
   function handleStart() {
-    if (task.level === 2) {
-      if (!frozenLv2Message) return;
-      onStart({
-        taskId: task.id,
-        title: task.title,
-        startedAt: new Date().toISOString(),
-        entryLevel: 2,
-        microTask: frozenLv2Message.microtask,
-        reason: task.reason,
-      });
-    } else {
-      onStart();
-    }
+    if (!frozenMessage) return;
+    onStart({
+      entryMode: "intervention",
+      entryLevel: task.level,
+      microTask: frozenMessage.microtask,
+      generationSource: frozenMessage.generationSource,
+      memoryEvidence: frozenMessage.memoryEvidence,
+    });
   }
 
   // 재확인에 응답하면 체크포인트를 접고 평소 넛지 메시지로 넘어간다.
@@ -128,7 +139,7 @@ function NudgeModal({
           task={task}
           onStart={handleStart}
           completedTasks={completedTasks}
-          overrideMessage={frozenLv2Message}
+          overrideMessage={frozenMessage}
           isGenerating={isGeneratingLv2}
           startDisabled={isGeneratingLv2}
         />

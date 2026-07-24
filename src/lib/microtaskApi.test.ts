@@ -46,8 +46,14 @@ describe("requestLv2Microtask", () => {
       data: { microTask: "문서를 열고 제목을 입력하기", source: "gemini" },
     });
     await expect(Promise.all([first, second])).resolves.toEqual([
-      "문서를 열고 제목을 입력하기",
-      "문서를 열고 제목을 입력하기",
+      {
+        microTask: "문서를 열고 제목을 입력하기",
+        generationSource: "gemini",
+      },
+      {
+        microTask: "문서를 열고 제목을 입력하기",
+        generationSource: "gemini",
+      },
     ]);
   });
 
@@ -70,7 +76,10 @@ describe("requestLv2Microtask", () => {
       });
 
     await expect(requestLv2Microtask(INPUT)).rejects.toThrow("network");
-    await expect(requestLv2Microtask(INPUT)).resolves.toBe("문서를 열기");
+    await expect(requestLv2Microtask(INPUT)).resolves.toEqual({
+      microTask: "문서를 열기",
+      generationSource: "gemini",
+    });
     expect(apiFetch).toHaveBeenCalledTimes(2);
   });
 
@@ -101,6 +110,30 @@ describe("requestLv2Microtask", () => {
 
     await expect(requestLv2Microtask(INPUT)).rejects.toThrow(
       "invalid_microtask_response",
+    );
+  });
+
+  it.each([
+    ["gemini", "gemini"],
+    ["rule_based", "rule_based"],
+  ] as const)("API source=%s를 실제 generationSource로 유지한다", async (source, expected) => {
+    vi.mocked(apiFetch).mockResolvedValue({
+      data: { microTask: "문서 제목 한 줄 쓰기", source },
+    });
+
+    await expect(requestLv2Microtask(INPUT)).resolves.toEqual({
+      microTask: "문서 제목 한 줄 쓰기",
+      generationSource: expected,
+    });
+  });
+
+  it("지원하지 않는 API source는 로컬 fallback 가능한 실패로 처리한다", async () => {
+    vi.mocked(apiFetch).mockResolvedValue({
+      data: { microTask: "문서 제목 한 줄 쓰기", source: "unknown" },
+    });
+
+    await expect(requestLv2Microtask(INPUT)).rejects.toThrow(
+      "invalid_microtask_source",
     );
   });
 });

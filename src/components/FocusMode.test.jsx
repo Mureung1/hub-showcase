@@ -19,8 +19,15 @@ function renderFocusMode(props = {}) {
         taskId="task-1"
         title="테스트 과제"
         startedAt={props.startedAt ?? Date.now()}
-        microTask="첫 문장 쓰기"
-        entryLevel={2}
+        entryMode={props.entryMode ?? "intervention"}
+        microTask={
+          Object.hasOwn(props, "microTask") ? props.microTask : "첫 문장 쓰기"
+        }
+        entryLevel={
+          Object.hasOwn(props, "entryLevel") ? props.entryLevel : 2
+        }
+        generationSource={props.generationSource ?? "gemini"}
+        memoryEvidence={props.memoryEvidence ?? null}
         onSessionCompleted={props.onSessionCompleted}
         onStop={props.onStop}
       />
@@ -192,10 +199,57 @@ describe("FocusMode elapsed time recovery", () => {
     expect(body).toEqual({
       eventType: "done",
       durationSeconds: 125,
+      entryMode: "intervention",
       entryLevel: 2,
       microTask: "첫 문장 쓰기",
+      generationSource: "gemini",
+      memoryEvidence: null,
     });
     expect(screen.getByText("02:05")).toBeInTheDocument();
+  });
+
+  it("카드 직접 시작 컨텍스트를 done 요청에 그대로 포함한다", async () => {
+    apiFetch.mockResolvedValue({ data: { id: "task-1", status: "done" } });
+    renderFocusMode({
+      startedAt: NOW.getTime(),
+      entryMode: "direct",
+      entryLevel: null,
+      microTask: null,
+      generationSource: "none",
+      memoryEvidence: null,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "완료" }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(JSON.parse(apiFetch.mock.calls[0][1].body)).toMatchObject({
+      eventType: "done",
+      entryMode: "direct",
+      entryLevel: null,
+      microTask: null,
+      generationSource: "none",
+      memoryEvidence: null,
+    });
+  });
+
+  it("v1 이관 세션의 unknown 출처는 done 요청에서 null로 변환한다", async () => {
+    apiFetch.mockResolvedValue({ data: { id: "task-1", status: "done" } });
+    renderFocusMode({
+      startedAt: NOW.getTime(),
+      generationSource: "unknown",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "완료" }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(JSON.parse(apiFetch.mock.calls[0][1].body)).toMatchObject({
+      microTask: "첫 문장 쓰기",
+      generationSource: null,
+    });
   });
 
   it("clears its interval when unmounted", () => {

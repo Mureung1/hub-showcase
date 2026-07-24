@@ -58,7 +58,7 @@ function HomePage() {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState(null); // 포커스 중인 task(= modalLocked)
-  const [focusSession, setFocusSession] = useState(null); // Lv2 모달에서 넘어온 microTask/entryLevel 등(카드 직접 클릭 시엔 null)
+  const [focusSession, setFocusSession] = useState(null); // 시작 방식과 개입 action을 보존하는 Focus 세션 v2
   const [modalTaskId, setModalTaskId] = useState(null); // 자동으로 뜬 넛지 모달 대상
   const [modalCheckpointLevel, setModalCheckpointLevel] = useState(null); // 이번 모달에 회피이유 재확인을 띄울 레벨(1|3|null)
 
@@ -323,8 +323,11 @@ function HomePage() {
 
     const session = createFocusSession({
       taskId: task.id,
+      entryMode: overrides.entryMode ?? "direct",
       entryLevel: overrides.entryLevel ?? null,
       microTask: overrides.microTask ?? null,
+      generationSource: overrides.generationSource ?? "none",
+      memoryEvidence: overrides.memoryEvidence ?? null,
     });
     saveFocusSession(session);
     if (modalOpenRef.current !== null) closeModalWithoutReschedule();
@@ -332,14 +335,17 @@ function HomePage() {
     setSelectedTaskId(task.id);
   }
 
-  // 넛지 모달에서 "지금 시작하기" → 공통 세션 생성 후 포커스 진입.
-  // Lv2가 넘긴 microTask/entryLevel만 보존하고 title/startedAt/reason은 HomePage가 정규화한다.
+  // 넛지 모달에서 "지금 시작하기" → 화면에 실제 표시된 action과 출처를
+  // 공통 세션 생성 함수에 그대로 넘긴 뒤 포커스에 진입한다.
   function handleStartFromModal(session) {
     const task = tasks.find((candidate) => candidate.id === modalTaskId);
     if (!task) return;
     startFocus(task, {
+      entryMode: session?.entryMode ?? "intervention",
       entryLevel: session?.entryLevel ?? null,
       microTask: session?.microTask ?? null,
+      generationSource: session?.generationSource ?? "none",
+      memoryEvidence: session?.memoryEvidence ?? null,
     });
   }
 
@@ -437,8 +443,11 @@ function HomePage() {
             taskId={selectedTask.id}
             title={selectedTask.title}
             startedAt={focusSession?.startedAt}
+            entryMode={focusSession?.entryMode}
             microTask={focusSession?.microTask ?? null}
             entryLevel={focusSession?.entryLevel ?? null}
+            generationSource={focusSession?.generationSource}
+            memoryEvidence={focusSession?.memoryEvidence ?? null}
             onSessionCompleted={removeFocusSession}
             onComplete={closeFocusAndRefresh}
             onStop={closeFocusAndRefresh}

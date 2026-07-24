@@ -13,11 +13,16 @@ export interface Lv2MicrotaskRequest {
 interface Lv2MicrotaskResponse {
   data: {
     microTask: string;
-    source: "gemini";
+    source: "gemini" | "rule_based";
   };
 }
 
-const inFlight = new Map<string, Promise<string>>();
+export interface Lv2MicrotaskResult {
+  microTask: string;
+  generationSource: "gemini" | "rule_based";
+}
+
+const inFlight = new Map<string, Promise<Lv2MicrotaskResult>>();
 
 function normalizeWhitespace(value: string): string {
   return value.trim().replace(/\s+/g, " ");
@@ -38,7 +43,7 @@ function createRequestKey(input: Lv2MicrotaskRequest): string {
 
 export function requestLv2Microtask(
   input: Lv2MicrotaskRequest,
-): Promise<string> {
+): Promise<Lv2MicrotaskResult> {
   const key = createRequestKey(input);
   const existing = inFlight.get(key);
   if (existing) return existing;
@@ -56,10 +61,17 @@ export function requestLv2Microtask(
   })
     .then((response: Lv2MicrotaskResponse) => {
       const microTask = response?.data?.microTask;
+      const source = response?.data?.source;
       if (typeof microTask !== "string" || microTask.trim().length === 0) {
         throw new Error("invalid_microtask_response");
       }
-      return microTask.trim();
+      if (source !== "gemini" && source !== "rule_based") {
+        throw new Error("invalid_microtask_source");
+      }
+      return {
+        microTask: microTask.trim(),
+        generationSource: source,
+      };
     })
     .finally(() => {
       clearTimeout(timeoutId);

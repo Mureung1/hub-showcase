@@ -33,13 +33,20 @@ const LV2_LEAD_INS = [
 /**
  * @param {{ title?: string, type: string, reason: string, skipCount: number }} task
  * @param {string | null} microtask
+ * @param {"gemini" | "rule_based"} generationSource
  */
-export function buildLv2NudgeMessage(task, microtask = null) {
+export function buildLv2NudgeMessage(
+  task,
+  microtask = null,
+  generationSource = "rule_based",
+) {
   const finalMicrotask =
     microtask ?? getMicrotask({ type: task.type, reason: task.reason });
   return {
     body: `${LV2_LEAD_INS[task.skipCount % LV2_LEAD_INS.length]} ${finalMicrotask}`,
     microtask: finalMicrotask,
+    generationSource,
+    memoryEvidence: null,
   };
 }
 
@@ -66,6 +73,8 @@ export const NUDGE_MESSAGE_BUILDERS = {
   1: ({ skipCount }) => ({
     body: LV1_MESSAGES[skipCount % LV1_MESSAGES.length],
     microtask: null,
+    generationSource: "none",
+    memoryEvidence: null,
   }),
   2: (task) => buildLv2NudgeMessage(task),
   // Lv3: 기억 기반 개입(#25 getMemoryNudge). 세션 내 완료 이력 중 같은 회피 이유로
@@ -77,6 +86,10 @@ export const NUDGE_MESSAGE_BUILDERS = {
       return {
         body: `지난번 ${memory.source.type}도 같은 이유로 미루셨었는데, 그때 이렇게 해서 완료하셨어요. ${memory.microtask}`,
         microtask: memory.microtask,
+        // 현재 getMemoryNudge는 과거 done microTask를 재사용하지 않고 룰베이스로
+        // 새로 생성한다. 실제 재사용이 구현되기 전에는 history_reuse로 기록하지 않는다.
+        generationSource: "rule_based",
+        memoryEvidence: null,
       };
     }
     // 매칭 없음: 반복해서 미뤄지고 있다는 근거를 제시하고 새 폴백을 제안한다.
@@ -84,6 +97,8 @@ export const NUDGE_MESSAGE_BUILDERS = {
     return {
       body: `이 할일, 벌써 ${skipCount}번이나 미뤄졌어요. 이번엔 이렇게 시작해볼까요? ${microtask}`,
       microtask,
+      generationSource: "rule_based",
+      memoryEvidence: null,
     };
   },
   // Lv4: 마감 임박 경고. 실제 마감 D-day 숫자를 언급하며 즉시 시작을 유도하는 가장 강한
@@ -94,6 +109,8 @@ export const NUDGE_MESSAGE_BUILDERS = {
     return {
       body: `마감이 ${dday}예요. 더 미루면 진짜 늦어요 — 지금 딱 이것만 시작해요: ${microtask}`,
       microtask,
+      generationSource: "rule_based",
+      memoryEvidence: null,
     };
   },
 };
