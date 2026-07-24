@@ -406,13 +406,15 @@ patientCount = childCount + adultCount + seniorCount
 | `GET` | `/api/staff/hospital` | 소속 병원 정보와 검토 중 변경 요청 조회 |
 | `POST` | `/api/staff/hospital-change-requests` | 병원 정보 변경사항 검토 요청 |
 | `PATCH` | `/api/staff/queue/status` | 오늘 대기열 운영 상태 변경 |
+| `PATCH` | `/api/staff/queue/settings` | 평균 진료시간, 알림 기준과 원격 접수 한도 변경 |
 | `POST` | `/api/staff/waitings` | 현장 웨이팅 등록 |
+| `GET` | `/api/staff/waitings/:waitingId/notifications` | 대기 항목의 알림 발송 이력 조회 |
 | `PATCH` | `/api/staff/waitings/:waitingId/status` | 도착·호출·취소 처리 |
 | `POST` | `/api/staff/waitings/:waitingId/hold` | 활성 웨이팅 보류 |
 | `POST` | `/api/staff/waitings/:waitingId/restore` | 보류 해제와 복귀 위치 지정 |
 | `PUT` | `/api/staff/waitings/order` | 활성 통합 대기열 순서 변경 |
 
-날짜별 대기열 열기, 운영 설정 변경과 상태·알림 이력 조회 API는 후속 작업으로 구현합니다.
+도착 제한시간 변경과 전체 상태 이력 조회 API는 후속 작업으로 구현합니다.
 
 ### 14.4 플랫폼 관리자
 

@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import {
   calculateQueuePositions,
   calculateRegistrationPatientCount,
+  defaultQueueSettings,
 } from "@baro-jinryo/shared";
 import type {
   NotificationReceipt,
@@ -9,6 +10,7 @@ import type {
   OnsiteWaitingRegistrationInput,
   PatientCounts,
   PatientInputConfiguration,
+  QueueSettings,
   QueueStatus,
   QueueEntry,
   StaffNotificationHistoryItem,
@@ -50,10 +52,8 @@ export interface StaffQueueOperations {
     hospitalId: string,
     input: OnsiteWaitingRegistrationInput,
   ): Promise<OnsiteRegistrationResult>;
-  setQueueStatus(
-    hospitalId: string,
-    status: QueueStatus,
-  ): Promise<StaffQueueState>;
+  setQueueStatus(hospitalId: string, status: QueueStatus): Promise<StaffQueueState>;
+  updateQueueSettings(hospitalId: string, settings: QueueSettings): Promise<StaffQueueState>;
   changeWaitingStatus(
     hospitalId: string,
     waitingEntryId: string,
@@ -173,10 +173,7 @@ export class StaffQueueService implements StaffQueueOperations {
           : [];
       const lookupToken = randomBytes(32).toString("base64url");
       const lookupTokenHash = createHash("sha256").update(lookupToken).digest("hex");
-      const slot = await this.waitingRepository.allocateRegistrationSlot(
-        executor,
-        queue.id,
-      );
+      const slot = await this.waitingRepository.allocateRegistrationSlot(executor, queue.id);
       const waiting = await this.waitingRepository.create(executor, {
         queueId: queue.id,
         accountId: null,
@@ -267,7 +264,11 @@ export class StaffQueueService implements StaffQueueOperations {
         cancelled: ["remote_waiting", "entry_requested", "onsite_waiting", "held"],
       };
       if (!allowedFrom[status].includes(current.status)) {
-        throw new ApiError(409, "INVALID_TRANSITION", "현재 상태에서는 요청한 처리를 할 수 없습니다.");
+        throw new ApiError(
+          409,
+          "INVALID_TRANSITION",
+          "현재 상태에서는 요청한 처리를 할 수 없습니다.",
+        );
       }
       const updated = await this.waitingRepository.transitionStatus(executor, {
         waitingEntryId,
@@ -347,20 +348,31 @@ export class StaffQueueService implements StaffQueueOperations {
       const events = await this.waitingEventRepository.listByWaitingEntry(executor, waitingEntryId);
       const heldEvent = [...events].reverse().find((event) => event.eventType === "held");
       const restoredStatus = heldEvent?.fromStatus;
-      if (!restoredStatus || !["remote_waiting", "entry_requested", "onsite_waiting"].includes(restoredStatus)) {
+      if (
+        !restoredStatus ||
+        !["remote_waiting", "entry_requested", "onsite_waiting"].includes(restoredStatus)
+      ) {
         throw new ApiError(409, "WAITING_HISTORY_INVALID", "보류 전 상태를 확인할 수 없습니다.");
       }
       const activeIds = (await this.waitingRepository.listByQueue(executor, current.queueId))
-        .filter(({ status }) => ["remote_waiting", "entry_requested", "onsite_waiting"].includes(status))
+        .filter(({ status }) =>
+          ["remote_waiting", "entry_requested", "onsite_waiting"].includes(status),
+        )
         .map(({ id }) => id);
       const insertIndex = position === undefined ? activeIds.length : position - 1;
       if (insertIndex < 0 || insertIndex > activeIds.length) {
-        throw new ApiError(400, "INVALID_RETURN_POSITION", `복귀 위치는 1부터 ${activeIds.length + 1} 사이여야 합니다.`);
+        throw new ApiError(
+          400,
+          "INVALID_RETURN_POSITION",
+          `복귀 위치는 1부터 ${activeIds.length + 1} 사이여야 합니다.`,
+        );
       }
       const orderedIds = [...activeIds];
       orderedIds.splice(insertIndex, 0, waitingEntryId);
       const restored = await this.waitingRepository.restoreHeldAtPosition(
-        executor, waitingEntryId, current.version,
+        executor,
+        waitingEntryId,
+        current.version,
         restoredStatus as "remote_waiting" | "entry_requested" | "onsite_waiting",
         orderedIds,
       );
@@ -391,14 +403,23 @@ export class StaffQueueService implements StaffQueueOperations {
   ): Promise<StaffQueueState> {
     return this.transactionManager.run(async (executor) => {
       const { queue } = await this.getQueueContext(executor, hospitalId);
-      const before = (await this.waitingRepository.listByQueue(executor, queue.id))
-        .filter(({ status }) => ["remote_waiting", "entry_requested", "onsite_waiting"].includes(status));
+      const before = (await this.waitingRepository.listByQueue(executor, queue.id)).filter(
+        ({ status }) => ["remote_waiting", "entry_requested", "onsite_waiting"].includes(status),
+      );
       if (orderedWaitingIds.length === 0) {
         throw new ApiError(400, "WAITING_ORDER_REQUIRED", "변경할 활성 대기 순서를 입력해 주세요.");
       }
-      const reordered = await this.waitingRepository.reorderActive(executor, queue.id, orderedWaitingIds);
+      const reordered = await this.waitingRepository.reorderActive(
+        executor,
+        queue.id,
+        orderedWaitingIds,
+      );
       if (!reordered) {
-        throw new ApiError(409, "QUEUE_ORDER_CONFLICT", "대기열이 변경되었습니다. 새로고침 후 다시 시도해 주세요.");
+        throw new ApiError(
+          409,
+          "QUEUE_ORDER_CONFLICT",
+          "대기열이 변경되었습니다. 새로고침 후 다시 시도해 주세요.",
+        );
       }
       const previousOrder = new Map(before.map(({ id }, index) => [id, index + 1]));
       for (const [index, waitingEntryId] of orderedWaitingIds.entries()) {
@@ -422,6 +443,18 @@ export class StaffQueueService implements StaffQueueOperations {
     });
   }
 
+  async updateQueueSettings(hospitalId: string, settings: QueueSettings): Promise<StaffQueueState> {
+    return this.transactionManager.run(async (executor) => {
+      const { queue, hospital } = await this.getOrCreatePausedQueueContext(executor, hospitalId);
+      const updated = await this.dailyQueueRepository.updateSettings(executor, queue.id, settings);
+      if (!updated) {
+        throw new ApiError(409, "QUEUE_CONFLICT", "대기열 설정이 변경되었습니다.");
+      }
+      await this.processQueueNotifications(executor, queue.id, hospital.name);
+      return this.buildQueueState(executor, hospitalId);
+    });
+  }
+
   private async processQueueNotifications(
     executor: DatabaseExecutor,
     queueId: string,
@@ -432,10 +465,7 @@ export class StaffQueueService implements StaffQueueOperations {
     if (!resolvedHospitalName) {
       const queue = await this.dailyQueueRepository.findById(executor, queueId);
       if (!queue) throw new ApiError(404, "DAILY_QUEUE_NOT_FOUND", "Daily queue was not found.");
-      const hospital = await this.requireApprovedHospital(
-        executor,
-        hospitalId ?? queue.hospitalId,
-      );
+      const hospital = await this.requireApprovedHospital(executor, hospitalId ?? queue.hospitalId);
       resolvedHospitalName = hospital.name;
     }
     await this.automaticNotificationProcessor.processQueue(executor, {
@@ -473,6 +503,7 @@ export class StaffQueueService implements StaffQueueOperations {
         nextDayInputMode: nextConfiguration.inputMode,
         todayCategories: configuration.categories,
         nextDayCategories: nextConfiguration.categories,
+        settings: { ...defaultQueueSettings },
       };
     }
     const configuration = await this.getConfigurationById(
@@ -488,13 +519,19 @@ export class StaffQueueService implements StaffQueueOperations {
     const nextConfiguration = nextDayConfiguration ?? configuration;
     return {
       entries,
-      positions: calculateQueuePositions(entries),
+      positions: calculateQueuePositions(entries, queue.averageMinutesPerPatient),
       queueDate: queue.queueDate,
       queueStatus: queue.status,
       todayInputMode: configuration.inputMode,
       nextDayInputMode: nextConfiguration.inputMode,
       todayCategories: configuration.categories,
       nextDayCategories: nextConfiguration.categories,
+      settings: {
+        averageMinutesPerPatient: queue.averageMinutesPerPatient,
+        preparationThreshold: queue.preparationThreshold,
+        entryThreshold: queue.entryThreshold,
+        maxRemoteWaitingPatients: queue.maxRemoteWaitingPatients,
+      },
     };
   }
 
@@ -514,14 +551,15 @@ export class StaffQueueService implements StaffQueueOperations {
     if (!queue) {
       throw new ApiError(404, "DAILY_QUEUE_NOT_FOUND", "오늘 대기열이 준비되지 않았습니다.");
     }
-    const configuration = await this.getConfigurationById(executor, hospitalId, queue.categorySetId);
+    const configuration = await this.getConfigurationById(
+      executor,
+      hospitalId,
+      queue.categorySetId,
+    );
     return { queue, configuration, hospital };
   }
 
-  private async getOrCreatePausedQueueContext(
-    executor: DatabaseExecutor,
-    hospitalId: string,
-  ) {
+  private async getOrCreatePausedQueueContext(executor: DatabaseExecutor, hospitalId: string) {
     const hospital = await this.requireApprovedHospital(executor, hospitalId);
     let queue = await this.dailyQueueRepository.findByHospitalAndDate(
       executor,
@@ -597,7 +635,11 @@ export class StaffQueueService implements StaffQueueOperations {
     const allowed = new Set(allowedIds);
     const unknownIds = Object.keys(patientCounts).filter((id) => !allowed.has(id));
     if (unknownIds.length > 0) {
-      throw new ApiError(400, "INVALID_PATIENT_CATEGORY", "현재 사용하지 않는 환자 분류가 포함되어 있습니다.");
+      throw new ApiError(
+        400,
+        "INVALID_PATIENT_CATEGORY",
+        "현재 사용하지 않는 환자 분류가 포함되어 있습니다.",
+      );
     }
     return Object.entries(patientCounts)
       .filter(([, count]) => count > 0)

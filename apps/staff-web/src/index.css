@@ -1634,6 +1634,22 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .queue-settings-row {
+    padding-block: var(--bj-space-4);
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .queue-settings-stepper {
+    width: 100%;
+    grid-template-columns: 40px minmax(72px, 1fr) 40px;
+  }
+
+  .queue-settings-stepper label,
+  .queue-settings-stepper input {
+    width: 100%;
+  }
+
   .search-band {
     padding-top: 28px;
   }
@@ -1868,6 +1884,91 @@ button:disabled {
 .onboarding-state-panel h2,
 .onboarding-state-panel p {
   margin: 0;
+}
+
+.queue-settings-modal {
+  width: min(100%, 620px);
+  max-height: min(90vh, 760px);
+  padding: var(--bj-space-6);
+  overflow-y: auto;
+  background: var(--bj-color-surface);
+  border-radius: var(--bj-radius-lg);
+  box-shadow: var(--bj-shadow-overlay);
+}
+
+.queue-settings-modal .category-settings-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-space-2);
+}
+
+.queue-settings-list {
+  border-top: 1px solid var(--bj-color-border);
+}
+
+.queue-settings-row {
+  min-height: 86px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bj-space-4);
+  border-bottom: 1px solid var(--bj-color-border);
+}
+
+.queue-settings-row > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: var(--bj-space-1);
+}
+
+.queue-settings-row span {
+  color: var(--bj-color-text-secondary);
+  font-size: var(--bj-font-size-sm);
+}
+
+.queue-settings-stepper {
+  display: grid;
+  grid-template-columns: 40px 72px 40px;
+  align-items: center;
+  gap: var(--bj-space-1);
+}
+
+.queue-settings-stepper button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: var(--bj-color-text);
+  background: var(--bj-color-surface);
+  border: 1px solid var(--bj-color-border-strong);
+  border-radius: var(--bj-radius-md);
+  cursor: pointer;
+}
+
+.queue-settings-stepper button:disabled {
+  color: var(--bj-color-text-disabled);
+  background: var(--bj-color-surface-subtle);
+  cursor: not-allowed;
+}
+
+.queue-settings-stepper input {
+  width: 72px;
+  height: 40px;
+  padding: 0 var(--bj-space-2);
+  color: var(--bj-color-text);
+  background: var(--bj-color-surface);
+  border: 1px solid var(--bj-color-border-strong);
+  border-radius: var(--bj-radius-md);
+  text-align: center;
+}
+
+.queue-settings-note {
+  margin: var(--bj-space-4) 0 0;
+  padding: var(--bj-space-3);
+  color: var(--bj-color-text-secondary);
+  background: var(--bj-color-surface-subtle);
+  border-radius: var(--bj-radius-md);
+  font-size: var(--bj-font-size-sm);
 }
 
 .hospital-management-main {

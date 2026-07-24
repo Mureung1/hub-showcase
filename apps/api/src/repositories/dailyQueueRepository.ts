@@ -1,4 +1,4 @@
-import type { QueueStatus } from "@baro-jinryo/shared";
+import type { QueueSettings, QueueStatus } from "@baro-jinryo/shared";
 import type { DatabaseExecutor } from "../db/databaseExecutor.js";
 
 export interface DailyQueue {
@@ -38,5 +38,10 @@ export interface DailyQueueRepository {
     executor: DatabaseExecutor,
     queueId: string,
     status: QueueStatus,
+  ): Promise<DailyQueue | null>;
+  updateSettings(
+    executor: DatabaseExecutor,
+    queueId: string,
+    settings: QueueSettings,
   ): Promise<DailyQueue | null>;
 }

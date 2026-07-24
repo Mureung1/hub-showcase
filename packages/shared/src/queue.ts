@@ -7,6 +7,7 @@ import type {
   WaitingSource,
   WaitingStatus,
 } from "./domain.js";
+import { z } from "zod";
 export const waitingEventActorTypes = ["patient", "staff", "system"] as const;
 export type WaitingEventActorType = (typeof waitingEventActorTypes)[number];
 
@@ -107,6 +108,7 @@ export interface StaffQueueState {
   nextDayInputMode: PatientInputMode;
   todayCategories: PatientCategoryDefinition[];
   nextDayCategories: PatientCategoryDefinition[];
+  settings: QueueSettings;
 }
 
 export type MockStaffQueueState = StaffQueueState;
@@ -120,6 +122,31 @@ export const defaultQueueSettings = {
   arrivalGraceMinutes: 20,
   maxRemoteWaitingPatients: 20,
 } as const;
+
+export const queueSettingsSchema = z
+  .object({
+    averageMinutesPerPatient: z
+      .number()
+      .int()
+      .positive("평균 진료시간은 5분 이상이어야 합니다.")
+      .refine((value) => value % 5 === 0, {
+        message: "평균 진료시간은 5분 단위로 입력해 주세요.",
+      }),
+    preparationThreshold: z.number().int().positive("준비 기준은 1 이상이어야 합니다."),
+    entryThreshold: z.number().int().positive("입장 기준은 1 이상이어야 합니다."),
+    maxRemoteWaitingPatients: z.number().int().positive("원격 접수 한도는 1명 이상이어야 합니다."),
+  })
+  .superRefine((settings, context) => {
+    if (settings.preparationThreshold <= settings.entryThreshold) {
+      context.addIssue({
+        code: "custom",
+        path: ["preparationThreshold"],
+        message: "준비 기준은 입장 기준보다 커야 합니다.",
+      });
+    }
+  });
+
+export type QueueSettings = z.infer<typeof queueSettingsSchema>;
 
 export type AutomaticNotificationDecision =
   | { notificationType: "preparation"; dedupeKey: "preparation" }
@@ -201,7 +228,10 @@ export function isActiveEntry(entry: MockQueueEntry): boolean {
   return activeWaitingStatuses.includes(entry.status);
 }
 
-export function calculateQueuePositions(entries: MockQueueEntry[]): QueuePosition[] {
+export function calculateQueuePositions(
+  entries: MockQueueEntry[],
+  averageMinutesPerPatient = AVERAGE_TREATMENT_MINUTES,
+): QueuePosition[] {
   let patientsAhead = 0;
   let activeTeamNumber = 0;
 
@@ -219,7 +249,7 @@ export function calculateQueuePositions(entries: MockQueueEntry[]): QueuePositio
     const patientCount = entry.patientCount;
     const position = patientsAhead + 1;
     const positionEnd = position + patientCount - 1;
-    const estimatedMinutes = patientsAhead * AVERAGE_TREATMENT_MINUTES;
+    const estimatedMinutes = patientsAhead * averageMinutesPerPatient;
     patientsAhead += patientCount;
     activeTeamNumber += 1;
 
@@ -236,7 +266,6 @@ export function formatPatientCounts(entry: MockQueueEntry): string {
     .map((category) => `${category.name} ${entry.patientCounts[category.id]}`)
     .join(" · ");
 }
-
 
 export function formatPositionRange(position: QueuePosition): string {
   if (position.position === null || position.positionEnd === null) return "-";

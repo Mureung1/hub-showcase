@@ -1,7 +1,7 @@
 import type { QueuePosition, WaitingStatus } from "@baro-jinryo/shared";
 import { formatPatientCounts, formatPositionRange } from "@baro-jinryo/shared";
 import { ArrowDown, ArrowUp, Megaphone, RotateCcw, UserCheck, UsersRound } from "lucide-react";
-import { statusLabels } from "./queuePresentation";
+import { statusLabels } from "../utils/queueLabels";
 
 interface StaffQueueTableProps {
   rows: QueuePosition[];

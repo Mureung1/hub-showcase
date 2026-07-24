@@ -1,7 +1,7 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../app.js";
-import { resetMockOnboardingStore } from "../mock/onboardingStore.js";
+import { resetMockOnboardingStore } from "../mock/mockOnboardingStore.js";
 
 const applicationInput = {
   operatingHoursText: "평일 09:00-18:00",

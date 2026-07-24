@@ -38,31 +38,58 @@
 ## 데이터 흐름과 아키텍처
 
 ```mermaid
-flowchart LR
-  subgraph users["사용자 화면"]
-    patient["환자 React<br/>:5173"]
-    staff["병원 관리자 React<br/>:5174"]
-    platform["플랫폼 관리자 React<br/>:5175"]
+flowchart TB
+  subgraph screens["1. 역할별 React 화면"]
+    direction LR
+    patient["환자<br/>:5173"]
+    staff["병원 관리자<br/>:5174"]
+    platform["플랫폼 관리자<br/>:5175"]
   end
 
-  auth["Supabase Auth<br/>로그인·세션"]
-  api["Express API :3000<br/>인증·검증·비즈니스 규칙"]
-  repository["Repository<br/>pg + SQL"]
-  db[("Supabase PostgreSQL")]
-  worker["1분 자동 만료 작업"]
-  brevo["Brevo SMTP<br/>인증 메일"]
-  mock["Mock 알림톡"]
+  client["공통 Auth · API 클라이언트"]
 
-  users -->|"회원가입·로그인"| auth
+  subgraph server["2. Express API :3000"]
+    direction LR
+    verify["인증 · 역할 · 입력 검증"]
+    service["대기열 · 병원 · 알림 규칙"]
+    repository["Repository<br/>pg · SQL"]
+    verify --> service --> repository
+  end
+
+  subgraph data["3. Supabase"]
+    direction LR
+    auth["Auth<br/>로그인 · 세션"]
+    db[("PostgreSQL<br/>업무 데이터 · 이력")]
+  end
+
+  subgraph support["4. 자동 작업 · 외부 서비스"]
+    direction LR
+    worker["1분 자동 만료"]
+    brevo["Brevo 인증 메일"]
+    mock["Mock 알림톡"]
+  end
+
+  patient --> client
+  staff --> client
+  platform --> client
+  client <-->|"JSON + Bearer token<br/>10초 Polling"| verify
+  client -->|"회원가입 · 로그인"| auth
+  verify -. "token 확인" .-> auth
+  repository <-->|"SQL · 트랜잭션"| db
   auth --> brevo
-  users -->|"JSON + Bearer token<br/>10초 Polling"| api
-  api -. "토큰 확인" .-> auth
-  api --> repository --> db
-  db --> repository --> api -->|"JSON 응답"| users
-  worker -->|"만료·마지막 이동"| api
+  worker --> service
   worker -. "advisory lock" .-> db
-  api --> mock
-  api -->|"알림 이력"| db
+  service --> mock
+
+  classDef screen fill:#eaf7f0,stroke:#15805d,color:#102a24;
+  classDef serverNode fill:#edf3fb,stroke:#376ea6,color:#13263a;
+  classDef dataNode fill:#fff6df,stroke:#a66a14,color:#3b2a10;
+  classDef supportNode fill:#f4f4f4,stroke:#737373,color:#242424;
+
+  class patient,staff,platform,client screen;
+  class verify,service,repository serverNode;
+  class auth,db dataNode;
+  class worker,brevo,mock supportNode;
 ```
 
 React는 Supabase를 인증에만 직접 사용하고, 병원과 대기열 데이터는 반드시 Express와 Repository를 거쳐 PostgreSQL에 저장합니다. 상세한 요청 흐름, 주요 테이블과 현재 발견한 보완 지점은 [데이터 흐름과 아키텍처 문서](./docs/architecture.md)에서 확인할 수 있습니다.
@@ -92,10 +119,9 @@ React는 Supabase를 인증에만 직접 사용하고, 병원과 대기열 데�
 ## 프로젝트 문서
 
 - [GitHub Project - 개발 대시보드](https://github.com/users/DLSTODAKD/projects/1)
-- [3주차 주간 계획](./docs/weekly-plan-week3.md)
-- [3주차 작업 결과](./docs/week3-summary.md)
+- [2~3주차 주간 계획](./docs/weekly-plan.md)
+- [3~4주차 작업 결과](./docs/weekly-summary.md)
 - [나의 AI 개발 워크플로우](./docs/ai-workflow.md)
-- [2주차 주간 계획 기록](./docs/weekly-plan-week2.md)
 - [기획서](./docs/plan.md)
 - [시스템 기능 명세](./docs/feature-spec.md)
 - [ERD](./docs/erd.md)

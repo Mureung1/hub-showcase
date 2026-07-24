@@ -9,9 +9,10 @@ import type {
   PatientInputMode,
   PatientRegistrationInput,
   QueueStatus,
+  QueueSettings,
   WaitingStatus,
 } from "@baro-jinryo/shared";
-import { defaultPatientCategories } from "@baro-jinryo/shared";
+import { defaultPatientCategories, defaultQueueSettings } from "@baro-jinryo/shared";
 import { useCallback, useEffect, useState } from "react";
 import { StaffQueuePage } from "./pages/StaffQueuePage";
 import { StaffLoginPage } from "./pages/StaffLoginPage";
@@ -31,6 +32,7 @@ import {
   saveNextDayCategories,
   submitHospitalApplication,
   submitHospitalInquiry,
+  updateQueueSettings,
   isApiClientErrorCode,
 } from "./services/apiClient";
 
@@ -45,14 +47,13 @@ const initialState: StaffQueueState = {
   nextDayInputMode: "categorized",
   todayCategories: defaultPatientCategories,
   nextDayCategories: defaultPatientCategories,
+  settings: { ...defaultQueueSettings },
 };
 
 function StaffApp() {
   const { session, profile, loading, signOut } = useStaffAuth();
   const [queue, setQueue] = useState(initialState);
-  const [connectionStatus, setConnectionStatus] = useState<
-    "connected" | "retrying"
-  >("connected");
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "retrying">("connected");
   const [view, setView] = useState<"queue" | "onboarding" | "hospital-management">("queue");
   const [onboarding, setOnboarding] = useState<MockHospitalOnboardingState>({
     inquiry: null,
@@ -118,6 +119,10 @@ function StaffApp() {
     setQueue(await changeQueueStatus(status));
   }
 
+  async function saveQueueSettings(settings: QueueSettings) {
+    setQueue(await updateQueueSettings(settings));
+  }
+
   async function updatePatientConfiguration(
     inputMode: PatientInputMode,
     categories: PatientCategoryDefinition[],
@@ -167,8 +172,10 @@ function StaffApp() {
       patientInputMode={queue.todayInputMode}
       nextDayInputMode={queue.nextDayInputMode}
       queueStatus={queue.queueStatus}
+      settings={queue.settings}
       onAddOnsite={addOnsite}
       onChangeQueueStatus={updateQueueStatus}
+      onSaveQueueSettings={saveQueueSettings}
       onChangeStatus={updateStatus}
       onHold={async (id) => setQueue(await holdWaiting(id))}
       onRestore={async (id, position) => setQueue(await restoreWaiting(id, position))}

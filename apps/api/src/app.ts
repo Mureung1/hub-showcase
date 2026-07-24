@@ -15,7 +15,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { notFound } from "./middleware/notFound.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import { healthRouter } from "./routes/health.js";
-import { onboardingMockRouter } from "./routes/onboardingMock.js";
+import { mockOnboardingRouter } from "./routes/mockOnboarding.js";
 import { createStaffRouter } from "./routes/staff.js";
 import { createHospitalManagementRouter } from "./routes/hospitalManagement.js";
 import { createPlatformRouter } from "./routes/platform.js";
@@ -32,7 +32,7 @@ export function createApp(): Express {
   app.use(requestLogger);
 
   app.use("/api/health", healthRouter);
-  app.use("/api/mock", onboardingMockRouter);
+  app.use("/api/mock", mockOnboardingRouter);
   app.use("/api/waitings/status", createOnsiteStatusRouter(createOnsiteStatusService()));
   const patientProfile = createPatientProfileDependencies();
   app.use(

@@ -6,7 +6,7 @@ import {
   reviewMockHospitalInquiry,
   submitMockHospitalApplication,
   submitMockHospitalInquiry,
-} from "../mock/onboardingStore.js";
+} from "../mock/mockOnboardingStore.js";
 
 const hospitalInquiryBodySchema = z.object({
   hospitalName: z.string().trim().min(2).max(100),
@@ -42,22 +42,22 @@ const hospitalApplicationBodySchema = z.object({
   medicalOpeningCertificate: mockDocumentSchema,
 });
 
-export const onboardingMockRouter = Router();
+export const mockOnboardingRouter = Router();
 
-onboardingMockRouter.get("/hospital-onboarding", (_request, response) => {
+mockOnboardingRouter.get("/hospital-onboarding", (_request, response) => {
   response.json(getMockHospitalOnboardingState());
 });
 
-onboardingMockRouter.post("/hospital-inquiries", (request, response) => {
+mockOnboardingRouter.post("/hospital-inquiries", (request, response) => {
   const input = hospitalInquiryBodySchema.parse(request.body);
   response.status(201).json(submitMockHospitalInquiry(input));
 });
 
-onboardingMockRouter.get("/platform/hospital-inquiries", (_request, response) => {
+mockOnboardingRouter.get("/platform/hospital-inquiries", (_request, response) => {
   response.json(listMockHospitalInquiries());
 });
 
-onboardingMockRouter.patch("/platform/hospital-inquiries/:id", (request, response) => {
+mockOnboardingRouter.patch("/platform/hospital-inquiries/:id", (request, response) => {
   const { status } = inquiryReviewBodySchema.parse(request.body);
   const inquiry = reviewMockHospitalInquiry(request.params.id ?? "", status);
   if (!inquiry) {
@@ -69,7 +69,7 @@ onboardingMockRouter.patch("/platform/hospital-inquiries/:id", (request, respons
   response.json(inquiry);
 });
 
-onboardingMockRouter.post("/hospital-applications", (request, response) => {
+mockOnboardingRouter.post("/hospital-applications", (request, response) => {
   const input = hospitalApplicationBodySchema.parse(request.body);
   const state = submitMockHospitalApplication(input);
   if (!state) {

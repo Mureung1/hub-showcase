@@ -9,6 +9,7 @@ import type {
   PatientCategoryDefinition,
   PatientInputMode,
   QueueStatus,
+  QueueSettings,
   WaitingStatus,
   HospitalInformation,
   HospitalManagementState,
@@ -76,9 +77,7 @@ export function getStaffQueue(): Promise<StaffQueueState> {
 export function getWaitingNotificationHistory(
   waitingId: string,
 ): Promise<StaffNotificationHistoryItem[]> {
-  return requestJson<StaffNotificationHistoryItem[]>(
-    `/staff/waitings/${waitingId}/notifications`,
-  );
+  return requestJson<StaffNotificationHistoryItem[]>(`/staff/waitings/${waitingId}/notifications`);
 }
 
 export function getHospitalManagement(): Promise<HospitalManagementState> {
@@ -150,6 +149,13 @@ export function changeQueueStatus(status: QueueStatus): Promise<StaffQueueState>
   return requestJson("/staff/queue/status", {
     method: "PATCH",
     body: JSON.stringify({ status }),
+  });
+}
+
+export function updateQueueSettings(settings: QueueSettings): Promise<StaffQueueState> {
+  return requestJson("/staff/queue/settings", {
+    method: "PATCH",
+    body: JSON.stringify(settings),
   });
 }
 

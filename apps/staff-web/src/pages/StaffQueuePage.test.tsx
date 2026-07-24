@@ -1,14 +1,9 @@
-import type {
-  QueueEntry,
-  StaffNotificationHistoryItem,
-} from "@baro-jinryo/shared";
 import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+  defaultQueueSettings,
+  type QueueEntry,
+  type StaffNotificationHistoryItem,
+} from "@baro-jinryo/shared";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { StaffQueuePage } from "./StaffQueuePage";
 
@@ -48,6 +43,7 @@ function renderPage(
   onGetNotificationHistory = vi.fn(async () => notifications),
   connectionStatus: "connected" | "retrying" = "connected",
   onRetry = vi.fn(async () => undefined),
+  onSaveQueueSettings = vi.fn(async () => undefined),
 ) {
   render(
     <StaffQueuePage
@@ -58,8 +54,10 @@ function renderPage(
       patientInputMode="total_only"
       nextDayInputMode="total_only"
       queueStatus="open"
+      settings={{ ...defaultQueueSettings }}
       onAddOnsite={vi.fn()}
       onChangeQueueStatus={vi.fn()}
+      onSaveQueueSettings={onSaveQueueSettings}
       onChangeStatus={vi.fn()}
       onHold={vi.fn()}
       onRestore={vi.fn()}
@@ -73,7 +71,7 @@ function renderPage(
       onSignOut={vi.fn()}
     />,
   );
-  return onGetNotificationHistory;
+  return { onGetNotificationHistory, onSaveQueueSettings };
 }
 
 describe("StaffQueuePage 네트워크 재시도", () => {
@@ -86,9 +84,7 @@ describe("StaffQueuePage 네트워크 재시도", () => {
     );
 
     expect(screen.getByRole("cell", { name: "4" })).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "서버 연결이 끊겼습니다",
-    );
+    expect(screen.getByRole("alert")).toHaveTextContent("서버 연결이 끊겼습니다");
 
     fireEvent.click(screen.getByRole("button", { name: "지금 다시 시도" }));
     await waitFor(() => expect(onRetry).toHaveBeenCalledTimes(1));
@@ -97,13 +93,11 @@ describe("StaffQueuePage 네트워크 재시도", () => {
 
 describe("StaffQueuePage 알림 발송 이력", () => {
   it("선택한 환자의 알림 종류와 발송 결과를 표시한다", async () => {
-    const onGetNotificationHistory = renderPage();
+    const { onGetNotificationHistory } = renderPage();
 
     fireEvent.click(screen.getByRole("cell", { name: "4" }));
 
-    await waitFor(() =>
-      expect(onGetNotificationHistory).toHaveBeenCalledWith(entry.id),
-    );
+    await waitFor(() => expect(onGetNotificationHistory).toHaveBeenCalledWith(entry.id));
     const history = await screen.findByRole("region", {
       name: "알림 발송 이력",
     });
@@ -118,8 +112,33 @@ describe("StaffQueuePage 알림 발송 이력", () => {
 
     fireEvent.click(screen.getByRole("cell", { name: "4" }));
 
-    expect(
-      await screen.findByText("아직 발송된 알림이 없습니다."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("아직 발송된 알림이 없습니다.")).toBeInTheDocument();
+  });
+});
+
+describe("StaffQueuePage 운영 설정", () => {
+  it("평균 진료시간과 알림 기준, 원격 접수 한도를 저장한다", async () => {
+    const onSaveQueueSettings = vi.fn(async () => undefined);
+    renderPage(
+      vi.fn(async () => notifications),
+      "connected",
+      vi.fn(async () => undefined),
+      onSaveQueueSettings,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "운영 설정" }));
+    fireEvent.change(screen.getByLabelText("평균 진료시간"), {
+      target: { value: "15" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "설정 저장" }));
+
+    await waitFor(() =>
+      expect(onSaveQueueSettings).toHaveBeenCalledWith({
+        averageMinutesPerPatient: 15,
+        preparationThreshold: 6,
+        entryThreshold: 4,
+        maxRemoteWaitingPatients: 20,
+      }),
+    );
   });
 });

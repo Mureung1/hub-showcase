@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { QueueEntry } from "./queue.js";
-import { calculateQueuePositions, decideAutomaticNotification } from "./queue.js";
+import {
+  calculateQueuePositions,
+  decideAutomaticNotification,
+  queueSettingsSchema,
+} from "./queue.js";
 
 const remoteContext = {
   source: "remote" as const,
@@ -12,15 +16,14 @@ const remoteContext = {
 
 describe("decideAutomaticNotification", () => {
   it("원격 환자가 6번째가 되면 준비 알림을 결정한다", () => {
-    expect(
-      decideAutomaticNotification({ ...remoteContext, currentPosition: 6 }),
-    ).toEqual({ notificationType: "preparation", dedupeKey: "preparation" });
+    expect(decideAutomaticNotification({ ...remoteContext, currentPosition: 6 })).toEqual({
+      notificationType: "preparation",
+      dedupeKey: "preparation",
+    });
   });
 
   it("6번째를 건너뛰고 4번째가 되면 입장 요청만 결정한다", () => {
-    expect(
-      decideAutomaticNotification({ ...remoteContext, currentPosition: 4 }),
-    ).toEqual({
+    expect(decideAutomaticNotification({ ...remoteContext, currentPosition: 4 })).toEqual({
       notificationType: "entry_requested",
       dedupeKey: "entry_requested:0",
     });
@@ -86,9 +89,7 @@ describe("decideAutomaticNotification", () => {
 });
 
 describe("calculateQueuePositions", () => {
-  const categories = [
-    { id: "adult", name: "성인", description: "만 19세 이상", sortOrder: 0 },
-  ];
+  const categories = [{ id: "adult", name: "성인", description: "만 19세 이상", sortOrder: 0 }];
 
   function createEntry(id: string, patientCount: number): QueueEntry {
     return {
@@ -121,5 +122,55 @@ describe("calculateQueuePositions", () => {
       expect.objectContaining({ entry: first, position: 2, positionEnd: 5, estimatedMinutes: 10 }),
       expect.objectContaining({ entry: third, position: 6, positionEnd: 7, estimatedMinutes: 50 }),
     ]);
+  });
+
+  it("병원이 설정한 평균 진료시간으로 예상 시간을 계산한다", () => {
+    const first = createEntry("1", 2);
+    const second = createEntry("2", 1);
+
+    expect(calculateQueuePositions([first, second], 15)[1]).toMatchObject({
+      position: 3,
+      estimatedMinutes: 30,
+    });
+  });
+});
+
+describe("queueSettingsSchema", () => {
+  const validSettings = {
+    averageMinutesPerPatient: 10,
+    preparationThreshold: 6,
+    entryThreshold: 4,
+    maxRemoteWaitingPatients: 20,
+  };
+
+  it("운영 설정의 정상값을 허용한다", () => {
+    expect(queueSettingsSchema.parse(validSettings)).toEqual(validSettings);
+  });
+
+  it("평균 진료시간이 5분 단위가 아니면 거절한다", () => {
+    expect(() =>
+      queueSettingsSchema.parse({
+        ...validSettings,
+        averageMinutesPerPatient: 7,
+      }),
+    ).toThrow("평균 진료시간은 5분 단위로 입력해 주세요.");
+  });
+
+  it("준비 기준이 입장 기준보다 크지 않으면 거절한다", () => {
+    expect(() =>
+      queueSettingsSchema.parse({
+        ...validSettings,
+        preparationThreshold: 4,
+      }),
+    ).toThrow("준비 기준은 입장 기준보다 커야 합니다.");
+  });
+
+  it("원격 접수 한도가 1명 미만이면 거절한다", () => {
+    expect(() =>
+      queueSettingsSchema.parse({
+        ...validSettings,
+        maxRemoteWaitingPatients: 0,
+      }),
+    ).toThrow("원격 접수 한도는 1명 이상이어야 합니다.");
   });
 });

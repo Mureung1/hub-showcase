@@ -10,7 +10,7 @@ import {
   notificationDeliveryLabels,
   notificationTypeLabels,
   statusLabels,
-} from "./queuePresentation";
+} from "../utils/queueLabels";
 
 interface WaitingDetailPanelProps {
   waiting: QueuePosition;
