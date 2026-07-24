@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import Stepper from "./components/Stepper.jsx";
+import JobTargetSelect from "./features/jobTarget/JobTargetSelect.jsx";
+import { getJobPosting, JOB_POSTINGS } from "./features/jobTarget/jobPostings.js";
 import CvUpload from "./features/cvUpload/CvUpload.jsx";
 import { parseCv } from "./features/cvUpload/parseCv.js";
 import DesignSelect from "./features/designSelect/DesignSelect.jsx";
@@ -19,9 +21,10 @@ const SAMPLES = [
 ];
 
 // 앱 전체 흐름을 관리하는 오케스트레이터.
-// 단계: upload → design → generate → result
+// 단계: target → upload → design → generate → result
 export default function App() {
-  const [step, setStep] = useState("upload");
+  const [step, setStep] = useState("target");
+  const [jobTargetId, setJobTargetId] = useState("");
   const [cvText, setCvText] = useState("");
   const [designSlug, setDesignSlug] = useState(DEFAULT_THEME.slug);
   const [html, setHtml] = useState("");
@@ -30,6 +33,7 @@ export default function App() {
   const parsed = useMemo(() => parseCv(cvText), [cvText]);
   const cvReady = cvText.trim().length > 0;
   const theme = getTheme(designSlug);
+  const jobTarget = getJobPosting(jobTargetId);
 
   const handleGenerated = useCallback((result) => {
     setHtml(result.html);
@@ -40,7 +44,7 @@ export default function App() {
   function restart() {
     setHtml("");
     setGeneration(null);
-    setStep("upload");
+    setStep("target");
   }
 
   return (
@@ -50,13 +54,33 @@ export default function App() {
           CV → 포트폴리오 생성기 <span className="tag">prototype</span>
         </h1>
         <p className="sub">
-          이력서를 올리고 디자인을 고르면, 포트폴리오 사이트를 만들어 드립니다.
+          지원할 기업과 공고를 고르면, 내 경험을 JD에 맞춰 포트폴리오로 만듭니다.
         </p>
       </header>
 
       <Stepper current={step} onStep={setStep} />
 
       <main className="stage">
+        {step === "target" && (
+          <>
+            <JobTargetSelect
+              postings={JOB_POSTINGS}
+              selectedId={jobTargetId}
+              onSelect={setJobTargetId}
+            />
+            <div className="stage-nav">
+              <span />
+              <button
+                className="btn primary"
+                disabled={!jobTarget}
+                onClick={() => setStep("upload")}
+              >
+                다음: CV 입력 →
+              </button>
+            </div>
+          </>
+        )}
+
         {step === "upload" && (
           <>
             <CvUpload
@@ -66,7 +90,9 @@ export default function App() {
               samples={SAMPLES}
             />
             <div className="stage-nav">
-              <span />
+              <button className="btn" onClick={() => setStep("target")}>
+                ← 이전
+              </button>
               <button
                 className="btn primary"
                 disabled={!cvReady}
@@ -101,6 +127,7 @@ export default function App() {
             cv={parsed}
             cvMarkdown={cvText}
             theme={theme}
+            jobTarget={jobTarget}
             onDone={handleGenerated}
           />
         )}
@@ -110,6 +137,7 @@ export default function App() {
             html={html}
             cv={parsed}
             theme={theme}
+            jobTarget={jobTarget}
             generation={generation}
             onRestart={restart}
             onChangeDesign={() => setStep("design")}

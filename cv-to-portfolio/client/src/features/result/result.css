@@ -90,3 +90,30 @@
   background: #fffbeb;
   color: #92400e;
 }
+
+.result-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin: 10px 0 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 12.5px;
+}
+
+.result-target span {
+  color: var(--muted);
+}
+
+.result-target strong {
+  color: var(--ink);
+}
+
+.result-target a {
+  margin-left: auto;
+  color: var(--brand);
+  font-weight: 700;
+}

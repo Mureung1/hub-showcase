@@ -1,6 +1,7 @@
 # CV → 포트폴리오 생성기 (CV2PF)
 
-이력서(CV)를 업로드하고 원하는 **DESIGN.md** 테마를 고르면, 그 디자인으로 완성된
+지원할 기업·채용 공고를 고르고 이력서(CV)와 원하는 **DESIGN.md** 테마를 입력하면,
+기업 인재상과 JD에 맞춰 실제 경험의 강조 순서를 조정한
 **독립 실행형 포트폴리오 HTML**을 만들어 주는 웹앱입니다.
 프론트(React/Vite)와 백엔드(Express)를 **npm workspaces 모노레포**로 관리합니다.
 완성한 결과는 Express API를 통해 Supabase에 저장하고 최근 기록에서 다시 불러올 수 있습니다.
@@ -12,7 +13,7 @@ flowchart LR
   U["사용자"]
 
   subgraph B["브라우저 · React/Vite"]
-    UI["CV 입력 · 테마 선택<br/>App state"]
+    UI["기업·공고 · CV · 테마 선택<br/>App state"]
     GEN["생성 흐름<br/>generateWithFallback"]
     LOCAL["로컬 HTML 생성기<br/>generatePortfolio"]
     VIEW["결과 화면<br/>iframe 미리보기 · 코드 · 다운로드"]
@@ -32,9 +33,9 @@ flowchart LR
     TABLE[("public.portfolios<br/>메타데이터 · HTML · 생성 시각")]
   end
 
-  U -->|"CV Markdown · 테마"| UI
+  U -->|"지원 목표 · CV Markdown · 테마"| UI
   UI --> GEN
-  GEN -->|"cvMarkdown + designMarkdown"| AI_API
+  GEN -->|"targetMarkdown + cvMarkdown<br/>+ designMarkdown"| AI_API
   AI_API -->|"서버 전용 API key"| ANTHROPIC
   ANTHROPIC -->|"생성 HTML"| AI_API
   AI_API -->|"{ html }"| GEN
@@ -53,7 +54,7 @@ flowchart LR
   LIB -. "환경 변수로 실제 API 우회" .-> MOCK
 ```
 
-사용자는 React 화면에서 CV와 디자인을 고릅니다. React는 Express에 생성을 요청하고,
+사용자는 React 화면에서 지원 기업·공고, CV와 디자인을 고릅니다. React는 Express에 생성을 요청하고,
 Express만 보관하는 API 키로 Anthropic에서 HTML을 받아옵니다. AI 요청이 실패하면 브라우저의
 로컬 생성기가 대신 HTML을 만듭니다. 저장 버튼을 누르면 Express가 결과와 메타데이터를
 Supabase에 저장합니다. 목록에서는 가벼운 메타데이터만 받고, 항목을 열 때 UUID로 HTML을
@@ -63,6 +64,8 @@ Supabase에 저장합니다. 목록에서는 가벼운 메타데이터만 받고
 
 ## 문서
 
+- 🎤 [10분 발표 슬라이드 설계서](docs/ten-minute-presentation-outline-2026-07-24.md) · [발표 대본과 예상 Q&A](docs/ten-minute-presentation-script-2026-07-24.md)
+- 🏢 [기업·채용 공고 예시 5개와 선정 근거](docs/company-job-examples-2026-07-24.md)
 - 🧪 [즐겨찾기 토글 TDD · Skill · 검증 Agent 기록](docs/tdd-favorite-2026-07-23.md)
 - 🗺️ [데이터 흐름·아키텍처 설명 자료](docs/architecture-and-data-flow-2026-07-22.md)
 - 🗓️ **[3주차 주간 계획](docs/WEEK3_PLAN.md)** · [GitHub Project 보드](https://github.com/users/dolphin1404/projects/2)
@@ -99,14 +102,14 @@ Supabase에 저장합니다. 목록에서는 가벼운 메타데이터만 받고
 ## 사용자 흐름
 
 ```
-① CV 업로드/붙여넣기  →  ② DESIGN.md 테마 선택  →  ③ AI 생성  →  ④ 미리보기 & 다운로드
+① 기업·공고 선택  →  ② CV 업로드/붙여넣기  →  ③ DESIGN.md 테마 선택  →  ④ AI 생성  →  ⑤ 미리보기 & 다운로드
 ```
 
-1. **CV 업로드** — 마크다운 이력서를 붙여넣거나 `.md/.txt` 파일 업로드 (샘플 4종: 개발자·디자이너·마케터·기획자). 실시간으로 이름·직함·연락처·스킬·경력·프로젝트·학력으로 파싱됩니다.
-2. **디자인 선택** — 6개 테마의 미리보기 카드에서 하나를 고르면 해당 `DESIGN.md` 원문이 표시됩니다.
-3. **생성** — 선택한 디자인 토큰으로 CV를 렌더링해 HTML 페이지를 조립합니다.
-4. **결과** — iframe 미리보기 ↔ HTML 코드 탭, `<이름>_portfolio.html`로 다운로드.
-5. **저장·조회** — 현재 결과를 Supabase에 저장하고 최근 기록을 선택해 다시 미리보기.
+1. **기업·공고 선택** — 공식 공고 예시 5개에서 지원 목표를 고르고 인재상·JD·포트폴리오 강조점을 확인합니다.
+2. **CV 업로드** — 마크다운 이력서를 붙여넣거나 `.md/.txt` 파일 업로드 (샘플 4종: 개발자·디자이너·마케터·기획자). 실시간으로 이름·직함·연락처·스킬·경력·프로젝트·학력으로 파싱됩니다.
+3. **디자인 선택** — 6개 테마의 미리보기 카드에서 하나를 고르면 해당 `DESIGN.md` 원문이 표시됩니다.
+4. **생성** — 지원 목표, CV, 디자인 명세를 Express에 보내 JD에 맞는 HTML 페이지를 생성합니다. CV에 없는 사실은 추가하지 않습니다.
+5. **결과·저장** — iframe 미리보기, HTML 코드, 다운로드를 제공하고 Supabase에 저장한 결과를 다시 조회합니다.
 
 ## 실행
 
@@ -135,9 +138,9 @@ client/                      # @cv2pf/client — React + Vite
 ├─ designs/                  # 사람이 읽는 디자인 명세 (DESIGN.md 6종)
 ├─ samples/                  # 샘플 CV 4종 (개발자·디자이너·마케터·기획자)
 └─ src/
-   ├─ App.jsx                # 4단계 흐름 오케스트레이터
+   ├─ App.jsx                # 5단계 흐름 오케스트레이터
    ├─ components/Stepper.jsx # 진행 표시기
-   └─ features/              # cvUpload · designSelect · generate · result
+   └─ features/              # jobTarget · cvUpload · designSelect · generate · result
 server/                      # @cv2pf/server — Express API
 └─ src/                      # index·app / config·routes·controllers·services·middlewares
 ```

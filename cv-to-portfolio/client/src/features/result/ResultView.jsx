@@ -8,6 +8,7 @@ export default function ResultView({
   html,
   cv,
   theme,
+  jobTarget,
   generation,
   onRestart,
   onChangeDesign,
@@ -75,6 +76,16 @@ export default function ResultView({
           {generation.notice}
         </p>
       )}
+
+      <div className="result-target">
+        <span>지원 목표</span>
+        <strong>
+          {jobTarget.company} · {jobTarget.role}
+        </strong>
+        <a href={jobTarget.sourceUrl} target="_blank" rel="noreferrer">
+          공고 확인 ↗
+        </a>
+      </div>
 
       {tab === "preview" ? (
         <iframe
