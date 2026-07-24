@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../api/client.js'
 import { getSession, clearSession } from '../../lib/session.js'
 import { onForegroundMessage } from '../../lib/firebase.js'
+import { fetchNotifications, countUnread } from '../../lib/notifications.js'
 import './ConsumerHomePage.css'
 
 const timeOf = (iso) =>
@@ -19,6 +20,7 @@ function ConsumerHomePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [flash, setFlash] = useState(null)
+  const [unread, setUnread] = useState(0)
 
   useEffect(() => {
     api
@@ -26,6 +28,23 @@ function ConsumerHomePage() {
       .then((res) => setDeals(res.data))
       .catch((err) => setError(err.response?.data?.message ?? '목록을 불러오지 못했습니다.'))
       .finally(() => setLoading(false))
+  }, [])
+
+  // 안 읽은 알림 배지 — 목록에 머무는 동안 새 알림이 오면 배지로 알린다 (푸시 폴백)
+  useEffect(() => {
+    let cancelled = false
+    const check = () =>
+      fetchNotifications()
+        .then((items) => {
+          if (!cancelled) setUnread(countUnread(items))
+        })
+        .catch(() => {})
+    check()
+    const timer = setInterval(check, 10000)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
   }, [])
 
   // 앱이 열려 있을 때 도착한 푸시는 브라우저가 알림을 띄우지 않으므로 인앱 배너로 보여준다
@@ -36,6 +55,7 @@ function ConsumerHomePage() {
         title: payload.notification?.title ?? '새 마감 할인',
         body: payload.notification?.body ?? '',
       })
+      setUnread((n) => n + 1)
       // 새 딜이 등록된 것이므로 목록도 갱신한다
       api
         .get('/deals/nearby')
@@ -60,8 +80,15 @@ function ConsumerHomePage() {
           <p className="consumer-home__sub">{session?.nickname}님 · 기준 위치 반경 이내</p>
         </div>
         <nav className="consumer-home__nav">
-          <button type="button" onClick={() => navigate('/app/notifications')}>
+          <button
+            type="button"
+            className="consumer-home__noti"
+            onClick={() => navigate('/app/notifications')}
+          >
             알림
+            {unread > 0 && (
+              <span className="consumer-home__badge">{unread > 9 ? '9+' : unread}</span>
+            )}
           </button>
           <button type="button" onClick={() => navigate('/app/favorites')}>
             관심 가게

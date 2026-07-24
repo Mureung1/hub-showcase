@@ -61,6 +61,30 @@
   color: var(--color-error);
 }
 
+/* 알림 버튼 + 안 읽음 배지 */
+.owner-home__noti {
+  position: relative;
+}
+
+.owner-home__badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: var(--color-error);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* 버튼과 Link가 나란히 서므로 폰트·여백을 맞춘다 */
 button.owner-home__pickup {
   font-family: inherit;

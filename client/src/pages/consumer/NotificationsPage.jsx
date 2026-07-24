@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/client.js'
 import { getSession } from '../../lib/session.js'
+import { markSeen } from '../../lib/notifications.js'
 import './NotificationsPage.css'
 
 const timeOf = (iso) =>
@@ -31,7 +32,11 @@ function NotificationsPage() {
   useEffect(() => {
     api
       .get('/notifications/me')
-      .then((res) => setItems(res.data))
+      .then((res) => {
+        setItems(res.data)
+        // 이 화면을 열었으니 최신 알림까지 읽은 것으로 표시 → 배지 초기화
+        if (res.data.length > 0) markSeen(res.data[0].id)
+      })
       .catch((err) => setError(err.response?.data?.message ?? '알림을 불러오지 못했습니다.'))
       .finally(() => setLoading(false))
   }, [])

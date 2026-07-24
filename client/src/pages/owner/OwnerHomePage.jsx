@@ -8,6 +8,7 @@ import {
   onForegroundMessage,
   syncTokenIfGranted,
 } from '../../lib/firebase.js'
+import { fetchNotifications, countUnread } from '../../lib/notifications.js'
 import './OwnerHomePage.css'
 
 const timeOf = (iso) =>
@@ -25,6 +26,7 @@ function OwnerHomePage() {
   const [loading, setLoading] = useState(true)
   const [pushState, setPushState] = useState(getPermission())
   const [flash, setFlash] = useState(null)
+  const [unread, setUnread] = useState(0)
 
   useEffect(() => {
     let timer
@@ -38,6 +40,10 @@ function OwnerHomePage() {
         const dealsRes = await api.get('/deals', { params: { storeId: res.data.id } })
         if (cancelled) return
         setDeals(dealsRes.data)
+        // 안 읽은 알림 개수 — 푸시 전달·탭 포커스와 무관하게 배지로 알린다 (T-17)
+        const notis = await fetchNotifications()
+        if (cancelled) return
+        setUnread(countUnread(notis))
       } catch (err) {
         if (err.response?.status === 404) {
           navigate('/owner/store/new', { replace: true })
@@ -50,7 +56,7 @@ function OwnerHomePage() {
     }
 
     load()
-    // 예약 현황 실시간 갱신 — MVP는 폴링(5초). SSE/WebSocket 전환은 Backlog
+    // 예약 현황·알림 실시간 갱신 — MVP는 폴링(5초). SSE/WebSocket 전환은 Backlog
     timer = setInterval(load, 5000)
     return () => {
       cancelled = true
@@ -72,6 +78,7 @@ function OwnerHomePage() {
         title: payload.notification?.title ?? '새 예약',
         body: payload.notification?.body ?? '',
       })
+      setUnread((n) => n + 1)
       api
         .get('/deals', { params: { storeId: store.id } })
         .then((res) => setDeals(res.data))
@@ -118,8 +125,9 @@ function OwnerHomePage() {
           <Link className="owner-home__pickup" to="/owner/reservations">
             예약 현황
           </Link>
-          <Link className="owner-home__pickup" to="/owner/notifications">
+          <Link className="owner-home__pickup owner-home__noti" to="/owner/notifications">
             알림
+            {unread > 0 && <span className="owner-home__badge">{unread > 9 ? '9+' : unread}</span>}
           </Link>
           <Link className="owner-home__pickup" to="/owner/pickup">
             픽업 확인
