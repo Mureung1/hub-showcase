@@ -32,6 +32,7 @@ export interface DbPaper {
   channel: string;
   year: number;
   match_score: number;
+  url?: string | null;
   created_at: string;
 }
 
@@ -43,6 +44,7 @@ export interface PaperPayload {
   year: number;
   matchScore: number;
   userId: string;
+  url?: string;
 }
 
 export interface LibraryItem {
@@ -53,6 +55,7 @@ export interface LibraryItem {
   channel: string;
   year: number;
   matchScore: number;
+  url?: string;
   createdAt: string;
 }
 
@@ -70,6 +73,7 @@ export function mapToCamelCase(dbPaper: DbPaper | DbPaper[]): LibraryItem | Libr
       channel: item.channel,
       year: item.year,
       matchScore: item.match_score,
+      url: item.url || '',
       createdAt: item.created_at
     }));
   }
@@ -81,6 +85,7 @@ export function mapToCamelCase(dbPaper: DbPaper | DbPaper[]): LibraryItem | Libr
     channel: dbPaper.channel,
     year: dbPaper.year,
     matchScore: dbPaper.match_score,
+    url: dbPaper.url || '',
     createdAt: dbPaper.created_at
   };
 }
@@ -95,13 +100,15 @@ interface S2RawPaper {
   abstract: string;
   year: number;
   citationCount?: number;
+  url?: string;
+  venue?: string;
 }
 
 // S2 API 논문 수집 유틸리티 함수
 async function fetchS2Papers(searchKeyword: string, limit: number = 50): Promise<S2RawPaper[]> {
   const apiKey = process.env.SEMANTIC_SCHOLAR_API_KEY;
   const encodedQuery = encodeURIComponent(searchKeyword);
-  const fields = 'paperId,title,authors,abstract,year,citationCount';
+  const fields = 'paperId,title,authors,abstract,year,citationCount,url,openAccessPdf,venue';
   const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodedQuery}&fields=${fields}&year=2025-2026&sort=citationCount:desc&limit=${limit}`;
 
   const headers: Record<string, string> = {
@@ -114,18 +121,18 @@ async function fetchS2Papers(searchKeyword: string, limit: number = 50): Promise
   let fetchResponse: any = null;
   let attempts = 0;
 
-  while (attempts < 5) {
+  while (attempts < 8) {
     try {
       attempts++;
       fetchResponse = await fetch(url, { headers });
       if (fetchResponse.status === 429) {
-        console.warn(`⚠️ [S2 API 429 Limit] IP Cooldown 대기 중... (3.5초 대기, 시도 ${attempts}/5)`);
-        await new Promise(r => setTimeout(r, 3500));
+        console.warn(`⚠️ [S2 API 429 Limit] IP Rate Limit 감지됨. 백오프 대기 중... (5.0초 대기, 시도 ${attempts}/8)`);
+        await new Promise(r => setTimeout(r, 5000));
         continue;
       }
       if (fetchResponse.ok) break;
     } catch (err) {
-      if (attempts >= 5) throw err;
+      if (attempts >= 8) throw err;
       await new Promise(r => setTimeout(r, 2000));
     }
   }
@@ -150,6 +157,8 @@ async function fetchS2Papers(searchKeyword: string, limit: number = 50): Promise
     const abstract = item.abstract ? String(item.abstract).replace(/\s+/g, ' ').trim() : 'No abstract provided.';
     const year = typeof item.year === 'number' ? item.year : 2025;
     const citationCount = typeof item.citationCount === 'number' ? item.citationCount : 0;
+    const paperUrl = item.openAccessPdf?.url || item.url || (item.paperId ? `https://www.semanticscholar.org/paper/${item.paperId}` : '');
+    const paperVenue = item.venue ? String(item.venue).trim() : '';
 
     return {
       paperId,
@@ -157,7 +166,9 @@ async function fetchS2Papers(searchKeyword: string, limit: number = 50): Promise
       authors: authorsList,
       abstract,
       year,
-      citationCount
+      citationCount,
+      url: paperUrl,
+      venue: paperVenue
     };
   });
 }
@@ -177,6 +188,7 @@ const benchmarkZodSchema = z.object({
     channel: z.string().min(1),
     year: z.number().int().min(1900),
     matchScore: z.number().int().min(0).max(100),
+    url: z.string().optional().default(''),
     ovgBreakdown: z.object({
       originality: z.number().int().min(0).max(100),
       validity: z.number().int().min(0).max(100),
@@ -199,7 +211,8 @@ const librarySchema = z.object({
     channel: z.string().trim().min(1, { message: "학술 채널은 필수값입니다." }),
     year: z.number().int().min(1900).max(new Date().getFullYear() + 1, { message: "올바른 발행 연도가 아닙니다." }),
     matchScore: z.number().int().min(0).max(100, { message: "매칭 스코어는 0에서 100 사이여야 합니다." }),
-    userId: z.string().trim().min(1, { message: "유효한 형식의 userId가 필요합니다." }) // 시니어 피드백: uuid() 제약 제거
+    userId: z.string().trim().min(1, { message: "유효한 형식의 userId가 필요합니다." }),
+    url: z.string().optional().default('')
   })
 });
 
@@ -263,6 +276,7 @@ app.post('/api/curate', async (req: Request, res: Response) => {
               channel: { type: SchemaType.STRING },
               year: { type: SchemaType.INTEGER },
               matchScore: { type: SchemaType.INTEGER },
+              url: { type: SchemaType.STRING },
               ovgBreakdown: {
                 type: SchemaType.OBJECT,
                 properties: {
@@ -296,11 +310,17 @@ app.post('/api/curate', async (req: Request, res: Response) => {
 [사용자의 현재 연구 질문]
 "${query}"
 
-[큐레이션 및 선별 원칙]
+[큐레이션 및 데이터 클렌징 원칙]
 1. 최우선 연관성 필터링 (Relevance Filtering): OVG 기준을 평가하기에 앞서, 수집된 50편의 논문 중 사용자의 현재 연구 질문("${query}")을 해결하는 데 직접적으로 연관된(Relevant) 논문인지 최우선으로 필터링하라.
 2. OVG 3대 학술 평가 (Originality, Validity, Generalizability): 연관성이 확보된 후보군 중 OVG 점수가 가장 뛰어난 논문(최대 5편)을 최종 선별하라.
-3. XAI 근거 및 인사이트 작성: 선별된 논문들에 대하여 왜 사용자의 질문에 부합하는지 reasoning과 insights(background, coreMethod, quantitativeResult)를 한국어로 명확히 기술하라.
-4. 예외 수량 반환 지침: 만약 수집된 50편의 논문 중 사용자의 질문과 직접적으로 연관된 논문이 5편 미만이라면, 억지로 5편을 채우지 말고 연관성이 확실히 검증된 논문(예: 1~4편)만 선별하여 반환하라. 연관된 논문이 아예 없다면 빈 배열([])을 반환해도 좋다.
+3. 저자명 정제 (Authors Cleansing): 저자명(authors) 배열의 각 문자열에서 'Prof.', 'Dr.', 'Ph.D.', 'MD' 등의 모든 직함/학위/소속 표식을 완전히 제거하라. 또한 수집 데이터 노이즈로 인해 동일 저자명이 중복 결합된 경우(예: 'John Doe John Doe', 'Wael AbdAlmageed Wael AbdAlmageed')에는 이를 단일 영문 성명('John Doe', 'Wael AbdAlmageed')으로 완전히 압축하여 반환하라.
+4. 채널명(Channel) 3단계 정제 및 압축 프로토콜:
+   - 1순위 (공식 이니셜 약어 우선): CVPR, JMIR, SIGCSE, ACL, NeurIPS, IEEE TPAMI 등 해당 학계에서 널리 통용되는 공식 이니셜 약어(Acronym)가 존재하는 경우, 무조건 해당 공식 약어만 단독 출력하라.
+   - 2순위 (기계적 마침표 축약 금지): 'Journal -> J.', 'Applied -> Appl.' 같이 마침표(.)를 부착하는 기계적/임의적 단어 슬라이싱 축약 방식은 절대 사용하지 말라.
+   - 3순위 (환각 방지 및 핵심 키워드 추출): 공식 약어가 존재하지 않으면서 50자를 초과하는 경우, 존재하지 않는 이니셜을 임의로 환각(Hallucination)하여 지어내지 말라. 대신 'Journal of', 'International Conference on', 'Transactions on', 'the', 'for' 등의 불용어를 제거하고 출처를 명확히 식별할 수 있는 핵심 고유 명사 키워드만 남겨 50자 이내로 압축하라.
+5. 원문 링크 포함 (URL Preservation): 각 논문의 원문 접근 링크(url)를 반드시 포함하여 반환하라.
+6. XAI 근거 및 인사이트 작성: 선별된 논문들에 대하여 왜 사용자의 질문에 부합하는지 reasoning과 insights(background, coreMethod, quantitativeResult)를 한국어로 명확히 기술하라.
+7. 예외 수량 반환 지침: 만약 수집된 50편의 논문 중 사용자의 질문과 직접적으로 연관된 논문이 5편 미만이라면, 억지로 5편을 채우지 말고 연관성이 확실히 검증된 논문(예: 1~4편)만 선별하여 반환하라. 연관된 논문이 아예 없다면 빈 배열([])을 반환해도 좋다.
 `;
 
     const model = genAI.getGenerativeModel({
@@ -366,10 +386,11 @@ app.post('/api/library', async (req: Request, res: Response) => {
           paper_id: paper.paperId,
           title: paper.title,
           authors: paper.authors,
-          channel: paper.channel,
+          channel: paper.channel ? paper.channel.substring(0, 50).trim() : '',
           year: paper.year,
           match_score: paper.matchScore,
-          user_id: paper.userId
+          user_id: paper.userId,
+          url: paper.url || null
         }
       ])
       .select();
@@ -445,12 +466,14 @@ app.delete('/api/library/:userId/:paperId', async (req: Request, res: Response) 
   }
 });
 
-// 서버 포트 리스닝
-app.listen(PORT, () => {
-  console.log(`==================================================`);
-  console.log(` Scholar-Sync AI Server is running on port ${PORT}`);
-  console.log(` Health Check: http://localhost:${PORT}/`);
-  console.log(`==================================================`);
-});
+// 서버 포트 리스닝 (테스트 환경이 아닐 때만 실행)
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`==================================================`);
+    console.log(` Scholar-Sync AI Server is running on port ${PORT}`);
+    console.log(` Health Check: http://localhost:${PORT}/`);
+    console.log(`==================================================`);
+  });
+}
 
 export default app;

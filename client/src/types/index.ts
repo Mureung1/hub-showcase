@@ -5,6 +5,7 @@ export interface Paper {
   channel: string;
   year: number;
   matchScore: number;
+  url?: string;
   insights: PaperInsights;
 }
 
@@ -37,5 +38,6 @@ export interface LibraryItem {
   channel: string;
   year: number;
   matchScore: number;
+  url?: string;
   createdAt: string;
 }
