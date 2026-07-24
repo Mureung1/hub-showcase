@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { detectFormat } from "@/lib/classify";
 import { classifyTopic } from "@/lib/classifyTopic";
 
+// Vercel 함수 실행 제한 상향: 페이지 fetch(최대 8초) + LLM 판정(최대 6초)이
+// 겹치면 Hobby 기본 제한(10초)을 넘을 수 있다.
+export const maxDuration = 30;
+
 // 브라우저처럼 보이는 UA — 일부 커머스/뉴스 사이트가 기본 UA를 차단함
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
