@@ -1,17 +1,31 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { getSubscription } from '../lib/subscriptions'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { deleteSubscription, getSubscription } from '../lib/subscriptions'
 import { getServiceColor } from '../lib/serviceColor'
 import RoleBadge from '../components/RoleBadge'
 import LoginRequired from '../components/LoginRequired'
+import ConfirmDialog from '../components/ConfirmDialog'
 import './SubscriptionDetail.css'
 
 const SubscriptionDetail = () => {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [status, setStatus] = useState('loading')
   const [subscription, setSubscription] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [copied, setCopied] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteErrorMessage, setDeleteErrorMessage] = useState('')
+
+  const handleDelete = async () => {
+    setDeleteErrorMessage('')
+    try {
+      await deleteSubscription(id)
+      navigate('/')
+    } catch (error) {
+      setDeleteErrorMessage(error.message)
+    }
+  }
 
   const handleCopyLink = async (joinUrl) => {
     try {
@@ -132,7 +146,6 @@ const SubscriptionDetail = () => {
                 카카오톡 공유
               </button>
             </div>
-
           </div>
         )}
       </>
@@ -141,8 +154,33 @@ const SubscriptionDetail = () => {
 
   return (
     <div className="subscription-detail-page">
-      <Link to="/" className="back-link">← 메인으로</Link>
+      <div className="subscription-detail-topbar">
+        <Link to="/" className="back-link">← 메인으로</Link>
+        {status === 'success' && subscription.role === 'owner' && (
+          <div className="detail-header-actions">
+            <Link to={`/subscriptions/${id}/edit`} className="detail-action-btn">
+              수정
+            </Link>
+            <button
+              type="button"
+              className="detail-action-btn"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              삭제
+            </button>
+          </div>
+        )}
+      </div>
       {content}
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          message={'정말 삭제할까요?\n가입한 파티원 정보도 함께 삭제됩니다.'}
+          confirmLabel="삭제"
+          errorMessage={deleteErrorMessage}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </div>
   )
 }

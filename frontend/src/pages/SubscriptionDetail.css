@@ -4,8 +4,13 @@
   gap: var(--space-section-gap);
 }
 
+.subscription-detail-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .back-link {
-  align-self: flex-start;
   font-size: var(--font-size-caption);
   font-weight: 600;
   color: var(--color-text-muted);
@@ -104,6 +109,24 @@
   color: var(--color-text);
   font-size: var(--font-size-caption);
   font-weight: 600;
+  cursor: pointer;
+}
+
+.detail-header-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.detail-action-btn {
+  font-family: inherit;
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--color-primary);
+  background: none;
   cursor: pointer;
 }
 
