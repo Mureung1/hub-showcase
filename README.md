@@ -5,6 +5,26 @@
 - 참가자: N001_강민구
 - 프로그램: AI Agent Challenge (네이버 커넥트재단 + 서울대, 코드스쿼드 운영)
 
+## 아키텍처
+
+```mermaid
+flowchart LR
+    subgraph Client["화면 · React + Vite"]
+        UI["src/pages, src/components"]
+    end
+    subgraph Server["서버 · Express"]
+        API["server/routes/*.js"]
+    end
+    subgraph DB["DB · Supabase PostgreSQL"]
+        PG[("Prisma Client로 접근")]
+    end
+
+    UI -- "fetch(JSON 요청)" --> API
+    API -- "JSON 응답" --> UI
+    API -- "Prisma 쿼리" --> PG
+    PG -- "쿼리 결과" --> API
+```
+
 ## 문서
 
 - [기획서 (Wiki)](../../wiki) — 문제정의, 사용자 시나리오, 핵심 기능
