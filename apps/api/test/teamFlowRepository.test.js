@@ -129,6 +129,7 @@ function aiContextRows({ assigneeId = aiMemberId, status = 'not_started' } = {})
       is_ai: true,
     }],
     resources: [],
+    ai_runs: [],
   }
 }
 
@@ -540,6 +541,100 @@ test('mock AI run rejects completed tasks and tasks assigned to another member b
       TeamFlowConflictError,
     )
   }
+})
+
+test('mock AI run blocks open or applied history before generation but retries after rejected or failed history', async () => {
+  for (const status of ['running', 'pending_review', 'applied']) {
+    const rows = aiContextRows()
+    rows.ai_runs = [{
+      project_id: projectId,
+      ai_member_id: aiMemberId,
+      task_id: taskId,
+      status,
+    }]
+    let generated = false
+    const supabase = {
+      from: (table) => filteredQuery(rows[table]),
+      rpc: async () => assert.fail(`${status} history must not create another run`),
+    }
+    const repository = createSupabaseTeamFlowRepository(supabase, { id: userId }, {
+      buildMockAiContext: () => assert.fail(`${status} history must not build context`),
+      generateMockAiResult: () => { generated = true },
+    })
+
+    await assert.rejects(
+      repository.createAiRun(aiMemberId, taskId),
+      TeamFlowConflictError,
+    )
+    assert.equal(generated, false)
+  }
+
+  const rejectedRows = aiContextRows()
+  rejectedRows.ai_runs = [{
+    project_id: projectId,
+    ai_member_id: aiMemberId,
+    task_id: taskId,
+    status: 'rejected',
+  }]
+  const rejectedCalls = []
+  const pendingRun = {
+    id: aiRunId,
+    project_id: projectId,
+    ai_member_id: aiMemberId,
+    task_id: taskId,
+    status: 'pending_review',
+    context_snapshot: { version: 1 },
+    result_markdown: '# 모의 실행 결과',
+    error_message: null,
+    applied_note_id: null,
+    created_by: userId,
+    created_at: '2026-07-24T00:00:00.000Z',
+    updated_at: '2026-07-24T00:00:00.000Z',
+  }
+  const rejectedRepository = createSupabaseTeamFlowRepository({
+    from: (table) => filteredQuery(rejectedRows[table]),
+    rpc: async (name, args) => {
+      rejectedCalls.push({ name, args })
+      return { data: pendingRun, error: null }
+    },
+  }, { id: userId }, {
+    buildMockAiContext: () => ({ version: 1, context: {}, truncation: {} }),
+    generateMockAiResult: () => ({
+      contextSnapshot: { version: 1, context: {}, truncation: {} },
+      resultMarkdown: pendingRun.result_markdown,
+    }),
+  })
+
+  assert.equal((await rejectedRepository.createAiRun(aiMemberId, taskId)).status, 'pending_review')
+  assert.equal(rejectedCalls[0].name, 'create_mock_ai_run')
+
+  const failedRows = aiContextRows()
+  failedRows.ai_runs = [{
+    project_id: projectId,
+    ai_member_id: aiMemberId,
+    task_id: taskId,
+    status: 'failed',
+  }]
+  const failedCalls = []
+  const failedRun = {
+    ...pendingRun,
+    status: 'failed',
+    result_markdown: '',
+    error_message: 'Mock 결과 생성에 실패했습니다.',
+  }
+  const failedRepository = createSupabaseTeamFlowRepository({
+    from: (table) => filteredQuery(failedRows[table]),
+    rpc: async (name, args) => {
+      failedCalls.push({ name, args })
+      return { data: failedRun, error: null }
+    },
+  }, { id: userId }, {
+    buildMockAiContext: () => ({ version: 1, context: {}, truncation: {} }),
+    generateMockAiResult: () => { throw new Error('deterministic failure') },
+  })
+
+  assert.equal((await failedRepository.createAiRun(aiMemberId, taskId)).status, 'failed')
+  assert.equal(failedCalls[0].name, 'create_failed_mock_ai_run')
 })
 
 test('disabled project AI cannot receive a new task or a task reassignment before mutation', async () => {

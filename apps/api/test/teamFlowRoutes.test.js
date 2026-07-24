@@ -473,6 +473,24 @@ test('AI agents accept profiles at creation and support partial profile or setti
   assert.equal((await rejectResponse.json()).aiRun.status, 'rejected')
 })
 
+test('applied AI run re-execution conflicts are exposed as 409 responses', async () => {
+  const originalCreateAiRun = repository.createAiRun
+  repository.createAiRun = async () => {
+    throw new TeamFlowConflictError('AI_RUN_APPLIED')
+  }
+
+  try {
+    const response = await request(`/api/ai-agents/${aiMemberId}/runs`, {
+      method: 'POST',
+      body: { taskId },
+    })
+    assert.equal(response.status, 409)
+    assert.equal((await response.json()).error.code, 'CONFLICT')
+  } finally {
+    repository.createAiRun = originalCreateAiRun
+  }
+})
+
 test('mock AI routes reject invalid ids and malformed settings before repository access', async () => {
   assert.equal((await request('/api/projects/not-a-uuid/ai-agents', { method: 'POST', body: aiAgentCreateInput })).status, 400)
   assert.equal((await request(`/api/projects/${projectId}/ai-agents`, {

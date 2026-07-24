@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import { PROJECT_ICON, RESOURCE_UPLOAD, TASK_STATUS } from '@teamflow/shared'
+import { AI_RUN_STATUS, PROJECT_ICON, RESOURCE_UPLOAD, TASK_STATUS } from '@teamflow/shared'
 
 import {
   buildMockAiContext as defaultBuildMockAiContext,
@@ -106,6 +106,11 @@ const AI_VALIDATION_FIELDS = [
   ['INVALID_AI_ENABLED', 'enabled'],
 ]
 
+const BLOCKING_AI_RUN_STATUSES = new Set([
+  AI_RUN_STATUS.RUNNING,
+  AI_RUN_STATUS.PENDING_REVIEW,
+])
+
 export class TeamFlowStoreError extends Error {
   constructor(message, options) {
     super(message, options)
@@ -124,6 +129,15 @@ export class TeamFlowConflictError extends Error {
   constructor(message = '현재 상태에서는 요청을 처리할 수 없습니다.') {
     super(message)
     this.name = 'TeamFlowConflictError'
+  }
+}
+
+function assertAiRunCanStart(runHistory) {
+  if (runHistory.some((run) => run.status === AI_RUN_STATUS.APPLIED)) {
+    throw new TeamFlowConflictError('공유 노트로 반영한 AI 실행 결과는 다시 실행할 수 없습니다.')
+  }
+  if (runHistory.some((run) => BLOCKING_AI_RUN_STATUSES.has(run.status))) {
+    throw new TeamFlowConflictError('같은 할 일의 AI 실행 결과를 검토 중입니다.')
   }
 }
 
@@ -574,6 +588,17 @@ export function createSupabaseTeamFlowRepository(
       if (task.status === TASK_STATUS.COMPLETED) {
         throw new TeamFlowConflictError('완료된 할 일은 다시 실행할 수 없습니다.')
       }
+
+      const { data: runHistory, error: runHistoryError } = await supabase
+        .from('ai_runs')
+        .select('status')
+        .eq('project_id', agent.project_id)
+        .eq('ai_member_id', memberId)
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: false })
+
+      if (runHistoryError) throwDatabaseError('AI 실행 이력 조회', runHistoryError)
+      assertAiRunCanStart(runHistory ?? [])
 
       const [
         projectResult,

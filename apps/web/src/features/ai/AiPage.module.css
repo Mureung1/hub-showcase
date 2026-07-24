@@ -177,15 +177,18 @@
   line-height: 1.5;
 }
 
-.layout { display: grid; grid-template-columns: minmax(0, 1.06fr) minmax(380px, .94fr); gap: 16px; }
+.layout { display: grid; grid-template-columns: minmax(0, 1.06fr) minmax(380px, .94fr); align-items: stretch; gap: 16px; }
 .leftColumn,
-.rightColumn { display: grid; align-content: start; gap: 16px; }
+.rightColumn { display: grid; min-height: 0; align-content: start; gap: 16px; }
+.rightColumn { grid-template-rows: auto minmax(0, 1fr); }
 
 .settingsCard,
 .contextCard,
 .tasksCard,
 .resultCard,
 .historyCard { border-radius: 16px; }
+
+.resultCard { display: grid; min-height: 0; grid-template-rows: auto auto minmax(0, 1fr) auto; }
 
 .settingsCard > header,
 .contextCard > header {
@@ -199,6 +202,9 @@
 .contextCard p { margin: 4px 0 0; color: var(--color-text-secondary); font-size: 11px; }
 
 .settingsFields { display: grid; gap: 14px; padding: 16px 17px; }
+.nameRoleInputs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.descriptionTextarea { min-height: 96px; }
+.instructionsTextarea { min-height: 144px; }
 
 .contextCard > div { display: grid; }
 .contextCard label {
@@ -243,7 +249,7 @@
 .resultMeta strong { overflow: hidden; color: var(--color-text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .resultMeta span { flex: 0 0 auto; color: var(--color-text-secondary); font-size: 10px; }
 
-.markdownResult { max-height: 390px; overflow: auto; padding: 18px; color: var(--color-text-secondary); font-size: 12px; line-height: 1.7; }
+.markdownResult { min-height: 280px; overflow: auto; padding: 18px; color: var(--color-text-secondary); font-size: 12px; line-height: 1.7; }
 .markdownResult h1,
 .markdownResult h2,
 .markdownResult h3 { margin: 18px 0 8px; color: var(--color-text); }
@@ -278,6 +284,7 @@
 
 @media (max-width: 1100px) {
   .layout { grid-template-columns: minmax(0, 1fr); }
+  .rightColumn { grid-template-rows: auto auto; }
   .agentList { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 }
 
@@ -285,6 +292,7 @@
   .emptyAgent { grid-template-columns: auto minmax(0, 1fr); }
   .emptyAgent > button { grid-column: 1 / -1; justify-self: start; }
   .agentList { grid-template-columns: minmax(0, 1fr); }
+  .nameRoleInputs { grid-template-columns: minmax(0, 1fr); }
   .aiIdentity { align-items: flex-start; flex-wrap: wrap; }
   .enableButton { width: 100%; }
 }

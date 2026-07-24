@@ -44,14 +44,6 @@ const contextOptions = [
   ['resources', '자료실 이름과 설명', '등록된 자료의 메타데이터'],
 ]
 
-const colorOptions = [
-  ['', '기본 색상'],
-  ['#3d4a63', '슬레이트 네이비'],
-  ['#2e52b0', '파랑'],
-  ['#1a6040', '초록'],
-  ['#6b3e00', '브라운'],
-]
-
 const runStatusLabel = {
   [AI_RUN_STATUS.RUNNING]: '작업 중',
   [AI_RUN_STATUS.PENDING_REVIEW]: '검토 대기',
@@ -99,11 +91,15 @@ export function AiPage() {
     () => new Map(projectTasks.map((task) => [task.id, task])),
     [projectTasks],
   )
-  const openRunByTaskId = useMemo(
+  const blockingRunByTaskId = useMemo(
     () => new Map(aiRuns
       .filter((run) => (
         run.taskId
-        && [AI_RUN_STATUS.RUNNING, AI_RUN_STATUS.PENDING_REVIEW].includes(run.status)
+        && [
+          AI_RUN_STATUS.RUNNING,
+          AI_RUN_STATUS.PENDING_REVIEW,
+          AI_RUN_STATUS.APPLIED,
+        ].includes(run.status)
       ))
       .map((run) => [run.taskId, run])),
     [aiRuns],
@@ -192,7 +188,6 @@ export function AiPage() {
         name: profile.name.trim(),
         role: profile.role.trim(),
         description: profile.description.trim(),
-        ...(profile.color ? { color: profile.color } : {}),
         instructions,
         contextConfig,
       })
@@ -332,15 +327,17 @@ export function AiPage() {
               <div className={styles.layout}>
                 <div className={styles.leftColumn}>
                   <article className={`${workspace.card} ${styles.settingsCard}`}>
-                    <header><div><Sparkles size={16} aria-hidden="true" /><h2>Agent 프로필과 역할</h2></div></header>
+                    <header><div><Sparkles size={16} aria-hidden="true" /><h2>Agent 기본 정보</h2></div></header>
                     <div className={styles.settingsFields}>
-                      <div className={forms.fieldRow}>
-                        <label className={forms.field}><span className={forms.label}>이름</span><input className={forms.input} disabled={!canWrite || saving} value={profile.name} onChange={(event) => updateProfile('name', event.target.value)} maxLength={80} aria-label="AI Agent 이름" /></label>
-                        <label className={forms.field}><span className={forms.label}>색상</span><select className={forms.select} disabled={!canWrite || saving} value={profile.color} onChange={(event) => updateProfile('color', event.target.value)} aria-label="AI Agent 색상">{colorOptions.map(([value, label]) => <option key={value || 'default'} value={value}>{label}</option>)}</select></label>
+                      <div className={`${forms.field} ${styles.nameRoleField}`}>
+                        <span className={forms.label}>이름 · 역할</span>
+                        <div className={styles.nameRoleInputs}>
+                          <input className={forms.input} disabled={!canWrite || saving} value={profile.name} onChange={(event) => updateProfile('name', event.target.value)} maxLength={80} aria-label="AI Agent 이름" placeholder="예: 자료조사 AI" />
+                          <input className={forms.input} disabled={!canWrite || saving} value={profile.role} onChange={(event) => updateProfile('role', event.target.value)} maxLength={120} aria-label="AI Agent 역할" placeholder="예: 시장 조사" />
+                        </div>
                       </div>
-                      <label className={forms.field}><span className={forms.label}>역할</span><input className={forms.input} disabled={!canWrite || saving} value={profile.role} onChange={(event) => updateProfile('role', event.target.value)} maxLength={120} aria-label="AI Agent 역할" /></label>
-                      <label className={forms.field}><span className={forms.label}>소개</span><textarea className={forms.textarea} disabled={!canWrite || saving} value={profile.description} onChange={(event) => updateProfile('description', event.target.value)} maxLength={500} aria-label="AI Agent 소개" /></label>
-                      <label className={forms.field}><span className={forms.label}>역할 지시사항</span><textarea className={forms.textarea} disabled={!canWrite || saving} value={instructions} onChange={(event) => updateInstructions(event.target.value)} maxLength={10_000} aria-label="AI 역할 지시사항" placeholder="AI Agent가 따라야 할 역할과 작업 원칙을 입력하세요" /></label>
+                      <label className={forms.field}><span className={forms.label}>소개</span><textarea className={`${forms.textarea} ${styles.descriptionTextarea}`} disabled={!canWrite || saving} value={profile.description} onChange={(event) => updateProfile('description', event.target.value)} maxLength={500} aria-label="AI Agent 소개" placeholder="이 Agent가 프로젝트에서 맡는 일을 간단히 설명하세요" /></label>
+                      <label className={forms.field}><span className={forms.label}>역할 프롬프트</span><textarea className={`${forms.textarea} ${styles.instructionsTextarea}`} disabled={!canWrite || saving} value={instructions} onChange={(event) => updateInstructions(event.target.value)} maxLength={10_000} aria-label="AI 역할 프롬프트" placeholder="AI Agent가 따라야 할 역할과 작업 원칙을 입력하세요" /></label>
                     </div>
                   </article>
 
@@ -362,11 +359,30 @@ export function AiPage() {
                     <header className={workspace.sectionHeader}><div><ClipboardList size={16} aria-hidden="true" /><h2>AI 담당 할 일</h2></div><span><b className={workspace.mono}>{aiTasks.length}</b>개</span></header>
                     {aiTasks.length === 0 ? <p className={workspace.empty}>할 일 생성·수정 화면에서 이 AI Agent를 담당자로 지정해 주세요.</p> : (
                       <ul className={styles.taskList}>{aiTasks.map((task) => {
-                        const openRun = openRunByTaskId.get(task.id)
+                        const blockingRun = blockingRunByTaskId.get(task.id)
                         const isRunning = runningTaskId === task.id
                         const completed = task.status === TASK_STATUS.COMPLETED
-                        const runBlocked = !agentEnabled || completed || isRunning || Boolean(openRun)
-                        return <li key={task.id}><div><strong>{task.title}</strong><span>{TASK_STATUS_LABEL[task.status]} · 마감 <b className={workspace.mono}>{formatShortDate(task.dueDate)}</b></span></div>{canWrite ? <button type="button" onClick={() => runTask(task.id)} disabled={runBlocked} title={!agentEnabled ? '비활성 AI Agent는 실행할 수 없습니다.' : completed ? '완료된 할 일은 실행할 수 없습니다.' : undefined}><Play size={13} aria-hidden="true" />{isRunning ? '작업 중' : openRun ? '검토 대기' : !agentEnabled ? '비활성' : completed ? '실행 완료' : '모의 작업 실행'}</button> : null}</li>
+                        const applied = blockingRun?.status === AI_RUN_STATUS.APPLIED
+                        const runBlocked = !agentEnabled || completed || isRunning || Boolean(blockingRun)
+                        const buttonTitle = !agentEnabled
+                          ? '비활성 AI Agent는 실행할 수 없습니다.'
+                          : applied
+                            ? '공유 노트에 반영한 결과는 다시 실행할 수 없습니다.'
+                            : completed
+                              ? '완료된 할 일은 실행할 수 없습니다.'
+                              : undefined
+                        const buttonLabel = isRunning
+                          ? '작업 중'
+                          : applied
+                            ? '반영 완료'
+                            : blockingRun
+                              ? '검토 대기'
+                              : !agentEnabled
+                                ? '비활성'
+                                : completed
+                                  ? '실행 완료'
+                                  : '모의 작업 실행'
+                        return <li key={task.id}><div><strong>{task.title}</strong><span>{TASK_STATUS_LABEL[task.status]} · 마감 <b className={workspace.mono}>{formatShortDate(task.dueDate)}</b></span></div>{canWrite ? <button type="button" onClick={() => runTask(task.id)} disabled={runBlocked} title={buttonTitle}><Play size={13} aria-hidden="true" />{buttonLabel}</button> : null}</li>
                       })}</ul>
                     )}
                   </article>
@@ -406,7 +422,7 @@ function RunStatus({ status }) {
 }
 
 function profileValues(member) {
-  return { name: member?.name ?? '', role: member?.role ?? '', description: member?.description ?? '', color: member?.color ?? '' }
+  return { name: member?.name ?? '', role: member?.role ?? '', description: member?.description ?? '' }
 }
 
 function errorMessage(error, fallback) {
