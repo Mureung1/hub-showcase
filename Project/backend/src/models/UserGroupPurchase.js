@@ -29,6 +29,11 @@ const UserGroupPurchase = sequelize.define(
       allowNull: false,
       defaultValue: false,
     },
+    isPaymentConfirmed: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
     isReceived: {
       type: DataTypes.BOOLEAN,
       allowNull: false,

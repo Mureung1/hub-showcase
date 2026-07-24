@@ -10,6 +10,13 @@ async function main() {
   await assertDbConnection();
   const queryInterface = sequelize.getQueryInterface();
   await addColumnIfMissing('group_purchases', 'pickup_place', { type: 'VARCHAR(255)', allowNull: true });
+  await addColumnIfMissing('group_purchases', 'pickup_detail_address', { type: 'VARCHAR(255)', allowNull: true });
+  await addColumnIfMissing('group_purchases', 'payment_account', { type: 'VARCHAR(150)', allowNull: true });
+  await addColumnIfMissing('group_purchases', 'image_url', { type: 'MEDIUMTEXT', allowNull: true });
+  await sequelize.query('ALTER TABLE group_purchases MODIFY COLUMN image_url MEDIUMTEXT NULL');
+  await addColumnIfMissing('group_purchases', 'image_urls', { type: 'JSON', allowNull: true });
+  await addColumnIfMissing('user_group_purchases', 'is_payment_confirmed', { type: 'TINYINT(1)', allowNull: false, defaultValue: false });
+  await sequelize.query("UPDATE group_purchases SET current_participants = 1 WHERE current_participants = 0");
   await sequelize.query("ALTER TABLE group_purchases MODIFY COLUMN status ENUM('RECRUITING','COMPLETED','ORDERED','WAITING_PICKUP','FINISHED','FAILED') NOT NULL DEFAULT 'RECRUITING'");
   await queryInterface.createTable('notifications', {
     id: { type: 'INTEGER', primaryKey: true, autoIncrement: true, allowNull: false },
@@ -24,7 +31,7 @@ async function main() {
   }).catch((error) => {
     if (!/already exists/i.test(error.message)) throw error;
   });
-  console.log('[migrate] notifications and pickup_place are ready');
+  console.log('[migrate] notifications, pickup_place, payment_account, and payment confirmation are ready');
   await sequelize.close();
 }
 

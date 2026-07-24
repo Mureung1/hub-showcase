@@ -238,7 +238,7 @@ describe('ThingDong Concurrency and State Transition Tests', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.groupPurchase.currentParticipants).toBe(0);
+      expect(res.body.data.groupPurchase.currentParticipants).toBe(1);
       expect(res.body.data.groupPurchase.status).toBe('RECRUITING');
 
       const applicationCount = await UserGroupPurchase.count({
@@ -348,8 +348,8 @@ describe('ThingDong Concurrency and State Transition Tests', () => {
         status: 'COMPLETED',
         deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
       });
-      await UserGroupPurchase.create({ userId: participants[0].id, groupPurchaseId: groupPurchase.id });
-      await UserGroupPurchase.create({ userId: participants[1].id, groupPurchaseId: groupPurchase.id });
+      await UserGroupPurchase.create({ userId: participants[0].id, groupPurchaseId: groupPurchase.id, isPaid: true, isPaymentConfirmed: true });
+      await UserGroupPurchase.create({ userId: participants[1].id, groupPurchaseId: groupPurchase.id, isPaid: true, isPaymentConfirmed: true });
     });
 
     test('방장만 순서대로 주문 완료와 픽업 대기 상태로 바꿀 수 있다', async () => {
@@ -425,6 +425,7 @@ describe('ThingDong Concurrency and State Transition Tests', () => {
         .send({
           title: '인증 없는 테스트',
           productUrl: 'http://test.com',
+          imageUrl: 'data:image/png;base64,authenticated-test-photo',
           totalPrice: 10000,
           targetParticipants: 2,
           category: 'FOOD',
@@ -469,10 +470,12 @@ describe('ThingDong Concurrency and State Transition Tests', () => {
         title: '신선한 토마토 5kg 나눔',
         description: '유기농 토마토 공구',
         productUrl: 'http://test.com/tomato',
+        imageUrl: 'data:image/png;base64,existing-test-photo',
         totalPrice: 20000,
         targetParticipants: 4,
         pickupLatitude: 37.5,
         pickupLongitude: 127.0,
+        pickupDetailAddress: '101동 공동현관 앞',
         pickupTimeSlot: '저녁 7시 아파트 앞',
         category: 'FOOD',
       };
@@ -486,13 +489,54 @@ describe('ThingDong Concurrency and State Transition Tests', () => {
       expect(res.body.success).toBe(true);
       expect(res.body.data.title).toBe(newPostData.title);
       expect(res.body.data.perPersonPrice).toBe(5000); // 20000 / 4 = 5000
-      expect(res.body.data.currentParticipants).toBe(0);
+      expect(res.body.data.currentParticipants).toBe(1);
       expect(res.body.data.status).toBe('RECRUITING');
 
       // Verify DB persistence
       const dbRecord = await GroupPurchase.findByPk(res.body.data.id);
       expect(dbRecord).not.toBeNull();
       expect(dbRecord.title).toBe(newPostData.title);
+      expect(dbRecord.pickupDetailAddress).toBe('101동 공동현관 앞');
+    });
+
+    test('상품 사진 없이 등록하면 거절하고, 사진 URL은 게시글에 저장한다', async () => {
+      const missingPhoto = await request(app)
+        .post('/group-purchases')
+        .set('Authorization', getAuthHeader(participants[0].id))
+        .send({
+          title: '사진 없는 공동구매', productUrl: 'https://example.com/no-photo',
+          totalPrice: 10000, targetParticipants: 2, category: 'FOOD',
+        });
+      expect(missingPhoto.status).toBe(400);
+      expect(missingPhoto.body.error.code).toBe('VALIDATION_ERROR');
+
+      const photoUrl = 'data:image/png;base64,photo-test-data';
+      const withPhoto = await request(app)
+        .post('/group-purchases')
+        .set('Authorization', getAuthHeader(participants[0].id))
+        .send({
+          title: '사진 있는 공동구매', productUrl: 'https://example.com/with-photo', imageUrl: photoUrl,
+          totalPrice: 10000, targetParticipants: 2, category: 'FOOD',
+        });
+      expect(withPhoto.status).toBe(201);
+      expect(withPhoto.body.data.imageUrl).toBe(photoUrl);
+    });
+
+    test('사진은 1장 이상 5장 이하로 저장한다', async () => {
+      const imageUrls = Array.from({ length: 5 }, (_, index) => `data:image/png;base64,photo-${index + 1}`);
+      const valid = await request(app)
+        .post('/group-purchases')
+        .set('Authorization', getAuthHeader(participants[0].id))
+        .send({ title: '사진 다섯 장', productUrl: 'https://example.com/five-images', imageUrls, totalPrice: 10000, targetParticipants: 2, category: 'FOOD' });
+      expect(valid.status).toBe(201);
+      expect(valid.body.data.imageUrls).toEqual(imageUrls);
+
+      const tooMany = await request(app)
+        .post('/group-purchases')
+        .set('Authorization', getAuthHeader(participants[0].id))
+        .send({ title: '사진 여섯 장', productUrl: 'https://example.com/six-images', imageUrls: [...imageUrls, 'data:image/png;base64,photo-6'], totalPrice: 10000, targetParticipants: 2, category: 'FOOD' });
+      expect(tooMany.status).toBe(400);
+      expect(tooMany.body.error.code).toBe('VALIDATION_ERROR');
     });
   });
 
@@ -535,6 +579,95 @@ describe('ThingDong Concurrency and State Transition Tests', () => {
       expect(application.isApproved).toBe(false);
       expect(application.isPaid).toBe(false);
       expect(await Notification.count({ where: { groupPurchaseId: purchase.id } })).toBe(1);
+    });
+  });
+
+  describe('공동구매 입금 완료 흐름', () => {
+    test('참여자가 입금 완료를 표시하고, 전원 입금 전에는 주문 완료로 바꿀 수 없다', async () => {
+      const paymentPurchase = await GroupPurchase.create({
+        hostId: hostUser.id,
+        title: '입금 확인 공동구매',
+        productUrl: 'https://example.com/payment',
+        totalPrice: 20000,
+        targetParticipants: 2,
+        currentParticipants: 2,
+        perPersonPrice: 10000,
+        pickupLatitude: 37.5,
+        pickupLongitude: 127,
+        pickupPlace: '아파트 정문',
+        pickupTimeSlot: '토요일 오후 2시',
+        paymentAccount: '카카오뱅크 3333-01-1234567',
+        category: 'FOOD',
+        status: 'COMPLETED',
+        deadlineAt: new Date(Date.now() + 86400000),
+      });
+      await UserGroupPurchase.create({ userId: participants[0].id, groupPurchaseId: paymentPurchase.id });
+      await UserGroupPurchase.create({ userId: participants[1].id, groupPurchaseId: paymentPurchase.id });
+
+      const detail = await request(app)
+        .get(`/group-purchases/${paymentPurchase.id}`)
+        .set('Authorization', getAuthHeader(participants[0].id));
+      expect(detail.status).toBe(200);
+      expect(detail.body.data.paymentAccount).toBe('카카오뱅크 3333-01-1234567');
+
+      const firstPayment = await request(app)
+        .patch(`/group-purchases/${paymentPurchase.id}/payment`)
+        .set('Authorization', getAuthHeader(participants[0].id));
+      expect(firstPayment.status).toBe(200);
+      expect(firstPayment.body.data.isPaid).toBe(true);
+
+      const earlyOrder = await request(app)
+        .patch(`/group-purchases/${paymentPurchase.id}/status`)
+        .set('Authorization', getAuthHeader(hostUser.id))
+        .send({ status: 'ORDERED' });
+      expect(earlyOrder.status).toBe(409);
+      expect(earlyOrder.body.error.code).toBe('PARTICIPANTS_NOT_PAYMENT_CONFIRMED');
+
+      const secondPayment = await request(app)
+        .patch(`/group-purchases/${paymentPurchase.id}/payment`)
+        .set('Authorization', getAuthHeader(participants[1].id));
+      expect(secondPayment.status).toBe(200);
+
+      const paymentApplications = await UserGroupPurchase.findAll({ where: { groupPurchaseId: paymentPurchase.id } });
+      await request(app).patch(`/group-purchases/${paymentPurchase.id}/payments/${paymentApplications[0].id}/confirm`)
+        .set('Authorization', getAuthHeader(hostUser.id));
+      await request(app).patch(`/group-purchases/${paymentPurchase.id}/payments/${paymentApplications[1].id}/confirm`)
+        .set('Authorization', getAuthHeader(hostUser.id));
+
+      const ordered = await request(app)
+        .patch(`/group-purchases/${paymentPurchase.id}/status`)
+        .set('Authorization', getAuthHeader(hostUser.id))
+        .send({ status: 'ORDERED' });
+      expect(ordered.status).toBe(200);
+      expect(ordered.body.data.status).toBe('ORDERED');
+    });
+
+    test('참여자의 입금 신고는 방장이 확인한 뒤에만 주문 완료 조건에 포함된다', async () => {
+      const purchase = await GroupPurchase.create({
+        hostId: hostUser.id, title: '입금 이중 확인 공동구매', productUrl: 'https://example.com/confirm-payment',
+        totalPrice: 20000, targetParticipants: 2, currentParticipants: 2, perPersonPrice: 10000,
+        pickupLatitude: 37.5, pickupLongitude: 127, paymentAccount: '카카오뱅크 3333-02-1234567',
+        category: 'FOOD', status: 'COMPLETED', deadlineAt: new Date(Date.now() + 86400000),
+      });
+      const application = await UserGroupPurchase.create({ userId: participants[0].id, groupPurchaseId: purchase.id });
+
+      await request(app).patch(`/group-purchases/${purchase.id}/payment`)
+        .set('Authorization', getAuthHeader(participants[0].id));
+
+      const hostDetail = await request(app).get(`/group-purchases/${purchase.id}`)
+        .set('Authorization', getAuthHeader(hostUser.id));
+      expect(hostDetail.body.data.viewer.paymentSummary).toMatchObject({ reportedCount: 1, confirmedCount: 0 });
+      expect(hostDetail.body.data.viewer.paymentParticipants[0]).toMatchObject({ id: application.id, isPaid: true, isPaymentConfirmed: false });
+
+      const earlyOrder = await request(app).patch(`/group-purchases/${purchase.id}/status`)
+        .set('Authorization', getAuthHeader(hostUser.id)).send({ status: 'ORDERED' });
+      expect(earlyOrder.status).toBe(409);
+      expect(earlyOrder.body.error.code).toBe('PARTICIPANTS_NOT_PAYMENT_CONFIRMED');
+
+      const confirmation = await request(app).patch(`/group-purchases/${purchase.id}/payments/${application.id}/confirm`)
+        .set('Authorization', getAuthHeader(hostUser.id));
+      expect(confirmation.status).toBe(200);
+      expect(confirmation.body.data.isPaymentConfirmed).toBe(true);
     });
   });
 });

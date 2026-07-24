@@ -61,7 +61,22 @@
   cursor: pointer;
   transition: all 0.2s ease;
   color: var(--td-on-surface-variant);
+  overflow: hidden;
 }
+
+.td-createpost-page__file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.td-createpost-page__photo-preview { width: 100%; height: 100%; object-fit: cover; }
+.td-createpost-page__photo-preview ~ span,
+.td-createpost-page__photo-preview ~ p { display: none; }
+.td-createpost-page__photo-list { display: flex; flex-wrap: wrap; gap: 10px; }
+.td-createpost-page__photo-thumb { position: relative; width: 92px; height: 92px; overflow: hidden; border-radius: 10px; }
+.td-createpost-page__photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.td-createpost-page__photo-thumb button { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, .68); color: #fff; font-size: 18px; line-height: 20px; cursor: pointer; }
+.td-createpost-page__representative-badge,
+.td-createpost-page__representative-btn { position: absolute; top: auto; right: auto; left: 5px; bottom: 5px; width: auto; height: auto; border: 0; border-radius: 999px; padding: 4px 7px; background: var(--td-primary); color: #fff; font: inherit; font-size: 11px; font-weight: 700; line-height: normal; }
+.td-createpost-page__representative-btn { cursor: pointer; background: rgba(0, 0, 0, .68); }
+.td-createpost-page__photo-add-btn { display: grid; place-content: center; width: 92px; height: 92px; border: 1px dashed var(--td-primary-container); border-radius: 10px; background: #fff; color: var(--td-primary); font-size: 24px; cursor: pointer; }
+.td-createpost-page__photo-add-btn span { display: block; margin-top: 4px; font-size: 12px; }
 
 .td-createpost-page__photo-uploader span {
   font-size: 36px;

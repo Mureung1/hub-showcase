@@ -68,6 +68,8 @@ export default function PostfeedScreen({ onNavigate }) {
       imageUrl = 'https://lh3.googleusercontent.com/aida-public/AB6AXuD3Jgk1WL3bHM7C6vwAUT_s8auzkGNvqaZ1GMfzW7Lv0PhcOL2riiWQ_xvPzlchfF3MvcU1RBi9Eqqd3N0hj4G-yfIeSEMXh4dZkPRGT7AtdE4UU8yIehvP3ISAfTqxnAtnc3VIsVW6QzzA73JQ8mxZLq0U2171YNUHYdEz_FKoTo8Xm8anAcfRngm5zdfGzB5GEwL9z6lSIYs2Pp6OAP4nxvQBNMgJl-BAVGeE6WHuIA_wMNtJmYY';
     }
 
+    imageUrl = item.imageUrl || item.imageUrls?.[0] || imageUrl;
+
     return {
       id: item.id,
       category: categoryLabel,

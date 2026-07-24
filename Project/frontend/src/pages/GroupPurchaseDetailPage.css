@@ -426,6 +426,63 @@
   pointer-events: none;
 }
 
+.td-detail-page__payment-summary {
+  margin: 0 0 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--td-surface-muted);
+  color: var(--td-primary);
+}
+
+.td-detail-page__payment-summary p { margin: 6px 0 10px; }
+.td-detail-page__payment-participants { display: grid; gap: 8px; }
+.td-detail-page__payment-participant { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--td-border-light); font-size: 13px; }
+.td-detail-page__payment-state { color: var(--td-on-surface-variant); font-size: 12px; }
+.td-detail-page__payment-state--confirmed { color: var(--td-primary); font-weight: 700; }
+.td-detail-page__payment-confirm-btn { border: 0; border-radius: 999px; padding: 6px 10px; color: #fff; background: var(--td-primary); font: inherit; font-size: 12px; cursor: pointer; }
+.td-detail-page__payment-confirm-btn:disabled { opacity: .55; cursor: wait; }
+.td-detail-page__product-link { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 14px; color: var(--td-primary); font-weight: 700; text-decoration: none; }
+.td-detail-page__product-link span { font-size: 16px; }
+.td-detail-page__desc-content > p:not(.td-detail-page__user-description),
+.td-detail-page__desc-content > .td-detail-page__desc-bullets { display: none; }
+
+.td-detail-page__payment-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.td-detail-page__payment-modal {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 28px;
+  border-radius: 20px;
+  background: #fff;
+  text-align: center;
+}
+
+.td-detail-page__payment-account {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--td-primary);
+  color: #fff;
+  font-size: 18px;
+  letter-spacing: .02em;
+}
+
+.td-detail-page__payment-modal-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 4px; }
+.td-detail-page__payment-later-btn,
+.td-detail-page__payment-submit-btn { min-height: 52px; border-radius: 12px; font: inherit; font-weight: 700; cursor: pointer; }
+.td-detail-page__payment-later-btn { border: 1px solid var(--td-border-light); background: #fff; color: var(--td-on-surface-variant); }
+.td-detail-page__payment-submit-btn { border: 0; background: var(--td-primary-container); color: var(--td-on-primary); }
+.td-detail-page__payment-submit-btn:hover:not(:disabled) { background: var(--td-primary); }
+.td-detail-page__payment-submit-btn:disabled { opacity: .55; cursor: wait; }
+
 .td-detail-page__map-text {
   color: var(--td-on-surface-variant);
   margin: 0;

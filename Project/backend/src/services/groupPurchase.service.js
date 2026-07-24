@@ -1,7 +1,7 @@
 const { GroupPurchase, UserGroupPurchase, User, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const AppError = require('../utils/appError');
-const { notifyParticipantsOfStatus } = require('./notification.service');
+const { notifyParticipantsOfStatus, notifyHostOfPaymentReport } = require('./notification.service');
 
 async function listGroupPurchases(filters = {}) {
   const where = {};
@@ -34,12 +34,28 @@ async function getGroupPurchaseById(id, viewerId = null) {
   }
 
   const application = await UserGroupPurchase.findOne({ where: { groupPurchaseId: id, userId: viewerId } });
+  const [reportedCount, confirmedCount, participantCount, paymentParticipants] = await Promise.all([
+    UserGroupPurchase.count({ where: { groupPurchaseId: id, isPaid: true } }),
+    UserGroupPurchase.count({ where: { groupPurchaseId: id, isPaymentConfirmed: true } }),
+    UserGroupPurchase.count({ where: { groupPurchaseId: id } }),
+    data.hostId === viewerId
+      ? UserGroupPurchase.findAll({
+        where: { groupPurchaseId: id },
+        include: [{ model: User, attributes: ['nickname'] }],
+        order: [['appliedAt', 'ASC']],
+      })
+      : [],
+  ]);
   return {
     ...data,
     viewer: {
       isHost: data.hostId === viewerId,
       application: application
-        ? { id: application.id, isReceived: application.isReceived, isPaid: application.isPaid }
+        ? { id: application.id, isReceived: application.isReceived, isPaid: application.isPaid, isPaymentConfirmed: application.isPaymentConfirmed }
+        : null,
+      paymentSummary: data.hostId === viewerId ? { reportedCount, confirmedCount, participantCount } : null,
+      paymentParticipants: data.hostId === viewerId
+        ? paymentParticipants.map((item) => ({ id: item.id, nickname: item.User.nickname, isPaid: item.isPaid, isPaymentConfirmed: item.isPaymentConfirmed }))
         : null,
     },
   };
@@ -75,6 +91,7 @@ async function getMyGroupPurchaseActivities(userId) {
         id: application.id,
         isApproved: application.isApproved,
         isPaid: application.isPaid,
+        isPaymentConfirmed: application.isPaymentConfirmed,
         appliedAt: application.appliedAt,
       },
     };
@@ -89,12 +106,16 @@ async function createGroupPurchase(data) {
     title,
     description,
     productUrl,
+    imageUrl,
+    imageUrls,
     totalPrice,
     targetParticipants,
     pickupLatitude,
     pickupLongitude,
     pickupPlace,
+    pickupDetailAddress,
     pickupTimeSlot,
+    paymentAccount,
     category,
     deadlineAt,
   } = data;
@@ -120,14 +141,18 @@ async function createGroupPurchase(data) {
     title,
     description,
     productUrl,
+    imageUrl,
+    imageUrls,
     totalPrice,
     targetParticipants,
-    currentParticipants: 0,
+    currentParticipants: 1,
     perPersonPrice,
     pickupLatitude: pickupLatitude || 37.5665,
     pickupLongitude: pickupLongitude || 126.978,
     pickupPlace,
+    pickupDetailAddress,
     pickupTimeSlot,
+    paymentAccount,
     category,
     deadlineAt: deadlineAt || new Date(Date.now() + 1000 * 60 * 60 * 24),
     status: 'RECRUITING',
@@ -190,7 +215,7 @@ async function cancelGroupPurchaseJoin(groupPurchaseId, userId) {
     }
 
     await application.destroy({ transaction });
-    const currentParticipants = Math.max(groupPurchase.currentParticipants - 1, 0);
+    const currentParticipants = Math.max(groupPurchase.currentParticipants - 1, 1);
     await groupPurchase.update({ currentParticipants, status: 'RECRUITING' }, { transaction });
 
     return {
@@ -236,12 +261,52 @@ async function updateGroupPurchaseStatus(groupPurchaseId, hostId, nextStatus) {
         throw new AppError(409, '모든 참여자의 수령 완료 후 공구를 마감할 수 있습니다.', 'PARTICIPANTS_NOT_RECEIVED');
       }
     }
+    if (nextStatus === 'ORDERED') {
+      const notPaidCount = await UserGroupPurchase.count({
+        where: { groupPurchaseId, isPaymentConfirmed: false },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (notPaidCount > 0) {
+        throw new AppError(409, '방장이 모든 참여자의 입금을 확인한 뒤 주문할 수 있습니다.', 'PARTICIPANTS_NOT_PAYMENT_CONFIRMED');
+      }
+    }
 
     await groupPurchase.update({ status: nextStatus }, { transaction });
     return { id: groupPurchase.id, status: groupPurchase.status };
   });
   await notifyParticipantsOfStatus(groupPurchaseId, nextStatus);
   return result;
+}
+
+async function markGroupPurchasePayment(groupPurchaseId, userId) {
+  const result = await sequelize.transaction(async (transaction) => {
+    const groupPurchase = await GroupPurchase.findByPk(groupPurchaseId, { transaction, lock: transaction.LOCK.UPDATE });
+    if (!groupPurchase) throw new AppError(404, '공동구매를 찾을 수 없습니다.', 'GROUP_PURCHASE_NOT_FOUND');
+    if (groupPurchase.status !== 'COMPLETED') {
+      throw new AppError(409, '모집 완료 상태에서만 입금 완료를 표시할 수 있습니다.', 'NOT_WAITING_FOR_PAYMENT');
+    }
+    const application = await UserGroupPurchase.findOne({ where: { groupPurchaseId, userId }, transaction, lock: transaction.LOCK.UPDATE });
+    if (!application) throw new AppError(404, '참여 내역을 찾을 수 없습니다.', 'JOIN_NOT_FOUND');
+    await application.update({ isPaid: true, isPaymentConfirmed: false }, { transaction });
+    return { id: application.id, groupPurchaseId, isPaid: application.isPaid, isPaymentConfirmed: application.isPaymentConfirmed, hostId: groupPurchase.hostId, userId };
+  });
+  await notifyHostOfPaymentReport(groupPurchaseId, result);
+  return result;
+}
+
+async function confirmGroupPurchasePayment(groupPurchaseId, hostId, applicationId) {
+  return sequelize.transaction(async (transaction) => {
+    const groupPurchase = await GroupPurchase.findByPk(groupPurchaseId, { transaction, lock: transaction.LOCK.UPDATE });
+    if (!groupPurchase) throw new AppError(404, '공동구매를 찾을 수 없습니다.', 'GROUP_PURCHASE_NOT_FOUND');
+    if (groupPurchase.hostId !== hostId) throw new AppError(403, '방장만 입금을 확인할 수 있습니다.', 'HOST_ONLY');
+    if (groupPurchase.status !== 'COMPLETED') throw new AppError(409, '모집 완료 상태에서만 입금을 확인할 수 있습니다.', 'NOT_WAITING_FOR_PAYMENT');
+    const application = await UserGroupPurchase.findOne({ where: { id: applicationId, groupPurchaseId }, transaction, lock: transaction.LOCK.UPDATE });
+    if (!application) throw new AppError(404, '참여 내역을 찾을 수 없습니다.', 'JOIN_NOT_FOUND');
+    if (!application.isPaid) throw new AppError(409, '참여자가 아직 입금 완료를 신고하지 않았습니다.', 'PAYMENT_NOT_REPORTED');
+    await application.update({ isPaymentConfirmed: true }, { transaction });
+    return { id: application.id, groupPurchaseId, isPaid: application.isPaid, isPaymentConfirmed: application.isPaymentConfirmed };
+  });
 }
 
 async function markGroupPurchaseReceipt(groupPurchaseId, userId) {
@@ -278,5 +343,7 @@ module.exports = {
   joinGroupPurchase,
   cancelGroupPurchaseJoin,
   updateGroupPurchaseStatus,
+  markGroupPurchasePayment,
+  confirmGroupPurchasePayment,
   markGroupPurchaseReceipt,
 };
