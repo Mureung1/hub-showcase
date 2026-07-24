@@ -1,22 +1,9 @@
-<div align="center">
 
-# AI 시대 사고력 서비스, 깸
 
-### 🔔 내 생각을 깨우자
+## 🔔깸
+> AI 시대 역행하는 나의 사고력을 깨우자!
 
-관심 있는 글을 읽고 질문·반박·연결·표현을 더해,<br/>
-AI 시대에 잃기 쉬운 비판적 사고 습관을 만드는 서비스
-
-[![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react&logoColor=white)](https://react.dev)
-[![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
-[![MVP](https://img.shields.io/badge/status-MVP%20in%20progress-yellow)]()
-
-</div>
-
----
-
-## 목차
+### 목차
 
 - [프로젝트 소개](#프로젝트-소개)
 - [핵심 사용자 흐름](#핵심-사용자-흐름)
@@ -30,33 +17,29 @@ AI 시대에 잃기 쉬운 비판적 사고 습관을 만드는 서비스
 - [검증](#검증)
 - [프로젝트 문서](#프로젝트-문서)
 
-## 프로젝트 소개
+<div align="center">
+<p align="center">
+  <img src="assets/images/overview.gif" alt="깸 서비스 소개" width="100%" />
+</p>
+
+
+</div>
+
+
+### 프로젝트 소개
 
 **깸**은 관심사 기반 콘텐츠를 추천하고, 사용자가 원문을 읽은 뒤 짧은 사고 미션으로 자기 생각을 기록하게 하는 서비스다.
 
-생성형 AI가 검색·요약·글쓰기의 많은 과정을 대신하면서 정보를 빠르게 얻을 수 있게 됐지만, 그 결과를 검토하고 자기 생각으로 다시 구성하는 과정은 줄어들기 쉽다. 깸은 AI가 정답을 대신 만들어주는 서비스가 아니라, 사용자가 직접 읽고 한 번 더 생각하도록 돕는 도구를 지향한다.
+생성형 AI가 검색·요약·글쓰기를 대신할수록 결과를 검토하고 자기 생각으로 다시 구성하는 과정은 줄어들기 쉽다. 깸은 정답이나 원문을 대신하는 AI 요약을 제공하지 않는다. 사용자가 외부 원문을 직접 읽고, 질문·반박·연결·표현 중 하나의 미션에 답하며 생각을 남기게 한다.
 
-그래서 깸은 원문을 대신하는 AI 요약을 제공하지 않는다. 사용자는 외부 원문을 직접 읽고, 질문·반박·연결·표현 중 하나의 미션에 답하며 생각을 남긴다.
 
-| 일반 콘텐츠·AI 서비스 | 깸 |
-| --- | --- |
-| 더 많은 정보를 빠르게 소비하게 한다 | 하나의 글을 읽고 생각을 남기게 한다 |
-| 요약이나 답을 제공한다 | 사용자가 직접 판단할 질문을 제공한다 |
-| 소비한 콘텐츠가 중심이다 | 사용자가 남긴 생각이 중심이다 |
-
-## 핵심 사용자 흐름
+### 핵심 사용자 흐름
 
 현재 구현된 핵심 사용자 흐름은 다음과 같다.
 
-```mermaid
-flowchart LR
-    A["익명 사용자 생성"] --> B["관심사 선택"]
-    B --> C["오늘의 글 추천"]
-    C --> D["외부 원문 읽기"]
-    D --> E["사고 미션 수행"]
-    E --> F["나의 깸에 기록"]
-    F --> C
-```
+<p align="center">
+  <img src="assets/images/core_flow.gif" alt="주요흐름" width="100%" />
+</p>
 
 1. **관심사 선택** — 관심사 1~3개를 선택한다.
 2. **오늘의 글** — 공용 콘텐츠 풀에서 관심사에 맞는 글을 최대 3개 추천받는다.
@@ -64,7 +47,7 @@ flowchart LR
 4. **사고 미션** — 글 전체를 대상으로 질문·반박·연결·표현 중 하나를 수행한다.
 5. **나의 깸** — 한 줄 생각을 저장하고 월별 캘린더에서 다시 확인한다.
 
-## 주요 기능
+### 주요 기능
 
 | 기능 | 설명 | 현재 상태 |
 | --- | --- | --- |
@@ -74,16 +57,8 @@ flowchart LR
 | 나의 깸 | 월별 캘린더와 날짜별 목록으로 과거 사고 기록을 확인한다 | 구현됨 |
 | 콘텐츠 수집 | 검증된 RSS 소스에서 글을 수집하고 품질·접근성·중복을 검사한다 | 수동 CLI 구현됨 |
 
-### 네 가지 사고 행동
 
-| 행동 | 질문 예시 |
-| --- | --- |
-| 🟡 질문 | 이 글의 핵심 주장은 뭐지? |
-| 🔴 반박 | 이 주장에 반대한다면? |
-| 🟢 연결 | 내 상황이나 프로젝트와 연결해보면? |
-| 🔵 표현 | 이 글이 놓친 관점은 뭐지? |
-
-## 기술 스택
+### 기술 스택
 
 | 영역 | 기술 | 책임 |
 | --- | --- | --- |
@@ -93,21 +68,11 @@ flowchart LR
 | Content Pipeline | feedparser, HTTPX | RSS 수집·파싱·검증 |
 | Test & Verification | Vitest, Pytest, PostgreSQL 통합 테스트 | 프론트엔드·API·DB 검증 |
 
-## 시스템 아키텍처
+### 시스템 아키텍처
 
-```mermaid
-flowchart LR
-    USER["사용자"] --> FE["React Frontend"]
-
-    FE -->|"익명 인증"| AUTH["Supabase Auth"]
-    FE -->|"/api 요청"| API["FastAPI"]
-    API -->|"사용자 JWT 적용"| DB["Supabase PostgreSQL"]
-
-    RSS["외부 RSS"] --> PIPE["콘텐츠 수집 파이프라인"]
-    PIPE -->|"검증된 공용 콘텐츠 저장"| DB
-
-    FE -->|"새 탭으로 이동"| ORIGINAL["외부 원문"]
-```
+<p align="center">
+  <img src="assets/images/system_architecture.gif" alt="깸 시스템 아키텍처" width="100%" />
+</p>
 
 아키텍처는 다음 원칙을 따른다.
 
@@ -120,7 +85,7 @@ flowchart LR
 
 자세한 API·인증·키 사용 규칙은 [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)와 [`docs/plan/engineering/api-spec.md`](docs/plan/engineering/api-spec.md)를 따른다.
 
-## 콘텐츠 수집 및 추천 파이프라인
+### 콘텐츠 수집 및 추천 파이프라인
 
 사용자마다 별도의 콘텐츠 DB를 만들지 않는다. RSS에서 수집한 글을 하나의 **공용 콘텐츠 풀**에 저장한 뒤 사용자별 관심사와 완료 기록에 따라 추천 결과만 다르게 만든다.
 
@@ -135,7 +100,7 @@ flowchart LR
     RECOMMEND --> USER["오늘의 글 1~3개"]
 ```
 
-### 수집
+#### 수집
 
 1. `sources`와 `source_interests`에서 수집 설정과 관심사를 읽는다.
 2. 활성 상태, 수집 방식, 언어, 신뢰도, 노출 정책과 paywall 위험을 검사한다.
@@ -158,7 +123,7 @@ uv run python -m app.jobs.collect_feed --source-id <SOURCE_UUID> --dry-run
 uv run python -m app.jobs.collect_feed --source-id <SOURCE_UUID> --save
 ```
 
-### 추천
+#### 추천
 
 추천 함수는 다음 조건으로 공용 콘텐츠 풀의 후보를 찾는다.
 
@@ -172,21 +137,13 @@ uv run python -m app.jobs.collect_feed --source-id <SOURCE_UUID> --save
 
 상세 계약은 [`docs/plan/engineering/content-pipeline.md`](docs/plan/engineering/content-pipeline.md), [`docs/plan/engineering/db-schema.md`](docs/plan/engineering/db-schema.md)에서 확인할 수 있다.
 
-## AI 협업 개발 방식
+### AI 협업 개발 방식
 
 깸은 Codex와 Claude Code의 역할을 단계별로 분리해 사용한다. 한 AI가 설계·구현·최종 검증을 모두 담당하지 않게 하고, 다른 관점의 검토와 실행 결과를 통해 판단한다.
 
-```mermaid
-flowchart LR
-    DESIGN["Codex<br/>요구사항·설계"]
-    REVIEW["Claude Code<br/>설계 검증"]
-    DECISION["사람<br/>결정·확정"]
-    IMPLEMENT["Claude Code<br/>구현"]
-    VERIFY["Codex<br/>구현 검증"]
-
-    DESIGN --> REVIEW --> DECISION --> IMPLEMENT --> VERIFY
-    VERIFY -->|"실패 항목 수정"| IMPLEMENT
-```
+<p align="center">
+  <img src="assets/images/ai_collab.gif" alt="깸 AI 협업 개발 방식" width="100%" />
+</p>
 
 | 단계 | 담당 | 목적 |
 | --- | --- | --- |
@@ -204,7 +161,7 @@ AI 협업에서 다음 원칙을 사용한다.
 - 정상 성공뿐 아니라 `401`, `422`, RLS 차단처럼 실패해야 정상인 경우도 검증한다.
 - Git·코딩·검증 규칙은 한 문서에서 관리해 도구별 지침이 달라지는 것을 막는다.
 
-### AI 설정 구조
+#### AI 설정 구조
 
 | 파일·디렉터리 | 역할 |
 | --- | --- |
@@ -221,7 +178,7 @@ AI 협업에서 다음 원칙을 사용한다.
 
 현재 `.claude/rules/`, `.claude/skills/`, `.claude/agents/`, `.claude/hooks/`와 일부 `.codex/` 확장 디렉터리는 향후 설정을 위한 위치만 마련되어 있다. 실제 협업 사이클과 사용법은 [`.agents/templates/README.md`](.agents/templates/README.md), 공통 작업 규칙은 [`AGENTS.md`](AGENTS.md)에서 확인할 수 있다.
 
-## 프로젝트 구조
+### 프로젝트 구조
 
 ```text
 hub-clone/
@@ -246,6 +203,8 @@ hub-clone/
 │   ├── seeds/                 # 콘텐츠 소스 seed
 │   └── tests/                 # PostgreSQL 통합 테스트
 ├── scripts/                   # API·Supabase 반복 검증 스크립트
+├── assets/
+│   └── images/                # README 소개·아키텍처 이미지
 ├── docs/
 │   ├── plan/
 │   │   ├── product/           # 문제·서비스·사용자 흐름
@@ -264,9 +223,9 @@ hub-clone/
 
 `docs/prototype/`은 구현 전 화면 검토를 위한 참고 자료이며 실제 빌드 대상이 아니다.
 
-## 로컬 개발 환경
+### 로컬 개발 환경
 
-### 요구 사항
+#### 요구 사항
 
 - Node.js
 - Python
@@ -275,7 +234,7 @@ hub-clone/
 
 필요한 환경변수 이름은 [`.env.example`](.env.example)을 참고한다. 실제 키나 DB 접속 정보가 담긴 `.env`는 커밋하지 않는다.
 
-### 프론트엔드
+#### 프론트엔드
 
 ```bash
 cd frontend
@@ -285,7 +244,7 @@ npm run dev
 
 개발 서버는 `http://localhost:5173`에서 실행된다.
 
-### 백엔드
+#### 백엔드
 
 ```bash
 cd backend
@@ -295,9 +254,9 @@ uv run fastapi dev app/main.py
 
 API 서버는 `http://localhost:8000`에서 실행된다. 프론트엔드의 `/api` 요청은 Vite proxy를 통해 백엔드로 전달된다.
 
-## 검증
+### 검증
 
-### 프론트엔드
+#### 프론트엔드
 
 ```bash
 cd frontend
@@ -306,7 +265,7 @@ npm run lint
 npm test
 ```
 
-### 백엔드
+#### 백엔드
 
 ```bash
 cd backend
@@ -322,16 +281,16 @@ uv run scripts/smoke_api.py
 uv run scripts/verify_supabase.py
 ```
 
-## 프로젝트 문서
+### 프로젝트 문서
 
-### 제품과 사용자 흐름
+#### 제품과 사용자 흐름
 
 - [문제 정의 및 인사이트](docs/plan/product/problem-insight.md)
 - [서비스 정의와 MVP 범위](docs/plan/product/service-mvp.md)
 - [핵심 기능](docs/plan/product/feature-details.md)
 - [사용자 시나리오와 화면 구조](docs/plan/product/scenario-ia.md)
 
-### 엔지니어링
+#### 엔지니어링
 
 - [개발 규칙](docs/DEVELOPMENT.md)
 - [기술 스택](docs/plan/engineering/tech-stack.md)
@@ -340,9 +299,7 @@ uv run scripts/verify_supabase.py
 - [콘텐츠 수집 파이프라인](docs/plan/engineering/content-pipeline.md)
 - [콘텐츠 운영 전략](docs/plan/engineering/content-strategy.md)
 
-### 품질과 협업
+#### 품질과 협업
 
 - [AI 에이전트 운영 전략](docs/plan/process/agent-strategy.md)
 - [AI 협업 요청 사이클](.agents/templates/README.md)
-
-`docs/quality/`과 `docs/plan/implementation/`은 개인 검증·구현 계획 문서로 사용하며 Git에는 올리지 않는다.
