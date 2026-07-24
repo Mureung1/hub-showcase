@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -35,19 +35,28 @@ Node Runtime이 frozen `CodexAccountLifecycle`을 구현하고 생성 시 `auth-
 
 ## Acceptance Criteria
 
-- [ ] Node Runtime이 frozen `CodexAccountLifecycle`의 fresh read, start/status/cancel/release/logout/close를 strict bridge frames에 연결한다.
-- [ ] `auth-only` role에서 account family만 성공하고 thread/Turn/Skill/MCP/workspace command는 native request 0건으로 거절된다.
-- [ ] `workspace` role의 existing product/Chat lifecycle와 cleanup tests가 회귀 없이 통과한다.
-- [ ] Delayed completion, duplicate status, cancel/completion race, expiry, logout null readback와 Runtime loss가 stable private outcome으로 수렴한다.
-- [ ] Public export, thrown error, journal과 diagnostics에서 token, email, auth URL beyond allowlisted start result, native login/request identity와 raw provider payload가 0건이다.
-- [ ] Normal close, interrupt와 forced bridge/native failure 뒤 complete process tree와 pending operation이 bounded하게 사라진다.
-- [ ] R1 completion handoff가 downstream A1/R2가 소비할 exact Runtime contract와 evidence를 고정한다.
+- [x] Node Runtime이 frozen `CodexAccountLifecycle`의 fresh read, start/status/cancel/release/logout/close를 strict bridge frames에 연결한다.
+- [x] `auth-only` role에서 account family만 성공하고 thread/Turn/Skill/MCP/workspace command는 native request 0건으로 거절된다.
+- [x] `workspace` role의 existing product/Chat lifecycle와 cleanup tests가 회귀 없이 통과한다.
+- [x] Delayed completion, duplicate status, cancel/completion race, expiry, logout null readback와 Runtime loss가 stable private outcome으로 수렴한다.
+- [x] Public export, thrown error, journal과 diagnostics에서 token, email, auth URL beyond allowlisted start result, native login/request identity와 raw provider payload가 0건이다.
+- [x] Normal close, interrupt와 forced bridge/native failure 뒤 complete process tree와 pending operation이 bounded하게 사라진다.
+- [x] R1 completion handoff가 downstream A1/R2가 소비할 exact Runtime contract와 evidence를 고정한다.
 
 ## Verification
 
 - Targeted test or command: `npm run test:node-unit -w @ay-ple/codex-chat-runtime`, `npm run test:node-actual -w @ay-ple/codex-chat-runtime`, `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime`, Runtime browser-contract typecheck
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `git diff --check`
 - Manual or live smoke: 없음. Fake App Server actual-child matrix로 account-only denial과 full cleanup을 확인한다.
+
+## Claim Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Exact corrective handoff | `9b4507f52113549f61dc156c028a460f11b9210c` |
+| Atomic Runtime boundary | Reviewed R1b Python bridge와 canonical production Runtime serialization을 포함하지만 Node account decoder가 아직 old readiness frame을 기대해 `validate:node-runtime`가 red인 staging tip이다. R1b와 R1c는 이 branch에서 green pair로 만든 뒤 함께 integration에 반영한다. |
+| Predecessor evidence | R1b fixed reviewed tip `4332b086f994764e5ab7a494733ebc5d46071824`; Python bridge 39/39, Ruff, production Runtime materialization/verification green |
+| Claim scope | Frozen `account-contract.ts`, shared manifest·lockfile, Server/Browser와 sibling lane을 변경하지 않고 ticket의 `writablePaths`만 사용한다. |
 
 ## Blocked By
 
@@ -73,10 +82,65 @@ Node Runtime이 frozen `CodexAccountLifecycle`을 구현하고 생성 시 `auth-
 | owner | `R` — Runtime |
 | branch | `codex/public-preview-r1c-node-account` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/r1c-node-account` |
-| handoffSha | Claim 시 coordinator가 005의 fixed reviewed SHA를 integration branch에 `--no-ff` merge하고 predecessor 및 integration Runtime/root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `9b4507f52113549f61dc156c028a460f11b9210c` — reviewed R1b와 canonical Runtime serialization을 보존한 corrective staging tip이다. Node incompatibility 때문에 integration은 의도적으로 아직 진전시키지 않았으며 R1b+R1c를 atomic하게 검증한다. |
 | writablePaths | `packages/codex-chat-runtime/src/**` 중 implementation·test files (`account-contract.ts`와 다른 S1 frozen contract 제외); Runtime type tests; account actual-child fixtures; `docs/tickets/2026-07-23-public-npx-first-release/006-r1c-node-account-lifecycle-runtime-roles.md` |
 | consumedContracts | S1 frozen `CodexAccountLifecycle`·Runtime role contract, R1b strict bridge account family와 current Runtime supervisor invariants |
 | predecessorEvidence | 005 fixed reviewed SHA, bridge attempt/race/leak/cleanup receipt와 exact SDK/production Runtime verification |
 | requiredChecks | Runtime Node unit/actual; bridge full; exact SDK and production Runtime before/after verification; browser-contract typecheck; root test/typecheck/build/Chat Shell lint; `git diff --check` |
 | reviewOwner | Independent Node Runtime/lifecycle reviewer와 downstream A consumer reviewer |
 | handoffArtifact | Reviewed fixed R1c commit SHA, R1 completion contract/evidence bundle와 auth-only denial·process-tree cleanup receipt |
+
+## Candidate Receipt
+
+이 receipt는 coordinator의 combined review 전 writer candidate evidence다. Ticket state는 `claimed`로 유지하고 Acceptance Criteria checkbox는 의도적으로 닫지 않는다.
+
+| Evidence | Result |
+| --- | --- |
+| Reviewed implementation tip | `095b58bd1b894e29623e52ddb3f26c3262f40d63` |
+| Downstream Runtime contract | Explicit factory input은 immutable `CodexRuntimeRole`, exact AY-PLE application identity와 controlled environment를 받고 root-only `CodexManagedRuntime = CodexProductCapableRuntime & CodexAccountLifecycle`을 반환한다. Existing workspace factory overload와 `readAccountReadiness()` behavior는 유지한다. |
+| Auth-only boundary | Owner-only empty bootstrap cwd와 owner-only disjoint roots를 spawn 전에 검증한다. Account family와 close만 허용하고 thread, Turn, Skill, private MCP와 workspace family는 native write 0건으로 `runtime_role_denied`에 수렴한다. |
+| Account settlement | `expiresAt`은 canonical future ISO이며 frozen 10분 bound를 넘을 수 없다. Delayed operation의 `AbortSignal`은 stable `runtime_closing` result와 auth-only Runtime 전체 shutdown을 소유하고, close는 internal rejection을 consume한 뒤 process-tree disappearance로 `closed | ambiguous`를 판정한다. |
+| Privacy and decoder | Account result는 exact-key strict decoder와 exact allowlisted HTTPS authority를 통과한다. Email, token, native login/request identity, raw provider payload와 noncanonical/ported auth URL은 private projection을 통과하지 않는다. |
+| Runtime verification | Node unit `77/77`; actual child `84/84`; official local provider `1/1`; `validate:node-runtime`의 before/after production Runtime verification green. |
+| Production Runtime verification | Production bundle `23/23`; full Python bridge `39/39`; Ruff와 format check; materialized complete-tree verification green. |
+| Repository gates | Sequential `npm test`, root `npm run typecheck`, root `npm run build`, Chat Shell lint와 `git diff --check` green. |
+| Independent review | Exact reviewed tip에서 P0–P3 finding 0건. Review 중 발견한 account-close unhandled rejection, auth URL canonicalization, root-negative coverage와 delayed fake mid-flight abort parity를 수정하고 재검증했다. |
+| Scope guard | Frozen `account-contract.ts`, browser `contract.ts`, shared manifest·lockfile, Server/Browser implementation과 sibling lane은 변경하지 않았다. |
+
+## Combined Review Correction Handoff
+
+| Evidence | Result |
+| --- | --- |
+| Exact handoff | `d6c4b26af` — R1b·R1c, B1b containment, D1b와 C serialization을 합친 combined candidate이며 integration에는 아직 반영하지 않았다. |
+| Standards finding | Workspace Runtime이 `role.workspaceRoot`와 다른 absolute `StartThreadInput.workspace`를 native cwd로 전달할 수 있다. Exact admitted root equality와 deterministic fake parity를 native write 전에 강제해야 한다. |
+| Spec finding | Runtime이 frozen `CodexNativeContextPort`를 구현하지 않아 actual workspace Runtime의 `config/read`·`skills/list`가 Server-local temporary adapter 밖으로 연결되지 않았다. Runtime이 high-level projection과 raw mapping을 소유하고 auth-only에서는 native request 0건으로 거절해야 한다. |
+| Documentation finding | Runtime README, implementation map과 ADR 0017의 current implementation 문구를 실제 R1 상태와 남은 product integration 경계에 맞춰 갱신해야 한다. |
+| Corrective branch | `codex/public-preview-c-native-context-bind` |
+| Corrective worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/c-native-context-bind` |
+
+## Patch-free Native Context Final Receipt
+
+이 receipt는 위 combined handoff를 실제 채택한 correction 결과다. Historical `c-native-context-bind` handoff를 덮어쓰지 않되, final implementation lane과 검증 결과는 아래 값이 authoritative하다. Ticket State는 combined integration 전까지 `claimed`, Acceptance Criteria는 unchecked로 유지한다.
+
+| Evidence | Result |
+| --- | --- |
+| Reviewed code tip | `93897411bd9d310d39c1a8d7e528ee892db2de99` |
+| Actual correction lane | Branch `codex/public-preview-c-native-context-probe`; worktree `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/c-native-context-probe`; fixed handoff `e165e9d856680665be841b133c7742e0c1e81674` |
+| Runtime role·root | Workspace role root는 persistent bridge, sidecar와 thread의 exact canonical root다. Workspace와 controlled environment root의 ancestor/descendant overlap을 bridge spawn 전에 거절하며, auth-only는 native-context family를 native write 0건으로 `runtime_role_denied` 처리한다. |
+| Native context port | `CodexManagedRuntime`이 frozen `CodexNativeContextPort`를 구현한다. 같은 caller `AbortSignal`의 config·Skill read는 한 atomic generation이고, Server·Browser에는 high-level projection만 전달된다. |
+| Spawn integrity | Verifier-issued frozen bundle identity를 coordinator가 보존하고 sidecar spawn 직전 complete-tree verifier를 다시 실행한다. Selected executable drift, malformed pinned schema와 wrong root는 native spawn·protocol write 전 fail closed한다. |
+| Cleanup·privacy | Main bridge와 모든 sidecar cleanup을 `Promise.allSettled`로 끝까지 join한다. 12회 반복 probe가 fd·task·process group·route·temp retention 0을 확인하며 raw response, path, request identity와 provider detail은 Runtime 경계를 넘지 않는다. |
+| SDK disposition | [Patch stack 축소 연구](../../spikes/codex-sdk-patch-reduction/research.md)에 따라 `0010`을 만들지 않았다. Ordered stack은 exact `0001`–`0009` 아홉 개이고 patch-stack digest `2cb3dcc9bdf7f81136b21ac16cb1afe161e5676e3800e85265653c2795fbbcbd`를 유지한다. |
+| Verification | Runtime unit `138/138`; native-context actual `23/23`; Node actual `91/91`; official local provider `1/1`; production bundle before/after verification green. Root test·typecheck·build, Chat Shell lint, docs links와 diff check가 green이다. |
+| Independent review | Standards P0–P2 finding 0건, parent Spec P0–P3 finding 0건. Persistent bridge와 one-shot probe의 중복 launch primitive는 bounded P3 debt이며 pre-release lifecycle refactor 대상이 아니다. |
+| Deferred composition | Account transition lease, first-run setup transaction, `Semester Ready` commit과 admission-to-action binding은 후속 A1/B2/C1 책임이다. 이 receipt가 해당 completion을 합성하지 않는다. |
+
+## Coordinator Integration Closeout
+
+| Evidence | Result |
+| --- | --- |
+| Canonical integration tip | `3e3e578fbd8d5f427bde6c6c6087f3789756cdba` |
+| R1 completion | R1b·R1c, patch-free native-context port와 exact Runtime role/root correction이 canonical integration history에 반영됐다. |
+| Verification | Final combined tip의 root test·typecheck·build, Chat Shell lint, docs links와 diff check가 green이다. Runtime unit `138/138`, native-context actual `23/23`, Node actual `91/91`, local provider `1/1`과 production verifier evidence를 유지한다. |
+| Review | Exact correction tip과 rebased combined tip의 Standards·Spec review가 모두 GREEN이다. 남은 primitive duplication은 non-blocking P3 debt다. |
+| Downstream handoff | A1은 이 integration closeout 이후 exact Runtime account role과 fresh native-context port를 소비한다. Setup state와 Ready pointer는 아직 쓰지 않는다. |

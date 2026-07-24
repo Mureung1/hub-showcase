@@ -16,6 +16,8 @@ TURN_A_ID = "turn-bounded-a"
 TURN_B_ID = "turn-bounded-b"
 TURN_STALLED_ID = "turn-bounded-stalled"
 ITEM_B_ID = "item-bounded-b"
+COMPLETED_LOGIN_ID = "login-managed-completed"
+COMPLETED_LOGIN_URL = "https://example.invalid/managed-login"
 LOGIN_ID = "login-bounded"
 LOGIN_URL = "https://example.invalid/codex-login"
 TURN_ITEM_LIMIT = 4_096
@@ -49,6 +51,17 @@ def _require_request(method: str) -> dict[str, Any]:
     if message.get("method") != method or "id" not in message:
         raise RuntimeError(f"expected {method} request, got {message!r}")
     return message
+
+
+def _require_managed_login_start() -> dict[str, Any]:
+    request = _require_request("account/login/start")
+    if request.get("params") != {
+        "appBrand": "codex",
+        "type": "chatgpt",
+        "useHostedLoginSuccessPage": True,
+    }:
+        raise RuntimeError(f"managed login contract mismatch: {request!r}")
+    return request
 
 
 def _thread(thread_id: str) -> dict[str, Any]:
@@ -163,6 +176,20 @@ def main() -> None:
     steps: list[str] = []
 
     initialize = _require_request("initialize")
+    expected_initialize_params = {
+        "capabilities": {
+            "experimentalApi": True,
+            "optOutNotificationMethods": ["thread/status/changed"],
+        },
+        "clientInfo": {
+            "name": "ay-ple",
+            "title": "AY-PLE",
+            "version": "0.1.0-preview.1",
+        },
+    }
+    if initialize.get("params") != expected_initialize_params:
+        raise RuntimeError(f"initialize contract mismatch: {initialize!r}")
+    steps.append("initialize-contract-verified")
     _write_message(
         {
             "id": initialize["id"],
@@ -185,7 +212,41 @@ def main() -> None:
     _respond_thread_start(thread_b, THREAD_B_ID)
     steps.append("thread-b-started")
 
-    login_start = _require_request("account/login/start")
+    completed_login_start = _require_managed_login_start()
+    _write_message(
+        {
+            "id": completed_login_start["id"],
+            "result": {
+                "authUrl": COMPLETED_LOGIN_URL,
+                "loginId": COMPLETED_LOGIN_ID,
+                "type": "chatgpt",
+            },
+        }
+    )
+    _write_message(
+        {
+            "method": "account/login/completed",
+            "params": {
+                "error": None,
+                "loginId": "login-unrelated",
+                "success": True,
+            },
+        }
+    )
+    _write_message(
+        {
+            "method": "account/login/completed",
+            "params": {
+                "error": None,
+                "loginId": COMPLETED_LOGIN_ID,
+                "success": True,
+            },
+        }
+    )
+    steps.append("managed-login-completed")
+    steps.append("unrelated-login-completion-preserved")
+
+    login_start = _require_managed_login_start()
     _write_message(
         {
             "id": login_start["id"],

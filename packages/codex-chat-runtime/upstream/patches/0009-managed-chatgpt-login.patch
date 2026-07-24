@@ -1,0 +1,335 @@
+diff --git a/sdk/python/src/openai_codex/_login.py b/sdk/python/src/openai_codex/_login.py
+index 377c948..dce5bd4 100644
+--- a/sdk/python/src/openai_codex/_login.py
++++ b/sdk/python/src/openai_codex/_login.py
+@@ -4 +4 @@ from dataclasses import dataclass
+-from typing import Protocol
++from typing import NoReturn, Protocol
+@@ -15,0 +16 @@ from .generated.v2_all import (
++    LoginAppBrand,
+@@ -28,0 +30,22 @@ class _AsyncLoginOwner(Protocol):
++def _managed_chatgpt_login_params() -> LoginAccountParams:
++    """Build the official hosted-success browser login request."""
++    return LoginAccountParams(
++        root=ChatgptLoginAccountParams(
++            app_brand=LoginAppBrand.codex,
++            type="chatgpt",
++            use_hosted_login_success_page=True,
++        ),
++    )
++
++
++def _raise_unexpected_chatgpt_response(
++    client: CodexClient | AsyncCodexClient,
++    response_root: object,
++) -> NoReturn:
++    """Release any route registered for an unexpected interactive response."""
++    login_id = getattr(response_root, "login_id", None)
++    if isinstance(login_id, str):
++        client.unregister_login_notifications(login_id)
++    raise RuntimeError(f"unexpected ChatGPT login response: {response_root!r}")
++
++
+@@ -31,5 +54 @@ def start_chatgpt_login(client: CodexClient) -> ChatgptLoginHandle:
+-    response = client.account_login_start(
+-        LoginAccountParams(
+-            root=ChatgptLoginAccountParams(type="chatgpt"),
+-        )
+-    )
++    response = client.account_login_start(_managed_chatgpt_login_params())
+@@ -38 +57 @@ def start_chatgpt_login(client: CodexClient) -> ChatgptLoginHandle:
+-        raise RuntimeError(f"unexpected ChatGPT login response: {response_root!r}")
++        _raise_unexpected_chatgpt_response(client, response_root)
+@@ -48,5 +67 @@ async def async_start_chatgpt_login(owner: _AsyncLoginOwner) -> AsyncChatgptLogi
+-    response = await owner._client.account_login_start(
+-        LoginAccountParams(
+-            root=ChatgptLoginAccountParams(type="chatgpt"),
+-        )
+-    )
++    response = await owner._client.account_login_start(_managed_chatgpt_login_params())
+@@ -55 +70 @@ async def async_start_chatgpt_login(owner: _AsyncLoginOwner) -> AsyncChatgptLogi
+-        raise RuntimeError(f"unexpected ChatGPT login response: {response_root!r}")
++        _raise_unexpected_chatgpt_response(owner._client, response_root)
+diff --git a/sdk/python/src/openai_codex/client.py b/sdk/python/src/openai_codex/client.py
+index 044a007..b39a5ae 100644
+--- a/sdk/python/src/openai_codex/client.py
++++ b/sdk/python/src/openai_codex/client.py
+@@ -80,0 +81 @@ _GOAL_START_TIMEOUT_S = 30.0
++_MANAGED_CHATGPT_LOGIN_NOTIFICATION_METHODS = frozenset({"account/login/completed"})
+@@ -469,0 +471 @@ class CodexConfig:
++    reserve_chatgpt_login_completion: bool = False
+@@ -583,4 +585,12 @@ class CodexClient:
+-        if self.config.opt_out_notification_methods:
+-            capabilities["optOutNotificationMethods"] = list(
+-                self.config.opt_out_notification_methods
+-            )
++        reserved_notification_methods = (
++            _MANAGED_CHATGPT_LOGIN_NOTIFICATION_METHODS
++            if self.config.reserve_chatgpt_login_completion
++            else ()
++        )
++        opt_out_notification_methods = [
++            method
++            for method in self.config.opt_out_notification_methods
++            if method not in reserved_notification_methods
++        ]
++        if opt_out_notification_methods:
++            capabilities["optOutNotificationMethods"] = opt_out_notification_methods
+diff --git a/sdk/python/tests/test_client_rpc_methods.py b/sdk/python/tests/test_client_rpc_methods.py
+index 0fa11ef..a34e4ef 100644
+--- a/sdk/python/tests/test_client_rpc_methods.py
++++ b/sdk/python/tests/test_client_rpc_methods.py
+@@ -16 +16 @@ from openai_codex.client import CodexClient, CodexConfig, _params_dict
+-from openai_codex.errors import CodexError, JsonRpcError
++from openai_codex.errors import CodexError, JsonRpcError, TransportClosedError
+@@ -57 +57 @@ def _wait_for_router_waiters(
+-def test_initialize_forwards_exact_notification_opt_out_methods(
++def test_initialize_preserves_opt_outs_unless_managed_login_reserves_completion(
+@@ -62,2 +62,2 @@ def test_initialize_forwards_exact_notification_opt_out_methods(
+-    def run(methods: tuple[str, ...]) -> None:
+-        client = CodexClient(CodexConfig(opt_out_notification_methods=methods))
++    def run(config: CodexConfig) -> None:
++        client = CodexClient(config)
+@@ -79,2 +79,26 @@ def test_initialize_forwards_exact_notification_opt_out_methods(
+-    run(())
+-    run(("thread/started", "thread/status/changed"))
++    run(CodexConfig())
++    run(
++        CodexConfig(
++            client_name="ay-ple",
++            client_title="AY-PLE",
++            client_version="0.1.0-preview.1",
++            opt_out_notification_methods=(
++                "thread/started",
++                "account/login/completed",
++                "thread/status/changed",
++            ),
++        )
++    )
++    run(
++        CodexConfig(
++            client_name="ay-ple",
++            client_title="AY-PLE",
++            client_version="0.1.0-preview.1",
++            opt_out_notification_methods=(
++                "thread/started",
++                "account/login/completed",
++                "thread/status/changed",
++            ),
++            reserve_chatgpt_login_completion=True,
++        )
++    )
+@@ -82,0 +107,5 @@ def test_initialize_forwards_exact_notification_opt_out_methods(
++    assert captured[1]["clientInfo"] == {
++        "name": "ay-ple",
++        "title": "AY-PLE",
++        "version": "0.1.0-preview.1",
++    }
+@@ -83,0 +113,9 @@ def test_initialize_forwards_exact_notification_opt_out_methods(
++        "experimentalApi": True,
++        "optOutNotificationMethods": [
++            "thread/started",
++            "account/login/completed",
++            "thread/status/changed",
++        ],
++    }
++    assert captured[2]["clientInfo"] == captured[1]["clientInfo"]
++    assert captured[2]["capabilities"] == {
+@@ -113,0 +152,48 @@ def _assert_router_usage_zero(router: MessageRouter) -> None:
++def test_login_completion_wait_is_scoped_to_the_exact_attempt() -> None:
++    client = CodexClient()
++    client.register_login_notifications("login-wanted")
++    unrelated = client._coerce_notification(
++        "account/login/completed",
++        {"error": None, "loginId": "login-unrelated", "success": True},
++    )
++    matching = client._coerce_notification(
++        "account/login/completed",
++        {"error": None, "loginId": "login-wanted", "success": True},
++    )
++    client._router.route_notification(unrelated)
++
++    with ThreadPoolExecutor(max_workers=1) as executor:
++        waiting = executor.submit(
++            client.wait_for_login_completed,
++            "login-wanted",
++        )
++        _wait_for_router_waiters(client._router, login=1)
++        client._router.route_notification(matching)
++        completed = waiting.result(timeout=1)
++
++    assert (completed.login_id, completed.success) == ("login-wanted", True)
++    client.register_login_notifications("login-unrelated")
++    assert client.next_login_notification("login-unrelated") is unrelated
++    client.unregister_login_notifications("login-unrelated")
++    _assert_router_usage_zero(client._router)
++
++
++def test_login_completion_wait_closes_with_the_transport() -> None:
++    client = CodexClient()
++    client.register_login_notifications("login-pending")
++
++    with ThreadPoolExecutor(max_workers=1) as executor:
++        waiting = executor.submit(
++            client.wait_for_login_completed,
++            "login-pending",
++        )
++        _wait_for_router_waiters(client._router, login=1)
++        failure = TransportClosedError("transport closed during login")
++        client._router.fail_all(failure)
++        with pytest.raises(TransportClosedError) as caught:
++            waiting.result(timeout=1)
++
++    assert caught.value is failure
++    _assert_router_usage_zero(client._router)
++
++
+diff --git a/sdk/python/tests/test_public_api_runtime_behavior.py b/sdk/python/tests/test_public_api_runtime_behavior.py
+index 5a04c66..84911a6 100644
+--- a/sdk/python/tests/test_public_api_runtime_behavior.py
++++ b/sdk/python/tests/test_public_api_runtime_behavior.py
+@@ -18,0 +19 @@ from openai_codex.client import CodexClient
++from openai_codex.errors import InvalidRequestError
+@@ -19,0 +21,7 @@ from openai_codex.generated.v2_all import (
++    AccountLoginCompletedNotification,
++    CancelLoginAccountResponse,
++    CancelLoginAccountStatus,
++    ChatgptDeviceCodeLoginAccountResponse,
++    ChatgptLoginAccountResponse,
++    LoginAccountResponse,
++    LoginAppBrand,
+@@ -137,0 +146,134 @@ def test_async_codex_initializes_only_once_under_concurrency() -> None:
++def test_managed_chatgpt_login_uses_hosted_codex_options_sync_and_async() -> None:
++    completion = AccountLoginCompletedNotification(
++        error=None,
++        login_id="login-managed",
++        success=True,
++    )
++    cancellation = CancelLoginAccountResponse(
++        status=CancelLoginAccountStatus.canceled,
++    )
++    response = LoginAccountResponse(
++        root=ChatgptLoginAccountResponse(
++            auth_url="https://example.invalid/managed-login",
++            login_id="login-managed",
++            type="chatgpt",
++        )
++    )
++    requests: list[dict[str, object]] = []
++
++    class FakeSyncLoginClient:
++        def account_login_start(self, params):  # noqa: ANN001,ANN202
++            requests.append(
++                params.model_dump(
++                    by_alias=True,
++                    exclude_none=True,
++                    mode="json",
++                )
++            )
++            return response
++
++        def wait_for_login_completed(
++            self,
++            login_id: str,
++        ) -> AccountLoginCompletedNotification:
++            assert login_id == "login-managed"
++            return completion
++
++        def account_login_cancel(self, login_id: str) -> CancelLoginAccountResponse:
++            assert login_id == "login-managed"
++            return cancellation
++
++    sync_codex = object.__new__(Codex)
++    sync_codex._client = FakeSyncLoginClient()
++    sync_handle = sync_codex.login_chatgpt()
++
++    assert (sync_handle.wait(), sync_handle.cancel()) == (completion, cancellation)
++
++    async def scenario() -> None:
++        class FakeAsyncLoginClient:
++            async def account_login_start(self, params):  # noqa: ANN001,ANN202
++                requests.append(
++                    params.model_dump(
++                        by_alias=True,
++                        exclude_none=True,
++                        mode="json",
++                    )
++                )
++                return response
++
++            async def wait_for_login_completed(
++                self,
++                login_id: str,
++            ) -> AccountLoginCompletedNotification:
++                assert login_id == "login-managed"
++                return completion
++
++            async def account_login_cancel(
++                self,
++                login_id: str,
++            ) -> CancelLoginAccountResponse:
++                assert login_id == "login-managed"
++                return cancellation
++
++        async_codex = AsyncCodex()
++        async_codex._client = FakeAsyncLoginClient()  # type: ignore[assignment]
++        async_codex._initialized = True
++        async_handle = await async_codex.login_chatgpt()
++
++        assert (await async_handle.wait(), await async_handle.cancel()) == (
++            completion,
++            cancellation,
++        )
++
++    asyncio.run(scenario())
++
++    assert requests == [
++        {
++            "appBrand": LoginAppBrand.codex.value,
++            "type": "chatgpt",
++            "useHostedLoginSuccessPage": True,
++        },
++        {
++            "appBrand": LoginAppBrand.codex.value,
++            "type": "chatgpt",
++            "useHostedLoginSuccessPage": True,
++        },
++    ]
++
++
++def test_managed_chatgpt_login_propagates_start_failure_and_cleans_unexpected_route() -> None:
++    start_failure = InvalidRequestError(-32600, "managed login unavailable")
++
++    class FailingClient:
++        def account_login_start(self, _params):  # noqa: ANN001,ANN202
++            raise start_failure
++
++    codex = object.__new__(Codex)
++    codex._client = FailingClient()
++    with pytest.raises(InvalidRequestError) as caught:
++        codex.login_chatgpt()
++    assert caught.value is start_failure
++
++    unexpected = LoginAccountResponse(
++        root=ChatgptDeviceCodeLoginAccountResponse(
++            login_id="login-unexpected",
++            type="chatgptDeviceCode",
++            user_code="ABCD-EFGH",
++            verification_url="https://example.invalid/device",
++        )
++    )
++    released: list[str] = []
++
++    class UnexpectedClient:
++        def account_login_start(self, _params):  # noqa: ANN001,ANN202
++            return unexpected
++
++        def unregister_login_notifications(self, login_id: str) -> None:
++            released.append(login_id)
++
++    codex._client = UnexpectedClient()
++    with pytest.raises(RuntimeError, match="unexpected ChatGPT login response"):
++        codex.login_chatgpt()
++    assert released == ["login-unexpected"]
++
++

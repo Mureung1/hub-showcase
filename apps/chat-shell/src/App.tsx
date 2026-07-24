@@ -12,6 +12,7 @@ import {
 
 import { ProductChatDock } from './product-chat-presentation.js'
 import type { ProductRawMaterial } from './product-api.js'
+import { PublicPreviewRoot } from './public-preview-presentation.js'
 import { useProductChat } from './use-product-chat.js'
 import {
   useSourceWorkbench,
@@ -22,6 +23,10 @@ import {
 import './App.css'
 
 export default function App() {
+  return <PublicPreviewRoot />
+}
+
+export function AcademicWorkbench() {
   const workbench = useSourceWorkbench()
   const productChat = useProductChat({
     accountReadiness: workbench.accountReadiness,

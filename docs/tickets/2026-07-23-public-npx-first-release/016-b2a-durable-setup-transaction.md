@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: coordinator
 
 ## Parent Spec
 
@@ -34,15 +34,62 @@
 
 ## Acceptance Criteria
 
-- [ ] Fresh logical empty는 state file absence이고 draft, native parent selection과 `prepare`만으로 durable state나 workspace가 생기지 않는다.
-- [ ] `approve`가 complete `pending/approved` envelope를 먼저 commit·readback한 뒤 exact B1 plan 하나만 admission한다.
-- [ ] Successful admission이 v3 aggregate, required seam, bundle complete tree와 App-side context scan을 fresh 검증한 뒤에만 `pending/prepared`를 commit·readback한다.
-- [ ] Duplicate approve, same-plan tab/relaunch와 response loss가 같은 transaction에 join하고 second scaffold를 만들지 않는다.
-- [ ] Different approved plan, expired parent selection, existing target와 current v2/incompatible bytes가 기존 state·bytes를 덮어쓰지 않고 stable conflict/recovery로 수렴한다.
-- [ ] Temp write, file sync, rename, directory sync와 readback의 직전·직후 fault에서 old-or-new complete envelope만 관찰된다.
-- [ ] Safe discard가 intent-first로 known pre-admission entries만 제거하고 unknown/modified/symlink, admitted, prepared와 Ready candidate bytes를 보존한다.
-- [ ] `observe()`와 Browser GET/poll은 read-only이며 mutation-capable automatic reconciliation은 Host `launch` command에만 남는다.
-- [ ] Browser projection conformance와 private path/phase/digest leak scan이 green이고 이 slice에서 Ready가 절대 projection되지 않는다.
+- [x] Fresh logical empty는 state file absence이고 draft, native parent selection과 `prepare`만으로 durable state나 workspace가 생기지 않는다.
+- [x] `approve`가 complete `pending/approved` envelope를 먼저 commit·readback한 뒤 exact B1 plan 하나만 admission한다.
+- [x] Successful admission이 v3 aggregate, required seam, bundle complete tree와 App-side context scan을 fresh 검증한 뒤에만 `pending/prepared`를 commit·readback한다.
+- [x] Duplicate approve, same-plan tab/relaunch와 response loss가 같은 transaction에 join하고 second scaffold를 만들지 않는다.
+- [x] Different approved plan, expired parent selection, existing target와 current v2/incompatible bytes가 기존 state·bytes를 덮어쓰지 않고 stable conflict/recovery로 수렴한다.
+- [x] Temp write, file sync, rename, directory sync와 readback의 직전·직후 fault에서 old-or-new complete envelope만 관찰된다.
+- [x] Safe discard가 intent-first로 known pre-admission entries만 제거하고 unknown/modified/symlink, admitted, prepared와 Ready candidate bytes를 보존한다.
+- [x] `observe()`와 Browser GET/poll은 read-only이며 mutation-capable automatic reconciliation은 Host `launch` command에만 남는다.
+- [x] Browser projection conformance와 private path/phase/digest leak scan이 green이고 이 slice에서 Ready가 절대 projection되지 않는다.
+
+## Claim Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Exact integration handoff | `cc9a94fc6e16ec40307c2548a677eb30a0d89ee5` |
+| Reviewed B1 predecessor | `3e3e578fbd8d5f427bde6c6c6087f3789756cdba` — v3 admission, canonical bundle, containment correction와 patch-free native-context guard가 integrated·reviewed 상태다. |
+| Reviewed A1 predecessor | `c3c2b088f239fbb8d039314f28e9b26e752c0411` — auth-only close ambiguity와 non-ChatGPT account를 fail closed하는 transition lease closeout이다. |
+| Integration baseline | Coordinator가 exact handoff에서 root test·typecheck·build, Chat Shell lint, docs links, diff와 clean status를 green으로 확인했다. |
+| Observable result | `prepare`는 write-free confirmation만 만들고, `approve`는 complete `pending/approved`를 먼저 commit·readback한 뒤 B1 admission·bundle/static-context를 exactly once 수행해 `pending/prepared`를 commit·readback한다. |
+| Highest practical seam | Temp app-data/workspace filesystem에서 production State Adapter와 deterministic admission/bundle fake를 함께 사용해 every write boundary, duplicate/response-loss/relaunch, conflict와 discard를 검증한다. |
+| Scope | `packages/semester-workspace/**` 중 `package.json`·`src/contract.ts` 제외, `apps/server/src/setup/**`, `apps/server/src/workspace-admission/**`, colocated tests와 이 ticket만 수정한다. |
+
+## Candidate Receipt
+
+| Evidence | Result |
+| --- | --- |
+| Exact reviewed code candidate | `61915bcc56de32035e41947b296659e7f1ca5524` — exact handoff `cc9a94fc6e16ec40307c2548a677eb30a0d89ee5`에서 시작한 B2a production code tip이다. |
+| Durable state | `createSetupEnvelopeStore()`가 owner-only `appDataRoot/setup/v1/state.json`의 strict codec, cooperative single-writer lease, same-directory exclusive temp, file·directory sync, observed-byte CAS, atomic rename·readback과 abandoned-write recovery를 한 Module로 소유한다. Logical empty는 state file absence다. |
+| Approved→prepared transaction | `createSemesterSetupJourney()`의 `prepare`는 write-free다. `approve`는 complete `pending/approved`를 먼저 commit·readback하고 exact B1 admission, bundle materialization·verification과 static context scan을 통과한 뒤에만 `pending/prepared`를 commit·readback한다. Runtime start, native verification과 Ready commit은 포함하지 않는다. |
+| Join·recovery | Same-plan duplicate approve와 response loss는 같은 in-process promise 또는 durable receipt에 join한다. Relaunch는 approved, admitted, partial, prepared와 discard intent를 fresh inspect해 old-or-new complete state로 수렴하며 different plan과 stale parent authority는 fail closed한다. |
+| Exact authority binding | Durable receipt의 setup plan, semester, target, workspace identity, root marker, owned-scaffold plan과 expected initial aggregate digest를 reconstructed B1 plan 및 실제 marker/aggregate byte에 exact bind한다. 별도로 admitted된 foreign v3, mismatched owned partial과 prepared lookalike를 채택하지 않는다. |
+| Safe discard | 최초 discard는 receipt와 inspected `discard_owned` plan의 exact binding을 확인한 뒤 `discard_requested`를 먼저 durable하게 기록한다. Evidence가 남은 relaunch도 같은 binding 뒤에만 삭제를 계속하며, markerless post-unlink recovery는 prior intent, stored root identity, fresh parent/target와 empty topology로 제한한다. Unknown·modified·symlink·admitted·prepared byte는 보존한다. |
+| Crash evidence | Store write boundary와 journey approval/admission/bundle/prepared/discard boundary의 injected fault 및 actual child-process interruption matrix가 complete prior-or-next envelope, idempotent relaunch와 no-clobber를 검증한다. |
+| Author verification | `@ay-ple/semester-workspace` `143/143`, `@ay-ple/server` `187/187`, receipt-binding/discard focused `15/15`; 두 workspace의 typecheck·build와 `git diff --check`가 green이다. |
+| Coordinator root observation | Root-wide `npm test` full-load run은 B2a scope 밖 Runtime-release retained-archive deadline case 1건만 실패했다. 같은 exact test는 isolated `1/1`로 약 15.7초에 통과했고 B2a package·Server gates는 green이었다. Final integration root gate 재실행은 coordinator가 소유한다. |
+| Scope·threat boundary | Frozen `src/contract.ts`, shared manifest·lockfile, UI, Runtime, Official SDK와 native config는 변경하지 않았다. App data는 owner-only이고 모든 AY-PLE writer가 cooperative lease를 지킨다는 경계이며, lease를 무시하는 same-UID live filesystem manipulation은 이 ticket의 보장 범위가 아니다. |
+| Superseded candidates | `cf5af360b`는 foreign v3/partial authority binding 누락으로, `40193539e`는 discard가 receipt authority를 재검증하지 않는 P1으로 각각 independent review를 통과하지 못했다. 둘은 integration 후보가 아니며 `61915bcc5`가 두 finding을 닫은 유일한 reviewed candidate다. |
+
+## Independent Review Closeout
+
+| Evidence | Result |
+| --- | --- |
+| Exact reviewed candidate | `61915bcc56de32035e41947b296659e7f1ca5524` |
+| Review disposition | Independent durable-state/filesystem-safety 재검토는 P0/P1/P2 finding `0`으로 PASS다. Scope·contract drift도 없다. |
+| Independent probes | Receipt/admitted/partial/prepared binding, initial discard, evidence-present relaunch와 interruption focused suite `23/23`; `git diff --check`, writable-path audit와 clean status가 green이다. |
+| Markerless discard judgment | Durable prior intent, stored root `(dev, ino, birthtime)`, fresh canonical parent/target와 exact empty topology로 제한된 post-unlink continuation은 accepted boundary다. Existing unlink-boundary 6개 case도 green이다. |
+| Completion | B2a implementation과 evidence는 complete다. Canonical integration과 root release gate는 coordinator가, Runtime transition·native verification·Ready commit은 B2b가 소유한다. |
+
+## B2b Delivery Handoff
+
+| Field | Contract |
+| --- | --- |
+| Consumed API | `createSetupEnvelopeStore()`, `createSemesterSetupJourney()`와 public `SetupJourney`/`PendingSetupReceipt` contract를 exact reviewed candidate에서 소비한다. |
+| Prepared authority | B2b는 `pending/prepared` receipt가 가리키는 admitted workspace와 verified bundle/static-context evidence를 fresh readback한 뒤에만 A1 transition callback으로 넘긴다. B2a receipt나 point-in-time evidence를 lease 밖의 Ready 증명으로 재해석하지 않는다. |
+| B2b-owned work | A1 `transitionToWorkspace()` lease 안에서 exact workspace Runtime을 시작하고 native context를 fresh verify한 뒤 Ready를 idempotent하게 commit·readback하며, fault/relaunch에서 prepared→Ready convergence를 증명한다. |
+| Explicit non-ownership | B2a는 Runtime generation, native config/Skill verification, `active_ready`, Ready Browser projection과 post-Ready action을 구현하지 않는다. |
 
 ## Verification
 

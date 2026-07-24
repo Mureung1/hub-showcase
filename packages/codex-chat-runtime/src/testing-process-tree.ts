@@ -1,4 +1,11 @@
-import { mkdir, mkdtemp, readFile, realpath, rm } from 'node:fs/promises'
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -8,6 +15,7 @@ import type {
   ReleaseThreadInput,
   StartTurnInput,
 } from './contract.js'
+import type { CodexRuntimeCloseResult } from './account-contract.js'
 import { verifyProductionBundle } from './production-bundle.js'
 import {
   startVerifiedCodexChatRuntime,
@@ -16,7 +24,7 @@ import {
 import type {
   AnswerUserInput,
   CancelUserInput,
-  CodexProductCapableRuntime,
+  CodexManagedRuntime,
   StartProductTurnInput,
   StartThreadInput,
 } from './runtime-contract.js'
@@ -38,7 +46,7 @@ export type CodexChatTestProcessTree = {
 }
 
 export interface CodexChatProcessTreeTestFixture {
-  readonly runtime: CodexProductCapableRuntime
+  readonly runtime: CodexManagedRuntime
   readProcessTree(): Promise<CodexChatTestProcessTree>
   waitForCloseRequest(): Promise<void>
   releaseClose(): Promise<void>
@@ -47,6 +55,7 @@ export interface CodexChatProcessTreeTestFixture {
 
 export async function startCodexChatProcessTreeTestFixture(options: {
   readonly runtimeRoot: string
+  readonly accountState: 'chatgpt' | 'signed_out'
 }): Promise<CodexChatProcessTreeTestFixture> {
   const bundle = await verifyProductionBundle(options.runtimeRoot)
   const fixtureRoot = await mkdtemp(
@@ -76,6 +85,11 @@ export async function startCodexChatProcessTreeTestFixture(options: {
       ])
     const journalPath = path.join(fixtureRoot, 'journal.json')
     const nativeChildPidPath = path.join(fixtureRoot, 'native-child.pid')
+    await writeFile(
+      path.join(fixtureRoot, 'account-state'),
+      options.accountState,
+      'utf8',
+    )
     spawned = await startVerifiedCodexChatRuntime({
       bundle,
       workspace: canonicalWorkspace,
@@ -94,9 +108,38 @@ export async function startCodexChatProcessTreeTestFixture(options: {
     const processTree = await readProcessTree(spawned, nativeChildPidPath)
     const closeRequested = createDeferred()
     const closeReleased = createDeferred()
-    let closePromise: Promise<void> | undefined
-    const runtime: CodexProductCapableRuntime = {
+    function closeRuntime(): Promise<void>
+    function closeRuntime(input: {
+      readonly signal: AbortSignal
+    }): Promise<CodexRuntimeCloseResult>
+    async function closeRuntime(input?: {
+      readonly signal: AbortSignal
+    }): Promise<void | CodexRuntimeCloseResult> {
+      closeRequested.resolve()
+      await closeReleased.promise
+      if (input === undefined) {
+        await spawned!.runtime.close()
+        return
+      }
+      return spawned!.runtime.close(input)
+    }
+    const runtime: CodexManagedRuntime = {
       terminal: spawned.runtime.terminal,
+      role: spawned.runtime.role,
+      readAccount: (input) => spawned!.runtime.readAccount(input),
+      startBrowserLogin: (input) =>
+        spawned!.runtime.startBrowserLogin(input),
+      readBrowserLoginAttempt: (input) =>
+        spawned!.runtime.readBrowserLoginAttempt(input),
+      cancelBrowserLogin: (input) =>
+        spawned!.runtime.cancelBrowserLogin(input),
+      releaseBrowserLoginAttempt: (input) =>
+        spawned!.runtime.releaseBrowserLoginAttempt(input),
+      logout: (input) => spawned!.runtime.logout(input),
+      readEffectiveConfig: (input) =>
+        spawned!.runtime.readEffectiveConfig(input),
+      listEffectiveSkills: (input) =>
+        spawned!.runtime.listEffectiveSkills(input),
       startThread: (input?: StartThreadInput) =>
         input === undefined
           ? spawned!.runtime.startThread()
@@ -112,11 +155,7 @@ export async function startCodexChatProcessTreeTestFixture(options: {
       interrupt: (input: InterruptTurnInput) => spawned!.runtime.interrupt(input),
       releaseThread: (input: ReleaseThreadInput) =>
         spawned!.runtime.releaseThread(input),
-      close: () => {
-        closeRequested.resolve()
-        closePromise ??= closeReleased.promise.then(() => spawned!.runtime.close())
-        return closePromise
-      },
+      close: closeRuntime,
     }
     let disposed = false
     return {

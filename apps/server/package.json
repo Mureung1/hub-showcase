@@ -3,9 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "dev": "NODE_OPTIONS=--conditions=development tsx watch src/server.ts",
     "build": "tsc",
+    "verify:package-root": "npm run build && tsx src/testing/verify-built-package-root.ts",
     "test": "NODE_OPTIONS=--conditions=development tsx --test \"src/**/*.test.ts\"",
     "test:product-shutdown-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/product-shutdown.actual.ts",
     "test:first-assignment-product-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/first-assignment-product.actual.ts",
@@ -16,6 +26,7 @@
   "dependencies": {
     "@ay-ple/codex-chat-runtime": "0.0.0",
     "@ay-ple/product-contract": "0.0.0",
+    "@ay-ple/semester-workspace": "0.0.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1"
   },

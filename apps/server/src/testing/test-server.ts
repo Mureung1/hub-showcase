@@ -1,5 +1,6 @@
 import {
   createServerApplication,
+  listenToServerApplication,
   type CreateServerAppOptions,
   type ServerApplication,
 } from '../server.js'
@@ -12,11 +13,17 @@ export async function withTestServer(
   ) => Promise<void>,
 ): Promise<void> {
   const application = await createServerApplication(options)
-  const address = await application.listen(0, '127.0.0.1')
+  const started = await listenToServerApplication(application, {
+    host: '127.0.0.1',
+    port: 0,
+  })
 
   try {
-    await testBody(`http://127.0.0.1:${address.port}`, application)
+    await testBody(
+      `http://127.0.0.1:${started.port}`,
+      started.application,
+    )
   } finally {
-    await application.close()
+    await started.application.close()
   }
 }

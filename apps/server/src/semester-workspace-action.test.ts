@@ -822,7 +822,7 @@ test('source rebaseline remains blocked until bounded artifact cleanup succeeds'
     releaseCleanup = resolve
   })
   const fixture = await createFixture(undefined, {
-    actionCleanupDeadlineMs: 5,
+    actionCleanupDeadlineMs: 250,
     beforeActionArtifactCleanup: () => cleanupBarrier,
   })
   try {

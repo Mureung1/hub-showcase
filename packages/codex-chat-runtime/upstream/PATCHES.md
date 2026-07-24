@@ -197,10 +197,25 @@ Pinned first-party client는 `thread/start`에서 `configured → advertised def
 
 Exact managed `SKILL.md`를 `SkillInput`으로 보내도 active catalog에 해당 Skill이 없으면 native가 조용히 건너뛴다. 0008은 exact process-wide `skills/extraRoots/set`을 string sequence만 받는 typed sync·async `set_skill_extra_roots()`로 노출해 order·duplicate와 `extraRoots` alias를 보존하고 scalar·path-like·non-string을 거부한다. Bridge는 Turn start를 직렬화해 text Turn 전에 empty roots, managed Skill product Turn 전에 exact Skill directory로 roots를 매번 교체한다. Official signature/runtime test, bridge actual-child의 replacement·invalid path, Server exact local-provider의 managed Skill injection과 same-Turn terminal이 regression oracle다.
 
+### 0009 — Expose managed ChatGPT browser login
+
+| 항목 | 값 |
+| --- | --- |
+| Patch | `upstream/patches/0009-managed-chatgpt-login.patch` |
+| Exact preimage | 0008 postimage의 immediate-before digest는 `manifests/patched-source.json` ordered stage 9가 소유한다. |
+| Handwritten source | `sdk/python/src/openai_codex/_login.py`, `sdk/python/src/openai_codex/client.py` |
+| Aligned official test | `sdk/python/tests/test_client_rpc_methods.py`, `sdk/python/tests/test_public_api_runtime_behavior.py` |
+| Derived evidence | `manifests/patched-source.json` ordered stage 9와 final source tree |
+| Upstream issue/PR | 아직 없음. Exact managed-login request와 attempt-scoped completion conformance를 먼저 고정했다. |
+
+Official high-level ChatGPT login helper는 generated type이 이미 지원하는 `appBrand`와 hosted-success option을 보내지 않았고, caller의 notification opt-out complement에 `account/login/completed`가 포함되면 helper의 waiter가 completion을 받을 수 없었다. 0009는 sync·async helper가 generated `LoginAppBrand.codex`와 `useHostedLoginSuccessPage: true`를 typed request로 전달한다. Managed Browser login을 소유하는 client만 typed `reserve_chatgpt_login_completion` option을 명시해 completion method를 caller opt-out에서 제외한다. Default가 `false`이므로 일반 client와 production bridge의 기존 opt-out 순서·wire roster는 바뀌지 않으며 caller가 준 `clientInfo` name·title·version도 그대로 전달한다.
+
+Completion은 기존 bounded login route에 `loginId`별로 보존된다. Matching attempt waiter는 unrelated attempt를 소비하지 않고, unexpected interactive response가 만든 route는 high-level type check 실패 전에 해제한다. Start error는 typed SDK error를 그대로 전달하며 completion, cancel과 transport close는 기존 typed handle·sticky terminal behavior를 유지한다. Official initialize unit test는 ordinary client의 completion opt-out 보존과 managed client의 explicit reservation을 함께 고정한다. Bounded-router fake App Server는 unrelated attempt 뒤 exact matching completion과 pending-at-overflow attempt를 검증한다. Managed production bridge는 `account/login/completed`도 예약하므로 adopted notification은 8개, sorted opt-out complement는 60개다. Device-code entrypoint, direct OAuth HTTP, API key, host token과 `auth.json` fallback은 추가하지 않는다.
+
 ## Production wheel derivation
 
-`manifests/unpatched.json`의 wheel은 behavioral patch 전 reproduction evidence이므로 production wheel로 재사용하지 않는다. Materializer는 immutable snapshot에 위 여덟 patch를 순서대로 적용하고 `manifests/patched-source.json`과 exact 일치를 확인한 뒤, hash-pinned macOS arm64 `uv_build==0.11.19` wheel만 허용하는 `--no-index --offline` environment에서 source epoch wheel을 두 번 build한다. 두 bytes가 동일한 경우에만 `manifests/production-runtime-darwin-arm64.json`이 build-backend evidence, patched SDK wheel digest와 installed source digest를 소유한다. Prototype의 과거 wheel이나 unpatched wheel digest는 production input이 아니다.
+`manifests/unpatched.json`의 wheel은 behavioral patch 전 reproduction evidence이므로 production wheel로 재사용하지 않는다. Materializer는 immutable snapshot에 위 아홉 patch를 순서대로 적용하고 `manifests/patched-source.json`과 exact 일치를 확인한 뒤, hash-pinned macOS arm64 `uv_build==0.11.19` wheel만 허용하는 `--no-index --offline` environment에서 source epoch wheel을 두 번 build한다. 두 bytes가 동일한 경우에만 `manifests/production-runtime-darwin-arm64.json`이 build-backend evidence, patched SDK wheel digest와 installed source digest를 소유한다. Prototype의 과거 wheel이나 unpatched wheel digest는 production input이 아니다.
 
 ## AY-PLE bridge disposition
 
-Ticket 005의 `python/bridge` 자체는 ordered upstream patch가 아니다. Source review에서 확인된 public SDK seam은 ordered patch가 소유하며 bridge는 complete `0001 → 0002 → 0003 → 0004 → 0005 → 0006 → 0007 → 0008` SDK 위의 AY-PLE-owned external process adapter다. Canonical production manifest가 local 5-file source roster, installed `bundle/bridge` roster와 entrypoint를 별도 evidence로 기록한다. `scripts/test_python_bridge.py` actual-child gate가 response-last acceptance-first FIFO, exact native identity, explicit `deny_all + read_only`, exact notification opt-out, malformed mutation classification, interrupt, local release/LRU, admission/cap rejection, stream·stdout terminal과 close를 검증한다.
+Ticket 005의 `python/bridge` 자체는 ordered upstream patch가 아니다. Source review에서 확인된 public SDK seam은 ordered patch가 소유하며 bridge는 complete `0001 → 0002 → 0003 → 0004 → 0005 → 0006 → 0007 → 0008 → 0009` SDK 위의 AY-PLE-owned external process adapter다. Canonical production manifest가 local 5-file source roster, installed `bundle/bridge` roster와 entrypoint를 별도 evidence로 기록한다. `scripts/test_python_bridge.py` actual-child gate가 response-last acceptance-first FIFO, exact native identity, explicit `deny_all + read_only`, exact notification opt-out, malformed mutation classification, interrupt, local release/LRU, admission/cap rejection, stream·stdout terminal과 close를 검증한다.

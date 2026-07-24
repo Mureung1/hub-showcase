@@ -34,7 +34,7 @@ const EXPECTED_RUNTIME_VERSION = '0.144.4'
 const EXPECTED_RUNTIME_BINARY_VERSION = 'codex-cli 0.144.4'
 const EXPECTED_RUNTIME_DISTRIBUTION = 'openai-codex-cli-bin'
 const EXPECTED_PATCH_STACK_SHA256 =
-  'ffc43da6e5e7a146016404db54968d37d849b778e5e9b04db680cac4124fc1c9'
+  '2cb3dcc9bdf7f81136b21ac16cb1afe161e5676e3800e85265653c2795fbbcbd'
 const EXPECTED_PATCH_IDS = [
   '0001-response-last-router',
   '0002-bounded-notification-routing',
@@ -44,6 +44,7 @@ const EXPECTED_PATCH_IDS = [
   '0006-plan-user-input-seam',
   '0007-thread-start-settings',
   '0008-standalone-skill-extra-roots',
+  '0009-managed-chatgpt-login',
 ] as const
 const EXPECTED_TARGET = {
   architecture: 'arm64',
@@ -87,6 +88,16 @@ export interface VerifiedProductionBundle {
   sitePackages: string
   sourceCommit: string
 }
+
+interface ProductionBundleVerificationAuthority {
+  readonly artifactRoot: string
+  readonly canonicalManifestPath: string
+}
+
+const PRODUCTION_BUNDLE_AUTHORITIES = new WeakMap<
+  VerifiedProductionBundle,
+  ProductionBundleVerificationAuthority
+>()
 
 /**
  * Package-private test seam. Production callers must omit this argument so the
@@ -685,7 +696,7 @@ export async function verifyProductionBundle(
       ),
     ])
 
-  return {
+  const verified = Object.freeze({
     bridgeEntrypoint,
     codexPathDirectory,
     nativeExecutable,
@@ -705,5 +716,32 @@ export async function verifyProductionBundle(
     runtimeVersion: requireString(runtime, 'version', 'runtime version'),
     sitePackages,
     sourceCommit: requireString(source, 'commit', 'source commit'),
+  })
+  PRODUCTION_BUNDLE_AUTHORITIES.set(
+    verified,
+    Object.freeze({
+      artifactRoot: normalizedRoot,
+      canonicalManifestPath,
+    }),
+  )
+  return verified
+}
+
+/**
+ * Package-private launch-time re-attestation seam. The original verified
+ * object is an opaque capability: callers cannot reconstruct its complete-tree
+ * verification authority from selected paths or stale metadata.
+ */
+export async function reverifyProductionBundle(
+  bundle: VerifiedProductionBundle,
+): Promise<VerifiedProductionBundle> {
+  const authority = PRODUCTION_BUNDLE_AUTHORITIES.get(bundle)
+  if (!authority) {
+    throw new ProductionBundleVerificationError(
+      'production bundle was not issued by the verifier',
+    )
   }
+  return verifyProductionBundle(authority.artifactRoot, {
+    canonicalManifestPath: authority.canonicalManifestPath,
+  })
 }

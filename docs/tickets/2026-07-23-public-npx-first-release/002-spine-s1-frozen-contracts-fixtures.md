@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -32,18 +32,40 @@ Runtime, account transition, SemesterWorkspace, Server, Browser와 public host l
 
 ## Acceptance Criteria
 
-- [ ] Account의 8개 coarse state와 Setup/Ready projection, allowed command·error envelope를 dependency-free Browser contract가 exact decode한다.
-- [ ] Private account lifecycle, Runtime role, resolver, admission, bundle/context, setup journey, transition lease와 host seam이 implementation 없이 typecheck 가능한 frozen Interface로 존재한다.
-- [ ] Compatibility, workspace bundle과 Runtime release descriptor는 schema/version 및 immutable identity field를 strict decode하고 서로의 authority를 중복하지 않는다.
-- [ ] Valid fixture roster와 missing·extra·unknown/private-field invalid family가 Server producer와 Browser consumer 모두의 contract test input이다.
-- [ ] Public contract source·fixture에서 absolute path, credential, native ID, digest, Runtime process identity와 durable receipt phase leak이 0건이다.
-- [ ] 기존 product contract와 Runtime public surface가 호환되고 root baseline이 green이다.
+- [x] Account의 8개 coarse state와 Setup/Ready projection, allowed command·error envelope를 dependency-free Browser contract가 exact decode한다.
+- [x] Private account lifecycle, Runtime role, resolver, admission, bundle/context, setup journey, transition lease와 host seam이 implementation 없이 typecheck 가능한 frozen Interface로 존재한다.
+- [x] Compatibility, workspace bundle과 Runtime release descriptor는 schema/version 및 immutable identity field를 strict decode하고 서로의 authority를 중복하지 않는다.
+- [x] Valid fixture roster와 missing·extra·unknown/private-field invalid family가 Server producer와 Browser consumer 모두의 contract test input이다.
+- [x] Public contract source·fixture에서 absolute path, credential, native ID, digest, Runtime process identity와 durable receipt phase leak이 0건이다.
+- [x] 기존 product contract와 Runtime public surface가 호환되고 root baseline이 green이다.
 
 ## Verification
 
-- Targeted test or command: `npm run test -w @ay-ple/product-contract`, `npm run typecheck -w @ay-ple/product-contract`, `npm run build -w @ay-ple/product-contract`, 각 새 private contract package의 typecheck·contract test
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
-- Manual or live smoke: 없음. Fixture equality와 leak scan이 이 slice의 최고 seam이다.
+| Gate | Result |
+| --- | --- |
+| `npm run test -w @ay-ple/product-contract` | green, 20/20 |
+| `npm run typecheck -w @ay-ple/product-contract` | green |
+| `npm run build -w @ay-ple/product-contract` | green |
+| Private contract package test·typecheck·build | root test·typecheck·build gate가 `@ay-ple/codex-chat-runtime`, `@ay-ple/runtime-release`, `@ay-ple/semester-workspace`, Server와 `ay-ple`의 exact workspace scripts를 모두 green으로 실행 |
+| Shared producer·consumer conformance | Server 115/115, Browser 40/40 green; 같은 valid/invalid `@ay-ple/product-contract/testing` roster 사용 |
+| `npm test` | green |
+| `npm run typecheck` | green |
+| `npm run build` | green |
+| `npm run lint -w @ay-ple/chat-shell` | green |
+| `npm run check:docs-links` | green, active 28·historical banner 2 |
+| `git diff --check c182c2eeb754cbc4315f26f16a735257957e4b6e..7332c8bc77705160e31e0ce8e53e0dec6eb2dd90` | green |
+| Public preview leak scan | Browser contract와 valid fixture의 absolute path, credential, native ID, Runtime process identity, durable receipt phase 0건 |
+| Manual or live smoke | 없음. Fixture equality, relation rejection과 leak scan이 이 slice의 최고 seam |
+
+## Result
+
+- Implementation commits: `4661379e2`, `b45cdaa2e`, `d28392efa`, `7332c8bc7`
+- Reviewed fixed SHA: `7332c8bc77705160e31e0ce8e53e0dec6eb2dd90`
+- Valid fixture SHA-256: `d7dc6e71b1ef3429f009420a5f644565616f5cda2d847fa185fb292c6714d5d1`
+- Invalid fixture SHA-256: `3f50b1290330e0f3be00c11438a4491c1c797da9d877faa1384bc54b1498f7f9`
+- Server producer와 Browser consumer가 같은 test-only fixture roster를 exact decode하며 Account·Setup의 모순 조합도 공통 invalid family로 fail closed한다.
+- Independent review disposition: Standards `GREEN`, Spec `GREEN`
+- Parent Spec은 sibling ticket이 남아 있으므로 incomplete 상태를 유지한다.
 
 ## Blocked By
 
@@ -72,10 +94,10 @@ Runtime, account transition, SemesterWorkspace, Server, Browser와 public host l
 | owner | `C` — Contract/integrator |
 | branch | `codex/public-preview-integration` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/integration` |
-| handoffSha | Claim 시 coordinator가 001의 fixed reviewed SHA를 integration branch에 반영하고 predecessor 및 integration root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
-| writablePaths | `packages/product-contract/**`; `packages/codex-chat-runtime/src/account-contract.ts`; `packages/runtime-release/src/contract.ts`; `packages/semester-workspace/src/contract.ts`; `apps/server/src/account-runtime/contract.ts`; `apps/ay-ple/src/host-contract.ts`; contract fixture/test 전용 파일; `docs/tickets/2026-07-23-public-npx-first-release/002-spine-s1-frozen-contracts-fixtures.md` |
+| handoffSha | `c182c2eeb754cbc4315f26f16a735257957e4b6e` — Ticket 001 fixed reviewed SHA가 반영된 clean integration HEAD. Coordinator가 `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`를 green으로 확인했다. |
+| writablePaths | `packages/product-contract/**`; `packages/codex-chat-runtime/src/account-contract.ts`; `packages/runtime-release/src/contract.ts`; `packages/semester-workspace/src/contract.ts`; `apps/server/src/account-runtime/contract.ts`; `apps/ay-ple/src/host-contract.ts`; contract fixture/test 전용 파일; owning truth README `packages/product-contract/README.md`, `packages/runtime-release/README.md`, `packages/semester-workspace/README.md`, `packages/codex-chat-runtime/README.md`, `apps/server/README.md`, `apps/ay-ple/README.md`; `docs/tickets/2026-07-23-public-npx-first-release/002-spine-s1-frozen-contracts-fixtures.md`. 독립 리뷰 보정에서 Coordinator가 contract-only 상태를 정확히 기록하기 위해 README ownership을 이 범위로 확장했다. |
 | consumedContracts | Parent Spec의 Browser-safe projection, private Module Interface, descriptor identity, error vocabulary와 S0 package graph |
 | predecessorEvidence | 001 fixed reviewed SHA, lockfile digest, safe TAR dependency record, green scaffold receipt |
 | requiredChecks | Contract fixture equality·private-field leak scan; 각 contract workspace test/typecheck/build; `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `npm run check:docs-links`; `git diff --check` |
 | reviewOwner | Independent contract reviewer와 R/B/D/A/U/H consumer representative |
-| handoffArtifact | Reviewed fixed S1 commit SHA, frozen fixture roster/digests, producer-consumer conformance 및 leak-scan receipt |
+| handoffArtifact | Reviewed fixed SHA `7332c8bc77705160e31e0ce8e53e0dec6eb2dd90`; valid fixture `d7dc6e71b1ef3429f009420a5f644565616f5cda2d847fa185fb292c6714d5d1`; invalid fixture `3f50b1290330e0f3be00c11438a4491c1c797da9d877faa1384bc54b1498f7f9`; shared producer-consumer conformance와 Standards/Spec `GREEN` receipt |

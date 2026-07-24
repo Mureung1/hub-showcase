@@ -34,6 +34,7 @@ import {
 
 import {
   createServerApplication,
+  listenToServerApplication,
   type ServerApplication,
 } from '../../server/src/server.js'
 import { codexChatIdentity } from '../../server/src/testing/codex-chat-test-support.js'
@@ -52,6 +53,7 @@ export type ChatScenario =
   | 'invalid-store'
   | 'acknowledged-interrupt-response-loss'
   | 'disconnect-drain-timeout'
+  | 'fail-closed-oracle'
   | 'reload-before-interrupt-settlement'
   | 'post-review-clarification'
 
@@ -70,6 +72,27 @@ export type ProductRuntimeCall =
   | { readonly operation: 'cancelUserInput'; readonly input: CancelUserInput }
   | { readonly operation: 'interrupt'; readonly input: InterruptTurnInput }
 
+export type FailClosedProposalCase =
+  | 'unselected-evidence'
+  | 'quote-mismatch'
+  | 'stale-base'
+  | 'valid'
+
+type FailClosedProposalScriptCase =
+  | {
+      readonly type: 'unselected-evidence'
+      readonly material: {
+        readonly id: string
+        readonly digest: string
+      }
+    }
+  | {
+      readonly type: 'quote-mismatch'
+      readonly quote: string
+    }
+  | { readonly type: 'stale-base' }
+  | { readonly type: 'valid' }
+
 type ChatShellFixtures = {
   scenario: ChatScenario
   chatHarness: ChatShellHarness
@@ -85,6 +108,7 @@ export type ChatShellHarness = {
     readonly workspaceRoot: string
   }
   readonly calls: () => readonly ProductRuntimeCall[]
+  readonly failClosedProposalCases: () => readonly FailClosedProposalCase[]
   readonly requests: () => readonly string[]
   readWorkspaceBytes(relativePath: string): Promise<Buffer>
   disconnectAssignmentStream(): Promise<void>
@@ -312,16 +336,48 @@ export async function startChatShellHarness(
       ) {
         await nextApplication.semesterWorkspace?.createCourse('문제해결글쓰기')
       }
+      if (scenario === 'fail-closed-oracle') {
+        const snapshot = nextApplication.semesterWorkspace?.snapshot()
+        assert.equal(snapshot?.state, 'ready')
+        if (snapshot?.state !== 'ready') {
+          throw new Error('Expected a ready fail-closed test workspace.')
+        }
+        const negativeControl = snapshot.materials.find(
+          ({ relativePath }) => relativePath === 'unselected-control.txt',
+        )
+        assert.ok(negativeControl)
+        assert.ok(nextRuntime)
+        nextRuntime.scriptFailClosedProposals([
+          {
+            type: 'unselected-evidence',
+            material: {
+              id: negativeControl.id,
+              digest: negativeControl.digest,
+            },
+          },
+          {
+            type: 'quote-mismatch',
+            quote: '선택한 원문에 존재하지 않는 제목 근거',
+          },
+          { type: 'stale-base' },
+          { type: 'valid' },
+        ])
+      }
       runtime = nextRuntime
-      application = nextApplication
       return nextApplication
     }
 
-    application = await createAndActivateApplication()
-
-    const apiAddress = await application.listen(0, '127.0.0.1')
-    const apiPort = apiAddress.port
-    const apiUrl = `http://127.0.0.1:${apiAddress.port}`
+    const initialApplication = await createAndActivateApplication()
+    const initialListener = await listenToServerApplication(
+      initialApplication,
+      {
+        host: '127.0.0.1',
+        port: 0,
+      },
+    )
+    application = initialListener.application
+    const apiPort = initialListener.port
+    const apiUrl = `http://127.0.0.1:${apiPort}`
     viteServer = await createViteServer({
       appType: 'spa',
       configFile: false,
@@ -381,6 +437,10 @@ export async function startChatShellHarness(
         workspaceRoot: semesterWorkspace.workspaceRoot,
       },
       calls: () => runtimeGenerations.flatMap((generation) => generation.calls),
+      failClosedProposalCases: () =>
+        runtimeGenerations.flatMap(
+          (generation) => generation.failClosedProposalCases,
+        ),
       requests: () => [...requests],
       async readWorkspaceBytes(relativePath) {
         const candidate = path.resolve(
@@ -445,8 +505,12 @@ export async function startChatShellHarness(
           throw new Error('E2E Server application is unavailable')
         }
         await previousApplication.close()
-        application = await createAndActivateApplication()
-        await application.listen(apiPort, '127.0.0.1')
+        const nextApplication = await createAndActivateApplication()
+        const nextListener = await listenToServerApplication(nextApplication, {
+          host: '127.0.0.1',
+          port: apiPort,
+        })
+        application = nextListener.application
       },
       async stopServer() {
         const previousApplication = application
@@ -519,6 +583,7 @@ type PendingInteractionSettlement =
 class ProductE2eRuntime implements CodexProductCapableRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
   private readonly callLog: ProductRuntimeCall[] = []
+  private readonly failClosedProposalCaseLog: FailClosedProposalCase[] = []
   private readonly threadInputs: StartThreadInput[] = []
   private readonly pendingInteractions = new Map<string, PendingInteraction>()
   private readonly interruptedTurns = new Set<string>()
@@ -528,6 +593,9 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   private readonly interruptSettlementReleased = deferred<void>()
   private readonly lateInteractionReleased = deferred<void>()
   private readonly reviewContinuationReleased = deferred<void>()
+  private failClosedProposalScript:
+    | readonly FailClosedProposalScriptCase[]
+    | undefined
   private reviewContinuationPaused = false
   private recoveryConflictInjected = false
   private turnOrdinal = 0
@@ -541,6 +609,19 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
 
   get calls(): readonly ProductRuntimeCall[] {
     return this.callLog.map((call) => structuredClone(call))
+  }
+
+  get failClosedProposalCases(): readonly FailClosedProposalCase[] {
+    return [...this.failClosedProposalCaseLog]
+  }
+
+  scriptFailClosedProposals(
+    cases: readonly FailClosedProposalScriptCase[],
+  ): void {
+    assert.equal(this.scenario, 'fail-closed-oracle')
+    assert.equal(this.turnOrdinal, 0)
+    assert.equal(this.failClosedProposalScript, undefined)
+    this.failClosedProposalScript = structuredClone(cases)
   }
 
   async readAccountReadiness(): Promise<CodexAccountReadiness> {
@@ -679,6 +760,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     const wasInterrupted = this.wasInterrupted.bind(this)
     const acknowledgedInterruptResponseLoss =
       this.scenario === 'acknowledged-interrupt-response-loss'
+    const failClosedOracle = this.scenario === 'fail-closed-oracle'
     const postReviewClarification =
       this.scenario === 'post-review-clarification'
     const interruptObserved = this.interruptObserved.promise
@@ -721,7 +803,6 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
         }
         const proposalFailed = await callProposalTool(input.text)
         if (proposalFailed) {
-          await interruptObserved
           yield {
             type: 'mcp_call.failed',
             threadId: input.threadId,
@@ -730,10 +811,13 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
             tool: 'propose_state_patch',
             displayMessage: 'The product proposal tool failed.',
           }
-          yield {
-            type: 'turn.interrupt_acknowledged',
-            threadId: input.threadId,
-            turnId,
+          if (!failClosedOracle) {
+            await interruptObserved
+            yield {
+              type: 'turn.interrupt_acknowledged',
+              threadId: input.threadId,
+              turnId,
+            }
           }
           yield {
             type: 'turn.completed',
@@ -1039,6 +1123,15 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
         await writeFile(storePath, `${JSON.stringify(store, null, 2)}\n`)
       }
     }
+    const proposal = proposalFromAssignmentInput(text, overrides)
+    if (this.scenario === 'fail-closed-oracle' && !overrides) {
+      const scriptedCase =
+        this.failClosedProposalScript?.[this.turnOrdinal - 1]
+      assert.ok(scriptedCase)
+      this.failClosedProposalCaseLog.push(
+        applyFailClosedProposalCase(proposal, scriptedCase),
+      )
+    }
     const response = await fetch(threadInput.mcp.url, {
       method: 'POST',
       headers: {
@@ -1051,7 +1144,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
         method: 'tools/call',
         params: {
           name: 'propose_state_patch',
-          arguments: proposalFromAssignmentInput(text, overrides),
+          arguments: proposal,
         },
       }),
     })
@@ -1062,7 +1155,8 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     if (body.result?.isError === true) {
       assert.ok(
         this.scenario === 'source-conflict' ||
-          this.scenario === 'store-conflict',
+          this.scenario === 'store-conflict' ||
+          (this.scenario === 'fail-closed-oracle' && this.turnOrdinal <= 3),
       )
       return true
     }
@@ -1222,6 +1316,40 @@ function proposalFromAssignmentInput(
       },
     ],
   }
+}
+
+function applyFailClosedProposalCase(
+  proposal: Record<string, unknown>,
+  scriptedCase: FailClosedProposalScriptCase,
+): FailClosedProposalCase {
+  if (scriptedCase.type === 'valid') return 'valid'
+
+  if (scriptedCase.type === 'stale-base') {
+    const baseRevision = proposal.baseRevision
+    assert.ok(typeof baseRevision === 'number')
+    proposal.baseRevision = baseRevision + 1
+    return scriptedCase.type
+  }
+
+  const evidence = proposal.evidence
+  assert.ok(Array.isArray(evidence))
+  const titleEvidence = evidence[0]
+  assert.ok(
+    typeof titleEvidence === 'object' &&
+      titleEvidence !== null &&
+      !Array.isArray(titleEvidence),
+  )
+
+  if (scriptedCase.type === 'unselected-evidence') {
+    Object.assign(titleEvidence, {
+      rawMaterialId: scriptedCase.material.id,
+      digest: scriptedCase.material.digest,
+    })
+    return scriptedCase.type
+  }
+
+  Object.assign(titleEvidence, { quote: scriptedCase.quote })
+  return scriptedCase.type
 }
 
 function requireMatch(value: string, pattern: RegExp): string {

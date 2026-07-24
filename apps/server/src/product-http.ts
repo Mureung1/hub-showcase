@@ -153,6 +153,7 @@ export function createProductRouter(
   productOperations?: ProductOperationCoordinator,
   writeDrainMs = defaultProductWriteDrainMs,
   readAccountReadiness?: ProductAccountReadinessSource,
+  allowWorkspaceActivation = true,
 ): Router {
   const router = express.Router()
 
@@ -232,26 +233,28 @@ export function createProductRouter(
     }),
   )
 
-  router.post('/workspaces/activate', async (request, response) => {
-    if (!controller) {
-      sendError(response, 503, 'product_unavailable', safeUnavailable)
-      return
-    }
-    if (!tryDecode(decodeEmptyProductRequest, request.body)) {
-      sendError(response, 400, 'invalid_request', safeInvalidRequest)
-      return
-    }
-    try {
-      const activation = await controller.activate()
-      const body: ProductWorkspaceActivationResponse = {
-        status: activation.status,
-        workspace: projectProductWorkspace(activation.workspace),
+  if (allowWorkspaceActivation) {
+    router.post('/workspaces/activate', async (request, response) => {
+      if (!controller) {
+        sendError(response, 503, 'product_unavailable', safeUnavailable)
+        return
       }
-      response.json(body)
-    } catch (error) {
-      sendWorkspaceError(response, error)
-    }
-  })
+      if (!tryDecode(decodeEmptyProductRequest, request.body)) {
+        sendError(response, 400, 'invalid_request', safeInvalidRequest)
+        return
+      }
+      try {
+        const activation = await controller.activate()
+        const body: ProductWorkspaceActivationResponse = {
+          status: activation.status,
+          workspace: projectProductWorkspace(activation.workspace),
+        }
+        response.json(body)
+      } catch (error) {
+        sendWorkspaceError(response, error)
+      }
+    })
+  }
 
   router.post('/courses', async (request, response) => {
     if (!controller) {
