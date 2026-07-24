@@ -460,7 +460,7 @@ else:
 ## Step 11 — DB 스키마 설계 (서브 에이전트, 2026-07-20)
 
 **무엇을 했는지 (한 줄)**
-지금까지 만든 엔진은 CSV 폴더 하나 = 회사 하나를 가정하는데, 소상공인 여러 명이 웹으로 쓰게 되면 이 가정이 깨져요. 그래서 서브 에이전트에게 "CSV 구조를 DB로 옮기면 어떤 스키마가 되는가"를 설계시켰습니다(`notes/DB-스키마-설계.md`, `taxengine/db/schema.sql`). 코드는 안 건드리고 설계 문서·DDL만 추가했어요.
+지금까지 만든 엔진은 CSV 폴더 하나 = 회사 하나를 가정하는데, 소상공인 여러 명이 웹으로 쓰게 되면 이 가정이 깨져요. 그래서 서브 에이전트에게 "CSV 구조를 DB로 옮기면 어떤 스키마가 되는가"를 설계시켰습니다(`docs/research/DB-스키마-설계.md`, `taxengine/db/schema.sql`). 코드는 안 건드리고 설계 문서·DDL만 추가했어요.
 
 **핵심 결정 1** — 이월값은 "매번 재계산"이 아니라 "그대로 저장 + FK로 검증"
 
@@ -1098,6 +1098,521 @@ const [data, dispatch] = useReducer(dataReducer, undefined,
 
 ---
 
+## Step 23 — taxwiz-fe에 Vitest 테스트 환경 설치 (2026-07-23)
+
+**무엇을 했는지 (한 줄)**
+FE(taxwiz-fe)에는 지금까지 테스트 러너 자체가 없었어요. Vitest + jsdom + Testing Library를 설치하고 `vite.config.ts`에 test 설정을 추가해, `npm test` 한 번으로 FE 테스트를 돌릴 수 있는 기반을 깔았습니다 (아직 테스트 파일은 0개 — 다음 스텝에서 채움).
+
+**핵심 코드 1** — Vite 설정 파일 하나가 테스트 설정도 겸한다 (`vite.config.ts`)
+
+```typescript
+/// <reference types="vitest/config" />   // ← 이 한 줄이 없으면 TS가 "test 속성 모름" 에러
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: 'jsdom',                 // Node에는 DOM이 없으므로 가짜 브라우저 환경을 씌움
+    setupFiles: './src/setupTests.ts',    // 모든 테스트 전에 한 번 실행되는 공통 준비 파일
+  },
+})
+```
+
+Vitest가 Jest와 다른 결정적 장점이 이거예요: **빌드(dev 서버)와 테스트가 같은 설정 파일·같은 변환 파이프라인을 공유**합니다. Jest였다면 `jest.config` + babel 변환 설정을 따로 맞춰야 했을 것을, Vite 플러그인(react)이 이미 아는 방식 그대로 테스트 코드도 변환해요. 함정 하나: `defineConfig`를 `'vite'`에서 import하면 타입 정의에 `test` 속성이 없어서, 맨 윗줄 triple-slash reference로 Vitest의 타입 확장을 불러와야 TS 에러가 안 납니다.
+
+**핵심 코드 2** — setupTests는 "matcher 확장" 자리 (`src/setupTests.ts`)
+
+```typescript
+// jest-dom: toBeInTheDocument() 같은 DOM 단언 matcher를 expect에 추가.
+import '@testing-library/jest-dom/vitest'
+```
+
+이 파일은 import 부작용(side effect)만으로 일해요 — 함수를 export하지 않고, import되는 순간 `expect`에 `toBeInTheDocument()`·`toHaveTextContent()` 같은 DOM 전용 단언이 심어집니다. 경로 끝의 `/vitest`가 중요한데, 같은 패키지가 Jest용/Vitest용 진입점을 따로 제공하기 때문이에요.
+
+**검증한 것**: `npx vitest run` 실행 → 설정 로드 성공, "No test files found" (테스트 파일이 아직 없으니 정상). `package.json`에 `"test": "vitest"` 스크립트 추가.
+
+**새로 나온 용어**
+- Vitest: Vite 프로젝트 전용 테스트 러너. 빌드 설정을 그대로 재사용해 별도 변환 설정이 필요 없음
+- jsdom: Node.js 안에서 브라우저 DOM을 흉내 내는 라이브러리. 실제 브라우저 없이 `document`·`window`를 쓰게 해줌
+- triple-slash reference(`/// <reference types="..." />`): TS 파일 맨 위에서 "이 타입 정의도 불러와"라고 컴파일러에게 지시하는 특수 주석
+- Testing Library: "사용자가 보는 방식(텍스트·역할)으로 요소를 찾아 테스트하라"는 철학의 UI 테스트 도구 모음
+- watch 모드: 파일이 바뀔 때마다 관련 테스트만 자동 재실행하는 모드. `vitest`는 기본이 watch, CI에서는 `vitest run`(1회 실행)
+
+**확인 질문**
+Jest 대신 Vitest를 쓰면 설정이 왜 줄어드나요? (힌트: 핵심 코드 1의 "같은 변환 파이프라인" — dev 서버가 TSX 파일을 브라우저용 JS로 바꾸는 그 과정을 테스트도 그대로 탄다는 게 무슨 뜻일까요)
+
+#### 답변 :
+
+---
+
+## Step 24 — money.py 원()의 단위 테스트: "분기 순서"를 고정하는 테스트 (2026-07-23)
+
+**무엇을 했는지 (한 줄)**
+전 엔진의 금액 입구인 `원()`(과 `절사`/`반올림`)에 테스트가 없었어요. 케이스 목록을 먼저 계획(정상/빈 값/경계값/실패 15개)한 뒤 `tests/test_money.py`로 구현했고, 19개 전부 통과. 참고: 처음엔 Vitest로 쓰려 했지만 `원()`은 Python 함수라 Vitest(JS 러너)로는 못 돌립니다 — 기존 관례대로 unittest로 갔어요.
+
+**핵심 코드 1** — 값이 아니라 "분기 순서"를 고정하는 테스트 (`tests/test_money.py`)
+
+```python
+def test_숫자_0은_빈값_분기로_새지_않는다(self):
+    # 0 == "" 는 False → 마지막 변환 분기를 타야 함 (분기 순서 고정)
+    self.assertEqual(원(0), D(0))
+
+def test_False도_TypeError(self):
+    # 분기 순서 함정: False == "" 는 False라 빈값 분기를 통과해
+    # bool 차단 분기에 도달해야 함
+    with self.assertRaises(TypeError):
+        원(False)
+```
+
+`원(0)`도 `Decimal(0)`, `원(None)`도 `Decimal(0)` — 결과값만 보면 같은 테스트 같지만, **서로 다른 분기를 통과해 같은 값에 도달**하는 걸 각각 고정하는 게 목적이에요. 나중에 누가 분기 순서를 재배열하면(예: bool 검사를 맨 뒤로) 이 테스트들이 바로 잡아줍니다. 좋은 단위 테스트는 "지금 맞다"가 아니라 "나중에 바뀌면 알려준다"를 산다는 것.
+
+**핵심 코드 2** — 실패도 스펙이다: 예외를 "기대"하는 테스트
+
+```python
+def test_오타_문자열은_시끄럽게_실패(self):
+    # 조용히 0이 되면 안 됨 — 수기 입력 오타를 검산 단계에서 잡으려면
+    with self.assertRaises(InvalidOperation):
+        원("abc")
+```
+
+`with self.assertRaises(예외):` 블록은 "이 안에서 그 예외가 나면 통과, 안 나면 실패"예요. `원("abc")`이 0을 돌려주도록 '친절하게' 고치는 사람이 나타나면 이 테스트가 막습니다 — 오타가 조용히 0원이 되는 것보다 시끄럽게 죽는 게 세무 계산에선 안전하니까요.
+
+**핵심 코드 3** — 알고 보면 함정: 파이썬 round()와 장부 반올림은 다르다
+
+```python
+def test_파이썬_기본_round와_다름(self):
+    # 내장 round()는 은행가 반올림(2.5 → 2)이지만, 장부 관행은 사사오입(2.5 → 3)
+    self.assertEqual(반올림(D("2.5")), D(3))
+```
+
+파이썬 내장 `round(2.5)`는 2입니다(짝수 방향 반올림). money.py가 `ROUND_HALF_UP`을 명시한 이유가 바로 이거고, 이 테스트는 그 선택을 문서로 남기는 역할이에요. `절사`의 음수 동작(`-0.5` → `-1`이 아니라 `0`, ROUND_DOWN은 "0 방향" 버림)도 같은 이유로 고정했어요.
+
+**검증한 것**: `python -m unittest tests.test_money -v` → 19개 전부 OK (0.003초).
+
+**새로 나온 용어**
+- assertRaises: "이 코드는 이 예외를 던져야 한다"를 검증하는 unittest 도구 — 실패 동작도 스펙의 일부
+- assertIs: 값이 같은지(`==`)가 아니라 **같은 객체인지**(`is`) 검증 — Decimal 통과 분기가 복사 없이 그대로 돌려주는지 확인에 사용
+- 은행가 반올림(banker's rounding): .5를 항상 올리지 않고 짝수 쪽으로 보내는 방식(2.5→2, 3.5→4). 파이썬 `round()`의 기본값
+- InvalidOperation: Decimal이 이해할 수 없는 문자열을 받았을 때 던지는 예외 (float의 조용한 NaN과 대비됨)
+
+**확인 질문**
+`원(0)`과 `원(None)`은 둘 다 `Decimal(0)`을 돌려주는데, 왜 굳이 별개의 테스트로 나눴을까요? (힌트: 두 입력이 함수 안에서 지나가는 경로)
+
+#### 답변 :
+
+---
+
+## Step 25 — taxwiz-fe 첫 Vitest 테스트: ProtectedRoute 로그인 가드 (2026-07-23)
+
+**무엇을 했는지 (한 줄)**
+수업에서 본 `RequireRole` 테스트 패턴(정상/세션 없음/불일치 + `renderAt` 헬퍼)을 우리 로그인 가드 `ProtectedRoute`에 이식했어요. FE 첫 테스트 파일(`src/auth/ProtectedRoute.test.tsx`) 3개 통과 + `tsc -b` 클린.
+
+**핵심 코드 1** — 진짜 Supabase 대신 useAuth를 모킹 (`ProtectedRoute.test.tsx`)
+
+```typescript
+// AuthProvider는 lib/supabase.ts를 끌고 오는데, 그 파일은 env가 없으면 throw
+vi.mock('./AuthContext', () => ({ useAuth: vi.fn() }));
+const mockedUseAuth = vi.mocked(useAuth);
+
+// 테스트마다 원하는 인증 상태를 주입
+mockedUseAuth.mockReturnValue({ session: 가짜세션, loading: false });
+```
+
+수업 예제는 localStorage에 직접 역할을 넣었지만(`selectRole('owner')`), 우리는 세션을 supabase-js가 관리해서 그 방법을 못 써요. 대신 **가드가 세상을 보는 창구(useAuth 훅) 자체를 가짜로 바꿔치기** — `vi.mock`은 import 시점에 모듈을 통째로 교체합니다. 덕분에 테스트가 Supabase 서버·env 파일과 완전히 무관해졌어요. 이게 단위 테스트의 "격리": ProtectedRoute의 분기 로직만 시험하고, 세션을 어떻게 얻는지는 남의 일로 둡니다.
+
+**핵심 코드 2** — 수업의 renderAt 헬퍼를 직접 구현
+
+```tsx
+function renderAt(path: string) {
+  return render(
+    <MemoryRouter initialEntries={[path]}>   {/* 주소창 없는 테스트용 라우터 */}
+      <Routes>
+        <Route path="/login" element={<div>로그인 화면</div>} />
+        <Route path="/" element={<ProtectedRoute><div>보호된 화면</div></ProtectedRoute>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+```
+
+진짜 `LoginPage`/`HomePage`를 렌더하지 않고 `<div>로그인 화면</div>` 같은 **표지판만** 세웠어요 — 검증 대상은 "어느 화면으로 갔는가"이지 화면의 내용이 아니니까요. 진짜 페이지를 쓰면 그 페이지의 의존성(API 호출 등)까지 다 끌려 들어와 테스트가 무거워집니다.
+
+**핵심 코드 3** — 우리 가드에만 있는 세 번째 분기: loading
+
+```typescript
+it('세션 복원 중(loading)에는 아무것도 보여주지 않는다 — 오리다이렉트 방지', () => {
+  mockedUseAuth.mockReturnValue({ session: null, loading: true });
+  renderAt('/');
+  expect(screen.queryByText('보호된 화면')).not.toBeInTheDocument();
+  expect(screen.queryByText('로그인 화면')).not.toBeInTheDocument();  // ← 둘 다 없어야
+});
+```
+
+수업 예제엔 없던 분기예요. 새로고침 직후엔 세션이 "아직 null"인데, 이때 성급히 /login으로 보내면 로그인해둔 사용자가 매번 로그인 화면을 스치게 됩니다(Step 21에서 넣은 방어). "없어야 한다" 단언은 `getByText`(없으면 즉시 에러)가 아니라 **`queryByText`(없으면 null)**로 — 부재 확인의 표준 도구예요. setupTests.ts에는 수업의 "매 테스트 후 청소"에 해당하는 `afterEach(cleanup)`을 추가했어요 (globals 미사용이라 RTL 자동 청소가 안 걸리므로 직접).
+
+**검증한 것**: `npx vitest run` → 3/3 통과. `npx tsc -b` → 타입 에러 0 (build가 tsc를 포함하므로 테스트 파일이 빌드를 깨지 않는지 확인).
+
+**새로 나온 용어**
+- vi.mock / vi.mocked: import되는 모듈을 통째로 가짜로 교체하고(vi.mock), 그 가짜에 TS 타입을 입혀 다루는(vi.mocked) Vitest 도구
+- MemoryRouter: 브라우저 주소창 없이 메모리에서만 경로를 관리하는 테스트용 라우터. `initialEntries`로 "이 URL로 들어온 상황"을 재현
+- getByText vs queryByText: 전자는 없으면 즉시 에러("있어야 한다"용), 후자는 없으면 null("없어야 한다"용) — 부재 단언에 getBy를 쓰면 단언 전에 터진다
+- cleanup: 렌더된 DOM을 지우는 RTL 함수. 테스트 간 화면 오염 방지
+
+**확인 질문**
+`vi.mock('./AuthContext', ...)` 대신 진짜 `AuthProvider`로 감싸서 테스트했다면 어떤 문제가 생겼을까요? (힌트: AuthProvider가 import하는 파일이 무엇에 의존하는지)
+
+#### 답변 :
+
+---
+
+## Step 26 — 첫 TDD 사이클: 실패하는 테스트 먼저, TopBar 잔여 문항 카운트 (2026-07-23)
+
+**무엇을 했는지 (한 줄)**
+"todo count(잔여 문항)를 페이지 상단에 표시" 기능을 **TDD 순서**로 만들었어요: 테스트를 먼저 써서 실패(red)를 확인 → TopBar에 기능을 추가해 통과(green). 잔여 카운트 자체는 이미 있었지만(useEngine.ts:161 `remainingEst`, TaxInputWizard/OnboardingPage의 eyebrow에 표시 — 삭제하지 않고 유지), 최상단 고정 바(TopBar)에는 없었어서 그 자리를 새 기능으로 삼았습니다.
+
+**핵심 코드 1** — red: 아직 없는 동작을 요구하는 테스트 (`TopBar.test.tsx`)
+
+```tsx
+it('remainingEst를 주면 "약 N문항 남음"을 상단 바에 보여준다', () => {
+  render(<TopBar {...필수props} remainingEst={12} />);   // ← 이 prop은 아직 없다!
+  expect(screen.getByText(/약 12문항 남음/)).toBeInTheDocument();
+});
+```
+
+이 시점의 `npx vitest run` 결과가 중요해요: **1 failed | 5 passed**. 실패가 "내가 원하는 이유로" 났는지 확인하는 게 red 단계의 핵심입니다 — 오타로 실패한 게 아니라, 기능이 없어서 실패해야 해요. 부재 단언 2개(0일 때·prop 생략 시 안 보임)는 이 시점에도 통과하는데, 그건 "아무것도 안 그리면 통과"라 red의 증거가 못 됩니다. 존재 단언 1개만이 기능 부재를 증명해요.
+
+**핵심 코드 2** — green: 선택적 prop으로 하위호환 추가 (`TopBar.tsx`)
+
+```tsx
+/** 잔여 문항 추정치(useEngine.remainingEst) — 0 이하이거나 안 넘기면 표시하지 않는다 */
+remainingEst?: number;   // ← ?가 핵심: 기존 호출부는 안 고쳐도 그대로 컴파일된다
+
+{remainingEst != null && remainingEst > 0 && (
+  <span className={styles.remain}>약 {remainingEst}문항 남음</span>
+)}
+```
+
+`?`(선택적 prop) 덕분에 TopBar를 쓰는 기존 코드는 한 줄도 안 바꿔도 깨지지 않아요 — 세 번째 테스트("prop 생략 시 안 보임")가 이 하위호환을 스펙으로 고정합니다. 표시 조건을 `> 0`으로 둔 건 "약 0문항 남음"이 떠 있으면 오히려 헷갈리기 때문(두 번째 테스트가 고정).
+
+**핵심 코드 3** — 좁은 화면 처리 (`TopBar.module.css`)
+
+```css
+/* 좁은 화면에서는 진행률 바 공간을 우선한다 — eyebrow 쪽 표시가 여전히 남아 있으므로 정보 손실 없음 */
+@media (max-width: 560px) {
+  .remain { display: none; }
+}
+```
+
+같은 정보가 두 군데(TopBar + eyebrow) 있게 됐는데, 이게 중복 낭비가 아니라 **모바일에서의 안전망**이 됩니다 — 좁은 화면에선 TopBar 쪽만 숨겨도 정보가 사라지지 않아요. 호출부 연결은 TaxInputWizard(:71)와 OnboardingPage(:47) 두 곳, 온보딩은 eyebrow와 같은 조건(`finished`면 숨김)을 미러링했어요.
+
+**검증한 것**: red — 1 failed | 5 passed → green — `npx vitest run` 6/6 통과 + `npx tsc -b` 타입 에러 0.
+
+**새로 나온 용어**
+- TDD(테스트 주도 개발): 기능보다 테스트를 먼저 쓰는 순서. 실패(red) → 구현으로 통과(green) → 정리(refactor)의 반복
+- red/green: 실패하는 테스트 상태(red)와 통과 상태(green). red를 먼저 눈으로 확인해야 "테스트가 진짜 그 기능을 검증하고 있다"는 증거가 됨
+- 선택적 prop(`?:`): 안 넘겨도 되는 컴포넌트 입력. 기존 호출부를 안 깨고 기능을 더하는 표준 수단
+
+**확인 질문**
+red 단계에서 "0이면 안 보인다" 같은 부재 단언은 이미 통과하고 있었는데, 왜 이건 기능이 없다는 증거가 못 될까요?
+
+#### 답변 :
+
+---
+
+## Step 27 — 홈택스 가이드 Phase 2 Step 2: "감으로 찍은 임계값" 대신 실측 분포로 (2026-07-24)
+
+**무엇을 했는지 (한 줄)**
+확장이 "다음에 뭘 누를지"를 매번 LLM에게 열린 질문으로 묻던 걸 바꾸는 작업의 2단계 — **임베딩(문장을 숫자 벡터로 바꾼 것)으로 라벨을 비교**하는 계층을 만들고, 그 비교 점수의 합격선(임계값)을 실제 홈택스 화면 덤프로 재는 도구를 만들었어요. (API 키가 없어서 실제 측정 실행은 대기 중)
+
+**핵심 코드 1** — 설정을 한 곳에만 두는 이유 (`server/match-config.mjs`)
+
+```js
+export const EMBED_MODEL = 'gemini-embedding-001';
+export const EMBED_DIM = 768;   // 기본 3072를 잘라서 씀
+```
+
+이걸 파일 세 곳에 각각 적지 않고 한 곳에 몰아둔 건 스타일 문제가 아니에요. 임베딩은 "같은 모델·같은 차원"으로 만든 벡터끼리만 비교가 의미 있는데, 서로 다르면 **에러가 안 나고 점수만 조용히 틀려집니다**. 캐시·캘리브레이션·런타임이 각자 다른 값을 쓰기 시작하면 원인을 못 찾아요.
+
+**핵심 코드 2** — 정규화가 풀린 벡터에도 안전한 코사인 (`server/lib/embeddings.mjs`)
+
+```js
+export function cosineSim(a, b) {
+  if (a.length !== b.length) {
+    throw new Error(`차원이 다릅니다 (${a.length} vs ${b.length}) — 모델/outputDimensionality 불일치를 의심하세요.`);
+  }
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    dot += a[i] * b[i];  normA += a[i] * a[i];  normB += b[i] * b[i];
+  }
+  if (normA === 0 || normB === 0) return 0;   // 영벡터 → NaN 전파 금지
+  return dot / Math.sqrt(normA * normB);      // ← 나누기를 생략하지 않았다
+}
+```
+
+임베딩 벡터는 보통 길이가 1로 맞춰져 있어서 `dot`만 계산하면 그게 곧 코사인이라 더 빠릅니다. 그 최적화를 **일부러 안 썼어요** — `outputDimensionality`로 차원을 자르면 Gemini가 길이 1이 아닌 벡터를 주기 때문에, 그 가정이 깨져도 역시 에러 없이 점수만 틀어집니다. 후보 100여 개 비교에 나눗셈 몇 번은 공짜인데, 틀린 값을 조용히 내는 위험은 안 공짜예요. 길이가 다르면 `throw`하는 것도 같은 이유(맞춰서 대충 비교하면 버그가 숨음).
+
+**핵심 코드 3** — 개별 호출 금지, 배치 + 캐시 (`server/lib/embeddings.mjs`)
+
+```js
+const wanted  = [...new Set(texts.map(normalizeText).filter(Boolean))]; // 중복·공백차이 합치기
+const missing = wanted.filter((t) => !cache.has(t));                    // 캐시에 없는 것만
+
+for (let i = 0; i < missing.length; i += maxBatch) {
+  const chunk = missing.slice(i, i + maxBatch);
+  const response = await ai.models.embedContent({ model, contents: chunk, ... });
+  const embeddings = response.embeddings ?? [];
+  if (embeddings.length !== chunk.length) {       // 순서로 짝을 맞추므로 개수가 어긋나면
+    throw new Error(`임베딩 응답 개수 불일치: ...`); // 잘못 매핑하느니 즉시 실패
+  }
+  chunk.forEach((text, j) => cache.set(text, Float32Array.from(embeddings[j].values)));
+}
+```
+
+첫 턴에 화면 텍스트가 100개 넘게 들어오는데 하나씩 부르면 지연·쿼터가 터져요. 그리고 메뉴 라벨은 턴마다 거의 그대로라 **캐시가 차고 나면 API 호출이 사실상 0**이 됩니다 — 이게 "LLM 호출 0회로 확정" 설계가 성립하는 근거예요. `normalizeText`가 필요한 건 실제 덤프에 `"종합소득세 신고\t종합소득세 기한후 환급신고"`처럼 탭이 섞여 있어서, 안 접으면 같은 라벨이 캐시에서 다른 키가 되기 때문입니다.
+
+**핵심 코드 4** — 정답을 추측하지 않기 (`server/tools/calibrate-thresholds.mjs`)
+
+```js
+{
+  id: 'step3-환급금조회(라벨 드리프트)',
+  expected: '환급금 조회',        // 우리가 경로에 적어둔 라벨
+  correct:  '환급금 상세조회',    // 화면에 실제로 있는 진짜 타깃
+},
+{
+  id: 'absent-환급금조회@전체메뉴화면',
+  expected: '환급금 조회',
+  correct:  null,                 // ← 이 화면엔 정답이 없어야 정상
+},
+```
+
+임계값을 정하려면 "정답 쌍은 몇 점, 오답 쌍은 몇 점"이 필요한데, 그 정답을 제가 짐작해서 넣으면 측정 전체가 짐작이 돼요. 그래서 이미 성공한 `refund-check.mjs`가 실제로 클릭한 경로만 정답으로 넣었습니다. `correct: null` 케이스는 반대 방향 안전장치예요 — **정답이 없는 화면에서 점수가 높게 나오면 "확신에 찬 오답"이 사용자 화면에 하이라이트로 뜬다**는 뜻이라, 그 상황의 최고점도 같이 재야 합니다.
+
+**검증한 것**: `npm test` 11/11 통과(전부 오프라인 — 가짜 `ai`를 주입해서 네트워크 0회), `npm run typecheck` 에러 0. 실제 캘리브레이션(`npm run calibrate`)은 `server/.env`에 `GEMINI_API_KEY`가 없어 대기 중.
+
+**새로 나온 용어**
+- 임베딩(embedding): 문장을 숫자 벡터로 바꾼 것. 뜻이 비슷하면 벡터 방향도 비슷해져서, 글자가 달라도 "같은 걸 가리키는지" 비교할 수 있음
+- 코사인 유사도: 두 벡터가 이루는 각도로 재는 닮음 정도. 1이면 같은 방향, 0이면 무관, -1이면 반대
+- 정규화(L2 normalize): 벡터의 길이를 1로 맞추는 것. 길이 차이가 점수에 새어드는 걸 막음
+- 캘리브레이션(calibration): 합격선(임계값)을 감이 아니라 실제 데이터 분포를 재서 정하는 작업
+- 배치(batch): 여러 건을 한 번의 요청에 몰아 보내는 것
+- 의존성 주입(DI): 함수가 쓸 외부 도구(`ai` 같은)를 안에서 만들지 않고 밖에서 받는 것. 테스트에서 가짜로 바꿔 끼울 수 있게 됨
+- 라벨 드리프트: 우리가 적어둔 이름과 실제 화면에 뜨는 이름이 어긋나는 것 (`환급금 조회` vs `환급금 상세조회`)
+
+**확인 질문**
+`cosineSim`에서 나눗셈을 생략한 빠른 버전을 쓰고, 대신 벡터를 저장할 때 미리 길이 1로 맞춰두는 방법도 있어요. 그런데도 이번엔 왜 그 방법을 피했을까요? (힌트: 그 방식이 틀리게 동작할 때 어떤 신호가 나오는지)
+
+#### 답변 :
+
+---
+
+## Step 28 — 홈택스 가이드 Phase 2 Step 3~8: "확신에 찬 오답"을 구조로 막기 (2026-07-24)
+
+**무엇을 했는지 (한 줄)**
+확장이 매 턴 LLM에게 "다음에 뭘 누를까?"를 열린 질문으로 묻던 걸, **임베딩이 먼저 좁히고 LLM은 좁혀진 안에서만 판단하는** 구조로 바꿨어요 — 서버 판정 로직·LLM 심판·확장 렌더링·학습 루프까지 한 번에.
+
+**핵심 코드 1** — 점수가 높아도 confirm이 아닐 수 있다 (`server/lib/match.mjs`)
+
+```js
+const top1 = scored[0];
+// 후보가 하나뿐이면 겨룰 상대가 없다 — 격차는 무한대로 본다
+const margin = scored.length > 1 ? top1.score - scored[1].score : Infinity;
+
+if (top1.score >= config.T_HIGH && margin >= config.MARGIN) {
+  return { mode: 'confirm', candidates: [top1] };   // ← 두 조건을 모두 통과해야만
+}
+if (top1.score >= config.T_MID) { ... return { mode: 'tiebreak', ... }; }
+```
+
+이 설계의 심장이에요. "1위가 95점이니 확정"이 아니라 **"2위가 94점이면 확정이 아니다"** 입니다. 둘 다 높은 상황에서 하나만 실선으로 강조하면, 그게 틀렸을 때 사용자는 의심할 근거를 하나도 못 받아요. 그래서 애매하면 두 개를 같이 보여주고 사람이 고르게 합니다.
+
+**핵심 코드 2** — LLM을 거수기로 만들지 않기 (`server/lib/llm.mjs`)
+
+```js
+const shuffled = shuffle(candidateTexts, rng);   // 임베딩 순위대로 보여주지 않는다
+const list = shuffled.map((t, i) => `${i + 1}. "${t}"`).join('\n');
+// 프롬프트에는 유사도 수치도, "1위/2위"도 들어가지 않는다
+```
+
+임베딩 점수를 프롬프트에 같이 넣으면 LLM은 거의 항상 1위를 복창합니다. 그러면 판정기를 둘로 나눈 의미가 사라져요 — 서로 **독립적으로** 같은 답을 냈을 때만 "두 번 확인됐다"고 말할 수 있으니까요. 순서를 섞는 것도 목록 첫 번째를 고르는 편향을 없애기 위해서고, `rng`를 주입받게 만든 건 그 셔플을 테스트로 고정하기 위해서입니다.
+
+**핵심 코드 3** — 학습의 문을 네 겹으로 잠그기 (`server/lib/learning.mjs`)
+
+```js
+export function isLearnable(lastClick) {
+  if (!lastClick) return false;
+  if (lastClick.mode !== 'tiebreak' && lastClick.mode !== 'scout') return false; // confirm/halt 제외
+  if (lastClick.screenChanged !== true) return false;   // 눌러도 아무 일 없었으면 증거가 아니다
+  if (!clicked || !expected) return false;
+  if (clicked === expected) return false;               // 라벨과 같으면 배울 게 없다
+  return true;
+}
+```
+
+경로 파일(`guide-paths.json`)을 바꿀 수 있는 유일한 통로예요. 규칙 하나가 전부를 지배합니다: **LLM의 추측은 절대 경로를 못 바꾼다.** 바꿀 수 있는 건 "사용자가 실제로 눌렀고, 그 결과 화면이 실제로 바뀐" 클릭뿐이에요. 홈택스에는 눌러도 아무 반응이 없는 요소가 많아서, `screenChanged` 확인이 없으면 잘못된 별칭이 그대로 학습됩니다.
+
+**핵심 코드 4** — 데드락을 막는 문서 레벨 리스너 (`content-script.js`)
+
+```js
+for (const el of targets) { el.addEventListener('click', onClick, { capture: true }); ... }
+
+/** 타깃 밖 클릭(이탈)도 반드시 잡아야 한다 */
+const onDocClick = (e) => {
+  if (node instanceof Node && targets.some((t) => t === node || t.contains(node))) return;
+  finish(null, text);      // ← target=null 로 "이탈"을 알린다
+};
+document.addEventListener('click', onDocClick, { capture: true });
+```
+
+기존 코드는 "강조한 그 요소가 눌릴 때까지" 기다렸어요. 강조가 항상 맞다는 전제였으니 그걸로 됐죠. 그런데 이제 `tiebreak`·`scout`는 **틀릴 수 있다고 전제하는 모드**라, 사용자가 다른 곳을 누르는 게 정상 경로가 됩니다. 이 리스너가 없으면 그 순간 가이드가 영원히 멈춰요. 이탈로 끝난 클릭은 학습에도 넣지 않고 `stepIndex`도 안 올립니다 — 우리 제안을 확인해준 게 아니니까요.
+
+**핵심 코드 5** — 근거 없는 `true`를 넣지 않기 (`content-script.js`)
+
+```js
+// (고쳤음) pendingClick.screenChanged = true;   ← 화면을 보지도 않고 단정했었다
+const added   = [...textSet].filter((t) => !prev.has(t)).length;
+const removed = [...prev].filter((t) => !textSet.has(t)).length;
+pendingClick.screenChanged = added > 0 || removed > 0;
+```
+
+처음엔 "여기까지 왔으면 화면이 바뀐 거겠지"로 `true`를 넣었는데, 그건 위 3번의 잠금장치를 우회하는 구멍이었어요. 확인 안 된 클릭이 "확인됨"으로 로그에 들어가면 별칭이 오염됩니다. 실제로 화면을 다시 읽어 비교하도록 고쳤어요.
+
+**검증한 것**: `npm test` **63/63 통과**(전부 오프라인 — 임베딩·LLM·파일 저장을 모두 가짜로 주입), `npm run typecheck` 에러 0(`content-script.js`에 `// @ts-check` 신규 적용 포함), `server.mjs` 모듈 로드 스모크 통과. **실제 홈택스 E2E는 아직 안 함** — `GEMINI_API_KEY`가 없어 캘리브레이션도 대기 중이라, 임계값은 여전히 임시값입니다. 수동 검증 항목 7개는 `guide-extension/README.md`에 체크리스트로 적어뒀어요.
+
+**새로 나온 용어**
+- 순수 함수(pure function): 같은 입력이면 언제나 같은 출력이고, 바깥 세상(파일·네트워크·시계)에 손대지 않는 함수. 테스트가 쉬워지는 게 아니라 **동작을 확신할 수 있게** 됨
+- 경계값 테스트: 임계값과 "정확히 같을 때", "아주 살짝 모자랄 때"를 콕 집어 확인하는 테스트. 판정 로직의 버그는 대부분 이 지점에 숨음
+- 멱등(idempotent): 여러 번 해도 결과가 한 번 한 것과 같은 성질. 같은 별칭을 세 번 승격해도 목록이 세 개로 안 늘어나는 것
+- 원자적 쓰기(atomic write): 임시 파일에 다 쓴 뒤 이름만 바꿔치기하는 저장 방식. 쓰다가 죽어도 반쯤 잘린 파일이 안 남음
+- 캡처(capture) 리스너: 이벤트가 자식으로 내려가는 단계에서 먼저 낚아채는 리스너. 페이지가 자기 이벤트를 멈추기 전에 잡을 수 있음
+- 데드락: 서로 기다리기만 해서 아무도 진행 못 하는 상태
+- 강등(fallback/downgrade): 새 방식이 못 다루는 입력을 옛 방식으로 넘기는 것. 여기선 등록 안 된 목표(`unknown-goal`)를 레거시 LLM 루프로 넘김
+
+**확인 질문**
+`tiebreak`에서 LLM이 임베딩 1위와 **다른** 답을 냈을 때, 우리는 "LLM 답을 채택"도 "임베딩 답을 채택"도 아닌 제3의 선택(둘 다 강조)을 했어요. 만약 여기서 둘 중 하나를 골라 단독 강조했다면, 사용자 입장에서 무엇이 나빠졌을까요?
+
+#### 답변 :
+
+---
+
+## Step 29 — UI 개편: 라이트 토큰 전환 · 홈 대시보드 · 위저드 3분할 (2026-07-24)
+
+**무엇을 했는지 (한 줄)**
+`DESIGN.md` §9 결정사항을 코드로 옮겼어요 — 와이드 모니터에서 앱 전체가 좁은 모바일 칼럼으로 떠 있던 문제를 고치고, 다크 → 라이트 팔레트로 바꾸고, 위저드를 좌(토픽 목록)·중(질문)·우(실시간 검산) 3분할로 재구성했습니다.
+
+**핵심 코드 1** — 이번 개편의 출발점이었던 한 줄 (`src/styles/global.css`)
+
+```css
+.app-container {
+  max-width: 480px;   /* ← 이 한 줄 때문에 27인치 모니터에서도 앱이 480px 칼럼이었다 */
+}
+```
+
+```css
+/* 고친 뒤: 상한을 페이지 폭으로 풀고, "좁게 유지할지"는 각 화면이 자기 폭 토큰으로 결정한다 */
+.app-container { max-width: var(--w-page); }
+
+:root {
+  --w-page: 1440px;   /* 페이지 전체 상한 */
+  --w-read: 620px;    /* 읽기/입력 칼럼 — 이 이상 넓히지 않는다 */
+  --w-rail: 232px;    /* 위저드 좌측 토픽 네비 */
+  --w-panel: 300px;   /* 위저드 우측 실시간 패널 */
+}
+```
+
+여기서 중요한 건 "그럼 이제 다 늘리자"가 **아니라는** 점이에요. 조사해보니 Linear·Notion·Stripe 같은 도구들도 본문 칼럼 폭은 오히려 못 박아 둡니다 — 글자가 한 줄에 너무 길면 눈이 다음 줄 첫 글자를 못 찾거든요. 그래서 늘어나는 건 **가운데가 아니라 양옆**입니다: 중앙 입력 칼럼은 `--w-read`로 잠가두고, 남는 폭을 레일과 패널이 가져가요.
+
+**핵심 코드 2** — "되돌아가기만 되고 건너뛰기는 안 되는" 네비게이션 (`src/taxinput/useEngine.ts`)
+
+```ts
+const goToTopic = useCallback((topicKey: string) => {
+  setCursor((prev) => {
+    const i = prev.history.indexOf(topicKey);
+    if (i < 0) return prev;              // ← 안 지나온 토픽이면 아무것도 안 하고 그대로 반환
+    const target = cellsFor(topicKey);
+    return {
+      topicKey,
+      frontier: Math.max(0, target.length - 1),  // 마지막 셀을 활성 셀로 (goBack과 같은 규칙)
+      history: prev.history.slice(0, i),         // 그 토픽 이전까지로 되감기
+      editingId: null,
+    };
+  });
+}, [cellsFor]);
+```
+
+왼쪽 목록에서 17개 토픽이 다 보이니 "아무거나 눌러서 점프"가 자연스러워 보이지만, 앞으로 점프는 **일부러 막았어요**. 이 위저드의 질문은 고정 목록이 아니라 앞선 답변에 따라 그때그때 만들어집니다("부동산임대업인가요?" → 예면 토지·건물을 묻고, 아니면 안 묻고). 그래서 중간을 건너뛰고 앞으로 가면 "지금 몇 번째 질문인가"를 세는 `frontier`가 실제 질문 목록과 어긋나요. 안 지나온 토픽은 버튼을 `disabled`로 두고, 함수도 한 번 더 막아서 **UI와 로직 양쪽에서** 같은 규칙을 지킵니다.
+
+**핵심 코드 3** — 0 = 0을 "맞아요"라고 하지 않기 (`src/taxinput/components/LivePanel.tsx`)
+
+```tsx
+const 미입력 = 자산 === 0 && 부채자본 === 0;
+const 균형 = 자산 === 부채자본;
+
+// 상태가 둘(맞다/틀리다)이 아니라 셋이다 — "아직 입력 전"을 따로 둔 게 이 코드의 핵심
+{미입력 ? '입력 전' : 균형 ? '맞아요' : '안 맞아요'}
+```
+
+대차평형(자산 = 부채 + 자본)은 이 화면의 간판 기능이라 입력 내내 오른쪽에 띄워뒀는데, 그러면 **아직 아무것도 안 적은 시점에도 보인다**는 문제가 생겨요. 그때 0 = 0이라고 "맞아요 ✓"를 띄우면, 사용자는 검산이 끝난 줄 압니다. 실제로는 아직 시작도 안 했는데요. 그래서 세 번째 상태를 만들었고, 이걸 테스트로 고정해뒀어요:
+
+```tsx
+it('아무것도 안 적었으면 0=0을 "맞아요"라고 하지 않는다', () => {
+  render(<LivePanel {...필수props} />);
+  expect(screen.getByText('입력 전')).toBeInTheDocument();
+  expect(screen.queryByText('맞아요')).not.toBeInTheDocument();  // 부재 단언
+});
+```
+
+**핵심 코드 4** — 어긋났을 때는 조용하지 않게 (`LivePanel.module.css` / `.tsx`)
+
+```css
+.bad {
+  border-width: 2px;                          /* 1px → 2px */
+  border-color: var(--color-danger);
+  background: var(--color-danger-light);
+  padding: calc(var(--space-4) - 1px);        /* ← 테두리가 굵어진 만큼 빼서 크기 점프를 막는다 */
+}
+```
+
+```tsx
+<b>{toKRW(Math.abs(차액))}원</b> 만큼 {차액 > 0 ? '자산이 많아요' : '부채+자본이 많아요'}.
+```
+
+"안 맞습니다"만 띄우면 사용자는 뭘 해야 할지 모릅니다. **얼마나** 어긋났는지, **어느 쪽이** 많은지를 같이 줘야 찾을 수 있어요. CSS의 `padding: calc(... - 1px)`은 사소해 보이지만 중요한데, 테두리가 1px에서 2px로 굵어질 때 패딩을 안 줄이면 박스 전체가 2px 커지면서 옆 카드들이 미세하게 밀립니다 — 숫자를 입력할 때마다 화면이 들썩이면 거슬려요.
+
+**핵심 코드 5** — 그동안 폰트가 적용되고 있지 않았던 것 (`global.css`)
+
+```css
+/* 고치기 전 — Pretendard는 Google Fonts에 없다. 조용히 404가 나고 시스템 폰트로 폴백 중이었다 */
+@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
+
+/* 고친 뒤 — 공식 배포처(jsdelivr CDN) */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css');
+```
+
+CSS의 웹폰트 로딩은 **실패해도 에러가 안 납니다** — 그냥 다음 후보 폰트로 넘어가요. 그래서 "화면이 멀쩡해 보인다"가 "의도한 대로 동작한다"의 증거가 못 되는 대표적인 경우입니다.
+
+**검증한 것**: `npx vitest run` 14개 통과(잔여 문항 3 + 대차평형 3 + 기존 8) · `npx tsc -b` 타입 에러 0 · `npx oxlint` 신규 경고 0. 그리고 dev 서버(5173)와 API(8000)를 실제로 띄워 브라우저로 홈·위저드·대차평형 경고 상태를 눈으로 확인했어요.
+
+**부수적으로 발견한 것 두 가지**
+- `src/index.css`, `src/App.css`는 **한 번도 import된 적이 없는** Vite 템플릿 잔재였어요(삭제). 지우기 전에 `grep`으로 import처를 확인하는 게 순서입니다.
+- `DESIGN.md` §8.4의 "키보드 우선 입력"은 실제로 **깨져 있습니다** — 숫자 셀에서 Enter를 눌러도 안 넘어가요(autofocus 미적용). 이번 패스 범위 밖이라 §9.6에 기록만 해뒀습니다.
+
+**새로 나온 용어**
+- 디자인 토큰: 색·간격·폭 같은 값에 이름을 붙여 한 곳에 모아둔 것. `--w-read` 하나만 고치면 그걸 쓰는 모든 화면이 같이 바뀜
+- CSS 변수(커스텀 프로퍼티): `--이름: 값`으로 정의하고 `var(--이름)`으로 꺼내 쓰는 CSS 문법. 디자인 토큰을 담는 그릇
+- `position: sticky`: 스크롤하다 지정 위치에 닿으면 그 자리에 붙어 따라오는 배치. 좌측 레일·우측 패널이 이걸로 화면에 고정됨
+- 폴백(fallback): 1순위가 실패했을 때 조용히 쓰이는 대안. 웹폰트가 대표적 — 실패해도 에러가 안 나서 눈치채기 어려움
+- CDN: 파일을 전 세계 서버에 복사해두고 가까운 곳에서 내려주는 배포망
+- 부재 단언: "이게 **없어야** 한다"를 검사하는 테스트. `queryByText(...)` + `not.toBeInTheDocument()`
+- 미디어 쿼리(`@media`): 화면 폭 같은 조건에 따라 CSS를 다르게 적용하는 문법. 좁은 화면에서 레일·패널을 접는 데 씀
+
+**확인 질문**
+왼쪽 레일에는 17개 토픽이 전부 보이는데, 아직 안 지나온 토픽은 클릭이 막혀 있어요. "다 보여줄 거면 아무거나 누르게 해주지" 싶은데, 왜 앞으로 점프를 허용하면 위험할까요? (힌트: 이 위저드의 질문 목록이 어떻게 만들어지는지)
+
+#### 답변 :
+
+---
+
 ## 용어집
 
 - `.gitignore`: git이 "이 파일들은 추적하지 마"라고 알려주는 목록 파일
@@ -1130,3 +1645,8 @@ const [data, dispatch] = useReducer(dataReducer, undefined,
 - fetch: 브라우저가 서버에 HTTP 요청을 보내는 표준 자바스크립트 함수
 - 페이로드(payload): 요청에 실어 보내는 실제 데이터 본문
 - 스모크 테스트(smoke test): 전체를 꼼꼼히 검사하기 전에 기본 동작만 빠르게 확인하는 테스트
+- 디자인 토큰: 색·간격·폭 같은 값에 이름을 붙여 한 곳에 모아둔 것 (`--w-read` 하나를 고치면 쓰는 곳이 다 따라 바뀜)
+- CSS 변수(커스텀 프로퍼티): `--이름: 값`으로 정의하고 `var(--이름)`으로 꺼내 쓰는 CSS 문법
+- `position: sticky`: 스크롤하다 지정 위치에 닿으면 그 자리에 붙어 따라오는 배치
+- 폴백(fallback): 1순위가 실패했을 때 조용히 쓰이는 대안 (웹폰트는 실패해도 에러가 안 나서 눈치채기 어렵다)
+- 부재 단언: "이게 없어야 한다"를 검사하는 테스트 단언
