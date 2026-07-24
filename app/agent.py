@@ -184,9 +184,14 @@ def _verify_loop(
     되돌아가 재요약한다. verify가 is_good/feedback을 빠뜨린 유효 JSON을 줄 수 있어
     .get의 기본값으로 방어한다(is_good은 통과 쪽 True, feedback은 빈 문자열).
 
-    상한: retried가 MAX_RETRY에 도달하면 더 왕복하지 않는다(CLAUDE.md 불변식 —
-    상한 없는 재시도 금지). 상한 도달 시의 "마지막 요약 채택"은 4-5(#32)가 채운다.
-    지금(4-4)은 그 자리를 raise로 명시해 조용히 틀린 값을 반환하지 않게 한다.
+    상한: retried가 MAX_RETRY에 도달하면 더 왕복하지 않고 마지막 요약을 그대로
+    채택한다 — 버리지 않는다. 부분 결과라도 보여주는 게 낫고("부분 실패는 정상적
+    결말"), 남은 retry 이벤트가 "이 요약은 검증을 통과 못 했다"는 감사 기록이
+    된다. 상한 없는 재시도는 CLAUDE.md 불변식 위반이다.
+
+    paper_done/paper_failed 라우팅은 이 함수의 몫이 아니다 — (summary, retried)를
+    버리지 않고 반환하는 데까지만 책임진다. 검증 소진을 실패로 볼지는 Task 6(#49)이
+    결정한다(sse-contract의 paper_failed 사유와 4-5 완료 기준의 paper_done 사이 경계).
     """
     retried = 0
     while True:
@@ -194,7 +199,7 @@ def _verify_loop(
         if verdict.get("is_good", True):
             return summary, retried
         if retried >= config.MAX_RETRY:
-            raise NotImplementedError("상한 소진 시 마지막 요약 채택은 4-5(#32)에서 구현")
+            return summary, retried  # 상한 소진: 마지막 요약을 그대로 채택(버리지 않는다)
         retried += 1
         feedback = verdict.get("feedback", "")
         yield {"stage": "retry", "index": index, "attempt": retried, "feedback": feedback}

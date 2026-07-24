@@ -6,7 +6,7 @@ verify 고유의 사실은 "fallback 값이 하필 {"is_good": True}"라는 점 
 (파싱 실패·예외를 흡수하는 ask_llm_json 자체의 메커니즘은 Task 0의 책임이라 여기서 다시 테스트하지 않는다.)
 """
 
-from app import agent
+from app import agent, config
 
 
 def _drain(gen):
@@ -73,3 +73,30 @@ def test_verify_loop_emits_retry_and_resummarizes_on_bad(monkeypatch):
     ]
     assert adopted == new_summary  # 재요약 결과를 채택
     assert retried == 1
+
+
+def test_verify_loop_caps_at_max_retry(monkeypatch):
+    """계속 is_good=False여도 MAX_RETRY회까지만 왕복하고 마지막 요약을 채택한다 (4-5).
+
+    완료 기준: 3번 연속 False여도 attempt:3은 발생하지 않고, 마지막 재요약이 채택된다.
+    """
+    # verify는 늘 실패, 재요약은 S1→S2로 매번 다른 요약을 낸다.
+    monkeypatch.setattr(
+        "app.agent._call_verify", lambda title, src, summ: {"is_good": False, "feedback": "부족"}
+    )
+    summaries = iter(
+        [
+            {"contribution": "c1", "method": "m1", "result": "r1"},
+            {"contribution": "c2", "method": "m2", "result": "r2"},
+        ]
+    )
+    monkeypatch.setattr("app.agent._call_summarize", lambda title, src, fb: next(summaries))
+
+    original = {"contribution": "c0", "method": "m0", "result": "r0"}
+    events, (adopted, retried) = _drain(agent._verify_loop(1, "제목", "원문", original))
+
+    # attempt는 1·2만 — MAX_RETRY(2)를 넘는 attempt:3은 발생하지 않는다
+    assert [e["attempt"] for e in events] == [1, 2]
+    assert retried == config.MAX_RETRY
+    # 통과한 적 없어도 마지막 재요약(S2)을 버리지 않고 채택한다
+    assert adopted == {"contribution": "c2", "method": "m2", "result": "r2"}
