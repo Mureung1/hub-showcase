@@ -259,6 +259,53 @@ export function formatExpectedIntake(expected) {
   return parts.length > 0 ? `${parts.join(' · ')} 섭취 가능` : null
 }
 
+// ── 영양소 분류: "부족 판정 대상" vs "기록·경고 전용" ─────────────────────────
+// 부족 영양소 선정(식당 추천·보충 메뉴 추천의 입력)은 4개 목표형 영양소만 대상으로 한다.
+// - 칼로리는 다른 영양소의 합산 결과라 "칼로리가 부족해요"는 실질적 조언이 못 되고,
+// - 나트륨은 상한형이라 "부족" 개념 자체가 성립하지 않는다.
+// 이 둘은 화면 표시(섭취량 기록)와 초과 경고에서만 쓴다. 단, 달력의 하루 상태 판정
+// (calcDayStatus)과 리더보드 점수(nutritionScore.js + supabase SQL)는 기존 6개 기준을
+// 의도적으로 유지한다 — 바꾸면 과거 기록의 상태가 소급해서 달라지고, SQL 채점 공식과
+// 어긋난다(CLAUDE.md의 "채점 공식은 반드시 동일하게 유지" 규칙).
+export const DEFICIENCY_TARGET_KEYS = ['carbs', 'protein', 'fat', 'fiber']
+export const RECORD_ONLY_KEYS = ['calories', 'sodium']
+export const UPPER_LIMIT_KEYS = ['sodium']
+
+// 오늘 부족한 영양소 상위 max개. 단위가 제각각(kcal/g/mg)인 절대량 대신 충족률(actual/recommended)
+// 오름차순으로 정렬한다 — 절대량 비교는 스케일이 큰 칼로리·나트륨·탄수화물이 항상 상위를 독식해
+// 단백질·식이섬유가 구조적으로 진입하지 못했다. 충족률 100% 이상인 영양소는 부족 목록에서 제외.
+// 반환 row 모양은 기존 화면·프롬프트가 쓰던 것과 호환된다(key/label/unit/recommended/actual/deficiency).
+export function buildDeficiencyRows(recommended, total, { max = 3 } = {}) {
+  if (!isNutrientSet(recommended) || !isNutrientSet(total)) return []
+
+  return NUTRIENT_LABELS.filter(({ key }) => DEFICIENCY_TARGET_KEYS.includes(key))
+    .map(({ key, label, unit }) => {
+      const rec = Number(recommended[key]) || 0
+      const actual = Number(total[key]) || 0
+      return {
+        key,
+        label,
+        unit,
+        recommended: rec,
+        actual,
+        // 프롬프트("약 Xg 부족")용 표시값 — 정수로 반올림해 소수점 노이즈를 없앤다.
+        deficiency: Math.max(0, Math.round(rec - actual)),
+        ratio: rec > 0 ? actual / rec : 1,
+      }
+    })
+    .filter((row) => row.ratio < 1)
+    .sort((a, b) => a.ratio - b.ratio)
+    .slice(0, max)
+}
+
+// 나트륨(상한형)이 오늘 이미 상한을 초과했는지 — 식당/메뉴 추천 프롬프트에
+// "짠 메뉴를 피하라" 제약을 얹는 역방향 신호로 쓴다(부족 영양소로는 절대 취급하지 않는다).
+export function isSodiumExceeded(recommended, total) {
+  const limit = Number(recommended?.sodium) || 0
+  const actual = Number(total?.sodium) || 0
+  return limit > 0 && actual > limit
+}
+
 // ── 하루 영양 상태 3단계 판정 ──────────────────────────────────────────────
 // 목표형 영양소(칼로리·단백·탄수·지방·식이섬유)는 권장량의 NUTRIENT_SATISFY_RATIO 이상 도달 시 "충족",
 // 나트륨(상한형)은 권장 상한 이하일 때 "충족"으로 본다(식단 탭의 한도 개념과 동일).

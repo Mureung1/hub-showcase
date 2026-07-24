@@ -18,22 +18,23 @@ import {
 } from '../lib/foodCategory.js'
 import { geocodeLocation, reverseGeocode } from '../lib/kakao.js'
 import { searchNaverPlaces } from '../lib/naverPlaces.js'
-import { NUTRIENT_LABELS } from '../lib/nutrition.js'
+import { buildDeficiencyRows, isSodiumExceeded } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 // 위치 권한 거부/실패 시 지도를 띄울 기본 위치(대전 유성구 충남대학교 인근)
 const DEFAULT_POSITION = { lat: 36.3665, lng: 127.3448 }
 
-// AI 키워드 생성이 실패했을 때 쓰는 부족 영양소별 기본 식당 유형(서로 다른 유형으로 분산)
+// AI 키워드 생성이 실패했을 때 쓰는 부족 영양소별 기본 식당 유형(서로 다른 유형으로 분산).
+// 칼로리·나트륨은 더 이상 부족 판정 대상이 아니라서(nutrition.js DEFICIENCY_TARGET_KEYS) 키가 없다.
 const KEYWORD_FALLBACKS = {
   protein: '고깃집',
   fiber: '샐러드',
   carbs: '백반',
-  calories: '백반',
   fat: '돈까스',
-  sodium: '백반',
 }
 const FALLBACK_SEARCH_KEYWORD = '백반'
+// 4대 목표 영양소를 전부 충족한 날(부족 영양소 없음)의 "균형 잡힌 식사" 방향 검색어
+const BALANCED_KEYWORDS = ['백반', '샐러드', '정식']
 // 결과가 한 유형으로만 몰렸을 때 보완 검색에 쓰는 다양화 풀
 const DIVERSITY_POOL = ['샐러드', '고깃집', '비빔밥', '쌈밥', '두부요리']
 const MAX_PER_KEYWORD = 3
@@ -42,14 +43,25 @@ const MAX_TOTAL_PLACES = 6
 // 있다 — 사용자 좌표(또는 지정 위치) 기준 이 거리(m)를 벗어나는 결과는 아예 후보에서 제외한다.
 const MAX_DISTANCE_METERS = 3000
 
-// category는 foodCategory.js의 항목. 'all'이면 예전 프롬프트와 완전히 동일한 문장이 나간다 —
-// 카테고리를 고르지 않은 사용자의 결과가 이번 변경으로 달라지지 않도록.
-function buildKeywordsPrompt(deficientRows, category) {
+// category는 foodCategory.js의 항목. 'all'+나트륨 정상이면 예전 프롬프트와 완전히 동일한 문장이
+// 나간다 — 카테고리를 고르지 않은 사용자의 결과가 이번 변경으로 달라지지 않도록.
+function buildKeywordsPrompt(deficientRows, category, { sodiumExceeded = false } = {}) {
   const nutrientText = deficientRows.map((row) => `${row.label}(${row.key}) 약 ${row.deficiency}${row.unit} 부족`).join(', ')
-  const categoryLine =
-    category.key === 'all'
-      ? ''
-      : `\n4. 사용자가 "${category.label}"을(를) 먹고 싶어 한다. 모든 키워드는 반드시 ${category.label} 범주 안에서 골라라 — 그 범주 안에서 위 영양소를 가장 잘 채워주는 유형을 고르면 된다.`
+
+  // 조건 4번부터 이어 붙는 선택 조건들 — 없으면 빈 문자열이라 기존 프롬프트와 완전히 동일해진다.
+  const extraConditions = []
+  if (category.key !== 'all') {
+    extraConditions.push(
+      `사용자가 "${category.label}"을(를) 먹고 싶어 한다. 모든 키워드는 반드시 ${category.label} 범주 안에서 골라라 — 그 범주 안에서 위 영양소를 가장 잘 채워주는 유형을 고르면 된다.`,
+    )
+  }
+  if (sodiumExceeded) {
+    // 나트륨은 부족 영양소가 아니라 역방향(한도 초과) 제약으로만 프롬프트에 반영한다.
+    extraConditions.push(
+      '사용자는 오늘 나트륨 섭취가 이미 권장 상한을 초과했다. 찌개·짬뽕·국밥처럼 국물 위주로 나트륨이 매우 높은 유형은 키워드로 뽑지 마라.',
+    )
+  }
+  const extraText = extraConditions.map((line, i) => `\n${4 + i}. ${line}`).join('')
 
   return `오늘 부족한 영양소를 채울 식당을 검색하려고 해.
 부족한 영양소: ${nutrientText}.
@@ -58,7 +70,7 @@ function buildKeywordsPrompt(deficientRows, category) {
 1. 부족한 영양소 각각에 대해, 그 영양소를 보충하기 좋은 음식을 파는 "식당 유형" 검색 키워드를 1개씩 뽑아라(총 2~3개).
 2. 키워드끼리 서로 다른 유형이어야 한다. 백반/국밥 같은 한 가지 유형으로 몰지 마라.
    매핑 예시: 단백질→구이/고깃집/샤브샤브, 식이섬유→샐러드/비빔밥/쌈밥, 탄수화물→백반/김밥, 칼슘→두부요리.
-3. 각 키워드는 지역 장소 검색에 바로 쓸 수 있는 짧은 한국어 단어(1~4글자 상호 유형)여야 한다.${categoryLine}
+3. 각 키워드는 지역 장소 검색에 바로 쓸 수 있는 짧은 한국어 단어(1~4글자 상호 유형)여야 한다.${extraText}
 
 설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
 {
@@ -68,14 +80,15 @@ function buildKeywordsPrompt(deficientRows, category) {
 }`
 }
 
-async function fetchSearchKeywords(deficientRows, category) {
-  // 부족 영양소가 없으면(프로필/오늘 기록 미입력) 고를 근거가 없으니 카테고리 자체를 검색어로 쓴다.
+async function fetchSearchKeywords(deficientRows, category, { sodiumExceeded = false } = {}) {
+  // 부족 영양소가 없는 경우는 둘: ① 프로필/오늘 기록 미입력(고를 근거 없음) ② 4대 영양소 전부 충족.
+  // 어느 쪽이든 "균형 잡힌 식사" 방향의 검색어를 쓴다(카테고리를 골랐으면 그 카테고리 풀).
   if (deficientRows.length === 0) {
-    return category.key === 'all' ? [FALLBACK_SEARCH_KEYWORD] : category.keywords.slice(0, 3)
+    return category.key === 'all' ? BALANCED_KEYWORDS.slice(0, 3) : category.keywords.slice(0, 3)
   }
 
   try {
-    const text = await geminiCompleteWithRetry({ prompt: buildKeywordsPrompt(deficientRows, category) })
+    const text = await geminiCompleteWithRetry({ prompt: buildKeywordsPrompt(deficientRows, category, { sodiumExceeded }) })
     const parsed = parseJsonLoose(text)
     const keywords = (parsed?.keywords || [])
       .map((k) => (typeof k === 'string' ? k : k?.keyword))
@@ -174,8 +187,8 @@ async function searchAndMerge({ x, y, keywords, regionLabel, existing = [] }) {
   return merged.slice(0, MAX_TOTAL_PLACES)
 }
 
-// allergyLabels가 비어 있으면(프로필 미입력 등) 기존 프롬프트와 완전히 동일하게 나간다.
-function buildExpectedPrompt(places, deficientRows, allergyLabels = []) {
+// allergyLabels가 비고 나트륨 정상이면(프로필 미입력 등) 기존 프롬프트와 완전히 동일하게 나간다.
+function buildExpectedPrompt(places, deficientRows, allergyLabels = [], { sodiumExceeded = false } = {}) {
   const placeText = places.map((p) => `- ${p.place_name} (${p.category_name || '분류 없음'})`).join('\n')
   const deficientKeys = deficientRows.map((row) => `"${row.key}"`).join(', ')
   const nutrientText = deficientRows.map((row) => `${row.label}(${row.key})`).join(', ')
@@ -183,6 +196,9 @@ function buildExpectedPrompt(places, deficientRows, allergyLabels = []) {
     allergyLabels.length > 0
       ? `\n- 다음 알레르기 성분이 들어간 메뉴는 대표 메뉴(representativeMenu)로 고르지 마라: ${allergyLabels.join(', ')}.`
       : ''
+  const sodiumLine = sodiumExceeded
+    ? '\n- 사용자는 오늘 나트륨 섭취가 이미 권장 상한을 초과했다. 가능한 한 나트륨(sodium)이 낮은 대표 메뉴를 골라라.'
+    : ''
 
   return `아래는 오늘 부족한 영양소(${nutrientText})를 채우러 갈 후보 식당 목록이야.
 각 식당의 카테고리를 보고 대표 메뉴(representativeMenu)를 하나 떠올린 뒤, 그 대표 메뉴 "한국 표준 1인분"을 먹었을 때 예상되는 주요 영양 섭취량(expected)을 계산해줘.
@@ -193,7 +209,7 @@ function buildExpectedPrompt(places, deficientRows, allergyLabels = []) {
 - 과대추정 금지: 통상적인 1인분 현실 범위를 벗어나면 스스로 재검토하고 보수적인 값으로 고쳐라.
 - expected에는 부족한 영양소 키(${deficientKeys})를 반드시 포함해라.
 - 사용할 수 있는 키와 단위: calories(kcal), protein(g), carbs(g), fat(g), fiber(g), sodium(mg). 값은 숫자만.
-- place_name은 아래 목록의 이름과 정확히 같아야 한다.${allergyLine}
+- place_name은 아래 목록의 이름과 정확히 같아야 한다.${allergyLine}${sodiumLine}
 
 식당 목록:
 ${placeText}
@@ -207,11 +223,11 @@ ${placeText}
 }
 
 // 장소별 "대표 메뉴 1인분 예상 섭취량"을 한 번의 호출로 계산해 붙인다. 실패해도 목록 자체는 그대로 보여준다.
-async function attachExpectedIntake(places, deficientRows, allergyLabels = []) {
+async function attachExpectedIntake(places, deficientRows, allergyLabels = [], { sodiumExceeded = false } = {}) {
   if (places.length === 0 || deficientRows.length === 0) return places
 
   try {
-    const text = await geminiCompleteWithRetry({ prompt: buildExpectedPrompt(places, deficientRows, allergyLabels) })
+    const text = await geminiCompleteWithRetry({ prompt: buildExpectedPrompt(places, deficientRows, allergyLabels, { sodiumExceeded }) })
     const parsed = parseJsonLoose(text)
     const byName = new Map(
       (parsed?.places || [])
@@ -238,19 +254,12 @@ export default function MapPage() {
     [profile?.allergies],
   )
 
-  // 오늘 부족한 영양소 상위 3개. 프로필/오늘 분석 기록이 없으면 빈 배열 → 기본 키워드로 폴백.
-  const top3Rows = useMemo(() => {
-    if (!recommended || !todayTotal) return []
-    return NUTRIENT_LABELS.map(({ key, label, unit }) => ({
-      key,
-      label,
-      unit,
-      deficiency: recommended[key] - todayTotal[key],
-    }))
-      .filter((row) => row.deficiency > 0)
-      .sort((a, b) => b.deficiency - a.deficiency)
-      .slice(0, 3)
-  }, [recommended, todayTotal])
+  // 오늘 부족한 영양소 상위 3개 — 4대 목표 영양소(탄수·단백·지방·식이섬유)만, 충족률 낮은 순.
+  // 프로필/오늘 분석 기록이 없거나 전부 충족이면 빈 배열 → 균형 식사 키워드로 폴백.
+  const top3Rows = useMemo(() => buildDeficiencyRows(recommended, todayTotal), [recommended, todayTotal])
+
+  // 나트륨 상한 초과 여부 — 부족 영양소가 아니라 "짠 메뉴 피하기" 역방향 제약으로만 쓴다.
+  const sodiumExceeded = useMemo(() => isSodiumExceeded(recommended, todayTotal), [recommended, todayTotal])
 
   const [places, setPlaces] = useState(null)
   // NaverPlaceMap의 useEffect는 places를 참조 비교로 의존한다 — `places || []`를 JSX에서 그대로
@@ -306,8 +315,8 @@ export default function MapPage() {
   async function searchAroundPosition({ x, y }) {
     const category = getFoodCategory(categoryKey)
 
-    // 1) 부족 영양소(+고른 음식 종류) → 서로 다른 식당 유형 키워드 2~3개
-    const keywords = await fetchSearchKeywords(top3Rows, category)
+    // 1) 부족 영양소(+고른 음식 종류, 나트륨 초과 제약) → 서로 다른 식당 유형 키워드 2~3개
+    const keywords = await fetchSearchKeywords(top3Rows, category, { sodiumExceeded })
 
     // 1.5) 좌표 -> 대략적 지역명(예: "유성구"). 네이버 지역 검색은 반경 파라미터가 없어, 검색어 자체에
     // 지역명을 섞어 넣어야 "내 주변" 결과에 가까워진다. 실패해도 검색 자체는 지역명 없이 계속 진행한다.
@@ -353,10 +362,10 @@ export default function MapPage() {
 
     if (filtered.length === 0) return { places: [], categoryNotice: '' }
 
-    // 6) 각 식당의 대표 메뉴 예상 섭취량(추천 근거) 계산해 부착 — 알레르기가 있으면 대표 메뉴 선정에 반영
+    // 6) 각 식당의 대표 메뉴 예상 섭취량(추천 근거) 계산해 부착 — 알레르기·나트륨 초과를 대표 메뉴 선정에 반영
     // (예전엔 여기서 스폰서 식당 목업을 4번째 자리에 끼워 넣었지만, 식당 광고는 PRD v2.0 §6에서 이번
     //  릴리즈 스코프 아웃됐다. 광고는 식단 탭의 쿠팡 파트너스 영양제 배너 한 곳으로 통일한다.)
-    return { places: await attachExpectedIntake(filtered, top3Rows, allergyLabels), categoryNotice }
+    return { places: await attachExpectedIntake(filtered, top3Rows, allergyLabels, { sodiumExceeded }), categoryNotice }
   }
 
   async function handleFindNearby() {

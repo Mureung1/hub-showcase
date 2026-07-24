@@ -13,12 +13,12 @@ import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { displayProductName, nutrientLabel, productsForNutrient } from '../data/coupangProducts.js'
 import { geminiCompleteWithRetry, parseJsonLoose } from '../lib/gemini.js'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
-import { calcAchievementPercent, NUTRIENT_LABELS } from '../lib/nutrition.js'
+import { buildDeficiencyRows, calcAchievementPercent, isSodiumExceeded, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
 
-// allergyLabels/conditionLabels가 비어 있으면(프로필 미입력 등) 기존 프롬프트와 완전히 동일하게
-// 나간다 — 제약 문단 자체가 붙지 않는다.
-function buildRecommendationPrompt(deficientRows, allergyLabels = [], conditionLabels = []) {
+// allergyLabels/conditionLabels가 비고 나트륨 정상이면(프로필 미입력 등) 기존 프롬프트와 완전히
+// 동일하게 나간다 — 제약 문단 자체가 붙지 않는다.
+function buildRecommendationPrompt(deficientRows, allergyLabels = [], conditionLabels = [], { sodiumExceeded = false } = {}) {
   const nutrientText = deficientRows.map((row) => `${row.label}(${row.key}) 약 ${row.deficiency}${row.unit} 부족`).join(', ')
   const deficientKeys = deficientRows.map((row) => `"${row.key}"`).join(', ')
 
@@ -28,6 +28,10 @@ function buildRecommendationPrompt(deficientRows, allergyLabels = [], conditionL
   }
   if (conditionLabels.length > 0) {
     constraints.push(`- 다음 기저질환에 부적합하거나 악화시킬 수 있는 메뉴(자극적/고나트륨/고당 등)는 피하라: ${conditionLabels.join(', ')}.`)
+  }
+  if (sodiumExceeded) {
+    // 나트륨은 부족 영양소가 아니라 역방향(한도 초과) 제약으로만 반영한다(nutrition.js 분류 참고).
+    constraints.push('- 사용자는 오늘 나트륨 섭취가 이미 권장 상한을 초과했다. 찌개·라면·국밥처럼 나트륨이 매우 높은 메뉴는 피하고, 가능한 한 나트륨이 낮은 메뉴를 골라라.')
   }
   const constraintBlock = constraints.length > 0 ? `\n\n반드시 지킬 제약:\n${constraints.join('\n')}` : ''
 
@@ -123,15 +127,12 @@ export default function Result() {
     }))
   }, [recommended, todayTotal])
 
-  const top3Rows = useMemo(
-    () =>
-      [...rows]
-        .filter((row) => row.deficiency > 0)
-        .sort((a, b) => b.deficiency - a.deficiency)
-        .slice(0, 3),
-    [rows],
-  )
+  // 부족 영양소 상위 3개 — 4대 목표 영양소(탄수·단백·지방·식이섬유)만, 충족률 낮은 순
+  // (nutrition.js buildDeficiencyRows — MapPage의 식당 추천과 같은 판정을 공유한다).
+  const top3Rows = useMemo(() => buildDeficiencyRows(recommended, todayTotal), [recommended, todayTotal])
   const top3DeficientKeys = useMemo(() => top3Rows.map((row) => row.key), [top3Rows])
+  // 나트륨 상한 초과 여부 — 보충 메뉴 추천에서 "짠 메뉴 피하기" 제약으로만 쓴다.
+  const sodiumExceeded = useMemo(() => isSodiumExceeded(recommended, todayTotal), [recommended, todayTotal])
 
   // "부족한 영양소" 렌더링에만 쓴다 — top3Rows(AI 보충 메뉴 추천 프롬프트 입력값)는 표시 설정과
   // 무관하게 항상 rows(전체 6개) 기준으로 계산돼야 하므로 여기서 걸러낸 값을 쓰지 않는다.
@@ -151,7 +152,7 @@ export default function Result() {
     setRecLoading(true)
     setRecError('')
     try {
-      const prompt = buildRecommendationPrompt(top3Rows, allergyLabels, conditionLabels)
+      const prompt = buildRecommendationPrompt(top3Rows, allergyLabels, conditionLabels, { sodiumExceeded })
       const text = await geminiCompleteWithRetry({ prompt })
       const parsed = parseJsonLoose(text)
 
@@ -262,6 +263,17 @@ export default function Result() {
       })()}
 
       <SectionTitle>오늘의 보충 추천 메뉴</SectionTitle>
+      {/* 4대 목표 영양소를 전부 충족한 날 — 추천할 부족 영양소가 없으므로 추천 대신 축하 안내를 보여준다. */}
+      {top3Rows.length === 0 && (
+        <Card style={{ background: colors.primarySurface, boxShadow: 'none' }}>
+          <p style={{ margin: 0, color: colors.textStrong, fontWeight: 600 }}>
+            오늘은 영양 균형이 좋아요 👍
+          </p>
+          <p style={{ margin: `${spacing.xs}px 0 0`, color: colors.textSub, fontSize: font.size.sm }}>
+            탄수화물·단백질·지방·식이섬유를 모두 충분히 채웠어요. 다음 끼니는 부담 없이 즐기세요.
+          </p>
+        </Card>
+      )}
       {recLoading && (
         <>
           {[0, 1].map((i) => (
