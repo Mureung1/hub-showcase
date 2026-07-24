@@ -61,12 +61,13 @@ export const MealUpdateSchema = MealCreateSchema.partial();
 export const MemoSchema = z.object({
   id: z.string().uuid(),
   content: z.string(),
+  completed: z.boolean(),
   rawInput: z.string(),
   createdAt: z.string(),
 });
 
-export const MemoCreateSchema = MemoSchema.omit({ id: true, createdAt: true });
-export const MemoUpdateSchema = MemoCreateSchema.partial();
+export const MemoCreateSchema = MemoSchema.omit({ id: true, createdAt: true, completed: true });
+export const MemoUpdateSchema = MemoSchema.omit({ id: true, createdAt: true }).partial();
 
 // ===== 보조 엔티티 =====
 
@@ -112,12 +113,27 @@ export const ItemSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('reminders'), data: ReminderSchema }),
 ]);
 
+// 되묻기 후보 — 아직 저장 전이라 완전한 엔티티가 없다. intent가 create/complete 어느 쪽이든
+// 다룰 수 있도록(complete는 "새로 만들 데이터"가 아니라 "기존 대상을 찾을 힌트") 느슨한
+// fields로 표현한다. 실제 검증·저장은 서버가 intent/type에 맞는 로직으로 수행한다.
+export const ParseCandidateSchema = z.object({
+  label: z.string(),
+  intent: IntentSchema,
+  type: ItemTypeSchema,
+  fields: z.record(z.string(), z.union([z.string(), z.boolean()])),
+});
+
 export const ParseResultSchema = z.discriminatedUnion('status', [
-  z.object({ status: z.literal('resolved'), intent: IntentSchema, item: ItemSchema }),
+  z.object({
+    status: z.literal('resolved'),
+    intent: IntentSchema,
+    items: z.array(ItemSchema).min(1),
+  }),
   z.object({
     status: z.literal('clarify'),
     question: z.string(),
-    candidates: z.array(z.object({ label: z.string(), intent: IntentSchema, item: ItemSchema })),
+    rawInput: z.string(),
+    candidates: z.array(ParseCandidateSchema),
   }),
 ]);
 
@@ -164,6 +180,7 @@ export type Briefing = z.infer<typeof BriefingSchema>;
 export type ItemType = z.infer<typeof ItemTypeSchema>;
 export type Intent = z.infer<typeof IntentSchema>;
 export type Item = z.infer<typeof ItemSchema>;
+export type ParseCandidate = z.infer<typeof ParseCandidateSchema>;
 export type ParseResult = z.infer<typeof ParseResultSchema>;
 export type ResolvedParseResult = Extract<ParseResult, { status: 'resolved' }>;
 export type ClarifyParseResult = Extract<ParseResult, { status: 'clarify' }>;
