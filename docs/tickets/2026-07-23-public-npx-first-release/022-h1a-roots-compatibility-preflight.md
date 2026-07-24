@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: coordinator integration
 
 ## Parent Spec
 
@@ -34,14 +34,14 @@ Public host가 current working directory나 ambient environment를 신뢰하지 
 
 ## Acceptance Criteria
 
-- [ ] Package root가 packed-module-relative canonical path로 계산되고 declared descriptors, built UI와 dedicated workspace resource가 containment·regular-file·no-symlink·digest 검증을 통과한다.
-- [ ] Unsupported OS/arch/macOS/Node/npm/Browser와 descriptor/resource mismatch가 persistent app-data mutation, D1 network, Runtime/account start와 workspace write 0건으로 끝난다.
-- [ ] Supported Apple Silicon/macOS/Node/npm invocation이 exact discovered values와 descriptor identity를 가진 preflight result로 수렴한다.
-- [ ] Browser candidate가 fixed candidate order, canonical path, expected bundle ID와 pinned minimum major를 모두 만족하며 unsupported/default Browser fallback이 없다.
-- [ ] Preflight 뒤 appDataRoot가 owner-only·non-symlink로 create/reopen되고 unsafe owner/permission/symlink와 package/workspace/root overlap을 fail closed한다.
-- [ ] Fresh invocation은 workspace 없이도 valid startup context를 만들고 admitted workspace가 있으면 B-owned authority를 그대로 보존한다.
-- [ ] D1은 preflight green 뒤에만 호출되며 returned `VerifiedRuntime`을 재조립하거나 system/repository fallback으로 바꾸지 않는다.
-- [ ] Error가 발견값·지원값·safe next action을 제공하되 raw path, descriptor URL/digest와 nested private cause를 Browser contract에 노출하지 않는다.
+- [x] Package root가 packed-module-relative canonical path로 계산되고 declared descriptors, built UI와 dedicated workspace resource가 containment·regular-file·no-symlink·digest 검증을 통과한다.
+- [x] Unsupported OS/arch/macOS/Node/npm/Browser와 descriptor/resource mismatch가 persistent app-data mutation, D1 network, Runtime/account start와 workspace write 0건으로 끝난다.
+- [x] Supported Apple Silicon/macOS/Node/npm invocation이 exact discovered values와 descriptor identity를 가진 preflight result로 수렴한다.
+- [x] Browser candidate가 fixed candidate order, canonical path, expected bundle ID와 pinned minimum major를 모두 만족하며 unsupported/default Browser fallback이 없다.
+- [x] Preflight 뒤 appDataRoot가 owner-only·non-symlink로 create/reopen되고 unsafe owner/permission/symlink와 package/workspace/root overlap을 fail closed한다.
+- [x] Fresh invocation은 workspace 없이도 valid startup context를 만들고 admitted workspace가 있으면 B-owned authority를 그대로 보존한다.
+- [x] D1은 preflight green 뒤에만 호출되며 returned `VerifiedRuntime`을 재조립하거나 system/repository fallback으로 바꾸지 않는다.
+- [x] Error가 발견값·지원값·safe next action을 제공하되 raw path, descriptor URL/digest와 nested private cause를 Browser contract에 노출하지 않는다.
 
 ## Verification
 
@@ -65,6 +65,56 @@ Public host가 current working directory나 ambient environment를 신뢰하지 
 - `docs/wayfinding/public-npx-first-release/assets/npx-production-composition-research.md`
 - `docs/adr/0006-separate-package-app-data-and-semester-workspace-roots.md`
 
+## Predecessor Contract Note
+
+- `@ay-ple/runtime-release` package root는 production Host가 필요한 descriptor decoder, caller-safe authority error, resolver bundle factory와 contract type만 공개한다. Testing factory·fault hook과 cache/transport/extraction/generation 내부 구현은 deep import하지 않는다.
+- `@ay-ple/semester-workspace` package root의 `captureWorkspaceBundleSourceAt`를 package-relative immutable workspace resource 검증에 사용한다. Testing mutation helper를 public Host contract로 올리지 않는다.
+- C-owned `PublicPreviewSetupBootstrap`은 required `PublicPreviewWorkspaceTargetGuard`를 받는다. H1a는 authoritative parent가 resolve된 뒤 전달되는 `{ canonicalParent, leafName }`만으로 package/app-data/workspace root overlap을 판단하고 `allowed | blocked`를 반환한다.
+- Guard가 `blocked`를 반환하면 Server가 B-owned `SetupJourney` 호출 전에 `setup_invalid_input`으로 닫는다. H1a는 이 seam을 우회하거나 B schema/admission logic을 복제하지 않는다.
+- 이 predecessor note 자체는 H1a 완료 증거가 아니다. Fixed reviewed H1a SHA는 별도 implementation review와 required checks가 끝난 뒤에만 기록한다.
+
+## Claim Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Exact handoff | `8147d678a8d7f5f4078b6e1f50062f558feb8e36` — D1d, U1과 C1을 DAG 순서로 포함하고 H1a predecessor seam까지 독립 검토한 clean integration HEAD다. |
+| Completed predecessors | Ticket 012의 integrated tip `8164a0489dd929c293df11067e3189fe4f99dd16`, Ticket 014의 integrated tip `c1345c50c5c0272c84e6862e76bcc5ab0532cfc2`, Ticket 021 close `c6b7f4146`은 모두 exact handoff의 ancestor다. Fixed reviewed candidates `27c3dd72c`, `b1f20e07a`, `ad1d4321f`도 같은 history에 포함된다. |
+| Latest contract tips | B command-order tip `f24ee0850`, C cleanup tip `f2e993e1c`, Runtime/semester production-root seam `63c847fd3` + `7289dd20d`, Host target-guard seam `8147d678a`를 소비한다. |
+| Pre-H1a review | Runtime/semester package-root 공개면과 target guard의 fresh parent·caller-mutation·mutation-zero ordering을 각각 독립 검토했고 unresolved finding 0개로 PASS했다. |
+| Integration gates | Exact handoff에서 root `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs links와 `git diff --check`가 green이다. |
+| Scope | 이 branch는 `apps/ay-ple/src/**` 중 `host-contract.ts`를 제외한 H-owned source/tests와 이 ticket만 수정한다. Actual manifest/lock·release-generated package resources는 G lane까지 합성하지 않는다. |
+
+## Candidate Evidence
+
+이 절은 implementation candidate의 검증 범위를 기록하며 ticket 완료나 public artifact readiness를 선언하지 않는다.
+
+| Evidence | Result |
+| --- | --- |
+| Candidate | `4c3f374ae7ceccd155b7f8b821de7d2fac719920` — package resource verification, descriptor-driven compatibility, owner-only roots와 staged `D1 → C` startup을 한 production package-root surface로 조립했다. |
+| Targeted gates | `ay-ple` workspace test 92/92, typecheck와 build가 green이다. Root replacement, cancellation, bounded static traversal, package mutation과 pre-effect ordering regressions를 포함한다. |
+| Repository gates | Candidate source 기준 root `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs links와 `git diff --check`가 모두 exit 0이다. |
+| Built package roots | `@ay-ple/runtime-release`는 `RuntimeReleaseAuthorityError`, `createRuntimeResolverBundle`, `decodeRuntimeReleaseDescriptor`만, `@ay-ple/server`는 `ServerStartupCleanupError`, `createServerApplication`, `listenToServerApplication`만 노출한다. Built `ay-ple` root는 `ApplicationStartupError`, `admitApplicationStartup`만 노출한다. |
+| Local read-only smoke | macOS `26.5.2`, arm64 Node `22.22.3`, npm invocation hint `10.9.8`, `/Applications/Google Chrome.app`의 `com.google.Chrome` `150.0.7871.182`를 descriptor policy로 확인해 `ready`로 수렴했다. OAuth, external Runtime download, app-data 생성과 workspace mutation은 실행하지 않았다. |
+| Independent corrective review | Module-owned `import.meta.url`, effect-free pre-root Runtime semantic admission, five root revalidation boundaries, exact cleanup error와 bounded static traversal을 재검토해 H1a code blocker 0건으로 PASS했다. Fixed reviewed SHA는 별도 최종 review 뒤에만 정한다. |
+| Evidence class | Actual manifest/lock, release-generated resource roster와 public package가 아직 없으므로 현재 결과는 `synthetic_package_preflight`와 local compatibility evidence다. Public package authenticity나 clean-machine readiness를 주장하지 않는다. |
+
+## Known Cross-Package Residual
+
+H1a는 workspace resource tree를 descriptor-derived allowlist와 entry/depth budget으로 앞뒤 검사한다. 다만 `@ay-ple/semester-workspace`의 public `captureWorkspaceBundleSourceAt()`는 내부 recursive scan에 `AbortSignal`과 caller-supplied traversal budget을 받지 않는다. Bounded pre-scan 뒤 concurrent tree injection이 발생하면 post-scan에서 fail closed하지만 그 사이 scan work와 cancellation latency는 public donor가 제한하지 못한다.
+
+이는 H-owned private reimplementation으로 우회하지 않는다. 후속 `@ay-ple/semester-workspace` public capture seam이 bounded roster 또는 cancellation authority를 제공하면 H wrapper가 그 seam을 소비하고 이 residual을 제거한다. Static-site tree와 H-owned package descriptor traversal 자체는 현재 bounded fail-closed다.
+
+## Final Review
+
+| Evidence | Result |
+| --- | --- |
+| Fixed reviewed implementation | `4c3f374ae7ceccd155b7f8b821de7d2fac719920` |
+| Candidate evidence tip | `4bc286216` — synthetic preflight, built package-root probe, local read-only compatibility smoke와 root gates를 기록했다. |
+| Independent review | Host security/process review와 Ticket 022 Spec 재리뷰가 모두 PASS했다. Module-owned `import.meta.url`, pre-mutation Runtime semantic admission, controlled-root boundary revalidation, cleanup authority와 bounded H-owned traversal을 확인했다. |
+| Effect ordering | `package semantic admission → compatibility → roots → resolver.resolve() → exact Origin → C`다. `createRuntimeResolverBundle()`은 immutable admission과 inert object 구성만 수행하며 cache/network effect는 preflight green 뒤 `resolve()`에서 시작한다. |
+| Required checks | `ay-ple` 92/92, workspace typecheck/build, root test/typecheck/build, Chat Shell lint, docs links와 `git diff --check`가 green이다. |
+| Disposition | H1a code blocker 0건으로 완료한다. `captureWorkspaceBundleSourceAt()`의 중간 scan work/cancellation bound는 위 removal condition을 가진 nonblocking cross-package residual이다. |
+
 ## Delivery Handoff
 
 | Field | Contract |
@@ -73,7 +123,7 @@ Public host가 current working directory나 ambient environment를 신뢰하지 
 | owner | `H` — Public host |
 | branch | `codex/public-preview-h1a-preflight` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/h1a-preflight` |
-| handoffSha | Claim 시 coordinator가 012, 014와 021의 fixed reviewed SHA를 integration branch에 DAG 순서로 merge하고 predecessor 및 integration root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·branch name·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `8147d678a8d7f5f4078b6e1f50062f558feb8e36` |
 | writablePaths | `apps/ay-ple/src/**` 중 `host-contract.ts` 제외; host adapter tests; `docs/tickets/2026-07-23-public-npx-first-release/022-h1a-roots-compatibility-preflight.md`. `apps/ay-ple/package.json`, root manifest/lock와 release-generated values는 제외한다. |
 | consumedContracts | S1 host/compatibility/resource contracts; D1 `VerifiedRuntime`; C1 application factory; U1 built-SPA handoff; three-root authority |
 | predecessorEvidence | 012·014·021 fixed reviewed SHAs와 integration merge receipts, resolver matrix, U1 build/visual receipt, C1 route/close receipt, latest applicable `contractTipSha`, root four-gate receipt |

@@ -7,6 +7,10 @@ import type {
   CodexThreadId,
   CodexTurnId,
 } from './contract.js'
+import type {
+  CodexAccountLifecycle,
+  CodexNativeContextPort,
+} from './account-contract.js'
 
 export type CodexProductSkillInput = {
   readonly name: string
@@ -52,3 +56,8 @@ export interface CodexProductCapableRuntime extends CodexChatRuntime {
   answerUserInput(input: AnswerUserInput): Promise<void>
   cancelUserInput(input: CancelUserInput): Promise<void>
 }
+
+export type CodexManagedRuntime =
+  CodexProductCapableRuntime &
+  CodexAccountLifecycle &
+  CodexNativeContextPort

@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -37,13 +37,13 @@ Exact descriptor가 지정한 HTTPS Runtime archive 한 개만 bounded하게 내
 
 ## Acceptance Criteria
 
-- [ ] Scripted fresh `200`이 exact bytes/hash archive를 만들고 unexpected encoding/length/hash를 verified로 승격하지 않는다.
-- [ ] Strong ETag 기반 exact `206`만 append하며 validator, range start/total 또는 descriptor drift는 truncate/fail-closed policy를 따른다.
-- [ ] `200` fallback, bounded valid/invalid `416`, weak/absent ETag와 interrupted stream matrix가 duplicate·stale byte 없이 끝난다.
-- [ ] HTTPS downgrade, redirect cycle/hop overflow와 cross-origin secret header propagation이 0건이다.
-- [ ] `401/403`, `404/410`, transient network와 integrity failure가 stable error로 구분되고 retry budget을 넘지 않는다.
-- [ ] Cancellation/restart가 only-valid partial journal을 보존하고 file descriptor, request와 temporary writer가 남지 않는다.
-- [ ] 다른 URL, mirror, cached older version과 moving release로 fallback하는 code path가 없다.
+- [x] Scripted fresh `200`이 exact bytes/hash archive를 만들고 unexpected encoding/length/hash를 verified로 승격하지 않는다.
+- [x] Strong ETag 기반 exact `206`만 append하며 validator, range start/total 또는 descriptor drift는 truncate/fail-closed policy를 따른다.
+- [x] `200` fallback, bounded valid/invalid `416`, weak/absent ETag와 interrupted stream matrix가 duplicate·stale byte 없이 끝난다.
+- [x] HTTPS downgrade, redirect cycle/hop overflow와 cross-origin secret header propagation이 0건이다.
+- [x] `401/403`, `404/410`, transient network와 integrity failure가 stable error로 구분되고 retry budget을 넘지 않는다.
+- [x] Cancellation/restart가 only-valid partial journal을 보존하고 file descriptor, request와 temporary writer가 남지 않는다.
+- [x] 다른 URL, mirror, cached older version과 moving release로 fallback하는 code path가 없다.
 
 ## Verification
 
@@ -71,10 +71,45 @@ Exact descriptor가 지정한 HTTPS Runtime archive 한 개만 bounded하게 내
 | owner | `D` — Runtime delivery |
 | branch | `codex/public-preview-d1c-download-resume` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/d1c-download-resume` |
-| handoffSha | Claim 시 coordinator가 010의 fixed reviewed SHA를 integration branch에 `--no-ff` merge하고 predecessor 및 integration runtime-release/root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `bfb57e71a87a064bc6f9081c876bb5084effe4b5` — coordinator가 reviewed D1b closeout을 integration branch에 `--no-ff` 반영하고 predecessor 및 integration runtime-release/root gates를 green으로 확인한 exact handoff |
 | writablePaths | `packages/runtime-release/src/**` 중 transport/download/partial-journal implementation·tests (`src/contract.ts`, package manifest와 lockfile 제외); scripted transport fixtures; `docs/tickets/2026-07-23-public-npx-first-release/011-d1c-runtime-download-resume-transport.md` |
 | consumedContracts | D1a descriptor/archive/cache identity와 stable errors; D1b verified archive/staging contract |
 | predecessorEvidence | 010 fixed reviewed SHA, safe TAR dependency gate와 malicious archive/verified-staging receipt |
 | requiredChecks | Full scripted transport/resume/cancel matrix; runtime-release package test/typecheck/build; archive extraction regression; root test/typecheck/build/Chat Shell lint; `git diff --check` |
 | reviewOwner | Independent HTTP/resume/security reviewer |
 | handoffArtifact | Reviewed fixed D1c commit SHA, scripted transport trace roster와 verified archive/partial cleanup receipt |
+
+## Candidate Receipt — coordinator closeout
+
+Coordinator가 exact code tip의 independent review와 package/root gate를 확인했다. 아래 closeout commit은 이 ticket receipt와 `RuntimeDirectoryCapability`의 authority 설명 comment만 갱신하며 reviewed implementation은 바꾸지 않는다.
+
+| Evidence | Result |
+| --- | --- |
+| fixed handoff | `bfb57e71a87a064bc6f9081c876bb5084effe4b5` |
+| claim commit | `0f74bbc98d0a618fa15a0f3347129ca5fc275a49` — `docs: claim runtime download resume transport` |
+| candidate code commits | `d812d53320fa68893ba9edec4536be996baf782c` — exact archive download retention; `bef3ff608e2ec99e9103d3fc65d9dedf2c7b4c2a` — resume/redirect/transport hardening; `12c6fb83c7f3491c36988dd0fd36acc6f9068a65` — recovery race closure; `9823c121505a765e03810809dec7241152460585` — completed-partial cancellation reset; `08d116105f2be4ac2593302f65cc53f48dc45279` — full descriptor binding과 reversed `206` rejection; `af2bfe0a47de27cec97e1604a4ab3935f50f82af` — canonical descriptor journal digest assertion; `ef87178cdb79e1b354209b85a83179b97d5f5069` — atomic no-clobber archive hardlink publish; `788438e6c7ff1a0cfbed4aea26fcfe5b9d4de7d0` — zero-journal final-link-loss restart; `7f4d465fadaf47b6f0236bf79a612e4d95bdc256` — zero-reset I/O stable error normalization; `57cb79ffdabbed9030abe23483a334bb87423106` — pre-reset exact nlink-one identity revalidation |
+| reviewed code tip | `57cb79ffdabbed9030abe23483a334bb87423106` |
+| exact transport | Package-private `ArchiveTransport`는 HTTPS one-hop exchange만 수행하고 caller는 bounded redirect cycle/hop policy를 소유한다. Request는 `Accept-Encoding: identity`, `Range`, `If-Range`의 closed set만 사용하며 raw URL·header·credential·body를 journal이나 product contract에 노출하지 않는다. Cross-origin redirect도 이 archive header set만 재구성한다. |
+| response and retry matrix | Fresh/range-ignored `200`, exact strong-validator `206`, bounded `416` reconcile, duplicate/invalid header, non-identity encoding, declared/streamed length, digest, `401/403`, `404/410`, `408/429/500/502/503/504`, request/body interruption을 scripted하게 고정했다. Allowlisted transient failure는 exact URL에서 한 번만 retry하며 exact asset 외 URL, mirror, older/moving release fallback은 없다. |
+| partial authority | Journal은 full canonical descriptor digest, archive identity, written bytes와 strong ETag만 exact schema로 기록한다. Strong validator만 append authority이고 weak/absent validator 및 `writtenBytes: 0`은 append authority가 아니다. Final link가 사라진 owner-bound nlink-one zero/no-journal partial은 descriptor size bound와 final handle stat의 regular/nlink `1`/`0600`/owner/device/inode를 확인한 뒤 truncate+fsync하고 fresh request로 재개한다. Reset I/O failure는 `runtime_storage_unavailable`, alias/identity drift는 recovery/unsafe outcome으로 닫히며 network work는 0이다. |
+| atomic retained archive | Verified partial은 retained archive directory capability가 destination direct leaf에 no-clobber hardlink하고 directory fsync와 full digest/path readback을 마친 뒤 snapshot이 된다. Durable retained form은 exact standalone nlink-one final 또는 canonical final과 `archive.part`가 같은 inode인 exact nlink-two pair뿐이다. Foreign alias, nlink `3+`, collision, source/root substitution과 final readback replacement은 기존 byte를 delete·overwrite하지 않고 fail closed한다. |
+| cancellation and cleanup | Pre-abort는 network/partial mutation 0건이다. Mid-stream cancellation은 response와 handles를 닫고 strong-validator checkpoint 또는 zero fresh state만 남긴다. No-clobber commit이 시작된 뒤 cancellation은 link/fsync/readback 완료까지 defer되어 valid retained archive를 ambiguous cancellation residue로 만들지 않는다. |
+| targeted matrix | `runtime-archive-download.test.ts` + `runtime-archive-transport.test.ts` → `87/87`. 여기에는 strong→weak success 뒤 final-link loss, injected truncate `EIO` stable projection, open/reset 사이 alias 생성, atomic collision/substitution/readback, cancellation, redirect, `200/206/416`, validator와 retry case가 포함된다. |
+| package gates | `npm test -w @ay-ple/runtime-release` → `239/239`; `npm run typecheck -w @ay-ple/runtime-release` → green; `npm run build -w @ay-ple/runtime-release` → green. D1b extraction regression 전체를 포함한다. |
+| repository gates | Exact reviewed code tip에서 `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links` (`28` active, `2` historical), `git diff --check`가 모두 green이다. |
+| frozen/diff boundary | `package.json`, `package-lock.json`, package manifest, `src/contract.ts`, `src/index.ts`, `runtime-archive-extraction.ts`, package README를 수정하지 않았다. Authorized source exception은 retained-cwd capability의 minimal no-clobber link primitive와 이 closeout의 authority comment 정밀화뿐이다. |
+| independent review | Fixed-base Standards review는 P0–P2 `0`건, Spec review는 P0–P3 `0`건이다. Atomic publish, full descriptor binding, reversed `206`, zero-journal recovery, stable error projection과 pre-reset alias race correction을 exact code tip에서 재검증했다. |
+| D1d cooperative lease handoff | D1c의 final pre-truncate stat 뒤 OS-level conditional truncate가 없는 irreducible race는 D1d cache lease를 cooperative mutation boundary로 요구한다. D1d는 invalid nlink-two pair를 final과 partial root 단위로 함께 quarantine/reconcile하고 valid final alias가 있는 partial을 truncate하지 않는다. Publish/quarantine, generation orchestration과 fresh complete-tree readback은 계속 D1d 책임이다. |
+| deferred Retry-After | D1c는 transient status의 one-retry budget과 stable outcome만 고정한다. `Retry-After` 해석, bounded delay와 전체 startup deadline/clock 결합은 resolver deadline을 소유하는 D1d에서 구현한다. |
+| owner documentation | `packages/runtime-release/README.md`의 download/resume 미구현 문구와 capability 설명은 integration 시 owner-first로 갱신해야 한다. 이 lane의 frozen package README 경계를 지켜 candidate branch에서는 수정하지 않았다. |
+| closeout | Ticket state는 `completed`, acceptance checkbox는 모두 완료다. Integration branch 반영과 package README owner update는 coordinator의 다음 integration action이다. |
+
+## Coordinator Integration Closeout
+
+| Evidence | Result |
+| --- | --- |
+| integration merge | `d4bc34fb36358dfcab3bdd4c0c9ac91bc8866591` — reviewed D1c branch를 `codex/public-preview-integration`에 `--no-ff` 병합했다. |
+| reviewed implementation | Code tip `57cb79ffdabbed9030abe23483a334bb87423106`, candidate closeout `89b34603e681a6476019110b08194cc85c0b2fca`를 그대로 반영했다. |
+| integration gates | Merge 직후 clean 재실행한 root `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`가 green이다. 첫 `npm test`에서 D1c diff 밖 기존 Server cleanup-deadline test 한 건이 실패했고 100회 fresh-process 진단에서 2회 재현됐다. D1c가 Server source를 변경하지 않았고 과거 동일 stabilization precedent가 있음을 확인한 뒤 `2790d6fd47b05a964337693f92e1f51f436ad8ed`에서 해당 test-only deadline을 `5ms`에서 `250ms`로 조정했다. Exact pair와 Server suite가 green이다. |
+| owner documentation | 이 integration closeout에서 `packages/runtime-release/README.md`를 실제 transport/download/resume, retained archive representation과 D1d 잔여 책임에 맞춰 owner-first로 갱신했다. |
+| next handoff | D1d는 이 closeout commit을 exact `handoffSha`로 사용한다. Cooperative per-digest lease, invalid final·partial pair의 root-level quarantine, generation publish/readback, `Retry-After`와 overall startup deadline, spawn-boundary revalidation을 소유한다. |

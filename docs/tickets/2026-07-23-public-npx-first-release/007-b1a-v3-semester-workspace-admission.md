@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -36,19 +36,131 @@
 
 ## Acceptance Criteria
 
-- [ ] `inspect`가 모든 outcome을 write 0으로 분류하고 `new_target`만 authority-bound create plan으로 승격할 수 있다.
-- [ ] `apply`가 nonexistent final leaf를 exclusive reserve하고 exact minimal tree와 strict v3 aggregate를 no-clobber로 만든다.
-- [ ] Year level은 positive safe integer, term은 bounded custom-capable key/display, workspace ID는 opaque safe grammar로 검증된다.
-- [ ] Publish 뒤 fresh read/strict decode와 root identity 검증을 통과한 경우에만 admitted handle이 반환된다.
-- [ ] Existing empty/non-empty target, target race, unsafe root relation, symlink와 permission failure가 overwrite 없이 stable outcome으로 끝난다.
-- [ ] Current v2, malformed/future state와 unknown bytes의 before/after byte identity가 같고 automatic v3 sidecar/migration이 없다.
-- [ ] Fault injection의 create/write/sync/rename/readback 경계에서 admitted 또는 evidence-backed owned incomplete만 남고 half-valid success는 없다.
+- [x] `inspect`가 모든 outcome을 write 0으로 분류하고 `new_target`만 authority-bound create plan으로 승격할 수 있다.
+- [x] `apply`가 nonexistent final leaf를 exclusive reserve하고 exact minimal tree와 strict v3 aggregate를 no-clobber로 만든다.
+- [x] Year level은 positive safe integer, term은 bounded custom-capable key/display, workspace ID는 opaque safe grammar로 검증된다.
+- [x] Publish 뒤 fresh read/strict decode와 root identity 검증을 통과한 경우에만 admitted handle이 반환된다.
+- [x] Existing empty/non-empty target, target race, unsafe root relation, symlink와 permission failure가 overwrite 없이 stable outcome으로 끝난다.
+- [x] Current v2, malformed/future state와 unknown bytes의 before/after byte identity가 같고 automatic v3 sidecar/migration이 없다.
+- [x] Fault injection의 create/write/sync/rename/readback 경계에서 admitted, evidence-backed owned incomplete 또는 evidence publish 전 preserved collision만 남고 half-valid success는 없다.
 
 ## Verification
 
-- Targeted test or command: `packages/semester-workspace`의 codec/admission unit·filesystem fault tests와 current v2 preservation fixtures
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `git diff --check`
-- Manual or live smoke: Temporary existing parent 아래 new leaf create/reopen과 v2 read-only inspection을 확인한다. 기존 사용자 directory를 fixture로 사용하지 않는다.
+| Gate | Result |
+| --- | --- |
+| Package admission·durability | `npm test -w @ay-ple/semester-workspace` — `37/37` green. Strict v3 codec, write-free inspection, exclusive/no-clobber create, 17개 durability fault window, marker/HMAC recovery, hard-link·same-shape rewrite rejection과 returned-plan alias 회귀를 포함한다. |
+| Package compile | `npm run typecheck -w @ay-ple/semester-workspace`; `npm run build -w @ay-ple/semester-workspace` — green |
+| Current-v2 parity·preservation | Package-owned fixed roster 426개(`ready` 414, `incompatible` 12)의 `>1 MiB`, retry source-order, 16-case guard-order와 408-case evidence-order를 shared decoder와 Server open regression이 함께 통과했다. State와 unknown entry의 before/after byte identity가 유지됐다. |
+| Server regression | `npm test -w @ay-ple/server` — `124/124` green; fixed-vector Server open regression — `1/1` green; Server typecheck·build green |
+| Root gates | Reviewed combined tip `13c4b30a67a96c9dff111ecfda51fff0fe579e70`에서 `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `npm run check:docs-links`; `git diff --check` — green. Docs link result는 active 28, historical 2다. |
+| Bounded smoke | Temporary parent에서 `create: created → reopen: admitted`, opaque `setupPlanId` equality, Server current v2 `ready`, package v2 `legacy_migration_required`와 original byte identity를 확인한 뒤 fixture를 정리했다. |
+| Independent reviews | Final combined tip의 Standards review와 Spec review가 각각 `GREEN`, remaining finding `0`이다. Prior returned-plan alias P2 remediation도 두 review 범위에 포함됐다. |
+
+## Result
+
+| Evidence | Result |
+| --- | --- |
+| Reviewed B implementation tip | `22c46d4ec229b1f8952f65e17a2e5c4d581c0d1a` |
+| C serialization implementation | `b4ee7626cbb74fc49c80f1fe872b312499571f5e` |
+| Returned-plan alias remediation | `f797ed8bea773e6bc7a57edb6bd1578c8c8e47ca` |
+| Fixed combined reviewed tip | `13c4b30a67a96c9dff111ecfda51fff0fe579e70` |
+| Independent review range | `22c46d4ec229b1f8952f65e17a2e5c4d581c0d1a..13c4b30a67a96c9dff111ecfda51fff0fe579e70` |
+| Standards review | `GREEN` — findings `0` |
+| Spec review | `GREEN` — findings `0` |
+
+Strict v3 `SemesterWorkspaceAdmission`은 existing parent 아래 absent leaf만 exclusive scaffold하고, fresh disk authority와 exact bytes를 확인한 뒤에만 admitted handle을 발급한다. Private `describe(plan)` binding, caller/internal plan authority 분리와 shared current-v2 decoder는 Browser contract를 넓히지 않으며 existing v2·unknown bytes를 read-only로 보존한다.
+
+Parent Spec은 이 디렉터리의 후속 implementation ticket이 남아 있으므로 incomplete 상태를 유지한다.
+
+## Candidate Evidence
+
+Current v2 compatibility/Spec review green을 보존하면서 후속 filesystem/durability review의 temp와 final-state hard-link ownership finding까지 반영한 durability-only re-review candidate 증거다. Ticket state와 acceptance checkbox는 Coordinator review가 끝날 때까지 변경하지 않는다.
+
+| Evidence | Result |
+| --- | --- |
+| Fixed handoff | `269a3555d3adf52bf520b3de0b99c7cb3fee3ae7` |
+| Claim commit | `d73fa8a180083092f2cbcce44f892d8dada844a9` |
+| Implementation commit | `8eafbc197bb4568fe65d680f8de8df9eb404827b` |
+| Review remediation commit | `a6fe6fec3edb70353a44c920f271d91df97cdcdc` |
+| Compatibility/Spec remediation commit | `65d81133e3a9c1d4606ebd501ff81f009b5c90dd` |
+| Durability remediation commit | `b675111e7881b9ce338d046eac0d3fe62bd20bf5` |
+| Hard-link ownership remediation commit | `229d2be0b720fa33405c516ef2a915eecfef3414` |
+| Final-state ownership remediation commit | `65d25bd0fc28c943a66b87f7a80d04875f6b9e7e` |
+| Package codec/admission/fault/parity gate | `npm test -w @ay-ple/semester-workspace` — `37/37` green |
+| Package compile gates | `npm run typecheck -w @ay-ple/semester-workspace`; `npm run build -w @ay-ple/semester-workspace` — green |
+| V3 conformance | Exact initial aggregate encode/fresh decode, positive safe integer `yearLevel`, bounded custom-capable term, opaque workspace ID, extra/nonempty/default drift rejection이 green |
+| Parent/root authority conformance | Exact `before_root_reservation` parent swap은 mutation 0으로 `authority_changed`, reservation 직후 swap은 displaced parent의 markerless root만 보존, marker fsync 뒤 swap은 displaced evidence bytes만 보존한다. Apply는 success 전까지 selected parent `(dev, ino)`와 reserved root identity를 다시 확인한다. |
+| Opaque plan ID와 preplanned evidence binding | Create `planId`는 digest와 독립적인 `workspace_plan_<128-bit random>` token이다. Raw token은 marker에 기록하지 않고 private HMAC binding으로 canonical root/parent, workspace ID, exact aggregate bytes/SHA-256, canonical owned-scaffold plan/SHA-256와 exact marker bytes/SHA-256를 bind한다. Marker는 post-`mkdir` root identity를 포함하지 않으며 wrong token, old authority digest를 유지한 workspace ID·aggregate 변조는 cross-instance resume에서 `collision`이다. |
+| Owned-incomplete topology | Root는 `.ay-ple/`, empty `inbox/`, empty `courses/`만, product root는 exact marker·known strict-prefix/exact temp·exact final state만 허용한다. Lone temp는 regular `nlink === 1`, publish 뒤 state+temp는 같은 `(dev, ino, birthtimeNs)`의 exact `nlink === 2` pair, temp unlink 뒤 state와 cold reopen의 final state는 stable inode의 `nlink === 1`일 때만 authority다. Valid HMAC marker 아래 non-prefix·symlink·unexpected multi-link temp/state, nested file/subtree와 unknown entry는 repair·publish·unlink하지 않은 채 collision으로 보존한다. |
+| Recovery durability | Resume는 no-follow로 연 regular single-link temp inode와 marker binding을 다시 확인한다. Strict prefix는 같은 검증된 inode를 truncate/write해 다시 채우고 file sync하며, 이미 complete지만 이전 write가 sync되지 않았을 수 있는 temp도 명시적으로 file sync한다. Create/resume가 만든 temp identity와 single-link count를 no-clobber hard-link publish 직전에 fresh reopen으로 다시 확인하고, cleanup도 exact two-name app pair만 unlink한다. Stable multi-link inspect와 `before_state_publish` link-count race는 state를 publish하지 않고 두 hard-link path를 보존한 `collision/conflict`로 끝나며, dirty complete temp ordering과 17-window recovery도 green이다. |
+| Final success binding | Cold reopen은 state를 no-follow로 열어 stable `(dev, ino, birthtimeNs)`, `nlink === 1`과 bytes를 같은 read에서 확인하고, 아니면 `collision`이다. Evidence unlink와 directory sync 뒤 `created/resumed`를 반환하기 직전에도 같은 single-link identity read로 precomputed aggregate SHA-256와 exact bytes를 다시 비교한다. `after_evidence_unlink`의 hard-link alias와 minified/whitespace-only same-shape rewrite는 create/resume 모두 `conflict`이며 state와 alias bytes를 변경하지 않는다. |
+| Durability conformance | Before/after root reservation, marker create/write/file sync/directory sync, required directory create/sync, state temp create/write/file sync, no-clobber hard-link publish, directory sync, temp unlink/sync, readback, evidence unlink/sync를 분리했다. 17개 evidence-backed window는 cross-instance `owned_incomplete → resumed → admitted`, markerless/empty-marker window는 preserved collision, evidence unlink 뒤 fault window는 complete admitted로 수렴한다. |
+| V2 exact donor parity | Package root가 `decodeCurrentSemesterWorkspaceV2`를 canonical shared decoder로 제공한다. Retry invocation의 `sourceBaseline`은 donor처럼 fieldwise 비교하지만 execution-guard baseline은 donor의 JSON/key-order-sensitive 비교를 보존한다. Patch/Assignment evidence는 donor의 fixed-field clone 순서로 normalize한 뒤 비교한다. Donor-valid `>1 MiB`, 16-case guard-order matrix와 generated 408-case evidence-order matrix가 모두 Server donor와 일치한다. |
+| Compatibility/Spec review | Green candidate를 보존했다. Durability와 hard-link ownership remediation은 current-v2 decoder/parity source를 바꾸지 않았다. Single-link read가 드러낸 parity fixture의 premature cleanup은 inspection Promise를 `await`해 fixture lifetime을 닫았고, root/package gate에서 donor-valid `>1 MiB`, 16-case guard-order와 408-case evidence-order matrix를 다시 통과했다. |
+| V2/incompatible preservation | Fixture SHA-256 `b753a066ff3ea3e56a560f8dd89d16fec14dab71d5aa795f927a57197118ffa9`; decoder-valid current v2는 크기 1 MiB 초과도 `legacy_migration_required/readOnly`, malformed·future는 `incompatible/readOnly`; state와 unknown entry before/after byte identity green |
+| Root gates | `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `git diff --check 269a3555d3adf52bf520b3de0b99c7cb3fee3ae7...HEAD` — green |
+| Docs gate | `npm run check:docs-links` — active 28, historical 2 green |
+| Bounded manual smoke | Fresh temporary parent에서 `create: created → reopen: admitted`; final-state alias 추가 뒤 `linkedReopen: collision`, `aliasesPreserved: true`; current v2는 `legacy_migration_required`, `v2ByteIdentity: true`; temporary root cleanup 완료 |
+| Independent re-review | Final combined tip `13c4b30a67a96c9dff111ecfda51fff0fe579e70`의 Standards review와 Spec review가 각각 `GREEN`, remaining finding `0`이다. |
+
+C-only follow-up은 다음 exact delta다. 이 lane에서는 C-owned Server source, manifest, lockfile과 README를 수정하지 않는다.
+
+1. Reviewed serial `contractTipSha`에서 Browser에 노출하지 않는 private `describe(plan)` seam을 추가해 admission apply 전에 아래 값을 제공한다. `setupPlanId`는 정확히 random opaque `plan.planId`이고 digest나 hash에서 만들지 않는다. `setupId`는 이 description에 포함하지 않으며 B2a가 별도의 random durable transaction ID로 발급한다. `canonicalBytesSha256`, marker/bundle hash와 `authorityDigest`·`setupPlanBinding`은 Server-private이고 Browser projection에 포함하지 않는다.
+
+   ```ts
+   type WorkspaceAdmissionPlanDescription = {
+     readonly setupPlanId: string
+     readonly privateBinding: {
+       readonly plan: {
+         readonly canonicalBytesSha256: string
+         readonly semester: SemesterIdentity
+         readonly target: {
+           readonly canonicalParent: string
+           readonly parentDevice: string
+           readonly parentInode: string
+           readonly leafName: string
+           readonly canonicalTarget: string
+         }
+       }
+       readonly workspace: {
+         readonly workspaceId: string
+         readonly formatVersion: 3
+         readonly rootMarkerSha256: string
+         readonly ownedScaffoldPlanSha256: string
+         readonly expectedInitialAggregateSha256: string
+       }
+     }
+   }
+   ```
+
+   B2a의 receipt mapping은 `setupId = B2a가 발급한 opaque transaction ID`, `setupPlanId = description.setupPlanId`, `plan = description.privateBinding.plan`, `workspace = description.privateBinding.workspace`로 고정한다. `canonicalBytesSha256`나 `authorityDigest`를 두 opaque ID 중 어느 쪽에도 대입하지 않는다.
+
+2. `apps/server/package.json`의 exact workspace dependency에 `"@ay-ple/semester-workspace": "0.0.0"`을 추가하고 repository root에서 `npm install`로 `package-lock.json`을 갱신한다. Lock readback에서 `apps/server.dependencies` edge와 기존 `node_modules/@ay-ple/semester-workspace → packages/semester-workspace` workspace link를 확인한다. `npm run typecheck -w @ay-ple/server`, `npm run build -w @ay-ple/server`와 root `npm run typecheck && npm run build`로 source와 build graph가 package dependency를 실제로 닫는지 검증한다.
+3. 그 dependency가 고정된 뒤 `apps/server/src/semester-workspace-store.ts`의 duplicate current-v2 structural/invariant decoder를 package root의 `decodeCurrentSemesterWorkspaceV2`로 교체한다. JSON parse와 physical no-follow/read-only I/O는 Server에 남기고, package decoded value를 existing `PersistedWorkspaceState` clone으로 옮기는 narrow adapter만 유지한다. Current write path가 사용하는 canonical payload producer/clone은 삭제하지 않는다. Package parity test의 Server source import는 순환 oracle이 되므로 제거하고, 이번 16/408 matrix의 fixed expected outcomes를 package-owned oracle로 남긴다. Server open regression도 같은 vectors를 소비해 code removal 전후 accept/reject와 byte-preservation이 같음을 확인한 뒤에만 duplicate decode-only validator/invariant code를 제거한다.
+4. `packages/semester-workspace/README.md`에는 B1a admission/recovery, private marker/token boundary, shared current-v2 decoder와 package 명령을 반영한다. `apps/server/README.md`에는 shared decoder dependency와 narrow adapter를 current behavior로 기록하되 아직 조합되지 않은 B2 setup/Ready 상태를 구현된 것처럼 쓰지 않는다.
+
+### C-only serialization candidate receipt
+
+아래 증거는 reviewed serial base에서 C-only delta를 구현한 candidate receipt다. Ticket state와 acceptance checkbox는 Coordinator review와 close 전까지 변경하지 않는다.
+
+| Evidence | Result |
+| --- | --- |
+| Fixed serial base | `22c46d4ec229b1f8952f65e17a2e5c4d581c0d1a` |
+| C-only implementation commit | `b4ee7626cbb74fc49c80f1fe872b312499571f5e` |
+| Standards review fixed point | `a90d6d4e3820641d328de73931740a6c03c71426` |
+| Plan authority remediation commit | `f797ed8bea773e6bc7a57edb6bd1578c8c8e47ca` |
+| Private plan description | `describe(plan)`은 같은 admission instance의 exact create plan에만 defensive `WorkspaceAdmissionPlanDescription` clone을 반환한다. Internal create/resume authority plan은 caller-visible plan과 별도 clone으로 보관한다. `setupPlanId`는 random opaque `plan.planId`와 byte-for-byte 같고, `canonicalBytesSha256`는 canonical receipt plan `{ semester, target }` bytes의 SHA-256이다. Unknown·tampered·resume plan은 `null`이며 `setupId`, `authorityDigest`, `setupPlanBinding`은 description에 없다. |
+| Returned-plan alias regression | Exact returned create plan의 `authorityDigest`를 in-place mutate하면 `describe()`는 `null`, `apply()`는 filesystem mutation 없이 `authority_changed`다. Resume도 returned plan mutation이 internal authority를 바꾸지 않아 mutated plan은 fail closed하고 mutation 전 exact copy만 resume할 수 있다. |
+| Browser-private boundary | Chat Shell source, `@ay-ple/product-contract`, Server product HTTP와 public-preview contract test에서 description type과 private hash/binding field 검색 결과가 0건이다. |
+| Manifest·lock closure | Server exact dependency는 `"@ay-ple/semester-workspace": "0.0.0"`이다. Root `npm install` 뒤 lock readback은 `apps/server.dependencies` edge와 `node_modules/@ay-ple/semester-workspace → packages/semester-workspace` workspace link를 확인했다. |
+| Pre-removal behavior checkpoint | Duplicate validator 제거 전에 fixed package vectors와 새 Server open regression을 기존 Server donor에 실행해 `4/4` green을 확인했다. 그 뒤에만 duplicate decode-only structural/invariant code를 제거했다. |
+| Shared decoder cutover | Server가 JSON parse와 physical no-follow/read-only I/O를 계속 소유하고 package root의 `decodeCurrentSemesterWorkspaceV2`를 호출한다. Narrow clone adapter와 current write producer/CAS path는 남겼고 package parity test의 Server source import는 제거했다. |
+| Fixed current-v2 oracle | Package-owned roster는 총 426개(`ready` 414, `incompatible` 12)다. Decoder-valid `>1 MiB` 1개, retry source-order 1개, fixed guard-order 16개와 evidence-order 408개를 package decoder/classifier와 Server open regression이 함께 소비한다. Accepted/rejected state와 unknown entry의 before/after bytes가 동일하다. |
+| Package gates | `npm test -w @ay-ple/semester-workspace` — `37/37` green; `npm run typecheck -w @ay-ple/semester-workspace`; `npm run build -w @ay-ple/semester-workspace` — green |
+| Server gates | `npm test -w @ay-ple/server` — `124/124` green; fixed-vector Server open regression — `1/1` green; `npm run typecheck -w @ay-ple/server`; `npm run build -w @ay-ple/server` — green |
+| Root·docs gates | `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `npm run check:docs-links`; `git diff --check 22c46d4ec229b1f8952f65e17a2e5c4d581c0d1a...HEAD` — green. Docs link result는 active 28, historical 2다. |
+| Bounded smoke | Temporary parent에서 `create: created → reopen: admitted`, opaque `setupPlanId` equality, Server v2 `ready`, package v2 `legacy_migration_required`, v2 byte identity를 확인하고 fixture를 정리했다. |
+| Coordinator review | Complete — Standards P2 remediation을 포함한 final combined tip의 두 independent review가 `GREEN`이어서 Ticket closeout을 승인했다. |
 
 ## Blocked By
 
@@ -73,7 +185,7 @@
 | owner | `B` — Semester setup |
 | branch | `codex/public-preview-b1a-workspace-admission` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/b1a-workspace-admission` |
-| handoffSha | Claim 시 coordinator가 003 fixed `spineTipSha`를 integration branch에 반영하고 predecessor 및 integration root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `269a3555d3adf52bf520b3de0b99c7cb3fee3ae7` — coordinator가 003 fixed `spineTipSha`를 integration branch에 반영하고 predecessor 및 integration root gates를 green으로 확인한 뒤 기록한 clean integration HEAD |
 | writablePaths | `packages/semester-workspace/src/**` 중 v3 codec/admission implementation·tests (`src/contract.ts`와 S1 frozen files 제외); package-local admission fixtures; `docs/tickets/2026-07-23-public-npx-first-release/007-b1a-v3-semester-workspace-admission.md` |
 | consumedContracts | S1 frozen SemesterWorkspace contract, parent Spec exact v3 aggregate/admission outcome와 current v2 compatibility fixtures |
 | predecessorEvidence | Fixed reviewed `spineTipSha`, green root gates와 current v2/current-workbench regression evidence |

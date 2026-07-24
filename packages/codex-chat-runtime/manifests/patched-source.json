@@ -271,9 +271,9 @@
       "sha256": "28f2c09a3477285af23415c0122900a4913f75911603ec42c5b8a713d2ab72d0"
     },
     "sdk/python/src/openai_codex/_login.py": {
-      "bytes": 5985,
+      "bytes": 6609,
       "git_mode": "100644",
-      "sha256": "0acc5d5e801afbb9b1b73ce2867412031dbb099fb4747713fdaec41b3c02e91b"
+      "sha256": "b0bc0bdc7ecc68627b872ce42ea058e1b374ecbc45e4c754716f4117d4783a57"
     },
     "sdk/python/src/openai_codex/_message_router.py": {
       "bytes": 25850,
@@ -306,9 +306,9 @@
       "sha256": "12742e73f350ef2d09539318c7c82cddac17a61138e556c6b34628243f9c8493"
     },
     "sdk/python/src/openai_codex/client.py": {
-      "bytes": 54258,
+      "bytes": 54718,
       "git_mode": "100644",
-      "sha256": "283eca7ae6bfdb495f7e57076ef654ffef876d9c488637a3ee4fbabf2ab71fbf"
+      "sha256": "abbcce241d2b59af3f9bf704252b1a582d17addd3ca28a27502f0ec9dfd680db"
     },
     "sdk/python/src/openai_codex/errors.py": {
       "bytes": 4046,
@@ -416,9 +416,9 @@
       "sha256": "1d7c4db9c8b15333291269e92b3263238e4ae6dfaef6816cef888af01374fc79"
     },
     "sdk/python/tests/test_client_rpc_methods.py": {
-      "bytes": 33876,
+      "bytes": 36842,
       "git_mode": "100644",
-      "sha256": "2565f10d4fcbb38d6d23101569bd69af84e54431ac671fcacee1ea28d1671f96"
+      "sha256": "aa4b921561769d4e686259aebeac595da43a3ee883684c4eda1ce2bce2a0f43b"
     },
     "sdk/python/tests/test_contract_generation.py": {
       "bytes": 1991,
@@ -426,9 +426,9 @@
       "sha256": "fdb0b24935368f41397c12260d774e65976fbb5222c2d6994e073ea6473092ac"
     },
     "sdk/python/tests/test_public_api_runtime_behavior.py": {
-      "bytes": 9925,
+      "bytes": 14558,
       "git_mode": "100644",
-      "sha256": "3ea29456cfbeec042924a9d4ccf0fb43bfe0a34070e213c9d851b7389385e162"
+      "sha256": "4fb41f7128f33407cf4afaac8d38236cffcb0e3830bc1d8d1dc0523737dd20b0"
     },
     "sdk/python/tests/test_public_api_signatures.py": {
       "bytes": 20215,
@@ -447,7 +447,7 @@
     }
   },
   "kind": "patched_source",
-  "patch_stack_sha256": "ffc43da6e5e7a146016404db54968d37d849b778e5e9b04db680cac4124fc1c9",
+  "patch_stack_sha256": "2cb3dcc9bdf7f81136b21ac16cb1afe161e5676e3800e85265653c2795fbbcbd",
   "patches": [
     {
       "bytes": 6020,
@@ -864,9 +864,67 @@
       "order": 8,
       "path": "upstream/patches/0008-standalone-skill-extra-roots.patch",
       "sha256": "60eb7ec0fede4b97b1bd041e92bf49f93dca0ec0beadb1e3e4de9cb9637074a4"
+    },
+    {
+      "bytes": 13298,
+      "changed_files": {
+        "sdk/python/src/openai_codex/_login.py": {
+          "after": {
+            "bytes": 6609,
+            "git_mode": "100644",
+            "sha256": "b0bc0bdc7ecc68627b872ce42ea058e1b374ecbc45e4c754716f4117d4783a57"
+          },
+          "before": {
+            "bytes": 5985,
+            "git_mode": "100644",
+            "sha256": "0acc5d5e801afbb9b1b73ce2867412031dbb099fb4747713fdaec41b3c02e91b"
+          }
+        },
+        "sdk/python/src/openai_codex/client.py": {
+          "after": {
+            "bytes": 54718,
+            "git_mode": "100644",
+            "sha256": "abbcce241d2b59af3f9bf704252b1a582d17addd3ca28a27502f0ec9dfd680db"
+          },
+          "before": {
+            "bytes": 54258,
+            "git_mode": "100644",
+            "sha256": "283eca7ae6bfdb495f7e57076ef654ffef876d9c488637a3ee4fbabf2ab71fbf"
+          }
+        },
+        "sdk/python/tests/test_client_rpc_methods.py": {
+          "after": {
+            "bytes": 36842,
+            "git_mode": "100644",
+            "sha256": "aa4b921561769d4e686259aebeac595da43a3ee883684c4eda1ce2bce2a0f43b"
+          },
+          "before": {
+            "bytes": 33876,
+            "git_mode": "100644",
+            "sha256": "2565f10d4fcbb38d6d23101569bd69af84e54431ac671fcacee1ea28d1671f96"
+          }
+        },
+        "sdk/python/tests/test_public_api_runtime_behavior.py": {
+          "after": {
+            "bytes": 14558,
+            "git_mode": "100644",
+            "sha256": "4fb41f7128f33407cf4afaac8d38236cffcb0e3830bc1d8d1dc0523737dd20b0"
+          },
+          "before": {
+            "bytes": 9925,
+            "git_mode": "100644",
+            "sha256": "3ea29456cfbeec042924a9d4ccf0fb43bfe0a34070e213c9d851b7389385e162"
+          }
+        }
+      },
+      "git_mode": "100644",
+      "id": "0009-managed-chatgpt-login",
+      "order": 9,
+      "path": "upstream/patches/0009-managed-chatgpt-login.patch",
+      "sha256": "0b7e567644ec25d0ab57f9639319fcecce591af8e4f4e57596c11be8174402fa"
     }
   ],
   "schema_version": 1,
   "source_file_count": 88,
-  "source_tree_sha256": "c0f19b682d4cf182448ebd1e47eaecb9fac3c478c3c7899fd2e10b913b30aa06"
+  "source_tree_sha256": "b3eb6e17d3a67066d1be01997ec9ce522bebba4fbd0119f8762fd32da854f999"
 }

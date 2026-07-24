@@ -99,6 +99,7 @@ npm run demo
 
 | 문서 | 용도 |
 | --- | --- |
+| [Codex Python SDK patch stack 축소 연구](docs/spikes/codex-sdk-patch-reduction/research.md) | `0010` patch-free 대안과 `0001`–`0009`의 유지·제거 조건 |
 | [Codex App Server context delivery capability 조사](docs/spikes/codex-app-server-context-delivery/research.md) | context·request·tool·Hook 전달 경로와 case별 선택 근거 |
 | [Codex session topology 조사](docs/spikes/codex-session-topology/research.md) | thread·turn·item·compaction·resume의 저수준 의미와 topology 위험 |
 | [Codex local Memories 아키텍처 조사](docs/spikes/codex-memory-architecture/research.md) | built-in memory pipeline, personalization surface, scope·privacy 제약 |

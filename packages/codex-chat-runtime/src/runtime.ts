@@ -4,7 +4,7 @@ import {
   type SpawnOptionsWithoutStdio,
 } from 'node:child_process'
 import { constants as fsConstants } from 'node:fs'
-import { access, lstat, realpath } from 'node:fs/promises'
+import { access, lstat, readdir, realpath } from 'node:fs/promises'
 import path from 'node:path'
 
 import {
@@ -22,10 +22,25 @@ import {
   type ReleaseThreadInput,
   type StartTurnInput,
 } from './contract.js'
+import {
+  type CodexEffectiveConfig,
+  type CodexEffectiveSkill,
+  CODEX_BROWSER_LOGIN_ATTEMPT_TIMEOUT_MS,
+  type CodexAccountFailure,
+  type CodexAccountFailureCode,
+  type CodexAccountReadResult,
+  type CodexBrowserLoginAttempt,
+  type CodexBrowserLoginCancellation,
+  type CodexBrowserLoginRelease,
+  type CodexBrowserLoginStartResult,
+  type CodexLogoutResult,
+  type CodexRuntimeCloseResult,
+  type CodexRuntimeRole,
+} from './account-contract.js'
 import type {
   AnswerUserInput,
   CancelUserInput,
-  CodexProductCapableRuntime,
+  CodexManagedRuntime,
   CodexProductTurn,
   StartThreadInput,
   StartProductTurnInput,
@@ -53,6 +68,10 @@ import {
   BoundedStderrCapture,
   type BoundedStderrSnapshot,
 } from './bounded-stderr.js'
+import {
+  NativeContextGenerationCoordinator,
+  type NativeContextProbeRunner,
+} from './native-context-coordinator.js'
 import type { VerifiedProductionBundle } from './production-bundle.js'
 import { SerializedBridgeWriter } from './serialized-writer.js'
 
@@ -60,6 +79,11 @@ type ResultFrame = Extract<BridgeOutputFrame, { type: 'result' }>
 type RuntimeState = 'starting' | 'ready' | 'closing' | 'closed' | 'failed'
 type CommandName =
   | 'read_account'
+  | 'start_browser_login'
+  | 'read_browser_login_attempt'
+  | 'cancel_browser_login'
+  | 'release_browser_login_attempt'
+  | 'logout'
   | 'start_thread'
   | 'start_turn'
   | 'start_product_turn'
@@ -69,11 +93,17 @@ type CommandName =
   | 'release_thread'
 
 const BRIDGE_OPERATION_ERROR_MESSAGES: Readonly<Record<string, string>> = {
+  account_read_failed: 'The Codex account could not be read.',
   active_turn: 'The thread already has an active turn.',
   active_turn_limit: 'The bridge active-turn limit was reached.',
   interaction_not_pending: 'The user-input interaction is not pending.',
   invalid_user_input_answer: 'The user-input answer is invalid.',
   live_thread_limit: 'The bridge live-thread limit was reached.',
+  login_attempt_not_found: 'The browser login attempt was not found.',
+  login_cancel_failed: 'The browser login attempt could not be cancelled.',
+  login_failed: 'The browser login attempt failed.',
+  login_start_failed: 'The browser login attempt could not be started.',
+  logout_failed: 'The Codex account could not be signed out.',
   operation_limit: 'The bridge pending-operation limit was reached.',
   sdk_request_failed: 'Codex rejected the requested operation.',
   unknown_thread: 'The native thread is not live in this bridge.',
@@ -97,12 +127,32 @@ const BRIDGE_GENERIC_FATAL_CODES = new Set([
   'sdk_close_failed',
   'sdk_initialization_failed',
   'sdk_operation_failed',
+  'sdk_operation_timeout',
   'sdk_stream_ended',
   'sdk_stream_failed',
   'sdk_transport_failed',
   'unexpected_eof',
   'unknown_command',
 ])
+
+const ACCOUNT_FAILURE_MESSAGES: Readonly<
+  Record<CodexAccountFailureCode, string>
+> = {
+  account_read_failed: 'The Codex account could not be read.',
+  login_attempt_not_found: 'The browser login attempt was not found.',
+  login_cancel_failed: 'The browser login attempt could not be cancelled.',
+  login_failed: 'The browser login attempt failed.',
+  login_start_failed: 'The browser login attempt could not be started.',
+  logout_failed: 'The Codex account could not be signed out.',
+  runtime_closing: 'The Codex runtime is closing.',
+  runtime_unavailable: 'The Codex runtime is unavailable.',
+}
+
+const RUNTIME_ROLE_DENIED_MESSAGE =
+  'The auth-only Codex runtime does not allow workspace operations.'
+const RUNTIME_CLOSING_MESSAGE = 'The Codex runtime is closing.'
+const WORKSPACE_ROOT_MISMATCH_MESSAGE =
+  'The requested workspace does not match this Codex runtime.'
 
 interface PendingOperation<T> {
   readonly command: CommandName
@@ -135,9 +185,8 @@ interface ChildCloseStatus {
   readonly signalCode: NodeJS.Signals | null
 }
 
-export interface StartVerifiedCodexChatRuntimeOptions {
+interface StartVerifiedCodexChatRuntimeCommonOptions {
   readonly bundle: VerifiedProductionBundle
-  readonly workspace: string
   readonly environment: CodexChatRuntimeEnvironment
   /** Package-private operational limits; production callers use defaults. */
   readonly budgets?: Partial<NodeRuntimeBudgets>
@@ -148,6 +197,8 @@ export interface StartVerifiedCodexChatRuntimeOptions {
   readonly deadlines?: Partial<NodeRuntimeDeadlines>
   /** Package-private exact-local test isolation; production honors managed config. */
   readonly disableManagedConfigForTest?: true
+  /** Package-private native-context generation seam; production callers omit this. */
+  readonly nativeContextProbeRunnerOverride?: NativeContextProbeRunner
   /** Package-private actual-child seam; production callers omit this. */
   readonly launchArgsOverride?: readonly string[]
   readonly journalPath?: string
@@ -158,6 +209,28 @@ export interface StartVerifiedCodexChatRuntimeOptions {
     signal: NodeJS.Signals,
   ) => void
 }
+
+export type CodexRuntimeApplicationIdentity = {
+  readonly name: 'ay-ple'
+  readonly title: 'AY-PLE'
+  readonly version: string
+}
+
+export type StartVerifiedCodexChatRuntimeOptions =
+  StartVerifiedCodexChatRuntimeCommonOptions &
+    (
+      | {
+          readonly role: CodexRuntimeRole
+          readonly workspace?: never
+          readonly application: CodexRuntimeApplicationIdentity
+        }
+      | {
+          /** Compatibility input for the current workspace-only caller. */
+          readonly workspace: string
+          readonly role?: never
+          readonly application?: CodexRuntimeApplicationIdentity
+        }
+    )
 
 export interface NodeRuntimeBudgets {
   readonly operationMaxFrames: number
@@ -205,7 +278,7 @@ export interface CodexChatRuntimeEnvironment {
 }
 
 export interface SpawnedCodexChatRuntime {
-  readonly runtime: CodexProductCapableRuntime
+  readonly runtime: CodexManagedRuntime
   readonly child: ChildProcessWithoutNullStreams
   readonly closed: Promise<void>
   readonly terminal: Promise<CodexChatRuntimeError>
@@ -221,10 +294,21 @@ export async function startVerifiedCodexChatRuntime(
 ): Promise<SpawnedCodexChatRuntime> {
   const budgets = resolveRuntimeBudgets(options.budgets)
   const deadlines = resolveRuntimeDeadlines(options.deadlines)
-  const [workspace, environment] = await Promise.all([
-    validateWorkspace(options.workspace),
-    validateEnvironment(options.environment),
-  ])
+  const role = await validateRuntimeRole(options)
+  const environment = await validateEnvironment(
+    options.environment,
+    role.role === 'auth-only',
+  )
+  const workspace =
+    role.role === 'auth-only' ? role.bootstrapCwd : role.workspaceRoot
+  requireDisjointRuntimeRoots(workspace, environment)
+  const application = validateApplicationIdentity(
+    options.application ?? {
+      name: 'ay-ple',
+      title: 'AY-PLE',
+      version: '0.0.0',
+    },
+  )
   const args = [
     '-B',
     options.bridgeEntrypointOverride ?? options.bundle.bridgeEntrypoint,
@@ -232,6 +316,9 @@ export async function startVerifiedCodexChatRuntime(
     workspace,
     '--site-packages',
     options.bundle.sitePackages,
+    `--client-name=${application.name}`,
+    `--client-title=${application.title}`,
+    `--client-version=${application.version}`,
   ]
   if (options.launchArgsOverride) {
     for (const value of options.launchArgsOverride) {
@@ -256,11 +343,25 @@ export async function startVerifiedCodexChatRuntime(
     ...spawnOptions,
     stdio: ['pipe', 'pipe', 'pipe'],
   })
+  const nativeContext =
+    role.role === 'workspace'
+      ? new NativeContextGenerationCoordinator({
+          bundle: options.bundle,
+          workspace: role.workspaceRoot,
+          environment,
+          application,
+          disableManagedConfigForTest: options.disableManagedConfigForTest,
+          runProbe: options.nativeContextProbeRunnerOverride,
+          signalProcessGroupOverride: options.signalProcessGroupOverride,
+        })
+      : undefined
   const runtime = new NodeCodexChatRuntime(
     child,
+    role,
     budgets,
     deadlines,
     options.signalProcessGroupOverride ?? signalDetachedProcessGroup,
+    nativeContext,
   )
   try {
     await runtime.waitUntilReady()
@@ -281,7 +382,8 @@ export async function startVerifiedCodexChatRuntime(
   }
 }
 
-class NodeCodexChatRuntime implements CodexProductCapableRuntime {
+class NodeCodexChatRuntime implements CodexManagedRuntime {
+  readonly role: CodexRuntimeRole
   readonly closed: Promise<void>
   readonly terminal: Promise<CodexChatRuntimeError>
 
@@ -294,6 +396,9 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
     processGroupId: number,
     signal: NodeJS.Signals,
   ) => void
+  private readonly nativeContext:
+    | NativeContextGenerationCoordinator
+    | undefined
   private readonly framer = new NdjsonBridgeFramer()
   private readonly spawned = createDeferred<void>()
   private readonly ready = createDeferred<void>()
@@ -320,17 +425,21 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
 
   constructor(
     child: ChildProcessWithoutNullStreams,
+    role: CodexRuntimeRole,
     budgets: NodeRuntimeBudgets,
     deadlines: NodeRuntimeDeadlines,
     processGroupSignaler: (
       processGroupId: number,
       signal: NodeJS.Signals,
     ) => void,
+    nativeContext: NativeContextGenerationCoordinator | undefined,
   ) {
     this.child = child
+    this.role = Object.freeze({ ...role })
     this.budgets = budgets
     this.deadlines = deadlines
     this.processGroupSignaler = processGroupSignaler
+    this.nativeContext = nativeContext
     this.aggregateQueueBudget = new AggregateOperationQueueBudget(
       budgets.aggregateMaxFrames,
       budgets.aggregateMaxBytes,
@@ -443,24 +552,274 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
     }
   }
 
-  readAccountReadiness(): Promise<CodexAccountReadiness> {
-    return this.sendOperation(
-      'read_account',
-      false,
-      (bridgeRequestId) => ({ bridgeRequestId, command: 'read_account' }),
-      (frame) => {
-        if (frame.command !== 'read_account') {
-          throw new BridgeProtocolError('mismatch')
-        }
-        return frame.state === 'ready'
-          ? { state: 'ready' }
-          : { state: 'not_ready', reason: 'authentication_required' }
-      },
+  async readAccountReadiness(): Promise<CodexAccountReadiness> {
+    const result = await this.readAccount({
+      refreshToken: true,
+      signal: new AbortController().signal,
+    })
+    if (result.status === 'error') {
+      throw new CodexChatRuntimeError({
+        code: result.error.code,
+        displayMessage: ACCOUNT_FAILURE_MESSAGES[result.error.code],
+        unknownOutcome: false,
+      })
+    }
+    return result.account.state === 'chatgpt'
+      ? { state: 'ready' }
+      : { state: 'not_ready', reason: 'authentication_required' }
+  }
+
+  readEffectiveConfig(input: {
+    readonly signal: AbortSignal
+  }): Promise<CodexEffectiveConfig> {
+    const denied = this.workspaceOperationDenied()
+    if (denied) return Promise.reject(denied)
+    requireExactInputKeys(input, ['signal'], 'Native config read input')
+    requireAbortSignal(input.signal)
+    const unavailable = this.unavailableError()
+    if (unavailable) return Promise.reject(unavailable)
+    return this.observeNativeContext(
+      this.nativeContext!.readEffectiveConfig(input),
+    )
+  }
+
+  listEffectiveSkills(input: {
+    readonly signal: AbortSignal
+  }): Promise<readonly CodexEffectiveSkill[]> {
+    const denied = this.workspaceOperationDenied()
+    if (denied) return Promise.reject(denied)
+    requireExactInputKeys(input, ['signal'], 'Native Skill list input')
+    requireAbortSignal(input.signal)
+    const unavailable = this.unavailableError()
+    if (unavailable) return Promise.reject(unavailable)
+    return this.observeNativeContext(
+      this.nativeContext!.listEffectiveSkills(input),
+    )
+  }
+
+  readAccount(input: {
+    readonly refreshToken: true
+    readonly signal: AbortSignal
+  }): Promise<CodexAccountReadResult> {
+    requireExactInputKeys(input, ['refreshToken', 'signal'], 'Account read input')
+    if (input.refreshToken !== true) {
+      throw new TypeError('Account read must refresh the managed token')
+    }
+    return this.runAccountOperation<CodexAccountReadResult>(
+      input.signal,
+      () =>
+        this.sendOperation(
+          'read_account',
+          false,
+          (bridgeRequestId) => ({
+            bridgeRequestId,
+            command: 'read_account',
+          }),
+          (frame) => {
+            if (frame.command !== 'read_account') {
+              throw new BridgeProtocolError('mismatch')
+            }
+            return {
+              status: 'ok',
+              account: { ...frame.account },
+            } as const
+          },
+        ),
+      (error) => ({ status: 'error', error }),
+    )
+  }
+
+  startBrowserLogin(input: {
+    readonly attemptId: string
+    readonly expiresAt: string
+    readonly signal: AbortSignal
+  }): Promise<CodexBrowserLoginStartResult> {
+    requireExactInputKeys(
+      input,
+      ['attemptId', 'expiresAt', 'signal'],
+      'Browser login start input',
+    )
+    const attemptId = requireAccountAttemptId(input.attemptId)
+    const expiresAt = requireAccountExpiry(input.expiresAt)
+    return this.runAccountOperation<CodexBrowserLoginStartResult>(
+      input.signal,
+      () =>
+        this.sendOperation(
+          'start_browser_login',
+          true,
+          (bridgeRequestId) => ({
+            bridgeRequestId,
+            command: 'start_browser_login',
+            attemptId,
+          }),
+          (frame) => {
+            if (
+              frame.command !== 'start_browser_login' ||
+              frame.attemptId !== attemptId
+            ) {
+              throw new BridgeProtocolError('mismatch')
+            }
+            return {
+              status: 'pending',
+              attemptId,
+              authUrl: frame.authUrl,
+              expiresAt,
+            } as const
+          },
+        ),
+      (error) => ({ status: 'error', error }),
+    )
+  }
+
+  readBrowserLoginAttempt(input: {
+    readonly attemptId: string
+    readonly signal: AbortSignal
+  }): Promise<CodexBrowserLoginAttempt> {
+    requireExactInputKeys(
+      input,
+      ['attemptId', 'signal'],
+      'Browser login status input',
+    )
+    const attemptId = requireAccountAttemptId(input.attemptId)
+    return this.runAccountOperation<CodexBrowserLoginAttempt>(
+      input.signal,
+      () =>
+        this.sendOperation(
+          'read_browser_login_attempt',
+          false,
+          (bridgeRequestId) => ({
+            bridgeRequestId,
+            command: 'read_browser_login_attempt',
+            attemptId,
+          }),
+          (frame) => {
+            if (
+              frame.command !== 'read_browser_login_attempt' ||
+              frame.attemptId !== attemptId
+            ) {
+              throw new BridgeProtocolError('mismatch')
+            }
+            if (frame.status === 'failed') {
+              return {
+                status: frame.status,
+                attemptId,
+                error: { ...frame.error },
+              } as const
+            }
+            return { status: frame.status, attemptId } as const
+          },
+        ),
+      (error) => ({
+        status: 'failed',
+        attemptId,
+        error,
+      }),
+    )
+  }
+
+  cancelBrowserLogin(input: {
+    readonly attemptId: string
+    readonly signal: AbortSignal
+  }): Promise<CodexBrowserLoginCancellation> {
+    requireExactInputKeys(
+      input,
+      ['attemptId', 'signal'],
+      'Browser login cancel input',
+    )
+    const attemptId = requireAccountAttemptId(input.attemptId)
+    return this.runAccountOperation<CodexBrowserLoginCancellation>(
+      input.signal,
+      () =>
+        this.sendOperation(
+          'cancel_browser_login',
+          true,
+          (bridgeRequestId) => ({
+            bridgeRequestId,
+            command: 'cancel_browser_login',
+            attemptId,
+          }),
+          (frame) => {
+            if (
+              frame.command !== 'cancel_browser_login' ||
+              frame.attemptId !== attemptId
+            ) {
+              throw new BridgeProtocolError('mismatch')
+            }
+            return { status: frame.status, attemptId } as const
+          },
+        ),
+      (error) => ({ status: 'error', attemptId, error }),
+    )
+  }
+
+  releaseBrowserLoginAttempt(input: {
+    readonly attemptId: string
+    readonly signal: AbortSignal
+  }): Promise<CodexBrowserLoginRelease> {
+    requireExactInputKeys(
+      input,
+      ['attemptId', 'signal'],
+      'Browser login release input',
+    )
+    const attemptId = requireAccountAttemptId(input.attemptId)
+    return this.runAccountOperation<CodexBrowserLoginRelease>(
+      input.signal,
+      () =>
+        this.sendOperation(
+          'release_browser_login_attempt',
+          false,
+          (bridgeRequestId) => ({
+            bridgeRequestId,
+            command: 'release_browser_login_attempt',
+            attemptId,
+          }),
+          (frame) => {
+            if (
+              frame.command !== 'release_browser_login_attempt' ||
+              frame.attemptId !== attemptId
+            ) {
+              throw new BridgeProtocolError('mismatch')
+            }
+            return { status: frame.status, attemptId } as const
+          },
+        ),
+      (error) => ({ status: 'error', attemptId, error }),
+    )
+  }
+
+  logout(input: {
+    readonly signal: AbortSignal
+  }): Promise<CodexLogoutResult> {
+    requireExactInputKeys(input, ['signal'], 'Account logout input')
+    return this.runAccountOperation<CodexLogoutResult>(
+      input.signal,
+      () =>
+        this.sendOperation(
+          'logout',
+          true,
+          (bridgeRequestId) => ({ bridgeRequestId, command: 'logout' }),
+          (frame) => {
+            if (frame.command !== 'logout') {
+              throw new BridgeProtocolError('mismatch')
+            }
+            return { status: 'signed_out' } as const
+          },
+        ),
+      (error) => ({ status: 'error', error }),
     )
   }
 
   startThread(input?: StartThreadInput): Promise<CodexChatThread> {
+    const denied = this.workspaceOperationDenied()
+    if (denied) return Promise.reject(denied)
     const normalized = normalizeStartThreadInput(input)
+    if (
+      normalized !== undefined &&
+      this.role.role === 'workspace' &&
+      normalized.workspace !== this.role.workspaceRoot
+    ) {
+      return Promise.reject(workspaceRootMismatchError())
+    }
     return this.sendOperation(
       'start_thread',
       true,
@@ -482,6 +841,8 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
   }
 
   startTurn(input: StartTurnInput): Promise<CodexChatTurn> {
+    const denied = this.workspaceOperationDenied()
+    if (denied) return Promise.reject(denied)
     const threadId = input.threadId
     const text = input.text
     requireNativeId(threadId)
@@ -530,6 +891,8 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
   }
 
   startProductTurn(input: StartProductTurnInput): Promise<CodexProductTurn> {
+    const denied = this.workspaceOperationDenied()
+    if (denied) return Promise.reject(denied)
     requireProductTurnInput(input)
     const { threadId, skill, text } = input
     const stream = new CodexChatEventStream<CodexProductActivity>({
@@ -575,6 +938,8 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
   }
 
   answerUserInput(input: AnswerUserInput): Promise<void> {
+    const denied = this.workspaceOperationDenied()
+    if (denied) return Promise.reject(denied)
     requireInteractionId(input.interactionId)
     const answers = normalizeUserInputAnswers(input.answers)
     return this.sendOperation(
@@ -598,6 +963,8 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
   }
 
   cancelUserInput(input: CancelUserInput): Promise<void> {
+    const denied = this.workspaceOperationDenied()
+    if (denied) return Promise.reject(denied)
     requireInteractionId(input.interactionId)
     return this.sendOperation(
       'cancel_user_input',
@@ -619,6 +986,8 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
   }
 
   interrupt(input: InterruptTurnInput): Promise<void> {
+    const denied = this.workspaceOperationDenied()
+    if (denied) return Promise.reject(denied)
     const threadId = input.threadId
     const turnId = input.turnId
     requireNativeId(threadId)
@@ -645,6 +1014,8 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
   }
 
   releaseThread(input: ReleaseThreadInput): Promise<void> {
+    const denied = this.workspaceOperationDenied()
+    if (denied) return Promise.reject(denied)
     const threadId = input.threadId
     requireNativeId(threadId)
     return this.sendOperation(
@@ -666,7 +1037,14 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
     )
   }
 
-  close(): Promise<void> {
+  close(): Promise<void>
+  close(input: {
+    readonly signal: AbortSignal
+  }): Promise<CodexRuntimeCloseResult>
+  close(
+    input?: { readonly signal: AbortSignal },
+  ): Promise<void> | Promise<CodexRuntimeCloseResult> {
+    if (input !== undefined) return this.closeAccountLifecycle(input)
     this.closePromise ??= this.closeOnce()
     return this.closePromise
   }
@@ -681,6 +1059,119 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
 
   stderrDiagnosticForTest(): BoundedStderrSnapshot {
     return this.stderrCapture.snapshot()
+  }
+
+  private async closeAccountLifecycle(input: {
+    readonly signal: AbortSignal
+  }): Promise<CodexRuntimeCloseResult> {
+    requireExactInputKeys(input, ['signal'], 'Runtime close input')
+    requireAbortSignal(input.signal)
+    const escalate = () => {
+      this.cleanupEscalationRequested = true
+      if (this.cleanupPromise) void this.startCleanup(false)
+    }
+    input.signal.addEventListener('abort', escalate, { once: true })
+    this.closePromise ??= this.closeOnce()
+    if (input.signal.aborted) escalate()
+    try {
+      await this.closePromise.catch(() => undefined)
+      await this.closed
+      return { status: 'closed', processTreeGone: true }
+    } catch {
+      return { status: 'ambiguous', processTreeGone: false }
+    } finally {
+      input.signal.removeEventListener('abort', escalate)
+    }
+  }
+
+  private runAccountOperation<TResult>(
+    signal: AbortSignal,
+    operation: () => Promise<TResult>,
+    failure: (error: CodexAccountFailure) => TResult,
+  ): Promise<TResult> {
+    requireAbortSignal(signal)
+    if (signal.aborted) {
+      this.beginAccountAbortShutdown()
+      return Promise.resolve(failure(accountFailure('runtime_closing')))
+    }
+
+    let resolveAbort!: (result: TResult) => void
+    const aborted = new Promise<TResult>((resolve) => {
+      resolveAbort = resolve
+    })
+    const onAbort = () => {
+      this.beginAccountAbortShutdown()
+      resolveAbort(failure(accountFailure('runtime_closing')))
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    if (signal.aborted) {
+      onAbort()
+      return aborted.finally(() => {
+        signal.removeEventListener('abort', onAbort)
+      })
+    }
+    const settled = operation().catch((error: unknown) =>
+      failure(this.projectAccountFailure(error)),
+    )
+    return Promise.race([settled, aborted]).finally(() => {
+      signal.removeEventListener('abort', onAbort)
+    })
+  }
+
+  private beginAccountAbortShutdown(): void {
+    this.cleanupEscalationRequested = true
+    this.closePromise ??= this.closeOnce()
+    void this.closePromise.catch(() => undefined)
+  }
+
+  private projectAccountFailure(error: unknown): CodexAccountFailure {
+    if (error instanceof CodexChatRuntimeError) {
+      if (isAccountFailureCode(error.code)) {
+        return accountFailure(error.code)
+      }
+      if (
+        error.code === 'runtime_closed' ||
+        this.state === 'closing' ||
+        this.state === 'closed'
+      ) {
+        return accountFailure('runtime_closing')
+      }
+    }
+    return accountFailure('runtime_unavailable')
+  }
+
+  private workspaceOperationDenied(): CodexChatRuntimeError | undefined {
+    if (this.role.role === 'workspace') return undefined
+    return new CodexChatRuntimeError({
+      code: 'runtime_role_denied',
+      displayMessage: RUNTIME_ROLE_DENIED_MESSAGE,
+      unknownOutcome: false,
+    })
+  }
+
+  private async observeNativeContext<T>(operation: Promise<T>): Promise<T> {
+    try {
+      return await operation
+    } catch (error) {
+      if (
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'runtime_cleanup_failed'
+      ) {
+        this.failRuntime(error)
+      }
+      if (
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'native_context_aborted' &&
+        this.state === 'closing'
+      ) {
+        throw new CodexChatRuntimeError({
+          code: 'runtime_closing',
+          displayMessage: RUNTIME_CLOSING_MESSAGE,
+          unknownOutcome: false,
+        })
+      }
+      throw error
+    }
   }
 
   private async closeOnce(): Promise<void> {
@@ -1059,17 +1550,29 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
   ): Promise<{ readonly escalated: boolean }> {
     if (!graceful) this.cleanupEscalationRequested = true
     if (this.cleanupPromise) return this.cleanupPromise
-    this.cleanupPromise = this.cleanupProcessTree(graceful).then(
-      (outcome) => outcome,
-      () => {
-        const error = this.cleanupError()
-        this.settleRuntimeFailure(error)
-        this.cleanupClosed.reject(error)
-        throw error
-      },
-    )
+    this.cleanupPromise = this.finishCleanup(graceful)
     void this.cleanupPromise.catch(() => undefined)
     return this.cleanupPromise
+  }
+
+  private async finishCleanup(
+    graceful: boolean,
+  ): Promise<{ readonly escalated: boolean }> {
+    const [processOutcome, nativeContextOutcome] =
+      await Promise.allSettled([
+        this.cleanupProcessTree(graceful),
+        this.nativeContext?.close() ?? Promise.resolve(),
+      ])
+    if (
+      processOutcome.status === 'rejected' ||
+      nativeContextOutcome.status === 'rejected'
+    ) {
+      const error = this.cleanupError()
+      this.settleRuntimeFailure(error)
+      this.cleanupClosed.reject(error)
+      throw error
+    }
+    return processOutcome.value
   }
 
   private async cleanupProcessTree(
@@ -1298,14 +1801,76 @@ async function validateWorkspace(workspace: string): Promise<string> {
   }
 }
 
+async function validateRuntimeRole(
+  options: StartVerifiedCodexChatRuntimeOptions,
+): Promise<CodexRuntimeRole> {
+  if (options.role === undefined) {
+    return Object.freeze({
+      role: 'workspace',
+      workspaceRoot: await validateWorkspace(options.workspace),
+    })
+  }
+  const role = options.role
+  if (role.role === 'auth-only') {
+    requireExactInputKeys(
+      role,
+      ['role', 'bootstrapCwd'],
+      'Codex Runtime role',
+    )
+    return Object.freeze({
+      role: 'auth-only',
+      bootstrapCwd: await validateAuthOnlyBootstrapCwd(role.bootstrapCwd),
+    })
+  }
+  if (role.role === 'workspace') {
+    requireExactInputKeys(
+      role,
+      ['role', 'workspaceRoot'],
+      'Codex Runtime role',
+    )
+    return Object.freeze({
+      role: 'workspace',
+      workspaceRoot: await validateWorkspace(role.workspaceRoot),
+    })
+  }
+  throw new TypeError('Codex Runtime role is invalid')
+}
+
+async function validateAuthOnlyBootstrapCwd(directory: string): Promise<string> {
+  const canonical = await validateControlledDirectory(
+    directory,
+    'auth-only bootstrap cwd',
+    true,
+  )
+  let entries: readonly string[]
+  try {
+    entries = await readdir(canonical)
+  } catch {
+    throw new TypeError('auth-only bootstrap cwd could not be validated')
+  }
+  if (entries.length !== 0) {
+    throw new TypeError('auth-only bootstrap cwd must be empty')
+  }
+  return canonical
+}
+
 async function validateEnvironment(
   environment: CodexChatRuntimeEnvironment,
+  ownerOnly = false,
 ): Promise<CodexChatRuntimeEnvironment> {
   const [home, codexHome, codexSqliteHome, tempDirectory] = await Promise.all([
-    validateControlledDirectory(environment.home, 'runtime home'),
-    validateControlledDirectory(environment.codexHome, 'Codex home'),
-    validateControlledDirectory(environment.codexSqliteHome, 'Codex SQLite home'),
-    validateControlledDirectory(environment.tempDirectory, 'runtime temporary directory'),
+    validateControlledDirectory(environment.home, 'runtime home', ownerOnly),
+    validateControlledDirectory(environment.codexHome, 'Codex home', ownerOnly),
+    validateControlledDirectory(
+      environment.codexSqliteHome,
+      'Codex SQLite home',
+      ownerOnly,
+    ),
+    validateControlledDirectory(
+      environment.tempDirectory,
+      'runtime temporary directory',
+      ownerOnly,
+    ),
   ])
   if (new Set([home, codexHome, codexSqliteHome, tempDirectory]).size !== 4) {
     throw new TypeError('Codex runtime directories must be distinct')
@@ -1316,6 +1881,7 @@ async function validateEnvironment(
 async function validateControlledDirectory(
   directory: string,
   label: string,
+  ownerOnly = false,
 ): Promise<string> {
   if (!path.isAbsolute(directory)) {
     throw new TypeError(`${label} must be absolute`)
@@ -1324,6 +1890,14 @@ async function validateControlledDirectory(
     const stats = await lstat(directory)
     if (!stats.isDirectory() || stats.isSymbolicLink()) {
       throw new TypeError(`${label} must be a directory`)
+    }
+    if (
+      ownerOnly &&
+      (typeof process.getuid !== 'function' ||
+        stats.uid !== process.getuid() ||
+        (stats.mode & 0o077) !== 0)
+    ) {
+      throw new TypeError(`${label} must be owner-only`)
     }
     await access(
       directory,
@@ -1334,6 +1908,60 @@ async function validateControlledDirectory(
     if (error instanceof TypeError) throw error
     throw new TypeError(`${label} could not be validated`)
   }
+}
+
+function requireDisjointRuntimeRoots(
+  runtimeCwd: string,
+  environment: CodexChatRuntimeEnvironment,
+): void {
+  const roots = [runtimeCwd, ...Object.values(environment)]
+  for (let leftIndex = 0; leftIndex < roots.length; leftIndex += 1) {
+    for (
+      let rightIndex = leftIndex + 1;
+      rightIndex < roots.length;
+      rightIndex += 1
+    ) {
+      if (pathsOverlap(roots[leftIndex], roots[rightIndex])) {
+        throw new TypeError('Codex Runtime roots must be disjoint')
+      }
+    }
+  }
+}
+
+function pathsOverlap(left: string, right: string): boolean {
+  return isSameOrDescendant(left, right) || isSameOrDescendant(right, left)
+}
+
+function isSameOrDescendant(parent: string, candidate: string): boolean {
+  const relative = path.relative(parent, candidate)
+  return (
+    relative === '' ||
+    (!path.isAbsolute(relative) &&
+      relative !== '..' &&
+      !relative.startsWith(`..${path.sep}`))
+  )
+}
+
+function validateApplicationIdentity(
+  identity: CodexRuntimeApplicationIdentity,
+): CodexRuntimeApplicationIdentity {
+  requireExactInputKeys(
+    identity,
+    ['name', 'title', 'version'],
+    'Codex Runtime application identity',
+  )
+  if (identity.name !== 'ay-ple' || identity.title !== 'AY-PLE') {
+    throw new TypeError('Codex Runtime application identity is invalid')
+  }
+  requireBoundedString(identity.version, 'Application version', 128)
+  if (
+    !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u.test(
+      identity.version,
+    )
+  ) {
+    throw new TypeError('Application version must be an exact SemVer')
+  }
+  return Object.freeze({ ...identity })
 }
 
 function createChildEnvironment(
@@ -1425,6 +2053,63 @@ function requireNativeId(value: unknown): asserts value is string {
   }
 }
 
+function requireAccountAttemptId(value: unknown): string {
+  requireBoundedString(value, 'Browser login attempt identity', 256)
+  if (/[\r\n]/u.test(value)) {
+    throw new TypeError('Browser login attempt identity is invalid')
+  }
+  return value
+}
+
+function requireAccountExpiry(value: unknown): string {
+  requireBoundedString(value, 'Browser login expiry', 64)
+  let parsed: Date
+  try {
+    parsed = new Date(value)
+  } catch {
+    throw new TypeError('Browser login expiry is invalid')
+  }
+  if (
+    !Number.isFinite(parsed.getTime()) ||
+    parsed.toISOString() !== value
+  ) {
+    throw new TypeError('Browser login expiry is invalid')
+  }
+  const remainingMilliseconds = parsed.getTime() - Date.now()
+  if (
+    remainingMilliseconds <= 0 ||
+    remainingMilliseconds > CODEX_BROWSER_LOGIN_ATTEMPT_TIMEOUT_MS
+  ) {
+    throw new TypeError('Browser login expiry is outside the managed deadline')
+  }
+  return value
+}
+
+function requireAbortSignal(value: unknown): asserts value is AbortSignal {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    typeof (value as AbortSignal).aborted !== 'boolean' ||
+    typeof (value as AbortSignal).addEventListener !== 'function' ||
+    typeof (value as AbortSignal).removeEventListener !== 'function'
+  ) {
+    throw new TypeError('Abort signal is invalid')
+  }
+}
+
+function isAccountFailureCode(
+  value: string,
+): value is CodexAccountFailureCode {
+  return Object.hasOwn(ACCOUNT_FAILURE_MESSAGES, value)
+}
+
+function accountFailure(code: CodexAccountFailureCode): CodexAccountFailure {
+  return {
+    code,
+    retryable: code !== 'login_attempt_not_found',
+  }
+}
+
 function requireProductTurnInput(input: StartProductTurnInput): void {
   requireNativeId(input.threadId)
   if (input.skill !== undefined) {
@@ -1467,6 +2152,14 @@ function normalizeStartThreadInput(
     workspace: input.workspace,
     mcp: { ...input.mcp },
   }
+}
+
+function workspaceRootMismatchError(): CodexChatRuntimeError {
+  return new CodexChatRuntimeError({
+    code: 'runtime_role_denied',
+    displayMessage: WORKSPACE_ROOT_MISMATCH_MESSAGE,
+    unknownOutcome: false,
+  })
 }
 
 function requireExactInputKeys(
