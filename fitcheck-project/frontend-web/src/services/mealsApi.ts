@@ -12,6 +12,7 @@ interface ApiMealLog {
   macros: MealLog['macros'];
   aiFeedback: string | null;
   createdAt: string;
+  aiAnalysisPending?: boolean;
 }
 
 interface MealResponse {
@@ -37,6 +38,7 @@ function mapMealLog(api: ApiMealLog): MealLog {
     macros: api.macros,
     aiFeedback: api.aiFeedback,
     createdAt: api.createdAt,
+    aiAnalysisPending: api.aiAnalysisPending,
   };
 }
 

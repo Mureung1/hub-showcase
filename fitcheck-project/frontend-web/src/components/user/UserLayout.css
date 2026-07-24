@@ -6,7 +6,7 @@
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  background: transparent;
+  background: #0a0a0c;
 }
 
 .user-main {

@@ -31,7 +31,7 @@ export default function UserHeader() {
     <header className="user-header">
       <div className="user-header-inner">
         <div className="user-brand">
-          <span className="user-logo-mark">FC</span>
+          <span className="user-logo-mark">F</span>
           <div className="user-brand-text">
             <span className="user-logo">FitCheck</span>
             <span className="user-logo-sub">Member</span>
