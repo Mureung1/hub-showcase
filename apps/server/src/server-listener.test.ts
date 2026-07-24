@@ -160,14 +160,12 @@ test('pre-attachment close force-closes an incomplete local connection', async (
   })
 
   try {
-    const result = await Promise.race([
+    const result = await settleWithin(
       listener.close({
         signal: new AbortController().signal,
       }),
-      new Promise<'timeout'>((resolve) => {
-        setTimeout(() => resolve('timeout'), 250)
-      }),
-    ])
+      250,
+    )
     assert.deepEqual(
       result,
       { status: 'closed', processTreeGone: true },
@@ -412,4 +410,23 @@ function settlesBeforeImmediate(promise: Promise<void>): Promise<boolean> {
     ),
     new Promise<false>((resolve) => setImmediate(() => resolve(false))),
   ])
+}
+
+function settleWithin<T>(
+  promise: Promise<T>,
+  milliseconds: number,
+): Promise<T | 'timeout'> {
+  return new Promise<T | 'timeout'>((resolve, reject) => {
+    const timeout = setTimeout(() => resolve('timeout'), milliseconds)
+    promise.then(
+      (value) => {
+        clearTimeout(timeout)
+        resolve(value)
+      },
+      (error: unknown) => {
+        clearTimeout(timeout)
+        reject(error)
+      },
+    )
+  })
 }
