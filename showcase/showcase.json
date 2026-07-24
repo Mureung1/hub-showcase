@@ -3,7 +3,7 @@
   "title": "Campus Flow",
   "summary": "전국 거점국립대 정류장의 방향별·시간대별 이용 집중도를 지도와 그래프로 비교하는 대시보드입니다.",
   "githubUser": "busandangam(김진영)",
-  "demoUrl": "https://campus-flow-bus-dashboard-kr.kjh62879078.chatgpt.site",
+  "demoUrl": "https://campus-flow-national-live-kr.kjh62879078.chatgpt.site",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
