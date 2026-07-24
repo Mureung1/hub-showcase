@@ -4,16 +4,15 @@
   "summary": "사진 한 장으로 한국의 올바른 분리배출 방법을 공식 데이터와 AI를 통해 쉽고 정확하게 안내하는 서비스입니다.",
   "githubUser": "ymina25 (Yin Min Aye)",
   "demoUrl": "",
-  "thumbnail": "",
+  "thumbnail": "screenshots/thumbnail.png",
   "screenshots": [
     "screenshots/home.png",
-    "screenshots/search.png",
     "screenshots/result.png",
     "screenshots/rules.png"
   ],
   "problem": "한국의 분리배출 규정은 국가 공통 규정과 지자체별 규정이 뒤섞여 있고 품목별 처리 방법도 제각각이라, 외국인이나 자취생처럼 규정을 처음 접하는 사람은 애매한 품목을 어디에 버려야 할지 판단하기 어렵습니다. 인터넷 검색이나 블로그로 찾은 정보는 오래되었거나 지역이 달라 신뢰하기 어려운 경우가 많습니다.",
   "targetUsers": [
-    "외국인 및 교환학생",
+    "외국인 및 유학생",
     "어린이 및 대학생",
     "한국의 분리배출 규정을 처음 접하는 사람"
   ],
@@ -25,11 +24,9 @@
     "Translate 토글로 앱 전체(홈/검색/결과/확인/규정 화면)를 한국어와 영어로 전환할 수 있으며, 정부 데이터 기반 설명 텍스트는 한/영을 한 번에 생성해 캐싱하므로 토글 시 재요청 없이 즉시 전환됩니다."
   ],
   "featureTags": [
-    "사진 인식",
-    "품목 검색",
+    "사진 인식 혹은 품목 검색",
     "지역별 분리배출 규정",
-    "다국어 지원",
-    "오늘/일주일 배출 일정"
+    "다국어 지원"
   ],
   "techStack": [
     "React",
