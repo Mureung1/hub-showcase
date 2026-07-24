@@ -1,0 +1,145 @@
+:root {
+  /* =========================
+     Font
+  ========================= */
+
+  --font-main: "Inter", "Pretendard", "Noto Sans KR", sans-serif;
+
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 28px;
+  --font-size-2xl: 36px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+
+  /* =========================
+     Primary Colors
+  ========================= */
+
+  --color-primary: #35e6b4;
+  --color-primary-hover: #27d6a5;
+  --color-primary-soft: rgba(53, 230, 180, 0.14);
+  --color-primary-glow: rgba(53, 230, 180, 0.35);
+
+  --color-accent-blue: #5d7cff;
+  --color-accent-purple: #9b6cff;
+  --color-accent-orange: #ff8f70;
+
+  --color-success: #35e6b4;
+  --color-danger: #ff6b6b;
+  --color-warning: #f6c85f;
+
+  /* =========================
+     Background
+  ========================= */
+
+  --bg-page: #252b32;
+  --bg-page-gradient:
+    radial-gradient(circle at 18% 78%, rgba(255, 143, 112, 0.22), transparent 28%),
+    radial-gradient(circle at 82% 18%, rgba(53, 230, 180, 0.16), transparent 32%),
+    linear-gradient(135deg, #233039 0%, #2c2b34 100%);
+
+  --bg-app: #0f1117;
+  --bg-sidebar: #11131a;
+  --bg-card: #1b1f2b;
+  --bg-card-soft: #202534;
+  --bg-card-hover: #242a3a;
+
+  --bg-input: #191d2b;
+  --bg-active: var(--color-primary);
+
+  /* =========================
+     Text
+  ========================= */
+
+  --text-primary: #f7f8ff;
+  --text-secondary: #b7bdcc;
+  --text-muted: #747b8f;
+  --text-disabled: #4f5668;
+  --text-inverse: #07110f;
+
+  /* =========================
+     Border
+  ========================= */
+
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-soft: rgba(255, 255, 255, 0.04);
+  --border-active: rgba(53, 230, 180, 0.5);
+
+  /* =========================
+     Radius
+  ========================= */
+
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-pill: 999px;
+
+  /* =========================
+     Spacing
+  ========================= */
+
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-28: 28px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+
+  /* =========================
+     Layout
+  ========================= */
+
+  --sidebar-width: 260px;
+  --header-height: 72px;
+  --container-padding: 32px;
+  --card-padding: 28px;
+  --grid-gap: 24px;
+
+  /* =========================
+     Shadow
+  ========================= */
+
+  --shadow-app:
+    0 40px 100px rgba(0, 0, 0, 0.45);
+
+  --shadow-card:
+    0 20px 50px rgba(0, 0, 0, 0.22);
+
+  --shadow-card-hover:
+    0 24px 70px rgba(0, 0, 0, 0.32);
+
+  --shadow-primary:
+    0 0 35px rgba(53, 230, 180, 0.22);
+
+  /* =========================
+     Card Style
+  ========================= */
+
+  --card-background: var(--bg-card);
+  --card-border: 1px solid var(--border-soft);
+  --card-radius: var(--radius-lg);
+  --card-padding: 28px;
+  --card-shadow: var(--shadow-card);
+
+  /* =========================
+     Transition
+  ========================= */
+
+  --transition-fast: 0.18s ease;
+  --transition-normal: 0.28s ease;
+}
