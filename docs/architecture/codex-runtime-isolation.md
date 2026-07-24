@@ -47,7 +47,7 @@ Current product startup·install·Runtime command는 전역 `CODEX_HOME`만 의�
 
 ### 현재 개발 composition
 
-Root `npm run dev -- --app-data-root <absolute-path>`는 세 root와 Runtime artifact를 직접 조합한다. Caller가 여섯 legacy path를 맞추거나 environment에서 root model을 다시 만들지 않는다. V3 scaffold·`WorkspaceManifest` admission Module은 구현됐지만 현재 composition은 chooser·development materializer가 넘긴 directory와 current-v2 store를 사용하며, workspace registry와 public admission route를 조합하지 않는다.
+Root `npm run dev`는 repository-relative personal app data·existing workspace와 Runtime artifact를 직접 조합한다. Caller가 여섯 legacy path를 맞추거나 environment에서 root model을 다시 만들지 않는다. `--root`와 `--workspace` override도 repository 기준 상대 경로나 absolute path로 같은 검증을 통과한다. V3 scaffold·`WorkspaceManifest` admission Module은 구현됐지만 현재 composition은 existing directory와 current-v2 store를 사용하며, workspace registry와 public admission route를 조합하지 않는다.
 
 ### 중단한 public target
 

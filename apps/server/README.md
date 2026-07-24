@@ -11,7 +11,7 @@ Canonical product 구현의 `SemesterWorkspaceController`는 chooser·developmen
 Repository root에서 다음 명령을 사용한다.
 
 ```bash
-npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
+npm run dev
 ```
 
 Canonical product composition은 다음 세 root를 명시적으로 분리한다.
@@ -19,9 +19,9 @@ Canonical product composition은 다음 세 root를 명시적으로 분리한다
 | Root | Current owner와 계산 |
 | --- | --- |
 | `packageRoot` | Repository-owned product code와 `packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64` verified artifact를 찾는 source root다. 사용자 상태를 쓰지 않는다. |
-| `appDataRoot` | Caller가 `--app-data-root` 또는 explicit `AY_PLE_APP_DATA_ROOT`로 제공한 absolute non-symlink directory다. Composition이 `runtime/home`, `runtime/codex-sqlite-home`, `runtime/temp`를 isolated `HOME`, `CODEX_SQLITE_HOME`, temporary state로 계산·준비한다. |
-| `CODEX_HOME` | Caller의 전역 `CODEX_HOME`을 그대로 사용하며, 미설정이면 OS user의 `~/.codex`를 사용한다. Canonical dev와 dogfood는 별도 auth profile이나 credential copy를 만들지 않는다. |
-| `workspaceRoot` | Current materializer 또는 Server-owned chooser가 선택한 internal-ready directory다. Product native thread의 exact `cwd`이며 current v2 confirmed product state와 user-owned TXT를 보존한다. |
+| `appDataRoot` | 기본값은 repository 기준 `../.ay-ple-dogfood/app-data`다. `--root`로 profile을 바꿀 수 있으며 composition이 `runtime/home`, `runtime/codex-sqlite-home`, `runtime/temp`를 isolated `HOME`, `CODEX_SQLITE_HOME`, temporary state로 계산·준비한다. |
+| `CODEX_HOME` | Caller의 전역 `CODEX_HOME`을 그대로 사용하며, 미설정이면 OS user의 `~/.codex`를 사용한다. Canonical dev는 별도 auth profile이나 credential copy를 만들지 않는다. |
+| `workspaceRoot` | 기본값은 repository 기준 `../workspace/year-2-semester-2`이며 `--workspace`로 바꿀 수 있다. Product native thread의 exact `cwd`이며 current v2 confirmed product state와 user-owned 자료를 보존한다. |
 
 Package, app data, workspace와 Runtime state root는 서로 다르고 unsafe ancestor·descendant 관계가 없어야 한다. 전역 `CODEX_HOME`은 인증·Codex 전역 설정의 의도적인 예외이며 workspace와 겹치면 fail closed한다. Repository `.ay-ple`, legacy 여섯 `CODEX_CHAT_*` path, common parent와 `process.cwd()`를 fallback으로 사용하지 않는다. Fresh clone은 Runtime bundle이 tracked되지 않으므로 먼저 [runtime package README](../../packages/codex-chat-runtime/README.md#standalone-production-bundle)에 따라 materialize한다.
 

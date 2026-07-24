@@ -20,7 +20,7 @@ export function resolveExplicitAppDataRoot(options: {
     const argument = options.arguments[index]
     if (argument !== '--app-data-root' || argumentRoot !== undefined) {
       throw new Error(
-        'Usage: npm run dev -- --app-data-root /absolute/path/to/app-data',
+        'Usage: tsx scripts/product-development-bootstrap.mts --app-data-root /absolute/path/to/app-data',
       )
     }
     argumentRoot = options.arguments[index + 1]

@@ -27,10 +27,10 @@ App production source는 `@ay-ple/product-contract`만 shared package contract�
 Repository root에서 다음 명령을 사용한다.
 
 ```bash
-npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
+npm run dev
 ```
 
-이 canonical development 명령은 explicit app data와 current materialized/override directory를 product composition에 주입하고 Server와 Chat Shell을 `127.0.0.1:3000`, `127.0.0.1:4173`에서 함께 시작한다. `packageRoot`의 verified Runtime artifact와 `appDataRoot` 아래 controlled directory는 composition이 계산하며 caller가 여섯 Runtime path를 조립하지 않는다. Fresh clone에서는 [Runtime README](../../packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 먼저 materialize한다. 정확한 current startup·workspace 제약은 [Server README](../server/README.md)가 소유한다.
+이 canonical development 명령은 persistent local app data와 existing workspace를 product composition에 주입하고 Server와 Chat Shell을 `127.0.0.1:3000`, `127.0.0.1:4173`에서 함께 시작한다. `packageRoot`의 verified Runtime artifact와 `appDataRoot` 아래 controlled directory는 composition이 계산하며 caller가 여섯 Runtime path를 조립하지 않는다. Fresh clone에서는 [Runtime README](../../packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 먼저 materialize한다. 정확한 current startup·workspace 제약은 [Server README](../server/README.md)가 소유한다.
 
 ## 검증
 

@@ -35,7 +35,7 @@ AY-PLE는 이 과정을 앱이 생성하고 검증하는 한 학기 공간 안�
 
 ## 현재 개인 dogfood를 시작할 때
 
-사용자는 개발 checkout에서 dogfood 명령을 실행한다. Local AY-PLE Browser UI는 caller의 전역 `CODEX_HOME`, 또는 미설정 시 `~/.codex`의 기존 account와 current-v2 workspace를 연다.
+사용자는 개발 checkout에서 `npm run dev`를 실행한다. Local AY-PLE Browser UI는 caller의 전역 `CODEX_HOME`, 또는 미설정 시 `~/.codex`의 기존 account와 current-v2 workspace를 연다.
 
 Current wire state의 `ready`는 existing workspace를 mutation할 수 있다는 뜻이며 adopted `Semester Ready`가 아니다. 같은 dogfood profile로 다시 실행하면 기존 workspace와 학업 상태를 보존해 다시 열어야 한다.
 

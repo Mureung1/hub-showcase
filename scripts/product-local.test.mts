@@ -14,13 +14,13 @@ import path from 'node:path'
 import test from 'node:test'
 
 import {
-  prepareDogfoodProfile,
-  resolveDogfoodArguments,
-  runDogfood,
-} from './product-dogfood.mjs'
+  prepareLocalProductProfile,
+  resolveLocalProductArguments,
+  runLocalProduct,
+} from './product-local.mjs'
 
 const repositoryRoot = path.resolve(import.meta.dirname, '..')
-test('persistent dogfood profile uses an empty external workspace and preserves later state', async () => {
+test('persistent local profile uses an empty external workspace and preserves later state', async () => {
   const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-dogfood-test-'))
   const profileRoot = path.join(testRoot, 'profile')
   const workspaceRoot = path.join(
@@ -34,7 +34,7 @@ test('persistent dogfood profile uses an empty external workspace and preserves 
       path.join(root, 'profile'),
     )
     const canonicalWorkspaceRoot = await realpath(workspaceRoot)
-    const first = await prepareDogfoodProfile({
+    const first = await prepareLocalProductProfile({
       packageRoot: repositoryRoot,
       profileRoot,
       workspaceRoot,
@@ -58,7 +58,7 @@ test('persistent dogfood profile uses an empty external workspace and preserves 
       'utf8',
     )
 
-    const second = await prepareDogfoodProfile({
+    const second = await prepareLocalProductProfile({
       packageRoot: repositoryRoot,
       profileRoot,
       workspaceRoot,
@@ -83,7 +83,7 @@ test('persistent dogfood profile uses an empty external workspace and preserves 
   }
 })
 
-test('existing dogfood data requires explicit one-time adoption and remains unchanged', async () => {
+test('existing local data requires explicit one-time adoption and remains unchanged', async () => {
   const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-dogfood-test-'))
   const profileRoot = path.join(testRoot, 'profile')
   const appDataRoot = path.join(profileRoot, 'app-data')
@@ -99,7 +99,7 @@ test('existing dogfood data requires explicit one-time adoption and remains unch
     )
 
     await assert.rejects(
-      prepareDogfoodProfile({
+      prepareLocalProductProfile({
         packageRoot: repositoryRoot,
         profileRoot,
         workspaceRoot,
@@ -107,7 +107,7 @@ test('existing dogfood data requires explicit one-time adoption and remains unch
       /ownership marker is missing/,
     )
 
-    const adopted = await prepareDogfoodProfile({
+    const adopted = await prepareLocalProductProfile({
       adoptExisting: true,
       packageRoot: repositoryRoot,
       profileRoot,
@@ -122,7 +122,7 @@ test('existing dogfood data requires explicit one-time adoption and remains unch
     )
 
     assert.deepEqual(
-      await prepareDogfoodProfile({
+      await prepareLocalProductProfile({
         packageRoot: repositoryRoot,
         profileRoot,
         workspaceRoot,
@@ -134,7 +134,7 @@ test('existing dogfood data requires explicit one-time adoption and remains unch
   }
 })
 
-test('dogfood profile resolves a symlinked parent before package overlap checks', async () => {
+test('local profile resolves a symlinked parent before package overlap checks', async () => {
   const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-dogfood-test-'))
   const packageRoot = path.join(testRoot, 'package')
   const packageAlias = path.join(testRoot, 'package-alias')
@@ -147,7 +147,7 @@ test('dogfood profile resolves a symlinked parent before package overlap checks'
     await symlink(packageRoot, packageAlias)
 
     await assert.rejects(
-      prepareDogfoodProfile({ packageRoot, profileRoot, workspaceRoot }),
+      prepareLocalProductProfile({ packageRoot, profileRoot, workspaceRoot }),
       /Product roots cannot overlap/,
     )
   } finally {
@@ -155,14 +155,14 @@ test('dogfood profile resolves a symlinked parent before package overlap checks'
   }
 })
 
-test('dogfood CLI defaults to the personal relative roots and accepts overrides', () => {
-  assert.deepEqual(resolveDogfoodArguments([]), {
+test('local CLI defaults to the personal relative roots and accepts overrides', () => {
+  assert.deepEqual(resolveLocalProductArguments([]), {
     adoptExisting: false,
     profileRoot: '../.ay-ple-dogfood',
     workspaceRoot: '../workspace/year-2-semester-2',
   })
   assert.deepEqual(
-    resolveDogfoodArguments([
+    resolveLocalProductArguments([
       '--root',
       '../profile',
       '--workspace',
@@ -175,7 +175,7 @@ test('dogfood CLI defaults to the personal relative roots and accepts overrides'
     },
   )
   assert.deepEqual(
-    resolveDogfoodArguments([
+    resolveLocalProductArguments([
       '--adopt-existing',
       '--root',
       '/tmp/ay-ple-dogfood',
@@ -188,21 +188,21 @@ test('dogfood CLI defaults to the personal relative roots and accepts overrides'
   )
   assert.throws(
     () =>
-      resolveDogfoodArguments([
+      resolveLocalProductArguments([
         '--root',
         '/tmp/one',
         '--root',
         '/tmp/two',
       ]),
-    /Usage: npm run dogfood/,
+    /Usage: npm run dev/,
   )
   assert.throws(
-    () => resolveDogfoodArguments(['--workspace']),
-    /Usage: npm run dogfood/,
+    () => resolveLocalProductArguments(['--workspace']),
+    /Usage: npm run dev/,
   )
 })
 
-test('dogfood run delegates persistent roots and global Codex state to canonical product development', async () => {
+test('local run delegates persistent roots and global Codex state to canonical product development', async () => {
   const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-dogfood-test-'))
   const packageRoot = path.join(testRoot, 'hub')
   const profileRoot = path.join(testRoot, '.ay-ple-dogfood')
@@ -221,7 +221,7 @@ test('dogfood run delegates persistent roots and global Codex state to canonical
         }
       | undefined
 
-    await runDogfood({
+    await runLocalProduct({
       arguments: [],
       environment: { CODEX_HOME: '/global/codex-home', KEEP_ME: 'yes' },
       log: () => undefined,

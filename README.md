@@ -34,23 +34,17 @@ AY-PLE(에이플)는 학생이 한 학기 작업공간에서 공지, 강의계�
 
 ```bash
 npm install
-npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
+npm run dev
 ```
 
-Canonical development command는 explicit `appDataRoot`와 current materialized/override directory를 검증하고, `packageRoot`의 verified Runtime artifact와 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. 이 current path는 app-owned scaffold나 `WorkspaceManifest` admission을 아직 구현하지 않습니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 materialize해야 합니다. 현재 시작·workspace·Runtime 제약은 [Server README](apps/server/README.md), 채택한 workspace target은 [ADR 0014](docs/adr/0014-create-app-owned-normalized-semester-workspaces.md), 화면 동작과 후속 경계는 [Chat Shell README](apps/chat-shell/README.md)를 따릅니다.
-
-반복해서 실제 제품을 만질 때는 다음 dogfood 명령을 사용합니다. 이 helper는 별도 실행 topology를 만들지 않고 [ADR 0013](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 canonical development composition에 위임합니다.
-
-```bash
-npm run dogfood
-```
+Canonical development command는 persistent app data와 existing workspace를 검증하고, `packageRoot`의 verified Runtime artifact와 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. 이 entrypoint는 별도 실행 topology를 만들지 않고 [ADR 0013](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 canonical composition에 위임합니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 materialize해야 합니다.
 
 기본 app data는 repository 기준 `../.ay-ple-dogfood`, workspace는 `../workspace/year-2-semester-2`를 사용합니다. Workspace에는 sample fixture를 복사하지 않으며 비어 있어도 정상입니다. Codex account는 caller의 전역 `CODEX_HOME`, 또는 미설정 시 `~/.codex`를 그대로 사용합니다. 이후 Server·Chat Shell 시작에서도 workspace의 사용자 자료와 `.ay-ple` 상태를 보존하고 기존 내용을 reset하지 않습니다.
 
 다른 위치가 필요하면 repository 기준 상대 경로나 absolute path로 override할 수 있습니다. 이미 수동으로 만든 app-data profile은 최초 한 번만 명시적으로 채택합니다.
 
 ```bash
-npm run dogfood -- --root ../existing-profile --workspace ../workspace/another-semester --adopt-existing
+npm run dev -- --root ../existing-profile --workspace ../workspace/another-semester --adopt-existing
 ```
 
 ## 캠프 데모
@@ -144,8 +138,7 @@ npm run demo
 ## 개발 명령어
 
 ```bash
-npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
-npm run dogfood
+npm run dev
 npm run demo
 npm test
 npm run test:e2e

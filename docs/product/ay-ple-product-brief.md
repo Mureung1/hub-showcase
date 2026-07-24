@@ -42,7 +42,7 @@ AY-PLE는 새로운 범용 Agent framework를 만드는 제품이 아니다. 일
 
 | 순서 | 학생이 하는 일 | AY-PLE가 하는 일 | 결과 |
 | --- | --- | --- | --- |
-| 1 | 개인 dogfood 명령으로 기존 workspace를 연다. | 전역 `CODEX_HOME`의 Codex account와 current-v2 workspace를 연결한다. | 기존 자료와 학기 상태를 그대로 사용한다. |
+| 1 | `npm run dev`로 기존 workspace를 연다. | 전역 `CODEX_HOME`의 Codex account와 current-v2 workspace를 연결한다. | 기존 자료와 학기 상태를 그대로 사용한다. |
 | 2 | 기존 자료 폴더나 자료 묶음을 `ImportSource`로 고른다. | AY가 분석을 돕고 App이 mapping·반입 제안을 검증 가능한 형태로 준비한다. | 학생이 검토한 자료만 workspace 안의 `RawMaterial`과 Course 맥락으로 들어온다. |
 | 3 | 이번에 정리할 두 자료를 고른다. | 이번 요청에 사용할 `SourceSelection`을 준비한다. | 이번 작업의 우선 입력이 명확해진다. |
 | 4 | `선택한 자료 정리하기`를 누른다. | Recipe와 이번 입력을 `ModelingInvocation`으로 실행한다. | AY가 과제 후보와 근거를 찾는다. |
@@ -73,7 +73,7 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 
 ## 제품 제공 형태
 
-현재 제공 형태는 개발 checkout에서 개인 dogfood 명령으로 local companion과 browser UI를 여는 **macOS-first local web app**이다. Landing, public `npx`, packaged distribution과 public release claim은 현재 제품 surface가 아니다.
+현재 제공 형태는 개발 checkout에서 `npm run dev`로 local companion과 browser UI를 여는 **macOS-first local web app**이다. Landing, public `npx`, packaged distribution과 public release claim은 현재 제품 surface가 아니다.
 
 [Official SDK 기반 Codex Chat Shell](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)과 First Assignment vertical은 native 실행과 학업 product boundary를 검증한 현재 kernel이다. Public `npx` 배포, Browser OAuth와 first-run setup surface는 current graph에서 제거했다. 당시 exact public command·application host·Runtime delivery·offline과 rollback 경계는 historical [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)이 보존한다.
 
@@ -228,7 +228,7 @@ PDF text extraction, OCR, HWP/HWPX parsing처럼 결정적으로 처리할 수 �
 
 | 기준 | 확인할 질문 |
 | --- | --- |
-| dogfood 진입 가능성 | 개발 checkout의 개인 dogfood 명령이 기존 workspace와 전역 Codex account로 local AY-PLE을 여는가? |
+| local 진입 가능성 | 개발 checkout의 `npm run dev`가 기존 workspace와 전역 Codex account로 local AY-PLE을 여는가? |
 | account authority | 제품이 별도 login·credential home을 만들지 않고 전역 `CODEX_HOME`을 사용하는가? |
 | 재실행 지속성 | 같은 dogfood profile로 다시 실행했을 때 기존 workspace와 학업 상태를 보존해 여는가? |
 | 학업 작업 시작 가능성 | 준비된 workspace에서 학생이 자료를 선택하고 action을 시작할 수 있는가? |
