@@ -10,6 +10,7 @@ import {
   realpath,
   rename,
   rm,
+  unlink,
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -33,7 +34,9 @@ import {
   type RecoverableSetupEnvelopeStore,
 } from './setup-envelope-store.js'
 import {
+  createLeaseBoundSemesterSetupJourney,
   createSemesterSetupJourney,
+  type SemesterReadyTransitionPort,
   type SemesterSetupJourneyOptions,
 } from './setup-journey.js'
 import {
@@ -1332,6 +1335,427 @@ test('forged source hash fields cannot bypass prepared relaunch verification', a
   }
 })
 
+test('lease-bound approval commits and strictly reads one active Ready pointer', async () => {
+  const fixture = await createJourneyFixture('ready-commit')
+  try {
+    const calls: string[] = []
+    const journey = fixture.createLeaseJourney({
+      async transition(input) {
+        calls.push('transition')
+        const committed = await input.commitReady()
+        calls.push('commit')
+        const readback = await input.readReady()
+        calls.push('readback')
+        assert.deepEqual(readback, committed)
+        return { status: 'ready', ready: readback }
+      },
+    })
+    const confirmation = await confirmationFor(journey, fixture.input)
+
+    const result = await journey.reconcile({
+      kind: 'approve',
+      setupPlanId: confirmation.setupPlanId,
+    })
+
+    assert.equal(result.outcome, 'ready_created')
+    assert.equal(result.projection.state, 'ready')
+    assert.deepEqual(calls, ['transition', 'commit', 'readback'])
+    const observed = await fixture.store.read()
+    assert.equal(observed.status, 'current')
+    if (
+      observed.status !== 'current' ||
+      observed.envelope.state.kind !== 'active_ready'
+    ) {
+      assert.fail('active Ready pointer required')
+    }
+    assert.equal(
+      observed.envelope.state.pointer.workspace.workspaceId,
+      result.projection.state === 'ready'
+        ? result.projection.workspace.workspaceId
+        : '',
+    )
+    assert.deepEqual(
+      await journey.reconcile({ kind: 'recover', recoveryId: 'unused', action: 'discard' }),
+      {
+        outcome: 'setup_conflict',
+        projection: {
+          state: 'blocked',
+          reason: 'setup_conflict',
+        },
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('Ready commit faults converge to protected prepared or durable Ready', async (t) => {
+  for (const testCase of [
+    {
+      point: 'before_ready_commit',
+      expectedOutcome: 'setup_transition_unavailable',
+      expectedKind: 'pending',
+    },
+    {
+      point: 'after_ready_commit',
+      expectedOutcome: 'ready_created',
+      expectedKind: 'active_ready',
+    },
+  ] as const) {
+    await t.test(testCase.point, async () => {
+      const fixture = await createJourneyFixture(testCase.point)
+      try {
+        let injected = false
+        const journey = fixture.createLeaseJourney(
+          catchingCommitTransition(),
+          {
+            fault(point) {
+              if (!injected && point === testCase.point) {
+                injected = true
+                throw new Error(testCase.point)
+              }
+            },
+          },
+        )
+        const confirmation = await confirmationFor(
+          journey,
+          fixture.input,
+        )
+
+        const result = await journey.reconcile({
+          kind: 'approve',
+          setupPlanId: confirmation.setupPlanId,
+        })
+
+        assert.equal(result.outcome, testCase.expectedOutcome)
+        const observed = await fixture.store.read()
+        assert.equal(observed.status, 'current')
+        if (observed.status !== 'current') assert.fail()
+        assert.equal(observed.envelope.state.kind, testCase.expectedKind)
+        if (testCase.expectedKind === 'pending') {
+          assert.equal(result.projection.state, 'transition_blocked')
+          if (observed.envelope.state.kind !== 'pending') assert.fail()
+          assert.equal(
+            observed.envelope.state.receipt.lifecycle.phase,
+            'prepared',
+          )
+        } else {
+          assert.equal(result.projection.state, 'ready')
+        }
+      } finally {
+        await fixture.cleanup()
+      }
+    })
+  }
+})
+
+test('same-release active Ready relaunch fresh-validates without rewriting the pointer', async () => {
+  const fixture = await createJourneyFixture('ready-relaunch')
+  try {
+    const first = fixture.createLeaseJourney(passingTransition())
+    const confirmation = await confirmationFor(first, fixture.input)
+    assert.equal(
+      (
+        await first.reconcile({
+          kind: 'approve',
+          setupPlanId: confirmation.setupPlanId,
+        })
+      ).outcome,
+      'ready_created',
+    )
+    const before = await fixture.store.read()
+    assert.equal(before.status, 'current')
+    let transitionCount = 0
+    const relaunched = fixture.createLeaseJourney({
+      async transition(input) {
+        transitionCount += 1
+        const committed = await input.commitReady()
+        const readback = await input.readReady()
+        assert.deepEqual(committed, readback)
+        return { status: 'ready', ready: readback }
+      },
+    })
+
+    const result = await relaunched.reconcile({ kind: 'launch' })
+
+    assert.equal(result.outcome, 'ready_relaunch')
+    assert.equal(result.projection.state, 'ready')
+    assert.equal(transitionCount, 1)
+    assert.deepEqual(await fixture.store.read(), before)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('account loss preserves prepared state until explicit resume succeeds', async () => {
+  const fixture = await createJourneyFixture('ready-reauth')
+  try {
+    let connected = false
+    const journey = fixture.createLeaseJourney({
+      async transition(input) {
+        if (!connected) return { status: 'reauth_required' }
+        return passingTransition().transition(input)
+      },
+    })
+    const confirmation = await confirmationFor(journey, fixture.input)
+    const first = await journey.reconcile({
+      kind: 'approve',
+      setupPlanId: confirmation.setupPlanId,
+    })
+    assert.equal(first.outcome, 'reauth_required')
+    assert.equal(first.projection.state, 'workspace_reauth')
+    const prepared = await fixture.store.read()
+    assert.equal(prepared.status, 'current')
+    if (
+      prepared.status !== 'current' ||
+      prepared.envelope.state.kind !== 'pending'
+    ) {
+      assert.fail('prepared state required')
+    }
+    assert.equal(
+      prepared.envelope.state.receipt.lifecycle.phase,
+      'prepared',
+    )
+
+    connected = true
+    const resumed = await journey.reconcile({
+      kind: 'recover',
+      recoveryId: prepared.envelope.state.receipt.setupId,
+      action: 'resume',
+    })
+
+    assert.equal(resumed.outcome, 'ready_created')
+    assert.equal(resumed.projection.state, 'ready')
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('active Ready bundle absence is repaired only by explicit resume', async () => {
+  const fixture = await createJourneyFixture('ready-missing-bundle')
+  try {
+    const first = fixture.createLeaseJourney(passingTransition())
+    const confirmation = await confirmationFor(first, fixture.input)
+    await first.reconcile({
+      kind: 'approve',
+      setupPlanId: confirmation.setupPlanId,
+    })
+    const observed = await fixture.store.read()
+    assert.equal(observed.status, 'current')
+    if (
+      observed.status !== 'current' ||
+      observed.envelope.state.kind !== 'active_ready'
+    ) {
+      assert.fail('active Ready required')
+    }
+    const pointer = observed.envelope.state.pointer
+    const missing = fixture.source.files[0]!.relativePath
+    await unlink(path.join(pointer.workspace.canonicalRoot, missing))
+    let transitions = 0
+    const relaunched = fixture.createLeaseJourney({
+      async transition(input) {
+        transitions += 1
+        return passingTransition().transition(input)
+      },
+    })
+
+    const protectedResult = await relaunched.reconcile({
+      kind: 'launch',
+    })
+
+    assert.equal(protectedResult.outcome, 'recovery_required')
+    assert.deepEqual(protectedResult.projection, {
+      state: 'recovery_required',
+      recoveryId: pointer.setupId,
+      reason: 'bundle_missing',
+    })
+    assert.equal(transitions, 0)
+    await assert.rejects(
+      lstat(path.join(pointer.workspace.canonicalRoot, missing)),
+      hasCode('ENOENT'),
+    )
+
+    const resumed = await relaunched.reconcile({
+      kind: 'recover',
+      recoveryId: pointer.setupId,
+      action: 'resume',
+    })
+
+    assert.equal(resumed.outcome, 'ready_relaunch')
+    assert.equal(resumed.projection.state, 'ready')
+    assert.equal(transitions, 1)
+    assert.equal(
+      (await lstat(path.join(pointer.workspace.canonicalRoot, missing)))
+        .isFile(),
+      true,
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('release, native context, and active pointer conflicts fail closed without deleting workspace bytes', async (t) => {
+  await t.test('prepared release mismatch', async () => {
+    const fixture = await createJourneyFixture('ready-release-mismatch')
+    try {
+      const preparedJourney = fixture.createJourney()
+      const confirmation = await confirmationFor(
+        preparedJourney,
+        fixture.input,
+      )
+      await preparedJourney.reconcile({
+        kind: 'approve',
+        setupPlanId: confirmation.setupPlanId,
+      })
+      const receipt = await preparedReceipt(fixture.store)
+      const before = await snapshotTree(
+        receipt.plan.target.canonicalTarget,
+      )
+      let transitions = 0
+      const mismatched = fixture.createLeaseJourney(
+        {
+          async transition() {
+            transitions += 1
+            return { status: 'reauth_required' }
+          },
+        },
+        {
+          release: {
+            ...fixture.release,
+            application: {
+              packageName: 'ay-ple',
+              packageVersion: '0.0.2',
+            },
+          },
+        },
+      )
+
+      const result = await mismatched.reconcile({ kind: 'launch' })
+
+      assert.equal(result.outcome, 'setup_release_mismatch')
+      assert.equal(transitions, 0)
+      assert.deepEqual(
+        await snapshotTree(receipt.plan.target.canonicalTarget),
+        before,
+      )
+    } finally {
+      await fixture.cleanup()
+    }
+  })
+
+  await t.test('native context conflict', async () => {
+    const fixture = await createJourneyFixture('ready-context-conflict')
+    try {
+      const journey = fixture.createLeaseJourney({
+        async transition() {
+          return { status: 'context_conflict' }
+        },
+      })
+      const confirmation = await confirmationFor(journey, fixture.input)
+      const result = await journey.reconcile({
+        kind: 'approve',
+        setupPlanId: confirmation.setupPlanId,
+      })
+      const receipt = await preparedReceipt(fixture.store)
+
+      assert.equal(result.outcome, 'recovery_required')
+      assert.deepEqual(result.projection, {
+        state: 'recovery_required',
+        recoveryId: receipt.setupId,
+        reason: 'context_conflict',
+      })
+    } finally {
+      await fixture.cleanup()
+    }
+  })
+
+  await t.test('foreign active pointer', async () => {
+    const fixture = await createJourneyFixture('ready-foreign-pointer')
+    try {
+      const journey = fixture.createLeaseJourney(passingTransition())
+      const confirmation = await confirmationFor(journey, fixture.input)
+      await journey.reconcile({
+        kind: 'approve',
+        setupPlanId: confirmation.setupPlanId,
+      })
+      const observed = await fixture.store.read()
+      assert.equal(observed.status, 'current')
+      if (
+        observed.status !== 'current' ||
+        observed.envelope.state.kind !== 'active_ready'
+      ) {
+        assert.fail('active Ready required')
+      }
+      const forged: SetupStateEnvelope = {
+        ...observed.envelope,
+        revision: observed.envelope.revision + 1,
+        state: {
+          kind: 'active_ready',
+          pointer: {
+            ...observed.envelope.state.pointer,
+            workspace: {
+              ...observed.envelope.state.pointer.workspace,
+              workspaceId: `workspace_${'f'.repeat(32)}`,
+            },
+          },
+        },
+      }
+      assert.equal(
+        (
+          await fixture.store.compareAndReplace({
+            expectedRevisionToken: observed.revisionToken,
+            envelope: forged,
+          })
+        ).status,
+        'written',
+      )
+      let transitions = 0
+
+      const result = await fixture
+        .createLeaseJourney({
+          async transition() {
+            transitions += 1
+            return { status: 'reauth_required' }
+          },
+        })
+        .reconcile({ kind: 'launch' })
+
+      assert.equal(result.outcome, 'setup_state_conflict')
+      assert.equal(transitions, 0)
+    } finally {
+      await fixture.cleanup()
+    }
+  })
+})
+
+function passingTransition(): SemesterReadyTransitionPort {
+  return {
+    async transition(input) {
+      const committed = await input.commitReady()
+      const readback = await input.readReady()
+      assert.deepEqual(readback, committed)
+      return { status: 'ready', ready: readback }
+    },
+  }
+}
+
+function catchingCommitTransition(): SemesterReadyTransitionPort {
+  return {
+    async transition(input) {
+      try {
+        const committed = await input.commitReady()
+        const readback = await input.readReady()
+        return {
+          status: 'ready',
+          ready: readback ?? committed,
+        }
+      } catch {
+        return { status: 'ready_commit_unknown' }
+      }
+    },
+  }
+}
+
 async function createOwnedPartialFixture(name: string) {
   const base = await createJourneyFixture(name)
   let faulted = false
@@ -1438,6 +1862,16 @@ async function createJourneyFixture(name: string) {
       return createSemesterSetupJourney({
         ...defaults,
         ...overrides,
+      })
+    },
+    createLeaseJourney(
+      readyTransition: SemesterReadyTransitionPort,
+      overrides: Partial<SemesterSetupJourneyOptions> = {},
+    ) {
+      return createLeaseBoundSemesterSetupJourney({
+        ...defaults,
+        ...overrides,
+        readyTransition,
       })
     },
     cleanup: () => rm(root, { force: true, recursive: true }),

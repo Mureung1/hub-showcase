@@ -16,6 +16,7 @@ import {
   type RestorableSemesterWorkspaceAdmission,
 } from './admission.js'
 import type {
+  ActiveReadyPointer,
   AdmittedSemesterWorkspace,
   LaunchBinding,
   PendingSetupReceipt,
@@ -32,6 +33,7 @@ import {
   type RecoverableSetupEnvelopeStore,
 } from './setup-envelope-store.js'
 import {
+  recoverMissingWorkspaceBundle,
   materializeWorkspaceBundle,
   verifyWorkspaceBundle,
 } from './workspace-bundle.js'
@@ -75,6 +77,22 @@ export type SemesterSetupJourneyProjection =
         | 'setup_state_conflict'
         | 'setup_release_mismatch'
     }
+  | {
+      readonly state: 'workspace_reauth'
+      readonly recoveryId: string
+    }
+  | {
+      readonly state: 'transition_blocked'
+      readonly reason:
+        | 'setup_transition_unavailable'
+        | 'account_unavailable'
+      readonly retry: 'resume' | 'restart_required'
+      readonly recoveryId?: string
+    }
+  | {
+      readonly state: 'ready'
+      readonly workspace: AdmittedSemesterWorkspace
+    }
 
 export type SemesterSetupJourneyFaultPoint =
   | 'after_approved_commit'
@@ -86,6 +104,8 @@ export type SemesterSetupJourneyFaultPoint =
   | 'after_workspace_discard'
   | 'before_empty_commit'
   | 'after_empty_commit'
+  | 'before_ready_commit'
+  | 'after_ready_commit'
 
 export type SemesterSetupJourneyOptions = {
   readonly stateStore: RecoverableSetupEnvelopeStore
@@ -101,6 +121,34 @@ export type SemesterSetupJourneyOptions = {
   ) => void | Promise<void>
 }
 
+export type SemesterReadyTransitionResult =
+  | {
+      readonly status: 'ready'
+      readonly ready: ActiveReadyPointer
+    }
+  | { readonly status: 'reauth_required' }
+  | { readonly status: 'account_unavailable' }
+  | { readonly status: 'context_conflict' }
+  | {
+      readonly status: 'transition_unavailable'
+      readonly retry: 'resume' | 'restart_required'
+    }
+  | { readonly status: 'cancelled' }
+  | { readonly status: 'ready_commit_unknown' }
+
+export interface SemesterReadyTransitionPort {
+  transition(input: {
+    readonly workspace: AdmittedSemesterWorkspace
+    readonly commitReady: () => Promise<ActiveReadyPointer>
+    readonly readReady: () => Promise<ActiveReadyPointer>
+  }): Promise<SemesterReadyTransitionResult>
+}
+
+export type LeaseBoundSemesterSetupJourneyOptions =
+  SemesterSetupJourneyOptions & {
+    readonly readyTransition: SemesterReadyTransitionPort
+  }
+
 type PreparedDraft = {
   readonly expectedRevisionToken: string | null
   readonly nextRevision: number
@@ -113,6 +161,19 @@ type PreparedDraft = {
 
 export function createSemesterSetupJourney(
   options: SemesterSetupJourneyOptions,
+): SetupJourney<SemesterSetupJourneyProjection> {
+  return createSetupJourney(options)
+}
+
+export function createLeaseBoundSemesterSetupJourney(
+  options: LeaseBoundSemesterSetupJourneyOptions,
+): SetupJourney<SemesterSetupJourneyProjection> {
+  return createSetupJourney(options, options.readyTransition)
+}
+
+function createSetupJourney(
+  options: SemesterSetupJourneyOptions,
+  readyTransition?: SemesterReadyTransitionPort,
 ): SetupJourney<SemesterSetupJourneyProjection> {
   const createAdmission =
     options.createAdmission ?? createSemesterWorkspaceAdmission
@@ -200,7 +261,9 @@ export function createSemesterSetupJourney(
       return inputRequired()
     }
     if (recovered.envelope.state.kind === 'active_ready') {
-      return blocked('setup_state_conflict')
+      return readyTransition
+        ? relaunchReady(recovered.envelope.state.pointer)
+        : blocked('setup_state_conflict')
     }
     const receipt = recovered.envelope.state.receipt
     if (!sameRelease(receipt.release, options.release)) {
@@ -464,11 +527,25 @@ export function createSemesterSetupJourney(
       return blocked('setup_state_conflict')
     }
     await inject(options, 'after_prepared_commit')
-    return { outcome: 'resumed', projection }
+    if (!readyTransition) {
+      return { outcome: 'resumed', projection }
+    }
+    const current = await options.stateStore.read()
+    if (
+      current.status !== 'current' ||
+      current.envelope.state.kind !== 'pending' ||
+      current.envelope.state.receipt.setupId !==
+        state.receipt.setupId ||
+      current.envelope.state.receipt.lifecycle.phase !== 'prepared'
+    ) {
+      return blocked('setup_state_conflict')
+    }
+    return validatePrepared(current.envelope.state.receipt)
   }
 
   const validatePrepared = async (
     receipt: PendingSetupReceipt,
+    allowMissingRecovery = false,
   ): Promise<
     SetupReconcileResult<SemesterSetupJourneyProjection>
   > => {
@@ -497,10 +574,20 @@ export function createSemesterSetupJourney(
       }
       return recovery(receipt.setupId, 'owned_incomplete')
     }
-    const bundle = await verifyWorkspaceBundle({
+    let bundle = await verifyWorkspaceBundle({
       workspace,
       source: options.bundleSource,
     })
+    if (bundle.status === 'missing' && allowMissingRecovery) {
+      await recoverMissingWorkspaceBundle({
+        workspace,
+        source: options.bundleSource,
+      })
+      bundle = await verifyWorkspaceBundle({
+        workspace,
+        source: options.bundleSource,
+      })
+    }
     if (bundle.status === 'missing') {
       return recovery(receipt.setupId, 'bundle_missing')
     }
@@ -519,14 +606,20 @@ export function createSemesterSetupJourney(
     ) {
       return recovery(receipt.setupId, 'context_conflict')
     }
-    if (!(await reopenReceiptWorkspace(receipt, createAdmission))) {
+    const rebound = await reopenReceiptWorkspace(
+      receipt,
+      createAdmission,
+    )
+    if (!rebound || !sameWorkspace(workspace, rebound)) {
       return blocked('setup_state_conflict')
     }
     projection = {
       state: 'working',
       stage: 'verifying_environment',
     }
-    return { outcome: 'resumed', projection }
+    return readyTransition
+      ? transitionPrepared(receipt, rebound)
+      : { outcome: 'resumed', projection }
   }
 
   const resume = async (
@@ -535,6 +628,13 @@ export function createSemesterSetupJourney(
     SetupReconcileResult<SemesterSetupJourneyProjection>
   > => {
     const observed = await options.stateStore.read()
+    if (
+      observed.status === 'current' &&
+      observed.envelope.state.kind === 'active_ready' &&
+      observed.envelope.state.pointer.setupId === recoveryId
+    ) {
+      return relaunchReady(observed.envelope.state.pointer, true)
+    }
     if (
       observed.status !== 'current' ||
       observed.envelope.state.kind !== 'pending' ||
@@ -547,9 +647,303 @@ export function createSemesterSetupJourney(
       return continueDiscard(observed)
     }
     if (receipt.lifecycle.phase === 'prepared') {
-      return validatePrepared(receipt)
+      return validatePrepared(receipt, true)
     }
     return prepareApproved(observed, true)
+  }
+
+  const transitionPrepared = async (
+    receipt: PendingSetupReceipt,
+    workspace: AdmittedSemesterWorkspace,
+  ): Promise<
+    SetupReconcileResult<SemesterSetupJourneyProjection>
+  > => {
+    const expected = readyPointer(receipt, workspace)
+    return runReadyTransition({
+      recoveryId: receipt.setupId,
+      workspace,
+      expected,
+      successOutcome: 'ready_created',
+      commitReady: () =>
+        commitPreparedReady(receipt, workspace, expected),
+      readReady: () => readExactReadyPointer(expected),
+    })
+  }
+
+  const relaunchReady = async (
+    pointer: ActiveReadyPointer,
+    allowMissingRecovery = false,
+  ): Promise<
+    SetupReconcileResult<SemesterSetupJourneyProjection>
+  > => {
+    if (
+      !sameRelease(pointer.release, options.release) ||
+      !bundleSourceMatchesRelease(
+        options.bundleSource,
+        pointer.release,
+      )
+    ) {
+      return blocked('setup_release_mismatch')
+    }
+    const admission = createAdmission()
+    const inspection = await admission.inspect({
+      kind: 'reopen',
+      canonicalRoot: pointer.workspace.canonicalRoot,
+    })
+    if (
+      (inspection.outcome !== 'admitted' &&
+        inspection.outcome !== 'already_ready') ||
+      !pointerMatchesWorkspace(pointer, inspection.workspace)
+    ) {
+      return blocked('setup_state_conflict')
+    }
+    const workspace = inspection.workspace
+    let bundle = await verifyWorkspaceBundle({
+      workspace,
+      source: options.bundleSource,
+    })
+    if (bundle.status === 'missing' && allowMissingRecovery) {
+      await recoverMissingWorkspaceBundle({
+        workspace,
+        source: options.bundleSource,
+      })
+      bundle = await verifyWorkspaceBundle({
+        workspace,
+        source: options.bundleSource,
+      })
+    }
+    if (bundle.status === 'missing') {
+      return recovery(pointer.setupId, 'bundle_missing')
+    }
+    if (
+      bundle.status !== 'verified' ||
+      bundle.descriptorSha256 !==
+        pointer.release.bundle.descriptorSha256 ||
+      bundle.completeTreeSha256 !==
+        pointer.release.bundle.completeTreeSha256
+    ) {
+      return recovery(pointer.setupId, 'bundle_conflict')
+    }
+    if (
+      (await verifyWorkspaceStaticContext(workspace)).status !==
+      'verified'
+    ) {
+      return recovery(pointer.setupId, 'context_conflict')
+    }
+    const finalAdmission = createAdmission()
+    const rebound = await finalAdmission.inspect({
+      kind: 'reopen',
+      canonicalRoot: pointer.workspace.canonicalRoot,
+    })
+    if (
+      (rebound.outcome !== 'admitted' &&
+        rebound.outcome !== 'already_ready') ||
+      !sameWorkspace(workspace, rebound.workspace) ||
+      !pointerMatchesWorkspace(pointer, rebound.workspace)
+    ) {
+      return blocked('setup_state_conflict')
+    }
+    projection = {
+      state: 'working',
+      stage: 'verifying_environment',
+    }
+    return runReadyTransition({
+      recoveryId: pointer.setupId,
+      workspace: rebound.workspace,
+      expected: pointer,
+      successOutcome: 'ready_relaunch',
+      commitReady: () => readExactReadyPointer(pointer),
+      readReady: () => readExactReadyPointer(pointer),
+    })
+  }
+
+  const runReadyTransition = async (input: {
+    readonly recoveryId: string
+    readonly workspace: AdmittedSemesterWorkspace
+    readonly expected: ActiveReadyPointer
+    readonly successOutcome: 'ready_created' | 'ready_relaunch'
+    readonly commitReady: () => Promise<ActiveReadyPointer>
+    readonly readReady: () => Promise<ActiveReadyPointer>
+  }): Promise<
+    SetupReconcileResult<SemesterSetupJourneyProjection>
+  > => {
+    if (!readyTransition) {
+      return blocked('setup_state_conflict')
+    }
+    let transitioned: SemesterReadyTransitionResult
+    try {
+      transitioned = await readyTransition.transition({
+        workspace: input.workspace,
+        commitReady: input.commitReady,
+        readReady: input.readReady,
+      })
+    } catch {
+      return transitionBlocked(
+        input.recoveryId,
+        'setup_transition_unavailable',
+        'resume',
+      )
+    }
+    if (transitioned.status === 'ready') {
+      if (!sameReadyPointer(transitioned.ready, input.expected)) {
+        return blocked('setup_state_conflict')
+      }
+      try {
+        const readback = await input.readReady()
+        if (!sameReadyPointer(readback, input.expected)) {
+          return blocked('setup_state_conflict')
+        }
+      } catch {
+        return transitionBlocked(
+          input.recoveryId,
+          'setup_transition_unavailable',
+          'resume',
+        )
+      }
+      return ready(input.successOutcome, input.workspace)
+    }
+    if (transitioned.status === 'ready_commit_unknown') {
+      try {
+        await input.readReady()
+        return ready(input.successOutcome, input.workspace)
+      } catch {
+        return transitionBlocked(
+          input.recoveryId,
+          'setup_transition_unavailable',
+          'resume',
+        )
+      }
+    }
+    if (transitioned.status === 'reauth_required') {
+      projection = {
+        state: 'workspace_reauth',
+        recoveryId: input.recoveryId,
+      }
+      return { outcome: 'reauth_required', projection }
+    }
+    if (transitioned.status === 'context_conflict') {
+      return recovery(input.recoveryId, 'context_conflict')
+    }
+    if (transitioned.status === 'account_unavailable') {
+      return transitionBlocked(
+        input.recoveryId,
+        'account_unavailable',
+        'resume',
+      )
+    }
+    if (transitioned.status === 'cancelled') {
+      const blockedResult = transitionBlocked(
+        input.recoveryId,
+        'setup_transition_unavailable',
+        'resume',
+      )
+      return {
+        outcome: 'cancelled',
+        projection: blockedResult.projection,
+      }
+    }
+    return transitionBlocked(
+      input.recoveryId,
+      'setup_transition_unavailable',
+      transitioned.retry,
+    )
+  }
+
+  const commitPreparedReady = async (
+    expectedReceipt: PendingSetupReceipt,
+    expectedWorkspace: AdmittedSemesterWorkspace,
+    expectedPointer: ActiveReadyPointer,
+  ): Promise<ActiveReadyPointer> => {
+    const observed = await options.stateStore.read()
+    if (
+      observed.status !== 'current' ||
+      observed.envelope.state.kind !== 'pending' ||
+      observed.envelope.state.receipt.lifecycle.phase !== 'prepared' ||
+      !samePreparedReceipt(
+        observed.envelope.state.receipt,
+        expectedReceipt,
+      ) ||
+      !sameRelease(
+        observed.envelope.state.receipt.release,
+        options.release,
+      )
+    ) {
+      throw new Error('Prepared setup authority changed before Ready commit')
+    }
+    const currentWorkspace = await reopenReceiptWorkspace(
+      observed.envelope.state.receipt,
+      createAdmission,
+    )
+    if (
+      !currentWorkspace ||
+      !sameWorkspace(currentWorkspace, expectedWorkspace) ||
+      !pointerMatchesWorkspace(expectedPointer, currentWorkspace)
+    ) {
+      throw new Error('Prepared workspace binding changed before Ready commit')
+    }
+    const bundle = await verifyWorkspaceBundle({
+      workspace: currentWorkspace,
+      source: options.bundleSource,
+    })
+    if (
+      bundle.status !== 'verified' ||
+      bundle.descriptorSha256 !==
+        expectedPointer.release.bundle.descriptorSha256 ||
+      bundle.completeTreeSha256 !==
+        expectedPointer.release.bundle.completeTreeSha256 ||
+      (await verifyWorkspaceStaticContext(currentWorkspace)).status !==
+        'verified'
+    ) {
+      throw new Error('Prepared workspace changed before Ready commit')
+    }
+    const rebound = await reopenReceiptWorkspace(
+      observed.envelope.state.receipt,
+      createAdmission,
+    )
+    if (!rebound || !sameWorkspace(currentWorkspace, rebound)) {
+      throw new Error('Prepared workspace changed before Ready commit')
+    }
+    const next: SetupStateEnvelope = {
+      formatVersion: 1,
+      revision: observed.envelope.revision + 1,
+      state: {
+        kind: 'active_ready',
+        pointer: cloneReadyPointer(expectedPointer),
+      },
+    }
+    await inject(options, 'before_ready_commit')
+    const committed = await options.stateStore.compareAndReplace({
+      expectedRevisionToken: observed.revisionToken,
+      envelope: next,
+    })
+    if (committed.status === 'conflict') {
+      return readExactReadyPointer(expectedPointer)
+    }
+    if (
+      committed.envelope.state.kind !== 'active_ready' ||
+      !sameReadyPointer(
+        committed.envelope.state.pointer,
+        expectedPointer,
+      )
+    ) {
+      throw new Error('Ready commit did not return the exact pointer')
+    }
+    await inject(options, 'after_ready_commit')
+    return readExactReadyPointer(expectedPointer)
+  }
+
+  const readExactReadyPointer = async (
+    expected: ActiveReadyPointer,
+  ): Promise<ActiveReadyPointer> => {
+    const observed = await options.stateStore.read()
+    if (
+      observed.status !== 'current' ||
+      observed.envelope.state.kind !== 'active_ready' ||
+      !sameReadyPointer(observed.envelope.state.pointer, expected)
+    ) {
+      throw new Error('The exact Ready pointer is not durable')
+    }
+    return cloneReadyPointer(observed.envelope.state.pointer)
   }
 
   const discard = async (
@@ -749,6 +1143,47 @@ export function createSemesterSetupJourney(
     }
   }
 
+  const transitionBlocked = (
+    recoveryId: string,
+    reason: Extract<
+      SemesterSetupJourneyProjection,
+      { state: 'transition_blocked' }
+    >['reason'],
+    retry: 'resume' | 'restart_required',
+  ): SetupReconcileResult<SemesterSetupJourneyProjection> => {
+    projection =
+      retry === 'resume'
+        ? {
+            state: 'transition_blocked',
+            reason,
+            retry,
+            recoveryId,
+          }
+        : {
+            state: 'transition_blocked',
+            reason: 'setup_transition_unavailable',
+            retry,
+          }
+    return {
+      outcome:
+        reason === 'account_unavailable'
+          ? 'account_unavailable'
+          : 'setup_transition_unavailable',
+      projection,
+    }
+  }
+
+  const ready = (
+    outcome: 'ready_created' | 'ready_relaunch',
+    workspace: AdmittedSemesterWorkspace,
+  ): SetupReconcileResult<SemesterSetupJourneyProjection> => {
+    projection = {
+      state: 'ready',
+      workspace: cloneAdmittedWorkspace(workspace),
+    }
+    return { outcome, projection }
+  }
+
   return {
     reconcile,
     observe(): SemesterSetupJourneyProjection {
@@ -943,6 +1378,110 @@ function cloneRelease(release: LaunchBinding): LaunchBinding {
     runtime: { ...release.runtime },
     bundle: { ...release.bundle },
   }
+}
+
+function readyPointer(
+  receipt: PendingSetupReceipt,
+  workspace: AdmittedSemesterWorkspace,
+): ActiveReadyPointer {
+  return {
+    setupId: receipt.setupId,
+    release: cloneRelease(receipt.release),
+    workspace: {
+      canonicalRoot: workspace.canonicalRoot,
+      workspaceId: workspace.workspaceId,
+      formatVersion: 3,
+    },
+  }
+}
+
+function cloneReadyPointer(
+  pointer: ActiveReadyPointer,
+): ActiveReadyPointer {
+  return {
+    setupId: pointer.setupId,
+    release: cloneRelease(pointer.release),
+    workspace: { ...pointer.workspace },
+  }
+}
+
+function cloneAdmittedWorkspace(
+  workspace: AdmittedSemesterWorkspace,
+): AdmittedSemesterWorkspace {
+  return {
+    canonicalRoot: workspace.canonicalRoot,
+    workspaceId: workspace.workspaceId,
+    formatVersion: 3,
+    manifest: {
+      workspaceId: workspace.manifest.workspaceId,
+      semester: {
+        yearLevel: workspace.manifest.semester.yearLevel,
+        term: { ...workspace.manifest.semester.term },
+      },
+      courses: [],
+    },
+  }
+}
+
+function samePreparedReceipt(
+  left: PendingSetupReceipt,
+  right: PendingSetupReceipt,
+): boolean {
+  return (
+    left.lifecycle.phase === 'prepared' &&
+    right.lifecycle.phase === 'prepared' &&
+    JSON.stringify(cloneReceipt(left)) ===
+      JSON.stringify(cloneReceipt(right))
+  )
+}
+
+function sameWorkspace(
+  left: AdmittedSemesterWorkspace,
+  right: AdmittedSemesterWorkspace,
+): boolean {
+  return (
+    left.canonicalRoot === right.canonicalRoot &&
+    left.workspaceId === right.workspaceId &&
+    left.formatVersion === 3 &&
+    right.formatVersion === 3 &&
+    left.workspaceId === left.manifest.workspaceId &&
+    right.workspaceId === right.manifest.workspaceId &&
+    left.manifest.semester.yearLevel ===
+      right.manifest.semester.yearLevel &&
+    left.manifest.semester.term.key ===
+      right.manifest.semester.term.key &&
+    left.manifest.semester.term.displayName ===
+      right.manifest.semester.term.displayName &&
+    left.manifest.courses.length === 0 &&
+    right.manifest.courses.length === 0
+  )
+}
+
+function pointerMatchesWorkspace(
+  pointer: ActiveReadyPointer,
+  workspace: AdmittedSemesterWorkspace,
+): boolean {
+  return (
+    pointer.workspace.canonicalRoot === workspace.canonicalRoot &&
+    pointer.workspace.workspaceId === workspace.workspaceId &&
+    pointer.workspace.formatVersion === 3 &&
+    workspace.formatVersion === 3 &&
+    workspace.manifest.workspaceId === workspace.workspaceId
+  )
+}
+
+function sameReadyPointer(
+  left: ActiveReadyPointer,
+  right: ActiveReadyPointer,
+): boolean {
+  return (
+    left.setupId === right.setupId &&
+    sameRelease(left.release, right.release) &&
+    left.workspace.canonicalRoot === right.workspace.canonicalRoot &&
+    left.workspace.workspaceId === right.workspace.workspaceId &&
+    left.workspace.formatVersion === 3 &&
+    right.workspace.formatVersion === 3
+  )
 }
 
 function sameRelease(left: LaunchBinding, right: LaunchBinding): boolean {
