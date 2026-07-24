@@ -95,13 +95,18 @@ export function useProductChat(options: {
   )
   const assignmentAvailable =
     chatAvailable && options.workspace?.course != null
+  const codexSettingsSettled = isCodexSettingsSettled(codexSettingsState)
   const canStartAssignment =
     assignmentAvailable &&
+    codexSettingsSettled &&
     selected.length === 2 &&
     !operationPending &&
     responsePending === undefined
   const canCompose =
-    chatAvailable && !operationPending && responsePending === undefined
+    chatAvailable &&
+    codexSettingsSettled &&
+    !operationPending &&
+    responsePending === undefined
   const canSubmit = canCompose && draft.trim().length > 0
   const canInterrupt =
     operationPending &&
@@ -177,6 +182,7 @@ export function useProductChat(options: {
       options.workspace?.recovery !== null ||
       course.id !== run.courseId ||
       !run.recovery?.retryable ||
+      !codexSettingsSettled ||
       operationPendingRef.current ||
       isProductOperationActive(stateRef.current)
     ) {
@@ -610,7 +616,11 @@ export function useProductChat(options: {
   }
 }
 
-type CodexSettingsState = 'idle' | 'loading' | 'loaded' | 'failed'
+export type CodexSettingsState = 'idle' | 'loading' | 'loaded' | 'failed'
+
+export function isCodexSettingsSettled(state: CodexSettingsState): boolean {
+  return state === 'loaded' || state === 'failed'
+}
 
 export function createCodexTurnSettings(
   model: ProductCodexModel | undefined,

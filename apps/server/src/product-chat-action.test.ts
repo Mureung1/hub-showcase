@@ -117,6 +117,43 @@ test('course-free Product Chat starts before ModelingRun and reuses one native T
   }
 })
 
+test('rejects Codex Turn settings that are absent from the advertised catalog', async () => {
+  const fixture = await createChatFixture()
+  const runtime = new ProductChatRuntime()
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        const activation = await application.semesterWorkspace?.activate()
+        assert.equal(activation?.status, 'activated')
+
+        const response = await postJson(`${baseUrl}/api/product/chat/messages`, {
+          text: '지원하지 않는 설정이야.',
+          materials: [],
+          codexSettings: {
+            model: 'gpt-unknown',
+            reasoningEffort: 'high',
+            serviceTier: 'fast',
+          },
+        })
+
+        assert.equal(response.status, 400)
+        assert.deepEqual(await response.json(), {
+          code: 'action_invalid',
+          displayMessage: '현재 Codex 모델 설정을 다시 선택해 주세요.',
+        })
+        assert.equal(runtime.productInputs.length, 0)
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('general Plan clarification answers once through public IDs and resumes the same Run-free Chat Turn', async () => {
   const fixture = await createChatFixture()
   const runtime = new ProductChatRuntime()
@@ -668,7 +705,22 @@ class ProductChatRuntime implements CodexProductCapableRuntime {
   }
 
   async readModelCatalog() {
-    return { models: [] }
+    return {
+      models: [
+        {
+          model: 'gpt-current',
+          displayName: 'GPT Current',
+          description: 'Current model',
+          isDefault: true,
+          defaultReasoningEffort: 'medium',
+          supportedReasoningEfforts: [
+            { reasoningEffort: 'medium', description: 'Balanced' },
+            { reasoningEffort: 'high', description: 'Deep' },
+          ],
+          serviceTiers: ['fast'],
+        },
+      ],
+    }
   }
 
   async startThread(input?: StartThreadInput) {

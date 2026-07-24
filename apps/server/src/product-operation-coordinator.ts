@@ -17,6 +17,7 @@ import {
   type ProductOperationFrame,
   type ProductQuestion,
   type ProductStatePatch,
+  type ProductCodexTurnSettings,
 } from '@ay-ple/product-contract'
 
 import {
@@ -696,6 +697,11 @@ export function createProductOperationCoordinator(options: {
       let streamOpened = false
       try {
         await requireAccount(operation)
+        await validateCodexTurnSettings(
+          input.codexSettings,
+          options.service,
+          operation.lease,
+        )
         const argumentsCanonical = JSON.stringify(input.arguments)
         const prepared = await options.controller.prepareAssignmentAction({
           actionId,
@@ -1005,6 +1011,11 @@ export function createProductOperationCoordinator(options: {
       let streamOpened = false
       try {
         await requireAccount(operation)
+        await validateCodexTurnSettings(
+          input.codexSettings,
+          options.service,
+          operation.lease,
+        )
         const courseId = currentCourseId(options.controller)
         const selectedCourseId =
           input.materials.length > 0
@@ -1737,6 +1748,32 @@ function mapInteractionAnswers(
     nativeAnswers[nativeQuestionId] = [...values]
   }
   return nativeAnswers
+}
+
+async function validateCodexTurnSettings(
+  settings: ProductCodexTurnSettings | undefined,
+  service: CodexChatService,
+  lease: ProductOperationLease,
+): Promise<void> {
+  if (!settings) return
+  const catalog = await service.readProductModelCatalog(lease)
+  const model = catalog.models.find(
+    (candidate) => candidate.model === settings.model,
+  )
+  const reasoningSupported = model?.supportedReasoningEfforts.some(
+    (candidate) =>
+      candidate.reasoningEffort === settings.reasoningEffort,
+  )
+  const fastSupported =
+    settings.serviceTier === 'default' ||
+    model?.serviceTiers.includes('fast') === true
+  if (!model || !reasoningSupported || !fastSupported) {
+    throw new ProductOperationError(
+      'action_invalid',
+      400,
+      '현재 Codex 모델 설정을 다시 선택해 주세요.',
+    )
+  }
 }
 
 function invalidInteraction(): ProductOperationError {

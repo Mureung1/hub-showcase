@@ -56,7 +56,9 @@ export function decodeProductCodexTurnSettings(
       'serviceTier',
     ]) ||
     !isNonEmptyString(value.model) ||
+    value.model.length > 256 ||
     !isNonEmptyString(value.reasoningEffort) ||
+    value.reasoningEffort.length > 64 ||
     (value.serviceTier !== 'default' && value.serviceTier !== 'fast')
   ) {
     throw invalidContract()

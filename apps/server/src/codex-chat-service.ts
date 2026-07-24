@@ -175,8 +175,14 @@ export class CodexChatService {
     return read
   }
 
-  async readProductModelCatalog(): Promise<CodexModelCatalog> {
+  async readProductModelCatalog(
+    lease?: ProductOperationLease,
+  ): Promise<CodexModelCatalog> {
     this.requireAvailable()
+    if (lease) {
+      this.requireProductLease(lease)
+      return this.readProductModelCatalogOnce()
+    }
     if (this.activeTurn || this.productOperationLease) {
       throw stateError('active_turn')
     }

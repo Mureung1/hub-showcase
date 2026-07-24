@@ -12,6 +12,7 @@ import {
   decodeProductBootstrap,
   decodeProductChatRequest,
   decodeProductCodexSettings,
+  decodeProductCodexTurnSettings,
   decodeProductError,
   decodeProductMaterialRefreshResponse,
   decodeProductMaterialPreview,
@@ -555,6 +556,24 @@ test('Codex settings decoder keeps the advertised order and fast availability', 
       }),
     ProductContractError,
   )
+})
+
+test('Codex Turn settings decoder bounds private Runtime identifiers', () => {
+  const settings = {
+    model: 'gpt-current',
+    reasoningEffort: 'medium',
+    serviceTier: 'default',
+  } as const
+  assert.deepEqual(decodeProductCodexTurnSettings(settings), settings)
+  for (const invalid of [
+    { ...settings, model: 'm'.repeat(257) },
+    { ...settings, reasoningEffort: 'e'.repeat(65) },
+  ]) {
+    assert.throws(
+      () => decodeProductCodexTurnSettings(invalid),
+      ProductContractError,
+    )
+  }
 })
 
 test('review request decoder accepts exact settled decisions and bounded revision feedback', () => {
