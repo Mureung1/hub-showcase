@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "title": "SpendMate",
+  "summary": "자취생을 위해 영수증을 찍으면 자동으로 지출을 정리하고, 소비 습관을 코칭해주는 AI 서비스입니다.",
+  "githubUser": "jsoyeonj(주소연)",
+  "demoUrl": "https://spendmate-wine.vercel.app/",
+  "thumbnail": "thumbnail.png",
+  "screenshots": [],
+  "problem": "자취생은 매달 얼마를 왜 쓰는지 기록만 할 뿐 실제 소비 습관을 바꾸지 못합니다. 영수증을 일일이 손으로 입력하는 게 번거로워 기록 자체가 중단되고, 지금 속도로 쓰면 이번 달이 어떻게 끝날지 미리 알 방법이 없어 월말에야 위기를 깨닫습니다.",
+  "targetUsers": [
+    "자취/기숙사 대학생",
+    "생활비를 스스로 관리해야 하는 자취 초보"
+  ],
+  "features": [
+    "영수증을 찍으면 OCR로 상호명·금액·카테고리를 자동 인식해 지출로 저장",
+    "구독(고정비) 등록·수정·삭제 및 월 총예산 관리",
+    "이번 달 누적 소비 속도로 생활비 소진 예상일 계산, 임계치 이하 시 생존 모드 자동 전환",
+    "단기(배달비 증가율, 예산 사용률)·장기(카테고리 구성/추세, 구독 상태) 소비 신호를 하나의 Context로 통합",
+    "Claude API 기반 AI Agent용 내부 데이터 조회 Tool 3종(지출 요약/구독/예산) 연동"
+  ],
+  "featureTags": ["영수증 OCR", "소비 예측", "AI 소비 코치"],
+  "techStack": ["React", "TypeScript", "Spring Boot", "PostgreSQL", "Claude API"],
+  "techHighlights": [
+    "Spring AI 대신 WebClient로 Claude API를 직접 호출해, Tool 호출 여부 판단과 결과 재구성 흐름을 직접 제어",
+    "가입 경과일수(5일/14일 기준)에 따라 장기 소비 신호의 노출 범위를 단계적으로 분기해 데이터가 부족할 때 과장된 분석을 보여주지 않음",
+    "OCR 텍스트를 좌표 기준으로 정렬해 여러 줄로 나뉜 영수증 항목도 정확히 파싱"
+  ],
+  "developmentWithAI": "저는 요구사항과 우선순위, 스코프 조정(레시피 추천·외부 최저가 비교는 멘토링 피드백으로 제외)을 직접 결정했습니다. AI에게는 작업 분해, 코드 초안, 테스트 작성을 맡기되 결과를 그대로 받지 않고 매번 실제 DB 값과 API 응답을 curl·psql·브라우저로 직접 대조해서 확인한 뒤에만 완료 처리했습니다. 새로 배우는 패턴(Tool 인터페이스 설계 등)은 직접 타이핑하며 익혔고, 이미 익힌 반복 작업은 위임해 속도를 냈습니다.",
+  "agent": {
+    "summary": "기획 확인부터 구현, 검증, 문서/이슈 정리까지 커스텀 서브에이전트와 Skill을 함께 사용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "feature-planner",
+        "purpose": "기능 요구사항을 하루 단위 작업으로 쪼개고 우선순위(P0/P1/P2)를 정리합니다."
+      },
+      {
+        "type": "agent",
+        "name": "progress-checker",
+        "purpose": "구현한(또는 하려는) 작업이 기획서 방향과 맞는지 사후 검증합니다."
+      },
+      {
+        "type": "agent",
+        "name": "code-reviewer",
+        "purpose": "커밋 전 변경사항을 검토해 버그·엣지케이스·컨벤션 위반을 찾습니다."
+      },
+      {
+        "type": "skill",
+        "name": "backend-test-scaffold",
+        "purpose": "프로젝트 컨벤션(@SpringBootTest, 한글 테스트명)에 맞춘 테스트 스캐폴드를 생성합니다."
+      },
+      {
+        "type": "skill",
+        "name": "spendmate-design-rules",
+        "purpose": "색상·타이포·카피 톤을 기존 5개 화면과 일관되게 유지합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "plan.md·checklist.md에서 요구사항 확인",
+          "feature-planner로 작업 쪼개기",
+          "구현 (손코딩 vs 위임 판단)",
+          "실제 DB 값·API 응답 직접 대조 검증",
+          "progress-checker로 방향 재검증",
+          "checklist·GitHub 이슈 정리",
+          "커밋 (항상 직접 실행)"
+        ]
+      },
+      {
+        "name": "TDD Workflow",
+        "steps": [
+          "실패하는 테스트 작성 (Red)",
+          "Red 상태로 우선 커밋",
+          "구현",
+          "테스트 통과 확인 (Green)",
+          "Green 상태 커밋"
+        ]
+      }
+    ]
+  }
+}
