@@ -110,7 +110,9 @@ Expected: 테이블과 함수가 없어 FAIL.
 | 공부       | slate-2 |
 | 취업       | coral-2 |
 
-나머지 이름은 24개 팔레트 순서로 반복 배정한다. 이전 직후 비어 있지 않은 legacy 문자열 중 `category_id is null`인 행이 있으면 migration을 실패시킨다.
+나머지 이름은 24개 팔레트 순서로 반복 배정한다. 백필 동안 기존 수정 시각 트리거를 트랜잭션 안에서 비활성화하고, 이전 직후 `updated_at` 변경이나 비어 있지 않은 legacy 문자열 중 `category_id is null`인 행이 있으면 migration을 실패시킨다.
+
+롤링 배포 중 열린 구버전 탭을 위해 DB 호환 트리거를 둔다. 구버전의 `category` 변경은 사용자 카테고리를 찾거나 생성해 `category_id`로 연결하고, 새 버전의 `category_id` 변경·카테고리 이름 변경·삭제는 legacy 문자열에도 반영한다. 새 애플리케이션 코드는 legacy 열을 직접 읽거나 쓰지 않는다.
 
 `delete_user_category(uuid)`는 `security invoker`로 작성하고 `authenticated`만 실행한다. 호출 사용자 소유를 확인하고, 같은 사용자의 인사이트만 `category_id = null`로 바꾼 뒤 카테고리를 삭제한다. 어느 단계든 실패하면 transaction 전체를 되돌린다.
 
@@ -118,11 +120,12 @@ Expected: 테이블과 함수가 없어 FAIL.
 
 ```powershell
 npx supabase test db supabase/tests/database/category_management.test.sql
+npx supabase test db supabase/upgrade-tests/category_management.test.sql
 git add supabase/migrations/20260724000100_add_user_categories.sql supabase/tests/database/category_management.test.sql
 git commit -m "feat: 사용자 카테고리 데이터 구조"
 ```
 
-Expected: 8개 assertion PASS.
+Expected: 현재 스키마 13개, 이전 버전 업그레이드 4개 assertion PASS.
 
 ---
 

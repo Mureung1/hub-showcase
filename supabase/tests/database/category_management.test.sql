@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(9);
+select extensions.plan(13);
 
 select extensions.has_table(
   'public',
@@ -115,7 +115,8 @@ insert into public.insights (
   normalized_url,
   domain,
   title,
-  category_id
+  category_id,
+  updated_at
 ) values (
   '30000000-0000-4000-8000-000000000011',
   '00000000-0000-4000-8000-000000000011',
@@ -123,7 +124,67 @@ insert into public.insights (
   'https://category-owner.example/article',
   'category-owner.example',
   '카테고리 연결 인사이트',
-  '20000000-0000-4000-8000-000000000011'
+  '20000000-0000-4000-8000-000000000011',
+  '2026-07-01 00:00:00+00'
+);
+
+select extensions.results_eq(
+  $$
+    select category
+    from public.insights
+    where id = '30000000-0000-4000-8000-000000000011'
+  $$,
+  array['개발'::text],
+  '새 category_id로 저장하면 구버전 category 문자열도 동기화된다'
+);
+
+update public.categories
+set name = '개발 도구'
+where id = '20000000-0000-4000-8000-000000000011';
+
+select extensions.results_eq(
+  $$
+    select
+      category,
+      updated_at = '2026-07-01 00:00:00+00'::timestamptz
+    from public.insights
+    where id = '30000000-0000-4000-8000-000000000011'
+  $$,
+  $$
+    values ('개발 도구'::text, true)
+  $$,
+  '카테고리 이름 변경은 구버전 문자열을 갱신하고 인사이트 수정 시각은 보존한다'
+);
+
+update public.insights
+set category = '개인 프로젝트'
+where id = '30000000-0000-4000-8000-000000000011';
+
+select extensions.results_eq(
+  $$
+    select category.name
+    from public.insights as insight
+    join public.categories as category
+      on category.id = insight.category_id
+      and category.user_id = insight.user_id
+    where insight.id = '30000000-0000-4000-8000-000000000011'
+  $$,
+  array['개인 프로젝트'::text],
+  '구버전 category 문자열 변경은 사용자 카테고리를 만들고 category_id를 연결한다'
+);
+
+update public.insights
+set category_id = '20000000-0000-4000-8000-000000000011'
+where id = '30000000-0000-4000-8000-000000000011';
+
+select extensions.results_eq(
+  $$
+    select category
+    from public.insights
+    where id = '30000000-0000-4000-8000-000000000011'
+  $$,
+  array['개발 도구'::text],
+  '새 category_id 변경은 현재 카테고리 이름으로 구버전 문자열을 갱신한다'
 );
 
 select extensions.throws_ok(
@@ -152,6 +213,7 @@ select extensions.results_eq(
     from public.insights
     where id = '30000000-0000-4000-8000-000000000011'
       and category_id is null
+      and category is null
   $$,
   array[1::bigint],
   '카테고리 삭제 뒤 인사이트는 남고 미분류 상태가 된다'

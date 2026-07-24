@@ -56,6 +56,7 @@ export function CategoryManager({
   updateCategory,
 }: CategoryManagerProps) {
   const nameInputId = useId();
+  const nameErrorId = useId();
   const [mode, setMode] = useState<CategoryManagerMode>({ type: 'list' });
   const [name, setName] = useState('');
   const [colorKey, setColorKey] = useState<CategoryColorKey>('slate-2');
@@ -161,6 +162,8 @@ export function CategoryManager({
   }
 
   const busy = isMutating || isSubmitting;
+  const hasNameError =
+    failureReason === 'duplicate' || failureReason === 'invalid-input';
 
   return (
     <Modal
@@ -237,9 +240,10 @@ export function CategoryManager({
         <div className="category-manager__field">
           <label htmlFor={nameInputId}>카테고리 이름</label>
           <TextField
+            aria-describedby={hasNameError ? nameErrorId : undefined}
+            aria-invalid={hasNameError || undefined}
             disabled={busy}
             id={nameInputId}
-            maxLength={50}
             onChange={(event) => setName(event.currentTarget.value)}
             placeholder="예: 사이드 프로젝트"
             value={name}
@@ -270,7 +274,11 @@ export function CategoryManager({
           </div>
         </fieldset>
         {failureReason ? (
-          <p className="category-manager__error" role="alert">
+          <p
+            className="category-manager__error"
+            id={hasNameError ? nameErrorId : undefined}
+            role="alert"
+          >
             {FAILURE_MESSAGES[failureReason]}
           </p>
         ) : null}

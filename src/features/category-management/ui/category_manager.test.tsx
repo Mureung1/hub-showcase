@@ -137,7 +137,11 @@ describe('CategoryManager', () => {
     expect(
       (screen.getByLabelText('카테고리 이름') as HTMLInputElement).value
     ).toBe('개발');
-    expect(screen.getByText('같은 이름의 카테고리가 있습니다.')).toBeTruthy();
+    const input = screen.getByLabelText('카테고리 이름');
+    const error = screen.getByText('같은 이름의 카테고리가 있습니다.');
+
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(input.getAttribute('aria-describedby')).toBe(error.id);
     expect(screen.getByRole('dialog', { name: /새 카테고리/ })).toBeTruthy();
   });
 });

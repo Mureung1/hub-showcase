@@ -150,4 +150,31 @@ describe('createSupabaseCategoryRepository', () => {
     ).resolves.toEqual({ ok: false, reason: 'invalid-input' });
     expect(from).not.toHaveBeenCalled();
   });
+
+  it('PostgreSQL과 같은 문자 수 기준으로 다중 바이트 이름을 저장하고 읽는다', async () => {
+    const name = '😀'.repeat(26);
+    const row = { ...ROW, name };
+    const single = vi.fn().mockResolvedValue({ data: row, error: null });
+    const select = vi.fn(() => ({ single }));
+    const insert = vi.fn(() => ({ select }));
+    const repository = createSupabaseCategoryRepository(
+      {
+        from: vi.fn(() => ({ insert })),
+      } as unknown as SupabaseClient,
+      USER_ID
+    );
+
+    await expect(
+      repository.create({ colorKey: 'blue-2', name }, 0)
+    ).resolves.toEqual({
+      category: { ...CATEGORY, name },
+      ok: true,
+    });
+    expect(insert).toHaveBeenCalledWith({
+      color_key: 'blue-2',
+      name,
+      sort_order: 0,
+      user_id: USER_ID,
+    });
+  });
 });

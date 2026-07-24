@@ -26,7 +26,7 @@ describe('Supabase migration Pull Request 검사', () => {
     const workflow = readWorkflow();
 
     expect(workflow).toMatch(
-      /uses: actions\/checkout@[^\n]+\n\s{8}with:\n\s{10}fetch-depth: 0\n\s{10}persist-credentials: false/u
+      /uses: actions\/checkout@[^\r\n]+\r?\n\s{8}with:\r?\n\s{10}fetch-depth: 0\r?\n\s{10}persist-credentials: false/u
     );
   });
 
@@ -41,6 +41,15 @@ describe('Supabase migration Pull Request 검사', () => {
       "if: steps.changes.outputs.should_run == 'true'"
     );
     expect(workflow).toContain('supabase db start');
+    expect(workflow).toContain('--version 20260716000000');
+    expect(workflow).toContain(
+      '--sql-paths upgrade-tests/category_management_fixture.sql'
+    );
+    expect(workflow).toContain('supabase migration up --local');
+    expect(workflow).toContain(
+      'supabase/upgrade-tests/category_management.test.sql'
+    );
+    expect(workflow).toContain('supabase db reset --local');
     expect(workflow).toContain('supabase test db');
     expect(workflow).toContain('supabase stop --no-backup');
   });

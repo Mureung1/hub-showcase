@@ -6,8 +6,8 @@ import {
 } from '@/shared/config/design-system';
 
 import {
+  isValidCategoryName,
   normalizeCategoryInput,
-  normalizeCategoryName,
   type Category,
   type CategoryInput,
 } from '../model/category';
@@ -172,9 +172,7 @@ function parseCategoryRow(row: unknown, userId: string): Category | null {
     row.user_id !== userId ||
     !isUuid(row.id) ||
     typeof row.name !== 'string' ||
-    row.name !== normalizeCategoryName(row.name) ||
-    row.name.length === 0 ||
-    row.name.length > 50 ||
+    !isValidCategoryName(row.name) ||
     !isCategoryColorKey(row.color_key) ||
     !isValidSortOrder(row.sort_order) ||
     !isIsoTimestamp(row.created_at) ||

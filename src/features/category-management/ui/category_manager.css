@@ -99,7 +99,7 @@ button.category-manager__color {
   height: 44px;
   padding: var(--spacing-1);
   border: 2px solid transparent;
-  border-radius: var(--radius-button);
+  border-radius: 50%;
   place-items: center;
   background: transparent;
 }
@@ -107,7 +107,7 @@ button.category-manager__color {
 button.category-manager__color::before {
   width: var(--spacing-8);
   height: var(--spacing-8);
-  border-radius: var(--radius-button);
+  border-radius: 50%;
   background: var(--category-color);
   content: '';
   grid-area: 1 / 1;

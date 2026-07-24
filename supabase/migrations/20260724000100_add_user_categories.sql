@@ -185,6 +185,16 @@ select
   sort_order
 from prepared_categories;
 
+create temporary table category_backfill_updated_at_snapshot
+on commit drop
+as
+select id, updated_at
+from public.insights
+where nullif(btrim(category), '') is not null;
+
+alter table public.insights
+disable trigger set_insights_updated_at;
+
 update public.insights as insight
 set category_id = category.id
 from public.categories as category
@@ -193,6 +203,9 @@ where category.user_id = insight.user_id
     regexp_replace(btrim(insight.category), '[[:space:]]+', ' ', 'g')
   )
   and nullif(btrim(insight.category), '') is not null;
+
+alter table public.insights
+enable trigger set_insights_updated_at;
 
 do $$
 begin
@@ -203,6 +216,15 @@ begin
       and category_id is null
   ) then
     raise exception '기존 카테고리 문자열을 category_id로 모두 이전하지 못했습니다.';
+  end if;
+
+  if exists (
+    select 1
+    from category_backfill_updated_at_snapshot as snapshot
+    join public.insights as insight using (id)
+    where insight.updated_at is distinct from snapshot.updated_at
+  ) then
+    raise exception '카테고리 이전 중 인사이트 수정 시각이 변경되었습니다.';
   end if;
 end;
 $$;
@@ -215,6 +237,190 @@ references public.categories (id, user_id);
 create index insights_category_user_id_idx
 on public.insights (category_id, user_id)
 where category_id is not null;
+
+create or replace function public.set_insights_updated_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if (
+    to_jsonb(new) - 'category' - 'updated_at'
+  ) = (
+    to_jsonb(old) - 'category' - 'updated_at'
+  ) then
+    new.updated_at = old.updated_at;
+  else
+    new.updated_at = now();
+  end if;
+
+  return new;
+end;
+$$;
+
+create function public.sync_insight_category_compatibility()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  normalized_legacy_name text;
+  resolved_category_id uuid;
+  resolved_category_name text;
+  canonical_category_name text;
+  next_sort_order integer;
+  next_color_key text;
+  color_keys constant text[] := array[
+    'slate-1',
+    'slate-2',
+    'slate-3',
+    'blue-1',
+    'blue-2',
+    'blue-3',
+    'indigo-1',
+    'indigo-2',
+    'indigo-3',
+    'violet-1',
+    'violet-2',
+    'violet-3',
+    'green-1',
+    'green-2',
+    'green-3',
+    'teal-1',
+    'teal-2',
+    'teal-3',
+    'amber-1',
+    'amber-2',
+    'amber-3',
+    'coral-1',
+    'coral-2',
+    'coral-3'
+  ]::text[];
+begin
+  if tg_op = 'UPDATE' then
+    if new.category_id is distinct from old.category_id then
+      if new.category_id is null then
+        new.category = null;
+        return new;
+      end if;
+
+      select category.name
+      into canonical_category_name
+      from public.categories as category
+      where category.id = new.category_id
+        and category.user_id = new.user_id;
+
+      new.category = canonical_category_name;
+      return new;
+    end if;
+
+    if new.category is not distinct from old.category then
+      return new;
+    end if;
+  elsif new.category_id is not null then
+    select category.name
+    into canonical_category_name
+    from public.categories as category
+    where category.id = new.category_id
+      and category.user_id = new.user_id;
+
+    new.category = canonical_category_name;
+    return new;
+  end if;
+
+  if nullif(btrim(new.category), '') is null then
+    new.category = null;
+    new.category_id = null;
+    return new;
+  end if;
+
+  resolved_category_name := regexp_replace(
+    btrim(new.category),
+    '[[:space:]]+',
+    ' ',
+    'g'
+  );
+  normalized_legacy_name := lower(resolved_category_name);
+
+  select category.id, category.name
+  into resolved_category_id, canonical_category_name
+  from public.categories as category
+  where category.user_id = new.user_id
+    and category.normalized_name = normalized_legacy_name;
+
+  if resolved_category_id is null then
+    select coalesce(max(category.sort_order) + 1, 0)
+    into next_sort_order
+    from public.categories as category
+    where category.user_id = new.user_id;
+
+    next_color_key := case normalized_legacy_name
+      when '개발' then 'green-2'
+      when '디자인' then 'blue-2'
+      when '사이드프로젝트' then 'amber-2'
+      when '공부' then 'slate-2'
+      when '취업' then 'coral-2'
+      else color_keys[(next_sort_order % array_length(color_keys, 1)) + 1]
+    end;
+
+    insert into public.categories (
+      user_id,
+      name,
+      color_key,
+      sort_order
+    ) values (
+      new.user_id,
+      resolved_category_name,
+      next_color_key,
+      next_sort_order
+    )
+    on conflict (user_id, normalized_name) do nothing
+    returning id, name
+    into resolved_category_id, canonical_category_name;
+
+    if resolved_category_id is null then
+      select category.id, category.name
+      into resolved_category_id, canonical_category_name
+      from public.categories as category
+      where category.user_id = new.user_id
+        and category.normalized_name = normalized_legacy_name;
+    end if;
+  end if;
+
+  new.category_id = resolved_category_id;
+  new.category = canonical_category_name;
+  return new;
+end;
+$$;
+
+create trigger sync_insight_category_compatibility
+before insert or update on public.insights
+for each row
+execute function public.sync_insight_category_compatibility();
+
+create function public.sync_category_name_compatibility()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  update public.insights
+  set category = new.name
+  where category_id = new.id
+    and user_id = new.user_id
+    and category is distinct from new.name;
+
+  return new;
+end;
+$$;
+
+create trigger sync_category_name_compatibility
+after update of name on public.categories
+for each row
+when (new.name is distinct from old.name)
+execute function public.sync_category_name_compatibility();
 
 create function public.delete_user_category(target_category_id uuid)
 returns void
