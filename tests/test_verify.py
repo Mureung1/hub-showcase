@@ -22,3 +22,15 @@ def test_verify_fallback_on_broken_response(monkeypatch):
     result = agent._call_verify("제목", "원문", summary)
 
     assert result == {"is_good": True}
+
+
+def test_verify_loop_adopts_summary_on_good(monkeypatch):
+    """is_good=True면 _verify_loop이 그 요약을 그대로 채택하고 retried=0으로 종료한다 (4-3)."""
+    # _call_verify를 통과 판정으로 고정한다 — LLM/프롬프트를 거치지 않고 루프 분기만 본다.
+    monkeypatch.setattr("app.agent._call_verify", lambda title, src, summ: {"is_good": True})
+
+    summary = {"contribution": "c", "method": "m", "result": "r"}
+    adopted, retried = agent._verify_loop("제목", "원문", summary)
+
+    assert adopted is summary  # 요약을 가공 없이 그대로 채택
+    assert retried == 0  # 통과 시 retried는 증가하지 않는다

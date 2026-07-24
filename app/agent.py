@@ -173,6 +173,26 @@ def _call_verify(title: str, source_text: str, summary: dict) -> dict:
     return tools.ask_llm_json(prompt, fallback={"is_good": True})
 
 
+def _verify_loop(title: str, source_text: str, summary: dict) -> tuple[dict, int]:
+    """자기 검증(verify)의 3↔4단계 왕복 루프. 채택할 요약과 재시도 횟수를 반환한다.
+
+    is_good이면 그 요약을 그대로 채택하고 retried 증가 없이 종료한다.
+    verify가 is_good을 빠뜨린 유효 JSON을 줄 수 있으므로 .get의 기본값도
+    통과 쪽(True)으로 둔다 — _call_verify의 fallback(파싱 실패 시)과 별개 방어.
+
+    범위: 지금(4-3)은 통과 경로만이다. is_good=False일 때의 재요약·retry
+    이벤트(4-4)와 왕복 상한(4-5)이 이 골격에 얹히면서, 그때 이 함수는
+    retry 이벤트를 yield하는 제너레이터로 바뀐다(반환 힌트도 Generator로 갱신).
+    아직 호출자(Task 6)가 없어 그 전환은 아무것도 깨지 않는다.
+    """
+    retried = 0
+    verdict = _call_verify(title, source_text, summary)
+    if verdict.get("is_good", True):
+        return summary, retried
+    # is_good=False: 재요약 왕복(4-4 #31)과 상한(4-5 #32)에서 이 자리를 채운다.
+    raise NotImplementedError("verify 재시도는 4-4(#31)에서 구현")
+
+
 if __name__ == "__main__":
     import argparse
 
