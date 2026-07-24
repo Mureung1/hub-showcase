@@ -3,7 +3,7 @@
 > 상태: 아래 API 전부 구현 완료 (`server/src/routes`, `server/src/controllers`, `server/src/services` 기준)  
 > Base URL: `/api`  
 > Content-Type: `application/json`  
-> 최종 수정: 2026-07-23
+> 최종 수정: 2026-07-24
 
 ## 1. 기본 규칙
 
@@ -102,9 +102,12 @@ Authorization: Bearer <access-token>
 | `GET` | `/api/applications` | 멘티·멘토 | 현재 사용자의 신청 목록 조회 |
 | `PATCH` | `/api/applications/:applicationId/accept` | 대상 멘토 | 신청 수락 |
 | `PATCH` | `/api/applications/:applicationId/reject` | 대상 멘토 | 신청 거절 |
+| `PATCH` | `/api/applications/:applicationId/complete` | 확정 멘토 | 면담 완료 처리 |
 | `PATCH` | `/api/meetings/:meetingId` | 확정 멘토·신청 멘티 | 면담 시간·장소 수정 |
+| `GET` | `/api/applications/:applicationId/messages` | 신청 참여자 | 채팅 메시지 목록 조회 |
+| `POST` | `/api/applications/:applicationId/messages` | 신청 참여자 | 채팅 메시지 전송 |
 
-신청 상세 단건 조회 API와 면담 완료 처리 API는 아직 구현되어 있지 않다 (신청 목록 조회 응답에 필요한 정보가 이미 포함되어 있고, 완료 처리 흐름은 MVP 이후로 미뤄졌다).
+신청 상세 단건 조회 API는 아직 구현되어 있지 않다 (신청 목록 조회 응답에 이미 필요한 정보가 포함되어 있어서).
 
 ## 4. 인증 API
 
@@ -630,9 +633,135 @@ Query parameters:
 }
 ```
 
-면담 완료 처리(`applications.status` → `completed`) API는 아직 구현되어 있지 않다.
+### 7.2 면담 완료 처리
 
-## 8. 권한 요약
+`PATCH /api/applications/:applicationId/complete`
+
+요청 본문 없음.
+
+처리 규칙:
+
+- 신청 상태가 `confirmed`여야 한다 (`pending`/`rejected`면 `409 APPLICATION_NOT_CONFIRMED`, 이미 `completed`면 `409 APPLICATION_ALREADY_COMPLETED`).
+- 현재 로그인 사용자가 그 신청의 확정 멘토(`acceptedMentorId`)여야 한다 (아니면 `403 FORBIDDEN`).
+- `applications.status`와 확정 멘토의 `application_mentors.status`를 `completed`로, `meetings.completed_at`을 현재 시각으로 갱신한다.
+
+응답 `200`:
+
+```json
+{
+  "data": {
+    "id": "application-uuid",
+    "status": "completed",
+    "acceptedMentorId": "mentor-uuid",
+    "updatedAt": "2026-07-23T19:00:00+09:00"
+  }
+}
+```
+
+## 8. 채팅 API
+
+확정(`confirmed`)된 신청의 멘티와 확정 멘토만 메시지를 주고받을 수 있다. 실시간 반영은 프론트엔드가 Supabase Realtime(`postgres_changes`)을 직접 구독해서 처리하고, 아래 두 API는 초기 로딩·과거 메시지 페이지네이션·전송을 담당한다. 참여자·상태 검증은 애플리케이션 계층과 DB의 Row Level Security 양쪽에서 이중으로 적용된다(`supabase/migrations/20260724000000_create_messages_table.sql`).
+
+### 8.1 메시지 목록 조회
+
+`GET /api/applications/:applicationId/messages`
+
+Query parameters:
+
+| 이름 | 필수 | 설명 |
+|---|---:|---|
+| `limit` | 아니요 | 페이지당 개수 (기본 50, 최대 100) |
+| `cursor` | 아니요 | 이전 응답의 `meta.nextCursor` 값. 그 시점보다 이전 메시지를 가져온다 |
+
+- 신청 참여자(신청 멘티 또는 확정 멘토)가 아니면 `403 FORBIDDEN`.
+- 존재하지 않는 신청 id면 `404 APPLICATION_NOT_FOUND`.
+- `cursor` 없이 호출하면 가장 최근 메시지부터 `limit`개를 반환한다. 응답의 `data`는 항상 시간 오름차순(오래된 → 최신)이다.
+
+요청 예시:
+
+```bash
+curl "http://localhost:4000/api/applications/$APPLICATION_ID/messages?limit=50" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+응답 `200`:
+
+```json
+{
+  "data": [
+    {
+      "id": "message-uuid",
+      "applicationId": "application-uuid",
+      "senderId": "mentee-uuid",
+      "senderName": "백승주",
+      "body": "안녕하세요, 잘 부탁드립니다.",
+      "createdAt": "2026-07-24T02:37:27.471Z"
+    }
+  ],
+  "meta": {
+    "hasMore": true,
+    "nextCursor": "eyJjcmVhdGVkQXQiOiIyMDI2LTA3LTI0VDAyOjI2OjU4LjY4MVoiLCJpZCI6IjIwY2EwODA5In0="
+  }
+}
+```
+
+과거 메시지를 이어서 불러올 때는 `nextCursor`를 그대로 `cursor`에 넣어 다시 호출한다:
+
+```bash
+curl -G "http://localhost:4000/api/applications/$APPLICATION_ID/messages" \
+  --data-urlencode "limit=50" \
+  --data-urlencode "cursor=$NEXT_CURSOR" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+`meta.hasMore`가 `false`이거나 `meta.nextCursor`가 `null`이면 더 이전 메시지가 없다는 뜻이다.
+
+### 8.2 메시지 전송
+
+`POST /api/applications/:applicationId/messages`
+
+요청:
+
+```json
+{
+  "body": "안녕하세요, 잘 부탁드립니다."
+}
+```
+
+검증:
+
+- 신청 참여자가 아니면 `403 FORBIDDEN`.
+- 신청 상태가 `confirmed`가 아니면 `409 APPLICATION_NOT_CONFIRMED`.
+- `body`가 비어 있거나 공백만 있으면 `400 VALIDATION_ERROR` (`details.field: "body"`). 2000자를 넘어도 동일하게 `400`.
+- 존재하지 않는 신청 id면 `404 APPLICATION_NOT_FOUND`.
+
+요청 예시:
+
+```bash
+curl -X POST "http://localhost:4000/api/applications/$APPLICATION_ID/messages" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"body": "안녕하세요, 잘 부탁드립니다."}'
+```
+
+응답 `201`:
+
+```json
+{
+  "data": {
+    "id": "message-uuid",
+    "applicationId": "application-uuid",
+    "senderId": "mentee-uuid",
+    "senderName": "백승주",
+    "body": "안녕하세요, 잘 부탁드립니다.",
+    "createdAt": "2026-07-24T02:37:27.471Z"
+  }
+}
+```
+
+`senderName`은 `nickname`이 아니라 `profiles.name`이다.
+
+## 9. 권한 요약
 
 | 작업 | 멘티 | 멘토 |
 |---|---:|---:|
@@ -642,9 +771,11 @@ Query parameters:
 | 신청 생성 | 가능 | 불가 |
 | 자신의 신청 조회 | 가능 | 대상 신청만 가능 |
 | 신청 수락·거절 | 불가 | 대상 멘토만 가능 |
+| 신청 완료 처리 | 불가 | 확정 멘토만 가능 |
 | 면담 정보 수정 | 자신의 신청만 가능 | 확정 멘토만 가능 |
+| 채팅 메시지 조회·전송 | 참여자(신청 멘티)만 가능 | 참여자(확정 멘토)만 가능 |
 
-## 9. MVP 이후 API
+## 10. MVP 이후 API
 
 다음 API는 현재 초안에서 제외한다.
 
