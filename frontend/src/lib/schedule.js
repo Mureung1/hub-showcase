@@ -42,6 +42,8 @@ export function buildDayPlan({ essentialHours = {}, recommendations = [], routin
   );
   const clampedEssential = Math.min(24, essentialTotal);
   const freeMinutes = Math.max(0, Math.round((24 - clampedEssential) * 60));
+  // 필수시간 합이 하루(24h)를 넘으면 과부하 — UI가 "일정을 너무 많이 잡았다"고 안내할 수 있게 신호만 준다.
+  const overloaded = essentialTotal > 24;
 
   // 하루에 다 공부에 쓰지 않는다: 가용시간의 일부(기본 40%, 상한 180분)만 학습 블록으로 제안.
   const studyBudget = Math.min(180, Math.round(freeMinutes * 0.4));
@@ -80,7 +82,7 @@ export function buildDayPlan({ essentialHours = {}, recommendations = [], routin
         ? `오늘 자유시간은 약 ${Math.round(freeMinutes / 60 * 10) / 10}시간입니다. 우선 20분 블록 하나부터 넣어보세요.`
         : `오늘 자유시간 약 ${Math.round(freeMinutes / 60 * 10) / 10}시간 중 ${used}분을 학습·회복으로 제안했습니다. 나머지는 여유·다른 일에 쓰세요.`;
 
-  return { freeMinutes, studyMinutes: used, blocks, note };
+  return { freeMinutes, studyMinutes: used, blocks, note, overloaded };
 }
 
 // v1.5: 주간 타임테이블 골격(#29). buildDayPlan 블록을 한 주에 "분산"해 배치한다.

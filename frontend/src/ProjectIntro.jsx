@@ -703,6 +703,11 @@ export default function ProjectIntro() {
                   <span>{otherHours}h</span>
                 </label>
               </div>
+              {dayPlan.overloaded && (
+                <p className="hint" role="alert" style={{ marginTop: 10, color: "var(--ink-warn, #b96842)" }}>
+                  ⚠️ 필수시간 합이 하루(24시간)를 넘었어요. 수면·수업·기타 시간을 다시 확인해보세요.
+                </p>
+              )}
               <p className="hint" style={{ marginTop: 10 }}>{dayPlan.note}</p>
               {dayPlan.blocks.length > 0 && (
                 <div className="answers" style={{ marginTop: 10 }}>

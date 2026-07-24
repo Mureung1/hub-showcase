@@ -83,6 +83,7 @@ flowchart LR
 | [docs/plan.md](docs/plan.md) | 최종 기획서, 문제 정의, 사용자 흐름, MVP 범위 |
 | [docs/checklist.md](docs/checklist.md) | MVP 구현 현황과 검증 베타·장기 확장 게이트 |
 | [docs/evidence-data-roadmap.md](docs/evidence-data-roadmap.md) | 문헌 근거, 측정, NMAR, 개인정보, 알고리즘 검증 기준 |
+| [docs/ai-workflow.md](docs/ai-workflow.md) | AI와 함께 일하는 작업 순서와 사용 Skill·Agent |
 | [GitHub Wiki](https://github.com/bricepark94/hub/wiki) | 발표·공유용 프로젝트 문서 허브 |
 
 ## 실행 방법
