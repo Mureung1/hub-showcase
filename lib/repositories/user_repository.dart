@@ -11,6 +11,13 @@ import '../models/app_user.dart';
 /// 에서 이 신호를 보고 부른다.
 typedef EnsureUserResult = ({AppUser user, bool created});
 
+/// 코인이 부족해 구매할 수 없을 때 사용자에게 보여줄 문구.
+///
+/// [UserRepository.purchaseItem]이 잔액 부족을 [AppFailure]로 알릴 때 쓴다.
+/// 화면(상점)도 미리 이 조건을 걸러 버튼을 비활성화하지만, `purchaseItem`이
+/// public API라 저장소가 마지막 방어선으로 한 번 더 막는다.
+const String kInsufficientCoinMessage = '코인이 부족해요.';
+
 /// 사용자 문서 읽기·쓰기.
 ///
 /// 구현체는 실패 시 반드시 `AppFailure`를 던진다.
@@ -52,4 +59,24 @@ abstract interface class UserRepository {
 
   /// 장착 아이템 변경 (4주차 상점).
   Future<void> updateEquipped(String uid, Map<String, String> equipped);
+
+  /// 보유 아이템 ID 집합 스트림 (4주차 상점의 "보유 중" 표시용).
+  ///
+  /// `users/{uid}/inventory` 하위 컬렉션의 문서 ID들을 흘린다. 문서가 없으면 빈
+  /// 집합이다 — 신규 사용자도 특수 분기 없이 "아무것도 보유하지 않음"으로 렌더된다.
+  Stream<Set<String>> watchInventory(String uid);
+
+  /// 아이템 구매. **원자적 트랜잭션이다.**
+  ///
+  /// 사용자 문서를 읽어 `coin >= price`를 확인하고, 통과하면 **한 트랜잭션에서**
+  /// `coin`을 [price]만큼 차감하면서 `inventory/{itemId}` 문서를 만든다. "코인만
+  /// 빠지고 아이템은 없는" 중간 상태는 존재할 수 없다.
+  ///
+  /// 계약 두 가지(두 구현이 **같은 판정**을 내야 한다):
+  /// - **잔액 부족이면 [AppFailure]를 던진다**([kInsufficientCoinMessage]).
+  ///   코인을 한 푼도 차감하지 않고, inventory 문서도 만들지 않는다.
+  /// - **이미 보유한 아이템이면 아무 일도 하지 않는다**(멱등). 코인을 다시 차감하지
+  ///   않는다 — `completeQuest`의 `rewardedAt` 재지급 금지와 같은 정신이다. 두 기기가
+  ///   같은 아이템을 동시에 사도 한 번만 결제된다(트랜잭션 안에서 보유 여부를 읽는다).
+  Future<void> purchaseItem(String uid, String itemId, int price);
 }

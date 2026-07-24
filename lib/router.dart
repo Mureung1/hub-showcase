@@ -8,6 +8,7 @@ import 'features/quest/quest_create_screen.dart';
 import 'features/quest/quest_list_screen.dart';
 import 'features/quest/quest_split_screen.dart';
 import 'features/shell/root_shell.dart';
+import 'features/shop/shop_screen.dart';
 
 /// 앱이 쓰는 라우터 인스턴스.
 final router = createRouter();
@@ -72,11 +73,7 @@ GoRouter createRouter({String initialLocation = '/home'}) => GoRouter(
           routes: [
             GoRoute(
               path: '/shop',
-              builder: (context, state) => const PlaceholderScreen(
-                title: '상점',
-                emoji: '🛍️',
-                message: '모은 코인으로 배경과 이펙트를 살 수 있어요.\n4주차에 열립니다.',
-              ),
+              builder: (context, state) => const ShopScreen(),
             ),
           ],
         ),

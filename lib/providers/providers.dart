@@ -143,6 +143,15 @@ final questListProvider = StreamProvider<List<Quest>>((ref) async* {
   yield* ref.watch(questRepositoryProvider).watchQuests(uid);
 });
 
+/// 보유 아이템 ID 집합 (4주차 상점의 "보유 중" 표시용).
+///
+/// [currentUserProvider]와 같은 형태 — 세션(uid)이 준비된 뒤 저장소 스트림을 잇는다.
+/// 구매 트랜잭션이 커밋되면 이 스트림이 갱신돼 상점 버튼이 자동으로 "장착"으로 바뀐다.
+final inventoryProvider = StreamProvider<Set<String>>((ref) async* {
+  final uid = await ref.watch(sessionProvider.future);
+  yield* ref.watch(userRepositoryProvider).watchInventory(uid);
+});
+
 /// 큰 목표 목록. 퀘스트 목록의 **폴더 라벨**을 그리는 데 쓴다.
 ///
 /// [questListProvider]와 같은 형태 — 세션(uid)이 준비된 뒤 저장소 스트림을 잇는다.

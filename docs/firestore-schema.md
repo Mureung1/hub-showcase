@@ -225,11 +225,23 @@ final drafts = QuestDraft.parseList(aiJson['quests']);
 
 ### `users/{uid}/inventory/{itemId}` — 4주차
 
-보유 아이템. `itemId`, `acquiredAt`, `equipped`.
+보유 아이템. 문서 **ID = itemId**라 아이템당 문서 1개이고, 재구매해도 같은 문서를 덮어써 중복 보유가 생기지 않는다.
 
-### `items/{itemId}` — 4주차
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `itemId` | string | 아이템 ID (문서 ID와 동일, 조회 편의) |
+| `acquiredAt` | timestamp | 구매 시각 (서버 시각) |
 
-공개 아이템 카탈로그. 인증 사용자는 읽기만 가능하고, 쓰기는 콘솔에서만 한다.
+**구매 트랜잭션 계약** (`UserRepository.purchaseItem`, `firestore_user_repository.dart`):
+사용자 문서를 읽어 `coin >= price`를 확인하고, 통과하면 **한 트랜잭션에서** `coin`을 `FieldValue.increment(-price)`로 차감하면서 이 문서를 만든다. "코인만 빠지고 아이템 없는" 중간 상태는 불가능하다.
+- **잔액 부족** → write 없이 `AppFailure`(트랜잭션 중단). 코인을 한 푼도 깎지 않는다.
+- **이미 보유**(문서 존재) → 재결제 없이 반환(멱등). `completeQuest`의 `rewardedAt` 재지급 금지와 같은 정신 — 두 기기 동시 구매도 트랜잭션 안에서 존재 여부를 읽어 한 번만 결제한다.
+
+아이템 **카탈로그는 Firestore가 아니라 코드 상수**(`lib/core/constants/shop_items.dart`, `kShopItems`)다. 운영 중 변경이 없는 MVP라 콘솔 수동 입력·테스트 사각지대를 피한다(`reward_rules`·`growth_rules`와 같은 관례). 슬롯은 2개(`background` 틴트 · `aura` 이모지)이며 `equipped` 맵의 키가 된다.
+
+### `items/{itemId}` — 4주차 (미사용)
+
+공개 아이템 카탈로그 경로. **현재 쓰지 않는다** — 위처럼 카탈로그를 코드 상수로 두기로 했다. 콘솔 관리형 카탈로그가 필요해지는 날을 위해 경로만 남겨 둔다.
 
 ## 보안 규칙
 

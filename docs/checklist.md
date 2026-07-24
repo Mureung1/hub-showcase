@@ -418,8 +418,8 @@
 ### 캐릭터 기본 렌더링
 - [x] 캐릭터가 정상 렌더된다 — **도트아트 자산 완성 전에는 이모지 목업 렌더도 PASS 조건**이며, 자산 로드 실패 시 대체 표시(이모지)가 나온다.
       → `_CharacterStage(emoji: stage.emoji)`가 진화 단계별 이모지를 목업으로 렌더한다(도트아트 자산 전까지 PASS 조건, `lib/features/home/widgets/character_card.dart`). 테스트 `test/features/home_screen_test.dart`.
-- [ ] 장착(equipped) 아이템이 캐릭터에 반영된다.
-      → 미확인: 상점·인벤토리·장착 기능이 아직 미구현이라 이 항목의 근거 없음.
+- [x] 장착(equipped) 아이템이 캐릭터에 반영된다.
+      → B-6로 해소. `character_card.dart`가 `AppUser.equipped`를 읽어 `background` 슬롯=배경 틴트, `aura` 슬롯=오라 이모지로 반영한다(캐릭터가 이모지 목업이라 이 둘로 표현). 고아 방어: `itemById`가 null이거나 슬롯이 어긋나면 장착 없음으로 렌더(깨진 장착이 카드를 안 죽인다, `lib/core/constants/shop_items.dart`). `equipped`가 user 문서에 영속되고 홈이 `watchUser` 구독이라 재실행 후 유지는 구조로 보장. 테스트 `test/features/character_card_equip_test.dart`(오라 미반영 뮤테이션이 실패시킴).
 
 ### 레벨업 처리
 - [x] XP가 임계값 도달 시 레벨이 오르고 남은 XP가 이월된다.
@@ -438,14 +438,20 @@
       → `_CoinBanner(coin: user.coin)`(`lib/features/home/widgets/character_card.dart`). coin은 `completeQuest`에서 `FieldValue.increment`로 누적되고, 홈은 `watchUser` 스트림 구독이라 지급 커밋 즉시 갱신된다. 코인 배너는 노랑 허용 위젯이며 `test/theme/color_role_test.dart`가 허용 목록 밖 노랑을 FAIL 처리한다.
 
 ### 상점 화면 기본 레이아웃(최소 치장 아이템 1종)
-- [ ] 최소 1종의 치장 아이템과 가격이 표시된다.
-- [ ] 보유 코인 부족 시 구매 버튼이 비활성 또는 안내가 표시된다.
+- [x] 최소 1종의 치장 아이템과 가격이 표시된다.
+      → `lib/features/shop/shop_screen.dart`(신규, `/shop` 라우트가 실제 화면 — `lib/router.dart`). 아이템 카탈로그는 **코드 상수** `lib/core/constants/shop_items.dart`(배경 3 + 오라 2 = 5종, 가격 10/30/50/40/60). MVP라 Firestore items 컬렉션이 아닌 코드 상수 채택(`reward_rules`·`growth_rules`와 같은 관례, 콘솔 수동 입력·테스트 사각지대 회피 / 운영 중 변경은 코드 배포 필요). 테스트 `test/core/shop_items_test.dart`·`test/features/shop_screen_test.dart`.
+- [x] 보유 코인 부족 시 구매 버튼이 비활성 또는 안내가 표시된다.
+      → 5상태 버튼 분기(미보유+충분→구매 / 미보유+부족→비활성 "코인이 부족해요" / 보유+미장착→장착 / 보유+장착중→"장착 중"+해제). `shop_screen.dart` 부족 분기는 `onPressed: null`+안내 텍스트. 테스트 `test/features/shop_screen_test.dart`.
 
 ### 코인으로 치장 아이템 구매 및 적용
-- [ ] 구매 시 코인이 정확히 차감되고 `inventory`에 아이템이 추가된다.
-- [ ] 구매·차감이 트랜잭션으로 처리되어 코인만 빠지고 아이템이 없는 상태가 발생하지 않는다.
-- [ ] 이미 보유한 아이템 중복 구매가 막히거나 정의된 규칙대로 처리된다.
-- [ ] 장착 시 캐릭터에 반영되고 재실행 후에도 유지된다.
+- [x] 구매 시 코인이 정확히 차감되고 `inventory`에 아이템이 추가된다.
+      → `purchaseItem(uid, itemId, price)` 신설(저장소 2구현 — `lib/repositories/firestore/firestore_user_repository.dart`·`lib/repositories/memory/in_memory_user_repository.dart`). `inventoryItem` 경로 추가, `inventoryProvider` 스트림. 테스트 `test/repositories/purchase_item_test.dart`.
+- [x] 구매·차감이 트랜잭션으로 처리되어 코인만 빠지고 아이템이 없는 상태가 발생하지 않는다.
+      → Firestore `runTransaction`(read-before-write): coin 확인 → 차감 + inventory 문서 생성 원자적. **잔액 부족이면 write 없이 AppFailure**(코인 불변 + inventory 미추가), InMemory도 동일 판정. 뮤테이션(잔액 부족 가드 제거)으로 2건 실패 확인. Firestore 트랜잭션 경로 자동 테스트는 N/A(`fake_cloud_firestore` 미도입) — InMemory와 동일 계약으로 맞추고 실제 확인은 에뮬레이터 몫(기존 `completeQuest`와 같은 한계).
+- [x] 이미 보유한 아이템 중복 구매가 막히거나 정의된 규칙대로 처리된다.
+      → 이미 보유면 코인 재차감 없이 조용히 통과(멱등, `rewardedAt` 가드와 같은 정신). 재구매 차단 근거는 읽어 온 inventory 문서(ID=itemId) 존재 여부. 뮤테이션(중복 가드 제거)으로 코인이 2회 차감돼 1건 실패 확인.
+- [x] 장착 시 캐릭터에 반영되고 재실행 후에도 유지된다.
+      → `character_card.dart`가 `AppUser.equipped`를 읽어 `background` 슬롯=배경 틴트, `aura` 슬롯=오라 이모지로 반영(캐릭터가 이모지 목업이라 이 둘로 표현, 도트아트 자산 나오면 교체 예정). `equipped`가 user 문서에 영속되고 홈이 `watchUser` 구독이라 재실행 후 유지는 구조로 보장. 고아 방어: `itemById`가 null이거나 슬롯이 어긋나면 장착 없음으로 렌더. 뮤테이션(오라 미반영)으로 실패 확인. 테스트 `test/features/character_card_equip_test.dart`·`test/repositories/purchase_item_test.dart`.
 
 ### 퀘스트 완료 연출
 - [ ] 완료 시 애니메이션/피드백이 재생되고 실제 상태 변화와 동기화된다.

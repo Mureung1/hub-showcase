@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/theme/app_theme.dart';
 import 'package:one_step/features/quest/quest_create_screen.dart';
 import 'package:one_step/features/quest/quest_list_screen.dart';
+import 'package:one_step/features/shop/shop_screen.dart';
 import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/difficulty.dart';
 import 'package:one_step/models/quest.dart';
@@ -96,7 +97,7 @@ void main() {
     );
 
     await tapTab(tester, '상점');
-    expect(find.text('모은 코인으로 배경과 이펙트를 살 수 있어요.\n4주차에 열립니다.'), findsOneWidget);
+    expect(find.byType(ShopScreen), findsOneWidget);
     expect(
       tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
       2,

@@ -24,6 +24,10 @@ class InMemoryUserRepository implements UserRepository {
   final DateTime Function() _clock;
 
   final Map<String, AppUser> _users = {};
+
+  /// 사용자별 보유 아이템 ID. Firestore의 `users/{uid}/inventory`에 대응한다.
+  final Map<String, Set<String>> _inventory = {};
+
   final _controller = StreamController<String>.broadcast();
 
   void _check() {
@@ -105,10 +109,51 @@ class InMemoryUserRepository implements UserRepository {
     _controller.add(uid);
   }
 
+  @override
+  Stream<Set<String>> watchInventory(String uid) async* {
+    _check();
+    yield {...?_inventory[uid]};
+    await for (final changed in _controller.stream) {
+      if (changed == uid) yield {...?_inventory[uid]};
+    }
+  }
+
+  /// Firestore 트랜잭션과 **같은 판정**의 구매.
+  ///
+  /// 단일 스레드 + await 없는 상태 변경이라 별도 잠금 없이 원자적이다. 중요한 건
+  /// Firestore 구현과 순서·가드를 맞추는 것이다: ① 이미 보유면 코인을 건드리지
+  /// 않고 조용히 반환(멱등), ② 잔액 부족이면 차감·추가 없이 실패. 둘 다 통과할
+  /// 때만 잔액을 깎고 inventory에 추가하며, 방출은 **한 번**이다(잔액·보유가 같은
+  /// 프레임에 반영돼 화면이 중간 상태를 보지 않는다).
+  @override
+  Future<void> purchaseItem(String uid, String itemId, int price) async {
+    _check();
+    final current = _users[uid] ?? AppUser.initial(uid);
+    final owned = _inventory[uid] ?? const <String>{};
+
+    // 이미 보유 — 코인 재차감 없이 조용히 통과(멱등).
+    if (owned.contains(itemId)) return;
+
+    // 잔액 부족 — 차감하지 않고 실패한다(코인만 빠지는 상태 불가).
+    if (current.coin < price) {
+      throw const UnknownFailure(null, kInsufficientCoinMessage);
+    }
+
+    _users[uid] = current.copyWith(coin: current.coin - price);
+    (_inventory[uid] ??= <String>{}).add(itemId);
+    _controller.add(uid);
+  }
+
   /// 테스트·데모용 직접 주입.
   void put(AppUser user) {
     _users[user.uid] = user;
     _controller.add(user.uid);
+  }
+
+  /// 테스트·데모용 보유 아이템 직접 주입.
+  void putInventory(String uid, Set<String> itemIds) {
+    _inventory[uid] = {...itemIds};
+    _controller.add(uid);
   }
 
   void dispose() => _controller.close();

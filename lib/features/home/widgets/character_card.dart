@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../core/constants/shop_items.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -25,6 +26,19 @@ class CharacterCard extends StatelessWidget {
     final theme = Theme.of(context);
     final stage = user.stage;
 
+    // 장착 아이템을 해석한다. 고아 방어: itemById가 null이거나 슬롯이 어긋나면
+    // (과거 데이터·삭제된 아이템·손상된 문서) 그 슬롯은 장착 없음으로 떨어져
+    // 기존 렌더가 그대로 유지된다 — 깨진 장착이 카드를 죽이지 않는다.
+    final backgroundItem = itemById(user.equipped['background']);
+    final backgroundTint =
+        backgroundItem != null && backgroundItem.slot == ItemSlot.background
+        ? backgroundItem.tint
+        : null;
+    final auraItem = itemById(user.equipped['aura']);
+    final auraEmoji = auraItem != null && auraItem.slot == ItemSlot.aura
+        ? auraItem.emoji
+        : null;
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
@@ -35,7 +49,11 @@ class CharacterCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          _CharacterStage(emoji: stage.emoji),
+          _CharacterStage(
+            emoji: stage.emoji,
+            backgroundTint: backgroundTint,
+            auraEmoji: auraEmoji,
+          ),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
@@ -73,14 +91,31 @@ class CharacterCard extends StatelessWidget {
   }
 }
 
-/// 캐릭터 이모지 + 하단 반원형 그린 백드롭.
+/// 캐릭터 이모지 + 하단 반원형 백드롭 + (장착 시) 오라 이모지.
+///
+/// 캐릭터가 이모지 목업이라 치장을 두 방식으로만 표현한다: 배경 [backgroundTint]와
+/// 주변 [auraEmoji]. 둘 다 null이면(장착 없음) 기존 그린 백드롭 렌더가 그대로다.
 class _CharacterStage extends StatelessWidget {
-  const _CharacterStage({required this.emoji});
+  const _CharacterStage({
+    required this.emoji,
+    this.backgroundTint,
+    this.auraEmoji,
+  });
 
   final String emoji;
 
+  /// 장착된 배경 아이템의 틴트. null이면 기본 그린 백드롭.
+  final Color? backgroundTint;
+
+  /// 장착된 오라 아이템의 이모지. null이면 오라 없음.
+  final String? auraEmoji;
+
   @override
   Widget build(BuildContext context) {
+    // 배경 아이템을 장착했으면 그 색으로, 아니면 기존 그린 백드롭 유지.
+    final backdropColor = (backgroundTint ?? AppColors.primaryContainer)
+        .withValues(alpha: 0.18);
+
     return SizedBox(
       height: 180,
       width: double.infinity,
@@ -93,19 +128,28 @@ class _CharacterStage extends StatelessWidget {
               width: 220,
               height: 120,
               decoration: BoxDecoration(
-                color: AppColors.primaryContainer.withValues(alpha: 0.18),
+                color: backdropColor,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(110),
                 ),
               ),
             ),
           ),
+          // 오라 이모지 — 캐릭터 주변에 흩뿌린다(장착했을 때만).
+          if (auraEmoji != null) ..._auras(auraEmoji!),
           // 도트아트 자산 완성 전까지의 플레이스홀더.
           Text(emoji, style: const TextStyle(fontSize: 88)),
         ],
       ),
     );
   }
+
+  /// 캐릭터 주변 장식 이모지 배치. 캐릭터 본체(88pt)보다 작게 흩뿌린다.
+  List<Widget> _auras(String glyph) => [
+    Positioned(top: 18, left: 44, child: Text(glyph, style: const TextStyle(fontSize: 26))),
+    Positioned(top: 40, right: 48, child: Text(glyph, style: const TextStyle(fontSize: 20))),
+    Positioned(bottom: 30, right: 60, child: Text(glyph, style: const TextStyle(fontSize: 24))),
+  ];
 }
 
 class _XpBar extends StatelessWidget {
