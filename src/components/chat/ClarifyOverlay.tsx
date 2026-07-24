@@ -1,9 +1,10 @@
-import type { ResolvedParseResult } from '@shared/schemas';
 import type { ClarifyData } from '../../types/overlay';
+
+type Candidate = ClarifyData['candidates'][number];
 
 type ClarifyOverlayProps = {
   data: ClarifyData;
-  onSelect: (candidate: ResolvedParseResult) => void;
+  onSelect: (candidate: Candidate) => void;
   onClose: () => void;
 };
 
@@ -16,11 +17,9 @@ export default function ClarifyOverlay({ data, onSelect, onClose }: ClarifyOverl
         <div className="clarify-options">
           {data.candidates.map((candidate) => (
             <button
-              key={`${candidate.intent}-${candidate.item.type}-${candidate.item.data.id}`}
+              key={`${candidate.intent}-${candidate.type}-${candidate.label}`}
               className="clarify-option"
-              onClick={() =>
-                onSelect({ status: 'resolved', intent: candidate.intent, item: candidate.item })
-              }
+              onClick={() => onSelect(candidate)}
             >
               {candidate.label}
             </button>

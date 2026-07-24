@@ -17,6 +17,16 @@
   --color-accent: #ff1f2d;
   --color-accent-soft: #ff6b73;
 
+  /* Info soft: 완료함 복구 버튼 (연한 파랑) */
+  --color-info-soft-bg: #dbeafe;
+  --color-info-soft-bg-hover: #bfdbfe;
+  --color-info-soft-text: #1d4ed8;
+
+  /* Danger soft: 완료함 영구 삭제 버튼 (연한 빨강) */
+  --color-danger-soft-bg: #fee2e2;
+  --color-danger-soft-bg-hover: #fecaca;
+  --color-danger-soft-text: #b91c1c;
+
   /* Background */
   --color-bg: #eef3f5;
   --color-bg-soft: #dce5e9;
@@ -187,6 +197,34 @@ body {
   margin-bottom: var(--space-1);
 }
 
+.briefing-header__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-4);
+}
+
+.briefing-header__completed-btn {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.briefing-header__completed-btn:hover {
+  background: var(--color-bg-soft);
+}
+
+.briefing-header__completed-btn:active {
+  background: var(--color-border);
+}
+
 .briefing-header__greeting {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-black);
@@ -233,44 +271,6 @@ body {
   color: var(--color-text-muted);
 }
 
-/* ===== Routine Card ===== */
-
-.routine-item {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-}
-
-.routine-item__checkbox {
-  width: 22px;
-  height: 22px;
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-xs);
-  flex-shrink: 0;
-  margin-top: 2px;
-  cursor: pointer;
-  appearance: none;
-  background: var(--color-bg-panel);
-  transition: all 0.15s ease;
-}
-
-.routine-item__checkbox:checked {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-.routine-item__content {
-  font-size: var(--font-size-md);
-  color: var(--color-text);
-  font-weight: var(--font-weight-medium);
-}
-
-.routine-item__time {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-subtle);
-  margin-top: var(--space-1);
-}
-
 /* ===== Meal Card ===== */
 
 .meal-row {
@@ -292,18 +292,23 @@ body {
   color: var(--color-text-muted);
 }
 
-/* ===== Deadline Item ===== */
+/* ===== Check Item (마감 임박 · 메모 공용 체크박스 레이아웃) ===== */
 
-.deadline-item {
+.check-item {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-4);
   padding: var(--space-3) 0;
+  transition: opacity 0.4s ease;
 }
 
-.deadline-item__checkbox {
-  width: 18px;
-  height: 18px;
+.check-item--fading {
+  opacity: 0;
+}
+
+.check-item__checkbox {
+  width: 22px;
+  height: 22px;
   border: 2px solid var(--color-border);
   border-radius: var(--radius-xs);
   flex-shrink: 0;
@@ -313,15 +318,27 @@ body {
   transition: all 0.15s ease;
 }
 
-.deadline-item__checkbox:checked {
+.check-item__checkbox:checked {
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.deadline-item__title {
+.check-item__checkbox:disabled {
+  cursor: default;
+}
+
+.check-item__title {
   flex: 1;
   font-size: var(--font-size-md);
   color: var(--color-text);
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
+}
+
+.check-item__title--done {
+  color: var(--color-text-subtle);
+  text-decoration: line-through;
 }
 
 /* ===== D-day Badge ===== */
@@ -344,14 +361,6 @@ body {
   background: transparent;
   color: var(--color-text-muted);
   border: 1px solid var(--color-border);
-}
-
-/* ===== Memo ===== */
-
-.memo-content {
-  font-size: var(--font-size-md);
-  color: var(--color-text-muted);
-  line-height: var(--line-height-normal);
 }
 
 /* ===== Chat Input Bar ===== */
@@ -625,6 +634,103 @@ body {
 
 .query-back-btn:hover {
   background: var(--color-secondary-hover);
+}
+
+/* ===== Completed View (완료함) ===== */
+
+.completed-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.completed-view__header {
+  padding: var(--space-5) var(--space-4) var(--space-3);
+  background: var(--color-bg-panel);
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.completed-view__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-black);
+  color: var(--color-text);
+}
+
+.completed-view__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+}
+
+.completed-view__section-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.completed-view__count {
+  color: var(--color-text-subtle);
+  font-weight: var(--font-weight-medium);
+}
+
+.completed-view__empty {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-subtle);
+  padding: var(--space-2) 0;
+}
+
+.completed-item {
+  background: var(--color-bg-panel);
+  border: var(--card-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-soft);
+}
+
+.completed-item__title {
+  font-size: var(--font-size-md);
+  color: var(--color-text-subtle);
+  text-decoration: line-through;
+}
+
+.completed-item__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.completed-item__btn {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-sans);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.completed-item__btn--restore {
+  background: var(--color-info-soft-bg);
+  color: var(--color-info-soft-text);
+}
+
+.completed-item__btn--restore:hover {
+  background: var(--color-info-soft-bg-hover);
+}
+
+.completed-item__btn--delete {
+  background: var(--color-danger-soft-bg);
+  color: var(--color-danger-soft-text);
+}
+
+.completed-item__btn--delete:hover {
+  background: var(--color-danger-soft-bg-hover);
 }
 
 /* ===== Animations ===== */

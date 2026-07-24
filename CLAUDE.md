@@ -3,7 +3,7 @@
 ## 프로젝트
 
 **Briefy** — 자연어 한 문장으로 일정/과제/루틴/식단을 기록하고, 하루를 한 화면으로 브리핑하는 개인 생활 관리 웹앱.
-사용자 입력 → Claude API가 JSON으로 파싱(intent + type + 속성) → DB 저장 → 브리핑 대시보드에 반영.
+사용자 입력 → Groq API가 JSON으로 파싱(intent + type + 속성) → DB 저장 → 브리핑 대시보드에 반영.
 
 ## 기술 스택
 
@@ -12,7 +12,7 @@
 | **FE** | React 19 + TypeScript (Vite 8, Tailwind CSS v4) | 모바일(390px) 기준 반응형 |
 | **BE** | Express 5 (TypeScript, tsx로 실행) | 자연어 파싱 + CRUD API |
 | **DB** | Supabase (Postgres) | 서버에서만 접근 (`@supabase/supabase-js`) |
-| **AI** | Claude API (`@anthropic-ai/sdk`) | 자연어 파싱 전용, 서버에서만 호출 |
+| **AI** | Groq API (`groq-sdk`, 모델 `openai/gpt-oss-120b`) | 자연어 파싱 전용, 서버에서만 호출 |
 | **공통** | zod (스키마 검증), date-fns (날짜 계산) | |
 | **라우팅** | react-router-dom | 클라이언트 사이드 라우팅 |
 | **린트** | oxlint | ESLint 대신 사용 (더 빠름) |
@@ -29,7 +29,6 @@ briefy/
 │  ├─ lib/                 # 순수 로직 함수
 │  ├─ api/                 # 서버 호출 래퍼
 │  ├─ types/               # FE 전용 타입
-│  ├─ mocks/               # 프로토타입 목데이터 (실제 API 연동 전 임시)
 │  ├─ assets/              # 정적 에셋
 │  ├─ App.tsx
 │  ├─ main.tsx
@@ -37,17 +36,20 @@ briefy/
 ├─ server/                 # BE (Express)
 │  ├─ index.ts             # Express 진입점
 │  ├─ routes/              # 라우트 정의
-│  ├─ services/            # Claude 파싱·Supabase CRUD
-│  └─ lib/                 # 프롬프트 템플릿 등
+│  ├─ services/            # Groq 파싱·Supabase CRUD (+ *.test.ts 유닛 테스트 colocate)
+│  ├─ lib/                 # 프롬프트 템플릿, Groq/Supabase 클라이언트
+│  └─ scripts/seed.ts      # 개발용 seed 스크립트 (`npm run seed`, 오늘 기준 상대 날짜)
 ├─ shared/                 # FE/BE 공유
 │  └─ schemas.ts           # zod 스키마 (엔티티·파싱 결과 단일 정의)
 ├─ supabase/
-│  └─ migrations/          # 테이블 생성 SQL (반드시 커밋)
-├─ docs/                   # plan.md, design.md, wireframes/, prototype/
-├─ .claude/                # skills/briefy-ui/ (디자인 토큰·컴포넌트 규칙)
+│  ├─ migrations/          # 테이블 생성 SQL (반드시 커밋)
+│  └─ seed.sql             # SQL Editor에서 직접 실행하는 seed (seed.ts와 동일 데이터 유지)
+├─ docs/                   # plan.md, design.md, data-model.md, wireframes/, prototype/
+├─ .claude/                # skills/(briefy-ui, tdd-workflow), agents/(planner, verifier)
 ├─ tsconfig.json           # FE + shared 용
 ├─ tsconfig.server.json    # BE + shared 용
 ├─ vite.config.ts          # Tailwind v4, @shared alias, /api 프록시
+├─ vitest.config.ts        # 유닛 테스트 (@shared alias 재사용)
 ├─ .prettierrc
 ├─ .oxlintrc.json
 └─ .env.example
@@ -65,14 +67,20 @@ briefy/
 | `npm run format` | Prettier 포맷 적용 |
 | `npm run format:check` | Prettier 포맷 검사 |
 | `npm run typecheck` | FE + BE TypeScript 타입 검사 |
+| `npm run test` | Vitest 유닛 테스트 1회 실행 |
+| `npm run test:watch` | Vitest 감시 모드 |
+| `npm run seed` | 개발용 seed 데이터 삽입 (오늘 기준 상대 날짜, 기존 데이터 초기화 후 재삽입) |
 
 ## API 규칙
 
-- `POST /api/parse` — 자연어 문장 → 구조화 결과 (저장까지 수행, 모호하면 되묻기 선택지 반환)
+- `POST /api/parse` — 자연어 문장 → 구조화 결과 (`resolved`면 저장까지 수행, `clarify`면 되묻기 후보 반환)
+- `POST /api/parse/resolve` — 되묻기 후보 확정 → Groq 재호출 없이 바로 저장
 - `GET /api/briefing?date=YYYY-MM-DD` — 해당 일자 브리핑 데이터
-- `GET/POST/PATCH/DELETE /api/items/:type` — 엔티티 CRUD (type: schedules|tasks|routines|meals|memos|reminders)
+- `GET/POST/PATCH/DELETE /api/items/:type` — 엔티티 CRUD (type: schedules|tasks|routines|meals|memos|reminders). `GET /api/items/tasks|memos`는 `?completed=true|false` 쿼리로 필터링 가능(완료함 화면이 `?completed=true`로 조회)
+- `POST /api/items/routines/:id/complete` — 루틴 완료 체크(`routine_logs` upsert, `routine_logs`는 `ItemType`에 없어 별도 라우트)
 - `GET /api/health` — 서버 상태 확인
 - 에러 응답은 항상 `{ error: { code, message } }` 형태로 통일
+- intent는 스키마상 5개(create/update/delete/query/complete) 전부 허용하지만, 현재 실제 구현은 **create(6종 전부) + complete(루틴만)** 뿐이다. update/delete/query는 원문을 memo로 안전하게 저장하는 동일한 안전망으로 강등된다 (A-2/A-3 범위, checklist.md 참고)
 
 ## 아키텍처 원칙
 
@@ -83,6 +91,7 @@ briefy/
 - **파싱 결과는 저장 전에 `shared/schemas.ts`의 zod 스키마로 검증한다.** 모호한 입력은 임의 저장하지 않고 되묻기 선택지를 응답으로 반환한다. intent는 create/update/delete/query/complete 5개만 허용.
 - **스키마는 `shared/`에 한 번만 정의한다.** FE 타입과 BE 검증이 같은 정의를 공유하며, 타입을 손으로 복제하지 않는다.
 - **path alias**: FE에서 shared 접근 시 `@shared/schemas` 사용 (vite.config.ts에 설정됨)
+- **과제·메모의 완료 처리는 아카이브다.** 체크박스로 완료 처리하면 `completed=true`로 저장되고 브리핑(`GET /api/briefing`)에서는 즉시 사라진다(서버가 `completed=false`만 반환). 완료된 항목은 헤더의 "완료한 Task로 이동" 화면(`CompletedView`)에서만 조회되며, 거기서 **복구**(`completed=false`로 되돌림) 또는 **영구 삭제**(`DELETE`)만 가능하다 — 별도 mutation 엔드포인트 없이 기존 `PATCH`/`DELETE`를 재사용한다. 루틴은 이 모델과 무관하다(완료 체크는 당일 로그일 뿐 순환에서 사라지지 않음).
 
 ## 컨벤션
 
@@ -128,7 +137,7 @@ Conventional Commits 형식을 따른다:
 ## 환경변수
 
 - `.env`는 커밋 금지 (`.gitignore`에 등록됨), `.env.example`에 키 이름만 유지
-- 필수 키: `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `PORT`
+- 필수 키: `GROQ_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `PORT`
 
 ## 개발 서버 설정
 
@@ -141,7 +150,7 @@ Conventional Commits 형식을 따른다:
 
 - `any` 타입 금지 — `shared/schemas.ts`에서 추론된 타입을 사용
 - 외부 UI 라이브러리 금지 (별도 합의 전까지 Tailwind만). 상태관리 라이브러리도 별도 합의 전까지 금지 (useState/useReducer 사용)
-- API 키(Claude, Supabase)를 프론트 코드·`VITE_*` 환경변수에 노출 금지 — 서버 전용
+- API 키(Groq, Supabase)를 프론트 코드·`VITE_*` 환경변수에 노출 금지 — 서버 전용
 - Supabase 테이블을 대시보드에서 수동 생성 금지 — 반드시 `supabase/migrations/` SQL 파일로
 - MVP 범위 밖 기능 선제 구현 금지: 음성 입력(STT)/음성 대화(TTS), 푸시 알림, 주간·월간 뷰, 통계, 외부 캘린더 동기화, 로그인/계정
 - 일정 관리 외 응답(잡담, 검색) 기능 추가 금지
@@ -150,7 +159,6 @@ Conventional Commits 형식을 따른다:
 ## 미결 사항
 
 - 배포 방식: FE(Vercel) + BE 호스팅(Render 등) vs 로컬 시연 — 과제 요건 확인 후 결정
-- 테스트 프레임워크: Vitest 도입 여부 — 2주차 개발 시작 시 결정
 
 ## 참고
 

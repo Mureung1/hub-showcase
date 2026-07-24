@@ -6,23 +6,25 @@
 
 ## 핵심 기능
 
-**A. 자연어 CRUD 파이프라인** — 단일 입력창에 자유로운 한국어 문장을 입력하면 Claude API가 의도(create/update/delete/query/complete)와 항목 유형(일정/과제/루틴/식단/메모)을 파싱해 처리합니다.
+**A. 자연어 CRUD 파이프라인** — 단일 입력창에 자유로운 한국어 문장을 입력하면 Groq API가 의도(create/update/delete/query/complete)와 항목 유형(일정/과제/루틴/식단/메모)을 파싱해 처리합니다.
 
 | 입력 예시 | 동작 |
 | --- | --- |
 | "금요일까지 데이터베이스 과제 제출" | 마감일 있는 과제로 저장 |
 | "다음주 화요일 오후 3시 팀플 회의, 전날 알려줘" | 일정 + 리마인더 동시 생성 |
-| "치과 4시로 바꿔줘" | 기존 일정 검색 후 수정 |
-| "이번 주 마감 뭐 있어?" | 이번 주 마감 항목만 조회 |
 | "오늘 운동 다 함" | 오늘 루틴 완료 처리 |
+| "치과 4시로 바꿔줘" | (준비 중) 아직 지원 안 함 — 원문을 메모로 안전하게 보존 |
+| "이번 주 마감 뭐 있어?" | (준비 중) 아직 지원 안 함 — 원문을 메모로 안전하게 보존 |
 
-모호한 입력("운동")은 임의 저장하지 않고 선택지를 되묻고, 파싱에 실패해도 원문을 메모로 보존합니다 — **사용자 입력은 절대 유실되지 않습니다.**
+모호한 입력("운동")은 임의 저장하지 않고 선택지를 되묻고, 파싱에 실패하거나 아직 지원하지 않는 요청(수정/삭제/조회)이 들어와도 원문을 메모로 보존합니다 — **사용자 입력은 절대 유실되지 않습니다.**
 
 **B. 오늘의 브리핑 대시보드** — 앱을 열면 오늘의 일정(시간순), 루틴(시간이 아니라 "상체 day · 벤치프레스, 러닝 3km"라는 내용까지), 식단, 마감 임박 과제(D-day), 메모가 한 화면에 표시됩니다. 루틴을 완료하면 다음 운동일에 순환의 다음 단계(하체 day)가 자동으로 표시됩니다.
 
+과제와 메모는 체크박스로 완료 처리하며, 완료 즉시 브리핑에서 사라집니다. 헤더의 "완료한 Task로 이동" 버튼을 누르면 완료된 과제·메모만 모아 보는 별도 화면(완료함)으로 전환되고, 각 항목을 **복구**(다시 브리핑에 표시) 또는 **영구 삭제**할 수 있습니다.
+
 ## 아키텍처
 
-브라우저는 Supabase에 직접 접근하지 않고 모든 데이터는 Express API를 거칩니다. 점선은 아직 코드가 없는 부분(`/api/parse`, Claude 연동)입니다.
+브라우저는 Supabase에 직접 접근하지 않고 모든 데이터는 Express API를 거칩니다.
 
 ```mermaid
 flowchart TD
@@ -30,44 +32,44 @@ flowchart TD
     BP["BriefingPage.tsx"]
     CI["ChatInput.tsx"]
     CARDS["RoutineCard / DeadlineItem / ScheduleCard / MealCard / MemoCard"]
+    CV["CompletedView.tsx\n(완료함)"]
   end
 
   subgraph API["Express API — :3001"]
     R_BRIEF["GET /api/briefing"]
-    R_ITEMS["/api/items/:type\nGET · POST · PATCH · DELETE"]
+    R_ITEMS["/api/items/:type\nGET(·?completed=) · POST · PATCH · DELETE"]
     R_COMPLETE["POST /api/items/routines/:id/complete"]
-    R_PARSE["POST /api/parse\n[미구현]"]
+    R_PARSE["POST /api/parse\nPOST /api/parse/resolve"]
   end
 
   subgraph SERVICES["server/services/"]
     S_BRIEF["briefingService\nresolveTodayRoutines()"]
     S_ITEMS["schedule · task · routine\nmeal · memo · reminder Service"]
     S_LOG["routineLogService\nupsertRoutineLog()"]
-    S_PARSE["parseService\n[미구현]"]
+    S_PARSE["parseService\nparseText() / resolveCandidate()"]
   end
 
   DB[("Supabase Postgres\n7 tables")]
-  CLAUDE["Claude API\n[ANTHROPIC_API_KEY 대기]"]
+  GROQ["Groq API\nopenai/gpt-oss-120b"]
 
   BP -->|"fetch"| R_BRIEF
   BP -->|"fetch"| R_ITEMS
-  CARDS -->|"체크박스 토글"| R_ITEMS
-  CARDS -->|"체크박스 토글"| R_COMPLETE
-  CI -.->|"전송 (현재 no-op)"| R_PARSE
+  CARDS -->|"체크박스 토글(완료)"| R_ITEMS
+  CARDS -->|"체크박스 토글(완료)"| R_COMPLETE
+  BP -->|"완료 버튼"| CV
+  CV -->|"조회 · 복구 · 영구삭제"| R_ITEMS
+  CI -->|"전송"| R_PARSE
 
   R_BRIEF --> S_BRIEF
   R_ITEMS --> S_ITEMS
   R_COMPLETE --> S_LOG
-  R_PARSE -.-> S_PARSE
+  R_PARSE --> S_PARSE
 
   S_BRIEF --> DB
   S_ITEMS --> DB
   S_LOG --> DB
-  S_PARSE -.-> CLAUDE
-  S_PARSE -.-> DB
-
-  classDef pending stroke-dasharray: 4 3
-  class R_PARSE,S_PARSE,CLAUDE pending
+  S_PARSE --> GROQ
+  S_PARSE --> DB
 ```
 
 <details>
@@ -137,30 +139,82 @@ sequenceDiagram
 </details>
 
 <details>
-<summary>데이터 흐름 — 자연어 저장 (설계, 미구현)</summary>
+<summary>데이터 흐름 — 완료함(아카이브) (구현·검증됨)</summary>
 
 ```mermaid
 sequenceDiagram
   autonumber
   participant U as 사용자
-  participant FE as ChatInput
-  participant EX as POST /api/parse
-  participant PS as parseService
-  participant AI as Claude API
+  participant FE as BriefingPage / CompletedView
+  participant EX as Express
+  participant SV as taskService / memoService
   participant DB as Supabase
 
-  U-->>FE: "금요일까지 DB 과제 제출"
-  FE-->>EX: 전송
-  EX-->>PS: 파싱 요청
-  PS-->>AI: 자연어 → JSON 파싱
-  AI-->>PS: intent + type + 속성
-  PS-->>PS: ParseResultSchema.parse()
-  alt zod 검증 성공
-    PS-->>DB: 해당 엔티티 저장 (raw_input 포함)
-  else zod 검증 실패
-    PS-->>DB: memos에 원문 그대로 보존
+  U->>FE: 헤더 "완료한 Task로 이동" 클릭
+  FE->>EX: GET /api/items/tasks?completed=true
+  FE->>EX: GET /api/items/memos?completed=true
+  EX->>SV: listTasks(true) / listMemos(true)
+  SV->>DB: select … where completed = true
+  DB-->>SV: rows
+  SV-->>EX: 완료된 과제·메모
+  EX-->>FE: 200 JSON
+  FE-->>U: 완료함 화면 렌더 (복구 · 영구삭제 버튼)
+
+  alt 복구
+    U->>FE: "복구" 클릭
+    FE->>EX: PATCH /api/items/:type/:id { completed: false }
+    EX->>SV: updateTask/Memo()
+    SV->>DB: update
+    FE->>FE: 브리핑 재조회 + 완료함 목록 재조회
+  else 영구 삭제
+    U->>FE: "영구 삭제" 클릭
+    FE->>EX: DELETE /api/items/:type/:id
+    EX->>SV: deleteTask/Memo()
+    SV->>DB: delete
+    FE->>FE: 완료함 목록 재조회
   end
-  PS-->>FE: 확인 카드 / 되묻기 응답
+```
+
+브리핑(`GET /api/briefing`)은 `tasks`·`memos` 모두 `completed=false`인 항목만 반환하므로, 체크박스로 완료 처리한 항목은 완료함에서 복구하기 전까지 브리핑에 다시 나타나지 않습니다.
+
+</details>
+
+<details>
+<summary>데이터 흐름 — 자연어 저장</summary>
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as 사용자
+  participant FE as ChatInput / BriefingPage
+  participant EX as Express
+  participant PS as parseService
+  participant AI as Groq API (gpt-oss-120b)
+  participant DB as Supabase
+
+  U->>FE: "금요일까지 DB 과제 제출"
+  FE->>EX: POST /api/parse { message }
+  EX->>PS: parseText(message)
+  PS->>AI: system prompt(오늘 날짜·필드 정의) + user message
+  AI-->>PS: JSON (status/results/fields)
+  alt status=resolved, 필드 검증 성공
+    PS->>DB: 해당 엔티티 저장 (raw_input은 서버가 원문으로 채움)
+    PS-->>EX: { status: resolved, items }
+  else status=clarify
+    PS-->>EX: { status: clarify, question, candidates, rawInput }
+  else status=unsupported 또는 검증 실패
+    PS->>DB: memos에 원문 그대로 보존
+    PS-->>EX: { status: resolved, items: [memo] }
+  end
+  EX-->>FE: 200 JSON
+  opt clarify였던 경우 — 사용자가 후보 선택
+    FE->>EX: POST /api/parse/resolve { intent, type, fields, rawInput }
+    EX->>PS: resolveCandidate(...) — Groq 재호출 없이 바로 저장
+    PS->>DB: 저장
+    PS-->>EX: { status: resolved, items }
+    EX-->>FE: 200 JSON
+  end
+  FE-->>U: 확인 카드 (+ 실행취소 시 DELETE 후 브리핑 재조회)
 ```
 
 </details>
@@ -168,9 +222,9 @@ sequenceDiagram
 ## 기술 스택
 
 - **Frontend**: React + TypeScript (Vite, Tailwind CSS) — 모바일(390px) 기준 반응형
-- **Backend**: Express — 자연어 파싱 엔드포인트(Claude API) + 엔티티 CRUD API
+- **Backend**: Express — 자연어 파싱 엔드포인트(Groq API) + 엔티티 CRUD API
 - **Database**: Supabase (Postgres)
-- **AI**: Claude API (자연어 파싱 전용)
+- **AI**: Groq API (`openai/gpt-oss-120b`, 자연어 파싱 전용)
 
 ## 시작하기
 
@@ -178,7 +232,7 @@ sequenceDiagram
 
 - Node.js 20+
 - Supabase 프로젝트 (URL, service role key)
-- Anthropic API key
+- Groq API key
 
 ### 설치 및 실행
 
@@ -188,13 +242,26 @@ npm install
 
 # 환경변수 설정
 cp .env.example .env
-# .env에 ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 입력
+# .env에 GROQ_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 입력
+
+# supabase/migrations/ 안의 SQL 파일을 번호 순서대로(0001, 0002, ...) Supabase SQL Editor에서 실행한 뒤,
+# 개발용 샘플 데이터 채우기 (오늘 날짜 기준 상대값이라 언제 실행해도 오늘 데이터로 채워짐)
+npm run seed
 
 # 개발 서버 실행 (FE + BE)
 npm run dev
 ```
 
 > ⚠️ API 키는 서버 환경변수로만 관리합니다. `VITE_*` 등 클라이언트 노출 변수에 넣지 마세요.
+
+### 테스트
+
+```bash
+npm run test        # 1회 실행
+npm run test:watch  # 감시 모드
+```
+
+Vitest 기반. 순수 함수는 소스 파일과 같은 디렉토리에 `*.test.ts`로 colocate합니다 (예: `server/services/queryService.ts` + `queryService.test.ts`). 새 순수 함수를 테스트 먼저 작성해서 만들 때는 `tdd-workflow` 스킬을 참고하세요.
 
 ## 프로젝트 구조
 

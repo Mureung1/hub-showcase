@@ -4,6 +4,7 @@ import type { Memo, MemoCreate, MemoUpdate } from '@shared/schemas';
 type MemoRow = {
   id: string;
   content: string;
+  completed: boolean;
   raw_input: string;
   created_at: string;
 };
@@ -12,6 +13,7 @@ function rowToMemo(row: MemoRow): Memo {
   return {
     id: row.id,
     content: row.content,
+    completed: row.completed,
     rawInput: row.raw_input,
     createdAt: row.created_at,
   };
@@ -20,18 +22,18 @@ function rowToMemo(row: MemoRow): Memo {
 function memoToRow(input: MemoCreate | MemoUpdate) {
   const row: Record<string, unknown> = {};
   if (input.content !== undefined) row.content = input.content;
+  if ('completed' in input && input.completed !== undefined) row.completed = input.completed;
   if (input.rawInput !== undefined) row.raw_input = input.rawInput;
   return row;
 }
 
 export class MemoNotFoundError extends Error {}
 
-export async function listMemos(): Promise<Memo[]> {
+export async function listMemos(completed?: boolean): Promise<Memo[]> {
   const client = getSupabaseClient();
-  const { data, error } = await client
-    .from('memos')
-    .select('*')
-    .order('created_at', { ascending: false });
+  let query = client.from('memos').select('*').order('created_at', { ascending: false });
+  if (completed !== undefined) query = query.eq('completed', completed);
+  const { data, error } = await query;
   if (error) throw new Error(`[memoService] 조회 실패: ${error.message}`);
   return (data as MemoRow[]).map(rowToMemo);
 }

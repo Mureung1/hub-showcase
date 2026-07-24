@@ -12,7 +12,7 @@ export default function ScheduleCard({ schedules }: ScheduleCardProps) {
     <section className="card">
       <h2 className="card__title">오늘의 일정</h2>
       {schedules.map((s) => (
-        <ScheduleItem key={s.id} time={s.startTime} title={s.title} />
+        <ScheduleItem key={s.id} time={s.startTime.slice(0, 5)} title={s.title} />
       ))}
     </section>
   );
