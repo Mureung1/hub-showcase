@@ -18,6 +18,7 @@ interface SubsidyRow {
   where_url: string | null
   contact: string
   region: string[]
+  industry: string[]
 }
 
 function subsidyToRow(subsidy: Subsidy): SubsidyRow {
@@ -37,6 +38,7 @@ function subsidyToRow(subsidy: Subsidy): SubsidyRow {
     where_url: subsidy.whereUrl ?? null,
     contact: subsidy.contact,
     region: subsidy.region,
+    industry: subsidy.industry,
   }
 }
 

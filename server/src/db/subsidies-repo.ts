@@ -143,21 +143,36 @@ export async function findById(id: string): Promise<Subsidy | null> {
 const REGION_MATCH_BONUS = 20
 const REGION_MISMATCH_PENALTY = 20
 
+/**
+ * industry 조건 가점 (이슈 #52). region과 달리 **가점만 주고 불일치 페널티는 없다** —
+ * [#43](https://github.com/syd348/hub/issues/43)의 trgetNm 전용 키워드 매칭은 0.2%(3/1500)만
+ * 매칭돼 반영을 보류했었는데, bsnsSumryCn까지 포함하고 동의어를 넓혀 실 API 500건으로
+ * 오탐(경제과학진흥원 등 substring 충돌, "~업 제외" 부정 문맥)까지 걸러낸 뒤 검증하니
+ * 6.6%(33/500)로 개선됐다. 그래도 region(hashtags 기반, ~98% 커버리지)보다는 신뢰도가
+ * 낮아 페널티는 넣지 않았다 — subsidy.industry가 비어있으면(대다수, ~93%) "업종 정보 없음"으로
+ * 간주해 중립 유지. 상세: docs/week4/issue-52-industry-match-plan.md
+ */
+const INDUSTRY_MATCH_BONUS = 10
+
 function scoreForProfile(subsidy: Subsidy, profile: OnboardingProfile): number {
-  if (subsidy.region.length === 0) return subsidy.match
-  if (subsidy.region.includes(profile.region)) {
-    return Math.min(100, subsidy.match + REGION_MATCH_BONUS)
+  let score = subsidy.match
+
+  if (subsidy.region.length > 0) {
+    score = subsidy.region.includes(profile.region)
+      ? Math.min(100, score + REGION_MATCH_BONUS)
+      : Math.max(0, score - REGION_MISMATCH_PENALTY)
   }
-  return Math.max(0, subsidy.match - REGION_MISMATCH_PENALTY)
+
+  if (subsidy.industry.includes(profile.industry)) {
+    score = Math.min(100, score + INDUSTRY_MATCH_BONUS)
+  }
+
+  return score
 }
 
 /**
  * 프로필 조건 매칭 + 정렬.
- * region은 위 scoreForProfile로 실제 반영된다. industry는 실험해봤으나(trgetNm 텍스트에서
- * 온보딩 업종 키워드 검색) 실크롤링 1500건 중 0.2%에서만 매칭돼 신뢰할 수 없다고 판단해
- * 이번 이슈에서는 반영하지 않았다 — bizinfo API가 신청자 업종을 나타내는 구조화 필드를
- * 안 주고, trgetNm도 업종보다는 지역/기업규모 위주 자유 텍스트라서다. 상세는
- * docs/week3/issue-43-match-plan.md 참고.
+ * region은 가점/감점, industry는 가점만 위 scoreForProfile로 반영된다.
  */
 export async function match(
   profile: OnboardingProfile,

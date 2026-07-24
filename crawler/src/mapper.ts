@@ -96,6 +96,52 @@ export function extractAmount(bsnsSumryCn: string): string | null {
 const REGION_SET: ReadonlySet<string> = new Set(REGIONS)
 
 /**
+ * 업종 키워드 사전 (이슈 #52). `src/data/onboardingSteps.ts`의 `INDUSTRY_OPTIONS` 값과 카테고리
+ * 라벨이 정확히 일치해야 `scoreForProfile`에서 매칭이 동작한다 — 온보딩 업종 옵션이 바뀌면 이
+ * 사전도 같이 갱신할 것 (`기타`는 자유 텍스트라 추출 대상에서 제외).
+ *
+ * 실 API 500건 표본(2026-07-25)으로 정확도를 검증하며 확정한 키워드:
+ * - `제과`는 "경제과학진흥원" 같은 단어에 우연히 포함되는 오탐이 있어 `제과점`으로 좁힘
+ * - `제외` 근접 문맥(예: "유통업체 제외")은 아래 EXCLUDE_WINDOW로 걸러냄
+ */
+const INDUSTRY_KEYWORDS: Record<string, RegExp> = {
+  '음식점': /음식점|외식업|요식업|식당/,
+  '카페·베이커리': /카페|베이커리|제과점|커피/,
+  '소매·유통': /도소매|유통업|소매업/,
+  '서비스업': /서비스업/,
+  '제조업': /제조업체|제조업/,
+}
+
+/** 매칭된 키워드 뒤 이 범위 안에 "제외"가 있으면 부정 문맥으로 간주해 매칭에서 뺀다 */
+const INDUSTRY_EXCLUDE_WINDOW = 20
+
+/**
+ * bsnsSumryCn(사업개요) + trgetNm(지원대상)에서 업종 태그를 추출한다 (이슈 #52).
+ * [#43](https://github.com/syd348/hub/issues/43)에서 trgetNm만으로는 0.2%(3/1500)만 매칭돼
+ * 보류했으나, bsnsSumryCn까지 포함하고 동의어를 넓히니 정확도 검증 후 6.6%(33/500)로 개선됨
+ * (상세: docs/week4/issue-52-industry-match-plan.md). 여러 업종이 동시에 매칭될 수 있다
+ * (예: "제조업, 서비스업" 둘 다 언급된 공고).
+ */
+export function extractIndustry(bsnsSumryCn: string, trgetNm: string | undefined): string[] {
+  const text = `${bsnsSumryCn} ${trgetNm ?? ''}`.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ')
+
+  const result: string[] = []
+  for (const [category, pattern] of Object.entries(INDUSTRY_KEYWORDS)) {
+    const match = text.match(pattern)
+    if (!match || match.index === undefined) continue
+
+    const after = text.slice(
+      match.index + match[0].length,
+      match.index + match[0].length + INDUSTRY_EXCLUDE_WINDOW,
+    )
+    if (after.includes('제외')) continue
+
+    result.push(category)
+  }
+  return result
+}
+
+/**
  * hashtags에서 시/도 태그를 추출한다 (이슈 #43). 실API 500건 조사(2026-07-23) 결과 hashtags는
  * "대분류,지역,...세부키워드" 형태의 콤마 구분 문자열이고, 지역 태그 개수가 뚜렷한 이분포를
  * 보였다: 정확히 1개(64%, 특정 지역 한정) / 16개=REGIONS 전체(33%, 전국 대상) / 2~14개(2.4%,
@@ -140,5 +186,6 @@ export function mapAnnouncementToSubsidy(
     whereUrl: item.pblancUrl,
     contact: item.refrncNm || FALLBACK_CONTACT,
     region: extractRegions(item.hashtags),
+    industry: extractIndustry(item.bsnsSumryCn, item.trgetNm),
   }
 }

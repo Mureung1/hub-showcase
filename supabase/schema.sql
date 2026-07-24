@@ -24,6 +24,9 @@ create table if not exists public.subsidies (
                                                       -- 포함되는지만 확인하면 전국/광역권/단일
                                                       -- 지역이 같은 방식으로 매칭된다. 빈 배열은
                                                       -- "지역 정보 없음"(hashtags 미제공 등).
+  industry       text[]      not null default '{}', -- 이슈 #52: bsnsSumryCn/trgetNm 키워드 기반
+                                                      -- 업종 배열. region과 동일하게 매칭되면
+                                                      -- 가점, 빈 배열은 "업종 정보 없음"(대다수).
   created_at     timestamptz not null default now()
 );
 
@@ -32,6 +35,9 @@ alter table public.subsidies enable row level security;
 
 -- 이슈 #43: 이미 배포된 테이블은 위 create table이 스킵되므로 별도로 컬럼을 추가한다.
 alter table public.subsidies add column if not exists region text[] not null default '{}';
+
+-- 이슈 #52: 이미 배포된 테이블은 위 create table이 스킵되므로 별도로 컬럼을 추가한다.
+alter table public.subsidies add column if not exists industry text[] not null default '{}';
 
 -- 이슈 #7: 사용자가 제출한 매칭 조건(OnboardingProfile) 저장
 -- 컬럼은 server/src/routes/match.ts 의 profileSchema 와 1:1 매핑한다.

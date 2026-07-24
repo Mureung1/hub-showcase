@@ -36,6 +36,7 @@ function makeRow(overrides: Partial<SubsidyRow>): SubsidyRow {
     where_url: null,
     contact: '000-0000',
     region: [],
+    industry: [],
     ...overrides,
   }
 }
@@ -102,6 +103,52 @@ describe('match', () => {
     const result = await match(profile, 'match')
     // busan(30)은 감점, seoul/nationwide는 둘 다 70으로 동점 — id 오름차순 2차 정렬(#48)로 결정됨
     expect(result.items.map((r) => r.id)).toEqual(['nationwide', 'seoul', 'busan'])
+  })
+})
+
+describe('match — industry 가점 (이슈 #52)', () => {
+  beforeEach(() => {
+    state.rows = []
+  })
+
+  it('subsidy.industry에 profile.industry가 포함되면 가점을 받는다', async () => {
+    state.rows = [makeRow({ id: '1', industry: ['음식점', '카페·베이커리'] })]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(60) // 50 + 10 (region은 비어있어 변화 없음)
+  })
+
+  it('subsidy.industry가 있지만 profile.industry와 다르면 페널티 없이 그대로 유지한다', async () => {
+    state.rows = [makeRow({ id: '1', industry: ['제조업'] })]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(50)
+  })
+
+  it('subsidy.industry가 비어있으면(업종 정보 없음) 점수를 그대로 유지한다', async () => {
+    state.rows = [makeRow({ id: '1', industry: [] })]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(50)
+  })
+
+  it('region 가점과 industry 가점이 함께 적용된다', async () => {
+    state.rows = [makeRow({ id: '1', region: ['서울'], industry: ['음식점'] })]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(80) // 50 + 20(region) + 10(industry)
+  })
+
+  it('industry 가점도 100을 넘지 않는다', async () => {
+    state.rows = [makeRow({ id: '1', industry: ['음식점'], match_score: 95 })]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(100)
   })
 })
 
