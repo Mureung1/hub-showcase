@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: B2a implementation agent
 
 ## Parent Spec
 
@@ -43,6 +43,18 @@
 - [ ] Safe discard가 intent-first로 known pre-admission entries만 제거하고 unknown/modified/symlink, admitted, prepared와 Ready candidate bytes를 보존한다.
 - [ ] `observe()`와 Browser GET/poll은 read-only이며 mutation-capable automatic reconciliation은 Host `launch` command에만 남는다.
 - [ ] Browser projection conformance와 private path/phase/digest leak scan이 green이고 이 slice에서 Ready가 절대 projection되지 않는다.
+
+## Claim Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Exact integration handoff | `cc9a94fc6e16ec40307c2548a677eb30a0d89ee5` |
+| Reviewed B1 predecessor | `3e3e578fbd8d5f427bde6c6c6087f3789756cdba` — v3 admission, canonical bundle, containment correction와 patch-free native-context guard가 integrated·reviewed 상태다. |
+| Reviewed A1 predecessor | `c3c2b088f239fbb8d039314f28e9b26e752c0411` — auth-only close ambiguity와 non-ChatGPT account를 fail closed하는 transition lease closeout이다. |
+| Integration baseline | Coordinator가 exact handoff에서 root test·typecheck·build, Chat Shell lint, docs links, diff와 clean status를 green으로 확인했다. |
+| Observable result | `prepare`는 write-free confirmation만 만들고, `approve`는 complete `pending/approved`를 먼저 commit·readback한 뒤 B1 admission·bundle/static-context를 exactly once 수행해 `pending/prepared`를 commit·readback한다. |
+| Highest practical seam | Temp app-data/workspace filesystem에서 production State Adapter와 deterministic admission/bundle fake를 함께 사용해 every write boundary, duplicate/response-loss/relaunch, conflict와 discard를 검증한다. |
+| Scope | `packages/semester-workspace/**` 중 `package.json`·`src/contract.ts` 제외, `apps/server/src/setup/**`, `apps/server/src/workspace-admission/**`, colocated tests와 이 ticket만 수정한다. |
 
 ## Verification
 
