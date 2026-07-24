@@ -3,6 +3,7 @@ import './App.css'
 import AddTaskForm from './components/AddTaskForm'
 import ArchivedTasks from './components/ArchivedTasks'
 import Header from './components/Header'
+import MeetingMatch from './components/MeetingMatch'
 import ProgressCard from './components/ProgressCard'
 import TaskList from './components/TaskList'
 import Toast from './components/Toast'
@@ -22,6 +23,7 @@ import { safeGetStoredMemberId, safeSetStoredMemberId } from './utils/storage'
 const NEXT_STATUS = { pending: 'in_progress', in_progress: 'done', done: 'pending' }
 
 function App() {
+  const [currentPage, setCurrentPage] = useState('tasks')
   const [tasks, setTasks] = useState([])
   const [archivedTasks, setArchivedTasks] = useState([])
   const [members, setMembers] = useState([])
@@ -156,30 +158,38 @@ function App() {
           members={members}
           currentMemberId={currentMemberId}
           onChangeCurrentMember={handleChangeCurrentMember}
+          currentPage={currentPage}
+          onChangePage={setCurrentPage}
         />
-        <ProgressCard tasks={tasks} currentMemberId={currentMemberId} />
-        <TaskList
-          tasks={tasks}
-          members={members}
-          currentMemberId={currentMemberId}
-          pendingTaskIds={pendingTaskIds}
-          onToggleStatus={handleToggleStatus}
-          onCycleStatus={handleCycleStatus}
-          onDelete={handleDeleteTask}
-          onUpdateTitle={handleUpdateTitle}
-          onUpdateAssignee={handleUpdateAssignee}
-          onUpdateDueDate={handleUpdateDueDate}
-          showToast={showToast}
-        />
-        <AddTaskForm members={members} onTaskAdded={handleTaskAdded} />
-        <ArchivedTasks
-          archivedTasks={archivedTasks}
-          members={members}
-          currentMemberId={currentMemberId}
-          pendingTaskIds={pendingTaskIds}
-          onRestore={handleRestoreTask}
-          showToast={showToast}
-        />
+        {currentPage === 'tasks' ? (
+          <>
+            <ProgressCard tasks={tasks} currentMemberId={currentMemberId} />
+            <TaskList
+              tasks={tasks}
+              members={members}
+              currentMemberId={currentMemberId}
+              pendingTaskIds={pendingTaskIds}
+              onToggleStatus={handleToggleStatus}
+              onCycleStatus={handleCycleStatus}
+              onDelete={handleDeleteTask}
+              onUpdateTitle={handleUpdateTitle}
+              onUpdateAssignee={handleUpdateAssignee}
+              onUpdateDueDate={handleUpdateDueDate}
+              showToast={showToast}
+            />
+            <AddTaskForm members={members} onTaskAdded={handleTaskAdded} />
+            <ArchivedTasks
+              archivedTasks={archivedTasks}
+              members={members}
+              currentMemberId={currentMemberId}
+              pendingTaskIds={pendingTaskIds}
+              onRestore={handleRestoreTask}
+              showToast={showToast}
+            />
+          </>
+        ) : (
+          <MeetingMatch />
+        )}
       </div>
       <Toast message={toastMessage} />
     </>

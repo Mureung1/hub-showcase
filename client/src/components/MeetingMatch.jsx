@@ -78,26 +78,20 @@ function MeetingMatch() {
 
   return (
     <>
-      <div className="meeting-match-page">
-        <header className="meeting-match-header">
-          <h1>회의시간 매칭</h1>
-          <p className="subtitle">가능한 시간을 클릭해서 선택해주세요</p>
-        </header>
-
-        <div className="meeting-match-card">
-          <WeekTabs weekOffset={weekOffset} onSelectWeek={setWeekOffset} />
-          <TimeGrid dates={dates} selectedKeys={selectedKeys} onToggleCell={handleToggleCell} />
-        </div>
-
-        <button
-          type="button"
-          className="meeting-match-save-btn"
-          onClick={handleSave}
-          disabled={isSaving}
-        >
-          {isSaving ? '저장 중...' : '저장'}
-        </button>
+      <div className="meeting-match-card">
+        <WeekTabs weekOffset={weekOffset} onSelectWeek={setWeekOffset} />
+        <TimeGrid dates={dates} selectedKeys={selectedKeys} onToggleCell={handleToggleCell} />
       </div>
+
+      <button
+        type="button"
+        className="meeting-match-save-btn"
+        onClick={handleSave}
+        disabled={isSaving}
+      >
+        {isSaving ? '저장 중...' : '저장'}
+      </button>
+
       <Toast message={toastMessage} />
     </>
   );

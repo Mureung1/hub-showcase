@@ -1,26 +1,3 @@
-.meeting-match-page {
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.meeting-match-header {
-  margin-bottom: 20px;
-}
-
-.meeting-match-header h1 {
-  font-size: 36px;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  color: var(--text-primary);
-  margin-bottom: 6px;
-}
-
-.meeting-match-header .subtitle {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-}
-
 .meeting-match-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
