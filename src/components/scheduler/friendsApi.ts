@@ -1,5 +1,5 @@
 import { request } from './apiClient'
-import type { FriendGroup, FriendRequestSummary, FriendScheduleEntry, FriendSummary, HomeVisitActionKind } from './types'
+import type { FriendGroup, FriendHomeState, FriendRequestSummary, FriendScheduleEntry, FriendSummary, HomeVisitActionKind } from './types'
 
 export function fetchFriends() {
   return request<FriendSummary[]>('/api/friends')
@@ -7,6 +7,10 @@ export function fetchFriends() {
 
 export function fetchFriendSchedules(friendId: string) {
   return request<FriendScheduleEntry[]>(`/api/friends/${friendId}/schedules`)
+}
+
+export function fetchFriendHome(friendId: string) {
+  return request<FriendHomeState>(`/api/friends/${friendId}/home`)
 }
 
 export function removeFriend(friendId: string) {

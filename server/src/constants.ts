@@ -31,7 +31,7 @@ export const AVATAR_PALETTE = ['#a9c8ec', '#c7b7e7', '#a9cfbd', '#f2a58d', '#b8a
 export const HANDLE_PATTERN = /^[a-zA-Z0-9_]{3,20}$/
 
 // 마이홈 꾸미기 상점의 전역 카탈로그. 유저별이 아니라 전체 공용이라 고정 id로 upsert한다.
-// equippable: 두두가 직접 착용(헤드폰) / interactable: 장식용이지만 두두와 상호작용 가능(게임기, 베개, 화분) /
+// equippable: 두두가 직접 착용(헤드폰) / interactable: 장식용이지만 두두와 상호작용 가능(게임기, 화분) /
 // colorCustomizable: 본체 색을 사용자가 AVATAR_PALETTE 중에서 고를 수 있음(게임기) /
 // placeable: 마이홈 방 안에 물리적으로 놓을 수 있음(헤드폰은 착용만 하고 놓지 않음) /
 // wallMounted: 벽 영역에만 놓을 수 있음(창문·별 장식·선반 장식 — 화분은 방 어디든 자유롭게 놓을 수 있다) /
@@ -39,7 +39,6 @@ export const HANDLE_PATTERN = /^[a-zA-Z0-9_]{3,20}$/
 // repeatable: 색 구분 없이도 같은 아이템을 여러 개 살 수 있음(간식류 — 소비성 아이템이라 개수 제한이 없다).
 export const ROOM_ITEMS = [
   { id: 'item-game-console', name: '게임기', cost: 300, type: 'FURNITURE', iconKey: 'game-console', equippable: false, interactable: true, colorCustomizable: true, placeable: true, wallMounted: false, equipSlot: null, repeatable: false },
-  { id: 'item-pillow', name: '베개', cost: 300, type: 'FURNITURE', iconKey: 'pillow', equippable: false, interactable: true, colorCustomizable: false, placeable: true, wallMounted: false, equipSlot: null, repeatable: false },
   { id: 'item-headphones', name: '헤드폰', cost: 300, type: 'FURNITURE', iconKey: 'headphones', equippable: true, interactable: false, colorCustomizable: true, placeable: false, wallMounted: false, equipSlot: 'ACCESSORY', repeatable: false },
   { id: 'item-table', name: '테이블', cost: 350, type: 'FURNITURE', iconKey: 'table', equippable: false, interactable: false, colorCustomizable: true, placeable: true, wallMounted: false, equipSlot: null, repeatable: false },
   { id: 'item-window', name: '창문', cost: 500, type: 'WINDOW_VIEW', iconKey: 'window', equippable: false, interactable: false, colorCustomizable: false, placeable: true, wallMounted: true, equipSlot: null, repeatable: false },

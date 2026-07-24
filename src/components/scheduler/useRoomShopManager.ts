@@ -6,7 +6,6 @@ import type { RoomInventoryItem, RoomItem, RoomLayoutEntry } from './types'
 // window/wall-star/wall-shelf는 wallMounted라 y가 벽 영역(WALL_BAND, StaticViews.tsx) 안에 있어야 한다.
 const DEFAULT_PLACEMENT: Record<string, { x: number; y: number }> = {
   'game-console': { x: 32, y: 72 },
-  'pillow': { x: 68, y: 72 },
   'table': { x: 50, y: 80 },
   'window': { x: 25, y: 20 },
   'plant': { x: 85, y: 78 },
