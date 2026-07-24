@@ -64,7 +64,7 @@ Supabase에 저장합니다. 목록에서는 가벼운 메타데이터만 받고
 
 ## 문서
 
-- 🎤 [10분 발표 슬라이드 설계서](docs/ten-minute-presentation-outline-2026-07-24.md) · [발표 대본과 예상 Q&A](docs/ten-minute-presentation-script-2026-07-24.md)
+- 🎤 [10분 발표 PPT](docs/CV2PF_기업_JD_맞춤_발표.pptx) · [슬라이드 설계서](docs/ten-minute-presentation-outline-2026-07-24.md) · [발표 대본과 예상 Q&A](docs/ten-minute-presentation-script-2026-07-24.md)
 - 🏢 [기업·채용 공고 예시 5개와 선정 근거](docs/company-job-examples-2026-07-24.md)
 - 🧪 [즐겨찾기 토글 TDD · Skill · 검증 Agent 기록](docs/tdd-favorite-2026-07-23.md)
 - 🗺️ [데이터 흐름·아키텍처 설명 자료](docs/architecture-and-data-flow-2026-07-22.md)
