@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-24 · BE-RECIPE-003 · 완료
+
+- 결과: 인증 사용자가 수정한 전체 레시피 초안을 다시 검증하고, 출처 유무에 따라 `OWNED` 또는 `EXTERNAL`로 결정해 레시피·재료·단계·출처를 PostgreSQL 트랜잭션으로 저장한다. 위조한 소유자·유형과 안전하지 않은 URL은 저장 전에 거부한다.
+- 결정: `/api/auth/me` 호출 여부와 무관하게 Firebase UID로 서비스 사용자를 upsert하며, 출처 URL은 콘텐츠를 다시 수집하지 않고 기존 URL 형식·공개 주소 검증을 재사용한다.
+- 시행착오: focused 테스트가 생성 서비스 모듈 부재로 실패하는 Red를 확인한 뒤 최소 구현으로 Green을 만들었다.
+- 검증: 백엔드 전체 29개 테스트, `backend npm run type-check`, `backend npm run build`, `git diff --check`를 통과했다. mock DB client로 두 유형 저장, 전체 입력 검증, 위조 필드 거부와 하위 INSERT 실패 시 롤백을 확인했다.
+- 후속: `FE-RECIPE-003`, `BE-RECIPE-004`
+- 반복 패턴: 없음
+
 ## 2026-07-24 · BE-AI-005 · 완료
 
 - 결과: 공개 `youtube.com`, `youtu.be` URL을 검증해 YouTube Data API의 영상 제목·채널명을 출처로 사용하고, 공개 또는 자동 생성 자막을 우선 기존 OpenAI 레시피 구조화 흐름에 연결했다. 자막 조회 실패 시 `gemini-3.6-flash` 영상 분석으로 한 번 대체하며 전체 실패는 기존 `URL_FETCH_FAILED` 422와 직접 입력 안내를 유지한다.

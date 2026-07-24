@@ -1,5 +1,10 @@
 import { Router, type Request, type Response } from "express";
 import { databasePool } from "../database.js";
+import {
+  createRecipe,
+  RecipeCreateValidationError,
+} from "../services/recipeCreate.service.js";
+import { UrlContentError } from "../services/urlContent.service.js";
 
 type PrototypeRecipe = {
   id: number;
@@ -103,38 +108,48 @@ router.get("/:recipeId", (req: Request, res: Response) => {
   });
 });
 
-router.post("/", (req: Request, res: Response) => {
-  const { title, description } = req.body as {
-    title?: string;
-    description?: string;
-  };
+router.post("/", async (req: Request, res: Response) => {
+  const firebaseUser = req.firebaseUser;
 
-  if (!title?.trim()) {
-    return res.status(400).json({
+  if (!firebaseUser) {
+    return res.status(401).json({
       error: {
-        code: "VALIDATION_ERROR",
-        message: "입력값을 확인해 주세요.",
-        details: [
-          {
-            field: "title",
-            message: "레시피 제목은 필수입니다.",
-          },
-        ],
+        code: "UNAUTHORIZED",
+        message: "로그인이 필요합니다.",
       },
     });
   }
 
-  const newRecipe: PrototypeRecipe = {
-    id: prototypeRecipes.length + 1,
-    title: title.trim(),
-    description: description?.trim() ?? "",
-  };
+  try {
+    const recipe = await createRecipe(databasePool, firebaseUser, req.body);
 
-  prototypeRecipes.push(newRecipe);
+    return res.status(201).json({
+      data: recipe,
+    });
+  } catch (error) {
+    if (error instanceof RecipeCreateValidationError) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "입력값을 확인해 주세요.",
+        },
+      });
+    }
 
-  return res.status(201).json({
-    data: newRecipe,
-  });
+    if (error instanceof UrlContentError) {
+      return res.status(400).json({
+        error: {
+          code: error.code,
+          message:
+            error.code === "INVALID_URL"
+              ? "URL 형식을 확인해 주세요."
+              : "접근할 수 없는 URL입니다.",
+        },
+      });
+    }
+
+    throw error;
+  }
 });
 
 export default router;
