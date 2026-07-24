@@ -171,6 +171,7 @@ export class SemesterReadyValidationError extends Error {
 type PreparedDraft = {
   readonly expectedRevisionToken: string | null
   readonly nextRevision: number
+  readonly approvalAttempted: boolean
   readonly planDescription: WorkspaceAdmissionPlanDescription
   readonly projection: Extract<
     SemesterSetupJourneyProjection,
@@ -230,6 +231,13 @@ function createSetupJourney(
     SetupReconcileResult<SemesterSetupJourneyProjection>
   > => {
     if (command.kind === 'approve') {
+      if (
+        projection.state === 'confirmation_required' &&
+        projection.setupPlanId === command.setupPlanId &&
+        draft?.planDescription.setupPlanId === command.setupPlanId
+      ) {
+        draft = { ...draft, approvalAttempted: true }
+      }
       const existing = approvePromises.get(command.setupPlanId)
       if (existing) return existing
       const promise = enqueue(() => approve(command.setupPlanId))
@@ -361,6 +369,7 @@ function createSetupJourney(
           ? observed.revisionToken
           : null,
       nextRevision,
+      approvalAttempted: false,
       planDescription: description,
       projection: confirmation,
     }
@@ -375,7 +384,8 @@ function createSetupJourney(
       projection.state !== 'confirmation_required' ||
       projection.setupPlanId !== setupPlanId ||
       !draft ||
-      draft.planDescription.setupPlanId !== setupPlanId
+      draft.planDescription.setupPlanId !== setupPlanId ||
+      draft.approvalAttempted
     ) {
       return { outcome: 'setup_conflict', projection }
     }

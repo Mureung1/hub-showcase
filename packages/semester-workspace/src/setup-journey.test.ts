@@ -244,6 +244,136 @@ test('return_to_input rejects invalid state or stale authority without clearing 
   }
 })
 
+test('approval response loss keeps a queued return_to_input closed and retry converges on the durable receipt', async () => {
+  const fixture = await createJourneyFixture('approval-return-race')
+  try {
+    let reachedFault = (): void => {}
+    let releaseFault = (): void => {}
+    const reached = new Promise<void>((resolve) => {
+      reachedFault = resolve
+    })
+    const release = new Promise<void>((resolve) => {
+      releaseFault = resolve
+    })
+    let faulted = false
+    const journey = fixture.createJourney({
+      async fault(point) {
+        if (faulted || point !== 'after_approved_commit') return
+        faulted = true
+        reachedFault()
+        await release
+        throw new Error('approved-response-lost')
+      },
+    })
+    const confirmation = await confirmationFor(journey, fixture.input)
+    const approving = journey.reconcile({
+      kind: 'approve',
+      setupPlanId: confirmation.setupPlanId,
+    })
+    await reached
+    const returning = journey.reconcile({
+      kind: 'return_to_input',
+      setupPlanId: confirmation.setupPlanId,
+    })
+
+    releaseFault()
+    await assert.rejects(approving, /approved-response-lost/)
+    const returned = await returning
+
+    assert.deepEqual(returned, {
+      outcome: 'setup_conflict',
+      projection: confirmation,
+    })
+    assert.notEqual(returned.projection.state, 'input_required')
+    assert.deepEqual(
+      await journey.reconcile({
+        kind: 'return_to_input',
+        setupPlanId: confirmation.setupPlanId,
+      }),
+      {
+        outcome: 'setup_conflict',
+        projection: confirmation,
+      },
+    )
+    assert.equal(
+      (await approvedReceipt(fixture.store)).lifecycle.phase,
+      'approved',
+    )
+
+    const retried = await journey.reconcile({
+      kind: 'approve',
+      setupPlanId: confirmation.setupPlanId,
+    })
+    assert.equal(retried.outcome, 'resumed')
+    assert.equal(
+      (await preparedReceipt(fixture.store)).lifecycle.phase,
+      'prepared',
+    )
+    const relaunched = await fixture
+      .createJourney()
+      .reconcile({ kind: 'launch' })
+    assert.equal(relaunched.outcome, 'resumed')
+    assert.deepEqual(await readdir(fixture.canonicalParent), [
+      fixture.input.leafName,
+    ])
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('approval claim keeps return_to_input closed when the first durable read rejects', async () => {
+  const fixture = await createJourneyFixture('approval-read-failure')
+  try {
+    let rejectNextRead = false
+    const journey = fixture.createJourney({
+      stateStore: {
+        async read() {
+          if (rejectNextRead) {
+            rejectNextRead = false
+            throw new Error('synthetic approval read failure')
+          }
+          return fixture.store.read()
+        },
+        compareAndReplace: (input) =>
+          fixture.store.compareAndReplace(input),
+        reconcileAbandonedWrite: () =>
+          fixture.store.reconcileAbandonedWrite(),
+      },
+    })
+    const confirmation = await confirmationFor(journey, fixture.input)
+    rejectNextRead = true
+
+    await assert.rejects(
+      journey.reconcile({
+        kind: 'approve',
+        setupPlanId: confirmation.setupPlanId,
+      }),
+      /synthetic approval read failure/,
+    )
+    const returned = await journey.reconcile({
+      kind: 'return_to_input',
+      setupPlanId: confirmation.setupPlanId,
+    })
+
+    assert.deepEqual(returned, {
+      outcome: 'setup_conflict',
+      projection: confirmation,
+    })
+    assert.equal((await fixture.store.read()).status, 'absent')
+    assert.equal(
+      (
+        await journey.reconcile({
+          kind: 'approve',
+          setupPlanId: confirmation.setupPlanId,
+        })
+      ).outcome,
+      'resumed',
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('same-plan concurrent duplicate approve joins one terminal promise and one scaffold reservation', async () => {
   const fixture = await createJourneyFixture('duplicate-approve')
   try {
