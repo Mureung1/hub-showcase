@@ -30,9 +30,10 @@ describe('Gemini 합성 데이터 projection', () => {
     });
 
     expect(document).toBe(
-      'title: React 폼 검증 패턴 | text: 메모: 입력 오류를 즉시 안내할 때 | 카테고리: 개발 | 도메인: react.example'
+      'title: React 폼 검증 패턴 | text: 메모: 입력 오류를 즉시 안내할 때 | 도메인: react.example'
     );
     expect(query).toBe('task: search result | query: 표현이 다른 검색어');
+    expect(document).not.toContain('개발');
     expect(document).not.toContain('전송하면-안-되는');
     expect(query).not.toContain('전송하면-안-되는');
   });
@@ -52,10 +53,10 @@ describe('Gemini 합성 데이터 projection', () => {
     );
 
     expect(GEMINI_PROJECTION_HASH).toBe(
-      '8308faf17802dcba4d599c8ac138c9bea156b1ef82640a99b4c9b0ec836785b2'
+      '94d47b1d960143072daf2225190c741dbf91f759bb5a15c0cd079b9f004af684'
     );
     expect(projectedInputs).toHaveLength(117);
-    expect(codePoints).toBe(8522);
-    expect(utf8Bytes).toBe(14998);
+    expect(codePoints).toBe(7694);
+    expect(utf8Bytes).toBe(13234);
   });
 });

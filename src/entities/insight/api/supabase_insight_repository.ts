@@ -17,7 +17,7 @@ const INSIGHT_COLUMNS = [
   'title',
   'title_origin',
   'memo',
-  'category',
+  'category_id',
   'schema_version',
   'created_at',
   'updated_at',
@@ -136,7 +136,7 @@ export function createSupabaseInsightRepository(
 
 function toInsertRow(insight: Insight, userId: string) {
   return {
-    category: insight.category,
+    category_id: insight.categoryId,
     domain: insight.domain,
     id: insight.id,
     memo: insight.memo,
@@ -151,7 +151,7 @@ function toInsertRow(insight: Insight, userId: string) {
 
 function toUpdateRow(insight: Insight) {
   return {
-    category: insight.category,
+    category_id: insight.categoryId,
     memo: insight.memo,
     title: insight.title,
     title_origin: insight.titleOrigin,
@@ -168,7 +168,7 @@ function parseInsightRow(row: unknown, userId: string) {
   }
 
   return parseInsight({
-    category: row.category,
+    categoryId: row.category_id,
     createdAt: row.created_at,
     domain: row.domain,
     id: row.id,

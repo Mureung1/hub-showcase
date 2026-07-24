@@ -1,6 +1,10 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 
+import type {
+  CategoryRepository,
+  CategoryRepositoryWarning,
+} from '@/entities/category';
 import {
   filterInsights,
   retrieveInsights,
@@ -9,17 +13,24 @@ import {
   type InsightCaptureService,
   type InsightRepositoryWarning,
 } from '@/entities/insight';
+import { CategoryManager } from '@/features/category-management';
 import { PwaInstallNotice, usePwaInstallPrompt } from '@/features/pwa-install';
 import { HomePage, type SuggestedSituation } from '@/pages/home';
 import { LibraryPage } from '@/pages/library';
 import { SavePage, type SaveContextDraft } from '@/pages/save';
 import { readClipboardText } from '@/shared/browser';
-import { BrandLogo, StatusMessage } from '@/shared/ui';
+import {
+  BrandLogo,
+  StatusMessage,
+  type CategoryFilterOption,
+} from '@/shared/ui';
 import { AppNavigation, type WorkspaceTab } from '@/widgets/app-navigation';
 
+import { createBrowserCategoryRepository } from './model/create_browser_category_repository';
 import { createBrowserInsightRepository } from './model/create_browser_insight_repository';
 import { createRepositoryInsightCaptureService } from './model/create_repository_insight_capture_service';
-import { CATEGORY_FILTERS, SUGGESTED_SITUATIONS } from './model/workspace_seed';
+import { useCategoryWorkspace } from './model/use_category_workspace';
+import { SUGGESTED_SITUATIONS } from './model/workspace_seed';
 import {
   useInsightWorkspace,
   type SaveInsightFailureReason,
@@ -28,9 +39,29 @@ import {
 import './styles/authenticated_workspace.css';
 
 const EMPTY_CONTEXT_DRAFT: SaveContextDraft = {
-  category: '',
+  categoryId: null,
   memo: '',
   title: '',
+};
+const CATEGORY_LOAD_WARNING_MESSAGES: Record<
+  CategoryRepositoryWarning,
+  { description: string; title: string }
+> = {
+  'corrupted-entry': {
+    title: '일부 카테고리를 제외했어요',
+    description:
+      '손상된 카테고리를 제외했습니다. 보이는 카테고리는 계속 사용할 수 있어요.',
+  },
+  'permission-denied': {
+    title: '카테고리 접근 권한을 확인하지 못했어요',
+    description:
+      '인사이트는 계속 볼 수 있지만 카테고리는 다시 로그인한 뒤 변경할 수 있어요.',
+  },
+  'read-failed': {
+    title: '카테고리를 불러오지 못했어요',
+    description:
+      '인사이트는 계속 볼 수 있지만 카테고리는 네트워크를 확인한 뒤 다시 시도해 주세요.',
+  },
 };
 const SAVE_ERROR_MESSAGES: Record<SaveInsightFailureReason, string> = {
   'invalid-url': '올바른 URL을 입력해주세요.',
@@ -70,6 +101,12 @@ function hasBlockingLoadWarning(warnings: InsightRepositoryWarning[]) {
   );
 }
 
+function hasBlockingCategoryWarning(warnings: CategoryRepositoryWarning[]) {
+  return warnings.some(
+    (warning) => warning === 'read-failed' || warning === 'permission-denied'
+  );
+}
+
 function isLibraryUnavailable(
   warnings: InsightRepositoryWarning[],
   insightCount: number
@@ -98,6 +135,7 @@ function getLoadWarningMessage(
 export type AuthenticatedWorkspaceProps = {
   accountControl?: ReactNode;
   captureService?: InsightCaptureService;
+  categoryRepository?: CategoryRepository;
   initialSaveDraft?: SaveInsightInput;
   repository?: InsightRepository;
   userId?: string;
@@ -106,6 +144,7 @@ export type AuthenticatedWorkspaceProps = {
 export function AuthenticatedWorkspace({
   accountControl,
   captureService,
+  categoryRepository,
   initialSaveDraft,
   repository,
   userId,
@@ -129,8 +168,19 @@ export function AuthenticatedWorkspace({
           : createUnavailableInsightCaptureService()),
     [captureService, repository, userId]
   );
+  const workspaceCategoryRepository = useMemo(
+    () =>
+      categoryRepository ??
+      (userId
+        ? createBrowserCategoryRepository(userId)
+        : repository
+          ? createEmptyCategoryRepository()
+          : createUnavailableCategoryRepository()),
+    [categoryRepository, repository, userId]
+  );
   const {
     deleteInsight,
+    detachCategory,
     insights,
     isLoading,
     isMutating,
@@ -144,7 +194,7 @@ export function AuthenticatedWorkspace({
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(() =>
     initialSaveDraft ? 'save' : 'home'
   );
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [activeCategory, setActiveCategory] = useState('all');
   const [globalQuery, setGlobalQuery] = useState('');
   const [retrieveQuery, setRetrieveQuery] = useState('');
   const [submittedRetrieveQuery, setSubmittedRetrieveQuery] = useState('');
@@ -160,10 +210,60 @@ export function AuthenticatedWorkspace({
   const [contextDraft, setContextDraft] = useState(EMPTY_CONTEXT_DRAFT);
   const [contextSaveComplete, setContextSaveComplete] = useState(false);
   const [contextSaveFailed, setContextSaveFailed] = useState(false);
+  const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
+  const pendingCategorySelectionRef = useRef<
+    ((categoryId: string) => void) | undefined
+  >(undefined);
+  const handleCategoryDeleted = useCallback(
+    (categoryId: string) => {
+      detachCategory(categoryId);
+      setActiveCategory((currentCategory) =>
+        currentCategory === categoryId ? 'all' : currentCategory
+      );
+      setContextDraft((currentDraft) =>
+        currentDraft.categoryId === categoryId
+          ? { ...currentDraft, categoryId: null }
+          : currentDraft
+      );
+    },
+    [detachCategory]
+  );
+  const {
+    categories,
+    createCategory,
+    deleteCategory,
+    isLoading: categoriesLoading,
+    isMutating: categoriesMutating,
+    loadWarnings: categoryLoadWarnings,
+    updateCategory,
+  } = useCategoryWorkspace({
+    onCategoryDeleted: handleCategoryDeleted,
+    repository: workspaceCategoryRepository,
+  });
+  const categoryNameById = useMemo(
+    () => new Map(categories.map((category) => [category.id, category.name])),
+    [categories]
+  );
+  const categoryOptions = useMemo<CategoryFilterOption[]>(
+    () => [
+      { colorKey: null, label: '전체', value: 'all' },
+      ...categories.map((category) => ({
+        colorKey: category.colorKey,
+        label: category.name,
+        value: category.id,
+      })),
+      { colorKey: null, label: '미분류', value: 'uncategorized' },
+    ],
+    [categories]
+  );
+  const categorySelectionDisabled =
+    categoriesLoading || hasBlockingCategoryWarning(categoryLoadWarnings);
 
   const visibleInsights = useMemo(() => {
-    return filterInsights(insights, activeCategory, globalQuery);
-  }, [activeCategory, globalQuery, insights]);
+    return filterInsights(insights, activeCategory, globalQuery, {
+      getCategoryName: (categoryId) => categoryNameById.get(categoryId) ?? null,
+    });
+  }, [activeCategory, categoryNameById, globalQuery, insights]);
 
   const retrieveResults = useMemo(() => {
     return retrieveInsights(insights, submittedRetrieveQuery);
@@ -217,7 +317,7 @@ export function AuthenticatedWorkspace({
 
     pwaInstallPrompt.recordSuccessfulSave();
     setSaveErrorReason(undefined);
-    setActiveCategory('All');
+    setActiveCategory('all');
     setSavedInsightId(saveResult.insightId);
     setContextDraft(EMPTY_CONTEXT_DRAFT);
     setContextSaveComplete(false);
@@ -294,9 +394,41 @@ export function AuthenticatedWorkspace({
     setSaveComplete(false);
     setSaveDraft({ source: 'web', url: '' });
     setSaveErrorReason(undefined);
-    setActiveCategory('All');
+    setActiveCategory('all');
     setGlobalQuery('');
     setActiveTab('library');
+  }
+
+  function openCategoryManager() {
+    pendingCategorySelectionRef.current = undefined;
+    setCategoryManagerOpen(true);
+  }
+
+  function requestCategoryCreation(
+    selectCategory: (categoryId: string) => void
+  ) {
+    pendingCategorySelectionRef.current = selectCategory;
+    setCategoryManagerOpen(true);
+  }
+
+  function handleCategoryManagerOpenChange(open: boolean) {
+    setCategoryManagerOpen(open);
+
+    if (!open) {
+      pendingCategorySelectionRef.current = undefined;
+    }
+  }
+
+  function handleCategoryCreated(category: { id: string }) {
+    const selectCategory = pendingCategorySelectionRef.current;
+
+    if (!selectCategory) {
+      return;
+    }
+
+    selectCategory(category.id);
+    pendingCategorySelectionRef.current = undefined;
+    setCategoryManagerOpen(false);
   }
 
   return (
@@ -342,17 +474,39 @@ export function AuthenticatedWorkspace({
           </div>
         ) : null}
 
+        {categoryLoadWarnings.length > 0 ? (
+          <div className="workspace-warnings" aria-label="카테고리 안내">
+            {categoryLoadWarnings.map((warning) => {
+              const message = CATEGORY_LOAD_WARNING_MESSAGES[warning];
+
+              return (
+                <StatusMessage
+                  key={warning}
+                  title={message.title}
+                  variant="error"
+                >
+                  <p>{message.description}</p>
+                </StatusMessage>
+              );
+            })}
+          </div>
+        ) : null}
+
         {activeTab === 'library' ? (
           <LibraryPage
             activeCategory={activeCategory}
-            categoryOptions={CATEGORY_FILTERS}
+            categories={categories}
+            categoryManagementDisabled={categorySelectionDisabled}
+            categoryOptions={categoryOptions}
             insights={visibleInsights}
             loading={isLoading}
             onCategoryChange={setActiveCategory}
             onDeleteInsight={deleteInsight}
+            onManageCategories={openCategoryManager}
             onOpenSave={() => setActiveTab('save')}
             onQueryChange={setGlobalQuery}
             onRetryLoad={() => window.location.reload()}
+            onRequestCategoryCreation={requestCategoryCreation}
             onUpdateInsight={updateInsightContext}
             query={globalQuery}
             totalInsightCount={insights.length}
@@ -387,6 +541,8 @@ export function AuthenticatedWorkspace({
 
         {activeTab === 'save' ? (
           <SavePage
+            categories={categories}
+            categorySelectionDisabled={categorySelectionDisabled}
             contextDraft={contextDraft}
             contextErrorMessage={
               contextSaveFailed
@@ -403,6 +559,7 @@ export function AuthenticatedWorkspace({
             onContextSave={handleContextSave}
             onContextSkip={handleContextSkip}
             onPasteFromClipboard={handleClipboardPaste}
+            onRequestCategoryCreation={requestCategoryCreation}
             onSave={handleSave}
             onTitleChange={handleSaveTitleChange}
             onUrlChange={handleSaveUrlChange}
@@ -415,6 +572,16 @@ export function AuthenticatedWorkspace({
         ) : null}
       </main>
 
+      <CategoryManager
+        categories={categories}
+        createCategory={createCategory}
+        deleteCategory={deleteCategory}
+        isMutating={categoriesMutating}
+        onCategoryCreated={handleCategoryCreated}
+        onOpenChange={handleCategoryManagerOpenChange}
+        open={categoryManagerOpen}
+        updateCategory={updateCategory}
+      />
       <AppNavigation onTabChange={setActiveTab} tab={activeTab} />
     </div>
   );
@@ -433,6 +600,32 @@ function createUnavailableInsightRepository(): InsightRepository {
     },
     async update() {
       return { ok: false, reason: 'permission-denied' };
+    },
+  };
+}
+
+function createEmptyCategoryRepository(): CategoryRepository {
+  return {
+    async create() {
+      return { ok: false, reason: 'permission-denied' };
+    },
+    async delete() {
+      return { ok: false, reason: 'permission-denied' };
+    },
+    async list() {
+      return { categories: [], warnings: [] };
+    },
+    async update() {
+      return { ok: false, reason: 'permission-denied' };
+    },
+  };
+}
+
+function createUnavailableCategoryRepository(): CategoryRepository {
+  return {
+    ...createEmptyCategoryRepository(),
+    async list() {
+      return { categories: [], warnings: ['permission-denied'] };
     },
   };
 }

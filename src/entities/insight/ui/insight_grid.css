@@ -121,6 +121,21 @@
   line-height: var(--typography-label-line-height);
 }
 
+.insight-card__category-select-value {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.insight-card__category-select-mark {
+  width: var(--spacing-2);
+  height: var(--spacing-2);
+  border-radius: var(--radius-button);
+  background: var(--category-color);
+  flex: 0 0 auto;
+}
+
 .insight-card__locked-url {
   display: grid;
   min-width: 0;

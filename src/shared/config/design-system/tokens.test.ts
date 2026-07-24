@@ -29,7 +29,62 @@ function contrastRatio(foreground: string, background: string) {
 }
 
 describe('designTokens', () => {
+  it('keeps category colors in the approved palette order', () => {
+    expect(Object.keys(designTokens.category)).toEqual([
+      'slate-1',
+      'slate-2',
+      'slate-3',
+      'blue-1',
+      'blue-2',
+      'blue-3',
+      'indigo-1',
+      'indigo-2',
+      'indigo-3',
+      'violet-1',
+      'violet-2',
+      'violet-3',
+      'green-1',
+      'green-2',
+      'green-3',
+      'teal-1',
+      'teal-2',
+      'teal-3',
+      'amber-1',
+      'amber-2',
+      'amber-3',
+      'coral-1',
+      'coral-2',
+      'coral-3',
+    ]);
+  });
+
   it('defines the complete approved token contract', () => {
+    expect(designTokens.category).toEqual({
+      'amber-1': '#FEF3C7',
+      'amber-2': '#F59E0B',
+      'amber-3': '#B45309',
+      'blue-1': '#DBEAFE',
+      'blue-2': '#3B82F6',
+      'blue-3': '#1D4ED8',
+      'coral-1': '#FEE2E2',
+      'coral-2': '#F04438',
+      'coral-3': '#B42318',
+      'green-1': '#DCFCE7',
+      'green-2': '#16A34A',
+      'green-3': '#166534',
+      'indigo-1': '#E0E7FF',
+      'indigo-2': '#4F46E5',
+      'indigo-3': '#4338CA',
+      'slate-1': '#F1F5F9',
+      'slate-2': '#64748B',
+      'slate-3': '#334155',
+      'teal-1': '#CCFBF1',
+      'teal-2': '#0D9488',
+      'teal-3': '#115E59',
+      'violet-1': '#EDE9FE',
+      'violet-2': '#7C3AED',
+      'violet-3': '#6D28D9',
+    });
     expect(designTokens.color).toEqual({
       amber: '#F59E0B',
       ash: '#E1E2E5',

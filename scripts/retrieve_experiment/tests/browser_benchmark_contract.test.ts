@@ -179,7 +179,9 @@ describe('브라우저 벤치마크 계약', () => {
       typeof renderBrowserBenchmarkReport
     >[0];
 
-    expect(renderBrowserBenchmarkReport(result)).toBe(reportText);
+    expect(renderBrowserBenchmarkReport(result)).toBe(
+      reportText.replace(/\r\n/gu, '\n')
+    );
   });
 
   it('UA 메모리 API를 원래 receiver로 호출한다', async () => {

@@ -19,7 +19,7 @@ const INSIGHT_COLUMNS = [
   'title',
   'title_origin',
   'memo',
-  'category',
+  'category_id',
   'schema_version',
   'created_at',
   'updated_at',
@@ -130,7 +130,7 @@ export function createSupabaseInsightCaptureStore(
 
 function toInsertRow(input: InsightCaptureStoreInput) {
   return {
-    category: null,
+    category_id: null,
     domain: input.domain,
     memo: null,
     normalized_url: input.normalizedUrl,
@@ -182,13 +182,13 @@ function parseCapturedInsight(
     ]) ||
     !isTitleOrigin(value.title_origin) ||
     !isNullableString(value.memo) ||
-    !isNullableString(value.category)
+    !isNullableUuid(value.category_id)
   ) {
     return null;
   }
 
   const row = value as {
-    category: string | null;
+    category_id: string | null;
     created_at: string;
     domain: string;
     id: string;
@@ -201,7 +201,7 @@ function parseCapturedInsight(
   };
 
   return {
-    category: row.category,
+    categoryId: row.category_id,
     createdAt: row.created_at,
     domain: row.domain,
     id: row.id,
@@ -237,6 +237,16 @@ function isTitleOrigin(
 
 function isNullableString(value: unknown): value is string | null {
   return value === null || typeof value === 'string';
+}
+
+function isNullableUuid(value: unknown): value is string | null {
+  return (
+    value === null ||
+    (typeof value === 'string' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+        value
+      ))
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

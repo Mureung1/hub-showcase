@@ -10,6 +10,8 @@ import { DesignSystemProvider } from '@/shared/ui';
 
 import { LibraryPage } from './library_page';
 
+const DEVELOPMENT_CATEGORY_ID = '10000000-0000-4000-8000-000000000001';
+
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
@@ -62,8 +64,8 @@ describe('LibraryPage', () => {
     render(
       <DesignSystemProvider>
         <LibraryPage
-          activeCategory="All"
-          categoryOptions={[{ label: '전체', tone: 'slate', value: 'All' }]}
+          activeCategory="all"
+          categoryOptions={[{ colorKey: null, label: '전체', value: 'all' }]}
           insights={[]}
           totalInsightCount={0}
           onCategoryChange={vi.fn()}
@@ -98,8 +100,8 @@ describe('LibraryPage', () => {
     render(
       <DesignSystemProvider>
         <LibraryPage
-          activeCategory="All"
-          categoryOptions={[{ label: '전체', tone: 'slate', value: 'All' }]}
+          activeCategory="all"
+          categoryOptions={[{ colorKey: null, label: '전체', value: 'all' }]}
           insights={[]}
           totalInsightCount={1}
           onCategoryChange={vi.fn()}
@@ -134,8 +136,8 @@ describe('LibraryPage', () => {
     render(
       <DesignSystemProvider>
         <LibraryPage
-          activeCategory="All"
-          categoryOptions={[{ label: '전체', tone: 'slate', value: 'All' }]}
+          activeCategory="all"
+          categoryOptions={[{ colorKey: null, label: '전체', value: 'all' }]}
           insights={[]}
           totalInsightCount={0}
           onCategoryChange={vi.fn()}
@@ -165,10 +167,14 @@ describe('LibraryPage', () => {
     render(
       <DesignSystemProvider>
         <LibraryPage
-          activeCategory="개발"
+          activeCategory={DEVELOPMENT_CATEGORY_ID}
           categoryOptions={[
-            { label: '전체', tone: 'slate', value: 'All' },
-            { label: '개발', tone: 'blue', value: '개발' },
+            { colorKey: null, label: '전체', value: 'all' },
+            {
+              colorKey: 'blue-2',
+              label: '개발',
+              value: DEVELOPMENT_CATEGORY_ID,
+            },
           ]}
           insights={[]}
           totalInsightCount={1}
@@ -194,7 +200,7 @@ describe('LibraryPage', () => {
 
     await user.click(screen.getByRole('button', { name: '전체 보기' }));
 
-    expect(onCategoryChange).toHaveBeenCalledWith('All');
+    expect(onCategoryChange).toHaveBeenCalledWith('all');
     expect(onQueryChange).toHaveBeenCalledWith('');
   });
 
@@ -205,8 +211,8 @@ describe('LibraryPage', () => {
     render(
       <DesignSystemProvider>
         <LibraryPage
-          activeCategory="All"
-          categoryOptions={[{ label: '전체', tone: 'slate', value: 'All' }]}
+          activeCategory="all"
+          categoryOptions={[{ colorKey: null, label: '전체', value: 'all' }]}
           insights={[]}
           totalInsightCount={0}
           onCategoryChange={vi.fn()}

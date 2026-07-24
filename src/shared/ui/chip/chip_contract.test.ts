@@ -3,16 +3,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-import { designTokens } from '@/shared/config/design-system';
+import { categoryPalette, designTokens } from '@/shared/config/design-system';
 
 const chipSource = readFileSync(new URL('./chip.tsx', import.meta.url), 'utf8');
 const chipStyles = readFileSync(new URL('./chip.css', import.meta.url), 'utf8');
-const colorByCssVariable = new Map(
-  Object.entries(designTokens.color).map(([name, value]) => [
-    `--color-${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`,
-    value,
-  ])
-);
 
 describe('ChoiceChip implementation contract', () => {
   it('uses a named root-ref adapter', () => {
@@ -38,36 +32,32 @@ describe('ChoiceChip implementation contract', () => {
     );
   });
 
-  it('keeps the green category tag text contrast at 4.5 to 1 or higher', () => {
-    const greenState = chipStyles.match(
-      /span\.category-tag--green\s*\{(?<declarations>[^}]*)\}/s
+  it('connects category palette variables to the rendered tag colors', () => {
+    const categoryTagStyles = chipStyles.match(
+      /span\.category-tag\s*\{(?<declarations>[^}]*)\}/s
     )?.groups?.declarations;
-    const foreground = getTokenValue(getColorVariable(greenState, 'color'));
-    const background = getTokenValue(
-      getColorVariable(greenState, 'background')
-    );
 
-    expect(getContrastRatio(foreground, background)).toBeGreaterThanOrEqual(
-      4.5
+    expect(chipSource).toContain("'--category-color': palette.cssVariable");
+    expect(chipSource).toContain("'--category-foreground':");
+    expect(categoryTagStyles).toMatch(
+      /background: var\(--category-color\);[^}]*color: var\(--category-foreground\);/s
     );
   });
+
+  it('keeps every category palette foreground at 4.5 to 1 or higher', () => {
+    for (const palette of Object.values(categoryPalette)) {
+      const foreground =
+        palette.foreground === 'canvas'
+          ? designTokens.color.canvas
+          : designTokens.color.ink;
+
+      expect(
+        getContrastRatio(foreground, palette.color),
+        `${palette.accessibleName} 대비`
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+  });
 });
-
-function getColorVariable(declarations: string | undefined, property: string) {
-  return declarations?.match(
-    new RegExp(`${property}:\\s*var\\((--color-[^)]+)\\);`)
-  )?.[1];
-}
-
-function getTokenValue(variable: string | undefined) {
-  const value = variable ? colorByCssVariable.get(variable) : undefined;
-
-  if (!value) {
-    throw new Error(`Missing color token: ${variable ?? 'undefined'}`);
-  }
-
-  return value;
-}
 
 function getContrastRatio(foreground: string, background: string) {
   const foregroundLuminance = getRelativeLuminance(foreground);

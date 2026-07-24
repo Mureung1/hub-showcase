@@ -193,7 +193,7 @@ describe('useInsightWorkspace', () => {
     expect(result.current.isMutating).toBe(false);
   });
 
-  it('개인 맥락을 정규화해 원격 수정 성공 후 반영한다', async () => {
+  it('개인 맥락을 원격 수정 성공 후 반영한다', async () => {
     const savedInsight = createInsight({ id: 'saved' });
     const update = vi.fn<InsightRepository['update']>(async (candidate) => ({
       insight: candidate,
@@ -213,7 +213,7 @@ describe('useInsightWorkspace', () => {
     await act(async () => {
       await expect(
         result.current.updateInsightContext(savedInsight.id, {
-          category: '  Design   Systems  ',
+          categoryId: '10000000-0000-4000-8000-000000000001',
           memo: '  다시 볼 메모  ',
           title: '  새 제목  ',
         })
@@ -223,7 +223,7 @@ describe('useInsightWorkspace', () => {
     expect(update).toHaveBeenCalledWith({
       ...savedInsight,
       titleOrigin: 'user',
-      category: 'Design Systems',
+      categoryId: '10000000-0000-4000-8000-000000000001',
       memo: '다시 볼 메모',
       title: '새 제목',
       updatedAt: '2026-07-15T01:00:00.000Z',
@@ -253,7 +253,7 @@ describe('useInsightWorkspace', () => {
     await act(async () => {
       await expect(
         result.current.updateInsightContext(savedInsight.id, {
-          category: 'Development',
+          categoryId: '10000000-0000-4000-8000-000000000001',
           memo: 'Read before implementation.',
           title: '   ',
         })
@@ -261,7 +261,7 @@ describe('useInsightWorkspace', () => {
     });
 
     expect(update.mock.calls[0]?.[0]).toMatchObject({
-      category: 'Development',
+      categoryId: '10000000-0000-4000-8000-000000000001',
       memo: 'Read before implementation.',
       title: savedInsight.title,
       titleOrigin: savedInsight.titleOrigin,
@@ -288,7 +288,7 @@ describe('useInsightWorkspace', () => {
     await act(async () => {
       await expect(
         result.current.updateInsightContext(savedInsight.id, {
-          category: '개발',
+          categoryId: '10000000-0000-4000-8000-000000000001',
           memo: '새 메모',
           title: '새 제목',
         })
@@ -324,7 +324,7 @@ describe('useInsightWorkspace', () => {
 
     await act(async () => {
       await result.current.updateInsightContext(savedInsight.id, {
-        category: '',
+        categoryId: null,
         memo: '단조 증가 확인',
         title: savedInsight.title,
       });
@@ -369,6 +369,29 @@ describe('useInsightWorkspace', () => {
       ).resolves.toEqual({ ok: true });
     });
     expect(result.current.insights).toEqual([secondInsight]);
+  });
+
+  it('삭제된 카테고리를 참조하던 인사이트를 미분류로 동기화한다', async () => {
+    const deletedCategoryId = '10000000-0000-4000-8000-000000000001';
+    const repository = createRepository({
+      list: vi.fn().mockResolvedValue({
+        insights: [
+          createInsight({ id: 'linked', categoryId: deletedCategoryId }),
+          createInsight({ id: 'unlinked', categoryId: null }),
+        ],
+        warnings: [],
+      }),
+    });
+    const { result } = await renderReadyWorkspace(repository);
+
+    act(() => {
+      result.current.detachCategory(deletedCategoryId);
+    });
+
+    expect(result.current.insights).toEqual([
+      createInsight({ id: 'linked', categoryId: null }),
+      createInsight({ id: 'unlinked', categoryId: null }),
+    ]);
   });
 
   it('저장소가 바뀌면 이전 지연 응답을 무시하고 새 목록만 노출한다', async () => {
@@ -460,7 +483,7 @@ function createInsight(overrides: Partial<Insight> = {}): Insight {
     title: 'example.com',
     titleOrigin: 'fallback',
     memo: null,
-    category: null,
+    categoryId: null,
     createdAt: '2026-07-14T00:00:00.000Z',
     updatedAt: '2026-07-14T00:00:00.000Z',
     ...overrides,

@@ -62,6 +62,16 @@ describe('retrieveInsights', () => {
       expect(targetIndex).toBeLessThan(distractorIndex);
     }
   );
+
+  it('카테고리 이름을 검색어에 포함하지 않는다', () => {
+    const categoryOnlyInsight = createInsight({
+      categoryId: '10000000-0000-4000-8000-000000000001',
+      memo: null,
+      title: '관련 없는 자료',
+    });
+
+    expect(retrieveInsights([categoryOnlyInsight], '개발')).toEqual([]);
+  });
 });
 
 const RETRIEVAL_EVALUATION_CASES = [
@@ -239,7 +249,7 @@ const RETRIEVAL_EVALUATION_INSIGHTS = [
   createEvaluationInsight({
     id: 'product-quality',
     title: '앱 프로젝트 품질 체크리스트',
-    memo: '로그인 온보딩 키보드 접근성 모바일 로컬 확인',
+    memo: '로그인 온보딩 키보드 접근성 모바일 로컬 테스트 확인',
     category: '테스트',
     domain: 'checklist.example',
   }),
@@ -313,7 +323,7 @@ function createEvaluationInsight({
     id,
     title,
     memo,
-    category,
+    categoryId: toEvaluationCategoryId(category),
     domain,
     originalUrl,
     normalizedUrl: originalUrl,
@@ -331,9 +341,31 @@ function createInsight(overrides: Partial<Insight> = {}): Insight {
     titleOrigin: 'fallback',
     title: '자료',
     memo: null,
-    category: null,
+    categoryId: null,
     createdAt,
     updatedAt: createdAt,
     ...overrides,
   };
+}
+
+function toEvaluationCategoryId(category: string) {
+  const categories = [
+    '개발',
+    '리서치',
+    '커리어',
+    '품질',
+    '디자인',
+    '프론트엔드',
+    '접근성',
+    '브라우저',
+    '테스트',
+    '포트폴리오',
+  ];
+  const categoryIndex = categories.indexOf(category);
+
+  if (categoryIndex === -1) {
+    throw new Error(`알 수 없는 평가 카테고리: ${category}`);
+  }
+
+  return `10000000-0000-4000-8000-${String(categoryIndex + 1).padStart(12, '0')}`;
 }

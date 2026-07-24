@@ -39,7 +39,7 @@ export function createRepositoryInsightCaptureService(
         const timestamp = new Date().toISOString();
         const captureTitle = request.title?.trim();
         const candidate: Insight = {
-          category: null,
+          categoryId: null,
           createdAt: timestamp,
           domain: normalizedUrl.domain,
           id: crypto.randomUUID(),

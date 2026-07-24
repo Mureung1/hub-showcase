@@ -10,12 +10,19 @@ import {
 } from '../ranking';
 import type { EvaluationInsight } from '../contracts';
 
+const DEVELOPMENT_CATEGORY_ID = '10000000-0000-4000-8000-000000000001';
+const DESIGN_CATEGORY_ID = '10000000-0000-4000-8000-000000000002';
+const CATEGORY_NAMES = new Map([
+  [DEVELOPMENT_CATEGORY_ID, '개발'],
+  [DESIGN_CATEGORY_ID, '디자인'],
+]);
+
 const productInsights: Insight[] = [
   createProductInsight({
     id: 'A',
     title: 'React 폼 검증',
     memo: '팀 프로젝트 로그인 구현',
-    category: '개발',
+    categoryId: DEVELOPMENT_CATEGORY_ID,
     domain: 'react.dev',
     originalUrl: 'https://react.dev/learn/forms',
     createdAt: '2026-07-10T09:00:00Z',
@@ -24,7 +31,7 @@ const productInsights: Insight[] = [
     id: 'B',
     title: '로그인 UX 체크리스트',
     memo: '앱 온보딩 디자인 참고',
-    category: '디자인',
+    categoryId: DESIGN_CATEGORY_ID,
     domain: 'medium.com',
     originalUrl: 'https://medium.com/login-ux',
     createdAt: '2026-07-11T09:00:00Z',
@@ -33,7 +40,7 @@ const productInsights: Insight[] = [
     id: 'D',
     title: 'WDS 버튼',
     memo: '팀 프로젝트 디자인 시스템',
-    category: '개발',
+    categoryId: DEVELOPMENT_CATEGORY_ID,
     domain: 'wanted.co.kr',
     originalUrl: 'https://wanted.co.kr/wds/button',
     createdAt: '2026-07-12T09:00:00Z',
@@ -53,6 +60,17 @@ describe('실험 랭킹', () => {
     expect(rankLexically(toEvaluationInsights(productInsights), query)).toEqual(
       expected
     );
+  });
+
+  it('꺼내보기 lexical adapter는 카테고리 이름만 일치하는 결과를 제외한다', () => {
+    const categoryOnlyInsight = createProductInsight({
+      categoryId: DEVELOPMENT_CATEGORY_ID,
+      title: '분류된 자료',
+    });
+
+    expect(
+      rankLexically(toEvaluationInsights([categoryOnlyInsight]), '개발')
+    ).toEqual([]);
   });
 
   it('코사인 유사도를 계산하고 잘못된 벡터를 명시적으로 거부한다', () => {
@@ -133,7 +151,7 @@ function createProductInsight(overrides: Partial<Insight>): Insight {
     titleOrigin: 'fallback',
     title: '자료',
     memo: null,
-    category: null,
+    categoryId: null,
     createdAt,
     updatedAt: createdAt,
     ...overrides,
@@ -144,11 +162,11 @@ function toEvaluationInsights(
   insights: readonly Insight[]
 ): EvaluationInsight[] {
   return insights.map(
-    ({ id, title, memo, category, domain, originalUrl, createdAt }) => ({
+    ({ id, title, memo, categoryId, domain, originalUrl, createdAt }) => ({
       id,
       title,
       memo,
-      category,
+      category: categoryId ? (CATEGORY_NAMES.get(categoryId) ?? null) : null,
       domain,
       originalUrl,
       createdAt,
