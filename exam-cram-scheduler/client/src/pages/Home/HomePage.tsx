@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppShell } from '../../layouts/AppShell/AppShell';
-import { Card, Row, Button } from '../../components';
+import { Card, Row, Button, Calendar, CalendarDaySheet } from '../../components';
 import text from '../../styles/text.module.css';
 import { useSchedule } from '../../context/ScheduleContext';
 import {
@@ -9,7 +9,13 @@ import {
   loadSavedSchedules,
   type SavedSchedule,
 } from '../../storage/savedSchedules';
-import { formatKstDate, formatKstDateTime, formatKstTime } from '../Result/formatSchedule';
+import {
+  buildCalendarData,
+  buildDayDetail,
+  formatKstDate,
+  formatKstDateTime,
+  formatKstTime,
+} from '../Result/formatSchedule';
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -20,6 +26,13 @@ export function HomePage() {
   const records = useMemo(() => loadSavedSchedules(), []);
   const latest = records[0] ?? null;
   const nearestExam = useMemo(() => findNearestUpcomingExam(latest), [latest]);
+
+  // #27 — 홈 캘린더는 가장 최근 계산을 보여준다. 기록이 없으면 오늘이 든 달만 평범하게.
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const calendar = latest ? buildCalendarData(latest.response, latest.request) : null;
+  const todayKey = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(new Date());
+  const dayDetail =
+    latest && selectedDate ? buildDayDetail(latest.response, latest.request, selectedDate) : null;
 
   /** 저장된 기록을 다시 열어본다 — 보관함에 넣고 결과 화면으로 */
   function openRecord(record: SavedSchedule) {
@@ -88,16 +101,27 @@ export function HomePage() {
         </Card>
       </div>
 
+      {/* #27 — "이렇게 계산해요"(모델 설명) 자리에 시험 캘린더. 기록이 있으면 시험일·스케줄을
+          표시하고 날짜를 눌러 상세를 본다. 기록이 없으면 오늘이 든 달만 평범하게 보여준다. */}
       <div className={text.sectionBlock}>
         <div className={text.sectionHead}>
-          <span className={text.label}>이렇게 계산해요</span>
+          <span className={text.label}>시험 캘린더</span>
         </div>
         <Card>
-          <Row icon="🌙" iconVariant="sleep" title="Two-Process Model" subtitle="수면압(Process S) + 일주기리듬(Process C)" />
-          <Row icon="☕" iconVariant="caffeine" title="카페인 상호작용 모델(UMP)" subtitle="아데노신 수용체 억제 효과 반영" />
-          <Row icon="📚" iconVariant="exam" title="다중 시험 통합 최적화" subtitle="이번 주 시험 전체를 한 번에 고려" />
+          <Calendar
+            rangeStart={calendar?.rangeStart ?? todayKey}
+            rangeEnd={calendar?.rangeEnd ?? todayKey}
+            marks={calendar?.marks}
+            onSelectDate={latest ? setSelectedDate : undefined}
+          />
         </Card>
       </div>
+
+      <CalendarDaySheet
+        open={selectedDate !== null}
+        onClose={() => setSelectedDate(null)}
+        detail={dayDetail}
+      />
     </AppShell>
   );
 }

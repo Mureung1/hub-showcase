@@ -7,7 +7,8 @@
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
-    "screenshots/input.webp"
+    "screenshots/input.webp",
+    "screenshots/result.webp"
   ],
   "problem": "벼락치기를 할 때 언제 자고 언제 카페인을 마셔야 시험 시간에 가장 맑은 정신일지를 감으로만 정하게 됩니다. 밤을 새워 공부량을 늘리면 오히려 시험 시간에 머리가 멍해지고, 반대로 잠을 챙기면 공부가 부족한 것 같아 어느 쪽도 확신이 서지 않습니다. 특히 시험이 여러 개 몰린 시험기간에는 각 시험 시각마다 컨디션을 맞추기가 더 어렵습니다.",
   "targetUsers": [

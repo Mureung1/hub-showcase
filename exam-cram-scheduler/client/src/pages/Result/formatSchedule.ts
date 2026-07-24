@@ -2,6 +2,8 @@
 // 밤(취침~기상)·카페인·시험을 "하루" 단위로 묶는다.
 // 서버는 시각만 주고 과목명은 안 주므로, 요청(request)의 시험 목록과 날짜로 짝을 맞춘다.
 import type { ScheduleCalculateRequest, ScheduleCalculateResponse } from '../../api/calculateSchedule';
+import type { CalendarMark } from '../../components/Calendar/Calendar';
+import type { CalendarDayDetail } from '../../components/Calendar/CalendarDaySheet';
 
 const KST = 'Asia/Seoul';
 
@@ -105,6 +107,85 @@ export function buildDayPlans(
       subtitle: 뒷부분 ? `${앞부분} → ${뒷부분}` : 앞부분,
     };
   });
+}
+
+/** 오늘(KST) 날짜 키 "YYYY-MM-DD" */
+function todayKstKey(): string {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: KST }).format(new Date());
+}
+
+/**
+ * #27 — 캘린더에 넘길 표시 데이터.
+ * rangeStart~rangeEnd는 스케줄이 걸친 기간(취침·기상·카페인·시험의 최소~최대 날짜)이라
+ * 캘린더가 이 기간이 걸친 달만 그린다. marks는 시험일(밑줄)·스케줄 있는 날 표시용.
+ */
+export function buildCalendarData(
+  response: ScheduleCalculateResponse,
+  request: ScheduleCalculateRequest | null,
+): { rangeStart: string; rangeEnd: string; marks: CalendarMark[] } {
+  const { nights, caffeineDoses } = response.recommendedSchedule;
+  const exams = request?.exams ?? [];
+
+  const examDates = new Set(exams.map((exam) => kstDateKey(exam.examDateTime)));
+  // "스케줄 있는 날" = 그날 아침 기상하는 밤이 있거나, 그날 카페인 섭취가 있는 날
+  const scheduleDates = new Set<string>([
+    ...nights.map((night) => kstDateKey(night.wakeTime)),
+    ...caffeineDoses.map((dose) => kstDateKey(dose.time)),
+  ]);
+
+  // 기간 계산에는 취침 날짜(전날 저녁)까지 포함해서 첫날이 빠지지 않게 한다
+  const allKeys = [
+    ...nights.map((night) => kstDateKey(night.bedTime)),
+    ...nights.map((night) => kstDateKey(night.wakeTime)),
+    ...caffeineDoses.map((dose) => kstDateKey(dose.time)),
+    ...exams.map((exam) => kstDateKey(exam.examDateTime)),
+  ].sort();
+
+  // 날짜 문자열이 하나도 없으면(빈 스케줄) 오늘이 든 달만 평범하게 보여준다
+  const rangeStart = allKeys[0] ?? todayKstKey();
+  const rangeEnd = allKeys.at(-1) ?? todayKstKey();
+
+  const markDates = new Set<string>([...examDates, ...scheduleDates]);
+  const marks: CalendarMark[] = [...markDates].map((date) => ({
+    date,
+    hasExam: examDates.has(date),
+    hasSchedule: scheduleDates.has(date),
+  }));
+
+  return { rangeStart, rangeEnd, marks };
+}
+
+/**
+ * #27 — 캘린더에서 특정 날짜를 눌렀을 때 시트에 보여줄 하루치 상세.
+ * 그날 시험, 그날 아침 기상하는 밤(전날 취침 → 이 날 기상), 그날 카페인을 모아 포맷한다.
+ */
+export function buildDayDetail(
+  response: ScheduleCalculateResponse,
+  request: ScheduleCalculateRequest | null,
+  dateKey: string,
+): CalendarDayDetail {
+  const { nights, caffeineDoses } = response.recommendedSchedule;
+  const exams = request?.exams ?? [];
+
+  const dayExams = exams
+    .filter((exam) => kstDateKey(exam.examDateTime) === dateKey)
+    .map((exam) => ({ subject: exam.subject, time: formatKstTime(exam.examDateTime) }));
+
+  const night = nights.find((n) => kstDateKey(n.wakeTime) === dateKey);
+  const sleep = night
+    ? { bedTime: formatKstTime(night.bedTime), wakeTime: formatKstTime(night.wakeTime) }
+    : null;
+
+  const dayCaffeine = caffeineDoses
+    .filter((dose) => kstDateKey(dose.time) === dateKey)
+    .map((dose) => ({ time: formatKstTime(dose.time), cups: formatCups(dose.cups, dose.amountMg) }));
+
+  return {
+    dateLabel: formatKstDate(dateKey),
+    exams: dayExams,
+    sleep,
+    caffeine: dayCaffeine,
+  };
 }
 
 /** 결과 화면 맨 위 요약 문구 */
