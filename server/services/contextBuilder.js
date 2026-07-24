@@ -1,26 +1,55 @@
 import { fetchBlobContent } from './githubClient.js';
 import { parseReadme, emptyProjectOverview } from './readmeParser.js';
-import { buildFixedContext } from './stubData.js';
+import { parsePackageJsonDependencies, parseDockerComposeImages } from './dependencyExtractor.js';
+import { mapTechStack } from './techStackMapper.js';
+import { detectLanguages } from './languageDetector.js';
 
 /**
- * README fetch + 파싱을 조합하는 오케스트레이션 레이어.
- * tech_stack(의존성 사전 매핑)은 아직 별도 작업 범위라 stubData.js의
- * 스텁 값을 계속 재사용하고, project_overview/sources만 실제 값으로 채운다.
+ * Context File(README/package.json/docker-compose.yml) fetch + 파싱을 조합하는
+ * 오케스트레이션 레이어. project_overview는 README에서, tech_stack은 의존성
+ * 이름을 뽑아 사전+LLM으로 분류한다(techStackMapper.js). 각 파일은 존재하고
+ * fetch에 성공했을 때만 sources에 기록된다.
  */
-export async function buildContext(owner, repo, contextFilePaths) {
-  const stub = buildFixedContext();
-  const readmeFile = contextFilePaths.find(
-    (f) => f.path.split('/').pop().toLowerCase() === 'readme.md'
-  );
 
-  if (!readmeFile) {
-    return { ...stub, project_overview: emptyProjectOverview(), sources: [] };
+function findContextFile(contextFilePaths, basename) {
+  return contextFilePaths.find((f) => f.path.split('/').pop().toLowerCase() === basename);
+}
+
+export async function buildContext(owner, repo, contextFilePaths, candidateFilePaths) {
+  const sources = [];
+
+  let projectOverview = emptyProjectOverview();
+  const readmeFile = findContextFile(contextFilePaths, 'readme.md');
+  if (readmeFile) {
+    const content = await fetchBlobContent(owner, repo, readmeFile.sha);
+    if (content !== null) {
+      projectOverview = parseReadme(content);
+      sources.push('README.md');
+    }
   }
 
-  const content = await fetchBlobContent(owner, repo, readmeFile.sha);
-  if (content === null) {
-    return { ...stub, project_overview: emptyProjectOverview(), sources: [] };
+  const dependencyNames = [];
+
+  const packageJsonFile = findContextFile(contextFilePaths, 'package.json');
+  if (packageJsonFile) {
+    const content = await fetchBlobContent(owner, repo, packageJsonFile.sha);
+    if (content !== null) {
+      dependencyNames.push(...parsePackageJsonDependencies(content));
+      sources.push('package.json');
+    }
   }
 
-  return { ...stub, project_overview: parseReadme(content), sources: ['README.md'] };
+  const dockerComposeFile = findContextFile(contextFilePaths, 'docker-compose.yml');
+  if (dockerComposeFile) {
+    const content = await fetchBlobContent(owner, repo, dockerComposeFile.sha);
+    if (content !== null) {
+      dependencyNames.push(...parseDockerComposeImages(content));
+      sources.push('docker-compose.yml');
+    }
+  }
+
+  const techStack = await mapTechStack(dependencyNames);
+  techStack.language = detectLanguages(candidateFilePaths);
+
+  return { project_overview: projectOverview, tech_stack: techStack, sources };
 }
