@@ -25,10 +25,65 @@
 - 디자인 시스템: [docs/design-system.md](./docs/design-system.md)
 - 개발 환경 결정: [docs/dev-setup.md](./docs/dev-setup.md)
 - 디자인 Skill: [docs/skills/trusted-place-design/SKILL.md](./docs/skills/trusted-place-design/SKILL.md)
+- 코드 검증 Skill: [docs/skills/code-verification/SKILL.md](./docs/skills/code-verification/SKILL.md)
+- AI Agent Workflow: [docs/ai-workflow.md](./docs/ai-workflow.md)
+- TDD 기록: [docs/tdd-nickname-normalization.md](./docs/tdd-nickname-normalization.md)
+
+## 화면·서버·DB 데이터 흐름
+
+```mermaid
+flowchart LR
+    U[사용자]
+
+    subgraph Browser[React 화면 · localhost:3000]
+        MAP[지도 검색·업체 상세]
+        PROFILE[마이페이지·닉네임 변경]
+        REVIEW[리뷰 작성·5단계 그래프]
+        SESSION[Supabase Auth 세션]
+        TESTDATA[(테스트 리뷰 localStorage)]
+    end
+
+    subgraph API[Express API · localhost:4000]
+        KPROXY[장소 검색 프록시]
+        USERAPI[PATCH /api/users/me]
+        AIAPI[POST /api/reviews/analyze]
+        AUTH[Access Token 검증]
+    end
+
+    subgraph External[외부 서비스]
+        KAKAO[Kakao Maps·Local API]
+        OPENAI[OpenAI Responses API]
+    end
+
+    subgraph DB[Supabase]
+        SUPAAUTH[Auth]
+        PROFILES[(profiles)]
+        DOMAIN[(places·receipts·reviews·review_likes)]
+    end
+
+    U --> MAP
+    U --> PROFILE
+    U --> REVIEW
+    MAP --> KPROXY --> KAKAO --> KPROXY --> MAP
+    SESSION <--> SUPAAUTH
+    PROFILE -->|닉네임 + Access Token| USERAPI
+    USERAPI --> AUTH --> SUPAAUTH
+    USERAPI -->|display_name 저장| PROFILES
+    PROFILES -->|변경된 사용자 응답| USERAPI --> PROFILE
+    REVIEW -->|리뷰 텍스트 + Access Token| AIAPI
+    AIAPI --> AUTH
+    AIAPI --> OPENAI -->|5단계·신뢰도·키워드| AIAPI --> REVIEW
+    REVIEW -->|현재 개발용 임시 저장| TESTDATA
+    DOMAIN -. 영수증 OCR 연결 후 실제 리뷰 저장 예정 .-> REVIEW
+```
+
+### 현재 수직 슬라이스
+
+닉네임 변경은 `마이페이지 입력 → Express 인증·검증 → Supabase profiles 저장 → 변경된 사용자 응답 → 화면 갱신`까지 한 바퀴로 동작한다. 리뷰 분석은 Express와 OpenAI까지 연결되어 있지만, 리뷰 최종 저장은 영수증 OCR 연결 전까지 개발용 `localStorage`를 사용한다.
 
 ## 현재 개발 상태
 
-현재 저장소는 Create React App 기반의 초기 React 프로젝트입니다. 2주차 본격 개발 전까지는 문서와 설계 기준을 먼저 고정하고, 실제 구현 시작 시 React + Express + Supabase 구조로 확장합니다. 예약 기능은 핵심이 아니라 추후 부가 기능으로만 검토합니다.
+현재 저장소는 Create React App 기반 React 화면, Express API, Supabase Auth/Postgres, Kakao 지도·장소 검색, OpenAI 리뷰 분석이 연결된 MVP입니다. 영수증 OCR과 인증 리뷰의 DB 최종 저장은 다음 구현 범위입니다.
 
 ## 실행
 
