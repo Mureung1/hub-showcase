@@ -17,6 +17,8 @@ const KAKAO_KEYWORD_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/keyword
 const KAKAO_ADDRESS_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/address.json'
 const KAKAO_COORD2ADDRESS_URL = 'https://dapi.kakao.com/v2/local/geo/coord2address.json'
 const NAVER_LOCAL_SEARCH_URL = 'https://naverapihub.apigw.ntruss.com/search/v1/local'
+// 지역 검색 정렬: 'comment'(리뷰 많은 순 — 추천 품질용 기본값) | 'random'(무작위 — 예전 동작)
+const NAVER_LOCAL_SORT = 'comment'
 
 // 식약처 식품영양성분DB: "음식"(조리식) API가 기본, "가공식품" API는 편의점/포장/프랜차이즈 제품 보완용 폴백. 파라미터·응답 구조는 동일하다.
 const FOODSAFETY_SOURCES = {
@@ -375,9 +377,13 @@ app.post('/api/naver-places', async (req, res) => {
 
   const url = new URL(NAVER_LOCAL_SEARCH_URL)
   url.searchParams.set('query', query.trim())
+  // display 실측(2026-07): 10/15/30을 요청해도 항상 최대 5건만 반환된다(API Hub 지역 검색의 실질
+  // 상한). 후보 풀을 늘리려면 이 값이 아니라 "서로 다른 키워드로 병렬 검색"을 늘려야 한다(MapPage).
   url.searchParams.set('display', '5')
   url.searchParams.set('start', '1')
-  url.searchParams.set('sort', 'random')
+  // random → comment(리뷰 많은 순): 추천 품질을 위해 검증된 인기 식당을 우선한다. 결과가 결정적이라
+  // 같은 위치·키워드면 같은 후보가 나온다(예전 random은 매번 달랐음). 되돌리려면 이 값만 'random'으로.
+  url.searchParams.set('sort', NAVER_LOCAL_SORT)
   url.searchParams.set('format', 'json')
 
   try {

@@ -38,8 +38,12 @@ const FALLBACK_SEARCH_KEYWORD = '백반'
 const BALANCED_KEYWORDS = ['백반', '샐러드', '정식']
 // 결과가 한 유형으로만 몰렸을 때 보완 검색에 쓰는 다양화 풀
 const DIVERSITY_POOL = ['샐러드', '고깃집', '비빔밥', '쌈밥', '두부요리']
-const MAX_PER_KEYWORD = 3
-const MAX_TOTAL_PLACES = 6
+// 네이버 지역 검색은 쿼리당 최대 5건만 준다(실측 — proxy.js 참고). 후보 풀은 키워드 수로 늘리므로,
+// 키워드당 결과는 전부(5건) 쓰고 최종 목록만 8곳으로 자른다.
+const MAX_PER_KEYWORD = 5
+const MAX_TOTAL_PLACES = 8
+// 한 번의 검색 라운드에서 병렬로 던질 최대 키워드 수(호출량·지연 상한)
+const MAX_SEARCH_KEYWORDS = 4
 // 네이버 지역 검색은 반경 파라미터가 없어 검색어에 지역명을 섞는 것만으로는 먼 결과가 섞여 들어올 수
 // 있다 — 사용자 좌표(또는 지정 위치) 기준 이 거리(m)를 벗어나는 결과는 아예 후보에서 제외한다.
 const MAX_DISTANCE_METERS = 3000
@@ -153,13 +157,19 @@ function toPlaceShape(item, myPos) {
   }
 }
 
-// 키워드별로 네이버 지역 검색을 돌리고, 중복 장소를 제거하며 합친다(키워드당 최대 3곳).
+// 키워드별로 네이버 지역 검색을 병렬로 돌리고, 중복 장소를 제거하며 합친다.
 // 네이버 지역 검색은 반경 파라미터가 없어(regionLabel로 검색어에 지역명을 섞어 "내 주변" 느낌을 내는
 // 것과 별개로) 결과 자체가 항상 사용자 근처라는 보장이 없다 — 그래서 MAX_DISTANCE_METERS를 벗어난
 // 결과는 후보에서 아예 제외하고, 남은 것끼리도 키워드별 결과·최종 병합 결과 모두 거리순으로 정렬한다.
-async function searchAndMerge({ x, y, keywords, regionLabel, existing = [] }) {
+//
+// categoryKey: 음식 종류 필터를 **키워드당 슬롯 배분 전에** 적용한다 — 필터를 병합 후에 걸면
+// 쿼리당 5건뿐인 슬롯을 다른 종류 식당이 차지해 정작 고른 종류가 밀려나는 낭비가 생긴다.
+// 반환: { places: 필터 통과 병합 결과, rawPool: 필터 전(거리 필터 후) 후보 전체 — 완화 폴백용 }.
+async function searchAndMerge({ x, y, keywords, regionLabel, categoryKey = 'all', existing = [] }) {
   const merged = [...existing]
   const seen = new Set(existing.map(placeIdentity))
+  const rawPool = []
+  const rawSeen = new Set()
   const myPos = { lat: Number(y), lng: Number(x) }
 
   const settled = await Promise.allSettled(
@@ -171,12 +181,19 @@ async function searchAndMerge({ x, y, keywords, regionLabel, existing = [] }) {
       console.error(`naver search failed for "${keywords[i]}":`, result.reason)
       return
     }
-    const places = result.value
+    const nearby = result.value
       .map((item) => toPlaceShape(item, myPos))
       .filter((place) => place.distance <= MAX_DISTANCE_METERS)
       .sort((a, b) => a.distance - b.distance)
 
-    for (const place of places.slice(0, MAX_PER_KEYWORD)) {
+    for (const place of nearby) {
+      const identity = placeIdentity(place)
+      if (rawSeen.has(identity)) continue
+      rawSeen.add(identity)
+      rawPool.push(place)
+    }
+
+    for (const place of filterPlacesByCategory(categoryKey, nearby).slice(0, MAX_PER_KEYWORD)) {
       const identity = placeIdentity(place)
       if (seen.has(identity)) continue
       seen.add(identity)
@@ -185,7 +202,8 @@ async function searchAndMerge({ x, y, keywords, regionLabel, existing = [] }) {
   })
 
   merged.sort((a, b) => a.distance - b.distance)
-  return merged.slice(0, MAX_TOTAL_PLACES)
+  rawPool.sort((a, b) => a.distance - b.distance)
+  return { places: merged.slice(0, MAX_TOTAL_PLACES), rawPool }
 }
 
 // allergyLabels가 비고 나트륨 정상이면(프로필 미입력 등) 기존 프롬프트와 완전히 동일하게 나간다.
@@ -319,6 +337,19 @@ export default function MapPage() {
     // 1) 부족 영양소(+고른 음식 종류, 나트륨 초과 제약) → 서로 다른 식당 유형 키워드 2~3개
     const keywords = await fetchSearchKeywords(top3Rows, category, { sodiumExceeded })
 
+    // 1.2) 후보 풀 확대: 쿼리당 결과가 최대 5건뿐이라(실측, proxy.js) 키워드 수로 풀을 늘린다.
+    //  - 카테고리를 골랐으면 카테고리 이름 검색을 첫 배치에 포함한다(예전 5-a 완화 단계가 하던 검색을
+    //    선제 흡수 — 영양소 키워드가 전부 빗나가도 이 쿼리가 그 종류의 기본 후보를 확보한다).
+    //  - '전체'면 다양화 풀에서 하나를 미리 추가해 유형 다양성을 높인다.
+    const searchKeywords = [...keywords]
+    if (searchKeywords.length < MAX_SEARCH_KEYWORDS) {
+      const extra =
+        category.key !== 'all'
+          ? category.searchTerm
+          : DIVERSITY_POOL.find((k) => !searchKeywords.includes(k))
+      if (extra && !searchKeywords.includes(extra)) searchKeywords.push(extra)
+    }
+
     // 1.5) 좌표 -> 대략적 지역명(예: "유성구"). 네이버 지역 검색은 반경 파라미터가 없어, 검색어 자체에
     // 지역명을 섞어 넣어야 "내 주변" 결과에 가까워진다. 실패해도 검색 자체는 지역명 없이 계속 진행한다.
     const regionLabel = await reverseGeocode({ x, y }).catch((err) => {
@@ -326,39 +357,47 @@ export default function MapPage() {
       return null
     })
 
-    // 2) 키워드별 검색 후 병합(중복 제거)
-    let results = await searchAndMerge({ x, y, keywords, regionLabel })
+    // 2) 키워드별 병렬 검색 후 병합(중복 제거). 음식 종류 필터는 searchAndMerge 안에서 슬롯 배분
+    //    전에 적용된다("한식을 골랐는데 중국집이 나온다"를 막으면서 슬롯 낭비도 없앤다).
+    let { places: results, rawPool } = await searchAndMerge({
+      x, y, keywords: searchKeywords, regionLabel, categoryKey: category.key,
+    })
 
     // 3) 한 유형으로만 몰리면 다른 유형으로 보완 검색. 카테고리를 골랐다면 그 카테고리 안에서 다양화한다
     //    — '전체'용 풀(샐러드/고깃집/…)을 그대로 쓰면 고른 종류 밖으로 새어 나간다.
     const diversityPool = category.key === 'all' ? DIVERSITY_POOL : category.keywords
     const categoryCount = new Set(results.map(categoryOf)).size
     if (results.length > 0 && categoryCount <= 1) {
-      const extraKeyword = diversityPool.find((k) => !keywords.includes(k))
+      const extraKeyword = diversityPool.find((k) => !searchKeywords.includes(k))
       if (extraKeyword) {
-        results = await searchAndMerge({ x, y, keywords: [extraKeyword], regionLabel, existing: results })
+        const supplement = await searchAndMerge({
+          x, y, keywords: [extraKeyword], regionLabel, categoryKey: category.key, existing: results,
+        })
+        results = supplement.places
+        rawPool = [...rawPool, ...supplement.rawPool]
       }
     }
 
-    // 4) 고른 종류만 남긴다. 검색어를 카테고리에 맞춰도 네이버 결과에는 다른 종류가 섞여 들어오므로,
-    //    응답의 category 문자열로 한 번 더 거른다("한식을 골랐는데 중국집이 나온다"를 막는 지점).
-    let filtered = filterPlacesByCategory(category.key, results)
+    let filtered = results
     let categoryNotice = ''
 
-    // 5) 걸러낸 게 없으면 단계적으로 완화한다. 네이버 지역 검색은 결과 수가 적어, 영양소 키워드까지
-    //    얹으면 카테고리가 통째로 비는 일이 흔하다.
-    //    5-a) 카테고리 이름만으로 다시 검색(영양소 narrowing만 푼다 — 고른 종류는 지킨다)
-    if (filtered.length === 0 && category.key !== 'all') {
-      const relaxed = await searchAndMerge({ x, y, keywords: [category.searchTerm], regionLabel })
-      filtered = filterPlacesByCategory(category.key, relaxed)
-      //  5-b) 그래도 없는데 종류를 가리지 않은 결과는 있다면, 빈 화면 대신 그걸 보여주고 이유를 말한다.
-      if (filtered.length === 0) {
-        const anyPlaces = results.length > 0 ? results : relaxed
-        if (anyPlaces.length > 0) {
-          filtered = anyPlaces
-          categoryNotice = `근처에 ${category.label} 식당이 없어서 다른 종류를 함께 보여줘요.`
-        }
+    // 4) 완화: 고른 종류로는 한 곳도 없는데 종류를 가리지 않은 후보(rawPool)는 있다면, 빈 화면 대신
+    //    그걸 보여주고 이유를 말한다. (예전 5-a "카테고리 이름만으로 재검색"은 1.2에서 첫 배치에
+    //    흡수됐다 — sort가 결정적(comment)이라 같은 쿼리를 다시 던져도 같은 결과만 나온다.)
+    if (filtered.length === 0 && category.key !== 'all' && rawPool.length > 0) {
+      // 두 차례 검색(rawPool 합산)에서 같은 식당이 겹칠 수 있어 여기서 한 번 더 중복 제거한다.
+      const seen = new Set()
+      const dedupedPool = rawPool.filter((place) => {
+        const identity = placeIdentity(place)
+        if (seen.has(identity)) return false
+        seen.add(identity)
+        return true
+      })
+      if (import.meta.env.DEV) {
+        console.log(`[식당검색 진단] "${category.label}" 필터 통과 0건 → 종류 무관 후보 ${dedupedPool.length}건으로 완화`)
       }
+      filtered = dedupedPool.slice(0, MAX_TOTAL_PLACES)
+      categoryNotice = `근처에 ${category.label} 식당이 없어서 다른 종류를 함께 보여줘요.`
     }
 
     if (filtered.length === 0) return { places: [], categoryNotice: '' }
