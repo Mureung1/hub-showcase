@@ -4,6 +4,7 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  readdir,
   realpath,
   rm,
   writeFile,
@@ -15,6 +16,7 @@ import test from 'node:test'
 import {
   createSemesterWorkspaceAdmission,
   createSemesterWorkspaceAdmissionForTesting,
+  readWorkspaceAdmissionPlanEvidenceForTesting,
 } from './admission.js'
 import type {
   AuthorityBoundWorkspacePlan,
@@ -284,6 +286,157 @@ test('cross-instance resume rejects workspace identity or aggregate changes that
   }
 })
 
+test('a strict durable description restores byte-identical create authority after approved-before-apply process loss', async () => {
+  const parent = await realpath(
+    await mkdtemp(
+      path.join(tmpdir(), 'ay-ple-admission-plan-restore-'),
+    ),
+  )
+  try {
+    const authority = await parentAuthority(parent)
+    const first = createSemesterWorkspaceAdmission()
+    const inspection = await first.inspect({
+      kind: 'create',
+      parent: authority,
+      semester: {
+        yearLevel: 2,
+        term: { key: '2', displayName: '2학기' },
+      },
+      leafName: '2026-2학기',
+    })
+    assert.equal(inspection.outcome, 'new_target')
+    if (inspection.outcome !== 'new_target') assert.fail('plan required')
+    const description = first.describe(inspection.plan)
+    assert.ok(description)
+    if (!description) assert.fail('description required')
+    const originalEvidence = readWorkspaceAdmissionPlanEvidenceForTesting(
+      first,
+      inspection.plan,
+    )
+
+    const restoredAdmission = createSemesterWorkspaceAdmission()
+    const restoredPlan = await restoredAdmission.restore(description)
+
+    assert.deepEqual(restoredPlan, inspection.plan)
+    assert.deepEqual(
+      restoredAdmission.describe(restoredPlan!),
+      description,
+    )
+    assert.deepEqual(
+      readWorkspaceAdmissionPlanEvidenceForTesting(
+        restoredAdmission,
+        restoredPlan!,
+      ),
+      originalEvidence,
+    )
+    assert.equal((await readdir(parent)).length, 0)
+  } finally {
+    await rm(parent, { force: true, recursive: true })
+  }
+})
+
+test('durable plan restore rejects every authority digest field drift before creating bytes', async () => {
+  const parent = await realpath(
+    await mkdtemp(
+      path.join(tmpdir(), 'ay-ple-admission-plan-restore-drift-'),
+    ),
+  )
+  try {
+    const authority = await parentAuthority(parent)
+    const first = createSemesterWorkspaceAdmission()
+    const inspection = await first.inspect({
+      kind: 'create',
+      parent: authority,
+      semester: {
+        yearLevel: 2,
+        term: { key: '2', displayName: '2학기' },
+      },
+      leafName: '2026-2학기',
+    })
+    assert.equal(inspection.outcome, 'new_target')
+    if (inspection.outcome !== 'new_target') assert.fail('plan required')
+    const description = first.describe(inspection.plan)
+    assert.ok(description)
+    if (!description) assert.fail('description required')
+
+    const drifts = [
+      {
+        ...description,
+        privateBinding: {
+          ...description.privateBinding,
+          plan: {
+            ...description.privateBinding.plan,
+            canonicalBytesSha256: '0'.repeat(64),
+          },
+        },
+      },
+      {
+        ...description,
+        privateBinding: {
+          ...description.privateBinding,
+          plan: {
+            ...description.privateBinding.plan,
+            target: {
+              ...description.privateBinding.plan.target,
+              parentInode: '999999',
+            },
+          },
+        },
+      },
+      {
+        ...description,
+        privateBinding: {
+          ...description.privateBinding,
+          workspace: {
+            ...description.privateBinding.workspace,
+            workspaceId:
+              'workspace_ffffffffffffffffffffffffffffffff',
+          },
+        },
+      },
+      {
+        ...description,
+        privateBinding: {
+          ...description.privateBinding,
+          workspace: {
+            ...description.privateBinding.workspace,
+            rootMarkerSha256: '0'.repeat(64),
+          },
+        },
+      },
+      {
+        ...description,
+        privateBinding: {
+          ...description.privateBinding,
+          workspace: {
+            ...description.privateBinding.workspace,
+            ownedScaffoldPlanSha256: '0'.repeat(64),
+          },
+        },
+      },
+      {
+        ...description,
+        privateBinding: {
+          ...description.privateBinding,
+          workspace: {
+            ...description.privateBinding.workspace,
+            expectedInitialAggregateSha256: '0'.repeat(64),
+          },
+        },
+      },
+    ]
+    for (const drift of drifts) {
+      assert.equal(
+        await createSemesterWorkspaceAdmission().restore(drift),
+        null,
+      )
+      assert.deepEqual(await readdir(parent), [])
+    }
+  } finally {
+    await rm(parent, { force: true, recursive: true })
+  }
+})
+
 type EvidenceMarker = {
   readonly kind: 'ay-ple.workspace-admission-evidence'
   readonly formatVersion: 3
@@ -371,6 +524,20 @@ async function createFixture(leafName: string): Promise<{
       leafName,
     },
     cleanup: () => rm(root, { force: true, recursive: true }),
+  }
+}
+
+async function parentAuthority(
+  canonicalParent: string,
+): Promise<WorkspaceParentAuthority> {
+  const stats = await import('node:fs/promises').then(({ lstat }) =>
+    lstat(canonicalParent, { bigint: true }),
+  )
+  return {
+    selectionId: 'parent_selection_restore',
+    canonicalParent,
+    parentDevice: stats.dev.toString(),
+    parentInode: stats.ino.toString(),
   }
 }
 

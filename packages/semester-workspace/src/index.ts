@@ -1,4 +1,9 @@
-export { createSemesterWorkspaceAdmission } from './admission.js'
+export {
+  createSemesterWorkspaceAdmission,
+} from './admission.js'
+export type {
+  RestorableSemesterWorkspaceAdmission,
+} from './admission.js'
 export * from './contract.js'
 export {
   decodeCurrentSemesterWorkspaceV2,
@@ -26,6 +31,27 @@ export {
   createWorkspaceContextGuard,
   verifyWorkspaceStaticContext,
 } from './workspace-context.js'
+export {
+  createSetupEnvelopeStore,
+  decodeSetupStateEnvelopeBytes,
+  encodeSetupStateEnvelope,
+  SetupEnvelopeStorageError,
+  SetupStateCodecError,
+} from './setup-envelope-store.js'
+export type {
+  RecoverableSetupEnvelopeStore,
+  SetupEnvelopeStoreFaultPoint,
+  SetupEnvelopeStoreOptions,
+} from './setup-envelope-store.js'
+export {
+  createSemesterSetupJourney,
+} from './setup-journey.js'
+export type {
+  SemesterSetupJourneyFaultPoint,
+  SemesterSetupJourneyOptions,
+  SemesterSetupJourneyProjection,
+  SemesterSetupParentSelection,
+} from './setup-journey.js'
 
 export type SemesterWorkspaceScaffold = {
   readonly workspace: '@ay-ple/semester-workspace'

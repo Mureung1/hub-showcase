@@ -10,6 +10,7 @@ import {
   open,
   readdir,
   realpath,
+  rmdir,
   unlink,
 } from 'node:fs/promises'
 import path from 'node:path'
@@ -69,6 +70,12 @@ type WorkspaceAdmissionFaultPoint =
   | 'before_evidence_unlink'
   | 'after_evidence_unlink'
   | 'after_evidence_directory_sync'
+  | 'after_discard_state_temp_unlink'
+  | 'after_discard_courses_remove'
+  | 'after_discard_inbox_remove'
+  | 'after_discard_marker_unlink'
+  | 'after_discard_product_root_remove'
+  | 'after_discard_root_remove'
 
 type SemesterWorkspaceAdmissionTestOptions = {
   readonly fault?: (
@@ -145,7 +152,49 @@ type ResumePlanContext = {
   readonly runtimeAuthority: OwnedRuntimeAuthority
 }
 
-type PlanContext = CreatePlanContext | ResumePlanContext
+type DiscardPlanContext = {
+  readonly kind: 'discard_owned'
+  readonly plan: AuthorityBoundWorkspacePlan
+  readonly planned: DecodedAdmissionEvidence
+  readonly runtimeAuthority: OwnedRuntimeAuthority
+}
+
+type PlanContext =
+  | CreatePlanContext
+  | ResumePlanContext
+  | DiscardPlanContext
+
+export interface RestorableSemesterWorkspaceAdmission
+  extends SemesterWorkspaceAdmission {
+  restore(
+    description: WorkspaceAdmissionPlanDescription,
+  ): Promise<AuthorityBoundWorkspacePlan | null>
+  verifyBinding(
+    description: WorkspaceAdmissionPlanDescription,
+    subject:
+      | {
+          readonly kind: 'plan'
+          readonly plan: AuthorityBoundWorkspacePlan
+        }
+      | {
+          readonly kind: 'workspace'
+          readonly workspace: AdmittedSemesterWorkspace
+        },
+  ): Promise<boolean>
+}
+
+type WorkspaceAdmissionPlanEvidenceForTesting = {
+  readonly plan: AuthorityBoundWorkspacePlan
+  readonly description: WorkspaceAdmissionPlanDescription
+  readonly authorityDigest: string
+  readonly markerBytesBase64: string
+  readonly aggregateBytesBase64: string
+}
+
+const admissionPlanContexts = new WeakMap<
+  RestorableSemesterWorkspaceAdmission,
+  Map<string, PlanContext>
+>()
 
 type RootClassification =
   | {
@@ -160,22 +209,22 @@ type RootClassification =
   | { readonly status: 'unavailable' }
 
 export function createSemesterWorkspaceAdmission(
-): SemesterWorkspaceAdmission {
+): RestorableSemesterWorkspaceAdmission {
   return createSemesterWorkspaceAdmissionModule({})
 }
 
 export function createSemesterWorkspaceAdmissionForTesting(
   options: SemesterWorkspaceAdmissionTestOptions,
-): SemesterWorkspaceAdmission {
+): RestorableSemesterWorkspaceAdmission {
   return createSemesterWorkspaceAdmissionModule(options)
 }
 
 function createSemesterWorkspaceAdmissionModule(
   options: SemesterWorkspaceAdmissionTestOptions,
-): SemesterWorkspaceAdmission {
+): RestorableSemesterWorkspaceAdmission {
   const plans = new Map<string, PlanContext>()
 
-  return {
+  const admission: RestorableSemesterWorkspaceAdmission = {
     async inspect(intent): Promise<WorkspaceInspection> {
       if (!intent || typeof intent !== 'object') {
         return { outcome: 'unsafe', readOnly: false }
@@ -188,7 +237,7 @@ function createSemesterWorkspaceAdmissionModule(
         case 'resume_owned':
           return inspectOwnedResume(intent, plans)
         case 'discard_owned':
-          return { outcome: 'unsafe', readOnly: false }
+          return inspectOwnedDiscard(intent, plans)
         default:
           return { outcome: 'unsafe', readOnly: false }
       }
@@ -208,6 +257,19 @@ function createSemesterWorkspaceAdmissionModule(
       return describeCreatePlan(context)
     },
 
+    async restore(
+      description: WorkspaceAdmissionPlanDescription,
+    ): Promise<AuthorityBoundWorkspacePlan | null> {
+      return restoreCreatePlan(description, plans)
+    },
+
+    async verifyBinding(
+      description,
+      subject,
+    ): Promise<boolean> {
+      return verifyAdmissionBinding(description, subject, plans)
+    },
+
     async apply(plan): Promise<WorkspaceApplyResult> {
       const context = plans.get(plan.planId)
       if (!context || !samePlan(context.plan, plan)) {
@@ -216,6 +278,9 @@ function createSemesterWorkspaceAdmissionModule(
       try {
         if (context.kind === 'create') {
           return await applyCreate(context, options)
+        }
+        if (context.kind === 'discard_owned') {
+          return await applyDiscard(context, options)
         }
         return await applyResume(context, options)
       } catch (error) {
@@ -227,14 +292,44 @@ function createSemesterWorkspaceAdmissionModule(
       }
     },
   }
+  admissionPlanContexts.set(admission, plans)
+  return admission
+}
+
+export function readWorkspaceAdmissionPlanEvidenceForTesting(
+  admission: RestorableSemesterWorkspaceAdmission,
+  plan: AuthorityBoundWorkspacePlan,
+): WorkspaceAdmissionPlanEvidenceForTesting {
+  const context = admissionPlanContexts.get(admission)?.get(plan.planId)
+  if (
+    !context ||
+    context.kind !== 'create' ||
+    !samePlan(context.plan, plan)
+  ) {
+    throw new TypeError('Unknown workspace admission plan.')
+  }
+  return {
+    plan: cloneAuthorityBoundWorkspacePlan(context.plan),
+    description: describeCreatePlan(context),
+    authorityDigest: context.planned.evidence.authorityDigest,
+    markerBytesBase64: context.planned.markerBytes.toString('base64'),
+    aggregateBytesBase64:
+      context.planned.aggregateBytes.toString('base64'),
+  }
 }
 
 function describeCreatePlan(
   context: CreatePlanContext,
 ): WorkspaceAdmissionPlanDescription {
-  const { authority } = context.planned.evidence
+  return describePlannedAdmission(context.planned)
+}
+
+function describePlannedAdmission(
+  planned: DecodedAdmissionEvidence,
+): WorkspaceAdmissionPlanDescription {
+  const { authority } = planned.evidence
   const semester = cloneSemesterIdentity(
-    context.planned.aggregate.manifest.semester,
+    planned.aggregate.manifest.semester,
   )
   const target = {
     canonicalParent: authority.parent.canonicalParent,
@@ -244,7 +339,7 @@ function describeCreatePlan(
     canonicalTarget: authority.canonicalRoot,
   }
   return {
-    setupPlanId: context.plan.planId,
+    setupPlanId: planned.setupPlanId,
     privateBinding: {
       plan: {
         canonicalBytesSha256: sha256Canonical({
@@ -257,11 +352,218 @@ function describeCreatePlan(
       workspace: {
         workspaceId: authority.workspaceId,
         formatVersion: 3,
-        rootMarkerSha256: context.planned.markerSha256,
+        rootMarkerSha256: planned.markerSha256,
         ownedScaffoldPlanSha256: authority.ownedScaffoldPlanSha256,
         expectedInitialAggregateSha256: authority.aggregateSha256,
       },
     },
+  }
+}
+
+async function verifyAdmissionBinding(
+  description: WorkspaceAdmissionPlanDescription,
+  subject:
+    | {
+        readonly kind: 'plan'
+        readonly plan: AuthorityBoundWorkspacePlan
+      }
+    | {
+        readonly kind: 'workspace'
+        readonly workspace: AdmittedSemesterWorkspace
+      },
+  plans: Map<string, PlanContext>,
+): Promise<boolean> {
+  const decoded = decodeRestorablePlanDescription(description)
+  if (!decoded) return false
+  if ((await inspectCanonicalParent(decoded.parent)) !== 'current') {
+    return false
+  }
+  const candidate = planCreateAdmission({
+    parent: decoded.parent,
+    leafName: decoded.leafName,
+    canonicalRoot: decoded.canonicalRoot,
+    semester: decoded.semester,
+    setupPlanId: decoded.setupPlanId,
+    workspaceId: decoded.workspaceId,
+  })
+  if (
+    canonicalJson(describePlannedAdmission(candidate.planned)) !==
+    canonicalJson(description)
+  ) {
+    return false
+  }
+
+  if (subject.kind === 'plan') {
+    const context = plans.get(subject.plan.planId)
+    if (
+      !context ||
+      !samePlan(context.plan, subject.plan)
+    ) {
+      return false
+    }
+    return (
+      context.planned.markerBytes.equals(
+        candidate.planned.markerBytes,
+      ) &&
+      context.planned.aggregateBytes.equals(
+        candidate.planned.aggregateBytes,
+      )
+    )
+  }
+
+  const { workspace } = subject
+  if (
+    workspace.canonicalRoot !== decoded.canonicalRoot ||
+    workspace.formatVersion !== 3 ||
+    workspace.workspaceId !== decoded.workspaceId ||
+    workspace.manifest.workspaceId !== decoded.workspaceId ||
+    workspace.manifest.semester.yearLevel !==
+      decoded.semester.yearLevel ||
+    workspace.manifest.semester.term.key !==
+      decoded.semester.term.key ||
+    workspace.manifest.semester.term.displayName !==
+      decoded.semester.term.displayName ||
+    workspace.manifest.courses.length !== 0
+  ) {
+    return false
+  }
+  try {
+    const stateBytes = await readSingleLinkRegularFile(
+      path.join(
+        workspace.canonicalRoot,
+        productDirectoryName,
+        stateFileName,
+      ),
+      admissionMarkerMaxBytes,
+    )
+    return stateBytes.equals(candidate.planned.aggregateBytes)
+  } catch {
+    return false
+  }
+}
+
+async function restoreCreatePlan(
+  description: WorkspaceAdmissionPlanDescription,
+  plans: Map<string, PlanContext>,
+): Promise<AuthorityBoundWorkspacePlan | null> {
+  const decoded = decodeRestorablePlanDescription(description)
+  if (!decoded) return null
+  const parentState = await inspectCanonicalParent(decoded.parent)
+  if (parentState !== 'current') return null
+  const targetState = await lstatOutcome(decoded.canonicalRoot)
+  if (targetState.status !== 'absent') return null
+
+  const candidate = planCreateAdmission({
+    parent: decoded.parent,
+    leafName: decoded.leafName,
+    canonicalRoot: decoded.canonicalRoot,
+    semester: decoded.semester,
+    setupPlanId: decoded.setupPlanId,
+    workspaceId: decoded.workspaceId,
+  })
+  const context = {
+    kind: 'create',
+    plan: cloneAuthorityBoundWorkspacePlan(candidate.plan),
+    planned: candidate.planned,
+  } as const satisfies CreatePlanContext
+  if (
+    canonicalJson(describeCreatePlan(context)) !==
+    canonicalJson(description)
+  ) {
+    return null
+  }
+  plans.set(context.plan.planId, context)
+  return cloneAuthorityBoundWorkspacePlan(context.plan)
+}
+
+function decodeRestorablePlanDescription(
+  value: unknown,
+): {
+  readonly setupPlanId: string
+  readonly parent: WorkspaceParentAuthority
+  readonly leafName: string
+  readonly canonicalRoot: string
+  readonly semester: SemesterIdentity
+  readonly workspaceId: string
+} | null {
+  if (
+    !isExactRecord(value, ['privateBinding', 'setupPlanId']) ||
+    !isOpaqueIdentity(value.setupPlanId) ||
+    !isExactRecord(value.privateBinding, ['plan', 'workspace']) ||
+    !isExactRecord(value.privateBinding.plan, [
+      'canonicalBytesSha256',
+      'semester',
+      'target',
+    ]) ||
+    !isSha256(value.privateBinding.plan.canonicalBytesSha256) ||
+    !isSemesterIdentity(value.privateBinding.plan.semester) ||
+    !isExactRecord(value.privateBinding.plan.target, [
+      'canonicalParent',
+      'canonicalTarget',
+      'leafName',
+      'parentDevice',
+      'parentInode',
+    ]) ||
+    !isCanonicalAbsolutePath(
+      value.privateBinding.plan.target.canonicalParent,
+    ) ||
+    !isCanonicalAbsolutePath(
+      value.privateBinding.plan.target.canonicalTarget,
+    ) ||
+    !isSafeLeafName(value.privateBinding.plan.target.leafName) ||
+    !isOpaqueIdentity(value.privateBinding.plan.target.parentDevice) ||
+    !isOpaqueIdentity(value.privateBinding.plan.target.parentInode) ||
+    path.join(
+      value.privateBinding.plan.target.canonicalParent,
+      value.privateBinding.plan.target.leafName,
+    ) !== value.privateBinding.plan.target.canonicalTarget ||
+    !isStrictChild(
+      value.privateBinding.plan.target.canonicalParent,
+      value.privateBinding.plan.target.canonicalTarget,
+    ) ||
+    !isExactRecord(value.privateBinding.workspace, [
+      'expectedInitialAggregateSha256',
+      'formatVersion',
+      'ownedScaffoldPlanSha256',
+      'rootMarkerSha256',
+      'workspaceId',
+    ]) ||
+    !isWorkspaceId(value.privateBinding.workspace.workspaceId) ||
+    value.privateBinding.workspace.formatVersion !== 3 ||
+    !isSha256(value.privateBinding.workspace.rootMarkerSha256) ||
+    !isSha256(
+      value.privateBinding.workspace.ownedScaffoldPlanSha256,
+    ) ||
+    !isSha256(
+      value.privateBinding.workspace.expectedInitialAggregateSha256,
+    )
+  ) {
+    return null
+  }
+  const target = value.privateBinding.plan.target as {
+    readonly canonicalParent: string
+    readonly canonicalTarget: string
+    readonly leafName: string
+    readonly parentDevice: string
+    readonly parentInode: string
+  }
+  const semester = value.privateBinding.plan
+    .semester as SemesterIdentity
+  const workspace = value.privateBinding.workspace as {
+    readonly workspaceId: string
+  }
+  return {
+    setupPlanId: value.setupPlanId,
+    parent: {
+      selectionId: storedParentSelectionId(value.setupPlanId),
+      canonicalParent: target.canonicalParent,
+      parentDevice: target.parentDevice,
+      parentInode: target.parentInode,
+    },
+    leafName: target.leafName,
+    canonicalRoot: target.canonicalTarget,
+    semester: cloneSemesterIdentity(semester),
+    workspaceId: workspace.workspaceId,
   }
 }
 
@@ -450,6 +752,83 @@ async function inspectOwnedResume(
   return { outcome: 'owned_incomplete', plan }
 }
 
+async function inspectOwnedDiscard(
+  intent: Extract<WorkspaceIntent, { kind: 'discard_owned' }>,
+  plans: Map<string, PlanContext>,
+): Promise<WorkspaceInspection> {
+  if (
+    !isOpaqueIdentity(intent.setupId) ||
+    !isCanonicalAbsolutePath(intent.canonicalRoot)
+  ) {
+    return { outcome: 'unsafe', readOnly: false }
+  }
+  const planned = await readAdmissionEvidence(
+    intent.canonicalRoot,
+    intent.setupId,
+  )
+  if (
+    !planned ||
+    planned.setupPlanId !== intent.setupId ||
+    planned.evidence.authority.canonicalRoot !== intent.canonicalRoot ||
+    (await inspectCanonicalParent(
+      planned.evidence.authority.parent,
+    )) !== 'current'
+  ) {
+    return { outcome: 'collision', readOnly: false }
+  }
+  const statePath = path.join(
+    intent.canonicalRoot,
+    planned.evidence.authority.ownedScaffoldPlan.state.relativePath,
+  )
+  if ((await lstatOutcome(statePath)).status !== 'absent') {
+    return { outcome: 'collision', readOnly: false }
+  }
+  let rootIdentity: FileIdentity
+  try {
+    rootIdentity = await directoryIdentity(intent.canonicalRoot)
+    await assertOwnedIncompleteTopology(planned, {
+      allowRepairableTemporary: true,
+    })
+    await assertExactRegularFileIdentity(
+      path.join(
+        productRootPath(intent.canonicalRoot),
+        evidenceFileName,
+      ),
+      planned.markerBytes,
+      1,
+    )
+  } catch (error) {
+    return error instanceof ApplyFailure && error.outcome === 'unavailable'
+      ? { outcome: 'unavailable', readOnly: false }
+      : { outcome: 'collision', readOnly: false }
+  }
+  const planId = `workspace_discard_${randomHex()}`
+  const authorityDigest = sha256Canonical({
+    operation: 'discard_owned',
+    planId,
+    canonicalRoot: intent.canonicalRoot,
+    markerSha256: planned.markerSha256,
+    createAuthorityDigest: planned.evidence.authorityDigest,
+    rootIdentity,
+  })
+  const plan = {
+    planId,
+    operation: 'discard_owned',
+    canonicalRoot: intent.canonicalRoot,
+    authorityDigest,
+  } satisfies AuthorityBoundWorkspacePlan
+  plans.set(planId, {
+    kind: 'discard_owned',
+    plan: cloneAuthorityBoundWorkspacePlan(plan),
+    planned,
+    runtimeAuthority: {
+      parent: cloneParentAuthority(planned.evidence.authority.parent),
+      rootIdentity,
+    },
+  })
+  return { outcome: 'owned_incomplete', plan }
+}
+
 async function applyCreate(
   context: CreatePlanContext,
   options: SemesterWorkspaceAdmissionTestOptions,
@@ -540,6 +919,113 @@ async function applyResume(
     true,
   )
   return { outcome: 'resumed', workspace }
+}
+
+async function applyDiscard(
+  context: DiscardPlanContext,
+  options: SemesterWorkspaceAdmissionTestOptions,
+): Promise<WorkspaceApplyResult> {
+  const root = context.plan.canonicalRoot
+  const productRoot = productRootPath(root)
+  const authority =
+    context.planned.evidence.authority.ownedScaffoldPlan
+  await assertOwnedRuntimeAuthority(root, context.runtimeAuthority)
+  await assertOwnedIncompleteTopology(context.planned, {
+    allowRepairableTemporary: true,
+  })
+  const statePath = path.join(root, authority.state.relativePath)
+  if ((await lstatOutcome(statePath)).status !== 'absent') {
+    throw new ApplyFailure('conflict')
+  }
+  const temporaryPath = path.join(
+    root,
+    authority.state.temporaryRelativePath,
+  )
+  const temporary = await lstatOutcome(temporaryPath)
+  if (temporary.status === 'unavailable') {
+    throw new ApplyFailure('unavailable')
+  }
+  if (temporary.status === 'present') {
+    if (
+      !temporary.stats.isFile() ||
+      temporary.stats.isSymbolicLink() ||
+      temporary.stats.nlink !== 1 ||
+      !(
+        await regularFileHasExactBytes(
+          temporaryPath,
+          context.planned.aggregateBytes,
+          1,
+        )
+      ) &&
+        !(
+          await regularFileIsStrictPrefix(
+            temporaryPath,
+            context.planned.aggregateBytes,
+          )
+        )
+    ) {
+      throw new ApplyFailure('conflict')
+    }
+    await unlink(temporaryPath)
+    await syncDirectory(productRoot)
+    await inject(options, 'after_discard_state_temp_unlink')
+  }
+  for (const directoryName of ['courses', 'inbox'] as const) {
+    const directory = path.join(root, directoryName)
+    const outcome = await lstatOutcome(directory)
+    if (outcome.status === 'unavailable') {
+      throw new ApplyFailure('unavailable')
+    }
+    if (outcome.status === 'absent') continue
+    if (
+      !outcome.stats.isDirectory() ||
+      outcome.stats.isSymbolicLink() ||
+      (await readDirectoryEntries(directory)).length !== 0
+    ) {
+      throw new ApplyFailure('conflict')
+    }
+    await assertOwnedRuntimeAuthority(root, context.runtimeAuthority)
+    await rmdir(directory)
+    await syncDirectory(root)
+    await inject(
+      options,
+      directoryName === 'courses'
+        ? 'after_discard_courses_remove'
+        : 'after_discard_inbox_remove',
+    )
+  }
+  const markerPath = path.join(productRoot, evidenceFileName)
+  await assertExactRegularFileIdentity(
+    markerPath,
+    context.planned.markerBytes,
+    1,
+  )
+  await assertOwnedRuntimeAuthority(root, context.runtimeAuthority)
+  if (
+    !(await hasExactDirectoryEntries(productRoot, [
+      evidenceFileName,
+    ]))
+  ) {
+    throw new ApplyFailure('conflict')
+  }
+  await unlink(markerPath)
+  await syncDirectory(productRoot)
+  await inject(options, 'after_discard_marker_unlink')
+  await assertOwnedRuntimeAuthority(root, context.runtimeAuthority)
+  if (!(await hasExactDirectoryEntries(productRoot, []))) {
+    throw new ApplyFailure('conflict')
+  }
+  await rmdir(productRoot)
+  await syncDirectory(root)
+  await inject(options, 'after_discard_product_root_remove')
+  await assertOwnedRuntimeAuthority(root, context.runtimeAuthority)
+  if (!(await hasExactDirectoryEntries(root, []))) {
+    throw new ApplyFailure('conflict')
+  }
+  await rmdir(root)
+  await syncDirectory(context.runtimeAuthority.parent.canonicalParent)
+  await inject(options, 'after_discard_root_remove')
+  return { outcome: 'discarded' }
 }
 
 async function finishOwnedScaffold(
@@ -919,14 +1405,21 @@ function planCreateAdmission(input: {
   readonly leafName: string
   readonly canonicalRoot: string
   readonly semester: SemesterIdentity
+  readonly setupPlanId?: string
+  readonly workspaceId?: string
 }): {
   readonly plan: AuthorityBoundWorkspacePlan
   readonly planned: DecodedAdmissionEvidence
 } {
-  const setupPlanId = `workspace_plan_${randomHex()}`
-  const setupNonce = randomHex()
+  const setupPlanId =
+    input.setupPlanId ?? `workspace_plan_${randomHex()}`
+  const setupNonce = admissionSetupNonce(setupPlanId)
+  const parent = {
+    ...cloneParentAuthority(input.parent),
+    selectionId: storedParentSelectionId(setupPlanId),
+  }
   const aggregate = createInitialSemesterWorkspaceV3({
-    workspaceId: `workspace_${randomHex()}`,
+    workspaceId: input.workspaceId ?? `workspace_${randomHex()}`,
     semester: input.semester,
   })
   const aggregateBytes = encodeSemesterWorkspaceV3(aggregate)
@@ -946,7 +1439,7 @@ function planCreateAdmission(input: {
     setupNonce,
     operation: 'create',
     canonicalRoot: input.canonicalRoot,
-    parent: cloneParentAuthority(input.parent),
+    parent,
     leafName: input.leafName,
     workspaceId: aggregate.manifest.workspaceId,
     aggregateBytesBase64: aggregateBytes.toString('base64'),
@@ -1820,6 +2313,18 @@ async function syncDirectory(directory: string): Promise<void> {
   }
 }
 
+async function hasExactDirectoryEntries(
+  directory: string,
+  expected: readonly string[],
+): Promise<boolean> {
+  const actual = (await readDirectoryEntries(directory)).sort()
+  const sortedExpected = [...expected].sort()
+  return (
+    actual.length === sortedExpected.length &&
+    actual.every((entry, index) => entry === sortedExpected[index])
+  )
+}
+
 async function isRegularDirectory(directory: string): Promise<boolean> {
   try {
     const stats = await lstat(directory)
@@ -2076,6 +2581,20 @@ function admissionSetupPlanBinding(input: {
       ),
     )
     .digest('hex')
+}
+
+function admissionSetupNonce(setupPlanId: string): string {
+  return sha256Canonical({
+    domain: 'ay-ple.workspace-admission.setup-nonce.v1',
+    setupPlanId,
+  }).slice(0, 32)
+}
+
+function storedParentSelectionId(setupPlanId: string): string {
+  return `selection_${sha256Canonical({
+    domain: 'ay-ple.workspace-admission.parent-selection.v1',
+    setupPlanId,
+  }).slice(0, 32)}`
 }
 
 function canonicalJson(value: unknown): string {
