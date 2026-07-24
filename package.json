@@ -4,8 +4,13 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "concurrently -n CLIENT,SERVER -c blue,green \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
+    "start": "npm start --prefix server",
     "install:all": "npm install --prefix client && npm install --prefix server",
-    "build": "npm run build --prefix client"
+    "build": "npm run build --prefix client",
+    "render:build": "npm install --package-lock=false && npm install --prefix client --package-lock=false && npm install --prefix server --package-lock=false && npm run build"
+  },
+  "engines": {
+    "node": ">=20.19.0"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
