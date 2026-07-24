@@ -161,7 +161,6 @@ Root companion docs:
 | runtime root의 소유권 불변 조건 | [ADR 0006](adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | 다른 문서는 결정 결과만 요약하고 ADR을 연결 |
 | SemesterWorkspace admission·identity와 `WorkspaceManifest` authority | [ADR 0014](adr/0014-create-app-owned-normalized-semester-workspaces.md) | 제품·architecture·package 문서는 현재 구현 또는 사용자 결과만 요약하고 exact schema를 재정의하지 않음 |
 | Public repository lineage·canonical source·first-party license와 trust authority | [ADR 0015](adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | 제품·release 문서는 public 진입 결과만 요약하고 allowlist·cutover·legal policy를 재정의하지 않음 |
-| Public npm application↔Runtime release binding·integrity·rollback authority | [ADR 0016](adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md) | 제품 문서는 사용자 결과, architecture·implementation 문서는 필요한 resolver consequence만 설명하고 distribution 결정을 재정의하지 않음 |
 | Public preview의 Codex account mode·credential authority·product token boundary | [ADR 0017](adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md) | Product Brief는 사용자 결과, Runtime 문서는 기술 mapping, 구현 지도는 current gap, Backlog는 작업 조건만 설명함 |
 | runtime 격리의 현재·목표·후속 기술 배치 | [Codex Runtime 격리](architecture/codex-runtime-isolation.md) | 구현 문서는 현재 동작만, Backlog는 후속 일정만 설명 |
 | Codex Chat의 횡단 topology와 gap | [Codex Chat 구현 지도](architecture/codex-chat-implementation-map.md) | 제품 문서는 구현 여부만 짧게 요약 |

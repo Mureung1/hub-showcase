@@ -9,7 +9,7 @@
 
 이 문서는 AY-PLE의 실제 작업 순서와 완료 상태를 날짜 없는 Markdown task list로 관리한다. 먼저 일반적인 Codex 사용 흐름에 준하는 웹 제품 기반을 닫고, 그 위에 AY-PLE의 학업 제품 기능을 올린다. 과거 캠프 제출 일정과 당시 판단은 [과거 캠프 제출 백로그](../archive/2026-07-ay-ple-4-week-submission-backlog.md)에 역사 기록으로 보존한다.
 
-제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Official SDK Runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), single maintained graph·no-alias 경계는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), product-only public cutover와 durable v2 store 정책은 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md), app-owned workspace admission·identity는 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), public repository lineage·license·trust authority는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md), public application↔Runtime distribution authority는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), Codex account·credential authority는 [ADR 0017](../adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md)을 따른다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
+제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Official SDK Runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), single maintained graph·no-alias 경계는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), product-only public cutover와 durable v2 store 정책은 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md), app-owned workspace admission·identity는 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), public repository lineage·license·trust authority는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md), Codex account·credential authority는 [ADR 0017](../adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md)을 따른다. Historical public application↔Runtime distribution 결정은 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)에 보존한다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
 
 ## 운영 규칙
 
@@ -90,6 +90,11 @@
   - [x] Browser reload나 local process restart 뒤 transcript나 unanswered `request_user_input` prompt를 복원하지 않고, settled `UserConfirmation`·apply outcome·확인된 `SemesterModel`의 사실 상태를 다시 연다. 답변 전 continuity loss는 `interrupted`·no-apply로 표시하고 명시적 retry를 제시한다.
   - [x] 첫 action이 실제로 발생시키는 Codex approval과 일반 Plan clarification은 원래 request identity로 처리하고 학업 상태를 바꾸지 않으며, `StatePatch` Review의 built-in `request_user_input` 답변은 같은 native Turn을 이어가되 settled `UserConfirmation`만 apply authority가 되게 한다.
   - [x] 자료 선택·근거·변경 제안·Review와 오른쪽 companion이 같은 desktop product flow에서 이해 가능하게 동작하는지 1440px~1920px에서 검증했다.
+
+- [ ] 2026-07-23 public release lane에서 추가된 구현을 감사하고 현재 제품에 필요한 범위를 다시 판정한다.
+  - [ ] Landing처럼 확정적으로 제거할 surface, 학업 kernel에 재사용할 기반, historical evidence로만 보존할 artifact를 구분한다.
+  - [ ] Runtime resolver·application host, Browser OAuth·auth-only Runtime, app-owned `SemesterWorkspace` setup·Ready를 각각 `keep | remove | undecided`로 판정하기 전에는 구현 순서나 삭제 범위를 확정하지 않는다.
+  - [ ] 감사 결과를 Product Brief, 구현 지도와 이 backlog에 먼저 반영한 뒤 다음 구현 목표를 정한다.
 
 - [ ] 확인된 사용자 필요에 따라 post-Ready capability를 순서대로 추가한다.
   - [ ] 기존 폴더와 자료 묶음을 `ImportSource`로 분석하고 mapping·반입 제안을 사용자 검토 뒤 app-owned `SemesterWorkspace`의 Course·`RawMaterial`로 만드는 첫 자료 가져오기 여정을 추가한다. 임의의 기존 폴더를 workspace로 직접 열지 않는다.
