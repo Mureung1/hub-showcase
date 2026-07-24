@@ -3,7 +3,7 @@
   "title": "CalMe - AI 기반 대학생 일정 관리 서비스",
   "summary": "AI가 학교 공지와 안내문을 자동으로 분석하여 마감일과 일정을 추출하고, 웹 캘린더에 등록해주는 서비스입니다. 대학생이 중요한 일정을 놓치지 않도록 도와줍니다.",
   "githubUser": "codms8369(박채은)",
-  "demoUrl": "",
+  "demoUrl": "https://calme.example.com",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp"
@@ -65,6 +65,114 @@
       "구현 단계: 기능별 코드 작성 → 단위 테스트 → 코드 리뷰 및 개선",
       "API 연동 단계: Claude API 프롬프트 작성 → 테스트 데이터로 검증 → 응답 처리 로직 개선",
       "검증 단계: 전체 흐름 통합 테스트 → 엣지 케이스 테스트 → 성능 최적화"
+    ]
+  },
+  "developmentPhases": [
+    {
+      "week": 1,
+      "title": "기획 및 설계",
+      "description": "사용자 조사, 문제 정의, 솔루션 설계, 기술 아키텍처 결정",
+      "deliverables": [
+        "사용자 흐름도 (User Flow)",
+        "화면 설계 (Wireframe)",
+        "기술 스택 선택",
+        "API 설계"
+      ]
+    },
+    {
+      "week": 2,
+      "title": "기반 구축",
+      "description": "회원가입/로그인 구현, 입력 인터페이스, Mock AI 분석, DB 설계",
+      "deliverables": [
+        "사용자 인증 (JWT)",
+        "텍스트/PDF 입력 기능",
+        "Mock 분석 결과 표시",
+        "SQLite 데이터베이스"
+      ]
+    },
+    {
+      "week": 3,
+      "title": "AI 분석 및 일정 저장",
+      "description": "Claude API 연동, 결과 수정 UI, 일정 저장, 중복 감지",
+      "deliverables": [
+        "Claude API 통합",
+        "분석 결과 수정 화면",
+        "일정 저장 API",
+        "중복 일정 감지",
+        "카테고리 필터링",
+        "저장 확인 팝업"
+      ]
+    },
+    {
+      "week": 4,
+      "title": "캘린더 및 대시보드",
+      "description": "월간 캘린더 표시, 마감임박 일정 강조, 일정 수정/삭제, 최종 배포",
+      "deliverables": [
+        "월간 캘린더 UI",
+        "D-Day 기반 대시보드",
+        "일정 상세 보기 및 수정",
+        "카테고리별 색상 표시",
+        "서비스 배포"
+      ]
+    }
+  ],
+  "statistics": {
+    "totalCommits": 50,
+    "codeLines": 15000,
+    "backendLines": 3500,
+    "frontendLines": 11500,
+    "developmentTime": "4 weeks",
+    "teamSize": 1,
+    "aiAssistance": "60%"
+  },
+  "challenges": [
+    {
+      "category": "AI 프롬프트 최적화",
+      "description": "Claude API로부터 일관되게 올바른 형식의 JSON 응답을 받기 위해 프롬프트를 여러 번 반복적으로 개선",
+      "solution": "프롬프트 엔지니어링, JSON Schema 검증, 오류 처리 강화"
+    },
+    {
+      "category": "날짜 형식 통일",
+      "description": "공지마다 다양한 날짜 형식('2024-03-15', '3월 15일', '15일' 등)을 일관되게 처리해야 함",
+      "solution": "정규화 함수 작성, UTC 타임존 처리"
+    },
+    {
+      "category": "중복 일정 감지",
+      "description": "사용자가 실수로 같은 일정을 중복 등록하는 것을 방지하면서도 의도된 중복은 허용해야 함",
+      "solution": "명확한 중복 기준 정의, 확인 팝업 구현"
+    },
+    {
+      "category": "PDF 텍스트 추출 정확도",
+      "description": "다양한 형식의 PDF에서 일관되게 텍스트를 추출하는 것이 어려움",
+      "solution": "pdf-parse 라이브러리 활용, 사용자에게 수정 기능 제공"
+    }
+  ],
+  "keyLearnings": [
+    "Mock 데이터로 전체 흐름을 먼저 완성하면, 실제 API 연동이 훨씬 쉬워진다",
+    "사용자의 피드백을 초기에 받을수록 큰 수정을 줄일 수 있다",
+    "견고한 에러 처리가 사용자 경험의 신뢰도를 크게 높인다",
+    "AI는 코드 작성뿐만 아니라 설계 단계에서도 새로운 관점을 제시할 수 있다"
+  ],
+  "roadmap": {
+    "completed": [
+      "사용자 인증 (회원가입/로그인)",
+      "공지 입력 (텍스트/PDF)",
+      "Claude API 기반 AI 분석",
+      "분석 결과 수정 UI",
+      "일정 저장",
+      "중복 감지",
+      "월간 캘린더 표시",
+      "카테고리별 색상 필터링",
+      "D-Day 대시보드"
+    ],
+    "inProgress": [],
+    "planned": [
+      "모바일 반응형 디자인",
+      "알림 기능 (Push Notification)",
+      "이메일 리마인더",
+      "주간/일일 뷰",
+      "내보내기 (iCal, CSV)",
+      "다크 테마"
     ]
   }
 }
