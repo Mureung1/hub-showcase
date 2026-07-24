@@ -193,6 +193,58 @@ test('return_to_input invalidates only the matching in-memory confirmation draft
   }
 })
 
+test('return_to_input invoked before approve wins the serialized draft authority without a durable write', async () => {
+  const fixture = await createJourneyFixture(
+    'return-to-input-before-approve',
+  )
+  try {
+    let writes = 0
+    const journey = fixture.createJourney({
+      stateStore: {
+        read: () => fixture.store.read(),
+        async compareAndReplace(input) {
+          writes += 1
+          return fixture.store.compareAndReplace(input)
+        },
+        reconcileAbandonedWrite: () =>
+          fixture.store.reconcileAbandonedWrite(),
+      },
+    })
+    const confirmation = await confirmationFor(journey, fixture.input)
+    const beforeTree = await snapshotTree(fixture.appDataRoot)
+
+    const returning = journey.reconcile({
+      kind: 'return_to_input',
+      setupPlanId: confirmation.setupPlanId,
+    })
+    const approving = journey.reconcile({
+      kind: 'approve',
+      setupPlanId: confirmation.setupPlanId,
+    })
+
+    assert.deepEqual(await returning, {
+      outcome: 'awaiting_input',
+      projection: { state: 'input_required' },
+    })
+    assert.deepEqual(await approving, {
+      outcome: 'setup_conflict',
+      projection: {
+        state: 'blocked',
+        reason: 'setup_conflict',
+      },
+    })
+    assert.equal(writes, 0)
+    assert.equal((await fixture.store.read()).status, 'absent')
+    assert.deepEqual(
+      await snapshotTree(fixture.appDataRoot),
+      beforeTree,
+    )
+    assert.deepEqual(await readdir(fixture.canonicalParent), [])
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('return_to_input rejects invalid state or stale authority without clearing the current projection', async () => {
   const fixture = await createJourneyFixture('return-to-input-invalid')
   try {

@@ -231,13 +231,6 @@ function createSetupJourney(
     SetupReconcileResult<SemesterSetupJourneyProjection>
   > => {
     if (command.kind === 'approve') {
-      if (
-        projection.state === 'confirmation_required' &&
-        projection.setupPlanId === command.setupPlanId &&
-        draft?.planDescription.setupPlanId === command.setupPlanId
-      ) {
-        draft = { ...draft, approvalAttempted: true }
-      }
       const existing = approvePromises.get(command.setupPlanId)
       if (existing) return existing
       const promise = enqueue(() => approve(command.setupPlanId))
@@ -397,6 +390,13 @@ function createSetupJourney(
   ): Promise<
     SetupReconcileResult<SemesterSetupJourneyProjection>
   > => {
+    if (
+      projection.state === 'confirmation_required' &&
+      projection.setupPlanId === setupPlanId &&
+      draft?.planDescription.setupPlanId === setupPlanId
+    ) {
+      draft = { ...draft, approvalAttempted: true }
+    }
     let observed = await options.stateStore.read()
     let approvedCommitted = false
     if (
