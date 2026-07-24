@@ -47,13 +47,24 @@ S1이 고정한 단일 `CanonicalRuntimeManifest` authority에 Runtime-owned rec
 - [ ] Manifest self-hash를 만들지 않고 S1 descriptor가 manifest exact bytes·SHA를 pin할 수 있는 deterministic output을 제공한다.
 - [ ] Build-only input은 recipient artifact path로 오인되지 않고 source/input/builder identity를 provenance field로 표현한다.
 - [ ] Current exact Runtime verify/generate flow와 official SDK provenance가 additive v2 work 때문에 조용히 바뀌지 않는다.
-- [ ] R2b가 actual component roster와 legal tree를 주입할 수 있는 owner-private generator/verifier seam과 fixture가 handoff된다.
+- [ ] R2b가 actual component roster와 legal tree를 주입할 수 있는 owner-private assembler와 inherited verifier seam·fixture가 handoff된다.
+
+## Acceptance ownership
+
+| Acceptance | Owner와 R2a proof |
+| --- | --- |
+| Strict schema·path graph·selected launch·provenance decode | Existing S1 `canonical-runtime-manifest.ts`; assembler unit가 same decoder로 self-validation과 negative matrix를 실행한다. |
+| Complete recipient·bundle·manifest/legal/mode/symlink verification | Existing S1 release admission·retained directory capability·archive extraction/generation verifier; assembler-produced resolver fixture가 full suite를 통과한다. |
+| Root/ancestor/file replacement와 point-in-time spawn authority | Existing S1 final pathname rebind와 exact-object `verifyForSpawn`; R2a는 alternate path capability를 발급하지 않는다. |
+| Ordering, evidence math, canonical bytes·digest | New R2a pure assembler; reverse-order input equality와 3,093-byte synthetic fixture SHA-256 `d2d09adeb6adc7d456b4418f30e68d285c87d7092abb864e27338541dd655421`가 oracle이다. |
+| Actual component/legal/provenance closure | R2b 후속 책임이며 이 ticket은 synthetic input만 고정한다. |
 
 ## Verification
 
-- Targeted test or command: Runtime manifest v2 decoder/generator/complete-tree unit tests, `npm run test:production-runtime -w @ay-ple/codex-chat-runtime`, `npm run verify:production-runtime -w @ay-ple/codex-chat-runtime`
+- Targeted test or command: assembler unit와 existing decoder cross-contract, `npm test -w @ay-ple/runtime-release`의 admission·retained-capability extraction·generation·resolver/spawn matrix, Runtime release typecheck/build.
+- Non-mutation evidence: `npm run test:production-runtime -w @ay-ple/codex-chat-runtime`, `npm run verify:production-runtime -w @ay-ple/codex-chat-runtime`, `npm run test:provenance -w @ay-ple/codex-chat-runtime`, `npm run verify:exact-sdk -w @ay-ple/codex-chat-runtime`. Current v1/SDK flow는 public schema authority가 아니다.
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
-- Manual or live smoke: 없음. Synthetic recipient trees와 current production Runtime before/after non-mutation verification이 authority다.
+- Manual or live smoke: 없음. Synthetic descriptor fixture와 existing S1 secure filesystem verifier가 authority다.
 
 ## Claim Evidence
 
@@ -71,12 +82,14 @@ S1이 고정한 단일 `CanonicalRuntimeManifest` authority에 Runtime-owned rec
 
 ## Starting Points
 
-- `packages/codex-chat-runtime/manifests/production-runtime-darwin-arm64.json`
-- `packages/codex-chat-runtime/src/production-bundle.ts`
-- `packages/codex-chat-runtime/src/production-bundle.unit.test.ts`
-- `packages/codex-chat-runtime/scripts/production_bundle.py`
-- `packages/codex-chat-runtime/scripts/test_production_bundle.py`
-- `packages/codex-chat-runtime/README.md`
+- `packages/runtime-release/src/canonical-runtime-manifest.ts`
+- `packages/runtime-release/src/runtime-release-authority.ts`
+- `packages/runtime-release/src/runtime-archive-extraction.ts`
+- `packages/runtime-release/src/runtime-generation.ts`
+- `packages/runtime-release/src/runtime-resolver.ts`
+- `packages/runtime-release/src/runtime-resolver-fixture.test.ts`
+- `packages/runtime-release/README.md`
+- `packages/codex-chat-runtime/README.md`의 current v1 non-mutation 경계
 - `docs/wayfinding/public-npx-first-release/assets/runtime-release-delivery-research.md`
 
 ## Delivery Handoff
@@ -91,6 +104,6 @@ S1이 고정한 단일 `CanonicalRuntimeManifest` authority에 Runtime-owned rec
 | writablePaths | `packages/runtime-release/src/canonical-runtime-manifest-assembler*`; 최소 adjacent tests/fixture; `packages/runtime-release/README.md`; 필요 시 `packages/codex-chat-runtime/manifests/fixtures/**`와 `packages/codex-chat-runtime/README.md`; Ticket 018. Existing canonical decoder/authority/extraction/resolver는 cross-contract proof에 필요한 colocated test 외 read-only donor다. |
 | consumedContracts | S1 `RuntimeReleaseDescriptor` manifest-v2 binding; current production Runtime manifest/verifier/materializer invariants; R1-complete Runtime identity and process graph |
 | predecessorEvidence | 006 fixed reviewed SHA와 integration merge receipt, exact SDK/bridge/production Runtime green evidence, latest applicable `contractTipSha`, root four-gate receipt |
-| requiredChecks | Manifest v2 canonical/strict decoder and complete-tree matrix; production Runtime before/after verify; exact SDK provenance non-regression; Runtime workspace test/typecheck/build; root four gates; docs links; `git diff --check` |
+| requiredChecks | Assembler canonical/strict decoder cross-contract; existing S1 complete-tree/spawn matrix; production Runtime before/after verify; exact SDK provenance non-regression; Runtime release test/typecheck/build; root four gates; docs links; `git diff --check` |
 | reviewOwner | R author가 아닌 independent Runtime manifest/provenance reviewer |
-| handoffArtifact | Fixed reviewed R2a SHA, manifest-v2 schema/generator/verifier path와 canonical synthetic fixture digest consumed by R2b |
+| handoffArtifact | Fixed reviewed R2a SHA, owner-private assembler path, existing S1 decoder/verifier owner와 canonical synthetic fixture bytes/digest consumed by R2b |

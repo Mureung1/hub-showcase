@@ -8,6 +8,7 @@
 | --- | --- |
 | `src/contract.ts` | Frozen `RuntimeReleaseDescriptor`, `RuntimeResolver`·`VerifiedRuntime` Interface와 S1 error family를 소유한다. Descriptor decoder는 exact launcher/Runtime identity에서 tag와 asset name을 결합하고 canonical `https://github.com/<owner>/<repo>` repository 및 같은 authority의 exact release URL만 허용한다. |
 | `src/canonical-runtime-manifest.ts` | Canonical manifest의 exact shape, Runtime identity, launch path, complete roster evidence와 path graph를 strict decode한다. |
+| `src/canonical-runtime-manifest-assembler.ts` | R2 build Adapter가 stream/hash한 immutable recipient file·symlink descriptor를 정렬·clone하고 payload/`bundle/` evidence와 하나의 canonical byte representation을 계산한 뒤 기존 decoder로 self-validation한다. Filesystem scan이나 verified capability를 소유하지 않는다. |
 | `src/runtime-release-authority.ts` | Descriptor, application/target/contract, canonical manifest resource·bytes·digest·identity를 effect 전에 admission하고 caller-safe failure와 private diagnostic evidence를 분리한다. |
 | `src/runtime-cache-authority.ts` | `appDataRoot/runtime-cache/v1` 아래 content-addressed archive, partial, generation, staging, quarantine, lease와 receipt identity를 계산한다. Cache root를 read-only로 검사하고 owner UID, exact `0700`, no-symlink ancestor, same-device `(dev, ino)` snapshot을 mutation authority 발급 전에 재검증한다. |
 | `src/runtime-cache-bootstrap.ts` | Canonical owner-only `appDataRoot` 아래 stable cache namespace와 exact generation parent를 direct-leaf 단위로 생성·fsync·재검증하고, exclusive owned staging root를 발급한다. |
@@ -24,6 +25,7 @@
 ## 내부 경계
 
 - Package root `src/index.ts`는 아직 `RuntimeReleaseScaffold`만 노출한다. D1의 production factory, authority, transport, cache와 verification Modules는 downstream host composition 전까지 package entrypoint에서 re-export하지 않는 source-internal seam이다.
+- Canonical manifest assembler도 package root에서 re-export하지 않는 owner-private build seam이다. 입력은 payload bytes가 아니라 `{ path, type, mode, bytes, sha256 }` 또는 symlink target descriptor이므로 Runtime 크기에 비례한 bytes를 메모리에 보존하지 않는다. Detailed builder/source/download identity는 `input_provenance`가 가리키는 payload file 안에 있고, assembler는 그 file descriptor의 digest만 canonical manifest에 결합한다.
 - Host는 admission·owner당 `createRuntimeResolverBundle()` 하나를 만들고 process lifetime 동안 재사용해야 한다. Shared flight registry와 exact-object `WeakMap` spawn authority는 bundle-local이며, cross-bundle same-owner lease join은 correctness evidence이지 다중 bundle을 권장하는 host contract가 아니다.
 - Same-identity caller는 한 transaction을 공유하되 각 caller는 독립적으로 detach한다. 마지막 subscriber가 사라지면 transaction을 cancel·settle하고, late caller는 draining flight가 끝난 뒤 fresh transaction을 시작한다.
 - Joined completion receipt는 wake hint일 뿐 Ready나 spawn authority가 아니다. Joiner와 cache hit은 exact generation receipt와 complete tree를 fresh inspect하고, 반환된 exact `VerifiedRuntime` object도 child spawn 직전에 다시 검증한다.
@@ -39,7 +41,7 @@
 
 ## Resolver evidence
 
-`RuntimeResolver.resolve()` scripted matrix는 `200/206/416`, HTTPS redirect와 downgrade, content encoding drift, access denial, unsafe archive, corrupt retained archive reacquisition, lease ambiguity, cancellation resume와 no-downgrade를 검증한다. Real-filesystem cases는 valid cache reuse, retained archive offline repair, publish/readback fault 뒤 fresh-owner offline recovery와 spawn-boundary complete-tree drift 거절을 검증한다. 상세 candidate receipt는 [Ticket 012](../../docs/tickets/2026-07-23-public-npx-first-release/012-d1d-runtime-resolver-transaction-repair.md)에 있다.
+`RuntimeResolver.resolve()` scripted matrix는 `200/206/416`, HTTPS redirect와 downgrade, content encoding drift, access denial, unsafe archive, corrupt retained archive reacquisition, lease ambiguity, cancellation resume와 no-downgrade를 검증한다. Test-only resolver fixture도 canonical manifest를 assembler로 만들기 때문에 같은 bytes가 decoder admission, safe archive extraction, generation readback과 spawn-boundary reverify까지 흐른다. Real-filesystem cases는 valid cache reuse, retained archive offline repair, retained ancestor·same-name file replacement, manifest·legal·selected executable drift, final pathname rebind, publish/readback fault 뒤 fresh-owner offline recovery와 exact-object spawn authority를 검증한다. Synthetic fixture manifest는 3,093 bytes, SHA-256 `d2d09adeb6adc7d456b4418f30e68d285c87d7092abb864e27338541dd655421`로 고정한다. 상세 resolver candidate receipt는 [Ticket 012](../../docs/tickets/2026-07-23-public-npx-first-release/012-d1d-runtime-resolver-transaction-repair.md), assembler handoff는 [Ticket 018](../../docs/tickets/2026-07-23-public-npx-first-release/018-r2a-runtime-recipient-manifest.md)에 있다.
 
 ## 검증 명령
 

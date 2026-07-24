@@ -11,6 +11,9 @@ import {
   CanonicalRuntimeManifestContractError,
   decodeCanonicalRuntimeManifest,
 } from './canonical-runtime-manifest.js'
+import {
+  createRuntimeResolverReleaseFixture,
+} from './runtime-resolver-fixture.test.js'
 
 const PROVENANCE_BYTES = Buffer.from(
   JSON.stringify(
@@ -205,6 +208,19 @@ test('uses the existing canonical decoder as the only strict contract authority'
       )
     })
   }
+})
+
+test('pins the canonical synthetic R2 resolver fixture bytes for R2b handoff', async () => {
+  const fixture = await createRuntimeResolverReleaseFixture()
+
+  assert.equal(fixture.canonicalManifestBytes.byteLength, 3093)
+  assert.equal(
+    createHash('sha256')
+      .update(fixture.canonicalManifestBytes)
+      .digest('hex'),
+    'd2d09adeb6adc7d456b4418f30e68d285c87d7092abb864e27338541dd655421',
+  )
+  assert.deepEqual(fixture.canonicalManifest, fixture.admission.manifest)
 })
 
 function file(

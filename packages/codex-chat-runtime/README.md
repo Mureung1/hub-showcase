@@ -68,6 +68,8 @@ Canonical manifest는 다음을 서로 연결한다.
 - tracked `python/bridge` 5-file roster와 installed `bundle/bridge` roster·entrypoint
 - bundle-local import path, native executable, `codex-cli 0.144.4`와 complete tree-roster digest `ff65a20ea5d44e9b532babc4875a2dc32675c25ee8173ddd7382f7f841b0eca6`
 
+이 package의 current production manifest v1과 ignored materialization은 exact SDK·bridge non-regression authority이며 public Runtime recipient로 승격되지 않았다. Public R2 build Adapter는 actual legal·SBOM·provenance closure와 payload file을 stream/hash해 immutable roster descriptor를 만들고, [`@ay-ple/runtime-release`](../runtime-release/README.md)의 owner-private assembler가 그 metadata를 S1 `CanonicalRuntimeManifest` bytes로 조립한다. Schema admission, extracted complete-tree 검증과 spawn-adjacent reverify는 계속 `@ay-ple/runtime-release`만 소유한다. R2b가 actual component roster와 legal tree를 닫기 전에는 이 경계가 public release input 완성을 주장하지 않는다.
+
 `verify:production-runtime`은 download, build, submodule access 또는 artifact repair를 하지 않는다. Canonical manifest와 이미 materialize된 ignored tree가 없거나 한 파일이라도 missing, extra, renamed, truncated 또는 digest-mismatched 상태면 fail closed한다. Production factory도 absolute artifact root를 요구하고, tracked canonical manifest와 local manifest의 byte equality, exact source·runtime·Python·ordered patch identity, complete bundle tree roster와 symlink containment을 검증한 뒤 그 tree의 absolute Python·bridge·site-packages·native executable만 사용한다. System Python, ambient `PATH` 또는 source submodule로 fallback하지 않는다. Worker actual-child gate는 verified bundled Python, `-B`, site-packages와 entrypoint만 사용해 tree에 bytecode를 쓰지 않는다. Windows, Linux와 macOS x86_64는 지원하지 않는다.
 
 ## Persistent Python bridge
