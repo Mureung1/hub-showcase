@@ -46,6 +46,33 @@ describe('curriculumClient', () => {
     })
   })
 
+  it('keeps follow-up requests tied to the previous plan in server mode', async () => {
+    const plan = createFallbackCurriculumPlan('I want to build a FastAPI server')
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ plan }),
+    })) as unknown as typeof fetch
+
+    await recommendCurriculum(
+      {
+        goal: 'I want to build a FastAPI server',
+        followUpInstruction: 'Make this a three-week practice plan.',
+        previousPlan: plan,
+      },
+      { mode: 'server', fetchImpl },
+    )
+
+    expect(fetchImpl).toHaveBeenCalledWith(curriculumRecommendationEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        goal: 'I want to build a FastAPI server',
+        followUpInstruction: 'Make this a three-week practice plan.',
+        previousPlan: plan,
+      }),
+    })
+  })
+
   it('uses server error messages when recommendation requests fail', async () => {
     const fetchImpl = vi.fn(async () => ({
       ok: false,

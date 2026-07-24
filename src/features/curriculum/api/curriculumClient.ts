@@ -3,6 +3,8 @@ import type { GeneratedCurriculumSnapshot } from '../model/useGeneratedCurriculu
 
 export type CurriculumRecommendationRequest = {
   goal: string
+  followUpInstruction?: string
+  previousPlan?: GeneratedCurriculumPlan
 }
 
 export type CurriculumRecommendationResponse = {
@@ -18,6 +20,7 @@ type CurriculumRecommendationOptions = {
 
 export const curriculumRecommendationEndpoint = '/api/curriculum/recommend'
 export const generatedCurriculumEndpoint = '/api/curriculum/generated'
+export const curriculumHistoryEndpoint = '/api/curriculum/history'
 
 export function resolveCurriculumRecommendationMode(value?: string): CurriculumRecommendationMode {
   const modeValue = arguments.length === 0
@@ -59,6 +62,21 @@ export async function getGeneratedCurriculum(
   return { generatedCurriculum: body.generatedCurriculum ?? null }
 }
 
+export async function getCurriculumHistory(
+  options: CurriculumRecommendationOptions = {},
+): Promise<{ curriculums: GeneratedCurriculumSnapshot[] }> {
+  const fetchImpl = options.fetchImpl ?? fetch
+  const response = await fetchImpl(curriculumHistoryEndpoint)
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch curriculum history (${response.status})`)
+  }
+
+  const body = (await response.json()) as { curriculums?: GeneratedCurriculumSnapshot[] }
+
+  return { curriculums: body.curriculums ?? [] }
+}
+
 export async function saveGeneratedCurriculumApi(
   snapshot: GeneratedCurriculumSnapshot,
   options: CurriculumRecommendationOptions = {},
@@ -81,6 +99,22 @@ export async function saveGeneratedCurriculumApi(
   }
 
   return { generatedCurriculum: body.generatedCurriculum }
+}
+
+export async function deleteCurriculumHistoryItemApi(
+  id: string,
+  options: CurriculumRecommendationOptions = {},
+): Promise<{ ok: boolean }> {
+  const fetchImpl = options.fetchImpl ?? fetch
+  const response = await fetchImpl(`/api/curriculum/generated/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete curriculum item (${response.status})`)
+  }
+
+  return { ok: true }
 }
 
 export async function resetGeneratedCurriculumApi(

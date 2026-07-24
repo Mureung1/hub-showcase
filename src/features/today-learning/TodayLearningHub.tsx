@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { shouldUseServerApi } from '../../app/icuApiMode'
 import {
@@ -127,6 +127,7 @@ function formatGeneratedAt(value: string | undefined) {
     minute: '2-digit',
   }).format(date)
 }
+
 export function TodayLearningHub() {
   const { profile } = useLearningProfileStore()
   const generatedCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
@@ -153,18 +154,20 @@ export function TodayLearningHub() {
   )
   const [curriculumMode, setCurriculumMode] = useState<CurriculumMode>('ai')
   const [careerGoal, setCareerGoal] = useState(generatedCurriculum?.goal ?? profileGoal)
+  const [followUpText, setFollowUpText] = useState('')
   const [goalError, setGoalError] = useState('')
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus>('ready')
-  const generationTimerRef = useRef<number | undefined>(undefined)
   const activeTrackName = profile?.preferredTracks[0] ?? 'React'
   const displayName = profile?.displayName ?? '학습자'
   const dailyMinutes = profile?.dailyStudyMinutes ?? 30
   const savedGoal = generatedCurriculum?.goal ?? generatedPlan.goal
   const isGoalDraftChanged = careerGoal.trim().length > 0 && careerGoal.trim() !== savedGoal
+  const isGenerating = generationStatus === 'generating'
   const generatedAtLabel = formatGeneratedAt(generatedCurriculum?.generatedAt)
   const generatedStateLabel = generatedCurriculum
     ? '최근 생성한 커리큘럼'
     : '프로필 기준 기본 커리큘럼'
+
   useEffect(() => {
     let cancelled = false
 
@@ -193,9 +196,6 @@ export function TodayLearningHub() {
 
     return () => {
       cancelled = true
-      if (generationTimerRef.current) {
-        window.clearTimeout(generationTimerRef.current)
-      }
     }
   }, [hydrateMissionProgress, hydrateGeneratedCurriculum])
 
@@ -285,8 +285,9 @@ export function TodayLearningHub() {
     [recentOpenMistakes],
   )
 
-  function startCurriculumGeneration(goal: string) {
+  function startCurriculumGeneration(goal: string, followUpInstruction?: string) {
     const trimmedGoal = goal.trim()
+    const trimmedFollowUp = followUpInstruction?.trim()
 
     if (!trimmedGoal) {
       setGoalError('목표를 입력하면 AI가 학습 순서를 제안합니다.')
@@ -297,31 +298,29 @@ export function TodayLearningHub() {
     setGoalError('')
     setGenerationStatus('generating')
 
-    if (generationTimerRef.current) {
-      window.clearTimeout(generationTimerRef.current)
-    }
-
-    generationTimerRef.current = window.setTimeout(() => {
-      void recommendCurriculum(
-        { goal: trimmedGoal },
-        { mode: shouldUseServerApi() ? 'server' : 'mock' },
-      )
-        .then(({ plan }) => {
-          setCareerGoal(trimmedGoal)
-          saveGeneratedCurriculum(trimmedGoal, plan)
-          if (shouldUseServerApi()) {
-            void saveGeneratedCurriculumApi(
-              { goal: trimmedGoal, plan, generatedAt: new Date().toISOString() },
-              { mode: 'server' },
-            ).catch(() => {})
-          }
-          setGenerationStatus('ready')
-        })
-        .catch(() => {
-          setGoalError('커리큘럼을 생성하지 못했습니다. 잠시 후 다시 시도해보세요.')
-          setGenerationStatus('idle')
-        })
-    }, 2000)
+    void recommendCurriculum(
+      {
+        goal: trimmedGoal,
+        followUpInstruction: trimmedFollowUp || undefined,
+        previousPlan: generatedCurriculum?.plan,
+      },
+      { mode: shouldUseServerApi() ? 'server' : 'mock' },
+    )
+      .then(({ plan }) => {
+        setCareerGoal(trimmedGoal)
+        saveGeneratedCurriculum(trimmedGoal, plan)
+        if (shouldUseServerApi()) {
+          void saveGeneratedCurriculumApi(
+            { goal: trimmedGoal, plan, generatedAt: new Date().toISOString() },
+            { mode: 'server' },
+          ).catch(() => {})
+        }
+        setGenerationStatus('ready')
+      })
+      .catch(() => {
+        setGoalError('커리큘럼을 생성하지 못했습니다. 잠시 후 다시 시도해보세요.')
+        setGenerationStatus('idle')
+      })
   }
 
   function handleGenerateCurriculum(event: FormEvent<HTMLFormElement>) {
@@ -329,11 +328,14 @@ export function TodayLearningHub() {
     startCurriculumGeneration(careerGoal)
   }
 
-  function handleResetGeneratedCurriculum() {
-    if (generationTimerRef.current) {
-      window.clearTimeout(generationTimerRef.current)
-    }
+  function handleFollowUpSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!followUpText.trim()) return
+    startCurriculumGeneration(careerGoal, followUpText)
+    setFollowUpText('')
+  }
 
+  function handleResetGeneratedCurriculum() {
     resetGeneratedCurriculum()
     if (shouldUseServerApi()) {
       void resetGeneratedCurriculumApi({ mode: 'server' }).catch(() => {})
@@ -424,6 +426,9 @@ export function TodayLearningHub() {
                   >
                     AI 커리큘럼 작성하기
                   </button>
+                  <Link to="/curriculum/history" className={styles.historyTabLink}>
+                    보관함 관리
+                  </Link>
                 </div>
               </div>
 
@@ -506,6 +511,48 @@ export function TodayLearningHub() {
                           </button>
                         </div>
                       </section>
+                      <div className={styles.followUpSection}>
+                        <div className={styles.quickChips} aria-label="추천 후속 질문">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              startCurriculumGeneration(careerGoal, '3주 커리큘럼으로 수정해줘')
+                            }
+                          >
+                            3주 코스로 변경
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              startCurriculumGeneration(
+                                careerGoal,
+                                '어제 공부한 내용에 이어서 다음 단계를 추천해줘',
+                              )
+                            }
+                          >
+                            어제 내용 이어서
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              startCurriculumGeneration(careerGoal, '실습 30분 위주로 구성해줘')
+                            }
+                          >
+                            실습 중심 구성
+                          </button>
+                        </div>
+                        <form className={styles.followUpRow} onSubmit={handleFollowUpSubmit}>
+                          <input
+                            type="text"
+                            placeholder="후속 요청 입력 (예: 3주 과정으로 수정, 어제 내용 이어서)"
+                            value={followUpText}
+                            onChange={(event) => setFollowUpText(event.target.value)}
+                          />
+                          <button type="submit" disabled={isGenerating || !followUpText.trim()}>
+                            {isGenerating ? '수정 중' : '후속 요청'}
+                          </button>
+                        </form>
+                      </div>
                       <div className={styles.aiPlanHeader} data-status={generationStatus}>
                         <strong>{generatedPlan.title}</strong>
                         <span>{generatedPlan.summary}</span>

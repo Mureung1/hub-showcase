@@ -1,5 +1,8 @@
 export function createSqliteGeneratedCurriculumRepository(database) {
   const latestStatement = database.prepare('SELECT * FROM generated_curriculums ORDER BY updated_at DESC LIMIT 1')
+  const listStatement = database.prepare('SELECT * FROM generated_curriculums ORDER BY updated_at DESC')
+  const findByIdStatement = database.prepare('SELECT * FROM generated_curriculums WHERE id = ?')
+  const deleteByIdStatement = database.prepare('DELETE FROM generated_curriculums WHERE id = ?')
   const saveStatement = database.prepare(`
     INSERT INTO generated_curriculums (id, goal, plan_json, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?)
@@ -14,6 +17,14 @@ export function createSqliteGeneratedCurriculumRepository(database) {
   return {
     getLatest() {
       const row = latestStatement.get()
+
+      return row ? mapGeneratedCurriculum(row) : null
+    },
+    list() {
+      return listStatement.all().map(mapGeneratedCurriculum)
+    },
+    getById(id) {
+      const row = findByIdStatement.get(id)
 
       return row ? mapGeneratedCurriculum(row) : null
     },
@@ -36,6 +47,11 @@ export function createSqliteGeneratedCurriculumRepository(database) {
       )
 
       return record
+    },
+    delete(id) {
+      const result = deleteByIdStatement.run(id)
+
+      return result.changes > 0
     },
     reset() {
       resetStatement.run()

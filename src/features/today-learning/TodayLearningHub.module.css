@@ -134,6 +134,135 @@
   box-shadow: 0 18px 46px rgb(15 23 42 / 7%);
 }
 
+.content {
+  min-width: 0;
+  display: grid;
+  gap: 22px;
+  align-content: start;
+  padding: 28px 30px 34px;
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 320px) auto;
+  gap: 20px;
+  align-items: center;
+}
+
+.topbar h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.topbar p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.search {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  padding: 0 14px;
+  background: #ffffff;
+  color: #94a3b8;
+  box-shadow: 0 12px 28px rgb(15 23 42 / 4%);
+}
+
+.search span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.search input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #111827;
+  outline: none;
+}
+
+.profileLink,
+.emptyState a,
+.welcomeCopy a,
+.panelTitleRow a,
+.generatedStartLink,
+.goalInputRow button {
+  min-width: 96px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 9999px;
+  padding: 0 18px;
+  background: #07003d;
+  color: #ffffff;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.emptyState {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  border-radius: 8px;
+  padding: 18px 22px;
+  background: #ffffff;
+  box-shadow: 0 18px 46px rgb(15 23 42 / 7%);
+}
+
+.emptyState strong {
+  color: #111827;
+}
+
+.emptyState p {
+  margin: 6px 0 0;
+  color: #64748b;
+  line-height: 1.55;
+}
+
+.layoutGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 22px;
+  align-items: start;
+}
+
+.mainColumn,
+.sideColumn {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.welcomeCard,
+.curriculumPanel,
+.chartPanel,
+.ringPanel,
+.trackSection,
+.calendarCard,
+.upcomingCard,
+.reviewCard {
+  border: 1px solid rgb(226 232 240 / 86%);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 46px rgb(15 23 42 / 7%);
+}
+
 .welcomeCard {
   min-height: 176px;
   display: grid;
@@ -285,7 +414,11 @@
 }
 
 .panelTitleRow button,
-.tabs button {
+.tabs button,
+.historyTabLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 34px;
   border: 1px solid #d9dee8;
   border-radius: 9999px;
@@ -295,6 +428,14 @@
   cursor: pointer;
   font-size: 12px;
   font-weight: 900;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.historyTabLink:hover {
+  border-color: #35c8f4;
+  color: #07003d;
+  background: #f8fafc;
 }
 
 .curriculumPanel,
@@ -932,5 +1073,82 @@ input:focus-visible {
 
 .generatedStartLink:hover {
   transform: translateY(-1px);
+}
+
+.followUpSection {
+  margin-top: 16px;
+  border-top: 1px dashed #dbe7f5;
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quickChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quickChips button {
+  background: #eef7ff;
+  border: 1px solid #b7dbe5;
+  color: #07003d;
+  border-radius: 9999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quickChips button:hover {
+  background: #eaf3ff;
+  border-color: #35c8f4;
+  color: #07003d;
+}
+
+.followUpRow {
+  display: flex;
+  gap: 10px;
+}
+
+.followUpRow input {
+  flex: 1;
+  min-height: 42px;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 13px;
+  background: #f8fafc;
+  color: #111827;
+  outline: none;
+}
+
+.followUpRow input:focus {
+  border-color: #35c8f4;
+  box-shadow: 0 0 0 3px rgba(53, 200, 244, 0.16);
+}
+
+.followUpRow button {
+  min-height: 42px;
+  background: #07003d;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.followUpRow button:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.followUpRow button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 

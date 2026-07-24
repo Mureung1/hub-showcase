@@ -57,6 +57,14 @@ type GeneratedCurriculumPlan = {
   - `official-doc` -> `official_docs`
   - `reference` -> `practice_guide`
 
+## 대화형 후속 커리큘럼 생성 (Multi-turn Follow-up Agent)
+
+사용자가 최초 생성 후 추가 지시어(예: `"3주 커리큘럼으로 짜줘"`, `"2주 분량으로 조정해줘"`, `"어제 학습한 거에 이어서 다음 단계 짜줘"`)를 입력할 수 있습니다.
+
+- `followUpInstruction`: 사용자의 추가 후속 요청 문자열
+- `previousPlan`: 직전에 생성되거나 보관함에서 선택한 커리큘럼 스냅샷
+- Gemini Provider는 `contents` 멀티턴 메시지 배열(System Instruction + Initial Prompt + Previous Recommendation + Follow-up Instruction)을 구성하여 기존 맥락을 유지하면서 기간 및 단계를 재조정하여 생성합니다.
+
 ## 트랙 매칭 키워드
 
 - frontend: `frontend`, `프론트`, `react`, `html`, `css`, `javascript`
