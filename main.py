@@ -16,7 +16,7 @@ from scheduler import start_scheduler
 
 app = FastAPI(
     title="Civil Litigation AI Agent API",
-    description="진화형 법률 AI 에이전트 v3.0 통합 API 서버",
+    description="진화형 법률 AI 에이전트 통합 API 서버",
     version="3.0"
 )
 
