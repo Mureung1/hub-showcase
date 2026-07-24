@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -12,7 +12,7 @@
 
 ## What It Delivers
 
-Spine S2의 listener-independent application seam에 A-owned account router와 coordinator, B-owned setup router·SetupJourney·workspace action admission을 feature logic 없이 mount한다. 하나의 product application에서 account→setup→Ready command graph가 S1 Browser contract로 노출되고, Runtime start와 모든 thread/product action은 fixed workspace boundary와 fresh native-context verifier를 우회하지 못한다.
+Spine S2의 listener-independent application seam에 A-owned account route adapter와 coordinator, B-owned SetupJourney·projection·readiness·workspace action admission Modules을 feature logic 복제 없이 mount한다. C1은 이 B-owned Modules을 소비하는 Server-private command adapter/router를 소유한다. 하나의 product application에서 account→setup→Ready command graph가 S1 Browser contract로 노출되고, Runtime start와 모든 thread/product action은 fixed workspace boundary와 fresh native-context verifier를 우회하지 못한다.
 
 ## Spec Traceability
 
@@ -24,7 +24,7 @@ Spine S2의 listener-independent application seam에 A-owned account router와 c
 ## Slice-Specific Constraints
 
 - C1은 integration branch에서 coordinator가 작성하는 serial composition delta다. A1·B2의 account/setup state machine, filesystem algorithm, Ready commit과 Runtime lifecycle을 복제하거나 수정하지 않는다.
-- Account와 setup route를 current `product-http.ts`의 monolith에 feature logic으로 계속 쌓지 않는다. A/B router의 public mount와 shared middleware·close wiring만 소유한다.
+- Account와 setup route를 current `product-http.ts`의 monolith에 feature logic으로 계속 쌓지 않는다. A-owned Account route adapter와 B-owned SetupJourney·projection·readiness·action-admission Modules을 소비하는 C-owned private command adapter/router의 public mount와 shared middleware·close wiring만 소유한다. B가 HTTP setup router를 소유한다는 전제는 사용하지 않는다.
 - S1 Browser-safe contract와 private Server/Runtime contract를 연결하되 raw path, token, native ID, Runtime identity, receipt phase와 nested error를 새 wire field로 만들지 않는다.
 - 모든 workspace Runtime start, thread start/resume, Turn, Skill과 product academic action이 B-owned fixed project boundary·fresh bundle/effective-context `WorkspaceActionAdmission`을 통과해야 한다.
 - Existing product-only route, absent-or-exact Origin mutation guard, neutral NDJSON framing, private MCP loopback/token guard, removed raw/legacy endpoint `404`와 bounded close behavior를 보존한다.
@@ -48,6 +48,17 @@ Spine S2의 listener-independent application seam에 A-owned account router와 c
 - Targeted test or command: `npm test -w @ay-ple/server`, A/B router producer-consumer conformance, action-admission bypass negatives, Origin/404/private MCP and shutdown regression
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
 - Manual or live smoke: Deterministic A/B fixture로 listener-independent Server application을 기동해 account→setup→Ready route graph와 clean close를 확인한다. Live OAuth와 public host는 사용하지 않는다.
+
+## Claim Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Exact handoff | `533c6a6131ea623f44a67ece930667f329d8b27f` — reviewed A1과 B2b closeout을 DAG 순서로 merge한 clean `codex/public-preview-integration` HEAD다. |
+| Completed predecessors | Ticket 013과 Ticket 017은 모두 `State: completed`다. A1 fixed review는 app-wide account/Runtime lease와 Account route adapter를, B2b fixed review는 lease-bound Ready transition/attestation, SetupJourney projection/readiness와 action admission을 unresolved finding 0개로 handoff했다. |
+| Integration receipt | Coordinator가 exact handoff에서 root `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs links와 `git diff --check`가 green인 predecessor/integration receipt를 확인했다. |
+| Observable result | GET·POST `/api/product/public-preview`가 S1 frozen contract로 account→setup→Ready graph를 round-trip하고, 모든 real product action route가 B-owned `WorkspaceActionAdmission`을 통과하지 않으면 native thread·Turn·Skill을 시작할 수 없다. |
+| Highest practical seam | Listener-independent Express application에 deterministic Account Runtime, real SetupJourney/state store와 admission probes를 조합해 exact Origin, reauth→reconnect→explicit resume, action no-bypass와 bounded close를 검증한다. Live OAuth·public Host는 사용하지 않는다. |
+| Scope correction | B는 setup HTTP router가 아니라 SetupJourney·projection·readiness·admission Modules을 소유한다. C1이 frozen Browser contract를 변경하지 않고 이 Modules을 소비하는 Server-private command adapter/router를 새 composition seam으로 소유한다. |
 
 ## Blocked By
 
