@@ -95,15 +95,24 @@
   width: 18px;
   height: 18px;
   appearance: none;
-  border: 2px solid #000;
+  border: 2px solid;
   border-radius: 3px;
-  background-color: white;
   margin: 0;
-  transition: background-color 0.2s;
+  padding: 0;
+  position: relative;
+  transition: all 0.2s;
 }
 
-.category-item input[type="checkbox"]:checked {
-  background-color: currentColor;
+.category-item input[type="checkbox"]:checked::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
 }
 
 .category-name {

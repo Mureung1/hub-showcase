@@ -318,17 +318,24 @@ function CalendarPage() {
                 '과제': '#C8E6C9',
                 '기타': '#E8E8E8',
               };
+              const categoryDarkColors = {
+                '공모전': '#5B9BD5',
+                '시험': '#E75480',
+                '과제': '#4CAF50',
+                '기타': '#757575',
+              };
               const bgColor = categoryBgColors[category] || '#E8E8E8';
+              const darkColor = categoryDarkColors[category] || '#757575';
               return (
                 <label key={category} className="category-item" style={{ backgroundColor: bgColor }}>
                   <input
                     type="checkbox"
                     checked={visibleCategories[category] || false}
                     onChange={() => handleCategoryToggle(category)}
-                    style={{ accentColor: bgColor }}
+                    style={{ backgroundColor: bgColor, borderColor: darkColor, color: darkColor }}
                   />
                   <span className="category-name">{category}</span>
-                  <span className="category-count">{categories[category]}</span>
+                  <span className="category-count" style={{ backgroundColor: bgColor }}>{categories[category]}</span>
                 </label>
               );
             })}
