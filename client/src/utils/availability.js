@@ -28,3 +28,22 @@ export function buildSlotStats(rows, members) {
 
   return map;
 }
+
+// slotStats(현재 보고 있는 주)에서 겹치는 인원이 많은 시간대 상위 N개.
+// 인원수가 같으면 이른 날짜 → 이른 시간 순으로 우선.
+export function getTopRecommendedSlots(slotStats, limit = 3) {
+  const entries = [];
+
+  slotStats.forEach((stat, key) => {
+    const [date, hourStr] = key.split('_');
+    entries.push({ key, date, hour: Number(hourStr), count: stat.count, names: stat.names });
+  });
+
+  entries.sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return a.hour - b.hour;
+  });
+
+  return entries.slice(0, limit);
+}

@@ -92,6 +92,10 @@ export function formatMonthDaySlash(dateStr) {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+export function formatMonthDaySlashWeekday(dateStr) {
+  return `${formatMonthDaySlash(dateStr)}(${getWeekdayLabel(dateStr)})`;
+}
+
 export function daysBetween(dateStrA, dateStrB) {
   const a = new Date(dateStrA + 'T00:00:00');
   const b = new Date(dateStrB + 'T00:00:00');
