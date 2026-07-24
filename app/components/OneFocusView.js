@@ -42,9 +42,9 @@ export default function OneFocusView({ task, onStart, onStruggle }) {
           style={{
             padding: "18px 40px",
             borderRadius: "100px",
-            border: "1px solid var(--lavender-line)",
-            background: "var(--lavender)",
-            color: "var(--lavender-ink)",
+            border: "1px solid var(--cream-line)",
+            background: "var(--white)",
+            color: "var(--ink)",
             fontFamily: "var(--font-body)",
             fontSize: "18px",
             cursor: "pointer",

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>콕 — 마이크로스텝 검토·삭제 (프로토타입)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&family=IBM+Plex+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FAF4EA;
+    --cream-line:#EDE3D3;
+    --white:#FFFDF9;
+    --ink:#3E332C;
+    --ink-soft:#8A7A70;
+    --ink-faint:#C6B9AC;
+    --rose:#E4BFB9;
+    --rose-line:#D9A9A3;
+    --rose-ink:#8C5A54;
+    --lavender:#E1D9EC;
+    --lavender-line:#D2C6E6;
+    --lavender-ink:#7A6B94;
+    --sky:#DCE8ED;
+    --sky-line:#C4D9E1;
+    --sky-ink:#5C7986;
+    --peach:#F5E1CE;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'IBM Plex Sans KR', sans-serif;
+    font-weight:300;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:48px 24px 260px;
+  }
+  h1{
+    font-family:'Gowun Batang', serif;
+    font-weight:400;
+    font-size:28px;
+    margin-bottom:8px;
+    text-align:center;
+  }
+  .summary{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-bottom:28px;
+  }
+  .summary b{color:var(--sky-ink);}
+  .list{
+    width:100%;
+    max-width:520px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:24px;
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:var(--white);
+    border:1px solid var(--cream-line);
+    border-radius:16px;
+    padding:14px 16px;
+  }
+  .row-title{flex:1; font-size:15px;}
+  .row-time{font-size:12px; color:var(--ink-faint); white-space:nowrap;}
+  .tag{
+    font-size:11px;
+    padding:4px 10px;
+    border-radius:100px;
+    background:var(--peach);
+    color:var(--rose-ink);
+    white-space:nowrap;
+  }
+  .del-btn{
+    width:26px; height:26px;
+    border-radius:50%;
+    border:1px solid var(--cream-line);
+    background:transparent;
+    color:var(--ink-faint);
+    font-size:14px;
+    line-height:1;
+    cursor:pointer;
+  }
+  .del-btn:hover{background:var(--rose); color:var(--rose-ink); border-color:var(--rose-line);}
+  .actions{
+    display:flex;
+    gap:10px;
+    margin-bottom:8px;
+  }
+  button.pill{
+    padding:16px 32px;
+    border-radius:100px;
+    border:none;
+    font-family:'IBM Plex Sans KR', sans-serif;
+    font-size:16px;
+    cursor:pointer;
+  }
+  .primary{background:var(--ink); color:var(--white);}
+  .secondary{background:var(--white); border:1px solid var(--cream-line); color:var(--ink);}
+
+  /* character (design-board.html과 동일) */
+  .companion{
+    position:fixed;
+    bottom:0;
+    left:50%;
+    transform:translateX(-50%) scale(2.2);
+    transform-origin:bottom center;
+    width:150px;
+    height:64px;
+  }
+  .ear{
+    position:absolute; top:-18px; width:34px; height:46px;
+    background:var(--rose); border:1px solid var(--rose-line);
+    border-radius:50% 50% 45% 45%;
+  }
+  .ear.left{left:20px;}
+  .ear.right{right:20px;}
+  .head{
+    position:absolute; bottom:0; left:14px; right:14px; height:52px;
+    background:var(--rose); border:1px solid var(--rose-line); border-bottom:none;
+    border-radius:50% 50% 0 0 / 65% 65% 0 0;
+  }
+  .eye{
+    position:absolute; top:18px; width:5px; height:8px;
+    background:var(--ink); border-radius:50%;
+  }
+  .eye.left{left:44px;}
+  .eye.right{right:44px;}
+</style>
+</head>
+<body>
+  <h1>오늘 할 일, 확인해봐</h1>
+  <p class="summary">5개 · 다 하면 총 <b>19분</b></p>
+
+  <div class="list">
+    <div class="row">
+      <span class="row-title">발표 주제와 핵심 메시지 3문장 정리</span>
+      <span class="tag">문서작성</span>
+      <span class="row-time">5분</span>
+      <button class="del-btn">×</button>
+    </div>
+    <div class="row">
+      <span class="row-title">필요한 이미지/차트 2개 검색 후 임시 저장</span>
+      <span class="tag">문서작성</span>
+      <span class="row-time">4분</span>
+      <button class="del-btn">×</button>
+    </div>
+    <div class="row">
+      <span class="row-title">PPT 새 파일 생성 후 제목 슬라이드 작성</span>
+      <span class="tag">문서작성</span>
+      <span class="row-time">3분</span>
+      <button class="del-btn">×</button>
+    </div>
+    <div class="row">
+      <span class="row-title">첫 번째 섹션 슬라이드 초안 제작</span>
+      <span class="tag">문서작성</span>
+      <span class="row-time">5분</span>
+      <button class="del-btn">×</button>
+    </div>
+    <div class="row">
+      <span class="row-title">발표 장소 미리 방문해 환경 확인</span>
+      <span class="tag">외출/이동</span>
+      <span class="row-time">2분</span>
+      <button class="del-btn">×</button>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="pill secondary">전부 다시 쪼개기</button>
+    <button class="pill primary">이대로 시작하기</button>
+  </div>
+
+  <div class="companion">
+    <div class="ear left"></div>
+    <div class="ear right"></div>
+    <div class="head">
+      <div class="eye left"></div>
+      <div class="eye right"></div>
+    </div>
+  </div>
+</body>
+</html>
