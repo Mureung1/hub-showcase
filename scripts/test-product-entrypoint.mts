@@ -564,7 +564,8 @@ function isProductionPythonBridge(command: string): boolean {
 function isProductionNativeRuntime(command: string): boolean {
   return (
     command.includes(productionRuntimeRoot) &&
-    command.includes('/codex_cli_bin/bin/codex app-server')
+    command.includes('/codex_cli_bin/bin/codex ') &&
+    command.includes(' app-server')
   )
 }
 
