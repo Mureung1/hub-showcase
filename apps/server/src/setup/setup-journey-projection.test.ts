@@ -26,6 +26,7 @@ const context: SetupJourneyProjectionContext = {
   suggestedLeafName: '2026-2학기',
   requiredApplicationCommand: 'npx ay-ple@0.0.1',
   accountConnected: false,
+  readyAttested: () => true,
   presentReadyWorkspace: () => ({
     semesterLabel: '2학년 2학기',
     workspaceName: '2026-2학기',
@@ -190,9 +191,10 @@ test('Ready projection uses injected safe presentation and never serializes work
   const projected = toPublicPreviewSetupProjection(
     {
       state: 'ready',
+      recoveryId: 'setup_ready_public',
       workspace: readyWorkspace(),
     },
-    context,
+    { ...context, accountConnected: true },
   )
 
   assert.deepEqual(projected, {
@@ -223,10 +225,12 @@ test('Ready projection rejects a presentation port that echoes private authority
       toPublicPreviewSetupProjection(
         {
           state: 'ready',
+          recoveryId: 'setup_ready_public',
           workspace: readyWorkspace(),
         },
         {
           ...context,
+          accountConnected: true,
           presentReadyWorkspace: () => ({
             semesterLabel: '2학년 2학기',
             workspaceName: '2026-2학기',
@@ -244,10 +248,12 @@ test('Ready projection rejects a presenter that echoes private authority in seme
       toPublicPreviewSetupProjection(
         {
           state: 'ready',
+          recoveryId: 'setup_ready_public',
           workspace: readyWorkspace(),
         },
         {
           ...context,
+          accountConnected: true,
           presentReadyWorkspace: () => ({
             semesterLabel: `2학년 ${privatePath}`,
             workspaceName: '2026-2학기',
@@ -257,6 +263,43 @@ test('Ready projection rejects a presenter that echoes private authority in seme
         },
       ),
     /safe workspace presentation/,
+  )
+})
+
+test('unattested private Ready remains resumable after logout and reconnect', () => {
+  const projection: SemesterSetupJourneyProjection = {
+    state: 'ready',
+    recoveryId: 'setup_ready_public',
+    workspace: readyWorkspace(),
+  }
+
+  assert.deepEqual(
+    toPublicPreviewSetupProjection(projection, context),
+    {
+      state: 'account_required',
+      reason: 'workspace_reauth',
+      resume: 'awaiting_account',
+      recoveryId: 'setup_ready_public',
+      displayMessage:
+        '학기 공간은 그대로 보존되어 있습니다. Codex에 다시 연결해 주세요.',
+      allowedCommands: [],
+    },
+  )
+  assert.deepEqual(
+    toPublicPreviewSetupProjection(projection, {
+      ...context,
+      accountConnected: true,
+      readyAttested: () => false,
+    }),
+    {
+      state: 'account_required',
+      reason: 'workspace_reauth',
+      resume: 'available',
+      recoveryId: 'setup_ready_public',
+      displayMessage:
+        'Codex 연결을 확인했습니다. 보존된 학기 공간 준비를 이어가세요.',
+      allowedCommands: ['setup.resume'],
+    },
   )
 })
 

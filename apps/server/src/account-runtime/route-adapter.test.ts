@@ -482,6 +482,29 @@ test('account retry performs another fresh managed read through the shared lease
   )
 })
 
+test('private refresh bypasses the cached projection and invalidates Ready from a fresh signed-out read', async () => {
+  const harness = createHarness({
+    accountReads: [
+      { status: 'ok', account: { state: 'chatgpt' } },
+      { status: 'ok', account: { state: 'signed_out' } },
+    ],
+  })
+  assertProjection(
+    await harness.adapter.observe({ signal: signal() }),
+    PUBLIC_PREVIEW_ACCOUNT_FIXTURES.connected,
+  )
+
+  assertProjection(
+    await harness.adapter.refresh({ signal: signal() }),
+    PUBLIC_PREVIEW_ACCOUNT_FIXTURES.loginRequired,
+  )
+  assert.deepEqual(
+    harness.runtime.calls.map(({ operation }) => operation),
+    ['readAccount', 'readAccount'],
+  )
+  assert.equal(harness.readyInvalidations.count, 1)
+})
+
 test('wrong attempt and disallowed account commands fail closed without native calls', async () => {
   const harness = createHarness({
     accountReads: [

@@ -334,6 +334,7 @@ test('real setup journey reaches one action-eligible Ready only after the A1 and
       outcome: 'ready_created',
       projection: {
         state: 'ready',
+        recoveryId: 'setup_ready_seam',
         workspace: activeWorkspace,
       },
     })

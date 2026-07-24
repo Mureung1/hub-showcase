@@ -13,6 +13,9 @@ export type SetupJourneyProjectionContext = {
   readonly suggestedLeafName: string
   readonly requiredApplicationCommand: string
   readonly accountConnected: boolean
+  readonly readyAttested: (
+    workspace: AdmittedSemesterWorkspace,
+  ) => boolean
   readonly presentReadyWorkspace: (
     workspace: AdmittedSemesterWorkspace,
   ) => {
@@ -140,8 +143,42 @@ export function toPublicPreviewSetupProjection(
         allowedCommands: ['setup.resume'],
       })
     case 'ready':
+      if (
+        !context.accountConnected ||
+        !context.readyAttested(projection.workspace)
+      ) {
+        return workspaceReauthProjection(
+          projection.recoveryId,
+          context.accountConnected,
+        )
+      }
       return readyProjection(projection.workspace, context)
   }
+}
+
+function workspaceReauthProjection(
+  recoveryId: string,
+  accountConnected: boolean,
+): PublicPreviewSetupProjection {
+  return accountConnected
+    ? decode({
+        state: 'account_required',
+        reason: 'workspace_reauth',
+        resume: 'available',
+        recoveryId,
+        displayMessage:
+          'Codex 연결을 확인했습니다. 보존된 학기 공간 준비를 이어가세요.',
+        allowedCommands: ['setup.resume'],
+      })
+    : decode({
+        state: 'account_required',
+        reason: 'workspace_reauth',
+        resume: 'awaiting_account',
+        recoveryId,
+        displayMessage:
+          '학기 공간은 그대로 보존되어 있습니다. Codex에 다시 연결해 주세요.',
+        allowedCommands: [],
+      })
 }
 
 function readyProjection(

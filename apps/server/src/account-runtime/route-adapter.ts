@@ -30,6 +30,9 @@ export interface AccountRuntimeRouteAdapter {
   observe(input: {
     readonly signal: AbortSignal
   }): Promise<PublicPreviewAccountProjection>
+  refresh(input: {
+    readonly signal: AbortSignal
+  }): Promise<PublicPreviewAccountProjection>
   dispatch(input: {
     readonly command: AccountRuntimeCommand
     readonly signal: AbortSignal
@@ -502,6 +505,11 @@ export function createAccountRuntimeRouteAdapter(
       if (startFlight || attemptFlight) return cloneProjection(projection)
       if (attempt) return inspectAttempt(attempt, signal)
       return cloneProjection(projection)
+    },
+
+    async refresh({ signal }) {
+      if (shuttingDown) return cloneProjection(unavailableProjection())
+      return readFreshAccount(signal)
     },
 
     async dispatch({ command, signal }) {

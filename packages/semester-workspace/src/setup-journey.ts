@@ -91,6 +91,7 @@ export type SemesterSetupJourneyProjection =
     }
   | {
       readonly state: 'ready'
+      readonly recoveryId: string
       readonly workspace: AdmittedSemesterWorkspace
     }
 
@@ -808,7 +809,11 @@ function createSetupJourney(
       if (!sameReadyPointer(transitioned.ready, input.expected)) {
         return blocked('setup_state_conflict')
       }
-      return ready(input.successOutcome, input.workspace)
+      return ready(
+        input.successOutcome,
+        input.recoveryId,
+        input.workspace,
+      )
     }
     if (transitioned.status === 'ready_commit_unknown') {
       return transitionBlocked(
@@ -1236,10 +1241,12 @@ function createSetupJourney(
 
   const ready = (
     outcome: 'ready_created' | 'ready_relaunch',
+    recoveryId: string,
     workspace: AdmittedSemesterWorkspace,
   ): SetupReconcileResult<SemesterSetupJourneyProjection> => {
     projection = {
       state: 'ready',
+      recoveryId,
       workspace: cloneAdmittedWorkspace(workspace),
     }
     return { outcome, projection }
