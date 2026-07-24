@@ -1033,10 +1033,6 @@ test('binds isolated thread cwd to the exact workspace role before native mutati
       assert.fail('expected a workspace Runtime')
     }
     const workspace = harness.runtime.role.workspaceRoot
-    await writeFile(
-      join(dirname(harness.journalPath), 'expect-read-only-product'),
-      '',
-    )
     const mcp = {
       url: 'http://127.0.0.1:43127/mcp',
       token: 'private-mcp-token',
