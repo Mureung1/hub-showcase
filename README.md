@@ -13,7 +13,7 @@ CareerSignal은 여러 채용공고의 반복 요구를 통계로 정리하고, 
 
 - 화면: 직무 선택, 통계 분석, 채용공고 해석, 합격 전략, 준비 로드맵
 - 분석 범위: 직무 전체, 기업군, 개별 공고
-- 실행 방식: 데이터 갱신 시 다섯 에이전트가 분석 결과를 생성·검증해 Supabase에 저장
+- 실행 방식: 데이터 갱신 시 여섯 에이전트가 분석 결과를 생성·검증해 Supabase에 저장
 - 일반 조회: React가 Express를 통해 활성 분석 버전을 조회
 - 체크 상태: 준비 현황과 프로젝트 로드맵·학습 전략만 규칙으로 재조합
 - 검색 구조: 키워드·벡터 검색과 지식 그래프를 결합한 Hybrid RAG·GraphRAG
@@ -41,7 +41,7 @@ hub/
 - Backend: Express
 - Agent: Python, FastAPI, LangChain, LangGraph
 - Database: Supabase Postgres, pgvector
-- LLM: OpenAI API, 공개 YouTube 보강용 Gemini API
+- LLM: OpenAI API(생성·임베딩·웹 검색), 공개 영상 보강용 Gemini API, 평가 교차검증용 NVIDIA Build API
 
 ## 로컬 실행
 
@@ -100,7 +100,7 @@ Express의 통계 집계는 `server/data/backend-postings.sample.json`을 Supaba
 
 - [기획서](docs/plan.md): 문제·사용자·핵심 기능·화면 흐름
 - [아키텍처](docs/architecture.md): 전체 구조·데이터 갱신·런타임·버전
-- [에이전트 설계](docs/agent-design.md): 다섯 에이전트의 입출력·도구·내부 흐름
+- [에이전트 설계](docs/agent-design.md): 여섯 에이전트의 입출력·도구·내부 흐름
 - [데이터 전략](docs/data-strategy.md): 자료 계층·출처·획득·신뢰도·평가 세트
 - [디자인 컨셉](docs/design-concept.md): 화면 구조와 정보 위계
 - [디자인 토큰](docs/design-tokens.md): 색상·레이아웃·컴포넌트 규칙
