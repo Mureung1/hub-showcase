@@ -354,6 +354,17 @@
 - [x] 저장 실패 시 오류 처리되고 보상 지급과 정합성이 유지된다.
       → `users/{uid}/achievements`에 **최초 지급 시에만** 1건(questId·questTitle·coin·xp·memo·verified·completedAt). 보상 지급과 같은 트랜잭션이라 "보상은 줬는데 기록이 없다"가 불가능하고, 재완료 시 기록도 중복되지 않는다. 모델 `lib/models/achievement.dart`, 테스트 `test/models/achievement_test.dart`.
 
+### 성취 보관함 화면
+> 상점 화면처럼 checklist에 항목이 없던 화면이라 신규 섹션으로 승격했다. 3주차부터 쌓이던 `achievements` 기록을 사용자가 처음으로 이력으로 볼 수 있게 한 **읽기 전용** 화면이다. verification-agent 6/6 PASS.
+- [x] 완료한 도전이 보관함(`/storage`)에 최신순 타임라인으로 표시된다.
+      → 조회 경로 `watchAchievements`를 저장소 2구현에 신설(`lib/repositories/quest_repository.dart` 인터페이스). Firestore는 `orderBy('completedAt', descending: true)` + 관대한 파싱(`Achievement.tryParse` — 깨진 기록 하나가 목록을 안 죽인다), InMemory는 최신순 정렬 스트림. 화면 `lib/features/storage/storage_screen.dart`(신규)가 날짜·제목·코인/XP(`RewardChip`)·인증 뱃지를 타임라인 카드로 렌더. `lib/router.dart`의 `/storage`가 PlaceholderScreen → `StorageScreen`으로 교체됨. `achievementsProvider`(`lib/providers/providers.dart`)가 세션 uid 뒤 스트림을 잇는다. 테스트: `test/repositories/in_memory_quest_repository_test.dart`(watchAchievements) · `test/features/storage_screen_test.dart`.
+- [x] 완료 수·연속 출석 요약이 표시된다.
+      → 상단 2분할 stat(완료 = achievements 개수에서 파생, 연속 = `user.streak`). 환생 배너는 환생 미구현이라 완료 수+스트릭 요약으로 대체했다. 테스트: `test/features/storage_screen_test.dart`.
+- [x] 빈 상태·로딩·오류가 각각 처리된다.
+      → 공통 `EmptyView`·`SkeletonBox`·`ErrorView` 재사용(`storage_screen.dart`의 `.when(loading/error/data)`). 스트릭은 못 읽으면 0으로 떨어뜨리고 타임라인은 그대로 보인다. 테스트: `test/features/storage_screen_test.dart`.
+- [x] 인증(메모/사진)한 도전은 뱃지로 구분된다.
+      → 메모/사진 여부를 각각 뱃지로 표시. 사진은 **유무 뱃지(📷)만** 표시하고 썸네일은 안 읽는다 — proof 문서가 questId당 별도라 목록에서 N번 읽으면 비싸다(3주차에 문서를 분리한 이유). 탭 상세 로딩은 이번 범위 밖. 테스트: `test/features/storage_screen_test.dart`.
+
 ### 중복 완료 방지 처리
 - [x] 이미 완료된 퀘스트를 다시 완료해도 **코인·XP가 재지급되지 않는다**.
 - [x] 완료 요청 중복(빠른 연타/재시도)에서 지급이 정확히 1회만 발생한다.

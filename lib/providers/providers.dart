@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/constants/reward_rules.dart';
+import '../models/achievement.dart';
 import '../models/analytics_event.dart';
 import '../models/app_user.dart';
 import '../models/goal.dart';
@@ -141,6 +142,15 @@ final attendanceProvider = FutureProvider<AttendanceResult>((ref) async {
 final questListProvider = StreamProvider<List<Quest>>((ref) async* {
   final uid = await ref.watch(sessionProvider.future);
   yield* ref.watch(questRepositoryProvider).watchQuests(uid);
+});
+
+/// 성취 기록 목록 (보관함 화면). 최신순으로 흐른다.
+///
+/// [questListProvider]와 같은 형태 — 세션(uid)이 준비된 뒤 저장소 스트림을 잇는다.
+/// 완료 트랜잭션이 커밋되면 이 스트림이 갱신돼 보관함 타임라인에 새 기록이 뜬다.
+final achievementsProvider = StreamProvider<List<Achievement>>((ref) async* {
+  final uid = await ref.watch(sessionProvider.future);
+  yield* ref.watch(questRepositoryProvider).watchAchievements(uid);
 });
 
 /// 보유 아이템 ID 집합 (4주차 상점의 "보유 중" 표시용).

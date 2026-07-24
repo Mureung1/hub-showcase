@@ -176,6 +176,8 @@ final drafts = QuestDraft.parseList(aiJson['quests']);
 
 파싱은 `Quest.fromJson`처럼 관대하다(`id`만 필수). 기록 하나가 깨져도 보관함 전체가 죽으면 안 된다.
 
+**조회 경로**(보관함 화면): `watchAchievements(uid)`가 `orderBy('completedAt', descending: true)`로 **최신순** 스트림을 흘린다. `quests`와 달리 `completedAt` 단일 키라 복합 인덱스가 필요 없어 정렬을 서버에 맡긴다. 목록은 `Achievement.tryParse`로 관대하게 파싱해 깨진 문서만 버린다(`watchQuests`와 같은 계약). ⚠️ `orderBy`는 `completedAt` 필드가 없는 문서를 결과에서 제외하지만, 지급 경로가 항상 서버 시각을 찍으므로 정상 기록은 모두 포함된다. **이미지 바이트는 이 스트림에 실리지 않는다** — 목록에서 사진은 `hasPhoto` 플래그만 쓰고, proof 문서(base64)는 필요한 화면에서만 questId로 따로 읽는다.
+
 #### 인증 보너스
 
 `completeQuest(uid, questId, memo:)`의 `memo`가 **공백이 아니면 인증 성립** → 기본 보상 + `kVerificationBonus`(코인 3 · XP 3)를 **합산 지급**한다(예: 보통 5/10 → 8/13). 판정은 `normalizeMemo()` 한 곳에서만 한다(두 저장소 구현이 갈리지 않게).

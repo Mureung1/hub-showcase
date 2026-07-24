@@ -24,11 +24,17 @@ class InMemoryQuestRepository implements QuestRepository {
   InMemoryQuestRepository({
     this.failWith,
     List<Quest> seed = const [],
+    Map<String, List<Achievement>> seedAchievements = const {},
     this.users,
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now {
     for (final quest in seed) {
       _quests.putIfAbsent(quest.id, () => quest);
+    }
+    // 보관함 화면 테스트가 완료 트랜잭션을 거치지 않고 기록을 미리 심을 수 있게
+    // 한다(상점 seed inventory와 같은 목적). 실제 앱은 completeQuest만으로 채운다.
+    for (final entry in seedAchievements.entries) {
+      _achievements[entry.key] = List.of(entry.value);
     }
   }
 
@@ -76,6 +82,23 @@ class InMemoryQuestRepository implements QuestRepository {
   List<Achievement> achievementsOf(String uid) =>
       List.unmodifiable(_achievements[uid] ?? const []);
 
+  /// 해당 사용자의 성취 기록을 **최신순**으로 정렬한 사본.
+  ///
+  /// 내부 저장은 완료된 순서(오래된 것 먼저)라, 보관함이 요구하는 최신순으로
+  /// 뒤집어 준다. completedAt이 없는 기록은 맨 뒤로 보낸다(Firestore orderBy가
+  /// 필드 없는 문서를 제외하는 것과 의미를 맞춘다).
+  List<Achievement> _sortedAchievements(String uid) {
+    final list = List<Achievement>.of(_achievements[uid] ?? const []);
+    list.sort((a, b) {
+      final at = a.completedAt;
+      final bt = b.completedAt;
+      if (at == null) return bt == null ? 0 : 1;
+      if (bt == null) return -1;
+      return bt.compareTo(at); // 내림차순 = 최신 먼저
+    });
+    return List.unmodifiable(list);
+  }
+
   /// 해당 퀘스트의 인증 사진 base64 (없으면 null). 테스트 전용 조회구.
   /// Firestore proof 문서를 실제 네트워크 없이 검증하기 위한 것이다.
   String? proofOf(String uid, String questId) => _proofs[uid]?[questId];
@@ -110,6 +133,17 @@ class InMemoryQuestRepository implements QuestRepository {
   Future<List<Quest>> fetchQuests(String uid) async {
     _check();
     return _sorted;
+  }
+
+  @override
+  Stream<List<Achievement>> watchAchievements(String uid) async* {
+    _check();
+    // completeQuest가 `_controller.add(null)`을 부르므로, 같은 컨트롤러를 구독하면
+    // 새 완료 기록이 곧바로 이 스트림에 반영된다(watchQuests와 같은 신호).
+    yield _sortedAchievements(uid);
+    await for (final _ in _controller.stream) {
+      yield _sortedAchievements(uid);
+    }
   }
 
   @override
@@ -245,9 +279,14 @@ class InMemoryQuestRepository implements QuestRepository {
         ? withMemo
         // 최초 지급이면 지급 시각을 함께 찍는다. 이후 이 값은 절대 지워지지 않는다.
         : withMemo.copyWith(rewardedAt: DateTime.now());
-    _controller.add(null);
 
-    if (alreadyPaid) return null;
+    // 재완료는 여기서 끝난다 — 상태·메모 변경만 알리고 성취는 남기지 않는다.
+    // (방출을 여기서 하는 이유: 지급 경로의 방출은 성취 기록까지 담은 뒤에 한 번만
+    //  내보내야 watchAchievements가 "기록 없는 빈 목록"을 먼저 흘리지 않는다.)
+    if (alreadyPaid) {
+      _controller.add(null);
+      return null;
+    }
 
     // 적용 순서 1+2: 기본 보상 + 인증 보너스(예: 보통 5/10 → 8/13).
     // 보너스도 rewardedAt 가드 아래라 재완료로 다시 받을 수 없다.
@@ -317,6 +356,11 @@ class InMemoryQuestRepository implements QuestRepository {
         ),
       );
     }
+
+    // 지급 경로의 **단일 방출** — 퀘스트 상태와 성취 기록을 모두 반영한 뒤에 한 번만
+    // 내보낸다. 앞(상태 변경 직후)에서 방출하면 watchAchievements가 아직 기록이 없는
+    // 빈 목록을 흘려, 방금 완료한 도전이 순간적으로 사라진 것처럼 보인다.
+    _controller.add(null);
 
     // cutCoin은 절삭 전 총액(gross)과 실지급액의 차이다. 화면이 다시 계산하지
     // 않도록 저장소가 실어 준다(Firestore 구현과 같은 계약).

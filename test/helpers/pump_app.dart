@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/core/theme/app_theme.dart';
+import 'package:one_step/models/achievement.dart';
 import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/goal.dart';
 import 'package:one_step/models/quest.dart';
@@ -23,6 +24,7 @@ Future<InMemoryQuestRepository> pumpScreen(
   Widget screen, {
   List<Quest> quests = const [],
   List<Goal> goals = const [],
+  List<Achievement> achievements = const [],
   AppUser? user,
   AppFailure? failWith,
   DateTime Function()? clock,
@@ -42,6 +44,9 @@ Future<InMemoryQuestRepository> pumpScreen(
   // 경계에 걸려 있어, 실제 시계로는 "자정을 넘겼다"를 재현할 수 없다.
   final questRepo = InMemoryQuestRepository(
     seed: quests,
+    // 보관함 화면 테스트가 완료 트랜잭션을 거치지 않고 성취 기록을 심을 수 있게
+    // 한다(빈 리스트면 기존 동작 그대로).
+    seedAchievements: achievements.isEmpty ? const {} : {uid: achievements},
     failWith: failWith,
     users: userRepo,
     clock: clock,

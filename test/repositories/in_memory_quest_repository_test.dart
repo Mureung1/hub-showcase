@@ -5,6 +5,7 @@ import 'package:one_step/core/constants/growth_rules.dart';
 import 'package:one_step/core/constants/proof_rules.dart';
 import 'package:one_step/core/constants/reward_rules.dart';
 import 'package:one_step/core/error/app_failure.dart';
+import 'package:one_step/models/achievement.dart';
 import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/difficulty.dart';
 import 'package:one_step/models/quest.dart';
@@ -1258,6 +1259,200 @@ void main() {
 
     test('AppFailure 메시지는 그대로 사용자에게 보여줄 수 있다', () {
       expect(const NetworkFailure().message, '인터넷 연결을 확인해 주세요.');
+    });
+  });
+
+  // ===== 보관함 조회 경로 (watchAchievements) =====
+  //
+  // 완료 트랜잭션이 남긴 성취 기록을 보관함이 읽는 경로. 쓰기(completeQuest)는
+  // 이미 위에서 검증했으니, 여기서는 **읽기 계약**만 못 박는다.
+  group('watchAchievements — 보관함 조회 경로', () {
+    Achievement ach(String id, {required DateTime? at, String title = 'x'}) =>
+        Achievement(
+          id: id,
+          questId: 'q-$id',
+          questTitle: title,
+          coin: 5,
+          xp: 10,
+          completedAt: at,
+        );
+
+    test('★ 최신순(completedAt 내림차순)으로 흐른다 (뮤테이션: 정렬을 뒤집으면 실패)', () async {
+      // 일부러 저장 순서(오래된→최신)와 반대가 되도록 심는다. 정렬이 없거나
+      // 뒤집혀 있으면 이 순서가 어긋난다.
+      final repo = InMemoryQuestRepository(
+        seedAchievements: {
+          'u': [
+            ach('old', at: DateTime.utc(2026, 7, 10), title: '가장 오래됨'),
+            ach('new', at: DateTime.utc(2026, 7, 20), title: '가장 최신'),
+            ach('mid', at: DateTime.utc(2026, 7, 15), title: '중간'),
+          ],
+        },
+      );
+      addTearDown(repo.dispose);
+
+      final list = await repo.watchAchievements('u').first;
+
+      expect(list.map((a) => a.questTitle), ['가장 최신', '중간', '가장 오래됨']);
+    });
+
+    test('completedAt이 없는 기록은 맨 뒤로 간다', () async {
+      final repo = InMemoryQuestRepository(
+        seedAchievements: {
+          'u': [
+            ach('n', at: null, title: '시각 없음'),
+            ach('a', at: DateTime.utc(2026, 7, 20), title: '있음'),
+          ],
+        },
+      );
+      addTearDown(repo.dispose);
+
+      final list = await repo.watchAchievements('u').first;
+      expect(list.map((a) => a.questTitle), ['있음', '시각 없음']);
+    });
+
+    test('★ 제목이 유실된 기록도 목록에 남는다 (관대한 취급)', () async {
+      // 저장된 기록 하나가 손상돼도(제목 유실 등) 보관함 전체가 비지 않아야 한다.
+      // 진짜 깨진 문서(id 없음)의 드롭은 Firestore _parseAchievements가
+      // Achievement.tryParse로 처리하며, 그 계약은 achievement_test가 못 박는다.
+      final repo = InMemoryQuestRepository(
+        seedAchievements: {
+          'u': [
+            ach('good', at: DateTime.utc(2026, 7, 20), title: '정상'),
+            ach('degraded', at: DateTime.utc(2026, 7, 19), title: ''),
+          ],
+        },
+      );
+      addTearDown(repo.dispose);
+
+      final list = await repo.watchAchievements('u').first;
+      expect(list, hasLength(2));
+      expect(list.first.questTitle, '정상');
+      expect(list.last.questTitle, '');
+    });
+
+    test('빈 계정은 빈 목록을 흘린다', () async {
+      final repo = InMemoryQuestRepository();
+      addTearDown(repo.dispose);
+
+      expect(await repo.watchAchievements('u').first, isEmpty);
+    });
+
+    test('★ 퀘스트를 완료하면 스트림에 새 기록이 반영된다', () async {
+      final users = InMemoryUserRepository(seed: AppUser.initial('u'));
+      final repo = InMemoryQuestRepository(users: users);
+      addTearDown(users.dispose);
+      addTearDown(repo.dispose);
+
+      // 퀘스트 생성은 구독 전에 끝내 둔다 — 생성이 흘리는 (성취) 빈 목록 방출을
+      // 검증 대상에서 빼기 위해서다. 관심사는 "완료가 기록을 흘리는가"다.
+      final quest = await repo.createQuest(
+        'u',
+        title: '완료할 도전',
+        difficulty: Difficulty.normal,
+      );
+
+      unawaited(
+        expectLater(
+          repo.watchAchievements('u'),
+          emitsInOrder([
+            isEmpty,
+            predicate<List<Achievement>>(
+              (list) => list.length == 1 && list.single.questTitle == '완료할 도전',
+              '완료 기록 1건',
+            ),
+          ]),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      await repo.completeQuest('u', quest.id);
+      await Future<void>.delayed(Duration.zero);
+    });
+
+    test('★ 재완료해도 기록이 늘지 않는다 (지급 횟수 = 기록 수 회귀 방어)', () async {
+      final users = InMemoryUserRepository(seed: AppUser.initial('u'));
+      final repo = InMemoryQuestRepository(users: users);
+      addTearDown(users.dispose);
+      addTearDown(repo.dispose);
+
+      final quest = await repo.createQuest(
+        'u',
+        title: 'x',
+        difficulty: Difficulty.easy,
+      );
+      await repo.completeQuest('u', quest.id);
+      // 해제 → 재완료(파밍 시나리오).
+      await repo.setStatus('u', quest.id, QuestStatus.todo);
+      await repo.completeQuest('u', quest.id);
+
+      expect(await repo.watchAchievements('u').first, hasLength(1));
+    });
+
+    test('★ 재완료(alreadyPaid)도 스트림을 재방출한다 (뮤테이션: alreadyPaid 방출 제거 시 실패)', () async {
+      // 재완료는 기록을 늘리지 않지만(위 테스트), 퀘스트 상태·메모는 바뀔 수 있어
+      // watchQuests·watchAchievements가 **재방출**해야 화면이 갱신된다. 이 방출이
+      // 없으면 "메모를 고쳐 다시 완료했는데 화면이 안 바뀐다"가 되고, 지금까지
+      // 아무 테스트도 그걸 잡지 못했다(무테스트 방출). 여기서 못 박는다.
+      final users = InMemoryUserRepository(seed: AppUser.initial('u'));
+      final repo = InMemoryQuestRepository(users: users);
+      addTearDown(users.dispose);
+
+      // 먼저 지급까지 끝낸다 → 이후 완료는 alreadyPaid 경로로만 흐른다.
+      final quest = await repo.createQuest(
+        'u',
+        title: '메모 고칠 도전',
+        difficulty: Difficulty.easy,
+      );
+      await repo.completeQuest('u', quest.id);
+
+      // 지급이 끝난 뒤 구독을 시작한다 → 첫 방출은 이미 있는 기록 1건.
+      final achEmissions = <List<Achievement>>[];
+      final questEmissions = <List<Quest>>[];
+      final achSub = repo.watchAchievements('u').listen(achEmissions.add);
+      final questSub = repo.watchQuests('u').listen(questEmissions.add);
+      addTearDown(() async {
+        repo.dispose();
+        await achSub.cancel();
+        await questSub.cancel();
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(achEmissions, hasLength(1), reason: '구독 시 최초 방출');
+      expect(questEmissions, hasLength(1));
+
+      // 재완료(alreadyPaid) — 메모를 붙여 다시 완료한다.
+      final result = await repo.completeQuest('u', quest.id, memo: '이제 인증 메모');
+      await Future<void>.delayed(Duration.zero);
+
+      // 재완료라 지급은 없다(가드는 그대로).
+      expect(result, isNull, reason: 'alreadyPaid 경로여야 이 테스트가 의미 있다');
+      // 그러나 두 스트림 모두 **재방출**해야 한다(alreadyPaid 분기의 방출).
+      expect(achEmissions, hasLength(2), reason: '재완료도 성취 스트림을 재방출한다');
+      expect(questEmissions, hasLength(2), reason: '재완료도 퀘스트 스트림을 재방출한다');
+      // 기록 수는 그대로 1건(재완료는 기록을 늘리지 않는다).
+      expect(achEmissions.last, hasLength(1));
+    });
+
+    test('기록은 사용자별로 분리된다', () async {
+      final repo = InMemoryQuestRepository(
+        seedAchievements: {
+          'u': [ach('a', at: DateTime.utc(2026, 7, 20))],
+        },
+      );
+      addTearDown(repo.dispose);
+
+      expect(await repo.watchAchievements('u').first, hasLength(1));
+      expect(await repo.watchAchievements('다른uid').first, isEmpty);
+    });
+
+    test('failWith가 있으면 조회가 AppFailure를 던진다', () async {
+      final repo = InMemoryQuestRepository(failWith: const NetworkFailure());
+      addTearDown(repo.dispose);
+
+      await expectLater(
+        repo.watchAchievements('u').first,
+        throwsA(isA<NetworkFailure>()),
+      );
     });
   });
 

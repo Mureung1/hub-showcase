@@ -5,6 +5,7 @@ import '../../core/constants/growth_rules.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/utils/kst_date.dart';
+import '../../models/achievement.dart';
 import '../../models/app_user.dart';
 import '../../models/difficulty.dart';
 import '../../models/quest.dart';
@@ -355,5 +356,32 @@ class FirestoreQuestRepository implements QuestRepository {
         );
       });
     });
+  }
+
+  @override
+  Stream<List<Achievement>> watchAchievements(String uid) {
+    // 최신순은 서버 orderBy에 맡긴다 — createdAt 2차 정렬이 필요한 quests와 달리
+    // achievements는 completedAt 단일 키라 복합 인덱스가 필요 없다.
+    // ⚠️ orderBy는 completedAt 필드가 없는 문서를 결과에서 제외한다. 지급 경로가
+    // 항상 서버 시각을 찍으므로 정상 기록은 모두 포함된다.
+    return guardStream(
+      _db
+          .collection(FirestorePaths.achievements(uid))
+          .orderBy('completedAt', descending: true)
+          .snapshots()
+          .map(_parseAchievements),
+    );
+  }
+
+  /// 문서 하나가 깨져 있어도 목록 전체를 죽이지 않는다.
+  /// `Achievement.tryParse`가 null을 주면 그 항목만 버린다(_parse와 같은 계약).
+  /// 정렬은 서버 orderBy가 이미 했으므로 여기서 다시 정렬하지 않는다.
+  List<Achievement> _parseAchievements(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+  ) {
+    return snapshot.docs
+        .map((doc) => Achievement.tryParse(doc.id, decodeDoc(doc.data())))
+        .whereType<Achievement>()
+        .toList();
   }
 }

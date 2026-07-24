@@ -4,6 +4,7 @@ import '../core/constants/growth_rules.dart';
 import '../core/constants/proof_rules.dart';
 import '../core/constants/reward_rules.dart';
 import '../core/error/app_failure.dart';
+import '../models/achievement.dart';
 import '../models/difficulty.dart';
 import '../models/quest.dart';
 import '../models/quest_draft.dart';
@@ -144,6 +145,17 @@ abstract interface class QuestRepository {
     String? memo,
     String? photoBase64,
   });
+
+  /// 성취 기록 스트림 (보관함 화면). **최신순**(completedAt 내림차순)으로 흐른다.
+  ///
+  /// 완료·인증마다 [completeQuest]가 남긴 `users/{uid}/achievements` 문서들을
+  /// 읽는다. 목록 조회는 **관대하게** 파싱한다 — [Achievement.tryParse]로 깨진
+  /// 기록 하나가 보관함 전체를 죽이지 않게 그 항목만 버린다([watchQuests]와 같은 계약).
+  ///
+  /// ⚠️ 이미지 바이트는 여기 실리지 않는다. proof 문서는 questId당 별도라
+  /// 목록에서 N번 읽으면 비싸다(3주차에 문서를 분리한 이유). 보관함은 사진 유무
+  /// 플래그([Achievement.hasPhoto])만 쓰고, 실제 사진 로딩은 이 스트림 밖의 몫이다.
+  Stream<List<Achievement>> watchAchievements(String uid);
 }
 
 /// 완료+지급이 **실제로 일어났을 때**의 결과. 재완료·미지급은 이 객체가 아니라

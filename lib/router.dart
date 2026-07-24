@@ -9,6 +9,7 @@ import 'features/quest/quest_list_screen.dart';
 import 'features/quest/quest_split_screen.dart';
 import 'features/shell/root_shell.dart';
 import 'features/shop/shop_screen.dart';
+import 'features/storage/storage_screen.dart';
 
 /// 앱이 쓰는 라우터 인스턴스.
 final router = createRouter();
@@ -81,11 +82,7 @@ GoRouter createRouter({String initialLocation = '/home'}) => GoRouter(
           routes: [
             GoRoute(
               path: '/storage',
-              builder: (context, state) => const PlaceholderScreen(
-                title: '보관함',
-                emoji: '🏆',
-                message: '완료한 도전을 사진과 메모로 기록해요.\n3주차에 열립니다.',
-              ),
+              builder: (context, state) => const StorageScreen(),
             ),
           ],
         ),
