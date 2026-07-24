@@ -72,7 +72,7 @@ export const defaultWindowPetPlacementDrafts: WindowPetPlacementDraftsByMotion =
 export const runtimeWindowPetSlots = {
   "below-quest": {
     motion: "hanging",
-    edge: "bottom",
+    edge: "top",
     windowSize: { width: 360, height: 367.5 },
   },
   "beside-recovery": {

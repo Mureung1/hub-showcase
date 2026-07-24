@@ -1,0 +1,189 @@
+{"kind":"deck","id":"pr/0a3nit","name":"Deck"}
+{"kind":"layout","layoutId":"1425758f-d9d5-4b91-9104-e03014f1eb20","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"f54f2425-a67b-470c-9912-9bdc76e7b547","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/elaeco","slide":1,"title":"3주간 AI와 일한 방식","textShapes":10}
+{"kind":"textbox","id":"sh/twbils7e","slide":1,"text":"3주간 AI와 일한 방식","textPreview":"3주간 AI와 일한 방식","textChars":13,"textLines":1,"bbox":[64,62,780,72]}
+{"kind":"textbox","id":"sh/6tkzqx8n","slide":1,"text":"기능을 맡긴 것이 아니라, 반복 가능한 작업 하네스를 만들었다","textPreview":"기능을 맡긴 것이 아니라, 반복 가능한 작업 하네스를 만들었다","textChars":34,"textLines":1,"bbox":[64,150,870,44]}
+{"kind":"shape","id":"sh/rut0j298","slide":1,"bbox":[64,232,180,6]}
+{"kind":"shape","id":"sh/4r2honqx","slide":1,"bbox":[72,330,140,82]}
+{"kind":"textbox","id":"sh/5sbihsri","slide":1,"text":"React MVP","textPreview":"React MVP","textChars":9,"textLines":1,"bbox":[86,358,112,28]}
+{"kind":"shape","id":"sh/i50zmd8r","slide":1,"bbox":[216,370,52,2]}
+{"kind":"shape","id":"sh/j6tgfi9c","slide":1,"bbox":[272,330,140,82]}
+{"kind":"textbox","id":"sh/w3ihk3ql","slide":1,"text":"Supabase","textPreview":"Supabase","textChars":8,"textLines":1,"bbox":[286,358,112,28]}
+{"kind":"shape","id":"sh/h4ryd8r6","slide":1,"bbox":[416,370,52,2]}
+{"kind":"shape","id":"sh/h8jepk7q","slide":1,"bbox":[472,330,140,82]}
+{"kind":"textbox","id":"sh/g7qdwzq5","slide":1,"text":"동적 에셋","textPreview":"동적 에셋","textChars":5,"textLines":1,"bbox":[486,358,112,28]}
+{"kind":"shape","id":"sh/f6hcnupk","slide":1,"bbox":[616,370,52,2]}
+{"kind":"shape","id":"sh/u58vup8f","slide":1,"bbox":[672,330,140,82]}
+{"kind":"textbox","id":"sh/t4zulkru","slide":1,"text":"TDD","textPreview":"TDD","textChars":3,"textLines":1,"bbox":[686,358,112,28]}
+{"kind":"shape","id":"sh/s3qdsfq9","slide":1,"bbox":[816,370,52,2]}
+{"kind":"shape","id":"sh/7ihcja9o","slide":1,"bbox":[872,330,140,82]}
+{"kind":"textbox","id":"sh/6h8vq583","slide":1,"text":"Wiki/검증","textPreview":"Wiki/검증","textChars":7,"textLines":1,"bbox":[886,358,112,28]}
+{"kind":"textbox","id":"sh/5gfuh0ri","slide":1,"text":"AI 협업의 핵심은 ‘한 번에 잘 시키기’가 아니라, 역할과 절차를 남겨 다음 작업이 이어지게 하는 것이었다.","textPreview":"AI 협업의 핵심은 ‘한 번에 잘 시키기’가 아니라, 역할과 절차를 남겨 다음 작업이 이어지게 하는 것이었다.","textChars":61,"textLines":1,"bbox":[64,512,900,66]}
+{"kind":"textbox","id":"sh/kf6dofqx","slide":1,"text":"Sources: docs/status.md","textPreview":"Sources: docs/status.md","textChars":23,"textLines":1,"bbox":[64,668,620,20]}
+{"kind":"textbox","id":"sh/wvu5kz25","slide":1,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[1160,660,54,30]}
+{"kind":"notes","id":"nt/elaeco","slide":1,"text":"첫 장에서는 기능 목록보다 작업 방식의 변화에 초점을 둔다.\n3주 동안 React MVP에서 시작해 Supabase, 애니메이션, TDD, Wiki까지 확장됐고, 그 과정에서 AI에게 그냥 코드를 맡기는 방식으로는 관리가 어렵다는 걸 체감했다.\n그래서 Skill과 Agent, 검증 스크립트를 갖춘 하네스를 만들었다는 메시지로 시작한다."}
+{"kind":"slide","id":"sl/uj7a6p","slide":2,"title":"HARNESS STRUCTURE","textShapes":18}
+{"kind":"textbox","id":"sh/tsny5gru","slide":2,"text":"HARNESS STRUCTURE","textPreview":"HARNESS STRUCTURE","textChars":17,"textLines":1,"bbox":[64,46,600,28]}
+{"kind":"textbox","id":"sh/6pczul8j","slide":2,"text":"내 하네스는 네 층으로 나뉜다","textPreview":"내 하네스는 네 층으로 나뉜다","textChars":16,"textLines":1,"bbox":[64,86,940,96]}
+{"kind":"shape","id":"sh/rqlg3q94","slide":2,"bbox":[64,190,84,4]}
+{"kind":"textbox","id":"sh/gveh0vql","slide":2,"text":"Sources: project harness files","textPreview":"Sources: project harness files","textChars":30,"textLines":1,"bbox":[64,668,620,20]}
+{"kind":"textbox","id":"sh/1wni90r6","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1160,660,54,30]}
+{"kind":"textbox","id":"sh/etwzyl8f","slide":2,"text":"규칙","textPreview":"규칙","textChars":2,"textLines":1,"bbox":[76,256,78,28]}
+{"kind":"textbox","id":"sh/fu507q90","slide":2,"text":"AGENTS.md","textPreview":"AGENTS.md","textChars":9,"textLines":1,"bbox":[190,246,360,32]}
+{"kind":"textbox","id":"sh/wzahorq1","slide":2,"text":"작업 전 확인, 금지사항, 완료 전 검증 기준","textPreview":"작업 전 확인, 금지사항, 완료 전 검증 기준","textChars":25,"textLines":1,"bbox":[190,284,820,30]}
+{"kind":"shape","id":"sh/h03yxwrm","slide":2,"bbox":[64,322,1050,1]}
+{"kind":"textbox","id":"sh/donat4ji","slide":2,"text":"역할","textPreview":"역할","textChars":2,"textLines":1,"bbox":[76,348,78,28]}
+{"kind":"textbox","id":"sh/cnut0z2x","slide":2,"text":".codex/agents/*.toml","textPreview":".codex/agents/*.toml","textChars":20,"textLines":1,"bbox":[190,338,360,32]}
+{"kind":"textbox","id":"sh/bmlsru1c","slide":2,"text":"researcher, planner, implementer, verifier 등 권한 경계","textPreview":"researcher, planner, implementer, verifier 등 권한 경계","textChars":50,"textLines":1,"bbox":[190,376,820,30]}
+{"kind":"shape","id":"sh/qlcby9kr","slide":2,"bbox":[64,414,1050,1]}
+{"kind":"textbox","id":"sh/lcnaxoje","slide":2,"text":"절차","textPreview":"절차","textChars":2,"textLines":1,"bbox":[76,440,78,28]}
+{"kind":"textbox","id":"sh/0ret4j29","slide":2,"text":".agents/skills/*/SKILL.md","textPreview":".agents/skills/*/SKILL.md","textChars":25,"textLines":1,"bbox":[190,430,360,32]}
+{"kind":"textbox","id":"sh/zq5sve1o","slide":2,"text":"요청 분석, 계획, 실행, 검증, Wiki 작업의 반복 규칙","textPreview":"요청 분석, 계획, 실행, 검증, Wiki 작업의 반복 규칙","textChars":33,"textLines":1,"bbox":[190,468,820,30]}
+{"kind":"shape","id":"sh/ypwb29k3","slide":2,"bbox":[64,506,1050,1]}
+{"kind":"textbox","id":"sh/9g7a1ojq","slide":2,"text":"기록","textPreview":"기록","textChars":2,"textLines":1,"bbox":[76,532,78,28]}
+{"kind":"textbox","id":"sh/8fet8j25","slide":2,"text":"docs/status.md · docs/tasks.md · docs/wiki","textPreview":"docs/status.md · docs/tasks.md · docs/wiki","textChars":42,"textLines":1,"bbox":[190,522,360,32]}
+{"kind":"textbox","id":"sh/8jmd47ah","slide":2,"text":"완료/검증/다음 작업과 source-backed 지식 축적","textPreview":"완료/검증/다음 작업과 source-backed 지식 축적","textChars":32,"textLines":1,"bbox":[190,560,820,30]}
+{"kind":"shape","id":"sh/tkfuxsrm","slide":2,"bbox":[64,598,1050,1]}
+{"kind":"shape","id":"sh/6x4v2xsb","slide":2,"bbox":[950,80,180,110]}
+{"kind":"textbox","id":"sh/7ydcv29w","slide":2,"text":"검증 스크립트","textPreview":"검증 스크립트","textChars":7,"textLines":1,"bbox":[976,104,128,22]}
+{"kind":"textbox","id":"sh/gn6d87qd","slide":2,"text":"verify-harness.ps1","textPreview":"verify-harness.ps1","textChars":18,"textLines":1,"bbox":[970,142,140,24]}
+{"kind":"notes","id":"nt/uj7a6p","slide":2,"text":"두 번째 장은 내 하네스가 추상적인 개념이 아니라 실제 폴더와 파일로 구성되어 있음을 보여준다.\nAGENTS.md는 전체 규칙이고, .codex/agents는 역할별 권한, .agents/skills는 절차, docs는 기록과 지식이다.\n이 구조 덕분에 세션이 바뀌어도 AI가 같은 기준으로 일을 이어갈 수 있다."}
+{"kind":"slide","id":"sl/03lwn6","slide":3,"title":"WORKFLOW","textShapes":20}
+{"kind":"textbox","id":"sh/uxcn6x4f","slide":3,"text":"WORKFLOW","textPreview":"WORKFLOW","textChars":8,"textLines":1,"bbox":[64,46,600,28]}
+{"kind":"textbox","id":"sh/hkn61snq","slide":3,"text":"작업은 분석에서 시작하고 검증으로 끝난다","textPreview":"작업은 분석에서 시작하고 검증으로 끝난다","textChars":22,"textLines":1,"bbox":[64,86,940,96]}
+{"kind":"shape","id":"sh/gje58nm5","slide":3,"bbox":[64,190,84,4]}
+{"kind":"textbox","id":"sh/7ulovi5o","slide":3,"text":"Sources: project harness files","textPreview":"Sources: project harness files","textChars":30,"textLines":1,"bbox":[64,668,620,20]}
+{"kind":"textbox","id":"sh/6tcn2d43","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1160,660,54,30]}
+{"kind":"shape","id":"sh/tw36xsnu","slide":3,"bbox":[64,270,184,162]}
+{"kind":"textbox","id":"sh/8vu54nm9","slide":3,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[82,292,50,32]}
+{"kind":"textbox","id":"sh/jq1ory5s","slide":3,"text":"analyze-request","textPreview":"analyze-request","textChars":15,"textLines":1,"bbox":[82,334,150,30]}
+{"kind":"textbox","id":"sh/ypsnyt47","slide":3,"text":"목표·제약·위험·수용 조건","textPreview":"목표·제약·위험·수용 조건","textChars":14,"textLines":1,"bbox":[82,376,140,44]}
+{"kind":"shape","id":"sh/83ulk72x","slide":3,"bbox":[254,350,30,2]}
+{"kind":"shape","id":"sh/t43mtc32","slide":3,"bbox":[290,270,184,162]}
+{"kind":"textbox","id":"sh/61c3ixkr","slide":3,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[308,292,50,32]}
+{"kind":"textbox","id":"sh/72l4r2lc","slide":3,"text":"create-plan","textPreview":"create-plan","textChars":11,"textLines":1,"bbox":[308,334,150,30]}
+{"kind":"textbox","id":"sh/kzalgn2l","slide":3,"text":"파일 범위·검증 명령·승인 지점","textPreview":"파일 범위·검증 명령·승인 지점","textChars":17,"textLines":1,"bbox":[308,376,140,44]}
+{"kind":"shape","id":"sh/l03mps36","slide":3,"bbox":[480,350,30,2]}
+{"kind":"shape","id":"sh/yxs3exkf","slide":3,"bbox":[516,270,184,162]}
+{"kind":"textbox","id":"sh/jy14n2l0","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[534,292,50,32]}
+{"kind":"textbox","id":"sh/4ve5sr2p","slide":3,"text":"execute-plan","textPreview":"execute-plan","textChars":12,"textLines":1,"bbox":[534,334,150,30]}
+{"kind":"textbox","id":"sh/5wnm1w3a","slide":3,"text":"승인된 좁은 범위만 구현","textPreview":"승인된 좁은 범위만 구현","textChars":13,"textLines":1,"bbox":[534,376,140,44]}
+{"kind":"shape","id":"sh/dsjmlwve","slide":3,"bbox":[706,350,30,2]}
+{"kind":"shape","id":"sh/cralcru9","slide":3,"bbox":[742,270,184,162]}
+{"kind":"textbox","id":"sh/rq14jmdo","slide":3,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[760,292,50,32]}
+{"kind":"textbox","id":"sh/qps3ahc3","slide":3,"text":"verify-result","textPreview":"verify-result","textChars":13,"textLines":1,"bbox":[760,334,150,30]}
+{"kind":"textbox","id":"sh/pojmhcvi","slide":3,"text":"독립 검증과 실패 증거","textPreview":"독립 검증과 실패 증거","textChars":12,"textLines":1,"bbox":[760,376,140,44]}
+{"kind":"shape","id":"sh/4nal87ux","slide":3,"bbox":[932,350,30,2]}
+{"kind":"shape","id":"sh/3mh4f2dc","slide":3,"bbox":[968,270,184,162]}
+{"kind":"textbox","id":"sh/2l836xcr","slide":3,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[986,292,50,32]}
+{"kind":"textbox","id":"sh/hkzmdcvm","slide":3,"text":"wiki-ingest/query/lint","textPreview":"wiki-ingest/query/lint","textChars":22,"textLines":1,"bbox":[986,334,150,30]}
+{"kind":"textbox","id":"sh/gjql47u1","slide":3,"text":"지식 축적과 링크 검증","textPreview":"지식 축적과 링크 검증","textChars":12,"textLines":1,"bbox":[986,376,140,44]}
+{"kind":"textbox","id":"sh/6pojedsj","slide":3,"text":"빠르게 구현하기 전에, ‘어디까지 바꿀지’와 ‘무엇을 통과로 볼지’를 먼저 고정한다.","textPreview":"빠르게 구현하기 전에, ‘어디까지 바꿀지’와 ‘무엇을 통과로 볼지’를 먼저 고정한다.","textChars":47,"textLines":1,"bbox":[95,504,1040,42]}
+{"kind":"notes","id":"nt/03lwn6","slide":3,"text":"이 장에서는 내가 AI에게 바로 구현을 시키지 않는다는 점을 강조한다.\n먼저 analyze-request로 요구사항을 정리하고, create-plan으로 파일 범위와 검증 명령을 정한다.\n그 다음에만 execute-plan으로 구현하고, verify-result와 Wiki 계열 Skill로 검증과 지식화를 한다."}
+{"kind":"slide","id":"sl/dgqd5b","slide":4,"title":"AGENT BOUNDARIES","textShapes":26}
+{"kind":"textbox","id":"sh/3atozaps","slide":4,"text":"AGENT BOUNDARIES","textPreview":"AGENT BOUNDARIES","textChars":16,"textLines":1,"bbox":[64,46,600,28]}
+{"kind":"textbox","id":"sh/4b25sfqd","slide":4,"text":"Agent는 역할보다 권한 경계가 핵심이었다","textPreview":"Agent는 역할보다 권한 경계가 핵심이었다","textChars":24,"textLines":1,"bbox":[64,86,940,96]}
+{"kind":"shape","id":"sh/pcb6107y","slide":4,"bbox":[64,190,84,4]}
+{"kind":"textbox","id":"sh/u50nml8b","slide":4,"text":"Sources: project harness files","textPreview":"Sources: project harness files","textChars":30,"textLines":1,"bbox":[64,668,620,20]}
+{"kind":"textbox","id":"sh/f6t4vqpw","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1160,660,54,30]}
+{"kind":"shape","id":"sh/g725ovqh","slide":4,"bbox":[72,242,1050,332]}
+{"kind":"textbox","id":"sh/h8bmx07m","slide":4,"text":"Agent","textPreview":"Agent","textChars":5,"textLines":1,"bbox":[98,264,160,24]}
+{"kind":"textbox","id":"sh/e14nyp8f","slide":4,"text":"권한","textPreview":"권한","textChars":2,"textLines":1,"bbox":[338,264,170,24]}
+{"kind":"textbox","id":"sh/z2do7up0","slide":4,"text":"맡긴 일","textPreview":"맡긴 일","textChars":4,"textLines":1,"bbox":[584,264,340,24]}
+{"kind":"shape","id":"sh/zqhwnih4","slide":4,"bbox":[96,298,980,1]}
+{"kind":"textbox","id":"sh/yp8vud0j","slide":4,"text":"researcher","textPreview":"researcher","textChars":10,"textLines":1,"bbox":[98,316,190,24]}
+{"kind":"textbox","id":"sh/lszepsza","slide":4,"text":"read-only","textPreview":"read-only","textChars":9,"textLines":1,"bbox":[338,316,190,24]}
+{"kind":"textbox","id":"sh/0rqdwnip","slide":4,"text":"코드·문서·근거 조사","textPreview":"코드·문서·근거 조사","textChars":11,"textLines":1,"bbox":[584,316,430,24]}
+{"kind":"textbox","id":"sh/ne1wr2h0","slide":4,"text":"planner","textPreview":"planner","textChars":7,"textLines":1,"bbox":[98,356,190,24]}
+{"kind":"textbox","id":"sh/md8fyx0f","slide":4,"text":"read-only","textPreview":"read-only","textChars":9,"textLines":1,"bbox":[338,356,190,24]}
+{"kind":"textbox","id":"sh/9gjetsz6","slide":4,"text":"파일 단위 계획과 승인 지점","textPreview":"파일 단위 계획과 승인 지점","textChars":15,"textLines":1,"bbox":[584,356,430,24]}
+{"kind":"textbox","id":"sh/8fax07il","slide":4,"text":"implementer","textPreview":"implementer","textChars":11,"textLines":1,"bbox":[98,396,190,24]}
+{"kind":"textbox","id":"sh/vi1wv2hc","slide":4,"text":"workspace-write","textPreview":"workspace-write","textChars":15,"textLines":1,"bbox":[338,396,190,24]}
+{"kind":"textbox","id":"sh/ahsf2x0r","slide":4,"text":"승인된 범위만 최소 구현","textPreview":"승인된 범위만 최소 구현","textChars":13,"textLines":1,"bbox":[584,396,430,24]}
+{"kind":"textbox","id":"sh/6dwzu1kz","slide":4,"text":"verifier","textPreview":"verifier","textChars":8,"textLines":1,"bbox":[98,436,190,24]}
+{"kind":"textbox","id":"sh/7e5gn61k","slide":4,"text":"read-only","textPreview":"read-only","textChars":9,"textLines":1,"bbox":[338,436,190,24]}
+{"kind":"textbox","id":"sh/sfehwb25","slide":4,"text":"독립 검증과 실패 보고","textPreview":"독립 검증과 실패 보고","textChars":12,"textLines":1,"bbox":[584,436,430,24]}
+{"kind":"textbox","id":"sh/tgnipgja","slide":4,"text":"wiki_curator","textPreview":"wiki_curator","textChars":12,"textLines":1,"bbox":[98,476,190,24]}
+{"kind":"textbox","id":"sh/i9czq1kn","slide":4,"text":"workspace-write","textPreview":"workspace-write","textChars":15,"textLines":1,"bbox":[338,476,190,24]}
+{"kind":"textbox","id":"sh/jalgj618","slide":4,"text":"승인된 Wiki 영역만 갱신","textPreview":"승인된 Wiki 영역만 갱신","textChars":15,"textLines":1,"bbox":[584,476,430,24]}
+{"kind":"textbox","id":"sh/kbuhsr2t","slide":4,"text":"tdd_workflow","textPreview":"tdd_workflow","textChars":12,"textLines":1,"bbox":[98,516,190,24]}
+{"kind":"textbox","id":"sh/5c3ylwje","slide":4,"text":"workspace-write","textPreview":"workspace-write","textChars":15,"textLines":1,"bbox":[338,516,190,24]}
+{"kind":"textbox","id":"sh/25gz2lk7","slide":4,"text":"RED/GREEN/REFACTOR 전용","textPreview":"RED/GREEN/REFACTOR 전용","textChars":21,"textLines":1,"bbox":[584,516,430,24]}
+{"kind":"textbox","id":"sh/36p0vq1s","slide":4,"text":"구현 Agent가 스스로 완료를 승인하지 못하게 한 것이 핵심 안전장치였다.","textPreview":"구현 Agent가 스스로 완료를 승인하지 못하게 한 것이 핵심 안전장치였다.","textChars":42,"textLines":1,"bbox":[108,612,920,32]}
+{"kind":"notes","id":"nt/dgqd5b","slide":4,"text":"Agent를 설명할 때 단순히 역할 이름을 나열하지 않고, 권한 경계가 핵심이라고 설명한다.\nresearcher와 planner, verifier는 읽기 중심이고, implementer와 wiki_curator, tdd_workflow는 쓰기 권한이 있지만 범위가 제한된다.\n특히 구현과 검증을 분리해서 AI가 스스로 완료를 통과시키지 못하게 했다."}
+{"kind":"slide","id":"sl/xpn8ed","slide":5,"title":"SKILL PLAYBOOKS","textShapes":15}
+{"kind":"textbox","id":"sh/veh47m1s","slide":5,"text":"SKILL PLAYBOOKS","textPreview":"SKILL PLAYBOOKS","textChars":15,"textLines":1,"bbox":[64,46,600,28]}
+{"kind":"textbox","id":"sh/gzql0r2d","slide":5,"text":"Skill은 매번 같은 기준으로 일하게 만든 절차서였다","textPreview":"Skill은 매번 같은 기준으로 일하게 만든 절차서였다","textChars":30,"textLines":1,"bbox":[64,86,940,96]}
+{"kind":"shape","id":"sh/h0zm9wji","slide":5,"bbox":[64,190,84,4]}
+{"kind":"textbox","id":"sh/i18321k3","slide":5,"text":"Sources: project harness files","textPreview":"Sources: project harness files","textChars":30,"textLines":1,"bbox":[64,668,620,20]}
+{"kind":"textbox","id":"sh/32h4b61o","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1160,660,54,30]}
+{"kind":"shape","id":"sh/43a54b29","slide":5,"bbox":[76,250,292,142]}
+{"kind":"shape","id":"sh/54jmdgju","slide":5,"bbox":[76,250,292,5]}
+{"kind":"textbox","id":"sh/y5o3qhkz","slide":5,"text":"요청·계획","textPreview":"요청·계획","textChars":5,"textLines":1,"bbox":[98,274,248,32]}
+{"kind":"textbox","id":"sh/j6x4z21k","slide":5,"text":"analyze-request\ncreate-plan","textPreview":"analyze-request | create-plan","textChars":27,"textLines":2,"bbox":[98,316,248,64]}
+{"kind":"shape","id":"sh/nq1gjaho","slide":5,"bbox":[426,250,292,142]}
+{"kind":"shape","id":"sh/2p8fqpg3","slide":5,"bbox":[426,250,292,5]}
+{"kind":"textbox","id":"sh/psjylkze","slide":5,"text":"구현·검증","textPreview":"구현·검증","textChars":5,"textLines":1,"bbox":[448,274,248,32]}
+{"kind":"textbox","id":"sh/oraxsfy9","slide":5,"text":"execute-plan\nverify-result","textPreview":"execute-plan | verify-result","textChars":26,"textLines":2,"bbox":[448,316,248,64]}
+{"kind":"shape","id":"sh/f2hgfahc","slide":5,"bbox":[776,250,292,142]}
+{"kind":"shape","id":"sh/e18fm5gr","slide":5,"bbox":[776,250,292,5]}
+{"kind":"textbox","id":"sh/14zyhkzi","slide":5,"text":"UI·에셋","textPreview":"UI·에셋","textChars":5,"textLines":1,"bbox":[798,274,248,32]}
+{"kind":"textbox","id":"sh/03qxofyx","slide":5,"text":"xp-desktop-pet-ui\nasset-quality-verifier","textPreview":"xp-desktop-pet-ui | asset-quality-verifier","textChars":40,"textLines":2,"bbox":[798,316,248,64]}
+{"kind":"shape","id":"sh/ryxwbqhg","slide":5,"bbox":[76,430,292,142]}
+{"kind":"shape","id":"sh/qxofi5gv","slide":5,"bbox":[76,430,292,5]}
+{"kind":"textbox","id":"sh/utozulkn","slide":5,"text":"TDD","textPreview":"TDD","textChars":3,"textLines":1,"bbox":[98,454,248,32]}
+{"kind":"textbox","id":"sh/vuxg3q18","slide":5,"text":"tdd-test-writing","textPreview":"tdd-test-writing","textChars":16,"textLines":1,"bbox":[98,496,248,64]}
+{"kind":"shape","id":"sh/gv6hwvit","slide":5,"bbox":[426,430,292,142]}
+{"kind":"shape","id":"sh/hwfy50je","slide":5,"bbox":[426,430,292,5]}
+{"kind":"textbox","id":"sh/ixozy50z","slide":5,"text":"지식 관리","textPreview":"지식 관리","textChars":5,"textLines":1,"bbox":[448,454,248,32]}
+{"kind":"textbox","id":"sh/3yxg7a1k","slide":5,"text":"wiki-ingest\nwiki-query\nwiki-lint","textPreview":"wiki-ingest | wiki-query | wiki-lint","textChars":32,"textLines":3,"bbox":[448,496,248,64]}
+{"kind":"textbox","id":"sh/4zqh0fip","slide":5,"text":"예: sprite sheet 검수는 감상이 아니라 frame size, anchor, baseline, manifest 경로 일치 여부로 판단했다.","textPreview":"예: sprite sheet 검수는 감상이 아니라 frame size, anchor, baseline, manifest 경로 일치 여부로 판단했다.","textChars":82,"textLines":1,"bbox":[108,602,940,40]}
+{"kind":"notes","id":"nt/xpn8ed","slide":5,"text":"Skill은 Agent가 어떤 순서와 기준으로 일해야 하는지 적어둔 절차서다.\n요청 분석, 계획, 구현, 검증, UI/에셋, TDD, Wiki 작업이 각각 다른 Skill로 나뉘어 있다.\n특히 에셋 작업에서는 asset-quality-verifier가 품질 기준을 고정해줘서 주관적인 판단을 줄였다."}
+{"kind":"slide","id":"sl/sstpk4","slide":6,"title":"APPLIED CASE · ASSETS","textShapes":11}
+{"kind":"textbox","id":"sh/p8fidwre","slide":6,"text":"APPLIED CASE · ASSETS","textPreview":"APPLIED CASE · ASSETS","textChars":21,"textLines":1,"bbox":[64,46,600,28]}
+{"kind":"textbox","id":"sh/254ji183","slide":6,"text":"사례 1: 동적 캐릭터 에셋은 Skill과 검증 기준으로 반복했다","textPreview":"사례 1: 동적 캐릭터 에셋은 Skill과 검증 기준으로 반복했다","textChars":36,"textLines":1,"bbox":[64,86,940,96]}
+{"kind":"shape","id":"sh/n6d0r698","slide":6,"bbox":[64,190,84,4]}
+{"kind":"textbox","id":"sh/cb61obq5","slide":6,"text":"Sources: project harness files","textPreview":"Sources: project harness files","textChars":30,"textLines":1,"bbox":[64,668,620,20]}
+{"kind":"textbox","id":"sh/xcfihgrq","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1160,660,54,30]}
+{"kind":"shape","id":"sh/a9ojm18z","slide":6,"bbox":[74,246,468,250]}
+{"kind":"shape","id":"sh/bax0f69k","slide":6,"bbox":[74,246,468,5]}
+{"kind":"textbox","id":"sh/kz61svq1","slide":6,"text":"적용 흐름","textPreview":"적용 흐름","textChars":5,"textLines":1,"bbox":[96,270,424,32]}
+{"kind":"textbox","id":"sh/l0zil0rm","slide":6,"text":"xp-desktop-pet-ui로 정체성 유지\nasset-quality-verifier로 sheet 규격 확인\ndocs/asset-prompts에 motion plan 기록\n?review=sprites에서 실제 sheet 시각 검수","textPreview":"xp-desktop-pet-ui로 정체성 유지 | asset-quality-verifier로 sheet 규격 확인 | docs/asset-prompts에 motion plan 기록 | ?review=sprites에서 실제 sheet 시각 검수","textChars":129,"textLines":4,"bbox":[96,312,424,172]}
+{"kind":"shape","id":"sh/h8by547e","slide":6,"bbox":[606,246,468,250]}
+{"kind":"shape","id":"sh/g72xczqt","slide":6,"bbox":[606,246,468,5]}
+{"kind":"textbox","id":"sh/f6tg3up8","slide":6,"text":"프로젝트 결과","textPreview":"프로젝트 결과","textChars":7,"textLines":1,"bbox":[628,270,424,32]}
+{"kind":"textbox","id":"sh/u50fap8n","slide":6,"text":"플라나리아 sample 생성\n핑크 매니저·유리개구리 canonical 정리\n바다달팽이·계란후라이 해파리 후보 생성\ncrop 실패 후 production sheet 직접 생성으로 전환","textPreview":"플라나리아 sample 생성 | 핑크 매니저·유리개구리 canonical 정리 | 바다달팽이·계란후라이 해파리 후보 생성 | crop 실패 후 production sheet 직접 생성으로 전환","textChars":101,"textLines":4,"bbox":[628,312,424,172]}
+{"kind":"shape","id":"sh/pwby947a","slide":6,"bbox":[315,550,520,38]}
+{"kind":"textbox","id":"sh/4v2xgjqp","slide":6,"text":"에셋도 코드처럼: 기준 → 후보 → 검수 → 승격","textPreview":"에셋도 코드처럼: 기준 → 후보 → 검수 → 승격","textChars":27,"textLines":1,"bbox":[329,558,492,22]}
+{"kind":"textbox","id":"sh/3utg7ep4","slide":6,"text":"Sources: status · asset prompts · verifier skill","textPreview":"Sources: status · asset prompts · verifier skill","textChars":48,"textLines":1,"bbox":[64,668,620,20]}
+{"kind":"textbox","id":"sh/2tkfe98j","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1160,660,54,30]}
+{"kind":"notes","id":"nt/sstpk4","slide":6,"text":"여기서는 앞에서 설명한 Skill 구조가 실제 에셋 작업에 어떻게 적용됐는지 보여준다.\n캐릭터 에셋은 단순히 예쁜 이미지를 고르는 문제가 아니라, sheet 규격과 anchor, baseline, manifest 경로가 맞아야 실제 웹에서 흔들리지 않는다.\n처음에는 contact sheet를 crop하는 방식도 시도했지만 문제가 생겼고, 이후 motion별 production sheet를 직접 생성하는 방식으로 바꿨다."}
+{"kind":"slide","id":"sl/i9s6h8","slide":7,"title":"APPLIED CASE · FEATURES","textShapes":16}
+{"kind":"textbox","id":"sh/n698jqps","slide":7,"text":"APPLIED CASE · FEATURES","textPreview":"APPLIED CASE · FEATURES","textChars":23,"textLines":1,"bbox":[64,46,600,28]}
+{"kind":"textbox","id":"sh/o729cv6d","slide":7,"text":"사례 2: 기능 구현은 TDD와 독립 검증으로 연결했다","textPreview":"사례 2: 기능 구현은 TDD와 독립 검증으로 연결했다","textChars":30,"textLines":1,"bbox":[64,86,940,96]}
+{"kind":"shape","id":"sh/p8bql07y","slide":7,"bbox":[64,190,84,4]}
+{"kind":"textbox","id":"sh/eh076lob","slide":7,"text":"Sources: project harness files","textPreview":"Sources: project harness files","textChars":30,"textLines":1,"bbox":[64,668,620,20]}
+{"kind":"textbox","id":"sh/fi98fqpw","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1160,660,54,30]}
+{"kind":"shape","id":"sh/0jip8b61","slide":7,"bbox":[74,236,470,88]}
+{"kind":"shape","id":"sh/14rqhg7m","slide":7,"bbox":[74,236,470,5]}
+{"kind":"textbox","id":"sh/ydkri5of","slide":7,"text":"작은 규칙","textPreview":"작은 규칙","textChars":5,"textLines":1,"bbox":[96,260,426,32]}
+{"kind":"textbox","id":"sh/zed8rap0","slide":7,"text":"createRecoveryQuest를 순수 함수로 분리하고 Vitest 대상으로 계획","textPreview":"createRecoveryQuest를 순수 함수로 분리하고 Vitest 대상으로 계획","textChars":47,"textLines":1,"bbox":[96,302,426,10]}
+{"kind":"shape","id":"sh/r2lgvadk","slide":7,"bbox":[74,352,470,88]}
+{"kind":"shape","id":"sh/61czm5wz","slide":7,"bbox":[74,352,470,5]}
+{"kind":"textbox","id":"sh/t43yxkvq","slide":7,"text":"수직 슬라이스","textPreview":"수직 슬라이스","textChars":7,"textLines":1,"bbox":[96,376,426,32]}
+{"kind":"textbox","id":"sh/s3uhofe5","slide":7,"text":"Quest Event API와 Supabase 저장·조회 흐름 검증","textPreview":"Quest Event API와 Supabase 저장·조회 흐름 검증","textChars":37,"textLines":1,"bbox":[96,418,426,10]}
+{"kind":"shape","id":"sh/f65gzudw","slide":7,"bbox":[74,468,470,88]}
+{"kind":"shape","id":"sh/e5wzqpwb","slide":7,"bbox":[74,468,470,5]}
+{"kind":"textbox","id":"sh/18ny1kvm","slide":7,"text":"확장 규칙","textPreview":"확장 규칙","textChars":5,"textLines":1,"bbox":[96,492,426,32]}
+{"kind":"textbox","id":"sh/g7ehszu1","slide":7,"text":"manager behavior, interaction object, outside transition을 테스트 가능한 단위로 분리","textPreview":"manager behavior, interaction object, outside transition을 테스트 가능한 단위로 분리","textChars":72,"textLines":1,"bbox":[96,534,426,10]}
+{"kind":"shape","id":"sh/3a5g3uds","slide":7,"bbox":[650,248,360,260]}
+{"kind":"textbox","id":"sh/29wzupc7","slide":7,"text":"RED","textPreview":"RED","textChars":3,"textLines":1,"bbox":[708,296,90,40]}
+{"kind":"textbox","id":"sh/y50jmtwf","slide":7,"text":"GREEN","textPreview":"GREEN","textChars":5,"textLines":1,"bbox":[780,370,140,40]}
+{"kind":"textbox","id":"sh/z69kvyx0","slide":7,"text":"VERIFY","textPreview":"VERIFY","textChars":6,"textLines":1,"bbox":[695,446,160,40]}
+{"kind":"shape","id":"sh/kri1o3el","slide":7,"bbox":[762,352,80,2]}
+{"kind":"shape","id":"sh/lsr2x8f6","slide":7,"bbox":[808,426,80,2]}
+{"kind":"textbox","id":"sh/q1gjitgj","slide":7,"text":"결과는 docs/status.md, docs/tasks.md, Wiki에 남겨 다음 작업의 출발점으로 사용했다.","textPreview":"결과는 docs/status.md, docs/tasks.md, Wiki에 남겨 다음 작업의 출발점으로 사용했다.","textChars":62,"textLines":1,"bbox":[104,612,1000,34]}
+{"kind":"textbox","id":"sh/b2pkryx4","slide":7,"text":"Sources: status · tdd skill · tdd_workflow agent","textPreview":"Sources: status · tdd skill · tdd_workflow agent","textChars":48,"textLines":1,"bbox":[64,668,620,20]}
+{"kind":"textbox","id":"sh/c3y1kjyp","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1160,660,54,30]}
+{"kind":"notes","id":"nt/i9s6h8","slide":7,"text":"마지막 장은 기능 구현 사례다. 작은 도메인 규칙은 TDD로 먼저 테스트 케이스를 잡고, RED/GREEN 흐름으로 구현했다.\nSupabase 같은 기능은 API 요청과 응답, storage mode까지 수직 슬라이스로 검증했다.\n결과를 status, tasks, Wiki에 남겨서 다음 세션에서도 같은 맥락을 이어갈 수 있게 했다."}

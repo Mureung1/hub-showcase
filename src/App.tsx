@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AnimationEvent, CSSProperties, FormEvent, MouseEvent, PointerEvent, ReactNode } from "react";
 import { CanvasSpriteAnimator } from "./components/CanvasSpriteAnimator";
 import {
@@ -8,10 +8,12 @@ import {
   getRenderablePetStage,
   getUnlockedPetStages,
   projectionModeAssets,
+  interactionObjectAssets,
   defaultLumiPetId,
   lumiMoodToSpriteState,
   resolvePetStageFromLevel,
   type DesktopIconId,
+  type InteractionObjectAsset,
   type PetAnimationState,
   type LumiSpriteState,
   type PetId,
@@ -27,19 +29,24 @@ import {
 import { createQuestEventViaApi, fetchManagerContextViaApi, fetchQuestEventsViaApi } from "./layers/storage/questLogApi";
 import type { CreateQuestEventRequest, ManagerContext } from "./layers/storage/questLogApi";
 import { createQuestLogRepository } from "./layers/storage/questLogRepository";
-import { getClimbPosition, resizeInteractionObject, type InteractionObject } from "./domain/interactionObjects";
+import { getClimbPosition, type InteractionObject, type ResizeAxis } from "./domain/interactionObjects";
+import { chooseWeightedBehavior, getBehaviorCandidates, mapBehaviorToAnimation } from "./domain/petBehaviorStateMachine";
+import type { PetBehaviorMood, PetBehaviorRecentEvent } from "./domain/petBehaviorStateMachine";
 import { createRecoveryQuest, type Difficulty, type Quest, type QuestType } from "./domain/questLogic";
 import "./styles.css";
 
-type AppScreen = "wizard" | "manager-created" | "desktop";
+type AppScreen = "manager-select" | "wizard" | "manager-created" | "desktop";
 type QuestStatus = "draft" | "active" | "success" | "failed" | "recovery";
 type ManagerTone = "calm" | "friendly" | "firm";
 type QuestSize = "tiny" | "balanced" | "challenge";
-type WindowId = "quest" | "runner" | "failure" | "recovery" | "manager" | "profile" | "journal" | "trash" | "pixelTvProperties";
+type WindowId = "quest" | "runner" | "failure" | "recovery" | "manager" | "profile" | "journal" | "trash" | "pixelTvProperties" | "ladderObject" | "platformObject";
 type QuestLogSyncStatus = "idle" | "loading" | "saving" | "success" | "error";
-type BlinkFocusMode = "start_day" | "end_day";
+type BlinkFocusMode = "start_day" | "end_day" | "outside_transition";
 type PixelTvMode = "default" | "projection";
-type InteractionPrototypeMode = "idle" | "climb_ladder" | "jump_to_platform" | "escape_window";
+type OutsidePetPhase = "inside" | "blink" | "peek_from_edge" | "walk_in" | "free_roam" | "returning";
+type OutsidePetSide = "left" | "right";
+type ManagerRuntimeLocation = "manager_window" | "window_edge" | "outside" | "transition";
+type ManagerWindowInteractionState = "none" | "quest_hanging" | "recovery_hiding";
 
 interface UserProfile {
   name: string;
@@ -70,6 +77,13 @@ interface WindowPosition {
   y: number;
 }
 
+interface WindowSize {
+  width: number;
+  height: number;
+}
+
+interface WindowRect extends WindowPosition, WindowSize {}
+
 interface InteractionSpritePosition {
   x: number;
   y: number;
@@ -95,11 +109,41 @@ interface DesktopContextMenuState {
   y: number;
 }
 
+interface OutsidePetState {
+  phase: OutsidePetPhase;
+  side: OutsidePetSide;
+  position: InteractionSpritePosition;
+  direction: 1 | -1;
+  animation: PetAnimationState;
+  roamTicks: number;
+}
+
+interface ManagerRuntimeState {
+  location: ManagerRuntimeLocation;
+  mood: ManagerState["mood"];
+  stage: PetStageId;
+  animation: PetAnimationState | LumiSpriteState;
+  windowInteraction: ManagerWindowInteractionState;
+  outside: OutsidePetState;
+  petAwayFromManagerWindow: boolean;
+  showOutsidePet: boolean;
+}
+
+interface ManagerRuntimeStateInput {
+  manager: ManagerState;
+  displayStage: PetStageId;
+  outsidePet: OutsidePetState;
+  showQuestHangingPet: boolean;
+  showRecoveryHidingPet: boolean;
+  showOutsidePet: boolean;
+}
+
 interface StartMenuProps {
   questStatus: QuestStatus;
   onOpenWindow: (id: WindowId) => void;
   onOpenQuest: () => void;
   onExitService: () => void;
+  onRestart: () => void;
 }
 
 interface DesktopContextMenuProps {
@@ -116,6 +160,12 @@ interface PixelTvPropertiesWindowProps {
 interface BlinkFocusOverlayProps {
   effect: BlinkFocusState | null;
   onDone: () => void;
+}
+
+interface ManagerSelectWindowProps {
+  selectedPetId: PetId;
+  onSelect: (petId: PetId) => void;
+  onContinue: () => void;
 }
 
 interface ProfileSetupWizardProps {
@@ -176,10 +226,14 @@ interface XpWindowProps {
   className: string;
   children: ReactNode;
   position?: WindowPosition;
+  size?: WindowSize;
+  resizeAxis?: ResizeAxis;
   zIndex?: number;
   isActive?: boolean;
   onFocus?: () => void;
   onMove?: (position: WindowPosition) => void;
+  onResize?: (size: WindowSize) => void;
+  onMeasure?: (rect: WindowRect) => void;
   onClose?: (() => void) | undefined;
 }
 
@@ -200,16 +254,8 @@ interface DesktopIconProps {
   disabled?: boolean;
 }
 
-interface InteractionObjectLayerProps {
-  activeMode: InteractionPrototypeMode;
-  objects: InteractionObject[];
-  onActivate: (mode: InteractionPrototypeMode) => void;
-  onResize: (id: string, delta: number) => void;
-}
-
-interface InteractionPrototypePetProps {
-  mode: Exclude<InteractionPrototypeMode, "idle">;
-  objects: InteractionObject[];
+interface OutsidePetLayerProps {
+  pet: OutsidePetState;
   petId: PetId;
   stage: PetStageId;
 }
@@ -220,6 +266,7 @@ interface WindowPetInteractionProps {
   stage: PetStageId;
   placement: "below-quest" | "beside-recovery";
   position: WindowPosition;
+  measuredRect?: WindowRect;
   zIndex: number;
 }
 
@@ -245,13 +292,25 @@ const initialWindowPositions: Record<WindowId, WindowPosition> = {
   journal: { x: 285, y: 392 },
   trash: { x: 895, y: 405 },
   pixelTvProperties: { x: 360, y: 185 },
+  ladderObject: { x: 650, y: 294 },
+  platformObject: { x: 735, y: 350 },
 };
 
-const initialInteractionObjects: InteractionObject[] = [
-  { id: "ladder-1", type: "ladder", resizeAxis: "vertical", rect: { x: 760, y: 290, width: 38, height: 146 } },
-  { id: "platform-1", type: "platform", resizeAxis: "horizontal", rect: { x: 800, y: 282, width: 154, height: 24 } },
-  { id: "escape-edge-1", type: "window_escape_edge", resizeAxis: "none", rect: { x: 1112, y: 170, width: 10, height: 156 } },
-];
+const initialWindowSizes: Partial<Record<WindowId, WindowSize>> = {
+  ladderObject: { width: 86, height: 184 },
+  platformObject: { width: 280, height: 124 },
+};
+
+const outsidePetFieldRect = { x: 190, y: 430, width: 780, height: 116 };
+const outsidePetSpriteSize = 96;
+const outsidePetInitialState: OutsidePetState = {
+  phase: "inside",
+  side: "left",
+  position: { x: outsidePetFieldRect.x, y: outsidePetFieldRect.y },
+  direction: 1,
+  animation: "idle",
+  roamTicks: 0,
+};
 
 const workflowWindowIds = new Set<WindowId>(["quest", "runner", "failure", "recovery", "manager", "journal"]);
 
@@ -269,6 +328,8 @@ const windowLabels: Record<WindowId, string> = {
   journal: "기록 노트",
   trash: "휴지통",
   pixelTvProperties: "Pixel TV 속성",
+  ladderObject: "사다리",
+  platformObject: "평지",
 };
 
 const windowTitleIcons: Record<WindowId, string> = {
@@ -281,6 +342,8 @@ const windowTitleIcons: Record<WindowId, string> = {
   journal: "N",
   trash: "T",
   pixelTvProperties: "TV",
+  ladderObject: "L",
+  platformObject: "_",
 };
 
 const desktopIconAssetIds: Partial<Record<WindowId, DesktopIconId>> = {
@@ -371,6 +434,32 @@ const defaultManager: ManagerState = {
   unlockedStages: ["stage-1"],
   selectedStage: null,
 };
+
+const selectableManagerPets: Array<{
+  petId: PetId;
+  name: string;
+  title: string;
+  description: string;
+}> = [
+  {
+    petId: "pink-manager",
+    name: "루미",
+    title: "분홍 전자 매니저",
+    description: "밝은 반응과 큰 동작이 잘 보이는 기본 매니저",
+  },
+  {
+    petId: "glass-frog",
+    name: "글라",
+    title: "유리 개구리 매니저",
+    description: "조용한 움직임과 점프 동작이 어울리는 매니저",
+  },
+  {
+    petId: "planaria",
+    name: "플라",
+    title: "플라나리아 매니저",
+    description: "작고 단순한 형태로 시작하는 샘플 매니저",
+  },
+];
 
 function readStorage<T>(key: string, fallback: T): T {
   try {
@@ -523,9 +612,15 @@ function createManagerContextLine(context: ManagerContext) {
   return "오늘 흐름을 조용히 정리하고 있어.";
 }
 
-function useWindowManager(initialOpenWindows: WindowId[], initialPositions: Record<WindowId, WindowPosition>) {
+function useWindowManager(
+  initialOpenWindows: WindowId[],
+  initialPositions: Record<WindowId, WindowPosition>,
+  initialSizes: Partial<Record<WindowId, WindowSize>> = {},
+) {
   const [openWindows, setOpenWindows] = useState<WindowId[]>(initialOpenWindows);
   const [windowPositions, setWindowPositions] = useState<Record<WindowId, WindowPosition>>(initialPositions);
+  const [windowSizes, setWindowSizes] = useState<Partial<Record<WindowId, WindowSize>>>(initialSizes);
+  const [windowRects, setWindowRects] = useState<Partial<Record<WindowId, WindowRect>>>({});
   const activeWindow = openWindows[openWindows.length - 1];
 
   function openWindow(id: WindowId) {
@@ -538,6 +633,27 @@ function useWindowManager(initialOpenWindows: WindowId[], initialPositions: Reco
 
   function moveWindow(id: WindowId, position: WindowPosition) {
     setWindowPositions((current) => ({ ...current, [id]: position }));
+  }
+
+  function resizeWindow(id: WindowId, size: WindowSize) {
+    setWindowSizes((current) => ({ ...current, [id]: size }));
+  }
+
+  function measureWindow(id: WindowId, rect: WindowRect) {
+    setWindowRects((current) => {
+      const previous = current[id];
+      if (
+        previous &&
+        Math.abs(previous.x - rect.x) < 0.5 &&
+        Math.abs(previous.y - rect.y) < 0.5 &&
+        Math.abs(previous.width - rect.width) < 0.5 &&
+        Math.abs(previous.height - rect.height) < 0.5
+      ) {
+        return current;
+      }
+
+      return { ...current, [id]: rect };
+    });
   }
 
   function setWorkflowWindows(nextWindows: WindowId[]) {
@@ -556,10 +672,13 @@ function useWindowManager(initialOpenWindows: WindowId[], initialPositions: Reco
     return {
       id,
       position: windowPositions[id],
+      size: windowSizes[id],
       zIndex: 10 + openWindows.indexOf(id),
       isActive: activeWindow === id,
       onFocus: () => openWindow(id),
       onMove: (position: WindowPosition) => moveWindow(id, position),
+      onResize: (size: WindowSize) => resizeWindow(id, size),
+      onMeasure: (rect: WindowRect) => measureWindow(id, rect),
       onClose: () => closeWindow(id),
     };
   }
@@ -574,16 +693,38 @@ function useWindowManager(initialOpenWindows: WindowId[], initialPositions: Reco
     setWorkflowWindows,
     windowChrome,
     windowPositions,
+    windowSizes,
+    windowRects,
   };
+}
+
+function usePrefersReducedMotion() {
+  const [reducedMotion, setReducedMotion] = useState(() => {
+    if (typeof window === "undefined" || !("matchMedia" in window)) return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  });
+
+  useEffect(() => {
+    if (!("matchMedia" in window)) return undefined;
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleChange = () => setReducedMotion(mediaQuery.matches);
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  return reducedMotion;
 }
 
 
 export default function App() {
   const storedProfile = useMemo(() => readStorage<UserProfile | null>(profileKey, null), []);
-  const [screen, setScreen] = useState<AppScreen>(storedProfile ? "desktop" : "wizard");
+  const [screen, setScreen] = useState<AppScreen>(storedProfile ? "desktop" : "manager-select");
   const [profile, setProfile] = useState<UserProfile>(storedProfile ?? defaultProfile);
   const [wizardDraft, setWizardDraft] = useState<UserProfile>(storedProfile ?? defaultProfile);
   const [manager, setManager] = useState<ManagerState>(() => normalizeManager(readStorage(managerKey, defaultManager)));
+  const [selectedPetId, setSelectedPetId] = useState<PetId>(() => normalizeManager(readStorage(managerKey, defaultManager)).petId);
   const [logs, setLogs] = useState<QuestLog[]>(() => questLogRepository.get());
   const [quest, setQuest] = useState<Quest>(() => createQuest(storedProfile ?? defaultProfile));
   const [questStatus, setQuestStatus] = useState<QuestStatus>("draft");
@@ -596,7 +737,9 @@ export default function App() {
     setWorkflowWindows,
     windowChrome,
     windowPositions,
-  } = useWindowManager(["quest", "manager"], initialWindowPositions);
+    windowSizes,
+    windowRects,
+  } = useWindowManager(["quest", "manager", "ladderObject", "platformObject"], initialWindowPositions, initialWindowSizes);
   const [now, setNow] = useState(() => new Date());
   const [needsClarify, setNeedsClarify] = useState(false);
   const [selectedFailureReason, setSelectedFailureReason] = useState(failureReasons[0]);
@@ -608,15 +751,19 @@ export default function App() {
   const [exitAfterBlink, setExitAfterBlink] = useState(false);
   const [pixelTvMode, setPixelTvMode] = useState<PixelTvMode>(() => readStorage<PixelTvMode>(pixelTvModeKey, "default"));
   const [pixelTvContextMenu, setPixelTvContextMenu] = useState<DesktopContextMenuState | null>(null);
-  const [interactionObjects, setInteractionObjects] = useState<InteractionObject[]>(initialInteractionObjects);
-  const [interactionMode, setInteractionMode] = useState<InteractionPrototypeMode>("idle");
+  const [outsidePet, setOutsidePet] = useState<OutsidePetState>(outsidePetInitialState);
+  const reducedMotion = usePrefersReducedMotion();
+  const interactionObjects = useMemo(
+    () => createInteractionObjectsFromWindows(windowPositions, windowSizes),
+    [windowPositions, windowSizes],
+  );
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
 
-  useEffect(() => { if (screen !== "wizard") writeStorage(profileKey, profile); }, [profile, screen]);
+  useEffect(() => { if (screen === "desktop" || screen === "manager-created") writeStorage(profileKey, profile); }, [profile, screen]);
   useEffect(() => { writeStorage(managerKey, manager); }, [manager]);
   useEffect(() => { questLogRepository.set(logs); }, [logs]);
   useEffect(() => { writeStorage(pixelTvModeKey, pixelTvMode); }, [pixelTvMode]);
@@ -643,6 +790,124 @@ export default function App() {
     };
   }, [screen]);
 
+  useEffect(() => {
+    if (outsidePet.phase !== "peek_from_edge") return undefined;
+
+    const timer = window.setTimeout(() => {
+      setOutsidePet((current) => ({
+        ...current,
+        phase: "walk_in",
+        animation: "walk",
+        position: {
+          x: current.side === "left" ? outsidePetFieldRect.x - 42 : outsidePetFieldRect.x + outsidePetFieldRect.width - outsidePetSpriteSize + 42,
+          y: outsidePetFieldRect.y,
+        },
+      }));
+    }, 820);
+
+    return () => window.clearTimeout(timer);
+  }, [outsidePet.phase]);
+
+  useEffect(() => {
+    if (outsidePet.phase !== "walk_in") return undefined;
+
+    const targetX = outsidePet.side === "left" ? outsidePetFieldRect.x + 64 : outsidePetFieldRect.x + outsidePetFieldRect.width - outsidePetSpriteSize - 64;
+    const timer = window.setInterval(() => {
+      setOutsidePet((current) => {
+        if (current.phase !== "walk_in") return current;
+
+        const step = current.side === "left" ? 18 : -18;
+        const nextX = current.position.x + step;
+        const reachedTarget = current.side === "left" ? nextX >= targetX : nextX <= targetX;
+        if (reachedTarget) {
+          return {
+            ...current,
+            phase: "free_roam",
+            animation: "idle",
+            roamTicks: 0,
+            position: { ...current.position, x: targetX },
+          };
+        }
+
+        return { ...current, position: { ...current.position, x: nextX }, direction: step > 0 ? 1 : -1 };
+      });
+    }, 90);
+
+    return () => window.clearInterval(timer);
+  }, [outsidePet.phase, outsidePet.side]);
+
+  useEffect(() => {
+    if (outsidePet.phase !== "free_roam") return undefined;
+
+    const timer = window.setInterval(() => {
+      setOutsidePet((current) => {
+        if (current.phase !== "free_roam") return current;
+
+        const nextRoamTicks = current.roamTicks + 1;
+        const nextAnimation = getNextOutsidePetRoamAnimation(current, interactionObjects, manager.mood, questOutcomeStreak, reducedMotion);
+        const nextDirection = resolveOutsidePetDirection(current, interactionObjects);
+        const speed = nextAnimation === "run" ? 42 : nextAnimation === "jump" ? 28 : nextAnimation === "climbing" ? 0 : 22;
+        const rawX = current.position.x + speed * nextDirection;
+        const minX = outsidePetFieldRect.x;
+        const maxX = outsidePetFieldRect.x + outsidePetFieldRect.width - outsidePetSpriteSize;
+        const clampedX = Math.min(Math.max(rawX, minX), maxX);
+        const nextPosition = resolveOutsidePetRoamPosition(current, nextAnimation, { x: clampedX, y: nextAnimation === "jump" ? outsidePetFieldRect.y - 26 : outsidePetFieldRect.y }, interactionObjects);
+
+        return {
+          ...current,
+          animation: nextAnimation,
+          direction: clampedX === minX ? 1 : clampedX === maxX ? -1 : nextDirection,
+          roamTicks: nextRoamTicks,
+          position: nextPosition,
+        };
+      });
+    }, 1100);
+
+    return () => window.clearInterval(timer);
+  }, [outsidePet.phase, interactionObjects, manager.mood, questOutcomeStreak, reducedMotion]);
+
+  useEffect(() => {
+    if (outsidePet.phase !== "free_roam" || openWindows.includes("journal")) return;
+
+    setOutsidePet((current) => {
+      if (current.phase !== "free_roam") return current;
+
+      const side = getNearestOutsidePetSide(current.position);
+      return {
+        ...current,
+        phase: "returning",
+        side,
+        animation: "walk",
+        direction: side === "left" ? -1 : 1,
+        position: { ...current.position, y: outsidePetFieldRect.y },
+      };
+    });
+  }, [openWindows, outsidePet.phase]);
+
+  useEffect(() => {
+    if (outsidePet.phase !== "returning") return undefined;
+
+    const timer = window.setInterval(() => {
+      setOutsidePet((current) => {
+        if (current.phase !== "returning") return current;
+
+        const step = current.side === "left" ? -22 : 22;
+        const nextX = current.position.x + step;
+        const reachedEdge = current.side === "left" ? nextX <= -outsidePetSpriteSize : nextX >= window.innerWidth;
+        if (reachedEdge) return outsidePetInitialState;
+
+        return {
+          ...current,
+          animation: nextX < 16 || nextX > window.innerWidth - outsidePetSpriteSize - 16 ? "hiding" : "walk",
+          direction: step > 0 ? 1 : -1,
+          position: { x: nextX, y: outsidePetFieldRect.y },
+        };
+      });
+    }, 100);
+
+    return () => window.clearInterval(timer);
+  }, [outsidePet.phase]);
+
   const remainingTime = formatRemaining(now);
   const managerDisplayStage = getManagerDisplayStage(manager);
   const projectionModeAsset = projectionModeAssets.find((asset) => asset.mode === "single_plane_pepper");
@@ -658,8 +923,51 @@ export default function App() {
     setExitAfterBlink(true);
     triggerBlinkFocus("end_day");
   }
+  function continueWithSelectedManager() {
+    const nextManager = normalizeManager({ ...defaultManager, petId: selectedPetId, line: "좋아. 어떤 목표를 함께 키울지 알려줘." });
+    setManager(nextManager);
+    setWizardDraft(defaultProfile);
+    setNeedsClarify(false);
+    setScreen("wizard");
+  }
+  function restartService() {
+    window.localStorage.removeItem(profileKey);
+    window.localStorage.removeItem(managerKey);
+    questLogRepository.set([]);
+    setStartOpen(false);
+    setScreen("manager-select");
+    setProfile(defaultProfile);
+    setWizardDraft(defaultProfile);
+    setManager(defaultManager);
+    setSelectedPetId(defaultLumiPetId);
+    setLogs([]);
+    setQuest(createQuest(defaultProfile));
+    setQuestStatus("draft");
+    setPreviousQuestTitle("");
+    setSelectedFailureReason(failureReasons[0]);
+    setQuestOutcomeStreak({ result: null, count: 0 });
+    setOutsidePet(outsidePetInitialState);
+    setBlinkFocus(null);
+    setExitAfterBlink(false);
+    resetOpenWindows(["quest", "manager", "ladderObject", "platformObject"]);
+    resetWindowPositions();
+  }
   function finishBlinkFocus() {
     setBlinkFocus(null);
+    if (outsidePet.phase === "blink") {
+      setOutsidePet((current) => ({
+        ...current,
+        phase: "peek_from_edge",
+        animation: "hiding",
+        position: {
+          x: current.side === "left" ? -34 : window.innerWidth - 62,
+          y: outsidePetFieldRect.y - 18,
+        },
+        direction: current.side === "left" ? 1 : -1,
+      }));
+      return;
+    }
+
     if (!exitAfterBlink) return;
     setExitAfterBlink(false);
     resetOpenWindows(["quest", "manager"]);
@@ -668,22 +976,26 @@ export default function App() {
   function togglePixelTvMode() {
     setPixelTvMode((current) => (current === "projection" ? "default" : "projection"));
   }
-  function activateInteractionMode(mode: InteractionPrototypeMode) {
-    setInteractionMode((current) => (current === mode ? "idle" : mode));
+  function openAppWindow(id: WindowId) {
+    openWindow(id);
+    if (id === "journal") triggerOutsidePetFromJournal();
   }
-  function resizeInteractionObjectById(id: string, delta: number) {
-    setInteractionObjects((current) =>
-      current.map((object) => {
-        if (object.id !== id) return object;
+  function triggerOutsidePetFromJournal() {
+    if (outsidePet.phase !== "inside") return;
 
-        const nextRect = {
-          ...object.rect,
-          height: object.type === "ladder" ? Math.max(96, Math.min(240, object.rect.height + delta)) : object.rect.height,
-          width: object.type === "platform" ? Math.max(96, Math.min(260, object.rect.width + delta)) : object.rect.width,
-        };
-        return resizeInteractionObject(object, nextRect);
-      }),
-    );
+    const side: OutsidePetSide = Date.now() % 2 === 0 ? "left" : "right";
+    setOutsidePet({
+      phase: "blink",
+      side,
+      position: {
+        x: side === "left" ? -34 : window.innerWidth - 62,
+        y: outsidePetFieldRect.y - 18,
+      },
+      direction: side === "left" ? 1 : -1,
+      animation: "hiding",
+      roamTicks: 0,
+    });
+    triggerBlinkFocus("outside_transition");
   }
   function openPixelTvContextMenu(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -760,12 +1072,13 @@ export default function App() {
     event.preventDefault();
     if (isGoalAbstract(wizardDraft.goal) && !wizardDraft.focusAnswer) { setNeedsClarify(true); return; }
     const savedProfile: UserProfile = { ...wizardDraft, name: wizardDraft.name.trim() || "사용자", nickname: wizardDraft.nickname.trim() || "루카스", goal: wizardDraft.goal.trim() || defaultProfile.goal };
+    const selectedPet = selectableManagerPets.find((pet) => pet.petId === selectedPetId);
     setProfile(savedProfile);
     setQuest(createQuest(savedProfile));
     setQuestStatus("draft");
-    setManager({ ...defaultManager, line: toneLines[savedProfile.managerTone] });
+    setManager(normalizeManager({ ...defaultManager, petId: selectedPetId, name: selectedPet?.name ?? defaultManager.name, line: toneLines[savedProfile.managerTone] }));
     setLogs([]);
-    resetOpenWindows(["quest", "manager"]);
+    resetOpenWindows(["quest", "manager", "ladderObject", "platformObject"]);
     resetWindowPositions();
     setNeedsClarify(false);
     setScreen("manager-created");
@@ -824,8 +1137,17 @@ export default function App() {
 
   const showRecoveryHidingPet = questStatus === "recovery" && openWindows.includes("recovery") && questOutcomeStreak.result === "failed" && questOutcomeStreak.count >= 2;
   const showQuestHangingPet = questStatus === "draft" && openWindows.includes("quest") && questOutcomeStreak.result === "success" && questOutcomeStreak.count >= 2;
-  const showInteractionPet = interactionMode !== "idle" && !showQuestHangingPet && !showRecoveryHidingPet;
+  const showOutsidePet = outsidePet.phase !== "inside" && outsidePet.phase !== "blink";
+  const managerRuntimeState = createManagerRuntimeState({
+    manager,
+    displayStage: managerDisplayStage,
+    outsidePet,
+    showQuestHangingPet,
+    showRecoveryHidingPet,
+    showOutsidePet,
+  });
 
+  if (screen === "manager-select") return <main className="xp-boot-screen"><ManagerSelectWindow selectedPetId={selectedPetId} onSelect={setSelectedPetId} onContinue={continueWithSelectedManager} /></main>;
   if (screen === "wizard") return <main className="xp-boot-screen"><ProfileSetupWizard draft={wizardDraft} needsClarify={needsClarify} onChange={setWizardDraft} onSubmit={submitWizard} /></main>;
   if (screen === "manager-created") return <main className="xp-boot-screen"><XpWindow className="created-window" title="Manager Created" titlebarIcon="◇" onClose={undefined}><p className="created-lead">매니저가 깨어났어요.</p><div className="created-card"><DesktopPet mood="happy" petId={manager.petId} stage={managerDisplayStage} large /><div><strong>◇ 루미 ◇</strong><span>전자 생물형 페이스메이커</span><br /><small>목표를 오늘의 퀘스트로 나누고 실패하면 다음 분량을 다시 맞춰요.</small></div></div><div className="window-actions"><button className="xp-button primary" type="button" onClick={enterDesktop}>데스크톱으로 이동</button></div></XpWindow></main>;
 
@@ -833,9 +1155,9 @@ export default function App() {
     <main className="xp-desktop" aria-label="Manager.exe desktop" onClick={() => setPixelTvContextMenu(null)}>
       <nav className="desktop-icons" aria-label="바탕화면 아이콘">
         <DesktopIcon label="오늘의 퀘스트" type="quest" onClick={openTodayQuest} />
-        <DesktopIcon label="매니저" type="manager" onClick={() => openWindow("manager")} />
-        <DesktopIcon label="내 프로필" type="profile" onClick={() => openWindow("profile")} />
-        <DesktopIcon label="기록 노트" type="journal" onClick={() => openWindow("journal")} />
+        <DesktopIcon label="매니저" type="manager" onClick={() => openAppWindow("manager")} />
+        <DesktopIcon label="내 프로필" type="profile" onClick={() => openAppWindow("profile")} />
+        <DesktopIcon label="기록 노트" type="journal" onClick={() => openAppWindow("journal")} />
         <DesktopIcon
           label={pixelTvConnected ? "Projection TV" : "Pixel TV"}
           type="pixelTvProperties"
@@ -845,35 +1167,28 @@ export default function App() {
           onClick={launchProjectionMode}
           onContextMenu={openPixelTvContextMenu}
         />
-        <DesktopIcon label="휴지통" type="trash" onClick={() => openWindow("trash")} />
+        <DesktopIcon label="휴지통" type="trash" onClick={() => openAppWindow("trash")} />
       </nav>
 
       {pixelTvContextMenu && (
         <DesktopContextMenu x={pixelTvContextMenu.x} y={pixelTvContextMenu.y} onOpenProperties={openPixelTvProperties} />
       )}
 
-      <InteractionObjectLayer
-        activeMode={interactionMode}
-        objects={interactionObjects}
-        onActivate={activateInteractionMode}
-        onResize={resizeInteractionObjectById}
-      />
-      {showInteractionPet && (
-        <InteractionPrototypePet
-          mode={interactionMode}
-          objects={interactionObjects}
+      {managerRuntimeState.showOutsidePet && (
+        <OutsidePetLayer
+          pet={managerRuntimeState.outside}
           petId={manager.petId}
-          stage={managerDisplayStage}
+          stage={managerRuntimeState.stage}
         />
       )}
 
       {openWindows.includes("quest") && <XpWindow className="quest-window" title={questStatus === "recovery" ? "복구 퀘스트" : "오늘의 퀘스트"} {...windowChrome("quest")}><QuestWindow quest={quest} status={questStatus} previousQuestTitle={previousQuestTitle} onQuestChange={updateQuest} onAccept={acceptQuest} onOpenRunner={() => openWindow("runner")} onRecommendNext={openTodayQuest} /></XpWindow>}
-      {showQuestHangingPet && <WindowPetInteraction state="hanging" petId={manager.petId} stage={managerDisplayStage} placement="below-quest" position={windowPositions.quest} zIndex={11 + openWindows.indexOf("quest")} />}
+      {managerRuntimeState.windowInteraction === "quest_hanging" && <WindowPetInteraction state="hanging" petId={manager.petId} stage={managerRuntimeState.stage} placement="below-quest" position={windowPositions.quest} measuredRect={windowRects.quest} zIndex={10 + openWindows.indexOf("quest")} />}
       {openWindows.includes("runner") && <XpWindow className="runner-window" title="QuestRunner.exe" {...windowChrome("runner")}><QuestRunnerWindow quest={quest} remainingTime={remainingTime} onComplete={completeQuest} onFail={startFailureFlow} /></XpWindow>}
       {openWindows.includes("failure") && <XpWindow className="failure-window" title="퀘스트가 소멸했어" {...windowChrome("failure")}><FailureWindow selectedFailureReason={selectedFailureReason} onReasonChange={setSelectedFailureReason} onCreateRecovery={createRecovery} /></XpWindow>}
       {openWindows.includes("recovery") && <XpWindow className="recovery-window" title="복구 퀘스트" {...windowChrome("recovery")}><RecoveryWindow quest={quest} onEdit={editRecovery} onAccept={acceptQuest} /></XpWindow>}
-      {showRecoveryHidingPet && <WindowPetInteraction state="hiding" petId={manager.petId} stage={managerDisplayStage} placement="beside-recovery" position={windowPositions.recovery} zIndex={9 + openWindows.indexOf("recovery")} />}
-      {openWindows.includes("manager") && <XpWindow className="manager-window" title="매니저" {...windowChrome("manager")}><ManagerWindow manager={manager} petAway={showQuestHangingPet || showRecoveryHidingPet || showInteractionPet} /></XpWindow>}
+      {managerRuntimeState.windowInteraction === "recovery_hiding" && <WindowPetInteraction state="hiding" petId={manager.petId} stage={managerRuntimeState.stage} placement="beside-recovery" position={windowPositions.recovery} measuredRect={windowRects.recovery} zIndex={10 + openWindows.indexOf("recovery")} />}
+      {openWindows.includes("manager") && <XpWindow className="manager-window" title="매니저" {...windowChrome("manager")}><ManagerWindow manager={manager} petAway={managerRuntimeState.petAwayFromManagerWindow} /></XpWindow>}
       {openWindows.includes("profile") && <XpWindow className="profile-window" title="내 프로필" {...windowChrome("profile")}><ProfileWindow profile={profile} onSave={saveProfile} /></XpWindow>}
       {openWindows.includes("journal") && <XpWindow className="journal-window" title="기록 노트" {...windowChrome("journal")}><JournalWindow logs={logs} sync={logSync} /></XpWindow>}
       {openWindows.includes("trash") && <XpWindow className="trash-window" title="휴지통" {...windowChrome("trash")}><div className="empty-trash">비어 있음</div></XpWindow>}
@@ -882,11 +1197,21 @@ export default function App() {
           <PixelTvPropertiesWindow connected={pixelTvConnected} onToggle={togglePixelTvMode} />
         </XpWindow>
       )}
+      {openWindows.includes("ladderObject") && (
+        <XpWindow className="interaction-object-window ladder-object-window" title="사다리" resizeAxis="vertical" {...windowChrome("ladderObject")}>
+          <LadderObjectWindow />
+        </XpWindow>
+      )}
+      {openWindows.includes("platformObject") && (
+        <XpWindow className="interaction-object-window platform-object-window" title="평지" resizeAxis="horizontal" {...windowChrome("platformObject")}>
+          <PlatformObjectWindow />
+        </XpWindow>
+      )}
 
       <BlinkFocusOverlay effect={blinkFocus} onDone={finishBlinkFocus} />
       <footer className="taskbar">
         <button className="start-button" type="button" onClick={() => setStartOpen((value) => !value)}><span className="start-mark" />시작</button>
-        {startOpen && <StartMenu questStatus={questStatus} onOpenWindow={openWindow} onOpenQuest={openTodayQuest} onExitService={exitService} />}
+        {startOpen && <StartMenu questStatus={questStatus} onOpenWindow={openAppWindow} onOpenQuest={openTodayQuest} onExitService={exitService} onRestart={restartService} />}
         <div className="taskbar-items">
           {openWindows.map((windowId) => (
             <button className={activeWindow === windowId ? "active" : ""} key={windowId} type="button" onClick={() => openWindow(windowId)}>
@@ -901,7 +1226,7 @@ export default function App() {
   );
 }
 
-function StartMenu({ questStatus, onOpenWindow, onOpenQuest, onExitService }: StartMenuProps) {
+function StartMenu({ questStatus, onOpenWindow, onOpenQuest, onExitService, onRestart }: StartMenuProps) {
   return (
     <div className="start-menu">
       <strong>Manager.exe</strong>
@@ -927,11 +1252,45 @@ function StartMenu({ questStatus, onOpenWindow, onOpenQuest, onExitService }: St
         <WindowIconMark id="journal" className="menu-icon" />
         <span>기록 노트</span>
       </button>
+      <button type="button" onClick={onRestart}>
+        <span className="menu-icon text-icon" aria-hidden="true">RS</span>
+        <span>다시 시작</span>
+      </button>
       <button type="button" onClick={onExitService}>
         <span className="menu-icon text-icon" aria-hidden="true">IO</span>
         <span>서비스 종료</span>
       </button>
     </div>
+  );
+}
+
+function ManagerSelectWindow({ selectedPetId, onSelect, onContinue }: ManagerSelectWindowProps) {
+  return (
+    <XpWindow className="manager-select-window" title="Manager.exe 선택" titlebarIcon="◇" onClose={undefined}>
+      <section className="manager-select-panel">
+        <p className="wizard-lead">함께 지낼 전자 매니저를 선택해 주세요</p>
+        <div className="manager-select-grid">
+          {selectableManagerPets.map((pet) => {
+            const selected = selectedPetId === pet.petId;
+            return (
+              <button
+                className={`manager-select-card ${selected ? "selected" : ""}`}
+                key={pet.petId}
+                type="button"
+                onClick={() => onSelect(pet.petId)}
+              >
+                <DesktopPet mood={selected ? "happy" : "waiting"} petId={pet.petId} stage="stage-2" />
+                <strong>{pet.title}</strong>
+                <span>{pet.description}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="window-actions">
+          <button className="xp-button primary" type="button" onClick={onContinue}>선택 완료</button>
+        </div>
+      </section>
+    </XpWindow>
   );
 }
 
@@ -1130,10 +1489,55 @@ function JournalWindow({ logs, sync }: JournalWindowProps) {
   return <section className="journal-panel">{sync.message && <p className={`sync-notice ${sync.status}`}>{sync.message}</p>}{logs.length === 0 ? <div className="journal-empty"><strong>아직 기록이 없어.</strong><p>퀘스트를 완료하거나 복구하면 이곳에 기록돼.</p></div> : <div className="notes-list">{logs.map((log) => <div className="note-row" key={log.id}><span className={`log-mark ${log.result}`}>{questLogMarks[log.result]}</span><span>{log.title} <small>{log.reason ?? questLogResultLabels[log.result]}</small></span><strong>EXP +{log.exp}</strong></div>)}</div>}</section>;
 }
 
-function XpWindow({ id, title, titlebarIcon, className, children, position, zIndex, isActive, onFocus, onMove, onClose }: XpWindowProps) {
+function XpWindow({ id, title, titlebarIcon, className, children, position, size, resizeAxis = "none", zIndex, isActive, onFocus, onMove, onResize, onMeasure, onClose }: XpWindowProps) {
+  const windowRef = useRef<HTMLElement | null>(null);
   const [dragOffset, setDragOffset] = useState<WindowPosition | null>(null);
-  const windowStyle = position ? ({ "--window-x": `${position.x}px`, "--window-y": `${position.y}px`, zIndex } as CSSProperties & Record<"--window-x" | "--window-y", string>) : undefined;
+  const [resizeStart, setResizeStart] = useState<{ pointerX: number; pointerY: number; size: WindowSize } | null>(null);
+  const windowStyle = position
+    ? ({
+        "--window-x": `${position.x}px`,
+        "--window-y": `${position.y}px`,
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        right: "auto",
+        width: size ? `${size.width}px` : undefined,
+        height: size ? `${size.height}px` : undefined,
+        zIndex,
+      } as CSSProperties & Record<"--window-x" | "--window-y", string>)
+    : undefined;
   const icon = titlebarIcon ?? (id ? windowTitleIcons[id] : "M");
+
+  useLayoutEffect(() => {
+    if (!onMeasure) return undefined;
+
+    const windowElement = windowRef.current;
+    if (!windowElement) return undefined;
+
+    const measure = () => {
+      const rect = windowElement.getBoundingClientRect();
+      onMeasure({
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+      });
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+
+    if (typeof ResizeObserver === "undefined") {
+      return () => window.removeEventListener("resize", measure);
+    }
+
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(windowElement);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [position?.x, position?.y, size?.height, size?.width]);
 
   function startDrag(event: PointerEvent<HTMLDivElement>) {
     if (!id || !position || !onMove) return;
@@ -1166,8 +1570,37 @@ function XpWindow({ id, title, titlebarIcon, className, children, position, zInd
     event.currentTarget.releasePointerCapture(event.pointerId);
   }
 
+  function startResize(event: PointerEvent<HTMLButtonElement>) {
+    if (!size || resizeAxis === "none" || !onResize) return;
+
+    setResizeStart({ pointerX: event.clientX, pointerY: event.clientY, size });
+    onFocus?.();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  }
+
+  function resizeWindow(event: PointerEvent<HTMLButtonElement>) {
+    if (!resizeStart || resizeAxis === "none" || !onResize) return;
+
+    const nextWidth = resizeAxis === "horizontal"
+      ? Math.max(112, Math.min(360, resizeStart.size.width + event.clientX - resizeStart.pointerX))
+      : resizeStart.size.width;
+    const nextHeight = resizeAxis === "vertical"
+      ? Math.max(112, Math.min(300, resizeStart.size.height + event.clientY - resizeStart.pointerY))
+      : resizeStart.size.height;
+    onResize({ width: nextWidth, height: nextHeight });
+  }
+
+  function stopResize(event: PointerEvent<HTMLButtonElement>) {
+    if (!resizeStart) return;
+
+    setResizeStart(null);
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
   return (
     <section
+      ref={windowRef}
       className={`xp-window ${position ? "positioned" : ""} ${isActive ? "active" : ""} ${className}`}
       onPointerDown={onFocus}
       style={windowStyle}
@@ -1188,6 +1621,17 @@ function XpWindow({ id, title, titlebarIcon, className, children, position, zInd
         </div>
       </div>
       <div className="xp-window-body">{children}</div>
+      {resizeAxis !== "none" && (
+        <button
+          className={`xp-window-resize-handle ${resizeAxis}`}
+          type="button"
+          aria-label={resizeAxis === "vertical" ? "창 높이 조절" : "창 너비 조절"}
+          onPointerDown={startResize}
+          onPointerMove={resizeWindow}
+          onPointerUp={stopResize}
+          onPointerCancel={stopResize}
+        />
+      )}
     </section>
   );
 }
@@ -1239,81 +1683,66 @@ function DesktopIcon({
   );
 }
 
-function InteractionObjectLayer({ activeMode, objects, onActivate, onResize }: InteractionObjectLayerProps) {
+function LadderObjectWindow() {
+  const asset = getInteractionObjectAsset("ladder");
+
   return (
-    <section className="interaction-object-layer" aria-label="전자 매니저 상호작용 오브젝트">
-      {objects.map((object) => {
-        const objectStyle = {
-          left: `${object.rect.x}px`,
-          top: `${object.rect.y}px`,
-          width: `${object.rect.width}px`,
-          height: `${object.rect.height}px`,
-        } as CSSProperties;
-        const mode = getInteractionModeFromObject(object);
-        const isActive = activeMode === mode;
-
-        if (object.type === "window_escape_edge") {
-          return (
-            <button
-              aria-label="창 밖으로 나가기"
-              className={`interaction-object escape-edge ${isActive ? "active" : ""}`}
-              key={object.id}
-              onClick={() => onActivate(mode)}
-              style={objectStyle}
-              type="button"
-            />
-          );
-        }
-
-        return (
-          <div className={`interaction-object ${object.type} ${isActive ? "active" : ""}`} key={object.id} style={objectStyle}>
-            <button className="interaction-object-hitbox" type="button" onClick={() => onActivate(mode)}>
-              <span>{object.type === "ladder" ? "사다리" : "평지"}</span>
-            </button>
-            {object.resizeAxis !== "none" && (
-              <div className={`interaction-resize-controls ${object.resizeAxis}`}>
-                <button type="button" aria-label="크기 줄이기" onClick={() => onResize(object.id, -24)}>
-                  {object.resizeAxis === "vertical" ? "▲" : "◀"}
-                </button>
-                <button type="button" aria-label="크기 늘리기" onClick={() => onResize(object.id, 24)}>
-                  {object.resizeAxis === "vertical" ? "▼" : "▶"}
-                </button>
-              </div>
-            )}
-          </div>
-        );
-      })}
+    <section className="object-window-content ladder-object-content" aria-label="사다리 오브젝트">
+      <div className="ladder-tile-stack" aria-hidden="true">
+        <img className="ladder-tile-cap" src={asset.tiles?.top ?? asset.src} alt="" draggable={false} />
+        <span className="ladder-tile-repeat" style={{ backgroundImage: `url(${asset.tiles?.middleRepeat ?? asset.src})` }} />
+        <img className="ladder-tile-cap" src={asset.tiles?.bottom ?? asset.src} alt="" draggable={false} />
+      </div>
     </section>
   );
 }
 
-function InteractionPrototypePet({ mode, objects, petId, stage }: InteractionPrototypePetProps) {
+function PlatformObjectWindow() {
+  const asset = getInteractionObjectAsset("platform");
+
+  return (
+    <section className="object-window-content platform-object-content" aria-label="평지 오브젝트">
+      <div className="platform-tile-strip" aria-hidden="true">
+        <img className="platform-tile-cap" src={asset.tiles?.left ?? asset.src} alt="" draggable={false} />
+        <span className="platform-tile-repeat" style={{ backgroundImage: `url(${asset.tiles?.centerRepeat ?? asset.src})` }} />
+        <img className="platform-tile-cap" src={asset.tiles?.right ?? asset.src} alt="" draggable={false} />
+      </div>
+    </section>
+  );
+}
+
+function OutsidePetLayer({ pet, petId, stage }: OutsidePetLayerProps) {
   const renderableStage = getRenderablePetStage(petId, stage);
-  const animationState = getInteractionAnimationState(mode);
-  const animation = getInteractionPrototypeAnimation(petId, renderableStage, animationState);
-  const position = getInteractionPetPosition(mode, objects);
+  const animation = getInteractionPrototypeAnimation(petId, renderableStage, pet.animation);
   const petStyle = {
-    left: `${position.x}px`,
-    top: `${position.y}px`,
+    left: `${pet.position.x}px`,
+    top: `${pet.position.y}px`,
   } as CSSProperties;
 
   return (
-    <div className={`interaction-prototype-pet ${mode}`} data-pet-stage={renderableStage} style={petStyle} aria-hidden="true">
-      <CanvasSpriteAnimator animation={animation} ariaLabel={`${animationState} 핑크 매니저`} forceMotion={mode === "climb_ladder"} />
+    <div className={`outside-pet-layer ${pet.phase} ${pet.animation}`} data-pet-stage={renderableStage} style={petStyle} aria-hidden="true">
+      <CanvasSpriteAnimator
+        animation={animation}
+        ariaLabel={`${pet.animation} 핑크 매니저`}
+        forceMotion={pet.phase !== "peek_from_edge"}
+        mirrorX={shouldMirrorOutsidePet(pet)}
+      />
     </div>
   );
 }
 
-function WindowPetInteraction({ state, petId, stage, placement, position, zIndex }: WindowPetInteractionProps) {
+function WindowPetInteraction({ state, petId, stage, placement, position, measuredRect, zIndex }: WindowPetInteractionProps) {
   const animation = getLumiAnimationAsset(state, petId, stage);
   const renderableStage = getRenderablePetStage(petId, stage);
   const placementDrafts = readWindowPetPlacementDrafts((key) => window.localStorage.getItem(key));
   const runtimeSlot = runtimeWindowPetSlots[placement];
   const selectedPlacement = placementDrafts[runtimeSlot.motion][runtimeSlot.edge];
+  const targetPosition = measuredRect ? { x: measuredRect.x, y: measuredRect.y } : position;
+  const targetSize = measuredRect ? { width: measuredRect.width, height: measuredRect.height } : runtimeSlot.windowSize;
   const resolvedPosition = resolveWindowPetPosition({
     placement: selectedPlacement,
-    windowPosition: position,
-    windowSize: runtimeSlot.windowSize,
+    windowPosition: targetPosition,
+    windowSize: targetSize,
     frameWidth: animation.frameWidth,
     anchor: animation.anchor,
     baseSpriteSize: 96,
@@ -1323,7 +1752,7 @@ function WindowPetInteraction({ state, petId, stage, placement, position, zIndex
     top: `${resolvedPosition.top}px`,
     width: `${resolvedPosition.size}px`,
     height: `${resolvedPosition.size}px`,
-    zIndex,
+    zIndex: resolvedPosition.layer === "behind-window" ? Math.max(1, zIndex - 1) : zIndex + 1,
   } as CSSProperties;
 
   return (
@@ -1331,18 +1760,6 @@ function WindowPetInteraction({ state, petId, stage, placement, position, zIndex
       <CanvasSpriteAnimator animation={animation} ariaLabel={`${state} 핑크 매니저`} mirrorX={selectedPlacement.mirrorX} />
     </div>
   );
-}
-
-function getInteractionModeFromObject(object: InteractionObject): Exclude<InteractionPrototypeMode, "idle"> {
-  if (object.type === "ladder") return "climb_ladder";
-  if (object.type === "platform") return "jump_to_platform";
-  return "escape_window";
-}
-
-function getInteractionAnimationState(mode: Exclude<InteractionPrototypeMode, "idle">): PetAnimationState {
-  if (mode === "climb_ladder") return "climbing";
-  if (mode === "jump_to_platform") return "jump";
-  return "walk";
 }
 
 function getInteractionPrototypeAnimation(petId: PetId, stage: PetStageId, state: PetAnimationState) {
@@ -1353,23 +1770,251 @@ function getInteractionPrototypeAnimation(petId: PetId, stage: PetStageId, state
   }
 }
 
-function getInteractionPetPosition(mode: Exclude<InteractionPrototypeMode, "idle">, objects: InteractionObject[]): InteractionSpritePosition {
-  if (mode === "climb_ladder") {
-    const ladder = objects.find((object) => object.type === "ladder");
-    if (!ladder) return { x: 760, y: 290 };
-    const climbPosition = getClimbPosition(ladder.rect, 0.48);
-    return { x: climbPosition.x - 48, y: climbPosition.y - 48 };
+function getInteractionObjectAsset(type: InteractionObjectAsset["type"]): InteractionObjectAsset {
+  return interactionObjectAssets.find((asset) => asset.type === type) ?? interactionObjectAssets[0];
+}
+
+function createManagerRuntimeState(input: ManagerRuntimeStateInput): ManagerRuntimeState {
+  if (input.showOutsidePet) {
+    return {
+      location: "outside",
+      mood: input.manager.mood,
+      stage: input.displayStage,
+      animation: input.outsidePet.animation,
+      windowInteraction: "none",
+      outside: input.outsidePet,
+      petAwayFromManagerWindow: true,
+      showOutsidePet: true,
+    };
   }
 
-  if (mode === "jump_to_platform") {
-    const platform = objects.find((object) => object.type === "platform");
-    if (!platform) return { x: 800, y: 240 };
-    return { x: platform.rect.x + platform.rect.width / 2 - 48, y: platform.rect.y - 78 };
+  if (input.outsidePet.phase === "blink") {
+    return {
+      location: "transition",
+      mood: input.manager.mood,
+      stage: input.displayStage,
+      animation: "hiding",
+      windowInteraction: "none",
+      outside: input.outsidePet,
+      petAwayFromManagerWindow: true,
+      showOutsidePet: false,
+    };
   }
 
-  const escapeEdge = objects.find((object) => object.type === "window_escape_edge");
-  if (!escapeEdge) return { x: 1060, y: 210 };
-  return { x: escapeEdge.rect.x + 18, y: escapeEdge.rect.y + escapeEdge.rect.height / 2 - 48 };
+  if (input.showQuestHangingPet) {
+    return {
+      location: "window_edge",
+      mood: input.manager.mood,
+      stage: input.displayStage,
+      animation: "hanging",
+      windowInteraction: "quest_hanging",
+      outside: input.outsidePet,
+      petAwayFromManagerWindow: true,
+      showOutsidePet: false,
+    };
+  }
+
+  if (input.showRecoveryHidingPet) {
+    return {
+      location: "window_edge",
+      mood: input.manager.mood,
+      stage: input.displayStage,
+      animation: "hiding",
+      windowInteraction: "recovery_hiding",
+      outside: input.outsidePet,
+      petAwayFromManagerWindow: true,
+      showOutsidePet: false,
+    };
+  }
+
+  return {
+    location: "manager_window",
+    mood: input.manager.mood,
+    stage: input.displayStage,
+    animation: lumiMoodToSpriteState[input.manager.mood],
+    windowInteraction: "none",
+    outside: input.outsidePet,
+    petAwayFromManagerWindow: false,
+    showOutsidePet: false,
+  };
+}
+
+function createInteractionObjectsFromWindows(
+  positions: Record<WindowId, WindowPosition>,
+  sizes: Partial<Record<WindowId, WindowSize>>,
+): InteractionObject[] {
+  const ladderPosition = positions.ladderObject;
+  const ladderSize = sizes.ladderObject ?? initialWindowSizes.ladderObject ?? { width: 86, height: 184 };
+  const platformPosition = positions.platformObject;
+  const platformSize = sizes.platformObject ?? initialWindowSizes.platformObject ?? { width: 280, height: 124 };
+
+  return [
+    {
+      id: "ladder-1",
+      type: "ladder",
+      resizeAxis: "vertical",
+      rect: {
+        x: ladderPosition.x + ladderSize.width / 2 - 18,
+        y: ladderPosition.y + 32,
+        width: 36,
+        height: Math.max(72, ladderSize.height - 46),
+      },
+    },
+    {
+      id: "platform-1",
+      type: "platform",
+      resizeAxis: "horizontal",
+      rect: {
+        x: platformPosition.x + 18,
+        y: platformPosition.y + Math.max(48, platformSize.height - 53),
+        width: Math.max(96, platformSize.width - 36),
+        height: 22,
+      },
+    },
+    {
+      id: "escape-edge-1",
+      type: "window_escape_edge",
+      resizeAxis: "none",
+      rect: { x: window.innerWidth - 18, y: outsidePetFieldRect.y - 48, width: 10, height: 150 },
+    },
+  ];
+}
+
+function getNextOutsidePetRoamAnimation(
+  pet: OutsidePetState,
+  objects: InteractionObject[],
+  mood: ManagerState["mood"],
+  streak: QuestOutcomeStreak,
+  reducedMotion: boolean,
+): PetAnimationState {
+  const petRect = { x: pet.position.x, y: pet.position.y, width: outsidePetSpriteSize, height: outsidePetSpriteSize };
+  const clockSlice = Math.floor(Date.now() / 1100);
+  if (!reducedMotion && clockSlice % 6 === 2 && getNearbyLadder(petRect, objects)) return "climbing";
+  if (!reducedMotion && clockSlice % 5 === 1 && getNearbyPlatform(petRect, objects)) return "jump";
+
+  const candidates = getBehaviorCandidates({
+    pet: petRect,
+    objects,
+    mood: getBehaviorMoodFromManagerMood(mood),
+    recentEvent: getRecentBehaviorEvent(streak),
+    reducedMotion,
+  });
+  const selectedBehavior = chooseWeightedBehavior(candidates, (Date.now() / 1000) % 1);
+  const mappedAnimation = mapBehaviorToAnimation(selectedBehavior, reducedMotion);
+
+  if (mappedAnimation === "hanging" || mappedAnimation === "hiding") return "idle";
+  return mappedAnimation;
+}
+
+function getNearestOutsidePetSide(position: InteractionSpritePosition): OutsidePetSide {
+  const fieldCenter = outsidePetFieldRect.x + outsidePetFieldRect.width / 2;
+  return position.x < fieldCenter ? "left" : "right";
+}
+
+function getBehaviorMoodFromManagerMood(mood: ManagerState["mood"]): PetBehaviorMood {
+  return mood;
+}
+
+function getRecentBehaviorEvent(streak: QuestOutcomeStreak): PetBehaviorRecentEvent {
+  if (streak.result === "success") return "quest_completed";
+  if (streak.result === "failed") return "quest_failed";
+  return null;
+}
+
+function resolveOutsidePetRoamPosition(
+  pet: OutsidePetState,
+  animation: PetAnimationState,
+  fallbackPosition: InteractionSpritePosition,
+  objects: InteractionObject[],
+): InteractionSpritePosition {
+  const petRect = { x: pet.position.x, y: pet.position.y, width: outsidePetSpriteSize, height: outsidePetSpriteSize };
+
+  if (animation === "climbing") {
+    const ladder = getNearbyLadder(petRect, objects);
+    if (ladder) {
+      const climbPosition = getClimbPosition(ladder.rect, 0.48);
+      return { x: climbPosition.x - outsidePetSpriteSize / 2, y: climbPosition.y - outsidePetSpriteSize / 2 };
+    }
+  }
+
+  if (animation === "jump") {
+    const platform = getNearbyPlatform(petRect, objects);
+    if (platform) return { x: platform.rect.x + platform.rect.width / 2 - outsidePetSpriteSize / 2, y: platform.rect.y - outsidePetSpriteSize + 12 };
+  }
+
+  const standingPlatform = getStandingPlatform({ x: fallbackPosition.x, y: pet.position.y, width: outsidePetSpriteSize, height: outsidePetSpriteSize }, objects);
+  if (standingPlatform) return { x: fallbackPosition.x, y: standingPlatform.rect.y - outsidePetSpriteSize + 12 };
+
+  return { x: fallbackPosition.x, y: outsidePetFieldRect.y };
+}
+
+function resolveOutsidePetDirection(pet: OutsidePetState, objects: InteractionObject[]): 1 | -1 {
+  const minX = outsidePetFieldRect.x;
+  const maxX = outsidePetFieldRect.x + outsidePetFieldRect.width - outsidePetSpriteSize;
+  if (pet.position.x <= minX + 12) return 1;
+  if (pet.position.x >= maxX - 12) return -1;
+
+  const targetDirection = getInteractionObjectApproachDirection(pet, objects);
+  if (targetDirection) return targetDirection;
+
+  const shouldTurn = pet.roamTicks > 0 && pet.roamTicks % 7 === 0;
+  if (shouldTurn) return pet.direction === 1 ? -1 : 1;
+  return pet.direction;
+}
+
+function getInteractionObjectApproachDirection(pet: OutsidePetState, objects: InteractionObject[]): 1 | -1 | null {
+  const objectTargets = objects
+    .filter((object) => object.type === "ladder" || object.type === "platform")
+    .map((object) => ({ object, distance: Math.abs(getRectCenterX(object.rect) - (pet.position.x + outsidePetSpriteSize / 2)) }))
+    .sort((a, b) => a.distance - b.distance);
+  const nearest = objectTargets[0];
+  if (!nearest || nearest.distance < 36 || nearest.distance > 340) return null;
+  return getRectCenterX(nearest.object.rect) > pet.position.x + outsidePetSpriteSize / 2 ? 1 : -1;
+}
+
+function shouldMirrorOutsidePet(pet: OutsidePetState): boolean {
+  return pet.direction < 0;
+}
+
+function getNearbyLadder(petRect: { x: number; y: number; width: number; height: number }, objects: InteractionObject[]): InteractionObject | undefined {
+  return objects.find((object) => object.type === "ladder" && isNearObject(petRect, object.rect, 96));
+}
+
+function getNearbyPlatform(petRect: { x: number; y: number; width: number; height: number }, objects: InteractionObject[]): InteractionObject | undefined {
+  return objects.find((object) => {
+    if (object.type !== "platform") return false;
+
+    const petFootX = petRect.x + petRect.width / 2;
+    const petFootY = petRect.y + petRect.height;
+    const horizontalReach = petFootX >= object.rect.x - 72 && petFootX <= object.rect.x + object.rect.width + 72;
+    const verticalReach = Math.abs(petFootY - object.rect.y) <= 150;
+    return horizontalReach && verticalReach;
+  });
+}
+
+function getStandingPlatform(petRect: { x: number; y: number; width: number; height: number }, objects: InteractionObject[]): InteractionObject | undefined {
+  return objects.find((object) => {
+    if (object.type !== "platform") return false;
+
+    const petFootX = petRect.x + petRect.width / 2;
+    const petFootY = petRect.y + petRect.height;
+    const insidePlatform = petFootX >= object.rect.x && petFootX <= object.rect.x + object.rect.width;
+    const closeToTop = Math.abs(petFootY - object.rect.y) <= 28;
+    return insidePlatform && closeToTop;
+  });
+}
+
+function getRectCenterX(rect: { x: number; width: number }): number {
+  return rect.x + rect.width / 2;
+}
+
+function isNearObject(a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }, threshold: number): boolean {
+  return (
+    a.x < b.x + b.width + threshold &&
+    a.x + a.width > b.x - threshold &&
+    a.y < b.y + b.height + threshold &&
+    a.y + a.height > b.y - threshold
+  );
 }
 
 function DesktopPet({ mood, petId, stage, large = false }: DesktopPetProps) {

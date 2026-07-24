@@ -1,0 +1,34 @@
+{"kind":"deck","id":"pr/8p17os","name":"Deck"}
+{"kind":"layout","layoutId":"2c7b188d-e0db-4b6a-84df-3817adf1dca9","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"62078f4d-80e5-4d6e-af8d-2ed2f2430b41","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/5ch0fv","slide":1,"title":"화면 요청이 서버와 DB를 거쳐 다시 화면을 바꾼다","textShapes":18}
+{"kind":"textbox","id":"sh/at8zq18r","slide":1,"text":"화면 요청이 서버와 DB를 거쳐 다시 화면을 바꾼다","textPreview":"화면 요청이 서버와 DB를 거쳐 다시 화면을 바꾼다","textChars":28,"textLines":1,"bbox":[64,42,880,48]}
+{"kind":"textbox","id":"sh/xwzy1wr2","slide":1,"text":"Quest 완료·실패·복구 이벤트는 하나의 Quest Event로 저장되고, 같은 응답이 기록 노트와 Lumi 상태를 갱신한다.","textPreview":"Quest 완료·실패·복구 이벤트는 하나의 Quest Event로 저장되고, 같은 응답이 기록 노트와 Lumi 상태를 갱신한다.","textChars":71,"textLines":1,"bbox":[66,96,980,36]}
+{"kind":"shape","id":"sh/cvqhsrqh","slide":1,"name":"react-handler","bbox":[64,188,166,164]}
+{"kind":"textbox","id":"sh/zy1g3698","slide":1,"name":"react-handler-title","text":"1. React Event","textPreview":"1. React Event","textChars":14,"textLines":1,"bbox":[78,200,138,28]}
+{"kind":"textbox","id":"sh/yx8zu18n","slide":1,"name":"react-handler-body","text":"위치  src/App.tsx\nIN   사용자 클릭 + quest state\nOUT  QuestEventRequest","textPreview":"위치  src/App.tsx | IN   사용자 클릭 + quest state | OUT  QuestEventRequest","textChars":64,"textLines":3,"bbox":[78,236,138,106]}
+{"kind":"shape","id":"sh/l0jy5gre","slide":1,"name":"api-adapter","bbox":[262,188,166,164]}
+{"kind":"textbox","id":"sh/kzahwbqt","slide":1,"name":"api-adapter-title","text":"2. API Adapter","textPreview":"2. API Adapter","textChars":14,"textLines":1,"bbox":[276,200,138,28]}
+{"kind":"textbox","id":"sh/f2xgr294","slide":1,"name":"api-adapter-body","text":"위치  questLogApi.ts\nIN   QuestEventRequest\nOUT  fetch POST/GET","textPreview":"위치  questLogApi.ts | IN   QuestEventRequest | OUT  fetch POST/GET","textChars":61,"textLines":3,"bbox":[276,236,138,106]}
+{"kind":"shape","id":"sh/e1ofih8j","slide":1,"name":"hono-route","bbox":[460,188,166,164]}
+{"kind":"textbox","id":"sh/sn6dwzep","slide":1,"name":"hono-route-title","text":"3. Hono Route","textPreview":"3. Hono Route","textChars":13,"textLines":1,"bbox":[474,200,138,28]}
+{"kind":"textbox","id":"sh/tofup4fa","slide":1,"name":"hono-route-body","text":"위치  server/routes\nIN   JSON body\nOUT  validated event","textPreview":"위치  server/routes | IN   JSON body | OUT  validated event","textChars":53,"textLines":3,"bbox":[474,236,138,106]}
+{"kind":"shape","id":"sh/6lovu9wj","slide":1,"name":"store-db","bbox":[658,188,166,164]}
+{"kind":"textbox","id":"sh/7mxcnux4","slide":1,"name":"store-db-title","text":"4. Store / DB","textPreview":"4. Store / DB","textChars":13,"textLines":1,"bbox":[672,200,138,28]}
+{"kind":"textbox","id":"sh/grqd0jel","slide":1,"name":"store-db-body","text":"위치  Supabase or memory\nIN   validated event\nOUT  QuestEventRecord","textPreview":"위치  Supabase or memory | IN   validated event | OUT  QuestEventRecord","textChars":65,"textLines":3,"bbox":[672,236,138,106]}
+{"kind":"shape","id":"sh/hszutof6","slide":1,"name":"manager-context","bbox":[856,188,166,164]}
+{"kind":"textbox","id":"sh/upovy9wv","slide":1,"name":"manager-context-title","text":"5. Context","textPreview":"5. Context","textChars":10,"textLines":1,"bbox":[870,200,138,28]}
+{"kind":"textbox","id":"sh/fqhcrexg","slide":1,"name":"manager-context-body","text":"위치  questEventStore\nIN   saved records\nOUT  mood, streak, line","textPreview":"위치  questEventStore | IN   saved records | OUT  mood, streak, line","textChars":62,"textLines":3,"bbox":[870,236,138,106]}
+{"kind":"shape","id":"sh/wvmtofeh","slide":1,"name":"react-render","bbox":[1054,188,166,164]}
+{"kind":"textbox","id":"sh/xwvuhkf2","slide":1,"name":"react-render-title","text":"6. React Render","textPreview":"6. React Render","textChars":15,"textLines":1,"bbox":[1068,200,138,28]}
+{"kind":"textbox","id":"sh/dsnalg7q","slide":1,"name":"react-render-body","text":"위치  Journal + Manager\nIN   event + context\nOUT  기록 노트, Lumi 상태","textPreview":"위치  Journal + Manager | IN   event + context | OUT  기록 노트, Lumi 상태","textChars":62,"textLines":3,"bbox":[1068,236,138,106]}
+{"kind":"shape","id":"sh/cre9sbq5","slide":1,"bbox":[230,270,32,0]}
+{"kind":"shape","id":"sh/bq5sj6p0","slide":1,"bbox":[428,270,32,0]}
+{"kind":"shape","id":"sh/qpwrq18f","slide":1,"bbox":[626,270,32,0]}
+{"kind":"shape","id":"sh/lg7apg72","slide":1,"bbox":[824,270,32,0]}
+{"kind":"shape","id":"sh/0fytwv6h","slide":1,"bbox":[1022,270,32,0]}
+{"kind":"textbox","id":"sh/zepsnqpw","slide":1,"name":"request-band","text":"POST /api/quest-events\n완료·실패·복구 이벤트를 저장한다. Hono route에서 계약을 검증하고, 유효할 때만 store 또는 Supabase로 넘긴다.","textPreview":"POST /api/quest-events | 완료·실패·복구 이벤트를 저장한다. Hono route에서 계약을 검증하고, 유효할 때만 store 또는 Supabase로 넘긴다.","textChars":96,"textLines":2,"bbox":[64,398,548,112]}
+{"kind":"textbox","id":"sh/ytwrulob","slide":1,"name":"query-band","text":"GET /api/quest-events + GET /api/manager-context\n새로고침 후에도 저장된 기록을 다시 조회하고, 최근 흐름을 Lumi 대사와 상태로 요약한다.","textPreview":"GET /api/quest-events + GET /api/manager-context | 새로고침 후에도 저장된 기록을 다시 조회하고, 최근 흐름을 Lumi 대사와 상태로 요약한다.","textChars":100,"textLines":2,"bbox":[668,398,548,112]}
+{"kind":"textbox","id":"sh/9k7at07y","slide":1,"name":"storage-mode-note","text":"핵심 포인트: 서버 mock은 DB 비용 때문이 아니라, Supabase 연결 전에도 FE→BE→Store→UI 한 바퀴를 실제 HTTP 요청으로 검증하기 위한 단계다.","textPreview":"핵심 포인트: 서버 mock은 DB 비용 때문이 아니라, Supabase 연결 전에도 FE→BE→Store→UI 한 바퀴를 실제 HTTP 요청으로 검증하기 위한 단계다.","textChars":94,"textLines":1,"bbox":[198,548,884,78]}
+{"kind":"textbox","id":"sh/8jyt0v6d","slide":1,"text":"현재 구현 기준: /api/health에서 storageMode가 supabase면 DB 저장, 아니면 memory store로 같은 계약을 검증","textPreview":"현재 구현 기준: /api/health에서 storageMode가 supabase면 DB 저장, 아니면 memory store로 같은 계약을 검증","textChars":81,"textLines":1,"bbox":[64,654,1060,24]}
+{"kind":"notes","id":"nt/5ch0fv","slide":1,"text":""}

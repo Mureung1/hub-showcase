@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { CanvasSpriteAnimator } from "./CanvasSpriteAnimator";
 import { getSpriteReviewAnimations, getSpriteReviewSet, spriteReviewSets, type SpriteReviewSetId } from "../data/spriteReviewAssets";
@@ -27,6 +27,12 @@ type AttachSide = WindowPetAttachSide;
 type PlacementMotion = WindowPetMotion;
 type PlacementDraft = WindowPetPlacementDraft;
 type PlacementDraftsByMotion = WindowPetPlacementDraftsByMotion;
+type MockWindowRect = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
 function withSpeed(animation: SpriteAnimationAsset, speed: number): SpriteAnimationAsset {
   return {
@@ -42,17 +48,20 @@ export function SpriteSheetReviewTool() {
   const [speed, setSpeed] = useState<(typeof speedOptions)[number]>(1);
   const [reviewSetId, setReviewSetId] = useState<SpriteReviewSetId>("pink-manager-stage-2-production-candidates");
   const [placementMotion, setPlacementMotion] = useState<PlacementMotion>("hanging");
-  const [attachSide, setAttachSide] = useState<AttachSide>("bottom");
+  const [attachSide, setAttachSide] = useState<AttachSide>(runtimeWindowPetSlots["below-quest"].edge);
   const [placementDrafts, setPlacementDrafts] = useState<PlacementDraftsBySet>(() => ({
     "pink-manager-stage-2": readWindowPetPlacementDrafts((key) => window.localStorage.getItem(key)),
     "pink-manager-stage-2-production-candidates": readWindowPetPlacementDrafts((key) => window.localStorage.getItem(key)),
   }));
   const [saveMessage, setSaveMessage] = useState("");
   const [showAnchor, setShowAnchor] = useState(true);
+  const mockWindowRef = useRef<HTMLElement | null>(null);
   const reviewSet = getSpriteReviewSet(reviewSetId);
   const currentSetPlacements = placementDrafts[reviewSetId] ?? defaultWindowPetPlacementDrafts;
   const currentPlacement = currentSetPlacements[placementMotion][attachSide];
   const mockWindow = placementMotion === "hiding" ? recoveryMockWindow : questMockWindow;
+  const [measuredMockWindow, setMeasuredMockWindow] = useState<MockWindowRect>(mockWindow);
+  const effectiveMockWindow = measuredMockWindow;
   const baseAnimations = useMemo(() => getSpriteReviewAnimations(reviewSetId), [reviewSetId]);
   const animations = useMemo(
     () => baseAnimations.map((animation) => withSpeed(animation, speed)),
@@ -60,11 +69,11 @@ export function SpriteSheetReviewTool() {
   );
   const selectedBaseAnimation = baseAnimations.find((animation) => animation.states[0] === placementMotion) ?? baseAnimations[0];
   const selectedAnimation = withSpeed(selectedBaseAnimation, speed);
-  const edgePoint = getMockEdgePoint(mockWindow, currentPlacement.edge);
+  const edgePoint = getMockEdgePoint(effectiveMockWindow, currentPlacement.edge);
   const resolvedPreviewPosition = resolveWindowPetPosition({
     placement: currentPlacement,
-    windowPosition: { x: mockWindow.x, y: mockWindow.y },
-    windowSize: { width: mockWindow.width, height: mockWindow.height },
+    windowPosition: { x: effectiveMockWindow.x, y: effectiveMockWindow.y },
+    windowSize: { width: effectiveMockWindow.width, height: effectiveMockWindow.height },
     frameWidth: selectedAnimation.frameWidth,
     anchor: selectedAnimation.anchor,
     baseSpriteSize: selectedAnimation.frameWidth * scale,
@@ -87,6 +96,39 @@ export function SpriteSheetReviewTool() {
       return `  ${motion}: {\n${sides}\n  },`;
     })
     .join("\n")}\n}`;
+
+  useLayoutEffect(() => {
+    const element = mockWindowRef.current;
+    if (!element) return undefined;
+
+    const stageRect = element.offsetParent instanceof HTMLElement
+      ? element.offsetParent.getBoundingClientRect()
+      : { left: 0, top: 0 };
+    const measure = () => {
+      const rect = element.getBoundingClientRect();
+      setMeasuredMockWindow({
+        x: rect.left - stageRect.left,
+        y: rect.top - stageRect.top,
+        width: rect.width,
+        height: rect.height,
+      });
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+
+    if (typeof ResizeObserver === "undefined") {
+      return () => window.removeEventListener("resize", measure);
+    }
+
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(element);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [mockWindow.x, mockWindow.y, mockWindow.width, mockWindow.height, placementMotion]);
 
   function updatePlacement(nextPlacement: Partial<PlacementDraft>) {
     setPlacementDrafts((drafts) => {
@@ -264,15 +306,18 @@ export function SpriteSheetReviewTool() {
       >
         <div className="sprite-placement-preview-stage">
           <section
-            className="sprite-placement-window-mock"
+            ref={mockWindowRef}
+            className={`sprite-placement-window-mock xp-window positioned ${placementMotion === "hiding" ? "recovery-window" : "quest-window"}`}
             style={
               {
                 "--mock-window-x": `${mockWindow.x}px`,
                 "--mock-window-y": `${mockWindow.y}px`,
                 "--mock-window-width": `${mockWindow.width}px`,
                 "--mock-window-height": `${mockWindow.height}px`,
+                "--window-x": `${mockWindow.x}px`,
+                "--window-y": `${mockWindow.y}px`,
               } as CSSProperties &
-                Record<"--mock-window-x" | "--mock-window-y" | "--mock-window-width" | "--mock-window-height", string>
+                Record<"--mock-window-x" | "--mock-window-y" | "--mock-window-width" | "--mock-window-height" | "--window-x" | "--window-y", string>
             }
           >
             <div className="sprite-placement-titlebar">
@@ -407,7 +452,7 @@ export function SpriteSheetReviewTool() {
   );
 }
 
-function getMockEdgePoint(mockWindow: typeof questMockWindow | typeof recoveryMockWindow, edge: AttachSide) {
+function getMockEdgePoint(mockWindow: MockWindowRect, edge: AttachSide) {
   if (edge === "top") return { x: mockWindow.x + mockWindow.width / 2, y: mockWindow.y };
   if (edge === "left") return { x: mockWindow.x, y: mockWindow.y + mockWindow.height / 2 };
   if (edge === "right") return { x: mockWindow.x + mockWindow.width, y: mockWindow.y + mockWindow.height / 2 };

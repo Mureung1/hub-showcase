@@ -77,7 +77,7 @@ export function CanvasSpriteAnimator({
 
       renderingContext.clearRect(0, 0, animation.frameWidth, animation.frameHeight);
 
-      if (step.mirrorX !== mirrorX) {
+      if (Boolean(step.mirrorX) !== mirrorX) {
         renderingContext.save();
         renderingContext.translate(animation.frameWidth, 0);
         renderingContext.scale(-1, 1);

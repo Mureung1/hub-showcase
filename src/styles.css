@@ -1195,6 +1195,42 @@ label {
   background: #ece9d8;
 }
 
+.xp-window-resize-handle {
+  position: absolute;
+  z-index: 4;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.xp-window-resize-handle.vertical {
+  left: 8px;
+  right: 8px;
+  bottom: 0;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.xp-window-resize-handle.horizontal {
+  top: 28px;
+  right: 0;
+  bottom: 8px;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.xp-window-resize-handle::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 6px;
+  height: 6px;
+  background:
+    linear-gradient(135deg, transparent 0 45%, #858585 46% 55%, transparent 56%),
+    linear-gradient(135deg, transparent 0 65%, #ffffff 66% 75%, transparent 76%);
+}
+
 .xp-button {
   min-width: 82px;
   min-height: 27px;
@@ -1217,6 +1253,66 @@ label {
   top: 58px;
   width: min(520px, calc(100vw - 40px));
   transform: translateX(-50%);
+}
+
+.manager-select-window {
+  top: 56px;
+  width: min(640px, calc(100vw - 40px));
+  transform: translateX(-50%);
+}
+
+.manager-select-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.manager-select-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.manager-select-card {
+  min-width: 0;
+  min-height: 190px;
+  display: grid;
+  grid-template-rows: 96px auto 1fr;
+  place-items: center;
+  gap: 5px;
+  padding: 8px;
+  color: #1f1f1f;
+  text-align: center;
+  background: #f8f6ee;
+  border: 1px solid #aca899;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #716f64;
+  font: inherit;
+}
+
+.manager-select-card.selected {
+  outline: 2px solid #316ac5;
+  outline-offset: -3px;
+  background: #fff8d6;
+}
+
+.manager-select-card .desktop-pet-sprite {
+  width: 96px;
+  height: 96px;
+}
+
+.manager-select-card .desktop-pet-sprite .canvas-sprite-animator {
+  width: 96px;
+  height: 96px;
+}
+
+.manager-select-card strong {
+  color: #113f75;
+  font-size: 13px;
+}
+
+.manager-select-card span {
+  color: #55514a;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .setup-window .xp-window-body {
@@ -1396,125 +1492,132 @@ label {
   height: 100%;
 }
 
-.interaction-object-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  pointer-events: none;
+.interaction-object-window {
+  min-width: 76px;
+  min-height: 76px;
 }
 
-.interaction-object {
-  position: absolute;
-  pointer-events: auto;
+.interaction-object-window .xp-window-body {
+  height: calc(100% - 26px);
+  padding: 0;
+  overflow: hidden;
 }
 
-.interaction-object-hitbox {
+.object-window-content {
+  position: relative;
   width: 100%;
   height: 100%;
-  padding: 0;
-  color: #16335c;
-  background: transparent;
-  border: 0;
-  font: inherit;
-}
-
-.interaction-object-hitbox span {
-  position: absolute;
-  left: 50%;
-  bottom: -18px;
-  transform: translateX(-50%);
-  padding: 1px 5px;
-  color: #ffffff;
-  background: rgba(49, 106, 197, 0.82);
-  border: 1px solid rgba(13, 63, 141, 0.9);
-  font-size: 11px;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-.interaction-object.ladder {
   background:
-    repeating-linear-gradient(180deg, transparent 0 16px, #f7e48b 16px 20px, transparent 20px 32px),
-    linear-gradient(90deg, #8b5a2b 0 6px, transparent 6px calc(100% - 6px), #8b5a2b calc(100% - 6px));
-  filter: drop-shadow(1px 2px 0 rgba(0, 0, 0, 0.25));
+    linear-gradient(180deg, rgba(192, 222, 255, 0.36), rgba(192, 222, 255, 0) 45%),
+    linear-gradient(180deg, #6eaf6b 0 28%, #4d934a 29% 100%);
+  image-rendering: pixelated;
 }
 
-.interaction-object.platform {
-  background:
-    linear-gradient(180deg, #fff5a8 0 35%, #d8a63f 36% 100%),
-    repeating-linear-gradient(90deg, rgba(117, 72, 26, 0.35) 0 12px, transparent 12px 24px);
-  border: 2px solid #7b4f18;
-  box-shadow: inset 1px 1px 0 #fff9d8, 2px 2px 0 rgba(0, 0, 0, 0.22);
-}
-
-.interaction-object.escape-edge {
-  width: 10px;
-  padding: 0;
-  background: repeating-linear-gradient(180deg, rgba(125, 210, 255, 0.2) 0 8px, rgba(255, 255, 255, 0.55) 8px 12px);
-  border: 1px dashed rgba(255, 255, 255, 0.65);
-  box-shadow: 0 0 10px rgba(104, 210, 255, 0.35);
-}
-
-.interaction-object.active {
-  filter: drop-shadow(0 0 5px rgba(255, 241, 118, 0.9));
-}
-
-.interaction-resize-controls {
-  position: absolute;
+.ladder-object-content {
   display: flex;
-  gap: 2px;
-  pointer-events: auto;
+  justify-content: center;
+  align-items: stretch;
+  padding: 6px 0 14px;
 }
 
-.interaction-resize-controls.vertical {
-  top: -22px;
-  left: 50%;
-  transform: translateX(-50%);
+.ladder-tile-stack {
+  display: grid;
+  grid-template-rows: 16px 1fr 16px;
+  width: 32px;
+  height: 100%;
+  image-rendering: pixelated;
 }
 
-.interaction-resize-controls.horizontal {
-  top: 50%;
-  right: -48px;
-  transform: translateY(-50%);
+.ladder-tile-cap {
+  width: 32px;
+  height: 16px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  user-select: none;
 }
 
-.interaction-resize-controls button {
-  width: 21px;
-  height: 21px;
-  padding: 0;
-  color: #ffffff;
-  background: #316ac5;
-  border: 1px solid #0d3f8d;
-  box-shadow: inset 1px 1px 0 #8db6f0, inset -1px -1px 0 #0b2f6b;
-  font-size: 11px;
-  line-height: 1;
+.ladder-tile-repeat {
+  min-height: 16px;
+  background-position: center top;
+  background-repeat: repeat-y;
+  background-size: 32px 16px;
 }
 
-.interaction-prototype-pet {
+.platform-object-content {
+  background:
+    linear-gradient(180deg, rgba(192, 222, 255, 0.42), rgba(192, 222, 255, 0) 52%),
+    linear-gradient(180deg, #8bd47d 0 56%, #4f9a4e 57% 100%);
+}
+
+.platform-tile-strip {
   position: absolute;
-  z-index: 13;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 0 rgba(34, 64, 23, 0.34));
+}
+
+.platform-tile-strip::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: -10px;
+  height: 6px;
+  background: repeating-linear-gradient(90deg, #ecff90 0 7px, #72d15c 7px 13px);
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+.platform-tile-cap {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  user-select: none;
+}
+
+.platform-tile-repeat {
+  min-width: 64px;
+  background-position: left top;
+  background-repeat: repeat-x;
+  background-size: 64px 48px;
+}
+
+.outside-pet-layer {
+  position: absolute;
+  z-index: 18;
   width: 96px;
   height: 96px;
   pointer-events: none;
+  transition: left 360ms steps(8), top 240ms steps(5);
+  filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.22));
 }
 
-.interaction-prototype-pet .canvas-sprite-animator {
+.outside-pet-layer.peek_from_edge {
+  z-index: 12;
+  transition: none;
+}
+
+.outside-pet-layer.walk_in {
+  transition: left 90ms linear;
+}
+
+.outside-pet-layer.free_roam.run {
+  transition: left 280ms steps(8), top 180ms steps(4);
+}
+
+.outside-pet-layer.free_roam.jump {
+  transition: left 280ms steps(6), top 180ms steps(4);
+}
+
+.outside-pet-layer .canvas-sprite-animator {
   width: 100%;
   height: 100%;
-}
-
-.interaction-prototype-pet.escape_window {
-  z-index: 18;
-}
-
-.window-pet-interaction.below-quest {
-  left: calc(var(--window-x) + 132px);
-  top: calc(var(--window-y) + 352px);
-}
-
-.window-pet-interaction.beside-recovery {
-  left: calc(var(--window-x) - 78px);
-  top: calc(var(--window-y) + 48px);
 }
 
 .quest-window {
@@ -2261,6 +2364,13 @@ label {
     rgb(2 6 16 / 22%);
 }
 
+.blink-focus-overlay.outside_transition .blink-focus-glow {
+  background:
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 30%), transparent 16%),
+    radial-gradient(circle at 48% 48%, rgb(255 224 112 / 22%), transparent 34%),
+    rgb(2 6 16 / 24%);
+}
+
 .blink-focus-overlay.end_day .blink-focus-glow {
   background:
     radial-gradient(circle at 50% 42%, rgb(46 86 145 / 16%), transparent 32%),
@@ -2952,6 +3062,29 @@ label {
 }
 
 @media (max-width: 720px) {
+  .manager-select-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-select-card {
+    min-height: 148px;
+    grid-template-columns: 84px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .manager-select-card .desktop-pet-sprite {
+    grid-row: 1 / 3;
+    width: 84px;
+    height: 84px;
+  }
+
+  .manager-select-card .desktop-pet-sprite .canvas-sprite-animator {
+    width: 84px;
+    height: 84px;
+  }
+
   .sprite-review-page {
     padding: 12px;
   }
