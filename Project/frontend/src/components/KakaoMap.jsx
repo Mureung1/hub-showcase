@@ -27,6 +27,7 @@ export default function KakaoMap({ latitude, longitude, onLocationChange, height
   const latestOptionsRef = useRef(null);
   const [error, setError] = useState('');
   const [addressQuery, setAddressQuery] = useState('');
+  const [searchMessage, setSearchMessage] = useState('');
   const editable = Boolean(onLocationChange);
   latestOptionsRef.current = { latitude, longitude, editable, onLocationChange };
 
@@ -70,18 +71,29 @@ export default function KakaoMap({ latitude, longitude, onLocationChange, height
     event.preventDefault();
     if (!addressQuery.trim()) return;
     loadKakaoMap().then((kakao) => {
-      const geocoder = new kakao.maps.services.Geocoder();
-      geocoder.addressSearch(addressQuery, (result, status) => {
-        if (status !== kakao.maps.services.Status.OK || !result[0]) {
-          setError('주소를 찾지 못했습니다. 다른 주소로 다시 검색해 주세요.');
-          return;
-        }
-        const latitude = Number(result[0].y);
-        const longitude = Number(result[0].x);
+      const moveToLocation = (item, address) => {
+        const latitude = Number(item.y);
+        const longitude = Number(item.x);
         const position = new kakao.maps.LatLng(latitude, longitude);
         markerRef.current?.setPosition(position);
         mapRef.current?.setCenter(position);
-        onLocationChange?.({ latitude, longitude, address: result[0].road_address?.address_name || result[0].address_name });
+        onLocationChange?.({ latitude, longitude, address });
+        setSearchMessage('선택한 위치로 핀을 옮겼습니다.');
+      };
+      const geocoder = new kakao.maps.services.Geocoder();
+      geocoder.addressSearch(addressQuery, (result, status) => {
+        if (status === kakao.maps.services.Status.OK && result[0]) {
+          moveToLocation(result[0], result[0].road_address?.address_name || result[0].address_name);
+          return;
+        }
+        const places = new kakao.maps.services.Places();
+        places.keywordSearch(addressQuery, (placeResults, placeStatus) => {
+          if (placeStatus === kakao.maps.services.Status.OK && placeResults[0]) {
+            moveToLocation(placeResults[0], placeResults[0].road_address_name || placeResults[0].address_name || placeResults[0].place_name);
+            return;
+          }
+          setSearchMessage('주소나 장소를 찾지 못했습니다. 도로명·지번 또는 실제 장소명으로 다시 검색해 주세요.');
+        });
       });
     }).catch((loadError) => setError(loadError.message));
   }
@@ -97,6 +109,7 @@ export default function KakaoMap({ latitude, longitude, onLocationChange, height
       <input value={addressQuery} onChange={(event) => setAddressQuery(event.target.value)} placeholder="주소로 위치 검색" />
       <button type="submit">검색</button>
     </form>}
+    {searchMessage && <p className="td-kakao-map__search-message">{searchMessage}</p>}
     <div ref={containerRef} className="td-kakao-map" style={{ height }} aria-label="카카오 픽업 위치 지도" />
   </div>;
 }

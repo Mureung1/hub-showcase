@@ -9,14 +9,18 @@ export default function CreatePostScreen({ onNavigate }) {
   const queryClient = useQueryClient();
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
+  const [imageUrls, setImageUrls] = useState([]);
+  const imageUrl = imageUrls[0] || '';
   const [category, setCategory] = useState('');
   const [targetCount, setTargetCount] = useState(2);
   const [totalPrice, setTotalPrice] = useState('');
   const [perPersonPrice, setPerPersonPrice] = useState(0);
   const [pickupPlace, setPickupPlace] = useState('센트럴파크 아파트, 메인 로비 (A동)');
+  const [pickupDetailAddress, setPickupDetailAddress] = useState('');
   const [pickupLocation, setPickupLocation] = useState({ latitude: 37.5665, longitude: 126.978 });
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [pickupTime, setPickupTime] = useState('');
+  const [paymentAccount, setPaymentAccount] = useState('');
   const [description, setDescription] = useState('');
 
   // Automatically calculate per-person price
@@ -42,11 +46,43 @@ export default function CreatePostScreen({ onNavigate }) {
     }
   };
 
+  const handleImageChange = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (imageUrls.length + files.length > 5) {
+      alert(`사진은 최대 5장까지 첨부할 수 있어요. 현재 ${imageUrls.length}장 선택됨`);
+      event.target.value = '';
+      return;
+    }
+    if (files.some((file) => !file.type.startsWith('image/'))) {
+      alert('이미지 파일만 첨부할 수 있어요.');
+      event.target.value = '';
+      return;
+    }
+    if (files.some((file) => file.size > 2 * 1024 * 1024)) {
+      alert('각 사진은 2MB 이하로 첨부해 주세요.');
+      event.target.value = '';
+      return;
+    }
+    Promise.all(files.map((file) => new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.readAsDataURL(file);
+    }))).then((newImages) => setImageUrls((current) => [...current, ...newImages]));
+    event.target.value = '';
+  };
+
+  const removeImage = (index) => setImageUrls((current) => current.filter((_, imageIndex) => imageIndex !== index));
+  const setRepresentativeImage = (index) => setImageUrls((current) => [current[index], ...current.filter((_, imageIndex) => imageIndex !== index)]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!title.trim()) {
       alert('제목을 입력해주세요.');
+      return;
+    }
+    if (imageUrls.length === 0) {
+      alert('상품 사진을 한 장 이상 첨부해 주세요.');
       return;
     }
     if (!category) {
@@ -59,6 +95,10 @@ export default function CreatePostScreen({ onNavigate }) {
     }
     if (!pickupTime) {
       alert('픽업 시간을 입력해주세요.');
+      return;
+    }
+    if (!paymentAccount.trim()) {
+      alert('입금 계좌를 입력해주세요.');
       return;
     }
     if (!description.trim()) {
@@ -84,12 +124,15 @@ export default function CreatePostScreen({ onNavigate }) {
       title: title.trim(),
       description: description.trim(),
       productUrl: url.trim() || 'http://example.com/product',
+      imageUrls,
       totalPrice: Number(totalPrice),
       targetParticipants: Number(targetCount),
       pickupLatitude: pickupLocation.latitude,
       pickupLongitude: pickupLocation.longitude,
       pickupPlace,
+      pickupDetailAddress: pickupDetailAddress.trim(),
       pickupTimeSlot: pickupTime,
+      paymentAccount: paymentAccount.trim(),
       category: categoryEnum,
       deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3), // default 3 days
     };
@@ -128,11 +171,24 @@ export default function CreatePostScreen({ onNavigate }) {
             {/* Photo Upload Area */}
             <div className="td-createpost-page__field">
               <label className="td-label-md td-createpost-page__label">상품 사진</label>
-              <div className="td-createpost-page__photo-uploader">
+              <div className="td-createpost-page__photo-uploader" onClick={() => document.getElementById('post-image')?.click()}>
+                <input id="post-image" className="td-createpost-page__file-input" type="file" accept="image/*" multiple onClick={(event) => event.stopPropagation()} onChange={handleImageChange} />
+                {imageUrl && <img className="td-createpost-page__photo-preview" src={imageUrl} alt="첨부한 상품 미리보기" />}
                 <span className="material-symbols-outlined">add_a_photo</span>
                 <p className="td-body-md">사진을 등록해주세요 (최대 5장)</p>
               </div>
             </div>
+
+              <div className="td-createpost-page__photo-list" aria-label="첨부한 사진 목록">
+                {imageUrls.map((currentImageUrl, index) => (
+                  <div className="td-createpost-page__photo-thumb" key={currentImageUrl}>
+                    <img src={currentImageUrl} alt={`첨부 사진 ${index + 1}`} />
+                    {index === 0 ? <span className="td-createpost-page__representative-badge">대표</span> : <button type="button" className="td-createpost-page__representative-btn" onClick={() => setRepresentativeImage(index)}>대표</button>}
+                    <button type="button" aria-label={`사진 ${index + 1} 삭제`} onClick={() => removeImage(index)}>×</button>
+                  </div>
+                ))}
+                {imageUrls.length < 5 && <button type="button" className="td-createpost-page__photo-add-btn" onClick={() => document.getElementById('post-image')?.click()}>+<span>{imageUrls.length}/5</span></button>}
+              </div>
 
             {/* Title */}
             <div className="td-createpost-page__field">
@@ -221,6 +277,19 @@ export default function CreatePostScreen({ onNavigate }) {
               </div>
             </div>
 
+            <div className="td-createpost-page__field">
+              <label className="td-label-md td-createpost-page__label" htmlFor="post-payment-account">입금 계좌</label>
+              <input
+                className="td-createpost-page__input"
+                id="post-payment-account"
+                placeholder="예: 카카오뱅크 3333-01-1234567"
+                type="text"
+                value={paymentAccount}
+                onChange={(e) => setPaymentAccount(e.target.value)}
+              />
+              <p className="td-body-sm">모집이 완료되면 참여자에게 이 계좌가 안내됩니다.</p>
+            </div>
+
             {/* Pickup Details Row */}
             <div className="td-createpost-page__row">
               <div className="td-createpost-page__field flex-grow">
@@ -245,6 +314,19 @@ export default function CreatePostScreen({ onNavigate }) {
                   onChange={(e) => setPickupTime(e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="td-createpost-page__field">
+              <label className="td-label-md td-createpost-page__label" htmlFor="post-pickup-detail-address">상세 주소</label>
+              <input
+                className="td-createpost-page__input"
+                id="post-pickup-detail-address"
+                placeholder="예: 101동 공동현관 앞 / 경비실 옆"
+                type="text"
+                value={pickupDetailAddress}
+                onChange={(event) => setPickupDetailAddress(event.target.value)}
+              />
+              <p className="td-body-sm">지도 주소 외에 정확한 만남 장소나 동·호수 안내를 적어 주세요.</p>
             </div>
 
             {/* Description */}
