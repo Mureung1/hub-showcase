@@ -167,7 +167,7 @@ export default function MeetingDetailPage() {
   if (loading) {
     return (
       <>
-        <PageHeader title="모임 정보를 불러오는 중" back />
+        <PageHeader title="모임 정보를 불러오는 중" />
         <Card variant="solid">
           <p style={{ color: 'var(--ink-mute)', fontSize: 13.5 }}>잠시만 기다려 주세요.</p>
         </Card>
@@ -182,7 +182,7 @@ export default function MeetingDetailPage() {
     const isNotFound = errorCode === 'NOT_FOUND'
     return (
       <>
-        <PageHeader title={isNotFound ? '모임을 찾을 수 없어요' : '일시적인 오류예요'} back />
+        <PageHeader title={isNotFound ? '모임을 찾을 수 없어요' : '일시적인 오류예요'} />
         <Card variant="solid">
           <p style={{ color: 'var(--ink-mute)', fontSize: 13.5 }}>
             {isNotFound ? '삭제되었거나 존재하지 않는 모임이에요.' : '잠시 후 다시 시도해주세요.'}
@@ -207,7 +207,7 @@ export default function MeetingDetailPage() {
 
   return (
     <>
-      <PageHeader title={meeting.type === 'flash' ? '번개모임' : '소모임'} eyebrow={meeting.category} back />
+      <PageHeader title={meeting.type === 'flash' ? '번개모임' : '소모임'} eyebrow={meeting.category} />
 
       <Card variant="solid">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>

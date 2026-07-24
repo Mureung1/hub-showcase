@@ -63,7 +63,7 @@ export default function MeetingEditPage() {
   if (!isLoggedIn) {
     return (
       <>
-        <PageHeader title="모임 수정" back />
+        <PageHeader title="모임 수정" />
         <Card variant="dark">
           <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>수정하려면 먼저 로그인해주세요.</p>
           <PillButton to="/login" variant="accent" block>로그인하러 가기</PillButton>
@@ -75,7 +75,7 @@ export default function MeetingEditPage() {
   if (loadError) {
     return (
       <>
-        <PageHeader title="모임 수정" back />
+        <PageHeader title="모임 수정" />
         <Card variant="dark">
           <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>모임을 불러오지 못했어요. {loadError}</p>
         </Card>
@@ -86,7 +86,7 @@ export default function MeetingEditPage() {
   if (!meeting) {
     return (
       <>
-        <PageHeader title="모임 수정" back />
+        <PageHeader title="모임 수정" />
         <Card variant="dark">
           <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>불러오는 중…</p>
         </Card>
@@ -100,7 +100,7 @@ export default function MeetingEditPage() {
   if (!isHost || isEnded) {
     return (
       <>
-        <PageHeader title="모임 수정" back />
+        <PageHeader title="모임 수정" />
         <Card variant="dark">
           <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>
             {!isHost ? '이 모임을 수정할 권한이 없어요.' : '종료되었거나 취소된 모임은 수정할 수 없어요.'}
@@ -119,7 +119,7 @@ export default function MeetingEditPage() {
 
   return (
     <>
-      <PageHeader title="모임 수정" eyebrow="모임 정보 수정" back />
+      <PageHeader title="모임 수정" eyebrow="모임 정보 수정" />
       <MeetingForm
         initialValues={meetingToFormValues(meeting)}
         disabled={disabled}

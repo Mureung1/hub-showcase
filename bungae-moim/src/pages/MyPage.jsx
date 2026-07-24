@@ -46,7 +46,7 @@ export default function MyPage() {
   if (!isLoggedIn) {
     return (
       <>
-        <PageHeader title="마이페이지" back />
+        <PageHeader title="마이페이지" />
         <Card variant="dark">
           <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>로그인하면 내가 등록/참여한 모임을 볼 수 있어요.</p>
           <PillButton to="/login" variant="accent" block>

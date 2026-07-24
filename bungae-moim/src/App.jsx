@@ -1,7 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { AppStateProvider, useAppState } from './context/AppStateContext.jsx'
-import Atmosphere from './components/Atmosphere.jsx'
-import BottomNav from './components/BottomNav.jsx'
+import SiteHeader from './components/SiteHeader.jsx'
 import HomePage from './pages/HomePage.jsx'
 import MeetingListPage from './pages/MeetingListPage.jsx'
 import MeetingDetailPage from './pages/MeetingDetailPage.jsx'
@@ -19,7 +18,7 @@ function AppContent() {
 
   return (
     <div className="app-shell">
-      <Atmosphere />
+      <SiteHeader minimal={needsBirthDate} />
       <div className="page">
         {needsBirthDate ? (
           <BirthDateGate />
@@ -35,7 +34,6 @@ function AppContent() {
           </Routes>
         )}
       </div>
-      <BottomNav />
     </div>
   )
 }

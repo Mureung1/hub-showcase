@@ -14,7 +14,7 @@ export default function MeetingCreatePage() {
   if (!isLoggedIn) {
     return (
       <>
-        <PageHeader title="모임 등록" back />
+        <PageHeader title="모임 등록" />
         <Card variant="dark">
           <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>모임을 등록하려면 먼저 로그인해주세요.</p>
           <PillButton to="/login" variant="accent" block>
@@ -27,7 +27,7 @@ export default function MeetingCreatePage() {
 
   return (
     <>
-      <PageHeader title="모임 등록" eyebrow="새 모임 만들기" back />
+      <PageHeader title="모임 등록" eyebrow="새 모임 만들기" />
       <MeetingForm
         initialValues={defaultFormValues()}
         submitLabel="모임 등록하기"
