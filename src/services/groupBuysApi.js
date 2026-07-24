@@ -18,6 +18,7 @@ export const getGroupBuy = async (id) => (await request(`/api/group-buys/${id}`)
 export const createGroupBuy = async (input) => (await request("/api/group-buys", jsonOptions("POST", input))).groupBuy;
 export const updateGroupBuy = async (id, input) => (await request(`/api/group-buys/${id}`, jsonOptions("PATCH", input))).groupBuy;
 export const joinGroupBuy = async (id, input = {}) => (await request(`/api/group-buys/${id}/join`, jsonOptions("POST", input))).groupBuy;
+export const cancelGroupBuyParticipation = async (id) => (await request(`/api/group-buys/${id}/join`, { method: "DELETE" })).groupBuy;
 export const votePickup = async (id, candidate) => (await request(`/api/group-buys/${id}/vote`, jsonOptions("POST", { candidate }))).groupBuy;
 export const advanceStage = async (id) => (await request(`/api/group-buys/${id}/stage`, { method: "PATCH" })).groupBuy;
 export const finalizePickup = async (id) => (await request(`/api/group-buys/${id}/finalize-pickup`, { method: "PATCH" })).groupBuy;

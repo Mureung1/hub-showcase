@@ -118,6 +118,16 @@ export function createGroupBuyRepository(supabase) {
       return this.findById(id);
     },
 
+    async cancelParticipation(id, userId) {
+      const { error } = await supabase.rpc("cancel_group_buy_participation", {
+        participant_user_id: userId,
+        target_group_buy_id: id,
+      });
+
+      if (error) throw error;
+      return this.findById(id);
+    },
+
     async vote(id, userId, candidate) {
       const { error } = await supabase.rpc("vote_group_buy", {
         selected_candidate: candidate,
