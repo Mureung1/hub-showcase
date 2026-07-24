@@ -86,6 +86,24 @@ abstract interface class QuestRepository {
   /// (중복 완료 시 재지급 금지 요건 때문에 여기서 지급하면 안 된다).
   Future<void> setStatus(String uid, String questId, QuestStatus status);
 
+  /// 여러 퀘스트를 **한 번에 원자적으로** 보관함으로 옮긴다(`archived = true`, 2단계).
+  ///
+  /// "완료 = 보관함으로 이동" 구조의 쓰기 경로다. 대상 집합은 **화면**이
+  /// [resolveArchiveOnComplete]로 계산하고(저장소는 규칙을 모른다 — [deleteQuests]와
+  /// 같은 관심사 분리), 저장소는 "이 ID들을 원자적으로 `archived: true`로 만든다"만
+  /// 책임진다.
+  ///
+  /// ⚠️ **[completeQuest] 지급 경로를 절대 건드리지 않는다.** 완료·보상은 이미 커밋된
+  /// 뒤, 화면이 **별도 쓰기**로 이 메서드를 부른다. 지급 트랜잭션에 보관 로직을 섞으면
+  /// 보관 실패가 지급을 롤백하거나 그 반대가 된다 — 계측 로그를 트랜잭션 밖에 두는
+  /// 것과 같은 원칙이다.
+  ///
+  /// 보장 두 가지:
+  /// - **원자성**: 전부 보관되거나 전부 실패한다(목표 폴더가 "절반만 옮겨진" 중간
+  ///   상태가 없다). Firestore는 batch, InMemory는 스테이징 후 스트림 **1회** 방출.
+  /// - **없는 ID·빈 집합은 조용히 통과한다**(멱등 — [deleteQuests]와 같은 계약).
+  Future<void> archiveQuests(String uid, Set<String> questIds);
+
   /// 완료 처리 + 보상 지급을 **한 트랜잭션으로** 수행한다 (3주차).
   ///
   /// 완료는 문서 두 개를 건드린다 — 퀘스트(`status`·`completedAt`·`rewardedAt`)와

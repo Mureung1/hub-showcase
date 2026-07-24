@@ -6,23 +6,23 @@ import '../../core/error/app_failure.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/widgets/reward_chip.dart';
+import '../../core/widgets/quest_card.dart';
 import '../../core/widgets/state_views.dart';
-import '../../models/achievement.dart';
+import '../../models/quest_group.dart';
 import '../../providers/providers.dart';
+import '../quest/widgets/goal_group_section.dart';
 import '../shell/tab_scroll_registry.dart';
 
-/// 보관함 — 완료·인증한 도전이 쌓이는 성취 타임라인.
+/// 보관함 — 끝낸 일이 쌓이는 곳.
 ///
-/// 보상 루프의 결과가 처음으로 사용자에게 이력으로 보이는 화면이다
-/// (plan.md 성공 지표 「누적 완료 퀘스트 수」). 데이터는 [completeQuest]
-/// 트랜잭션이 남긴 `achievements` 기록이고, 이 화면은 **읽기만** 한다.
-/// one-step-design `screens.md` "성취 보관함" 스펙을 따른다.
+/// "오늘의 퀘스트 = 할 일, 보관함 = 끝낸 일" 구조(2단계). 완료돼 보관된
+/// (`archived == true`) 퀘스트를 **오늘의 퀘스트와 같은 폴더 그룹뷰**로 보여 준다 —
+/// [archivedGroupsProvider] → [groupQuestsByGoal] → [GoalGroupSection]을 그대로
+/// 재사용한다. 다른 점은 딱 하나: **완료 토글이 없는 보기 전용 카드**다(단방향 이동
+/// 이라 여기서 되돌리지 않는다).
 ///
-/// 상단은 완료 수·연속 일수 요약(2분할), 아래는 최신순 타임라인 카드다.
-/// 사진은 목록에서 썸네일을 읽지 않고 **유무 뱃지만** 보인다 — proof 문서는
-/// questId당 별도라 목록에서 N번 읽으면 비싸다(3주차에 문서를 분리한 이유).
-/// (탭하면 상세로 열어 그때 proof를 읽는 방식은 이번 범위 밖이다.)
+/// 이 화면은 **읽기만** 한다. 목표는 통째로, 직접 등록은 낱개로 옮겨져 오지만 화면은
+/// 어느 쪽인지 구분할 필요가 없다 — 그룹뷰가 폴더/직접 등록을 이미 갈라 준다.
 class StorageScreen extends ConsumerStatefulWidget {
   const StorageScreen({super.key});
 
@@ -35,30 +35,41 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
   @override
   int get tabIndex => 3;
 
+  /// 그룹별 펼침 상태 (키 = [QuestGroup.key]).
+  ///
+  /// 보관함은 이미 끝난 것이라 **기본 펼침**이다 — 사용자가 해낸 것을 바로 보여 준다.
+  /// 오늘의 퀘스트는 "완료된 그룹을 접어" 진행 중인 걸 위로 올리지만, 여기선 모두
+  /// 완료라 접을 이유가 없다. 값은 처음 그릴 때 확정하고 그 뒤엔 사용자 조작만 바꾼다.
+  final Map<String, bool> _expanded = {};
+
+  bool _isExpanded(QuestGroup group) =>
+      _expanded.putIfAbsent(group.key, () => true);
+
   @override
   Widget build(BuildContext context) {
-    final achievementsAsync = ref.watch(achievementsProvider);
-    // 스트릭은 요약 부가 수치다. 그것 때문에 타임라인 전체가 오류·로딩 화면이 되면
-    // 사용자는 완료 이력을 잃은 걸로 본다. 못 읽으면 0으로 떨어뜨리고 타임라인은
-    // 그대로 보여 준다(questGroupsProvider가 goal 실패를 삼키는 것과 같은 원칙).
+    final groupsAsync = ref.watch(archivedGroupsProvider);
+    // 스트릭은 요약 부가 수치다. 못 읽어도 0으로 떨어뜨리고 목록은 그대로 보여 준다
+    // (questGroupsProvider가 goal 실패를 삼키는 것과 같은 원칙).
     final streak = ref.watch(currentUserProvider).valueOrNull?.streak ?? 0;
 
     return Scaffold(
       body: SafeArea(
-        child: achievementsAsync.when(
+        child: groupsAsync.when(
           loading: () => const _StorageSkeleton(),
           error: (error, _) => ErrorView(
             message: error is AppFailure ? error.message : '보관함을 불러오지 못했어요.',
-            onRetry: () => ref.invalidate(sessionProvider),
+            onRetry: () => ref.invalidate(questListProvider),
           ),
-          data: (achievements) => _content(achievements, streak),
+          data: (groups) => _content(groups, streak),
         ),
       ),
     );
   }
 
-  Widget _content(List<Achievement> achievements, int streak) {
+  Widget _content(List<QuestGroup> groups, int streak) {
     final theme = Theme.of(context);
+    // 보관된 퀘스트 총합 = 지금까지 해낸 도전 수(폴더 안 자식·자동완료 원본 포함).
+    final completedCount = groups.fold<int>(0, (sum, g) => sum + g.total);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,28 +87,25 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
               Text('보관함', style: theme.textTheme.headlineLarge),
               AppSpacing.gapXs,
               Text(
-                '지금까지 해낸 도전을 모아 뒀어요.',
+                '끝낸 도전을 모아 뒀어요.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               AppSpacing.gapMd,
-              _SummaryCard(
-                completedCount: achievements.length,
-                streak: streak,
-              ),
+              _SummaryCard(completedCount: completedCount, streak: streak),
             ],
           ),
         ),
         AppSpacing.gapMd,
         Expanded(
-          child: achievements.isEmpty
+          child: groups.isEmpty
               ? const EmptyView(
-                  title: '아직 완료한 도전이 없어요',
-                  message: '퀘스트를 완료하면 여기에 하나씩 쌓여요.',
+                  title: '아직 끝낸 도전이 없어요',
+                  message: '퀘스트를 완료하면 여기로 하나씩 옮겨져요.',
                   emoji: '🗂️',
                 )
-              : ListView.separated(
+              : ListView.builder(
                   controller: scrollController,
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.screenH,
@@ -105,10 +113,24 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
                     AppSpacing.screenH,
                     AppSpacing.xl,
                   ),
-                  itemCount: achievements.length,
-                  separatorBuilder: (_, _) => AppSpacing.gapSm,
-                  itemBuilder: (context, index) =>
-                      _AchievementCard(achievement: achievements[index]),
+                  itemCount: groups.length,
+                  itemBuilder: (context, index) {
+                    final group = groups[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: GoalGroupSection(
+                        group: group,
+                        expanded: _isExpanded(group),
+                        onToggleExpanded: () => setState(() {
+                          _expanded[group.key] = !_isExpanded(group);
+                        }),
+                        // 보기 전용 카드 — 완료 토글도 `⋮` 메뉴도 없다. 보관함은
+                        // 끝낸 일을 되돌리지 않으므로 상호작용을 걷어낸다.
+                        questBuilder: (context, node) =>
+                            QuestCard(quest: node.quest),
+                      ),
+                    );
+                  },
                 ),
         ),
       ],
@@ -193,136 +215,6 @@ class _Stat extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// 타임라인 카드 하나 — 흰 카드 + 좌측 그린 accent 보더(성취 = 완료·성장).
-class _AchievementCard extends StatelessWidget {
-  const _AchievementCard({required this.achievement});
-
-  final Achievement achievement;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: AppRadius.mdAll,
-        color: theme.colorScheme.surfaceContainerLowest,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        // 좌측 accent 세로 보더 (components.md, QuestCard와 같은 패턴).
-        gradient: const LinearGradient(
-          colors: [
-            AppColors.primary,
-            AppColors.primary,
-            Colors.transparent,
-          ],
-          stops: [0, 0.012, 0.012],
-        ),
-        boxShadow: AppColors.softShadow,
-      ),
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.md,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Symbols.calendar_today,
-                size: 14,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              AppSpacing.gapWXs,
-              Text(
-                _formatDate(achievement.completedAt),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-          AppSpacing.gapSm,
-          Text(
-            achievement.questTitle.isEmpty
-                ? '제목 없는 도전'
-                : achievement.questTitle,
-            style: theme.textTheme.bodyLarge,
-          ),
-          AppSpacing.gapSm,
-          Row(
-            children: [
-              // 코인·XP — 노랑은 RewardChip 안에 갇혀 있다(색 역할 규칙).
-              RewardChip(reward: achievement.reward),
-              const Spacer(),
-              ..._badges(context),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 인증 뱃지 — 메모/사진이 있으면 각각 아이콘으로 알린다.
-  List<Widget> _badges(BuildContext context) {
-    final badges = <Widget>[];
-    if (achievement.memo != null) {
-      badges.add(const _Badge(icon: Symbols.edit_note, label: '메모'));
-    }
-    if (achievement.hasPhoto) {
-      if (badges.isNotEmpty) badges.add(AppSpacing.gapWSm);
-      badges.add(const _Badge(icon: Symbols.photo_camera, label: '사진'));
-    }
-    return badges;
-  }
-
-  /// 날짜 라벨 `yyyy.MM.dd`. 완료 시각이 없으면(구버전·깨진 기록) 폴백 문구.
-  String _formatDate(DateTime? at) {
-    if (at == null) return '날짜 미상';
-    final month = at.month.toString().padLeft(2, '0');
-    final day = at.day.toString().padLeft(2, '0');
-    return '${at.year}.$month.$day';
-  }
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: AppRadius.fullAll,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: theme.colorScheme.secondary),
-          AppSpacing.gapWXs,
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.secondary,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -28,6 +28,7 @@ class Quest {
     this.completedAt,
     this.rewardedAt,
     this.memo,
+    this.archived = false,
   });
 
   /// 저장된 문서를 읽는다. 필수 필드가 없으면 [FormatException].
@@ -49,6 +50,9 @@ class Quest {
       completedAt: asDateTime(data['completedAt']),
       rewardedAt: asDateTime(data['rewardedAt']),
       memo: asNullableString(data['memo']),
+      // 하위호환: 이 필드 도입 전 문서엔 값이 없어(null) `asBool`이 false로 떨어진다.
+      // 관대 파싱 — 값이 이상해도 목록을 죽이지 않는다(나머지 필드와 같은 계약).
+      archived: asBool(data['archived']),
     );
   }
 
@@ -126,6 +130,14 @@ class Quest {
   /// "공백만 입력했는데 인증으로 쳐 주는" 구멍을 모델 경계에서 미리 막는다.
   final String? memo;
 
+  /// **보관함으로 옮겨졌는가** (2단계).
+  ///
+  /// "오늘의 퀘스트 = 할 일, 보관함 = 끝낸 일" 구조를 만드는 단 하나의 플래그다.
+  /// 완료 즉시(직접 등록) 또는 목표 전체 완료 시(폴더 통째로) `true`가 되며,
+  /// **되돌리지 않는다**(단방향). 새 화면·새 데이터 구조를 만들지 않고 이 플래그와
+  /// 필터 분기만으로 오늘의 퀘스트/보관함을 가른다.
+  final bool archived;
+
   /// 인증 메모를 남긴 퀘스트인가.
   bool get isVerified => memo != null;
 
@@ -156,6 +168,9 @@ class Quest {
     if (completedAt != null) 'completedAt': completedAt!.toIso8601String(),
     if (rewardedAt != null) 'rewardedAt': rewardedAt!.toIso8601String(),
     if (memo != null) 'memo': memo,
+    // true일 때만 기록한다 — 기본값(false)은 필드를 아예 두지 않아, 기존 문서와
+    // 스키마가 어긋나지 않고 하위호환 파싱(asBool 기본 false)과도 정확히 맞물린다.
+    if (archived) 'archived': true,
   };
 
   Quest copyWith({
@@ -170,6 +185,7 @@ class Quest {
     DateTime? completedAt,
     DateTime? rewardedAt,
     String? memo,
+    bool? archived,
   }) {
     return Quest(
       id: id,
@@ -184,6 +200,7 @@ class Quest {
       completedAt: completedAt ?? this.completedAt,
       rewardedAt: rewardedAt ?? this.rewardedAt,
       memo: memo ?? this.memo,
+      archived: archived ?? this.archived,
     );
   }
 
@@ -213,6 +230,8 @@ class Quest {
           : null,
       rewardedAt: rewardedAt,
       memo: memo,
+      // 보관 여부는 상태 전이와 무관하게 보존한다(단방향 플래그).
+      archived: archived,
     );
   }
 
@@ -230,7 +249,8 @@ class Quest {
       other.createdAt == createdAt &&
       other.completedAt == completedAt &&
       other.rewardedAt == rewardedAt &&
-      other.memo == memo;
+      other.memo == memo &&
+      other.archived == archived;
 
   @override
   int get hashCode => Object.hash(
@@ -246,11 +266,13 @@ class Quest {
     completedAt,
     rewardedAt,
     memo,
+    archived,
   );
 
   @override
   String toString() =>
       'Quest($id, "$title", ${difficulty.name}, ${status.name}'
       '${isRewarded ? ', rewarded' : ''}'
-      '${isVerified ? ', verified' : ''})';
+      '${isVerified ? ', verified' : ''}'
+      '${archived ? ', archived' : ''})';
 }

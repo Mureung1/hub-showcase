@@ -191,6 +191,24 @@ class FirestoreQuestRepository implements QuestRepository {
     );
   }
 
+  @override
+  Future<void> archiveQuests(String uid, Set<String> questIds) {
+    return guard(() async {
+      if (questIds.isEmpty) return;
+      // 원자성: batch는 전부 보관되거나 전부 실패한다(deleteQuests와 대칭).
+      // 목표 폴더가 "절반만 옮겨진" 중간 상태가 없다.
+      // ⚠️ set(merge:true)가 아니라 update다 — 완료·보상으로 이미 존재하는 문서에
+      // archived 플래그만 켜고, 다른 필드(rewardedAt·memo·status)는 손대지 않는다.
+      // 없는 문서 ID가 섞이면 update가 실패하지만, 보관 대상은 언제나 방금 완료된
+      // (=존재가 보장된) 퀘스트라 그 경로가 발생하지 않는다.
+      final batch = _db.batch();
+      for (final id in questIds) {
+        batch.update(_db.doc(FirestorePaths.quest(uid, id)), {'archived': true});
+      }
+      await batch.commit();
+    });
+  }
+
   /// 완료 + 보상 지급을 한 트랜잭션으로 (3주차 핵심 보상 루프).
   ///
   /// 트랜잭션인 이유: 퀘스트 문서와 사용자 문서를 함께 바꾸기 때문이다.

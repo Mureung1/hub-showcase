@@ -235,8 +235,25 @@ class InMemoryQuestRepository implements QuestRepository {
     _check();
     final quest = _quests[questId];
     if (quest == null) throw const NotFoundFailure();
-    // withStatus가 완료 해제 시 completedAt까지 지운다.
+    // withStatus가 완료 해제 시 completedAt까지 지운다(archived는 보존).
     _quests[questId] = quest.withStatus(status);
+    _controller.add(null);
+  }
+
+  @override
+  Future<void> archiveQuests(String uid, Set<String> questIds) async {
+    _check();
+    // 빈 집합은 아무 일도 하지 않는다 — 헛방출을 만들지 않는다(deleteQuests와 대칭).
+    if (questIds.isEmpty) return;
+    // 원자성: 전부 스테이징한 뒤 **한 번만** 방출한다. 한 건씩 반영하면 방출이
+    // 여러 번이 되고 그 중간 프레임은 "목표 폴더가 절반만 보관된" 목록이다.
+    // 없는 ID는 조용히 건너뛴다(보관은 멱등). rewardedAt·memo·상태는 건드리지 않고
+    // archived만 켠다 — 지급·완료 이력과 무관한 순수 이동이다.
+    for (final id in questIds) {
+      final quest = _quests[id];
+      if (quest == null) continue;
+      _quests[id] = quest.copyWith(archived: true);
+    }
     _controller.add(null);
   }
 

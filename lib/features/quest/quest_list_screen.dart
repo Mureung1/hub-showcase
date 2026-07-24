@@ -21,6 +21,7 @@ import '../home/widgets/evolve_dialog.dart';
 import '../home/widgets/level_up_dialog.dart';
 import '../shell/tab_scroll_registry.dart';
 import 'decompose_notifier.dart';
+import 'widgets/goal_complete_dialog.dart';
 import 'widgets/goal_group_section.dart';
 import 'widgets/quest_complete_dialog.dart';
 import 'widgets/quest_delete_dialog.dart';
@@ -74,7 +75,7 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
   bool _isExpanded(QuestGroup group) =>
       _expanded.putIfAbsent(group.key, () => !group.isAllDone);
 
-  Future<void> _toggleDone(Quest quest, bool done) async {
+  Future<void> _toggleDone(Quest quest, bool done, QuestGroup group) async {
     // 중복 실행 방지 — 이미 흐름을 타고 있는 퀘스트의 추가 탭은 무시한다.
     // (시트가 뜨기 전 한 프레임 사이의 연타도 여기서 걸린다.)
     if (_pending.contains(quest.id)) return;
@@ -107,6 +108,8 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
     if (mounted) setState(() => _completing.add(quest.id));
 
     CompleteResult? result;
+    // 이번 완료로 목표(폴더)가 통째로 보관됐는가. 완수 연출의 트리거다.
+    var goalCompleted = false;
     try {
       // sessionProvider는 로그인 완료된 uid를 보장한다.
       // currentUidProvider를 read하면 AsyncLoading이라 uid가 null로 나온다.
@@ -133,13 +136,38 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
             AnalyticsEvent.questCompleted(at: DateTime.now(), questId: quest.id),
           );
         }
+
+        // ── 완료 = 보관함으로 이동 (2단계) ──
+        // 지급 트랜잭션이 **성공한 뒤 별도 쓰기**로 처리한다. 지급 경로
+        // (completeQuest)에는 손대지 않는다 — 보관 실패가 지급을 롤백하거나 그 반대가
+        // 되면 안 된다(계측 로그를 트랜잭션 밖에 두는 것과 같은 원칙).
+        //
+        // 무엇을 자동완료·보관할지는 순수 함수([resolveArchiveOnComplete])가 정한다.
+        // 목록은 보관된 것까지 포함한 전체를 넘긴다 — 직접 등록 재분해에서 먼저 완료돼
+        // 이미 보관된 자식도 원본 자동완료 판정의 근거다. 방금 완료한 quest는 스트림
+        // 반영이 한 프레임 늦을 수 있으나, 함수가 completedQuestId를 done으로 간주하므로
+        // 판정이 어긋나지 않는다.
+        final all = ref.read(questListProvider).valueOrNull;
+        if (all != null) {
+          final plan = resolveArchiveOnComplete(all, quest.id);
+          // 재분해 원본 자동완료 — 자식을 다 끝낸 stuck 원본을 done으로 민다.
+          // **보상 없이** setStatus로만 처리한다(자식 완료로 이미 지급됐다).
+          for (final id in plan.autoCompleteIds) {
+            await repo.setStatus(uid, id, QuestStatus.done);
+          }
+          // 완료된 낱개(직접 등록) 또는 목표 폴더 전체를 원자적으로 보관한다.
+          await repo.archiveQuests(uid, plan.archiveIds);
+          goalCompleted = plan.goalCompleted;
+        }
       } else {
         // 완료 해제: 상태만 되돌린다. 지급 이력(rewardedAt)은 해제해도 남으므로,
         // 다시 완료해도 보상은 재지급되지 않는다.
         await repo.setStatus(uid, quest.id, QuestStatus.todo);
       }
     } on AppFailure catch (failure) {
-      // 트랜잭션이 커밋되지 않았으므로 서버 상태는 그대로다(자동 롤백).
+      // 트랜잭션이 커밋되지 않았으므로 서버 상태는 그대로다(자동 롤백). 보관 쓰기가
+      // 실패한 경우엔 보상은 이미 지급됐고 퀘스트만 오늘 목록에 done인 채 남는다 —
+      // 다음 완료·재실행에서 다시 보관을 시도할 수 있어 데이터 손실은 없다.
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -153,55 +181,58 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
 
     if (!mounted) return;
 
-    // 여기 도달했으면 성공 경로다(실패는 catch에서 이미 return). result가 null인
-    // 경우는 두 갈래이고, 둘을 반드시 구분한다:
-    //   (a) done == true  + result == null  → 완료를 눌렀는데 지급이 없었다
-    //       = 이미 보상 받은 퀘스트(재완료). 상태는 done으로 바뀌어(체크·밑줄 켜짐)
-    //         completeQuest가 정상 처리했지만, rewardedAt 가드가 코인을 재지급하지 않았다.
-    //         무반응이 아니라 왜 축하가 없는지를 스낵바로 알린다.
+    // result가 null인 경우는 두 갈래다:
+    //   (a) done == true  + result == null  → 재완료(이미 보상 받음). 목표를 이번에
+    //       완수했다면 스낵바 대신 완수 연출로 축하한다(아래 goalCompleted 분기).
+    //       완수가 아니면 "왜 축하가 없는지"를 스낵바로 알린다.
     //   (b) done == false + result == null  → 완료 해제. 원래 지급이 없는 동작이니
-    //       조용히 통과한다(안내를 띄우면 오히려 오탐이다).
-    // 축하 다이얼로그와 이 안내는 상호배타 — result가 있으면 축하, 없으면 여기서 끝.
-    if (result == null) {
-      if (done) {
-        ScaffoldMessenger.of(
+    //       조용히 통과한다.
+    if (result != null) {
+      // 완료 → (레벨업) → 진화 순으로 이어 띄운다. 각 단계는 await로 순차 진행되고,
+      // 사이마다 mounted를 확인해 연출 도중 화면을 떠나도 크래시가 없다(기존 패턴).
+      // 표시값은 전부 저장소가 준 결과 그대로다 — 화면이 재계산하지 않는다.
+      await showQuestCompleteDialog(
+        context,
+        questTitle: quest.title,
+        reward: result.reward,
+        // 보너스 포함 여부·절삭액은 지급한 쪽이 안다. 총액에서 역산하지 않는다.
+        verified: memoResult?.isVerified ?? false,
+        cutCoin: result.cutCoin,
+      );
+
+      // 레벨이 올랐으면 레벨업 연출을 잇는다. 다단계 상승도 from→to로 표현된다.
+      if (result.leveledUp) {
+        if (!mounted) return;
+        await showLevelUpDialog(
           context,
-        ).showSnackBar(const SnackBar(content: Text('이미 완료한 퀘스트예요')));
+          fromLevel: result.fromLevel,
+          toLevel: result.toLevel,
+        );
       }
-      return;
+
+      // 진화 단계가 바뀌었으면 가장 강한 연출로 이어 간다.
+      // 진화가 있었다면 레벨업도 반드시 있었으므로 순서가 자연스럽다.
+      if (result.evolved) {
+        if (!mounted) return;
+        await showEvolveDialog(
+          context,
+          fromStage: result.fromStage,
+          toStage: result.toStage,
+        );
+      }
+    } else if (done && !goalCompleted) {
+      // 재완료인데 목표 완수도 아니면 무반응 대신 이유를 알린다.
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이미 완료한 퀘스트예요')));
     }
 
-    // 완료 → (레벨업) → 진화 순으로 이어 띄운다. 각 단계는 await로 순차 진행되고,
-    // 사이마다 mounted를 확인해 연출 도중 화면을 떠나도 크래시가 없다(기존 패턴).
-    // 표시값은 전부 저장소가 준 결과 그대로다 — 화면이 재계산하지 않는다.
-    await showQuestCompleteDialog(
-      context,
-      questTitle: quest.title,
-      reward: result.reward,
-      // 보너스 포함 여부·절삭액은 지급한 쪽이 안다. 총액에서 역산하지 않는다.
-      verified: memoResult?.isVerified ?? false,
-      cutCoin: result.cutCoin,
-    );
-
-    // 레벨이 올랐으면 레벨업 연출을 잇는다. 다단계 상승도 from→to로 표현된다.
-    if (result.leveledUp) {
+    // 목표(폴더) 완수 연출 — 보상/레벨업/진화 연출 뒤에 **마무리**로 이어 띄운다.
+    // 목표의 마지막 퀘스트를 완료해 폴더가 통째로 보관된 순간에만 뜬다. 직접 등록
+    // 낱개 이동에는 이 연출이 없다.
+    if (goalCompleted) {
       if (!mounted) return;
-      await showLevelUpDialog(
-        context,
-        fromLevel: result.fromLevel,
-        toLevel: result.toLevel,
-      );
-    }
-
-    // 진화 단계가 바뀌었으면 가장 강한 연출로 마무리한다.
-    // 진화가 있었다면 레벨업도 반드시 있었으므로 순서가 자연스럽다.
-    if (result.evolved) {
-      if (!mounted) return;
-      await showEvolveDialog(
-        context,
-        fromStage: result.fromStage,
-        toStage: result.toStage,
-      );
+      await showGoalCompleteDialog(context, goalLabel: group.label);
     }
   }
 
@@ -501,7 +532,7 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
                             quest: node.quest,
                             isCompleting: _completing.contains(node.quest.id),
                             onToggleDone: (done) =>
-                                _toggleDone(node.quest, done),
+                                _toggleDone(node.quest, done, group),
                             menuActions: _menuActionsFor(node, group),
                           ),
                         ),

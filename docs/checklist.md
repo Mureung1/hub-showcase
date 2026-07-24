@@ -355,15 +355,26 @@
       → `users/{uid}/achievements`에 **최초 지급 시에만** 1건(questId·questTitle·coin·xp·memo·verified·completedAt). 보상 지급과 같은 트랜잭션이라 "보상은 줬는데 기록이 없다"가 불가능하고, 재완료 시 기록도 중복되지 않는다. 모델 `lib/models/achievement.dart`, 테스트 `test/models/achievement_test.dart`.
 
 ### 성취 보관함 화면
-> 상점 화면처럼 checklist에 항목이 없던 화면이라 신규 섹션으로 승격했다. 3주차부터 쌓이던 `achievements` 기록을 사용자가 처음으로 이력으로 볼 수 있게 한 **읽기 전용** 화면이다. verification-agent 6/6 PASS.
-- [x] 완료한 도전이 보관함(`/storage`)에 최신순 타임라인으로 표시된다.
-      → 조회 경로 `watchAchievements`를 저장소 2구현에 신설(`lib/repositories/quest_repository.dart` 인터페이스). Firestore는 `orderBy('completedAt', descending: true)` + 관대한 파싱(`Achievement.tryParse` — 깨진 기록 하나가 목록을 안 죽인다), InMemory는 최신순 정렬 스트림. 화면 `lib/features/storage/storage_screen.dart`(신규)가 날짜·제목·코인/XP(`RewardChip`)·인증 뱃지를 타임라인 카드로 렌더. `lib/router.dart`의 `/storage`가 PlaceholderScreen → `StorageScreen`으로 교체됨. `achievementsProvider`(`lib/providers/providers.dart`)가 세션 uid 뒤 스트림을 잇는다. 테스트: `test/repositories/in_memory_quest_repository_test.dart`(watchAchievements) · `test/features/storage_screen_test.dart`.
+> 상점 화면처럼 checklist에 항목이 없던 화면이라 신규 섹션으로 승격했다. **사용자 피드백을 받아 achievements 타임라인 → quest 기반 폴더뷰로 재작성**했다("오늘의 퀘스트 = 할 일, 보관함 = 끝낸 일" 구조). verification-agent PASS.
+- [x] 완료한 도전이 보관함(`/storage`)에 표시된다.
+      → 보관함은 `archivedGroupsProvider`(`archived == true` 퀘스트) 기반 **폴더 그룹뷰**다. 오늘의 퀘스트와 **같은 `groupQuestsByGoal`·`GoalGroupSection`을 재사용**하되 완료 토글 없는 **보기 전용 카드**다(`storage_screen.dart`가 `archivedGroupsProvider` → `groupQuestsByGoal` → `GoalGroupSection`으로 렌더). 화면 `lib/features/storage/storage_screen.dart`는 폴더뷰로 **재작성**됐다. achievements 타임라인 방식(`watchAchievements` 경로)은 삭제하지 않고 **3단계 상세 시트용으로 남겨뒀다**. 테스트: `test/features/storage_screen_test.dart`.
 - [x] 완료 수·연속 출석 요약이 표시된다.
       → 상단 2분할 stat(완료 = achievements 개수에서 파생, 연속 = `user.streak`). 환생 배너는 환생 미구현이라 완료 수+스트릭 요약으로 대체했다. 테스트: `test/features/storage_screen_test.dart`.
 - [x] 빈 상태·로딩·오류가 각각 처리된다.
       → 공통 `EmptyView`·`SkeletonBox`·`ErrorView` 재사용(`storage_screen.dart`의 `.when(loading/error/data)`). 스트릭은 못 읽으면 0으로 떨어뜨리고 타임라인은 그대로 보인다. 테스트: `test/features/storage_screen_test.dart`.
 - [x] 인증(메모/사진)한 도전은 뱃지로 구분된다.
       → 메모/사진 여부를 각각 뱃지로 표시. 사진은 **유무 뱃지(📷)만** 표시하고 썸네일은 안 읽는다 — proof 문서가 questId당 별도라 목록에서 N번 읽으면 비싸다(3주차에 문서를 분리한 이유). 탭 상세 로딩은 이번 범위 밖. 테스트: `test/features/storage_screen_test.dart`.
+
+### 완료 시 보관함 이동
+> checklist에 항목이 없던 흐름이라 신규 섹션으로 승격했다("오늘의 퀘스트 = 할 일, 보관함 = 끝낸 일"). verification-agent PASS. **보관함 이동은 단방향**이다(완료 실수 복구는 이번 범위 밖 — 3단계 이후 판단).
+- [x] 완료한 퀘스트가 오늘의 퀘스트 목록에서 사라지고 보관함으로 이동한다.
+      → `Quest.archived` 플래그 도입. 완료 즉시 이동(단방향). 오늘의 퀘스트는 `archived == false`, 보관함은 `archived == true`, 홈 미리보기도 `archived` 제외. 저장소 `archiveQuests`(원자적, 스트림 1회 방출)를 2구현에 신설(`lib/repositories/quest_repository.dart`). **완료·보상 트랜잭션(`completeQuest`)은 안 건드리고 완료 성공 뒤 별도 쓰기로 처리**(지급 오염 금지 — verification이 diff상 주석만 변경, 지급 로직 무변경 확인). 테스트: `test/models/quest_archive_test.dart` · `test/providers/quest_group_providers_test.dart` · `test/features/quest_list_screen_test.dart`.
+- [x] 목표(폴더)는 그 안의 퀘스트가 전부 완료돼야 통째로 이동하고, 직접 등록은 완료 즉시 낱개로 이동한다.
+      → 순수 함수 `resolveArchiveOnComplete`(`lib/models/quest_group.dart`)가 판정한다. 목표는 자식이 `every` done일 때만, 직접 등록(`goalId` 없음)은 낱개로 이동. 고아·순환 방어는 `descendantIds`·`_childrenByParent`를 재사용한다. 뮤테이션(전부완료→일부완료로 느슨히)으로 7건 실패 확인.
+- [x] 재분해한 목표는 자식이 모두 완료되면 원본(stuck)도 자동 완료된 뒤 함께 이동한다.
+      → 자동완료는 `setStatus(done)`로 **상태만 바꾸고 보상은 없다**(자식 완료로 이미 지급됨, B-5 "자동 완료로 안 누른 지급 금지" 준수). 뮤테이션(`setStatus`→`completeQuest`)으로 원본 `rewardedAt`이 찍혀 실패 확인.
+- [x] 목표 전체를 완수하면 축하 연출이 표시된다.
+      → `goal_complete_dialog.dart`(신규, `lib/features/quest/widgets/`)가 "축하합니다, 목표를 이루었어요 / 보관함에서 확인해보세요"를 표시. **목표(폴더) 완수 시에만** 뜨고 직접 등록 낱개엔 없다. 레벨업 연출의 시각 언어(그린)를 재사용. 테스트: `test/features/quest_list_screen_test.dart`.
 
 ### 중복 완료 방지 처리
 - [x] 이미 완료된 퀘스트를 다시 완료해도 **코인·XP가 재지급되지 않는다**.

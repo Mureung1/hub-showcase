@@ -94,8 +94,22 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 | `completedAt` | timestamp? | null | **언제 완료했나.** 완료 해제 시 null로 지움 |
 | `rewardedAt` | timestamp? | null | **보상을 지급한 시각.** 한번 찍히면 절대 지우지 않는다 |
 | `memo` | string? | null | 완료 시 남긴 **인증 메모**(3주차-B). 공백만이면 `null`로 정규화. 상태 전이에서 보존한다 |
+| `archived` | bool | false | **보관함으로 옮겨졌는가**(2단계). `true`일 때만 문서에 기록한다(기본값은 필드 생략) |
 
 정렬: `order` → `createdAt`.
+
+#### `archived` — 완료 = 보관함으로 이동 (2단계)
+
+"오늘의 퀘스트 = 할 일, 보관함 = 끝낸 일" 구조를 만드는 **단 하나의 플래그**다. 새 컬렉션·새 문서 구조 없이, 같은 `quests` 컬렉션을 필터 분기만으로 두 화면에 나눠 준다.
+
+- **오늘의 퀘스트** = `archived == false` 그룹뷰(완료 토글 있음). **보관함** = `archived == true` 그룹뷰(완료 토글 없는 보기 전용). 두 화면이 `groupQuestsByGoal`·`GoalGroupSection`을 그대로 공유한다.
+- **이동 단위**: 목표(폴더)는 **그 목표의 모든 퀘스트(부모·자식)가 done일 때 통째로**, 직접 등록(`goalId == null`)은 **완료 즉시 낱개로** `archived`가 된다. 무엇을 옮길지는 순수 함수 `resolveArchiveOnComplete()`(`lib/models/quest_group.dart`)가 정한다 — `arrangeQuestTree`·`descendantIds`와 같은 관심사 분리(저장소는 규칙을 모른다).
+- **재분해 원본 자동완료**: 어떤 `stuck` 원본의 자식(`descendantIds`)이 **모두** done이면 그 원본도 done으로 민다 — 그래야 "목표 전부 완료"가 성립한다. 이 자동완료는 **보상 없이** `setStatus(done)`으로만 처리한다(자식 완료로 이미 지급됨). 3주차의 "부모 자동 완료는 하지 않는다"에서 2단계에 **정책이 바뀐 부분**이며, 보상 지급 없는 상태 전이라 보상 정책은 그대로다.
+- **되돌림 없음** — 단방향 플래그. 보관함에는 완료 토글이 없다.
+
+**쓰기 경로**: `archiveQuests(uid, Set<String> ids)`가 **유일한** 보관 쓰기다. Firestore는 batch로 `{'archived': true}`만 `update`하고, InMemory는 스테이징 후 스트림 **1회** 방출한다(목표 폴더가 "절반만 옮겨진" 중간 상태가 없다). 없는 ID·빈 집합은 멱등하게 통과한다(`deleteQuests`와 같은 계약).
+
+⚠️ **`completeQuest` 지급 트랜잭션은 건드리지 않는다.** 완료·보상이 커밋된 **뒤**, 화면이 자동완료(`setStatus`)와 보관(`archiveQuests`)을 **별도 쓰기**로 부른다. 보관 실패가 지급을 롤백하거나 그 반대가 되면 안 되기 때문이다(계측 로그를 트랜잭션 밖에 두는 것과 같은 원칙). 보관 쓰기가 실패하면 퀘스트는 done인 채 오늘 목록에 남고, 다음 완료·재실행에서 다시 시도된다 — 데이터 손실은 없다.
 
 #### `completedAt`과 `rewardedAt`을 왜 나눴나
 

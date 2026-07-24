@@ -1,91 +1,73 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/error/app_failure.dart';
-import 'package:one_step/core/widgets/reward_chip.dart';
+import 'package:one_step/core/widgets/quest_card.dart';
 import 'package:one_step/core/widgets/state_views.dart';
+import 'package:one_step/features/quest/widgets/goal_group_section.dart';
 import 'package:one_step/features/storage/storage_screen.dart';
-import 'package:one_step/models/achievement.dart';
 import 'package:one_step/models/app_user.dart';
-import 'package:one_step/providers/providers.dart';
+import 'package:one_step/models/goal.dart';
+import 'package:one_step/models/quest.dart';
+import 'package:one_step/models/quest_status.dart';
 
 import '../helpers/pump_app.dart';
 
-/// 보관함 화면 — 성취 타임라인 · 요약 stat · 인증 뱃지 · 로딩/빈/오류.
+/// 보관함 화면 (2단계) — 완료돼 **보관된**(`archived == true`) 퀘스트를 오늘의 퀘스트와
+/// **같은 폴더 그룹뷰**로 보여 준다. 다른 점은 완료 토글이 없는 보기 전용 카드다.
 void main() {
   const uid = 'test-uid';
 
-  Achievement ach({
-    required String id,
+  Quest archived(
+    String id, {
     required String title,
-    int coin = 5,
-    int xp = 10,
-    String? memo,
-    bool hasPhoto = false,
-    bool verified = false,
-    DateTime? at,
-  }) => Achievement(
+    String? goalId,
+    int order = 0,
+  }) => Quest(
     id: id,
-    questId: 'q-$id',
-    questTitle: title,
-    coin: coin,
-    xp: xp,
-    memo: memo,
-    verified: verified,
-    hasPhoto: hasPhoto,
-    completedAt: at ?? DateTime.utc(2026, 7, 20),
+    title: title,
+    goalId: goalId,
+    status: QuestStatus.done,
+    archived: true,
+    order: order,
   );
 
-  testWidgets('완료 기록이 최신순 타임라인으로 표시된다', (tester) async {
+  testWidgets('보관된 퀘스트가 목표 폴더 그룹뷰로 보인다', (tester) async {
     await pumpScreen(
       tester,
       const StorageScreen(),
       user: const AppUser(uid: uid, streak: 4),
-      achievements: [
-        ach(id: 'a', title: '가장 오래됨', at: DateTime.utc(2026, 7, 10)),
-        ach(id: 'b', title: '가장 최신', at: DateTime.utc(2026, 7, 20)),
+      goals: const [Goal(id: 'g1', text: '공모전 지원하기')],
+      quests: [
+        archived('q1', title: '공고 찾기', goalId: 'g1', order: 0),
+        archived('q2', title: '지원서 쓰기', goalId: 'g1', order: 1),
       ],
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('가장 최신'), findsOneWidget);
-    expect(find.text('가장 오래됨'), findsOneWidget);
-
-    // 최신이 오래된 것보다 위에 있어야 한다(y좌표 비교).
-    final newest = tester.getCenter(find.text('가장 최신')).dy;
-    final oldest = tester.getCenter(find.text('가장 오래됨')).dy;
-    expect(newest, lessThan(oldest));
-
-    // 코인·XP는 RewardChip으로 표시된다.
-    expect(find.byType(RewardChip), findsNWidgets(2));
+    // 폴더(목표 라벨)로 묶이고, 기본 펼침이라 카드가 그 아래 붙는다.
+    expect(find.byType(GoalGroupSection), findsOneWidget);
+    expect(find.text('공모전 지원하기'), findsOneWidget);
+    expect(find.text('공고 찾기'), findsOneWidget);
+    expect(find.text('지원서 쓰기'), findsOneWidget);
   });
 
-  // 완료 수 stat이 **기록 개수를 실제로 세는지** 못 박는다. 한 케이스(예: 3건)만
-  // 보면 `completedCount = 3` 같은 상수 하드코딩으로 우회된다. 서로 다른 개수를
-  // 두 번 돌려(2건·5건) 상수 우회를 봉쇄한다. 코인은 8로 둬서 RewardChip('+8')이
-  // 개수 숫자와 충돌하지 않게 한다.
-  for (final (count, streak) in [(2, 7), (5, 3)]) {
-    testWidgets('★ 완료 수 stat이 기록 $count개와 일치한다 (상수 우회 봉쇄·뮤테이션 방어)', (
+  // 완료 수 stat이 **보관된 퀘스트 개수를 실제로 세는지** 못 박는다. 서로 다른
+  // 개수(2·3)를 돌려 상수 하드코딩 우회를 봉쇄한다. streak은 개수와 다르게 둬서
+  // 라벨이 뒤바뀌어도(완료↔연속) 잡힌다.
+  for (final (count, streak) in [(2, 7), (3, 5)]) {
+    testWidgets('★ 완료 수 stat이 보관 퀘스트 $count개와 일치한다 (상수 우회 봉쇄)', (
       tester,
     ) async {
       await pumpScreen(
         tester,
         const StorageScreen(),
         user: AppUser(uid: uid, streak: streak),
-        achievements: [
+        quests: [
           for (var i = 0; i < count; i++)
-            ach(
-              id: 'a$i',
-              title: '도전$i',
-              coin: 8,
-              at: DateTime.utc(2026, 7, 20 - i),
-            ),
+            archived('q$i', title: '도전$i', order: i),
         ],
       );
       await tester.pumpAndSettle();
 
-      // 완료 stat = count, 연속 stat = streak. 둘을 서로 다르게 둬서 라벨이
-      // 뒤바뀌어도(완료↔연속) 잡힌다.
       expect(find.text('$count'), findsOneWidget);
       expect(find.text('완료'), findsOneWidget);
       expect(find.text('$streak'), findsOneWidget);
@@ -93,69 +75,51 @@ void main() {
     });
   }
 
-  testWidgets('인증 뱃지 — 메모/사진이 있으면 각각 뜬다', (tester) async {
+  testWidgets('★ 보관함 카드에는 완료 토글이 없다 (보기 전용)', (tester) async {
     await pumpScreen(
       tester,
       const StorageScreen(),
       user: const AppUser(uid: uid),
-      achievements: [
-        ach(
-          id: 'a',
-          title: '메모+사진',
-          memo: '카페에서 2시간',
-          hasPhoto: true,
-          verified: true,
-        ),
+      quests: [archived('q1', title: '끝낸 퀘스트')],
+    );
+    await tester.pumpAndSettle();
+
+    // 카드는 보이지만 완료/완료 취소 토글은 없다(단방향 이동이라 되돌리지 않는다).
+    expect(find.byType(QuestCard), findsOneWidget);
+    expect(find.byTooltip('완료'), findsNothing);
+    expect(find.byTooltip('완료 취소'), findsNothing);
+    // 더보기(수정·삭제) 메뉴도 없다.
+    expect(find.byTooltip('끝낸 퀘스트 더보기'), findsNothing);
+  });
+
+  testWidgets('보관된 퀘스트가 없으면 빈 상태를 보여 준다', (tester) async {
+    await pumpScreen(
+      tester,
+      const StorageScreen(),
+      user: const AppUser(uid: uid),
+      // 완료됐지만 아직 보관되지 않은 퀘스트는 보관함에 뜨지 않는다.
+      quests: const [
+        Quest(id: 'q1', title: '완료했지만 보관 전', status: QuestStatus.done),
       ],
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('메모'), findsOneWidget);
-    expect(find.text('사진'), findsOneWidget);
-  });
-
-  testWidgets('메모·사진이 없으면 인증 뱃지도 없다', (tester) async {
-    await pumpScreen(
-      tester,
-      const StorageScreen(),
-      user: const AppUser(uid: uid),
-      achievements: [ach(id: 'a', title: '인증 없이 완료')],
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('메모'), findsNothing);
-    expect(find.text('사진'), findsNothing);
-  });
-
-  testWidgets('완료 기록이 없으면 빈 상태를 보여 준다', (tester) async {
-    await pumpScreen(
-      tester,
-      const StorageScreen(),
-      user: const AppUser(uid: uid),
-      // achievements 없음.
-    );
-    await tester.pumpAndSettle();
-
     expect(find.byType(EmptyView), findsOneWidget);
-    expect(find.text('아직 완료한 도전이 없어요'), findsOneWidget);
+    expect(find.text('아직 끝낸 도전이 없어요'), findsOneWidget);
+    // 보관 전 완료 퀘스트는 목록에 나타나지 않는다.
+    expect(find.text('완료했지만 보관 전'), findsNothing);
     // 빈 상태에도 요약 stat(완료 0)은 보인다.
     expect(find.text('완료'), findsOneWidget);
   });
 
   testWidgets('로딩 중에는 스켈레톤을 보여 준다', (tester) async {
-    // 보관함은 achievementsProvider로 로딩을 판단하므로 그 스트림을 영원히
-    // 로딩 상태로 둔다(InMemory는 즉시 응답해 로딩 프레임을 관찰할 수 없다).
+    // 보관함은 questListProvider로 로딩을 판단하므로 그 스트림을 영원히 로딩으로 둔다.
     await pumpScreen(
       tester,
       const StorageScreen(),
       user: const AppUser(uid: uid),
-      extraOverrides: [
-        achievementsProvider.overrideWith(
-          (ref) => Completer<List<Achievement>>().future.asStream(),
-        ),
-      ],
+      extraOverrides: loadingForever(),
     );
-    // pumpAndSettle 대신 한 프레임만 — 스트림이 영원히 로딩이라 settle이 끝나지 않는다.
     await tester.pump();
 
     expect(find.byType(SkeletonBox), findsWidgets);

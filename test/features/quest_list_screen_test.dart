@@ -8,6 +8,7 @@ import 'package:one_step/core/widgets/state_views.dart';
 import 'package:one_step/features/home/widgets/evolve_dialog.dart';
 import 'package:one_step/features/home/widgets/level_up_dialog.dart';
 import 'package:one_step/features/quest/quest_list_screen.dart';
+import 'package:one_step/features/quest/widgets/goal_complete_dialog.dart';
 import 'package:one_step/features/quest/widgets/goal_group_section.dart';
 import 'package:one_step/features/quest/widgets/quest_complete_dialog.dart';
 import 'package:one_step/features/quest/widgets/quest_edit_dialog.dart';
@@ -50,6 +51,22 @@ class _FailingCompleteQuestRepository extends InMemoryQuestRepository {
 /// 같은 두 단계를 반복하므로 헬퍼로 묶었다.
 Future<void> completeSkippingMemo(WidgetTester tester) async {
   await tester.tap(find.byTooltip('완료'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('건너뛰기'));
+  await tester.pumpAndSettle();
+}
+
+/// 특정 제목의 카드에 있는 완료 버튼을 눌러 **메모를 건너뛰고** 완료한다.
+///
+/// 같은 화면에 완료 버튼이 여럿일 때(폴더 안 여러 퀘스트) `find.byTooltip('완료')`는
+/// 모호하다. 카드를 제목으로 특정한 뒤 그 안의 토글만 누른다. 완료 연출은 닫지 않는다
+/// (연출 검증은 호출부의 몫).
+Future<void> completeByTitle(WidgetTester tester, String title) async {
+  final card = find.ancestor(
+    of: find.text(title),
+    matching: find.byType(QuestCard),
+  );
+  await tester.tap(find.descendant(of: card, matching: find.byTooltip('완료')));
   await tester.pumpAndSettle();
   await tester.tap(find.text('건너뛰기'));
   await tester.pumpAndSettle();
@@ -166,7 +183,7 @@ void main() {
     expect(find.byType(EmptyView), findsNothing);
   });
 
-  testWidgets('완료 체크를 하면 상태가 done으로 바뀐다', (tester) async {
+  testWidgets('완료 체크를 하면 done + 보관함으로 이동한다 (오늘 목록에서 사라짐)', (tester) async {
     final repo = await pumpScreen(
       tester,
       const QuestListScreen(),
@@ -175,12 +192,18 @@ void main() {
     await tester.pumpAndSettle();
 
     await completeSkippingMemo(tester);
+    // 완료 연출을 닫는다.
+    await tester.tap(find.text('좋아요'));
+    await tester.pumpAndSettle();
 
+    // 저장소: done + archived(직접 등록은 완료 즉시 낱개 이동).
     final quests = await repo.fetchQuests('test-uid');
     expect(quests.single.done, isTrue);
+    expect(quests.single.archived, isTrue);
 
-    // 화면에도 반영된다.
-    expect(find.byTooltip('완료 취소'), findsOneWidget);
+    // 화면: 오늘의 퀘스트에서 사라진다(= 보관함으로 이동). 하나뿐이라 빈 상태.
+    expect(find.byType(QuestCard), findsNothing);
+    expect(find.byType(EmptyView), findsOneWidget);
   });
 
   group('완료 → 트랜잭션 보상 지급 → 완료 연출 (3주차 핵심 보상 루프)', () {
@@ -212,7 +235,7 @@ void main() {
       expect(user.xp, 0);
     });
 
-    testWidgets('연출을 닫으면 퀘스트가 완료 상태로 남는다', (tester) async {
+    testWidgets('연출을 닫으면 퀘스트가 완료된 채 보관함으로 옮겨진다', (tester) async {
       final repo = await pumpScreen(
         tester,
         const QuestListScreen(),
@@ -227,11 +250,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(QuestCompleteDialog), findsNothing);
-      expect(find.byTooltip('완료 취소'), findsOneWidget);
+      // 완료 = 이동: 오늘의 퀘스트에서 카드가 사라진다.
+      expect(find.byType(QuestCard), findsNothing);
 
       final quest = (await repo.fetchQuests('test-uid')).single;
       expect(quest.done, isTrue);
       expect(quest.completedAt, isNotNull);
+      expect(quest.archived, isTrue);
     });
 
     testWidgets('★ 처리 중 중복 탭은 무시된다 (연출도 지급도 한 번뿐)', (tester) async {
@@ -294,15 +319,17 @@ void main() {
       // 이미 보상받은 퀘스트라 "오늘 어땠나요?" 메모 시트가 아예 안 뜬다.
       expect(find.text('오늘 어땠나요?'), findsNothing);
 
-      // ★ 회귀 방지: 그래도 완료 처리는 되어야 한다 — 상태가 done으로 바뀌어
-      //   체크·밑줄이 켜진다(툴팁이 '완료'→'완료 취소'로 바뀜 = 체크된 상태).
-      expect(find.byTooltip('완료 취소'), findsOneWidget);
-      expect(find.byTooltip('완료'), findsNothing);
-
       // 무반응이 아니라 "이미 완료한 퀘스트예요"로 이유를 알린다.
       expect(find.text('이미 완료한 퀘스트예요'), findsOneWidget);
       // 축하는 없다(이미 받은 보상을 다시 축하하면 안 된다).
       expect(find.byType(QuestCompleteDialog), findsNothing);
+
+      // ★ 회귀 방지: 그래도 완료 처리는 되어야 한다 — done으로 바뀌고, 완료 = 이동이라
+      //   보관함으로 옮겨져 오늘 목록에서 사라진다(카드가 없다).
+      final quest = (await repo.fetchQuests('test-uid')).single;
+      expect(quest.done, isTrue);
+      expect(quest.archived, isTrue);
+      expect(find.byTooltip('완료 취소'), findsNothing);
 
       // completeQuest는 호출되지만 rewardedAt 가드가 재지급을 막으므로 잔액은 그대로다.
       final user = await repo.users!.fetchUser('test-uid');
@@ -1106,6 +1133,177 @@ void main() {
       // 부모·자식 모두 그대로다.
       final remaining = await repo.fetchQuests('test-uid');
       expect(remaining.map((q) => q.id).toSet(), {'p', 'c1'});
+    });
+  });
+
+  group('완료 = 보관함으로 이동 (2단계)', () {
+    // 레벨/진화 연출이 끼어들지 않도록 독수리(Lv30, 40 XP/레벨) 사용자로 둔다 —
+    // 쉬움·보통 몇 개론 레벨이 오르지 않아 완료 연출만 검증에 남는다.
+    const eagle = AppUser(uid: 'test-uid', level: 30, xp: 0);
+
+    testWidgets('★ 목표의 마지막 퀘스트를 완료하면 폴더째 이동하고 완수 연출이 뜬다', (tester) async {
+      final repo = await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(id: 'q1', title: '공고 찾기', goalId: 'g1', order: 0),
+          Quest(id: 'q2', title: '지원서 쓰기', goalId: 'g1', order: 1),
+        ],
+        goals: const [Goal(id: 'g1', text: '공모전 지원하기')],
+        user: eagle,
+      );
+      await tester.pumpAndSettle();
+
+      // 첫 퀘스트 완료 → 폴더는 아직 남는다(목표 미완).
+      await completeByTitle(tester, '공고 찾기');
+      await tester.tap(find.text('좋아요')); // 완료 연출 닫기
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GoalCompleteDialog), findsNothing);
+      expect(find.byType(GoalGroupSection), findsOneWidget);
+      expect(find.text('1/2'), findsOneWidget);
+      // q1은 done이지만 아직 이동하지 않는다(폴더는 통째로만 이동).
+      final afterFirst = await repo.fetchQuests('test-uid');
+      expect(afterFirst.firstWhere((q) => q.id == 'q1').archived, isFalse);
+
+      // 마지막 퀘스트 완료 → 목표 전부 완료 → 폴더째 이동 + 완수 연출.
+      await completeByTitle(tester, '지원서 쓰기');
+      await tester.tap(find.text('좋아요')); // 완료 연출 닫기
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GoalCompleteDialog), findsOneWidget);
+      // 연출에 완수한 목표명이 비친다.
+      expect(find.text('공모전 지원하기'), findsWidgets);
+
+      await tester.tap(find.text('좋아요')); // 완수 연출 닫기
+      await tester.pumpAndSettle();
+
+      // 오늘의 퀘스트에서 폴더가 통째로 사라진다.
+      expect(find.byType(GoalGroupSection), findsNothing);
+      expect(find.byType(EmptyView), findsOneWidget);
+
+      // 저장소: 두 퀘스트 모두 done + archived.
+      final all = await repo.fetchQuests('test-uid');
+      expect(all, hasLength(2));
+      expect(all.every((q) => q.done && q.archived), isTrue);
+    });
+
+    testWidgets('★ 목표의 일부만 완료하면 이동하지 않고 폴더에 남는다 (뮤테이션 방어)', (tester) async {
+      // "목표 전부 완료" 판정을 "일부 완료"로 느슨히 하면 이 테스트가 깨진다 —
+      // 한 개만 끝냈는데 폴더가 사라지고 완수 연출이 뜰 것이다.
+      final repo = await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(id: 'q1', title: '공고 찾기', goalId: 'g1', order: 0),
+          Quest(id: 'q2', title: '지원서 쓰기', goalId: 'g1', order: 1),
+        ],
+        goals: const [Goal(id: 'g1', text: '공모전 지원하기')],
+        user: eagle,
+      );
+      await tester.pumpAndSettle();
+
+      await completeByTitle(tester, '공고 찾기');
+      await tester.tap(find.text('좋아요'));
+      await tester.pumpAndSettle();
+
+      // 완수 연출은 없고, 폴더는 그대로 남는다.
+      expect(find.byType(GoalCompleteDialog), findsNothing);
+      expect(find.byType(GoalGroupSection), findsOneWidget);
+
+      // 아무 퀘스트도 이동하지 않았다(목표는 통째로만 이동).
+      final all = await repo.fetchQuests('test-uid');
+      expect(all.any((q) => q.archived), isFalse);
+    });
+
+    testWidgets('★ 직접 등록은 완료 즉시 낱개로 이동하고 나머지는 남는다', (tester) async {
+      final repo = await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(id: 'q1', title: '완료할 직접', order: 0),
+          Quest(id: 'q2', title: '남을 직접', order: 1),
+        ],
+        user: eagle,
+      );
+      await tester.pumpAndSettle();
+
+      await completeByTitle(tester, '완료할 직접');
+      await tester.tap(find.text('좋아요'));
+      await tester.pumpAndSettle();
+
+      // 완수 연출은 없다(직접 등록 낱개 이동엔 연출이 없다).
+      expect(find.byType(GoalCompleteDialog), findsNothing);
+      // q1만 이동, q2는 오늘 목록에 남는다.
+      expect(find.text('완료할 직접'), findsNothing);
+      expect(find.text('남을 직접'), findsOneWidget);
+
+      final all = await repo.fetchQuests('test-uid');
+      expect(all.firstWhere((q) => q.id == 'q1').archived, isTrue);
+      expect(all.firstWhere((q) => q.id == 'q2').archived, isFalse);
+    });
+
+    testWidgets('★ 재분해 목표: 자식을 다 끝내면 원본이 보상 없이 자동완료되고 폴더째 이동한다', (
+      tester,
+    ) async {
+      // 카드 3장(원본+자식2)이 한 화면에 다 들어가도록 세로 여유를 준다 —
+      // 기본 800x600에선 하단 카드의 완료 버튼이 FAB에 가려 탭이 빗나간다.
+      tester.view.physicalSize = const Size(1200, 2600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // 뮤테이션 방어의 핵심: 자동완료가 completeQuest(지급)를 타면 원본(p, normal)에
+      // 코인 5·성취 1건이 더 붙어 아래 잔액/기록 단언이 깨진다. setStatus여야만 통과한다.
+      final repo = await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(id: 'p', title: '재분해 원본', goalId: 'g1',
+              status: QuestStatus.stuck, order: 0),
+          Quest(id: 'c1', title: '자식1', goalId: 'g1',
+              parentQuestId: 'p', difficulty: Difficulty.easy, order: 1),
+          Quest(id: 'c2', title: '자식2', goalId: 'g1',
+              parentQuestId: 'p', difficulty: Difficulty.easy, order: 2),
+        ],
+        goals: const [Goal(id: 'g1', text: '공모전 지원하기')],
+        user: eagle,
+      );
+      await tester.pumpAndSettle();
+
+      await completeByTitle(tester, '자식1');
+      await tester.tap(find.text('좋아요'));
+      await tester.pumpAndSettle();
+
+      // 아직 원본이 안 끝났으니 이동/자동완료 없음.
+      expect(find.byType(GoalCompleteDialog), findsNothing);
+      final mid = await repo.fetchQuests('test-uid');
+      expect(mid.firstWhere((q) => q.id == 'p').done, isFalse);
+
+      await completeByTitle(tester, '자식2');
+      await tester.tap(find.text('좋아요'));
+      await tester.pumpAndSettle();
+
+      // 원본이 자동완료되며 목표 전체가 이동 → 완수 연출.
+      expect(find.byType(GoalCompleteDialog), findsOneWidget);
+      await tester.tap(find.text('좋아요'));
+      await tester.pumpAndSettle();
+
+      final all = await repo.fetchQuests('test-uid');
+      final p = all.firstWhere((q) => q.id == 'p');
+      // 원본은 done + archived.
+      expect(p.done, isTrue);
+      expect(p.archived, isTrue);
+      // ★ 자동완료는 **보상 없이** setStatus로만 처리된다.
+      expect(p.rewardedAt, isNull);
+      // 세 퀘스트 모두 보관.
+      expect(all.every((q) => q.archived), isTrue);
+
+      // 잔액: 자식 2개(쉬움 코인3)만 = 6. 원본이 지급을 탔다면 11이 된다.
+      final user = await repo.users!.fetchUser('test-uid');
+      expect(user.coin, 6);
+      // 성취 기록도 자식 2건뿐(원본 자동완료는 기록을 남기지 않는다).
+      expect(repo.achievementsOf('test-uid'), hasLength(2));
     });
   });
 

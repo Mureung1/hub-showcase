@@ -142,6 +142,133 @@ void main() {
     });
   });
 
+  group('archiveQuests — 완료 = 보관함으로 이동 (2단계)', () {
+    test('여러 퀘스트를 한 번에 보관하고 스트림을 1회만 방출한다 (원자성)', () async {
+      final repo = InMemoryQuestRepository(
+        seed: const [
+          Quest(id: 'q1', title: '하나', order: 0),
+          Quest(id: 'q2', title: '둘', order: 1),
+          Quest(id: 'q3', title: '셋', order: 2),
+        ],
+      );
+
+      final emissions = <List<Quest>>[];
+      final sub = repo.watchQuests('u').listen(emissions.add);
+      // 순서 중요: 컨트롤러를 먼저 닫아야 watchQuests의 `await for`가 끝나 cancel이
+      // 완료된다(반대 순서면 tearDown이 영원히 기다린다 — 기존 emission 테스트와 동일).
+      addTearDown(() async {
+        repo.dispose();
+        await sub.cancel();
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions, hasLength(1)); // 최초 목록.
+
+      await repo.archiveQuests('u', {'q1', 'q2'});
+      await Future<void>.delayed(Duration.zero);
+
+      // ★ 한 목표를 보관할 때 "절반만 옮겨진" 중간 프레임이 없다 — 보관은 1회만 방출.
+      expect(emissions, hasLength(2));
+      final list = emissions.last;
+      expect(list.firstWhere((q) => q.id == 'q1').archived, isTrue);
+      expect(list.firstWhere((q) => q.id == 'q2').archived, isTrue);
+      // 지목하지 않은 것은 그대로다.
+      expect(list.firstWhere((q) => q.id == 'q3').archived, isFalse);
+    });
+
+    test('빈 집합은 아무 일도 하지 않는다 (헛방출 없음)', () async {
+      final repo = InMemoryQuestRepository(
+        seed: const [Quest(id: 'q1', title: 'x')],
+      );
+
+      final emissions = <List<Quest>>[];
+      final sub = repo.watchQuests('u').listen(emissions.add);
+      addTearDown(() async {
+        repo.dispose();
+        await sub.cancel();
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions, hasLength(1)); // 최초 목록.
+
+      await repo.archiveQuests('u', const {});
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emissions, hasLength(1), reason: '빈 집합은 방출하지 않는다');
+    });
+
+    test('없는 ID가 섞여도 있는 것만 보관한다 (멱등)', () async {
+      final repo = InMemoryQuestRepository(
+        seed: const [Quest(id: 'q1', title: 'x')],
+      );
+      addTearDown(repo.dispose);
+
+      await repo.archiveQuests('u', {'q1', '없는id'});
+
+      final quests = await repo.fetchQuests('u');
+      expect(quests.single.archived, isTrue);
+    });
+
+    test('보관은 영속된다 — 다시 읽어도 archived가 유지된다', () async {
+      final repo = InMemoryQuestRepository(
+        seed: const [Quest(id: 'q1', title: 'x')],
+      );
+      addTearDown(repo.dispose);
+
+      await repo.archiveQuests('u', {'q1'});
+
+      // 재조회(앱 재실행 동치)에도 archived가 남는다.
+      expect((await repo.fetchQuests('u')).single.archived, isTrue);
+    });
+
+    test('보관은 상태·지급 이력을 건드리지 않는다', () async {
+      final repo = InMemoryQuestRepository(
+        seed: [
+          Quest(
+            id: 'q1',
+            title: 'x',
+            status: QuestStatus.done,
+            rewardedAt: DateTime(2026, 1, 1),
+            memo: '인증 메모',
+          ),
+        ],
+      );
+      addTearDown(repo.dispose);
+
+      await repo.archiveQuests('u', {'q1'});
+
+      final q = (await repo.fetchQuests('u')).single;
+      expect(q.archived, isTrue);
+      expect(q.status, QuestStatus.done);
+      expect(q.rewardedAt, DateTime(2026, 1, 1));
+      expect(q.memo, '인증 메모');
+    });
+
+    test('★ 자동완료(setStatus done)는 코인·XP·성취를 건드리지 않는다 (뮤테이션 방어)', () async {
+      // 재분해 원본 자동완료는 completeQuest(지급)가 아니라 setStatus여야 한다.
+      // 이 경로가 지급을 타면 아래 잔액/기록 단언이 깨진다.
+      final users = InMemoryUserRepository(seed: AppUser.initial('u'));
+      final repo = InMemoryQuestRepository(
+        seed: const [
+          Quest(id: 'p', title: '재분해 원본', status: QuestStatus.stuck),
+        ],
+        users: users,
+      );
+      addTearDown(users.dispose);
+      addTearDown(repo.dispose);
+
+      await repo.setStatus('u', 'p', QuestStatus.done);
+
+      final p = (await repo.fetchQuests('u')).single;
+      expect(p.done, isTrue);
+      // 보상은 지급되지 않는다.
+      expect(p.rewardedAt, isNull);
+      final user = await users.fetchUser('u');
+      expect(user.coin, 0);
+      expect(user.xp, 0);
+      // 성취 기록도 남지 않는다.
+      expect(repo.achievementsOf('u'), isEmpty);
+    });
+  });
+
   group('completeQuest — 완료 + 트랜잭션 보상 지급 (3주차 핵심 보상 루프)', () {
     /// 퀘스트 저장소와 사용자 저장소를 배선해 함께 돌려준다.
     /// 완료는 두 문서를 동시에 바꾸므로 둘을 같이 봐야 검증이 된다.
