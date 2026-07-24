@@ -218,7 +218,10 @@ npm run db:reset
 npm run db:seed:development -w @baro-jinryo/api
 ```
 
-플랫폼 관리자 계정은 Supabase Auth 로그인이 가능하지만, P2 약식 플랫폼 관리자 웹에는 아직 로그인 화면과 권한 검사가 연결되지 않았습니다. Seoul 개발용 Supabase 프로젝트 연결과 실제 `pg` Repository 통합 테스트도 구성되어 있습니다.
+플랫폼 관리자 웹은 Supabase Auth 로그인과 `platform_admin` 권한 검사를 적용하며,
+입점 문의와 병원 정보 변경 요청을 검토할 수 있습니다. 승인 병원의 이용 중지·복구
+같은 전체 운영 기능은 P2 범위입니다. Seoul 개발용 Supabase 프로젝트 연결과 실제
+`pg` Repository 통합 테스트도 구성되어 있습니다.
 
 현재 구조:
 
@@ -231,6 +234,7 @@ hub/
 │  └─ api/              # 세 앱이 공유하는 Express API
 ├─ packages/
 │  ├─ shared/           # 공통 타입, Zod 스키마, 대기열 계산
+│  ├─ web-shared/       # 웹 앱 공통 컴포넌트와 API·인증 클라이언트 기반
 │  └─ design-system/    # 공통 디자인 토큰 CSS
 ├─ docs/
 ├─ prototype/
