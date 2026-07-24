@@ -19,3 +19,7 @@ export type {
   RuntimeResolverBundleInput,
   RuntimeSpawnBoundary,
 } from './runtime-resolver.js'
+
+export type RuntimeReleaseScaffold = {
+  readonly workspace: '@ay-ple/runtime-release'
+}

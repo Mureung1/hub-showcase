@@ -25,7 +25,7 @@
 
 ## 내부 경계
 
-- Package root의 runtime value는 `decodeRuntimeReleaseDescriptor`, `RuntimeReleaseAuthorityError`, `createRuntimeResolverBundle` 세 개뿐이다. `RuntimeReleaseDescriptor`, `RuntimeResolveProgress`, `RuntimeResolutionError`, `RuntimeResolutionErrorCode`, `RuntimeResolver`, `VerifiedRuntime`, `RuntimeResolverBundleInput`, `RuntimeSpawnBoundary`만 type surface로 제공한다. Production Host는 source deep import 없이 이 표면만 사용하고 testing·cache·transport·extraction·generation·assembler·admission 내부 seam은 package-private으로 유지한다.
+- Package root의 runtime value는 `decodeRuntimeReleaseDescriptor`, `RuntimeReleaseAuthorityError`, `createRuntimeResolverBundle` 세 개뿐이다. Resolver contract type과 기존 `ay-ple` composition이 사용하는 type-only `RuntimeReleaseScaffold` compatibility placeholder를 제공한다. Production Host는 source deep import 없이 이 표면만 사용하고 testing·cache·transport·extraction·generation·assembler·admission 내부 seam은 package-private으로 유지한다.
 - Canonical manifest assembler도 package root에서 re-export하지 않는 owner-private build seam이다. 입력은 payload bytes가 아니라 `{ path, type, mode, bytes, sha256 }` 또는 symlink target descriptor이므로 Runtime 크기에 비례한 bytes를 메모리에 보존하지 않는다. Detailed builder/source/download identity는 `input_provenance`가 가리키는 payload file 안에 있고, assembler는 그 file descriptor의 digest만 canonical manifest에 결합한다.
 - Host는 admission·owner당 `createRuntimeResolverBundle()` 하나를 만들고 process lifetime 동안 재사용해야 한다. Shared flight registry와 exact-object `WeakMap` spawn authority는 bundle-local이며, cross-bundle same-owner lease join은 correctness evidence이지 다중 bundle을 권장하는 host contract가 아니다.
 - Same-identity caller는 한 transaction을 공유하되 각 caller는 독립적으로 detach한다. 마지막 subscriber가 사라지면 transaction을 cancel·settle하고, late caller는 draining flight가 끝난 뒤 fresh transaction을 시작한다.
