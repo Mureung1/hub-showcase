@@ -136,6 +136,23 @@ export interface InteractionObjectAsset {
   hoverSrc?: string;
   resizeAxis: "vertical" | "horizontal" | "none";
   anchorPoints: Array<"top" | "bottom" | "left" | "right" | "center">;
+  tileMode?: "vertical-3part" | "horizontal-3part";
+  tiles?: {
+    top?: string;
+    middleRepeat?: string;
+    bottom?: string;
+    left?: string;
+    centerRepeat?: string;
+    right?: string;
+  };
+  metrics?: {
+    tileWidth: number;
+    tileHeight: number;
+    gripLineX?: number;
+    rungSpacing?: number;
+    landingLineY?: number;
+    minRepeatCount: number;
+  };
 }
 
 export interface ProjectionModeAsset {
@@ -568,18 +585,43 @@ export const soundAssets: SoundAsset[] = [
 
 export const interactionObjectAssets: InteractionObjectAsset[] = [
   {
-    id: "ladder-object-placeholder",
+    id: "ladder-object-tiles-v1",
     type: "ladder",
-    src: "/assets/interaction-objects/ladder-placeholder.png",
+    src: "/assets/interaction-objects/ladder/ladder-tiles.png",
     resizeAxis: "vertical",
     anchorPoints: ["top", "bottom", "center"],
+    tileMode: "vertical-3part",
+    tiles: {
+      top: "/assets/interaction-objects/ladder/ladder-top.png",
+      middleRepeat: "/assets/interaction-objects/ladder/ladder-middle-repeat.png",
+      bottom: "/assets/interaction-objects/ladder/ladder-bottom.png",
+    },
+    metrics: {
+      tileWidth: 32,
+      tileHeight: 16,
+      gripLineX: 16,
+      rungSpacing: 8,
+      minRepeatCount: 1,
+    },
   },
   {
-    id: "platform-object-placeholder",
+    id: "platform-object-tiles-v1",
     type: "platform",
-    src: "/assets/interaction-objects/platform-placeholder.png",
+    src: "/assets/interaction-objects/platform/platform-tiles.png",
     resizeAxis: "horizontal",
     anchorPoints: ["left", "right", "center"],
+    tileMode: "horizontal-3part",
+    tiles: {
+      left: "/assets/interaction-objects/platform/platform-left.png",
+      centerRepeat: "/assets/interaction-objects/platform/platform-center-repeat.png",
+      right: "/assets/interaction-objects/platform/platform-right.png",
+    },
+    metrics: {
+      tileWidth: 32,
+      tileHeight: 24,
+      landingLineY: 6,
+      minRepeatCount: 1,
+    },
   },
 ];
 

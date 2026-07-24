@@ -32,6 +32,7 @@ const pinkManagerCandidatePath = "/assets/lumi/pink-manager-stage-2-production-c
 const glassFrogCanonicalPath = "/assets/lumi/glass-frog-stage-2";
 const glassFrogCandidatePath = "/assets/lumi/glass-frog-stage-2-production-candidates";
 const seaBunnySlugCandidatePath = "/assets/lumi/sea-bunny-slug-stage-2-production-candidates";
+const friedEggJellyfishCandidatePath = "/assets/lumi/fried-egg-jellyfish-stage-2-production-candidates";
 
 const floatAnchor: SpriteAnchor = { type: "float", x: 32, y: 58 };
 const topGripAnchor: SpriteAnchor = { type: "top-grip", x: 32, y: 5 };
@@ -188,6 +189,16 @@ export const spriteReviewSets = [
       if (state === "hanging" || state === "climbing") return `sea-bunny-slug-stage-2-${state}-sheet-v2.png`;
       return `sea-bunny-slug-stage-2-${state}-sheet-v1.png`;
     },
+  },
+  {
+    id: "fried-egg-jellyfish-stage-2-production-candidates",
+    label: "Fried Egg Jellyfish Stage 2 - Production Candidates",
+    description:
+      "Fried egg jellyfish sheets generated from the Stage 2 base reference with bell-pulse movement.",
+    petId: "fried-egg-jellyfish",
+    stage: "stage-2",
+    path: friedEggJellyfishCandidatePath,
+    fileForState: (state: PetMotionState) => `fried-egg-jellyfish-stage-2-${state}-sheet-v1.png`,
   },
 ] as const satisfies readonly SpriteReviewSet[];
 

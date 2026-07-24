@@ -39,6 +39,7 @@ docs/design-references/concept.png
 | `01-manager-sprite/planaria-stage-1-animation-sample.md` | 11종 캐릭터 애니메이션 확장을 위한 기준 샘플: 64x64 frame, anchor, playback, reduced-motion 기준 |
 | `01-manager-sprite/stage-1-pet-interaction-motion-contract.md` | 펫 상호작용 motion sheet 계약: accepted Stage 2 canonical, variable frame count, playbackFrames, walk/run/jump/climbing 기준 |
 | `01-manager-sprite/sea-bunny-slug-stage-2-motion-plan.md` | 꼬마비로드갯민숭달팽이 Stage 2 모션 상세 기획과 등 무늬 수정 기준 |
+| `01-manager-sprite/fried-egg-jellyfish-stage-2-motion-plan.md` | 계란후라이 해파리 Stage 2 모션 상세 기획과 bell-pulse 이동 기준 |
 | `01-manager-sprite/manager-asset-naming-convention.md` | 확정 manager runtime 폴더, candidate 폴더, review asset 명명 규칙 |
 
 ## 기간 내 승격 확장 에셋
@@ -51,6 +52,7 @@ docs/design-references/concept.png
 | `05-social-world/flower-field.md` | 공개 퀘스트 탐색용 꽃밭 확장안 |
 | `06-pixel-tv/reality-pixel-tv.md` | 현실 픽셀화 TV 확장안 |
 | `07-audio-visual-fx/visual-fx-sheets.md` | 캐릭터 반응, 완료, 복구, 레벨업 효과 |
+| `08-interaction-objects/window-platform-ladder-tiles.md` | 창 안에서 쓰는 사다리/플랫폼 9-slice tile-repeat 에셋 |
 
 ## 보류 확장 에셋
 

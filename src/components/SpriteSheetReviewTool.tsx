@@ -1,66 +1,37 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { CanvasSpriteAnimator } from "./CanvasSpriteAnimator";
 import { getSpriteReviewAnimations, getSpriteReviewSet, spriteReviewSets, type SpriteReviewSetId } from "../data/spriteReviewAssets";
 import type { SpriteAnimationAsset } from "../data/assetManifest";
+import {
+  defaultWindowPetPlacementDrafts,
+  readWindowPetPlacementDrafts,
+  resolveWindowPetPosition,
+  runtimeWindowPetSlots,
+  windowPetPlacementStorageKey,
+  type WindowPetAttachSide,
+  type WindowPetMotion,
+  type WindowPetPlacementDraft,
+  type WindowPetPlacementDraftsByMotion,
+} from "../data/windowPetPlacements";
 
 const scaleOptions = [2, 3, 4] as const;
 const speedOptions = [0.5, 1, 1.5, 2] as const;
 const attachSideOptions = ["bottom", "left", "right", "top"] as const;
 const placementMotionOptions = ["hanging", "hiding", "climbing", "jump"] as const;
-const mockWindow = { x: 140, y: 62, width: 420, height: 190 };
+const questMockWindow = { x: 140, y: 62, ...runtimeWindowPetSlots["below-quest"].windowSize };
+const recoveryMockWindow = { x: 140, y: 62, ...runtimeWindowPetSlots["beside-recovery"].windowSize };
 
-type AttachSide = (typeof attachSideOptions)[number];
-type PlacementMotion = (typeof placementMotionOptions)[number];
-
-interface PlacementDraft {
-  offsetX: number;
-  offsetY: number;
-  scale: number;
-  edge: AttachSide;
-  mirrorX: boolean;
-  layer: "front" | "behind-window";
-}
-
-type PlacementDraftsByMotion = Record<PlacementMotion, Record<AttachSide, PlacementDraft>>;
 type PlacementDraftsBySet = Partial<Record<SpriteReviewSetId, PlacementDraftsByMotion>>;
-
-function placement(
-  edge: AttachSide,
-  offsetX = 0,
-  offsetY = 0,
-  scale = 1,
-  mirrorX = false,
-  layer: PlacementDraft["layer"] = "front",
-): PlacementDraft {
-  return { edge, offsetX, offsetY, scale, mirrorX, layer };
-}
-
-const defaultPlacementDrafts: PlacementDraftsByMotion = {
-  hanging: {
-    bottom: placement("bottom", 0, -8),
-    left: placement("left", -6, 0),
-    right: placement("right", 6, 0, 1, true),
-    top: placement("top", 0, 8),
-  },
-  hiding: {
-    bottom: placement("bottom", 0, 8, 1, false, "behind-window"),
-    left: placement("left", -6, 0, 1, false, "behind-window"),
-    right: placement("right", 6, 0, 1, true, "behind-window"),
-    top: placement("top", 0, -8, 1, false, "behind-window"),
-  },
-  climbing: {
-    bottom: placement("bottom", 0, -8),
-    left: placement("left", -4, 0),
-    right: placement("right", 4, 0, 1, true),
-    top: placement("top", 0, 8),
-  },
-  jump: {
-    bottom: placement("bottom", 0, -16),
-    left: placement("left", -10, -8),
-    right: placement("right", 10, -8, 1, true),
-    top: placement("top", 0, 12),
-  },
+type AttachSide = WindowPetAttachSide;
+type PlacementMotion = WindowPetMotion;
+type PlacementDraft = WindowPetPlacementDraft;
+type PlacementDraftsByMotion = WindowPetPlacementDraftsByMotion;
+type MockWindowRect = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 function withSpeed(animation: SpriteAnimationAsset, speed: number): SpriteAnimationAsset {
@@ -77,12 +48,20 @@ export function SpriteSheetReviewTool() {
   const [speed, setSpeed] = useState<(typeof speedOptions)[number]>(1);
   const [reviewSetId, setReviewSetId] = useState<SpriteReviewSetId>("pink-manager-stage-2-production-candidates");
   const [placementMotion, setPlacementMotion] = useState<PlacementMotion>("hanging");
-  const [attachSide, setAttachSide] = useState<AttachSide>("bottom");
-  const [placementDrafts, setPlacementDrafts] = useState<PlacementDraftsBySet>({});
+  const [attachSide, setAttachSide] = useState<AttachSide>(runtimeWindowPetSlots["below-quest"].edge);
+  const [placementDrafts, setPlacementDrafts] = useState<PlacementDraftsBySet>(() => ({
+    "pink-manager-stage-2": readWindowPetPlacementDrafts((key) => window.localStorage.getItem(key)),
+    "pink-manager-stage-2-production-candidates": readWindowPetPlacementDrafts((key) => window.localStorage.getItem(key)),
+  }));
+  const [saveMessage, setSaveMessage] = useState("");
   const [showAnchor, setShowAnchor] = useState(true);
+  const mockWindowRef = useRef<HTMLElement | null>(null);
   const reviewSet = getSpriteReviewSet(reviewSetId);
-  const currentSetPlacements = placementDrafts[reviewSetId] ?? defaultPlacementDrafts;
+  const currentSetPlacements = placementDrafts[reviewSetId] ?? defaultWindowPetPlacementDrafts;
   const currentPlacement = currentSetPlacements[placementMotion][attachSide];
+  const mockWindow = placementMotion === "hiding" ? recoveryMockWindow : questMockWindow;
+  const [measuredMockWindow, setMeasuredMockWindow] = useState<MockWindowRect>(mockWindow);
+  const effectiveMockWindow = measuredMockWindow;
   const baseAnimations = useMemo(() => getSpriteReviewAnimations(reviewSetId), [reviewSetId]);
   const animations = useMemo(
     () => baseAnimations.map((animation) => withSpeed(animation, speed)),
@@ -90,12 +69,20 @@ export function SpriteSheetReviewTool() {
   );
   const selectedBaseAnimation = baseAnimations.find((animation) => animation.states[0] === placementMotion) ?? baseAnimations[0];
   const selectedAnimation = withSpeed(selectedBaseAnimation, speed);
-  const previewSpriteScale = scale * currentPlacement.scale;
+  const edgePoint = getMockEdgePoint(effectiveMockWindow, currentPlacement.edge);
+  const resolvedPreviewPosition = resolveWindowPetPosition({
+    placement: currentPlacement,
+    windowPosition: { x: effectiveMockWindow.x, y: effectiveMockWindow.y },
+    windowSize: { width: effectiveMockWindow.width, height: effectiveMockWindow.height },
+    frameWidth: selectedAnimation.frameWidth,
+    anchor: selectedAnimation.anchor,
+    baseSpriteSize: selectedAnimation.frameWidth * scale,
+  });
+  const previewSpriteScale = resolvedPreviewPosition.size / selectedAnimation.frameWidth;
   const anchorX = (currentPlacement.mirrorX ? selectedAnimation.frameWidth - selectedAnimation.anchor.x : selectedAnimation.anchor.x) * previewSpriteScale;
   const anchorY = selectedAnimation.anchor.y * previewSpriteScale;
-  const edgePoint = getMockEdgePoint(currentPlacement.edge);
-  const spriteLeft = edgePoint.x + currentPlacement.offsetX - anchorX;
-  const spriteTop = edgePoint.y + currentPlacement.offsetY - anchorY;
+  const spriteLeft = resolvedPreviewPosition.left;
+  const spriteTop = resolvedPreviewPosition.top;
   const finalAnchorX = edgePoint.x + currentPlacement.offsetX;
   const finalAnchorY = edgePoint.y + currentPlacement.offsetY;
   const placementSnippet = `placement: {\n${placementMotionOptions
@@ -110,9 +97,42 @@ export function SpriteSheetReviewTool() {
     })
     .join("\n")}\n}`;
 
+  useLayoutEffect(() => {
+    const element = mockWindowRef.current;
+    if (!element) return undefined;
+
+    const stageRect = element.offsetParent instanceof HTMLElement
+      ? element.offsetParent.getBoundingClientRect()
+      : { left: 0, top: 0 };
+    const measure = () => {
+      const rect = element.getBoundingClientRect();
+      setMeasuredMockWindow({
+        x: rect.left - stageRect.left,
+        y: rect.top - stageRect.top,
+        width: rect.width,
+        height: rect.height,
+      });
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+
+    if (typeof ResizeObserver === "undefined") {
+      return () => window.removeEventListener("resize", measure);
+    }
+
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(element);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [mockWindow.x, mockWindow.y, mockWindow.width, mockWindow.height, placementMotion]);
+
   function updatePlacement(nextPlacement: Partial<PlacementDraft>) {
     setPlacementDrafts((drafts) => {
-      const setDrafts = drafts[reviewSetId] ?? defaultPlacementDrafts;
+      const setDrafts = drafts[reviewSetId] ?? defaultWindowPetPlacementDrafts;
       return {
         ...drafts,
         [reviewSetId]: {
@@ -127,6 +147,17 @@ export function SpriteSheetReviewTool() {
         },
       };
     });
+    setSaveMessage("");
+  }
+
+  function savePlacementForRuntime() {
+    window.localStorage.setItem(windowPetPlacementStorageKey, JSON.stringify(currentSetPlacements));
+    setPlacementDrafts((drafts) => ({
+      ...drafts,
+      "pink-manager-stage-2": currentSetPlacements,
+      "pink-manager-stage-2-production-candidates": currentSetPlacements,
+    }));
+    setSaveMessage("Saved for runtime preview on this browser origin.");
   }
 
   return (
@@ -261,6 +292,12 @@ export function SpriteSheetReviewTool() {
             {currentPlacement.mirrorX ? ` -> mirrored ${selectedAnimation.frameWidth - selectedAnimation.anchor.x}, ${selectedAnimation.anchor.y}` : ""}
           </span>
         </div>
+        <button type="button" onClick={savePlacementForRuntime}>
+          Save placement
+        </button>
+        <p className="sprite-placement-save-message">
+          {saveMessage || "Save writes this placement to the same browser origin used by the runtime preview."}
+        </p>
       </section>
 
       <section
@@ -269,15 +306,18 @@ export function SpriteSheetReviewTool() {
       >
         <div className="sprite-placement-preview-stage">
           <section
-            className="sprite-placement-window-mock"
+            ref={mockWindowRef}
+            className={`sprite-placement-window-mock xp-window positioned ${placementMotion === "hiding" ? "recovery-window" : "quest-window"}`}
             style={
               {
                 "--mock-window-x": `${mockWindow.x}px`,
                 "--mock-window-y": `${mockWindow.y}px`,
                 "--mock-window-width": `${mockWindow.width}px`,
                 "--mock-window-height": `${mockWindow.height}px`,
+                "--window-x": `${mockWindow.x}px`,
+                "--window-y": `${mockWindow.y}px`,
               } as CSSProperties &
-                Record<"--mock-window-x" | "--mock-window-y" | "--mock-window-width" | "--mock-window-height", string>
+                Record<"--mock-window-x" | "--mock-window-y" | "--mock-window-width" | "--mock-window-height" | "--window-x" | "--window-y", string>
             }
           >
             <div className="sprite-placement-titlebar">
@@ -412,7 +452,7 @@ export function SpriteSheetReviewTool() {
   );
 }
 
-function getMockEdgePoint(edge: AttachSide) {
+function getMockEdgePoint(mockWindow: MockWindowRect, edge: AttachSide) {
   if (edge === "top") return { x: mockWindow.x + mockWindow.width / 2, y: mockWindow.y };
   if (edge === "left") return { x: mockWindow.x, y: mockWindow.y + mockWindow.height / 2 };
   if (edge === "right") return { x: mockWindow.x + mockWindow.width, y: mockWindow.y + mockWindow.height / 2 };
