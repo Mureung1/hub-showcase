@@ -80,8 +80,17 @@ export async function createMessageInChatRoom(chatRoomId, senderId, content) {
 
 // chatRoomId 채팅방의 메시지 전체를 오래된 것부터 최신순으로 조회한다.
 // 채팅방이 존재하지 않으면 404, 요청자가 해당 채팅방의 참여자(user1Id/user2Id)가 아니면 403을 던진다
+// 조회와 함께 요청자 본인 쪽의 lastReadAt을 현재 시각으로 갱신한다 (상대방 쪽은 건드리지 않음)
 export async function getMessagesInChatRoom(chatRoomId, requesterId) {
   const chatRoom = await findChatRoomAndVerifyParticipant(chatRoomId, requesterId)
+  const requesterUserId = BigInt(requesterId)
+
+  const isUser1 = chatRoom.user1Id === requesterUserId
+
+  await prisma.candidateChatRoom.update({
+    where: { id: chatRoom.id },
+    data: isUser1 ? { user1LastReadAt: new Date() } : { user2LastReadAt: new Date() },
+  })
 
   return prisma.candidateChatMessage.findMany({
     where: { chatRoomId: chatRoom.id },

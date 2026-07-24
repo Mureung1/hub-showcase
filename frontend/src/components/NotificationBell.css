@@ -1,0 +1,191 @@
+.notification-bell {
+  position: relative;
+}
+
+.notification-bell-button {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--card-white);
+  box-shadow: 0 4px 12px rgba(74, 46, 34, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.notification-bell-button:hover {
+  filter: brightness(0.97);
+}
+
+.notification-bell-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #d4537e;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.notification-bell-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 320px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--card-white);
+  border-radius: 20px;
+  box-shadow: 0 10px 28px rgba(74, 46, 34, 0.16);
+  padding: 8px;
+  z-index: 100;
+}
+
+.notification-bell-empty {
+  padding: 24px 12px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-warm-gray);
+}
+
+.notification-bell-section {
+  padding: 4px;
+}
+
+.notification-bell-section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: none;
+  background: transparent;
+  padding: 12px 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-brown-dark);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.notification-bell-chevron {
+  font-size: 10px;
+  color: var(--text-warm-gray);
+}
+
+.notification-bell-divider {
+  height: 1px;
+  background: rgba(180, 154, 140, 0.25);
+  margin: 4px 8px;
+}
+
+.notification-bell-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+
+.notification-bell-list-empty {
+  font-size: 13px;
+  color: var(--text-warm-gray);
+  padding: 8px 4px;
+}
+
+.notification-bell-chat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: none;
+  background: var(--bg-cream);
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.notification-bell-chat-nickname {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-brown-dark);
+}
+
+.notification-bell-chat-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #d4537e;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-bell-invite-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-cream);
+  border-radius: 14px;
+  padding: 10px 14px;
+  gap: 8px;
+}
+
+.notification-bell-invite-nickname {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-brown-dark);
+}
+
+.notification-bell-invite-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.notification-bell-invite-button {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.notification-bell-invite-accept {
+  background: var(--coral-primary);
+  color: #fff;
+}
+
+.notification-bell-invite-reject {
+  background: var(--card-white);
+  color: var(--text-warm-gray);
+  border: 1px solid rgba(180, 154, 140, 0.4);
+}
+
+.notification-bell-invite-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.notification-bell-invite-error {
+  font-size: 12px;
+  color: var(--coral-primary);
+  padding: 4px 4px 0;
+}

@@ -12,7 +12,9 @@
   width: 100%;
   max-width: 900px;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 12px;
   margin-bottom: 4px;
 }
 

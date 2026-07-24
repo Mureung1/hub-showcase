@@ -1,10 +1,17 @@
 .team-setup-page {
+  position: relative;
   min-height: 100vh;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-cream);
+}
+
+.team-setup-notification-bell {
+  position: absolute;
+  top: 32px;
+  right: 32px;
 }
 
 .team-setup-message {

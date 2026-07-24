@@ -79,6 +79,12 @@
   color: var(--text-warm-gray);
 }
 
+.team-size-select-error {
+  margin-top: 24px;
+  font-size: 14px;
+  color: var(--like-red);
+}
+
 @media (max-width: 720px) {
   .team-size-select-page {
     padding: 24px 16px;

@@ -58,3 +58,16 @@ export async function getInviteCodeByUserId(userId) {
 
   return user.inviteCode
 }
+
+// 로그인한 본인의 선호 과팅 인원(팀당 인원수) 저장
+export async function updatePreferredTeamSize(userId, teamSize) {
+  const targetId = BigInt(userId)
+
+  const user = await prisma.user.update({
+    where: { userId: targetId },
+    data: { preferredTeamSize: teamSize },
+    select: { preferredTeamSize: true },
+  })
+
+  return user.preferredTeamSize
+}

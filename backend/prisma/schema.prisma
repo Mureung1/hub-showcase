@@ -25,6 +25,7 @@ model User {
   birthYear    Int      @map("birth_year")
   schoolName   String   @map("school_name") @db.VarChar(100)
   inviteCode   String?  @unique @map("invite_code") @db.VarChar(50)
+  preferredTeamSize Int? @map("preferred_team_size")
   createdAt    DateTime @default(now()) @map("created_at")
 
   // 관계
@@ -229,6 +230,9 @@ model CandidateChatRoom {
   user1Id   BigInt   @map("user1_id")
   user2Id   BigInt   @map("user2_id")
   createdAt DateTime @default(now()) @map("created_at")
+  // 각 유저가 이 채팅방의 메시지를 마지막으로 조회한 시각. null이면 한 번도 읽지 않은 상태.
+  user1LastReadAt DateTime? @map("user1_last_read_at")
+  user2LastReadAt DateTime? @map("user2_last_read_at")
 
   user1    User                   @relation("CandidateChatRoomUser1", fields: [user1Id], references: [userId])
   user2    User                   @relation("CandidateChatRoomUser2", fields: [user2Id], references: [userId])

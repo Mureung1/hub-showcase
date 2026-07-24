@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "title": "우리결",
+  "summary": "취미·성향 기반 대학생 매칭 플랫폼 (과팅 그룹 매칭 + 룸메이트 매칭).",
+  "githubUser": "ksj2002",
+  "demoUrl": "",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/dating.webp",
+    "screenshots/dating_same.webp",
+    "screenshots/select_team_size.webp"
+  ],
+  "problem": "대학생이 과팅을 하려면 주변 지인의 주선이 필요해 인맥이 없으면 기회 자체가 생기지 않고, 룸메이트를 구할 때도 게시글을 일일이 확인하며 생활 성향을 비교해야 해서 비효율적입니다.",
+  "targetUsers": [
+    "주변 지인 부탁 없이 친구들과 팀을 이뤄 부담 없이 과팅을 하고 싶은 대학생",
+    "생활 성향이 맞는 룸메이트를 찾는 대학생"
+  ],
+  "features": [
+    "학교 이메일(.ac.kr) 인증을 거친 재학생만 이용할 수 있습니다.",
+    "취미·이상형·생활 성향 테스트로 나의 성향 유형을 분석합니다.",
+    "생활 성향 코사인 유사도와 흡연·음주 등 필수 조건을 기반으로 룸메이트를 매칭합니다.",
+    "동성 그룹 매칭 → 팀 확정 → 이성 그룹 매칭의 2단계 구조로 과팅 그룹을 매칭합니다.",
+    "매칭 신청·수락·거절과 채팅, 알림 기능으로 매칭 성사 흐름을 처리합니다."
+  ],
+  "featureTags": [
+    "성향 테스트",
+    "룸메이트 매칭",
+    "과팅 그룹 매칭"
+  ],
+  "techStack": [
+    "React",
+    "Vite",
+    "TypeScript",
+    "Node.js",
+    "Express",
+    "Prisma",
+    "MySQL"
+  ],
+  "techHighlights": [
+    "React + zustand로 로그인 상태와 테스트 진행 상태를 관리하고, axios로 백엔드 API와 통신합니다.",
+    "Prisma 7 + MySQL로 취미/이상형/생활 성향 테스트 결과를 JSON 컬럼으로 저장하고, 테스트 완료 여부는 별도 boolean 컬럼 없이 결과 테이블 조회로 판단합니다.",
+    "룸메이트 매칭은 흡연·음주·성별 등 하드필터로 후보를 먼저 걸러낸 뒤, 생활 성향 벡터의 코사인 유사도(0.6) + 소프트필터 일치도(0.4)로 궁합 점수를 계산합니다."
+  ],
+  "developmentWithAI": "저는 문제 정의, 핵심 기능, 매칭 알고리즘의 방향을 직접 정했습니다. AI(Claude)는 기획 내용을 바탕으로 작업을 작은 단위로 나누고, 각 단계별 구현 프롬프트와 코드 초안을 만들었습니다. 저는 매 단계마다 Prisma Studio 확인, curl 테스트, 브라우저 동작 확인을 거쳐 결과를 검증하고 다음 단계로 넘어갔습니다.",
+  "agent": {
+    "summary": "기획 문서 정리부터 단계별 구현 프롬프트 작성, 결과 검증까지 Claude와 Claude Code를 함께 사용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Claude (기획/설계 어시스턴트)",
+        "purpose": "기획서·성향 테스트 설계·매칭 알고리즘을 함께 정리하고, Claude Code에 전달할 작업 프롬프트를 작성합니다."
+      },
+      {
+        "type": "agent",
+        "name": "Claude Code",
+        "purpose": "정해진 작업 단위(화면, API, DB 연동 등)를 실제 코드로 구현합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "기능을 작은 작업 단위로 분해",
+          "Claude Code용 작업 프롬프트 작성",
+          "Claude Code로 코드 구현",
+          "Prisma Studio/curl/브라우저로 결과 검증",
+          "문제 발생 시 원인 분석 후 다음 단계 진행"
+        ]
+      }
+    ]
+  }
+}
