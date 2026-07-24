@@ -509,6 +509,9 @@ export function createAccountRuntimeRouteAdapter(
 
     async refresh({ signal }) {
       if (shuttingDown) return cloneProjection(unavailableProjection())
+      if (attempt || startFlight || attemptFlight) {
+        return cloneProjection(projection)
+      }
       return readFreshAccount(signal)
     },
 

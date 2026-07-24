@@ -505,6 +505,25 @@ test('private refresh bypasses the cached projection and invalidates Ready from 
   assert.equal(harness.readyInvalidations.count, 1)
 })
 
+test('private refresh never reads through an active login attempt', async () => {
+  const harness = createHarness({
+    accountReads: [
+      { status: 'ok', account: { state: 'signed_out' } },
+      { status: 'ok', account: { state: 'signed_out' } },
+    ],
+    browserLoginStarts: [pendingLoginStart()],
+  })
+  await startPendingLogin(harness.adapter)
+  const callsBeforeRefresh = harness.runtime.calls.length
+
+  assertProjection(
+    await harness.adapter.refresh({ signal: signal() }),
+    PUBLIC_PREVIEW_ACCOUNT_FIXTURES.loginPending,
+  )
+  assert.equal(harness.runtime.calls.length, callsBeforeRefresh)
+  assert.equal(harness.adapter.hasPendingAttempt(), true)
+})
+
 test('wrong attempt and disallowed account commands fail closed without native calls', async () => {
   const harness = createHarness({
     accountReads: [
