@@ -4,6 +4,12 @@
   gap: clamp(0.875rem, 1.5vw, 1.25rem);
 }
 
+.user-layout .meal-timeline .panel {
+  background: #141418;
+  border-color: rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+}
+
 .meal-item-header {
   display: flex;
   align-items: flex-start;
@@ -29,6 +35,42 @@
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border-radius: 999px;
   vertical-align: middle;
+}
+
+.meal-ai-badge--pending {
+  color: #fbbf24;
+  background: color-mix(in srgb, #fbbf24 14%, transparent);
+}
+
+.meal-item--pending {
+  border-color: color-mix(in srgb, #fbbf24 22%, rgba(255, 255, 255, 0.06));
+}
+
+.meal-macros--pending div {
+  opacity: 0.65;
+}
+
+.meal-feedback--pending {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fbbf24;
+}
+
+.meal-pending-spinner {
+  flex-shrink: 0;
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 2px solid color-mix(in srgb, #fbbf24 25%, transparent);
+  border-top-color: #fbbf24;
+  border-radius: 50%;
+  animation: meal-pending-spin 0.75s linear infinite;
+}
+
+@keyframes meal-pending-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .meal-item h3 {

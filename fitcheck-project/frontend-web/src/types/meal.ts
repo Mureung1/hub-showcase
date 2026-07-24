@@ -19,6 +19,8 @@ export interface MealLog {
   macros: MealMacros;
   aiFeedback: string | null;
   createdAt: string;
+  /** Gemini 백그라운드 분석 대기 중 */
+  aiAnalysisPending?: boolean;
 }
 
 export interface CreateMealPayload {

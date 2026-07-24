@@ -45,6 +45,40 @@ function mergeMacros(
   };
 }
 
+export function shouldQueueMealAiAnalysis(input: {
+  mealType: MealType;
+  memo?: string | null;
+  imageUrl?: string | null;
+  macros?: Partial<MealMacros>;
+  aiFeedback?: string | null;
+}): boolean {
+  if (!isGeminiConfigured()) return false;
+
+  const clientMacros = hasExplicitMacros(input.macros);
+  const needsFeedback = !input.aiFeedback?.trim();
+  const hasImage = Boolean(input.imageUrl?.trim());
+  const memo = input.memo?.trim() ?? '';
+
+  if (!needsFeedback && clientMacros) return false;
+  if (!hasImage && !needsFeedback) return false;
+  if (!hasImage && !memo) return false;
+
+  return needsFeedback || (hasImage && !clientMacros);
+}
+
+function isMealAiAnalysisPending(row: MealLogRow): boolean {
+  if (!isGeminiConfigured()) return false;
+  if (row.ai_feedback?.trim()) return false;
+
+  return shouldQueueMealAiAnalysis({
+    mealType: row.meal_type as MealType,
+    memo: row.memo,
+    imageUrl: row.image_url,
+    macros: normalizeMacros(row.macros),
+    aiFeedback: row.ai_feedback,
+  });
+}
+
 function toMealLogDto(row: MealLogRow): MealLogDto {
   return {
     id: row.id,
@@ -57,8 +91,83 @@ function toMealLogDto(row: MealLogRow): MealLogDto {
     macros: normalizeMacros(row.macros),
     aiFeedback: row.ai_feedback,
     createdAt: row.created_at,
+    aiAnalysisPending: isMealAiAnalysisPending(row),
   };
 }
+
+interface MealAiJobInput {
+  mealType: MealType;
+  memo: string;
+  imageUrl?: string | null;
+  estimateMacros: boolean;
+}
+
+async function runMealAiAnalysis(
+  userId: string,
+  mealId: string,
+  job: MealAiJobInput,
+): Promise<void> {
+  try {
+    const analysis = await analyzeMealWithGemini({
+      mealType: job.mealType,
+      memo: job.memo,
+      imageUrl: job.imageUrl,
+      estimateMacros: job.estimateMacros,
+    });
+
+    if (!analysis) {
+      await updateMealLogForUser(userId, mealId, {
+        aiFeedback: 'AI 분석 결과를 가져오지 못했습니다.',
+      });
+      return;
+    }
+
+    const { data: existing, error } = await getSupabase()
+      .from('meal_logs')
+      .select('*')
+      .eq('id', mealId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    if (!existing) return;
+
+    const row = existing as MealLogRow;
+    const currentMacros = normalizeMacros(row.macros);
+    const keepClientMacros = hasExplicitMacros(currentMacros);
+
+    await updateMealLogForUser(userId, mealId, {
+      macros: keepClientMacros ? currentMacros : analysis.macros,
+      aiFeedback: analysis.aiFeedback,
+    });
+  } catch (err) {
+    console.error('[mealAi] background analysis failed:', err);
+    try {
+      await updateMealLogForUser(userId, mealId, {
+        aiFeedback: 'AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+      });
+    } catch (updateErr) {
+      console.error('[mealAi] failed to write analysis error state:', updateErr);
+    }
+  }
+}
+
+export function queueMealAiAnalysis(
+  userId: string,
+  mealId: string,
+  input: CreateMealLogInput,
+): void {
+  const clientMacros = hasExplicitMacros(input.macros);
+  const job: MealAiJobInput = {
+    mealType: input.mealType,
+    memo: input.memo ?? '',
+    imageUrl: input.imageUrl,
+    estimateMacros: Boolean(input.imageUrl?.trim()) && !clientMacros,
+  };
+
+  void runMealAiAnalysis(userId, mealId, job);
+}
+
 /** Ensures a profiles row exists for FK on meal_logs (fallback when auth trigger missed). */
 export async function ensureProfile(userId: string): Promise<void> {
   const supabase = getSupabase();
@@ -114,66 +223,38 @@ export async function listMealLogs(
   };
 }
 
-async function enrichMealInputWithAi(input: CreateMealLogInput): Promise<CreateMealLogInput> {
-  if (!isGeminiConfigured()) return input;
-
-  const clientMacros = hasExplicitMacros(input.macros);
-  const needsFeedback = !input.aiFeedback?.trim();
-  const hasImage = Boolean(input.imageUrl?.trim());
-
-  if (!needsFeedback && clientMacros) return input;
-  if (!hasImage && !needsFeedback) return input;
-  if (!hasImage && !input.memo?.trim()) return input;
-
-  try {
-    const analysis = await analyzeMealWithGemini({
-      mealType: input.mealType,
-      memo: input.memo ?? '',
-      imageUrl: input.imageUrl,
-      estimateMacros: hasImage && !clientMacros,
-    });
-
-    if (!analysis) return input;
-
-    return {
-      ...input,
-      macros: clientMacros
-        ? mergeMacros(undefined, input.macros)
-        : mergeMacros(undefined, analysis.macros),
-      aiFeedback: input.aiFeedback ?? analysis.aiFeedback,
-    };
-  } catch (err) {
-    console.error('[mealAi] Gemini analysis failed:', err);
-    return input;
-  }
-}
-
 export async function createMealLog(
   userId: string,
   input: CreateMealLogInput,
 ): Promise<MealLogDto> {
   await ensureProfile(userId);
 
-  const enriched = await enrichMealInputWithAi(input);
-
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('meal_logs')
     .insert({
       user_id: userId,
-      date: enriched.date,
-      meal_type: enriched.mealType,
-      time: enriched.time ?? null,
-      memo: enriched.memo ?? null,
-      image_url: enriched.imageUrl ?? null,
-      macros: mergeMacros(undefined, enriched.macros),
-      ai_feedback: enriched.aiFeedback ?? null,
+      date: input.date,
+      meal_type: input.mealType,
+      time: input.time ?? null,
+      memo: input.memo ?? null,
+      image_url: input.imageUrl ?? null,
+      macros: mergeMacros(undefined, input.macros),
+      ai_feedback: input.aiFeedback ?? null,
     })
     .select('*')
     .single();
 
   if (error) throw new Error(error.message);
-  return toMealLogDto(data as MealLogRow);
+
+  const row = data as MealLogRow;
+  const dto = toMealLogDto(row);
+
+  if (shouldQueueMealAiAnalysis(input)) {
+    queueMealAiAnalysis(userId, row.id, input);
+  }
+
+  return dto;
 }
 
 export async function updateMealLogForUser(
