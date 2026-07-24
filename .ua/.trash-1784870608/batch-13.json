@@ -1,0 +1,132 @@
+{
+  "nodes": [
+    {
+      "id": "file:docs/agent-workflow.html",
+      "type": "file",
+      "name": "agent-workflow.html",
+      "filePath": "docs/agent-workflow.html",
+      "summary": "요구사항에서 구현·테스트 작성·독립 검증·사용자 판단으로 이어지는 TeamFlow AI 개발 흐름과 역할 분리를 시각적으로 설명하는 독립 HTML 문서다.",
+      "tags": [
+        "documentation",
+        "workflow",
+        "tdd",
+        "agent-roles"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:docs/api.md",
+      "type": "document",
+      "name": "api.md",
+      "filePath": "docs/api.md",
+      "summary": "공개·인증·Mock AI API의 요청, 응답, 상태값, 오류 코드와 구현 위치를 정리한 TeamFlow HTTP API 명세다.",
+      "tags": [
+        "documentation",
+        "api-schema",
+        "authentication",
+        "mock-ai"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:docs/architecture.md",
+      "type": "document",
+      "name": "architecture.md",
+      "filePath": "docs/architecture.md",
+      "summary": "React/Vite, Express, Supabase, shared 패키지의 책임과 Google 로그인·게스트·인증 사용자 데이터 흐름을 설명하는 3계층 아키텍처 문서다.",
+      "tags": [
+        "documentation",
+        "architecture",
+        "data-flow",
+        "authentication"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:docs/deployment.md",
+      "type": "document",
+      "name": "deployment.md",
+      "filePath": "docs/deployment.md",
+      "summary": "Express API를 Render에, React 웹을 Vercel에 배포하고 CORS·환경 변수·Supabase OAuth 리디렉션을 연결하는 운영 배포 절차다.",
+      "tags": [
+        "documentation",
+        "deployment",
+        "vercel",
+        "render"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:docs/plan.md",
+      "type": "document",
+      "name": "plan.md",
+      "filePath": "docs/plan.md",
+      "summary": "팀 프로젝트 관리 문제, 사용자 시나리오, 핵심 기능, 화면 구조와 사용자 흐름을 정의한 TeamFlow 제품 기획서다.",
+      "tags": [
+        "documentation",
+        "product-plan",
+        "user-flow",
+        "requirements"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:docs/weekly-plan.md",
+      "type": "document",
+      "name": "weekly-plan.md",
+      "filePath": "docs/weekly-plan.md",
+      "summary": "Supabase 연동과 핵심 기능 완성을 중심으로 3주차 P0·P1·P2 우선순위와 금요일 작업을 기록한 주간 실행 계획이다.",
+      "tags": [
+        "documentation",
+        "weekly-plan",
+        "priorities",
+        "delivery"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:docs/agent-workflow.html",
+      "target": "document:docs/plan.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/api.md",
+      "target": "document:docs/architecture.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/architecture.md",
+      "target": "document:docs/deployment.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/architecture.md",
+      "target": "document:docs/plan.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/deployment.md",
+      "target": "document:docs/api.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/weekly-plan.md",
+      "target": "document:docs/plan.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

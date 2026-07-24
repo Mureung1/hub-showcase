@@ -1,0 +1,128 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "apps/web/src/auth/AuthContext.js",
+      "language": "javascript",
+      "sizeLines": 3,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/auth/AuthFlows.test.jsx",
+      "language": "javascript",
+      "sizeLines": 83,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/auth/AuthProvider.jsx",
+      "language": "javascript",
+      "sizeLines": 131,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/auth/supabaseClient.js",
+      "language": "javascript",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/auth/supabaseClient.test.js",
+      "language": "javascript",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/AppFlows.test.jsx",
+      "language": "javascript",
+      "sizeLines": 615,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/CollaborationFlows.test.jsx",
+      "language": "javascript",
+      "sizeLines": 267,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "language": "javascript",
+      "sizeLines": 49,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/tasks/components/TaskDetailModal.test.jsx",
+      "language": "javascript",
+      "sizeLines": 39,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/main.jsx",
+      "language": "javascript",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/test/createTestTeamFlowRepository.js",
+      "language": "javascript",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/test/renderTeamFlowApp.jsx",
+      "language": "javascript",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/test/teamFlowFixture.js",
+      "language": "javascript",
+      "sizeLines": 118,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "apps/web/src/auth/AuthContext.js": [],
+    "apps/web/src/auth/AuthFlows.test.jsx": [
+      "apps/web/src/App.jsx",
+      "apps/web/src/auth/AuthProvider.jsx",
+      "apps/web/src/test/createTestTeamFlowRepository.js",
+      "apps/web/src/test/renderTeamFlowApp.jsx"
+    ],
+    "apps/web/src/auth/AuthProvider.jsx": [
+      "apps/web/src/auth/AuthContext.js"
+    ],
+    "apps/web/src/auth/supabaseClient.js": [],
+    "apps/web/src/auth/supabaseClient.test.js": [
+      "apps/web/src/auth/supabaseClient.js"
+    ],
+    "apps/web/src/features/AppFlows.test.jsx": [
+      "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "apps/web/src/test/createTestTeamFlowRepository.js",
+      "apps/web/src/test/renderTeamFlowApp.jsx"
+    ],
+    "apps/web/src/features/CollaborationFlows.test.jsx": [
+      "apps/web/src/test/createTestTeamFlowRepository.js",
+      "apps/web/src/test/renderTeamFlowApp.jsx"
+    ],
+    "apps/web/src/features/notes/MarkdownPreview.jsx": [],
+    "apps/web/src/features/tasks/components/TaskDetailModal.test.jsx": [
+      "apps/web/src/test/renderTeamFlowApp.jsx"
+    ],
+    "apps/web/src/main.jsx": [
+      "apps/web/src/App.jsx",
+      "apps/web/src/auth/AuthProvider.jsx",
+      "apps/web/src/auth/supabaseClient.js",
+      "apps/web/src/styles/global.css",
+      "apps/web/src/styles/tokens.css"
+    ],
+    "apps/web/src/test/createTestTeamFlowRepository.js": [
+      "apps/web/src/test/teamFlowFixture.js"
+    ],
+    "apps/web/src/test/renderTeamFlowApp.jsx": [
+      "apps/web/src/App.jsx",
+      "apps/web/src/auth/AuthProvider.jsx",
+      "apps/web/src/test/createTestTeamFlowRepository.js"
+    ],
+    "apps/web/src/test/teamFlowFixture.js": []
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "apps/web/src/styles/global.css",
+      "language": "css",
+      "sizeLines": 76,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/styles/tokens.css",
+      "language": "css",
+      "sizeLines": 38,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/styles/workspace.module.css",
+      "language": "css",
+      "sizeLines": 35,
+      "fileCategory": "markup"
+    }
+  ],
+  "batchImportData": {
+    "apps/web/src/styles/global.css": [],
+    "apps/web/src/styles/tokens.css": [],
+    "apps/web/src/styles/workspace.module.css": []
+  }
+}

@@ -1,0 +1,626 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 13,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 13,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 0,
+      "failed": 0,
+      "skipped": 13
+    }
+  },
+  "results": [
+    {
+      "path": "supabase/migrations/20260720030115_create_tasks.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 25,
+      "nonEmptyLines": 22,
+      "definitions": [
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "project_id",
+            "title",
+            "assignee_id",
+            "due_date",
+            "status",
+            "description",
+            "created_at"
+          ],
+          "startLine": 1,
+          "endLine": 16
+        },
+        {
+          "name": "tasks_project_created_at_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 18,
+          "endLine": 18
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 2
+      }
+    },
+    {
+      "path": "supabase/migrations/20260721054012_google_auth_workspace.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 326,
+      "nonEmptyLines": 292,
+      "definitions": [
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "workspace_owner_id",
+            "auth_user_id",
+            "name",
+            "initial",
+            "role",
+            "description",
+            "avatar_url",
+            "color",
+            "is_ai",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 3,
+          "endLine": 22
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "owner_id",
+            "name",
+            "description",
+            "status",
+            "start_date",
+            "end_date",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 26,
+          "endLine": 40
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "project_id",
+            "member_id",
+            "created_at"
+          ],
+          "startLine": 44,
+          "endLine": 49
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "slug",
+            "payload",
+            "is_active",
+            "updated_at"
+          ],
+          "startLine": 59,
+          "endLine": 66
+        },
+        {
+          "name": "members_workspace_owner_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 24,
+          "endLine": 24
+        },
+        {
+          "name": "projects_owner_created_at_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 42,
+          "endLine": 42
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 6
+      }
+    },
+    {
+      "path": "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 717,
+      "nonEmptyLines": 657,
+      "definitions": [
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "project_id",
+            "auth_user_id",
+            "email",
+            "kind",
+            "name",
+            "initial",
+            "role",
+            "description",
+            "avatar_url",
+            "color",
+            "is_ai",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 17,
+          "endLine": 43
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "project_id",
+            "user_id",
+            "member_id",
+            "joined_at"
+          ],
+          "startLine": 126,
+          "endLine": 135
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "project_id",
+            "invitee_email",
+            "invited_by",
+            "status",
+            "created_at",
+            "responded_at"
+          ],
+          "startLine": 158,
+          "endLine": 172
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "project_id",
+            "title",
+            "content",
+            "author_id",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 182,
+          "endLine": 192
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "project_id",
+            "parent_id",
+            "type",
+            "name",
+            "description",
+            "url",
+            "owner_id",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 197,
+          "endLine": 217
+        },
+        {
+          "name": "members_project_auth_user_unique",
+          "kind": "index",
+          "fields": [],
+          "startLine": 45,
+          "endLine": 45
+        },
+        {
+          "name": "members_project_created_at_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 48,
+          "endLine": 48
+        },
+        {
+          "name": "members_auth_user_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 49,
+          "endLine": 49
+        },
+        {
+          "name": "tasks_project_assignee_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 150,
+          "endLine": 150
+        },
+        {
+          "name": "project_access_user_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 151,
+          "endLine": 151
+        },
+        {
+          "name": "project_invitations_pending_unique",
+          "kind": "index",
+          "fields": [],
+          "startLine": 174,
+          "endLine": 174
+        },
+        {
+          "name": "project_invitations_email_status_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 177,
+          "endLine": 177
+        },
+        {
+          "name": "project_invitations_project_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 179,
+          "endLine": 179
+        },
+        {
+          "name": "notes_project_updated_at_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 194,
+          "endLine": 194
+        },
+        {
+          "name": "notes_author_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 195,
+          "endLine": 195
+        },
+        {
+          "name": "resources_project_parent_updated_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 219,
+          "endLine": 219
+        },
+        {
+          "name": "resources_owner_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 221,
+          "endLine": 221
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 17
+      }
+    },
+    {
+      "path": "supabase/migrations/20260722114219_collaboration_and_content_hardening.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 321,
+      "nonEmptyLines": 290,
+      "definitions": [
+        {
+          "name": "project_invitations_invited_by_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 4,
+          "endLine": 4
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 1
+      }
+    },
+    {
+      "path": "supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 172,
+      "nonEmptyLines": 155,
+      "definitions": [
+        {
+          "name": "project_access_user_member_fk_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 4,
+          "endLine": 4
+        },
+        {
+          "name": "notes_project_author_fk_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 6,
+          "endLine": 6
+        },
+        {
+          "name": "resources_project_owner_fk_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 9,
+          "endLine": 9
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 3
+      }
+    },
+    {
+      "path": "supabase/migrations/20260722154845_add_project_icon_key.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 8,
+      "nonEmptyLines": 6,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260722155721_backfill_demo_project_icons.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 22,
+      "nonEmptyLines": 22,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260723093000_private_resource_uploads.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 122,
+      "nonEmptyLines": 108,
+      "definitions": [
+        {
+          "name": "resources_storage_path_unique",
+          "kind": "index",
+          "fields": [],
+          "startLine": 46,
+          "endLine": 46
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 1
+      }
+    },
+    {
+      "path": "supabase/migrations/20260723094500_harden_private_resource_uploads.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 221,
+      "nonEmptyLines": 198,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260723185956_remove_manual_assignees.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 203,
+      "nonEmptyLines": 177,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260724090000_mock_ai_team_member.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 921,
+      "nonEmptyLines": 839,
+      "definitions": [
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "member_id",
+            "project_id",
+            "instructions",
+            "context_config",
+            "enabled",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 126,
+          "endLine": 144
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "project_id",
+            "ai_member_id",
+            "task_id",
+            "status",
+            "context_snapshot",
+            "result_markdown",
+            "error_message",
+            "applied_note_id",
+            "created_by",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 146,
+          "endLine": 198
+        },
+        {
+          "name": "members_project_ai_unique",
+          "kind": "index",
+          "fields": [],
+          "startLine": 84,
+          "endLine": 84
+        },
+        {
+          "name": "ai_runs_open_task_unique",
+          "kind": "index",
+          "fields": [],
+          "startLine": 200,
+          "endLine": 200
+        },
+        {
+          "name": "ai_runs_project_created_at_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 203,
+          "endLine": 203
+        },
+        {
+          "name": "ai_runs_project_agent_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 205,
+          "endLine": 205
+        },
+        {
+          "name": "ai_runs_project_task_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 207,
+          "endLine": 207
+        },
+        {
+          "name": "ai_runs_project_note_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 210,
+          "endLine": 210
+        },
+        {
+          "name": "ai_runs_task_created_at_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 213,
+          "endLine": 213
+        },
+        {
+          "name": "ai_runs_created_by_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 216,
+          "endLine": 216
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 10
+      }
+    },
+    {
+      "path": "supabase/migrations/20260724093000_mock_ai_fk_indexes.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 11,
+      "nonEmptyLines": 9,
+      "definitions": [
+        {
+          "name": "ai_runs_project_agent_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 2,
+          "endLine": 2
+        },
+        {
+          "name": "ai_runs_project_task_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 5,
+          "endLine": 5
+        },
+        {
+          "name": "ai_runs_project_note_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 9,
+          "endLine": 9
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 3
+      }
+    },
+    {
+      "path": "supabase/migrations/20260724094500_fix_demo_ai_markdown.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 23,
+      "nonEmptyLines": 23,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    }
+  ]
+}

@@ -5,7 +5,14 @@ import { TeamFlowContext } from './TeamFlowContext.js'
 function reducer(state, action) {
   switch (action.type) {
     case 'hydrate':
-      return { ...action.payload, ready: true, loadError: '' }
+      return {
+        ...emptyState,
+        ...action.payload,
+        aiAgents: action.payload.aiAgents ?? [],
+        aiRuns: action.payload.aiRuns ?? [],
+        ready: true,
+        loadError: '',
+      }
     case 'loadFailed':
       return { ...state, ready: false, loadError: action.message }
     case 'projectCreated':
@@ -32,6 +39,8 @@ function reducer(state, action) {
         notes: state.notes.filter((note) => note.projectId !== action.projectId),
         resources: state.resources.filter((resource) => resource.projectId !== action.projectId),
         invitations: state.invitations.filter((invitation) => invitation.projectId !== action.projectId),
+        aiAgents: state.aiAgents.filter((agent) => agent.projectId !== action.projectId),
+        aiRuns: state.aiRuns.filter((run) => run.projectId !== action.projectId),
       }
     case 'taskCreated':
       return { ...state, tasks: [action.task, ...state.tasks] }
@@ -90,20 +99,43 @@ function reducer(state, action) {
       return { ...state, invitations: [action.invitation, ...state.invitations] }
     case 'invitationRemoved':
       return { ...state, invitations: state.invitations.filter((invitation) => invitation.id !== action.invitationId) }
-    case 'aiSettingsUpdated':
+    case 'aiAgentCreated':
       return {
         ...state,
-        aiSettings: {
-          ...state.aiSettings,
-          [action.projectId]: {
-            ...(state.aiSettings[action.projectId] ?? {}),
-            ...action.patch,
-          },
-        },
+        members: upsertById(state.members, action.member),
+        projects: state.projects.map((project) => project.id === action.member.projectId
+          ? { ...project, memberIds: [...new Set([...project.memberIds, action.member.id])] }
+          : project),
+        aiAgents: upsertByKey(state.aiAgents, action.aiAgent, 'memberId'),
+      }
+    case 'aiAgentUpdated':
+      return {
+        ...state,
+        members: action.member ? upsertById(state.members, action.member) : state.members,
+        aiAgents: upsertByKey(state.aiAgents, action.aiAgent, 'memberId'),
+      }
+    case 'aiRunUpserted':
+      return {
+        ...state,
+        aiRuns: upsertById(state.aiRuns, action.aiRun),
+      }
+    case 'aiRunApplied':
+      return {
+        ...state,
+        aiRuns: upsertById(state.aiRuns, action.aiRun),
+        notes: action.note ? upsertById(state.notes, action.note) : state.notes,
       }
     default:
       return state
   }
+}
+
+function upsertByKey(items, value, key) {
+  return [...items.filter((item) => item[key] !== value[key]), value]
+}
+
+function upsertById(items, value) {
+  return upsertByKey(items, value, 'id')
 }
 
 const emptyState = {
@@ -116,10 +148,9 @@ const emptyState = {
   resources: [],
   invitations: [],
   currentMemberIdsByProject: {},
-  aiSettings: {},
-  aiHistory: [],
+  aiAgents: [],
+  aiRuns: [],
   currentUserId: '',
-  aiMemberId: '',
   accessMode: 'authenticated',
   capabilities: { projects: false, members: false, tasks: false, notes: false, resources: false, ai: false },
 }
@@ -327,9 +358,34 @@ export function TeamFlowProvider({ children, repository }) {
     repository.getResourceDownloadUrl(resourceId)
   ), [repository])
 
-  const updateAiSettings = useCallback(async (projectId, patch) => {
-    const result = await repository.updateAiSettings(projectId, patch)
-    dispatch({ type: 'aiSettingsUpdated', ...result })
+  const createAiAgent = useCallback(async (projectId, input) => {
+    const result = await repository.createAiAgent(projectId, input)
+    dispatch({ type: 'aiAgentCreated', ...result })
+    return result
+  }, [repository])
+
+  const updateAiAgent = useCallback(async (memberId, input) => {
+    const result = await repository.updateAiAgent(memberId, input)
+    dispatch({ type: 'aiAgentUpdated', ...result })
+    return result
+  }, [repository])
+
+  const createAiRun = useCallback(async (memberId, taskId) => {
+    const aiRun = await repository.createAiRun(memberId, taskId)
+    dispatch({ type: 'aiRunUpserted', aiRun })
+    return aiRun
+  }, [repository])
+
+  const applyAiRun = useCallback(async (runId) => {
+    const result = await repository.applyAiRun(runId)
+    dispatch({ type: 'aiRunApplied', ...result })
+    return result
+  }, [repository])
+
+  const rejectAiRun = useCallback(async (runId) => {
+    const aiRun = await repository.rejectAiRun(runId)
+    dispatch({ type: 'aiRunUpserted', aiRun })
+    return aiRun
   }, [repository])
 
   const value = useMemo(() => ({
@@ -359,11 +415,15 @@ export function TeamFlowProvider({ children, repository }) {
       updateResource,
       deleteResource,
       getResourceDownloadUrl,
-      updateAiSettings,
+      createAiAgent,
+      updateAiAgent,
+      createAiRun,
+      applyAiRun,
+      rejectAiRun,
       registerBeforeLeave,
       flushPending,
     },
-  }), [state, reload, reloadOnEntry, createProject, updateProject, deleteProject, createTask, updateTask, deleteTask, updateMember, deleteMember, createInvitation, acceptInvitation, rejectInvitation, cancelInvitation, createNote, updateNote, deleteNote, createResource, uploadResource, updateResource, deleteResource, getResourceDownloadUrl, updateAiSettings, registerBeforeLeave, flushPending])
+  }), [state, reload, reloadOnEntry, createProject, updateProject, deleteProject, createTask, updateTask, deleteTask, updateMember, deleteMember, createInvitation, acceptInvitation, rejectInvitation, cancelInvitation, createNote, updateNote, deleteNote, createResource, uploadResource, updateResource, deleteResource, getResourceDownloadUrl, createAiAgent, updateAiAgent, createAiRun, applyAiRun, rejectAiRun, registerBeforeLeave, flushPending])
 
   if (state.loadError) {
     return (

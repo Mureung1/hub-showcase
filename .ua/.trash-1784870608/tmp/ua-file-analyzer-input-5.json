@@ -1,0 +1,219 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "apps/web/src/components/ui/ResourceIcon.jsx",
+      "language": "javascript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/AddResourceModal.jsx",
+      "language": "javascript",
+      "sizeLines": 158,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "language": "javascript",
+      "sizeLines": 179,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/ResourcesPage.jsx",
+      "language": "javascript",
+      "sizeLines": 119,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/resourceValidation.js",
+      "language": "javascript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/resourceValidation.test.js",
+      "language": "javascript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "apps/web/src/components/ui/ResourceIcon.jsx": [
+      "apps/web/src/components/ui/ui.module.css"
+    ],
+    "apps/web/src/features/resources/AddResourceModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/features/resources/ResourcesPage.module.css",
+      "apps/web/src/features/resources/resourceValidation.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/resources/ResourceDetailModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/ResourceIcon.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/resources/ResourcesPage.module.css",
+      "apps/web/src/features/resources/resourceValidation.js",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/resources/ResourcesPage.jsx": [
+      "apps/web/src/components/ui/ResourceIcon.jsx",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/resources/AddResourceModal.jsx",
+      "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "apps/web/src/features/resources/ResourcesPage.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/resources/resourceValidation.js": [],
+    "apps/web/src/features/resources/resourceValidation.test.js": [
+      "apps/web/src/features/resources/resourceValidation.js"
+    ]
+  },
+  "neighborMap": {
+    "apps/web/src/components/ui/ResourceIcon.jsx": [
+      {
+        "path": "apps/web/src/components/ui/ui.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "ProjectDashboardPage"
+        ]
+      }
+    ],
+    "apps/web/src/features/resources/AddResourceModal.jsx": [
+      {
+        "path": "apps/web/src/components/ui/Modal.jsx",
+        "batchIndex": 1,
+        "symbols": [
+          "Modal"
+        ]
+      },
+      {
+        "path": "apps/web/src/components/ui/forms.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/features/resources/ResourcesPage.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/state/useTeamFlow.js",
+        "batchIndex": 1,
+        "symbols": [
+          "useTeamFlow"
+        ]
+      }
+    ],
+    "apps/web/src/features/resources/ResourceDetailModal.jsx": [
+      {
+        "path": "apps/web/src/components/ui/Modal.jsx",
+        "batchIndex": 1,
+        "symbols": [
+          "Modal"
+        ]
+      },
+      {
+        "path": "apps/web/src/components/ui/forms.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/constants/labels.js",
+        "batchIndex": 3,
+        "symbols": [
+          "PROJECT_STATUS_LABEL",
+          "TASK_STATUS_LABEL",
+          "RESOURCE_TYPE_LABEL",
+          "TASK_STATUS_ORDER"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/resources/ResourcesPage.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/lib/format.js",
+        "batchIndex": 3,
+        "symbols": [
+          "formatShortDate",
+          "formatPeriod",
+          "todayIso",
+          "addLocalDaysIso"
+        ]
+      },
+      {
+        "path": "apps/web/src/state/useTeamFlow.js",
+        "batchIndex": 1,
+        "symbols": [
+          "useTeamFlow"
+        ]
+      }
+    ],
+    "apps/web/src/features/resources/ResourcesPage.jsx": [
+      {
+        "path": "apps/web/src/constants/labels.js",
+        "batchIndex": 3,
+        "symbols": [
+          "PROJECT_STATUS_LABEL",
+          "TASK_STATUS_LABEL",
+          "RESOURCE_TYPE_LABEL",
+          "TASK_STATUS_ORDER"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/resources/CreateFolderModal.jsx",
+        "batchIndex": 1,
+        "symbols": [
+          "CreateFolderModal"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/resources/ResourcesPage.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/lib/format.js",
+        "batchIndex": 3,
+        "symbols": [
+          "formatShortDate",
+          "formatPeriod",
+          "todayIso",
+          "addLocalDaysIso"
+        ]
+      },
+      {
+        "path": "apps/web/src/state/useTeamFlow.js",
+        "batchIndex": 1,
+        "symbols": [
+          "useTeamFlow"
+        ]
+      },
+      {
+        "path": "apps/web/src/styles/workspace.module.css",
+        "batchIndex": 12,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/App.jsx",
+        "batchIndex": 4,
+        "symbols": [
+          "App"
+        ]
+      }
+    ]
+  }
+}

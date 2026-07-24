@@ -1,0 +1,30 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "packages/shared/src/project.js",
+      "language": "javascript",
+      "sizeLines": 296,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/shared/test/project.test.js",
+      "language": "javascript",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/tests/database/mock_ai_team_member_rls.sql",
+      "language": "sql",
+      "sizeLines": 841,
+      "fileCategory": "data"
+    }
+  ],
+  "batchImportData": {
+    "packages/shared/src/project.js": [],
+    "packages/shared/test/project.test.js": [
+      "packages/shared/src/project.js"
+    ],
+    "supabase/tests/database/mock_ai_team_member_rls.sql": []
+  }
+}

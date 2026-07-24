@@ -1,0 +1,69 @@
+{
+  "nodes": [
+    {
+      "id": "file:apps/web/src/features/projects/components/ProjectCard.module.css",
+      "type": "file",
+      "name": "ProjectCard.module.css",
+      "filePath": "apps/web/src/features/projects/components/ProjectCard.module.css",
+      "summary": "프로젝트 카드의 상태, 진행률, 팀원 아바타, 기간과 설정 동작을 배치하는 CSS Module이다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "projects",
+        "ui"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/components/ProjectIconPicker.module.css",
+      "type": "file",
+      "name": "ProjectIconPicker.module.css",
+      "filePath": "apps/web/src/features/projects/components/ProjectIconPicker.module.css",
+      "summary": "프로젝트 아이콘 선택기의 3열 옵션과 선택·오류·비활성 상태를 표현한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "projects",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/components/ProjectSettingsModal.module.css",
+      "type": "file",
+      "name": "ProjectSettingsModal.module.css",
+      "filePath": "apps/web/src/features/projects/components/ProjectSettingsModal.module.css",
+      "summary": "프로젝트 설정 모달의 삭제 진입점과 위험 작업 경고를 강조한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "projects",
+        "ui"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.module.css",
+      "target": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectIconPicker.module.css",
+      "target": "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectSettingsModal.module.css",
+      "target": "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

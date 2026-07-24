@@ -1,0 +1,112 @@
+{
+  "nodes": [
+    {
+      "id": "file:apps/web/src/styles/global.css",
+      "type": "file",
+      "name": "global.css",
+      "filePath": "apps/web/src/styles/global.css",
+      "summary": "브라우저 기본값, 전역 타이포그래피, 폼 컨트롤, 포커스 표시와 로딩 유틸리티를 정의한다.",
+      "tags": [
+        "global-styles",
+        "accessibility",
+        "forms",
+        "typography"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/styles/tokens.css",
+      "type": "file",
+      "name": "tokens.css",
+      "filePath": "apps/web/src/styles/tokens.css",
+      "summary": "웹 런타임에서 공유하는 글꼴, 색상, 상태, 레이아웃과 반경 디자인 토큰을 CSS 변수로 제공한다.",
+      "tags": [
+        "design-tokens",
+        "css-variables",
+        "theme",
+        "typography"
+      ],
+      "complexity": "simple",
+      "languageNotes": "외부 웹폰트와 CSS custom properties를 한 번 정의해 모든 화면에서 공유한다."
+    },
+    {
+      "id": "file:apps/web/src/styles/workspace.module.css",
+      "type": "file",
+      "name": "workspace.module.css",
+      "filePath": "apps/web/src/styles/workspace.module.css",
+      "summary": "작업 화면이 공유하는 컨테이너, 헤더, 버튼, 카드, 테이블, 검색과 빈 상태 레이아웃을 제공한다.",
+      "tags": [
+        "shared-styles",
+        "css-modules",
+        "workspace",
+        "responsive-layout"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/web/src/styles/global.css",
+      "target": "file:apps/web/src/main.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/tokens.css",
+      "target": "file:apps/web/src/main.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/ai/AiPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/members/MembersPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

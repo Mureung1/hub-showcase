@@ -19,7 +19,7 @@ describe('task detail editing', () => {
     await user.type(title, '대시보드 반응형 레이아웃 완성')
     const assigneeSelect = within(dialog).getByLabelText(/담당 팀원/)
     expect(within(assigneeSelect).getByRole('option', { name: '최지우' })).toBeInTheDocument()
-    expect(within(assigneeSelect).queryByRole('option', { name: '자료조사 AI' })).not.toBeInTheDocument()
+    expect(within(assigneeSelect).getByRole('option', { name: '자료조사 AI' })).toBeInTheDocument()
     await user.selectOptions(assigneeSelect, 'member-5')
     const dueDate = within(dialog).getByLabelText(/마감일/)
     await user.clear(dueDate)

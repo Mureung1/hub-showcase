@@ -1,0 +1,42 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": ".oxlintrc.json",
+      "language": "json",
+      "sizeLines": 8,
+      "fileCategory": "config"
+    },
+    {
+      "path": "CLAUDE.md",
+      "language": "markdown",
+      "sizeLines": 39,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "README.md",
+      "language": "markdown",
+      "sizeLines": 173,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "package.json",
+      "language": "json",
+      "sizeLines": 26,
+      "fileCategory": "config"
+    },
+    {
+      "path": "render.yaml",
+      "language": "yaml",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    }
+  ],
+  "batchImportData": {
+    ".oxlintrc.json": [],
+    "CLAUDE.md": [],
+    "README.md": [],
+    "package.json": [],
+    "render.yaml": []
+  }
+}

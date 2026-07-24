@@ -1,0 +1,574 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "apps/web/src/components/layout/AppShell.jsx",
+      "language": "javascript",
+      "sizeLines": 171,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/components/layout/ProjectShell.jsx",
+      "language": "javascript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/components/ui/Modal.jsx",
+      "language": "javascript",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "language": "javascript",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/members/EditMemberModal.jsx",
+      "language": "javascript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/members/InviteCollaboratorModal.jsx",
+      "language": "javascript",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/members/MemberRemovalModal.jsx",
+      "language": "javascript",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/members/MembersPage.jsx",
+      "language": "javascript",
+      "sizeLines": 116,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "language": "javascript",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/notes/NotesPage.jsx",
+      "language": "javascript",
+      "sizeLines": 377,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "language": "javascript",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "language": "javascript",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "language": "javascript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/state/selectors.js",
+      "language": "javascript",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/state/useTeamFlow.js",
+      "language": "javascript",
+      "sizeLines": 9,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "apps/web/src/components/layout/AppShell.jsx": [
+      "apps/web/src/auth/useAuth.js",
+      "apps/web/src/components/layout/AppShell.module.css",
+      "apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/components/layout/ProjectShell.jsx": [
+      "apps/web/src/components/layout/AppShell.jsx",
+      "apps/web/src/components/layout/AppShell.module.css",
+      "apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/components/ui/Modal.jsx": [
+      "apps/web/src/components/ui/ui.module.css"
+    ],
+    "apps/web/src/features/dashboard/ProjectPeriodModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/members/EditMemberModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/features/members/MembersPage.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/members/InviteCollaboratorModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/members/MemberRemovalModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/features/members/MembersPage.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/members/MembersPage.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/components/ui/StatusBadge.jsx",
+      "apps/web/src/features/members/EditMemberModal.jsx",
+      "apps/web/src/features/members/InviteCollaboratorModal.jsx",
+      "apps/web/src/features/members/MemberRemovalModal.jsx",
+      "apps/web/src/features/members/MembersPage.module.css",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/notes/NoteTemplateModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/features/notes/NotesPage.module.css"
+    ],
+    "apps/web/src/features/notes/NotesPage.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "apps/web/src/features/notes/NotesPage.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/projects/components/NewProjectModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/resources/CreateFolderModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/tasks/components/TaskCreateModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/state/selectors.js": [],
+    "apps/web/src/state/useTeamFlow.js": [
+      "apps/web/src/state/TeamFlowContext.js"
+    ]
+  },
+  "neighborMap": {
+    "apps/web/src/components/layout/AppShell.jsx": [
+      {
+        "path": "apps/web/src/auth/useAuth.js",
+        "batchIndex": 4,
+        "symbols": [
+          "useAuth"
+        ]
+      },
+      {
+        "path": "apps/web/src/components/layout/AppShell.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/App.jsx",
+        "batchIndex": 4,
+        "symbols": [
+          "App"
+        ]
+      }
+    ],
+    "apps/web/src/components/layout/ProjectShell.jsx": [
+      {
+        "path": "apps/web/src/components/layout/AppShell.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/features/projects/components/ProjectIcon.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "ProjectIcon"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "TaskDetailModal"
+        ]
+      },
+      {
+        "path": "apps/web/src/App.jsx",
+        "batchIndex": 4,
+        "symbols": [
+          "App"
+        ]
+      }
+    ],
+    "apps/web/src/components/ui/Modal.jsx": [
+      {
+        "path": "apps/web/src/components/ui/ui.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "ProjectIconPicker"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "ProjectSettingsModal"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/resources/AddResourceModal.jsx",
+        "batchIndex": 5,
+        "symbols": [
+          "AddResourceModal"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+        "batchIndex": 5,
+        "symbols": [
+          "ResourceDetailModal"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "TaskDetailModal"
+        ]
+      }
+    ],
+    "apps/web/src/features/dashboard/ProjectPeriodModal.jsx": [
+      {
+        "path": "apps/web/src/components/ui/forms.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "ProjectDashboardPage"
+        ]
+      }
+    ],
+    "apps/web/src/features/members/EditMemberModal.jsx": [
+      {
+        "path": "apps/web/src/components/ui/forms.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/features/members/MembersPage.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      }
+    ],
+    "apps/web/src/features/members/InviteCollaboratorModal.jsx": [
+      {
+        "path": "apps/web/src/components/ui/forms.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      }
+    ],
+    "apps/web/src/features/members/MemberRemovalModal.jsx": [
+      {
+        "path": "apps/web/src/components/ui/forms.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/features/members/MembersPage.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      }
+    ],
+    "apps/web/src/features/members/MembersPage.jsx": [
+      {
+        "path": "apps/web/src/components/ui/Avatar.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "Avatar"
+        ]
+      },
+      {
+        "path": "apps/web/src/components/ui/StatusBadge.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "StatusBadge"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/members/MembersPage.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/styles/workspace.module.css",
+        "batchIndex": 12,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/App.jsx",
+        "batchIndex": 4,
+        "symbols": [
+          "App"
+        ]
+      }
+    ],
+    "apps/web/src/features/notes/NoteTemplateModal.jsx": [
+      {
+        "path": "apps/web/src/features/notes/NotesPage.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      }
+    ],
+    "apps/web/src/features/notes/NotesPage.jsx": [
+      {
+        "path": "apps/web/src/components/ui/Avatar.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "Avatar"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/notes/MarkdownPreview.jsx",
+        "batchIndex": 2,
+        "symbols": [
+          "MarkdownPreview"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/notes/NotesPage.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/lib/format.js",
+        "batchIndex": 3,
+        "symbols": [
+          "formatShortDate",
+          "formatPeriod",
+          "todayIso",
+          "addLocalDaysIso"
+        ]
+      },
+      {
+        "path": "apps/web/src/App.jsx",
+        "batchIndex": 4,
+        "symbols": [
+          "App"
+        ]
+      }
+    ],
+    "apps/web/src/features/projects/components/NewProjectModal.jsx": [
+      {
+        "path": "apps/web/src/components/ui/forms.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/constants/labels.js",
+        "batchIndex": 3,
+        "symbols": [
+          "PROJECT_STATUS_LABEL",
+          "TASK_STATUS_LABEL",
+          "RESOURCE_TYPE_LABEL",
+          "TASK_STATUS_ORDER"
+        ]
+      }
+    ],
+    "apps/web/src/features/resources/CreateFolderModal.jsx": [
+      {
+        "path": "apps/web/src/components/ui/forms.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/lib/format.js",
+        "batchIndex": 3,
+        "symbols": [
+          "formatShortDate",
+          "formatPeriod",
+          "todayIso",
+          "addLocalDaysIso"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/resources/ResourcesPage.jsx",
+        "batchIndex": 5,
+        "symbols": [
+          "ResourcesPage"
+        ]
+      }
+    ],
+    "apps/web/src/features/tasks/components/TaskCreateModal.jsx": [
+      {
+        "path": "apps/web/src/components/ui/forms.module.css",
+        "batchIndex": 14,
+        "symbols": []
+      },
+      {
+        "path": "apps/web/src/constants/labels.js",
+        "batchIndex": 3,
+        "symbols": [
+          "PROJECT_STATUS_LABEL",
+          "TASK_STATUS_LABEL",
+          "RESOURCE_TYPE_LABEL",
+          "TASK_STATUS_ORDER"
+        ]
+      }
+    ],
+    "apps/web/src/state/selectors.js": [
+      {
+        "path": "apps/web/src/features/ai/AiPage.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "AiPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "ProjectDashboardPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/projects/ProjectListPage.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "ProjectListPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "ProjectTasksPage"
+        ]
+      }
+    ],
+    "apps/web/src/state/useTeamFlow.js": [
+      {
+        "path": "apps/web/src/state/TeamFlowContext.js",
+        "batchIndex": 4,
+        "symbols": [
+          "TeamFlowContext"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/ai/AiPage.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "AiPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "ProjectDashboardPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/projects/ProjectListPage.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "ProjectListPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+        "batchIndex": 6,
+        "symbols": [
+          "ProjectIconPicker"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "ProjectSettingsModal"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/resources/AddResourceModal.jsx",
+        "batchIndex": 5,
+        "symbols": [
+          "AddResourceModal"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+        "batchIndex": 5,
+        "symbols": [
+          "ResourceDetailModal"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/resources/ResourcesPage.jsx",
+        "batchIndex": 5,
+        "symbols": [
+          "ResourcesPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/tasks/MyTasksPage.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "MyTasksPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "ProjectTasksPage"
+        ]
+      },
+      {
+        "path": "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+        "batchIndex": 3,
+        "symbols": [
+          "TaskDetailModal"
+        ]
+      }
+    ]
+  }
+}

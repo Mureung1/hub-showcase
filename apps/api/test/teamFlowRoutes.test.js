@@ -14,6 +14,8 @@ const invitationId = '55555555-5555-4555-8555-555555555555'
 const noteId = '66666666-6666-4666-8666-666666666666'
 const resourceId = '77777777-7777-4777-8777-777777777777'
 const blockedMemberId = '88888888-8888-4888-8888-888888888888'
+const aiMemberId = '99999999-9999-4999-8999-999999999999'
+const aiRunId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 
 const project = {
   id: projectId,
@@ -39,6 +41,62 @@ const member = {
   description: '',
   color: '#3a6898',
   isAi: false,
+}
+
+const aiMember = {
+  id: aiMemberId,
+  projectId,
+  authUserId: null,
+  email: null,
+  kind: 'ai',
+  name: '자료조사 AI',
+  initial: 'AI',
+  role: '자료 조사',
+  description: '',
+  color: '#6950b8',
+  isAi: true,
+}
+
+const contextConfig = {
+  project: true,
+  notes: true,
+  tasks: true,
+  team: false,
+  resources: true,
+}
+
+const aiAgentCreateInput = {
+  name: '리서치 파트너',
+  role: '시장 조사',
+  description: '경쟁 서비스와 시장 근거를 정리합니다.',
+  color: '#6950b8',
+  instructions: '신뢰할 수 있는 자료를 구조화해 주세요.',
+  contextConfig,
+}
+
+const aiAgent = {
+  memberId: aiMemberId,
+  projectId,
+  instructions: '신뢰할 수 있는 자료를 구조화해 주세요.',
+  contextConfig,
+  enabled: true,
+  createdAt: '2026-07-24T00:00:00.000Z',
+  updatedAt: '2026-07-24T00:00:00.000Z',
+}
+
+const aiRun = {
+  id: aiRunId,
+  projectId,
+  aiMemberId,
+  taskId,
+  status: 'pending_review',
+  contextSnapshot: { version: 1, task: { id: taskId, title: '인증 API 테스트' } },
+  resultMarkdown: '# 모의 실행 결과',
+  errorMessage: null,
+  appliedNoteId: null,
+  createdBy: userId,
+  createdAt: '2026-07-24T00:00:00.000Z',
+  updatedAt: '2026-07-24T00:00:00.000Z',
 }
 
 const task = {
@@ -107,12 +165,11 @@ const bootstrap = {
   resources: [resource],
   invitations: [invitation],
   currentMemberIdsByProject: { [projectId]: memberId },
-  aiSettings: {},
-  aiHistory: [],
+  aiAgents: [aiAgent],
+  aiRuns: [aiRun],
   currentUserId: memberId,
-  aiMemberId: '',
   accessMode: 'authenticated',
-  capabilities: { projects: true, members: true, tasks: true, notes: true, resources: true, ai: false },
+  capabilities: { projects: true, members: true, tasks: true, notes: true, resources: true, ai: true },
 }
 
 const repository = {
@@ -130,7 +187,12 @@ const repository = {
     if (id === blockedMemberId) throw new TeamFlowConflictError('마지막 협업자는 프로젝트에서 제거할 수 없습니다.')
     return id
   },
-  createTask: async (input) => ({ ...task, ...input, isNew: true }),
+  createTask: async (input) => {
+    if (input.assigneeId === aiMemberId) {
+      throw new TeamFlowConflictError('비활성화된 AI 팀원에게는 새 할 일을 배정할 수 없습니다.')
+    }
+    return { ...task, ...input, isNew: true }
+  },
   updateTask: async (_id, patch) => ({ ...task, ...patch }),
   deleteTask: async () => taskId,
   createNote: async (_projectId, input) => ({ ...note, ...input }),
@@ -152,6 +214,42 @@ const repository = {
   }),
   updateResource: async (_id, patch) => ({ ...resource, ...patch }),
   deleteResource: async () => resourceId,
+  createAiAgent: async (_projectId, input) => ({
+    member: {
+      ...aiMember,
+      name: input.name,
+      initial: '리',
+      role: input.role,
+      description: input.description,
+      color: input.color,
+    },
+    aiAgent: {
+      ...aiAgent,
+      instructions: input.instructions,
+      contextConfig: input.contextConfig,
+    },
+  }),
+  updateAiAgent: async (_id, input) => ({
+    member: {
+      ...aiMember,
+      ...(input.name === undefined ? {} : { name: input.name, initial: '전' }),
+      ...(input.role === undefined ? {} : { role: input.role }),
+      ...(input.description === undefined ? {} : { description: input.description }),
+      ...(input.color === undefined ? {} : { color: input.color }),
+    },
+    aiAgent: {
+      ...aiAgent,
+      ...(input.instructions === undefined ? {} : { instructions: input.instructions }),
+      ...(input.contextConfig === undefined ? {} : { contextConfig: input.contextConfig }),
+      ...(input.enabled === undefined ? {} : { enabled: input.enabled }),
+    },
+  }),
+  createAiRun: async () => aiRun,
+  applyAiRun: async () => ({
+    aiRun: { ...aiRun, status: 'applied', appliedNoteId: noteId },
+    note: { ...note, id: noteId, title: `AI 결과 · ${task.title}`, content: aiRun.resultMarkdown },
+  }),
+  rejectAiRun: async () => ({ ...aiRun, status: 'rejected' }),
 }
 
 const app = createApp({
@@ -315,6 +413,138 @@ test('tasks can be created, fully or partially updated, and deleted', async () =
   const deleteResponse = await request(`/api/tasks/${taskId}`, { method: 'DELETE' })
   assert.equal(deleteResponse.status, 200)
   assert.deepEqual(await deleteResponse.json(), { taskId })
+})
+
+test('disabled AI assignment conflicts are returned as 409 responses', async () => {
+  const response = await request('/api/tasks', {
+    method: 'POST',
+    body: {
+      projectId,
+      title: '비활성 AI 배정 차단',
+      assigneeId: aiMemberId,
+      dueDate: '2026-07-30',
+      status: 'not_started',
+      description: '',
+    },
+  })
+
+  assert.equal(response.status, 409)
+  assert.equal((await response.json()).error.code, 'CONFLICT')
+})
+
+test('AI agents accept profiles at creation and support partial profile or settings updates', async () => {
+  const createResponse = await request(`/api/projects/${projectId}/ai-agents`, {
+    method: 'POST',
+    body: aiAgentCreateInput,
+  })
+  assert.equal(createResponse.status, 201)
+  const created = await createResponse.json()
+  assert.equal(created.member.name, aiAgentCreateInput.name)
+  assert.equal(created.member.initial, '리')
+  assert.equal(created.member.role, aiAgentCreateInput.role)
+  assert.equal(created.aiAgent.instructions, aiAgentCreateInput.instructions)
+
+  const settingsResponse = await request(`/api/ai-agents/${aiMemberId}`, {
+    method: 'PATCH',
+    body: {
+      name: '전략 리서치 Agent',
+      enabled: false,
+    },
+  })
+  assert.equal(settingsResponse.status, 200)
+  assert.deepEqual(await settingsResponse.json(), {
+    member: { ...aiMember, name: '전략 리서치 Agent', initial: '전' },
+    aiAgent: { ...aiAgent, enabled: false },
+  })
+
+  const runResponse = await request(`/api/ai-agents/${aiMemberId}/runs`, {
+    method: 'POST',
+    body: { taskId },
+  })
+  assert.equal(runResponse.status, 201)
+  assert.deepEqual(await runResponse.json(), { aiRun })
+
+  const applyResponse = await request(`/api/ai-runs/${aiRunId}/apply`, { method: 'POST' })
+  assert.equal(applyResponse.status, 200)
+  assert.equal((await applyResponse.json()).aiRun.status, 'applied')
+
+  const rejectResponse = await request(`/api/ai-runs/${aiRunId}/reject`, { method: 'POST' })
+  assert.equal(rejectResponse.status, 200)
+  assert.equal((await rejectResponse.json()).aiRun.status, 'rejected')
+})
+
+test('applied AI run re-execution conflicts are exposed as 409 responses', async () => {
+  const originalCreateAiRun = repository.createAiRun
+  repository.createAiRun = async () => {
+    throw new TeamFlowConflictError('AI_RUN_APPLIED')
+  }
+
+  try {
+    const response = await request(`/api/ai-agents/${aiMemberId}/runs`, {
+      method: 'POST',
+      body: { taskId },
+    })
+    assert.equal(response.status, 409)
+    assert.equal((await response.json()).error.code, 'CONFLICT')
+  } finally {
+    repository.createAiRun = originalCreateAiRun
+  }
+})
+
+test('mock AI routes reject invalid ids and malformed settings before repository access', async () => {
+  assert.equal((await request('/api/projects/not-a-uuid/ai-agents', { method: 'POST', body: aiAgentCreateInput })).status, 400)
+  assert.equal((await request(`/api/projects/${projectId}/ai-agents`, {
+    method: 'POST', body: { ...aiAgentCreateInput, name: '' },
+  })).status, 400)
+  assert.equal((await request(`/api/projects/${projectId}/ai-agents`, {
+    method: 'POST', body: { ...aiAgentCreateInput, name: 'A'.repeat(81) },
+  })).status, 400)
+  assert.equal((await request(`/api/projects/${projectId}/ai-agents`, {
+    method: 'POST', body: { ...aiAgentCreateInput, role: '' },
+  })).status, 400)
+  assert.equal((await request('/api/ai-agents/not-a-uuid', {
+    method: 'PATCH',
+    body: { enabled: false },
+  })).status, 400)
+  assert.equal((await request(`/api/ai-agents/${aiMemberId}`, {
+    method: 'PATCH',
+    body: {},
+  })).status, 400)
+  assert.equal((await request(`/api/ai-agents/${aiMemberId}`, {
+    method: 'PATCH',
+    body: {
+      instructions: 'x'.repeat(10_001),
+    },
+  })).status, 400)
+  assert.equal((await request(`/api/ai-agents/${aiMemberId}`, {
+    method: 'PATCH',
+    body: {
+      contextConfig: { ...contextConfig, unexpected: true },
+    },
+  })).status, 400)
+  assert.equal((await request(`/api/ai-agents/${aiMemberId}`, {
+    method: 'PATCH',
+    body: { enabled: 'false' },
+  })).status, 400)
+  assert.equal((await request(`/api/ai-agents/${aiMemberId}`, {
+    method: 'PATCH',
+    body: { color: '#not-a-color' },
+  })).status, 400)
+  assert.equal((await request(`/api/projects/${projectId}/ai-agent`, {
+    method: 'POST',
+    body: aiAgentCreateInput,
+  })).status, 404)
+  assert.equal((await request(`/api/ai-agents/${aiMemberId}`, {
+    method: 'PATCH',
+    body: {
+      description: 'x'.repeat(501),
+    },
+  })).status, 400)
+  assert.equal((await request(`/api/ai-agents/${aiMemberId}/runs`, {
+    method: 'POST',
+    body: { taskId: 'not-a-uuid' },
+  })).status, 400)
+  assert.equal((await request('/api/ai-runs/not-a-uuid/apply', { method: 'POST' })).status, 400)
 })
 
 test('shared notes support create, partial update and delete', async () => {

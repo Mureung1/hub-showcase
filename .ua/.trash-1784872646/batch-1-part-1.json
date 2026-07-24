@@ -1,0 +1,1321 @@
+{
+  "nodes": [
+    {
+      "id": "file:apps/api/src/app.js",
+      "type": "file",
+      "name": "app.js",
+      "filePath": "apps/api/src/app.js",
+      "summary": "Express application을 만들고 CORS, health check, TeamFlow API router를 조립하는 API 진입 구성 파일입니다.",
+      "tags": [
+        "entry-point",
+        "factory",
+        "express",
+        "dependency-injection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/app.js:createApp",
+      "type": "function",
+      "name": "createApp",
+      "filePath": "apps/api/src/app.js",
+      "lineRange": [
+        11,
+        37
+      ],
+      "summary": "CORS와 health endpoint, TeamFlow router를 결합한 Express application을 생성합니다.",
+      "tags": [
+        "factory",
+        "application",
+        "dependency-injection",
+        "service"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/src/lib/auth.js",
+      "type": "file",
+      "name": "auth.js",
+      "filePath": "apps/api/src/lib/auth.js",
+      "summary": "Bearer token을 해석하고 Supabase에서 사용자를 검증해 요청에 인증 정보를 주입하는 Express authentication middleware를 제공합니다.",
+      "tags": [
+        "authentication",
+        "middleware",
+        "security",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/api/src/lib/auth.js:readBearerToken",
+      "type": "function",
+      "name": "readBearerToken",
+      "filePath": "apps/api/src/lib/auth.js",
+      "lineRange": [
+        8,
+        12
+      ],
+      "summary": "Authorization header에서 Bearer token을 안전하게 추출하고 잘못된 형식을 거부합니다.",
+      "tags": [
+        "function",
+        "utility",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/lib/auth.js:displayProfile",
+      "type": "function",
+      "name": "displayProfile",
+      "filePath": "apps/api/src/lib/auth.js",
+      "lineRange": [
+        14,
+        30
+      ],
+      "summary": "Supabase user metadata를 API에서 사용할 간결한 사용자 profile로 변환합니다.",
+      "tags": [
+        "function",
+        "utility",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/lib/auth.js:createSupabaseAuthVerifier",
+      "type": "function",
+      "name": "createSupabaseAuthVerifier",
+      "filePath": "apps/api/src/lib/auth.js",
+      "lineRange": [
+        32,
+        45
+      ],
+      "summary": "Supabase authentication API로 access token을 검증하는 verifier 함수를 구성합니다.",
+      "tags": [
+        "factory",
+        "utility",
+        "dependency-injection",
+        "service"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/lib/auth.js:createAuthenticationMiddleware",
+      "type": "function",
+      "name": "createAuthenticationMiddleware",
+      "filePath": "apps/api/src/lib/auth.js",
+      "lineRange": [
+        47,
+        72
+      ],
+      "summary": "검증된 사용자 정보를 요청에 주입하고 인증 실패를 HTTP 오류로 전달하는 middleware를 생성합니다.",
+      "tags": [
+        "factory",
+        "utility",
+        "dependency-injection",
+        "service"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:apps/api/src/lib/auth.js:AuthenticationError",
+      "type": "class",
+      "name": "AuthenticationError",
+      "filePath": "apps/api/src/lib/auth.js",
+      "lineRange": [
+        1,
+        6
+      ],
+      "summary": "인증 실패 원인과 HTTP status를 함께 표현하는 API authentication 오류 형식입니다.",
+      "tags": [
+        "error-model",
+        "utility",
+        "exception",
+        "error-handling"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/src/lib/cors.js",
+      "type": "file",
+      "name": "cors.js",
+      "filePath": "apps/api/src/lib/cors.js",
+      "summary": "허용 origin 환경 설정을 정규화하고 요청 origin을 검사하는 Express CORS 옵션을 구성합니다.",
+      "tags": [
+        "cors",
+        "middleware",
+        "security",
+        "configuration"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/lib/cors.js:normalizeOrigin",
+      "type": "function",
+      "name": "normalizeOrigin",
+      "filePath": "apps/api/src/lib/cors.js",
+      "lineRange": [
+        3,
+        21
+      ],
+      "summary": "origin 문자열을 비교 가능한 정규 형식으로 변환합니다.",
+      "tags": [
+        "utility",
+        "pure-function",
+        "formatting",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/lib/cors.js:readAllowedOrigins",
+      "type": "function",
+      "name": "readAllowedOrigins",
+      "filePath": "apps/api/src/lib/cors.js",
+      "lineRange": [
+        23,
+        35
+      ],
+      "summary": "환경 설정의 허용 origin 목록을 파싱하고 중복을 제거합니다.",
+      "tags": [
+        "function",
+        "utility",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/lib/cors.js:createCorsOptions",
+      "type": "function",
+      "name": "createCorsOptions",
+      "filePath": "apps/api/src/lib/cors.js",
+      "lineRange": [
+        37,
+        48
+      ],
+      "summary": "요청 origin을 허용 목록과 비교하는 Express CORS 옵션을 생성합니다.",
+      "tags": [
+        "factory",
+        "utility",
+        "dependency-injection",
+        "service"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/src/lib/supabaseClient.js",
+      "type": "file",
+      "name": "supabaseClient.js",
+      "filePath": "apps/api/src/lib/supabaseClient.js",
+      "summary": "서버용 Supabase URL과 service role key를 검증하고 TeamFlow API가 사용할 Supabase client를 생성합니다.",
+      "tags": [
+        "supabase",
+        "factory",
+        "configuration",
+        "data-access"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/lib/supabaseClient.js:readTeamFlowSupabaseConfig",
+      "type": "function",
+      "name": "readTeamFlowSupabaseConfig",
+      "filePath": "apps/api/src/lib/supabaseClient.js",
+      "lineRange": [
+        16,
+        40
+      ],
+      "summary": "서버 Supabase URL과 service role key의 존재와 형식을 검증합니다.",
+      "tags": [
+        "function",
+        "utility",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/lib/supabaseClient.js:createTeamFlowSupabaseClient",
+      "type": "function",
+      "name": "createTeamFlowSupabaseClient",
+      "filePath": "apps/api/src/lib/supabaseClient.js",
+      "lineRange": [
+        42,
+        54
+      ],
+      "summary": "검증된 서버 설정으로 인증 session을 유지하지 않는 Supabase client를 생성합니다.",
+      "tags": [
+        "factory",
+        "utility",
+        "dependency-injection",
+        "service"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/src/runtime.js",
+      "type": "file",
+      "name": "runtime.js",
+      "filePath": "apps/api/src/runtime.js",
+      "summary": "환경 설정에서 인증, CORS, Supabase repository를 구성한 뒤 실행 가능한 TeamFlow Express application으로 결합합니다.",
+      "tags": [
+        "entry-point",
+        "factory",
+        "express",
+        "dependency-injection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/runtime.js:createConfiguredTeamFlowApp",
+      "type": "function",
+      "name": "createConfiguredTeamFlowApp",
+      "filePath": "apps/api/src/runtime.js",
+      "lineRange": [
+        16,
+        32
+      ],
+      "summary": "환경 설정과 주입된 의존성으로 인증·CORS·repository·Express app을 조립합니다.",
+      "tags": [
+        "factory",
+        "application",
+        "dependency-injection",
+        "service"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/src/server.js",
+      "type": "file",
+      "name": "server.js",
+      "filePath": "apps/api/src/server.js",
+      "summary": "구성된 Express application을 지정된 port에서 시작하는 API process entry point입니다.",
+      "tags": [
+        "entry-point",
+        "express",
+        "server",
+        "runtime"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "type": "file",
+      "name": "mockAiGenerator.js",
+      "filePath": "apps/api/src/teamflow/mockAiGenerator.js",
+      "summary": "프로젝트의 작업·노트·자료 snapshot을 정규화하고 크기를 제한한 뒤 결정적인 Mock AI Markdown 결과를 생성합니다.",
+      "tags": [
+        "teamflow-domain",
+        "service",
+        "javascript",
+        "application-logic"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/mockAiGenerator.js:compareText",
+      "type": "function",
+      "name": "compareText",
+      "filePath": "apps/api/src/teamflow/mockAiGenerator.js",
+      "lineRange": [
+        7,
+        17
+      ],
+      "summary": "compareText 함수는 결정적인 결과를 위해 teamflow domain 값을 안정된 순서로 비교합니다.",
+      "tags": [
+        "function",
+        "teamflow-domain",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/mockAiGenerator.js:createTextNormalizer",
+      "type": "function",
+      "name": "createTextNormalizer",
+      "filePath": "apps/api/src/teamflow/mockAiGenerator.js",
+      "lineRange": [
+        29,
+        40
+      ],
+      "summary": "createTextNormalizer 함수는 teamflow domain 동작에 필요한 의존성과 interface를 구성해 반환합니다.",
+      "tags": [
+        "factory",
+        "teamflow-domain",
+        "dependency-injection",
+        "service"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/mockAiGenerator.js:compareRecords",
+      "type": "function",
+      "name": "compareRecords",
+      "filePath": "apps/api/src/teamflow/mockAiGenerator.js",
+      "lineRange": [
+        42,
+        54
+      ],
+      "summary": "compareRecords 함수는 결정적인 결과를 위해 teamflow domain 값을 안정된 순서로 비교합니다.",
+      "tags": [
+        "function",
+        "teamflow-domain",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/mockAiGenerator.js:normalizeTask",
+      "type": "function",
+      "name": "normalizeTask",
+      "filePath": "apps/api/src/teamflow/mockAiGenerator.js",
+      "lineRange": [
+        62,
+        71
+      ],
+      "summary": "normalizeTask 함수는 teamflow domain 입력을 비교·저장 가능한 일관된 형태로 정규화합니다.",
+      "tags": [
+        "utility",
+        "pure-function",
+        "formatting",
+        "teamflow-domain"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/mockAiGenerator.js:normalizeCollection",
+      "type": "function",
+      "name": "normalizeCollection",
+      "filePath": "apps/api/src/teamflow/mockAiGenerator.js",
+      "lineRange": [
+        73,
+        82
+      ],
+      "summary": "normalizeCollection 함수는 teamflow domain 입력을 비교·저장 가능한 일관된 형태로 정규화합니다.",
+      "tags": [
+        "utility",
+        "pure-function",
+        "formatting",
+        "teamflow-domain"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/mockAiGenerator.js:createCollectionData",
+      "type": "function",
+      "name": "createCollectionData",
+      "filePath": "apps/api/src/teamflow/mockAiGenerator.js",
+      "lineRange": [
+        84,
+        134
+      ],
+      "summary": "createCollectionData 함수는 teamflow domain 동작에 필요한 의존성과 interface를 구성해 반환합니다.",
+      "tags": [
+        "factory",
+        "teamflow-domain",
+        "dependency-injection",
+        "service"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/mockAiGenerator.js:enforceSnapshotLimit",
+      "type": "function",
+      "name": "enforceSnapshotLimit",
+      "filePath": "apps/api/src/teamflow/mockAiGenerator.js",
+      "lineRange": [
+        140,
+        182
+      ],
+      "summary": "enforceSnapshotLimit 함수는 teamflow domain 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다.",
+      "tags": [
+        "function",
+        "teamflow-domain",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/mockAiGenerator.js:buildMockAiContext",
+      "type": "function",
+      "name": "buildMockAiContext",
+      "filePath": "apps/api/src/teamflow/mockAiGenerator.js",
+      "lineRange": [
+        189,
+        239
+      ],
+      "summary": "프로젝트 snapshot을 정렬·정규화하고 제한된 Mock AI 실행 context로 구성합니다.",
+      "tags": [
+        "function",
+        "teamflow-domain",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/mockAiGenerator.js:renderContext",
+      "type": "function",
+      "name": "renderContext",
+      "filePath": "apps/api/src/teamflow/mockAiGenerator.js",
+      "lineRange": [
+        245,
+        323
+      ],
+      "summary": "renderContext 함수는 정규화된 teamflow domain 데이터를 화면 또는 Markdown 표현으로 변환합니다.",
+      "tags": [
+        "rendering",
+        "teamflow-domain",
+        "utility",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/mockAiGenerator.js:renderMockMarkdown",
+      "type": "function",
+      "name": "renderMockMarkdown",
+      "filePath": "apps/api/src/teamflow/mockAiGenerator.js",
+      "lineRange": [
+        325,
+        359
+      ],
+      "summary": "renderMockMarkdown 함수는 정규화된 teamflow domain 데이터를 화면 또는 Markdown 표현으로 변환합니다.",
+      "tags": [
+        "rendering",
+        "teamflow-domain",
+        "utility",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/mockAiGenerator.js:generateMockAiResult",
+      "type": "function",
+      "name": "generateMockAiResult",
+      "filePath": "apps/api/src/teamflow/mockAiGenerator.js",
+      "lineRange": [
+        366,
+        373
+      ],
+      "summary": "정규화된 context에서 결정적인 Mock AI Markdown 결과를 생성합니다.",
+      "tags": [
+        "function",
+        "teamflow-domain",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "type": "file",
+      "name": "teamFlowRepository.js",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "summary": "Supabase table과 RPC를 통해 프로젝트, 멤버, 작업, 노트, 자료, 초대, AI 실행의 전체 데이터 수명주기를 구현하는 repository입니다.",
+      "tags": [
+        "repository",
+        "data-access",
+        "teamflow-domain",
+        "service"
+      ],
+      "complexity": "complex",
+      "languageNotes": "factory가 closure 안에 client 의존성을 보관하고 비동기 method를 가진 object interface를 반환합니다."
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRepository.js:throwDatabaseError",
+      "type": "function",
+      "name": "throwDatabaseError",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        136,
+        164
+      ],
+      "summary": "throwDatabaseError 함수는 teamflow domain 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다.",
+      "tags": [
+        "function",
+        "teamflow-domain",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRepository.js:mapMember",
+      "type": "function",
+      "name": "mapMember",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        166,
+        181
+      ],
+      "summary": "mapMember 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다.",
+      "tags": [
+        "serialization",
+        "data-mapping",
+        "utility",
+        "teamflow-domain"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRepository.js:mapProject",
+      "type": "function",
+      "name": "mapProject",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        183,
+        194
+      ],
+      "summary": "mapProject 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다.",
+      "tags": [
+        "serialization",
+        "data-mapping",
+        "utility",
+        "teamflow-domain"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRepository.js:mapTask",
+      "type": "function",
+      "name": "mapTask",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        196,
+        207
+      ],
+      "summary": "mapTask 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다.",
+      "tags": [
+        "serialization",
+        "data-mapping",
+        "utility",
+        "teamflow-domain"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRepository.js:mapNote",
+      "type": "function",
+      "name": "mapNote",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        209,
+        219
+      ],
+      "summary": "mapNote 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다.",
+      "tags": [
+        "serialization",
+        "data-mapping",
+        "utility",
+        "teamflow-domain"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRepository.js:mapResource",
+      "type": "function",
+      "name": "mapResource",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        221,
+        239
+      ],
+      "summary": "mapResource 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다.",
+      "tags": [
+        "serialization",
+        "data-mapping",
+        "utility",
+        "teamflow-domain"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRepository.js:mapInvitation",
+      "type": "function",
+      "name": "mapInvitation",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        241,
+        254
+      ],
+      "summary": "mapInvitation 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다.",
+      "tags": [
+        "serialization",
+        "data-mapping",
+        "utility",
+        "teamflow-domain"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRepository.js:mapAiAgent",
+      "type": "function",
+      "name": "mapAiAgent",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        256,
+        266
+      ],
+      "summary": "mapAiAgent 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다.",
+      "tags": [
+        "serialization",
+        "data-mapping",
+        "utility",
+        "teamflow-domain"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRepository.js:mapAiRun",
+      "type": "function",
+      "name": "mapAiRun",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        268,
+        283
+      ],
+      "summary": "mapAiRun 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다.",
+      "tags": [
+        "serialization",
+        "data-mapping",
+        "utility",
+        "teamflow-domain"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRepository.js:createSupabaseDemoRepository",
+      "type": "function",
+      "name": "createSupabaseDemoRepository",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        302,
+        328
+      ],
+      "summary": "guest가 읽을 수 있는 demo workspace를 Supabase에서 조회하는 read-only repository를 생성합니다.",
+      "tags": [
+        "factory",
+        "teamflow-domain",
+        "dependency-injection",
+        "service"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRepository.js:createSupabaseTeamFlowRepository",
+      "type": "function",
+      "name": "createSupabaseTeamFlowRepository",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        330,
+        992
+      ],
+      "summary": "인증 사용자의 프로젝트·협업·콘텐츠·AI 작업을 Supabase table과 RPC에 연결하는 repository를 생성합니다.",
+      "tags": [
+        "factory",
+        "teamflow-domain",
+        "dependency-injection",
+        "service"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowStoreError",
+      "type": "class",
+      "name": "TeamFlowStoreError",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        99,
+        104
+      ],
+      "summary": "TeamFlowStoreError class는 TeamFlow repository의 저장소 오류를 의미별로 구분해 route 계층에 전달합니다.",
+      "tags": [
+        "error-model",
+        "teamflow-domain",
+        "exception",
+        "error-handling"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowNotFoundError",
+      "type": "class",
+      "name": "TeamFlowNotFoundError",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        106,
+        111
+      ],
+      "summary": "TeamFlowNotFoundError class는 TeamFlow repository의 저장소 오류를 의미별로 구분해 route 계층에 전달합니다.",
+      "tags": [
+        "error-model",
+        "teamflow-domain",
+        "exception",
+        "error-handling"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowConflictError",
+      "type": "class",
+      "name": "TeamFlowConflictError",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        113,
+        118
+      ],
+      "summary": "TeamFlowConflictError class는 TeamFlow repository의 저장소 오류를 의미별로 구분해 route 계층에 전달합니다.",
+      "tags": [
+        "error-model",
+        "teamflow-domain",
+        "exception",
+        "error-handling"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowValidationError",
+      "type": "class",
+      "name": "TeamFlowValidationError",
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "lineRange": [
+        120,
+        126
+      ],
+      "summary": "TeamFlowValidationError class는 TeamFlow repository의 저장소 오류를 의미별로 구분해 route 계층에 전달합니다.",
+      "tags": [
+        "error-model",
+        "teamflow-domain",
+        "exception",
+        "error-handling"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/api/src/app.js",
+      "target": "function:apps/api/src/app.js:createApp",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/app.js",
+      "target": "function:apps/api/src/app.js:createApp",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/lib/auth.js",
+      "target": "function:apps/api/src/lib/auth.js:readBearerToken",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/lib/auth.js",
+      "target": "function:apps/api/src/lib/auth.js:readBearerToken",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/lib/auth.js",
+      "target": "function:apps/api/src/lib/auth.js:displayProfile",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/lib/auth.js",
+      "target": "function:apps/api/src/lib/auth.js:createSupabaseAuthVerifier",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/lib/auth.js",
+      "target": "function:apps/api/src/lib/auth.js:createSupabaseAuthVerifier",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/lib/auth.js",
+      "target": "function:apps/api/src/lib/auth.js:createAuthenticationMiddleware",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/lib/auth.js",
+      "target": "function:apps/api/src/lib/auth.js:createAuthenticationMiddleware",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/lib/auth.js",
+      "target": "class:apps/api/src/lib/auth.js:AuthenticationError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/lib/auth.js",
+      "target": "class:apps/api/src/lib/auth.js:AuthenticationError",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/lib/cors.js",
+      "target": "function:apps/api/src/lib/cors.js:normalizeOrigin",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/lib/cors.js",
+      "target": "function:apps/api/src/lib/cors.js:readAllowedOrigins",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/lib/cors.js",
+      "target": "function:apps/api/src/lib/cors.js:readAllowedOrigins",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/lib/cors.js",
+      "target": "function:apps/api/src/lib/cors.js:createCorsOptions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/lib/cors.js",
+      "target": "function:apps/api/src/lib/cors.js:createCorsOptions",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/lib/supabaseClient.js",
+      "target": "function:apps/api/src/lib/supabaseClient.js:readTeamFlowSupabaseConfig",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/lib/supabaseClient.js",
+      "target": "function:apps/api/src/lib/supabaseClient.js:readTeamFlowSupabaseConfig",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/lib/supabaseClient.js",
+      "target": "function:apps/api/src/lib/supabaseClient.js:createTeamFlowSupabaseClient",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/lib/supabaseClient.js",
+      "target": "function:apps/api/src/lib/supabaseClient.js:createTeamFlowSupabaseClient",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/runtime.js",
+      "target": "function:apps/api/src/runtime.js:createConfiguredTeamFlowApp",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/runtime.js",
+      "target": "function:apps/api/src/runtime.js:createConfiguredTeamFlowApp",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "function:apps/api/src/teamflow/mockAiGenerator.js:compareText",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "function:apps/api/src/teamflow/mockAiGenerator.js:createTextNormalizer",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "function:apps/api/src/teamflow/mockAiGenerator.js:compareRecords",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "function:apps/api/src/teamflow/mockAiGenerator.js:normalizeTask",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "function:apps/api/src/teamflow/mockAiGenerator.js:normalizeCollection",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "function:apps/api/src/teamflow/mockAiGenerator.js:createCollectionData",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "function:apps/api/src/teamflow/mockAiGenerator.js:enforceSnapshotLimit",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "function:apps/api/src/teamflow/mockAiGenerator.js:buildMockAiContext",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "function:apps/api/src/teamflow/mockAiGenerator.js:buildMockAiContext",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "function:apps/api/src/teamflow/mockAiGenerator.js:renderContext",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "function:apps/api/src/teamflow/mockAiGenerator.js:renderMockMarkdown",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "function:apps/api/src/teamflow/mockAiGenerator.js:generateMockAiResult",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "function:apps/api/src/teamflow/mockAiGenerator.js:generateMockAiResult",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRepository.js:throwDatabaseError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRepository.js:mapMember",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRepository.js:mapProject",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRepository.js:mapTask",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRepository.js:mapNote",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRepository.js:mapResource",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRepository.js:mapInvitation",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRepository.js:mapAiAgent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRepository.js:mapAiRun",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRepository.js:createSupabaseDemoRepository",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRepository.js:createSupabaseDemoRepository",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRepository.js:createSupabaseTeamFlowRepository",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRepository.js:createSupabaseTeamFlowRepository",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowStoreError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowStoreError",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowNotFoundError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowNotFoundError",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowConflictError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowConflictError",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowValidationError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowValidationError",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/app.js",
+      "target": "file:apps/api/src/lib/cors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/src/app.js",
+      "target": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/src/runtime.js",
+      "target": "file:apps/api/src/app.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/src/runtime.js",
+      "target": "file:apps/api/src/lib/auth.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/src/runtime.js",
+      "target": "file:apps/api/src/lib/cors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/src/runtime.js",
+      "target": "file:apps/api/src/lib/supabaseClient.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/src/runtime.js",
+      "target": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/src/server.js",
+      "target": "file:apps/api/src/runtime.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/src/lib/auth.js",
+      "target": "file:apps/api/test/auth.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/api/src/app.js",
+      "target": "file:apps/api/test/cors.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/api/src/lib/cors.js",
+      "target": "file:apps/api/test/cors.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/api/src/app.js",
+      "target": "file:apps/api/test/health.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "target": "file:apps/api/test/mockAiGenerator.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/api/src/lib/supabaseClient.js",
+      "target": "file:apps/api/test/supabaseClient.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "file:apps/api/test/teamFlowRepository.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/api/src/app.js",
+      "target": "file:apps/api/test/teamFlowRoutes.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "target": "file:apps/api/test/teamFlowRoutes.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

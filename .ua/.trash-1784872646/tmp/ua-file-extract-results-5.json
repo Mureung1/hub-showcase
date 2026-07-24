@@ -1,0 +1,1495 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 9,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 9,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 9,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "apps/web/src/App.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 75,
+      "nonEmptyLines": 69,
+      "functions": [
+        {
+          "name": "App",
+          "startLine": 26,
+          "endLine": 51,
+          "params": []
+        },
+        {
+          "name": "TeamFlowBoundary",
+          "startLine": 53,
+          "endLine": 69,
+          "params": []
+        },
+        {
+          "name": "FallbackRedirect",
+          "startLine": 71,
+          "endLine": 75,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "App",
+          "line": 26,
+          "isDefault": true
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "TeamFlowBoundary",
+          "callee": "useAuth",
+          "lineNumber": 54
+        },
+        {
+          "caller": "TeamFlowBoundary",
+          "callee": "useMemo",
+          "lineNumber": 55
+        },
+        {
+          "caller": "TeamFlowBoundary",
+          "callee": "createDemoTeamFlowRepository",
+          "lineNumber": 57
+        },
+        {
+          "caller": "TeamFlowBoundary",
+          "callee": "createApiTeamFlowRepository",
+          "lineNumber": 61
+        },
+        {
+          "caller": "FallbackRedirect",
+          "callee": "useAuth",
+          "lineNumber": 72
+        }
+      ],
+      "metrics": {
+        "importCount": 16,
+        "exportCount": 1,
+        "functionCount": 3,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/auth/AuthCallbackPage.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 32,
+      "nonEmptyLines": 26,
+      "functions": [
+        {
+          "name": "callbackError",
+          "startLine": 7,
+          "endLine": 11,
+          "params": []
+        },
+        {
+          "name": "AuthCallbackPage",
+          "startLine": 13,
+          "endLine": 32,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "AuthCallbackPage",
+          "line": 13,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "callbackError",
+          "callee": "globalThis.location.hash.replace",
+          "lineNumber": 9
+        },
+        {
+          "caller": "callbackError",
+          "callee": "query.get",
+          "lineNumber": 10
+        },
+        {
+          "caller": "callbackError",
+          "callee": "hash.get",
+          "lineNumber": 10
+        },
+        {
+          "caller": "AuthCallbackPage",
+          "callee": "useAuth",
+          "lineNumber": 14
+        },
+        {
+          "caller": "AuthCallbackPage",
+          "callee": "useNavigate",
+          "lineNumber": 15
+        },
+        {
+          "caller": "AuthCallbackPage",
+          "callee": "useMemo",
+          "lineNumber": 16
+        },
+        {
+          "caller": "AuthCallbackPage",
+          "callee": "useEffect",
+          "lineNumber": 19
+        },
+        {
+          "caller": "AuthCallbackPage",
+          "callee": "navigate",
+          "lineNumber": 20
+        },
+        {
+          "caller": "AuthCallbackPage",
+          "callee": "consumeReturnTo",
+          "lineNumber": 20
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/auth/ProtectedRoute.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 15,
+      "nonEmptyLines": 12,
+      "functions": [
+        {
+          "name": "ProtectedRoute",
+          "startLine": 5,
+          "endLine": 15,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ProtectedRoute",
+          "line": 5,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ProtectedRoute",
+          "callee": "useAuth",
+          "lineNumber": 6
+        },
+        {
+          "caller": "ProtectedRoute",
+          "callee": "useLocation",
+          "lineNumber": 7
+        },
+        {
+          "caller": "ProtectedRoute",
+          "callee": "encodeURIComponent",
+          "lineNumber": 12
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/auth/useAuth.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 9,
+      "nonEmptyLines": 7,
+      "functions": [
+        {
+          "name": "useAuth",
+          "startLine": 5,
+          "endLine": 9,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "useAuth",
+          "line": 5,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "useAuth",
+          "callee": "useContext",
+          "lineNumber": 6
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/data/apiTeamFlowRepository.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 337,
+      "nonEmptyLines": 296,
+      "functions": [
+        {
+          "name": "normalizeApiBaseUrl",
+          "startLine": 9,
+          "endLine": 30,
+          "params": []
+        },
+        {
+          "name": "apiUrl",
+          "startLine": 32,
+          "endLine": 34,
+          "params": [
+            "baseUrl",
+            "path"
+          ]
+        },
+        {
+          "name": "readJson",
+          "startLine": 36,
+          "endLine": 48,
+          "params": [
+            "response",
+            "fallbackMessage"
+          ]
+        },
+        {
+          "name": "requestJson",
+          "startLine": 50,
+          "endLine": 58,
+          "params": [
+            "fetchImpl",
+            "url",
+            "options",
+            "fallbackMessage"
+          ]
+        },
+        {
+          "name": "createApiTeamFlowRepository",
+          "startLine": 60,
+          "endLine": 298,
+          "params": []
+        },
+        {
+          "name": "createDemoTeamFlowRepository",
+          "startLine": 300,
+          "endLine": 337,
+          "params": []
+        }
+      ],
+      "classes": [
+        {
+          "name": "TeamFlowApiError",
+          "startLine": 1,
+          "endLine": 7,
+          "methods": [
+            "constructor"
+          ],
+          "properties": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "TeamFlowApiError",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "createApiTeamFlowRepository",
+          "line": 60,
+          "isDefault": false
+        },
+        {
+          "name": "createDemoTeamFlowRepository",
+          "line": 300,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "constructor",
+          "callee": "super",
+          "lineNumber": 3
+        },
+        {
+          "caller": "normalizeApiBaseUrl",
+          "callee": "value.trim",
+          "lineNumber": 10
+        },
+        {
+          "caller": "normalizeApiBaseUrl",
+          "callee": "['http:', 'https:'].includes",
+          "lineNumber": 20
+        },
+        {
+          "caller": "readJson",
+          "callee": "response.json",
+          "lineNumber": 39
+        },
+        {
+          "caller": "requestJson",
+          "callee": "fetchImpl",
+          "lineNumber": 53
+        },
+        {
+          "caller": "requestJson",
+          "callee": "readJson",
+          "lineNumber": 57
+        },
+        {
+          "caller": "createApiTeamFlowRepository",
+          "callee": "normalizeApiBaseUrl",
+          "lineNumber": 66
+        },
+        {
+          "caller": "authenticatedRequest",
+          "callee": "getAccessToken",
+          "lineNumber": 69
+        },
+        {
+          "caller": "authenticatedRequest",
+          "callee": "requestJson",
+          "lineNumber": 76
+        },
+        {
+          "caller": "authenticatedRequest",
+          "callee": "apiUrl",
+          "lineNumber": 76
+        },
+        {
+          "caller": "cleanupPendingResource",
+          "callee": "authenticatedRequest",
+          "lineNumber": 81
+        },
+        {
+          "caller": "load",
+          "callee": "authenticatedRequest",
+          "lineNumber": 91
+        },
+        {
+          "caller": "createProject",
+          "callee": "authenticatedRequest",
+          "lineNumber": 95
+        },
+        {
+          "caller": "createProject",
+          "callee": "JSON.stringify",
+          "lineNumber": 96
+        },
+        {
+          "caller": "updateProject",
+          "callee": "authenticatedRequest",
+          "lineNumber": 102
+        },
+        {
+          "caller": "updateProject",
+          "callee": "JSON.stringify",
+          "lineNumber": 103
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "authenticatedRequest",
+          "lineNumber": 109
+        },
+        {
+          "caller": "updateMember",
+          "callee": "authenticatedRequest",
+          "lineNumber": 116
+        },
+        {
+          "caller": "updateMember",
+          "callee": "JSON.stringify",
+          "lineNumber": 117
+        },
+        {
+          "caller": "deleteMember",
+          "callee": "authenticatedRequest",
+          "lineNumber": 123
+        },
+        {
+          "caller": "deleteMember",
+          "callee": "Boolean",
+          "lineNumber": 129
+        },
+        {
+          "caller": "createInvitation",
+          "callee": "authenticatedRequest",
+          "lineNumber": 134
+        },
+        {
+          "caller": "createInvitation",
+          "callee": "JSON.stringify",
+          "lineNumber": 135
+        },
+        {
+          "caller": "acceptInvitation",
+          "callee": "authenticatedRequest",
+          "lineNumber": 141
+        },
+        {
+          "caller": "rejectInvitation",
+          "callee": "authenticatedRequest",
+          "lineNumber": 147
+        },
+        {
+          "caller": "cancelInvitation",
+          "callee": "authenticatedRequest",
+          "lineNumber": 154
+        },
+        {
+          "caller": "createTask",
+          "callee": "authenticatedRequest",
+          "lineNumber": 161
+        },
+        {
+          "caller": "createTask",
+          "callee": "JSON.stringify",
+          "lineNumber": 162
+        },
+        {
+          "caller": "updateTask",
+          "callee": "authenticatedRequest",
+          "lineNumber": 168
+        },
+        {
+          "caller": "updateTask",
+          "callee": "JSON.stringify",
+          "lineNumber": 169
+        },
+        {
+          "caller": "deleteTask",
+          "callee": "authenticatedRequest",
+          "lineNumber": 175
+        },
+        {
+          "caller": "createNote",
+          "callee": "authenticatedRequest",
+          "lineNumber": 182
+        },
+        {
+          "caller": "createNote",
+          "callee": "JSON.stringify",
+          "lineNumber": 183
+        },
+        {
+          "caller": "updateNote",
+          "callee": "authenticatedRequest",
+          "lineNumber": 189
+        },
+        {
+          "caller": "updateNote",
+          "callee": "JSON.stringify",
+          "lineNumber": 190
+        },
+        {
+          "caller": "deleteNote",
+          "callee": "authenticatedRequest",
+          "lineNumber": 196
+        },
+        {
+          "caller": "createResource",
+          "callee": "authenticatedRequest",
+          "lineNumber": 203
+        },
+        {
+          "caller": "createResource",
+          "callee": "JSON.stringify",
+          "lineNumber": 204
+        },
+        {
+          "caller": "uploadResource",
+          "callee": "authenticatedRequest",
+          "lineNumber": 215
+        },
+        {
+          "caller": "uploadResource",
+          "callee": "JSON.stringify",
+          "lineNumber": 217
+        },
+        {
+          "caller": "uploadResource",
+          "callee": "uploadToSignedUrl",
+          "lineNumber": 226
+        },
+        {
+          "caller": "uploadResource",
+          "callee": "cleanupPendingResource",
+          "lineNumber": 228
+        },
+        {
+          "caller": "uploadResource",
+          "callee": "authenticatedRequest",
+          "lineNumber": 235
+        },
+        {
+          "caller": "uploadResource",
+          "callee": "cleanupPendingResource",
+          "lineNumber": 240
+        },
+        {
+          "caller": "updateResource",
+          "callee": "authenticatedRequest",
+          "lineNumber": 246
+        },
+        {
+          "caller": "updateResource",
+          "callee": "JSON.stringify",
+          "lineNumber": 247
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "authenticatedRequest",
+          "lineNumber": 253
+        },
+        {
+          "caller": "getResourceDownloadUrl",
+          "callee": "authenticatedRequest",
+          "lineNumber": 260
+        },
+        {
+          "caller": "createAiAgent",
+          "callee": "authenticatedRequest",
+          "lineNumber": 266
+        },
+        {
+          "caller": "updateAiAgent",
+          "callee": "authenticatedRequest",
+          "lineNumber": 272
+        },
+        {
+          "caller": "updateAiAgent",
+          "callee": "JSON.stringify",
+          "lineNumber": 273
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "authenticatedRequest",
+          "lineNumber": 279
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "JSON.stringify",
+          "lineNumber": 280
+        },
+        {
+          "caller": "applyAiRun",
+          "callee": "authenticatedRequest",
+          "lineNumber": 286
+        },
+        {
+          "caller": "rejectAiRun",
+          "callee": "authenticatedRequest",
+          "lineNumber": 292
+        },
+        {
+          "caller": "createDemoTeamFlowRepository",
+          "callee": "normalizeApiBaseUrl",
+          "lineNumber": 304
+        },
+        {
+          "caller": "readOnly",
+          "callee": "Promise.reject",
+          "lineNumber": 305
+        },
+        {
+          "caller": "load",
+          "callee": "requestJson",
+          "lineNumber": 309
+        },
+        {
+          "caller": "load",
+          "callee": "apiUrl",
+          "lineNumber": 309
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 3,
+        "functionCount": 6,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "apps/web/src/data/apiTeamFlowRepository.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 221,
+      "nonEmptyLines": 195,
+      "functions": [
+        {
+          "name": "jsonResponse",
+          "startLine": 15,
+          "endLine": 17,
+          "params": [
+            "body"
+          ]
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/landing/LandingPage.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 56,
+      "nonEmptyLines": 49,
+      "functions": [
+        {
+          "name": "GoogleMark",
+          "startLine": 17,
+          "endLine": 19,
+          "params": []
+        },
+        {
+          "name": "LandingPage",
+          "startLine": 21,
+          "endLine": 56,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "LandingPage",
+          "line": 21,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "LandingPage",
+          "callee": "useAuth",
+          "lineNumber": 22
+        },
+        {
+          "caller": "LandingPage",
+          "callee": "useSearchParams",
+          "lineNumber": 23
+        },
+        {
+          "caller": "LandingPage",
+          "callee": "searchParams.get",
+          "lineNumber": 24
+        },
+        {
+          "caller": "LandingPage",
+          "callee": "features.map",
+          "lineNumber": 38
+        },
+        {
+          "caller": "LandingPage",
+          "callee": "auth.signInWithGoogle",
+          "lineNumber": 48
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/state/TeamFlowContext.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 3,
+      "nonEmptyLines": 2,
+      "exports": [
+        {
+          "name": "TeamFlowContext",
+          "line": 3,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 1,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/state/TeamFlowProvider.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 441,
+      "nonEmptyLines": 401,
+      "functions": [
+        {
+          "name": "reducer",
+          "startLine": 5,
+          "endLine": 130,
+          "params": [
+            "state",
+            "action"
+          ]
+        },
+        {
+          "name": "upsertByKey",
+          "startLine": 132,
+          "endLine": 134,
+          "params": [
+            "items",
+            "value",
+            "key"
+          ]
+        },
+        {
+          "name": "upsertById",
+          "startLine": 136,
+          "endLine": 138,
+          "params": [
+            "items",
+            "value"
+          ]
+        },
+        {
+          "name": "TeamFlowProvider",
+          "startLine": 160,
+          "endLine": 441,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "TeamFlowProvider",
+          "line": 160,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "reducer",
+          "callee": "state.projects.filter",
+          "lineNumber": 21
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.projects.map",
+          "lineNumber": 29
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.projects.filter",
+          "lineNumber": 36
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.members.filter",
+          "lineNumber": 37
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.tasks.filter",
+          "lineNumber": 38
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.notes.filter",
+          "lineNumber": 39
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.resources.filter",
+          "lineNumber": 40
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.invitations.filter",
+          "lineNumber": 41
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.aiAgents.filter",
+          "lineNumber": 42
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.aiRuns.filter",
+          "lineNumber": 43
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.tasks.map",
+          "lineNumber": 50
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.tasks.filter",
+          "lineNumber": 55
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.tasks.map",
+          "lineNumber": 59
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.members.map",
+          "lineNumber": 64
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.members.filter",
+          "lineNumber": 71
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.projects.map",
+          "lineNumber": 72
+        },
+        {
+          "caller": "reducer",
+          "callee": "project.memberIds.filter",
+          "lineNumber": 73
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.notes.map",
+          "lineNumber": 75
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.resources.map",
+          "lineNumber": 76
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.notes.map",
+          "lineNumber": 83
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.notes.filter",
+          "lineNumber": 86
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.resources.map",
+          "lineNumber": 92
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.resources.filter",
+          "lineNumber": 97
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.invitations.filter",
+          "lineNumber": 101
+        },
+        {
+          "caller": "reducer",
+          "callee": "upsertById",
+          "lineNumber": 105
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.projects.map",
+          "lineNumber": 106
+        },
+        {
+          "caller": "reducer",
+          "callee": "upsertByKey",
+          "lineNumber": 109
+        },
+        {
+          "caller": "reducer",
+          "callee": "upsertByKey",
+          "lineNumber": 114
+        },
+        {
+          "caller": "reducer",
+          "callee": "upsertById",
+          "lineNumber": 119
+        },
+        {
+          "caller": "reducer",
+          "callee": "upsertById",
+          "lineNumber": 124
+        },
+        {
+          "caller": "reducer",
+          "callee": "upsertById",
+          "lineNumber": 125
+        },
+        {
+          "caller": "upsertByKey",
+          "callee": "items.filter",
+          "lineNumber": 133
+        },
+        {
+          "caller": "upsertById",
+          "callee": "upsertByKey",
+          "lineNumber": 137
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useReducer",
+          "lineNumber": 161
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useRef",
+          "lineNumber": 162
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useRef",
+          "lineNumber": 163
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 165
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.load",
+          "lineNumber": 166
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 167
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 171
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "Promise.resolve",
+          "lineNumber": 172
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "reload",
+          "lineNumber": 172
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useEffect",
+          "lineNumber": 175
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.load()\n      .then((payload) => {\n        if (active) dispatch({ type: 'hydrate', payload })\n      })\n      .catch",
+          "lineNumber": 178
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.load()\n      .then",
+          "lineNumber": 178
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.load",
+          "lineNumber": 178
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 180
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 184
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "activeTimers.forEach",
+          "lineNumber": 192
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "activeTimers.clear",
+          "lineNumber": 193
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 197
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.createProject",
+          "lineNumber": 198
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 199
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "reload",
+          "lineNumber": 204
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "payload.projects.some",
+          "lineNumber": 205
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 206
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 214
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.updateProject",
+          "lineNumber": 215
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 216
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 220
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.deleteProject",
+          "lineNumber": 221
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 222
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 226
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.createTask",
+          "lineNumber": 227
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 228
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "setTimeout",
+          "lineNumber": 229
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 230
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "timers.current.delete",
+          "lineNumber": 231
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "timers.current.add",
+          "lineNumber": 233
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 237
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.updateTask",
+          "lineNumber": 238
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 239
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 243
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.deleteTask",
+          "lineNumber": 244
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 245
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 249
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.updateMember",
+          "lineNumber": 250
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 251
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 255
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.deleteMember",
+          "lineNumber": 256
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "reload",
+          "lineNumber": 262
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 264
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 268
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 272
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "beforeLeaveHandlers.current.add",
+          "lineNumber": 273
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "beforeLeaveHandlers.current.delete",
+          "lineNumber": 274
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 277
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "handler",
+          "lineNumber": 279
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 284
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.createInvitation",
+          "lineNumber": 285
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 286
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 290
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.acceptInvitation",
+          "lineNumber": 291
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 292
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "reload",
+          "lineNumber": 294
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 302
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.rejectInvitation",
+          "lineNumber": 303
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 304
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 308
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.cancelInvitation",
+          "lineNumber": 309
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 310
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 314
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.createNote",
+          "lineNumber": 315
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 316
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 320
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.updateNote",
+          "lineNumber": 321
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 322
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 326
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.deleteNote",
+          "lineNumber": 327
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 328
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 332
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.createResource",
+          "lineNumber": 333
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 334
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 338
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.uploadResource",
+          "lineNumber": 339
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 340
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 344
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.updateResource",
+          "lineNumber": 345
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 346
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 350
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.deleteResource",
+          "lineNumber": 351
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 352
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 356
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.getResourceDownloadUrl",
+          "lineNumber": 357
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 360
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.createAiAgent",
+          "lineNumber": 361
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 362
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 366
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.updateAiAgent",
+          "lineNumber": 367
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 368
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 372
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.createAiRun",
+          "lineNumber": 373
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 374
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 378
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.applyAiRun",
+          "lineNumber": 379
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 380
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 384
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.rejectAiRun",
+          "lineNumber": 385
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 386
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useMemo",
+          "lineNumber": 390
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 4,
+        "classCount": 0
+      }
+    }
+  ]
+}

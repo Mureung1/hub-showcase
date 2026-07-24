@@ -45,6 +45,11 @@ references/figma-ai-prototype/
 **/.env.local
 **/.env.*.local
 **/settings.local.json
+showcase/
+.vercel/
+/api/
+*.log
+h origin N138_이주환
 
 # --- Test file patterns (uncomment to exclude) ---
 

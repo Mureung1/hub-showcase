@@ -9,6 +9,7 @@ import { Modal } from '../../../components/ui/Modal.jsx'
 import { StatusBadge } from '../../../components/ui/StatusBadge.jsx'
 import { TASK_STATUS_LABEL, TASK_STATUS_ORDER } from '../../../constants/labels.js'
 import { formatShortDate } from '../../../lib/format.js'
+import { selectAssignableProjectMembers } from '../../../state/selectors.js'
 import { useTeamFlow } from '../../../state/useTeamFlow.js'
 import workspace from '../../../styles/workspace.module.css'
 import styles from './TaskModal.module.css'
@@ -31,12 +32,11 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
   const [errors, setErrors] = useState({})
   const [values, setValues] = useState(() => taskValues(task))
   const member = members.find((candidate) => candidate.id === task.assigneeId)
-  const project = state.projects.find((candidate) => candidate.id === task.projectId)
-  const availableMembers = members.filter((candidate) => (
-    !candidate.isAi
-    && (candidate.kind === 'user' || Boolean(candidate.authUserId))
-    && (candidate.projectId ? candidate.projectId === task.projectId : project?.memberIds?.includes(candidate.id))
-  ))
+  const assignableMembers = selectAssignableProjectMembers(state, task.projectId)
+  const currentDisabledAi = Boolean(member && (member.kind === 'ai' || member.isAi) && !assignableMembers.some((candidate) => candidate.id === member.id))
+  const availableMembers = currentDisabledAi ? [...assignableMembers, member] : assignableMembers
+  const collaborators = availableMembers.filter((candidate) => candidate.kind === 'user')
+  const aiAgents = availableMembers.filter((candidate) => candidate.kind === 'ai' || candidate.isAi)
 
   function beginEdit() {
     setValues(taskValues(task))
@@ -71,6 +71,7 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
     const nextErrors = {}
     if (!values.title.trim()) nextErrors.title = '할 일 제목을 입력해 주세요.'
     if (!values.assigneeId) nextErrors.assigneeId = '담당자를 선택해 주세요.'
+    if (currentDisabledAi && values.assigneeId === member?.id) nextErrors.assigneeId = '비활성 AI Agent 대신 담당자를 다시 선택해 주세요.'
     if (!values.dueDate) nextErrors.dueDate = '마감일을 선택해 주세요.'
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
@@ -133,7 +134,7 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
           {requestError ? <p className={forms.error} role="alert">{requestError}</p> : null}
           <label className={forms.field}><span className={forms.label}>할 일 제목 <em>*</em></span><input className={`${forms.input} ${errors.title ? forms.errorInput : ''}`} value={values.title} onChange={(event) => change('title', event.target.value)} aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? 'edit-task-title-error' : undefined} />{errors.title ? <span id="edit-task-title-error" className={forms.error}>{errors.title}</span> : null}</label>
           <div className={forms.fieldRow}>
-            <label className={forms.field}><span className={forms.label}>담당 팀원 <em>*</em></span><select className={`${forms.select} ${errors.assigneeId ? forms.errorInput : ''}`} value={values.assigneeId} onChange={(event) => change('assigneeId', event.target.value)} aria-invalid={Boolean(errors.assigneeId)}>{availableMembers.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name}</option>)}</select>{errors.assigneeId ? <span className={forms.error}>{errors.assigneeId}</span> : null}</label>
+            <label className={forms.field}><span className={forms.label}>담당 팀원 <em>*</em></span><select className={`${forms.select} ${errors.assigneeId ? forms.errorInput : ''}`} value={values.assigneeId} onChange={(event) => change('assigneeId', event.target.value)} aria-invalid={Boolean(errors.assigneeId)}><AssigneeOptionGroup label="협업 사용자" members={collaborators} />{currentDisabledAi ? <optgroup label="비활성 AI Agent"><option value={member.id} disabled>{member.name} (비활성)</option></optgroup> : null}<AssigneeOptionGroup label="AI Agent" members={aiAgents.filter((candidate) => candidate.id !== member?.id || !currentDisabledAi)} /></select>{errors.assigneeId ? <span className={forms.error}>{errors.assigneeId}</span> : null}</label>
             <label className={forms.field}><span className={forms.label}>마감일 <em>*</em></span><input type="date" className={`${forms.input} ${errors.dueDate ? forms.errorInput : ''}`} value={values.dueDate} onChange={(event) => change('dueDate', event.target.value)} aria-invalid={Boolean(errors.dueDate)} />{errors.dueDate ? <span className={forms.error}>{errors.dueDate}</span> : null}</label>
           </div>
           <div className={forms.field}>
@@ -177,4 +178,9 @@ function taskValues(task) {
     status: task.status,
     description: task.description ?? '',
   }
+}
+
+function AssigneeOptionGroup({ label, members }) {
+  if (members.length === 0) return null
+  return <optgroup label={label}>{members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</optgroup>
 }

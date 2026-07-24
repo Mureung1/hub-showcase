@@ -1,0 +1,7 @@
+interface:
+  display_name: "TeamFlow 테스트 작성"
+  short_description: "TeamFlow 테스트 계획·작성·실행 워크플로"
+  default_prompt: "Use $teamflow-test-authoring to plan, write, and run tests for this TeamFlow change."
+
+policy:
+  allow_implicit_invocation: true

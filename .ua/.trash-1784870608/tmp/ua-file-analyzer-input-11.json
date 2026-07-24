@@ -1,0 +1,28 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "apps/web/src/features/projects/components/ProjectCard.module.css",
+      "language": "css",
+      "sizeLines": 215,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/features/projects/components/ProjectIconPicker.module.css",
+      "language": "css",
+      "sizeLines": 70,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/web/src/features/projects/components/ProjectSettingsModal.module.css",
+      "language": "css",
+      "sizeLines": 41,
+      "fileCategory": "markup"
+    }
+  ],
+  "batchImportData": {
+    "apps/web/src/features/projects/components/ProjectCard.module.css": [],
+    "apps/web/src/features/projects/components/ProjectIconPicker.module.css": [],
+    "apps/web/src/features/projects/components/ProjectSettingsModal.module.css": []
+  }
+}

@@ -1,0 +1,491 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 6,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 6,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 6,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "apps/web/src/features/projects/ProjectListPage.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 117,
+      "nonEmptyLines": 108,
+      "functions": [
+        {
+          "name": "ProjectListPage",
+          "startLine": 15,
+          "endLine": 117,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ProjectListPage",
+          "line": 15,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ProjectListPage",
+          "callee": "useState",
+          "lineNumber": 16
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "useState",
+          "lineNumber": 17
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "useState",
+          "lineNumber": 18
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "useState",
+          "lineNumber": 19
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "useState",
+          "lineNumber": 20
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "useTeamFlow",
+          "lineNumber": 21
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "useNavigate",
+          "lineNumber": 23
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "useMemo",
+          "lineNumber": 24
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "query.trim().toLocaleLowerCase",
+          "lineNumber": 25
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "query.trim",
+          "lineNumber": 25
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "selectProjectSummaries(state).filter",
+          "lineNumber": 26
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "selectProjectSummaries",
+          "lineNumber": 26
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "project.name.toLocaleLowerCase('ko-KR').includes",
+          "lineNumber": 27
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "project.name.toLocaleLowerCase",
+          "lineNumber": 27
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "project.description.toLocaleLowerCase('ko-KR').includes",
+          "lineNumber": 27
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "project.description.toLocaleLowerCase",
+          "lineNumber": 27
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "useMemo",
+          "lineNumber": 29
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "selectReceivedInvitations",
+          "lineNumber": 29
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "state.projects.find",
+          "lineNumber": 30
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "state.projects.find",
+          "lineNumber": 31
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "useEffect",
+          "lineNumber": 33
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "reloadOnEntry().catch",
+          "lineNumber": 34
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "reloadOnEntry",
+          "lineNumber": 34
+        },
+        {
+          "caller": "respondToInvitation",
+          "callee": "setPendingInvitationId",
+          "lineNumber": 39
+        },
+        {
+          "caller": "respondToInvitation",
+          "callee": "setInvitationError",
+          "lineNumber": 40
+        },
+        {
+          "caller": "respondToInvitation",
+          "callee": "actions[response === 'accept' ? 'acceptInvitation' : 'rejectInvitation']",
+          "lineNumber": 42
+        },
+        {
+          "caller": "respondToInvitation",
+          "callee": "setInvitationError",
+          "lineNumber": 44
+        },
+        {
+          "caller": "respondToInvitation",
+          "callee": "setPendingInvitationId",
+          "lineNumber": 46
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "setQuery",
+          "lineNumber": 64
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "receivedInvitations.map",
+          "lineNumber": 78
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "respondToInvitation",
+          "lineNumber": 84
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "Boolean",
+          "lineNumber": 84
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "respondToInvitation",
+          "lineNumber": 85
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "Boolean",
+          "lineNumber": 85
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "projects.map",
+          "lineNumber": 101
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "navigate",
+          "lineNumber": 105
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "setIconProjectId",
+          "lineNumber": 106
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "setSettingsProjectId",
+          "lineNumber": 107
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "setSettingsProjectId",
+          "lineNumber": 113
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "setIconProjectId",
+          "lineNumber": 114
+        }
+      ],
+      "metrics": {
+        "importCount": 6,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 73,
+      "nonEmptyLines": 60,
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 99,
+      "nonEmptyLines": 92,
+      "functions": [
+        {
+          "name": "ProjectCard",
+          "startLine": 25,
+          "endLine": 99,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ProjectCard",
+          "line": 25,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ProjectCard",
+          "callee": "normalizeProgress",
+          "lineNumber": 26
+        },
+        {
+          "caller": "ProjectCard",
+          "callee": "project.members.map((member) => member.name).join",
+          "lineNumber": 28
+        },
+        {
+          "caller": "ProjectCard",
+          "callee": "project.members.map",
+          "lineNumber": 28
+        },
+        {
+          "caller": "ProjectCard",
+          "callee": "Boolean",
+          "lineNumber": 29
+        },
+        {
+          "caller": "ProjectCard",
+          "callee": "getProjectIconLabel",
+          "lineNumber": 30
+        },
+        {
+          "caller": "ProjectCard",
+          "callee": "project.members.map",
+          "lineNumber": 69
+        },
+        {
+          "caller": "ProjectCard",
+          "callee": "formatPeriod",
+          "lineNumber": 81
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 21,
+      "nonEmptyLines": 19,
+      "functions": [
+        {
+          "name": "ProjectIcon",
+          "startLine": 18,
+          "endLine": 21,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ProjectIcon",
+          "line": 18,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 52,
+      "nonEmptyLines": 48,
+      "functions": [
+        {
+          "name": "ProjectIconPicker",
+          "startLine": 10,
+          "endLine": 52,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ProjectIconPicker",
+          "line": 10,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ProjectIconPicker",
+          "callee": "useTeamFlow",
+          "lineNumber": 11
+        },
+        {
+          "caller": "ProjectIconPicker",
+          "callee": "useState",
+          "lineNumber": 12
+        },
+        {
+          "caller": "ProjectIconPicker",
+          "callee": "useState",
+          "lineNumber": 13
+        },
+        {
+          "caller": "ProjectIconPicker",
+          "callee": "useState",
+          "lineNumber": 14
+        },
+        {
+          "caller": "choose",
+          "callee": "setSelected",
+          "lineNumber": 18
+        },
+        {
+          "caller": "choose",
+          "callee": "setSaving",
+          "lineNumber": 19
+        },
+        {
+          "caller": "choose",
+          "callee": "setError",
+          "lineNumber": 20
+        },
+        {
+          "caller": "choose",
+          "callee": "actions.updateProject",
+          "lineNumber": 22
+        },
+        {
+          "caller": "choose",
+          "callee": "onClose",
+          "lineNumber": 23
+        },
+        {
+          "caller": "choose",
+          "callee": "setError",
+          "lineNumber": 25
+        },
+        {
+          "caller": "choose",
+          "callee": "setSaving",
+          "lineNumber": 26
+        },
+        {
+          "caller": "ProjectIconPicker",
+          "callee": "PROJECT_ICON_OPTIONS.map",
+          "lineNumber": 35
+        },
+        {
+          "caller": "ProjectIconPicker",
+          "callee": "choose",
+          "lineNumber": 42
+        }
+      ],
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/projects/components/projectIconOptions.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 14,
+      "nonEmptyLines": 12,
+      "functions": [
+        {
+          "name": "getProjectIconLabel",
+          "startLine": 12,
+          "endLine": 14,
+          "params": [
+            "iconKey"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "PROJECT_ICON_OPTIONS",
+          "line": 3,
+          "isDefault": false
+        },
+        {
+          "name": "getProjectIconLabel",
+          "line": 12,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "getProjectIconLabel",
+          "callee": "PROJECT_ICON_OPTIONS.find",
+          "lineNumber": 13
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    }
+  ]
+}

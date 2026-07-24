@@ -1,0 +1,36 @@
+{
+  "issues": [],
+  "warnings": [
+    "Node 'pipeline:.github/workflows/auto-merge.yml' has no edges (orphan)",
+    "Node 'file:.nvmrc' has no edges (orphan)",
+    "Node 'table:supabase/tests/database/mock_ai_team_member_rls.sql:ai_test_state' has no edges (orphan)"
+  ],
+  "stats": {
+    "totalNodes": 290,
+    "totalEdges": 593,
+    "totalLayers": 8,
+    "tourSteps": 12,
+    "nodeTypes": {
+      "file": 103,
+      "function": 133,
+      "class": 6,
+      "pipeline": 1,
+      "table": 26,
+      "config": 11,
+      "document": 10
+    },
+    "edgeTypes": {
+      "contains": 139,
+      "exports": 94,
+      "imports": 213,
+      "tested_by": 19,
+      "calls": 22,
+      "migrates": 40,
+      "configures": 6,
+      "related": 54,
+      "documents": 3,
+      "depends_on": 2,
+      "routes": 1
+    }
+  }
+}

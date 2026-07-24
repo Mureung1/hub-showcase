@@ -1,6 +1,15 @@
 import { Router } from 'express'
 
-import { RESOURCE_TYPE, RESOURCE_UPLOAD, isProjectIcon, isProjectStatus, isResourceType, isTaskStatus } from '@teamflow/shared'
+import {
+  DEFAULT_AI_CONTEXT_CONFIG,
+  RESOURCE_TYPE,
+  RESOURCE_UPLOAD,
+  isAiContextConfig,
+  isProjectIcon,
+  isProjectStatus,
+  isResourceType,
+  isTaskStatus,
+} from '@teamflow/shared'
 
 import { createAuthenticationMiddleware } from '../lib/auth.js'
 import {
@@ -13,6 +22,7 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIME_TYPE_PATTERN = /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/i
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const DEFAULT_AI_AGENT_COLOR = '#6950b8'
 
 function hasOwn(value, key) {
   return Object.prototype.hasOwnProperty.call(value ?? {}, key)
@@ -233,6 +243,94 @@ function validateInvitation(body) {
     : { fields: { email: '올바른 이메일 주소를 입력해 주세요.' } }
 }
 
+function validateAiAgentCreate(body) {
+  const value = {
+    name: cleanString(body?.name),
+    role: cleanString(body?.role),
+    description: body?.description === undefined ? '' : cleanString(body.description),
+    color: body?.color === undefined ? DEFAULT_AI_AGENT_COLOR : cleanString(body.color),
+    instructions: body?.instructions === undefined ? '' : body.instructions,
+    contextConfig: body?.contextConfig === undefined
+      ? { ...DEFAULT_AI_CONTEXT_CONFIG }
+      : body.contextConfig,
+  }
+  const fields = {}
+
+  if (!value.name || value.name.length > 80) {
+    fields.name = 'AI Agent 이름은 1자 이상 80자 이하여야 합니다.'
+  }
+  if (!value.role || value.role.length > 120) {
+    fields.role = '역할은 1자 이상 120자 이하여야 합니다.'
+  }
+  if (body?.description !== undefined && typeof body.description !== 'string') {
+    fields.description = '소개는 500자 이하여야 합니다.'
+  } else if (value.description.length > 500) {
+    fields.description = '소개는 500자 이하여야 합니다.'
+  }
+  if (!/^#[0-9a-f]{6}$/i.test(value.color)) {
+    fields.color = '색상 값을 확인해 주세요.'
+  }
+  if (typeof value.instructions !== 'string' || value.instructions.length > 10_000) {
+    fields.instructions = '역할 지시사항은 10,000자 이하여야 합니다.'
+  }
+  if (!isAiContextConfig(value.contextConfig)) {
+    fields.contextConfig = '다섯 가지 프로젝트 컨텍스트 설정을 확인해 주세요.'
+  }
+
+  return Object.keys(fields).length ? { fields } : { value }
+}
+
+function validateAiAgentPatch(body) {
+  const value = {}
+  const fields = {}
+  const keys = ['name', 'role', 'description', 'color', 'instructions', 'contextConfig', 'enabled']
+  if (!keys.some((key) => hasOwn(body, key))) fields.body = '수정할 AI Agent 정보를 입력해 주세요.'
+
+  if (hasOwn(body, 'name')) {
+    value.name = cleanString(body.name)
+    if (!value.name || value.name.length > 80) fields.name = 'AI Agent 이름은 1자 이상 80자 이하여야 합니다.'
+  }
+  if (hasOwn(body, 'role')) {
+    value.role = cleanString(body.role)
+    if (!value.role || value.role.length > 120) fields.role = '역할은 1자 이상 120자 이하여야 합니다.'
+  }
+  if (hasOwn(body, 'description')) {
+    value.description = cleanString(body.description)
+    if (typeof body.description !== 'string' || value.description.length > 500) {
+      fields.description = '소개는 500자 이하여야 합니다.'
+    }
+  }
+  if (hasOwn(body, 'color')) {
+    value.color = cleanString(body.color)
+    if (!/^#[0-9a-f]{6}$/i.test(value.color)) fields.color = '색상 값을 확인해 주세요.'
+  }
+  if (hasOwn(body, 'instructions')) {
+    value.instructions = body.instructions
+    if (typeof value.instructions !== 'string' || value.instructions.length > 10_000) {
+      fields.instructions = '역할 지시사항은 10,000자 이하여야 합니다.'
+    }
+  }
+  if (hasOwn(body, 'contextConfig')) {
+    value.contextConfig = body.contextConfig
+    if (!isAiContextConfig(value.contextConfig)) {
+      fields.contextConfig = '다섯 가지 프로젝트 컨텍스트 설정을 확인해 주세요.'
+    }
+  }
+  if (hasOwn(body, 'enabled')) {
+    value.enabled = body.enabled
+    if (typeof value.enabled !== 'boolean') fields.enabled = '활성 상태를 확인해 주세요.'
+  }
+
+  return Object.keys(fields).length ? { fields } : { value }
+}
+
+function validateAiRun(body) {
+  const taskId = cleanString(body?.taskId)
+  return UUID_PATTERN.test(taskId)
+    ? { value: { taskId } }
+    : { fields: { taskId: '할 일 ID를 확인해 주세요.' } }
+}
+
 function validationError(response, fields) {
   response.status(400).json({
     error: { code: 'VALIDATION_ERROR', message: '입력값을 확인해 주세요.', fields },
@@ -364,6 +462,60 @@ export function createTeamFlowRouter({ authVerifier, repositoryFactory, demoRepo
     return asyncRoute(async () => {
       const result = await request.teamFlow.repository.deleteMember(request.params.memberId)
       response.status(200).json(typeof result === 'string' ? { memberId: result } : result)
+    })(request, response)
+  })
+
+  router.post('/projects/:projectId/ai-agents', async (request, response) => {
+    if (!validId(response, 'projectId', request.params.projectId)) return
+    const validation = validateAiAgentCreate(request.body)
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(201).json(await request.teamFlow.repository.createAiAgent(
+        request.params.projectId,
+        validation.value,
+      ))
+    })(request, response)
+  })
+
+  router.patch('/ai-agents/:memberId', async (request, response) => {
+    if (!validId(response, 'memberId', request.params.memberId)) return
+    const validation = validateAiAgentPatch(request.body)
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(200).json(await request.teamFlow.repository.updateAiAgent(
+        request.params.memberId,
+        validation.value,
+      ))
+    })(request, response)
+  })
+
+  router.post('/ai-agents/:memberId/runs', async (request, response) => {
+    if (!validId(response, 'memberId', request.params.memberId)) return
+    const validation = validateAiRun(request.body)
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(201).json({
+        aiRun: await request.teamFlow.repository.createAiRun(
+          request.params.memberId,
+          validation.value.taskId,
+        ),
+      })
+    })(request, response)
+  })
+
+  router.post('/ai-runs/:runId/apply', async (request, response) => {
+    if (!validId(response, 'runId', request.params.runId)) return
+    return asyncRoute(async () => {
+      response.status(200).json(await request.teamFlow.repository.applyAiRun(request.params.runId))
+    })(request, response)
+  })
+
+  router.post('/ai-runs/:runId/reject', async (request, response) => {
+    if (!validId(response, 'runId', request.params.runId)) return
+    return asyncRoute(async () => {
+      response.status(200).json({
+        aiRun: await request.teamFlow.repository.rejectAiRun(request.params.runId),
+      })
     })(request, response)
   })
 

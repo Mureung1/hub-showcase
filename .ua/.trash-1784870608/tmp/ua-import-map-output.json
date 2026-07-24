@@ -1,0 +1,373 @@
+{
+  "scriptCompleted": true,
+  "stats": {
+    "filesScanned": 121,
+    "filesWithImports": 49,
+    "totalEdges": 193
+  },
+  "importMap": {
+    ".agents/skills/teamflow-test-authoring/SKILL.md": [],
+    ".agents/skills/teamflow-test-authoring/agents/openai.yaml": [],
+    ".claude/skills/teamflow-design/SKILL.md": [],
+    ".claude/skills/teamflow-design/tokens.css": [],
+    ".codex/agents/verification_agent.toml": [],
+    ".github/pull_request_template.md": [],
+    ".github/workflows/auto-merge.yml": [],
+    ".nvmrc": [],
+    ".oxlintrc.json": [],
+    "CLAUDE.md": [],
+    "README.md": [],
+    "apps/web/.env.example": [],
+    "apps/web/index.html": [],
+    "apps/web/package.json": [],
+    "apps/web/src/App.jsx": [
+      "apps/web/src/auth/AuthCallbackPage.jsx",
+      "apps/web/src/auth/ProtectedRoute.jsx",
+      "apps/web/src/auth/useAuth.js",
+      "apps/web/src/components/layout/AppShell.jsx",
+      "apps/web/src/components/layout/ProjectShell.jsx",
+      "apps/web/src/data/apiTeamFlowRepository.js",
+      "apps/web/src/features/ai/AiPage.jsx",
+      "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "apps/web/src/features/landing/LandingPage.jsx",
+      "apps/web/src/features/members/MembersPage.jsx",
+      "apps/web/src/features/notes/NotesPage.jsx",
+      "apps/web/src/features/projects/ProjectListPage.jsx",
+      "apps/web/src/features/resources/ResourcesPage.jsx",
+      "apps/web/src/features/tasks/MyTasksPage.jsx",
+      "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "apps/web/src/state/TeamFlowProvider.jsx"
+    ],
+    "apps/web/src/auth/AuthCallbackPage.jsx": [
+      "apps/web/src/auth/useAuth.js",
+      "apps/web/src/features/landing/LandingPage.module.css"
+    ],
+    "apps/web/src/auth/AuthContext.js": [],
+    "apps/web/src/auth/AuthFlows.test.jsx": [
+      "apps/web/src/App.jsx",
+      "apps/web/src/auth/AuthProvider.jsx",
+      "apps/web/src/test/createTestTeamFlowRepository.js",
+      "apps/web/src/test/renderTeamFlowApp.jsx"
+    ],
+    "apps/web/src/auth/AuthProvider.jsx": [
+      "apps/web/src/auth/AuthContext.js"
+    ],
+    "apps/web/src/auth/ProtectedRoute.jsx": [
+      "apps/web/src/auth/useAuth.js"
+    ],
+    "apps/web/src/auth/supabaseClient.js": [],
+    "apps/web/src/auth/supabaseClient.test.js": [
+      "apps/web/src/auth/supabaseClient.js"
+    ],
+    "apps/web/src/auth/useAuth.js": [
+      "apps/web/src/auth/AuthContext.js"
+    ],
+    "apps/web/src/components/layout/AppShell.jsx": [
+      "apps/web/src/auth/useAuth.js",
+      "apps/web/src/components/layout/AppShell.module.css",
+      "apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/components/layout/AppShell.module.css": [],
+    "apps/web/src/components/layout/ProjectShell.jsx": [
+      "apps/web/src/components/layout/AppShell.jsx",
+      "apps/web/src/components/layout/AppShell.module.css",
+      "apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/components/ui/Avatar.jsx": [
+      "apps/web/src/components/ui/ui.module.css"
+    ],
+    "apps/web/src/components/ui/Modal.jsx": [
+      "apps/web/src/components/ui/ui.module.css"
+    ],
+    "apps/web/src/components/ui/ResourceIcon.jsx": [
+      "apps/web/src/components/ui/ui.module.css"
+    ],
+    "apps/web/src/components/ui/StatusBadge.jsx": [
+      "apps/web/src/components/ui/ui.module.css",
+      "apps/web/src/constants/labels.js"
+    ],
+    "apps/web/src/components/ui/forms.module.css": [],
+    "apps/web/src/components/ui/ui.module.css": [],
+    "apps/web/src/constants/labels.js": [],
+    "apps/web/src/data/apiTeamFlowRepository.js": [],
+    "apps/web/src/data/apiTeamFlowRepository.test.js": [
+      "apps/web/src/data/apiTeamFlowRepository.js"
+    ],
+    "apps/web/src/features/AppFlows.test.jsx": [
+      "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "apps/web/src/test/createTestTeamFlowRepository.js",
+      "apps/web/src/test/renderTeamFlowApp.jsx"
+    ],
+    "apps/web/src/features/CollaborationFlows.test.jsx": [
+      "apps/web/src/test/createTestTeamFlowRepository.js",
+      "apps/web/src/test/renderTeamFlowApp.jsx"
+    ],
+    "apps/web/src/features/ai/AiPage.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/ai/AiPage.module.css",
+      "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/ai/AiPage.module.css": [],
+    "apps/web/src/features/dashboard/ProjectDashboardPage.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/components/ui/ResourceIcon.jsx",
+      "apps/web/src/components/ui/StatusBadge.jsx",
+      "apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/dashboard/ProjectDashboardPage.module.css": [],
+    "apps/web/src/features/dashboard/ProjectPeriodModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/landing/LandingPage.jsx": [
+      "apps/web/src/auth/useAuth.js",
+      "apps/web/src/features/landing/LandingPage.module.css"
+    ],
+    "apps/web/src/features/landing/LandingPage.module.css": [],
+    "apps/web/src/features/members/EditMemberModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/features/members/MembersPage.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/members/InviteCollaboratorModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/members/MemberRemovalModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/features/members/MembersPage.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/members/MembersPage.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/components/ui/StatusBadge.jsx",
+      "apps/web/src/features/members/EditMemberModal.jsx",
+      "apps/web/src/features/members/InviteCollaboratorModal.jsx",
+      "apps/web/src/features/members/MemberRemovalModal.jsx",
+      "apps/web/src/features/members/MembersPage.module.css",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/members/MembersPage.module.css": [],
+    "apps/web/src/features/notes/MarkdownPreview.jsx": [],
+    "apps/web/src/features/notes/NoteTemplateModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/features/notes/NotesPage.module.css"
+    ],
+    "apps/web/src/features/notes/NotesPage.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "apps/web/src/features/notes/NotesPage.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/notes/NotesPage.module.css": [],
+    "apps/web/src/features/projects/ProjectListPage.jsx": [
+      "apps/web/src/features/projects/ProjectListPage.module.css",
+      "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/projects/ProjectListPage.module.css": [],
+    "apps/web/src/features/projects/ProjectListPage.test.jsx": [
+      "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "apps/web/src/test/renderTeamFlowApp.jsx"
+    ],
+    "apps/web/src/features/projects/components/NewProjectModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/projects/components/ProjectCard.jsx": [
+      "apps/web/src/features/projects/components/ProjectCard.module.css",
+      "apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "apps/web/src/features/projects/components/projectIconOptions.js",
+      "apps/web/src/lib/format.js"
+    ],
+    "apps/web/src/features/projects/components/ProjectCard.module.css": [],
+    "apps/web/src/features/projects/components/ProjectIcon.jsx": [],
+    "apps/web/src/features/projects/components/ProjectIconPicker.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "apps/web/src/features/projects/components/ProjectIconPicker.module.css",
+      "apps/web/src/features/projects/components/projectIconOptions.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/projects/components/ProjectIconPicker.module.css": [],
+    "apps/web/src/features/projects/components/ProjectSettingsModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/projects/components/ProjectSettingsModal.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/projects/components/ProjectSettingsModal.module.css": [],
+    "apps/web/src/features/projects/components/projectIconOptions.js": [],
+    "apps/web/src/features/resources/AddResourceModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/features/resources/ResourcesPage.module.css",
+      "apps/web/src/features/resources/resourceValidation.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/resources/CreateFolderModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/resources/ResourceDetailModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/ResourceIcon.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/resources/ResourcesPage.module.css",
+      "apps/web/src/features/resources/resourceValidation.js",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/resources/ResourcesPage.jsx": [
+      "apps/web/src/components/ui/ResourceIcon.jsx",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/resources/AddResourceModal.jsx",
+      "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "apps/web/src/features/resources/ResourcesPage.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/resources/ResourcesPage.module.css": [],
+    "apps/web/src/features/resources/resourceValidation.js": [],
+    "apps/web/src/features/resources/resourceValidation.test.js": [
+      "apps/web/src/features/resources/resourceValidation.js"
+    ],
+    "apps/web/src/features/tasks/MyTasksPage.jsx": [
+      "apps/web/src/components/ui/StatusBadge.jsx",
+      "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/tasks/ProjectTasksPage.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/tasks/ProjectTasksPage.module.css": [],
+    "apps/web/src/features/tasks/components/TaskCreateModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/tasks/components/TaskDetailModal.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/StatusBadge.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/tasks/components/TaskModal.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/tasks/components/TaskDetailModal.test.jsx": [
+      "apps/web/src/test/renderTeamFlowApp.jsx"
+    ],
+    "apps/web/src/features/tasks/components/TaskModal.module.css": [],
+    "apps/web/src/lib/format.js": [],
+    "apps/web/src/lib/format.test.js": [
+      "apps/web/src/lib/format.js"
+    ],
+    "apps/web/src/main.jsx": [
+      "apps/web/src/App.jsx",
+      "apps/web/src/auth/AuthProvider.jsx",
+      "apps/web/src/auth/supabaseClient.js",
+      "apps/web/src/styles/global.css",
+      "apps/web/src/styles/tokens.css"
+    ],
+    "apps/web/src/state/TeamFlowContext.js": [],
+    "apps/web/src/state/TeamFlowProvider.jsx": [
+      "apps/web/src/state/TeamFlowContext.js"
+    ],
+    "apps/web/src/state/selectors.js": [],
+    "apps/web/src/state/useTeamFlow.js": [
+      "apps/web/src/state/TeamFlowContext.js"
+    ],
+    "apps/web/src/styles/global.css": [],
+    "apps/web/src/styles/tokens.css": [],
+    "apps/web/src/styles/workspace.module.css": [],
+    "apps/web/src/test/createTestTeamFlowRepository.js": [
+      "apps/web/src/test/teamFlowFixture.js"
+    ],
+    "apps/web/src/test/renderTeamFlowApp.jsx": [
+      "apps/web/src/App.jsx",
+      "apps/web/src/auth/AuthProvider.jsx",
+      "apps/web/src/test/createTestTeamFlowRepository.js"
+    ],
+    "apps/web/src/test/setup.js": [],
+    "apps/web/src/test/teamFlowFixture.js": [],
+    "apps/web/vercel.json": [],
+    "apps/web/vite.config.js": [],
+    "docs/agent-workflow.html": [],
+    "docs/api.md": [],
+    "docs/architecture.md": [],
+    "docs/deployment.md": [],
+    "docs/plan.md": [],
+    "docs/weekly-plan.md": [],
+    "package.json": [],
+    "packages/shared/package.json": [],
+    "packages/shared/src/index.js": [],
+    "packages/shared/src/project.js": [],
+    "packages/shared/test/project.test.js": [
+      "packages/shared/src/project.js"
+    ],
+    "render.yaml": [],
+    "supabase/migrations/20260720030115_create_tasks.sql": [],
+    "supabase/migrations/20260721054012_google_auth_workspace.sql": [],
+    "supabase/migrations/20260722112108_collaboration_and_content_crud.sql": [],
+    "supabase/migrations/20260722114219_collaboration_and_content_hardening.sql": [],
+    "supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql": [],
+    "supabase/migrations/20260722154845_add_project_icon_key.sql": [],
+    "supabase/migrations/20260722155721_backfill_demo_project_icons.sql": [],
+    "supabase/migrations/20260723093000_private_resource_uploads.sql": [],
+    "supabase/migrations/20260723094500_harden_private_resource_uploads.sql": [],
+    "supabase/migrations/20260723185956_remove_manual_assignees.sql": [],
+    "supabase/migrations/20260724090000_mock_ai_team_member.sql": [],
+    "supabase/migrations/20260724093000_mock_ai_fk_indexes.sql": [],
+    "supabase/migrations/20260724094500_fix_demo_ai_markdown.sql": [],
+    "supabase/tests/database/mock_ai_team_member_rls.sql": []
+  }
+}

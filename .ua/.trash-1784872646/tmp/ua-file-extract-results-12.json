@@ -1,0 +1,21 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 0,
+  "filesSkipped": [
+    "apps/web/src/features/projects/components/ProjectCard.module.css",
+    "apps/web/src/features/projects/components/ProjectIconPicker.module.css",
+    "apps/web/src/features/projects/components/ProjectSettingsModal.module.css"
+  ],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 0,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 0,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": []
+}

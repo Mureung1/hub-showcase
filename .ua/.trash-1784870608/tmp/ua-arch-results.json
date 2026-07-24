@@ -1,0 +1,2990 @@
+{
+  "scriptCompleted": true,
+  "commonPathPrefix": "",
+  "directoryGroups": {
+    "apps": [
+      "config:apps/web/.env.example",
+      "config:apps/web/package.json",
+      "config:apps/web/vercel.json",
+      "file:apps/web/index.html",
+      "file:apps/web/src/App.jsx",
+      "file:apps/web/src/auth/AuthCallbackPage.jsx",
+      "file:apps/web/src/auth/AuthContext.js",
+      "file:apps/web/src/auth/AuthFlows.test.jsx",
+      "file:apps/web/src/auth/AuthProvider.jsx",
+      "file:apps/web/src/auth/ProtectedRoute.jsx",
+      "file:apps/web/src/auth/supabaseClient.js",
+      "file:apps/web/src/auth/supabaseClient.test.js",
+      "file:apps/web/src/auth/useAuth.js",
+      "file:apps/web/src/components/layout/AppShell.jsx",
+      "file:apps/web/src/components/layout/AppShell.module.css",
+      "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "file:apps/web/src/components/ui/Avatar.jsx",
+      "file:apps/web/src/components/ui/Modal.jsx",
+      "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "file:apps/web/src/components/ui/forms.module.css",
+      "file:apps/web/src/components/ui/ui.module.css",
+      "file:apps/web/src/constants/labels.js",
+      "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "file:apps/web/src/data/apiTeamFlowRepository.test.js",
+      "file:apps/web/src/features/AppFlows.test.jsx",
+      "file:apps/web/src/features/CollaborationFlows.test.jsx",
+      "file:apps/web/src/features/ai/AiPage.jsx",
+      "file:apps/web/src/features/ai/AiPage.module.css",
+      "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "file:apps/web/src/features/landing/LandingPage.jsx",
+      "file:apps/web/src/features/landing/LandingPage.module.css",
+      "file:apps/web/src/features/members/EditMemberModal.jsx",
+      "file:apps/web/src/features/members/InviteCollaboratorModal.jsx",
+      "file:apps/web/src/features/members/MemberRemovalModal.jsx",
+      "file:apps/web/src/features/members/MembersPage.jsx",
+      "file:apps/web/src/features/members/MembersPage.module.css",
+      "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "file:apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "file:apps/web/src/features/notes/NotesPage.jsx",
+      "file:apps/web/src/features/notes/NotesPage.module.css",
+      "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "file:apps/web/src/features/projects/ProjectListPage.module.css",
+      "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "file:apps/web/src/features/projects/components/ProjectCard.module.css",
+      "file:apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "file:apps/web/src/features/projects/components/ProjectIconPicker.module.css",
+      "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "file:apps/web/src/features/projects/components/ProjectSettingsModal.module.css",
+      "file:apps/web/src/features/projects/components/projectIconOptions.js",
+      "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "file:apps/web/src/features/resources/resourceValidation.js",
+      "file:apps/web/src/features/resources/resourceValidation.test.js",
+      "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "file:apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "file:apps/web/src/features/tasks/components/TaskDetailModal.test.jsx",
+      "file:apps/web/src/features/tasks/components/TaskModal.module.css",
+      "file:apps/web/src/lib/format.js",
+      "file:apps/web/src/lib/format.test.js",
+      "file:apps/web/src/main.jsx",
+      "file:apps/web/src/state/TeamFlowContext.js",
+      "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "file:apps/web/src/state/selectors.js",
+      "file:apps/web/src/state/useTeamFlow.js",
+      "file:apps/web/src/styles/global.css",
+      "file:apps/web/src/styles/tokens.css",
+      "file:apps/web/src/styles/workspace.module.css",
+      "file:apps/web/src/test/createTestTeamFlowRepository.js",
+      "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "file:apps/web/src/test/setup.js",
+      "file:apps/web/src/test/teamFlowFixture.js",
+      "file:apps/web/vite.config.js"
+    ],
+    ".github": [
+      "document:.github/pull_request_template.md",
+      "pipeline:.github/workflows/auto-merge.yml"
+    ],
+    "supabase": [
+      "table:supabase/migrations/20260720030115_create_tasks.sql:migration",
+      "table:supabase/migrations/20260720030115_create_tasks.sql:tasks",
+      "table:supabase/migrations/20260721054012_google_auth_workspace.sql:demo_workspaces",
+      "table:supabase/migrations/20260721054012_google_auth_workspace.sql:members",
+      "table:supabase/migrations/20260721054012_google_auth_workspace.sql:migration",
+      "table:supabase/migrations/20260721054012_google_auth_workspace.sql:project_members",
+      "table:supabase/migrations/20260721054012_google_auth_workspace.sql:projects",
+      "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members",
+      "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:migration",
+      "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:notes",
+      "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_access",
+      "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_invitations",
+      "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources",
+      "table:supabase/migrations/20260722114219_collaboration_and_content_hardening.sql:migration",
+      "table:supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql:migration",
+      "table:supabase/migrations/20260722154845_add_project_icon_key.sql:migration",
+      "table:supabase/migrations/20260722155721_backfill_demo_project_icons.sql:migration",
+      "table:supabase/migrations/20260723093000_private_resource_uploads.sql:migration",
+      "table:supabase/migrations/20260723094500_harden_private_resource_uploads.sql:migration",
+      "table:supabase/migrations/20260723185956_remove_manual_assignees.sql:migration",
+      "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_agents",
+      "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_runs",
+      "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:migration",
+      "table:supabase/migrations/20260724093000_mock_ai_fk_indexes.sql:migration",
+      "table:supabase/migrations/20260724094500_fix_demo_ai_markdown.sql:migration",
+      "table:supabase/tests/database/mock_ai_team_member_rls.sql:ai_test_state"
+    ],
+    "root": [
+      "config:.oxlintrc.json",
+      "config:package.json",
+      "config:render.yaml",
+      "document:CLAUDE.md",
+      "document:README.md",
+      "file:.nvmrc"
+    ],
+    "docs": [
+      "document:docs/api.md",
+      "document:docs/architecture.md",
+      "document:docs/deployment.md",
+      "document:docs/plan.md",
+      "document:docs/weekly-plan.md",
+      "file:docs/agent-workflow.html"
+    ],
+    ".agents": [
+      "config:.agents/skills/teamflow-test-authoring/agents/openai.yaml",
+      "document:.agents/skills/teamflow-test-authoring/SKILL.md"
+    ],
+    ".claude": [
+      "document:.claude/skills/teamflow-design/SKILL.md",
+      "file:.claude/skills/teamflow-design/tokens.css"
+    ],
+    ".codex": [
+      "config:.codex/agents/verification_agent.toml"
+    ],
+    "packages": [
+      "config:packages/shared/package.json",
+      "file:packages/shared/src/index.js",
+      "file:packages/shared/src/project.js",
+      "file:packages/shared/test/project.test.js"
+    ]
+  },
+  "nodeTypeGroups": {
+    "file": [
+      "file:.claude/skills/teamflow-design/tokens.css",
+      "file:.nvmrc",
+      "file:apps/web/index.html",
+      "file:apps/web/src/App.jsx",
+      "file:apps/web/src/auth/AuthCallbackPage.jsx",
+      "file:apps/web/src/auth/AuthContext.js",
+      "file:apps/web/src/auth/AuthFlows.test.jsx",
+      "file:apps/web/src/auth/AuthProvider.jsx",
+      "file:apps/web/src/auth/ProtectedRoute.jsx",
+      "file:apps/web/src/auth/supabaseClient.js",
+      "file:apps/web/src/auth/supabaseClient.test.js",
+      "file:apps/web/src/auth/useAuth.js",
+      "file:apps/web/src/components/layout/AppShell.jsx",
+      "file:apps/web/src/components/layout/AppShell.module.css",
+      "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "file:apps/web/src/components/ui/Avatar.jsx",
+      "file:apps/web/src/components/ui/Modal.jsx",
+      "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "file:apps/web/src/components/ui/forms.module.css",
+      "file:apps/web/src/components/ui/ui.module.css",
+      "file:apps/web/src/constants/labels.js",
+      "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "file:apps/web/src/data/apiTeamFlowRepository.test.js",
+      "file:apps/web/src/features/AppFlows.test.jsx",
+      "file:apps/web/src/features/CollaborationFlows.test.jsx",
+      "file:apps/web/src/features/ai/AiPage.jsx",
+      "file:apps/web/src/features/ai/AiPage.module.css",
+      "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "file:apps/web/src/features/landing/LandingPage.jsx",
+      "file:apps/web/src/features/landing/LandingPage.module.css",
+      "file:apps/web/src/features/members/EditMemberModal.jsx",
+      "file:apps/web/src/features/members/InviteCollaboratorModal.jsx",
+      "file:apps/web/src/features/members/MemberRemovalModal.jsx",
+      "file:apps/web/src/features/members/MembersPage.jsx",
+      "file:apps/web/src/features/members/MembersPage.module.css",
+      "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "file:apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "file:apps/web/src/features/notes/NotesPage.jsx",
+      "file:apps/web/src/features/notes/NotesPage.module.css",
+      "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "file:apps/web/src/features/projects/ProjectListPage.module.css",
+      "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "file:apps/web/src/features/projects/components/ProjectCard.module.css",
+      "file:apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "file:apps/web/src/features/projects/components/ProjectIconPicker.module.css",
+      "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "file:apps/web/src/features/projects/components/ProjectSettingsModal.module.css",
+      "file:apps/web/src/features/projects/components/projectIconOptions.js",
+      "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "file:apps/web/src/features/resources/resourceValidation.js",
+      "file:apps/web/src/features/resources/resourceValidation.test.js",
+      "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "file:apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "file:apps/web/src/features/tasks/components/TaskDetailModal.test.jsx",
+      "file:apps/web/src/features/tasks/components/TaskModal.module.css",
+      "file:apps/web/src/lib/format.js",
+      "file:apps/web/src/lib/format.test.js",
+      "file:apps/web/src/main.jsx",
+      "file:apps/web/src/state/TeamFlowContext.js",
+      "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "file:apps/web/src/state/selectors.js",
+      "file:apps/web/src/state/useTeamFlow.js",
+      "file:apps/web/src/styles/global.css",
+      "file:apps/web/src/styles/tokens.css",
+      "file:apps/web/src/styles/workspace.module.css",
+      "file:apps/web/src/test/createTestTeamFlowRepository.js",
+      "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "file:apps/web/src/test/setup.js",
+      "file:apps/web/src/test/teamFlowFixture.js",
+      "file:apps/web/vite.config.js",
+      "file:docs/agent-workflow.html",
+      "file:packages/shared/src/index.js",
+      "file:packages/shared/src/project.js",
+      "file:packages/shared/test/project.test.js"
+    ],
+    "pipeline": [
+      "pipeline:.github/workflows/auto-merge.yml"
+    ],
+    "table": [
+      "table:supabase/migrations/20260720030115_create_tasks.sql:migration",
+      "table:supabase/migrations/20260720030115_create_tasks.sql:tasks",
+      "table:supabase/migrations/20260721054012_google_auth_workspace.sql:demo_workspaces",
+      "table:supabase/migrations/20260721054012_google_auth_workspace.sql:members",
+      "table:supabase/migrations/20260721054012_google_auth_workspace.sql:migration",
+      "table:supabase/migrations/20260721054012_google_auth_workspace.sql:project_members",
+      "table:supabase/migrations/20260721054012_google_auth_workspace.sql:projects",
+      "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members",
+      "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:migration",
+      "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:notes",
+      "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_access",
+      "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_invitations",
+      "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources",
+      "table:supabase/migrations/20260722114219_collaboration_and_content_hardening.sql:migration",
+      "table:supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql:migration",
+      "table:supabase/migrations/20260722154845_add_project_icon_key.sql:migration",
+      "table:supabase/migrations/20260722155721_backfill_demo_project_icons.sql:migration",
+      "table:supabase/migrations/20260723093000_private_resource_uploads.sql:migration",
+      "table:supabase/migrations/20260723094500_harden_private_resource_uploads.sql:migration",
+      "table:supabase/migrations/20260723185956_remove_manual_assignees.sql:migration",
+      "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_agents",
+      "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_runs",
+      "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:migration",
+      "table:supabase/migrations/20260724093000_mock_ai_fk_indexes.sql:migration",
+      "table:supabase/migrations/20260724094500_fix_demo_ai_markdown.sql:migration",
+      "table:supabase/tests/database/mock_ai_team_member_rls.sql:ai_test_state"
+    ],
+    "config": [
+      "config:.agents/skills/teamflow-test-authoring/agents/openai.yaml",
+      "config:.codex/agents/verification_agent.toml",
+      "config:.oxlintrc.json",
+      "config:apps/web/.env.example",
+      "config:apps/web/package.json",
+      "config:apps/web/vercel.json",
+      "config:package.json",
+      "config:packages/shared/package.json",
+      "config:render.yaml"
+    ],
+    "document": [
+      "document:.agents/skills/teamflow-test-authoring/SKILL.md",
+      "document:.claude/skills/teamflow-design/SKILL.md",
+      "document:.github/pull_request_template.md",
+      "document:CLAUDE.md",
+      "document:README.md",
+      "document:docs/api.md",
+      "document:docs/architecture.md",
+      "document:docs/deployment.md",
+      "document:docs/plan.md",
+      "document:docs/weekly-plan.md"
+    ]
+  },
+  "directoryDependencies": {
+    "apps": {
+      "importsFrom": [],
+      "importedBy": []
+    },
+    ".github": {
+      "importsFrom": [],
+      "importedBy": []
+    },
+    "supabase": {
+      "importsFrom": [],
+      "importedBy": []
+    },
+    "root": {
+      "importsFrom": [],
+      "importedBy": []
+    },
+    "docs": {
+      "importsFrom": [],
+      "importedBy": []
+    },
+    ".agents": {
+      "importsFrom": [],
+      "importedBy": []
+    },
+    ".claude": {
+      "importsFrom": [],
+      "importedBy": []
+    },
+    ".codex": {
+      "importsFrom": [],
+      "importedBy": []
+    },
+    "packages": {
+      "importsFrom": [],
+      "importedBy": []
+    }
+  },
+  "crossCategoryEdges": [
+    {
+      "fromType": "file",
+      "toType": "file",
+      "edgeType": "imports",
+      "count": 193
+    },
+    {
+      "fromType": "file",
+      "toType": "file",
+      "edgeType": "related",
+      "count": 44
+    },
+    {
+      "fromType": "table",
+      "toType": "table",
+      "edgeType": "migrates",
+      "count": 40
+    },
+    {
+      "fromType": "file",
+      "toType": "file",
+      "edgeType": "tested_by",
+      "count": 9
+    },
+    {
+      "fromType": "document",
+      "toType": "document",
+      "edgeType": "related",
+      "count": 7
+    },
+    {
+      "fromType": "config",
+      "toType": "file",
+      "edgeType": "configures",
+      "count": 5
+    },
+    {
+      "fromType": "document",
+      "toType": "config",
+      "edgeType": "documents",
+      "count": 2
+    },
+    {
+      "fromType": "document",
+      "toType": "file",
+      "edgeType": "documents",
+      "count": 2
+    },
+    {
+      "fromType": "file",
+      "toType": "document",
+      "edgeType": "related",
+      "count": 2
+    },
+    {
+      "fromType": "file",
+      "toType": "file",
+      "edgeType": "depends_on",
+      "count": 2
+    },
+    {
+      "fromType": "config",
+      "toType": "config",
+      "edgeType": "configures",
+      "count": 1
+    },
+    {
+      "fromType": "config",
+      "toType": "config",
+      "edgeType": "depends_on",
+      "count": 1
+    },
+    {
+      "fromType": "config",
+      "toType": "file",
+      "edgeType": "routes",
+      "count": 1
+    },
+    {
+      "fromType": "config",
+      "toType": "document",
+      "edgeType": "configures",
+      "count": 1
+    },
+    {
+      "fromType": "config",
+      "toType": "document",
+      "edgeType": "related",
+      "count": 1
+    }
+  ],
+  "nonCodeConnections": {
+    "table:supabase/migrations/20260720030115_create_tasks.sql:migration": [
+      {
+        "target": "table:supabase/migrations/20260720030115_create_tasks.sql:tasks",
+        "edgeType": "migrates"
+      }
+    ],
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:migration": [
+      {
+        "target": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:members",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:projects",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:project_members",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:demo_workspaces",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260720030115_create_tasks.sql:tasks",
+        "edgeType": "migrates"
+      }
+    ],
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:migration": [
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_access",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_invitations",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:notes",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260720030115_create_tasks.sql:tasks",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:projects",
+        "edgeType": "migrates"
+      }
+    ],
+    "table:supabase/migrations/20260722114219_collaboration_and_content_hardening.sql:migration": [
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_access",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_invitations",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:notes",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260720030115_create_tasks.sql:tasks",
+        "edgeType": "migrates"
+      }
+    ],
+    "table:supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql:migration": [
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_access",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_invitations",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:notes",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:projects",
+        "edgeType": "migrates"
+      }
+    ],
+    "table:supabase/migrations/20260722154845_add_project_icon_key.sql:migration": [
+      {
+        "target": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:projects",
+        "edgeType": "migrates"
+      }
+    ],
+    "table:supabase/migrations/20260722155721_backfill_demo_project_icons.sql:migration": [
+      {
+        "target": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:demo_workspaces",
+        "edgeType": "migrates"
+      }
+    ],
+    "table:supabase/migrations/20260723093000_private_resource_uploads.sql:migration": [
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources",
+        "edgeType": "migrates"
+      }
+    ],
+    "table:supabase/migrations/20260723094500_harden_private_resource_uploads.sql:migration": [
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources",
+        "edgeType": "migrates"
+      }
+    ],
+    "table:supabase/migrations/20260723185956_remove_manual_assignees.sql:migration": [
+      {
+        "target": "table:supabase/migrations/20260720030115_create_tasks.sql:tasks",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_access",
+        "edgeType": "migrates"
+      }
+    ],
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:migration": [
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260720030115_create_tasks.sql:tasks",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:notes",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_agents",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_runs",
+        "edgeType": "migrates"
+      },
+      {
+        "target": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:demo_workspaces",
+        "edgeType": "migrates"
+      }
+    ],
+    "table:supabase/migrations/20260724093000_mock_ai_fk_indexes.sql:migration": [
+      {
+        "target": "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_runs",
+        "edgeType": "migrates"
+      }
+    ],
+    "table:supabase/migrations/20260724094500_fix_demo_ai_markdown.sql:migration": [
+      {
+        "target": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:demo_workspaces",
+        "edgeType": "migrates"
+      }
+    ],
+    "config:.oxlintrc.json": [
+      {
+        "target": "config:package.json",
+        "edgeType": "configures"
+      }
+    ],
+    "document:CLAUDE.md": [
+      {
+        "target": "document:README.md",
+        "edgeType": "related"
+      }
+    ],
+    "document:README.md": [
+      {
+        "target": "config:package.json",
+        "edgeType": "documents"
+      },
+      {
+        "target": "config:render.yaml",
+        "edgeType": "documents"
+      }
+    ],
+    "config:render.yaml": [
+      {
+        "target": "config:package.json",
+        "edgeType": "depends_on"
+      }
+    ],
+    "config:apps/web/.env.example": [
+      {
+        "target": "file:apps/web/index.html",
+        "edgeType": "configures"
+      }
+    ],
+    "config:apps/web/package.json": [
+      {
+        "target": "file:apps/web/index.html",
+        "edgeType": "configures"
+      }
+    ],
+    "config:apps/web/vercel.json": [
+      {
+        "target": "file:apps/web/index.html",
+        "edgeType": "routes"
+      }
+    ],
+    "document:docs/api.md": [
+      {
+        "target": "document:docs/architecture.md",
+        "edgeType": "related"
+      }
+    ],
+    "document:docs/architecture.md": [
+      {
+        "target": "document:docs/deployment.md",
+        "edgeType": "related"
+      },
+      {
+        "target": "document:docs/plan.md",
+        "edgeType": "related"
+      }
+    ],
+    "document:docs/deployment.md": [
+      {
+        "target": "document:docs/api.md",
+        "edgeType": "related"
+      }
+    ],
+    "document:docs/weekly-plan.md": [
+      {
+        "target": "document:docs/plan.md",
+        "edgeType": "related"
+      }
+    ],
+    "config:.agents/skills/teamflow-test-authoring/agents/openai.yaml": [
+      {
+        "target": "document:.agents/skills/teamflow-test-authoring/SKILL.md",
+        "edgeType": "configures"
+      }
+    ],
+    "document:.agents/skills/teamflow-test-authoring/SKILL.md": [
+      {
+        "target": "file:packages/shared/test/project.test.js",
+        "edgeType": "documents"
+      }
+    ],
+    "document:.claude/skills/teamflow-design/SKILL.md": [
+      {
+        "target": "file:.claude/skills/teamflow-design/tokens.css",
+        "edgeType": "documents"
+      }
+    ],
+    "config:.codex/agents/verification_agent.toml": [
+      {
+        "target": "document:.agents/skills/teamflow-test-authoring/SKILL.md",
+        "edgeType": "related"
+      }
+    ],
+    "document:.github/pull_request_template.md": [
+      {
+        "target": "document:.agents/skills/teamflow-test-authoring/SKILL.md",
+        "edgeType": "related"
+      }
+    ],
+    "config:packages/shared/package.json": [
+      {
+        "target": "file:packages/shared/src/index.js",
+        "edgeType": "configures"
+      },
+      {
+        "target": "file:packages/shared/src/project.js",
+        "edgeType": "configures"
+      },
+      {
+        "target": "file:packages/shared/test/project.test.js",
+        "edgeType": "configures"
+      }
+    ]
+  },
+  "interGroupImports": [],
+  "intraGroupDensity": {
+    "apps": {
+      "internalEdges": 192,
+      "totalEdges": 192,
+      "density": 1
+    },
+    ".github": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    },
+    "supabase": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    },
+    "root": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    },
+    "docs": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    },
+    ".agents": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    },
+    ".claude": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    },
+    ".codex": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    },
+    "packages": {
+      "internalEdges": 1,
+      "totalEdges": 1,
+      "density": 1
+    }
+  },
+  "patternMatches": {
+    "apps": "unclassified",
+    ".github": "ci-cd",
+    "supabase": "data",
+    "root": "config",
+    "docs": "documentation",
+    ".agents": "config",
+    ".claude": "documentation",
+    ".codex": "config",
+    "packages": "config"
+  },
+  "filePatternMatches": {
+    "file:apps/web/src/components/layout/AppShell.jsx": "ui",
+    "file:apps/web/src/components/layout/ProjectShell.jsx": "ui",
+    "file:apps/web/src/components/ui/Modal.jsx": "ui",
+    "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx": "unclassified",
+    "file:apps/web/src/features/members/EditMemberModal.jsx": "unclassified",
+    "file:apps/web/src/features/members/InviteCollaboratorModal.jsx": "unclassified",
+    "file:apps/web/src/features/members/MemberRemovalModal.jsx": "unclassified",
+    "file:apps/web/src/features/members/MembersPage.jsx": "unclassified",
+    "file:apps/web/src/features/notes/NoteTemplateModal.jsx": "unclassified",
+    "file:apps/web/src/features/notes/NotesPage.jsx": "unclassified",
+    "file:apps/web/src/features/projects/components/NewProjectModal.jsx": "ui",
+    "file:apps/web/src/features/resources/CreateFolderModal.jsx": "unclassified",
+    "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx": "ui",
+    "file:apps/web/src/state/selectors.js": "state",
+    "file:apps/web/src/state/useTeamFlow.js": "state",
+    "file:apps/web/src/auth/AuthContext.js": "unclassified",
+    "file:apps/web/src/auth/AuthFlows.test.jsx": "test",
+    "file:apps/web/src/auth/AuthProvider.jsx": "unclassified",
+    "file:apps/web/src/auth/supabaseClient.js": "unclassified",
+    "file:apps/web/src/auth/supabaseClient.test.js": "test",
+    "file:apps/web/src/features/AppFlows.test.jsx": "test",
+    "file:apps/web/src/features/CollaborationFlows.test.jsx": "test",
+    "file:apps/web/src/features/notes/MarkdownPreview.jsx": "unclassified",
+    "file:apps/web/src/features/tasks/components/TaskDetailModal.test.jsx": "test",
+    "file:apps/web/src/main.jsx": "unclassified",
+    "file:apps/web/src/test/createTestTeamFlowRepository.js": "test",
+    "file:apps/web/src/test/renderTeamFlowApp.jsx": "test",
+    "file:apps/web/src/test/teamFlowFixture.js": "test",
+    "file:apps/web/src/components/ui/Avatar.jsx": "ui",
+    "file:apps/web/src/components/ui/StatusBadge.jsx": "ui",
+    "file:apps/web/src/constants/labels.js": "config",
+    "file:apps/web/src/features/ai/AiPage.jsx": "unclassified",
+    "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx": "unclassified",
+    "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx": "ui",
+    "file:apps/web/src/features/tasks/MyTasksPage.jsx": "unclassified",
+    "file:apps/web/src/features/tasks/ProjectTasksPage.jsx": "unclassified",
+    "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx": "ui",
+    "file:apps/web/src/lib/format.js": "service",
+    "file:apps/web/src/lib/format.test.js": "test",
+    "file:apps/web/src/App.jsx": "unclassified",
+    "file:apps/web/src/auth/AuthCallbackPage.jsx": "unclassified",
+    "file:apps/web/src/auth/ProtectedRoute.jsx": "unclassified",
+    "file:apps/web/src/auth/useAuth.js": "unclassified",
+    "file:apps/web/src/data/apiTeamFlowRepository.js": "data",
+    "file:apps/web/src/data/apiTeamFlowRepository.test.js": "test",
+    "file:apps/web/src/features/landing/LandingPage.jsx": "unclassified",
+    "file:apps/web/src/state/TeamFlowContext.js": "state",
+    "file:apps/web/src/state/TeamFlowProvider.jsx": "state",
+    "file:apps/web/src/components/ui/ResourceIcon.jsx": "ui",
+    "file:apps/web/src/features/resources/AddResourceModal.jsx": "unclassified",
+    "file:apps/web/src/features/resources/ResourceDetailModal.jsx": "unclassified",
+    "file:apps/web/src/features/resources/ResourcesPage.jsx": "unclassified",
+    "file:apps/web/src/features/resources/resourceValidation.js": "unclassified",
+    "file:apps/web/src/features/resources/resourceValidation.test.js": "test",
+    "file:apps/web/src/features/projects/ProjectListPage.jsx": "unclassified",
+    "file:apps/web/src/features/projects/ProjectListPage.test.jsx": "test",
+    "file:apps/web/src/features/projects/components/ProjectCard.jsx": "ui",
+    "file:apps/web/src/features/projects/components/ProjectIcon.jsx": "ui",
+    "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx": "ui",
+    "file:apps/web/src/features/projects/components/projectIconOptions.js": "ui",
+    "pipeline:.github/workflows/auto-merge.yml": "ci-cd",
+    "table:supabase/migrations/20260720030115_create_tasks.sql:migration": "data",
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:migration": "data",
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:migration": "data",
+    "table:supabase/migrations/20260722114219_collaboration_and_content_hardening.sql:migration": "data",
+    "table:supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql:migration": "data",
+    "table:supabase/migrations/20260722154845_add_project_icon_key.sql:migration": "data",
+    "table:supabase/migrations/20260722155721_backfill_demo_project_icons.sql:migration": "data",
+    "table:supabase/migrations/20260723093000_private_resource_uploads.sql:migration": "data",
+    "table:supabase/migrations/20260723094500_harden_private_resource_uploads.sql:migration": "data",
+    "table:supabase/migrations/20260723185956_remove_manual_assignees.sql:migration": "data",
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:migration": "data",
+    "table:supabase/migrations/20260724093000_mock_ai_fk_indexes.sql:migration": "data",
+    "table:supabase/migrations/20260724094500_fix_demo_ai_markdown.sql:migration": "data",
+    "table:supabase/migrations/20260720030115_create_tasks.sql:tasks": "data",
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:members": "data",
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:projects": "data",
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:project_members": "data",
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:demo_workspaces": "data",
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members": "data",
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_access": "data",
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_invitations": "data",
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:notes": "data",
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources": "data",
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_agents": "data",
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_runs": "data",
+    "config:.oxlintrc.json": "config",
+    "document:CLAUDE.md": "documentation",
+    "document:README.md": "documentation",
+    "config:package.json": "config",
+    "config:render.yaml": "config",
+    "config:apps/web/.env.example": "config",
+    "file:apps/web/index.html": "unclassified",
+    "config:apps/web/package.json": "config",
+    "config:apps/web/vercel.json": "config",
+    "file:apps/web/src/features/projects/components/ProjectCard.module.css": "ui",
+    "file:apps/web/src/features/projects/components/ProjectIconPicker.module.css": "ui",
+    "file:apps/web/src/features/projects/components/ProjectSettingsModal.module.css": "ui",
+    "file:apps/web/src/styles/global.css": "unclassified",
+    "file:apps/web/src/styles/tokens.css": "unclassified",
+    "file:apps/web/src/styles/workspace.module.css": "unclassified",
+    "file:docs/agent-workflow.html": "documentation",
+    "document:docs/api.md": "documentation",
+    "document:docs/architecture.md": "documentation",
+    "document:docs/deployment.md": "documentation",
+    "document:docs/plan.md": "documentation",
+    "document:docs/weekly-plan.md": "documentation",
+    "document:.agents/skills/teamflow-test-authoring/SKILL.md": "documentation",
+    "config:.agents/skills/teamflow-test-authoring/agents/openai.yaml": "config",
+    "document:.claude/skills/teamflow-design/SKILL.md": "documentation",
+    "file:.claude/skills/teamflow-design/tokens.css": "unclassified",
+    "config:.codex/agents/verification_agent.toml": "config",
+    "document:.github/pull_request_template.md": "documentation",
+    "file:.nvmrc": "unclassified",
+    "file:apps/web/src/components/layout/AppShell.module.css": "ui",
+    "file:apps/web/src/components/ui/forms.module.css": "ui",
+    "file:apps/web/src/components/ui/ui.module.css": "ui",
+    "file:apps/web/src/features/ai/AiPage.module.css": "unclassified",
+    "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css": "unclassified",
+    "file:apps/web/src/features/landing/LandingPage.module.css": "unclassified",
+    "file:apps/web/src/features/members/MembersPage.module.css": "unclassified",
+    "file:apps/web/src/features/notes/NotesPage.module.css": "unclassified",
+    "file:apps/web/src/features/projects/ProjectListPage.module.css": "unclassified",
+    "file:apps/web/src/features/resources/ResourcesPage.module.css": "unclassified",
+    "file:apps/web/src/features/tasks/ProjectTasksPage.module.css": "unclassified",
+    "file:apps/web/src/features/tasks/components/TaskModal.module.css": "ui",
+    "file:apps/web/src/test/setup.js": "test",
+    "file:apps/web/vite.config.js": "unclassified",
+    "config:packages/shared/package.json": "config",
+    "file:packages/shared/src/index.js": "entry",
+    "file:packages/shared/src/project.js": "utility",
+    "file:packages/shared/test/project.test.js": "test",
+    "table:supabase/tests/database/mock_ai_team_member_rls.sql:ai_test_state": "data"
+  },
+  "deploymentTopology": {
+    "hasDockerfile": false,
+    "hasCompose": false,
+    "hasK8s": false,
+    "hasTerraform": false,
+    "hasCI": true,
+    "infraFiles": [
+      ".github/workflows/auto-merge.yml"
+    ]
+  },
+  "dataPipeline": {
+    "schemaFiles": [
+      "supabase/migrations/20260720030115_create_tasks.sql",
+      "supabase/migrations/20260720030115_create_tasks.sql",
+      "supabase/migrations/20260721054012_google_auth_workspace.sql",
+      "supabase/migrations/20260721054012_google_auth_workspace.sql",
+      "supabase/migrations/20260721054012_google_auth_workspace.sql",
+      "supabase/migrations/20260721054012_google_auth_workspace.sql",
+      "supabase/migrations/20260721054012_google_auth_workspace.sql",
+      "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "supabase/migrations/20260722114219_collaboration_and_content_hardening.sql",
+      "supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql",
+      "supabase/migrations/20260722154845_add_project_icon_key.sql",
+      "supabase/migrations/20260722155721_backfill_demo_project_icons.sql",
+      "supabase/migrations/20260723093000_private_resource_uploads.sql",
+      "supabase/migrations/20260723094500_harden_private_resource_uploads.sql",
+      "supabase/migrations/20260723185956_remove_manual_assignees.sql",
+      "supabase/migrations/20260724090000_mock_ai_team_member.sql",
+      "supabase/migrations/20260724090000_mock_ai_team_member.sql",
+      "supabase/migrations/20260724090000_mock_ai_team_member.sql",
+      "supabase/migrations/20260724093000_mock_ai_fk_indexes.sql",
+      "supabase/migrations/20260724094500_fix_demo_ai_markdown.sql",
+      "supabase/tests/database/mock_ai_team_member_rls.sql"
+    ],
+    "migrationFiles": [
+      "supabase/migrations/20260720030115_create_tasks.sql",
+      "supabase/migrations/20260721054012_google_auth_workspace.sql",
+      "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "supabase/migrations/20260722114219_collaboration_and_content_hardening.sql",
+      "supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql",
+      "supabase/migrations/20260722154845_add_project_icon_key.sql",
+      "supabase/migrations/20260722155721_backfill_demo_project_icons.sql",
+      "supabase/migrations/20260723093000_private_resource_uploads.sql",
+      "supabase/migrations/20260723094500_harden_private_resource_uploads.sql",
+      "supabase/migrations/20260723185956_remove_manual_assignees.sql",
+      "supabase/migrations/20260724090000_mock_ai_team_member.sql",
+      "supabase/migrations/20260724093000_mock_ai_fk_indexes.sql",
+      "supabase/migrations/20260724094500_fix_demo_ai_markdown.sql",
+      "supabase/tests/database/mock_ai_team_member_rls.sql"
+    ],
+    "dataModelFiles": [
+      "apps/web/src/data/apiTeamFlowRepository.js",
+      "packages/shared/src/index.js",
+      "packages/shared/src/project.js",
+      "packages/shared/test/project.test.js"
+    ],
+    "apiHandlerFiles": []
+  },
+  "docCoverage": {
+    "groupsWithDocs": 6,
+    "totalGroups": 9,
+    "coverageRatio": 0.6667,
+    "undocumentedGroups": [
+      ".codex",
+      "apps",
+      "supabase"
+    ]
+  },
+  "dependencyDirection": [],
+  "fileStats": {
+    "totalFileNodes": 133,
+    "filesPerGroup": {
+      "apps": 84,
+      ".github": 2,
+      "supabase": 26,
+      "root": 6,
+      "docs": 6,
+      ".agents": 2,
+      ".claude": 2,
+      ".codex": 1,
+      "packages": 4
+    },
+    "nodeTypeCounts": {
+      "file": 87,
+      "pipeline": 1,
+      "table": 26,
+      "config": 9,
+      "document": 10
+    }
+  },
+  "fileFanIn": {
+    "file:apps/web/src/components/layout/AppShell.jsx": 2,
+    "file:apps/web/src/components/layout/ProjectShell.jsx": 1,
+    "file:apps/web/src/components/ui/Modal.jsx": 14,
+    "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx": 1,
+    "file:apps/web/src/features/members/EditMemberModal.jsx": 1,
+    "file:apps/web/src/features/members/InviteCollaboratorModal.jsx": 1,
+    "file:apps/web/src/features/members/MemberRemovalModal.jsx": 1,
+    "file:apps/web/src/features/members/MembersPage.jsx": 1,
+    "file:apps/web/src/features/notes/NoteTemplateModal.jsx": 1,
+    "file:apps/web/src/features/notes/NotesPage.jsx": 1,
+    "file:apps/web/src/features/projects/components/NewProjectModal.jsx": 1,
+    "file:apps/web/src/features/resources/CreateFolderModal.jsx": 1,
+    "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx": 1,
+    "file:apps/web/src/state/selectors.js": 7,
+    "file:apps/web/src/state/useTeamFlow.js": 22,
+    "file:apps/web/src/auth/AuthContext.js": 2,
+    "file:apps/web/src/auth/AuthFlows.test.jsx": 0,
+    "file:apps/web/src/auth/AuthProvider.jsx": 3,
+    "file:apps/web/src/auth/supabaseClient.js": 2,
+    "file:apps/web/src/auth/supabaseClient.test.js": 0,
+    "file:apps/web/src/features/AppFlows.test.jsx": 0,
+    "file:apps/web/src/features/CollaborationFlows.test.jsx": 0,
+    "file:apps/web/src/features/notes/MarkdownPreview.jsx": 3,
+    "file:apps/web/src/features/tasks/components/TaskDetailModal.test.jsx": 0,
+    "file:apps/web/src/main.jsx": 0,
+    "file:apps/web/src/test/createTestTeamFlowRepository.js": 4,
+    "file:apps/web/src/test/renderTeamFlowApp.jsx": 5,
+    "file:apps/web/src/test/teamFlowFixture.js": 1,
+    "file:apps/web/src/components/ui/Avatar.jsx": 6,
+    "file:apps/web/src/components/ui/StatusBadge.jsx": 4,
+    "file:apps/web/src/constants/labels.js": 9,
+    "file:apps/web/src/features/ai/AiPage.jsx": 1,
+    "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx": 1,
+    "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx": 2,
+    "file:apps/web/src/features/tasks/MyTasksPage.jsx": 1,
+    "file:apps/web/src/features/tasks/ProjectTasksPage.jsx": 1,
+    "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx": 2,
+    "file:apps/web/src/lib/format.js": 11,
+    "file:apps/web/src/lib/format.test.js": 0,
+    "file:apps/web/src/App.jsx": 3,
+    "file:apps/web/src/auth/AuthCallbackPage.jsx": 1,
+    "file:apps/web/src/auth/ProtectedRoute.jsx": 1,
+    "file:apps/web/src/auth/useAuth.js": 5,
+    "file:apps/web/src/data/apiTeamFlowRepository.js": 2,
+    "file:apps/web/src/data/apiTeamFlowRepository.test.js": 0,
+    "file:apps/web/src/features/landing/LandingPage.jsx": 1,
+    "file:apps/web/src/state/TeamFlowContext.js": 2,
+    "file:apps/web/src/state/TeamFlowProvider.jsx": 1,
+    "file:apps/web/src/components/ui/ResourceIcon.jsx": 3,
+    "file:apps/web/src/features/resources/AddResourceModal.jsx": 1,
+    "file:apps/web/src/features/resources/ResourceDetailModal.jsx": 1,
+    "file:apps/web/src/features/resources/ResourcesPage.jsx": 1,
+    "file:apps/web/src/features/resources/resourceValidation.js": 3,
+    "file:apps/web/src/features/resources/resourceValidation.test.js": 0,
+    "file:apps/web/src/features/projects/ProjectListPage.jsx": 1,
+    "file:apps/web/src/features/projects/ProjectListPage.test.jsx": 0,
+    "file:apps/web/src/features/projects/components/ProjectCard.jsx": 2,
+    "file:apps/web/src/features/projects/components/ProjectIcon.jsx": 3,
+    "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx": 1,
+    "file:apps/web/src/features/projects/components/projectIconOptions.js": 2,
+    "pipeline:.github/workflows/auto-merge.yml": 0,
+    "table:supabase/migrations/20260720030115_create_tasks.sql:migration": 0,
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:migration": 0,
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:migration": 0,
+    "table:supabase/migrations/20260722114219_collaboration_and_content_hardening.sql:migration": 0,
+    "table:supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql:migration": 0,
+    "table:supabase/migrations/20260722154845_add_project_icon_key.sql:migration": 0,
+    "table:supabase/migrations/20260722155721_backfill_demo_project_icons.sql:migration": 0,
+    "table:supabase/migrations/20260723093000_private_resource_uploads.sql:migration": 0,
+    "table:supabase/migrations/20260723094500_harden_private_resource_uploads.sql:migration": 0,
+    "table:supabase/migrations/20260723185956_remove_manual_assignees.sql:migration": 0,
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:migration": 0,
+    "table:supabase/migrations/20260724093000_mock_ai_fk_indexes.sql:migration": 0,
+    "table:supabase/migrations/20260724094500_fix_demo_ai_markdown.sql:migration": 0,
+    "table:supabase/migrations/20260720030115_create_tasks.sql:tasks": 0,
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:members": 0,
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:projects": 0,
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:project_members": 0,
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:demo_workspaces": 0,
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members": 0,
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_access": 0,
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_invitations": 0,
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:notes": 0,
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources": 0,
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_agents": 0,
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_runs": 0,
+    "config:.oxlintrc.json": 0,
+    "document:CLAUDE.md": 0,
+    "document:README.md": 0,
+    "config:package.json": 0,
+    "config:render.yaml": 0,
+    "config:apps/web/.env.example": 0,
+    "file:apps/web/index.html": 0,
+    "config:apps/web/package.json": 0,
+    "config:apps/web/vercel.json": 0,
+    "file:apps/web/src/features/projects/components/ProjectCard.module.css": 1,
+    "file:apps/web/src/features/projects/components/ProjectIconPicker.module.css": 1,
+    "file:apps/web/src/features/projects/components/ProjectSettingsModal.module.css": 1,
+    "file:apps/web/src/styles/global.css": 1,
+    "file:apps/web/src/styles/tokens.css": 1,
+    "file:apps/web/src/styles/workspace.module.css": 7,
+    "file:docs/agent-workflow.html": 0,
+    "document:docs/api.md": 0,
+    "document:docs/architecture.md": 0,
+    "document:docs/deployment.md": 0,
+    "document:docs/plan.md": 0,
+    "document:docs/weekly-plan.md": 0,
+    "document:.agents/skills/teamflow-test-authoring/SKILL.md": 0,
+    "config:.agents/skills/teamflow-test-authoring/agents/openai.yaml": 0,
+    "document:.claude/skills/teamflow-design/SKILL.md": 0,
+    "file:.claude/skills/teamflow-design/tokens.css": 0,
+    "config:.codex/agents/verification_agent.toml": 0,
+    "document:.github/pull_request_template.md": 0,
+    "file:.nvmrc": 0,
+    "file:apps/web/src/components/layout/AppShell.module.css": 2,
+    "file:apps/web/src/components/ui/forms.module.css": 11,
+    "file:apps/web/src/components/ui/ui.module.css": 4,
+    "file:apps/web/src/features/ai/AiPage.module.css": 1,
+    "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css": 1,
+    "file:apps/web/src/features/landing/LandingPage.module.css": 2,
+    "file:apps/web/src/features/members/MembersPage.module.css": 3,
+    "file:apps/web/src/features/notes/NotesPage.module.css": 2,
+    "file:apps/web/src/features/projects/ProjectListPage.module.css": 1,
+    "file:apps/web/src/features/resources/ResourcesPage.module.css": 3,
+    "file:apps/web/src/features/tasks/ProjectTasksPage.module.css": 1,
+    "file:apps/web/src/features/tasks/components/TaskModal.module.css": 1,
+    "file:apps/web/src/test/setup.js": 0,
+    "file:apps/web/vite.config.js": 0,
+    "config:packages/shared/package.json": 0,
+    "file:packages/shared/src/index.js": 0,
+    "file:packages/shared/src/project.js": 1,
+    "file:packages/shared/test/project.test.js": 0,
+    "table:supabase/tests/database/mock_ai_team_member_rls.sql:ai_test_state": 0
+  },
+  "fileFanOut": {
+    "file:apps/web/src/components/layout/AppShell.jsx": 5,
+    "file:apps/web/src/components/layout/ProjectShell.jsx": 7,
+    "file:apps/web/src/components/ui/Modal.jsx": 1,
+    "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx": 3,
+    "file:apps/web/src/features/members/EditMemberModal.jsx": 4,
+    "file:apps/web/src/features/members/InviteCollaboratorModal.jsx": 3,
+    "file:apps/web/src/features/members/MemberRemovalModal.jsx": 4,
+    "file:apps/web/src/features/members/MembersPage.jsx": 9,
+    "file:apps/web/src/features/notes/NoteTemplateModal.jsx": 2,
+    "file:apps/web/src/features/notes/NotesPage.jsx": 7,
+    "file:apps/web/src/features/projects/components/NewProjectModal.jsx": 4,
+    "file:apps/web/src/features/resources/CreateFolderModal.jsx": 4,
+    "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx": 4,
+    "file:apps/web/src/state/selectors.js": 0,
+    "file:apps/web/src/state/useTeamFlow.js": 1,
+    "file:apps/web/src/auth/AuthContext.js": 0,
+    "file:apps/web/src/auth/AuthFlows.test.jsx": 4,
+    "file:apps/web/src/auth/AuthProvider.jsx": 1,
+    "file:apps/web/src/auth/supabaseClient.js": 0,
+    "file:apps/web/src/auth/supabaseClient.test.js": 1,
+    "file:apps/web/src/features/AppFlows.test.jsx": 3,
+    "file:apps/web/src/features/CollaborationFlows.test.jsx": 2,
+    "file:apps/web/src/features/notes/MarkdownPreview.jsx": 0,
+    "file:apps/web/src/features/tasks/components/TaskDetailModal.test.jsx": 1,
+    "file:apps/web/src/main.jsx": 5,
+    "file:apps/web/src/test/createTestTeamFlowRepository.js": 1,
+    "file:apps/web/src/test/renderTeamFlowApp.jsx": 3,
+    "file:apps/web/src/test/teamFlowFixture.js": 0,
+    "file:apps/web/src/components/ui/Avatar.jsx": 1,
+    "file:apps/web/src/components/ui/StatusBadge.jsx": 2,
+    "file:apps/web/src/constants/labels.js": 0,
+    "file:apps/web/src/features/ai/AiPage.jsx": 8,
+    "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx": 10,
+    "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx": 5,
+    "file:apps/web/src/features/tasks/MyTasksPage.jsx": 5,
+    "file:apps/web/src/features/tasks/ProjectTasksPage.jsx": 7,
+    "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx": 9,
+    "file:apps/web/src/lib/format.js": 0,
+    "file:apps/web/src/lib/format.test.js": 1,
+    "file:apps/web/src/App.jsx": 16,
+    "file:apps/web/src/auth/AuthCallbackPage.jsx": 2,
+    "file:apps/web/src/auth/ProtectedRoute.jsx": 1,
+    "file:apps/web/src/auth/useAuth.js": 1,
+    "file:apps/web/src/data/apiTeamFlowRepository.js": 0,
+    "file:apps/web/src/data/apiTeamFlowRepository.test.js": 1,
+    "file:apps/web/src/features/landing/LandingPage.jsx": 2,
+    "file:apps/web/src/state/TeamFlowContext.js": 0,
+    "file:apps/web/src/state/TeamFlowProvider.jsx": 1,
+    "file:apps/web/src/components/ui/ResourceIcon.jsx": 1,
+    "file:apps/web/src/features/resources/AddResourceModal.jsx": 5,
+    "file:apps/web/src/features/resources/ResourceDetailModal.jsx": 8,
+    "file:apps/web/src/features/resources/ResourcesPage.jsx": 9,
+    "file:apps/web/src/features/resources/resourceValidation.js": 0,
+    "file:apps/web/src/features/resources/resourceValidation.test.js": 1,
+    "file:apps/web/src/features/projects/ProjectListPage.jsx": 6,
+    "file:apps/web/src/features/projects/ProjectListPage.test.jsx": 2,
+    "file:apps/web/src/features/projects/components/ProjectCard.jsx": 4,
+    "file:apps/web/src/features/projects/components/ProjectIcon.jsx": 0,
+    "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx": 5,
+    "file:apps/web/src/features/projects/components/projectIconOptions.js": 0,
+    "pipeline:.github/workflows/auto-merge.yml": 0,
+    "table:supabase/migrations/20260720030115_create_tasks.sql:migration": 0,
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:migration": 0,
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:migration": 0,
+    "table:supabase/migrations/20260722114219_collaboration_and_content_hardening.sql:migration": 0,
+    "table:supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql:migration": 0,
+    "table:supabase/migrations/20260722154845_add_project_icon_key.sql:migration": 0,
+    "table:supabase/migrations/20260722155721_backfill_demo_project_icons.sql:migration": 0,
+    "table:supabase/migrations/20260723093000_private_resource_uploads.sql:migration": 0,
+    "table:supabase/migrations/20260723094500_harden_private_resource_uploads.sql:migration": 0,
+    "table:supabase/migrations/20260723185956_remove_manual_assignees.sql:migration": 0,
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:migration": 0,
+    "table:supabase/migrations/20260724093000_mock_ai_fk_indexes.sql:migration": 0,
+    "table:supabase/migrations/20260724094500_fix_demo_ai_markdown.sql:migration": 0,
+    "table:supabase/migrations/20260720030115_create_tasks.sql:tasks": 0,
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:members": 0,
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:projects": 0,
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:project_members": 0,
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:demo_workspaces": 0,
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members": 0,
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_access": 0,
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_invitations": 0,
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:notes": 0,
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources": 0,
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_agents": 0,
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_runs": 0,
+    "config:.oxlintrc.json": 0,
+    "document:CLAUDE.md": 0,
+    "document:README.md": 0,
+    "config:package.json": 0,
+    "config:render.yaml": 0,
+    "config:apps/web/.env.example": 0,
+    "file:apps/web/index.html": 0,
+    "config:apps/web/package.json": 0,
+    "config:apps/web/vercel.json": 0,
+    "file:apps/web/src/features/projects/components/ProjectCard.module.css": 0,
+    "file:apps/web/src/features/projects/components/ProjectIconPicker.module.css": 0,
+    "file:apps/web/src/features/projects/components/ProjectSettingsModal.module.css": 0,
+    "file:apps/web/src/styles/global.css": 0,
+    "file:apps/web/src/styles/tokens.css": 0,
+    "file:apps/web/src/styles/workspace.module.css": 0,
+    "file:docs/agent-workflow.html": 0,
+    "document:docs/api.md": 0,
+    "document:docs/architecture.md": 0,
+    "document:docs/deployment.md": 0,
+    "document:docs/plan.md": 0,
+    "document:docs/weekly-plan.md": 0,
+    "document:.agents/skills/teamflow-test-authoring/SKILL.md": 0,
+    "config:.agents/skills/teamflow-test-authoring/agents/openai.yaml": 0,
+    "document:.claude/skills/teamflow-design/SKILL.md": 0,
+    "file:.claude/skills/teamflow-design/tokens.css": 0,
+    "config:.codex/agents/verification_agent.toml": 0,
+    "document:.github/pull_request_template.md": 0,
+    "file:.nvmrc": 0,
+    "file:apps/web/src/components/layout/AppShell.module.css": 0,
+    "file:apps/web/src/components/ui/forms.module.css": 0,
+    "file:apps/web/src/components/ui/ui.module.css": 0,
+    "file:apps/web/src/features/ai/AiPage.module.css": 0,
+    "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css": 0,
+    "file:apps/web/src/features/landing/LandingPage.module.css": 0,
+    "file:apps/web/src/features/members/MembersPage.module.css": 0,
+    "file:apps/web/src/features/notes/NotesPage.module.css": 0,
+    "file:apps/web/src/features/projects/ProjectListPage.module.css": 0,
+    "file:apps/web/src/features/resources/ResourcesPage.module.css": 0,
+    "file:apps/web/src/features/tasks/ProjectTasksPage.module.css": 0,
+    "file:apps/web/src/features/tasks/components/TaskModal.module.css": 0,
+    "file:apps/web/src/test/setup.js": 0,
+    "file:apps/web/vite.config.js": 0,
+    "config:packages/shared/package.json": 0,
+    "file:packages/shared/src/index.js": 0,
+    "file:packages/shared/src/project.js": 0,
+    "file:packages/shared/test/project.test.js": 1,
+    "table:supabase/tests/database/mock_ai_team_member_rls.sql:ai_test_state": 0
+  },
+  "fileIndex": {
+    "file:apps/web/src/components/layout/AppShell.jsx": {
+      "filePath": "apps/web/src/components/layout/AppShell.jsx",
+      "type": "file",
+      "summary": "전역 탐색, 프로젝트 전환·생성, 로그인 사용자 또는 게스트의 계정 메뉴를 제공하는 TeamFlow 최상위 layout입니다.",
+      "tags": [
+        "component",
+        "layout",
+        "navigation"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/components/layout/ProjectShell.jsx": {
+      "filePath": "apps/web/src/components/layout/ProjectShell.jsx",
+      "type": "file",
+      "summary": "선택한 프로젝트의 하위 route 탐색과 outlet context를 구성하고 할 일 생성·상세 modal을 조정하는 프로젝트 작업공간 shell입니다.",
+      "tags": [
+        "component",
+        "layout",
+        "navigation"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/components/ui/Modal.jsx": {
+      "filePath": "apps/web/src/components/ui/Modal.jsx",
+      "type": "file",
+      "summary": "배경 scroll 제어, Escape·overlay 닫기, 제목과 action 영역을 공통 처리하는 접근 가능한 modal 기반 component입니다.",
+      "tags": [
+        "component",
+        "ui",
+        "react"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx": {
+      "filePath": "apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "type": "file",
+      "summary": "프로젝트 시작일과 종료일을 검증해 기간 수정 action으로 전달하는 dashboard용 modal form입니다.",
+      "tags": [
+        "component",
+        "dashboard",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/members/EditMemberModal.jsx": {
+      "filePath": "apps/web/src/features/members/EditMemberModal.jsx",
+      "type": "file",
+      "summary": "프로젝트 협업자의 이름과 역할을 편집하고 변경 내용을 저장하는 member 관리 modal입니다.",
+      "tags": [
+        "component",
+        "collaboration",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/members/InviteCollaboratorModal.jsx": {
+      "filePath": "apps/web/src/features/members/InviteCollaboratorModal.jsx",
+      "type": "file",
+      "summary": "이메일 주소를 검증해 프로젝트 협업자 초대를 전송하고 제출 오류를 표시하는 modal입니다.",
+      "tags": [
+        "component",
+        "collaboration",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/members/MemberRemovalModal.jsx": {
+      "filePath": "apps/web/src/features/members/MemberRemovalModal.jsx",
+      "type": "file",
+      "summary": "협업자 제거 또는 현재 사용자의 프로젝트 나가기를 확인하고 관련 action을 실행하는 경고 modal입니다.",
+      "tags": [
+        "component",
+        "collaboration",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/members/MembersPage.jsx": {
+      "filePath": "apps/web/src/features/members/MembersPage.jsx",
+      "type": "file",
+      "summary": "프로젝트 협업자와 초대 상태를 보여주고 초대·편집·제거 흐름을 연결하는 member 관리 화면입니다.",
+      "tags": [
+        "component",
+        "collaboration",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/notes/NoteTemplateModal.jsx": {
+      "filePath": "apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "type": "file",
+      "summary": "회의록 등 미리 정의된 노트 template을 선택해 편집 화면에 적용하도록 제공하는 modal입니다.",
+      "tags": [
+        "component",
+        "notes",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/notes/NotesPage.jsx": {
+      "filePath": "apps/web/src/features/notes/NotesPage.jsx",
+      "type": "file",
+      "summary": "공유 노트를 검색·정렬·생성·편집·삭제하고 Markdown preview와 template 적용, 저장 상태를 관리하는 노트 작업공간입니다.",
+      "tags": [
+        "component",
+        "notes",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/projects/components/NewProjectModal.jsx": {
+      "filePath": "apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "type": "file",
+      "summary": "프로젝트 이름·설명·기간·상태를 검증해 새 프로젝트 생성 action으로 전달하는 modal form입니다.",
+      "tags": [
+        "component",
+        "project-management",
+        "react"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/resources/CreateFolderModal.jsx": {
+      "filePath": "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "type": "file",
+      "summary": "현재 자료실 위치 아래에 새 폴더를 만들기 위한 이름 입력과 validation·제출 상태를 관리합니다.",
+      "tags": [
+        "component",
+        "resources",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx": {
+      "filePath": "apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "type": "file",
+      "summary": "담당 가능한 협업자를 기준으로 제목·담당자·마감일·상태·설명을 검증해 프로젝트 할 일을 생성합니다.",
+      "tags": [
+        "component",
+        "task-management",
+        "react"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/state/selectors.js": {
+      "filePath": "apps/web/src/state/selectors.js",
+      "type": "file",
+      "summary": "TeamFlow 전역 상태에서 프로젝트·할 일·협업자·AI 실행·초대와 카드용 요약을 파생하는 순수 selector 모음입니다.",
+      "tags": [
+        "state-management",
+        "react",
+        "selector"
+      ],
+      "pattern": "state",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/state/useTeamFlow.js": {
+      "filePath": "apps/web/src/state/useTeamFlow.js",
+      "type": "file",
+      "summary": "TeamFlowContext를 읽고 Provider 밖에서 호출되면 명시적 오류를 내는 전역 상태 접근용 custom hook입니다.",
+      "tags": [
+        "state-management",
+        "react",
+        "context"
+      ],
+      "pattern": "state",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/auth/AuthContext.js": {
+      "filePath": "apps/web/src/auth/AuthContext.js",
+      "type": "file",
+      "summary": "로그인 session, profile, guest 상태와 인증 action을 전달하기 위한 React Context 객체를 정의합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/auth/AuthFlows.test.jsx": {
+      "filePath": "apps/web/src/auth/AuthFlows.test.jsx",
+      "type": "file",
+      "summary": "Google OAuth 로그인, guest 진입, 보호 route와 logout 등 주요 인증 사용자 흐름을 검증합니다.",
+      "tags": [
+        "test",
+        "authentication",
+        "regression"
+      ],
+      "pattern": "test",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/auth/AuthProvider.jsx": {
+      "filePath": "apps/web/src/auth/AuthProvider.jsx",
+      "type": "file",
+      "summary": "Supabase session 구독과 Google OAuth, logout, guest session을 통합해 인증 상태를 React Context로 제공합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "react",
+        "tested"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/auth/supabaseClient.js": {
+      "filePath": "apps/web/src/auth/supabaseClient.js",
+      "type": "file",
+      "summary": "브라우저 환경변수의 Supabase URL·anon key를 검증하고 인증용 client를 지연 생성하거나 주입받도록 합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "react",
+        "tested"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/auth/supabaseClient.test.js": {
+      "filePath": "apps/web/src/auth/supabaseClient.test.js",
+      "type": "file",
+      "summary": "브라우저 Supabase 설정 누락·형식 오류와 정상 client 생성 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "authentication",
+        "regression"
+      ],
+      "pattern": "test",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/AppFlows.test.jsx": {
+      "filePath": "apps/web/src/features/AppFlows.test.jsx",
+      "type": "file",
+      "summary": "실제 route와 provider를 함께 렌더링해 프로젝트·할 일·노트·자료·AI 팀원 등 핵심 사용자 흐름을 검증하는 통합 UI 테스트입니다.",
+      "tags": [
+        "test",
+        "teamflow",
+        "regression"
+      ],
+      "pattern": "test",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/CollaborationFlows.test.jsx": {
+      "filePath": "apps/web/src/features/CollaborationFlows.test.jsx",
+      "type": "file",
+      "summary": "협업자 초대·수락·역할 편집·제거와 프로젝트 탈퇴 같은 협업 수명주기를 검증하는 통합 테스트입니다.",
+      "tags": [
+        "test",
+        "teamflow",
+        "regression"
+      ],
+      "pattern": "test",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/notes/MarkdownPreview.jsx": {
+      "filePath": "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "type": "file",
+      "summary": "노트의 제한된 Markdown heading·목록·인용·강조·inline code를 React element로 변환하는 경량 preview renderer입니다.",
+      "tags": [
+        "component",
+        "notes",
+        "react",
+        "tested"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/tasks/components/TaskDetailModal.test.jsx": {
+      "filePath": "apps/web/src/features/tasks/components/TaskDetailModal.test.jsx",
+      "type": "file",
+      "summary": "할 일 상세 modal의 상태 변경, 저장·삭제, 오류 표시와 권한별 동작을 검증합니다.",
+      "tags": [
+        "test",
+        "task-management",
+        "regression"
+      ],
+      "pattern": "test",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/main.jsx": {
+      "filePath": "apps/web/src/main.jsx",
+      "type": "file",
+      "summary": "React root를 만들고 BrowserRouter, AuthProvider, TeamFlowProvider, App을 조합해 웹 애플리케이션을 부트스트랩합니다.",
+      "tags": [
+        "entry-point",
+        "react",
+        "routing"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/test/createTestTeamFlowRepository.js": {
+      "filePath": "apps/web/src/test/createTestTeamFlowRepository.js",
+      "type": "file",
+      "summary": "프로젝트·협업자·할 일·노트·자료·AI 실행을 메모리에서 처리하는 테스트 전용 repository 구현을 제공합니다.",
+      "tags": [
+        "test-utility",
+        "fixture",
+        "testing"
+      ],
+      "pattern": "test",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/test/renderTeamFlowApp.jsx": {
+      "filePath": "apps/web/src/test/renderTeamFlowApp.jsx",
+      "type": "file",
+      "summary": "인증 session과 테스트 repository를 주입해 TeamFlow App을 원하는 route에서 렌더링하는 공통 테스트 helper입니다.",
+      "tags": [
+        "test-utility",
+        "fixture",
+        "testing"
+      ],
+      "pattern": "test",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/test/teamFlowFixture.js": {
+      "filePath": "apps/web/src/test/teamFlowFixture.js",
+      "type": "file",
+      "summary": "통합 테스트가 공유하는 프로젝트, 협업자, 할 일, 노트, 자료, AI agent·run fixture를 정의합니다.",
+      "tags": [
+        "test-utility",
+        "fixture",
+        "testing"
+      ],
+      "pattern": "test",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/components/ui/Avatar.jsx": {
+      "filePath": "apps/web/src/components/ui/Avatar.jsx",
+      "type": "file",
+      "summary": "프로필 이미지가 있으면 사진을, 없으면 이름 이니셜을 표시하는 재사용 가능한 avatar component입니다.",
+      "tags": [
+        "component",
+        "ui",
+        "react"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/components/ui/StatusBadge.jsx": {
+      "filePath": "apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "file",
+      "summary": "공유 상태 상수를 한국어 label과 시각적 variant로 매핑해 표시하는 badge component입니다.",
+      "tags": [
+        "component",
+        "ui",
+        "react"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/constants/labels.js": {
+      "filePath": "apps/web/src/constants/labels.js",
+      "type": "file",
+      "summary": "project·task 상태와 resource 유형의 한국어 표시명 및 task 정렬 순서를 중앙에서 정의합니다.",
+      "tags": [
+        "configuration",
+        "localization",
+        "type-definition"
+      ],
+      "pattern": "config",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/ai/AiPage.jsx": {
+      "filePath": "apps/web/src/features/ai/AiPage.jsx",
+      "type": "file",
+      "summary": "프로젝트 AI 팀원의 설정·context·brief, 실행 요청·상태 polling·결과 기록을 한 화면에서 관리합니다.",
+      "tags": [
+        "component",
+        "ai-workflow",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx": {
+      "filePath": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "file",
+      "summary": "프로젝트 진행률, 상태별 할 일, 협업자, 최근 노트·자료를 집계하고 기간 편집을 연결하는 dashboard입니다.",
+      "tags": [
+        "component",
+        "dashboard",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx": {
+      "filePath": "apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "type": "file",
+      "summary": "프로젝트 기본 정보 수정, 초대 관리와 프로젝트 삭제 등 설정 작업을 한 modal에서 제공합니다.",
+      "tags": [
+        "component",
+        "project-management",
+        "react"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/tasks/MyTasksPage.jsx": {
+      "filePath": "apps/web/src/features/tasks/MyTasksPage.jsx",
+      "type": "file",
+      "summary": "현재 사용자에게 배정된 할 일을 프로젝트별로 묶어 보여주고 선택한 항목의 상세 흐름을 엽니다.",
+      "tags": [
+        "component",
+        "task-management",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/tasks/ProjectTasksPage.jsx": {
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "file",
+      "summary": "프로젝트 할 일을 상태·검색어로 필터링하고 정렬하며 table 또는 board 형태와 inline 상태 변경을 제공합니다.",
+      "tags": [
+        "component",
+        "task-management",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx": {
+      "filePath": "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "file",
+      "summary": "할 일 상세 값을 편집·검증해 저장하고 상태 변경·삭제 확인과 권한·오류 처리를 제공하는 modal입니다.",
+      "tags": [
+        "component",
+        "task-management",
+        "react"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/lib/format.js": {
+      "filePath": "apps/web/src/lib/format.js",
+      "type": "file",
+      "summary": "날짜 단축 표시, 프로젝트 기간, 오늘 날짜와 로컬 날짜 가산을 일관된 ISO 형식으로 제공하는 utility입니다.",
+      "tags": [
+        "utility",
+        "date",
+        "formatting",
+        "tested"
+      ],
+      "pattern": "service",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/lib/format.test.js": {
+      "filePath": "apps/web/src/lib/format.test.js",
+      "type": "file",
+      "summary": "날짜 표시와 기간 조합, 로컬 오늘 날짜·날짜 가산의 정상 및 경계 사례를 검증합니다.",
+      "tags": [
+        "test",
+        "teamflow",
+        "regression"
+      ],
+      "pattern": "test",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/App.jsx": {
+      "filePath": "apps/web/src/App.jsx",
+      "type": "file",
+      "summary": "landing·OAuth callback·guest demo·보호 route를 포함한 TeamFlow의 최상위 React route tree를 정의합니다.",
+      "tags": [
+        "entry-point",
+        "routing",
+        "component"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/auth/AuthCallbackPage.jsx": {
+      "filePath": "apps/web/src/auth/AuthCallbackPage.jsx",
+      "type": "file",
+      "summary": "Supabase OAuth callback 처리 상태를 확인하고 성공 시 app으로, 실패 시 설명 가능한 오류 화면으로 전환합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/auth/ProtectedRoute.jsx": {
+      "filePath": "apps/web/src/auth/ProtectedRoute.jsx",
+      "type": "file",
+      "summary": "인증 loading을 처리하고 로그인 사용자나 guest session만 하위 route에 접근하도록 제한합니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/auth/useAuth.js": {
+      "filePath": "apps/web/src/auth/useAuth.js",
+      "type": "file",
+      "summary": "AuthContext를 읽고 Provider 외부 사용을 차단하는 인증 상태 접근용 custom hook입니다.",
+      "tags": [
+        "authentication",
+        "security",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/data/apiTeamFlowRepository.js": {
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.js",
+      "type": "file",
+      "summary": "access token을 포함한 API 요청으로 프로젝트·협업자·할 일·노트·자료·AI 실행을 처리하고 guest demo용 read-only repository도 제공합니다.",
+      "tags": [
+        "repository",
+        "api-client",
+        "serialization",
+        "tested"
+      ],
+      "pattern": "data",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/data/apiTeamFlowRepository.test.js": {
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.test.js",
+      "type": "file",
+      "summary": "API base URL, 인증 header, 각 repository method의 요청·응답 mapping과 오류 정규화를 검증합니다.",
+      "tags": [
+        "test",
+        "teamflow",
+        "regression"
+      ],
+      "pattern": "test",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/landing/LandingPage.jsx": {
+      "filePath": "apps/web/src/features/landing/LandingPage.jsx",
+      "type": "file",
+      "summary": "TeamFlow 가치 제안과 Google 로그인, guest demo 진입 action을 제공하는 공개 landing 화면입니다.",
+      "tags": [
+        "component",
+        "teamflow",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/state/TeamFlowContext.js": {
+      "filePath": "apps/web/src/state/TeamFlowContext.js",
+      "type": "file",
+      "summary": "TeamFlow 전역 데이터와 action을 전달하기 위한 React Context 객체를 정의합니다.",
+      "tags": [
+        "state-management",
+        "react",
+        "context"
+      ],
+      "pattern": "state",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/state/TeamFlowProvider.jsx": {
+      "filePath": "apps/web/src/state/TeamFlowProvider.jsx",
+      "type": "file",
+      "summary": "인증 또는 guest repository에서 데이터를 hydrate하고 reducer와 비동기 action으로 전체 협업 상태를 관리합니다.",
+      "tags": [
+        "state-management",
+        "react",
+        "context"
+      ],
+      "pattern": "state",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/components/ui/ResourceIcon.jsx": {
+      "filePath": "apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "file",
+      "summary": "folder·link·file resource 유형을 일관된 icon으로 표시하는 공용 presentation component입니다.",
+      "tags": [
+        "component",
+        "ui",
+        "react"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/resources/AddResourceModal.jsx": {
+      "filePath": "apps/web/src/features/resources/AddResourceModal.jsx",
+      "type": "file",
+      "summary": "link 또는 file resource의 입력·upload·validation·제출 상태를 관리해 현재 폴더에 자료를 추가합니다.",
+      "tags": [
+        "component",
+        "resources",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/resources/ResourceDetailModal.jsx": {
+      "filePath": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "type": "file",
+      "summary": "resource metadata를 편집하고 link 열기·file download·삭제 확인과 오류 처리를 제공하는 상세 modal입니다.",
+      "tags": [
+        "component",
+        "resources",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/resources/ResourcesPage.jsx": {
+      "filePath": "apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "file",
+      "summary": "자료를 폴더 계층으로 탐색하고 검색·유형 filter·수정일 정렬하며 folder·resource 생성과 상세 modal을 조정합니다.",
+      "tags": [
+        "component",
+        "resources",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/resources/resourceValidation.js": {
+      "filePath": "apps/web/src/features/resources/resourceValidation.js",
+      "type": "file",
+      "summary": "허용 URL scheme, file 크기·형식, resource 유형별 필수 값을 검사하는 자료실 validation utility입니다.",
+      "tags": [
+        "validation",
+        "resources",
+        "security",
+        "tested"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/resources/resourceValidation.test.js": {
+      "filePath": "apps/web/src/features/resources/resourceValidation.test.js",
+      "type": "file",
+      "summary": "안전한 link, upload file 제한과 resource 유형별 validation 규칙의 정상·실패 사례를 검증합니다.",
+      "tags": [
+        "test",
+        "resources",
+        "regression"
+      ],
+      "pattern": "test",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/projects/ProjectListPage.jsx": {
+      "filePath": "apps/web/src/features/projects/ProjectListPage.jsx",
+      "type": "file",
+      "summary": "로그인 상태의 프로젝트 요약과 받은 초대를 조회하고, 검색·초대 응답·프로젝트 이동·설정 및 아이콘 변경 모달을 조율하는 프로젝트 목록 화면이다.",
+      "tags": [
+        "component",
+        "project-overview",
+        "invitation",
+        "search",
+        "tested"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/projects/ProjectListPage.test.jsx": {
+      "filePath": "apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "type": "file",
+      "summary": "프로젝트 목록의 라우팅, 검색과 빈 상태, 생성 후 이동, 진행률 경계 처리, 아이콘 변경 흐름을 사용자 관점에서 검증한다.",
+      "tags": [
+        "test",
+        "integration-test",
+        "project-overview",
+        "accessibility"
+      ],
+      "pattern": "test",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/projects/components/ProjectCard.jsx": {
+      "filePath": "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "type": "file",
+      "summary": "프로젝트 상태·진행률·기간·멤버·아이콘을 접근 가능한 카드로 표시하고 열기, 아이콘 변경, 설정 동작을 노출한다.",
+      "tags": [
+        "component",
+        "project-summary",
+        "accessibility",
+        "progress",
+        "tested"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/projects/components/ProjectIcon.jsx": {
+      "filePath": "apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "type": "file",
+      "summary": "공유 프로젝트 아이콘 키를 Lucide 아이콘 컴포넌트로 변환하며, 알 수 없는 값은 기본 레이어 아이콘으로 대체한다.",
+      "tags": [
+        "component",
+        "icon",
+        "presentation",
+        "fallback"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx": {
+      "filePath": "apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "type": "file",
+      "summary": "프로젝트 아이콘 후보를 모달에 표시하고 선택 결과를 TeamFlow 상태 액션으로 저장하며 진행 및 오류 상태를 관리한다.",
+      "tags": [
+        "component",
+        "modal",
+        "project-settings",
+        "event-handler"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/projects/components/projectIconOptions.js": {
+      "filePath": "apps/web/src/features/projects/components/projectIconOptions.js",
+      "type": "file",
+      "summary": "프로젝트 아이콘 선택지와 아이콘 키의 한국어 표시 이름을 제공하는 프레젠테이션 유틸리티다.",
+      "tags": [
+        "utility",
+        "configuration",
+        "icon",
+        "localization"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "pipeline:.github/workflows/auto-merge.yml": {
+      "filePath": ".github/workflows/auto-merge.yml",
+      "type": "pipeline",
+      "summary": "매일 예약 실행 또는 수동 실행으로 열린 PR을 조회하고, 대상 브랜치·review 라벨·변경 요청·충돌 규칙의 우선순위에 따라 코멘트, 연기, 종료 또는 병합을 수행한다.",
+      "tags": [
+        "ci-cd",
+        "github-actions",
+        "pull-request",
+        "automation"
+      ],
+      "pattern": "ci-cd",
+      "directoryGroup": ".github"
+    },
+    "table:supabase/migrations/20260720030115_create_tasks.sql:migration": {
+      "filePath": "supabase/migrations/20260720030115_create_tasks.sql",
+      "type": "table",
+      "summary": "프로젝트별 할 일과 담당자, 마감일, 상태를 저장하는 tasks 테이블을 만들고 생성 시각 인덱스, RLS, service_role 권한을 설정한다.",
+      "tags": [
+        "database",
+        "migration",
+        "tasks",
+        "security"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:migration": {
+      "filePath": "supabase/migrations/20260721054012_google_auth_workspace.sql",
+      "type": "table",
+      "summary": "Google 인증 사용자용 멤버·프로젝트·소속·게스트 데모 스키마를 만들고 tasks를 연결하며, RLS 정책과 프로젝트 생성 RPC를 구성한다.",
+      "tags": [
+        "database",
+        "migration",
+        "authentication",
+        "rls",
+        "rpc"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:migration": {
+      "filePath": "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "type": "table",
+      "summary": "프로젝트 단위 멤버와 접근 권한으로 모델을 개편하고 초대·노트·자료 CRUD 테이블, 트리거, RLS 정책, 보안 RPC를 도입한다.",
+      "tags": [
+        "database",
+        "migration",
+        "collaboration",
+        "content",
+        "rls"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260722114219_collaboration_and_content_hardening.sql:migration": {
+      "filePath": "supabase/migrations/20260722114219_collaboration_and_content_hardening.sql",
+      "type": "table",
+      "summary": "협업 및 콘텐츠 테이블의 외래 키와 검사 제약, 초대 조회 정책, 자료 부모 검증, 프로젝트·멤버 RPC 권한을 강화한다.",
+      "tags": [
+        "database",
+        "migration",
+        "security",
+        "hardening",
+        "rls"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql:migration": {
+      "filePath": "supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql",
+      "type": "table",
+      "summary": "권한 있는 RPC 구현을 private 스키마로 이동하고 public에는 인증 전용 래퍼를 유지하며 복합 외래 키 조회용 인덱스를 추가한다.",
+      "tags": [
+        "database",
+        "migration",
+        "rpc",
+        "security",
+        "indexing"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260722154845_add_project_icon_key.sql:migration": {
+      "filePath": "supabase/migrations/20260722154845_add_project_icon_key.sql",
+      "type": "table",
+      "summary": "projects에 허용된 아이콘 키만 저장하는 icon_key 열과 검사 제약을 추가하고 인증 사용자의 열 단위 갱신을 허용한다.",
+      "tags": [
+        "database",
+        "migration",
+        "project-settings",
+        "validation"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260722155721_backfill_demo_project_icons.sql:migration": {
+      "filePath": "supabase/migrations/20260722155721_backfill_demo_project_icons.sql",
+      "type": "table",
+      "summary": "게스트 데모 워크스페이스의 프로젝트별 아이콘 키를 결정적으로 채워 데모 화면의 아이콘 구성을 갱신한다.",
+      "tags": [
+        "database",
+        "migration",
+        "demo-data",
+        "backfill"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260723093000_private_resource_uploads.sql:migration": {
+      "filePath": "supabase/migrations/20260723093000_private_resource_uploads.sql",
+      "type": "table",
+      "summary": "비공개 TeamFlow Storage 버킷과 자료 파일 메타데이터를 추가하고 프로젝트 경로 기반 업로드·조회·삭제 RLS 정책을 구성한다.",
+      "tags": [
+        "database",
+        "migration",
+        "storage",
+        "security",
+        "upload"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260723094500_harden_private_resource_uploads.sql:migration": {
+      "filePath": "supabase/migrations/20260723094500_harden_private_resource_uploads.sql",
+      "type": "table",
+      "summary": "업로드 의도 생성과 완료 RPC, 상태 전이 제약, Storage 객체 정책을 도입해 브라우저의 비공개 파일 업로드 수명주기를 강화한다.",
+      "tags": [
+        "database",
+        "migration",
+        "storage",
+        "rpc",
+        "hardening"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260723185956_remove_manual_assignees.sql:migration": {
+      "filePath": "supabase/migrations/20260723185956_remove_manual_assignees.sql",
+      "type": "table",
+      "summary": "로그인하지 않은 수동 담당자 생성을 제거하고 작업 담당자를 실제 프로젝트 협업자로 제한하며 멤버 수정·삭제 RPC를 재정의한다.",
+      "tags": [
+        "database",
+        "migration",
+        "collaboration",
+        "authorization",
+        "rpc"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:migration": {
+      "filePath": "supabase/migrations/20260724090000_mock_ai_team_member.sql",
+      "type": "table",
+      "summary": "프로젝트 AI 팀원과 실행 기록 스키마, RLS, 설정·실행·적용·거절 RPC를 추가하고 인증 및 데모 응답을 동일한 AI 계약으로 맞춘다.",
+      "tags": [
+        "database",
+        "migration",
+        "ai-agent",
+        "rpc",
+        "rls"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260724093000_mock_ai_fk_indexes.sql:migration": {
+      "filePath": "supabase/migrations/20260724093000_mock_ai_fk_indexes.sql",
+      "type": "table",
+      "summary": "Supabase 성능 권고에 따라 AI 실행의 에이전트·작업·노트 복합 외래 키를 지원하는 인덱스를 보강한다.",
+      "tags": [
+        "database",
+        "migration",
+        "indexing",
+        "performance"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260724094500_fix_demo_ai_markdown.sql:migration": {
+      "filePath": "supabase/migrations/20260724094500_fix_demo_ai_markdown.sql",
+      "type": "table",
+      "summary": "초기 데모 AI 결과에 문자열로 저장된 줄바꿈 표기를 실제 개행으로 변환해 Markdown 렌더링을 바로잡는다.",
+      "tags": [
+        "database",
+        "migration",
+        "demo-data",
+        "markdown"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260720030115_create_tasks.sql:tasks": {
+      "filePath": "supabase/migrations/20260720030115_create_tasks.sql",
+      "type": "table",
+      "summary": "프로젝트별 작업 제목, 담당자, 마감일, 상태, 설명과 생성 시각을 저장한다.",
+      "tags": [
+        "database",
+        "table",
+        "tasks",
+        "project-data"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:members": {
+      "filePath": "supabase/migrations/20260721054012_google_auth_workspace.sql",
+      "type": "table",
+      "summary": "워크스페이스 소유자와 인증 사용자에 연결된 사람 및 AI 멤버 프로필을 저장한다.",
+      "tags": [
+        "database",
+        "table",
+        "members",
+        "authentication"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:projects": {
+      "filePath": "supabase/migrations/20260721054012_google_auth_workspace.sql",
+      "type": "table",
+      "summary": "소유자별 프로젝트의 이름, 설명, 상태, 기간과 감사 시각을 저장한다.",
+      "tags": [
+        "database",
+        "table",
+        "projects",
+        "workspace"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:project_members": {
+      "filePath": "supabase/migrations/20260721054012_google_auth_workspace.sql",
+      "type": "table",
+      "summary": "프로젝트와 워크스페이스 멤버 사이의 소속 관계를 저장한다.",
+      "tags": [
+        "database",
+        "table",
+        "membership",
+        "relation"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:demo_workspaces": {
+      "filePath": "supabase/migrations/20260721054012_google_auth_workspace.sql",
+      "type": "table",
+      "summary": "게스트가 읽을 수 있는 활성 데모 워크스페이스의 JSON 페이로드를 저장한다.",
+      "tags": [
+        "database",
+        "table",
+        "demo-data",
+        "json"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members": {
+      "filePath": "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "type": "table",
+      "summary": "프로젝트 범위의 협업자와 AI 멤버 프로필, 인증 사용자 연결 정보를 저장하는 최신 멤버 모델이다.",
+      "tags": [
+        "database",
+        "table",
+        "members",
+        "collaboration"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_access": {
+      "filePath": "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "type": "table",
+      "summary": "인증 사용자와 프로젝트 멤버를 묶어 프로젝트 접근 권한의 근거를 제공한다.",
+      "tags": [
+        "database",
+        "table",
+        "authorization",
+        "membership"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_invitations": {
+      "filePath": "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "type": "table",
+      "summary": "프로젝트 초대 대상 이메일, 초대자, 상태와 응답 시각을 저장한다.",
+      "tags": [
+        "database",
+        "table",
+        "invitation",
+        "collaboration"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:notes": {
+      "filePath": "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "type": "table",
+      "summary": "프로젝트 공유 노트의 제목, 본문, 작성자와 수정 시각을 저장한다.",
+      "tags": [
+        "database",
+        "table",
+        "notes",
+        "content"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources": {
+      "filePath": "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "type": "table",
+      "summary": "프로젝트 자료의 계층, 유형, 링크 또는 파일 메타데이터와 소유자를 저장한다.",
+      "tags": [
+        "database",
+        "table",
+        "resources",
+        "content"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_agents": {
+      "filePath": "supabase/migrations/20260724090000_mock_ai_team_member.sql",
+      "type": "table",
+      "summary": "AI 멤버별 지침, 컨텍스트 설정, 활성 상태를 프로젝트 범위에서 관리한다.",
+      "tags": [
+        "database",
+        "table",
+        "ai-agent",
+        "configuration"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_runs": {
+      "filePath": "supabase/migrations/20260724090000_mock_ai_team_member.sql",
+      "type": "table",
+      "summary": "AI 작업 실행의 입력 스냅샷, 결과 Markdown, 오류, 적용 노트와 상태 전이를 기록한다.",
+      "tags": [
+        "database",
+        "table",
+        "ai-run",
+        "audit"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    },
+    "config:.oxlintrc.json": {
+      "filePath": ".oxlintrc.json",
+      "type": "config",
+      "summary": "React Hooks 규칙을 오류로, 컴포넌트 전용 내보내기 규칙을 경고로 검사하도록 oxlint를 설정한다.",
+      "tags": [
+        "configuration",
+        "linting",
+        "react",
+        "code-quality"
+      ],
+      "pattern": "config",
+      "directoryGroup": "root"
+    },
+    "document:CLAUDE.md": {
+      "filePath": "CLAUDE.md",
+      "type": "document",
+      "summary": "TeamFlow의 제품 목적, 기술 스택, 개발 명령, 코드·커밋·디자인 규칙과 금지 사항을 에이전트 작업 지침으로 정리한다.",
+      "tags": [
+        "documentation",
+        "development",
+        "conventions",
+        "agent-guidance"
+      ],
+      "pattern": "documentation",
+      "directoryGroup": "root"
+    },
+    "document:README.md": {
+      "filePath": "README.md",
+      "type": "document",
+      "summary": "TeamFlow의 구현 상태와 전체 아키텍처, Supabase·Google OAuth 설정, 로컬 실행, 검증, Vercel·Render 배포 흐름을 안내한다.",
+      "tags": [
+        "documentation",
+        "entry-point",
+        "architecture",
+        "onboarding"
+      ],
+      "pattern": "documentation",
+      "directoryGroup": "root"
+    },
+    "config:package.json": {
+      "filePath": "package.json",
+      "type": "config",
+      "summary": "Node 24와 npm 11 기반 모노레포 워크스페이스, 웹·API 개발 명령, 빌드·린트·테스트 실행 경로를 정의한다.",
+      "tags": [
+        "configuration",
+        "monorepo",
+        "build-system",
+        "scripts"
+      ],
+      "pattern": "config",
+      "directoryGroup": "root"
+    },
+    "config:render.yaml": {
+      "filePath": "render.yaml",
+      "type": "config",
+      "summary": "Express API를 Render 무료 Node 웹 서비스로 빌드·실행하고 health check, 변경 경로 필터, Supabase 및 CORS 환경변수를 구성한다.",
+      "tags": [
+        "configuration",
+        "deployment",
+        "render",
+        "api"
+      ],
+      "pattern": "config",
+      "directoryGroup": "root"
+    },
+    "config:apps/web/.env.example": {
+      "filePath": "apps/web/.env.example",
+      "type": "config",
+      "summary": "웹 클라이언트가 사용하는 TeamFlow Supabase URL·publishable key와 선택적 API 기본 URL의 환경변수 형식을 제공한다.",
+      "tags": [
+        "configuration",
+        "environment",
+        "supabase",
+        "api-client"
+      ],
+      "pattern": "config",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/index.html": {
+      "filePath": "apps/web/index.html",
+      "type": "file",
+      "summary": "한국어 TeamFlow 웹 앱의 문서 메타데이터와 React 마운트 지점을 정의하고 Vite 진입점인 src/main.jsx를 로드한다.",
+      "tags": [
+        "entry-point",
+        "markup",
+        "vite",
+        "react"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "config:apps/web/package.json": {
+      "filePath": "apps/web/package.json",
+      "type": "config",
+      "summary": "React 19 웹 워크스페이스의 Vite 개발·빌드·미리보기와 Vitest 테스트 명령, Supabase·라우터·UI 의존성을 정의한다.",
+      "tags": [
+        "configuration",
+        "react",
+        "vite",
+        "testing"
+      ],
+      "pattern": "config",
+      "directoryGroup": "apps"
+    },
+    "config:apps/web/vercel.json": {
+      "filePath": "apps/web/vercel.json",
+      "type": "config",
+      "summary": "모든 요청을 index.html로 재작성해 Vercel에서 React Router의 클라이언트 라우팅을 지원한다.",
+      "tags": [
+        "configuration",
+        "deployment",
+        "vercel",
+        "routing"
+      ],
+      "pattern": "config",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/projects/components/ProjectCard.module.css": {
+      "filePath": "apps/web/src/features/projects/components/ProjectCard.module.css",
+      "type": "file",
+      "summary": "프로젝트 카드의 상태 배지, 진행률, 팀원 아바타, 기간과 설정 버튼을 배치하고 상호작용 상태를 표현하는 CSS Module이다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "project-card",
+        "progress"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/projects/components/ProjectIconPicker.module.css": {
+      "filePath": "apps/web/src/features/projects/components/ProjectIconPicker.module.css",
+      "type": "file",
+      "summary": "프로젝트 아이콘 선택기의 3열 옵션 그리드와 선택·오류·비활성 상태를 정의하는 CSS Module이다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "icon-picker",
+        "interaction"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/projects/components/ProjectSettingsModal.module.css": {
+      "filePath": "apps/web/src/features/projects/components/ProjectSettingsModal.module.css",
+      "type": "file",
+      "summary": "프로젝트 설정 모달의 삭제 진입 버튼, 위험 작업 버튼과 경고 문구를 강조하는 CSS Module이다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "modal",
+        "danger-zone"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/styles/global.css": {
+      "filePath": "apps/web/src/styles/global.css",
+      "type": "file",
+      "summary": "브라우저 기본 스타일을 정리하고 전역 타이포그래피, 폼 컨트롤, 포커스 표시, 로딩 및 시각적 숨김 유틸리티를 제공한다.",
+      "tags": [
+        "global-styles",
+        "accessibility",
+        "forms",
+        "typography"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/styles/tokens.css": {
+      "filePath": "apps/web/src/styles/tokens.css",
+      "type": "file",
+      "summary": "TeamFlow 웹의 글꼴, 색상, 상태 배지, 레이아웃 폭과 모서리 반경을 CSS 변수로 정의하는 런타임 디자인 토큰이다.",
+      "tags": [
+        "design-tokens",
+        "css-variables",
+        "theme",
+        "typography"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/styles/workspace.module.css": {
+      "filePath": "apps/web/src/styles/workspace.module.css",
+      "type": "file",
+      "summary": "프로젝트 작업 화면들이 공유하는 컨테이너, 헤더, 버튼, 카드, 테이블, 검색창과 빈 상태 레이아웃을 제공하는 CSS Module이다.",
+      "tags": [
+        "shared-styles",
+        "css-modules",
+        "workspace",
+        "responsive-layout"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:docs/agent-workflow.html": {
+      "filePath": "docs/agent-workflow.html",
+      "type": "file",
+      "summary": "요구사항에서 구현·테스트 작성·독립 검증·사용자 판단으로 이어지는 TeamFlow AI 개발 흐름과 역할 분리를 시각적으로 설명하는 독립 HTML 문서다.",
+      "tags": [
+        "documentation",
+        "workflow",
+        "tdd",
+        "agent-roles"
+      ],
+      "pattern": "documentation",
+      "directoryGroup": "docs"
+    },
+    "document:docs/api.md": {
+      "filePath": "docs/api.md",
+      "type": "document",
+      "summary": "공개·인증·Mock AI API의 요청, 응답, 상태값, 오류 코드와 구현 위치를 정리한 TeamFlow HTTP API 명세다.",
+      "tags": [
+        "documentation",
+        "api-schema",
+        "authentication",
+        "mock-ai"
+      ],
+      "pattern": "documentation",
+      "directoryGroup": "docs"
+    },
+    "document:docs/architecture.md": {
+      "filePath": "docs/architecture.md",
+      "type": "document",
+      "summary": "React/Vite, Express, Supabase, shared 패키지의 책임과 Google 로그인·게스트·인증 사용자 데이터 흐름을 설명하는 3계층 아키텍처 문서다.",
+      "tags": [
+        "documentation",
+        "architecture",
+        "data-flow",
+        "authentication"
+      ],
+      "pattern": "documentation",
+      "directoryGroup": "docs"
+    },
+    "document:docs/deployment.md": {
+      "filePath": "docs/deployment.md",
+      "type": "document",
+      "summary": "Express API를 Render에, React 웹을 Vercel에 배포하고 CORS·환경 변수·Supabase OAuth 리디렉션을 연결하는 운영 배포 절차다.",
+      "tags": [
+        "documentation",
+        "deployment",
+        "vercel",
+        "render"
+      ],
+      "pattern": "documentation",
+      "directoryGroup": "docs"
+    },
+    "document:docs/plan.md": {
+      "filePath": "docs/plan.md",
+      "type": "document",
+      "summary": "팀 프로젝트 관리 문제, 사용자 시나리오, 핵심 기능, 화면 구조와 사용자 흐름을 정의한 TeamFlow 제품 기획서다.",
+      "tags": [
+        "documentation",
+        "product-plan",
+        "user-flow",
+        "requirements"
+      ],
+      "pattern": "documentation",
+      "directoryGroup": "docs"
+    },
+    "document:docs/weekly-plan.md": {
+      "filePath": "docs/weekly-plan.md",
+      "type": "document",
+      "summary": "Supabase 연동과 핵심 기능 완성을 중심으로 3주차 P0·P1·P2 우선순위와 금요일 작업을 기록한 주간 실행 계획이다.",
+      "tags": [
+        "documentation",
+        "weekly-plan",
+        "priorities",
+        "delivery"
+      ],
+      "pattern": "documentation",
+      "directoryGroup": "docs"
+    },
+    "document:.agents/skills/teamflow-test-authoring/SKILL.md": {
+      "filePath": ".agents/skills/teamflow-test-authoring/SKILL.md",
+      "type": "document",
+      "summary": "TeamFlow 변경에서 테스트 수준을 선택하고 테스트 작성·실행과 Red-Green-Refactor 증거를 관리하는 프로젝트 전용 테스트 작성 Skill 지침이다.",
+      "tags": [
+        "documentation",
+        "test-authoring",
+        "tdd",
+        "regression"
+      ],
+      "pattern": "documentation",
+      "directoryGroup": ".agents"
+    },
+    "config:.agents/skills/teamflow-test-authoring/agents/openai.yaml": {
+      "filePath": ".agents/skills/teamflow-test-authoring/agents/openai.yaml",
+      "type": "config",
+      "summary": "TeamFlow 테스트 작성 Skill의 표시 이름, 설명, 기본 호출 프롬프트와 암시적 호출 정책을 등록하는 에이전트 메타데이터다.",
+      "tags": [
+        "configuration",
+        "agent-metadata",
+        "test-authoring"
+      ],
+      "pattern": "config",
+      "directoryGroup": ".agents"
+    },
+    "document:.claude/skills/teamflow-design/SKILL.md": {
+      "filePath": ".claude/skills/teamflow-design/SKILL.md",
+      "type": "document",
+      "summary": "TeamFlow 화면 구현 시 사용할 디자인 토큰, 타이포그래피, 레이아웃 패턴, 화면별 기준과 완료 전 검증 항목을 정의한다.",
+      "tags": [
+        "documentation",
+        "design-system",
+        "ui-guidelines",
+        "validation"
+      ],
+      "pattern": "documentation",
+      "directoryGroup": ".claude"
+    },
+    "file:.claude/skills/teamflow-design/tokens.css": {
+      "filePath": ".claude/skills/teamflow-design/tokens.css",
+      "type": "file",
+      "summary": "디자인 Skill이 참조하는 색상, 상태, 간격, 반경, 그림자와 글꼴의 기준 CSS 변수 및 숫자 전용 mono 유틸리티를 제공한다.",
+      "tags": [
+        "design-tokens",
+        "css-variables",
+        "design-system",
+        "typography"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": ".claude"
+    },
+    "config:.codex/agents/verification_agent.toml": {
+      "filePath": ".codex/agents/verification_agent.toml",
+      "type": "config",
+      "summary": "요구사항별 구현·테스트·TDD 증거를 독립적으로 확인하되 코드 수정은 금지하는 TeamFlow 검증 Agent의 권한, 절차와 보고 형식을 설정한다.",
+      "tags": [
+        "configuration",
+        "verification",
+        "test-quality",
+        "agent-policy"
+      ],
+      "pattern": "config",
+      "directoryGroup": ".codex"
+    },
+    "document:.github/pull_request_template.md": {
+      "filePath": ".github/pull_request_template.md",
+      "type": "document",
+      "summary": "주요 작업, 설명 가능한 부분, 이해하지 못한 부분과 새로 배운 내용을 작성하도록 유도하는 학습 중심 Pull Request 템플릿이다.",
+      "tags": [
+        "documentation",
+        "pull-request",
+        "learning",
+        "checklist"
+      ],
+      "pattern": "documentation",
+      "directoryGroup": ".github"
+    },
+    "file:.nvmrc": {
+      "filePath": ".nvmrc",
+      "type": "file",
+      "summary": "TeamFlow 모노레포의 로컬 Node.js 실행 버전을 24.14.0으로 고정한다.",
+      "tags": [
+        "configuration",
+        "nodejs",
+        "runtime-version"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "root"
+    },
+    "file:apps/web/src/components/layout/AppShell.module.css": {
+      "filePath": "apps/web/src/components/layout/AppShell.module.css",
+      "type": "file",
+      "summary": "전역 및 프로젝트 셸의 확장·축소 사이드바, 내비게이션, 계정 팝오버와 스크롤 가능한 본문 레이아웃을 정의하는 CSS Module이다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "app-shell",
+        "navigation"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/components/ui/forms.module.css": {
+      "filePath": "apps/web/src/components/ui/forms.module.css",
+      "type": "file",
+      "summary": "모달과 입력 화면에서 공유하는 폼, 필드, 선택지 그리드, 오류 상태 및 취소·제출 버튼 스타일을 제공한다.",
+      "tags": [
+        "shared-styles",
+        "css-modules",
+        "forms",
+        "validation"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/components/ui/ui.module.css": {
+      "filePath": "apps/web/src/components/ui/ui.module.css",
+      "type": "file",
+      "summary": "아바타, 상태 배지, 자료 아이콘과 공통 모달의 크기·상태·레이아웃을 정의하는 공유 UI CSS Module이다.",
+      "tags": [
+        "shared-styles",
+        "css-modules",
+        "ui-components",
+        "modal"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/ai/AiPage.module.css": {
+      "filePath": "apps/web/src/features/ai/AiPage.module.css",
+      "type": "file",
+      "summary": "Mock AI 팀원 설정, 컨텍스트 선택, 작업 실행, Markdown 결과 검토, 실행 이력과 실시간 피드백을 구성하는 반응형 페이지 스타일이다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "mock-ai",
+        "responsive-layout"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css": {
+      "filePath": "apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "type": "file",
+      "summary": "프로젝트 기간·진행률·작업 표와 팀원·자료·노트 패널을 대시보드 그리드로 배치하는 CSS Module이다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "dashboard",
+        "project-overview"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/landing/LandingPage.module.css": {
+      "filePath": "apps/web/src/features/landing/LandingPage.module.css",
+      "type": "file",
+      "summary": "랜딩 히어로, 기능 소개, Google·게스트 인증 카드와 OAuth 콜백 상태 화면을 구성하는 CSS Module이다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "landing-page",
+        "authentication"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/members/MembersPage.module.css": {
+      "filePath": "apps/web/src/features/members/MembersPage.module.css",
+      "type": "file",
+      "summary": "사용자·AI 팀원 카드, 담당 작업 요약, 초대 목록, 편집·삭제 작업과 오류 상태를 배치하는 CSS Module이다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "members",
+        "collaboration"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/notes/NotesPage.module.css": {
+      "filePath": "apps/web/src/features/notes/NotesPage.module.css",
+      "type": "file",
+      "summary": "노트 목록 검색·정렬, 편집기·미리보기, 템플릿 선택과 삭제 확인 흐름을 양분 화면으로 구성하는 CSS Module이다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "notes",
+        "editor"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/projects/ProjectListPage.module.css": {
+      "filePath": "apps/web/src/features/projects/ProjectListPage.module.css",
+      "type": "file",
+      "summary": "프로젝트 검색 결과, 초대 수락·거절 패널, 카드 그리드와 메시지 상태를 구성하는 프로젝트 목록 스타일이다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "project-list",
+        "invitations"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/resources/ResourcesPage.module.css": {
+      "filePath": "apps/web/src/features/resources/ResourcesPage.module.css",
+      "type": "file",
+      "summary": "자료실의 이동 경로, 폴더·파일 그리드, 필터, 업로드, 상세 보기, 다운로드·교체·삭제 동작을 표현하는 CSS Module이다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "resources",
+        "file-upload"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/tasks/ProjectTasksPage.module.css": {
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "type": "file",
+      "summary": "프로젝트 작업의 통계, 필터·정렬 도구, 표·보드 보기와 상태 변경 메뉴를 구성하는 CSS Module이다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "task-management",
+        "board-view"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/features/tasks/components/TaskModal.module.css": {
+      "filePath": "apps/web/src/features/tasks/components/TaskModal.module.css",
+      "type": "file",
+      "summary": "작업 상세 모달의 상태 선택, 설명, 편집·닫기·삭제 확인 영역을 배치하고 위험 동작을 강조한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "task-modal",
+        "danger-zone"
+      ],
+      "pattern": "ui",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/src/test/setup.js": {
+      "filePath": "apps/web/src/test/setup.js",
+      "type": "file",
+      "summary": "Vitest의 DOM matcher를 등록하고 각 테스트 뒤 React 렌더 트리와 sessionStorage를 정리하는 웹 테스트 초기화 파일이다.",
+      "tags": [
+        "test",
+        "vitest",
+        "testing-library",
+        "cleanup"
+      ],
+      "pattern": "test",
+      "directoryGroup": "apps"
+    },
+    "file:apps/web/vite.config.js": {
+      "filePath": "apps/web/vite.config.js",
+      "type": "file",
+      "summary": "React 플러그인, 고정 개발 포트 5173, Express API 프록시와 jsdom 기반 Vitest 환경을 구성하는 Vite 설정이다.",
+      "tags": [
+        "configuration",
+        "vite",
+        "dev-server",
+        "test"
+      ],
+      "pattern": "unclassified",
+      "directoryGroup": "apps"
+    },
+    "config:packages/shared/package.json": {
+      "filePath": "packages/shared/package.json",
+      "type": "config",
+      "summary": "공유 패키지의 ESM 진입점과 project 하위 경로 export, Node 내장 테스트 실행 스크립트를 정의한다.",
+      "tags": [
+        "configuration",
+        "package-manifest",
+        "esm",
+        "exports"
+      ],
+      "pattern": "config",
+      "directoryGroup": "packages"
+    },
+    "file:packages/shared/src/index.js": {
+      "filePath": "packages/shared/src/index.js",
+      "type": "file",
+      "summary": "프로젝트·작업·자료·팀원·AI 실행·초대 상태 상수와 검증·진행률 함수를 공개하는 shared 패키지 배럴 파일이다.",
+      "tags": [
+        "barrel",
+        "entry-point",
+        "exports",
+        "shared-contract"
+      ],
+      "pattern": "entry",
+      "directoryGroup": "packages"
+    },
+    "file:packages/shared/src/project.js": {
+      "filePath": "packages/shared/src/project.js",
+      "type": "file",
+      "summary": "웹과 API가 함께 사용하는 TeamFlow 도메인 상태 상수, JSDoc 데이터 계약, 진행률 계산과 값 검증 함수를 정의한다.",
+      "tags": [
+        "data-model",
+        "validation",
+        "shared-contract",
+        "domain",
+        "tested"
+      ],
+      "pattern": "utility",
+      "directoryGroup": "packages"
+    },
+    "file:packages/shared/test/project.test.js": {
+      "filePath": "packages/shared/test/project.test.js",
+      "type": "file",
+      "summary": "공유 진행률 계산의 반올림·경계 처리와 프로젝트·작업·자료·팀원·AI·초대 상태 판별 계약을 검증하는 Node 테스트다.",
+      "tags": [
+        "test",
+        "node-test",
+        "validation",
+        "shared-contract"
+      ],
+      "pattern": "test",
+      "directoryGroup": "packages"
+    },
+    "table:supabase/tests/database/mock_ai_team_member_rls.sql:ai_test_state": {
+      "filePath": "supabase/tests/database/mock_ai_team_member_rls.sql",
+      "type": "table",
+      "summary": "트랜잭션 안에서 임시 사용자·프로젝트·팀원 데이터를 구성하고 Mock AI 팀원의 RLS, RPC 상태 전이, 멱등성, 격리와 제약 조건을 검증한 뒤 롤백하는 SQL 통합 테스트다.",
+      "tags": [
+        "database",
+        "test",
+        "security",
+        "rls",
+        "mock-ai"
+      ],
+      "pattern": "data",
+      "directoryGroup": "supabase"
+    }
+  }
+}

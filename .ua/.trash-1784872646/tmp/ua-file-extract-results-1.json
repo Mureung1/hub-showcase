@@ -1,0 +1,5104 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 16,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 16,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 16,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "apps/api/src/app.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 37,
+      "nonEmptyLines": 31,
+      "functions": [
+        {
+          "name": "createApp",
+          "startLine": 11,
+          "endLine": 37,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "createApp",
+          "line": 11,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "createApp",
+          "callee": "express",
+          "lineNumber": 17
+        },
+        {
+          "caller": "createApp",
+          "callee": "app.disable",
+          "lineNumber": 19
+        },
+        {
+          "caller": "createApp",
+          "callee": "app.use",
+          "lineNumber": 20
+        },
+        {
+          "caller": "createApp",
+          "callee": "cors",
+          "lineNumber": 20
+        },
+        {
+          "caller": "createApp",
+          "callee": "createCorsOptions",
+          "lineNumber": 20
+        },
+        {
+          "caller": "createApp",
+          "callee": "app.use",
+          "lineNumber": 23
+        },
+        {
+          "caller": "createApp",
+          "callee": "express.json",
+          "lineNumber": 23
+        },
+        {
+          "caller": "createApp",
+          "callee": "app.get",
+          "lineNumber": 25
+        },
+        {
+          "caller": "createApp",
+          "callee": "response.status(200).json",
+          "lineNumber": 26
+        },
+        {
+          "caller": "createApp",
+          "callee": "response.status",
+          "lineNumber": 26
+        },
+        {
+          "caller": "createApp",
+          "callee": "app.use",
+          "lineNumber": 33
+        },
+        {
+          "caller": "createApp",
+          "callee": "createTeamFlowRouter",
+          "lineNumber": 33
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/src/lib/auth.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 72,
+      "nonEmptyLines": 63,
+      "functions": [
+        {
+          "name": "readBearerToken",
+          "startLine": 8,
+          "endLine": 12,
+          "params": [
+            "header"
+          ]
+        },
+        {
+          "name": "displayProfile",
+          "startLine": 14,
+          "endLine": 30,
+          "params": [
+            "claims"
+          ]
+        },
+        {
+          "name": "createSupabaseAuthVerifier",
+          "startLine": 32,
+          "endLine": 45,
+          "params": [
+            "supabase"
+          ]
+        },
+        {
+          "name": "createAuthenticationMiddleware",
+          "startLine": 47,
+          "endLine": 72,
+          "params": []
+        }
+      ],
+      "classes": [
+        {
+          "name": "AuthenticationError",
+          "startLine": 1,
+          "endLine": 6,
+          "methods": [
+            "constructor"
+          ],
+          "properties": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "AuthenticationError",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "readBearerToken",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "createSupabaseAuthVerifier",
+          "line": 32,
+          "isDefault": false
+        },
+        {
+          "name": "createAuthenticationMiddleware",
+          "line": 47,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "constructor",
+          "callee": "super",
+          "lineNumber": 3
+        },
+        {
+          "caller": "readBearerToken",
+          "callee": "/^Bearer\\s+(.+)$/i.exec",
+          "lineNumber": 10
+        },
+        {
+          "caller": "readBearerToken",
+          "callee": "header.trim",
+          "lineNumber": 10
+        },
+        {
+          "caller": "readBearerToken",
+          "callee": "match?.[1]?.trim",
+          "lineNumber": 11
+        },
+        {
+          "caller": "displayProfile",
+          "callee": "[metadata.full_name, metadata.name, email.split('@')[0]]\n    .find",
+          "lineNumber": 19
+        },
+        {
+          "caller": "displayProfile",
+          "callee": "email.split",
+          "lineNumber": 19
+        },
+        {
+          "caller": "displayProfile",
+          "callee": "value.trim",
+          "lineNumber": 20
+        },
+        {
+          "caller": "displayProfile",
+          "callee": "[metadata.avatar_url, metadata.picture]\n    .find",
+          "lineNumber": 21
+        },
+        {
+          "caller": "displayProfile",
+          "callee": "value.trim",
+          "lineNumber": 22
+        },
+        {
+          "caller": "displayProfile",
+          "callee": "displayName?.trim",
+          "lineNumber": 27
+        },
+        {
+          "caller": "displayProfile",
+          "callee": "avatarUrl?.trim",
+          "lineNumber": 28
+        },
+        {
+          "caller": "verify",
+          "callee": "supabase.auth.getClaims",
+          "lineNumber": 35
+        },
+        {
+          "caller": "verify",
+          "callee": "displayProfile",
+          "lineNumber": 42
+        },
+        {
+          "caller": "createAuthenticationMiddleware",
+          "callee": "readBearerToken",
+          "lineNumber": 49
+        },
+        {
+          "caller": "createAuthenticationMiddleware",
+          "callee": "request.get",
+          "lineNumber": 49
+        },
+        {
+          "caller": "createAuthenticationMiddleware",
+          "callee": "response.status(401).json",
+          "lineNumber": 52
+        },
+        {
+          "caller": "createAuthenticationMiddleware",
+          "callee": "response.status",
+          "lineNumber": 52
+        },
+        {
+          "caller": "createAuthenticationMiddleware",
+          "callee": "authVerifier.verify",
+          "lineNumber": 59
+        },
+        {
+          "caller": "createAuthenticationMiddleware",
+          "callee": "repositoryFactory",
+          "lineNumber": 63
+        },
+        {
+          "caller": "createAuthenticationMiddleware",
+          "callee": "next",
+          "lineNumber": 65
+        },
+        {
+          "caller": "createAuthenticationMiddleware",
+          "callee": "response.status(401).json",
+          "lineNumber": 67
+        },
+        {
+          "caller": "createAuthenticationMiddleware",
+          "callee": "response.status",
+          "lineNumber": 67
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 4,
+        "functionCount": 4,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "apps/api/src/lib/cors.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 48,
+      "nonEmptyLines": 40,
+      "functions": [
+        {
+          "name": "normalizeOrigin",
+          "startLine": 3,
+          "endLine": 21,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "readAllowedOrigins",
+          "startLine": 23,
+          "endLine": 35,
+          "params": []
+        },
+        {
+          "name": "createCorsOptions",
+          "startLine": 37,
+          "endLine": 48,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "readAllowedOrigins",
+          "line": 23,
+          "isDefault": false
+        },
+        {
+          "name": "createCorsOptions",
+          "line": 37,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "normalizeOrigin",
+          "callee": "['http:', 'https:'].includes",
+          "lineNumber": 11
+        },
+        {
+          "caller": "readAllowedOrigins",
+          "callee": "environment.TEAMFLOW_ALLOWED_ORIGINS?.trim",
+          "lineNumber": 24
+        },
+        {
+          "caller": "readAllowedOrigins",
+          "callee": "(configured || LOCAL_WEB_ORIGIN)\n    .split(',')\n    .map((value) => value.trim())\n    .filter",
+          "lineNumber": 25
+        },
+        {
+          "caller": "readAllowedOrigins",
+          "callee": "(configured || LOCAL_WEB_ORIGIN)\n    .split(',')\n    .map",
+          "lineNumber": 25
+        },
+        {
+          "caller": "readAllowedOrigins",
+          "callee": "(configured || LOCAL_WEB_ORIGIN)\n    .split",
+          "lineNumber": 25
+        },
+        {
+          "caller": "readAllowedOrigins",
+          "callee": "value.trim",
+          "lineNumber": 27
+        },
+        {
+          "caller": "readAllowedOrigins",
+          "callee": "values.map",
+          "lineNumber": 34
+        },
+        {
+          "caller": "origin",
+          "callee": "callback",
+          "lineNumber": 42
+        },
+        {
+          "caller": "origin",
+          "callee": "allowed.has",
+          "lineNumber": 42
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 3,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/src/lib/supabaseClient.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 54,
+      "nonEmptyLines": 42,
+      "functions": [
+        {
+          "name": "requireEnvironmentValue",
+          "startLine": 6,
+          "endLine": 14,
+          "params": [
+            "environment",
+            "name"
+          ]
+        },
+        {
+          "name": "readTeamFlowSupabaseConfig",
+          "startLine": 16,
+          "endLine": 40,
+          "params": []
+        },
+        {
+          "name": "createTeamFlowSupabaseClient",
+          "startLine": 42,
+          "endLine": 54,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "readTeamFlowSupabaseConfig",
+          "line": 16,
+          "isDefault": false
+        },
+        {
+          "name": "createTeamFlowSupabaseClient",
+          "line": 42,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "requireEnvironmentValue",
+          "callee": "environment[name]?.trim",
+          "lineNumber": 7
+        },
+        {
+          "caller": "readTeamFlowSupabaseConfig",
+          "callee": "requireEnvironmentValue",
+          "lineNumber": 17
+        },
+        {
+          "caller": "readTeamFlowSupabaseConfig",
+          "callee": "requireEnvironmentValue",
+          "lineNumber": 18
+        },
+        {
+          "caller": "readTeamFlowSupabaseConfig",
+          "callee": "hostname.includes",
+          "lineNumber": 27
+        },
+        {
+          "caller": "readTeamFlowSupabaseConfig",
+          "callee": "publishableKey.startsWith",
+          "lineNumber": 35
+        },
+        {
+          "caller": "createTeamFlowSupabaseClient",
+          "callee": "readTeamFlowSupabaseConfig",
+          "lineNumber": 43
+        },
+        {
+          "caller": "createTeamFlowSupabaseClient",
+          "callee": "createClient",
+          "lineNumber": 46
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 3,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/src/runtime.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 32,
+      "nonEmptyLines": 30,
+      "functions": [
+        {
+          "name": "createConfiguredTeamFlowApp",
+          "startLine": 16,
+          "endLine": 32,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "createConfiguredTeamFlowApp",
+          "line": 16,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "createConfiguredTeamFlowApp",
+          "callee": "createTeamFlowSupabaseClient",
+          "lineNumber": 17
+        },
+        {
+          "caller": "createConfiguredTeamFlowApp",
+          "callee": "readAllowedOrigins",
+          "lineNumber": 18
+        },
+        {
+          "caller": "createConfiguredTeamFlowApp",
+          "callee": "createSupabaseAuthVerifier",
+          "lineNumber": 19
+        },
+        {
+          "caller": "createConfiguredTeamFlowApp",
+          "callee": "createSupabaseDemoRepository",
+          "lineNumber": 20
+        },
+        {
+          "caller": "repositoryFactory",
+          "callee": "createSupabaseTeamFlowRepository",
+          "lineNumber": 21
+        },
+        {
+          "caller": "repositoryFactory",
+          "callee": "createTeamFlowSupabaseClient",
+          "lineNumber": 22
+        },
+        {
+          "caller": "createConfiguredTeamFlowApp",
+          "callee": "createApp",
+          "lineNumber": 26
+        }
+      ],
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/src/server.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 8,
+      "nonEmptyLines": 6,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/src/teamflow/mockAiGenerator.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 373,
+      "nonEmptyLines": 326,
+      "functions": [
+        {
+          "name": "compareText",
+          "startLine": 7,
+          "endLine": 17,
+          "params": [
+            "left",
+            "right"
+          ]
+        },
+        {
+          "name": "normalizeWhitespace",
+          "startLine": 19,
+          "endLine": 27,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "createTextNormalizer",
+          "startLine": 29,
+          "endLine": 40,
+          "params": [
+            "truncatedFields"
+          ]
+        },
+        {
+          "name": "compareRecords",
+          "startLine": 42,
+          "endLine": 54,
+          "params": [
+            "...fields"
+          ]
+        },
+        {
+          "name": "normalizeContextConfig",
+          "startLine": 56,
+          "endLine": 60,
+          "params": [
+            "contextConfig"
+          ]
+        },
+        {
+          "name": "normalizeTask",
+          "startLine": 62,
+          "endLine": 71,
+          "params": [
+            "task",
+            "text"
+          ]
+        },
+        {
+          "name": "normalizeCollection",
+          "startLine": 73,
+          "endLine": 82,
+          "params": [
+            "items",
+            "normalizeItem",
+            "compare",
+            "collectionKey"
+          ]
+        },
+        {
+          "name": "createCollectionData",
+          "startLine": 84,
+          "endLine": 134,
+          "params": [
+            "input",
+            "text"
+          ]
+        },
+        {
+          "name": "serializedLength",
+          "startLine": 136,
+          "endLine": 138,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "enforceSnapshotLimit",
+          "startLine": 140,
+          "endLine": 182,
+          "params": [
+            "snapshot",
+            "collectionData"
+          ]
+        },
+        {
+          "name": "buildMockAiContext",
+          "startLine": 189,
+          "endLine": 239,
+          "params": []
+        },
+        {
+          "name": "inline",
+          "startLine": 241,
+          "endLine": 243,
+          "params": [
+            "value",
+            "fallback"
+          ]
+        },
+        {
+          "name": "renderContext",
+          "startLine": 245,
+          "endLine": 323,
+          "params": [
+            "snapshot"
+          ]
+        },
+        {
+          "name": "renderMockMarkdown",
+          "startLine": 325,
+          "endLine": 359,
+          "params": [
+            "snapshot"
+          ]
+        },
+        {
+          "name": "generateMockAiResult",
+          "startLine": 366,
+          "endLine": 373,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "buildMockAiContext",
+          "line": 189,
+          "isDefault": false
+        },
+        {
+          "name": "generateMockAiResult",
+          "line": 366,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "normalizeWhitespace",
+          "callee": "String(value ?? '')\n    .replace(/\\r\\n?/g, '\\n')\n    .split('\\n')\n    .map((line) => line.trim().replace(/[ \\t]+/g, ' '))\n    .join('\\n')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim",
+          "lineNumber": 20
+        },
+        {
+          "caller": "normalizeWhitespace",
+          "callee": "String(value ?? '')\n    .replace(/\\r\\n?/g, '\\n')\n    .split('\\n')\n    .map((line) => line.trim().replace(/[ \\t]+/g, ' '))\n    .join('\\n')\n    .replace",
+          "lineNumber": 20
+        },
+        {
+          "caller": "normalizeWhitespace",
+          "callee": "String(value ?? '')\n    .replace(/\\r\\n?/g, '\\n')\n    .split('\\n')\n    .map((line) => line.trim().replace(/[ \\t]+/g, ' '))\n    .join",
+          "lineNumber": 20
+        },
+        {
+          "caller": "normalizeWhitespace",
+          "callee": "String(value ?? '')\n    .replace(/\\r\\n?/g, '\\n')\n    .split('\\n')\n    .map",
+          "lineNumber": 20
+        },
+        {
+          "caller": "normalizeWhitespace",
+          "callee": "String(value ?? '')\n    .replace(/\\r\\n?/g, '\\n')\n    .split",
+          "lineNumber": 20
+        },
+        {
+          "caller": "normalizeWhitespace",
+          "callee": "String(value ?? '')\n    .replace",
+          "lineNumber": 20
+        },
+        {
+          "caller": "normalizeWhitespace",
+          "callee": "String",
+          "lineNumber": 20
+        },
+        {
+          "caller": "normalizeWhitespace",
+          "callee": "line.trim().replace",
+          "lineNumber": 23
+        },
+        {
+          "caller": "normalizeWhitespace",
+          "callee": "line.trim",
+          "lineNumber": 23
+        },
+        {
+          "caller": "createTextNormalizer",
+          "callee": "normalizeWhitespace",
+          "lineNumber": 31
+        },
+        {
+          "caller": "createTextNormalizer",
+          "callee": "truncatedFields.push",
+          "lineNumber": 34
+        },
+        {
+          "caller": "createTextNormalizer",
+          "callee": "normalized.slice",
+          "lineNumber": 35
+        },
+        {
+          "caller": "compareRecords",
+          "callee": "compareText",
+          "lineNumber": 45
+        },
+        {
+          "caller": "compareRecords",
+          "callee": "compareText",
+          "lineNumber": 52
+        },
+        {
+          "caller": "compareRecords",
+          "callee": "JSON.stringify",
+          "lineNumber": 52
+        },
+        {
+          "caller": "compareRecords",
+          "callee": "JSON.stringify",
+          "lineNumber": 52
+        },
+        {
+          "caller": "normalizeContextConfig",
+          "callee": "Object.fromEntries",
+          "lineNumber": 57
+        },
+        {
+          "caller": "normalizeContextConfig",
+          "callee": "CONTEXT_KEYS.map",
+          "lineNumber": 58
+        },
+        {
+          "caller": "normalizeTask",
+          "callee": "text",
+          "lineNumber": 64
+        },
+        {
+          "caller": "normalizeTask",
+          "callee": "text",
+          "lineNumber": 65
+        },
+        {
+          "caller": "normalizeTask",
+          "callee": "text",
+          "lineNumber": 66
+        },
+        {
+          "caller": "normalizeTask",
+          "callee": "text",
+          "lineNumber": 67
+        },
+        {
+          "caller": "normalizeTask",
+          "callee": "text",
+          "lineNumber": 68
+        },
+        {
+          "caller": "normalizeTask",
+          "callee": "text",
+          "lineNumber": 69
+        },
+        {
+          "caller": "normalizeCollection",
+          "callee": "(Array.isArray(items) ? items : []).map(normalizeItem).sort",
+          "lineNumber": 74
+        },
+        {
+          "caller": "normalizeCollection",
+          "callee": "(Array.isArray(items) ? items : []).map",
+          "lineNumber": 74
+        },
+        {
+          "caller": "normalizeCollection",
+          "callee": "Array.isArray",
+          "lineNumber": 74
+        },
+        {
+          "caller": "normalizeCollection",
+          "callee": "normalized.slice",
+          "lineNumber": 75
+        },
+        {
+          "caller": "normalizeCollection",
+          "callee": "Math.max",
+          "lineNumber": 79
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "normalizeCollection",
+          "lineNumber": 85
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "text",
+          "lineNumber": 88
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "text",
+          "lineNumber": 89
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "text",
+          "lineNumber": 90
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "compareRecords",
+          "lineNumber": 92
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "normalizeCollection",
+          "lineNumber": 96
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "normalizeTask",
+          "lineNumber": 98
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "compareRecords",
+          "lineNumber": 99
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "normalizeCollection",
+          "lineNumber": 103
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "text",
+          "lineNumber": 106
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "text",
+          "lineNumber": 107
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "text",
+          "lineNumber": 108
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "text",
+          "lineNumber": 109
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "compareRecords",
+          "lineNumber": 111
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "(Array.isArray(input.resources) ? input.resources : []).filter",
+          "lineNumber": 115
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "Array.isArray",
+          "lineNumber": 115
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "normalizeCollection",
+          "lineNumber": 118
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "text",
+          "lineNumber": 121
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "text",
+          "lineNumber": 122
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "text",
+          "lineNumber": 123
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "text",
+          "lineNumber": 127
+        },
+        {
+          "caller": "createCollectionData",
+          "callee": "compareRecords",
+          "lineNumber": 129
+        },
+        {
+          "caller": "serializedLength",
+          "callee": "JSON.stringify",
+          "lineNumber": 137
+        },
+        {
+          "caller": "enforceSnapshotLimit",
+          "callee": "snapshot.context[key].push",
+          "lineNumber": 156
+        },
+        {
+          "caller": "enforceSnapshotLimit",
+          "callee": "serializedLength",
+          "lineNumber": 158
+        },
+        {
+          "caller": "enforceSnapshotLimit",
+          "callee": "snapshot.context[key].pop",
+          "lineNumber": 159
+        },
+        {
+          "caller": "enforceSnapshotLimit",
+          "callee": "serializedLength",
+          "lineNumber": 171
+        },
+        {
+          "caller": "enforceSnapshotLimit",
+          "callee": "Array.isArray",
+          "lineNumber": 172
+        },
+        {
+          "caller": "enforceSnapshotLimit",
+          "callee": "snapshot.context[key].pop",
+          "lineNumber": 175
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "createTextNormalizer",
+          "lineNumber": 191
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "normalizeContextConfig",
+          "lineNumber": 192
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "createCollectionData",
+          "lineNumber": 193
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "text",
+          "lineNumber": 198
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "text",
+          "lineNumber": 199
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "text",
+          "lineNumber": 200
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "text",
+          "lineNumber": 212
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "normalizeTask",
+          "lineNumber": 213
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "Object.fromEntries",
+          "lineNumber": 223
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "COLLECTION_KEYS.map",
+          "lineNumber": 224
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "Object.fromEntries",
+          "lineNumber": 231
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "COLLECTION_KEYS.map",
+          "lineNumber": 231
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "snapshot.truncation.fields.sort",
+          "lineNumber": 236
+        },
+        {
+          "caller": "buildMockAiContext",
+          "callee": "enforceSnapshotLimit",
+          "lineNumber": 238
+        },
+        {
+          "caller": "inline",
+          "callee": "value.replace",
+          "lineNumber": 242
+        },
+        {
+          "caller": "renderContext",
+          "callee": "sections.push",
+          "lineNumber": 249
+        },
+        {
+          "caller": "renderContext",
+          "callee": "[\n        '### 프로젝트',\n        `- 이름: ${inline(snapshot.context.project.name, '이름 없음')}`,\n        `- 설명: ${inline(snapshot.context.project.description, '설명 없음')}`,\n      ].join",
+          "lineNumber": 250
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 252
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 253
+        },
+        {
+          "caller": "renderContext",
+          "callee": "sections.push",
+          "lineNumber": 259
+        },
+        {
+          "caller": "renderContext",
+          "callee": "[\n        '### 공유 노트',\n        snapshot.context.notes.length === 0\n          ? '- 참고할 노트가 없습니다.'\n          : snapshot.context.notes\n              .map(\n                (note) =>\n                  `- ${inline(note.title, '제목 없음')} (${inline(note.id, 'ID 없음')}): ${inline(note.content, '내용 없음')}`,\n              )\n              .join('\\n'),\n      ].join",
+          "lineNumber": 260
+        },
+        {
+          "caller": "renderContext",
+          "callee": "snapshot.context.notes\n              .map(\n                (note) =>\n                  `- ${inline(note.title, '제목 없음')} (${inline(note.id, 'ID 없음')}): ${inline(note.content, '내용 없음')}`,\n              )\n              .join",
+          "lineNumber": 264
+        },
+        {
+          "caller": "renderContext",
+          "callee": "snapshot.context.notes\n              .map",
+          "lineNumber": 264
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 267
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 267
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 267
+        },
+        {
+          "caller": "renderContext",
+          "callee": "sections.push",
+          "lineNumber": 275
+        },
+        {
+          "caller": "renderContext",
+          "callee": "[\n        '### 할 일 목록',\n        snapshot.context.tasks.length === 0\n          ? '- 참고할 할 일이 없습니다.'\n          : snapshot.context.tasks\n              .map(\n                (task) =>\n                  `- ${inline(task.dueDate, '마감 없음')} · ${inline(task.title, '제목 없음')} · ${inline(task.status, '상태 없음')}`,\n              )\n              .join('\\n'),\n      ].join",
+          "lineNumber": 276
+        },
+        {
+          "caller": "renderContext",
+          "callee": "snapshot.context.tasks\n              .map(\n                (task) =>\n                  `- ${inline(task.dueDate, '마감 없음')} · ${inline(task.title, '제목 없음')} · ${inline(task.status, '상태 없음')}`,\n              )\n              .join",
+          "lineNumber": 280
+        },
+        {
+          "caller": "renderContext",
+          "callee": "snapshot.context.tasks\n              .map",
+          "lineNumber": 280
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 283
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 283
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 283
+        },
+        {
+          "caller": "renderContext",
+          "callee": "sections.push",
+          "lineNumber": 291
+        },
+        {
+          "caller": "renderContext",
+          "callee": "[\n        '### 팀원 역할',\n        snapshot.context.team.length === 0\n          ? '- 참고할 팀원 역할이 없습니다.'\n          : snapshot.context.team\n              .map(\n                (member) =>\n                  `- ${inline(member.name, '이름 없음')}: ${inline(member.role, '역할 없음')} (${inline(member.kind, '유형 없음')})`,\n              )\n              .join('\\n'),\n      ].join",
+          "lineNumber": 292
+        },
+        {
+          "caller": "renderContext",
+          "callee": "snapshot.context.team\n              .map(\n                (member) =>\n                  `- ${inline(member.name, '이름 없음')}: ${inline(member.role, '역할 없음')} (${inline(member.kind, '유형 없음')})`,\n              )\n              .join",
+          "lineNumber": 296
+        },
+        {
+          "caller": "renderContext",
+          "callee": "snapshot.context.team\n              .map",
+          "lineNumber": 296
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 299
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 299
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 299
+        },
+        {
+          "caller": "renderContext",
+          "callee": "sections.push",
+          "lineNumber": 307
+        },
+        {
+          "caller": "renderContext",
+          "callee": "[\n        '### 자료실',\n        snapshot.context.resources.length === 0\n          ? '- 참고할 자료가 없습니다.'\n          : snapshot.context.resources\n              .map(\n                (resource) =>\n                  `- ${inline(resource.name, '이름 없음')} (${inline(resource.type, '유형 없음')}): ${inline(resource.description, '설명 없음')}`,\n              )\n              .join('\\n'),\n      ].join",
+          "lineNumber": 308
+        },
+        {
+          "caller": "renderContext",
+          "callee": "snapshot.context.resources\n              .map(\n                (resource) =>\n                  `- ${inline(resource.name, '이름 없음')} (${inline(resource.type, '유형 없음')}): ${inline(resource.description, '설명 없음')}`,\n              )\n              .join",
+          "lineNumber": 312
+        },
+        {
+          "caller": "renderContext",
+          "callee": "snapshot.context.resources\n              .map",
+          "lineNumber": 312
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 315
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 315
+        },
+        {
+          "caller": "renderContext",
+          "callee": "inline",
+          "lineNumber": 315
+        },
+        {
+          "caller": "renderContext",
+          "callee": "sections.join",
+          "lineNumber": 322
+        },
+        {
+          "caller": "renderMockMarkdown",
+          "callee": "[\n    ['project', '프로젝트 설명'],\n    ['notes', '공유 노트'],\n    ['tasks', '할 일 목록'],\n    ['team', '팀원 역할'],\n    ['resources', '자료실 이름과 설명'],\n  ]\n    .filter(([key]) => snapshot.contextConfig[key])\n    .map",
+          "lineNumber": 326
+        },
+        {
+          "caller": "renderMockMarkdown",
+          "callee": "[\n    ['project', '프로젝트 설명'],\n    ['notes', '공유 노트'],\n    ['tasks', '할 일 목록'],\n    ['team', '팀원 역할'],\n    ['resources', '자료실 이름과 설명'],\n  ]\n    .filter",
+          "lineNumber": 326
+        },
+        {
+          "caller": "renderMockMarkdown",
+          "callee": "[\n    '# 모의 실행 결과',\n    '',\n    '> 외부 AI API를 호출하지 않고 TeamFlow 서버가 고정 규칙으로 만든 Mock 결과입니다.',\n    '',\n    '## 작업 요청 요약',\n    `- 할 일: ${inline(snapshot.task.title, '제목 없음')}`,\n    `- 설명: ${inline(snapshot.task.description, '설명 없음')}`,\n    `- 역할 지시사항: ${inline(snapshot.instructions, '등록된 지시사항 없음')}`,\n    '',\n    '## 참고한 컨텍스트',\n    renderContext(snapshot),\n    '',\n    '## Mock 작업 결과',\n    `- \"${inline(snapshot.task.title, '제목 없는 작업')}\" 요청을 역할 지시사항에 맞춰 구조화했습니다.`,\n    `- 참고 범위: ${activeLabels.length > 0 ? activeLabels.join(', ') : '활성화된 컨텍스트 없음'}`,\n    '- 실제 조사나 외부 URL 접근 없이 저장된 프로젝트 정보만 요약했습니다.',\n    '',\n    '## 제안하는 다음 행동',\n    '1. 결과에 빠진 요구사항이 없는지 검토합니다.',\n    '2. 필요한 근거와 세부 내용을 협업자가 보완합니다.',\n    '3. 유효한 결과만 공유 노트로 반영합니다.',\n  ].join",
+          "lineNumber": 336
+        },
+        {
+          "caller": "renderMockMarkdown",
+          "callee": "inline",
+          "lineNumber": 342
+        },
+        {
+          "caller": "renderMockMarkdown",
+          "callee": "inline",
+          "lineNumber": 343
+        },
+        {
+          "caller": "renderMockMarkdown",
+          "callee": "inline",
+          "lineNumber": 344
+        },
+        {
+          "caller": "renderMockMarkdown",
+          "callee": "renderContext",
+          "lineNumber": 347
+        },
+        {
+          "caller": "renderMockMarkdown",
+          "callee": "inline",
+          "lineNumber": 350
+        },
+        {
+          "caller": "renderMockMarkdown",
+          "callee": "activeLabels.join",
+          "lineNumber": 351
+        },
+        {
+          "caller": "generateMockAiResult",
+          "callee": "buildMockAiContext",
+          "lineNumber": 367
+        },
+        {
+          "caller": "generateMockAiResult",
+          "callee": "renderMockMarkdown",
+          "lineNumber": 371
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 15,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/src/teamflow/teamFlowRepository.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 992,
+      "nonEmptyLines": 886,
+      "functions": [
+        {
+          "name": "storeError",
+          "startLine": 128,
+          "endLine": 130,
+          "params": [
+            "operation",
+            "error"
+          ]
+        },
+        {
+          "name": "databaseErrorMessage",
+          "startLine": 132,
+          "endLine": 134,
+          "params": [
+            "error"
+          ]
+        },
+        {
+          "name": "throwDatabaseError",
+          "startLine": 136,
+          "endLine": 164,
+          "params": [
+            "operation",
+            "error"
+          ]
+        },
+        {
+          "name": "mapMember",
+          "startLine": 166,
+          "endLine": 181,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "mapProject",
+          "startLine": 183,
+          "endLine": 194,
+          "params": [
+            "row",
+            "memberIds"
+          ]
+        },
+        {
+          "name": "mapTask",
+          "startLine": 196,
+          "endLine": 207,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "mapNote",
+          "startLine": 209,
+          "endLine": 219,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "mapResource",
+          "startLine": 221,
+          "endLine": 239,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "mapInvitation",
+          "startLine": 241,
+          "endLine": 254,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "mapAiAgent",
+          "startLine": 256,
+          "endLine": 266,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "mapAiRun",
+          "startLine": 268,
+          "endLine": 283,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "unwrapRpcRow",
+          "startLine": 285,
+          "endLine": 287,
+          "params": [
+            "data"
+          ]
+        },
+        {
+          "name": "rpcRows",
+          "startLine": 289,
+          "endLine": 292,
+          "params": [
+            "data"
+          ]
+        },
+        {
+          "name": "rpcObject",
+          "startLine": 294,
+          "endLine": 296,
+          "params": [
+            "data"
+          ]
+        },
+        {
+          "name": "hasOwn",
+          "startLine": 298,
+          "endLine": 300,
+          "params": [
+            "value",
+            "key"
+          ]
+        },
+        {
+          "name": "createSupabaseDemoRepository",
+          "startLine": 302,
+          "endLine": 328,
+          "params": [
+            "supabase"
+          ]
+        },
+        {
+          "name": "createSupabaseTeamFlowRepository",
+          "startLine": 330,
+          "endLine": 992,
+          "params": [
+            "supabase",
+            "user"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "TeamFlowStoreError",
+          "startLine": 99,
+          "endLine": 104,
+          "methods": [
+            "constructor"
+          ],
+          "properties": []
+        },
+        {
+          "name": "TeamFlowNotFoundError",
+          "startLine": 106,
+          "endLine": 111,
+          "methods": [
+            "constructor"
+          ],
+          "properties": []
+        },
+        {
+          "name": "TeamFlowConflictError",
+          "startLine": 113,
+          "endLine": 118,
+          "methods": [
+            "constructor"
+          ],
+          "properties": []
+        },
+        {
+          "name": "TeamFlowValidationError",
+          "startLine": 120,
+          "endLine": 126,
+          "methods": [
+            "constructor"
+          ],
+          "properties": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "TeamFlowStoreError",
+          "line": 99,
+          "isDefault": false
+        },
+        {
+          "name": "TeamFlowNotFoundError",
+          "line": 106,
+          "isDefault": false
+        },
+        {
+          "name": "TeamFlowConflictError",
+          "line": 113,
+          "isDefault": false
+        },
+        {
+          "name": "TeamFlowValidationError",
+          "line": 120,
+          "isDefault": false
+        },
+        {
+          "name": "createSupabaseDemoRepository",
+          "line": 302,
+          "isDefault": false
+        },
+        {
+          "name": "createSupabaseTeamFlowRepository",
+          "line": 330,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "constructor",
+          "callee": "super",
+          "lineNumber": 101
+        },
+        {
+          "caller": "constructor",
+          "callee": "super",
+          "lineNumber": 108
+        },
+        {
+          "caller": "constructor",
+          "callee": "super",
+          "lineNumber": 115
+        },
+        {
+          "caller": "constructor",
+          "callee": "super",
+          "lineNumber": 122
+        },
+        {
+          "caller": "throwDatabaseError",
+          "callee": "databaseErrorMessage",
+          "lineNumber": 137
+        },
+        {
+          "caller": "throwDatabaseError",
+          "callee": "message.includes",
+          "lineNumber": 139
+        },
+        {
+          "caller": "throwDatabaseError",
+          "callee": "/(?:PROJECT|MEMBER|INVITATION|TASK|AI_AGENT|AI_RUN)_NOT_FOUND/.test",
+          "lineNumber": 140
+        },
+        {
+          "caller": "throwDatabaseError",
+          "callee": "/(?:INVALID_RESOURCE_URL|RESOURCE_URL_REQUIRED|FOLDER_URL_NOT_ALLOWED|FOLDER_MUST_BE_ROOT|INVALID_RESOURCE_PARENT|INVALID_RESOURCE_TYPE_CHANGE)/.test",
+          "lineNumber": 144
+        },
+        {
+          "caller": "throwDatabaseError",
+          "callee": "/URL/.test",
+          "lineNumber": 145
+        },
+        {
+          "caller": "throwDatabaseError",
+          "callee": "/TYPE/.test",
+          "lineNumber": 145
+        },
+        {
+          "caller": "throwDatabaseError",
+          "callee": "message.includes",
+          "lineNumber": 148
+        },
+        {
+          "caller": "throwDatabaseError",
+          "callee": "message.includes",
+          "lineNumber": 158
+        },
+        {
+          "caller": "throwDatabaseError",
+          "callee": "message.split('TEAMFLOW_CONFLICT:')[1]?.trim",
+          "lineNumber": 160
+        },
+        {
+          "caller": "throwDatabaseError",
+          "callee": "message.split",
+          "lineNumber": 160
+        },
+        {
+          "caller": "throwDatabaseError",
+          "callee": "storeError",
+          "lineNumber": 163
+        },
+        {
+          "caller": "unwrapRpcRow",
+          "callee": "Array.isArray",
+          "lineNumber": 286
+        },
+        {
+          "caller": "rpcRows",
+          "callee": "Array.isArray",
+          "lineNumber": 291
+        },
+        {
+          "caller": "rpcObject",
+          "callee": "unwrapRpcRow",
+          "lineNumber": 295
+        },
+        {
+          "caller": "hasOwn",
+          "callee": "Object.prototype.hasOwnProperty.call",
+          "lineNumber": 299
+        },
+        {
+          "caller": "loadDemo",
+          "callee": "supabase\n        .from('demo_workspaces')\n        .select('payload')\n        .eq('slug', 'teamflow')\n        .eq('is_active', true)\n        .single",
+          "lineNumber": 305
+        },
+        {
+          "caller": "loadDemo",
+          "callee": "supabase\n        .from('demo_workspaces')\n        .select('payload')\n        .eq('slug', 'teamflow')\n        .eq",
+          "lineNumber": 305
+        },
+        {
+          "caller": "loadDemo",
+          "callee": "supabase\n        .from('demo_workspaces')\n        .select('payload')\n        .eq",
+          "lineNumber": 305
+        },
+        {
+          "caller": "loadDemo",
+          "callee": "supabase\n        .from('demo_workspaces')\n        .select",
+          "lineNumber": 305
+        },
+        {
+          "caller": "loadDemo",
+          "callee": "supabase\n        .from",
+          "lineNumber": 305
+        },
+        {
+          "caller": "loadDemo",
+          "callee": "storeError",
+          "lineNumber": 312
+        },
+        {
+          "caller": "currentProjectMemberId",
+          "callee": "supabase\n      .from('project_access')\n      .select('member_id')\n      .eq('project_id', projectId)\n      .eq('user_id', user.id)\n      .maybeSingle",
+          "lineNumber": 339
+        },
+        {
+          "caller": "currentProjectMemberId",
+          "callee": "supabase\n      .from('project_access')\n      .select('member_id')\n      .eq('project_id', projectId)\n      .eq",
+          "lineNumber": 339
+        },
+        {
+          "caller": "currentProjectMemberId",
+          "callee": "supabase\n      .from('project_access')\n      .select('member_id')\n      .eq",
+          "lineNumber": 339
+        },
+        {
+          "caller": "currentProjectMemberId",
+          "callee": "supabase\n      .from('project_access')\n      .select",
+          "lineNumber": 339
+        },
+        {
+          "caller": "currentProjectMemberId",
+          "callee": "supabase\n      .from",
+          "lineNumber": 339
+        },
+        {
+          "caller": "currentProjectMemberId",
+          "callee": "throwDatabaseError",
+          "lineNumber": 346
+        },
+        {
+          "caller": "listInvitations",
+          "callee": "supabase.rpc",
+          "lineNumber": 352
+        },
+        {
+          "caller": "listInvitations",
+          "callee": "throwDatabaseError",
+          "lineNumber": 353
+        },
+        {
+          "caller": "listInvitations",
+          "callee": "rpcRows(data).map",
+          "lineNumber": 354
+        },
+        {
+          "caller": "listInvitations",
+          "callee": "rpcRows",
+          "lineNumber": 354
+        },
+        {
+          "caller": "respondToInvitation",
+          "callee": "supabase.rpc",
+          "lineNumber": 358
+        },
+        {
+          "caller": "respondToInvitation",
+          "callee": "throwDatabaseError",
+          "lineNumber": 359
+        },
+        {
+          "caller": "respondToInvitation",
+          "callee": "unwrapRpcRow",
+          "lineNumber": 360
+        },
+        {
+          "caller": "respondToInvitation",
+          "callee": "mapInvitation",
+          "lineNumber": 367
+        },
+        {
+          "caller": "removeStoredFiles",
+          "callee": "paths.filter",
+          "lineNumber": 371
+        },
+        {
+          "caller": "removeStoredFiles",
+          "callee": "supabase.storage\n      .from(RESOURCE_UPLOAD.BUCKET)\n      .remove",
+          "lineNumber": 374
+        },
+        {
+          "caller": "removeStoredFiles",
+          "callee": "supabase.storage\n      .from",
+          "lineNumber": 374
+        },
+        {
+          "caller": "removeStoredFiles",
+          "callee": "storeError",
+          "lineNumber": 378
+        },
+        {
+          "caller": "load",
+          "callee": "Promise.all",
+          "lineNumber": 392
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('projects').select(PROJECT_COLUMNS).order",
+          "lineNumber": 393
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('projects').select",
+          "lineNumber": 393
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from",
+          "lineNumber": 393
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('members').select(MEMBER_COLUMNS).order",
+          "lineNumber": 394
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('members').select",
+          "lineNumber": 394
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from",
+          "lineNumber": 394
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('tasks').select(TASK_COLUMNS).order",
+          "lineNumber": 395
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('tasks').select",
+          "lineNumber": 395
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from",
+          "lineNumber": 395
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('notes').select(NOTE_COLUMNS).order",
+          "lineNumber": 396
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('notes').select",
+          "lineNumber": 396
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from",
+          "lineNumber": 396
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('resources').select(RESOURCE_COLUMNS).eq('upload_status', 'ready').order",
+          "lineNumber": 397
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('resources').select(RESOURCE_COLUMNS).eq",
+          "lineNumber": 397
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('resources').select",
+          "lineNumber": 397
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from",
+          "lineNumber": 397
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('ai_agents').select(AI_AGENT_COLUMNS).order",
+          "lineNumber": 398
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('ai_agents').select",
+          "lineNumber": 398
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from",
+          "lineNumber": 398
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('ai_runs').select(AI_RUN_COLUMNS).order",
+          "lineNumber": 399
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from('ai_runs').select",
+          "lineNumber": 399
+        },
+        {
+          "caller": "load",
+          "callee": "supabase.from",
+          "lineNumber": 399
+        },
+        {
+          "caller": "load",
+          "callee": "listInvitations",
+          "lineNumber": 400
+        },
+        {
+          "caller": "load",
+          "callee": "[\n        projectsResult,\n        membersResult,\n        tasksResult,\n        notesResult,\n        resourcesResult,\n        aiAgentsResult,\n        aiRunsResult,\n      ]\n        .find",
+          "lineNumber": 403
+        },
+        {
+          "caller": "load",
+          "callee": "throwDatabaseError",
+          "lineNumber": 413
+        },
+        {
+          "caller": "load",
+          "callee": "membersResult.data.map",
+          "lineNumber": 415
+        },
+        {
+          "caller": "load",
+          "callee": "memberIdsByProject.get",
+          "lineNumber": 419
+        },
+        {
+          "caller": "load",
+          "callee": "memberIds.push",
+          "lineNumber": 420
+        },
+        {
+          "caller": "load",
+          "callee": "memberIdsByProject.set",
+          "lineNumber": 421
+        },
+        {
+          "caller": "load",
+          "callee": "projectsResult.data.map",
+          "lineNumber": 425
+        },
+        {
+          "caller": "load",
+          "callee": "memberIdsByProject.get",
+          "lineNumber": 426
+        },
+        {
+          "caller": "load",
+          "callee": "members.find",
+          "lineNumber": 427
+        },
+        {
+          "caller": "load",
+          "callee": "mapProject",
+          "lineNumber": 431
+        },
+        {
+          "caller": "load",
+          "callee": "tasksResult.data.map",
+          "lineNumber": 439
+        },
+        {
+          "caller": "load",
+          "callee": "mapTask",
+          "lineNumber": 439
+        },
+        {
+          "caller": "load",
+          "callee": "notesResult.data.map",
+          "lineNumber": 440
+        },
+        {
+          "caller": "load",
+          "callee": "resourcesResult.data.map",
+          "lineNumber": 441
+        },
+        {
+          "caller": "load",
+          "callee": "aiAgentsResult.data.map",
+          "lineNumber": 442
+        },
+        {
+          "caller": "load",
+          "callee": "aiRunsResult.data.map",
+          "lineNumber": 443
+        },
+        {
+          "caller": "load",
+          "callee": "Object.values",
+          "lineNumber": 446
+        },
+        {
+          "caller": "createAiAgent",
+          "callee": "supabase.rpc",
+          "lineNumber": 462
+        },
+        {
+          "caller": "createAiAgent",
+          "callee": "throwDatabaseError",
+          "lineNumber": 465
+        },
+        {
+          "caller": "createAiAgent",
+          "callee": "rpcObject",
+          "lineNumber": 466
+        },
+        {
+          "caller": "createAiAgent",
+          "callee": "storeError",
+          "lineNumber": 469
+        },
+        {
+          "caller": "createAiAgent",
+          "callee": "mapMember",
+          "lineNumber": 471
+        },
+        {
+          "caller": "createAiAgent",
+          "callee": "mapAiAgent",
+          "lineNumber": 472
+        },
+        {
+          "caller": "updateAiAgent",
+          "callee": "supabase.rpc",
+          "lineNumber": 477
+        },
+        {
+          "caller": "updateAiAgent",
+          "callee": "throwDatabaseError",
+          "lineNumber": 482
+        },
+        {
+          "caller": "updateAiAgent",
+          "callee": "rpcObject",
+          "lineNumber": 483
+        },
+        {
+          "caller": "updateAiAgent",
+          "callee": "mapAiAgent",
+          "lineNumber": 485
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n        .from('ai_agents')\n        .select(AI_AGENT_COLUMNS)\n        .eq('member_id', memberId)\n        .maybeSingle",
+          "lineNumber": 489
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n        .from('ai_agents')\n        .select(AI_AGENT_COLUMNS)\n        .eq",
+          "lineNumber": 489
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n        .from('ai_agents')\n        .select",
+          "lineNumber": 489
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n        .from",
+          "lineNumber": 489
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "throwDatabaseError",
+          "lineNumber": 495
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n        .from('tasks')\n        .select(TASK_COLUMNS)\n        .eq('id', taskId)\n        .eq('project_id', agent.project_id)\n        .maybeSingle",
+          "lineNumber": 499
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n        .from('tasks')\n        .select(TASK_COLUMNS)\n        .eq('id', taskId)\n        .eq",
+          "lineNumber": 499
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n        .from('tasks')\n        .select(TASK_COLUMNS)\n        .eq",
+          "lineNumber": 499
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n        .from('tasks')\n        .select",
+          "lineNumber": 499
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n        .from",
+          "lineNumber": 499
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "throwDatabaseError",
+          "lineNumber": 506
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "Promise.all",
+          "lineNumber": 521
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('projects')\n          .select(PROJECT_COLUMNS)\n          .eq('id', agent.project_id)\n          .maybeSingle",
+          "lineNumber": 522
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('projects')\n          .select(PROJECT_COLUMNS)\n          .eq",
+          "lineNumber": 522
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('projects')\n          .select",
+          "lineNumber": 522
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from",
+          "lineNumber": 522
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('notes')\n          .select(NOTE_COLUMNS)\n          .eq('project_id', agent.project_id)\n          .order",
+          "lineNumber": 527
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('notes')\n          .select(NOTE_COLUMNS)\n          .eq",
+          "lineNumber": 527
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('notes')\n          .select",
+          "lineNumber": 527
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from",
+          "lineNumber": 527
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('tasks')\n          .select(TASK_COLUMNS)\n          .eq('project_id', agent.project_id)\n          .order",
+          "lineNumber": 532
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('tasks')\n          .select(TASK_COLUMNS)\n          .eq",
+          "lineNumber": 532
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('tasks')\n          .select",
+          "lineNumber": 532
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from",
+          "lineNumber": 532
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('members')\n          .select(MEMBER_COLUMNS)\n          .eq('project_id', agent.project_id)\n          .order",
+          "lineNumber": 537
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('members')\n          .select(MEMBER_COLUMNS)\n          .eq",
+          "lineNumber": 537
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('members')\n          .select",
+          "lineNumber": 537
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from",
+          "lineNumber": 537
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('resources')\n          .select(RESOURCE_COLUMNS)\n          .eq('project_id', agent.project_id)\n          .eq('upload_status', 'ready')\n          .order",
+          "lineNumber": 542
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('resources')\n          .select(RESOURCE_COLUMNS)\n          .eq('project_id', agent.project_id)\n          .eq",
+          "lineNumber": 542
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('resources')\n          .select(RESOURCE_COLUMNS)\n          .eq",
+          "lineNumber": 542
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from('resources')\n          .select",
+          "lineNumber": 542
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase\n          .from",
+          "lineNumber": 542
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "[\n        projectResult,\n        notesResult,\n        tasksResult,\n        membersResult,\n        resourcesResult,\n      ].find",
+          "lineNumber": 550
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "throwDatabaseError",
+          "lineNumber": 557
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "mapTask",
+          "lineNumber": 563
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "mapProject",
+          "lineNumber": 564
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "(notesResult.data ?? []).map",
+          "lineNumber": 565
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "(tasksResult.data ?? []).map",
+          "lineNumber": 566
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "(membersResult.data ?? []).map",
+          "lineNumber": 567
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "(resourcesResult.data ?? []).map",
+          "lineNumber": 568
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "buildMockAiContext",
+          "lineNumber": 574
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "generateMockAiResult",
+          "lineNumber": 575
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "mapTask",
+          "lineNumber": 580
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase.rpc",
+          "lineNumber": 586
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "throwDatabaseError",
+          "lineNumber": 592
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "rpcObject",
+          "lineNumber": 593
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "storeError",
+          "lineNumber": 594
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "mapAiRun",
+          "lineNumber": 595
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "supabase.rpc",
+          "lineNumber": 598
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "throwDatabaseError",
+          "lineNumber": 604
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "rpcObject",
+          "lineNumber": 605
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "storeError",
+          "lineNumber": 606
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "mapAiRun",
+          "lineNumber": 607
+        },
+        {
+          "caller": "applyAiRun",
+          "callee": "supabase.rpc",
+          "lineNumber": 611
+        },
+        {
+          "caller": "applyAiRun",
+          "callee": "throwDatabaseError",
+          "lineNumber": 614
+        },
+        {
+          "caller": "applyAiRun",
+          "callee": "rpcObject",
+          "lineNumber": 615
+        },
+        {
+          "caller": "applyAiRun",
+          "callee": "mapAiRun",
+          "lineNumber": 619
+        },
+        {
+          "caller": "applyAiRun",
+          "callee": "mapNote",
+          "lineNumber": 620
+        },
+        {
+          "caller": "rejectAiRun",
+          "callee": "supabase.rpc",
+          "lineNumber": 625
+        },
+        {
+          "caller": "rejectAiRun",
+          "callee": "throwDatabaseError",
+          "lineNumber": 628
+        },
+        {
+          "caller": "rejectAiRun",
+          "callee": "rpcObject",
+          "lineNumber": 629
+        },
+        {
+          "caller": "rejectAiRun",
+          "callee": "mapAiRun",
+          "lineNumber": 631
+        },
+        {
+          "caller": "createInvitation",
+          "callee": "supabase.rpc",
+          "lineNumber": 635
+        },
+        {
+          "caller": "createInvitation",
+          "callee": "throwDatabaseError",
+          "lineNumber": 639
+        },
+        {
+          "caller": "createInvitation",
+          "callee": "unwrapRpcRow",
+          "lineNumber": 640
+        },
+        {
+          "caller": "createInvitation",
+          "callee": "storeError",
+          "lineNumber": 641
+        },
+        {
+          "caller": "createInvitation",
+          "callee": "listInvitations",
+          "lineNumber": 643
+        },
+        {
+          "caller": "createInvitation",
+          "callee": "invitations.find",
+          "lineNumber": 644
+        },
+        {
+          "caller": "createInvitation",
+          "callee": "mapInvitation",
+          "lineNumber": 644
+        },
+        {
+          "caller": "createInvitation",
+          "callee": "mapInvitation",
+          "lineNumber": 646
+        },
+        {
+          "caller": "acceptInvitation",
+          "callee": "respondToInvitation",
+          "lineNumber": 651
+        },
+        {
+          "caller": "rejectInvitation",
+          "callee": "respondToInvitation",
+          "lineNumber": 655
+        },
+        {
+          "caller": "cancelInvitation",
+          "callee": "respondToInvitation",
+          "lineNumber": 659
+        },
+        {
+          "caller": "createProject",
+          "callee": "supabase.rpc",
+          "lineNumber": 663
+        },
+        {
+          "caller": "createProject",
+          "callee": "throwDatabaseError",
+          "lineNumber": 670
+        },
+        {
+          "caller": "createProject",
+          "callee": "unwrapRpcRow",
+          "lineNumber": 671
+        },
+        {
+          "caller": "createProject",
+          "callee": "storeError",
+          "lineNumber": 672
+        },
+        {
+          "caller": "createProject",
+          "callee": "currentProjectMemberId",
+          "lineNumber": 673
+        },
+        {
+          "caller": "createProject",
+          "callee": "mapProject",
+          "lineNumber": 676
+        },
+        {
+          "caller": "updateProject",
+          "callee": "new Date().toISOString",
+          "lineNumber": 682
+        },
+        {
+          "caller": "updateProject",
+          "callee": "hasOwn",
+          "lineNumber": 683
+        },
+        {
+          "caller": "updateProject",
+          "callee": "hasOwn",
+          "lineNumber": 684
+        },
+        {
+          "caller": "updateProject",
+          "callee": "hasOwn",
+          "lineNumber": 685
+        },
+        {
+          "caller": "updateProject",
+          "callee": "hasOwn",
+          "lineNumber": 686
+        },
+        {
+          "caller": "updateProject",
+          "callee": "hasOwn",
+          "lineNumber": 687
+        },
+        {
+          "caller": "updateProject",
+          "callee": "hasOwn",
+          "lineNumber": 688
+        },
+        {
+          "caller": "updateProject",
+          "callee": "supabase\n        .from('projects')\n        .update(databasePatch)\n        .eq('id', projectId)\n        .select(PROJECT_COLUMNS)\n        .maybeSingle",
+          "lineNumber": 690
+        },
+        {
+          "caller": "updateProject",
+          "callee": "supabase\n        .from('projects')\n        .update(databasePatch)\n        .eq('id', projectId)\n        .select",
+          "lineNumber": 690
+        },
+        {
+          "caller": "updateProject",
+          "callee": "supabase\n        .from('projects')\n        .update(databasePatch)\n        .eq",
+          "lineNumber": 690
+        },
+        {
+          "caller": "updateProject",
+          "callee": "supabase\n        .from('projects')\n        .update",
+          "lineNumber": 690
+        },
+        {
+          "caller": "updateProject",
+          "callee": "supabase\n        .from",
+          "lineNumber": 690
+        },
+        {
+          "caller": "updateProject",
+          "callee": "throwDatabaseError",
+          "lineNumber": 697
+        },
+        {
+          "caller": "updateProject",
+          "callee": "mapProject",
+          "lineNumber": 699
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "supabase\n        .from('resources')\n        .select('storage_path')\n        .eq('project_id', projectId)\n        .not",
+          "lineNumber": 703
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "supabase\n        .from('resources')\n        .select('storage_path')\n        .eq",
+          "lineNumber": 703
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "supabase\n        .from('resources')\n        .select",
+          "lineNumber": 703
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "supabase\n        .from",
+          "lineNumber": 703
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "throwDatabaseError",
+          "lineNumber": 709
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "removeStoredFiles",
+          "lineNumber": 710
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "(files ?? []).map",
+          "lineNumber": 710
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "supabase\n        .from('projects')\n        .delete()\n        .eq('id', projectId)\n        .select('id')\n        .maybeSingle",
+          "lineNumber": 712
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "supabase\n        .from('projects')\n        .delete()\n        .eq('id', projectId)\n        .select",
+          "lineNumber": 712
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "supabase\n        .from('projects')\n        .delete()\n        .eq",
+          "lineNumber": 712
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "supabase\n        .from('projects')\n        .delete",
+          "lineNumber": 712
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "supabase\n        .from",
+          "lineNumber": 712
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "throwDatabaseError",
+          "lineNumber": 719
+        },
+        {
+          "caller": "updateMember",
+          "callee": "supabase.rpc",
+          "lineNumber": 725
+        },
+        {
+          "caller": "updateMember",
+          "callee": "throwDatabaseError",
+          "lineNumber": 731
+        },
+        {
+          "caller": "updateMember",
+          "callee": "unwrapRpcRow",
+          "lineNumber": 732
+        },
+        {
+          "caller": "updateMember",
+          "callee": "mapMember",
+          "lineNumber": 734
+        },
+        {
+          "caller": "deleteMember",
+          "callee": "supabase.rpc",
+          "lineNumber": 738
+        },
+        {
+          "caller": "deleteMember",
+          "callee": "throwDatabaseError",
+          "lineNumber": 741
+        },
+        {
+          "caller": "deleteMember",
+          "callee": "unwrapRpcRow",
+          "lineNumber": 742
+        },
+        {
+          "caller": "createTask",
+          "callee": "supabase\n        .from('tasks')\n        .insert({\n          project_id: input.projectId,\n          title: input.title,\n          assignee_id: input.assigneeId,\n          due_date: input.dueDate,\n          status: input.status,\n          description: input.description || '',\n        })\n        .select(TASK_COLUMNS)\n        .single",
+          "lineNumber": 753
+        },
+        {
+          "caller": "createTask",
+          "callee": "supabase\n        .from('tasks')\n        .insert({\n          project_id: input.projectId,\n          title: input.title,\n          assignee_id: input.assigneeId,\n          due_date: input.dueDate,\n          status: input.status,\n          description: input.description || '',\n        })\n        .select",
+          "lineNumber": 753
+        },
+        {
+          "caller": "createTask",
+          "callee": "supabase\n        .from('tasks')\n        .insert",
+          "lineNumber": 753
+        },
+        {
+          "caller": "createTask",
+          "callee": "supabase\n        .from",
+          "lineNumber": 753
+        },
+        {
+          "caller": "createTask",
+          "callee": "throwDatabaseError",
+          "lineNumber": 766
+        },
+        {
+          "caller": "createTask",
+          "callee": "storeError",
+          "lineNumber": 767
+        },
+        {
+          "caller": "createTask",
+          "callee": "mapTask",
+          "lineNumber": 768
+        },
+        {
+          "caller": "updateTask",
+          "callee": "new Date().toISOString",
+          "lineNumber": 772
+        },
+        {
+          "caller": "updateTask",
+          "callee": "hasOwn",
+          "lineNumber": 773
+        },
+        {
+          "caller": "updateTask",
+          "callee": "hasOwn",
+          "lineNumber": 774
+        },
+        {
+          "caller": "updateTask",
+          "callee": "hasOwn",
+          "lineNumber": 775
+        },
+        {
+          "caller": "updateTask",
+          "callee": "hasOwn",
+          "lineNumber": 776
+        },
+        {
+          "caller": "updateTask",
+          "callee": "hasOwn",
+          "lineNumber": 777
+        },
+        {
+          "caller": "updateTask",
+          "callee": "supabase\n        .from('tasks')\n        .update(databasePatch)\n        .eq('id', taskId)\n        .select(TASK_COLUMNS)\n        .maybeSingle",
+          "lineNumber": 779
+        },
+        {
+          "caller": "updateTask",
+          "callee": "supabase\n        .from('tasks')\n        .update(databasePatch)\n        .eq('id', taskId)\n        .select",
+          "lineNumber": 779
+        },
+        {
+          "caller": "updateTask",
+          "callee": "supabase\n        .from('tasks')\n        .update(databasePatch)\n        .eq",
+          "lineNumber": 779
+        },
+        {
+          "caller": "updateTask",
+          "callee": "supabase\n        .from('tasks')\n        .update",
+          "lineNumber": 779
+        },
+        {
+          "caller": "updateTask",
+          "callee": "supabase\n        .from",
+          "lineNumber": 779
+        },
+        {
+          "caller": "updateTask",
+          "callee": "throwDatabaseError",
+          "lineNumber": 786
+        },
+        {
+          "caller": "updateTask",
+          "callee": "mapTask",
+          "lineNumber": 788
+        },
+        {
+          "caller": "deleteTask",
+          "callee": "supabase\n        .from('tasks')\n        .delete()\n        .eq('id', taskId)\n        .select('id')\n        .maybeSingle",
+          "lineNumber": 792
+        },
+        {
+          "caller": "deleteTask",
+          "callee": "supabase\n        .from('tasks')\n        .delete()\n        .eq('id', taskId)\n        .select",
+          "lineNumber": 792
+        },
+        {
+          "caller": "deleteTask",
+          "callee": "supabase\n        .from('tasks')\n        .delete()\n        .eq",
+          "lineNumber": 792
+        },
+        {
+          "caller": "deleteTask",
+          "callee": "supabase\n        .from('tasks')\n        .delete",
+          "lineNumber": 792
+        },
+        {
+          "caller": "deleteTask",
+          "callee": "supabase\n        .from",
+          "lineNumber": 792
+        },
+        {
+          "caller": "deleteTask",
+          "callee": "throwDatabaseError",
+          "lineNumber": 799
+        },
+        {
+          "caller": "createNote",
+          "callee": "currentProjectMemberId",
+          "lineNumber": 805
+        },
+        {
+          "caller": "createNote",
+          "callee": "supabase\n        .from('notes')\n        .insert({\n          project_id: projectId,\n          title: input.title,\n          content: input.content,\n          author_id: authorId,\n        })\n        .select(NOTE_COLUMNS)\n        .single",
+          "lineNumber": 806
+        },
+        {
+          "caller": "createNote",
+          "callee": "supabase\n        .from('notes')\n        .insert({\n          project_id: projectId,\n          title: input.title,\n          content: input.content,\n          author_id: authorId,\n        })\n        .select",
+          "lineNumber": 806
+        },
+        {
+          "caller": "createNote",
+          "callee": "supabase\n        .from('notes')\n        .insert",
+          "lineNumber": 806
+        },
+        {
+          "caller": "createNote",
+          "callee": "supabase\n        .from",
+          "lineNumber": 806
+        },
+        {
+          "caller": "createNote",
+          "callee": "throwDatabaseError",
+          "lineNumber": 817
+        },
+        {
+          "caller": "createNote",
+          "callee": "storeError",
+          "lineNumber": 818
+        },
+        {
+          "caller": "createNote",
+          "callee": "mapNote",
+          "lineNumber": 819
+        },
+        {
+          "caller": "updateNote",
+          "callee": "new Date().toISOString",
+          "lineNumber": 823
+        },
+        {
+          "caller": "updateNote",
+          "callee": "hasOwn",
+          "lineNumber": 824
+        },
+        {
+          "caller": "updateNote",
+          "callee": "hasOwn",
+          "lineNumber": 825
+        },
+        {
+          "caller": "updateNote",
+          "callee": "supabase\n        .from('notes')\n        .update(databasePatch)\n        .eq('id', noteId)\n        .select(NOTE_COLUMNS)\n        .maybeSingle",
+          "lineNumber": 827
+        },
+        {
+          "caller": "updateNote",
+          "callee": "supabase\n        .from('notes')\n        .update(databasePatch)\n        .eq('id', noteId)\n        .select",
+          "lineNumber": 827
+        },
+        {
+          "caller": "updateNote",
+          "callee": "supabase\n        .from('notes')\n        .update(databasePatch)\n        .eq",
+          "lineNumber": 827
+        },
+        {
+          "caller": "updateNote",
+          "callee": "supabase\n        .from('notes')\n        .update",
+          "lineNumber": 827
+        },
+        {
+          "caller": "updateNote",
+          "callee": "supabase\n        .from",
+          "lineNumber": 827
+        },
+        {
+          "caller": "updateNote",
+          "callee": "throwDatabaseError",
+          "lineNumber": 834
+        },
+        {
+          "caller": "updateNote",
+          "callee": "mapNote",
+          "lineNumber": 836
+        },
+        {
+          "caller": "deleteNote",
+          "callee": "supabase\n        .from('notes')\n        .delete()\n        .eq('id', noteId)\n        .select('id')\n        .maybeSingle",
+          "lineNumber": 840
+        },
+        {
+          "caller": "deleteNote",
+          "callee": "supabase\n        .from('notes')\n        .delete()\n        .eq('id', noteId)\n        .select",
+          "lineNumber": 840
+        },
+        {
+          "caller": "deleteNote",
+          "callee": "supabase\n        .from('notes')\n        .delete()\n        .eq",
+          "lineNumber": 840
+        },
+        {
+          "caller": "deleteNote",
+          "callee": "supabase\n        .from('notes')\n        .delete",
+          "lineNumber": 840
+        },
+        {
+          "caller": "deleteNote",
+          "callee": "supabase\n        .from",
+          "lineNumber": 840
+        },
+        {
+          "caller": "deleteNote",
+          "callee": "throwDatabaseError",
+          "lineNumber": 847
+        },
+        {
+          "caller": "createResource",
+          "callee": "currentProjectMemberId",
+          "lineNumber": 853
+        },
+        {
+          "caller": "createResource",
+          "callee": "supabase\n        .from('resources')\n        .insert({\n          project_id: projectId,\n          parent_id: input.parentId || null,\n          type: input.type,\n          name: input.name,\n          description: input.description || '',\n          url: input.url || null,\n          owner_id: ownerId,\n        })\n        .select(RESOURCE_COLUMNS)\n        .single",
+          "lineNumber": 854
+        },
+        {
+          "caller": "createResource",
+          "callee": "supabase\n        .from('resources')\n        .insert({\n          project_id: projectId,\n          parent_id: input.parentId || null,\n          type: input.type,\n          name: input.name,\n          description: input.description || '',\n          url: input.url || null,\n          owner_id: ownerId,\n        })\n        .select",
+          "lineNumber": 854
+        },
+        {
+          "caller": "createResource",
+          "callee": "supabase\n        .from('resources')\n        .insert",
+          "lineNumber": 854
+        },
+        {
+          "caller": "createResource",
+          "callee": "supabase\n        .from",
+          "lineNumber": 854
+        },
+        {
+          "caller": "createResource",
+          "callee": "throwDatabaseError",
+          "lineNumber": 868
+        },
+        {
+          "caller": "createResource",
+          "callee": "storeError",
+          "lineNumber": 869
+        },
+        {
+          "caller": "createResource",
+          "callee": "mapResource",
+          "lineNumber": 870
+        },
+        {
+          "caller": "createResourceUpload",
+          "callee": "randomUUID",
+          "lineNumber": 874
+        },
+        {
+          "caller": "createResourceUpload",
+          "callee": "supabase.rpc",
+          "lineNumber": 876
+        },
+        {
+          "caller": "createResourceUpload",
+          "callee": "unwrapRpcRow",
+          "lineNumber": 887
+        },
+        {
+          "caller": "createResourceUpload",
+          "callee": "throwDatabaseError",
+          "lineNumber": 889
+        },
+        {
+          "caller": "createResourceUpload",
+          "callee": "storeError",
+          "lineNumber": 890
+        },
+        {
+          "caller": "createResourceUpload",
+          "callee": "supabase.storage\n        .from(RESOURCE_UPLOAD.BUCKET)\n        .createSignedUploadUrl",
+          "lineNumber": 892
+        },
+        {
+          "caller": "createResourceUpload",
+          "callee": "supabase.storage\n        .from",
+          "lineNumber": 892
+        },
+        {
+          "caller": "createResourceUpload",
+          "callee": "supabase\n          .from('resources')\n          .delete()\n          .eq",
+          "lineNumber": 901
+        },
+        {
+          "caller": "createResourceUpload",
+          "callee": "supabase\n          .from('resources')\n          .delete",
+          "lineNumber": 901
+        },
+        {
+          "caller": "createResourceUpload",
+          "callee": "supabase\n          .from",
+          "lineNumber": 901
+        },
+        {
+          "caller": "createResourceUpload",
+          "callee": "storeError",
+          "lineNumber": 905
+        },
+        {
+          "caller": "createResourceUpload",
+          "callee": "storeError",
+          "lineNumber": 906
+        },
+        {
+          "caller": "createResourceUpload",
+          "callee": "mapResource",
+          "lineNumber": 910
+        },
+        {
+          "caller": "completeResourceUpload",
+          "callee": "supabase.rpc",
+          "lineNumber": 920
+        },
+        {
+          "caller": "completeResourceUpload",
+          "callee": "unwrapRpcRow",
+          "lineNumber": 923
+        },
+        {
+          "caller": "completeResourceUpload",
+          "callee": "throwDatabaseError",
+          "lineNumber": 925
+        },
+        {
+          "caller": "completeResourceUpload",
+          "callee": "mapResource",
+          "lineNumber": 927
+        },
+        {
+          "caller": "createResourceDownloadUrl",
+          "callee": "supabase\n        .from('resources')\n        .select(RESOURCE_COLUMNS)\n        .eq('id', resourceId)\n        .eq('upload_status', 'ready')\n        .maybeSingle",
+          "lineNumber": 931
+        },
+        {
+          "caller": "createResourceDownloadUrl",
+          "callee": "supabase\n        .from('resources')\n        .select(RESOURCE_COLUMNS)\n        .eq('id', resourceId)\n        .eq",
+          "lineNumber": 931
+        },
+        {
+          "caller": "createResourceDownloadUrl",
+          "callee": "supabase\n        .from('resources')\n        .select(RESOURCE_COLUMNS)\n        .eq",
+          "lineNumber": 931
+        },
+        {
+          "caller": "createResourceDownloadUrl",
+          "callee": "supabase\n        .from('resources')\n        .select",
+          "lineNumber": 931
+        },
+        {
+          "caller": "createResourceDownloadUrl",
+          "callee": "supabase\n        .from",
+          "lineNumber": 931
+        },
+        {
+          "caller": "createResourceDownloadUrl",
+          "callee": "throwDatabaseError",
+          "lineNumber": 938
+        },
+        {
+          "caller": "createResourceDownloadUrl",
+          "callee": "supabase.storage\n        .from(RESOURCE_UPLOAD.BUCKET)\n        .createSignedUrl",
+          "lineNumber": 941
+        },
+        {
+          "caller": "createResourceDownloadUrl",
+          "callee": "supabase.storage\n        .from",
+          "lineNumber": 941
+        },
+        {
+          "caller": "createResourceDownloadUrl",
+          "callee": "storeError",
+          "lineNumber": 945
+        },
+        {
+          "caller": "updateResource",
+          "callee": "new Date().toISOString",
+          "lineNumber": 950
+        },
+        {
+          "caller": "updateResource",
+          "callee": "hasOwn",
+          "lineNumber": 951
+        },
+        {
+          "caller": "updateResource",
+          "callee": "hasOwn",
+          "lineNumber": 952
+        },
+        {
+          "caller": "updateResource",
+          "callee": "hasOwn",
+          "lineNumber": 953
+        },
+        {
+          "caller": "updateResource",
+          "callee": "hasOwn",
+          "lineNumber": 954
+        },
+        {
+          "caller": "updateResource",
+          "callee": "hasOwn",
+          "lineNumber": 955
+        },
+        {
+          "caller": "updateResource",
+          "callee": "supabase\n        .from('resources')\n        .update(databasePatch)\n        .eq('id', resourceId)\n        .select(RESOURCE_COLUMNS)\n        .maybeSingle",
+          "lineNumber": 957
+        },
+        {
+          "caller": "updateResource",
+          "callee": "supabase\n        .from('resources')\n        .update(databasePatch)\n        .eq('id', resourceId)\n        .select",
+          "lineNumber": 957
+        },
+        {
+          "caller": "updateResource",
+          "callee": "supabase\n        .from('resources')\n        .update(databasePatch)\n        .eq",
+          "lineNumber": 957
+        },
+        {
+          "caller": "updateResource",
+          "callee": "supabase\n        .from('resources')\n        .update",
+          "lineNumber": 957
+        },
+        {
+          "caller": "updateResource",
+          "callee": "supabase\n        .from",
+          "lineNumber": 957
+        },
+        {
+          "caller": "updateResource",
+          "callee": "throwDatabaseError",
+          "lineNumber": 964
+        },
+        {
+          "caller": "updateResource",
+          "callee": "mapResource",
+          "lineNumber": 966
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "supabase\n        .from('resources')\n        .select('id,storage_path')\n        .eq('id', resourceId)\n        .maybeSingle",
+          "lineNumber": 970
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "supabase\n        .from('resources')\n        .select('id,storage_path')\n        .eq",
+          "lineNumber": 970
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "supabase\n        .from('resources')\n        .select",
+          "lineNumber": 970
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "supabase\n        .from",
+          "lineNumber": 970
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "throwDatabaseError",
+          "lineNumber": 976
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "removeStoredFiles",
+          "lineNumber": 978
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "supabase\n        .from('resources')\n        .delete()\n        .eq('id', resourceId)\n        .select('id')\n        .maybeSingle",
+          "lineNumber": 980
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "supabase\n        .from('resources')\n        .delete()\n        .eq('id', resourceId)\n        .select",
+          "lineNumber": 980
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "supabase\n        .from('resources')\n        .delete()\n        .eq",
+          "lineNumber": 980
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "supabase\n        .from('resources')\n        .delete",
+          "lineNumber": 980
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "supabase\n        .from",
+          "lineNumber": 980
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "throwDatabaseError",
+          "lineNumber": 987
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 6,
+        "functionCount": 17,
+        "classCount": 4
+      }
+    },
+    {
+      "path": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 559,
+      "nonEmptyLines": 493,
+      "functions": [
+        {
+          "name": "hasOwn",
+          "startLine": 18,
+          "endLine": 20,
+          "params": [
+            "value",
+            "key"
+          ]
+        },
+        {
+          "name": "calendarDate",
+          "startLine": 22,
+          "endLine": 27,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "cleanString",
+          "startLine": 29,
+          "endLine": 31,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "cleanFileName",
+          "startLine": 33,
+          "endLine": 35,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "validHttpUrl",
+          "startLine": 37,
+          "endLine": 45,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateProject",
+          "startLine": 47,
+          "endLine": 87,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "validateMemberPatch",
+          "startLine": 89,
+          "endLine": 100,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "validateTaskCreateInput",
+          "startLine": 102,
+          "endLine": 119,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "validateTaskPatch",
+          "startLine": 121,
+          "endLine": 148,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "validateNote",
+          "startLine": 150,
+          "endLine": 165,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "validateResource",
+          "startLine": 167,
+          "endLine": 201,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "validateResourceUpload",
+          "startLine": 203,
+          "endLine": 228,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "validateInvitation",
+          "startLine": 230,
+          "endLine": 235,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "validateAiSettings",
+          "startLine": 237,
+          "endLine": 267,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "validateAiRun",
+          "startLine": 269,
+          "endLine": 274,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "validationError",
+          "startLine": 276,
+          "endLine": 280,
+          "params": [
+            "response",
+            "fields"
+          ]
+        },
+        {
+          "name": "validId",
+          "startLine": 282,
+          "endLine": 286,
+          "params": [
+            "response",
+            "key",
+            "value"
+          ]
+        },
+        {
+          "name": "routeError",
+          "startLine": 288,
+          "endLine": 308,
+          "params": [
+            "response",
+            "error"
+          ]
+        },
+        {
+          "name": "asyncRoute",
+          "startLine": 310,
+          "endLine": 318,
+          "params": [
+            "handler"
+          ]
+        },
+        {
+          "name": "createTeamFlowRouter",
+          "startLine": 320,
+          "endLine": 559,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "validateTaskCreateInput",
+          "line": 102,
+          "isDefault": false
+        },
+        {
+          "name": "createTeamFlowRouter",
+          "line": 320,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "hasOwn",
+          "callee": "Object.prototype.hasOwnProperty.call",
+          "lineNumber": 19
+        },
+        {
+          "caller": "calendarDate",
+          "callee": "DATE_PATTERN.test",
+          "lineNumber": 24
+        },
+        {
+          "caller": "calendarDate",
+          "callee": "Number.isNaN",
+          "lineNumber": 26
+        },
+        {
+          "caller": "calendarDate",
+          "callee": "date.valueOf",
+          "lineNumber": 26
+        },
+        {
+          "caller": "calendarDate",
+          "callee": "date.toISOString().slice",
+          "lineNumber": 26
+        },
+        {
+          "caller": "calendarDate",
+          "callee": "date.toISOString",
+          "lineNumber": 26
+        },
+        {
+          "caller": "cleanString",
+          "callee": "value.trim",
+          "lineNumber": 30
+        },
+        {
+          "caller": "cleanFileName",
+          "callee": "cleanString(value).replace",
+          "lineNumber": 34
+        },
+        {
+          "caller": "cleanFileName",
+          "callee": "cleanString",
+          "lineNumber": 34
+        },
+        {
+          "caller": "validHttpUrl",
+          "callee": "value.trim",
+          "lineNumber": 38
+        },
+        {
+          "caller": "validHttpUrl",
+          "callee": "value.trim",
+          "lineNumber": 40
+        },
+        {
+          "caller": "validateProject",
+          "callee": "keys.filter",
+          "lineNumber": 51
+        },
+        {
+          "caller": "validateProject",
+          "callee": "hasOwn",
+          "lineNumber": 51
+        },
+        {
+          "caller": "validateProject",
+          "callee": "hasOwn",
+          "lineNumber": 54
+        },
+        {
+          "caller": "validateProject",
+          "callee": "cleanString",
+          "lineNumber": 55
+        },
+        {
+          "caller": "validateProject",
+          "callee": "hasOwn",
+          "lineNumber": 58
+        },
+        {
+          "caller": "validateProject",
+          "callee": "cleanString",
+          "lineNumber": 59
+        },
+        {
+          "caller": "validateProject",
+          "callee": "hasOwn",
+          "lineNumber": 62
+        },
+        {
+          "caller": "validateProject",
+          "callee": "isProjectStatus",
+          "lineNumber": 64
+        },
+        {
+          "caller": "validateProject",
+          "callee": "hasOwn",
+          "lineNumber": 66
+        },
+        {
+          "caller": "validateProject",
+          "callee": "calendarDate",
+          "lineNumber": 68
+        },
+        {
+          "caller": "validateProject",
+          "callee": "hasOwn",
+          "lineNumber": 70
+        },
+        {
+          "caller": "validateProject",
+          "callee": "calendarDate",
+          "lineNumber": 72
+        },
+        {
+          "caller": "validateProject",
+          "callee": "hasOwn",
+          "lineNumber": 74
+        },
+        {
+          "caller": "validateProject",
+          "callee": "isProjectIcon",
+          "lineNumber": 76
+        },
+        {
+          "caller": "validateProject",
+          "callee": "hasOwn",
+          "lineNumber": 79
+        },
+        {
+          "caller": "validateProject",
+          "callee": "hasOwn",
+          "lineNumber": 80
+        },
+        {
+          "caller": "validateProject",
+          "callee": "Object.keys",
+          "lineNumber": 86
+        },
+        {
+          "caller": "validateMemberPatch",
+          "callee": "cleanString",
+          "lineNumber": 91
+        },
+        {
+          "caller": "validateMemberPatch",
+          "callee": "cleanString",
+          "lineNumber": 92
+        },
+        {
+          "caller": "validateMemberPatch",
+          "callee": "cleanString",
+          "lineNumber": 93
+        },
+        {
+          "caller": "validateMemberPatch",
+          "callee": "/^#[0-9a-f]{6}$/i.test",
+          "lineNumber": 98
+        },
+        {
+          "caller": "validateMemberPatch",
+          "callee": "Object.keys",
+          "lineNumber": 99
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "cleanString",
+          "lineNumber": 104
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "cleanString",
+          "lineNumber": 105
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "cleanString",
+          "lineNumber": 106
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "UUID_PATTERN.test",
+          "lineNumber": 112
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "UUID_PATTERN.test",
+          "lineNumber": 114
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "calendarDate",
+          "lineNumber": 115
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "isTaskStatus",
+          "lineNumber": 116
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "Object.keys",
+          "lineNumber": 118
+        },
+        {
+          "caller": "validateTaskPatch",
+          "callee": "keys.some",
+          "lineNumber": 125
+        },
+        {
+          "caller": "validateTaskPatch",
+          "callee": "hasOwn",
+          "lineNumber": 125
+        },
+        {
+          "caller": "validateTaskPatch",
+          "callee": "hasOwn",
+          "lineNumber": 127
+        },
+        {
+          "caller": "validateTaskPatch",
+          "callee": "cleanString",
+          "lineNumber": 128
+        },
+        {
+          "caller": "validateTaskPatch",
+          "callee": "hasOwn",
+          "lineNumber": 131
+        },
+        {
+          "caller": "validateTaskPatch",
+          "callee": "cleanString",
+          "lineNumber": 132
+        },
+        {
+          "caller": "validateTaskPatch",
+          "callee": "UUID_PATTERN.test",
+          "lineNumber": 133
+        },
+        {
+          "caller": "validateTaskPatch",
+          "callee": "hasOwn",
+          "lineNumber": 135
+        },
+        {
+          "caller": "validateTaskPatch",
+          "callee": "calendarDate",
+          "lineNumber": 137
+        },
+        {
+          "caller": "validateTaskPatch",
+          "callee": "hasOwn",
+          "lineNumber": 139
+        },
+        {
+          "caller": "validateTaskPatch",
+          "callee": "isTaskStatus",
+          "lineNumber": 141
+        },
+        {
+          "caller": "validateTaskPatch",
+          "callee": "hasOwn",
+          "lineNumber": 143
+        },
+        {
+          "caller": "validateTaskPatch",
+          "callee": "Object.keys",
+          "lineNumber": 147
+        },
+        {
+          "caller": "validateNote",
+          "callee": "keys.some",
+          "lineNumber": 154
+        },
+        {
+          "caller": "validateNote",
+          "callee": "hasOwn",
+          "lineNumber": 154
+        },
+        {
+          "caller": "validateNote",
+          "callee": "hasOwn",
+          "lineNumber": 156
+        },
+        {
+          "caller": "validateNote",
+          "callee": "body.title.trim",
+          "lineNumber": 157
+        },
+        {
+          "caller": "validateNote",
+          "callee": "hasOwn",
+          "lineNumber": 160
+        },
+        {
+          "caller": "validateNote",
+          "callee": "Object.keys",
+          "lineNumber": 164
+        },
+        {
+          "caller": "validateResource",
+          "callee": "keys.some",
+          "lineNumber": 171
+        },
+        {
+          "caller": "validateResource",
+          "callee": "hasOwn",
+          "lineNumber": 171
+        },
+        {
+          "caller": "validateResource",
+          "callee": "hasOwn",
+          "lineNumber": 173
+        },
+        {
+          "caller": "validateResource",
+          "callee": "cleanString",
+          "lineNumber": 174
+        },
+        {
+          "caller": "validateResource",
+          "callee": "hasOwn",
+          "lineNumber": 177
+        },
+        {
+          "caller": "validateResource",
+          "callee": "cleanString",
+          "lineNumber": 178
+        },
+        {
+          "caller": "validateResource",
+          "callee": "hasOwn",
+          "lineNumber": 181
+        },
+        {
+          "caller": "validateResource",
+          "callee": "isResourceType",
+          "lineNumber": 183
+        },
+        {
+          "caller": "validateResource",
+          "callee": "hasOwn",
+          "lineNumber": 185
+        },
+        {
+          "caller": "validateResource",
+          "callee": "UUID_PATTERN.test",
+          "lineNumber": 187
+        },
+        {
+          "caller": "validateResource",
+          "callee": "hasOwn",
+          "lineNumber": 189
+        },
+        {
+          "caller": "validateResource",
+          "callee": "cleanString",
+          "lineNumber": 190
+        },
+        {
+          "caller": "validateResource",
+          "callee": "validHttpUrl",
+          "lineNumber": 191
+        },
+        {
+          "caller": "validateResource",
+          "callee": "Object.keys",
+          "lineNumber": 200
+        },
+        {
+          "caller": "validateResourceUpload",
+          "callee": "cleanString",
+          "lineNumber": 205
+        },
+        {
+          "caller": "validateResourceUpload",
+          "callee": "cleanString",
+          "lineNumber": 206
+        },
+        {
+          "caller": "validateResourceUpload",
+          "callee": "cleanFileName",
+          "lineNumber": 208
+        },
+        {
+          "caller": "validateResourceUpload",
+          "callee": "(cleanString(body?.mimeType) || 'application/octet-stream').toLocaleLowerCase",
+          "lineNumber": 209
+        },
+        {
+          "caller": "validateResourceUpload",
+          "callee": "cleanString",
+          "lineNumber": 209
+        },
+        {
+          "caller": "validateResourceUpload",
+          "callee": "UUID_PATTERN.test",
+          "lineNumber": 216
+        },
+        {
+          "caller": "validateResourceUpload",
+          "callee": "MIME_TYPE_PATTERN.test",
+          "lineNumber": 218
+        },
+        {
+          "caller": "validateResourceUpload",
+          "callee": "Number.isSafeInteger",
+          "lineNumber": 219
+        },
+        {
+          "caller": "validateResourceUpload",
+          "callee": "Math.floor",
+          "lineNumber": 220
+        },
+        {
+          "caller": "validateResourceUpload",
+          "callee": "/^image\\/(?!svg\\+xml$)/i.test",
+          "lineNumber": 223
+        },
+        {
+          "caller": "validateResourceUpload",
+          "callee": "Object.keys",
+          "lineNumber": 227
+        },
+        {
+          "caller": "validateInvitation",
+          "callee": "cleanString(body?.inviteeEmail ?? body?.email).toLocaleLowerCase",
+          "lineNumber": 231
+        },
+        {
+          "caller": "validateInvitation",
+          "callee": "cleanString",
+          "lineNumber": 231
+        },
+        {
+          "caller": "validateInvitation",
+          "callee": "EMAIL_PATTERN.test",
+          "lineNumber": 232
+        },
+        {
+          "caller": "validateAiSettings",
+          "callee": "Array.isArray",
+          "lineNumber": 251
+        },
+        {
+          "caller": "validateAiSettings",
+          "callee": "Object.keys(value.contextConfig).sort",
+          "lineNumber": 253
+        },
+        {
+          "caller": "validateAiSettings",
+          "callee": "Object.keys",
+          "lineNumber": 253
+        },
+        {
+          "caller": "validateAiSettings",
+          "callee": "contextKeys.every",
+          "lineNumber": 257
+        },
+        {
+          "caller": "validateAiSettings",
+          "callee": "AI_CONTEXT_KEYS.some",
+          "lineNumber": 261
+        },
+        {
+          "caller": "validateAiSettings",
+          "callee": "Object.keys",
+          "lineNumber": 266
+        },
+        {
+          "caller": "validateAiRun",
+          "callee": "cleanString",
+          "lineNumber": 270
+        },
+        {
+          "caller": "validateAiRun",
+          "callee": "UUID_PATTERN.test",
+          "lineNumber": 271
+        },
+        {
+          "caller": "validationError",
+          "callee": "response.status(400).json",
+          "lineNumber": 277
+        },
+        {
+          "caller": "validationError",
+          "callee": "response.status",
+          "lineNumber": 277
+        },
+        {
+          "caller": "validId",
+          "callee": "UUID_PATTERN.test",
+          "lineNumber": 283
+        },
+        {
+          "caller": "validId",
+          "callee": "validationError",
+          "lineNumber": 284
+        },
+        {
+          "caller": "routeError",
+          "callee": "validationError",
+          "lineNumber": 290
+        },
+        {
+          "caller": "routeError",
+          "callee": "response.status(404).json",
+          "lineNumber": 294
+        },
+        {
+          "caller": "routeError",
+          "callee": "response.status",
+          "lineNumber": 294
+        },
+        {
+          "caller": "routeError",
+          "callee": "response.status(409).json",
+          "lineNumber": 300
+        },
+        {
+          "caller": "routeError",
+          "callee": "response.status",
+          "lineNumber": 300
+        },
+        {
+          "caller": "routeError",
+          "callee": "response.status(503).json",
+          "lineNumber": 305
+        },
+        {
+          "caller": "routeError",
+          "callee": "response.status",
+          "lineNumber": 305
+        },
+        {
+          "caller": "asyncRoute",
+          "callee": "handler",
+          "lineNumber": 313
+        },
+        {
+          "caller": "asyncRoute",
+          "callee": "routeError",
+          "lineNumber": 315
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "Router",
+          "lineNumber": 321
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.get",
+          "lineNumber": 323
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 323
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 324
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 324
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "demoRepository.loadDemo",
+          "lineNumber": 324
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.use",
+          "lineNumber": 327
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "createAuthenticationMiddleware",
+          "lineNumber": 327
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.get",
+          "lineNumber": 329
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 329
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 330
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 330
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.load",
+          "lineNumber": 330
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.get",
+          "lineNumber": 333
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 333
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 334
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 334
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.listInvitations",
+          "lineNumber": 334
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.post",
+          "lineNumber": 337
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validateProject",
+          "lineNumber": 338
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validationError",
+          "lineNumber": 339
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(201).json({ project: await request.teamFlow.repository.createProject(validation.value) })\n    })",
+          "lineNumber": 340
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 340
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(201).json",
+          "lineNumber": 341
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 341
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.createProject",
+          "lineNumber": 341
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.patch",
+          "lineNumber": 345
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 346
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validateProject",
+          "lineNumber": 347
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validationError",
+          "lineNumber": 348
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json({ project: await request.teamFlow.repository.updateProject(request.params.projectId, validation.value) })\n    })",
+          "lineNumber": 349
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 349
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 350
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 350
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.updateProject",
+          "lineNumber": 350
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.delete",
+          "lineNumber": 354
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 355
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json({ projectId: await request.teamFlow.repository.deleteProject(request.params.projectId) })\n    })",
+          "lineNumber": 356
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 356
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 357
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 357
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.deleteProject",
+          "lineNumber": 357
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.post",
+          "lineNumber": 361
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 362
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validateInvitation",
+          "lineNumber": 363
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validationError",
+          "lineNumber": 364
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(201).json({ invitation: await request.teamFlow.repository.createInvitation(request.params.projectId, validation.value) })\n    })",
+          "lineNumber": 365
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 365
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(201).json",
+          "lineNumber": 366
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 366
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.createInvitation",
+          "lineNumber": 366
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.post",
+          "lineNumber": 374
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 375
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n        const result = await request.teamFlow.repository[method](request.params.invitationId)\n        response.status(200).json(action === 'accept'\n          ? { result }\n          : { invitationId: result.invitationId ?? request.params.invitationId })\n      })",
+          "lineNumber": 376
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 376
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository[method]",
+          "lineNumber": 377
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 378
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 378
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.delete",
+          "lineNumber": 385
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 386
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      const result = await request.teamFlow.repository.cancelInvitation(request.params.invitationId)\n      response.status(200).json({ invitationId: result.invitationId ?? request.params.invitationId })\n    })",
+          "lineNumber": 387
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 387
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.cancelInvitation",
+          "lineNumber": 388
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 389
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 389
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.patch",
+          "lineNumber": 393
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 394
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validateMemberPatch",
+          "lineNumber": 395
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validationError",
+          "lineNumber": 396
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json({ member: await request.teamFlow.repository.updateMember(request.params.memberId, validation.value) })\n    })",
+          "lineNumber": 397
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 397
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 398
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 398
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.updateMember",
+          "lineNumber": 398
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.delete",
+          "lineNumber": 402
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 403
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      const result = await request.teamFlow.repository.deleteMember(request.params.memberId)\n      response.status(200).json(typeof result === 'string' ? { memberId: result } : result)\n    })",
+          "lineNumber": 404
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 404
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.deleteMember",
+          "lineNumber": 405
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 406
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 406
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.post",
+          "lineNumber": 410
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 411
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(201).json(await request.teamFlow.repository.createAiAgent(request.params.projectId))\n    })",
+          "lineNumber": 412
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 412
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(201).json",
+          "lineNumber": 413
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 413
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.createAiAgent",
+          "lineNumber": 413
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.patch",
+          "lineNumber": 417
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 418
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validateAiSettings",
+          "lineNumber": 419
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validationError",
+          "lineNumber": 420
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json({\n        aiAgent: await request.teamFlow.repository.updateAiAgent(\n          request.params.memberId,\n          validation.value,\n        ),\n      })\n    })",
+          "lineNumber": 421
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 421
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 422
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 422
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.updateAiAgent",
+          "lineNumber": 423
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.post",
+          "lineNumber": 431
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 432
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validateAiRun",
+          "lineNumber": 433
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validationError",
+          "lineNumber": 434
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(201).json({\n        aiRun: await request.teamFlow.repository.createAiRun(\n          request.params.memberId,\n          validation.value.taskId,\n        ),\n      })\n    })",
+          "lineNumber": 435
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 435
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(201).json",
+          "lineNumber": 436
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 436
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.createAiRun",
+          "lineNumber": 437
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.post",
+          "lineNumber": 445
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 446
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json(await request.teamFlow.repository.applyAiRun(request.params.runId))\n    })",
+          "lineNumber": 447
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 447
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 448
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 448
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.applyAiRun",
+          "lineNumber": 448
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.post",
+          "lineNumber": 452
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 453
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json({\n        aiRun: await request.teamFlow.repository.rejectAiRun(request.params.runId),\n      })\n    })",
+          "lineNumber": 454
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 454
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 455
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 455
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.rejectAiRun",
+          "lineNumber": 456
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.post",
+          "lineNumber": 461
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validateTaskCreateInput",
+          "lineNumber": 462
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validationError",
+          "lineNumber": 463
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(201).json({ task: await request.teamFlow.repository.createTask(validation.value) })\n    })",
+          "lineNumber": 464
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 464
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(201).json",
+          "lineNumber": 465
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 465
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.createTask",
+          "lineNumber": 465
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.patch",
+          "lineNumber": 469
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 470
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validateTaskPatch",
+          "lineNumber": 471
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validationError",
+          "lineNumber": 472
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json({ task: await request.teamFlow.repository.updateTask(request.params.taskId, validation.value) })\n    })",
+          "lineNumber": 473
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 473
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 474
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 474
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.updateTask",
+          "lineNumber": 474
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.delete",
+          "lineNumber": 478
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 479
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json({ taskId: await request.teamFlow.repository.deleteTask(request.params.taskId) })\n    })",
+          "lineNumber": 480
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 480
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 481
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 481
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.deleteTask",
+          "lineNumber": 481
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.post",
+          "lineNumber": 485
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 486
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validateNote",
+          "lineNumber": 487
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validationError",
+          "lineNumber": 488
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(201).json({ note: await request.teamFlow.repository.createNote(request.params.projectId, validation.value) })\n    })",
+          "lineNumber": 489
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 489
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(201).json",
+          "lineNumber": 490
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 490
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.createNote",
+          "lineNumber": 490
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.patch",
+          "lineNumber": 494
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 495
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validateNote",
+          "lineNumber": 496
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validationError",
+          "lineNumber": 497
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json({ note: await request.teamFlow.repository.updateNote(request.params.noteId, validation.value) })\n    })",
+          "lineNumber": 498
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 498
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 499
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 499
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.updateNote",
+          "lineNumber": 499
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.delete",
+          "lineNumber": 503
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 504
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json({ noteId: await request.teamFlow.repository.deleteNote(request.params.noteId) })\n    })",
+          "lineNumber": 505
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 505
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 506
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 506
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.deleteNote",
+          "lineNumber": 506
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.post",
+          "lineNumber": 510
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 511
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validateResourceUpload",
+          "lineNumber": 512
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validationError",
+          "lineNumber": 513
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(201).json(await request.teamFlow.repository.createResourceUpload(request.params.projectId, validation.value))\n    })",
+          "lineNumber": 514
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 514
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(201).json",
+          "lineNumber": 515
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 515
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.createResourceUpload",
+          "lineNumber": 515
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.post",
+          "lineNumber": 519
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 520
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json({ resource: await request.teamFlow.repository.completeResourceUpload(request.params.resourceId) })\n    })",
+          "lineNumber": 521
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 521
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 522
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 522
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.completeResourceUpload",
+          "lineNumber": 522
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.post",
+          "lineNumber": 526
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 527
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json(await request.teamFlow.repository.createResourceDownloadUrl(request.params.resourceId))\n    })",
+          "lineNumber": 528
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 528
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 529
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 529
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.createResourceDownloadUrl",
+          "lineNumber": 529
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.post",
+          "lineNumber": 533
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 534
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validateResource",
+          "lineNumber": 535
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validationError",
+          "lineNumber": 536
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(201).json({ resource: await request.teamFlow.repository.createResource(request.params.projectId, validation.value) })\n    })",
+          "lineNumber": 537
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 537
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(201).json",
+          "lineNumber": 538
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 538
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.createResource",
+          "lineNumber": 538
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.patch",
+          "lineNumber": 542
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 543
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validateResource",
+          "lineNumber": 544
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validationError",
+          "lineNumber": 545
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json({ resource: await request.teamFlow.repository.updateResource(request.params.resourceId, validation.value) })\n    })",
+          "lineNumber": 546
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 546
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 547
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 547
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.updateResource",
+          "lineNumber": 547
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "router.delete",
+          "lineNumber": 551
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "validId",
+          "lineNumber": 552
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute(async () => {\n      response.status(200).json({ resourceId: await request.teamFlow.repository.deleteResource(request.params.resourceId) })\n    })",
+          "lineNumber": 553
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "asyncRoute",
+          "lineNumber": 553
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 554
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "response.status",
+          "lineNumber": 554
+        },
+        {
+          "caller": "createTeamFlowRouter",
+          "callee": "request.teamFlow.repository.deleteResource",
+          "lineNumber": 554
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 2,
+        "functionCount": 20,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/test/auth.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 48,
+      "nonEmptyLines": 42,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/test/cors.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 56,
+      "nonEmptyLines": 46,
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/test/health.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 30,
+      "nonEmptyLines": 24,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/test/mockAiGenerator.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 220,
+      "nonEmptyLines": 207,
+      "functions": [
+        {
+          "name": "createInput",
+          "startLine": 17,
+          "endLine": 81,
+          "params": []
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/test/supabaseClient.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 28,
+      "nonEmptyLines": 24,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/test/teamFlowRepository.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 598,
+      "nonEmptyLines": 565,
+      "functions": [
+        {
+          "name": "resourceRow",
+          "startLine": 29,
+          "endLine": 50,
+          "params": []
+        },
+        {
+          "name": "orderedRows",
+          "startLine": 52,
+          "endLine": 62,
+          "params": [
+            "rows"
+          ]
+        },
+        {
+          "name": "filteredQuery",
+          "startLine": 64,
+          "endLine": 84,
+          "params": []
+        },
+        {
+          "name": "aiContextRows",
+          "startLine": 86,
+          "endLine": 133,
+          "params": []
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "eq",
+          "callee": "filters.push",
+          "lineNumber": 71
+        },
+        {
+          "caller": "filteredQuery",
+          "callee": "rows.filter",
+          "lineNumber": 75
+        },
+        {
+          "caller": "filteredQuery",
+          "callee": "filters.every",
+          "lineNumber": 75
+        },
+        {
+          "caller": "filteredQuery",
+          "callee": "rows.find",
+          "lineNumber": 79
+        },
+        {
+          "caller": "filteredQuery",
+          "callee": "filters.every",
+          "lineNumber": 79
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 4,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/test/teamFlowRoutes.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 544,
+      "nonEmptyLines": 480,
+      "functions": [
+        {
+          "name": "request",
+          "startLine": 241,
+          "endLine": 247,
+          "params": [
+            "path"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "request",
+          "callee": "fetch",
+          "lineNumber": 242
+        },
+        {
+          "caller": "request",
+          "callee": "JSON.stringify",
+          "lineNumber": 245
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 0,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    }
+  ]
+}

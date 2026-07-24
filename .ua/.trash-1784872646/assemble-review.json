@@ -1,0 +1,17 @@
+{
+  "fixedSectionOk": true,
+  "nodesRecovered": 0,
+  "edgesRestored": 0,
+  "crossBatchEdgesAdded": 0,
+  "typesRemapped": 0,
+  "complexityRemapped": 0,
+  "notes": [
+    "17개 fragment와 16개 logical batch의 입력 290 nodes, 593 edges가 중복이나 dangling edge 없이 동일한 개수로 조립되어 병합 규모가 합리적입니다.",
+    "제거된 tested_by 1개는 실행 가능한 테스트가 아닌 renderTeamFlowApp 테스트 helper를 대상으로 한 AuthProvider 관계였으므로 복원하지 않는 것이 맞습니다.",
+    "scan-result의 importMap 213개 관계가 assembled graph의 imports edge와 정확히 일치하며, 139개 파일 모두 누락 없이 표현되어 cross-batch edge 추가가 필요하지 않았습니다.",
+    "apps/api 파일은 scan 결과의 18개가 모두 graph에 존재하고 API 내부 import 20개도 전부 유지되었습니다.",
+    "프론트엔드 repository에는 App과 apiTeamFlowRepository.test에서 들어오는 cross-batch imports edge가 모두 유지되었습니다.",
+    "tested_by 19개는 모두 production에서 test 방향이며, 고유 production source 16개와 tested tag가 정확히 일치합니다. TaskDetailModal의 path-convention tested_by 1개도 유효합니다.",
+    "알 수 없는 node type이나 complexity, 누락된 ID, dangling edge는 없으며 남은 우려 사항도 없습니다."
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "apps/web/src/features/projects/ProjectListPage.jsx",
+      "language": "javascript",
+      "sizeLines": 117,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "language": "javascript",
+      "sizeLines": 73,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "language": "javascript",
+      "sizeLines": 99,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "language": "javascript",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "language": "javascript",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/projects/components/projectIconOptions.js",
+      "language": "javascript",
+      "sizeLines": 14,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "apps/web/src/features/projects/ProjectListPage.jsx": [
+      "apps/web/src/features/projects/ProjectListPage.module.css",
+      "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "apps/web/src/features/projects/components/ProjectIconPicker.jsx",
+      "apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/projects/ProjectListPage.test.jsx": [
+      "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "apps/web/src/test/renderTeamFlowApp.jsx"
+    ],
+    "apps/web/src/features/projects/components/ProjectCard.jsx": [
+      "apps/web/src/features/projects/components/ProjectCard.module.css",
+      "apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "apps/web/src/features/projects/components/projectIconOptions.js",
+      "apps/web/src/lib/format.js"
+    ],
+    "apps/web/src/features/projects/components/ProjectIcon.jsx": [],
+    "apps/web/src/features/projects/components/ProjectIconPicker.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "apps/web/src/features/projects/components/ProjectIconPicker.module.css",
+      "apps/web/src/features/projects/components/projectIconOptions.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/projects/components/projectIconOptions.js": []
+  }
+}

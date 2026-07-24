@@ -262,8 +262,37 @@ export function createApiTeamFlowRepository({
       }, '파일 다운로드를 준비하지 못했습니다.')
     },
 
-    updateAiSettings() {
-      throw new TeamFlowApiError('AI 기능은 이번 구현 범위에서 제외됩니다.', 'FEATURE_NOT_AVAILABLE')
+    async createAiAgent(projectId, input) {
+      return authenticatedRequest(`/api/projects/${projectId}/ai-agents`, {
+        method: 'POST', body: JSON.stringify(input),
+      }, 'AI 팀원을 추가하지 못했습니다.')
+    },
+
+    async updateAiAgent(memberId, input) {
+      const payload = await authenticatedRequest(`/api/ai-agents/${memberId}`, {
+        method: 'PATCH', body: JSON.stringify(input),
+      }, 'AI 팀원 설정을 저장하지 못했습니다.')
+      return { member: payload.member, aiAgent: payload.aiAgent }
+    },
+
+    async createAiRun(memberId, taskId) {
+      const payload = await authenticatedRequest(`/api/ai-agents/${memberId}/runs`, {
+        method: 'POST', body: JSON.stringify({ taskId }),
+      }, '모의 작업을 실행하지 못했습니다.')
+      return payload.aiRun
+    },
+
+    async applyAiRun(runId) {
+      return authenticatedRequest(`/api/ai-runs/${runId}/apply`, {
+        method: 'POST',
+      }, 'AI 결과를 공유 노트에 반영하지 못했습니다.')
+    },
+
+    async rejectAiRun(runId) {
+      const payload = await authenticatedRequest(`/api/ai-runs/${runId}/reject`, {
+        method: 'POST',
+      }, 'AI 결과를 보류하지 못했습니다.')
+      return payload.aiRun
     },
   }
 }
@@ -299,6 +328,10 @@ export function createDemoTeamFlowRepository({
     updateResource: readOnly,
     deleteResource: readOnly,
     getResourceDownloadUrl: readOnly,
-    updateAiSettings: readOnly,
+    createAiAgent: readOnly,
+    updateAiAgent: readOnly,
+    createAiRun: readOnly,
+    applyAiRun: readOnly,
+    rejectAiRun: readOnly,
   }
 }

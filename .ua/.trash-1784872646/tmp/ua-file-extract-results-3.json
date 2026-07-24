@@ -1,0 +1,1215 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 13,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 13,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 13,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "apps/web/src/auth/AuthContext.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 3,
+      "nonEmptyLines": 2,
+      "exports": [
+        {
+          "name": "AuthContext",
+          "line": 3,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 1,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/auth/AuthFlows.test.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 83,
+      "nonEmptyLines": 70,
+      "functions": [
+        {
+          "name": "renderWithAuth",
+          "startLine": 11,
+          "endLine": 21,
+          "params": []
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "renderWithAuth",
+          "callee": "createTestAuthClient",
+          "lineNumber": 11
+        },
+        {
+          "caller": "renderWithAuth",
+          "callee": "createMemoryRouter",
+          "lineNumber": 12
+        },
+        {
+          "caller": "renderWithAuth",
+          "callee": "render",
+          "lineNumber": 20
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 0,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/auth/AuthProvider.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 131,
+      "nonEmptyLines": 111,
+      "functions": [
+        {
+          "name": "hasGuestSession",
+          "startLine": 8,
+          "endLine": 10,
+          "params": []
+        },
+        {
+          "name": "profileFromSession",
+          "startLine": 12,
+          "endLine": 21,
+          "params": [
+            "session"
+          ]
+        },
+        {
+          "name": "AuthProvider",
+          "startLine": 23,
+          "endLine": 131,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "AuthProvider",
+          "line": 23,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "hasGuestSession",
+          "callee": "globalThis.sessionStorage?.getItem",
+          "lineNumber": 9
+        },
+        {
+          "caller": "profileFromSession",
+          "callee": "email.split",
+          "lineNumber": 18
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "useState",
+          "lineNumber": 24
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "useEffect",
+          "lineNumber": 26
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "setState",
+          "lineNumber": 30
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "hasGuestSession",
+          "lineNumber": 30
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "client.auth.getSession().then",
+          "lineNumber": 34
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "client.auth.getSession",
+          "lineNumber": 34
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "setState",
+          "lineNumber": 37
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "hasGuestSession",
+          "lineNumber": 37
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "globalThis.sessionStorage?.removeItem",
+          "lineNumber": 41
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "setState",
+          "lineNumber": 42
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "setState",
+          "lineNumber": 44
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "hasGuestSession",
+          "lineNumber": 44
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "client.auth.onAuthStateChange",
+          "lineNumber": 48
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "globalThis.sessionStorage?.removeItem",
+          "lineNumber": 51
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "setState",
+          "lineNumber": 52
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "setState",
+          "lineNumber": 54
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "hasGuestSession",
+          "lineNumber": 54
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "subscription.subscription.unsubscribe",
+          "lineNumber": 60
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "useCallback",
+          "lineNumber": 64
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "setState",
+          "lineNumber": 66
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "globalThis.sessionStorage?.removeItem",
+          "lineNumber": 69
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "globalThis.sessionStorage?.setItem",
+          "lineNumber": 70
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "client.auth.signInWithOAuth",
+          "lineNumber": 71
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "setState",
+          "lineNumber": 75
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "useCallback",
+          "lineNumber": 79
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "globalThis.sessionStorage?.setItem",
+          "lineNumber": 80
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "setState",
+          "lineNumber": 81
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "useCallback",
+          "lineNumber": 84
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "globalThis.sessionStorage?.removeItem",
+          "lineNumber": 85
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "globalThis.sessionStorage?.removeItem",
+          "lineNumber": 86
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "client.auth.signOut",
+          "lineNumber": 87
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "setState",
+          "lineNumber": 88
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "useCallback",
+          "lineNumber": 91
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "client.auth.getSession",
+          "lineNumber": 93
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "useCallback",
+          "lineNumber": 98
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "client.storage\n      .from(bucket)\n      .uploadToSignedUrl",
+          "lineNumber": 102
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "client.storage\n      .from",
+          "lineNumber": 102
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "useCallback",
+          "lineNumber": 112
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "globalThis.sessionStorage?.getItem",
+          "lineNumber": 113
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "globalThis.sessionStorage?.removeItem",
+          "lineNumber": 114
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "value.startsWith",
+          "lineNumber": 115
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "value.startsWith",
+          "lineNumber": 115
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "useMemo",
+          "lineNumber": 118
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "profileFromSession",
+          "lineNumber": 120
+        },
+        {
+          "caller": "AuthProvider",
+          "callee": "setState",
+          "lineNumber": 127
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 3,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/auth/supabaseClient.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 56,
+      "nonEmptyLines": 46,
+      "functions": [
+        {
+          "name": "readBrowserSupabaseConfig",
+          "startLine": 6,
+          "endLine": 34,
+          "params": []
+        },
+        {
+          "name": "createBrowserSupabaseClient",
+          "startLine": 36,
+          "endLine": 45,
+          "params": []
+        },
+        {
+          "name": "resolveBrowserSupabaseClient",
+          "startLine": 47,
+          "endLine": 56,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "readBrowserSupabaseConfig",
+          "line": 6,
+          "isDefault": false
+        },
+        {
+          "name": "createBrowserSupabaseClient",
+          "line": 36,
+          "isDefault": false
+        },
+        {
+          "name": "resolveBrowserSupabaseClient",
+          "line": 47,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "readBrowserSupabaseConfig",
+          "callee": "environment.VITE_TEAMFLOW_SUPABASE_URL?.trim",
+          "lineNumber": 7
+        },
+        {
+          "caller": "readBrowserSupabaseConfig",
+          "callee": "environment.VITE_TEAMFLOW_SUPABASE_PUBLISHABLE_KEY?.trim",
+          "lineNumber": 8
+        },
+        {
+          "caller": "readBrowserSupabaseConfig",
+          "callee": "hostname.includes",
+          "lineNumber": 21
+        },
+        {
+          "caller": "readBrowserSupabaseConfig",
+          "callee": "publishableKey.startsWith",
+          "lineNumber": 29
+        },
+        {
+          "caller": "createBrowserSupabaseClient",
+          "callee": "readBrowserSupabaseConfig",
+          "lineNumber": 37
+        },
+        {
+          "caller": "createBrowserSupabaseClient",
+          "callee": "createClient",
+          "lineNumber": 38
+        },
+        {
+          "caller": "resolveBrowserSupabaseClient",
+          "callee": "createBrowserSupabaseClient",
+          "lineNumber": 49
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 3,
+        "functionCount": 3,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/auth/supabaseClient.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 25,
+      "nonEmptyLines": 21,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/AppFlows.test.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 615,
+      "nonEmptyLines": 538,
+      "callGraph": [
+        {
+          "caller": "firstNoteButton",
+          "callee": "within(noteList).getAllByRole('button').find",
+          "lineNumber": 298
+        },
+        {
+          "caller": "firstNoteButton",
+          "callee": "within(noteList).getAllByRole",
+          "lineNumber": 298
+        },
+        {
+          "caller": "firstNoteButton",
+          "callee": "within",
+          "lineNumber": 298
+        },
+        {
+          "caller": "firstNoteButton",
+          "callee": "button.querySelector",
+          "lineNumber": 298
+        }
+      ],
+      "metrics": {
+        "importCount": 3,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/CollaborationFlows.test.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 267,
+      "nonEmptyLines": 247,
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 49,
+      "nonEmptyLines": 44,
+      "functions": [
+        {
+          "name": "inline",
+          "startLine": 3,
+          "endLine": 12,
+          "params": [
+            "text",
+            "keyPrefix"
+          ]
+        },
+        {
+          "name": "MarkdownPreview",
+          "startLine": 14,
+          "endLine": 49,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "MarkdownPreview",
+          "line": 14,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "inline",
+          "callee": "text.split(/(\\*\\*.+?\\*\\*|\\*.+?\\*|`.+?`)/g).filter",
+          "lineNumber": 4
+        },
+        {
+          "caller": "inline",
+          "callee": "text.split",
+          "lineNumber": 4
+        },
+        {
+          "caller": "inline",
+          "callee": "tokens.map",
+          "lineNumber": 5
+        },
+        {
+          "caller": "inline",
+          "callee": "token.startsWith",
+          "lineNumber": 7
+        },
+        {
+          "caller": "inline",
+          "callee": "token.endsWith",
+          "lineNumber": 7
+        },
+        {
+          "caller": "inline",
+          "callee": "token.slice",
+          "lineNumber": 7
+        },
+        {
+          "caller": "inline",
+          "callee": "token.startsWith",
+          "lineNumber": 8
+        },
+        {
+          "caller": "inline",
+          "callee": "token.endsWith",
+          "lineNumber": 8
+        },
+        {
+          "caller": "inline",
+          "callee": "token.slice",
+          "lineNumber": 8
+        },
+        {
+          "caller": "inline",
+          "callee": "token.startsWith",
+          "lineNumber": 9
+        },
+        {
+          "caller": "inline",
+          "callee": "token.endsWith",
+          "lineNumber": 9
+        },
+        {
+          "caller": "inline",
+          "callee": "token.slice",
+          "lineNumber": 9
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "content.split",
+          "lineNumber": 15
+        },
+        {
+          "caller": "flushList",
+          "callee": "elements.push",
+          "lineNumber": 23
+        },
+        {
+          "caller": "flushList",
+          "callee": "list.map",
+          "lineNumber": 23
+        },
+        {
+          "caller": "flushList",
+          "callee": "inline",
+          "lineNumber": 23
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "lines.forEach",
+          "lineNumber": 28
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.match",
+          "lineNumber": 29
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.match",
+          "lineNumber": 30
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "flushList",
+          "lineNumber": 33
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "list.push",
+          "lineNumber": 35
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "flushList",
+          "lineNumber": 39
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.trim",
+          "lineNumber": 40
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "elements.push",
+          "lineNumber": 40
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.startsWith",
+          "lineNumber": 41
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "elements.push",
+          "lineNumber": 41
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "inline",
+          "lineNumber": 41
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.slice",
+          "lineNumber": 41
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.startsWith",
+          "lineNumber": 42
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "elements.push",
+          "lineNumber": 42
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "inline",
+          "lineNumber": 42
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.slice",
+          "lineNumber": 42
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.startsWith",
+          "lineNumber": 43
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "elements.push",
+          "lineNumber": 43
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "inline",
+          "lineNumber": 43
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.slice",
+          "lineNumber": 43
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.startsWith",
+          "lineNumber": 44
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "elements.push",
+          "lineNumber": 44
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "inline",
+          "lineNumber": 44
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.slice",
+          "lineNumber": 44
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "elements.push",
+          "lineNumber": 45
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "inline",
+          "lineNumber": 45
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "flushList",
+          "lineNumber": 47
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/tasks/components/TaskDetailModal.test.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 39,
+      "nonEmptyLines": 34,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/main.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 26,
+      "nonEmptyLines": 22,
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/test/createTestTeamFlowRepository.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 180,
+      "nonEmptyLines": 154,
+      "functions": [
+        {
+          "name": "nextId",
+          "startLine": 5,
+          "endLine": 5,
+          "params": [
+            "prefix"
+          ]
+        },
+        {
+          "name": "clone",
+          "startLine": 6,
+          "endLine": 6,
+          "params": [
+            "value"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "testTeamFlowRepository",
+          "line": 12,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "nextId",
+          "callee": "Date.now",
+          "lineNumber": 5
+        },
+        {
+          "caller": "clone",
+          "callee": "structuredClone",
+          "lineNumber": 6
+        },
+        {
+          "caller": "load",
+          "callee": "Promise.resolve",
+          "lineNumber": 15
+        },
+        {
+          "caller": "load",
+          "callee": "clone",
+          "lineNumber": 15
+        },
+        {
+          "caller": "load",
+          "callee": "Object.fromEntries",
+          "lineNumber": 24
+        },
+        {
+          "caller": "load",
+          "callee": "initialProjects.map",
+          "lineNumber": 24
+        },
+        {
+          "caller": "createProject",
+          "callee": "Promise.resolve",
+          "lineNumber": 32
+        },
+        {
+          "caller": "createProject",
+          "callee": "nextId",
+          "lineNumber": 33
+        },
+        {
+          "caller": "updateProject",
+          "callee": "Promise.resolve",
+          "lineNumber": 42
+        },
+        {
+          "caller": "deleteProject",
+          "callee": "Promise.resolve",
+          "lineNumber": 46
+        },
+        {
+          "caller": "createTask",
+          "callee": "Promise.resolve",
+          "lineNumber": 50
+        },
+        {
+          "caller": "createTask",
+          "callee": "nextId",
+          "lineNumber": 50
+        },
+        {
+          "caller": "updateTask",
+          "callee": "Promise.resolve",
+          "lineNumber": 54
+        },
+        {
+          "caller": "deleteTask",
+          "callee": "Promise.resolve",
+          "lineNumber": 58
+        },
+        {
+          "caller": "updateMember",
+          "callee": "Promise.resolve",
+          "lineNumber": 62
+        },
+        {
+          "caller": "deleteMember",
+          "callee": "initialProjects.find",
+          "lineNumber": 66
+        },
+        {
+          "caller": "deleteMember",
+          "callee": "candidate.memberIds.includes",
+          "lineNumber": 66
+        },
+        {
+          "caller": "deleteMember",
+          "callee": "Promise.resolve",
+          "lineNumber": 67
+        },
+        {
+          "caller": "createInvitation",
+          "callee": "Promise.resolve",
+          "lineNumber": 71
+        },
+        {
+          "caller": "createInvitation",
+          "callee": "nextId",
+          "lineNumber": 72
+        },
+        {
+          "caller": "acceptInvitation",
+          "callee": "Promise.resolve",
+          "lineNumber": 77
+        },
+        {
+          "caller": "rejectInvitation",
+          "callee": "Promise.resolve",
+          "lineNumber": 78
+        },
+        {
+          "caller": "cancelInvitation",
+          "callee": "Promise.resolve",
+          "lineNumber": 79
+        },
+        {
+          "caller": "createNote",
+          "callee": "Promise.resolve",
+          "lineNumber": 82
+        },
+        {
+          "caller": "createNote",
+          "callee": "nextId",
+          "lineNumber": 82
+        },
+        {
+          "caller": "updateNote",
+          "callee": "Promise.resolve",
+          "lineNumber": 86
+        },
+        {
+          "caller": "deleteNote",
+          "callee": "Promise.resolve",
+          "lineNumber": 90
+        },
+        {
+          "caller": "createResource",
+          "callee": "Promise.resolve",
+          "lineNumber": 94
+        },
+        {
+          "caller": "createResource",
+          "callee": "nextId",
+          "lineNumber": 94
+        },
+        {
+          "caller": "uploadResource",
+          "callee": "Promise.resolve",
+          "lineNumber": 98
+        },
+        {
+          "caller": "uploadResource",
+          "callee": "nextId",
+          "lineNumber": 99
+        },
+        {
+          "caller": "uploadResource",
+          "callee": "file?.type?.startsWith",
+          "lineNumber": 101
+        },
+        {
+          "caller": "updateResource",
+          "callee": "Promise.resolve",
+          "lineNumber": 112
+        },
+        {
+          "caller": "deleteResource",
+          "callee": "Promise.resolve",
+          "lineNumber": 116
+        },
+        {
+          "caller": "getResourceDownloadUrl",
+          "callee": "Promise.resolve",
+          "lineNumber": 120
+        },
+        {
+          "caller": "createAiAgent",
+          "callee": "nextId",
+          "lineNumber": 125
+        },
+        {
+          "caller": "createAiAgent",
+          "callee": "Promise.resolve",
+          "lineNumber": 128
+        },
+        {
+          "caller": "updateAiAgent",
+          "callee": "initialAiAgents.find",
+          "lineNumber": 139
+        },
+        {
+          "caller": "updateAiAgent",
+          "callee": "Promise.resolve",
+          "lineNumber": 140
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "initialTasks.find",
+          "lineNumber": 148
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "nextId",
+          "lineNumber": 150
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "createdAiRuns.set",
+          "lineNumber": 156
+        },
+        {
+          "caller": "createAiRun",
+          "callee": "Promise.resolve",
+          "lineNumber": 157
+        },
+        {
+          "caller": "applyAiRun",
+          "callee": "createdAiRuns.get",
+          "lineNumber": 161
+        },
+        {
+          "caller": "applyAiRun",
+          "callee": "initialAiRuns.find",
+          "lineNumber": 161
+        },
+        {
+          "caller": "applyAiRun",
+          "callee": "createdAiRuns.set",
+          "lineNumber": 163
+        },
+        {
+          "caller": "applyAiRun",
+          "callee": "Promise.resolve",
+          "lineNumber": 164
+        },
+        {
+          "caller": "rejectAiRun",
+          "callee": "createdAiRuns.get",
+          "lineNumber": 175
+        },
+        {
+          "caller": "rejectAiRun",
+          "callee": "initialAiRuns.find",
+          "lineNumber": 175
+        },
+        {
+          "caller": "rejectAiRun",
+          "callee": "createdAiRuns.set",
+          "lineNumber": 177
+        },
+        {
+          "caller": "rejectAiRun",
+          "callee": "Promise.resolve",
+          "lineNumber": 178
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/test/renderTeamFlowApp.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 38,
+      "nonEmptyLines": 34,
+      "functions": [
+        {
+          "name": "createTestAuthClient",
+          "startLine": 17,
+          "endLine": 26,
+          "params": []
+        },
+        {
+          "name": "renderAuthenticatedApp",
+          "startLine": 28,
+          "endLine": 38,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "authenticatedSession",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "createTestAuthClient",
+          "line": 17,
+          "isDefault": false
+        },
+        {
+          "name": "renderAuthenticatedApp",
+          "line": 28,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "renderAuthenticatedApp",
+          "callee": "createMemoryRouter",
+          "lineNumber": 29
+        },
+        {
+          "caller": "renderAuthenticatedApp",
+          "callee": "createTestAuthClient",
+          "lineNumber": 32
+        },
+        {
+          "caller": "renderAuthenticatedApp",
+          "callee": "render",
+          "lineNumber": 37
+        }
+      ],
+      "metrics": {
+        "importCount": 3,
+        "exportCount": 3,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/test/teamFlowFixture.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 118,
+      "nonEmptyLines": 108,
+      "functions": [
+        {
+          "name": "task",
+          "startLine": 22,
+          "endLine": 24,
+          "params": [
+            "id",
+            "projectId",
+            "title",
+            "assigneeId",
+            "dueDate",
+            "status",
+            "description"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "CURRENT_USER_ID",
+          "line": 3,
+          "isDefault": false
+        },
+        {
+          "name": "AI_MEMBER_ID",
+          "line": 4,
+          "isDefault": false
+        },
+        {
+          "name": "initialProjects",
+          "line": 6,
+          "isDefault": false
+        },
+        {
+          "name": "initialMembers",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "initialTasks",
+          "line": 26,
+          "isDefault": false
+        },
+        {
+          "name": "initialNotes",
+          "line": 56,
+          "isDefault": false
+        },
+        {
+          "name": "initialResources",
+          "line": 64,
+          "isDefault": false
+        },
+        {
+          "name": "initialAiAgents",
+          "line": 77,
+          "isDefault": false
+        },
+        {
+          "name": "initialAiRuns",
+          "line": 89,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 9,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    }
+  ]
+}

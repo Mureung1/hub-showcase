@@ -1,0 +1,84 @@
+{
+  "nodes": [
+    {
+      "id": "config:apps/web/.env.example",
+      "type": "config",
+      "name": ".env.example",
+      "filePath": "apps/web/.env.example",
+      "summary": "웹 클라이언트가 사용하는 TeamFlow Supabase URL·publishable key와 선택적 API 기본 URL의 환경변수 형식을 제공한다.",
+      "tags": [
+        "configuration",
+        "environment",
+        "supabase",
+        "api-client"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/index.html",
+      "type": "file",
+      "name": "index.html",
+      "filePath": "apps/web/index.html",
+      "summary": "한국어 TeamFlow 웹 앱의 문서 메타데이터와 React 마운트 지점을 정의하고 Vite 진입점인 src/main.jsx를 로드한다.",
+      "tags": [
+        "entry-point",
+        "markup",
+        "vite",
+        "react"
+      ],
+      "complexity": "simple",
+      "languageNotes": "단일 페이지 앱의 최소 HTML 셸이며 실제 화면은 React가 #root에 마운트한다."
+    },
+    {
+      "id": "config:apps/web/package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "apps/web/package.json",
+      "summary": "React 19 웹 워크스페이스의 Vite 개발·빌드·미리보기와 Vitest 테스트 명령, Supabase·라우터·UI 의존성을 정의한다.",
+      "tags": [
+        "configuration",
+        "react",
+        "vite",
+        "testing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:apps/web/vercel.json",
+      "type": "config",
+      "name": "vercel.json",
+      "filePath": "apps/web/vercel.json",
+      "summary": "모든 요청을 index.html로 재작성해 Vercel에서 React Router의 클라이언트 라우팅을 지원한다.",
+      "tags": [
+        "configuration",
+        "deployment",
+        "vercel",
+        "routing"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "config:apps/web/.env.example",
+      "target": "file:apps/web/index.html",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:apps/web/package.json",
+      "target": "file:apps/web/index.html",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:apps/web/vercel.json",
+      "target": "file:apps/web/index.html",
+      "type": "routes",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ]
+}

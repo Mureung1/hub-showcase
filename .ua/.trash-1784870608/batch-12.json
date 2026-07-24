@@ -1,0 +1,112 @@
+{
+  "nodes": [
+    {
+      "id": "file:apps/web/src/styles/global.css",
+      "type": "file",
+      "name": "global.css",
+      "filePath": "apps/web/src/styles/global.css",
+      "summary": "브라우저 기본 스타일을 정리하고 전역 타이포그래피, 폼 컨트롤, 포커스 표시, 로딩 및 시각적 숨김 유틸리티를 제공한다.",
+      "tags": [
+        "global-styles",
+        "accessibility",
+        "forms",
+        "typography"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/styles/tokens.css",
+      "type": "file",
+      "name": "tokens.css",
+      "filePath": "apps/web/src/styles/tokens.css",
+      "summary": "TeamFlow 웹의 글꼴, 색상, 상태 배지, 레이아웃 폭과 모서리 반경을 CSS 변수로 정의하는 런타임 디자인 토큰이다.",
+      "tags": [
+        "design-tokens",
+        "css-variables",
+        "theme",
+        "typography"
+      ],
+      "complexity": "simple",
+      "languageNotes": "외부 웹폰트를 한 번 가져오고 상태·레이아웃 값을 CSS custom properties로 공유한다."
+    },
+    {
+      "id": "file:apps/web/src/styles/workspace.module.css",
+      "type": "file",
+      "name": "workspace.module.css",
+      "filePath": "apps/web/src/styles/workspace.module.css",
+      "summary": "프로젝트 작업 화면들이 공유하는 컨테이너, 헤더, 버튼, 카드, 테이블, 검색창과 빈 상태 레이아웃을 제공하는 CSS Module이다.",
+      "tags": [
+        "shared-styles",
+        "css-modules",
+        "workspace",
+        "responsive-layout"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/web/src/styles/global.css",
+      "target": "file:apps/web/src/main.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/tokens.css",
+      "target": "file:apps/web/src/main.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/ai/AiPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/members/MembersPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}
