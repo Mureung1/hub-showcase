@@ -259,11 +259,16 @@ the 1,000-row sample generator: `docs/csv-crossplatform-test.md`, `scripts/gener
 
 ### Routing and design system
 
-- `src/router.jsx`: `react-router-dom` routes. `RootRedirect` handles `/` (always -> `/analyze`, unless
-  loading or a profile-fetch error is in progress); `LoadGate` wraps every other content route and only
-  blocks on session/profile loading, never on login state. Every route wraps content in `AppShell` (adds the bottom tab bar)
-  except `/login`, which passes `hideTabBar` — `/profile` shows the tab bar in both its onboarding and
-  MY-tab uses, since both need to stay navigable via the tab bar.
+- `src/router.jsx`: `react-router-dom` routes. `AppShell` (bottom tab bar) and `LoadGate` are **layout
+  routes**, not per-route wrappers: `<Route element={<AppShell/>}>` holds every tab screen and
+  `<Route element={<LoadGate/>}>` nests inside it, so a path change swaps only what renders at
+  `AppShell`'s `<Outlet/>` — the tab bar component stays mounted across navigations, and it also stays
+  put while `LoadGate` shows its loading/error card. `/login` and `/signup` sit under a second
+  `<AppShell hideTabBar/>` layout route; `/profile` is under the tab-bar one in both its onboarding and
+  MY-tab uses, since both need to stay navigable via the tab bar. `RootRedirect` handles `/` (always ->
+  `/analyze`, unless loading or a profile-fetch error is in progress); `LoadGate` only blocks on
+  session/profile loading, never on login state. `src/__tests__/appShell.tabbar.test.jsx` pins the
+  layout-route property by asserting the tab bar's DOM node survives a navigation.
 - `src/styles/theme.js` is the single source of design tokens (colors, spacing, radius, shadow,
   font, layout, and shared inline `styles.*` objects like `styles.page`/`styles.card`) — components
   should reference these tokens, not hardcode hex/px values. Interactive elements get
@@ -278,7 +283,11 @@ the 1,000-row sample generator: `docs/csv-crossplatform-test.md`, `scripts/gener
   fallback. **Only `transform`/`opacity` may be animated** — progress bars use
   `ProgressBarFill`'s `scaleX`, never `width`; the two remaining `stroke-dashoffset` transitions are
   deliberate (SVG paint-only, no reflow). `AppShell` also resets `data-nav-direction` on every route
-  change and restores per-tab scroll position. Details: `docs/interaction-guide.md`.
+  change and restores per-tab scroll position. The header (`.tds-appbar`) and the bottom tab bar
+  (`.tds-tabbar`) each carry their own `view-transition-name` so they are pulled out of the animated
+  `root` snapshot — without that, the `translateX` on `::view-transition-old/new(root)` drags both bars
+  (the tab bar is `position: fixed`) off-screen and back on every tab change, which is what "the tab bar
+  flickers" was. Details: `docs/interaction-guide.md`.
 - **`.claude/commands/toss.md`** (invoked via `/toss`) is a project-specific skill applying Toss
   design-system conventions, with detailed docs under `디자인/docs/`. Note one intentional
   deviation documented in `theme.js`'s header comment: this app uses a single green accent

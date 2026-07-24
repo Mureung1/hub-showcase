@@ -61,6 +61,27 @@ document.startViewTransition(() => flushSync(() => navigate(toPath)))
 > 갱신되어야 한다. `AppShell`이 경로가 바뀔 때마다 다시 계산해 `none`으로 되돌린다 — 이 처리가 없으면
 > 직전 탭 전환의 방향값이 남아 `/analyze → /result` 같은 같은-탭 이동에도 엉뚱한 슬라이드가 붙는다.
 
+### 상단 바·하단 탭바는 전환에서 빼둔다
+
+(a) 경로가 애니메이션하는 `::view-transition-old/new(root)` 스냅샷은 **화면 전체**다 — `position: fixed`인
+하단 탭바도 여기 포함된다. 그래서 아무 조치 없이 root에 `translateX(±100%)`를 걸면 탭을 옮길 때마다
+**탭바 자체가 화면 밖으로 밀려났다가 반대편에서 들어온다.** 사용자에게는 "탭바가 깜빡인다"로 보인다.
+
+해결은 두 바에 각자 `view-transition-name`을 주어 root에서 분리하는 것이다(`index.css`의 `.tds-appbar`
+= `Header`, `.tds-tabbar` = `BottomTabBar`). 분리된 그룹은 크로스페이드를 꺼서(`old`는 `display: none`,
+`new`는 `animation: none`) 전환 내내 제자리에 남고, 콘텐츠 영역만 좌우로 슬라이드한다.
+
+- `old`를 지우고 `new`만 남기는 이유: `::view-transition-new`는 정지 이미지가 아니라 **실제 화면의 라이브
+  표현**이라, 탭 아이콘 바운스(`.tds-tab-bounce`)가 전환 중에도 그대로 재생된다.
+- `::view-transition-group`의 기본 애니메이션(위치·크기 보간)은 일부러 남겼다. 탭바는 fixed라 어느
+  화면에서나 같은 자리지만, 헤더는 스크롤과 함께 흐르는 요소라 두 화면의 스크롤 복원 위치가 다르면
+  좌표가 달라질 수 있다 — 그때 튀지 않고 부드럽게 맞춰지도록.
+- 이 규칙들은 `prefers-reduced-motion` 미디어쿼리 **밖**에 둔다. 동작 줄이기에서도 똑같이 고정돼야 한다.
+
+구조 쪽에도 같은 목적의 장치가 있다: `AppShell`(과 `LoadGate`)은 라우트마다 감싸는 래퍼가 아니라
+**레이아웃 라우트**여서, 경로가 바뀌어도 탭바는 마운트된 채 남고 `<Outlet/>` 안쪽 콘텐츠만 교체된다.
+이 성질은 `src/__tests__/appShell.tabbar.test.jsx`가 탭바 DOM 노드 동일성으로 고정한다.
+
 ---
 
 ## 3. FR-4.3 검증: 애니메이션하는 속성 전수 확인

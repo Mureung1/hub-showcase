@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { useUser } from './context/UserContext.jsx'
 import AppButton from './components/AppButton.jsx'
 import Header from './components/Header.jsx'
@@ -39,12 +39,14 @@ function ProfileErrorCard({ message, onRetry }) {
 // 튕기지 않는다. 세션 복원(authLoading)과 신체정보 조회(profileLoading — 게스트는 localStorage, 로그인
 // 계정은 Supabase)가 끝날 때까지만 스피너로 기다리고, 조회 자체가 실패했으면(네트워크 오류 등) 재시도
 // 화면을 보여준다.
-function LoadGate({ children }) {
+// AppShell 안쪽(콘텐츠 영역)의 레이아웃 라우트로 둔다 — 이 게이트가 셸 바깥에 있으면 로딩·오류
+// 화면에서 하단 탭바까지 통째로 사라졌다 다시 나타난다.
+function LoadGate() {
   const { authLoading, profileLoading, profileError, refetchProfile } = useUser()
 
   if (authLoading || profileLoading) return <CenteredSpinner />
   if (profileError) return <ProfileErrorCard message={profileError} onRetry={refetchProfile} />
-  return children
+  return <Outlet />
 }
 
 // 앱의 진짜 진입점("/"). 신체정보 유무·로그인 여부와 무관하게 항상 바로 홈(분석 화면)으로 보낸다 —
@@ -59,92 +61,36 @@ function RootRedirect() {
   return <Navigate to="/analyze" replace />
 }
 
+// AppShell(하단 탭바 포함)과 LoadGate를 각 라우트 element 안이 아니라 **레이아웃 라우트**로 올린다.
+// 경로가 바뀌면 교체되는 것은 AppShell의 <Outlet/> 안쪽 콘텐츠뿐이고, 탭바 컴포넌트는 마운트된 채로
+// 남는다 — 예전 구조에서는 라우트마다 자기 <AppShell>을 들고 있어 탭을 옮길 때마다 탭바까지 함께
+// 다시 그려졌다. (화면 전환 애니메이션에서 탭바를 빼는 처리는 index.css의 .tds-tabbar 규칙 쪽이다.)
+//
 // /profile은 최초 입력(온보딩)과 MY 탭(이미 프로필이 있는 경우) 두 가지로 쓰이지만, 둘 다 MY 탭을 통해
-// 다른 화면으로 자유롭게 이동할 수 있어야 하므로 탭바는 항상 보여준다.
-function ProfileRoute() {
-  return (
-    <LoadGate>
-      <AppShell>
-        <Profile />
-      </AppShell>
-    </LoadGate>
-  )
-}
-
+// 다른 화면으로 자유롭게 이동할 수 있어야 하므로 탭바가 있는 쪽에 둔다. /login·/signup만 탭바를 숨긴다.
 export default function AppRouter() {
   return (
     <BrowserRouter>
       <Header />
       <GuestMigrationPrompt />
       <Routes>
-        <Route path="/" element={<RootRedirect />} />
-        <Route
-          path="/login"
-          element={
-            <AppShell hideTabBar>
-              <Login />
-            </AppShell>
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            <AppShell hideTabBar>
-              <Signup />
-            </AppShell>
-          }
-        />
-        <Route path="/profile" element={<ProfileRoute />} />
-        <Route
-          path="/analyze"
-          element={
-            <LoadGate>
-              <AppShell>
-                <Analyze />
-              </AppShell>
-            </LoadGate>
-          }
-        />
-        <Route
-          path="/result"
-          element={
-            <LoadGate>
-              <AppShell>
-                <Result />
-              </AppShell>
-            </LoadGate>
-          }
-        />
-        <Route
-          path="/meals"
-          element={
-            <LoadGate>
-              <AppShell>
-                <MealsPage />
-              </AppShell>
-            </LoadGate>
-          }
-        />
-        <Route
-          path="/calendar"
-          element={
-            <LoadGate>
-              <AppShell>
-                <Calendar />
-              </AppShell>
-            </LoadGate>
-          }
-        />
-        <Route
-          path="/map"
-          element={
-            <LoadGate>
-              <AppShell>
-                <MapPage />
-              </AppShell>
-            </LoadGate>
-          }
-        />
+        <Route element={<AppShell />}>
+          {/* "/"는 곧바로 /analyze로 넘기는 통로지만, 프로필 조회가 끝나기 전에는 스피너가 보인다 —
+              그 사이에도 탭바가 유지되도록 셸 안에 둔다. */}
+          <Route path="/" element={<RootRedirect />} />
+          <Route element={<LoadGate />}>
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/analyze" element={<Analyze />} />
+            <Route path="/result" element={<Result />} />
+            <Route path="/meals" element={<MealsPage />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/map" element={<MapPage />} />
+          </Route>
+        </Route>
+        <Route element={<AppShell hideTabBar />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )

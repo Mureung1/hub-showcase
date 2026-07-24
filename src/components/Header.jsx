@@ -59,6 +59,9 @@ export default function Header() {
 
   return (
     <header
+      // tds-appbar: 탭 전환 애니메이션에서 이 바를 제외한다(index.css) — 없으면 화면 전체 스냅샷에
+      // 딸려가 상단 바까지 좌우로 밀려난다.
+      className="tds-appbar"
       style={{
         display: 'flex',
         justifyContent: 'space-between',

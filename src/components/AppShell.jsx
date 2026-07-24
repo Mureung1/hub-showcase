@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import BottomTabBar from './BottomTabBar.jsx'
 import { navDirection } from '../lib/useTabTransition.js'
 import { colors, layout } from '../styles/theme.js'
@@ -9,11 +9,14 @@ const TAB_BAR_CLEARANCE = 76 // 탭바(고정 위치)에 콘텐츠 마지막 줄
 // 탭별 스크롤 위치를 기억해 되돌아왔을 때 복원한다(PRD v2.0 §4의 "탭 전환 시 각 탭의 스크롤 위치가
 // 유지되는지 확인하고, 깨진다면 유지되도록 처리"). 라우트가 통째로 언마운트/마운트되는 구조라
 // 브라우저 기본 스크롤 복원이 동작하지 않으므로 직접 관리한다.
-// 모듈 스코프에 두는 이유: AppShell 자체가 라우트마다 새로 마운트되므로 컴포넌트 상태로는 남지 않는다.
+// 모듈 스코프에 두는 이유: 앱↔로그인처럼 셸이 통째로 바뀌는 이동에서도 기록이 유지돼야 한다.
 const scrollByPath = new Map()
 let lastPathname = null
 
-export default function AppShell({ children, hideTabBar = false }) {
+// 라우터의 공통 레이아웃(레이아웃 라우트)이다. 경로가 바뀌어도 이 컴포넌트와 하단 탭바는 그대로
+// 남고, 교체되는 것은 <Outlet/> 안쪽 콘텐츠뿐이다 — 탭바를 각 라우트 element 안에 두면 라우트가
+// 바뀔 때마다 탭바까지 다시 그려진다.
+export default function AppShell({ hideTabBar = false }) {
   const { pathname } = useLocation()
   const pathRef = useRef(pathname)
   pathRef.current = pathname
@@ -57,7 +60,7 @@ export default function AppShell({ children, hideTabBar = false }) {
           paddingBottom: hideTabBar ? 0 : TAB_BAR_CLEARANCE,
         }}
       >
-        {children}
+        <Outlet />
       </div>
       {!hideTabBar && <BottomTabBar />}
     </div>
