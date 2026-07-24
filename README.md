@@ -17,6 +17,7 @@
 - [화면 단위 와이어프레임 (wireframe.md)](./docs/wireframe.md)
 - [디자인 컨셉 (design-concept.md)](./docs/design-concept.md)
 - [유사 서비스 리서치 (design-research.md)](./docs/design-research.md)
+- [AI Agent 협업 워크플로우 (workflow.md)](./docs/workflow.md)
 
 ## 이번 주 계획
 
