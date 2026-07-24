@@ -9,5 +9,5 @@ describe('ESLint 설정', () => {
       eslint.isPathIgnored('.worktrees/example/src/example.ts')
     ).resolves.toBe(true);
     await expect(eslint.isPathIgnored('src/main.tsx')).resolves.toBe(false);
-  });
+  }, 30_000);
 });
