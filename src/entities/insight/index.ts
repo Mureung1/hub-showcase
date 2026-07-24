@@ -44,3 +44,4 @@ export type {
 export { retrieveInsights } from './model/retrieve_insights';
 export type { RetrievedInsight } from './model/retrieve_insights';
 export { InsightGrid } from './ui/insight_grid';
+export type { InsightCategoryOption } from './ui/insight_card';

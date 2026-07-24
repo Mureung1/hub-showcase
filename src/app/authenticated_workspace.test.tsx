@@ -20,6 +20,10 @@ import {
 } from 'vitest';
 
 import type {
+  Category,
+  CategoryRepository as AsyncCategoryRepository,
+} from '@/entities/category';
+import type {
   Insight,
   InsightCaptureService,
   InsightRepository as AsyncInsightRepository,
@@ -40,6 +44,30 @@ type InsightRepository = {
   ) => { ok: true } | { ok: false; reason: 'write-failed' };
 };
 
+const DEVELOPMENT_CATEGORY_ID = '10000000-0000-4000-8000-000000000001';
+const DESIGN_CATEGORY_ID = '10000000-0000-4000-8000-000000000002';
+const DESIGN_SYSTEMS_CATEGORY_ID = '10000000-0000-4000-8000-000000000003';
+const TEST_CATEGORIES: Category[] = [
+  createCategory({
+    colorKey: 'blue-2',
+    id: DEVELOPMENT_CATEGORY_ID,
+    name: '개발',
+    sortOrder: 0,
+  }),
+  createCategory({
+    colorKey: 'coral-2',
+    id: DESIGN_CATEGORY_ID,
+    name: '디자인',
+    sortOrder: 1,
+  }),
+  createCategory({
+    colorKey: 'violet-2',
+    id: DESIGN_SYSTEMS_CATEGORY_ID,
+    name: 'Design Systems',
+    sortOrder: 2,
+  }),
+];
+
 beforeEach(() => {
   vi.stubGlobal(
     'ResizeObserver',
@@ -52,6 +80,11 @@ beforeEach(() => {
 });
 
 beforeAll(() => {
+  Object.defineProperty(Element.prototype, 'getAnimations', {
+    configurable: true,
+    value: vi.fn(() => []),
+  });
+
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     value: vi.fn().mockImplementation((query: string) => ({
@@ -167,6 +200,51 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.queryByRole('heading', { name: '보관함을 불러오지 못했어요' })
     ).toBeNull();
+  });
+
+  it('keeps insights visible but disables category changes when category loading fails', async () => {
+    const user = userEvent.setup();
+    const categoryRepository: AsyncCategoryRepository = {
+      ...createCategoryRepository(),
+      async list() {
+        return { categories: [], warnings: ['read-failed'] };
+      },
+    };
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [createInsight({ title: '계속 볼 수 있는 인사이트' })],
+        warnings: [],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          categoryRepository={categoryRepository}
+          repository={toAsyncRepository(repository)}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      await screen.findByText('카테고리를 불러오지 못했어요')
+    ).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+
+    expect(screen.getByText('계속 볼 수 있는 인사이트')).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '관리' }).getAttribute('aria-disabled')
+    ).toBe('true');
+
+    await user.click(screen.getByRole('button', { name: '수정' }));
+
+    expect(
+      screen
+        .getByRole('combobox', { name: '카테고리' })
+        .getAttribute('aria-disabled')
+    ).toBe('true');
   });
 
   it('shows remote loading before an empty library is ready', async () => {
@@ -755,7 +833,7 @@ describe('AuthenticatedWorkspace', () => {
       normalizedUrl: 'https://title.example/signal',
       domain: 'title.example',
       title: 'signal 제목',
-      category: '개발',
+      categoryId: DEVELOPMENT_CATEGORY_ID,
       createdAt: '2026-07-14T00:00:00.000Z',
     });
     const memoMatch = createInsight({
@@ -765,7 +843,7 @@ describe('AuthenticatedWorkspace', () => {
       domain: 'memo.example',
       title: '메모로 찾은 자료',
       memo: 'signal',
-      category: '개발',
+      categoryId: DEVELOPMENT_CATEGORY_ID,
       createdAt: '2026-07-13T00:00:00.000Z',
     });
     const moreMatches = Array.from({ length: 6 }, (_, index) =>
@@ -775,13 +853,13 @@ describe('AuthenticatedWorkspace', () => {
         normalizedUrl: `https://more${index}.example/article`,
         domain: `more${index}.example`,
         title: `signal 추가 자료 ${index}`,
-        category: '개발',
+        categoryId: DEVELOPMENT_CATEGORY_ID,
       })
     );
     const otherCategory = createInsight({
       id: 'other-category',
       title: 'signal 디자인 자료',
-      category: '디자인',
+      categoryId: DESIGN_CATEGORY_ID,
     });
     const repository: InsightRepository = {
       load: () => ({
@@ -793,7 +871,10 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace
+          categoryRepository={createCategoryRepository(TEST_CATEGORIES)}
+          repository={toAsyncRepository(repository)}
+        />
       </DesignSystemProvider>
     );
 
@@ -820,7 +901,12 @@ describe('AuthenticatedWorkspace', () => {
     const user = userEvent.setup();
     const repository: InsightRepository = {
       load: () => ({
-        insights: [createInsight({ title: '디자인 자료', category: '디자인' })],
+        insights: [
+          createInsight({
+            title: '디자인 자료',
+            categoryId: DESIGN_CATEGORY_ID,
+          }),
+        ],
         warnings: [],
       }),
       save: () => ({ ok: true }),
@@ -828,7 +914,10 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace
+          categoryRepository={createCategoryRepository(TEST_CATEGORIES)}
+          repository={toAsyncRepository(repository)}
+        />
       </DesignSystemProvider>
     );
 
@@ -853,12 +942,12 @@ describe('AuthenticatedWorkspace', () => {
           createInsight({
             id: 'development',
             title: '개발 자료',
-            category: '개발',
+            categoryId: DEVELOPMENT_CATEGORY_ID,
           }),
           createInsight({
             id: 'design',
             title: '디자인 자료',
-            category: '디자인',
+            categoryId: DESIGN_CATEGORY_ID,
           }),
         ],
         warnings: [],
@@ -868,7 +957,10 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace
+          categoryRepository={createCategoryRepository(TEST_CATEGORIES)}
+          repository={toAsyncRepository(repository)}
+        />
       </DesignSystemProvider>
     );
 
@@ -901,7 +993,7 @@ describe('AuthenticatedWorkspace', () => {
           createInsight({
             id: 'category-change',
             title: '카테고리로 찾은 카드',
-            category: '개발',
+            categoryId: DEVELOPMENT_CATEGORY_ID,
           }),
           createInsight({
             id: 'next-card',
@@ -909,7 +1001,7 @@ describe('AuthenticatedWorkspace', () => {
             normalizedUrl: 'https://next.example/article',
             domain: 'next.example',
             title: '다음 개발 카드',
-            category: '개발',
+            categoryId: DEVELOPMENT_CATEGORY_ID,
           }),
         ],
         warnings: [],
@@ -919,16 +1011,19 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace
+          categoryRepository={createCategoryRepository(TEST_CATEGORIES)}
+          repository={toAsyncRepository(repository)}
+        />
       </DesignSystemProvider>
     );
 
     await user.click(screen.getByRole('button', { name: '보관함' }));
     await user.click(screen.getByRole('button', { name: '개발' }));
     await user.click(screen.getAllByRole('button', { name: '수정' })[0]!);
-    const categoryInput = screen.getByRole('textbox', { name: '카테고리' });
-    await user.clear(categoryInput);
-    await user.type(categoryInput, '디자인');
+    const categoryInput = screen.getByRole('combobox', { name: '카테고리' });
+    await user.click(categoryInput);
+    await user.click(screen.getByRole('option', { name: '디자인' }));
     await user.click(screen.getByRole('button', { name: '변경 저장' }));
 
     await waitFor(() => {
@@ -985,7 +1080,7 @@ describe('AuthenticatedWorkspace', () => {
       createInsight({
         title: '편집할 링크',
         memo: '기존 메모',
-        category: '개발',
+        categoryId: DEVELOPMENT_CATEGORY_ID,
       }),
     ];
     const repository: InsightRepository = {
@@ -997,7 +1092,10 @@ describe('AuthenticatedWorkspace', () => {
     };
     const firstRender = render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace
+          categoryRepository={createCategoryRepository(TEST_CATEGORIES)}
+          repository={toAsyncRepository(repository)}
+        />
       </DesignSystemProvider>
     );
 
@@ -1009,16 +1107,15 @@ describe('AuthenticatedWorkspace', () => {
     fireEvent.change(screen.getByRole('textbox', { name: '한 줄 메모' }), {
       target: { value: '  새 검색 단서  ' },
     });
-    fireEvent.change(screen.getByRole('textbox', { name: '카테고리' }), {
-      target: { value: '  Design   Systems  ' },
-    });
+    await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+    await user.click(screen.getByRole('option', { name: 'Design Systems' }));
     await user.click(screen.getByRole('button', { name: '변경 저장' }));
 
     expect(persistedInsights[0]).toEqual(
       expect.objectContaining({
         title: '검색에 바로 잡힐 제목',
         memo: '새 검색 단서',
-        category: 'Design Systems',
+        categoryId: DESIGN_SYSTEMS_CATEGORY_ID,
       })
     );
 
@@ -1031,7 +1128,10 @@ describe('AuthenticatedWorkspace', () => {
     firstRender.unmount();
     const editReload = render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace
+          categoryRepository={createCategoryRepository(TEST_CATEGORIES)}
+          repository={toAsyncRepository(repository)}
+        />
       </DesignSystemProvider>
     );
     await user.click(screen.getByRole('button', { name: '보관함' }));
@@ -1058,7 +1158,10 @@ describe('AuthenticatedWorkspace', () => {
     editReload.unmount();
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace
+          categoryRepository={createCategoryRepository(TEST_CATEGORIES)}
+          repository={toAsyncRepository(repository)}
+        />
       </DesignSystemProvider>
     );
     await user.click(screen.getByRole('button', { name: '보관함' }));
@@ -1078,7 +1181,10 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace
+          categoryRepository={createCategoryRepository(TEST_CATEGORIES)}
+          repository={toAsyncRepository(repository)}
+        />
       </DesignSystemProvider>
     );
 
@@ -1101,15 +1207,14 @@ describe('AuthenticatedWorkspace', () => {
       screen.getByRole('textbox', { name: '한 줄 메모 (선택)' }),
       { target: { value: '모바일 설계 때 참고하기' } }
     );
-    fireEvent.change(screen.getByRole('textbox', { name: '카테고리 (선택)' }), {
-      target: { value: '  Design   Systems  ' },
-    });
+    await user.click(screen.getByRole('combobox', { name: '카테고리 (선택)' }));
+    await user.click(screen.getByRole('option', { name: 'Design Systems' }));
     await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
 
     expect(save).toHaveBeenCalledTimes(2);
     expect(save.mock.calls[1]?.[0][0]).toEqual(
       expect.objectContaining({
-        category: 'Design Systems',
+        categoryId: DESIGN_SYSTEMS_CATEGORY_ID,
         memo: '모바일 설계 때 참고하기',
         title: '다시 쓰는 디자인 패턴',
       })
@@ -1132,7 +1237,9 @@ describe('AuthenticatedWorkspace', () => {
 
     expect(screen.getByText('수정한 디자인 패턴')).not.toBeNull();
     expect(screen.getByText('모바일 설계 때 참고하기')).not.toBeNull();
-    expect(screen.getByText('Design Systems')).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Design Systems' })
+    ).not.toBeNull();
 
     fireEvent.change(screen.getByRole('searchbox', { name: '보관함 검색' }), {
       target: { value: 'Design Systems' },
@@ -1195,12 +1302,10 @@ describe('AuthenticatedWorkspace', () => {
       ).value
     ).toBe('');
     expect(
-      (
-        screen.getByRole('textbox', {
-          name: '카테고리 (선택)',
-        }) as HTMLInputElement
-      ).value
-    ).toBe('');
+      screen.getByRole('combobox', {
+        name: '카테고리 (선택)',
+      }).textContent
+    ).toContain('미분류');
     expect(screen.queryByRole('status', { name: '맥락 저장 완료' })).toBeNull();
   });
 
@@ -1412,7 +1517,7 @@ describe('AuthenticatedWorkspace', () => {
       originalUrl: 'https://example.com/article?utm_source=feed',
       normalizedUrl: 'https://example.com/article',
       title: '다시 보여야 하는 링크',
-      category: '개발',
+      categoryId: DEVELOPMENT_CATEGORY_ID,
     });
     const repository: InsightRepository = {
       load: () => ({ insights: [duplicateInsight], warnings: [] }),
@@ -1421,7 +1526,10 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace
+          categoryRepository={createCategoryRepository(TEST_CATEGORIES)}
+          repository={toAsyncRepository(repository)}
+        />
       </DesignSystemProvider>
     );
 
@@ -1620,6 +1728,70 @@ describe('AuthenticatedWorkspace', () => {
 
     expect(screen.getByRole('status').textContent).toContain('저장됨');
   });
+
+  it('카테고리 생성부터 연결, 필터, 삭제 후 미분류 이동까지 동기화한다', async () => {
+    const user = userEvent.setup();
+    const insightRepository = toAsyncRepository({
+      load: () => ({
+        insights: [
+          createInsight({
+            id: 'category-flow',
+            title: '프론트엔드 참고 자료',
+          }),
+        ],
+        warnings: [],
+      }),
+      save: () => ({ ok: true }),
+    });
+    const categoryRepository = createCategoryRepository();
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          categoryRepository={categoryRepository}
+          repository={insightRepository}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    await user.click(screen.getByRole('button', { name: '관리' }));
+    await user.click(screen.getByRole('button', { name: '새 카테고리' }));
+    await user.type(screen.getByLabelText('카테고리 이름'), '프론트엔드');
+    await user.click(screen.getByRole('button', { name: '파랑' }));
+    await user.click(screen.getByRole('button', { name: '만들기' }));
+    await user.click(screen.getAllByRole('button', { name: '닫기' }).at(-1)!);
+
+    await user.click(screen.getByRole('button', { name: '수정' }));
+    await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+    await user.click(screen.getByRole('option', { name: '프론트엔드' }));
+    await user.click(screen.getByRole('button', { name: '변경 저장' }));
+
+    const frontendFilter = screen.getByRole('button', {
+      name: '프론트엔드',
+    });
+
+    expect(frontendFilter).not.toBeNull();
+    await user.click(frontendFilter);
+    expect(screen.getByRole('article').textContent).toContain(
+      '프론트엔드 참고 자료'
+    );
+
+    await user.click(screen.getByRole('button', { name: '관리' }));
+    await user.click(screen.getByRole('button', { name: '프론트엔드 수정' }));
+    await user.click(screen.getByRole('button', { name: '카테고리 삭제' }));
+    await user.click(screen.getByRole('button', { name: '삭제하기' }));
+    await user.click(screen.getAllByRole('button', { name: '닫기' }).at(-1)!);
+
+    expect(
+      screen.getByRole('button', { name: '전체' }).getAttribute('aria-pressed')
+    ).toBe('true');
+    await user.click(screen.getByRole('button', { name: '미분류' }));
+    expect(screen.getByRole('article').textContent).toContain(
+      '프론트엔드 참고 자료'
+    );
+    expect(screen.queryByText('프론트엔드')).toBeNull();
+  }, 15_000);
 });
 
 function createInsight(overrides: Partial<Insight> = {}): Insight {
@@ -1631,10 +1803,66 @@ function createInsight(overrides: Partial<Insight> = {}): Insight {
     titleOrigin: 'fallback',
     title: 'example.com',
     memo: null,
-    category: null,
+    categoryId: null,
     createdAt: '2026-07-14T00:00:00.000Z',
     updatedAt: '2026-07-14T00:00:00.000Z',
     ...overrides,
+  };
+}
+
+function createCategory(overrides: Partial<Category> = {}): Category {
+  return {
+    colorKey: 'blue-2',
+    createdAt: '2026-07-24T00:00:00.000Z',
+    id: DEVELOPMENT_CATEGORY_ID,
+    name: '개발',
+    sortOrder: 0,
+    updatedAt: '2026-07-24T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function createCategoryRepository(
+  initialCategories: readonly Category[] = []
+): AsyncCategoryRepository {
+  let categories: Category[] = [...initialCategories];
+
+  return {
+    async create(input, sortOrder) {
+      const category: Category = {
+        ...input,
+        createdAt: '2026-07-24T00:00:00.000Z',
+        id: '10000000-0000-4000-8000-000000000001',
+        sortOrder,
+        updatedAt: '2026-07-24T00:00:00.000Z',
+      };
+      categories = [...categories, category];
+
+      return { category, ok: true };
+    },
+    async delete(categoryId) {
+      categories = categories.filter((category) => category.id !== categoryId);
+      return { ok: true };
+    },
+    async list() {
+      return { categories, warnings: [] };
+    },
+    async update(categoryId, input) {
+      const categoryIndex = categories.findIndex(
+        (category) => category.id === categoryId
+      );
+      const currentCategory = categories[categoryIndex];
+
+      if (!currentCategory) {
+        return { ok: false, reason: 'not-found' };
+      }
+
+      const category = { ...currentCategory, ...input };
+      categories = [...categories];
+      categories[categoryIndex] = category;
+
+      return { category, ok: true };
+    },
   };
 }
 

@@ -1,4 +1,4 @@
-import { searchInsights } from './search_insights';
+import { searchInsights, type SearchInsightsOptions } from './search_insights';
 import type { InsightTitleOrigin } from './insight_capture';
 
 export type { InsightTitleOrigin } from './insight_capture';
@@ -32,7 +32,8 @@ export type InsightMutationResult =
 export function filterInsights(
   insights: Insight[],
   categoryFilter: string,
-  query: string
+  query: string,
+  searchOptions?: SearchInsightsOptions
 ) {
   const categoryInsights = insights.filter((insight) => {
     return (
@@ -46,5 +47,7 @@ export function filterInsights(
     return categoryInsights;
   }
 
-  return searchInsights(categoryInsights, query).map(({ insight }) => insight);
+  return searchInsights(categoryInsights, query, searchOptions).map(
+    ({ insight }) => insight
+  );
 }

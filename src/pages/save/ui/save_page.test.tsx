@@ -1,5 +1,6 @@
 /* @vitest-environment jsdom */
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { DesignSystemProvider } from '@/shared/ui';
@@ -28,6 +29,11 @@ beforeAll(() => {
       removeEventListener: vi.fn(),
       removeListener: vi.fn(),
     })),
+  });
+
+  Object.defineProperty(Element.prototype, 'getAnimations', {
+    configurable: true,
+    value: vi.fn(() => []),
   });
 });
 
@@ -59,9 +65,47 @@ describe('SavePage', () => {
       screen.getByRole('textbox', { name: '한 줄 메모 (선택)' })
     ).not.toBeNull();
     expect(
-      screen.getByRole('textbox', { name: '카테고리 (선택)' })
+      screen.getByRole('combobox', { name: '카테고리 (선택)' })
     ).not.toBeNull();
     expect(screen.getByRole('button', { name: '건너뛰기' })).not.toBeNull();
+  });
+
+  it('selects a category created from the context selector immediately', async () => {
+    const user = userEvent.setup();
+    const categoryId = '10000000-0000-4000-8000-000000000001';
+    const onContextDraftChange = vi.fn();
+    const onRequestCategoryCreation = vi.fn(
+      (selectCategory: (createdCategoryId: string) => void) => {
+        selectCategory(categoryId);
+      }
+    );
+
+    render(
+      <DesignSystemProvider>
+        <SavePage
+          {...createContextProps()}
+          onContextDraftChange={onContextDraftChange}
+          onRequestCategoryCreation={onRequestCategoryCreation}
+          onSave={vi.fn()}
+          onUrlChange={vi.fn()}
+          saveComplete
+          saveTitle=""
+          saveUrl="https://example.com/article"
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('combobox', { name: '카테고리 (선택)' }));
+    await user.click(
+      screen.getByRole('option', { name: '새 카테고리 만들기' })
+    );
+
+    expect(onRequestCategoryCreation).toHaveBeenCalledOnce();
+    expect(onContextDraftChange).toHaveBeenCalledWith({
+      categoryId,
+      memo: '',
+      title: '',
+    });
   });
 
   it('reports URL changes and save submission', () => {
@@ -185,7 +229,7 @@ describe('SavePage', () => {
 
 function createContextProps() {
   return {
-    contextDraft: { category: '', memo: '', title: '' },
+    contextDraft: { categoryId: null, memo: '', title: '' },
     contextSaveComplete: false,
     onContextDraftChange: vi.fn(),
     onContextSave: vi.fn(),

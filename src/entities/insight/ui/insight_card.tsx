@@ -1,6 +1,24 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+} from 'react';
 
-import { Button, CategoryTag, TextArea, TextField } from '@/shared/ui';
+import {
+  categoryPalette,
+  type CategoryColorKey,
+} from '@/shared/config/design-system';
+import {
+  Button,
+  CategoryTag,
+  Select,
+  TextArea,
+  TextField,
+  type SelectOption,
+} from '@/shared/ui';
 
 import type {
   Insight,
@@ -10,7 +28,12 @@ import type {
 import { normalizeInsightUrl } from '../model/normalize_insight_url';
 
 export type InsightCardProps = {
+  categories?: readonly InsightCategoryOption[];
+  categorySelectionDisabled?: boolean;
   insight: Insight;
+  onRequestCategoryCreation?: (
+    selectCategory: (categoryId: string) => void
+  ) => void;
   onDeleteInsight?: (insightId: string) => Promise<InsightMutationResult>;
   onDeletionFocusFallback?: () => void;
   onEditFocusFallback?: () => void;
@@ -20,11 +43,20 @@ export type InsightCardProps = {
   ) => Promise<InsightMutationResult>;
 };
 
+export type InsightCategoryOption = {
+  colorKey: CategoryColorKey;
+  id: string;
+  name: string;
+};
+
 export function InsightCard({
+  categories = [],
+  categorySelectionDisabled = false,
   insight,
   onDeleteInsight,
   onDeletionFocusFallback,
   onEditFocusFallback,
+  onRequestCategoryCreation,
   onUpdateInsight,
 }: InsightCardProps) {
   const fieldId = useId();
@@ -41,6 +73,9 @@ export function InsightCard({
   const [deleteFailed, setDeleteFailed] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const selectedCategory = categories.find(
+    (category) => category.id === insight.categoryId
+  );
 
   useEffect(() => {
     const previousMode = previousCardMode.current;
@@ -202,17 +237,30 @@ export function InsightCard({
             width="100%"
           />
 
-          <label htmlFor={`${fieldId}-category`}>카테고리</label>
-          <TextField
-            id={`${fieldId}-category`}
-            onChange={(event) =>
+          <label id={`${fieldId}-category-label`}>카테고리</label>
+          <Select
+            aria-labelledby={`${fieldId}-category-label`}
+            disabled={categorySelectionDisabled}
+            onValueChange={(value) => {
+              if (value === CREATE_CATEGORY_VALUE) {
+                onRequestCategoryCreation?.((categoryId) =>
+                  handleDraftChange({ ...draft, categoryId })
+                );
+                return;
+              }
+
               handleDraftChange({
                 ...draft,
-                category: event.currentTarget.value,
-              })
-            }
-            value={draft.category}
-            width="100%"
+                categoryId:
+                  value === UNCATEGORIZED_CATEGORY_VALUE ? null : value,
+              });
+            }}
+            options={createCategorySelectOptions(
+              categories,
+              Boolean(onRequestCategoryCreation)
+            )}
+            renderValue={(option) => renderCategorySelectValue(option)}
+            value={draft.categoryId ?? UNCATEGORIZED_CATEGORY_VALUE}
           />
 
           {editFailed ? (
@@ -251,7 +299,7 @@ export function InsightCard({
             {insight.memo ? (
               <p className="insight-card__memo">{insight.memo}</p>
             ) : null}
-            {insight.category ? (
+            {selectedCategory ? (
               <ul
                 className="insight-card__categories"
                 aria-label="카테고리 목록"
@@ -259,9 +307,9 @@ export function InsightCard({
                 <li>
                   <CategoryTag
                     className="insight-card__category"
-                    tone={getCategoryTone(insight.category)}
+                    colorKey={selectedCategory.colorKey}
                   >
-                    {insight.category}
+                    {selectedCategory.name}
                   </CategoryTag>
                 </li>
               </ul>
@@ -370,7 +418,7 @@ function SourceAction({ insight }: { insight: Insight }) {
 
 function createEditDraft(insight: Insight): InsightContextInput {
   return {
-    category: insight.category ?? '',
+    categoryId: insight.categoryId,
     memo: insight.memo ?? '',
     title: insight.title,
   };
@@ -388,14 +436,62 @@ function getNextManageTrigger(article: HTMLElement | null) {
   );
 }
 
-const CATEGORY_TONES = {
-  개발: 'green',
-  디자인: 'blue',
-  팀프로젝트: 'amber',
-  공부: 'slate',
-  취업: 'coral',
-} as const;
+const UNCATEGORIZED_CATEGORY_VALUE = '__uncategorized__';
+const CREATE_CATEGORY_VALUE = '__create_category__';
 
-function getCategoryTone(category: string) {
-  return CATEGORY_TONES[category as keyof typeof CATEGORY_TONES] ?? 'slate';
+function createCategorySelectOptions(
+  categories: readonly InsightCategoryOption[],
+  includeCreateAction: boolean
+): SelectOption[] {
+  const options: SelectOption[] = [
+    {
+      label: '미분류',
+      leadingContent: <CategorySelectMark colorKey={null} />,
+      value: UNCATEGORIZED_CATEGORY_VALUE,
+    },
+    ...categories.map((category) => ({
+      label: category.name,
+      leadingContent: <CategorySelectMark colorKey={category.colorKey} />,
+      value: category.id,
+    })),
+  ];
+
+  if (includeCreateAction) {
+    options.push({
+      label: '새 카테고리 만들기',
+      leadingContent: <span aria-hidden="true">＋</span>,
+      value: CREATE_CATEGORY_VALUE,
+    });
+  }
+
+  return options;
+}
+
+function renderCategorySelectValue(option: SelectOption) {
+  return (
+    <span className="insight-card__category-select-value">
+      {option.leadingContent}
+      <span>{option.label}</span>
+    </span>
+  );
+}
+
+function CategorySelectMark({
+  colorKey,
+}: {
+  colorKey: CategoryColorKey | null;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className="insight-card__category-select-mark"
+      style={
+        {
+          '--category-color': colorKey
+            ? categoryPalette[colorKey].cssVariable
+            : 'var(--color-graphite)',
+        } as CSSProperties
+      }
+    />
+  );
 }
