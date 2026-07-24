@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CalMe 3주차 발표</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #0066CC;
+      --secondary: #00A8E8;
+      --accent: #FF6B6B;
+      --success: #10B981;
+      --bg-light: #F8F9FA;
+      --bg-white: #FFFFFF;
+      --text-dark: #1A1A1A;
+      --text-light: #666666;
+      --border: #E5E7EB;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+      background: #000;
+      color: var(--text-dark);
+      overflow: hidden;
+    }
+
+    .presentation {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: none;
+      background: #FFFFFF;
+      padding: 60px 80px;
+      opacity: 1;
+    }
+
+    .slide.active {
+      display: flex;
+      flex-direction: column;
+      opacity: 1;
+    }
+
+    .slide.title-slide {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: #FFFFFF;
+      color: var(--text-dark);
+    }
+
+    .slide.title-slide h1 {
+      font-size: 72px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+      color: var(--primary);
+    }
+
+    .slide.title-slide p {
+      font-size: 28px;
+      font-weight: 300;
+      opacity: 1;
+      color: var(--text-light);
+    }
+
+    .slide h1 {
+      font-size: 54px;
+      font-weight: 700;
+      margin-bottom: 40px;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .slide h2 {
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 30px;
+    }
+
+    .slide h3 {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 16px;
+    }
+
+    .slide p {
+      font-size: 18px;
+      line-height: 1.6;
+      color: var(--text-light);
+      margin-bottom: 12px;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      gap: 60px;
+      align-items: flex-start;
+    }
+
+    .content-left {
+      flex: 1;
+    }
+
+    .content-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+
+    .list-item::before {
+      content: "✓";
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--success);
+      color: white;
+      border-radius: 50%;
+      margin-right: 16px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--secondary);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .grid-item {
+      background: var(--bg-light);
+      border-left: 4px solid var(--primary);
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    .grid-item h3 {
+      margin-bottom: 10px;
+    }
+
+    .grid-item p {
+      font-size: 16px;
+    }
+
+    .highlight {
+      background: var(--bg-light);
+      border-left: 4px solid var(--accent);
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .highlight h3 {
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-light);
+      border-radius: 8px;
+    }
+
+    .flow-step-number {
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .flow-step p {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    .comparison-table {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .comparison-item {
+      border: 2px solid var(--primary);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .comparison-item h3 {
+      margin-bottom: 12px;
+    }
+
+    .comparison-item.negative {
+      border-color: var(--accent);
+    }
+
+    .comparison-item.negative h3 {
+      color: var(--accent);
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .code-snippet {
+      background: #1E1E1E;
+      color: #E8E8E8;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: "Monaco", "Courier New", monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin: 20px 0;
+      line-height: 1.5;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="presentation">
+    <!-- Slide 1: 제목 -->
+    <div class="slide title-slide active">
+      <h1>CalMe</h1>
+      <p style="margin-bottom: 10px;">AI 기반 대학생 일정 관리 서비스</p>
+      <p style="margin-top: 40px; font-size: 24px;">3주차 발표</p>
+      <p style="margin-top: 60px; font-size: 16px;">AI 분석 및 일정 저장 기능 완성</p>
+    </div>
+
+    <!-- Slide 2: CalMe 프로젝트 소개 -->
+    <div class="slide">
+      <h1>CalMe란?</h1>
+      <div class="two-column">
+        <div>
+          <h3>🎯 문제</h3>
+          <p style="font-size: 18px; margin-bottom: 20px;">
+            대학생이 여러 공지와 안내문을 확인하면서<br>
+            중요한 일정과 마감일을 놓친다
+          </p>
+
+          <h3 style="margin-top: 30px;">💡 솔루션</h3>
+          <div class="flow" style="margin-top: 15px;">
+            <div class="flow-step">
+              <div class="flow-step-number">1</div>
+              <p>공지 입력 (텍스트/PDF)</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">2</div>
+              <p>AI 자동 분석</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">3</div>
+              <p>결과 확인 & 수정</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">4</div>
+              <p>캘린더 자동 등록</p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3>📊 핵심 기능</h3>
+          <div class="grid" style="grid-template-columns: 1fr;">
+            <div class="grid-item">
+              <h3 style="font-size: 16px;">✨ 자동 추출</h3>
+              <p style="font-size: 15px;">공지에서 일정, 마감일, 제출물 등 정보 자동 추출</p>
+            </div>
+            <div class="grid-item">
+              <h3 style="font-size: 16px;">✏️ 수정 가능</h3>
+              <p style="font-size: 15px;">AI 분석 결과를 사용자가 직접 수정</p>
+            </div>
+            <div class="grid-item">
+              <h3 style="font-size: 16px;">📅 자동 등록</h3>
+              <p style="font-size: 15px;">캘린더에 자동으로 일정 등록</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: 개발 진행 현황 -->
+    <div class="slide">
+      <h1>개발 진행 현황</h1>
+      <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px;">
+        <div class="grid-item">
+          <h3 style="color: var(--success);">1주차 ✅</h3>
+          <p style="font-size: 15px;">
+            • 기획 & 설계<br>
+            • 프로토타입<br>
+            • 사용자 흐름
+          </p>
+        </div>
+        <div class="grid-item">
+          <h3 style="color: var(--success);">2주차 ✅</h3>
+          <p style="font-size: 15px;">
+            • 로그인/회원가입<br>
+            • 공지 입력<br>
+            • PDF 업로드<br>
+            • Mock 분석
+          </p>
+        </div>
+        <div class="grid-item">
+          <h3 style="color: var(--accent);">3주차 🔄</h3>
+          <p style="font-size: 15px;">
+            • Claude API 연결<br>
+            • 결과 수정 UI<br>
+            • 일정 저장<br>
+            • 중복 감지
+          </p>
+        </div>
+      </div>
+      <div class="highlight" style="margin-top: 30px;">
+        <strong>3주차의 의미:</strong> Mock 데이터 → <strong>실제 AI 분석</strong>으로 전환, 전체 서비스 흐름 완성
+      </div>
+    </div>
+
+    <!-- Slide 4: 3주차 목표 및 핵심 변화 -->
+    <div class="slide">
+      <h1>3주차 목표</h1>
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+        <div style="margin-bottom: 30px;">
+          <h3 style="color: var(--primary); font-size: 28px; margin-bottom: 20px;">
+            🎯 AI 분석부터 일정 저장까지 완전한 흐름 완성
+          </h3>
+        </div>
+
+        <div class="comparison-table">
+          <div class="comparison-item">
+            <h3>2주차: Mock 데이터</h3>
+            <p style="font-size: 15px; margin-top: 10px;">
+              • 텍스트 길이로<br>미리 정해진 결과<br>반환<br><br>• 전체 흐름 검증
+            </p>
+          </div>
+          <div class="comparison-item">
+            <h3>3주차: 실제 Claude API</h3>
+            <p style="font-size: 15px; margin-top: 10px;">
+              • 실제 공지 분석<br>• 사용자 수정 UI<br>• DB에 저장<br><br>• 중복 감지
+            </p>
+          </div>
+        </div>
+
+        <div class="highlight" style="margin-top: 30px;">
+          <strong>핵심 변화:</strong> "분석 결과가 고정되어 있음" → "실제 AI가 분석하고 사용자가 수정 가능"
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5: 기술 아키텍처 - Claude API 통합 -->
+    <div class="slide">
+      <h1>기술 아키텍처 - Claude API 통합</h1>
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+        <div style="margin-bottom: 30px;">
+          <p style="text-align: center; font-size: 18px; color: var(--primary); font-weight: 600;">
+            입력 → 검증 → <strong>Claude 분석</strong> → 수정 → 저장 → 확인
+          </p>
+        </div>
+
+        <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 20px;">
+          <div class="grid-item">
+            <h3>📝 Frontend</h3>
+            <p style="font-size: 15px;">
+              • 공지 입력<br>
+              • 분석 결과 표시<br>
+              • 수정 UI<br>
+              • 저장 요청
+            </p>
+          </div>
+          <div class="grid-item">
+            <h3>⚙️ Backend</h3>
+            <p style="font-size: 15px;">
+              • Claude API 호출<br>
+              • JSON 검증<br>
+              • DB 저장<br>
+              • 중복 감지
+            </p>
+          </div>
+          <div class="grid-item">
+            <h3>🤖 Claude AI</h3>
+            <p style="font-size: 15px;">
+              • claude-opus-4-8 모델<br>
+              • 프롬프트 엔지니어링<br>
+              • JSON 스키마<br>
+              • 구조화된 응답
+            </p>
+          </div>
+          <div class="grid-item">
+            <h3>💾 Database</h3>
+            <p style="font-size: 15px;">
+              • events 테이블<br>
+              • notice 연결<br>
+              • user 격리<br>
+              • 중복 검사
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 6: Claude API 연결 (기술) -->
+    <div class="slide">
+      <h1>Claude API 연결 (기술)</h1>
+      <div class="two-column">
+        <div>
+          <h3>프롬프트 엔지니어링</h3>
+          <p style="font-size: 16px; margin-bottom: 15px;">
+            어떤 정보를 어떤 형식으로<br>
+            추출할지 명확히 정의
+          </p>
+          <div class="highlight" style="font-size: 14px;">
+            <strong>예시:</strong><br>
+            "공지에서 일정명, 마감일,<br>
+            제출물을 JSON으로 반환"
+          </div>
+
+          <h3 style="margin-top: 25px;">JSON Schema</h3>
+          <p style="font-size: 16px; margin-bottom: 15px;">
+            응답 형식을 고정해서<br>
+            파싱 오류 방지
+          </p>
+
+          <h3 style="margin-top: 25px;">오류 처리</h3>
+          <p style="font-size: 16px; margin-bottom: 8px;">
+            • API 타임아웃<br>
+            • 잘못된 JSON<br>
+            • 정보 부족
+          </p>
+        </div>
+        <div>
+          <h3>API 호출 흐름</h3>
+          <div class="flow">
+            <div class="flow-step">
+              <div class="flow-step-number">1</div>
+              <p>공지 텍스트 전송</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">2</div>
+              <p>Claude API 호출</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">3</div>
+              <p>JSON 응답 수신</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">4</div>
+              <p>응답 검증</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">5</div>
+              <p>정규화 & 반환</p>
+            </div>
+          </div>
+
+          <div class="highlight" style="margin-top: 20px; font-size: 13px;">
+            <strong>장점:</strong><br>
+            • 실제 AI 분석<br>
+            • 정확한 정보 추출<br>
+            • 문맥 이해
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 7: 분석 결과 수정 UI -->
+    <div class="slide">
+      <h1>분석 결과 수정 UI</h1>
+      <div style="flex: 1; display: grid; grid-template-columns: 350px 1fr; gap: 40px; align-items: stretch;">
+        <div>
+          <h3 style="font-size: 18px; margin-bottom: 20px;">표시되는 정보</h3>
+          <div style="font-size: 15px; line-height: 2;">
+            📋 일정명<br>
+            📅 시작일 / 마감일<br>
+            ⏰ 시간<br>
+            📍 장소<br>
+            📦 제출물<br>
+            📝 메모<br>
+            🏷️ 카테고리
+          </div>
+
+          <h3 style="font-size: 18px; margin-top: 25px; margin-bottom: 15px;">수정 기능</h3>
+          <div style="font-size: 14px; line-height: 1.8;">
+            ✏️ 각 필드 직접 수정<br>
+            🗑️ 일정 삭제<br>
+            ➕ 새 일정 추가<br>
+            ✓ 등록할 일정 선택
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center;">
+          <img src="./analysis_result_edit.png" alt="분석 결과 수정 UI" style="max-width: 100%; max-height: calc(100vh - 200px); object-fit: contain;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 8: 일정 저장 기능 -->
+    <div class="slide">
+      <h1>일정 저장 기능</h1>
+      <div class="two-column">
+        <div>
+          <h3>저장 프로세스</h3>
+          <div class="flow">
+            <div class="flow-step">
+              <div class="flow-step-number">1</div>
+              <p>수정한 일정 확인</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">2</div>
+              <p>필수 정보 검증</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">3</div>
+              <p>여러 일정 한 번에</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">4</div>
+              <p>DB에 저장</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">5</div>
+              <p>대시보드 업데이트</p>
+            </div>
+          </div>
+
+          <div class="highlight" style="margin-top: 20px; font-size: 13px;">
+            <strong>DB 저장:</strong><br>
+            • events 테이블<br>
+            • notice_id 연결<br>
+            • user 격리
+          </div>
+        </div>
+        <div>
+          <img src="./dashboard_with_events.png" alt="저장된 일정 대시보드" style="max-width: 100%; max-height: calc(100vh - 200px); object-fit: contain;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 9: 중복 일정 감지 -->
+    <div class="slide">
+      <h1>중복 일정 감지</h1>
+      <div style="flex: 1; display: grid; grid-template-columns: 350px 1fr; gap: 40px; align-items: stretch;">
+        <div>
+          <h3 style="font-size: 18px; margin-bottom: 20px;">중복 기준</h3>
+          <div class="highlight">
+            <strong>같은 사용자 +<br>
+            같은 일정명 +<br>
+            같은 날짜</strong>
+          </div>
+
+          <h3 style="font-size: 18px; margin-top: 25px; margin-bottom: 15px;">감지 로직</h3>
+          <div style="font-size: 15px; line-height: 1.8;">
+            ✓ 저장 전 확인<br>
+            🔍 유사 일정 찾기<br>
+            ⚠️ 경고 팝업<br>
+            🤔 강제 등록 선택지
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center;">
+          <img src="./duplicate_warning.png" alt="중복 감지 팝업" style="max-width: 100%; max-height: calc(100vh - 200px); object-fit: contain;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 10: 시연 -->
+    <div class="slide">
+      <h1>시연</h1>
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+        <h3 style="text-align: center; font-size: 24px; color: var(--primary); margin-bottom: 30px;">
+          🎬 실제 동작 보여드리겠습니다
+        </h3>
+
+        <div class="flow">
+          <div class="flow-step">
+            <div class="flow-step-number">1</div>
+            <p><strong>로그인</strong> → 대시보드 접속</p>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-number">2</div>
+            <p><strong>공지 입력</strong> → 텍스트 또는 PDF</p>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-number">3</div>
+            <p><strong>Claude 분석</strong> → 실제 AI 분석 (Mock 아님!)</p>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-number">4</div>
+            <p><strong>결과 수정</strong> → 일정 정보 수정</p>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-number">5</div>
+            <p><strong>저장 & 확인</strong> → 대시보드 업데이트</p>
+          </div>
+        </div>
+
+        <div class="highlight" style="margin-top: 30px; text-align: center;">
+          <strong>포인트:</strong> Mock이 아닌 <strong>실제 Claude API</strong>로 공지를 분석합니다
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 11: 어려웠던 점 -->
+    <div class="slide">
+      <h1>어려웠던 점 & 해결</h1>
+      <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 20px;">
+        <div class="grid-item">
+          <h3>🤖 Claude 프롬프트</h3>
+          <p style="font-size: 14px;">
+            여러 번 시도해서 좋은 프롬프트 발견<br><br>
+            → 정확도 ↑
+          </p>
+        </div>
+        <div class="grid-item">
+          <h3>📋 JSON 검증</h3>
+          <p style="font-size: 14px;">
+            API 응답이 항상 올바른 형식 아님<br><br>
+            → 검증 로직 추가
+          </p>
+        </div>
+        <div class="grid-item">
+          <h3>📅 날짜 형식</h3>
+          <p style="font-size: 14px;">
+            다양한 날짜 형식을 하나로 통일<br><br>
+            → 정규화 함수 작성
+          </p>
+        </div>
+        <div class="grid-item">
+          <h3>🔄 중복 감지</h3>
+          <p style="font-size: 14px;">
+            "중복"의 정의를 명확히 하는 데 시간<br><br>
+            → 명확한 기준 수립
+          </p>
+        </div>
+      </div>
+
+      <div class="highlight" style="margin-top: 30px;">
+        <strong>배운 점:</strong> API 통합할 때는 <strong>완벽한 응답을 기대하지 말고 검증 로직</strong>을 견고하게 만들어야 한다
+      </div>
+    </div>
+
+    <!-- Slide 12: 4주차 계획 -->
+    <div class="slide">
+      <h1>4주차 계획</h1>
+      <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 20px;">
+        <div class="grid-item">
+          <h3>📅 캘린더</h3>
+          <p style="font-size: 15px;">
+            • 월간 캘린더 표시<br>
+            • 일정 클릭 & 상세보기<br>
+            • 월 이동
+          </p>
+        </div>
+        <div class="grid-item">
+          <h3>📊 대시보드</h3>
+          <p style="font-size: 15px;">
+            • 마감 임박 일정<br>
+            • D-Day 표시<br>
+            • 지난 일정 처리
+          </p>
+        </div>
+        <div class="grid-item">
+          <h3>🚀 배포</h3>
+          <p style="font-size: 15px;">
+            • Frontend 배포<br>
+            • Backend 배포<br>
+            • 운영 DB 연결
+          </p>
+        </div>
+        <div class="grid-item">
+          <h3>🧪 QA</h3>
+          <p style="font-size: 15px;">
+            • 전체 흐름 테스트<br>
+            • 버그 수정<br>
+            • 최종 검증
+          </p>
+        </div>
+      </div>
+
+      <div class="highlight" style="margin-top: 30px;">
+        <strong>4주차 목표:</strong> <strong>완성된 서비스</strong>로 배포 준비
+      </div>
+    </div>
+
+    <!-- Slide 13: 마무리 -->
+    <div class="slide" style="justify-content: center;">
+      <div style="text-align: center;">
+        <h1 style="font-size: 64px; margin-bottom: 30px;">Thank You</h1>
+        <p style="font-size: 24px; color: var(--text-light); margin-bottom: 40px;">
+          3주차: AI 분석 & 일정 저장 완성
+        </p>
+        <div style="display: flex; justify-content: center; gap: 30px; margin-top: 50px;">
+          <div>
+            <p style="font-size: 14px; color: var(--text-light);">다음 발표</p>
+            <p style="font-size: 20px; font-weight: 600; color: var(--primary);">4주차 캘린더 & 배포</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+
+    updateSlide();
+
+    function showSlide(n) {
+      slides.forEach(slide => slide.classList.remove('active'));
+
+      if (n >= totalSlides) {
+        currentSlide = totalSlides - 1;
+      } else if (n < 0) {
+        currentSlide = 0;
+      } else {
+        currentSlide = n;
+      }
+
+      slides[currentSlide].classList.add('active');
+      updateSlide();
+    }
+
+    function nextSlide() {
+      showSlide(currentSlide + 1);
+    }
+
+    function previousSlide() {
+      showSlide(currentSlide - 1);
+    }
+
+    function updateSlide() {
+      // 네비게이션 없음
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
+        e.preventDefault();
+        previousSlide();
+      }
+    });
+
+    document.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (e.deltaY > 0) {
+        nextSlide();
+      } else {
+        previousSlide();
+      }
+    }, { passive: false });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'F5') {
+        e.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -118,7 +118,7 @@
   font-weight: 400;
   line-height: 1.5;
   color: var(--color-text);
-  background-color: var(--color-surface-subtle);
+  background-color: var(--color-surface);
   transition: border-color var(--transition-fast),
     background-color var(--transition-fast), box-shadow var(--transition-fast);
   box-sizing: border-box;

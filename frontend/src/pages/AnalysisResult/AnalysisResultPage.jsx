@@ -14,6 +14,8 @@ function AnalysisResultPage() {
   const [editingEventId, setEditingEventId] = useState(null);
   const [editedData, setEditedData] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [savedEventCount, setSavedEventCount] = useState(0);
 
   // Dashboard에서 전달된 실제 분석 결과를 받음
   useEffect(() => {
@@ -77,7 +79,12 @@ function AnalysisResultPage() {
     } else {
       // 수정 모드 시작 (현재 데이터를 임시 데이터로 복사)
       setEditingEventId(index);
-      setEditedData({ ...analysisData.events[index] });
+      const eventData = { ...analysisData.events[index] };
+      // deliverables가 없으면 빈 배열로 초기화
+      if (!eventData.deliverables) {
+        eventData.deliverables = [];
+      }
+      setEditedData(eventData);
     }
   }
 
@@ -86,6 +93,31 @@ function AnalysisResultPage() {
       ...prev,
       [field]: value,
     }));
+  }
+
+  function handleAddDeliverable() {
+    setEditedData((prev) => ({
+      ...prev,
+      deliverables: [...(prev.deliverables || []), ""],
+    }));
+  }
+
+  function handleDeleteDeliverable(index) {
+    setEditedData((prev) => ({
+      ...prev,
+      deliverables: prev.deliverables.filter((_, i) => i !== index),
+    }));
+  }
+
+  function handleDeliverableChange(index, value) {
+    setEditedData((prev) => {
+      const updatedDeliverables = [...prev.deliverables];
+      updatedDeliverables[index] = value;
+      return {
+        ...prev,
+        deliverables: updatedDeliverables,
+      };
+    });
   }
 
   function validateEventData(data) {
@@ -256,6 +288,8 @@ function AnalysisResultPage() {
       // 백엔드 API 호출
       await saveEvents(selectedEventsList);
 
+      setSavedEventCount(selectedEventsList.length);
+      setShowSaveConfirmation(true);
       setSuccess(`${selectedEventsList.length}개의 일정이 저장되었습니다.`);
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
@@ -264,6 +298,16 @@ function AnalysisResultPage() {
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function handleSaveConfirmationYes() {
+    setShowSaveConfirmation(false);
+    navigate("/calendar");
+  }
+
+  function handleSaveConfirmationNo() {
+    setShowSaveConfirmation(false);
+    navigate("/register-event");
   }
 
   if (error) {
@@ -565,16 +609,81 @@ function AnalysisResultPage() {
                       )}
                     </div>
 
-                    {event.deliverables.length > 0 && (
+                    {editingEventId === index || event.deliverables?.length > 0 ? (
                       <div className="event-field">
                         <label>제출물</label>
-                        <ul className="deliverables-list">
-                          {event.deliverables.map((item, idx) => (
-                            <li key={idx}>{item}</li>
-                          ))}
-                        </ul>
+                        {editingEventId === index ? (
+                          <div>
+                            {editedData.deliverables?.map((item, idx) => (
+                              <div
+                                key={idx}
+                                style={{
+                                  display: "flex",
+                                  gap: "8px",
+                                  marginBottom: "8px",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <input
+                                  type="text"
+                                  value={item}
+                                  onChange={(e) =>
+                                    handleDeliverableChange(idx, e.target.value)
+                                  }
+                                  placeholder="제출물 입력"
+                                  style={{
+                                    flex: 1,
+                                    padding: "8px 12px",
+                                    border: "1px solid var(--color-border)",
+                                    borderRadius: "4px",
+                                    fontSize: "14px",
+                                    fontFamily: "Inter, Pretendard, sans-serif",
+                                  }}
+                                />
+                                <button
+                                  onClick={() => handleDeleteDeliverable(idx)}
+                                  style={{
+                                    padding: "6px 10px",
+                                    backgroundColor: "#ff6b6b",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    cursor: "pointer",
+                                    fontSize: "12px",
+                                    fontWeight: "600",
+                                  }}
+                                >
+                                  삭제
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={handleAddDeliverable}
+                              style={{
+                                width: "100%",
+                                padding: "8px 12px",
+                                backgroundColor: "var(--color-primary)",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "13px",
+                                fontWeight: "600",
+                                marginTop: "8px",
+                              }}
+                            >
+                              + 제출물 추가
+                            </button>
+                          </div>
+                        ) : (
+                          <ul className="deliverables-list">
+                            {event.deliverables?.map((item, idx) => (
+                              <li key={idx}>{item}</li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
-                    )}
+                    ) : null}
 
                     {editingEventId === index || event.notes ? (
                       <div className="event-field">
@@ -671,6 +780,74 @@ function AnalysisResultPage() {
           </button>
         </div>
       </div>
+
+      {/* 저장 완료 팝업 */}
+      {showSaveConfirmation && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              padding: "32px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
+              maxWidth: "400px",
+              textAlign: "center",
+            }}
+          >
+            <h2 style={{ margin: "0 0 16px 0", color: "var(--color-text)" }}>
+              일정이 등록되었습니다
+            </h2>
+            <p style={{ margin: "0 0 24px 0", color: "var(--color-text-muted)", fontSize: "14px" }}>
+              {savedEventCount}개의 일정이 저장되었습니다. 캘린더로 이동하시겠습니까?
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+              <button
+                onClick={handleSaveConfirmationYes}
+                style={{
+                  padding: "10px 24px",
+                  backgroundColor: "var(--color-primary)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                }}
+              >
+                예, 캘린더로 이동
+              </button>
+              <button
+                onClick={handleSaveConfirmationNo}
+                style={{
+                  padding: "10px 24px",
+                  backgroundColor: "var(--color-surface-subtle)",
+                  color: "var(--color-text)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                }}
+              >
+                아니오, 계속 등록
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
