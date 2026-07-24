@@ -28,7 +28,19 @@ function App() {
         {/* path="*" = 위 어디에도 안 맞는 주소 → 홈으로 리다이렉트(replace=뒤로가기 기록 안 남김) */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      {/* Routes 밖에 두어 모든 화면(홈·검색·상세) 공통으로 하단에 표시된다. */}
+      <Footer />
     </div>
+  );
+}
+
+// 전역 푸터: 데이터 출처·주의·제보 안내. 서비스 전체가 서울시 공공데이터를 쓰므로 앱 하단 공통.
+function Footer() {
+  return (
+    <footer className="footer">
+      <p className="footer-source">데이터 출처 · 서울시 공공데이터 (공영주차장 정보 · 실시간 주차대수)</p>
+      <p className="footer-note">공공데이터 기준이며, 실제와 다를 수 있습니다. 정보가 다를 경우 제보 부탁드립니다.</p>
+    </footer>
   );
 }
 
