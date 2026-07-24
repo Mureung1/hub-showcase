@@ -148,7 +148,9 @@ export function createMacOsPublicPreviewParentPicker(options: {
       ],
       { signal },
     )
-    const selected = stdout.replace(/\r?\n$/u, '').replace(/\/$/u, '')
+    const output = stdout.replace(/\r?\n$/u, '')
+    const selected =
+      output.length > 1 ? output.replace(/\/$/u, '') : output
     return selected.length > 0 ? selected : null
   }
 }

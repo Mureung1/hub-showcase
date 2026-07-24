@@ -84,6 +84,15 @@ export async function createPublicPreviewRuntimeOwner(
     },
     signal: new AbortController().signal,
   })
+  if (
+    current.role.role !== 'auth-only' ||
+    current.role.bootstrapCwd !== input.authOnlyBootstrapCwd
+  ) {
+    await current.close({
+      signal: new AbortController().signal,
+    }).catch(() => undefined)
+    throw new Error('The auth-only Runtime role changed')
+  }
   let workspace: AdmittedSemesterWorkspace | undefined
 
   async function spawnRuntime(spawnInput: {

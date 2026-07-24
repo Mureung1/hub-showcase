@@ -77,6 +77,29 @@ test('auth-only and workspace generations each consume a fresh spawn capability 
   )
 })
 
+test('a changed auth-only Runtime role is closed before owner creation fails', async () => {
+  const runtime = new DeterministicCodexChatRuntime({
+    role: {
+      role: 'workspace',
+      workspaceRoot: '/unexpected/workspace',
+    },
+  })
+
+  await assert.rejects(
+    createPublicPreviewRuntimeOwner(
+      runtimeBootstrap(async () => ({
+        runtimeRoot: '/verified/runtime',
+      })),
+      async () => runtime,
+    ),
+    /auth-only Runtime role changed/,
+  )
+  assert.deepEqual(
+    runtime.calls.map(({ operation }) => operation),
+    ['closeAccount'],
+  )
+})
+
 function runtimeBootstrap(
   verifyRuntimeForSpawn:
     PublicPreviewRuntimeBootstrap['spawn']['verifyRuntimeForSpawn'],

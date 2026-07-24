@@ -1,4 +1,5 @@
 import {
+  decodePublicPreviewAccountProjection,
   decodePublicPreviewBootstrap,
   decodePublicPreviewResponse,
   decodePublicPreviewSetupProjection,
@@ -86,8 +87,13 @@ export function createPublicPreviewCommandAdapter(input: {
     signal: AbortSignal,
     accountOverride?: PublicPreviewAccountProjection,
   ): Promise<PublicPreviewBootstrap> => {
-    const account =
-      accountOverride ?? await input.account.observe({ signal })
+    let account: PublicPreviewAccountProjection
+    try {
+      account =
+        accountOverride ?? await input.account.observe({ signal })
+    } catch {
+      return safeUnavailableBootstrap()
+    }
     try {
       return project(account)
     } catch {
@@ -103,7 +109,10 @@ export function createPublicPreviewCommandAdapter(input: {
   ): Promise<PublicPreviewResponse> => {
     const promise = operation()
     activeCommands.add(promise)
-    void promise.finally(() => activeCommands.delete(promise))
+    void promise.then(
+      () => activeCommands.delete(promise),
+      () => activeCommands.delete(promise),
+    )
     return promise
   }
 
@@ -361,6 +370,17 @@ function firstConnectionProjection(): PublicPreviewSetupProjection {
     displayMessage:
       '학기 공간을 만들기 전에 ChatGPT를 연결해 주세요.',
     allowedCommands: [],
+  })
+}
+
+function safeUnavailableBootstrap(): PublicPreviewBootstrap {
+  return decodePublicPreviewBootstrap({
+    account: decodePublicPreviewAccountProjection({
+      state: 'unavailable',
+      displayMessage: '지금은 계정 상태를 확인할 수 없습니다.',
+      allowedCommands: ['account.retry'],
+    }),
+    setup: firstConnectionProjection(),
   })
 }
 

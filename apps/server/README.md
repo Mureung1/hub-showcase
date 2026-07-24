@@ -1,12 +1,26 @@
 # @ay-ple/server
 
-Explicit current workspace directory와 official SDK 기반 Codex Runtime을 하나의 product lifecycle로 조합하는 Express local companion server다. `createServerApplication()`이 product HTTP, current workspace authority, listener와 bounded Runtime shutdown을 함께 소유하는 application factory다.
+Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 product lifecycle로 조합하는 Express local companion server다. `createServerApplication()`은 listener-independent application factory이며 product HTTP, 선택한 workspace graph와 bounded Runtime shutdown을 소유한다. Listener bind와 process signal은 별도 host adapter가 소유한다.
 
 `/api/product/*`의 public JSON request·response와 NDJSON frame은 dependency-free [`@ay-ple/product-contract`](../../packages/product-contract/README.md)가 소유한다. Server는 shared decoder로 mutation body를 admission하고 domain object를 public projection으로 변환한다. Express route, status·Origin guard, neutral NDJSON line writer, workspace store와 private Runtime/MCP binding은 Server에 남는다.
 
-`src/account-runtime/contract.ts`, `coordinator.ts`, `route-adapter.ts`는 Spine S1의 private `AccountRuntimeTransitionLease`, app-wide serialized account/Runtime transition과 mount-independent Account command adapter를 구현한다. Auth-only Runtime의 complete close 뒤 workspace Runtime을 시작하고 fresh account를 읽으며, transition 중 fresh `signed_out`는 `workspace_account_reauth_required`로 보존한다. Account route가 성공한 fresh non-ChatGPT 상태를 관찰하면 injected B-owned Ready attestation을 무효화하지만 unavailable/error/abort는 인증 증거로 취급하지 않는다. Current `createServerApplication()`의 product router에는 이 graph가 아직 조합되지 않았다.
+`src/account-runtime/contract.ts`, `coordinator.ts`, `route-adapter.ts`는 Spine S1의 private `AccountRuntimeTransitionLease`, app-wide serialized account/Runtime transition과 mount-independent Account command adapter를 구현한다. Auth-only Runtime의 complete close 뒤 workspace Runtime을 시작하고 fresh account를 읽으며, transition 중 fresh `signed_out`는 `workspace_account_reauth_required`로 보존한다. Account route가 성공한 fresh non-ChatGPT 상태를 관찰하면 injected B-owned Ready attestation을 무효화하지만 unavailable/error/abort는 인증 증거로 취급하지 않는다. `createServerApplication({ publicPreview })`가 이 owner를 v3 setup graph와 직렬 조합한다.
 
-현재 canonical product 구현의 `SemesterWorkspaceController`는 chooser·development materializer가 넘긴 directory를 current v2 store로 열고 internal `ready`를 판정한다. 이와 별도로 exact workspace dependency인 [`@ay-ple/semester-workspace`](../../packages/semester-workspace/README.md)는 v3 admission, durable setup envelope·`SetupJourney`와 lease-bound Ready relaunch를 구현했고, Server는 native project boundary, lease-bound Ready transition/attestation, setup-envelope action readiness와 Browser-safe Ready presentation을 구현했다. 그러나 current product controller·HTTP/router·Chat Shell·startup에는 이 v3 setup graph가 아직 조합되지 않았다. 따라서 canonical dogfood의 current `ready workspace`는 [domain glossary](../../CONTEXT.md)의 `Semester Ready`와 같지 않으며, adopted target은 [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)가 소유한다.
+기존 canonical development product 구현의 `SemesterWorkspaceController`는 chooser·development materializer가 넘긴 directory를 current v2 store로 열고 internal `ready`를 판정한다. 이와 별도로 exact workspace dependency인 [`@ay-ple/semester-workspace`](../../packages/semester-workspace/README.md)는 v3 admission, durable setup envelope·`SetupJourney`와 lease-bound Ready relaunch를 구현한다. Public-preview Server graph는 이 v3 owner와 native project boundary, lease-bound Ready transition/attestation, setup-envelope action readiness, Browser-safe Ready presentation을 조합한다. 아직 public host/startup이 이 graph를 선택하지 않으므로 기존 dogfood의 current `ready workspace`는 [domain glossary](../../CONTEXT.md)의 `Semester Ready`와 같지 않다.
+
+## Public-preview application graph
+
+`@ay-ple/server` package root는 side-effect-free `createServerApplication()`과 public-preview bootstrap type만 host에 공개한다. `publicPreview`와 legacy `codexChat`·`productRuntime`·`semesterWorkspace` bootstrap은 한 application에서 함께 사용할 수 없다. 따라서 하나의 application graph에 두 Runtime owner나 두 workspace authority가 생기지 않는다.
+
+Public-preview graph는 다음 순서를 소유한다.
+
+1. Host가 제공한 high-level spawn capability를 매 Runtime generation 직전에 검증한다.
+2. Auth-only Runtime에서 managed Browser OAuth를 수행한다.
+3. Native picker의 transient opaque parent selection으로 app-owned v3 workspace를 prepare·approve한다.
+4. A-owned lease 안에서 auth-only close → workspace Runtime start → fresh account → native context → Ready commit/readback을 완료한다.
+5. Reconnect 뒤에는 durable Ready만으로 성공을 합성하지 않고 explicit `setup.resume`이 새 attestation을 만든 뒤에만 `Semester Ready`를 공개한다.
+
+`GET|POST /api/product/public-preview`는 S1 exact Browser contract만 반환한다. Absolute path, Runtime identity, token, native ID, setup/release private binding과 nested error는 노출하지 않는다. Public-preview graph는 현재 `Semester Ready`에서 끝난다. `admitAcademicAction()`은 후속 action integration을 위한 B-owned admission probe일 뿐 route나 native action을 실행하지 않으며, legacy Course·material·Assignment·Chat·Review route와 private MCP host는 이 graph에 mount되지 않는다.
 
 ## Canonical 시작과 root 소유권
 
@@ -57,7 +71,7 @@ Boundary는 config·Skill read를 첫 `await` 전에 같은 `AbortSignal`로 함
 
 `src/setup/setup-envelope-action-readiness.ts`는 durable `active_ready` pointer, exact release/workspace와 현재-process attestation이 모두 일치할 때만 action readiness를 연다. `workspace-action-admission.ts`는 이 readiness를 action 전후에 다시 읽으면서 v3 aggregate, bundle/static context와 native boundary를 fresh 검증한다. `ready-workspace-presentation.ts`와 `setup-journey-projection.ts`는 semester label, redacted workspace leaf와 safe breadcrumb만 Browser-safe Ready fixture로 옮기고 absolute path, workspace/setup/release identity와 사용자명 파생 copy를 제외한다.
 
-Native boundary 하나의 성공이나 durable `active_ready` bytes만으로는 current canonical app의 `Semester Ready`가 아니다. 위 Module-level graph와 tests는 구현됐지만 current Server application은 v3 admission, setup journey, account/Runtime coordinator와 Browser command router를 아직 직렬 조합하지 않았고, current product actions도 이 v3 action admission을 사용하지 않는다. 이 composition은 C1과 후속 UI/host integration의 범위다.
+Native boundary 하나의 성공이나 durable `active_ready` bytes만으로는 `Semester Ready`가 아니다. Public-preview application은 v3 admission, setup journey, account/Runtime coordinator와 Browser command router를 직렬 조합하고 process-local attestation까지 확인한다. 기존 development product actions는 별도 current-v2 graph에 남으며 이 v3 action admission을 사용하지 않는다.
 
 ## Workspace-local durable store
 
@@ -94,6 +108,7 @@ Private `propose_state_patch` MCP는 selected source·base revision·exact quote
 
 | Endpoint | 동작 |
 | --- | --- |
+| `GET|POST /api/product/public-preview` | Optional public-preview graph의 Account→Setup→Ready observe와 exact command endpoint. Mutation은 absent-or-exact Origin과 loopback socket만 허용 |
 | `GET /api/product/bootstrap` | Account Readiness, coarse operation status, active workspace·Course·material, confirmed revision·settled history |
 | `POST /api/product/workspaces/activate` | Current Server-owned chooser directory activation, current-store adoption과 read-only incompatible boundary. `WorkspaceManifest` scaffold endpoint가 아님 |
 | `POST /api/product/courses` | Empty internal-ready current workspace의 first-vertical Course 생성 |
@@ -107,11 +122,11 @@ Private `propose_state_patch` MCP는 selected source·base revision·exact quote
 | `POST /api/product/reviews/:interactionId` | Exact active Review의 accept·revise·reject |
 | `POST /api/product/operations/:operationId/interrupt` | Matching active Turn interrupt acknowledgement |
 
-Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Origin과 exact match할 때만 허용한다. MCP host는 loopback과 per-process high-entropy token을 모두 검증한다. Token, native identity, absolute source·scratch path, complete MCP payload, traceback과 persistence metadata는 Browser contract에 없다. `/api/health`, `/api/runtime/*`와 `/api/codex-chat/*`는 compatibility alias가 아니며 Express `404`로 닫힌다.
+Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Origin과 exact match할 때만 허용한다. MCP host는 legacy development graph에서 loopback과 per-process high-entropy token을 모두 검증한다. Token, native identity, absolute source·scratch path, complete MCP payload, traceback과 persistence metadata는 Browser contract에 없다. Public-preview graph에서는 arbitrary `/workspaces/activate`, private MCP와 legacy/raw Codex route를 mount하지 않는다. `/api/health`, `/api/runtime/*`와 `/api/codex-chat/*`도 compatibility alias가 아니며 Express `404`로 닫힌다.
 
 ## NDJSON과 shutdown
 
-Neutral Server-private NDJSON writer는 product stream의 backpressure·disconnect와 bounded drain을 소유한다. `CodexChatService`는 Runtime terminal을 한 번 관찰하고 accepted operation의 interrupt·terminal·unknown settlement를 관리한다. `createServerApplication().close()`는 새 work·listener restart를 막고 listener close를 시작한 뒤 active disconnect drain과 Runtime close를 한 promise로 수렴한다. Python·native process group과 pipe가 사라진 뒤에만 resolve한다.
+Neutral Server-private NDJSON writer는 legacy development product stream의 backpressure·disconnect와 bounded drain을 소유한다. `CodexChatService`는 Runtime terminal을 한 번 관찰하고 accepted operation의 interrupt·terminal·unknown settlement를 관리한다. `createServerApplication().close()`는 새 work·listener restart를 막고 listener close를 시작한 뒤 active command/picker/transition을 abort·drain하고 Runtime close를 한 promise로 수렴한다. Python·native process group과 pipe가 사라진 뒤에만 resolve하며 ambiguous public-preview Runtime cleanup은 성공으로 합성하지 않는다.
 
 `npm run test:product-entrypoint`는 root canonical command가 explicit `appDataRoot`와 workspace selection만으로 product API·Browser를 열고 legacy path를 무시하며 SIGINT 뒤 OS process graph와 port를 bounded하게 정리하는지 검증한다. `npm run test:product-shutdown-actual -w @ay-ple/server`는 product-capable Runtime process tree에서 listener refusal, close ordering과 child-of-child reap을 별도로 증명한다.
 

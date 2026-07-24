@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { createServer } from 'node:net'
+import { createServer as createHttpServer } from 'node:http'
+import { createServer as createNetServer } from 'node:net'
 import {
   mkdir,
   mkdtemp,
@@ -11,6 +12,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 
+import express from 'express'
+
 import {
   DeterministicCodexChatRuntime,
 } from '@ay-ple/codex-chat-runtime/testing'
@@ -19,6 +22,10 @@ import {
   type PublicPreviewCommand,
   type PublicPreviewResponse,
 } from '@ay-ple/product-contract'
+import {
+  PUBLIC_PREVIEW_ACCOUNT_FIXTURES,
+  PUBLIC_PREVIEW_SETUP_FIXTURES,
+} from '@ay-ple/product-contract/testing'
 import {
   captureCanonicalWorkspaceBundleSource,
   type LaunchBinding,
@@ -29,6 +36,10 @@ import {
   type PublicPreviewFeatureComposition,
   type PublicPreviewServerBootstrap,
 } from './public-preview-composition.js'
+import type {
+  PublicPreviewCommandAdapter,
+} from './public-preview-command-adapter.js'
+import { createPublicPreviewRouter } from './public-preview-http.js'
 import {
   createPublicPreviewRuntimeOwner,
 } from './public-preview-runtime-owner.js'
@@ -365,6 +376,73 @@ test('composition failure after Runtime ownership closes the active generation',
     )
   } finally {
     await fixture.cleanup()
+  }
+})
+
+test('unexpected adapter failures stay inside a strict safe 500 response', async () => {
+  const origin = 'http://127.0.0.1:43123'
+  let failureCalls = 0
+  const adapter: PublicPreviewCommandAdapter = {
+    async observe() {
+      throw new Error('private observe failure')
+    },
+    async dispatch() {
+      throw new Error('private dispatch failure')
+    },
+    async failure({ code }) {
+      failureCalls += 1
+      return decodePublicPreviewResponse({
+        status: 'error',
+        error: {
+          code,
+          displayMessage: '학기 공간 준비 상태를 확인할 수 없습니다.',
+          retryable: true,
+        },
+        projection: {
+          account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.unavailable,
+          setup: PUBLIC_PREVIEW_SETUP_FIXTURES.firstConnection,
+        },
+      })
+    },
+    currentReadyWorkspace: () => null,
+    beginShutdown: () => undefined,
+    whenIdle: async () => undefined,
+  }
+  const app = express()
+  app.use(
+    '/api/product/public-preview',
+    createPublicPreviewRouter({ adapter, origin }),
+  )
+  const listener = createHttpServer(app)
+  await new Promise<void>((resolve, reject) => {
+    listener.once('error', reject)
+    listener.listen(0, '127.0.0.1', resolve)
+  })
+  const address = listener.address()
+  assert.ok(address && typeof address === 'object')
+  const baseUrl = `http://127.0.0.1:${address.port}`
+  try {
+    for (const request of [
+      () => fetch(`${baseUrl}/api/product/public-preview`),
+      () => fetch(`${baseUrl}/api/product/public-preview`, {
+        method: 'POST',
+        headers: jsonHeaders(origin),
+        body: JSON.stringify({ command: 'account.retry' }),
+      }),
+    ]) {
+      const response = await request()
+      assert.equal(response.status, 500)
+      const decoded = decodePublicPreviewResponse(await response.json())
+      assert.equal(decoded.status, 'error')
+      if (decoded.status === 'error') {
+        assert.equal(decoded.error.code, 'setup_unavailable')
+      }
+    }
+    assert.equal(failureCalls, 2)
+  } finally {
+    await new Promise<void>((resolve, reject) => {
+      listener.close((error) => error ? reject(error) : resolve())
+    })
   }
 })
 
@@ -750,7 +828,7 @@ async function snapshotEntries(root: string): Promise<readonly string[]> {
 }
 
 async function freePort(): Promise<number> {
-  const server = createServer()
+  const server = createNetServer()
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject)
     server.listen(0, '127.0.0.1', resolve)
