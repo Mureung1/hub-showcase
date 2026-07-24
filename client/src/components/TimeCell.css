@@ -1,0 +1,41 @@
+.time-cell {
+  height: 36px;
+  padding: 0;
+  background: var(--heatmap-0);
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast),
+    box-shadow var(--transition-base), transform 0.1s ease;
+}
+
+.time-cell:hover {
+  transform: scale(1.05);
+}
+
+.time-cell.level-1 {
+  background: var(--heatmap-1);
+}
+
+.time-cell.level-2 {
+  background: var(--heatmap-2);
+}
+
+.time-cell.level-3 {
+  background: var(--heatmap-3);
+}
+
+.time-cell.level-4 {
+  background: var(--heatmap-4);
+}
+
+/* 내가 선택한 칸: 색 진하기(누가 가능한지)와 안 겹치게 테두리로만 구분 */
+.time-cell.mine {
+  border-color: var(--color-info);
+}
+
+/* 추천 카드를 클릭했을 때 해당 칸을 잠깐 강조.
+   진한 보라 칸(level-4) 위에서도 티가 나도록 밝은 틈(bg-page) + 보라 링 2겹으로 */
+.time-cell.highlight {
+  box-shadow: 0 0 0 3px var(--bg-page), 0 0 0 6px var(--color-primary);
+}

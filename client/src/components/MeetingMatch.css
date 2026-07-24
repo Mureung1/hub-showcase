@@ -1,0 +1,32 @@
+.meeting-match-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: 24px 24px 28px;
+}
+
+.meeting-match-save-btn {
+  width: 100%;
+  margin-top: 20px;
+  padding: 15px;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--text-on-primary);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-primary);
+  transition: background var(--transition-fast);
+}
+
+.meeting-match-save-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.meeting-match-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

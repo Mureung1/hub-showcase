@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>팀플 올인원 — 발표</title>
+<link href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1A1526;
+  --ink-soft:#4A4359;
+  --paper:#FAF9FC;
+  --violet:#6C4DE6;
+  --violet-deep:#3B2A8C;
+  --violet-wash:#EDE8FE;
+  --line:#DDD6F0;
+  --note-bg:#161122;
+  --note-ink:#E4DEF5;
+  --note-accent:#A78BFA;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Gothic A1',-apple-system,sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+.stage{
+  max-width:1100px;
+  margin:0 auto;
+  padding:0 24px 120px;
+}
+
+/* ---- 상단 바 ---- */
+.bar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(250,249,252,.92);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:16px;
+  padding:14px 24px;
+  margin:0 -24px 40px;
+}
+.bar h1{font-size:15px;font-weight:800;letter-spacing:-.02em}
+.bar .sp{flex:1}
+.toggle{
+  font-family:inherit;font-size:13px;font-weight:700;
+  border:1.5px solid var(--violet);
+  background:var(--violet);color:#fff;
+  padding:8px 16px;border-radius:999px;cursor:pointer;
+  transition:.15s;
+}
+.toggle.off{background:transparent;color:var(--violet)}
+.toggle:hover{opacity:.85}
+.timer{
+  font-family:'JetBrains Mono',monospace;
+  font-size:15px;font-weight:600;
+  color:var(--violet-deep);
+  min-width:56px;text-align:right;
+}
+.tbtn{
+  font-family:inherit;font-size:12px;font-weight:700;
+  border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);
+  padding:7px 12px;border-radius:8px;cursor:pointer;
+}
+
+/* ---- 슬라이드 ---- */
+.slide{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:56px 60px;
+  margin-bottom:20px;
+  box-shadow:0 1px 3px rgba(60,40,120,.05);
+  min-height:420px;
+  display:flex;flex-direction:column;justify-content:center;
+}
+.num{
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;font-weight:600;
+  color:var(--violet);
+  letter-spacing:.1em;
+  margin-bottom:20px;
+}
+.slide h2{
+  font-size:40px;font-weight:800;
+  letter-spacing:-.03em;line-height:1.2;
+  margin-bottom:24px;
+}
+.slide h2.big{font-size:52px}
+.slide .sub{
+  font-size:20px;color:var(--ink-soft);
+  line-height:1.6;font-weight:500;
+  margin-bottom:28px;
+}
+.slide ul{list-style:none;display:flex;flex-direction:column;gap:14px}
+.slide li{
+  font-size:19px;line-height:1.5;
+  padding-left:26px;position:relative;
+}
+.slide li::before{
+  content:'';position:absolute;left:0;top:11px;
+  width:9px;height:9px;border-radius:3px;
+  background:var(--violet);
+}
+.slide li b{font-weight:800}
+.hl{color:var(--violet-deep);font-weight:800}
+
+/* 2단 */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:36px}
+.two h3{
+  font-size:14px;font-weight:800;letter-spacing:.04em;
+  color:var(--violet);margin-bottom:14px;
+  padding-bottom:8px;border-bottom:2px solid var(--violet-wash);
+}
+
+/* 기술스택 */
+.stack{display:flex;flex-direction:column;gap:18px}
+.srow{display:grid;grid-template-columns:110px 1fr;gap:18px;align-items:start}
+.slab{
+  font-size:13px;font-weight:800;color:var(--ink-soft);
+  padding-top:7px;letter-spacing:.02em;
+}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  font-family:'JetBrains Mono',monospace;
+  font-size:14px;font-weight:600;
+  background:var(--violet-wash);color:var(--violet-deep);
+  padding:7px 13px;border-radius:8px;
+}
+.chip.dark{background:var(--violet-deep);color:#fff}
+
+/* 흐름도 */
+.flow{
+  display:flex;align-items:center;gap:14px;
+  flex-wrap:wrap;margin:8px 0 24px;
+}
+.box{
+  background:var(--violet-wash);
+  border:1.5px solid var(--violet);
+  border-radius:12px;
+  padding:16px 20px;
+  font-weight:700;font-size:16px;
+  text-align:center;
+}
+.box small{
+  display:block;font-family:'JetBrains Mono',monospace;
+  font-size:11px;font-weight:500;color:var(--ink-soft);
+  margin-top:4px;
+}
+.arr{color:var(--violet);font-size:22px;font-weight:700}
+
+/* 지표 */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:12px}
+.stat{text-align:center;padding:22px 12px;background:var(--violet-wash);border-radius:14px}
+.stat .n{
+  font-family:'JetBrains Mono',monospace;
+  font-size:34px;font-weight:600;color:var(--violet-deep);
+  line-height:1;
+}
+.stat .l{font-size:13px;color:var(--ink-soft);margin-top:8px;font-weight:600}
+
+/* 코드 */
+code{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.88em;background:var(--violet-wash);
+  color:var(--violet-deep);
+  padding:2px 6px;border-radius:5px;font-weight:600;
+}
+
+/* ---- 발표자 노트 ---- */
+.note{
+  background:var(--note-bg);
+  color:var(--note-ink);
+  border-radius:16px;
+  padding:26px 30px;
+  margin:-8px 0 34px;
+  font-size:15.5px;line-height:1.75;
+}
+.note .tag{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;font-weight:600;letter-spacing:.12em;
+  color:var(--note-accent);
+  display:block;margin-bottom:12px;
+}
+.note p{margin-bottom:11px}
+.note p:last-child{margin-bottom:0}
+.note b{color:#fff;font-weight:700}
+.note .q{
+  border-left:2.5px solid var(--note-accent);
+  padding-left:14px;margin-top:14px;
+  font-size:14.5px;color:#B9B0D4;
+}
+.note .q b{color:var(--note-accent)}
+body.hide-notes .note{display:none}
+
+@media print{
+  .bar{display:none}
+  .note{display:none}
+  .slide{page-break-after:always;box-shadow:none}
+}
+@media(max-width:760px){
+  .slide{padding:36px 28px}
+  .slide h2{font-size:30px}
+  .slide h2.big{font-size:36px}
+  .two{grid-template-columns:1fr;gap:24px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .srow{grid-template-columns:1fr;gap:8px}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <h1>팀플 올인원 — N048 김우현</h1>
+  <div class="sp"></div>
+  <span class="timer" id="timer">10:00</span>
+  <button class="tbtn" id="startBtn">시작</button>
+</div>
+
+<div class="stage">
+
+<!-- 1 -->
+<div class="slide">
+  <div class="num">01 / 09</div>
+  <h2 class="big">팀플 올인원</h2>
+  <p class="sub">팀 프로젝트의 시작(언제 모이지?)부터<br>끝(누가 뭘 얼마나 했지?)까지 하나로 잇는 웹 서비스</p>
+  <ul>
+    <li>컴퓨터공학과 2학년 · <b>1인 개발 4주</b></li>
+    <li>Claude Code와 함께 작업을 잘게 쪼개 개발</li>
+  </ul>
+</div>
+
+<!-- 2 -->
+<div class="slide">
+  <div class="num">02 / 09</div>
+  <h2>기술 스택</h2>
+  <div class="stack">
+    <div class="srow">
+      <div class="slab">프론트엔드</div>
+      <div class="chips">
+        <span class="chip dark">React 19</span>
+        <span class="chip">Vite</span>
+        <span class="chip">axios</span>
+        <span class="chip">CSS 변수 디자인 시스템</span>
+      </div>
+    </div>
+    <div class="srow">
+      <div class="slab">백엔드</div>
+      <div class="chips">
+        <span class="chip dark">Node.js</span>
+        <span class="chip">Express 5</span>
+        <span class="chip">pg (node-postgres)</span>
+      </div>
+    </div>
+    <div class="srow">
+      <div class="slab">데이터베이스</div>
+      <div class="chips">
+        <span class="chip dark">Supabase</span>
+        <span class="chip">PostgreSQL</span>
+      </div>
+    </div>
+    <div class="srow">
+      <div class="slab">테스트</div>
+      <div class="chips">
+        <span class="chip">Vitest</span>
+        <span class="chip">TDD (권한 로직)</span>
+      </div>
+    </div>
+    <div class="srow">
+      <div class="slab">배포</div>
+      <div class="chips">
+        <span class="chip dark">Vercel</span>
+        <span class="chip dark">Render</span>
+        <span class="chip">환경변수 분리</span>
+      </div>
+    </div>
+    <div class="srow">
+      <div class="slab">개발 도구</div>
+      <div class="chips">
+        <span class="chip">Claude Code</span>
+        <span class="chip">Git / GitHub</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="slide">
+  <div class="num">03 / 09</div>
+  <h2>왜 만들었나</h2>
+  <div class="two">
+    <div>
+      <h3>불편했던 것</h3>
+      <ul>
+        <li>시간 맞추려면 <b>when2meet</b></li>
+        <li>할 일 나누는 건 <b>카톡</b></li>
+        <li>진행 상황은 <b>각자 메모</b></li>
+        <li>도구를 계속 오가야 함</li>
+      </ul>
+    </div>
+    <div>
+      <h3>진짜 문제</h3>
+      <ul>
+        <li>누가 뭘 얼마나 했는지 <b>안 드러남</b></li>
+        <li>무임승차가 생겨도 <b>증거가 없음</b></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="slide">
+  <div class="num">04 / 09</div>
+  <h2>두 개의 기둥</h2>
+  <div class="two">
+    <div>
+      <h3>태스크 관리</h3>
+      <ul>
+        <li>할 일 · 담당자 · 마감일</li>
+        <li>팀 전체 / 내 <b>진행도</b></li>
+        <li><b>담당자만</b> 상태 변경 가능</li>
+        <li>삭제해도 남는 <b>복원 기능</b></li>
+        <li>모든 변경이 <b>활동 로그</b>에</li>
+      </ul>
+    </div>
+    <div>
+      <h3>회의시간 매칭</h3>
+      <ul>
+        <li>프로젝트 기간 <b>주차별</b> 격자</li>
+        <li>가능한 시간 클릭으로 표시</li>
+        <li>겹치는 인원 <b>히트맵</b></li>
+        <li><b>추천 시간</b> 상위 3개</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="slide">
+  <div class="num">05 / 09</div>
+  <h2>시연</h2>
+  <p class="sub">배포된 링크로 직접 보여드리겠습니다</p>
+  <div class="flow">
+    <div class="box">태스크 화면<small>추가 · 담당자 · 진행도</small></div>
+    <span class="arr">→</span>
+    <div class="box">권한 확인<small>남의 일 → 거부</small></div>
+    <span class="arr">→</span>
+    <div class="box">회의시간<small>클릭 → 저장 → 히트맵</small></div>
+    <span class="arr">→</span>
+    <div class="box">추천 시간<small>상위 3개</small></div>
+  </div>
+</div>
+
+<!-- 6 -->
+<div class="slide">
+  <div class="num">06 / 09</div>
+  <h2>구조</h2>
+  <div class="flow">
+    <div class="box">React<small>브라우저 · Vercel</small></div>
+    <span class="arr">→</span>
+    <div class="box">Express<small>서버 · Render</small></div>
+    <span class="arr">→</span>
+    <div class="box">PostgreSQL<small>Supabase</small></div>
+  </div>
+  <ul>
+    <li>프론트는 <b>DB를 직접 만지지 않음</b> — 반드시 서버를 거침</li>
+    <li>서버는 <code>routes → controllers → models</code> 3단 구조</li>
+    <li>주소 연결 / 검증·권한 / SQL 쿼리로 <b>역할 분리</b></li>
+  </ul>
+</div>
+
+<!-- 7 -->
+<div class="slide">
+  <div class="num">07 / 09</div>
+  <h2>가장 공들인 것</h2>
+  <p class="sub">권한 체크 로직 <code>canMemberChange</code> — 테스트를 먼저 쓰고 구현했습니다</p>
+  <ul>
+    <li><b>규칙</b> — 담당자가 있으면 담당자만, 없으면 누구나</li>
+    <li><b>TDD</b> — 테스트 작성 → 실패 확인 → 구현 → 통과</li>
+    <li>입력과 출력이 명확해서 <b>테스트 쓰기 좋은 로직</b></li>
+    <li>client / server 양쪽에 같은 규칙 + <b>같은 테스트 6개씩</b></li>
+  </ul>
+</div>
+
+<!-- 8 -->
+<div class="slide">
+  <div class="num">08 / 09</div>
+  <h2>막혔던 것</h2>
+  <div class="two">
+    <div>
+      <h3>날짜가 하루씩 밀렸다</h3>
+      <ul>
+        <li>DB의 <code>DATE</code>를 JS가 읽을 때<br><b>한국 시간</b>을 거치며 하루 밀림</li>
+        <li>3곳에서 같은 증상 → 원인은 다름</li>
+        <li>같은 증상도 <b>원인을 봐야</b> 처방이 나옴</li>
+      </ul>
+    </div>
+    <div>
+      <h3>6일 된 좀비 프로세스</h3>
+      <ul>
+        <li>코드를 고쳐도 <b>화면이 그대로</b></li>
+        <li>옛 서버가 포트를 물고 있었음</li>
+        <li>"코드가 틀렸다"가 아니라<br><b>"코드가 실행되고 있나"</b>를 먼저 확인</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 9 -->
+<div class="slide">
+  <div class="num">09 / 09</div>
+  <h2>정리와 다음</h2>
+  <div class="stats">
+    <div class="stat"><div class="n">2</div><div class="l">핵심 기능</div></div>
+    <div class="stat"><div class="n">4</div><div class="l">개발 주차</div></div>
+    <div class="stat"><div class="n">12</div><div class="l">테스트</div></div>
+    <div class="stat"><div class="n">1</div><div class="l">배포 링크</div></div>
+  </div>
+  <ul style="margin-top:26px">
+    <li><b>했습니다</b> — SQLite → Supabase 이전, React 전환, 회의시간 매칭, 배포</li>
+    <li><b>다음</b> — 초대코드로 팀에 들어가는 로그인, 드래그로 시간 선택</li>
+  </ul>
+</div>
+
+</div>
+
+<script>
+(function(){
+  var total=600,left=total,id=null;
+  var t=document.getElementById('timer'),s=document.getElementById('startBtn');
+  function draw(){
+    var m=Math.floor(Math.abs(left)/60),x=Math.abs(left)%60;
+    t.textContent=(left<0?'-':'')+m+':'+(x<10?'0':'')+x;
+    t.style.color=left<=60?'#D0333F':'';
+  }
+  s.addEventListener('click',function(){
+    if(id){clearInterval(id);id=null;s.textContent='계속';return;}
+    if(left===total)left=total;
+    s.textContent='일시정지';
+    id=setInterval(function(){left--;draw();},1000);
+  });
+  draw();
+})();
+</script>
+
+</body>
+</html>

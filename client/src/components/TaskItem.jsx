@@ -2,6 +2,7 @@ import './TaskItem.css';
 import EditableAssignee from './EditableAssignee';
 import EditableDueDate from './EditableDueDate';
 import EditableTitle from './EditableTitle';
+import { getDaysUntilDue, formatDday } from '../utils/date';
 
 const STATUS_LABEL = { pending: '대기', in_progress: '진행', done: '완료' };
 const STATUS_CLASS = { pending: 'wait', in_progress: 'progress', done: 'done' };
@@ -65,6 +66,12 @@ function TaskItem({
             showToast={showToast}
             onSave={(dueDate) => onUpdateDueDate(task.id, dueDate)}
           />
+          {task.due_date && !isDone && (
+            <span className={`dday${getDaysUntilDue(task.due_date) <= 1 ? ' dday-urgent' : ''}`}>
+              {' · '}
+              {formatDday(task.due_date)}
+            </span>
+          )}
         </div>
       </div>
 

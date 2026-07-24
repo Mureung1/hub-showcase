@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
+import ActivityLog from './components/ActivityLog'
 import AddTaskForm from './components/AddTaskForm'
 import ArchivedTasks from './components/ArchivedTasks'
 import Header from './components/Header'
+import MeetingMatch from './components/MeetingMatch'
 import ProgressCard from './components/ProgressCard'
 import TaskList from './components/TaskList'
 import Toast from './components/Toast'
@@ -17,13 +19,16 @@ import {
   restoreTask,
 } from './api/tasks'
 import { getMembers } from './api/members'
+import { getActivityLogs } from './api/activityLogs'
 import { safeGetStoredMemberId, safeSetStoredMemberId } from './utils/storage'
 
 const NEXT_STATUS = { pending: 'in_progress', in_progress: 'done', done: 'pending' }
 
 function App() {
+  const [currentPage, setCurrentPage] = useState('tasks')
   const [tasks, setTasks] = useState([])
   const [archivedTasks, setArchivedTasks] = useState([])
+  const [logs, setLogs] = useState([])
   const [members, setMembers] = useState([])
   const [currentMemberId, setCurrentMemberId] = useState(() => {
     const saved = safeGetStoredMemberId()
@@ -36,6 +41,7 @@ function App() {
   useEffect(() => {
     getTasks().then(setTasks).catch((err) => console.error(err))
     getArchivedTasks().then(setArchivedTasks).catch((err) => console.error(err))
+    getActivityLogs().then(setLogs).catch((err) => console.error(err))
 
     getMembers()
       .then((data) => {
@@ -91,6 +97,8 @@ function App() {
         currentMemberId
       )
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+      // 상태 변경은 서버에서 활동 로그를 자동으로 남기므로 같이 새로고침
+      getActivityLogs().then(setLogs).catch((err) => console.error(err))
     })
   }
 
@@ -104,6 +112,7 @@ function App() {
         currentMemberId
       )
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+      getActivityLogs().then(setLogs).catch((err) => console.error(err))
     })
   }
 
@@ -156,30 +165,39 @@ function App() {
           members={members}
           currentMemberId={currentMemberId}
           onChangeCurrentMember={handleChangeCurrentMember}
+          currentPage={currentPage}
+          onChangePage={setCurrentPage}
         />
-        <ProgressCard tasks={tasks} currentMemberId={currentMemberId} />
-        <TaskList
-          tasks={tasks}
-          members={members}
-          currentMemberId={currentMemberId}
-          pendingTaskIds={pendingTaskIds}
-          onToggleStatus={handleToggleStatus}
-          onCycleStatus={handleCycleStatus}
-          onDelete={handleDeleteTask}
-          onUpdateTitle={handleUpdateTitle}
-          onUpdateAssignee={handleUpdateAssignee}
-          onUpdateDueDate={handleUpdateDueDate}
-          showToast={showToast}
-        />
-        <AddTaskForm members={members} onTaskAdded={handleTaskAdded} />
-        <ArchivedTasks
-          archivedTasks={archivedTasks}
-          members={members}
-          currentMemberId={currentMemberId}
-          pendingTaskIds={pendingTaskIds}
-          onRestore={handleRestoreTask}
-          showToast={showToast}
-        />
+        {currentPage === 'tasks' ? (
+          <>
+            <ProgressCard tasks={tasks} currentMemberId={currentMemberId} />
+            <TaskList
+              tasks={tasks}
+              members={members}
+              currentMemberId={currentMemberId}
+              pendingTaskIds={pendingTaskIds}
+              onToggleStatus={handleToggleStatus}
+              onCycleStatus={handleCycleStatus}
+              onDelete={handleDeleteTask}
+              onUpdateTitle={handleUpdateTitle}
+              onUpdateAssignee={handleUpdateAssignee}
+              onUpdateDueDate={handleUpdateDueDate}
+              showToast={showToast}
+            />
+            <AddTaskForm members={members} onTaskAdded={handleTaskAdded} />
+            <ArchivedTasks
+              archivedTasks={archivedTasks}
+              members={members}
+              currentMemberId={currentMemberId}
+              pendingTaskIds={pendingTaskIds}
+              onRestore={handleRestoreTask}
+              showToast={showToast}
+            />
+            <ActivityLog logs={logs} />
+          </>
+        ) : (
+          <MeetingMatch members={members} currentMemberId={currentMemberId} />
+        )}
       </div>
       <Toast message={toastMessage} />
     </>

@@ -38,17 +38,17 @@
 
 ## 기술 스택
 
-- **프론트엔드**: React (Vite)
+- **프론트엔드**: React (Vite) — `client/`, 전환 완료 (3주차)
 - **백엔드**: Node.js + Express
-- **DB**: SQLite → **Supabase로 전환 예정 (3주차)**. 접속 URL/키는 `.env`로 분리(커밋 금지)
+- **DB**: **Supabase(Postgres)로 전환 완료 (3주차)**. `pg`(node-postgres)로 직접 연결(`@supabase/supabase-js` SDK가 아니라 순수 Postgres 커넥션). 접속 URL은 `.env`의 `DATABASE_URL`로 분리(커밋 금지)
 - **실시간**: Socket.IO (여유 시)
 - **차트**: Chart.js (기여도 시각화 시)
 
-> **현재 상태(2주차 기준)**: 아직 `client/`(React)로 전환하지 않고 `prototype/` 폴더의 순수 HTML/CSS/바닐라 JS로 진행 중이었음. `tasks.html`은 백엔드 API와 실제로 연동되어 동작한다.
-> - `calendar-match.html`(회의시간 매칭)은 프로토타입 상태. 실제 날짜 기반 UI(드래그 선택, 겹침 히트맵, 추천)는 동작하지만 가짜 데이터이며 백엔드/DB 연동은 아직 안 됨.
+> **현재 상태(3주차 기준)**: `client/`(React, Vite)로 전환 완료. `prototype/` 폴더(순수 HTML/CSS/바닐라 JS)는 이제 참고용 구버전 — 화면/CSS를 React로 옮길 때 원본으로만 참조하고, 더는 직접 수정하지 않는다.
+> - `tasks.html`(태스크 관리)은 `client/`의 App/TaskList/TaskItem/ProgressCard 등으로 이전 완료, 실제 API와 연동되어 동작한다.
+> - `calendar-match.html`(회의시간 매칭)은 여전히 프로토타입 상태. 실제 날짜 기반 UI(드래그 선택, 겹침 히트맵, 추천)는 동작하지만 가짜 데이터이며 React 전환·백엔드/DB 연동은 아직 안 됨 — 다음 작업 대상.
 > - `index.html`은 `calendar-match.html`의 구버전으로 정리 대상.
->
-> **3주차부터**: React 전환을 "발표 이후로 미룬다"고 했던 것에서 변경 — **이번 주에 진행 예정**. 순서는 아래 "3주차 계획" 참고.
+> - server는 여전히 `prototype/`을 `:3000`에서 정적 서빙하지만(레거시), 실제 개발은 `client/`(`npm run dev`, `:5173`)에서 한다.
 
 ### 개발 원칙
 - **1개 만들고 → 바로 확인 → Git 저장** 반복
@@ -94,8 +94,8 @@
 
 ### 로그인 방식
 - 아이디/비밀번호가 아니라 **이름 선택 방식**으로 확정. JWT/bcrypt 사용 안 함.
-- 3주차에 "초대코드 진입 → 이름 선택 → 4자리 핀" 흐름으로 정식 구현 예정.
-- 2주차 현재는 `tasks.html` 상단의 이름 선택 드롭다운 + localStorage로 currentUser를 식별하는 임시 버전. 이 로직은 3주차에 그대로 재사용.
+- "초대코드 진입 → 이름 선택 → 4자리 핀" 흐름은 아직 미구현 — 다중 팀(초대코드) 기능이 없어서 뒤로 미뤄짐.
+- 3주차 현재는 헤더 우측 `UserSelect`(아바타+이름 드롭다운) 컴포넌트로 React 전환 완료. 선택한 사람은 `localStorage`(`teamplan_currentMemberId`)에 저장되고, 새로고침해도 그 사람이 실제로 지금 팀원 목록에 있는지 검증한 뒤 유지 — 2주차 `tasks.html`의 이름 선택 로직을 그대로 React state로 옮긴 것.
 
 > **3주차 착수 전 확인**: `server/src/currentTeamId.js`에 팀 id가 `1`로 하드코딩되어 있고, `taskController`·`memberController`·`activityLogController` 4곳이 이 값을 그대로 가져다 쓴다. 다중 팀(초대코드) 기능을 붙일 때 이 4곳을 "현재 사용자가 속한 팀"으로 바꿔야 한다.
 
@@ -108,6 +108,9 @@
 - 완료↔미완료 **되돌리기는 허용**하되, 모든 변경을 활동 로그에 기록.
   - 이유: 금지하면 실수 복구 불가. 투명성(기록)으로 조작을 억제하는 게 낫다.
 - 마감일은 목록에서 텍스트를 클릭하면 바로 수정/삭제(지우기)할 수 있다. 계획서 원안엔 없었지만 2주차에 추가로 구현함. 권한 규칙은 상태 변경/삭제와 동일(담당자 본인만, 없으면 누구나).
+- 제목·담당자도 3주차에 같은 방식(클릭 → 인라인 편집)으로 추가 구현함. 권한 규칙 동일. `PATCH /api/tasks/:id/title`, `PATCH /api/tasks/:id/assignee`.
+- soft delete된(삭제된) 태스크는 "삭제된 항목 보기" 토글로 볼 수 있고, 담당자 본인만(없으면 누구나) 복원 가능(`GET /api/tasks/archived`, `PATCH /api/tasks/:id/restore`) — 3주차에 추가 구현.
+- 권한 체크 로직(`canMemberChange`)은 3주차에 TDD로 개발 — `client/src/utils/permission.js`와 `server/src/utils/permission.js`에 각각 같은 로직·같은 테스트 케이스로 존재(아래 "부트캠프 요구사항 반영" 참고). client/server가 서로 다른 런타임이라 코드를 공유할 수 없어서 파일은 두 벌, 테스트로 동일 동작을 보장.
 
 ### 기여도
 - 개수 기반으로 계산 (완료한 태스크 수 + 활동 기록).
@@ -270,6 +273,9 @@ https://github.com/jsjsbs7233/hub/pull/new/N048_김우현
 | `warning: LF will be replaced by CRLF` | 줄바꿈 방식 차이 | **무시해도 됨** |
 | `git log`에서 못 빠져나옴 | 페이지 뷰어 모드 | **`q`** 키 |
 | vim 편집기가 뜸 | merge 커밋 메시지 확인 | `:wq` 입력 후 Enter |
+| PowerShell에서 `npm`/`vite` 실행 시 "이 시스템에서 스크립트 실행이 금지되어 있으므로..." | PowerShell 실행 정책(ExecutionPolicy)이 스크립트 실행을 막음 | PowerShell 대신 **cmd(명령 프롬프트)**에서 실행 |
+| API를 고쳤는데 서버 재시작해도 계속 옛날 동작(예: 새로 만든 라우트가 404) | 3000번 포트를 예전 `node src/app.js` 프로세스가 이미 점유 중이라 새 프로세스가 안 뜨거나 옛 프로세스가 계속 응답 | `netstat -ano \| findstr :3000`으로 점유 중인 PID 확인 → 작업 관리자나 `taskkill /F /PID <번호>`로 종료 후 재시작 |
+| 새로 추가한 라우트(예: `GET /api/tasks/archived`)가 계속 404 | Express는 라우트를 등록 순서대로 검사하다 첫 매치에서 멈춤 — `GET /:id`처럼 뭐든 매치하는 동적 라우트가 `/archived`보다 위에 있으면 그게 먼저 가로챔 | 고정 경로(`/archived`, `/:id/restore` 등)를 `:id` 같은 동적 라우트보다 **위에** 배치 |
 
 ---
 
@@ -294,16 +300,17 @@ https://github.com/jsjsbs7233/hub/pull/new/N048_김우현
 ### 화면 만들 때
 위 디자인 시스템의 CSS 변수를 그대로 사용할 것. 색을 임의로 정하지 말 것.
 
-## 디렉토리 구조
+## 디렉토리 구조 (3주차 기준 실제 구조)
 teamplan/
-├── client/                    # React (Vite)
+├── client/                    # React (Vite) — 전환 완료
 │   ├── src/
-│   │   ├── components/        # 재사용 부품 (버튼, 카드, 진행바)
-│   │   ├── pages/             # 화면 단위 (로그인, 팀목록, 태스크관리)
-│   │   ├── api/               # 서버 요청 코드
-│   │   ├── styles/            # CSS 변수 (디자인 시스템)
+│   │   ├── components/        # 화면 부품 (Header, TaskList, TaskItem, ProgressCard, AddTaskForm, ArchivedTasks, Toast, Editable* 등). 컴포넌트 옆에 같은 이름의 .css를 둠(컴포넌트별 css)
+│   │   ├── api/                # 서버 요청 코드 (axios). client.js(공통 인스턴스), tasks.js, members.js, activityLogs.js
+│   │   ├── utils/               # DOM 없는 순수 함수 (date, members, tasks, storage, permission) + permission.test.js
+│   │   ├── styles/             # design-system.css (CSS 변수 + 공통 리셋)
 │   │   ├── App.jsx
-│   │   └── main.jsx
+│   │   ├── main.jsx
+│   │   └── pages/              # (예정, 아직 없음) 로그인/팀목록 등 여러 화면이 생기면 분리
 │   ├── index.html
 │   └── package.json
 │
@@ -311,10 +318,14 @@ teamplan/
 │   ├── src/
 │   │   ├── routes/            # 주소 → controller 연결 (안내)
 │   │   ├── controllers/       # 요청 처리 로직 (판단)
-│   │   ├── models/            # DB 다루는 코드 (DB)
-│   │   ├── middleware/        # 로그인 확인 등 (검문)
-│   │   └── app.js             # 서버 시작점
-│   ├── db/                    # SQLite 파일
+│   │   ├── models/            # DB 다루는 코드, pg Pool 기반 (DB)
+│   │   ├── utils/              # permission.js(권한 체크) + permission.test.js
+│   │   ├── currentTeamId.js    # 팀 id 하드코딩(=1), 다중 팀 붙이면 손볼 곳
+│   │   ├── db.js               # pg Pool 생성 (Supabase 연결)
+│   │   ├── init-db.js          # (레거시) SQLite 시절 테이블 생성 스크립트, 지금은 안 씀 — 아래 "서버 실행 순서" 참고
+│   │   ├── app.js              # 서버 시작점
+│   │   └── middleware/         # (예정, 아직 없음)
+│   ├── db/                    # 예전 SQLite 파일(teamplan.db)이 남아있지만 이제 안 씀 — Supabase가 실제 DB
 │   └── package.json
 │
 ├── CLAUDE.md
@@ -326,14 +337,26 @@ teamplan/
 
 ## 라이브러리
 server
-라이브러리용도express서버 프레임워크better-sqlite3DB (아래 주의사항 참고)cors프론트-백 통신 허용dotenv비밀 설정값 관리nodemon코드 수정 시 서버 자동 재시작 (개발용)
+라이브러리|용도
+express|서버 프레임워크
+pg|DB 연결 (Supabase Postgres, node-postgres)
+cors|프론트-백 통신 허용
+dotenv|비밀 설정값(.env) 관리
+vitest|테스트 도구 (devDependency, 권한 체크 로직 TDD용)
 
+> `better-sqlite3`는 아직 `package.json`에 남아있지만 **더 이상 사용하지 않음** — `db.js`에서 pg로 전환하면서 이전 코드는 주석 처리만 해두고(되돌릴 때 대비) 지우진 않음. 새로 `npm install` 할 때 아래 "better-sqlite3 설치 실패 시 대응"이 여전히 뜰 수 있어서 항목은 남겨둠.
+> `nodemon`은 계획엔 있었지만 실제로 설치돼 있지 않음(수동으로 `node src/app.js` 재실행 중) — 필요해지면 그때 설치.
 > bcrypt, jsonwebtoken은 로그인 방식이 "이름 선택"으로 확정되면서 더 이상 필요 없어 계획에서 제외
 
-> **Supabase 전환 예정(3주차)**: `@supabase/supabase-js` 추가 예정. 접속 URL/키는 `.env`에 넣고 `.gitignore`로 커밋 방지(이미 `server/.gitignore`에 `.env` 포함돼 있음). 전환 완료 전까지는 `better-sqlite3`/`db.js`가 그대로 기준.
+> **Supabase 전환 완료(3주차)**: `@supabase/supabase-js`(Supabase 전용 SDK)가 아니라 **`pg`로 Postgres 연결 문자열에 직접 접속**하는 방식을 택함 — Supabase Auth/Storage 등 SDK 전용 기능은 안 쓰고 순수 DB로만 사용 중이라는 뜻. 접속 URL은 `.env`의 `DATABASE_URL`에 넣고 `.gitignore`로 커밋 방지(이미 `server/.gitignore`에 `.env` 포함돼 있음).
 
 client
-라이브러리용도react, react-domVite가 기본 설치react-router-dom화면 이동axios서버 요청chart.js기여도 차트 (확장 기능, 나중에)
+라이브러리|용도
+react, react-dom|Vite가 기본 설치
+axios|서버 요청 (fetch 대신 이걸로 통일)
+vitest|테스트 도구 (devDependency, 권한 체크 로직 TDD용)
+
+> react-router-dom(화면 이동), chart.js(기여도 차트)는 계획에는 있으나 아직 미설치 — 여러 화면(로그인/팀목록 등)이나 기여도 시각화를 실제로 만들 때 추가.
 
 better-sqlite3 설치 실패 시 대응
 증상: 설치할 때 gyp ERR!, node-gyp rebuild failed, MSBuild.exe ENOENT 같은 에러.
@@ -349,7 +372,7 @@ better-sqlite3 설치 실패 시 대응
 
 ## 서버 / API 규칙
 
-포트: 프론트 5173 (Vite 기본, `client/` 생기면), 백엔드 3000
+포트: 프론트 5173 (Vite), 백엔드 3000
 API 주소: 앞에 /api 붙이기
 
 /api/tasks — 태스크. GET(목록) · GET /archived(삭제된 태스크 목록) · POST(추가) · PATCH /:id(상태 변경) · PATCH /:id/due-date(마감일만 수정) · PATCH /:id/title(제목 수정) · PATCH /:id/assignee(담당자 수정) · PATCH /:id/restore(복원) · DELETE /:id(soft delete)
@@ -357,13 +380,13 @@ API 주소: 앞에 /api 붙이기
 /api/members — 팀원 이름 목록 (이름 선택용, 로그인 아님)
 /api/activity-logs — 활동 로그 조회 (태스크 제목·담당자 이름까지 JOIN해서 반환)
 
-> **2주차 현재**: `client/`가 없어서 5173은 아직 안 쓴다. server가 :3000 하나에서 API와 `prototype/` 정적 파일을 함께 서빙한다 — `http://localhost:3000/tasks.html`로 접속(파일 더블클릭 금지, 알림 권한이 file://에서는 저장 안 됨).
+> **3주차 현재**: `client/`가 실제 화면이라 개발할 땐 `cd client && npm run dev`(:5173)로 접속한다. server(:3000)는 API 전용으로 쓰고, `prototype/` 정적 서빙(`http://localhost:3000/tasks.html`)은 2주차 산물이 남아있는 것뿐이라 이제 참고용 — 실제 개발/확인은 5173에서 한다.
 
-개발 중 터미널: 두 개 띄우기 (client 하나, server 하나) — `client/` 생긴 뒤에 해당
+개발 중 터미널 두 개 띄우기: `cd server && node src/app.js`(3000) / `cd client && npm run dev`(5173)
 
 나중에 귀찮아지면 concurrently 도입 검토
 
-> **서버 실행 순서 주의**: `db.js`는 연결만 하고 테이블은 안 만든다. 처음 실행하거나 DB 파일을 새로 만들 땐 반드시 `cd server && npm run init-db`를 먼저 돌려서 테이블+시드를 만든 다음 `node src/app.js`. 순서를 안 지키면 서버는 정상적으로 뜨지만 모든 API가 `no such table` 에러를 던진다.
+> **서버 실행 순서 주의(3주차부터 바뀜)**: DB가 Supabase로 전환되면서 테이블이 이미 클라우드에 만들어져 있다 — `npm run init-db`는 **이제 안 돌려도 된다**. `cd server && node src/app.js`만 실행하면 됨. (`src/init-db.js`는 SQLite 시절 스크립트라 지금 실행해도 pg Pool 위에서 그대로 안 돌아간다 — 남겨두긴 했지만 실질적으로 레거시.)
 
 
 
@@ -419,14 +442,23 @@ docs: 기획서 추가
 
 **순서**: Supabase 전환 → React 전환 → 회의시간 매칭 연동 → 배포
 
-1. **DB: SQLite → Supabase 전환** (예정) — 접속 URL/키는 `.env`로 분리, 절대 커밋하지 않는다.
-2. **React 전환** (예정) — `prototype/`의 바닐라 JS를 `client/`(Vite)로 옮긴다. 예전엔 "발표 이후로 미룬다"였으나 이번 주로 당겨짐.
-3. **회의시간 매칭 백엔드/DB 연동** (예정) — 현재 `calendar-match.html`은 가짜 데이터로만 동작하는 프로토타입, 실제 API·DB와 연결.
-4. **배포** (예정)
+1. **DB: SQLite → Supabase 전환** — ✅ **완료**. `pg`로 `DATABASE_URL` 연결, models 전부 pg 문법으로 전환.
+2. **React 전환** — ✅ **완료**. `prototype/tasks.html`의 바닐라 JS를 `client/`(Vite)로 옮김. 아래 "3주차 진행 상황" 참고.
+3. **회의시간 매칭 백엔드/DB 연동** — 예정. 현재 `calendar-match.html`은 가짜 데이터로만 동작하는 프로토타입, 아직 React 전환도 안 됨.
+4. **배포** — 예정.
 
 ### 부트캠프 요구사항 반영 (이번 주)
-- 아키텍처 다이어그램을 mermaid로 그려서 README에 포함
-- 핵심 기능 1개는 TDD(테스트를 먼저 작성하고 구현)로 개발
+- 아키텍처 다이어그램을 mermaid로 그려서 README에 포함 — 예정
+- 핵심 기능 1개는 TDD(테스트를 먼저 작성하고 구현)로 개발 — ✅ **완료**. 태스크 권한 체크(`canMemberChange`)를 client/server 양쪽에서 테스트 먼저 작성 → 실패 확인(red) → 구현(green) 순서로 진행.
+
+## 3주차 진행 상황
+
+- **SQLite → Supabase(Postgres) 마이그레이션**: `db.js`를 `pg` Pool로 전환(이전 better-sqlite3 코드는 롤백 대비 주석으로 보존), `taskModel`/`memberModel`/`activityLogModel`/`taskController`를 전부 `async`/`await` + pg 파라미터(`$1, $2...`) 문법으로 전환. 마이그레이션 과정에서 `memberController.js`(그리고 뒤늦게 발견한 `activityLogController.js`)가 async 모델 함수를 `await` 없이 호출해 `{}`를 반환하던 버그도 같이 잡음.
+- **React 전환**: `client/`(Vite)에 태스크 화면 전체를 컴포넌트로 재구성 — `Header`/`UserSelect`(이름 선택, localStorage), `ProgressCard`(팀/내 진행도), `TaskList`/`TaskItem`, `AddTaskForm`, `Toast`(권한 없음 알림), `ArchivedTasks`/`ArchivedTaskItem`(삭제된 태스크). 유틸 함수(`utils/`)와 API 호출(`api/`, axios)도 프로토타입에서 그대로 분리 이전.
+- **인라인 수정**: 마감일에 이어 **제목·담당자**도 클릭 → 그 자리에서 편집 → 저장이 가능하도록 확장(`EditableTitle`/`EditableAssignee`/`EditableDueDate`). 서버에 `PATCH /:id/title`, `PATCH /:id/assignee` 신규 추가.
+- **삭제된 태스크 보기·복원 UI**: "삭제된 항목 보기" 토글 + 복원 버튼. 서버에 `GET /api/tasks/archived`, `PATCH /api/tasks/:id/restore` 신규 추가.
+- **권한 로직 TDD**: `canMemberChange(task, memberId)`를 client에서 먼저 테스트 6개 작성(실패 확인) → 구현(통과) → server에도 동일 로직·동일 테스트로 복제 → 양쪽의 인라인 중복 코드(`TaskList.jsx`, `taskController.js` 등)를 각자의 `utils/permission.js` import로 정리. `client`/`server` 둘 다 Vitest 설치, `npm test`로 실행.
+- **자잘한 버그 수정**: `app.js`의 SQLite 전용 테이블 확인 코드 제거, `memberController.js`/`taskRoutes.js` 관련 버그·순서 수정 (자세한 원인은 "자주 만나는 오류" 표 참고).
 
 ## 향후 기능 후보 (4주차 이후)
 
