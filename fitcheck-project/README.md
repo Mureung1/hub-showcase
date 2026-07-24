@@ -26,6 +26,111 @@ fitcheck-project/
 - `src/features/` — 강좌 / 식단 / 지도 / 상담 등
 - `src/services/` — API 클라이언트 (`api.ts`, `gymsApi.ts`, `consultRequestsApi.ts`)
 
+## 아키텍처 & 데이터 흐름
+
+화면(React), Express API, Supabase DB·Storage, 외부 API(Gemini·Naver Map)의 연결 구조입니다.
+
+### 전체 구조
+
+```mermaid
+flowchart TB
+  subgraph Client["화면 (Client)"]
+    WEB["frontend-web<br/>React + Vite<br/>/user · /trainer"]
+    MOBILE["mobile-app<br/>Expo WebView"]
+  end
+
+  subgraph Server["서버 (Backend)"]
+    API["Express API<br/>localhost:5001<br/>JWT 검증 · PII 암호화"]
+  end
+
+  subgraph Supabase["Supabase"]
+    AUTH["Auth<br/>JWT 발급"]
+    DB[(Postgres<br/>profiles · meal_logs<br/>gyms · consult_requests …)]
+    STORAGE[(Storage<br/>meal-images)]
+  end
+
+  subgraph External["외부 API"]
+    GEMINI["Gemini API<br/>식단 Vision 분석"]
+    NAVER["Naver Map<br/>지도 · GPS"]
+  end
+
+  MOBILE -->|WebView 로드| WEB
+  WEB -->|"/api/*" HTTPS| API
+  WEB -->|로그인| AUTH
+  WEB -->|지도 렌더| NAVER
+
+  API -->|SELECT / INSERT / UPDATE| DB
+  API -->|JWT 검증| AUTH
+  API -->|사진 업로드| STORAGE
+  API -->|백그라운드 AI| GEMINI
+```
+
+| 구간 | 설명 |
+|------|------|
+| Client → Express | Vite dev는 `/api`를 `localhost:5001`로 프록시 |
+| Express → Postgres | 강좌·헬스장·식단·상담 등 CRUD |
+| Express → Gemini | 식단 사진 분석 (저장 후 백그라운드) |
+| Express → Storage | 식단 사진 업로드 → public URL → `meal_logs.image_url` |
+
+### 식단 AI (비동기 저장)
+
+사용자는 **1~2초 안에 저장 완료**를 체감하고, AI 결과는 타임라인에서 **2초 폴링**으로 갱신됩니다.
+
+```mermaid
+sequenceDiagram
+  actor U as 사용자
+  participant F as frontend-web
+  participant E as Express
+  participant S as Supabase
+  participant G as Gemini
+
+  U->>F: 식단 사진 선택
+  F->>E: POST /uploads/meals
+  E->>S: Storage 업로드
+  S-->>E: image URL
+  E-->>F: public URL
+  F->>E: POST /meals
+  E->>S: meal_logs INSERT
+  E-->>F: 201 (aiAnalysisPending: true)
+
+  Note over E,G: 응답 후 백그라운드 분석
+  E->>G: Vision + 프롬프트
+  G-->>E: 탄단지 · 피드백
+  E->>S: meal_logs UPDATE
+
+  loop 2초마다 (최대 90초)
+    F->>E: GET /meals
+    E->>S: SELECT
+    E-->>F: 분석 완료 데이터
+  end
+```
+
+### 상담 PII (AES-256-GCM)
+
+상담 신청의 이름·연락처·메모만 **앱 레벨 필드 암호화**합니다. 식단·프로필 등은 JWT 인증 + DB 접근 통제로 보호합니다.
+
+```mermaid
+flowchart LR
+  C["Client<br/>상담 신청 폼"] -->|HTTPS JSON| E["Express<br/>fieldEncryption.ts"]
+  E -->|encryptField<br/>name · phone · memo …| DB[("Supabase<br/>consult_requests<br/>(ciphertext)")]
+  E -->|decryptField| C
+```
+
+→ 상세: [backend/README.md — 상담 신청 개인정보 암호화](./backend/README.md#상담-신청-개인정보-암호화)
+
+### 헬스장 매칭
+
+PT 강좌 시청 기록(`course_views`)과 GPS 위치를 Express에서 **규칙 기반 점수**로 계산합니다. (Gemini 미사용)
+
+```mermaid
+flowchart LR
+  F["frontend-web<br/>지도 · 홈"] -->|GET /gyms/recommended<br/>lat · lng| E["Express<br/>gymRecommendation"]
+  E -->|course_views<br/>courses · trainers| DB[(Postgres)]
+  E -->|매칭 점수 · 이유| F
+  F -->|POST /courses/:id/watch| E
+  E -->|시청 기록 저장| DB
+```
+
 ## 빠른 시작
 
 ### 1. Backend
