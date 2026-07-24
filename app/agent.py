@@ -141,6 +141,38 @@ def _call_summarize(title: str, source_text: str, feedback: str = "") -> dict | 
     return tools.ask_llm_json(prompt, fallback=None, attempts=config.SUMMARIZE_PARSE_ATTEMPTS)
 
 
+def _build_verify_prompt(title: str, source_text: str, summary: dict) -> str:
+    """자기 검증(verify) 프롬프트를 조립한다. LLM 호출은 하지 않는다.
+
+    summary(dict)를 JSON 문자열로 직렬화해 {summary_json}에 채운다.
+    prompt_loader.fill()은 str(value)로 치환하므로, dict를 그냥 넘기면
+    파이썬 repr(홑따옴표)이 들어가 JSON이 깨진다. json.dumps로 먼저
+    직렬화한다. ensure_ascii=False — 한글이 \\uXXXX로 이스케이프되면
+    LLM이 읽기 나빠진다(전송은 어차피 UTF-8이라 무관).
+
+    summary는 요약 성공 dict만 온다(None 아님). None 분기는 Task 6
+    오케스트레이션이 verify 호출 전에 paper_failed로 걸러낸다.
+    """
+    return prompt_loader.fill(
+        prompt_loader.load("verify"),
+        title=title,
+        source_text=source_text,
+        summary_json=json.dumps(summary, ensure_ascii=False),
+    )
+
+
+def _call_verify(title: str, source_text: str, summary: dict) -> dict:
+    """자기 검증(verify) LLM 호출. 실패해도 예외 없이 fallback을 반환한다.
+
+    fallback은 {"is_good": True} — 판단 불가 시 통과 쪽(비용이 덜 드는 쪽).
+    재시도하면 무한 루프·API 비용 위험(CLAUDE.md). 파싱 실패 시 재시도하지
+    않는다(attempts 기본값 1) — summarize의 3회 재시도와 달리 fallback이
+    이미 안전한 쪽이라 재요청할 이유가 없다.
+    """
+    prompt = _build_verify_prompt(title, source_text, summary)
+    return tools.ask_llm_json(prompt, fallback={"is_good": True})
+
+
 if __name__ == "__main__":
     import argparse
 
