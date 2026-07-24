@@ -6,8 +6,7 @@ import { SUPPORTED_JOB } from '../data/mock'
 const NAV_IDS = ['summary', 'kpi', 'scope', 'inflation', 'difficulty', 'tech', 'combo', 'trend', 'conditions', 'companies', 'items']
 
 // 02 통계 분석 — 1차 슬라이스.
-// 블록 1(KPI)·7(기술 빈도)·10(요구 항목 전체표)은 GET /api/stats 실데이터,
-// 블록 5·6·8·9는 mock 유지, 블록 2·3·4는 다음 슬라이스 자리 표시.
+// 블록 번호와 순서는 docs/plan.md 9.2의 ①~⑩을 따른다. 데이터 출처는 각 블록 주석에 표기한다.
 
 const LOGO = { java: 'java', 'spring-boot': 'spring', mysql: 'mysql', jpa: 'jpa', redis: 'redis', docker: 'docker', git: 'git' }
 const BAR_CLS = { java: 'java', 'spring-boot': 'spring', mysql: 'mysql', jpa: 'jpa', git: 'git' }
@@ -22,7 +21,7 @@ const TREND_LABEL = { increase: '증가 ↗', decrease: '감소 ↘', stable: '�
 const CONFIDENCE = { high: '높음', medium: '중간', low: '낮음' }
 const SCOPE_BAR = ['', 'blue', 'green', 'amber', 'rose']
 
-// 블록 5의 기울기 차트 한 열. 이전→최근 % 를 선으로 잇는다.
+// 블록 7(추이)의 기울기 차트 한 열. 이전→최근 % 를 선으로 잇는다.
 function TrendColumn({ tone, title, note, items }) {
   const y = (pct) => Math.max(14, 150 - pct * 1.45)
   const colors = { up: ['#16A34A', '#22C55E', '#86EFAC'], flat: ['#64748B', '#94A3B8', '#CBD5E1'], down: ['#E11D48', '#FB7185', '#FECDD3'] }[tone]
@@ -187,7 +186,7 @@ function StatsScreen({ go }) {
             </div>
           </section>
 
-          {/* 블록 7 · 기술 빈도 — 실데이터 */}
+          {/* 블록 5 · 기술 빈도 — 실데이터 */}
           <section className="section-block" id="tech">
             <div className="section-title">
               <h2>단일 기술 빈도는 시작점입니다</h2>
@@ -237,7 +236,7 @@ function StatsScreen({ go }) {
             </div>
           </section>
 
-          {/* 블록 5 · 추이 — 실데이터, 차트 3개 분리 */}
+          {/* 블록 7 · 추이 — 실데이터, 차트 3개 분리 */}
           <section className="section-block" id="trend">
             <div className="section-title">
               <h2>늘어나는 기술과 줄어드는 기술</h2>

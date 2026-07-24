@@ -72,4 +72,4 @@ CareerSignal은 채용공고의 기준선과 편차를 해석해, 직무·기업
 - 디자인 컨셉: docs/design-concept.md
 - 디자인 토큰: docs/design-tokens.md
 - 개발 백로그: docs/backlog.md
-- 체크리스트: docs/checklist.md
+- 검증 체크리스트: docs/checklist.md
