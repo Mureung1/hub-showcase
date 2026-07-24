@@ -9,6 +9,7 @@ import type { VerifiedRuntime } from '@ay-ple/runtime-release'
 import {
   ServerStartupCleanupError,
   createServerApplication,
+  type BoundServerApplicationListener,
   type ServerApplication,
 } from '@ay-ple/server'
 
@@ -37,7 +38,6 @@ test('one dynamic listener stays 503 until it serves same-origin API, static ass
       return application
     }),
     signal: new AbortController().signal,
-    staticSite: staticSite(),
   })
   const origin = await originObserved.promise
   let host:
@@ -121,7 +121,6 @@ test('API and static namespaces fail closed without SPA fallback', async () => {
       }),
     ),
     signal: new AbortController().signal,
-    staticSite: staticSite(),
   })
 
   try {
@@ -182,7 +181,6 @@ test('static HEAD and non-hashed resources preserve bytes and cache policy', asy
   const host = await startDynamicLocalApplicationHost({
     prepared: preparedApplication(async () => application),
     signal: new AbortController().signal,
-    staticSite: staticSite(),
   })
 
   try {
@@ -215,7 +213,6 @@ test('unexpected Host authority is rejected before API or SPA routing', async ()
   const host = await startDynamicLocalApplicationHost({
     prepared: preparedApplication(async () => application),
     signal: new AbortController().signal,
-    staticSite: staticSite(),
   })
 
   try {
@@ -227,6 +224,37 @@ test('unexpected Host authority is rejected before API or SPA routing', async ()
       })
       assert.equal(response.statusCode, 421)
       assert.equal(response.body, 'Invalid request.\n')
+    }
+  } finally {
+    await host.close({
+      signal: new AbortController().signal,
+    })
+  }
+})
+
+test('raw API-like traversal and ambiguous origin-form targets never become SPA HTML', async () => {
+  const application = await createServerApplication()
+  const host = await startDynamicLocalApplicationHost({
+    prepared: preparedApplication(async () => application),
+    signal: new AbortController().signal,
+  })
+
+  try {
+    for (const pathname of [
+      '/api/../semester/setup',
+      '/api/%2e%2e/semester/setup',
+      '/api\\..\\semester/setup',
+      '/%2Fapi/product/bootstrap',
+      '//api/product/bootstrap',
+      '/api/%zz',
+    ]) {
+      const response = await rawRequest({
+        hostHeader: `127.0.0.1:${host.port}`,
+        pathname,
+        port: host.port,
+      })
+      assert.equal(response.statusCode, 400, pathname)
+      assert.notEqual(response.body, indexHtml, pathname)
     }
   } finally {
     await host.close({
@@ -252,7 +280,6 @@ test('listener binding ignores cwd, PORT, and ambient static files', async () =>
   const host = await startDynamicLocalApplicationHost({
     prepared: preparedApplication(async () => application),
     signal: new AbortController().signal,
-    staticSite: staticSite(),
   })
 
   try {
@@ -290,7 +317,6 @@ test('listener refusal happens before Server composition', async () => {
           return createServerApplication()
         }),
         signal: new AbortController().signal,
-        staticSite: staticSite(),
       },
       {
         bindServerApplicationListener: async () => {
@@ -314,7 +340,6 @@ test('composition failure closes the already-bound listener and preserves the er
         throw failure
       }),
       signal: new AbortController().signal,
-      staticSite: staticSite(),
     }),
     (error) => error === failure,
   )
@@ -337,7 +362,6 @@ test('a Server cleanup failure remains retryable after the unattached listener c
         throw cleanupError
       }),
       signal: new AbortController().signal,
-      staticSite: staticSite(),
     })
   } catch (error) {
     exposed = error
@@ -352,6 +376,102 @@ test('a Server cleanup failure remains retryable after the unattached listener c
   assert.equal(cleanupCount, 1)
 })
 
+test('post-composition cancellation attaches first and closes through caller signal authority', async () => {
+  const application = await createServerApplication()
+  const cancellation = new Error('cancelled after composition')
+  const controller = new AbortController()
+  const order: string[] = []
+  let publicCloseCount = 0
+  const originalClose = application.close.bind(application)
+  application.close = async () => {
+    publicCloseCount += 1
+    return originalClose()
+  }
+  let observedCloseSignal: AbortSignal | undefined
+  const bound = fakeBoundListener({
+    application,
+    onAttach() {
+      order.push('attach')
+    },
+    onClose(signal) {
+      order.push('close')
+      observedCloseSignal = signal
+      return { status: 'closed', processTreeGone: true }
+    },
+  })
+
+  try {
+    await assert.rejects(
+      startDynamicLocalApplicationHostForTesting(
+        {
+          prepared: preparedApplication(async () => {
+            order.push('compose')
+            controller.abort(cancellation)
+            return application
+          }),
+          signal: controller.signal,
+        },
+        {
+          bindServerApplicationListener: async () => bound,
+        },
+      ),
+      (error) => error === cancellation,
+    )
+    assert.deepEqual(order, ['compose', 'attach', 'close'])
+    assert.equal(observedCloseSignal, controller.signal)
+    assert.equal(observedCloseSignal?.aborted, true)
+    assert.equal(publicCloseCount, 0)
+  } finally {
+    await originalClose()
+  }
+})
+
+test('ambiguous attached cancellation exposes the same cleanup for a fresh-signal retry', async () => {
+  const application = await createServerApplication()
+  const controller = new AbortController()
+  const cancellation = new Error('cancelled after composition')
+  const closeSignals: AbortSignal[] = []
+  const bound = fakeBoundListener({
+    application,
+    onClose(signal) {
+      closeSignals.push(signal)
+      return closeSignals.length === 1
+        ? { status: 'ambiguous', processTreeGone: false }
+        : { status: 'closed', processTreeGone: true }
+    },
+  })
+
+  let exposed: unknown
+  try {
+    await startDynamicLocalApplicationHostForTesting(
+      {
+        prepared: preparedApplication(async () => {
+          controller.abort(cancellation)
+          return application
+        }),
+        signal: controller.signal,
+      },
+      {
+        bindServerApplicationListener: async () => bound,
+      },
+    )
+  } catch (error) {
+    exposed = error
+  }
+
+  try {
+    assert.ok(exposed instanceof ServerStartupCleanupError)
+    const retrySignal = new AbortController().signal
+    assert.deepEqual(
+      await exposed.close({ signal: retrySignal }),
+      { status: 'closed', processTreeGone: true },
+    )
+    assert.deepEqual(closeSignals, [controller.signal, retrySignal])
+  } finally {
+    await application.close()
+  }
+})
+
 test('a missing verified index fails before listener bind or composition', async () => {
   let bindCount = 0
   let compositionCount = 0
@@ -359,12 +479,14 @@ test('a missing verified index fails before listener bind or composition', async
   await assert.rejects(
     startDynamicLocalApplicationHostForTesting(
       {
-        prepared: preparedApplication(async () => {
-          compositionCount += 1
-          return createServerApplication()
-        }),
+        prepared: preparedApplication(
+          async () => {
+            compositionCount += 1
+            return createServerApplication()
+          },
+          staticSite({ omitIndex: true }),
+        ),
         signal: new AbortController().signal,
-        staticSite: staticSite({ omitIndex: true }),
       },
       {
         bindServerApplicationListener: async () => {
@@ -383,9 +505,12 @@ function preparedApplication(
   createServerAtOrigin: (
     origin: DynamicLocalOrigin,
   ) => Promise<ServerApplication>,
+  verifiedStaticSite: ApplicationStartupAdmission['staticSite'] =
+    staticSite(),
 ): PreparedApplicationStartup {
   return {
     runtime: {} as VerifiedRuntime,
+    staticSite: verifiedStaticSite,
     createServerAtOrigin,
   }
 }
@@ -461,4 +586,31 @@ function rawRequest(input: {
     outgoing.once('error', reject)
     outgoing.end()
   })
+}
+
+function fakeBoundListener(input: {
+  readonly application: ServerApplication
+  readonly onAttach?: () => void
+  readonly onClose: (
+    signal: AbortSignal,
+  ) =>
+    | { readonly status: 'closed'; readonly processTreeGone: true }
+    | {
+        readonly status: 'ambiguous'
+        readonly processTreeGone: false
+      }
+}): BoundServerApplicationListener {
+  return {
+    port: 43_123,
+    attach(application) {
+      assert.equal(application, input.application)
+      input.onAttach?.()
+      return {
+        application,
+        port: 43_123,
+        close: async ({ signal }) => input.onClose(signal),
+      }
+    },
+    close: async ({ signal }) => input.onClose(signal),
+  }
 }

@@ -15,10 +15,7 @@ import {
   type ServerStartupCleanupResult,
 } from '@ay-ple/server'
 
-import type {
-  ApplicationStartupAdmission,
-  PreparedApplicationStartup,
-} from './application-startup.js'
+import type { PreparedApplicationStartup } from './application-startup.js'
 import type { DynamicLocalOrigin } from './host-contract.js'
 
 const loopbackHost = '127.0.0.1'
@@ -28,16 +25,14 @@ const notFoundBody = 'Not found.\n'
 const methodNotAllowedBody = 'Method not allowed.\n'
 const invalidRequestBody = 'Invalid request.\n'
 
-type StaticSite = ApplicationStartupAdmission['staticSite']
+type StaticSite = PreparedApplicationStartup['staticSite']
 
 export type StartDynamicLocalApplicationHostInput = {
   readonly prepared: PreparedApplicationStartup
   readonly signal: AbortSignal
-  readonly staticSite: StaticSite
 }
 
 export type DynamicLocalApplicationHost = {
-  readonly application: ServerApplication
   readonly origin: DynamicLocalOrigin
   readonly port: number
   close(
@@ -73,7 +68,10 @@ export async function startDynamicLocalApplicationHostForTesting(
   dependencies: DynamicLocalApplicationHostDependencies,
 ): Promise<DynamicLocalApplicationHost> {
   requireActiveSignal(input.signal)
-  requireStaticEntry(input.staticSite, 'index.html')
+  const index = requireStaticEntry(
+    input.prepared.staticSite,
+    'index.html',
+  )
 
   let expectedAuthority: string | undefined
   let requestHandler: RequestListener = (request, response) => {
@@ -117,52 +115,33 @@ export async function startDynamicLocalApplicationHostForTesting(
       error,
     )
   }
-  try {
-    requireActiveSignal(input.signal)
-  } catch (error) {
-    return closeUnattachedApplicationAfterFailure({
-      application,
-      bound,
-      error,
-      signal: input.signal,
-    })
-  }
 
+  // A PreparedApplicationStartup can return only the fresh, genuine C-owned
+  // application it just constructed. Claim its listener lifecycle
+  // immediately; the request delegate remains the bounded 503 handler.
+  const attached = bound.attach(application)
   let finalHandler: RequestListener
   try {
+    requireActiveSignal(input.signal)
     finalHandler = createSameOriginRequestHandler({
       application,
       authority: expectedAuthority,
-      staticSite: input.staticSite,
+      index,
+      staticSite: input.prepared.staticSite,
     })
   } catch (error) {
-    return closeUnattachedApplicationAfterFailure({
-      application,
-      bound,
+    return closeAttachedAfterFailure({
+      attached,
       error,
       signal: input.signal,
     })
   }
 
-  let attached: AttachedServerApplicationListener
-  try {
-    attached = bound.attach(application)
-  } catch (error) {
-    return closeUnattachedApplicationAfterFailure({
-      application,
-      bound,
-      error,
-      signal: input.signal,
-    })
-  }
-
-  // There is deliberately no await between lifecycle attachment and the
-  // delegate swap. Requests remain on the bounded 503 handler until the
-  // listener owns the application cleanup graph.
+  // There is deliberately no await between the final readiness check and
+  // delegate swap.
   requestHandler = finalHandler
 
   return Object.freeze({
-    application,
     origin,
     port: attached.port,
     close: (closeInput: ServerStartupCleanupInput) =>
@@ -173,10 +152,9 @@ export async function startDynamicLocalApplicationHostForTesting(
 function createSameOriginRequestHandler(input: {
   readonly application: ServerApplication
   readonly authority: string
+  readonly index: Uint8Array
   readonly staticSite: StaticSite
 }): RequestListener {
-  const index = requireStaticEntry(input.staticSite, 'index.html')
-
   return (request, response) => {
     if (!hasExactAuthority(request, input.authority)) {
       respondText(response, 421, invalidRequestBody)
@@ -200,7 +178,7 @@ function createSameOriginRequestHandler(input: {
 
     const relativePath = requestPath.relativePath
     const exact = relativePath === ''
-      ? index
+      ? input.index
       : input.staticSite.read(relativePath)
     if (exact !== null) {
       respondStatic(
@@ -215,7 +193,12 @@ function createSameOriginRequestHandler(input: {
       respondText(response, 404, notFoundBody)
       return
     }
-    respondStatic(response, request.method, 'index.html', index)
+    respondStatic(
+      response,
+      request.method,
+      'index.html',
+      input.index,
+    )
   }
 }
 
@@ -229,38 +212,51 @@ function parseRequestPath(
   if (
     typeof requestTarget !== 'string' ||
     !requestTarget.startsWith('/') ||
-    requestTarget.startsWith('//')
+    requestTarget.startsWith('//') ||
+    requestTarget.includes('\\') ||
+    requestTarget.includes('#')
   ) {
     return null
   }
 
-  let parsed: URL
-  try {
-    parsed = new URL(requestTarget, 'http://127.0.0.1')
-  } catch {
-    return null
-  }
+  const queryIndex = requestTarget.indexOf('?')
+  const encodedPathname = queryIndex === -1
+    ? requestTarget
+    : requestTarget.slice(0, queryIndex)
   let decodedPathname: string
   try {
-    decodedPathname = decodeURIComponent(parsed.pathname)
+    decodedPathname = decodeURIComponent(encodedPathname)
   } catch {
     return null
   }
   if (
+    !decodedPathname.startsWith('/') ||
+    decodedPathname.startsWith('//') ||
     decodedPathname.includes('\0') ||
-    decodedPathname.includes('\\')
+    decodedPathname.includes('\\') ||
+    decodedPathname.includes('#') ||
+    decodedPathname.includes('?') ||
+    hasUnsafePathSegment(decodedPathname)
   ) {
     return null
   }
-  const api =
-    isApiPath(parsed.pathname) ||
-    isApiPath(decodedPathname)
+  const api = isApiPath(decodedPathname)
   const relativePath = decodedPathname.slice(1)
   return { api, relativePath }
 }
 
 function isApiPath(pathname: string): boolean {
   return pathname === '/api' || pathname.startsWith('/api/')
+}
+
+function hasUnsafePathSegment(pathname: string): boolean {
+  const segments = pathname.slice(1).split('/')
+  return segments.some(
+    (segment, index) =>
+      segment === '.' ||
+      segment === '..' ||
+      (segment === '' && index < segments.length - 1),
+  )
 }
 
 function allowsSpaFallback(relativePath: string): boolean {
@@ -439,60 +435,34 @@ async function closeUnattachedAfterFailure(
   )
 }
 
-async function closeUnattachedApplicationAfterFailure(input: {
-  readonly application: ServerApplication
-  readonly bound: BoundServerApplicationListener
+async function closeAttachedAfterFailure(input: {
+  readonly attached: AttachedServerApplicationListener
   readonly error: unknown
   readonly signal: AbortSignal
 }): Promise<never> {
-  const listenerResult = await closeSafely(
-    input.bound,
+  const result = await closeSafely(
+    input.attached,
     input.signal,
   )
-  let applicationClosed = false
-  try {
-    await input.application.close()
-    applicationClosed = true
-  } catch {
-    applicationClosed = false
-  }
   if (
-    listenerResult.status === 'closed' &&
-    listenerResult.processTreeGone &&
-    applicationClosed
+    result.status === 'closed' &&
+    result.processTreeGone
   ) {
     throw input.error
   }
-  throw new ServerStartupCleanupError((closeInput) =>
-    combineCleanupAttempts([
-      () => input.bound.close(closeInput),
-      async () => {
-        try {
-          await input.application.close()
-          return {
-            status: 'closed',
-            processTreeGone: true,
-          } as const
-        } catch (error) {
-          if (error instanceof ServerStartupCleanupError) {
-            return error.close(closeInput)
-          }
-          return {
-            status: 'ambiguous',
-            processTreeGone: false,
-          } as const
-        }
-      },
-    ]),
+  throw new ServerStartupCleanupError(
+    (closeInput) => input.attached.close(closeInput),
   )
 }
 
 async function closeSafely(
-  bound: BoundServerApplicationListener,
+  listener:
+    | BoundServerApplicationListener
+    | AttachedServerApplicationListener,
   signal: AbortSignal,
 ): Promise<ServerStartupCleanupResult> {
   try {
-    return await bound.close({ signal })
+    return await listener.close({ signal })
   } catch {
     return { status: 'ambiguous', processTreeGone: false }
   }

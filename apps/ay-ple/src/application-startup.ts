@@ -101,6 +101,11 @@ export type PreparedApplicationStartup = {
    * revalidation. It must never be cloned or reconstructed.
    */
   readonly runtime: VerifiedRuntime
+  /**
+   * The immutable H1a package snapshot is carried with the exact prepared
+   * Runtime so H1b cannot combine authorities from different admissions.
+   */
+  readonly staticSite: VerifiedStaticSite
   createServerAtOrigin(
     origin: DynamicLocalOrigin | string,
   ): Promise<ServerApplication>
@@ -415,6 +420,7 @@ function createPreparedStartup(input: {
 
   return Object.freeze({
     runtime: input.runtime,
+    staticSite: input.resources.staticSite,
     createServerAtOrigin,
   })
 }
