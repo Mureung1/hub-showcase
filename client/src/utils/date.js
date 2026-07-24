@@ -29,9 +29,12 @@ export function formatDday(dueDateStr) {
   return `D+${Math.abs(days)}`;
 }
 
-// SQLite의 datetime('now')는 UTC라서, 로컬 시각과 정확히 비교하려면 ISO 형식으로 바꿔줘야 함
-export function parseUtcDate(sqliteDatetime) {
-  return new Date(sqliteDatetime.replace(' ', 'T') + 'Z');
+// pg의 TIMESTAMPTZ 컬럼(activity_logs.changed_at)은 이미 완전한 ISO 문자열
+// (예: "2026-07-23T08:18:22.504Z")로 내려오므로 그대로 파싱하면 됨.
+// (SQLite 시절엔 "2026-07-23 08:18:22" 형식이라 공백→T 치환 + Z 붙이기가 필요했지만,
+//  지금 그 로직을 그대로 쓰면 이미 Z로 끝난 문자열 뒤에 Z가 하나 더 붙어 Invalid Date가 됨)
+export function parseUtcDate(isoDatetime) {
+  return new Date(isoDatetime);
 }
 
 export function formatLogTime(changedAt) {
