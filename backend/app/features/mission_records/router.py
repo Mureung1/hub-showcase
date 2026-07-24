@@ -9,8 +9,8 @@ from supabase import Client
 from app.api.deps import CurrentUserId, UserClient
 from app.core.errors import ApiError
 from app.missions import MISSION_PROMPTS
-from app.schemas.article import InterestTag
-from app.schemas.mission_record import (
+from app.features.articles.schemas import InterestTag
+from app.features.mission_records.schemas import (
     MissionRecordCalendarDay,
     MissionRecordCalendarResponse,
     MissionRecordListItem,

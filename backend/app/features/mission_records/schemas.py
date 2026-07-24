@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.alias_generators import to_camel
 
 from app.missions import MissionType
-from app.schemas.article import InterestTag
+from app.features.articles.schemas import InterestTag
 
 BLOCKED_ANSWERS = {"네", "아니요", "ㅇㅇ", "ㄴㄴ", "몰라", "모름"}
 

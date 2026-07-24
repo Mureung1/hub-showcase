@@ -7,7 +7,7 @@ from supabase import Client
 from app.api.deps import CurrentUserId, UserClient
 from app.core.errors import ApiError
 from app.missions import MISSION_PROMPTS, RECOMMENDED_MISSION_TYPE
-from app.schemas.article import (
+from app.features.articles.schemas import (
     ArticleDetail,
     InterestTag,
     Mission,

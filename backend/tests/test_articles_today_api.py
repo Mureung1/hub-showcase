@@ -17,7 +17,7 @@ os.environ.setdefault("SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test")
 from fastapi.testclient import TestClient
 
 from app.api.deps import get_current_user_id, get_user_client
-from app.api.routes.articles import CANDIDATE_EMPTY_MESSAGE, ONBOARDING_EMPTY_MESSAGE
+from app.features.articles.router import CANDIDATE_EMPTY_MESSAGE, ONBOARDING_EMPTY_MESSAGE
 from app.main import app
 
 TEST_USER_ID = "10000000-0000-0000-0000-000000000001"

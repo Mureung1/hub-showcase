@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.schemas.common import ErrorDetail, ErrorResponse
+from app.shared.error_schemas import ErrorDetail, ErrorResponse
 
 # starlette 최신에서 HTTP_422_UNPROCESSABLE_ENTITY가 이름 변경 예정이라 값을 직접 쓴다.
 HTTP_422 = 422
