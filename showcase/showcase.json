@@ -34,7 +34,10 @@
   ],
   "githubUser": "SubJeeLee(이준섭)",
   "demoUrl": "https://subjeelee.github.io/hub/",
-  "thumbnail": "thumbnail.png",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/home.webp"
+  ],
   "agent": {
     "summary": "문제 정의와 사용자 흐름을 먼저 정리한 뒤 Agent와 함께 계획·구현·테스트를 반복했습니다.",
     "agentTools": [
