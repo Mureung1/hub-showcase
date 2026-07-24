@@ -136,6 +136,61 @@ router.post('/:id/turns', async (req, res) => {
       .not('question', 'is', null);
 
     const asked = new Set(allTurns?.map(t => t.question) || []);
+
+    // ─────────────────────────────────────────────────────────────────
+    // VERIFY 응답 처리 (axisId가 "verify_" 접두사일 때)
+    // ─────────────────────────────────────────────────────────────────
+    if (axisId.startsWith('verify_')) {
+      const hypothesisId = axisId.slice(7); // "verify_" 제거
+
+      // verified 집합 복원 (이전 VERIFY 응답 수집)
+      const verifiedSet = new Set(
+        allTurns
+          ?.filter(t => t.question?.startsWith('verify_') && t.user_answer === 'yes')
+          ?.map(t => t.question.slice(7)) || []
+      );
+
+      // yes면 verified에 추가
+      if (answer === 'yes') {
+        verifiedSet.add(hypothesisId);
+      }
+
+      // VERIFY는 posterior를 변경하지 않음 (검증일 뿐)
+      const newPosterior = { ...prevPosterior };
+
+      // 새 턴 저장
+      const { error: insertError } = await supabase
+        .from('turns')
+        .insert({
+          id: generateTurnId(),
+          session_id: sessionId,
+          turn_index: turnIndex,
+          question: axisId,
+          user_answer: answer,
+          posterior_snapshot: newPosterior,
+        });
+
+      if (insertError) {
+        return res.status(500).json({ error: insertError.message });
+      }
+
+      // 상태 구성
+      const state = {
+        posterior: newPosterior,
+        turn: turnIndex,
+        asked,
+        verified: verifiedSet,
+      };
+
+      // 다음 결정
+      const decision = decide(kb, state);
+      const response = toResponse(sessionId, decision, state, kb);
+      return res.json(response);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // 일반 질문 응답 처리
+    // ─────────────────────────────────────────────────────────────────
     asked.add(axisId);
 
     // 해당 observable 찾기
@@ -169,12 +224,19 @@ router.post('/:id/turns', async (req, res) => {
       return res.status(500).json({ error: insertError.message });
     }
 
+    // verified 집합 복원
+    const verifiedSet = new Set(
+      allTurns
+        ?.filter(t => t.question?.startsWith('verify_') && t.user_answer === 'yes')
+        ?.map(t => t.question.slice(7)) || []
+    );
+
     // 상태 구성
     const state = {
       posterior: newPosterior,
       turn: turnIndex,
       asked,
-      verified: new Set(),
+      verified: verifiedSet,
     };
 
     // 다음 결정

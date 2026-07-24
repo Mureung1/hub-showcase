@@ -136,6 +136,86 @@ function QuestionCard({ question, options, onSelect, disabled }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// VerifyCard — VERIFY 전용 카드 (예/아니오 2버튼)
+// ═══════════════════════════════════════════════════════════════════════════
+function VerifyCard({ question, onSelect, disabled }) {
+  return (
+    <div style={{
+      background: 'var(--color-tile)',
+      borderRadius: 'var(--radius-lg)',
+      padding: 'var(--space-6)',
+      boxShadow: 'var(--shadow-card)',
+      maxWidth: 'var(--width-card)',
+      border: '2px solid var(--color-amber)',
+    }}>
+      {/* 검증 라벨 */}
+      <div style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 'var(--space-2)',
+        padding: 'var(--space-1) var(--space-3)',
+        background: 'var(--color-amber-wash)',
+        borderRadius: 'var(--radius-sm)',
+        marginBottom: 'var(--space-4)',
+      }}>
+        <span style={{ fontSize: 14 }}>🔍</span>
+        <span style={{
+          font: 'var(--font-eyebrow)',
+          color: 'var(--color-amber-deep)',
+          letterSpacing: '0.08em',
+        }}>
+          직접 확인
+        </span>
+      </div>
+
+      <p style={{
+        font: 'var(--font-title)',
+        color: 'var(--color-ink)',
+        marginBottom: 'var(--space-5)',
+      }}>
+        {question}
+      </p>
+
+      {/* 예/아니오 버튼 */}
+      <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+        <button
+          onClick={() => onSelect({ id: 'yes', label: '예' })}
+          disabled={disabled}
+          style={{
+            flex: 1,
+            padding: 'var(--space-4)',
+            background: 'var(--color-mint)',
+            color: 'white',
+            borderRadius: 'var(--radius-btn)',
+            font: 'var(--font-caption)',
+            border: 'none',
+            transition: 'background var(--transition-fast)',
+          }}
+        >
+          예
+        </button>
+        <button
+          onClick={() => onSelect({ id: 'no', label: '아니오' })}
+          disabled={disabled}
+          style={{
+            flex: 1,
+            padding: 'var(--space-4)',
+            background: 'var(--color-tile)',
+            color: 'var(--color-ink)',
+            borderRadius: 'var(--radius-btn)',
+            font: 'var(--font-caption)',
+            border: '1px solid var(--color-border)',
+            transition: 'background var(--transition-fast)',
+          }}
+        >
+          아니오
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // HypothesisCard — 가설 카드
 // ═══════════════════════════════════════════════════════════════════════════
 function HypothesisCard({ hypothesis, rank }) {
@@ -267,6 +347,68 @@ function HistoryItem({ question, answer }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Toast — 에러/정보 알림 (우상단 고정, 3초 자동 소멸)
+// ═══════════════════════════════════════════════════════════════════════════
+function Toast({ toast, onClose }) {
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(onClose, 3000)
+    return () => clearTimeout(timer)
+  }, [toast, onClose])
+
+  if (!toast) return null
+
+  const isError = toast.variant === 'error'
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 'var(--space-4)',
+        right: 'var(--space-4)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 'var(--space-3)',
+        padding: 'var(--space-4)',
+        background: isError ? 'var(--color-alarm-wash)' : 'var(--color-mint-wash)',
+        border: `1px solid ${isError ? 'var(--color-alarm)' : 'var(--color-mint)'}`,
+        borderRadius: 'var(--radius-md)',
+        boxShadow: 'var(--shadow-float)',
+        maxWidth: 320,
+        animation: 'fadeIn var(--transition-normal)',
+      }}
+      role="alert"
+    >
+      <span style={{ fontSize: 16 }}>{isError ? '⚠️' : 'ℹ️'}</span>
+      <div style={{ flex: 1 }}>
+        <p style={{
+          font: 'var(--font-body)',
+          color: isError ? 'var(--color-alarm-deep)' : 'var(--color-mint-deep)',
+        }}>
+          {toast.message}
+        </p>
+      </div>
+      <button
+        onClick={onClose}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: 'var(--color-ink-muted)',
+          cursor: 'pointer',
+          padding: 0,
+          fontSize: 16,
+          lineHeight: 1,
+        }}
+        aria-label="닫기"
+      >
+        ✕
+      </button>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // App — 메인 컴포넌트
 // ═══════════════════════════════════════════════════════════════════════════
 function App() {
@@ -277,6 +419,7 @@ function App() {
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState(null)
+  const [toast, setToast] = useState(null)
 
   // 공간 목록 로드
   useEffect(() => {
@@ -287,7 +430,9 @@ function App() {
           setSelectedSpace(data[0].id)
         }
       })
-      .catch((err) => console.error('Failed to fetch spaces:', err))
+      .catch(() => {
+        setToast({ variant: 'error', message: '공간 목록을 불러오지 못했어요.' })
+      })
   }, [])
 
   // 핸들러
@@ -298,8 +443,8 @@ function App() {
       setSessionId(result.sessionId)
       setResponse(result)
       setHistory([])
-    } catch (err) {
-      console.error(err)
+    } catch {
+      setToast({ variant: 'error', message: '서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.' })
     }
     setLoading(false)
   }
@@ -315,8 +460,8 @@ function App() {
       const axisId = response.needMoreInfo.axisId
       const result = await turn(sessionId, axisId, option.id)
       setResponse(result)
-    } catch (err) {
-      console.error(err)
+    } catch {
+      setToast({ variant: 'error', message: '응답을 처리하지 못했어요. 다시 시도해 주세요.' })
     }
     setLoading(false)
   }
@@ -326,8 +471,8 @@ function App() {
     try {
       const result = await done(sessionId)
       setResponse(result)
-    } catch (err) {
-      console.error(err)
+    } catch {
+      setToast({ variant: 'error', message: '진단을 완료하지 못했어요. 다시 시도해 주세요.' })
     }
     setLoading(false)
   }
@@ -342,16 +487,20 @@ function App() {
   const currentSpace = spaces.find(s => s.id === selectedSpace) || spaces[0]
 
   return (
-    <div style={{
-      minHeight: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      padding: 'var(--space-8) var(--space-4)',
-    }}>
-      {/* ─────────────────────────────────────────────────────────────────
-          시작 화면
-          ───────────────────────────────────────────────────────────────── */}
+    <>
+      {/* Toast 알림 */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
+      <div style={{
+        minHeight: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        padding: 'var(--space-8) var(--space-4)',
+      }}>
+        {/* ─────────────────────────────────────────────────────────────────
+            시작 화면
+            ───────────────────────────────────────────────────────────────── */}
       {response === null && (
         <div style={{
           display: 'flex',
@@ -446,12 +595,21 @@ function App() {
             </div>
           )}
 
-          <QuestionCard
-            question={response.needMoreInfo.question}
-            options={response.needMoreInfo.options}
-            onSelect={handleSelect}
-            disabled={loading}
-          />
+          {/* VERIFY vs 일반 질문 분기 */}
+          {response.needMoreInfo.axisId.startsWith('verify_') ? (
+            <VerifyCard
+              question={response.needMoreInfo.question}
+              onSelect={handleSelect}
+              disabled={loading}
+            />
+          ) : (
+            <QuestionCard
+              question={response.needMoreInfo.question}
+              options={response.needMoreInfo.options}
+              onSelect={handleSelect}
+              disabled={loading}
+            />
+          )}
         </div>
       )}
 
@@ -565,7 +723,8 @@ function App() {
           </ActionButton>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
 

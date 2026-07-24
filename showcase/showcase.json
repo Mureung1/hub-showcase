@@ -4,8 +4,12 @@
   "summary": "베이지안 추론 기반 자취방 악취 진단 시스템. LLM이 확률을 계산하지 않고, 순수 함수 엔진이 판단한다.",
   "githubUser": "khy",
   "demoUrl": "",
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "thumbnail.png",
+  "screenshots": [
+    "screenshot-prototype.png",
+    "screenshot-result.png",
+    "screenshot-history.png"
+  ],
   "problem": "자취생은 혼자 집 관리를 하기 위한 전문 지식이 부족하고, 문제의 원인을 모를 때 상황에 맞는 진단이 어렵다.",
   "targetUsers": [
     "자취생",
@@ -21,7 +25,6 @@
   "featureTags": [
     "원인진단",
     "베이지안",
-    "턴제",
     "악취"
   ],
   "techStack": [
@@ -34,20 +37,38 @@
   "techHighlights": [
     "베이지안 추론 엔진 (순수 함수, LLM 무관)",
     "정보이득(IG) 기반 질문 선택",
-    "확률→라벨 변환",
     "KB(지식베이스) 기반 진단"
   ],
   "developmentWithAI": "Claude Code를 사용하여 TDD 방식으로 엔진 함수 테스트 작성, FE-BE 연결, 디자인 시스템 적용까지 진행. CLAUDE.md에 불변식을 정의하여 AI가 규칙을 어기지 않도록 가드레일 설정.",
   "agent": {
     "summary": "진단 로직은 코드가 소유하고, LLM은 자유텍스트→KB어휘 변환(인식자)과 결정→문장 변환(설명자) 역할만 수행",
     "agentTools": [
-      "bayes() - 사후확률 갱신",
-      "decide() - 다음 행동 결정 (ASK/PROPOSE/ASSUME)",
-      "infoGain() - 질문 선택 기준",
-      "label() - 확률→라벨 변환"
+      {
+        "name": "bayes",
+        "type": "skill",
+        "purpose": "사후확률 갱신"
+      },
+      {
+        "name": "decide",
+        "type": "skill",
+        "purpose": "다음 행동 결정 (ASK/PROPOSE/ASSUME)"
+      },
+      {
+        "name": "infoGain",
+        "type": "skill",
+        "purpose": "질문 선택 기준"
+      }
     ],
     "workflows": [
-      "사용자 입력 → 베이즈 갱신 → 정책 결정 → 응답 생성"
+      {
+        "name": "진단 흐름",
+        "steps": [
+          "사용자 입력",
+          "베이즈 갱신",
+          "정책 결정",
+          "응답 생성"
+        ]
+      }
     ]
   }
 }
