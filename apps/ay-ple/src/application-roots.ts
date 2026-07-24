@@ -2,7 +2,6 @@ import {
   type BigIntStats,
 } from 'node:fs'
 import {
-  chmod,
   lstat,
   mkdir,
   realpath,
@@ -40,6 +39,7 @@ export type PreparedApplicationRoots = {
   readonly controlled: ControlledApplicationRoots
   readonly controlledRootPaths: readonly string[]
   readonly admittedWorkspace: AdmittedSemesterWorkspace | null
+  readonly admittedWorkspaceCanonicalRoot: string | null
 }
 
 type ApplicationRootsTestingDependencies = {
@@ -213,6 +213,7 @@ export async function createApplicationRootsForTesting(
     controlled,
     controlledRootPaths: Object.freeze(controlledRootPaths),
     admittedWorkspace,
+    admittedWorkspaceCanonicalRoot: workspaceRoot,
   })
 }
 
@@ -227,8 +228,8 @@ export function createPublicPreviewWorkspaceTargetGuard(
     roots.packageRoot,
     roots.appDataRoot,
     ...roots.controlledRootPaths,
-    ...(roots.admittedWorkspace
-      ? [roots.admittedWorkspace.canonicalRoot]
+    ...(roots.admittedWorkspaceCanonicalRoot
+      ? [roots.admittedWorkspaceCanonicalRoot]
       : []),
   ].map(normalizedComparisonPath))
 
@@ -306,7 +307,6 @@ async function ensureOwnerOnlyDirectory(
 ): Promise<DirectoryIdentity> {
   try {
     await mkdir(target, { mode: 0o700 })
-    await chmod(target, 0o700)
   } catch (error) {
     if (!hasCode(error, 'EEXIST')) {
       throw new ApplicationRootsError('unsafe_app_data_root')

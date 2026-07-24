@@ -107,6 +107,10 @@ test('reopens exact safe roots and preserves the admitted workspace reference', 
 
     assert.equal(first.admittedWorkspace, workspace)
     assert.equal(second.admittedWorkspace, workspace)
+    assert.equal(
+      first.admittedWorkspaceCanonicalRoot,
+      workspace.canonicalRoot,
+    )
     assert.equal(first.appDataRoot, second.appDataRoot)
     assert.deepEqual(
       first.controlledRootPaths,
@@ -310,6 +314,48 @@ test('target guard is total, snapshots mutable input, and only owns protected-ro
           throw new Error('hostile getter')
         },
         leafName: 'semester',
+      }),
+      'blocked',
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('target guard preserves the validated workspace root if the exact handle is later mutated', async () => {
+  const fixture = await createRootFixture()
+  const originalWorkspaceRoot = path.join(fixture.root, 'semester')
+  const mutatedWorkspaceRoot = path.join(fixture.root, 'other-semester')
+  const workspace = await createAdmittedWorkspace(
+    originalWorkspaceRoot,
+  )
+  await mkdir(mutatedWorkspaceRoot, { mode: 0o700 })
+  try {
+    const roots = await createApplicationRootsForTesting(
+      {
+        packageRoot: fixture.packageRoot,
+        admittedWorkspace: workspace,
+      },
+      {
+        userInfo: () => ({
+          homedir: fixture.userHome,
+          uid: process.getuid!(),
+        }),
+      },
+    )
+    const mutableWorkspace = workspace as { canonicalRoot: string }
+    mutableWorkspace.canonicalRoot = mutatedWorkspaceRoot
+    const guard = createPublicPreviewWorkspaceTargetGuard(roots)
+
+    assert.equal(roots.admittedWorkspace, workspace)
+    assert.equal(
+      roots.admittedWorkspaceCanonicalRoot,
+      originalWorkspaceRoot,
+    )
+    assert.equal(
+      guard({
+        canonicalParent: path.dirname(originalWorkspaceRoot),
+        leafName: path.basename(originalWorkspaceRoot),
       }),
       'blocked',
     )
