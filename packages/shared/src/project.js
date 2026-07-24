@@ -45,6 +45,22 @@ export const AI_RUN_STATUS = Object.freeze({
   FAILED: 'failed',
 })
 
+export const AI_CONTEXT_KEYS = Object.freeze([
+  'project',
+  'notes',
+  'tasks',
+  'team',
+  'resources',
+])
+
+export const DEFAULT_AI_CONTEXT_CONFIG = Object.freeze({
+  project: true,
+  notes: true,
+  tasks: true,
+  team: false,
+  resources: true,
+})
+
 export const INVITATION_STATUS = Object.freeze({
   PENDING: 'pending',
   ACCEPTED: 'accepted',
@@ -189,6 +205,20 @@ export const INVITATION_STATUS = Object.freeze({
  */
 
 /**
+ * @typedef {object} AIAgentCreateInput
+ * @property {string} name
+ * @property {string} role
+ * @property {string} [description]
+ * @property {string} [color]
+ * @property {string} [instructions]
+ * @property {AIContext} [contextConfig]
+ */
+
+/**
+ * @typedef {Partial<AIAgentCreateInput> & {enabled?: boolean}} AIAgentUpdateInput
+ */
+
+/**
  * @typedef {object} AIRun
  * @property {string} id
  * @property {string} projectId
@@ -284,6 +314,22 @@ export function isMemberKind(value) {
  */
 export function isAiRunStatus(value) {
   return Object.values(AI_RUN_STATUS).includes(value)
+}
+
+/**
+ * Checks whether a value has every supported AI context toggle as a boolean.
+ * @param {unknown} value
+ * @returns {value is AIContext}
+ */
+export function isAiContextConfig(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const keys = Object.keys(value)
+  return (
+    keys.length === AI_CONTEXT_KEYS.length
+    && AI_CONTEXT_KEYS.every((key) => (
+      Object.prototype.hasOwnProperty.call(value, key) && typeof value[key] === 'boolean'
+    ))
+  )
 }
 
 /**

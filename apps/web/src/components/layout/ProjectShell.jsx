@@ -13,7 +13,7 @@ import { TaskCreateModal } from '../../features/tasks/components/TaskCreateModal
 import { TaskDetailModal } from '../../features/tasks/components/TaskDetailModal.jsx'
 import { ProjectIcon } from '../../features/projects/components/ProjectIcon.jsx'
 import { useTeamFlow } from '../../state/useTeamFlow.js'
-import { selectProject, selectProjectMembers } from '../../state/selectors.js'
+import { selectAssignableProjectMembers, selectProject } from '../../state/selectors.js'
 import styles from './AppShell.module.css'
 
 const projectNav = [
@@ -65,7 +65,7 @@ export function ProjectShell() {
         </div>
       </aside>
       <main className={styles.main}><Outlet context={{ project, openTaskCreate: () => { if (capabilities.tasks) setShowTaskCreate(true) }, openTaskDetail: (task) => setSelectedTaskId(task.id) }} /></main>
-      {showTaskCreate && capabilities.tasks ? <TaskCreateModal projectId={project.id} members={selectProjectMembers(state, project.id)} onClose={() => setShowTaskCreate(false)} /> : null}
+      {showTaskCreate && capabilities.tasks ? <TaskCreateModal projectId={project.id} members={selectAssignableProjectMembers(state, project.id)} onClose={() => setShowTaskCreate(false)} /> : null}
       {selectedTask ? <TaskDetailModal readOnly={readOnly} task={selectedTask} members={state.members} onClose={() => setSelectedTaskId(null)} onStatusChange={(status) => actions.updateTask(selectedTask.id, { status })} onDelete={async (taskId) => { await actions.deleteTask(taskId); setSelectedTaskId(null) }} /> : null}
     </div>
   )

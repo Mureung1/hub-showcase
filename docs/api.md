@@ -20,8 +20,8 @@ Authorization: Bearer <access_token>
 | `GET` | `/api/bootstrap` | 필요 | 로그인 사용자의 초기 데이터 조회 |
 | `POST` | `/api/projects` | 필요 | 프로젝트 생성 |
 | `PATCH` | `/api/projects/:projectId` | 필요 | 프로젝트 기간 변경 |
-| `POST` | `/api/projects/:projectId/ai-agent` | 필요 | 자료조사 AI 팀원 추가 |
-| `PATCH` | `/api/ai-agents/:memberId` | 필요 | AI 역할·컨텍스트 설정 저장 |
+| `POST` | `/api/projects/:projectId/ai-agents` | 필요 | AI Agent 팀원 추가 |
+| `PATCH` | `/api/ai-agents/:memberId` | 필요 | AI Agent 프로필·설정 수정 |
 | `POST` | `/api/ai-agents/:memberId/runs` | 필요 | 결정론적 Mock 작업 실행 |
 | `POST` | `/api/ai-runs/:runId/apply` | 필요 | 실행 결과를 공유 노트로 반영 |
 | `POST` | `/api/ai-runs/:runId/reject` | 필요 | 실행 결과 보류 |
@@ -211,9 +211,28 @@ API 서버가 실행 중인지 확인합니다.
 
 Mock AI는 외부 AI API나 네트워크를 호출하지 않습니다. Express가 저장된 프로젝트 정보만 정규화해 같은 입력에 항상 같은 Markdown을 만들고, 결과를 먼저 `pending_review`로 저장합니다.
 
-### `POST /api/projects/:projectId/ai-agent`
+### `POST /api/projects/:projectId/ai-agents`
 
-프로젝트에 고정된 `자료조사 AI`를 추가합니다. 프로젝트당 한 명만 허용합니다.
+프로젝트에 사용자 정의 AI Agent를 추가합니다. AI Agent는 팀원으로 표시되지만 프로젝트 접근 권한(`project_access`)을 갖지 않으며, 프로젝트 협업자만 관리할 수 있습니다.
+
+```json
+{
+  "name": "리서치 파트너",
+  "role": "시장 조사",
+  "description": "경쟁 서비스와 시장 근거를 정리합니다.",
+  "color": "#6950b8",
+  "instructions": "신뢰할 수 있는 자료를 구조화해 주세요.",
+  "contextConfig": {
+    "project": true,
+    "notes": true,
+    "tasks": true,
+    "team": false,
+    "resources": true
+  }
+}
+```
+
+`name`, `role`은 필수입니다. 나머지는 선택값이며, 생략한 `contextConfig`는 위 기본값으로 저장됩니다. `initial`은 서버가 이름의 첫 글자에서 생성합니다.
 
 성공: `201 Created`
 
@@ -223,8 +242,8 @@ Mock AI는 외부 AI API나 네트워크를 호출하지 않습니다. Express�
     "id": "44444444-4444-4444-8444-444444444444",
     "projectId": "11111111-1111-4111-8111-111111111111",
     "kind": "ai",
-    "name": "자료조사 AI",
-    "role": "자료 조사",
+    "name": "리서치 파트너",
+    "role": "시장 조사",
     "isAi": true
   },
   "aiAgent": {
@@ -245,22 +264,16 @@ Mock AI는 외부 AI API나 네트워크를 호출하지 않습니다. Express�
 
 ### `PATCH /api/ai-agents/:memberId`
 
-역할 지시사항과 다섯 컨텍스트 토글을 한 번에 저장합니다. `contextConfig`는 아래 다섯 boolean을 모두 포함해야 하며 다른 키는 허용하지 않습니다.
+프로필과 설정 중 바꿀 값만 부분 수정합니다. 허용 키는 `name`, `role`, `description`, `color`, `instructions`, `contextConfig`, `enabled`입니다. `contextConfig`를 전달할 때는 아래 다섯 boolean을 모두 포함해야 하며 다른 키는 허용하지 않습니다.
 
 ```json
 {
-  "instructions": "프로젝트 내부 정보만 사용해 근거와 다음 행동을 정리해 주세요.",
-  "contextConfig": {
-    "project": true,
-    "notes": true,
-    "tasks": true,
-    "team": false,
-    "resources": true
-  }
+  "name": "전략 리서치 Agent",
+  "enabled": false
 }
 ```
 
-성공: `200 OK` — `{ "aiAgent": { ... } }`
+성공: `200 OK` — `{ "member": { ... }, "aiAgent": { ... } }`
 
 ### `POST /api/ai-agents/:memberId/runs`
 

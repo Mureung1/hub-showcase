@@ -1,0 +1,177 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "apps/web/src/components/layout/AppShell.jsx",
+      "language": "javascript",
+      "sizeLines": 171,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/components/layout/ProjectShell.jsx",
+      "language": "javascript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/components/ui/Modal.jsx",
+      "language": "javascript",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "language": "javascript",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/members/EditMemberModal.jsx",
+      "language": "javascript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/members/InviteCollaboratorModal.jsx",
+      "language": "javascript",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/members/MemberRemovalModal.jsx",
+      "language": "javascript",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/members/MembersPage.jsx",
+      "language": "javascript",
+      "sizeLines": 116,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "language": "javascript",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/notes/NotesPage.jsx",
+      "language": "javascript",
+      "sizeLines": 377,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "language": "javascript",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "language": "javascript",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "language": "javascript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/state/useTeamFlow.js",
+      "language": "javascript",
+      "sizeLines": 9,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "apps/web/src/components/layout/AppShell.jsx": [
+      "apps/web/src/auth/useAuth.js",
+      "apps/web/src/components/layout/AppShell.module.css",
+      "apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/components/layout/ProjectShell.jsx": [
+      "apps/web/src/components/layout/AppShell.jsx",
+      "apps/web/src/components/layout/AppShell.module.css",
+      "apps/web/src/features/projects/components/ProjectIcon.jsx",
+      "apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/components/ui/Modal.jsx": [
+      "apps/web/src/components/ui/ui.module.css"
+    ],
+    "apps/web/src/features/dashboard/ProjectPeriodModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/members/EditMemberModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/features/members/MembersPage.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/members/InviteCollaboratorModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/members/MemberRemovalModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/features/members/MembersPage.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/members/MembersPage.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/components/ui/StatusBadge.jsx",
+      "apps/web/src/features/members/EditMemberModal.jsx",
+      "apps/web/src/features/members/InviteCollaboratorModal.jsx",
+      "apps/web/src/features/members/MemberRemovalModal.jsx",
+      "apps/web/src/features/members/MembersPage.module.css",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/notes/NoteTemplateModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/features/notes/NotesPage.module.css"
+    ],
+    "apps/web/src/features/notes/NotesPage.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "apps/web/src/features/notes/NotesPage.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/projects/components/NewProjectModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/resources/CreateFolderModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/tasks/components/TaskCreateModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/state/useTeamFlow.js": [
+      "apps/web/src/state/TeamFlowContext.js"
+    ]
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "supabase/migrations/20260720030115_create_tasks.sql",
+      "language": "sql",
+      "sizeLines": 25,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260721054012_google_auth_workspace.sql",
+      "language": "sql",
+      "sizeLines": 326,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260722112108_collaboration_and_content_crud.sql",
+      "language": "sql",
+      "sizeLines": 717,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260722114219_collaboration_and_content_hardening.sql",
+      "language": "sql",
+      "sizeLines": 321,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql",
+      "language": "sql",
+      "sizeLines": 172,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260722154845_add_project_icon_key.sql",
+      "language": "sql",
+      "sizeLines": 8,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260722155721_backfill_demo_project_icons.sql",
+      "language": "sql",
+      "sizeLines": 22,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260723093000_private_resource_uploads.sql",
+      "language": "sql",
+      "sizeLines": 122,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260723094500_harden_private_resource_uploads.sql",
+      "language": "sql",
+      "sizeLines": 221,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260723185956_remove_manual_assignees.sql",
+      "language": "sql",
+      "sizeLines": 203,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260724090000_mock_ai_team_member.sql",
+      "language": "sql",
+      "sizeLines": 921,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260724093000_mock_ai_fk_indexes.sql",
+      "language": "sql",
+      "sizeLines": 11,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260724094500_fix_demo_ai_markdown.sql",
+      "language": "sql",
+      "sizeLines": 23,
+      "fileCategory": "data"
+    }
+  ],
+  "batchImportData": {
+    "supabase/migrations/20260720030115_create_tasks.sql": [],
+    "supabase/migrations/20260721054012_google_auth_workspace.sql": [],
+    "supabase/migrations/20260722112108_collaboration_and_content_crud.sql": [],
+    "supabase/migrations/20260722114219_collaboration_and_content_hardening.sql": [],
+    "supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql": [],
+    "supabase/migrations/20260722154845_add_project_icon_key.sql": [],
+    "supabase/migrations/20260722155721_backfill_demo_project_icons.sql": [],
+    "supabase/migrations/20260723093000_private_resource_uploads.sql": [],
+    "supabase/migrations/20260723094500_harden_private_resource_uploads.sql": [],
+    "supabase/migrations/20260723185956_remove_manual_assignees.sql": [],
+    "supabase/migrations/20260724090000_mock_ai_team_member.sql": [],
+    "supabase/migrations/20260724093000_mock_ai_fk_indexes.sql": [],
+    "supabase/migrations/20260724094500_fix_demo_ai_markdown.sql": []
+  }
+}

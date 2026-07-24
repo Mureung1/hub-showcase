@@ -1,6 +1,7 @@
--- TeamFlow Mock AI teammate database verification.
+-- TeamFlow multi-AI agent database and RLS verification.
 -- Run only against TeamFlow project lmmeuoeuiouyowpthxwg after applying
--- 20260724090000_mock_ai_team_member.sql.
+-- 20260724114500_reject_disabled_ai_task_assignment.sql and all preceding migrations.
+-- Do not run against TimeBox project vimywtpiqsixlfiegpdd.
 -- Every fixture and assertion is enclosed by this transaction and ROLLBACK.
 
 begin;
@@ -55,8 +56,8 @@ begin
 end;
 $$;
 
--- Dedicated test identities. These UUIDs and emails are reserved for this
--- transaction and never remain because the script ends in ROLLBACK.
+-- Dedicated identities. The final ROLLBACK ensures they cannot remain in the
+-- TeamFlow Auth schema or application tables.
 insert into auth.users (
   id,
   aud,
@@ -110,8 +111,8 @@ insert into public.projects (
   (
     'b1000000-0000-4000-8000-000000000001',
     'a1000000-0000-4000-8000-000000000001',
-    'AI RLS 프로젝트 A',
-    '협업자 A와 B가 사용하는 테스트 프로젝트',
+    'Multi AI project A',
+    'A and B collaborate in this project.',
     'in_progress',
     '2026-07-24',
     '2026-07-31'
@@ -119,8 +120,8 @@ insert into public.projects (
   (
     'b1000000-0000-4000-8000-000000000002',
     'a1000000-0000-4000-8000-000000000003',
-    'AI RLS 프로젝트 C',
-    '비협업자 격리 테스트 프로젝트',
+    'Isolated project C',
+    'This project belongs only to C.',
     'in_progress',
     '2026-07-24',
     '2026-07-31'
@@ -147,7 +148,7 @@ insert into public.members (
     'user',
     'AI RLS A',
     'A',
-    '개발',
+    'Developer',
     '',
     '#3a6898',
     false
@@ -160,7 +161,7 @@ insert into public.members (
     'user',
     'AI RLS B',
     'B',
-    '기획',
+    'Planner',
     '',
     '#8a4e68',
     false
@@ -173,7 +174,7 @@ insert into public.members (
     'user',
     'AI RLS C',
     'C',
-    '검증',
+    'Reviewer',
     '',
     '#3d7a54',
     false
@@ -196,8 +197,8 @@ insert into public.project_access (project_id, user_id, member_id) values
     'c1000000-0000-4000-8000-000000000003'
   );
 
--- Member-kind constraints: manual members and inconsistent user/AI identity
--- combinations must fail before any AI RPC is exercised.
+-- The multi-AI migration retains the user/AI identity model and removes the
+-- old fixed identity and one-agent-per-project database objects.
 select pg_temp.expect_error(
   $sql$
     insert into public.members (
@@ -207,9 +208,9 @@ select pg_temp.expect_error(
       null,
       null,
       'manual',
-      '수동 담당자',
-      '수',
-      '담당자',
+      'Manual member',
+      'M',
+      'Manual',
       false
     )
   $sql$,
@@ -225,9 +226,9 @@ select pg_temp.expect_error(
       'a1000000-0000-4000-8000-000000000003',
       'teamflow-ai-rls-c@example.invalid',
       'ai',
-      '자료조사 AI',
-      'AI',
-      '자료 조사',
+      'Invalid AI',
+      'I',
+      'Invalid',
       true
     )
   $sql$,
@@ -243,9 +244,9 @@ select pg_temp.expect_error(
       'a1000000-0000-4000-8000-000000000003',
       'teamflow-ai-rls-c@example.invalid',
       'user',
-      '잘못된 사용자',
-      '오',
-      '개발',
+      'Invalid user',
+      'I',
+      'Invalid',
       true
     )
   $sql$,
@@ -263,7 +264,27 @@ select pg_temp.expect_error(
   'AI_MEMBER_REQUIRED'
 );
 
--- User A creates the sole AI teammate in project A.
+select pg_temp.assert_true(
+  to_regclass('public.members_project_ai_unique') is null
+  and not exists (
+    select 1
+    from pg_catalog.pg_constraint constraint_row
+    where constraint_row.conrelid = 'public.ai_agents'::regclass
+      and constraint_row.conname = 'ai_agents_project_id_key'
+  )
+  and to_regclass('public.ai_agents_project_idx') is not null,
+  'the fixed one-agent indexes must be removed and the project lookup index retained'
+);
+
+select pg_temp.assert_true(
+  to_regprocedure('public.create_project_ai_agent(uuid)') is null
+  and to_regprocedure('public.update_ai_agent_settings(uuid,text,jsonb)') is null
+  and to_regprocedure('public.create_project_ai_agent(uuid,text,text,text,text,text,jsonb)') is not null
+  and to_regprocedure('public.update_ai_agent(uuid,text,text,text,text,text,jsonb,boolean)') is not null,
+  'the fixed single-agent RPC signatures must be replaced'
+);
+
+-- User A creates two independently configured AI agents in the same project.
 select set_config(
   'request.jwt.claim.sub',
   'a1000000-0000-4000-8000-000000000001',
@@ -280,31 +301,72 @@ insert into ai_test_state (key, value)
 select
   'ai_a',
   ((public.create_project_ai_agent(
-    'b1000000-0000-4000-8000-000000000001'
+    'b1000000-0000-4000-8000-000000000001',
+    'Research Agent',
+    'Research lead',
+    'Collect and summarize evidence.',
+    '#6950b8',
+    'Return a concise evidence brief.',
+    '{"project":true,"notes":true,"tasks":true,"team":false,"resources":true}'::jsonb
+  ) -> 'member' ->> 'id')::uuid);
+
+insert into ai_test_state (key, value)
+select
+  'ai_b',
+  ((public.create_project_ai_agent(
+    'b1000000-0000-4000-8000-000000000001',
+    'Planning Agent',
+    'Planning lead',
+    'Turn evidence into an action plan.',
+    '#3d7a54',
+    'Produce a prioritized implementation plan.',
+    '{"project":true,"notes":false,"tasks":true,"team":true,"resources":false}'::jsonb
   ) -> 'member' ->> 'id')::uuid);
 
 select pg_temp.assert_true(
   (
-    select count(*) = 1
+    select count(*) = 2
     from public.ai_agents
     where project_id = 'b1000000-0000-4000-8000-000000000001'
   ),
-  'project A must have exactly one AI agent'
+  'one project must allow two AI agents'
 );
 
-select pg_temp.expect_error(
-  $sql$
-    select public.create_project_ai_agent(
-      'b1000000-0000-4000-8000-000000000001'
-    )
-  $sql$,
-  'TEAMFLOW_CONFLICT:AI_AGENT_EXISTS'
+select pg_temp.assert_true(
+  (
+    select member.name = 'Research Agent'
+      and member.initial = 'R'
+      and member.role = 'Research lead'
+      and member.kind = 'ai'
+      and member.auth_user_id is null
+      and member.email is null
+      and member.is_ai
+      and agent.instructions = 'Return a concise evidence brief.'
+    from public.members member
+    join public.ai_agents agent on agent.member_id = member.id
+    where member.id = (select value from ai_test_state where key = 'ai_a')
+  ),
+  'custom AI creation must persist its profile, generated initial, and settings'
+);
+
+select pg_temp.assert_true(
+  (
+    select member.name = 'Planning Agent'
+      and member.initial = 'P'
+      and member.role = 'Planning lead'
+      and agent.instructions = 'Produce a prioritized implementation plan.'
+      and agent.context_config ->> 'notes' = 'false'
+    from public.members member
+    join public.ai_agents agent on agent.member_id = member.id
+    where member.id = (select value from ai_test_state where key = 'ai_b')
+  ),
+  'each AI agent must keep an independent profile and settings row'
 );
 
 reset role;
 
--- The AI can never become a project_access principal because it has no
--- auth_user_id and therefore cannot satisfy the composite access FK.
+-- No AI may become an authorization principal: the project_access composite
+-- foreign key requires a real auth_user_id matching user_id.
 select pg_temp.expect_error(
   format(
     $sql$
@@ -324,12 +386,16 @@ select pg_temp.assert_true(
   not exists (
     select 1
     from public.project_access
-    where member_id = (select value from ai_test_state where key = 'ai_a')
+    where member_id in (
+      (select value from ai_test_state where key = 'ai_a'),
+      (select value from ai_test_state where key = 'ai_b')
+    )
   ),
-  'AI member must not receive project_access'
+  'AI agents must not receive project_access'
 );
 
--- User C creates the sole AI in the isolated project.
+-- User C owns an isolated project and can create its own AI without gaining
+-- access to project A.
 select set_config(
   'request.jwt.claim.sub',
   'a1000000-0000-4000-8000-000000000003',
@@ -346,13 +412,19 @@ insert into ai_test_state (key, value)
 select
   'ai_c',
   ((public.create_project_ai_agent(
-    'b1000000-0000-4000-8000-000000000002'
+    'b1000000-0000-4000-8000-000000000002',
+    'Isolated Agent',
+    'Private lead',
+    '',
+    '#8a4e68',
+    '',
+    '{"project":true,"notes":true,"tasks":true,"team":false,"resources":true}'::jsonb
   ) -> 'member' ->> 'id')::uuid);
 
 reset role;
 
--- Same-project AI assignment succeeds; cross-project assignment is rejected
--- by the task/member composite FK.
+-- Same-project AI assignment succeeds for both agents. Cross-project AI
+-- assignment remains blocked by the task/member composite foreign key.
 select set_config(
   'request.jwt.claim.sub',
   'a1000000-0000-4000-8000-000000000001',
@@ -375,25 +447,49 @@ with inserted_task as (
     description
   ) values (
     'b1000000-0000-4000-8000-000000000001',
-    'AI 조사 보고서 작성',
+    'Gather competitor evidence',
     (select value from ai_test_state where key = 'ai_a'),
     '2026-07-28',
     'in_progress',
-    '동일 프로젝트 AI에게 배정된 작업'
+    'Research task for the evidence agent.'
   )
   returning id
 )
 insert into ai_test_state (key, value)
-select 'task_applied', id from inserted_task;
+select 'task_a', id from inserted_task;
+
+with inserted_task as (
+  insert into public.tasks (
+    project_id,
+    title,
+    assignee_id,
+    due_date,
+    status,
+    description
+  ) values (
+    'b1000000-0000-4000-8000-000000000001',
+    'Plan the rollout',
+    (select value from ai_test_state where key = 'ai_b'),
+    '2026-07-29',
+    'not_started',
+    'Planning task for the second agent.'
+  )
+  returning id
+)
+insert into ai_test_state (key, value)
+select 'task_b', id from inserted_task;
 
 select pg_temp.assert_true(
-  exists (
-    select 1
+  (
+    select count(*) = 2
     from public.tasks
-    where id = (select value from ai_test_state where key = 'task_applied')
-      and assignee_id = (select value from ai_test_state where key = 'ai_a')
+    where id in (
+      (select value from ai_test_state where key = 'task_a'),
+      (select value from ai_test_state where key = 'task_b')
+    )
+      and project_id = 'b1000000-0000-4000-8000-000000000001'
   ),
-  'same-project AI assignment must succeed'
+  'each same-project AI must be assignable to its own task'
 );
 
 select pg_temp.expect_error(
@@ -403,7 +499,7 @@ select pg_temp.expect_error(
         project_id, title, assignee_id, due_date, status, description
       ) values (
         'b1000000-0000-4000-8000-000000000001',
-        '다른 프로젝트 AI 배정',
+        'Cross project assignment',
         %L,
         '2026-07-29',
         'not_started',
@@ -417,7 +513,8 @@ select pg_temp.expect_error(
 
 reset role;
 
--- Collaborator B has the same management permission as A.
+-- Collaborator B has the same management rights as A, but editing A must not
+-- overwrite B's profile, context settings, or execution history.
 select set_config(
   'request.jwt.claim.sub',
   'a1000000-0000-4000-8000-000000000002',
@@ -430,30 +527,60 @@ select set_config(
 );
 set local role authenticated;
 
-select public.update_ai_agent_settings(
+select public.update_ai_agent(
   (select value from ai_test_state where key = 'ai_a'),
-  '자료를 근거별로 나눠 정리한다.',
-  '{"project":true,"notes":true,"tasks":true,"team":true,"resources":false}'::jsonb
+  'Evidence Agent',
+  'Evidence lead',
+  'Updated by a collaborator.',
+  '#6950b8',
+  'Group findings by source and confidence.',
+  '{"project":true,"notes":true,"tasks":true,"team":true,"resources":false}'::jsonb,
+  true
 );
 
 select pg_temp.assert_true(
   (
-    select instructions = '자료를 근거별로 나눠 정리한다.'
-      and context_config ->> 'team' = 'true'
-      and context_config ->> 'resources' = 'false'
-    from public.ai_agents
-    where member_id = (select value from ai_test_state where key = 'ai_a')
+    select member.name = 'Evidence Agent'
+      and member.initial = 'E'
+      and member.role = 'Evidence lead'
+      and member.description = 'Updated by a collaborator.'
+      and agent.instructions = 'Group findings by source and confidence.'
+      and agent.context_config ->> 'team' = 'true'
+      and agent.context_config ->> 'resources' = 'false'
+      and agent.enabled
+    from public.members member
+    join public.ai_agents agent on agent.member_id = member.id
+    where member.id = (select value from ai_test_state where key = 'ai_a')
   ),
-  'collaborator B must be able to update AI settings'
+  'a collaborator must be able to update an AI profile and settings'
+);
+
+select pg_temp.assert_true(
+  (
+    select member.name = 'Planning Agent'
+      and member.role = 'Planning lead'
+      and agent.instructions = 'Produce a prioritized implementation plan.'
+      and agent.context_config ->> 'notes' = 'false'
+      and agent.enabled
+    from public.members member
+    join public.ai_agents agent on agent.member_id = member.id
+    where member.id = (select value from ai_test_state where key = 'ai_b')
+  ),
+  'updating one AI must not overwrite another AI settings'
 );
 
 select pg_temp.expect_error(
   format(
     $sql$
-      select public.update_ai_agent_settings(
+      select public.update_ai_agent(
         %L,
-        '잘못된 설정',
-        '{"project":true,"notes":true,"tasks":true,"team":false,"resources":true,"extra":true}'::jsonb
+        'Evidence Agent',
+        'Evidence lead',
+        '',
+        '#6950b8',
+        '',
+        '{"project":true,"notes":true,"tasks":true,"team":false,"resources":true,"extra":true}'::jsonb,
+        true
       )
     $sql$,
     (select value from ai_test_state where key = 'ai_a')
@@ -461,40 +588,28 @@ select pg_temp.expect_error(
   'INVALID_AI_CONTEXT'
 );
 
+-- Each run is bound to the selected AI and its own assigned task. A pending
+-- run blocks only a duplicate for the same agent/task pair.
 insert into ai_test_state (key, value)
 select
-  'run_applied',
+  'run_a',
   ((public.create_mock_ai_run(
     (select value from ai_test_state where key = 'ai_a'),
-    (select value from ai_test_state where key = 'task_applied'),
-    '{"task":{"title":"AI 조사 보고서 작성"},"context":{"project":"테스트"}}'::jsonb,
-    '# 모의 실행 결과
-
-## 작업 요청 요약
-
-AI 조사 보고서를 작성합니다.
-
-## 참고한 컨텍스트
-
-- 프로젝트 설명
-
-## Mock 작업 결과
-
-결정론적 테스트 결과입니다.
-
-## 제안하는 다음 행동
-
-- 협업자가 결과를 검토합니다.'
+    (select value from ai_test_state where key = 'task_a'),
+    '{"task":{"title":"Gather competitor evidence"},"context":{"project":"Multi AI project A"}}'::jsonb,
+    '# Mock result\n\nEvidence brief for the assigned task.'
   ) ->> 'id')::uuid);
 
 select pg_temp.assert_true(
   (
     select status = 'pending_review'
+      and ai_member_id = (select value from ai_test_state where key = 'ai_a')
+      and task_id = (select value from ai_test_state where key = 'task_a')
       and created_by = 'a1000000-0000-4000-8000-000000000002'
     from public.ai_runs
-    where id = (select value from ai_test_state where key = 'run_applied')
+    where id = (select value from ai_test_state where key = 'run_a')
   ),
-  'successful run must be pending_review and record the collaborator'
+  'agent A must persist its own pending review run'
 );
 
 select pg_temp.expect_error(
@@ -503,21 +618,62 @@ select pg_temp.expect_error(
       select public.create_mock_ai_run(
         %L,
         %L,
-        '{"task":{"title":"AI 조사 보고서 작성"}}'::jsonb,
-        '# 모의 실행 결과'
+        '{"task":{"title":"Gather competitor evidence"}}'::jsonb,
+        '# Duplicate result'
       )
     $sql$,
     (select value from ai_test_state where key = 'ai_a'),
-    (select value from ai_test_state where key = 'task_applied')
+    (select value from ai_test_state where key = 'task_a')
   ),
   'TEAMFLOW_CONFLICT:AI_RUN_PENDING'
 );
+
+select pg_temp.expect_error(
+  format(
+    $sql$
+      select public.create_mock_ai_run(
+        %L,
+        %L,
+        '{"task":{"title":"Gather competitor evidence"}}'::jsonb,
+        '# Wrong agent result'
+      )
+    $sql$,
+    (select value from ai_test_state where key = 'ai_b'),
+    (select value from ai_test_state where key = 'task_a')
+  ),
+  'TEAMFLOW_CONFLICT:TASK_NOT_ASSIGNED_TO_AI'
+);
+
+insert into ai_test_state (key, value)
+select
+  'run_b',
+  ((public.create_mock_ai_run(
+    (select value from ai_test_state where key = 'ai_b'),
+    (select value from ai_test_state where key = 'task_b'),
+    '{"task":{"title":"Plan the rollout"},"context":{"project":"Multi AI project A"}}'::jsonb,
+    '# Mock result\n\nPlanning brief for the assigned task.'
+  ) ->> 'id')::uuid);
+
+select pg_temp.assert_true(
+  (
+    select count(*) = 2
+    from public.ai_runs
+    where id in (
+      (select value from ai_test_state where key = 'run_a'),
+      (select value from ai_test_state where key = 'run_b')
+    )
+      and status = 'pending_review'
+  ),
+  'different agents must be able to retain separate pending runs'
+);
+
+select public.reject_ai_run((select value from ai_test_state where key = 'run_b'));
 
 insert into ai_test_state (key, value)
 select
   'applied_note',
   ((public.apply_ai_run(
-    (select value from ai_test_state where key = 'run_applied')
+    (select value from ai_test_state where key = 'run_a')
   ) -> 'note' ->> 'id')::uuid);
 
 select pg_temp.assert_true(
@@ -525,15 +681,15 @@ select pg_temp.assert_true(
     select status = 'applied'
       and applied_note_id = (select value from ai_test_state where key = 'applied_note')
     from public.ai_runs
-    where id = (select value from ai_test_state where key = 'run_applied')
+    where id = (select value from ai_test_state where key = 'run_a')
   ),
-  'apply must atomically link one note and mark the run applied'
+  'applying an AI run must atomically link exactly one note'
 );
 
 select pg_temp.assert_true(
   (
     public.apply_ai_run(
-      (select value from ai_test_state where key = 'run_applied')
+      (select value from ai_test_state where key = 'run_a')
     ) -> 'note' ->> 'id'
   )::uuid = (select value from ai_test_state where key = 'applied_note'),
   'repeated apply must return the existing note'
@@ -548,8 +704,6 @@ select pg_temp.assert_true(
   'repeated apply must not create a duplicate note'
 );
 
--- Deleting an applied note does not reopen the run and reapply does not
--- recreate a deleted note.
 delete from public.notes
 where id = (select value from ai_test_state where key = 'applied_note');
 
@@ -557,21 +711,22 @@ select pg_temp.assert_true(
   (
     select status = 'applied' and applied_note_id is null
     from public.ai_runs
-    where id = (select value from ai_test_state where key = 'run_applied')
+    where id = (select value from ai_test_state where key = 'run_a')
   ),
-  'deleting the note must preserve applied history'
+  'deleting an applied note must preserve applied run history'
 );
 
 select pg_temp.assert_true(
   public.apply_ai_run(
-    (select value from ai_test_state where key = 'run_applied')
+    (select value from ai_test_state where key = 'run_a')
   ) -> 'note' = 'null'::jsonb,
   'reapplying after note deletion must not create a replacement'
 );
 
 reset role;
 
--- A non-collaborator cannot see or mutate project A AI data.
+-- C cannot discover or mutate project A AI data. The last human collaborator
+-- of C's project remains protected by the existing collaborator invariant.
 select set_config(
   'request.jwt.claim.sub',
   'a1000000-0000-4000-8000-000000000003',
@@ -590,7 +745,7 @@ select pg_temp.assert_true(
     from public.ai_agents
     where project_id = 'b1000000-0000-4000-8000-000000000001'
   ),
-  'non-collaborator must not select project A AI settings'
+  'a non-collaborator must not select another project AI settings'
 );
 
 select pg_temp.assert_true(
@@ -599,16 +754,21 @@ select pg_temp.assert_true(
     from public.ai_runs
     where project_id = 'b1000000-0000-4000-8000-000000000001'
   ),
-  'non-collaborator must not select project A AI runs'
+  'a non-collaborator must not select another project AI runs'
 );
 
 select pg_temp.expect_error(
   format(
     $sql$
-      select public.update_ai_agent_settings(
+      select public.update_ai_agent(
         %L,
-        '권한 없는 수정',
-        '{"project":true,"notes":true,"tasks":true,"team":false,"resources":true}'::jsonb
+        'Unauthorized Agent',
+        'Unauthorized lead',
+        '',
+        '#6950b8',
+        '',
+        '{"project":true,"notes":true,"tasks":true,"team":false,"resources":true}'::jsonb,
+        true
       )
     $sql$,
     (select value from ai_test_state where key = 'ai_a')
@@ -616,7 +776,6 @@ select pg_temp.expect_error(
   'AI_AGENT_NOT_FOUND'
 );
 
--- The existing collaborator-removal invariant still protects the final human.
 select pg_temp.expect_error(
   $sql$
     select public.remove_project_member(
@@ -628,7 +787,8 @@ select pg_temp.expect_error(
 
 reset role;
 
--- Anonymous users have neither table nor RPC privileges.
+-- Anonymous users have neither direct AI table access nor AI RPC execute
+-- permission. Guests remain read-only through demo_workspaces, not these APIs.
 select set_config('request.jwt.claim.sub', '', true);
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 set local role anon;
@@ -637,10 +797,17 @@ select pg_temp.expect_error(
   'select count(*) from public.ai_agents',
   'permission denied'
 );
+
 select pg_temp.expect_error(
   $sql$
     select public.create_project_ai_agent(
-      'b1000000-0000-4000-8000-000000000001'
+      'b1000000-0000-4000-8000-000000000001',
+      'Anonymous Agent',
+      'No access',
+      '',
+      '#6950b8',
+      '',
+      '{"project":true,"notes":true,"tasks":true,"team":false,"resources":true}'::jsonb
     )
   $sql$,
   'permission denied'
@@ -648,8 +815,8 @@ select pg_temp.expect_error(
 
 reset role;
 
--- Rejection is idempotent, cannot be reversed into applied, and task deletion
--- preserves the historical run with task_id set to NULL.
+-- Rejection is idempotent, completed tasks cannot execute, failures are
+-- persisted, and disabling one agent preserves other agents and their runs.
 select set_config(
   'request.jwt.claim.sub',
   'a1000000-0000-4000-8000-000000000001',
@@ -672,7 +839,7 @@ with inserted_task as (
     description
   ) values (
     'b1000000-0000-4000-8000-000000000001',
-    '보류할 AI 작업',
+    'Rejected run task',
     (select value from ai_test_state where key = 'ai_a'),
     '2026-07-29',
     'not_started',
@@ -689,15 +856,12 @@ select
   ((public.create_mock_ai_run(
     (select value from ai_test_state where key = 'ai_a'),
     (select value from ai_test_state where key = 'task_rejected'),
-    '{"task":{"title":"보류할 AI 작업"}}'::jsonb,
-    '# 모의 실행 결과
-
-보류 대상 결과'
+    '{"task":{"title":"Rejected run task"}}'::jsonb,
+    '# Mock result\n\nRejected review result.'
   ) ->> 'id')::uuid);
 
-select public.reject_ai_run(
-  (select value from ai_test_state where key = 'run_rejected')
-);
+select public.reject_ai_run((select value from ai_test_state where key = 'run_rejected'));
+
 select pg_temp.assert_true(
   public.reject_ai_run(
     (select value from ai_test_state where key = 'run_rejected')
@@ -722,10 +886,9 @@ select pg_temp.assert_true(
     from public.ai_runs
     where id = (select value from ai_test_state where key = 'run_rejected')
   ),
-  'task deletion must preserve AI run history'
+  'task deletion must preserve rejected AI run history'
 );
 
--- Generator failures are persisted as failed and cannot be applied.
 with inserted_task as (
   insert into public.tasks (
     project_id,
@@ -736,7 +899,7 @@ with inserted_task as (
     description
   ) values (
     'b1000000-0000-4000-8000-000000000001',
-    '실패할 AI 작업',
+    'Failed run task',
     (select value from ai_test_state where key = 'ai_a'),
     '2026-07-30',
     'in_progress',
@@ -753,14 +916,14 @@ select
   ((public.create_failed_mock_ai_run(
     (select value from ai_test_state where key = 'ai_a'),
     (select value from ai_test_state where key = 'task_failed'),
-    '{"task":{"title":"실패할 AI 작업"}}'::jsonb,
-    '결정론적 생성기 실패'
+    '{"task":{"title":"Failed run task"}}'::jsonb,
+    'Deterministic generator failure'
   ) ->> 'id')::uuid);
 
 select pg_temp.assert_true(
   (
     select status = 'failed'
-      and error_message = '결정론적 생성기 실패'
+      and error_message = 'Deterministic generator failure'
     from public.ai_runs
     where id = (select value from ai_test_state where key = 'run_failed')
   ),
@@ -775,7 +938,6 @@ select pg_temp.expect_error(
   'TEAMFLOW_CONFLICT:INVALID_AI_RUN_TRANSITION'
 );
 
--- Completed AI tasks remain assignable and visible, but cannot be executed.
 with inserted_task as (
   insert into public.tasks (
     project_id,
@@ -786,7 +948,7 @@ with inserted_task as (
     description
   ) values (
     'b1000000-0000-4000-8000-000000000001',
-    '완료된 AI 작업',
+    'Completed task',
     (select value from ai_test_state where key = 'ai_a'),
     '2026-07-27',
     'completed',
@@ -803,8 +965,8 @@ select pg_temp.expect_error(
       select public.create_mock_ai_run(
         %L,
         %L,
-        '{"task":{"title":"완료된 AI 작업"}}'::jsonb,
-        '# 모의 실행 결과'
+        '{"task":{"title":"Completed task"}}'::jsonb,
+        '# Mock result'
       )
     $sql$,
     (select value from ai_test_state where key = 'ai_a'),
@@ -813,7 +975,139 @@ select pg_temp.expect_error(
   'TEAMFLOW_CONFLICT:TASK_COMPLETED'
 );
 
--- Authenticated callers cannot bypass RPC state transitions with direct writes.
+-- Create the task while agent B is active, then deactivate it. The existing
+-- task remains historical data, but its next execution is rejected.
+with inserted_task as (
+  insert into public.tasks (
+    project_id,
+    title,
+    assignee_id,
+    due_date,
+    status,
+    description
+  ) values (
+    'b1000000-0000-4000-8000-000000000001',
+    'Disabled agent task',
+    (select value from ai_test_state where key = 'ai_b'),
+    '2026-07-30',
+    'in_progress',
+    ''
+  )
+  returning id
+)
+insert into ai_test_state (key, value)
+select 'task_disabled', id from inserted_task;
+
+select public.update_ai_agent(
+  (select value from ai_test_state where key = 'ai_b'),
+  'Planning Agent',
+  'Planning lead',
+  'Turn evidence into an action plan.',
+  '#3d7a54',
+  'Produce a prioritized implementation plan.',
+  '{"project":true,"notes":false,"tasks":true,"team":true,"resources":false}'::jsonb,
+  false
+);
+
+select pg_temp.assert_true(
+  (
+    select not enabled
+    from public.ai_agents
+    where member_id = (select value from ai_test_state where key = 'ai_b')
+  ),
+  'a collaborator must be able to deactivate one AI agent'
+);
+
+select pg_temp.expect_error(
+  format(
+    $sql$
+      select public.create_mock_ai_run(
+        %L,
+        %L,
+        '{"task":{"title":"Disabled agent task"}}'::jsonb,
+        '# Mock result'
+      )
+    $sql$,
+    (select value from ai_test_state where key = 'ai_b'),
+    (select value from ai_test_state where key = 'task_disabled')
+  ),
+  'TEAMFLOW_CONFLICT:AI_AGENT_DISABLED'
+);
+
+-- A disabled Agent cannot be assigned through direct task writes either. The
+-- trigger protects create and reassignment paths while leaving people alone.
+select pg_temp.expect_error(
+  format(
+    $sql$
+      insert into public.tasks (
+        project_id, title, assignee_id, due_date, status, description
+      ) values (
+        'b1000000-0000-4000-8000-000000000001',
+        'Blocked disabled Agent assignment',
+        %L,
+        '2026-07-31',
+        'not_started',
+        ''
+      )
+    $sql$,
+    (select value from ai_test_state where key = 'ai_b')
+  ),
+  'TEAMFLOW_CONFLICT:AI_AGENT_DISABLED'
+);
+
+select pg_temp.expect_error(
+  format(
+    $sql$
+      update public.tasks
+      set assignee_id = %L
+      where id = %L
+    $sql$,
+    (select value from ai_test_state where key = 'ai_b'),
+    (select value from ai_test_state where key = 'task_completed')
+  ),
+  'TEAMFLOW_CONFLICT:AI_AGENT_DISABLED'
+);
+
+with inserted_task as (
+  insert into public.tasks (
+    project_id, title, assignee_id, due_date, status, description
+  ) values (
+    'b1000000-0000-4000-8000-000000000001',
+    'Human assignment remains allowed',
+    'c1000000-0000-4000-8000-000000000001',
+    '2026-07-31',
+    'not_started',
+    ''
+  )
+  returning id
+)
+select pg_temp.assert_true(
+  exists (select 1 from inserted_task),
+  'human collaborators must remain assignable after disabled AI enforcement'
+);
+
+select pg_temp.assert_true(
+  (
+    select exists (
+      select 1
+      from public.members member
+      join public.ai_agents agent on agent.member_id = member.id
+      where member.id = (select value from ai_test_state where key = 'ai_a')
+        and member.name = 'Evidence Agent'
+        and agent.enabled
+    )
+    and exists (
+      select 1
+      from public.ai_runs
+      where id = (select value from ai_test_state where key = 'run_a')
+        and status = 'applied'
+    )
+  ),
+  'changing another agent must preserve existing agents and run history'
+);
+
+-- Authenticated callers cannot bypass the AI RPC state machine with direct
+-- writes to ai_runs.
 select pg_temp.expect_error(
   format(
     $sql$
@@ -826,7 +1120,7 @@ select pg_temp.expect_error(
         %L,
         'pending_review',
         '{}'::jsonb,
-        '# 우회 결과',
+        '# Bypassed result',
         'a1000000-0000-4000-8000-000000000001'
       )
     $sql$,

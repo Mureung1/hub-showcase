@@ -1,0 +1,111 @@
+{
+  "nodes": [
+    {
+      "id": "config:.oxlintrc.json",
+      "type": "config",
+      "name": ".oxlintrc.json",
+      "filePath": ".oxlintrc.json",
+      "summary": "React Hooks 규칙을 오류로, 컴포넌트 전용 내보내기 규칙을 경고로 검사하도록 oxlint를 설정한다.",
+      "tags": [
+        "configuration",
+        "linting",
+        "react",
+        "code-quality"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:CLAUDE.md",
+      "type": "document",
+      "name": "CLAUDE.md",
+      "filePath": "CLAUDE.md",
+      "summary": "TeamFlow의 제품 목적, 기술 스택, 개발 명령, 코드·커밋·디자인 규칙과 금지 사항을 에이전트 작업 지침으로 정리한다.",
+      "tags": [
+        "documentation",
+        "development",
+        "conventions",
+        "agent-guidance"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "TeamFlow의 구현 상태와 전체 아키텍처, Supabase·Google OAuth 설정, 로컬 실행, 검증, Vercel·Render 배포를 안내한다.",
+      "tags": [
+        "documentation",
+        "entry-point",
+        "architecture",
+        "onboarding"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "package.json",
+      "summary": "Node 24와 npm 11 기반 모노레포 워크스페이스, 웹·API 개발 명령, 빌드·린트·테스트 경로를 정의한다.",
+      "tags": [
+        "configuration",
+        "monorepo",
+        "build-system",
+        "scripts"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:render.yaml",
+      "type": "config",
+      "name": "render.yaml",
+      "filePath": "render.yaml",
+      "summary": "Express API를 Render Node 웹 서비스로 실행하고 health check, 변경 경로 필터, Supabase 및 CORS 환경변수를 구성한다.",
+      "tags": [
+        "configuration",
+        "deployment",
+        "render",
+        "api"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "config:.oxlintrc.json",
+      "target": "config:package.json",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "document:README.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "config:package.json",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "config:render.yaml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:render.yaml",
+      "target": "config:package.json",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ]
+}

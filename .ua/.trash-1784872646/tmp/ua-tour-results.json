@@ -1,0 +1,2077 @@
+{
+  "scriptCompleted": true,
+  "entryPointCandidates": [
+    {
+      "id": "document:README.md",
+      "score": 5,
+      "name": "README.md",
+      "summary": "TeamFlow의 구현 상태와 전체 아키텍처, Supabase·Google OAuth 설정, 로컬 실행, 검증, Vercel·Render 배포를 안내한다.",
+      "type": "document"
+    },
+    {
+      "id": "file:apps/api/src/app.js",
+      "score": 4,
+      "name": "app.js",
+      "summary": "Express application을 만들고 CORS, health check, TeamFlow API router를 조립하는 API 진입 구성 파일입니다.",
+      "type": "file"
+    },
+    {
+      "id": "file:apps/api/src/server.js",
+      "score": 4,
+      "name": "server.js",
+      "summary": "구성된 Express application을 지정된 port에서 시작하는 API process entry point입니다.",
+      "type": "file"
+    },
+    {
+      "id": "file:packages/shared/src/index.js",
+      "score": 4,
+      "name": "index.js",
+      "summary": "프로젝트·작업·자료·팀원·AI·초대 상태와 검증·진행률 함수를 공개하는 배럴 파일이다.",
+      "type": "file"
+    },
+    {
+      "id": "document:CLAUDE.md",
+      "score": 2,
+      "name": "CLAUDE.md",
+      "summary": "TeamFlow의 제품 목적, 기술 스택, 개발 명령, 코드·커밋·디자인 규칙과 금지 사항을 에이전트 작업 지침으로 정리한다.",
+      "type": "document"
+    }
+  ],
+  "fanInRanking": [
+    {
+      "id": "file:apps/web/src/state/useTeamFlow.js",
+      "fanIn": 22,
+      "name": "useTeamFlow.js"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/Modal.jsx",
+      "fanIn": 15,
+      "name": "Modal.jsx"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/forms.module.css",
+      "fanIn": 11,
+      "name": "forms.module.css"
+    },
+    {
+      "id": "file:apps/web/src/lib/format.js",
+      "fanIn": 11,
+      "name": "format.js"
+    },
+    {
+      "id": "file:apps/web/src/constants/labels.js",
+      "fanIn": 9,
+      "name": "labels.js"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/Avatar.jsx",
+      "fanIn": 7,
+      "name": "Avatar.jsx"
+    },
+    {
+      "id": "file:apps/web/src/state/selectors.js",
+      "fanIn": 7,
+      "name": "selectors.js"
+    },
+    {
+      "id": "file:apps/web/src/styles/workspace.module.css",
+      "fanIn": 7,
+      "name": "workspace.module.css"
+    },
+    {
+      "id": "table:supabase/migrations/20260720030115_create_tasks.sql:tasks",
+      "fanIn": 6,
+      "name": "tasks"
+    },
+    {
+      "id": "file:apps/web/src/auth/useAuth.js",
+      "fanIn": 5,
+      "name": "useAuth.js"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "fanIn": 5,
+      "name": "StatusBadge.jsx"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "fanIn": 5,
+      "name": "TaskDetailModal.jsx"
+    },
+    {
+      "id": "file:apps/web/src/test/renderTeamFlowApp.jsx",
+      "fanIn": 5,
+      "name": "renderTeamFlowApp.jsx"
+    },
+    {
+      "id": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members",
+      "fanIn": 5,
+      "name": "members"
+    },
+    {
+      "id": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources",
+      "fanIn": 5,
+      "name": "resources"
+    },
+    {
+      "id": "file:apps/api/src/app.js",
+      "fanIn": 4,
+      "name": "app.js"
+    },
+    {
+      "id": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "fanIn": 4,
+      "name": "teamFlowRepository.js"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "fanIn": 4,
+      "name": "ResourceIcon.jsx"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/ui.module.css",
+      "fanIn": 4,
+      "name": "ui.module.css"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "fanIn": 4,
+      "name": "ProjectSettingsModal.jsx"
+    }
+  ],
+  "fanOutRanking": [
+    {
+      "id": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "fanOut": 24,
+      "name": "teamFlowRepository.js"
+    },
+    {
+      "id": "file:apps/web/src/App.jsx",
+      "fanOut": 19,
+      "name": "App.jsx"
+    },
+    {
+      "id": "file:packages/shared/src/project.js",
+      "fanOut": 19,
+      "name": "project.js"
+    },
+    {
+      "id": "file:apps/web/src/state/selectors.js",
+      "fanOut": 18,
+      "name": "selectors.js"
+    },
+    {
+      "id": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "fanOut": 14,
+      "name": "mockAiGenerator.js"
+    },
+    {
+      "id": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "fanOut": 14,
+      "name": "teamFlowRoutes.js"
+    },
+    {
+      "id": "file:apps/web/src/components/layout/AppShell.jsx",
+      "fanOut": 12,
+      "name": "AppShell.jsx"
+    },
+    {
+      "id": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "fanOut": 12,
+      "name": "ProjectDashboardPage.jsx"
+    },
+    {
+      "id": "file:apps/web/src/features/members/MembersPage.jsx",
+      "fanOut": 12,
+      "name": "MembersPage.jsx"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "fanOut": 12,
+      "name": "TaskDetailModal.jsx"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/forms.module.css",
+      "fanOut": 11,
+      "name": "forms.module.css"
+    },
+    {
+      "id": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "fanOut": 11,
+      "name": "ResourcesPage.jsx"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "fanOut": 11,
+      "name": "ProjectTasksPage.jsx"
+    },
+    {
+      "id": "file:apps/api/src/lib/auth.js",
+      "fanOut": 10,
+      "name": "auth.js"
+    },
+    {
+      "id": "file:apps/web/src/features/ai/AiPage.jsx",
+      "fanOut": 10,
+      "name": "AiPage.jsx"
+    },
+    {
+      "id": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "fanOut": 10,
+      "name": "NotesPage.jsx"
+    },
+    {
+      "id": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "fanOut": 10,
+      "name": "ResourceDetailModal.jsx"
+    },
+    {
+      "id": "file:packages/shared/test/project.test.js",
+      "fanOut": 10,
+      "name": "project.test.js"
+    },
+    {
+      "id": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "fanOut": 9,
+      "name": "ProjectShell.jsx"
+    },
+    {
+      "id": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "fanOut": 9,
+      "name": "apiTeamFlowRepository.js"
+    }
+  ],
+  "bfsTraversal": {
+    "startNode": "file:apps/api/src/app.js",
+    "order": [
+      "file:apps/api/src/app.js",
+      "file:apps/api/src/lib/cors.js",
+      "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "file:apps/api/src/lib/auth.js",
+      "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "file:apps/api/src/teamflow/mockAiGenerator.js"
+    ],
+    "depthMap": {
+      "file:apps/api/src/app.js": 0,
+      "file:apps/api/src/lib/cors.js": 1,
+      "file:apps/api/src/teamflow/teamFlowRoutes.js": 1,
+      "file:apps/api/src/lib/auth.js": 2,
+      "file:apps/api/src/teamflow/teamFlowRepository.js": 2,
+      "file:apps/api/src/teamflow/mockAiGenerator.js": 3
+    },
+    "byDepth": {
+      "0": [
+        "file:apps/api/src/app.js"
+      ],
+      "1": [
+        "file:apps/api/src/lib/cors.js",
+        "file:apps/api/src/teamflow/teamFlowRoutes.js"
+      ],
+      "2": [
+        "file:apps/api/src/lib/auth.js",
+        "file:apps/api/src/teamflow/teamFlowRepository.js"
+      ],
+      "3": [
+        "file:apps/api/src/teamflow/mockAiGenerator.js"
+      ]
+    }
+  },
+  "nonCodeFiles": {
+    "documentation": [
+      {
+        "id": "document:.agents/skills/teamflow-test-authoring/SKILL.md",
+        "name": "SKILL.md",
+        "type": "document",
+        "summary": "TeamFlow 변경의 테스트 수준, 작성·실행 순서와 Red-Green-Refactor 증거 관리를 정의한 테스트 작성 Skill이다."
+      },
+      {
+        "id": "document:.claude/skills/teamflow-design/SKILL.md",
+        "name": "SKILL.md",
+        "type": "document",
+        "summary": "TeamFlow UI의 디자인 토큰, 타이포그래피, 레이아웃 패턴과 화면 완료 검증 기준을 정의한다."
+      },
+      {
+        "id": "document:.github/pull_request_template.md",
+        "name": "pull_request_template.md",
+        "type": "document",
+        "summary": "주요 작업, 설명 가능한 부분, 이해하지 못한 부분과 새로 배운 내용을 기록하는 학습 중심 PR 템플릿이다."
+      },
+      {
+        "id": "document:CLAUDE.md",
+        "name": "CLAUDE.md",
+        "type": "document",
+        "summary": "TeamFlow의 제품 목적, 기술 스택, 개발 명령, 코드·커밋·디자인 규칙과 금지 사항을 에이전트 작업 지침으로 정리한다."
+      },
+      {
+        "id": "document:docs/api.md",
+        "name": "api.md",
+        "type": "document",
+        "summary": "공개·인증·Mock AI API의 요청, 응답, 상태값, 오류 코드와 구현 위치를 정리한 HTTP API 명세다."
+      },
+      {
+        "id": "document:docs/architecture.md",
+        "name": "architecture.md",
+        "type": "document",
+        "summary": "React/Vite, Express, Supabase와 shared 패키지의 책임 및 로그인·게스트 데이터 흐름을 설명한다."
+      },
+      {
+        "id": "document:docs/deployment.md",
+        "name": "deployment.md",
+        "type": "document",
+        "summary": "Express를 Render에, React를 Vercel에 배포하고 CORS·환경 변수·OAuth 리디렉션을 연결하는 절차다."
+      },
+      {
+        "id": "document:docs/plan.md",
+        "name": "plan.md",
+        "type": "document",
+        "summary": "팀 프로젝트 관리 문제, 사용자 시나리오, 핵심 기능, 화면 구조와 사용자 흐름을 정의한 제품 기획서다."
+      },
+      {
+        "id": "document:docs/weekly-plan.md",
+        "name": "weekly-plan.md",
+        "type": "document",
+        "summary": "Supabase 연동과 핵심 기능 완성을 중심으로 3주차 P0·P1·P2 작업 우선순위를 기록한다."
+      },
+      {
+        "id": "document:README.md",
+        "name": "README.md",
+        "type": "document",
+        "summary": "TeamFlow의 구현 상태와 전체 아키텍처, Supabase·Google OAuth 설정, 로컬 실행, 검증, Vercel·Render 배포를 안내한다."
+      }
+    ],
+    "infrastructure": [
+      {
+        "id": "pipeline:.github/workflows/auto-merge.yml",
+        "name": "auto-merge.yml",
+        "type": "pipeline",
+        "summary": "매일 예약 또는 수동 실행으로 열린 PR을 조회하고 대상 브랜치·review 라벨·변경 요청·충돌 규칙의 우선순위에 따라 코멘트, 연기, 종료 또는 병합한다."
+      }
+    ],
+    "data": [
+      {
+        "id": "table:supabase/migrations/20260720030115_create_tasks.sql:migration",
+        "name": "20260720030115_create_tasks.sql",
+        "type": "table",
+        "summary": "프로젝트별 할 일과 담당자, 마감일, 상태를 저장하는 tasks 테이블과 인덱스, RLS, service_role 권한을 설정한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260720030115_create_tasks.sql:tasks",
+        "name": "tasks",
+        "type": "table",
+        "summary": "프로젝트별 작업 제목, 담당자, 마감일, 상태, 설명과 생성 시각을 저장한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:demo_workspaces",
+        "name": "demo_workspaces",
+        "type": "table",
+        "summary": "게스트가 읽을 수 있는 활성 데모 워크스페이스 JSON 페이로드를 저장한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:members",
+        "name": "members",
+        "type": "table",
+        "summary": "워크스페이스 소유자와 인증 사용자에 연결된 사람 및 AI 멤버 프로필을 저장한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:migration",
+        "name": "20260721054012_google_auth_workspace.sql",
+        "type": "table",
+        "summary": "Google 인증 사용자용 멤버·프로젝트·소속·게스트 데모 스키마를 만들고 tasks를 연결하며 RLS 정책과 프로젝트 생성 RPC를 구성한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:project_members",
+        "name": "project_members",
+        "type": "table",
+        "summary": "프로젝트와 워크스페이스 멤버 사이의 소속 관계를 저장한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260721054012_google_auth_workspace.sql:projects",
+        "name": "projects",
+        "type": "table",
+        "summary": "소유자별 프로젝트의 이름, 설명, 상태, 기간과 감사 시각을 저장한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members",
+        "name": "members",
+        "type": "table",
+        "summary": "프로젝트 범위의 협업자와 AI 멤버 프로필, 인증 사용자 연결 정보를 저장하는 최신 멤버 모델이다."
+      },
+      {
+        "id": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:migration",
+        "name": "20260722112108_collaboration_and_content_crud.sql",
+        "type": "table",
+        "summary": "프로젝트 단위 멤버와 접근 권한으로 모델을 개편하고 초대·노트·자료 CRUD 테이블, 트리거, RLS 정책, 보안 RPC를 도입한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:notes",
+        "name": "notes",
+        "type": "table",
+        "summary": "프로젝트 공유 노트의 제목, 본문, 작성자와 수정 시각을 저장한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_access",
+        "name": "project_access",
+        "type": "table",
+        "summary": "인증 사용자와 프로젝트 멤버를 묶어 접근 권한의 근거를 제공한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_invitations",
+        "name": "project_invitations",
+        "type": "table",
+        "summary": "초대 대상 이메일, 초대자, 상태와 응답 시각을 저장한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources",
+        "name": "resources",
+        "type": "table",
+        "summary": "프로젝트 자료의 계층, 유형, 링크·파일 메타데이터와 소유자를 저장한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260722114219_collaboration_and_content_hardening.sql:migration",
+        "name": "20260722114219_collaboration_and_content_hardening.sql",
+        "type": "table",
+        "summary": "협업 및 콘텐츠 테이블의 외래 키와 검사 제약, 초대 조회 정책, 자료 부모 검증, 프로젝트·멤버 RPC 권한을 강화한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql:migration",
+        "name": "20260722115346_private_rpc_wrappers_and_fk_indexes.sql",
+        "type": "table",
+        "summary": "권한 있는 RPC 구현을 private 스키마로 이동하고 public에는 인증 전용 래퍼를 유지하며 외래 키 조회 인덱스를 추가한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260722154845_add_project_icon_key.sql:migration",
+        "name": "20260722154845_add_project_icon_key.sql",
+        "type": "table",
+        "summary": "projects에 허용된 아이콘 키만 저장하는 열과 검사 제약을 추가하고 인증 사용자의 열 단위 갱신을 허용한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260722155721_backfill_demo_project_icons.sql:migration",
+        "name": "20260722155721_backfill_demo_project_icons.sql",
+        "type": "table",
+        "summary": "게스트 데모 워크스페이스의 프로젝트별 아이콘 키를 결정적으로 채운다."
+      },
+      {
+        "id": "table:supabase/migrations/20260723093000_private_resource_uploads.sql:migration",
+        "name": "20260723093000_private_resource_uploads.sql",
+        "type": "table",
+        "summary": "비공개 Storage 버킷과 자료 파일 메타데이터를 추가하고 프로젝트 경로 기반 업로드·조회·삭제 RLS 정책을 구성한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260723094500_harden_private_resource_uploads.sql:migration",
+        "name": "20260723094500_harden_private_resource_uploads.sql",
+        "type": "table",
+        "summary": "업로드 의도 생성과 완료 RPC, 상태 전이 제약, Storage 정책으로 비공개 파일 업로드 수명주기를 강화한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260723185956_remove_manual_assignees.sql:migration",
+        "name": "20260723185956_remove_manual_assignees.sql",
+        "type": "table",
+        "summary": "수동 담당자 생성을 제거하고 작업 담당자를 실제 프로젝트 협업자로 제한하며 멤버 수정·삭제 RPC를 재정의한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_agents",
+        "name": "ai_agents",
+        "type": "table",
+        "summary": "AI 멤버별 지침, 컨텍스트 설정, 활성 상태를 프로젝트 범위에서 관리한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_runs",
+        "name": "ai_runs",
+        "type": "table",
+        "summary": "AI 실행의 입력 스냅샷, 결과 Markdown, 오류, 적용 노트와 상태 전이를 기록한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:migration",
+        "name": "20260724090000_mock_ai_team_member.sql",
+        "type": "table",
+        "summary": "프로젝트 AI 팀원과 실행 기록 스키마, RLS, 설정·실행·적용·거절 RPC를 추가하고 인증 및 데모 응답을 동일한 AI 계약으로 맞춘다."
+      },
+      {
+        "id": "table:supabase/migrations/20260724093000_mock_ai_fk_indexes.sql:migration",
+        "name": "20260724093000_mock_ai_fk_indexes.sql",
+        "type": "table",
+        "summary": "AI 실행의 에이전트·작업·노트 복합 외래 키를 지원하는 인덱스를 보강한다."
+      },
+      {
+        "id": "table:supabase/migrations/20260724094500_fix_demo_ai_markdown.sql:migration",
+        "name": "20260724094500_fix_demo_ai_markdown.sql",
+        "type": "table",
+        "summary": "데모 AI 결과의 문자열 줄바꿈 표기를 실제 개행으로 변환해 Markdown 렌더링을 바로잡는다."
+      },
+      {
+        "id": "table:supabase/tests/database/mock_ai_team_member_rls.sql:ai_test_state",
+        "name": "ai_test_state",
+        "type": "table",
+        "summary": "트랜잭션 안에서 Mock AI 팀원의 RLS, RPC 상태 전이, 멱등성, 격리와 제약을 검증한 뒤 롤백하는 SQL 통합 테스트다."
+      }
+    ],
+    "config": [
+      {
+        "id": "config:.agents/skills/teamflow-test-authoring/agents/openai.yaml",
+        "name": "openai.yaml",
+        "type": "config",
+        "summary": "테스트 작성 Skill의 표시 정보, 기본 프롬프트와 암시적 호출 정책을 등록한다."
+      },
+      {
+        "id": "config:.codex/agents/verification_agent.toml",
+        "name": "verification_agent.toml",
+        "type": "config",
+        "summary": "요구사항·테스트·TDD 증거를 독립 검증하되 구현을 수정하지 않는 검증 Agent의 절차와 보고 형식을 설정한다."
+      },
+      {
+        "id": "config:.oxlintrc.json",
+        "name": ".oxlintrc.json",
+        "type": "config",
+        "summary": "React Hooks 규칙을 오류로, 컴포넌트 전용 내보내기 규칙을 경고로 검사하도록 oxlint를 설정한다."
+      },
+      {
+        "id": "config:apps/api/.env.example",
+        "name": ".env.example",
+        "type": "config",
+        "summary": "Express API에 필요한 Supabase URL·publishable key, 허용 Origin과 포트의 예시를 제공하는 환경 변수 템플릿이다."
+      },
+      {
+        "id": "config:apps/api/package.json",
+        "name": "package.json",
+        "type": "config",
+        "summary": "Express API의 개발·운영·테스트 명령과 Supabase, shared 계약, CORS, Express 의존성을 정의한다."
+      },
+      {
+        "id": "config:apps/web/.env.example",
+        "name": ".env.example",
+        "type": "config",
+        "summary": "웹 클라이언트가 사용하는 TeamFlow Supabase URL·publishable key와 선택적 API 기본 URL의 환경변수 형식을 제공한다."
+      },
+      {
+        "id": "config:apps/web/package.json",
+        "name": "package.json",
+        "type": "config",
+        "summary": "React 19 웹 워크스페이스의 Vite 개발·빌드·미리보기와 Vitest 테스트 명령, Supabase·라우터·UI 의존성을 정의한다."
+      },
+      {
+        "id": "config:apps/web/vercel.json",
+        "name": "vercel.json",
+        "type": "config",
+        "summary": "모든 요청을 index.html로 재작성해 Vercel에서 React Router 클라이언트 라우팅을 지원한다."
+      },
+      {
+        "id": "config:package.json",
+        "name": "package.json",
+        "type": "config",
+        "summary": "Node 24와 npm 11 기반 모노레포 워크스페이스, 웹·API 개발 명령, 빌드·린트·테스트 경로를 정의한다."
+      },
+      {
+        "id": "config:packages/shared/package.json",
+        "name": "package.json",
+        "type": "config",
+        "summary": "공유 ESM 패키지의 진입점·하위 경로 export와 Node 테스트 스크립트를 정의한다."
+      },
+      {
+        "id": "config:render.yaml",
+        "name": "render.yaml",
+        "type": "config",
+        "summary": "Express API를 Render Node 웹 서비스로 실행하고 health check, 변경 경로 필터, Supabase 및 CORS 환경변수를 구성한다."
+      }
+    ]
+  },
+  "clusters": [],
+  "layers": {
+    "count": 8,
+    "list": [
+      {
+        "id": "layer:web-ui",
+        "name": "React UI",
+        "description": "React route, layout, feature page, modal과 CSS Module이 사용자 event를 받아 상태 기반 화면을 구성합니다."
+      },
+      {
+        "id": "layer:web-application",
+        "name": "인증·상태 및 브라우저 데이터 접근",
+        "description": "브라우저 인증 session, React Context와 reducer, selector, API Repository가 UI와 원격 데이터 사이의 단방향 흐름을 조정합니다."
+      },
+      {
+        "id": "layer:api-server",
+        "name": "Express API·서버 Repository",
+        "description": "Express 진입점과 middleware, route validation, Supabase 서버 client와 Repository가 HTTP 요청을 인증된 TeamFlow 데이터 작업으로 변환합니다."
+      },
+      {
+        "id": "layer:shared-domain",
+        "name": "공유 도메인·유틸리티",
+        "description": "웹과 API가 공유하는 TeamFlow 상태 계약과 검증 규칙, 화면 label, 날짜 formatting helper를 제공합니다."
+      },
+      {
+        "id": "layer:supabase-data",
+        "name": "Supabase 데이터·RLS",
+        "description": "SQL migration이 프로젝트·협업·콘텐츠·AI 실행 schema와 RLS, RPC, 비공개 Storage 정책을 순서대로 정의하고 강화합니다."
+      },
+      {
+        "id": "layer:test",
+        "name": "테스트",
+        "description": "Node test, Vitest·Testing Library와 SQL 통합 검증이 순수 계약부터 React 사용자 흐름, Express API, Supabase RLS까지 계층별 동작을 보호합니다."
+      },
+      {
+        "id": "layer:config-infrastructure",
+        "name": "설정·배포 및 CI/CD",
+        "description": "workspace manifest, 환경변수 예시, Vite·Vercel·Render 설정과 GitHub Actions가 개발·빌드·배포·PR 자동화 환경을 구성합니다."
+      },
+      {
+        "id": "layer:documentation",
+        "name": "문서·디자인 가이드",
+        "description": "README, 기획·아키텍처·API·배포 문서와 agent workflow 자료가 제품 의도, 시스템 경계와 협업 절차를 설명합니다."
+      }
+    ]
+  },
+  "nodeSummaryIndex": {
+    "file:apps/api/src/app.js": {
+      "name": "app.js",
+      "type": "file",
+      "summary": "Express application을 만들고 CORS, health check, TeamFlow API router를 조립하는 API 진입 구성 파일입니다."
+    },
+    "function:apps/api/src/app.js:createApp": {
+      "name": "createApp",
+      "type": "function",
+      "summary": "CORS와 health endpoint, TeamFlow router를 결합한 Express application을 생성합니다."
+    },
+    "file:apps/api/src/lib/auth.js": {
+      "name": "auth.js",
+      "type": "file",
+      "summary": "Bearer token을 해석하고 Supabase에서 사용자를 검증해 요청에 인증 정보를 주입하는 Express authentication middleware를 제공합니다."
+    },
+    "function:apps/api/src/lib/auth.js:readBearerToken": {
+      "name": "readBearerToken",
+      "type": "function",
+      "summary": "Authorization header에서 Bearer token을 안전하게 추출하고 잘못된 형식을 거부합니다."
+    },
+    "function:apps/api/src/lib/auth.js:displayProfile": {
+      "name": "displayProfile",
+      "type": "function",
+      "summary": "Supabase user metadata를 API에서 사용할 간결한 사용자 profile로 변환합니다."
+    },
+    "function:apps/api/src/lib/auth.js:createSupabaseAuthVerifier": {
+      "name": "createSupabaseAuthVerifier",
+      "type": "function",
+      "summary": "Supabase authentication API로 access token을 검증하는 verifier 함수를 구성합니다."
+    },
+    "function:apps/api/src/lib/auth.js:createAuthenticationMiddleware": {
+      "name": "createAuthenticationMiddleware",
+      "type": "function",
+      "summary": "검증된 사용자 정보를 요청에 주입하고 인증 실패를 HTTP 오류로 전달하는 middleware를 생성합니다."
+    },
+    "class:apps/api/src/lib/auth.js:AuthenticationError": {
+      "name": "AuthenticationError",
+      "type": "class",
+      "summary": "인증 실패 원인과 HTTP status를 함께 표현하는 API authentication 오류 형식입니다."
+    },
+    "file:apps/api/src/lib/cors.js": {
+      "name": "cors.js",
+      "type": "file",
+      "summary": "허용 origin 환경 설정을 정규화하고 요청 origin을 검사하는 Express CORS 옵션을 구성합니다."
+    },
+    "function:apps/api/src/lib/cors.js:normalizeOrigin": {
+      "name": "normalizeOrigin",
+      "type": "function",
+      "summary": "origin 문자열을 비교 가능한 정규 형식으로 변환합니다."
+    },
+    "function:apps/api/src/lib/cors.js:readAllowedOrigins": {
+      "name": "readAllowedOrigins",
+      "type": "function",
+      "summary": "환경 설정의 허용 origin 목록을 파싱하고 중복을 제거합니다."
+    },
+    "function:apps/api/src/lib/cors.js:createCorsOptions": {
+      "name": "createCorsOptions",
+      "type": "function",
+      "summary": "요청 origin을 허용 목록과 비교하는 Express CORS 옵션을 생성합니다."
+    },
+    "file:apps/api/src/lib/supabaseClient.js": {
+      "name": "supabaseClient.js",
+      "type": "file",
+      "summary": "서버용 Supabase URL과 service role key를 검증하고 TeamFlow API가 사용할 Supabase client를 생성합니다."
+    },
+    "function:apps/api/src/lib/supabaseClient.js:readTeamFlowSupabaseConfig": {
+      "name": "readTeamFlowSupabaseConfig",
+      "type": "function",
+      "summary": "서버 Supabase URL과 service role key의 존재와 형식을 검증합니다."
+    },
+    "function:apps/api/src/lib/supabaseClient.js:createTeamFlowSupabaseClient": {
+      "name": "createTeamFlowSupabaseClient",
+      "type": "function",
+      "summary": "검증된 서버 설정으로 인증 session을 유지하지 않는 Supabase client를 생성합니다."
+    },
+    "file:apps/api/src/runtime.js": {
+      "name": "runtime.js",
+      "type": "file",
+      "summary": "환경 설정에서 인증, CORS, Supabase repository를 구성한 뒤 실행 가능한 TeamFlow Express application으로 결합합니다."
+    },
+    "function:apps/api/src/runtime.js:createConfiguredTeamFlowApp": {
+      "name": "createConfiguredTeamFlowApp",
+      "type": "function",
+      "summary": "환경 설정과 주입된 의존성으로 인증·CORS·repository·Express app을 조립합니다."
+    },
+    "file:apps/api/src/server.js": {
+      "name": "server.js",
+      "type": "file",
+      "summary": "구성된 Express application을 지정된 port에서 시작하는 API process entry point입니다."
+    },
+    "file:apps/api/src/teamflow/mockAiGenerator.js": {
+      "name": "mockAiGenerator.js",
+      "type": "file",
+      "summary": "프로젝트의 작업·노트·자료 snapshot을 정규화하고 크기를 제한한 뒤 결정적인 Mock AI Markdown 결과를 생성합니다."
+    },
+    "function:apps/api/src/teamflow/mockAiGenerator.js:compareText": {
+      "name": "compareText",
+      "type": "function",
+      "summary": "compareText 함수는 결정적인 결과를 위해 teamflow domain 값을 안정된 순서로 비교합니다."
+    },
+    "function:apps/api/src/teamflow/mockAiGenerator.js:createTextNormalizer": {
+      "name": "createTextNormalizer",
+      "type": "function",
+      "summary": "createTextNormalizer 함수는 teamflow domain 동작에 필요한 의존성과 interface를 구성해 반환합니다."
+    },
+    "function:apps/api/src/teamflow/mockAiGenerator.js:compareRecords": {
+      "name": "compareRecords",
+      "type": "function",
+      "summary": "compareRecords 함수는 결정적인 결과를 위해 teamflow domain 값을 안정된 순서로 비교합니다."
+    },
+    "function:apps/api/src/teamflow/mockAiGenerator.js:normalizeTask": {
+      "name": "normalizeTask",
+      "type": "function",
+      "summary": "normalizeTask 함수는 teamflow domain 입력을 비교·저장 가능한 일관된 형태로 정규화합니다."
+    },
+    "function:apps/api/src/teamflow/mockAiGenerator.js:normalizeCollection": {
+      "name": "normalizeCollection",
+      "type": "function",
+      "summary": "normalizeCollection 함수는 teamflow domain 입력을 비교·저장 가능한 일관된 형태로 정규화합니다."
+    },
+    "function:apps/api/src/teamflow/mockAiGenerator.js:createCollectionData": {
+      "name": "createCollectionData",
+      "type": "function",
+      "summary": "createCollectionData 함수는 teamflow domain 동작에 필요한 의존성과 interface를 구성해 반환합니다."
+    },
+    "function:apps/api/src/teamflow/mockAiGenerator.js:enforceSnapshotLimit": {
+      "name": "enforceSnapshotLimit",
+      "type": "function",
+      "summary": "enforceSnapshotLimit 함수는 teamflow domain 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다."
+    },
+    "function:apps/api/src/teamflow/mockAiGenerator.js:buildMockAiContext": {
+      "name": "buildMockAiContext",
+      "type": "function",
+      "summary": "프로젝트 snapshot을 정렬·정규화하고 제한된 Mock AI 실행 context로 구성합니다."
+    },
+    "function:apps/api/src/teamflow/mockAiGenerator.js:renderContext": {
+      "name": "renderContext",
+      "type": "function",
+      "summary": "renderContext 함수는 정규화된 teamflow domain 데이터를 화면 또는 Markdown 표현으로 변환합니다."
+    },
+    "function:apps/api/src/teamflow/mockAiGenerator.js:renderMockMarkdown": {
+      "name": "renderMockMarkdown",
+      "type": "function",
+      "summary": "renderMockMarkdown 함수는 정규화된 teamflow domain 데이터를 화면 또는 Markdown 표현으로 변환합니다."
+    },
+    "function:apps/api/src/teamflow/mockAiGenerator.js:generateMockAiResult": {
+      "name": "generateMockAiResult",
+      "type": "function",
+      "summary": "정규화된 context에서 결정적인 Mock AI Markdown 결과를 생성합니다."
+    },
+    "file:apps/api/src/teamflow/teamFlowRepository.js": {
+      "name": "teamFlowRepository.js",
+      "type": "file",
+      "summary": "Supabase table과 RPC를 통해 프로젝트, 멤버, 작업, 노트, 자료, 초대, AI 실행의 전체 데이터 수명주기를 구현하는 repository입니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRepository.js:throwDatabaseError": {
+      "name": "throwDatabaseError",
+      "type": "function",
+      "summary": "throwDatabaseError 함수는 teamflow domain 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRepository.js:mapMember": {
+      "name": "mapMember",
+      "type": "function",
+      "summary": "mapMember 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRepository.js:mapProject": {
+      "name": "mapProject",
+      "type": "function",
+      "summary": "mapProject 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRepository.js:mapTask": {
+      "name": "mapTask",
+      "type": "function",
+      "summary": "mapTask 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRepository.js:mapNote": {
+      "name": "mapNote",
+      "type": "function",
+      "summary": "mapNote 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRepository.js:mapResource": {
+      "name": "mapResource",
+      "type": "function",
+      "summary": "mapResource 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRepository.js:mapInvitation": {
+      "name": "mapInvitation",
+      "type": "function",
+      "summary": "mapInvitation 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRepository.js:mapAiAgent": {
+      "name": "mapAiAgent",
+      "type": "function",
+      "summary": "mapAiAgent 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRepository.js:mapAiRun": {
+      "name": "mapAiRun",
+      "type": "function",
+      "summary": "mapAiRun 함수는 Supabase row를 TeamFlow teamflow domain 도메인 객체로 변환합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRepository.js:createSupabaseDemoRepository": {
+      "name": "createSupabaseDemoRepository",
+      "type": "function",
+      "summary": "guest가 읽을 수 있는 demo workspace를 Supabase에서 조회하는 read-only repository를 생성합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRepository.js:createSupabaseTeamFlowRepository": {
+      "name": "createSupabaseTeamFlowRepository",
+      "type": "function",
+      "summary": "인증 사용자의 프로젝트·협업·콘텐츠·AI 작업을 Supabase table과 RPC에 연결하는 repository를 생성합니다."
+    },
+    "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowStoreError": {
+      "name": "TeamFlowStoreError",
+      "type": "class",
+      "summary": "TeamFlowStoreError class는 TeamFlow repository의 저장소 오류를 의미별로 구분해 route 계층에 전달합니다."
+    },
+    "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowNotFoundError": {
+      "name": "TeamFlowNotFoundError",
+      "type": "class",
+      "summary": "TeamFlowNotFoundError class는 TeamFlow repository의 저장소 오류를 의미별로 구분해 route 계층에 전달합니다."
+    },
+    "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowConflictError": {
+      "name": "TeamFlowConflictError",
+      "type": "class",
+      "summary": "TeamFlowConflictError class는 TeamFlow repository의 저장소 오류를 의미별로 구분해 route 계층에 전달합니다."
+    },
+    "class:apps/api/src/teamflow/teamFlowRepository.js:TeamFlowValidationError": {
+      "name": "TeamFlowValidationError",
+      "type": "class",
+      "summary": "TeamFlowValidationError class는 TeamFlow repository의 저장소 오류를 의미별로 구분해 route 계층에 전달합니다."
+    },
+    "file:apps/api/src/teamflow/teamFlowRoutes.js": {
+      "name": "teamFlowRoutes.js",
+      "type": "file",
+      "summary": "TeamFlow HTTP endpoint를 정의하고 요청 payload 검증, authentication middleware, repository 호출, 오류 응답 변환을 조정합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRoutes.js:validateProject": {
+      "name": "validateProject",
+      "type": "function",
+      "summary": "validateProject 함수는 teamflow domain 입력의 필수 값, 형식과 허용 범위를 검증합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRoutes.js:validateMemberPatch": {
+      "name": "validateMemberPatch",
+      "type": "function",
+      "summary": "validateMemberPatch 함수는 teamflow domain 입력의 필수 값, 형식과 허용 범위를 검증합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRoutes.js:validateTaskCreateInput": {
+      "name": "validateTaskCreateInput",
+      "type": "function",
+      "summary": "작업 생성 payload의 제목, 담당자, 날짜, 상태와 설명 규칙을 검증합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRoutes.js:validateTaskPatch": {
+      "name": "validateTaskPatch",
+      "type": "function",
+      "summary": "validateTaskPatch 함수는 teamflow domain 입력의 필수 값, 형식과 허용 범위를 검증합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRoutes.js:validateNote": {
+      "name": "validateNote",
+      "type": "function",
+      "summary": "validateNote 함수는 teamflow domain 입력의 필수 값, 형식과 허용 범위를 검증합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRoutes.js:validateResource": {
+      "name": "validateResource",
+      "type": "function",
+      "summary": "자료 유형에 따라 이름, URL 또는 파일 입력의 필수 규칙을 검증합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRoutes.js:validateResourceUpload": {
+      "name": "validateResourceUpload",
+      "type": "function",
+      "summary": "validateResourceUpload 함수는 teamflow domain 입력의 필수 값, 형식과 허용 범위를 검증합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRoutes.js:validateAiSettings": {
+      "name": "validateAiSettings",
+      "type": "function",
+      "summary": "validateAiSettings 함수는 teamflow domain 입력의 필수 값, 형식과 허용 범위를 검증합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRoutes.js:routeError": {
+      "name": "routeError",
+      "type": "function",
+      "summary": "routeError 함수는 teamflow domain 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다."
+    },
+    "function:apps/api/src/teamflow/teamFlowRoutes.js:createTeamFlowRouter": {
+      "name": "createTeamFlowRouter",
+      "type": "function",
+      "summary": "TeamFlow endpoint와 authentication, validation, repository 호출, 오류 응답을 하나의 Express router로 구성합니다."
+    },
+    "file:apps/api/test/auth.test.js": {
+      "name": "auth.test.js",
+      "type": "file",
+      "summary": "Bearer token 파싱과 Supabase 인증 검증, authentication middleware의 성공·실패 경계를 검증하는 Node 테스트입니다."
+    },
+    "file:apps/api/test/cors.test.js": {
+      "name": "cors.test.js",
+      "type": "file",
+      "summary": "허용 origin 설정과 Express CORS callback이 승인·거절 요청을 올바르게 처리하는지 검증합니다."
+    },
+    "file:apps/api/test/health.test.js": {
+      "name": "health.test.js",
+      "type": "file",
+      "summary": "Express application의 health endpoint가 기대한 상태와 service 정보를 반환하는지 검증합니다."
+    },
+    "file:apps/api/test/mockAiGenerator.test.js": {
+      "name": "mockAiGenerator.test.js",
+      "type": "file",
+      "summary": "Mock AI context 정규화, snapshot 제한, 결정적 Markdown 생성과 입력 격리 규칙을 폭넓게 검증합니다."
+    },
+    "function:apps/api/test/mockAiGenerator.test.js:createInput": {
+      "name": "createInput",
+      "type": "function",
+      "summary": "createInput 함수는 test support 동작에 필요한 의존성과 interface를 구성해 반환합니다."
+    },
+    "file:apps/api/test/supabaseClient.test.js": {
+      "name": "supabaseClient.test.js",
+      "type": "file",
+      "summary": "서버 Supabase 환경 설정의 누락·형식 오류와 정상 client 생성 조건을 검증합니다."
+    },
+    "file:apps/api/test/teamFlowRepository.test.js": {
+      "name": "teamFlowRepository.test.js",
+      "type": "file",
+      "summary": "Supabase query와 RPC를 모의해 TeamFlow repository의 CRUD, 오류 변환, 자료 업로드, AI 실행 동작을 검증합니다."
+    },
+    "function:apps/api/test/teamFlowRepository.test.js:resourceRow": {
+      "name": "resourceRow",
+      "type": "function",
+      "summary": "resourceRow 함수는 test support 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다."
+    },
+    "function:apps/api/test/teamFlowRepository.test.js:orderedRows": {
+      "name": "orderedRows",
+      "type": "function",
+      "summary": "orderedRows 함수는 test support 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다."
+    },
+    "function:apps/api/test/teamFlowRepository.test.js:filteredQuery": {
+      "name": "filteredQuery",
+      "type": "function",
+      "summary": "filteredQuery 함수는 test support 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다."
+    },
+    "function:apps/api/test/teamFlowRepository.test.js:aiContextRows": {
+      "name": "aiContextRows",
+      "type": "function",
+      "summary": "aiContextRows 함수는 test support 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다."
+    },
+    "file:apps/api/test/teamFlowRoutes.test.js": {
+      "name": "teamFlowRoutes.test.js",
+      "type": "file",
+      "summary": "실제 Express router와 test repository를 사용해 TeamFlow API endpoint의 인증, 검증, 응답, 오류 처리를 통합 검증합니다."
+    },
+    "file:apps/web/src/components/layout/AppShell.jsx": {
+      "name": "AppShell.jsx",
+      "type": "file",
+      "summary": "전역 navigation, 프로젝트 전환·생성, 사용자 또는 guest 계정 메뉴를 제공하는 TeamFlow 최상위 layout component입니다."
+    },
+    "function:apps/web/src/components/layout/AppShell.jsx:AppShell": {
+      "name": "AppShell",
+      "type": "function",
+      "summary": "AppShell React component는 application 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "function:apps/web/src/components/layout/AppShell.jsx:Brand": {
+      "name": "Brand",
+      "type": "function",
+      "summary": "Brand React component는 application 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "function:apps/web/src/components/layout/AppShell.jsx:Account": {
+      "name": "Account",
+      "type": "function",
+      "summary": "Account React component는 application 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "function:apps/web/src/components/layout/AppShell.jsx:AccountAvatar": {
+      "name": "AccountAvatar",
+      "type": "function",
+      "summary": "AccountAvatar React component는 application 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "file:apps/web/src/components/layout/ProjectShell.jsx": {
+      "name": "ProjectShell.jsx",
+      "type": "file",
+      "summary": "선택된 프로젝트의 하위 route와 outlet context를 구성하고 작업 생성·상세 modal 상태를 조정하는 workspace shell입니다."
+    },
+    "function:apps/web/src/components/layout/ProjectShell.jsx:ProjectShell": {
+      "name": "ProjectShell",
+      "type": "function",
+      "summary": "ProjectShell React component는 application 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "file:apps/web/src/components/ui/Modal.jsx": {
+      "name": "Modal.jsx",
+      "type": "file",
+      "summary": "Escape와 overlay 닫기, 배경 scroll 잠금, 제목·본문·action 영역을 공통 처리하는 접근 가능한 modal component입니다."
+    },
+    "function:apps/web/src/components/ui/Modal.jsx:Modal": {
+      "name": "Modal",
+      "type": "function",
+      "summary": "Modal React component는 application 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다."
+    },
+    "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx": {
+      "name": "ProjectPeriodModal.jsx",
+      "type": "file",
+      "summary": "프로젝트 시작일과 종료일을 편집·검증하고 전역 action으로 저장하는 기간 설정 modal입니다."
+    },
+    "function:apps/web/src/features/dashboard/ProjectPeriodModal.jsx:ProjectPeriodModal": {
+      "name": "ProjectPeriodModal",
+      "type": "function",
+      "summary": "ProjectPeriodModal React component는 dashboard 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다."
+    },
+    "file:apps/web/src/features/members/EditMemberModal.jsx": {
+      "name": "EditMemberModal.jsx",
+      "type": "file",
+      "summary": "협업자의 이름과 역할을 편집하고 TeamFlow 상태 action으로 저장하는 member modal입니다."
+    },
+    "function:apps/web/src/features/members/EditMemberModal.jsx:EditMemberModal": {
+      "name": "EditMemberModal",
+      "type": "function",
+      "summary": "EditMemberModal React component는 member management 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다."
+    },
+    "file:apps/web/src/features/members/InviteCollaboratorModal.jsx": {
+      "name": "InviteCollaboratorModal.jsx",
+      "type": "file",
+      "summary": "초대 이메일을 입력·검증해 프로젝트 협업자 초대 action을 실행하는 modal입니다."
+    },
+    "function:apps/web/src/features/members/InviteCollaboratorModal.jsx:InviteCollaboratorModal": {
+      "name": "InviteCollaboratorModal",
+      "type": "function",
+      "summary": "InviteCollaboratorModal React component는 member management 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다."
+    },
+    "file:apps/web/src/features/members/MemberRemovalModal.jsx": {
+      "name": "MemberRemovalModal.jsx",
+      "type": "file",
+      "summary": "협업자 제거의 영향을 안내하고 확인 event를 실제 제거 action으로 연결하는 modal입니다."
+    },
+    "function:apps/web/src/features/members/MemberRemovalModal.jsx:MemberRemovalModal": {
+      "name": "MemberRemovalModal",
+      "type": "function",
+      "summary": "MemberRemovalModal React component는 member management 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다."
+    },
+    "file:apps/web/src/features/members/MembersPage.jsx": {
+      "name": "MembersPage.jsx",
+      "type": "file",
+      "summary": "프로젝트 협업자와 초대 상태를 표시하고 초대·편집·제거 modal 흐름을 조정하는 팀원 관리 페이지입니다."
+    },
+    "function:apps/web/src/features/members/MembersPage.jsx:MembersPage": {
+      "name": "MembersPage",
+      "type": "function",
+      "summary": "MembersPage React component는 member management 데이터를 파생하고 페이지 UI와 사용자 action을 조정합니다."
+    },
+    "function:apps/web/src/features/members/MembersPage.jsx:MemberCard": {
+      "name": "MemberCard",
+      "type": "function",
+      "summary": "MemberCard React component는 member management 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "file:apps/web/src/features/notes/NoteTemplateModal.jsx": {
+      "name": "NoteTemplateModal.jsx",
+      "type": "file",
+      "summary": "선택한 template으로 새 노트를 시작하도록 상위 callback을 호출하는 간단한 template 선택 modal입니다."
+    },
+    "function:apps/web/src/features/notes/NoteTemplateModal.jsx:NoteTemplateModal": {
+      "name": "NoteTemplateModal",
+      "type": "function",
+      "summary": "NoteTemplateModal React component는 notes 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다."
+    },
+    "file:apps/web/src/features/notes/NotesPage.jsx": {
+      "name": "NotesPage.jsx",
+      "type": "file",
+      "summary": "프로젝트 노트를 검색·정렬하고 생성, template 적용, 편집, Markdown preview, 삭제 수명주기를 관리하는 페이지입니다."
+    },
+    "function:apps/web/src/features/notes/NotesPage.jsx:sortNotes": {
+      "name": "sortNotes",
+      "type": "function",
+      "summary": "sortNotes 함수는 notes 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다."
+    },
+    "function:apps/web/src/features/notes/NotesPage.jsx:NotesPage": {
+      "name": "NotesPage",
+      "type": "function",
+      "summary": "NotesPage React component는 notes 데이터를 파생하고 페이지 UI와 사용자 action을 조정합니다."
+    },
+    "file:apps/web/src/features/projects/components/NewProjectModal.jsx": {
+      "name": "NewProjectModal.jsx",
+      "type": "file",
+      "summary": "프로젝트 이름·설명·기간을 입력하고 검증한 뒤 새 프로젝트 생성 action을 실행하는 modal입니다."
+    },
+    "function:apps/web/src/features/projects/components/NewProjectModal.jsx:NewProjectModal": {
+      "name": "NewProjectModal",
+      "type": "function",
+      "summary": "NewProjectModal React component는 projects 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다."
+    },
+    "file:apps/web/src/features/resources/CreateFolderModal.jsx": {
+      "name": "CreateFolderModal.jsx",
+      "type": "file",
+      "summary": "현재 자료 계층 아래에 새 folder를 만들기 위한 이름 입력과 생성 action을 처리합니다."
+    },
+    "function:apps/web/src/features/resources/CreateFolderModal.jsx:CreateFolderModal": {
+      "name": "CreateFolderModal",
+      "type": "function",
+      "summary": "CreateFolderModal React component는 resources 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다."
+    },
+    "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx": {
+      "name": "TaskCreateModal.jsx",
+      "type": "file",
+      "summary": "제목, 담당자, 마감일, 상태, 설명을 검증해 선택한 프로젝트에 새 작업을 생성하는 modal입니다."
+    },
+    "function:apps/web/src/features/tasks/components/TaskCreateModal.jsx:TaskCreateModal": {
+      "name": "TaskCreateModal",
+      "type": "function",
+      "summary": "TaskCreateModal React component는 tasks 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다."
+    },
+    "file:apps/web/src/state/useTeamFlow.js": {
+      "name": "useTeamFlow.js",
+      "type": "file",
+      "summary": "TeamFlowContext를 읽고 Provider 밖에서 호출되면 명시적 오류를 내는 전역 상태 접근용 custom hook입니다."
+    },
+    "function:apps/web/src/state/useTeamFlow.js:useTeamFlow": {
+      "name": "useTeamFlow",
+      "type": "function",
+      "summary": "TeamFlowContext의 전역 state와 action을 반환하고 Provider 밖의 잘못된 사용을 차단합니다."
+    },
+    "file:apps/web/src/auth/AuthContext.js": {
+      "name": "AuthContext.js",
+      "type": "file",
+      "summary": "로그인 session, profile, guest 상태와 인증 action을 하위 component에 전달하는 React Context 객체를 정의합니다."
+    },
+    "file:apps/web/src/auth/AuthFlows.test.jsx": {
+      "name": "AuthFlows.test.jsx",
+      "type": "file",
+      "summary": "Google OAuth, guest 진입, 보호 route, logout 등 주요 인증 사용자 흐름을 React 통합 수준에서 검증합니다."
+    },
+    "function:apps/web/src/auth/AuthFlows.test.jsx:renderWithAuth": {
+      "name": "renderWithAuth",
+      "type": "function",
+      "summary": "테스트용 authentication client와 route를 주입해 인증 흐름 component를 렌더링합니다."
+    },
+    "file:apps/web/src/auth/AuthProvider.jsx": {
+      "name": "AuthProvider.jsx",
+      "type": "file",
+      "summary": "Supabase session 구독, Google OAuth, logout, guest session을 통합해 인증 상태와 action을 Context로 제공합니다."
+    },
+    "function:apps/web/src/auth/AuthProvider.jsx:profileFromSession": {
+      "name": "profileFromSession",
+      "type": "function",
+      "summary": "Supabase session metadata를 화면에서 사용할 사용자 profile로 변환합니다."
+    },
+    "function:apps/web/src/auth/AuthProvider.jsx:AuthProvider": {
+      "name": "AuthProvider",
+      "type": "function",
+      "summary": "AuthProvider React component는 authentication 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "file:apps/web/src/auth/supabaseClient.js": {
+      "name": "supabaseClient.js",
+      "type": "file",
+      "summary": "브라우저 Supabase 환경 설정을 검증하고 실제 또는 주입된 authentication client를 지연 해석합니다."
+    },
+    "function:apps/web/src/auth/supabaseClient.js:readBrowserSupabaseConfig": {
+      "name": "readBrowserSupabaseConfig",
+      "type": "function",
+      "summary": "브라우저 환경변수의 Supabase URL과 publishable key를 검증합니다."
+    },
+    "function:apps/web/src/auth/supabaseClient.js:createBrowserSupabaseClient": {
+      "name": "createBrowserSupabaseClient",
+      "type": "function",
+      "summary": "검증된 browser 설정으로 Supabase authentication client를 생성합니다."
+    },
+    "function:apps/web/src/auth/supabaseClient.js:resolveBrowserSupabaseClient": {
+      "name": "resolveBrowserSupabaseClient",
+      "type": "function",
+      "summary": "주입된 client를 우선 사용하고 없으면 browser Supabase client를 지연 생성합니다."
+    },
+    "file:apps/web/src/auth/supabaseClient.test.js": {
+      "name": "supabaseClient.test.js",
+      "type": "file",
+      "summary": "브라우저 Supabase 설정의 누락·형식 오류와 정상 client 생성·주입 조건을 검증합니다."
+    },
+    "file:apps/web/src/features/AppFlows.test.jsx": {
+      "name": "AppFlows.test.jsx",
+      "type": "file",
+      "summary": "실제 route와 Provider를 함께 렌더링해 프로젝트, 작업, 노트, 자료, AI 팀원의 핵심 사용자 흐름을 검증합니다."
+    },
+    "file:apps/web/src/features/CollaborationFlows.test.jsx": {
+      "name": "CollaborationFlows.test.jsx",
+      "type": "file",
+      "summary": "협업자 초대·수락·역할 변경·제거와 프로젝트 탈퇴 수명주기를 화면 event 중심으로 검증합니다."
+    },
+    "file:apps/web/src/features/notes/MarkdownPreview.jsx": {
+      "name": "MarkdownPreview.jsx",
+      "type": "file",
+      "summary": "제한된 Markdown 문법을 안전한 React element로 변환해 노트 preview를 렌더링합니다."
+    },
+    "function:apps/web/src/features/notes/MarkdownPreview.jsx:inline": {
+      "name": "inline",
+      "type": "function",
+      "summary": "간단한 inline Markdown token을 React element로 변환합니다."
+    },
+    "function:apps/web/src/features/notes/MarkdownPreview.jsx:MarkdownPreview": {
+      "name": "MarkdownPreview",
+      "type": "function",
+      "summary": "MarkdownPreview React component는 notes 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "file:apps/web/src/features/tasks/components/TaskDetailModal.test.jsx": {
+      "name": "TaskDetailModal.test.jsx",
+      "type": "file",
+      "summary": "작업 상세 modal의 상태 변경, 저장·삭제, 오류 표시와 권한별 동작을 검증합니다."
+    },
+    "file:apps/web/src/main.jsx": {
+      "name": "main.jsx",
+      "type": "file",
+      "summary": "React root를 만들고 BrowserRouter, AuthProvider, TeamFlowProvider, App을 조합해 웹 application을 부트스트랩합니다."
+    },
+    "file:apps/web/src/test/createTestTeamFlowRepository.js": {
+      "name": "createTestTeamFlowRepository.js",
+      "type": "file",
+      "summary": "메모리 fixture를 복제하고 실제 repository와 같은 비동기 CRUD interface를 제공하는 테스트 대역을 구성합니다."
+    },
+    "file:apps/web/src/test/renderTeamFlowApp.jsx": {
+      "name": "renderTeamFlowApp.jsx",
+      "type": "file",
+      "summary": "인증 session과 test repository를 주입해 TeamFlow App을 원하는 route에서 렌더링하는 공통 테스트 helper입니다."
+    },
+    "function:apps/web/src/test/renderTeamFlowApp.jsx:createTestAuthClient": {
+      "name": "createTestAuthClient",
+      "type": "function",
+      "summary": "지정한 session 상태를 반환하는 테스트용 authentication client를 구성합니다."
+    },
+    "function:apps/web/src/test/renderTeamFlowApp.jsx:renderAuthenticatedApp": {
+      "name": "renderAuthenticatedApp",
+      "type": "function",
+      "summary": "인증 session과 test repository를 주입해 지정 route의 TeamFlow App을 렌더링합니다."
+    },
+    "file:apps/web/src/test/teamFlowFixture.js": {
+      "name": "teamFlowFixture.js",
+      "type": "file",
+      "summary": "프로젝트, 멤버, 작업, 노트, 자료, AI agent와 실행 기록의 일관된 테스트 fixture를 제공합니다."
+    },
+    "file:apps/web/src/components/ui/Avatar.jsx": {
+      "name": "Avatar.jsx",
+      "type": "file",
+      "summary": "프로필 image가 있으면 사진을, 없으면 이름의 첫 글자를 표시하는 재사용 Avatar component입니다."
+    },
+    "function:apps/web/src/components/ui/Avatar.jsx:Avatar": {
+      "name": "Avatar",
+      "type": "function",
+      "summary": "Avatar React component는 application 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "file:apps/web/src/components/ui/StatusBadge.jsx": {
+      "name": "StatusBadge.jsx",
+      "type": "file",
+      "summary": "프로젝트 또는 작업 상태를 한국어 label과 상태별 style로 표시하는 badge component입니다."
+    },
+    "function:apps/web/src/components/ui/StatusBadge.jsx:StatusBadge": {
+      "name": "StatusBadge",
+      "type": "function",
+      "summary": "StatusBadge React component는 application 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "file:apps/web/src/constants/labels.js": {
+      "name": "labels.js",
+      "type": "file",
+      "summary": "프로젝트·작업·자료 상태의 화면 label과 작업 상태 정렬 순서를 중앙에서 정의합니다."
+    },
+    "file:apps/web/src/features/ai/AiPage.jsx": {
+      "name": "AiPage.jsx",
+      "type": "file",
+      "summary": "프로젝트 AI 팀원의 설정, 실행 context, 결과 Markdown과 실행 이력을 조회·편집·실행하는 관리 페이지입니다."
+    },
+    "function:apps/web/src/features/ai/AiPage.jsx:AiPage": {
+      "name": "AiPage",
+      "type": "function",
+      "summary": "AiPage React component는 ai workflow 데이터를 파생하고 페이지 UI와 사용자 action을 조정합니다."
+    },
+    "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx": {
+      "name": "ProjectDashboardPage.jsx",
+      "type": "file",
+      "summary": "프로젝트 진행률, 상태별 작업, 협업자, 최근 노트·자료를 집계하고 기간 편집을 연결하는 dashboard입니다."
+    },
+    "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage": {
+      "name": "ProjectDashboardPage",
+      "type": "function",
+      "summary": "ProjectDashboardPage React component는 dashboard 데이터를 파생하고 페이지 UI와 사용자 action을 조정합니다."
+    },
+    "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx": {
+      "name": "ProjectSettingsModal.jsx",
+      "type": "file",
+      "summary": "프로젝트 정보 수정, owner 전용 위험 작업, 프로젝트 나가기 흐름을 권한에 따라 제공하는 설정 modal입니다."
+    },
+    "function:apps/web/src/features/projects/components/ProjectSettingsModal.jsx:ProjectSettingsModal": {
+      "name": "ProjectSettingsModal",
+      "type": "function",
+      "summary": "ProjectSettingsModal React component는 projects 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다."
+    },
+    "file:apps/web/src/features/tasks/MyTasksPage.jsx": {
+      "name": "MyTasksPage.jsx",
+      "type": "file",
+      "summary": "현재 사용자에게 배정된 작업을 프로젝트별로 모아 상태와 마감일 중심으로 보여 주는 개인 작업 페이지입니다."
+    },
+    "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage": {
+      "name": "MyTasksPage",
+      "type": "function",
+      "summary": "MyTasksPage React component는 tasks 데이터를 파생하고 페이지 UI와 사용자 action을 조정합니다."
+    },
+    "file:apps/web/src/features/tasks/ProjectTasksPage.jsx": {
+      "name": "ProjectTasksPage.jsx",
+      "type": "file",
+      "summary": "프로젝트 작업을 검색·필터·정렬하고 table 또는 board로 표시하며 inline 상태 변경을 제공합니다."
+    },
+    "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage": {
+      "name": "ProjectTasksPage",
+      "type": "function",
+      "summary": "ProjectTasksPage React component는 tasks 데이터를 파생하고 페이지 UI와 사용자 action을 조정합니다."
+    },
+    "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:SortHeader": {
+      "name": "SortHeader",
+      "type": "function",
+      "summary": "SortHeader React component는 tasks 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:TaskStatusMenu": {
+      "name": "TaskStatusMenu",
+      "type": "function",
+      "summary": "TaskStatusMenu React component는 tasks 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx": {
+      "name": "TaskDetailModal.jsx",
+      "type": "file",
+      "summary": "작업 상세 값을 편집·검증해 저장하고 상태 변경·삭제 확인과 권한·오류 처리를 제공하는 modal입니다."
+    },
+    "function:apps/web/src/features/tasks/components/TaskDetailModal.jsx:TaskDetailModal": {
+      "name": "TaskDetailModal",
+      "type": "function",
+      "summary": "TaskDetailModal React component는 tasks 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다."
+    },
+    "file:apps/web/src/lib/format.js": {
+      "name": "format.js",
+      "type": "file",
+      "summary": "날짜와 프로젝트 기간을 화면용 문자열 또는 로컬 ISO 날짜로 변환하는 순수 formatting helper 모음입니다."
+    },
+    "function:apps/web/src/lib/format.js:formatShortDate": {
+      "name": "formatShortDate",
+      "type": "function",
+      "summary": "ISO 날짜 값을 사용자가 읽기 쉬운 짧은 날짜 문자열로 변환합니다."
+    },
+    "function:apps/web/src/lib/format.js:formatPeriod": {
+      "name": "formatPeriod",
+      "type": "function",
+      "summary": "프로젝트 시작일과 종료일을 하나의 기간 문자열로 조합합니다."
+    },
+    "function:apps/web/src/lib/format.js:todayIso": {
+      "name": "todayIso",
+      "type": "function",
+      "summary": "현재 로컬 날짜를 ISO 날짜 문자열로 반환합니다."
+    },
+    "function:apps/web/src/lib/format.js:addLocalDaysIso": {
+      "name": "addLocalDaysIso",
+      "type": "function",
+      "summary": "로컬 날짜에 일수를 더한 ISO 날짜 문자열을 계산합니다."
+    },
+    "file:apps/web/src/lib/format.test.js": {
+      "name": "format.test.js",
+      "type": "file",
+      "summary": "날짜·기간 formatting과 로컬 날짜 계산 helper의 정상 값과 경계 사례를 검증합니다."
+    },
+    "file:apps/web/src/state/selectors.js": {
+      "name": "selectors.js",
+      "type": "file",
+      "summary": "TeamFlow 전역 state에서 프로젝트, 작업, 멤버, AI 실행, 초대와 dashboard 요약을 파생하는 순수 selector 모음입니다."
+    },
+    "function:apps/web/src/state/selectors.js:selectProject": {
+      "name": "selectProject",
+      "type": "function",
+      "summary": "selectProject selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다."
+    },
+    "function:apps/web/src/state/selectors.js:selectProjectTasks": {
+      "name": "selectProjectTasks",
+      "type": "function",
+      "summary": "selectProjectTasks selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다."
+    },
+    "function:apps/web/src/state/selectors.js:selectProjectMembers": {
+      "name": "selectProjectMembers",
+      "type": "function",
+      "summary": "selectProjectMembers selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다."
+    },
+    "function:apps/web/src/state/selectors.js:selectAssignableProjectMembers": {
+      "name": "selectAssignableProjectMembers",
+      "type": "function",
+      "summary": "selectAssignableProjectMembers selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다."
+    },
+    "function:apps/web/src/state/selectors.js:selectProjectAiMember": {
+      "name": "selectProjectAiMember",
+      "type": "function",
+      "summary": "selectProjectAiMember selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다."
+    },
+    "function:apps/web/src/state/selectors.js:selectProjectAiAgent": {
+      "name": "selectProjectAiAgent",
+      "type": "function",
+      "summary": "selectProjectAiAgent selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다."
+    },
+    "function:apps/web/src/state/selectors.js:selectProjectAiRuns": {
+      "name": "selectProjectAiRuns",
+      "type": "function",
+      "summary": "selectProjectAiRuns selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다."
+    },
+    "function:apps/web/src/state/selectors.js:selectProjectSummaries": {
+      "name": "selectProjectSummaries",
+      "type": "function",
+      "summary": "selectProjectSummaries selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다."
+    },
+    "function:apps/web/src/state/selectors.js:selectReceivedInvitations": {
+      "name": "selectReceivedInvitations",
+      "type": "function",
+      "summary": "selectReceivedInvitations selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다."
+    },
+    "file:apps/web/src/App.jsx": {
+      "name": "App.jsx",
+      "type": "file",
+      "summary": "landing, OAuth callback, guest demo, 인증 보호 route와 각 TeamFlow feature page를 연결하는 최상위 route tree입니다."
+    },
+    "function:apps/web/src/App.jsx:App": {
+      "name": "App",
+      "type": "function",
+      "summary": "App React component는 application 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "function:apps/web/src/App.jsx:TeamFlowBoundary": {
+      "name": "TeamFlowBoundary",
+      "type": "function",
+      "summary": "TeamFlowBoundary React component는 application 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "file:apps/web/src/auth/AuthCallbackPage.jsx": {
+      "name": "AuthCallbackPage.jsx",
+      "type": "file",
+      "summary": "Supabase OAuth callback 처리 상태를 확인하고 성공 시 app으로, 실패 시 설명 가능한 오류 화면으로 전환합니다."
+    },
+    "function:apps/web/src/auth/AuthCallbackPage.jsx:AuthCallbackPage": {
+      "name": "AuthCallbackPage",
+      "type": "function",
+      "summary": "AuthCallbackPage React component는 authentication 데이터를 파생하고 페이지 UI와 사용자 action을 조정합니다."
+    },
+    "file:apps/web/src/auth/ProtectedRoute.jsx": {
+      "name": "ProtectedRoute.jsx",
+      "type": "file",
+      "summary": "인증 loading을 처리하고 로그인 사용자 또는 guest session만 하위 route에 접근하도록 제한합니다."
+    },
+    "function:apps/web/src/auth/ProtectedRoute.jsx:ProtectedRoute": {
+      "name": "ProtectedRoute",
+      "type": "function",
+      "summary": "ProtectedRoute React component는 authentication 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "file:apps/web/src/auth/useAuth.js": {
+      "name": "useAuth.js",
+      "type": "file",
+      "summary": "AuthContext를 읽고 Provider 외부 사용을 차단하는 인증 상태 접근용 custom hook입니다."
+    },
+    "function:apps/web/src/auth/useAuth.js:useAuth": {
+      "name": "useAuth",
+      "type": "function",
+      "summary": "AuthContext의 인증 상태와 action을 반환하고 Provider 밖의 잘못된 사용을 차단합니다."
+    },
+    "file:apps/web/src/data/apiTeamFlowRepository.js": {
+      "name": "apiTeamFlowRepository.js",
+      "type": "file",
+      "summary": "access token을 포함한 API 요청으로 TeamFlow 데이터를 처리하고 guest demo용 read-only repository도 제공하는 브라우저 data adapter입니다."
+    },
+    "function:apps/web/src/data/apiTeamFlowRepository.js:normalizeApiBaseUrl": {
+      "name": "normalizeApiBaseUrl",
+      "type": "function",
+      "summary": "API 기본 URL의 공백과 끝 slash를 정리하고 유효한 요청 기준 URL로 변환합니다."
+    },
+    "function:apps/web/src/data/apiTeamFlowRepository.js:readJson": {
+      "name": "readJson",
+      "type": "function",
+      "summary": "fetch 응답의 JSON body를 안전하게 읽고 API 오류 정보를 보존합니다."
+    },
+    "function:apps/web/src/data/apiTeamFlowRepository.js:createApiTeamFlowRepository": {
+      "name": "createApiTeamFlowRepository",
+      "type": "function",
+      "summary": "access token과 fetch를 사용해 TeamFlow HTTP API를 호출하는 browser repository를 생성합니다."
+    },
+    "function:apps/web/src/data/apiTeamFlowRepository.js:createDemoTeamFlowRepository": {
+      "name": "createDemoTeamFlowRepository",
+      "type": "function",
+      "summary": "고정 demo 데이터를 제공하고 변경 작업을 거부하는 read-only repository를 생성합니다."
+    },
+    "class:apps/web/src/data/apiTeamFlowRepository.js:TeamFlowApiError": {
+      "name": "TeamFlowApiError",
+      "type": "class",
+      "summary": "TeamFlow HTTP API의 status와 payload를 보존해 UI 계층에 전달하는 browser 오류 형식입니다."
+    },
+    "file:apps/web/src/data/apiTeamFlowRepository.test.js": {
+      "name": "apiTeamFlowRepository.test.js",
+      "type": "file",
+      "summary": "API repository의 URL·header·payload 구성, 오류 변환과 guest read-only 동작을 fetch mock으로 검증합니다."
+    },
+    "file:apps/web/src/features/landing/LandingPage.jsx": {
+      "name": "LandingPage.jsx",
+      "type": "file",
+      "summary": "서비스 가치와 핵심 기능을 소개하고 Google 로그인 또는 guest demo 진입 event를 제공하는 landing page입니다."
+    },
+    "function:apps/web/src/features/landing/LandingPage.jsx:LandingPage": {
+      "name": "LandingPage",
+      "type": "function",
+      "summary": "LandingPage React component는 landing 데이터를 파생하고 페이지 UI와 사용자 action을 조정합니다."
+    },
+    "file:apps/web/src/state/TeamFlowContext.js": {
+      "name": "TeamFlowContext.js",
+      "type": "file",
+      "summary": "TeamFlow 전역 데이터와 비동기 action을 component tree에 전달하기 위한 React Context 객체를 정의합니다."
+    },
+    "file:apps/web/src/state/TeamFlowProvider.jsx": {
+      "name": "TeamFlowProvider.jsx",
+      "type": "file",
+      "summary": "인증 또는 guest repository에서 데이터를 hydrate하고 reducer와 비동기 action으로 전체 협업 상태를 관리합니다."
+    },
+    "function:apps/web/src/state/TeamFlowProvider.jsx:reducer": {
+      "name": "reducer",
+      "type": "function",
+      "summary": "TeamFlow action 유형에 따라 불변 state를 계산하는 중앙 reducer입니다."
+    },
+    "function:apps/web/src/state/TeamFlowProvider.jsx:TeamFlowProvider": {
+      "name": "TeamFlowProvider",
+      "type": "function",
+      "summary": "TeamFlowProvider React component는 state management 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "file:apps/web/src/components/ui/ResourceIcon.jsx": {
+      "name": "ResourceIcon.jsx",
+      "type": "file",
+      "summary": "자료 유형에 맞는 icon component를 선택해 일관된 시각 표시를 제공하는 UI adapter입니다."
+    },
+    "function:apps/web/src/components/ui/ResourceIcon.jsx:ResourceIcon": {
+      "name": "ResourceIcon",
+      "type": "function",
+      "summary": "ResourceIcon React component는 application 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다."
+    },
+    "file:apps/web/src/features/resources/AddResourceModal.jsx": {
+      "name": "AddResourceModal.jsx",
+      "type": "file",
+      "summary": "link 또는 file 자료의 입력·validation·upload를 처리해 현재 folder에 새 자료를 추가하는 modal입니다."
+    },
+    "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal": {
+      "name": "AddResourceModal",
+      "type": "function",
+      "summary": "AddResourceModal React component는 resources 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다."
+    },
+    "file:apps/web/src/features/resources/ResourceDetailModal.jsx": {
+      "name": "ResourceDetailModal.jsx",
+      "type": "file",
+      "summary": "자료 상세 정보를 표시하고 이름·link 편집, download, 삭제와 권한별 action을 조정하는 modal입니다."
+    },
+    "function:apps/web/src/features/resources/ResourceDetailModal.jsx:ResourceDetailModal": {
+      "name": "ResourceDetailModal",
+      "type": "function",
+      "summary": "ResourceDetailModal React component는 resources 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다."
+    },
+    "file:apps/web/src/features/resources/ResourcesPage.jsx": {
+      "name": "ResourcesPage.jsx",
+      "type": "file",
+      "summary": "folder breadcrumb와 자료 목록을 탐색하며 folder 생성, 자료 추가, 상세 modal 흐름을 관리하는 페이지입니다."
+    },
+    "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage": {
+      "name": "ResourcesPage",
+      "type": "function",
+      "summary": "ResourcesPage React component는 resources 데이터를 파생하고 페이지 UI와 사용자 action을 조정합니다."
+    },
+    "file:apps/web/src/features/resources/resourceValidation.js": {
+      "name": "resourceValidation.js",
+      "type": "file",
+      "summary": "안전한 HTTP URL, upload file 제한과 자료 유형별 필수 입력을 검증하는 순수 validation helper를 제공합니다."
+    },
+    "function:apps/web/src/features/resources/resourceValidation.js:isSafeHttpUrl": {
+      "name": "isSafeHttpUrl",
+      "type": "function",
+      "summary": "입력 URL이 허용된 HTTP 또는 HTTPS 주소인지 검증합니다."
+    },
+    "function:apps/web/src/features/resources/resourceValidation.js:validateUploadFile": {
+      "name": "validateUploadFile",
+      "type": "function",
+      "summary": "업로드 파일의 존재, 크기와 허용 형식을 검증합니다."
+    },
+    "function:apps/web/src/features/resources/resourceValidation.js:validateResource": {
+      "name": "validateResource",
+      "type": "function",
+      "summary": "자료 유형에 따라 이름, URL 또는 파일 입력의 필수 규칙을 검증합니다."
+    },
+    "file:apps/web/src/features/resources/resourceValidation.test.js": {
+      "name": "resourceValidation.test.js",
+      "type": "file",
+      "summary": "자료 URL과 upload file, 유형별 validation 규칙의 정상·실패·경계 사례를 검증합니다."
+    },
+    "file:apps/web/src/features/projects/ProjectListPage.jsx": {
+      "name": "ProjectListPage.jsx",
+      "type": "file",
+      "summary": "로그인 상태의 프로젝트 요약과 받은 초대를 조회하고 검색·초대 응답·프로젝트 이동·설정 및 아이콘 변경 모달을 조율한다."
+    },
+    "file:apps/web/src/features/projects/ProjectListPage.test.jsx": {
+      "name": "ProjectListPage.test.jsx",
+      "type": "file",
+      "summary": "프로젝트 목록의 라우팅, 검색과 빈 상태, 생성 후 이동, 진행률 경계 처리, 아이콘 변경 흐름을 사용자 관점에서 검증한다."
+    },
+    "file:apps/web/src/features/projects/components/ProjectCard.jsx": {
+      "name": "ProjectCard.jsx",
+      "type": "file",
+      "summary": "프로젝트 상태·진행률·기간·멤버·아이콘을 접근 가능한 카드로 표시하고 열기, 아이콘 변경, 설정 동작을 노출한다."
+    },
+    "file:apps/web/src/features/projects/components/ProjectIcon.jsx": {
+      "name": "ProjectIcon.jsx",
+      "type": "file",
+      "summary": "공유 프로젝트 아이콘 키를 Lucide 아이콘으로 변환하며 알 수 없는 값은 기본 레이어 아이콘으로 대체한다."
+    },
+    "file:apps/web/src/features/projects/components/ProjectIconPicker.jsx": {
+      "name": "ProjectIconPicker.jsx",
+      "type": "file",
+      "summary": "프로젝트 아이콘 후보를 모달에 표시하고 선택 결과를 TeamFlow 상태 액션으로 저장하며 진행 및 오류 상태를 관리한다."
+    },
+    "file:apps/web/src/features/projects/components/projectIconOptions.js": {
+      "name": "projectIconOptions.js",
+      "type": "file",
+      "summary": "프로젝트 아이콘 선택지와 아이콘 키의 한국어 표시 이름을 제공한다."
+    },
+    "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage": {
+      "name": "ProjectListPage",
+      "type": "function",
+      "summary": "프로젝트와 초대를 상태에서 파생해 렌더링하고 검색·초대 응답·페이지 이동·편집 모달을 연결한다."
+    },
+    "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard": {
+      "name": "ProjectCard",
+      "type": "function",
+      "summary": "프로젝트 요약을 시각화하고 진행률을 경계값으로 정규화하며 선택 가능한 카드 동작을 제공한다."
+    },
+    "function:apps/web/src/features/projects/components/ProjectIcon.jsx:ProjectIcon": {
+      "name": "ProjectIcon",
+      "type": "function",
+      "summary": "프로젝트 아이콘 키에 해당하는 Lucide 아이콘을 장식용 SVG로 렌더링한다."
+    },
+    "function:apps/web/src/features/projects/components/ProjectIconPicker.jsx:ProjectIconPicker": {
+      "name": "ProjectIconPicker",
+      "type": "function",
+      "summary": "아이콘 선택 UI와 비동기 저장 상태를 관리하고 성공 시 모달을 닫는다."
+    },
+    "function:apps/web/src/features/projects/components/projectIconOptions.js:getProjectIconLabel": {
+      "name": "getProjectIconLabel",
+      "type": "function",
+      "summary": "아이콘 키의 한국어 레이블을 찾고 등록되지 않은 키에는 기본값을 반환한다."
+    },
+    "pipeline:.github/workflows/auto-merge.yml": {
+      "name": "auto-merge.yml",
+      "type": "pipeline",
+      "summary": "매일 예약 또는 수동 실행으로 열린 PR을 조회하고 대상 브랜치·review 라벨·변경 요청·충돌 규칙의 우선순위에 따라 코멘트, 연기, 종료 또는 병합한다."
+    },
+    "table:supabase/migrations/20260720030115_create_tasks.sql:migration": {
+      "name": "20260720030115_create_tasks.sql",
+      "type": "table",
+      "summary": "프로젝트별 할 일과 담당자, 마감일, 상태를 저장하는 tasks 테이블과 인덱스, RLS, service_role 권한을 설정한다."
+    },
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:migration": {
+      "name": "20260721054012_google_auth_workspace.sql",
+      "type": "table",
+      "summary": "Google 인증 사용자용 멤버·프로젝트·소속·게스트 데모 스키마를 만들고 tasks를 연결하며 RLS 정책과 프로젝트 생성 RPC를 구성한다."
+    },
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:migration": {
+      "name": "20260722112108_collaboration_and_content_crud.sql",
+      "type": "table",
+      "summary": "프로젝트 단위 멤버와 접근 권한으로 모델을 개편하고 초대·노트·자료 CRUD 테이블, 트리거, RLS 정책, 보안 RPC를 도입한다."
+    },
+    "table:supabase/migrations/20260722114219_collaboration_and_content_hardening.sql:migration": {
+      "name": "20260722114219_collaboration_and_content_hardening.sql",
+      "type": "table",
+      "summary": "협업 및 콘텐츠 테이블의 외래 키와 검사 제약, 초대 조회 정책, 자료 부모 검증, 프로젝트·멤버 RPC 권한을 강화한다."
+    },
+    "table:supabase/migrations/20260722115346_private_rpc_wrappers_and_fk_indexes.sql:migration": {
+      "name": "20260722115346_private_rpc_wrappers_and_fk_indexes.sql",
+      "type": "table",
+      "summary": "권한 있는 RPC 구현을 private 스키마로 이동하고 public에는 인증 전용 래퍼를 유지하며 외래 키 조회 인덱스를 추가한다."
+    },
+    "table:supabase/migrations/20260722154845_add_project_icon_key.sql:migration": {
+      "name": "20260722154845_add_project_icon_key.sql",
+      "type": "table",
+      "summary": "projects에 허용된 아이콘 키만 저장하는 열과 검사 제약을 추가하고 인증 사용자의 열 단위 갱신을 허용한다."
+    },
+    "table:supabase/migrations/20260722155721_backfill_demo_project_icons.sql:migration": {
+      "name": "20260722155721_backfill_demo_project_icons.sql",
+      "type": "table",
+      "summary": "게스트 데모 워크스페이스의 프로젝트별 아이콘 키를 결정적으로 채운다."
+    },
+    "table:supabase/migrations/20260723093000_private_resource_uploads.sql:migration": {
+      "name": "20260723093000_private_resource_uploads.sql",
+      "type": "table",
+      "summary": "비공개 Storage 버킷과 자료 파일 메타데이터를 추가하고 프로젝트 경로 기반 업로드·조회·삭제 RLS 정책을 구성한다."
+    },
+    "table:supabase/migrations/20260723094500_harden_private_resource_uploads.sql:migration": {
+      "name": "20260723094500_harden_private_resource_uploads.sql",
+      "type": "table",
+      "summary": "업로드 의도 생성과 완료 RPC, 상태 전이 제약, Storage 정책으로 비공개 파일 업로드 수명주기를 강화한다."
+    },
+    "table:supabase/migrations/20260723185956_remove_manual_assignees.sql:migration": {
+      "name": "20260723185956_remove_manual_assignees.sql",
+      "type": "table",
+      "summary": "수동 담당자 생성을 제거하고 작업 담당자를 실제 프로젝트 협업자로 제한하며 멤버 수정·삭제 RPC를 재정의한다."
+    },
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:migration": {
+      "name": "20260724090000_mock_ai_team_member.sql",
+      "type": "table",
+      "summary": "프로젝트 AI 팀원과 실행 기록 스키마, RLS, 설정·실행·적용·거절 RPC를 추가하고 인증 및 데모 응답을 동일한 AI 계약으로 맞춘다."
+    },
+    "table:supabase/migrations/20260724093000_mock_ai_fk_indexes.sql:migration": {
+      "name": "20260724093000_mock_ai_fk_indexes.sql",
+      "type": "table",
+      "summary": "AI 실행의 에이전트·작업·노트 복합 외래 키를 지원하는 인덱스를 보강한다."
+    },
+    "table:supabase/migrations/20260724094500_fix_demo_ai_markdown.sql:migration": {
+      "name": "20260724094500_fix_demo_ai_markdown.sql",
+      "type": "table",
+      "summary": "데모 AI 결과의 문자열 줄바꿈 표기를 실제 개행으로 변환해 Markdown 렌더링을 바로잡는다."
+    },
+    "table:supabase/migrations/20260720030115_create_tasks.sql:tasks": {
+      "name": "tasks",
+      "type": "table",
+      "summary": "프로젝트별 작업 제목, 담당자, 마감일, 상태, 설명과 생성 시각을 저장한다."
+    },
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:members": {
+      "name": "members",
+      "type": "table",
+      "summary": "워크스페이스 소유자와 인증 사용자에 연결된 사람 및 AI 멤버 프로필을 저장한다."
+    },
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:projects": {
+      "name": "projects",
+      "type": "table",
+      "summary": "소유자별 프로젝트의 이름, 설명, 상태, 기간과 감사 시각을 저장한다."
+    },
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:project_members": {
+      "name": "project_members",
+      "type": "table",
+      "summary": "프로젝트와 워크스페이스 멤버 사이의 소속 관계를 저장한다."
+    },
+    "table:supabase/migrations/20260721054012_google_auth_workspace.sql:demo_workspaces": {
+      "name": "demo_workspaces",
+      "type": "table",
+      "summary": "게스트가 읽을 수 있는 활성 데모 워크스페이스 JSON 페이로드를 저장한다."
+    },
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:members": {
+      "name": "members",
+      "type": "table",
+      "summary": "프로젝트 범위의 협업자와 AI 멤버 프로필, 인증 사용자 연결 정보를 저장하는 최신 멤버 모델이다."
+    },
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_access": {
+      "name": "project_access",
+      "type": "table",
+      "summary": "인증 사용자와 프로젝트 멤버를 묶어 접근 권한의 근거를 제공한다."
+    },
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:project_invitations": {
+      "name": "project_invitations",
+      "type": "table",
+      "summary": "초대 대상 이메일, 초대자, 상태와 응답 시각을 저장한다."
+    },
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:notes": {
+      "name": "notes",
+      "type": "table",
+      "summary": "프로젝트 공유 노트의 제목, 본문, 작성자와 수정 시각을 저장한다."
+    },
+    "table:supabase/migrations/20260722112108_collaboration_and_content_crud.sql:resources": {
+      "name": "resources",
+      "type": "table",
+      "summary": "프로젝트 자료의 계층, 유형, 링크·파일 메타데이터와 소유자를 저장한다."
+    },
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_agents": {
+      "name": "ai_agents",
+      "type": "table",
+      "summary": "AI 멤버별 지침, 컨텍스트 설정, 활성 상태를 프로젝트 범위에서 관리한다."
+    },
+    "table:supabase/migrations/20260724090000_mock_ai_team_member.sql:ai_runs": {
+      "name": "ai_runs",
+      "type": "table",
+      "summary": "AI 실행의 입력 스냅샷, 결과 Markdown, 오류, 적용 노트와 상태 전이를 기록한다."
+    },
+    "config:.oxlintrc.json": {
+      "name": ".oxlintrc.json",
+      "type": "config",
+      "summary": "React Hooks 규칙을 오류로, 컴포넌트 전용 내보내기 규칙을 경고로 검사하도록 oxlint를 설정한다."
+    },
+    "document:CLAUDE.md": {
+      "name": "CLAUDE.md",
+      "type": "document",
+      "summary": "TeamFlow의 제품 목적, 기술 스택, 개발 명령, 코드·커밋·디자인 규칙과 금지 사항을 에이전트 작업 지침으로 정리한다."
+    },
+    "document:README.md": {
+      "name": "README.md",
+      "type": "document",
+      "summary": "TeamFlow의 구현 상태와 전체 아키텍처, Supabase·Google OAuth 설정, 로컬 실행, 검증, Vercel·Render 배포를 안내한다."
+    },
+    "config:package.json": {
+      "name": "package.json",
+      "type": "config",
+      "summary": "Node 24와 npm 11 기반 모노레포 워크스페이스, 웹·API 개발 명령, 빌드·린트·테스트 경로를 정의한다."
+    },
+    "config:render.yaml": {
+      "name": "render.yaml",
+      "type": "config",
+      "summary": "Express API를 Render Node 웹 서비스로 실행하고 health check, 변경 경로 필터, Supabase 및 CORS 환경변수를 구성한다."
+    },
+    "config:apps/web/.env.example": {
+      "name": ".env.example",
+      "type": "config",
+      "summary": "웹 클라이언트가 사용하는 TeamFlow Supabase URL·publishable key와 선택적 API 기본 URL의 환경변수 형식을 제공한다."
+    },
+    "file:apps/web/index.html": {
+      "name": "index.html",
+      "type": "file",
+      "summary": "한국어 TeamFlow 웹 앱의 문서 메타데이터와 React 마운트 지점을 정의하고 Vite 진입점 src/main.jsx를 로드한다."
+    },
+    "config:apps/web/package.json": {
+      "name": "package.json",
+      "type": "config",
+      "summary": "React 19 웹 워크스페이스의 Vite 개발·빌드·미리보기와 Vitest 테스트 명령, Supabase·라우터·UI 의존성을 정의한다."
+    },
+    "config:apps/web/vercel.json": {
+      "name": "vercel.json",
+      "type": "config",
+      "summary": "모든 요청을 index.html로 재작성해 Vercel에서 React Router 클라이언트 라우팅을 지원한다."
+    },
+    "file:apps/web/src/features/projects/components/ProjectCard.module.css": {
+      "name": "ProjectCard.module.css",
+      "type": "file",
+      "summary": "프로젝트 카드의 상태, 진행률, 팀원 아바타, 기간과 설정 동작을 배치하는 CSS Module이다."
+    },
+    "file:apps/web/src/features/projects/components/ProjectIconPicker.module.css": {
+      "name": "ProjectIconPicker.module.css",
+      "type": "file",
+      "summary": "프로젝트 아이콘 선택기의 3열 옵션과 선택·오류·비활성 상태를 표현한다."
+    },
+    "file:apps/web/src/features/projects/components/ProjectSettingsModal.module.css": {
+      "name": "ProjectSettingsModal.module.css",
+      "type": "file",
+      "summary": "프로젝트 설정 모달의 삭제 진입점과 위험 작업 경고를 강조한다."
+    },
+    "file:apps/web/src/styles/global.css": {
+      "name": "global.css",
+      "type": "file",
+      "summary": "브라우저 기본값, 전역 타이포그래피, 폼 컨트롤, 포커스 표시와 로딩 유틸리티를 정의한다."
+    },
+    "file:apps/web/src/styles/tokens.css": {
+      "name": "tokens.css",
+      "type": "file",
+      "summary": "웹 런타임에서 공유하는 글꼴, 색상, 상태, 레이아웃과 반경 디자인 토큰을 CSS 변수로 제공한다."
+    },
+    "file:apps/web/src/styles/workspace.module.css": {
+      "name": "workspace.module.css",
+      "type": "file",
+      "summary": "작업 화면이 공유하는 컨테이너, 헤더, 버튼, 카드, 테이블, 검색과 빈 상태 레이아웃을 제공한다."
+    },
+    "file:docs/agent-workflow.html": {
+      "name": "agent-workflow.html",
+      "type": "file",
+      "summary": "요구사항에서 구현·테스트 작성·독립 검증·사용자 판단으로 이어지는 AI 개발 역할 분리를 시각화한 HTML 문서다."
+    },
+    "document:docs/api.md": {
+      "name": "api.md",
+      "type": "document",
+      "summary": "공개·인증·Mock AI API의 요청, 응답, 상태값, 오류 코드와 구현 위치를 정리한 HTTP API 명세다."
+    },
+    "document:docs/architecture.md": {
+      "name": "architecture.md",
+      "type": "document",
+      "summary": "React/Vite, Express, Supabase와 shared 패키지의 책임 및 로그인·게스트 데이터 흐름을 설명한다."
+    },
+    "document:docs/deployment.md": {
+      "name": "deployment.md",
+      "type": "document",
+      "summary": "Express를 Render에, React를 Vercel에 배포하고 CORS·환경 변수·OAuth 리디렉션을 연결하는 절차다."
+    },
+    "document:docs/plan.md": {
+      "name": "plan.md",
+      "type": "document",
+      "summary": "팀 프로젝트 관리 문제, 사용자 시나리오, 핵심 기능, 화면 구조와 사용자 흐름을 정의한 제품 기획서다."
+    },
+    "document:docs/weekly-plan.md": {
+      "name": "weekly-plan.md",
+      "type": "document",
+      "summary": "Supabase 연동과 핵심 기능 완성을 중심으로 3주차 P0·P1·P2 작업 우선순위를 기록한다."
+    },
+    "document:.agents/skills/teamflow-test-authoring/SKILL.md": {
+      "name": "SKILL.md",
+      "type": "document",
+      "summary": "TeamFlow 변경의 테스트 수준, 작성·실행 순서와 Red-Green-Refactor 증거 관리를 정의한 테스트 작성 Skill이다."
+    },
+    "config:.agents/skills/teamflow-test-authoring/agents/openai.yaml": {
+      "name": "openai.yaml",
+      "type": "config",
+      "summary": "테스트 작성 Skill의 표시 정보, 기본 프롬프트와 암시적 호출 정책을 등록한다."
+    },
+    "document:.claude/skills/teamflow-design/SKILL.md": {
+      "name": "SKILL.md",
+      "type": "document",
+      "summary": "TeamFlow UI의 디자인 토큰, 타이포그래피, 레이아웃 패턴과 화면 완료 검증 기준을 정의한다."
+    },
+    "file:.claude/skills/teamflow-design/tokens.css": {
+      "name": "tokens.css",
+      "type": "file",
+      "summary": "디자인 Skill이 참조하는 색상, 상태, 간격, 반경, 그림자와 글꼴의 기준 CSS 변수를 제공한다."
+    },
+    "config:.codex/agents/verification_agent.toml": {
+      "name": "verification_agent.toml",
+      "type": "config",
+      "summary": "요구사항·테스트·TDD 증거를 독립 검증하되 구현을 수정하지 않는 검증 Agent의 절차와 보고 형식을 설정한다."
+    },
+    "document:.github/pull_request_template.md": {
+      "name": "pull_request_template.md",
+      "type": "document",
+      "summary": "주요 작업, 설명 가능한 부분, 이해하지 못한 부분과 새로 배운 내용을 기록하는 학습 중심 PR 템플릿이다."
+    },
+    "file:.nvmrc": {
+      "name": ".nvmrc",
+      "type": "file",
+      "summary": "TeamFlow 모노레포의 로컬 Node.js 버전을 24.14.0으로 고정한다."
+    },
+    "config:apps/api/.env.example": {
+      "name": ".env.example",
+      "type": "config",
+      "summary": "Express API에 필요한 Supabase URL·publishable key, 허용 Origin과 포트의 예시를 제공하는 환경 변수 템플릿이다."
+    },
+    "config:apps/api/package.json": {
+      "name": "package.json",
+      "type": "config",
+      "summary": "Express API의 개발·운영·테스트 명령과 Supabase, shared 계약, CORS, Express 의존성을 정의한다."
+    },
+    "file:apps/web/src/components/layout/AppShell.module.css": {
+      "name": "AppShell.module.css",
+      "type": "file",
+      "summary": "전역·프로젝트 셸의 축소 가능한 사이드바, 내비게이션, 계정 팝오버와 본문 레이아웃을 정의한다."
+    },
+    "file:apps/web/src/components/ui/forms.module.css": {
+      "name": "forms.module.css",
+      "type": "file",
+      "summary": "공유 폼, 입력 필드, 선택지, 오류 상태와 취소·제출 버튼 스타일을 제공한다."
+    },
+    "file:apps/web/src/components/ui/ui.module.css": {
+      "name": "ui.module.css",
+      "type": "file",
+      "summary": "아바타, 상태 배지, 자료 아이콘과 공통 모달의 크기·상태·레이아웃을 정의한다."
+    },
+    "file:apps/web/src/features/ai/AiPage.module.css": {
+      "name": "AiPage.module.css",
+      "type": "file",
+      "summary": "Mock AI 설정, 컨텍스트, 작업 실행, Markdown 검토, 실행 이력과 실시간 피드백을 반응형으로 배치한다."
+    },
+    "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css": {
+      "name": "ProjectDashboardPage.module.css",
+      "type": "file",
+      "summary": "프로젝트 기간·진행률·작업 표와 팀원·자료·노트 패널을 대시보드 그리드로 배치한다."
+    },
+    "file:apps/web/src/features/landing/LandingPage.module.css": {
+      "name": "LandingPage.module.css",
+      "type": "file",
+      "summary": "랜딩 히어로, 기능 소개, Google·게스트 인증 카드와 OAuth 콜백 상태를 구성한다."
+    },
+    "file:apps/web/src/features/members/MembersPage.module.css": {
+      "name": "MembersPage.module.css",
+      "type": "file",
+      "summary": "사용자·AI 팀원 카드, 담당 작업, 초대 목록과 편집·삭제·오류 상태를 배치한다."
+    },
+    "file:apps/web/src/features/notes/NotesPage.module.css": {
+      "name": "NotesPage.module.css",
+      "type": "file",
+      "summary": "노트 검색·정렬, 편집기·미리보기, 템플릿 선택과 삭제 확인 흐름을 구성한다."
+    },
+    "file:apps/web/src/features/projects/ProjectListPage.module.css": {
+      "name": "ProjectListPage.module.css",
+      "type": "file",
+      "summary": "프로젝트 검색, 초대 수락·거절 패널, 카드 그리드와 메시지 상태를 구성한다."
+    },
+    "file:apps/web/src/features/resources/ResourcesPage.module.css": {
+      "name": "ResourcesPage.module.css",
+      "type": "file",
+      "summary": "자료실 경로, 폴더·파일, 필터, 업로드, 상세 보기와 다운로드·교체·삭제 동작을 표현한다."
+    },
+    "file:apps/web/src/features/tasks/ProjectTasksPage.module.css": {
+      "name": "ProjectTasksPage.module.css",
+      "type": "file",
+      "summary": "작업 통계, 필터·정렬, 표·보드 보기와 상태 변경 메뉴를 구성한다."
+    },
+    "file:apps/web/src/features/tasks/components/TaskModal.module.css": {
+      "name": "TaskModal.module.css",
+      "type": "file",
+      "summary": "작업 상세 모달의 상태, 설명, 편집·닫기·삭제 확인 영역을 배치한다."
+    },
+    "file:apps/web/src/test/setup.js": {
+      "name": "setup.js",
+      "type": "file",
+      "summary": "Vitest DOM matcher를 등록하고 각 테스트 뒤 React 렌더 트리와 sessionStorage를 정리한다."
+    },
+    "file:apps/web/vite.config.js": {
+      "name": "vite.config.js",
+      "type": "file",
+      "summary": "React 플러그인, 고정 포트 5173, API 프록시와 jsdom 기반 Vitest 환경을 구성한다."
+    },
+    "config:packages/shared/package.json": {
+      "name": "package.json",
+      "type": "config",
+      "summary": "공유 ESM 패키지의 진입점·하위 경로 export와 Node 테스트 스크립트를 정의한다."
+    },
+    "file:packages/shared/src/index.js": {
+      "name": "index.js",
+      "type": "file",
+      "summary": "프로젝트·작업·자료·팀원·AI·초대 상태와 검증·진행률 함수를 공개하는 배럴 파일이다."
+    },
+    "file:packages/shared/src/project.js": {
+      "name": "project.js",
+      "type": "file",
+      "summary": "웹과 API가 공유하는 도메인 상태 상수, JSDoc 데이터 계약, 진행률 계산과 값 검증 함수를 정의한다."
+    },
+    "file:packages/shared/test/project.test.js": {
+      "name": "project.test.js",
+      "type": "file",
+      "summary": "진행률 경계 처리와 프로젝트·작업·자료·팀원·AI·초대 상태 판별 계약을 검증한다."
+    },
+    "table:supabase/tests/database/mock_ai_team_member_rls.sql:ai_test_state": {
+      "name": "ai_test_state",
+      "type": "table",
+      "summary": "트랜잭션 안에서 Mock AI 팀원의 RLS, RPC 상태 전이, 멱등성, 격리와 제약을 검증한 뒤 롤백하는 SQL 통합 테스트다."
+    },
+    "function:packages/shared/src/project.js:normalizeProgress": {
+      "name": "normalizeProgress",
+      "type": "function",
+      "summary": "진행률을 유한한 정수 0~100 범위로 반올림하고 제한한다."
+    },
+    "function:packages/shared/src/project.js:calculateProgress": {
+      "name": "calculateProgress",
+      "type": "function",
+      "summary": "완료된 작업 비율을 프로젝트 진행률로 계산하고 정규화한다."
+    },
+    "function:packages/shared/src/project.js:isTaskStatus": {
+      "name": "isTaskStatus",
+      "type": "function",
+      "summary": "값이 공유 작업 상태 계약에 포함되는지 판별한다."
+    },
+    "function:packages/shared/src/project.js:isProjectStatus": {
+      "name": "isProjectStatus",
+      "type": "function",
+      "summary": "값이 공유 프로젝트 상태 계약에 포함되는지 판별한다."
+    },
+    "function:packages/shared/src/project.js:isProjectIcon": {
+      "name": "isProjectIcon",
+      "type": "function",
+      "summary": "값이 지원되는 프로젝트 아이콘 키인지 판별한다."
+    },
+    "function:packages/shared/src/project.js:isResourceType": {
+      "name": "isResourceType",
+      "type": "function",
+      "summary": "값이 지원되는 자료 유형인지 판별한다."
+    },
+    "function:packages/shared/src/project.js:isMemberKind": {
+      "name": "isMemberKind",
+      "type": "function",
+      "summary": "값이 사용자 또는 AI 팀원 유형인지 판별한다."
+    },
+    "function:packages/shared/src/project.js:isAiRunStatus": {
+      "name": "isAiRunStatus",
+      "type": "function",
+      "summary": "값이 Mock AI 실행 상태 계약에 포함되는지 판별한다."
+    },
+    "function:packages/shared/src/project.js:isInvitationStatus": {
+      "name": "isInvitationStatus",
+      "type": "function",
+      "summary": "값이 프로젝트 초대 상태 계약에 포함되는지 판별한다."
+    }
+  },
+  "totalNodes": 290,
+  "totalEdges": 593
+}

@@ -2,9 +2,12 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  AI_CONTEXT_KEYS,
+  DEFAULT_AI_CONTEXT_CONFIG,
   AI_RUN_STATUS,
   calculateProgress,
   INVITATION_STATUS,
+  isAiContextConfig,
   isInvitationStatus,
   isAiRunStatus,
   isMemberKind,
@@ -84,4 +87,18 @@ test('isAiRunStatus accepts only shared AI execution states', () => {
   assert.equal(isAiRunStatus(AI_RUN_STATUS.FAILED), true)
   assert.equal(isAiRunStatus('completed'), false)
   assert.equal(isAiRunStatus(null), false)
+})
+
+test('shared AI context defaults are complete and safe to reuse for new agents', () => {
+  assert.deepEqual(AI_CONTEXT_KEYS, ['project', 'notes', 'tasks', 'team', 'resources'])
+  assert.deepEqual(DEFAULT_AI_CONTEXT_CONFIG, {
+    project: true,
+    notes: true,
+    tasks: true,
+    team: false,
+    resources: true,
+  })
+  assert.equal(isAiContextConfig(DEFAULT_AI_CONTEXT_CONFIG), true)
+  assert.equal(isAiContextConfig({ ...DEFAULT_AI_CONTEXT_CONFIG, unexpected: false }), false)
+  assert.equal(isAiContextConfig({ ...DEFAULT_AI_CONTEXT_CONFIG, team: 'false' }), false)
 })

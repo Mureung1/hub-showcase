@@ -1,0 +1,321 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 3,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 3,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 2,
+      "failed": 0,
+      "skipped": 1
+    }
+  },
+  "results": [
+    {
+      "path": "packages/shared/src/project.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 296,
+      "nonEmptyLines": 266,
+      "functions": [
+        {
+          "name": "normalizeProgress",
+          "startLine": 212,
+          "endLine": 218,
+          "params": [
+            "progress"
+          ]
+        },
+        {
+          "name": "calculateProgress",
+          "startLine": 225,
+          "endLine": 233,
+          "params": [
+            "tasks"
+          ]
+        },
+        {
+          "name": "isTaskStatus",
+          "startLine": 240,
+          "endLine": 242,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "isProjectStatus",
+          "startLine": 249,
+          "endLine": 251,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "isProjectIcon",
+          "startLine": 258,
+          "endLine": 260,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "isResourceType",
+          "startLine": 267,
+          "endLine": 269,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "isMemberKind",
+          "startLine": 276,
+          "endLine": 278,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "isAiRunStatus",
+          "startLine": 285,
+          "endLine": 287,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "isInvitationStatus",
+          "startLine": 294,
+          "endLine": 296,
+          "params": [
+            "value"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "PROJECT_STATUS",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "TASK_STATUS",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "RESOURCE_TYPE",
+          "line": 14,
+          "isDefault": false
+        },
+        {
+          "name": "RESOURCE_UPLOAD",
+          "line": 21,
+          "isDefault": false
+        },
+        {
+          "name": "PROJECT_ICON",
+          "line": 26,
+          "isDefault": false
+        },
+        {
+          "name": "MEMBER_KIND",
+          "line": 35,
+          "isDefault": false
+        },
+        {
+          "name": "AI_RUN_STATUS",
+          "line": 40,
+          "isDefault": false
+        },
+        {
+          "name": "INVITATION_STATUS",
+          "line": 48,
+          "isDefault": false
+        },
+        {
+          "name": "normalizeProgress",
+          "line": 212,
+          "isDefault": false
+        },
+        {
+          "name": "calculateProgress",
+          "line": 225,
+          "isDefault": false
+        },
+        {
+          "name": "isTaskStatus",
+          "line": 240,
+          "isDefault": false
+        },
+        {
+          "name": "isProjectStatus",
+          "line": 249,
+          "isDefault": false
+        },
+        {
+          "name": "isProjectIcon",
+          "line": 258,
+          "isDefault": false
+        },
+        {
+          "name": "isResourceType",
+          "line": 267,
+          "isDefault": false
+        },
+        {
+          "name": "isMemberKind",
+          "line": 276,
+          "isDefault": false
+        },
+        {
+          "name": "isAiRunStatus",
+          "line": 285,
+          "isDefault": false
+        },
+        {
+          "name": "isInvitationStatus",
+          "line": 294,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "normalizeProgress",
+          "callee": "Number.isFinite",
+          "lineNumber": 213
+        },
+        {
+          "caller": "normalizeProgress",
+          "callee": "Math.min",
+          "lineNumber": 217
+        },
+        {
+          "caller": "normalizeProgress",
+          "callee": "Math.max",
+          "lineNumber": 217
+        },
+        {
+          "caller": "normalizeProgress",
+          "callee": "Math.round",
+          "lineNumber": 217
+        },
+        {
+          "caller": "calculateProgress",
+          "callee": "normalizeProgress",
+          "lineNumber": 230
+        },
+        {
+          "caller": "calculateProgress",
+          "callee": "tasks.filter",
+          "lineNumber": 231
+        },
+        {
+          "caller": "isTaskStatus",
+          "callee": "Object.values(TASK_STATUS).includes",
+          "lineNumber": 241
+        },
+        {
+          "caller": "isTaskStatus",
+          "callee": "Object.values",
+          "lineNumber": 241
+        },
+        {
+          "caller": "isProjectStatus",
+          "callee": "Object.values(PROJECT_STATUS).includes",
+          "lineNumber": 250
+        },
+        {
+          "caller": "isProjectStatus",
+          "callee": "Object.values",
+          "lineNumber": 250
+        },
+        {
+          "caller": "isProjectIcon",
+          "callee": "Object.values(PROJECT_ICON).includes",
+          "lineNumber": 259
+        },
+        {
+          "caller": "isProjectIcon",
+          "callee": "Object.values",
+          "lineNumber": 259
+        },
+        {
+          "caller": "isResourceType",
+          "callee": "Object.values(RESOURCE_TYPE).includes",
+          "lineNumber": 268
+        },
+        {
+          "caller": "isResourceType",
+          "callee": "Object.values",
+          "lineNumber": 268
+        },
+        {
+          "caller": "isMemberKind",
+          "callee": "Object.values(MEMBER_KIND).includes",
+          "lineNumber": 277
+        },
+        {
+          "caller": "isMemberKind",
+          "callee": "Object.values",
+          "lineNumber": 277
+        },
+        {
+          "caller": "isAiRunStatus",
+          "callee": "Object.values(AI_RUN_STATUS).includes",
+          "lineNumber": 286
+        },
+        {
+          "caller": "isAiRunStatus",
+          "callee": "Object.values",
+          "lineNumber": 286
+        },
+        {
+          "caller": "isInvitationStatus",
+          "callee": "Object.values(INVITATION_STATUS).includes",
+          "lineNumber": 295
+        },
+        {
+          "caller": "isInvitationStatus",
+          "callee": "Object.values",
+          "lineNumber": 295
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 17,
+        "functionCount": 9,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "packages/shared/test/project.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 87,
+      "nonEmptyLines": 78,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/tests/database/mock_ai_team_member_rls.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 841,
+      "nonEmptyLines": 762,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    }
+  ]
+}

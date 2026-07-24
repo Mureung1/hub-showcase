@@ -47,7 +47,7 @@ references/figma-ai-prototype/
 **/settings.local.json
 showcase/
 .vercel/
-api/
+/api/
 *.log
 h origin N138_이주환
 

@@ -1,0 +1,49 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "docs/agent-workflow.html",
+      "language": "html",
+      "sizeLines": 190,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "docs/api.md",
+      "language": "markdown",
+      "sizeLines": 320,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture.md",
+      "language": "markdown",
+      "sizeLines": 127,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/deployment.md",
+      "language": "markdown",
+      "sizeLines": 138,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/plan.md",
+      "language": "markdown",
+      "sizeLines": 215,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/weekly-plan.md",
+      "language": "markdown",
+      "sizeLines": 49,
+      "fileCategory": "docs"
+    }
+  ],
+  "batchImportData": {
+    "docs/agent-workflow.html": [],
+    "docs/api.md": [],
+    "docs/architecture.md": [],
+    "docs/deployment.md": [],
+    "docs/plan.md": [],
+    "docs/weekly-plan.md": []
+  }
+}

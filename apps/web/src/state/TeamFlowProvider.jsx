@@ -111,6 +111,7 @@ function reducer(state, action) {
     case 'aiAgentUpdated':
       return {
         ...state,
+        members: action.member ? upsertById(state.members, action.member) : state.members,
         aiAgents: upsertByKey(state.aiAgents, action.aiAgent, 'memberId'),
       }
     case 'aiRunUpserted':
@@ -357,16 +358,16 @@ export function TeamFlowProvider({ children, repository }) {
     repository.getResourceDownloadUrl(resourceId)
   ), [repository])
 
-  const createAiAgent = useCallback(async (projectId) => {
-    const result = await repository.createAiAgent(projectId)
+  const createAiAgent = useCallback(async (projectId, input) => {
+    const result = await repository.createAiAgent(projectId, input)
     dispatch({ type: 'aiAgentCreated', ...result })
     return result
   }, [repository])
 
   const updateAiAgent = useCallback(async (memberId, input) => {
-    const aiAgent = await repository.updateAiAgent(memberId, input)
-    dispatch({ type: 'aiAgentUpdated', aiAgent })
-    return aiAgent
+    const result = await repository.updateAiAgent(memberId, input)
+    dispatch({ type: 'aiAgentUpdated', ...result })
+    return result
   }, [repository])
 
   const createAiRun = useCallback(async (memberId, taskId) => {

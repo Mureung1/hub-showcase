@@ -1,0 +1,1249 @@
+{
+  "nodes": [
+    {
+      "id": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "file",
+      "name": "Avatar.jsx",
+      "filePath": "apps/web/src/components/ui/Avatar.jsx",
+      "summary": "프로필 image가 있으면 사진을, 없으면 이름의 첫 글자를 표시하는 재사용 Avatar component입니다.",
+      "tags": [
+        "component",
+        "application",
+        "react",
+        "ui"
+      ],
+      "complexity": "simple",
+      "languageNotes": "함수형 React component가 hook으로 상태를 읽고 JSX를 state의 선언적 결과로 반환합니다."
+    },
+    {
+      "id": "function:apps/web/src/components/ui/Avatar.jsx:Avatar",
+      "type": "function",
+      "name": "Avatar",
+      "filePath": "apps/web/src/components/ui/Avatar.jsx",
+      "lineRange": [
+        5,
+        15
+      ],
+      "summary": "Avatar React component는 application 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다.",
+      "tags": [
+        "component",
+        "react",
+        "application",
+        "event-handler"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "file",
+      "name": "StatusBadge.jsx",
+      "filePath": "apps/web/src/components/ui/StatusBadge.jsx",
+      "summary": "프로젝트 또는 작업 상태를 한국어 label과 상태별 style로 표시하는 badge component입니다.",
+      "tags": [
+        "component",
+        "application",
+        "react",
+        "ui"
+      ],
+      "complexity": "simple",
+      "languageNotes": "함수형 React component가 hook으로 상태를 읽고 JSX를 state의 선언적 결과로 반환합니다."
+    },
+    {
+      "id": "function:apps/web/src/components/ui/StatusBadge.jsx:StatusBadge",
+      "type": "function",
+      "name": "StatusBadge",
+      "filePath": "apps/web/src/components/ui/StatusBadge.jsx",
+      "lineRange": [
+        13,
+        20
+      ],
+      "summary": "StatusBadge React component는 application 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다.",
+      "tags": [
+        "component",
+        "react",
+        "application",
+        "event-handler"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/constants/labels.js",
+      "type": "file",
+      "name": "labels.js",
+      "filePath": "apps/web/src/constants/labels.js",
+      "summary": "프로젝트·작업·자료 상태의 화면 label과 작업 상태 정렬 순서를 중앙에서 정의합니다.",
+      "tags": [
+        "application",
+        "service",
+        "javascript",
+        "application-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/ai/AiPage.jsx",
+      "type": "file",
+      "name": "AiPage.jsx",
+      "filePath": "apps/web/src/features/ai/AiPage.jsx",
+      "summary": "프로젝트 AI 팀원의 설정, 실행 context, 결과 Markdown과 실행 이력을 조회·편집·실행하는 관리 페이지입니다.",
+      "tags": [
+        "component",
+        "page",
+        "ai-workflow",
+        "state-management"
+      ],
+      "complexity": "complex",
+      "languageNotes": "함수형 React component가 hook으로 상태를 읽고 JSX를 state의 선언적 결과로 반환합니다."
+    },
+    {
+      "id": "function:apps/web/src/features/ai/AiPage.jsx:AiPage",
+      "type": "function",
+      "name": "AiPage",
+      "filePath": "apps/web/src/features/ai/AiPage.jsx",
+      "lineRange": [
+        52,
+        426
+      ],
+      "summary": "AiPage React component는 ai workflow 데이터를 파생하고 페이지 UI와 사용자 action을 조정합니다.",
+      "tags": [
+        "component",
+        "react",
+        "ai-workflow",
+        "event-handler"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "file",
+      "name": "ProjectDashboardPage.jsx",
+      "filePath": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "summary": "프로젝트 진행률, 상태별 작업, 협업자, 최근 노트·자료를 집계하고 기간 편집을 연결하는 dashboard입니다.",
+      "tags": [
+        "component",
+        "page",
+        "dashboard",
+        "state-management"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "함수형 React component가 hook으로 상태를 읽고 JSX를 state의 선언적 결과로 반환합니다."
+    },
+    {
+      "id": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "type": "function",
+      "name": "ProjectDashboardPage",
+      "filePath": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "lineRange": [
+        24,
+        127
+      ],
+      "summary": "ProjectDashboardPage React component는 dashboard 데이터를 파생하고 페이지 UI와 사용자 action을 조정합니다.",
+      "tags": [
+        "component",
+        "react",
+        "dashboard",
+        "event-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "type": "file",
+      "name": "ProjectSettingsModal.jsx",
+      "filePath": "apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "summary": "프로젝트 정보 수정, owner 전용 위험 작업, 프로젝트 나가기 흐름을 권한에 따라 제공하는 설정 modal입니다.",
+      "tags": [
+        "component",
+        "modal",
+        "projects",
+        "event-handler"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "함수형 React component가 hook으로 상태를 읽고 JSX를 state의 선언적 결과로 반환합니다."
+    },
+    {
+      "id": "function:apps/web/src/features/projects/components/ProjectSettingsModal.jsx:ProjectSettingsModal",
+      "type": "function",
+      "name": "ProjectSettingsModal",
+      "filePath": "apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "lineRange": [
+        18,
+        148
+      ],
+      "summary": "ProjectSettingsModal React component는 projects 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다.",
+      "tags": [
+        "component",
+        "react",
+        "projects",
+        "event-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "type": "file",
+      "name": "MyTasksPage.jsx",
+      "filePath": "apps/web/src/features/tasks/MyTasksPage.jsx",
+      "summary": "현재 사용자에게 배정된 작업을 프로젝트별로 모아 상태와 마감일 중심으로 보여 주는 개인 작업 페이지입니다.",
+      "tags": [
+        "component",
+        "page",
+        "tasks",
+        "state-management"
+      ],
+      "complexity": "simple",
+      "languageNotes": "함수형 React component가 hook으로 상태를 읽고 JSX를 state의 선언적 결과로 반환합니다."
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage",
+      "type": "function",
+      "name": "MyTasksPage",
+      "filePath": "apps/web/src/features/tasks/MyTasksPage.jsx",
+      "lineRange": [
+        10,
+        53
+      ],
+      "summary": "MyTasksPage React component는 tasks 데이터를 파생하고 페이지 UI와 사용자 action을 조정합니다.",
+      "tags": [
+        "component",
+        "react",
+        "tasks",
+        "event-handler"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "file",
+      "name": "ProjectTasksPage.jsx",
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "summary": "프로젝트 작업을 검색·필터·정렬하고 table 또는 board로 표시하며 inline 상태 변경을 제공합니다.",
+      "tags": [
+        "component",
+        "page",
+        "tasks",
+        "state-management"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "함수형 React component가 hook으로 상태를 읽고 JSX를 state의 선언적 결과로 반환합니다."
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "type": "function",
+      "name": "ProjectTasksPage",
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "lineRange": [
+        29,
+        100
+      ],
+      "summary": "ProjectTasksPage React component는 tasks 데이터를 파생하고 페이지 UI와 사용자 action을 조정합니다.",
+      "tags": [
+        "component",
+        "react",
+        "tasks",
+        "event-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:SortHeader",
+      "type": "function",
+      "name": "SortHeader",
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "lineRange": [
+        102,
+        115
+      ],
+      "summary": "SortHeader React component는 tasks 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다.",
+      "tags": [
+        "component",
+        "react",
+        "tasks",
+        "event-handler"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:TaskStatusMenu",
+      "type": "function",
+      "name": "TaskStatusMenu",
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "lineRange": [
+        117,
+        214
+      ],
+      "summary": "TaskStatusMenu React component는 tasks 영역의 상태와 사용자 event를 조정해 UI를 렌더링합니다.",
+      "tags": [
+        "component",
+        "react",
+        "tasks",
+        "event-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "file",
+      "name": "TaskDetailModal.jsx",
+      "filePath": "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "summary": "작업 상세 값을 편집·검증해 저장하고 상태 변경·삭제 확인과 권한·오류 처리를 제공하는 modal입니다.",
+      "tags": [
+        "component",
+        "modal",
+        "tasks",
+        "event-handler"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "함수형 React component가 hook으로 상태를 읽고 JSX를 state의 선언적 결과로 반환합니다."
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/components/TaskDetailModal.jsx:TaskDetailModal",
+      "type": "function",
+      "name": "TaskDetailModal",
+      "filePath": "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "lineRange": [
+        23,
+        169
+      ],
+      "summary": "TaskDetailModal React component는 tasks 입력·확인 흐름을 modal로 렌더링하고 사용자 event를 action에 연결합니다.",
+      "tags": [
+        "component",
+        "react",
+        "tasks",
+        "event-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/lib/format.js",
+      "type": "file",
+      "name": "format.js",
+      "filePath": "apps/web/src/lib/format.js",
+      "summary": "날짜와 프로젝트 기간을 화면용 문자열 또는 로컬 ISO 날짜로 변환하는 순수 formatting helper 모음입니다.",
+      "tags": [
+        "utility",
+        "formatting",
+        "date",
+        "pure-function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "function",
+      "name": "formatShortDate",
+      "filePath": "apps/web/src/lib/format.js",
+      "lineRange": [
+        1,
+        15
+      ],
+      "summary": "ISO 날짜 값을 사용자가 읽기 쉬운 짧은 날짜 문자열로 변환합니다.",
+      "tags": [
+        "utility",
+        "pure-function",
+        "formatting",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "function",
+      "name": "formatPeriod",
+      "filePath": "apps/web/src/lib/format.js",
+      "lineRange": [
+        17,
+        20
+      ],
+      "summary": "프로젝트 시작일과 종료일을 하나의 기간 문자열로 조합합니다.",
+      "tags": [
+        "utility",
+        "pure-function",
+        "formatting",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/lib/format.js:todayIso",
+      "type": "function",
+      "name": "todayIso",
+      "filePath": "apps/web/src/lib/format.js",
+      "lineRange": [
+        22,
+        24
+      ],
+      "summary": "현재 로컬 날짜를 ISO 날짜 문자열로 반환합니다.",
+      "tags": [
+        "function",
+        "utility",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/lib/format.js:addLocalDaysIso",
+      "type": "function",
+      "name": "addLocalDaysIso",
+      "filePath": "apps/web/src/lib/format.js",
+      "lineRange": [
+        26,
+        30
+      ],
+      "summary": "로컬 날짜에 일수를 더한 ISO 날짜 문자열을 계산합니다.",
+      "tags": [
+        "function",
+        "utility",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/lib/format.test.js",
+      "type": "file",
+      "name": "format.test.js",
+      "filePath": "apps/web/src/lib/format.test.js",
+      "summary": "날짜·기간 formatting과 로컬 날짜 계산 helper의 정상 값과 경계 사례를 검증합니다.",
+      "tags": [
+        "test",
+        "utility",
+        "verification",
+        "regression"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Vitest와 Testing Library로 내부 구현보다 사용자 event와 관찰 가능한 UI 결과를 검증합니다."
+    },
+    {
+      "id": "file:apps/web/src/state/selectors.js",
+      "type": "file",
+      "name": "selectors.js",
+      "filePath": "apps/web/src/state/selectors.js",
+      "summary": "TeamFlow 전역 state에서 프로젝트, 작업, 멤버, AI 실행, 초대와 dashboard 요약을 파생하는 순수 selector 모음입니다.",
+      "tags": [
+        "selector",
+        "state-management",
+        "utility",
+        "derived-state"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "selector를 순수 함수로 유지하면 state 변경 없이 파생 데이터를 계산하고 독립 테스트할 수 있습니다."
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "function",
+      "name": "selectProject",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        3,
+        5
+      ],
+      "summary": "selectProject selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다.",
+      "tags": [
+        "selector",
+        "pure-function",
+        "derived-state",
+        "state-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "function",
+      "name": "selectProjectTasks",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        7,
+        9
+      ],
+      "summary": "selectProjectTasks selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다.",
+      "tags": [
+        "selector",
+        "pure-function",
+        "derived-state",
+        "state-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "function",
+      "name": "selectProjectMembers",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        11,
+        14
+      ],
+      "summary": "selectProjectMembers selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다.",
+      "tags": [
+        "selector",
+        "pure-function",
+        "derived-state",
+        "state-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectAssignableProjectMembers",
+      "type": "function",
+      "name": "selectAssignableProjectMembers",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        16,
+        20
+      ],
+      "summary": "selectAssignableProjectMembers selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다.",
+      "tags": [
+        "selector",
+        "pure-function",
+        "derived-state",
+        "state-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProjectAiMember",
+      "type": "function",
+      "name": "selectProjectAiMember",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        22,
+        26
+      ],
+      "summary": "selectProjectAiMember selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다.",
+      "tags": [
+        "selector",
+        "pure-function",
+        "derived-state",
+        "state-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProjectAiAgent",
+      "type": "function",
+      "name": "selectProjectAiAgent",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        28,
+        34
+      ],
+      "summary": "selectProjectAiAgent selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다.",
+      "tags": [
+        "selector",
+        "pure-function",
+        "derived-state",
+        "state-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProjectAiRuns",
+      "type": "function",
+      "name": "selectProjectAiRuns",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        36,
+        43
+      ],
+      "summary": "selectProjectAiRuns selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다.",
+      "tags": [
+        "selector",
+        "pure-function",
+        "derived-state",
+        "state-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "type": "function",
+      "name": "selectProjectSummaries",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        45,
+        54
+      ],
+      "summary": "selectProjectSummaries selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다.",
+      "tags": [
+        "selector",
+        "pure-function",
+        "derived-state",
+        "state-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectReceivedInvitations",
+      "type": "function",
+      "name": "selectReceivedInvitations",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        56,
+        60
+      ],
+      "summary": "selectReceivedInvitations selector는 TeamFlow state에서 state management 화면에 필요한 파생 데이터를 계산합니다.",
+      "tags": [
+        "selector",
+        "pure-function",
+        "derived-state",
+        "state-management"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/web/src/components/ui/Avatar.jsx",
+      "target": "function:apps/web/src/components/ui/Avatar.jsx:Avatar",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/ui/Avatar.jsx",
+      "target": "function:apps/web/src/components/ui/Avatar.jsx:Avatar",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "target": "function:apps/web/src/components/ui/StatusBadge.jsx:StatusBadge",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "target": "function:apps/web/src/components/ui/StatusBadge.jsx:StatusBadge",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "function:apps/web/src/features/ai/AiPage.jsx:AiPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "function:apps/web/src/features/ai/AiPage.jsx:AiPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "target": "function:apps/web/src/features/projects/components/ProjectSettingsModal.jsx:ProjectSettingsModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "target": "function:apps/web/src/features/projects/components/ProjectSettingsModal.jsx:ProjectSettingsModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:SortHeader",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:TaskStatusMenu",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "function:apps/web/src/features/tasks/components/TaskDetailModal.jsx:TaskDetailModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "function:apps/web/src/features/tasks/components/TaskDetailModal.jsx:TaskDetailModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:todayIso",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:todayIso",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:addLocalDaysIso",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:addLocalDaysIso",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectAssignableProjectMembers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectAssignableProjectMembers",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectAiMember",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectAiMember",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectAiAgent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectAiAgent",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectAiRuns",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectAiRuns",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectReceivedInvitations",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectReceivedInvitations",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/ui/Avatar.jsx",
+      "target": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "target": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "file:apps/web/src/features/ai/AiPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "file:apps/web/src/state/selectors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/state/selectors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectSettingsModal.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/state/selectors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/features/tasks/components/TaskModal.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/lib/format.test.js",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "file:apps/web/src/lib/format.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

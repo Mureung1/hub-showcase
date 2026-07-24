@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "gitCommitHash": "0e30583106f8dd323db1529a2d5449b7d3148c62",
-  "generatedAt": "2026-07-24T05:22:57.370Z",
+  "generatedAt": "2026-07-24T05:57:13.259Z",
   "files": {
     ".agents/skills/teamflow-test-authoring/SKILL.md": {
       "filePath": ".agents/skills/teamflow-test-authoring/SKILL.md",
@@ -111,6 +111,1117 @@
       "imports": [],
       "exports": [],
       "totalLines": 174,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/.env.example": {
+      "filePath": "apps/api/.env.example",
+      "contentHash": "18ea451bde27bce5fb13db2711ce334a0241345b9dec479955a4c602140300c3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 5,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/package.json": {
+      "filePath": "apps/api/package.json",
+      "contentHash": "0bfa31d409f497dc4715637ec68896e2de671e0c3c4737c4f21fc6f3270110ec",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 18,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/app.js": {
+      "filePath": "apps/api/src/app.js",
+      "contentHash": "6467a53bee13389a4f3e2ce27d3a1736e4cee7c558489b96b07996768ceb3d7e",
+      "functions": [
+        {
+          "name": "createApp",
+          "params": [],
+          "exported": true,
+          "lineCount": 27
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "cors",
+          "specifiers": [
+            "cors"
+          ]
+        },
+        {
+          "source": "express",
+          "specifiers": [
+            "express"
+          ]
+        },
+        {
+          "source": "./lib/cors.js",
+          "specifiers": [
+            "createCorsOptions"
+          ]
+        },
+        {
+          "source": "./teamflow/teamFlowRoutes.js",
+          "specifiers": [
+            "createTeamFlowRouter"
+          ]
+        }
+      ],
+      "exports": [
+        "createApp"
+      ],
+      "totalLines": 38,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/lib/auth.js": {
+      "filePath": "apps/api/src/lib/auth.js",
+      "contentHash": "937ce6bdd1fb0353d99ed43b0bc69a7e43a5909fac901595975adfe2d5f08580",
+      "functions": [
+        {
+          "name": "readBearerToken",
+          "params": [
+            "header"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "displayProfile",
+          "params": [
+            "claims"
+          ],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "createSupabaseAuthVerifier",
+          "params": [
+            "supabase"
+          ],
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "createAuthenticationMiddleware",
+          "params": [],
+          "exported": true,
+          "lineCount": 26
+        }
+      ],
+      "classes": [
+        {
+          "name": "AuthenticationError",
+          "methods": [
+            "constructor"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [],
+      "exports": [
+        "AuthenticationError",
+        "readBearerToken",
+        "createSupabaseAuthVerifier",
+        "createAuthenticationMiddleware"
+      ],
+      "totalLines": 73,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/lib/cors.js": {
+      "filePath": "apps/api/src/lib/cors.js",
+      "contentHash": "62ea4a30569c472f50a77689cfd7d55723ecd92c2580b57318d9b6224608fe77",
+      "functions": [
+        {
+          "name": "normalizeOrigin",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "readAllowedOrigins",
+          "params": [],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "createCorsOptions",
+          "params": [],
+          "exported": true,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "readAllowedOrigins",
+        "createCorsOptions"
+      ],
+      "totalLines": 49,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/lib/supabaseClient.js": {
+      "filePath": "apps/api/src/lib/supabaseClient.js",
+      "contentHash": "3b2991ca1f22c9e620bb855840cb4d01b3e5cb639f015593d92d83f70d602411",
+      "functions": [
+        {
+          "name": "requireEnvironmentValue",
+          "params": [
+            "environment",
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "readTeamFlowSupabaseConfig",
+          "params": [],
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "createTeamFlowSupabaseClient",
+          "params": [],
+          "exported": true,
+          "lineCount": 13
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@supabase/supabase-js",
+          "specifiers": [
+            "createClient"
+          ]
+        }
+      ],
+      "exports": [
+        "readTeamFlowSupabaseConfig",
+        "createTeamFlowSupabaseClient"
+      ],
+      "totalLines": 55,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/runtime.js": {
+      "filePath": "apps/api/src/runtime.js",
+      "contentHash": "2bacc837c1e1761a19277b6201ca6505b62b7740144bd47a03ec2bf65c5dbd74",
+      "functions": [
+        {
+          "name": "createConfiguredTeamFlowApp",
+          "params": [],
+          "exported": true,
+          "lineCount": 17
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./app.js",
+          "specifiers": [
+            "createApp"
+          ]
+        },
+        {
+          "source": "./lib/auth.js",
+          "specifiers": [
+            "createSupabaseAuthVerifier"
+          ]
+        },
+        {
+          "source": "./lib/cors.js",
+          "specifiers": [
+            "readAllowedOrigins"
+          ]
+        },
+        {
+          "source": "./lib/supabaseClient.js",
+          "specifiers": [
+            "createTeamFlowSupabaseClient"
+          ]
+        },
+        {
+          "source": "./teamflow/teamFlowRepository.js",
+          "specifiers": [
+            "createSupabaseDemoRepository",
+            "createSupabaseTeamFlowRepository"
+          ]
+        }
+      ],
+      "exports": [
+        "createConfiguredTeamFlowApp"
+      ],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/server.js": {
+      "filePath": "apps/api/src/server.js",
+      "contentHash": "ef73d351b346a3e1faf402e6ba1ee011d8dab084be5dfaa9c77d97d4a08ee2fa",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./runtime.js",
+          "specifiers": [
+            "createConfiguredTeamFlowApp"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 9,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/teamflow/mockAiGenerator.js": {
+      "filePath": "apps/api/src/teamflow/mockAiGenerator.js",
+      "contentHash": "c682ee8602372b578d9f5f5c2f527e57d96ad9d1c70aa318f932455fad249045",
+      "functions": [
+        {
+          "name": "compareText",
+          "params": [
+            "left",
+            "right"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "normalizeWhitespace",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "createTextNormalizer",
+          "params": [
+            "truncatedFields"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "compareRecords",
+          "params": [
+            "...fields"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "normalizeContextConfig",
+          "params": [
+            "contextConfig"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "normalizeTask",
+          "params": [
+            "task",
+            "text"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "normalizeCollection",
+          "params": [
+            "items",
+            "normalizeItem",
+            "compare",
+            "collectionKey"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "createCollectionData",
+          "params": [
+            "input",
+            "text"
+          ],
+          "exported": false,
+          "lineCount": 51
+        },
+        {
+          "name": "serializedLength",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "enforceSnapshotLimit",
+          "params": [
+            "snapshot",
+            "collectionData"
+          ],
+          "exported": false,
+          "lineCount": 43
+        },
+        {
+          "name": "buildMockAiContext",
+          "params": [],
+          "exported": true,
+          "lineCount": 51
+        },
+        {
+          "name": "inline",
+          "params": [
+            "value",
+            "fallback"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "renderContext",
+          "params": [
+            "snapshot"
+          ],
+          "exported": false,
+          "lineCount": 79
+        },
+        {
+          "name": "renderMockMarkdown",
+          "params": [
+            "snapshot"
+          ],
+          "exported": false,
+          "lineCount": 35
+        },
+        {
+          "name": "generateMockAiResult",
+          "params": [],
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "buildMockAiContext",
+        "generateMockAiResult"
+      ],
+      "totalLines": 374,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/teamflow/teamFlowRepository.js": {
+      "filePath": "apps/api/src/teamflow/teamFlowRepository.js",
+      "contentHash": "1c3413abcca1c0358b6093ff6c53f3ac689ee6965b643645c5b7401b2ead3378",
+      "functions": [
+        {
+          "name": "storeError",
+          "params": [
+            "operation",
+            "error"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "databaseErrorMessage",
+          "params": [
+            "error"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "throwDatabaseError",
+          "params": [
+            "operation",
+            "error"
+          ],
+          "exported": false,
+          "lineCount": 29
+        },
+        {
+          "name": "mapMember",
+          "params": [
+            "row"
+          ],
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "mapProject",
+          "params": [
+            "row",
+            "memberIds"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "mapTask",
+          "params": [
+            "row"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "mapNote",
+          "params": [
+            "row"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "mapResource",
+          "params": [
+            "row"
+          ],
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "mapInvitation",
+          "params": [
+            "row"
+          ],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "mapAiAgent",
+          "params": [
+            "row"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "mapAiRun",
+          "params": [
+            "row"
+          ],
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "unwrapRpcRow",
+          "params": [
+            "data"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "rpcRows",
+          "params": [
+            "data"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "rpcObject",
+          "params": [
+            "data"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "hasOwn",
+          "params": [
+            "value",
+            "key"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "createSupabaseDemoRepository",
+          "params": [
+            "supabase"
+          ],
+          "exported": true,
+          "lineCount": 27
+        },
+        {
+          "name": "createSupabaseTeamFlowRepository",
+          "params": [
+            "supabase",
+            "user"
+          ],
+          "exported": true,
+          "lineCount": 663
+        }
+      ],
+      "classes": [
+        {
+          "name": "TeamFlowStoreError",
+          "methods": [
+            "constructor"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "TeamFlowNotFoundError",
+          "methods": [
+            "constructor"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "TeamFlowConflictError",
+          "methods": [
+            "constructor"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "TeamFlowValidationError",
+          "methods": [
+            "constructor"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "imports": [
+        {
+          "source": "node:crypto",
+          "specifiers": [
+            "randomUUID"
+          ]
+        },
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "PROJECT_ICON",
+            "RESOURCE_UPLOAD",
+            "TASK_STATUS"
+          ]
+        },
+        {
+          "source": "./mockAiGenerator.js",
+          "specifiers": [
+            "defaultBuildMockAiContext",
+            "defaultGenerateMockAiResult"
+          ]
+        }
+      ],
+      "exports": [
+        "TeamFlowStoreError",
+        "TeamFlowNotFoundError",
+        "TeamFlowConflictError",
+        "TeamFlowValidationError",
+        "createSupabaseDemoRepository",
+        "createSupabaseTeamFlowRepository"
+      ],
+      "totalLines": 993,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/teamflow/teamFlowRoutes.js": {
+      "filePath": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "contentHash": "41fb20bfc6582d47b8ceac1aae34ddfcfa8c1afa46b5f39a3d16313fe7f0c8cc",
+      "functions": [
+        {
+          "name": "hasOwn",
+          "params": [
+            "value",
+            "key"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "calendarDate",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "cleanString",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "cleanFileName",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "validHttpUrl",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "validateProject",
+          "params": [
+            "body"
+          ],
+          "exported": false,
+          "lineCount": 41
+        },
+        {
+          "name": "validateMemberPatch",
+          "params": [
+            "body"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "validateTaskCreateInput",
+          "params": [
+            "body"
+          ],
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "validateTaskPatch",
+          "params": [
+            "body"
+          ],
+          "exported": false,
+          "lineCount": 28
+        },
+        {
+          "name": "validateNote",
+          "params": [
+            "body"
+          ],
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "validateResource",
+          "params": [
+            "body"
+          ],
+          "exported": false,
+          "lineCount": 35
+        },
+        {
+          "name": "validateResourceUpload",
+          "params": [
+            "body"
+          ],
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "validateInvitation",
+          "params": [
+            "body"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "validateAiSettings",
+          "params": [
+            "body"
+          ],
+          "exported": false,
+          "lineCount": 31
+        },
+        {
+          "name": "validateAiRun",
+          "params": [
+            "body"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "validationError",
+          "params": [
+            "response",
+            "fields"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "validId",
+          "params": [
+            "response",
+            "key",
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "routeError",
+          "params": [
+            "response",
+            "error"
+          ],
+          "exported": false,
+          "lineCount": 21
+        },
+        {
+          "name": "asyncRoute",
+          "params": [
+            "handler"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "createTeamFlowRouter",
+          "params": [],
+          "exported": true,
+          "lineCount": 240
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "express",
+          "specifiers": [
+            "Router"
+          ]
+        },
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "RESOURCE_TYPE",
+            "RESOURCE_UPLOAD",
+            "isProjectIcon",
+            "isProjectStatus",
+            "isResourceType",
+            "isTaskStatus"
+          ]
+        },
+        {
+          "source": "../lib/auth.js",
+          "specifiers": [
+            "createAuthenticationMiddleware"
+          ]
+        },
+        {
+          "source": "./teamFlowRepository.js",
+          "specifiers": [
+            "TeamFlowConflictError",
+            "TeamFlowNotFoundError",
+            "TeamFlowValidationError"
+          ]
+        }
+      ],
+      "exports": [
+        "validateTaskCreateInput",
+        "createTeamFlowRouter"
+      ],
+      "totalLines": 560,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/test/auth.test.js": {
+      "filePath": "apps/api/test/auth.test.js",
+      "contentHash": "824a2b17db2e2beb8cf086abbd59376a47b34d5ae33dac0ef21972c49328fd87",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:assert/strict",
+          "specifiers": [
+            "assert"
+          ]
+        },
+        {
+          "source": "node:test",
+          "specifiers": [
+            "test"
+          ]
+        },
+        {
+          "source": "../src/lib/auth.js",
+          "specifiers": [
+            "AuthenticationError",
+            "createSupabaseAuthVerifier",
+            "readBearerToken"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 49,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/test/cors.test.js": {
+      "filePath": "apps/api/test/cors.test.js",
+      "contentHash": "c9c541757facb1cbca4d9b1774c1976e158a86ab417c49a79531e8f606e45db1",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:assert/strict",
+          "specifiers": [
+            "assert"
+          ]
+        },
+        {
+          "source": "node:test",
+          "specifiers": [
+            "after",
+            "before",
+            "test"
+          ]
+        },
+        {
+          "source": "../src/app.js",
+          "specifiers": [
+            "createApp"
+          ]
+        },
+        {
+          "source": "../src/lib/cors.js",
+          "specifiers": [
+            "readAllowedOrigins"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 57,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/test/health.test.js": {
+      "filePath": "apps/api/test/health.test.js",
+      "contentHash": "8c523ec7d05df5854b464b72cf0b19cc33e3f8634e87f8c5ab5a3738f8cf3ef8",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:assert/strict",
+          "specifiers": [
+            "assert"
+          ]
+        },
+        {
+          "source": "node:test",
+          "specifiers": [
+            "after",
+            "before",
+            "test"
+          ]
+        },
+        {
+          "source": "../src/app.js",
+          "specifiers": [
+            "createApp"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 31,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/test/mockAiGenerator.test.js": {
+      "filePath": "apps/api/test/mockAiGenerator.test.js",
+      "contentHash": "1df4ea7969e418ad38ef4f433616e6dc8f283082c553ba3e2b1922b3b92aabb7",
+      "functions": [
+        {
+          "name": "createInput",
+          "params": [],
+          "exported": false,
+          "lineCount": 65
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:assert/strict",
+          "specifiers": [
+            "assert"
+          ]
+        },
+        {
+          "source": "node:test",
+          "specifiers": [
+            "test"
+          ]
+        },
+        {
+          "source": "../src/teamflow/mockAiGenerator.js",
+          "specifiers": [
+            "buildMockAiContext",
+            "generateMockAiResult"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 221,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/test/supabaseClient.test.js": {
+      "filePath": "apps/api/test/supabaseClient.test.js",
+      "contentHash": "a910cf06b82b617801948cbfe5e43fcd8f0eb20c74d4e92a2a18fa432ce95c58",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:assert/strict",
+          "specifiers": [
+            "assert"
+          ]
+        },
+        {
+          "source": "node:test",
+          "specifiers": [
+            "test"
+          ]
+        },
+        {
+          "source": "../src/lib/supabaseClient.js",
+          "specifiers": [
+            "readTeamFlowSupabaseConfig"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 29,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/test/teamFlowRepository.test.js": {
+      "filePath": "apps/api/test/teamFlowRepository.test.js",
+      "contentHash": "8171fbb902c8cc2d17d4ebe22a3342d382bc2dde08143fa1153790639e35270b",
+      "functions": [
+        {
+          "name": "resourceRow",
+          "params": [],
+          "exported": false,
+          "lineCount": 22
+        },
+        {
+          "name": "orderedRows",
+          "params": [
+            "rows"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "filteredQuery",
+          "params": [],
+          "exported": false,
+          "lineCount": 21
+        },
+        {
+          "name": "aiContextRows",
+          "params": [],
+          "exported": false,
+          "lineCount": 48
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:assert/strict",
+          "specifiers": [
+            "assert"
+          ]
+        },
+        {
+          "source": "node:test",
+          "specifiers": [
+            "test"
+          ]
+        },
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "RESOURCE_UPLOAD"
+          ]
+        },
+        {
+          "source": "../src/teamflow/teamFlowRepository.js",
+          "specifiers": [
+            "TeamFlowConflictError",
+            "TeamFlowNotFoundError",
+            "TeamFlowValidationError",
+            "createSupabaseTeamFlowRepository"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 599,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/test/teamFlowRoutes.test.js": {
+      "filePath": "apps/api/test/teamFlowRoutes.test.js",
+      "contentHash": "cc505bdbc8c4ba799913bf907b4355f95146e2dcae91c8c0d3886c2c1c6a3339",
+      "functions": [
+        {
+          "name": "request",
+          "params": [
+            "path"
+          ],
+          "exported": false,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:assert/strict",
+          "specifiers": [
+            "assert"
+          ]
+        },
+        {
+          "source": "node:test",
+          "specifiers": [
+            "after",
+            "before",
+            "test"
+          ]
+        },
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "RESOURCE_UPLOAD"
+          ]
+        },
+        {
+          "source": "../src/app.js",
+          "specifiers": [
+            "createApp"
+          ]
+        },
+        {
+          "source": "../src/teamflow/teamFlowRepository.js",
+          "specifiers": [
+            "TeamFlowConflictError"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 545,
       "hasStructuralAnalysis": true
     },
     "apps/web/.env.example": {
@@ -4354,12 +5465,12 @@
     },
     "docs/agent-workflow.html": {
       "filePath": "docs/agent-workflow.html",
-      "contentHash": "97e75fbcc99947a196a86f27bffc0d450a5c43f5af4e6260cb39388e34908b83",
+      "contentHash": "0e7b0ebb3fa2cb21271c1c0860008d9fbd4cca937b61538da295b8e035291d74",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 191,
+      "totalLines": 208,
       "hasStructuralAnalysis": false
     },
     "docs/api.md": {

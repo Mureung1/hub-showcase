@@ -1,0 +1,591 @@
+{
+  "nodes": [
+    {
+      "id": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "type": "file",
+      "name": "teamFlowRoutes.js",
+      "filePath": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "summary": "TeamFlow HTTP endpoint를 정의하고 요청 payload 검증, authentication middleware, repository 호출, 오류 응답 변환을 조정합니다.",
+      "tags": [
+        "api-handler",
+        "routing",
+        "validation",
+        "express"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateProject",
+      "type": "function",
+      "name": "validateProject",
+      "filePath": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "lineRange": [
+        47,
+        87
+      ],
+      "summary": "validateProject 함수는 teamflow domain 입력의 필수 값, 형식과 허용 범위를 검증합니다.",
+      "tags": [
+        "validation",
+        "pure-function",
+        "teamflow-domain",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateMemberPatch",
+      "type": "function",
+      "name": "validateMemberPatch",
+      "filePath": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "lineRange": [
+        89,
+        100
+      ],
+      "summary": "validateMemberPatch 함수는 teamflow domain 입력의 필수 값, 형식과 허용 범위를 검증합니다.",
+      "tags": [
+        "validation",
+        "pure-function",
+        "teamflow-domain",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateTaskCreateInput",
+      "type": "function",
+      "name": "validateTaskCreateInput",
+      "filePath": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "lineRange": [
+        102,
+        119
+      ],
+      "summary": "작업 생성 payload의 제목, 담당자, 날짜, 상태와 설명 규칙을 검증합니다.",
+      "tags": [
+        "validation",
+        "pure-function",
+        "teamflow-domain",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateTaskPatch",
+      "type": "function",
+      "name": "validateTaskPatch",
+      "filePath": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "lineRange": [
+        121,
+        148
+      ],
+      "summary": "validateTaskPatch 함수는 teamflow domain 입력의 필수 값, 형식과 허용 범위를 검증합니다.",
+      "tags": [
+        "validation",
+        "pure-function",
+        "teamflow-domain",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateNote",
+      "type": "function",
+      "name": "validateNote",
+      "filePath": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "lineRange": [
+        150,
+        165
+      ],
+      "summary": "validateNote 함수는 teamflow domain 입력의 필수 값, 형식과 허용 범위를 검증합니다.",
+      "tags": [
+        "validation",
+        "pure-function",
+        "teamflow-domain",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateResource",
+      "type": "function",
+      "name": "validateResource",
+      "filePath": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "lineRange": [
+        167,
+        201
+      ],
+      "summary": "자료 유형에 따라 이름, URL 또는 파일 입력의 필수 규칙을 검증합니다.",
+      "tags": [
+        "validation",
+        "pure-function",
+        "teamflow-domain",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateResourceUpload",
+      "type": "function",
+      "name": "validateResourceUpload",
+      "filePath": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "lineRange": [
+        203,
+        228
+      ],
+      "summary": "validateResourceUpload 함수는 teamflow domain 입력의 필수 값, 형식과 허용 범위를 검증합니다.",
+      "tags": [
+        "validation",
+        "pure-function",
+        "teamflow-domain",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateAiSettings",
+      "type": "function",
+      "name": "validateAiSettings",
+      "filePath": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "lineRange": [
+        237,
+        267
+      ],
+      "summary": "validateAiSettings 함수는 teamflow domain 입력의 필수 값, 형식과 허용 범위를 검증합니다.",
+      "tags": [
+        "validation",
+        "pure-function",
+        "teamflow-domain",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRoutes.js:routeError",
+      "type": "function",
+      "name": "routeError",
+      "filePath": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "lineRange": [
+        288,
+        308
+      ],
+      "summary": "routeError 함수는 teamflow domain 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다.",
+      "tags": [
+        "function",
+        "teamflow-domain",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/teamflow/teamFlowRoutes.js:createTeamFlowRouter",
+      "type": "function",
+      "name": "createTeamFlowRouter",
+      "filePath": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "lineRange": [
+        320,
+        559
+      ],
+      "summary": "TeamFlow endpoint와 authentication, validation, repository 호출, 오류 응답을 하나의 Express router로 구성합니다.",
+      "tags": [
+        "factory",
+        "teamflow-domain",
+        "dependency-injection",
+        "service"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:apps/api/test/auth.test.js",
+      "type": "file",
+      "name": "auth.test.js",
+      "filePath": "apps/api/test/auth.test.js",
+      "summary": "Bearer token 파싱과 Supabase 인증 검증, authentication middleware의 성공·실패 경계를 검증하는 Node 테스트입니다.",
+      "tags": [
+        "test",
+        "test-support",
+        "verification",
+        "regression"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Node.js 내장 test runner를 사용해 외부 의존성을 test double로 격리합니다."
+    },
+    {
+      "id": "file:apps/api/test/cors.test.js",
+      "type": "file",
+      "name": "cors.test.js",
+      "filePath": "apps/api/test/cors.test.js",
+      "summary": "허용 origin 설정과 Express CORS callback이 승인·거절 요청을 올바르게 처리하는지 검증합니다.",
+      "tags": [
+        "test",
+        "test-support",
+        "verification",
+        "regression"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Node.js 내장 test runner를 사용해 외부 의존성을 test double로 격리합니다."
+    },
+    {
+      "id": "file:apps/api/test/health.test.js",
+      "type": "file",
+      "name": "health.test.js",
+      "filePath": "apps/api/test/health.test.js",
+      "summary": "Express application의 health endpoint가 기대한 상태와 service 정보를 반환하는지 검증합니다.",
+      "tags": [
+        "test",
+        "test-support",
+        "verification",
+        "regression"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Node.js 내장 test runner를 사용해 외부 의존성을 test double로 격리합니다."
+    },
+    {
+      "id": "file:apps/api/test/mockAiGenerator.test.js",
+      "type": "file",
+      "name": "mockAiGenerator.test.js",
+      "filePath": "apps/api/test/mockAiGenerator.test.js",
+      "summary": "Mock AI context 정규화, snapshot 제한, 결정적 Markdown 생성과 입력 격리 규칙을 폭넓게 검증합니다.",
+      "tags": [
+        "test",
+        "test-support",
+        "verification",
+        "regression"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Node.js 내장 test runner를 사용해 외부 의존성을 test double로 격리합니다."
+    },
+    {
+      "id": "function:apps/api/test/mockAiGenerator.test.js:createInput",
+      "type": "function",
+      "name": "createInput",
+      "filePath": "apps/api/test/mockAiGenerator.test.js",
+      "lineRange": [
+        17,
+        81
+      ],
+      "summary": "createInput 함수는 test support 동작에 필요한 의존성과 interface를 구성해 반환합니다.",
+      "tags": [
+        "factory",
+        "test-support",
+        "dependency-injection",
+        "service"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/api/test/supabaseClient.test.js",
+      "type": "file",
+      "name": "supabaseClient.test.js",
+      "filePath": "apps/api/test/supabaseClient.test.js",
+      "summary": "서버 Supabase 환경 설정의 누락·형식 오류와 정상 client 생성 조건을 검증합니다.",
+      "tags": [
+        "test",
+        "test-support",
+        "verification",
+        "regression"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Node.js 내장 test runner를 사용해 외부 의존성을 test double로 격리합니다."
+    },
+    {
+      "id": "file:apps/api/test/teamFlowRepository.test.js",
+      "type": "file",
+      "name": "teamFlowRepository.test.js",
+      "filePath": "apps/api/test/teamFlowRepository.test.js",
+      "summary": "Supabase query와 RPC를 모의해 TeamFlow repository의 CRUD, 오류 변환, 자료 업로드, AI 실행 동작을 검증합니다.",
+      "tags": [
+        "test",
+        "test-support",
+        "verification",
+        "regression"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Node.js 내장 test runner를 사용해 외부 의존성을 test double로 격리합니다."
+    },
+    {
+      "id": "function:apps/api/test/teamFlowRepository.test.js:resourceRow",
+      "type": "function",
+      "name": "resourceRow",
+      "filePath": "apps/api/test/teamFlowRepository.test.js",
+      "lineRange": [
+        29,
+        50
+      ],
+      "summary": "resourceRow 함수는 test support 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다.",
+      "tags": [
+        "function",
+        "test-support",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/test/teamFlowRepository.test.js:orderedRows",
+      "type": "function",
+      "name": "orderedRows",
+      "filePath": "apps/api/test/teamFlowRepository.test.js",
+      "lineRange": [
+        52,
+        62
+      ],
+      "summary": "orderedRows 함수는 test support 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다.",
+      "tags": [
+        "function",
+        "test-support",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/test/teamFlowRepository.test.js:filteredQuery",
+      "type": "function",
+      "name": "filteredQuery",
+      "filePath": "apps/api/test/teamFlowRepository.test.js",
+      "lineRange": [
+        64,
+        84
+      ],
+      "summary": "filteredQuery 함수는 test support 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다.",
+      "tags": [
+        "function",
+        "test-support",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/test/teamFlowRepository.test.js:aiContextRows",
+      "type": "function",
+      "name": "aiContextRows",
+      "filePath": "apps/api/test/teamFlowRepository.test.js",
+      "lineRange": [
+        86,
+        133
+      ],
+      "summary": "aiContextRows 함수는 test support 파일의 핵심 데이터 변환 또는 사용자 흐름을 구현합니다.",
+      "tags": [
+        "function",
+        "test-support",
+        "application-logic",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/test/teamFlowRoutes.test.js",
+      "type": "file",
+      "name": "teamFlowRoutes.test.js",
+      "filePath": "apps/api/test/teamFlowRoutes.test.js",
+      "summary": "실제 Express router와 test repository를 사용해 TeamFlow API endpoint의 인증, 검증, 응답, 오류 처리를 통합 검증합니다.",
+      "tags": [
+        "test",
+        "test-support",
+        "verification",
+        "regression"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Node.js 내장 test runner를 사용해 외부 의존성을 test double로 격리합니다."
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateProject",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateMemberPatch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateTaskCreateInput",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateTaskCreateInput",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateTaskPatch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateNote",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateResource",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateResourceUpload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRoutes.js:validateAiSettings",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRoutes.js:routeError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRoutes.js:createTeamFlowRouter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "function:apps/api/src/teamflow/teamFlowRoutes.js:createTeamFlowRouter",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/test/mockAiGenerator.test.js",
+      "target": "function:apps/api/test/mockAiGenerator.test.js:createInput",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/test/teamFlowRepository.test.js",
+      "target": "function:apps/api/test/teamFlowRepository.test.js:resourceRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/test/teamFlowRepository.test.js",
+      "target": "function:apps/api/test/teamFlowRepository.test.js:orderedRows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/test/teamFlowRepository.test.js",
+      "target": "function:apps/api/test/teamFlowRepository.test.js:filteredQuery",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/test/teamFlowRepository.test.js",
+      "target": "function:apps/api/test/teamFlowRepository.test.js:aiContextRows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "file:apps/api/src/lib/auth.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/src/teamflow/teamFlowRoutes.js",
+      "target": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/test/auth.test.js",
+      "target": "file:apps/api/src/lib/auth.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/test/cors.test.js",
+      "target": "file:apps/api/src/app.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/test/cors.test.js",
+      "target": "file:apps/api/src/lib/cors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/test/health.test.js",
+      "target": "file:apps/api/src/app.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/test/mockAiGenerator.test.js",
+      "target": "file:apps/api/src/teamflow/mockAiGenerator.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/test/supabaseClient.test.js",
+      "target": "file:apps/api/src/lib/supabaseClient.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/test/teamFlowRepository.test.js",
+      "target": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/test/teamFlowRoutes.test.js",
+      "target": "file:apps/api/src/app.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/test/teamFlowRoutes.test.js",
+      "target": "file:apps/api/src/teamflow/teamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

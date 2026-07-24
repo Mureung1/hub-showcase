@@ -262,9 +262,9 @@ export function createApiTeamFlowRepository({
       }, '파일 다운로드를 준비하지 못했습니다.')
     },
 
-    async createAiAgent(projectId) {
-      return authenticatedRequest(`/api/projects/${projectId}/ai-agent`, {
-        method: 'POST',
+    async createAiAgent(projectId, input) {
+      return authenticatedRequest(`/api/projects/${projectId}/ai-agents`, {
+        method: 'POST', body: JSON.stringify(input),
       }, 'AI 팀원을 추가하지 못했습니다.')
     },
 
@@ -272,7 +272,7 @@ export function createApiTeamFlowRepository({
       const payload = await authenticatedRequest(`/api/ai-agents/${memberId}`, {
         method: 'PATCH', body: JSON.stringify(input),
       }, 'AI 팀원 설정을 저장하지 못했습니다.')
-      return payload.aiAgent
+      return { member: payload.member, aiAgent: payload.aiAgent }
     },
 
     async createAiRun(memberId, taskId) {

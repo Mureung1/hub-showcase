@@ -1,6 +1,6 @@
 {
   "name": "teamflow",
-  "description": "대학생 팀 프로젝트의 프로젝트, 할 일, 팀원, 회의록, 자료를 한 공간에서 관리하는 웹 서비스입니다. React와 Vite 웹, Express API, Supabase Auth·PostgreSQL·RLS를 기반으로 Google OAuth, 게스트 데모, 협업 관리와 공유 노트·자료실·AI 팀원 UI를 제공합니다. 참고: 이 프로젝트에는 소스 파일이 100개 넘게 포함되어 있으므로, 더 빠른 결과를 위해 분석 범위를 하위 디렉터리로 좁히는 것을 고려하세요.",
+  "description": "??? ? ????? ?????? ???????????? ? ???? ????, Google OAuth? Express API, Supabase RLS? ?? ???? ?? ???? ???? ??? ? ??????. ??: ? ?????? 100?? ?? ?? ??? ???? ? ?? ??? ????? ?? ????? ??? ??? ?? ?????.",
   "languages": [
     "config",
     "css",
@@ -15,8 +15,9 @@
   ],
   "frameworks": [
     "React",
-    "Vite",
     "Express",
+    "Vite",
+    "Vitest",
     "GitHub Actions"
   ],
   "files": [
@@ -85,6 +86,114 @@
       "language": "markdown",
       "sizeLines": 173,
       "fileCategory": "docs"
+    },
+    {
+      "path": "apps/api/.env.example",
+      "language": "config",
+      "sizeLines": 4,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/api/package.json",
+      "language": "json",
+      "sizeLines": 17,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/api/src/app.js",
+      "language": "javascript",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/src/lib/auth.js",
+      "language": "javascript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/src/lib/cors.js",
+      "language": "javascript",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/src/lib/supabaseClient.js",
+      "language": "javascript",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/src/runtime.js",
+      "language": "javascript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/src/server.js",
+      "language": "javascript",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/src/teamflow/mockAiGenerator.js",
+      "language": "javascript",
+      "sizeLines": 373,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/src/teamflow/teamFlowRepository.js",
+      "language": "javascript",
+      "sizeLines": 992,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/src/teamflow/teamFlowRoutes.js",
+      "language": "javascript",
+      "sizeLines": 559,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/test/auth.test.js",
+      "language": "javascript",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/test/cors.test.js",
+      "language": "javascript",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/test/health.test.js",
+      "language": "javascript",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/test/mockAiGenerator.test.js",
+      "language": "javascript",
+      "sizeLines": 220,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/test/supabaseClient.test.js",
+      "language": "javascript",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/test/teamFlowRepository.test.js",
+      "language": "javascript",
+      "sizeLines": 598,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/test/teamFlowRoutes.test.js",
+      "language": "javascript",
+      "sizeLines": 544,
+      "fileCategory": "code"
     },
     {
       "path": "apps/web/.env.example",
@@ -747,8 +856,8 @@
       "fileCategory": "data"
     }
   ],
-  "totalFiles": 121,
-  "filteredByIgnore": 1250,
+  "totalFiles": 139,
+  "filteredByIgnore": 1298,
   "estimatedComplexity": "moderate",
   "importMap": {
     ".agents/skills/teamflow-test-authoring/SKILL.md": [],
@@ -762,6 +871,56 @@
     ".oxlintrc.json": [],
     "CLAUDE.md": [],
     "README.md": [],
+    "apps/api/.env.example": [],
+    "apps/api/package.json": [],
+    "apps/api/src/app.js": [
+      "apps/api/src/lib/cors.js",
+      "apps/api/src/teamflow/teamFlowRoutes.js"
+    ],
+    "apps/api/src/lib/auth.js": [],
+    "apps/api/src/lib/cors.js": [],
+    "apps/api/src/lib/supabaseClient.js": [],
+    "apps/api/src/runtime.js": [
+      "apps/api/src/app.js",
+      "apps/api/src/lib/auth.js",
+      "apps/api/src/lib/cors.js",
+      "apps/api/src/lib/supabaseClient.js",
+      "apps/api/src/teamflow/teamFlowRepository.js"
+    ],
+    "apps/api/src/server.js": [
+      "apps/api/src/runtime.js"
+    ],
+    "apps/api/src/teamflow/mockAiGenerator.js": [],
+    "apps/api/src/teamflow/teamFlowRepository.js": [
+      "apps/api/src/teamflow/mockAiGenerator.js"
+    ],
+    "apps/api/src/teamflow/teamFlowRoutes.js": [
+      "apps/api/src/lib/auth.js",
+      "apps/api/src/teamflow/teamFlowRepository.js"
+    ],
+    "apps/api/test/auth.test.js": [
+      "apps/api/src/lib/auth.js"
+    ],
+    "apps/api/test/cors.test.js": [
+      "apps/api/src/app.js",
+      "apps/api/src/lib/cors.js"
+    ],
+    "apps/api/test/health.test.js": [
+      "apps/api/src/app.js"
+    ],
+    "apps/api/test/mockAiGenerator.test.js": [
+      "apps/api/src/teamflow/mockAiGenerator.js"
+    ],
+    "apps/api/test/supabaseClient.test.js": [
+      "apps/api/src/lib/supabaseClient.js"
+    ],
+    "apps/api/test/teamFlowRepository.test.js": [
+      "apps/api/src/teamflow/teamFlowRepository.js"
+    ],
+    "apps/api/test/teamFlowRoutes.test.js": [
+      "apps/api/src/app.js",
+      "apps/api/src/teamflow/teamFlowRepository.js"
+    ],
     "apps/web/.env.example": [],
     "apps/web/index.html": [],
     "apps/web/package.json": [],

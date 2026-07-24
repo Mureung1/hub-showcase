@@ -1,0 +1,78 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "apps/web/src/components/ui/ResourceIcon.jsx",
+      "language": "javascript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/AddResourceModal.jsx",
+      "language": "javascript",
+      "sizeLines": 158,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "language": "javascript",
+      "sizeLines": 179,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/ResourcesPage.jsx",
+      "language": "javascript",
+      "sizeLines": 119,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/resourceValidation.js",
+      "language": "javascript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/resourceValidation.test.js",
+      "language": "javascript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "apps/web/src/components/ui/ResourceIcon.jsx": [
+      "apps/web/src/components/ui/ui.module.css"
+    ],
+    "apps/web/src/features/resources/AddResourceModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/features/resources/ResourcesPage.module.css",
+      "apps/web/src/features/resources/resourceValidation.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/resources/ResourceDetailModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/ResourceIcon.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/resources/ResourcesPage.module.css",
+      "apps/web/src/features/resources/resourceValidation.js",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/resources/ResourcesPage.jsx": [
+      "apps/web/src/components/ui/ResourceIcon.jsx",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/resources/AddResourceModal.jsx",
+      "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "apps/web/src/features/resources/ResourcesPage.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/resources/resourceValidation.js": [],
+    "apps/web/src/features/resources/resourceValidation.test.js": [
+      "apps/web/src/features/resources/resourceValidation.js"
+    ]
+  }
+}

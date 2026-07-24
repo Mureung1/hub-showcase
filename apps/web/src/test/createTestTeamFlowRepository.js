@@ -120,16 +120,17 @@ export const testTeamFlowRepository = {
     return Promise.resolve({ url: 'https://example.com/download', expiresIn: 60 })
   },
 
-  createAiAgent(projectId) {
+  createAiAgent(projectId, input = {}) {
     const member = {
       id: nextId('member-ai'), projectId, authUserId: null, email: null, kind: 'ai',
-      name: '자료조사 AI', initial: 'AI', role: '자료 조사', description: '', isAi: true, color: '#3d4a63',
+      name: input.name ?? 'AI Agent', initial: getInitial(input.name ?? 'AI Agent'), role: input.role ?? 'AI 역할',
+      description: input.description ?? '', isAi: true, color: input.color ?? '#3d4a63',
     }
     return Promise.resolve({
       member,
       aiAgent: {
-        memberId: member.id, projectId, instructions: '',
-        contextConfig: { project: true, notes: true, tasks: true, team: false, resources: true },
+        memberId: member.id, projectId, instructions: input.instructions ?? '',
+        contextConfig: input.contextConfig ?? { project: true, notes: true, tasks: true, team: false, resources: true },
         enabled: true, createdAt: '2026-07-24T00:00:00.000Z', updatedAt: '2026-07-24T00:00:00.000Z',
       },
     })
@@ -137,10 +138,20 @@ export const testTeamFlowRepository = {
 
   updateAiAgent(memberId, input) {
     const existing = initialAiAgents.find((agent) => agent.memberId === memberId)
+    const existingMember = initialMembers.find((member) => member.id === memberId)
+    const member = {
+      ...(existingMember ?? {
+        id: memberId, projectId: existing?.projectId ?? '1', kind: 'ai', authUserId: null, email: null, isAi: true,
+      }),
+      ...(pickMemberPatch(input)),
+    }
     return Promise.resolve({
-      ...(existing ?? { memberId, projectId: '1', enabled: true, createdAt: '2026-07-24T00:00:00.000Z' }),
-      ...input,
-      updatedAt: '2026-07-24T01:00:00.000Z',
+      member,
+      aiAgent: {
+        ...(existing ?? { memberId, projectId: '1', enabled: true, createdAt: '2026-07-24T00:00:00.000Z' }),
+        ...(pickAiAgentPatch(input)),
+        updatedAt: '2026-07-24T01:00:00.000Z',
+      },
     })
   },
 
@@ -177,4 +188,25 @@ export const testTeamFlowRepository = {
     createdAiRuns.set(runId, aiRun)
     return Promise.resolve(aiRun)
   },
+}
+
+function pickMemberPatch(input) {
+  const patch = {}
+  for (const key of ['name', 'role', 'description', 'color']) {
+    if (key in input) patch[key] = input[key]
+  }
+  if (input.name) patch.initial = getInitial(input.name)
+  return patch
+}
+
+function pickAiAgentPatch(input) {
+  const patch = {}
+  for (const key of ['instructions', 'contextConfig', 'enabled']) {
+    if (key in input) patch[key] = input[key]
+  }
+  return patch
+}
+
+function getInitial(name) {
+  return String(name).trim().slice(0, 2).toUpperCase() || 'AI'
 }

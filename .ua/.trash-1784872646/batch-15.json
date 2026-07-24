@@ -1,0 +1,638 @@
+{
+  "nodes": [
+    {
+      "id": "document:.agents/skills/teamflow-test-authoring/SKILL.md",
+      "type": "document",
+      "name": "SKILL.md",
+      "filePath": ".agents/skills/teamflow-test-authoring/SKILL.md",
+      "summary": "TeamFlow 변경의 테스트 수준, 작성·실행 순서와 Red-Green-Refactor 증거 관리를 정의한 테스트 작성 Skill이다.",
+      "tags": [
+        "documentation",
+        "test-authoring",
+        "tdd",
+        "regression"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:.agents/skills/teamflow-test-authoring/agents/openai.yaml",
+      "type": "config",
+      "name": "openai.yaml",
+      "filePath": ".agents/skills/teamflow-test-authoring/agents/openai.yaml",
+      "summary": "테스트 작성 Skill의 표시 정보, 기본 프롬프트와 암시적 호출 정책을 등록한다.",
+      "tags": [
+        "configuration",
+        "agent-metadata",
+        "test-authoring"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:.claude/skills/teamflow-design/SKILL.md",
+      "type": "document",
+      "name": "SKILL.md",
+      "filePath": ".claude/skills/teamflow-design/SKILL.md",
+      "summary": "TeamFlow UI의 디자인 토큰, 타이포그래피, 레이아웃 패턴과 화면 완료 검증 기준을 정의한다.",
+      "tags": [
+        "documentation",
+        "design-system",
+        "ui-guidelines",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:.claude/skills/teamflow-design/tokens.css",
+      "type": "file",
+      "name": "tokens.css",
+      "filePath": ".claude/skills/teamflow-design/tokens.css",
+      "summary": "디자인 Skill이 참조하는 색상, 상태, 간격, 반경, 그림자와 글꼴의 기준 CSS 변수를 제공한다.",
+      "tags": [
+        "design-tokens",
+        "css-variables",
+        "design-system",
+        "typography"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "4px 간격 체계와 상태별 전경·배경·점 색상을 분리하고 숫자 전용 글꼴 규칙을 문서화한다."
+    },
+    {
+      "id": "config:.codex/agents/verification_agent.toml",
+      "type": "config",
+      "name": "verification_agent.toml",
+      "filePath": ".codex/agents/verification_agent.toml",
+      "summary": "요구사항·테스트·TDD 증거를 독립 검증하되 구현을 수정하지 않는 검증 Agent의 절차와 보고 형식을 설정한다.",
+      "tags": [
+        "configuration",
+        "verification",
+        "test-quality",
+        "agent-policy"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:.github/pull_request_template.md",
+      "type": "document",
+      "name": "pull_request_template.md",
+      "filePath": ".github/pull_request_template.md",
+      "summary": "주요 작업, 설명 가능한 부분, 이해하지 못한 부분과 새로 배운 내용을 기록하는 학습 중심 PR 템플릿이다.",
+      "tags": [
+        "documentation",
+        "pull-request",
+        "learning",
+        "checklist"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.nvmrc",
+      "type": "file",
+      "name": ".nvmrc",
+      "filePath": ".nvmrc",
+      "summary": "TeamFlow 모노레포의 로컬 Node.js 버전을 24.14.0으로 고정한다.",
+      "tags": [
+        "configuration",
+        "nodejs",
+        "runtime-version"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:apps/api/.env.example",
+      "type": "config",
+      "name": ".env.example",
+      "filePath": "apps/api/.env.example",
+      "summary": "Express API에 필요한 Supabase URL·publishable key, 허용 Origin과 포트의 예시를 제공하는 환경 변수 템플릿이다.",
+      "tags": [
+        "configuration",
+        "environment",
+        "authentication",
+        "cors"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:apps/api/package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "apps/api/package.json",
+      "summary": "Express API의 개발·운영·테스트 명령과 Supabase, shared 계약, CORS, Express 의존성을 정의한다.",
+      "tags": [
+        "configuration",
+        "package-manifest",
+        "api",
+        "esm",
+        "build-system"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Node의 --env-file-if-exists와 --watch 옵션으로 환경 파일 로드와 개발 재시작을 처리한다."
+    },
+    {
+      "id": "file:apps/web/src/components/layout/AppShell.module.css",
+      "type": "file",
+      "name": "AppShell.module.css",
+      "filePath": "apps/web/src/components/layout/AppShell.module.css",
+      "summary": "전역·프로젝트 셸의 축소 가능한 사이드바, 내비게이션, 계정 팝오버와 본문 레이아웃을 정의한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "ui",
+        "ui"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "file",
+      "name": "forms.module.css",
+      "filePath": "apps/web/src/components/ui/forms.module.css",
+      "summary": "공유 폼, 입력 필드, 선택지, 오류 상태와 취소·제출 버튼 스타일을 제공한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "ui",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "file",
+      "name": "ui.module.css",
+      "filePath": "apps/web/src/components/ui/ui.module.css",
+      "summary": "아바타, 상태 배지, 자료 아이콘과 공통 모달의 크기·상태·레이아웃을 정의한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "ui",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/ai/AiPage.module.css",
+      "type": "file",
+      "name": "AiPage.module.css",
+      "filePath": "apps/web/src/features/ai/AiPage.module.css",
+      "summary": "Mock AI 설정, 컨텍스트, 작업 실행, Markdown 검토, 실행 이력과 실시간 피드백을 반응형으로 배치한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "ai",
+        "ui"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "type": "file",
+      "name": "ProjectDashboardPage.module.css",
+      "filePath": "apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "summary": "프로젝트 기간·진행률·작업 표와 팀원·자료·노트 패널을 대시보드 그리드로 배치한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "dashboard",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/landing/LandingPage.module.css",
+      "type": "file",
+      "name": "LandingPage.module.css",
+      "filePath": "apps/web/src/features/landing/LandingPage.module.css",
+      "summary": "랜딩 히어로, 기능 소개, Google·게스트 인증 카드와 OAuth 콜백 상태를 구성한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "landing",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/members/MembersPage.module.css",
+      "type": "file",
+      "name": "MembersPage.module.css",
+      "filePath": "apps/web/src/features/members/MembersPage.module.css",
+      "summary": "사용자·AI 팀원 카드, 담당 작업, 초대 목록과 편집·삭제·오류 상태를 배치한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "members",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/notes/NotesPage.module.css",
+      "type": "file",
+      "name": "NotesPage.module.css",
+      "filePath": "apps/web/src/features/notes/NotesPage.module.css",
+      "summary": "노트 검색·정렬, 편집기·미리보기, 템플릿 선택과 삭제 확인 흐름을 구성한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "notes",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/ProjectListPage.module.css",
+      "type": "file",
+      "name": "ProjectListPage.module.css",
+      "filePath": "apps/web/src/features/projects/ProjectListPage.module.css",
+      "summary": "프로젝트 검색, 초대 수락·거절 패널, 카드 그리드와 메시지 상태를 구성한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "projects",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "type": "file",
+      "name": "ResourcesPage.module.css",
+      "filePath": "apps/web/src/features/resources/ResourcesPage.module.css",
+      "summary": "자료실 경로, 폴더·파일, 필터, 업로드, 상세 보기와 다운로드·교체·삭제 동작을 표현한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "resources",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "type": "file",
+      "name": "ProjectTasksPage.module.css",
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "summary": "작업 통계, 필터·정렬, 표·보드 보기와 상태 변경 메뉴를 구성한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "tasks",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/components/TaskModal.module.css",
+      "type": "file",
+      "name": "TaskModal.module.css",
+      "filePath": "apps/web/src/features/tasks/components/TaskModal.module.css",
+      "summary": "작업 상세 모달의 상태, 설명, 편집·닫기·삭제 확인 영역을 배치한다.",
+      "tags": [
+        "component-styles",
+        "css-modules",
+        "tasks",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/test/setup.js",
+      "type": "file",
+      "name": "setup.js",
+      "filePath": "apps/web/src/test/setup.js",
+      "summary": "Vitest DOM matcher를 등록하고 각 테스트 뒤 React 렌더 트리와 sessionStorage를 정리한다.",
+      "tags": [
+        "test",
+        "vitest",
+        "testing-library",
+        "cleanup"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/vite.config.js",
+      "type": "file",
+      "name": "vite.config.js",
+      "filePath": "apps/web/vite.config.js",
+      "summary": "React 플러그인, 고정 포트 5173, API 프록시와 jsdom 기반 Vitest 환경을 구성한다.",
+      "tags": [
+        "configuration",
+        "vite",
+        "dev-server",
+        "test"
+      ],
+      "complexity": "simple",
+      "languageNotes": "개발 포트를 5173으로 고정하고 /api 요청을 127.0.0.1:3000으로 프록시한다."
+    },
+    {
+      "id": "config:packages/shared/package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "packages/shared/package.json",
+      "summary": "공유 ESM 패키지의 진입점·하위 경로 export와 Node 테스트 스크립트를 정의한다.",
+      "tags": [
+        "configuration",
+        "package-manifest",
+        "esm",
+        "exports"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:packages/shared/src/index.js",
+      "type": "file",
+      "name": "index.js",
+      "filePath": "packages/shared/src/index.js",
+      "summary": "프로젝트·작업·자료·팀원·AI·초대 상태와 검증·진행률 함수를 공개하는 배럴 파일이다.",
+      "tags": [
+        "barrel",
+        "entry-point",
+        "exports",
+        "shared-contract"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.module.css",
+      "target": "file:apps/web/src/components/layout/AppShell.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.module.css",
+      "target": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/members/EditMemberModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/members/InviteCollaboratorModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/members/MemberRemovalModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/projects/components/ProjectSettingsModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ui.module.css",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ui.module.css",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ui.module.css",
+      "target": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ui.module.css",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.module.css",
+      "target": "file:apps/web/src/features/ai/AiPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/landing/LandingPage.module.css",
+      "target": "file:apps/web/src/auth/AuthCallbackPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/landing/LandingPage.module.css",
+      "target": "file:apps/web/src/features/landing/LandingPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.module.css",
+      "target": "file:apps/web/src/features/members/EditMemberModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.module.css",
+      "target": "file:apps/web/src/features/members/MemberRemovalModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.module.css",
+      "target": "file:apps/web/src/features/members/MembersPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.module.css",
+      "target": "file:apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.module.css",
+      "target": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.module.css",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "target": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "target": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskModal.module.css",
+      "target": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:.agents/skills/teamflow-test-authoring/agents/openai.yaml",
+      "target": "document:.agents/skills/teamflow-test-authoring/SKILL.md",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:.claude/skills/teamflow-design/SKILL.md",
+      "target": "file:.claude/skills/teamflow-design/tokens.css",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:.claude/skills/teamflow-design/tokens.css",
+      "target": "document:.claude/skills/teamflow-design/SKILL.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:.codex/agents/verification_agent.toml",
+      "target": "document:.agents/skills/teamflow-test-authoring/SKILL.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.github/pull_request_template.md",
+      "target": "document:.agents/skills/teamflow-test-authoring/SKILL.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:apps/api/.env.example",
+      "target": "config:apps/api/package.json",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:packages/shared/package.json",
+      "target": "file:packages/shared/src/index.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:apps/web/vite.config.js",
+      "target": "file:apps/web/src/test/setup.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ]
+}

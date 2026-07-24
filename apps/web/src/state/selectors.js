@@ -14,28 +14,43 @@ export function selectProjectMembers(state, projectId) {
 }
 
 export function selectAssignableProjectMembers(state, projectId) {
+  const enabledAiMemberIds = new Set(selectProjectAiAgents(state, projectId)
+    .filter((agent) => agent.enabled)
+    .map((agent) => agent.memberId))
   return selectProjectMembers(state, projectId).filter((member) => (
-    member.kind === 'user' || member.kind === 'ai'
+    member.kind === 'user'
+    || (member.kind === 'ai' && enabledAiMemberIds.has(member.id))
   ))
 }
 
-export function selectProjectAiMember(state, projectId) {
-  return selectProjectMembers(state, projectId).find((member) => (
+export function selectProjectAiMembers(state, projectId) {
+  return selectProjectMembers(state, projectId).filter((member) => (
     member.kind === 'ai' || member.isAi
-  )) ?? null
+  ))
 }
 
-export function selectProjectAiAgent(state, projectId) {
-  const aiMember = selectProjectAiMember(state, projectId)
-  return (state.aiAgents ?? []).find((agent) => (
-    agent.projectId === projectId
-    && (!aiMember || agent.memberId === aiMember.id)
-  )) ?? null
+export function selectProjectAiAgents(state, projectId) {
+  const aiMemberIds = new Set(selectProjectAiMembers(state, projectId).map((member) => member.id))
+  return (state.aiAgents ?? []).filter((agent) => (
+    agent.projectId === projectId && aiMemberIds.has(agent.memberId)
+  ))
 }
 
-export function selectProjectAiRuns(state, projectId) {
+export function selectProjectAiAgent(state, projectId, memberId) {
+  const agents = selectProjectAiAgents(state, projectId)
+  if (memberId) return agents.find((agent) => agent.memberId === memberId) ?? null
+  return agents[0] ?? null
+}
+
+export function selectProjectAiMember(state, projectId, memberId) {
+  const members = selectProjectAiMembers(state, projectId)
+  if (memberId) return members.find((member) => member.id === memberId) ?? null
+  return members[0] ?? null
+}
+
+export function selectProjectAiRuns(state, projectId, memberId) {
   return [...(state.aiRuns ?? [])]
-    .filter((run) => run.projectId === projectId)
+    .filter((run) => run.projectId === projectId && (!memberId || run.aiMemberId === memberId))
     .sort((left, right) => (
       String(right.createdAt ?? '').localeCompare(String(left.createdAt ?? ''))
       || String(right.id).localeCompare(String(left.id))

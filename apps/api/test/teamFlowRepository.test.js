@@ -206,7 +206,7 @@ test('bootstrap includes project-scoped AI agents and run history', async () => 
   assert.equal(Object.hasOwn(result, 'aiMemberId'), false)
 })
 
-test('AI teammate creation, settings and review transitions use database RPCs', async () => {
+test('AI agent profile creation and partial updates use the multi-agent database RPC contracts', async () => {
   const calls = []
   const member = {
     id: aiMemberId,
@@ -254,14 +254,58 @@ test('AI teammate creation, settings and review transitions use database RPCs', 
     created_at: '2026-07-24T00:00:00.000Z',
     updated_at: '2026-07-24T00:00:00.000Z',
   }
+  const createInput = {
+    name: '리서치 파트너',
+    role: '시장 조사',
+    description: '경쟁 서비스와 시장 근거를 정리합니다.',
+    color: '#6950b8',
+    instructions: '신뢰할 수 있는 자료를 구조화해 주세요.',
+    contextConfig,
+  }
   const supabase = {
+    from: (table) => filteredQuery({ members: [member], ai_agents: [agent] }[table]),
     rpc: async (name, args) => {
       calls.push({ name, args })
       if (name === 'create_project_ai_agent') {
-        return { data: { member, aiAgent: agent }, error: null }
+        return {
+          data: {
+            member: {
+              ...member,
+              name: args.p_name,
+              initial: '리',
+              role: args.p_role,
+              description: args.p_description,
+              color: args.p_color,
+            },
+            aiAgent: {
+              ...agent,
+              instructions: args.p_instructions,
+              context_config: args.p_context_config,
+            },
+          },
+          error: null,
+        }
       }
-      if (name === 'update_ai_agent_settings') {
-        return { data: agent, error: null }
+      if (name === 'update_ai_agent') {
+        return {
+          data: {
+            member: {
+              ...member,
+              name: args.p_name,
+              initial: '전',
+              role: args.p_role,
+              description: args.p_description,
+              color: args.p_color,
+            },
+            aiAgent: {
+              ...agent,
+              instructions: args.p_instructions,
+              context_config: args.p_context_config,
+              enabled: args.p_enabled,
+            },
+          },
+          error: null,
+        }
       }
       if (name === 'apply_ai_run') {
         return {
@@ -285,31 +329,48 @@ test('AI teammate creation, settings and review transitions use database RPCs', 
   assert.equal(typeof repository.applyAiRun, 'function')
   assert.equal(typeof repository.rejectAiRun, 'function')
 
-  const created = await repository.createAiAgent(projectId)
+  const created = await repository.createAiAgent(projectId, createInput)
   const updated = await repository.updateAiAgent(aiMemberId, {
-    instructions: agent.instructions,
-    contextConfig,
+    name: '전략 리서치 Agent',
+    enabled: false,
   })
   const applied = await repository.applyAiRun(aiRunId)
   const rejected = await repository.rejectAiRun(aiRunId)
 
   assert.equal(created.member.kind, 'ai')
+  assert.equal(created.member.name, createInput.name)
+  assert.equal(created.member.initial, '리')
   assert.equal(created.aiAgent.memberId, aiMemberId)
-  assert.deepEqual(updated.contextConfig, contextConfig)
+  assert.equal(updated.member.name, '전략 리서치 Agent')
+  assert.deepEqual(updated.aiAgent.contextConfig, contextConfig)
+  assert.equal(updated.aiAgent.enabled, false)
   assert.equal(applied.aiRun.status, 'applied')
   assert.equal(applied.note.id, note.id)
   assert.equal(rejected.status, 'rejected')
   assert.deepEqual(calls, [
     {
       name: 'create_project_ai_agent',
-      args: { p_project_id: projectId },
+      args: {
+        p_project_id: projectId,
+        p_name: createInput.name,
+        p_role: createInput.role,
+        p_description: createInput.description,
+        p_color: createInput.color,
+        p_instructions: createInput.instructions,
+        p_context_config: createInput.contextConfig,
+      },
     },
     {
-      name: 'update_ai_agent_settings',
+      name: 'update_ai_agent',
       args: {
         p_member_id: aiMemberId,
+        p_name: '전략 리서치 Agent',
+        p_role: member.role,
+        p_description: member.description,
+        p_color: member.color,
         p_instructions: agent.instructions,
         p_context_config: contextConfig,
+        p_enabled: false,
       },
     },
     {
@@ -325,11 +386,13 @@ test('AI teammate creation, settings and review transitions use database RPCs', 
 
 test('AI RPC not-found errors remain hidden behind the repository 404 contract', async () => {
   const notFoundByRpc = {
-    update_ai_agent_settings: 'AI_AGENT_NOT_FOUND',
+    update_ai_agent: 'AI_AGENT_NOT_FOUND',
     apply_ai_run: 'AI_RUN_NOT_FOUND',
     reject_ai_run: 'AI_RUN_NOT_FOUND',
   }
+  const rows = aiContextRows()
   const supabase = {
+    from: (table) => filteredQuery(rows[table]),
     rpc: async (name) => ({
       data: null,
       error: { code: 'P0001', message: notFoundByRpc[name] },
@@ -338,7 +401,7 @@ test('AI RPC not-found errors remain hidden behind the repository 404 contract',
   const repository = createSupabaseTeamFlowRepository(supabase, { id: userId })
 
   await assert.rejects(
-    repository.updateAiAgent(aiMemberId, { instructions: '', contextConfig }),
+    repository.updateAiAgent(aiMemberId, { instructions: '' }),
     TeamFlowNotFoundError,
   )
   await assert.rejects(repository.applyAiRun(aiRunId), TeamFlowNotFoundError)
@@ -477,6 +540,54 @@ test('mock AI run rejects completed tasks and tasks assigned to another member b
       TeamFlowConflictError,
     )
   }
+})
+
+test('disabled project AI cannot receive a new task or a task reassignment before mutation', async () => {
+  const rows = aiContextRows()
+  rows.ai_agents[0] = { ...rows.ai_agents[0], enabled: false }
+  const taskInput = {
+    projectId,
+    title: '비활성 AI 배정 차단',
+    assigneeId: aiMemberId,
+    dueDate: '2026-07-31',
+    status: 'not_started',
+    description: '',
+  }
+  const supabase = {
+    from(table) {
+      if (table === 'ai_agents') return filteredQuery(rows.ai_agents)
+      if (table === 'tasks') {
+        return {
+          select() {
+            return {
+              eq() {
+                return {
+                  maybeSingle: async () => ({ data: rows.tasks[0], error: null }),
+                }
+              },
+            }
+          },
+          insert() {
+            assert.fail('disabled AI must be rejected before task insert')
+          },
+          update() {
+            assert.fail('disabled AI must be rejected before task update')
+          },
+        }
+      }
+      assert.fail(`unexpected table ${table}`)
+    },
+  }
+  const repository = createSupabaseTeamFlowRepository(supabase, { id: userId })
+
+  await assert.rejects(
+    repository.createTask(taskInput),
+    TeamFlowConflictError,
+  )
+  await assert.rejects(
+    repository.updateTask(taskId, { assigneeId: aiMemberId }),
+    TeamFlowConflictError,
+  )
 })
 
 test('resource upload intent uses the database RPC before creating a signed upload URL', async () => {

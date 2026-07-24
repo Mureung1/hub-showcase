@@ -40,7 +40,7 @@ describe('authenticated TeamFlow repository', () => {
   })
 
   test('connects every Mock AI command to its authenticated Express endpoint', async () => {
-    const member = { id: 'ai-member-1', projectId: 'project-1', kind: 'ai' }
+    const member = { id: 'ai-member-1', projectId: 'project-1', kind: 'ai', name: '시장 분석 Agent', role: '시장 조사' }
     const aiAgent = {
       memberId: member.id,
       projectId: member.projectId,
@@ -50,9 +50,16 @@ describe('authenticated TeamFlow repository', () => {
     const pending = { id: 'run-1', aiMemberId: member.id, taskId: 'task-1', status: 'pending_review' }
     const applied = { ...pending, status: 'applied', appliedNoteId: 'note-1' }
     const note = { id: 'note-1', projectId: 'project-1', title: 'AI 결과 · 테스트' }
+    const createInput = {
+      name: member.name,
+      role: member.role,
+      description: '시장 동향을 정리합니다.',
+      instructions: aiAgent.instructions,
+      contextConfig: aiAgent.contextConfig,
+    }
     const fetchImpl = vi.fn(async (url) => {
-      if (url.endsWith('/projects/project-1/ai-agent')) return jsonResponse({ member, aiAgent })
-      if (url.endsWith('/ai-agents/ai-member-1') && !url.endsWith('/runs')) return jsonResponse({ aiAgent })
+      if (url.endsWith('/projects/project-1/ai-agents')) return jsonResponse({ member, aiAgent })
+      if (url.endsWith('/ai-agents/ai-member-1') && !url.endsWith('/runs')) return jsonResponse({ member, aiAgent })
       if (url.endsWith('/ai-agents/ai-member-1/runs')) return jsonResponse({ aiRun: pending })
       if (url.endsWith('/ai-runs/run-1/apply')) return jsonResponse({ aiRun: applied, note })
       if (url.endsWith('/ai-runs/run-1/reject')) return jsonResponse({ aiRun: { ...pending, status: 'rejected' } })
@@ -63,11 +70,11 @@ describe('authenticated TeamFlow repository', () => {
       getAccessToken: async () => 'access-token',
     })
 
-    await expect(repository.createAiAgent('project-1')).resolves.toEqual({ member, aiAgent })
+    await expect(repository.createAiAgent('project-1', createInput)).resolves.toEqual({ member, aiAgent })
     await expect(repository.updateAiAgent(member.id, {
       instructions: aiAgent.instructions,
       contextConfig: aiAgent.contextConfig,
-    })).resolves.toEqual(aiAgent)
+    })).resolves.toEqual({ member, aiAgent })
     await expect(repository.createAiRun(member.id, 'task-1')).resolves.toEqual(pending)
     await expect(repository.applyAiRun(pending.id)).resolves.toEqual({ aiRun: applied, note })
     await expect(repository.rejectAiRun(pending.id)).resolves.toMatchObject({
@@ -75,10 +82,11 @@ describe('authenticated TeamFlow repository', () => {
       status: 'rejected',
     })
 
-    expect(fetchImpl).toHaveBeenNthCalledWith(1, '/api/projects/project-1/ai-agent', expect.objectContaining({
+    expect(fetchImpl).toHaveBeenNthCalledWith(1, '/api/projects/project-1/ai-agents', expect.objectContaining({
       method: 'POST',
-      headers: { authorization: 'Bearer access-token' },
+      headers: { authorization: 'Bearer access-token', 'content-type': 'application/json' },
     }))
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).toEqual(createInput)
     expect(JSON.parse(fetchImpl.mock.calls[1][1].body)).toEqual({
       instructions: aiAgent.instructions,
       contextConfig: aiAgent.contextConfig,

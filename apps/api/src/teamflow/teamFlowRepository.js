@@ -96,6 +96,16 @@ const AI_RUN_COLUMNS = [
   'updated_at',
 ].join(',')
 
+const AI_VALIDATION_FIELDS = [
+  ['INVALID_AI_NAME', 'name'],
+  ['INVALID_AI_ROLE', 'role'],
+  ['INVALID_AI_DESCRIPTION', 'description'],
+  ['INVALID_AI_COLOR', 'color'],
+  ['INVALID_AI_INSTRUCTIONS', 'instructions'],
+  ['INVALID_AI_CONTEXT', 'contextConfig'],
+  ['INVALID_AI_ENABLED', 'enabled'],
+]
+
 export class TeamFlowStoreError extends Error {
   constructor(message, options) {
     super(message, options)
@@ -147,6 +157,10 @@ function throwDatabaseError(operation, error) {
   }
   if (message.includes('INVALID_RESOURCE_UPLOAD')) {
     throw new TeamFlowValidationError(undefined, { file: '업로드할 파일 정보를 확인해 주세요.' })
+  }
+  const aiValidationField = AI_VALIDATION_FIELDS.find(([identifier]) => message.includes(identifier))?.[1]
+  if (aiValidationField) {
+    throw new TeamFlowValidationError(undefined, { [aiValidationField]: 'AI Agent 정보를 확인해 주세요.' })
   }
   if (error?.code === '23514') {
     throw new TeamFlowValidationError(undefined, { body: '입력값이 데이터 제약조건을 충족하지 않습니다.' })
@@ -282,6 +296,16 @@ function mapAiRun(row) {
   }
 }
 
+function mapAiAgentResult(row, operation) {
+  const member = row?.member
+  const aiAgent = row?.aiAgent ?? row?.ai_agent
+  if (!member || !aiAgent) storeError(operation)
+  return {
+    member: mapMember(member),
+    aiAgent: mapAiAgent(aiAgent),
+  }
+}
+
 function unwrapRpcRow(data) {
   return Array.isArray(data) ? data[0] : data
 }
@@ -378,6 +402,42 @@ export function createSupabaseTeamFlowRepository(
     if (error) storeError(operation, error)
   }
 
+  async function loadAiAgentProfile(memberId) {
+    const [memberResult, agentResult] = await Promise.all([
+      supabase.from('members').select(MEMBER_COLUMNS).eq('id', memberId).maybeSingle(),
+      supabase.from('ai_agents').select(AI_AGENT_COLUMNS).eq('member_id', memberId).maybeSingle(),
+    ])
+    if (memberResult.error) throwDatabaseError('AI 팀원 조회', memberResult.error)
+    if (agentResult.error) throwDatabaseError('AI 팀원 조회', agentResult.error)
+    if (!memberResult.data || !agentResult.data) throw new TeamFlowNotFoundError()
+    return { member: memberResult.data, aiAgent: agentResult.data }
+  }
+
+  async function assertAssigneeIsActive(projectId, assigneeId) {
+    const { data, error } = await supabase
+      .from('ai_agents')
+      .select('project_id,enabled')
+      .eq('member_id', assigneeId)
+      .maybeSingle()
+
+    if (error) throwDatabaseError('AI 팀원 조회', error)
+    if (data?.project_id === projectId && data.enabled === false) {
+      throw new TeamFlowConflictError('비활성화된 AI 팀원에게는 새 할 일을 배정할 수 없습니다.')
+    }
+  }
+
+  async function taskProjectId(taskId) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('project_id')
+      .eq('id', taskId)
+      .maybeSingle()
+
+    if (error) throwDatabaseError('할 일 조회', error)
+    if (!data?.project_id) throw new TeamFlowNotFoundError()
+    return data.project_id
+  }
+
   return {
     async load() {
       const [
@@ -458,31 +518,34 @@ export function createSupabaseTeamFlowRepository(
 
     listInvitations,
 
-    async createAiAgent(projectId) {
+    async createAiAgent(projectId, input) {
       const { data, error } = await supabase.rpc('create_project_ai_agent', {
         p_project_id: projectId,
-      })
-      if (error) throwDatabaseError('AI 팀원 생성', error)
-      const result = rpcObject(data)
-      const member = result?.member
-      const aiAgent = result?.aiAgent ?? result?.ai_agent
-      if (!member || !aiAgent) storeError('AI 팀원 생성')
-      return {
-        member: mapMember(member),
-        aiAgent: mapAiAgent(aiAgent),
-      }
-    },
-
-    async updateAiAgent(memberId, input) {
-      const { data, error } = await supabase.rpc('update_ai_agent_settings', {
-        p_member_id: memberId,
+        p_name: input.name,
+        p_role: input.role,
+        p_description: input.description,
+        p_color: input.color,
         p_instructions: input.instructions,
         p_context_config: input.contextConfig,
       })
+      if (error) throwDatabaseError('AI 팀원 생성', error)
+      return mapAiAgentResult(rpcObject(data), 'AI 팀원 생성')
+    },
+
+    async updateAiAgent(memberId, input) {
+      const current = await loadAiAgentProfile(memberId)
+      const { data, error } = await supabase.rpc('update_ai_agent', {
+        p_member_id: memberId,
+        p_name: input.name ?? current.member.name,
+        p_role: input.role ?? current.member.role,
+        p_description: input.description ?? current.member.description ?? '',
+        p_color: input.color ?? current.member.color,
+        p_instructions: input.instructions ?? current.aiAgent.instructions ?? '',
+        p_context_config: input.contextConfig ?? current.aiAgent.context_config,
+        p_enabled: input.enabled ?? current.aiAgent.enabled,
+      })
       if (error) throwDatabaseError('AI 팀원 설정 저장', error)
-      const row = rpcObject(data)
-      if (!row) throw new TeamFlowNotFoundError()
-      return mapAiAgent(row)
+      return mapAiAgentResult(rpcObject(data), 'AI 팀원 설정 저장')
     },
 
     async createAiRun(memberId, taskId) {
@@ -750,6 +813,7 @@ export function createSupabaseTeamFlowRepository(
     },
 
     async createTask(input) {
+      await assertAssigneeIsActive(input.projectId, input.assigneeId)
       const { data, error } = await supabase
         .from('tasks')
         .insert({
@@ -769,6 +833,9 @@ export function createSupabaseTeamFlowRepository(
     },
 
     async updateTask(taskId, patch) {
+      if (hasOwn(patch, 'assigneeId')) {
+        await assertAssigneeIsActive(await taskProjectId(taskId), patch.assigneeId)
+      }
       const databasePatch = { updated_at: new Date().toISOString() }
       if (hasOwn(patch, 'title')) databasePatch.title = patch.title
       if (hasOwn(patch, 'assigneeId')) databasePatch.assignee_id = patch.assigneeId
