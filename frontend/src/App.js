@@ -124,7 +124,8 @@ function App() {
         query: chatLog[chatLog.length - 2]?.text || "수동 입력 데이터",
         extracted_data: extractedData,
         doc_type: selectedDocType,
-        document_content: generatedDoc
+        document_content: generatedDoc,
+        related_laws: relatedLaws
       };
       const caseRes = await axios.post("http://127.0.0.1:8000/api/cases", casePayload);
       setCurrentCaseId(caseRes.data.id); 
@@ -225,7 +226,7 @@ function App() {
       )}
 
       <h1 style={{ color: colors.snuNavy, borderBottom: `3px solid ${colors.snuNavy}`, paddingBottom: '15px', fontWeight: '800', letterSpacing: '-0.5px' }}>
-        ⚖️ 진화형 법률 AI 에이전트 (v3.0)
+        ⚖️ 진화형 법률 AI 에이전트
       </h1>
 
       <div style={{ marginBottom: '30px', display: 'flex', gap: '10px', marginTop: '20px' }}>

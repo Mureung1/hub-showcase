@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "title": "Civil Litigation Evolutionary AI Agent",
+  "summary": "본 프로젝트는 변호사 조력을 극대화하는 '사전 법률 가이드 프레임워크'입니다. 사용자의 흩어진 사건 정보를 '변호사 상담용 브리핑 페이퍼'로 구조화하고 소송 승소 전략 가이드를 제시합니다.",
+  "githubUser": "jinho",
+  "demoUrl": "",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/home.webp", "screenshots/pic2.webp","screenshots/pic3.webp"
+  ],
+  "problem": "일반인이 소송 및 법적 분쟁 발생 시 모호한 정보로 인해 변호사 상담 효율이 떨어지고, 방대한 판례와 법령 속에서 승소 실익을 사전 판단하기 어려운 문제 해결",
+  "targetUsers": [
+    "법적 분쟁 당사자",
+    "소송 준비 중인 일반인"
+  ],
+  "features": [
+    "사건 브리핑 자동 생성 모듈",
+    "승소/패소 근거 비교표 생성",
+    "소송 단계별 필수 액션 플랜 제시"
+  ],
+  "featureTags": [
+    "Legal Tech",
+    "AI Agent",
+    "Case Briefing"
+  ],
+  "techStack": [
+    "Python",
+    "FastAPI",
+    "React",
+    "LangChain",
+    "Faiss"
+  ],
+  "techHighlights": [
+    "Hybrid-Perception 및 Self-Evolution 루프 탑재"
+  ],
+  "developmentWithAI": "FastAPI와 LangChain을 활용한 법률 데이터 구조화 및 에이전트 파이프라인 설계",
+  "agent": {
+    "summary": "변호사 상담용 브리핑 페이퍼 구조화 및 소송 승소 전략 안내 에이전트",
+    "agentTools": [
+      {
+        "name": "Legal Case Analyst",
+        "type": "skill",
+        "purpose": "상담 내용의 법률적 구조화"
+      },
+      {
+        "name": "Pathfinding Engine",
+        "type": "skill",
+        "purpose": "유리한 판례 및 불리한 리스크 대조"
+      },
+      {
+        "name": "Document Gen",
+        "type": "skill",
+        "purpose": "브리핑 페이퍼 및 소송 서식 자동화"
+      },
+      {
+        "name": "Privacy Shield",
+        "type": "skill",
+        "purpose": "증거 자료 비식별화 및 패키징"
+      }
+    ],
+    "workflows": [
+      {
+        "name": "Core Pipeline",
+        "steps": [
+          "Input",
+          "Structuring",
+          "Strategy",
+          "Action",
+          "Evolution"
+        ]
+      }
+    ]
+  }
+}

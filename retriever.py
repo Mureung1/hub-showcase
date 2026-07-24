@@ -1,4 +1,5 @@
 import os
+import json
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from langchain_community.vectorstores import FAISS
@@ -49,6 +50,18 @@ class Retriever:
             print(f"⚠️ 판례 DB 로드 실패: {e}")
             self.prec_db = None
 
+    def _load_feedback_weights(self):
+        """🚀 [추가] 저장된 사용자 피드백 가중치를 불러옵니다."""
+        weights_file = "logs/feedback_weights.json"
+        if os.path.exists(weights_file):
+            try:
+                with open(weights_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"⚠️ 가중치 파일 로드 실패: {e}")
+                return {}
+        return {}
+
     def _get_smart_summary(self, content, query):
         # 딥러닝 임베딩 제거 -> 초고속 키워드 매칭 방식으로 변경
         sentences = [s.strip() for s in content.replace('\n', ' ').split('.') if len(s.strip()) > 5]
@@ -85,18 +98,18 @@ class Retriever:
         boost_keywords_law = ["대여", "빌려", "차용", "소비대차", "반환", "변제", "갚아"]
         boost_keywords_prec = ["대여금", "차용금", "변제", "반환", "청구", "인용"]
 
+        # 🚀 [추가] 검색할 때마다 실시간으로 사용자들이 누적한 가중치 파일을 읽어옴
+        feedback_weights = self._load_feedback_weights()
+
         # 1. 법령 검색 (self.law_db)
         if self.law_db:
-            # [개선 포인트 2] k값을 넉넉하게가져옵니다 (k=10).
+            # k값을 넉넉하게 가져옵니다 (k=10).
             docs_and_scores = self.law_db.similarity_search_with_score(query, k=10)
-            
             boosted_laws = []
 
             for doc, score in docs_and_scores:
                 # 기본 L2 거리 점수를 퍼센트로 변환 (원본 점수)
                 base_similarity = max(0, min(100, int((1 - (score / 2.0)) * 100)))
-                
-                # [개선 포인트 3] 키워드 매칭 가중치(Boosting) 로직
                 boost_score = 0
                 content = doc.page_content.replace('\n', ' ') # 줄바꿈 제거하여 분석
 
@@ -138,25 +151,30 @@ class Retriever:
                     if law_name == "민법" and article_no in ["750", "751"]:
                         boost_score += 50  # 제750조(불법행위 내용)
 
+                # 🚀 [추가] 피드백 시스템에서 받은 동적 가산점(Dynamic Boost) 적용!
+                law_title = f"⚖️ [법령] {doc.metadata.get('law_name', '법령')} 제{doc.metadata.get('article_no', '')}조"
+                dynamic_boost = feedback_weights.get(law_title, 0)
+                boost_score += dynamic_boost
+
                 # 최종 점수 계산 (최대 100점 제한)
                 final_similarity = min(100, base_similarity + boost_score)
                 
                 # 결과 임시 저장
                 boosted_laws.append({
-                    "title": f"⚖️ [법령] {doc.metadata.get('law_name', '법령')} 제{doc.metadata.get('article_no', '')}조",
+                    "title": law_title,
                     "content": f"▶ 핵심 요약: {self._get_smart_summary(doc.page_content, query)}...",
                     "full_content": doc.page_content,
                     "similarity": final_similarity, # 최종 가중 점수
                     "base_sim_debug": base_similarity # 디버깅용 원본 점수
                 })
 
-            # [개선 포인트 4] 최종 가중 점수 기준으로 정렬 후 상위 k=3개만 최종 리스트에 담음
+            # 최종 가중 점수 기준으로 정렬 후 상위 k=3개만 최종 리스트에 담음
             boosted_laws = sorted(boosted_laws, key=lambda x: x["similarity"], reverse=True)
             law_results = boosted_laws[:3] # 상위 3개 절삭
 
             # 디버깅 출력 (백엔드 터미널에서 확인 가능)
             if law_results:
-                print(f"DEBUG: 법령 최고점 -> 최종: {law_results[0]['similarity']}% (원본: {law_results[0]['base_sim_debug']}%)")
+                print(f"DEBUG: 법령 최고점 -> 최종: {law_results[0]['similarity']}% (원본: {law_results[0]['base_sim_debug']}%) / 피드백 가중치 반영 완료")
 
 
         # 2. 판례 검색 (self.prec_db)
@@ -182,11 +200,16 @@ class Retriever:
                 if any(kw in case_name for kw in ["대여금"]):
                     boost_score += 15
 
+                # 🚀 [추가] 판례 피드백 동적 가산점(Dynamic Boost) 적용!
+                prec_title = f"📂 [판례] {doc.metadata.get('case_name', '사건')} ({doc.metadata.get('case_no', '')})"
+                dynamic_boost = feedback_weights.get(prec_title, 0)
+                boost_score += dynamic_boost
+
                 # 최종 점수 계산 (최대 100점 제한)
                 final_similarity = min(100, base_similarity + boost_score)
 
                 boosted_precs.append({
-                    "title": f"📂 [판례] {doc.metadata.get('case_name', '사건')} ({doc.metadata.get('case_no', '')})",
+                    "title": prec_title,
                     "content": f"▶ 판결 요지: {self._get_smart_summary(doc.page_content, query)}...",
                     "full_content": doc.page_content,
                     "similarity": final_similarity,
@@ -198,7 +221,7 @@ class Retriever:
             prec_results = boosted_precs[:3]
 
             if prec_results:
-                print(f"DEBUG: 판례 최고점 -> 최종: {prec_results[0]['similarity']}% (원본: {prec_results[0]['base_sim_debug']}%)")
+                print(f"DEBUG: 판례 최고점 -> 최종: {prec_results[0]['similarity']}% (원본: {prec_results[0]['base_sim_debug']}%) / 피드백 가중치 반영 완료")
 
 
         # 3. 최종 정렬 및 병합

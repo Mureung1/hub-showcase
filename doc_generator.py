@@ -5,8 +5,8 @@ from jinja2 import Template
 class DocumentGenerator:
     def __init__(self):
         # 1. 내용증명서 템플릿 (상대방 압박용 - 엄중하고 단호하게)
-        self.content_proof_template = """
-[내용증명]
+        # 주의: 템플릿 내의 불필요한 공백을 없애기 위해 좌측 정렬을 유지합니다.
+        self.content_proof_template = """[내용증명]
 
 제목 : {{ title }}
 
@@ -29,12 +29,10 @@ class DocumentGenerator:
 {{ demands }}
 
 위 사항을 {{ deadline }}까지 이행하여 주시기 바랍니다. 
-만약 지정된 기한까지 이행하지 않을 경우, 본 발신인은 민형사상의 모든 법적 조치를 취할 것임을 엄중히 통고합니다.
-"""
+만약 지정된 기한까지 이행하지 않을 경우, 본 발신인은 민형사상의 모든 법적 조치를 취할 것임을 엄중히 통고합니다."""
 
         # 2. 민사 소장 템플릿 (법원 제출용 - 엄격한 양식)
-        self.complaint_template = """
-[소 장]
+        self.complaint_template = """[소 장]
 
 사 건 : {{ title }}
 원 고 : {{ sender_name }}
@@ -64,24 +62,22 @@ class DocumentGenerator:
 {{ date }}
 원고 : {{ sender_name }} (인)
 
-관할 법원 귀중
-"""
+관할 법원 귀중"""
 
-        # 3. 변호사 상담용 브리핑 템플릿 (AI 분석 결과 + 판례 포함)
-        self.briefing_template = """
-[변호사 사전 브리핑 및 사건 요약서]
+        # 3. 변호사 상담용 브리핑 템플릿 (제목 변경 및 여백/줄바꿈 완벽 정돈)
+        self.briefing_template = """[변호사 사전 브리핑 및 사건 요약서]
 
 작성일자 : {{ date }}
 사건제목 : {{ title }}
 
 ■ 당사자 정보
- - 의뢰인(원고) : {{ sender_name }} (연락처: {{ sender_phone }})
- - 상대방(피고) : {{ receiver_name }}
+- 의뢰인(원고) : {{ sender_name }} (연락처: {{ sender_phone }})
+- 상대방(피고) : {{ receiver_name }}
 
 ■ 사건 타임라인 및 핵심 사실관계
 {{ facts }}
 
-■ 의뢰인 최종 요구사항
+■ 의뢰인 기본 요구 및 AI 연계 검토 요청사항
 {{ demands }}
 
 ■ AI 분석 변호사 상담 전략 및 필요 증거
@@ -96,8 +92,7 @@ class DocumentGenerator:
 {% endfor %}
 {% else %}
 - 검색된 관련 법령/판례가 없습니다.
-{% endif %}
-"""
+{% endif %}"""
 
     def generate(self, doc_type: str, data: dict) -> str:
         if doc_type == "content_proof":
@@ -116,5 +111,20 @@ class DocumentGenerator:
         safe_data["related_laws"] = data.get("related_laws", [])
         safe_data["strategy_guide"] = data.get("strategy_guide", "[전략 분석 결과가 없습니다.]")
         safe_data["date"] = data.get("date", "")
+
+        # 🚀 [핵심 추가] 브리핑 문서일 경우, 토큰 소모 없이 파이썬 문자열 조합으로 변호사 요청사항을 빵빵하게 채워줍니다.
+        if doc_type == "briefing":
+            current_demands = safe_data.get("demands", "[기재 요망]")
+            if current_demands == "[기재 요망]":
+                current_demands = "본 사안에 대한 소송 및 법적 대응 방안 상담"
+            
+            # 사용자가 입력한 요구사항 밑에, 변호사에게 전하는 멘트를 자동(0원)으로 붙입니다.
+            ai_supplement = (
+                "\n\n[💡 AI 사전 분석 기반 추가 검토 요청사항]\n"
+                "하단에 기재된 'AI 분석 변호사 상담 전략'을 참고하여, "
+                "증거 보전 절차, 가압류 신청, 내용증명 발송 등 "
+                "초기 대응 절차의 실효성을 함께 검토해 주시기 바랍니다."
+            )
+            safe_data["demands"] = current_demands + ai_supplement
 
         return template.render(**safe_data)

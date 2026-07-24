@@ -81,6 +81,7 @@ class CaseLog(BaseModel):
     extracted_data: dict
     doc_type: str
     document_content: str
+    related_laws: list = []
 
 class FeedbackData(BaseModel):
     case_id: str
@@ -186,6 +187,7 @@ async def delete_case(case_id: str):
         
     return {"status": "success"}
 
+# (main.py 의 @app.post("/api/feedback") 부분 전체 덮어쓰기)
 @app.post("/api/feedback")
 async def update_feedback(feedback: FeedbackData):
     if not os.path.exists(CASES_FILE):
@@ -194,15 +196,51 @@ async def update_feedback(feedback: FeedbackData):
     with open(CASES_FILE, "r", encoding="utf-8") as f:
         cases = json.load(f)
         
+    target_case = None
     for case in cases:
         if case.get("id") == feedback.case_id:
             case["rating"] = feedback.rating
             case["comment"] = feedback.comment
+            target_case = case  # 피드백이 업데이트된 사건 정보 확보
             break
             
     with open(CASES_FILE, "w", encoding="utf-8") as f:
         json.dump(cases, f, ensure_ascii=False, indent=2)
+
+    # 🚀 [토큰 0원 진화 로직] 피드백 점수를 법령 가중치 파일에 누적 저장
+    if target_case and "related_laws" in target_case:
+        WEIGHTS_FILE = os.path.join(LOG_DIR, "feedback_weights.json")
+        weights = {}
         
+        # 기존 가중치 파일이 있으면 불러오기
+        if os.path.exists(WEIGHTS_FILE):
+            with open(WEIGHTS_FILE, "r", encoding="utf-8") as wf:
+                weights = json.load(wf)
+
+        # 4~5점: +5점 (가중치 상승), 1~2점: -5점 (가중치 하락)
+        point_change = 0
+        if feedback.rating >= 4:
+            point_change = 5
+        elif feedback.rating <= 2:
+            point_change = -5
+
+        # 변경점이 있을 경우에만 관련 법령/판례의 점수를 업데이트
+        if point_change != 0:
+            for law in target_case["related_laws"]:
+                law_title = law.get("title", "")
+                if not law_title:
+                    continue
+                
+                # 예: "⚖️ [법령] 민법 제598조" 자체를 영구 Key 값으로 사용
+                if law_title not in weights:
+                    weights[law_title] = 0
+                
+                weights[law_title] += point_change
+
+            # 가중치 파일 영구 저장 (DB를 초기화해도 지워지지 않음)
+            with open(WEIGHTS_FILE, "w", encoding="utf-8") as wf:
+                json.dump(weights, wf, ensure_ascii=False, indent=2)
+                
     return {"status": "success"}
 
 if __name__ == "__main__": 
