@@ -4,7 +4,7 @@
 
 - State: claimed
 - Surface: local-ticket
-- Next actor: A1 writer
+- Next actor: independent Server concurrency/Runtime lifecycle reviewer
 
 ## Parent Spec
 
@@ -58,6 +58,23 @@ Official Codex가 소유하는 account lifecycle과 AY-PLE의 auth-only→worksp
 | Observable result | Account action과 auth-only→workspace Runtime 교체가 app-wide lease 하나에서 직렬화되고, B-owned callback과 Ready readback이 성공한 뒤에만 Ready result가 반환된다. |
 | Highest practical seam | Deterministic R1 `CodexAccountLifecycle` fake와 injected Runtime factory/close/readback을 사용하는 Server account/transition race matrix. Live OAuth와 credential byte는 사용하지 않는다. |
 | Scope | Ticket의 `writablePaths`만 사용하며 frozen contract, shared manifest·lockfile, sibling branch와 Codex SDK source/patch stack을 변경하지 않는다. |
+
+## Corrective Candidate Receipt
+
+이 receipt는 independent 재리뷰 전 writer candidate evidence다. Ticket state는 `claimed`로 유지하고 Acceptance Criteria checkbox는 의도적으로 닫지 않는다.
+
+| Evidence | Result |
+| --- | --- |
+| Initial candidate | `3f7d600d144aa7178c7a0816ad0901ab77fd8c4e` — app-wide account lease, mount-independent Account route adapter와 product reserve→release guard를 구현했지만 independent review에서 P1 두 건으로 NOT PASS였다. |
+| Review finding 1 | `closeAuthOnlyRuntime()` reject가 caller까지 전파돼 ambiguous close를 stable restart-required state로 고정하지 못했다. |
+| Review finding 2 | Workspace Runtime의 fresh account가 `signed_out` 또는 `unsupported`여도 B-owned Ready callback과 readback을 호출할 수 있었다. |
+| Corrective code tip | `cad4784284793901bc54fd736f8faf9c34401cfd` — close reject를 `auth_runtime_close_ambiguous`로 변환하고 같은 failure를 latch하며, fresh `chatgpt` account만 B callback에 넘기는 A-owned refinement를 추가했다. |
+| Close regression | Rejecting close를 두 번 요청해도 close 1회, workspace Runtime start 0회, B commit 0회다. Private cause는 optional diagnostic callback에만 전달되고 reporter failure가 latch를 약화하지 않는다. |
+| Account admission regression | Fresh `chatgpt`는 B commit→Ready readback까지 같은 lease에서 성공한다. Fresh `signed_out`, `unsupported`와 thrown read는 B commit/readback 0회로 `account_unavailable` 또는 cancellation에 수렴하며 retry는 이미 시작한 같은 Runtime generation을 재사용한다. |
+| Focused verification | Account coordinator와 route adapter `33/33`; complete Server `185/185`; Server typecheck와 `git diff --check` green. |
+| Repository gates | Exact corrective code tip에서 root `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs links와 diff check가 green이다. Docs link result는 active 28, historical 2다. |
+| Scope audit | Frozen `account-runtime/contract.ts`, shared manifest·lockfile, sibling branches와 Official Codex SDK source/patch stack은 변경하지 않았다. |
+| Review status | Corrective candidate는 아직 independently reviewed fixed SHA가 아니다. Standards와 parent Spec 재리뷰 통과 뒤에만 completion 및 integration 대상으로 승격한다. |
 
 ## Blocked By
 
