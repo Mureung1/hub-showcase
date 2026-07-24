@@ -99,4 +99,15 @@ describe('validateReviews', () => {
     const result = validateReviews(['A', '', 'B'])
     expect(result).toEqual(['A', 'B'])
   })
+
+  // 12. 경계값: 정확히 500자면 통과한다
+  it('리뷰 길이가 정확히 500자면 통과한다', () => {
+    const result = validateReviews(['가'.repeat(500)])
+    expect(result[0]).toHaveLength(500)
+  })
+
+  // 13. 경계값: 501자면 REVIEW_TOO_LONG
+  it('리뷰 길이가 501자면 REVIEW_TOO_LONG 에러가 발생한다', () => {
+    assertApiError(() => validateReviews(['가'.repeat(501)]), 'REVIEW_TOO_LONG')
+  })
 })
