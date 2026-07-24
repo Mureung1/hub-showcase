@@ -62,7 +62,7 @@ test('presenter redacts the trusted home leaf if it recurs below home', () => {
 
   const result = present(
     workspace(
-      '/Users/private-user/private-user/Documents/2026-2학기',
+      '/Users/private-user/archive-PRIVATE-USER-copy/Documents/2026-2학기',
     ),
   )
 
@@ -81,6 +81,8 @@ test('presenter replaces a username or private canary leaf only in Browser copy'
 
   for (const leaf of [
     'Private-User',
+    '2026-private-user-2학기',
+    '2026-PRIVATE-USER-2학기',
     'workspace_deadbeef',
     'a'.repeat(64),
     'semester\nprivate',
@@ -190,6 +192,10 @@ function assertSafe(value: {
     '\\',
     '\n',
   ]) {
-    assert.equal(serialized.includes(canary), false, canary)
+    assert.equal(
+      serialized.toLowerCase().includes(canary.toLowerCase()),
+      false,
+      canary,
+    )
   }
 }

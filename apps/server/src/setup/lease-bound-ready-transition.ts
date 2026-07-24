@@ -35,6 +35,7 @@ export type WorkspaceReadyAttestation =
 
 export interface WorkspaceReadyAttestationPort {
   read(workspace: AdmittedSemesterWorkspace): WorkspaceReadyAttestation
+  invalidateAll(): void
 }
 
 export interface LeaseBoundReadyTransition
@@ -68,10 +69,13 @@ export function createLeaseBoundReadyTransition(input: {
           ? { state: 'confirmed', ready: cloneReadyPointer(ready) }
           : { state: 'unconfirmed' }
       },
+      invalidateAll() {
+        confirmed.clear()
+      },
     },
     async transition(request): Promise<SemesterReadyTransitionResult> {
       const key = workspaceKey(request.workspace)
-      confirmed.delete(key)
+      confirmed.clear()
       active.set(key, (active.get(key) ?? 0) + 1)
       activeCount += 1
       let attested = false
@@ -170,6 +174,7 @@ export function createLeaseBoundReadyTransition(input: {
           ) {
             return { status: 'ready_commit_unknown' }
           }
+          confirmed.clear()
           confirmed.set(key, cloneReadyPointer(transitioned.ready))
           attested = true
           return { status: 'ready', ready: transitioned.ready }
@@ -196,7 +201,7 @@ export function createLeaseBoundReadyTransition(input: {
             }
         }
       } finally {
-        if (!attested) confirmed.delete(key)
+        if (!attested) confirmed.clear()
         const remaining = (active.get(key) ?? 1) - 1
         activeCount -= 1
         if (remaining === 0) {

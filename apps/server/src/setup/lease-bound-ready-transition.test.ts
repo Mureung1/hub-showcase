@@ -22,20 +22,30 @@ import type {
   AdmittedSemesterWorkspace,
   LaunchBinding,
   SetupEnvelopeRead,
+  WorkspaceActionAdmission,
   WorkspaceParentAuthority,
 } from '@ay-ple/semester-workspace'
 import type {
   CodexFreshAccount,
   CodexNativeContextPort,
 } from '@ay-ple/codex-chat-runtime'
+import {
+  DeterministicCodexChatRuntime,
+} from '@ay-ple/codex-chat-runtime/testing'
 
 import { createAccountRuntimeCoordinator } from '../account-runtime/coordinator.js'
+import {
+  createAccountRuntimeRouteAdapter,
+} from '../account-runtime/route-adapter.js'
 import {
   createLeaseBoundReadyTransition,
 } from './lease-bound-ready-transition.js'
 import {
   createSetupEnvelopeActionReadiness,
 } from './setup-envelope-action-readiness.js'
+import {
+  createWorkspaceActionAdmission,
+} from './workspace-action-admission.js'
 import type {
   WorkspaceNativeProjectBoundary,
 } from './native-project-boundary.js'
@@ -193,12 +203,33 @@ test('real setup journey reaches one action-eligible Ready only after the A1 and
           nativeContext,
         }),
     })
+    const accountObservationRuntime =
+      new DeterministicCodexChatRuntime({
+        role: {
+          role: 'workspace',
+          workspaceRoot: canonicalParent,
+        },
+        accountReads: [
+          { status: 'ok', account: { state: 'chatgpt' } },
+          { status: 'ok', account: { state: 'chatgpt' } },
+        ],
+      })
+    const accountRoutes = createAccountRuntimeRouteAdapter({
+      coordinator,
+      currentAccountRuntime: async () => accountObservationRuntime,
+      attemptId: () => 'account_attempt_ready_seam',
+      now: () => new Date('2026-07-24T00:00:00.000Z'),
+      wait: async () => undefined,
+      invalidateReadyAttestation: () =>
+        transition.attestation.invalidateAll(),
+    })
     const store = createSetupEnvelopeStore({ appDataRoot })
     const readiness = createSetupEnvelopeActionReadiness({
       stateStore: store,
       release,
       transitionAttestation: transition.attestation,
     })
+    const actionCalls = createActionCallProbe()
     const readyCommitted = deferred<void>()
     const journey = createLeaseBoundSemesterSetupJourney({
       stateStore: store,
@@ -247,6 +278,16 @@ test('real setup journey reaches one action-eligible Ready only after the A1 and
     })
     await readyCommitted.promise
     assert.ok(activeWorkspace)
+    const actionAdmission = createWorkspaceActionAdmission({
+      source: bundleSource,
+      readiness,
+      nativeBoundary: createWorkspaceNativeProjectBoundary({
+        workspace: activeWorkspace,
+        controlledHome: canonicalHome,
+        controlledCodexHome: canonicalCodexHome,
+        nativeContext,
+      }),
+    })
     assert.equal(
       await readiness.read(activeWorkspace),
       'setup_transition_active',
@@ -260,16 +301,31 @@ test('real setup journey reaches one action-eligible Ready only after the A1 and
       duringCommit.envelope.state.kind,
       'active_ready',
     )
-    assert.equal(
-      events.filter((event) =>
-        [
-          'thread.start',
-          'turn.start',
-          'Skill',
-        ].includes(event),
-      ).length,
-      0,
+    assert.deepEqual(
+      await attemptAcademicAction({
+        admission: actionAdmission,
+        workspace: activeWorkspace,
+        mode: 'start',
+        calls: actionCalls,
+      }),
+      {
+        status: 'blocked',
+        reason: 'setup_transition_active',
+      },
     )
+    assert.deepEqual(
+      await attemptAcademicAction({
+        admission: actionAdmission,
+        workspace: activeWorkspace,
+        mode: 'resume',
+        calls: actionCalls,
+      }),
+      {
+        status: 'blocked',
+        reason: 'setup_transition_active',
+      },
+    )
+    assertNoAcademicActionCalls(actionCalls)
 
     allowReadyReturn.resolve()
     const result = await approval
@@ -290,6 +346,127 @@ test('real setup journey reaches one action-eligible Ready only after the A1 and
       'native.skills.list',
       'ready.cas',
     ])
+
+    assert.equal(
+      (
+        await accountRoutes.observe({
+          signal: new AbortController().signal,
+        })
+      ).state,
+      'connected',
+    )
+    const durableReady = await store.read()
+    assert.equal(durableReady.status, 'current')
+    if (
+      durableReady.status !== 'current' ||
+      durableReady.envelope.state.kind !== 'active_ready'
+    ) {
+      assert.fail('durable Ready required')
+    }
+    assert.equal(
+      (
+        await accountRoutes.dispatch({
+          command: { command: 'account.logout' },
+          signal: new AbortController().signal,
+        })
+      ).state,
+      'login_required',
+    )
+    assert.equal(
+      transition.attestation.read(activeWorkspace).state,
+      'unconfirmed',
+    )
+    assert.equal(
+      await readiness.read(activeWorkspace),
+      'workspace_not_ready',
+    )
+    assert.deepEqual(
+      await attemptAcademicAction({
+        admission: actionAdmission,
+        workspace: activeWorkspace,
+        mode: 'start',
+        calls: actionCalls,
+      }),
+      {
+        status: 'blocked',
+        reason: 'workspace_not_ready',
+      },
+    )
+    assert.deepEqual(
+      await attemptAcademicAction({
+        admission: actionAdmission,
+        workspace: activeWorkspace,
+        mode: 'resume',
+        calls: actionCalls,
+      }),
+      {
+        status: 'blocked',
+        reason: 'workspace_not_ready',
+      },
+    )
+    assertNoAcademicActionCalls(actionCalls)
+    assert.deepEqual(await store.read(), durableReady)
+
+    assert.equal(
+      (
+        await accountRoutes.dispatch({
+          command: { command: 'account.retry' },
+          signal: new AbortController().signal,
+        })
+      ).state,
+      'connected',
+    )
+    assert.equal(
+      transition.attestation.read(activeWorkspace).state,
+      'unconfirmed',
+    )
+    assert.equal(
+      await readiness.read(activeWorkspace),
+      'workspace_not_ready',
+    )
+    assert.deepEqual(await store.read(), durableReady)
+
+    const resumed = await journey.reconcile({
+      kind: 'recover',
+      recoveryId: durableReady.envelope.state.pointer.setupId,
+      action: 'resume',
+    })
+    assert.equal(resumed.outcome, 'ready_relaunch')
+    assert.equal(resumed.projection.state, 'ready')
+    assert.equal(
+      transition.attestation.read(activeWorkspace).state,
+      'confirmed',
+    )
+    assert.equal(await readiness.read(activeWorkspace), 'ready')
+    assert.deepEqual(await store.read(), durableReady)
+    assert.equal(
+      (
+        await attemptAcademicAction({
+          admission: actionAdmission,
+          workspace: activeWorkspace,
+          mode: 'start',
+          calls: actionCalls,
+        })
+      ).status,
+      'admitted',
+    )
+    assert.equal(
+      (
+        await attemptAcademicAction({
+          admission: actionAdmission,
+          workspace: activeWorkspace,
+          mode: 'resume',
+          calls: actionCalls,
+        })
+      ).status,
+      'admitted',
+    )
+    assert.deepEqual(actionCalls, {
+      'thread/start': 1,
+      'thread/resume': 1,
+      'turn/start': 2,
+      SkillInput: 2,
+    })
   } finally {
     allowReadyReturn.resolve()
     await approval?.catch(() => undefined)
@@ -349,12 +526,6 @@ test('lease adapter preserves A1 order and holds the lease through native guard 
     'ready.commit.relaunch',
     'ready.read.relaunch',
   ])
-  assert.equal(
-    events.some((event) =>
-      ['thread/start', 'turn/start', 'Skill'].includes(event),
-    ),
-    false,
-  )
 })
 
 test('adapter restores native and Ready callback failures hidden by A1 account_unavailable flattening', async (t) => {
@@ -915,6 +1086,57 @@ test('a queued same-workspace failure invalidates an earlier overlapping success
   )
 })
 
+test('any workspace transition invalidates an earlier workspace attestation even when the new transition fails', async () => {
+  const events: string[] = []
+  const transition = createLeaseBoundReadyTransition({
+    lease: createCoordinator(events),
+    createNativeBoundary: (candidate) =>
+      nativeBoundary(candidate, async () => ({ status: 'verified' })),
+  })
+  assert.deepEqual(await transition.transition(callbacks()), {
+    status: 'ready',
+    ready,
+  })
+  assert.equal(
+    transition.attestation.read(workspace).state,
+    'confirmed',
+  )
+  const otherWorkspace = {
+    ...structuredClone(workspace),
+    canonicalRoot: '/workspace/another-semester',
+    workspaceId: `workspace_${'2'.repeat(32)}`,
+    manifest: {
+      ...structuredClone(workspace.manifest),
+      workspaceId: `workspace_${'2'.repeat(32)}`,
+    },
+  } satisfies AdmittedSemesterWorkspace
+  const otherReady = {
+    ...structuredClone(ready),
+    workspace: {
+      canonicalRoot: otherWorkspace.canonicalRoot,
+      workspaceId: otherWorkspace.workspaceId,
+      formatVersion: 3,
+    },
+  } satisfies ActiveReadyPointer
+
+  assert.deepEqual(
+    await transition.transition({
+      workspace: otherWorkspace,
+      expectedReady: otherReady,
+      commitReady: async () => otherReady,
+      readReady: async () => otherReady,
+    }),
+    {
+      status: 'transition_unavailable',
+      retry: 'restart_required',
+    },
+  )
+  assert.equal(
+    transition.attestation.read(workspace).state,
+    'unconfirmed',
+  )
+})
+
 test('adapter maps A1 failures without inventing Ready state', async (t) => {
   for (const testCase of [
     {
@@ -1130,5 +1352,51 @@ function aborted(signal: AbortSignal): Promise<void> {
   if (signal.aborted) return Promise.resolve()
   return new Promise((resolve) => {
     signal.addEventListener('abort', () => resolve(), { once: true })
+  })
+}
+
+type ActionCallProbe = {
+  'thread/start': number
+  'thread/resume': number
+  'turn/start': number
+  SkillInput: number
+}
+
+function createActionCallProbe(): ActionCallProbe {
+  return {
+    'thread/start': 0,
+    'thread/resume': 0,
+    'turn/start': 0,
+    SkillInput: 0,
+  }
+}
+
+async function attemptAcademicAction(input: {
+  readonly admission: WorkspaceActionAdmission
+  readonly workspace: AdmittedSemesterWorkspace
+  readonly mode: 'start' | 'resume'
+  readonly calls: ActionCallProbe
+}) {
+  const admitted = await input.admission.admit({
+    workspace: input.workspace,
+    action: 'academic',
+  })
+  if (admitted.status !== 'admitted') return admitted
+  if (input.mode === 'start') {
+    input.calls['thread/start'] += 1
+  } else {
+    input.calls['thread/resume'] += 1
+  }
+  input.calls['turn/start'] += 1
+  input.calls.SkillInput += 1
+  return admitted
+}
+
+function assertNoAcademicActionCalls(calls: ActionCallProbe): void {
+  assert.deepEqual(calls, {
+    'thread/start': 0,
+    'thread/resume': 0,
+    'turn/start': 0,
+    SkillInput: 0,
   })
 }

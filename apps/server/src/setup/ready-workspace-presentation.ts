@@ -38,7 +38,7 @@ export function createReadyWorkspacePresenter(input: {
       throw new TypeError('A safe workspace leaf is required')
     }
     const workspaceName =
-      workspaceLeaf.toLowerCase() === userName.toLowerCase() ||
+      includesPrivateValue(workspaceLeaf, userName) ||
       hasControl(workspaceLeaf) ||
       looksPrivate(workspaceLeaf)
         ? '학기 공간'
@@ -131,7 +131,7 @@ function safeBreadcrumbSegment(
 ): string {
   return (
     isPublicSafeSegment(segment) &&
-    segment.toLowerCase() !== userName.toLowerCase() &&
+    !includesPrivateValue(segment, userName) &&
     !looksPrivate(segment)
   )
     ? segment
