@@ -10,15 +10,16 @@ Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 p
 
 ## Public-preview application graph
 
-`@ay-ple/server` package root는 side-effect-free `createServerApplication()`과 public-preview bootstrap type만 host에 공개한다. `publicPreview`와 legacy `codexChat`·`productRuntime`·`semesterWorkspace` bootstrap은 한 application에서 함께 사용할 수 없다. 따라서 하나의 application graph에 두 Runtime owner나 두 workspace authority가 생기지 않는다.
+`@ay-ple/server` package root는 side-effect-free `createServerApplication()`, listener lifecycle 순서를 캡슐화한 `listenToServerApplication()`과 두 함수의 host-facing type을 공개한다. Host는 내부 listener claim 순서를 재구성하지 않는다. `publicPreview`와 legacy `codexChat`·`productRuntime`·`semesterWorkspace` bootstrap은 한 application에서 함께 사용할 수 없다. 따라서 하나의 application graph에 두 Runtime owner나 두 workspace authority가 생기지 않는다.
 
 Public-preview graph는 다음 순서를 소유한다.
 
-1. Host가 제공한 high-level spawn capability를 매 Runtime generation 직전에 검증한다.
-2. Auth-only Runtime에서 managed Browser OAuth를 수행한다.
-3. Native picker의 transient opaque parent selection으로 app-owned v3 workspace를 prepare·approve한다.
-4. A-owned lease 안에서 auth-only close → workspace Runtime start → fresh account → native context → Ready commit/readback을 완료한다.
-5. Reconnect 뒤에는 durable Ready만으로 성공을 합성하지 않고 explicit `setup.resume`이 새 attestation을 만든 뒤에만 `Semester Ready`를 공개한다.
+1. App package version, exact `npx ay-ple@<version>` command, Runtime release identity와 workspace bundle hash를 하나의 launch binding으로 교차 검증한다.
+2. Host가 제공한 high-level spawn capability를 매 Runtime generation 직전에 검증하고 그 결과의 release ID, target과 Runtime contract version이 같은 binding과 일치할 때만 native Runtime을 만든다.
+3. Auth-only Runtime에서 managed Browser OAuth를 수행한다.
+4. Native picker의 transient opaque parent selection으로 app-owned v3 workspace를 prepare·approve한다.
+5. A-owned lease 안에서 auth-only close → workspace Runtime start → fresh account → native context → Ready commit/readback을 완료한다.
+6. Reconnect 뒤에는 durable Ready만으로 성공을 합성하지 않고 explicit `setup.resume`이 새 attestation을 만든 뒤에만 `Semester Ready`를 공개한다.
 
 `GET|POST /api/product/public-preview`는 S1 exact Browser contract만 반환한다. Absolute path, Runtime identity, token, native ID, setup/release private binding과 nested error는 노출하지 않는다. Public-preview graph는 현재 `Semester Ready`에서 끝난다. `admitAcademicAction()`은 후속 action integration을 위한 B-owned admission probe일 뿐 route나 native action을 실행하지 않으며, legacy Course·material·Assignment·Chat·Review route와 private MCP host는 이 graph에 mount되지 않는다.
 

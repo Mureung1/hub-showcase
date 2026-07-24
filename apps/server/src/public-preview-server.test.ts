@@ -29,9 +29,11 @@ import {
 import {
   captureCanonicalWorkspaceBundleSource,
   type LaunchBinding,
+  type RecoverableSetupEnvelopeStore,
 } from '@ay-ple/semester-workspace'
 
 import {
+  PublicPreviewCompositionStartError,
   createPublicPreviewFeatureComposition,
   type PublicPreviewFeatureComposition,
   type PublicPreviewServerBootstrap,
@@ -42,6 +44,7 @@ import type {
 import { createPublicPreviewRouter } from './public-preview-http.js'
 import {
   createPublicPreviewRuntimeOwner,
+  type PublicPreviewRuntimeOwner,
 } from './public-preview-runtime-owner.js'
 import {
   createServerApplicationForTesting,
@@ -366,20 +369,183 @@ test('shutdown aborts an in-flight native parent picker before waiting for comma
 test('composition failure after Runtime ownership closes the active generation', async () => {
   const fixture = await createFixture({ authInitiallyConnected: true })
   try {
-    const bootstrap = fixture.bootstrap('http://127.0.0.1:43123')
     await assert.rejects(
-      fixture.createFeature({
-        ...bootstrap,
-        setup: {
-          ...bootstrap.setup,
-          displayUserHome: 'relative-user-home',
+      createPublicPreviewFeatureComposition(
+        fixture.bootstrap('http://127.0.0.1:43123'),
+        {
+          runtimeOwner: fixture.runtimeOwner,
+          stateStore: failingStateStore(),
         },
-      }),
-      /canonical user home/,
+      ),
+      /synthetic launch failure/,
     )
     assert.equal(
       fixture.authRuntime.calls.at(-1)?.operation,
       'closeAccount',
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('composition surfaces ambiguous post-spawn cleanup with a stable start error', async () => {
+  const fixture = await createFixture({ authInitiallyConnected: true })
+  try {
+    const runtimeOwner = withCloseCurrent(
+      fixture.runtimeOwner,
+      async () => ({
+        status: 'ambiguous',
+        processTreeGone: false,
+      }),
+    )
+    await assert.rejects(
+      createPublicPreviewFeatureComposition(
+        fixture.bootstrap('http://127.0.0.1:43123'),
+        {
+          runtimeOwner,
+          stateStore: failingStateStore(),
+        },
+      ),
+      (error) => {
+        assert.ok(error instanceof PublicPreviewCompositionStartError)
+        assert.equal(
+          error.code,
+          'public_preview_runtime_cleanup_ambiguous',
+        )
+        return true
+      },
+    )
+  } finally {
+    await fixture.runtimeOwner.closeCurrent({ signal: signal() })
+    await fixture.cleanup()
+  }
+})
+
+test('composition surfaces rejected post-spawn cleanup with a stable start error', async () => {
+  const fixture = await createFixture({ authInitiallyConnected: true })
+  try {
+    const runtimeOwner = withCloseCurrent(
+      fixture.runtimeOwner,
+      async () => {
+        throw new Error('synthetic close failure')
+      },
+    )
+    await assert.rejects(
+      createPublicPreviewFeatureComposition(
+        fixture.bootstrap('http://127.0.0.1:43123'),
+        {
+          runtimeOwner,
+          stateStore: failingStateStore(),
+        },
+      ),
+      (error) => {
+        assert.ok(error instanceof PublicPreviewCompositionStartError)
+        assert.equal(
+          error.code,
+          'public_preview_runtime_cleanup_ambiguous',
+        )
+        return true
+      },
+    )
+  } finally {
+    await fixture.runtimeOwner.closeCurrent({ signal: signal() })
+    await fixture.cleanup()
+  }
+})
+
+test('release bootstrap mismatches fail before owner creation, Runtime spawn or setup state access', async () => {
+  const fixture = await createFixture({ authInitiallyConnected: true })
+  try {
+    await fixture.runtimeOwner.closeCurrent({ signal: signal() })
+    const beforeRuntimeCalls = fixture.allRuntimeCalls()
+    const beforeState = await snapshotEntries(fixture.appDataRoot)
+    const base = fixture.bootstrap('http://127.0.0.1:43123')
+    const mismatches: readonly PublicPreviewServerBootstrap[] = [
+      {
+        ...base,
+        applicationVersion: '0.0.2',
+      },
+      {
+        ...base,
+        setup: {
+          ...base.setup,
+          requiredApplicationCommand: 'npx ay-ple',
+        },
+      },
+      {
+        ...base,
+        setup: {
+          ...base.setup,
+          release: {
+            ...base.setup.release,
+            bundle: {
+              ...base.setup.release.bundle,
+              descriptorSha256: 'f'.repeat(64),
+            },
+          },
+        },
+      },
+      {
+        ...base,
+        setup: {
+          ...base.setup,
+          bundleSource: {
+            ...base.setup.bundleSource,
+            completeTreeSha256: 'e'.repeat(64),
+          },
+        },
+      },
+    ]
+    let ownerCreations = 0
+    let spawnCapabilityCalls = 0
+    let nativeRuntimeSpawns = 0
+    let stateStoreCalls = 0
+    const stateStore = unreachableStateStore(() => {
+      stateStoreCalls += 1
+    })
+
+    for (const mismatch of mismatches) {
+      const runtime = {
+        ...mismatch.runtime,
+        spawn: {
+          verifyRuntimeForSpawn: async (input: {
+            readonly signal: AbortSignal
+          }) => {
+            spawnCapabilityCalls += 1
+            return mismatch.runtime.spawn.verifyRuntimeForSpawn(input)
+          },
+        },
+      }
+      await assert.rejects(
+        createPublicPreviewFeatureComposition(
+          { ...mismatch, runtime },
+          {
+            stateStore,
+            async createRuntimeOwner(input, expected) {
+              ownerCreations += 1
+              return createPublicPreviewRuntimeOwner(
+                input,
+                expected,
+                async () => {
+                  nativeRuntimeSpawns += 1
+                  throw new Error('unexpected native Runtime spawn')
+                },
+              )
+            },
+          },
+        ),
+        /release bootstrap is inconsistent/,
+      )
+    }
+
+    assert.equal(ownerCreations, 0)
+    assert.equal(spawnCapabilityCalls, 0)
+    assert.equal(nativeRuntimeSpawns, 0)
+    assert.equal(stateStoreCalls, 0)
+    assert.deepEqual(fixture.allRuntimeCalls(), beforeRuntimeCalls)
+    assert.deepEqual(
+      await snapshotEntries(fixture.appDataRoot),
+      beforeState,
     )
   } finally {
     await fixture.cleanup()
@@ -501,9 +667,6 @@ async function createFixture(options: {
       completeTreeSha256: source.completeTreeSha256,
     },
   }
-  const accountState = options.authInitiallyConnected
-    ? 'chatgpt' as const
-    : 'signed_out' as const
   const authRuntime = new DeterministicCodexChatRuntime({
     role: { role: 'auth-only', bootstrapCwd },
     accountReads: options.authInitiallyConnected
@@ -547,7 +710,6 @@ async function createFixture(options: {
   let workspaceRuntime: DeterministicCodexChatRuntime | undefined
   const runtimeOwner = await createPublicPreviewRuntimeOwner(
     {
-      applicationVersion: '0.0.1',
       authOnlyBootstrapCwd: bootstrapCwd,
       environment: {
         home: runtimeHome,
@@ -558,7 +720,21 @@ async function createFixture(options: {
       spawn: {
         verifyRuntimeForSpawn: async () => ({
           runtimeRoot: path.join(root, 'verified-runtime'),
+          identity: {
+            releaseId: release.runtime.releaseId,
+            target: release.runtime.target,
+            runtimeContractVersion:
+              release.runtime.runtimeContractVersion,
+          },
         }),
+      },
+    },
+    {
+      applicationVersion: release.application.packageVersion,
+      runtime: {
+        releaseId: release.runtime.releaseId,
+        target: release.runtime.target,
+        runtimeContractVersion: release.runtime.runtimeContractVersion,
       },
     },
     async ({ role }) => {
@@ -626,9 +802,9 @@ async function createFixture(options: {
   const bootstrap = (
     origin: string,
   ): PublicPreviewServerBootstrap => ({
+    applicationVersion: '0.0.1',
     origin,
     runtime: {
-      applicationVersion: '0.0.1',
       authOnlyBootstrapCwd: bootstrapCwd,
       environment: {
         home: runtimeHome,
@@ -639,6 +815,12 @@ async function createFixture(options: {
       spawn: {
         verifyRuntimeForSpawn: async () => ({
           runtimeRoot: path.join(root, 'unused-runtime'),
+          identity: {
+            releaseId: release.runtime.releaseId,
+            target: release.runtime.target,
+            runtimeContractVersion:
+              release.runtime.runtimeContractVersion,
+          },
         }),
       },
     },
@@ -677,6 +859,7 @@ async function createFixture(options: {
     pickerAborts,
     pickerCalls,
     pickerStarted,
+    runtimeOwner,
     async createFeature(input: PublicPreviewServerBootstrap) {
       return createPublicPreviewFeatureComposition(input, {
         runtimeOwner,
@@ -708,7 +891,6 @@ async function createFixture(options: {
       release.runtime.manifestSha256,
     ],
     cleanup: () => rm(root, { force: true, recursive: true }),
-    accountState,
   }
 }
 
@@ -851,6 +1033,41 @@ async function freePort(): Promise<number> {
 
 function signal(): AbortSignal {
   return new AbortController().signal
+}
+
+function failingStateStore(): RecoverableSetupEnvelopeStore {
+  return unreachableStateStore(() => {
+    throw new Error('synthetic launch failure')
+  })
+}
+
+function unreachableStateStore(
+  onAccess: () => void,
+): RecoverableSetupEnvelopeStore {
+  return {
+    async read() {
+      onAccess()
+      throw new Error('unexpected setup state read')
+    },
+    async compareAndReplace() {
+      onAccess()
+      throw new Error('unexpected setup state write')
+    },
+    async reconcileAbandonedWrite() {
+      onAccess()
+      throw new Error('unexpected setup state recovery')
+    },
+  }
+}
+
+function withCloseCurrent(
+  runtimeOwner: PublicPreviewRuntimeOwner,
+  closeCurrent: PublicPreviewRuntimeOwner['closeCurrent'],
+): PublicPreviewRuntimeOwner {
+  return {
+    ...runtimeOwner,
+    closeCurrent,
+  }
 }
 
 async function settlesWithin(

@@ -25,14 +25,29 @@ export type PublicPreviewRuntimeEnvironment = {
 export type PublicPreviewRuntimeSpawnCapability = {
   verifyRuntimeForSpawn(input: {
     readonly signal: AbortSignal
-  }): Promise<{ readonly runtimeRoot: string }>
+  }): Promise<{
+    readonly runtimeRoot: string
+    readonly identity: {
+      readonly releaseId: string
+      readonly target: 'darwin-arm64'
+      readonly runtimeContractVersion: number
+    }
+  }>
 }
 
 export type PublicPreviewRuntimeBootstrap = {
-  readonly applicationVersion: string
   readonly authOnlyBootstrapCwd: string
   readonly environment: PublicPreviewRuntimeEnvironment
   readonly spawn: PublicPreviewRuntimeSpawnCapability
+}
+
+export type PublicPreviewExpectedRuntimeBinding = {
+  readonly applicationVersion: string
+  readonly runtime: {
+    readonly releaseId: string
+    readonly target: 'darwin-arm64'
+    readonly runtimeContractVersion: number
+  }
 }
 
 export interface PublicPreviewRuntimeOwner {
@@ -69,12 +84,14 @@ type ManagedRuntimeFactory = (input: {
 
 export async function createPublicPreviewRuntimeOwner(
   input: PublicPreviewRuntimeBootstrap,
+  expectedBinding: PublicPreviewExpectedRuntimeBinding,
   createRuntime: ManagedRuntimeFactory = createCodexChatRuntime,
 ): Promise<PublicPreviewRuntimeOwner> {
+  const expected = cloneExpectedBinding(expectedBinding)
   const application = {
     name: 'ay-ple',
     title: 'AY-PLE',
-    version: input.applicationVersion,
+    version: expected.applicationVersion,
   } as const satisfies CodexRuntimeApplicationIdentity
   const environment = { ...input.environment }
   let current: CodexManagedRuntime | undefined = await spawnRuntime({
@@ -105,9 +122,12 @@ export async function createPublicPreviewRuntimeOwner(
     if (
       spawnInput.signal.aborted ||
       typeof verified.runtimeRoot !== 'string' ||
-      verified.runtimeRoot.length === 0
+      verified.runtimeRoot.length === 0 ||
+      !sameRuntimeIdentity(verified.identity, expected.runtime)
     ) {
-      throw new TypeError('Verified Runtime spawn was not authorized')
+      throw new TypeError(
+        'Verified Runtime spawn release was not authorized',
+      )
     }
     return createRuntime({
       runtimeRoot: verified.runtimeRoot,
@@ -235,4 +255,48 @@ function cloneWorkspace(
   workspace: AdmittedSemesterWorkspace,
 ): AdmittedSemesterWorkspace {
   return structuredClone(workspace)
+}
+
+function cloneExpectedBinding(
+  binding: PublicPreviewExpectedRuntimeBinding,
+): PublicPreviewExpectedRuntimeBinding {
+  if (
+    !isOpaqueValue(binding.applicationVersion) ||
+    !isOpaqueValue(binding.runtime.releaseId) ||
+    binding.runtime.target !== 'darwin-arm64' ||
+    !Number.isSafeInteger(binding.runtime.runtimeContractVersion) ||
+    binding.runtime.runtimeContractVersion < 1
+  ) {
+    throw new TypeError('Expected Runtime release binding is invalid')
+  }
+  return {
+    applicationVersion: binding.applicationVersion,
+    runtime: { ...binding.runtime },
+  }
+}
+
+function sameRuntimeIdentity(
+  actual: {
+    readonly releaseId: string
+    readonly target: 'darwin-arm64'
+    readonly runtimeContractVersion: number
+  },
+  expected: PublicPreviewExpectedRuntimeBinding['runtime'],
+): boolean {
+  return (
+    actual !== null &&
+    typeof actual === 'object' &&
+    actual.releaseId === expected.releaseId &&
+    actual.target === expected.target &&
+    actual.runtimeContractVersion === expected.runtimeContractVersion
+  )
+}
+
+function isOpaqueValue(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    Buffer.byteLength(value, 'utf8') <= 512 &&
+    !/[\u0000-\u001f\u007f/\\]/u.test(value)
+  )
 }

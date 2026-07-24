@@ -7,8 +7,20 @@ import {
 
 import {
   createPublicPreviewRuntimeOwner,
+  type PublicPreviewExpectedRuntimeBinding,
   type PublicPreviewRuntimeBootstrap,
 } from './public-preview-runtime-owner.js'
+
+const runtimeIdentity = {
+  releaseId: '0.144.4',
+  target: 'darwin-arm64',
+  runtimeContractVersion: 1,
+} as const
+
+const expectedBinding = {
+  applicationVersion: '0.0.1',
+  runtime: runtimeIdentity,
+} as const satisfies PublicPreviewExpectedRuntimeBinding
 
 test('rejected exact Runtime capability prevents every native spawn', async () => {
   let spawnCalls = 0
@@ -19,6 +31,7 @@ test('rejected exact Runtime capability prevents every native spawn', async () =
   await assert.rejects(
     createPublicPreviewRuntimeOwner(
       bootstrap,
+      expectedBinding,
       async () => {
         spawnCalls += 1
         return new DeterministicCodexChatRuntime()
@@ -34,10 +47,14 @@ test('auth-only and workspace generations each consume a fresh spawn capability 
   const roles: string[] = []
   const bootstrap = runtimeBootstrap(async () => {
     verifications.push('verify')
-    return { runtimeRoot: '/verified/runtime' }
+    return {
+      runtimeRoot: '/verified/runtime',
+      identity: runtimeIdentity,
+    }
   })
   const owner = await createPublicPreviewRuntimeOwner(
     bootstrap,
+    expectedBinding,
     async ({ role }) => {
       roles.push(role.role)
       return new DeterministicCodexChatRuntime({ role })
@@ -89,7 +106,9 @@ test('a changed auth-only Runtime role is closed before owner creation fails', a
     createPublicPreviewRuntimeOwner(
       runtimeBootstrap(async () => ({
         runtimeRoot: '/verified/runtime',
+        identity: runtimeIdentity,
       })),
+      expectedBinding,
       async () => runtime,
     ),
     /auth-only Runtime role changed/,
@@ -100,12 +119,79 @@ test('a changed auth-only Runtime role is closed before owner creation fails', a
   )
 })
 
+test('a mismatched initial release identity prevents the auth-only spawn', async () => {
+  let spawnCalls = 0
+
+  await assert.rejects(
+    createPublicPreviewRuntimeOwner(
+      runtimeBootstrap(async () => ({
+        runtimeRoot: '/verified/runtime',
+        identity: {
+          ...runtimeIdentity,
+          releaseId: '0.145.0',
+        },
+      })),
+      expectedBinding,
+      async () => {
+        spawnCalls += 1
+        return new DeterministicCodexChatRuntime()
+      },
+    ),
+    /release was not authorized/,
+  )
+  assert.equal(spawnCalls, 0)
+})
+
+test('every workspace generation rechecks the expected release before spawn', async () => {
+  let verification = 0
+  const roles: string[] = []
+  const owner = await createPublicPreviewRuntimeOwner(
+    runtimeBootstrap(async () => {
+      verification += 1
+      return {
+        runtimeRoot: '/verified/runtime',
+        identity:
+          verification === 1
+            ? runtimeIdentity
+            : { ...runtimeIdentity, runtimeContractVersion: 2 },
+      }
+    }),
+    expectedBinding,
+    async ({ role }) => {
+      roles.push(role.role)
+      return new DeterministicCodexChatRuntime({ role })
+    },
+  )
+  await owner.closeAuthOnly({ signal: signal() })
+
+  await assert.rejects(
+    owner.startWorkspace({
+      workspace: {
+        canonicalRoot: '/semester/workspace',
+        workspaceId: `workspace_${'2'.repeat(32)}`,
+        formatVersion: 3,
+        manifest: {
+          workspaceId: `workspace_${'2'.repeat(32)}`,
+          semester: {
+            yearLevel: 2,
+            term: { key: '2', displayName: '2학기' },
+          },
+          courses: [],
+        },
+      },
+      signal: signal(),
+    }),
+    /release was not authorized/,
+  )
+  assert.deepEqual(roles, ['auth-only'])
+  assert.equal(verification, 2)
+})
+
 function runtimeBootstrap(
   verifyRuntimeForSpawn:
     PublicPreviewRuntimeBootstrap['spawn']['verifyRuntimeForSpawn'],
 ): PublicPreviewRuntimeBootstrap {
   return {
-    applicationVersion: '0.0.1',
     authOnlyBootstrapCwd: '/controlled/bootstrap',
     environment: {
       home: '/controlled/home',

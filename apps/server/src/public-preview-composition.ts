@@ -31,6 +31,7 @@ import {
 } from './public-preview-parent-selection.js'
 import {
   createPublicPreviewRuntimeOwner,
+  type PublicPreviewExpectedRuntimeBinding,
   type PublicPreviewRuntimeBootstrap,
   type PublicPreviewRuntimeOwner,
 } from './public-preview-runtime-owner.js'
@@ -58,9 +59,19 @@ export type PublicPreviewSetupBootstrap = {
 }
 
 export type PublicPreviewServerBootstrap = {
+  readonly applicationVersion: string
   readonly origin: string
   readonly runtime: PublicPreviewRuntimeBootstrap
   readonly setup: PublicPreviewSetupBootstrap
+}
+
+export class PublicPreviewCompositionStartError extends Error {
+  readonly code = 'public_preview_runtime_cleanup_ambiguous'
+
+  constructor() {
+    super('Public preview Runtime cleanup was ambiguous')
+    this.name = 'PublicPreviewCompositionStartError'
+  }
 }
 
 export interface PublicPreviewFeatureComposition {
@@ -85,6 +96,7 @@ type PublicPreviewCompositionTesting = {
   readonly accountAttemptId?: () => string
   readonly createParentSelectionId?: () => string
   readonly createSetupId?: () => string
+  readonly createRuntimeOwner?: typeof createPublicPreviewRuntimeOwner
   readonly now?: () => Date
   readonly runtimeOwner?: PublicPreviewRuntimeOwner
   readonly stateStore?: RecoverableSetupEnvelopeStore
@@ -99,15 +111,45 @@ export async function createPublicPreviewFeatureComposition(
   testing: PublicPreviewCompositionTesting = {},
 ): Promise<PublicPreviewFeatureComposition> {
   requireLocalOrigin(input.origin)
+  const release = structuredClone(input.setup.release)
+  const bundleSource = structuredClone(input.setup.bundleSource)
+  requireCoherentReleaseBootstrap({
+    applicationVersion: input.applicationVersion,
+    bundleSource,
+    release,
+    requiredApplicationCommand:
+      input.setup.requiredApplicationCommand,
+  })
+  const expectedRuntime: PublicPreviewExpectedRuntimeBinding = {
+    applicationVersion: release.application.packageVersion,
+    runtime: {
+      releaseId: release.runtime.releaseId,
+      target: release.runtime.target,
+      runtimeContractVersion: release.runtime.runtimeContractVersion,
+    },
+  }
+  const stateStore =
+    testing.stateStore ??
+    createSetupEnvelopeStore({
+      appDataRoot: input.setup.appDataRoot,
+    })
+  const parentSelection = createPublicPreviewParentSelectionPort({
+    pick:
+      input.setup.pickParentDirectory ??
+      createMacOsPublicPreviewParentPicker(),
+    userHome: input.setup.displayUserHome,
+    createSelectionId: testing.createParentSelectionId,
+  })
+  const presentReadyWorkspace = createReadyWorkspacePresenter({
+    userHome: input.setup.displayUserHome,
+  })
   const runtimeOwner =
     testing.runtimeOwner ??
-    await createPublicPreviewRuntimeOwner(input.runtime)
+    await (
+      testing.createRuntimeOwner ??
+      createPublicPreviewRuntimeOwner
+    )(input.runtime, expectedRuntime)
   try {
-    const stateStore =
-      testing.stateStore ??
-      createSetupEnvelopeStore({
-        appDataRoot: input.setup.appDataRoot,
-      })
     let accountAdapter: AccountRuntimeRouteAdapter | undefined
     const coordinator = createAccountRuntimeCoordinator<
       CodexFreshAccount,
@@ -147,17 +189,10 @@ export async function createPublicPreviewFeatureComposition(
       invalidateReadyAttestation: () =>
         readyTransition.attestation.invalidateAll(),
     })
-    const parentSelection = createPublicPreviewParentSelectionPort({
-      pick:
-        input.setup.pickParentDirectory ??
-        createMacOsPublicPreviewParentPicker(),
-      userHome: input.setup.displayUserHome,
-      createSelectionId: testing.createParentSelectionId,
-    })
     const journey = createLeaseBoundSemesterSetupJourney({
       stateStore,
-      release: input.setup.release,
-      bundleSource: input.setup.bundleSource,
+      release,
+      bundleSource,
       resolveParent: (selectionId) =>
         parentSelection.resolve(selectionId),
       createSetupId: testing.createSetupId,
@@ -166,11 +201,8 @@ export async function createPublicPreviewFeatureComposition(
     await journey.reconcile({ kind: 'launch' })
     const readiness = createSetupEnvelopeActionReadiness({
       stateStore,
-      release: input.setup.release,
+      release,
       transitionAttestation: readyTransition.attestation,
-    })
-    const presentReadyWorkspace = createReadyWorkspacePresenter({
-      userHome: input.setup.displayUserHome,
     })
     const isReadyAttested = (
       workspace: AdmittedSemesterWorkspace,
@@ -227,7 +259,7 @@ export async function createPublicPreviewFeatureComposition(
           return { status: 'blocked', reason: 'context_not_verified' }
         }
         return createWorkspaceActionAdmission({
-          source: input.setup.bundleSource,
+          source: bundleSource,
           readiness,
           nativeBoundary,
         }).admit({ workspace, action: 'academic' })
@@ -244,10 +276,59 @@ export async function createPublicPreviewFeatureComposition(
       },
     }
   } catch (error) {
-    await runtimeOwner.closeCurrent({
-      signal: new AbortController().signal,
-    }).catch(() => undefined)
+    await requireRuntimeRollback(runtimeOwner)
     throw error
+  }
+}
+
+async function requireRuntimeRollback(
+  runtimeOwner: PublicPreviewRuntimeOwner,
+): Promise<void> {
+  let result
+  try {
+    result = await runtimeOwner.closeCurrent({
+      signal: new AbortController().signal,
+    })
+  } catch {
+    throw new PublicPreviewCompositionStartError()
+  }
+  if (result.status !== 'closed' || !result.processTreeGone) {
+    throw new PublicPreviewCompositionStartError()
+  }
+}
+
+function requireCoherentReleaseBootstrap(input: {
+  readonly applicationVersion: string
+  readonly bundleSource: VerifiedBundleSource
+  readonly release: LaunchBinding
+  readonly requiredApplicationCommand: string
+}): void {
+  const { release, bundleSource } = input
+  if (
+    release.application.packageName !== 'ay-ple' ||
+    !isOpaqueValue(input.applicationVersion) ||
+    !isOpaqueValue(release.application.packageVersion) ||
+    input.applicationVersion !== release.application.packageVersion ||
+    input.requiredApplicationCommand !==
+      `npx ay-ple@${release.application.packageVersion}` ||
+    !isOpaqueValue(release.runtime.releaseId) ||
+    release.runtime.target !== 'darwin-arm64' ||
+    !Number.isSafeInteger(release.runtime.runtimeContractVersion) ||
+    release.runtime.runtimeContractVersion < 1 ||
+    !isSha256(release.runtime.releaseDescriptorSha256) ||
+    !isSha256(release.runtime.manifestSha256) ||
+    !isSha256(release.bundle.descriptorSha256) ||
+    !isSha256(release.bundle.completeTreeSha256) ||
+    !isSha256(bundleSource.descriptorSha256) ||
+    !isSha256(bundleSource.completeTreeSha256) ||
+    release.bundle.descriptorSha256 !==
+      bundleSource.descriptorSha256 ||
+    release.bundle.completeTreeSha256 !==
+      bundleSource.completeTreeSha256 ||
+    bundleSource.descriptor.completeTreeSha256 !==
+      bundleSource.completeTreeSha256
+  ) {
+    throw new TypeError('Public preview release bootstrap is inconsistent')
   }
 }
 
@@ -284,6 +365,22 @@ function requireLocalOrigin(origin: string): void {
   ) {
     throw new TypeError('A canonical local Origin is required')
   }
+}
+
+function isOpaqueValue(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    Buffer.byteLength(value, 'utf8') <= 512 &&
+    !/[\u0000-\u001f\u007f/\\]/u.test(value)
+  )
+}
+
+function isSha256(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    /^[0-9a-f]{64}$/u.test(value)
+  )
 }
 
 function waitWithSignal(

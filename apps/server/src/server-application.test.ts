@@ -7,9 +7,17 @@ import test from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 
+import * as serverPackageRoot from './index.js'
 import { createServerApplication } from './server-application.js'
 
 const execFileAsync = promisify(execFile)
+
+test('the Server package root exports the deep host composition seam', () => {
+  assert.deepEqual(Object.keys(serverPackageRoot).sort(), [
+    'createServerApplication',
+    'listenToServerApplication',
+  ])
+})
 
 test('the host application seam is listener-independent and closes idempotently', async () => {
   const application = await createServerApplication()
