@@ -33,6 +33,12 @@ export interface Subsidy {
    * 빈 배열이다 — `region.includes(profile.region)`로 전국/광역권/단일 지역을 동일하게 매칭한다.
    */
   region: string[]
+  /**
+   * 업종 배열 (이슈 #52). bsnsSumryCn/trgetNm 키워드 매칭으로 추출 — 커버리지가 낮아
+   * (~6.6%) 대다수는 빈 배열("업종 정보 없음")이다. region과 달리 매칭 시 가점만 주고
+   * 불일치 페널티는 없다 (신뢰도가 낮아서). 상세: docs/week4/issue-52-industry-match-plan.md
+   */
+  industry: string[]
 }
 
 /** GET /api/subsidies 응답 — 페이지네이션 포함 (이슈 #48) */

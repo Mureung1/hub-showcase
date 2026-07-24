@@ -30,6 +30,7 @@ export const sampleSubsidies = [
       where: '서울시 자영업지원센터',
       contact: '02-1234-5678',
       region: ['서울'],
+      industry: [],
     },
     {
       id: '2',
@@ -50,6 +51,7 @@ export const sampleSubsidies = [
       where: '마포구 소상공인지원센터',
       contact: '02-3153-0000',
       region: ['서울'],
+      industry: [],
     },
     {
       id: '3',
@@ -70,6 +72,7 @@ export const sampleSubsidies = [
       where: '소상공인시장진흥공단',
       contact: '1357',
       region: NATIONWIDE,
+      industry: [],
     },
     {
       id: '4',
@@ -90,6 +93,7 @@ export const sampleSubsidies = [
       where: '스마트상점 기술보급센터',
       contact: '1600-3737',
       region: NATIONWIDE,
+      industry: ['음식점', '카페·베이커리'],
     },
     {
       id: '5',
@@ -110,6 +114,7 @@ export const sampleSubsidies = [
       where: '한국에너지공단',
       contact: '1551-0100',
       region: NATIONWIDE,
+      industry: [],
     },
     {
       id: '6',
@@ -130,6 +135,7 @@ export const sampleSubsidies = [
       where: '소상공인시장진흥공단 지역센터',
       contact: '1357',
       region: NATIONWIDE,
+      industry: [],
     },
     {
       id: '7',
@@ -150,6 +156,7 @@ export const sampleSubsidies = [
       where: '소상공인 디지털전환 플랫폼',
       contact: '1800-2400',
       region: NATIONWIDE,
+      industry: [],
     },
     {
       id: '8',
@@ -170,6 +177,7 @@ export const sampleSubsidies = [
       where: '고용보험 홈페이지',
       contact: '1588-0075',
       region: NATIONWIDE,
+      industry: [],
     },
   ]
   

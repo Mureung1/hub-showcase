@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { BizinfoAnnouncement } from './bizinfo-client.js'
-import { extractAmount, extractRegions, inferMethod, mapAnnouncementToSubsidy, parseDeadline } from './mapper.js'
+import {
+  extractAmount,
+  extractIndustry,
+  extractRegions,
+  inferMethod,
+  mapAnnouncementToSubsidy,
+  parseDeadline,
+} from './mapper.js'
 
 const NOW = new Date(2026, 6, 22) // 2026-07-22, 로컬 타임존 기준 (월은 0-indexed)
 
@@ -143,6 +150,56 @@ describe('extractRegions', () => {
   })
 })
 
+describe('extractIndustry', () => {
+  it('음식점 관련 키워드를 인식한다', () => {
+    expect(extractIndustry('서울시 거주 외식업 창업희망 청년 대상', undefined)).toEqual(['음식점'])
+  })
+
+  it('카페·베이커리 키워드를 인식한다 (제과점 포함)', () => {
+    expect(extractIndustry('일반ㆍ휴게음식점, 제과점, 집단급식소 중 식품안심업소', undefined)).toEqual([
+      '음식점',
+      '카페·베이커리',
+    ])
+  })
+
+  it('제조업 키워드를 인식한다', () => {
+    expect(extractIndustry('한국표준산업분류 대분류(C)제조업(10~34)에 해당되는 기업', undefined)).toEqual([
+      '제조업',
+    ])
+  })
+
+  it('여러 업종이 동시에 언급되면 전부 반환한다', () => {
+    expect(extractIndustry('도소매업, 제조업 등 제조 및 유통 관련 업종 대상', undefined)).toEqual([
+      '소매·유통',
+      '제조업',
+    ])
+  })
+
+  it('"제과"가 다른 단어에 우연히 포함된 경우(예: 경제과학진흥원) 오탐하지 않는다', () => {
+    expect(extractIndustry('경기도경제과학진흥원은 도내 중소기업의 해외시장진출을 지원', undefined)).toEqual([])
+  })
+
+  it('"~업 제외"처럼 부정 문맥에 쓰인 업종은 매칭하지 않는다 (실 API 사례, 2026-07-25)', () => {
+    expect(
+      extractIndustry('중소제조기업(※ 유통업체 제외) - B2C 적합 제품을 생산하는 중소제조기업', undefined),
+    ).toEqual([])
+  })
+
+  it('제외 문맥과 무관하게 등장하는 업종은 그대로 매칭한다', () => {
+    expect(extractIndustry('제조업 기반 유망 중소기업 발굴 및 육성 사업. 유통업체는 별도 공고 참조', undefined)).toEqual(
+      ['소매·유통', '제조업'],
+    )
+  })
+
+  it('trgetNm에 있는 키워드도 함께 검색한다', () => {
+    expect(extractIndustry('사업 개요', '카페ㆍ베이커리 업종 대상')).toEqual(['카페·베이커리'])
+  })
+
+  it('업종 키워드가 없으면 빈 배열을 반환한다', () => {
+    expect(extractIndustry('디지털 전환 지원사업', undefined)).toEqual([])
+  })
+})
+
 describe('mapAnnouncementToSubsidy', () => {
   it('실제 API 응답 형태를 Subsidy 타입으로 정확히 매핑한다', () => {
     const result = mapAnnouncementToSubsidy(baseAnnouncement, NOW)
@@ -163,12 +220,21 @@ describe('mapAnnouncementToSubsidy', () => {
       whereUrl: 'https://www.bizinfo.go.kr/sii/siia/selectSIIA200Detail.do?pblancId=PBLN_000000000124563',
       contact: '울주군청 경제교통과 052-229-8353',
       region: [],
+      industry: [],
     })
   })
 
   it('hashtags가 있으면 region이 채워진다', () => {
     const result = mapAnnouncementToSubsidy({ ...baseAnnouncement, hashtags: '경영,울산,울주군,2026' }, NOW)
     expect(result.region).toEqual(['울산'])
+  })
+
+  it('bsnsSumryCn에 업종 키워드가 있으면 industry가 채워진다', () => {
+    const result = mapAnnouncementToSubsidy(
+      { ...baseAnnouncement, bsnsSumryCn: '<p>제조업 소상공인 경영환경개선 지원</p>' },
+      NOW,
+    )
+    expect(result.industry).toEqual(['제조업'])
   })
 
   it('trgetNm이 없으면 qualifications는 안내 문구로 대체된다', () => {
