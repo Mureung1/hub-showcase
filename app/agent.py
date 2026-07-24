@@ -208,6 +208,24 @@ def _verify_loop(
             summary = new_summary
 
 
+def _collect_summaries(successful: list[dict]) -> list[dict]:
+    """트렌드(trend) 5-1. 성공 논문에서 index+title+3키 요약을 평탄화해 모은다.
+
+    successful의 각 원소는 최소 index·title·summary(3키 dict)를 갖는다 —
+    paper_done 이벤트가 담는 필드의 부분집합이다(느슨한 계약: url·date 등
+    나머지는 보지 않는다). 성공 논문만 모아 넘기는 것은 Task 6 오케스트레이션의
+    몫이라, 실패·제외 논문은 애초에 들어오지 않는다.
+
+    summary(중첩 dict)를 **로 펼쳐 3키를 최상위로 올린다 — trend 프롬프트의
+    입력이자 완료 기준(각 원소가 index/title/contribution/method/result를
+    모두 가진다)을 충족하는 형태다.
+    """
+    return [
+        {"index": p["index"], "title": p["title"], **p["summary"]}
+        for p in successful
+    ]
+
+
 if __name__ == "__main__":
     import argparse
 
