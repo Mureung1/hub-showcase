@@ -17,7 +17,7 @@ export default function Hero({ count, updatedAt }) {
       <div className="hero-text">
         <h1 className="hero-title">내 조건에 맞는 대외활동만 골라줄게</h1>
         <p className="hero-sub">
-          대외활동·공모전·장학·봉사 공고를 여러 곳에서 다 모았어. 조건만 넣어주면 지원할 수 있는 것만 위로 올려줄게.
+          대외활동·공모전·장학 공고를 여러 곳에서 다 모았어. 조건만 넣어주면 지원할 수 있는 것만 위로 올려줄게.
         </p>
         <div className="hero-meta">
           {count > 0 && <span className="hero-badge">지금 {count.toLocaleString()}개 공고</span>}

@@ -1,4 +1,4 @@
-// 대외활동/공모전/장학/봉사 스키마 + 여러 화면이 공유하는 옵션 상수
+// 대외활동/공모전/장학 스키마 + 여러 화면이 공유하는 옵션 상수
 //
 // eligibility(자격요건)는 "이 조건들을 모두 만족해야 지원 가능"을 뜻한다.
 // 빈 배열([]) 또는 null 은 "무관(누구나 가능)"으로 해석한다.
@@ -8,7 +8,7 @@
 // @property {string} id
 // @property {string} title
 // @property {string} org
-// @property {'대외활동'|'공모전'|'장학'|'봉사'} category
+// @property {'대외활동'|'공모전'|'장학'|'지자체'} category
 // @property {'activity'|'scholarship'} track
 // @property {string} source            수집 출처
 // @property {string} url

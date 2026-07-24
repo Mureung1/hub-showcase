@@ -106,7 +106,7 @@ create table postings (
   raw_id uuid references raw_postings(id),
   title text not null,
   org text,
-  category text,                      -- 대외활동 / 공모전 / 장학 / 봉사
+  category text,                      -- 대외활동 / 공모전 / 장학
   track text,                         -- activity / scholarship
   source text,
   url text,                           -- 원문 링크
@@ -165,7 +165,7 @@ eligibility(JSONB)의 필드는 프론트 mock(src/data/activities.js)의 eligib
 | id | uuid PK | |
 | raw_posting_id | uuid FK→raw_postings | |
 | track | text | activity / scholarship |
-| category | text | 대외활동 / 공모전 / 봉사 / 장학 등 |
+| category | text | 대외활동 / 공모전 / 장학 등 |
 | title | text | |
 | org | text null | 주최 |
 | deadline | date null | 못 읽으면 null → 확인 필요 |
@@ -219,8 +219,8 @@ eligibility(JSONB)의 필드는 프론트 mock(src/data/activities.js)의 eligib
 프롬프트
 ```
 다음 공고를 분류하고, 지원에 '필수'인 자격조건만 뽑아라.
-- track: activity(대외활동·공모전·봉사) 또는 scholarship(장학·지원금)
-- category: 대외활동 / 공모전 / 봉사 / 장학 중 하나
+- track: activity(대외활동·공모전) 또는 scholarship(장학·지원금)
+- category: 대외활동 / 공모전 / 장학 중 하나
 - track이 scholarship이면 grades/majors/regions/age 등은 빈 배열·null로 둬라(장학 필드는 이후 별도 처리).
 - 우대·우선 조건은 무시한다. 원문에 없는 조건은 추측하지 말고 빈 배열이나 null로 둔다.
 - 각 필드마다 근거가 된 원문 문장을 found_in_text에 그대로 담는다.
@@ -234,7 +234,7 @@ eligibility(JSONB)의 필드는 프론트 mock(src/data/activities.js)의 eligib
   "type": "object",
   "properties": {
     "track": { "type": "string", "enum": ["activity", "scholarship"] },
-    "category": { "type": "string", "enum": ["대외활동", "공모전", "봉사", "장학"] },
+    "category": { "type": "string", "enum": ["대외활동", "공모전", "장학"] },
     "grades": { "type": "array", "items": { "type": "integer", "enum": [1,2,3,4] } },
     "enrollment_status": { "type": "array", "items": { "type": "string", "enum": ["재학","휴학","졸업예정"] } },
     "majors": { "type": "array", "items": { "type": "string" } },
