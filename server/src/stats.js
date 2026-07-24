@@ -93,7 +93,7 @@ function aggregate(postings) {
     }))
     .sort((a, b) => b.count - a.count)
 
-  // --- items (블록 10 화면 + 채용공고 해설 에이전트 입력을 같은 배열로) ---
+  // --- items (블록 10 화면 + 채용공고 해석 에이전트 입력을 같은 배열로) ---
   const items = [...R.values()]
     .map((e) => {
       const pv = P.get(e.slug)

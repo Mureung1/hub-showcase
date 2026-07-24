@@ -102,7 +102,7 @@ function StatsScreen({ go }) {
           <header className="report-header" id="summary">
             <span className="eyebrow">백엔드 공고 {recentN}건 기반 리서치 · 이전 스냅샷 {meta.snapshots.prev.n}건 비교</span>
             <h1>공고의 절반 이상이 "신입"이라 쓰고 경력급 준비를 요구합니다. 기술 이름이 아니라 요구의 구조를 읽습니다.</h1>
-            <p>여러 공고에서 반복되는 요구를 리얼리티 중심으로 집계했습니다. 이 통계는 다음 단계(채용공고 해설)에서 직무 기준선과 편차를 읽는 기준이 됩니다.</p>
+            <p>여러 공고에서 반복되는 요구를 리얼리티 중심으로 집계했습니다. 이 통계는 다음 단계(채용공고 해석)에서 직무 기준선과 편차를 읽는 기준이 됩니다.</p>
             <div className="data-note">
               <span>{meta.snapshots.recent.label}: {recentN}건</span>
               <span>{meta.snapshots.prev.label}: {meta.snapshots.prev.n}건</span>
@@ -284,7 +284,7 @@ function StatsScreen({ go }) {
           <section className="section-block" id="companies">
             <div className="section-title">
               <h2>기업군마다 힘주는 곳이 다릅니다</h2>
-              <span className="hint">기업군 × 강조축 언급률 · 다음 단계에서 기업군을 고르면 이 행이 공고 해설 입력이 됩니다</span>
+              <span className="hint">기업군 × 강조축 언급률 · 다음 단계에서 기업군을 고르면 이 행이 공고 해석 입력이 됩니다</span>
             </div>
             <div className="panel">
               <table className="heatmap">
@@ -316,7 +316,7 @@ function StatsScreen({ go }) {
           <section className="section-block" id="items">
             <div className="section-title">
               <h2>요구 항목 전체표</h2>
-              <span className="hint">공고 해설 단계가 그대로 입력으로 받는 데이터 · {items.length}개 항목</span>
+              <span className="hint">공고 해석 단계가 그대로 입력으로 받는 데이터 · {items.length}개 항목</span>
             </div>
             <div className="panel">
               <div className="fulltable-head">
@@ -352,7 +352,7 @@ function StatsScreen({ go }) {
 
           <div className="nav-actions">
             <button className="btn btn-secondary" onClick={() => go('select')}>← 직무 다시 선택</button>
-            <button className="btn btn-primary" onClick={() => go('reverse')}>채용공고 해설 보기 →</button>
+            <button className="btn btn-primary" onClick={() => go('reverse')}>채용공고 해석 보기 →</button>
           </div>
         </article>
 

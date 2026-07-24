@@ -3,7 +3,7 @@ import TopBar from '../components/TopBar'
 import useScrollSpy from '../hooks/useScrollSpy'
 import { SUPPORTED_JOB } from '../data/mock'
 
-// 03 채용공고 해설 화면.
+// 03 채용공고 해석 화면.
 // 세 섹션(전체 baseline / 기업군 편차 / 개별 공고)을 항상 표시한다.
 // 데이터는 POST /api/reverse 실통신(에이전트 fixture + DB 공고 목록)으로 받는다.
 
@@ -77,10 +77,10 @@ function ReverseScreen({ go, scope, setScope }) {
   if (status === 'error') {
     return (
       <>
-        <TopBar step={3} label="채용공고 해설" job={SUPPORTED_JOB} backTo="stats" backLabel="통계" go={go} />
+        <TopBar step={3} label="채용공고 해석" job={SUPPORTED_JOB} backTo="stats" backLabel="통계" go={go} />
         <main className="app-shell reader-layout">
           <p className="status-panel status-panel--error">
-            공고 해설 서버에 연결하지 못했습니다. server(4000)와 agent(8000)가 켜져 있는지 확인해 주세요.
+            공고 해석 서버에 연결하지 못했습니다. server(4000)와 agent(8000)가 켜져 있는지 확인해 주세요.
           </p>
         </main>
       </>
@@ -94,16 +94,16 @@ function ReverseScreen({ go, scope, setScope }) {
 
   return (
     <>
-      <TopBar step={3} label="채용공고 해설" job={SUPPORTED_JOB} backTo="stats" backLabel="통계" go={go} />
+      <TopBar step={3} label="채용공고 해석" job={SUPPORTED_JOB} backTo="stats" backLabel="통계" go={go} />
       <main className="app-shell reader-layout">
         <article className="page page--wide">
           <header className="report-header" id="top">
-            <span className="eyebrow">통계 items 기반 · 직무 기준선 대비 편차 해설{data && ` · ${data.source === 'fixture' ? '표본 해설' : 'AI 해설'}`}</span>
+            <span className="eyebrow">통계 items 기반 · 직무 기준선 대비 편차 해석{data && ` · ${data.source === 'fixture' ? '표본 해석' : 'AI 해석'}`}</span>
             <h1>공고가 반복하는 문장 뒤에서, 이 회사·기업군이 유독 원하는 지점을 되짚습니다.</h1>
             <p>전체는 직군 공통 기대치(baseline)를, 기업군·개별 공고는 그 기준 위에서 더 높거나 추가로 요구되는 편차를 근거·신뢰도와 함께 보여 줍니다.</p>
           </header>
 
-          {status === 'loading' && <p className="status-panel">채용공고를 해설하는 중입니다…</p>}
+          {status === 'loading' && <p className="status-panel">채용공고를 해석하는 중입니다…</p>}
 
           {status === 'ready' && data && (
             <>
@@ -178,7 +178,7 @@ function ReverseScreen({ go, scope, setScope }) {
               {/* 섹션 3 · 개별 공고 */}
               <section className="section-block" id="posting">
                 <div className="section-title">
-                  <h2>개별 공고 — 원문과 해설을 나란히</h2>
+                  <h2>개별 공고 — 원문과 해석을 나란히</h2>
                   <span className="hint">하이라이트 = baseline보다 높거나 baseline에 없는 요구 문장</span>
                 </div>
                 <input
@@ -207,8 +207,8 @@ function ReverseScreen({ go, scope, setScope }) {
                   ))}
                 </div>
 
-                {detailStatus === 'loading' && <p className="status-panel">공고를 해설하는 중입니다…</p>}
-                {detailStatus === 'error' && <p className="status-panel status-panel--error">선택한 공고 해설을 불러오지 못했습니다.</p>}
+                {detailStatus === 'loading' && <p className="status-panel">공고를 해석하는 중입니다…</p>}
+                {detailStatus === 'error' && <p className="status-panel status-panel--error">선택한 공고 해석을 불러오지 못했습니다.</p>}
 
                 {detail && (
                   <div className="posting-layout">
@@ -267,7 +267,7 @@ function ReverseScreen({ go, scope, setScope }) {
                         </div>
                       ))}
                       <div className="fold-note">{detail.unchanged_note}</div>
-                      <div className="posting-input-note"><b>공고 직접 입력</b> — 다른 공고 원문을 붙여넣으면 같은 방식으로 개별 해설합니다.</div>
+                      <div className="posting-input-note"><b>공고 직접 입력</b> — 다른 공고 원문을 붙여넣으면 같은 방식으로 개별 해석합니다.</div>
                     </div>
                   </div>
                 )}
@@ -281,9 +281,9 @@ function ReverseScreen({ go, scope, setScope }) {
           )}
         </article>
 
-        <aside className="floating-nav" aria-label="채용공고 해설 목차">
-          <p className="floating-nav__label">공고 해설</p>
-          {[['baseline', '전체 baseline'], ['cluster', '기업군 편차'], ['posting', '개별 공고 해설']].map(([id, label]) => (
+        <aside className="floating-nav" aria-label="채용공고 해석 목차">
+          <p className="floating-nav__label">공고 해석</p>
+          {[['baseline', '전체 baseline'], ['cluster', '기업군 편차'], ['posting', '개별 공고 해석']].map(([id, label]) => (
             <a key={id} className={activeSection === id ? 'is-current' : ''} href={`#${id}`}><span className="dot"></span>{label}</a>
           ))}
         </aside>
