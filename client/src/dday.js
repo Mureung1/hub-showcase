@@ -42,3 +42,8 @@ export function getDdayLabel(days) {
   if (days === 1) return "내일";
   return `D-${days}`;
 }
+// 이번 달에 낼 항목인지 판단한다
+// 납부일이 오늘 이후면 이번 달, 이미 지났으면 다음 달
+export function isThisMonth(due_day, today = new Date()) {
+  return due_day >= today.getDate();
+}
