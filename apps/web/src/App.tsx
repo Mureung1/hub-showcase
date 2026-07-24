@@ -39,6 +39,45 @@ function applyDiscountPct(promo: string, pct: number): string {
 
 const MAX_DISCOUNT_PCT = 20; // 서버 가드레일과 동일 상한 (안내용 — 최종 강제는 서버)
 
+// ---- 채널 브랜드 로고 (앱아이콘 스타일 인라인 SVG — 외부 아이콘 라이브러리 미사용) ------
+function InstagramLogo({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" role="img" aria-label="Instagram">
+      <defs>
+        <radialGradient id="wp-ig" cx="30%" cy="107%" r="140%">
+          <stop offset="0" stopColor="#FDDB4A" />
+          <stop offset="0.22" stopColor="#FA7E1E" />
+          <stop offset="0.5" stopColor="#D62976" />
+          <stop offset="0.75" stopColor="#962FBF" />
+          <stop offset="1" stopColor="#4F5BD5" />
+        </radialGradient>
+      </defs>
+      <rect x="0.5" y="0.5" width="23" height="23" rx="6.5" fill="url(#wp-ig)" />
+      <rect x="6" y="6" width="12" height="12" rx="4" fill="none" stroke="#fff" strokeWidth="1.7" />
+      <circle cx="12" cy="12" r="3.1" fill="none" stroke="#fff" strokeWidth="1.7" />
+      <circle cx="16.2" cy="7.8" r="1.05" fill="#fff" />
+    </svg>
+  );
+}
+
+function XLogo({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" role="img" aria-label="X">
+      <rect x="0.5" y="0.5" width="23" height="23" rx="6.5" fill="#000" />
+      <g transform="translate(4.9 4.9) scale(0.59)">
+        <path fill="#fff" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </g>
+    </svg>
+  );
+}
+
+/** 채널 아이콘: instagram·x는 실제 브랜드 로고, 그 외(단골)는 이모지 fallback. */
+function ChannelIcon({ id, fallback }: { id: ChannelId; fallback: string }) {
+  if (id === "instagram") return <InstagramLogo />;
+  if (id === "x") return <XLogo />;
+  return <span style={{ fontSize: 20 }}>{fallback}</span>;
+}
+
 // ---- 최상위 컴포넌트 ---------------------------------------------------------
 export default function WeatherPilotV3() {
   const [scenarioKey, setScenarioKey] = useState<ScenarioKey>("rain");
@@ -383,7 +422,7 @@ function EditView({ copy, setCopy, discountPct, setDiscountPct, promoLabel, chan
             return (
               <button key={ch.id} className={`wp-ch wp-btn${on ? " on" : ""}`} onClick={() => toggleChannel(ch.id)}
                 style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer", padding: "12px 14px", borderRadius: 12, fontFamily: font, width: "100%", border: `1.5px solid ${on ? T.primary : T.border}`, background: on ? "#EAF2FC" : "#fff" }}>
-                <span style={{ fontSize: 20, width: 26, textAlign: "center" }}>{ch.icon}</span>
+                <span style={{ width: 26, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><ChannelIcon id={ch.id} fallback={ch.icon} /></span>
                 <span style={{ flex: 1 }}>
                   <span style={{ display: "block", fontWeight: 600, fontSize: 14, color: T.ink }}>
                     {ch.label}
