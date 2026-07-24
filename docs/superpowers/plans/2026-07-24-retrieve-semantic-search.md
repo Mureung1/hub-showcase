@@ -168,6 +168,7 @@ export const RETRIEVE_SIMILARITY_THRESHOLD = 0.59;
 export const RETRIEVE_INDEX_CATCH_UP_LIMIT = 8;
 export const RETRIEVE_INDEX_CONCURRENCY = 4;
 export const RETRIEVE_MONTHLY_TOKEN_LIMIT = 25_000_000;
+export const RETRIEVE_MAX_TOKENS_PER_EMBEDDING = 8_192;
 
 type DocumentSource = {
   category?: string | null;
@@ -218,7 +219,7 @@ Expected: 3 tests PASS, 커밋 생성.
 
 - [ ] **Step 1: 핵심 데이터 경계를 검증하는 pgTAP 테스트를 작성한다**
 
-테스트는 아래 여섯 계약만 검증한다.
+테스트는 아래 여덟 계약만 검증한다.
 
 1. `insight_embeddings.embedding`이 768차원이다.
 2. 인사이트 생성과 제목·메모 변경은 작업을 등록한다.
@@ -226,6 +227,8 @@ Expected: 3 tests PASS, 커밋 생성.
 4. 검색 함수는 전달된 `user_id` 외의 벡터를 반환하지 않는다.
 5. `0.59` 미만은 제외하고 동점은 최신 인사이트부터 정렬한다.
 6. 일곱 개가 관련 있으면 일곱 개 모두 반환한다.
+7. `anon`과 `authenticated`는 `SECURITY DEFINER` 검색·작업·비용 함수를 실행할 수 없다.
+8. 남은 월 한도를 각각 소비하는 두 예약 중 첫 예약 뒤 두 번째 예약은 거부된다.
 
 예상 검색 검증의 중심 SQL:
 
@@ -268,6 +271,7 @@ Expected: `insight_embeddings` 또는 `match_insight_embeddings`가 없어 FAIL.
 
 ```sql
 create extension if not exists vector with schema extensions;
+create extension if not exists pgcrypto with schema extensions;
 
 create table public.insight_embeddings (
   insight_id uuid primary key
@@ -276,7 +280,7 @@ create table public.insight_embeddings (
   embedding extensions.vector(768) not null,
   model_id text not null,
   projection_version smallint not null,
-  source_updated_at timestamptz not null,
+  source_hash text not null check (source_hash ~ '^[0-9a-f]{64}$'),
   updated_at timestamptz not null default now()
 );
 
@@ -284,22 +288,50 @@ create table public.insight_embedding_jobs (
   insight_id uuid primary key
     references public.insights(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
-  source_updated_at timestamptz not null,
+  model_id text not null,
+  projection_version smallint not null,
+  source_hash text not null check (source_hash ~ '^[0-9a-f]{64}$'),
   updated_at timestamptz not null default now()
 );
 
 create table public.embedding_usage_months (
   month_start date primary key,
-  prompt_tokens bigint not null default 0 check (prompt_tokens >= 0),
+  used_tokens bigint not null default 0 check (used_tokens >= 0),
   updated_at timestamptz not null default now()
+);
+
+create table public.embedding_usage_reservations (
+  id uuid primary key default gen_random_uuid(),
+  month_start date not null,
+  reserved_tokens bigint not null check (reserved_tokens > 0),
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
 );
 ```
 
-세 테이블은 RLS를 활성화하고 `anon`, `authenticated`의 직접 권한을 모두 회수한다. `service_role`에 필요한 권한만 부여한다.
+네 테이블은 RLS를 활성화하고 `anon`, `authenticated`의 직접 권한을 모두 회수한다. `service_role`에 필요한 권한만 부여한다.
 
-제목·메모 변경 감지 함수는 같은 값으로 업데이트된 경우 작업을 만들지 않는다.
+제목·메모 변경 감지 함수는 같은 값으로 업데이트된 경우 작업을 만들지 않는다. `source_hash`는 trim한 제목과 메모를 구분자와 함께 SHA-256으로 변환한 값이며, 서버의 문서 입력 정규화와 같은 규칙을 사용한다.
 
 ```sql
+create function public.get_insight_embedding_source_hash(
+  source_title text,
+  source_memo text
+)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select encode(
+    extensions.digest(
+      btrim(source_title) || E'\n---memo---\n' || coalesce(btrim(source_memo), ''),
+      'sha256'
+    ),
+    'hex'
+  );
+$$;
+
 create function public.enqueue_insight_embedding()
 returns trigger
 language plpgsql
@@ -316,18 +348,24 @@ begin
   insert into public.insight_embedding_jobs (
     insight_id,
     user_id,
-    source_updated_at,
+    model_id,
+    projection_version,
+    source_hash,
     updated_at
   ) values (
     new.id,
     new.user_id,
-    new.updated_at,
+    'gemini-embedding-2',
+    1,
+    public.get_insight_embedding_source_hash(new.title, new.memo),
     now()
   )
   on conflict (insight_id) do update
   set
     user_id = excluded.user_id,
-    source_updated_at = excluded.source_updated_at,
+    model_id = excluded.model_id,
+    projection_version = excluded.projection_version,
+    source_hash = excluded.source_hash,
     updated_at = now();
 
   return new;
@@ -352,22 +390,51 @@ set search_path = ''
 as $$
   select
     embeddings.insight_id,
-    (1 - (embeddings.embedding <=> query_embedding))::real as similarity
+    (
+      1 - (
+        embeddings.embedding
+        OPERATOR(extensions.<=>)
+        query_embedding
+      )
+    )::real as similarity
   from public.insight_embeddings as embeddings
   join public.insights as insights
     on insights.id = embeddings.insight_id
   where embeddings.user_id = requested_user_id
     and embeddings.model_id = requested_model_id
     and embeddings.projection_version = requested_projection_version
-    and 1 - (embeddings.embedding <=> query_embedding) >= match_threshold
+    and 1 - (
+      embeddings.embedding
+      OPERATOR(extensions.<=>)
+      query_embedding
+    ) >= match_threshold
   order by
-    embeddings.embedding <=> query_embedding,
+    embeddings.embedding OPERATOR(extensions.<=>) query_embedding,
     insights.updated_at desc,
     embeddings.insight_id;
 $$;
+
+revoke execute on function public.match_insight_embeddings(
+  uuid,
+  extensions.vector,
+  real,
+  text,
+  smallint
+) from public, anon, authenticated;
+grant execute on function public.match_insight_embeddings(
+  uuid,
+  extensions.vector,
+  real,
+  text,
+  smallint
+) to service_role;
 ```
 
-벡터 저장과 해당 버전의 작업 삭제는 `complete_insight_embedding_job` 함수 한 번으로 처리한다. 처리 중 제목·메모가 다시 바뀌면 `source_updated_at`이 다른 새 작업은 삭제하지 않는다. 월 사용량은 `add_embedding_usage` 함수에서 원자적으로 누적한다.
+벡터 저장과 해당 버전의 작업 삭제는 `complete_insight_embedding_job` 함수 한 번으로 처리한다. 처리 중 제목·메모가 다시 바뀌면 `source_hash`, `model_id`, `projection_version`이 다른 새 작업은 삭제하지 않는다.
+
+모든 `SECURITY DEFINER` 함수는 생성 직후 `PUBLIC`, `anon`, `authenticated`의 `EXECUTE`를 회수한다. 서버가 직접 호출하는 `list_pending_insight_embeddings`, `complete_insight_embedding_job`, `match_insight_embeddings`, 비용 예약·정산 함수만 `service_role`에 실행 권한을 부여한다. 트리거 함수는 직접 호출 권한을 누구에게도 부여하지 않는다.
+
+월 비용 한도는 `reserve_embedding_usage`가 월 집계 행을 잠근 상태에서 활성 예약을 합산하고, 한도를 넘지 않을 때만 예약 행을 만드는 방식으로 집행한다. 만료된 예약은 실제 최대 사용량으로 보수적으로 확정해 서버 중단이 비용을 누락시키지 않으며, 성공한 호출은 `reconcile_embedding_usage`가 실제 `promptTokenCount`로 정산한다.
 
 - [ ] **Step 4: 기존 인사이트를 검색 준비 대기열에 넣는다**
 
@@ -377,14 +444,23 @@ $$;
 insert into public.insight_embedding_jobs (
   insight_id,
   user_id,
-  source_updated_at
+  model_id,
+  projection_version,
+  source_hash
 )
-select id, user_id, updated_at
+select
+  id,
+  user_id,
+  'gemini-embedding-2',
+  1,
+  public.get_insight_embedding_source_hash(title, memo)
 from public.insights
 on conflict (insight_id) do update
 set
   user_id = excluded.user_id,
-  source_updated_at = excluded.source_updated_at,
+  model_id = excluded.model_id,
+  projection_version = excluded.projection_version,
+  source_hash = excluded.source_hash,
   updated_at = now();
 ```
 
@@ -471,14 +547,25 @@ export type GeminiEmbeddingClient = {
   embed(text: string): Promise<EmbeddingResult>;
 };
 
-export function createGeminiEmbeddingClient(
-  apiKey: string
-): GeminiEmbeddingClient {
-  const ai = new GoogleGenAI({ apiKey });
+type EmbedContent = (request: {
+  config: { outputDimensionality: number };
+  contents: string;
+  model: string;
+}) => Promise<{
+  embeddings?: Array<{ values?: number[] }>;
+  usageMetadata?: { promptTokenCount?: number };
+}>;
 
+type CreateGeminiEmbeddingClientOptions = {
+  embedContent: EmbedContent;
+};
+
+export function createGeminiEmbeddingClient({
+  embedContent,
+}: CreateGeminiEmbeddingClientOptions): GeminiEmbeddingClient {
   return {
     async embed(text) {
-      const response = await ai.models.embedContent({
+      const response = await embedContent({
         config: { outputDimensionality: RETRIEVE_EMBEDDING_DIMENSIONS },
         contents: text,
         model: RETRIEVE_EMBEDDING_MODEL,
@@ -494,13 +581,23 @@ export function createGeminiEmbeddingClient(
     },
   };
 }
+
+export function createGoogleGeminiEmbeddingClient(apiKey: string) {
+  const ai = new GoogleGenAI({ apiKey });
+
+  return createGeminiEmbeddingClient({
+    embedContent: (request) => ai.models.embedContent(request),
+  });
+}
 ```
 
-테스트 주입을 위해 실제 구현에서는 `embedContent` 함수만 받을 수 있는 내부 생성자를 함께 둔다. 오류에는 입력 문장, 제목, 메모를 넣지 않는다.
+테스트와 운영 코드가 같은 `createGeminiEmbeddingClient` 의존성 계약을 사용한다. 운영 조립만 `createGoogleGeminiEmbeddingClient`를 호출해 SDK를 연결한다. 오류에는 입력 문장, 제목, 메모를 넣지 않는다.
 
 - [ ] **Step 4: 비용 한도 정책을 서버 서비스가 사용하도록 타입으로 노출한다**
 
-비용 한도는 Gemini 호출 전에 현재 월 사용량이 2,500만 토큰 이상인지 확인하고, 호출 뒤 API가 반환한 실제 입력 토큰을 누적한다. 동시 요청으로 한 번의 입력량만큼 초과할 수 있지만 제목·메모·쿼리 길이 제한상 금액 차이는 미미하며, 별도 토큰 계산 API를 호출해 검색 응답을 늦추지 않는다.
+Gemini 호출 하나가 사용할 수 있는 최대 입력량은 모델 한도인 8,192토큰으로 계산한다. 서버는 외부 호출을 시작하기 전에 `호출 수 × 8,192`를 `reserve_embedding_usage`로 한 번에 예약한다. 데이터베이스 함수는 해당 월의 사용량 행을 잠그고 기존 사용량과 활성 예약을 합산해 2,500만 토큰을 넘지 않을 때만 예약 ID를 반환한다.
+
+호출이 끝나면 `reconcile_embedding_usage`가 예약량을 해제하고 Gemini가 반환한 실제 `promptTokenCount`를 사용량으로 확정한다. Gemini가 토큰 수를 반환하지 않거나 호출 결과를 확인할 수 없으면 예약한 최대량을 사용한 것으로 확정한다. 만료된 예약도 다음 예약 시 최대량 사용으로 전환해 서버 중단 때문에 비용이 누락되지 않게 한다. 별도 토큰 계산 API는 호출하지 않는다.
 
 - [ ] **Step 5: 테스트를 통과시키고 커밋한다**
 
@@ -529,19 +626,17 @@ Expected: 대상 테스트 PASS, 커밋 생성.
 export type PendingEmbeddingDocument = {
   insightId: string;
   memo: string | null;
-  sourceUpdatedAt: string;
+  sourceHash: string;
   title: string;
 };
 
 export type InsightEmbeddingStore = {
-  addMonthlyUsage(promptTokens: number): Promise<void>;
   completeDocument(input: {
     insightId: string;
-    sourceUpdatedAt: string;
+    sourceHash: string;
     vector: number[];
   }): Promise<void>;
   countPending(userId: string): Promise<number>;
-  getMonthlyUsage(): Promise<number>;
   listPending(
     userId: string,
     limit: number
@@ -551,28 +646,42 @@ export type InsightEmbeddingStore = {
     threshold: number;
     userId: string;
   }): Promise<string[]>;
+  reconcileUsage(input: {
+    promptTokens: number;
+    reservationId: string;
+  }): Promise<void>;
+  reserveUsage(
+    maxTokens: number
+  ): Promise<
+    | { ok: true; reservationId: string }
+    | { ok: false; reason: 'usage-limit-reached' }
+  >;
 };
 ```
 
-- [ ] **Step 2: 서비스의 핵심 경계 다섯 개를 실패 테스트로 작성한다**
+- [ ] **Step 2: 서비스의 핵심 경계 여섯 개를 실패 테스트로 작성한다**
 
 1. 인증 실패 시 Gemini와 DB를 호출하지 않는다.
 2. 빈 문자열과 500자 초과 입력을 거부한다.
-3. 문서 입력은 제목·메모만 사용하고 완료된 작업만 제거한다.
+3. 문서 입력은 제목·메모만 사용하고 같은 `sourceHash` 작업만 완료한다.
 4. 검색은 같은 사용자와 `0.59` 기준으로 요청하며 ID 순서를 보존한다.
 5. Gemini 실패 시 기존 인사이트와 작업을 손상시키지 않고 `retrieve-failed`를 반환한다.
+6. 동시에 시작한 요청은 원자적 예약 결과에 따라 하나만 Gemini 호출을 시작한다.
 
 대표 성공 흐름:
 
 ```ts
 it('미처리 문서를 준비한 뒤 관련도순 ID를 반환한다', async () => {
   authenticator.getUserId.mockResolvedValue('user-1');
-  store.getMonthlyUsage.mockResolvedValue(0);
+  store.reserveUsage.mockResolvedValue({
+    ok: true,
+    reservationId: 'reservation-1',
+  });
   store.listPending.mockResolvedValue([
     {
       insightId: 'insight-1',
       memo: '로그인 오류 안내',
-      sourceUpdatedAt: '2026-07-24T00:00:00.000Z',
+      sourceHash: 'a'.repeat(64),
       title: '오류 문구',
     },
   ]);
@@ -589,6 +698,39 @@ it('미처리 문서를 준비한 뒤 관련도순 ID를 반환한다', async ()
     ok: true,
     pendingCount: 0,
   });
+  expect(store.reconcileUsage).toHaveBeenCalledWith({
+    promptTokens: 14,
+    reservationId: 'reservation-1',
+  });
+});
+```
+
+동시 요청 검증은 공유된 예약 대역이 첫 요청에만 예약 ID를 반환하도록 구성한다.
+
+```ts
+it('동시에 시작해도 예산을 예약한 요청만 Gemini를 호출한다', async () => {
+  store.listPending.mockResolvedValue([]);
+  store.reserveUsage
+    .mockResolvedValueOnce({ ok: true, reservationId: 'reservation-1' })
+    .mockResolvedValueOnce({ ok: false, reason: 'usage-limit-reached' });
+  embedder.embed.mockResolvedValue({
+    promptTokens: 4,
+    vector: queryVector,
+  });
+  store.match.mockResolvedValue([]);
+  store.countPending.mockResolvedValue(0);
+
+  const [accepted, rejected] = await Promise.all([
+    service.retrieve('token', { query: '첫 요청' }),
+    service.retrieve('token', { query: '두 번째 요청' }),
+  ]);
+
+  expect(accepted.ok).toBe(true);
+  expect(rejected).toEqual({
+    ok: false,
+    reason: 'usage-limit-reached',
+  });
+  expect(embedder.embed).toHaveBeenCalledOnce();
 });
 ```
 
@@ -621,19 +763,19 @@ export type InsightRetrieveResult =
 
 1. 기존 `InsightCaptureAuthenticator`와 같은 Bearer 토큰 인증 경계로 `userId`를 얻는다.
 2. 쿼리를 trim하고 길이 1~500을 검증한다.
-3. 월 사용량이 `RETRIEVE_MONTHLY_TOKEN_LIMIT` 이상이면 외부 호출 전 중단한다.
-4. 해당 사용자의 미처리 문서 최대 8개와 쿼리를 준비한다.
+3. 해당 사용자의 미처리 문서 최대 8개와 쿼리를 준비한다.
+4. `(미처리 문서 수 + 쿼리 1개) × 8,192` 토큰을 원자적으로 예약하고, 한도 때문에 실패하면 외부 호출 전 중단한다.
 5. 문서는 최대 4개씩 병렬로 Gemini에 보내고, 성공 건만 벡터 저장과 작업 완료를 처리한다.
 6. 쿼리 벡터 생성이 실패하면 검색 실패로 반환한다.
-7. 실제 `promptTokens`를 각 성공 호출 뒤 누적한다.
+7. 모든 호출이 끝나면 예약 ID에 실제 `promptTokens` 합계를 정산한다. 결과를 확인할 수 없는 호출이 있으면 예약 최대량을 사용량으로 확정한다.
 8. `userId`, `0.59`, 모델 ID, 입력 버전으로 정확 검색한다.
 9. 남은 미처리 건수와 정렬된 ID를 반환한다.
 
-문서 하나의 실패가 다른 문서까지 취소하지 않게 `Promise.allSettled`를 사용한다. 쿼리 실패는 결과 자체를 만들 수 없으므로 전체 검색 실패다.
+문서 하나의 실패가 다른 문서까지 취소하지 않게 `Promise.allSettled`를 사용한다. 쿼리 실패는 결과 자체를 만들 수 없으므로 전체 검색 실패다. 동시에 시작한 요청은 각각 데이터베이스 예약을 먼저 통과해야 하므로 월 사용량 잔여분을 함께 소비할 수 없다.
 
 - [ ] **Step 5: service role Supabase 저장소를 구현한다**
 
-`createSupabaseInsightEmbeddingStore`는 모든 쿼리에 인증으로 얻은 `userId`를 전달한다. `listPending`은 작업과 `insights`를 조인하는 보안 함수, `completeDocument`는 벡터 저장과 작업 완료 함수, `match`는 `match_insight_embeddings` RPC를 호출한다. 브라우저용 publishable key 클라이언트는 사용하지 않는다.
+`createSupabaseInsightEmbeddingStore`는 모든 검색 쿼리에 인증으로 얻은 `userId`를 전달한다. `listPending`은 작업과 `insights`를 조인하는 보안 함수, `completeDocument`는 벡터 저장과 같은 `source_hash` 작업 완료 함수, `match`는 `match_insight_embeddings` RPC를 호출한다. 비용은 `reserve_embedding_usage`와 `reconcile_embedding_usage` RPC로 예약·정산한다. 브라우저용 publishable key 클라이언트는 사용하지 않는다.
 
 - [ ] **Step 6: 대상 테스트를 통과시키고 커밋한다**
 
@@ -918,7 +1060,7 @@ Expected output:
 
 - [ ] **Step 2: Batch 제출 명령을 구현한다**
 
-사용자 승인 뒤 `--confirm`이 있을 때만 실행한다. 인라인 요청의 metadata에는 `insightId`와 `sourceUpdatedAt`만 넣고, 문서 본문은 Task 1의 `createDocumentEmbeddingText`로 만든다.
+사용자 승인 뒤 `--confirm`이 있을 때만 실행한다. 인라인 요청의 metadata에는 `insightId`, `sourceHash`, `modelId`, `projectionVersion`만 넣고, 문서 본문은 Task 1의 `createDocumentEmbeddingText`로 만든다.
 
 ```ts
 const batch = await ai.batches.createEmbeddings({
@@ -930,7 +1072,9 @@ const batch = await ai.batches.createEmbeddings({
       content: { parts: [{ text: createDocumentEmbeddingText(document) }] },
       metadata: {
         insightId: document.insightId,
-        sourceUpdatedAt: document.sourceUpdatedAt,
+        modelId: RETRIEVE_EMBEDDING_MODEL,
+        projectionVersion: String(RETRIEVE_PROJECTION_VERSION),
+        sourceHash: document.sourceHash,
       },
     })),
   },
