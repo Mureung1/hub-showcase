@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from app.api.deps import CurrentUserId, UserClient
 from app.core.errors import ApiError
-from app.schemas.user_interest import (
+from app.features.user_interests.schemas import (
     ReplaceUserInterestsRequest,
     ReplaceUserInterestsResponse,
     UserInterestItem,

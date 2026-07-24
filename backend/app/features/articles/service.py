@@ -1,41 +1,33 @@
-from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Query
 from supabase import Client
 
-from app.api.deps import CurrentUserId, UserClient
 from app.core.errors import ApiError
-from app.missions import MISSION_PROMPTS, RECOMMENDED_MISSION_TYPE
-from app.schemas.article import (
+from app.features.articles.schemas import (
     ArticleDetail,
     InterestTag,
     Mission,
     TodayArticle,
     TodayArticlesResponse,
 )
-
-router = APIRouter(prefix="/articles", tags=["articles"])
+from app.shared.mission_types import MISSION_PROMPTS, RECOMMENDED_MISSION_TYPE
 
 ARTICLE_DETAIL_SELECT = (
     "id,title,translated_title,canonical_url,published_at,author,official_excerpt,"
     "translated_excerpt,reading_time_minutes,language,access_type,url_status,"
     "content_type,source_type,sources(name)"
 )
-
-ONBOARDING_EMPTY_MESSAGE = "관심사를 먼저 선택하면 오늘의 깸을 볼 수 있어요."
-CANDIDATE_EMPTY_MESSAGE = "관심사에 맞는 글을 아직 준비하지 못했어요."
-
 ARTICLE_SELECT = (
     "id,title,translated_title,canonical_url,published_at,official_excerpt,"
     "translated_excerpt,thumbnail_url,reading_time_minutes,language,access_type,"
     "content_type,source_type,sources(name),"
     "content_interest_tags(confidence,interests(id,name,display_order))"
 )
+ONBOARDING_EMPTY_MESSAGE = "관심사를 먼저 선택하면 오늘의 깸을 볼 수 있어요."
+CANDIDATE_EMPTY_MESSAGE = "관심사에 맞는 글을 아직 준비하지 못했어요."
 
 
 def fetch_selected_interests(client: Client) -> list[dict]:
-    """사용자가 저장한 관심사를 (display_order, id) 순으로 반환한다."""
     result = (
         client.table("user_interests")
         .select("interests(id,name,display_order,empty_state_message)")
@@ -76,12 +68,7 @@ def recommendation_reason(tag: dict | None) -> str:
 
 
 def fetch_article_cards(client: Client, article_ids: list[str]) -> list[dict]:
-    result = (
-        client.table("articles")
-        .select(ARTICLE_SELECT)
-        .in_("id", article_ids)
-        .execute()
-    )
+    result = client.table("articles").select(ARTICLE_SELECT).in_("id", article_ids).execute()
     return result.data or []
 
 
@@ -116,25 +103,15 @@ def build_card(row: dict, selected_ids: set[str]) -> TodayArticle:
     )
 
 
-@router.get("/today", response_model=TodayArticlesResponse)
-def get_today_articles(
-    user_id: CurrentUserId,
-    client: UserClient,
-    limit: Annotated[int, Query(ge=1, le=3)] = 3,
-) -> TodayArticlesResponse:
+def get_today_articles(client: Client, user_id: str, limit: int) -> TodayArticlesResponse:
     selected = fetch_selected_interests(client)
     if not selected:
         return TodayArticlesResponse(items=[], empty_state_message=ONBOARDING_EMPTY_MESSAGE)
 
-    ranked = (
-        client.rpc(
-            "get_recommended_articles",
-            {"p_user_id": user_id, "p_limit": limit},
-        )
-        .execute()
-        .data
-        or []
-    )
+    ranked = client.rpc(
+        "get_recommended_articles",
+        {"p_user_id": user_id, "p_limit": limit},
+    ).execute().data or []
     ranked_ids = [row["article_id"] for row in ranked]
     if not ranked_ids:
         return TodayArticlesResponse(
@@ -174,12 +151,7 @@ def fetch_article_detail_row(client: Client, article_id: UUID) -> dict:
     return rows[0]
 
 
-@router.get("/{article_id}", response_model=ArticleDetail)
-def get_article_detail(
-    article_id: UUID,
-    _user_id: CurrentUserId,
-    client: UserClient,
-) -> ArticleDetail:
+def get_article_detail(client: Client, article_id: UUID) -> ArticleDetail:
     row = fetch_article_detail_row(client, article_id)
     return ArticleDetail(
         id=row["id"],

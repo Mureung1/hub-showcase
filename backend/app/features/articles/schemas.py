@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
-from app.missions import MissionType
+from app.shared.mission_types import MissionType
 
 
 class InterestTag(BaseModel):
