@@ -440,7 +440,7 @@ model RoomItem {
   iconKey String
   // 두두가 직접 착용하는 아이템(헤드폰 등)인지 여부 — true면 DodoAppearance의 착용 슬롯에 장착할 수 있다.
   equippable   Boolean @default(false)
-  // 장식용이지만 두두와 상호작용 가능한 아이템(게임기, 베개 등)인지 여부.
+  // 장식용이지만 두두와 상호작용 가능한 아이템(게임기 등)인지 여부.
   interactable Boolean @default(false)
   // 사용자가 본체 색을 직접 고를 수 있는 아이템인지 여부(게임기 등).
   colorCustomizable Boolean @default(false)

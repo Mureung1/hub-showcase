@@ -296,7 +296,7 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 .myhome-placed-item:has(.shop-item-pancake),
 .myhome-placed-item:has(.shop-item-rice) { z-index: 6; transform: translate(-50%, -50%) scale(1.6875); }
 
-.shop-item-console, .shop-item-pillow, .shop-item-headphones, .shop-item-table,
+.shop-item-console, .shop-item-headphones, .shop-item-table,
 .shop-item-fried-egg, .shop-item-toast, .shop-item-pancake, .shop-item-rice {
   width: 48px; height: 48px; flex: 0 0 auto; position: relative; display: block;
   clip-path: polygon(8px 0, 40px 0, 40px 8px, 48px 8px, 48px 40px, 40px 40px, 40px 48px, 8px 48px, 8px 40px, 0 40px, 0 8px, 8px 8px);
@@ -314,9 +314,6 @@ button.agenda-copy:hover strong { text-decoration: underline; }
     16px -3px 0 var(--scheduler-ink),
     20px 3px 0 var(--scheduler-ink);
 }
-.shop-item-pillow { background: var(--scheduler-coral); }
-.shop-item-pillow::before { content: ''; position: absolute; inset: 14px; border: 3px solid var(--scheduler-ink); }
-.shop-item-pillow::after { content: ''; position: absolute; width: 16px; height: 3px; top: 23px; left: 16px; background: var(--scheduler-ink); }
 .shop-item-headphones::before {
   content: ''; position: absolute; width: 24px; height: 14px; top: 6px; left: 12px; background: var(--item-color, var(--scheduler-violet));
   clip-path: polygon(4px 0, 20px 0, 20px 4px, 24px 4px, 24px 14px, 20px 14px, 20px 6px, 4px 6px, 4px 14px, 0 14px, 0 4px, 4px 4px);
