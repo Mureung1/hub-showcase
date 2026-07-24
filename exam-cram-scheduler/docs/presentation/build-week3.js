@@ -787,6 +787,141 @@ async function build() {
     }
   );
 
+  // ── Slide 9.5 — AI와 일하는 방식 (3주 회고) ───────────────
+  let sAI = pres.addSlide();
+  addContentFrame(pres, sAI, "AI와 어떻게 일했나 — 3주간의 작업 방식", "회고 · 일하는 방식");
+
+  sAI.addText("작업 순서 — 이슈 하나를 처리하는 사이클", {
+    x: 0.5, y: 1.3, w: 9, h: 0.28,
+    fontSize: 11.5, bold: true, color: COLOR.ink900,
+    align: "left", fontFace: FONT, margin: 0,
+  });
+
+  const cycle = [
+    { t: "이슈 파악", d: ["GitHub 이슈로", "할 작업 범위 확인"] },
+    { t: "설명 듣고 검증", d: ["AI 설명 듣고 근거·", "수식이 맞는지 검증"] },
+    { t: "계획 이해", d: ["구현 계획을 이해될", "때까지 되묻기"] },
+    { t: "작업 수행", d: ["다 이해한 뒤에야", "구현 작업 수행"] },
+    { t: "이해 · 버그 테스트", d: ["코드 내용 이해 +", "검증 스크립트 테스트"] },
+    { t: "커밋", d: ["commit 스킬로", "파일 단위 커밋"] },
+  ];
+  const cyW = 1.38, cyGap = 0.144, cyY = 1.62, cyH = 1.15;
+  cycle.forEach((c, i) => {
+    const cx = 0.5 + i * (cyW + cyGap);
+    const isLast = i === cycle.length - 1;
+    sAI.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+      x: cx, y: cyY, w: cyW, h: cyH,
+      fill: { color: isLast ? COLOR.brandSoft : COLOR.surfaceMuted },
+      line: isLast ? { color: COLOR.brand, width: 1.2 } : { type: "none" },
+      rectRadius: 0.09,
+    });
+    sAI.addShape(pres.shapes.OVAL, {
+      x: cx + cyW / 2 - 0.15, y: cyY + 0.12, w: 0.3, h: 0.3,
+      fill: { color: COLOR.brand },
+    });
+    sAI.addText(String(i + 1), {
+      x: cx + cyW / 2 - 0.15, y: cyY + 0.12, w: 0.3, h: 0.3,
+      fontSize: 10, bold: true, color: COLOR.surface,
+      align: "center", valign: "middle", fontFace: FONT, margin: 0,
+    });
+    sAI.addText(c.t, {
+      x: cx + 0.06, y: cyY + 0.46, w: cyW - 0.12, h: 0.24,
+      fontSize: 9.3, bold: true, color: COLOR.ink900,
+      align: "center", valign: "middle", fontFace: FONT, margin: 0,
+    });
+    sAI.addText(multiLine(c.d), {
+      x: cx + 0.08, y: cyY + 0.72, w: cyW - 0.16, h: 0.36,
+      fontSize: 7.3, color: COLOR.ink600,
+      align: "center", valign: "top", fontFace: FONT, margin: 0, lineSpacingMultiple: 1.2,
+    });
+    if (!isLast) {
+      arrowBetween(pres, sAI, cx + cyW + 0.018, cyY + cyH / 2, cyGap - 0.036, COLOR.brand);
+    }
+  });
+
+  // 왼쪽 — 쓰는 Skill 3개
+  sAI.addText("쓰는 Skill 3개  (.claude/skills/)", {
+    x: 0.5, y: 2.95, w: 4.55, h: 0.28,
+    fontSize: 11.5, bold: true, color: COLOR.ink900,
+    align: "left", fontFace: FONT, margin: 0,
+  });
+  const skills = [
+    ["/commit", ["\"커밋\" 한마디로 바로 실행 — Conventional Commits", "한국어 형식, 파일 하나당 커밋 하나로 분리"]],
+    ["/new-component", ["새 컴포넌트 요청 시 CLAUDE.md·디자인.md를 먼저 읽고", "디자인 토큰 재사용, 문서에 없으면 임의로 안 정하고 질문"]],
+    ["/daily-recap", ["하루 마무리 회고 — 한 일·목적·세부사항·", "헷갈린 점·배운 것 5가지를 표로"]],
+  ];
+  const skY = 3.28, skH = 0.62, skGap = 0.1;
+  skills.forEach((s, i) => {
+    const sy = skY + i * (skH + skGap);
+    sAI.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+      x: 0.5, y: sy, w: 4.55, h: skH,
+      fill: { color: COLOR.surfaceMuted }, rectRadius: 0.08,
+    });
+    sAI.addShape(pres.shapes.RECTANGLE, {
+      x: 0.5, y: sy, w: 0.07, h: skH,
+      fill: { color: COLOR.brand }, line: { type: "none" },
+    });
+    sAI.addText(s[0], {
+      x: 0.68, y: sy + 0.06, w: 4.2, h: 0.22,
+      fontSize: 10, bold: true, fontFace: "Consolas", color: COLOR.brandStrong,
+      align: "left", valign: "middle", margin: 0,
+    });
+    sAI.addText(multiLine(s[1]), {
+      x: 0.68, y: sy + 0.28, w: 4.25, h: 0.3,
+      fontSize: 7.8, color: COLOR.ink600,
+      align: "left", valign: "top", fontFace: FONT, margin: 0, lineSpacingMultiple: 1.18,
+    });
+  });
+
+  // 오른쪽 — Agent + 함께 정한 규칙
+  sAI.addText("Agent · 함께 정한 규칙", {
+    x: 5.35, y: 2.95, w: 4.15, h: 0.28,
+    fontSize: 11.5, bold: true, color: COLOR.ink900,
+    align: "left", fontFace: FONT, margin: 0,
+  });
+  sAI.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+    x: 5.35, y: 3.28, w: 4.15, h: 1.0,
+    fill: { color: COLOR.surfaceMuted }, rectRadius: 0.08,
+  });
+  sAI.addText("Agent — 기본은 메인 세션에서 직접 진행", {
+    x: 5.55, y: 3.36, w: 3.8, h: 0.24,
+    fontSize: 9.3, bold: true, color: COLOR.ink900,
+    align: "left", valign: "middle", fontFace: FONT, margin: 0,
+  });
+  sAI.addText(
+    multiLine([
+      "· Explore — 여러 파일을 한 번에 훑어야 할 때 코드베이스 탐색",
+      "· Plan — 구현 전에 단계별 계획을 먼저 받아볼 때",
+    ]),
+    {
+      x: 5.55, y: 3.64, w: 3.8, h: 0.56,
+      fontSize: 8.2, color: COLOR.ink600,
+      align: "left", valign: "top", fontFace: FONT, margin: 0, lineSpacingMultiple: 1.3,
+    }
+  );
+
+  sAI.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+    x: 5.35, y: 4.4, w: 4.15, h: SAFE_BOTTOM - 4.4,
+    fill: { color: COLOR.brandSoft }, rectRadius: 0.08,
+  });
+  sAI.addText("함께 정한 규칙 — CLAUDE.md에 적어둔 것", {
+    x: 5.55, y: 4.48, w: 3.8, h: 0.24,
+    fontSize: 9.3, bold: true, color: COLOR.brandStrong,
+    align: "left", valign: "middle", fontFace: FONT, margin: 0,
+  });
+  sAI.addText(
+    multiLine([
+      "· 지시하지 않은 작업은 AI가 스스로 실행하지 않기",
+      "· 빈틈은 임의로 채우지 말고 다시 질문하기",
+      "· 코드 설명은 목적 → 방식 → 근거 → 구현 4단계로",
+    ]),
+    {
+      x: 5.55, y: 4.75, w: 3.8, h: SAFE_BOTTOM - 4.82,
+      fontSize: 8.2, color: COLOR.brandStrong,
+      align: "left", valign: "top", fontFace: FONT, margin: 0, lineSpacingMultiple: 1.24,
+    }
+  );
+
   // ── Slide 10 — 다음 주 할 일 · 고민되는 점 ────────────────
   let s10 = pres.addSlide();
   addContentFrame(pres, s10, "다음 주 할 일 · 고민되는 점", "4주차 · 다음 단계");
