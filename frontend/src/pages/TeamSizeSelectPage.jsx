@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { apiClient } from '../api/client'
 import './TeamSizeSelectPage.css'
 
 // DESIGN.md 8.1 아이콘 규칙(viewBox 0 0 64 64, stroke 4, 플랫, 팔레트 컬러) 기준으로 그린 사람/하트 아이콘
@@ -39,9 +41,23 @@ const TEAM_SIZE_OPTIONS = [
 
 export default function TeamSizeSelectPage() {
   const navigate = useNavigate()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
-  const handleSelect = (teamSize) => {
-    navigate('/matching/dating-same', { state: { teamSize } })
+  const handleSelect = async (teamSize) => {
+    if (isSubmitting) return
+
+    setIsSubmitting(true)
+    setSubmitError('')
+    try {
+      await apiClient.patch('/users/me/team-size', { teamSize })
+      navigate('/matching/dating-same', { state: { teamSize } })
+    } catch (err) {
+      setSubmitError(
+        err.response?.data?.message ?? '저장 중 오류가 발생했습니다. 다시 시도해주세요.',
+      )
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -55,6 +71,7 @@ export default function TeamSizeSelectPage() {
             key={option.teamSize}
             className="team-size-select-card"
             onClick={() => handleSelect(option.teamSize)}
+            disabled={isSubmitting}
           >
             <div className="team-size-select-icon-row">
               {Array.from({ length: option.teamSize }).map((_, i) => (
@@ -70,6 +87,8 @@ export default function TeamSizeSelectPage() {
           </button>
         ))}
       </div>
+
+      {submitError && <p className="team-size-select-error">{submitError}</p>}
     </div>
   )
 }

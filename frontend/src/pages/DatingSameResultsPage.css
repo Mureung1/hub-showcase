@@ -1,4 +1,5 @@
 .dating-same-results-page {
+  position: relative;
   min-height: 100vh;
   width: 100%;
   display: flex;
@@ -6,6 +7,12 @@
   align-items: center;
   background: var(--bg-cream);
   padding: 48px 40px;
+}
+
+.dating-same-results-notification-bell {
+  position: absolute;
+  top: 32px;
+  right: 32px;
 }
 
 .dating-same-results-eyebrow {

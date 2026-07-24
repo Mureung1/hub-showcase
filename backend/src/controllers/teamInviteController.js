@@ -1,4 +1,8 @@
-import { createTeamInvite, getReceivedTeamInvites } from '../services/teamInviteService.js'
+import {
+  createTeamInvite,
+  getReceivedTeamInvites,
+  respondToTeamInvite,
+} from '../services/teamInviteService.js'
 
 // 친구 코드(inviteCode)로 상대를 찾아 pending 상태의 팀 초대를 생성한다
 export async function sendTeamInvite(req, res) {
@@ -46,5 +50,24 @@ export async function getReceivedInvites(req, res) {
   } catch (err) {
     console.error(err)
     return res.status(500).json({ message: '초대 목록 조회 중 오류가 발생했습니다.' })
+  }
+}
+
+// 로그인한 유저가 받은 팀 초대를 수락(accept)하거나 거절(reject)한다
+export async function respondToInvite(req, res) {
+  try {
+    const { userId } = req.user
+    const { inviteId } = req.params
+    const { action } = req.body
+
+    const result = await respondToTeamInvite(inviteId, userId, action)
+
+    return res.status(200).json(result)
+  } catch (err) {
+    console.error(err)
+    const status = err.status || 500
+    return res
+      .status(status)
+      .json({ message: err.status ? err.message : '초대 처리 중 오류가 발생했습니다.' })
   }
 }

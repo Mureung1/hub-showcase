@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client'
 import ConfirmModal from '../components/ConfirmModal'
+import NotificationBell from '../components/NotificationBell'
 import './DatingSameResultsPage.css'
 
 // 카드 아바타 색상은 실제 데이터가 아니라 순서대로 돌려쓰는 장식용 색상이다
@@ -82,6 +83,10 @@ export default function DatingSameResultsPage() {
 
   return (
     <div className="dating-same-results-page">
+      <div className="dating-same-results-notification-bell">
+        <NotificationBell />
+      </div>
+
       <span className="dating-same-results-eyebrow">매칭 결과</span>
       <h1 className="dating-same-results-title">취향이 비슷한 동성 친구들이에요!</h1>
 

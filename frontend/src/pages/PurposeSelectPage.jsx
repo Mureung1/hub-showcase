@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client'
+import NotificationBell from '../components/NotificationBell'
 import datingIllustration from '../assets/illustrations/onboarding-dating.png'
 import roommateIllustration from '../assets/illustrations/onboarding-roommate.png'
 import './PurposeSelectPage.css'
@@ -59,6 +60,7 @@ export default function PurposeSelectPage() {
   return (
     <div className="purpose-select-page">
       <div className="purpose-select-top-row">
+        <NotificationBell />
         <button type="button" className="purpose-select-mypage-button" onClick={handleMypageClick}>
           마이페이지
         </button>
