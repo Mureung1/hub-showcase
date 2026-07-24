@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: coordinator integration
 
 ## Parent Spec
 
@@ -34,14 +34,14 @@ H1a가 검증한 startup input으로 `127.0.0.1`의 OS-assigned port 하나를 b
 
 ## Acceptance Criteria
 
-- [ ] Host가 explicit `127.0.0.1:0`에 한 번 bind하고 returned actual port로 exact `http://127.0.0.1:<port>` Origin을 만든다.
-- [ ] Composition 전 request가 `503`으로 fail closed하고 delegate 교체 뒤 같은 listener가 product API와 built SPA를 제공한다.
-- [ ] Built index, hashed asset와 SPA navigation이 package-relative absolute root에서 동작하며 `/api/*`를 fallback HTML로 바꾸지 않는다.
-- [ ] Product mutation Origin, unexpected Host/authority와 private MCP token/loopback guard가 current Server contract대로 fail closed한다.
-- [ ] Removed `/api/codex-chat/*`, raw Runtime protocol와 unsupported legacy route가 계속 `404`다.
-- [ ] Listener refusal, application composition/static asset failure가 Browser 성공을 합성하지 않고 listener·Runtime·stream을 bounded close한다.
-- [ ] Caller cwd, hostile `.env`, occupied unrelated port와 fixed `PORT`가 selected Origin이나 asset root authority가 되지 않는다.
-- [ ] Focused same-origin/static/route tests와 C1 Server shutdown regression이 green이다.
+- [x] Host가 explicit `127.0.0.1:0`에 한 번 bind하고 returned actual port로 exact `http://127.0.0.1:<port>` Origin을 만든다.
+- [x] Composition 전 request가 `503`으로 fail closed하고 delegate 교체 뒤 같은 listener가 product API와 built SPA를 제공한다.
+- [x] Built index, hashed asset와 SPA navigation이 package-relative absolute root에서 동작하며 `/api/*`를 fallback HTML로 바꾸지 않는다.
+- [x] Product mutation Origin, unexpected Host/authority와 private MCP token/loopback guard가 current Server contract대로 fail closed한다.
+- [x] Removed `/api/codex-chat/*`, raw Runtime protocol와 unsupported legacy route가 계속 `404`다.
+- [x] Listener refusal, application composition/static asset failure가 Browser 성공을 합성하지 않고 listener·Runtime·stream을 bounded close한다.
+- [x] Caller cwd, hostile `.env`, occupied unrelated port와 fixed `PORT`가 selected Origin이나 asset root authority가 되지 않는다.
+- [x] Focused same-origin/static/route tests와 C1 Server shutdown regression이 green이다.
 
 ## Verification
 
@@ -73,6 +73,32 @@ H1a가 검증한 startup input으로 `127.0.0.1`의 OS-assigned port 하나를 b
 - U1 built Chat Shell output and Vite asset shape
 - `apps/server/src/testing/test-server.ts`
 - `apps/server/src/testing/product-shutdown.actual.ts`
+
+## Candidate Evidence
+
+이 절은 implementation candidate와 그 뒤의 test-only evidence를 구분한다.
+
+| Evidence | Result |
+| --- | --- |
+| Candidate | `a61c016dec022028e6182e71108c930b2c6ab05d` — H1a의 exact prepared startup과 C의 bind-first listener를 사용해 dynamic loopback same-origin host를 조립했다. Public root는 `origin`, `port`, bounded `close`만 제공한다. |
+| Route matrix | 실제 OS-assigned listener에서 readiness 전 `503`, product API, index, hashed/non-hashed static asset, `HEAD`, SPA navigation, unexpected Host, `/api` namespace, removed/legacy route와 raw traversal·percent encoding·backslash를 검증했다. API-like target은 SPA HTML로 승격되지 않는다. |
+| Lifecycle matrix | Listener refusal은 C composition 전 닫히고, composition/static failure와 post-composition cancellation은 C-owned listener/application close authority로 수렴한다. Ambiguous cleanup은 같은 authority가 fresh caller signal을 받는 retry handle을 보존한다. |
+| Highest-seam evidence | `251d893983caa403a970fd67fe8af76cd1946d6b` — production dynamic host, 실제 TCP listener와 genuine WeakMap-registered `ServerApplication`으로 ambiguous Runtime close 후 fresh-signal retry, proven close와 exact port refusal을 고정했다. |
+| Focused gates | `ay-ple` 105/105와 H1b host tests 13/13, `@ay-ple/server` 252/252, 각 workspace typecheck/build가 green이다. Built `ay-ple` root는 `ApplicationStartupError`, `admitApplicationStartup`, `startDynamicLocalApplicationHost` 세 값만 노출한다. |
+| Actual-child correction | Account lifecycle 도입 뒤 stale해진 process-tree fixture에 explicit `accountState`를 요구하는 test-only correction `f06d220d6`을 독립 리뷰 후 integration merge `9a34c8b82`로 먼저 반영했다. Product source, official SDK와 ordered patch stack은 수정하지 않았다. |
+| Actual-child receipt | Corrected full tree `13ff137a3`에서 `npm run test:product-shutdown-actual -w @ay-ple/server`가 2/2로 green이다. Product bootstrap이 실제 Python/native process tree close를 요청하고 listener refusal과 child-of-child reap까지 확인한다. |
+| Repository gates | Corrected full tree에서 root `npm test`가 exit 0이다. Root typecheck/build, Chat Shell lint, docs links와 `git diff --check`도 green으로 확정한다. |
+
+## Final Review
+
+| Evidence | Result |
+| --- | --- |
+| Fixed reviewed implementation | `a61c016dec022028e6182e71108c930b2c6ab05d` |
+| Tracked lifecycle evidence | `251d893983caa403a970fd67fe8af76cd1946d6b` |
+| Independent architecture/security review | Raw request-target 정규화 우회, exact Host, API/static namespace, one-bind readiness와 listener/application cleanup authority를 재검토해 unresolved finding 0건으로 PASS했다. |
+| Independent Standards review | Prepared startup authority, public root depth, README의 current/deferred truth와 H/C Module ownership을 검토해 PASS했다. |
+| Independent lifecycle re-review | 실제 listener와 genuine C application을 함께 쓰는 ambiguous cleanup retry test가 caller signal, proven close와 port refusal을 모두 고정함을 확인해 PASS했다. Test-only Server factory import는 production dependency/export를 넓히지 않는다. |
+| Disposition | H1b code blocker와 verification gap 0건으로 완료한다. Single-instance, Browser open와 signal policy는 계획대로 H1c/H1d가 소유한다. |
 
 ## Delivery Handoff
 
