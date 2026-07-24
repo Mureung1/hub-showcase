@@ -1,14 +1,14 @@
 # 작업 계획: T31 — 기술 MVP 통합 DoD·최종 배포
 
-> 상태: 보류
+> 상태: 종료
 >
 > 작성일: 2026-07-23
 >
-> 최종 갱신일: 2026-07-23
+> 최종 갱신일: 2026-07-24
 >
-> 현재 단계: 실제 `/api/generate` 연결 코드 `2398e9b` 자동검증 완료, 새 Preview 배포
+> 현재 단계: `beb6cda` Preview·Production UI→API·DB metadata 통합 검증 완료
 >
-> 다음 행동: `2398e9b` 포함 스냅샷을 Preview branch에 push하고 실제 자연어 생성·DB metadata를 확인
+> 다음 행동: 없음 — T22 외부 가치 검증과 T35 retrieval 실험은 별도 `Pending`·비운영 상태 유지
 >
 > CHECKLIST 항목: T31
 
@@ -71,15 +71,16 @@
 | 2026-07-23 | 승인됨 | 현재 HEAD의 비프로덕션 branch push와 Preview 최종 검증 | 사용자 “승인” |
 | 2026-07-23 | 승인됨 | 루트 tsconfig Node 타입 수정·검증·Preview 재배포 | 사용자 “승인” |
 | 2026-07-24 | 승인됨 | 배포 UI의 mock을 Production same-origin `/api/generate` 연결로 교체하고 자연어 입력 안내를 바로잡음 | 사용자 “승인 그리고 실제 연결을 한겁니까?” |
+| 2026-07-24 | 승인됨 | 검증된 `beb6cda`를 `N166_진현지`에 fast-forward해 Production 검증 후 T31 마감 | 사용자 제공 “실제 AI 연결 Production 배포 계획” |
 
 범위나 완료조건이 바뀌면 구현을 중단하고 이 표와 관련 항목을 갱신한 뒤 재승인받는다.
 
 ## 7. 진행·인계
 
-- 마지막으로 끝낸 단계: strict HTTP client·Production selector·자연어/provider 안내와 테스트를 `2398e9b`로 커밋하고 전체 45파일 386테스트·품질 gate를 통과했다.
-- 현재 작업 중인 단계: 새 Preview 배포.
-- 다음 행동: `codex/t31-preview-check`에 push한 뒤 Vercel build 상태와 보호된 실흐름을 확인한다.
-- 보류 사유와 재개 조건: 새 Preview에서 사용자 자연어를 반영한 후보와 DB metadata write가 확인되어야 한다.
+- 마지막으로 끝낸 단계: `beb6cda`를 Production에 fast-forward하고 같은 SHA의 Preview·Production 배포, 실제 AI 세 후보, public bundle, `generation_runs` metadata write를 확인했다.
+- 현재 작업 중인 단계: 없음. 필수 AC와 최종 품질 gate가 모두 통과했다.
+- 다음 행동: T31 범위에는 없다. T22는 외부 참여자 검증 전 `Pending`, T35는 별도 offline 실험 완료 전 운영 비활성으로 유지한다.
+- 보류 사유와 재개 조건: 해당 없음.
 
 | 날짜 | 진행·결정 | 근거·영향 |
 | --- | --- | --- |
@@ -103,3 +104,7 @@
 | 2026-07-24 | UI→API 통합 결함 확인 | 공개 Production API는 사용자 자연어 입력으로 HTTP 200·AI tone 1/2/3을 반환하지만 `MessageFlow`는 모든 guided/manual 요청을 `generateWithMock()`에만 전달하고 stale mock 안내를 표시함 |
 | 2026-07-24 | 결함 보완 승인 | Production same-origin HTTP 연결, 개발·테스트 mock 유지, 자연어 입력·provider 전송 안내와 자동검증 추가 |
 | 2026-07-24 | 코드 자동검증·커밋 | `2398e9b fix: 배포 UI를 실제 AI API에 연결`; 45파일 386테스트·타입·lint·build·bundle marker·하네스 통과 |
+| 2026-07-24 | 같은 SHA Preview 통과 | deployment `5582284113`, SHA `beb6cda`, state `success`; UI→API 세 후보와 `2026-07-24T01:20:58.411Z` `status=success` metadata 행 확인 |
+| 2026-07-24 | Production fast-forward·배포 통과 | `origin/N166_진현지`를 `f690a74`→`beb6cda`로 fast-forward. deployment `5582330653`, state `success`, 공개 `/` HTTP 200 |
+| 2026-07-24 | Production runtime 통과 | 공개 bundle이 로컬 검증 bundle과 SHA-256 `3ec66fd…`로 일치하고 `/api/generate`·Gemini 안내를 포함하며 mock 안내는 없음. 지정 자연어는 AI 세 후보에 반영되고 `2026-07-24T01:28:13.759Z` metadata 행은 `status=success` |
+| 2026-07-24 | 공개 화면 증거 한계 기록 | 연결 가능한 Browser backend가 없어 Production 클릭을 독립 재실행하지 못했다. 동일 SHA Preview UI 통과, public bundle 바이트 일치, same-origin API·DB 성공을 결합해 배포 환경 차이 위험을 확인했다 |
