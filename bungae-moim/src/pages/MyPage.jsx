@@ -45,20 +45,20 @@ export default function MyPage() {
 
   if (!isLoggedIn) {
     return (
-      <>
+      <div className="container--narrow">
         <PageHeader title="마이페이지" />
-        <Card variant="dark">
-          <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>로그인하면 내가 등록/참여한 모임을 볼 수 있어요.</p>
+        <Card variant="solid">
+          <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>로그인하면 내가 등록/참여한 모임을 볼 수 있어요.</p>
           <PillButton to="/login" variant="accent" block>
             로그인하러 가기
           </PillButton>
         </Card>
-      </>
+      </div>
     )
   }
 
   return (
-    <>
+    <div className="container--wide">
       <PageHeader title="마이페이지" />
 
       <Card variant="dark">
@@ -104,22 +104,26 @@ export default function MyPage() {
             </Card>
           )}
 
-          {hosted.map((m) => {
-            const status = meetingStatusMeta(m.status)
-            return (
-              <Link key={m.id} to={`/meetings/${m.id}`} className="meeting-card">
-                <div className="meeting-card-top">
-                  <span className="eyebrow">
-                    {m.type === 'flash' ? '번개모임' : '소모임'} · {formatMeetingSchedule(m)}
-                  </span>
-                  <StatusPill tone={status.tone}>{status.label}</StatusPill>
-                </div>
-                <h3 className="meeting-card-title">{m.title}</h3>
-                <span className="eyebrow">신청자 {m.applicantCount}명</span>
-                {m.pendingCount > 0 && <StatusPill tone="warning">승인 대기 {m.pendingCount}건</StatusPill>}
-              </Link>
-            )
-          })}
+          {hosted.length > 0 && (
+            <div className="card-grid--2">
+              {hosted.map((m) => {
+                const status = meetingStatusMeta(m.status)
+                return (
+                  <Link key={m.id} to={`/meetings/${m.id}`} className="meeting-card">
+                    <div className="meeting-card-top">
+                      <span className="eyebrow">
+                        {m.type === 'flash' ? '번개모임' : '소모임'} · {formatMeetingSchedule(m)}
+                      </span>
+                      <StatusPill tone={status.tone}>{status.label}</StatusPill>
+                    </div>
+                    <h3 className="meeting-card-title">{m.title}</h3>
+                    <span className="eyebrow">신청자 {m.applicantCount}명</span>
+                    {m.pendingCount > 0 && <StatusPill tone="warning">승인 대기 {m.pendingCount}건</StatusPill>}
+                  </Link>
+                )
+              })}
+            </div>
+          )}
 
           <h2 className="section-title" style={{ fontSize: 16 }}>
             참여한 모임 ({joined.length})
@@ -131,23 +135,27 @@ export default function MyPage() {
             </Card>
           )}
 
-          {joined.map(({ meeting, status }) => {
-            const meta = participationStatusMeta(status)
-            return (
-              <Link key={meeting.id} to={`/meetings/${meeting.id}`} className="meeting-card">
-                <div className="meeting-card-top">
-                  <span className="eyebrow">
-                    {meeting.type === 'flash' ? '번개모임' : '소모임'} · {formatMeetingSchedule(meeting)}
-                  </span>
-                  <StatusPill tone={meta.tone}>{meta.label}</StatusPill>
-                </div>
-                <h3 className="meeting-card-title">{meeting.title}</h3>
-                <span className="eyebrow">모임장 {meeting.host.nickname}</span>
-              </Link>
-            )
-          })}
+          {joined.length > 0 && (
+            <div className="card-grid--2">
+              {joined.map(({ meeting, status }) => {
+                const meta = participationStatusMeta(status)
+                return (
+                  <Link key={meeting.id} to={`/meetings/${meeting.id}`} className="meeting-card">
+                    <div className="meeting-card-top">
+                      <span className="eyebrow">
+                        {meeting.type === 'flash' ? '번개모임' : '소모임'} · {formatMeetingSchedule(meeting)}
+                      </span>
+                      <StatusPill tone={meta.tone}>{meta.label}</StatusPill>
+                    </div>
+                    <h3 className="meeting-card-title">{meeting.title}</h3>
+                    <span className="eyebrow">모임장 {meeting.host.nickname}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
         </>
       )}
-    </>
+    </div>
   )
 }
