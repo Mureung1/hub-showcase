@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint src vite.config.ts",
     "typecheck": "tsc -b --pretty false",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
@@ -21,9 +21,12 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.0",
+    "jsdom": "^29.1.1",
     "typescript": "^6.0.0",
     "vite": "^8.0.0",
     "vitest": "^4.0.0"
