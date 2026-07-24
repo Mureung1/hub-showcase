@@ -346,7 +346,8 @@ function OcrStep({
           if (result.ocrStatus === 'FAILED') {
             onError('영수증을 인식하지 못했어요. 직접 입력해주세요.')
           } else {
-            onDone(result)
+            // OCR이 금액을 못 읽으면 amount가 null로 올 수 있어 0으로 보정 (분석결과 화면 렌더 크래시 방지)
+            onDone({ ...result, items: result.items.map(item => ({ ...item, amount: item.amount ?? 0 })) })
           }
         }, 400)
       })
@@ -403,6 +404,7 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [items, setItems] = useState<ExpenseDraft[]>(result.items)
+  const [date, setDate] = useState(() => result.spentAt.slice(0, 10))
   const total = items.reduce((sum, item) => sum + item.amount, 0)
 
   const updateItem = (idx: number, field: 'name' | 'amount', value: string) => {
@@ -433,7 +435,7 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
     setSaving(true)
     setSaveError(null)
     try {
-      await confirmReceipt(result.receiptId, items, result.spentAt)
+      await confirmReceipt(result.receiptId, items, `${date}T00:00:00`)
       onClose()
     } catch {
       setSaveError('저장에 실패했어요. 다시 시도해주세요.')
@@ -475,6 +477,15 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
               </select>
             )
           })()}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>날짜</span>
+          <input
+            type="date"
+            value={date}
+            onChange={e => setDate(e.target.value)}
+            style={{ border: 'none', outline: 'none', fontSize: 14, fontWeight: 600, color: 'var(--foreground)', background: 'transparent', fontFamily: 'Pretendard' }}
+          />
         </div>
         {items.map((item, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>

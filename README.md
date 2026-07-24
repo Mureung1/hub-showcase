@@ -20,7 +20,7 @@
 
 ## 아키텍처
 
-화면(React) → 서버(Spring Boot) → DB(PostgreSQL)로 이어지는 데이터 흐름. 점선 박스는 아직 손 안 댄 부분(예측/생존모드/Agent), 실선 박스는 이미 동작 중인 부분이다.
+화면(React) → 서버(Spring Boot) → DB(PostgreSQL)로 이어지는 데이터 흐름. 점선 박스는 아직 손 안 댄 부분(챗봇 질의응답 플로우와 그 화면 연동), 실선 박스는 이미 동작 중인 부분이다.
 
 ```mermaid
 graph TD
@@ -28,7 +28,7 @@ graph TD
         AddExpense[AddExpenseScreen]
         Stats[StatsScreen]
         MyPage[MyPageScreen]
-        Survival[SurvivalModeScreen]:::planned
+        Survival[SurvivalModeScreen]
         AICoach[AICoachScreen]:::planned
     end
 
@@ -43,7 +43,7 @@ graph TD
         ExpenseS[ExpenseService]
         SubS[SubscriptionService]
         BudgetS[BudgetService]
-        ContextS[ContextService]:::planned
+        ContextS[ContextService]
         AgentS[AgentService]:::planned
 
         OcrClient[ClovaOcrClient]
