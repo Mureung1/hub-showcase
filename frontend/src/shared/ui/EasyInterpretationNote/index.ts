@@ -1,0 +1,1 @@
+export { EasyInterpretationNote } from './EasyInterpretationNote'
