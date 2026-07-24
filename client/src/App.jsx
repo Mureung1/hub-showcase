@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { validateExpense } from "./validate";
-import { getDaysUntil, getDdayLabel } from "./dday";  
+import { getDaysUntil, getDdayLabel, isThisMonth } from "./dday";
 
 // ============================================================
 // React 화면 전환 - 9개 화면 전체 연결 버전
@@ -1108,7 +1108,27 @@ function ExpenseSetup({ go }) {
             </span>
           </div>
         )}
-
+        {/* 이번 달 남은 지출 */}
+        {expenses.length > 0 && (
+          <div style={{
+            marginTop: 10,
+            padding: "12px 20px",
+            background: "#fff",
+            border: "1px solid #ebe6da",
+            borderRadius: 12,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}>
+            <span style={{ fontSize: 13, color: "#8a8478" }}>이번 달 남은 금액</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "#2d4030" }}>
+              {expenses
+                .filter((item) => isThisMonth(item.due_day))
+                .reduce((sum, item) => sum + item.amount, 0)
+                .toLocaleString("ko-KR")}원
+            </span>
+          </div>
+        )}
         <div style={{ marginTop: 28 }}></div>
         <div style={{ marginTop: 28 }}>
           {expenses.length === 0 ? (
@@ -1116,9 +1136,13 @@ function ExpenseSetup({ go }) {
               아직 등록된 항목이 없어요.
             </p>
           ) : (
-          expenses.map((item) => (
-              <div
-                key={item.id}
+              [...expenses]
+                .sort((a, b) => getDaysUntil(a.due_day) - getDaysUntil(b.due_day))
+                .map((item) => {
+                  const days = getDaysUntil(item.due_day);
+          return (
+            <div
+              key={item.id}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -1151,16 +1175,16 @@ function ExpenseSetup({ go }) {
                   </div>
                   <div style={{ fontSize: 12, color: "#8a8478", marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
                     <span>매월 {item.due_day}일 납부</span>
-                    <span style={{
-                        background: "#f0ede4",
-                        color: "#8a8478",
-                        borderRadius: 6,
-                        padding: "2px 7px",
-                        fontSize: 11,
-                        fontWeight: 700,
-                      }}>
-                        {getDdayLabel(getDaysUntil(item.due_day))}
-                      </span>
+                  <span style={{
+                    background: days <= 3 ? "#fbe9e7" : "#f0ede4",
+                    color: days <= 3 ? "#c0392b" : "#8a8478",
+                    borderRadius: 6,
+                    padding: "2px 7px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                  }}>
+                    {getDdayLabel(days)}
+                  </span>
                 </div>
                 </div>
                 {/* 금액 */}
@@ -1198,7 +1222,8 @@ function ExpenseSetup({ go }) {
                 </button>
                 </div>
               </div>
-            ))
+          );
+        })
           )}
         </div>
       </div>
