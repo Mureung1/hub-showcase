@@ -20,3 +20,6 @@ npm.cmd run dev
 
 ## 주간계획 수립(2주차)
 [[노션주간계획링크(2주차)](https://www.notion.so/2-39c147145ccd81c6b0d4e159f29dbe84?source=copy_link)]
+
+## 데이터 흐름 아키텍쳐 시각화
+<img width="1919" height="729" alt="image" src="https://github.com/user-attachments/assets/88d3952d-4bd4-4c43-b2a4-cb20f983f75f" />
