@@ -13,7 +13,7 @@ import { useToast } from '../context/ToastContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { pickBestFoodMatch, searchFoodDB } from '../lib/fooddb.js'
 import { normalizeFoodSearchName } from '../lib/foodNameMap.js'
-import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
+import { geminiCompleteWithRetry, parseJsonLoose } from '../lib/gemini.js'
 import { getRecommendedMealType } from '../lib/mealType.js'
 import { sumNutrients } from '../lib/mealStore.js'
 import {
@@ -202,24 +202,6 @@ function isTextAnalysisResult(value) {
     value.items.length > 0 &&
     value.items.every((item) => item && typeof item.name === 'string' && isNutrientSet(item.nutrients))
   )
-}
-
-// OpenRouter가 429(레이트리밋)를 반환하면 지수 백오프로 최대 2회까지 조용히 자동 재시도한다.
-// 그래도 실패하면 err.status(gemini.js가 실어줌)를 보고 호출부가 안내 문구로 전환한다.
-const RATE_LIMIT_RETRY_DELAYS_MS = [1500, 3000]
-
-async function geminiCompleteWithRetry(args) {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await geminiComplete(args)
-    } catch (err) {
-      if (err.status === 429 && attempt < RATE_LIMIT_RETRY_DELAYS_MS.length) {
-        await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_RETRY_DELAYS_MS[attempt]))
-        continue
-      }
-      throw err
-    }
-  }
 }
 
 // 사진 경로와 달리 식별→DB조회 2단계가 없다: AI가 한 번에 표준 1인분 기준 items+nutrients를 낸다.
@@ -561,7 +543,8 @@ export default function Analyze() {
       let parsed
       if (photo) {
         const prompt = buildIdentificationPrompt(menuName, brand)
-        const text = await geminiComplete({
+        // 429(레이트리밋)면 gemini.js의 재시도 헬퍼가 지수 백오프로 재시도한다 — 텍스트/라벨 경로와 동일.
+        const text = await geminiCompleteWithRetry({
           prompt,
           system: IDENTIFICATION_SYSTEM_PROMPT,
           imageBase64: photo.base64,

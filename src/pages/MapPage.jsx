@@ -7,7 +7,7 @@ import NaverPlaceMap from '../components/NaverPlaceMap.jsx'
 import PlaceList from '../components/PlaceList.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import Spinner from '../components/Spinner.jsx'
-import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
+import { geminiCompleteWithRetry, parseJsonLoose } from '../lib/gemini.js'
 import { getCurrentPosition } from '../lib/geolocation.js'
 import { ALLERGY_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
 import {
@@ -75,7 +75,7 @@ async function fetchSearchKeywords(deficientRows, category) {
   }
 
   try {
-    const text = await geminiComplete({ prompt: buildKeywordsPrompt(deficientRows, category) })
+    const text = await geminiCompleteWithRetry({ prompt: buildKeywordsPrompt(deficientRows, category) })
     const parsed = parseJsonLoose(text)
     const keywords = (parsed?.keywords || [])
       .map((k) => (typeof k === 'string' ? k : k?.keyword))
@@ -211,7 +211,7 @@ async function attachExpectedIntake(places, deficientRows, allergyLabels = []) {
   if (places.length === 0 || deficientRows.length === 0) return places
 
   try {
-    const text = await geminiComplete({ prompt: buildExpectedPrompt(places, deficientRows, allergyLabels) })
+    const text = await geminiCompleteWithRetry({ prompt: buildExpectedPrompt(places, deficientRows, allergyLabels) })
     const parsed = parseJsonLoose(text)
     const byName = new Map(
       (parsed?.places || [])

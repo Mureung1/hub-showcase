@@ -11,7 +11,7 @@ import SectionTitle from '../components/SectionTitle.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { displayProductName, nutrientLabel, productsForNutrient } from '../data/coupangProducts.js'
-import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
+import { geminiCompleteWithRetry, parseJsonLoose } from '../lib/gemini.js'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
 import { calcAchievementPercent, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
@@ -152,7 +152,7 @@ export default function Result() {
     setRecError('')
     try {
       const prompt = buildRecommendationPrompt(top3Rows, allergyLabels, conditionLabels)
-      const text = await geminiComplete({ prompt })
+      const text = await geminiCompleteWithRetry({ prompt })
       const parsed = parseJsonLoose(text)
 
       if (!isMenuRecommendationList(parsed)) {
