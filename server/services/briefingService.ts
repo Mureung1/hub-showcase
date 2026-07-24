@@ -53,6 +53,7 @@ type MealRow = {
 type MemoRow = {
   id: string;
   content: string;
+  completed: boolean;
   raw_input: string;
   created_at: string;
 };
@@ -108,6 +109,7 @@ function rowToMemo(row: MemoRow): Memo {
   return {
     id: row.id,
     content: row.content,
+    completed: row.completed,
     rawInput: row.raw_input,
     createdAt: row.created_at,
   };
@@ -189,11 +191,19 @@ export async function getBriefing(date: string): Promise<Briefing> {
   const [schedules, taskResult, routineResult, logResult, mealResult, memoResult] =
     await Promise.all([
       listSchedules(date),
-      client.from('tasks').select('*').order('deadline', { ascending: true }),
+      client
+        .from('tasks')
+        .select('*')
+        .eq('completed', false)
+        .order('deadline', { ascending: true }),
       client.from('routines').select('*'),
       client.from('routine_logs').select('*'),
       client.from('meals').select('*').eq('date', date).maybeSingle(),
-      client.from('memos').select('*').order('created_at', { ascending: false }),
+      client
+        .from('memos')
+        .select('*')
+        .eq('completed', false)
+        .order('created_at', { ascending: false }),
     ]);
 
   if (taskResult.error)

@@ -32,12 +32,11 @@ function taskToRow(input: TaskCreate | TaskUpdate) {
 
 export class TaskNotFoundError extends Error {}
 
-export async function listTasks(): Promise<Task[]> {
+export async function listTasks(completed?: boolean): Promise<Task[]> {
   const client = getSupabaseClient();
-  const { data, error } = await client
-    .from('tasks')
-    .select('*')
-    .order('deadline', { ascending: true });
+  let query = client.from('tasks').select('*').order('deadline', { ascending: true });
+  if (completed !== undefined) query = query.eq('completed', completed);
+  const { data, error } = await query;
   if (error) throw new Error(`[taskService] 조회 실패: ${error.message}`);
   return (data as TaskRow[]).map(rowToTask);
 }

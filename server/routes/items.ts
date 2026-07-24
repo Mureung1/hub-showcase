@@ -101,13 +101,15 @@ function handleError(err: unknown, res: Response) {
 router.get('/:type', async (req, res) => {
   const type = req.params.type as ItemType;
   const date = typeof req.query.date === 'string' ? req.query.date : undefined;
+  const completed =
+    req.query.completed === 'true' ? true : req.query.completed === 'false' ? false : undefined;
   try {
     switch (type) {
       case 'schedules':
         res.json(await listSchedules(date));
         return;
       case 'tasks':
-        res.json(await listTasks());
+        res.json(await listTasks(completed));
         return;
       case 'routines':
         res.json(await listRoutines());
@@ -116,7 +118,7 @@ router.get('/:type', async (req, res) => {
         res.json(await listMeals(date));
         return;
       case 'memos':
-        res.json(await listMemos());
+        res.json(await listMemos(completed));
         return;
       case 'reminders':
         res.json(await listReminders());

@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import itemsRouter from './routes/items';
 import briefingRouter from './routes/briefing';
+import parseRouter from './routes/parse';
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/items', itemsRouter);
 app.use('/api/briefing', briefingRouter);
+app.use('/api/parse', parseRouter);
 
 app.listen(PORT, () => {
   console.log(`[server] running on http://localhost:${PORT}`);
