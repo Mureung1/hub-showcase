@@ -19,7 +19,6 @@ import { sumNutrients } from '../lib/mealStore.js'
 import {
   clampEstimatedGrams,
   clampToPlausibleNutrients,
-  clampToStandardPlausibleNutrients,
   fillMissingNutrients,
   isMealAnalysis,
   isNutrientSet,
@@ -176,43 +175,52 @@ function logAnalysisDebug(name, info) {
   console.log(`[분석 진단] ${name}`, info)
 }
 
-// 사진 없이 메뉴명(+브랜드)만으로 "표준 1인분" 기준 영양을 바로 추정한다. 사진 경로
-// (IDENTIFICATION_SYSTEM_PROMPT)와 달리 그램 추정이나 식약처 DB 매칭이 필요 없어, AI가 한 번에
-// items+nutrients를 내도록 구조를 단순하게 유지한다.
-const TEXT_ANALYSIS_SYSTEM_PROMPT = `당신은 한국 음식 영양 분석 전문가다. 사용자가 입력한 메뉴명(과 선택적 브랜드)만 보고 그 음식의 "한국 표준 1인분"을 기준으로 영양성분을 추정한다. 수치는 식품의약품안전처 한국식품영양성분 데이터베이스(국가표준식품성분표) 수준의 표준값 기준으로 계산하고(실시간 조회가 아니라 그 DB 수준의 기준값이라는 의미), 통상적인 1인분 현실 범위를 벗어나면 스스로 재검토해 보수적인 값으로 고친다. 브랜드가 주어지면 그 브랜드/프랜차이즈의 실제 메뉴 특성을 반영하고, 없으면 일반적인 표준 메뉴로 추정한다. 메뉴명에 여러 음식이 언급되면(예: "김밥, 라면") 각각 분리해서 items에 담는다. 설명이나 마크다운, 계산 근거 없이 JSON만 반환한다.`
+// 사진 없이 메뉴명(+브랜드)만으로 분석하는 텍스트 경로의 식별 프롬프트. 예전에는 AI가 한 번에
+// items+nutrients를 내고 그 추정치를 그대로 썼지만, 그러면 같은 "김치찌개"를 사진으로 찍었을 때와
+// 타이핑했을 때 수치가 달라진다(신뢰도 문제). 지금은 사진 경로와 동일하게 AI에게는 식별
+// (dbSearchName/fallbackSearchName/표준 1인분 그램)만 시키고, 실제 수치는 식약처 DB 조회
+// (resolveFoodItem — 사진 경로와 같은 함수)로 채운다. estimatedNutrients는 DB 매칭 실패 시 폴백.
+// ※ 절차 2·5·6번의 문구는 IDENTIFICATION_SYSTEM_PROMPT(사진 경로)와 같은 규칙이다 — 한쪽을
+//   고치면 다른 쪽도 함께 검토할 것.
+const TEXT_IDENTIFICATION_SYSTEM_PROMPT = `당신은 한국 음식 인식·영양 분석 전문가다. 사용자가 입력한 메뉴명(과 선택적 브랜드)만 보고, 식약처 식품영양성분DB 검색에 쓸 표준 식품명과 사용자에게 보여줄 이름, 섭취량을 판단한다. DB 매칭이 실패할 경우를 대비해 참고용 영양성분 추정치도 함께 낸다. 다음 절차를 반드시 내부적으로 따른다(최종 출력은 JSON만):
 
-function buildTextAnalysisPrompt(menuName, brand) {
+1. 음식 식별: 메뉴명에 여러 음식이 언급되면(예: "김밥, 라면") 각각 분리해서 items에 담는다.
+2. DB 검색명 결정: 각 음식마다 식약처 식품영양성분DB에서 검색할 표준 일반 명칭(dbSearchName)을 정한다. 이 DB는 이름이 정확히 일치해야만 검색되고 부분(포함) 일치는 지원하지 않으니, 메뉴판 표현이 아니라 그 DB에 실제로 등록돼 있을 법한 짧고 표준적인 한식명을 써야 한다(예: "짜장면", "비빔밥", "김치찌개" 같은 대표 표준명). 브랜드명·강도 수식어(맵게/곱빼기 등)는 반드시 뺀다(예: "죠스떡볶이 매운맛" → "떡볶이"). 조리도구/재료가 붙은 변형 메뉴(예: "돌솥비빔밥", "참치김치찌개")는 dbSearchName엔 그 변형명을 그대로 쓰되, fallbackSearchName에는 반드시 그 상위 표준 카테고리명(각각 "비빔밥", "김치찌개")을 넣어 dbSearchName 검색이 실패해도 기본 음식으로는 매칭되게 한다. fallbackSearchName은 항상 dbSearchName보다 더 일반적인 이름이어야 한다.
+3. 표시 이름: 사용자에게 보여줄 이름(displayName)을 정한다. 브랜드가 주어졌거나 메뉴명에서 브랜드/프랜차이즈가 식별되면 "음식명 (브랜드명)" 형식으로 괄호에 브랜드를 표기하고, 아니면 음식명만 쓴다.
+4. 양 추정: 사진이 없으므로 그 음식의 "한국 표준 1인분" 무게를 그램(g) 단위로 추정한다(estimatedGrams). 참고 기준(그릇에 담긴 상태, 국물 포함): 짜장면/자장면 약 650g, 비빔밥류 약 500g, 찌개류(김치찌개 등) 1인분 약 400g, 라면(국물 포함) 약 500g, 공기밥 약 210g. 목록에 없는 음식은 일반적인 한국 1인분 상식 범위로 추정한다.
+5. 참고용 영양성분 추정(estimatedNutrients): DB 매칭이 실패하거나 일부 항목이 없을 때만 쓰이는 참고값이다. calories, protein, carbs, fat, fiber, sodium 여섯 키를 반드시 모두 포함하고, 어떤 값도 누락하거나 0으로 비워두지 말고 한국 표준 1인분 기준값으로 채운다. 나트륨과 식이섬유도 절대 생략하지 않는다. 브랜드가 주어지면 그 브랜드/프랜차이즈의 실제 메뉴 특성을 반영한다.
+6. 검증(sanity check): 각 값이 한국 표준 1인분의 현실 범위를 벗어나면 재조정한다. 특히 단백질과 지방을 과대추정하지 않는다.
+
+주의: 특정 웹사이트를 실시간 조회하는 게 아니라, 표준 데이터베이스 '수준'의 기준값에 맞춰 추정하라는 의미다. 계산 근거나 설명은 출력하지 말고 JSON만 반환한다.`
+
+function buildTextIdentificationPrompt(menuName, brand) {
   const brandLine = brand ? `\n브랜드: ${brand}` : ''
-  return `다음 메뉴의 영양성분을 분석해줘.\n메뉴명: ${menuName}${brandLine}
+  return `다음 메뉴를 분석해서 각 음식을 식별해줘.\n메뉴명: ${menuName}${brandLine}
 
-설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
+설명이나 마크다운, 계산 근거 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
 {
-  "source": "text",
   "items": [
-    { "name": "화면에 보여줄 음식 이름", "brand": "브랜드명(없으면 null)", "nutrients": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0, "sodium": 0 } }
-  ],
-  "total": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0, "sodium": 0 }
+    {
+      "dbSearchName": "식약처 식품영양성분DB 검색용 표준 식품명",
+      "fallbackSearchName": "dbSearchName 검색 실패 시 쓸 더 일반적인 대체 검색명",
+      "displayName": "사용자에게 보여줄 이름(브랜드가 있으면 \\"음식명 (브랜드명)\\" 형식)",
+      "estimatedGrams": 0,
+      "estimatedNutrients": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0, "sodium": 0 }
+    }
+  ]
 }`
 }
 
-function isTextAnalysisResult(value) {
-  return (
-    Boolean(value) &&
-    Array.isArray(value.items) &&
-    value.items.length > 0 &&
-    value.items.every((item) => item && typeof item.name === 'string' && isNutrientSet(item.nutrients))
-  )
-}
-
-// 사진 경로와 달리 식별→DB조회 2단계가 없다: AI가 한 번에 표준 1인분 기준 items+nutrients를 낸다.
-// 순수 계산 함수라 상태를 직접 건드리지 않고 MealAnalysis를 반환하거나(실패 시) 던진다 —
-// handleAnalyze가 사진 유무로 이 함수와 사진 경로 중 하나를 골라 호출한다.
+// 텍스트 경로도 사진 경로와 동일한 2단계 구조다: AI 식별 → 식약처 DB 조회(resolveFoodItem 공유).
+// 같은 음식이면 사진으로 찍든 타이핑하든 (그램수가 같다면) 같은 수치가 나온다. 출처 배지도 동일하게
+// 식약처DB/식약처DB(가공)/공식/추정으로 판정된다. 순수 계산 함수라 상태를 직접 건드리지 않고
+// MealAnalysis를 반환하거나(실패 시) 던진다 — handleAnalyze가 사진 유무로 경로를 고른다.
 async function resolveTextAnalysis(menuName, brand) {
   let text
   try {
     text = await geminiCompleteWithRetry({
-      prompt: buildTextAnalysisPrompt(menuName, brand),
-      system: TEXT_ANALYSIS_SYSTEM_PROMPT,
+      prompt: buildTextIdentificationPrompt(menuName, brand),
+      system: TEXT_IDENTIFICATION_SYSTEM_PROMPT,
     })
   } catch (err) {
     console.error('text meal analysis (gemini) failed:', err)
@@ -222,26 +230,14 @@ async function resolveTextAnalysis(menuName, brand) {
     throw new Error('분석 요청에 실패했습니다. 잠시 후 다시 시도해주세요.')
   }
 
-  const raw = parseJsonLoose(text)
-  if (!isTextAnalysisResult(raw)) {
+  const identified = parseJsonLoose(text)
+  if (!isIdentificationResult(identified)) {
     throw new Error('분석 결과 형식이 올바르지 않습니다. 다시 시도해주세요.')
   }
 
-  // AI가 브랜드를 개별 항목에 못 채웠으면 사용자가 입력한 브랜드 힌트로 보완한다.
-  // 브랜드가 있으면 '공식'(사진 경로의 no-DB-match 폴백과 동일한 관례), 없으면 '추정'으로 배지 처리.
-  const items = raw.items.map((item) => {
-    const resolvedBrand = item.brand || brand || null
-    return {
-      name: item.name,
-      brand: resolvedBrand,
-      // 사진 경로와 동일한 현실 범위 보정을 텍스트 추정치에도 적용(짜장면 단백질 20g 등 튀는 값 방지).
-      nutrients: clampToStandardPlausibleNutrients(item.nutrients, item.name),
-      source: resolvedBrand ? NUTRITION_SOURCE.OFFICIAL : NUTRITION_SOURCE.ESTIMATED,
-    }
-  })
-  // AI가 함께 낸 total은 신뢰하지 않고 사진 경로와 동일하게 클라이언트에서 직접 합산한다.
-  const total = sumNutrients(items)
-  const parsed = { source: 'text', items, total }
+  // 사진 경로와 같은 절차: 항목별 식약처 DB 조회 → 그램 환산 → 현실 범위 보정 → 클라이언트 합산.
+  const items = await Promise.all(identified.items.map(resolveFoodItem))
+  const parsed = { items, total: sumNutrients(items) }
 
   if (!isMealAnalysis(parsed)) {
     throw new Error('영양 계산 결과 형식이 올바르지 않습니다.')
