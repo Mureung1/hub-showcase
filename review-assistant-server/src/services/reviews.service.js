@@ -1,7 +1,5 @@
 import { callClaudeTool } from './claude.client.js'
 
-const KEYWORD_CATEGORIES = ['맛', '친절도', '대기시간', '가격', '청결도', '분위기', '일반']
-
 const SOLUTION_MAP = {
   맛: '메뉴 맛의 일관성을 점검하고, 레시피 표준화나 조리 담당자 교육을 고려해보세요.',
   친절도: '직원 응대 교육을 강화하고, 정기적인 서비스 피드백 세션을 진행해보세요.',
@@ -11,6 +9,9 @@ const SOLUTION_MAP = {
   분위기: '조명, 음악, 좌석 배치 등 매장 분위기 요소를 점검하고 개선해보세요.',
   일반: '구체적인 원인 파악을 위해 추가 피드백을 요청하거나 직접 문의해보세요.',
 }
+
+// SOLUTION_MAP의 키에서 파생시켜서, 카테고리를 추가/삭제할 때 두 목록이 따로 놀 수 없게 한다.
+const KEYWORD_CATEGORIES = Object.keys(SOLUTION_MAP)
 
 // 리뷰 하나를 분석시킬 때 Claude에게 강제하는 응답 스키마 (기획서.md 8-2).
 const REVIEW_ANALYSIS_TOOL = {
@@ -52,13 +53,12 @@ const REVIEW_ANALYSIS_TOOL = {
   },
 }
 
-function suggestImprovement(sentiment, keyword) {
-  if (sentiment !== 'negative') return null
+export function suggestionForKeyword(keyword) {
   return SOLUTION_MAP[keyword] || SOLUTION_MAP['일반']
 }
 
-export function suggestionForKeyword(keyword) {
-  return SOLUTION_MAP[keyword] || SOLUTION_MAP['일반']
+function suggestImprovement(sentiment, keyword) {
+  return sentiment === 'negative' ? suggestionForKeyword(keyword) : null
 }
 
 const SCORE_BASE = { positive: 10, neutral: 40, negative: 70 }
@@ -71,10 +71,15 @@ function computeScore(sentiment, keywords) {
   return Math.min(base + bonus, 100)
 }
 
+// insight.service.js의 buildPrompt()와 동일한 컨벤션 — 프롬프트 조립을 호출 로직에서 분리해둔다.
+function buildReviewAnalysisPrompt(text) {
+  return `너는 소상공인 사장님이 손님 리뷰에 답글을 달 때 쓰는 초안을 대신 써주는 도우미야. 다음 손님 리뷰를 분석하고, submit_review_analysis 도구의 replyDrafts 스키마에 적힌 톤별 지침을 지켜 답변 초안 3개를 각각 다르게 써서 제출해줘. 같은 문장을 어미만 바꿔 재사용하지 말고, 톤마다 실제로 다르게 느껴지게 써줘.\n\n리뷰: "${text}"`
+}
+
 async function analyzeOne(text, index) {
   const { sentiment, keywords, replyDrafts } = await callClaudeTool({
     tool: REVIEW_ANALYSIS_TOOL,
-    userMessage: `너는 소상공인 사장님이 손님 리뷰에 답글을 달 때 쓰는 초안을 대신 써주는 도우미야. 다음 손님 리뷰를 분석하고, submit_review_analysis 도구의 replyDrafts 스키마에 적힌 톤별 지침을 지켜 답변 초안 3개를 각각 다르게 써서 제출해줘. 같은 문장을 어미만 바꿔 재사용하지 말고, 톤마다 실제로 다르게 느껴지게 써줘.\n\n리뷰: "${text}"`,
+    userMessage: buildReviewAnalysisPrompt(text),
   })
 
   return {

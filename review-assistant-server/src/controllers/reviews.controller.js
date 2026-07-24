@@ -8,14 +8,21 @@ import {
 } from '../services/history.service.js'
 
 const MAX_REVIEWS = 15
+const MAX_REVIEW_LENGTH = 500
 
-function validateReviews(reviews) {
+export function validateReviews(reviews) {
   if (!Array.isArray(reviews) || reviews.length === 0) {
     throw new ApiError(400, 'EMPTY_INPUT', '리뷰를 먼저 입력해주세요.')
   }
-  const valid = reviews.map((r) => String(r).trim()).filter(Boolean)
+  const valid = reviews
+    .filter((r) => typeof r === 'string')
+    .map((r) => r.trim())
+    .filter(Boolean)
   if (valid.length === 0) {
     throw new ApiError(400, 'NO_VALID_REVIEW', '유효한 리뷰가 없어요.')
+  }
+  if (valid.some((r) => r.length > MAX_REVIEW_LENGTH)) {
+    throw new ApiError(400, 'REVIEW_TOO_LONG', `리뷰 하나당 최대 ${MAX_REVIEW_LENGTH}자까지 입력할 수 있어요.`)
   }
   if (valid.length > MAX_REVIEWS) {
     throw new ApiError(400, 'TOO_MANY_REVIEWS', '한 번에 최대 15개까지 분석할 수 있어요.')

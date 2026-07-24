@@ -1,56 +1,97 @@
-import { test } from 'node:test'
-import assert from 'node:assert/strict'
-import { analyzeReviews } from '../src/services/reviews.service.js'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { analyzeReviews, suggestionForKeyword } from '../src/services/reviews.service.js'
 
-test('부정 단어가 있으면 negative로 분류된다', () => {
-  const [result] = analyzeReviews(['직원이 너무 불친절했어요'])
-  assert.equal(result.sentiment, 'negative')
+process.env.ANTHROPIC_API_KEY ??= 'test-key'
+
+// analyzeReviews는 감정/키워드/답변초안 판단을 Claude API(callClaudeTool → fetch)에 위임한다.
+// 여기서는 fetch를 모킹해 Claude가 특정 결과를 반환했다고 가정하고,
+// 이 서비스가 로컬에서 실제로 책임지는 부분(점수 계산, reviewId 부여, 개선 제안, 프롬프트 조립)만 검증한다.
+function stubClaudeResponse({ sentiment, keywords, replyDrafts = { polite: 'p', friendly: 'f', concise: 'c' } }) {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async () => ({
+    ok: true,
+    json: async () => ({
+      content: [{ type: 'tool_use', input: { sentiment, keywords, replyDrafts } }],
+    }),
+  }))
+}
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
-test("'불친절'처럼 부정 접두사가 붙은 긍정 단어는 긍정으로 세지 않는다", () => {
-  const [result] = analyzeReviews(['불친절해서 실망했어요'])
-  assert.equal(result.sentiment, 'negative')
+describe('analyzeReviews', () => {
+  it('긍정 리뷰의 관심도 점수는 10점이다', async () => {
+    stubClaudeResponse({ sentiment: 'positive', keywords: ['맛'] })
+    const [result] = await analyzeReviews(['정말 좋았어요'])
+    expect(result.score).toBe(10)
+  })
+
+  it('중립 리뷰의 관심도 점수는 40점이다', async () => {
+    stubClaudeResponse({ sentiment: 'neutral', keywords: ['일반'] })
+    const [result] = await analyzeReviews(['그냥 그랬어요'])
+    expect(result.score).toBe(40)
+  })
+
+  it('부정 리뷰(키워드 1개)의 관심도 점수는 70점이다', async () => {
+    stubClaudeResponse({ sentiment: 'negative', keywords: ['친절도'] })
+    const [result] = await analyzeReviews(['직원이 불친절했어요'])
+    expect(result.score).toBe(70)
+  })
+
+  it('부정 리뷰는 매칭 키워드가 많을수록 관심도 점수가 높다', async () => {
+    stubClaudeResponse({ sentiment: 'negative', keywords: ['맛', '대기시간'] })
+    const [result] = await analyzeReviews(['음식이 맛없고 너무 오래 기다렸어요'])
+    expect(result.score).toBeGreaterThan(70)
+  })
+
+  it('부정 리뷰 점수는 100점을 넘지 않는다', async () => {
+    stubClaudeResponse({ sentiment: 'negative', keywords: ['맛', '친절도', '대기시간'] })
+    const [result] = await analyzeReviews(['최악이었어요'])
+    expect(result.score).toBeLessThanOrEqual(100)
+  })
+
+  it('reviewId는 순서대로 r_01, r_02 형식으로 매겨진다', async () => {
+    stubClaudeResponse({ sentiment: 'neutral', keywords: ['일반'] })
+    const results = await analyzeReviews(['첫 번째 리뷰', '두 번째 리뷰'])
+    expect(results[0].reviewId).toBe('r_01')
+    expect(results[1].reviewId).toBe('r_02')
+  })
+
+  it('긍정/중립 리뷰는 improvementSuggestion이 없다', async () => {
+    stubClaudeResponse({ sentiment: 'positive', keywords: ['맛'] })
+    const [result] = await analyzeReviews(['정말 맛있었어요'])
+    expect(result.improvementSuggestion).toBeNull()
+  })
+
+  it('부정 리뷰는 첫 번째 키워드에 대한 개선 제안이 붙는다', async () => {
+    stubClaudeResponse({ sentiment: 'negative', keywords: ['대기시간', '맛'] })
+    const [result] = await analyzeReviews(['너무 오래 기다렸고 맛도 별로였어요'])
+    expect(result.improvementSuggestion).toBe(suggestionForKeyword('대기시간'))
+  })
+
+  it('리뷰 원문이 Claude에게 보내는 프롬프트에 그대로 포함된다', async () => {
+    let capturedBody
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, options) => {
+      capturedBody = JSON.parse(options.body)
+      return {
+        ok: true,
+        json: async () => ({
+          content: [
+            {
+              type: 'tool_use',
+              input: { sentiment: 'neutral', keywords: ['일반'], replyDrafts: { polite: 'p', friendly: 'f', concise: 'c' } },
+            },
+          ],
+        }),
+      }
+    })
+    await analyzeReviews(['이 문장이 프롬프트에 들어가야 한다'])
+    expect(capturedBody.messages[0].content).toContain('이 문장이 프롬프트에 들어가야 한다')
+  })
 })
 
-test('긍정 단어가 있으면 positive로 분류된다', () => {
-  const [result] = analyzeReviews(['정말 친절하고 맛있었어요'])
-  assert.equal(result.sentiment, 'positive')
-})
-
-test('감정 단어가 없으면 neutral로 분류된다', () => {
-  const [result] = analyzeReviews(['그냥 그랬어요'])
-  assert.equal(result.sentiment, 'neutral')
-})
-
-test('키워드 카테고리가 매칭되면 추출된다', () => {
-  const [result] = analyzeReviews(['음식이 너무 맛있었어요'])
-  assert.ok(result.keywords.includes('맛'))
-})
-
-test('매칭되는 키워드가 없으면 일반으로 분류된다', () => {
-  const [result] = analyzeReviews(['그냥 그랬어요'])
-  assert.deepEqual(result.keywords, ['일반'])
-})
-
-test('긍정 리뷰의 관심도 점수는 10점이다', () => {
-  const [result] = analyzeReviews(['정말 좋았어요'])
-  assert.equal(result.score, 10)
-})
-
-test('중립 리뷰의 관심도 점수는 40점이다', () => {
-  const [result] = analyzeReviews(['그냥 그랬어요'])
-  assert.equal(result.score, 40)
-})
-
-test('부정 리뷰(키워드 1개)의 관심도 점수는 70점이다', () => {
-  const [result] = analyzeReviews(['직원이 불친절했어요'])
-  assert.equal(result.keywords.length, 1)
-  assert.equal(result.score, 70)
-})
-
-test('부정 리뷰는 매칭 키워드가 많을수록 관심도 점수가 높다', () => {
-  const [single] = analyzeReviews(['직원이 불친절했어요'])
-  const [double] = analyzeReviews(['음식이 맛없고 너무 오래 기다렸어요'])
-  assert.equal(double.keywords.length, 2)
-  assert.ok(double.score > single.score)
+describe('suggestionForKeyword', () => {
+  it('매칭되는 키워드가 없으면 일반 제안을 반환한다', () => {
+    expect(suggestionForKeyword('존재하지않는키워드')).toBe(suggestionForKeyword('일반'))
+  })
 })

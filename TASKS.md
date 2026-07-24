@@ -16,7 +16,7 @@
 | --- | --- | --- | --- |
 | 1주차 | 기획, 프로토타입, Agent 기능이해 | 기획서·프로토타입·디자인 시스템·개발 환경 구성 | ✅ 완료 |
 | 2주차 | 개발계획, Agent 활용, 주요 기능 개발 | 백엔드 실제 로직 구현 + 프론트-백엔드 연동 | 🔜 다음 주 |
-| 3주차 | Agent 고급 활용, 지속가능한 코드 | Claude API 연동 + 테스트·리팩토링 | ⬜ 예정 |
+| 3주차 | Agent 고급 활용, 지속가능한 코드 | Claude API 연동 + 테스트·리팩토링 | ✅ 완료 |
 | 4주차 | 서비스 완성, Agent 개발 흐름 완성 | 통합 테스트·배포, Agent 활용 흐름 정리 | ⬜ 예정 |
 
 ---
@@ -161,12 +161,24 @@ CLAUDE.md의 "로그인 없는 익명 세션" 결정을 뒤집고, 실제 회원
 - [x] curl로 회원가입→`/me`→리뷰분석(DB insert)→통계→인사이트 캐싱→로그아웃(토큰 실제 무효화 확인)→중복 이메일(`EMAIL_TAKEN`)/오타 비밀번호(`INVALID_CREDENTIALS`) 에러 코드→익명 세션 분석까지 전 구간 curl로 검증, 테스트 데이터 정리
 - [x] `CLAUDE.md` DB/인증 결정 문단 갱신(2026-07-22), 아키텍처 다이어그램(README.md)도 Supabase 반영해서 갱신
 
-- [ ] **P1** — [#32](https://github.com/rldbs5353/hub/issues/32) 핵심 로직 테스트 보강 (목 7/23)
-- [ ] **P1** — [#33](https://github.com/rldbs5353/hub/issues/33) 규칙 기반 로직 정리 및 리팩토링 (목 7/23)
-- [ ] **P1** — [#34](https://github.com/rldbs5353/hub/issues/34) 코드 리뷰 — 에이전트 활용 (목 7/23)
-- [ ] **P2** — [#35](https://github.com/rldbs5353/hub/issues/35) 요청 레이트리밋 / 입력 길이 제한 보강 (금 7/24)
-- [ ] **P2** — [#36](https://github.com/rldbs5353/hub/issues/36) Agent 고급 활용 — 반복 작업 자동화 (금 7/24)
-- [ ] **P1** — [#37](https://github.com/rldbs5353/hub/issues/37) 3주차 마무리 — 전체 재검증 및 TASKS.md 갱신 (금 7/24)
+- [x] **P1** — [#32](https://github.com/rldbs5353/hub/issues/32) 핵심 로직 테스트 보강 (목 7/23 완료)
+- [x] **P1** — [#33](https://github.com/rldbs5353/hub/issues/33) 규칙 기반 로직 정리 및 리팩토링 (목 7/23 완료)
+- [x] **P1** — [#34](https://github.com/rldbs5353/hub/issues/34) 코드 리뷰 — 에이전트 활용 (목 7/23 완료)
+- [x] **P2** — [#35](https://github.com/rldbs5353/hub/issues/35) 요청 레이트리밋 / 입력 길이 제한 보강 (금 7/24 완료)
+- [x] **P2** — [#36](https://github.com/rldbs5353/hub/issues/36) Agent 고급 활용 — 반복 작업 자동화 (금 7/24 완료)
+- [x] **P1** — [#37](https://github.com/rldbs5353/hub/issues/37) 3주차 마무리 — 전체 재검증 및 TASKS.md 갱신 (금 7/24 완료)
+
+### 목(7/23) — 핵심 로직 테스트 보강, 리팩토링, 코드 리뷰
+
+- [x] **[#32](https://github.com/rldbs5353/hub/issues/32) 핵심 로직 테스트 보강** — 백엔드 테스트 러너를 `node:test`에서 vitest로 통일(프론트엔드와 스택 일치). `#26` 교체 이후 깨져 있던 `reviews.service.test.js`를 `fetch` mock 기반으로 재작성. `claude.client.test.js` 신규 추가로 성공/응답실패(status)/JSON 파싱실패/tool_use 없음/네트워크 오류/타임아웃까지 `callClaudeTool`의 실패 케이스 전부 커버. `reviews.controller.test.js` 신규 추가(`validateReviews` 단위 테스트).
+- [x] **[#33](https://github.com/rldbs5353/hub/issues/33) 규칙 기반 로직 정리 및 리팩토링** — 옛 규칙 기반 분류 함수(`classifySentiment`/`KEYWORD_MAP` 등)는 `#26`에서 이미 제거되어 남아있지 않음을 확인. 계속 쓰이는 부분 중복 정리: `suggestImprovement`가 `suggestionForKeyword`를 호출하도록 통합(`SOLUTION_MAP` 폴백 중복 제거), `KEYWORD_CATEGORIES`를 `SOLUTION_MAP`에서 파생(이중 관리 방지), 프롬프트 조립을 `buildReviewAnalysisPrompt()`로 분리, `stats.service.js`/`history.service.js`의 키워드 카운팅 로직을 `countKeywords()`로 공용화. **확인 필요 항목 결정**: API 장애 시 규칙 기반 폴백 없이 API 전용(장애 시 `ANALYSIS_FAILED`)으로 동작하는 것으로 확정.
+- [x] **[#34](https://github.com/rldbs5353/hub/issues/34) 코드 리뷰 — 에이전트 활용** — 규칙 기반 로직 리팩토링(#33)은 4개 관점(재사용/단순화/효율성/구현 깊이) 병렬 에이전트로 리뷰 후 동작 변경 없는 항목만 적용. 오늘 diff 전체는 별도로 정확성 관점 에이전트 리뷰 — 심각한 버그 없음, 낮은 확신 잠재 리스크 2건만 기록. [PR #1916](https://github.com/connect-AIAgentChallenge-26-1/hub/pull/1916)로 제출, 이슈 3개 코멘트 후 클로즈.
+
+### 금(7/24) — 레이트리밋/입력 길이 제한, Agent 고급 활용, 3주차 전체 재검증
+
+- [x] **[#35](https://github.com/rldbs5353/hub/issues/35) 요청 레이트리밋 / 입력 길이 제한 보강** — 세션(`X-Session-Id`, 없으면 IP) 기준 1분에 20회로 제한하는 인메모리 슬라이딩 윈도우 미들웨어(`rateLimiter.js`) 신설, 초과 시 429 `RATE_LIMITED`. `validateReviews`에 리뷰 하나당 500자 초과 시 400 `REVIEW_TOO_LONG` 추가. **실전 버그 발견 및 수정**: 새로 만든 `code-reviewer` 에이전트로 검토하던 중, `sessionId` 미들웨어가 헤더 없는 요청마다 매번 새 UUID를 발급해 `req.sessionId`가 항상 truthy하므로 `req.sessionId || req.ip` 키 선택 로직이 `req.ip`로 절대 안 떨어져 **헤더 없는 요청은 레이트리밋이 사실상 무력화**되는 문제를 발견 — `req.get('X-Session-Id') || req.ip`로 원본 헤더를 직접 보도록 수정. curl로 헤더 있음/없음 두 경우 모두 21번째 요청에서 429 발생하는 것, 501자 리뷰가 400 `REVIEW_TOO_LONG`인 것 확인. 기획서.md 5-1/5-2/5-4절 갱신.
+- [x] **[#36](https://github.com/rldbs5353/hub/issues/36) Agent 고급 활용 — 반복 작업 자동화** — 스킬 `spec-drift-check`(기획서/CLAUDE.md와 실제 코드·git 로그 간 드리프트 탐지) 신설, 에이전트 `code-reviewer`(정확성 관점 코드 리뷰, `/simplify`와 역할 분리) 신설. **부수 발견**: `.gitignore`가 `.claude/`를 통째로 무시하고 있어, 기존 `planning-agent`/`feature-verifier`를 포함해 지금까지 만든 커스텀 Agent/Skill이 전부 로컬에만 있고 한 번도 git에 커밋된 적이 없었음 — `settings.local.json`(개인 권한 설정)만 계속 무시하고 `agents/`·`skills/`는 추적하도록 `.gitignore` 수정, 4개 파일 전부 커밋. **실행 결과 확인**: `code-reviewer` 에이전트를 `#35` 변경분에 실제로 돌려 위 레이트리밋 우회 버그를 실제로 찾아냄(리뷰 대상 코드에 실제 버그가 있었고, 에이전트가 그걸 실제로 잡아낸 것으로 "실행 결과 확인" 기준 충족).
+- [x] **[#37](https://github.com/rldbs5353/hub/issues/37) 3주차 마무리 — 전체 재검증 및 TASKS.md 갱신** — `feature-verifier` 에이전트로 정상 플로우(결과 카드 렌더링·대시보드 반영·복사 피드백), 에러 케이스 6종(`EMPTY_INPUT`/`NO_VALID_REVIEW`/`TOO_MANY_REVIEWS`/`REVIEW_TOO_LONG`/`INVALID_JSON`/`RATE_LIMITED`), 반복 문제 감지(`recurringIssues.occurrenceCount>=2`)까지 전체 재검증 — 전 항목 PASS. **발견된 이슈(4주차로 이월)**: Claude API 응답의 `keywords`가 `REVIEW_ANALYSIS_TOOL` 스키마에 정의된 6개 카테고리 enum으로 서버 측에서 강제되지 않아, 실제로 `"불편"`, `"불편함"` 같은 스키마 밖 값이 응답·DB에 그대로 저장되는 것을 확인(`claude.client.js`가 `toolUse.input`을 검증 없이 반환). `computeScore`의 키워드 개수 보너스에도 스키마 밖 값이 그대로 반영되어 점수 산정에 영향. 아래 4주차 섹션에 인계.
 
 ### 착수 전 확인 필요
 
@@ -174,10 +186,19 @@ CLAUDE.md의 "로그인 없는 익명 세션" 결정을 뒤집고, 실제 회원
 - SDK(`@anthropic-ai/sdk`) 신규 도입 vs 기존 `fetch` 직접 호출 (#24)
 - 구조화 응답 방식: tool-use vs 프롬프트+직접 파싱 (#25)
 - 타임아웃/재시도 정책 (#30)
-- 레이트리밋 구체 수치 (#35)
-- API 장애 시 규칙 기반 로직 폴백 여부 (#33 리팩토링 범위에 영향)
+- ~~레이트리밋 구체 수치 (#35)~~ → 세션/IP 기준 1분 20회로 확정 (7/24)
+- ~~API 장애 시 규칙 기반 로직 폴백 여부 (#33 리팩토링 범위에 영향)~~ → API 전용, 폴백 없음으로 확정 (7/23)
 
 ## 4주차 — 서비스 완성, Agent 개발 흐름 완성
+
+### 3주차에서 넘어온 인계 사항
+
+- [ ] **P0** — `keywords` 응답이 `REVIEW_ANALYSIS_TOOL` 스키마 enum(6개 카테고리)을 서버 측에서 강제하지 않아, 스키마 밖 값("불편" 등)이 그대로 저장되고 점수 계산에도 영향을 줌 (7/24 `#37` 재검증 중 발견, `claude.client.js`가 `toolUse.input`을 검증 없이 반환하는 게 원인 — 응답 파싱 시 enum 화이트리스트로 필터링하거나 매칭 안 되면 "일반"으로 대체하는 가드 추가 필요)
+- [ ] **P2** — `analyzeReviews`의 `Promise.all` fan-out — 리뷰 15개 중 1개만 실패해도 전체가 실패 처리되어 나머지 이미 성공한 분량(=이미 지불한 API 비용)이 버려짐. `Promise.allSettled` + 부분 실패 허용으로 전환 검토 (7/23 코드 리뷰에서 발견, API 계약이 바뀌는 일이라 보류)
+- [ ] **P2** — `supabaseClient.js`가 모듈 로드 시점에 즉시 `createClient()`를 호출하는 eager 초기화라, 순수 함수 하나만 테스트해도 이 체인을 거치면 실제 env 없이는 import가 실패함 (지연 초기화로 전환하면 테스트 작성 시 더미 env 우회가 필요 없어짐)
+- [ ] **P2** — `/stats/summary`·`/stats/monthly`·`/stats/insight`가 대시보드 방문 1회에 동일한 `reviews` 쿼리를 최소 3번 반복 조회 — 엔드포인트 통합 또는 캐시 공유 검토
+
+### 서비스 완성
 
 - [ ] **P0** — 전체 플로우(정상/에러/반복 문제 감지) 통합 테스트 및 버그 픽스
 - [ ] **P0** — 배포 준비 — 프론트엔드 빌드 및 배포 대상, 백엔드 배포 대상 결정 (미정 — 3주차 중 결정)
