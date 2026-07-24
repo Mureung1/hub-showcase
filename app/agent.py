@@ -92,6 +92,9 @@ def _read_source(paper: dict, need_fulltext: bool) -> tuple[str, bool]:
 
     PDF 다운로드/추출이 실패하면(fetch_fulltext가 None 반환) 예외 대신
     초록으로 자동 대체한다 — used_fulltext도 False로 되돌린다.
+
+    반환값의 source_text가 요약(summarize) 3-1(원문 가져오기)의 완료
+    기준을 그대로 충족한다 — Task 2에서 이미 만든 함수를 재사용한다.
     """
     if not need_fulltext:
         return paper["abstract"], False
@@ -100,6 +103,42 @@ def _read_source(paper: dict, need_fulltext: bool) -> tuple[str, bool]:
     if fulltext:
         return fulltext, True
     return paper["abstract"], False
+
+
+def _build_summarize_prompt(title: str, source_text: str, feedback: str = "") -> str:
+    """요약(summarize) 프롬프트를 조립한다. LLM 호출은 하지 않는다.
+
+    feedback이 있으면(재시도) {feedback_block}에 verify의 지적사항을 채워 넣는다.
+    """
+    feedback_block = ""
+    if feedback:
+        feedback_block = prompt_loader.fill(
+            prompt_loader.load_feedback_block(), feedback=feedback
+        )
+    return prompt_loader.fill(
+        prompt_loader.load("summarize"),
+        title=title,
+        source_text=source_text,
+        feedback_block=feedback_block,
+    )
+
+
+def _call_summarize(title: str, source_text: str, feedback: str = "") -> dict | None:
+    """요약(summarize) LLM 호출. 파싱 실패 시 최대 SUMMARIZE_PARSE_ATTEMPTS번 재시도한다.
+
+    전부 실패하면 None — 빈 dict가 아니라 None인 이유: 판단 불가 시 빈
+    선택지가 자연스러운 judge/select_tool과 달리, 요약은 "보여줄 수
+    있는 값이 없는" 상태라 가짜 빈 요약을 반환하면 진짜 요약처럼
+    오해될 수 있다. 호출하는 쪽이 반드시 None 분기를 타게 만든다.
+    paper_failed 처리(Task 6)는 이 함수의 몫이 아니다 — None을
+    예외 없이 반환하는 것까지만 책임진다.
+
+    성공 시 반환되는 {"contribution", "method", "result"} dict는
+    가공 없이 그대로 다음 단계(자기 검증/verify, Task 4)의 입력으로
+    쓸 준비가 된 상태다.
+    """
+    prompt = _build_summarize_prompt(title, source_text, feedback)
+    return tools.ask_llm_json(prompt, fallback=None, attempts=config.SUMMARIZE_PARSE_ATTEMPTS)
 
 
 if __name__ == "__main__":
