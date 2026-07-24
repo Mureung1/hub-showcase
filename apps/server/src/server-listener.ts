@@ -202,7 +202,9 @@ async function closeUnattachedListener(
   listener: Server,
 ): Promise<ServerStartupCleanupResult> {
   try {
-    await closeListener(listener)
+    const closing = closeListener(listener)
+    listener.closeAllConnections()
+    await closing
     return { status: 'closed', processTreeGone: true }
   } catch {
     return { status: 'ambiguous', processTreeGone: false }

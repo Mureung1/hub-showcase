@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import type { RequestListener } from 'node:http'
-import { createServer as createNetServer } from 'node:net'
+import {
+  createConnection,
+  createServer as createNetServer,
+} from 'node:net'
 import path from 'node:path'
 import test from 'node:test'
 
@@ -135,6 +138,45 @@ test('a pre-bound listener can close before application attachment and rejects l
       signal: new AbortController().signal,
     })
     await application.close()
+  }
+})
+
+test('pre-attachment close force-closes an incomplete local connection', async () => {
+  const listener = await bindServerApplicationListener({
+    host: '127.0.0.1',
+    port: 0,
+    requestHandler: (_request, response) => {
+      response.statusCode = 503
+      response.end()
+    },
+  })
+  const socket = createConnection({
+    host: '127.0.0.1',
+    port: listener.port,
+  })
+  await new Promise<void>((resolve, reject) => {
+    socket.once('connect', resolve)
+    socket.once('error', reject)
+  })
+
+  try {
+    const result = await Promise.race([
+      listener.close({
+        signal: new AbortController().signal,
+      }),
+      new Promise<'timeout'>((resolve) => {
+        setTimeout(() => resolve('timeout'), 250)
+      }),
+    ])
+    assert.deepEqual(
+      result,
+      { status: 'closed', processTreeGone: true },
+    )
+  } finally {
+    socket.destroy()
+    await listener.close({
+      signal: new AbortController().signal,
+    })
   }
 })
 
