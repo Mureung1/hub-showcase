@@ -58,6 +58,7 @@ def load_source_config(source_id: str) -> SourceConfig:
         source_quality_score=float(row["source_quality_score"]),
         paywall_risk=row["paywall_risk"],
         interest_count=len(interests),
+        feed_timezone=row.get("feed_timezone"),
         interests=tuple(interests),
     )
 

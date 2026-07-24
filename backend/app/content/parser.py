@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import calendar
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
+from zoneinfo import ZoneInfo
 
 import feedparser
 
@@ -64,19 +66,30 @@ def _map_entry(entry, source: SourceConfig) -> ArticleCandidate:
         title=title or "",
         original_url=original_url,
         canonical_url=canonical_url,
-        published_at=_parse_published_at(entry),
+        published_at=_parse_published_at(entry, source),
         author=sanitizer.clean_author(entry.get("author")),
         official_excerpt=_map_excerpt(entry, source),
         thumbnail_url=_map_thumbnail(entry),
     )
 
 
-def _parse_published_at(entry) -> datetime | None:
-    """published_parsed → updated_parsed를 UTC datetime으로. 없으면 None."""
+def _parse_published_at(entry, source: SourceConfig) -> datetime | None:
+    """구조화 날짜를 우선하고, 없으면 source timezone으로 RSS 원문 날짜를 해석한다."""
     struct = entry.get("published_parsed") or entry.get("updated_parsed")
-    if struct is None:
+    if struct is not None:
+        return datetime.fromtimestamp(calendar.timegm(struct), tz=timezone.utc)
+
+    raw = entry.get("published") or entry.get("updated")
+    if not raw or source.feed_timezone is None:
         return None
-    return datetime.fromtimestamp(calendar.timegm(struct), tz=timezone.utc)
+
+    try:
+        parsed = parsedate_to_datetime(raw)
+    except (TypeError, ValueError):
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=ZoneInfo(source.feed_timezone))
+    return parsed.astimezone(timezone.utc)
 
 
 def _map_excerpt(entry, source: SourceConfig) -> str | None:

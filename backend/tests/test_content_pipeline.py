@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from datetime import datetime, timezone
 from unittest import mock
 
 # service는 import 시점에 설정을 읽으므로 더미 값을 넣는다(실 비밀키 불필요).
@@ -141,6 +142,41 @@ class FeedParseFailureTest(unittest.TestCase):
         with self.assertRaises(PipelineError) as ctx:
             parser.parse_feed(broken, make_source())
         self.assertEqual(ctx.exception.code, FeedError.FEED_PARSE_ERROR)
+
+
+class FeedTimezoneFallbackTest(unittest.TestCase):
+    def test_timezone_less_date_uses_source_timezone(self):
+        feed = build_rss(
+            item_xml(
+                "DEVOCEAN 글",
+                "https://devocean.sk.com/blog/1",
+                pub="Tue, 30 Jun 2026 13:04:43",
+            )
+        )
+
+        candidates = parser.parse_feed(
+            feed,
+            make_source(feed_timezone="Asia/Seoul"),
+        )
+
+        self.assertEqual(
+            candidates[0].published_at,
+            datetime(2026, 6, 30, 4, 4, 43, tzinfo=timezone.utc),
+        )
+
+    def test_source_config_loads_feed_timezone(self):
+        row = eligible_row()
+        row["feed_timezone"] = "Asia/Seoul"
+
+        with mock.patch.object(service.repository, "fetch_source_row", return_value=row), \
+             mock.patch.object(
+                 service.repository,
+                 "fetch_source_interests",
+                 return_value=[("IT·개발", 1.0)],
+             ):
+            source = service.load_source_config(row["id"])
+
+        self.assertEqual(source.feed_timezone, "Asia/Seoul")
 
 
 class FetchSizeLimitTest(unittest.TestCase):
