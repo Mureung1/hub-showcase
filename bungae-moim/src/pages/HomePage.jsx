@@ -46,22 +46,22 @@ export default function HomePage() {
   const recent = meetings.slice(0, 4)
 
   return (
-    <>
+    <div className="container--wide">
       <Card variant="glass">
         <div className="eyebrow">번개모임 &amp; 소모임</div>
-        <h1 className="section-title" style={{ fontSize: 26, textWrap: 'balance' }}>
+        <h1 className="section-title" style={{ fontSize: 30, textWrap: 'balance' }}>
           지금 당장, 혹은 방학 내내
           <br />
           같이할 사람을 찾아보세요
         </h1>
-        <p style={{ color: 'var(--ink-mute)', fontSize: 14, lineHeight: 1.5 }}>
+        <p style={{ color: 'var(--ink-mute)', fontSize: 14.5, lineHeight: 1.6 }}>
           {isLoggedIn ? `${currentUser.nickname}님, 오늘은 어떤 모임을 찾아볼까요?` : '즉흥적인 번개모임부터 기간을 정한 소모임까지, 근처에서 찾아보세요.'}
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
-          <PillButton to="/meetings" variant="accent" block>
+          <PillButton to="/meetings" variant="accent">
             모임 찾기
           </PillButton>
-          <PillButton to="/meetings/new" variant="primary" block>
+          <PillButton to="/meetings/new" variant="primary">
             모임 등록하기
           </PillButton>
         </div>
@@ -89,9 +89,11 @@ export default function HomePage() {
         </Link>
       </div>
 
-      {recent.map((meeting) => (
-        <MeetingCard key={meeting.id} meeting={meeting} />
-      ))}
-    </>
+      <div className="card-grid--3">
+        {recent.map((meeting) => (
+          <MeetingCard key={meeting.id} meeting={meeting} />
+        ))}
+      </div>
+    </div>
   )
 }
