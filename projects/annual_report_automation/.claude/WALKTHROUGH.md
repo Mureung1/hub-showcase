@@ -1613,6 +1613,92 @@ CSS의 웹폰트 로딩은 **실패해도 에러가 안 납니다** — 그냥 �
 
 ---
 
+## Step 30 — 숫자·날짜 셀 자동 포커스: "필드마다 ref" 대신 "컨테이너에서 찾기" (2026-07-24)
+
+**무엇을 했는지 (한 줄)**
+질문 카드가 뜨면 입력란에 커서가 자동으로 가 있어서, 마우스로 클릭하지 않고 바로 타이핑 → Enter → 다음 질문으로 넘어갈 수 있게 했어요. 원래는 글자(text) 칸만 그렇게 됐고 숫자·날짜 칸은 매번 마우스로 먼저 클릭해야 했습니다.
+
+**핵심 코드 1** — 고장의 정체: focus가 엉뚱한 곳에 매여 있었다 (`ActiveCell.tsx`, 고치기 전)
+
+```tsx
+const inputRef = useRef<HTMLInputElement>(null);
+
+useEffect(() => {
+  if (cell.kind === 'text') {                      // ← text일 때만!
+    setTimeout(() => inputRef.current?.focus(), primary ? 340 : 120);
+  }
+}, [cell.id]);
+
+// ...그리고 inputRef는 text 칸의 <input>에만 붙어 있었다:
+<input ref={inputRef} type="text" ... />
+```
+
+숫자 칸은 `<NumberInput>`, 날짜 칸은 `<YmdField>`라는 **다른 컴포넌트**를 쓰는데, 그 안의 진짜 `<input>`에는 이 `inputRef`가 안 닿아요. 그래서 숫자·날짜 칸엔 포커스를 줄 대상 자체가 없었습니다.
+
+**핵심 코드 2** — 고친 방법: ref를 실로 꿰지 말고, 컨테이너에서 첫 입력 요소를 찾는다 (`ActiveCell.tsx`)
+
+```tsx
+const AUTOFOCUS_KINDS = new Set<CellKind>(['text', 'number', 'date-ymd']);
+const bodyRef = useRef<HTMLDivElement>(null);
+
+useEffect(() => {
+  if (!AUTOFOCUS_KINDS.has(cell.kind)) return;
+  const t = setTimeout(() => {
+    // .body 안에서 첫 입력 요소 하나만 찾아 포커스 — text/number/date를 한 번에 커버
+    bodyRef.current?.querySelector<HTMLElement>('input, select, textarea')?.focus();
+  }, primary ? 340 : 120);
+  return () => clearTimeout(t);
+}, [cell.id]);
+```
+
+`NumberInput`·`YmdField` 각각에 ref를 넘기도록 고칠 수도 있었지만, 그러면 컴포넌트 두 개의 인터페이스를 바꿔야 해요. 대신 **"그 카드 본문 안에서 맨 처음 나오는 입력칸에 포커스"**라는 한 줄로 셋(글자·숫자·날짜)을 다 처리했습니다. ref를 `.body`에 단 이유가 중요한데, 제목 줄의 도움말 물음표(?)도 사실 `<button>`이라 카드 전체에서 찾으면 그게 먼저 잡혀요 — 본문(`.body`)으로 범위를 좁혀 그걸 자연스럽게 걸러냅니다.
+
+**핵심 코드 3** — 일부러 안 한 것: 선택형(예/아니오) 칸은 포커스하지 않는다 (`ActiveCell.tsx`)
+
+```tsx
+// AUTOFOCUS_KINDS에 'yesno'·'select'는 일부러 뺐다.
+// 첫 보기 버튼에 포커스를 주면, 앞 질문을 Enter로 넘긴 손이 그대로 Enter를 한 번 더 눌러
+// "안 읽은 채 첫 보기가 선택"돼버린다. 세무 답변에서 이건 위험하다.
+```
+
+이게 이 스텝에서 제일 중요한 판단이에요. "모든 칸을 자동 포커스"가 언뜻 친절해 보이지만, 타이핑 칸에서 Enter는 *내가 방금 친 값*을 확정하는 안전한 동작인 반면, 선택 칸에서 Enter는 *아직 안 읽은 보기*를 골라버리는 위험한 동작입니다. 그래서 타이핑 칸(글자·숫자·날짜)만 포커스하고, 선택 칸은 사용자가 직접 눌러야만 답이 되도록 남겨뒀어요.
+
+**핵심 코드 4** — 날짜 칸에 없던 Enter 확정을 추가 (`ActiveCell.tsx`)
+
+```tsx
+// YmdField는 자체 Enter 처리가 없어, 버블링으로 여기서 잡는다 (숫자 칸과 같은 방식).
+// ymdValid일 때만 확정 — 년/월만 고른 미완성 상태에서 Enter가 넘어가지 않게 막는다.
+<div className={styles.inputRow} onKeyDown={(e) => { if (e.key === 'Enter' && ymdValid) onCommit(ymdBuild.current()); }}>
+```
+
+**핵심 코드 5** — 회귀를 막는 테스트, 특히 "부재 단언" (`ActiveCell.test.tsx`)
+
+```tsx
+it('선택형(yesno) 셀은 첫 보기 버튼에 자동 포커스하지 않는다', async () => {
+  render(<ActiveCell {...base} cell={makeCell({ id: 'y1', kind: 'yesno', title: '중소기업인가요?' })} />);
+  await new Promise((r) => setTimeout(r, 400));       // 포커스 지연(340ms) 창을 지나서
+  expect(screen.getByText('네, 있어요')).not.toHaveFocus();  // ← "없어야 한다"를 검사
+});
+```
+
+핵심 코드 3의 판단은 눈에 안 보여서 나중에 누가 "친절하게 다 포커스하자"며 되돌리기 쉬워요. 이 테스트가 그 되돌림을 실패로 잡아줍니다. `.not.toHaveFocus()` 같은 **부재 단언**(있으면 안 되는 걸 검사)이 이런 "의도적으로 안 한 것"을 지키는 도구예요.
+
+**검증한 것**: `ActiveCell.test.tsx` 7개 추가(자동 포커스 3 + Enter 확정 4) → 전체 21개 통과 · `npx tsc -b` 0 · `oxlint` 0. 그리고 dev 서버에서 위저드를 손으로 통과 — 날짜(년 select 자동 포커스 → Enter로 다음 날짜), 숫자(1,000,000 타이핑 → Enter → 다음 숫자칸 커서 살아있음), 선택 3종(모두 버튼에 포커스 안 감)을 브라우저로 확인.
+
+**새로 나온 용어**
+- 자동 포커스(autofocus): 화면이 뜨자마자 특정 입력칸에 커서를 자동으로 놓는 것
+- ref: React에서 실제 DOM 요소(진짜 `<input>` 등)를 직접 가리키는 손잡이. `.focus()` 같은 명령을 걸 때 씀
+- `querySelector`: 어떤 요소 안에서 조건(`input, select, textarea`)에 맞는 첫 요소를 찾는 DOM 함수
+- 이벤트 버블링: 자식(내부 input)에서 일어난 이벤트가 부모(바깥 div)로 타고 올라가는 것 — YmdField 바깥에서 Enter를 잡는 원리
+- 부재 단언: "이게 없어야/안 되어야 한다"를 검사하는 테스트 단언 (`.not.toHaveFocus()`)
+
+**확인 질문**
+`.body` 대신 카드 전체에서 `querySelector('input, select, textarea, button')`로 첫 요소를 찾았다면, 어떤 셀에서 엉뚱한 곳(입력칸이 아닌 곳)에 포커스가 갔을까요? (힌트: 제목 줄에 뭐가 있었죠?)
+
+#### 답변 :
+
+---
+
 ## 용어집
 
 - `.gitignore`: git이 "이 파일들은 추적하지 마"라고 알려주는 목록 파일
@@ -1650,3 +1736,6 @@ CSS의 웹폰트 로딩은 **실패해도 에러가 안 납니다** — 그냥 �
 - `position: sticky`: 스크롤하다 지정 위치에 닿으면 그 자리에 붙어 따라오는 배치
 - 폴백(fallback): 1순위가 실패했을 때 조용히 쓰이는 대안 (웹폰트는 실패해도 에러가 안 나서 눈치채기 어렵다)
 - 부재 단언: "이게 없어야 한다"를 검사하는 테스트 단언
+- 자동 포커스(autofocus): 화면이 뜨자마자 특정 입력칸에 커서를 자동으로 놓는 것
+- ref: React에서 실제 DOM 요소를 직접 가리키는 손잡이 (`.focus()` 같은 명령을 걸 때 씀)
+- `querySelector`: 어떤 요소 안에서 조건에 맞는 첫 요소를 찾는 DOM 함수
