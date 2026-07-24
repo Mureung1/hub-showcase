@@ -2,16 +2,8 @@
 
 > 냉장고 속 보유 재료와 소비기한을 바탕으로 지금 만들 수 있는 1인분 레시피를 추천하는 자취생용 식재료 관리 서비스
 
-<p align="center">
-  <a href="docs/demo-presentation/README.md">
-    <img src="docs/demo-presentation/slides/slide-01.png" width="860" alt="있는대로 데모 프레젠테이션 표지">
-  </a>
-</p>
-
 ## 바로가기
 
-- [데모 슬라이드 웹에서 보기](docs/demo-presentation/README.md)
-- [PowerPoint 원본 다운로드](docs/demo-presentation/ai-agent-challenge-demo-2026-07-24.pptx)
 - [AI와 함께 개발한 과정](docs/AI_DEVELOPMENT_WORKFLOW.md)
 - [개발 환경 및 협업 가이드](docs/DEVELOPMENT_GUIDE.md)
 - [GitHub Issues](https://github.com/pkchanghyun-pixel/hub/issues)
