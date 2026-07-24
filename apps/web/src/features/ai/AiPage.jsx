@@ -300,7 +300,7 @@ export function AiPage() {
           </article>
         ) : (
           <div className={styles.agentHub}>
-            <aside className={`${workspace.card} ${styles.agentPicker}`} aria-label="AI Agent 선택">
+            <section className={`${workspace.card} ${styles.agentPicker}`} aria-label="AI Agent 선택">
               <header><div><Bot size={16} aria-hidden="true" /><h2>프로젝트 AI Agent</h2></div><span><b className={workspace.mono}>{aiAgents.length}</b>명</span></header>
               <div className={styles.agentList}>
                 {aiAgents.map((agent) => {
@@ -315,8 +315,7 @@ export function AiPage() {
                   )
                 })}
               </div>
-              {canWrite ? <footer><button type="button" onClick={() => setShowCreate(true)}><Plus size={14} aria-hidden="true" />새 AI Agent</button></footer> : null}
-            </aside>
+            </section>
 
             <div className={styles.agentWorkspace}>
               <div className={styles.aiIdentity}>
