@@ -56,5 +56,3 @@
 - API·프론트 배포 타겟 및 env 분리
 - E2E/수동 테스트 체크리스트
 - `districts`(전국 지역 데이터) 소스 — 정적 JSON vs API
-- industry(업종) 조건 정밀 매칭 — bizinfo API에 구조화 필드가 없어 이슈 #43에서 보류, 별도
-  조사/설계 필요 (`docs/week3/issue-43-match-plan.md` 참고)
