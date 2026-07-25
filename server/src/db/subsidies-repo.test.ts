@@ -62,12 +62,11 @@ describe('match', () => {
     expect(result.match).toBe(70) // 50 + 20
   })
 
-  it('subsidy.region이 있지만 profile.region이 없으면 감점된다', async () => {
+  it('subsidy.region이 있지만 profile.region과 다르면 결과에서 제외된다 (이슈 #62)', async () => {
     state.rows = [makeRow({ id: '1', region: ['부산'] })]
-    const {
-      items: [result],
-    } = await match(profile)
-    expect(result.match).toBe(30) // 50 - 20
+    const { items, total } = await match(profile)
+    expect(items).toHaveLength(0)
+    expect(total).toBe(0)
   })
 
   it('subsidy.region이 비어있으면(지역 정보 없음) 점수를 그대로 유지한다', async () => {
@@ -86,23 +85,16 @@ describe('match', () => {
     expect(result.match).toBe(100)
   })
 
-  it('감점은 0 밑으로 내려가지 않는다', async () => {
-    state.rows = [makeRow({ id: '1', region: ['부산'], match_score: 10 })]
-    const {
-      items: [result],
-    } = await match(profile)
-    expect(result.match).toBe(0)
-  })
-
-  it('region이 다른 여러 건을 넣으면 조건에 맞는 지원금이 match 정렬에서 위로 온다', async () => {
+  it('region이 다른 여러 건을 넣으면 불일치 항목은 제외되고 나머지만 정렬된다 (이슈 #62)', async () => {
     state.rows = [
       makeRow({ id: 'busan', region: ['부산'], match_score: 50 }),
       makeRow({ id: 'seoul', region: ['서울'], match_score: 50 }),
       makeRow({ id: 'nationwide', region: ['서울', '부산', '경기'], match_score: 50 }),
     ]
     const result = await match(profile, 'match')
-    // busan(30)은 감점, seoul/nationwide는 둘 다 70으로 동점 — id 오름차순 2차 정렬(#48)로 결정됨
-    expect(result.items.map((r) => r.id)).toEqual(['nationwide', 'seoul', 'busan'])
+    // busan은 region 불일치로 제외, seoul/nationwide는 둘 다 70으로 동점 — id 오름차순 2차 정렬(#48)
+    expect(result.items.map((r) => r.id)).toEqual(['nationwide', 'seoul'])
+    expect(result.total).toBe(2)
   })
 })
 
