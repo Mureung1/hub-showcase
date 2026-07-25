@@ -101,28 +101,34 @@ Sources: [K-Startup 오픈 API](https://nidview.k-startup.go.kr/view/public/kise
 
 ## 실행 순서
 
-### 묶음 1 — region 필터링 적용 (승인 필요)
-- [ ] `match()`에서 `subsidy.region.length > 0 && !subsidy.region.includes(profile.region)`인
+### 묶음 1 — region 필터링 적용 (완료, 2026-07-25)
+- [x] `match()`에서 `subsidy.region.length > 0 && !subsidy.region.includes(profile.region)`인
       항목을 스코어링 전에 배열에서 제외
-- [ ] `REGION_MISMATCH_PENALTY` 상수·감점 분기 제거 (필터링으로 대체돼 dead code가 됨)
-- [ ] `subsidies-repo.test.ts` region 불일치 테스트를 "감점 확인" → "배열에서 제외 확인"으로 수정
-- [ ] 수동 검증: 프로필 지역을 바꿔가며 `POST /api/match`의 `total`이 실제로 달라지는지 확인
+- [x] `REGION_MISMATCH_PENALTY` 상수·감점 분기 제거 (필터링으로 대체돼 dead code가 됨)
+- [x] `subsidies-repo.test.ts` region 불일치 테스트를 "감점 확인" → "배열에서 제외 확인"으로 수정
+- [x] 수동 검증: 프로필 지역을 바꿔가며 `POST /api/match`의 `total`이 실제로 달라지는지 확인 —
+      서울 553건 vs 세종 519건으로 확인 (기존엔 프로필 무관 항상 1554건)
 
-### 묶음 2 — industry 동의어 사전 확장 여지 확인 (승인 필요)
+### 묶음 2 — industry 동의어 사전 확장 여지 확인 (완료, 2026-07-25 — 확장 안 함으로 결론)
 - [x] `pldirSportRealmLclasCodeNm`(분야 대분류) 상관관계 조사 — 도움 안 됨으로 결론 (위 조사 결과)
-- [ ] 기존 동의어 사전(`crawler/src/mapper.ts`의 `extractIndustry`) 확장 여지만 확인
-- [ ] 개선되면 반영 + backfill, 개선 안 되면 한계를 문서화하고 종료
+- [x] 기존 동의어 사전(`crawler/src/mapper.ts`의 `INDUSTRY_KEYWORDS`) 확장 여지 검토 — **지금은
+      확장 안 함으로 결론.** #52가 이미 500건 수동 대조로 오탐 2종을 걸러내며 6.6%까지 튜닝한
+      상태라, 검증 없이 동의어만 늘리면 오탐 위험이 있음(예: "판매업" 추가 시 "판매업 제외" 같은
+      부정 문맥 재발 가능). #67(첨부파일 AI 추출)이 원문 전체를 읽으므로 industry 커버리지도
+      부수적으로 개선될 가능성이 있어, 그 결과를 먼저 보고 재평가하는 게 낫다고 판단
 
-### 묶음 3 — employees/businessYears 정규식 추출 (스코프 결정 대기, 아래 리스크 표 참고)
-- [ ] (결정되면) `crawler/src/mapper.ts`에 `extractEmployeeLimit()`/`extractBusinessYearLimit()` 추가
-- [ ] `subsidies` 스키마에 구조화 컬럼 추가 (예: `employee_limit int`, `business_year_limit int`)
-- [ ] `scoreForProfile()`에 가점 반영 (industry와 동일 패턴 — 감지 안 되면 중립, 페널티 없음)
+### 묶음 3 — ~~employees/businessYears 정규식 추출~~ → 이슈 [#67](https://github.com/syd348/hub/issues/67)로 분리 (2026-07-25)
+정규식보다 첨부파일(PDF/HWP) AI 구조화 추출이 커버리지가 더 높을 것으로 판단해 별도 이슈로
+크게 다루기로 결정 — `docs/week4/issue-67-ai-document-extraction-plan.md` 참고. 이 이슈(#62)엔
+포함하지 않음.
 
 ## 완료 기준
 
-- [ ] region 불일치 지원금은 매칭 결과에서 제외되고, 프로필별로 `total`이 달라진다
-- [ ] industry 감지율 개선 조사 결과가 문서로 남는다 (반영 또는 한계 기록)
-- [ ] `npm test`/`npm run lint` 통과
+- [x] region 불일치 지원금은 매칭 결과에서 제외되고, 프로필별로 `total`이 달라진다
+- [x] industry 감지율 개선 조사 결과가 문서로 남는다 (확장 안 함으로 결론, #67 결과 보고 재평가)
+- [x] `npm test`(83 passed)/`npm run lint` 통과
+
+**이슈 #62 완료 (2026-07-25)**
 
 ## 리스크 / 결정 필요
 
@@ -131,6 +137,6 @@ Sources: [K-Startup 오픈 API](https://nidview.k-startup.go.kr/view/public/kise
 | region 완전 필터링 vs 감점 | #43 당시엔 "혼란 가능성"으로 감점만 택함 | **필터링으로 정책 변경** (2026-07-25, 사용자 결정) — region 신뢰도 ~98%로 실사용 데이터 기준 안전하다고 재평가 |
 | industry 필터링 여부 | 감지율 6.6%로 낮음 | **필터링 안 함 유지** — 실제로 맞는 지원금을 감지 실패만으로 대량 제외할 위험이 더 큼. 감지율 개선을 먼저 시도 |
 | region 정보 없는 지원금(hashtags 없음) | 필터링 대상에서 빼야 함 | 기존과 동일하게 중립 유지(필터링 안 함) — "정보 없음"과 "불일치"를 구분해야 하므로 |
-| employees/businessYears 정규식 추출 | 원문에 신호가 있음(11.7%/7.7%, 위 조사) — industry(#52, 6.6%)보다 오히려 높음 | **결정 대기** — 이 이슈(#62)에 묶음 3으로 포함할지, 별도 이슈로 분리할지 사용자 확인 필요 |
+| employees/businessYears 데이터 확보 방법 | 원문 정규식(11.7%/7.7%)보다 첨부파일 AI 추출이 커버리지 높을 것으로 판단 | **[#67](https://github.com/syd348/hub/issues/67)로 분리** (2026-07-25) — 이 이슈(#62)엔 포함 안 함 |
 | 다른 사이트(K-Startup/소진공/공공데이터포털) 추가 | 조사 결과 전부 자유 텍스트 구조이거나 bizinfo 재포장이라 새 정보 없음 | **도입 안 함** — bizinfo 단일 소스 유지, `CONTEXT.md` "데이터 소스" 표는 갱신 불필요 |
 | AI API(Claude 등) 도입 | 정규식으로 시도할 신호가 이미 있고, #44 전례(비용/속도로 정규식 채택)와 일치 | **도입 안 함** — 정규식 시도 후 커버리지 부족하면 재검토 |

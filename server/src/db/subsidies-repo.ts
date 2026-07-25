@@ -131,17 +131,17 @@ export async function findById(id: string): Promise<Subsidy | null> {
 }
 
 /**
- * region 조건 부합도에 따른 가점/감점 (이슈 #43).
+ * region 조건 가점 (이슈 #43, #62).
  * - subsidy.region이 비어있으면(hashtags에 지역 태그가 하나도 없던 경우) 지역 정보가 없다는
  *   뜻이라 그대로 둔다(필터링하지 않음 — "안 보이는 것보다 보이는 게 낫다"는 NEUTRAL_MATCH
  *   설계와 동일한 원칙).
  * - 전국 대상 공고는 크롤러가 hashtags 전체(15~16개)를 region에 담으므로 profile.region이
  *   항상 포함돼 있어 자연스럽게 가점을 받는다 — 별도 "전국" 처리 불필요.
- * - 완전 필터링이 아니라 점수 조정만 하는 이유는 리스크 표 참고: 조건이 안 맞는다고 아예
- *   숨기면 사용자가 "왜 안 보이지" 혼란스러울 수 있어 정렬 우선순위 조정으로 시작한다.
+ * - region 정보가 있는데 profile.region과 안 맞는 지원금은 감점이 아니라 `match()`에서
+ *   완전히 필터링해서 제외한다(#62) — region 데이터 신뢰도가 ~98%로 높아 안전하다고 판단
+ *   (#43 당시엔 "혼란 가능성"으로 감점만 택했으나 재평가, `docs/week4/issue-62-region-filter-plan.md` 참고).
  */
 const REGION_MATCH_BONUS = 20
-const REGION_MISMATCH_PENALTY = 20
 
 /**
  * industry 조건 가점 (이슈 #52). region과 달리 **가점만 주고 불일치 페널티는 없다** —
@@ -157,10 +157,8 @@ const INDUSTRY_MATCH_BONUS = 10
 function scoreForProfile(subsidy: Subsidy, profile: OnboardingProfile): number {
   let score = subsidy.match
 
-  if (subsidy.region.length > 0) {
-    score = subsidy.region.includes(profile.region)
-      ? Math.min(100, score + REGION_MATCH_BONUS)
-      : Math.max(0, score - REGION_MISMATCH_PENALTY)
+  if (subsidy.region.length > 0 && subsidy.region.includes(profile.region)) {
+    score = Math.min(100, score + REGION_MATCH_BONUS)
   }
 
   if (subsidy.industry.includes(profile.industry)) {
@@ -170,9 +168,14 @@ function scoreForProfile(subsidy: Subsidy, profile: OnboardingProfile): number {
   return score
 }
 
+/** region 정보가 있는데 profile.region과 안 맞으면 제외 (이슈 #62) — 정보 없음은 필터링 대상 아님 */
+function matchesRegion(subsidy: Subsidy, profile: OnboardingProfile): boolean {
+  return subsidy.region.length === 0 || subsidy.region.includes(profile.region)
+}
+
 /**
  * 프로필 조건 매칭 + 정렬.
- * region은 가점/감점, industry는 가점만 위 scoreForProfile로 반영된다.
+ * region 불일치는 필터링(#62), industry는 가점만 scoreForProfile로 반영된다.
  */
 export async function match(
   profile: OnboardingProfile,
@@ -181,7 +184,8 @@ export async function match(
   limit: number = DEFAULT_LIMIT,
 ): Promise<PagedResult> {
   const items = await loadAll()
-  const scored = items.map((item) => ({ ...item, match: scoreForProfile(item, profile) }))
+  const filtered = items.filter((item) => matchesRegion(item, profile))
+  const scored = filtered.map((item) => ({ ...item, match: scoreForProfile(item, profile) }))
   const sorted = applySort(scored, sort)
   return paginate(sorted, page, limit)
 }
