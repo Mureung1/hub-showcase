@@ -2,9 +2,9 @@ import campusManifest from './live-campuses.json';
 import generatedUsage from './generated-stop-usage.json';
 import generatedRoadRoutes from './generated-road-routes.json';
 import publicStopMappings from './public-stop-mappings.json';
-import type { Campus, CampusDirections, DirectionKey, DirectionUsage, RoadRoute, Stop } from '../types';
+import type { Campus, CampusDirections, DirectionKey, DirectionUsage, RoadRoute, Stop } from '../../entities/campus/types';
 import type { BusDataProvider } from './provider';
-import { formatUsagePeriod } from '../lib/usage';
+import { formatUsagePeriod } from '../../entities/usage/usage';
 
 interface PublicStopMapping {
   campusId: string;

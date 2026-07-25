@@ -1,11 +1,11 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import type { BusDataProvider } from '../data/provider';
-import { campusPresentation, fallbackCampusPresentation, type CampusPresentation } from '../data/campus-presentation';
-import { campusHasDirectionUsage, campusHasUsage, directionData, formatUsagePeriod, isDirectionUsageReady, isUsageReady } from '../lib/usage';
-import type { Campus, DirectionKey } from '../types';
-import { CompareBars } from './CompareBars';
-import { DailyChart } from './DailyChart';
-import { StopMap } from './StopMap';
+import type { BusDataProvider } from '../../shared/data/provider';
+import { campusPresentation, fallbackCampusPresentation, type CampusPresentation } from '../../entities/campus/presentation';
+import { campusHasDirectionUsage, campusHasUsage, directionData, formatUsagePeriod, isDirectionUsageReady, isUsageReady } from '../../entities/usage/usage';
+import type { Campus, DirectionKey } from '../../entities/campus/types';
+import { CompareBars } from '../../widgets/stop-compare-bars/CompareBars';
+import { DailyChart } from '../../widgets/daily-usage-chart/DailyChart';
+import { StopMap } from '../../widgets/campus-map/StopMap';
 import styles from './Dashboard.module.css';
 
 function currentHour(): number {

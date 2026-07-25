@@ -1,6 +1,6 @@
-import { levelFor } from '../lib/congestion';
-import { directionData, directionHours, directionUsageStatusLabel, formatUsagePeriod, isDirectionUsageReady, isUsageReady, usageStatusLabel } from '../lib/usage';
-import type { DirectionKey, Stop } from '../types';
+import { levelFor } from '../../entities/usage/congestion';
+import { directionData, directionHours, directionUsageStatusLabel, formatUsagePeriod, isDirectionUsageReady, isUsageReady, usageStatusLabel } from '../../entities/usage/usage';
+import type { DirectionKey, Stop } from '../../entities/campus/types';
 import styles from './DailyChart.module.css';
 
 interface DailyChartProps { stop: Stop | undefined; hour: number; direction?: DirectionKey; directionLabel?: string; }
