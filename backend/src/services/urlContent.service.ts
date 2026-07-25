@@ -137,6 +137,13 @@ export function parseSourceUrl(sourceUrl: string): URL {
 
   const hostname = parsedUrl.hostname.toLowerCase();
 
+  if (
+    hostname === "blog.naver.com" ||
+    hostname.endsWith(".blog.naver.com")
+  ) {
+    throw new UrlContentError("URL_FETCH_FAILED");
+  }
+
   if (hostname === "localhost" || hostname.endsWith(".localhost")) {
     throw new UrlContentError("URL_NOT_ALLOWED");
   }

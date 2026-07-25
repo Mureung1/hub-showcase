@@ -271,6 +271,7 @@ Authorization: Bearer firebase-id-token
 - HTML 전체를 AI에 그대로 전달하지 않고 레시피 관련 텍스트만 추출한다.
 - 공개 `youtube.com`, `youtu.be` 영상은 YouTube Data API로 제목·채널명을 조회하고, 공개 또는 자동 생성 자막을 우선 구조화 입력으로 사용한다.
 - 자막 조회가 실패하면 Gemini가 원본 URL·제목·채널명을 분석한 결과를 기존 OpenAI 구조화·검증 단계로 전달한다. 프록시, 쿠키, 계정 인증, 차단 우회, 영상·자막·썸네일 저장은 지원하지 않는다. 모든 YouTube 처리 실패에는 새 전용 오류 코드 없이 기존 `URL_FETCH_FAILED` 422 및 직접 입력 안내를 사용한다.
+- `blog.naver.com`과 하위 도메인은 현재 MVP/P0의 성공 입력 범위에서 제외하며 외부 요청 전에 기존 `URL_FETCH_FAILED` 422 및 직접 입력 안내로 처리한다.
 
 구체적인 timeout, redirect 횟수, 응답 크기와 본문 길이는 URL 수집 구현 시 환경 설정으로 확정하고 README에 기록한다.
 
