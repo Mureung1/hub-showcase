@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(24);
+select extensions.plan(25);
 
 select extensions.has_table('public', 'insight_import_jobs', '가져오기 작업 테이블이 존재한다');
 select extensions.has_table('public', 'insight_import_items', '가져오기 항목 테이블이 존재한다');
@@ -101,6 +101,17 @@ values
   ('00000000-0000-4000-8000-000000000021', 'import-owner@example.com'),
   ('00000000-0000-4000-8000-000000000022', 'import-other@example.com');
 
+insert into public.insights (
+  id, user_id, original_url, normalized_url, domain, title
+) values (
+  '30000000-0000-4000-8000-000000000022',
+  '00000000-0000-4000-8000-000000000022',
+  'https://other.example/created-insight',
+  'https://other.example/created-insight',
+  'other.example',
+  '다른 사용자의 생성 인사이트'
+);
+
 insert into public.categories (id, user_id, name, color_key, sort_order)
 values (
   '20000000-0000-4000-8000-000000000021',
@@ -161,6 +172,27 @@ insert into public.insight_import_items (
   'existing_duplicate',
   null,
   1
+);
+
+select extensions.throws_ok(
+  $$
+    insert into public.insight_import_items (
+      job_id, user_id, candidate_id, original_url, source_location, classification,
+      created_insight_id, ordinal
+    ) values (
+      '40000000-0000-4000-8000-000000000021',
+      '00000000-0000-4000-8000-000000000021',
+      'cross-user-insight',
+      'https://owner.example/cross-user-insight',
+      '행 99',
+      'new',
+      '30000000-0000-4000-8000-000000000022',
+      99
+    )
+  $$,
+  '23503',
+  null,
+  '다른 사용자의 인사이트를 가져오기 생성 결과로 연결할 수 없다'
 );
 
 set local role authenticated;

@@ -39,6 +39,9 @@ create table public.insight_import_jobs (
   constraint insight_import_jobs_user_idempotency_key unique (user_id, idempotency_key)
 );
 
+alter table public.insights
+add constraint insights_id_user_id_key unique (id, user_id);
+
 create table public.insight_import_items (
   job_id uuid not null,
   user_id uuid not null,
@@ -64,7 +67,7 @@ create table public.insight_import_items (
       'limit-exceeded'
     )
   ),
-  created_insight_id uuid references public.insights(id) on delete set null,
+  created_insight_id uuid,
   imported_updated_at timestamptz,
   selected_category_id uuid,
   ordinal integer not null check (ordinal >= 1),
@@ -99,6 +102,10 @@ create table public.insight_import_items (
     foreign key (job_id, user_id)
     references public.insight_import_jobs (id, user_id)
     on delete cascade,
+  constraint insight_import_items_created_insight_user_id_fkey
+    foreign key (created_insight_id, user_id)
+    references public.insights (id, user_id)
+    on delete set null (created_insight_id),
   constraint insight_import_items_category_user_id_fkey
     foreign key (selected_category_id, user_id)
     references public.categories (id, user_id)
