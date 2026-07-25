@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_GEMINI_MODEL,
   GEMINI_TIMEOUT_MS,
-  GeminiMicrotaskError,
   LV3_PROMPT_VERSION,
   PROMPT_VERSION,
   createGeminiMicrotaskCacheKey,
@@ -10,6 +9,7 @@ import {
   generateGeminiLv3Microtask,
   isValidLv3MicrotaskQuality,
   resetGeminiMicrotaskCacheForTests,
+  validateLv3MicrotaskQuality,
   type GeminiLv3MicrotaskInput,
   type GeminiMicrotaskInput,
 } from "./geminiMicrotask.js";
@@ -23,12 +23,14 @@ const INPUT: GeminiMicrotaskInput = {
 
 const LV3_INPUT: GeminiLv3MicrotaskInput = {
   ...INPUT,
+  reasonChanged: false,
+  lv2MicroTask: "발표 자료에 제목과 목차 3개 적기",
   sourceDoneEventId: "done-event-1",
   sourceTaskTitle: "중간 보고서",
   sourceMicroTask: "핵심 주장 한 문장 쓰기",
 };
 
-function geminiResponse(microTask: string): Response {
+function geminiTextResponse(text: string): Response {
   return new Response(
     JSON.stringify({
       status: "completed",
@@ -38,7 +40,7 @@ function geminiResponse(microTask: string): Response {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ microTask }),
+              text,
             },
           ],
         },
@@ -48,14 +50,22 @@ function geminiResponse(microTask: string): Response {
   );
 }
 
+function geminiResponse(microTask: string): Response {
+  return geminiTextResponse(JSON.stringify({ microTask }));
+}
+
 describe("generateGeminiMicrotask", () => {
   const originalApiKey = process.env.GEMINI_API_KEY;
   const originalModel = process.env.GEMINI_MODEL;
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalDebugValidation = process.env.GEMINI_DEBUG_VALIDATION;
 
   beforeEach(() => {
     resetGeminiMicrotaskCacheForTests();
     process.env.GEMINI_API_KEY = "test-secret-key";
     delete process.env.GEMINI_MODEL;
+    process.env.NODE_ENV = "test";
+    delete process.env.GEMINI_DEBUG_VALIDATION;
     vi.restoreAllMocks();
   });
 
@@ -65,6 +75,13 @@ describe("generateGeminiMicrotask", () => {
     else process.env.GEMINI_API_KEY = originalApiKey;
     if (originalModel === undefined) delete process.env.GEMINI_MODEL;
     else process.env.GEMINI_MODEL = originalModel;
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+    if (originalDebugValidation === undefined) {
+      delete process.env.GEMINI_DEBUG_VALIDATION;
+    } else {
+      process.env.GEMINI_DEBUG_VALIDATION = originalDebugValidation;
+    }
   });
 
   it("공식 v1 Interactions 요청 필드와 구조화 출력 형식을 사용한다", async () => {
@@ -245,25 +262,90 @@ describe("generateGeminiMicrotask", () => {
     );
   });
 
-  it.each([
-    ["", "빈 문자열"],
-    ["1. 문서 열기", "번호 목록"],
-    ["문서 열기\n제목 쓰기", "여러 줄"],
-    ["가".repeat(61), "60자 초과"],
-  ])("유효하지 않은 응답(%s: %s)은 거부한다", async (microTask) => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      geminiResponse(microTask),
+  it("HTTP 응답 body가 JSON이 아니면 원인과 안전한 진단값을 기록한다", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("not-json", { status: 200 }),
     );
 
-    await expect(generateGeminiMicrotask(INPUT)).rejects.toBeInstanceOf(
-      GeminiMicrotaskError,
-    );
     await expect(generateGeminiMicrotask(INPUT)).rejects.toMatchObject({
       code: "invalid_provider_response",
+      validationStage: "response_body",
+      validationRule: "response_body_not_json",
+      parsed: false,
+      responseLength: 8,
     });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('"rule":"response_body_not_json"'),
+    );
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('"parsed":false'),
+    );
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('"responseLength":8'),
+    );
   });
+
+  it.each([
+    [null, "payload_not_object"],
+    [{}, "steps_not_array"],
+    [{ steps: [] }, "model_text_missing"],
+  ] as const)("provider 구조 실패를 %s 규칙으로 구분한다", async (payload, rule) => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(payload), { status: 200 }),
+    );
+
+    await expect(generateGeminiMicrotask(INPUT)).rejects.toMatchObject({
+      code: "invalid_provider_response",
+      validationStage: "model_text_extraction",
+      validationRule: rule,
+      parsed: false,
+    });
+  });
+
+  it.each([
+    ["plain text", "model_text_not_json", false],
+    ['"plain text"', "structured_output_not_object", true],
+    ["{}", "microtask_not_string", true],
+  ] as const)(
+    "구조화 출력 실패를 %s 규칙으로 구분한다",
+    async (modelText, rule, parsed) => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        geminiTextResponse(modelText),
+      );
+
+      await expect(generateGeminiMicrotask(INPUT)).rejects.toMatchObject({
+        code: "invalid_provider_response",
+        validationStage: "structured_output",
+        validationRule: rule,
+        parsed,
+      });
+    },
+  );
+
+  it.each([
+    ["", "microtask_empty"],
+    ["문서 한 줄\n작성하기", "microtask_multiline"],
+    ["가".repeat(61), "microtask_too_long"],
+    ["1. 문서에 제목 한 줄 쓰기", "microtask_list_prefix"],
+  ] as const)(
+    "공통 형식 실패를 %s 규칙으로 구분한다",
+    async (microTask, rule) => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        geminiResponse(microTask),
+      );
+
+      await expect(generateGeminiMicrotask(INPUT)).rejects.toMatchObject({
+        code: "invalid_provider_response",
+        validationStage: "microtask_format",
+        validationRule: rule,
+        parsed: true,
+      });
+    },
+  );
 
   it("민감한 입력과 Gemini 원문 응답을 실패 로그에 남기지 않는다", async () => {
     const sensitiveInput: GeminiMicrotaskInput = {
@@ -289,6 +371,41 @@ describe("generateGeminiMicrotask", () => {
     expect(serializedLogs).not.toContain(rawProviderText);
   });
 
+  it("명시적 개발 플래그에서만 파싱된 microTask preview를 제한·마스킹한다", async () => {
+    process.env.NODE_ENV = "development";
+    process.env.GEMINI_DEBUG_VALIDATION = "1";
+    const debugInput: GeminiLv3MicrotaskInput = {
+      title: "PRIVATE_TITLE",
+      type: "리포트/글쓰기",
+      reason: "custom",
+      customReason: "PRIVATE_REASON",
+      reasonChanged: true,
+      lv2MicroTask: "PRIVATE_LV2_ACTION",
+      sourceDoneEventId: "PRIVATE_EVENT_ID",
+      sourceTaskTitle: "PRIVATE_SOURCE_TITLE",
+      sourceMicroTask: "PRIVATE_SOURCE_ACTION",
+    };
+    const generated =
+      "PRIVATE_TITLE PRIVATE_REASON PRIVATE_EVENT_ID PRIVATE_SOURCE_TITLE PRIVATE_SOURCE_ACTION 그리고 첫 문장 쓰기";
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(geminiResponse(generated));
+
+    await expect(generateGeminiLv3Microtask(debugInput)).rejects.toMatchObject({
+      code: "invalid_provider_response",
+    });
+
+    const serializedLogs = JSON.stringify(log.mock.calls);
+    expect(serializedLogs).toContain("microTaskPreview");
+    expect(serializedLogs).toContain("[redacted]");
+    expect(serializedLogs).not.toContain(debugInput.title);
+    expect(serializedLogs).not.toContain(debugInput.customReason);
+    expect(serializedLogs).not.toContain(debugInput.lv2MicroTask);
+    expect(serializedLogs).not.toContain(debugInput.sourceDoneEventId);
+    expect(serializedLogs).not.toContain(debugInput.sourceTaskTitle);
+    expect(serializedLogs).not.toContain(debugInput.sourceMicroTask);
+    expect(serializedLogs).not.toContain("test-secret-key");
+  });
+
   it("Lv3는 현재 Task와 과거 microTask를 참고 데이터로 전달한다", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
@@ -302,8 +419,13 @@ describe("generateGeminiMicrotask", () => {
     expect(body.input).toContain(`promptVersion=${LV3_PROMPT_VERSION}`);
     expect(body.input).toContain("보고서 작성");
     expect(body.input).toContain("리포트/글쓰기");
+    expect(body.input).toContain("발표 자료에 제목과 목차 3개 적기");
+    expect(body.input).toContain('"reasonChanged":false');
     expect(body.input).toContain("핵심 주장 한 문장 쓰기");
     expect(body.input).toContain("신뢰할 수 없는 데이터");
+    expect(body.input).toContain("준비 동작을 함께 쓰지 말고");
+    expect(body.input).toContain("피하기: 문서를 열고");
+    expect(body.input).toContain("권장: 문서에 핵심 주장");
   });
 
   it.each([
@@ -316,6 +438,17 @@ describe("generateGeminiMicrotask", () => {
     ["첫 슬라이드에 발표 핵심 한 문장 입력하기", true],
   ])("Lv3 행동 품질을 검사한다: %s", (microTask, expected) => {
     expect(isValidLv3MicrotaskQuality(microTask)).toBe(expected);
+  });
+
+  it.each([
+    ["문서를 열고 핵심 주장 한 문장 쓰기", "quality_chained_action"],
+    ["첫 슬라이드의 핵심 문장 선택", "quality_result_verb_missing"],
+    ["발표 핵심을 작성하기", "quality_bounded_scope_missing"],
+  ] as const)("Lv3 품질 실패 규칙을 구분한다: %s", (microTask, rule) => {
+    expect(validateLv3MicrotaskQuality(microTask)).toEqual({
+      valid: false,
+      rule,
+    });
   });
 
   it("9개 유형별 fallback이 모두 Lv3 행동 품질 검사를 통과한다", () => {
@@ -338,13 +471,20 @@ describe("generateGeminiMicrotask", () => {
   });
 
   it("Lv3 품질 기준을 통과하지 못한 provider 응답을 거부한다", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       geminiResponse("교재를 펼치고 첫 번째 문제에 동그라미 치기"),
     );
 
     await expect(generateGeminiLv3Microtask(LV3_INPUT)).rejects.toMatchObject({
       code: "invalid_provider_response",
+      validationStage: "quality",
+      validationRule: "quality_chained_action",
+      parsed: true,
     });
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('"rule":"quality_chained_action"'),
+    );
+    expect(JSON.stringify(log.mock.calls)).not.toContain("microTaskPreview");
   });
 });

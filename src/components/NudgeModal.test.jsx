@@ -36,6 +36,8 @@ function renderModal(overrides = {}, props = {}) {
   const onStart = vi.fn();
   const onReconfirmReason =
     props.onReconfirmReason ?? vi.fn();
+  const onLv2ActionResolved =
+    props.onLv2ActionResolved ?? vi.fn();
   const renderResult = render(
     <NudgeModal
       task={{ ...TASK, ...overrides }}
@@ -43,11 +45,19 @@ function renderModal(overrides = {}, props = {}) {
       onClose={vi.fn()}
       checkpointLevel={props.checkpointLevel ?? null}
       onReconfirmReason={onReconfirmReason}
+      onLv2ActionResolved={onLv2ActionResolved}
+      lv2MicroTask={props.lv2MicroTask ?? null}
+      lv3ReasonChanged={props.lv3ReasonChanged ?? null}
       onAddToCalendar={vi.fn()}
       completedTasks={[]}
     />,
   );
-  return { onStart, onReconfirmReason, ...renderResult };
+  return {
+    onStart,
+    onReconfirmReason,
+    onLv2ActionResolved,
+    ...renderResult,
+  };
 }
 
 describe("NudgeModal Lv.2 Gemini microTask", () => {
@@ -74,9 +84,10 @@ describe("NudgeModal Lv.2 Gemini microTask", () => {
       microTask: sentinel,
       generationSource: "gemini",
     });
-    const { onStart } = renderModal();
+    const { onStart, onLv2ActionResolved } = renderModal();
 
     expect(await screen.findByText(new RegExp(sentinel))).toBeInTheDocument();
+    expect(onLv2ActionResolved).toHaveBeenCalledWith(TASK.id, sentinel);
     fireEvent.click(screen.getByRole("button", { name: "지금 시작하기" }));
 
     expect(onStart).toHaveBeenCalledWith(
@@ -111,7 +122,7 @@ describe("NudgeModal Lv.2 Gemini microTask", () => {
 
   it("Gemini 실패 시 기존 룰베이스 결과를 표시하고 같은 값으로 시작한다", async () => {
     vi.mocked(requestLv2Microtask).mockRejectedValue(new Error("timeout"));
-    const { onStart } = renderModal();
+    const { onStart, onLv2ActionResolved } = renderModal();
 
     const button = await screen.findByRole("button", {
       name: "지금 시작하기",
@@ -123,6 +134,10 @@ describe("NudgeModal Lv.2 Gemini microTask", () => {
       MICROTASK_TEMPLATES["리포트/글쓰기"].overwhelm,
     ).toContain(session.microTask);
     expect(screen.getByText(new RegExp(session.microTask))).toBeInTheDocument();
+    expect(onLv2ActionResolved).toHaveBeenCalledWith(
+      TASK.id,
+      session.microTask,
+    );
     expect(session.generationSource).toBe("rule_based");
     expect(session.memoryEvidence).toBeNull();
   });
@@ -198,19 +213,36 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
     expect(
       screen.getByText(/지금 막는 이유가 처음과 같나요/),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/지금 막는 이유를 먼저 확인해 주세요/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/지금 할 수 있는 첫 행동을 찾고 있어요/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "이유 확인 후 시작하기" }),
+    ).toBeDisabled();
   });
 
   it("저장 성공 후 서버가 돌려준 최신 custom 이유로 한 번만 요청한다", async () => {
     const onReconfirmReason = vi.fn().mockResolvedValue({
       reason: "custom",
       customReasonText: "완벽하게 해야 할 것 같아서",
+      reasonChanged: true,
     });
     vi.mocked(requestLv3Microtask).mockResolvedValue({
-      status: "no_evidence",
+      status: "generated",
+      microTask: "첫 슬라이드 제목에 임시 문장 하나 쓰기",
+      generationSource: "gemini",
+      memoryEvidence: null,
     });
     renderModal(
       { level: 3, skipCount: 5, reason: "overwhelm" },
-      { checkpointLevel: 3, onReconfirmReason },
+      {
+        checkpointLevel: 3,
+        onReconfirmReason,
+        lv2MicroTask: "발표 목차 3개 적기",
+      },
     );
 
     fireEvent.click(screen.getByRole("button", { name: "기타(직접입력)" }));
@@ -226,7 +258,46 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
       taskId: TASK.id,
       reason: "custom",
       customReason: "완벽하게 해야 할 것 같아서",
+      reasonChanged: true,
+      lv2MicroTask: "발표 목차 3개 적기",
       level: 3,
+    });
+  });
+
+  it("이유가 같으면 Lv2 행동과 동일 이유 스냅샷을 Lv3 요청에 전달한다", async () => {
+    const onReconfirmReason = vi.fn().mockResolvedValue({
+      reason: "overwhelm",
+      customReasonText: null,
+      reasonChanged: false,
+    });
+    vi.mocked(requestLv3Microtask).mockResolvedValue({
+      status: "generated",
+      microTask: "첫 슬라이드에 발표 핵심 한 문장 쓰기",
+      generationSource: "gemini",
+      memoryEvidence: null,
+    });
+    renderModal(
+      { level: 3, skipCount: 5, reason: "overwhelm" },
+      {
+        checkpointLevel: 3,
+        onReconfirmReason,
+        lv2MicroTask: "발표 자료에 제목과 목차 3개 적기",
+      },
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "막막해서 못 시작" }),
+    );
+
+    await waitFor(() => {
+      expect(requestLv3Microtask).toHaveBeenCalledWith({
+        taskId: TASK.id,
+        reason: "overwhelm",
+        customReason: null,
+        reasonChanged: false,
+        lv2MicroTask: "발표 자료에 제목과 목차 3개 적기",
+        level: 3,
+      });
     });
   });
 
@@ -262,6 +333,9 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
 
     expect(await screen.findByText(new RegExp(microTask))).toBeInTheDocument();
     expect(screen.getByText(/지난 완료 기록을 참고해/)).toBeInTheDocument();
+    expect(
+      screen.getByText("Lv3 · 이전 완료 기록 참고"),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/그때 이렇게 해서 완료/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "지금 시작하기" }));
@@ -275,16 +349,45 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
     });
   });
 
-  it.each([
-    ["근거 없음", () => Promise.resolve({ status: "no_evidence" })],
-    ["provider 실패", () => Promise.reject(new Error("timeout"))],
-  ])("%s이면 과거 경험을 언급하지 않는 유형별 fallback을 사용한다", async (_label, createResult) => {
-    vi.mocked(requestLv3Microtask).mockReturnValue(createResult());
+  it("근거 없는 Gemini 성공은 맞춤 첫 행동으로 표시하고 그대로 시작한다", async () => {
+    const microTask = "문서에 발표 핵심 문장 한 줄 쓰기";
+    vi.mocked(requestLv3Microtask).mockResolvedValue({
+      status: "generated",
+      microTask,
+      generationSource: "gemini",
+      memoryEvidence: null,
+    });
+    const { onStart } = renderModal(
+      { level: 3, skipCount: 5 },
+      {
+        lv2MicroTask: "발표 자료에 제목과 목차 3개 적기",
+        lv3ReasonChanged: false,
+      },
+    );
+
+    expect(await screen.findByText(new RegExp(microTask))).toBeInTheDocument();
+    expect(screen.getByText("Lv3 · 맞춤 첫 행동")).toBeInTheDocument();
+    expect(screen.queryByText(/지난 완료 기록/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "지금 시작하기" }));
+    expect(onStart).toHaveBeenCalledWith({
+      entryMode: "intervention",
+      entryLevel: 3,
+      microTask,
+      generationSource: "gemini",
+      memoryEvidence: null,
+    });
+  });
+
+  it("provider 실패이면 과거 경험을 언급하지 않는 유형별 fallback을 사용한다", async () => {
+    vi.mocked(requestLv3Microtask).mockRejectedValue(new Error("timeout"));
     const { onStart } = renderModal({ level: 3, skipCount: 5 });
     const fallback = LV3_SAFE_FALLBACKS["리포트/글쓰기"];
 
     expect(await screen.findByText(new RegExp(fallback))).toBeInTheDocument();
     expect(screen.queryByText(/지난 완료 기록/)).not.toBeInTheDocument();
+    expect(screen.getByText("Lv3 · 강화된 첫 행동")).toBeInTheDocument();
+    expect(screen.queryByText(/근거 기반 개입/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "지금 시작하기" }));
 
     expect(onStart).toHaveBeenCalledWith(
@@ -298,9 +401,7 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
   });
 
   it("fallback 확정 후 task 객체가 바뀌어도 재요청하거나 행동을 바꾸지 않는다", async () => {
-    vi.mocked(requestLv3Microtask).mockResolvedValue({
-      status: "no_evidence",
-    });
+    vi.mocked(requestLv3Microtask).mockRejectedValue(new Error("timeout"));
     const { rerender } = renderModal({ level: 3, skipCount: 5 });
     const fallback = LV3_SAFE_FALLBACKS["리포트/글쓰기"];
 
@@ -370,19 +471,30 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
 
   it("요청 입력에 현재 Task 컨텍스트만 전달한다", async () => {
     vi.mocked(requestLv3Microtask).mockResolvedValue({
-      status: "no_evidence",
+      status: "generated",
+      microTask: "문서에 핵심 문장 한 줄 쓰기",
+      generationSource: "gemini",
+      memoryEvidence: null,
     });
-    renderModal({
-      level: 3,
-      reason: "custom",
-      customReasonText: "어디서 시작할지 모르겠어요",
-    });
+    renderModal(
+      {
+        level: 3,
+        reason: "custom",
+        customReasonText: "어디서 시작할지 모르겠어요",
+      },
+      {
+        lv2MicroTask: "문서에 제목과 목차 3개 적기",
+        lv3ReasonChanged: true,
+      },
+    );
 
-    await screen.findByText(new RegExp(LV3_SAFE_FALLBACKS["리포트/글쓰기"]));
+    await screen.findByText(/문서에 핵심 문장 한 줄 쓰기/);
     expect(requestLv3Microtask).toHaveBeenCalledWith({
       taskId: TASK.id,
       reason: "custom",
       customReason: "어디서 시작할지 모르겠어요",
+      reasonChanged: true,
+      lv2MicroTask: "문서에 제목과 목차 3개 적기",
       level: 3,
     });
   });
@@ -427,9 +539,7 @@ describe("NudgeModal 레벨별 Focus 컨텍스트", () => {
   beforeEach(() => {
     vi.mocked(requestLv2Microtask).mockReset();
     vi.mocked(requestLv3Microtask).mockReset();
-    vi.mocked(requestLv3Microtask).mockResolvedValue({
-      status: "no_evidence",
-    });
+    vi.mocked(requestLv3Microtask).mockRejectedValue(new Error("timeout"));
   });
 
   it("Lv.1은 action 없이 intervention/none으로 시작한다", () => {

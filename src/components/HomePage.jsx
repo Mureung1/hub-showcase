@@ -37,6 +37,20 @@ const STAT_DEFS = [
   },
 ];
 
+function normalizeReasonText(value) {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : null;
+}
+
+function didReasonChange(previousTask, savedReason) {
+  if (!previousTask || typeof previousTask.reason !== "string") return null;
+  if (previousTask.reason !== savedReason.reason) return true;
+  if (savedReason.reason !== "custom") return false;
+  return (
+    normalizeReasonText(previousTask.customReasonText) !==
+    normalizeReasonText(savedReason.customReasonText)
+  );
+}
+
 function StatsRow({ tasks }) {
   return (
     <div className="stats-row">
@@ -76,6 +90,10 @@ function HomePage() {
   // taskId -> 이미 회피이유 재확인을 띄운 레벨 Set. 레벨 1·3 각각 1회만 노출(=최대 2회).
   // 멈추기로 레벨이 내려갔다가 같은 레벨을 재진입해도 다시 뜨지 않게 막는다.
   const reasonCheckedRef = useRef(new Map());
+  // Task별로 실제 Lv2 모달에 표시해 확정한 행동과 Lv3 이유 변경 여부를 보존한다.
+  // 서버/DB 스키마를 늘리지 않는 현재 MVP의 같은 HomePage 세션 전용 스냅샷이다.
+  const lv2ActionByTaskRef = useRef(new Map());
+  const lv3ReasonChangedByTaskRef = useRef(new Map());
 
   const loadTasks = useCallback(({ restoreFocus = false } = {}) => {
     return apiFetch("/api/tasks").then(({ data }) => {
@@ -205,7 +223,7 @@ function HomePage() {
             leveledUp,
             updated.level,
           );
-          if (checkpointLevel !== null) {
+          if (checkpointLevel === 1) {
             checked.add(checkpointLevel);
             reasonCheckedRef.current.set(id, checked);
           }
@@ -349,12 +367,24 @@ function HomePage() {
     });
   }
 
+  const handleLv2ActionResolved = useCallback((taskId, microTask) => {
+    if (
+      typeof taskId !== "string" ||
+      typeof microTask !== "string" ||
+      microTask.trim().length === 0
+    ) {
+      return;
+    }
+    lv2ActionByTaskRef.current.set(taskId, microTask.trim());
+  }, []);
+
   // 회피 이유 재확인에서 이유를 고른 경우, avoidance_reasons에 새 행으로 저장한다.
   // Lv3 생성은 이 함수가 돌려준 서버 저장 결과만 사용한다. 실패 시 null을 반환해
   // 체크포인트를 유지하고 생성 요청도 시작하지 않는다.
   async function handleReconfirmReason(reason, customText) {
     const id = modalTaskId;
     const level = modalCheckpointLevel;
+    const previousTask = stateRef.current.tasks.find((task) => task.id === id);
     try {
       const { data } = await apiFetch(`/api/tasks/${id}/avoidance-reasons`, {
         method: "POST",
@@ -369,6 +399,14 @@ function HomePage() {
           task.id === id ? { ...task, ...savedReason } : task,
         ),
       );
+      if (level === 3) {
+        const reasonChanged = didReasonChange(previousTask, savedReason);
+        lv3ReasonChangedByTaskRef.current.set(id, reasonChanged);
+        const checked = reasonCheckedRef.current.get(id) ?? new Set();
+        checked.add(3);
+        reasonCheckedRef.current.set(id, checked);
+        return { ...savedReason, reasonChanged };
+      }
       return savedReason;
     } catch (err) {
       console.error(err);
@@ -389,6 +427,9 @@ function HomePage() {
     try {
       await apiFetch(`/api/tasks/${id}`, { method: "DELETE" });
       setTasks((prev) => prev.filter((t) => t.id !== id));
+      lv2ActionByTaskRef.current.delete(id);
+      lv3ReasonChangedByTaskRef.current.delete(id);
+      reasonCheckedRef.current.delete(id);
       if (selectedTaskId === id) setSelectedTaskId(null);
     } catch (err) {
       console.error(err);
@@ -472,6 +513,11 @@ function HomePage() {
           task={modalTask}
           checkpointLevel={modalCheckpointLevel}
           onReconfirmReason={handleReconfirmReason}
+          onLv2ActionResolved={handleLv2ActionResolved}
+          lv2MicroTask={lv2ActionByTaskRef.current.get(modalTask.id) ?? null}
+          lv3ReasonChanged={
+            lv3ReasonChangedByTaskRef.current.get(modalTask.id) ?? null
+          }
           onStart={handleStartFromModal}
           onClose={closeModal}
           onAddToCalendar={handleAddToCalendar}

@@ -6,6 +6,7 @@ import {
   buildLv2NudgeMessage,
   buildLv3FallbackMessage,
   buildLv3MemoryNudgeMessage,
+  buildLv3PersonalizedNudgeMessage,
 } from "../lib/nudgeMessages";
 import {
   requestLv2Microtask,
@@ -29,6 +30,9 @@ function NudgeModal({
   onClose,
   checkpointLevel,
   onReconfirmReason,
+  onLv2ActionResolved,
+  lv2MicroTask = null,
+  lv3ReasonChanged = null,
   onAddToCalendar,
   completedTasks = [],
 }) {
@@ -44,6 +48,8 @@ function NudgeModal({
       reason: task.reason,
       customReason:
         task.reason === "custom" ? task.customReasonText : null,
+      reasonChanged: lv3ReasonChanged,
+      lv2MicroTask,
     };
   });
 
@@ -67,7 +73,9 @@ function NudgeModal({
   const frozenLv3MessageRef = useRef(null);
   const lv3RequestSequenceRef = useRef(0);
   const isGeneratingLv3 =
-    task.level === 3 && frozenLv3Message === null;
+    task.level === 3 &&
+    lv3RequestContext !== null &&
+    frozenLv3Message === null;
 
   // Lv1/Lv4 룰베이스 메시지는 한 번만 만든다. 화면 표시와 Focus 전달은
   // 반드시 이 동일 객체를 사용한다.
@@ -98,19 +106,24 @@ function NudgeModal({
     })
       .then(({ microTask, generationSource }) => {
         if (!active) return;
-        setFrozenLv2Message(
-          buildLv2NudgeMessage(task, microTask, generationSource),
+        const message = buildLv2NudgeMessage(
+          task,
+          microTask,
+          generationSource,
         );
+        setFrozenLv2Message(message);
+        onLv2ActionResolved?.(task.id, message.microtask);
       })
       .catch(() => {
         if (!active) return;
         setFrozenLv2Message(lv2FallbackRef.current);
+        onLv2ActionResolved?.(task.id, lv2FallbackRef.current.microtask);
       });
 
     return () => {
       active = false;
     };
-  }, [task]);
+  }, [task, onLv2ActionResolved]);
 
   useEffect(() => {
     if (
@@ -139,15 +152,19 @@ function NudgeModal({
       taskId: task.id,
       reason: lv3RequestContext.reason,
       customReason: lv3RequestContext.customReason,
+      reasonChanged: lv3RequestContext.reasonChanged,
+      lv2MicroTask: lv3RequestContext.lv2MicroTask,
       level: 3,
     })
       .then((result) => {
         if (result.status === "generated") {
           finalizeMessage(
-            buildLv3MemoryNudgeMessage(
-              result.microTask,
-              result.memoryEvidence,
-            ),
+            result.memoryEvidence
+              ? buildLv3MemoryNudgeMessage(
+                  result.microTask,
+                  result.memoryEvidence,
+                )
+              : buildLv3PersonalizedNudgeMessage(result.microTask),
           );
           return;
         }
@@ -173,6 +190,24 @@ function NudgeModal({
         ? frozenLv3Message
         : frozenRuleMessageRef.current;
   const isGenerating = isGeneratingLv2 || isGeneratingLv3;
+  const isWaitingForLv3Reason =
+    task.level === 3 &&
+    Boolean(checkpointLevel) &&
+    !checkpointAnswered &&
+    !lockedToStart;
+  const hasValidMemoryEvidence =
+    task.level === 3 &&
+    frozenMessage?.generationSource === "gemini" &&
+    typeof frozenMessage.memoryEvidence?.sourceDoneEventId === "string" &&
+    frozenMessage.memoryEvidence.sourceDoneEventId.trim().length > 0;
+  const labelOverride =
+    task.level === 3
+      ? hasValidMemoryEvidence
+        ? "Lv3 · 이전 완료 기록 참고"
+        : frozenMessage?.generationSource === "gemini"
+          ? "Lv3 · 맞춤 첫 행동"
+          : "Lv3 · 강화된 첫 행동"
+      : null;
 
   // "지금 시작하기" → 화면에 고정해 표시한 action과 출처를 그대로 Focus까지 전달한다.
   function handleStart() {
@@ -211,6 +246,8 @@ function NudgeModal({
             savedReason.reason === "custom"
               ? savedReason.customReasonText
               : null,
+          reasonChanged: savedReason.reasonChanged ?? null,
+          lv2MicroTask,
         });
       }
     } finally {
@@ -251,8 +288,10 @@ function NudgeModal({
           onStart={handleStart}
           completedTasks={completedTasks}
           overrideMessage={frozenMessage}
+          labelOverride={labelOverride}
+          isWaitingForReason={isWaitingForLv3Reason}
           isGenerating={isGenerating}
-          startDisabled={isGenerating}
+          startDisabled={isWaitingForLv3Reason || isGenerating}
         />
 
         {task.level === 4 && (

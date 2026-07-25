@@ -263,6 +263,34 @@ describe("FocusMode elapsed time recovery", () => {
     });
   });
 
+  it("Lv3 fallback으로 전달된 행동을 done 요청에도 같은 값으로 포함한다", async () => {
+    const fallback = "첫 슬라이드에 발표 핵심 한 문장 입력하기";
+    apiFetch.mockResolvedValue({ data: { id: "task-1", status: "done" } });
+    renderFocusMode({
+      startedAt: NOW.getTime(),
+      entryMode: "intervention",
+      entryLevel: 3,
+      microTask: fallback,
+      generationSource: "rule_based",
+      memoryEvidence: null,
+    });
+
+    expect(screen.getByText(fallback)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "완료" }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(JSON.parse(apiFetch.mock.calls[0][1].body)).toMatchObject({
+      eventType: "done",
+      entryMode: "intervention",
+      entryLevel: 3,
+      microTask: fallback,
+      generationSource: "rule_based",
+      memoryEvidence: null,
+    });
+  });
+
   it("v1 이관 세션의 unknown 출처는 done 요청에서 null로 변환한다", async () => {
     apiFetch.mockResolvedValue({ data: { id: "task-1", status: "done" } });
     renderFocusMode({

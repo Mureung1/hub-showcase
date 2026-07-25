@@ -84,6 +84,15 @@ export function buildLv3MemoryNudgeMessage(microtask, memoryEvidence) {
   };
 }
 
+export function buildLv3PersonalizedNudgeMessage(microtask) {
+  return {
+    body: `지금 할 일과 회피 이유에 맞춰, 더 작고 구체적인 첫 행동을 제안했어요. ${microtask}`,
+    microtask,
+    generationSource: "gemini",
+    memoryEvidence: null,
+  };
+}
+
 // task.deadline(UTC ISO)과 현재 시각으로 D-day 라벨을 만든다. RegisterPage가
 // addDays(new Date(), N)로 "오늘+N일"을 저장하므로, 그 역방향으로 달력일 차이를
 // 계산한다(시:분이 아니라 달력일 기준이라 하루 중 언제 계산해도 안정적).
@@ -111,8 +120,8 @@ export const NUDGE_MESSAGE_BUILDERS = {
     memoryEvidence: null,
   }),
   2: (task) => buildLv2NudgeMessage(task),
-  // Lv3 기억 근거 선택과 Gemini 변형은 서버에서만 수행한다. 이 빌더는 근거가
-  // 없거나 요청이 실패했을 때의 안전한 로컬 fallback만 담당한다.
+  // Lv3 기억 근거 선택과 Gemini 변형은 서버에서만 수행한다. 이 빌더는 Gemini
+  // 요청이 실패하거나 응답 품질 검사를 통과하지 못했을 때의 로컬 fallback이다.
   3: (task) => buildLv3FallbackMessage(task),
   // Lv4: 마감 임박 경고. 실제 마감 D-day 숫자를 언급하며 즉시 시작을 유도하는 가장 강한
   // 개입(plan.md 3번). 톤을 높이고, "지금 시작하기"만 남긴다(isLockedToStart + NudgeModal).

@@ -27,6 +27,8 @@ const LV3_INPUT: Lv3MicrotaskRequest = {
   taskId: "current-task",
   reason: "overwhelm",
   customReason: null,
+  reasonChanged: false,
+  lv2MicroTask: "발표 자료에 제목과 목차 3개 적기",
   level: 3,
 };
 
@@ -197,14 +199,29 @@ describe("requestLv3Microtask", () => {
     ]);
   });
 
-  it("근거 없음 응답을 fallback 가능한 결과로 반환한다", async () => {
+  it("과거 근거가 없어도 Gemini 결과를 반환한다", async () => {
     vi.mocked(apiFetch).mockResolvedValue({
-      data: { status: "no_evidence" },
+      data: {
+        status: "generated",
+        microTask: "첫 슬라이드에 발표 핵심 한 문장 쓰기",
+        source: "gemini",
+        memoryEvidence: null,
+      },
     });
 
     await expect(requestLv3Microtask(LV3_INPUT)).resolves.toEqual({
-      status: "no_evidence",
+      status: "generated",
+      microTask: "첫 슬라이드에 발표 핵심 한 문장 쓰기",
+      generationSource: "gemini",
+      memoryEvidence: null,
     });
+    expect(apiFetch).toHaveBeenCalledWith(
+      "/api/microtasks/lv3",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify(LV3_INPUT),
+      }),
+    );
   });
 
   it("3초가 지나면 요청을 abort한다", async () => {

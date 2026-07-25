@@ -12,21 +12,25 @@ function NudgeMessage({
   onStart,
   completedTasks = [],
   overrideMessage = null,
+  labelOverride = null,
+  isWaitingForReason = false,
   isGenerating = false,
   startDisabled = false,
 }) {
   const meta = LEVEL_META[task.level];
-  const message = isGenerating
+  const message = isWaitingForReason || isGenerating
     ? null
     : overrideMessage ?? buildNudgeMessage(task.level, task, completedTasks);
 
   return (
     <div className="nudge-body">
-      <span className="nudge-chip">{meta.label}</span>
+      <span className="nudge-chip">{labelOverride ?? meta.label}</span>
       <p className="nudge-message">
         <strong>{task.title}</strong>
-        {isGenerating
-          ? ", 지금 할 수 있는 첫 행동을 찾고 있어요…"
+        {isWaitingForReason
+          ? ", 지금 막는 이유를 먼저 확인해 주세요."
+          : isGenerating
+            ? ", 지금 할 수 있는 첫 행동을 찾고 있어요…"
           : message
             ? `, ${message.body}`
             : ", 곧 이 레벨에 맞는 안내가 추가될 예정이에요."}
@@ -37,7 +41,11 @@ function NudgeMessage({
           onClick={onStart}
           disabled={startDisabled}
         >
-          {isGenerating ? "첫 행동 찾는 중…" : "지금 시작하기"}
+          {isWaitingForReason
+            ? "이유 확인 후 시작하기"
+            : isGenerating
+              ? "첫 행동 찾는 중…"
+              : "지금 시작하기"}
         </button>
       </div>
     </div>

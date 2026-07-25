@@ -4,6 +4,7 @@ import {
   buildNudgeMessage,
   buildLv2NudgeMessage,
   buildLv3MemoryNudgeMessage,
+  buildLv3PersonalizedNudgeMessage,
   isLockedToStart,
   LV1_MESSAGES,
   LV3_SAFE_FALLBACKS,
@@ -139,6 +140,17 @@ describe("buildNudgeMessage", () => {
       expect(result.body).toContain(result.microtask);
       expect(result.generationSource).toBe("gemini");
       expect(result.memoryEvidence).toBe(memoryEvidence);
+    });
+
+    it("과거 근거 없는 Gemini 행동은 맞춤 제안으로 표시하고 evidence를 남기지 않는다", () => {
+      const microTask = "문서에 발표 핵심 문장 한 줄 쓰기";
+      const result = buildLv3PersonalizedNudgeMessage(microTask);
+
+      expect(result.body).toContain("할 일과 회피 이유에 맞춰");
+      expect(result.body).toContain(microTask);
+      expect(result.microtask).toBe(microTask);
+      expect(result.generationSource).toBe("gemini");
+      expect(result.memoryEvidence).toBeNull();
     });
 
     it("9개 유형 모두 비어 있지 않은 안전 fallback을 가진다", () => {

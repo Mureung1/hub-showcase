@@ -27,17 +27,17 @@ export interface Lv3MicrotaskRequest {
   taskId: string;
   reason: "overwhelm" | "dislike" | "temptation" | "custom";
   customReason: string | null;
+  reasonChanged: boolean | null;
+  lv2MicroTask: string | null;
   level: 3;
 }
 
-export type Lv3MicrotaskResult =
-  | { status: "no_evidence" }
-  | {
-      status: "generated";
-      microTask: string;
-      generationSource: "gemini";
-      memoryEvidence: { sourceDoneEventId: string };
-    };
+export interface Lv3MicrotaskResult {
+  status: "generated";
+  microTask: string;
+  generationSource: "gemini";
+  memoryEvidence: { sourceDoneEventId: string } | null;
+}
 
 const lv2InFlight = new Map<string, Promise<Lv2MicrotaskResult>>();
 const lv3InFlight = new Map<string, Promise<Lv3MicrotaskResult>>();
@@ -108,6 +108,11 @@ function createLv3RequestKey(input: Lv3MicrotaskRequest): string {
       input.customReason === null
         ? null
         : normalizeWhitespace(input.customReason),
+    reasonChanged: input.reasonChanged,
+    lv2MicroTask:
+      input.lv2MicroTask === null
+        ? null
+        : normalizeWhitespace(input.lv2MicroTask),
     level: 3,
   });
 }
@@ -132,14 +137,11 @@ export function requestLv3Microtask(
   })
     .then((response: { data?: Record<string, unknown> }) => {
       const data = response?.data;
-      if (data?.status === "no_evidence") {
-        return { status: "no_evidence" } as const;
-      }
-
       const microTask = data?.microTask;
       const source = data?.source;
       const evidence = data?.memoryEvidence;
       const sourceDoneEventId =
+        evidence !== null &&
         evidence &&
         typeof evidence === "object" &&
         !Array.isArray(evidence) &&
@@ -152,8 +154,9 @@ export function requestLv3Microtask(
         typeof microTask !== "string" ||
         microTask.trim().length === 0 ||
         source !== "gemini" ||
-        typeof sourceDoneEventId !== "string" ||
-        sourceDoneEventId.trim().length === 0
+        (evidence !== null &&
+          (typeof sourceDoneEventId !== "string" ||
+            sourceDoneEventId.trim().length === 0))
       ) {
         throw new Error("invalid_lv3_microtask_response");
       }
@@ -164,9 +167,12 @@ export function requestLv3Microtask(
         generationSource: "gemini",
         // 서버가 발급한 추적 참조를 그대로 운반할 뿐 신뢰 판단은 하지 않는다.
         // 완료 API가 실제 done 이벤트를 다시 조회해 최종 스냅샷을 만든다.
-        memoryEvidence: {
-          sourceDoneEventId: sourceDoneEventId.trim(),
-        },
+        memoryEvidence:
+          evidence === null
+            ? null
+            : {
+                sourceDoneEventId: (sourceDoneEventId as string).trim(),
+              },
       } as const;
     })
     .finally(() => {

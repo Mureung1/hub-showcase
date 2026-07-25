@@ -37,12 +37,26 @@ vi.mock("./EmptyState", () => ({
 }));
 
 vi.mock("./NudgeModal", () => ({
-  default: ({ task, onClose, onStart, onReconfirmReason }) => (
+  default: ({
+    task,
+    checkpointLevel,
+    onClose,
+    onStart,
+    onReconfirmReason,
+    onLv2ActionResolved,
+    lv2MicroTask,
+    lv3ReasonChanged,
+  }) => (
     <div
       data-testid="nudge-modal"
       data-level={task.level}
+      data-checkpoint-level={checkpointLevel ?? ""}
       data-reason={task.reason}
       data-custom-reason={task.customReasonText ?? ""}
+      data-lv2-micro-task={lv2MicroTask ?? ""}
+      data-reason-changed={
+        lv3ReasonChanged === null ? "" : String(lv3ReasonChanged)
+      }
     >
       <span>{task.id}</span>
       <input aria-label="reason-input" />
@@ -53,6 +67,20 @@ vi.mock("./NudgeModal", () => ({
         }
       >
         reconfirm-custom
+      </button>
+      <button
+        onClick={() =>
+          onReconfirmReason?.(task.reason, task.customReasonText ?? null)
+        }
+      >
+        reconfirm-same
+      </button>
+      <button
+        onClick={() =>
+          onLv2ActionResolved?.(task.id, "resolved Lv2 action")
+        }
+      >
+        resolve-lv2-action
       </button>
       <button
         onClick={() =>
@@ -123,10 +151,17 @@ function makeTask({
   };
 }
 
-function setupApi(initialTasks, { failNotificationOnceFor = null } = {}) {
+function setupApi(
+  initialTasks,
+  {
+    failNotificationOnceFor = null,
+    failReasonOnceFor = null,
+  } = {},
+) {
   let serverTasks = initialTasks.map((task) => ({ ...task }));
   const notificationCalls = [];
   let failed = false;
+  let reasonFailed = false;
 
   apiFetch.mockImplementation(async (path, options = {}) => {
     if (path === "/api/tasks" && !options.method) {
@@ -163,6 +198,10 @@ function setupApi(initialTasks, { failNotificationOnceFor = null } = {}) {
       /^\/api\/tasks\/([^/]+)\/avoidance-reasons$/,
     );
     if (reasonMatch && options.method === "POST") {
+      if (reasonMatch[1] === failReasonOnceFor && !reasonFailed) {
+        reasonFailed = true;
+        throw new Error("reason save failed");
+      }
       const body = JSON.parse(options.body);
       return {
         data: {
@@ -181,6 +220,11 @@ function setupApi(initialTasks, { failNotificationOnceFor = null } = {}) {
     callsFor: (taskId) =>
       notificationCalls.filter((calledId) => calledId === taskId).length,
     allCalls: () => [...notificationCalls],
+    updateTask: (taskId, updates) => {
+      serverTasks = serverTasks.map((task) =>
+        task.id === taskId ? { ...task, ...updates } : task,
+      );
+    },
   };
 }
 
@@ -507,6 +551,10 @@ describe("HomePage response-driven nudge scheduling", () => {
       "data-custom-reason",
       "방금 저장한 이유",
     );
+    expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
+      "data-reason-changed",
+      "true",
+    );
     expect(apiFetch).toHaveBeenCalledWith(
       "/api/tasks/a/avoidance-reasons",
       expect.objectContaining({
@@ -517,6 +565,107 @@ describe("HomePage response-driven nudge scheduling", () => {
           customText: "방금 저장한 이유",
         }),
       }),
+    );
+  });
+
+  it("Lv2에 실제 표시된 행동을 같은 Task의 다음 Lv3 요청 컨텍스트로 유지한다", async () => {
+    setupApi([makeTask({ id: "a", level: 1 })]);
+    await renderHome();
+
+    await advance(3_000);
+    expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
+      "data-level",
+      "2",
+    );
+    fireEvent.click(screen.getByText("resolve-lv2-action"));
+    fireEvent.click(screen.getByText("close-modal"));
+
+    await advance(6_000);
+    expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
+      "data-level",
+      "3",
+    );
+    expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
+      "data-lv2-micro-task",
+      "resolved Lv2 action",
+    );
+  });
+
+  it("Lv3에서 같은 회피 이유를 다시 고르면 변경되지 않은 것으로 기록한다", async () => {
+    setupApi([makeTask({ id: "a", level: 2 })]);
+    await renderHome();
+
+    await advance(6_000);
+    await act(async () => {
+      fireEvent.click(screen.getByText("reconfirm-same"));
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
+      "data-reason-changed",
+      "false",
+    );
+  });
+
+  it("Lv3 이유를 확인하지 않고 닫으면 레벨 하락 후 재진입 때 체크포인트를 다시 표시한다", async () => {
+    const api = setupApi([makeTask({ id: "a", level: 2 })]);
+    await renderHome();
+
+    await advance(6_000);
+    expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
+      "data-checkpoint-level",
+      "3",
+    );
+    fireEvent.click(screen.getByText("close-modal"));
+
+    api.updateTask("a", { level: 0, skipCount: 0 });
+    await advance(10_000);
+    await advance(3_000);
+    expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
+      "data-level",
+      "2",
+    );
+    fireEvent.click(screen.getByText("close-modal"));
+    await advance(6_000);
+
+    expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
+      "data-level",
+      "3",
+    );
+    expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
+      "data-checkpoint-level",
+      "3",
+    );
+  });
+
+  it("Lv3 이유 저장 실패는 체크포인트를 소비하지 않아 다음 재진입에서 다시 표시한다", async () => {
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    const api = setupApi([makeTask({ id: "a", level: 2 })], {
+      failReasonOnceFor: "a",
+    });
+    await renderHome();
+
+    await advance(6_000);
+    fireEvent.click(screen.getByText("reconfirm-custom"));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByText("close-modal"));
+
+    api.updateTask("a", { level: 0, skipCount: 0 });
+    await advance(10_000);
+    await advance(3_000);
+    expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
+      "data-level",
+      "2",
+    );
+    fireEvent.click(screen.getByText("close-modal"));
+    await advance(6_000);
+
+    expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
+      "data-checkpoint-level",
+      "3",
     );
   });
 

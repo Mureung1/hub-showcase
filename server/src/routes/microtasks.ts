@@ -43,6 +43,8 @@ function sendValidationError(
     | "invalid_type"
     | "invalid_reason"
     | "invalid_custom_reason"
+    | "invalid_lv2_microtask"
+    | "invalid_reason_changed"
     | "invalid_level",
   message: string,
 ): void {
@@ -154,7 +156,14 @@ router.post("/lv2", async (req, res) => {
 });
 
 router.post("/lv3", async (req, res) => {
-  const { taskId, reason, customReason, level } = req.body ?? {};
+  const {
+    taskId,
+    reason,
+    customReason,
+    reasonChanged,
+    lv2MicroTask,
+    level,
+  } = req.body ?? {};
 
   if (
     typeof taskId !== "string" ||
@@ -203,6 +212,45 @@ router.post("/lv3", async (req, res) => {
     return;
   }
 
+  let normalizedLv2MicroTask: string | null = null;
+  if (lv2MicroTask !== undefined && lv2MicroTask !== null) {
+    if (typeof lv2MicroTask !== "string") {
+      sendValidationError(
+        res,
+        "invalid_lv2_microtask",
+        "이전 첫 행동을 확인해주세요.",
+      );
+      return;
+    }
+    normalizedLv2MicroTask = normalizeWhitespace(lv2MicroTask);
+    if (
+      normalizedLv2MicroTask.length === 0 ||
+      unicodeLength(normalizedLv2MicroTask) > 60 ||
+      /[\r\n]/.test(lv2MicroTask)
+    ) {
+      sendValidationError(
+        res,
+        "invalid_lv2_microtask",
+        "이전 첫 행동을 확인해주세요.",
+      );
+      return;
+    }
+  }
+
+  const normalizedReasonChanged =
+    reasonChanged === undefined ? null : reasonChanged;
+  if (
+    normalizedReasonChanged !== null &&
+    typeof normalizedReasonChanged !== "boolean"
+  ) {
+    sendValidationError(
+      res,
+      "invalid_reason_changed",
+      "회피 이유 변경 여부를 확인해주세요.",
+    );
+    return;
+  }
+
   if (level !== 3) {
     sendValidationError(res, "invalid_level", "Lv.3 요청만 지원합니다.");
     return;
@@ -217,19 +265,16 @@ router.post("/lv3", async (req, res) => {
       return;
     }
 
-    if (!context.candidate) {
-      res.json({ data: { status: "no_evidence" } });
-      return;
-    }
-
     const input: GeminiLv3MicrotaskInput = {
       title: context.currentTask.title,
       type: context.currentTask.type,
       reason: reason as GeminiMicrotaskInput["reason"],
       customReason: normalizedCustomReason,
-      sourceDoneEventId: context.candidate.sourceDoneEventId,
-      sourceTaskTitle: context.candidate.sourceTaskTitle,
-      sourceMicroTask: context.candidate.sourceMicroTask,
+      reasonChanged: normalizedReasonChanged,
+      lv2MicroTask: normalizedLv2MicroTask,
+      sourceDoneEventId: context.candidate?.sourceDoneEventId ?? null,
+      sourceTaskTitle: context.candidate?.sourceTaskTitle ?? null,
+      sourceMicroTask: context.candidate?.sourceMicroTask ?? null,
     };
     const microTask = await generateGeminiLv3Microtask(input);
 
@@ -240,9 +285,11 @@ router.post("/lv3", async (req, res) => {
         source: "gemini",
         // 추적용 참조만 전달한다. done API는 이 값을 신뢰하지 않고 실제 done
         // 이벤트를 다시 조회해 memoryEvidence 스냅샷을 구성한다.
-        memoryEvidence: {
-          sourceDoneEventId: context.candidate.sourceDoneEventId,
-        },
+        memoryEvidence: context.candidate
+          ? {
+              sourceDoneEventId: context.candidate.sourceDoneEventId,
+            }
+          : null,
       },
     });
   } catch (error) {
