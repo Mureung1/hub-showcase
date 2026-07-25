@@ -8,7 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.chasewar.global.infra.placesearch.PlaceSearchClient;
 import com.chasewar.parking.domain.ParkingLot;
-import com.chasewar.parking.domain.vo.Coordinates;
+import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.parking.domain.vo.Fee;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import com.chasewar.support.ControllerTest;

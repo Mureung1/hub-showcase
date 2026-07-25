@@ -6,7 +6,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.chasewar.global.infra.geocoding.GeocodingClient;
 import com.chasewar.parking.domain.ParkingLot;
-import com.chasewar.parking.domain.vo.Coordinates;
+import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import com.chasewar.support.IntegrationTest;
 import com.chasewar.support.fixture.ParkingLotFixtureBuilder;

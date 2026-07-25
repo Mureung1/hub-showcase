@@ -1,9 +1,9 @@
 package com.chasewar.global.infra.placesearch.kakao;
 
+import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.global.infra.placesearch.PlaceSearchClient;
 import com.chasewar.global.infra.placesearch.kakao.dto.KakaoKeywordResponse;
 import com.chasewar.global.infra.placesearch.kakao.dto.KakaoKeywordResponse.Document;
-import com.chasewar.parking.domain.vo.Coordinates;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;

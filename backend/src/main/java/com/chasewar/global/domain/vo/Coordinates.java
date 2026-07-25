@@ -1,4 +1,4 @@
-package com.chasewar.parking.domain.vo;
+package com.chasewar.global.domain.vo;
 
 import static java.lang.Math.atan2;
 import static java.lang.Math.cos;

@@ -1,6 +1,6 @@
 package com.chasewar.global.infra.geocoding;
 
-import com.chasewar.parking.domain.vo.Coordinates;
+import com.chasewar.global.domain.vo.Coordinates;
 import java.util.Optional;
 
 public interface GeocodingClient {

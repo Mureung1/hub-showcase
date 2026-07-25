@@ -1,4 +1,4 @@
-package com.chasewar.parking.domain.vo;
+package com.chasewar.global.domain.vo;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

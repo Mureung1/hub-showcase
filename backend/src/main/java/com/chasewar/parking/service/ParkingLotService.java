@@ -1,11 +1,11 @@
 package com.chasewar.parking.service;
 
+import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.global.exception.ChasewarException;
 import com.chasewar.global.exception.errorcode.NotFoundErrorCode;
 import com.chasewar.global.infra.placesearch.PlaceSearchClient;
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.ParkingLotRealtime;
-import com.chasewar.parking.domain.vo.Coordinates;
 import com.chasewar.parking.dto.ParkingLotDetailResponse;
 import com.chasewar.parking.dto.ParkingLotSearchResponse;
 import com.chasewar.parking.repository.ParkingLotRealtimeRepository;
