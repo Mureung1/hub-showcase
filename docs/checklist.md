@@ -243,12 +243,14 @@
       → 구조적 보장: Firestore `watchQuests` 재구독으로 동일 데이터가 복원되고 저장 계층은 `fetchQuests`로 확인된다. ⚠️ 리터럴 앱 재시작 테스트는 없고 `watchQuests` 스트림 구조로 보장. 테스트: `test/features/quest_list_screen_test.dart`.
 
 ### 직접 퀘스트 등록 기능
-- [x] AI 없이 제목·난이도를 직접 입력해 등록할 수 있다.
-      → `QuestCreateScreen`(`lib/features/quest/quest_create_screen.dart`, TextFormField + SegmentedButton 난이도 기본 normal + `createQuest`), 라우트 `/quest/new`. 테스트: `test/features/quest_create_screen_test.dart`.
-- [x] 빈 제목·난이도 미선택 시 등록이 막힌다.
-      → `_canSubmit`가 빈 제목 시 등록 버튼을 비활성화하고, SegmentedButton은 미선택이 구조적으로 불가하며 기본값 normal. 테스트: `test/features/quest_create_screen_test.dart`(제목 비면 비활성 · 공백만 비활성 · 기본값 보통).
+- [x] AI 없이 목표명 + 하위 퀘스트 여러 개를 직접 입력해 등록할 수 있다.
+      → **[3단계-c 목표(폴더) 단위 재구성]** `QuestCreateScreen`(`lib/features/quest/quest_create_screen.dart`)이 제목 1개 단건 등록에서 **목표명(필수) + 퀘스트 행 여러 개**(제목·난이도·예상보상·행 삭제 + "퀘스트 추가")로 바뀌었다. 저장은 `createGoal(uid, 목표명)` → `createQuests(drafts, goalId:, source: QuestSource.manual)`로 **AI 분해와 공용 저장 경로**를 재사용한다(신규 저장 경로 없음). 등록된 퀘스트들은 같은 goalId로 폴더 묶인다. 계측 `AnalyticsEvent.questRegistered(source: manual, count)`. 라우트 `/quest/new`. 테스트: `test/features/quest_create_screen_test.dart` · `test/features/root_shell_test.dart`.
+- [x] 빈 목표명·퀘스트 0개·빈 제목이면 등록이 막힌다.
+      → 신규 등록은 목표를 강제한다. `_canSubmit`가 목표명 비었거나 퀘스트 0개거나 각 제목이 비면 등록 버튼을 비활성화하고, 제출 핸들러가 목표명 빈 값을 이중으로 가드한다(중복 탭 방어 포함). 난이도는 SegmentedButton 기본값 normal이라 미선택이 구조적으로 불가. 뮤테이션으로 가드 실효 확인. 테스트: `test/features/quest_create_screen_test.dart`.
 - [x] 등록 즉시 목록과 저장소에 반영된다.
-      → 등록은 `createQuest`로 저장하고 목록은 `watchQuests` 스트림으로 즉시 반영된다. 테스트: `test/features/quest_create_screen_test.dart`(fetchQuests로 저장 확인).
+      → 등록은 `createGoal` + `createQuests`(batch, 원자적)로 저장하고 목록은 `watchQuests` 스트림으로 즉시 반영된다. 테스트: `test/features/quest_create_screen_test.dart`.
+      → **제약(정직 기록)**: 신규 폴더 등록 경로(`QuestDraft`/`createQuests`)가 마감일을 담지 않아 **deadline(마감일) 입력이 제거됐다**. verification 판정상 마감일은 화면 어디에도 표시되지 않던 write-only 필드라 사용자 가시 회귀는 아니지만, 저장 스키마의 유일한 입력구가 사라진 사실은 기록으로 남긴다(향후 마감일 기능 시 재도입 판단). Firestore `createQuests` batch 경로는 자동 테스트 N/A(`fake_cloud_firestore` 미도입) — InMemory와 같은 계약.
+      → **검증 증거**: `flutter analyze` No issues found · `flutter test` 691건 전부 통과(재구성 착수 기준선 674건) · verification-agent 9/9 PASS.
 
 ### 큰 목표 단위 그룹 조회
 - [x] 퀘스트가 `goalId` 기준으로 큰 목표(폴더) 단위로 묶여 표시된다.
@@ -274,7 +276,7 @@
 - [x] 완료된 퀘스트는 미리보기에서 제외된다(기존 규칙 회귀 없음).
       → 테스트: `test/features/home_screen_test.dart`(완료된 최신 퀘스트 제외 · 전부 완료 시 EmptyView).
 - [x] AI가 분해한 퀘스트와 직접 등록한 퀘스트가 시각적으로 구분된다.
-      → `QuestSourceChip`(`lib/core/widgets/quest_source_chip.dart`)이 `Quest.goalId` 유무만을 근거로 구분한다(모델에 새 필드를 추가하지 않았다). AI = 블루(기존 AI=블루 규칙과 일치), 직접 등록 = 회색 중립. `QuestCard`(`lib/core/widgets/quest_card.dart`)가 난이도 pill과 함께 `Wrap`에 담아 홈·목록 양쪽에 자동 반영된다. 카드 좌측 accent 보더는 **난이도 색 그대로 유지**했다 — 출처를 거기 얹으면 두 의미가 한 자리에서 겹친다. 테스트: `test/features/quest_source_chip_test.dart` · `test/features/quest_list_screen_test.dart` · `test/features/home_screen_test.dart`.
+      → **[3단계-c 재구성으로 판정 근거 교체]** 예전엔 `goalId` 유무로 출처를 추론했으나, 직접 등록이 목표(폴더) 단위가 되며 직접 등록 퀘스트도 goalId를 갖게 돼 이 방식이 직접 등록을 AI로 오표기하는 회귀(회귀 A)가 났다. 이제 출처는 goalId와 별개의 **명시 필드 `Quest.source`(`enum QuestSource {ai, manual}`, `lib/models/quest_source.dart`)**로 판정한다. `QuestSourceChip`(`lib/core/widgets/quest_source_chip.dart`)이 `quest.effectiveSource`(`source ?? (goalId != null ? ai : manual)` 하위호환 폴백, `lib/models/quest.dart`)로 AI = 블루 / 직접 = 회색 중립을 가른다. 직접 등록이 목표를 갖게 돼도 manual로 저장돼 "직접" 칩으로 표시된다. **구 문서(source 필드 없음)는 폴백으로 기존과 동일하게 보인다**(goalId 있으면 AI, 없으면 직접). `QuestCard`(`lib/core/widgets/quest_card.dart`)가 난이도 pill과 함께 `Wrap`에 담아 홈·목록 양쪽에 자동 반영. 카드 좌측 accent 보더는 **난이도 색 그대로 유지**했다. 뮤테이션(폴백 훼손·판정 뒤집기·`createQuests` source 무시·`isAiGenerated` 뒤집기)으로 실효 확인. 테스트: `test/models/quest_test.dart`(source 그룹) · `test/features/quest_source_chip_test.dart`(회귀 A 그룹) · `test/features/quest_list_screen_test.dart` · `test/features/home_screen_test.dart`.
 - [x] 다크 모드에서도 출처 칩의 대비가 유지된다.
       → 라이트는 `secondary` 틴트 + `secondary` 전경이지만, 다크에서 그대로 쓰면 파란 글자가 어두운 카드에 묻혀 `secondaryContainer` + `onSecondaryContainer`로 뒤집었다(색 역할은 블루 유지). 테스트가 전경 휘도 > 배경 휘도 + 0.2를 단언해 강제한다: `test/features/quest_source_chip_test.dart`.
 - [x] 색 역할 규칙(노랑 = 코인·보상 전용)을 지킨다.
@@ -387,8 +389,9 @@
 > checklist에 항목이 없던 흐름이라 신규 섹션으로 승격했다("오늘의 퀘스트 = 할 일, 보관함 = 끝낸 일"). verification-agent PASS. **보관함 이동은 단방향**이다(완료 실수 복구는 이번 범위 밖 — 3단계 이후 판단).
 - [x] 완료한 퀘스트가 오늘의 퀘스트 목록에서 사라지고 보관함으로 이동한다.
       → `Quest.archived` 플래그 도입. 완료 즉시 이동(단방향). 오늘의 퀘스트는 `archived == false`, 보관함은 `archived == true`, 홈 미리보기도 `archived` 제외. 저장소 `archiveQuests`(원자적, 스트림 1회 방출)를 2구현에 신설(`lib/repositories/quest_repository.dart`). **완료·보상 트랜잭션(`completeQuest`)은 안 건드리고 완료 성공 뒤 별도 쓰기로 처리**(지급 오염 금지 — verification이 diff상 주석만 변경, 지급 로직 무변경 확인). 테스트: `test/models/quest_archive_test.dart` · `test/providers/quest_group_providers_test.dart` · `test/features/quest_list_screen_test.dart`.
-- [x] 목표(폴더)는 그 안의 퀘스트가 전부 완료돼야 통째로 이동하고, 직접 등록은 완료 즉시 낱개로 이동한다.
-      → 순수 함수 `resolveArchiveOnComplete`(`lib/models/quest_group.dart`)가 판정한다. 목표는 자식이 `every` done일 때만, 직접 등록(`goalId` 없음)은 낱개로 이동. 고아·순환 방어는 `descendantIds`·`_childrenByParent`를 재사용한다. 뮤테이션(전부완료→일부완료로 느슨히)으로 7건 실패 확인.
+- [x] 목표(폴더)는 그 안의 퀘스트가 전부 완료돼야 통째로 이동하고, goalId 없는 낱개는 완료 즉시 이동한다.
+      → 순수 함수 `resolveArchiveOnComplete`(`lib/models/quest_group.dart`)가 판정한다. 목표는 자식이 `every` done일 때만, `goalId` 없는 퀘스트는 낱개로 이동. 고아·순환 방어는 `descendantIds`·`_childrenByParent`를 재사용한다. 뮤테이션(전부완료→일부완료로 느슨히)으로 7건 실패 확인.
+      → **[3단계-c 재구성 반영]** 이동 규칙은 **goalId 유무로 갈린다.** 신규 직접 등록은 이제 목표(폴더)를 가지므로 **폴더 규칙**(형제 전부 완료 시 통째 이동)을 탄다. "완료 즉시 낱개 이동"은 이제 **구 goalId-null 데이터(구 낱개 직접 등록)에만** 적용된다 — 신규 직접 등록과 구 낱개의 이동 규칙이 다르다.
 - [x] 재분해한 목표는 자식이 모두 완료되면 원본(stuck)도 자동 완료된 뒤 함께 이동한다.
       → 자동완료는 `setStatus(done)`로 **상태만 바꾸고 보상은 없다**(자식 완료로 이미 지급됨, B-5 "자동 완료로 안 누른 지급 금지" 준수). 뮤테이션(`setStatus`→`completeQuest`)으로 원본 `rewardedAt`이 찍혀 실패 확인.
 - [x] 목표 전체를 완수하면 축하 연출이 표시된다.

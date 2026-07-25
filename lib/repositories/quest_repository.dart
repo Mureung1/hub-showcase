@@ -8,6 +8,7 @@ import '../models/achievement.dart';
 import '../models/difficulty.dart';
 import '../models/quest.dart';
 import '../models/quest_draft.dart';
+import '../models/quest_source.dart';
 import '../models/quest_status.dart';
 
 /// 인증 메모 최대 길이(문자 수). **UI와 저장소가 공유하는 단일 진실원.**
@@ -50,12 +51,19 @@ abstract interface class QuestRepository {
   /// 원본을 자식으로 대체해 버리면 지표의 근거가 통째로 사라진다.
   /// 자식은 원본의 `goalId`를 그대로 [goalId]로 받아 **같은 목표 폴더에 남는다.**
   ///
+  /// **출처 (회귀 A).** [source]는 저장되는 퀘스트가 AI 분해 결과인지 직접 등록인지를
+  /// 문서에 명시한다. 카드의 출처 칩(`✨AI`/`✎직접`)이 이 값을 읽는다. 기본값
+  /// [QuestSource.ai]는 이 경로의 주 사용처가 AI 분해(+재분해)이기 때문이며, 직접
+  /// 등록은 [QuestSource.manual]을 넘긴다. goalId 유무로 출처를 추론하던 옛 방식은
+  /// 직접 등록이 목표(폴더) 단위가 되며 깨졌다([Quest.source] 참고).
+  ///
   /// 저장된 퀘스트(ID 부여됨)를 순서대로 돌려준다.
   Future<List<Quest>> createQuests(
     String uid,
     List<QuestDraft> drafts, {
     String? goalId,
     String? parentQuestId,
+    QuestSource source = QuestSource.ai,
   });
 
   Future<void> updateQuest(String uid, Quest quest);

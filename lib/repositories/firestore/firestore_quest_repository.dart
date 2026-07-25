@@ -10,6 +10,7 @@ import '../../models/app_user.dart';
 import '../../models/difficulty.dart';
 import '../../models/quest.dart';
 import '../../models/quest_draft.dart';
+import '../../models/quest_source.dart';
 import '../../models/quest_status.dart';
 import '../quest_repository.dart';
 import 'firestore_codec.dart';
@@ -114,6 +115,7 @@ class FirestoreQuestRepository implements QuestRepository {
     List<QuestDraft> drafts, {
     String? goalId,
     String? parentQuestId,
+    QuestSource source = QuestSource.ai,
   }) {
     return guard(() async {
       if (drafts.isEmpty) return const <Quest>[];
@@ -136,6 +138,8 @@ class FirestoreQuestRepository implements QuestRepository {
           order: offset + i,
           // 재분해 자식이면 원본 퀘스트 ID가 문서에 심긴다(없으면 toJson이 생략).
           parentQuestId: parentQuestId,
+          // 출처를 문서에 심는다(AI/직접). 카드 출처 칩의 근거(회귀 A).
+          source: source,
         );
         batch.set(ref, {
           ...quest.toJson(),

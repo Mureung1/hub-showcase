@@ -88,8 +88,9 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 | `done` | bool | false | `status`의 파생값. 하위호환 + 콘솔 가독성을 위해 함께 쓴다 |
 | `order` | int | 0 | 목록 정렬 순서 = AI 분해 결과의 **실행 경로 순서** |
 | `deadline` | timestamp? | null | 마감일 (선택) |
-| `goalId` | string? | null | 어느 목표에서 분해됐는지 (`goals/{goalId}`). 직접 등록이면 null |
+| `goalId` | string? | null | 어느 목표(폴더)에 속하는지 (`goals/{goalId}`). **AI 분해·직접 등록 모두** 목표 단위라 값이 있을 수 있다(3단계-c부터 직접 등록도 목표를 갖는다). 구 낱개 직접 등록은 null |
 | `parentQuestId` | string? | null | 재분해로 생긴 자식이면 원본 퀘스트 ID (4주차부터 실제로 쓰인다) |
+| `source` | string? | null | **출처** `ai` \| `manual`. 카드 출처 칩(`✨AI`/`✎직접`)의 근거. `null`(구 문서/미지정)이면 읽을 때 goalId로 폴백(있으면 ai, 없으면 manual). 명시값이 있을 때만 문서에 기록한다 |
 | `createdAt` | timestamp | 서버 시각 | 생성 시각 |
 | `completedAt` | timestamp? | null | **언제 완료했나.** 완료 해제 시 null로 지움 |
 | `rewardedAt` | timestamp? | null | **보상을 지급한 시각.** 한번 찍히면 절대 지우지 않는다 |
@@ -110,6 +111,15 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 **쓰기 경로**: `archiveQuests(uid, Set<String> ids)`가 **유일한** 보관 쓰기다. Firestore는 batch로 `{'archived': true}`만 `update`하고, InMemory는 스테이징 후 스트림 **1회** 방출한다(목표 폴더가 "절반만 옮겨진" 중간 상태가 없다). 없는 ID·빈 집합은 멱등하게 통과한다(`deleteQuests`와 같은 계약).
 
 ⚠️ **`completeQuest` 지급 트랜잭션은 건드리지 않는다.** 완료·보상이 커밋된 **뒤**, 화면이 자동완료(`setStatus`)와 보관(`archiveQuests`)을 **별도 쓰기**로 부른다. 보관 실패가 지급을 롤백하거나 그 반대가 되면 안 되기 때문이다(계측 로그를 트랜잭션 밖에 두는 것과 같은 원칙). 보관 쓰기가 실패하면 퀘스트는 done인 채 오늘 목록에 남고, 다음 완료·재실행에서 다시 시도된다 — 데이터 손실은 없다.
+
+#### `source` — 출처를 왜 별도 필드로 두나 (goalId 추론의 함정)
+
+예전에는 출처 칩(`✨AI`/`✎직접`)이 **`goalId` 유무 하나로** 판정했다("goalId 있으면 AI"). AI 분해 퀘스트만 목표를 가리키던 시절엔 맞았다. 그런데 **3단계-c에서 직접 등록이 목표(폴더) 단위가 되며** 직접 등록 퀘스트도 `goalId`를 갖게 됐고, 그 추론은 직접 등록을 전부 "AI"로 오표기했다(A0-2 위반). 출처는 goalId와 **별개의 사실**이라 명시 신호로 분리했다.
+
+- **쓰기**: `createQuests(uid, drafts, source:)`가 심는다. AI 분해·재분해는 `ai`, 직접 등록은 `manual`. 기본값은 `ai`(이 경로의 주 사용처가 분해라서)이고, 직접 등록만 `manual`을 명시한다.
+- **읽기(하위호환)**: `Quest.effectiveSource`가 유일한 판정처다. 명시값이 있으면 그 값, 없으면(구 문서) `goalId` 폴백 — **필드 없고 goalId 있으면 `ai`, 없으면 `manual`**. 덕분에 구 AI 분해 데이터는 계속 AI로, 구 낱개 직접 등록은 직접으로 보인다(마이그레이션 불필요).
+- **직렬화**: 명시값이 있을 때만 문서에 기록한다(`archived`와 같은 원칙 — 기본값은 필드 생략).
+- 카드는 `quest.effectiveSource`를, 칩(`QuestSourceChip`)은 `QuestSource`를 받는다. **더는 goalId를 출처 근거로 쓰지 않는다.**
 
 #### `completedAt`과 `rewardedAt`을 왜 나눴나
 

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/models/difficulty.dart';
 import 'package:one_step/models/quest.dart';
+import 'package:one_step/models/quest_source.dart';
 import 'package:one_step/models/quest_status.dart';
 
 /// checklist 1주차 · 퀘스트 데이터 모델
@@ -295,6 +296,102 @@ void main() {
 
       expect(restored.goalId, 'goal-1');
       expect(restored.parentQuestId, 'q1');
+    });
+  });
+
+  group('source — 출처 (회귀 A: 카드 출처 칩의 근거)', () {
+    test('명시된 출처가 왕복 직렬화된다 (manual)', () {
+      const original = Quest(
+        id: 'q1',
+        title: '직접 등록',
+        goalId: 'g1',
+        source: QuestSource.manual,
+      );
+
+      final restored = Quest.fromJson('q1', original.toJson());
+
+      expect(original.toJson()['source'], 'manual');
+      expect(restored.source, QuestSource.manual);
+      expect(restored.effectiveSource, QuestSource.manual);
+      expect(restored.isAiGenerated, isFalse);
+      expect(restored, original);
+    });
+
+    test('명시된 출처가 왕복 직렬화된다 (ai)', () {
+      const original = Quest(
+        id: 'q1',
+        title: 'AI 분해',
+        goalId: 'g1',
+        source: QuestSource.ai,
+      );
+
+      final restored = Quest.fromJson('q1', original.toJson());
+
+      expect(original.toJson()['source'], 'ai');
+      expect(restored.source, QuestSource.ai);
+      expect(restored.isAiGenerated, isTrue);
+    });
+
+    test('source가 없으면 키를 남기지 않는다 (구 문서 스키마 유지)', () {
+      const original = Quest(id: 'q1', title: 'x');
+
+      expect(original.toJson().containsKey('source'), isFalse);
+    });
+
+    test('★ 하위호환: source 없고 goalId 있으면 AI로 폴백한다 (구 AI 데이터)', () {
+      // 이 필드 도입 전에 저장된 AI 분해 문서. 계속 AI로 보여야 한다.
+      final quest = Quest.fromJson('q1', {'title': '구 AI 데이터', 'goalId': 'g1'});
+
+      expect(quest.source, isNull, reason: '문서엔 명시값이 없다');
+      expect(quest.effectiveSource, QuestSource.ai);
+      expect(quest.isAiGenerated, isTrue);
+    });
+
+    test('★ 하위호환: source 없고 goalId 없으면 직접으로 폴백한다 (구 낱개 데이터)', () {
+      // 이 필드 도입 전에 저장된 직접 등록(낱개) 문서.
+      final quest = Quest.fromJson('q1', {'title': '구 낱개 데이터'});
+
+      expect(quest.source, isNull);
+      expect(quest.effectiveSource, QuestSource.manual);
+      expect(quest.isAiGenerated, isFalse);
+    });
+
+    test('명시된 source가 goalId 폴백을 이긴다 (goalId 있어도 manual이면 직접)', () {
+      // 회귀 A의 정확한 상황: 직접 등록이지만 목표 폴더에 묶여 goalId가 있다.
+      final quest = Quest.fromJson('q1', {
+        'title': '직접 등록인데 폴더에 묶임',
+        'goalId': 'g1',
+        'source': 'manual',
+      });
+
+      expect(quest.effectiveSource, QuestSource.manual);
+      expect(quest.isAiGenerated, isFalse);
+    });
+
+    test('모르는 source 값은 무시하고 goalId 폴백을 쓴다 (관대)', () {
+      final quest = Quest.fromJson('q1', {
+        'title': 'x',
+        'goalId': 'g1',
+        'source': '이상한값',
+      });
+
+      expect(quest.source, isNull, reason: '엄격 파싱 — 모르는 값은 버린다');
+      expect(quest.effectiveSource, QuestSource.ai, reason: 'goalId 폴백');
+    });
+
+    test('withStatus 전이에도 source는 보존된다', () {
+      const quest = Quest(
+        id: 'q1',
+        title: 'x',
+        goalId: 'g1',
+        source: QuestSource.manual,
+      );
+
+      final done = quest.withStatus(QuestStatus.done);
+      final undone = done.withStatus(QuestStatus.todo);
+
+      expect(done.source, QuestSource.manual);
+      expect(undone.source, QuestSource.manual);
     });
   });
 

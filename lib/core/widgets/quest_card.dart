@@ -79,7 +79,7 @@ class QuestCard extends StatelessWidget {
                       runSpacing: AppSpacing.xs,
                       children: [
                         DifficultyPill(difficulty: quest.difficulty),
-                        QuestSourceChip(goalId: quest.goalId),
+                        QuestSourceChip(source: quest.effectiveSource),
                         // 멈춤일 때만 렌더된다(그 외 상태는 빈 위젯).
                         QuestStatusPill(status: quest.status),
                       ],

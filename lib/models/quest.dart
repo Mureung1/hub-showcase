@@ -1,6 +1,7 @@
 import '../core/constants/reward_rules.dart';
 import '../core/utils/json_utils.dart';
 import 'difficulty.dart';
+import 'quest_source.dart';
 import 'quest_status.dart';
 
 /// 저장된 퀘스트.
@@ -24,6 +25,7 @@ class Quest {
     this.order = 0,
     this.goalId,
     this.parentQuestId,
+    this.source,
     this.createdAt,
     this.completedAt,
     this.rewardedAt,
@@ -46,6 +48,9 @@ class Quest {
       order: asInt(data['order']),
       goalId: asNullableString(data['goalId']),
       parentQuestId: asNullableString(data['parentQuestId']),
+      // 출처는 **엄격 파싱**한다. 없거나(구 문서) 이상하면 null로 두고,
+      // [effectiveSource]가 goalId 기반 하위호환 폴백을 적용한다.
+      source: QuestSource.fromName(asNullableString(data['source'])),
       createdAt: asDateTime(data['createdAt']),
       completedAt: asDateTime(data['completedAt']),
       rewardedAt: asDateTime(data['rewardedAt']),
@@ -100,6 +105,17 @@ class Quest {
   /// 성공 지표 「재분해 복귀율」을 계산하는 근거다.
   final String? parentQuestId;
 
+  /// **출처 — AI 분해로 생겼나, 직접 등록했나.** (`null` = 문서에 기록 없음)
+  ///
+  /// ⚠️ 직접 표시에 쓰지 말 것 — [effectiveSource]를 써라. 이 필드는 "문서에 명시된
+  /// 값"만 담는다. 구 문서엔 값이 없어(null) 폴백이 필요하고, 그 폴백은
+  /// [effectiveSource]가 goalId로 계산한다.
+  ///
+  /// **왜 goalId 추론 대신 별도 필드인가:** 직접 등록이 목표(폴더) 단위가 되면서
+  /// 직접 등록 퀘스트도 goalId를 갖게 됐다. "goalId 있으면 AI"라는 옛 추론은 직접
+  /// 등록을 AI로 오표기한다. 출처는 goalId와 별개의 사실이라 명시 신호로 분리했다.
+  final QuestSource? source;
+
   final DateTime? createdAt;
 
   /// **언제 완료했나.** 완료를 해제하면 지워진다([withStatus] 참고).
@@ -150,6 +166,17 @@ class Quest {
   /// 사용자가 막혀서 멈춘 퀘스트인가. 재분해 대상.
   bool get isStuck => status == QuestStatus.stuck;
 
+  /// **표시에 쓰는 실효 출처.** [source]가 명시돼 있으면 그 값, 없으면(구 문서)
+  /// goalId로 폴백한다: goalId 있으면 AI, 없으면 직접.
+  ///
+  /// 하위호환의 유일한 정의처다 — 구 AI 분해 데이터(source 없음 + goalId 있음)가
+  /// 계속 AI로 보이고, 구 낱개(source 없음 + goalId 없음)는 직접으로 보인다.
+  QuestSource get effectiveSource =>
+      source ?? (goalId != null ? QuestSource.ai : QuestSource.manual);
+
+  /// AI 분해로 생긴 퀘스트인가([effectiveSource] 기준). 출처 칩이 읽는다.
+  bool get isAiGenerated => effectiveSource == QuestSource.ai;
+
   /// 이 퀘스트를 완료하면 받는 기본 보상(인증 보너스 제외).
   Reward get reward => rewardFor(difficulty);
 
@@ -164,6 +191,9 @@ class Quest {
     if (deadline != null) 'deadline': deadline!.toIso8601String(),
     if (goalId != null) 'goalId': goalId,
     if (parentQuestId != null) 'parentQuestId': parentQuestId,
+    // 명시된 출처만 기록한다. null(구 문서/미지정)이면 키를 두지 않아, 읽을 때
+    // effectiveSource가 goalId 폴백을 적용한다(archived·rewardedAt과 같은 원칙).
+    if (source != null) 'source': source!.name,
     if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
     if (completedAt != null) 'completedAt': completedAt!.toIso8601String(),
     if (rewardedAt != null) 'rewardedAt': rewardedAt!.toIso8601String(),
@@ -181,6 +211,7 @@ class Quest {
     int? order,
     String? goalId,
     String? parentQuestId,
+    QuestSource? source,
     DateTime? createdAt,
     DateTime? completedAt,
     DateTime? rewardedAt,
@@ -196,6 +227,7 @@ class Quest {
       order: order ?? this.order,
       goalId: goalId ?? this.goalId,
       parentQuestId: parentQuestId ?? this.parentQuestId,
+      source: source ?? this.source,
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
       rewardedAt: rewardedAt ?? this.rewardedAt,
@@ -224,6 +256,8 @@ class Quest {
       order: order,
       goalId: goalId,
       parentQuestId: parentQuestId,
+      // 출처는 상태 전이와 무관한 불변 사실이라 보존한다.
+      source: source,
       createdAt: createdAt,
       completedAt: next == QuestStatus.done
           ? (completedAt ?? this.completedAt ?? DateTime.now())
@@ -246,6 +280,7 @@ class Quest {
       other.order == order &&
       other.goalId == goalId &&
       other.parentQuestId == parentQuestId &&
+      other.source == source &&
       other.createdAt == createdAt &&
       other.completedAt == completedAt &&
       other.rewardedAt == rewardedAt &&
@@ -262,6 +297,7 @@ class Quest {
     order,
     goalId,
     parentQuestId,
+    source,
     createdAt,
     completedAt,
     rewardedAt,

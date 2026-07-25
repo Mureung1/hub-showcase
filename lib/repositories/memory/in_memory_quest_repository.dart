@@ -8,6 +8,7 @@ import '../../models/achievement.dart';
 import '../../models/difficulty.dart';
 import '../../models/quest.dart';
 import '../../models/quest_draft.dart';
+import '../../models/quest_source.dart';
 import '../../models/quest_status.dart';
 import '../quest_repository.dart';
 import 'in_memory_user_repository.dart';
@@ -205,6 +206,7 @@ class InMemoryQuestRepository implements QuestRepository {
     List<QuestDraft> drafts, {
     String? goalId,
     String? parentQuestId,
+    QuestSource source = QuestSource.ai,
   }) async {
     _check();
     if (drafts.isEmpty) return const [];
@@ -223,6 +225,8 @@ class InMemoryQuestRepository implements QuestRepository {
         order: offset + i,
         // 재분해 자식이면 원본 퀘스트 ID를 심는다(Firestore 구현과 동일한 계약).
         parentQuestId: parentQuestId,
+        // 출처를 문서에 심는다(AI/직접). 카드 출처 칩의 근거(회귀 A).
+        source: source,
       );
       staged[quest.id] = quest;
       created.add(quest);

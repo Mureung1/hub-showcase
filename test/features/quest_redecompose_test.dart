@@ -14,6 +14,7 @@ import 'package:one_step/models/difficulty.dart';
 import 'package:one_step/models/goal.dart';
 import 'package:one_step/models/quest.dart';
 import 'package:one_step/models/quest_draft.dart';
+import 'package:one_step/models/quest_source.dart';
 import 'package:one_step/models/quest_status.dart';
 import 'package:one_step/providers/providers.dart';
 import 'package:one_step/repositories/decompose/fake_quest_decomposer.dart';
@@ -38,6 +39,7 @@ class _FailingCreateQuestsRepository extends InMemoryQuestRepository {
     List<QuestDraft> drafts, {
     String? goalId,
     String? parentQuestId,
+    QuestSource source = QuestSource.ai,
   }) async {
     throw const NetworkFailure();
   }

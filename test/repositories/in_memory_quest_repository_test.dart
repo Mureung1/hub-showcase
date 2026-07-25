@@ -10,6 +10,7 @@ import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/difficulty.dart';
 import 'package:one_step/models/quest.dart';
 import 'package:one_step/models/quest_draft.dart';
+import 'package:one_step/models/quest_source.dart';
 import 'package:one_step/models/quest_status.dart';
 import 'package:one_step/repositories/memory/in_memory_quest_repository.dart';
 import 'package:one_step/repositories/memory/in_memory_user_repository.dart';
@@ -1258,6 +1259,41 @@ void main() {
 
       expect(created, isEmpty);
       expect(await repo.fetchQuests('u'), isEmpty);
+    });
+
+    test('★ source를 주면 모든 퀘스트에 출처가 심긴다 (회귀 A · manual)', () async {
+      // 직접 등록 경로는 source: manual을 넘긴다. goalId가 있어도 출처는 직접이어야
+      // 카드가 "✎직접"으로 표시된다(goalId 추론이 아니라 명시 신호).
+      final repo = InMemoryQuestRepository();
+      addTearDown(repo.dispose);
+
+      final created = await repo.createQuests(
+        'u',
+        const [
+          QuestDraft(localId: 'd0', title: 'x', difficulty: Difficulty.easy),
+          QuestDraft(localId: 'd1', title: 'y', difficulty: Difficulty.normal),
+        ],
+        goalId: 'goal-1',
+        source: QuestSource.manual,
+      );
+
+      expect(created.map((q) => q.source), [
+        QuestSource.manual,
+        QuestSource.manual,
+      ]);
+      expect(created.every((q) => !q.isAiGenerated), isTrue);
+    });
+
+    test('source를 생략하면 기본값 AI가 심긴다 (분해 경로의 주 사용처)', () async {
+      final repo = InMemoryQuestRepository();
+      addTearDown(repo.dispose);
+
+      final created = await repo.createQuests('u', const [
+        QuestDraft(localId: 'd0', title: 'x', difficulty: Difficulty.easy),
+      ], goalId: 'goal-1');
+
+      expect(created.single.source, QuestSource.ai);
+      expect(created.single.isAiGenerated, isTrue);
     });
 
     test('실패 시 아무것도 저장되지 않는다 (원자성)', () async {

@@ -6,33 +6,36 @@ import 'package:one_step/core/widgets/quest_card.dart';
 import 'package:one_step/core/widgets/quest_source_chip.dart';
 import 'package:one_step/models/difficulty.dart';
 import 'package:one_step/models/quest.dart';
+import 'package:one_step/models/quest_source.dart';
 
 /// 퀘스트 출처 칩 — AI 분해로 생긴 퀘스트와 직접 등록한 퀘스트를 구분한다.
 ///
-/// 판단 근거는 `goalId` 하나다(AI = goalId 있음, 직접 = null).
+/// 판단 근거는 **[QuestSource]다**(goalId가 아니다). 직접 등록이 목표(폴더)
+/// 단위가 되며 직접 등록 퀘스트도 goalId를 갖게 돼, goalId-추론은 직접 등록을
+/// AI로 오표기한다(회귀 A). 칩은 명시 출처 신호로 판정한다.
 Future<void> _pumpChip(
   WidgetTester tester,
-  String? goalId, {
+  QuestSource source, {
   ThemeData? theme,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: theme ?? AppTheme.light,
-      home: Scaffold(body: Center(child: QuestSourceChip(goalId: goalId))),
+      home: Scaffold(body: Center(child: QuestSourceChip(source: source))),
     ),
   );
 }
 
 void main() {
-  testWidgets('goalId가 있으면 AI 칩이 뜬다', (tester) async {
-    await _pumpChip(tester, 'goal-1');
+  testWidgets('출처가 AI면 AI 칩이 뜬다', (tester) async {
+    await _pumpChip(tester, QuestSource.ai);
 
     expect(find.text('AI'), findsOneWidget);
     expect(find.text('직접'), findsNothing);
   });
 
-  testWidgets('goalId가 null이면 직접 칩이 뜬다', (tester) async {
-    await _pumpChip(tester, null);
+  testWidgets('출처가 manual이면 직접 칩이 뜬다', (tester) async {
+    await _pumpChip(tester, QuestSource.manual);
 
     expect(find.text('직접'), findsOneWidget);
     expect(find.text('AI'), findsNothing);
@@ -49,10 +52,10 @@ void main() {
       return ((container.decoration! as BoxDecoration).color)!;
     }
 
-    await _pumpChip(tester, 'goal-1');
+    await _pumpChip(tester, QuestSource.ai);
     final aiBackground = backgroundOf(tester);
 
-    await _pumpChip(tester, null);
+    await _pumpChip(tester, QuestSource.manual);
     final manualBackground = backgroundOf(tester);
 
     expect(aiBackground, isNot(manualBackground));
@@ -61,7 +64,7 @@ void main() {
   testWidgets('다크 테마에서도 전경과 배경이 붙지 않는다', (tester) async {
     // 라이트와 같은 옅은 틴트를 다크에 그대로 쓰면 파란 글자가 어두운 카드에
     // 묻힌다. 색 계산이 밝기별로 갈리는지 확인한다.
-    await _pumpChip(tester, 'goal-1', theme: AppTheme.dark);
+    await _pumpChip(tester, QuestSource.ai, theme: AppTheme.dark);
 
     final text = tester.widget<Text>(find.text('AI'));
     final container = tester.widget<Container>(
@@ -151,6 +154,76 @@ void main() {
 
       expect(wrap.children.whereType<DifficultyPill>(), hasLength(1));
       expect(wrap.children.whereType<QuestSourceChip>(), hasLength(1));
+    });
+  });
+
+  group('회귀 A — 카드 출처는 goalId가 아니라 source로 판정한다', () {
+    // 직접 등록이 목표(폴더) 단위가 되며 직접 등록 퀘스트도 goalId를 갖는다.
+    // 카드가 goalId로 출처를 추론하면 직접 등록이 "✨AI"로 오표기된다(A0-2 위반).
+    // 카드는 quest.effectiveSource로 판정해야 한다.
+    Future<void> pumpCard(WidgetTester tester, Quest quest) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: Center(
+              child: QuestCard(quest: quest, onToggleDone: (_) {}),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('★ goalId를 가진 직접 등록 퀘스트는 카드에서 "직접" 칩으로 표시된다', (
+      tester,
+    ) async {
+      // 핵심 회귀: goalId가 있어도 source=manual이면 "직접"이어야 한다.
+      // 출처를 goalId-only로 되돌리면(goalId 있음 → AI) 이 단언이 깨진다.
+      await pumpCard(
+        tester,
+        const Quest(
+          id: 'q1',
+          title: '직접 등록했지만 목표(폴더)에 묶인 퀘스트',
+          goalId: 'g1',
+          source: QuestSource.manual,
+        ),
+      );
+
+      expect(find.text('직접'), findsOneWidget);
+      expect(find.text('AI'), findsNothing);
+    });
+
+    testWidgets('AI 분해 퀘스트(goalId + source ai)는 카드에서 "AI" 칩으로 표시된다', (
+      tester,
+    ) async {
+      // A0-2 유지: AI 분해는 여전히 AI로 보인다.
+      await pumpCard(
+        tester,
+        const Quest(
+          id: 'q1',
+          title: 'AI가 나눈 퀘스트',
+          goalId: 'g1',
+          source: QuestSource.ai,
+        ),
+      );
+
+      expect(find.text('AI'), findsOneWidget);
+      expect(find.text('직접'), findsNothing);
+    });
+
+    testWidgets('구 문서 하위호환: source 없고 goalId 있으면 카드에서 "AI"로 표시된다', (
+      tester,
+    ) async {
+      // source 필드 도입 전 저장된 AI 분해 데이터. effectiveSource가 goalId로
+      // 폴백해 계속 AI로 보여야 한다(마이그레이션 없이 하위호환).
+      await pumpCard(
+        tester,
+        const Quest(id: 'q1', title: '구 AI 데이터', goalId: 'g1'),
+      );
+
+      expect(find.text('AI'), findsOneWidget);
+      expect(find.text('직접'), findsNothing);
     });
   });
 }
