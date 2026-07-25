@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'features/home/home_screen.dart';
-import 'features/placeholder_screen.dart';
+import 'features/profile/profile_screen.dart';
 import 'features/quest/decompose_notifier.dart';
 import 'features/quest/quest_create_screen.dart';
 import 'features/quest/quest_list_screen.dart';
@@ -90,11 +90,7 @@ GoRouter createRouter({String initialLocation = '/home'}) => GoRouter(
           routes: [
             GoRoute(
               path: '/profile',
-              builder: (context, state) => const PlaceholderScreen(
-                title: 'MY',
-                emoji: '👤',
-                message: '프로필과 설정이 들어갑니다.',
-              ),
+              builder: (context, state) => const ProfileScreen(),
             ),
           ],
         ),

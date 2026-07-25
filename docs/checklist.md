@@ -496,6 +496,16 @@
 - [x] 장착 시 캐릭터에 반영되고 재실행 후에도 유지된다.
       → `character_card.dart`가 `AppUser.equipped`를 읽어 `background` 슬롯=배경 틴트, `aura` 슬롯=오라 이모지로 반영(캐릭터가 이모지 목업이라 이 둘로 표현, 도트아트 자산 나오면 교체 예정). `equipped`가 user 문서에 영속되고 홈이 `watchUser` 구독이라 재실행 후 유지는 구조로 보장. 고아 방어: `itemById`가 null이거나 슬롯이 어긋나면 장착 없음으로 렌더. 뮤테이션(오라 미반영)으로 실패 확인. 테스트 `test/features/character_card_equip_test.dart`·`test/repositories/purchase_item_test.dart`.
 
+### 프로필(MY) 화면
+- [x] 프로필 화면에 완료 통계가 표시된다.
+      → `lib/features/profile/profile_screen.dart`(신규 — `/profile` 라우트가 placeholder에서 실제 `ProfileScreen`으로 교체됨, `lib/router.dart:92`). 완료한 도전 수는 `achievementsProvider`의 `.length`(보관함과 같은 소스라 두 화면의 "해낸 도전 수"가 어긋나지 않음), 현재 연속 출석은 `user.streak`(0이면 "아직 없음"), 가입일은 `createdAt`을 KST `yyyy년 M월 d일`로 렌더(null이면 통째 생략). 로딩(`_StatsSkeleton`)·오류(`ErrorView`+재시도)·빈(완료 0을 EmptyView가 아니라 "0"으로) 5상태 처리. 완료 수는 achievements 스트림과 연동돼 기록이 늘면 증가한다. 노랑 규칙 준수(스트릭이 요약 통계라 그린/중립, `color_role_test` 무수정 통과). 테스트: `test/features/profile_screen_test.dart`(11건, 완료 수 상수화·스트릭 상수화 뮤테이션이 실패시킴).
+- [x] 설정에 계정 연동 자리가 준비돼 있다(실제 OAuth는 향후).
+      → `_SettingsSection`이 "Google 계정 연동"을 **준비 중** 배지로 두고 탭 시 "계정 연동은 곧 지원돼요." 스낵바로 안내(홈 환생 버튼이 "4주차에 열려요"로 정직하게 비활성인 것과 같은 방식). **로그아웃 버튼은 두지 않았다** — 익명 로그인이라 로그아웃하면 진행상황이 소실되기 때문(테스트가 버튼 부재를 회귀 방어로 못박음, 로그아웃 버튼 추가 뮤테이션 1건·탭 안내 제거 뮤테이션 1건 실패 확인). 테스트: `test/features/profile_screen_test.dart`.
+
+> **향후 계획(미구현)**: OAuth 계정 연동은 아직 구현하지 않았다. 이번 프로필은 진입점 **자리만** 준비했고, `AuthRepository`에 연동 메서드는 없다. 검증이 끝나면 익명↔Google 계정 연동(및 그때 signOut UI 재판단)을 추가할 계획이다.
+>
+> **검증 증거**: `flutter analyze` No issues found · `flutter test` **702건 전부 통과**(프로필 착수 기준선 691건) · `test/theme/color_role_test.dart` 무수정 통과 · verification-agent PASS. 변경 범위는 프로필+라우터+테스트로 한정.
+
 ### 퀘스트 완료 연출
 - [x] 완료 시 애니메이션/피드백이 재생되고 실제 상태 변화와 동기화된다.
       → `quest_complete_dialog.dart`가 트로피 scale/fade 등장 + 코인·XP 카운트업(0→실지급액) 애니메이션. 표시값은 저장소가 준 실지급액 그대로다(난이도 재계산 아님, 절삭돼도 정확). 완료 후 `user.level`이 저장소에 반영됨을 UI 테스트가 단언. 뮤테이션(카운트업 최종값 0 고정)으로 5건 실패 확인. 테스트: `test/features/growth_dialogs_test.dart` · `test/features/quest_list_screen_test.dart`
