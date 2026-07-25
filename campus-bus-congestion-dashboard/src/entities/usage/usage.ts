@@ -1,4 +1,4 @@
-import type { Campus, DirectionKey, DirectionalStopData, Stop, UsageStatus } from '../types';
+import type { Campus, DirectionKey, DirectionalStopData, Stop, UsageStatus } from '../campus/types';
 
 export function isUsageReady(stop: Stop | undefined): stop is Stop & { hours: number[] } {
   return stop?.usage?.status === 'ready' && stop.hours?.length === 24;

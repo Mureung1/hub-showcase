@@ -1,7 +1,7 @@
 import type { KeyboardEvent } from 'react';
-import { levelFor } from '../lib/congestion';
-import { directionHours, directionUsageStatusLabel, isDirectionUsageReady, isUsageReady, usageStatusLabel } from '../lib/usage';
-import type { Campus, DirectionKey, Stop } from '../types';
+import { levelFor } from '../../entities/usage/congestion';
+import { directionHours, directionUsageStatusLabel, isDirectionUsageReady, isUsageReady, usageStatusLabel } from '../../entities/usage/usage';
+import type { Campus, DirectionKey, Stop } from '../../entities/campus/types';
 import styles from './StopMap.module.css';
 
 interface StopMapProps {

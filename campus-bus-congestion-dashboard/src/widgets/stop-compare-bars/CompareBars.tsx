@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { levelFor } from '../lib/congestion';
-import { directionHours, directionUsageStatusLabel, isDirectionUsageReady, isUsageReady, usageStatusLabel } from '../lib/usage';
-import type { CampusDirections, DirectionKey, Stop } from '../types';
+import { levelFor } from '../../entities/usage/congestion';
+import { directionHours, directionUsageStatusLabel, isDirectionUsageReady, isUsageReady, usageStatusLabel } from '../../entities/usage/usage';
+import type { CampusDirections, DirectionKey, Stop } from '../../entities/campus/types';
 import styles from './CompareBars.module.css';
 
 interface CompareBarsProps {

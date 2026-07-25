@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import type { Campus, DirectionKey } from '../types';
-import { campusPresentation, fallbackCampusPresentation } from '../data/campus-presentation';
-import { campusHasUsage, formatUsagePeriod } from '../lib/usage';
-import { levelFor } from '../lib/congestion';
+import type { Campus, DirectionKey } from '../../entities/campus/types';
+import { campusPresentation, fallbackCampusPresentation } from '../../entities/campus/presentation';
+import { campusHasUsage, formatUsagePeriod } from '../../entities/usage/usage';
+import { levelFor } from '../../entities/usage/congestion';
 import styles from './CampusDirectory.module.css';
 
 interface CampusDirectoryProps {
