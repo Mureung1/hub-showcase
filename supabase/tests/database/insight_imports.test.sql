@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(26);
+select extensions.plan(43);
 
 select extensions.has_table('public', 'insight_import_jobs', '가져오기 작업 테이블이 존재한다');
 select extensions.has_table('public', 'insight_import_items', '가져오기 항목 테이블이 존재한다');
@@ -352,6 +352,223 @@ select extensions.lives_ok(
   $$,
   '선택 카테고리 없이 가져오기 항목을 저장할 수 있다'
 );
+insert into public.insights (
+  id, user_id, original_url, normalized_url, domain, title
+) values (
+  '30000000-0000-4000-8000-000000000023',
+  '00000000-0000-4000-8000-000000000021',
+  'https://owner.example/created-insight',
+  'https://owner.example/created-insight',
+  'owner.example',
+  'prepare duplicate insight'
+);
+
+set local role authenticated;
+set local "request.jwt.claims" =
+  '{"sub":"00000000-0000-4000-8000-000000000021","role":"authenticated"}';
+
+create temporary table prepared_import_result on commit drop as
+select public.prepare_insight_import(
+  'pasted-text',
+  'pasted-text',
+  repeat('c', 64),
+  jsonb_build_array(
+    jsonb_build_object(
+      'candidateId', 'prepared-new', 'capturedAtCandidate', '2026-07-01T00:00:00Z',
+      'collectionPath', jsonb_build_array('collection-one'), 'explicitMemoCandidate', 'memo',
+      'originalUrl', 'https://prepared.example/new',
+      'normalizedUrl', 'https://prepared.example/new', 'domain', 'prepared.example',
+      'sourceLocation', 'line one', 'titleCandidate', 'new item',
+      'warnings', '[]'::jsonb, 'exclusionCode', null
+    ),
+    jsonb_build_object(
+      'candidateId', 'prepared-existing', 'capturedAtCandidate', null,
+      'collectionPath', jsonb_build_array('collection-two'), 'explicitMemoCandidate', null,
+      'originalUrl', 'https://owner.example/created-insight',
+      'normalizedUrl', 'https://owner.example/created-insight', 'domain', 'owner.example',
+      'sourceLocation', 'line two', 'titleCandidate', null,
+      'warnings', jsonb_build_array('missing-title'), 'exclusionCode', null
+    ),
+    jsonb_build_object(
+      'candidateId', 'prepared-input-duplicate', 'capturedAtCandidate', null,
+      'collectionPath', jsonb_build_array('collection-one'), 'explicitMemoCandidate', null,
+      'originalUrl', 'https://prepared.example/new#duplicate',
+      'normalizedUrl', 'https://prepared.example/new', 'domain', 'prepared.example',
+      'sourceLocation', 'line three', 'titleCandidate', 'duplicate item',
+      'warnings', '[]'::jsonb, 'exclusionCode', null
+    ),
+    jsonb_build_object(
+      'candidateId', 'prepared-excluded', 'capturedAtCandidate', null,
+      'collectionPath', jsonb_build_array('collection-excluded'), 'explicitMemoCandidate', null,
+      'originalUrl', 'invalid url', 'normalizedUrl', null, 'domain', null,
+      'sourceLocation', 'line four', 'titleCandidate', null,
+      'warnings', '[]'::jsonb, 'exclusionCode', 'invalid-url'
+    )
+  )
+) as result;
+
+select extensions.results_eq(
+  $$
+    select result ->> 'status', result #>> '{summary,totalCount}',
+      result #>> '{summary,newCount}', result #>> '{summary,duplicateCount}',
+      result #>> '{summary,inputDuplicateCount}', result #>> '{summary,excludedCount}'
+    from prepared_import_result
+  $$,
+  $$ values ('ready', '4', '1', '1', '1', '1') $$,
+  'prepare RPC returns ready with exact summary'
+);
+select extensions.results_eq(
+  $$
+    select status, total_count, new_count, duplicate_count, input_duplicate_count, excluded_count
+    from public.insight_import_jobs
+    where id = (select (result ->> 'id')::uuid from prepared_import_result)
+  $$,
+  $$ values ('ready'::text, 4, 1, 1, 1, 1) $$,
+  'prepare RPC persists exact job summary'
+);
+select extensions.results_eq(
+  $$
+    select candidate_id, classification, ordinal
+    from public.insight_import_items
+    where job_id = (select (result ->> 'id')::uuid from prepared_import_result)
+    order by ordinal
+  $$,
+  $$
+    values
+      ('prepared-new'::text, 'new'::text, 1),
+      ('prepared-existing'::text, 'existing_duplicate'::text, 2),
+      ('prepared-input-duplicate'::text, 'input_duplicate'::text, 3),
+      ('prepared-excluded'::text, 'excluded'::text, 4)
+  $$,
+  'prepare RPC preserves ordinal and recalculates classifications'
+);
+select extensions.results_eq(
+  $$ select result -> 'collections' from prepared_import_result $$,
+  $$ values ('[["collection-one"], ["collection-two"], ["collection-excluded"]]'::jsonb) $$,
+  'prepare RPC returns first-seen unique collections'
+);
+select extensions.results_eq(
+  $$
+    select (public.prepare_insight_import(
+      'pasted-text', 'pasted-text', repeat('c', 64), '[]'::jsonb
+    ) ->> 'id')::uuid = (select (result ->> 'id')::uuid from prepared_import_result)
+  $$,
+  array[true],
+  'same user and idempotency key returns the stored job'
+);
+select extensions.results_eq(
+  $$
+    select count(*)::bigint from public.insight_import_items
+    where job_id = (select (result ->> 'id')::uuid from prepared_import_result)
+  $$,
+  array[4::bigint],
+  'idempotent retry does not append items'
+);
+
+set local "request.jwt.claims" =
+  '{"sub":"00000000-0000-4000-8000-000000000022","role":"authenticated"}';
+select extensions.ok(
+  (public.prepare_insight_import(
+    'file', 'generic-csv', repeat('c', 64),
+    jsonb_build_array(jsonb_build_object(
+      'candidateId', 'other-user-item', 'capturedAtCandidate', null,
+      'collectionPath', '[]'::jsonb, 'explicitMemoCandidate', null,
+      'originalUrl', 'https://other-user.example/new',
+      'normalizedUrl', 'https://other-user.example/new', 'domain', 'other-user.example',
+      'sourceLocation', 'line one', 'titleCandidate', null,
+      'warnings', '[]'::jsonb, 'exclusionCode', null
+    ))
+  ) ->> 'id')::uuid <> (select (result ->> 'id')::uuid from prepared_import_result),
+  'same idempotency key for another user creates another job'
+);
+
+select extensions.throws_ok(
+  $$ select public.prepare_insight_import('invalid', 'pasted-text', repeat('d', 64), '[]'::jsonb) $$,
+  '22023', null, 'invalid input kind is rejected'
+);
+select extensions.throws_ok(
+  $$ select public.prepare_insight_import('pasted-text', 'invalid', repeat('d', 64), '[]'::jsonb) $$,
+  '22023', null, 'invalid adapter key is rejected'
+);
+select extensions.throws_ok(
+  $$ select public.prepare_insight_import('pasted-text', 'pasted-text', 'invalid', '[]'::jsonb) $$,
+  '22023', null, 'invalid idempotency key is rejected'
+);
+select extensions.throws_ok(
+  $$ select public.prepare_insight_import('pasted-text', 'pasted-text', repeat('d', 64), '{}'::jsonb) $$,
+  '22023', null, 'non-array items are rejected'
+);
+select extensions.throws_ok(
+  $$
+    select public.prepare_insight_import(
+      'pasted-text', 'pasted-text', repeat('d', 64),
+      (select jsonb_agg(jsonb_build_object(
+        'candidateId', value::text, 'capturedAtCandidate', null, 'collectionPath', '[]'::jsonb,
+        'explicitMemoCandidate', null, 'originalUrl', 'https://limit.example/' || value,
+        'normalizedUrl', 'https://limit.example/' || value, 'domain', 'limit.example',
+        'sourceLocation', 'line', 'titleCandidate', null, 'warnings', '[]'::jsonb, 'exclusionCode', null
+      )) from generate_series(1, 10001) as value)
+    )
+  $$,
+  '22023', null, 'more than 10000 items are rejected'
+);
+select extensions.throws_ok(
+  $$
+    select public.prepare_insight_import('pasted-text', 'pasted-text', repeat('e', 64),
+      jsonb_build_array(jsonb_build_object(
+        'candidateId', '', 'capturedAtCandidate', 'invalid-date',
+        'collectionPath', jsonb_build_array(1), 'explicitMemoCandidate', repeat('m', 201),
+        'originalUrl', repeat('u', 4097), 'normalizedUrl', repeat('n', 4097), 'domain', 1,
+        'sourceLocation', repeat('s', 501), 'titleCandidate', repeat('t', 501),
+        'warnings', jsonb_build_array('invalid-warning'), 'exclusionCode', null
+      ))
+    )
+  $$,
+  '22023', null, 'invalid item shapes and field limits are rejected'
+);
+select extensions.throws_ok(
+  $$
+    select public.prepare_insight_import('pasted-text', 'pasted-text', repeat('f', 64),
+      jsonb_build_array(jsonb_build_object(
+        'candidateId', 'owned-by-payload', 'capturedAtCandidate', null, 'collectionPath', '[]'::jsonb,
+        'explicitMemoCandidate', null, 'originalUrl', 'https://payload.example/user',
+        'normalizedUrl', 'https://payload.example/user', 'domain', 'payload.example',
+        'sourceLocation', 'line', 'titleCandidate', null, 'warnings', '[]'::jsonb,
+        'exclusionCode', null, 'userId', '00000000-0000-4000-8000-000000000022'
+      ))
+    )
+  $$,
+  '22023', null, 'payload user ownership injection is rejected'
+);
+select extensions.throws_ok(
+  $$
+    select public.prepare_insight_import('pasted-text', 'pasted-text', repeat('1', 64),
+      jsonb_build_array(jsonb_build_object(
+        'candidateId', 'other-category-payload', 'capturedAtCandidate', null,
+        'collectionPath', '[]'::jsonb, 'explicitMemoCandidate', null,
+        'originalUrl', 'https://payload.example/category',
+        'normalizedUrl', 'https://payload.example/category', 'domain', 'payload.example',
+        'sourceLocation', 'line', 'titleCandidate', null, 'warnings', '[]'::jsonb,
+        'exclusionCode', null, 'selectedCategoryId', '20000000-0000-4000-8000-000000000021'
+      ))
+    )
+  $$,
+  '22023', null, 'another user selected category is rejected'
+);
+
+reset role;
+set local role anon;
+select extensions.throws_ok(
+  $$ select public.prepare_insight_import('pasted-text', 'pasted-text', repeat('2', 64), '[]'::jsonb) $$,
+  '42501', null, 'anonymous callers cannot execute the prepare RPC'
+);
+reset role;
+select extensions.ok(
+  has_function_privilege('authenticated', 'public.prepare_insight_import(text, text, text, jsonb)', 'execute')
+  and not has_function_privilege('anon', 'public.prepare_insight_import(text, text, text, jsonb)', 'execute'),
+  'only authenticated callers receive execute permission'
+);
+
 update public.insight_import_jobs
 set status = 'committing'
 where id = '40000000-0000-4000-8000-000000000021';
