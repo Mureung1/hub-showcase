@@ -29,22 +29,28 @@
 
 ## 실행 순서
 
-### 묶음 1 — 서버: 단건 조회에 프로필 기반 스코어링 추가 (승인 필요)
-- [ ] `findById(id, profile?)`가 profile이 있으면 `scoreForProfile()` 적용하도록 수정
-- [ ] `GET /api/subsidies/:id` 라우트가 query parameter(`region`, `industry`)를 zod로 검증해 전달
-- [ ] 기존 라우트 테스트(`subsidies.test.ts`) profile 없는 경우 회귀 확인 + profile 있는 경우 케이스 추가
+### 묶음 1 — 서버: 단건 조회에 프로필 기반 스코어링 추가 (완료, 2026-07-25)
+- [x] `findById(id, profile?)`가 profile이 있으면 `scoreForProfile()` 적용하도록 수정
+- [x] `GET /api/subsidies/:id` 라우트가 query parameter(`region`, `industry`)를 zod로 검증해 전달
+- [x] 기존 라우트 테스트(`subsidies.test.ts`) profile 없는 경우 회귀 확인 + profile 있는 경우 케이스 추가
+- [x] repo 레벨 테스트(`subsidies-repo.test.ts`) `findById` profile 유무 케이스 추가
 
-### 묶음 2 — client: 리스트 캐시 재사용 + fallback 연결 (승인 필요)
-- [ ] `useSubsidy(id)`가 TanStack Query 캐시에서 현재 profile/sort 조합의 리스트 쿼리 데이터 중
-      같은 id 항목을 찾아 `initialData`로 사용
-- [ ] 캐시에 없으면 `getSubsidy(id, profile)`로 네트워크 요청 (프로필 포함)
-- [ ] 리스트 → 클릭 → 상세: 매칭도 동일 확인 / 직접 URL 접속: 서버 재계산 값이 뜨는지 확인
+### 묶음 2 — client: 리스트 캐시 재사용 + fallback 연결 (완료, 2026-07-25)
+- [x] `useSubsidy(id, profile)`가 TanStack Query 캐시(`['subsidies', profile]` 접두사)에서 같은
+      id 항목을 찾아 `initialData`로 사용
+- [x] 캐시에 없으면 `getSubsidy(id, profile)`로 네트워크 요청 (프로필 쿼리 파라미터 포함)
+- [x] 실제 실행 중인 dev 서버로 end-to-end 검증: `POST /api/match`와 `GET /api/subsidies/:id?region=...&industry=...`가 같은 프로필에 대해 동일한 값(80) 반환 확인, profile 없이 호출하면 저장된 원본값(50) 유지 확인
+- [ ] ~~브라우저로 리스트→클릭→상세 직접 확인~~ — 이 환경에서 Chrome 확장이 연결 안 돼 있어
+      브라우저 클릭 테스트는 못 함(아래 리스크 표). API 레벨 end-to-end 검증으로 대체
 
 ## 완료 기준
 
-- [ ] 리스트에서 클릭해 들어간 상세 페이지는 리스트와 매칭도가 항상 같다
-- [ ] 직접 URL 접속·새로고침 시에도 프로필 기준으로 정확히 계산된 매칭도가 뜬다
-- [ ] `npm test`/`npm run lint` 통과
+- [x] 리스트에서 클릭해 들어간 상세 페이지는 리스트와 매칭도가 항상 같다 (API 레벨로 검증,
+      브라우저 클릭 테스트는 미실행 — 아래 리스크 표)
+- [x] 직접 URL 접속·새로고침 시에도 프로필 기준으로 정확히 계산된 매칭도가 뜬다
+- [x] `npm test`(88 passed)/`npm run lint` 통과
+
+**이슈 #61 완료 (2026-07-25)**
 
 ## 리스크 / 결정 필요
 
@@ -52,3 +58,4 @@
 |------|------|-----------|
 | 캐시 재사용 vs 항상 서버 재계산 | 항상 재계산은 로직상 안전하지만 리스트→상세 이동마다 불필요한 네트워크 요청 발생 | **하이브리드로 결정** (2026-07-25, 사용자 확인) — 캐시 우선, 없을 때만 서버 재계산 |
 | profile 없는 상태(온보딩 미완료)로 상세 접근 | region/industry가 빈 값일 수 있음 | `scoreForProfile`은 이미 빈 값에 안전(보너스/페널티 미적용) — 별도 처리 불필요 |
+| 브라우저 클릭 테스트 미실행 | 이 작업 환경에 Chrome 확장이 연결 안 돼 있어 리스트→클릭→상세 실제 클릭 흐름을 직접 확인 못 함 | `npm run dev`로 서버 띄운 뒤 `POST /api/match`와 `GET /api/subsidies/:id?region=&industry=`를 동일 프로필로 호출해 값이 일치함을 확인(80=80), profile 없이 호출하면 원본값(50) 유지 확인 — API 레벨로 대체 검증. 실제 화면 클릭 확인은 다음 수동 QA(#57 체크리스트) 때 병행 권장 |

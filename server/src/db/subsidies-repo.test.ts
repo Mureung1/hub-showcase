@@ -2,7 +2,7 @@ import type { OnboardingProfile } from '@hub/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SubsidyRow } from './mappers.js'
 
-const state = vi.hoisted(() => ({ rows: [] as SubsidyRow[] }))
+const state = vi.hoisted(() => ({ rows: [] as SubsidyRow[], single: null as SubsidyRow | null }))
 
 vi.mock('./supabase.js', () => ({
   SUBSIDIES_TABLE: 'subsidies',
@@ -12,12 +12,15 @@ vi.mock('./supabase.js', () => ({
         order: () => ({
           range: () => Promise.resolve({ data: state.rows, error: null }),
         }),
+        eq: () => ({
+          maybeSingle: () => Promise.resolve({ data: state.single, error: null }),
+        }),
       }),
     }),
   },
 }))
 
-import { match } from './subsidies-repo.js'
+import { findById, match } from './subsidies-repo.js'
 
 function makeRow(overrides: Partial<SubsidyRow>): SubsidyRow {
   return {
@@ -170,5 +173,29 @@ describe('match 페이지네이션 (이슈 #48)', () => {
     const result = await match(profile, 'match', 1, 10)
     expect(result.items).toHaveLength(10)
     expect(result.hasMore).toBe(true)
+  })
+})
+
+describe('findById — 프로필 기반 재계산 (이슈 #61)', () => {
+  beforeEach(() => {
+    state.single = null
+  })
+
+  it('profile 없이 호출하면 저장된 match_score를 그대로 반환한다', async () => {
+    state.single = makeRow({ id: '1', region: ['서울'], match_score: 50 })
+    const result = await findById('1')
+    expect(result?.match).toBe(50)
+  })
+
+  it('profile을 넘기면 리스트(match())와 동일한 공식으로 매칭도를 재계산한다', async () => {
+    state.single = makeRow({ id: '1', region: ['서울'], industry: ['음식점'], match_score: 50 })
+    const result = await findById('1', { region: '서울', industry: '음식점' })
+    expect(result?.match).toBe(80) // 50 + 20(region) + 10(industry) — match() 테스트와 동일 공식
+  })
+
+  it('존재하지 않는 id는 null을 반환한다', async () => {
+    state.single = null
+    const result = await findById('no-such-id', { region: '서울', industry: '음식점' })
+    expect(result).toBeNull()
   })
 })
