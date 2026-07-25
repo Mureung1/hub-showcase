@@ -36,11 +36,8 @@ function RecipeDraftPage() {
         memo: null,
       });
 
-      navigate("/recipes", {
+      navigate(`/recipes/${createdRecipe.id}`, {
         replace: true,
-        state: {
-          createdRecipeId: createdRecipe.id,
-        },
       });
     } catch (error) {
       setSaveError(

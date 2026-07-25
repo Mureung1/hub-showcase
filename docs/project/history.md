@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-25 · FE-RECIPE-004 · 완료
+
+- 결과: 인증된 `GET /api/recipes/:recipeId`를 기존 API 모듈에 연결하고 책형 목록 레이아웃의 오른쪽 페이지에 제목·설명·인분·시간·재료·조리 순서·출처를 표시한다. 목록 카드와 저장 성공은 같은 상세 URL로 이동하며, 로딩·오류·nullable·빈 배열과 목록 복귀를 처리한다.
+- 결정: 별도 상세 페이지와 중복 레이아웃을 만들지 않고 기존 `RecipeListPlaceholderPage`를 `/recipes/:recipeId` 보호 라우트에서도 재사용한다. 데스크톱은 목록과 상세를 함께 표시하고 1100px 이하에서는 상세 단일 페이지로 전환한다.
+- 시행착오: 최초 테스트 작성 중 상세 테스트가 기존 `createRecipe` 블록에 중첩되고 파일 끝 괄호가 누락된 문제를 교정했다. 별도 `RecipeDetailPage` 계획은 기존 책형 레이아웃을 중복하므로 기존 페이지의 상세 region 테스트로 변경했다.
+- 검증: focused 3개 파일·14개 테스트와 프론트엔드 전체 6개 파일·42개 테스트, `frontend npm run lint`, `frontend npm run build`를 통과했다. 사용자가 데스크톱·태블릿·모바일 시각 QA 완료를 확인했다.
+- 후속: `QA-CORE-001` 통합 흐름을 검증한다.
+- 반복 패턴: 없음
+
 ## 2026-07-25 · BE-RECIPE-004 · 완료
 
 - 결과: `GET /api/recipes/:recipeId`가 현재 Firebase 사용자가 소유한 활성 레시피를 PostgreSQL에서 조회해 `RecipeDetail` 계약으로 반환한다. 재료와 단계는 저장 순서로 정렬하고 출처가 없으면 `null`로 반환하며, 없는·타인 소유·삭제·잘못된 ID는 모두 같은 `RECIPE_NOT_FOUND`로 숨긴다.

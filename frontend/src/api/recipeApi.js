@@ -19,3 +19,10 @@ export function createRecipe(idToken, recipeRequest) {
     body: recipeRequest,
   });
 }
+
+export function getRecipeDetail(idToken, recipeId) {
+  return apiRequest(`/api/recipes/${recipeId}`, {
+    method: "GET",
+    idToken,
+  });
+}

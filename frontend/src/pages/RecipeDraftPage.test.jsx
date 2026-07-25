@@ -10,7 +10,7 @@ import {
   MemoryRouter,
   Route,
   Routes,
-  useLocation,
+  useParams,
 } from "react-router";
 import { AuthContext } from "../auth/authContext";
 import RecipeDraftPage from "./RecipeDraftPage";
@@ -42,9 +42,9 @@ afterEach(() => {
 });
 
 function SavedRecipeResult() {
-  const { state } = useLocation();
+  const { recipeId } = useParams();
 
-  return <p>저장됨: {state?.createdRecipeId}</p>;
+  return <p>저장됨: {recipeId}</p>;
 }
 
 function renderDraftPage() {
@@ -64,7 +64,10 @@ function renderDraftPage() {
       >
         <Routes>
           <Route path="/recipes/new" element={<p>레시피 입력 화면</p>} />
-          <Route path="/recipes" element={<SavedRecipeResult />} />
+          <Route
+            path="/recipes/:recipeId"
+            element={<SavedRecipeResult />}
+          />
           <Route path="/recipes/draft" element={<RecipeDraftPage />} />
         </Routes>
       </MemoryRouter>
@@ -88,7 +91,7 @@ describe("RecipeDraftPage", () => {
     expect(screen.getByText("레시피 입력 화면")).toBeInTheDocument();
   });
 
-  it("저장 중 중복 요청을 차단하고 생성된 레시피 ID를 목록 이동 상태로 보존한다", async () => {
+  it("저장 중 중복 요청을 차단하고 생성된 레시피 상세로 이동한다", async () => {
     let resolveResponse;
     const fetchMock = vi.fn().mockImplementation(
       () =>

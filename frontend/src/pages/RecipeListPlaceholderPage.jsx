@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router";
 import { useAuth } from "../auth/authContext";
-import { getRecipes, structureRecipe } from "../api/recipeApi";
+import {
+  getRecipeDetail,
+  getRecipes,
+  structureRecipe,
+} from "../api/recipeApi";
 import RecipeInputForm from "../components/RecipeInputForm";
 
 const filters = [
@@ -28,13 +37,17 @@ function RecipeListPlaceholderPage() {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { recipeId } = useParams();
   const [recipes, setRecipes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [loadVersion, setLoadVersion] = useState(0);
+  const [recipeDetail, setRecipeDetail] = useState(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
   const isAddingRecipe = location.pathname === "/recipes/new";
-  const createdRecipeId = location.state?.createdRecipeId;
+  const isShowingRightPage = isAddingRecipe || Boolean(recipeId);
 
   useEffect(() => {
     let isCancelled = false;
@@ -75,6 +88,51 @@ function RecipeListPlaceholderPage() {
       isCancelled = true;
     };
   }, [loadVersion, user]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadRecipeDetail() {
+      if (!user || !recipeId) {
+        setRecipeDetail(null);
+        setIsDetailLoading(false);
+        setDetailError("");
+        return;
+      }
+
+      setRecipeDetail(null);
+      setIsDetailLoading(true);
+      setDetailError("");
+
+      try {
+        const idToken = await user.getIdToken();
+        const detail = await getRecipeDetail(idToken, recipeId);
+
+        if (!isCancelled) {
+          setRecipeDetail(detail);
+        }
+      } catch (requestError) {
+        if (!isCancelled) {
+          setRecipeDetail(null);
+          setDetailError(
+            requestError instanceof Error
+              ? requestError.message
+              : "레시피 상세를 불러오지 못했습니다.",
+          );
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsDetailLoading(false);
+        }
+      }
+    }
+
+    void loadRecipeDetail();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [recipeId, user]);
 
   const filteredRecipes = recipes.filter((recipe) =>
     matchesFilter(recipe, activeFilter),
@@ -158,7 +216,7 @@ function RecipeListPlaceholderPage() {
 
         <div className="grid min-h-0 min-w-0 grid-cols-2 drop-shadow-[0_3px_3px_rgb(44_35_20/0.23)] max-[1100px]:grid-cols-1 max-[700px]:block max-[700px]:h-full">
           <section className={`min-w-0 overflow-hidden rounded-l-[3px] bg-[#f8f5eb] bg-[radial-gradient(circle_at_30%_40%,rgb(255_255_255/85%),transparent_60%)] shadow-[inset_-12px_0_23px_-20px_#4f3a20] min-[1101px]:shadow-[inset_-12px_0_23px_-20px_#4f3a20,-3px_0_0_#f1ece1,-6px_0_0_#d8cfbd] max-[700px]:h-full
-    max-[700px]:rounded-[5px] ${isAddingRecipe ? "max-[1100px]:hidden" : "max-[700px]:block"
+    max-[700px]:rounded-[5px] ${isShowingRightPage ? "max-[1100px]:hidden" : "max-[700px]:block"
             }`}>
             <div className="relative h-full overflow-y-auto p-[50px_46px_120px_36px] max-[700px]:p-[25px_22px_84px] short-screen:p-[30px_34px_92px]">
               <header>
@@ -167,15 +225,6 @@ function RecipeListPlaceholderPage() {
                 </h1>
                 <p className="text-[13px] text-[#626157]">차분히 모..아 둔 나만의 레시피를 확인하세요.</p>
               </header>
-
-              {createdRecipeId ? (
-                <p
-                  className="mt-4 rounded-md border border-[#a9bca8] bg-[#edf4eb] px-3 py-2 text-sm text-[#31523d]"
-                  role="status"
-                >
-                  레시피를 저장했습니다.
-                </p>
-              ) : null}
 
               <div className="mt-4.25 hidden gap-1.5 overflow-x-auto max-[700px]:flex" aria-label="레시피 필터">
                 {filters.map((filter) => {
@@ -227,7 +276,7 @@ function RecipeListPlaceholderPage() {
                       null;
 
                     return (
-                      <article key={recipe.id} className="flex min-h-28 justify-between gap-4 border-b border-[#d8cfbd] pb-4 pl-2.5 pt-5.5 max-[700px]:min-h-19 max-[700px]:gap-2.5 max-[700px]:px-0 max-[700px]:py-3 short-screen:min-h-23 short-screen:py-3.5">
+                      <Link key={recipe.id} to={`/recipes/${recipe.id}`} className="flex min-h-28 justify-between gap-4 border-b border-[#d8cfbd] pb-4 pl-2.5 pt-5.5 hover:bg-[#f1ece1] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15332a] max-[700px]:min-h-19 max-[700px]:gap-2.5 max-[700px]:px-0 max-[700px]:py-3 short-screen:min-h-23 short-screen:py-3.5">
                         <div className="min-w-0">
                           <h2 className="mb-2.25 text-[22px] font-medium max-[700px]:mb-1.25 max-[700px]:text-[17px] short-screen:mb-1.5 short-screen:text-[19px]">{recipe.title}</h2>
                           {recipe.description ? <p className="mb-3 text-[11px] leading-normal text-[#777469] max-[700px]:text-[10px]">{recipe.description}</p> : null}
@@ -239,7 +288,7 @@ function RecipeListPlaceholderPage() {
                         <time className="self-center whitespace-nowrap text-[11px] text-[#68675e] max-[700px]:text-[10px]" dateTime={recipe.createdAt}>
                           {new Date(recipe.createdAt).toLocaleDateString("ko-KR")}
                         </time>
-                      </article>
+                      </Link>
                     );
                   })}
                 </div>
@@ -257,7 +306,7 @@ function RecipeListPlaceholderPage() {
           </section>
 
           <section
-            className={`min-w-0 overflow-hidden rounded-r bg-[#f8f5eb] bg-[radial-gradient(circle_at_30%_40%,rgb(255_255_255/85%),transparent_60%)] shadow-[inset_15px_0_26px_-24px_#3f2d17] min-[1101px]:shadow-[inset_15px_0_26px_-24px_#3f2d17,3px_0_0_#f1ece1,6px_0_0_#d8cfbd] ${isAddingRecipe
+            className={`min-w-0 overflow-hidden rounded-r bg-[#f8f5eb] bg-[radial-gradient(circle_at_30%_40%,rgb(255_255_255/85%),transparent_60%)] shadow-[inset_15px_0_26px_-24px_#3f2d17] min-[1101px]:shadow-[inset_15px_0_26px_-24px_#3f2d17,3px_0_0_#f1ece1,6px_0_0_#d8cfbd] ${isShowingRightPage
               ? "max-[1100px]:block max-[1100px]:h-full max-[700px]:rounded-[5px]"
               : "max-[1100px]:hidden"
               }`}
@@ -269,6 +318,165 @@ function RecipeListPlaceholderPage() {
                   onCancel={handleCloseRecipeInput}
                   onPrepare={handlePrepareRecipe}
                 />
+              </div>
+            ) : null}
+            {recipeId && isDetailLoading ? (
+              <div className="flex h-full items-center justify-center p-8">
+                <p
+                  className="text-center text-sm text-[#626157]"
+                  role="status"
+                >
+                  레시피 상세를 불러오는 중입니다.
+                </p>
+              </div>
+            ) : null}
+            {recipeId && !isDetailLoading && detailError ? (
+              <div className="flex h-full items-center justify-center p-8">
+                <div
+                  className="w-full max-w-sm rounded-lg border border-[#c79181] bg-[#fcf1ed] p-5 text-center"
+                  role="alert"
+                >
+                  <p className="text-sm text-[#7f3c29]">
+                    {detailError}
+                  </p>
+                  <Link
+                    to="/recipes"
+                    className="mt-4 inline-flex min-h-11 items-center rounded-md bg-[#15332a] px-4 text-sm text-[#f3e1b4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15332a]"
+                  >
+                    목록으로 돌아가기
+                  </Link>
+                </div>
+              </div>
+            ) : null}
+            {recipeDetail ? (
+              <div className="h-full overflow-y-auto p-[50px_42px_38px] max-[1100px]:p-[38px_42px] max-[700px]:p-[25px_22px_24px] short-screen:p-[30px_34px_24px]">
+                <section aria-label="레시피 상세">
+                  <Link
+                    to="/recipes"
+                    className="inline-flex min-h-11 items-center text-sm text-[#4f5b50] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15332a] min-[1101px]:hidden"
+                  >
+                    ← 목록
+                  </Link>
+
+                  <header className="border-b border-[#c9bea7] pb-5 max-[700px]:pt-2">
+                    <p className="text-xs font-semibold tracking-[0.08em] text-[#8b6e35]">
+                      {typeLabels[recipeDetail.type]}
+                    </p>
+                    <h2 className="mt-2 text-[30px] font-semibold tracking-[0.04em] max-[700px]:text-[25px]">
+                      {recipeDetail.title}
+                    </h2>
+                    {recipeDetail.description ? (
+                      <p className="mt-3 text-sm leading-6 text-[#626157]">
+                        {recipeDetail.description}
+                      </p>
+                    ) : null}
+                    <div className="mt-4 flex flex-wrap gap-2 text-xs text-[#626157]">
+                      {recipeDetail.servings ? (
+                        <span className="rounded-full border border-[#d8cfbd] px-2.5 py-1">
+                          {recipeDetail.servings}
+                        </span>
+                      ) : null}
+                      {recipeDetail.cookingTimeMinutes !== null ? (
+                        <span className="rounded-full border border-[#d8cfbd] px-2.5 py-1">
+                          {recipeDetail.cookingTimeMinutes}분
+                        </span>
+                      ) : null}
+                    </div>
+                  </header>
+
+                  <section
+                    className="mt-6"
+                    aria-labelledby="recipe-ingredients-heading"
+                  >
+                    <h3
+                      id="recipe-ingredients-heading"
+                      className="text-lg font-semibold"
+                    >
+                      재료
+                    </h3>
+                    {recipeDetail.ingredients.length > 0 ? (
+                      <ul className="mt-3 divide-y divide-[#e0d8c8] border-y border-[#d8cfbd]">
+                        {recipeDetail.ingredients.map((ingredient) => (
+                          <li
+                            key={ingredient.order}
+                            className="flex min-h-11 items-center justify-between gap-4 py-2 text-sm"
+                          >
+                            <span>{ingredient.name}</span>
+                            <span className="text-right text-[#626157]">
+                              {[ingredient.amount, ingredient.unit]
+                                .filter(Boolean)
+                                .join(" ")}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 text-sm text-[#777469]">
+                        등록된 재료가 없습니다.
+                      </p>
+                    )}
+                  </section>
+
+                  <section
+                    className="mt-7"
+                    aria-labelledby="recipe-steps-heading"
+                  >
+                    <h3
+                      id="recipe-steps-heading"
+                      className="text-lg font-semibold"
+                    >
+                      조리 순서
+                    </h3>
+                    {recipeDetail.steps.length > 0 ? (
+                      <ol className="mt-3 space-y-4">
+                        {recipeDetail.steps.map((step) => (
+                          <li
+                            key={step.order}
+                            className="grid grid-cols-[28px_minmax(0,1fr)] gap-3 text-sm leading-6"
+                          >
+                            <span
+                              className="flex h-7 w-7 items-center justify-center rounded-full bg-[#15332a] text-xs text-[#f3e1b4]"
+                              aria-hidden="true"
+                            >
+                              {step.order}
+                            </span>
+                            <span>{step.description}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p className="mt-3 text-sm text-[#777469]">
+                        등록된 조리 순서가 없습니다.
+                      </p>
+                    )}
+                  </section>
+
+                  {recipeDetail.source ? (
+                    <section
+                      className="mt-7 border-t border-[#c9bea7] pt-5"
+                      aria-labelledby="recipe-source-heading"
+                    >
+                      <h3
+                        id="recipe-source-heading"
+                        className="text-sm font-semibold"
+                      >
+                        출처
+                      </h3>
+                      <a
+                        href={recipeDetail.source.url}
+                        className="mt-2 inline-block text-sm text-[#31523d] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15332a]"
+                      >
+                        {recipeDetail.source.title ??
+                          recipeDetail.source.url}
+                      </a>
+                      {recipeDetail.source.author ? (
+                        <p className="mt-1 text-xs text-[#777469]">
+                          {recipeDetail.source.author}
+                        </p>
+                      ) : null}
+                    </section>
+                  ) : null}
+                </section>
               </div>
             ) : null}
           </section>

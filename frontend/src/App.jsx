@@ -19,6 +19,14 @@ function App() {
         }
       />
       <Route
+        path="/recipes/:recipeId"
+        element={
+          <ProtectedRoute>
+            <RecipeListPlaceholderPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/recipes/new"
         element={
           <ProtectedRoute>

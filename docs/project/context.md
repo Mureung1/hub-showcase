@@ -23,7 +23,8 @@
 | `CTX-020` | 활성 | AI 구조화는 직접 입력, 안전하게 수집한 URL과 두 입력의 조합을 지원한다. URL 출처는 AI가 아닌 서버가 검증된 제출 URL과 수집한 제목·작성자로 설정하며, 직접 입력만 사용하면 `source`는 `null`이다. `warnings[].field` 검증 규칙은 계속 유지한다. | `BE-AI-001`, `BE-AI-002`, `FE-AI-001` |
 | `CTX-021` | 대체됨 | 공개 YouTube 영상 자막 자동 수집을 지원하지 않는 정책은 `BE-AI-005` 예정 정책으로 대체됐다. | `COMMON-AI-002`, `BE-AI-005` |
 | `CTX-022` | 활성 | 공개 `youtube.com`, `youtu.be` 영상은 YouTube Data API에서 제목·채널명을 조회하고 `youtube-transcript-api`로 공개 또는 자동 생성 자막을 한 번 조회한다. 자막 조회 실패 시 `gemini-3.6-flash`가 원본 URL·제목·채널명을 분석하고, 어느 경로든 기존 OpenAI가 최종 `RecipeDraft`를 구조화·검증한다. 프록시·쿠키·계정 인증·차단 우회와 영상·자막·썸네일 저장은 사용하지 않으며, 실패는 `URL_FETCH_FAILED` 422와 직접 입력 안내로 처리한다. | `BE-AI-005` |
-| `CTX-023` | 활성 | 레시피 저장 성공 시 상세 API·화면이 준비되기 전까지 `/recipes`로 이동하며 `location.state.createdRecipeId`에 생성 ID를 보존한다. `FE-RECIPE-004`에서 이 ID를 실제 상세 경로 연결에 사용한다. | `FE-RECIPE-003`, `FE-RECIPE-004` |
+| `CTX-023` | 대체됨 | 레시피 저장 성공 시 상세 API·화면이 준비되기 전까지 `/recipes`로 이동하며 `location.state.createdRecipeId`에 생성 ID를 보존한다. 대체 결정은 `CTX-024`다. | `FE-RECIPE-003`, `FE-RECIPE-004` |
+| `CTX-024` | 활성 | 목록 카드 선택과 레시피 저장 성공은 `/recipes/:recipeId`로 이동하고, 상세는 기존 책형 `RecipeListPlaceholderPage`의 오른쪽 페이지를 사용한다. 1100px 이하에서는 상세 단일 페이지와 `← 목록` 링크를 제공한다. | `FE-RECIPE-004` |
 
 ## 알려진 문제
 
