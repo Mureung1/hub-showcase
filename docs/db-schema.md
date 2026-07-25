@@ -217,6 +217,36 @@ language plpgsql
 - 온라인 면담은 `place`에 Google Meet 또는 Zoom 링크를 저장한다.
 - 신청 수락 시점에 `scheduled_at`, `place`가 빈 값(`NULL`)인 상태로 행이 자동 생성되며, 이후 확정 멘토가 값을 채운다.
 
+### 4.8 `message_read_states`
+
+사용자별로 신청(채팅방)의 마지막 메세지 읽음 시각을 저장한다. 안 읽은 메세지 수 계산에 사용한다.
+
+| 칼럼 | 타입 | NULL | 키/기본값 | 설명 |
+|---|---|---:|---|---|
+| `application_id` | `uuid` | 불가 | PK, FK → `applications.id` | 신청 ID |
+| `user_id` | `uuid` | 불가 | PK, FK → `profiles.id` | 사용자 ID |
+| `last_read_at` | `timestamptz` | 불가 | `now()` | 마지막으로 메세지를 읽은 시각 |
+
+기본키는 `(application_id, user_id)` 복합키로 사용한다.
+
+제약 및 규칙:
+
+- 참여자(신청 멘티 또는 확정 멘토)만 본인 명의로 행을 생성·조회·갱신할 수 있다.
+- 행이 없는 사용자는 아직 채팅방을 읽은 적이 없는 것으로 간주한다(`get_unread_message_counts` 함수 참고).
+
+#### `get_unread_message_counts` DB 함수
+
+사용자가 참여 중인 신청별 안 읽은 메세지 수를 계산하는 Postgres 함수다 (`supabase/migrations/20260725000000_create_message_read_states.sql`).
+
+```sql
+create or replace function get_unread_message_counts(p_user_id uuid)
+returns table (application_id uuid, unread_count bigint)
+language sql
+stable
+```
+
+사용자가 멘티 또는 확정 멘토로 참여 중인 각 신청에 대해, 본인이 보내지 않았고 `message_read_states.last_read_at`(없으면 `epoch`) 이후에 생성된 메세지 수를 센다.
+
 ## 5. 관계와 삭제 정책
 
 | 부모 | 자식 | 관계 | 삭제 정책 |
@@ -230,6 +260,8 @@ language plpgsql
 | `mentor_profiles` | `applications.accepted_mentor_id` | 1:N | 기본(NO ACTION) |
 | `applications` | `meetings` | 1:0..1 | CASCADE |
 | `mentor_profiles` | `meetings.mentor_id` | 1:N | RESTRICT |
+| `applications` | `message_read_states` | 1:N | CASCADE |
+| `profiles` | `message_read_states.user_id` | 1:N | CASCADE |
 
 신청 이력이 있는 사용자는 즉시 물리 삭제하기보다 비활성화 또는 익명화 정책을 검토한다.
 
