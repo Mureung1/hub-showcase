@@ -26,5 +26,6 @@ export const navigationTargets = {
   afterMentorSignup: routePaths.landingLogin,
   afterMenteeLogin: routePaths.menteeMentors,
   afterMentorLogin: routePaths.mentorHome,
+  afterApplicationComplete: routePaths.menteeMentors,
   mentorListMyPageButton: routePaths.menteeMyPage,
 };

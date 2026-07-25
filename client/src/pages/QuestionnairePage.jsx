@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getMentorById } from "../api/mentors";
 import { createApplication } from "../api/applications";
-import { routePaths } from "../routes/routePaths";
+import { navigationTargets, routePaths } from "../routes/routePaths";
 
 function QuestionnairePage() {
   const location = useLocation();
@@ -14,6 +14,7 @@ function QuestionnairePage() {
   const [isLoadingMentors, setIsLoadingMentors] = useState(mentorIds.length > 0);
   const [submissionError, setSubmissionError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isApplicationComplete, setIsApplicationComplete] = useState(false);
 
   useEffect(() => {
     if (mentorIds.length === 0) {
@@ -42,6 +43,16 @@ function QuestionnairePage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mentorIds.join(",")]);
+
+  useEffect(() => {
+    if (!isApplicationComplete) return undefined;
+
+    const redirectTimer = window.setTimeout(() => {
+      navigate(navigationTargets.afterApplicationComplete, { replace: true });
+    }, 1800);
+
+    return () => window.clearTimeout(redirectTimer);
+  }, [isApplicationComplete, navigate]);
 
   const handleBack = () => {
     navigate(routePaths.menteeMentors, {
@@ -81,20 +92,12 @@ function QuestionnairePage() {
     setIsSubmitting(true);
 
     try {
-      const response = await createApplication({
+      await createApplication({
         mentorIds,
         questionnaire,
       });
-      const application = response.data;
-      const completePath = routePaths.menteeApplicationComplete.replace(
-        ":applicationId",
-        application.id,
-      );
 
-      navigate(completePath, {
-        replace: true,
-        state: { application, selectedMentors },
-      });
+      setIsApplicationComplete(true);
     } catch (error) {
       setSubmissionError(error.message);
     } finally {
@@ -199,6 +202,24 @@ function QuestionnairePage() {
           </div>
         </form>
       </section>
+
+      {isApplicationComplete && (
+        <div className="questionnaire-complete-overlay">
+          <section className="card questionnaire-complete-card" role="status" aria-live="assertive">
+            <div className="questionnaire-complete-visual" aria-hidden="true">
+              <svg viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="25" />
+                <path d="m20 32 8 8 17-18" />
+              </svg>
+            </div>
+            <p className="eyebrow">APPLICATION COMPLETE</p>
+            <h2 className="card-title">면담 신청이 완료되었습니다</h2>
+            <p className="body-text">선택한 멘토에게 신청 내용이 전달되었습니다.</p>
+            <p className="muted-text">잠시 후 멘토 목록 화면으로 이동합니다.</p>
+            <span className="questionnaire-complete-progress" aria-hidden="true" />
+          </section>
+        </div>
+      )}
     </main>
   );
 }
