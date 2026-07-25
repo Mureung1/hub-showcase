@@ -54,4 +54,21 @@ const createMessage = async (req, res) => {
   }
 };
 
-module.exports = { createMessage, listMessages };
+const markMessagesAsRead = async (req, res) => {
+  try {
+    const result = await messagesService.markMessagesAsRead(req.user.id, req.params.applicationId);
+    return res.json({ data: result });
+  } catch (err) {
+    if (err instanceof NotFoundError) {
+      return sendError(res, 404, 'APPLICATION_NOT_FOUND', err.message);
+    }
+    if (err instanceof ForbiddenError) {
+      return sendError(res, 403, 'FORBIDDEN', err.message);
+    }
+
+    console.error(err);
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', '서버 내부 오류가 발생했습니다.');
+  }
+};
+
+module.exports = { createMessage, listMessages, markMessagesAsRead };

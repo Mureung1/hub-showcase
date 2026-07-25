@@ -77,6 +77,24 @@ const listMessages = async (userId, applicationId, { cursor, limit } = {}) => {
   };
 };
 
+const markMessagesAsRead = async (userId, applicationId) => {
+  const application = await fetchApplicationRow(applicationId);
+  assertParticipant(userId, application);
+
+  const lastReadAt = new Date().toISOString();
+
+  const { error } = await supabase
+    .from('message_read_states')
+    .upsert(
+      { application_id: applicationId, user_id: userId, last_read_at: lastReadAt },
+      { onConflict: 'application_id,user_id' },
+    );
+
+  if (error) throw error;
+
+  return { applicationId, lastReadAt };
+};
+
 const createMessage = async (userId, applicationId, body) => {
   const application = await fetchApplicationRow(applicationId);
   assertParticipant(userId, application);
@@ -98,4 +116,4 @@ const createMessage = async (userId, applicationId, body) => {
   return toApiMessage(data);
 };
 
-module.exports = { createMessage, listMessages };
+module.exports = { createMessage, listMessages, markMessagesAsRead };
