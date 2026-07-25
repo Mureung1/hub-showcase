@@ -90,3 +90,9 @@
 - 추가 발견·수정: 제안 카드의 `reason` 문장에 `reasonChip`/`estimatedMinutes` 같은 내부 변수 이름이 그대로 노출되던 것을 발견, 프롬프트에 "개발 용어 쓰지 말고 자연스러운 문장으로" 제약 추가해 수정.
 - 미결: T09(outcome 기록 — 완료 시 done, 다음 방문 시 이전 pending 일괄 not_done), T10(개인화 — recentLogs 실제 연결). split_node 재분할 시 원래 스텝 순서(created_time) 기준으로 다시 맨 위로 오는 점은 알려진 단순화.
 - 확인: [ ]
+
+## 2026-07-25 | T09 | outcome 기록
+- 작업: T08에서 빠져있던 실제 로그 기록 자체를 이번에 같이 채움. `app/api/agent-log/route.js`(신규) — 화면에서 수락/거절이 결정된 뒤 `logStruggle` 호출해 실제로 기록. `app/lib/agentlog.js`에 `markOutcomeDone(logId)`(즉시 done 갱신), `sweepStaleLogs()`(오늘 이전 timestamp의 pending을 전부 not_done, 로그가 어느 스텝이었는지는 안 보고 시간만 봄) 추가. `app/api/brain-dump/route.js`에 `sweepStaleLogs()` 호출 연결(S4 "Brain Dump 시작 시"). `app/api/steps/complete/route.js`가 `agentLogId`를 선택적으로 받아 `markOutcomeDone` 호출. `page.js`는 수락/거절마다 `logDecision()`으로 기록하고, encourage/shrink_step처럼 같은 스텝을 계속하는 경우만 로그 id를 `trackedAgentLogId`로 들고 있다가 그 스텝이 실제로 끝나면 `/api/steps/complete`에 같이 넘김.
+- 검증: `npm run verify` 통과. (1) 어제 날짜 pending 로그를 수동 생성 후 `/api/brain-dump` 호출 → not_done으로 정리됨 확인. (2) 실제 브라우저로 이유 칩(그냥 그래요)→제안(encourage)→수락까지 진행 후 AgentLog에 정확한 필드로 기록되는지 확인. (3) `/api/steps/complete`에 실제 스텝 id + 임의 생성한 pending 로그 id를 같이 보내 `markOutcomeDone`이 실제로 outcome을 done으로 바꾸는지 확인.
+- 미결: T10(개인화) — `recentLogs`가 아직 항상 빈 배열이라 `/api/struggle`이 과거 패턴을 못 보고 판단함. AgentLog가 "어느 스텝이었는지" Relation 없이 설계된 탓에, postpone_task/split_node/reorder_graph/swap_task/suggest_break/end_session 경로로 넘어간 로그는 완료 시점을 직접 못 잡고 다음 방문 때 not_done으로만 정리됨(설계상 알려진 단순화, S4 의도와 일치).
+- 확인: [ ]

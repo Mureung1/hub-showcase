@@ -43,8 +43,8 @@
 - [x] 수락/거절이 각각 tool 실행/재판단으로 연결된다
 
 ## C09 [T09] outcome 기록
-- [ ] 스텝 완료 도달 시 해당 pending 로그가 `done`으로 갱신된다
-- [ ] 다음 방문(새 Brain Dump 시작) 시 이전 날짜 pending이 일괄 `not_done`으로 마감된다
+- [x] 스텝 완료 도달 시 해당 pending 로그가 `done`으로 갱신된다 (encourage/shrink_step으로 이어서 완료한 경우, id를 화면 상태로 들고 있다가 갱신)
+- [x] 다음 방문(새 Brain Dump 시작) 시 이전 날짜 pending이 일괄 `not_done`으로 마감된다
 
 ## C10 [T10] 개인화
 - [ ] 판단 호출 시 최근 로그(전체 + 같은 category)가 프롬프트에 포함된다

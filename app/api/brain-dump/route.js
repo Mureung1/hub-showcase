@@ -2,6 +2,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { solar } from "@/app/lib/solar";
 import { createPage } from "@/app/lib/notion";
+import { sweepStaleLogs } from "@/app/lib/agentlog";
 
 // skills.md 고정 셋 (task_category, 7개). 한글 뜻: cleaning=청소/정리, contact=연락,
 // paperwork=문서작성, errands=외출/이동, self_care=자기관리, work=학습/업무, other=기타.
@@ -50,6 +51,9 @@ export async function POST(request) {
   if (!text || text.trim() === "") {
     return Response.json({ error: "text가 비어 있어요" }, { status: 400 });
   }
+
+  // S4: 스케줄러 없이 Brain Dump 시작 시 어제까지의 pending 로그를 일괄 정리한다.
+  await sweepStaleLogs();
 
   const { object } = await generateObject({
     model: solar,

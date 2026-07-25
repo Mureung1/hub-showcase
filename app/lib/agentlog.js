@@ -1,4 +1,4 @@
-import { createPage, queryDatabase } from "@/app/lib/notion";
+import { createPage, queryDatabase, updatePage } from "@/app/lib/notion";
 
 function toNotionProperties(entry) {
   return {
@@ -30,6 +30,36 @@ function fromNotionPage(page) {
 export async function logStruggle(entry) {
   const databaseId = process.env.NOTION_AGENTLOG_DB_ID;
   return createPage(databaseId, toNotionProperties(entry));
+}
+
+// 완료 시 즉시 호출: 해당 로그 하나만 done으로 갱신(S4).
+export async function markOutcomeDone(logId) {
+  return updatePage(logId, { outcome: { select: { name: "done" } } });
+}
+
+// 다음 방문(Brain Dump 시작) 시 호출: 오늘 이전 timestamp의 pending을 전부 not_done으로(S4).
+// "이 로그가 어느 스텝이었는지"는 안 보고, 시간이 지나도록 pending이면 안 끝난 걸로 친다.
+export async function sweepStaleLogs() {
+  const databaseId = process.env.NOTION_AGENTLOG_DB_ID;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const pending = await queryDatabase(databaseId, {
+    filter: { property: "outcome", select: { equals: "pending" } },
+  });
+
+  const stale = pending.filter((page) => {
+    const timestamp = page.properties.timestamp?.date?.start;
+    return timestamp && new Date(timestamp) < todayStart;
+  });
+
+  await Promise.all(
+    stale.map((page) =>
+      updatePage(page.id, { outcome: { select: { name: "not_done" } } })
+    )
+  );
+
+  return stale.length;
 }
 
 // category를 주면 같은 category 기록을 최신순으로 먼저 채우고,

@@ -32,6 +32,9 @@ export default function Home() {
   const [proposal, setProposal] = useState(null);
   const [struggleLoading, setStruggleLoading] = useState(false);
   const [struggleError, setStruggleError] = useState(null);
+  // encourage/shrink_step으로 하던 스텝을 계속할 때만 채워짐: 그 스텝이 나중에 진짜 끝나면
+  // 이 id로 AgentLog의 그 로그를 done으로 갱신한다(S4 markOutcomeDone).
+  const [trackedAgentLogId, setTrackedAgentLogId] = useState(null);
 
   const task = microsteps[currentIndex]?.title ?? "";
 
@@ -70,7 +73,7 @@ export default function Home() {
       const response = await fetch("/api/steps/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: current.id }),
+        body: JSON.stringify({ id: current.id, agentLogId: trackedAgentLogId }),
       });
       if (!response.ok) throw new Error("완료 처리에 실패했어요, 다시 시도해줘");
     } catch (err) {
@@ -78,6 +81,7 @@ export default function Home() {
       return; // Notion에 Done 기록이 안 됐으니 다음 스텝으로 넘어가지 않는다.
     }
 
+    setTrackedAgentLogId(null);
     advanceToNextStep();
   }
 
@@ -141,7 +145,29 @@ export default function Home() {
     callStruggle(chip, []);
   }
 
+  // 수락/거절 결정 하나를 AgentLog에 기록한다(S3 logStruggle). 실패해도 화면 흐름은 막지 않는다.
+  async function logDecision(accepted) {
+    try {
+      const response = await fetch("/api/agent-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskCategory: microsteps[currentIndex]?.category,
+          reasonChip,
+          proposedTool: proposal.proposedTool,
+          reason: proposal.reason,
+          accepted,
+        }),
+      });
+      const { id } = await response.json();
+      return id;
+    } catch {
+      return null;
+    }
+  }
+
   function handleReject() {
+    logDecision(false);
     callStruggle(reasonChip, [...rejectedTools, proposal.proposedTool]);
   }
 
@@ -150,23 +176,29 @@ export default function Home() {
     const current = microsteps[currentIndex];
 
     if (tool === "suggest_break") {
+      logDecision(true);
       setStep("rest");
       return;
     }
 
     if (tool === "end_session") {
+      logDecision(true);
       goHome();
       return;
     }
 
     if (tool === "encourage" || tool === "shrink_step") {
       // 구조 변경 없이 격려/축소 문구(이미 proposal.reason으로 보여줌)만 전하고 하던 화면으로.
+      // 이 스텝을 계속하는 거라, 나중에 진짜 완료되면 done으로 갱신할 수 있게 로그 id를 들고 있는다.
+      const logId = await logDecision(true);
+      setTrackedAgentLogId(logId);
       resetStruggleState();
       setStep("focus");
       return;
     }
 
     if (tool === "postpone_task") {
+      logDecision(true);
       await fetch("/api/steps/postpone", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -178,6 +210,7 @@ export default function Home() {
     }
 
     if (tool === "reorder_graph" || tool === "swap_task") {
+      logDecision(true);
       // 지금 스텝을 뒤로 미루고, 남은 것 중 다음 스텝을 먼저 보여준다(로컬 순서만 변경).
       const rest = microsteps.slice(currentIndex + 1);
       const reordered = [
@@ -192,6 +225,7 @@ export default function Home() {
     }
 
     if (tool === "split_node") {
+      logDecision(true);
       setStruggleLoading(true);
       try {
         await fetch("/api/brain-dump", {
