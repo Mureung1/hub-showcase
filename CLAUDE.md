@@ -17,7 +17,7 @@
 
 ## 제품 경계
 
-- 범위는 [docs/backlog.md](docs/backlog.md)의 T01~T18 + [docs/dev-plan.md](docs/dev-plan.md). Phase 2 백로그(2분 스타터·통계·화이트노이즈 등)와 선제적 개입은 **지금 구현하지 않는다**.
+- 범위는 [docs/backlog.md](docs/backlog.md)의 T01~T19 + [docs/dev-plan.md](docs/dev-plan.md). Phase 2 백로그(2분 스타터·통계·화이트노이즈 등)와 선제적 개입은 **지금 구현하지 않는다**.
 - checklist에 없는 기능을 임의 추가하지 않는다. 필요하면 문서(skills/backlog/checklist)를 먼저 갱신하고 구현한다.
 
 ## 현재 구현 상태 (작업 시 갱신)

@@ -13,8 +13,8 @@
 | [dev-plan.md](dev-plan.md) | 전체 로드맵·우선순위·기술 스택·백로그(Phase 2) | 범위·의존 판단이 필요할 때 |
 | [etc/agent-design.md](etc/agent-design.md) | Feat-4 Agent 루프 설계(동결) | Agent 관련 Task 착수 전 |
 | [skills.md](skills.md) | S1~S5 입력·출력·제약 typed 계약 (단일 진실 소스) | 구현 대상 스킬 착수 전 필수 |
-| [backlog.md](backlog.md) | T01~T18 구현 순서·선행조건·상태 | 매 작업 시작·종료 시 |
-| [checklist.md](checklist.md) | C01~C18 검증 가능한 완료 조건 | 매 작업 시작·종료 시 |
+| [backlog.md](backlog.md) | T01~T19 구현 순서·선행조건·상태 | 매 작업 시작·종료 시 |
+| [checklist.md](checklist.md) | C01~C19 검증 가능한 완료 조건 | 매 작업 시작·종료 시 |
 | [prerequisites.md](prerequisites.md) | 사용자가 준비할 API key·계정·결정 사항 | Task 착수 전 외부 자격증명 필요 여부 확인 |
 | [spec.md](spec.md) | Feat 단위 진행 단계(설계→개발→PR→머지) | Feat 상태 갱신 시 |
 | [etc/component-tree.md](etc/component-tree.md) | 화면·컴포넌트 구조 | 프론트 Task 착수 전 |
