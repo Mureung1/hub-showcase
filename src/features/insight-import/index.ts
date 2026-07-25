@@ -1,4 +1,9 @@
 export { IMPORT_LIMITS } from './model/import_limits';
+export { analyzeImportCandidates } from './model/import_analysis';
+export type { ImportAnalysis } from './model/import_analysis';
+export { analyzeImportUrl } from './model/import_url';
+export type { ImportUrlResult } from './model/import_url';
+export { pastedTextAdapter } from './model/pasted_text_adapter';
 export {
   IMPORT_ADAPTER_KEYS,
   IMPORT_INPUT_KINDS,
