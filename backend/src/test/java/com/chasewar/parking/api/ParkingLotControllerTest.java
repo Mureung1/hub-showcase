@@ -1,19 +1,16 @@
 package com.chasewar.parking.api;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.global.infra.placesearch.PlaceSearchClient;
 import com.chasewar.parking.domain.ParkingLot;
-import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.parking.domain.vo.Fee;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import com.chasewar.support.ControllerTest;
 import com.chasewar.support.fixture.ParkingLotFixtureBuilder;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,7 +27,7 @@ class ParkingLotControllerTest extends ControllerTest {
     @MockitoBean
     private PlaceSearchClient placeSearchClient;
 
-    @DisplayName("목적지로 근처 주차장을 검색할 때")
+    @DisplayName("목적지 좌표로 근처 주차장을 검색할 때")
     @Nested
     class Search {
 
@@ -38,8 +35,6 @@ class ParkingLotControllerTest extends ControllerTest {
         @Test
         void success_search() throws Exception {
             // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.of(DESTINATION));
             parkingLotRepository.save(ParkingLotFixtureBuilder.builder()
                     .pkltCd("12345")
                     .name("역삼동 공영주차장")
@@ -47,32 +42,45 @@ class ParkingLotControllerTest extends ControllerTest {
                     .build());
 
             // when & then
-            mockMvc.perform(get("/api/parking-lots").param("destination", "강남역"))
+            mockMvc.perform(get("/api/parking-lots")
+                            .param("latitude", "37.5")
+                            .param("longitude", "127.0")
+                    )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].name").value("역삼동 공영주차장"))
                     .andExpect(jsonPath("$[0].payType").value("PAID"));
         }
 
-        @DisplayName("목적지를 찾지 못하면 404와 에러 코드를 반환한다")
+        @DisplayName("목적지 좌표 파라미터가 없으면 400와 에러 코드를 반환한다")
         @Test
         void fail_notFound() throws Exception {
-            // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.empty());
-
-            // when & then
-            mockMvc.perform(get("/api/parking-lots").param("destination", "알 수 없는 주차장"))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.code").value("NOT_FOUND_DESTINATION"));
-        }
-
-        @DisplayName("목적지 파라미터가 없으면 400과 에러 코드를 반환한다")
-        @Test
-        void fail_noDestination() throws Exception {
             // when & then
             mockMvc.perform(get("/api/parking-lots"))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.code").value("MISSING_REQUEST_PARAMETER"));
+                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST_PARAMETER"));
+        }
+
+        @DisplayName("목적지 좌표가 유효 범위를 벗어나면 400과 에러 코드를 반환한다")
+        @Test
+        void fail_noDestination() throws Exception {
+            // when & then
+            mockMvc.perform(get("/api/parking-lots")
+                            .param("latitude", "999")
+                            .param("longitude", "127.0")
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST_PARAMETER"));
+        }
+
+        @DisplayName("좌표가 숫자가 아니면 400과 에러 코드를 반환한다")
+        @Test
+        void fail_notNumberLatitude() throws Exception {
+            // when & then
+            mockMvc.perform(get("/api/parking-lots")
+                            .param("latitude", "abc")
+                            .param("longitude", "127.0"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST_PARAMETER"));
         }
     }
 

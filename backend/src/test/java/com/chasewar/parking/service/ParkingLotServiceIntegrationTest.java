@@ -1,13 +1,10 @@
 package com.chasewar.parking.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.given;
 
-import com.chasewar.global.infra.placesearch.PlaceSearchClient;
+import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.ParkingLotRealtime;
-import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.parking.domain.vo.Fee;
 import com.chasewar.parking.domain.vo.OperatingHours;
 import com.chasewar.parking.domain.vo.RealtimeStatus;
@@ -19,20 +16,14 @@ import com.chasewar.support.IntegrationTest;
 import com.chasewar.support.fixture.ParkingLotFixtureBuilder;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class ParkingLotServiceIntegrationTest extends IntegrationTest {
 
     private static final Coordinates destinationCoordinates = new Coordinates(37.5, 127.0);
-    private static final String destination = "강남역";
-
-    @MockitoBean
-    private PlaceSearchClient placeSearchClient;
 
     @Autowired
     private ParkingLotRepository parkingLotRepository;
@@ -51,14 +42,12 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
         @Test
         void success_within1km() {
             // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.of(destinationCoordinates));
             persistParkingLot("12345", "1km 이내 가까운 주차장", new Coordinates(37.501, 127.0));
             persistParkingLot("30000", "1km 이내 먼 주차장", new Coordinates(37.507, 127.0));
             persistParkingLot("67890", "1km 초과 주차장", new Coordinates(37.52, 127.0));
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destinationCoordinates);
 
             // then
             assertThat(results)
@@ -70,14 +59,12 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
         @Test
         void success_sortedByDistance() {
             // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.of(destinationCoordinates));
             persistParkingLot("30000", "1km 이내 먼 주차장", new Coordinates(37.507, 127.0));
             persistParkingLot("20000", "1km 이내 중간 주차장", new Coordinates(37.504, 127.0));
             persistParkingLot("10000", "1km 이내 가장 가까운 주차장", new Coordinates(37.501, 127.0));
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destinationCoordinates);
 
             // then
             assertThat(results)
@@ -89,13 +76,11 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
         @Test
         void success_excludeNoCoordinates() {
             // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.of(destinationCoordinates));
             persistParkingLot("10000", "좌표 있는 주차장", new Coordinates(37.501, 127.0));
             persistParkingLot("20000", "좌표 없는 주차장", null);
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destinationCoordinates);
 
             // then
             assertThat(results)
@@ -107,14 +92,12 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
         @Test
         void success_limitTo10() {
             // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.of(destinationCoordinates));
             for (int i = 1; i <= 15; i++) {
                 persistParkingLot(String.valueOf(i), "테스트 주차장" + i, new Coordinates(37.5 + i * 0.000001, 127.0));
             }
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destinationCoordinates);
 
             // then
             assertThat(results).hasSize(10);
@@ -124,20 +107,19 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
         @Test
         void success_withRealtimeStatus() {
             // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.of(destinationCoordinates));
             parkingLotRepository.save(ParkingLotFixtureBuilder.builder()
                     .pkltCd("10001")
                     .name("실시간 데이터가 있는 주차장")
                     .coordinates(new Coordinates(37.502, 127.0))
                     .build()
             );
+
             parkingLotRealtimeRepository.save(
                     new ParkingLotRealtime("10001", 100, 60, LocalDateTime.of(2026, 7, 23, 17, 02))
             );
 
             // when
-            List<ParkingLotSearchResponse> responses = parkingLotService.search(destination);
+            List<ParkingLotSearchResponse> responses = parkingLotService.search(destinationCoordinates);
 
             // then
             assertThat(responses.get(0).name()).isEqualTo("실시간 데이터가 있는 주차장");
@@ -148,8 +130,6 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
         @Test
         void success_withoutRealtimeStatus() {
             // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.of(destinationCoordinates));
             parkingLotRepository.save(ParkingLotFixtureBuilder.builder()
                     .pkltCd("10001")
                     .name("실시간 데이터가 없는 주차장")
@@ -158,7 +138,7 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
             );
 
             // when
-            List<ParkingLotSearchResponse> responses = parkingLotService.search(destination);
+            List<ParkingLotSearchResponse> responses = parkingLotService.search(destinationCoordinates);
 
             // then
             assertThat(responses.get(0).name()).isEqualTo("실시간 데이터가 없는 주차장");

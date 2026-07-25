@@ -4,7 +4,6 @@ import org.springframework.http.HttpStatus;
 
 public enum NotFoundErrorCode implements ErrorCode {
 
-    NOT_FOUND_DESTINATION("목적지를 찾을 수 없습니다."),
     NOT_FOUND_PARKING_LOT("주차장을 찾을 수 없습니다.");
 
     private static final HttpStatus status = HttpStatus.NOT_FOUND;

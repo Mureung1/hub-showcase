@@ -3,7 +3,6 @@ package com.chasewar.parking.service;
 import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.global.exception.ChasewarException;
 import com.chasewar.global.exception.errorcode.NotFoundErrorCode;
-import com.chasewar.global.infra.placesearch.PlaceSearchClient;
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.ParkingLotRealtime;
 import com.chasewar.parking.dto.ParkingLotDetailResponse;
@@ -26,15 +25,11 @@ public class ParkingLotService {
     private static final double SEARCH_MAX_RADIUS_METERS = 1_000.0;
     private static final int MAX_RESULTS_COUNT = 10;
 
-    private final PlaceSearchClient placeSearchClient;
     private final ParkingLotRepository parkingLotRepository;
     private final ParkingLotRealtimeRepository parkingLotRealtimeRepository;
 
     @Transactional(readOnly = true)
-    public List<ParkingLotSearchResponse> search(String destination) {
-        Coordinates destinationCoordinates = placeSearchClient.searchByKeyword(destination)
-                .orElseThrow(() -> new ChasewarException(NotFoundErrorCode.NOT_FOUND_DESTINATION));
-
+    public List<ParkingLotSearchResponse> search(Coordinates destinationCoordinates) {
         return findNearbyParkingLots(destinationCoordinates);
     }
 
