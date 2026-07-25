@@ -117,6 +117,7 @@ describe('가져오기 URL 분석', () => {
     'http://[fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]/a',
     'http://[fe80::]/a',
     'http://[febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff]/a',
+    'https://[fec0::1]/a',
     'http://[::ffff:10.0.0.1]/a',
     'http://[::ffff:127.0.0.1]/a',
     'http://[::ffff:192.168.0.1]/a',
@@ -127,11 +128,10 @@ describe('가져오기 URL 분석', () => {
     });
   });
 
-  it.each([
-    'https://[2001:4860:4860::8888]/a',
-    'https://[::ffff:8.8.8.8]/a',
-    'https://[fec0::1]/a',
-  ])('차단 범위 밖 IPv6 주소 %s를 허용한다', (url) => {
-    expect(analyzeImportUrl(url)).toMatchObject({ ok: true });
-  });
+  it.each(['https://[2001:4860:4860::8888]/a', 'https://[::ffff:8.8.8.8]/a'])(
+    '차단 범위 밖 IPv6 주소 %s를 허용한다',
+    (url) => {
+      expect(analyzeImportUrl(url)).toMatchObject({ ok: true });
+    }
+  );
 });

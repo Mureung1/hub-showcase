@@ -161,12 +161,14 @@ function isPrivateIpv6(ipv6: readonly number[]) {
     ipv6.slice(0, 7).every((part) => part === 0) && ipv6[7] === 1;
   const isUniqueLocal = (first & 0xfe00) === 0xfc00;
   const isLinkLocal = (first & 0xffc0) === 0xfe80;
+  const isSiteLocal = (first & 0xffc0) === 0xfec0;
 
   return (
     isUnspecified ||
     isLoopback ||
     isUniqueLocal ||
     isLinkLocal ||
+    isSiteLocal ||
     isPrivateIpv4MappedIpv6(ipv6)
   );
 }
