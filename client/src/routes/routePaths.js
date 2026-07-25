@@ -9,7 +9,6 @@ export const routePaths = {
   menteeMentors: "/mentee/mentors",
   menteeMentorDetail: "/mentee/mentors/:mentorId",
   menteeApplicationNew: "/mentee/applications/new",
-  menteeApplicationComplete: "/mentee/applications/:applicationId/complete",
   menteeMyPage: "/mentee/mypage",
   menteeApplications: "/mentee/mypage/applications",
   menteeApplicationDetail: "/mentee/mypage/applications/:applicationId",

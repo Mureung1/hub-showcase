@@ -1,5 +1,4 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import ApplicationCompletePage from "../pages/ApplicationCompletePage";
 import LandingPage from "../pages/LandingPage";
 import MenteeApplicationListPage from "../pages/MenteeApplicationListPage";
 import MenteeProfileEditPage from "../pages/MenteeProfileEditPage";
@@ -30,7 +29,6 @@ function AppRoutes() {
         <Route path={routePaths.menteeMentors} element={<MentorListPage />} />
         <Route path={routePaths.menteeMentorDetail} element={<MentorDetailPage />} />
         <Route path={routePaths.menteeApplicationNew} element={<QuestionnairePage />} />
-        <Route path={routePaths.menteeApplicationComplete} element={<ApplicationCompletePage />} />
         <Route path={routePaths.menteeMyPage} element={<MenteeProfileEditPage />} />
         <Route path={routePaths.menteeApplications} element={<MenteeApplicationListPage />} />
         <Route
