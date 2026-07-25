@@ -1,4 +1,4 @@
-package com.chasewar.parking.infra.seoul.dto;
+package com.chasewar.parking.infra.opendata.seoul.dto;
 
 import com.chasewar.parking.domain.ParkingLotRealtime;
 import com.fasterxml.jackson.annotation.JsonProperty;

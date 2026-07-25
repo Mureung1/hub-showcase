@@ -1,6 +1,6 @@
 package com.chasewar.parking.service;
 
-import com.chasewar.global.infra.geocoding.GeocodingClient;
+import com.chasewar.parking.infra.geocoding.GeocodingClient;
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import java.util.List;

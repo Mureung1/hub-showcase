@@ -1,8 +1,8 @@
 package com.chasewar.parking.service;
 
 import com.chasewar.parking.domain.ParkingLot;
-import com.chasewar.parking.infra.seoul.SeoulParkingLotClient;
-import com.chasewar.parking.infra.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Row;
+import com.chasewar.parking.infra.opendata.SeoulParkingLotClient;
+import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Row;
 import com.chasewar.parking.repository.ParkingLotJdbcRepository;
 import java.util.ArrayList;
 import java.util.List;

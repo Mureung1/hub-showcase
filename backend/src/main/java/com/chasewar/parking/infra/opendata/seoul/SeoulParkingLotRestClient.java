@@ -1,7 +1,8 @@
-package com.chasewar.parking.infra.seoul;
+package com.chasewar.parking.infra.opendata.seoul;
 
-import com.chasewar.parking.infra.seoul.dto.SeoulParkingLotResponse;
-import com.chasewar.parking.infra.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Result;
+import com.chasewar.parking.infra.opendata.SeoulParkingLotClient;
+import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse;
+import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

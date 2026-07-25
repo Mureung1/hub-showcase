@@ -1,9 +1,9 @@
-package com.chasewar.global.infra.geocoding.kakao;
+package com.chasewar.parking.infra.geocoding.kakao;
 
 import com.chasewar.global.domain.vo.Coordinates;
-import com.chasewar.global.infra.geocoding.GeocodingClient;
-import com.chasewar.global.infra.geocoding.kakao.dto.KakaoAddressResponse;
-import com.chasewar.global.infra.geocoding.kakao.dto.KakaoAddressResponse.Document;
+import com.chasewar.parking.infra.geocoding.GeocodingClient;
+import com.chasewar.parking.infra.geocoding.kakao.dto.KakaoAddressResponse;
+import com.chasewar.parking.infra.geocoding.kakao.dto.KakaoAddressResponse.Document;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;

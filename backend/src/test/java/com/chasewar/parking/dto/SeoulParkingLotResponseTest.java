@@ -3,7 +3,7 @@ package com.chasewar.parking.dto;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.chasewar.parking.domain.ParkingLot;
-import com.chasewar.parking.infra.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Row;
+import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Row;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -1,4 +1,4 @@
-package com.chasewar.global.infra.geocoding.kakao.dto;
+package com.chasewar.parking.infra.geocoding.kakao.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;

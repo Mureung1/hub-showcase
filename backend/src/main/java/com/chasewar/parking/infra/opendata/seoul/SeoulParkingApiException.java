@@ -1,4 +1,4 @@
-package com.chasewar.parking.infra.seoul;
+package com.chasewar.parking.infra.opendata.seoul;
 
 public class SeoulParkingApiException extends RuntimeException {
 

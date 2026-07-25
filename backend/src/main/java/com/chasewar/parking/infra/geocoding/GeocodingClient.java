@@ -1,4 +1,4 @@
-package com.chasewar.global.infra.geocoding;
+package com.chasewar.parking.infra.geocoding;
 
 import com.chasewar.global.domain.vo.Coordinates;
 import java.util.Optional;
