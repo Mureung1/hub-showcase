@@ -29,11 +29,11 @@
     reasonChip: reason_chip,
     currentStep: MicroStep,
     remainingSteps: MicroStep[],
-    recentLogs: AgentLog[],          // 최근 N개 (T10 전까지는 [])
     rejectedTools: tool[],           // 이번 이벤트에서 이미 거절된 tool
     remainingTimeMinutes: number     // 오늘 자정까지 남은 분
   }
   ```
+  `recentLogs`는 클라이언트 입력이 아니라(T10부터) 서버가 `/api/struggle` 내부에서 `getRecentLogs({ limit: 15, category: currentStep.category })`로 직접 채운다 — 클라이언트는 Notion에 직접 접근할 수 없어 이 값을 만들 방법이 없었기 때문.
 - **출력**: `{ proposedTool: tool, reason: string }`
 - **제약**:
   - `proposedTool`은 고정 8개 중 하나(스키마 강제), `rejectedTools`에 든 것은 다시 고르지 않는다.

@@ -35,6 +35,8 @@ export default function Home() {
   // encourage/shrink_step으로 하던 스텝을 계속할 때만 채워짐: 그 스텝이 나중에 진짜 끝나면
   // 이 id로 AgentLog의 그 로그를 done으로 갱신한다(S4 markOutcomeDone).
   const [trackedAgentLogId, setTrackedAgentLogId] = useState(null);
+  // 타이머가 실제로 시작된 시각(C10 행동 패턴: StartedAt/ActualMinutes 계산용).
+  const [stepStartedAt, setStepStartedAt] = useState(null);
 
   const task = microsteps[currentIndex]?.title ?? "";
 
@@ -69,11 +71,22 @@ export default function Home() {
     const current = microsteps[currentIndex];
     setCompleteError(null);
 
+    const completedAt = new Date();
+    const actualMinutes = stepStartedAt
+      ? Math.round((completedAt - stepStartedAt) / 60000)
+      : null;
+
     try {
       const response = await fetch("/api/steps/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: current.id, agentLogId: trackedAgentLogId }),
+        body: JSON.stringify({
+          id: current.id,
+          agentLogId: trackedAgentLogId,
+          startedAt: stepStartedAt?.toISOString() ?? null,
+          completedAt: completedAt.toISOString(),
+          actualMinutes,
+        }),
       });
       if (!response.ok) throw new Error("완료 처리에 실패했어요, 다시 시도해줘");
     } catch (err) {
@@ -82,6 +95,7 @@ export default function Home() {
     }
 
     setTrackedAgentLogId(null);
+    setStepStartedAt(null);
     advanceToNextStep();
   }
 
@@ -122,7 +136,6 @@ export default function Home() {
           reasonChip: chip,
           currentStep: microsteps[currentIndex],
           remainingSteps: microsteps.slice(currentIndex + 1),
-          recentLogs: [], // T10 전까지는 항상 빈 배열(S2 계약)
           rejectedTools: rejected,
           remainingTimeMinutes: minutesUntilMidnight(),
         }),
@@ -271,7 +284,10 @@ export default function Home() {
     return (
       <OneFocusView
         task={task}
-        onStart={() => setStep("timer")}
+        onStart={() => {
+          setStepStartedAt(new Date());
+          setStep("timer");
+        }}
         onStruggle={() => setStep("reason")}
       />
     );

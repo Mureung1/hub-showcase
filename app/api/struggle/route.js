@@ -1,6 +1,37 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { solar } from "@/app/lib/solar";
+import { getRecentLogs } from "@/app/lib/agentlog";
+import { queryDatabase } from "@/app/lib/notion";
+
+// 최근 완료된 스텝들에서 "예상 대비 실제 시간", "미룬 횟수" 요약을 뽑는다(C10 행동 패턴).
+async function getBehaviorSummary() {
+  const rows = await queryDatabase(process.env.NOTION_STEPS_DB_ID, {
+    filter: { property: "Done", checkbox: { equals: true } },
+    sorts: [{ property: "CompletedAt", direction: "descending" }],
+  });
+  const recent = rows.slice(0, 10);
+  if (recent.length === 0) return null;
+
+  const ratios = recent
+    .map((row) => {
+      const estimated = row.properties?.EstimatedMinutes?.number;
+      const actual = row.properties?.ActualMinutes?.number;
+      return estimated && actual ? actual / estimated : null;
+    })
+    .filter((r) => r !== null);
+  const avgRatio =
+    ratios.length > 0 ? ratios.reduce((a, b) => a + b, 0) / ratios.length : null;
+
+  const postponedCount = recent.filter(
+    (row) => (row.properties?.PostponeCount?.number ?? 0) > 0
+  ).length;
+
+  return {
+    avgActualVsEstimatedRatio: avgRatio ? Math.round(avgRatio * 100) / 100 : null,
+    postponedStepsOutOfRecent: `${postponedCount}/${recent.length}`,
+  };
+}
 
 const TOOLS = [
   "split_node",
@@ -29,10 +60,13 @@ export async function POST(request) {
     reasonChip,
     currentStep,
     remainingSteps = [],
-    recentLogs = [],
     rejectedTools = [],
     remainingTimeMinutes,
   } = await request.json();
+
+  // recentLogs는 클라이언트 입력이 아니라 서버가 직접 채운다(T10, S2 갱신).
+  const recentLogs = await getRecentLogs({ limit: 15, category: currentStep?.category });
+  const behaviorSummary = await getBehaviorSummary();
 
   // 이미 거절당한 tool은 후보에서 뺀다(S2 제약).
   let candidates = TOOLS.filter((tool) => !rejectedTools.includes(tool));
@@ -80,6 +114,9 @@ export async function POST(request) {
     (isColdStart
       ? `이 사용자의 과거 기록이 아직 없다(cold start). 이럴 땐 reasonChip을 1차 근거로 참고해라 - ${COLD_START_PRIOR}`
       : "아래 최근 개입 기록을 참고해서, 반복적으로 거절한 tool이나 패턴이 보이면 이번엔 다른 방식을 시도해라.") +
+    (behaviorSummary
+      ? " 최근 완료한 스텝들의 행동 패턴도 참고해라: avgActualVsEstimatedRatio는 예상 시간 대비 실제 걸린 시간의 배율이다(1보다 크면 평소 예상보다 오래 걸린다는 뜻). postponedStepsOutOfRecent는 최근 스텝 중 한 번이라도 미룬 적 있는 비율이다."
+      : "") +
     ' reason은 사용자에게 그대로 보여줄 문장이니, reasonChip·estimatedMinutes·remainingSteps 같은 ' +
     "변수 이름이나 개발 용어를 절대 쓰지 말고 짧고 자연스러운 한국어 말투로 써라. " +
     '결과는 반드시 다음 JSON 형식으로만 응답한다(다른 필드 추가 금지): {"proposedTool": string, "reason": string}';
@@ -89,6 +126,7 @@ export async function POST(request) {
     currentStep,
     remainingSteps,
     recentLogs,
+    behaviorSummary,
     remainingTimeMinutes,
   });
 

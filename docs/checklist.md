@@ -47,10 +47,10 @@
 - [x] 다음 방문(새 Brain Dump 시작) 시 이전 날짜 pending이 일괄 `not_done`으로 마감된다
 
 ## C10 [T10] 개인화
-- [ ] 판단 호출 시 최근 로그(전체 + 같은 category)가 프롬프트에 포함된다
-- [ ] 같은 tool을 반복 거절한 이력이 있으면 다른 tool을 우선 시도하는 게 관찰된다
-- [ ] Notion Steps DB에 `ActualMinutes`·`StartedAt`·`CompletedAt`·`PostponeCount` 속성이 추가되고, 스텝 진행에 따라 채워진다
-- [ ] 판단 호출 시 위 행동 패턴 속성(예상 대비 실제 소요 시간, 미룬 횟수 등)이 프롬프트에 참고 정보로 포함된다
+- [x] 판단 호출 시 최근 로그(전체 + 같은 category)가 프롬프트에 포함된다
+- [x] 같은 tool을 반복 거절한 이력이 있으면 다른 tool을 우선 시도하는 게 관찰된다
+- [x] Notion Steps DB에 `ActualMinutes`·`StartedAt`·`CompletedAt`·`PostponeCount` 속성이 추가되고, 스텝 진행에 따라 채워진다
+- [x] 판단 호출 시 위 행동 패턴 속성(예상 대비 실제 소요 시간, 미룬 횟수 등)이 프롬프트에 참고 정보로 포함된다
 
 ## C11 [T11] Agent 평가
 - [ ] "개입했어야 하는 상황" 정답 세트가 파일로 존재한다

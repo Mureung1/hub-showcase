@@ -96,3 +96,9 @@
 - 검증: `npm run verify` 통과. (1) 어제 날짜 pending 로그를 수동 생성 후 `/api/brain-dump` 호출 → not_done으로 정리됨 확인. (2) 실제 브라우저로 이유 칩(그냥 그래요)→제안(encourage)→수락까지 진행 후 AgentLog에 정확한 필드로 기록되는지 확인. (3) `/api/steps/complete`에 실제 스텝 id + 임의 생성한 pending 로그 id를 같이 보내 `markOutcomeDone`이 실제로 outcome을 done으로 바꾸는지 확인.
 - 미결: T10(개인화) — `recentLogs`가 아직 항상 빈 배열이라 `/api/struggle`이 과거 패턴을 못 보고 판단함. AgentLog가 "어느 스텝이었는지" Relation 없이 설계된 탓에, postpone_task/split_node/reorder_graph/swap_task/suggest_break/end_session 경로로 넘어간 로그는 완료 시점을 직접 못 잡고 다음 방문 때 not_done으로만 정리됨(설계상 알려진 단순화, S4 의도와 일치).
 - 확인: [ ]
+
+## 2026-07-25 | T10 | 개인화 (최근 로그 + 행동 패턴을 판단에 반영)
+- 작업: `docs/skills.md` S2 갱신 — `recentLogs`를 클라이언트 입력에서 제거하고 "서버가 내부에서 `getRecentLogs` 호출"로 계약 수정(클라이언트가 Notion에 직접 접근할 방법이 없어서). `app/api/struggle/route.js`가 `getRecentLogs({ limit: 15, category: currentStep.category })`를 직접 호출하고, 추가로 `getBehaviorSummary()`(최근 완료 스텝 10개의 예상 대비 실제 시간 평균 배율 + 미룬 적 있는 비율)를 계산해 프롬프트에 포함. Notion Steps DB에 `StartedAt`·`CompletedAt`·`ActualMinutes`·`PostponeCount` 4개 속성 신규. `page.js`가 타이머 시작 시각을 `stepStartedAt`으로 들고 있다가 완료 시 실제 소요 분을 계산해 `/api/steps/complete`에 같이 전송(별도 "시작" API 호출 없이). `app/lib/notion.js`에 `getPage` 헬퍼 추가, `/api/steps/postpone`이 이걸로 기존 `PostponeCount`를 읽어 +1.
+- 검증: `npm run verify` 통과. (1) 같은 category로 `suggest_break`를 3번 거절한 과거 로그를 미리 만들어두고 `/api/struggle` 호출 → `rejectedTools`로 명시적으로 막지 않았는데도 실제로 다른 tool(`swap_task`)을 제안하는 것으로 개인화 반영 확인. (2) 실제 스텝에 postpone 2번 호출 → `PostponeCount=2` 확인. (3) `/api/steps/complete`에 startedAt/completedAt/actualMinutes 전달 → Notion에 정확히 기록되는 것 확인.
+- 미결: T11(Agent 평가 — 정답 세트 + Precision/Recall 스크립트)만 남음. 이걸로 Agent 루프(T05~T10) 전체가 실데이터 기반으로 동작.
+- 확인: [ ]

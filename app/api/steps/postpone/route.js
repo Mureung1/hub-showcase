@@ -1,4 +1,4 @@
-import { updatePage } from "@/app/lib/notion";
+import { updatePage, getPage } from "@/app/lib/notion";
 
 function tomorrowDateString() {
   const d = new Date();
@@ -7,6 +7,7 @@ function tomorrowDateString() {
 }
 
 // postpone_task tool 실행: 스텝의 ScheduledDate를 내일로 갱신해 오늘 목록에서 뺀다.
+// PostponeCount도 기존 값 읽어서 +1(C10 행동 패턴).
 export async function POST(request) {
   const { id } = await request.json();
 
@@ -14,7 +15,13 @@ export async function POST(request) {
     return Response.json({ error: "id가 없어요" }, { status: 400 });
   }
 
-  await updatePage(id, { ScheduledDate: { date: { start: tomorrowDateString() } } });
+  const page = await getPage(id);
+  const currentCount = page.properties?.PostponeCount?.number ?? 0;
+
+  await updatePage(id, {
+    ScheduledDate: { date: { start: tomorrowDateString() } },
+    PostponeCount: { number: currentCount + 1 },
+  });
 
   return Response.json({ ok: true });
 }
