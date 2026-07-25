@@ -6,6 +6,7 @@ import '../../core/error/app_failure.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/proof_image_picker.dart';
 import '../../core/widgets/quest_card.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/quest.dart';
@@ -47,11 +48,15 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
   bool _isExpanded(QuestGroup group) =>
       _expanded.putIfAbsent(group.key, () => true);
 
-  /// 보관함 카드 탭 → 완료 당시 정보(메모·사진·보상) 상세 시트(보기 전용).
+  /// 보관함 카드 탭 → 완료 당시 정보(메모·사진·보상) 상세 시트. 메모·사진 편집 가능.
   ///
-  /// 사진 조회 클로저를 시트에 주입한다 — 시트는 uid·저장소를 모르고, proof는 목록에서
-  /// 미리 읽지 않고 **이 시트를 열 때** 그 하나만 읽는다(proofDoc이 questId당 별도라
-  /// 목록에서 N번 읽으면 비싸다 — 3주차 문서 분리 이유).
+  /// 조회·저장·픽업 클로저를 시트에 주입한다 — 시트는 uid·저장소·image_picker를
+  /// 모른다(경계 유지). proof는 목록에서 미리 읽지 않고 **이 시트를 열 때** 그 하나만
+  /// 읽는다(proofDoc이 questId당 별도라 목록에서 N번 읽으면 비싸다 — 3주차 문서 분리).
+  ///
+  /// **정책 구분.** 여기서 여는 편집은 **보관함 기록**의 메모·사진이고 보상 경제를
+  /// 건드리지 않는다. B-5b가 막은 것은 **오늘의 퀘스트 목록**의 제목·난이도 수정
+  /// (재완료 보상 유효화 차단)이라 별개다 — 시트 문서 참고.
   Future<void> _openDetail(Quest quest) {
     return showAchievementDetailSheet(
       context,
@@ -61,8 +66,43 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
         final uid = await ref.read(sessionProvider.future);
         return ref.read(questRepositoryProvider).fetchProof(uid, quest.id);
       },
+      // 메모만 바꿔 updateQuest로 반영한다(상태·지급 이력·난이도 불변).
+      onSaveMemo: (memo) async {
+        final uid = await ref.read(sessionProvider.future);
+        await ref
+            .read(questRepositoryProvider)
+            .updateQuest(uid, _questWithMemo(quest, memo));
+      },
+      // 사진만 독립 갱신한다 — updateProof는 완료·보상 트랜잭션과 무관하다.
+      onSavePhoto: (base64) async {
+        final uid = await ref.read(sessionProvider.future);
+        await ref.read(questRepositoryProvider).updateProof(uid, quest.id, base64);
+      },
+      pickImage: pickCompressedProofImage,
     );
   }
+
+  /// 메모만 바꾼 퀘스트를 만든다.
+  ///
+  /// `copyWith`은 null 병합이라 메모를 **지우지** 못한다(`memo: null` → 기존값 유지).
+  /// 보관함 편집은 메모 비우기(=null)를 지원해야 하므로 전체 필드를 그대로 옮기며
+  /// memo만 교체한다. 상태·지급 이력(`rewardedAt`)·난이도·보관 여부는 불변이다 —
+  /// 보상 경제를 건드리지 않는 순수 메모 갱신이다.
+  Quest _questWithMemo(Quest q, String? memo) => Quest(
+    id: q.id,
+    title: q.title,
+    difficulty: q.difficulty,
+    status: q.status,
+    deadline: q.deadline,
+    order: q.order,
+    goalId: q.goalId,
+    parentQuestId: q.parentQuestId,
+    createdAt: q.createdAt,
+    completedAt: q.completedAt,
+    rewardedAt: q.rewardedAt,
+    memo: memo,
+    archived: q.archived,
+  );
 
   @override
   Widget build(BuildContext context) {

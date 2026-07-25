@@ -216,6 +216,10 @@ final drafts = QuestDraft.parseList(aiJson['quests']);
 
 **조회 경로 (보관함 상세 시트, 3단계-a)**: `QuestRepository.fetchProof(uid, questId)`가 이 문서를 `get`해 `base64` 필드를 돌려준다. **목록에선 읽지 않고 상세를 열 때만** 그 퀘스트 하나를 lazy 조회한다 — 위 "별도 컬렉션인가"의 이유(목록 N번 읽기 방지)와 짝을 이룬다. 문서가 없으면(사진 없이 완료) `null`을 돌려준다(에러 아님), `base64`가 문자열이 아닌 깨진 문서도 `null`로 떨어뜨려 상세 시트가 "사진 없음"을 그린다. 그 밖의 실패는 다른 조회와 동일하게 `AppFailure`로 정규화한다.
 
+**독립 갱신 경로 (보관함 기록 편집, 3단계-b)**: `QuestRepository.updateProof(uid, questId, String? photoBase64)`가 이 문서를 **완료·보상과 무관하게** 단건으로 고친다 — 값이면 `set`으로 교체, `null`이면 `delete`로 제거(퀘스트당 사진 1장이라 재완료 덮어쓰기와 같은 문서를 다룬다). ⚠️ **`completeQuest` 트랜잭션을 절대 타지 않는다**: `rewardedAt`·`coin`·`xp`·난이도·성취 기록을 전혀 건드리지 않는 보상 경제 밖의 부가 정보 쓰기다(보관 쓰기를 지급 트랜잭션 밖에 두는 것과 같은 원칙). 입구에서 `ensureProofWithinLimit()`로 교체 크기를 한 번 더 방어하고(`completeQuest`와 같은 단일 정의처), 실패는 `AppFailure`로 정규화한다.
+
+> **정책 구분**: 완료 퀘스트의 **제목·난이도** 수정은 B-5b가 막았다(오늘의 퀘스트 목록 — 재완료 보상 유효화 차단). 여기 `updateProof`와 상세 시트의 메모 편집은 **보관함 기록**의 메모·사진이고 보상 등급에 영향이 없어 별개로 허용된다. 메모는 `updateQuest`가 반영하는데, `Quest.toJson()`이 `memo == null`이면 필드를 생략하므로 **메모 비우기(=null)가 문서에서 실제로 지워지도록** Firestore `updateQuest`가 `'memo'`를 명시적으로 실어 쓴다(값이 있을 때는 `toJson`과 같은 값이라 무해). 메모(`updateQuest`)와 사진(`updateProof`)은 각각 별도 쓰기라 원자성이 필수가 아니다 — 부가 정보라 부분 반영을 허용하고 실패는 스낵바로 알린다.
+
 ### `users/{uid}/events/{eventId}` — 성공 지표 이벤트 로그 (4주차)
 
 `docs/plan.md`의 지표 3개(**도전 시작률 · 재분해 복귀율 · 7일 리텐션**)를 나중에 로그만으로 산출하기 위한 **append-only 이벤트 스트림**. 데이터만 쌓고 지표 화면은 만들지 않는다 — 산출은 `lib/core/analytics/metrics.dart`의 **순수 함수 + 테스트**가 "이렇게 계산된다"를 증명한다. (Firebase Analytics를 쓰지 않는 이유: 네이티브 플러그인이 한글 경로 빌드 이슈를 되살리고, 기존 저장소 추상화 패턴과 어긋난다. 사용자 결정 2026-07-23.)

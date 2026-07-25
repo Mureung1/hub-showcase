@@ -186,6 +186,25 @@ abstract interface class QuestRepository {
   /// 문서가 없으면(사진을 첨부하지 않고 완료한 퀘스트) `null`을 준다 — **에러가
   /// 아니다.** 그 밖의 실패는 다른 메서드와 동일하게 `AppFailure`로 정규화해 던진다.
   Future<String?> fetchProof(String uid, String questId);
+
+  /// 인증 사진(proof)을 **독립적으로** 갱신한다 — 보관함 기록 편집(3단계-b).
+  ///
+  /// [photoBase64]가 값이면 **교체**(그 base64로 덮어씀), `null`이면 **제거**(삭제).
+  /// 퀘스트당 사진 1장이라 questId 문서를 그대로 덮거나 지운다.
+  ///
+  /// ⚠️ **[completeQuest]와 완전히 별개인 경로다.** 완료·보상 트랜잭션이 proof를
+  /// 지급 시점에만 쓰는 것과 달리, 이 메서드는 이미 완료·보관된 기록의 사진만
+  /// 나중에 고치기 위한 것이다. `rewardedAt`·`coin`·`xp`·난이도·성취 기록을 **전혀
+  /// 건드리지 않는다** — 보상 경제 밖의 순수 부가 정보 쓰기다.
+  ///
+  /// ※ 정책 구분: 완료 퀘스트의 **제목·난이도** 수정은 B-5b가 막았다(재완료 보상
+  /// 유효화 차단). 그건 **오늘의 퀘스트 목록**의 이야기이고, 여기는 **보관함 기록**의
+  /// 메모·사진이라 보상 등급에 영향이 없어 별개로 허용된다.
+  ///
+  /// **크기 상한.** [photoBase64]는 [completeQuest]와 같은 [ensureProofWithinLimit]로
+  /// 입구에서 검사한다. 넘으면 쓰기 전에 [AppFailure](초과 시 문서 리밋에 걸린다).
+  /// 그 밖의 실패도 다른 메서드와 동일하게 `AppFailure`로 정규화해 던진다.
+  Future<void> updateProof(String uid, String questId, String? photoBase64);
 }
 
 /// 완료+지급이 **실제로 일어났을 때**의 결과. 재완료·미지급은 이 객체가 아니라

@@ -1083,6 +1083,119 @@ void main() {
     });
   });
 
+  // ===== proof 독립 갱신 — 보관함 기록 편집 (3단계-b) =====
+  //
+  // updateProof는 completeQuest와 완전히 별개인 단건 쓰기다. 완료·보상이 끝난 뒤
+  // 이미 보관된 기록의 사진만 나중에 고친다. rewardedAt·coin·xp·성취 기록을 절대
+  // 건드리지 않는 것이 최대 방어선이라 회귀 단언을 함께 둔다.
+  group('updateProof — 사진 독립 교체·제거', () {
+    (InMemoryQuestRepository, InMemoryUserRepository) makeRepos() {
+      final users = InMemoryUserRepository(seed: AppUser.initial('u'));
+      final quests = InMemoryQuestRepository(users: users);
+      addTearDown(users.dispose);
+      addTearDown(quests.dispose);
+      return (quests, users);
+    }
+
+    Future<Quest> seedNormal(InMemoryQuestRepository repo) =>
+        repo.createQuest('u', title: '지원서 초안 쓰기', difficulty: Difficulty.normal);
+
+    const smallPhoto = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAA';
+
+    test('교체: 새 base64가 fetchProof에 반영된다', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      await repo.updateProof('u', quest.id, smallPhoto);
+      expect(await repo.fetchProof('u', quest.id), smallPhoto);
+
+      // 다른 값으로 다시 교체하면 덮어쓴다(퀘스트당 사진 1장).
+      await repo.updateProof('u', quest.id, 'BBBBnewBBBB');
+      expect(await repo.fetchProof('u', quest.id), 'BBBBnewBBBB');
+    });
+
+    test('★ 제거: null을 주면 삭제돼 fetchProof가 null이 된다 (뮤테이션 방어)', () async {
+      // 이 단언이 updateProof의 null→삭제 분기를 지킨다. 삭제 분기를 무력화해
+      // (null도 교체로 처리) 두면 사진이 남아 이 테스트가 실패해야 한다.
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+      await repo.updateProof('u', quest.id, smallPhoto);
+      expect(await repo.fetchProof('u', quest.id), smallPhoto);
+
+      await repo.updateProof('u', quest.id, null);
+
+      expect(await repo.fetchProof('u', quest.id), isNull);
+    });
+
+    test('없던 사진을 제거해도 실패하지 않는다 (멱등)', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      // 애초에 사진이 없는 퀘스트에 제거(null) — 조용히 통과한다.
+      await repo.updateProof('u', quest.id, null);
+      expect(await repo.fetchProof('u', quest.id), isNull);
+    });
+
+    test('★ 크기 상한을 넘긴 사진은 거부된다 (AppFailure)', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+      final tooBig = 'A' * (kMaxProofBase64Bytes + 1);
+
+      await expectLater(
+        repo.updateProof('u', quest.id, tooBig),
+        throwsA(isA<AppFailure>()),
+      );
+      // 거부됐으므로 아무것도 저장되지 않았다.
+      expect(await repo.fetchProof('u', quest.id), isNull);
+    });
+
+    test('저장소 실패 시 AppFailure를 던진다', () async {
+      final repo = InMemoryQuestRepository(failWith: const NetworkFailure());
+      addTearDown(repo.dispose);
+
+      await expectLater(
+        repo.updateProof('u', 'q1', smallPhoto),
+        throwsA(isA<NetworkFailure>()),
+      );
+    });
+
+    test('★ 사진을 갈아끼워도 완료·보상(rewardedAt·coin·xp·성취)이 불변한다 (회귀 방어)', () async {
+      // 최대 방어선: updateProof가 completeQuest 경로를 절대 건드리지 않는다.
+      // 아래 "불변" 단언을 뒤집으면(예: coin이 변한다고 기대) 반드시 실패해야 한다.
+      final (repo, users) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      // 사진 인증으로 완료 → 보상 지급(보통 5/10 + 보너스 3/3 = 8/13).
+      await repo.completeQuest('u', quest.id, photoBase64: smallPhoto);
+      final questAfterComplete = (await repo.fetchQuests('u')).single;
+      final userAfterComplete = await users.fetchUser('u');
+      final achievementsAfterComplete = repo.achievementsOf('u').length;
+      expect(userAfterComplete.coin, 8);
+      expect(achievementsAfterComplete, 1);
+
+      // 이제 사진만 교체 → 다시 제거.
+      await repo.updateProof('u', quest.id, 'ZZZreplacedZZZ');
+      await repo.updateProof('u', quest.id, null);
+
+      // 사진은 바뀌었지만…
+      expect(await repo.fetchProof('u', quest.id), isNull);
+
+      // …완료·보상은 손끝 하나 안 댔다.
+      final questNow = (await repo.fetchQuests('u')).single;
+      expect(questNow.rewardedAt, questAfterComplete.rewardedAt);
+      expect(questNow.status, questAfterComplete.status);
+      expect(questNow.memo, questAfterComplete.memo);
+
+      final userNow = await users.fetchUser('u');
+      expect(userNow.coin, userAfterComplete.coin);
+      expect(userNow.xp, userAfterComplete.xp);
+      expect(userNow.level, userAfterComplete.level);
+
+      // 성취 기록도 늘거나 줄지 않는다.
+      expect(repo.achievementsOf('u').length, achievementsAfterComplete);
+    });
+  });
+
   group('createQuests — AI 분해 결과 일괄 등록', () {
     test('★ 기존 퀘스트 뒤에 이어 붙는다 (order가 겹치지 않는다)', () async {
       // 이 오프셋이 없으면 AI가 뱉은 order 0,1,2가 기존 퀘스트의 0,1,2와 겹쳐

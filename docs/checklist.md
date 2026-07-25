@@ -366,13 +366,22 @@
       → **폴더뷰 재작성 후 목록 카드(`QuestCard`)는 메모/사진 뱃지를 더 이상 그리지 않는다.** 인증 내용(메모 전문·인증 사진)은 이제 카드를 탭해 상세 시트에서 본다(아래 「완료 기록 상세 조회」로 연결). 사진은 여전히 목록에서 미리 읽지 않고 상세를 열 때만 `fetchProof`로 조회한다(proof 문서가 questId당 별도 — 3주차 문서 분리 이유). ⚠️ **항목 문구('뱃지로 구분된다')는 타임라인 시절 표현이라 현행 폴더뷰와 어긋난다 — 문구 재검토 필요**(체크 상태는 임의로 바꾸지 않음). 테스트: `test/features/storage_screen_test.dart`·`test/features/achievement_detail_sheet_test.dart`.
 
 ### 완료 기록 상세 조회
-> checklist에 항목이 없던 흐름이라 신규 섹션으로 승격했다(3단계-a). **보기 전용** — 메모/사진 수정·태그는 다음 조각(3단계-b·c). verification-agent 10/10 PASS.
+> checklist에 항목이 없던 흐름이라 신규 섹션으로 승격했다(3단계-a). 3단계-a는 **보기 전용**이었고(verification-agent 10/10 PASS), **3단계-b에서 메모·사진 편집이 붙어 더는 보기 전용이 아니다**(같은 시트에 "수정" 버튼 → 편집 모드, verification-agent 7/7 PASS). **태그는 다음 조각(3단계-c)** 대기.
 - [x] 보관함 카드를 탭하면 완료 당시 정보를 상세로 볼 수 있다.
       → `AchievementDetailSheet`(신규 `lib/features/storage/widgets/achievement_detail_sheet.dart`)가 제목·난이도(`DifficultyPill`)·보상(`RewardChip`)·완료 날짜(KST)·메모 전문·인증 사진을 보여준다. **보기 전용**이라 수정 버튼이 없다. `storage_screen.dart`의 `_openDetail`이 카드 탭에서 `showAchievementDetailSheet`를 연다. 테스트: `test/features/achievement_detail_sheet_test.dart`·`test/features/storage_screen_test.dart`(탭→시트 열림).
 - [x] 인증 사진은 목록에서 미리 읽지 않고 상세를 열 때만 조회한다.
       → `fetchProof(uid, questId)` 신설(인터페이스 `lib/repositories/quest_repository.dart` + Firestore·InMemory 2구현). 사진 base64가 `proofDoc/{questId}`에 있어 목록에서 N번 읽으면 비싸다(3주차 문서 분리 이유). 상세 시트가 `loadProof` 클로저로 lazy 조회한다(시트는 저장소·provider를 모름). 없으면 null(에러 아님), 저장소 실패 시 AppFailure, 깨진 base64는 "사진 없음"으로 폴백해 시트가 죽지 않는다. 테스트: `test/repositories/in_memory_quest_repository_test.dart`(fetchProof). ⚠️ Firestore `fetchProof`(특히 깨진 문서 분기)는 `fake_cloud_firestore` 미도입으로 자동 테스트 N/A — InMemory와 같은 계약으로 검증.
 - [x] 완료 날짜가 KST 기준으로 표시되고, 사진 로딩·없음·실패가 각각 처리된다.
       → `_formatKstDate`가 `kKstOffset`(단일 정의처)를 인용해 UTC를 KST 벽시계로 변환한다(자정 근처 완료의 하루 어긋남 방지). `_ProofPhoto`의 FutureBuilder가 로딩(스피너)·사진 있음(썸네일)·없음/실패("사진 없음" 플레이스홀더)를 각각 그리고, 조회 실패에도 시트가 생존한다. 테스트: `test/features/achievement_detail_sheet_test.dart`(KST 날짜·사진 3경로·깨진 base64 방어).
+- [x] 보관함 상세 시트에서 완료 기록의 메모·사진을 수정할 수 있다. (3단계-b)
+      → 보기 전용 시트(3-a)에 "수정" 버튼 → 편집 모드(메모 `TextField` + 사진 교체/제거 + 저장/취소). 같은 시트 안에서 보기↔편집 전환. `lib/features/storage/widgets/achievement_detail_sheet.dart` 확장(`_editing`/`_saving` 상태). 시트는 저장소·uid·image_picker를 직접 모르고 화면(`storage_screen._openDetail`)이 콜백 클로저(`onSaveMemo`/`onSavePhoto`/`pickImage`)로 주입한다(3-a `loadProof`와 같은 경계). 테스트: `test/features/achievement_detail_sheet_test.dart`.
+- [x] 인증 사진은 교체와 제거가 모두 되고, 독립 갱신 경로로 저장된다. (3단계-b)
+      → `updateProof(uid, questId, base64?)` 신설(인터페이스 `lib/repositories/quest_repository.dart` L207 + Firestore·InMemory 2구현). **값이면 교체, null이면 삭제**. 사진은 `completeQuest` 트랜잭션 안에서만 쓰이던 것을 완료와 무관한 독립 쓰기로 뺐다. 크기 상한 `ensureProofWithinLimit`(700KiB) 재사용. image_picker 압축 파이프라인은 `lib/core/utils/proof_image_picker.dart`로 공용 추출해 완료 시 메모 시트(`quest_memo_sheet.dart`)와 공유. 테스트: `test/repositories/in_memory_quest_repository_test.dart`. ⚠️ Firestore `updateProof`는 `fake_cloud_firestore` 미도입으로 자동 테스트 N/A — InMemory와 같은 계약으로 검증.
+- [x] 수정은 보상(코인·XP·난이도)을 건드리지 않는다. (3단계-b)
+      → 메모는 `updateQuest`, 사진은 `updateProof`. 둘 다 완료·보상 트랜잭션 밖의 별도 쓰기다. `completeQuest`·`rewardedAt`·지급 이력·코인·XP 전부 불변(verification이 diff로 확인 — `completeQuest` 지급 블록 무변경). 뮤테이션(보상 코인 불변 단언 뒤집기)으로 실패 확인. **정책 구분(중요)**: B-5b "완료 퀘스트 수정 메뉴 숨김"은 **퀘스트 목록에서 제목·난이도를 못 고치게 한 것**(재완료 보상 유효화 차단)이고, 여기는 **보관함 기록의 메모·사진**으로 **보상 경제를 안 건드려** 별개다(`achievement_detail_sheet.dart` 주석에 명시).
+- [x] 빈 메모로 저장하면 메모가 실제로 지워진다. (3단계-b)
+      → `copyWith(memo: null)`은 null 병합 탓에 메모를 못 지운다. Firestore `updateQuest`가 `'memo'`를 명시적으로 쓰도록(L161) 조정해 비우기를 문서에 반영(값 있을 땐 `toJson`과 같아 무해, B-5b 제목·난이도 수정엔 회귀 없음). 메모(`updateQuest`)와 사진(`updateProof`)은 별도 쓰기라 원자성이 필수가 아니다(부가 정보) — 하나 실패 시 스낵바+편집 유지. 테스트: `test/features/achievement_detail_sheet_test.dart`.
+      → **검증 증거(3단계-b 완료 시점)**: `flutter analyze` No issues found · `flutter test` **674건 전부 통과**(3-b 착수 기준선 661건) · `test/theme/color_role_test.dart` 무수정 통과 · verification-agent **7/7 PASS**. 뮤테이션: `updateProof` null 삭제(2건)·취소 시 커밋(1건)·사진 제거 null 미전달(1건)·보상 코인 불변 뒤집기(1건)가 각각 해당 테스트를 실제로 실패시킴.
 
 ### 완료 시 보관함 이동
 > checklist에 항목이 없던 흐름이라 신규 섹션으로 승격했다("오늘의 퀘스트 = 할 일, 보관함 = 끝낸 일"). verification-agent PASS. **보관함 이동은 단방향**이다(완료 실수 복구는 이번 범위 밖 — 3단계 이후 판단).

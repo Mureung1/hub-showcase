@@ -114,6 +114,27 @@ class InMemoryQuestRepository implements QuestRepository {
     return _proofs[uid]?[questId];
   }
 
+  /// 인증 사진만 독립 갱신한다(보관함 기록 편집, 3단계-b). Firestore proofDoc의
+  /// set/delete에 대응한다 — 값이면 교체, null이면 제거.
+  ///
+  /// ⚠️ **completeQuest를 타지 않는다.** 상태·rewardedAt·잔액·성취 기록은 손대지
+  /// 않고 오직 `_proofs`만 바꾼다. 보상 경제 밖의 순수 쓰기다.
+  @override
+  Future<void> updateProof(String uid, String questId, String? photoBase64) async {
+    _check();
+    // 크기 상한 방어 — completeQuest와 같은 단일 정의처를 쓴다(교체 시 문서 리밋 방어).
+    ensureProofWithinLimit(photoBase64);
+    if (photoBase64 == null) {
+      // 제거: 문서를 지운다. 없던 키여도 remove는 조용히 통과한다(멱등).
+      _proofs[uid]?.remove(questId);
+    } else {
+      // 교체: questId 키를 덮어쓴다(퀘스트당 사진 1장).
+      (_proofs[uid] ??= {})[questId] = photoBase64;
+    }
+    // proof는 watchQuests·watchAchievements 스트림에 실리지 않는다(별도 fetchProof
+    // 경로). 상세 시트가 저장 직후 로컬 상태로 새 사진을 반영하므로 방출하지 않는다.
+  }
+
   void _check() {
     if (failWith != null) throw failWith!;
   }

@@ -152,7 +152,14 @@ class FirestoreQuestRepository implements QuestRepository {
   @override
   Future<void> updateQuest(String uid, Quest quest) {
     return guard(
-      () => _db.doc(FirestorePaths.quest(uid, quest.id)).update(quest.toJson()),
+      () => _db.doc(FirestorePaths.quest(uid, quest.id)).update({
+        ...quest.toJson(),
+        // toJson은 memo가 null이면 필드를 **생략**한다. update는 준 필드만 건드리므로,
+        // 생략하면 문서에 남은 기존 memo를 지울 방법이 없다. 보관함 기록 편집(3단계-b)에서
+        // 메모를 비우면(=null) 문서에서도 실제로 사라져야 하므로 명시적으로 실어 준다.
+        // 값이 있을 때는 toJson과 같은 값이라 무해하다.
+        'memo': quest.memo,
+      }),
     );
   }
 
@@ -414,6 +421,34 @@ class FirestoreQuestRepository implements QuestRepository {
       // 그리면 되지, 예외로 시트를 죽이지 않는다(watchQuests 관대 파싱과 같은 원칙).
       final base64 = snap.data()?['base64'];
       return base64 is String ? base64 : null;
+    });
+  }
+
+  /// 인증 사진만 독립 갱신한다(보관함 기록 편집, 3단계-b).
+  ///
+  /// ⚠️ **completeQuest 트랜잭션과 무관한 단건 쓰기다.** 완료·보상이 커밋된 뒤,
+  /// 이미 보관된 기록의 사진만 나중에 고친다. rewardedAt·coin·xp·성취 기록을 전혀
+  /// 건드리지 않는다(보관 쓰기를 지급 트랜잭션 밖에 두는 것과 같은 원칙).
+  ///
+  /// 값이면 proofDoc을 `set`으로 교체(재완료 덮어쓰기와 같은 문서), null이면
+  /// `delete`로 제거한다. 문서 ID = questId라 퀘스트당 사진 1장을 유지한다.
+  @override
+  Future<void> updateProof(String uid, String questId, String? photoBase64) {
+    return guard(() async {
+      // 크기 상한 방어 — completeQuest와 같은 단일 정의처(교체 시 문서 리밋 방어).
+      ensureProofWithinLimit(photoBase64);
+      final ref = _db.doc(FirestorePaths.proofDoc(uid, questId));
+      if (photoBase64 == null) {
+        // 제거: 문서를 지운다. 없던 문서여도 delete는 실패하지 않는다(멱등).
+        await ref.delete();
+      } else {
+        // 교체: completeQuest가 지급 경로에서 쓰는 것과 같은 스키마로 덮어쓴다.
+        await ref.set({
+          'questId': questId,
+          'base64': photoBase64,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
     });
   }
 }
