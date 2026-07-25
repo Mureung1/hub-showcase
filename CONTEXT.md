@@ -25,7 +25,7 @@
 | DB | PostgreSQL (Supabase) | 스키마 연동 완료 (Week 2 #3) |
 | 크롤러 | Node.js + 기업마당 공식 Open API (`fetch`) | **Cheerio 아님** — 스크래핑 대신 공식 REST API 사용 (Week 3 #28~#32) |
 | 스케줄링 | GitHub Actions cron (`.github/workflows/crawler.yml`) | 매일 00:00 UTC 자동 실행 |
-| 배포 | 미확정 | 이전 GitHub Pages 자동배포(`deploy-pages.yml`)는 제거됨. API 호스팅 미정 |
+| 배포 | client: GitHub Pages(`deploy-pages.yml`, main push마다 자동), server: Render(`render.yaml`) | 이슈 #56, `docs/week4/issue-56-deploy-target-plan.md` 참고 |
 
 ## 데이터 소스
 
@@ -53,6 +53,5 @@
 이번 주(Week N) 범위의 리스크/결정은 `docs/weekN_plan.md`의 리스크 표에서 관리한다. 아래는
 아직 어느 주차 계획에도 안 들어간, 더 뒤(3~4주차) 미정 사항만 남긴다:
 
-- API·프론트 배포 타겟 및 env 분리
 - E2E/수동 테스트 체크리스트
 - `districts`(전국 지역 데이터) 소스 — 정적 JSON vs API
