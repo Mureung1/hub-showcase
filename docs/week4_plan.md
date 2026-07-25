@@ -13,7 +13,7 @@ todos:
     status: completed
   - id: issue-56
     content: API·프론트 배포 타겟 및 env 분리 결정
-    status: in_progress
+    status: completed
   - id: issue-57
     content: E2E/수동 테스트 체크리스트 작성
     status: pending
@@ -40,7 +40,7 @@ Week 3 마일스톤(#28~#32, #40, #43, #44) 완료 후 발견된 개별 작업(#
 |------|------|------|
 | [#51](https://github.com/syd348/hub/issues/51) | 업력(연차) 필드 온보딩 UI 추가 | 완료 (2026-07-25, PR #53 머지) |
 | [#52](https://github.com/syd348/hub/issues/52) | industry 매칭 고도화 | 완료 (2026-07-25, PR #54 머지) |
-| [#56](https://github.com/syd348/hub/issues/56) | API·프론트 배포 타겟 및 env 분리 | 묶음 1 완료(server 실행 버그 수정, 타겟 결정) — 묶음 2(실제 Render 배포)는 사용자 진행 대기, [`week4/issue-56-deploy-target-plan.md`](week4/issue-56-deploy-target-plan.md) |
+| [#56](https://github.com/syd348/hub/issues/56) | API·프론트 배포 타겟 및 env 분리 | 완료 (2026-07-25) — client: GitHub Pages, server: Render, [`week4/issue-56-deploy-target-plan.md`](week4/issue-56-deploy-target-plan.md) |
 | [#57](https://github.com/syd348/hub/issues/57) | E2E/수동 테스트 체크리스트 | 등록 완료 (2026-07-25) — [`week4/issue-57-e2e-checklist-plan.md`](week4/issue-57-e2e-checklist-plan.md) |
 | [#58](https://github.com/syd348/hub/issues/58) | districts 데이터 소스 결정 | 등록 완료 (2026-07-25) — [`week4/issue-58-districts-source-plan.md`](week4/issue-58-districts-source-plan.md) |
 

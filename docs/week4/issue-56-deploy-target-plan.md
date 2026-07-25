@@ -55,21 +55,24 @@
       `${{ vars.VITE_API_BASE_URL }}` 주입 추가
 - [x] `render.yaml` 블루프린트 작성 (server용, secrets는 `sync: false`로 대시보드 수동 입력 유도)
 
-### 묶음 2 — 실제 Render 배포 + 연결 검증 (사용자 진행 필요)
-- [ ] Render 대시보드에서 이 repo로 "New Blueprint" 생성 (`render.yaml` 자동 인식)
-- [ ] `CLIENT_ORIGIN`(`https://syd348.github.io`), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
+### 묶음 2 — 실제 Render 배포 + 연결 검증 (완료, 2026-07-25)
+- [x] Render 대시보드에서 이 repo로 "New Blueprint" 생성 (`render.yaml` 자동 인식) →
+      `https://hub-server-vers.onrender.com`
+- [x] `CLIENT_ORIGIN`(`https://syd348.github.io`), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
       `BIZINFO_API_KEY` 대시보드에 입력
-- [ ] 배포된 server URL을 GitHub repo variable `VITE_API_BASE_URL`로 등록
-      (Settings → Secrets and variables → Actions → Variables)
-- [ ] `deploy-pages.yml` 재실행(`workflow_dispatch` 또는 재push) → 실제 사이트에서 mock이 아닌
-      Supabase 데이터가 뜨는지 확인
-- [ ] `GET <render-url>/api/health`, `GET <render-url>/api/subsidies` curl 검증
+- [x] 배포된 server URL을 GitHub repo variable `VITE_API_BASE_URL`로 등록
+- [x] `deploy-pages.yml` 재실행(`workflow_dispatch`) → 빌드된 JS 번들에 Render URL이 포함됨을 확인,
+      실제 사이트가 mock이 아닌 Supabase 데이터를 호출하게 됨
+- [x] `GET <render-url>/api/health`(200), `GET <render-url>/api/subsidies`(실 데이터 응답),
+      CORS(`Access-Control-Allow-Origin: https://syd348.github.io`) curl 검증
 
 ## 완료 기준
 
 - [x] server가 실제로 시작 가능함이 로컬에서 확인된다 (묶음 1)
-- [ ] 배포 타겟이 결정되고 `CONTEXT.md` 기술스택 표의 "배포: 미확정"이 갱신된다
-- [ ] server가 Render에 실제 배포되어 응답하고, client가 mock이 아닌 실제 API를 호출한다
+- [x] 배포 타겟이 결정되고 `CONTEXT.md` 기술스택 표의 "배포: 미확정"이 갱신된다
+- [x] server가 Render에 실제 배포되어 응답하고, client가 mock이 아닌 실제 API를 호출한다
+
+**이슈 #56 완료 (2026-07-25)** — client: GitHub Pages, server: Render(`hub-server-vers.onrender.com`)
 
 ## 리스크 / 결정 필요
 
