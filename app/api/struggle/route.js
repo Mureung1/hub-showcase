@@ -34,8 +34,27 @@ export async function POST(request) {
     remainingTimeMinutes,
   } = await request.json();
 
-  // 이미 거절당한 tool은 스키마 단계에서부터 후보에서 뺀다(S2 제약).
-  const candidates = TOOLS.filter((tool) => !rejectedTools.includes(tool));
+  // 이미 거절당한 tool은 후보에서 뺀다(S2 제약).
+  let candidates = TOOLS.filter((tool) => !rejectedTools.includes(tool));
+
+  // 재판단 시간 게이트(C07, agent-design.md "(4) 거절→재판단 루프"):
+  // 이미 한 번 이상 거절당한 상태(재판단 중)인데, 남은 시간으로 남은 할 일을 오늘 안에
+  // 다 못 끝낼 상황이면 더 이상 자유롭게 재제안하지 않고 postpone_task/end_session으로 수렴시킨다.
+  const isRejudgment = rejectedTools.length > 0;
+  const remainingWorkload = remainingSteps.reduce(
+    (sum, step) => sum + (step.estimatedMinutes || 0),
+    0
+  );
+  const hasTimeForRejudgment = remainingTimeMinutes > remainingWorkload;
+
+  const isConverging = isRejudgment && !hasTimeForRejudgment;
+  if (isConverging) {
+    const convergeTools = ["postpone_task", "end_session"].filter(
+      (tool) => !rejectedTools.includes(tool)
+    );
+    candidates = convergeTools.length > 0 ? convergeTools : ["end_session"];
+  }
+
   const toolChoices = candidates.length > 0 ? candidates : TOOLS;
 
   // proposedTool은 z.enum이 아니라 z.string()으로 받는다. Solar가 enum 제약을 안 지키고
@@ -53,6 +72,9 @@ export async function POST(request) {
     `아래 tool 중 하나를 반드시 골라야 한다: ${toolChoices.join(", ")}. ` +
     (rejectedTools.length > 0
       ? `다음 tool은 이번에 이미 거절당했으니 절대 다시 고르면 안 된다: ${rejectedTools.join(", ")}. `
+      : "") +
+    (isConverging
+      ? "오늘 남은 시간으로는 남은 할 일을 다 끝내기 어렵다. 더 이상 다른 방식을 자유롭게 제안하지 말고, 이 스텝을 내일로 미루거나(postpone_task) 오늘은 여기서 중단하는 것(end_session) 중에서만 골라라. "
       : "") +
     `각 tool의 의미: ${TOOL_MEANINGS}. ` +
     (isColdStart

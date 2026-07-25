@@ -34,8 +34,8 @@
 - [x] 반환 tool이 정의된 8개 중 하나임을 보장한다 (Solar가 스키마 enum을 무시하고 거절된 tool을 다시 반환하는 사례가 실제로 재현되어, `z.enum` 대신 `z.string()` + 코드 검증·대체로 구현)
 
 ## C07 [T07] 재판단 시간 게이트
-- [ ] `remainingTimeToday > remainingWorkload`일 때만 거절 후 재제안이 나온다
-- [ ] 시간 부족 시 재제안이 멈추고 마지막 제안 확정 또는 postpone/end로 수렴한다
+- [x] `remainingTimeToday > remainingWorkload`일 때만 거절 후 재제안이 나온다
+- [x] 시간 부족 시 재제안이 멈추고 마지막 제안 확정 또는 postpone/end로 수렴한다
 
 ## C08 [T08] 이유 칩 + 수락/거절 UI
 - [ ] `onStruggle`이 고정 RestSuggestion이 아니라 이유 칩 → 제안 카드 플로우로 간다
