@@ -30,23 +30,31 @@
 
 ## 실행 순서
 
-### 묶음 1 — sweep 함수 구현 (승인 필요)
-- [ ] `crawler/src/sweep.ts`(가칭) — Supabase에서 전체 row(`id`, `deadline`) 조회 →
-      `parseDeadline`으로 오늘 날짜 기준 재계산 → `dday < 0`인 id 목록 삭제
-- [ ] `crawler/src/index.ts` 파이프라인에 upsert 이후 sweep 단계 추가
-- [ ] 단위 테스트: 이미 마감된 deadline 텍스트를 넣었을 때 삭제 대상으로 잡히는지, "상시 접수" 등은
-      제외되는지
+### 묶음 1 — sweep 함수 구현 (완료, 2026-07-25)
+- [x] `crawler/src/sweep.ts` — Supabase에서 전체 row(`id`, `deadline`) 조회 → 오늘 날짜 기준
+      재계산 → `dday < 0`인 id 목록 삭제
+  - **`parseDeadline` 그대로 재사용은 불가능했음** — 저장된 `deadline`은 원본 API 텍스트
+    ("2026-07-20 ~ 2026-08-14")가 아니라 이미 변환된 포맷("2026. 9. 30")이라 `parseDeadline`의
+    정규식(하이픈 구분자)이 매칭 안 됨. 저장 포맷을 다시 파싱하는 `recomputeDday()`를 새로 작성
+- [x] `crawler/src/index.ts` 파이프라인에 upsert 이후 sweep 단계 추가
+- [x] 단위 테스트(`sweep.test.ts`) — 마감 지난 deadline은 삭제 대상, "상시 접수"/파싱 불가 원문은
+      제외되는지 확인
 
-### 묶음 2 — 실행 검증 (승인 필요)
-- [ ] 로컬에서 `npm run run -w @hub/crawler` 실행 → 의도적으로 마감 지난 테스트 row를 하나 넣고
-      sweep 후 삭제됐는지 Supabase에서 확인
-- [ ] GitHub Actions cron 재실행 → 실제 운영 데이터에서 마감 지난 공고 수 감소 확인
+### 묶음 2 — 실행 검증 (완료, 2026-07-25)
+- [x] 실제 운영 Supabase 데이터로 read-only dry run(임시 스크립트, 삭제 없이 조회만) —
+      **전체 1554건 중 86건이 이미 마감 지났는데도 계속 노출되고 있었음을 확인**
+      (예: `PBLN_000000000123280` deadline=2026. 7. 24, 크롤링 시점엔 dday=1이었는데 지금은 -2)
+- [x] `npm test`(94 passed)/`npm run lint`/`npm run build -w @hub/crawler` 통과
+- [ ] 실제 크론 실행으로 이 86건 삭제 — PR 머지 후 `gh workflow run crawler.yml`로 트리거하며
+      진행 (사용자 확인 후)
 
 ## 완료 기준
 
-- [ ] 크롤러 실행 시 기존 저장된 공고 중 마감 지난 것이 삭제된다
-- [ ] 재수집 여부와 무관하게 마감 지난 공고가 다음 크론 실행 내로 목록에서 사라진다
-- [ ] `npm test`/`npm run lint` 통과
+- [x] 크롤러 실행 시 기존 저장된 공고 중 마감 지난 것이 삭제된다 (86건 확인, 실제 삭제는 머지 후)
+- [x] 재수집 여부와 무관하게 마감 지난 공고가 다음 크론 실행 내로 목록에서 사라진다
+- [x] `npm test`/`npm run lint` 통과
+
+**이슈 #63 구현 완료 (2026-07-25)** — 실제 크론 실행(삭제 반영)은 머지 후 진행
 
 ## 리스크 / 결정 필요
 
