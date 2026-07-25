@@ -412,6 +412,19 @@ select extensions.ok(
     select array_agg(key order by key) = array[
       'adapterKey', 'collections', 'expiresAt', 'id', 'items', 'status', 'summary'
     ]::text[]
+    and bool_and(
+      jsonb_typeof(result -> 'id') = 'string'
+      and (result ->> 'id')::uuid is not null
+      and jsonb_typeof(result -> 'adapterKey') = 'string'
+      and result ->> 'adapterKey' = 'pasted-text'
+      and jsonb_typeof(result -> 'status') = 'string'
+      and result ->> 'status' = 'ready'
+      and jsonb_typeof(result -> 'expiresAt') = 'string'
+      and (result ->> 'expiresAt')::timestamptz is not null
+      and jsonb_typeof(result -> 'collections') = 'array'
+      and jsonb_typeof(result -> 'items') = 'array'
+      and jsonb_typeof(result -> 'summary') = 'object'
+    )
     from prepared_import_result,
       jsonb_object_keys(result) as key
   ),
@@ -423,6 +436,20 @@ select extensions.ok(
       'createdCount', 'duplicateCount', 'excludedCount', 'inputDuplicateCount',
       'newCount', 'totalCount'
     ]::text[]
+    and bool_and(
+      jsonb_typeof(result -> 'summary' -> 'createdCount') = 'number'
+      and jsonb_typeof(result -> 'summary' -> 'duplicateCount') = 'number'
+      and jsonb_typeof(result -> 'summary' -> 'excludedCount') = 'number'
+      and jsonb_typeof(result -> 'summary' -> 'inputDuplicateCount') = 'number'
+      and jsonb_typeof(result -> 'summary' -> 'newCount') = 'number'
+      and jsonb_typeof(result -> 'summary' -> 'totalCount') = 'number'
+      and result -> 'summary' -> 'createdCount' = '0'::jsonb
+      and result -> 'summary' -> 'duplicateCount' = '1'::jsonb
+      and result -> 'summary' -> 'excludedCount' = '1'::jsonb
+      and result -> 'summary' -> 'inputDuplicateCount' = '1'::jsonb
+      and result -> 'summary' -> 'newCount' = '1'::jsonb
+      and result -> 'summary' -> 'totalCount' = '4'::jsonb
+    )
     from prepared_import_result,
       jsonb_object_keys(result -> 'summary') as key
   ),
