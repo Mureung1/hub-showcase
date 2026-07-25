@@ -19,7 +19,7 @@ todos:
     status: completed
   - id: issue-58
     content: districts(전국 지역 데이터) 소스 결정
-    status: pending
+    status: completed
   - id: issue-61
     content: 상세 페이지 매칭도가 리스트와 다르게 표시됨
     status: completed
@@ -58,7 +58,7 @@ Week 3 마일스톤(#28~#32, #40, #43, #44) 완료 후 발견된 개별 작업(#
 | [#52](https://github.com/syd348/hub/issues/52) | industry 매칭 고도화 | 완료 (2026-07-25, PR #54 머지) |
 | [#56](https://github.com/syd348/hub/issues/56) | API·프론트 배포 타겟 및 env 분리 | 완료 (2026-07-25) — client: GitHub Pages, server: Render, [`week4/issue-56-deploy-target-plan.md`](week4/issue-56-deploy-target-plan.md) |
 | [#57](https://github.com/syd348/hub/issues/57) | E2E/수동 테스트 체크리스트 | 완료 (2026-07-25, PR #65 머지) |
-| [#58](https://github.com/syd348/hub/issues/58) | districts 데이터 소스 결정 | 등록 완료 (2026-07-25) — [`week4/issue-58-districts-source-plan.md`](week4/issue-58-districts-source-plan.md) |
+| [#58](https://github.com/syd348/hub/issues/58) | districts 데이터 소스 결정 | 완료 (2026-07-25) — 정적 유지로 결정, [`week4/issue-58-districts-source-plan.md`](week4/issue-58-districts-source-plan.md) |
 | [#61](https://github.com/syd348/hub/issues/61) | 상세 페이지 매칭도가 리스트와 다르게 표시됨 | 완료 (2026-07-25) — [`week4/issue-61-detail-match-score-plan.md`](week4/issue-61-detail-match-score-plan.md) |
 | [#62](https://github.com/syd348/hub/issues/62) | 매칭 조건 필터링이 전혀 적용되지 않음 | 완료 (2026-07-25) — region 필터링 적용, [`week4/issue-62-region-filter-plan.md`](week4/issue-62-region-filter-plan.md) |
 | [#63](https://github.com/syd348/hub/issues/63) | 마감 지난 지원금이 계속 노출됨 | 완료 (2026-07-25) — 실제 86건 확인, [`week4/issue-63-expired-sweep-plan.md`](week4/issue-63-expired-sweep-plan.md) |
