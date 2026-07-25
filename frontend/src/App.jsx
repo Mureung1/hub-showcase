@@ -4,13 +4,15 @@
 // [SPA(Single Page Application)] 이 앱은 페이지를 통째로 새로고침하지 않고, URL이 바뀌면
 //   라우터가 "그 URL에 맞는 컴포넌트"로 화면만 갈아끼운다(빠르고 매끄러움).
 //   /                  → 검색 홈(SearchHome)
-//   /results           → 검색 결과(SearchResults)
+//   /places            → 목적지 선택(PlaceResults) — 검색어로 찾은 장소 후보 목록
+//   /results           → 검색 결과(SearchResults) — 선택한 목적지 주변 주차장
 //   /parking-lots/:id  → 주차장 상세(ParkingLotDetail)
 //   그 외 전부         → 홈으로 돌려보냄
 // ============================================================================
 
 import { Routes, Route, Navigate } from 'react-router-dom';
 import SearchHome from './pages/SearchHome.jsx';
+import PlaceResults from './pages/PlaceResults.jsx';
 import SearchResults from './pages/SearchResults.jsx';
 import ParkingLotDetail from './pages/ParkingLotDetail.jsx';
 
@@ -22,6 +24,8 @@ function App() {
       <Routes>
         {/* path(주소 패턴)와 element(그 주소일 때 그릴 컴포넌트)를 짝지운다. */}
         <Route path="/" element={<SearchHome />} />
+        {/* 검색어(?keyword=)로 장소 후보를 보여주고 목적지를 고르게 하는 화면 */}
+        <Route path="/places" element={<PlaceResults />} />
         <Route path="/results" element={<SearchResults />} />
         {/* :id 는 URL 파라미터(가변값) — 카드 클릭 시 /parking-lots/416 같은 주소로 온다. */}
         <Route path="/parking-lots/:id" element={<ParkingLotDetail />} />
