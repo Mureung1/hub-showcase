@@ -6,8 +6,10 @@ import {
   getApplications,
   rejectApplication,
 } from "../api/applications";
+import { markMessagesAsRead } from "../api/messages";
 import MentorApplicationCard from "../components/MentorApplicationCard";
 import { useAuth } from "../context/AuthContext";
+import useUnreadMessageRealtime from "../hooks/useUnreadMessageRealtime";
 import { routePaths } from "../routes/routePaths";
 
 const statusTabs = [
@@ -19,7 +21,7 @@ const statusTabs = [
 
 function MentorHomePage() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { currentUser, logout } = useAuth();
   const [applications, setApplications] = useState([]);
   const [activeStatus, setActiveStatus] = useState("pending");
   const [isLoading, setIsLoading] = useState(true);
@@ -27,6 +29,7 @@ function MentorHomePage() {
   const [rejectingApplicationId, setRejectingApplicationId] = useState(null);
   const [completingApplicationId, setCompletingApplicationId] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [openChatApplicationId, setOpenChatApplicationId] = useState(null);
 
   const loadApplications = useCallback(async () => {
     setIsLoading(true);
@@ -108,6 +111,40 @@ function MentorHomePage() {
           : application));
   };
 
+  const clearUnreadCount = (applicationId) => {
+    setApplications((currentApplications) =>
+      currentApplications.map((application) =>
+        application.id === applicationId
+          ? { ...application, unreadMessageCount: 0 }
+          : application));
+  };
+
+  const handleOpenChat = (applicationId) => {
+    setOpenChatApplicationId(applicationId);
+    clearUnreadCount(applicationId);
+    markMessagesAsRead({ applicationId }).catch(() => {});
+  };
+
+  const handleCloseChat = (applicationId) => {
+    setOpenChatApplicationId(null);
+    clearUnreadCount(applicationId);
+    markMessagesAsRead({ applicationId }).catch(() => {});
+  };
+
+  const handleUnreadMessage = useCallback((applicationId) => {
+    setApplications((currentApplications) =>
+      currentApplications.map((application) =>
+        application.id === applicationId
+          ? { ...application, unreadMessageCount: (application.unreadMessageCount ?? 0) + 1 }
+          : application));
+  }, []);
+
+  useUnreadMessageRealtime({
+    currentUserId: currentUser?.id,
+    openApplicationId: openChatApplicationId,
+    onUnreadMessage: handleUnreadMessage,
+  });
+
   const handleLogout = async () => {
     await logout();
     navigate(routePaths.landing, { replace: true });
@@ -178,12 +215,15 @@ function MentorHomePage() {
                 <MentorApplicationCard
                   application={application}
                   isAccepting={acceptingApplicationId === application.id}
+                  isChatOpen={openChatApplicationId === application.id}
                   isCompleting={completingApplicationId === application.id}
                   isRejecting={rejectingApplicationId === application.id}
                   key={application.id}
                   onAccept={handleAccept}
+                  onCloseChat={handleCloseChat}
                   onComplete={handleComplete}
                   onMeetingUpdated={handleMeetingUpdated}
+                  onOpenChat={handleOpenChat}
                   onReject={handleReject}
                 />
               ))}

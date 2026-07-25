@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import ChatModal from "./ChatModal";
 import MeetingScheduleEditor from "./MeetingScheduleEditor";
+import UnreadBadge from "./UnreadBadge";
 import { routePaths } from "../routes/routePaths";
 
 const statusLabels = {
@@ -55,8 +55,7 @@ function QuestionnaireDetails({ questionnaire }) {
   );
 }
 
-function ApplicationCard({ application, onMeetingUpdated }) {
-  const [isChatOpen, setIsChatOpen] = useState(false);
+function ApplicationCard({ application, isChatOpen, onCloseChat, onMeetingUpdated, onOpenChat }) {
   const hasAgreedMeeting = agreedStatuses.has(application.status);
   const applicationMentors = application.mentors ?? [];
   const visibleMentors = hasAgreedMeeting
@@ -84,10 +83,11 @@ function ApplicationCard({ application, onMeetingUpdated }) {
           {isConfirmed && (
             <button
               className="button button-soft chat-open-button"
-              onClick={() => setIsChatOpen(true)}
+              onClick={() => onOpenChat(application.id)}
               type="button"
             >
               채팅 열기
+              <UnreadBadge count={application.unreadMessageCount} />
             </button>
           )}
           <span className={`application-status application-status-${application.status}`}>
@@ -99,7 +99,7 @@ function ApplicationCard({ application, onMeetingUpdated }) {
       {isChatOpen && (
         <ChatModal
           applicationId={application.id}
-          onClose={() => setIsChatOpen(false)}
+          onClose={() => onCloseChat(application.id)}
           otherPartyName={acceptedMentor?.name}
         />
       )}

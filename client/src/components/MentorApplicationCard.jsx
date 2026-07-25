@@ -1,6 +1,6 @@
-import { useState } from "react";
 import ChatModal from "./ChatModal";
 import MeetingScheduleEditor from "./MeetingScheduleEditor";
+import UnreadBadge from "./UnreadBadge";
 
 const statusLabels = {
   pending: "대기",
@@ -27,14 +27,16 @@ function formatCreatedAt(createdAt) {
 function MentorApplicationCard({
   application,
   isAccepting,
+  isChatOpen,
   isCompleting,
   isRejecting,
   onAccept,
+  onCloseChat,
   onComplete,
   onMeetingUpdated,
+  onOpenChat,
   onReject,
 }) {
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const { applicationStatus, mentee, mentorStatus, questionnaire } = application;
   const visibleStatus = mentorStatus ?? applicationStatus;
   const showsMeetingFields = visibleStatus === "confirmed" || visibleStatus === "completed";
@@ -56,10 +58,11 @@ function MentorApplicationCard({
           {visibleStatus === "confirmed" && (
             <button
               className="button button-soft chat-open-button"
-              onClick={() => setIsChatOpen(true)}
+              onClick={() => onOpenChat(application.id)}
               type="button"
             >
               채팅 열기
+              <UnreadBadge count={application.unreadMessageCount} />
             </button>
           )}
           <span className={`mentor-application-status mentor-application-status-${visibleStatus}`}>
@@ -71,7 +74,7 @@ function MentorApplicationCard({
       {isChatOpen && (
         <ChatModal
           applicationId={application.id}
-          onClose={() => setIsChatOpen(false)}
+          onClose={() => onCloseChat(application.id)}
           otherPartyName={mentee.name}
         />
       )}
