@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(25);
+select extensions.plan(26);
 
 select extensions.has_table('public', 'insight_import_jobs', '가져오기 작업 테이블이 존재한다');
 select extensions.has_table('public', 'insight_import_items', '가져오기 항목 테이블이 존재한다');
@@ -104,6 +104,13 @@ values
 insert into public.insights (
   id, user_id, original_url, normalized_url, domain, title
 ) values (
+  '30000000-0000-4000-8000-000000000021',
+  '00000000-0000-4000-8000-000000000021',
+  'https://owner.example/created-insight',
+  'https://owner.example/created-insight',
+  'owner.example',
+  '소유자의 생성 인사이트'
+), (
   '30000000-0000-4000-8000-000000000022',
   '00000000-0000-4000-8000-000000000022',
   'https://other.example/created-insight',
@@ -153,7 +160,7 @@ insert into public.insight_import_jobs (
 
 insert into public.insight_import_items (
   job_id, user_id, candidate_id, original_url, source_location, classification,
-  selected_category_id, ordinal
+  selected_category_id, created_insight_id, ordinal
 ) values (
   '40000000-0000-4000-8000-000000000021',
   '00000000-0000-4000-8000-000000000021',
@@ -162,6 +169,7 @@ insert into public.insight_import_items (
   '행 1',
   'new',
   '20000000-0000-4000-8000-000000000021',
+  '30000000-0000-4000-8000-000000000021',
   1
 ), (
   '40000000-0000-4000-8000-000000000022',
@@ -170,6 +178,7 @@ insert into public.insight_import_items (
   'https://other.example/import',
   '행 1',
   'existing_duplicate',
+  null,
   null,
   1
 );
@@ -233,6 +242,25 @@ select extensions.results_eq(
 );
 
 reset role;
+
+delete from public.insights
+where id = '30000000-0000-4000-8000-000000000021';
+
+select extensions.results_eq(
+  $$
+    select created_insight_id, user_id
+    from public.insight_import_items
+    where job_id = '40000000-0000-4000-8000-000000000021'
+      and candidate_id = 'owner-1'
+  $$,
+  $$
+    values (
+      null::uuid,
+      '00000000-0000-4000-8000-000000000021'::uuid
+    )
+  $$,
+  '생성 인사이트 삭제 시 연결만 해제하고 항목 소유자는 보존한다'
+);
 
 select extensions.ok(
   not has_table_privilege('anon', 'public.insight_import_jobs', 'select,insert,update,delete'),
