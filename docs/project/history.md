@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-25 · BE-RECIPE-004 · 완료
+
+- 결과: `GET /api/recipes/:recipeId`가 현재 Firebase 사용자가 소유한 활성 레시피를 PostgreSQL에서 조회해 `RecipeDetail` 계약으로 반환한다. 재료와 단계는 저장 순서로 정렬하고 출처가 없으면 `null`로 반환하며, 없는·타인 소유·삭제·잘못된 ID는 모두 같은 `RECIPE_NOT_FOUND`로 숨긴다.
+- 결정: 부모 레시피 조회에서 Firebase UID 소유권과 `deleted_at IS NULL`을 함께 검사한 뒤에만 재료·단계를 별도 정렬 쿼리로 조회한다. 임의 경로 ID는 UUID 형식을 먼저 확인해 PostgreSQL cast 오류 없이 not-found로 처리한다.
+- 시행착오: focused 테스트가 상세 서비스 모듈 부재로 실패하는 Red를 확인했다. 최초 type-check에서 Express 경로 변수가 `string | string[]`로 추론되어, 문자열이 아닌 값은 동일한 not-found 경계로 정규화했다.
+- 검증: 백엔드 전체 35개 테스트, `backend npm run type-check`, `backend npm run build`, `git diff --check`를 통과했다. 정상 상세·출처 없음·없는 ID·타인 소유·삭제·잘못된 ID와 하위 조회 순서를 확인했다.
+- 후속: `FE-RECIPE-004`, `BE-RECIPE-006`, `BE-RECIPE-005`, `QA-CORE-001`
+- 반복 패턴: 없음
+
 ## 2026-07-24 · FE-RECIPE-003 · 완료
 
 - 결과: 편집한 레시피 초안을 Firebase ID 토큰과 함께 실제 생성 API로 저장한다. 요청 중 저장·취소 버튼을 비활성화해 중복 제출을 막고, 서버 검증·네트워크 실패 메시지를 표시하면서 편집값을 유지한다. 성공하면 생성 ID를 Router state에 보존해 목록으로 이동하고 저장 완료 상태를 알린다.

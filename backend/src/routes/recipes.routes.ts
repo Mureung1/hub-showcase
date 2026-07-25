@@ -4,13 +4,11 @@ import {
   createRecipe,
   RecipeCreateValidationError,
 } from "../services/recipeCreate.service.js";
+import {
+  getRecipeDetail,
+  RecipeNotFoundError,
+} from "../services/recipeDetail.service.js";
 import { UrlContentError } from "../services/urlContent.service.js";
-
-type PrototypeRecipe = {
-  id: number;
-  title: string;
-  description: string;
-};
 
 type RecipeType = "OWNED" | "EXTERNAL" | "RECEIVED";
 
@@ -26,14 +24,6 @@ type RecipeSummaryRow = {
 };
 
 const router = Router();
-
-const prototypeRecipes: PrototypeRecipe[] = [
-  {
-    id: 1,
-    title: "김치찌개",
-    description: "돼지고기를 넣은 김치찌개",
-  },
-];
 
 router.get("/", async (req: Request, res: Response) => {
   const firebaseUser = req.firebaseUser;
@@ -89,23 +79,44 @@ router.get("/", async (req: Request, res: Response) => {
   });
 });
 
-router.get("/:recipeId", (req: Request, res: Response) => {
-  const recipeId = Number(req.params.recipeId);
+router.get("/:recipeId", async (req: Request, res: Response) => {
+  const firebaseUser = req.firebaseUser;
 
-  const recipe = prototypeRecipes.find((item) => item.id === recipeId);
-
-  if (!recipe) {
-    return res.status(404).json({
+  if (!firebaseUser) {
+    return res.status(401).json({
       error: {
-        code: "RECIPE_NOT_FOUND",
-        message: "레시피를 찾을 수 없습니다.",
+        code: "UNAUTHORIZED",
+        message: "로그인이 필요합니다.",
       },
     });
   }
 
-  return res.status(200).json({
-    data: recipe,
-  });
+  try {
+    const recipeId =
+      typeof req.params.recipeId === "string"
+        ? req.params.recipeId
+        : "";
+    const recipe = await getRecipeDetail(
+      databasePool,
+      firebaseUser.uid,
+      recipeId,
+    );
+
+    return res.status(200).json({
+      data: recipe,
+    });
+  } catch (error) {
+    if (error instanceof RecipeNotFoundError) {
+      return res.status(404).json({
+        error: {
+          code: "RECIPE_NOT_FOUND",
+          message: "레시피를 찾을 수 없습니다.",
+        },
+      });
+    }
+
+    throw error;
+  }
 });
 
 router.post("/", async (req: Request, res: Response) => {

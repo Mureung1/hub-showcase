@@ -32,7 +32,7 @@
 | `CTX-006` | 해결됨 | `apiClient`에 헤더 변수 오타와 AbortError 비교 오류가 있고 로그인 컴포넌트가 직접 `fetch`를 사용한다. | `COMMON-API-001` |
 | `CTX-007` | 해결됨 | 로그인 버튼이 존재하지 않는 `leather-texture-tile.png`를 참조한다. | `COMMON-ASSET-001` |
 | `CTX-008` | 해결됨 | 로그인 흐름에 `setRecipes` 미정의와 화면에 표시되지 않는 오류 상태가 남아 있었다. | `FE-AUTH-002` |
-| `CTX-009` | 활성 | 목록·생성 API는 PostgreSQL과 공통 계약으로 전환되었지만 상세 임시 경로에는 메모리 프로토타입이 남아 있다. `BE-RECIPE-004`에서 실제 DB 경로로 교체한다. | `BE-RECIPE-001`, `BE-RECIPE-003`, `BE-RECIPE-004` |
+| `CTX-009` | 해결됨 | 목록·생성·상세 API의 메모리 프로토타입을 PostgreSQL 경로로 교체했다. 상세 조회는 Firebase UID 소유권과 활성 상태를 DB에서 함께 검사한다. | `BE-RECIPE-001`, `BE-RECIPE-003`, `BE-RECIPE-004` |
 | `CTX-010` | 해결됨 | 인증, 조리 팁, 파일 입력과 ERD에 관한 문서가 서로 일치하지 않는다. | `COMMON-DOCS-002` |
 | `CTX-011` | 활성 | 현재 실행 환경에서 `.agents/skills` 생성·수정은 추가 승인이 필요할 수 있고, Windows에서 스킬 메타데이터는 UTF-8 인코딩을 확인해야 한다. | `COMMON-SETUP-003` |
 
