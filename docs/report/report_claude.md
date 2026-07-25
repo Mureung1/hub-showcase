@@ -63,3 +63,16 @@
 - 검증: `npm run verify` 통과.
 - 미결: 없음
 - 확인: [ ]
+
+## 2026-07-25 | T05 | AgentLog Notion DB 생성 + 기록/조회 lib
+- 작업: `app/lib/agentlog.js` 신규 생성. `logStruggle(entry)`(outcome 제외 필드 받아 Notion에 pending으로 기록), `getRecentLogs({ limit, category })`(category 주면 해당 category 로그를 최신순으로 우선 채우고 부족분은 전체 최신순으로 채움) 구현, S3 계약대로. AgentLog Notion DB는 사용자가 직접 생성(부모 페이지 하위), 속성 이름을 한글→영어(S3 필드명과 동일)로 정리하고 `.env.local`의 `NOTION_AGENTLOG_DB_ID` 연결. 겸사겸사 Steps DB의 `Category`/AgentLog의 `task_category`/`reason_chip` select 옵션 값도 한글에서 영어(cleaning/contact/paperwork/errands/self_care/work/other, overwhelmed/bored/tired/neutral)로 통일(코드에서 직접 비교하는 값이라 영어로 가는 게 낫다고 판단), `docs/skills.md`·`docs/etc/agent-design.md` 동기화. `app/api/brain-dump/route.js`의 `TASK_CATEGORIES`도 같은 값으로 갱신(단, 이 파일은 main 브랜치에도 있어 그쪽 반영은 보류).
+- 검증: `npm run verify` 통과. 임시 라우트(`app/api/test-agentlog`)로 실제 Notion에 `logStruggle` 왕복 기록 + `getRecentLogs`(전체/category 우선) 조회까지 확인 후 라우트·테스트 로그 삭제. `docs/checklist.md` C05 2개 전부 체크, `docs/backlog.md` T05 완료로 변경, `CLAUDE.md` 갱신.
+- 미결: `app/api/brain-dump/route.js`의 `TASK_CATEGORIES` 영어 값 반영이 `main` 브랜치에는 아직 안 됨(추후 별도 커밋 필요). T06("힘들어" 루프 API)부터 이어서 진행.
+- 확인: [ ]
+
+## 2026-07-25 | T06 | "힘들어" 루프 판단 API
+- 작업: `app/api/struggle/route.js` 신규 생성. `POST /api/struggle`이 `{ reasonChip, currentStep, remainingSteps, recentLogs, rejectedTools, remainingTimeMinutes }`를 받아 Solar(`generateObject`)로 `{ proposedTool, reason }`을 반환. `rejectedTools`는 매 요청마다 후보 목록에서 제외한 뒤 스키마에 반영(동적 좁히기). `recentLogs`가 비면(cold start) reasonChip 기준 참고용 기울기를 프롬프트에 명시(강제 아님, agent-design.md 결정 사항).
+- 검증: `npm run verify` 통과. 실제 서버로 3가지 시나리오 확인 — (1) cold start + bored → swap_task로 합리적 판단, (2) rejectedTools에 든 tool 재요청, (3) recentLogs에 반복 거절 패턴 있을 때 다른 tool로 전환하는지. (2) 테스트 중 실제 버그 발견·수정(아래).
+- 버그 발견·수정: Solar가 `z.enum`으로 후보를 좁혀도, 그리고 프롬프트에 "이 tool은 절대 다시 고르지 마라"고 명시해도 이미 거절된 tool을 다시 반환하는 사례를 재현함(T02의 스키마 미준수 문제와 같은 계열). `proposedTool` 스키마를 `z.enum`에서 `z.string()`으로 바꾸고, 응답 후 코드에서 후보 목록 포함 여부를 직접 검사해 후보 밖이면 첫 후보로 안전하게 대체하도록 수정(사용자에게 보이는 reason엔 내부 교정 사실 대신 자연스러운 대체 문구 사용, `console.warn`으로만 서버 로그에 남김). 이 계기로 checklist.md C06의 "스키마가 강제한다" 문구도 "코드가 보장한다"로 실제 구현에 맞게 수정.
+- 미결: T07(재판단 시간 게이트), T08(이유 칩 + 수락/거절 UI)에서 이 API를 실제로 호출하도록 연결 예정. `/api/struggle`은 아직 화면과 연결 안 됨.
+- 확인: [ ]

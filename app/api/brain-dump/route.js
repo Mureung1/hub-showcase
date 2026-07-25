@@ -3,15 +3,16 @@ import { z } from "zod";
 import { solar } from "@/app/lib/solar";
 import { createPage } from "@/app/lib/notion";
 
-// skills.md 고정 셋 (task_category, 7개)
+// skills.md 고정 셋 (task_category, 7개). 한글 뜻: cleaning=청소/정리, contact=연락,
+// paperwork=문서작성, errands=외출/이동, self_care=자기관리, work=학습/업무, other=기타.
 const TASK_CATEGORIES = [
-  "청소/정리",
-  "연락",
-  "문서작성",
-  "외출/이동",
-  "자기관리",
-  "학습/업무",
-  "기타",
+  "cleaning",
+  "contact",
+  "paperwork",
+  "errands",
+  "self_care",
+  "work",
+  "other",
 ];
 
 const brainDumpSchema = z.object({
@@ -54,7 +55,8 @@ export async function POST(request) {
     system:
       "ADHD 사용자가 두서없이 적은 할 일을 25분 이내에 끝낼 수 있는 마이크로 스텝들로 쪼개는 어시스턴트다. " +
       "각 스텝은 바로 실행할 수 있을 만큼 구체적이어야 하고, 실행 순서대로 나열한다. " +
-      `category는 다음 중 하나로 분류한다: ${TASK_CATEGORIES.join(", ")}. ` +
+      "category는 다음 중 하나로 분류한다: cleaning(청소/정리), contact(연락), paperwork(문서작성), " +
+      "errands(외출/이동), self_care(자기관리), work(학습/업무), other(기타). " +
       '결과는 반드시 다음 JSON 형식으로만 응답한다(다른 필드 추가 금지): ' +
       '{"microsteps": [{"title": string, "estimatedMinutes": number, "category": string}]}',
     prompt: text,

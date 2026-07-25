@@ -25,13 +25,13 @@
 - [ ] 타이머 종료 시 정확히 완료 화면으로 전이된다
 
 ## C05 [T05] AgentLog DB + 기록 lib
-- [ ] AgentLog Notion DB가 agent-design.md 스키마(7 property)대로 존재한다
-- [ ] 로그 1건 기록 + 최근 N개 조회 헬퍼가 S3 계약대로 동작한다
+- [x] AgentLog Notion DB가 agent-design.md 스키마(7 property)대로 존재한다
+- [x] 로그 1건 기록 + 최근 N개 조회 헬퍼가 S3 계약대로 동작한다
 
 ## C06 [T06] "힘들어" 루프 판단
-- [ ] reason_chip·현재 스텝·남은 스텝·최근 로그를 입력받아 S2 계약대로 `proposed_tool`+`reason`을 반환한다
-- [ ] AgentLog가 빈 상태(cold start)에서도 reason_chip prior로 유효한 tool을 고른다
-- [ ] 반환 tool이 정의된 9개 중 하나임을 스키마가 강제한다
+- [x] reason_chip·현재 스텝·남은 스텝·최근 로그를 입력받아 S2 계약대로 `proposed_tool`+`reason`을 반환한다
+- [x] AgentLog가 빈 상태(cold start)에서도 reason_chip prior로 유효한 tool을 고른다
+- [x] 반환 tool이 정의된 8개 중 하나임을 보장한다 (Solar가 스키마 enum을 무시하고 거절된 tool을 다시 반환하는 사례가 실제로 재현되어, `z.enum` 대신 `z.string()` + 코드 검증·대체로 구현)
 
 ## C07 [T07] 재판단 시간 게이트
 - [ ] `remainingTimeToday > remainingWorkload`일 때만 거절 후 재제안이 나온다

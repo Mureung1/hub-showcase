@@ -12,8 +12,8 @@
 | T02 | Brain Dump 스키마에 `category` 추가 + Notion 저장 | 2 | T01 | C02 | S1, S3 | 완료 |
 | T03 | One-Focus View를 실제 마이크로스텝 순회로 연결 | 3 | T02 | C03 | — | 완료 |
 | T04 | Full Screen Timer 지속성 (새로고침 내구성) | 3 | T03 | C04 | — | 대기 |
-| T05 | AgentLog Notion DB 생성 + 기록/조회 `lib` | 4 | T01 | C05 | S3 | 대기 |
-| T06 | "힘들어" 루프 API route (tool 판단·reason·cold start) | 4 | T05 | C06 | S2 | 대기 |
+| T05 | AgentLog Notion DB 생성 + 기록/조회 `lib` | 4 | T01 | C05 | S3 | 완료 |
+| T06 | "힘들어" 루프 API route (tool 판단·reason·cold start) | 4 | T05 | C06 | S2 | 완료 |
 | T07 | 거절→재판단 시간 게이트 | 4 | T06 | C07 | S2 | 대기 |
 | T08 | 이유 칩 + 제안/수락/거절 UI | 4 | T06 | C08 | S2 | 대기 |
 | T09 | outcome 기록 (완료 즉시 + 다음 방문 일괄) | 4 | T05, T08 | C09 | S4 | 대기 |

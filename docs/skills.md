@@ -6,9 +6,9 @@
 
 ## 고정 상수
 
-**task_category (7)**: `청소/정리` | `연락` | `문서작성` | `외출/이동` | `자기관리` | `학습/업무` | `기타`
-**reason_chip (4)**: `막막해요` | `지루해요` | `지쳤어요` | `그냥 그래요`
-**tool (9)**: `split_node` | `reorder_graph` | `suggest_break` | `mark_avoidance` | `shrink_step` | `swap_task` | `postpone_task` | `encourage` | `end_session`
+**task_category (7)**: `cleaning`(청소/정리) | `contact`(연락) | `paperwork`(문서작성) | `errands`(외출/이동) | `self_care`(자기관리) | `work`(학습/업무) | `other`(기타)
+**reason_chip (4)**: `overwhelmed`(막막해요) | `bored`(지루해요) | `tired`(지쳤어요) | `neutral`(그냥 그래요)
+**tool (8)**: `split_node` | `reorder_graph` | `suggest_break` | `shrink_step` | `swap_task` | `postpone_task` | `encourage` | `end_session` (`mark_avoidance`는 별도 tool이 아니라 AgentLog 기록 자체로 통합됨)
 **outcome (3)**: `done` | `not_done` | `pending`
 
 ## S1 — Brain Dump 분할
@@ -36,7 +36,7 @@
   ```
 - **출력**: `{ proposedTool: tool, reason: string }`
 - **제약**:
-  - `proposedTool`은 고정 9개 중 하나(스키마 강제), `rejectedTools`에 든 것은 다시 고르지 않는다.
+  - `proposedTool`은 고정 8개 중 하나(스키마 강제), `rejectedTools`에 든 것은 다시 고르지 않는다.
   - `recentLogs`가 비면 cold start — `reasonChip` prior로 판단(막막→shrink/split, 지루→swap, 지쳤→break, 그냥→encourage). prior는 강제가 아닌 기울기.
   - `reason`은 한 줄, 판단 근거를 사용자에게 보이는 문장.
 - **재판단 게이트(T07)**: `remainingTimeMinutes > sum(remainingSteps.estimatedMinutes)`가 거짓이면 재제안 없이 마지막 제안 확정 또는 `postpone_task`/`end_session`으로 수렴.

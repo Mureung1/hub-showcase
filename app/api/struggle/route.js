@@ -1,0 +1,92 @@
+import { generateObject } from "ai";
+import { z } from "zod";
+import { solar } from "@/app/lib/solar";
+
+const TOOLS = [
+  "split_node",
+  "reorder_graph",
+  "suggest_break",
+  "shrink_step",
+  "swap_task",
+  "postpone_task",
+  "encourage",
+  "end_session",
+];
+
+const TOOL_MEANINGS =
+  "split_node=지금 스텝을 더 작게 쪼갬, reorder_graph=남은 스텝 순서 재배치, " +
+  "suggest_break=몇 분 쉴지 직접 정해서 휴식 제안, shrink_step=쪼개지 않고 완료 기준 자체를 최소로 줄임, " +
+  "swap_task=지금 스텝을 잠깐 미루고 오늘 목록 중 더 쉬운 다른 태스크로 전환, postpone_task=이 스텝을 내일로 미룸, " +
+  "encourage=구조는 안 바꾸고 격려 메시지만 제공, end_session=오늘은 여기까지 하고 중단";
+
+// cold start(recentLogs 없음)일 때 reasonChip 기준 참고용 기울기. 강제 아님(agent-design.md 결정 사항).
+const COLD_START_PRIOR =
+  "overwhelmed면 shrink_step/split_node 쪽, bored면 swap_task 쪽, tired면 suggest_break 쪽, " +
+  "neutral이면 encourage 쪽으로 기울되, 강제는 아니니 남은 시간·스텝 상황을 보고 다르게 판단해도 된다.";
+
+export async function POST(request) {
+  const {
+    reasonChip,
+    currentStep,
+    remainingSteps = [],
+    recentLogs = [],
+    rejectedTools = [],
+    remainingTimeMinutes,
+  } = await request.json();
+
+  // 이미 거절당한 tool은 스키마 단계에서부터 후보에서 뺀다(S2 제약).
+  const candidates = TOOLS.filter((tool) => !rejectedTools.includes(tool));
+  const toolChoices = candidates.length > 0 ? candidates : TOOLS;
+
+  // proposedTool은 z.enum이 아니라 z.string()으로 받는다. Solar가 enum 제약을 안 지키고
+  // 거절된 tool을 다시 골라버리는 경우가 있어서(실제로 재현됨), 스키마 검증에서 바로
+  // 예외를 던지게 두지 않고 아래에서 직접 검사해 안전하게 대체하기 위해서다.
+  const struggleSchema = z.object({
+    proposedTool: z.string(),
+    reason: z.string().describe("이 tool을 고른 이유를 사용자에게 보여줄 한 줄 문장"),
+  });
+
+  const isColdStart = recentLogs.length === 0;
+
+  const system =
+    "ADHD 사용자가 할 일을 하다가 힘들다고 알려온 상황에서, 다음에 뭘 해야 할지 tool 하나를 판단하는 어시스턴트다. " +
+    `아래 tool 중 하나를 반드시 골라야 한다: ${toolChoices.join(", ")}. ` +
+    (rejectedTools.length > 0
+      ? `다음 tool은 이번에 이미 거절당했으니 절대 다시 고르면 안 된다: ${rejectedTools.join(", ")}. `
+      : "") +
+    `각 tool의 의미: ${TOOL_MEANINGS}. ` +
+    (isColdStart
+      ? `이 사용자의 과거 기록이 아직 없다(cold start). 이럴 땐 reasonChip을 1차 근거로 참고해라 - ${COLD_START_PRIOR}`
+      : "아래 최근 개입 기록을 참고해서, 반복적으로 거절한 tool이나 패턴이 보이면 이번엔 다른 방식을 시도해라.") +
+    ' 결과는 반드시 다음 JSON 형식으로만 응답한다(다른 필드 추가 금지): {"proposedTool": string, "reason": string}';
+
+  const prompt = JSON.stringify({
+    reasonChip,
+    currentStep,
+    remainingSteps,
+    recentLogs,
+    remainingTimeMinutes,
+  });
+
+  const { object } = await generateObject({
+    model: solar,
+    schema: struggleSchema,
+    system,
+    prompt,
+  });
+
+  // Solar가 후보 목록에 없는(주로 이미 거절된) tool을 골라버리는 경우를 대비한 안전망.
+  // 계약(S2)상 rejectedTools는 절대 다시 고르면 안 되므로, 후보 밖 값이면 첫 후보로 대체한다.
+  // 사용자에게 보이는 reason엔 내부 교정 사실을 노출하지 않고 그럴듯한 문장으로 대체한다.
+  if (!toolChoices.includes(object.proposedTool)) {
+    console.warn(
+      `[struggle] Solar가 후보 밖 tool(${object.proposedTool})을 반환해 ${toolChoices[0]}로 대체함`
+    );
+    return Response.json({
+      proposedTool: toolChoices[0],
+      reason: "이전 제안이 잘 안 맞았던 것 같아서, 이번엔 다른 방식을 제안해요.",
+    });
+  }
+
+  return Response.json(object);
+}

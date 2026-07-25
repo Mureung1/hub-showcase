@@ -110,7 +110,7 @@ DB 구조는 etc/agent-design.md의 AgentLog flat DB(7 property)를 따라줘.
 docs/instructions.md 절차에 따라 T06("힘들어" 루프 판단 API)를 진행해줘.
 완료 조건은 checklist.md C06, 계약은 skills.md S2야.
 cold start(로그 없을 때 reason_chip prior)까지 포함하고,
-proposedTool은 정의된 9개로 스키마 강제해줘.
+proposedTool은 정의된 8개로 스키마 강제해줘.
 ```
 
 **T08 (이유 칩 + 수락/거절 UI)** ※ T07(재판단 시간 게이트)을 함께 넣는다
