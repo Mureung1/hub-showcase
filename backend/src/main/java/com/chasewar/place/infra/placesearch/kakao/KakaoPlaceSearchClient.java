@@ -1,10 +1,9 @@
-package com.chasewar.global.infra.placesearch.kakao;
+package com.chasewar.place.infra.placesearch.kakao;
 
-import com.chasewar.global.domain.vo.Coordinates;
-import com.chasewar.global.infra.placesearch.PlaceSearchClient;
-import com.chasewar.global.infra.placesearch.kakao.dto.KakaoKeywordResponse;
-import com.chasewar.global.infra.placesearch.kakao.dto.KakaoKeywordResponse.Document;
-import java.util.Optional;
+import com.chasewar.place.domain.Place;
+import com.chasewar.place.infra.placesearch.PlaceSearchClient;
+import com.chasewar.place.infra.placesearch.kakao.dto.KakaoKeywordResponse;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
@@ -15,6 +14,7 @@ public class KakaoPlaceSearchClient implements PlaceSearchClient {
 
     private static final String BASE_URL = "https://dapi.kakao.com";
     private static final String AUTH_PREFIX = "KakaoAK ";
+    private static final int RESULT_SIZE = 10;
 
     private final RestClient restClient;
 
@@ -26,27 +26,20 @@ public class KakaoPlaceSearchClient implements PlaceSearchClient {
     }
 
     @Override
-    public Optional<Coordinates> searchByKeyword(String keyword) {
+    public List<Place> searchByKeyword(String keyword) {
         KakaoKeywordResponse response = restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/v2/local/search/keyword.json")
                         .queryParam("query", keyword)
+                        .queryParam("size", RESULT_SIZE)
                         .build())
                 .retrieve()
                 .body(KakaoKeywordResponse.class);
 
-        return toCoordinates(response);
-    }
-
-    private Optional<Coordinates> toCoordinates(KakaoKeywordResponse response) {
-        if (response == null || response.documents().isEmpty()) {
-            return Optional.empty();
+        if (response == null) {
+            return List.of();
         }
 
-        Document document = response.documents().get(0);
-        double latitude = Double.parseDouble(document.latitude());
-        double longitude = Double.parseDouble(document.longitude());
-
-        return Optional.of(new Coordinates(latitude, longitude));
+        return response.toPlaces();
     }
 }
