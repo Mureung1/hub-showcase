@@ -13,12 +13,16 @@
 //   컴포넌트도 props를 일일이 안 받고 그 기능(서버데이터·라우팅)을 쓸 수 있다.
 //
 // [이 앱의 전체 흐름 — 검색 한 번의 여정]
-//   1) 홈(/)에서 목적지 입력 or 예시 칩 클릭 → URL을 /results?destination=강남역 로 변경
-//   2) 라우터가 URL을 보고 SearchResults 페이지를 렌더
-//   3) SearchResults가 URL에서 destination을 읽어 useSearchParkingLots 훅 호출
-//   4) 훅(react-query) → searchParkingLots() → axios가 GET /api/parking-lots 요청
+//   1) 홈(/)에서 검색어 입력 or 예시 칩 클릭 → URL을 /places?keyword=이태원역 으로 변경
+//   2) PlaceResults가 keyword로 장소 후보를 조회(GET /api/places) → 후보 목록 표시
+//        ("이태원 맛집"처럼 한 곳으로 정할 수 없는 검색어도 사용자가 직접 고를 수 있다)
+//   3) 후보 카드 클릭 → 그 장소의 좌표를 URL에 담아 이동
+//        /results?latitude=37.53&longitude=126.99&place=이태원역 6호선
+//   4) SearchResults가 URL에서 좌표를 읽어 useSearchParkingLots 훅 호출
+//   5) 훅(react-query) → searchParkingLots() → axios가 GET /api/parking-lots 요청
 //        → vite 프록시가 백엔드(localhost:8080)로 전달
-//   5) 응답 상태(로딩/에러/빈결과/성공)에 따라 알맞은 화면 조각을 렌더
+//   6) 응답 상태(로딩/에러/빈결과/성공)에 따라 알맞은 화면 조각을 렌더
+//        → 카드 클릭 시 /parking-lots/:id 상세로
 // ============================================================================
 
 import React from 'react';

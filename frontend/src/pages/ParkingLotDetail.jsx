@@ -5,7 +5,7 @@
 // 이름·주소·전화·기본정보·요금·운영시간을 보여준다.
 //
 // [useParams] URL "경로"의 가변 부분(:id)을 읽는 훅. /parking-lots/416 이면 id="416".
-//   (검색은 ?destination= 라는 "쿼리스트링"이라 useSearchParams, 상세는 경로 조각이라 useParams)
+//   (검색은 ?latitude=&longitude= 라는 "쿼리스트링"이라 useSearchParams, 상세는 경로 조각이라 useParams)
 //
 // [백엔드 계약] 상세 API(GET /api/parking-lots/{id})가 주는 항목:
 //   정적: name·address·tel·parkingKind·operType·totalSlots·payType·fee·operatingHours
