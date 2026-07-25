@@ -1,4 +1,4 @@
-const EXAMPLE_JOB_TITLES = ['반도체 품질관리', '전산직']
+const EXAMPLE_JOB_TITLES = ['반도체 품질관리', '전산직', '안전']
 
 function CertSearchForm({ jobTitle, onJobTitleChange, onSubmit, showValidationError }) {
   return (

@@ -297,6 +297,48 @@ Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInqui
 
 ---
 
+## Issue 12. 발표 직전 최소 데이터 파이프라인 + ALIO 수집 방식 전환(제목→NCS 코드)
+
+**요구사항**
+`job_posting`엔 Issue 11로 실제 ALIO 데이터가 쌓이는데, 랭킹 화면이 읽는 `certification_mention`은 Issue 1의 가짜 시드값뿐이었음. 발표 직전 최소 범위로 실제 데이터가 랭킹 화면까지 반영되게 만들고, 이후 수집 자체의 근본 한계(제목 검색)를 NCS 코드 기반으로 전환.
+
+**1단계 — 룰 기반 재계산 파이프라인 (LLM 정규화 FR-2 원안은 범위 밖)**
+- [x] `normalizer/CertificationTextMatcher`(순수 static, `String.contains` 기반 null-safe 매칭)
+- [x] `service/CertificationMentionRecalculationService`(`@Transactional`) — Kafka 이벤트 하나 들어올 때마다 해당 `job_title`의 `job_posting` 전체를 재스캔해 `certification_mention`을 **덮어씀**(누적 아님). `total_posting_count`가 "실제 수집된 공고 수"라는 의미인데 가짜 시드와 섞이면 분모 자체가 거짓이 되기 때문 — "카더라 대신 실제 데이터"라는 프로젝트 취지에 직결
+- [x] `JobPostingCollectedConsumer`에 재계산 호출 1줄 추가, `JobPostingRepository`/`CertificationMentionRepository`에 `findByJobTitle` 파생 쿼리 추가
+- [x] `CertificationTextMatcherTest`(4) + `JobPostingCollectedConsumerTest` 확장(실제 Kafka+Postgres 통합, `certification_mention` 갱신까지 검증) — 전체 52개 테스트 통과
+
+**2단계 — 버그 발견: `pbancEndYmd`를 오늘 날짜로 보내면 `ongoingYn=Y`와 충돌**
+실제 데모용으로 "반도체 품질관리"/"전산직"을 수집 트리거했더니 `job_posting`이 0건. 원인을 실제 ALIO 서버에 직접 curl로 이분탐색 검증(Issue 11의 `recrutPbancTtl` 디버깅과 동일한 방식): `pbancEndYmd`(공고 마감일 조회 상한)를 오늘 날짜로 고정하면, `ongoingYn=Y`(진행중인 공고만)와 결합했을 때 아직 마감 전이라 종료일이 미래인 진행중 공고가 전부 이 상한선에 걸려 제외됨 — 같은 키워드가 `ongoingYn=Y` 없이는 결과가 나오지만 `pbancEndYmd=오늘`과 결합하면 0건이 되는 것으로 직접 확인. `AlioJobPostingCollectorService.buildRequestParams()`의 `pbancEndYmd`를 `오늘+3개월`로 수정.
+- [x] 데모 데이터로 "안전"(13건 실수집, 산업안전기사 2건=15.4% 실제 언급률) 확보해 파이프라인 실증
+- [x] 부수 이슈: "전산직"을 실제로 수집했다가 `CertificationMentionMapperTest`(V2 시드값 하드코딩 가정)를 깨뜨림 — job_posting/certification_mention을 시드값으로 복원
+
+**3단계 — 수집 방식 자체를 제목 검색 → NCS 코드 기반으로 전환**
+`recrutPbancTtl`(제목) 검색은 문구가 실제 공고 제목에 리터럴로 존재해야만 매칭되는 구조적 한계가 있어(실측: "반도체 품질관리"/"전산직" 대부분 0~1건) 근본적으로 데이터가 안 쌓임. ALIO의 `ncsCdLst`(NCS 대분류 코드) 필드를 실제 엔드포인트로 직접 검증(추측 금지 원칙 — 이번 세션에 파라미터 추측이 실제와 달라 0건이 반복됐기 때문): `R6000` + NCS 대분류 순번(01~24) 패턴 확인, 요청에 넣은 코드와 응답 `ncsCdNmLst`가 정확히 일치.
+
+| 코드 | 분류명 | 실측 totalCount |
+|---|---|---|
+| R600020 | 정보통신 | 31 |
+| R600019 | 전기·전자 | 25 |
+| R600016 | 재료 | 1 |
+| R600017 | 화학 | 4 |
+
+- [x] `collector/alio/AlioJobTitleNcsMapping`(신규) — "전산직"→`[R600020]`, "반도체 품질관리"→`[R600019, R600016, R600017]`(NCS 대분류는 산업분야 단위라 "품질관리"라는 직무 기능 자체가 없음 — 인접 산업분야 코드를 복수로 묶어 커버). 매핑에 없는 jobTitle(예: "안전")은 기존 제목 검색으로 폴백 — 2단계에서 이미 실증한 경로를 그대로 보존
+- [x] `AlioJobPostingCollectorService` 리팩터링 — `buildRequestParams(recrutPbancTtl, ncsCdLst)`로 일반화(15개 필드 전부 채우는 Issue 11 규칙은 유지), `searchByNcsCodes`는 코드별 개별 요청 후 `recrutPblntSn` 기준 병합·중복 제거(하나의 공고가 여러 NCS 분류에 동시에 속하는 경우가 실제로 확인됨). 콤마 다중값 단일요청 지원 여부는 미검증이라 검증된 동작(코드당 1요청)만 사용
+- [x] `./gradlew compileJava` 성공 확인 — 이번 스코프는 데이터 양 확보 우선이라 테스트 커버리지는 다음으로 미룸(사용자 명시적 지시)
+- [x] 실제 `job_posting` 적재량 재확인 — "반도체 품질관리"/"전산직" `POST /api/job-postings/collect` 재트리거 결과 각각 28건/31건 실수집(제목검색 시절 0건/0~1건 대비 압도적 증가), `GET /api/certification?jobTitle=` 반영 확인(전산직 정보처리기사 5/31=16.1%, 반도체 품질관리 정보처리기사 2/28=7.1%), "안전" 폴백 경로 회귀 없음(15건, 산업안전기사 2/15=13.3%)
+
+**미해결 — "반도체 품질관리"/"전산직" job_title 문자열의 시드 픽스처 충돌 (구조적, 반복 발생함)**
+`CertificationMentionMapperTest`가 V2 시드값을 정확히 이 두 job_title 문자열로 하드코딩하고 있는데, NCS 코드 전환으로 이 두 job_title이 이제 실제로도 잘 수집되는 정식 대상이 됐다 — Issue 8 시절엔 "전산직"만 어쩌다 실수집했다가 깨졌지만, 이번엔 두 job_title 모두 매번 실제 데이터로 정상 덮어써짐을 실측 확인했다. 즉 앞으로 누구든 이 두 job_title로 실제 수집을 트리거할 때마다 이 테스트가 깨진다 — 이번엔 DB를 시드값으로 복원해서 테스트를 다시 통과시켰지만(`docs/BACKLOG.md` 이 항목을 남기는 이유), 이는 근본 해결이 아니라 임시 봉합이다. 다음 슬라이스에서 반드시 처리: 테스트를 실제 job_title과 겹치지 않는 전용 픽스처 문자열로 옮기거나, `@Sql`로 테스트 자체 데이터를 격리해야 함.
+
+**이번엔 하지 않은 것**
+- ncsCdLst 콤마 다중값 단일요청 지원 여부 검증(개별요청+병합으로 충분한 규모라 보류, ALIO 호출 한도가 실제 문제가 될 때 재검토)
+- jobTitle→NCS 코드 매핑의 외부 설정화(현재 직무가 2~3개뿐이라 과설계, Wiki_Home.md NFR "코드 재배포 없이 조정 가능"은 백로그로 유지)
+- NCS 코드 전환 경로의 JUnit 테스트(사용자 지시로 다음 슬라이스)
+- `CertificationMentionMapperTest`의 시드 픽스처 job_title 충돌 근본 해결(위 항목, 다음 슬라이스 최우선 후보)
+
+---
+
 ## 백로그 (다음 슬라이스 이후, 우선순위순)
 
 | Task | 설명 | 우선순위 | 예상 시점 | 상태 |
@@ -310,6 +352,8 @@ Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInqui
 | Java 그래프 알고리즘 (경로 최적화) | 선수조건 그래프 구성, 위상정렬, 순환탐지 | P1 | - | Done (Issue 6) |
 | 진행 상황 대시보드 (QueryDsl 동적 필터) | 자격증 단위 완료/준비중/예정 추적, QueryDsl 첫 실사용 | P1 | - | Done (Issue 9) |
 | Issue 7. 경로 최적화 DB/서비스/API 연동 | `certification_prerequisite` 테이블, 엔티티, `CertificationPathService`, `CertificationPathController` — pathfinder 결과를 실제 DB 데이터와 연결. 완성되면 Issue 9의 `target_date`를 경로 기반 스케줄과 연동 검토 | P1 | 다음 슬라이스 | Todo |
+| `CertificationMentionMapperTest` 시드 픽스처 충돌 근본 해결 | "반도체 품질관리"/"전산직" job_title이 V2 시드 픽스처이면서 동시에 NCS 코드 기반 실제 수집 대상이라 실수집할 때마다 테스트가 깨짐(Issue 12에서 반복 확인) — 전용 픽스처 문자열로 분리하거나 `@Sql` 격리 필요 | P0 | 다음 슬라이스 | Todo |
+| ALIO 수집 결과 job_title 회귀 테스트 | Issue 12의 NCS 코드 전환 경로(`AlioJobTitleNcsMapping`, `searchByNcsCodes` 병합·중복제거)에 대한 JUnit 테스트 — 이번 슬라이스는 데이터 양 확보 우선으로 명시적으로 미룸 | P1 | 다음 슬라이스 | Todo |
 | 랭킹 API에 certificationId 추가 | `CertificationRankingResponse`에 id 노출 — 랭킹 카드 → 진행 상황 크로스탭 "추적하기" 연동의 선행 조건 (Issue 9에서 범위 밖으로 분리) | P2 | 추후 | Todo |
 | 컨슈머 재시도/DLQ 정책 | `JobPostingCollectedConsumer` 에러 핸들링 — 실제 메시지 스키마 확정 후 설계 (Issue 10에서 범위 밖으로 분리) | P2 | 추후 | Todo |
 | 통합 테스트 · 예외처리 고도화 | 전체 파이프라인 e2e 확인 | P2 | 추후 | Todo |
