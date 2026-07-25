@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import StatusBox from '../components/StatusBox'
+import { useOnboarding } from '../context/OnboardingContext'
 import { useSubsidy } from '../hooks/useSubsidy'
 import { getDdayClass } from '../utils/dday'
 import './SubsidyDetailScreen.css'
@@ -16,8 +17,9 @@ export default function SubsidyDetailScreen() {
   const { id } = useParams()
   const navigate = useNavigate()
   const bodyRef = useRef<HTMLDivElement>(null)
+  const { profile } = useOnboarding()
 
-  const { data: subsidy, isLoading, isError, refetch } = useSubsidy(id)
+  const { data: subsidy, isLoading, isError, refetch } = useSubsidy(id, profile)
 
   const applyUrl = subsidy ? getApplyUrl(subsidy.whereUrl) : FALLBACK_APPLY_URL
 

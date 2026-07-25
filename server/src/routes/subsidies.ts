@@ -24,10 +24,24 @@ subsidiesRouter.get('/', async (req, res) => {
   }
 })
 
-/** GET /api/subsidies/:id — 단건 조회, 없으면 404 */
+const detailProfileSchema = z
+  .object({ region: z.string(), industry: z.string() })
+  .partial()
+
+/**
+ * GET /api/subsidies/:id — 단건 조회, 없으면 404.
+ * `region`/`industry` query parameter가 있으면 `POST /api/match`와 동일한 공식으로 매칭도를
+ * 재계산한다(이슈 #61) — client가 리스트 캐시를 못 찾았을 때(직접 URL 접속·새로고침)만 붙여서
+ * 호출하는 fallback 경로.
+ */
 subsidiesRouter.get('/:id', async (req, res) => {
+  const parsed = detailProfileSchema.safeParse(req.query)
+  const profile = parsed.success && (parsed.data.region || parsed.data.industry)
+    ? { region: parsed.data.region ?? '', industry: parsed.data.industry ?? '' }
+    : undefined
+
   try {
-    const item = await findById(req.params.id)
+    const item = await findById(req.params.id, profile)
     if (!item) {
       res.status(404).json({ error: 'Not found' })
       return

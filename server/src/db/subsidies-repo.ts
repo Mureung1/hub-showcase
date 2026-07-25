@@ -115,8 +115,16 @@ export async function findAll(
   return paginate(sorted, page, limit)
 }
 
-/** 단건 조회 — 없으면 null */
-export async function findById(id: string): Promise<Subsidy | null> {
+/**
+ * 단건 조회 — 없으면 null.
+ * `profile`이 주어지면 `match()`와 동일한 `scoreForProfile()`로 매칭도를 재계산한다(이슈 #61) —
+ * 리스트에서 이미 계산된 값을 캐시로 재사용하지 못하는 경우(직접 URL 접속·새로고침)에만
+ * 호출되는 fallback 경로라, 리스트와 상세의 매칭도가 항상 같은 공식으로 나오게 보장한다.
+ */
+export async function findById(
+  id: string,
+  profile?: Pick<OnboardingProfile, 'region' | 'industry'>,
+): Promise<Subsidy | null> {
   const { data, error } = await supabase
     .from(SUBSIDIES_TABLE)
     .select('*')
@@ -125,9 +133,14 @@ export async function findById(id: string): Promise<Subsidy | null> {
 
   if (error) {
     console.error('[subsidies-repo] 단건 조회 실패, 샘플 데이터로 대체:', error.message)
-    return FALLBACK.find((item) => item.id === id) ?? null
+    const fallback = FALLBACK.find((item) => item.id === id)
+    if (!fallback) return null
+    return profile ? { ...fallback, match: scoreForProfile(fallback, profile) } : fallback
   }
-  return data ? rowToSubsidy(data as SubsidyRow) : null
+  if (!data) return null
+
+  const item = rowToSubsidy(data as SubsidyRow)
+  return profile ? { ...item, match: scoreForProfile(item, profile) } : item
 }
 
 /**
@@ -154,7 +167,7 @@ const REGION_MATCH_BONUS = 20
  */
 const INDUSTRY_MATCH_BONUS = 10
 
-function scoreForProfile(subsidy: Subsidy, profile: OnboardingProfile): number {
+function scoreForProfile(subsidy: Subsidy, profile: Pick<OnboardingProfile, 'region' | 'industry'>): number {
   let score = subsidy.match
 
   if (subsidy.region.length > 0 && subsidy.region.includes(profile.region)) {
