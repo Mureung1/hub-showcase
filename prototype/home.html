@@ -1,0 +1,52 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>에코봇 · 홈</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<div class="phone">
+  <header class="top"><div class="brand"><span class="leaf"></span>EcoBot</div><div class="icon-btn">👤</div></header>
+  <div class="content">
+    <div class="region-bar" onclick="document.getElementById('regionSheet').classList.add('active')">📍 부산 / 해운대구 <span style="margin-left:auto">▾</span></div>
+    <a href="search.html" style="text-decoration:none"><div class="search-bar">🔍 버릴 물건 검색하기</div></a>
+
+    <div class="today-card">
+      <div class="eyebrow">오늘 · 일요일</div>
+      <h2>오늘은 수거 없음</h2>
+      <p>오늘은 쉬는 날이에요. 내일부터 플라스틱/비닐 수거가 재개됩니다.</p>
+    </div>
+
+    <div class="week-table">
+      <div class="day-cell"><div class="dname">월</div><div class="dicon">♻️</div><div class="dtype">플라스틱</div></div>
+      <div class="day-cell"><div class="dname">화</div><div class="dicon">🗑️</div><div class="dtype">일반</div></div>
+      <div class="day-cell"><div class="dname">수</div><div class="dicon">🍚</div><div class="dtype">음식물</div></div>
+      <div class="day-cell"><div class="dname">목</div><div class="dicon">📦</div><div class="dtype">종이</div></div>
+      <div class="day-cell"><div class="dname">금</div><div class="dicon">🥫</div><div class="dtype">캔/유리</div></div>
+      <div class="day-cell"><div class="dname">토</div><div class="dicon">🚫</div><div class="dtype">없음</div></div>
+      <div class="day-cell today"><div class="dname">일</div><div class="dicon">🌙</div><div class="dtype">휴무</div></div>
+    </div>
+
+    <div class="section-title">빠른 안내</div>
+    <div class="grid3">
+      <a href="bulky.html" style="text-decoration:none;color:inherit"><div class="tile"><div class="ticon">🚛</div><div class="tlabel">대형폐기물</div></div></a>
+      <a href="points.html" style="text-decoration:none;color:inherit"><div class="tile"><div class="ticon">📍</div><div class="tlabel">주변 수거함</div></div></a>
+      <a href="rules.html" style="text-decoration:none;color:inherit"><div class="tile"><div class="ticon">📄</div><div class="tlabel">배출 규정</div></div></a>
+    </div>
+  </div>
+  <button class="fab" onclick="document.getElementById('uploadSheet').classList.add('active')">+</button>
+
+  <div class="sheet-overlay" id="regionSheet">
+    <div class="sheet">
+      <h3>지역 선택</h3>
+      <select class="selfield"><option>부산</option><option>서울</option><option>인천</option></select>
+      <select class="selfield"><option>해운대구</option><option>수영구</option><option>남구</option></select>
+      <button class="btn-primary" onclick="document.getElementById('regionSheet').classList.remove('active')">지역 저장</button>
+      <div class="sheet-cancel" onclick="document.getElementById('regionSheet').classList.remove('active')">취소</div>
+    </div>
+  </div>
+  <div class="sheet-overlay" id="uploadSheet">
+    <div class="sheet">
+      <h3>물건 확인하기</h3>
+      <a href="confirm.html" style="text-decoration:none;color:inherit"><div class="sheet-opt">📷 사진 촬영</div></a>
+      <a href="confirm.html" style="text-decoration:none;color:inherit"><div class="sheet-opt">🖼️ 갤러리에서 업로드</div></a>
+      <div class="sheet-cancel" onclick="document.getElementById('uploadSheet').classList.remove('active')">취소</div>
+    </div>
+  </div>
+</div>
+</body></html>

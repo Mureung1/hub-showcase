@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Item {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  nameEn       String? // syncItemNamesEn.ts로 일괄 번역해 채움 — 영어 검색(name OR nameEn contains)에도 사용
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  disposalRule DisposalRule?
+}
+
+// 기후에너지환경부_분리배출 정보조회 서비스(getItem)에서 가져온 원본 응답을 그대로 캐시.
+// method/govItemName은 정부 API가 반환한 텍스트 그대로 저장 — steps/parts/commonMistakes/reason은
+// 이 원본 텍스트를 LLM이 가공한 결과(새 규정을 만들지 않고 설명만 함, CLAUDE.md 원칙).
+model DisposalRule {
+  id               String    @id @default(cuid())
+  itemId           String    @unique
+  item             Item      @relation(fields: [itemId], references: [id])
+  govItemName      String // 정부 API 원본 품목명 (itemNm)
+  method           String // 정부 API 원본 배출방법 텍스트 (dschgMthd)
+  sourceRegion     String    @default("서울") // getItem 데이터의 공간범위 — 서울시 기준 데이터임을 명시
+  steps            String[]  @default([]) // LLM이 가공한 단계별 배출 안내 (한국어)
+  parts            Json      @default("[]") // LLM이 가공한 부품별 분리 안내 (한국어) [{part, category}]
+  commonMistakes   String[]  @default([]) // LLM이 가공한 자주 하는 실수 (한국어)
+  reason           String? // LLM이 가공한 "왜 이렇게 버려야 하는지" 설명 (한국어)
+  explainedAt      DateTime? // steps 등 한국어 explanation 필드가 생성된 시각 — null이면 아직 미생성
+  stepsEn          String[]  @default([]) // 영어 번역 (Translate 토글용, 재요청 없이 즉시 전환)
+  partsEn          Json      @default("[]")
+  commonMistakesEn String[]  @default([])
+  reasonEn         String?
+  explainedAtEn    DateTime? // 영어 필드가 생성된 시각 — 한국어보다 나중에 채워질 수 있음(기존 한국어만 캐시된 항목 백필)
+  fetchedAt        DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+// 행정안전부_생활쓰레기배출정보 조회서비스(household_waste_info/info)에서 시/도+구/군+동으로 매칭한 결과를 캐시.
+// 원본 API는 구/군당 여러 행(생활쓰레기/음식물쓰레기/재활용품/대형폐기물 카테고리별로 동 범위가 다를 수 있음)을
+// 반환하므로, 사용자가 동을 선택한 시점에 카테고리별로 매칭되는 행을 찾아 categories에 병합해 저장한다.
+model RegionRule {
+  id         String   @id @default(cuid())
+  ctpvNm     String // 시/도 (예: 대구광역시)
+  sggNm      String // 구/군 (예: 북구)
+  dongNm     String // 사용자가 선택한 동 (매칭 키, 예: 산격1동)
+  categories Json // { 생활쓰레기: {dow, method, beginTime, endTime}, 음식물쓰레기: {...}, 재활용품: {...}, 대형폐기물: {...} }
+  unclltDay  String? // 미수거일 (UNCLLT_DAY 원본 텍스트)
+  fetchedAt  DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([ctpvNm, sggNm, dongNm])
+}
+
+// household_waste_info/info 데이터가 실제로 존재하는 (시/도, 구/군) 쌍의 전체 목록.
+// 커버리지가 시/도별로 매우 불균등함이 실측으로 확인됨(예: 부산 32건 vs 강원 2252건 전국 기준) — 특정
+// 구/군에 데이터가 없을 때 "같은 시/도 내 데이터가 있는 구/군" 목록을 즉시 보여주기 위해 한 번 전체 동기화해서 캐시.
+// scripts/syncRegionDistricts.ts로 동기화 (공공데이터 API에 매 요청마다 라이브로 조회하면 레이트리밋 위험).
+model RegionDistrict {
+  id       String  @id @default(cuid())
+  ctpvNm   String
+  sggNm    String
+  ctpvNmEn String? // scripts/syncRegionNamesEn.ts로 일괄 로마자 표기(영문) 채움
+  sggNmEn  String?
+
+  @@unique([ctpvNm, sggNm])
+}
+
+// 동/읍/면 등 세부 구역명의 한국어→영어(로마자 표기) 캐시. RegionDistrict와 달리 전량 동기화된 목록이
+// 없어(구/군별로 라이브 조회) 사용자가 실제로 접한 동 이름이 나올 때마다 지연 캐시한다. 지역과 무관하게
+// 텍스트 자체에 대한 번역이라 시/도·구/군 구분 없이 이름 하나로 전국에서 재사용 가능하다.
+model RegionZoneName {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  nameEn    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 환경부_전국대형폐기물수거수수료정보표준데이터(tn_pubr_public_lar_was_fee_api) 전량을 그대로 캐시.
+// larWasSpcfct(규격)/mngInstNm(관리기관명)은 지자체마다 신고 성실도가 달라 약 절반의 행만 실제 값을
+// 가짐(전국 22,831건 중 규격 11,882건·관리기관명 11,127건 실측 확인, 나머지는 빈 값) — 값이 있으면
+// 그대로 보여주고 없으면 카테고리+수수료만 보여준다(빈 값을 임의로 채우지 않음, CLAUDE.md 원칙). 연
+// 1회 갱신되는 안정적인 전국 데이터라 RegionRule처럼 지연 캐시하지 않고 Item 카탈로그처럼 전량 배치
+// 동기화한다(scripts/syncBulkyWasteFees.ts, 매번 전체를 지우고 새로 채움 — 행마다 안정적인 자연키가 없어 upsert 불가).
+model BulkyWasteFee {
+  id         String   @id @default(cuid())
+  ctpvNm     String
+  sggNm      String
+  itemName   String // larWasNm
+  category   String // larWasSeNm
+  spec       String? // larWasSpcfct — 값이 있는 행만(약 52%), 없으면 null
+  paidFree   String // paidFreeYn ("유료"/"무료")
+  fee        Int
+  mngInstNm  String? // 관리기관명 — 값이 있는 행만(약 49%), 신고 사이트 URL이 없을 때 문의처 안내용
+  sourceDate String // crtrYmd — 정부 데이터 기준일자
+  fetchedAt  DateTime @default(now())
+
+  @@index([ctpvNm, sggNm, itemName])
+}
+
+// 대형폐기물 수수료 API에는 공식 신고 사이트 URL이 없어(관리기관명도 실측 결과 대부분 빈 값) 별도로
+// 수동 확인한 지자체만 시드로 관리한다 — scripts/seedBulkyWasteReportSites.ts. 없는 지자체는 URL을
+// 지어내지 않고 프론트에서 "아직 없음" 상태로 안내한다.
+model BulkyWasteReportSite {
+  id        String @id @default(cuid())
+  ctpvNm    String
+  sggNm     String
+  reportUrl String
+
+  @@unique([ctpvNm, sggNm])
+}
