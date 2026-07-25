@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(43);
+select extensions.plan(46);
 
 select extensions.has_table('public', 'insight_import_jobs', '가져오기 작업 테이블이 존재한다');
 select extensions.has_table('public', 'insight_import_items', '가져오기 항목 테이블이 존재한다');
@@ -406,6 +406,63 @@ select public.prepare_insight_import(
     )
   )
 ) as result;
+
+select extensions.ok(
+  (
+    select array_agg(key order by key) = array[
+      'adapterKey', 'collections', 'expiresAt', 'id', 'items', 'status', 'summary'
+    ]::text[]
+    from prepared_import_result,
+      jsonb_object_keys(result) as key
+  ),
+  'prepare RPC returns only the PreparedImport top-level keys'
+);
+select extensions.ok(
+  (
+    select array_agg(key order by key) = array[
+      'createdCount', 'duplicateCount', 'excludedCount', 'inputDuplicateCount',
+      'newCount', 'totalCount'
+    ]::text[]
+    from prepared_import_result,
+      jsonb_object_keys(result -> 'summary') as key
+  ),
+  'prepare RPC returns only the PreparedImport summary keys'
+);
+select extensions.ok(
+  (
+    select
+      bool_and(
+        jsonb_typeof(item.value) = 'object'
+        and (select array_agg(key order by key) from jsonb_object_keys(item.value) as key) = array[
+          'candidateId', 'capturedAtCandidate', 'classification', 'collectionPath',
+          'domain', 'exclusionCode', 'explicitMemoCandidate', 'normalizedUrl',
+          'originalUrl', 'sourceLocation', 'titleCandidate', 'warnings'
+        ]::text[]
+        and jsonb_typeof(item.value -> 'candidateId') = 'string'
+        and jsonb_typeof(item.value -> 'capturedAtCandidate') in ('string', 'null')
+        and jsonb_typeof(item.value -> 'collectionPath') = 'array'
+        and jsonb_typeof(item.value -> 'explicitMemoCandidate') in ('string', 'null')
+        and jsonb_typeof(item.value -> 'originalUrl') = 'string'
+        and jsonb_typeof(item.value -> 'sourceLocation') = 'string'
+        and jsonb_typeof(item.value -> 'titleCandidate') in ('string', 'null')
+        and jsonb_typeof(item.value -> 'warnings') = 'array'
+        and jsonb_typeof(item.value -> 'classification') = 'string'
+        and jsonb_typeof(item.value -> 'domain') in ('string', 'null')
+        and jsonb_typeof(item.value -> 'exclusionCode') in ('string', 'null')
+        and jsonb_typeof(item.value -> 'normalizedUrl') in ('string', 'null')
+      )
+      and bool_or(
+        item.value ->> 'candidateId' = 'prepared-new'
+        and item.value ->> 'classification' = 'new'
+        and item.value -> 'collectionPath' = '["collection-one"]'::jsonb
+        and item.value ->> 'originalUrl' = 'https://prepared.example/new'
+        and item.value ->> 'normalizedUrl' = 'https://prepared.example/new'
+      )
+    from prepared_import_result,
+      jsonb_array_elements(result -> 'items') as item(value)
+  ),
+  'prepare RPC returns PreparedImportItem camelCase keys, shapes, and values'
+);
 
 select extensions.results_eq(
   $$
