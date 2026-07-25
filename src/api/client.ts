@@ -21,7 +21,15 @@ export class ApiError extends Error {
   }
 }
 
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+/**
+ * 배포 환경의 API 서버 주소. 로컬 개발(Vite `/api` 프록시)이나 client·server를 같은 호스트에서
+ * 서빙하는 경우엔 빈 문자열(상대 경로)로 둔다 — GitHub Pages처럼 client만 별도로 배포된 경우에만
+ * 실제 서버 URL을 빌드 시점에 주입한다(#56).
+ */
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+
+async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const url = `${API_BASE_URL}${path}`
   const res = await fetch(url, init)
   if (!res.ok) {
     throw new ApiError(res.status, `${init?.method ?? 'GET'} ${url} → ${res.status}`)
