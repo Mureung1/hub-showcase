@@ -38,9 +38,9 @@
 - [x] 시간 부족 시 재제안이 멈추고 마지막 제안 확정 또는 postpone/end로 수렴한다
 
 ## C08 [T08] 이유 칩 + 수락/거절 UI
-- [ ] `onStruggle`이 고정 RestSuggestion이 아니라 이유 칩 → 제안 카드 플로우로 간다
-- [ ] 제안 카드에 `reason` 한 줄이 노출된다
-- [ ] 수락/거절이 각각 tool 실행/재판단으로 연결된다
+- [x] `onStruggle`이 고정 RestSuggestion이 아니라 이유 칩 → 제안 카드 플로우로 간다
+- [x] 제안 카드에 `reason` 한 줄이 노출된다
+- [x] 수락/거절이 각각 tool 실행/재판단으로 연결된다
 
 ## C09 [T09] outcome 기록
 - [ ] 스텝 완료 도달 시 해당 pending 로그가 `done`으로 갱신된다

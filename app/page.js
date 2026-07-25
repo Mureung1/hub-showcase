@@ -7,8 +7,18 @@ import OneFocusView from "./components/OneFocusView";
 import FocusTimer from "./components/FocusTimer";
 import CompleteScreen from "./components/CompleteScreen";
 import RestSuggestion from "./components/RestSuggestion";
+import ReasonChips from "./components/ReasonChips";
+import ProposalCard from "./components/ProposalCard";
 
-// "input" -> "preview" -> "focus" -> "timer" -> "complete" / "rest"
+// "input" -> "preview" -> "focus" -> "timer" -> "complete"
+// "focus" 중 "나 지금 힘들어" -> "reason" -> "proposal" -> (수락 시 tool별로 분기) / (거절 시 "proposal" 재판단)
+function minutesUntilMidnight() {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 0, 0);
+  return Math.round((midnight - now) / 60000);
+}
+
 export default function Home() {
   const [step, setStep] = useState("input");
   const [microsteps, setMicrosteps] = useState([]);
@@ -16,6 +26,12 @@ export default function Home() {
   const [isSplitting, setIsSplitting] = useState(false);
   const [splitError, setSplitError] = useState(null);
   const [completeError, setCompleteError] = useState(null);
+
+  const [reasonChip, setReasonChip] = useState(null);
+  const [rejectedTools, setRejectedTools] = useState([]);
+  const [proposal, setProposal] = useState(null);
+  const [struggleLoading, setStruggleLoading] = useState(false);
+  const [struggleError, setStruggleError] = useState(null);
 
   const task = microsteps[currentIndex]?.title ?? "";
 
@@ -62,6 +78,11 @@ export default function Home() {
       return; // Notion에 Done 기록이 안 됐으니 다음 스텝으로 넘어가지 않는다.
     }
 
+    advanceToNextStep();
+  }
+
+  // 완료 처리 없이(미루기 등) 그냥 다음 스텝으로 넘어갈 때 재사용.
+  function advanceToNextStep() {
     const nextIndex = currentIndex + 1;
     if (nextIndex < microsteps.length) {
       setCurrentIndex(nextIndex);
@@ -75,6 +96,127 @@ export default function Home() {
     setMicrosteps([]);
     setCurrentIndex(0);
     setStep("input");
+  }
+
+  function resetStruggleState() {
+    setReasonChip(null);
+    setRejectedTools([]);
+    setProposal(null);
+    setStruggleError(null);
+  }
+
+  // reasonChip 선택(첫 판단) 또는 거절(재판단) 시 공통으로 /api/struggle을 호출한다.
+  async function callStruggle(chip, rejected) {
+    setStruggleLoading(true);
+    setStruggleError(null);
+
+    try {
+      const response = await fetch("/api/struggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reasonChip: chip,
+          currentStep: microsteps[currentIndex],
+          remainingSteps: microsteps.slice(currentIndex + 1),
+          recentLogs: [], // T10 전까지는 항상 빈 배열(S2 계약)
+          rejectedTools: rejected,
+          remainingTimeMinutes: minutesUntilMidnight(),
+        }),
+      });
+      if (!response.ok) throw new Error("판단 요청에 실패했어요, 다시 시도해줘");
+
+      const proposed = await response.json();
+      setProposal(proposed);
+      setRejectedTools(rejected);
+      setStep("proposal");
+    } catch (err) {
+      setStruggleError(err.message);
+    } finally {
+      setStruggleLoading(false);
+    }
+  }
+
+  function handleReasonSelect(chip) {
+    setReasonChip(chip);
+    callStruggle(chip, []);
+  }
+
+  function handleReject() {
+    callStruggle(reasonChip, [...rejectedTools, proposal.proposedTool]);
+  }
+
+  async function handleAccept() {
+    const tool = proposal.proposedTool;
+    const current = microsteps[currentIndex];
+
+    if (tool === "suggest_break") {
+      setStep("rest");
+      return;
+    }
+
+    if (tool === "end_session") {
+      goHome();
+      return;
+    }
+
+    if (tool === "encourage" || tool === "shrink_step") {
+      // 구조 변경 없이 격려/축소 문구(이미 proposal.reason으로 보여줌)만 전하고 하던 화면으로.
+      resetStruggleState();
+      setStep("focus");
+      return;
+    }
+
+    if (tool === "postpone_task") {
+      await fetch("/api/steps/postpone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: current.id }),
+      });
+      resetStruggleState();
+      advanceToNextStep();
+      return;
+    }
+
+    if (tool === "reorder_graph" || tool === "swap_task") {
+      // 지금 스텝을 뒤로 미루고, 남은 것 중 다음 스텝을 먼저 보여준다(로컬 순서만 변경).
+      const rest = microsteps.slice(currentIndex + 1);
+      const reordered = [
+        ...microsteps.slice(0, currentIndex),
+        ...rest,
+        current,
+      ];
+      setMicrosteps(reordered);
+      resetStruggleState();
+      setStep("preview");
+      return;
+    }
+
+    if (tool === "split_node") {
+      setStruggleLoading(true);
+      try {
+        await fetch("/api/brain-dump", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: current.title }),
+        });
+        await fetch("/api/steps/archive", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: current.id }),
+        });
+        const stepsResponse = await fetch("/api/steps");
+        const { steps } = await stepsResponse.json();
+        setMicrosteps(steps);
+        setCurrentIndex(0);
+        resetStruggleState();
+        setStep("preview");
+      } catch (err) {
+        setStruggleError("재분할에 실패했어요, 다시 시도해줘");
+      } finally {
+        setStruggleLoading(false);
+      }
+      return;
+    }
   }
 
   if (step === "input") {
@@ -96,7 +238,42 @@ export default function Home() {
       <OneFocusView
         task={task}
         onStart={() => setStep("timer")}
-        onStruggle={() => setStep("rest")}
+        onStruggle={() => setStep("reason")}
+      />
+    );
+  }
+
+  if (step === "reason") {
+    return <ReasonChips onSelect={handleReasonSelect} />;
+  }
+
+  if (step === "proposal") {
+    if (struggleError) {
+      return (
+        <main
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "100vh",
+            gap: "16px",
+            textAlign: "center",
+            padding: "24px",
+          }}
+        >
+          <p>{struggleError}</p>
+          <button onClick={() => callStruggle(reasonChip, rejectedTools)}>다시 시도</button>
+        </main>
+      );
+    }
+    return (
+      <ProposalCard
+        proposedTool={proposal?.proposedTool}
+        reason={proposal?.reason}
+        onAccept={handleAccept}
+        onReject={handleReject}
+        isLoading={struggleLoading}
       />
     );
   }

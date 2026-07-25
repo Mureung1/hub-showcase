@@ -80,7 +80,9 @@ export async function POST(request) {
     (isColdStart
       ? `이 사용자의 과거 기록이 아직 없다(cold start). 이럴 땐 reasonChip을 1차 근거로 참고해라 - ${COLD_START_PRIOR}`
       : "아래 최근 개입 기록을 참고해서, 반복적으로 거절한 tool이나 패턴이 보이면 이번엔 다른 방식을 시도해라.") +
-    ' 결과는 반드시 다음 JSON 형식으로만 응답한다(다른 필드 추가 금지): {"proposedTool": string, "reason": string}';
+    ' reason은 사용자에게 그대로 보여줄 문장이니, reasonChip·estimatedMinutes·remainingSteps 같은 ' +
+    "변수 이름이나 개발 용어를 절대 쓰지 말고 짧고 자연스러운 한국어 말투로 써라. " +
+    '결과는 반드시 다음 JSON 형식으로만 응답한다(다른 필드 추가 금지): {"proposedTool": string, "reason": string}';
 
   const prompt = JSON.stringify({
     reasonChip,

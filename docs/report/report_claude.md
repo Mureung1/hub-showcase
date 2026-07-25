@@ -82,3 +82,11 @@
 - 검증: `npm run verify` 통과. 실제 서버로 3가지 시나리오 확인 — (1) 재판단 중이지만 시간 충분 → 자유롭게 다른 tool 제안, (2) 재판단 중 + 시간 부족 → end_session으로 수렴, (3) 시간 부족 + postpone_task까지 이미 거절된 극단 케이스 → end_session으로 확정. 셋 다 기대대로 동작.
 - 미결: T08(이유 칩 + 수락/거절 UI)에서 이 게이트를 실제로 호출하는 재판단 루프(거절 시 rejectedTools에 추가해서 재요청)를 화면에 붙여야 함. T19(마감 시간 표시 + 연장 버튼, 이슈 #41)는 이 게이트가 쓰는 "자정 고정" 가정을 사용자가 보완할 수 있게 하는 후속 작업으로 별도 등록해둠.
 - 확인: [ ]
+
+## 2026-07-25 | T08 | 이유 칩 + 제안/수락/거절 UI
+- 작업: `app/components/ReasonChips.js`(이유 칩 4개), `app/components/ProposalCard.js`(제안+reason+수락/거절) 신규. `app/page.js`에 "reason"/"proposal" 스텝 추가, `onStruggle`을 고정 `RestSuggestion`에서 이유 칩 플로우로 교체. 거절 시 `rejectedTools`에 추가해 `/api/struggle` 재호출(재판단), 수락 시 tool 8개 전부 실제 동작 연결: suggest_break→RestSuggestion, end_session→홈, postpone_task→`/api/steps/postpone`(신규, ScheduledDate 내일로 갱신)+다음 스텝, encourage/shrink_step→구조 변경 없이 하던 화면 복귀, reorder_graph/swap_task→로컬에서 현재 스텝을 뒤로 미루고 순서 변경, split_node→`/api/brain-dump`로 현재 스텝만 재분할 후 `/api/steps/archive`(신규)로 원본 제거하고 새 목록 재조회. `OneFocusView.js`의 "나 지금 힘들어" 버튼도 라벤더에서 ink/white 아웃라인으로 통일(다른 브랜치에서만 반영되고 이 브랜치엔 안 온 상태였음).
+- 검증: `npm run verify` 통과. 실제 브라우저(puppeteer)로 Brain Dump 제출→TaskPreview→OneFocusView→힘들어→이유 칩→제안 카드→거절(재판단)→수락(swap_task) 전체 흐름 스크린샷 포함 확인. 거절 시 Solar가 여전히 거절된 tool을 재반환하는 사례가 실사용 흐름에서도 재현됐고, T06의 안전장치가 정상 작동해 화면이 안 깨짐을 확인.
+- 버그 발견·수정 (T08 범위 밖, T02): 테스트 중 `/api/brain-dump`가 Solar가 가끔 `estimatedMinutes`로 정수 대신 소수(예: 12.5)를 반환하면 `z.number().int()` 검증에서 500 에러로 죽는 걸 발견. `estimatedMinutes` 스키마에서 `.int()` 제거하고 저장 전 `Math.round()`로 반올림하도록 방어 코드 추가, 5회 연속 재현 테스트로 확인.
+- 추가 발견·수정: 제안 카드의 `reason` 문장에 `reasonChip`/`estimatedMinutes` 같은 내부 변수 이름이 그대로 노출되던 것을 발견, 프롬프트에 "개발 용어 쓰지 말고 자연스러운 문장으로" 제약 추가해 수정.
+- 미결: T09(outcome 기록 — 완료 시 done, 다음 방문 시 이전 pending 일괄 not_done), T10(개인화 — recentLogs 실제 연결). split_node 재분할 시 원래 스텝 순서(created_time) 기준으로 다시 맨 위로 오는 점은 알려진 단순화.
+- 확인: [ ]

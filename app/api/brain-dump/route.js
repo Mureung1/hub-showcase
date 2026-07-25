@@ -20,7 +20,9 @@ const brainDumpSchema = z.object({
     .array(
       z.object({
         title: z.string().describe("25분 이내에 끝낼 수 있는 구체적인 행동 한 문장"),
-        estimatedMinutes: z.number().int().min(1).max(25),
+        // Solar가 가끔 정수 대신 12.5 같은 소수를 반환해서 .int()로 두면 스키마 검증에서
+        // 그대로 죽는다. 소수도 받아서 아래에서 반올림해 정수로 맞춘다.
+        estimatedMinutes: z.number().min(1).max(25),
         category: z.enum(TASK_CATEGORIES).describe("이 스텝이 속하는 분류"),
       })
     )
@@ -63,7 +65,11 @@ export async function POST(request) {
   });
 
   const scheduledDate = todayDateString();
-  const microsteps = object.microsteps.map((step) => ({ ...step, scheduledDate }));
+  const microsteps = object.microsteps.map((step) => ({
+    ...step,
+    estimatedMinutes: Math.round(step.estimatedMinutes),
+    scheduledDate,
+  }));
 
   const databaseId = process.env.NOTION_STEPS_DB_ID;
   await Promise.all(microsteps.map((step) => saveMicrostep(databaseId, step)));
