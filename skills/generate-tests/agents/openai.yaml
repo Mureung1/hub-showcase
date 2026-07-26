@@ -1,0 +1,4 @@
+interface:
+  display_name: "Generate Tests"
+  short_description: "Later 변경에 맞는 Vitest 테스트를 생성하고 검증합니다"
+  default_prompt: "Use $generate-tests to add focused tests for the current Later code changes."
