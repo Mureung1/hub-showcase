@@ -80,6 +80,7 @@ GET /api/v1/stores/nearby
   &longitude=126.922788
   &radius=300
   &category=카페
+  &scope=radius
 ```
 
 입력 조건:
@@ -87,6 +88,7 @@ GET /api/v1/stores/nearby
 - `latitude`, `longitude`: 유한한 WGS84 좌표이며 지원 polygon 내부
 - `radius`: `100`, `300`, `500` 중 하나
 - `category`: canonical category 또는 생략
+- `scope`: `radius` 또는 `market`; `market`이면 안정적인 `market_id`를 함께 보낸다.
 - 이동 중 자동 요청 금지, 위치 확정 시 요청
 
 응답 최소 필드:
@@ -110,6 +112,10 @@ GET /api/v1/stores/nearby
   "aggregation_scope": "radius"
 }
 ```
+
+`scope=market` 응답은 `store_market_links`로 연결된 해당 상권의 점포 전체를 반환하고,
+`aggregation_scope: "market"`으로 표기한다. 반경 응답과 상권 응답을 빈 목록이나 동일한
+집계로 숨기지 않는다.
 
 ### Data and Calculation Boundary
 

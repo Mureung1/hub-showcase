@@ -1,7 +1,6 @@
 import {
   BarChart3,
   Building2,
-  ChevronRight,
   Layers3,
   LocateFixed,
   MapPinned,
@@ -9,7 +8,6 @@ import {
   PanelLeftOpen,
   PanelRightOpen,
   Plus,
-  ScanLine,
 } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import type { MapRef } from "react-map-gl/maplibre";
@@ -38,10 +36,8 @@ type MarketMapPanelProps = {
   inspectorOpen: boolean;
   filterOpenButtonRef: RefObject<HTMLButtonElement | null>;
   inspectorOpenButtonRef: RefObject<HTMLButtonElement | null>;
-  sceneOpenButtonRef: RefObject<HTMLButtonElement | null>;
   onFiltersOpen: () => void;
   onInspectorOpen: () => void;
-  onSceneOpen: () => void;
 };
 
 export function MarketMapPanel({
@@ -66,11 +62,13 @@ export function MarketMapPanel({
   inspectorOpen,
   filterOpenButtonRef,
   inspectorOpenButtonRef,
-  sceneOpenButtonRef,
   onFiltersOpen,
   onInspectorOpen,
-  onSceneOpen,
 }: MarketMapPanelProps) {
+  const nextLayerLabel = layer === "density" ? "시간대 수요 보기" : "경쟁 밀도 보기";
+  const currentLayerLabel =
+    layer === "density" ? `현재: ${densityLabel}` : `현재: ${activeDemandLabel} 시간대 수요`;
+
   return (
     <section className="map-panel" aria-label="지도와 상권 분포">
       <div className="map-toolbar">
@@ -118,25 +116,19 @@ export function MarketMapPanel({
             type="button"
             className="glass-button"
             onClick={() => onLayerChange(layer === "density" ? "demand" : "density")}
+            title={`현재 ${currentLayerLabel}. 누르면 ${nextLayerLabel}를 표시합니다.`}
           >
-            <Layers3 size={16} /> {densityLabel}
+            <Layers3 size={16} /> {currentLayerLabel} · {nextLayerLabel}
           </button>
         </div>
       </div>
-      <button
-        ref={sceneOpenButtonRef}
-        type="button"
-        className="scene-entry-button"
-        onClick={onSceneOpen}
-      >
-        <ScanLine size={16} />
-        <span>관평동 3D 장소</span>
-        <small>촬영 전</small>
-        <ChevronRight className="scene-entry-chevron" size={15} />
-      </button>
       {mapBody}
       <div className="map-legend">
-        <p>{layer === "density" ? "동일 업종 밀도" : "대표 시간대 수요"}</p>
+        <p>
+          {layer === "density"
+            ? "선택 업종 점포가 상대적으로 모인 정도"
+            : "선택 시간대의 상대 유동 수요"}
+        </p>
         <span>
           <i className="low" /> 낮음
         </span>
@@ -208,7 +200,7 @@ export function MarketMapPanel({
         title={comparisonEnabled ? undefined : "전체 지원 업종에서만 상권 비교를 제공합니다."}
         onClick={onCompareOpen}
       >
-        <BarChart3 size={17} /> 상권 비교 열기
+        <BarChart3 size={17} /> 전체 상권 보기
       </button>
     </section>
   );

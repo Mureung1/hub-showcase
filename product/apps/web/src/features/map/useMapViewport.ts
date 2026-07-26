@@ -73,6 +73,7 @@ export function useMapViewport(initialCenter: [number, number], preventOverlayCo
       });
     },
     analysisCenter: draftCenter ?? committedCenter,
+    visibleMapBounds,
     analysisMoveMode,
     updateVisibleCenter: (center: [number, number]) => {
       setVisibleMapCenter(center);

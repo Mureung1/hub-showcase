@@ -50,6 +50,7 @@ def test_equirectangular_video_command_uses_official_split_options(tmp_path: Pat
     assert "equirectangular" in commands[0]
     assert "--images-per-equirect" in commands[0]
     assert commands[1][0:2] == ["ns-train", "splatfacto"]
+    assert commands[1][-1] == str(store.job_dir(job.id) / "anonymized")
 
 
 def test_toolchain_reports_missing_fixed_tools() -> None:

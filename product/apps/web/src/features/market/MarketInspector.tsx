@@ -19,7 +19,6 @@ type MarketInspectorProps = {
   score: number | null;
   categorySelection: CategorySelection;
   categoryCoverageReason: string;
-  radius: number;
   activeHour: number;
   sameCategoryCount: number;
   analysis: MarketAnalysis | null;
@@ -32,6 +31,7 @@ type MarketInspectorProps = {
   onClosePanel: () => void;
   onClearSelection: () => void;
   onEvidenceOpen: () => void;
+  onReportOpen: () => void;
   onActiveHourChange: (hour: number) => void;
 };
 
@@ -41,7 +41,6 @@ export function MarketInspector({
   score,
   categorySelection,
   categoryCoverageReason,
-  radius,
   activeHour,
   sameCategoryCount,
   analysis,
@@ -54,6 +53,7 @@ export function MarketInspector({
   onClosePanel,
   onClearSelection,
   onEvidenceOpen,
+  onReportOpen,
   onActiveHourChange,
 }: MarketInspectorProps) {
   return (
@@ -73,7 +73,6 @@ export function MarketInspector({
         market={market}
         categorySelection={categorySelection}
         score={score}
-        radius={radius}
         sameCategoryCount={sameCategoryCount}
         analysis={analysis}
         analysisScope={analysisScope}
@@ -112,6 +111,7 @@ export function MarketInspector({
         categorySelection={categorySelection}
         analysis={analysis}
         topic={topic}
+        onReportOpen={onReportOpen}
       />
     </aside>
   );

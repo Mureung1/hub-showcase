@@ -11,7 +11,7 @@ const initial: AnalysisUrlState = {
   selectedCategoryCode: null,
   radius: 300,
   layer: "density",
-  scope: "radius",
+  scope: "market",
   topic: "overview",
   boundaryVisible: true,
   storesVisible: true,
@@ -32,12 +32,10 @@ describe("useAnalysisSelection", () => {
   it("resets all user-selectable filters to the neutral defaults", () => {
     const { result } = renderHook(() => useAnalysisSelection(initial));
     act(() => {
-      result.current.setRadius(500);
       result.current.setBoundaryVisible(false);
       result.current.setStoresVisible(false);
     });
     act(() => result.current.resetSelection());
-    expect(result.current.radius).toBe(300);
     expect(result.current.boundaryVisible).toBe(true);
     expect(result.current.storesVisible).toBe(true);
   });

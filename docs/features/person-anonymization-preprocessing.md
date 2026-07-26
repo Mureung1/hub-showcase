@@ -131,7 +131,26 @@ blur, mask, exclude 중 하나의 처리 방식을 적용할 수 있다.
 정제된 이미지를 3D reconstruction 입력으로 사용할 수 있다.
 ```
 
-## 10. 제외 범위
+## 10. 현재 구현 경계
+
+`product/apps/api/src/localtwin_api/scene_anonymization.py`는 이미지 디렉터리를
+읽어 별도 익명화 디렉터리와 JSON report를 만든다. detector는 작은 Interface로
+주입되며, 제품 실행에서는 OpenCV HOG detector를 사용하고 테스트에서는 결정적인
+fake detector를 사용한다.
+
+```text
+원본 input/
+→ detector + policy
+→ anonymized/
+→ anonymization-metadata.json + anonymization-report.json
+→ Nerfstudio train input
+```
+
+현재 검증한 범위는 이미지 sample의 blur, mask, exclude와 training input 분리다.
+사용자 촬영 360 영상 1건의 실제 GPU 학습·viewer end-to-end는 SCENE-007 후속
+검증으로 남긴다.
+
+## 11. 제외 범위
 
 ```text
 실시간 온디바이스 추론
@@ -142,7 +161,7 @@ blur, mask, exclude 중 하나의 처리 방식을 적용할 수 있다.
 MoE 구조
 ```
 
-## 11. 향후 확장
+## 12. 향후 확장
 
 ```text
 v0.2: YOLO small/nano 계열 자동 탐지 적용

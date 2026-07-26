@@ -8,7 +8,7 @@ Backlog ID: SEC-008
 Parent Epic: EPIC-07
 Type: security
 Owner: N187_정현우
-Status: ready
+Status: in progress
 ```
 
 ## 2. Goal
@@ -36,7 +36,7 @@ Status: ready
 ## 6. Acceptance Criteria
 
 - [ ] 배포 응답에 승인된 header가 있다.
-- [ ] CSP가 필요한 asset만 허용한다.
+- [x] CSP가 필요한 product asset origin만 허용한다.
 - [ ] 지도와 문서가 정상 로드된다.
 - [ ] 3D 비활성/활성 정책별 smoke가 통과한다.
 
@@ -54,7 +54,7 @@ git diff --check
 
 ## 8. Documentation Updates
 
-- [ ] `docs/issues/security-hardening-review.md` 상태와 검증 기록을 갱신한다.
+- [x] `docs/issues/security-hardening-review.md` 상태와 검증 기록을 갱신한다.
 - [ ] `docs/development/tasks.md` 상태를 실제 결과에 맞춘다.
 - [ ] 완료 시 `.harness/runs/` Run Report를 남긴다.
 

@@ -4,14 +4,23 @@ import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
 
 function PeriodSelect({
   periods,
+  availability,
   value,
   onChange,
 }: {
   periods: string[];
+  availability: Record<string, Array<"stores" | "sales" | "flow">>;
   value: string;
   onChange: (period: string) => void;
 }) {
   const options = periods.length > 0 ? periods : value ? [value] : [];
+  const formatPeriod = (period: string) => `${period.slice(0, 4)}년 ${period.slice(4)}분기`;
+  const formatAvailability = (period: string) => {
+    const available = availability[period] ?? [];
+    return available.includes("sales") && available.includes("flow")
+      ? "전체 분석"
+      : "점포·개폐업";
+  };
   return (
     <label className="header-control period-control">
       <span className="sr-only">분석 데이터 분기</span>
@@ -21,14 +30,14 @@ function PeriodSelect({
         disabled={periods.length <= 1}
         title={
           periods.length <= 1
-            ? "현재 적재된 완결 분기는 한 개입니다."
-            : "분석할 완결 분기를 선택합니다."
+            ? "현재 선택 가능한 분기는 한 개입니다."
+            : "분기별로 실제 적재된 데이터 범위를 확인하며 선택합니다."
         }
         onChange={(event) => onChange(event.target.value)}
       >
         {options.map((period) => (
           <option key={period} value={period}>
-            {`${period.slice(0, 4)}.${period.slice(4)}Q 기준`}
+            {`${formatPeriod(period)} · ${formatAvailability(period)}`}
           </option>
         ))}
         {!value && <option value="">분기 확인 중</option>}
@@ -39,10 +48,10 @@ function PeriodSelect({
 
 export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
   const { marketKey, period, setPeriod } = model.selection;
-  const { availablePeriods, analysisSource, analysisState, retryAnalysis } =
+  const { availablePeriods, periodAvailability, analysisSource, analysisState, retryAnalysis } =
     model.marketData.marketAnalysis;
   const { categorySelection } = model.selection;
-  const { setCompareOpen, setEvidenceOpen, setFiltersOpen } = model.panels;
+  const { setCompareOpen, setEvidenceOpen, setFiltersOpen, setReportOpen } = model.panels;
   const { state: apiState, retry: retryApiReadiness } = model.apiReadiness;
 
   return (
@@ -67,7 +76,17 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
           <button className="nav-item" type="button" onClick={() => setEvidenceOpen(true)}>
             데이터 기준
           </button>
-          <button className="nav-item" type="button" onClick={() => window.print()}>
+          <button
+            className="nav-item"
+            type="button"
+            onClick={() => {
+              if (document.documentElement.classList.contains("is-english")) {
+                window.print();
+                return;
+              }
+              setReportOpen(true);
+            }}
+          >
             보고서
           </button>
         </nav>
@@ -84,7 +103,12 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
           <button className="header-control" type="button" onClick={() => setFiltersOpen(true)}>
             <MapPinned size={16} /> 상권 선택: {marketKey}
           </button>
-          <PeriodSelect periods={availablePeriods} value={period} onChange={setPeriod} />
+          <PeriodSelect
+            periods={availablePeriods}
+            availability={periodAvailability}
+            value={period}
+            onChange={setPeriod}
+          />
           <button
             className="icon-button"
             type="button"

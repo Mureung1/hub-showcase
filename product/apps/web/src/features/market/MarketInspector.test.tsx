@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import type { MarketAnalysis } from "../../services/marketAnalysis";
 import { MarketInspector } from "./MarketInspector";
+import { InspectorSummary } from "./MarketInspectorSections";
 import { FLOW_TIME_BUCKET_LABELS } from "./model";
 import type { Market, MarketStore } from "./types";
 
@@ -91,7 +92,6 @@ function renderInspector(
         coverage: "full",
       }}
       categoryCoverageReason="전체 지원"
-      radius={300}
       activeHour={0}
       sameCategoryCount={1}
       analysis={analysis}
@@ -104,6 +104,7 @@ function renderInspector(
       onClosePanel={vi.fn()}
       onClearSelection={vi.fn()}
       onEvidenceOpen={vi.fn()}
+      onReportOpen={vi.fn()}
       onActiveHourChange={vi.fn()}
     />,
   );
@@ -124,11 +125,40 @@ describe("MarketInspector population evidence", () => {
     renderInspector(background, "ready");
 
     expect(screen.getByText("상권 상주인구")).toBeInTheDocument();
+    const details = screen.getByText(/행정동 배후통계 자세히 보기/).closest("details");
+    expect(details).not.toHaveAttribute("open");
+    fireEvent.click(screen.getByText(/행정동 배후통계 자세히 보기/));
+    expect(details).toHaveAttribute("open");
     expect(screen.getByText("행정동 주민")).toBeInTheDocument();
     expect(screen.getByText("상권 경계와 행정동 경계는 다릅니다.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /서울시 상권분석서비스 상주인구/ })).toHaveTextContent(
       "20251 · 과거 기준 · 상권",
     );
+    expect(screen.getByRole("link", { name: /서울시 상권분석서비스 상주인구/ })).toHaveAttribute(
+      "target",
+      "_blank",
+    );
+  });
+
+  it("opens a report dialog through the supplied action instead of printing", () => {
+    const openReport = vi.fn();
+    render(
+      <InspectorSummary
+        market={market}
+        categorySelection={{
+          name: "카페",
+          code: "CS100010",
+          analysisCategory: "카페",
+          coverage: "full",
+        }}
+        analysis={{} as MarketAnalysis}
+        topic="overview"
+        onReportOpen={openReport}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "보고서로 보기" }));
+    expect(openReport).toHaveBeenCalledTimes(1);
   });
 
   it("does not turn a provider failure into zero or an empty metric", () => {
@@ -217,7 +247,10 @@ describe("MarketInspector population evidence", () => {
       marketWithSourceBuckets,
     );
 
-    expect(screen.getByText("서울 길단위인구가 제공하는 6개 시간 구간입니다.")).toBeInTheDocument();
+    expect(
+      screen.getByText(/서울 길단위인구가 제공하는 선택 분기 집계입니다/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1명/분기")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /유동인구 상대값|데이터 없음/ })).toHaveLength(6);
     expect(screen.getByRole("button", { name: "14:00-17:00 데이터 없음" })).toBeDisabled();
     expect(screen.queryByText(/26/)).not.toBeInTheDocument();

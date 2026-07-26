@@ -3,7 +3,6 @@ import { findReadyOverlayRegion } from "../map/supportedRegions";
 import type { AnalysisRadius } from "./types";
 
 const LAYERS: readonly LayerMode[] = ["density", "demand"];
-const SCOPES: readonly AnalysisScope[] = ["market", "radius", "admin-area"];
 const TOPICS: readonly AnalysisTopic[] = [
   "overview",
   "stores",
@@ -59,7 +58,6 @@ export function readAnalysisUrlState(
   const categoryValue = parameters.get("category");
   const radiusValue = Number(parameters.get("radius"));
   const layerValue = parameters.get("layer");
-  const scopeValue = parameters.get("scope");
   const topicValue = parameters.get("topic");
   const longitude = Number(parameters.get("lng"));
   const latitude = Number(parameters.get("lat"));
@@ -84,7 +82,7 @@ export function readAnalysisUrlState(
       : defaults.selectedCategoryCode,
     radius: includes(policy.radii, radiusValue) ? radiusValue : defaults.radius,
     layer: includes(LAYERS, layerValue) ? layerValue : defaults.layer,
-    scope: includes(SCOPES, scopeValue) ? scopeValue : defaults.scope,
+    scope: "market",
     topic: includes(TOPICS, topicValue) ? topicValue : defaults.topic,
     boundaryVisible: booleanParameter(parameters.get("boundary"), defaults.boundaryVisible),
     storesVisible: booleanParameter(parameters.get("stores"), defaults.storesVisible),

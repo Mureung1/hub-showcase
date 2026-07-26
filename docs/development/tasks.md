@@ -177,10 +177,10 @@ Outcome: 상권 분석에서 선택한 한 위치의 현장감을 제한된 3D �
 | ID        | 세부 Task                                   | Priority | Status  | Week | Depends on | Acceptance                                          |
 | --------- | ------------------------------------------- | -------- | ------- | ---- | ---------- | --------------------------------------------------- |
 | SCENE-001 | 관평동 촬영 위치·범위·privacy Gate 확정     | P1       | Done    | 4    | EPIC-04    | 관평동 한 장소의 10~20m 범위와 공개 기준이 정해진다 |
-| SCENE-002 | 사람 영역 익명화 sample pipeline 검증       | P1       | In Progress | 4 | SCENE-001 | upload/job은 구현, 실제 blur/mask/exclude 검증이 남았다 |
+| SCENE-002 | 사람 영역 익명화 sample pipeline 검증       | P1       | Done | 4 | SCENE-001 | blur/mask/exclude 결과와 anonymized 학습 입력 경로를 검증했다. 실제 촬영 E2E는 SCENE-007에서 수행한다 |
 | SCENE-003 | 실제 scene 1개 또는 검증된 대체 viewer 연결 | P1       | Done | 4 | SCENE-002 | 공식 storefront PLY와 camera pose를 local viewer에서 검증했다 |
 | SCENE-006 | GPU server 공식 sample 학습과 local viewer 검증 | P1 | Done | 4 | SCENE-005 | `storefront` 12999-step PLY, camera pose, desktop/mobile QA 완료 |
-| SCENE-004 | 대표 시간대 혼잡도 overlay 연결             | P1       | Backlog | 4    | SCENE-003  | 10시/13시/15시/18시 상태가 근거와 함께 바뀐다       |
+| SCENE-004 | 대표 시간대 혼잡도 overlay 연결             | P1       | Done | 4    | SCENE-003  | fixture source를 명시한 10시/13시/15시/18시 관찰 overlay가 3DGS 재로딩 없이 바뀐다 |
 | SCENE-005 | Docker GPU worker와 Spark renderer QA       | P1       | Done    | 4    | SCENE-001  | Docker path와 synthetic PLY nonblank canvas를 검증한다 |
 | SCENE-007 | 사용자 촬영 입력 end-to-end 변환 검증       | P0       | Backlog | Phase 2 | SEC-002, SEC-004, SCENE-006 | 승인된 360 영상 또는 다중 시점 사진 1건이 익명화·학습·viewer 경로를 통과한다 |
 
@@ -201,7 +201,7 @@ Outcome: 공개 또는 제품 환경에서 Scene·데이터 경로가 기본 차
 | SEC-005 | 사용자·관리자 response schema 분리         | P1       | Backlog | Phase 2 | SEC-001    | 공개 응답에 path·command·상세 exception이 없다 |
 | SEC-006 | Seoul API key 전송·log 보호                | P1       | Backlog | Phase 2 | -          | HTTPS 또는 승인된 격리 대안과 log redaction이 검증된다 |
 | SEC-007 | dependency·container 공급망 hardening      | P1       | Backlog | Phase 2 | SEC-003    | frozen install, image digest와 최소 권한 runtime이 검증된다 |
-| SEC-008 | 정적 배포 security header와 화면 회귀      | P1       | Backlog | Phase 2 | -          | 배포 header와 지도·문서·3D smoke test가 함께 통과한다 |
+| SEC-008 | 정적 배포 security header와 화면 회귀      | P1       | In Progress | Phase 2 | -          | Vercel header 설정은 push됐고, 다음 버전 배포 뒤 공개 URL header와 지도·문서·3D smoke를 확인한다 |
 
 ### EPIC-06. 통합 검증과 발표 배포
 
@@ -354,3 +354,5 @@ W3-D1은 `MAP-005 → ANALYSIS-002/WEB-002/WEB-003 → EVAL-002` 순서로 진�
 | 2026-07-16 | MAP-004 첫 5개 업종 marker와 LOD 확대 | canonical 업종 코드로 방향 독립 장식을 선택하고 겹치는 marker를 제거하며 desktop 12개·mobile 6개 상한을 보장하기 위해 |
 | 2026-07-16 | API-002 상권 분석 runtime PostgreSQL 전환 | 배포 artifact에 없는 canonical SQLite 파일 대신 검색·반경 API와 같은 SQLAlchemy session을 사용하고 SQLite는 import·회귀 기준으로만 유지하기 위해 |
 | 2026-07-16 | MAP-004 공유 GLB body와 category atlas cache | 선택 전환마다 asset을 다시 받지 않고 3D 실패 시 procedural marker를 유지하며 선택 중심 UI가 점포를 가리지 않게 하기 위해 |
+| 2026-07-26 | SCENE-002·004 sample privacy와 관찰 overlay 완료 | 익명화 결과만 학습 입력으로 넘기고 fixture 관찰값을 실제 측정값처럼 보이지 않게 분리하기 위해 |
+| 2026-07-26 | 상권 범위 점포·UX 기준 정리 | 상권/반경 모두 API 응답을 사용하고, 목록·경쟁·근거 UI가 같은 분석 기준을 설명하도록 하기 위해 |

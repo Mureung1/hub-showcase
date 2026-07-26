@@ -27,7 +27,7 @@
 | SEC-005 | Medium | 공개 API가 worker 내부정보를 반환 | Planned | 공개 응답에서 경로·command·상세 진단을 제거한다 |
 | SEC-006 | Medium | Seoul API key가 평문 HTTP URL 경로로 전송 | Planned | HTTPS 또는 승인된 격리 대안을 적용한다 |
 | SEC-007 | Medium/Low | 공급망 고정과 container 격리 부족 | Planned | frozen install과 digest·runtime 제한을 적용한다 |
-| SEC-008 | Low | Vercel 보안 header 없음 | Planned | 배포 응답에서 header와 화면 회귀를 확인한다 |
+| SEC-008 | Low | Vercel 보안 header 없음 | In Progress | 배포 응답에서 header와 화면 회귀를 확인한다 |
 ## 2.1 Phase 2 실행 매핑
 
 Parent Epic은 `EPIC-07 제품 보안과 Privacy Enforcement`다. `SEC-001`은 두 단계로 나눈다. A단계의 제품 환경 기본 차단은 이번 주 첫 구현으로 수행하고, B단계의 인증·객체 단위 인가와 SEC-002~008은 핵심 서비스 vertical slice 이후 사용자 촬영 E2E 전에 수행한다.
@@ -295,9 +295,9 @@ $Site = "https://hub-localtwin-docs-vercel.vercel.app/"
 
 ### 조치와 선택 이유
 
-`vercel.json`에 header를 작은 단위로 추가한다. CSP는 preview에서 MapLibre, font, WebGL 출처를 확인한 뒤 강제한다. 너무 좁은 CSP는 정상 지도와 3D asset도 차단할 수 있다.
+`product/vercel.json`에는 product가 실제로 쓰는 Render API와 OpenFreeMap origin만 허용한 CSP를 둔다. docs artifact는 inline documentation viewer를 유지하므로 동일한 CSP를 억지로 공유하지 않고, 공통 browser protection header만 적용한다. 너무 좁은 CSP는 정상 지도와 3D asset도 차단할 수 있다.
 
-- [ ] 외부 resource origin 목록화
+- [x] 외부 resource origin 목록화
 - [ ] preview CSP 위반 확인
 - [ ] 배포 응답 header 확인
 - [ ] 지도·문서 viewer·3D smoke 통과

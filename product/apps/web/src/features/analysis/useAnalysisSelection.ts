@@ -14,7 +14,7 @@ export function useAnalysisSelection(initial: AnalysisUrlState) {
   const [radius, setRadius] = useState(initial.radius);
   const [activeHour, setActiveHour] = useState(2);
   const [layer, setLayer] = useState(initial.layer);
-  const [analysisScope, setAnalysisScope] = useState(initial.scope);
+  const analysisScope = "market" as const;
   const [analysisTopic, setAnalysisTopic] = useState(initial.topic);
   const [boundaryVisible, setBoundaryVisible] = useState(initial.boundaryVisible);
   const [storesVisible, setStoresVisible] = useState(initial.storesVisible);
@@ -41,7 +41,6 @@ export function useAnalysisSelection(initial: AnalysisUrlState) {
     setCategorySelection(next);
     if (next.analysisCategory) setCategory(next.analysisCategory);
     if (next.coverage !== "full") {
-      setAnalysisScope("radius");
       setAnalysisTopic("competition");
       setLayer("density");
     }
@@ -73,7 +72,6 @@ export function useAnalysisSelection(initial: AnalysisUrlState) {
     layer,
     setLayer,
     analysisScope,
-    setAnalysisScope,
     analysisTopic,
     chooseTopic,
     boundaryVisible,
@@ -86,7 +84,6 @@ export function useAnalysisSelection(initial: AnalysisUrlState) {
       chooseCategory("카페");
       setRadius(300);
       setLayer("density");
-      setAnalysisScope("radius");
       setAnalysisTopic("overview");
       setBoundaryVisible(true);
       setStoresVisible(true);

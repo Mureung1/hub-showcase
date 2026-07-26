@@ -107,7 +107,6 @@ export function InspectorScoreAndCompetition({
   market,
   categorySelection,
   score,
-  radius,
   sameCategoryCount,
   analysis,
   analysisScope,
@@ -117,7 +116,6 @@ export function InspectorScoreAndCompetition({
   market: Market;
   categorySelection: CategorySelection;
   score: number | null;
-  radius: number;
   sameCategoryCount: number;
   analysis: MarketAnalysis | null;
   analysisScope: AnalysisScope;
@@ -141,13 +139,13 @@ export function InspectorScoreAndCompetition({
       {showsScore && (
         <section className="score-section">
           <div>
-            <span>입지 점수</span>
+            <span>상권 입지 점수</span>
             <strong>{score}</strong>
             <small>/ 100</small>
           </div>
           <b>{market.grade}</b>
           <button type="button" className="evidence-button" onClick={onEvidenceOpen}>
-            점수 산정 근거 <CircleHelp size={15} />
+            점수의 근거와 읽는 법 <CircleHelp size={15} />
           </button>
         </section>
       )}
@@ -155,13 +153,13 @@ export function InspectorScoreAndCompetition({
         <section className="metric-section">
           <div className="section-title">
             <span>경쟁 현황</span>
-            <small>{analysis ? "서울시 상권 경계" : `반경 ${radius}m`}</small>
+            <small>서울시 상권 경계</small>
           </div>
           <div className="competition-chart">
-            <div className="donut">
-              <i />
-              <b>{sameCategoryCount}</b>
-              <small>동일 업종</small>
+            <div className="competition-stat">
+              <span>현재 범위 내</span>
+              <b>{sameCategoryCount}개</b>
+              <small>동일 업종 점포</small>
             </div>
             <div className="legend-list">
               <span>
@@ -383,6 +381,9 @@ export function InspectorFlow({
     return null;
   }
 
+  const activeBucket = analysis.raw.flow_time_buckets[activeHour];
+  const activeFlow = activeBucket?.value ?? null;
+
   return (
     <>
       <section className="metric-section">
@@ -419,7 +420,17 @@ export function InspectorFlow({
             <span key={label}>{label.replaceAll(":00", "")}</span>
           ))}
         </div>
-        <p className="metric-note">서울 길단위인구가 제공하는 6개 시간 구간입니다.</p>
+        <div className="hour-chart-value" role="status">
+          <span>{activeBucket?.label ?? "시간 구간 미확인"}</span>
+          <strong>
+            {activeFlow === null
+              ? "데이터 없음"
+              : `${Math.round(activeFlow).toLocaleString("ko-KR")}명/분기`}
+          </strong>
+        </div>
+        <p className="metric-note">
+          서울 길단위인구가 제공하는 선택 분기 집계입니다. 막대 높이는 이 상권 안에서 시간대끼리 비교한 상대값입니다.
+        </p>
       </section>
     </>
   );
@@ -481,7 +492,7 @@ export function InspectorPopulation({
           <p className="population-space-label">
             서울시 상권 경계 · {background.market_resident_population.period}
           </p>
-          <div className="population-section">
+          <div className="population-section population-section-primary">
             <div>
               <span>상권 상주인구</span>
               <b>{market.residentPopulation}</b>
@@ -513,30 +524,32 @@ export function InspectorPopulation({
               {background.market_worker_density.peer_count}위
             </span>
           </div>
-          <p className="population-space-label">행정동 배후통계 · {background.admin_area_name}</p>
-          <div className="population-section">
-            <div>
-              <span>행정동 주민</span>
-              <b>{background.resident_population.value.toLocaleString("ko-KR")}명</b>
-              <small>
-                {background.resident_population.rank}/{background.resident_population.peer_count}위
-              </small>
+          <details className="population-details">
+            <summary>행정동 배후통계 자세히 보기 · {background.admin_area_name}</summary>
+            <div className="population-section">
+              <div>
+                <span>행정동 주민</span>
+                <b>{background.resident_population.value.toLocaleString("ko-KR")}명</b>
+                <small>
+                  {background.resident_population.rank}/{background.resident_population.peer_count}위
+                </small>
+              </div>
+              <div>
+                <span>행정동 종사자</span>
+                <b>{background.workers.value.toLocaleString("ko-KR")}명</b>
+                <small>
+                  {background.workers.rank}/{background.workers.peer_count}위
+                </small>
+              </div>
+              <div>
+                <span>사업체</span>
+                <b>{background.businesses.value.toLocaleString("ko-KR")}개</b>
+                <small>
+                  {background.businesses.peer_count}개 동 중 {background.businesses.rank}위
+                </small>
+              </div>
             </div>
-            <div>
-              <span>행정동 종사자</span>
-              <b>{background.workers.value.toLocaleString("ko-KR")}명</b>
-              <small>
-                {background.workers.rank}/{background.workers.peer_count}위
-              </small>
-            </div>
-            <div>
-              <span>사업체</span>
-              <b>{background.businesses.value.toLocaleString("ko-KR")}개</b>
-              <small>
-                {background.businesses.peer_count}개 동 중 {background.businesses.rank}위
-              </small>
-            </div>
-          </div>
+          </details>
           <p className="population-boundary-note">{background.boundary_note}</p>
           <div className="population-evidence-list">
             {background.evidence
@@ -549,7 +562,12 @@ export function InspectorPopulation({
                   ) === index,
               )
               .map((item) => (
-                <a key={`${item.source_name}-${item.period}`} href={item.source_url}>
+                <a
+                  key={`${item.source_name}-${item.period}`}
+                  href={item.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   <span>{item.source_name}</span>
                   <small>
                     {item.period} · 과거 기준 · {item.geography === "market" ? "상권" : "행정동"}
@@ -574,11 +592,13 @@ export function InspectorSummary({
   categorySelection,
   analysis,
   topic,
+  onReportOpen,
 }: {
   market: Market;
   categorySelection: CategorySelection;
   analysis: MarketAnalysis | null;
   topic: AnalysisTopic;
+  onReportOpen: () => void;
 }) {
   if (categorySelection.coverage !== "full" || analysis === null || topic !== "overview")
     return null;
@@ -587,7 +607,7 @@ export function InspectorSummary({
     <section className="insight-section">
       <span>분석 요약</span>
       <p>{market.insight}</p>
-      <button type="button" onClick={() => window.print()}>
+      <button type="button" onClick={onReportOpen}>
         <FileText size={15} /> 보고서로 보기
       </button>
     </section>

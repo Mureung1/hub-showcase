@@ -19,6 +19,7 @@ export type MarketAnalysisOptions = {
 export type AnalysisPeriods = {
   periods: string[];
   default_period: string;
+  period_availability?: Record<string, Array<"stores" | "sales" | "flow">>;
   policy: "latest_complete_quarter";
 };
 export type ScoreDecisionBlocker =
@@ -95,7 +96,7 @@ export type MarketAnalysis = {
     monthly_sales_amount: number | null;
     monthly_sales_count: number | null;
     total_flow: number | null;
-    flow_by_time: number[];
+    flow_by_time: Array<number | null>;
     flow_time_buckets: Array<{
       label: string;
       value: number | null;

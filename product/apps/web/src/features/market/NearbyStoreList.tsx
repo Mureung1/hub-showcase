@@ -8,7 +8,6 @@ type NearbyStoreListProps = {
   stores: MarketStore[];
   selectedStoreName: string | null;
   state: NearbyStoreState;
-  usesAnalysis: boolean;
   onRetry: () => void;
   onSelect: (storeName: string) => void;
 };
@@ -17,7 +16,6 @@ export function NearbyStoreList({
   stores,
   selectedStoreName,
   state,
-  usesAnalysis,
   onRetry,
   onSelect,
 }: NearbyStoreListProps) {
@@ -76,7 +74,6 @@ export function NearbyStoreList({
                 {store.category} · {store.distance}
               </small>
             </span>
-            <strong>{usesAnalysis ? "POI" : store.score}</strong>
           </button>
         ))}
       </div>

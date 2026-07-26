@@ -32,6 +32,7 @@ export function MapLayerControls({
         type="button"
         className={boundaryVisible ? "layer-option active" : "layer-option"}
         aria-pressed={boundaryVisible}
+        title="지원 상권의 공식 경계선을 지도에 표시합니다."
         onClick={() => onBoundaryVisibleChange(!boundaryVisible)}
       >
         <MapPinned size={15} /> 상권 경계
@@ -40,6 +41,7 @@ export function MapLayerControls({
         type="button"
         className={storesVisible ? "layer-option active" : "layer-option"}
         aria-pressed={storesVisible}
+        title="현재 분석 범위에서 조회된 점포 위치를 표시합니다."
         onClick={() => onStoresVisibleChange(!storesVisible)}
       >
         <Store size={15} /> 점포 위치
@@ -48,6 +50,7 @@ export function MapLayerControls({
         type="button"
         className={layer === "density" ? "layer-option active" : "layer-option"}
         aria-pressed={layer === "density"}
+        title="선택 업종 점포가 상대적으로 모인 정도를 표시합니다."
         onClick={() => onLayerChange("density")}
       >
         <Layers3 size={15} /> 업종 밀도
@@ -56,6 +59,7 @@ export function MapLayerControls({
         type="button"
         className={layer === "demand" ? "layer-option active" : "layer-option"}
         aria-pressed={layer === "demand"}
+        title="선택 시간대의 상대 유동 수요를 표시합니다."
         onClick={() => onLayerChange("demand")}
       >
         <Users size={15} /> 시간대 수요

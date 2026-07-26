@@ -42,5 +42,5 @@ export type NearbyStoreResponse = {
     unavailable_metrics: string[];
     reason: string;
   };
-  aggregation_scope: "radius";
+  aggregation_scope: "radius" | "market";
 };

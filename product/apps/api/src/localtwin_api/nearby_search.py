@@ -14,7 +14,13 @@ from shapely.geometry import Point, shape
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from localtwin_api.db_models import DataSource, Market, MarketGeometry, StorePoint
+from localtwin_api.db_models import (
+    DataSource,
+    Market,
+    MarketGeometry,
+    StoreMarketLink,
+    StorePoint,
+)
 from localtwin_api.product_catalog import (
     CATEGORY_NAME_TERMS,
     SUPPORTED_MARKET_CODES,
@@ -77,7 +83,7 @@ class NearbyStoreResponse(BaseModel):
     stores: list[NearbyStore]
     evidence: list[NearbyEvidence]
     category_coverage: NearbyCategoryCoverage
-    aggregation_scope: Literal["radius"] = "radius"
+    aggregation_scope: Literal["radius", "market"] = "radius"
 
 
 class UnsupportedAnalysisAreaError(ValueError):
@@ -251,13 +257,85 @@ class NearbyStoreRepository:
             if distance <= radius:
                 within_radius.append((distance, store))
         within_radius.sort(key=lambda item: (item[0], item[1].store_id))
-
-        category_counter = Counter(
-            category_name(store) or "업종 미분류" for _, store in within_radius
+        return self._response(
+            market=market,
+            center=(longitude, latitude),
+            radius=radius,
+            stores_with_distance=within_radius,
+            category=category,
+            aggregation_scope="radius",
         )
-        same_category_count = sum(category_matches(store, category) for _, store in within_radius)
-        returned = within_radius[:MAX_RETURNED_STORES]
-        snapshot_ids = sorted({store.source_snapshot_id for _, store in within_radius})
+
+    def market(
+        self,
+        *,
+        market_id: str,
+        longitude: float,
+        latitude: float,
+        radius: NearbyRadius,
+        category: str | None = None,
+    ) -> NearbyStoreResponse:
+        if market_id not in SUPPORTED_MARKET_CODES:
+            raise UnsupportedAnalysisAreaError
+        market = self.session.get(Market, market_id)
+        if market is None:
+            raise UnsupportedAnalysisAreaError
+        linked_stores = self.session.scalars(
+            select(StorePoint)
+            .join(StoreMarketLink, StoreMarketLink.store_id == StorePoint.store_id)
+            .where(
+                StoreMarketLink.market_code == market_id,
+                StorePoint.longitude.is_not(None),
+                StorePoint.latitude.is_not(None),
+            )
+        ).all()
+        stores_with_distance = [
+            (
+                haversine_distance_meters(
+                    longitude,
+                    latitude,
+                    store.longitude,
+                    store.latitude,
+                ),
+                store,
+            )
+            for store in linked_stores
+            if store.longitude is not None and store.latitude is not None
+        ]
+        stores_with_distance.sort(key=lambda item: (item[0], item[1].store_id))
+        return self._response(
+            market=market,
+            center=(longitude, latitude),
+            radius=radius,
+            stores_with_distance=stores_with_distance,
+            category=category,
+            aggregation_scope="market",
+        )
+
+    def _response(
+        self,
+        *,
+        market: Market,
+        center: tuple[float, float],
+        radius: NearbyRadius,
+        stores_with_distance: list[tuple[float, StorePoint]],
+        category: str | None,
+        aggregation_scope: Literal["radius", "market"],
+    ) -> NearbyStoreResponse:
+        longitude, latitude = center
+        category_counter = Counter(
+            category_name(store) or "업종 미분류" for _, store in stores_with_distance
+        )
+        same_category_count = sum(
+            category_matches(store, category) for _, store in stores_with_distance
+        )
+        display_candidates = (
+            [item for item in stores_with_distance if category_matches(item[1], category)]
+            if category
+            else stores_with_distance
+        )
+        returned = display_candidates[:MAX_RETURNED_STORES]
+        snapshot_ids = sorted({store.source_snapshot_id for _, store in stores_with_distance})
         sources = (
             self.session.scalars(
                 select(DataSource)
@@ -287,11 +365,11 @@ class NearbyStoreRepository:
             radius=radius,
             market_id=market.market_code,
             market_name=market.market_name,
-            total_count=len(within_radius),
+            total_count=len(stores_with_distance),
             same_category_count=same_category_count,
             category_counts=dict(sorted(category_counter.items())),
             returned_count=len(stores),
-            truncated=len(within_radius) > len(stores),
+            truncated=len(display_candidates) > len(returned),
             stores=stores,
             evidence=[
                 NearbyEvidence(
@@ -305,4 +383,5 @@ class NearbyStoreRepository:
                 for source in sources
             ],
             category_coverage=category_coverage(category, same_category_count),
+            aggregation_scope=aggregation_scope,
         )
