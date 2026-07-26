@@ -42,7 +42,7 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
   const { availablePeriods, analysisSource, analysisState, retryAnalysis } =
     model.marketData.marketAnalysis;
   const { categorySelection } = model.selection;
-  const { setCompareOpen, setEvidenceOpen, setFiltersOpen } = model.panels;
+  const { setCompareOpen, setEvidenceOpen, setFiltersOpen, setReportOpen } = model.panels;
   const { state: apiState, retry: retryApiReadiness } = model.apiReadiness;
 
   return (
@@ -67,7 +67,17 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
           <button className="nav-item" type="button" onClick={() => setEvidenceOpen(true)}>
             데이터 기준
           </button>
-          <button className="nav-item" type="button" onClick={() => window.print()}>
+          <button
+            className="nav-item"
+            type="button"
+            onClick={() => {
+              if (document.documentElement.classList.contains("is-english")) {
+                window.print();
+                return;
+              }
+              setReportOpen(true);
+            }}
+          >
             보고서
           </button>
         </nav>

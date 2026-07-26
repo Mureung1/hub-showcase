@@ -103,6 +103,13 @@ describe("App", () => {
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
+  it("opens the Korean report dialog instead of starting a print flow", () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "보고서" }));
+    expect(screen.getByRole("dialog", { name: "상권 분석 보고서" })).toBeInTheDocument();
+  });
+
   it("starts mobile in a map-first state and keeps Docs available", () => {
     vi.stubGlobal(
       "matchMedia",

@@ -1,4 +1,5 @@
 @import "./tokens.css";
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
 
 * {
   box-sizing: border-box;
@@ -54,6 +55,30 @@ select:focus-visible {
 .app-shell {
   min-height: 100vh;
   background: #f4f6f4;
+}
+
+html:not(.is-english) .app-shell {
+  font-family:
+    "Pretendard Variable",
+    Pretendard,
+    "Apple SD Gothic Neo",
+    system-ui,
+    sans-serif;
+}
+
+.analysis-layout {
+  animation: workspace-enter 220ms ease-out both;
+}
+
+@keyframes workspace-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .app-header {
   height: 56px;
