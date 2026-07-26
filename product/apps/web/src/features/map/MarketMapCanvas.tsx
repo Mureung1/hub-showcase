@@ -1,11 +1,9 @@
 import { ChevronDown } from "lucide-react";
 import { lazy, Suspense, type RefObject } from "react";
-import Map, { Layer, Marker, Source, type MapRef } from "react-map-gl/maplibre";
+import Map, { Layer, Marker, type MapRef } from "react-map-gl/maplibre";
 
-import { AnalysisLocationControls } from "../analysis/AnalysisLocationControls";
-import type { AnalysisMoveMode, AnalysisRadius } from "../analysis/types";
 import { categoryClass, isTestEnvironment } from "../market/model";
-import type { AnalysisScope, LayerMode, MapMode, Market, MarketStore } from "../market/types";
+import type { LayerMode, MapMode, Market, MarketStore } from "../market/types";
 import {
   addMissingStyleImageFallback,
   BASE_BUILDING_LAYER_ID,
@@ -48,19 +46,11 @@ type MarketMapCanvasProps = {
   mapMode: MapMode;
   baseBuildingsVisible: boolean;
   baseBuildingsRendered: boolean;
-  analysisScope: AnalysisScope;
-  circle: {
-    type: "Feature";
-    properties: Record<string, never>;
-    geometry: { type: "Polygon"; coordinates: number[][][] };
-  };
   layer: LayerMode;
   boundaryVisible: boolean;
   storesVisible: boolean;
   selectedStorefront3d: SelectedStorefront | null;
   onStorefrontUnavailable: () => void;
-  analysisCenter: [number, number];
-  radius: AnalysisRadius;
   flowPeople: Array<{ longitude: number; latitude: number; delay: number }>;
   activeHour: number;
   activeDemandLabel: string;
@@ -70,11 +60,6 @@ type MarketMapCanvasProps = {
   prefabMode: boolean;
   onSelectStore: (name: string) => void;
   visibleSupportedRegion: boolean;
-  analysisMoveMode: AnalysisMoveMode;
-  canConfirmAnalysisMove: boolean;
-  onStartAnalysisMove: () => void;
-  onConfirmAnalysisMove: () => void;
-  onCancelAnalysisMove: () => void;
   onEvidenceOpen: () => void;
 };
 
@@ -142,15 +127,11 @@ export function MarketMapCanvas({
   mapMode,
   baseBuildingsVisible,
   baseBuildingsRendered,
-  analysisScope,
-  circle,
   layer,
   boundaryVisible,
   storesVisible,
   selectedStorefront3d,
   onStorefrontUnavailable,
-  analysisCenter,
-  radius,
   flowPeople,
   activeHour,
   activeDemandLabel,
@@ -160,11 +141,6 @@ export function MarketMapCanvas({
   prefabMode,
   onSelectStore,
   visibleSupportedRegion,
-  analysisMoveMode,
-  canConfirmAnalysisMove,
-  onStartAnalysisMove,
-  onConfirmAnalysisMove,
-  onCancelAnalysisMove,
   onEvidenceOpen,
 }: MarketMapCanvasProps) {
   if (isTestEnvironment())
@@ -213,23 +189,6 @@ export function MarketMapCanvas({
         {mapMode === "localtwin" && (
           <SupportedRegionOverlays buildingsVisible={baseBuildingsVisible} />
         )}
-        {analysisScope === "radius" && (
-          <Source id="analysis-area" type="geojson" data={circle}>
-            <Layer
-              id="analysis-area-fill"
-              type="fill"
-              paint={{
-                "fill-color": layer === "density" ? "#4fa76a" : "#4d8fdc",
-                "fill-opacity": 0.14,
-              }}
-            />
-            <Layer
-              id="analysis-area-line"
-              type="line"
-              paint={{ "line-color": "#ffffff", "line-width": 2.4, "line-opacity": 0.96 }}
-            />
-          </Source>
-        )}
         {boundaryVisible && <SelectedMarketBoundary marketId={marketId} />}
         {storesVisible && selectedStorefront3d && (
           <Suspense fallback={null}>
@@ -238,17 +197,6 @@ export function MarketMapCanvas({
               onUnavailable={onStorefrontUnavailable}
             />
           </Suspense>
-        )}
-        {analysisScope === "radius" && (
-          <Marker longitude={analysisCenter[0]} latitude={analysisCenter[1]} anchor="center">
-            <span
-              className={
-                selectedStorefront3d ? "analysis-center is-storefront-clear" : "analysis-center"
-              }
-            >
-              <span>{radius}m</span>
-            </span>
-          </Marker>
         )}
         {market.landmarks.map((place) => (
           <Marker
@@ -314,15 +262,6 @@ export function MarketMapCanvas({
           <b>LocalTwin 분석 지원 범위 밖</b>
           <span>기본 지도는 계속 탐색할 수 있으며 새 분석은 지원 지역에서 시작합니다.</span>
         </div>
-      )}
-      {analysisScope === "radius" && (
-        <AnalysisLocationControls
-          mode={analysisMoveMode}
-          canConfirm={canConfirmAnalysisMove}
-          onStart={onStartAnalysisMove}
-          onConfirm={onConfirmAnalysisMove}
-          onCancel={onCancelAnalysisMove}
-        />
       )}
     </div>
   );

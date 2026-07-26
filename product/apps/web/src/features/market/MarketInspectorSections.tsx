@@ -107,7 +107,6 @@ export function InspectorScoreAndCompetition({
   market,
   categorySelection,
   score,
-  radius,
   sameCategoryCount,
   analysis,
   analysisScope,
@@ -117,7 +116,6 @@ export function InspectorScoreAndCompetition({
   market: Market;
   categorySelection: CategorySelection;
   score: number | null;
-  radius: number;
   sameCategoryCount: number;
   analysis: MarketAnalysis | null;
   analysisScope: AnalysisScope;
@@ -155,7 +153,7 @@ export function InspectorScoreAndCompetition({
         <section className="metric-section">
           <div className="section-title">
             <span>경쟁 현황</span>
-            <small>{analysisScope === "market" ? "서울시 상권 경계" : `반경 ${radius}m`}</small>
+            <small>서울시 상권 경계</small>
           </div>
           <div className="competition-chart">
             <div className="competition-stat">

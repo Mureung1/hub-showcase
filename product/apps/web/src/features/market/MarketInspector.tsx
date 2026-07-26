@@ -19,7 +19,6 @@ type MarketInspectorProps = {
   score: number | null;
   categorySelection: CategorySelection;
   categoryCoverageReason: string;
-  radius: number;
   activeHour: number;
   sameCategoryCount: number;
   analysis: MarketAnalysis | null;
@@ -42,7 +41,6 @@ export function MarketInspector({
   score,
   categorySelection,
   categoryCoverageReason,
-  radius,
   activeHour,
   sameCategoryCount,
   analysis,
@@ -75,7 +73,6 @@ export function MarketInspector({
         market={market}
         categorySelection={categorySelection}
         score={score}
-        radius={radius}
         sameCategoryCount={sameCategoryCount}
         analysis={analysis}
         analysisScope={analysisScope}

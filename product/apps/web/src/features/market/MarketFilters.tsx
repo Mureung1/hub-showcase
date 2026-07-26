@@ -3,9 +3,7 @@ import { Building2, Coffee, MapPinned, Store, X } from "lucide-react";
 import { MapLayerControls } from "./MapLayerControls";
 import { NearbyStoreList } from "./NearbyStoreList";
 import type { NearbyStoreState } from "../analysis/useNearbyStores";
-import type { AnalysisRadius } from "../analysis/types";
 import type {
-  AnalysisScope,
   AnalysisTopic,
   Category,
   CategorySelection,
@@ -75,13 +73,10 @@ type MarketFiltersProps = {
   marketKey: MarketKey;
   markets: Record<MarketKey, Market>;
   supportedCategories: Category[];
-  supportedRadii: AnalysisRadius[];
   category: Category | null;
   categorySelection: CategorySelection;
   categoryCoverageReason: string;
-  radius: AnalysisRadius;
   layer: LayerMode;
-  scope: AnalysisScope;
   topic: AnalysisTopic;
   boundaryVisible: boolean;
   storesVisible: boolean;
@@ -92,10 +87,8 @@ type MarketFiltersProps = {
   onClose: () => void;
   onReset: () => void;
   onMarketChange: (market: MarketKey) => void;
-  onRadiusChange: (radius: AnalysisRadius) => void;
   onCategoryChange: (category: Category) => void;
   onLayerChange: (layer: LayerMode) => void;
-  onScopeChange: (scope: AnalysisScope) => void;
   onTopicChange: (topic: AnalysisTopic) => void;
   onBoundaryVisibleChange: (visible: boolean) => void;
   onStoresVisibleChange: (visible: boolean) => void;
@@ -106,13 +99,10 @@ export function MarketFilters({
   marketKey,
   markets,
   supportedCategories,
-  supportedRadii,
   category,
   categorySelection,
   categoryCoverageReason,
-  radius,
   layer,
-  scope,
   topic,
   boundaryVisible,
   storesVisible,
@@ -123,10 +113,8 @@ export function MarketFilters({
   onClose,
   onReset,
   onMarketChange,
-  onRadiusChange,
   onCategoryChange,
   onLayerChange,
-  onScopeChange,
   onTopicChange,
   onBoundaryVisibleChange,
   onStoresVisibleChange,
@@ -168,52 +156,12 @@ export function MarketFilters({
           <span>1</span>
           <div>
             <p className="filter-label">분석 기준</p>
-            <small>어디를 비교할지 선택</small>
+            <small>서울시 공식 상권 경계로 집계</small>
           </div>
         </div>
-        <div className="scope-options" role="group" aria-label="분석 기준">
-          <button
-            type="button"
-            className={scope === "market" ? "is-selected" : ""}
-            aria-pressed={scope === "market"}
-            onClick={() => onScopeChange("market")}
-          >
-            상권
-          </button>
-          <button
-            type="button"
-            className={scope === "radius" ? "is-selected" : ""}
-            aria-pressed={scope === "radius"}
-            onClick={() => onScopeChange("radius")}
-          >
-            직접 선택
-          </button>
-          <button type="button" disabled title="DATA-011 연결 후 사용할 수 있습니다.">
-            행정동
-          </button>
-        </div>
-        {scope === "market" ? (
-          <p className="filter-help">서울시 공식 상권 경계를 기준으로 분석합니다.</p>
-        ) : (
-          <p className="filter-help">지도 중심점과 선택 반경을 기준으로 실제 점포를 조회합니다.</p>
-        )}
-      </div>
-      <div className={`filter-group ${scope === "market" ? "is-muted" : ""}`}>
-        <p className="filter-label">분석 반경</p>
-        <div className="segmented" role="group" aria-label="분석 반경">
-          {supportedRadii.map((value) => (
-            <button
-              key={value}
-              type="button"
-              className={radius === value ? "is-selected" : ""}
-              aria-pressed={radius === value}
-              disabled={scope !== "radius"}
-              onClick={() => onRadiusChange(value)}
-            >
-              {value}m
-            </button>
-          ))}
-        </div>
+        <p className="filter-help">
+          선택한 상권 polygon 안의 점포와 공식 상권 지표를 함께 보여줍니다.
+        </p>
       </div>
       <div className="filter-group">
         <p className="filter-label">업종</p>
