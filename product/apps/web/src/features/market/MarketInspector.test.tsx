@@ -92,7 +92,6 @@ function renderInspector(
         coverage: "full",
       }}
       categoryCoverageReason="전체 지원"
-      radius={300}
       activeHour={0}
       sameCategoryCount={1}
       analysis={analysis}

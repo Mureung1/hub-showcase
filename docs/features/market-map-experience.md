@@ -642,18 +642,19 @@ LocalTwin GeoJSON 지도의 이동과 확대/축소
 건물 Layer와 후보 점포 prefab의 독립적인 표시 전환
 서로 가까운 연남·홍대·합정 상권 전환
 카페·음식점·베이커리·편의점 업종 선택
-100m / 300m / 500m 반경 선택
+서울시 공식 상권 경계 기준 점포·경쟁 분석
 경쟁 밀도 / 시간대 수요 Layer 전환
 OSM POI label과 후보 점포 prefab 표시 전환
 상권 비교, 점수 근거와 데이터 기준 dialog
 Docs Home 복귀
 ```
 
-현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 Render FastAPI가 production Supabase PostgreSQL을 조회하며, API가 준비되지 않은 동안에는 분석 수치를 검증 snapshot으로 대체하지 않는다. 선택 상권은 canonical polygon을 따라 노란 core·glow·halo 경계로 표시한다. LocalTwin 기본 경로에서 화면 viewport가 지원 Overlay를 조금이라도 포함하면 기본 building extrusion을 숨겨 전용 건물과 중복 렌더링하지 않는다. 이 규칙은 제출용 `/en` 데모에는 적용하지 않는다. 선택한 지원 업종은 공유 GLB body·category atlas·procedural attachment를 조합한 custom 3D marker 한 개로 표시한다. 주변 HTML marker는 선택 marker 105m 안에서 제거하고 desktop 최대 12개·mobile 최대 6개로 제한한다. 선택 시 지도는 16.8 zoom으로 이동하고 300m 중심 표식은 투명 ring과 바깥 label로 바뀌어 3D를 가리지 않는다. MAP-004의 asset cache까지 연결됐지만 복수 점포 건물 묶음과 회전·reduced-motion 성능 검증이 남아 있으므로 전체 Task는 계속 진행 중이다.
+현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 Render FastAPI가 production Supabase PostgreSQL을 조회하며, API가 준비되지 않은 동안에는 분석 수치를 검증 snapshot으로 대체하지 않는다. 선택 상권은 canonical polygon을 따라 노란 core·glow·halo 경계로 표시한다. LocalTwin 기본 경로에서 화면 viewport가 지원 Overlay를 조금이라도 포함하면 기본 building extrusion을 숨겨 전용 건물과 중복 렌더링하지 않는다. 이 규칙은 제출용 `/en` 데모에는 적용하지 않는다. 선택한 지원 업종은 공유 GLB body·category atlas·procedural attachment를 조합한 custom 3D marker 한 개로 표시한다. 주변 HTML marker는 선택 marker 105m 안에서 제거하고 desktop 최대 12개·mobile 최대 6개로 제한한다. 선택 시 지도는 16.8 zoom으로 이동하고, 상권 경계선이 현재 분석의 공간 기준을 표시한다. MAP-004의 asset cache까지 연결됐지만 복수 점포 건물 묶음과 회전·reduced-motion 성능 검증이 남아 있으므로 전체 Task는 계속 진행 중이다.
 
-### 14.1 후속 이동형 반경 분석
+### 14.1 서버에 보존한 이동형 반경 분석 contract
 
-현재 스프린트 마감 후 `ANALYSIS-002 / WEB-002 / WEB-003`에서 다음 동작을 구현한다.
+FastAPI의 반경 query와 내부 contract는 보존한다. 하지만 일반 사용자 화면은 현재 상권 경계만
+사용하며, 아래 동작은 데이터 정의와 사용자 기대가 충분히 정리될 때까지 제품 UI에 노출하지 않는다.
 
 ```text
 일반 지도 탐색: 지도를 움직여도 확정된 분석 중심 유지
@@ -676,10 +677,10 @@ OpenFreeMap basemap: 항상 유지
 기본 건물 extrusion: 독립 toggle
 연남·홍대·합정 LocalTwin Overlay: LocalTwin mode에서만 표시
 관평동: 좌표·경계·asset 승인 전 planned
-분석 원·점포 marker: basemap/Overlay mode와 독립
+상권 경계·점포 marker: basemap/Overlay mode와 독립
 ```
 
-코드 원본은 `.harness/tasks/MAP-005-base-map-supported-overlays.md`의 region registry, Layer ID, 파일 책임과 검증 계획을 따른다. 반경 분석은 그 위에 `.harness/tasks/ANALYSIS-002-radius-search.md`를 구현하고, 마지막으로 `.harness/tasks/EVAL-002-front-api-smoke.md`에서 실제 development Supabase 경로와 오류 상태를 검증한다.
+코드 원본은 `.harness/tasks/MAP-005-base-map-supported-overlays.md`의 region registry, Layer ID, 파일 책임과 검증 계획을 따른다. 마지막으로 `.harness/tasks/EVAL-002-front-api-smoke.md`에서 실제 development Supabase 경로와 오류 상태를 검증한다.
 
 ## 15. 관련 문서
 

@@ -9,7 +9,7 @@ const defaults = {
   selectedCategoryCode: null,
   radius: 300 as const,
   layer: "density" as const,
-  scope: "radius" as const,
+  scope: "market" as const,
   topic: "overview" as const,
   boundaryVisible: true,
   storesVisible: true,
