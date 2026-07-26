@@ -37,3 +37,11 @@ local Korean workspace에서 API가 준비된 뒤 33개 목록과 111개 동일 
 목록 기준으로 표시되던 원인을 확인했다. API filter 순서를 수정한 뒤에는 선택 업종 목록이
 같은 후보 집합에서 반환된다. 목록 제한 여부도 전체 점포 수가 아니라 필터링된 후보와 실제
 반환 수를 비교해 표시한다.
+
+## Deployed readiness check
+
+2026-07-26에 Render 공개 API를 대기 상태에서 직접 확인했다. 첫 `GET /health`는
+`200`까지 약 22.6초가 걸렸고, 이어진 `GET /ready`는 `200 {"status":"ready"}`까지 약
+2.9초였다. 따라서 무료 Render의 cold start는 여전히 생길 수 있지만, 한국어 제품 화면은
+bootstrap 화면을 유지하고 8초 간격의 readiness 재시도로 준비 뒤 실제 API 결과를 다시
+불러온다. 준비되지 않은 값을 실제 최신 결과처럼 표시하지 않는다.
