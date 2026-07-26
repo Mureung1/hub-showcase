@@ -14,6 +14,8 @@ export type {
   UseInsightImportOptions,
 } from './model/use_insight_import';
 export { createBrowserInsightImportService } from './api/browser_insight_import_service';
+export { InsightImportDialog } from './ui/insight_import_dialog';
+export type { InsightImportDialogProps } from './ui/insight_import_dialog';
 export {
   IMPORT_ADAPTER_KEYS,
   IMPORT_INPUT_KINDS,
