@@ -27,6 +27,7 @@
 | `CTX-024` | 활성 | 목록 카드 선택과 레시피 저장 성공은 `/recipes/:recipeId`로 이동하고, 상세는 기존 책형 `RecipeListPlaceholderPage`의 오른쪽 페이지를 사용한다. 1100px 이하에서는 상세 단일 페이지와 `← 목록` 링크를 제공한다. | `FE-RECIPE-004` |
 | `CTX-025` | 활성 | 현재 MVP/P0의 URL 성공 범위는 지원 가능한 일반 공개 웹페이지와 공개 `youtube.com`, `youtu.be`다. `blog.naver.com`과 하위 도메인은 전용 수집 없이 외부 요청 전에 `URL_FETCH_FAILED` 422와 직접 입력 안내로 처리한다. `COMMON-AI-003`과 `BE-AI-004`는 구현 완료가 아니라 이 범위 제외 결정으로 종료했으며 `QA-CORE-001`은 네이버 블로그 성공을 선행 조건으로 두지 않는다. | `COMMON-AI-003`, `BE-AI-004`, `QA-CORE-001` |
 | `CTX-026` | 활성 | 감사와 전달 공유 관계를 보존하기 위해 `recipe_audit_events`, `transfer_invitations`, `received_recipe_details`의 FK는 `ON DELETE RESTRICT`를 사용한다. MVP는 Recipe를 soft delete하며, 향후 영구 삭제는 관계 데이터의 보존·정리 순서를 별도 정책과 트랜잭션으로 명시해야 한다. | `DB-AUDIT-001`, `DB-SHARE-002` |
+| `CTX-027` | 활성 | 전달 링크·코드 미리보기와 수락에는 로그인이 필요하다. 비로그인 링크 접근은 로그인 후 같은 초대 경로로 복귀한다. 링크 토큰은 SHA-256, 초대 코드는 32자 이상의 백엔드 전용 `TRANSFER_INVITATION_CODE_SECRET`을 사용한 HMAC-SHA-256 해시로만 저장한다. | `BE-SHARE-002` |
 
 ## 알려진 문제
 
