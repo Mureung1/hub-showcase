@@ -479,6 +479,7 @@ Authorization: Bearer firebase-id-token
 
 ### 공통 공유 규칙
 
+- 전달 공유는 현재 활성 범위다. 열람 공유 계약은 삭제하지 않고 유지하지만, 구현은 가치와 필요성을 다시 검토할 P3 연기 후보이며 활성 MVP·출시 선행 조건이 아니다.
 - `OWNED`는 열람 공유와 전달 공유를 할 수 있다.
 - `EXTERNAL`은 출처를 포함한 열람 공유만 할 수 있다.
 - `RECEIVED`는 열람 공유와 전달 공유를 모두 할 수 없다.
@@ -788,31 +789,193 @@ Authorization: Bearer firebase-id-token
 
 ---
 
-## 11. 삭제 및 복원 정책
+## 11. 레시피 수정·삭제·복원
 
-삭제와 복원 API의 구현은 현재 핵심 흐름 이후로 미루지만 다음 정책은 확정한다.
+### `PATCH /api/recipes/:recipeId`
 
-- 레시피 삭제는 레코드를 즉시 제거하지 않고 `deletedAt`을 기록하는 soft delete로 처리한다.
-- 삭제된 레시피는 일반 목록과 상세 조회에서 제외하고 휴지통에서만 조회한다.
-- 휴지통에서는 삭제 시각과 남은 보관 기간을 표시하고 복원할 수 있다.
-- 삭제 직후 UI에서 실행 취소를 제공한다.
-- 휴지통 보관 기간은 30일이다.
-- MVP에서는 사용자가 직접 실행하는 영구 삭제와 휴지통 비우기를 제공하지 않는다.
-- 30일이 지나면 서버 작업이 영구 삭제 대상으로 처리한다.
-- 삭제와 복원 시 사용자 ID, 레시피 ID, 행위, 처리 시각을 감사 기록에 남긴다.
-- 감사 기록에는 세션 ID, Google credential, 개인정보가 포함된 레시피 본문을 남기지 않는다.
+현재 사용자가 소유한 활성 `OWNED`, `EXTERNAL` 레시피의 원본 내용을 수정한다.
 
-후속 API는 리소스 중심 경로를 사용한다.
+#### 인증
 
-```text
-DELETE /api/recipes/:recipeId
-GET    /api/recipes/trash
-POST   /api/recipes/:recipeId/restore
+필요
+
+#### 요청
+
+```json
+{
+  "title": "김치찌개",
+  "description": "돼지고기를 넣은 김치찌개",
+  "servings": "2인분",
+  "cookingTimeMinutes": 30,
+  "ingredients": [
+    {
+      "name": "김치",
+      "amount": "200",
+      "unit": "g",
+      "order": 1
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "김치를 볶는다."
+    }
+  ],
+  "source": null
+}
 ```
 
-레시피 원본 수정과 위 삭제·휴지통·복원 API의 상세 요청, 응답과 오류 계약은 `COMMON-API-002`에서 구현 전에 확정한다. 계약이 확정되기 전에는 각 구현 티켓을 시작하지 않는다.
+#### 요청 규칙
 
-라우터에서는 `GET /api/recipes/trash`를 `GET /api/recipes/:recipeId`보다 먼저 등록해 `trash`가 레시피 ID로 처리되지 않도록 한다.
+- `PATCH`지만 재료·단계·출처를 포함한 편집 폼 전체를 한 트랜잭션으로 교체하는 계약이다. 배열의 부분 수정 의미와 순서 충돌을 만들지 않기 위해 모든 편집 가능 필드를 매 요청에 보낸다.
+- 편집 가능 필드는 `title`, `description`, `servings`, `cookingTimeMinutes`, `ingredients`, `steps`, `source`뿐이다.
+- `ownerId`, `type`, `receivedInfo`, `memo`, 공유 상태와 생성·수정·삭제 시각은 요청에 포함하지 않는다. 개인 메모와 공유 상태는 각각의 전용 API에서만 변경한다.
+- 허용하지 않은 필드를 보내거나 편집 가능 필드를 누락하면 `VALIDATION_ERROR`로 거부한다.
+- 본문 검증과 URL 검증은 레시피 저장 API와 같은 규칙을 사용한다.
+- 서버는 검증된 `source`가 `null`이면 `OWNED`, 값이 있으면 `EXTERNAL`로 `type`을 다시 결정한다.
+- 현재 사용자가 소유한 활성 `RECEIVED` 레시피는 `RECIPE_NOT_EDITABLE`로 거부한다.
+- 없는 ID, 잘못된 ID, 다른 사용자 소유와 soft delete된 레시피는 존재 여부를 숨기고 모두 `RECIPE_NOT_FOUND`로 처리한다.
+
+#### 성공 응답
+
+```json
+{
+  "data": {
+    "id": "recipe-id",
+    "type": "OWNED",
+    "updatedAt": "2026-07-27T10:00:00.000Z"
+  }
+}
+```
+
+#### 오류
+
+- `UNAUTHORIZED`
+- `VALIDATION_ERROR`
+- `INVALID_URL`
+- `URL_NOT_ALLOWED`
+- `RECIPE_NOT_FOUND`
+- `RECIPE_NOT_EDITABLE`
+
+---
+
+### `DELETE /api/recipes/:recipeId`
+
+현재 사용자가 소유한 활성 레시피를 soft delete한다. `OWNED`, `EXTERNAL`은 삭제로 표현하고 `RECEIVED`는 다른 사용자의 원본에 영향 없이 내 레시피북의 복사본을 제거하는 의미로 표현한다.
+
+#### 인증
+
+필요
+
+#### 처리 규칙
+
+- 세 유형 모두 해당 소유자의 Recipe에 `deletedAt`을 기록하고 일반 목록·상세·공유 생성 대상에서 제외한다.
+- `deletedAt`, `updatedAt` 갱신과 `DELETED` 감사 이벤트 기록은 한 트랜잭션으로 처리한다.
+- 없는 ID, 잘못된 ID, 다른 사용자 소유와 이미 삭제된 레시피는 모두 `RECIPE_NOT_FOUND`로 처리한다.
+
+#### 성공 응답
+
+```json
+{
+  "data": {
+    "id": "recipe-id",
+    "type": "RECEIVED",
+    "deletedAt": "2026-07-27T10:00:00.000Z",
+    "restoreUntil": "2026-08-26T10:00:00.000Z"
+  }
+}
+```
+
+`restoreUntil`은 `deletedAt`부터 30일 뒤인 복원 만료 시각이다.
+
+#### 오류
+
+- `UNAUTHORIZED`
+- `RECIPE_NOT_FOUND`
+
+---
+
+### `GET /api/recipes/trash`
+
+현재 사용자의 삭제 레시피 중 아직 복원 가능한 항목을 조회한다.
+
+#### 인증
+
+필요
+
+#### 성공 응답
+
+```json
+{
+  "data": [
+    {
+      "id": "recipe-id",
+      "type": "EXTERNAL",
+      "title": "김치찌개",
+      "description": "돼지고기를 넣은 김치찌개",
+      "source": {
+        "url": "https://example.com/recipe",
+        "title": "김치찌개 만들기",
+        "author": "작성자"
+      },
+      "receivedInfo": null,
+      "deletedAt": "2026-07-27T10:00:00.000Z",
+      "restoreUntil": "2026-08-26T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+복원 가능한 레시피가 없으면 `200`과 `{ "data": [] }`를 반환한다.
+
+#### 조회 규칙
+
+- 현재 사용자 소유이면서 `deletedAt > 현재 시각 - 30일`인 행만 반환한다.
+- `deletedAt` 내림차순으로 정렬한다.
+- 각 항목은 `id`, `type`, `title`, `description`, `source`, `receivedInfo`, `deletedAt`, `restoreUntil`만 포함한다.
+- 30일이 지난 레코드가 물리적으로 남아 있어도 휴지통 목록에는 반환하지 않는다.
+- Express 라우터에서는 이 경로를 `GET /api/recipes/:recipeId`보다 먼저 등록해 `trash`가 레시피 ID로 처리되지 않게 한다.
+
+#### 오류
+
+- `UNAUTHORIZED`
+
+---
+
+### `POST /api/recipes/:recipeId/restore`
+
+현재 사용자가 소유하고 삭제 후 30일이 지나지 않은 레시피를 복원한다.
+
+#### 인증
+
+필요
+
+#### 처리 규칙
+
+- `deletedAt`을 `null`로 바꾸고 `updatedAt`을 복원 시각으로 갱신한다.
+- Recipe 갱신과 `RESTORED` 감사 이벤트 기록은 한 트랜잭션으로 처리한다.
+- 활성 레시피, 없는 ID, 잘못된 ID와 다른 사용자 소유 레시피는 모두 `RECIPE_NOT_FOUND`로 처리한다.
+- 물리적으로 남아 있지만 삭제 후 30일이 지난 레시피는 `RECIPE_RESTORE_EXPIRED`로 처리한다. 30일이 되는 시점부터 복원할 수 없다.
+
+#### 성공 응답
+
+```json
+{
+  "data": {
+    "id": "recipe-id",
+    "type": "EXTERNAL",
+    "restoredAt": "2026-07-27T10:00:00.000Z"
+  }
+}
+```
+
+#### 오류
+
+- `UNAUTHORIZED`
+- `RECIPE_NOT_FOUND`
+- `RECIPE_RESTORE_EXPIRED`
+
+MVP에는 영구 삭제 API, 휴지통 비우기와 자동 purge 작업을 두지 않는다. 30일이 지난 레코드의 물리 삭제와 관계·감사 데이터 보존 방식은 후속 운영·데이터 보존 결정에서 확정한다.
 
 ---
 
@@ -832,6 +995,8 @@ POST   /api/recipes/:recipeId/restore
 | `URL_FETCH_FAILED` | 422 | URL 내용 조회 실패 |
 | `AI_REQUEST_FAILED` | 502 | AI 제공자 요청 실패 |
 | `AI_RESPONSE_INVALID` | 502 | AI 응답 형식 또는 검증 오류 |
+| `RECIPE_NOT_EDITABLE` | 403 | 현재 레시피 유형은 원본을 수정할 수 없음 |
+| `RECIPE_RESTORE_EXPIRED` | 410 | 삭제 후 30일이 지나 복원할 수 없음 |
 | `RECIPE_NOT_SHAREABLE` | 403 | 레시피 유형 또는 소유권 정책상 공유할 수 없음 |
 | `VIEW_SHARE_NOT_FOUND` | 404 | 열람 공유 링크가 존재하지 않음 |
 | `VIEW_SHARE_INACTIVE` | 410 | 열람 링크가 비활성화됐거나 원본을 열람할 수 없음 |
@@ -859,4 +1024,4 @@ POST   /api/recipes/:recipeId/restore
 10. `POST /api/transfer-invitations/by-code`
 11. `POST /api/transfer-invitations/:invitationId/accept`
 
-열람 공유, 삭제·복원과 개인 메모 API는 계약을 확정했지만 후속 범위로 유지한다. 조리 팁도 후속 범위다.
+레시피 원본 수정, 삭제·복원과 개인 메모 API는 계약을 확정했지만 후속 구현 범위로 유지한다. 열람 공유 계약과 티켓도 유지하되 가치와 필요성을 다시 검토할 P3 연기 후보이며 활성 MVP·출시 선행 조건이 아니다. 조리 팁도 후속 범위다.

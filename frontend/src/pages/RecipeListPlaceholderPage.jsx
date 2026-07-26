@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Link,
   useLocation,
@@ -11,8 +11,8 @@ import {
   getRecipes,
   structureRecipe,
 } from "../api/recipeApi";
-import { createTransferInvitation } from "../api/transferInvitationApi";
 import RecipeInputForm from "../components/RecipeInputForm";
+import RecipeDetailView from "../components/RecipeDetailView";
 import TransferInvitationPage from "./TransferInvitationPage";
 
 const filters = [
@@ -48,13 +48,6 @@ function RecipeListPlaceholderPage() {
   const [recipeDetail, setRecipeDetail] = useState(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
-  const [transferInvitation, setTransferInvitation] = useState(null);
-  const [isCreatingTransferInvitation, setIsCreatingTransferInvitation] =
-    useState(false);
-  const [transferInvitationError, setTransferInvitationError] =
-    useState("");
-  const [copyFeedback, setCopyFeedback] = useState(null);
-  const isCreatingTransferInvitationRef = useRef(false);
   const isAddingRecipe = location.pathname === "/recipes/new";
   const isTransferInvitationDialog =
     location.pathname === "/transfer-invitations";
@@ -120,9 +113,6 @@ function RecipeListPlaceholderPage() {
         const detail = await getRecipeDetail(idToken, recipeId);
 
         if (!isCancelled) {
-          setTransferInvitation(null);
-          setTransferInvitationError("");
-          setCopyFeedback(null);
           setRecipeDetail(detail);
         }
       } catch (requestError) {
@@ -180,59 +170,6 @@ function RecipeListPlaceholderPage() {
       state: structuredRecipe,
     });
   }
-
-  async function handleCreateTransferInvitation() {
-    if (isCreatingTransferInvitationRef.current) {
-      return;
-    }
-
-    isCreatingTransferInvitationRef.current = true;
-    setIsCreatingTransferInvitation(true);
-    setTransferInvitationError("");
-    setCopyFeedback(null);
-
-    try {
-      if (!user || !recipeId) {
-        throw new Error("로그인 정보를 확인할 수 없습니다.");
-      }
-
-      const idToken = await user.getIdToken();
-      const invitation = await createTransferInvitation(
-        idToken,
-        recipeId,
-      );
-
-      setTransferInvitation(invitation);
-    } catch (requestError) {
-      setTransferInvitationError(
-        requestError instanceof Error
-          ? requestError.message
-          : "전달 초대를 만들지 못했습니다.",
-      );
-    } finally {
-      isCreatingTransferInvitationRef.current = false;
-      setIsCreatingTransferInvitation(false);
-    }
-  }
-
-  async function handleCopyTransferValue(value, label) {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopyFeedback({
-        isError: false,
-        message: `${label}를 복사했습니다.`,
-      });
-    } catch {
-      setCopyFeedback({
-        isError: true,
-        message: `${label}를 복사하지 못했습니다.`,
-      });
-    }
-  }
-
-  const transferLink = transferInvitation
-    ? `${window.location.origin}${transferInvitation.transferPath}`
-    : "";
 
   return (
     <main className="grid h-dvh grid-rows-[minmax(0,1fr)] place-items-stretch overflow-hidden bg-[radial-gradient(circle_at_50%_30%,#faf9f4,#e8e7e2_55%,#d7d6d1)] p-2.5 font-[Noto_Serif_KR,Nanum_Myeongjo,Malgun_Gothic,serif] text-[#272923] max-[700px]:flex max-[700px]:flex-col max-[700px]:p-0">
@@ -437,300 +374,15 @@ function RecipeListPlaceholderPage() {
               </div>
             ) : null}
             {recipeDetail ? (
-              <div className="h-full overflow-y-auto p-[50px_42px_38px] max-[1100px]:p-[38px_42px] max-[700px]:p-[25px_22px_24px] short-screen:p-[30px_34px_24px]">
-                <section aria-label="레시피 상세">
-                  <Link
-                    to="/recipes"
-                    className="inline-flex min-h-11 items-center text-sm text-[#4f5b50] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15332a] min-[1101px]:hidden"
-                  >
-                    ← 목록
-                  </Link>
-
-                  <header className="border-b border-[#c9bea7] pb-5 max-[700px]:pt-2">
-                    <p className="text-xs font-semibold tracking-[0.08em] text-[#8b6e35]">
-                      {typeLabels[recipeDetail.type]}
-                    </p>
-                    <h2 className="mt-2 text-[30px] font-semibold tracking-[0.04em] max-[700px]:text-[25px]">
-                      {recipeDetail.title}
-                    </h2>
-                    {recipeDetail.description ? (
-                      <p className="mt-3 text-sm leading-6 text-[#626157]">
-                        {recipeDetail.description}
-                      </p>
-                    ) : null}
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs text-[#626157]">
-                      {recipeDetail.servings ? (
-                        <span className="rounded-full border border-[#d8cfbd] px-2.5 py-1">
-                          {recipeDetail.servings}
-                        </span>
-                      ) : null}
-                      {recipeDetail.cookingTimeMinutes !== null ? (
-                        <span className="rounded-full border border-[#d8cfbd] px-2.5 py-1">
-                          {recipeDetail.cookingTimeMinutes}분
-                        </span>
-                      ) : null}
-                    </div>
-                  </header>
-
-                  {location.state?.receivedRecipeSaved ? (
-                    <p
-                      role="status"
-                      className="mt-5 rounded-lg border border-[#9eaa82] bg-[#eef1df] px-4 py-3 text-sm font-semibold text-[#31523d]"
-                    >
-                      전달받은 레시피를 저장했습니다.
-                    </p>
-                  ) : null}
-
-                  {recipeDetail.receivedInfo ? (
-                    <section
-                      className="mt-6 rounded-lg border border-[#c9bea7] bg-[#f1ecdf] p-4"
-                      aria-labelledby="received-memory-heading"
-                    >
-                      <h3
-                        id="received-memory-heading"
-                        className="text-lg font-semibold"
-                      >
-                        전달받은 기억
-                      </h3>
-                      <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
-                        <dt className="text-[#777469]">원 저장자</dt>
-                        <dd>{recipeDetail.receivedInfo.originalOwner.name}</dd>
-                        <dt className="text-[#777469]">전해준 사람</dt>
-                        <dd>{recipeDetail.receivedInfo.senderDisplayName}</dd>
-                        <dt className="text-[#777469]">관계</dt>
-                        <dd>{recipeDetail.receivedInfo.relationshipLabel}</dd>
-                      </dl>
-                      {recipeDetail.memo ? (
-                        <p className="mt-4 border-t border-[#d8cfbd] pt-3 text-sm leading-6 text-[#626157]">
-                          {recipeDetail.memo}
-                        </p>
-                      ) : null}
-                      {!recipeDetail.receivedInfo.canReshare ? (
-                        <p className="mt-3 text-xs text-[#777469]">
-                          전달받은 레시피는 다시 공유할 수 없습니다.
-                        </p>
-                      ) : null}
-                    </section>
-                  ) : null}
-
-                  {recipeDetail.type === "OWNED" ? (
-                    <section
-                      className="mt-6 rounded-lg border border-[#c9bea7] bg-[#f1ecdf] p-4"
-                      aria-labelledby="transfer-invitation-heading"
-                    >
-                      <h3
-                        id="transfer-invitation-heading"
-                        className="text-lg font-semibold"
-                      >
-                        전달 공유
-                      </h3>
-                      <p className="mt-2 text-sm leading-6 text-[#626157]">
-                        한 명이 자신의 레시피북에 저장할 수 있는
-                        일회성 초대를 만듭니다.
-                      </p>
-                      <button
-                        type="button"
-                        className="mt-4 min-h-11 rounded-lg border border-[#061c16] bg-[#15332a] px-4 text-sm font-semibold text-[#f3e1b4] disabled:cursor-wait disabled:opacity-70"
-                        disabled={isCreatingTransferInvitation}
-                        aria-busy={isCreatingTransferInvitation}
-                        onClick={handleCreateTransferInvitation}
-                      >
-                        {isCreatingTransferInvitation
-                          ? "생성 중"
-                          : "전달 초대 만들기"}
-                      </button>
-
-                      {transferInvitationError ? (
-                        <p
-                          role="alert"
-                          className="mt-3 text-sm text-[#8a3f2b]"
-                        >
-                          {transferInvitationError}
-                        </p>
-                      ) : null}
-
-                      {transferInvitation ? (
-                        <div className="mt-5 border-t border-[#d8cfbd] pt-4">
-                          <div>
-                            <label
-                              className="text-sm font-semibold"
-                              htmlFor="transfer-invitation-link"
-                            >
-                              전달 링크
-                            </label>
-                            <div className="mt-2 flex gap-2 max-[700px]:grid">
-                              <input
-                                id="transfer-invitation-link"
-                                className="min-h-11 min-w-0 flex-1 rounded-md border border-[#b8ad97] bg-[#fbf8ef] px-3 text-sm"
-                                value={transferLink}
-                                readOnly
-                              />
-                              <button
-                                type="button"
-                                className="min-h-11 rounded-md border border-[#8b6e35] px-3 text-sm font-semibold text-[#31523d]"
-                                onClick={() =>
-                                  handleCopyTransferValue(
-                                    transferLink,
-                                    "전달 링크",
-                                  )
-                                }
-                              >
-                                전달 링크 복사
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="mt-4">
-                            <label
-                              className="text-sm font-semibold"
-                              htmlFor="transfer-invitation-code"
-                            >
-                              초대 코드
-                            </label>
-                            <div className="mt-2 flex gap-2 max-[700px]:grid">
-                              <input
-                                id="transfer-invitation-code"
-                                className="min-h-11 min-w-0 flex-1 rounded-md border border-[#b8ad97] bg-[#fbf8ef] px-3 text-sm tracking-[0.08em]"
-                                value={transferInvitation.invitationCode}
-                                readOnly
-                              />
-                              <button
-                                type="button"
-                                className="min-h-11 rounded-md border border-[#8b6e35] px-3 text-sm font-semibold text-[#31523d]"
-                                onClick={() =>
-                                  handleCopyTransferValue(
-                                    transferInvitation.invitationCode,
-                                    "초대 코드",
-                                  )
-                                }
-                              >
-                                초대 코드 복사
-                              </button>
-                            </div>
-                          </div>
-
-                          {copyFeedback ? (
-                            <p
-                              role={
-                                copyFeedback.isError
-                                  ? "alert"
-                                  : "status"
-                              }
-                              className={`mt-3 text-sm ${
-                                copyFeedback.isError
-                                  ? "text-[#8a3f2b]"
-                                  : "text-[#31523d]"
-                              }`}
-                            >
-                              {copyFeedback.message}
-                            </p>
-                          ) : null}
-
-                          <p className="mt-4 text-xs leading-5 text-[#777469]">
-                            링크와 코드는 같은 초대입니다. 한 명이
-                            수락하면 다시 사용할 수 없고 7일 후
-                            만료됩니다. 원문 링크와 코드는 이 생성
-                            응답에서만 확인할 수 있습니다.
-                          </p>
-                        </div>
-                      ) : null}
-                    </section>
-                  ) : null}
-
-                  <section
-                    className="mt-6"
-                    aria-labelledby="recipe-ingredients-heading"
-                  >
-                    <h3
-                      id="recipe-ingredients-heading"
-                      className="text-lg font-semibold"
-                    >
-                      재료
-                    </h3>
-                    {recipeDetail.ingredients.length > 0 ? (
-                      <ul className="mt-3 divide-y divide-[#e0d8c8] border-y border-[#d8cfbd]">
-                        {recipeDetail.ingredients.map((ingredient) => (
-                          <li
-                            key={ingredient.order}
-                            className="flex min-h-11 items-center justify-between gap-4 py-2 text-sm"
-                          >
-                            <span>{ingredient.name}</span>
-                            <span className="text-right text-[#626157]">
-                              {[ingredient.amount, ingredient.unit]
-                                .filter(Boolean)
-                                .join(" ")}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="mt-3 text-sm text-[#777469]">
-                        등록된 재료가 없습니다.
-                      </p>
-                    )}
-                  </section>
-
-                  <section
-                    className="mt-7"
-                    aria-labelledby="recipe-steps-heading"
-                  >
-                    <h3
-                      id="recipe-steps-heading"
-                      className="text-lg font-semibold"
-                    >
-                      조리 순서
-                    </h3>
-                    {recipeDetail.steps.length > 0 ? (
-                      <ol className="mt-3 space-y-4">
-                        {recipeDetail.steps.map((step) => (
-                          <li
-                            key={step.order}
-                            className="grid grid-cols-[28px_minmax(0,1fr)] gap-3 text-sm leading-6"
-                          >
-                            <span
-                              className="flex h-7 w-7 items-center justify-center rounded-full bg-[#15332a] text-xs text-[#f3e1b4]"
-                              aria-hidden="true"
-                            >
-                              {step.order}
-                            </span>
-                            <span>{step.description}</span>
-                          </li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <p className="mt-3 text-sm text-[#777469]">
-                        등록된 조리 순서가 없습니다.
-                      </p>
-                    )}
-                  </section>
-
-                  {recipeDetail.source ? (
-                    <section
-                      className="mt-7 border-t border-[#c9bea7] pt-5"
-                      aria-labelledby="recipe-source-heading"
-                    >
-                      <h3
-                        id="recipe-source-heading"
-                        className="text-sm font-semibold"
-                      >
-                        출처
-                      </h3>
-                      <a
-                        href={recipeDetail.source.url}
-                        className="mt-2 inline-block text-sm text-[#31523d] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15332a]"
-                      >
-                        {recipeDetail.source.title ??
-                          recipeDetail.source.url}
-                      </a>
-                      {recipeDetail.source.author ? (
-                        <p className="mt-1 text-xs text-[#777469]">
-                          {recipeDetail.source.author}
-                        </p>
-                      ) : null}
-                    </section>
-                  ) : null}
-                </section>
-              </div>
+              <RecipeDetailView
+                key={recipeDetail.id}
+                isReceivedRecipeSaved={
+                  location.state?.receivedRecipeSaved
+                }
+                recipeDetail={recipeDetail}
+                recipeId={recipeId}
+                user={user}
+              />
             ) : null}
           </section>
         </div>

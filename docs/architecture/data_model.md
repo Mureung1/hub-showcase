@@ -291,7 +291,7 @@ interface StructureRecipeResponse {
 
 ---
 
-## 10. 레시피 생성과 메모 요청
+## 10. 레시피 생성·원본 수정·메모 요청
 
 ```ts
 interface CreateRecipeRequest {
@@ -305,12 +305,31 @@ interface CreateRecipeRequest {
   memo: string | null;
 }
 
+interface UpdateRecipeRequest {
+  title: string;
+  description: string | null;
+  servings: string | null;
+  cookingTimeMinutes: number | null;
+  ingredients: Ingredient[];
+  steps: RecipeStep[];
+  source: RecipeSource | null;
+}
+
+interface UpdateRecipeResult {
+  id: string;
+  type: "OWNED" | "EXTERNAL";
+  updatedAt: string;
+}
+
 interface UpdateRecipeMemoRequest {
   memo: string | null;
 }
 ```
 
 - CreateRecipeRequest에는 서버가 결정하는 `ownerId`와 `type`을 포함하지 않는다.
+- `UpdateRecipeRequest`는 `PATCH`에 사용하지만 편집 가능한 레시피 본문과 출처 전체를 교체한다. 하위 배열과 출처의 부분 수정 의미를 만들지 않기 위해 모든 필드를 보낸다.
+- `UpdateRecipeRequest`에는 `ownerId`, `type`, `receivedInfo`, `memo`, 공유 상태와 날짜 필드를 포함하지 않는다. 개인 메모와 공유 상태는 전용 API 계약을 사용한다.
+- 서버는 수정 후 검증된 `source` 유무로 `OWNED` 또는 `EXTERNAL`을 다시 결정하고, `RECEIVED` 원본 수정은 거부한다.
 - 빈 문자열 또는 공백만 있는 메모는 `null`로 저장한다.
 
 ---
@@ -339,6 +358,8 @@ interface SharedRecipe {
 ```
 
 ### 열람 공유
+
+열람 공유의 모델 계약은 삭제하지 않고 유지하지만, 관련 물리 구조와 API·화면 구현은 가치와 필요성을 다시 검토할 P3 연기 후보이며 활성 MVP·출시 선행 조건이 아니다.
 
 ```ts
 interface ViewShareCreated {
@@ -418,6 +439,30 @@ interface ReceivedRecipeInfo {
 레시피 삭제는 30일 동안 복원할 수 있는 soft delete로 처리한다.
 
 ```ts
+interface DeleteRecipeResult {
+  id: string;
+  type: RecipeType;
+  deletedAt: string;
+  restoreUntil: string;
+}
+
+interface TrashRecipeSummary {
+  id: string;
+  type: RecipeType;
+  title: string;
+  description: string | null;
+  source: RecipeSource | null;
+  receivedInfo: ReceivedRecipeInfo | null;
+  deletedAt: string;
+  restoreUntil: string;
+}
+
+interface RestoreRecipeResult {
+  id: string;
+  type: RecipeType;
+  restoredAt: string;
+}
+
 type RecipeAuditAction = "DELETED" | "RESTORED";
 
 interface RecipeAuditEvent {
@@ -431,12 +476,14 @@ interface RecipeAuditEvent {
 
 ### 제약
 
-- 삭제 시 `deletedAt`을 기록하고 Recipe 본문은 즉시 제거하지 않는다.
-- 복원 시 `deletedAt`을 `null`로 변경한다.
-- 삭제 후 30일 동안 복원할 수 있으며 MVP에는 즉시 영구 삭제 기능이 없다.
-- 삭제와 복원은 각각 감사 이벤트로 남긴다.
+- `OWNED`, `EXTERNAL`, `RECEIVED` 모두 자신의 Recipe를 soft delete할 수 있다. `RECEIVED`의 UI 의미는 다른 사용자의 원본 삭제가 아닌 내 복사본 제거다.
+- 삭제 시 `deletedAt`과 `updatedAt`을 갱신하고 Recipe 본문은 즉시 제거하지 않는다. `restoreUntil`은 저장 컬럼이 아니라 `deletedAt + 30일`로 계산하는 값이다.
+- 휴지통에는 현재 사용자 소유이면서 `deletedAt > 현재 시각 - 30일`인 행만 `deletedAt` 내림차순으로 반환한다. 30일이 지난 보존 레코드는 목록에서 제외한다.
+- 복원 시 `deletedAt`을 `null`로 변경하고 `updatedAt`과 응답의 `restoredAt`을 복원 시각으로 설정한다.
+- 삭제 후 30일이 되는 시점부터 복원을 금지한다. 보존 중인 만료 레코드의 직접 복원은 `RECIPE_RESTORE_EXPIRED`, 없는 레코드와 물리 삭제된 레코드는 `RECIPE_NOT_FOUND`다.
+- 삭제·복원 Recipe 갱신과 해당 `DELETED`·`RESTORED` 감사 이벤트는 각각 한 트랜잭션으로 처리한다.
 - 감사 이벤트에는 Firebase ID 토큰, provider access token, 레시피 본문을 저장하지 않는다.
-- 30일 경과 레시피의 실제 삭제 방식과 감사 이벤트 보존 기간은 데이터 접근 방식 및 운영 정책 확정 시 결정한다.
+- MVP에는 영구 삭제 API, 휴지통 비우기와 자동 purge 작업이 없다. 30일 경과 레시피의 물리 삭제 방식과 관계·감사 데이터 보존 기간은 후속 운영·데이터 보존 결정에서 확정한다.
 
 ---
 
@@ -477,6 +524,8 @@ interface ApiError {
 - `URL_FETCH_FAILED`
 - `AI_REQUEST_FAILED`
 - `AI_RESPONSE_INVALID`
+- `RECIPE_NOT_EDITABLE`
+- `RECIPE_RESTORE_EXPIRED`
 - `RECIPE_NOT_SHAREABLE`
 - `VIEW_SHARE_NOT_FOUND`
 - `VIEW_SHARE_INACTIVE`
@@ -523,6 +572,7 @@ Recipe 1 ─── 0..1 ReceivedRecipeInfo
 | `received_recipe_details` | `recipe_id` | Recipe 1:0..1, `transfer_invitation_id` UNIQUE |
 
 - 서비스 UUID는 애플리케이션의 `crypto.randomUUID()`로 생성하며 auto increment를 사용하지 않는다.
+- `recipe_view_shares`의 계획 모델은 보존하지만 P3 열람 공유 재검토 전에는 활성 MVP 마이그레이션 선행 조건으로 사용하지 않는다.
 - 조회 인덱스는 사용자별 활성 레시피 목록, 레시피별 감사 기록, 원본별 전달 초대와 초대 만료 시각에 둔다.
 - `canReshare`와 초대 수락자는 별도 컬럼으로 저장하지 않는다. 전자는 `RECEIVED` 정책에서, 후자는 받은 레시피의 `owner_id`에서 결정한다.
 - 감사와 전달 공유 관계를 보존하기 위해 `recipe_audit_events`, `transfer_invitations`, `received_recipe_details`의 FK는 `ON DELETE RESTRICT`를 사용한다. MVP는 Recipe를 soft delete하며, 향후 영구 삭제가 필요하면 관계 데이터의 보존·정리 순서를 별도 정책과 트랜잭션으로 명시한다.
