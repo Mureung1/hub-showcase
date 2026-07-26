@@ -426,6 +426,10 @@ describe("generateGeminiMicrotask", () => {
     expect(body.input).toContain("준비 동작을 함께 쓰지 말고");
     expect(body.input).toContain("피하기: 문서를 열고");
     expect(body.input).toContain("권장: 문서에 핵심 주장");
+    expect(body.input).toContain("반드시 다음 동사 중 하나로 끝나야 합니다");
+    expect(body.input).toContain("쓰기, 써보기, 적기");
+    expect(body.input).toContain("피하기: 표를 채우기");
+    expect(body.input).toContain("권장: 표의 첫 행에 값 하나 입력하기");
   });
 
   it.each([

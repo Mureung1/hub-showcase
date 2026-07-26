@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 export const PROMPT_VERSION = "lv2-v1";
-export const LV3_PROMPT_VERSION = "lv3-memory-v1";
+export const LV3_PROMPT_VERSION = "lv3-memory-v2";
 export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 export const GEMINI_TIMEOUT_MS = 2_000;
 export const MAX_MICROTASK_CHARS = 60;
@@ -285,8 +285,11 @@ function buildLv3Prompt(input: GeminiLv3MicrotaskInput): string {
     "1~5분 안에 끝나고 완료 여부가 분명하며 작은 결과물이 남는 행동을 정확히 하나 제안하세요.",
     "열기, 읽기, 보기, 확인하기, 표시하기, 생각하기, 시작하기만 하고 끝내지 마세요.",
     "준비 동작을 함께 쓰지 말고, 결과물을 남기는 마지막 핵심 행동 하나만 표현하세요.",
+    `행동 문장은 반드시 다음 동사 중 하나로 끝나야 합니다: ${LV3_ALLOWED_RESULT_VERBS.join(", ")}. 이 목록에 없는 동사로 끝내면 안 됩니다.`,
     "피하기: 문서를 열고 핵심 주장 한 문장 쓰기",
     "권장: 문서에 핵심 주장 한 문장 쓰기",
+    "피하기: 표를 채우기",
+    "권장: 표의 첫 행에 값 하나 입력하기",
     "설명, 이유, 인사말, 번호, 목록 없이 행동 문장만 만드세요.",
     `행동 문장은 ${MAX_MICROTASK_CHARS}자 이하여야 합니다.`,
     `promptVersion=${LV3_PROMPT_VERSION}`,
@@ -413,8 +416,31 @@ function parseAndValidateMicroTask(rawText: string): string {
   return microTask;
 }
 
-const LV3_RESULT_VERB_PATTERN =
-  /(?:쓰기|써보기|적기|입력하기|작성하기|요약하기|풀기|수정하기|만들기|정리하기|저장하기|붙여넣기|구현하기|계산하기|기록하기|완성하기)(?:[.!?])?$/;
+// buildLv3Prompt()가 Gemini에게 "정확히 이 목록으로 끝내라"고 그대로 알려주는
+// 허용 동사 목록. 검증(LV3_RESULT_VERB_PATTERN)과 프롬프트 지시가 서로 다른 목록을
+// 쓰면 Gemini가 검증 기준을 모른 채 통과 못 할 문장을 만들게 되므로, 한 배열에서
+// 둘 다 파생시켜 항상 같은 목록을 쓰게 한다.
+const LV3_ALLOWED_RESULT_VERBS = [
+  "쓰기",
+  "써보기",
+  "적기",
+  "입력하기",
+  "작성하기",
+  "요약하기",
+  "풀기",
+  "수정하기",
+  "만들기",
+  "정리하기",
+  "저장하기",
+  "붙여넣기",
+  "구현하기",
+  "계산하기",
+  "기록하기",
+  "완성하기",
+] as const;
+const LV3_RESULT_VERB_PATTERN = new RegExp(
+  `(?:${LV3_ALLOWED_RESULT_VERBS.join("|")})(?:[.!?])?$`,
+);
 const LV3_BOUNDED_SCOPE_PATTERN =
   /(?:한\s*(?:줄|문장|문제|개|항목|장|단계)|하나|첫(?:\s*번째)?|제목|목차|TODO|[1-5]\s*개|5\s*분)/i;
 const LV3_CHAINED_ACTION_PATTERN =
