@@ -293,7 +293,9 @@ export function MarketMapCanvas({
             offset={[46, -56]}
           >
             <div className="selected-location">
-              <span className="pin-head">{score}</span>
+              <span className="pin-head" title="선택 점포가 속한 상권의 입지 점수">
+                {score}
+              </span>
               <div>
                 <b>{selected.name}</b>
                 <small>

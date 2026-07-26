@@ -141,7 +141,7 @@ export function InspectorScoreAndCompetition({
       {showsScore && (
         <section className="score-section">
           <div>
-            <span>입지 점수</span>
+            <span>상권 입지 점수</span>
             <strong>{score}</strong>
             <small>/ 100</small>
           </div>
