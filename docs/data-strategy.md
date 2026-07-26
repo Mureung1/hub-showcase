@@ -41,9 +41,15 @@ interpretation_context
 strategy
 roadmap
 wiki_definition
-wiki_depth
-wiki_interview
+wiki_why_required
+wiki_depth_criteria
+wiki_prerequisites
+wiki_common_misconceptions
+wiki_interview_verification
+wiki_learning_sequence
 ```
+
+Wiki 용도는 [지식·저장 구조](knowledge-schema.md) 8.5의 필드와 일대일로 대응한다. 필드마다 토큰이 있어야 자료 정책 검사가 필드 단위로 판정할 수 있다.
 
 D 계층 청크가 통계 근거나 기업 요구 주장의 근거로 사용되면 검사에서 차단하고 해당 주장을 폐기한다. 자료 정책은 사람 점검이 아니라 자동 검사로 강제한다.
 
@@ -127,10 +133,11 @@ Wiki의 필드별 허용 근거는 [지식·저장 구조](knowledge-schema.md) 
 
 | 계층 | 기여하는 Wiki 필드 |
 | --- | --- |
-| A | 채용상 중요도 |
-| B | 회사별 사용 맥락, 깊이 기준 보강 |
-| C | 정의, 선수 역량 |
-| D | 깊이 기준, 흔한 오해, 면접 검증 관점 |
+| A | `why_required` |
+| B | `why_required`, `depth_criteria` |
+| C | `definition`, `prerequisites` |
+| D | `depth_criteria`, `common_misconceptions`, `interview_verification`, `learning_sequence` |
+| E | 없음 |
 
 ## 7. 원문과 출처 저장
 

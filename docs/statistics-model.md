@@ -150,6 +150,8 @@ flowchart LR
 
 모든 지표의 중복 제거 단위는 `posting_version_id`다. 한 공고에서 같은 차원이 여러 번 나타나도 한 번으로 센다.
 
+기업군 범위의 모집단은 `company_cluster_memberships`를 실행 봉투의 `as_of_date` 기준으로 해석해 확정한다. 공고 버전은 기업군을 속성으로 갖지 않는다.
+
 ### 5.3 `cluster_contrast`
 
 차이와 비율을 모두 저장한다.
