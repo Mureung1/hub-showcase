@@ -42,7 +42,7 @@
 
 | 화면 | 컴포넌트 | 비고 |
 |---|---|---|
-| 사이드바 | `components/Sidebar.jsx` | Primary 버튼 + Menu(대시보드/단어장)·History(인사이트 노트), 카운트 뱃지 |
+| 사이드바 | `components/Sidebar.jsx` | Primary 버튼 + Menu 단일 그룹(대시보드·인사이트 노트·단어장), 카운트 뱃지 |
 | 대시보드 | `pages/Dashboard.jsx` | 오늘의 핵심 외신 3개 카드 |
 | 리더뷰 | `pages/Reader.jsx` | 문장 아코디언 번역, AI 요약, 판단 버튼. `< 뒤로가기`로 복귀 |
 | 바텀시트 | `components/BottomSheet.jsx` | 판단 vs marketSentiment 비교 + insight 공개, 닫으면 저장 |

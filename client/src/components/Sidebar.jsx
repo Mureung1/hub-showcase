@@ -83,22 +83,6 @@ export default function Sidebar() {
             </span>
           </NavLink>
           <NavLink
-            to="/vocabulary"
-            className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}
-          >
-            <span className="sidebar-link-label">
-              <VocabularyIcon />
-              Vocabulary
-            </span>
-            <span className="sidebar-badge">{vocabularyCount}</span>
-          </NavLink>
-        </div>
-      </div>
-
-      <div className="sidebar-group">
-        <p className="sidebar-group-label">History</p>
-        <div className="sidebar-nav">
-          <NavLink
             to="/mypage"
             className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}
           >
@@ -107,6 +91,16 @@ export default function Sidebar() {
               Insight Notes
             </span>
             <span className="sidebar-badge">{decisionCount}</span>
+          </NavLink>
+          <NavLink
+            to="/vocabulary"
+            className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}
+          >
+            <span className="sidebar-link-label">
+              <VocabularyIcon />
+              Vocabulary
+            </span>
+            <span className="sidebar-badge">{vocabularyCount}</span>
           </NavLink>
         </div>
       </div>

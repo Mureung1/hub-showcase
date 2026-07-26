@@ -200,11 +200,11 @@ jsdelivr CDN으로 Pretendard 웹폰트를 각각 `<link>` 태그로 로드한�
 그 원칙은 리더뷰 안 프로토타입 인터랙션(용어 툴팁, 아코디언, 투자 판단
 버튼)에 한정된다.
 
-- **상단 Primary 액션 버튼 + 그룹 라벨(Menu/History)로 메뉴 구분.**
+- **상단 Primary 액션 버튼 + 단일 Menu 그룹.**
   `.sidebar-primary-btn`은 `--brand-blue` 배경 + `--text-inverse` 텍스트로
   눈에 띄게 배치하고 대시보드('/')로 이동한다. 그 아래 `.sidebar-group-label`
-  ("Menu", "History")로 대시보드·단어장(Menu)과 인사이트 노트(History)를
-  시각적으로 분리한다.
+  ("Menu") 하나에 대시보드·인사이트 노트·단어장을 모두 나열한다(2026-07-26
+  이전엔 History 그룹으로 분리돼 있었으나 화면 구조가 단순해 통합).
 - **메뉴 항목에 카운트 뱃지 표시.** 단어장·인사이트 노트 옆
   `.sidebar-badge`에 각각 `GET /api/vocabulary`, `GET /api/decisions` 응답
   배열의 length를 실시간으로 표시한다. 옅은 배경(`--surface-bg`) + 작은
