@@ -4,6 +4,12 @@ export type { ImportAnalysis } from './model/import_analysis';
 export { analyzeImportUrl } from './model/import_url';
 export type { ImportUrlResult } from './model/import_url';
 export { pastedTextAdapter } from './model/pasted_text_adapter';
+export { bookmarkHtmlAdapter } from './model/bookmark_html_adapter';
+export {
+  genericHtmlAdapter,
+  genericMarkdownAdapter,
+  genericTextAdapter,
+} from './model/text_file_adapter';
 export {
   createFileImportIdempotencyKey,
   createImportIdempotencyKey,
