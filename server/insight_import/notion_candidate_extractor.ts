@@ -660,7 +660,7 @@ function removeTrailingUrlDelimiters(rawUrl: string) {
   let url = rawUrl;
 
   while (url.length > 0) {
-    const finalCharacter = url.at(-1) ?? '';
+    const finalCharacter = url[url.length - 1] ?? '';
 
     if (TRAILING_URL_PUNCTUATION.has(finalCharacter)) {
       url = url.slice(0, -1);
