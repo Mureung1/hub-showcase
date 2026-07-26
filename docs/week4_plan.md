@@ -32,6 +32,9 @@ todos:
   - id: issue-67
     content: 첨부파일(PDF/HWP) AI 구조화 추출로 매칭 조건 커버리지 개선
     status: pending
+  - id: issue-74
+    content: 크롤러 fetch 재시도 이중 안전망(코드 레벨 + 워크플로우 레벨)
+    status: pending
 isProject: false
 ---
 
@@ -50,6 +53,9 @@ Week 3 마일스톤(#28~#32, #40, #43, #44) 완료 후 발견된 개별 작업(#
 발견해 같은 문서에서 함께 관리한다 (2026-07-25). #62 조사 중 매칭 조건 데이터가 대부분(4/6)
 비어있다는 게 드러나, 첨부파일 AI 추출로 개선하는 방안을 별도 이슈(#67)로 크게 분리했다.
 
+2026-07-26 새벽 크론 실행이 네트워크 커넥트 타임아웃으로 실패한 것을 계기로, 크롤러에 재시도
+로직이 전혀 없다는 걸 확인해 별도 이슈(#74)로 등록했다.
+
 ## 진행 현황
 
 | 이슈 | 제목 | 상태 |
@@ -63,6 +69,7 @@ Week 3 마일스톤(#28~#32, #40, #43, #44) 완료 후 발견된 개별 작업(#
 | [#62](https://github.com/syd348/hub/issues/62) | 매칭 조건 필터링이 전혀 적용되지 않음 | 완료 (2026-07-25) — region 필터링 적용, [`week4/issue-62-region-filter-plan.md`](week4/issue-62-region-filter-plan.md) |
 | [#63](https://github.com/syd348/hub/issues/63) | 마감 지난 지원금이 계속 노출됨 | 완료 (2026-07-25) — 실제 86건 확인, [`week4/issue-63-expired-sweep-plan.md`](week4/issue-63-expired-sweep-plan.md) |
 | [#67](https://github.com/syd348/hub/issues/67) | 첨부파일 AI 구조화 추출 | 등록 완료 (2026-07-25) — [`week4/issue-67-ai-document-extraction-plan.md`](week4/issue-67-ai-document-extraction-plan.md) |
+| [#74](https://github.com/syd348/hub/issues/74) | 크롤러 fetch 재시도 이중 안전망 | 등록 완료 (2026-07-26) — [`week4/issue-74-crawler-retry-plan.md`](week4/issue-74-crawler-retry-plan.md) |
 
 ## 리스크 / 결정 필요
 
