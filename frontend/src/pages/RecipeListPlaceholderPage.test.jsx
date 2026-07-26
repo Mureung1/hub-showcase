@@ -3,6 +3,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -15,6 +16,92 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
+
+function renderRecipeDetail({
+  type = "OWNED",
+  createInvitation = () =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({
+          data: {
+            invitationId: "invitation-id",
+            transferPath: "/transfer-invitations/link-token",
+            invitationCode: "ABCD-1234",
+            createdAt: "2026-07-26T14:00:00.000Z",
+            expiresAt: "2026-08-02T14:00:00.000Z",
+          },
+        }),
+        {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    ),
+} = {}) {
+  const recipeSummary = {
+    id: "recipe-id",
+    type,
+    title: "김치찌개",
+    description: null,
+    source: null,
+    receivedInfo: null,
+    createdAt: "2026-07-26T12:30:00.000Z",
+  };
+  const recipeDetail = {
+    ...recipeSummary,
+    ownerId: "user-id",
+    servings: "2인분",
+    cookingTimeMinutes: 30,
+    ingredients: [],
+    steps: [],
+    memo: null,
+    updatedAt: "2026-07-26T12:30:00.000Z",
+  };
+  const fetchMock = vi.fn().mockImplementation((path) => {
+    if (
+      path ===
+      "/api/recipes/recipe-id/transfer-invitations"
+    ) {
+      return createInvitation();
+    }
+
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({
+          data:
+            path === "/api/recipes/recipe-id"
+              ? recipeDetail
+              : [recipeSummary],
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
+  });
+  vi.stubGlobal("fetch", fetchMock);
+
+  const user = {
+    displayName: "요리사",
+    getIdToken: vi.fn().mockResolvedValue("firebase-token"),
+  };
+
+  render(
+    <AuthContext.Provider value={{ user }}>
+      <MemoryRouter initialEntries={["/recipes/recipe-id"]}>
+        <Routes>
+          <Route
+            path="/recipes/:recipeId"
+            element={<RecipeListPlaceholderPage />}
+          />
+        </Routes>
+      </MemoryRouter>
+    </AuthContext.Provider>,
+  );
+
+  return { fetchMock, user };
+}
 
 describe("RecipeListPlaceholderPage", () => {
   it("빈 레시피 목록을 알린다", async () => {
@@ -537,5 +624,213 @@ describe("RecipeListPlaceholderPage", () => {
     );
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("OWNED 레시피의 전달 링크와 코드를 생성하고 복사한다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    renderRecipeDetail();
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "전달 초대 만들기",
+      }),
+    );
+
+    const linkInput = await screen.findByLabelText("전달 링크");
+    const codeInput = screen.getByLabelText("초대 코드");
+    const fullLink = `${window.location.origin}/transfer-invitations/link-token`;
+
+    expect(linkInput).toHaveValue(fullLink);
+    expect(linkInput).toHaveAttribute("readonly");
+    expect(codeInput).toHaveValue("ABCD-1234");
+    expect(codeInput).toHaveAttribute("readonly");
+    expect(screen.getByText(/링크와 코드는 같은 초대/)).toBeInTheDocument();
+    expect(screen.getByText(/한 명이 수락하면/)).toBeInTheDocument();
+    expect(screen.getByText(/7일 후 만료/)).toBeInTheDocument();
+    expect(screen.getByText(/생성 응답에서만/)).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "전달 링크 복사" }),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "전달 링크를 복사했습니다.",
+    );
+    expect(writeText).toHaveBeenLastCalledWith(fullLink);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "초대 코드 복사" }),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "초대 코드를 복사했습니다.",
+    );
+    expect(writeText).toHaveBeenLastCalledWith("ABCD-1234");
+  });
+
+  it.each(["EXTERNAL", "RECEIVED"])(
+    "%s 레시피에는 전달 초대 생성 동작을 표시하지 않는다",
+    async (type) => {
+      renderRecipeDetail({ type });
+
+      await screen.findByRole("region", { name: "레시피 상세" });
+
+      expect(
+        screen.queryByRole("button", {
+          name: "전달 초대 만들기",
+        }),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it("전달 초대 생성 중 같은 틱의 중복 요청을 막는다", async () => {
+    let resolveInvitation;
+    const invitationResponse = new Promise((resolve) => {
+      resolveInvitation = resolve;
+    });
+    const { fetchMock } = renderRecipeDetail({
+      createInvitation: () => invitationResponse,
+    });
+    const createButton = await screen.findByRole("button", {
+      name: "전달 초대 만들기",
+    });
+
+    fireEvent.click(createButton);
+    fireEvent.click(createButton);
+
+    expect(createButton).toBeDisabled();
+    expect(createButton).toHaveAttribute("aria-busy", "true");
+    expect(createButton).toHaveTextContent("생성 중");
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.filter(
+          ([path]) =>
+            path ===
+            "/api/recipes/recipe-id/transfer-invitations",
+        ),
+      ).toHaveLength(1);
+    });
+
+    resolveInvitation(
+      new Response(
+        JSON.stringify({
+          data: {
+            invitationId: "invitation-id",
+            transferPath: "/transfer-invitations/link-token",
+            invitationCode: "ABCD-1234",
+            createdAt: "2026-07-26T14:00:00.000Z",
+            expiresAt: "2026-08-02T14:00:00.000Z",
+          },
+        }),
+        {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
+
+    expect(await screen.findByLabelText("전달 링크")).toBeInTheDocument();
+  });
+
+  it.each([
+    [
+      403,
+      "RECIPE_NOT_SHAREABLE",
+      "전달할 수 없는 레시피입니다.",
+    ],
+    [500, "INTERNAL_SERVER_ERROR", "서버 오류가 발생했습니다."],
+  ])(
+    "전달 초대 생성 %i 오류 후 결과를 유지하고 재시도한다",
+    async (status, code, message) => {
+      let requestCount = 0;
+      renderRecipeDetail({
+        createInvitation: () => {
+          requestCount += 1;
+
+          if (requestCount === 2) {
+            return Promise.resolve(
+              new Response(
+                JSON.stringify({
+                  error: { code, message },
+                }),
+                {
+                  status,
+                  headers: { "Content-Type": "application/json" },
+                },
+              ),
+            );
+          }
+
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                data: {
+                  invitationId: "invitation-id",
+                  transferPath: "/transfer-invitations/link-token",
+                  invitationCode: "ABCD-1234",
+                  createdAt: "2026-07-26T14:00:00.000Z",
+                  expiresAt: "2026-08-02T14:00:00.000Z",
+                },
+              }),
+              {
+                status: 201,
+                headers: { "Content-Type": "application/json" },
+              },
+            ),
+          );
+        },
+      });
+      const createButton = await screen.findByRole("button", {
+        name: "전달 초대 만들기",
+      });
+
+      fireEvent.click(createButton);
+      const linkInput = await screen.findByLabelText("전달 링크");
+      fireEvent.click(createButton);
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        message,
+      );
+      expect(linkInput).toHaveValue(
+        `${window.location.origin}/transfer-invitations/link-token`,
+      );
+      expect(createButton).toBeEnabled();
+
+      fireEvent.click(createButton);
+
+      await waitFor(() => {
+        expect(requestCount).toBe(3);
+      });
+    },
+  );
+
+  it("클립보드가 거부되어도 생성 결과를 유지한다", async () => {
+    vi.stubGlobal("navigator", {
+      clipboard: {
+        writeText: vi.fn().mockRejectedValue(
+          new Error("clipboard denied"),
+        ),
+      },
+    });
+    renderRecipeDetail();
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "전달 초대 만들기",
+      }),
+    );
+    const linkInput = await screen.findByLabelText("전달 링크");
+    const codeInput = screen.getByLabelText("초대 코드");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "전달 링크 복사" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "전달 링크를 복사하지 못했습니다.",
+    );
+    expect(linkInput).toHaveValue(
+      `${window.location.origin}/transfer-invitations/link-token`,
+    );
+    expect(codeInput).toHaveValue("ABCD-1234");
   });
 });

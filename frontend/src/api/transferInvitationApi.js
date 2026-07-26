@@ -1,5 +1,15 @@
 import { apiRequest } from "./apiClient";
 
+export function createTransferInvitation(idToken, recipeId) {
+  return apiRequest(
+    `/api/recipes/${recipeId}/transfer-invitations`,
+    {
+      method: "POST",
+      idToken,
+    },
+  );
+}
+
 export function getTransferInvitationByLink(idToken, linkToken) {
   return apiRequest(`/api/transfer-invitations/by-link/${linkToken}`, {
     method: "GET",
