@@ -8,6 +8,7 @@ import {
   getRequestErrorMessage,
   readApiError,
   type DeleteItemResponse,
+  type ArchiveItemResponse,
   type Item,
 } from "../../lib/items";
 
@@ -102,6 +103,27 @@ export default function CategoriesPage() {
       setItems((currentItems) => currentItems.filter((item) => item.id !== result.id));
     } catch (requestError) {
       throw new Error(getRequestErrorMessage(requestError, "항목을 삭제하지 못했습니다."));
+    }
+  }
+
+  async function changeArchiveState(id: number, archived: boolean) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/items/${id}/archive`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived }),
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      const result: ArchiveItemResponse = await response.json();
+      setItems((currentItems) =>
+        archived
+          ? currentItems.filter((item) => item.id !== result.id)
+          : currentItems.map((item) => (item.id === result.id ? result : item))
+      );
+    } catch (requestError) {
+      throw new Error(
+        getRequestErrorMessage(requestError, "항목을 보관하지 못했습니다.")
+      );
     }
   }
 
@@ -207,6 +229,7 @@ export default function CategoriesPage() {
                     key={item.id}
                     item={item}
                     onDelete={deleteItem}
+                    onArchive={changeArchiveState}
                   />
                 ))}
               </ul>
@@ -221,7 +244,7 @@ export default function CategoriesPage() {
           <Link href="/categories" className="text-accentDark font-medium">
             카테고리
           </Link>
-          <span>아카이브</span>
+          <Link href="/archive">아카이브</Link>
           <span>설정</span>
         </div>
       </nav>

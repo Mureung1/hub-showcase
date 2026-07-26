@@ -5,6 +5,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 const database = vi.hoisted(() => ({
   inserted: null as Record<string, unknown> | null,
   updated: null as Record<string, unknown> | null,
+  selectedArchived: null as boolean | null,
   upload: vi.fn(),
   remove: vi.fn(),
 }));
@@ -13,7 +14,12 @@ vi.mock("@supabase/supabase-js", () => ({
   createClient: () => ({
     from: () => ({
       select: () => ({
-        order: async () => ({ data: [], error: null }),
+        eq: (_column: string, archived: boolean) => {
+          database.selectedArchived = archived;
+          return {
+            order: async () => ({ data: [], error: null }),
+          };
+        },
       }),
       insert: (payload: Record<string, unknown>) => {
         database.inserted = payload;
@@ -40,6 +46,7 @@ vi.mock("@supabase/supabase-js", () => ({
                   id: 1,
                   title: payload.title,
                   image_url: null,
+                  ...payload,
                   created_at: "2026-07-23T00:00:00.000Z",
                 },
                 error: null,
@@ -97,6 +104,7 @@ beforeAll(async () => {
 beforeEach(() => {
   database.inserted = null;
   database.updated = null;
+  database.selectedArchived = null;
   database.upload.mockClear();
   database.upload.mockResolvedValue({ error: null });
   database.remove.mockClear();
@@ -176,8 +184,40 @@ describe("items API", () => {
     expect(database.inserted).toBeNull();
   });
 
-  it("기존 목록, 수정, 삭제 API가 계속 응답한다", async () => {
-    await expect(request(app).get("/api/items")).resolves.toMatchObject({ status: 200 });
+  it("활성 목록과 아카이브 목록을 구분해 조회한다", async () => {
+    const active = await request(app).get("/api/items");
+    expect(active.status).toBe(200);
+    expect(database.selectedArchived).toBe(false);
+
+    const archived = await request(app).get("/api/items?archived=true");
+    expect(archived.status).toBe(200);
+    expect(database.selectedArchived).toBe(true);
+
+    const invalid = await request(app).get("/api/items?archived=yes");
+    expect(invalid.status).toBe(400);
+  });
+
+  it("항목을 아카이브하고 복원한다", async () => {
+    const archived = await request(app)
+      .patch("/api/items/1/archive")
+      .send({ archived: true });
+    expect(archived.status).toBe(200);
+    expect(database.updated).toMatchObject({
+      is_archived: true,
+    });
+    expect(database.updated?.archived_at).toEqual(expect.any(String));
+
+    const restored = await request(app)
+      .patch("/api/items/1/archive")
+      .send({ archived: false });
+    expect(restored.status).toBe(200);
+    expect(database.updated).toEqual({
+      is_archived: false,
+      archived_at: null,
+    });
+  });
+
+  it("기존 수정, 삭제 API가 계속 응답한다", async () => {
 
     const updated = await request(app)
       .patch("/api/items/1")
