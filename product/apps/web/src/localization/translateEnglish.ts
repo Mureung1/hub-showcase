@@ -216,6 +216,7 @@ const replacements: Record<string, string> = {
     "Six time intervals from Seoul street-level population data.",
   "지표별 순위": "Metric rankings",
   "점수 산정 근거": "Score evidence",
+  "점수의 근거와 읽는 법": "How to read this score",
   개업: "Openings",
   폐업: "Closures",
   "선택 분기의 업종별 집계": "Category aggregate for the selected quarter",

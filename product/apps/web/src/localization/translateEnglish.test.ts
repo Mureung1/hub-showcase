@@ -37,6 +37,9 @@ describe("translateEnglishText", () => {
     expect(translateEnglishText("KOSIS 주민등록인구 · 20251 · 과거 기준 · 행정동")).toBe(
       "KOSIS resident registration population · 2025 Q1 · Historical reference · Administrative district",
     );
+    expect(translateEnglishText("점수의 근거와 읽는 법")).toBe(
+      "How to read this score",
+    );
   });
 
   it("translates dynamic summary and ranking values", () => {
