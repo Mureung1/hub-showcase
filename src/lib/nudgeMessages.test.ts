@@ -153,6 +153,41 @@ describe("buildNudgeMessage", () => {
       expect(result.memoryEvidence).toBeNull();
     });
 
+    it("눈앞의 유혹이면 body 앞에 방해 제거 안내를 붙이되 microtask는 깨끗하게 둔다 (경계)", () => {
+      const microTask = "문서에 발표 핵심 문장 한 줄 쓰기";
+      const result = buildLv3PersonalizedNudgeMessage(microTask, "temptation");
+
+      expect(result.body).toContain("잠깐 방해되는 걸 멀리 두고");
+      expect(result.body).toContain(microTask);
+      // 방해 제거 문구는 안내(body)에만 있고, 저장/재사용될 microtask엔 섞이지 않는다.
+      expect(result.microtask).toBe(microTask);
+      expect(result.microtask).not.toContain("멀리 두고");
+    });
+
+    it("유혹이 아닌 이유는 기존 안내 문구를 그대로 유지한다 (경계)", () => {
+      const microTask = "문서에 발표 핵심 문장 한 줄 쓰기";
+      const overwhelm = buildLv3PersonalizedNudgeMessage(microTask, "overwhelm");
+      const noReason = buildLv3PersonalizedNudgeMessage(microTask);
+
+      expect(overwhelm.body).not.toContain("잠깐 방해되는 걸 멀리 두고");
+      expect(overwhelm.body).toBe(noReason.body);
+    });
+
+    it("기억 기반 메시지도 유혹이면 방해 제거 안내 + 기존 근거 문구를 함께 유지한다 (경계)", () => {
+      const microTask = "목차 후보를 세 줄로 작성하기";
+      const memoryEvidence = { sourceDoneEventId: "done-event-1" };
+      const result = buildLv3MemoryNudgeMessage(
+        microTask,
+        memoryEvidence,
+        "temptation",
+      );
+
+      expect(result.body).toContain("잠깐 방해되는 걸 멀리 두고");
+      expect(result.body).toContain("지난 완료 기록을 참고해");
+      expect(result.microtask).toBe(microTask);
+      expect(result.memoryEvidence).toBe(memoryEvidence);
+    });
+
     it("9개 유형 모두 비어 있지 않은 안전 fallback을 가진다", () => {
       expect(Object.keys(LV3_SAFE_FALLBACKS)).toHaveLength(9);
       for (const value of Object.values(LV3_SAFE_FALLBACKS)) {

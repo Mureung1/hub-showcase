@@ -75,18 +75,51 @@ export function buildLv3FallbackMessage(task) {
   };
 }
 
-export function buildLv3MemoryNudgeMessage(microtask, memoryEvidence) {
+// "눈앞의 유혹"은 "방해 요소에서 잠깐 벗어난 뒤 짧은 행동"이 전략인데, 이 준비 동작을
+// microTask 문장에 넣으면 서버의 복수 행동 금지 검증(LV3_CHAINED_ACTION_PATTERN)에 걸린다.
+// 그래서 "방해 제거" 넛지는 microTask가 아니라 안내 문구(body)로만 전달한다(Phase B).
+// microtask 자체는 깨끗한 단일 행동으로 남아 Focus/History에 군더더기 없이 저장된다.
+const LV3_TEMPTATION_LEAD_IN = "잠깐 방해되는 걸 멀리 두고 시작해볼까요? ";
+
+// 회피 이유에 맞춘 안내 문구를 body 앞에 덧붙인다. 현재는 temptation만 별도 문구를
+// 쓰고(막막함/하기싫음/완벽주의 전략은 microTask 자체의 형태로 이미 드러남), 그 외
+// 이유나 reason이 없으면 기존 body를 그대로 둔다.
+/**
+ * @param {string} body
+ * @param {string | null | undefined} reason
+ */
+function withReasonLeadIn(body, reason) {
+  if (reason === "temptation") return `${LV3_TEMPTATION_LEAD_IN}${body}`;
+  return body;
+}
+
+/**
+ * @param {string} microtask
+ * @param {unknown} memoryEvidence
+ * @param {string | null} [reason]
+ */
+export function buildLv3MemoryNudgeMessage(microtask, memoryEvidence, reason = null) {
   return {
-    body: `같은 유형의 지난 완료 기록을 참고해, 지금 할 일에 맞는 첫 행동을 제안했어요. ${microtask}`,
+    body: withReasonLeadIn(
+      `같은 유형의 지난 완료 기록을 참고해, 지금 할 일에 맞는 첫 행동을 제안했어요. ${microtask}`,
+      reason,
+    ),
     microtask,
     generationSource: "gemini",
     memoryEvidence,
   };
 }
 
-export function buildLv3PersonalizedNudgeMessage(microtask) {
+/**
+ * @param {string} microtask
+ * @param {string | null} [reason]
+ */
+export function buildLv3PersonalizedNudgeMessage(microtask, reason = null) {
   return {
-    body: `지금 할 일과 회피 이유에 맞춰, 더 작고 구체적인 첫 행동을 제안했어요. ${microtask}`,
+    body: withReasonLeadIn(
+      `지금 할 일과 회피 이유에 맞춰, 더 작고 구체적인 첫 행동을 제안했어요. ${microtask}`,
+      reason,
+    ),
     microtask,
     generationSource: "gemini",
     memoryEvidence: null,

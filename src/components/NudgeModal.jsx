@@ -163,8 +163,12 @@ function NudgeModal({
               ? buildLv3MemoryNudgeMessage(
                   result.microTask,
                   result.memoryEvidence,
+                  lv3RequestContext.reason,
                 )
-              : buildLv3PersonalizedNudgeMessage(result.microTask),
+              : buildLv3PersonalizedNudgeMessage(
+                  result.microTask,
+                  lv3RequestContext.reason,
+                ),
           );
           return;
         }
