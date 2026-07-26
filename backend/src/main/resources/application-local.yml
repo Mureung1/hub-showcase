@@ -23,3 +23,7 @@ seoul:
 kakao:
   api:
     key: ${KAKAO_API_KEY}
+
+tmap:
+  api:
+    key: ${TMAP_API_KEY}
