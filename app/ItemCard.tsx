@@ -6,6 +6,7 @@ import type { Item } from "../lib/items";
 type ItemCardProps = {
   item: Item;
   onDelete: (id: number) => Promise<void>;
+  onArchive?: (id: number, archived: boolean) => Promise<void>;
 };
 
 function getDisplayTitle(item: Item) {
@@ -17,9 +18,9 @@ function getDisplayTitle(item: Item) {
   return item.image_url ? "저장한 이미지" : "저장한 웹 콘텐츠";
 }
 
-export default function ItemCard({ item, onDelete }: ItemCardProps) {
+export default function ItemCard({ item, onDelete, onArchive }: ItemCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"delete" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"delete" | "archive" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   async function deleteItem() {
@@ -31,6 +32,21 @@ export default function ItemCard({ item, onDelete }: ItemCardProps) {
       await onDelete(item.id);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "항목을 삭제하지 못했습니다.");
+      setPendingAction(null);
+    }
+  }
+
+  async function changeArchiveState() {
+    if (!onArchive) return;
+    setPendingAction("archive");
+    setActionError(null);
+    try {
+      await onArchive(item.id, !item.is_archived);
+      setPendingAction(null);
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : "아카이브 상태를 변경하지 못했습니다."
+      );
       setPendingAction(null);
     }
   }
@@ -72,6 +88,25 @@ export default function ItemCard({ item, onDelete }: ItemCardProps) {
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2">
             <div className="flex gap-2">
+              {onArchive && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void changeArchiveState();
+                  }}
+                  disabled={isPending}
+                  className="text-xs text-accentDark hover:text-accent disabled:opacity-50"
+                >
+                  {pendingAction === "archive"
+                    ? item.is_archived
+                      ? "복원 중..."
+                      : "보관 중..."
+                    : item.is_archived
+                      ? "복원"
+                      : "보관"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={(event) => {

@@ -54,6 +54,9 @@ URL 저장 시 메타데이터를 추출하고, 이미지가 있으면 이미지
 - 1~3문장의 콘텐츠 요약
 - 대분류와 소분류
 
+확인을 마친 콘텐츠는 카테고리 화면에서 아카이브로 보낼 수 있으며, 아카이브
+화면에서 다시 복원하거나 삭제할 수 있습니다.
+
 Gemini가 설정되지 않았거나 호출·검증에 실패하면 기존 규칙 기반 분류를 사용합니다.
 이미지 단독 요청을 규칙으로 판단할 수 없으면 `미분류 / null`로 저장합니다.
 
@@ -73,10 +76,12 @@ Gemini가 설정되지 않았거나 호출·검증에 실패하면 기존 규칙
 ```text
 supabase/migrations/202607230001_add_item_images.sql
 supabase/migrations/202607230002_add_item_summary.sql
+supabase/migrations/202607260001_add_item_archive.sql
 ```
 
 첫 migration은 `items.content`, `items.image_url`과 public `later-images` 버킷을
-생성합니다. 두 번째 migration은 AI 요약을 저장하는 `items.summary`를 추가합니다.
+생성합니다. 두 번째 migration은 AI 요약을 저장하는 `items.summary`를 추가하고,
+세 번째 migration은 아카이브 상태와 보관 시각을 추가합니다.
 
 서버 환경변수:
 

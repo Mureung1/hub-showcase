@@ -20,7 +20,7 @@ dotenv.config({ path: "server/.env", quiet: true });
 const app = express();
 const port = Number(process.env.PORT) || 4000;
 const itemColumns =
-  "id, title, summary, content, original_url, image_url, source_platform, category_main, category_sub, created_at";
+  "id, title, summary, content, original_url, image_url, source_platform, category_main, category_sub, is_archived, archived_at, created_at";
 const configuredOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:3000")
   .split(",")
   .map((origin) => origin.trim());
@@ -120,11 +120,23 @@ app.get("/health", (_request, response) => {
   response.json({ status: "ok" });
 });
 
-app.get("/api/items", async (_request, response) => {
+app.get("/api/items", async (request, response) => {
+  const archivedQuery = request.query.archived;
+  if (
+    archivedQuery !== undefined &&
+    archivedQuery !== "true" &&
+    archivedQuery !== "false"
+  ) {
+    response.status(400).json({ error: "archived는 true 또는 false여야 합니다." });
+    return;
+  }
+
   try {
+    const archived = archivedQuery === "true";
     const { data, error } = await getSupabase()
       .from("items")
       .select(itemColumns)
+      .eq("is_archived", archived)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -271,6 +283,44 @@ app.patch("/api/items/:id", async (request, response) => {
     console.error("item 수정 실패:", error);
     response.status(500).json({
       error: getErrorMessage(error, "항목을 수정하지 못했습니다."),
+    });
+  }
+});
+
+app.patch("/api/items/:id/archive", async (request, response) => {
+  const id = parseItemId(request.params.id);
+  if (id === null) {
+    response.status(400).json({ error: "id는 양의 정수여야 합니다." });
+    return;
+  }
+
+  const archived = request.body?.archived;
+  if (typeof archived !== "boolean") {
+    response.status(400).json({ error: "archived는 boolean이어야 합니다." });
+    return;
+  }
+
+  try {
+    const { data, error } = await getSupabase()
+      .from("items")
+      .update({
+        is_archived: archived,
+        archived_at: archived ? new Date().toISOString() : null,
+      })
+      .eq("id", id)
+      .select(itemColumns)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      response.status(404).json({ error: "항목을 찾을 수 없습니다." });
+      return;
+    }
+    response.json(data);
+  } catch (error) {
+    console.error("item 아카이브 상태 변경 실패:", error);
+    response.status(500).json({
+      error: getErrorMessage(error, "아카이브 상태를 변경하지 못했습니다."),
     });
   }
 });

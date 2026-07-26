@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ItemCard from "./ItemCard";
@@ -16,6 +16,8 @@ const item = {
   source_platform: "web",
   category_main: "공부",
   category_sub: "클라우드",
+  is_archived: false,
+  archived_at: null,
   created_at: "2026-07-23T00:00:00.000Z",
 };
 
@@ -57,5 +59,32 @@ describe("ItemCard", () => {
     );
 
     expect(screen.getByText("클라우드 관련 콘텐츠")).toBeInTheDocument();
+  });
+
+  it("활성 항목을 보관하고 아카이브 항목을 복원할 수 있다", async () => {
+    const onArchive = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = render(
+      <ul>
+        <ItemCard item={item} onDelete={vi.fn()} onArchive={onArchive} />
+      </ul>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "보관" }));
+    expect(onArchive).toHaveBeenCalledWith(item.id, true);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "보관" })).toBeEnabled()
+    );
+
+    rerender(
+      <ul>
+        <ItemCard
+          item={{ ...item, is_archived: true, archived_at: "2026-07-26T00:00:00.000Z" }}
+          onDelete={vi.fn()}
+          onArchive={onArchive}
+        />
+      </ul>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "복원" }));
+    expect(onArchive).toHaveBeenCalledWith(item.id, false);
   });
 });

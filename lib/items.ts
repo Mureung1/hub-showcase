@@ -8,6 +8,8 @@ export type Item = {
   source_platform: string | null;
   category_main: string | null;
   category_sub: string | null;
+  is_archived: boolean;
+  archived_at: string | null;
   created_at: string;
 };
 
@@ -15,6 +17,8 @@ export type DeleteItemResponse = {
   success: true;
   id: number;
 };
+
+export type ArchiveItemResponse = Item;
 
 export const apiBaseUrl = (
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"

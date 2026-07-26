@@ -171,7 +171,7 @@ export default function Home() {
             홈
           </Link>
           <Link href="/categories">카테고리</Link>
-          <span>아카이브</span>
+          <Link href="/archive">아카이브</Link>
           <span>설정</span>
         </div>
       </nav>
