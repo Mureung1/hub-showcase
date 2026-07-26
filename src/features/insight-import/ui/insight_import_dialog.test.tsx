@@ -8,6 +8,7 @@ import { DesignSystemProvider } from '@/shared/ui/design-system-provider';
 
 import type { InsightImportService } from '../model/insight_import_service';
 import type { ImportHistoryEntry, PreparedImport } from '../model/import_types';
+import type { NotionImportApi } from '../api/notion_import_api';
 import { InsightImportDialog } from './insight_import_dialog';
 
 const JOB_ID = '10000000-0000-4000-8000-000000000001';
@@ -274,6 +275,46 @@ describe('InsightImportDialog', () => {
       expect(screen.queryByText('붙여넣기 가져오기')).toBeNull()
     );
   });
+
+  it('Notion 공식 연결 안내와 기본값이 꺼진 페이지 주소 선택을 제공한다', async () => {
+    const user = userEvent.setup();
+    const notionApi = createNotionApi();
+    const openWeb = vi.fn();
+    notionApi.start.mockResolvedValue({
+      authorizeUrl: 'https://api.notion.com/v1/oauth/authorize',
+      connectionId: JOB_ID,
+    });
+
+    renderDialog({
+      notionApi,
+      notionOpenWeb: openWeb,
+      service: createService(),
+    });
+
+    await user.click(
+      screen.getByRole('button', { name: 'Notion에서 가져오기' })
+    );
+    expect(
+      screen.getByText(
+        'Notion 공식 화면에서 가져올 페이지를 직접 선택합니다. 읽기 권한만 사용하고 가져오기가 끝나면 연결을 해제합니다.'
+      )
+    ).toBeTruthy();
+    const includePages = screen.getByRole('checkbox', {
+      name: 'Notion 페이지 자체 주소도 가져오기',
+    });
+    expect((includePages as HTMLInputElement).checked).toBe(false);
+
+    await user.click(screen.getByRole('button', { name: 'Notion 연결하기' }));
+
+    expect(notionApi.start).toHaveBeenCalledWith(
+      false,
+      'web',
+      expect.any(AbortSignal)
+    );
+    expect(openWeb).toHaveBeenCalledWith(
+      'https://api.notion.com/v1/oauth/authorize'
+    );
+  });
 });
 
 function renderDialog({
@@ -281,11 +322,15 @@ function renderDialog({
   onCategoriesChanged = vi.fn(),
   onLibraryChanged = vi.fn(),
   service,
+  notionApi,
+  notionOpenWeb,
 }: {
   categories?: readonly Category[];
   onCategoriesChanged?: () => void | Promise<void>;
   onLibraryChanged?: () => void | Promise<void>;
   service: ReturnType<typeof createService>;
+  notionApi?: ReturnType<typeof createNotionApi>;
+  notionOpenWeb?: (url: string) => void;
 }) {
   return render(
     <DesignSystemProvider>
@@ -294,11 +339,23 @@ function renderDialog({
         onCategoriesChanged={onCategoriesChanged}
         onLibraryChanged={onLibraryChanged}
         onOpenChange={vi.fn()}
+        notionApi={notionApi}
+        notionOpenWeb={notionOpenWeb}
         open
         service={service}
       />
     </DesignSystemProvider>
   );
+}
+
+function createNotionApi() {
+  return {
+    analyze: vi.fn<NotionImportApi['analyze']>(),
+    cancel: vi.fn<NotionImportApi['cancel']>(),
+    complete: vi.fn<NotionImportApi['complete']>(),
+    start: vi.fn<NotionImportApi['start']>(),
+    status: vi.fn<NotionImportApi['status']>(),
+  };
 }
 
 function createService() {

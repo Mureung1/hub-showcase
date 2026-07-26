@@ -157,6 +157,34 @@ describe('NotionImportService', () => {
     });
   });
 
+  it('reload 시 이미 ready인 작업은 Provider 재호출 없이 준비 결과를 복원한다', async () => {
+    const dependencies = createDependencies();
+    dependencies.userStore.getStatus.mockResolvedValueOnce({
+      connectionId: CONNECTION_ID,
+      includePageUrls: false,
+      jobId: CONNECTION_ID,
+      jobStatus: 'ready',
+      status: 'connected',
+      workspaceName: '작업 공간',
+    });
+    dependencies.userStore.finalize.mockResolvedValueOnce({
+      id: CONNECTION_ID,
+      status: 'ready',
+    });
+    const service = createNotionImportService(dependencies);
+
+    await expect(
+      service.analyze('access-token', CONNECTION_ID, [])
+    ).resolves.toEqual({
+      candidateCount: 0,
+      prepared: { id: CONNECTION_ID, status: 'ready' },
+      requestCount: 0,
+      status: 'ready',
+    });
+    expect(dependencies.runAnalysisSlice).not.toHaveBeenCalled();
+    expect(dependencies.userStore.appendItems).not.toHaveBeenCalled();
+  });
+
   it('완료 시 access token 철회 뒤 암호화 token을 제거한다', async () => {
     const dependencies = createDependencies();
     dependencies.fetch.mockResolvedValueOnce(

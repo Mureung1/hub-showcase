@@ -34,6 +34,20 @@ export type {
   UseInsightImportOptions,
 } from './model/use_insight_import';
 export { createBrowserInsightImportService } from './api/browser_insight_import_service';
+export {
+  createNotionImportApi,
+  NotionImportApiError,
+} from './api/notion_import_api';
+export type {
+  NotionAnalyzeResult,
+  NotionConnectionStatus,
+  NotionFieldMapping,
+  NotionFieldMappingRequest,
+  NotionFinishResult,
+  NotionImportApi,
+  NotionImportApiFailureReason,
+} from './api/notion_import_api';
+export { useNotionImport } from './model/use_notion_import';
 export { InsightImportDialog } from './ui/insight_import_dialog';
 export type { InsightImportDialogProps } from './ui/insight_import_dialog';
 export {

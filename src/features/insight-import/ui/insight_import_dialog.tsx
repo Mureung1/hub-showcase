@@ -1,9 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { normalizeCategoryInput, type Category } from '@/entities/category';
-import { Button, Modal, StatusMessage, TextArea } from '@/shared/ui';
+import {
+  createDefaultNotionImportCallback,
+  type NotionImportCallback,
+} from '@/shared/capacitor';
+import { Button, Modal, Select, StatusMessage, TextArea } from '@/shared/ui';
 
 import { createBrowserInsightImportService } from '../api/browser_insight_import_service';
+import {
+  createNotionImportApi,
+  type NotionFieldMapping,
+  type NotionFieldMappingRequest,
+  type NotionImportApi,
+} from '../api/notion_import_api';
 import { bookmarkHtmlAdapter } from '../model/bookmark_html_adapter';
 import type { InsightImportService } from '../model/insight_import_service';
 import type { ImportCollectionMapping } from '../model/import_types';
@@ -17,6 +27,7 @@ import {
   genericTextAdapter,
 } from '../model/text_file_adapter';
 import { useInsightImport } from '../model/use_insight_import';
+import { useNotionImport } from '../model/use_notion_import';
 import { zipFileAdapter } from '../model/zip_file_adapter';
 import { ImportFieldMappingForm } from './import_field_mapping';
 import { ImportHistory } from './import_history';
@@ -40,6 +51,10 @@ export type InsightImportDialogProps = {
   onLibraryChanged: () => void | Promise<void>;
   onOpenChange: (open: boolean) => void;
   open: boolean;
+  initialNotionConnectionId?: string | null;
+  notionApi?: NotionImportApi;
+  notionCallback?: NotionImportCallback;
+  notionOpenWeb?: (authorizeUrl: string) => void;
   service?: InsightImportService;
 };
 
@@ -49,6 +64,10 @@ export function InsightImportDialog({
   onLibraryChanged,
   onOpenChange,
   open,
+  initialNotionConnectionId = null,
+  notionApi,
+  notionCallback,
+  notionOpenWeb,
   service,
 }: InsightImportDialogProps) {
   const importService = useMemo(
@@ -61,11 +80,28 @@ export function InsightImportDialog({
     onLibraryChanged,
     service: importService,
   });
-  const [sourceSelected, setSourceSelected] = useState<'file' | 'paste' | null>(
-    null
+  const resolvedNotionApi = useMemo(
+    () => notionApi ?? createNotionImportApi(),
+    [notionApi]
   );
+  const resolvedNotionCallback = useMemo(
+    () => notionCallback ?? createDefaultNotionImportCallback(),
+    [notionCallback]
+  );
+  const notion = useNotionImport({
+    api: resolvedNotionApi,
+    callback: resolvedNotionCallback,
+    initialConnectionId: initialNotionConnectionId,
+    onPrepared: controller.loadPrepared,
+    openWeb: notionOpenWeb,
+  });
+  const [sourceSelected, setSourceSelected] = useState<
+    'file' | 'notion' | 'paste' | null
+  >(initialNotionConnectionId ? 'notion' : null);
+  const [includeNotionPageUrls, setIncludeNotionPageUrls] = useState(false);
   const [pastedText, setPastedText] = useState('');
   const [undoConfirming, setUndoConfirming] = useState(false);
+  const completedNotionJobRef = useRef<string | null>(null);
   const { refreshHistory } = controller;
 
   useEffect(() => {
@@ -74,8 +110,28 @@ export function InsightImportDialog({
     }
   }, [open, refreshHistory]);
 
+  useEffect(() => {
+    if (
+      controller.stage === 'result' &&
+      notion.connectionId === controller.result?.jobId &&
+      completedNotionJobRef.current !== notion.connectionId
+    ) {
+      completedNotionJobRef.current = notion.connectionId;
+      void notion.complete();
+    }
+  }, [controller.result?.jobId, controller.stage, notion]);
+
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
+      if (
+        ['analyzing', 'connecting', 'mapping'].includes(notion.stage) &&
+        !globalThis.confirm('Notion 연결을 취소하고 가져오기 창을 닫을까요?')
+      ) {
+        return;
+      }
+      if (notion.connectionId && controller.stage !== 'result') {
+        void notion.cancel();
+      }
       controller.cancelCurrentOperation();
       setSourceSelected(null);
       setPastedText('');
@@ -96,6 +152,9 @@ export function InsightImportDialog({
   }
 
   function resetSource() {
+    if (notion.connectionId) {
+      void notion.cancel();
+    }
     controller.reset();
     setSourceSelected(null);
     setPastedText('');
@@ -130,6 +189,11 @@ export function InsightImportDialog({
           {controller.errorMessage}
         </StatusMessage>
       ) : null}
+      {notion.errorMessage ? (
+        <StatusMessage title="Notion 연결을 확인해 주세요" variant="error">
+          {notion.errorMessage}
+        </StatusMessage>
+      ) : null}
 
       {isSourceStage ? (
         <div className="insight-import-dialog__source">
@@ -140,6 +204,14 @@ export function InsightImportDialog({
             type="button"
           >
             파일에서 가져오기
+          </Button>
+          <Button
+            aria-pressed={sourceSelected === 'notion'}
+            hierarchy={sourceSelected === 'notion' ? 'primary' : 'secondary'}
+            onClick={() => setSourceSelected('notion')}
+            type="button"
+          >
+            Notion에서 가져오기
           </Button>
           <Button
             aria-pressed={sourceSelected === 'paste'}
@@ -195,14 +267,77 @@ export function InsightImportDialog({
             </div>
           ) : null}
 
-          <ImportHistory
-            entries={controller.history}
-            errorMessage={controller.historyErrorMessage}
-            loading={controller.isHistoryLoading}
-            onDelete={controller.deleteRecord}
-            onUndo={controller.undo}
-            service={importService}
-          />
+          {sourceSelected === 'notion' ? (
+            <div className="insight-import-dialog__notion">
+              <p>
+                Notion 공식 화면에서 가져올 페이지를 직접 선택합니다. 읽기
+                권한만 사용하고 가져오기가 끝나면 연결을 해제합니다.
+              </p>
+
+              {notion.stage === 'idle' || notion.stage === 'error' ? (
+                <>
+                  <label className="insight-import-dialog__notion-checkbox">
+                    <input
+                      checked={includeNotionPageUrls}
+                      onChange={(event) =>
+                        setIncludeNotionPageUrls(event.currentTarget.checked)
+                      }
+                      type="checkbox"
+                    />
+                    Notion 페이지 자체 주소도 가져오기
+                  </label>
+                  <p>
+                    Notion 안에 저장한 외부 링크가 아니라 선택한 페이지도
+                    원문으로 보관할 때만 사용합니다.
+                  </p>
+                  <Button
+                    hierarchy="primary"
+                    onClick={() => void notion.start(includeNotionPageUrls)}
+                    type="button"
+                  >
+                    Notion 연결하기
+                  </Button>
+                </>
+              ) : null}
+
+              {notion.stage === 'connecting' || notion.stage === 'analyzing' ? (
+                <section aria-live="polite" role="status">
+                  <strong>
+                    {notion.workspaceName ?? 'Notion 작업 공간'} 분석 중
+                  </strong>
+                  <p>
+                    완료한 요청 {notion.requestCount}개 · 후보{' '}
+                    {notion.candidateCount}개
+                  </p>
+                  <Button
+                    hierarchy="secondary"
+                    onClick={() => void notion.cancel()}
+                    type="button"
+                  >
+                    연결 취소
+                  </Button>
+                </section>
+              ) : null}
+
+              {notion.stage === 'mapping' ? (
+                <NotionFieldMappingForm
+                  onSubmit={(mappings) => void notion.submitMappings(mappings)}
+                  requests={notion.mappingRequests}
+                />
+              ) : null}
+            </div>
+          ) : null}
+
+          {notion.stage === 'idle' || notion.stage === 'error' ? (
+            <ImportHistory
+              entries={controller.history}
+              errorMessage={controller.historyErrorMessage}
+              loading={controller.isHistoryLoading}
+              onDelete={controller.deleteRecord}
+              onUndo={controller.undo}
+              service={importService}
+            />
+          ) : null}
         </div>
       ) : null}
 
@@ -331,6 +466,113 @@ export function InsightImportDialog({
         </div>
       ) : null}
     </Modal>
+  );
+}
+
+function NotionFieldMappingForm({
+  onSubmit,
+  requests,
+}: {
+  onSubmit: (mappings: NotionFieldMapping[]) => void;
+  requests: NotionFieldMappingRequest[];
+}) {
+  const unusedField = '__unused__';
+  const [mappings, setMappings] = useState<NotionFieldMapping[]>(() =>
+    requests.map((request) => ({
+      dataSourceId: request.dataSourceId,
+      memoPropertyId: null,
+      titlePropertyId: null,
+      urlPropertyId: request.suggestedUrlPropertyId,
+    }))
+  );
+
+  return (
+    <form
+      className="insight-import-dialog__field-mapping"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit(mappings);
+      }}
+    >
+      <div>
+        <h3>Notion 필드 연결</h3>
+        <p>각 데이터베이스에서 링크가 담긴 필드를 선택해 주세요.</p>
+      </div>
+      {requests.map((request) => {
+        const mapping = mappings.find(
+          (value) => value.dataSourceId === request.dataSourceId
+        );
+        if (!mapping) {
+          return null;
+        }
+        const options = request.fields.map((field) => ({
+          label: `${field.name} · ${field.type === 'url' ? 'URL' : '텍스트'}`,
+          value: field.id,
+        }));
+        const optionalOptions = [
+          { label: '사용하지 않음', value: unusedField },
+          ...options,
+        ];
+        const updateMapping = (
+          field: 'memoPropertyId' | 'titlePropertyId' | 'urlPropertyId',
+          value: string
+        ) => {
+          setMappings((current) =>
+            current.map((currentMapping) =>
+              currentMapping.dataSourceId === request.dataSourceId
+                ? {
+                    ...currentMapping,
+                    [field]:
+                      field === 'urlPropertyId' || value !== unusedField
+                        ? value
+                        : null,
+                  }
+                : currentMapping
+            )
+          );
+        };
+
+        return (
+          <fieldset key={request.dataSourceId}>
+            <legend>Notion 데이터베이스 {request.dataSourceId}</legend>
+            <label>
+              URL 필드
+              <Select
+                aria-label={`${request.dataSourceId} URL 필드`}
+                onValueChange={(value) => updateMapping('urlPropertyId', value)}
+                options={options}
+                value={mapping.urlPropertyId}
+              />
+            </label>
+            <label>
+              제목 필드
+              <Select
+                aria-label={`${request.dataSourceId} 제목 필드`}
+                onValueChange={(value) =>
+                  updateMapping('titlePropertyId', value)
+                }
+                options={optionalOptions}
+                value={mapping.titlePropertyId ?? unusedField}
+              />
+            </label>
+            <label>
+              메모 필드
+              <Select
+                aria-label={`${request.dataSourceId} 메모 필드`}
+                onValueChange={(value) =>
+                  updateMapping('memoPropertyId', value)
+                }
+                options={optionalOptions}
+                value={mapping.memoPropertyId ?? unusedField}
+              />
+            </label>
+          </fieldset>
+        );
+      })}
+      <Button hierarchy="primary" type="submit">
+        계속
+      </Button>
+    </form>
   );
 }
 

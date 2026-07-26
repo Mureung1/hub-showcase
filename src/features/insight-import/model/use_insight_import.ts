@@ -69,6 +69,7 @@ export type InsightImportController = {
   history: ImportHistoryEntry[];
   historyErrorMessage: string | null;
   isHistoryLoading: boolean;
+  loadPrepared(prepared: PreparedImport): void;
   mappings: ImportCollectionMapping[];
   prepared: PreparedImport | null;
   refreshHistory(): Promise<void>;
@@ -535,6 +536,21 @@ export function useInsightImport({
     applyState(INITIAL_STATE);
   }, [applyState]);
 
+  const loadPrepared = useCallback(
+    (nextPrepared: PreparedImport) => {
+      operationRevisionRef.current += 1;
+      operationPendingRef.current = false;
+      pendingFileRef.current = undefined;
+      applyState({
+        errorMessage: null,
+        mappings: createDefaultMappings(nextPrepared),
+        prepared: nextPrepared,
+        stage: 'preview',
+      });
+    },
+    [applyState]
+  );
+
   const prepared =
     state.stage === 'preview' ||
     state.stage === 'committing' ||
@@ -573,6 +589,7 @@ export function useInsightImport({
     history,
     historyErrorMessage,
     isHistoryLoading,
+    loadPrepared,
     mappings,
     prepared,
     refreshHistory,

@@ -258,7 +258,7 @@ export function createNotionImportService(
       throw new NotionImportServiceError('not-found');
     }
 
-    return connection;
+    return { connection, status };
   };
 
   const exchangeRefreshToken = async (connection: EncryptedConnection) => {
@@ -348,7 +348,7 @@ export function createNotionImportService(
     connectionId: string,
     status: 'canceled' | 'completed'
   ): Promise<NotionFinishResult> => {
-    const connection = await getOwnedConnection(accessToken, connectionId);
+    const { connection } = await getOwnedConnection(accessToken, connectionId);
 
     if (connection.accessToken) {
       const token = cipher.decrypt(
@@ -368,8 +368,26 @@ export function createNotionImportService(
 
   return {
     async analyze(accessToken, connectionId, mappings) {
-      const connection = await getOwnedConnection(accessToken, connectionId);
+      const { connection, status } = await getOwnedConnection(
+        accessToken,
+        connectionId
+      );
       const cursor = await userStore.getCursor(accessToken, connection.jobId);
+
+      if (status.jobStatus === 'ready') {
+        const prepared = await userStore.finalize(
+          accessToken,
+          connection.jobId,
+          cursor
+        );
+        return {
+          candidateCount: 0,
+          prepared,
+          requestCount: 0,
+          status: 'ready',
+        };
+      }
+
       const slice = await runAuthorizedSlice(connection, cursor);
       const extracted = extractNotionCandidates({
         blocks: slice.blocks,

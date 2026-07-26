@@ -31,6 +31,7 @@ import type {
 } from '@/entities/insight';
 import type {
   InsightImportService,
+  NotionImportApi,
   PreparedImport,
 } from '@/features/insight-import';
 import {
@@ -112,6 +113,54 @@ afterEach(() => {
 });
 
 describe('AuthenticatedWorkspace', () => {
+  it('Notion callback query가 있으면 가져오기 창을 열고 연결 분석을 재개한다', async () => {
+    const connectionId = '10000000-0000-4000-8000-000000000099';
+    window.history.replaceState(
+      null,
+      '',
+      `/?import=notion&connection=${connectionId}`
+    );
+    const notionApi = {
+      analyze: vi.fn<NotionImportApi['analyze']>().mockResolvedValue({
+        candidateCount: 1,
+        prepared: { ...createPreparedImport(), id: connectionId },
+        requestCount: 1,
+        status: 'ready',
+      }),
+      cancel: vi.fn<NotionImportApi['cancel']>(),
+      complete: vi.fn<NotionImportApi['complete']>(),
+      start: vi.fn<NotionImportApi['start']>(),
+      status: vi.fn<NotionImportApi['status']>().mockResolvedValue({
+        connectionId,
+        includePageUrls: false,
+        jobId: connectionId,
+        jobStatus: 'analyzing',
+        status: 'connected',
+        workspaceName: '개인 문서',
+      }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          importService={createImportService()}
+          notionImportApi={notionApi}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      await screen.findByRole('dialog', { name: '보관함 가져오기' })
+    ).toBeTruthy();
+    expect(await screen.findByText('신규')).toBeTruthy();
+    expect(notionApi.status).toHaveBeenCalledWith(
+      connectionId,
+      expect.any(AbortSignal)
+    );
+    window.history.replaceState(null, '', '/');
+  });
+
   it('가져오기 완료 뒤 인사이트와 분류를 재조회해 보관함과 꺼내보기에 반영한다', async () => {
     const user = userEvent.setup();
     const importedCategory = createCategory({

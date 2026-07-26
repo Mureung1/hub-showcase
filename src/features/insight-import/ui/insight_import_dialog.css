@@ -14,6 +14,35 @@
   gap: var(--spacing-4);
 }
 
+.insight-import-dialog__notion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-card);
+  padding: var(--spacing-4);
+  background: var(--color-canvas);
+}
+
+.insight-import-dialog__notion p {
+  margin: 0;
+  color: var(--color-graphite);
+}
+
+.insight-import-dialog__notion-checkbox {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: var(--spacing-2);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.insight-import-dialog__notion-checkbox input {
+  width: 20px;
+  height: 20px;
+}
+
 .insight-import-dialog__field-mapping {
   display: flex;
   flex-direction: column;
