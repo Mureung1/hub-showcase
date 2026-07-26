@@ -15,3 +15,18 @@ export function getTransferInvitationByCode(idToken, invitationCode) {
   });
 }
 
+export function acceptTransferInvitation(
+  idToken,
+  invitationId,
+  relationship,
+) {
+  return apiRequest(
+    `/api/transfer-invitations/${invitationId}/accept`,
+    {
+      method: "POST",
+      idToken,
+      body: relationship,
+    },
+  );
+}
+

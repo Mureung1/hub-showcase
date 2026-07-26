@@ -54,6 +54,10 @@ function renderPage(initialPath) {
             element={<TransferInvitationPage />}
           />
           <Route path="/recipes" element={<div>레시피 목록</div>} />
+          <Route
+            path="/recipes/:recipeId"
+            element={<div>전달받은 레시피 상세</div>}
+          />
         </Routes>
       </MemoryRouter>
     </AuthContext.Provider>,
@@ -104,6 +108,144 @@ describe("TransferInvitationPage", () => {
 
     expect(await screen.findByText("레시피 목록")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("미리보기에서 관계 정보를 검증하고 중복 없이 저장한 뒤 상세로 이동한다", async () => {
+    let resolveAcceptRequest;
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ data: preview }))
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveAcceptRequest = resolve;
+          }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderPage("/transfer-invitations/link-token");
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "수락" }),
+    );
+
+    const senderInput = screen.getByLabelText("전해준 사람");
+    const relationshipInput = screen.getByLabelText("관계 라벨");
+    const memoInput = screen.getByLabelText("내 메모 (선택)");
+    const saveButton = screen.getByRole("button", { name: "저장" });
+    const form = saveButton.closest("form");
+
+    fireEvent.click(saveButton);
+
+    expect(screen.getByText("전해준 사람을 입력해 주세요.")).toBeInTheDocument();
+    expect(screen.getByText("관계 라벨을 입력해 주세요.")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(senderInput, { target: { value: "  엄마  " } });
+    fireEvent.change(relationshipInput, {
+      target: { value: "  어머니의 레시피  " },
+    });
+    fireEvent.change(memoInput, {
+      target: { value: "  생일마다 해주시던 음식  " },
+    });
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(
+      screen.getByRole("button", { name: "저장 중…" }),
+    ).toBeDisabled();
+
+    const [requestPath, requestOptions] = fetchMock.mock.calls[1];
+
+    expect(requestPath).toBe(
+      "/api/transfer-invitations/invitation-1/accept",
+    );
+    expect(requestOptions.method).toBe("POST");
+    expect(requestOptions.headers.get("Authorization")).toBe(
+      "Bearer firebase-token",
+    );
+    expect(requestOptions.body).toBe(
+      JSON.stringify({
+        senderDisplayName: "엄마",
+        relationshipLabel: "어머니의 레시피",
+        memo: "생일마다 해주시던 음식",
+      }),
+    );
+
+    resolveAcceptRequest(
+      jsonResponse({
+        data: { recipeId: "received-recipe-id", type: "RECEIVED" },
+      }),
+    );
+
+    expect(
+      await screen.findByText("전달받은 레시피 상세"),
+    ).toBeInTheDocument();
+  });
+
+  it("관계 입력을 취소하면 저장하지 않고 미리보기로 돌아간다", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ data: preview }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderPage("/transfer-invitations/link-token");
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "수락" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+
+    expect(
+      screen.getByRole("heading", { name: "엄마의 김치찌개" }),
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    [
+      "중복 수락",
+      "TRANSFER_INVITATION_USED",
+      "이미 사용된 전달 초대입니다.",
+    ],
+    [
+      "동일 사용자 수락",
+      "TRANSFER_INVITATION_SELF_ACCEPT_NOT_ALLOWED",
+      "자신이 만든 전달 초대는 수락할 수 없습니다.",
+    ],
+    [
+      "만료 초대 수락",
+      "TRANSFER_INVITATION_EXPIRED",
+      "만료된 전달 초대입니다.",
+    ],
+  ])("%s 오류 후 관계 입력을 유지한다", async (_, code, message) => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ data: preview }))
+      .mockResolvedValueOnce(
+        jsonResponse({ error: { code, message } }, 409),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderPage("/transfer-invitations/link-token");
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "수락" }),
+    );
+    fireEvent.change(screen.getByLabelText("전해준 사람"), {
+      target: { value: "엄마" },
+    });
+    fireEvent.change(screen.getByLabelText("관계 라벨"), {
+      target: { value: "어머니의 레시피" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    expect(screen.getByLabelText("전해준 사람")).toHaveValue("엄마");
+    expect(screen.getByLabelText("관계 라벨")).toHaveValue(
+      "어머니의 레시피",
+    );
   });
 
   it("코드 입력 검증, 중복 제출 방지, 오류 후 입력 유지와 재시도를 한 흐름으로 처리한다", async () => {

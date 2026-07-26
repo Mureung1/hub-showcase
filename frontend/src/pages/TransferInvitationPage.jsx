@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useAuth } from "../auth/authContext";
 import {
+  acceptTransferInvitation,
   getTransferInvitationByCode,
   getTransferInvitationByLink,
 } from "../api/transferInvitationApi";
@@ -10,6 +11,14 @@ const ERROR_MESSAGES = {
   TRANSFER_INVITATION_NOT_FOUND: "유효하지 않은 초대 코드입니다.",
   TRANSFER_INVITATION_USED: "이미 사용된 전달 초대입니다.",
   TRANSFER_INVITATION_EXPIRED: "만료된 전달 초대입니다.",
+  TRANSFER_INVITATION_SELF_ACCEPT_NOT_ALLOWED:
+    "자신이 만든 전달 초대는 수락할 수 없습니다.",
+  VALIDATION_ERROR: "입력값을 확인해 주세요.",
+};
+
+const ACCEPT_ERROR_MESSAGES = {
+  ...ERROR_MESSAGES,
+  TRANSFER_INVITATION_NOT_FOUND: "유효하지 않은 전달 초대입니다.",
 };
 
 function getErrorMessage(error, isLinkInvitation) {
@@ -26,7 +35,7 @@ function getErrorMessage(error, isLinkInvitation) {
   );
 }
 
-function RecipePreview({ preview, onReject }) {
+function RecipePreview({ preview, onAccept, onReject }) {
   const { recipe } = preview;
 
   return (
@@ -145,9 +154,8 @@ function RecipePreview({ preview, onReject }) {
       <div className="mt-6 flex gap-3">
         <button
           type="button"
-          disabled
-          aria-describedby="transfer-accept-help"
-          className="min-h-12 flex-1 rounded-lg border border-[#b9ad97] bg-[#e4ddd0] px-4 font-semibold text-[#777469]"
+          onClick={onAccept}
+          className="min-h-12 flex-1 rounded-lg border border-[#31523d] bg-[#15332a] px-4 font-semibold text-[#f3e1b4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b6e35]"
         >
           수락
         </button>
@@ -159,10 +167,131 @@ function RecipePreview({ preview, onReject }) {
           거절
         </button>
       </div>
-      <p id="transfer-accept-help" className="mt-2 text-center text-xs text-[#777469]">
-        수락과 관계 입력은 다음 단계에서 제공됩니다.
-      </p>
     </div>
+  );
+}
+
+function RelationshipForm({
+  senderDisplayName,
+  relationshipLabel,
+  memo,
+  fieldErrors,
+  errorMessage,
+  isSaving,
+  onSenderDisplayNameChange,
+  onRelationshipLabelChange,
+  onMemoChange,
+  onCancel,
+  onSubmit,
+}) {
+  return (
+    <form noValidate aria-busy={isSaving} onSubmit={onSubmit}>
+      <header className="border-b border-[#d8cfbd] pb-4">
+        <p className="text-xs font-semibold tracking-[0.08em] text-[#8b6e35]">
+          전달받은 기억
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold text-[#272923]">
+          누구에게 받은 레시피인가요?
+        </h1>
+        <p className="mt-3 text-sm leading-6 text-[#626157]">
+          나중에 기억하기 쉽도록 전해준 사람과 관계를 남겨 주세요.
+        </p>
+      </header>
+
+      <label
+        htmlFor="sender-display-name"
+        className="mt-5 block text-sm font-semibold text-[#272923]"
+      >
+        전해준 사람
+      </label>
+      <input
+        id="sender-display-name"
+        value={senderDisplayName}
+        disabled={isSaving}
+        aria-invalid={Boolean(fieldErrors.senderDisplayName)}
+        aria-describedby={
+          fieldErrors.senderDisplayName ? "sender-display-name-error" : undefined
+        }
+        onChange={(event) => onSenderDisplayNameChange(event.target.value)}
+        className="mt-2 min-h-12 w-full rounded-lg border border-[#8d806b] bg-white px-3.5 text-base text-[#272923] outline-none focus-visible:border-[#31523d] focus-visible:ring-2 focus-visible:ring-[#aa8c4b]"
+      />
+      {fieldErrors.senderDisplayName ? (
+        <p
+          id="sender-display-name-error"
+          className="mt-2 text-sm font-semibold text-[#8a3f2b]"
+        >
+          {fieldErrors.senderDisplayName}
+        </p>
+      ) : null}
+
+      <label
+        htmlFor="relationship-label"
+        className="mt-5 block text-sm font-semibold text-[#272923]"
+      >
+        관계 라벨
+      </label>
+      <input
+        id="relationship-label"
+        value={relationshipLabel}
+        disabled={isSaving}
+        aria-invalid={Boolean(fieldErrors.relationshipLabel)}
+        aria-describedby={
+          fieldErrors.relationshipLabel ? "relationship-label-error" : undefined
+        }
+        onChange={(event) => onRelationshipLabelChange(event.target.value)}
+        className="mt-2 min-h-12 w-full rounded-lg border border-[#8d806b] bg-white px-3.5 text-base text-[#272923] outline-none focus-visible:border-[#31523d] focus-visible:ring-2 focus-visible:ring-[#aa8c4b]"
+      />
+      {fieldErrors.relationshipLabel ? (
+        <p
+          id="relationship-label-error"
+          className="mt-2 text-sm font-semibold text-[#8a3f2b]"
+        >
+          {fieldErrors.relationshipLabel}
+        </p>
+      ) : null}
+
+      <label
+        htmlFor="transfer-memo"
+        className="mt-5 block text-sm font-semibold text-[#272923]"
+      >
+        내 메모 (선택)
+      </label>
+      <textarea
+        id="transfer-memo"
+        value={memo}
+        disabled={isSaving}
+        rows={3}
+        onChange={(event) => onMemoChange(event.target.value)}
+        className="mt-2 w-full rounded-lg border border-[#8d806b] bg-white px-3.5 py-3 text-base text-[#272923] outline-none focus-visible:border-[#31523d] focus-visible:ring-2 focus-visible:ring-[#aa8c4b]"
+      />
+
+      {errorMessage ? (
+        <p
+          role="alert"
+          className="mt-4 rounded-lg border border-[#c98c76] bg-[#fff4ef] px-4 py-3 text-sm font-semibold text-[#8a3f2b]"
+        >
+          {errorMessage}
+        </p>
+      ) : null}
+
+      <div className="mt-6 flex gap-3">
+        <button
+          type="button"
+          disabled={isSaving}
+          onClick={onCancel}
+          className="min-h-12 flex-1 rounded-lg border border-[#8d806b] bg-[#f8f5eb] px-4 font-semibold text-[#34362f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b6e35] disabled:opacity-70"
+        >
+          취소
+        </button>
+        <button
+          type="submit"
+          disabled={isSaving}
+          className="min-h-12 flex-1 rounded-lg border border-[#061c16] bg-[#15332a] px-4 font-semibold text-[#f3e1b4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b6e35] disabled:cursor-wait disabled:opacity-70"
+        >
+          {isSaving ? "저장 중…" : "저장"}
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -175,7 +304,14 @@ function TransferInvitationPage({ isDialog = false }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(Boolean(linkToken));
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [senderDisplayName, setSenderDisplayName] = useState("");
+  const [relationshipLabel, setRelationshipLabel] = useState("");
+  const [memo, setMemo] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
   const isSubmittingRef = useRef(false);
+  const isSavingRef = useRef(false);
 
   useEffect(() => {
     if (!linkToken) {
@@ -243,6 +379,76 @@ function TransferInvitationPage({ isDialog = false }) {
     }
   }
 
+  function handleStartAccept() {
+    setErrorMessage("");
+    setFieldErrors({});
+    setIsAccepting(true);
+  }
+
+  function handleCancelAccept() {
+    setErrorMessage("");
+    setFieldErrors({});
+    setIsAccepting(false);
+  }
+
+  async function handleAccept(event) {
+    event.preventDefault();
+
+    if (isSavingRef.current) {
+      return;
+    }
+
+    const normalizedSenderDisplayName = senderDisplayName.trim();
+    const normalizedRelationshipLabel = relationshipLabel.trim();
+    const nextFieldErrors = {};
+
+    if (!normalizedSenderDisplayName) {
+      nextFieldErrors.senderDisplayName =
+        "전해준 사람을 입력해 주세요.";
+    }
+
+    if (!normalizedRelationshipLabel) {
+      nextFieldErrors.relationshipLabel =
+        "관계 라벨을 입력해 주세요.";
+    }
+
+    setFieldErrors(nextFieldErrors);
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      return;
+    }
+
+    isSavingRef.current = true;
+    setIsSaving(true);
+    setErrorMessage("");
+
+    try {
+      const idToken = await user.getIdToken();
+      const result = await acceptTransferInvitation(
+        idToken,
+        preview.invitationId,
+        {
+          senderDisplayName: normalizedSenderDisplayName,
+          relationshipLabel: normalizedRelationshipLabel,
+          memo: memo.trim() || null,
+        },
+      );
+
+      navigate(`/recipes/${result.recipeId}`, {
+        replace: true,
+        state: { receivedRecipeSaved: true },
+      });
+    } catch (error) {
+      setErrorMessage(
+        ACCEPT_ERROR_MESSAGES[error?.code] ??
+          "레시피를 저장하지 못했습니다. 다시 시도해 주세요.",
+      );
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
+    }
+  }
+
   let content;
 
   if (isLoading) {
@@ -253,10 +459,27 @@ function TransferInvitationPage({ isDialog = false }) {
         </p>
       </div>
     );
+  } else if (preview && isAccepting) {
+    content = (
+      <RelationshipForm
+        senderDisplayName={senderDisplayName}
+        relationshipLabel={relationshipLabel}
+        memo={memo}
+        fieldErrors={fieldErrors}
+        errorMessage={errorMessage}
+        isSaving={isSaving}
+        onSenderDisplayNameChange={setSenderDisplayName}
+        onRelationshipLabelChange={setRelationshipLabel}
+        onMemoChange={setMemo}
+        onCancel={handleCancelAccept}
+        onSubmit={handleAccept}
+      />
+    );
   } else if (preview) {
     content = (
       <RecipePreview
         preview={preview}
+        onAccept={handleStartAccept}
         onReject={() => navigate("/recipes")}
       />
     );

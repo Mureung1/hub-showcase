@@ -408,6 +408,47 @@ function RecipeListPlaceholderPage() {
                     </div>
                   </header>
 
+                  {location.state?.receivedRecipeSaved ? (
+                    <p
+                      role="status"
+                      className="mt-5 rounded-lg border border-[#9eaa82] bg-[#eef1df] px-4 py-3 text-sm font-semibold text-[#31523d]"
+                    >
+                      전달받은 레시피를 저장했습니다.
+                    </p>
+                  ) : null}
+
+                  {recipeDetail.receivedInfo ? (
+                    <section
+                      className="mt-6 rounded-lg border border-[#c9bea7] bg-[#f1ecdf] p-4"
+                      aria-labelledby="received-memory-heading"
+                    >
+                      <h3
+                        id="received-memory-heading"
+                        className="text-lg font-semibold"
+                      >
+                        전달받은 기억
+                      </h3>
+                      <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
+                        <dt className="text-[#777469]">원 저장자</dt>
+                        <dd>{recipeDetail.receivedInfo.originalOwner.name}</dd>
+                        <dt className="text-[#777469]">전해준 사람</dt>
+                        <dd>{recipeDetail.receivedInfo.senderDisplayName}</dd>
+                        <dt className="text-[#777469]">관계</dt>
+                        <dd>{recipeDetail.receivedInfo.relationshipLabel}</dd>
+                      </dl>
+                      {recipeDetail.memo ? (
+                        <p className="mt-4 border-t border-[#d8cfbd] pt-3 text-sm leading-6 text-[#626157]">
+                          {recipeDetail.memo}
+                        </p>
+                      ) : null}
+                      {!recipeDetail.receivedInfo.canReshare ? (
+                        <p className="mt-3 text-xs text-[#777469]">
+                          전달받은 레시피는 다시 공유할 수 없습니다.
+                        </p>
+                      ) : null}
+                    </section>
+                  ) : null}
+
                   <section
                     className="mt-6"
                     aria-labelledby="recipe-ingredients-heading"

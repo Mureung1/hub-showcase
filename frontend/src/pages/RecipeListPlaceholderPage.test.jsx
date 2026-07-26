@@ -195,6 +195,104 @@ describe("RecipeListPlaceholderPage", () => {
     );
   });
 
+  it("전달받은 레시피 상세에 관계와 기억 정보를 표시한다", async () => {
+    const receivedInfo = {
+      originalOwner: {
+        name: "김민지",
+        profileImageUrl: null,
+      },
+      senderDisplayName: "엄마",
+      relationshipLabel: "어머니의 레시피",
+      receivedAt: "2026-07-26T12:30:00.000Z",
+      canReshare: false,
+    };
+    const recipeSummary = {
+      id: "received-recipe-id",
+      type: "RECEIVED",
+      title: "엄마의 김치찌개",
+      description: null,
+      source: null,
+      receivedInfo,
+      createdAt: "2026-07-26T12:30:00.000Z",
+    };
+    const recipeDetail = {
+      ...recipeSummary,
+      ownerId: "user-id",
+      servings: "2인분",
+      cookingTimeMinutes: 30,
+      ingredients: [],
+      steps: [],
+      memo: "생일마다 해주시던 음식",
+      updatedAt: "2026-07-26T12:30:00.000Z",
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((path) =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data:
+                path === "/api/recipes/received-recipe-id"
+                  ? recipeDetail
+                  : [recipeSummary],
+            }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            },
+          ),
+        ),
+      ),
+    );
+    const user = {
+      displayName: "요리사",
+      getIdToken: vi.fn().mockResolvedValue("firebase-token"),
+    };
+
+    render(
+      <AuthContext.Provider value={{ user }}>
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: "/recipes/received-recipe-id",
+              state: { receivedRecipeSaved: true },
+            },
+          ]}
+        >
+          <Routes>
+            <Route
+              path="/recipes/:recipeId"
+              element={<RecipeListPlaceholderPage />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </AuthContext.Provider>,
+    );
+
+    const detailRegion = await screen.findByRole("region", {
+      name: "레시피 상세",
+    });
+    const memoryRegion = within(detailRegion).getByRole("region", {
+      name: "전달받은 기억",
+    });
+
+    expect(within(memoryRegion).getByText("김민지")).toBeInTheDocument();
+    expect(within(memoryRegion).getByText("엄마")).toBeInTheDocument();
+    expect(
+      within(memoryRegion).getByText("어머니의 레시피"),
+    ).toBeInTheDocument();
+    expect(
+      within(memoryRegion).getByText("생일마다 해주시던 음식"),
+    ).toBeInTheDocument();
+    expect(
+      within(memoryRegion).getByText(/다시 공유할 수 없습니다/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "전달받은 레시피를 저장했습니다.",
+    );
+  });
+
   it("상세 응답을 기다리는 동안 로딩 상태를 알린다", async () => {
     vi.stubGlobal(
       "fetch",
