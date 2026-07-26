@@ -163,6 +163,57 @@ test("출처가 없는 레시피는 source를 null로 반환한다", async () =>
   assert.deepEqual(result.steps, []);
 });
 
+test("RECEIVED 상세에 소유자용 관계 정보와 재공유 불가를 반환한다", async () => {
+  const receivedAt = new Date("2026-07-26T05:00:00.000Z");
+  const database = createPoolMock([
+    [
+      {
+        id: recipeId,
+        owner_id: "recipient-id",
+        type: "RECEIVED",
+        title: "Family recipe",
+        description: null,
+        servings: null,
+        cooking_time_minutes: null,
+        memo: "My private memo",
+        source_url: null,
+        source_title: null,
+        source_author: null,
+        original_owner_name: "엄마",
+        original_owner_profile_image_url: null,
+        sender_display_name: "엄마",
+        relationship_label: "엄마의 레시피",
+        received_at: receivedAt,
+        created_at: new Date("2026-07-26T05:00:00.000Z"),
+        updated_at: new Date("2026-07-26T05:00:00.000Z"),
+      },
+    ],
+    [],
+    [],
+  ]);
+
+  const result = await getRecipeDetail(
+    database.pool,
+    firebaseUid,
+    recipeId,
+  );
+
+  assert.deepEqual(result.receivedInfo, {
+    originalOwner: {
+      name: "엄마",
+      profileImageUrl: null,
+    },
+    senderDisplayName: "엄마",
+    relationshipLabel: "엄마의 레시피",
+    receivedAt: receivedAt.toISOString(),
+    canReshare: false,
+  });
+  assert.match(
+    database.queries[0]?.sql ?? "",
+    /LEFT JOIN received_recipe_details/,
+  );
+});
+
 for (const inaccessibleCase of [
   "존재하지 않는 레시피",
   "다른 사용자 레시피",

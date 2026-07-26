@@ -4,6 +4,7 @@ import test from "node:test";
 import type { Pool, PoolClient, QueryResult } from "pg";
 
 import {
+  acceptTransferInvitation,
   createTransferInvitation,
   getTransferInvitationByCode,
   getTransferInvitationByLink,
@@ -137,6 +138,110 @@ function createPreviewPool(
 
   return { pool, queries };
 }
+
+function createAcceptancePool(
+  state: "ACTIVE" | "USED" | "EXPIRED" | "NOT_FOUND" | "SELF",
+  failOnSql?: string,
+) {
+  const queries: RecordedQuery[] = [];
+  let connectCount = 0;
+  let releaseCount = 0;
+  const now = Date.now();
+
+  const client = {
+    async query(sql: string, values: readonly unknown[] = []) {
+      const normalizedSql = sql.replace(/\s+/g, " ").trim();
+      queries.push({ sql: normalizedSql, values });
+
+      if (failOnSql && normalizedSql.includes(failOnSql)) {
+        throw new Error("database failure");
+      }
+
+      if (normalizedSql.includes("FROM transfer_invitations")) {
+        return {
+          rows:
+            state === "NOT_FOUND"
+              ? []
+              : [
+                  {
+                    id: "11111111-1111-4111-8111-111111111111",
+                    source_recipe_id:
+                      "22222222-2222-4222-8222-222222222222",
+                    original_owner_id:
+                      state === "SELF" ? "recipient-id" : "original-owner-id",
+                    snapshot: {
+                      recipe: {
+                        title: "김치찌개",
+                        description: "돼지고기를 넣은 김치찌개",
+                        servings: "2인분",
+                        cookingTimeMinutes: 30,
+                        ingredients: [
+                          {
+                            name: "김치",
+                            amount: "200",
+                            unit: "g",
+                            order: 1,
+                          },
+                        ],
+                        steps: [{ order: 1, description: "끓인다." }],
+                        source: {
+                          url: "https://example.com/kimchi",
+                          title: "김치찌개",
+                          author: "엄마",
+                        },
+                      },
+                      originalOwner: {
+                        name: "엄마",
+                        profileImageUrl: null,
+                      },
+                    },
+                    expires_at: new Date(
+                      state === "EXPIRED" ? now - 1_000 : now + 60_000,
+                    ),
+                    used_at: state === "USED" ? new Date(now) : null,
+                  },
+                ],
+        } as QueryResult<never>;
+      }
+
+      if (normalizedSql.includes("INSERT INTO users")) {
+        return {
+          rows: [{ id: "recipient-id" }],
+        } as QueryResult<never>;
+      }
+
+      return { rows: [], rowCount: 1 } as unknown as QueryResult<never>;
+    },
+    release() {
+      releaseCount += 1;
+    },
+  } as unknown as PoolClient;
+
+  const pool = {
+    async connect() {
+      connectCount += 1;
+      return client;
+    },
+  } as unknown as Pick<Pool, "connect">;
+
+  return {
+    pool,
+    queries,
+    get connectCount() {
+      return connectCount;
+    },
+    get releaseCount() {
+      return releaseCount;
+    },
+  };
+}
+
+const recipient = {
+  uid: "recipient-firebase-uid",
+  email: "recipient@example.com",
+  name: "받는 사람",
+  picture: "https://example.com/recipient.jpg",
+};
 
 test("OWNED 레시피 스냅샷과 원문 없는 해시를 저장하고 7일 초대를 반환한다", async () => {
   const database = createCreationPool("OWNED");
@@ -364,4 +469,223 @@ test("빈 코드를 연결 전에 거부하고 코드 해시 비밀값을 검증
       process.env.TRANSFER_INVITATION_CODE_SECRET = originalSecret;
     }
   }
+});
+
+test("초대를 잠그고 RECEIVED 레시피·관계 정보·사용 완료를 함께 커밋한다", async () => {
+  const database = createAcceptancePool("ACTIVE");
+
+  const result = await acceptTransferInvitation(
+    database.pool,
+    recipient,
+    "11111111-1111-4111-8111-111111111111",
+    {
+      senderDisplayName: "  엄마  ",
+      relationshipLabel: "  엄마의 레시피  ",
+      memo: "  주말에 만들어 보기  ",
+    },
+  );
+
+  assert.match(result.recipeId, /^[0-9a-f-]{36}$/);
+  assert.equal(result.type, "RECEIVED");
+  assert.equal(database.connectCount, 1);
+  assert.equal(database.releaseCount, 1);
+  assert.equal(database.queries[0]?.sql, "BEGIN");
+  assert.equal(database.queries.at(-1)?.sql, "COMMIT");
+
+  const invitationQuery = database.queries.find(({ sql }) =>
+    sql.includes("FROM transfer_invitations"),
+  );
+  assert.match(
+    invitationQuery?.sql ?? "",
+    /FOR UPDATE OF transfer_invitations/,
+  );
+
+  const recipeQuery = database.queries.find(({ sql }) =>
+    sql.includes("INSERT INTO recipes"),
+  );
+  assert.deepEqual(recipeQuery?.values.slice(1), [
+    "recipient-id",
+    "RECEIVED",
+    "김치찌개",
+    "돼지고기를 넣은 김치찌개",
+    "2인분",
+    30,
+    "주말에 만들어 보기",
+  ]);
+
+  const ingredientQuery = database.queries.find(({ sql }) =>
+    sql.includes("INSERT INTO ingredients"),
+  );
+  const stepQuery = database.queries.find(({ sql }) =>
+    sql.includes("INSERT INTO recipe_steps"),
+  );
+  const sourceQuery = database.queries.find(({ sql }) =>
+    sql.includes("INSERT INTO recipe_sources"),
+  );
+  assert.deepEqual(ingredientQuery?.values.slice(1), [
+    1,
+    "김치",
+    "200",
+    "g",
+  ]);
+  assert.deepEqual(stepQuery?.values.slice(1), [1, "끓인다."]);
+  assert.deepEqual(sourceQuery?.values.slice(1), [
+    "https://example.com/kimchi",
+    "김치찌개",
+    "엄마",
+  ]);
+
+  const detailQuery = database.queries.find(({ sql }) =>
+    sql.includes("INSERT INTO received_recipe_details"),
+  );
+  assert.deepEqual(detailQuery?.values, [
+    result.recipeId,
+    "11111111-1111-4111-8111-111111111111",
+    "original-owner-id",
+    "엄마",
+    null,
+    "엄마",
+    "엄마의 레시피",
+  ]);
+  assert.match(
+    database.queries.find(({ sql }) =>
+      sql.includes("UPDATE transfer_invitations"),
+    )?.sql ?? "",
+    /used_at = CURRENT_TIMESTAMP/,
+  );
+});
+
+test("잘못된 수락 입력과 ID를 연결 전에 거부하고 공백 메모를 null로 정규화한다", async () => {
+  for (const [invitationId, request] of [
+    [
+      "not-an-id",
+      {
+        senderDisplayName: "엄마",
+        relationshipLabel: "가족",
+        memo: null,
+      },
+    ],
+    [
+      "11111111-1111-4111-8111-111111111111",
+      {
+        senderDisplayName: " ",
+        relationshipLabel: "가족",
+        memo: null,
+      },
+    ],
+    [
+      "11111111-1111-4111-8111-111111111111",
+      {
+        senderDisplayName: "엄마",
+        relationshipLabel: " ",
+        memo: null,
+      },
+    ],
+    [
+      "11111111-1111-4111-8111-111111111111",
+      {
+        senderDisplayName: "엄마",
+        relationshipLabel: "가족",
+        memo: null,
+        forged: true,
+      },
+    ],
+  ] as const) {
+    const database = createAcceptancePool("ACTIVE");
+
+    await assert.rejects(
+      () =>
+        acceptTransferInvitation(
+          database.pool,
+          recipient,
+          invitationId,
+          request,
+        ),
+      (error) =>
+        error instanceof TransferInvitationError &&
+        (error.code === "VALIDATION_ERROR" ||
+          error.code === "TRANSFER_INVITATION_NOT_FOUND"),
+    );
+    assert.equal(database.connectCount, 0);
+  }
+
+  const database = createAcceptancePool("ACTIVE");
+  const result = await acceptTransferInvitation(
+    database.pool,
+    recipient,
+    "11111111-1111-4111-8111-111111111111",
+    {
+      senderDisplayName: "엄마",
+      relationshipLabel: "가족",
+      memo: "   ",
+    },
+  );
+  const recipeQuery = database.queries.find(({ sql }) =>
+    sql.includes("INSERT INTO recipes"),
+  );
+  assert.equal(recipeQuery?.values[7], null);
+  assert.equal(result.type, "RECEIVED");
+});
+
+test("없는·사용·만료·자기 초대를 저장 없이 롤백한다", async () => {
+  for (const [state, expectedCode] of [
+    ["NOT_FOUND", "TRANSFER_INVITATION_NOT_FOUND"],
+    ["USED", "TRANSFER_INVITATION_USED"],
+    ["EXPIRED", "TRANSFER_INVITATION_EXPIRED"],
+    ["SELF", "TRANSFER_INVITATION_SELF_ACCEPT_NOT_ALLOWED"],
+  ] as const) {
+    const database = createAcceptancePool(state);
+
+    await assert.rejects(
+      () =>
+        acceptTransferInvitation(
+          database.pool,
+          recipient,
+          "11111111-1111-4111-8111-111111111111",
+          {
+            senderDisplayName: "엄마",
+            relationshipLabel: "가족",
+            memo: null,
+          },
+        ),
+      (error) =>
+        error instanceof TransferInvitationError &&
+        error.code === expectedCode,
+    );
+    assert.equal(database.queries.at(-1)?.sql, "ROLLBACK");
+    assert.equal(
+      database.queries.some(({ sql }) => sql.includes("INSERT INTO recipes")),
+      false,
+    );
+    assert.equal(database.releaseCount, 1);
+  }
+});
+
+test("수락 저장 중 실패하면 초대와 레시피 변경을 함께 롤백한다", async () => {
+  const database = createAcceptancePool(
+    "ACTIVE",
+    "INSERT INTO received_recipe_details",
+  );
+
+  await assert.rejects(
+    () =>
+      acceptTransferInvitation(
+        database.pool,
+        recipient,
+        "11111111-1111-4111-8111-111111111111",
+        {
+          senderDisplayName: "엄마",
+          relationshipLabel: "가족",
+          memo: null,
+        },
+      ),
+    /database failure/,
+  );
+
+  assert.equal(database.queries.at(-1)?.sql, "ROLLBACK");
+  assert.equal(
+    database.queries.some(({ sql }) => sql === "COMMIT"),
+    false,
+  );
+  assert.equal(database.releaseCount, 1);
 });

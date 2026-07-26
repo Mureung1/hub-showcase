@@ -3,6 +3,7 @@ import { Router, type Request, type Response } from "express";
 import { databasePool } from "../database.js";
 import { requireFirebaseAuth } from "../middlewares/requireFirebaseAuth.js";
 import {
+  acceptTransferInvitation,
   createTransferInvitation,
   getTransferInvitationByCode,
   getTransferInvitationByLink,
@@ -40,6 +41,10 @@ const ERROR_RESPONSES: Record<
   TRANSFER_INVITATION_EXPIRED: {
     status: 410,
     message: "만료된 전달 초대입니다.",
+  },
+  TRANSFER_INVITATION_SELF_ACCEPT_NOT_ALLOWED: {
+    status: 403,
+    message: "자신이 만든 전달 초대는 수락할 수 없습니다.",
   },
 };
 
@@ -160,6 +165,44 @@ router.post(
       );
 
       res.status(200).json({ data: preview });
+    } catch (error) {
+      if (!sendTransferInvitationError(res, error)) {
+        throw error;
+      }
+    }
+  },
+);
+
+router.post(
+  "/transfer-invitations/:invitationId/accept",
+  requireFirebaseAuth,
+  async (req: Request, res: Response) => {
+    const firebaseUser = req.firebaseUser;
+
+    if (!firebaseUser) {
+      res.status(401).json({
+        error: {
+          code: "UNAUTHORIZED",
+          message: "로그인이 필요합니다.",
+        },
+      });
+      return;
+    }
+
+    const invitationId =
+      typeof req.params.invitationId === "string"
+        ? req.params.invitationId
+        : "";
+
+    try {
+      const recipe = await acceptTransferInvitation(
+        databasePool,
+        firebaseUser,
+        invitationId,
+        req.body,
+      );
+
+      res.status(201).json({ data: recipe });
     } catch (error) {
       if (!sendTransferInvitationError(res, error)) {
         throw error;

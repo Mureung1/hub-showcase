@@ -854,6 +854,9 @@ POST   /api/recipes/:recipeId/restore
 5. `GET /api/recipes/:recipeId`
 6. `POST /api/ai/recipes/structure`
 7. `POST /api/recipes`
-8. `PATCH /api/recipes/:recipeId/memo`
+8. `POST /api/recipes/:recipeId/transfer-invitations`
+9. `GET /api/transfer-invitations/by-link/:linkToken`
+10. `POST /api/transfer-invitations/by-code`
+11. `POST /api/transfer-invitations/:invitationId/accept`
 
-삭제·복원과 공유 API는 계약을 확정했지만 핵심 흐름 완료 후 구현한다. 조리 팁은 후속 범위로 유지한다.
+열람 공유, 삭제·복원과 개인 메모 API는 계약을 확정했지만 후속 범위로 유지한다. 조리 팁도 후속 범위다.
