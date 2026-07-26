@@ -78,6 +78,13 @@ GIT_OPTIONAL_LOCKS=0 git status --short --branch
 GIT_OPTIONAL_LOCKS=0 git diff --stat
 ```
 
+PowerShell은 `VAR=value command` 표기를 지원하지 않는다. 세션마다 한 번 환경변수를 설정하고 명령을 실행한다.
+
+```powershell
+$env:GIT_OPTIONAL_LOCKS = "0"
+git status --short --branch
+```
+
 - 저장소 상태를 바꾸는 명령은 사용자가 직접 실행한다.
 - Git 명령 출력에 경고가 있으면 그대로 진행하지 않고 사용자에게 알린다. `unable to unlink` 경고는 락이 남았다는 뜻이며, 사용자가 `Remove-Item .git\index.lock`으로 제거한다.
 
