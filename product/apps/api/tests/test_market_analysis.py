@@ -196,6 +196,20 @@ def test_market_analysis_returns_raw_values_score_and_sources(tmp_path: Path) ->
     assert closure_rank.direction == "descending"
 
 
+def test_market_analysis_preserves_a_missing_time_bucket_as_null(tmp_path: Path) -> None:
+    database = tmp_path / "market.db"
+    build_market_database(database)
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "UPDATE flow_metrics SET flow_14_17 = NULL WHERE market_code = 'm2'"
+        )
+
+    result = analyze_market("m2", "카페", database=database)
+
+    assert result.raw.flow_by_time[3] is None
+    assert result.raw.flow_time_buckets[3].value is None
+
+
 def test_market_analysis_endpoint_reads_the_runtime_database(tmp_path: Path) -> None:
     canonical_database = tmp_path / "canonical.db"
     build_market_database(canonical_database)

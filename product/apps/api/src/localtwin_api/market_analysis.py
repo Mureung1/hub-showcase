@@ -63,7 +63,7 @@ class MarketRawSummary(BaseModel):
     monthly_sales_amount: float | None
     monthly_sales_count: float | None
     total_flow: float | None
-    flow_by_time: list[float]
+    flow_by_time: list[float | None]
     flow_time_buckets: list[FlowTimeBucket]
     area_sqm: float | None
 
@@ -452,7 +452,7 @@ def _raw_summary(
         monthly_sales_amount=float(target["monthly_sales_amount"] or 0) or None,
         monthly_sales_count=float(target["monthly_sales_count"] or 0) or None,
         total_flow=values["foot_traffic"] or None,
-        flow_by_time=[bucket.value or 0 for bucket in flow_time_buckets],
+        flow_by_time=[bucket.value for bucket in flow_time_buckets],
         flow_time_buckets=flow_time_buckets,
         area_sqm=values["area_sqm"] or None,
     )
