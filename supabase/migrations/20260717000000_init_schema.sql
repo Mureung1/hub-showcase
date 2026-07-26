@@ -1,4 +1,4 @@
--- Briefly 데이터 모델 초기 스키마
+-- Articles 데이터 모델 초기 스키마
 -- 대상 엔티티: articles, vocabulary, decisions, article_reads
 -- 사용자는 Supabase Auth(auth.users)를 사용한다.
 

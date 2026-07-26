@@ -135,11 +135,13 @@ Primary 지표(완독 수) = `count(*)`. Secondary 지표(판단수행률) =
   의도대로 동작하는지(잘못된 `decision` 값 insert 시 거부되는지 등) 수동
   확인
 
-## 스코프 밖
+## 스코프 밖 (설계 당시 기준, 이후 완료됨)
 
-- 서버 코드(`decisionStore.js`/`vocabularyStore.js`)를 Supabase 클라이언트
-  호출로 바꾸는 백엔드 전환
-- Supabase 프로젝트 생성/CLI 연결
-- `server/.env`에 `SUPABASE_URL`/`SUPABASE_ANON_KEY`(또는 서비스 키) 추가
+이 문서 작성 시점(2026-07-17)에는 아래 항목을 스코프 밖으로 두고 별도
+backlog Task로 미뤘으나, 모두 완료됐다(`docs/backlog.md` 참고).
 
-→ 이후 별도 backlog Task로 진행한다.
+- 서버 코드를 Supabase 클라이언트 호출로 바꾸는 백엔드 전환 —
+  `vocabularyStore.js`는 2026-07-17, `decisionStore.js`는 2026-07-21
+  전환 완료(GitHub #12)
+- Supabase 프로젝트 생성/CLI 연결 — 완료
+- `server/.env`에 `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` 추가 — 완료

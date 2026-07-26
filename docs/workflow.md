@@ -97,7 +97,7 @@ React+Express 개발 환경, CLAUDE.md 작성). 코드보다 기획 문서가 �
 - **역할**: 구현이 문서화된 요구사항(API 스펙/기획서/데이터 모델)을 실제로
   만족하는지 코드와 실행 중인 서버를 근거로 검증한다. 우선순위는
   `api-spec.md` > `plan.md` > `data-model.md`/마이그레이션 >
-  CLAUDE.md "구현 유의사항" 순. `checklist.md`/`backlog.md`의 체크박스
+  CLAUDE.md "구현 유의사항" 순. `backlog.md`의 체크박스
   상태는 신뢰하지 않고, 항상 파일경로:줄번호로 근거를 남긴다. `npm run dev`는
   직접 실행하지 않는다(에이전트가 멈춰버림) — 대신 curl로 이미 떠 있는
   로컬 서버(`localhost:4000`/`5173`)를 찔러 확인하는 패턴을

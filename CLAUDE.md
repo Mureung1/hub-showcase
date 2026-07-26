@@ -14,10 +14,10 @@
 > 분리, 바텀시트 추가, "마이페이지"→"인사이트 노트" 개명. `client/`,
 > `server/`는 재구성 완료.
 
-상세 문서: 기획/시나리오 `docs/plan.md`, API 스펙 `docs/api-spec.md`, 체크리스트
-`docs/checklist.md`, 로드맵 `docs/backlog.md`, 디자인 시스템(확정본)
-`.claude/skills/design/SKILL.md`. `stitch-reference/`는 첫 피벗 이전 원본이라
-SKILL.md가 우선.
+상세 문서: 기획/시나리오 `docs/plan.md`, API 스펙 `docs/api-spec.md`, 로드맵
+`docs/backlog.md`, 디자인 시스템(확정본) `.claude/skills/design/SKILL.md`.
+(`docs/checklist.md`는 `backlog.md`와 역할이 중복되고 갱신도 stale해 2026-07-26
+삭제됨 — 요구사항 추적은 `backlog.md` 단일 문서로 일원화)
 
 ### 핵심 기능 (MVP 4개, 우선순위순)
 
@@ -48,9 +48,6 @@ SKILL.md가 우선.
 | 바텀시트 | `components/BottomSheet.jsx` | 판단 vs marketSentiment 비교 + insight 공개, 닫으면 저장 |
 | 인사이트 노트 | `pages/InsightNote.jsx` | 히스토리 카드(기본: 판단 vs marketSentiment) + "AI 관점 해설 보기" 아코디언 |
 | 단어장 | `pages/Vocabulary.jsx` | 자동 적재된 용어 최신순, 출처 클릭 시 리더뷰 이동 |
-
-`prototype/`은 첫 피벗 이전 버전(용어 팝업 등) 포함 — 삭제 금지, 참고용.
-실제 동작 사양은 `docs/plan.md`/`api-spec.md`/`SKILL.md`가 우선.
 
 React 구현 메모:
 - 문장 번역/AI 요약 → 네이티브 `<details><summary>`
@@ -109,9 +106,7 @@ hub/
 │   ├── src/services/   # articleParser.js, llmService.js, decisionStore.js, vocabularyStore.js, articleStore.js, supabaseClient.js
 │   └── data/           # decisions.json/vocabulary.json 모두 Supabase로 이전, 미사용
 ├── supabase/migrations/ # 20260717000000_init_schema.sql (articles/vocabulary/decisions/article_reads + RLS)
-├── docs/               # plan.md, api-spec.md, checklist.md, backlog.md, data-model.md
-├── prototype/          # 정적 프로토타입 — 삭제 금지
-├── stitch-reference/    # 디자인 원본(참고용, SKILL.md 하위)
+├── docs/               # plan.md, api-spec.md, backlog.md, data-model.md, workflow.md
 ├── .claude/skills/design/SKILL.md
 └── CLAUDE.md
 ```
@@ -156,7 +151,7 @@ hub/
   절대 프론트 노출 금지)와 `client/.env`의 `VITE_SUPABASE_URL`/
   `VITE_SUPABASE_ANON_KEY`가 필요(각 `.env.example` 참고)
 - **린트/포맷**: `npm run lint`/`npm run format` (client/server src만 대상,
-  `docs/`·`prototype/`·`stitch-reference/`·`.claude/` 등 제외)
+  `docs/`·`.claude/` 등 제외)
 
 ## 구현 유의사항
 
