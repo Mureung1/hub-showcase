@@ -228,43 +228,24 @@ describe('InsightImportDialog', () => {
     ).toBe('https://example.com');
   });
 
-  it('최근 기록의 예외를 펼칠 때만 조회하고 경고 뒤 기록을 삭제한다', async () => {
+  it('최근 기록은 요약만 표시하고 경고 뒤 기록을 삭제한다', async () => {
     const user = userEvent.setup();
     const service = createService();
     service.listHistory.mockResolvedValue({
       ok: true,
       value: [createHistoryEntry()],
     });
-    service.listIssues.mockResolvedValue({
-      ok: true,
-      value: {
-        items: [createPreparedImport().items[4]!],
-        nextOrdinal: null,
-      },
-    });
     service.deleteRecord.mockResolvedValue({ ok: true, value: undefined });
     renderDialog({ service });
 
     expect(await screen.findByText('최근 가져오기')).toBeTruthy();
     expect(service.listIssues).not.toHaveBeenCalled();
-
-    await user.click(
-      screen.getByText('제외된 항목 확인', { selector: 'summary' })
-    );
-
-    await waitFor(() =>
-      expect(service.listIssues).toHaveBeenCalledWith(JOB_ID, null)
-    );
-    expect(
-      screen.getByText(
-        (content, element) =>
-          element?.tagName === 'LI' && content.includes('invalid-url')
-      )
-    ).toBeTruthy();
+    expect(screen.getByText(/생성 1개 · 중복 0개 · 제외 1개/)).toBeTruthy();
+    expect(screen.queryByText('제외된 항목 확인')).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '기록 삭제' }));
     expect(
-      screen.getByText('인사이트는 유지되고 Undo 권한이 사라집니다')
+      screen.getByText('인사이트는 유지되고 되돌리기 권한과 기록이 사라집니다.')
     ).toBeTruthy();
     expect(service.deleteRecord).not.toHaveBeenCalled();
 
@@ -274,6 +255,27 @@ describe('InsightImportDialog', () => {
     await waitFor(() =>
       expect(screen.queryByText('붙여넣기 가져오기')).toBeNull()
     );
+  });
+
+  it('24시간이 지난 완료 기록은 되돌리기 안내만 표시한다', async () => {
+    const service = createService();
+    service.listHistory.mockResolvedValue({
+      ok: true,
+      value: [
+        {
+          ...createHistoryEntry(),
+          undoExpiresAt: '2000-01-01T00:00:00.000Z',
+        },
+      ],
+    });
+    renderDialog({ service });
+
+    expect(
+      await screen.findByText('되돌릴 수 있는 24시간이 지났어요.')
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: '가져오기 되돌리기' })
+    ).toBeNull();
   });
 
   it('Notion 공식 연결 안내와 기본값이 꺼진 페이지 주소 선택을 제공한다', async () => {
@@ -476,6 +478,7 @@ function createHistoryEntry(): ImportHistoryEntry {
       newCount: 1,
       totalCount: 2,
     },
+    undoExpiresAt: '2099-07-26T03:00:00.000Z',
     undoResult: null,
   };
 }

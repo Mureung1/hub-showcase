@@ -7,6 +7,7 @@ import { createBrowserInsightImportService } from './browser_insight_import_serv
 const JOB_ID = '10000000-0000-4000-8000-000000000001';
 const COMPLETED_AT = '2026-07-25T03:00:00.000Z';
 const EXPIRES_AT = '2026-07-26T03:00:00.000Z';
+const UNDO_EXPIRES_AT = '2099-07-26T03:00:00.000Z';
 const analyzedItems: AnalyzedImportItem[] = [
   {
     candidateId: 'pasted-text:0',
@@ -133,7 +134,7 @@ describe('createBrowserInsightImportService', () => {
     });
   });
 
-  it('완료·Undo 기록을 제한된 열로 최신순 조회한다', async () => {
+  it('완료 기록과 Undo 만료 시각을 제한된 열로 최신순 조회한다', async () => {
     const historyQuery = createQuery({
       data: [
         {
@@ -147,8 +148,9 @@ describe('createBrowserInsightImportService', () => {
           input_duplicate_count: 1,
           new_count: 3,
           preserved_count: 1,
-          status: 'undone',
+          status: 'completed',
           total_count: 6,
+          undo_expires_at: UNDO_EXPIRES_AT,
         },
       ],
       error: null,
@@ -163,7 +165,7 @@ describe('createBrowserInsightImportService', () => {
           adapterKey: 'pasted-text',
           completedAt: COMPLETED_AT,
           id: JOB_ID,
-          status: 'undone',
+          status: 'completed',
           summary: {
             createdCount: 3,
             duplicateCount: 1,
@@ -172,12 +174,8 @@ describe('createBrowserInsightImportService', () => {
             newCount: 3,
             totalCount: 6,
           },
-          undoResult: {
-            alreadyDeletedCount: 1,
-            deletedCount: 1,
-            jobId: JOB_ID,
-            preservedCount: 1,
-          },
+          undoExpiresAt: UNDO_EXPIRES_AT,
+          undoResult: null,
         },
       ],
     });
@@ -191,6 +189,19 @@ describe('createBrowserInsightImportService', () => {
       ascending: false,
     });
     expect(historyQuery.limit).toHaveBeenCalledWith(20);
+  });
+
+  it('Undo 만료 응답을 전용 실패 사유로 반환한다', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: { ok: false, reason: 'undo-expired' },
+      error: null,
+    });
+    const service = createBrowserInsightImportService(createClient({ rpc }));
+
+    await expect(service.undo(JOB_ID)).resolves.toEqual({
+      ok: false,
+      reason: 'undo-expired',
+    });
   });
 
   it('오류 항목을 50개씩 조회하고 다음 ordinal을 반환한다', async () => {

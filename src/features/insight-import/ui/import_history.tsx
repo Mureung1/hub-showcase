@@ -1,12 +1,10 @@
-import { useState, type SyntheticEvent } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/shared/ui';
 
-import type { InsightImportService } from '../model/insight_import_service';
 import type {
   ImportAdapterKey,
   ImportHistoryEntry,
-  ImportIssuePage,
 } from '../model/import_types';
 
 const IMPORT_ADAPTER_LABELS = {
@@ -21,18 +19,12 @@ const IMPORT_ADAPTER_LABELS = {
   zip: 'ZIP 파일',
 } satisfies Record<ImportAdapterKey, string>;
 
-type IssueState = ImportIssuePage & {
-  errorMessage: string | null;
-  loading: boolean;
-};
-
 export type ImportHistoryProps = {
   entries: readonly ImportHistoryEntry[];
   errorMessage: string | null;
   loading: boolean;
   onDelete: (jobId: string) => Promise<void>;
   onUndo: (jobId: string) => Promise<void>;
-  service: InsightImportService;
 };
 
 export function ImportHistory({
@@ -41,10 +33,9 @@ export function ImportHistory({
   loading,
   onDelete,
   onUndo,
-  service,
 }: ImportHistoryProps) {
-  const [issueStates, setIssueStates] = useState<
-    Record<string, IssueState | undefined>
+  const [undoAvailability, setUndoAvailability] = useState<
+    Record<string, boolean>
   >({});
   const [deleteConfirmationId, setDeleteConfirmationId] = useState<
     string | null
@@ -53,64 +44,45 @@ export function ImportHistory({
     null
   );
 
-  async function loadIssues(
-    jobId: string,
-    afterOrdinal: number | null,
-    append: boolean
-  ) {
-    setIssueStates((current) => ({
-      ...current,
-      [jobId]: {
-        errorMessage: null,
-        items: append ? (current[jobId]?.items ?? []) : [],
-        loading: true,
-        nextOrdinal: current[jobId]?.nextOrdinal ?? null,
-      },
-    }));
+  useEffect(() => {
+    let timeoutId: number | undefined;
 
-    const result = await service.listIssues(jobId, afterOrdinal);
+    function updateUndoAvailability() {
+      const currentTime = Date.now();
+      const nextAvailability = Object.fromEntries(
+        entries.map((entry) => [
+          entry.id,
+          entry.status === 'completed' &&
+            entry.undoExpiresAt !== null &&
+            new Date(entry.undoExpiresAt).getTime() > currentTime,
+        ])
+      );
+      const nextExpiration = entries
+        .filter(
+          (entry) =>
+            entry.status === 'completed' &&
+            entry.undoExpiresAt !== null &&
+            new Date(entry.undoExpiresAt).getTime() > currentTime
+        )
+        .map((entry) => new Date(entry.undoExpiresAt!).getTime())
+        .sort((left, right) => left - right)[0];
 
-    if (!result.ok) {
-      setIssueStates((current) => ({
-        ...current,
-        [jobId]: {
-          errorMessage: '제외된 항목을 불러오지 못했습니다.',
-          items: current[jobId]?.items ?? [],
-          loading: false,
-          nextOrdinal: null,
-        },
-      }));
-      return;
+      setUndoAvailability(nextAvailability);
+
+      if (nextExpiration !== undefined) {
+        timeoutId = window.setTimeout(
+          updateUndoAvailability,
+          Math.min(nextExpiration - currentTime, 2_147_483_647)
+        );
+      }
     }
 
-    setIssueStates((current) => ({
-      ...current,
-      [jobId]: {
-        errorMessage: null,
-        items: append
-          ? [...(current[jobId]?.items ?? []), ...result.value.items]
-          : result.value.items,
-        loading: false,
-        nextOrdinal: result.value.nextOrdinal,
-      },
-    }));
-  }
+    updateUndoAvailability();
 
-  function openIssues(
-    event: SyntheticEvent<HTMLDetailsElement>,
-    entry: ImportHistoryEntry
-  ) {
-    if (event.currentTarget.open && !issueStates[entry.id]) {
-      void loadIssues(entry.id, null, false);
-    }
-  }
+    return () => window.clearTimeout(timeoutId);
+  }, [entries]);
 
   async function confirmDelete(jobId: string) {
-    setIssueStates((current) => {
-      const next = { ...current };
-      delete next[jobId];
-      return next;
-    });
     setDeleteConfirmationId(null);
     await onDelete(jobId);
   }
@@ -134,9 +106,7 @@ export function ImportHistory({
 
       <ul className="insight-import-dialog__history-list">
         {entries.map((entry) => {
-          const issueState = issueStates[entry.id];
-          const hasIssues =
-            entry.summary.excludedCount + entry.summary.inputDuplicateCount > 0;
+          const canUndo = undoAvailability[entry.id] === true;
 
           return (
             <li className="insight-import-dialog__history-item" key={entry.id}>
@@ -150,41 +120,8 @@ export function ImportHistory({
                 {entry.summary.excludedCount}개
               </p>
 
-              {hasIssues ? (
-                <details onToggle={(event) => openIssues(event, entry)}>
-                  <summary>제외된 항목 확인</summary>
-                  {issueState?.loading ? (
-                    <p role="status">항목을 불러오는 중입니다.</p>
-                  ) : null}
-                  {issueState?.errorMessage ? (
-                    <p role="alert">{issueState.errorMessage}</p>
-                  ) : null}
-                  {issueState?.items.length ? (
-                    <ul>
-                      {issueState.items.map((item) => (
-                        <li key={item.candidateId}>
-                          {item.sourceLocation} ·{' '}
-                          {item.exclusionCode ?? item.classification}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {issueState?.nextOrdinal ? (
-                    <Button
-                      disabled={issueState.loading}
-                      onClick={() =>
-                        void loadIssues(entry.id, issueState.nextOrdinal, true)
-                      }
-                      type="button"
-                    >
-                      더 보기
-                    </Button>
-                  ) : null}
-                </details>
-              ) : null}
-
               <div className="insight-import-dialog__history-actions">
-                {entry.status === 'completed' ? (
+                {canUndo ? (
                   undoConfirmationId === entry.id ? (
                     <>
                       <p>이 작업에서 새로 만든 인사이트만 삭제합니다.</p>
@@ -211,11 +148,17 @@ export function ImportHistory({
                       가져오기 되돌리기
                     </Button>
                   )
+                ) : entry.status === 'completed' ? (
+                  <p>되돌릴 수 있는 24시간이 지났어요.</p>
                 ) : null}
 
                 {deleteConfirmationId === entry.id ? (
                   <>
-                    <p>인사이트는 유지되고 Undo 권한이 사라집니다</p>
+                    <p>
+                      {canUndo
+                        ? '인사이트는 유지되고 되돌리기 권한과 기록이 사라집니다.'
+                        : '인사이트는 유지되고 가져오기 기록만 사라집니다.'}
+                    </p>
                     <Button
                       onClick={() => void confirmDelete(entry.id)}
                       type="button"

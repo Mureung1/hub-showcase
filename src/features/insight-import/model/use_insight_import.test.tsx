@@ -357,6 +357,27 @@ describe('useInsightImport', () => {
 
     expect(result.current.history).toEqual([]);
   });
+
+  it('Undo 만료를 안내하고 해당 기록의 되돌리기 권한을 제거한다', async () => {
+    const service = createService();
+    service.listHistory.mockResolvedValue({
+      ok: true,
+      value: [createHistoryEntry()],
+    });
+    service.undo.mockResolvedValue({
+      ok: false,
+      reason: 'undo-expired',
+    });
+    const { result } = renderHook(() => useInsightImport({ service }));
+
+    await act(() => result.current.refreshHistory());
+    await act(() => result.current.undo(JOB_ID));
+
+    expect(result.current.errorMessage).toBe(
+      '되돌릴 수 있는 24시간이 지났어요.'
+    );
+    expect(result.current.history[0]?.undoExpiresAt).toBeNull();
+  });
 });
 
 function createService() {
@@ -444,6 +465,7 @@ function createHistoryEntry(): ImportHistoryEntry {
       newCount: 1,
       totalCount: 1,
     },
+    undoExpiresAt: '2099-07-26T03:00:00.000Z',
     undoResult: null,
   };
 }

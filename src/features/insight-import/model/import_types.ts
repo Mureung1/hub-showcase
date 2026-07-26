@@ -116,6 +116,7 @@ export type ImportHistoryEntry = {
   id: string;
   status: 'completed' | 'undone';
   summary: ImportSummary;
+  undoExpiresAt: string | null;
   undoResult: ImportUndoResult | null;
 };
 

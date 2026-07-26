@@ -341,7 +341,6 @@ export function InsightImportDialog({
               loading={controller.isHistoryLoading}
               onDelete={controller.deleteRecord}
               onUndo={controller.undo}
-              service={importService}
             />
           ) : null}
         </div>

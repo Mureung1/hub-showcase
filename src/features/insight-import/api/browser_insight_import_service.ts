@@ -36,6 +36,7 @@ const HISTORY_COLUMNS = [
   'preserved_count',
   'already_deleted_count',
   'completed_at',
+  'undo_expires_at',
 ].join(',');
 
 const ISSUE_COLUMNS = [
@@ -190,12 +191,29 @@ export function createBrowserInsightImportService(
         return failure('invalid-request');
       }
 
-      return runParsedRpc(
-        client,
-        'undo_insight_import',
-        { p_job_id: jobId },
-        parseUndoResult
-      );
+      try {
+        const { data, error } = await client.rpc('undo_insight_import', {
+          p_job_id: jobId,
+        });
+
+        if (error) {
+          return failure(mapPostgresError(error, 'write-failed'));
+        }
+
+        if (
+          isRecord(data) &&
+          data.ok === false &&
+          data.reason === 'undo-expired'
+        ) {
+          return failure('undo-expired');
+        }
+
+        const result = parseUndoResult(data);
+
+        return result ? { ok: true, value: result } : failure('read-failed');
+      } catch {
+        return failure('write-failed');
+      }
     },
   };
 }
@@ -433,7 +451,8 @@ function parseHistoryEntry(value: unknown): ImportHistoryEntry | null {
     !isUuid(value.id) ||
     !isImportAdapterKey(value.adapter_key) ||
     (value.status !== 'completed' && value.status !== 'undone') ||
-    !isIsoTimestamp(value.completed_at)
+    !isIsoTimestamp(value.completed_at) ||
+    (value.undo_expires_at !== null && !isIsoTimestamp(value.undo_expires_at))
   ) {
     return null;
   }
@@ -468,6 +487,7 @@ function parseHistoryEntry(value: unknown): ImportHistoryEntry | null {
     id: value.id,
     status: value.status,
     summary,
+    undoExpiresAt: value.undo_expires_at,
     undoResult:
       value.status === 'undone'
         ? {
