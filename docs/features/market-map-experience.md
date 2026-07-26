@@ -692,3 +692,5 @@ OpenFreeMap basemap: 항상 유지
 지도 Layer control은 현재 켜진 값을 숨기지 않는다. 예를 들어 `현재: 카페 점포 밀도 · 시간대 수요 보기`처럼 현재 상태와 다음 행동을 같이 표시한다. 범례는 색 자체보다 `선택 업종 점포가 상대적으로 모인 정도` 또는 `선택 시간대의 상대 유동 수요`를 설명한다.
 
 일반 상권 지도에는 Scene upload·job 생성 control을 노출하지 않는다. 3DGS 결과가 준비된 지원 지역의 viewer 진입은 별도 공개 정책을 만족한 뒤에만 제공한다.
+
+검증은 `App.test.tsx`의 공개 workspace 조건과 `useWorkspacePanels.test.tsx`의 dialog panel contract로 유지한다.
