@@ -4,6 +4,7 @@ export type { ImportAnalysis } from './model/import_analysis';
 export { analyzeImportUrl } from './model/import_url';
 export type { ImportUrlResult } from './model/import_url';
 export { pastedTextAdapter } from './model/pasted_text_adapter';
+export { createBrowserInsightImportService } from './api/browser_insight_import_service';
 export {
   IMPORT_ADAPTER_KEYS,
   IMPORT_INPUT_KINDS,
@@ -35,3 +36,9 @@ export type {
   PreparedImport,
   PreparedImportItem,
 } from './model/import_types';
+export type {
+  ImportServiceFailureReason,
+  ImportServiceResult,
+  InsightImportService,
+  PrepareImportInput,
+} from './model/insight_import_service';
