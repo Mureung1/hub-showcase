@@ -83,6 +83,14 @@ h2 {
   color: var(--brand-blue);
 }
 
+.reader-back-nav {
+  margin-top: var(--space-xl);
+}
+
+.reader-back-nav .back-link {
+  margin-bottom: 0;
+}
+
 .page-subtitle {
   color: var(--text-secondary);
   font-size: 14px;

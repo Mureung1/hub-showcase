@@ -145,9 +145,6 @@ export default function Reader() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <Link className="back-link" to="/">
-          ← Back to Today’s Top News
-        </Link>
         <div className="card-source">
           <span className="source-logo">{article.sourceInitial}</span>
           <span className="source-name">{article.source}</span>
@@ -169,6 +166,12 @@ export default function Reader() {
 
       <div ref={decisionButtonsWrapRef}>
         <DecisionButtons onDecide={handleDecide} />
+      </div>
+
+      <div className="reader-back-nav">
+        <Link className="back-link" to="/">
+          ← Back to Today’s Top News
+        </Link>
       </div>
 
       {pendingDecision && (
