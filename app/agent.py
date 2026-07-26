@@ -49,11 +49,20 @@ def _validate_coverage(papers: list[dict], result: dict) -> dict:
     return {"picked": picked, "excluded": excluded}
 
 
-def judge(topic: str, papers: list[dict]) -> dict:
-    """판단(judge) 5단계 진입점. sse-contract.md의 judge 이벤트 형태로 정리해 반환한다."""
-    raw = _call_judge(topic, papers)
-    result = _validate_coverage(papers, raw)
+def _judge_papers(topic: str, papers: list[dict]) -> dict:
+    """판단(judge) 5단계 진입점. LLM 호출 + 커버리지 검증까지의 원시 결과(index 기반)를 반환한다.
 
+    sse-contract.md의 judge 이벤트(title/reason만, index 없음)로 바로 쓸 수 없는
+    이유는 run_agent()가 실제 papers[index]를 찾아 논문별 파이프라인을
+    순회(_iterate_picked)하는 데 index가 필요하기 때문이다. SSE 이벤트 포맷은
+    _format_judge_event()가 별도로 맡는다.
+    """
+    raw = _call_judge(topic, papers)
+    return _validate_coverage(papers, raw)
+
+
+def _format_judge_event(papers: list[dict], result: dict) -> dict:
+    """_judge_papers()의 원시 결과(index 기반)를 sse-contract.md의 judge 이벤트 형태로 정리한다."""
     return {
         "stage": "judge",
         "total": len(papers),
@@ -282,6 +291,44 @@ def run_agent(topic: str, limit: int = config.DEFAULT_LIMIT) -> Generator[dict, 
     if not papers:
         yield {"stage": "empty", "scanned": len(papers), "suggestions": []}
         return
+
+    judged = _judge_papers(topic, papers)
+    yield _format_judge_event(papers, judged)
+
+    picked_list = judged["picked"]
+    successful: list[dict] = []
+
+    for i, paper in _iterate_picked(papers, picked_list):
+        select = _select_tool(paper)
+        need_fulltext = select.get("need_fulltext", False)
+
+        yield {
+            "stage": "read",
+            "index": i,
+            "total": len(picked_list),
+            "title": paper["title"],
+            "used_fulltext": need_fulltext,
+            "reason": select.get("reason", ""),
+        }
+
+        source_text, used_fulltext = _read_source(paper, need_fulltext)
+
+        summary = _call_summarize(paper["title"], source_text)
+        summary, retried = yield from _verify_loop(i, paper["title"], source_text, summary)
+
+        yield {
+            "stage": "paper_done",
+            "index": i,
+            "title": paper["title"],
+            "arxiv_id": paper["id"],
+            "url": paper["url"],
+            "date": paper["published"],
+            "used_fulltext": used_fulltext,
+            "retried": retried,
+            "summary": summary,
+            "abstract": paper["abstract"],
+        }
+        successful.append({"index": i, "title": paper["title"], "summary": summary})
 
 
 if __name__ == "__main__":
