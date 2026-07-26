@@ -1,5 +1,6 @@
 package com.chasewar.parking.repository.dto;
 
+import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.parking.domain.vo.Fee;
 import com.chasewar.parking.domain.vo.OperType;
 import com.chasewar.parking.domain.vo.OperatingHours;
@@ -18,6 +19,7 @@ public record ParkingLotDetailProjection(
         PayType payType,
         Fee fee,
         OperatingHours operatingHours,
+        Coordinates coordinates,
         Integer availableSlots,
         Integer realtimeTotalSlots,
         LocalDateTime sourceUpdatedAt

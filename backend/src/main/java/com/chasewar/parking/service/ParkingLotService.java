@@ -42,11 +42,12 @@ public class ParkingLotService {
     }
 
     @Transactional(readOnly = true)
-    public ParkingLotDetailResponse getDetail(Long id) {
+    public ParkingLotDetailResponse getDetail(Long id, Coordinates destinationCoordinates) {
         ParkingLotDetailProjection projection = parkingLotRepository.findDetailById(id)
                 .orElseThrow(() -> new ChasewarException(NotFoundErrorCode.NOT_FOUND_PARKING_LOT));
+        WalkingRoute walkingRoute = findWalkingRoute(projection, destinationCoordinates);
 
-        return ParkingLotDetailResponse.from(projection);
+        return ParkingLotDetailResponse.from(projection, destinationCoordinates, walkingRoute);
     }
 
     private List<ParkingLotSearchResponse> findNearbyParkingLots(Coordinates destinationCoordinates) {
@@ -111,5 +112,17 @@ public class ParkingLotService {
                 () -> walkingRouteClient.findRoute(parkingLot.getCoordinates(), destinationCoordinates),
                 walkingRouteExecutor
         );
+    }
+
+    private WalkingRoute findWalkingRoute(
+            ParkingLotDetailProjection projection,
+            Coordinates destinationCoordinates
+    ) {
+        if (destinationCoordinates == null || projection.coordinates() == null) {
+            return null;
+        }
+
+        return walkingRouteClient.findRoute(projection.coordinates(), destinationCoordinates)
+                .orElse(null);
     }
 }
