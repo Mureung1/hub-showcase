@@ -49,15 +49,23 @@ def _validate_coverage(papers: list[dict], result: dict) -> dict:
     return {"picked": picked, "excluded": excluded}
 
 
-def _judge_papers(topic: str, papers: list[dict]) -> dict:
+def _judge_papers(topic: str, papers: list[dict]) -> dict | None:
     """판단(judge) 5단계 진입점. LLM 호출 + 커버리지 검증까지의 원시 결과(index 기반)를 반환한다.
 
     sse-contract.md의 judge 이벤트(title/reason만, index 없음)로 바로 쓸 수 없는
     이유는 run_agent()가 실제 papers[index]를 찾아 논문별 파이프라인을
     순회(_iterate_picked)하는 데 index가 필요하기 때문이다. SSE 이벤트 포맷은
     _format_judge_event()가 별도로 맡는다.
+
+    raw 응답이 picked·excluded 둘 다 비어있으면(ask_llm_json의 fallback이거나,
+    그와 구분 안 되는 완전 실패 응답) None을 반환한다 — 판단 자체가 실패한
+    것으로 보고 run_agent()가 error로 종결하게 한다(#49). 후보 논문이 있는데
+    picked·excluded를 하나도 못 채운 응답은 judge.md 프롬프트가 요구하는
+    "전체 커버리지"를 어겼으므로, 진짜 판단 결과로 신뢰할 수 없다.
     """
     raw = _call_judge(topic, papers)
+    if not raw.get("picked") and not raw.get("excluded"):
+        return None
     return _validate_coverage(papers, raw)
 
 
@@ -280,12 +288,19 @@ def run_agent(topic: str, limit: int = config.DEFAULT_LIMIT) -> Generator[dict, 
     sse-contract.md의 stage를 그대로 yield한다. main.py는 이 yield를 SSE로
     감싸기만 한다 — 로직은 이 함수 안에 전부 있다.
 
-    이번 서브이슈(6-1)는 search+found 두 이벤트만 담당한다. judge 호출·
-    논문별 파이프라인·empty/trend/done 분기는 이후 서브이슈(#47~#50)가
-    이 함수를 계속 이어서 채운다.
+    trend/done 분기는 이후 서브이슈(#50)가 이 함수를 계속 이어서 채운다.
     """
     yield {"stage": "search", "topic": topic}
-    papers = tools.search_arxiv(topic, limit=limit)
+    try:
+        papers = tools.search_arxiv(topic, limit=limit)
+    except Exception as exc:
+        yield {
+            "stage": "error",
+            "message": "arXiv 검색에 실패했습니다.",
+            "code": "search_failed",
+            "at": f"검색 단계 ({type(exc).__name__})",
+        }
+        return
     yield {"stage": "found", "count": len(papers)}
 
     if not papers:
@@ -293,42 +308,71 @@ def run_agent(topic: str, limit: int = config.DEFAULT_LIMIT) -> Generator[dict, 
         return
 
     judged = _judge_papers(topic, papers)
+    if judged is None:
+        yield {
+            "stage": "error",
+            "message": "논문 중요도 판단에 실패했습니다.",
+            "code": "judge_failed",
+            "at": "판단 단계",
+        }
+        return
     yield _format_judge_event(papers, judged)
 
     picked_list = judged["picked"]
     successful: list[dict] = []
 
     for i, paper in _iterate_picked(papers, picked_list):
-        select = _select_tool(paper)
-        need_fulltext = select.get("need_fulltext", False)
+        try:
+            select = _select_tool(paper)
+            need_fulltext = select.get("need_fulltext", False)
 
-        yield {
-            "stage": "read",
-            "index": i,
-            "total": len(picked_list),
-            "title": paper["title"],
-            "used_fulltext": need_fulltext,
-            "reason": select.get("reason", ""),
-        }
+            yield {
+                "stage": "read",
+                "index": i,
+                "total": len(picked_list),
+                "title": paper["title"],
+                "used_fulltext": need_fulltext,
+                "reason": select.get("reason", ""),
+            }
 
-        source_text, used_fulltext = _read_source(paper, need_fulltext)
+            source_text, used_fulltext = _read_source(paper, need_fulltext)
 
-        summary = _call_summarize(paper["title"], source_text)
-        summary, retried = yield from _verify_loop(i, paper["title"], source_text, summary)
+            summary = _call_summarize(paper["title"], source_text)
+            if summary is None:
+                yield {
+                    "stage": "paper_failed",
+                    "index": i,
+                    "title": paper["title"],
+                    "url": paper["url"],
+                    "reason": "요약 생성에 반복 실패했습니다.",
+                }
+                continue
 
-        yield {
-            "stage": "paper_done",
-            "index": i,
-            "title": paper["title"],
-            "arxiv_id": paper["id"],
-            "url": paper["url"],
-            "date": paper["published"],
-            "used_fulltext": used_fulltext,
-            "retried": retried,
-            "summary": summary,
-            "abstract": paper["abstract"],
-        }
-        successful.append({"index": i, "title": paper["title"], "summary": summary})
+            summary, retried = yield from _verify_loop(i, paper["title"], source_text, summary)
+
+            yield {
+                "stage": "paper_done",
+                "index": i,
+                "title": paper["title"],
+                "arxiv_id": paper["id"],
+                "url": paper["url"],
+                "date": paper["published"],
+                "used_fulltext": used_fulltext,
+                "retried": retried,
+                "summary": summary,
+                "abstract": paper["abstract"],
+            }
+            successful.append({"index": i, "title": paper["title"], "summary": summary})
+
+        except Exception as exc:
+            yield {
+                "stage": "paper_failed",
+                "index": i,
+                "title": paper["title"],
+                "url": paper["url"],
+                "reason": f"처리 중 예기치 않은 오류가 발생했습니다 ({type(exc).__name__}).",
+            }
+            continue
 
 
 if __name__ == "__main__":
