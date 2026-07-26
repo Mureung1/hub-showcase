@@ -18,7 +18,12 @@ function validateSourceUrl(sourceUrl) {
   return "";
 }
 
-function RecipeInputForm({ isPrepared, onCancel, onPrepare }) {
+function RecipeInputForm({
+  isPrepared,
+  onCancel,
+  onPrepare,
+  onOpenTransferCode,
+}) {
   const [sourceUrl, setSourceUrl] = useState("");
   const [rawText, setRawText] = useState("");
   const [sourceUrlError, setSourceUrlError] = useState("");
@@ -158,9 +163,16 @@ function RecipeInputForm({ isPrepared, onCancel, onPrepare }) {
       ) : null}
 
       <div className="mt-auto border-t border-[#d8cfbd] pt-5">
-        <div className="mb-4 text-center text-xs text-[#6f6b60]">
-          전달받은 레시피가 있나요?{" "}
-          <span className="font-semibold text-[#5d4a25]">코드 입력은 별도 화면에서 진행합니다.</span>
+        <div className="mb-4 text-center text-sm text-[#6f6b60]">
+          <button
+            type="button"
+            className="mt-3 text-left text-sm font-semibold text-[#8b6e35] underline underline-offset-4"
+            onClick={onOpenTransferCode}
+          >
+            전달받은 레시피가 있나요? 코드로 불러오기
+          </button>
+          {/* 전달받은 레시피가 있나요?{" "}
+          <span className="font-semibold text-[#5d4a25]">코드 입력은 별도 화면에서 진행합니다.</span> */}
         </div>
 
         {isSubmitting ? (

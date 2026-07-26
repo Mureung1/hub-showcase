@@ -377,4 +377,67 @@ describe("RecipeListPlaceholderPage", () => {
     );
     expect(screen.getByText("레시피 목록")).toBeInTheDocument();
   });
+
+  it("레시피 추가 화면에서 레시피북 위에 전달 코드 모달을 열고 닫는다", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ data: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+
+    const user = {
+      displayName: "요리사",
+      getIdToken: vi.fn().mockResolvedValue("firebase-token"),
+    };
+
+    render(
+      <AuthContext.Provider value={{ user }}>
+        <MemoryRouter initialEntries={["/recipes/new"]}>
+          <Routes>
+            <Route
+              path="/recipes"
+              element={<RecipeListPlaceholderPage />}
+            />
+            <Route
+              path="/recipes/new"
+              element={<RecipeListPlaceholderPage />}
+            />
+            <Route
+              path="/transfer-invitations"
+              element={<RecipeListPlaceholderPage />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </AuthContext.Provider>,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "전달받은 레시피가 있나요? 코드로 불러오기",
+      }),
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "전달 코드로 레시피 받기",
+    });
+
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(
+      within(dialog).getByLabelText("전달 코드"),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", { name: "코드 확인" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("나만의 레시피북")).not.toHaveLength(0);
+
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "닫기" }),
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
 });

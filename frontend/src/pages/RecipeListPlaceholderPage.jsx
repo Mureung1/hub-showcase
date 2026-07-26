@@ -12,6 +12,7 @@ import {
   structureRecipe,
 } from "../api/recipeApi";
 import RecipeInputForm from "../components/RecipeInputForm";
+import TransferInvitationPage from "./TransferInvitationPage";
 
 const filters = [
   { id: "all", label: "모든 레시피" },
@@ -47,6 +48,8 @@ function RecipeListPlaceholderPage() {
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
   const isAddingRecipe = location.pathname === "/recipes/new";
+  const isTransferInvitationDialog =
+    location.pathname === "/transfer-invitations";
   const isShowingRightPage = isAddingRecipe || Boolean(recipeId);
 
   useEffect(() => {
@@ -138,6 +141,14 @@ function RecipeListPlaceholderPage() {
     matchesFilter(recipe, activeFilter),
   );
 
+  function handleOpenTransferCode() {
+    navigate("/transfer-invitations");
+  }
+
+  function handleCloseTransferCode() {
+    navigate("/recipes/new");
+  }
+
   function handleOpenRecipeInput() {
     navigate("/recipes/new");
   }
@@ -161,12 +172,20 @@ function RecipeListPlaceholderPage() {
 
   return (
     <main className="grid h-dvh grid-rows-[minmax(0,1fr)] place-items-stretch overflow-hidden bg-[radial-gradient(circle_at_50%_30%,#faf9f4,#e8e7e2_55%,#d7d6d1)] p-2.5 font-[Noto_Serif_KR,Nanum_Myeongjo,Malgun_Gothic,serif] text-[#272923] max-[700px]:flex max-[700px]:flex-col max-[700px]:p-0">
-      <header className="hidden h-14 shrink-0 items-center gap-3 bg-[#15332a] bg-[url(/design-assets/cookbook/leather-texture-tile.png)] bg-center bg-size-[240px] px-4.5 text-base text-[#eed08b] max-[700px]:flex">
+      <header
+        className="hidden h-14 shrink-0 items-center gap-3 bg-[#15332a] bg-[url(/design-assets/cookbook/leather-texture-tile.png)] bg-center bg-size-[240px] px-4.5 text-base text-[#eed08b] max-[700px]:flex"
+        inert={isTransferInvitationDialog || undefined}
+        aria-hidden={isTransferInvitationDialog || undefined}
+      >
         <span aria-hidden="true">☰</span>
         <span>나만의 레시피북</span>
       </header>
 
-      <div className="relative grid min-h-0 w-full min-w-0 max-w-[1580px] justify-self-center grid-cols-[186px_minmax(0,1fr)] overflow-hidden p-[36px_25px] drop-shadow-[0_11px_8px_rgb(21_25_20/0.3)] isolate before:pointer-events-none before:absolute before:inset-0 before:z-[-2] before:border-49 before:border-transparent before:[border-image:url(/design-assets/cookbook/leather-frame-9slice.png)_96_fill_stretch] before:content-[''] after:pointer-events-none after:absolute after:inset-[24px_28px_22px] after:z-[-1] after:rounded-[9px] after:bg-[#163229] after:bg-[url(/design-assets/cookbook/leather-texture-tile.png)] after:bg-center after:bg-size-[440px] after:shadow-[inset_0_0_28px_#06120e] after:content-[''] min-[1101px]:px-7.75 max-[1100px]:grid-cols-[155px_minmax(0,1fr)] max-[1100px]:pr-5 max-[700px]:flex-1 max-[700px]:grid-cols-1 max-[700px]:bg-[#15332a] max-[700px]:bg-[url(/design-assets/cookbook/leather-texture-tile.png)] max-[700px]:bg-center max-[700px]:bg-size-[300px] max-[700px]:p-3 max-[700px]:drop-shadow-none max-[700px]:before:hidden max-[700px]:after:hidden short-screen:py-7">
+      <div
+        className="relative grid min-h-0 w-full min-w-0 max-w-[1580px] justify-self-center grid-cols-[186px_minmax(0,1fr)] overflow-hidden p-[36px_25px] drop-shadow-[0_11px_8px_rgb(21_25_20/0.3)] isolate before:pointer-events-none before:absolute before:inset-0 before:z-[-2] before:border-49 before:border-transparent before:[border-image:url(/design-assets/cookbook/leather-frame-9slice.png)_96_fill_stretch] before:content-[''] after:pointer-events-none after:absolute after:inset-[24px_28px_22px] after:z-[-1] after:rounded-[9px] after:bg-[#163229] after:bg-[url(/design-assets/cookbook/leather-texture-tile.png)] after:bg-center after:bg-size-[440px] after:shadow-[inset_0_0_28px_#06120e] after:content-[''] min-[1101px]:px-7.75 max-[1100px]:grid-cols-[155px_minmax(0,1fr)] max-[1100px]:pr-5 max-[700px]:flex-1 max-[700px]:grid-cols-1 max-[700px]:bg-[#15332a] max-[700px]:bg-[url(/design-assets/cookbook/leather-texture-tile.png)] max-[700px]:bg-center max-[700px]:bg-size-[300px] max-[700px]:p-3 max-[700px]:drop-shadow-none max-[700px]:before:hidden max-[700px]:after:hidden short-screen:py-7"
+        inert={isTransferInvitationDialog || undefined}
+        aria-hidden={isTransferInvitationDialog || undefined}
+      >
         <aside className="flex h-full min-h-0 flex-col items-center overflow-hidden bg-[linear-gradient(90deg,transparent,#102b23_18%,#102b23_82%,transparent)] px-2.5 pb-6.5 pt-11.25 text-[#e3c580] max-[700px]:hidden short-screen:pt-7.5">
           <div className="text-center text-[21px] leading-normal tracking-[0.08em]">
             <img
@@ -187,7 +206,11 @@ function RecipeListPlaceholderPage() {
             <button type="button" className="min-h-13.25 rounded-lg border border-transparent px-3.25 text-left text-base text-[#eed08b] short-screen:min-h-10.75" disabled>
               검색
             </button>
-            <button type="button" className="min-h-13.25 rounded-lg border border-transparent px-3.25 text-left text-base text-[#eed08b] short-screen:min-h-10.75" disabled>
+            <button
+              type="button"
+              className="min-h-13.25 rounded-lg border border-transparent px-3.25 text-left text-base text-[#eed08b] hover:bg-[rgb(255_244_204/7%)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e3c580] short-screen:min-h-10.75"
+              onClick={handleOpenTransferCode}
+            >
               전달 코드
             </button>
           </nav>
@@ -316,6 +339,7 @@ function RecipeListPlaceholderPage() {
               <div className="h-full overflow-y-auto p-[50px_42px_38px] max-[1100px]:p-[38px_42px] max-[700px]:p-[25px_22px_24px] short-screen:p-[30px_34px_24px]">
                 <RecipeInputForm
                   onCancel={handleCloseRecipeInput}
+                  onOpenTransferCode={handleOpenTransferCode}
                   onPrepare={handlePrepareRecipe}
                 />
               </div>
@@ -482,6 +506,62 @@ function RecipeListPlaceholderPage() {
           </section>
         </div>
       </div>
+
+      {isTransferInvitationDialog ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[rgb(3_14_10/78%)] p-4 backdrop-blur-[2px] max-[700px]:items-end max-[700px]:p-2"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              handleCloseTransferCode();
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              handleCloseTransferCode();
+            }
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="transfer-code-dialog-title"
+            className="relative max-h-[min(760px,calc(100dvh-32px))] w-full max-w-xl overflow-y-auto rounded-[5px] border border-[#c9bea7] bg-[#f8f5eb] p-5 text-[#272923] shadow-[0_26px_90px_rgb(0_0_0/52%)] sm:p-7 max-[700px]:max-h-[calc(100dvh-16px)] max-[700px]:rounded-[5px_5px_0_0]"
+          >
+            <header className="mb-5 border-b border-[#d8cfbd] pb-4 pr-12">
+              <p className="text-xs font-semibold tracking-[0.12em] text-[#8b6e35]">
+                전달받은 레시피
+              </p>
+              <h2
+                id="transfer-code-dialog-title"
+                className="mt-2 text-2xl font-semibold tracking-[0.04em]"
+              >
+                전달 코드로 레시피 받기
+              </h2>
+            </header>
+            <button
+              type="button"
+              aria-label="닫기"
+              onClick={handleCloseTransferCode}
+              className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-[#c9bea7] bg-[#fbf7eb] text-xl text-[#31523d] hover:bg-[#eee7d9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b6e35]"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="h-5 w-5"
+              >
+                <path
+                  d="M6 6 18 18M18 6 6 18"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+            <TransferInvitationPage isDialog />
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }
