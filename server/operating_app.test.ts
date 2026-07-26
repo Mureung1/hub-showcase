@@ -112,4 +112,15 @@ describe('운영 API 서비스 조립', () => {
       url: 'https://project.supabase.co',
     });
   });
+
+  it('Notion 설정 일부만 제공되면 시작을 거부한다', () => {
+    expect(() =>
+      createOperatingApp({
+        ...environment,
+        CRON_SECRET: 'cron-secret',
+        NOTION_CLIENT_ID: 'client-id',
+        SUPABASE_SERVICE_ROLE_KEY: 'service-role-key',
+      })
+    ).toThrow('IMPORT_APP_ORIGIN');
+  });
 });
