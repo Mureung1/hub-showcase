@@ -63,3 +63,39 @@
 - 계약 위반: 없음. `docs/skills.md`의 계약 및 `CLAUDE.md`의 범위·비밀정보 원칙을 준수합니다.
 - 권고: 없음.
 - 확인: [x] 2026-07-23 21:00 Claude — 반영할 사항 없음(발견 없음 승인), 확인만 함
+
+## 2026-07-26 00:19 | T05 · feat/onefocus-notion-sync · 2e0f07ad9 | 수정요청
+- 발견: 중간 — `app/lib/agentlog.js:9`는 `proposed_reason`을 Notion `title` 속성으로 기록합니다. C05가 요구하는 agent-design 스키마의 `proposed_reason: Text`와 일치하지 않습니다. 그 밖의 7개 필드 매핑, pending 기본값, 최신순·category 우선 조회는 확인했습니다. 해당 커밋 스냅샷에서 `npm run verify`는 기존 `app/layout.js:18` 외부 폰트 권고 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: `app/lib/agentlog.js:9` — S3의 AgentLog flat DB 속성 제약 중 `proposed_reason` Text 계약을 위반하고 Title을 사용합니다.
+- 권고: Notion DB의 필수 Title은 별도 표시용 속성으로 둘지 계약을 먼저 조정할지 결정한 뒤, Source of Truth 우선순위에 따라 `docs/skills.md`·agent-design·코드·실제 DB를 한 변경에서 일치시키세요.
+- 확인: [x] 2026-07-26 10:30 Claude — 반영: proposed_reason을 rich_text로, label을 별도 title 속성으로 분리
+
+## 2026-07-26 00:19 | T06 · feat/onefocus-notion-sync · 2e0f07ad9 | 승인
+- 발견: 없음. `app/api/struggle/route.js:5-92`는 고정 8개 tool, cold-start prior, 거절 후보 제외와 모델 출력 사후 검증, 한 줄 판단 이유를 구현합니다. T10에서 S2 입력 계약이 서버 직접 조회 방식으로 바뀐 부분도 최종 브랜치 `app/api/struggle/route.js:67-69`에서 동기화된 것을 확인했습니다. 해당 커밋 스냅샷의 `npm run verify`는 기존 폰트 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: 없음.
+- 권고: 없음.
+- 확인: [x] 2026-07-26 10:30 Claude — 반영할 사항 없음(발견 없음 승인), 확인만 함
+
+## 2026-07-26 00:19 | T07 · feat/onefocus-notion-sync · 3277110a1 | 수정요청
+- 발견: 높음 — 시간 부족 수렴 상태에서 `postpone_task`와 `end_session`이 모두 이미 거절됐으면 `app/api/struggle/route.js:52-55`가 `end_session`을 다시 후보로 강제합니다. 따라서 C06/S2의 “`rejectedTools`에 든 것은 다시 고르지 않는다” 보장을 깨며, 구현 보고에 적은 극단 시나리오도 실제로는 계약 위반 동작입니다. 시간 비교와 일반적인 수렴 로직 자체는 C07과 일치합니다. 해당 커밋 스냅샷의 `npm run verify`는 기존 폰트 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: `app/api/struggle/route.js:52-55` — S2의 거절 tool 재선택 금지 계약을 위반합니다. 최종 브랜치에서도 같은 로직이 `app/api/struggle/route.js:86-89`에 남아 있습니다.
+- 권고: 수렴 후보가 모두 소진됐을 때 이미 거절된 tool을 새 제안으로 반환하지 않도록 “마지막 제안 확정”을 API/UI 상태로 명시하거나, 입력·출력 계약에 별도 종결 상태를 먼저 정의해 동기화하세요.
+- 확인: [x] 2026-07-26 10:30 Claude — 반영: 후보 소진 시 모델 호출 없이 final:true로 즉시 종결, 화면에서 거절 버튼 비활성화
+
+## 2026-07-26 00:19 | T08 · feat/onefocus-notion-sync · ed1c5d479 | 수정요청
+- 발견: 중간 — `app/page.js:190-197`은 `encourage`와 `shrink_step`을 같은 분기로 처리해 둘 다 기존 focus 화면으로 복귀시킬 뿐입니다. `shrink_step`이 제안돼 수락되어도 현재 스텝의 완료 기준·표시 문구·데이터가 전혀 줄지 않아 C08의 “수락이 tool 실행으로 연결” 조건을 충족하지 못합니다. 이유 칩, reason 노출, 거절 재판단 및 나머지 분기는 연결돼 있습니다. 해당 커밋 스냅샷의 `npm run verify`는 기존 폰트 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: `app/page.js:190-197` — C08의 tool 실행 완료조건 및 `docs/etc/agent-design.md:39`의 `shrink_step` 의미(완료 기준 자체를 최소화)를 위반합니다. 최종 브랜치에서도 같은 로직이 `app/page.js:203-210`에 남아 있습니다.
+- 권고: 수락 시 현재 스텝의 축소된 완료 기준을 생성·표시하고 이후 완료 흐름이 그 기준을 사용하도록 구현하세요. Solar가 반환하는 현재 S2 출력에 축소 문구가 부족하다면 S2 계약을 먼저 확장하세요.
+- 확인: [x] 2026-07-26 10:30 Claude — 반영: revisedTitle 필드 추가, 수락 시 실제 Notion Title 갱신(steps/shrink 신규)
+
+## 2026-07-26 00:19 | T09 · feat/onefocus-notion-sync · 0dede398e | 수정요청
+- 발견: 높음 — S4는 `markOutcomeDone(stepRef)`가 해당 스텝에 걸린 pending 로그를 갱신하도록 정하지만, `app/lib/agentlog.js:35-37`은 스텝 참조가 아닌 단일 로그 id를 직접 갱신합니다. `app/page.js:190-194`도 한 개 id만 상태에 보관해 같은 스텝에서 개입을 여러 번 수락하면 이전 pending 로그가 덮어써져 완료 즉시 done이 되지 않습니다. 이전 날짜 pending sweep은 멱등적으로 구현돼 있습니다. 해당 커밋 스냅샷의 `npm run verify`는 기존 폰트 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: `app/lib/agentlog.js:35-37`, `app/page.js:190-194` — S4의 `markOutcomeDone(stepRef)` 및 “해당 스텝에 걸린 pending 로그” 일괄 갱신 계약을 단일 `logId` 갱신으로 축소합니다. 최종 브랜치의 대응 위치는 `app/lib/agentlog.js:35-37`, `app/page.js:203-207`입니다.
+- 권고: Relation 없이 flat DB를 유지하려면 화면에서 해당 스텝에 연결된 pending log id들을 모두 보존해 완료 API로 전달하는 등, 계약과 실제 식별 방식을 일치시키세요. 또는 스텝 참조 정의를 먼저 S4에 명확히 적고 코드·checklist를 함께 동기화하세요.
+- 확인: [x] 2026-07-26 10:30 Claude — 반영: 로그 id를 배열로 추적해 완료 시 전부 markOutcomeDone 처리
+
+## 2026-07-26 00:19 | T10 · feat/onefocus-notion-sync · f4ae07b6d | 승인
+- 발견: 없음. `app/api/struggle/route.js:67-69,117-130`은 최근 로그와 행동 요약을 서버에서 직접 조회해 판단 프롬프트에 포함하고, `app/page.js:74-89,287-290`, `app/api/steps/complete/route.js:14-21`, `app/api/steps/postpone/route.js:18-24`는 StartedAt·CompletedAt·ActualMinutes·PostponeCount를 진행에 따라 기록합니다. C10 및 갱신된 S2 입력 계약과 일치합니다. T09의 S4 위반은 위 별도 수정요청 대상으로 남겼습니다. 해당 커밋 스냅샷의 `npm run verify`는 기존 폰트 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: 없음.
+- 권고: 없음.
+- 확인: [x] 2026-07-26 10:30 Claude — 반영할 사항 없음(발견 없음 승인), 확인만 함

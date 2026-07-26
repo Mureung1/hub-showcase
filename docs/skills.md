@@ -34,7 +34,9 @@
   }
   ```
   `recentLogs`는 클라이언트 입력이 아니라(T10부터) 서버가 `/api/struggle` 내부에서 `getRecentLogs({ limit: 15, category: currentStep.category })`로 직접 채운다 — 클라이언트는 Notion에 직접 접근할 수 없어 이 값을 만들 방법이 없었기 때문.
-- **출력**: `{ proposedTool: tool, reason: string }`
+- **출력**: `{ proposedTool: tool, reason: string, revisedTitle?: string, final?: bool }`
+  - `revisedTitle`: `proposedTool`이 `shrink_step`일 때만, 완료 기준을 줄인 새 스텝 제목.
+  - `final`: 시간 부족으로 `postpone_task`/`end_session`도 이미 둘 다 거절된 경우 `true`. 이때는 새 tool을 제안하는 게 아니라 강제 종결이므로, 화면은 거절을 더 받지 않는다(C07).
 - **제약**:
   - `proposedTool`은 고정 8개 중 하나(스키마 강제), `rejectedTools`에 든 것은 다시 고르지 않는다.
   - `recentLogs`가 비면 cold start — `reasonChip` prior로 판단(막막→shrink/split, 지루→swap, 지쳤→break, 그냥→encourage). prior는 강제가 아닌 기울기.
@@ -50,11 +52,11 @@
   { timestamp: Date, task_category, reason_chip, proposed_tool, proposed_reason: string,
     accepted: bool, outcome }
   ```
-- **제약**: Notion flat DB. Select/Text/Checkbox만 사용, Relation 없음. property 추가/변경은 Notion UI에서 가능해야 한다.
+- **제약**: Notion flat DB. Select/Text/Checkbox만 사용, Relation 없음. property 추가/변경은 Notion UI에서 가능해야 한다. `proposed_reason`은 실제 Text(rich_text) 속성이며, Notion이 요구하는 필수 title 속성은 `label`(reason_chip·proposed_tool 조합의 표시용 요약)로 별도 분리한다.
 
 ## S4 — outcome 갱신
 
-- **완료 시**: `markOutcomeDone(stepRef)` — 해당 스텝에 걸린 `pending` 로그를 `done`으로.
+- **완료 시**: `markOutcomeDone(stepRef)` — 해당 스텝에 걸린 `pending` 로그를 `done`으로. AgentLog는 Relation이 없어 "그 스텝에 걸린 로그"를 DB로 조회할 수 없으므로, 화면이 encourage/shrink_step으로 같은 스텝을 이어갈 때마다 생긴 로그 id를 배열로 들고 있다가 그 스텝이 완료되는 시점에 배열 전체를 `markOutcomeDone`한다(`stepRef`는 실질적으로 "그 스텝에 대해 쌓인 로그 id 목록").
 - **다음 방문 시**: `sweepStaleLogs()` — 오늘 이전 날짜의 `pending`을 전부 `not_done`으로. 스케줄러 없이 Brain Dump 시작 시 호출.
 - **제약**: 이미 `done`/`not_done`인 로그는 건드리지 않는다(멱등).
 

@@ -68,20 +68,20 @@
 - 작업: `app/lib/agentlog.js` 신규 생성. `logStruggle(entry)`(outcome 제외 필드 받아 Notion에 pending으로 기록), `getRecentLogs({ limit, category })`(category 주면 해당 category 로그를 최신순으로 우선 채우고 부족분은 전체 최신순으로 채움) 구현, S3 계약대로. AgentLog Notion DB는 사용자가 직접 생성(부모 페이지 하위), 속성 이름을 한글→영어(S3 필드명과 동일)로 정리하고 `.env.local`의 `NOTION_AGENTLOG_DB_ID` 연결. 겸사겸사 Steps DB의 `Category`/AgentLog의 `task_category`/`reason_chip` select 옵션 값도 한글에서 영어(cleaning/contact/paperwork/errands/self_care/work/other, overwhelmed/bored/tired/neutral)로 통일(코드에서 직접 비교하는 값이라 영어로 가는 게 낫다고 판단), `docs/skills.md`·`docs/etc/agent-design.md` 동기화. `app/api/brain-dump/route.js`의 `TASK_CATEGORIES`도 같은 값으로 갱신(단, 이 파일은 main 브랜치에도 있어 그쪽 반영은 보류).
 - 검증: `npm run verify` 통과. 임시 라우트(`app/api/test-agentlog`)로 실제 Notion에 `logStruggle` 왕복 기록 + `getRecentLogs`(전체/category 우선) 조회까지 확인 후 라우트·테스트 로그 삭제. `docs/checklist.md` C05 2개 전부 체크, `docs/backlog.md` T05 완료로 변경, `CLAUDE.md` 갱신.
 - 미결: `app/api/brain-dump/route.js`의 `TASK_CATEGORIES` 영어 값 반영이 `main` 브랜치에는 아직 안 됨(추후 별도 커밋 필요). T06("힘들어" 루프 API)부터 이어서 진행.
-- 확인: [ ]
+- 확인: [x] 2026-07-26 00:19 GPT — T05 수정요청. proposed_reason이 S3의 Text가 아니라 Title로 기록됨.
 
 ## 2026-07-25 | T06 | "힘들어" 루프 판단 API
 - 작업: `app/api/struggle/route.js` 신규 생성. `POST /api/struggle`이 `{ reasonChip, currentStep, remainingSteps, recentLogs, rejectedTools, remainingTimeMinutes }`를 받아 Solar(`generateObject`)로 `{ proposedTool, reason }`을 반환. `rejectedTools`는 매 요청마다 후보 목록에서 제외한 뒤 스키마에 반영(동적 좁히기). `recentLogs`가 비면(cold start) reasonChip 기준 참고용 기울기를 프롬프트에 명시(강제 아님, agent-design.md 결정 사항).
 - 검증: `npm run verify` 통과. 실제 서버로 3가지 시나리오 확인 — (1) cold start + bored → swap_task로 합리적 판단, (2) rejectedTools에 든 tool 재요청, (3) recentLogs에 반복 거절 패턴 있을 때 다른 tool로 전환하는지. (2) 테스트 중 실제 버그 발견·수정(아래).
 - 버그 발견·수정: Solar가 `z.enum`으로 후보를 좁혀도, 그리고 프롬프트에 "이 tool은 절대 다시 고르지 마라"고 명시해도 이미 거절된 tool을 다시 반환하는 사례를 재현함(T02의 스키마 미준수 문제와 같은 계열). `proposedTool` 스키마를 `z.enum`에서 `z.string()`으로 바꾸고, 응답 후 코드에서 후보 목록 포함 여부를 직접 검사해 후보 밖이면 첫 후보로 안전하게 대체하도록 수정(사용자에게 보이는 reason엔 내부 교정 사실 대신 자연스러운 대체 문구 사용, `console.warn`으로만 서버 로그에 남김). 이 계기로 checklist.md C06의 "스키마가 강제한다" 문구도 "코드가 보장한다"로 실제 구현에 맞게 수정.
 - 미결: T07(재판단 시간 게이트), T08(이유 칩 + 수락/거절 UI)에서 이 API를 실제로 호출하도록 연결 예정. `/api/struggle`은 아직 화면과 연결 안 됨.
-- 확인: [ ]
+- 확인: [x] 2026-07-26 00:19 GPT — T06 승인. S2 판단 계약 및 verify 통과 확인.
 
 ## 2026-07-25 | T07 | 재판단 시간 게이트
 - 작업: `app/api/struggle/route.js`에 게이트 로직 추가. `remainingWorkload`(남은 스텝 예상 시간 합) 계산, `rejectedTools`가 비어있지 않은데(재판단 중) `remainingTimeMinutes > remainingWorkload`가 거짓이면(시간 부족) 후보를 `postpone_task`/`end_session`(이미 거절 안 된 것)으로 좁히고, 둘 다 거절됐으면 `end_session`으로 확정. 이 상황에서만 프롬프트에도 "자유롭게 제안하지 말고 이 둘 중에서만 골라라"를 명시. T06에서 만든 안전장치(후보 밖 반환 시 대체)는 그대로 재사용.
 - 검증: `npm run verify` 통과. 실제 서버로 3가지 시나리오 확인 — (1) 재판단 중이지만 시간 충분 → 자유롭게 다른 tool 제안, (2) 재판단 중 + 시간 부족 → end_session으로 수렴, (3) 시간 부족 + postpone_task까지 이미 거절된 극단 케이스 → end_session으로 확정. 셋 다 기대대로 동작.
 - 미결: T08(이유 칩 + 수락/거절 UI)에서 이 게이트를 실제로 호출하는 재판단 루프(거절 시 rejectedTools에 추가해서 재요청)를 화면에 붙여야 함. T19(마감 시간 표시 + 연장 버튼, 이슈 #41)는 이 게이트가 쓰는 "자정 고정" 가정을 사용자가 보완할 수 있게 하는 후속 작업으로 별도 등록해둠.
-- 확인: [ ]
+- 확인: [x] 2026-07-26 00:19 GPT — T07 수정요청. 수렴 후보 소진 시 거절된 end_session을 재선택함.
 
 ## 2026-07-25 | T08 | 이유 칩 + 제안/수락/거절 UI
 - 작업: `app/components/ReasonChips.js`(이유 칩 4개), `app/components/ProposalCard.js`(제안+reason+수락/거절) 신규. `app/page.js`에 "reason"/"proposal" 스텝 추가, `onStruggle`을 고정 `RestSuggestion`에서 이유 칩 플로우로 교체. 거절 시 `rejectedTools`에 추가해 `/api/struggle` 재호출(재판단), 수락 시 tool 8개 전부 실제 동작 연결: suggest_break→RestSuggestion, end_session→홈, postpone_task→`/api/steps/postpone`(신규, ScheduledDate 내일로 갱신)+다음 스텝, encourage/shrink_step→구조 변경 없이 하던 화면 복귀, reorder_graph/swap_task→로컬에서 현재 스텝을 뒤로 미루고 순서 변경, split_node→`/api/brain-dump`로 현재 스텝만 재분할 후 `/api/steps/archive`(신규)로 원본 제거하고 새 목록 재조회. `OneFocusView.js`의 "나 지금 힘들어" 버튼도 라벤더에서 ink/white 아웃라인으로 통일(다른 브랜치에서만 반영되고 이 브랜치엔 안 온 상태였음).
@@ -89,16 +89,24 @@
 - 버그 발견·수정 (T08 범위 밖, T02): 테스트 중 `/api/brain-dump`가 Solar가 가끔 `estimatedMinutes`로 정수 대신 소수(예: 12.5)를 반환하면 `z.number().int()` 검증에서 500 에러로 죽는 걸 발견. `estimatedMinutes` 스키마에서 `.int()` 제거하고 저장 전 `Math.round()`로 반올림하도록 방어 코드 추가, 5회 연속 재현 테스트로 확인.
 - 추가 발견·수정: 제안 카드의 `reason` 문장에 `reasonChip`/`estimatedMinutes` 같은 내부 변수 이름이 그대로 노출되던 것을 발견, 프롬프트에 "개발 용어 쓰지 말고 자연스러운 문장으로" 제약 추가해 수정.
 - 미결: T09(outcome 기록 — 완료 시 done, 다음 방문 시 이전 pending 일괄 not_done), T10(개인화 — recentLogs 실제 연결). split_node 재분할 시 원래 스텝 순서(created_time) 기준으로 다시 맨 위로 오는 점은 알려진 단순화.
-- 확인: [ ]
+- 확인: [x] 2026-07-26 00:19 GPT — T08 수정요청. shrink_step 수락이 완료 기준 축소를 실행하지 않음.
 
 ## 2026-07-25 | T09 | outcome 기록
 - 작업: T08에서 빠져있던 실제 로그 기록 자체를 이번에 같이 채움. `app/api/agent-log/route.js`(신규) — 화면에서 수락/거절이 결정된 뒤 `logStruggle` 호출해 실제로 기록. `app/lib/agentlog.js`에 `markOutcomeDone(logId)`(즉시 done 갱신), `sweepStaleLogs()`(오늘 이전 timestamp의 pending을 전부 not_done, 로그가 어느 스텝이었는지는 안 보고 시간만 봄) 추가. `app/api/brain-dump/route.js`에 `sweepStaleLogs()` 호출 연결(S4 "Brain Dump 시작 시"). `app/api/steps/complete/route.js`가 `agentLogId`를 선택적으로 받아 `markOutcomeDone` 호출. `page.js`는 수락/거절마다 `logDecision()`으로 기록하고, encourage/shrink_step처럼 같은 스텝을 계속하는 경우만 로그 id를 `trackedAgentLogId`로 들고 있다가 그 스텝이 실제로 끝나면 `/api/steps/complete`에 같이 넘김.
 - 검증: `npm run verify` 통과. (1) 어제 날짜 pending 로그를 수동 생성 후 `/api/brain-dump` 호출 → not_done으로 정리됨 확인. (2) 실제 브라우저로 이유 칩(그냥 그래요)→제안(encourage)→수락까지 진행 후 AgentLog에 정확한 필드로 기록되는지 확인. (3) `/api/steps/complete`에 실제 스텝 id + 임의 생성한 pending 로그 id를 같이 보내 `markOutcomeDone`이 실제로 outcome을 done으로 바꾸는지 확인.
 - 미결: T10(개인화) — `recentLogs`가 아직 항상 빈 배열이라 `/api/struggle`이 과거 패턴을 못 보고 판단함. AgentLog가 "어느 스텝이었는지" Relation 없이 설계된 탓에, postpone_task/split_node/reorder_graph/swap_task/suggest_break/end_session 경로로 넘어간 로그는 완료 시점을 직접 못 잡고 다음 방문 때 not_done으로만 정리됨(설계상 알려진 단순화, S4 의도와 일치).
-- 확인: [ ]
+- 확인: [x] 2026-07-26 00:19 GPT — T09 수정요청. stepRef 기반 pending 로그 갱신 계약을 단일 logId로 축소함.
 
 ## 2026-07-25 | T10 | 개인화 (최근 로그 + 행동 패턴을 판단에 반영)
 - 작업: `docs/skills.md` S2 갱신 — `recentLogs`를 클라이언트 입력에서 제거하고 "서버가 내부에서 `getRecentLogs` 호출"로 계약 수정(클라이언트가 Notion에 직접 접근할 방법이 없어서). `app/api/struggle/route.js`가 `getRecentLogs({ limit: 15, category: currentStep.category })`를 직접 호출하고, 추가로 `getBehaviorSummary()`(최근 완료 스텝 10개의 예상 대비 실제 시간 평균 배율 + 미룬 적 있는 비율)를 계산해 프롬프트에 포함. Notion Steps DB에 `StartedAt`·`CompletedAt`·`ActualMinutes`·`PostponeCount` 4개 속성 신규. `page.js`가 타이머 시작 시각을 `stepStartedAt`으로 들고 있다가 완료 시 실제 소요 분을 계산해 `/api/steps/complete`에 같이 전송(별도 "시작" API 호출 없이). `app/lib/notion.js`에 `getPage` 헬퍼 추가, `/api/steps/postpone`이 이걸로 기존 `PostponeCount`를 읽어 +1.
 - 검증: `npm run verify` 통과. (1) 같은 category로 `suggest_break`를 3번 거절한 과거 로그를 미리 만들어두고 `/api/struggle` 호출 → `rejectedTools`로 명시적으로 막지 않았는데도 실제로 다른 tool(`swap_task`)을 제안하는 것으로 개인화 반영 확인. (2) 실제 스텝에 postpone 2번 호출 → `PostponeCount=2` 확인. (3) `/api/steps/complete`에 startedAt/completedAt/actualMinutes 전달 → Notion에 정확히 기록되는 것 확인.
 - 미결: T11(Agent 평가 — 정답 세트 + Precision/Recall 스크립트)만 남음. 이걸로 Agent 루프(T05~T10) 전체가 실데이터 기반으로 동작.
+- 확인: [x] 2026-07-26 00:19 GPT — T10 승인. 최근 로그·행동 패턴 반영 및 verify 통과 확인.
+
+## 2026-07-26 | T05·T07·T08·T09 | GPT 리뷰 수정요청 4건 반영
+- T05 반영: `app/lib/agentlog.js`의 `proposed_reason`을 Notion `title`이 아니라 실제 `rich_text`(Text) 속성으로 기록하도록 수정. Notion DB의 필수 title 속성은 `label`(reason_chip → proposed_tool 요약)로 분리해 신규 추가. `docs/skills.md` S3, `docs/etc/agent-design.md` AgentLog 스키마 표 동기화.
+- T07 반영: `app/api/struggle/route.js`에서 시간 부족 수렴 상태에 `postpone_task`/`end_session`이 둘 다 이미 거절된 경우, 거절된 tool을 다시 후보로 강제하던 로직을 제거하고 모델 호출 없이 `{ proposedTool: "end_session", reason, final: true }`로 즉시 종결하도록 수정. `ProposalCard.js`가 `isFinal`을 받아 거절 버튼을 숨기지 않고 비활성화 + 안내 문구("지금은 더 미룰 수 없어요")로 처리(실수로 눌러도 안전). `docs/skills.md` S2 출력에 `final` 필드 추가.
+- T08 반영: `/api/struggle`의 출력 스키마에 `revisedTitle`(shrink_step 전용, 완료 기준을 줄인 새 제목) 추가하고 프롬프트에 생성 지시 포함. `app/api/steps/shrink/route.js` 신규 — 수락 시 실제로 Notion의 스텝 Title을 revisedTitle로 갱신. `page.js`에서 `shrink_step`을 `encourage`와 분리된 분기로 처리.
+- T09 반영: `trackedAgentLogId`(단일)를 `trackedAgentLogIds`(배열)로 변경, 같은 스텝에서 encourage/shrink_step을 여러 번 수락해도 로그 id가 쌓이도록 수정. `/api/steps/complete`가 `agentLogIds` 배열을 받아 전부 `markOutcomeDone` 처리. `docs/skills.md` S4에 "AgentLog에 Relation이 없어 화면이 id 목록을 직접 들고 있는다"는 실제 구현 방식 명시.
+- 검증: `npm run verify` 통과. 4건 전부 실제 API 호출로 재현·확인 — (1) label/proposed_reason이 각각 Title/Text로 올바르게 기록됨, (2) postpone_task+end_session 둘 다 거절 시 모델 호출 없이 `final:true` 즉시 반환, (3) `/api/steps/shrink` 호출 시 실제 Notion Title 갱신 확인, (4) pending 로그 3개를 한 번에 `agentLogIds`로 보내 전부 done 갱신 확인.
 - 확인: [ ]

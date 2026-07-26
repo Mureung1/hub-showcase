@@ -136,6 +136,7 @@ zod `z.enum([...])`으로 강제하면 `generateObject`가 이 중 하나로만 
 | proposed_reason | Text | Agent가 생성한 한 줄 |
 | accepted | Checkbox | — |
 | outcome | Select | done / not_done / pending |
+| label | Title | Notion 필수 title 속성. 표시용 요약(`reason_chip → proposed_tool`)만 담고 계약 필드로는 안 씀 |
 
 Relation을 안 쓰는 이유: Select/Text 속성은 Notion 화면에서 옵션을 바로 추가·수정할 수 있어서, 카테고리나 tool 목록이 바뀌어도 코드나 다른 DB 스키마를 안 건드리고 Notion UI에서만 고치면 된다. 처음부터 구조를 딱 맞게 짜기보다, 이후 실제로 써보면서 property를 추가/변경하기 쉬운 쪽을 택했다 — 지금 표의 항목들은 확정이 아니라 초안이다.
 

@@ -12,8 +12,19 @@ const TOOL_LABELS = {
 };
 
 // proposedTool, reason: /api/struggle 응답. onAccept/onReject: 버튼 클릭 시 호출.
-// isLoading: 거절 후 재판단(재요청) 중일 때 버튼을 잠깐 비활성화
-export default function ProposalCard({ proposedTool, reason, onAccept, onReject, isLoading }) {
+// isLoading: 거절 후 재판단(재요청) 중일 때 버튼을 잠깐 비활성화.
+// isFinal: 시간이 부족해 더 이상 다른 제안을 받을 수 없는 최종 상태(C07) — 거절 버튼을
+// 숨기지 않고 비활성화해서 이유를 보여준다(실수로 눌러도 안전하게 아무 일도 안 일어남).
+export default function ProposalCard({
+  proposedTool,
+  reason,
+  onAccept,
+  onReject,
+  isLoading,
+  isFinal,
+}) {
+  const rejectDisabled = isLoading || isFinal;
+
   return (
     <main
       style={{
@@ -33,6 +44,11 @@ export default function ProposalCard({ proposedTool, reason, onAccept, onReject,
         {TOOL_LABELS[proposedTool] ?? "이렇게 해볼까요?"}
       </h1>
       <p style={{ fontSize: "14px", color: "var(--ink-soft)", maxWidth: "320px" }}>{reason}</p>
+      {isFinal && (
+        <p style={{ fontSize: "12px", color: "var(--ink-faint)", maxWidth: "300px" }}>
+          지금은 더 미룰 수 없어요, 이 중 하나만 고를 수 있어요
+        </p>
+      )}
 
       <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
         <button
@@ -54,7 +70,7 @@ export default function ProposalCard({ proposedTool, reason, onAccept, onReject,
         </button>
         <button
           onClick={onReject}
-          disabled={isLoading}
+          disabled={rejectDisabled}
           style={{
             padding: "18px 40px",
             borderRadius: "100px",
@@ -63,8 +79,8 @@ export default function ProposalCard({ proposedTool, reason, onAccept, onReject,
             color: "var(--ink)",
             fontFamily: "var(--font-body)",
             fontSize: "18px",
-            cursor: isLoading ? "default" : "pointer",
-            opacity: isLoading ? 0.6 : 1,
+            cursor: rejectDisabled ? "default" : "pointer",
+            opacity: rejectDisabled ? 0.4 : 1,
           }}
         >
           {isLoading ? "다시 생각하는 중..." : "거절"}

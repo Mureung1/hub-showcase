@@ -32,9 +32,9 @@ export default function Home() {
   const [proposal, setProposal] = useState(null);
   const [struggleLoading, setStruggleLoading] = useState(false);
   const [struggleError, setStruggleError] = useState(null);
-  // encourage/shrink_step으로 하던 스텝을 계속할 때만 채워짐: 그 스텝이 나중에 진짜 끝나면
-  // 이 id로 AgentLog의 그 로그를 done으로 갱신한다(S4 markOutcomeDone).
-  const [trackedAgentLogId, setTrackedAgentLogId] = useState(null);
+  // encourage/shrink_step으로 하던 스텝을 계속할 때마다 쌓임(같은 스텝에서 여러 번 있을 수 있어서
+  // 하나로 덮어쓰지 않고 배열로 모은다). 그 스텝이 나중에 진짜 끝나면 전부 done으로 갱신한다(S4).
+  const [trackedAgentLogIds, setTrackedAgentLogIds] = useState([]);
   // 타이머가 실제로 시작된 시각(C10 행동 패턴: StartedAt/ActualMinutes 계산용).
   const [stepStartedAt, setStepStartedAt] = useState(null);
 
@@ -82,7 +82,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: current.id,
-          agentLogId: trackedAgentLogId,
+          agentLogIds: trackedAgentLogIds,
           startedAt: stepStartedAt?.toISOString() ?? null,
           completedAt: completedAt.toISOString(),
           actualMinutes,
@@ -94,7 +94,7 @@ export default function Home() {
       return; // Notion에 Done 기록이 안 됐으니 다음 스텝으로 넘어가지 않는다.
     }
 
-    setTrackedAgentLogId(null);
+    setTrackedAgentLogIds([]);
     setStepStartedAt(null);
     advanceToNextStep();
   }
@@ -200,11 +200,30 @@ export default function Home() {
       return;
     }
 
-    if (tool === "encourage" || tool === "shrink_step") {
-      // 구조 변경 없이 격려/축소 문구(이미 proposal.reason으로 보여줌)만 전하고 하던 화면으로.
-      // 이 스텝을 계속하는 거라, 나중에 진짜 완료되면 done으로 갱신할 수 있게 로그 id를 들고 있는다.
+    if (tool === "encourage") {
+      // 구조 변경 없이 격려 문구(이미 proposal.reason으로 보여줌)만 전하고 하던 화면으로.
+      // 이 스텝을 계속하는 거라, 나중에 진짜 완료되면 done으로 갱신할 수 있게 로그 id를 쌓아둔다.
       const logId = await logDecision(true);
-      setTrackedAgentLogId(logId);
+      if (logId) setTrackedAgentLogIds((ids) => [...ids, logId]);
+      resetStruggleState();
+      setStep("focus");
+      return;
+    }
+
+    if (tool === "shrink_step") {
+      // 완료 기준 자체를 줄인다: /api/struggle이 함께 반환한 revisedTitle로 스텝 제목을 실제로 갱신.
+      const logId = await logDecision(true);
+      if (logId) setTrackedAgentLogIds((ids) => [...ids, logId]);
+      if (proposal.revisedTitle) {
+        await fetch("/api/steps/shrink", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: current.id, title: proposal.revisedTitle }),
+        });
+        const updated = [...microsteps];
+        updated[currentIndex] = { ...updated[currentIndex], title: proposal.revisedTitle };
+        setMicrosteps(updated);
+      }
       resetStruggleState();
       setStep("focus");
       return;
@@ -324,6 +343,7 @@ export default function Home() {
         onAccept={handleAccept}
         onReject={handleReject}
         isLoading={struggleLoading}
+        isFinal={proposal?.final}
       />
     );
   }

@@ -86,7 +86,17 @@ export async function POST(request) {
     const convergeTools = ["postpone_task", "end_session"].filter(
       (tool) => !rejectedTools.includes(tool)
     );
-    candidates = convergeTools.length > 0 ? convergeTools : ["end_session"];
+    if (convergeTools.length === 0) {
+      // postpone_task/end_session 둘 다 이미 거절됨: 더 제안할 게 없다. 거절된 tool을
+      // "새 제안"인 것처럼 다시 내놓지 않기 위해 모델 호출 없이 강제 종결한다(S2 "재선택 금지").
+      // final:true는 화면에서 거절 버튼을 비활성화하는 신호로 쓴다.
+      return Response.json({
+        proposedTool: "end_session",
+        reason: "오늘은 여기까지 하고 마무리할게요.",
+        final: true,
+      });
+    }
+    candidates = convergeTools;
   }
 
   const toolChoices = candidates.length > 0 ? candidates : TOOLS;
@@ -97,6 +107,8 @@ export async function POST(request) {
   const struggleSchema = z.object({
     proposedTool: z.string(),
     reason: z.string().describe("이 tool을 고른 이유를 사용자에게 보여줄 한 줄 문장"),
+    // shrink_step일 때만 사용: 완료 기준을 실제로 줄인 새 스텝 제목.
+    revisedTitle: z.string().optional(),
   });
 
   const isColdStart = recentLogs.length === 0;
@@ -117,9 +129,11 @@ export async function POST(request) {
     (behaviorSummary
       ? " 최근 완료한 스텝들의 행동 패턴도 참고해라: avgActualVsEstimatedRatio는 예상 시간 대비 실제 걸린 시간의 배율이다(1보다 크면 평소 예상보다 오래 걸린다는 뜻). postponedStepsOutOfRecent는 최근 스텝 중 한 번이라도 미룬 적 있는 비율이다."
       : "") +
+    " shrink_step을 고른다면, 완료 기준 자체를 실제로 최소화한 새 스텝 제목을 revisedTitle에 " +
+    '담아라(예: "책상 정리하기" → "책상 위 물건 1개만 치우기"). 다른 tool에는 revisedTitle을 넣지 마라. ' +
     ' reason은 사용자에게 그대로 보여줄 문장이니, reasonChip·estimatedMinutes·remainingSteps 같은 ' +
     "변수 이름이나 개발 용어를 절대 쓰지 말고 짧고 자연스러운 한국어 말투로 써라. " +
-    '결과는 반드시 다음 JSON 형식으로만 응답한다(다른 필드 추가 금지): {"proposedTool": string, "reason": string}';
+    '결과는 반드시 다음 JSON 형식으로만 응답한다(다른 필드 추가 금지): {"proposedTool": string, "reason": string, "revisedTitle": string(선택)}';
 
   const prompt = JSON.stringify({
     reasonChip,
