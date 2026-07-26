@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: careersignal
+Version: 0.1.0
+Summary: CareerSignal 에이전트 서비스
+Requires-Python: >=3.13
