@@ -265,13 +265,28 @@ def trend(topic: str, successful: list[dict]) -> dict:
     return _call_trend(topic, summaries)
 
 
+def run_agent(topic: str, limit: int = config.DEFAULT_LIMIT) -> Generator[dict, None, None]:
+    """에이전트 5단계 루프의 진입점. 반드시 제너레이터다 (CLAUDE.md 불변식).
+
+    sse-contract.md의 stage를 그대로 yield한다. main.py는 이 yield를 SSE로
+    감싸기만 한다 — 로직은 이 함수 안에 전부 있다.
+
+    이번 서브이슈(6-1)는 search+found 두 이벤트만 담당한다. judge 호출·
+    논문별 파이프라인·empty/trend/done 분기는 이후 서브이슈(#47~#50)가
+    이 함수를 계속 이어서 채운다.
+    """
+    yield {"stage": "search", "topic": topic}
+    papers = tools.search_arxiv(topic, limit=limit)
+    yield {"stage": "found", "count": len(papers)}
+
+
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="agent.py 개별 단계 검증")
+    parser = argparse.ArgumentParser(description="run_agent()를 터미널에서 돌려 이벤트를 검증")
     parser.add_argument("--topic", required=True)
     parser.add_argument("--limit", type=int, default=config.DEFAULT_LIMIT)
     args = parser.parse_args()
 
-    papers = tools.search_arxiv(args.topic, limit=args.limit)
-    print(judge(args.topic, papers))
+    for event in run_agent(args.topic, limit=args.limit):
+        print(event)
