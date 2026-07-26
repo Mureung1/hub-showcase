@@ -1,11 +1,21 @@
+import { useState } from "react"
 import Badge from "./Badge.jsx"
 import { SENTIMENT_META } from "../constants/sentiment.js"
 
 export default function BottomSheet({ decision, marketSentiment, insight, onClose }) {
   const sentiment = SENTIMENT_META[marketSentiment]
+  const [memoRevealed, setMemoRevealed] = useState(false)
+  const [memo, setMemo] = useState("")
+
+  // 오버레이 클릭/닫기 버튼 모두 동일하게 trim된 메모(빈 문자열이면 null)를
+  // 넘기며 닫는다 — 바텀시트가 닫히는 모든 경로에서 저장 동작이 같아야 한다.
+  function handleClose() {
+    const trimmed = memo.trim()
+    onClose(trimmed === "" ? null : trimmed)
+  }
 
   return (
-    <div className="bottom-sheet-overlay" onClick={onClose}>
+    <div className="bottom-sheet-overlay" onClick={handleClose}>
       <div
         className="bottom-sheet"
         role="dialog"
@@ -30,7 +40,28 @@ export default function BottomSheet({ decision, marketSentiment, insight, onClos
           <p>{insight}</p>
         </div>
 
-        <button type="button" className="bottom-sheet-close" onClick={onClose}>
+        <div className="bottom-sheet-memo">
+          {!memoRevealed ? (
+            <button
+              type="button"
+              className="bottom-sheet-memo-trigger"
+              onClick={() => setMemoRevealed(true)}
+            >
+              내 생각 남기기
+            </button>
+          ) : (
+            <textarea
+              className="bottom-sheet-memo-input"
+              placeholder="이 판단을 내린 이유를 한 줄로 남겨보세요"
+              value={memo}
+              maxLength={200}
+              onChange={(e) => setMemo(e.target.value)}
+              autoFocus
+            />
+          )}
+        </div>
+
+        <button type="button" className="bottom-sheet-close" onClick={handleClose}>
           닫기
         </button>
       </div>

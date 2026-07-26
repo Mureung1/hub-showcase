@@ -189,7 +189,8 @@
   "summaryBullets": ["...", "...", "..."],
   "decision": "buy",
   "marketSentiment": "bearish",
-  "insight": "실적 가이던스 하향은 단기적으로 주가에 부정적이지만, 이번 하락은 개별 기업 이슈보다 시장 전반의 심리적 반응에 가까워 과매도 국면일 가능성이 있습니다."
+  "insight": "실적 가이던스 하향은 단기적으로 주가에 부정적이지만, 이번 하락은 개별 기업 이슈보다 시장 전반의 심리적 반응에 가까워 과매도 국면일 가능성이 있습니다.",
+  "memo": "과매도 국면이라 판단해 매수"
 }
 
 // 응답
@@ -203,6 +204,7 @@
     "decision": "buy",
     "marketSentiment": "bearish",
     "insight": "실적 가이던스 하향은 단기적으로 주가에 부정적이지만, 이번 하락은 개별 기업 이슈보다 시장 전반의 심리적 반응에 가까워 과매도 국면일 가능성이 있습니다.",
+    "memo": "과매도 국면이라 판단해 매수",
     "createdAt": "2026-07-13T10:00:00+09:00"
   }
 }
@@ -222,6 +224,12 @@
 > (`buy`→Bullish, `hold`→Neutral, `sell`→Bearish). `summaryBullets`/`marketSentiment`는
 > 계속 선택값이다.
 
+> **2026-07-26 변경**: `memo`(선택, nullable) 필드를 추가했다. 바텀시트의
+> "내 생각 남기기"에 입력한 판단 근거 한 줄을 함께 저장한다. 이후 메모만
+> 수정할 때는 이 엔드포인트를 다시 호출하지 않고 `8. PATCH
+> /api/decisions/:id`를 쓴다(재판단 insert와 메모 수정을 분리해 인사이트
+> 노트 카드가 중복 생성되지 않게 하기 위함).
+
 ## 6. GET /api/decisions — 히스토리 조회
 
 ```json
@@ -237,6 +245,7 @@
         "decision": "buy",
         "marketSentiment": "bearish",
         "insight": "실적 가이던스 하향은 단기적으로 주가에 부정적이지만, 이번 하락은 개별 기업 이슈보다 시장 전반의 심리적 반응에 가까워 과매도 국면일 가능성이 있습니다.",
+        "memo": "과매도 국면이라 판단해 매수",
         "createdAt": "2026-07-13T10:00:00+09:00"
       }
     ]
@@ -291,3 +300,33 @@ Supabase가 발급하는 uuid다). 인사이트 노트의 히스토리 카드는
   자체를 건너뜀).
 - 조회용 `GET /api/article-reads`는 아직 없다(현재 요구사항인 "분리 로깅 +
   FK 연결"에는 불필요 — 집계/조회 화면이 필요해지면 별도 Task).
+
+## 8. PATCH /api/decisions/:id — 판단 근거 메모 수정 (신규, 2026-07-26)
+
+```json
+// 요청
+PATCH /api/decisions/3f2a1c9e-...-uuid
+{ "memo": "실적 가이던스는 나빴지만 과매도라 판단해 매수" }
+
+// 응답 (본인 소유 + 존재)
+{
+  "success": true,
+  "data": { "id": "3f2a1c9e-...-uuid", "memo": "실적 가이던스는 나빴지만 과매도라 판단해 매수" }
+}
+
+// 응답 (없거나 타 사용자 소유)
+{ "success": false, "error": "decision not found" }  // 404
+```
+
+- 인사이트 노트 카드에서 이미 저장된 판단의 메모만 고쳐 쓸 때 쓴다. `memo`
+  필드만 갱신하며, `decision`/`marketSentiment`/`insight` 등 다른 필드나
+  row 자체는 건드리지 않는다 — 즉 이 엔드포인트는 새 row를 만들지 않으므로
+  인사이트 노트에 카드가 중복 생성될 일이 없다.
+- `memo`에 `null`을 보내면 메모를 지울 수 있다. 빈 문자열은 클라이언트가
+  trim 후 `null`로 정규화해서 보낸다.
+- 소유권 검증: 서버는 `SUPABASE_SERVICE_ROLE_KEY`로 접속해 RLS를 우회하므로,
+  `decisionStore.js`의 `updateDecisionMemo`가 `user_id` 조건을 애플리케이션
+  레벨에서 직접 검사한다 — 존재하지 않거나 본인 소유가 아니면 `404`를
+  반환한다.
+- **인증(필수)**: `Authorization: Bearer <access_token>` 헤더가 없거나
+  유효하지 않으면 `401`을 반환한다.

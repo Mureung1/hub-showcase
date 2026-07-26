@@ -8,7 +8,7 @@ export async function readDecisions(userId) {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from("decisions")
-    .select("id, decision, market_sentiment, insight, summary_bullets, created_at, articles(title, url)")
+    .select("id, decision, market_sentiment, insight, summary_bullets, memo, created_at, articles(title, url)")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
 
@@ -22,11 +22,15 @@ export async function readDecisions(userId) {
     decision: row.decision,
     marketSentiment: row.market_sentiment,
     insight: row.insight,
+    memo: row.memo ?? null,
     createdAt: row.created_at,
   }))
 }
 
-export async function appendDecision(userId, { url, title, summaryBullets, decision, marketSentiment, insight }) {
+export async function appendDecision(
+  userId,
+  { url, title, summaryBullets, decision, marketSentiment, insight, memo },
+) {
   const supabase = getSupabase()
   const article = await ensureArticle(title, url)
 
@@ -39,8 +43,9 @@ export async function appendDecision(userId, { url, title, summaryBullets, decis
       decision,
       market_sentiment: marketSentiment ?? null,
       insight: insight ?? null,
+      memo: memo ?? null,
     })
-    .select("id, decision, market_sentiment, insight, summary_bullets, created_at")
+    .select("id, decision, market_sentiment, insight, summary_bullets, memo, created_at")
     .single()
 
   if (error) throw new Error(error.message)
@@ -53,6 +58,25 @@ export async function appendDecision(userId, { url, title, summaryBullets, decis
     decision: saved.decision,
     marketSentiment: saved.market_sentiment,
     insight: saved.insight,
+    memo: saved.memo ?? null,
     createdAt: saved.created_at,
   }
+}
+
+// 메모 수정 전용 — 재판단(insert) 경로와 완전히 분리해 인사이트 노트 카드가
+// 중복 생성되지 않게 한다. 서버는 SUPABASE_SERVICE_ROLE_KEY로 접속해 RLS를
+// 우회하므로, 소유권 검증은 여기 .eq("user_id", userId)가 담당한다 — 빠뜨리면
+// 타인의 decision id로 메모를 바꿀 수 있는 IDOR이 된다.
+export async function updateDecisionMemo(userId, id, memo) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from("decisions")
+    .update({ memo: memo ?? null })
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("id, memo")
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+  return data
 }

@@ -107,7 +107,7 @@ export default function Reader() {
     setPendingDecision(decision)
   }
 
-  function handleCloseSheet() {
+  function handleCloseSheet(memo) {
     // decisions는 로그인 사용자별 데이터라 비로그인 상태에서는 저장을
     // 건너뛴다(llmService.js의 saveTermsToVocabulary와 동일한 패턴) — 저장
     // 실패를 setError로 올리면 방금 다 읽은 리더뷰가 에러 화면으로 덮인다.
@@ -124,6 +124,7 @@ export default function Reader() {
         decision: pendingDecision,
         marketSentiment: analysis?.marketSentiment,
         insight: analysis?.insight,
+        memo,
       })
         .then((saved) => {
           setToastMessage("✅ 인사이트 노트에 저장되었습니다.")

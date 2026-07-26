@@ -86,10 +86,12 @@
 | decision | text | `check (decision in ('buy','hold','sell')) not null` |
 | market_sentiment | text | `check (market_sentiment in ('bullish','neutral','bearish'))`, nullable |
 | insight | text | nullable |
+| memo | text | nullable, 판단 근거 한 줄 메모(2026-07-26 추가). `POST /api/decisions`로 최초 저장, `PATCH /api/decisions/:id`로 이 필드만 수정(카드 중복 생성 방지) |
 | created_at | timestamptz | `default now()` |
 
 동일 기사에 대한 재판단은 제약 없이 허용(현재 앱 동작과 동일하게 unique
-제약을 걸지 않음).
+제약을 걸지 않음). 이 정책은 `memo` 추가 이후에도 그대로 유지되며, 메모
+수정은 재판단(insert)과 별개인 update 전용 경로로만 이뤄진다.
 
 ### `article_reads`
 

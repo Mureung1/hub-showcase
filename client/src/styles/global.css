@@ -619,6 +619,36 @@ h2 {
   color: var(--text-primary);
 }
 
+.bottom-sheet-memo {
+  margin-bottom: var(--space-md);
+}
+
+.bottom-sheet-memo-trigger {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--brand-blue);
+  cursor: pointer;
+}
+
+.bottom-sheet-memo-input {
+  width: 100%;
+  min-height: 60px;
+  background: var(--surface-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  font: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-primary);
+  resize: vertical;
+}
+
 .bottom-sheet-close {
   display: block;
   width: 100%;
@@ -792,6 +822,60 @@ h2 {
 .history-compare-label {
   font-size: 13px;
   line-height: 20px;
+  color: var(--text-secondary);
+}
+
+.history-memo {
+  margin-bottom: var(--space-sm);
+}
+
+.history-memo-display {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--surface-bg);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.history-memo-input {
+  width: 100%;
+  min-height: 60px;
+  background: var(--surface-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  margin-bottom: var(--space-xs);
+  resize: vertical;
+}
+
+.history-memo-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.history-memo-actions button {
+  font-size: 13px;
+  font-weight: 600;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  background: var(--brand-blue);
+  color: var(--text-inverse);
+}
+
+.history-memo-actions button:last-child {
+  background: var(--surface-bg);
   color: var(--text-secondary);
 }
 
