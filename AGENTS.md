@@ -17,6 +17,42 @@ CareerSignal은 채용공고의 기준선과 편차를 해석해, 직무·기업
 - `agent/`: AI 에이전트용 Python·FastAPI 서비스. LangChain·LangGraph로 오케스트레이션하며, Express가 내부 HTTP로 호출한다.
 - DB: Supabase(Postgres + pgvector). 일반 화면은 사전 생성된 활성 분석 결과를 조회하고, 에이전트는 데이터 갱신과 사용자 공고 직접 입력 때 실행한다. `server/data/`의 JSON 파일은 샘플 데이터의 원본 fixture다.
 
+### `agent/` 내부 구조
+
+```text
+agent/
+├─ pyproject.toml
+├─ alembic.ini
+├─ migrations/                     데이터베이스 스키마의 기준
+├─ scripts/smoke.py                외부 API 연결 점검
+├─ src/careersignal/
+│  ├─ api/                         FastAPI 라우트
+│  ├─ contracts/                   Pydantic 공통 실행 계약
+│  ├─ domain/                      순수 개념. 저장소·모델을 import하지 않는다
+│  ├─ orchestration/               Control Plane. 영향 범위·실행 순서·활성화
+│  ├─ agents/                      도메인 에이전트 여섯 종
+│  ├─ pipelines/                   결정적 helper. 에이전트를 호출하지 않는다
+│  ├─ retrieval/                   라우터·검색·융합·재정렬·근거 집합
+│  ├─ verification/                검사 여덟 종과 통합 검증
+│  ├─ taxonomy/                    차원 발견·승격·할당
+│  ├─ graph/                       온톨로지·그래프 구축·탐색
+│  ├─ wiki/                        깊이 기준 생성
+│  ├─ metrics/                     지표 정의·실행·정책
+│  ├─ repositories/                데이터베이스 접근의 유일한 경로
+│  ├─ providers/                   모델 제공자별 어댑터
+│  ├─ evaluation/                  평가 세트 적재·채점·비교
+│  └─ telemetry/                   실행·검색·도구 호출 기록
+└─ tests/
+```
+
+세 가지 경계를 지킨다.
+
+- `contracts/`와 `domain/`은 저장소와 모델을 import하지 않는다.
+- 데이터베이스 접근은 `repositories/`만 수행한다. 이 경계가 구성요소별 권한을 코드 구조로 강제한다.
+- `orchestration/`은 `pipelines/` 밖에 둔다. 오케스트레이터만 에이전트를 스케줄링하고, helper 파이프라인은 에이전트를 시작하지 않는다.
+
+계층의 정의는 docs/architecture.md 2장에 있다.
+
 ## 프로토타입 배포
 
 - Vercel 프로젝트는 `prototype/`을 Root Directory로 사용한다.
@@ -32,6 +68,18 @@ CareerSignal은 채용공고의 기준선과 편차를 해석해, 직무·기업
 - 오리진 기준 브랜치: 오리진(개인 GitHub 포크)의 기준 브랜치도 동일하게 `N086_박주현`이다. `day/YYMMDD` 브랜치를 새로 만들기 전에 로컬 `N086_박주현`을 `upstream/N086_박주현`으로 최신화하고, `origin`에도 push해 두 원격을 같은 상태로 맞춘다.
 - 로컬 작업 브랜치: `day/YYMMDD`에서 파일을 수정하기 전에 커밋 가능한 작업 단위마다 타입과 맞춘 이름(`feat/<설명>`, `fix/<설명>`, `docs/<설명>`, `chore/<설명>`, `refactor/<설명>`)의 로컬 브랜치를 반드시 만든다. 이 브랜치는 원격에 push하지 않는다. 한 작업 단위를 커밋·병합하기 전에는 다음 작업 단위의 파일을 수정하지 않는다. 작업이 끝나면 `git merge --no-ff`로 `day/YYMMDD`에 병합해 작업 단위 경계를 커밋 그래프에 남기고, 병합 후 로컬 브랜치는 삭제한다. 하루 PR이 한 번이므로 원격에는 병합이 끝난 `day/YYMMDD`만 push하고, 그 브랜치로 PR을 연다.
 - git 명령어: 브랜치 전환·생성은 `git switch`(`git switch -c`), 파일 복원은 `git restore`를 쓴다. `git checkout`은 다른 브랜치의 파일 하나만 가져오는 것처럼 switch/restore로 표현이 안 되는 경우에만 쓴다.
+
+### AI 도구의 Git 사용
+
+- 읽기 전용 Git 명령은 `GIT_OPTIONAL_LOCKS=0`을 붙여 실행한다. `git status`와 `git diff`는 인덱스 갱신을 위해 `.git/index.lock`을 생성하는데, AI 도구의 실행 환경이 저장소를 마운트로 접근하면 이 파일을 삭제하지 못한다. 남은 락은 이후 모든 Git 작업을 차단한다.
+
+```bash
+GIT_OPTIONAL_LOCKS=0 git status --short --branch
+GIT_OPTIONAL_LOCKS=0 git diff --stat
+```
+
+- 저장소 상태를 바꾸는 명령은 사용자가 직접 실행한다.
+- Git 명령 출력에 경고가 있으면 그대로 진행하지 않고 사용자에게 알린다. `unable to unlink` 경고는 락이 남았다는 뜻이며, 사용자가 `Remove-Item .git\index.lock`으로 제거한다.
 
 ### 하루 작업 흐름
 
