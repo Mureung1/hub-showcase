@@ -25,7 +25,7 @@
 - [ ] 타이머 종료 시 정확히 완료 화면으로 전이된다
 
 ## C05 [T05] AgentLog DB + 기록 lib
-- [x] AgentLog Notion DB가 agent-design.md 스키마(7 property)대로 존재한다
+- [x] AgentLog Notion DB가 agent-design.md 스키마(계약 필드 7개 + Notion 필수 title `label` = 8 property)대로 존재한다
 - [x] 로그 1건 기록 + 최근 N개 조회 헬퍼가 S3 계약대로 동작한다
 
 ## C06 [T06] "힘들어" 루프 판단

@@ -87,11 +87,12 @@ export async function POST(request) {
       (tool) => !rejectedTools.includes(tool)
     );
     if (convergeTools.length === 0) {
-      // postpone_task/end_session 둘 다 이미 거절됨: 더 제안할 게 없다. 거절된 tool을
-      // "새 제안"인 것처럼 다시 내놓지 않기 위해 모델 호출 없이 강제 종결한다(S2 "재선택 금지").
-      // final:true는 화면에서 거절 버튼을 비활성화하는 신호로 쓴다.
+      // postpone_task/end_session 둘 다 이미 거절됨: 더 제안할 게 없다. proposedTool을
+      // rejectedTools에 든 값(end_session)으로 다시 채우면 S2 "재선택 금지"를 위반하므로,
+      // TOOLS에 없는 null로 반환해 "새 제안이 아니라 강제 종결"임을 값 자체로도 보장한다.
+      // 화면(page.js)은 final:true를 받으면 proposedTool 값과 무관하게 end_session으로 처리한다.
       return Response.json({
-        proposedTool: "end_session",
+        proposedTool: null,
         reason: "오늘은 여기까지 하고 마무리할게요.",
         final: true,
       });
@@ -161,6 +162,17 @@ export async function POST(request) {
     return Response.json({
       proposedTool: toolChoices[0],
       reason: "이전 제안이 잘 안 맞았던 것 같아서, 이번엔 다른 방식을 제안해요.",
+    });
+  }
+
+  // shrink_step인데 revisedTitle이 빠지면 "완료 기준 축소"를 실행할 수 없다(C08). 이 경우도
+  // 후보 밖 tool과 같은 방식으로, shrink_step만 후보에서 제외하고 다시 판단하지 않고
+  // 안전하게 encourage로 대체한다(구조 변경 없는 tool이라 항상 유효한 대체값).
+  if (object.proposedTool === "shrink_step" && !object.revisedTitle) {
+    console.warn("[struggle] shrink_step인데 revisedTitle이 없어 encourage로 대체함");
+    return Response.json({
+      proposedTool: "encourage",
+      reason: "지금 하는 것도 충분히 잘하고 있어요, 이대로 조금만 더 해봐요.",
     });
   }
 

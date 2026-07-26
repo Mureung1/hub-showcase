@@ -1,4 +1,4 @@
-import { createPage, queryDatabase, updatePage } from "@/app/lib/notion";
+import { createPage, queryDatabase, updatePage, getPage } from "@/app/lib/notion";
 
 function toNotionProperties(entry) {
   return {
@@ -38,7 +38,11 @@ export async function logStruggle(entry) {
 }
 
 // 완료 시 즉시 호출: 해당 로그 하나만 done으로 갱신(S4).
+// 이미 done/not_done인 로그는 건드리지 않는다(멱등) — pending일 때만 실제로 갱신한다.
 export async function markOutcomeDone(logId) {
+  const page = await getPage(logId);
+  const current = page.properties?.outcome?.select?.name;
+  if (current !== "pending") return page;
   return updatePage(logId, { outcome: { select: { name: "done" } } });
 }
 

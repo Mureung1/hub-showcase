@@ -99,3 +99,13 @@
 - 계약 위반: 없음.
 - 권고: 없음.
 - 확인: [x] 2026-07-26 10:30 Claude — 반영할 사항 없음(발견 없음 승인), 확인만 함
+
+## 2026-07-26 21:55 | T05·T07·T08·T09 리뷰 반영 · feat/onefocus-notion-sync · 9bc0559f | 수정요청
+- 발견: 높음 — T07의 후보 소진 분기 `app/api/struggle/route.js:89-97`은 `end_session`이 `rejectedTools`에 들어 있는 상태에서도 응답의 `proposedTool`로 다시 반환합니다. `final:true`로 UI 거절을 막는 것은 재판단 루프를 끝내지만, S2의 “`rejectedTools`에 든 것은 다시 고르지 않는다” 출력 제약 자체는 여전히 위반합니다.
+- 발견: 높음 — T08의 `revisedTitle`은 `app/api/struggle/route.js:107-112`에서 선택 필드라 `shrink_step` 응답에도 누락될 수 있고, `app/page.js:213-229`는 누락 시 아무 축소 없이 focus로 복귀합니다. 값이 있어도 `:218-225`는 `/api/steps/shrink`의 실패 응답을 확인하지 않은 채 로컬 제목을 바꾸므로, Notion 갱신 실패 시에도 tool 실행 성공처럼 보입니다. C08의 수락→tool 실행을 보장하지 못합니다.
+- 발견: 중간 — T05의 `proposed_reason`은 `app/lib/agentlog.js:11,29`에서 실제 rich_text로 고쳐졌습니다. 그러나 표시용 `label` Title을 추가하면서 AgentLog가 8개 속성이 됐고, `docs/checklist.md:28`은 여전히 agent-design의 “7 property”를 요구합니다. 코드·S3·agent-design과 C05의 완료조건이 서로 동기화되지 않았습니다.
+- 발견: 중간 — T09의 단일 id 덮어쓰기는 `app/page.js:203-207,213-216`의 배열 누적과 `app/api/steps/complete/route.js:10,22`의 전체 갱신으로 해소됐습니다. 다만 `app/lib/agentlog.js:40-42`의 `markOutcomeDone`은 현재 outcome을 확인하지 않고 무조건 done으로 덮어써, 이미 `not_done`인 로그도 변경할 수 있으므로 S4의 멱등 제약은 충족하지 않습니다.
+- 검증: `npm run verify` 재현 통과. `app/layout.js:18`의 기존 외부 폰트 권고 경고 1건 외에 lint 오류는 없고 Next.js production build도 성공했습니다.
+- 계약 위반: `app/api/struggle/route.js:89-97` — S2 거절 tool 재선택 금지 위반. `app/api/struggle/route.js:107-112`, `app/page.js:213-229` — C08 및 S2의 shrink_step 실행 보장 미충족. `docs/checklist.md:28`, `app/lib/agentlog.js:5-17` — C05의 7-property 완료조건 불일치. `app/lib/agentlog.js:40-42` — S4의 이미 done/not_done인 로그를 건드리지 않는 멱등 계약 위반.
+- 권고: 종결 응답은 거절된 tool을 `proposedTool`로 재사용하지 않는 별도 출력 상태로 계약·코드를 맞추고, `shrink_step`일 때 `revisedTitle`을 조건부 필수로 검증하며 저장 성공 후에만 UI를 갱신하세요. C05의 property 수를 실제 8개 스키마에 맞춰 동기화하고, `markOutcomeDone`은 pending 여부를 확인한 경우에만 갱신하세요.
+- 확인: [ ]

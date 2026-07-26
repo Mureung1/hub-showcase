@@ -109,4 +109,12 @@
 - T08 반영: `/api/struggle`의 출력 스키마에 `revisedTitle`(shrink_step 전용, 완료 기준을 줄인 새 제목) 추가하고 프롬프트에 생성 지시 포함. `app/api/steps/shrink/route.js` 신규 — 수락 시 실제로 Notion의 스텝 Title을 revisedTitle로 갱신. `page.js`에서 `shrink_step`을 `encourage`와 분리된 분기로 처리.
 - T09 반영: `trackedAgentLogId`(단일)를 `trackedAgentLogIds`(배열)로 변경, 같은 스텝에서 encourage/shrink_step을 여러 번 수락해도 로그 id가 쌓이도록 수정. `/api/steps/complete`가 `agentLogIds` 배열을 받아 전부 `markOutcomeDone` 처리. `docs/skills.md` S4에 "AgentLog에 Relation이 없어 화면이 id 목록을 직접 들고 있는다"는 실제 구현 방식 명시.
 - 검증: `npm run verify` 통과. 4건 전부 실제 API 호출로 재현·확인 — (1) label/proposed_reason이 각각 Title/Text로 올바르게 기록됨, (2) postpone_task+end_session 둘 다 거절 시 모델 호출 없이 `final:true` 즉시 반환, (3) `/api/steps/shrink` 호출 시 실제 Notion Title 갱신 확인, (4) pending 로그 3개를 한 번에 `agentLogIds`로 보내 전부 done 갱신 확인.
+- 확인: [x] 2026-07-26 21:55 GPT — 수정요청. T09 다중 id는 해결됐으나 T05 스키마 개수, T07 거절 tool 출력, T08 축소 보장, S4 멱등 위반이 남음.
+
+## 2026-07-26 | T05·T07·T08·T09 | GPT 재검토 수정요청 4건 반영 (2차)
+- T05: `docs/checklist.md` C05를 "7 property"에서 "계약 필드 7개 + Notion 필수 title `label` = 8 property"로 수정 — label 추가는 실수가 아니라 Notion 제약상 필요한 것이므로 완료조건 표기를 실제 스키마에 맞춤.
+- T07: `app/api/struggle/route.js`의 종결 응답에서 `proposedTool`을 `"end_session"`이 아니라 `null`로 변경(거절된 값을 재사용하지 않기 위해 TOOLS 밖의 값으로). `app/page.js`의 `handleAccept`가 `proposal.final`이면 `proposedTool` 값과 무관하게 `end_session`으로 처리하도록 수정.
+- T08: `shrink_step`인데 `revisedTitle`이 없는 경우를 안전망에 추가해 `encourage`로 대체(서버). 클라이언트는 `revisedTitle` 없으면 에러 처리, `/api/steps/shrink` 응답이 실패하면 로컬 제목을 바꾸지 않고 에러를 보여주도록 수정(저장 성공 확인 후에만 완료 처리).
+- T09: `app/lib/agentlog.js`의 `markOutcomeDone`이 갱신 전 현재 `outcome`을 조회해 `pending`일 때만 `done`으로 바꾸도록 수정(멱등).
+- 검증: `npm run verify` 통과. (1) 둘 다 거절된 극단 케이스 재현 → `proposedTool: null` 확인. (2) `not_done` 상태의 로그에 `markOutcomeDone` 재호출 → 그대로 `not_done` 유지 확인(멱등). (3) `overwhelmed` 5회 반복 호출로 `shrink_step`이 나올 때마다 `revisedTitle`이 항상 동반되는 것 확인.
 - 확인: [ ]

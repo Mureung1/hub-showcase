@@ -185,7 +185,9 @@ export default function Home() {
   }
 
   async function handleAccept() {
-    const tool = proposal.proposedTool;
+    // final:true면 서버가 proposedTool을 null로 보낸다(더 이상 제안할 tool이 없는 강제 종결
+    // 상태라 rejectedTools 값을 재사용하지 않기 위해서). 값과 무관하게 end_session으로 처리한다.
+    const tool = proposal.final ? "end_session" : proposal.proposedTool;
     const current = microsteps[currentIndex];
 
     if (tool === "suggest_break") {
@@ -212,18 +214,29 @@ export default function Home() {
 
     if (tool === "shrink_step") {
       // 완료 기준 자체를 줄인다: /api/struggle이 함께 반환한 revisedTitle로 스텝 제목을 실제로 갱신.
-      const logId = await logDecision(true);
-      if (logId) setTrackedAgentLogIds((ids) => [...ids, logId]);
-      if (proposal.revisedTitle) {
-        await fetch("/api/steps/shrink", {
+      // 서버가 revisedTitle 없는 shrink_step은 이미 걸러주지만, 저장 자체가 실패할 수도 있어서
+      // 응답을 확인한 뒤에만 성공으로 처리한다(실패 시 축소 없이 넘어가지 않도록).
+      if (!proposal.revisedTitle) {
+        setStruggleError("완료 기준을 줄이는 데 필요한 정보가 없었어요, 다시 시도해줘");
+        return;
+      }
+      try {
+        const shrinkResponse = await fetch("/api/steps/shrink", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: current.id, title: proposal.revisedTitle }),
         });
-        const updated = [...microsteps];
-        updated[currentIndex] = { ...updated[currentIndex], title: proposal.revisedTitle };
-        setMicrosteps(updated);
+        if (!shrinkResponse.ok) throw new Error("완료 기준을 줄이는 데 실패했어요, 다시 시도해줘");
+      } catch (err) {
+        setStruggleError(err.message);
+        return;
       }
+
+      const logId = await logDecision(true);
+      if (logId) setTrackedAgentLogIds((ids) => [...ids, logId]);
+      const updated = [...microsteps];
+      updated[currentIndex] = { ...updated[currentIndex], title: proposal.revisedTitle };
+      setMicrosteps(updated);
       resetStruggleState();
       setStep("focus");
       return;
