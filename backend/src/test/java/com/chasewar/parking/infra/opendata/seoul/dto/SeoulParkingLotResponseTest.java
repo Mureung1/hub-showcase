@@ -1,4 +1,4 @@
-package com.chasewar.parking.dto;
+package com.chasewar.parking.infra.opendata.seoul.dto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -124,6 +124,31 @@ class SeoulParkingLotResponseTest {
             assertThat(parkingLots)
                     .extracting(ParkingLot::getPkltCd)
                     .containsExactly("10002");
+        }
+    }
+
+    @DisplayName("승용차 주차장이 아닌 주차장은 적재에서 제외")
+    @Nested
+    class ExcludeNonPassenger {
+
+        @DisplayName("화물, 견인주차장은 정적 데이터 적재에서 제외한다")
+        @Test
+        void success_excludeNonPassengerParkingLot() {
+            // given
+            List<Row> rows = List.of(
+                    rowWithOperType("10001", "1"),
+                    rowWithOperType("1236612", "1"),
+                    rowWithOperType("1415512", "1"),
+                    rowWithOperType("173169", "1")
+            );
+
+            // when
+            List<ParkingLot> parkingLots = Row.toParkingLots(rows);
+
+            // then
+            assertThat(parkingLots)
+                    .extracting(ParkingLot::getPkltCd)
+                    .containsExactly("10001");
         }
     }
 

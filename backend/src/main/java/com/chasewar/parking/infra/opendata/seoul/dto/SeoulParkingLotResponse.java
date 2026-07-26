@@ -9,6 +9,7 @@ import com.chasewar.parking.domain.vo.PayType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public record SeoulParkingLotResponse(
@@ -48,14 +49,23 @@ public record SeoulParkingLotResponse(
                 @JsonProperty("LHLDY") String holidayEnd
         ) {
             private static final String SEOUL_CITY_PREFIX = "서울특별시 ";
+            // 승용차 주차장이 아니지만 데이터에 이를 구분하는 코드가 없는 주차장 목록
+            // 1236612 남대문 화물 공영주차장(시)
+            // 1415512 견인보관소(구)
+            // 173169  견인보관소 노외(구)
+            private static final Set<String> EXCLUDED_PKLT_CDS = Set.of("1236612", "1415512", "173169");
 
             public static List<ParkingLot> toParkingLots(List<Row> rows) {
                 return rows.stream()
-                        .filter(row -> !row.isBusOnly())
+                        .filter(Row::isForPassengerCar)
                         .collect(Collectors.groupingBy(Row::pkltCd, LinkedHashMap::new, Collectors.toList()))
                         .values().stream()
                         .map(Row::mergeToParkingLot)
                         .toList();
+            }
+
+            private boolean isForPassengerCar() {
+                return !isBusOnly() && !EXCLUDED_PKLT_CDS.contains(pkltCd);
             }
 
             private boolean isBusOnly() {
