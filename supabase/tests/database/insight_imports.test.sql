@@ -2,10 +2,15 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(96);
+select extensions.plan(102);
 
 select extensions.has_table('public', 'insight_import_jobs', '가져오기 작업 테이블이 존재한다');
 select extensions.has_table('public', 'insight_import_items', '가져오기 항목 테이블이 존재한다');
+select extensions.has_table(
+  'public',
+  'insight_import_undo_items',
+  '가져오기 되돌리기 최소 원장 테이블이 존재한다'
+);
 
 select extensions.ok(
   (select relrowsecurity from pg_class where oid = 'public.insight_import_jobs'::regclass),
@@ -15,6 +20,10 @@ select extensions.ok(
   (select relrowsecurity from pg_class where oid = 'public.insight_import_items'::regclass),
   '가져오기 항목 테이블에 RLS가 활성화되어 있다'
 );
+select extensions.ok(
+  (select relrowsecurity from pg_class where oid = 'public.insight_import_undo_items'::regclass),
+  '가져오기 되돌리기 최소 원장에 RLS가 활성화되어 있다'
+);
 
 select extensions.ok(
   (
@@ -22,7 +31,8 @@ select extensions.ok(
       'id', 'user_id', 'input_kind', 'adapter_key', 'status', 'idempotency_key',
       'total_count', 'new_count', 'duplicate_count', 'input_duplicate_count',
       'excluded_count', 'created_count', 'preserved_count', 'already_deleted_count',
-      'provider_cursor', 'failure_code', 'expires_at', 'completed_at', 'created_at', 'updated_at'
+      'provider_cursor', 'failure_code', 'expires_at', 'undo_expires_at',
+      'completed_at', 'created_at', 'updated_at'
     ]::text[]
     from pg_attribute
     where attrelid = 'public.insight_import_jobs'::regclass
@@ -787,22 +797,35 @@ select extensions.is(
   null::uuid,
   '매핑하지 않은 모음은 미분류로 반영한다'
 );
+
+reset role;
 select extensions.ok(
   (
     select status = 'completed'
       and expires_at is null
+      and undo_expires_at = completed_at + interval '24 hours'
       and created_count = 3
       and completed_at is not null
     from public.insight_import_jobs
     where id = (select (result ->> 'id')::uuid from commit_prepared_result)
   )
   and (
-    select bool_and(created_insight_id is not null and imported_updated_at is not null)
+    select count(*) = 3
+      and bool_and(created_insight_id is not null and imported_updated_at is not null)
+    from public.insight_import_undo_items
+    where job_id = (select (result ->> 'id')::uuid from commit_prepared_result)
+  )
+  and not exists (
+    select 1
     from public.insight_import_items
     where job_id = (select (result ->> 'id')::uuid from commit_prepared_result)
   ),
-  '완료 작업과 항목 생성 결과를 저장한다'
+  '완료 작업은 24시간 최소 원장만 남기고 원본 후보를 즉시 삭제한다'
 );
+
+set local role authenticated;
+set local "request.jwt.claims" =
+  '{"sub":"00000000-0000-4000-8000-000000000021","role":"authenticated"}';
 select extensions.results_eq(
   $$
     select public.commit_insight_import(
@@ -1165,7 +1188,8 @@ select extensions.ok(
 select extensions.ok(
   to_regprocedure('public.undo_insight_import(uuid)') is not null
   and to_regprocedure('public.delete_insight_import_record(uuid)') is not null
-  and to_regprocedure('public.cleanup_expired_insight_imports()') is not null,
+  and to_regprocedure('public.cleanup_expired_insight_imports()') is not null
+  and to_regprocedure('public.cleanup_expired_insight_import_undo_items()') is not null,
   'Undo, 기록 삭제와 만료 정리 RPC가 존재한다'
 );
 
@@ -1186,17 +1210,20 @@ select extensions.throws_ok(
 reset role;
 create temporary table undo_fixture on commit drop as
 select
-  max(created_insight_id::text) filter (
-    where candidate_id = 'commit-existing-category'
+  max(undo_item.created_insight_id::text) filter (
+    where insight.normalized_url = 'https://commit.example/existing-category'
   )::uuid as modified_insight_id,
-  max(created_insight_id::text) filter (
-    where candidate_id = 'commit-new-category'
+  max(undo_item.created_insight_id::text) filter (
+    where insight.normalized_url = 'https://commit.example/new-category'
   )::uuid as deleted_insight_id,
-  max(created_insight_id::text) filter (
-    where candidate_id = 'commit-uncategorized'
+  max(undo_item.created_insight_id::text) filter (
+    where insight.normalized_url = 'https://commit.example/uncategorized'
   )::uuid as untouched_insight_id
-from public.insight_import_items
-where job_id = (select (result ->> 'id')::uuid from commit_prepared_result);
+from public.insight_import_undo_items as undo_item
+join public.insights as insight
+  on insight.id = undo_item.created_insight_id
+ and insight.user_id = undo_item.user_id
+where undo_item.job_id = (select (result ->> 'id')::uuid from commit_prepared_result);
 grant select on undo_fixture to authenticated;
 
 set local role authenticated;
@@ -1212,10 +1239,10 @@ delete from public.insights
 where id = (select deleted_insight_id from undo_fixture);
 
 reset role;
-update public.insight_import_items
+update public.insight_import_undo_items
 set imported_updated_at = imported_updated_at - interval '1 second'
 where job_id = (select (result ->> 'id')::uuid from commit_prepared_result)
-  and candidate_id = 'commit-existing-category';
+  and created_insight_id = (select modified_insight_id from undo_fixture);
 
 set local role authenticated;
 set local "request.jwt.claims" =
@@ -1283,6 +1310,8 @@ select extensions.results_eq(
 select public.delete_insight_import_record(
   (select (result ->> 'id')::uuid from commit_prepared_result)
 );
+
+reset role;
 select extensions.ok(
   not exists (
     select 1
@@ -1292,6 +1321,11 @@ select extensions.ok(
   and not exists (
     select 1
     from public.insight_import_items
+    where job_id = (select (result ->> 'id')::uuid from commit_prepared_result)
+  )
+  and not exists (
+    select 1
+    from public.insight_import_undo_items
     where job_id = (select (result ->> 'id')::uuid from commit_prepared_result)
   )
   and exists (
@@ -1308,7 +1342,95 @@ select extensions.ok(
   '기록 삭제는 작업과 항목만 지우고 보존된 인사이트와 분류를 유지한다'
 );
 
+insert into public.insight_import_jobs (
+  id, user_id, input_kind, adapter_key, status, idempotency_key,
+  total_count, new_count, created_count, expires_at, undo_expires_at,
+  completed_at
+)
+values (
+  '40000000-0000-4000-8000-000000000099',
+  '00000000-0000-4000-8000-000000000021',
+  'pasted-text',
+  'pasted-text',
+  'completed',
+  repeat('81', 32),
+  1,
+  1,
+  1,
+  null,
+  now() - interval '1 second',
+  now() - interval '24 hours 1 second'
+);
+insert into public.insights (
+  id, user_id, original_url, normalized_url, domain, title, title_origin
+)
+values (
+  '30000000-0000-4000-8000-000000000099',
+  '00000000-0000-4000-8000-000000000021',
+  'https://expired-undo.example/item',
+  'https://expired-undo.example/item',
+  'expired-undo.example',
+  '만료된 되돌리기 인사이트',
+  'capture'
+);
+insert into public.insight_import_undo_items (
+  job_id, user_id, created_insight_id, imported_updated_at
+)
+select
+  '40000000-0000-4000-8000-000000000099',
+  '00000000-0000-4000-8000-000000000021',
+  id,
+  updated_at
+from public.insights
+where id = '30000000-0000-4000-8000-000000000099';
+
+set local role authenticated;
+set local "request.jwt.claims" =
+  '{"sub":"00000000-0000-4000-8000-000000000021","role":"authenticated"}';
+select extensions.results_eq(
+  $$
+    select public.undo_insight_import(
+      '40000000-0000-4000-8000-000000000099'
+    ) ->> 'reason'
+  $$,
+  array['undo-expired'::text],
+  '완료 후 24시간이 지난 작업은 DB 시각 기준으로 되돌리기를 거부한다'
+);
+
 reset role;
+select extensions.is(
+  public.cleanup_expired_insight_import_undo_items(),
+  1,
+  '되돌리기 만료 정리는 만료된 최소 원장 행 개수를 반환한다'
+);
+select extensions.ok(
+  exists (
+    select 1
+    from public.insights
+    where id = '30000000-0000-4000-8000-000000000099'
+  )
+  and not exists (
+    select 1
+    from public.insight_import_undo_items
+    where job_id = '40000000-0000-4000-8000-000000000099'
+  )
+  and (
+    select undo_expires_at is null
+    from public.insight_import_jobs
+    where id = '40000000-0000-4000-8000-000000000099'
+  ),
+  '만료 정리는 생성 인사이트를 유지하고 최소 원장과 Undo 권한만 제거한다'
+);
+select extensions.ok(
+  exists (
+    select 1
+    from cron.job
+    where jobname = 'cleanup-expired-insight-import-undo-items'
+      and schedule = '* * * * *'
+  ),
+  '되돌리기 최소 원장을 1분마다 정리하는 DB cron이 등록되어 있다'
+);
+
 create temporary table cleanup_fixture (
   job_id uuid primary key,
   expected_to_remain boolean not null
@@ -1406,8 +1528,23 @@ select extensions.ok(
   and not has_function_privilege('anon', 'public.delete_insight_import_record(uuid)', 'execute')
   and has_function_privilege('service_role', 'public.cleanup_expired_insight_imports()', 'execute')
   and not has_function_privilege('authenticated', 'public.cleanup_expired_insight_imports()', 'execute')
-  and not has_function_privilege('anon', 'public.cleanup_expired_insight_imports()', 'execute'),
-  'Undo·기록 삭제는 인증 사용자에게, 만료 정리는 서비스 역할에만 허용한다'
+  and not has_function_privilege('anon', 'public.cleanup_expired_insight_imports()', 'execute')
+  and not has_function_privilege(
+    'service_role',
+    'public.cleanup_expired_insight_import_undo_items()',
+    'execute'
+  )
+  and not has_function_privilege(
+    'authenticated',
+    'public.cleanup_expired_insight_import_undo_items()',
+    'execute'
+  )
+  and not has_function_privilege(
+    'anon',
+    'public.cleanup_expired_insight_import_undo_items()',
+    'execute'
+  ),
+  '사용자 RPC와 서비스 정리 및 DB 내부 원장 정리의 실행 권한을 분리한다'
 );
 
 select extensions.has_table(

@@ -78,6 +78,21 @@ jobs:
         if: steps.changes.outputs.should_run == 'true'
         run: supabase db reset --local
 
+      - name: 가져오기 되돌리기 보존 업그레이드 경로 검사
+        if: steps.changes.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          supabase db reset --local \
+            --version 20260725010200 \
+            --sql-paths upgrade-tests/insight_import_undo_retention_fixture.sql
+          supabase migration up --local
+          supabase test db \
+            supabase/upgrade-tests/insight_import_undo_retention.test.sql
+
+      - name: 업그레이드 검사 후 빈 로컬 데이터베이스 재구성
+        if: steps.changes.outputs.should_run == 'true'
+        run: supabase db reset --local
+
       - name: RLS 데이터베이스 테스트
         if: steps.changes.outputs.should_run == 'true'
         run: supabase test db
