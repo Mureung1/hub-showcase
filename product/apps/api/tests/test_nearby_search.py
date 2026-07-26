@@ -135,9 +135,9 @@ def test_nearby_query_returns_stable_distance_order_and_counts(
     assert payload["market_id"] == "3110562"
     assert payload["total_count"] == 3
     assert payload["same_category_count"] == 2
-    assert payload["returned_count"] == 3
+    assert payload["returned_count"] == 2
     assert payload["truncated"] is False
-    assert [store["id"] for store in payload["stores"]] == ["S0", "S1", "S2"]
+    assert [store["id"] for store in payload["stores"]] == ["S0", "S1"]
     assert payload["stores"][0]["distance_meters"] == 0
     assert payload["aggregation_scope"] == "radius"
     assert payload["evidence"] == [
@@ -199,7 +199,7 @@ def test_market_scope_returns_linked_stores_instead_of_an_empty_list(
     assert payload["aggregation_scope"] == "market"
     assert payload["total_count"] == 4
     assert payload["same_category_count"] == 2
-    assert [store["id"] for store in payload["stores"]] == ["S0", "S1", "S2", "S3"]
+    assert [store["id"] for store in payload["stores"]] == ["S0", "S1"]
 
 
 def test_market_scope_requires_an_explicit_market_id(nearby_client: TestClient) -> None:

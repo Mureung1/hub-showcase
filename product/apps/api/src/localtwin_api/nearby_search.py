@@ -329,7 +329,12 @@ class NearbyStoreRepository:
         same_category_count = sum(
             category_matches(store, category) for _, store in stores_with_distance
         )
-        returned = stores_with_distance[:MAX_RETURNED_STORES]
+        display_candidates = (
+            [item for item in stores_with_distance if category_matches(item[1], category)]
+            if category
+            else stores_with_distance
+        )
+        returned = display_candidates[:MAX_RETURNED_STORES]
         snapshot_ids = sorted({store.source_snapshot_id for _, store in stores_with_distance})
         sources = (
             self.session.scalars(
@@ -364,7 +369,7 @@ class NearbyStoreRepository:
             same_category_count=same_category_count,
             category_counts=dict(sorted(category_counter.items())),
             returned_count=len(stores),
-            truncated=len(stores_with_distance) > len(stores),
+            truncated=len(display_candidates) > len(stores),
             stores=stores,
             evidence=[
                 NearbyEvidence(
