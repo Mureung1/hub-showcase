@@ -1392,6 +1392,19 @@ html.is-english .three-d {
   font-size: 10px;
   font-weight: 700;
 }
+
+html:not(.is-english) .evidence-button {
+  padding: 7px 9px;
+  border: 1px solid #b8ddc3;
+  border-radius: 6px;
+  background: #eff9f1;
+}
+
+html:not(.is-english) .evidence-button:hover,
+html:not(.is-english) .evidence-button:focus-visible {
+  border-color: #248e4c;
+  background: #e2f5e7;
+}
 .metric-section {
   padding: 19px 0;
   border-bottom: 1px solid #edf0ee;
