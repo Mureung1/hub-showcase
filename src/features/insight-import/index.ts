@@ -52,6 +52,7 @@ export {
   genericCsvAdapter,
   genericJsonAdapter,
 } from './model/structured_file_adapter';
+export { isUnsafeZipPath, zipFileAdapter } from './model/zip_file_adapter';
 export { ImportFieldMappingForm } from './ui/import_field_mapping';
 export type { ImportFieldMappingProps } from './ui/import_field_mapping';
 export type {

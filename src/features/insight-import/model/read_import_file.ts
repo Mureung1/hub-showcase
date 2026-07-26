@@ -5,7 +5,8 @@ export type ImportFileErrorCode =
   | 'unsupported-encoding'
   | 'unsupported-structure'
   | 'corrupted-file'
-  | 'limit-exceeded';
+  | 'limit-exceeded'
+  | 'unsafe-zip';
 
 export class ImportFileError extends Error {
   readonly code: ImportFileErrorCode;

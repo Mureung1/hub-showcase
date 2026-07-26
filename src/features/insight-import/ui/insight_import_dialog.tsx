@@ -17,6 +17,7 @@ import {
   genericTextAdapter,
 } from '../model/text_file_adapter';
 import { useInsightImport } from '../model/use_insight_import';
+import { zipFileAdapter } from '../model/zip_file_adapter';
 import { ImportFieldMappingForm } from './import_field_mapping';
 import { ImportHistory } from './import_history';
 import { ImportIssueDetails, ImportPreview } from './import_preview';
@@ -24,6 +25,7 @@ import { ImportIssueDetails, ImportPreview } from './import_preview';
 import './insight_import_dialog.css';
 
 const FILE_ADAPTERS = [
+  zipFileAdapter,
   bookmarkHtmlAdapter,
   genericCsvAdapter,
   genericJsonAdapter,
@@ -59,7 +61,9 @@ export function InsightImportDialog({
     onLibraryChanged,
     service: importService,
   });
-  const [sourceSelected, setSourceSelected] = useState(false);
+  const [sourceSelected, setSourceSelected] = useState<'file' | 'paste' | null>(
+    null
+  );
   const [pastedText, setPastedText] = useState('');
   const [undoConfirming, setUndoConfirming] = useState(false);
   const { refreshHistory } = controller;
@@ -73,7 +77,7 @@ export function InsightImportDialog({
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
       controller.cancelCurrentOperation();
-      setSourceSelected(false);
+      setSourceSelected(null);
       setPastedText('');
       setUndoConfirming(false);
     }
@@ -83,6 +87,18 @@ export function InsightImportDialog({
 
   async function analyze() {
     await controller.analyzePastedText(pastedText);
+  }
+
+  async function analyzeFile(file: File | undefined) {
+    if (file) {
+      await controller.analyzeFile(file);
+    }
+  }
+
+  function resetSource() {
+    controller.reset();
+    setSourceSelected(null);
+    setPastedText('');
   }
 
   async function confirmUndo() {
@@ -118,15 +134,44 @@ export function InsightImportDialog({
       {isSourceStage ? (
         <div className="insight-import-dialog__source">
           <Button
-            aria-pressed={sourceSelected}
-            hierarchy={sourceSelected ? 'primary' : 'secondary'}
-            onClick={() => setSourceSelected(true)}
+            aria-pressed={sourceSelected === 'file'}
+            hierarchy={sourceSelected === 'file' ? 'primary' : 'secondary'}
+            onClick={() => setSourceSelected('file')}
+            type="button"
+          >
+            파일에서 가져오기
+          </Button>
+          <Button
+            aria-pressed={sourceSelected === 'paste'}
+            hierarchy={sourceSelected === 'paste' ? 'primary' : 'secondary'}
+            onClick={() => setSourceSelected('paste')}
             type="button"
           >
             링크 붙여넣기
           </Button>
 
-          {sourceSelected ? (
+          {sourceSelected === 'file' ? (
+            <div className="insight-import-dialog__file">
+              <label htmlFor="insight-import-file">가져올 파일</label>
+              <input
+                accept=".csv,.json,.html,.htm,.md,.markdown,.txt,.zip"
+                aria-describedby="insight-import-file-help"
+                disabled={controller.stage === 'analyzing'}
+                id="insight-import-file"
+                onChange={(event) =>
+                  void analyzeFile(event.currentTarget.files?.[0])
+                }
+                type="file"
+              />
+              <p id="insight-import-file-help">
+                CSV, JSON, HTML, Markdown, 텍스트, ZIP을 지원합니다. 원본 파일은
+                서버에 업로드하지 않으며, 일반 파일은 10 MiB, ZIP은 20 MiB까지
+                선택할 수 있습니다.
+              </p>
+            </div>
+          ) : null}
+
+          {sourceSelected === 'paste' ? (
             <div className="insight-import-dialog__paste">
               <label htmlFor="insight-import-pasted-text">가져올 링크</label>
               <TextArea
@@ -170,7 +215,7 @@ export function InsightImportDialog({
             prepared={controller.prepared}
           />
           <div className="insight-import-dialog__actions">
-            <Button hierarchy="ghost" onClick={controller.reset} type="button">
+            <Button hierarchy="ghost" onClick={resetSource} type="button">
               다시 선택
             </Button>
             <Button
@@ -198,7 +243,7 @@ export function InsightImportDialog({
             requests={controller.fieldMappingRequests}
           />
           <div className="insight-import-dialog__actions">
-            <Button hierarchy="ghost" onClick={controller.reset} type="button">
+            <Button hierarchy="ghost" onClick={resetSource} type="button">
               다시 선택
             </Button>
           </div>
@@ -272,7 +317,7 @@ export function InsightImportDialog({
           )}
 
           <div className="insight-import-dialog__actions">
-            <Button hierarchy="ghost" onClick={controller.reset} type="button">
+            <Button hierarchy="ghost" onClick={resetSource} type="button">
               다른 링크 가져오기
             </Button>
             <Button

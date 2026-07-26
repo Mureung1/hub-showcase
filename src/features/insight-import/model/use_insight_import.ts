@@ -663,5 +663,9 @@ function getFileErrorMessage(code: ImportFileError['code']) {
     return '손상된 파일이라 가져올 수 없습니다.';
   }
 
+  if (code === 'unsafe-zip') {
+    return '안전하지 않은 ZIP 파일입니다. 압축을 푼 뒤 지원 파일만 선택해 주세요.';
+  }
+
   return '지원하는 링크 파일 구조를 찾지 못했습니다.';
 }

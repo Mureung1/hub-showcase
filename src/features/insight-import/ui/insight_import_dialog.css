@@ -4,6 +4,7 @@
 
 .insight-import-dialog__source,
 .insight-import-dialog__paste,
+.insight-import-dialog__file,
 .insight-import-dialog__preview,
 .insight-import-dialog__collections,
 .insight-import-dialog__result,
@@ -57,12 +58,27 @@
 }
 
 .insight-import-dialog__paste label,
+.insight-import-dialog__file label,
 .insight-import-dialog__collection label {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2);
   color: var(--color-graphite);
   font-weight: 600;
+}
+
+.insight-import-dialog__file input {
+  min-height: 44px;
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-input);
+  padding: var(--spacing-2);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+.insight-import-dialog__file p {
+  margin: 0;
+  color: var(--color-graphite);
 }
 
 .insight-import-dialog__paste .ui-field,

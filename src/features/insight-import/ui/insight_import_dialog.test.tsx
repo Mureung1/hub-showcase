@@ -51,6 +51,42 @@ beforeAll(() => {
 afterEach(cleanup);
 
 describe('InsightImportDialog', () => {
+  it('원본 파일을 업로드하지 않고 자동 감지한 후보만 준비 요청한다', async () => {
+    const user = userEvent.setup();
+    const service = createService();
+    service.prepare.mockImplementation(async (input) => ({
+      ok: true,
+      value: {
+        ...createPreparedImport(),
+        adapterKey: input.adapterKey,
+      },
+    }));
+    renderDialog({ service });
+
+    await user.click(screen.getByRole('button', { name: '파일에서 가져오기' }));
+    expect(
+      screen.getByText(/원본 파일은 서버에 업로드하지 않으며/)
+    ).toBeTruthy();
+
+    await user.upload(
+      screen.getByLabelText('가져올 파일'),
+      new File(['https://example.com/from-file'], 'private-links.txt', {
+        type: 'text/plain',
+      })
+    );
+
+    expect(await screen.findByText('신규')).toBeTruthy();
+    expect(service.prepare).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adapterKey: 'generic-text',
+        inputKind: 'file',
+      })
+    );
+    expect(JSON.stringify(service.prepare.mock.calls[0]?.[0])).not.toContain(
+      'private-links.txt'
+    );
+  });
+
   it('링크 분석부터 매핑·반영·2단계 Undo까지 실제 흐름을 제공한다', async () => {
     const user = userEvent.setup();
     const service = createService();
