@@ -1,0 +1,288 @@
+.insight-import-dialog {
+  color: var(--color-ink);
+}
+
+.insight-import-dialog__source,
+.insight-import-dialog__paste,
+.insight-import-dialog__file,
+.insight-import-dialog__preview,
+.insight-import-dialog__collections,
+.insight-import-dialog__result,
+.insight-import-dialog__history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.insight-import-dialog__notion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-card);
+  padding: var(--spacing-4);
+  background: var(--color-canvas);
+}
+
+.insight-import-dialog__notion p {
+  margin: 0;
+  color: var(--color-graphite);
+}
+
+.insight-import-dialog__notion-checkbox {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: var(--spacing-2);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.insight-import-dialog__notion-checkbox input {
+  width: 20px;
+  height: 20px;
+}
+
+.insight-import-dialog__field-mapping {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.insight-import-dialog__field-mapping h3,
+.insight-import-dialog__field-mapping p {
+  margin: 0;
+}
+
+.insight-import-dialog__field-mapping p {
+  color: var(--color-graphite);
+}
+
+.insight-import-dialog__field-mapping fieldset {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-3);
+  margin: 0;
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-input);
+  padding: var(--spacing-4);
+}
+
+.insight-import-dialog__field-mapping legend {
+  padding: 0 var(--spacing-1);
+  font-weight: 700;
+}
+
+.insight-import-dialog__field-mapping label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  color: var(--color-graphite);
+  font-weight: 600;
+}
+
+.insight-import-dialog__field-mapping .ui-select,
+.insight-import-dialog__field-mapping .ui-button {
+  min-height: 44px;
+}
+
+.insight-import-dialog__paste label,
+.insight-import-dialog__file label,
+.insight-import-dialog__collection label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  color: var(--color-graphite);
+  font-weight: 600;
+}
+
+.insight-import-dialog__file input {
+  min-height: 44px;
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-input);
+  padding: var(--spacing-2);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+.insight-import-dialog__file p {
+  margin: 0;
+  color: var(--color-graphite);
+}
+
+.insight-import-dialog__paste .ui-field,
+.insight-import-dialog__paste .ui-button,
+.insight-import-dialog__collection .ui-field,
+.insight-import-dialog__collection .ui-select,
+.insight-import-dialog__actions .ui-button {
+  min-height: 44px;
+}
+
+.insight-import-dialog__summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-3);
+  margin: 0;
+}
+
+.insight-import-dialog__summary > div {
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-card);
+  padding: var(--spacing-4);
+  background: var(--color-canvas);
+}
+
+.insight-import-dialog__summary dt {
+  color: var(--color-graphite);
+}
+
+.insight-import-dialog__summary dd {
+  margin: var(--spacing-2) 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.insight-import-dialog__collections h3,
+.insight-import-dialog__history h3 {
+  margin: 0;
+}
+
+.insight-import-dialog__collection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  margin: 0;
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-input);
+  padding: var(--spacing-4);
+}
+
+.insight-import-dialog__collection legend {
+  padding: 0 var(--spacing-1);
+  font-weight: 700;
+}
+
+.insight-import-dialog__new-category {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--spacing-3);
+}
+
+.insight-import-dialog__field-error,
+.insight-import-dialog [role='alert'] {
+  color: var(--color-error-ink);
+}
+
+.insight-import-dialog__field-error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.insight-import-dialog__issues {
+  border-top: 1px solid var(--color-ash);
+  border-bottom: 1px solid var(--color-ash);
+  padding: var(--spacing-3) 0;
+}
+
+.insight-import-dialog__issues summary,
+.insight-import-dialog__history summary {
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--color-charcoal);
+  font-weight: 600;
+}
+
+.insight-import-dialog__issues ul,
+.insight-import-dialog__history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: var(--spacing-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.insight-import-dialog__issues li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  color: var(--color-graphite);
+}
+
+.insight-import-dialog__actions,
+.insight-import-dialog__history-actions,
+.insight-import-dialog__confirmation {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+}
+
+.insight-import-dialog__history {
+  border-top: 1px solid var(--color-ash);
+  padding-top: var(--spacing-5);
+}
+
+.insight-import-dialog__history-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-input);
+  padding: var(--spacing-4);
+  background: var(--color-canvas);
+}
+
+.insight-import-dialog__history-item > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+}
+
+.insight-import-dialog__history-item p {
+  margin: 0;
+  color: var(--color-graphite);
+}
+
+.insight-import-dialog__success {
+  border: 1px solid var(--color-signal-green);
+  border-radius: var(--radius-card);
+  padding: var(--spacing-4);
+  background: var(--color-canvas);
+}
+
+.insight-import-dialog__success p {
+  margin-bottom: 0;
+  color: var(--color-graphite);
+}
+
+.insight-import-dialog :focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .insight-import-dialog__summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .insight-import-dialog__new-category {
+    grid-template-columns: 1fr;
+  }
+
+  .insight-import-dialog__field-mapping fieldset {
+    grid-template-columns: 1fr;
+  }
+
+  .insight-import-dialog__actions,
+  .insight-import-dialog__history-actions,
+  .insight-import-dialog__confirmation {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .insight-import-dialog__issues li,
+  .insight-import-dialog__history-item > div:first-child {
+    flex-direction: column;
+  }
+}

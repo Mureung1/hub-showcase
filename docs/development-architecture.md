@@ -33,6 +33,19 @@ src/
         auth_provider.tsx
       ui/
         account_menu.tsx
+    insight-import/
+      api/
+        browser_insight_import_service.ts
+        notion_import_api.ts
+      model/
+        import_adapter.ts
+        import_analysis.ts
+        use_insight_import.ts
+        use_notion_import.ts
+      ui/
+        insight_import_dialog.tsx
+        import_field_mapping.tsx
+        import_preview.tsx
     pwa-install/
       index.ts
       model/
@@ -93,6 +106,7 @@ src/
     capacitor/
       android_share_plugin.ts
       mobile_oauth.ts
+      notion_import_callback.ts
       runtime.ts
     config/
       supabase_env.ts
@@ -134,6 +148,10 @@ src/
 
 현재 도메인 모델·Supabase 저장 어댑터·목록 UI는 `entities/insight`, Android 공유의 URL 추출·상태·결과 화면은 `features/android-share`, Google 로그인 정책은 `features/auth`, PWA 설치 안내 정책은 `features/pwa-install`, 고정 앱 내비게이션은 `widgets/app-navigation`, Supabase 공통 클라이언트는 `shared/api`, Capacitor 런타임·공유 플러그인·모바일 OAuth 어댑터는 `shared/capacitor`, 공개 환경 검증은 `shared/config`, PWA 브라우저 수명 주기 어댑터는 `shared/pwa`, 런타임 토큰은 `shared/config/design-system`, 공통 UI 경계는 `shared/ui`가 소유한다.
 
+- `features/insight-import`는 출처별 입력을 표준 후보로 바꾸는 어댑터, 분석·반영·Undo 사용자 행동과 UI를 소유한다.
+- 원본 파일은 브라우저에서만 읽으며 Notion OAuth와 Provider 호출은 `server/insight_import`에 둔다.
+- `pages/library`는 feature를 직접 import하지 않고 진입 callback만 노출하며 `app`이 다이얼로그와 원격 목록 재조회를 조합한다.
+
 ## import 경계
 
 - 외부 사용자는 slice의 `index.ts` public API만 import한다.
@@ -168,6 +186,9 @@ Express 서버는 FSD 대상이 아니므로 `server/`에 둔다. `/api/health` 
 - Web Storage 어댑터는 역사적 로컬 MVP 및 호환 작업을 위한 보조 구현이며, 현재 런타임 저장소 선택은 Supabase다.
 - 데이터 계약 버전은 Web Storage의 `schemaVersion`과 Supabase의 `schema_version`에 기록한다. Supabase 저장소와 캡처 서비스도 읽은 데이터가 현재 버전인지 검증한다.
 - 검색과 `꺼내보기`는 원격 목록을 불러온 뒤 도메인 순수 함수로 실행해 저장 인프라와 결정적 랭킹 계약을 분리한다.
+- 범용 파일 가져오기는 브라우저에서 파싱·정규화한 후보만 Supabase RPC로 보내고 원본 파일 body는 서버로 보내지 않는다.
+- Notion 연결은 서버가 OAuth state를 단일 사용으로 검증하고 AES-256-GCM으로 토큰을 암호화한다. 사용자 bearer client는 작업·후보 RPC와 RLS에만 사용하고 service role은 callback 토큰 저장과 만료 정리에만 사용한다.
+- Notion 분석은 Provider cursor를 DB에 저장해 요청 slice 단위로 재개하며 완료·취소 시 토큰 철회를 시도한다. 연결 생성 24시간 뒤에는 암호화 OAuth 토큰과 연결 row, 미완료 작업의 Provider cursor·후보·오류·컬렉션이 만료 대상이 되고 다음 일일 Cron이 Provider 응답과 무관하게 삭제한다. 이미 반영된 인사이트와 완료·Undo 작업 기록은 자동 삭제하지 않는다.
 
 현재 Supabase 전환 순서는 [#21](https://github.com/ppre1ude/hub/issues/21), 다중 기기 캡처 경계는 [#36](https://github.com/ppre1ude/hub/issues/36), 캡처 우선 제품 결정은 [#25](https://github.com/ppre1ude/hub/issues/25)를 따른다.
 

@@ -39,6 +39,25 @@ describe('클라이언트 번들 비밀값 검사', () => {
   });
 
   it.each([
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'NOTION_CLIENT_SECRET',
+    'IMPORT_TOKEN_ENCRYPTION_KEY',
+    'CRON_SECRET',
+  ])('서버 비밀 설정 marker %s를 찾는다', (name) => {
+    expect(findClientBundleSecrets(`const marker="${name}"`)).toContain(
+      `서버 비밀 설정 ${name}`
+    );
+  });
+
+  it('VITE 접두사가 없어도 실제 서버 비밀값을 찾는다', () => {
+    expect(
+      findClientBundleSecrets('const leaked="notion-test-secret"', {
+        NOTION_CLIENT_SECRET: 'notion-test-secret',
+      })
+    ).toContain('환경 변수 NOTION_CLIENT_SECRET');
+  });
+
+  it.each([
     ['VITE_google_client_secret', 'oauth-secret-value'],
     ['VITE_CLIENT_SECRET', 'short'],
   ])(

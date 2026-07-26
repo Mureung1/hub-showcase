@@ -50,32 +50,45 @@ export function useInsightWorkspace({
   const [isMutating, setIsMutating] = useState(false);
   const workspaceStateRef = useRef(workspaceState);
   const mutationInFlightRef = useRef(false);
+  const loadRevisionRef = useRef(0);
+  const mountedRef = useRef(false);
 
-  useEffect(() => {
-    let active = true;
-    const loadingState = createLoadingState(repository);
+  const reloadInsights = useCallback(async () => {
+    const revision = ++loadRevisionRef.current;
+    const currentState = workspaceStateRef.current;
+    const loadingState =
+      currentState.repository === repository
+        ? { ...currentState, status: 'loading' as const }
+        : createLoadingState(repository);
 
     workspaceStateRef.current = loadingState;
+    setWorkspaceState(loadingState);
 
-    void repository.list().then((loadResult) => {
-      if (!active) {
-        return;
-      }
+    const loadResult = await loadInsights(repository);
 
-      const readyState: InsightWorkspaceState = {
-        insights: loadResult.insights,
-        loadWarnings: loadResult.warnings,
-        repository,
-        status: 'ready',
-      };
-      workspaceStateRef.current = readyState;
-      setWorkspaceState(readyState);
-    });
+    if (!mountedRef.current || loadRevisionRef.current !== revision) {
+      return;
+    }
+
+    const readyState: InsightWorkspaceState = {
+      insights: loadResult.insights,
+      loadWarnings: loadResult.warnings,
+      repository,
+      status: 'ready',
+    };
+    workspaceStateRef.current = readyState;
+    setWorkspaceState(readyState);
+  }, [repository]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    void reloadInsights();
 
     return () => {
-      active = false;
+      mountedRef.current = false;
+      loadRevisionRef.current += 1;
     };
-  }, [repository]);
+  }, [reloadInsights]);
 
   const runMutation = useCallback(
     async <T>(command: () => Promise<T>, failure: T): Promise<T> => {
@@ -253,9 +266,21 @@ export function useInsightWorkspace({
     isLoading: !isCurrentRepository || workspaceState.status === 'loading',
     isMutating,
     loadWarnings: isCurrentRepository ? workspaceState.loadWarnings : [],
+    reloadInsights,
     saveInsight,
     updateInsightContext,
   };
+}
+
+async function loadInsights(repository: InsightRepository) {
+  try {
+    return await repository.list();
+  } catch {
+    return {
+      insights: [],
+      warnings: ['read-failed'] as InsightRepositoryWarning[],
+    };
+  }
 }
 
 function createLoadingState(

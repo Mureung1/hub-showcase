@@ -2,6 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build:web",
   "outputDirectory": "dist",
+  "crons": [
+    {
+      "path": "/api/cron/import-cleanup",
+      "schedule": "10 18 * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/:path((?!api/).*)",
