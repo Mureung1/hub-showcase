@@ -6,4 +6,14 @@
 
 제품 가설과 범위는 [현재 MVP](https://github.com/ppre1ude/hub/wiki/%ED%98%84%EC%9E%AC-MVP), 범위를 판단하는 기준은 [제품 원칙과 결정](https://github.com/ppre1ude/hub/wiki/%EC%A0%9C%ED%92%88-%EC%9B%90%EC%B9%99%EA%B3%BC-%EA%B2%B0%EC%A0%95)을 따른다.
 
-이 파일은 기존 링크를 유지하기 위한 안내 문서이며 작업 상태를 기록하지 않는다.
+일반 작업 상태는 GitHub에서 관리하며, 아래에는 #24 구현 범위의 코드 반영 여부만 기록한다.
+
+## #24 범용 가져오기 범위
+
+- [x] URL 붙여넣기와 Chrome bookmark HTML
+- [x] CSV, JSON, HTML, Markdown, text, 안전한 ZIP
+- [x] 분석 미리보기, 모음 매핑, commit, Undo, 기록 삭제
+- [x] Notion Public Connection과 웹·Android 복귀
+- [ ] YouTube, 카카오톡, Pinterest, Instagram 전용 어댑터
+
+완료 근거와 운영 검증 절차는 [승인 설계](./superpowers/specs/2026-07-25-universal-insight-import-design.md)와 [구현 계획](./superpowers/plans/2026-07-25-universal-insight-import.md)에 둔다. 후속 서비스의 우선순위와 상태는 GitHub 이슈와 프로젝트에서 관리한다.
