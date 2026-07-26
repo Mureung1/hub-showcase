@@ -5,6 +5,10 @@ import { describe, expect, it } from 'vitest';
 
 interface VercelConfig {
   buildCommand?: string;
+  crons?: Array<{
+    path: string;
+    schedule: string;
+  }>;
   outputDirectory?: string;
   rewrites?: Array<{
     source: string;
@@ -37,6 +41,17 @@ describe('Vercel 배포 설정', () => {
     expect(config.rewrites).toContainEqual({
       source: '/:path((?!api/).*)',
       destination: '/index.html',
+    });
+  });
+
+  it('매일 한국 시간 03시 10분에 가져오기 만료 정리를 실행한다', () => {
+    const config = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'vercel.json'), 'utf8')
+    ) as VercelConfig;
+
+    expect(config.crons).toContainEqual({
+      path: '/api/cron/import-cleanup',
+      schedule: '10 18 * * *',
     });
   });
 

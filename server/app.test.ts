@@ -2,6 +2,7 @@ import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createApp } from './app';
+import type { ImportCleanupService } from './app';
 import type { ServerInsightCaptureService } from './insight_capture_service';
 import type { ServerInsightMemoService } from './insight_memo_service';
 
@@ -13,6 +14,67 @@ describe('GET /api/health', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ ok: true });
+  });
+});
+
+describe('GET /api/cron/import-cleanup', () => {
+  it.each([
+    ['비밀 값이 없는 요청', undefined],
+    ['비밀 값이 틀린 요청', 'Bearer wrong-secret'],
+  ])('%s을 거부한다', async (_label, authorization) => {
+    const cleanupService = createCleanupService(3);
+    const pendingRequest = request(
+      createApp({ cleanupService, cronSecret: 'cron-secret' })
+    ).get('/api/cron/import-cleanup');
+
+    if (authorization) {
+      pendingRequest.set('Authorization', authorization);
+    }
+
+    const response = await pendingRequest;
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ ok: false, reason: 'permission-denied' });
+    expect(cleanupService.cleanup).not.toHaveBeenCalled();
+  });
+
+  it('올바른 비밀 값으로 만료 정리를 한 번 실행하고 개수만 반환한다', async () => {
+    const cleanupService = createCleanupService(3);
+
+    const response = await request(
+      createApp({ cleanupService, cronSecret: 'cron-secret' })
+    )
+      .get('/api/cron/import-cleanup')
+      .set('Authorization', 'Bearer cron-secret');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, deletedJobCount: 3 });
+    expect(cleanupService.cleanup).toHaveBeenCalledTimes(1);
+  });
+
+  it('만료 정리 예외 세부와 비밀 값을 응답이나 로그에 노출하지 않는다', async () => {
+    const cleanup = vi
+      .fn()
+      .mockRejectedValue(new Error('SENSITIVE_DATABASE_DETAIL'));
+    const error = vi.fn();
+
+    const response = await request(
+      createApp({
+        cleanupService: { cleanup },
+        cronSecret: 'cron-secret',
+        logger: { error },
+      })
+    )
+      .get('/api/cron/import-cleanup')
+      .set('Authorization', 'Bearer cron-secret');
+
+    expect(response.status).toBe(503);
+    expect(response.body).toEqual({ ok: false, reason: 'write-failed' });
+    expect(response.text).not.toContain('SENSITIVE_DATABASE_DETAIL');
+    expect(JSON.stringify(error.mock.calls)).not.toContain(
+      'SENSITIVE_DATABASE_DETAIL'
+    );
+    expect(JSON.stringify(error.mock.calls)).not.toContain('cron-secret');
   });
 });
 
@@ -290,4 +352,12 @@ function createMemoService(
     result,
     update,
   } satisfies ServerInsightMemoService & { result: typeof result };
+}
+
+function createCleanupService(
+  deletedJobCount: number
+): ImportCleanupService & { cleanup: ReturnType<typeof vi.fn> } {
+  return {
+    cleanup: vi.fn(async () => ({ deletedJobCount })),
+  };
 }

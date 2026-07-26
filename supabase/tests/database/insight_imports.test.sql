@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(66);
+select extensions.plan(76);
 
 select extensions.has_table('public', 'insight_import_jobs', '가져오기 작업 테이블이 존재한다');
 select extensions.has_table('public', 'insight_import_items', '가져오기 항목 테이블이 존재한다');
@@ -1060,6 +1060,254 @@ select extensions.ok(
   and not has_function_privilege('anon', 'public.commit_insight_import(uuid, jsonb)', 'execute')
   and not has_function_privilege('anon', 'public.retry_insight_import(uuid, jsonb)', 'execute'),
   '반영과 재시도 RPC는 인증 사용자에게만 실행 권한을 부여한다'
+);
+
+select extensions.ok(
+  to_regprocedure('public.undo_insight_import(uuid)') is not null
+  and to_regprocedure('public.delete_insight_import_record(uuid)') is not null
+  and to_regprocedure('public.cleanup_expired_insight_imports()') is not null,
+  'Undo, 기록 삭제와 만료 정리 RPC가 존재한다'
+);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" =
+  '{"sub":"00000000-0000-4000-8000-000000000022","role":"authenticated"}';
+select extensions.throws_ok(
+  format(
+    'select public.undo_insight_import(%L::uuid)',
+    (select result ->> 'id' from commit_prepared_result)
+  ),
+  '22023',
+  null,
+  '다른 사용자는 가져오기 작업을 되돌릴 수 없다'
+);
+
+reset role;
+create temporary table undo_fixture on commit drop as
+select
+  max(created_insight_id::text) filter (
+    where candidate_id = 'commit-existing-category'
+  )::uuid as modified_insight_id,
+  max(created_insight_id::text) filter (
+    where candidate_id = 'commit-new-category'
+  )::uuid as deleted_insight_id,
+  max(created_insight_id::text) filter (
+    where candidate_id = 'commit-uncategorized'
+  )::uuid as untouched_insight_id
+from public.insight_import_items
+where job_id = (select (result ->> 'id')::uuid from commit_prepared_result);
+grant select on undo_fixture to authenticated;
+
+set local role authenticated;
+set local "request.jwt.claims" =
+  '{"sub":"00000000-0000-4000-8000-000000000021","role":"authenticated"}';
+update public.insights
+set
+  title = '사용자가 바꾼 제목',
+  memo = '사용자가 바꾼 메모',
+  category_id = '20000000-0000-4000-8000-000000000021'
+where id = (select modified_insight_id from undo_fixture);
+delete from public.insights
+where id = (select deleted_insight_id from undo_fixture);
+
+reset role;
+update public.insight_import_items
+set imported_updated_at = imported_updated_at - interval '1 second'
+where job_id = (select (result ->> 'id')::uuid from commit_prepared_result)
+  and candidate_id = 'commit-existing-category';
+
+set local role authenticated;
+set local "request.jwt.claims" =
+  '{"sub":"00000000-0000-4000-8000-000000000021","role":"authenticated"}';
+create temporary table undo_result on commit drop as
+select public.undo_insight_import(
+  (select (result ->> 'id')::uuid from commit_prepared_result)
+) as result;
+
+select extensions.results_eq(
+  $$
+    select
+      result ->> 'deletedCount',
+      result ->> 'preservedCount',
+      result ->> 'alreadyDeletedCount'
+    from undo_result
+  $$,
+  $$ values ('1', '1', '1') $$,
+  'Undo는 미수정 항목만 삭제하고 수정·선삭제 항목을 구분해 집계한다'
+);
+select extensions.ok(
+  exists (
+    select 1
+    from public.insights
+    where id = (select modified_insight_id from undo_fixture)
+      and title = '사용자가 바꾼 제목'
+      and memo = '사용자가 바꾼 메모'
+      and category_id = '20000000-0000-4000-8000-000000000021'
+  )
+  and not exists (
+    select 1
+    from public.insights
+    where id in (
+      (select deleted_insight_id from undo_fixture),
+      (select untouched_insight_id from undo_fixture)
+    )
+  ),
+  'Undo는 사용자가 수정한 인사이트를 보존하고 나머지 생성 인사이트만 제거한다'
+);
+select extensions.ok(
+  exists (
+    select 1
+    from public.insights
+    where normalized_url = 'https://commit.example/racing-duplicate'
+      and title = '경쟁 저장 제목'
+  )
+  and exists (
+    select 1
+    from public.categories
+    where user_id = '00000000-0000-4000-8000-000000000021'
+      and normalized_name = '연구'
+  ),
+  'Undo는 기존 중복 인사이트와 반영 중 만든 분류를 삭제하지 않는다'
+);
+select extensions.results_eq(
+  $$
+    select public.undo_insight_import(
+      (select (result ->> 'id')::uuid from commit_prepared_result)
+    )
+  $$,
+  $$ select result from undo_result $$,
+  'Undo를 다시 호출해도 추가 삭제 없이 같은 결과를 반환한다'
+);
+
+select public.delete_insight_import_record(
+  (select (result ->> 'id')::uuid from commit_prepared_result)
+);
+select extensions.ok(
+  not exists (
+    select 1
+    from public.insight_import_jobs
+    where id = (select (result ->> 'id')::uuid from commit_prepared_result)
+  )
+  and not exists (
+    select 1
+    from public.insight_import_items
+    where job_id = (select (result ->> 'id')::uuid from commit_prepared_result)
+  )
+  and exists (
+    select 1
+    from public.insights
+    where id = (select modified_insight_id from undo_fixture)
+  )
+  and exists (
+    select 1
+    from public.categories
+    where user_id = '00000000-0000-4000-8000-000000000021'
+      and normalized_name = '연구'
+  ),
+  '기록 삭제는 작업과 항목만 지우고 보존된 인사이트와 분류를 유지한다'
+);
+
+reset role;
+create temporary table cleanup_fixture (
+  job_id uuid primary key,
+  expected_to_remain boolean not null
+) on commit drop;
+insert into public.insight_import_jobs (
+  id, user_id, input_kind, adapter_key, status, idempotency_key,
+  expires_at, completed_at
+)
+values
+  (
+    '41000000-0000-4000-8000-000000000001',
+    '00000000-0000-4000-8000-000000000021',
+    'pasted-text', 'pasted-text', 'ready', repeat('a', 63) || '1',
+    now() - interval '1 second', null
+  ),
+  (
+    '41000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000021',
+    'pasted-text', 'pasted-text', 'failed', repeat('b', 63) || '2',
+    now() - interval '1 second', null
+  ),
+  (
+    '41000000-0000-4000-8000-000000000003',
+    '00000000-0000-4000-8000-000000000021',
+    'connected-account', 'notion', 'analyzing', repeat('c', 63) || '3',
+    now() - interval '1 second', null
+  ),
+  (
+    '41000000-0000-4000-8000-000000000004',
+    '00000000-0000-4000-8000-000000000021',
+    'pasted-text', 'pasted-text', 'completed', repeat('d', 63) || '4',
+    null, now()
+  ),
+  (
+    '41000000-0000-4000-8000-000000000005',
+    '00000000-0000-4000-8000-000000000021',
+    'pasted-text', 'pasted-text', 'undone', repeat('e', 63) || '5',
+    null, now()
+  );
+insert into cleanup_fixture (job_id, expected_to_remain)
+values
+  ('41000000-0000-4000-8000-000000000001', false),
+  ('41000000-0000-4000-8000-000000000002', false),
+  ('41000000-0000-4000-8000-000000000003', false),
+  ('41000000-0000-4000-8000-000000000004', true),
+  ('41000000-0000-4000-8000-000000000005', true);
+insert into public.insight_import_items (
+  job_id, user_id, candidate_id, original_url, source_location,
+  classification, exclusion_code, ordinal
+)
+values (
+  '41000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000021',
+  'cleanup-cascade',
+  'https://cleanup.example/item',
+  '정리 항목',
+  'excluded',
+  'limit-exceeded',
+  1
+);
+
+set local role service_role;
+set local "request.jwt.claims" = '{"role":"service_role"}';
+select extensions.is(
+  public.cleanup_expired_insight_imports(),
+  3,
+  '만료 정리는 만료된 미완료 작업 개수를 반환한다'
+);
+
+reset role;
+select extensions.ok(
+  not exists (
+    select 1
+    from public.insight_import_jobs as job
+    join cleanup_fixture as fixture on fixture.job_id = job.id
+    where not fixture.expected_to_remain
+  )
+  and not exists (
+    select 1
+    from public.insight_import_items
+    where job_id = '41000000-0000-4000-8000-000000000001'
+  )
+  and (
+    select count(*) = 2
+    from public.insight_import_jobs as job
+    join cleanup_fixture as fixture on fixture.job_id = job.id
+    where fixture.expected_to_remain
+  ),
+  '만료 정리는 항목을 함께 삭제하고 완료·Undo 작업은 보존한다'
+);
+select extensions.ok(
+  has_function_privilege('authenticated', 'public.undo_insight_import(uuid)', 'execute')
+  and has_function_privilege('authenticated', 'public.delete_insight_import_record(uuid)', 'execute')
+  and not has_function_privilege('anon', 'public.undo_insight_import(uuid)', 'execute')
+  and not has_function_privilege('anon', 'public.delete_insight_import_record(uuid)', 'execute')
+  and has_function_privilege('service_role', 'public.cleanup_expired_insight_imports()', 'execute')
+  and not has_function_privilege('authenticated', 'public.cleanup_expired_insight_imports()', 'execute')
+  and not has_function_privilege('anon', 'public.cleanup_expired_insight_imports()', 'execute'),
+  'Undo·기록 삭제는 인증 사용자에게, 만료 정리는 서비스 역할에만 허용한다'
 );
 
 select * from extensions.finish();

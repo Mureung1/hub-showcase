@@ -1,3 +1,5 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
+
 import express, {
   type ErrorRequestHandler,
   type RequestHandler,
@@ -12,8 +14,14 @@ import type {
 
 export type CreateAppOptions = {
   captureService?: ServerInsightCaptureService;
+  cleanupService?: ImportCleanupService;
+  cronSecret?: string;
   logger?: Pick<Console, 'error'>;
   memoService?: ServerInsightMemoService;
+};
+
+export type ImportCleanupService = {
+  cleanup(): Promise<{ deletedJobCount: number }>;
 };
 
 const captureJsonParser = express.json({ limit: '8kb' });
@@ -60,6 +68,8 @@ const parseCaptureJson: RequestHandler = (request, response, next) => {
 
 export function createApp({
   captureService,
+  cleanupService,
+  cronSecret,
   logger = console,
   memoService,
 }: CreateAppOptions = {}) {
@@ -69,6 +79,28 @@ export function createApp({
 
   app.get('/api/health', (_request, response) => {
     response.json({ ok: true });
+  });
+
+  app.get('/api/cron/import-cleanup', async (request, response) => {
+    const suppliedSecret = getBearerToken(request.header('authorization'));
+
+    if (
+      !cronSecret ||
+      !suppliedSecret ||
+      !hasMatchingSecret(suppliedSecret, cronSecret)
+    ) {
+      response.status(401).json({ ok: false, reason: 'permission-denied' });
+      return;
+    }
+
+    if (!cleanupService) {
+      response.status(503).json({ ok: false, reason: 'write-failed' });
+      return;
+    }
+
+    const { deletedJobCount } = await cleanupService.cleanup();
+
+    response.json({ ok: true, deletedJobCount });
   });
 
   app.post(
@@ -150,6 +182,13 @@ function getBearerToken(authorization: string | undefined) {
   const match = /^Bearer ([^\s]+)$/i.exec(authorization ?? '');
 
   return match?.[1];
+}
+
+function hasMatchingSecret(suppliedSecret: string, expectedSecret: string) {
+  const suppliedDigest = createHash('sha256').update(suppliedSecret).digest();
+  const expectedDigest = createHash('sha256').update(expectedSecret).digest();
+
+  return timingSafeEqual(suppliedDigest, expectedDigest);
 }
 
 function getRouteParameter(value: string | string[] | undefined) {
