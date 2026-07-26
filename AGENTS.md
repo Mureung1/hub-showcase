@@ -129,8 +129,12 @@ git status --short --branch
 | --- | --- |
 | 실행 계층·구성요소 경계·버전 활성화·계측 | `docs/architecture.md` |
 | 에이전트 루프·도구·검증·신뢰도·종료 | `docs/agent-design.md` |
-| 데이터 계층·테이블·지식 그래프·Wiki·권한 | `docs/knowledge-schema.md` |
-| 요구 차원 발견과 승격·지표 정의·표본 정책 | `docs/statistics-model.md` |
+| 데이터 계층·테이블을 나눈 이유·지식 그래프·Wiki | `docs/knowledge-schema.md` |
+| 컬럼 타입·기본키·외래키·인덱스·제약 | `docs/erd.md` |
+| 그래프 노드·엣지 유형·허용 연결·엣지별 필수 근거 | `docs/ontology-v1.md` |
+| 요구 차원 발견과 승격·화면 블록 연결 | `docs/statistics-model.md` |
+| 지표 수식·중복 단위·결측 처리·불확실성·정책 버전 | `docs/metric-spec.md` |
+| 구성요소별 읽기·쓰기 범위와 강제 수단 | `docs/permission-matrix.md` |
 | 자료 계층·출처·허용 용도·평가 세트 | `docs/data-strategy.md` |
 | 개발 순서와 상태 | `docs/backlog.md` |
 | 수용 기준 | `docs/checklist.md` |
