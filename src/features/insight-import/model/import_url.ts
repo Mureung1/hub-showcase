@@ -1,4 +1,4 @@
-import { normalizeInsightUrl } from '@/entities/insight';
+import { normalizeInsightUrl } from '../../../entities/insight/model/normalize_insight_url.js';
 
 const PRIVATE_HOST_NAMES = new Set(['localhost', 'localhost.localdomain']);
 const PRIVATE_SUFFIXES = ['.internal', '.local', '.localhost'];

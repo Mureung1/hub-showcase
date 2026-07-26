@@ -1,4 +1,4 @@
-import type { CategoryColorKey } from '@/shared/config/design-system';
+import type { CategoryColorKey } from '../../../shared/config/design-system/tokens.js';
 
 export const IMPORT_INPUT_KINDS = [
   'pasted-text',
