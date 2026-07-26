@@ -28,20 +28,25 @@ import {
 import { toRealtimeStatus } from '../utils/realtimeStatus.js';
 
 // [enum → 한글 라벨] 백엔드가 주는 코드값(enum name)을 화면용 한글로 바꾼다.
-//   백엔드 ParkingKind/OperType/PayType enum의 name() 값과 1:1로 대응.
+//   백엔드 ParkingKind/OperType/PayType enum의 name() 값과 1:1로 대응한다.
+//   값을 모르는 경우(UNKNOWN)는 여기 넣지 않는다 — 아래 toLabel의 폴백이 처리한다.
 const PARKING_KIND_LABEL = { OUTDOOR: '노외', ON_STREET: '노상' };
 const OPER_TYPE_LABEL = {
   TIME_BASED: '시간제',
   RESIDENT_PRIORITY: '거주자우선',
   TIME_AND_RESIDENT: '시간제+거주자',
+  // 버스전용(4)은 적재에서 제외되지만, 정책이 바뀌거나 기존 데이터가 남았을 때를 위해 남겨둔다.
   BUS_ONLY: '버스전용',
-  UNKNOWN: '정보 없음',
+  // 시간제+버스전용(5)은 시간제로 주차할 수 있어 제외하지 않는다 → 라벨이 반드시 필요하다.
+  TIME_AND_BUS: '시간제+버스전용',
 };
 const PAY_TYPE_LABEL = { PAID: '유료', FREE: '무료' };
 
-// [enum 라벨 조회] 매핑에 없는 값(백엔드가 새 코드 추가 등)이면 '정보 없음'으로 안전하게 표시.
-function toLabel(labelMap, code) {
-  return labelMap[code] ?? '정보 없음';
+// [enum 라벨 조회] 매핑에 없는 값(UNKNOWN, 백엔드가 새로 추가한 코드 등)이면 폴백으로 넘긴다.
+//   tel을 넘긴 항목은 '전화 문의'로 안내하고, 안 넘긴 항목은 '정보 없음'.
+//   전화로 물어볼 가치가 있는 항목(운영구분·유료무료)에만 tel을 넘긴다.
+function toLabel(labelMap, code, tel) {
+  return labelMap[code] ?? fallbackText(tel);
 }
 
 // [값 없음 표시] 값이 없을 때: 전화번호가 있으면 '전화 문의'(사용자를 다음 행동으로 안내),
@@ -154,9 +159,11 @@ function ParkingLotDetail() {
 
       <div className="info-card">
         <h3>기본 정보</h3>
+        {/* 종류(노외/노상)는 몰라도 전화까지 할 정보가 아니라 tel을 넘기지 않는다.
+            운영구분·유료무료는 주차 가능 여부·비용이 걸려 있어 '전화 문의'로 안내한다. */}
         <InfoRow label="종류" value={toLabel(PARKING_KIND_LABEL, parkingKind)} />
-        <InfoRow label="운영구분" value={toLabel(OPER_TYPE_LABEL, operType)} />
-        <InfoRow label="요금" value={toLabel(PAY_TYPE_LABEL, payType)} />
+        <InfoRow label="운영구분" value={toLabel(OPER_TYPE_LABEL, operType, tel)} />
+        <InfoRow label="요금" value={toLabel(PAY_TYPE_LABEL, payType, tel)} />
         <InfoRow label="총 주차면수" value={totalSlots != null ? `${totalSlots}면` : null} />
         {tel && <InfoRow label="전화번호" value={tel} />}
       </div>
