@@ -370,7 +370,7 @@ ${list}
 ]`
 }
 
-function toCard(candidate, { translation, tickers }) {
+function toCard(candidate, { translation, tickers, readabilityScore }) {
   return {
     id: randomUUID(),
     source: candidate.source,
@@ -379,6 +379,7 @@ function toCard(candidate, { translation, tickers }) {
     translation,
     tickers: Array.isArray(tickers) ? tickers : [],
     url: candidate.link,
+    readabilityScore,
   }
 }
 
@@ -433,8 +434,14 @@ function parseEvaluationResponse(response, candidates) {
   return pickDiversifiedTop3(passed).map((e) => toCard(e.candidate, e))
 }
 
+const MOCK_READABILITY_SCORES = [5, 4, 3]
+
 function mockEvaluateAndSelectTop3(candidates) {
-  return candidates.slice(0, 3).map((c) => toCard(c, { translation: `[MOCK] ${c.title}`, tickers: [] }))
+  return candidates
+    .slice(0, 3)
+    .map((c, index) =>
+      toCard(c, { translation: `[MOCK] ${c.title}`, tickers: [], readabilityScore: MOCK_READABILITY_SCORES[index % 3] }),
+    )
 }
 
 // 2단계까지 통과한 후보(본문 포함)를 investmentScore/readabilityScore로

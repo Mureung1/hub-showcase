@@ -22,6 +22,11 @@
 > **2026-07-21 변경**: `POST /api/article-reads` 신규 추가(GitHub #16, 완독/판단
 > 분리 로깅). `decisionStore.js`는 이미 Supabase로 전환됐다(위 changelog의
 > "`decisions`는 아직 JSON 파일 저장소 그대로다"는 stale — GitHub #12로 완료됨).
+>
+> **2026-07-26 변경**: `GET /api/dashboard` 응답 카드에 `readabilityScore`
+> 필드 추가(기사 난이도 뱃지). 대시보드 큐레이션 3단계(LLM 평가)에서 이미
+> 계산되던 값을 카드 응답까지 노출한 것 — 통과 임계값 때문에 카드에 실리는
+> 값은 항상 3~5 범위다.
 
 ## 1. GET /api/dashboard — 오늘의 핵심 외신 3개
 
@@ -37,16 +42,19 @@
         "headline": "Fed Signals Rate Path as Inflation Guidance Shifts",
         "translation": "연준, 인플레이션 가이던스 변화에 따라 금리 방향 시사",
         "tickers": ["$SPX", "$TLT"],
-        "url": "https://www.nytimes.com/2026/07/12/business/fed-rate-path-guidance.html"
+        "url": "https://www.nytimes.com/2026/07/12/business/fed-rate-path-guidance.html",
+        "readabilityScore": 5
       }
     ]
   }
 }
 ```
 
-현재 `server/src/routes/dashboard.js`의 고정 픽스처 3건을 그대로 반환한다
-(실제 외신 수집·선별 로직은 아직 없음 — 부록 Tier 1 "경제 캘린더(비UI)"가
-이 로직의 신호로 검토 중).
+`readabilityScore`(1~5, 값이 높을수록 학습자가 읽기 쉬움)는
+`dashboardCurationService.js`의 RSS 자동 수집·선별 파이프라인 3단계(LLM
+평가)에서 매겨지며, 통과 임계값(`MIN_READABILITY_SCORE = 3`) 때문에 카드에
+실리는 값은 항상 3~5다. 클라이언트는 이 점수를 쉬움(5)/보통(4)/어려움(3)
+3단계 뱃지로 표시한다(`client/src/constants/difficulty.js`).
 
 ## 2. POST /api/article/parse — 외신 URL 파싱
 

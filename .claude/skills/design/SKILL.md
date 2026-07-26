@@ -60,6 +60,14 @@ Articles는 영문 뉴스 기반 해외 주식 모의 투자 학습 서비스다
   --alert-border: #FBBF24;
   --alert-text: #92400E;
 
+  /* Color - Difficulty (기사 난이도 뱃지, 쉬움→어려움 파스텔 그라데이션) */
+  --difficulty-easy-bg: #DDF3E4;
+  --difficulty-easy-text: #146C2E;
+  --difficulty-medium-bg: #FDECC8;
+  --difficulty-medium-text: #8A5A00;
+  --difficulty-hard-bg: #FCE1D2;
+  --difficulty-hard-text: #9A3B12;
+
   /* Color - Border (옅은 구분선/힌트용, 형광펜·색상 대신 조용히 존재하는 톤) */
   --border-subtle: #D6D9E0;
 
@@ -152,7 +160,10 @@ jsdelivr CDN으로 Pretendard 웹폰트를 각각 `<link>` 태그로 로드한�
 - **`.badge`** — 마이페이지 투자 판단 뱃지. `border-radius: var(--radius-full)`,
   `padding: var(--space-xs) var(--space-sm)`, 폰트는 label-lg 스케일을
   재사용한다. `.badge.buy`/`.badge.hold`/`.badge.sell` 수식자로
-  `--action-buy/hold/sell-bg`·`-text` 토큰을 매핑한다.
+  `--action-buy/hold/sell-bg`·`-text` 토큰을 매핑한다. 대시보드 카드의 난이도
+  칩도 같은 `.badge` 베이스를 재사용하며 `.badge.easy`/`.badge.medium`/
+  `.badge.hard` 수식자로 `--difficulty-easy/medium/hard-bg`·`-text`를
+  매핑한다(기사 난이도 뱃지, 2026-07-26).
 
 ## 4. 인터랙션 원칙 — 자바스크립트 절대 금지
 
