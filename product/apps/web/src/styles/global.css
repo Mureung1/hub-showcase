@@ -2300,7 +2300,7 @@ html.is-english .three-d {
   font-weight: 750;
 }
 .scene-progress.scene-job-progress {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 .scene-job-progress > div.stage-passed i {
   color: #fff;
@@ -2383,9 +2383,9 @@ html.is-english .three-d {
   font-size: 11px;
 }
 .scene-time-section {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 20px;
   padding: 19px 0;
 }
@@ -2421,6 +2421,24 @@ html.is-english .three-d {
   color: #195e32;
   background: #fff;
   box-shadow: 0 1px 4px rgba(30, 72, 43, 0.14);
+}
+.scene-observation-summary {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+  padding: 11px 12px;
+  border: 1px solid #dce6de;
+  border-radius: 7px;
+  background: #f5f9f6;
+}
+.scene-observation-summary b {
+  color: #25653b;
+  font-size: 11px;
+}
+.scene-observation-summary span {
+  color: #69776e;
+  font-size: 10px;
+  font-weight: 500;
 }
 .scene-progress {
   display: grid;

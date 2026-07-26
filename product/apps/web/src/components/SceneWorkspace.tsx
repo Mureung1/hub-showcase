@@ -2,8 +2,15 @@ import { Box, Clock3, FileImage, Lock, UploadCloud, X } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { sceneAssetUrl, type CaptureType } from "../features/scene/sceneApi";
+import { SceneObservationPanel } from "../features/scene/SceneObservationPanel";
 import { SceneProgress } from "../features/scene/SceneProgress";
 import { SceneWorkerStatus } from "../features/scene/SceneWorkerStatus";
+import {
+  createSceneCrowdPositions,
+  findSceneObservation,
+  GWANPYEONG_SCENE_OBSERVATIONS,
+  type SceneObservationTime,
+} from "../features/scene/sceneObservations";
 import { useSceneJob } from "../features/scene/useSceneJob";
 import { useSceneToolchain } from "../features/scene/useSceneToolchain";
 import { SplatViewer } from "./SplatViewer";
@@ -13,14 +20,12 @@ type SceneWorkspaceProps = {
   restoreFocusExternally: boolean;
 };
 
-const sceneHours = ["10:00", "13:00", "15:00", "18:00"] as const;
-
 export function SceneWorkspace({ onClose, restoreFocusExternally }: SceneWorkspaceProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const [captureType, setCaptureType] = useState<CaptureType>("equirectangular_video");
   const [sceneName, setSceneName] = useState("관평동 점포 전면");
-  const [sceneHour, setSceneHour] = useState<(typeof sceneHours)[number]>("13:00");
+  const [sceneHour, setSceneHour] = useState<SceneObservationTime>("13:00");
   const { toolchain, error: toolchainError } = useSceneToolchain();
   const { error: jobError, job, retry, setError, submit: submitJob, submitting } = useSceneJob();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -64,6 +69,11 @@ export function SceneWorkspace({ onClose, restoreFocusExternally }: SceneWorkspa
   }
 
   const error = jobError ?? toolchainError;
+  const observation = findSceneObservation(GWANPYEONG_SCENE_OBSERVATIONS, sceneHour);
+  const crowdPositions = useMemo(
+    () => createSceneCrowdPositions(sceneHour, observation.displayObjectCount),
+    [observation.displayObjectCount, sceneHour],
+  );
 
   return (
     <div className="modal-backdrop scene-modal-backdrop" role="presentation" onMouseDown={onClose}>
@@ -92,6 +102,7 @@ export function SceneWorkspace({ onClose, restoreFocusExternally }: SceneWorkspa
         {job?.status === "ready" && job.asset_url ? (
           <SplatViewer
             assetUrl={sceneAssetUrl(job.asset_url)}
+            crowdPositions={crowdPositions}
             filterScaleOutliers
             initialCamera={job.camera_pose}
           />
@@ -143,25 +154,11 @@ export function SceneWorkspace({ onClose, restoreFocusExternally }: SceneWorkspa
         <div className="scene-modal-content">
           <SceneProgress job={job} />
 
-          <section className="scene-time-section">
-            <div>
-              <span>대표 관찰 시간</span>
-              <p>시간 선택은 장면 메타데이터이며 혼잡도 측정값이 아닙니다.</p>
-            </div>
-            <div className="scene-time-buttons" role="group" aria-label="촬영 계획 시간">
-              {sceneHours.map((hour) => (
-                <button
-                  key={hour}
-                  type="button"
-                  className={sceneHour === hour ? "is-selected" : ""}
-                  aria-pressed={sceneHour === hour}
-                  onClick={() => setSceneHour(hour)}
-                >
-                  {hour}
-                </button>
-              ))}
-            </div>
-          </section>
+          <SceneObservationPanel
+            observations={GWANPYEONG_SCENE_OBSERVATIONS}
+            selectedTime={sceneHour}
+            onChange={setSceneHour}
+          />
 
           <div className="scene-privacy">
             <Lock size={17} />
