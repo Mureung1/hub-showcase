@@ -201,7 +201,7 @@ Outcome: 공개 또는 제품 환경에서 Scene·데이터 경로가 기본 차
 | SEC-005 | 사용자·관리자 response schema 분리         | P1       | Backlog | Phase 2 | SEC-001    | 공개 응답에 path·command·상세 exception이 없다 |
 | SEC-006 | Seoul API key 전송·log 보호                | P1       | Backlog | Phase 2 | -          | HTTPS 또는 승인된 격리 대안과 log redaction이 검증된다 |
 | SEC-007 | dependency·container 공급망 hardening      | P1       | Backlog | Phase 2 | SEC-003    | frozen install, image digest와 최소 권한 runtime이 검증된다 |
-| SEC-008 | 정적 배포 security header와 화면 회귀      | P1       | Backlog | Phase 2 | -          | 배포 header와 지도·문서·3D smoke test가 함께 통과한다 |
+| SEC-008 | 정적 배포 security header와 화면 회귀      | P1       | In Progress | Phase 2 | -          | Vercel header 설정은 push됐고, 다음 버전 배포 뒤 공개 URL header와 지도·문서·3D smoke를 확인한다 |
 
 ### EPIC-06. 통합 검증과 발표 배포
 
