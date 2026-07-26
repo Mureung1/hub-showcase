@@ -167,7 +167,49 @@ const REGION_MATCH_BONUS = 20
  */
 const INDUSTRY_MATCH_BONUS = 10
 
-function scoreForProfile(subsidy: Subsidy, profile: Pick<OnboardingProfile, 'region' | 'industry'>): number {
+/**
+ * 이슈 #67: employees/revenue/businessYears 조건 가점.
+ * industry와 같은 패턴 — AI 추출 신뢰도가 region(hashtags 기반, ~98%)만큼 높지 않아 페널티 없이
+ * 가점만 준다. 정보가 없으면(대다수, 신규 공고 중 AI 처리된 것만 값이 있음) 중립 유지.
+ *
+ * OnboardingProfile은 온보딩 UI에서 버킷(구간) 문자열로 저장된다(`src/data/onboardingSteps.ts`의
+ * EMPLOYEE_OPTIONS/REVENUE_OPTIONS/BUSINESS_YEARS_OPTIONS와 반드시 동기화). AI가 추출한 조건은
+ * "OO 이하/미만" 형태의 상한값이라, 버킷의 하한값이 그 상한 이하면 사용자가 조건을 충족할
+ * 가능성이 있다고 보고 가점을 준다(정밀 비교가 아니라 "그럴듯함" 판단이라 필터링은 하지 않는다).
+ */
+const EMPLOYEES_MATCH_BONUS = 10
+const REVENUE_MATCH_BONUS = 10
+const BUSINESS_YEARS_MATCH_BONUS = 10
+
+const EMPLOYEES_MIN: Record<string, number> = {
+  '없음 (1인)': 1,
+  '1~4명': 1,
+  '5~9명': 5,
+  '10명 이상': 10,
+}
+
+const REVENUE_MIN_KRW: Record<string, number> = {
+  '5천만원 미만': 0,
+  '5천만원 ~ 1억원': 50_000_000,
+  '1억원 ~ 3억원': 100_000_000,
+  '3억원 ~ 5억원': 300_000_000,
+  '5억원 이상': 500_000_000,
+}
+
+const BUSINESS_YEARS_MIN: Record<string, number> = {
+  '예비창업자': 0,
+  '1년 미만': 0,
+  '1~3년': 1,
+  '3~5년': 3,
+  '5~7년': 5,
+  '7~10년': 7,
+  '10년 이상': 10,
+}
+
+type ScoringProfile = Pick<OnboardingProfile, 'region' | 'industry'> &
+  Partial<Pick<OnboardingProfile, 'employees' | 'revenue' | 'businessYears'>>
+
+function scoreForProfile(subsidy: Subsidy, profile: ScoringProfile): number {
   let score = subsidy.match
 
   if (subsidy.region.length > 0 && subsidy.region.includes(profile.region)) {
@@ -176,6 +218,27 @@ function scoreForProfile(subsidy: Subsidy, profile: Pick<OnboardingProfile, 'reg
 
   if (subsidy.industry.includes(profile.industry)) {
     score = Math.min(100, score + INDUSTRY_MATCH_BONUS)
+  }
+
+  if (subsidy.employeesMaxCount != null && profile.employees) {
+    const min = EMPLOYEES_MIN[profile.employees]
+    if (min !== undefined && min <= subsidy.employeesMaxCount) {
+      score = Math.min(100, score + EMPLOYEES_MATCH_BONUS)
+    }
+  }
+
+  if (subsidy.revenueMaxKrw != null && profile.revenue) {
+    const min = REVENUE_MIN_KRW[profile.revenue]
+    if (min !== undefined && min <= subsidy.revenueMaxKrw) {
+      score = Math.min(100, score + REVENUE_MATCH_BONUS)
+    }
+  }
+
+  if (subsidy.businessYearsMax != null && profile.businessYears) {
+    const min = BUSINESS_YEARS_MIN[profile.businessYears]
+    if (min !== undefined && min <= subsidy.businessYearsMax) {
+      score = Math.min(100, score + BUSINESS_YEARS_MATCH_BONUS)
+    }
   }
 
   return score

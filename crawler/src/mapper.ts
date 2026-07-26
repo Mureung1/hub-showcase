@@ -9,7 +9,7 @@ const NO_DEADLINE_DDAY = 9999
 
 const FALLBACK_QUALIFICATION = '공고문 원문에서 확인해주세요'
 const FALLBACK_DOCUMENT = '공고문 원문에서 확인해주세요'
-const FALLBACK_AMOUNT = '공고문 참조'
+export const FALLBACK_AMOUNT = '공고문 참조'
 const FALLBACK_HOW = '공고문 원문에서 확인해주세요'
 const FALLBACK_CONTACT = '공고문 원문 참조'
 /** 조건 기반 매칭 알고리즘 도입 전까지의 중립값 (3주차 범위). 0은 "안 맞음"으로 오인되어 제외 */

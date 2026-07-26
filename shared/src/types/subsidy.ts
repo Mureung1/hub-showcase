@@ -39,6 +39,18 @@ export interface Subsidy {
    * 불일치 페널티는 없다 (신뢰도가 낮아서). 상세: docs/week4/issue-52-industry-match-plan.md
    */
   industry: string[]
+  /**
+   * 이슈 #67: 첨부파일 AI 구조화 추출 결과 — employees/revenue/businessYears는 문서 원문
+   * 표현 그대로(예: "상시근로자 50인 미만"), `*MaxCount`/`*MaxKrw`/`*Max`는 매칭 가점 계산용으로
+   * 정규화한 숫자(예: 50). 신규 공고 중 첨부파일에서 조건을 못 뽑았거나 아직 AI 추출을 못 한
+   * 공고는 전부 undefined — region/industry와 같은 원칙으로 "정보 없음"은 중립 취급한다.
+   */
+  employees?: string
+  employeesMaxCount?: number
+  revenue?: string
+  revenueMaxKrw?: number
+  businessYears?: string
+  businessYearsMax?: number
 }
 
 /** GET /api/subsidies 응답 — 페이지네이션 포함 (이슈 #48) */

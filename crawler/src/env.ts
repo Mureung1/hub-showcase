@@ -17,3 +17,11 @@ if (!apiKey) {
 }
 
 export const BIZINFO_API_KEY = apiKey
+
+const geminiApiKey = process.env.GEMINI_API_KEY
+
+if (!geminiApiKey) {
+  throw new Error('GEMINI_API_KEY가 없습니다. Google AI Studio에서 발급받아 .env에 설정하세요.')
+}
+
+export const GEMINI_API_KEY = geminiApiKey

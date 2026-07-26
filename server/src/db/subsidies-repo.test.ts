@@ -40,6 +40,12 @@ function makeRow(overrides: Partial<SubsidyRow>): SubsidyRow {
     contact: '000-0000',
     region: [],
     industry: [],
+    employees: null,
+    employees_max_count: null,
+    revenue: null,
+    revenue_max_krw: null,
+    business_years: null,
+    business_years_max: null,
     ...overrides,
   }
 }
@@ -140,6 +146,73 @@ describe('match — industry 가점 (이슈 #52)', () => {
 
   it('industry 가점도 100을 넘지 않는다', async () => {
     state.rows = [makeRow({ id: '1', industry: ['음식점'], match_score: 95 })]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(100)
+  })
+})
+
+describe('match — employees/revenue/businessYears 가점 (이슈 #67)', () => {
+  beforeEach(() => {
+    state.rows = []
+  })
+
+  // profile: employees '1~4명'(최솟값 1), revenue '5천만원 미만'(최솟값 0)
+
+  it('subsidy.employeesMaxCount가 profile 버킷의 최솟값 이상이면 가점을 받는다', async () => {
+    state.rows = [makeRow({ id: '1', employees_max_count: 5 })] // "50인 미만" 같은 조건이라 가정
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(60) // 50 + 10
+  })
+
+  it('subsidy.employeesMaxCount가 profile 버킷의 최솟값보다 작으면 가점을 받지 않는다', async () => {
+    const strictProfile = { ...profile, employees: '10명 이상' } // 최솟값 10
+    state.rows = [makeRow({ id: '1', employees_max_count: 5 })] // 5인 미만 조건 — 10명 이상 사업자는 대상 아님
+    const {
+      items: [result],
+    } = await match(strictProfile)
+    expect(result.match).toBe(50)
+  })
+
+  it('subsidy.revenueMaxKrw가 profile 버킷의 최솟값 이상이면 가점을 받는다', async () => {
+    state.rows = [makeRow({ id: '1', revenue_max_krw: 300_000_000 })]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(60) // 50 + 10
+  })
+
+  it('subsidy.businessYearsMax가 profile 버킷의 최솟값 이상이면 가점을 받는다', async () => {
+    const profileWithYears = { ...profile, businessYears: '3~5년' } // 최솟값 3
+    state.rows = [makeRow({ id: '1', business_years_max: 7 })] // "7년 미만" 조건
+    const {
+      items: [result],
+    } = await match(profileWithYears)
+    expect(result.match).toBe(60) // 50 + 10
+  })
+
+  it('AI 추출 정보가 없으면(null) 가점 없이 중립 유지한다', async () => {
+    state.rows = [makeRow({ id: '1' })] // employees_max_count/revenue_max_krw/business_years_max 전부 기본값 null
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(50)
+  })
+
+  it('여러 조건 가점이 동시에 적용되고 100을 넘지 않는다', async () => {
+    state.rows = [
+      makeRow({
+        id: '1',
+        region: ['서울'],
+        industry: ['음식점'],
+        employees_max_count: 5,
+        revenue_max_krw: 300_000_000,
+        match_score: 95,
+      }),
+    ]
     const {
       items: [result],
     } = await match(profile)
