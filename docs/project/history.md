@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-26 · DB-AUDIT-001 · 완료
+
+- 결과: `recipe_audit_events`에 사용자, 레시피, `DELETED`·`RESTORED` 행위와 발생 시각만 저장하는 마이그레이션을 추가하고 레시피별 최신 감사 기록 조회 인덱스를 구축했다.
+- 결정: 감사 기록 보존을 위해 사용자와 레시피 외래 키는 `ON DELETE RESTRICT`를 사용한다. 현재 확정된 감사 행위는 삭제와 복원으로 한정하고 토큰, credential, 레시피 본문 또는 범용 메타데이터 컬럼은 두지 않는다.
+- 시행착오: 샌드박스의 외부 PostgreSQL 연결이 `EACCES`로 차단되어 승인된 네트워크 실행으로 검증했다. Windows 인라인 명령 인용 문제는 저장소에 남기지 않은 임시 읽기 전용 검사 스크립트로 우회했다.
+- 검증: `backend npm run migrate`를 두 번 실행해 최초 적용과 재실행 건너뛰기를 확인했다. PostgreSQL 카탈로그에서 5개 컬럼, 기본 키, 두 외래 키, `action` CHECK 제약과 `idx_recipe_audits_recipe_time (recipe_id, occurred_at DESC)`를 확인했다. 백엔드 37개 테스트와 `npm run type-check`, `npm run build`, `git diff --check`를 통과했다.
+- 후속: `DB-SHARE-002`, `DB-SHARE-001`, `BE-RECIPE-007`
+- 반복 패턴: `database-migration-validation`
+
 ## 2026-07-26 · QA-CORE-001 · 완료
 
 - 결과: 실제 Google 로그인 후 기존 레시피 2개를 조회하고, 직접 입력으로 만든 초안의 제목을 `QA 직접입력 달걀볶음밥 20260726`으로 수정해 Express API와 PostgreSQL에 저장한 뒤 같은 제목을 상세와 새로고침한 목록의 3번째 항목에서 확인했다. 일반 공개 King Arthur Baking URL, 공개 Maangchi YouTube URL과 일반 URL·직접 입력 혼합 요청이 각각 편집 가능한 초안을 반환했으며 혼합 요청에는 두유·식물성 오일 보완 정보와 원본 출처가 함께 반영됐다. 네이버 블로그 URL은 `422 URL_FETCH_FAILED`와 직접 입력 안내를 표시하고 URL을 유지했으며, 빈 입력과 제목 누락은 요청 전에 차단하고 작성값을 보존했다.
