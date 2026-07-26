@@ -247,7 +247,10 @@ describe("MarketInspector population evidence", () => {
       marketWithSourceBuckets,
     );
 
-    expect(screen.getByText("서울 길단위인구가 제공하는 6개 시간 구간입니다.")).toBeInTheDocument();
+    expect(
+      screen.getByText(/서울 길단위인구가 제공하는 선택 분기 집계입니다/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1명/분기")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /유동인구 상대값|데이터 없음/ })).toHaveLength(6);
     expect(screen.getByRole("button", { name: "14:00-17:00 데이터 없음" })).toBeDisabled();
     expect(screen.queryByText(/26/)).not.toBeInTheDocument();

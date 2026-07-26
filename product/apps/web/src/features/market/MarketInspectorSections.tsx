@@ -381,6 +381,9 @@ export function InspectorFlow({
     return null;
   }
 
+  const activeBucket = analysis.raw.flow_time_buckets[activeHour];
+  const activeFlow = activeBucket?.value ?? null;
+
   return (
     <>
       <section className="metric-section">
@@ -417,7 +420,17 @@ export function InspectorFlow({
             <span key={label}>{label.replaceAll(":00", "")}</span>
           ))}
         </div>
-        <p className="metric-note">서울 길단위인구가 제공하는 6개 시간 구간입니다.</p>
+        <div className="hour-chart-value" role="status">
+          <span>{activeBucket?.label ?? "시간 구간 미확인"}</span>
+          <strong>
+            {activeFlow === null
+              ? "데이터 없음"
+              : `${Math.round(activeFlow).toLocaleString("ko-KR")}명/분기`}
+          </strong>
+        </div>
+        <p className="metric-note">
+          서울 길단위인구가 제공하는 선택 분기 집계입니다. 막대 높이는 이 상권 안에서 시간대끼리 비교한 상대값입니다.
+        </p>
       </section>
     </>
   );
