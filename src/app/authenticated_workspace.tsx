@@ -14,6 +14,10 @@ import {
   type InsightRepositoryWarning,
 } from '@/entities/insight';
 import { CategoryManager } from '@/features/category-management';
+import {
+  InsightImportDialog,
+  type InsightImportService,
+} from '@/features/insight-import';
 import { PwaInstallNotice, usePwaInstallPrompt } from '@/features/pwa-install';
 import { HomePage, type SuggestedSituation } from '@/pages/home';
 import { LibraryPage } from '@/pages/library';
@@ -136,6 +140,7 @@ export type AuthenticatedWorkspaceProps = {
   accountControl?: ReactNode;
   captureService?: InsightCaptureService;
   categoryRepository?: CategoryRepository;
+  importService?: InsightImportService;
   initialSaveDraft?: SaveInsightInput;
   repository?: InsightRepository;
   userId?: string;
@@ -145,6 +150,7 @@ export function AuthenticatedWorkspace({
   accountControl,
   captureService,
   categoryRepository,
+  importService,
   initialSaveDraft,
   repository,
   userId,
@@ -185,6 +191,7 @@ export function AuthenticatedWorkspace({
     isLoading,
     isMutating,
     loadWarnings,
+    reloadInsights,
     saveInsight,
     updateInsightContext,
   } = useInsightWorkspace({
@@ -211,6 +218,7 @@ export function AuthenticatedWorkspace({
   const [contextSaveComplete, setContextSaveComplete] = useState(false);
   const [contextSaveFailed, setContextSaveFailed] = useState(false);
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const pendingCategorySelectionRef = useRef<
     ((categoryId: string) => void) | undefined
   >(undefined);
@@ -235,6 +243,7 @@ export function AuthenticatedWorkspace({
     isLoading: categoriesLoading,
     isMutating: categoriesMutating,
     loadWarnings: categoryLoadWarnings,
+    reloadCategories,
     updateCategory,
   } = useCategoryWorkspace({
     onCategoryDeleted: handleCategoryDeleted,
@@ -503,6 +512,7 @@ export function AuthenticatedWorkspace({
             onCategoryChange={setActiveCategory}
             onDeleteInsight={deleteInsight}
             onManageCategories={openCategoryManager}
+            onOpenImport={() => setImportOpen(true)}
             onOpenSave={() => setActiveTab('save')}
             onQueryChange={setGlobalQuery}
             onRetryLoad={() => window.location.reload()}
@@ -571,6 +581,17 @@ export function AuthenticatedWorkspace({
           />
         ) : null}
       </main>
+
+      {importOpen ? (
+        <InsightImportDialog
+          categories={categories}
+          onCategoriesChanged={reloadCategories}
+          onLibraryChanged={reloadInsights}
+          onOpenChange={setImportOpen}
+          open
+          service={importService}
+        />
+      ) : null}
 
       <CategoryManager
         categories={categories}
