@@ -4,6 +4,15 @@ export type { ImportAnalysis } from './model/import_analysis';
 export { analyzeImportUrl } from './model/import_url';
 export type { ImportUrlResult } from './model/import_url';
 export { pastedTextAdapter } from './model/pasted_text_adapter';
+export {
+  createImportIdempotencyKey,
+  useInsightImport,
+} from './model/use_insight_import';
+export type {
+  InsightImportController,
+  InsightImportState,
+  UseInsightImportOptions,
+} from './model/use_insight_import';
 export { createBrowserInsightImportService } from './api/browser_insight_import_service';
 export {
   IMPORT_ADAPTER_KEYS,
