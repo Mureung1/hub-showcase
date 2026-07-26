@@ -9,7 +9,7 @@ select extensions.has_table('public', 'insight_import_items', '가져오기 항�
 select extensions.has_table(
   'public',
   'insight_import_undo_items',
-  '가져오기 되돌리기 최소 원장 테이블이 존재한다'
+  '생성 인사이트 ID와 반영 시각을 저장하는 테이블이 존재한다'
 );
 
 select extensions.ok(
@@ -22,7 +22,7 @@ select extensions.ok(
 );
 select extensions.ok(
   (select relrowsecurity from pg_class where oid = 'public.insight_import_undo_items'::regclass),
-  '가져오기 되돌리기 최소 원장에 RLS가 활성화되어 있다'
+  '생성 인사이트 ID와 반영 시각 테이블에 RLS가 활성화되어 있다'
 );
 
 select extensions.ok(
@@ -820,7 +820,7 @@ select extensions.ok(
     from public.insight_import_items
     where job_id = (select (result ->> 'id')::uuid from commit_prepared_result)
   ),
-  '완료 작업은 24시간 최소 원장만 남기고 원본 후보를 즉시 삭제한다'
+  '완료 작업은 생성 인사이트 ID와 반영 시각만 남기고 원본 후보를 즉시 삭제한다'
 );
 
 set local role authenticated;
@@ -1401,7 +1401,7 @@ reset role;
 select extensions.is(
   public.cleanup_expired_insight_import_undo_items(),
   1,
-  '되돌리기 만료 정리는 만료된 최소 원장 행 개수를 반환한다'
+  '되돌리기 만료 정리는 삭제한 생성 인사이트 ID 행 개수를 반환한다'
 );
 select extensions.ok(
   exists (
@@ -1419,7 +1419,7 @@ select extensions.ok(
     from public.insight_import_jobs
     where id = '40000000-0000-4000-8000-000000000099'
   ),
-  '만료 정리는 생성 인사이트를 유지하고 최소 원장과 Undo 권한만 제거한다'
+  '만료 정리는 생성 인사이트를 유지하고 저장된 ID·반영 시각과 권한만 제거한다'
 );
 select extensions.ok(
   exists (
@@ -1428,7 +1428,7 @@ select extensions.ok(
     where jobname = 'cleanup-expired-insight-import-undo-items'
       and schedule = '* * * * *'
   ),
-  '되돌리기 최소 원장을 1분마다 정리하는 DB cron이 등록되어 있다'
+  '만료된 생성 인사이트 ID와 반영 시각을 1분마다 삭제하는 DB cron이 등록되어 있다'
 );
 
 create temporary table cleanup_fixture (
@@ -1544,7 +1544,7 @@ select extensions.ok(
     'public.cleanup_expired_insight_import_undo_items()',
     'execute'
   ),
-  '사용자 RPC와 서비스 정리 및 DB 내부 원장 정리의 실행 권한을 분리한다'
+  '사용자 RPC와 서비스 정리 및 DB 내부 ID·반영 시각 삭제 권한을 분리한다'
 );
 
 select extensions.has_table(

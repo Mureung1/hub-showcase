@@ -40,7 +40,7 @@ select extensions.results_eq(
       true
     )
   $$,
-  '24시간 이내 완료 작업만 최소 되돌리기 원장으로 이관한다'
+  '24시간 이내 완료 작업의 생성 인사이트 ID와 반영 시각만 이관한다'
 );
 
 select extensions.results_eq(

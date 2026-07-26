@@ -2,9 +2,9 @@
 
 > **For Codex:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** 가져오기 원본 후보 데이터는 반영 완료 즉시 삭제하고, 되돌리기 최소 원장만 완료 시각부터 24시간 동안 서버에 보존합니다.
+**Goal:** 가져오기 원본 후보 데이터는 반영 완료 즉시 삭제하고, 생성 인사이트 ID와 반영 시각만 완료 시각부터 24시간 동안 서버에 보존합니다.
 
-**Architecture:** 새 Supabase migration에서 작업 이력의 `undo_expires_at`과 최소 원장 테이블을 추가합니다. 반영 RPC는 생성된 인사이트 식별자와 반영 시각을 원장으로 옮긴 뒤 원본 후보 행을 삭제하고, 되돌리기 RPC는 DB 시각으로 만료를 검사합니다. 브라우저 서비스와 기록 UI는 만료 시각 및 전용 실패 사유를 명시적으로 처리합니다.
+**Architecture:** 새 Supabase migration에서 작업 이력의 `undo_expires_at`과 생성 인사이트 ID·반영 시각 테이블을 추가합니다. 반영 RPC는 이 두 값을 별도 테이블로 옮긴 뒤 원본 후보 행을 삭제하고, 되돌리기 RPC는 DB 시각으로 만료를 검사합니다. 브라우저 서비스와 기록 UI는 만료 시각 및 전용 실패 사유를 명시적으로 처리합니다.
 
 **Tech Stack:** PostgreSQL/Supabase RPC·RLS·pg_cron, TypeScript, React, Vitest, pgTAP
 
@@ -23,10 +23,10 @@
 **1단계: 실패 테스트 작성**
 
 - 완료된 작업의 후보 행이 남지 않는지 검증합니다.
-- 최소 원장에 `job_id`, `user_id`, `created_insight_id`, `imported_updated_at`만 남는지 검증합니다.
+- 별도 테이블에 `job_id`, `user_id`, `created_insight_id`, `imported_updated_at`만 남는지 검증합니다.
 - 완료 후 24시간 전에는 되돌리기가 성공하고, 만료 후에는 `undo-expired`가 반환되는지 검증합니다.
-- 수정된 인사이트는 보존하고 수정되지 않은 인사이트만 삭제하는 기존 계약을 최소 원장 기준으로 검증합니다.
-- 기존 완료 작업 중 24시간 이내인 항목만 원장으로 이관하고, 오래된 완료·되돌림 작업의 후보 행을 삭제하는 업그레이드 테스트를 추가합니다.
+- 수정된 인사이트는 보존하고 수정되지 않은 인사이트만 삭제하는 기존 계약을 저장된 ID와 반영 시각 기준으로 검증합니다.
+- 기존 완료 작업 중 24시간 이내인 항목의 ID와 반영 시각만 이관하고, 오래된 완료·되돌림 작업의 후보 행을 삭제하는 업그레이드 테스트를 추가합니다.
 
 **2단계: RED 확인**
 
@@ -42,11 +42,11 @@ supabase test db supabase/tests/database/insight_imports.test.sql
 
 - `insight_import_jobs.undo_expires_at timestamptz`를 추가하고 완료 상태에서만 값이 허용되도록 제약을 갱신합니다.
 - `insight_import_undo_items`를 생성하고 사용자 직접 접근을 막습니다.
-- 기존 24시간 이내 완료 작업의 생성 인사이트만 최소 원장으로 이관합니다.
+- 기존 24시간 이내 완료 작업의 생성 인사이트 ID와 반영 시각만 별도 테이블로 이관합니다.
 - 완료·되돌림 작업의 `insight_import_items`를 삭제합니다.
-- `commit_insight_import`는 원장 기록, 완료 시각·만료 시각 기록, 후보 행 삭제를 한 트랜잭션에서 수행합니다.
+- `commit_insight_import`는 생성 인사이트 ID·반영 시각과 완료·만료 시각 기록, 후보 행 삭제를 한 트랜잭션에서 수행합니다.
 - `undo_insight_import`는 `undo_expires_at > now()`를 검사하고 만료 시 `{ "ok": false, "reason": "undo-expired" }`를 반환합니다.
-- 되돌리기 완료 시 원장을 삭제하고 `undo_expires_at`을 비웁니다.
+- 되돌리기 완료 시 저장된 ID와 반영 시각을 삭제하고 `undo_expires_at`을 비웁니다.
 - `cleanup_expired_insight_import_undo_items`를 pg_cron에서 1분마다 호출하되 외부 역할에는 실행 권한을 주지 않습니다.
 - 기존 Vercel cleanup RPC는 미완료 작업과 Notion 연결 정리 책임만 유지합니다.
 
@@ -119,7 +119,7 @@ npx vitest run src/features/insight-import/api/browser_insight_import_service.te
 **1단계: 운영 의미 명확화**
 
 - 사용자에게 되돌리기 권한은 완료 시점부터 정확히 24시간이며 DB 시각으로 판정됨을 명시합니다.
-- 원본 후보 데이터는 반영 완료 즉시 삭제되고, 최소 원장은 만료 뒤 다음 1분 cron 실행에서 물리 삭제됨을 명시합니다.
+- 원본 후보 데이터는 반영 완료 즉시 삭제되고, 저장된 ID와 반영 시각은 만료 뒤 다음 1분 cron 실행에서 물리 삭제됨을 명시합니다.
 - 스케줄러 지연 시에도 만료 후 Undo는 허용되지 않는다고 명시합니다.
 
 **2단계: 최소 최종 검증**
