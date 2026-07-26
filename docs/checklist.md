@@ -15,7 +15,7 @@
 
 - [x] 범용 후보·분석·commit·Undo 데이터 계약
 - [x] 브라우저 파일 파싱과 원본 비업로드 경계
-- [x] Notion 단일 사용 state, 암호화 token, 재개 cursor, revoke·24시간 cleanup
+- [x] Notion 단일 사용 state, 암호화 token, 재개 cursor, revoke·24시간 만료 후 일일 cleanup
 - [x] 웹 callback query와 Android `import/notion` 딥링크
 - [ ] Preview 승인 계정 수동 검증과 운영 Sensitive 변수·Firewall·Cron 확인
 - [ ] YouTube, 카카오톡, Pinterest, Instagram 후속 범위 결정

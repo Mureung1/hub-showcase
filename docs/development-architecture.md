@@ -188,7 +188,7 @@ Express 서버는 FSD 대상이 아니므로 `server/`에 둔다. `/api/health` 
 - 검색과 `꺼내보기`는 원격 목록을 불러온 뒤 도메인 순수 함수로 실행해 저장 인프라와 결정적 랭킹 계약을 분리한다.
 - 범용 파일 가져오기는 브라우저에서 파싱·정규화한 후보만 Supabase RPC로 보내고 원본 파일 body는 서버로 보내지 않는다.
 - Notion 연결은 서버가 OAuth state를 단일 사용으로 검증하고 AES-256-GCM으로 토큰을 암호화한다. 사용자 bearer client는 작업·후보 RPC와 RLS에만 사용하고 service role은 callback 토큰 저장과 만료 정리에만 사용한다.
-- Notion 분석은 Provider cursor를 DB에 저장해 요청 slice 단위로 재개하며 완료·취소 시 토큰 철회를 시도한다. 24시간이 지난 연결과 미완료 후보는 Cron이 Provider 응답과 무관하게 삭제한다.
+- Notion 분석은 Provider cursor를 DB에 저장해 요청 slice 단위로 재개하며 완료·취소 시 토큰 철회를 시도한다. 연결 생성 24시간 뒤에는 암호화 OAuth 토큰과 연결 row, 미완료 작업의 Provider cursor·후보·오류·컬렉션이 만료 대상이 되고 다음 일일 Cron이 Provider 응답과 무관하게 삭제한다. 이미 반영된 인사이트와 완료·Undo 작업 기록은 자동 삭제하지 않는다.
 
 현재 Supabase 전환 순서는 [#21](https://github.com/ppre1ude/hub/issues/21), 다중 기기 캡처 경계는 [#36](https://github.com/ppre1ude/hub/issues/36), 캡처 우선 제품 결정은 [#25](https://github.com/ppre1ude/hub/issues/25)를 따른다.
 

@@ -65,6 +65,8 @@ Vercel Firewall에는 `/api/imports/`의 `start`, `analyze`, `cancel`, `complete
 
 `vercel.json`은 `/api/cron/import-cleanup`을 `10 18 * * *`로 매일 호출한다. Vercel은 `CRON_SECRET`을 `Authorization: Bearer ...` 헤더로 자동 전달하며 서버는 timing-safe 비교 뒤에만 정리를 실행한다. Hobby plan에서는 지정 시각부터 같은 한 시간 안에 실행될 수 있으므로 정확한 분 단위 삭제를 약속하지 않는다. 만료 여부는 Cron 실행 시각이 아니라 DB의 `expires_at` timestamp로 판정한다. 자세한 동작은 [Vercel Cron 관리](https://vercel.com/docs/cron-jobs/manage-cron-jobs)와 [요금제별 정밀도](https://vercel.com/docs/cron-jobs/usage-and-pricing)를 따른다.
 
+연결 생성 24시간 뒤 삭제 대상이 되는 것은 암호화한 Notion access·refresh token과 nonce·인증 tag, 연결 row의 workspace·state 정보, 미완료 작업(`analyzing`, `ready`, `failed`)의 Provider cursor·후보·오류·컬렉션이다. 이 값들은 24시간이 되는 즉시 삭제되는 것이 아니라 다음 일일 Cron에서 삭제되므로, 현재 일정과 Hobby plan 정밀도에서는 만료 후 최대 약 25시간이 더 걸릴 수 있다. 가져오기를 완료해 생성된 인사이트와 `completed`·`undone` 작업 기록은 이 자동 정리의 삭제 대상이 아니다.
+
 ## 공개 저장 API 요청 제한
 
 Vercel Firewall의 `인사이트 저장 API 요청 제한` 규칙으로 Supabase 인증 전에 반복 요청을 차단한다. 이 규칙은 Vercel 프로젝트의 운영 설정이며 애플리케이션 인스턴스 메모리에 카운터를 두지 않는다.
