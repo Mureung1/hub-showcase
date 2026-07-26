@@ -91,6 +91,62 @@ function EvidenceDialog({ model }: { model: ProductWorkspaceModel }) {
   );
 }
 
+function ReportDialog({ model }: { model: ProductWorkspaceModel }) {
+  const { analysis } = model.marketData.marketAnalysis;
+  const { market } = model.marketData;
+  const { category, period } = model.selection;
+  const { setReportOpen } = model.panels;
+
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={() => setReportOpen(false)}>
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="상권 분석 보고서"
+        className="evidence-modal report-modal"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <button
+          className="modal-close"
+          type="button"
+          aria-label="상권 분석 보고서 닫기"
+          onClick={() => setReportOpen(false)}
+        >
+          <X size={20} />
+        </button>
+        <p className="modal-eyebrow">LOCAL TWIN · ANALYSIS REPORT</p>
+        <h2>{market.name} 상권 분석 보고서</h2>
+        <p className="modal-description">
+          {category} · {period || analysis?.period || "기준 기간 확인 중"}
+        </p>
+        <div className="evidence-grid">
+          <div>
+            <span>분석 요약</span>
+            <b>{market.grade}</b>
+            <p>{market.insight}</p>
+          </div>
+          <div>
+            <span>입지 점수</span>
+            <b>{analysis ? `${Math.round(analysis.score.score)} / 100` : "근거 확인 중"}</b>
+            <p>점수는 선택 업종의 수요·경쟁·변화·접근성 근거를 함께 읽기 위한 보조 지표입니다.</p>
+          </div>
+          <div>
+            <span>읽는 방법</span>
+            <b>숫자보다 기준을 함께 확인</b>
+            <p>
+              상권 경계 집계와 반경 내 점포 수는 서로 다른 공간 기준이므로 한 값처럼 합치지
+              않습니다.
+            </p>
+          </div>
+        </div>
+        <button type="button" className="primary-action" onClick={() => setReportOpen(false)}>
+          확인
+        </button>
+      </section>
+    </div>
+  );
+}
+
 function AnalysisEvidence({
   analysis,
 }: {
@@ -219,6 +275,7 @@ export function WorkspaceDialogs({ model }: { model: ProductWorkspaceModel }) {
   return (
     <>
       {model.panels.evidenceOpen && <EvidenceDialog model={model} />}
+      {model.panels.reportOpen && <ReportDialog model={model} />}
       {model.panels.compareOpen && <ComparisonDialog model={model} />}
       {model.panels.sceneOpen && (
         <Suspense

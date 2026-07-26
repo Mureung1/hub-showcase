@@ -157,6 +157,7 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
           onClosePanel={() => panels.setInspectorOpen(false)}
           onClearSelection={storefronts.storeSelection.clearSelection}
           onEvidenceOpen={() => panels.setEvidenceOpen(true)}
+          onReportOpen={() => panels.setReportOpen(true)}
           onActiveHourChange={selection.setActiveHour}
         />
       )}

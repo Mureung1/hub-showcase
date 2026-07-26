@@ -32,6 +32,7 @@ type MarketInspectorProps = {
   onClosePanel: () => void;
   onClearSelection: () => void;
   onEvidenceOpen: () => void;
+  onReportOpen: () => void;
   onActiveHourChange: (hour: number) => void;
 };
 
@@ -54,6 +55,7 @@ export function MarketInspector({
   onClosePanel,
   onClearSelection,
   onEvidenceOpen,
+  onReportOpen,
   onActiveHourChange,
 }: MarketInspectorProps) {
   return (
@@ -112,6 +114,7 @@ export function MarketInspector({
         categorySelection={categorySelection}
         analysis={analysis}
         topic={topic}
+        onReportOpen={onReportOpen}
       />
     </aside>
   );

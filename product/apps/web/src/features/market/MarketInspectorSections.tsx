@@ -549,7 +549,12 @@ export function InspectorPopulation({
                   ) === index,
               )
               .map((item) => (
-                <a key={`${item.source_name}-${item.period}`} href={item.source_url}>
+                <a
+                  key={`${item.source_name}-${item.period}`}
+                  href={item.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   <span>{item.source_name}</span>
                   <small>
                     {item.period} · 과거 기준 · {item.geography === "market" ? "상권" : "행정동"}
@@ -574,11 +579,13 @@ export function InspectorSummary({
   categorySelection,
   analysis,
   topic,
+  onReportOpen,
 }: {
   market: Market;
   categorySelection: CategorySelection;
   analysis: MarketAnalysis | null;
   topic: AnalysisTopic;
+  onReportOpen: () => void;
 }) {
   if (categorySelection.coverage !== "full" || analysis === null || topic !== "overview")
     return null;
@@ -587,7 +594,7 @@ export function InspectorSummary({
     <section className="insight-section">
       <span>분석 요약</span>
       <p>{market.insight}</p>
-      <button type="button" onClick={() => window.print()}>
+      <button type="button" onClick={onReportOpen}>
         <FileText size={15} /> 보고서로 보기
       </button>
     </section>

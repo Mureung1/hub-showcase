@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 export function useWorkspacePanels(compactMap: boolean, restoreSceneFocus: boolean) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [sceneOpen, setSceneOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(() => !compactMap);
@@ -10,7 +11,13 @@ export function useWorkspacePanels(compactMap: boolean, restoreSceneFocus: boole
   const inspectorOpenButtonRef = useRef<HTMLButtonElement>(null);
   const sceneOpenButtonRef = useRef<HTMLButtonElement>(null);
   const sceneWasOpenRef = useRef(false);
-  const activeDialog = evidenceOpen ? "evidence" : compareOpen ? "compare" : null;
+  const activeDialog = evidenceOpen
+    ? "evidence"
+    : reportOpen
+      ? "report"
+      : compareOpen
+        ? "compare"
+        : null;
 
   useEffect(() => {
     if (!activeDialog) return;
@@ -18,6 +25,7 @@ export function useWorkspacePanels(compactMap: boolean, restoreSceneFocus: boole
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const close = () => {
       if (activeDialog === "evidence") setEvidenceOpen(false);
+      if (activeDialog === "report") setReportOpen(false);
       if (activeDialog === "compare") setCompareOpen(false);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -53,6 +61,8 @@ export function useWorkspacePanels(compactMap: boolean, restoreSceneFocus: boole
   return {
     evidenceOpen,
     setEvidenceOpen,
+    reportOpen,
+    setReportOpen,
     compareOpen,
     setCompareOpen,
     sceneOpen,

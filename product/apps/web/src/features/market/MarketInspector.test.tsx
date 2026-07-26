@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import type { MarketAnalysis } from "../../services/marketAnalysis";
 import { MarketInspector } from "./MarketInspector";
+import { InspectorSummary } from "./MarketInspectorSections";
 import { FLOW_TIME_BUCKET_LABELS } from "./model";
 import type { Market, MarketStore } from "./types";
 
@@ -104,6 +105,7 @@ function renderInspector(
       onClosePanel={vi.fn()}
       onClearSelection={vi.fn()}
       onEvidenceOpen={vi.fn()}
+      onReportOpen={vi.fn()}
       onActiveHourChange={vi.fn()}
     />,
   );
@@ -129,6 +131,31 @@ describe("MarketInspector population evidence", () => {
     expect(screen.getByRole("link", { name: /서울시 상권분석서비스 상주인구/ })).toHaveTextContent(
       "20251 · 과거 기준 · 상권",
     );
+    expect(screen.getByRole("link", { name: /서울시 상권분석서비스 상주인구/ })).toHaveAttribute(
+      "target",
+      "_blank",
+    );
+  });
+
+  it("opens a report dialog through the supplied action instead of printing", () => {
+    const openReport = vi.fn();
+    render(
+      <InspectorSummary
+        market={market}
+        categorySelection={{
+          name: "카페",
+          code: "CS100010",
+          analysisCategory: "카페",
+          coverage: "full",
+        }}
+        analysis={{} as MarketAnalysis}
+        topic="overview"
+        onReportOpen={openReport}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "보고서로 보기" }));
+    expect(openReport).toHaveBeenCalledTimes(1);
   });
 
   it("does not turn a provider failure into zero or an empty metric", () => {
