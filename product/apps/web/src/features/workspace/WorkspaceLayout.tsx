@@ -44,9 +44,6 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
           topic={selection.analysisTopic}
           boundaryVisible={selection.boundaryVisible}
           storesVisible={selection.storesVisible}
-          usesAnalysis={
-            selection.categorySelection.coverage === "full" && marketAnalysis.analysis !== null
-          }
           visibleStores={storefronts.listedStores}
           selectedStoreName={storefronts.storeSelection.selected?.name ?? null}
           nearbyState={nearby.state}

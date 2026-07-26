@@ -126,6 +126,10 @@ describe("MarketInspector population evidence", () => {
     renderInspector(background, "ready");
 
     expect(screen.getByText("상권 상주인구")).toBeInTheDocument();
+    const details = screen.getByText(/행정동 배후통계 자세히 보기/).closest("details");
+    expect(details).not.toHaveAttribute("open");
+    fireEvent.click(screen.getByText(/행정동 배후통계 자세히 보기/));
+    expect(details).toHaveAttribute("open");
     expect(screen.getByText("행정동 주민")).toBeInTheDocument();
     expect(screen.getByText("상권 경계와 행정동 경계는 다릅니다.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /서울시 상권분석서비스 상주인구/ })).toHaveTextContent(

@@ -85,7 +85,6 @@ type MarketFiltersProps = {
   topic: AnalysisTopic;
   boundaryVisible: boolean;
   storesVisible: boolean;
-  usesAnalysis: boolean;
   visibleStores: MarketStore[];
   selectedStoreName: string | null;
   nearbyState: NearbyStoreState;
@@ -117,7 +116,6 @@ export function MarketFilters({
   topic,
   boundaryVisible,
   storesVisible,
-  usesAnalysis,
   visibleStores,
   selectedStoreName,
   nearbyState,
@@ -277,7 +275,6 @@ export function MarketFilters({
         stores={visibleStores}
         selectedStoreName={selectedStoreName}
         state={nearbyState}
-        usesAnalysis={usesAnalysis}
         onRetry={onNearbyRetry}
         onSelect={onStoreChange}
       />

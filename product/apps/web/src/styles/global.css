@@ -1386,37 +1386,23 @@ html.is-english .three-d {
   gap: 20px;
   padding-top: 15px;
 }
-.donut {
-  position: relative;
+.competition-stat {
   display: grid;
-  place-items: center;
-  width: 91px;
-  height: 91px;
-  border: 11px solid #e8eeea;
-  border-right-color: #248e4c;
-  border-top-color: #e4a243;
-  border-radius: 50%;
-  transform: rotate(18deg);
+  gap: 3px;
+  min-width: 86px;
+  padding: 10px 12px;
+  border: 1px solid #dce8df;
+  border-radius: 8px;
+  background: #f8fcf9;
 }
-.donut i {
-  position: absolute;
-  inset: 17px;
-  border-radius: 50%;
-  background: #fff;
+.competition-stat span,
+.competition-stat small {
+  color: #718077;
+  font-size: 9px;
 }
-.donut b,
-.donut small {
-  z-index: 1;
-  transform: rotate(-18deg);
-}
-.donut b {
-  color: #2d4033;
-  font-size: 17px;
-}
-.donut small {
-  margin-top: -4px;
-  color: #849087;
-  font-size: 8px;
+.competition-stat b {
+  color: #236f3e;
+  font-size: 18px;
 }
 .legend-list {
   display: grid;
@@ -1553,6 +1539,23 @@ html.is-english .three-d {
   padding: 12px 0 0;
 }
 
+.population-section-primary {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.population-details {
+  margin-top: 12px;
+  border-top: 1px solid #edf0ee;
+}
+
+.population-details summary {
+  padding-top: 11px;
+  color: #3e5e4c;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .population-section > div small {
   color: #5f7669;
   font-size: 10px;
@@ -1585,6 +1588,13 @@ html.is-english .three-d {
   margin-top: 6px;
   color: #596c61;
   font-size: 9px;
+}
+
+.metric-note {
+  margin: 8px 0 0;
+  color: #718077;
+  font-size: 9px;
+  line-height: 1.4;
 }
 
 .population-evidence-list a {
