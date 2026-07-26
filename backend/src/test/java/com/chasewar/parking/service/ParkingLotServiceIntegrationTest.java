@@ -126,7 +126,7 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
             );
 
             parkingLotRealtimeRepository.save(
-                    new ParkingLotRealtime("10001", 100, 60, LocalDateTime.of(2026, 7, 23, 17, 02))
+                    new ParkingLotRealtime("10001", 100, 5, LocalDateTime.of(2026, 7, 23, 17, 02))
             );
 
             // when
@@ -134,7 +134,7 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
 
             // then
             assertThat(responses.get(0).name()).isEqualTo("실시간 데이터가 있는 주차장");
-            assertThat(responses.get(0).realtimeStatus()).isEqualTo(RealtimeStatus.SPACIOUS.name());
+            assertThat(responses.get(0).realtimeStatus()).isEqualTo(RealtimeStatus.BUSY.name());
         }
 
         @DisplayName("실시간 데이터가 없는 주차장은 null를 반환한다")
@@ -234,7 +234,7 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
                     .build()
             );
             parkingLotRealtimeRepository.save(
-                    new ParkingLotRealtime("10001", 100, 60, LocalDateTime.of(2026, 7, 23, 9, 41, 15))
+                    new ParkingLotRealtime("10001", 100, 5, LocalDateTime.of(2026, 7, 23, 9, 41, 15))
             );
 
             // when
@@ -242,9 +242,9 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
 
             // then
             assertThat(response.realtimeInfo()).isNotNull();
-            assertThat(response.realtimeInfo().availableSlots()).isEqualTo(60);
+            assertThat(response.realtimeInfo().availableSlots()).isEqualTo(5);
             assertThat(response.realtimeInfo().totalSlots()).isEqualTo(100);
-            assertThat(response.realtimeInfo().status()).isEqualTo(RealtimeStatus.SPACIOUS.name());
+            assertThat(response.realtimeInfo().status()).isEqualTo(RealtimeStatus.BUSY.name());
             assertThat(response.totalSlots()).isEqualTo(100);
         }
     }

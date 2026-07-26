@@ -57,7 +57,7 @@ public record ParkingLotDetailResponse(
             return new RealtimeResponse(
                     projection.availableSlots(),
                     projection.realtimeTotalSlots(),
-                    RealtimeStatus.of(projection.availableSlots(), projection.realtimeTotalSlots()).name(),
+                    RealtimeStatus.of(projection.realtimeTotalSlots(), projection.availableSlots()).name(),
                     projection.sourceUpdatedAt()
             );
         }
