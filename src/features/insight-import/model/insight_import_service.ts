@@ -18,7 +18,11 @@ export type PrepareImportInput = {
 };
 
 export type ImportServiceFailureReason =
-  'invalid-request' | 'permission-denied' | 'read-failed' | 'write-failed';
+  | 'invalid-request'
+  | 'permission-denied'
+  | 'read-failed'
+  | 'undo-expired'
+  | 'write-failed';
 
 export type ImportServiceResult<T> =
   { ok: true; value: T } | { ok: false; reason: ImportServiceFailureReason };

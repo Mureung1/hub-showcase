@@ -400,6 +400,20 @@ export function useInsightImport({
         }
 
         if (!undoResult.ok) {
+          if (undoResult.reason === 'undo-expired') {
+            setHistory((currentHistory) =>
+              currentHistory.map((entry) =>
+                entry.id === jobId
+                  ? {
+                      ...entry,
+                      canUndo: false,
+                      undoExpiresAt: null,
+                      undoRemainingMs: 0,
+                    }
+                  : entry
+              )
+            );
+          }
           applyError(getServiceErrorMessage(undoResult.reason));
           return;
         }
@@ -421,7 +435,10 @@ export function useInsightImport({
             entry.id === jobId
               ? {
                   ...entry,
+                  canUndo: false,
                   status: 'undone',
+                  undoExpiresAt: null,
+                  undoRemainingMs: 0,
                   undoResult: undoResult.value,
                 }
               : entry
@@ -662,6 +679,10 @@ function getServiceErrorMessage(reason: ImportServiceFailureReason) {
 
   if (reason === 'read-failed') {
     return '가져오기 정보를 불러오지 못했습니다.';
+  }
+
+  if (reason === 'undo-expired') {
+    return '되돌릴 수 있는 24시간이 지났어요.';
   }
 
   return '가져오기를 완료하지 못했습니다. 다시 시도해 주세요.';

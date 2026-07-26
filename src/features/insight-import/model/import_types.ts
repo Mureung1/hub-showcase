@@ -112,10 +112,13 @@ export type ImportUndoResult = {
 
 export type ImportHistoryEntry = {
   adapterKey: ImportAdapterKey;
+  canUndo: boolean;
   completedAt: string;
   id: string;
   status: 'completed' | 'undone';
   summary: ImportSummary;
+  undoExpiresAt: string | null;
+  undoRemainingMs: number;
   undoResult: ImportUndoResult | null;
 };
 

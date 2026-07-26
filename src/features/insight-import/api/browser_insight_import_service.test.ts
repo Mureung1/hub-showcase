@@ -7,6 +7,7 @@ import { createBrowserInsightImportService } from './browser_insight_import_serv
 const JOB_ID = '10000000-0000-4000-8000-000000000001';
 const COMPLETED_AT = '2026-07-25T03:00:00.000Z';
 const EXPIRES_AT = '2026-07-26T03:00:00.000Z';
+const UNDO_EXPIRES_AT = '2099-07-26T03:00:00.000Z';
 const analyzedItems: AnalyzedImportItem[] = [
   {
     candidateId: 'pasted-text:0',
@@ -133,12 +134,13 @@ describe('createBrowserInsightImportService', () => {
     });
   });
 
-  it('완료·Undo 기록을 제한된 열로 최신순 조회한다', async () => {
-    const historyQuery = createQuery({
+  it('서버 시각을 기준으로 완료 기록의 Undo 가능 여부를 조회한다', async () => {
+    const rpc = vi.fn().mockResolvedValue({
       data: [
         {
           adapter_key: 'pasted-text',
           already_deleted_count: 1,
+          can_undo: true,
           completed_at: COMPLETED_AT,
           created_count: 3,
           duplicate_count: 1,
@@ -147,50 +149,60 @@ describe('createBrowserInsightImportService', () => {
           input_duplicate_count: 1,
           new_count: 3,
           preserved_count: 1,
-          status: 'undone',
+          server_now: '2099-07-26T02:00:00.000Z',
+          status: 'completed',
           total_count: 6,
+          undo_expires_at: UNDO_EXPIRES_AT,
         },
       ],
       error: null,
     });
-    const from = vi.fn(() => historyQuery);
-    const service = createBrowserInsightImportService(createClient({ from }));
+    const service = createBrowserInsightImportService(createClient({ rpc }));
+    const dateNow = vi
+      .spyOn(Date, 'now')
+      .mockReturnValue(new Date('2100-01-01T00:00:00.000Z').getTime());
 
-    await expect(service.listHistory()).resolves.toEqual({
-      ok: true,
-      value: [
-        {
-          adapterKey: 'pasted-text',
-          completedAt: COMPLETED_AT,
-          id: JOB_ID,
-          status: 'undone',
-          summary: {
-            createdCount: 3,
-            duplicateCount: 1,
-            excludedCount: 1,
-            inputDuplicateCount: 1,
-            newCount: 3,
-            totalCount: 6,
+    try {
+      await expect(service.listHistory()).resolves.toEqual({
+        ok: true,
+        value: [
+          {
+            adapterKey: 'pasted-text',
+            canUndo: true,
+            completedAt: COMPLETED_AT,
+            id: JOB_ID,
+            status: 'completed',
+            summary: {
+              createdCount: 3,
+              duplicateCount: 1,
+              excludedCount: 1,
+              inputDuplicateCount: 1,
+              newCount: 3,
+              totalCount: 6,
+            },
+            undoExpiresAt: UNDO_EXPIRES_AT,
+            undoRemainingMs: 3_600_000,
+            undoResult: null,
           },
-          undoResult: {
-            alreadyDeletedCount: 1,
-            deletedCount: 1,
-            jobId: JOB_ID,
-            preservedCount: 1,
-          },
-        },
-      ],
+        ],
+      });
+      expect(rpc).toHaveBeenCalledWith('list_insight_import_history');
+    } finally {
+      dateNow.mockRestore();
+    }
+  });
+
+  it('Undo 만료 응답을 전용 실패 사유로 반환한다', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: { ok: false, reason: 'undo-expired' },
+      error: null,
     });
-    expect(from).toHaveBeenCalledWith('insight_import_jobs');
-    expect(historyQuery.select).toHaveBeenCalledTimes(1);
-    expect(historyQuery.in).toHaveBeenCalledWith('status', [
-      'completed',
-      'undone',
-    ]);
-    expect(historyQuery.order).toHaveBeenCalledWith('completed_at', {
-      ascending: false,
+    const service = createBrowserInsightImportService(createClient({ rpc }));
+
+    await expect(service.undo(JOB_ID)).resolves.toEqual({
+      ok: false,
+      reason: 'undo-expired',
     });
-    expect(historyQuery.limit).toHaveBeenCalledWith(20);
   });
 
   it('오류 항목을 50개씩 조회하고 다음 ordinal을 반환한다', async () => {

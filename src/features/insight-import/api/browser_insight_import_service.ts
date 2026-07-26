@@ -23,21 +23,6 @@ import {
   type PreparedImportItem,
 } from '../model/import_types';
 
-const HISTORY_COLUMNS = [
-  'id',
-  'adapter_key',
-  'status',
-  'total_count',
-  'new_count',
-  'duplicate_count',
-  'input_duplicate_count',
-  'excluded_count',
-  'created_count',
-  'preserved_count',
-  'already_deleted_count',
-  'completed_at',
-].join(',');
-
 const ISSUE_COLUMNS = [
   'candidate_id',
   'captured_at_candidate',
@@ -110,12 +95,7 @@ export function createBrowserInsightImportService(
     },
     async listHistory() {
       try {
-        const { data, error } = await client
-          .from('insight_import_jobs')
-          .select(HISTORY_COLUMNS)
-          .in('status', ['completed', 'undone'])
-          .order('completed_at', { ascending: false })
-          .limit(20);
+        const { data, error } = await client.rpc('list_insight_import_history');
 
         if (error) {
           return failure(mapPostgresError(error, 'read-failed'));
@@ -190,12 +170,29 @@ export function createBrowserInsightImportService(
         return failure('invalid-request');
       }
 
-      return runParsedRpc(
-        client,
-        'undo_insight_import',
-        { p_job_id: jobId },
-        parseUndoResult
-      );
+      try {
+        const { data, error } = await client.rpc('undo_insight_import', {
+          p_job_id: jobId,
+        });
+
+        if (error) {
+          return failure(mapPostgresError(error, 'write-failed'));
+        }
+
+        if (
+          isRecord(data) &&
+          data.ok === false &&
+          data.reason === 'undo-expired'
+        ) {
+          return failure('undo-expired');
+        }
+
+        const result = parseUndoResult(data);
+
+        return result ? { ok: true, value: result } : failure('read-failed');
+      } catch {
+        return failure('write-failed');
+      }
     },
   };
 }
@@ -433,7 +430,11 @@ function parseHistoryEntry(value: unknown): ImportHistoryEntry | null {
     !isUuid(value.id) ||
     !isImportAdapterKey(value.adapter_key) ||
     (value.status !== 'completed' && value.status !== 'undone') ||
-    !isIsoTimestamp(value.completed_at)
+    !isIsoTimestamp(value.completed_at) ||
+    (value.undo_expires_at !== null &&
+      !isIsoTimestamp(value.undo_expires_at)) ||
+    typeof value.can_undo !== 'boolean' ||
+    !isIsoTimestamp(value.server_now)
   ) {
     return null;
   }
@@ -462,12 +463,36 @@ function parseHistoryEntry(value: unknown): ImportHistoryEntry | null {
     return null;
   }
 
+  const serverTime = new Date(value.server_now).getTime();
+  const undoExpirationTime =
+    value.undo_expires_at === null
+      ? null
+      : new Date(value.undo_expires_at).getTime();
+  const expectedCanUndo =
+    value.status === 'completed' &&
+    undoExpirationTime !== null &&
+    undoExpirationTime > serverTime;
+
+  if (
+    !Number.isFinite(serverTime) ||
+    (undoExpirationTime !== null && !Number.isFinite(undoExpirationTime)) ||
+    value.can_undo !== expectedCanUndo
+  ) {
+    return null;
+  }
+
   return {
     adapterKey: value.adapter_key,
+    canUndo: value.can_undo,
     completedAt: value.completed_at,
     id: value.id,
     status: value.status,
     summary,
+    undoExpiresAt: value.undo_expires_at,
+    undoRemainingMs:
+      value.can_undo && undoExpirationTime !== null
+        ? undoExpirationTime - serverTime
+        : 0,
     undoResult:
       value.status === 'undone'
         ? {

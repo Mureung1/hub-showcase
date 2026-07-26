@@ -1,6 +1,7 @@
 /* @vitest-environment jsdom */
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import type { Category } from '@/entities/category';
@@ -9,6 +10,7 @@ import { DesignSystemProvider } from '@/shared/ui/design-system-provider';
 import type { InsightImportService } from '../model/insight_import_service';
 import type { ImportHistoryEntry, PreparedImport } from '../model/import_types';
 import type { NotionImportApi } from '../api/notion_import_api';
+import { ImportHistory } from './import_history';
 import { InsightImportDialog } from './insight_import_dialog';
 
 const JOB_ID = '10000000-0000-4000-8000-000000000001';
@@ -228,43 +230,24 @@ describe('InsightImportDialog', () => {
     ).toBe('https://example.com');
   });
 
-  it('최근 기록의 예외를 펼칠 때만 조회하고 경고 뒤 기록을 삭제한다', async () => {
+  it('최근 기록은 요약만 표시하고 경고 뒤 기록을 삭제한다', async () => {
     const user = userEvent.setup();
     const service = createService();
     service.listHistory.mockResolvedValue({
       ok: true,
       value: [createHistoryEntry()],
     });
-    service.listIssues.mockResolvedValue({
-      ok: true,
-      value: {
-        items: [createPreparedImport().items[4]!],
-        nextOrdinal: null,
-      },
-    });
     service.deleteRecord.mockResolvedValue({ ok: true, value: undefined });
     renderDialog({ service });
 
     expect(await screen.findByText('최근 가져오기')).toBeTruthy();
     expect(service.listIssues).not.toHaveBeenCalled();
-
-    await user.click(
-      screen.getByText('제외된 항목 확인', { selector: 'summary' })
-    );
-
-    await waitFor(() =>
-      expect(service.listIssues).toHaveBeenCalledWith(JOB_ID, null)
-    );
-    expect(
-      screen.getByText(
-        (content, element) =>
-          element?.tagName === 'LI' && content.includes('invalid-url')
-      )
-    ).toBeTruthy();
+    expect(screen.getByText(/생성 1개 · 중복 0개 · 제외 1개/)).toBeTruthy();
+    expect(screen.queryByText('제외된 항목 확인')).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '기록 삭제' }));
     expect(
-      screen.getByText('인사이트는 유지되고 Undo 권한이 사라집니다')
+      screen.getByText('인사이트는 유지되고 되돌리기 권한과 기록이 사라집니다.')
     ).toBeTruthy();
     expect(service.deleteRecord).not.toHaveBeenCalled();
 
@@ -274,6 +257,78 @@ describe('InsightImportDialog', () => {
     await waitFor(() =>
       expect(screen.queryByText('붙여넣기 가져오기')).toBeNull()
     );
+  });
+
+  it('24시간이 지난 완료 기록은 되돌리기 안내만 표시한다', async () => {
+    const service = createService();
+    service.listHistory.mockResolvedValue({
+      ok: true,
+      value: [
+        {
+          ...createHistoryEntry(),
+          canUndo: false,
+          undoExpiresAt: '2000-01-01T00:00:00.000Z',
+          undoRemainingMs: 0,
+        },
+      ],
+    });
+    renderDialog({ service });
+
+    expect(
+      await screen.findByText('되돌릴 수 있는 24시간이 지났어요.')
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: '가져오기 되돌리기' })
+    ).toBeNull();
+  });
+
+  it('되돌릴 수 있는 기록은 첫 렌더부터 되돌리기 버튼을 표시한다', () => {
+    const markup = renderToStaticMarkup(
+      <DesignSystemProvider>
+        <ImportHistory
+          entries={[createHistoryEntry()]}
+          errorMessage={null}
+          loading={false}
+          onDelete={vi.fn()}
+          onUndo={vi.fn()}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(markup).toContain('가져오기 되돌리기');
+    expect(markup).not.toContain('되돌릴 수 있는 24시간이 지났어요.');
+  });
+
+  it('서버가 계산한 남은 시간이 지나면 되돌리기 버튼을 숨긴다', async () => {
+    vi.useFakeTimers();
+
+    try {
+      render(
+        <DesignSystemProvider>
+          <ImportHistory
+            entries={[
+              { ...createHistoryEntry(), undoRemainingMs: 1_000 },
+            ]}
+            errorMessage={null}
+            loading={false}
+            onDelete={vi.fn()}
+            onUndo={vi.fn()}
+          />
+        </DesignSystemProvider>
+      );
+
+      expect(
+        screen.getByRole('button', { name: '가져오기 되돌리기' })
+      ).toBeTruthy();
+
+      await act(() => vi.advanceTimersByTimeAsync(1_000));
+
+      expect(
+        screen.getByText('되돌릴 수 있는 24시간이 지났어요.')
+      ).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('Notion 공식 연결 안내와 기본값이 꺼진 페이지 주소 선택을 제공한다', async () => {
@@ -465,6 +520,7 @@ function createItem(
 function createHistoryEntry(): ImportHistoryEntry {
   return {
     adapterKey: 'pasted-text',
+    canUndo: true,
     completedAt: '2026-07-25T03:00:00.000Z',
     id: JOB_ID,
     status: 'completed',
@@ -476,6 +532,8 @@ function createHistoryEntry(): ImportHistoryEntry {
       newCount: 1,
       totalCount: 2,
     },
+    undoExpiresAt: '2099-07-26T03:00:00.000Z',
+    undoRemainingMs: 86_400_000,
     undoResult: null,
   };
 }
