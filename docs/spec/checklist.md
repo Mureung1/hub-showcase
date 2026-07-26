@@ -24,8 +24,8 @@
 - [x] `prompts/` 5개 파일 + `CHANGELOG.md` 배치 — ✓ judge·select_tool·summarize·verify·trend·CHANGELOG 6파일 생성, 상호 참조(`./CHANGELOG.md` 등) 전부 유효
 - [x] 디렉토리 구조 생성 (`app/` `prompts/` `web/` `data/` `tests/`) — ✓ 5개 폴더 전부 존재 (`app/__init__.py`, 나머지 `.gitkeep`)
 - [x] `.env.example` · `.gitignore`(`.env`, `data/` 포함) 작성 — ✓ 둘 다 존재, `.env` 차단·`data/*` 무시(`.gitkeep` 제외) 확인
-- [ ] Gemini API 키 발급 + `.env` 설정 — ⚠️ **부분 완료(불변).** `.env`에 키가 있고 `google-generativeai` 설치·`ask_llm()` 코드 경로도 정상 도달(인증 통과)하나, **완료 기준(실제 LLM 호출 성공)은 여전히 미충족** — 2026-07-26 재확인 결과 무료 티어 quota가 3개 지표(분당 토큰·분당 요청·일일 요청) 전부 `limit: 0`으로 소진된 상태(`429 ResourceExhausted`). 코드 결함이 아니라 API 키/프로젝트의 결제·할당량 설정 문제로 보임 — `https://ai.dev/rate-limit`에서 직접 확인 필요
-  - **완료 기준:** `python -c "..."` 한 줄로 LLM 호출이 성공한다
+- [x] Gemini API 키 발급 + `.env` 설정 — ✓ 2026-07-26 해결. `GEMINI_MODEL="gemini-2.0-flash"`의 무료 티어 quota가 3개 지표 전부 `limit:0`(계정 자체가 이 모델에 무료 할당량 없음 — 소진이 아니라 애초에 0)이라 실패했던 것 — `genai.list_models()`로 키 자체는 유효함을 먼저 확인한 뒤, `gemini-2.0-flash-lite`도 동일하게 `limit:0`, `gemini-flash-lite-latest`·`gemini-flash-latest`는 정상 응답하는 것을 개별 테스트로 확인. `config.py`의 `GEMINI_MODEL`을 `"gemini-flash-latest"`로 교체해 해결(CLAUDE.md의 "Gemini Flash" 스펙에 부합하는 별칭)
+  - **완료 기준:** `python -c "..."` 한 줄로 LLM 호출이 성공한다 — ✓ `python -m app.tools --check llm` → `2` 응답 확인
 - [x] `requirements.txt` (fastapi, uvicorn, arxiv, google-generativeai, pytest) — ✓ 명시 5종 전부 포함(+feedparser·python-dotenv·pypdf 추가)
 
 > ⚠️ **발견된 이슈 (경로 불일치)** — 루트 `CLAUDE.md` 내부 링크(`../docs/...`, `../prompts/CHANGELOG.md` 등)가 **한 단계 중첩된 위치**(예: `.claude/CLAUDE.md`)를 전제로 쓰여 있어, 지금처럼 **루트 배치 시 전부 깨짐**(`../docs/plan.md` → repo 밖). 반면 `plan.md`·`checklist.md`는 CLAUDE.md를 **루트**로 전제(`../CLAUDE.md`, `../../CLAUDE.md`)해 서로 상충. plan.md·checklist.md 쪽(2곳)이 다수이므로 **CLAUDE.md 내부 링크에서 `../`를 한 겹 제거**하는 쪽이 맞다. 별도 수정 필요.
@@ -36,14 +36,14 @@
 
 **목표: [plan.md §10](../plan.md) 1번.** 웹은 손대지 않는다.
 
-> **📍 진행 점검 (2026-07-26)** — 코드·로직은 Task 0~6(#1~#50, PR #51~#57 전부 병합)으로 완주. 이 주차 목표(single-agent 루프)는 mock 기반 `pytest` 18개 전부 통과로 구조상 완료됐다. 다만 **Gemini 무료 티어 quota가 소진(`limit:0`)된 상태**라 `ask_llm()`·`run_agent()` 두 항목은 완료 기준이 요구하는 "실제 API 호출"로는 아직 검증 못 했다 — 코드 결함이 아니라 외부 계정 제약이다. quota가 풀리면 두 항목만 재확인하면 된다.
+> **📍 진행 점검 (2026-07-26)** — Task 0~6(#1~#50, PR #51~#57 전부 병합)으로 완주. `GEMINI_MODEL`을 `gemini-flash-latest`로 교체해 무료 티어 quota 문제를 해결했고, `python -m app.agent --topic "LLM agent planning" --limit 3`를 실제 API로 끝까지 돌려 이 주차 목표(single-agent 루프)를 완전히 검증했다. 그 과정에서 `search_arxiv()`가 다단어 topic을 따옴표 없이 `all:`에 넣어 검색이 사실상 무의미해지던 **실제 버그도 발견해 같이 고쳤다**(`app/tools.py`, 아래 참고).
 
 ### 도구 (개발 순서 [1])
 - [x] `app/config.py` — `MAX_RETRY = 2`, 환경변수 로드 — ✓ 2026-07-26 파일 확인: `MAX_RETRY=2`, `python-dotenv`로 `.env` 로드. `SUMMARIZE_PARSE_ATTEMPTS`·`DEFAULT_LIMIT`·`ARXIV_CATEGORIES`도 함께 관리
 - [x] `app/tools.py :: search_arxiv()` — cs.CL/cs.AI/cs.LG 검색
-  - **완료 기준:** `python -m app.tools --check arxiv --topic "LLM agent"` → 논문 목록 출력 — ✓ 2026-07-26 실행, 3편 출력 확인(실제 arXiv API 호출 성공)
-- [ ] `app/tools.py :: ask_llm()` — Gemini Flash 호출. 교체 가능하게 추상화 — ⚠️ **부분 완료.** 코드는 구현되어 있고 실제로 Gemini API에 요청까지 정상 도달하나(인증 통과), 무료 티어 quota 소진(`limit:0`)으로 응답을 못 받는다 — Week 0 Gemini 키 항목과 동일한 차단 요인
-  - **완료 기준:** `python -m app.tools --check llm` → 응답 출력 — ✗ 2026-07-26 실행 시 `ResourceExhausted 429`(quota 소진)로 실패
+  - **완료 기준:** `python -m app.tools --check arxiv --topic "LLM agent"` → 논문 목록 출력 — ✓ 2026-07-26 실행, 3편 출력 확인. **버그 발견·수정**: `all:{topic}`을 따옴표 없이 넣으면 arXiv 쿼리 파서가 `all:`을 첫 단어에만 적용해 다단어 topic(대부분의 실제 입력)에서 검색이 사실상 topic과 무관해짐 — 실제로 "retrieval augmented generation"·"large language model agents" 등으로 3번 연속 무관한 논문만 나온 것으로 발견. `all:"{topic}"`으로 감싸도록 수정 후 재검증(`GRADRAG`·`VizRAG` 등 실제 RAG 논문 출력 확인)
+- [x] `app/tools.py :: ask_llm()` — Gemini Flash 호출. 교체 가능하게 추상화
+  - **완료 기준:** `python -m app.tools --check llm` → 응답 출력 — ✓ 2026-07-26 모델을 `gemini-flash-latest`로 교체 후 실행, `2` 응답 확인(위 Week 0 Gemini 키 항목 참고)
 - [x] `app/tools.py :: ask_llm_json()` — **fallback 포함.** ```json 래핑 벗기기
   - **완료 기준:** 일부러 깨진 응답을 넣어도 fallback이 반환되고 예외가 안 난다 — ✓ 2026-07-26 `ask_llm`을 깨진 응답으로 mock, 예외 없이 fallback 반환 확인
 - [x] `app/tools.py :: fetch_fulltext()` — PDF 본문 추출
@@ -56,9 +56,9 @@
 - [x] 3단계 요약 — `contribution`/`method`/`result` 3키 고정 — ✓ 3키는 `prompts/summarize.md` 프롬프트가 강제(judge/trend와 같은 패턴, 코드 차원 스키마 검증은 아님). 파싱 실패 시 `SUMMARIZE_PARSE_ATTEMPTS=3`회 재시도 후 `None` 반환 확인
 - [x] 4단계 자기 검증 — 실패 시 3단계로. **`MAX_RETRY = 2` 상한** — ✓ `tests/test_verify.py` 4개 전부 통과 — `is_good` 통과/재시도·피드백 반영/`MAX_RETRY=2` 상한(3회째 attempt는 발생 안 하고 마지막 요약 채택) 확인
 - [x] 5단계 트렌드 추론 — `flows[].papers` 근거 필수 — ✓ `tests/test_trend.py` 4개 전부 통과. `papers` 근거는 `prompts/trend.md`가 강제("근거를 못 대면 그 흐름은 버려라"), 코드는 fallback `{"flows":[],"gap":None}`로 판단 불가 시 억지 흐름 생성을 막는다
-- [ ] `run_agent()`를 **제너레이터로** 조립. `sse-contract.md`의 stage를 그대로 yield — ⚠️ **부분 완료.** Task 6(#46~#50, PR #57 2026-07-26 병합)로 구현 완료, mock 기반 `tests/test_orchestration.py`(전체 pytest 18개 중 10개)가 이벤트 순서(search→found→judge→(read→[retry]*→paper_done|paper_failed)*→trend→done, 분기 empty/error)를 전부 증명한다. 다만 **완료 기준 문구 그대로의 실제 API 호출 검증**은 Gemini quota 소진으로 지금 불가 — 2026-07-26 아래 명령 실행 시 `search`→`found`→`error(judge_failed)`에서 멈춤(코드 결함 아님, quota 문제)
+- [x] `run_agent()`를 **제너레이터로** 조립. `sse-contract.md`의 stage를 그대로 yield — ✓ Task 6(#46~#50, PR #57 2026-07-26 병합)로 구현. mock 기반 `tests/test_orchestration.py`(전체 pytest 18개 중 10개)로 이벤트 순서 전부 증명한 데 더해, **quota·검색 버그를 고친 뒤 실제 API로 전체 파이프라인을 끝까지 실행해 재검증**(아래 완료 기준 참고)
   - **완료 기준:** `python -m app.agent --topic "LLM agent planning" --limit 3`
-    → search·found·judge·read·paper_done·trend·done이 순서대로 print된다 — ⚠️ mock으로는 순서 일치 증명됨, 실제 API로는 quota 소진으로 미확인
+    → search·found·judge·read·paper_done·trend·done이 순서대로 print된다 — ✓ 2026-07-26 실제 API로 실행, `search→found→judge(3편 선택)→read→paper_done→read→paper_done→read→paper_failed→trend→done` 순서로 정확히 출력됨(3편 중 1편은 요약 반복 실패로 `paper_failed` — 부분 실패도 정상적으로 동시에 실증됨). `done.stats == {"scanned":3,"selected":3,"succeeded":2,"failed":1,"llm_calls":12}`로 `succeeded+failed==selected` 불변식도 실전에서 성립 확인
 
 > **이번 주 안에 반드시 겪어야 하는 것:** `retry`가 실제로 한 번은 발동하는 것.
 > 한 번도 안 나오면 4단계 프롬프트가 너무 관대한 것이다. `prompts/verify.md`를 조인다.
