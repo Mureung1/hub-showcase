@@ -15,10 +15,13 @@
 | D0 | 변경하지 않는 source snapshot | `dataset_version` | 데이터 수집 에이전트 |
 | D1 | source chunk와 구조적 위치, 검색 인덱스 | `dataset_version` | 인덱싱 파이프라인 |
 | D2 | 원문에 근거한 mention과 observation | `dataset_version` | 통계 분석 에이전트 |
-| D3 | 분류체계, 정규화 할당, 지식 그래프, Wiki | `taxonomy_version`, `knowledge_version` | 통계 분석·지식 구축 에이전트 |
-| D4 | 집계 통계와 패턴 | `analysis_version` | 통계 집계 파이프라인 |
+| D3a | 분류체계와 정규화 할당 | `taxonomy_version` | 통계 분석 에이전트 |
+| D4 | 집계 통계, 패턴, 깊이 프로파일 | `analysis_version` | 집계 파이프라인 |
+| D3b | 지식 그래프와 Wiki | `knowledge_version` | 지식 구축 에이전트 |
 | D5 | 해석·전략·로드맵 주장 | `analysis_version` | 해석·전략·로드맵 에이전트 |
 | D6 | 활성화된 사용자 제공 결과 | `analysis_version` | 통합 Verifier |
+
+D3a와 D3b는 지식을 정규화하는 같은 성격의 계층이나 생성 순서가 다르다. D3a는 집계의 입력이고, D3b는 집계의 결과를 입력으로 받는다. Wiki의 생성 대상 판정과 그래프 엣지의 `weight`가 집계 통계에서 나오므로 D3b는 D4 뒤에 온다.
 
 사용자의 체크 상태와 그에 따른 재조합 결과는 데이터 성숙도 계층에 속하지 않는다. 이는 Express가 요청 시점에 계산하는 런타임 결과다.
 
@@ -27,22 +30,27 @@ flowchart TD
     D0[("D0 Source snapshot<br/>변경하지 않는 증거")]
     D1[("D1 Chunk 구조적 위치<br/>lexical vector index")]
     D2[("D2 Grounded mention<br/>분류체계 무관")]
-    D3[("D3 Taxonomy Assignment<br/>Knowledge Graph Wiki")]
-    D4[("D4 집계 통계 패턴")]
+    D3A[("D3a Taxonomy Assignment")]
+    D4[("D4 집계 통계 패턴<br/>깊이 프로파일")]
+    D3B[("D3b Knowledge Graph Wiki")]
     D5[("D5 해석 전략 로드맵 주장")]
     D6(["D6 활성 사용자 제공 결과"])
 
     D0 -->|"인덱싱 파이프라인"| D1
     D1 -->|"mention 추출"| D2
-    D2 -->|"분류체계 발견 승격 할당"| D3
-    D3 -->|"집계 파이프라인"| D4
-    D3 -->|"검색"| D5
+    D2 -->|"분류체계 발견 승격 할당"| D3A
+    D3A -->|"집계 파이프라인"| D4
+    D3A -->|"정규화된 관계"| D3B
+    D4 -->|"생성 대상 판정 깊이 기준 weight"| D3B
+    D3B -->|"그래프 탐색 Wiki 참조"| D5
     D4 -->|"해석 전략 로드맵"| D5
     D5 -->|"통합 검증"| D6
 
     D6 -.->|"계보 역추적"| D5
     D5 -.->|"계보 역추적"| D4
-    D5 -.->|"계보 역추적"| D2
+    D5 -.->|"계보 역추적"| D1
+    D4 -.->|"계보 역추적"| D3A
+    D3A -.->|"계보 역추적"| D2
     D2 -.->|"계보 역추적"| D1
     D1 -.->|"계보 역추적"| D0
 ```
@@ -214,7 +222,7 @@ requirement_mentions
 
 `raw_expression`은 원문 문장의 부분 문자열이며 `evidence_span_start`와 `evidence_span_end`로 위치를 고정한다. 위치가 원문과 일치하지 않는 mention은 검증에서 폐기한다.
 
-## 6. D3 분류체계와 할당
+## 6. D3a 분류체계와 할당
 
 ### 6.1 할당
 
@@ -269,13 +277,17 @@ role_boundary_eligible
 
 차원 후보의 발견, 관계 판정, 승격 절차는 [통계 모델](statistics-model.md)에서 정의한다.
 
-## 7. D3 지식 그래프
+## 7. D3b 지식 그래프
 
 그래프는 두 개의 논리 층으로 나눈다. 하나는 직무 지식의 연결을 표현하고, 다른 하나는 산출물이 만들어진 경로를 표현한다. 두 층은 같은 노드·엣지 테이블에 `graph_layer` 속성으로 구분해 저장한다.
 
 ### 7.1 Semantic Knowledge Graph
 
-정규화가 끝난 도메인 관계를 표현한다.
+정규화가 끝난 도메인 관계를 표현한다. 생성 시점에 따라 두 묶음으로 나눈다.
+
+#### 7.1.1 사전 semantic
+
+D3b에서 지식 구축 에이전트가 생성한다. 해석·전략·로드맵 에이전트의 탐색 입력이다.
 
 | 노드 유형 | 참조 |
 | --- | --- |
@@ -287,10 +299,6 @@ role_boundary_eligible
 | `Capability` | `capabilities` |
 | `Technology` | `requirement_dimensions` 중 기술 유형 |
 | `Standard` | `standards` |
-| `ProofArtifact` | 분석 산출물 |
-| `Channel` | 포트폴리오·자소서·면접 |
-| `LearningResource` | 분석 산출물 |
-| `Project` | 분석 산출물 |
 
 | 엣지 유형 | 방향 |
 | --- | --- |
@@ -299,14 +307,30 @@ role_boundary_eligible
 | `REQUIRES` | Posting → RequirementDimension |
 | `REQUIRES_CAPABILITY` | RequirementDimension → Capability |
 | `MAPS_TO_STANDARD` | Capability → Standard |
+| `PREREQUISITE_OF` | Capability → Capability |
+
+#### 7.1.2 사후 semantic
+
+D5 산출물이 저장될 때 계보 기록 파이프라인이 생성한다.
+
+| 노드 유형 | 참조 |
+| --- | --- |
+| `ProofArtifact` | `checklist_items` 중 증명 산출물 유형 |
+| `Channel` | 포트폴리오·자소서·면접의 고정 목록 |
+| `LearningResource` | `study_tracks` |
+| `Project` | `roadmap_items` |
+
+| 엣지 유형 | 방향 |
+| --- | --- |
 | `PROVEN_BY` | Capability → ProofArtifact |
 | `USED_IN_CHANNEL` | ProofArtifact → Channel |
-| `PREREQUISITE_OF` | Capability → Capability |
 | `TEACHES` | LearningResource → Capability |
+
+사후 semantic은 이를 생성한 에이전트의 같은 실행 안에서는 사용할 수 없다. 전략 에이전트는 `ProofArtifact`를 만드는 주체이므로 `PROVEN_BY`를 탐색 입력으로 받지 않는다. 이 묶음은 화면의 근거 경로 표시와 다음 분석 버전의 탐색에 사용한다.
 
 ### 7.2 Provenance Lineage Graph
 
-산출물의 생성 경로를 표현한다.
+산출물의 생성 경로를 표현한다. 계보 기록 파이프라인이 각 계층의 산출물이 저장될 때 결정적으로 기록한다. 판단이 개입하지 않으므로 에이전트가 쓰지 않는다.
 
 | 노드 유형 | 참조 |
 | --- | --- |
@@ -335,7 +359,17 @@ role_boundary_eligible
 
 원문 표현에서 차원으로 이어지는 정규화는 계보이므로 `ASSIGNED_TO`로 Provenance 층에 기록한다. Semantic 층에는 정규화가 끝난 관계만 넣는다.
 
-### 7.3 노드·엣지 테이블
+### 7.3 층별 생성 주체와 시점
+
+| 묶음 | 생성 | 시점 | 진실의 원천 |
+| --- | --- | --- | --- |
+| 사전 semantic | 지식 구축 에이전트 | D3b | `knowledge_edges` |
+| 사후 semantic | 계보 기록 파이프라인 | D5 산출물 저장 직후 | 산출물 정규 테이블 |
+| Provenance | 계보 기록 파이프라인 | 각 계층 산출물 저장 직후 | 산출물 정규 테이블 |
+
+Provenance 엣지와 사후 semantic 엣지는 정규 테이블의 외래키를 그래프 표현으로 옮긴 것이다. `analysis_claim_evidence`와 `SUPPORTED_BY`가 같은 사실을 담을 때 진실의 원천은 `analysis_claim_evidence`이며, 엣지는 경로 탐색을 위한 파생 표현이다. 두 값이 어긋나면 검증에서 엣지를 폐기하고 다시 기록한다.
+
+### 7.4 노드·엣지 테이블
 
 ```text
 knowledge_nodes
@@ -345,7 +379,7 @@ knowledge_nodes
 knowledge_edges
   edge_id, graph_layer, edge_type, src_node_id, dst_node_id
   weight, evidence_id, produced_by_run_id, verification_status
-  ontology_version, dataset_version, analysis_version
+  ontology_version, dataset_version, taxonomy_version, analysis_version
   valid_from, valid_to
 ```
 
@@ -353,14 +387,18 @@ knowledge_edges
 
 ```text
 ontology_versions
-  ontology_version, graph_layer
+  ontology_version, graph_layer            복합 기본키
   node_types, edge_types, allowed_connections
   required_evidence_by_edge_type, effective_from
 ```
 
+`knowledge_nodes`와 `knowledge_edges`는 `(ontology_version, graph_layer)` 두 컬럼으로 이 표를 참조한다.
+
+`REQUIRES`와 `REQUIRES_CAPABILITY`는 할당에서 파생되므로 엣지가 `taxonomy_version`을 가진다. 분류체계 버전이 바뀌면 해당 엣지는 재구축 대상이며, `graph_paths`의 캐시 키와 실제 의존 관계가 일치한다.
+
 `weight`는 통계 지표에서 계산한 값을 담아 경로 순위 계산에 사용한다.
 
-### 7.4 `graph_paths`
+### 7.5 `graph_paths`
 
 ```text
 graph_paths
@@ -371,7 +409,7 @@ graph_paths
 
 `graph_paths`는 자주 조회하는 경로의 캐시다. 진실의 원천은 `knowledge_edges`이며 경로는 버전이 고정된 엣지에서 계산한다. 네 개의 버전이 캐시 키에 포함되므로 분류체계나 분석 버전이 바뀌면 이전 경로를 재사용하지 않는다.
 
-### 7.5 근거 경로
+### 7.6 근거 경로
 
 로드맵 항목에서 공고 원문까지의 경로는 두 층을 잇는 계보다.
 
@@ -386,7 +424,7 @@ RoadmapItem
   → PART_OF → SourceSnapshot
 ```
 
-## 8. D3 Wiki
+## 8. D3b Wiki
 
 ### 8.1 책임
 
@@ -449,7 +487,7 @@ AND (통계적 우선순위 상위 OR research_request 존재)
 
 ### 8.6 기대 깊이
 
-특정 직무·대상군·기업군·기간에서 실제로 기대되는 깊이는 Wiki의 고정 속성이 아니라 분석 산출물이다.
+특정 직무·대상군·기업군·기간에서 실제로 기대되는 깊이는 Wiki의 고정 속성이 아니라 분석 산출물이다. `capability_depth_profiles`는 D4 계층에 속하며 집계 파이프라인이 `depth_distribution` 지표에서 생성한다. Wiki가 참조하는 입력이므로 정의를 이 장에 둔다.
 
 ```text
 capability_depth_profiles
@@ -661,23 +699,31 @@ evaluation_failures
 | 구성요소 | 쓰기 가능 테이블 |
 | --- | --- |
 | 데이터 수집 에이전트 | `sources`, `source_snapshots`, `source_observations`, `source_assessments` |
-| 지식 구축 에이전트 | `knowledge_nodes`, `knowledge_edges`, `wiki_pages`, `wiki_revisions`, `wiki_evidence` |
-| 통계 분석 에이전트 | `requirement_mentions`, `requirement_candidates`, `requirement_candidate_mentions`, `requirement_candidate_decisions`, `posting_requirement_assignments`, `statistics_facts`, `capability_depth_profiles`, `saturation_observations` |
+| 지식 구축 에이전트 | `knowledge_nodes`·`knowledge_edges`의 사전 semantic 묶음, `wiki_pages`, `wiki_revisions`, `wiki_evidence` |
+| 통계 분석 에이전트 | `requirement_mentions`, `requirement_candidates`, `requirement_candidate_mentions`, `requirement_candidate_decisions`, `posting_requirement_assignments`, `saturation_observations` |
 | 채용공고 해석 에이전트 | `analysis_claims`, `analysis_claim_evidence`, `coverage_assertions`, `analysis_outputs` |
 | 합격 전략 에이전트 | `checklist_concepts`, `checklist_items`, `checklist_item_mappings`, `analysis_outputs` |
 | 준비 로드맵 에이전트 | `roadmap_items`, `roadmap_item_fills`, `study_tracks`, `analysis_outputs` |
 | 오케스트레이터 | `analysis_versions`, `active_analysis_versions`, `research_requests` |
 | 인덱싱 파이프라인 | `source_chunks`, `chunk_embeddings` |
+| 집계 파이프라인 | `statistics_facts`, `capability_depth_profiles` |
+| 계보 기록 파이프라인 | `knowledge_nodes`·`knowledge_edges`의 Provenance 묶음과 사후 semantic 묶음, `graph_paths` |
 | 검증 파이프라인 | `verification_results`, `repair_orders` |
 | 전 구성요소 | `retrieval_runs`, `retrieval_queries`, `retrieval_candidates`, `evidence_sets`, `evidence_set_members`, `evidence_usages`, `agent_runs`, `agent_run_steps`, `tool_calls` |
 
-`research_requests`는 에이전트가 생성하고 오케스트레이터가 상태를 갱신한다.
+수치를 저장하는 경로는 집계 파이프라인 하나다. 통계 분석 에이전트는 mention 추출, 차원 발견과 승격, 할당까지 담당하고 `statistics_facts`에 쓰지 않는다.
+
+`research_requests`는 해석·전략·로드맵 에이전트와 검증 파이프라인이 `INSERT`하고 오케스트레이터가 상태를 갱신한다. 검증 파이프라인의 `needs_research` 판정도 같은 경로로 요청을 발행한다.
+
+`analysis_outputs`는 세 에이전트가 공유하므로 테이블 단위 `GRANT`로 분리하지 못한다. `output_type`과 실행 주체의 일치는 repository 인터페이스와 행 수준 제약으로 강제한다.
+
+`knowledge_nodes`와 `knowledge_edges`도 두 구성요소가 공유하므로 `graph_layer`와 유형 목록으로 쓰기 범위를 나눈다. 강제 수단은 13.2를 따른다.
 
 ### 13.2 강제 수단
 
 | 층 | 수단 |
 | --- | --- |
-| 설계 | 12.1의 권한 범위 |
+| 설계 | 13.1의 권한 범위 |
 | 코드 | 구성요소별 repository 인터페이스. 다른 데이터베이스 접근 경로를 두지 않는다 |
 | 데이터베이스 | 구성요소별 role과 `GRANT`, 또는 허용된 저장 프로시저만 노출 |
 | 검증 | 통합 테스트에서 허용 범위 밖 쓰기가 실패한다 |
