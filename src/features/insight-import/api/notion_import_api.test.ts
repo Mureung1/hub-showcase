@@ -82,6 +82,38 @@ describe('Notion 가져오기 API', () => {
     expect(String(error)).not.toContain('private.example');
     expect(String(error)).not.toContain('session-access-token');
   });
+
+  it('mapping 응답에서 데이터베이스 이름과 field 계약을 검증한다', async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          candidateCount: 0,
+          mappingRequests: [
+            {
+              dataSourceId: 'data-source-id',
+              dataSourceName: '업무 자료',
+              fields: [{ id: 'url-field', name: '링크', type: 'url' }],
+              suggestedUrlPropertyId: 'url-field',
+            },
+          ],
+          requestCount: 2,
+          status: 'mapping-required',
+        }),
+        { status: 200 }
+      )
+    );
+    const api = createNotionImportApi({ client: createClient(), fetch });
+
+    await expect(api.analyze(CONNECTION_ID, [])).resolves.toMatchObject({
+      mappingRequests: [
+        expect.objectContaining({
+          dataSourceId: 'data-source-id',
+          dataSourceName: '업무 자료',
+        }),
+      ],
+      status: 'mapping-required',
+    });
+  });
 });
 
 function createClient() {

@@ -163,10 +163,14 @@ export function AuthenticatedWorkspace({
   repository,
   userId,
 }: AuthenticatedWorkspaceProps) {
-  const initialNotionConnectionId = useMemo(
-    () => readNotionConnectionId(globalThis.location?.search ?? ''),
-    []
+  const [initialNotionCallback, setInitialNotionCallback] = useState(() =>
+    readNotionCallback(globalThis.location?.search ?? '')
   );
+  const initialNotionConnectionId = initialNotionCallback?.connectionId ?? null;
+  const clearNotionCallback = useCallback(() => {
+    setInitialNotionCallback(null);
+    clearNotionCallbackQuery();
+  }, []);
   const pwaInstallPrompt = usePwaInstallPrompt();
   const workspaceRepository = useMemo(
     () =>
@@ -230,9 +234,7 @@ export function AuthenticatedWorkspace({
   const [contextSaveComplete, setContextSaveComplete] = useState(false);
   const [contextSaveFailed, setContextSaveFailed] = useState(false);
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(
-    initialNotionConnectionId !== null
-  );
+  const [importOpen, setImportOpen] = useState(initialNotionCallback !== null);
   const pendingCategorySelectionRef = useRef<
     ((categoryId: string) => void) | undefined
   >(undefined);
@@ -600,11 +602,13 @@ export function AuthenticatedWorkspace({
         <InsightImportDialog
           categories={categories}
           initialNotionConnectionId={initialNotionConnectionId}
+          initialNotionError={initialNotionCallback?.error ?? null}
           notionApi={notionImportApi}
           notionCallback={notionImportCallback}
           notionOpenWeb={notionOpenWeb}
           onCategoriesChanged={reloadCategories}
           onLibraryChanged={reloadInsights}
+          onNotionConnectionFinished={clearNotionCallback}
           onOpenChange={setImportOpen}
           open
           service={importService}
@@ -626,17 +630,43 @@ export function AuthenticatedWorkspace({
   );
 }
 
-function readNotionConnectionId(search: string) {
+function readNotionCallback(search: string) {
   const query = new URLSearchParams(search);
   const connectionId = query.get('connection');
 
-  return query.get('import') === 'notion' &&
-    connectionId &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+  if (
+    query.get('import') !== 'notion' ||
+    !connectionId ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
       connectionId
     )
-    ? connectionId
-    : null;
+  ) {
+    return null;
+  }
+
+  return {
+    connectionId,
+    error:
+      query.get('error') === 'access-denied'
+        ? ('access-denied' as const)
+        : null,
+  };
+}
+
+function clearNotionCallbackQuery() {
+  if (!globalThis.location || !globalThis.history) {
+    return;
+  }
+
+  const url = new URL(globalThis.location.href);
+  url.searchParams.delete('import');
+  url.searchParams.delete('connection');
+  url.searchParams.delete('error');
+  globalThis.history.replaceState(
+    globalThis.history.state,
+    '',
+    `${url.pathname}${url.search}${url.hash}`
+  );
 }
 
 function createUnavailableInsightRepository(): InsightRepository {

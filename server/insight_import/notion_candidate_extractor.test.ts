@@ -121,6 +121,7 @@ describe('extractNotionCandidates', () => {
     expect(result.mappingRequests).toEqual([
       expect.objectContaining({
         dataSourceId: 'data-source-id',
+        dataSourceName: '업무 자료',
         fields: expect.arrayContaining([
           expect.objectContaining({ id: 'url-property', type: 'url' }),
           expect.objectContaining({
@@ -130,6 +131,91 @@ describe('extractNotionCandidates', () => {
         ]),
       }),
     ]);
+  });
+
+  it('선택한 rich_text URL 속성은 전체 속성 조회를 요청하고 결과를 후보로 만든다', () => {
+    const richTextSource = structuredClone(dataSource) as {
+      properties: Record<string, unknown>;
+    };
+    richTextSource.properties['링크'] = {
+      id: 'url-property',
+      name: '링크',
+      type: 'rich_text',
+    };
+    const richTextPages = pages.map((page) => {
+      const copy = structuredClone(page) as {
+        properties: Record<string, unknown>;
+      };
+      copy.properties['링크'] = {
+        id: 'url-property',
+        rich_text: [{ href: null, plain_text: 'https://example.com/embedded' }],
+        type: 'rich_text',
+      };
+      return { collectionPath: ['업무 자료'], page: copy };
+    });
+    const mappings: NotionFieldMapping[] = [
+      {
+        dataSourceId: 'data-source-id',
+        memoPropertyId: 'memo-property',
+        titlePropertyId: null,
+        urlPropertyId: 'url-property',
+      },
+    ];
+
+    const queued = extractNotionCandidates({
+      blocks: [],
+      dataSources: [richTextSource],
+      includePageUrls: false,
+      mappings,
+      pages: richTextPages,
+    }) as ReturnType<typeof extractNotionCandidates> & {
+      propertyRequests: unknown[];
+    };
+
+    expect(queued.candidates).toEqual([]);
+    expect(queued.propertyRequests).toEqual([
+      {
+        collectionPath: ['업무 자료'],
+        explicitMemoCandidate: '명시적 메모',
+        pageId: 'page-id',
+        propertyId: 'url-property',
+        titleCandidate: '개발',
+      },
+    ]);
+
+    const extracted = extractNotionCandidates({
+      blocks: [],
+      dataSources: [],
+      includePageUrls: false,
+      pages: [],
+      propertyItems: [
+        {
+          collectionPath: ['업무 자료'],
+          explicitMemoCandidate: '명시적 메모',
+          index: 25,
+          item: {
+            rich_text: {
+              href: 'https://example.com/full-property',
+              plain_text: '전체 속성',
+            },
+          },
+          pageId: 'page-id',
+          propertyId: 'url-property',
+          titleCandidate: '개발',
+        },
+      ],
+    } as Parameters<typeof extractNotionCandidates>[0] & {
+      propertyItems: unknown[];
+    });
+
+    expect(extracted.candidates).toContainEqual(
+      expect.objectContaining({
+        candidateId: 'notion:page:page-id:property:url-property:25:href',
+        explicitMemoCandidate: '명시적 메모',
+        originalUrl: 'https://example.com/full-property',
+        titleCandidate: '개발',
+      })
+    );
   });
 });
 

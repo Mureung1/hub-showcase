@@ -127,6 +127,74 @@ describe('NotionImportClient', () => {
     expect(second.cursor.visitedBlockIds).toHaveLength(10);
   });
 
+  it('page 속성 목록을 cursor 끝까지 이어서 가져온다', async () => {
+    const cursor = createInitialNotionAnalysisCursor() as ReturnType<
+      typeof createInitialNotionAnalysisCursor
+    > & {
+      propertyQueue: Array<{
+        collectionPath: string[];
+        cursor: string | null;
+        explicitMemoCandidate: string | null;
+        nextIndex: number;
+        pageId: string;
+        propertyId: string;
+        titleCandidate: string | null;
+      }>;
+    };
+    cursor.stage = 'complete';
+    cursor.propertyQueue = [
+      {
+        collectionPath: ['업무 자료'],
+        cursor: null,
+        explicitMemoCandidate: '메모',
+        nextIndex: 0,
+        pageId: 'page-id',
+        propertyId: 'link-property',
+        titleCandidate: '제목',
+      },
+    ];
+    const client = {
+      listBlockChildren: vi.fn(),
+      queryDataSource: vi.fn(),
+      retrieveDataSource: vi.fn(),
+      retrievePageProperty: vi
+        .fn()
+        .mockResolvedValueOnce({
+          ...createList(),
+          has_more: true,
+          next_cursor: 'property-cursor',
+          results: [{ rich_text: { href: 'https://example.com/1' } }],
+        })
+        .mockResolvedValueOnce({
+          ...createList(),
+          results: [{ rich_text: { href: 'https://example.com/2' } }],
+        }),
+      search: vi.fn(),
+    };
+
+    const result = (await runNotionAnalysisSlice(client, cursor)) as Awaited<
+      ReturnType<typeof runNotionAnalysisSlice>
+    > & {
+      properties: Array<{ index: number; item: unknown }>;
+    };
+
+    expect(client.retrievePageProperty).toHaveBeenNthCalledWith(
+      1,
+      'page-id',
+      'link-property',
+      null
+    );
+    expect(client.retrievePageProperty).toHaveBeenNthCalledWith(
+      2,
+      'page-id',
+      'link-property',
+      'property-cursor'
+    );
+    expect(result.properties.map(({ index }) => index)).toEqual([0, 1]);
+    expect(result.cursor.propertyQueue).toEqual([]);
+    expect(result.requestCount).toBe(2);
+  });
+
   it('cursor queue나 visited가 10,000개를 넘으면 중단한다', async () => {
     const cursor = createInitialNotionAnalysisCursor();
     cursor.visitedPageIds = Array.from(

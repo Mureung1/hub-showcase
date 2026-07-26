@@ -72,6 +72,7 @@ describe('useNotionImport', () => {
         mappingRequests: [
           {
             dataSourceId: 'data-source-id',
+            dataSourceName: '팀 자료',
             fields: [
               { id: 'url-field', name: 'URL', type: 'url' },
               { id: 'text-field', name: '링크', type: 'rich_text' },
@@ -169,6 +170,63 @@ describe('useNotionImport', () => {
     );
     act(() => callbackListener?.(CONNECTION_ID));
     await waitFor(() => expect(result.current.stage).toBe('ready'));
+  });
+
+  it('OAuth 거절 callback은 API를 호출하지 않고 다시 연결할 수 있게 안내한다', async () => {
+    const api = createApi();
+    const onConnectionFinished = vi.fn();
+
+    const { result } = renderHook(() =>
+      useNotionImport({
+        api,
+        initialConnectionId: CONNECTION_ID,
+        initialError: 'access-denied',
+        onConnectionFinished,
+        onPrepared: vi.fn(),
+      } as Parameters<typeof useNotionImport>[0] & {
+        initialError: 'access-denied';
+        onConnectionFinished(): void;
+      })
+    );
+
+    await waitFor(() => expect(result.current.stage).toBe('error'));
+    expect(result.current.errorMessage).toBe(
+      'Notion 연결이 승인되지 않았어요. 다시 연결해 주세요.'
+    );
+    expect(api.status).not.toHaveBeenCalled();
+    expect(api.analyze).not.toHaveBeenCalled();
+    expect(onConnectionFinished).toHaveBeenCalledTimes(1);
+  });
+
+  it('종료된 연결은 분석하지 않고 callback 상태를 정리한다', async () => {
+    const api = createApi();
+    api.status.mockResolvedValue({
+      connectionId: CONNECTION_ID,
+      includePageUrls: false,
+      jobId: CONNECTION_ID,
+      jobStatus: 'failed',
+      status: 'failed',
+      workspaceName: null,
+    });
+    const onConnectionFinished = vi.fn();
+
+    const { result } = renderHook(() =>
+      useNotionImport({
+        api,
+        initialConnectionId: CONNECTION_ID,
+        onConnectionFinished,
+        onPrepared: vi.fn(),
+      } as Parameters<typeof useNotionImport>[0] & {
+        onConnectionFinished(): void;
+      })
+    );
+
+    await waitFor(() => expect(result.current.stage).toBe('error'));
+    expect(result.current.errorMessage).toBe(
+      '완료되지 않은 Notion 연결이에요. 다시 연결해 주세요.'
+    );
+    expect(api.analyze).not.toHaveBeenCalled();
+    expect(onConnectionFinished).toHaveBeenCalledTimes(1);
   });
 });
 

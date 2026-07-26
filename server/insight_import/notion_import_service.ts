@@ -5,6 +5,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { analyzeImportCandidates } from '../../src/features/insight-import/model/import_analysis.js';
 import type { AnalyzedImportItem } from '../../src/features/insight-import/model/import_types.js';
 import {
+  appendNotionPropertyRequest,
   createInitialNotionAnalysisCursor,
   createNotionImportClient,
   NotionClientError,
@@ -395,6 +396,7 @@ export function createNotionImportService(
         includePageUrls: connection.includePageUrls,
         mappings,
         pages: slice.pages,
+        propertyItems: slice.properties,
       });
 
       if (extracted.mappingRequests.length > 0) {
@@ -406,6 +408,10 @@ export function createNotionImportService(
         };
       }
 
+      for (const propertyRequest of extracted.propertyRequests) {
+        appendNotionPropertyRequest(slice.cursor, propertyRequest);
+      }
+
       const analysis = analyzeImportCandidates(extracted.candidates);
       const progress = await userStore.appendItems(
         accessToken,
@@ -414,7 +420,10 @@ export function createNotionImportService(
         slice.cursor
       );
 
-      if (slice.cursor.stage !== 'complete') {
+      if (
+        slice.cursor.stage !== 'complete' ||
+        slice.cursor.propertyQueue.length > 0
+      ) {
         return {
           candidateCount: progress.candidateCount,
           requestCount: slice.requestCount,
@@ -750,7 +759,16 @@ function parseCursor(value: unknown): NotionAnalysisCursor {
     throw new NotionImportServiceError('write-failed');
   }
 
-  return value as NotionAnalysisCursor;
+  const propertyQueue =
+    value.propertyQueue === undefined ? [] : value.propertyQueue;
+  if (!Array.isArray(propertyQueue)) {
+    throw new NotionImportServiceError('write-failed');
+  }
+
+  return {
+    ...(value as Omit<NotionAnalysisCursor, 'propertyQueue'>),
+    propertyQueue: propertyQueue as NotionAnalysisCursor['propertyQueue'],
+  };
 }
 
 function parseConnectionStatus(

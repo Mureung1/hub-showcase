@@ -51,6 +51,7 @@ export type NotionAnalysisCursor = {
     dataSourceId: string;
     cursor: string | null;
   }>;
+  propertyQueue: NotionPropertyQueueEntry[];
   searchCursor: string | null;
   stage: 'search' | 'data-sources' | 'blocks' | 'complete';
   visitedBlockIds: string[];
@@ -58,11 +59,32 @@ export type NotionAnalysisCursor = {
   visitedPageIds: string[];
 };
 
+export type NotionPropertyRequest = Omit<
+  NotionPropertyQueueEntry,
+  'cursor' | 'nextIndex'
+>;
+
+export type NotionPropertyQueueEntry = {
+  collectionPath: string[];
+  cursor: string | null;
+  explicitMemoCandidate: string | null;
+  nextIndex: number;
+  pageId: string;
+  propertyId: string;
+  titleCandidate: string | null;
+};
+
 export type NotionAnalysisSlice = {
   blocks: Array<{ block: unknown; collectionPath: string[] }>;
   cursor: NotionAnalysisCursor;
   dataSources: unknown[];
   pages: Array<{ collectionPath: string[]; page: unknown }>;
+  properties: Array<
+    NotionPropertyRequest & {
+      index: number;
+      item: unknown;
+    }
+  >;
   requestCount: number;
 };
 
@@ -156,6 +178,7 @@ export function createInitialNotionAnalysisCursor(): NotionAnalysisCursor {
   return {
     blockQueue: [],
     dataSourceQueue: [],
+    propertyQueue: [],
     searchCursor: null,
     stage: 'search',
     visitedBlockIds: [],
@@ -181,6 +204,7 @@ export async function runNotionAnalysisSlice(
   const blocks: NotionAnalysisSlice['blocks'] = [];
   const dataSources: unknown[] = [];
   const pages: NotionAnalysisSlice['pages'] = [];
+  const properties: NotionAnalysisSlice['properties'] = [];
   const startedAt = now();
   let requestCount = 0;
 
@@ -194,8 +218,43 @@ export async function runNotionAnalysisSlice(
     return { exhausted: false as const, value };
   };
 
-  while (cursor.stage !== 'complete') {
+  while (cursor.stage !== 'complete' || cursor.propertyQueue.length > 0) {
     assertCursorLimits(cursor);
+
+    const property = cursor.propertyQueue[0];
+    if (property) {
+      const response = await request(() =>
+        client.retrievePageProperty(
+          property.pageId,
+          property.propertyId,
+          property.cursor
+        )
+      );
+      if (response.exhausted) {
+        break;
+      }
+
+      const page = parseListResponse(response.value);
+      page.results.forEach((item, index) => {
+        properties.push({
+          collectionPath: property.collectionPath,
+          explicitMemoCandidate: property.explicitMemoCandidate,
+          index: property.nextIndex + index,
+          item,
+          pageId: property.pageId,
+          propertyId: property.propertyId,
+          titleCandidate: property.titleCandidate,
+        });
+      });
+      property.nextIndex += page.results.length;
+
+      if (page.hasMore) {
+        property.cursor = page.nextCursor;
+      } else {
+        cursor.propertyQueue.shift();
+      }
+      continue;
+    }
 
     if (cursor.stage === 'search') {
       const response = await request(() =>
@@ -309,7 +368,29 @@ export async function runNotionAnalysisSlice(
   }
 
   assertCursorLimits(cursor);
-  return { blocks, cursor, dataSources, pages, requestCount };
+  return { blocks, cursor, dataSources, pages, properties, requestCount };
+}
+
+export function appendNotionPropertyRequest(
+  cursor: NotionAnalysisCursor,
+  request: NotionPropertyRequest
+) {
+  if (
+    cursor.propertyQueue.some(
+      (entry) =>
+        entry.pageId === request.pageId &&
+        entry.propertyId === request.propertyId
+    )
+  ) {
+    return;
+  }
+
+  cursor.propertyQueue.push({
+    ...request,
+    collectionPath: request.collectionPath.slice(0, 20),
+    cursor: null,
+    nextIndex: 0,
+  });
 }
 
 async function safelyRequest(operation: () => Promise<unknown>) {
@@ -445,6 +526,7 @@ function assertCursorLimits(cursor: NotionAnalysisCursor) {
   const collections = [
     cursor.blockQueue,
     cursor.dataSourceQueue,
+    cursor.propertyQueue,
     cursor.visitedBlockIds,
     cursor.visitedDataSourceIds,
     cursor.visitedPageIds,

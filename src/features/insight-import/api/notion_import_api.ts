@@ -13,6 +13,7 @@ export type NotionFieldMapping = {
 
 export type NotionFieldMappingRequest = {
   dataSourceId: string;
+  dataSourceName: string;
   fields: Array<{
     id: string;
     name: string;
@@ -25,8 +26,16 @@ export type NotionConnectionStatus = {
   connectionId: string;
   includePageUrls: boolean;
   jobId: string;
-  jobStatus: string;
-  status: string;
+  jobStatus:
+    'analyzing' | 'ready' | 'committing' | 'completed' | 'failed' | 'undone';
+  status:
+    | 'pending'
+    | 'exchanging'
+    | 'connected'
+    | 'analyzing'
+    | 'completed'
+    | 'canceled'
+    | 'failed';
   workspaceName: string | null;
 };
 
@@ -198,11 +207,12 @@ export function createNotionImportApi({
       }
       if (
         value.status === 'mapping-required' &&
-        Array.isArray(value.mappingRequests)
+        Array.isArray(value.mappingRequests) &&
+        value.mappingRequests.every(isNotionFieldMappingRequest)
       ) {
         return {
           candidateCount: value.candidateCount,
-          mappingRequests: value.mappingRequests as NotionFieldMappingRequest[],
+          mappingRequests: value.mappingRequests,
           requestCount: value.requestCount,
           status: value.status,
         };
@@ -263,8 +273,8 @@ export function createNotionImportApi({
         typeof value.connectionId !== 'string' ||
         typeof value.includePageUrls !== 'boolean' ||
         typeof value.jobId !== 'string' ||
-        typeof value.jobStatus !== 'string' ||
-        typeof value.status !== 'string' ||
+        !isNotionJobStatus(value.jobStatus) ||
+        !isNotionConnectionStatus(value.status) ||
         !(
           value.workspaceName === null ||
           typeof value.workspaceName === 'string'
@@ -276,6 +286,69 @@ export function createNotionImportApi({
       return value as NotionConnectionStatus;
     },
   };
+}
+
+function isNotionFieldMappingRequest(
+  value: unknown
+): value is NotionFieldMappingRequest {
+  if (
+    !isRecord(value) ||
+    typeof value.dataSourceId !== 'string' ||
+    typeof value.dataSourceName !== 'string' ||
+    typeof value.suggestedUrlPropertyId !== 'string' ||
+    !Array.isArray(value.fields) ||
+    value.fields.length === 0
+  ) {
+    return false;
+  }
+
+  const fieldsAreValid = value.fields.every(
+    (field) =>
+      isRecord(field) &&
+      typeof field.id === 'string' &&
+      typeof field.name === 'string' &&
+      (field.type === 'url' || field.type === 'rich_text')
+  );
+
+  return (
+    fieldsAreValid &&
+    value.fields.some(
+      (field) => isRecord(field) && field.id === value.suggestedUrlPropertyId
+    )
+  );
+}
+
+function isNotionConnectionStatus(
+  value: unknown
+): value is NotionConnectionStatus['status'] {
+  return (
+    typeof value === 'string' &&
+    [
+      'pending',
+      'exchanging',
+      'connected',
+      'analyzing',
+      'completed',
+      'canceled',
+      'failed',
+    ].includes(value)
+  );
+}
+
+function isNotionJobStatus(
+  value: unknown
+): value is NotionConnectionStatus['jobStatus'] {
+  return (
+    typeof value === 'string' &&
+    [
+      'analyzing',
+      'ready',
+      'committing',
+      'completed',
+      'failed',
+      'undone',
+    ].includes(value)
+  );
 }
 
 function readFailureReason(value: unknown): NotionImportApiFailureReason {

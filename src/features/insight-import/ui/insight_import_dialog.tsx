@@ -52,8 +52,10 @@ export type InsightImportDialogProps = {
   onOpenChange: (open: boolean) => void;
   open: boolean;
   initialNotionConnectionId?: string | null;
+  initialNotionError?: 'access-denied' | null;
   notionApi?: NotionImportApi;
   notionCallback?: NotionImportCallback;
+  onNotionConnectionFinished?: () => void;
   notionOpenWeb?: (authorizeUrl: string) => void;
   service?: InsightImportService;
 };
@@ -65,9 +67,11 @@ export function InsightImportDialog({
   onOpenChange,
   open,
   initialNotionConnectionId = null,
+  initialNotionError = null,
   notionApi,
   notionCallback,
   notionOpenWeb,
+  onNotionConnectionFinished,
   service,
 }: InsightImportDialogProps) {
   const importService = useMemo(
@@ -92,12 +96,14 @@ export function InsightImportDialog({
     api: resolvedNotionApi,
     callback: resolvedNotionCallback,
     initialConnectionId: initialNotionConnectionId,
+    initialError: initialNotionError,
+    onConnectionFinished: onNotionConnectionFinished,
     onPrepared: controller.loadPrepared,
     openWeb: notionOpenWeb,
   });
   const [sourceSelected, setSourceSelected] = useState<
     'file' | 'notion' | 'paste' | null
-  >(initialNotionConnectionId ? 'notion' : null);
+  >(initialNotionConnectionId || initialNotionError ? 'notion' : null);
   const [includeNotionPageUrls, setIncludeNotionPageUrls] = useState(false);
   const [pastedText, setPastedText] = useState('');
   const [undoConfirming, setUndoConfirming] = useState(false);
@@ -534,11 +540,11 @@ function NotionFieldMappingForm({
 
         return (
           <fieldset key={request.dataSourceId}>
-            <legend>Notion 데이터베이스 {request.dataSourceId}</legend>
+            <legend>Notion 데이터베이스 · {request.dataSourceName}</legend>
             <label>
               URL 필드
               <Select
-                aria-label={`${request.dataSourceId} URL 필드`}
+                aria-label={`${request.dataSourceName} URL 필드`}
                 onValueChange={(value) => updateMapping('urlPropertyId', value)}
                 options={options}
                 value={mapping.urlPropertyId}
@@ -547,7 +553,7 @@ function NotionFieldMappingForm({
             <label>
               제목 필드
               <Select
-                aria-label={`${request.dataSourceId} 제목 필드`}
+                aria-label={`${request.dataSourceName} 제목 필드`}
                 onValueChange={(value) =>
                   updateMapping('titlePropertyId', value)
                 }
@@ -558,7 +564,7 @@ function NotionFieldMappingForm({
             <label>
               메모 필드
               <Select
-                aria-label={`${request.dataSourceId} 메모 필드`}
+                aria-label={`${request.dataSourceName} 메모 필드`}
                 onValueChange={(value) =>
                   updateMapping('memoPropertyId', value)
                 }

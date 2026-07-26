@@ -19,6 +19,8 @@ export type UseNotionImportOptions = {
   api?: NotionImportApi;
   callback?: NotionImportCallback;
   initialConnectionId?: string | null;
+  initialError?: 'access-denied' | null;
+  onConnectionFinished?: () => void;
   onPrepared(prepared: PreparedImport): void;
   openWeb?: (authorizeUrl: string) => void;
 };
@@ -28,6 +30,8 @@ export function useNotionImport({
   api = createNotionImportApi(),
   callback,
   initialConnectionId = null,
+  initialError = null,
+  onConnectionFinished = noop,
   onPrepared,
   openWeb = (authorizeUrl) => window.location.assign(authorizeUrl),
 }: UseNotionImportOptions) {
@@ -44,6 +48,7 @@ export function useNotionImport({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | undefined>(undefined);
   const activeConnectionRef = useRef<string | null>(initialConnectionId);
+  const initialCallbackHandledRef = useRef(false);
 
   const abortCurrent = useCallback(() => {
     abortControllerRef.current?.abort();
@@ -121,6 +126,16 @@ export function useNotionImport({
           return;
         }
         setWorkspaceName(status.workspaceName);
+
+        if (status.status !== 'connected' && status.status !== 'analyzing') {
+          activeConnectionRef.current = null;
+          setConnectionId(null);
+          setStage('error');
+          setErrorMessage(getTerminalStatusMessage(status.status));
+          onConnectionFinished();
+          return;
+        }
+
         await analyze(nextConnectionId, mappings, controller);
       } catch (error) {
         if (controller.signal.aborted) {
@@ -128,15 +143,34 @@ export function useNotionImport({
         }
         setStage('error');
         setErrorMessage(getErrorMessage(error));
+        if (
+          error instanceof NotionImportApiError &&
+          (error.reason === 'not-found' || error.reason === 'reauthorize')
+        ) {
+          activeConnectionRef.current = null;
+          setConnectionId(null);
+          onConnectionFinished();
+        }
       }
     },
-    [abortCurrent, analyze, api]
+    [abortCurrent, analyze, api, onConnectionFinished]
   );
 
   useEffect(() => {
     let active = true;
 
-    if (initialConnectionId) {
+    if (
+      initialError === 'access-denied' &&
+      !initialCallbackHandledRef.current
+    ) {
+      initialCallbackHandledRef.current = true;
+      activeConnectionRef.current = null;
+      setConnectionId(null);
+      setStage('error');
+      setErrorMessage('Notion 연결이 승인되지 않았어요. 다시 연결해 주세요.');
+      onConnectionFinished();
+    } else if (initialConnectionId && !initialCallbackHandledRef.current) {
+      initialCallbackHandledRef.current = true;
       queueMicrotask(() => {
         if (active) {
           void resume(initialConnectionId);
@@ -148,7 +182,13 @@ export function useNotionImport({
       active = false;
       abortCurrent();
     };
-  }, [abortCurrent, initialConnectionId, resume]);
+  }, [
+    abortCurrent,
+    initialConnectionId,
+    initialError,
+    onConnectionFinished,
+    resume,
+  ]);
 
   useEffect(
     () => callback?.subscribe((id) => void resume(id)),
@@ -181,6 +221,7 @@ export function useNotionImport({
       activeConnectionRef.current = null;
       setConnectionId(null);
       setStage('idle');
+      onConnectionFinished();
     },
 
     async complete() {
@@ -200,6 +241,10 @@ export function useNotionImport({
         setErrorMessage(
           '가져오기는 완료됐고 연결 해제는 자동으로 다시 시도합니다.'
         );
+      } finally {
+        activeConnectionRef.current = null;
+        setConnectionId(null);
+        onConnectionFinished();
       }
     },
 
@@ -245,6 +290,18 @@ export function useNotionImport({
   };
 }
 
+function getTerminalStatusMessage(status: string) {
+  if (status === 'completed') {
+    return '이미 완료된 Notion 가져오기예요.';
+  }
+
+  if (status === 'canceled') {
+    return '취소된 Notion 연결이에요. 다시 연결해 주세요.';
+  }
+
+  return '완료되지 않은 Notion 연결이에요. 다시 연결해 주세요.';
+}
+
 function getErrorMessage(error: unknown) {
   if (error instanceof NotionImportApiError && error.reason === 'reauthorize') {
     return 'Notion 연결이 만료되었어요. 다시 연결해 주세요.';
@@ -273,3 +330,5 @@ function wait(milliseconds: number, signal: AbortSignal) {
     );
   });
 }
+
+function noop() {}

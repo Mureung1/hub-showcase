@@ -16,6 +16,7 @@ const URL_BLOCK_TYPES = new Set(['bookmark', 'embed', 'link_preview']);
 
 export type NotionFieldMappingRequest = {
   dataSourceId: string;
+  dataSourceName: string;
   fields: Array<{
     id: string;
     name: string;
@@ -37,11 +38,26 @@ export type NotionCandidateExtractionInput = {
   includePageUrls: boolean;
   mappings?: NotionFieldMapping[];
   pages: Array<{ collectionPath: string[]; page: unknown }>;
+  propertyItems?: NotionPropertyItem[];
 };
 
 export type NotionCandidateExtractionResult = {
   candidates: ImportCandidate[];
   mappingRequests: NotionFieldMappingRequest[];
+  propertyRequests: NotionPropertyRequest[];
+};
+
+export type NotionPropertyRequest = {
+  collectionPath: string[];
+  explicitMemoCandidate: string | null;
+  pageId: string;
+  propertyId: string;
+  titleCandidate: string | null;
+};
+
+export type NotionPropertyItem = NotionPropertyRequest & {
+  index: number;
+  item: unknown;
 };
 
 export function extractNotionCandidates({
@@ -50,6 +66,7 @@ export function extractNotionCandidates({
   includePageUrls,
   mappings = [],
   pages,
+  propertyItems = [],
 }: NotionCandidateExtractionInput): NotionCandidateExtractionResult {
   const dataSourceById = new Map(
     dataSources
@@ -84,15 +101,25 @@ export function extractNotionCandidates({
   }
 
   if (mappingRequests.length > 0) {
-    return { candidates: [], mappingRequests };
+    return { candidates: [], mappingRequests, propertyRequests: [] };
   }
 
+  const pageResult = extractPageCandidates(
+    pages,
+    inferredMappings,
+    includePageUrls
+  );
   const candidates = [
-    ...extractPageCandidates(pages, inferredMappings, includePageUrls),
+    ...pageResult.candidates,
+    ...extractPropertyItemCandidates(propertyItems),
     ...extractBlockCandidates(blocks),
   ];
 
-  return { candidates, mappingRequests: [] };
+  return {
+    candidates,
+    mappingRequests: [],
+    propertyRequests: pageResult.propertyRequests,
+  };
 }
 
 function extractPageCandidates(
@@ -101,6 +128,7 @@ function extractPageCandidates(
   includePageUrls: boolean
 ) {
   const candidates: ImportCandidate[] = [];
+  const propertyRequests: NotionPropertyRequest[] = [];
 
   for (const { collectionPath, page } of pages) {
     if (!isRecord(page) || typeof page.id !== 'string') {
@@ -123,14 +151,28 @@ function extractPageCandidates(
           findPropertyById(properties, mapping.titlePropertyId)
         ) ?? title;
 
-      appendPropertyCandidates(
-        candidates,
-        page.id,
-        property,
-        normalizedPath,
-        mappedTitle,
-        memo
-      );
+      if (
+        isRecord(property) &&
+        property.type === 'rich_text' &&
+        typeof property.id === 'string'
+      ) {
+        propertyRequests.push({
+          collectionPath: normalizedPath,
+          explicitMemoCandidate: memo,
+          pageId: page.id,
+          propertyId: property.id,
+          titleCandidate: mappedTitle,
+        });
+      } else {
+        appendPropertyCandidates(
+          candidates,
+          page.id,
+          property,
+          normalizedPath,
+          mappedTitle,
+          memo
+        );
+      }
     } else {
       for (const property of Object.values(properties)) {
         if (isRecord(property) && property.type === 'url') {
@@ -160,6 +202,66 @@ function extractPageCandidates(
           titleCandidate: title,
         })
       );
+    }
+  }
+
+  return { candidates, propertyRequests };
+}
+
+function extractPropertyItemCandidates(propertyItems: NotionPropertyItem[]) {
+  const candidates: ImportCandidate[] = [];
+
+  for (const propertyItem of propertyItems) {
+    if (!isRecord(propertyItem.item)) {
+      continue;
+    }
+
+    const richText = propertyItem.item.rich_text;
+    if (!isRecord(richText)) {
+      continue;
+    }
+
+    const baseId = `notion:page:${propertyItem.pageId}:property:${propertyItem.propertyId}:${propertyItem.index}`;
+    const sourceLocation = createSourceLocation(
+      propertyItem.collectionPath,
+      '텍스트 URL 속성'
+    );
+    const href = typeof richText.href === 'string' ? richText.href : null;
+
+    if (href) {
+      candidates.push({
+        ...createCandidate({
+          candidateId: `${baseId}:href`,
+          collectionPath: propertyItem.collectionPath,
+          originalUrl: href,
+          sourceLocation,
+          titleCandidate: propertyItem.titleCandidate,
+        }),
+        explicitMemoCandidate: propertyItem.explicitMemoCandidate,
+      });
+    }
+
+    if (typeof richText.plain_text !== 'string') {
+      continue;
+    }
+
+    for (const [urlIndex, url] of extractHttpUrls(
+      richText.plain_text
+    ).entries()) {
+      if (url === href) {
+        continue;
+      }
+
+      candidates.push({
+        ...createCandidate({
+          candidateId: `${baseId}:text:${urlIndex}`,
+          collectionPath: propertyItem.collectionPath,
+          originalUrl: url,
+          sourceLocation,
+          titleCandidate: propertyItem.titleCandidate,
+        }),
+        explicitMemoCandidate: propertyItem.explicitMemoCandidate,
+      });
     }
   }
 
@@ -331,6 +433,7 @@ function inferDataSourceFields(
     return {
       request: {
         dataSourceId: dataSource.id,
+        dataSourceName: dataSource.name,
         fields: candidates,
         suggestedUrlPropertyId: candidates[0]?.id ?? '',
       } satisfies NotionFieldMappingRequest,
@@ -358,6 +461,7 @@ type ParsedDataSource = {
     type: 'rich_text' | 'url';
   }>;
   id: string;
+  name: string;
 };
 
 function parseDataSource(value: unknown): ParsedDataSource | null {
@@ -387,7 +491,11 @@ function parseDataSource(value: unknown): ParsedDataSource | null {
     });
   }
 
-  return { fields, id: value.id };
+  return {
+    fields,
+    id: value.id,
+    name: readRichText(value.title) ?? '제목 없음',
+  };
 }
 
 function groupPagesByDataSource(

@@ -315,10 +315,50 @@ describe('InsightImportDialog', () => {
       'https://api.notion.com/v1/oauth/authorize'
     );
   });
+
+  it('Notion field mapping에 데이터베이스 이름을 표시한다', async () => {
+    const notionApi = createNotionApi();
+    notionApi.status.mockResolvedValue({
+      connectionId: JOB_ID,
+      includePageUrls: false,
+      jobId: JOB_ID,
+      jobStatus: 'analyzing',
+      status: 'connected',
+      workspaceName: '팀 문서',
+    });
+    notionApi.analyze.mockResolvedValue({
+      candidateCount: 0,
+      mappingRequests: [
+        {
+          dataSourceId: 'data-source-id',
+          dataSourceName: '업무 자료',
+          fields: [
+            { id: 'url-field', name: 'URL', type: 'url' },
+            { id: 'text-field', name: '링크', type: 'rich_text' },
+          ],
+          suggestedUrlPropertyId: 'url-field',
+        },
+      ],
+      requestCount: 2,
+      status: 'mapping-required',
+    });
+
+    renderDialog({
+      initialNotionConnectionId: JOB_ID,
+      notionApi,
+      service: createService(),
+    });
+
+    expect(
+      await screen.findByText('Notion 데이터베이스 · 업무 자료')
+    ).toBeTruthy();
+    expect(screen.queryByText(/data-source-id/)).toBeNull();
+  });
 });
 
 function renderDialog({
   categories = [],
+  initialNotionConnectionId = null,
   onCategoriesChanged = vi.fn(),
   onLibraryChanged = vi.fn(),
   service,
@@ -326,6 +366,7 @@ function renderDialog({
   notionOpenWeb,
 }: {
   categories?: readonly Category[];
+  initialNotionConnectionId?: string | null;
   onCategoriesChanged?: () => void | Promise<void>;
   onLibraryChanged?: () => void | Promise<void>;
   service: ReturnType<typeof createService>;
@@ -336,6 +377,7 @@ function renderDialog({
     <DesignSystemProvider>
       <InsightImportDialog
         categories={categories}
+        initialNotionConnectionId={initialNotionConnectionId}
         onCategoriesChanged={onCategoriesChanged}
         onLibraryChanged={onLibraryChanged}
         onOpenChange={vi.fn()}

@@ -15,6 +15,7 @@ const NOW = new Date('2026-07-25T00:00:00.000Z');
 const INITIAL_CURSOR: NotionAnalysisCursor = {
   blockQueue: [],
   dataSourceQueue: [],
+  propertyQueue: [],
   searchCursor: null,
   stage: 'search',
   visitedBlockIds: [],
@@ -128,6 +129,7 @@ describe('NotionImportService', () => {
       cursor: { ...INITIAL_CURSOR, stage: 'complete' },
       dataSources: [],
       pages: [],
+      properties: [],
       requestCount: 2,
     });
     dependencies.userStore.finalize.mockResolvedValueOnce({
@@ -155,6 +157,78 @@ describe('NotionImportService', () => {
       requestCount: 2,
       status: 'ready',
     });
+  });
+
+  it('rich_text URL 속성 조회가 남으면 완료하지 않고 cursor에 예약한다', async () => {
+    const dependencies = createDependencies();
+    dependencies.runAnalysisSlice.mockResolvedValueOnce({
+      blocks: [],
+      cursor: { ...INITIAL_CURSOR, stage: 'complete' },
+      dataSources: [
+        {
+          id: 'data-source-id',
+          properties: {
+            링크: {
+              id: 'url-property',
+              name: '링크',
+              type: 'rich_text',
+            },
+          },
+          title: [{ plain_text: '업무 자료' }],
+        },
+      ],
+      pages: [
+        {
+          collectionPath: ['업무 자료'],
+          page: {
+            id: 'page-id',
+            object: 'page',
+            parent: {
+              data_source_id: 'data-source-id',
+              type: 'data_source_id',
+            },
+            properties: {
+              링크: {
+                id: 'url-property',
+                rich_text: [{ plain_text: 'https://example.com/embedded' }],
+                type: 'rich_text',
+              },
+            },
+          },
+        },
+      ],
+      properties: [],
+      requestCount: 2,
+    });
+    dependencies.userStore.appendItems.mockResolvedValueOnce({
+      candidateCount: 0,
+    });
+    const service = createNotionImportService(dependencies);
+
+    const result = await service.analyze('access-token', CONNECTION_ID, [
+      {
+        dataSourceId: 'data-source-id',
+        memoPropertyId: null,
+        titlePropertyId: null,
+        urlPropertyId: 'url-property',
+      },
+    ]);
+
+    expect(dependencies.userStore.appendItems).toHaveBeenCalledWith(
+      'access-token',
+      CONNECTION_ID,
+      [],
+      expect.objectContaining({
+        propertyQueue: [
+          expect.objectContaining({
+            pageId: 'page-id',
+            propertyId: 'url-property',
+          }),
+        ],
+      })
+    );
+    expect(dependencies.userStore.finalize).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ status: 'analyzing' });
   });
 
   it('reload 시 이미 ready인 작업은 Provider 재호출 없이 준비 결과를 복원한다', async () => {

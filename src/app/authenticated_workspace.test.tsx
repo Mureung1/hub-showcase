@@ -161,6 +161,40 @@ describe('AuthenticatedWorkspace', () => {
     window.history.replaceState(null, '', '/');
   });
 
+  it('거절된 Notion callback을 안내하고 URL에서 일회성 query를 제거한다', async () => {
+    const connectionId = '10000000-0000-4000-8000-000000000098';
+    window.history.replaceState(
+      null,
+      '',
+      `/?tab=home&import=notion&connection=${connectionId}&error=access-denied`
+    );
+    const notionApi = {
+      analyze: vi.fn<NotionImportApi['analyze']>(),
+      cancel: vi.fn<NotionImportApi['cancel']>(),
+      complete: vi.fn<NotionImportApi['complete']>(),
+      start: vi.fn<NotionImportApi['start']>(),
+      status: vi.fn<NotionImportApi['status']>(),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          importService={createImportService()}
+          notionImportApi={notionApi}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      await screen.findByText(
+        'Notion 연결이 승인되지 않았어요. 다시 연결해 주세요.'
+      )
+    ).toBeTruthy();
+    expect(notionApi.status).not.toHaveBeenCalled();
+    expect(window.location.search).toBe('?tab=home');
+  });
+
   it('가져오기 완료 뒤 인사이트와 분류를 재조회해 보관함과 꺼내보기에 반영한다', async () => {
     const user = userEvent.setup();
     const importedCategory = createCategory({
