@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from test_database import alembic_config
 
+import localtwin_api.nearby_search as nearby_search
 from alembic import command
 from localtwin_api.config import Settings
 from localtwin_api.database import create_database_engine, create_session_factory
@@ -233,6 +234,42 @@ def test_nearby_query_maps_product_categories_to_official_category_names(
     assert response.status_code == 200
     assert response.json()["same_category_count"] == 1
     assert response.json()["category_coverage"]["status"] == "full"
+
+
+def test_nearby_query_limits_the_selected_category_after_filtering(
+    nearby_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(nearby_search, "MAX_RETURNED_STORES", 1)
+
+    response = nearby_client.get(
+        "/api/v1/stores/nearby",
+        params={
+            "longitude": CENTER_LONGITUDE,
+            "latitude": CENTER_LATITUDE,
+            "radius": 300,
+            "category": "베이커리",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert [store["id"] for store in payload["stores"]] == ["S2"]
+    assert payload["returned_count"] == 1
+    assert payload["truncated"] is False
+
+    truncated_response = nearby_client.get(
+        "/api/v1/stores/nearby",
+        params={
+            "longitude": CENTER_LONGITUDE,
+            "latitude": CENTER_LATITUDE,
+            "radius": 300,
+            "category": "카페",
+        },
+    )
+
+    assert truncated_response.status_code == 200
+    assert truncated_response.json()["returned_count"] == 1
+    assert truncated_response.json()["truncated"] is True
 
 
 def test_nearby_query_marks_a_specific_store_category_as_partial(

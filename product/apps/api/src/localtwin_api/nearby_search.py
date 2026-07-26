@@ -369,7 +369,7 @@ class NearbyStoreRepository:
             same_category_count=same_category_count,
             category_counts=dict(sorted(category_counter.items())),
             returned_count=len(stores),
-            truncated=len(display_candidates) > len(stores),
+            truncated=len(display_candidates) > len(returned),
             stores=stores,
             evidence=[
                 NearbyEvidence(
