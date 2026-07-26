@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 export const PROMPT_VERSION = "lv2-v1";
-export const LV3_PROMPT_VERSION = "lv3-memory-v2";
+export const LV3_PROMPT_VERSION = "lv3-memory-v3";
 export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 export const GEMINI_TIMEOUT_MS = 2_000;
 export const MAX_MICROTASK_CHARS = 60;
@@ -17,6 +17,22 @@ const REASON_LABELS: Record<GeminiMicrotaskInput["reason"], string> = {
   dislike: "이 할일 자체가 하기 싫음",
   temptation: "눈앞의 유혹 때문에 시작하기 어려움",
   custom: "직접 입력한 이유",
+};
+
+// Lv3에서 회피 이유별로 "어떤 결의 행동을 제안할지" 전략을 프롬프트에 명시한다.
+// 이유가 달라져도 비슷한 행동만 나오던 문제(추천 차이가 안 드러남)를 해결하기 위함.
+// temptation은 "방해 요소 제거 → 실제 행동" 2박자를 행동 문장에 넣으면 복수 행동
+// 금지 규칙(LV3_CHAINED_ACTION_PATTERN)에 걸리므로, 준비 동작은 문장에서 빼고
+// "방해 제거" 넛지는 프론트 안내 문구(nudgeMessages.js)에서 별도로 전달한다(Phase B).
+const LV3_REASON_STRATEGIES: Record<GeminiMicrotaskInput["reason"], string> = {
+  overwhelm:
+    "회피 이유가 막막함이므로, previousProposal이나 원래 할 일의 범위를 더 잘게 쪼갠, 지금 당장 손댈 수 있는 가장 작은 단위의 행동을 제안하세요.",
+  dislike:
+    "회피 이유가 하기 싫음이므로, 부담이 가장 적고 가장 쉬운 부분에서 작은 결과물부터 만드는 행동을 제안하세요.",
+  temptation:
+    "회피 이유가 눈앞의 유혹이므로, 방해 요소를 치우라는 준비 동작은 문장에 넣지 말고, 지금 자리에서 바로 끝낼 수 있는 아주 짧은 단일 행동을 제안하세요.",
+  custom:
+    "회피 이유가 사용자가 직접 입력한 경우이므로, 완성도 부담을 낮춰 임시 초안이나 대충 만든 첫 버전 수준의 행동을 제안하세요.",
 };
 
 export interface GeminiMicrotaskInput {
@@ -282,6 +298,7 @@ function buildLv3Prompt(input: GeminiLv3MicrotaskInput): string {
     "reasonChanged가 true이면 previousProposal을 단순 축소하지 말고, 현재 회피 이유를 낮추는 다른 접근의 행동을 만드세요.",
     "reasonChanged가 null이면 현재 회피 이유를 우선하고 previousProposal은 참고만 하세요.",
     "pastRecord가 null이어도 현재 할 일과 previousProposal만으로 행동을 반드시 제안하세요.",
+    LV3_REASON_STRATEGIES[input.reason],
     "1~5분 안에 끝나고 완료 여부가 분명하며 작은 결과물이 남는 행동을 정확히 하나 제안하세요.",
     "열기, 읽기, 보기, 확인하기, 표시하기, 생각하기, 시작하기만 하고 끝내지 마세요.",
     "준비 동작을 함께 쓰지 말고, 결과물을 남기는 마지막 핵심 행동 하나만 표현하세요.",

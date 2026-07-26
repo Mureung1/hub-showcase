@@ -430,6 +430,42 @@ describe("generateGeminiMicrotask", () => {
     expect(body.input).toContain("쓰기, 써보기, 적기");
     expect(body.input).toContain("피하기: 표를 채우기");
     expect(body.input).toContain("권장: 표의 첫 행에 값 하나 입력하기");
+    // reason=overwhelm 전략이 프롬프트에 실제로 들어간다.
+    expect(body.input).toContain("회피 이유가 막막함이므로");
+  });
+
+  it.each([
+    ["overwhelm", null, "회피 이유가 막막함이므로"],
+    ["dislike", null, "회피 이유가 하기 싫음이므로"],
+    ["temptation", null, "회피 이유가 눈앞의 유혹이므로"],
+    ["custom", "완벽하게 하고 싶어서", "회피 이유가 사용자가 직접 입력한 경우이므로"],
+  ])(
+    "Lv3 프롬프트에 reason=%s 전략 문구가 정확히 들어간다",
+    async (reason, customReason, expectedStrategy) => {
+      const fetchMock = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValue(geminiResponse("목차 첫 항목 한 줄 쓰기"));
+
+      await generateGeminiLv3Microtask({
+        ...LV3_INPUT,
+        reason: reason as GeminiLv3MicrotaskInput["reason"],
+        customReason,
+      });
+
+      const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+      expect(body.input).toContain(expectedStrategy);
+    },
+  );
+
+  it("temptation 전략은 방해 제거 준비 동작을 문장에 넣지 말라고 명시한다 (검증 충돌 방지)", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(geminiResponse("첫 문장 한 줄 쓰기"));
+
+    await generateGeminiLv3Microtask({ ...LV3_INPUT, reason: "temptation" });
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.input).toContain("방해 요소를 치우라는 준비 동작은 문장에 넣지 말고");
   });
 
   it.each([
