@@ -6,18 +6,15 @@ import 'package:one_step/repositories/decompose/quest_templates.dart';
 
 void main() {
   group('FakeQuestDecomposer — success (데모 모드)', () {
-    test('비어있지 않고 모든 draft의 난이도가 유효하다', () async {
+    test('어떤 목표든 비어있지 않은 초안을 돌려준다', () async {
       final ai = FakeQuestDecomposer();
 
       final drafts = await ai.decompose('무언가 도전하기');
 
       expect(drafts, isNotEmpty);
-      // parseStrict를 통과한 것만 나오므로 난이도는 항상 유효하지만,
-      // 회귀 방지를 위해 명시적으로 단언한다.
-      expect(
-        drafts.every((d) => Difficulty.values.contains(d.difficulty)),
-        isTrue,
-      );
+      // (난이도 유효성 단언은 삭제했다 — difficulty가 enum 타입이라 타입상 항상 참이다.
+      //  "3종 밖 난이도가 결과에 새어 나오지 않는다"는 아래 difficultyPollution ·
+      //  missingField 테스트가 실제 값으로 지킨다.)
     });
 
     test('목표 키워드로 유형이 매칭된다 (공모전 지원하기 → 공모전 유형)', () async {

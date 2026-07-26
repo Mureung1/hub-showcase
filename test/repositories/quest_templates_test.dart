@@ -38,10 +38,20 @@ void main() {
         for (var i = 0; i < drafts.length; i++) {
           expect(drafts[i].order, i, reason: '${entry.key}: order는 0..n 연속이어야 한다');
         }
-        // 난이도는 항상 유효 enum.
+        // (여기 있던 `every(Difficulty.values.contains)`는 삭제했다 — difficulty가
+        //  enum 타입이라 타입상 항상 참이라 어떤 회귀도 못 잡는다.)
+        // 대신 실패할 수 있는 것을 본다: 템플릿의 난이도 배분 원칙
+        //  (quest_templates.dart 문서 주석 — 첫 스텝은 부담 없는 easy, 이후 난이도가
+        //   올라간다)이 실제로 지켜지는지.
         expect(
-          drafts.every((d) => Difficulty.values.contains(d.difficulty)),
-          isTrue,
+          drafts.first.difficulty,
+          Difficulty.easy,
+          reason: '${entry.key}: 폴백의 첫 칸이 무거우면 "시작 부담 완화" 목적이 깨진다',
+        );
+        expect(
+          drafts.map((d) => d.difficulty).toSet().length,
+          greaterThanOrEqualTo(2),
+          reason: '${entry.key}: 전부 같은 난이도면 난이도 분류가 의미를 잃는다',
         );
       });
     }
