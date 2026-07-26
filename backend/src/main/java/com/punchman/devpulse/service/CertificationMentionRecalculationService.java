@@ -4,6 +4,7 @@ import com.punchman.devpulse.domain.Certification;
 import com.punchman.devpulse.domain.CertificationMention;
 import com.punchman.devpulse.domain.JobPosting;
 import com.punchman.devpulse.normalizer.CertificationTextMatcher;
+import com.punchman.devpulse.normalizer.CertificationTextMatcher.MentionField;
 import com.punchman.devpulse.repository.jpa.CertificationMentionRepository;
 import com.punchman.devpulse.repository.jpa.CertificationRepository;
 import com.punchman.devpulse.repository.jpa.JobPostingRepository;
@@ -19,6 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
  * job_posting 원문에서 자격증 언급 여부를 룰 기반(단순 contains)으로 재계산해
  * certification_mention을 덮어쓴다. 시드값 위에 누적하지 않는다 — total_posting_count는
  * "실제 수집된 공고 수"라는 의미라서 가짜 시드와 섞이면 분모 자체가 거짓이 된다.
+ *
+ * essential/preferred 카운트는 공고 단위 문맥(자격요건 vs 우대사항) 분류다.
+ * CertificationRankingService의 EmphasisLevel(언급률 임계치 기반, 전혀 다른 축)은 이번 변경과
+ * 무관 — 랭킹 API 통합은 다음 슬라이스로 명시적으로 미룬다.
  */
 @Service
 @RequiredArgsConstructor
@@ -41,12 +46,19 @@ public class CertificationMentionRecalculationService {
                 .collect(Collectors.toMap(m -> m.getCertification().getId(), Function.identity()));
 
         for (Certification certification : certificationRepository.findAll()) {
-            int mentionCount = (int) postings.stream()
-                    .filter(posting -> CertificationTextMatcher.mentions(
-                            certification.getName(),
-                            posting.getApplicationQualification(),
-                            posting.getPreferenceDetail()))
-                    .count();
+            int essentialCount = 0;
+            int preferredCount = 0;
+            for (JobPosting posting : postings) {
+                MentionField field = CertificationTextMatcher.classify(
+                        certification.getName(),
+                        posting.getApplicationQualification(),
+                        posting.getPreferenceDetail());
+                if (field == MentionField.QUALIFICATION) {
+                    essentialCount++;
+                } else if (field == MentionField.PREFERENCE) {
+                    preferredCount++;
+                }
+            }
 
             CertificationMention mention = existingByCertificationId.get(certification.getId());
             if (mention == null) {
@@ -56,7 +68,9 @@ public class CertificationMentionRecalculationService {
                         .build();
             }
             mention.setTotalPostingCount(total);
-            mention.setMentionCount(mentionCount);
+            mention.setMentionCount(essentialCount + preferredCount);
+            mention.setEssentialMentionCount(essentialCount);
+            mention.setPreferredMentionCount(preferredCount);
             certificationMentionRepository.save(mention);
         }
     }

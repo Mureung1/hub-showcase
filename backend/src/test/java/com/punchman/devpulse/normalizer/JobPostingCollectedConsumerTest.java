@@ -92,6 +92,10 @@ class JobPostingCollectedConsumerTest {
                     .filter(m -> sqldId.equals(m.getCertification().getId()))
                     .findFirst().orElseThrow();
             assertThat(sqld.getMentionCount()).isEqualTo(1);
+            // 이벤트의 SQLD는 preferenceDetail("SQLD 자격증 소지자 우대")에만 있고
+            // applicationQualification("응시자격 원문")엔 없음 — 우대 문맥으로 분류돼야 한다.
+            assertThat(sqld.getEssentialMentionCount()).isEqualTo(0);
+            assertThat(sqld.getPreferredMentionCount()).isEqualTo(1);
 
             long zeroMentionCount = mentions.stream()
                     .filter(m -> !sqldId.equals(m.getCertification().getId()))

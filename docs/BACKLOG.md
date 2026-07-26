@@ -338,6 +338,37 @@ Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInqui
 
 ---
 
+## Issue 13. 강조도(필수/우대) 문맥 분류 고도화
+
+**요구사항**
+기획서_v1.md 기능1 / Wiki_Home.md FR-2: "필수"/"우대"/"있으면 좋음" 강조도를 문맥 기반으로 분류. Issue 12까지의 `CertificationTextMatcher`는 자격증 언급 여부만 카운트하고 어느 문맥(자격요건 vs 우대사항)에서 매칭됐는지는 버리고 있었음.
+
+**범위 결정 — planner 검토 + 사용자 확인(AskUserQuestion)**
+- ALIO가 이미 `aplyQlfcCn`(자격요건)/`prefCn`(우대사항)을 분리해 내려주므로, 자유 텍스트에서 "필수"/"우대" 키워드를 다시 찾는 것보다 이 필드 구조 자체를 신호로 쓰는 게 더 신뢰도 높음(구조적으로 이미 라벨링된 데이터)
+- **중요 — 기존 `EmphasisLevel`(`CertificationRankingService`)과는 다른 축**: `EmphasisLevel`은 언급률(mentionCount/totalPostingCount) 임계치 기반이고, 이번에 만드는 건 공고 단위 문맥(자격요건란에 적혔는지 우대사항란에 적혔는지) 기반 — 이름도 겹치는 라벨(ESSENTIAL/PREFERRED)을 피해 `MentionField`(QUALIFICATION/PREFERENCE/NONE)로 명명. Issue 8이 애초에 "언급률 기반 EmphasisLevel은 FR-2 원시 데이터가 생기기 전까지의 대체 지표"라고 문서화해뒀던 것과 일치 — 랭킹 API/`EmphasisLevel` 통합은 이번 스코프가 아니고 다음 슬라이스로 명시적으로 미룸
+- DB 저장 여부(스키마 변경 동반)는 사용자에게 직접 확인받음 — "지금 저장"으로 확정(`V5` 마이그레이션). `CertificationMentionMapper`가 명시적 컬럼 SELECT라 순수 additive라 기존 랭킹 쿼리엔 영향 없음을 사전 확인
+
+**작업 단계**
+- [x] `V5__certification_mention_context.sql` — `certification_mention`에 `essential_mention_count`/`preferred_mention_count`(`NOT NULL DEFAULT 0`) 추가
+- [x] `CertificationMention` 엔티티에 두 필드 추가(`@Builder.Default = 0`)
+- [x] `CertificationTextMatcher.classify(name, qualificationText, preferenceText)` 신규 — `MentionField`(QUALIFICATION/PREFERENCE/NONE) 반환. 양쪽 다 매칭되면 QUALIFICATION 우선(essential+preferred가 항상 mentionCount와 정확히 같아지도록 이중 집계 방지). 기존 `mentions()`는 하위 호환용으로 그대로 유지
+- [x] `CertificationMentionRecalculationService.recalculate()` 리팩터링 — `classify()`로 essential/preferred를 같은 순회에서 함께 계산·저장, `mentionCount = essentialCount + preferredCount`
+- [x] `CertificationTextMatcherTest`에 `classify()` 테스트 6종(자격요건만/우대사항만/양쪽 매칭 시 우선순위/둘 다 미매칭/blank 자격증명/null 텍스트) 추가
+- [x] `JobPostingCollectedConsumerTest`에 essential/preferred 단언 추가(SQLD는 preferenceDetail에만 있어 PREFERENCE로 분류돼야 함)
+
+**완료 기준**
+- [x] `./gradlew test --rerun-tasks` 전체 58개 통과(기존 52 + classify 6종)
+- [x] `essential_mention_count + preferred_mention_count == mention_count` 불변식이 코드 구조상 항상 성립함을 확인 — 실측으로도 재검증("안전" 재수집 후 7개 자격증 행 전부 성립)
+- [x] `GET /api/certification?jobTitle=` 응답 계약 무변경 확인(essential/preferred 필드 미노출) — `CertificationMentionMapper` SELECT가 명시적 컬럼 나열이라 새 컬럼과 무관함을 코드로 재확인
+- [x] `CertificationRankingService`/`EmphasisLevel`/`CertificationMentionMapper`/`CertificationRankingController` 전혀 미변경 확인(git diff)
+- [x] verifier 서브에이전트 검증 — Blocker/Warning 없음
+
+**이번엔 하지 않은 것**
+- 랭킹 API에 essential/preferred 가중합 반영 통합(다음 슬라이스, `EmphasisLevel`을 언급률 대신 문맥 가중합 기반으로 재설계할지는 별도 판단 필요)
+- "있으면 좋음"(3단계 강조도) 분류 — 지금은 필수/우대 2단계만, ALIO 필드가 2개뿐이라 3단계째는 근거 데이터가 없음
+
+---
+
 ## 백로그 (다음 슬라이스 이후, 우선순위순)
 
 | Task | 설명 | 우선순위 | 예상 시점 | 상태 |
@@ -345,7 +376,7 @@ Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInqui
 | ALIO Collector | Feign 클라이언트, 채용공고 실제 수집 + Kafka 프로듀서/컨슈머 원문 저장. **주의**: MyBatis 집계 쿼리가 `total_posting_count=0`일 때 division-by-zero(500)를 던짐 — 실 데이터 수집 전 방어 로직 필요 (Issue 8 참고) | P0 | - | Done (Issue 11) |
 | `recrutPbancTtl` 검색 파라미터 재확인 | 원인 규명 완료 — ALIO 검색 폼이 요구하는 15개 필드 중 9개를 키째로 누락해서 발생. `AlioJobPostingCollectorService`에 반영 완료, 실제 공고 41건 수집 검증 | P0 | - | Done (Issue 11) |
 | 자격증 정규화 에이전트 | 룰 기반 1차 매칭 + 애매 항목 LLM 배치 정규화, `JobPostingCollectedConsumer`(Issue 11)의 `preferenceDetail`(prefCn 원문) 파싱 + 전용 DTO 정의 | P0 | 다음 슬라이스 | Todo |
-| 강조도 분류 (필수/우대/낮음) | 문맥 기반 분류 로직으로 고도화 (현재는 단순 규칙) | P1 | 다음 슬라이스 | Todo |
+| 강조도 분류 (필수/우대) | 문맥 기반(자격요건 vs 우대사항 필드) 분류 로직 구현, `certification_mention`에 essential/preferred 카운트 저장 | P1 | - | Done (Issue 13) |
 | MyBatis 집계 쿼리 | 언급 빈도·강조도 join 집계 → 랭킹 | P1 | - | Done (Issue 8) |
 | Kafka 파이프라인 분리 | `jobposting.collected` 토픽·컨슈머 뼈대, docker-compose 인프라 | P1 | - | Done (Issue 10) |
 | Java 그래프 알고리즘 (경로 최적화) | 선수조건 그래프 구성, 위상정렬, 순환탐지 | P1 | - | Done (Issue 6) |
@@ -353,6 +384,7 @@ Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInqui
 | Issue 7. 경로 최적화 DB/서비스/API 연동 | `certification_prerequisite` 테이블, 엔티티, `CertificationPathService`, `CertificationPathController` — pathfinder 결과를 실제 DB 데이터와 연결. 완성되면 Issue 9의 `target_date`를 경로 기반 스케줄과 연동 검토 | P1 | 다음 슬라이스 | Todo |
 | `CertificationMentionMapperTest` 시드 픽스처 충돌 근본 해결 | "반도체 품질관리"/"전산직" job_title이 V2 시드 픽스처이면서 동시에 NCS 코드 기반 실제 수집 대상이라 실수집할 때마다 테스트가 깨짐(Issue 12에서 반복 확인) — 전용 픽스처 job_title(`테스트직무-mention랭킹A/B`)로 분리, 실수집 재현 후에도 테스트 통과 확인 | P0 | - | Done |
 | ALIO 수집 결과 job_title 회귀 테스트 | Issue 12의 NCS 코드 전환 경로(`AlioJobTitleNcsMapping`, `searchByNcsCodes` 병합·중복제거)에 대한 JUnit 테스트 — 이번 슬라이스는 데이터 양 확보 우선으로 명시적으로 미룸 | P1 | 다음 슬라이스 | Todo |
+| 랭킹 API에 essential/preferred 가중합 반영 | Issue 13에서 저장만 해둔 문맥 기반 강조도(essential/preferred)를 `CertificationRankingService`의 `EmphasisLevel`(언급률 임계치 기반)과 통합할지 재설계 — 정규화(가중합/total_posting_count) 방식부터 다시 정해야 하는 별도 설계 결정이라 의도적으로 분리 | P1 | 다음 슬라이스 | Todo |
 | 랭킹 API에 certificationId 추가 | `CertificationRankingResponse`에 id 노출 — 랭킹 카드 → 진행 상황 크로스탭 "추적하기" 연동의 선행 조건 (Issue 9에서 범위 밖으로 분리) | P2 | 추후 | Todo |
 | 컨슈머 재시도/DLQ 정책 | `JobPostingCollectedConsumer` 에러 핸들링 — 실제 메시지 스키마 확정 후 설계 (Issue 10에서 범위 밖으로 분리) | P2 | 추후 | Todo |
 | 통합 테스트 · 예외처리 고도화 | 전체 파이프라인 e2e 확인 | P2 | 추후 | Todo |
