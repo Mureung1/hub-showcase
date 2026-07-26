@@ -34,23 +34,16 @@
 ### 5. 반환 (엔티티 노출 금지)
 
 - 서비스는 **응답 DTO**를 반환한다. 엔티티를 컨트롤러로 직접 내보내지 않는다.
-- 엔티티 → DTO 변환은 DTO의 정적 팩
+- 엔티티 → DTO 변환은 DTO의 정적 팩토리 `from()`이 소유한다.
     - 예: `ParkingLotDetailResponse.from(parkingLot)`
 
-### 6. 스케줄링
+### 6. 상수
 
-- 주기 작업은 **서비스 메서드에 `@Scheduled`** 를 직접 붙인다.
-    - 예: `@Scheduled(cron = DAILY_
-- 다중 인스턴스 중복 실행 방지나 스케줄 로직 확장이 필요해지면 **별도 스케줄러 컴포넌트로
-  분리**하고 분산 락(ShedLock)·외부
-
-### 7. 상수
-
-- 매직 넘버(반경·최대 개수·페이지  atic final` 상수로 뽑는다.
+- 매직 넘버(반경·최대 개수·페이지 크기 등)는 `private static final` 상수로 뽑는다.
     - 예: `SEARCH_MAX_RADIUS_METERS`, `MAX_RESULTS_COUNT`, `PAGE_SIZE`
 
-### 8. 테스트
+### 7. 테스트
 
-- **DB에 무관한 로직**(예외 분기 등)은 **단위 테스트**(Mockito `@Mock`·`@InjectMocks`)로 검증한다.
-- **DB에 의존하는 로직**(쿼리·매핑·**(Testcontainers)로 검증하고, 외부클라이언트만 `@MockitoBean`으로 대체한다.
-- 한 서비스의 두 성격 테스트는 `...nTest`로 나눈다.
+- 한 서비스의 성격이 다른 두 테스트는 `...UnitTest`·`...IntegrationTest`로 나눈다.
+    - **DB에 무관한 로직**(예외 분기 등)은 **단위 테스트**(Mockito `@Mock`·`@InjectMocks`)로 검증한다.
+    - **DB에 의존하는 로직**(쿼리·매핑·트랜잭션 등)은 **통합 테스트**(Testcontainers)로 검증하고, 외부 클라이언트만 `@MockitoBean`으로 대체한다.
