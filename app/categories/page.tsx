@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { getCategoryStyle } from "../categoryStyles";
 import ItemCard from "../ItemCard";
 import {
   apiBaseUrl,
@@ -18,7 +17,7 @@ type CategoryCount = {
 };
 
 function getMainCategory(item: Item) {
-  return item.category_main ?? "미분류";
+  return item.category_main === "개발" ? "공부" : item.category_main ?? "미분류";
 }
 
 function getSubCategory(item: Item) {
@@ -93,23 +92,6 @@ export default function CategoriesPage() {
     setSelectedSub("전체");
   }
 
-  async function updateItem(id: number, title: string) {
-    try {
-      const response = await fetch(`${apiBaseUrl}/api/items/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
-      });
-      if (!response.ok) throw new Error(await readApiError(response));
-      const updatedItem: Item = await response.json();
-      setItems((currentItems) =>
-        currentItems.map((item) => (item.id === updatedItem.id ? updatedItem : item))
-      );
-    } catch (requestError) {
-      throw new Error(getRequestErrorMessage(requestError, "항목을 수정하지 못했습니다."));
-    }
-  }
-
   async function deleteItem(id: number) {
     try {
       const response = await fetch(`${apiBaseUrl}/api/items/${id}`, {
@@ -150,8 +132,8 @@ export default function CategoriesPage() {
                 onClick={() => selectMainCategory("전체")}
                 className={`text-xs rounded-full px-3 py-2 font-medium transition-colors ${
                   selectedMain === "전체"
-                    ? "bg-ink text-white"
-                    : "bg-white text-muted hover:bg-creamDeep"
+                    ? "bg-accent text-white"
+                    : "border border-creamDeep bg-white text-muted hover:border-accent hover:text-accentDark"
                 }`}
               >
                 전체 {items.length}
@@ -163,9 +145,9 @@ export default function CategoriesPage() {
                   onClick={() => selectMainCategory(category.name)}
                   className={`text-xs rounded-full px-3 py-2 font-medium transition-colors ${
                     selectedMain === category.name
-                      ? "ring-2 ring-ink/20 ring-offset-1"
-                      : ""
-                  } ${getCategoryStyle(category.name)}`}
+                      ? "bg-accent text-white"
+                      : "border border-creamDeep bg-white text-muted hover:border-accent hover:text-accentDark"
+                  }`}
                 >
                   {category.name} {category.count}
                 </button>
@@ -182,8 +164,8 @@ export default function CategoriesPage() {
                   onClick={() => setSelectedSub("전체")}
                   className={`text-xs rounded-full px-3 py-1.5 font-medium border transition-colors ${
                     selectedSub === "전체"
-                      ? "border-ink bg-ink text-white"
-                      : "border-creamDeep bg-white text-muted hover:bg-creamDeep"
+                      ? "border-accent bg-accent text-white"
+                      : "border-creamDeep bg-white text-muted hover:border-accent hover:text-accentDark"
                   }`}
                 >
                   전체
@@ -195,8 +177,8 @@ export default function CategoriesPage() {
                     onClick={() => setSelectedSub(category.name)}
                     className={`text-xs rounded-full px-3 py-1.5 font-medium border transition-colors ${
                       selectedSub === category.name
-                        ? "border-accent bg-accent/10 text-accentDark"
-                        : "border-creamDeep bg-white text-muted hover:bg-creamDeep"
+                        ? "border-accent bg-accent text-white"
+                        : "border-creamDeep bg-white text-muted hover:border-accent hover:text-accentDark"
                     }`}
                   >
                     {category.name} {category.count}
@@ -224,7 +206,6 @@ export default function CategoriesPage() {
                   <ItemCard
                     key={item.id}
                     item={item}
-                    onUpdate={updateItem}
                     onDelete={deleteItem}
                   />
                 ))}

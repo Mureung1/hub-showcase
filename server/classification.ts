@@ -51,7 +51,7 @@ const keywordRules: Array<{
   },
   {
     keywords: ["개발", "프로그래밍", "코딩", "react", "javascript", "typescript"],
-    classification: { categoryMain: "개발", categorySub: "프로그래밍" },
+    classification: { categoryMain: "공부", categorySub: "프로그래밍" },
   },
   {
     keywords: ["여행", "항공", "호텔", "travel", "flight", "hotel"],

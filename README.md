@@ -1,89 +1,120 @@
+# Later
+
+나중에 다시 보고 싶은 URL, 텍스트, 이미지를 저장하고 Gemini가 제목, 요약,
+카테고리를 생성해 다시 찾기 쉽게 정리하는 서비스입니다.
+
 ## 서비스 구조 및 데이터 흐름
 
 ```mermaid
-%%{init: {
-  "theme": "base",
-  "themeVariables": {
-    "background": "#ffffff",
-    "primaryColor": "#f3f3f3",
-    "primaryTextColor": "#222222",
-    "primaryBorderColor": "#b8b8b8",
-    "lineColor": "#8a8a8a",
-    "secondaryColor": "#ffffff",
-    "tertiaryColor": "#ffffff",
-    "clusterBkg": "#ffffff",
-    "clusterBorder": "#a9a9a9",
-    "fontFamily": "Arial, sans-serif",
-    "fontSize": "14px"
-  },
-  "flowchart": {
-    "curve": "linear",
-    "nodeSpacing": 35,
-    "rankSpacing": 55,
-    "htmlLabels": true
-  }
-}}%%
-
 flowchart LR
+    User[사용자]
 
-    subgraph FRONT["Next.js · React (화면)"]
-        direction TB
-
-        APP["LaterApp<br/>items 상태 관리"]
-
-        HOME["Home<br/>전체 콘텐츠 목록"]
-        CATEGORY["Categories<br/>카테고리별 목록"]
-
-        FORM["ContentForm<br/>콘텐츠 입력"]
-        CARD["ItemCard<br/>조회 · 수정 · 삭제"]
-
-        APP --> HOME
-        APP --> CATEGORY
-        HOME --> FORM
-        HOME --> CARD
-        CATEGORY --> CARD
+    subgraph Frontend[Next.js · React]
+        Home[저장 입력 화면]
+        Categories[카테고리 화면]
+        Card[요약 상세 카드]
     end
 
-    subgraph SERVER["Express (서버)"]
-        direction TB
-
-        READ["GET /api/items"]
-        CREATE["POST /api/items"]
-        UPDATE["PATCH /api/items/:id"]
-        REMOVE["DELETE /api/items/:id"]
-
-        CLASSIFY["자동 분류<br/>category_main · category_sub"]
-
-        CREATE --> CLASSIFY
+    subgraph Backend[Express API]
+        Routes[Items CRUD API]
+        Metadata[Metadata Extractor]
+        Gemini[Gemini 멀티모달 분류·요약]
+        Fallback[Rule-based Fallback]
+        Validation[Structured Output 검증]
+        Storage[이미지 업로드]
     end
 
-    subgraph DATABASE["Supabase (DB)"]
-        direction TB
+    Supabase[(Supabase items)]
+    Bucket[(Supabase Storage)]
+    Web[외부 웹페이지]
 
-        ITEMS[("items 테이블")]
-    end
-
-    HOME -->|"fetch 조회"| READ
-    CATEGORY -->|"fetch 조회"| READ
-    FORM -->|"fetch 추가"| CREATE
-    CARD -->|"fetch 수정"| UPDATE
-    CARD -->|"fetch 삭제"| REMOVE
-
-    READ -->|"select"| ITEMS
-    CLASSIFY -->|"insert"| ITEMS
-    UPDATE -->|"update"| ITEMS
-    REMOVE -->|"delete"| ITEMS
-
-    classDef default fill:#f3f3f3,stroke:#b8b8b8,color:#222222,stroke-width:1px;
-    classDef database fill:#f3f3f3,stroke:#b8b8b8,color:#222222,stroke-width:1px;
-
-    class ITEMS database;
-
-    style FRONT fill:#ffffff,stroke:#a9a9a9,stroke-width:1px
-    style SERVER fill:#ffffff,stroke:#a9a9a9,stroke-width:1px
-    style DATABASE fill:#ffffff,stroke:#a9a9a9,stroke-width:1px
+    User --> Home
+    User --> Categories
+    Home -->|POST /api/items| Routes
+    Categories -->|GET /api/items| Routes
+    Categories --> Card
+    Routes --> Metadata
+    Metadata --> Web
+    Routes --> Gemini
+    Gemini --> Validation
+    Validation -. 실패 .-> Fallback
+    Routes --> Storage
+    Storage --> Bucket
+    Routes --> Supabase
+    Supabase --> Routes
+    Routes --> Home
+    Routes --> Categories
+    Card -->|원본 링크| Web
 ```
 
-## 프로젝트 문서
+URL 저장 시 메타데이터를 추출하고, 이미지가 있으면 이미지 바이너리와 입력 텍스트를
+함께 Gemini에 전달합니다. Gemini는 다음 값을 구조화된 JSON으로 반환합니다.
 
-- [서비스 구조 및 데이터 흐름](docs/SERVICE_ARCHITECTURE.md)
+- 짧고 구체적인 표시 제목
+- 1~3문장의 콘텐츠 요약
+- 대분류와 소분류
+
+Gemini가 설정되지 않았거나 호출·검증에 실패하면 기존 규칙 기반 분류를 사용합니다.
+이미지 단독 요청을 규칙으로 판단할 수 없으면 `미분류 / null`로 저장합니다.
+
+## 이미지 저장 및 AI 분류
+
+- 지원 형식: JPEG, PNG, WebP
+- 최대 크기: 5MB
+- 이미지는 `multipart/form-data`로 Express에 전송됩니다.
+- Express는 이미지를 메모리에서 Gemini inline data로 전달합니다.
+- 분류 후 이미지는 Supabase Storage에 업로드합니다.
+- 이미지 원본이나 Base64 데이터는 일반 DB 컬럼에 저장하지 않습니다.
+
+## Supabase 설정
+
+아래 migration을 순서대로 적용합니다.
+
+```text
+supabase/migrations/202607230001_add_item_images.sql
+supabase/migrations/202607230002_add_item_summary.sql
+```
+
+첫 migration은 `items.content`, `items.image_url`과 public `later-images` 버킷을
+생성합니다. 두 번째 migration은 AI 요약을 저장하는 `items.summary`를 추가합니다.
+
+서버 환경변수:
+
+```env
+PORT=4000
+CLIENT_ORIGIN=http://localhost:3000
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_STORAGE_BUCKET=later-images
+GEMINI_API_KEY=
+GEMINI_MODEL=
+```
+
+`GEMINI_API_KEY`와 `GEMINI_MODEL`이 모두 있을 때만 Gemini를 호출합니다. 실제 비밀
+키는 저장소에 커밋하지 않습니다.
+
+프론트엔드 환경변수:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:4000
+```
+
+## 로컬 실행
+
+프론트엔드와 Express 서버를 각각 실행합니다.
+
+```bash
+npm run dev
+```
+
+```bash
+npm run dev:server
+```
+
+## 검증
+
+```bash
+npm test
+npx tsc --noEmit
+npm run build
+```

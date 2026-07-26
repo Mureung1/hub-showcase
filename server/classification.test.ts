@@ -7,7 +7,7 @@ describe("classifyContent", () => {
     ["https://smartstore.naver.com/test", "쇼핑", "스마트스토어"],
     ["https://www.instagram.com/test", "SNS", "인스타그램"],
     ["다이어트 운동 루틴 정리", "건강", "운동"],
-    ["React TypeScript 공부 자료", "개발", "프로그래밍"],
+    ["React TypeScript 공부 자료", "공부", "프로그래밍"],
     ["분류할 수 없는 일반 문장", "미분류", "기타"],
   ])("%s를 분류한다", (content, categoryMain, categorySub) => {
     expect(classifyContent(content)).toEqual({ categoryMain, categorySub });

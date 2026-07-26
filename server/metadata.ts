@@ -126,6 +126,56 @@ function clean(value: string | undefined) {
   return normalized ? normalized.slice(0, 2_000) : null;
 }
 
+function isYouTubeUrl(url: URL) {
+  const hostname = url.hostname.toLowerCase();
+  return (
+    hostname === "youtu.be" ||
+    hostname === "youtube.com" ||
+    hostname.endsWith(".youtube.com")
+  );
+}
+
+async function extractYouTubeMetadata(
+  originalUrl: URL,
+  fetchImpl: FetchLike,
+  resolveAddresses: ResolveAddresses,
+  signal: AbortSignal,
+  maxBytes: number
+): Promise<PageMetadata> {
+  const endpoint = new URL("https://www.youtube.com/oembed");
+  endpoint.searchParams.set("url", originalUrl.toString());
+  endpoint.searchParams.set("format", "json");
+  await assertSafeHttpUrl(endpoint.toString(), resolveAddresses);
+
+  const response = await fetchImpl(endpoint, {
+    redirect: "manual",
+    signal,
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "LaterMetadataBot/1.0",
+    },
+  });
+  if (!response.ok) throw new Error(`YouTube 메타데이터 요청에 실패했습니다. (${response.status})`);
+  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("YouTube 메타데이터 응답 형식이 올바르지 않습니다.");
+  }
+  const body = JSON.parse(await readLimitedText(response, maxBytes)) as {
+    title?: string;
+  };
+  const title = clean(body.title);
+  if (!title) throw new Error("YouTube 영상 제목을 찾지 못했습니다.");
+  return {
+    url: originalUrl.toString(),
+    title,
+    description: null,
+    ogTitle: title,
+    ogDescription: null,
+    ogSiteName: "YouTube",
+    ogType: "video",
+  };
+}
+
 export function parsePageMetadata(html: string, url: string): PageMetadata {
   const $ = cheerio.load(html);
   const meta = (selector: string) => clean($(selector).first().attr("content"));
@@ -154,6 +204,15 @@ export async function extractPageMetadata(
 
   try {
     let currentUrl = await assertSafeHttpUrl(inputUrl, resolveAddresses);
+    if (isYouTubeUrl(currentUrl)) {
+      return await extractYouTubeMetadata(
+        currentUrl,
+        fetchImpl,
+        resolveAddresses,
+        controller.signal,
+        maxBytes
+      );
+    }
     for (let redirects = 0; redirects <= maxRedirects; redirects += 1) {
       const response = await fetchImpl(currentUrl, {
         redirect: "manual",
