@@ -15,3 +15,16 @@ def test_run_agent_yields_search_then_found(monkeypatch):
 
     assert next(events) == {"stage": "search", "topic": "LLM agent planning"}
     assert next(events) == {"stage": "found", "count": 2}
+
+
+def test_run_agent_ends_with_empty_when_no_papers(monkeypatch):
+    """검색 결과 0편이면 search→found→empty로 끝나고 그 뒤로 아무 이벤트도 없다 (6-2)."""
+    monkeypatch.setattr("app.tools.search_arxiv", lambda *a, **k: [])
+
+    events = list(agent.run_agent("LLM agent planning", limit=3))
+
+    assert events == [
+        {"stage": "search", "topic": "LLM agent planning"},
+        {"stage": "found", "count": 0},
+        {"stage": "empty", "scanned": 0, "suggestions": []},
+    ]

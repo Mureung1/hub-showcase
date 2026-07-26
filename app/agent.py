@@ -279,6 +279,10 @@ def run_agent(topic: str, limit: int = config.DEFAULT_LIMIT) -> Generator[dict, 
     papers = tools.search_arxiv(topic, limit=limit)
     yield {"stage": "found", "count": len(papers)}
 
+    if not papers:
+        yield {"stage": "empty", "scanned": len(papers), "suggestions": []}
+        return
+
 
 if __name__ == "__main__":
     import argparse
