@@ -123,3 +123,9 @@ npm test
 npx tsc --noEmit
 npm run build
 ```
+
+## 개발 문서
+
+- [서비스 아키텍처](docs/SERVICE_ARCHITECTURE.md)
+- [AI 개발 워크플로](docs/AI_DEVELOPMENT_WORKFLOW.md)
+- [코드 검증 Agent](docs/CODE_VALIDATION_AGENT.md)
