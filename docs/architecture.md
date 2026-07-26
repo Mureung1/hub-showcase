@@ -68,48 +68,48 @@ CareerSignal은 채용공고와 근거 자료를 직무 단위로 분석해 통�
 ```mermaid
 flowchart TB
     subgraph SRC["원본 자료"]
-        SA["기업 공식 채용공고"]
-        SB["회사 공식 채용·기술 자료"]
-        SC["공공·직무 표준"]
-        SD["검증된 외부 전문가 자료"]
+        SA[/"기업 공식 채용공고"/]
+        SB[/"회사 공식 채용·기술 자료"/]
+        SC[/"공공·직무 표준"/]
+        SD[/"검증된 외부 전문가 자료"/]
     end
 
     subgraph CTRL["Control Plane"]
-        CHANGE["데이터 변경 이벤트"]
-        ORCH["분석 오케스트레이터<br/>영향 범위 · 실행 순서 · 버전 활성화"]
+        CHANGE[/"데이터 변경 이벤트"/]
+        ORCH{{"분석 오케스트레이터<br/>영향 범위 · 실행 순서 · 버전 활성화"}}
     end
 
     subgraph AGENTS["Domain Agents"]
-        COL["데이터 수집 · A3"]
-        KB["지식 구축 · A2"]
-        STAT["통계 분석 · A2 발견 + A0 집계"]
-        INTER["채용공고 해석 · A2"]
-        STRAT["합격 전략 · A2"]
-        ROAD["준비 로드맵 · A2"]
+        COL{{"데이터 수집 · A3"}}
+        KB{{"지식 구축 · A2"}}
+        STAT{{"통계 분석 · A2 발견 + A0 집계"}}
+        INTER{{"채용공고 해석 · A2"}}
+        STRAT{{"합격 전략 · A2"}}
+        ROAD{{"준비 로드맵 · A2"}}
     end
 
     subgraph PIPE["Helper Pipelines"]
-        P1["적재"]
-        P2["인덱싱"]
-        P3["집계"]
-        P4["검증"]
-        P5["서빙"]
+        P1[["적재"]]
+        P2[["인덱싱"]]
+        P3[["집계"]]
+        P4[["검증"]]
+        P5[["서빙"]]
     end
 
     subgraph BB["Supabase 블랙보드"]
-        RAW["원본 스냅샷·관찰·평가"]
-        IDX["청크·임베딩·키워드 인덱스"]
-        FACT["mention·할당·분류체계"]
-        GRAPH["지식 그래프·Wiki"]
-        OUT["분석 산출물"]
-        REQ["research_requests"]
-        TRACE["검색·도구·검증 궤적"]
-        ACTIVE["활성 분석 버전"]
+        RAW[("원본 스냅샷·관찰·평가")]
+        IDX[("청크·임베딩·키워드 인덱스")]
+        FACT[("mention·할당·분류체계")]
+        GRAPH[("지식 그래프·Wiki")]
+        OUT[("분석 산출물")]
+        REQ[("research_requests")]
+        TRACE[("검색·도구·검증 궤적")]
+        ACTIVE[("활성 분석 버전")]
     end
 
     subgraph RT["사용자 런타임"]
-        API["Express API"]
-        UI["React 5화면"]
+        API[["Express API"]]
+        UI(["React 5화면"])
     end
 
     SRC --> COL
@@ -140,6 +140,16 @@ flowchart TB
     OUT --> P4 --> ACTIVE
     ACTIVE --> P5 --> API --> UI
 ```
+
+도형은 구성요소의 성격을 나타낸다.
+
+| 도형 | 의미 |
+| --- | --- |
+| 평행사변형 | 외부 자료와 입력 이벤트 |
+| 육각형 | 판단하는 구성요소. 오케스트레이터와 도메인 에이전트 |
+| 서브루틴 | 결정적 helper 파이프라인 |
+| 원통 | 저장소의 논리 영역 |
+| 스타디움 | 사용자 접점 |
 
 ## 4. 구성요소와 책임
 

@@ -24,13 +24,13 @@
 
 ```mermaid
 flowchart TD
-    D0["D0 Source snapshot<br/>변경하지 않는 증거"]
-    D1["D1 Chunk 구조적 위치<br/>lexical vector index"]
-    D2["D2 Grounded mention<br/>분류체계 무관"]
-    D3["D3 Taxonomy Assignment<br/>Knowledge Graph Wiki"]
-    D4["D4 집계 통계 패턴"]
-    D5["D5 해석 전략 로드맵 주장"]
-    D6["D6 활성 사용자 제공 결과"]
+    D0[("D0 Source snapshot<br/>변경하지 않는 증거")]
+    D1[("D1 Chunk 구조적 위치<br/>lexical vector index")]
+    D2[("D2 Grounded mention<br/>분류체계 무관")]
+    D3[("D3 Taxonomy Assignment<br/>Knowledge Graph Wiki")]
+    D4[("D4 집계 통계 패턴")]
+    D5[("D5 해석 전략 로드맵 주장")]
+    D6(["D6 활성 사용자 제공 결과"])
 
     D0 -->|"인덱싱 파이프라인"| D1
     D1 -->|"mention 추출"| D2
@@ -141,7 +141,7 @@ posting_versions
 
 ```mermaid
 flowchart LR
-    A["원문 수신"] --> B["content_hash 계산"]
+    A[/"원문 수신"/] --> B["content_hash 계산"]
     B --> C{"기존 해시와 동일"}
     C -->|"동일"| D["snapshot 재사용"]
     C -->|"상이"| E["새 snapshot insert"]
@@ -150,12 +150,12 @@ flowchart LR
     F --> G["섹션 분할"]
     G --> H["메타데이터 문맥 생성"]
     H --> I{"장문 여부"}
-    I -->|"장문"| J["문맥 요약 추가"]
+    I -->|"장문"| J{{"문맥 요약 추가"}}
     I -->|"단문"| K["embedding_text 조립"]
     J --> K
     K --> L["임베딩 생성"]
     L --> M["tsvector 생성"]
-    M --> N["source_chunks chunk_embeddings 저장"]
+    M --> N[("source_chunks chunk_embeddings")]
 ```
 
 ### 4.1 `source_chunks`

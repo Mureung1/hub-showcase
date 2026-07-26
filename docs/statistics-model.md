@@ -28,29 +28,29 @@
 
 ```mermaid
 flowchart TD
-    DOC["공고 요구 문장"] --> KNOWN["기지 추출<br/>활성 분류체계 기준"]
-    DOC --> OPEN["잔여 추출<br/>기존 차원으로 설명되지 않는 표현"]
+    DOC[/"공고 요구 문장"/] --> KNOWN{{"기지 추출<br/>활성 분류체계 기준"}}
+    DOC --> OPEN{{"잔여 추출<br/>기존 차원으로 설명되지 않는 표현"}}
 
     KNOWN --> ASSIGN["기존 차원 할당"]
-    OPEN --> CAND["신규 차원 후보"]
+    OPEN --> CAND[("신규 차원 후보")]
     CAND --> RETR["기존 차원 별칭 후보 검색"]
-    RETR --> REL["관계 판정"]
+    RETR --> REL{"관계 판정"}
 
     REL -->|"동의어"| ALIAS["별칭 후보"]
     REL -->|"상하위"| HIER["계층 관계 후보"]
     REL -->|"관련"| RELD["관련 관계 후보"]
     REL -->|"해당 없음"| NEW["신규 차원 후보"]
 
-    ALIAS --> REV["승격 심사"]
+    ALIAS --> REV{"승격 심사"}
     HIER --> REV
     RELD --> REV
     NEW --> REV
 
-    REV -->|"승격"| TAX["새 분류체계 버전"]
-    REV -->|"보류"| HOLD["후보 유지<br/>통계 미포함"]
+    REV -->|"승격"| TAX[("새 분류체계 버전")]
+    REV -->|"보류"| HOLD(["후보 유지<br/>통계 미포함"])
     TAX --> REASSIGN["데이터셋 전체 재할당"]
     ASSIGN --> REASSIGN
-    REASSIGN --> STATS["결정적 통계 집계"]
+    REASSIGN --> STATS[["결정적 통계 집계"]]
 ```
 
 ### 3.2 관계 판정
@@ -124,14 +124,16 @@ taxonomy_policy_version
 
 ```mermaid
 flowchart LR
-    A["활성 분류체계 버전"] --> B["지표 적용 가능성 조회"]
+    A[("활성 분류체계 버전")] --> B["지표 적용 가능성 조회"]
     B --> C["실행 조합 전개<br/>지표 x 차원 x 범위 x 기간"]
     C --> D["분모 모집단 확정"]
     D --> E["중복 제거 단위 적용"]
     E --> F["SQL 집계"]
-    F --> G["표본 상태 판정"]
-    G --> H["불확실성 계산"]
-    H --> I["statistics_facts 저장"]
+    F --> G{"표본 상태 판정"}
+    G -->|"계산 불가"| H1["결과 억제"]
+    G -->|"계산 가능"| H2["불확실성 계산"]
+    H1 --> I[("statistics_facts")]
+    H2 --> I
 ```
 
 ### 5.2 지표 family

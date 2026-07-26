@@ -76,12 +76,12 @@ flowchart LR
     F --> E["6 Evidence Set Optimization"]
     E --> M["7 Grounded Context"]
     M --> D["8 Structured Draft"]
-    D --> V["9 Verification"]
+    D --> V{"9 Verification"}
     V -->|"수리 가능"| X["10 Repair Order"]
     X --> R
-    V -->|"외부 근거 부족"| Q["research_request"]
-    V -->|"통과"| S["버전별 저장"]
-    V -->|"충족 불가"| Z["실패 기록·기존 활성 버전 유지"]
+    V -->|"외부 근거 부족"| Q[("research_request")]
+    V -->|"통과"| S[("버전별 저장")]
+    V -->|"충족 불가"| Z(["실패 기록·기존 활성 버전 유지"])
 ```
 
 | 단계 | 자율성 |
@@ -241,19 +241,21 @@ verification_status
 
 ```mermaid
 flowchart LR
-    A["산출물"] --> C1["1 Schema Validator"]
-    C1 --> C2["2 Source policy Validator"]
-    C2 --> C3["3 Citation span Validator"]
-    C3 --> C4["4 Numerical Consistency"]
-    C4 --> C5["5 Claim Evidence Entailment"]
-    C5 --> C6["6 Cross model Sample Audit"]
+    A[/"산출물"/] --> C1["1 Schema Validator · A0"]
+    C1 --> C2["2 Source policy Validator · A0"]
+    C2 --> C3["3 Citation span Validator · A0"]
+    C3 --> C4["4 Numerical Consistency · A0"]
+    C4 --> C5{{"5 Claim Evidence Entailment · A1"}}
+    C5 --> C6{{"6 Cross model Sample Audit · A1"}}
     C6 --> C7["7 Contradiction Detector"]
-    C7 --> C8["8 Typed Verdict"]
-    C8 --> R["검사별 판정 기록"]
+    C7 --> C8["8 Typed Verdict · A0"]
+    C8 --> R[("검사별 판정 기록")]
     R --> D{"차단 판정 존재"}
     D -->|"있음"| F["Repair Order 발행"]
-    D -->|"없음"| P["공개 후보"]
+    D -->|"없음"| P(["공개 후보"])
 ```
+
+육각형은 생성 모델을 사용하는 검사다. 나머지는 규칙으로 판정한다.
 
 | 검사 | 내용 | 자율성 |
 | --- | --- | --- |
