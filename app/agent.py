@@ -4,6 +4,7 @@
 """
 
 import json
+import time
 from collections.abc import Generator
 
 from app import config, prompt_loader, tools
@@ -49,11 +50,28 @@ def _validate_coverage(papers: list[dict], result: dict) -> dict:
     return {"picked": picked, "excluded": excluded}
 
 
-def judge(topic: str, papers: list[dict]) -> dict:
-    """판단(judge) 5단계 진입점. sse-contract.md의 judge 이벤트 형태로 정리해 반환한다."""
-    raw = _call_judge(topic, papers)
-    result = _validate_coverage(papers, raw)
+def _judge_papers(topic: str, papers: list[dict]) -> dict | None:
+    """판단(judge) 5단계 진입점. LLM 호출 + 커버리지 검증까지의 원시 결과(index 기반)를 반환한다.
 
+    sse-contract.md의 judge 이벤트(title/reason만, index 없음)로 바로 쓸 수 없는
+    이유는 run_agent()가 실제 papers[index]를 찾아 논문별 파이프라인을
+    순회(_iterate_picked)하는 데 index가 필요하기 때문이다. SSE 이벤트 포맷은
+    _format_judge_event()가 별도로 맡는다.
+
+    raw 응답이 picked·excluded 둘 다 비어있으면(ask_llm_json의 fallback이거나,
+    그와 구분 안 되는 완전 실패 응답) None을 반환한다 — 판단 자체가 실패한
+    것으로 보고 run_agent()가 error로 종결하게 한다(#49). 후보 논문이 있는데
+    picked·excluded를 하나도 못 채운 응답은 judge.md 프롬프트가 요구하는
+    "전체 커버리지"를 어겼으므로, 진짜 판단 결과로 신뢰할 수 없다.
+    """
+    raw = _call_judge(topic, papers)
+    if not raw.get("picked") and not raw.get("excluded"):
+        return None
+    return _validate_coverage(papers, raw)
+
+
+def _format_judge_event(papers: list[dict], result: dict) -> dict:
+    """_judge_papers()의 원시 결과(index 기반)를 sse-contract.md의 judge 이벤트 형태로 정리한다."""
     return {
         "stage": "judge",
         "total": len(papers),
@@ -265,13 +283,129 @@ def trend(topic: str, successful: list[dict]) -> dict:
     return _call_trend(topic, summaries)
 
 
+def run_agent(topic: str, limit: int = config.DEFAULT_LIMIT) -> Generator[dict, None, None]:
+    """에이전트 5단계 루프의 진입점. 반드시 제너레이터다 (CLAUDE.md 불변식).
+
+    sse-contract.md의 stage를 그대로 yield한다. main.py는 이 yield를 SSE로
+    감싸기만 한다 — 로직은 이 함수 안에 전부 있다.
+    """
+    start = time.time()
+    start_calls = tools.CALL_COUNT
+
+    yield {"stage": "search", "topic": topic}
+    try:
+        papers = tools.search_arxiv(topic, limit=limit)
+    except Exception as exc:
+        yield {
+            "stage": "error",
+            "message": "arXiv 검색에 실패했습니다.",
+            "code": "search_failed",
+            "at": f"검색 단계 ({type(exc).__name__})",
+        }
+        return
+    scanned = len(papers)
+    yield {"stage": "found", "count": scanned}
+
+    if not papers:
+        yield {"stage": "empty", "scanned": scanned, "suggestions": []}
+        return
+
+    judged = _judge_papers(topic, papers)
+    if judged is None:
+        yield {
+            "stage": "error",
+            "message": "논문 중요도 판단에 실패했습니다.",
+            "code": "judge_failed",
+            "at": "판단 단계",
+        }
+        return
+    yield _format_judge_event(papers, judged)
+
+    picked_list = judged["picked"]
+    successful: list[dict] = []
+    succeeded = 0
+    failed = 0
+
+    for i, paper in _iterate_picked(papers, picked_list):
+        try:
+            select = _select_tool(paper)
+            need_fulltext = select.get("need_fulltext", False)
+
+            yield {
+                "stage": "read",
+                "index": i,
+                "total": len(picked_list),
+                "title": paper["title"],
+                "used_fulltext": need_fulltext,
+                "reason": select.get("reason", ""),
+            }
+
+            source_text, used_fulltext = _read_source(paper, need_fulltext)
+
+            summary = _call_summarize(paper["title"], source_text)
+            if summary is None:
+                failed += 1
+                yield {
+                    "stage": "paper_failed",
+                    "index": i,
+                    "title": paper["title"],
+                    "url": paper["url"],
+                    "reason": "요약 생성에 반복 실패했습니다.",
+                }
+                continue
+
+            summary, retried = yield from _verify_loop(i, paper["title"], source_text, summary)
+
+            yield {
+                "stage": "paper_done",
+                "index": i,
+                "title": paper["title"],
+                "arxiv_id": paper["id"],
+                "url": paper["url"],
+                "date": paper["published"],
+                "used_fulltext": used_fulltext,
+                "retried": retried,
+                "summary": summary,
+                "abstract": paper["abstract"],
+            }
+            successful.append({"index": i, "title": paper["title"], "summary": summary})
+            succeeded += 1
+
+        except Exception as exc:
+            failed += 1
+            yield {
+                "stage": "paper_failed",
+                "index": i,
+                "title": paper["title"],
+                "url": paper["url"],
+                "reason": f"처리 중 예기치 않은 오류가 발생했습니다 ({type(exc).__name__}).",
+            }
+            continue
+
+    yield {"stage": "trend"}
+    trend_result = trend(topic, successful)
+
+    yield {
+        "stage": "done",
+        "elapsed": round(time.time() - start, 1),
+        "stats": {
+            "scanned": scanned,
+            "selected": len(picked_list),
+            "succeeded": succeeded,
+            "failed": failed,
+            "llm_calls": tools.CALL_COUNT - start_calls,
+        },
+        "trend": trend_result,
+    }
+
+
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="agent.py 개별 단계 검증")
+    parser = argparse.ArgumentParser(description="run_agent()를 터미널에서 돌려 이벤트를 검증")
     parser.add_argument("--topic", required=True)
     parser.add_argument("--limit", type=int, default=config.DEFAULT_LIMIT)
     args = parser.parse_args()
 
-    papers = tools.search_arxiv(args.topic, limit=args.limit)
-    print(judge(args.topic, papers))
+    for event in run_agent(args.topic, limit=args.limit):
+        print(event)
