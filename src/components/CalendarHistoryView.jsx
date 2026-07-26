@@ -74,7 +74,7 @@ function CalendarHistoryView({ tasksByDate, selectedDate, onSelectDate, initialM
       {selectedDate && (
         <div className="calendar-day-detail">
           <p className="calendar-day-detail-title">
-            {format(selectedDate, "M월 d일")}에 등록된 할일
+            {format(selectedDate, "M월 d일")}의 할일
           </p>
           {selectedTasks.length === 0 ? (
             <p className="calendar-day-detail-empty">이 날 등록된 할일이 없어요.</p>

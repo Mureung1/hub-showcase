@@ -81,7 +81,18 @@ function HistoryPage() {
     );
   }
 
-  const tasksByDate = groupTasksByDate(tasks);
+  // 캘린더 그루핑에서만 completedAt을 반영한다 — 완료된 task는 taskId로
+  // /api/history의 completedAt을 찾아 붙이고, 진행 중이라 history에 없는 task는
+  // completedAt 없이(=createdAt 기준으로) 그대로 둔다. 리스트 뷰(history state)는
+  // 이 매핑과 무관하게 원본 그대로 렌더링한다.
+  const completedAtByTaskId = new Map(
+    history.map((entry) => [entry.taskId, entry.completedAt]),
+  );
+  const tasksForCalendar = tasks.map((task) => ({
+    ...task,
+    completedAt: completedAtByTaskId.get(task.id) ?? null,
+  }));
+  const tasksByDate = groupTasksByDate(tasksForCalendar);
 
   return (
     <div className="page">
