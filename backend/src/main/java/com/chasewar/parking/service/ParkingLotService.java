@@ -13,8 +13,12 @@ import com.chasewar.parking.repository.ParkingLotRealtimeRepository;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import com.chasewar.parking.repository.dto.ParkingLotDetailProjection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,6 +34,7 @@ public class ParkingLotService {
     private final ParkingLotRepository parkingLotRepository;
     private final ParkingLotRealtimeRepository parkingLotRealtimeRepository;
     private final WalkingRouteClient walkingRouteClient;
+    private final Executor walkingRouteExecutor;
 
     @Transactional(readOnly = true)
     public List<ParkingLotSearchResponse> search(Coordinates destinationCoordinates) {
@@ -47,12 +52,13 @@ public class ParkingLotService {
     private List<ParkingLotSearchResponse> findNearbyParkingLots(Coordinates destinationCoordinates) {
         List<ParkingLot> parkingLots = findWithinRadius(destinationCoordinates);
         Map<String, ParkingLotRealtime> realtimeByPkltCd = findRealtimeByPkltCd(parkingLots);
+        Map<Long, WalkingRoute> walkingRouteById = findWalkingRoutes(parkingLots, destinationCoordinates);
 
         return parkingLots.stream()
                 .map(parkingLot -> ParkingLotSearchResponse.from(
                         parkingLot,
                         destinationCoordinates.distanceTo(parkingLot.getCoordinates()),
-                        findWalkingRoute(parkingLot, destinationCoordinates),
+                        walkingRouteById.get(parkingLot.getId()),
                         realtimeByPkltCd.get(parkingLot.getPkltCd())
                 ))
                 .sorted(Comparator.comparingInt(ParkingLotSearchResponse::distance))
@@ -63,8 +69,8 @@ public class ParkingLotService {
     private List<ParkingLot> findWithinRadius(Coordinates destinationCoordinates) {
         return parkingLotRepository.findByCoordinatesLatitudeIsNotNull()
                 .stream()
-                .filter(parkingLot ->
-                        destinationCoordinates.distanceTo(parkingLot.getCoordinates()) <= SEARCH_MAX_RADIUS_METERS
+                .filter(parkingLot -> destinationCoordinates.distanceTo(parkingLot.getCoordinates()) <=
+                        SEARCH_MAX_RADIUS_METERS
                 )
                 .toList();
     }
@@ -76,11 +82,34 @@ public class ParkingLotService {
 
         return parkingLotRealtimeRepository.findByPkltCdIn(pkltCds)
                 .stream()
-                .collect(Collectors.toMap(ParkingLotRealtime::getPkltCd, realtime -> realtime));
+                .collect(Collectors.toMap(ParkingLotRealtime::getPkltCd, parkingLotRealtime -> parkingLotRealtime));
     }
 
-    private WalkingRoute findWalkingRoute(ParkingLot parkingLot, Coordinates destinationCoordinates) {
-        return walkingRouteClient.findRoute(parkingLot.getCoordinates(), destinationCoordinates)
-                .orElse(null);
+    private Map<Long, WalkingRoute> findWalkingRoutes(
+            List<ParkingLot> parkingLots,
+            Coordinates destinationCoordinates
+    ) {
+        Map<Long, CompletableFuture<Optional<WalkingRoute>>> futures = parkingLots.stream()
+                .collect(Collectors.toMap(
+                        ParkingLot::getId,
+                        parkingLot -> requestWalkingRoute(parkingLot, destinationCoordinates)
+                ));
+
+        Map<Long, WalkingRoute> walkingRouteById = new HashMap<>();
+        futures.forEach((parkingLotId, future) ->
+                future.join().ifPresent(walkingRoute -> walkingRouteById.put(parkingLotId,
+                        walkingRoute)));
+
+        return walkingRouteById;
+    }
+
+    private CompletableFuture<Optional<WalkingRoute>> requestWalkingRoute(
+            ParkingLot parkingLot,
+            Coordinates destinationCoordinates
+    ) {
+        return CompletableFuture.supplyAsync(
+                () -> walkingRouteClient.findRoute(parkingLot.getCoordinates(), destinationCoordinates),
+                walkingRouteExecutor
+        );
     }
 }
