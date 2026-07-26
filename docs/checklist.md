@@ -126,6 +126,8 @@
 - [x] 마감 긴급도(D-day) × 현재 레벨 기반 알림 간격 설계 — 기존엔 모든 task에 동일한 고정 폴링 간격이 적용됐는데, 마감이 가까울수록/레벨이 높을수록 다음 알림까지의 대기 시간이 짧아지도록 `src/lib/nudgeInterval.ts`로 분리(순수 함수, 단위 테스트로 검증). 최초 검토했던 "할일 유형별 기본 간격" 안은 근거 없는 가정이라 폐기하고 마감 긴급도×레벨 조합으로 확정 (#44로 완료)
 - [x] Focus 세션 새로고침 복구 — 새로고침해도 진행 중이던 Focus 세션(경과 시간 등)이 sessionStorage에서 복구되도록 구현 (이슈 없이 진행, 커밋 `cf23ee9`)
 - [x] 완료 기록에 개입 컨텍스트 저장 구조 추가 — 완료 시점에 `entryMode`(direct/intervention), `entryLevel`(null~4), `microTask`(실제 제안된 첫 행동), `generationSource`(none/gemini/rule_based/history_reuse, 레거시 해석용 unknown), `memoryEvidence`(Lv3 근거, 현재는 항상 null)를 함께 저장하도록 `TaskEvent` 스키마·완료 API·History API 확장. Home/NudgeModal에서 생성된 개입 컨텍스트를 Focus sessionStorage(v2)와 done API까지 전달하고, 기존 v1 세션은 v2로 자동 이관하도록 구현. Supabase에 실제 migration 적용 완료 (이슈 없이 진행, 커밋 `eeb2369`, `ffc2ec1`)
+- [x] 서비스워커 fetch 핸들러에 오프라인 폴백 추가 — 네비게이션 요청(/history 등)이 네트워크 실패 시 캐시된 "/"로 폴백하도록 수정, /api/* 등 그 외 요청은 그대로 reject되게 유지(catch 없음). 콘솔에서 uncaught FetchEvent rejection 발견해 수정 (2026-07-26)
+- [x] notificationclick 핸들러 구조적 버그 수정 — client.focus() 실패 시 조용히 사라지던 문제(다음 후보로 안 넘어가고 openWindow 폴백도 안 탐)를 try/catch로 수정, openWindow 대상도 "/"(랜딩 리다이렉트)에서 "/home"으로 변경. 실제 브라우저 클릭 시 Chrome 무반응/Edge 랜딩 이동 증상으로 발견 (2026-07-26)
 
 ### 배포
 
