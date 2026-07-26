@@ -9,7 +9,7 @@ from test_database import alembic_config
 from alembic import command
 from localtwin_api.config import Settings
 from localtwin_api.database import create_database_engine, create_session_factory
-from localtwin_api.db_models import DataSource, Market, MarketGeometry, StorePoint
+from localtwin_api.db_models import DataSource, Market, MarketGeometry, StoreMarketLink, StorePoint
 from localtwin_api.main import create_app
 from localtwin_api.nearby_search import haversine_distance_meters
 
@@ -102,6 +102,15 @@ def nearby_client(tmp_path: Path):
                     source_snapshot_id="source-nearby",
                 )
             )
+            session.add(
+                StoreMarketLink(
+                    store_id=store_id,
+                    market_code="3110562",
+                    link_method="point_in_polygon",
+                    is_boundary=False,
+                    source_snapshot_id="source-nearby",
+                )
+            )
         session.commit()
     client = TestClient(create_app(Settings(_env_file=None), search_session_factory=factory))
     yield client
@@ -168,6 +177,44 @@ def test_nearby_query_changes_with_radius(nearby_client: TestClient) -> None:
     assert wide.status_code == 200
     assert near.json()["total_count"] == 2
     assert wide.json()["total_count"] == 3
+
+
+def test_market_scope_returns_linked_stores_instead_of_an_empty_list(
+    nearby_client: TestClient,
+) -> None:
+    response = nearby_client.get(
+        "/api/v1/stores/nearby",
+        params={
+            "longitude": CENTER_LONGITUDE,
+            "latitude": CENTER_LATITUDE,
+            "radius": 300,
+            "category": "카페",
+            "scope": "market",
+            "market_id": "3110562",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["aggregation_scope"] == "market"
+    assert payload["total_count"] == 4
+    assert payload["same_category_count"] == 2
+    assert [store["id"] for store in payload["stores"]] == ["S0", "S1", "S2", "S3"]
+
+
+def test_market_scope_requires_an_explicit_market_id(nearby_client: TestClient) -> None:
+    response = nearby_client.get(
+        "/api/v1/stores/nearby",
+        params={
+            "longitude": CENTER_LONGITUDE,
+            "latitude": CENTER_LATITUDE,
+            "radius": 300,
+            "scope": "market",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": "market_id is required when scope is market."}
 
 
 def test_nearby_query_maps_product_categories_to_official_category_names(
