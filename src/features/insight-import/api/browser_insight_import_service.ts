@@ -483,6 +483,10 @@ function parseHistoryEntry(value: unknown): ImportHistoryEntry | null {
 
   return {
     adapterKey: value.adapter_key,
+    canUndo:
+      value.status === 'completed' &&
+      value.undo_expires_at !== null &&
+      new Date(value.undo_expires_at).getTime() > Date.now(),
     completedAt: value.completed_at,
     id: value.id,
     status: value.status,

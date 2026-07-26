@@ -403,7 +403,9 @@ export function useInsightImport({
           if (undoResult.reason === 'undo-expired') {
             setHistory((currentHistory) =>
               currentHistory.map((entry) =>
-                entry.id === jobId ? { ...entry, undoExpiresAt: null } : entry
+                entry.id === jobId
+                  ? { ...entry, canUndo: false, undoExpiresAt: null }
+                  : entry
               )
             );
           }
@@ -428,6 +430,7 @@ export function useInsightImport({
             entry.id === jobId
               ? {
                   ...entry,
+                  canUndo: false,
                   status: 'undone',
                   undoExpiresAt: null,
                   undoResult: undoResult.value,

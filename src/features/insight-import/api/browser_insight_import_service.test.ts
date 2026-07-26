@@ -163,6 +163,7 @@ describe('createBrowserInsightImportService', () => {
       value: [
         {
           adapterKey: 'pasted-text',
+          canUndo: true,
           completedAt: COMPLETED_AT,
           id: JOB_ID,
           status: 'completed',

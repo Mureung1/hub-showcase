@@ -36,7 +36,7 @@ export function ImportHistory({
 }: ImportHistoryProps) {
   const [undoAvailability, setUndoAvailability] = useState<
     Record<string, boolean>
-  >({});
+  >(() => computeUndoAvailability(entries).availability);
   const [deleteConfirmationId, setDeleteConfirmationId] = useState<
     string | null
   >(null);
@@ -49,25 +49,12 @@ export function ImportHistory({
 
     function updateUndoAvailability() {
       const currentTime = Date.now();
-      const nextAvailability = Object.fromEntries(
-        entries.map((entry) => [
-          entry.id,
-          entry.status === 'completed' &&
-            entry.undoExpiresAt !== null &&
-            new Date(entry.undoExpiresAt).getTime() > currentTime,
-        ])
+      const { availability, nextExpiration } = computeUndoAvailability(
+        entries,
+        currentTime
       );
-      const nextExpiration = entries
-        .filter(
-          (entry) =>
-            entry.status === 'completed' &&
-            entry.undoExpiresAt !== null &&
-            new Date(entry.undoExpiresAt).getTime() > currentTime
-        )
-        .map((entry) => new Date(entry.undoExpiresAt!).getTime())
-        .sort((left, right) => left - right)[0];
 
-      setUndoAvailability(nextAvailability);
+      setUndoAvailability(availability);
 
       if (nextExpiration !== undefined) {
         timeoutId = window.setTimeout(
@@ -106,7 +93,7 @@ export function ImportHistory({
 
       <ul className="insight-import-dialog__history-list">
         {entries.map((entry) => {
-          const canUndo = undoAvailability[entry.id] === true;
+          const canUndo = undoAvailability[entry.id] ?? entry.canUndo;
 
           return (
             <li className="insight-import-dialog__history-item" key={entry.id}>
@@ -189,6 +176,39 @@ export function ImportHistory({
       </ul>
     </section>
   );
+}
+
+function computeUndoAvailability(
+  entries: readonly ImportHistoryEntry[],
+  currentTime?: number
+) {
+  const availability: Record<string, boolean> = {};
+  let nextExpiration: number | undefined;
+
+  for (const entry of entries) {
+    const expiration =
+      entry.undoExpiresAt === null
+        ? undefined
+        : new Date(entry.undoExpiresAt).getTime();
+    const canUndo =
+      currentTime === undefined
+        ? entry.canUndo
+        : entry.status === 'completed' &&
+          expiration !== undefined &&
+          expiration > currentTime;
+
+    availability[entry.id] = canUndo;
+
+    if (
+      canUndo &&
+      expiration !== undefined &&
+      (nextExpiration === undefined || expiration < nextExpiration)
+    ) {
+      nextExpiration = expiration;
+    }
+  }
+
+  return { availability, nextExpiration };
 }
 
 function getAdapterLabel(entry: ImportHistoryEntry) {

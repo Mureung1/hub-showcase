@@ -1,6 +1,7 @@
 /* @vitest-environment jsdom */
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import type { Category } from '@/entities/category';
@@ -9,6 +10,7 @@ import { DesignSystemProvider } from '@/shared/ui/design-system-provider';
 import type { InsightImportService } from '../model/insight_import_service';
 import type { ImportHistoryEntry, PreparedImport } from '../model/import_types';
 import type { NotionImportApi } from '../api/notion_import_api';
+import { ImportHistory } from './import_history';
 import { InsightImportDialog } from './insight_import_dialog';
 
 const JOB_ID = '10000000-0000-4000-8000-000000000001';
@@ -264,6 +266,7 @@ describe('InsightImportDialog', () => {
       value: [
         {
           ...createHistoryEntry(),
+          canUndo: false,
           undoExpiresAt: '2000-01-01T00:00:00.000Z',
         },
       ],
@@ -276,6 +279,23 @@ describe('InsightImportDialog', () => {
     expect(
       screen.queryByRole('button', { name: '가져오기 되돌리기' })
     ).toBeNull();
+  });
+
+  it('되돌릴 수 있는 기록은 첫 렌더부터 되돌리기 버튼을 표시한다', () => {
+    const markup = renderToStaticMarkup(
+      <DesignSystemProvider>
+        <ImportHistory
+          entries={[createHistoryEntry()]}
+          errorMessage={null}
+          loading={false}
+          onDelete={vi.fn()}
+          onUndo={vi.fn()}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(markup).toContain('가져오기 되돌리기');
+    expect(markup).not.toContain('되돌릴 수 있는 24시간이 지났어요.');
   });
 
   it('Notion 공식 연결 안내와 기본값이 꺼진 페이지 주소 선택을 제공한다', async () => {
@@ -467,6 +487,7 @@ function createItem(
 function createHistoryEntry(): ImportHistoryEntry {
   return {
     adapterKey: 'pasted-text',
+    canUndo: true,
     completedAt: '2026-07-25T03:00:00.000Z',
     id: JOB_ID,
     status: 'completed',

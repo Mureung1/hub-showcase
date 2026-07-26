@@ -377,6 +377,7 @@ describe('useInsightImport', () => {
       '되돌릴 수 있는 24시간이 지났어요.'
     );
     expect(result.current.history[0]?.undoExpiresAt).toBeNull();
+    expect(result.current.history[0]?.canUndo).toBe(false);
   });
 });
 
@@ -454,6 +455,7 @@ function createPreparedWithCollection(): PreparedImport {
 function createHistoryEntry(): ImportHistoryEntry {
   return {
     adapterKey: 'pasted-text',
+    canUndo: true,
     completedAt: '2026-07-25T03:00:00.000Z',
     id: JOB_ID,
     status: 'completed',

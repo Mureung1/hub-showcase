@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(102);
+select extensions.plan(103);
 
 select extensions.has_table('public', 'insight_import_jobs', '가져오기 작업 테이블이 존재한다');
 select extensions.has_table('public', 'insight_import_items', '가져오기 항목 테이블이 존재한다');
@@ -922,6 +922,20 @@ select extensions.results_eq(
   '경쟁 중복은 기존 제목·메모·분류를 변경하지 않는다'
 );
 
+reset role;
+select extensions.is(
+  (
+    select count(*)::integer
+    from public.insight_import_undo_items
+    where job_id = (select (result ->> 'id')::uuid from racing_commit_prepared)
+  ),
+  0,
+  '반영 시점에 중복으로 바뀐 항목은 생성 인사이트 ID와 반영 시각을 저장하지 않는다'
+);
+
+set local role authenticated;
+set local "request.jwt.claims" =
+  '{"sub":"00000000-0000-4000-8000-000000000021","role":"authenticated"}';
 create temporary table root_collection_prepared on commit drop as
 select public.prepare_insight_import(
   'file', 'generic-json', repeat('d', 63) || '0',

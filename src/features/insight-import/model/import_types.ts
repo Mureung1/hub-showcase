@@ -112,6 +112,7 @@ export type ImportUndoResult = {
 
 export type ImportHistoryEntry = {
   adapterKey: ImportAdapterKey;
+  canUndo: boolean;
   completedAt: string;
   id: string;
   status: 'completed' | 'undone';
