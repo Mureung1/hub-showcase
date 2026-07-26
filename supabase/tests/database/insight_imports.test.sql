@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(46);
+select extensions.plan(66);
 
 select extensions.has_table('public', 'insight_import_jobs', '가져오기 작업 테이블이 존재한다');
 select extensions.has_table('public', 'insight_import_items', '가져오기 항목 테이블이 존재한다');
@@ -664,6 +664,402 @@ select extensions.ok(
     where id = '40000000-0000-4000-8000-000000000021'
   ),
   '가져오기 작업을 갱신하면 수정 시각 트리거가 적용된다'
+);
+
+select extensions.has_function(
+  'public',
+  'commit_insight_import',
+  array['uuid', 'jsonb'],
+  '가져오기 원자적 반영 RPC가 존재한다'
+);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" =
+  '{"sub":"00000000-0000-4000-8000-000000000021","role":"authenticated"}';
+
+create temporary table commit_prepared_result on commit drop as
+select public.prepare_insight_import(
+  'file',
+  'generic-csv',
+  repeat('3', 64),
+  jsonb_build_array(
+    jsonb_build_object(
+      'candidateId', 'commit-existing-category', 'capturedAtCandidate', null,
+      'collectionPath', jsonb_build_array('기존 분류'), 'explicitMemoCandidate', '기존 메모',
+      'originalUrl', 'https://commit.example/existing-category',
+      'normalizedUrl', 'https://commit.example/existing-category', 'domain', 'commit.example',
+      'sourceLocation', '행 1', 'titleCandidate', '외부 제목',
+      'warnings', '[]'::jsonb, 'exclusionCode', null
+    ),
+    jsonb_build_object(
+      'candidateId', 'commit-new-category', 'capturedAtCandidate', null,
+      'collectionPath', jsonb_build_array('새 분류'), 'explicitMemoCandidate', null,
+      'originalUrl', 'https://commit.example/new-category',
+      'normalizedUrl', 'https://commit.example/new-category', 'domain', 'commit.example',
+      'sourceLocation', '행 2', 'titleCandidate', null,
+      'warnings', jsonb_build_array('missing-title'), 'exclusionCode', null
+    ),
+    jsonb_build_object(
+      'candidateId', 'commit-uncategorized', 'capturedAtCandidate', null,
+      'collectionPath', jsonb_build_array('미분류'), 'explicitMemoCandidate', null,
+      'originalUrl', 'https://commit.example/uncategorized',
+      'normalizedUrl', 'https://commit.example/uncategorized', 'domain', 'commit.example',
+      'sourceLocation', '행 3', 'titleCandidate', '미분류 제목',
+      'warnings', '[]'::jsonb, 'exclusionCode', null
+    )
+  )
+) as result;
+
+create temporary table commit_result on commit drop as
+select public.commit_insight_import(
+  (select (result ->> 'id')::uuid from commit_prepared_result),
+  jsonb_build_array(
+    jsonb_build_object(
+      'collectionKey', '["기존 분류"]',
+      'target', jsonb_build_object('kind', 'existing', 'categoryId', '20000000-0000-4000-8000-000000000021')
+    ),
+    jsonb_build_object(
+      'collectionKey', '["새 분류"]',
+      'target', jsonb_build_object('kind', 'new', 'name', '  연구   ', 'colorKey', 'violet-2')
+    )
+  )
+) as result;
+
+select extensions.results_eq(
+  $$ select result ->> 'createdCount', result ->> 'duplicateCount', result ->> 'excludedCount' from commit_result $$,
+  $$ values ('3', '0', '0') $$,
+  '반영 RPC가 생성·중복·제외 집계를 반환한다'
+);
+select extensions.results_eq(
+  $$
+    select category_id, title, title_origin, memo
+    from public.insights
+    where user_id = '00000000-0000-4000-8000-000000000021'
+      and normalized_url = 'https://commit.example/existing-category'
+  $$,
+  $$ values ('20000000-0000-4000-8000-000000000021'::uuid, '외부 제목'::text, 'capture'::text, '기존 메모'::text) $$,
+  '소유한 기존 분류와 외부 제목·명시 메모를 반영한다'
+);
+select extensions.results_eq(
+  $$
+    select insight.title, insight.title_origin, category.name, category.color_key
+    from public.insights as insight
+    join public.categories as category on category.id = insight.category_id
+    where insight.user_id = '00000000-0000-4000-8000-000000000021'
+      and insight.normalized_url = 'https://commit.example/new-category'
+  $$,
+  $$ values ('commit.example'::text, 'fallback'::text, '연구'::text, 'violet-2'::text) $$,
+  '새 분류와 제목 대체값을 같은 반영으로 생성한다'
+);
+select extensions.is(
+  (
+    select category_id
+    from public.insights
+    where user_id = '00000000-0000-4000-8000-000000000021'
+      and normalized_url = 'https://commit.example/uncategorized'
+  ),
+  null::uuid,
+  '매핑하지 않은 모음은 미분류로 반영한다'
+);
+select extensions.ok(
+  (
+    select status = 'completed'
+      and expires_at is null
+      and created_count = 3
+      and completed_at is not null
+    from public.insight_import_jobs
+    where id = (select (result ->> 'id')::uuid from commit_prepared_result)
+  )
+  and (
+    select bool_and(created_insight_id is not null and imported_updated_at is not null)
+    from public.insight_import_items
+    where job_id = (select (result ->> 'id')::uuid from commit_prepared_result)
+  ),
+  '완료 작업과 항목 생성 결과를 저장한다'
+);
+select extensions.results_eq(
+  $$
+    select public.commit_insight_import(
+      (select (result ->> 'id')::uuid from commit_prepared_result),
+      '[]'::jsonb
+    ) = (select result from commit_result)
+  $$,
+  array[true],
+  '완료된 작업을 재호출하면 저장된 결과를 반환한다'
+);
+select extensions.is(
+  (
+    select count(*)::integer
+    from public.insights
+    where user_id = '00000000-0000-4000-8000-000000000021'
+      and normalized_url like 'https://commit.example/%'
+  ),
+  3,
+  '완료 작업 재호출은 인사이트를 추가하지 않는다'
+);
+
+create temporary table racing_commit_prepared on commit drop as
+select public.prepare_insight_import(
+  'file', 'generic-csv', repeat('5', 64),
+  jsonb_build_array(jsonb_build_object(
+    'candidateId', 'commit-racing-duplicate', 'capturedAtCandidate', null,
+    'collectionPath', jsonb_build_array('경쟁 중복'), 'explicitMemoCandidate', '가져오기 메모',
+    'originalUrl', 'https://commit.example/racing-duplicate',
+    'normalizedUrl', 'https://commit.example/racing-duplicate', 'domain', 'commit.example',
+    'sourceLocation', '행 4', 'titleCandidate', '가져오기 제목',
+    'warnings', '[]'::jsonb, 'exclusionCode', null
+  ))
+) as result;
+insert into public.insights (
+  user_id,
+  original_url,
+  normalized_url,
+  domain,
+  title,
+  title_origin,
+  memo,
+  category_id
+) values (
+  '00000000-0000-4000-8000-000000000021',
+  'https://commit.example/racing-duplicate',
+  'https://commit.example/racing-duplicate',
+  'commit.example',
+  '경쟁 저장 제목',
+  'user',
+  '경쟁 저장 메모',
+  '20000000-0000-4000-8000-000000000021'
+);
+create temporary table racing_commit_result on commit drop as
+select public.commit_insight_import(
+  (select (result ->> 'id')::uuid from racing_commit_prepared),
+  '[]'::jsonb
+) as result;
+select extensions.results_eq(
+  $$
+    select result ->> 'createdCount', result ->> 'duplicateCount'
+    from racing_commit_result
+  $$,
+  $$ values ('0', '1') $$,
+  '준비 뒤 생긴 경쟁 인사이트를 반영 시점 중복으로 다시 분류한다'
+);
+select extensions.results_eq(
+  $$
+    select count(*)::integer, title, title_origin, memo, category_id
+    from public.insights
+    where user_id = '00000000-0000-4000-8000-000000000021'
+      and normalized_url = 'https://commit.example/racing-duplicate'
+    group by title, title_origin, memo, category_id
+  $$,
+  $$
+    values (
+      1,
+      '경쟁 저장 제목'::text,
+      'user'::text,
+      '경쟁 저장 메모'::text,
+      '20000000-0000-4000-8000-000000000021'::uuid
+    )
+  $$,
+  '경쟁 중복은 기존 제목·메모·분류를 변경하지 않는다'
+);
+
+create temporary table failed_commit_prepared on commit drop as
+select public.prepare_insight_import(
+  'file', 'generic-csv', repeat('4', 64),
+  jsonb_build_array(jsonb_build_object(
+    'candidateId', 'failed-atomic', 'capturedAtCandidate', null,
+    'collectionPath', jsonb_build_array('실패 분류'), 'explicitMemoCandidate', null,
+    'originalUrl', 'https://commit.example/failed-atomic',
+    'normalizedUrl', 'https://commit.example/failed-atomic', 'domain', 'commit.example',
+    'sourceLocation', '행 4', 'titleCandidate', null,
+    'warnings', '[]'::jsonb, 'exclusionCode', null
+  ))
+) as result;
+select extensions.results_eq(
+  $$
+    select public.commit_insight_import(
+      (select (result ->> 'id')::uuid from failed_commit_prepared),
+      jsonb_build_array(jsonb_build_object(
+        'collectionKey', '["실패 분류"]',
+        'target', jsonb_build_object('kind', 'existing', 'categoryId', '20000000-0000-4000-8000-000000000022')
+      )))
+  $$,
+  $$ values ('{"ok": false, "reason": "commit-failed"}'::jsonb) $$,
+  '다른 사용자 분류 매핑은 원자적으로 실패한다'
+);
+select extensions.ok(
+  (
+    select status = 'failed' and failure_code = 'commit-failed' and expires_at is not null
+    from public.insight_import_jobs
+    where id = (select (result ->> 'id')::uuid from failed_commit_prepared)
+  )
+  and not exists (
+    select 1 from public.insights
+    where normalized_url = 'https://commit.example/failed-atomic'
+  ),
+  '실패한 반영은 인사이트를 남기지 않고 재시도 상태를 기록한다'
+);
+select extensions.ok(
+  public.retry_insight_import(
+    (select (result ->> 'id')::uuid from failed_commit_prepared),
+    jsonb_build_array(jsonb_build_object(
+      'collectionKey', '["실패 분류"]',
+      'target', jsonb_build_object('kind', 'new', 'name', '재시도', 'colorKey', 'blue-2')
+    ))
+  ) ->> 'createdCount' = '1',
+  '실패 작업은 재시도 RPC로 다시 반영할 수 있다'
+);
+
+create temporary table invalid_color_prepared on commit drop as
+select public.prepare_insight_import(
+  'file', 'generic-csv', repeat('6', 64),
+  jsonb_build_array(jsonb_build_object(
+    'candidateId', 'invalid-color', 'capturedAtCandidate', null,
+    'collectionPath', jsonb_build_array('잘못된 색상'), 'explicitMemoCandidate', null,
+    'originalUrl', 'https://commit.example/invalid-color',
+    'normalizedUrl', 'https://commit.example/invalid-color', 'domain', 'commit.example',
+    'sourceLocation', '행 5', 'titleCandidate', null,
+    'warnings', '[]'::jsonb, 'exclusionCode', null
+  ))
+) as result;
+select extensions.results_eq(
+  $$
+    select public.commit_insight_import(
+      (select (result ->> 'id')::uuid from invalid_color_prepared),
+      jsonb_build_array(jsonb_build_object(
+        'collectionKey', '["잘못된 색상"]',
+        'target', jsonb_build_object('kind', 'new', 'name', '잘못된 색상', 'colorKey', 'invalid')
+      ))
+    )
+  $$,
+  $$ values ('{"ok": false, "reason": "commit-failed"}'::jsonb) $$,
+  '잘못된 분류 색상은 원자적으로 반영을 실패시킨다'
+);
+
+create temporary table missing_collection_prepared on commit drop as
+select public.prepare_insight_import(
+  'file', 'generic-csv', repeat('7', 64),
+  jsonb_build_array(jsonb_build_object(
+    'candidateId', 'missing-collection', 'capturedAtCandidate', null,
+    'collectionPath', jsonb_build_array('실제 모음'), 'explicitMemoCandidate', null,
+    'originalUrl', 'https://commit.example/missing-collection',
+    'normalizedUrl', 'https://commit.example/missing-collection', 'domain', 'commit.example',
+    'sourceLocation', '행 6', 'titleCandidate', null,
+    'warnings', '[]'::jsonb, 'exclusionCode', null
+  ))
+) as result;
+select extensions.results_eq(
+  $$
+    select public.commit_insight_import(
+      (select (result ->> 'id')::uuid from missing_collection_prepared),
+      jsonb_build_array(jsonb_build_object(
+        'collectionKey', '["없는 모음"]',
+        'target', jsonb_build_object('kind', 'uncategorized')
+      ))
+    )
+  $$,
+  $$ values ('{"ok": false, "reason": "commit-failed"}'::jsonb) $$,
+  '준비 작업에 없는 모음 키는 원자적으로 반영을 실패시킨다'
+);
+select extensions.ok(
+  not exists (
+    select 1
+    from public.insights
+    where normalized_url in (
+      'https://commit.example/invalid-color',
+      'https://commit.example/missing-collection'
+    )
+  )
+  and not exists (
+    select 1
+    from public.categories
+    where user_id = '00000000-0000-4000-8000-000000000021'
+      and normalized_name in ('잘못된 색상', '없는 모음')
+  ),
+  '잘못된 매핑은 인사이트와 분류를 남기지 않는다'
+);
+
+create temporary table invalid_state_jobs (
+  state text primary key,
+  job_id uuid not null
+) on commit drop;
+insert into invalid_state_jobs (state, job_id)
+values
+  (
+    'analyzing',
+    (
+      public.prepare_insight_import(
+        'file', 'generic-csv', repeat('8', 64), '[]'::jsonb
+      ) ->> 'id'
+    )::uuid
+  ),
+  (
+    'committing',
+    (
+      public.prepare_insight_import(
+        'file', 'generic-csv', repeat('9', 64), '[]'::jsonb
+      ) ->> 'id'
+    )::uuid
+  ),
+  (
+    'undone',
+    (
+      public.prepare_insight_import(
+        'file', 'generic-csv', repeat('0', 64), '[]'::jsonb
+      ) ->> 'id'
+    )::uuid
+  );
+reset role;
+update public.insight_import_jobs as job
+set
+  status = state.state,
+  expires_at = case when state.state = 'undone' then null else job.expires_at end
+from invalid_state_jobs as state
+where job.id = state.job_id;
+set local role authenticated;
+set local "request.jwt.claims" =
+  '{"sub":"00000000-0000-4000-8000-000000000021","role":"authenticated"}';
+select extensions.throws_ok(
+  $$
+    select public.commit_insight_import(
+      (select job_id from invalid_state_jobs where state = 'analyzing'),
+      '[]'::jsonb
+    )
+  $$,
+  '22023',
+  null,
+  '분석 중 작업은 반영할 수 없다'
+);
+select extensions.throws_ok(
+  $$
+    select public.commit_insight_import(
+      (select job_id from invalid_state_jobs where state = 'committing'),
+      '[]'::jsonb
+    )
+  $$,
+  '22023',
+  null,
+  '이미 반영 중인 작업은 다시 반영할 수 없다'
+);
+select extensions.throws_ok(
+  $$
+    select public.commit_insight_import(
+      (select job_id from invalid_state_jobs where state = 'undone'),
+      '[]'::jsonb
+    )
+  $$,
+  '22023',
+  null,
+  '되돌린 작업은 다시 반영할 수 없다'
+);
+
+reset role;
+select extensions.ok(
+  has_function_privilege('authenticated', 'public.commit_insight_import(uuid, jsonb)', 'execute')
+  and has_function_privilege('authenticated', 'public.retry_insight_import(uuid, jsonb)', 'execute')
+  and not has_function_privilege('anon', 'public.commit_insight_import(uuid, jsonb)', 'execute')
+  and not has_function_privilege('anon', 'public.retry_insight_import(uuid, jsonb)', 'execute'),
+  '반영과 재시도 RPC는 인증 사용자에게만 실행 권한을 부여한다'
 );
 
 select * from extensions.finish();
