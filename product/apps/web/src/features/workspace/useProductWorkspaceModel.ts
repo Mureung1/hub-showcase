@@ -298,6 +298,7 @@ function useWorkspaceStorefronts(
           ? [selectedStorefront3d.longitude, selectedStorefront3d.latitude]
           : null,
         limit: compactMap ? 6 : 12,
+        bounds: viewport.visibleMapBounds,
         minimumDistanceMeters: selectedStorefront3d
           ? compactMap
             ? 125
@@ -306,7 +307,13 @@ function useWorkspaceStorefronts(
             ? 55
             : 40,
       }),
-    [compactMap, selectedStorefront3d, storeSelection.selected?.name, visibleStores],
+    [
+      compactMap,
+      selectedStorefront3d,
+      storeSelection.selected?.name,
+      viewport.visibleMapBounds,
+      visibleStores,
+    ],
   );
   const sameCategoryCount = nearby.data?.same_category_count ?? 0;
   const categoryCoverageReason =

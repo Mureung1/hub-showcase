@@ -13,7 +13,7 @@
 ## 2. 목표
 
 ```text
-사용자가 상권의 건물, 점포, 분석 반경과 유동인구 분포를
+사용자가 상권 경계 안의 건물, 점포와 유동인구 분포를
 한 화면에서 비교하고 필요한 Layer를 직접 켜고 끌 수 있게 한다.
 ```
 
@@ -26,8 +26,8 @@
 ```text
 시점: 상권 전체를 내려다보는 2.5D 시점
 목적: 점포, 경쟁, 인구와 매출 분포 비교
-현재 범위: 분석 중심 반경 100m / 300m / 500m
-후속 ANALYSIS-002: 100m / 300m / 500m, 기본 300m
+현재 범위: 서울시 공식 상권 polygon
+반경 API contract: 서버에만 보존하며 public UI에서는 노출하지 않음
 ```
 
 ### 현장 상세보기
@@ -44,12 +44,11 @@
 
 ```text
 1. 사용자가 상권과 업종을 선택한다.
-2. 분석 반경 100m / 300m / 500m 중 하나를 선택한다.
-3. 지도에서 점포, 건물과 분석 결과를 확인한다.
-4. 유동인구 Layer를 켜고 시간대를 선택한다.
-5. 지도 위 분포와 우측 분석 panel의 실제 집계값을 함께 확인한다.
-6. 특정 가게 또는 촬영 지점을 선택한다.
-7. 현장 상세보기를 열어 사람 눈높이의 3DGS 장면을 확인한다.
+2. 지도에서 점포, 건물과 분석 결과를 확인한다.
+3. 유동인구 Layer를 켜고 시간대를 선택한다.
+4. 지도 위 분포와 우측 분석 panel의 실제 집계값을 함께 확인한다.
+5. 특정 가게 또는 촬영 지점을 선택한다.
+6. 현장 상세보기를 열어 사람 눈높이의 3DGS 장면을 확인한다.
 ```
 
 ## 5. 지도 Layer
@@ -59,7 +58,7 @@
 | 기본 지도   | 켜짐      | 도로, 보도, 경계                  | 공간 맥락               |
 | 2.5D 건물   | 켜짐      | low-poly extrusion                | 건물 단위 탐색          |
 | 점포        | 켜짐      | 업종별 marker                     | 점포 위치와 선택        |
-| 분석 반경   | 켜짐      | 반투명 원과 경계선                | 100m / 300m / 500m 범위 |
+| 상권 경계   | 켜짐      | core·glow·halo polygon            | 서울시 공식 상권 집계 기준 |
 | 유동인구    | 꺼짐      | 점, 단순 사람 symbol 또는 heatmap | 시간대별 상대 밀도      |
 | 주거인구    | 꺼짐      | choropleth 또는 density           | 거주 수요               |
 | 매출        | 꺼짐      | 색상 구간 또는 집계 marker        | 지역별 매출 수준        |
@@ -215,7 +214,7 @@ flowchart LR
 4. 나머지 점포는 기존 marker 또는 POI label
 ```
 
-동시에 표시하는 상세 store marker 상한은 desktop 12개, mobile 6개로 둔다. 선택 점포는 항상 포함하고 상한을 넘으면 거리, 검색 순위, 선택 업종 일치 순으로 정렬한다. 이 숫자는 첫 구현의 렌더링 상한이며 실제 성능 측정 후 변경할 수 있다.
+동시에 표시하는 상세 store marker 상한은 desktop 12개, mobile 6개로 둔다. 현재 map viewport 안의 점포만 후보로 삼고, 선택 점포는 viewport 밖이어도 유지한다. 후보가 상한을 넘으면 거리, 검색 순위, 선택 업종 일치 순으로 정렬한다. 이 숫자는 첫 구현의 렌더링 상한이며 실제 성능 측정 후 변경할 수 있다.
 
 점포별 표시 단계:
 
@@ -649,7 +648,7 @@ OSM POI label과 후보 점포 prefab 표시 전환
 Docs Home 복귀
 ```
 
-현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 Render FastAPI가 production Supabase PostgreSQL을 조회하며, API가 준비되지 않은 동안에는 분석 수치를 검증 snapshot으로 대체하지 않는다. 선택 상권은 canonical polygon을 따라 노란 core·glow·halo 경계로 표시한다. LocalTwin 기본 경로에서 화면 viewport가 지원 Overlay를 조금이라도 포함하면 기본 building extrusion을 숨겨 전용 건물과 중복 렌더링하지 않는다. 이 규칙은 제출용 `/en` 데모에는 적용하지 않는다. 선택한 지원 업종은 공유 GLB body·category atlas·procedural attachment를 조합한 custom 3D marker 한 개로 표시한다. 주변 HTML marker는 선택 marker 105m 안에서 제거하고 desktop 최대 12개·mobile 최대 6개로 제한한다. 선택 시 지도는 16.8 zoom으로 이동하고, 상권 경계선이 현재 분석의 공간 기준을 표시한다. MAP-004의 asset cache까지 연결됐지만 복수 점포 건물 묶음과 회전·reduced-motion 성능 검증이 남아 있으므로 전체 Task는 계속 진행 중이다.
+현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 Render FastAPI가 production Supabase PostgreSQL을 조회하며, API가 준비되지 않은 동안에는 분석 수치를 검증 snapshot으로 대체하지 않는다. 선택 상권은 canonical polygon을 따라 노란 core·glow·halo 경계로 표시한다. LocalTwin 기본 경로에서 화면 viewport가 지원 Overlay를 조금이라도 포함하면 기본 building extrusion을 숨겨 전용 건물과 중복 렌더링하지 않는다. 이 규칙은 제출용 `/en` 데모에는 적용하지 않는다. 선택한 지원 업종은 공유 GLB body·category atlas·procedural attachment를 조합한 custom 3D marker 한 개로 표시한다. 주변 HTML marker는 현재 viewport 안의 후보만 사용하고 선택 marker 105m 안에서 제거한 뒤 desktop 최대 12개·mobile 최대 6개로 제한한다. 선택 시 지도는 16.8 zoom으로 이동하고, 상권 경계선이 현재 분석의 공간 기준을 표시한다. MAP-004의 asset cache까지 연결됐지만 복수 점포 건물 묶음과 회전·reduced-motion 성능 검증이 남아 있으므로 전체 Task는 계속 진행 중이다.
 
 ### 14.1 서버에 보존한 이동형 반경 분석 contract
 

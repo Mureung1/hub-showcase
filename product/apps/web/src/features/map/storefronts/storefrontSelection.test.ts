@@ -54,4 +54,16 @@ describe("selectMapStores", () => {
       }).map(({ name }) => name),
     ).toEqual(["후보1", "후보2"]);
   });
+
+  it("uses only stores inside the current map view while preserving the selected store", () => {
+    expect(
+      selectMapStores(stores, {
+        selectedName: "선택",
+        focus: null,
+        limit: 4,
+        minimumDistanceMeters: 1,
+        bounds: { west: 126.9208, south: 37.559, east: 126.9222, north: 37.561 },
+      }).map(({ name }) => name),
+    ).toEqual(["선택", "후보1", "후보2"]);
+  });
 });
