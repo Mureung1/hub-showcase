@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(76);
+select extensions.plan(87);
 
 select extensions.has_table('public', 'insight_import_jobs', '가져오기 작업 테이블이 존재한다');
 select extensions.has_table('public', 'insight_import_items', '가져오기 항목 테이블이 존재한다');
@@ -1310,5 +1310,181 @@ select extensions.ok(
   'Undo·기록 삭제는 인증 사용자에게, 만료 정리는 서비스 역할에만 허용한다'
 );
 
+select extensions.has_table(
+  'public',
+  'insight_import_connections',
+  'Notion 일회성 연결 테이블이 존재한다'
+);
+select extensions.has_view(
+  'public',
+  'my_insight_import_connections',
+  '사용자용 비민감 연결 view가 존재한다'
+);
+select extensions.ok(
+  (
+    select relrowsecurity
+    from pg_class
+    where oid = 'public.insight_import_connections'::regclass
+  ),
+  'Notion 연결 테이블에 RLS가 활성화되어 있다'
+);
+select extensions.ok(
+  has_column_privilege(
+    'authenticated',
+    'public.insight_import_connections',
+    'status',
+    'select'
+  )
+  and not has_column_privilege(
+    'authenticated',
+    'public.insight_import_connections',
+    'access_ciphertext',
+    'select'
+  )
+  and not has_table_privilege(
+    'anon',
+    'public.insight_import_connections',
+    'select'
+  ),
+  '인증 사용자는 비민감 열만 읽고 token 열과 anon 조회는 차단된다'
+);
+
+insert into public.insight_import_jobs (
+  id, user_id, input_kind, adapter_key, status, idempotency_key, expires_at
+)
+values (
+  '42000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000021',
+  'connected-account',
+  'notion',
+  'analyzing',
+  repeat('f', 64),
+  now() + interval '1 hour'
+);
+insert into public.insight_import_connections (
+  id, user_id, job_id, provider, status, return_mode, include_page_urls,
+  state_hash, state_expires_at, expires_at
+)
+values (
+  '43000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000021',
+  '42000000-0000-4000-8000-000000000001',
+  'notion',
+  'pending',
+  'web',
+  false,
+  repeat('1', 64),
+  now() + interval '5 minutes',
+  now() + interval '23 hours'
+);
+
+set local role authenticated;
+set local "request.jwt.claims" =
+  '{"sub":"00000000-0000-4000-8000-000000000021","role":"authenticated"}';
+select extensions.is(
+  (select count(*)::integer from public.my_insight_import_connections),
+  1,
+  '사용자는 view에서 자신의 비민감 연결만 조회한다'
+);
+
+reset role;
+set local role service_role;
+set local "request.jwt.claims" = '{"role":"service_role"}';
+create temporary table consumed_connection_result (
+  result jsonb
+) on commit drop;
+insert into consumed_connection_result (result)
+select public.consume_insight_import_oauth_state(repeat('1', 64));
+select extensions.is(
+  (select result ->> 'id' from consumed_connection_result),
+  '43000000-0000-4000-8000-000000000001',
+  'pending OAuth state를 한 번 소비한다'
+);
+select extensions.is(
+  public.consume_insight_import_oauth_state(repeat('1', 64)),
+  null,
+  '소비한 OAuth state는 다시 사용할 수 없다'
+);
+
+select public.store_insight_import_oauth_tokens(
+  '43000000-0000-4000-8000-000000000001',
+  jsonb_build_object(
+    'accessCiphertext', 'ciphertext',
+    'accessNonce', 'nonce',
+    'accessAuthTag', 'tag',
+    'keyVersion', 1,
+    'workspaceName', '테스트 워크스페이스',
+    'workspaceId', 'workspace-id'
+  )
+);
+select extensions.ok(
+  exists (
+    select 1
+    from public.insight_import_connections
+    where id = '43000000-0000-4000-8000-000000000001'
+      and status = 'connected'
+      and access_ciphertext = 'ciphertext'
+      and access_nonce = 'nonce'
+      and access_auth_tag = 'tag'
+  ),
+  '암호화 token과 workspace 정보를 연결에 저장한다'
+);
+
+select public.finish_insight_import_connection(
+  '43000000-0000-4000-8000-000000000001',
+  'completed'
+);
+select extensions.ok(
+  exists (
+    select 1
+    from public.insight_import_connections
+    where id = '43000000-0000-4000-8000-000000000001'
+      and status = 'completed'
+      and access_ciphertext is null
+      and access_nonce is null
+      and access_auth_tag is null
+  ),
+  '연결 완료 시 token을 삭제하고 terminal 상태로 바꾼다'
+);
+select extensions.ok(
+  has_function_privilege(
+    'service_role',
+    'public.consume_insight_import_oauth_state(text)',
+    'execute'
+  )
+  and has_function_privilege(
+    'service_role',
+    'public.store_insight_import_oauth_tokens(uuid,jsonb)',
+    'execute'
+  )
+  and has_function_privilege(
+    'service_role',
+    'public.finish_insight_import_connection(uuid,text)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'authenticated',
+    'public.consume_insight_import_oauth_state(text)',
+    'execute'
+  ),
+  'OAuth state와 token 함수는 service role만 실행한다'
+);
+select extensions.ok(
+  exists (
+    select 1
+    from pg_constraint
+    where conrelid = 'public.insight_import_connections'::regclass
+      and conname = 'insight_import_connections_state_expiry_check'
+  )
+  and exists (
+    select 1
+    from pg_constraint
+    where conrelid = 'public.insight_import_connections'::regclass
+      and conname = 'insight_import_connections_terminal_token_check'
+  ),
+  'state 10분 만료와 terminal token 삭제 제약이 존재한다'
+);
+
+reset role;
 select * from extensions.finish();
 rollback;
