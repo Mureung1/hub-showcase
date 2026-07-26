@@ -1,0 +1,10 @@
+{
+  "object": "data_source",
+  "id": "data-source-id",
+  "title": [{ "plain_text": "업무 자료" }],
+  "properties": {
+    "이름": { "id": "title", "name": "이름", "type": "title" },
+    "링크": { "id": "url-property", "name": "링크", "type": "url" },
+    "메모": { "id": "memo-property", "name": "메모", "type": "rich_text" }
+  }
+}
