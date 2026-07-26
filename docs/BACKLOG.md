@@ -328,14 +328,13 @@ Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInqui
 - [x] `./gradlew compileJava` 성공 확인 — 이번 스코프는 데이터 양 확보 우선이라 테스트 커버리지는 다음으로 미룸(사용자 명시적 지시)
 - [x] 실제 `job_posting` 적재량 재확인 — "반도체 품질관리"/"전산직" `POST /api/job-postings/collect` 재트리거 결과 각각 28건/31건 실수집(제목검색 시절 0건/0~1건 대비 압도적 증가), `GET /api/certification?jobTitle=` 반영 확인(전산직 정보처리기사 5/31=16.1%, 반도체 품질관리 정보처리기사 2/28=7.1%), "안전" 폴백 경로 회귀 없음(15건, 산업안전기사 2/15=13.3%)
 
-**미해결 — "반도체 품질관리"/"전산직" job_title 문자열의 시드 픽스처 충돌 (구조적, 반복 발생함)**
-`CertificationMentionMapperTest`가 V2 시드값을 정확히 이 두 job_title 문자열로 하드코딩하고 있는데, NCS 코드 전환으로 이 두 job_title이 이제 실제로도 잘 수집되는 정식 대상이 됐다 — Issue 8 시절엔 "전산직"만 어쩌다 실수집했다가 깨졌지만, 이번엔 두 job_title 모두 매번 실제 데이터로 정상 덮어써짐을 실측 확인했다. 즉 앞으로 누구든 이 두 job_title로 실제 수집을 트리거할 때마다 이 테스트가 깨진다 — 이번엔 DB를 시드값으로 복원해서 테스트를 다시 통과시켰지만(`docs/BACKLOG.md` 이 항목을 남기는 이유), 이는 근본 해결이 아니라 임시 봉합이다. 다음 슬라이스에서 반드시 처리: 테스트를 실제 job_title과 겹치지 않는 전용 픽스처 문자열로 옮기거나, `@Sql`로 테스트 자체 데이터를 격리해야 함.
+**해결 — "반도체 품질관리"/"전산직" job_title 문자열의 시드 픽스처 충돌**
+`CertificationMentionMapperTest`가 V2 시드값을 정확히 이 두 job_title 문자열로 하드코딩하고 있었는데, NCS 코드 전환으로 이 두 job_title이 실제로도 잘 수집되는 정식 대상이 되면서 실수집 때마다 테스트가 깨지는 문제가 반복됐다(두 번 실측). `V2__seed.sql`/`AlioJobTitleNcsMapping`/프론트 예시 칩은 그대로 두고(실사용자 대상 제품 기본값이라는 실제 목적이 있음), `CertificationMentionMapperTest`만 전용 fixture(`TEST_JOB_TITLE_A`="테스트직무-mention랭킹A", `TEST_JOB_TITLE_B`="테스트직무-mention랭킹B")로 분리 — 기존 `JobPostingCollectedConsumerTest`의 `테스트직무-consumer` 컨벤션을 그대로 따름, `@BeforeEach`에서 시드값과 동일한 수치를 직접 insert, `@AfterEach`에서 delete. **재현 검증 완료**: "반도체 품질관리"/"전산직"으로 실제 ALIO 재수집을 다시 트리거해 `certification_mention`을 실데이터로 덮어쓴 상태에서 `./gradlew test --rerun-tasks`를 돌려도 52개 전부 통과 확인 — 두 job_title이 구조적으로 다시는 겹치지 않아 근본 해결.
 
 **이번엔 하지 않은 것**
 - ncsCdLst 콤마 다중값 단일요청 지원 여부 검증(개별요청+병합으로 충분한 규모라 보류, ALIO 호출 한도가 실제 문제가 될 때 재검토)
 - jobTitle→NCS 코드 매핑의 외부 설정화(현재 직무가 2~3개뿐이라 과설계, Wiki_Home.md NFR "코드 재배포 없이 조정 가능"은 백로그로 유지)
 - NCS 코드 전환 경로의 JUnit 테스트(사용자 지시로 다음 슬라이스)
-- `CertificationMentionMapperTest`의 시드 픽스처 job_title 충돌 근본 해결(위 항목, 다음 슬라이스 최우선 후보)
 
 ---
 
@@ -352,7 +351,7 @@ Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInqui
 | Java 그래프 알고리즘 (경로 최적화) | 선수조건 그래프 구성, 위상정렬, 순환탐지 | P1 | - | Done (Issue 6) |
 | 진행 상황 대시보드 (QueryDsl 동적 필터) | 자격증 단위 완료/준비중/예정 추적, QueryDsl 첫 실사용 | P1 | - | Done (Issue 9) |
 | Issue 7. 경로 최적화 DB/서비스/API 연동 | `certification_prerequisite` 테이블, 엔티티, `CertificationPathService`, `CertificationPathController` — pathfinder 결과를 실제 DB 데이터와 연결. 완성되면 Issue 9의 `target_date`를 경로 기반 스케줄과 연동 검토 | P1 | 다음 슬라이스 | Todo |
-| `CertificationMentionMapperTest` 시드 픽스처 충돌 근본 해결 | "반도체 품질관리"/"전산직" job_title이 V2 시드 픽스처이면서 동시에 NCS 코드 기반 실제 수집 대상이라 실수집할 때마다 테스트가 깨짐(Issue 12에서 반복 확인) — 전용 픽스처 문자열로 분리하거나 `@Sql` 격리 필요 | P0 | 다음 슬라이스 | Todo |
+| `CertificationMentionMapperTest` 시드 픽스처 충돌 근본 해결 | "반도체 품질관리"/"전산직" job_title이 V2 시드 픽스처이면서 동시에 NCS 코드 기반 실제 수집 대상이라 실수집할 때마다 테스트가 깨짐(Issue 12에서 반복 확인) — 전용 픽스처 job_title(`테스트직무-mention랭킹A/B`)로 분리, 실수집 재현 후에도 테스트 통과 확인 | P0 | - | Done |
 | ALIO 수집 결과 job_title 회귀 테스트 | Issue 12의 NCS 코드 전환 경로(`AlioJobTitleNcsMapping`, `searchByNcsCodes` 병합·중복제거)에 대한 JUnit 테스트 — 이번 슬라이스는 데이터 양 확보 우선으로 명시적으로 미룸 | P1 | 다음 슬라이스 | Todo |
 | 랭킹 API에 certificationId 추가 | `CertificationRankingResponse`에 id 노출 — 랭킹 카드 → 진행 상황 크로스탭 "추적하기" 연동의 선행 조건 (Issue 9에서 범위 밖으로 분리) | P2 | 추후 | Todo |
 | 컨슈머 재시도/DLQ 정책 | `JobPostingCollectedConsumer` 에러 핸들링 — 실제 메시지 스키마 확정 후 설계 (Issue 10에서 범위 밖으로 분리) | P2 | 추후 | Todo |
