@@ -34,9 +34,9 @@ export function ImportHistory({
   onDelete,
   onUndo,
 }: ImportHistoryProps) {
-  const [undoAvailability, setUndoAvailability] = useState<
-    Record<string, boolean>
-  >(() => computeUndoAvailability(entries).availability);
+  const [expiredUndoIds, setExpiredUndoIds] = useState<ReadonlySet<string>>(
+    () => new Set()
+  );
   const [deleteConfirmationId, setDeleteConfirmationId] = useState<
     string | null
   >(null);
@@ -45,28 +45,24 @@ export function ImportHistory({
   );
 
   useEffect(() => {
-    let timeoutId: number | undefined;
+    const timeoutIds = entries
+      .filter((entry) => entry.canUndo)
+      .map((entry) =>
+        window.setTimeout(() => {
+          setExpiredUndoIds((current) => {
+            if (current.has(entry.id)) {
+              return current;
+            }
 
-    function updateUndoAvailability() {
-      const currentTime = Date.now();
-      const { availability, nextExpiration } = computeUndoAvailability(
-        entries,
-        currentTime
+            const next = new Set(current);
+            next.add(entry.id);
+            return next;
+          });
+        }, entry.undoRemainingMs)
       );
 
-      setUndoAvailability(availability);
-
-      if (nextExpiration !== undefined) {
-        timeoutId = window.setTimeout(
-          updateUndoAvailability,
-          Math.min(nextExpiration - currentTime, 2_147_483_647)
-        );
-      }
-    }
-
-    updateUndoAvailability();
-
-    return () => window.clearTimeout(timeoutId);
+    return () =>
+      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
   }, [entries]);
 
   async function confirmDelete(jobId: string) {
@@ -93,7 +89,7 @@ export function ImportHistory({
 
       <ul className="insight-import-dialog__history-list">
         {entries.map((entry) => {
-          const canUndo = undoAvailability[entry.id] ?? entry.canUndo;
+          const canUndo = entry.canUndo && !expiredUndoIds.has(entry.id);
 
           return (
             <li className="insight-import-dialog__history-item" key={entry.id}>
@@ -176,39 +172,6 @@ export function ImportHistory({
       </ul>
     </section>
   );
-}
-
-function computeUndoAvailability(
-  entries: readonly ImportHistoryEntry[],
-  currentTime?: number
-) {
-  const availability: Record<string, boolean> = {};
-  let nextExpiration: number | undefined;
-
-  for (const entry of entries) {
-    const expiration =
-      entry.undoExpiresAt === null
-        ? undefined
-        : new Date(entry.undoExpiresAt).getTime();
-    const canUndo =
-      currentTime === undefined
-        ? entry.canUndo
-        : entry.status === 'completed' &&
-          expiration !== undefined &&
-          expiration > currentTime;
-
-    availability[entry.id] = canUndo;
-
-    if (
-      canUndo &&
-      expiration !== undefined &&
-      (nextExpiration === undefined || expiration < nextExpiration)
-    ) {
-      nextExpiration = expiration;
-    }
-  }
-
-  return { availability, nextExpiration };
 }
 
 function getAdapterLabel(entry: ImportHistoryEntry) {

@@ -134,12 +134,13 @@ describe('createBrowserInsightImportService', () => {
     });
   });
 
-  it('완료 기록과 Undo 만료 시각을 제한된 열로 최신순 조회한다', async () => {
-    const historyQuery = createQuery({
+  it('서버 시각을 기준으로 완료 기록의 Undo 가능 여부를 조회한다', async () => {
+    const rpc = vi.fn().mockResolvedValue({
       data: [
         {
           adapter_key: 'pasted-text',
           already_deleted_count: 1,
+          can_undo: true,
           completed_at: COMPLETED_AT,
           created_count: 3,
           duplicate_count: 1,
@@ -148,6 +149,7 @@ describe('createBrowserInsightImportService', () => {
           input_duplicate_count: 1,
           new_count: 3,
           preserved_count: 1,
+          server_now: '2099-07-26T02:00:00.000Z',
           status: 'completed',
           total_count: 6,
           undo_expires_at: UNDO_EXPIRES_AT,
@@ -155,41 +157,39 @@ describe('createBrowserInsightImportService', () => {
       ],
       error: null,
     });
-    const from = vi.fn(() => historyQuery);
-    const service = createBrowserInsightImportService(createClient({ from }));
+    const service = createBrowserInsightImportService(createClient({ rpc }));
+    const dateNow = vi
+      .spyOn(Date, 'now')
+      .mockReturnValue(new Date('2100-01-01T00:00:00.000Z').getTime());
 
-    await expect(service.listHistory()).resolves.toEqual({
-      ok: true,
-      value: [
-        {
-          adapterKey: 'pasted-text',
-          canUndo: true,
-          completedAt: COMPLETED_AT,
-          id: JOB_ID,
-          status: 'completed',
-          summary: {
-            createdCount: 3,
-            duplicateCount: 1,
-            excludedCount: 1,
-            inputDuplicateCount: 1,
-            newCount: 3,
-            totalCount: 6,
+    try {
+      await expect(service.listHistory()).resolves.toEqual({
+        ok: true,
+        value: [
+          {
+            adapterKey: 'pasted-text',
+            canUndo: true,
+            completedAt: COMPLETED_AT,
+            id: JOB_ID,
+            status: 'completed',
+            summary: {
+              createdCount: 3,
+              duplicateCount: 1,
+              excludedCount: 1,
+              inputDuplicateCount: 1,
+              newCount: 3,
+              totalCount: 6,
+            },
+            undoExpiresAt: UNDO_EXPIRES_AT,
+            undoRemainingMs: 3_600_000,
+            undoResult: null,
           },
-          undoExpiresAt: UNDO_EXPIRES_AT,
-          undoResult: null,
-        },
-      ],
-    });
-    expect(from).toHaveBeenCalledWith('insight_import_jobs');
-    expect(historyQuery.select).toHaveBeenCalledTimes(1);
-    expect(historyQuery.in).toHaveBeenCalledWith('status', [
-      'completed',
-      'undone',
-    ]);
-    expect(historyQuery.order).toHaveBeenCalledWith('completed_at', {
-      ascending: false,
-    });
-    expect(historyQuery.limit).toHaveBeenCalledWith(20);
+        ],
+      });
+      expect(rpc).toHaveBeenCalledWith('list_insight_import_history');
+    } finally {
+      dateNow.mockRestore();
+    }
   });
 
   it('Undo 만료 응답을 전용 실패 사유로 반환한다', async () => {

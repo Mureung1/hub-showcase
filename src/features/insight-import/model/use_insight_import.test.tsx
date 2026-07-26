@@ -468,6 +468,7 @@ function createHistoryEntry(): ImportHistoryEntry {
       totalCount: 1,
     },
     undoExpiresAt: '2099-07-26T03:00:00.000Z',
+    undoRemainingMs: 86_400_000,
     undoResult: null,
   };
 }

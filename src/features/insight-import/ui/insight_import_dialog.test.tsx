@@ -1,5 +1,5 @@
 /* @vitest-environment jsdom */
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -268,6 +268,7 @@ describe('InsightImportDialog', () => {
           ...createHistoryEntry(),
           canUndo: false,
           undoExpiresAt: '2000-01-01T00:00:00.000Z',
+          undoRemainingMs: 0,
         },
       ],
     });
@@ -296,6 +297,38 @@ describe('InsightImportDialog', () => {
 
     expect(markup).toContain('가져오기 되돌리기');
     expect(markup).not.toContain('되돌릴 수 있는 24시간이 지났어요.');
+  });
+
+  it('서버가 계산한 남은 시간이 지나면 되돌리기 버튼을 숨긴다', async () => {
+    vi.useFakeTimers();
+
+    try {
+      render(
+        <DesignSystemProvider>
+          <ImportHistory
+            entries={[
+              { ...createHistoryEntry(), undoRemainingMs: 1_000 },
+            ]}
+            errorMessage={null}
+            loading={false}
+            onDelete={vi.fn()}
+            onUndo={vi.fn()}
+          />
+        </DesignSystemProvider>
+      );
+
+      expect(
+        screen.getByRole('button', { name: '가져오기 되돌리기' })
+      ).toBeTruthy();
+
+      await act(() => vi.advanceTimersByTimeAsync(1_000));
+
+      expect(
+        screen.getByText('되돌릴 수 있는 24시간이 지났어요.')
+      ).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('Notion 공식 연결 안내와 기본값이 꺼진 페이지 주소 선택을 제공한다', async () => {
@@ -500,6 +533,7 @@ function createHistoryEntry(): ImportHistoryEntry {
       totalCount: 2,
     },
     undoExpiresAt: '2099-07-26T03:00:00.000Z',
+    undoRemainingMs: 86_400_000,
     undoResult: null,
   };
 }

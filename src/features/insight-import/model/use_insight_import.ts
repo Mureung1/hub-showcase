@@ -404,7 +404,12 @@ export function useInsightImport({
             setHistory((currentHistory) =>
               currentHistory.map((entry) =>
                 entry.id === jobId
-                  ? { ...entry, canUndo: false, undoExpiresAt: null }
+                  ? {
+                      ...entry,
+                      canUndo: false,
+                      undoExpiresAt: null,
+                      undoRemainingMs: 0,
+                    }
                   : entry
               )
             );
@@ -433,6 +438,7 @@ export function useInsightImport({
                   canUndo: false,
                   status: 'undone',
                   undoExpiresAt: null,
+                  undoRemainingMs: 0,
                   undoResult: undoResult.value,
                 }
               : entry

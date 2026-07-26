@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(103);
+select extensions.plan(104);
 
 select extensions.has_table('public', 'insight_import_jobs', '가져오기 작업 테이블이 존재한다');
 select extensions.has_table('public', 'insight_import_items', '가져오기 항목 테이블이 존재한다');
@@ -828,6 +828,21 @@ set local "request.jwt.claims" =
   '{"sub":"00000000-0000-4000-8000-000000000021","role":"authenticated"}';
 select extensions.results_eq(
   $$
+    select id, can_undo, server_now <= undo_expires_at
+    from public.list_insight_import_history()
+    where id = (select (result ->> 'id')::uuid from commit_prepared_result)
+  $$,
+  $$
+    values (
+      (select (result ->> 'id')::uuid from commit_prepared_result),
+      true,
+      true
+    )
+  $$,
+  '가져오기 기록은 서버 시각으로 되돌리기 가능 여부와 남은 시간을 판정한다'
+);
+select extensions.results_eq(
+  $$
     select public.commit_insight_import(
       (select (result ->> 'id')::uuid from commit_prepared_result),
       '[]'::jsonb
@@ -1202,6 +1217,7 @@ select extensions.ok(
 select extensions.ok(
   to_regprocedure('public.undo_insight_import(uuid)') is not null
   and to_regprocedure('public.delete_insight_import_record(uuid)') is not null
+  and to_regprocedure('public.list_insight_import_history()') is not null
   and to_regprocedure('public.cleanup_expired_insight_imports()') is not null
   and to_regprocedure('public.cleanup_expired_insight_import_undo_items()') is not null,
   'Undo, 기록 삭제와 만료 정리 RPC가 존재한다'
@@ -1538,8 +1554,10 @@ select extensions.ok(
 select extensions.ok(
   has_function_privilege('authenticated', 'public.undo_insight_import(uuid)', 'execute')
   and has_function_privilege('authenticated', 'public.delete_insight_import_record(uuid)', 'execute')
+  and has_function_privilege('authenticated', 'public.list_insight_import_history()', 'execute')
   and not has_function_privilege('anon', 'public.undo_insight_import(uuid)', 'execute')
   and not has_function_privilege('anon', 'public.delete_insight_import_record(uuid)', 'execute')
+  and not has_function_privilege('anon', 'public.list_insight_import_history()', 'execute')
   and has_function_privilege('service_role', 'public.cleanup_expired_insight_imports()', 'execute')
   and not has_function_privilege('authenticated', 'public.cleanup_expired_insight_imports()', 'execute')
   and not has_function_privilege('anon', 'public.cleanup_expired_insight_imports()', 'execute')

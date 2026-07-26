@@ -118,6 +118,7 @@ export type ImportHistoryEntry = {
   status: 'completed' | 'undone';
   summary: ImportSummary;
   undoExpiresAt: string | null;
+  undoRemainingMs: number;
   undoResult: ImportUndoResult | null;
 };
 
