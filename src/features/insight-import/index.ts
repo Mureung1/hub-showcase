@@ -5,9 +5,23 @@ export { analyzeImportUrl } from './model/import_url';
 export type { ImportUrlResult } from './model/import_url';
 export { pastedTextAdapter } from './model/pasted_text_adapter';
 export {
+  createFileImportIdempotencyKey,
   createImportIdempotencyKey,
   useInsightImport,
 } from './model/use_insight_import';
+export {
+  detectFileInput,
+  extractFileCandidates,
+} from './model/file_adapter_registry';
+export type {
+  DetectedFileInput,
+  FileExtractionResult,
+} from './model/file_adapter_registry';
+export {
+  ImportFileError,
+  assertImportFileSize,
+  readTextFile,
+} from './model/read_import_file';
 export type {
   InsightImportController,
   InsightImportState,

@@ -1,6 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 
+import type { ImportSourceAdapter } from './import_adapter';
 import { analyzeImportCandidates } from './import_analysis';
+import { extractFileCandidates } from './file_adapter_registry';
 import type {
   ImportServiceFailureReason,
   InsightImportService,
@@ -11,10 +13,12 @@ import {
   type ImportAdapterKey,
   type ImportCollectionMapping,
   type ImportCommitResult,
+  type ImportFieldMapping,
   type ImportHistoryEntry,
   type ImportUndoResult,
   type PreparedImport,
 } from './import_types';
+import { ImportFileError } from './read_import_file';
 
 export type InsightImportState =
   | { stage: 'source'; errorMessage: string | null }
@@ -39,12 +43,14 @@ export type InsightImportState =
     };
 
 export type UseInsightImportOptions = {
+  fileAdapters?: readonly ImportSourceAdapter[];
   onCategoriesChanged?: () => void | Promise<void>;
   onLibraryChanged?: () => void | Promise<void>;
   service: InsightImportService;
 };
 
 export type InsightImportController = {
+  analyzeFile(file: File, mappings?: ImportFieldMapping[]): Promise<void>;
   analyzePastedText(text: string): Promise<void>;
   cancelCurrentOperation(): void;
   canCommit: boolean;
@@ -75,6 +81,7 @@ const REFRESH_FAILURE_MESSAGE =
   '가져오기는 완료됐지만 보관함을 새로고침하지 못했습니다.';
 
 export function useInsightImport({
+  fileAdapters = [],
   onCategoriesChanged,
   onLibraryChanged,
   service,
@@ -169,6 +176,76 @@ export function useInsightImport({
       }
     },
     [applyState, service]
+  );
+
+  const analyzeFile = useCallback(
+    async (file: File, mappings?: ImportFieldMapping[]) => {
+      if (operationPendingRef.current) {
+        return;
+      }
+
+      operationPendingRef.current = true;
+      const revision = ++operationRevisionRef.current;
+      applyState({ errorMessage: null, stage: 'analyzing' });
+
+      try {
+        const extraction = await extractFileCandidates(
+          { file, kind: 'file', mappings },
+          fileAdapters
+        );
+
+        if (extraction.candidates === null) {
+          throw new ImportFileError('unsupported-structure');
+        }
+
+        const analysis = analyzeImportCandidates(extraction.candidates);
+        const idempotencyKey = await createFileImportIdempotencyKey(
+          extraction.adapterKey,
+          file,
+          mappings
+        );
+        const preparedResult = await service.prepare({
+          adapterKey: extraction.adapterKey,
+          idempotencyKey,
+          inputKind: 'file',
+          items: analysis.items,
+        });
+
+        if (operationRevisionRef.current !== revision) {
+          return;
+        }
+
+        if (!preparedResult.ok) {
+          applyState({
+            errorMessage: getServiceErrorMessage(preparedResult.reason),
+            stage: 'source',
+          });
+          return;
+        }
+
+        applyState({
+          errorMessage: null,
+          mappings: createDefaultMappings(preparedResult.value),
+          prepared: preparedResult.value,
+          stage: 'preview',
+        });
+      } catch (error) {
+        if (operationRevisionRef.current === revision) {
+          applyState({
+            errorMessage:
+              error instanceof ImportFileError
+                ? getFileErrorMessage(error.code)
+                : getServiceErrorMessage('write-failed'),
+            stage: 'source',
+          });
+        }
+      } finally {
+        if (operationRevisionRef.current === revision) {
+          operationPendingRef.current = false;
+        }
+      }
+    },
+    [applyState, fileAdapters, service]
   );
 
   const setCollectionMapping = useCallback(
@@ -443,6 +520,7 @@ export function useInsightImport({
       : state.errorMessage;
 
   return {
+    analyzeFile,
     analyzePastedText,
     cancelCurrentOperation,
     canCommit: state.stage === 'preview' && state.prepared.summary.newCount > 0,
@@ -476,6 +554,33 @@ export async function createImportIdempotencyKey(
   ).join('');
 }
 
+export async function createFileImportIdempotencyKey(
+  adapterKey: ImportAdapterKey,
+  file: File,
+  mappings: ImportFieldMapping[] = []
+) {
+  const normalizedMappings = [...mappings]
+    .sort((left, right) => left.sourceKey.localeCompare(right.sourceKey))
+    .map(({ memoField, sourceKey, titleField, urlField }) => ({
+      memoField,
+      sourceKey,
+      titleField,
+      urlField,
+    }));
+  const prefix = new TextEncoder().encode(
+    `${adapterKey}\0${JSON.stringify(normalizedMappings)}\0`
+  );
+  const fileBytes = new Uint8Array(await file.arrayBuffer());
+  const bytes = new Uint8Array(prefix.length + fileBytes.length);
+  bytes.set(prefix);
+  bytes.set(fileBytes, prefix.length);
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, '0')
+  ).join('');
+}
+
 function createDefaultMappings(
   prepared: PreparedImport
 ): ImportCollectionMapping[] {
@@ -499,4 +604,20 @@ function getServiceErrorMessage(reason: ImportServiceFailureReason) {
   }
 
   return '가져오기를 완료하지 못했습니다. 다시 시도해 주세요.';
+}
+
+function getFileErrorMessage(code: ImportFileError['code']) {
+  if (code === 'file-too-large' || code === 'limit-exceeded') {
+    return '가져올 파일의 크기나 항목 수가 제한을 넘었습니다.';
+  }
+
+  if (code === 'unsupported-encoding') {
+    return 'UTF-8 또는 BOM이 있는 UTF-16 텍스트 파일을 선택해 주세요.';
+  }
+
+  if (code === 'corrupted-file') {
+    return '손상된 파일이라 가져올 수 없습니다.';
+  }
+
+  return '지원하는 링크 파일 구조를 찾지 못했습니다.';
 }

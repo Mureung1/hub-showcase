@@ -2,6 +2,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { ImportSourceAdapter } from './import_adapter';
 import type {
   ImportServiceResult,
   InsightImportService,
@@ -9,6 +10,7 @@ import type {
 } from './insight_import_service';
 import type { ImportHistoryEntry, PreparedImport } from './import_types';
 import {
+  createFileImportIdempotencyKey,
   createImportIdempotencyKey,
   useInsightImport,
 } from './use_insight_import';
@@ -186,6 +188,68 @@ describe('useInsightImport', () => {
       createImportIdempotencyKey('pasted-text', 'https://example.com/한글')
     ).resolves.toBe(
       'b098b941c798336fb8cb77a6274d8c81c9e901402a3b01316f0fa3fcc63de460'
+    );
+  });
+
+  it('파일 후보와 정렬한 필드 매핑, 원본 바이트 해시만 준비 요청으로 넘긴다', async () => {
+    const service = createService();
+    const adapter: ImportSourceAdapter = {
+      detect: vi.fn().mockResolvedValue({
+        adapterKey: 'generic-text',
+        confidence: 1,
+        mappingRequests: null,
+      }),
+      extract: vi.fn().mockResolvedValue([
+        {
+          candidateId: 'generic-text:0',
+          capturedAtCandidate: null,
+          collectionPath: [],
+          explicitMemoCandidate: null,
+          originalUrl: 'https://example.com/file',
+          sourceLocation: '1번째 줄',
+          titleCandidate: null,
+          warnings: ['missing-title'],
+        },
+      ]),
+    };
+    const mappings = [
+      {
+        memoField: null,
+        sourceKey: 'z',
+        titleField: null,
+        urlField: 'url',
+      },
+      {
+        memoField: 'memo',
+        sourceKey: 'a',
+        titleField: 'title',
+        urlField: 'link',
+      },
+    ];
+    const file = new File(['https://example.com/file'], 'links.txt');
+    service.prepare.mockImplementation(async (input: PrepareImportInput) => ({
+      ok: true,
+      value: createPreparedImport(input),
+    }));
+    const { result } = renderHook(() =>
+      useInsightImport({ fileAdapters: [adapter], service })
+    );
+
+    await act(() => result.current.analyzeFile(file, mappings));
+
+    expect(result.current.stage).toBe('preview');
+    expect(service.prepare).toHaveBeenCalledWith({
+      adapterKey: 'generic-text',
+      idempotencyKey: await createFileImportIdempotencyKey(
+        'generic-text',
+        file,
+        mappings
+      ),
+      inputKind: 'file',
+      items: expect.any(Array),
+    });
+    expect(JSON.stringify(service.prepare.mock.calls[0]?.[0])).not.toContain(
+      'links.txt'
     );
   });
 
