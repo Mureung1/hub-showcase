@@ -78,9 +78,15 @@ function SearchResults() {
           <div className="sort">거리순</div>
         </div>
         <div className="card-list">
-          {/* 주차장 배열 → 카드 컴포넌트 배열. key=고유 id(안정적 식별자). */}
+          {/* 주차장 배열 → 카드 컴포넌트 배열. key=고유 id(안정적 식별자).
+              destination: 카드가 상세 링크에 목적지를 실어 보내기 위한 값.
+              상세 화면도 "주차장 ↔ 목적지" 거리를 계산하려면 목적지를 알아야 한다. */}
           {parkingLots.map((parkingLot) => (
-            <ParkingLotCard key={parkingLot.id} parkingLot={parkingLot} />
+            <ParkingLotCard
+              key={parkingLot.id}
+              parkingLot={parkingLot}
+              destination={{ latitude, longitude, placeName }}
+            />
           ))}
         </div>
       </>

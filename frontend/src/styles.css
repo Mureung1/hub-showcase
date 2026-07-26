@@ -436,6 +436,23 @@ button {
   color: var(--text-muted);
 }
 
+/* 목적지까지의 거리. 값(굵게) + 기준점·안내(작은 회색)로, 목록 카드의 거리 표기와 같은 톤. */
+.detail-dist {
+  padding: 0 var(--s5) var(--s5);
+}
+
+.detail-dist-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.detail-dist-note {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 /* 전역 푸터: 데이터 출처·주의·제보 안내 (모든 화면 공통, 은은하게) */
 .footer {
   margin-top: auto;
