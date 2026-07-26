@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.vo.Fee;
+import com.chasewar.parking.infra.walkingroute.WalkingRouteClient;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import com.chasewar.support.ControllerTest;
 import com.chasewar.support.fixture.ParkingLotFixtureBuilder;
@@ -14,11 +15,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class ParkingLotControllerTest extends ControllerTest {
 
     @Autowired
     private ParkingLotRepository parkingLotRepository;
+
+    @MockitoBean
+    private WalkingRouteClient walkingRouteClient;
 
     @DisplayName("목적지 좌표로 근처 주차장을 검색할 때")
     @Nested

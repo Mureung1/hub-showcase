@@ -5,8 +5,10 @@ import com.chasewar.global.exception.ChasewarException;
 import com.chasewar.global.exception.errorcode.NotFoundErrorCode;
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.ParkingLotRealtime;
+import com.chasewar.parking.domain.vo.WalkingRoute;
 import com.chasewar.parking.dto.ParkingLotDetailResponse;
 import com.chasewar.parking.dto.ParkingLotSearchResponse;
+import com.chasewar.parking.infra.walkingroute.WalkingRouteClient;
 import com.chasewar.parking.repository.ParkingLotRealtimeRepository;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import com.chasewar.parking.repository.dto.ParkingLotDetailProjection;
@@ -27,6 +29,7 @@ public class ParkingLotService {
 
     private final ParkingLotRepository parkingLotRepository;
     private final ParkingLotRealtimeRepository parkingLotRealtimeRepository;
+    private final WalkingRouteClient walkingRouteClient;
 
     @Transactional(readOnly = true)
     public List<ParkingLotSearchResponse> search(Coordinates destinationCoordinates) {
@@ -42,22 +45,27 @@ public class ParkingLotService {
     }
 
     private List<ParkingLotSearchResponse> findNearbyParkingLots(Coordinates destinationCoordinates) {
-        List<ParkingLot> parkingLots = parkingLotRepository.findByCoordinatesLatitudeIsNotNull()
-                .stream()
-                .filter(parkingLot -> destinationCoordinates.distanceTo(parkingLot.getCoordinates())
-                        <= SEARCH_MAX_RADIUS_METERS)
-                .sorted(Comparator.comparingDouble(
-                        parkingLot -> destinationCoordinates.distanceTo(parkingLot.getCoordinates())))
-                .limit(MAX_RESULTS_COUNT)
-                .toList();
-
+        List<ParkingLot> parkingLots = findWithinRadius(destinationCoordinates);
         Map<String, ParkingLotRealtime> realtimeByPkltCd = findRealtimeByPkltCd(parkingLots);
 
         return parkingLots.stream()
                 .map(parkingLot -> ParkingLotSearchResponse.from(
                         parkingLot,
                         destinationCoordinates.distanceTo(parkingLot.getCoordinates()),
-                        realtimeByPkltCd.get(parkingLot.getPkltCd())))
+                        findWalkingRoute(parkingLot, destinationCoordinates),
+                        realtimeByPkltCd.get(parkingLot.getPkltCd())
+                ))
+                .sorted(Comparator.comparingInt(ParkingLotSearchResponse::distance))
+                .limit(MAX_RESULTS_COUNT)
+                .toList();
+    }
+
+    private List<ParkingLot> findWithinRadius(Coordinates destinationCoordinates) {
+        return parkingLotRepository.findByCoordinatesLatitudeIsNotNull()
+                .stream()
+                .filter(parkingLot ->
+                        destinationCoordinates.distanceTo(parkingLot.getCoordinates()) <= SEARCH_MAX_RADIUS_METERS
+                )
                 .toList();
     }
 
@@ -69,5 +77,10 @@ public class ParkingLotService {
         return parkingLotRealtimeRepository.findByPkltCdIn(pkltCds)
                 .stream()
                 .collect(Collectors.toMap(ParkingLotRealtime::getPkltCd, realtime -> realtime));
+    }
+
+    private WalkingRoute findWalkingRoute(ParkingLot parkingLot, Coordinates destinationCoordinates) {
+        return walkingRouteClient.findRoute(parkingLot.getCoordinates(), destinationCoordinates)
+                .orElse(null);
     }
 }
