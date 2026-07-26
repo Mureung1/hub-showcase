@@ -13,6 +13,49 @@
   gap: var(--spacing-4);
 }
 
+.insight-import-dialog__field-mapping {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.insight-import-dialog__field-mapping h3,
+.insight-import-dialog__field-mapping p {
+  margin: 0;
+}
+
+.insight-import-dialog__field-mapping p {
+  color: var(--color-graphite);
+}
+
+.insight-import-dialog__field-mapping fieldset {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-3);
+  margin: 0;
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-input);
+  padding: var(--spacing-4);
+}
+
+.insight-import-dialog__field-mapping legend {
+  padding: 0 var(--spacing-1);
+  font-weight: 700;
+}
+
+.insight-import-dialog__field-mapping label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  color: var(--color-graphite);
+  font-weight: 600;
+}
+
+.insight-import-dialog__field-mapping .ui-select,
+.insight-import-dialog__field-mapping .ui-button {
+  min-height: 44px;
+}
+
 .insight-import-dialog__paste label,
 .insight-import-dialog__collection label {
   display: flex;
@@ -179,6 +222,10 @@
   }
 
   .insight-import-dialog__new-category {
+    grid-template-columns: 1fr;
+  }
+
+  .insight-import-dialog__field-mapping fieldset {
     grid-template-columns: 1fr;
   }
 

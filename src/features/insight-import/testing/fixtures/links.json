@@ -1,0 +1,18 @@
+{
+  "items": [
+    {
+      "resource": {
+        "url": "https://example.com/nested",
+        "title": "중첩 제목"
+      },
+      "note": "JSON 메모"
+    },
+    {
+      "resource": {
+        "url": "https://example.org/second",
+        "title": "두 번째"
+      },
+      "note": null
+    }
+  ]
+}

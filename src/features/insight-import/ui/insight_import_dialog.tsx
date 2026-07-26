@@ -4,13 +4,33 @@ import { normalizeCategoryInput, type Category } from '@/entities/category';
 import { Button, Modal, StatusMessage, TextArea } from '@/shared/ui';
 
 import { createBrowserInsightImportService } from '../api/browser_insight_import_service';
+import { bookmarkHtmlAdapter } from '../model/bookmark_html_adapter';
 import type { InsightImportService } from '../model/insight_import_service';
 import type { ImportCollectionMapping } from '../model/import_types';
+import {
+  genericCsvAdapter,
+  genericJsonAdapter,
+} from '../model/structured_file_adapter';
+import {
+  genericHtmlAdapter,
+  genericMarkdownAdapter,
+  genericTextAdapter,
+} from '../model/text_file_adapter';
 import { useInsightImport } from '../model/use_insight_import';
+import { ImportFieldMappingForm } from './import_field_mapping';
 import { ImportHistory } from './import_history';
 import { ImportIssueDetails, ImportPreview } from './import_preview';
 
 import './insight_import_dialog.css';
+
+const FILE_ADAPTERS = [
+  bookmarkHtmlAdapter,
+  genericCsvAdapter,
+  genericJsonAdapter,
+  genericHtmlAdapter,
+  genericMarkdownAdapter,
+  genericTextAdapter,
+] as const;
 
 export type InsightImportDialogProps = {
   categories: readonly Category[];
@@ -34,6 +54,7 @@ export function InsightImportDialog({
     [service]
   );
   const controller = useInsightImport({
+    fileAdapters: FILE_ADAPTERS,
     onCategoriesChanged,
     onLibraryChanged,
     service: importService,
@@ -163,6 +184,22 @@ export function InsightImportDialog({
               type="button"
             >
               {controller.stage === 'committing' ? '가져오는 중' : '가져오기'}
+            </Button>
+          </div>
+        </>
+      ) : null}
+
+      {controller.stage === 'field-mapping' ? (
+        <>
+          <ImportFieldMappingForm
+            onSubmit={(mappings) =>
+              void controller.submitFieldMappings(mappings)
+            }
+            requests={controller.fieldMappingRequests}
+          />
+          <div className="insight-import-dialog__actions">
+            <Button hierarchy="ghost" onClick={controller.reset} type="button">
+              다시 선택
             </Button>
           </div>
         </>

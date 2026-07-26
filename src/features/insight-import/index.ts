@@ -45,8 +45,15 @@ export {
 } from './model/import_types';
 export type {
   ImportDetection,
+  ImportFieldMappingRequest,
   ImportSourceAdapter,
 } from './model/import_adapter';
+export {
+  genericCsvAdapter,
+  genericJsonAdapter,
+} from './model/structured_file_adapter';
+export { ImportFieldMappingForm } from './ui/import_field_mapping';
+export type { ImportFieldMappingProps } from './ui/import_field_mapping';
 export type {
   AnalyzedImportItem,
   ImportAdapterKey,

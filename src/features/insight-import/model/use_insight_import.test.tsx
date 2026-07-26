@@ -253,6 +253,72 @@ describe('useInsightImport', () => {
     );
   });
 
+  it('모호한 파일의 매핑 요청 뒤 같은 파일로 분석을 이어간다', async () => {
+    const service = createService();
+    const adapter: ImportSourceAdapter = {
+      detect: vi.fn().mockImplementation(async (input) => ({
+        adapterKey: 'generic-csv',
+        confidence: 1,
+        mappingRequests:
+          input.kind === 'file' && input.mappings
+            ? null
+            : [
+                {
+                  fields: ['url', 'link'],
+                  sourceKey: 'file',
+                  suggested: {
+                    memoField: null,
+                    sourceKey: 'file',
+                    titleField: null,
+                    urlField: 'url',
+                  },
+                },
+              ],
+      })),
+      extract: vi.fn().mockResolvedValue([
+        {
+          candidateId: 'generic-csv:0',
+          capturedAtCandidate: null,
+          collectionPath: [],
+          explicitMemoCandidate: null,
+          originalUrl: 'https://example.com/file',
+          sourceLocation: 'CSV 2번째 행',
+          titleCandidate: null,
+          warnings: ['missing-title'],
+        },
+      ]),
+    };
+    service.prepare.mockImplementation(async (input: PrepareImportInput) => ({
+      ok: true,
+      value: createPreparedImport(input),
+    }));
+    const { result } = renderHook(() =>
+      useInsightImport({ fileAdapters: [adapter], service })
+    );
+
+    await act(() =>
+      result.current.analyzeFile(new File(['url,link'], 'links.csv'))
+    );
+
+    expect(result.current.stage).toBe('field-mapping');
+    expect(result.current.fieldMappingRequests).toHaveLength(1);
+    expect(adapter.extract).not.toHaveBeenCalled();
+
+    await act(() =>
+      result.current.submitFieldMappings([
+        {
+          memoField: null,
+          sourceKey: 'file',
+          titleField: null,
+          urlField: 'link',
+        },
+      ])
+    );
+
+    expect(result.current.stage).toBe('preview');
+    expect(adapter.extract).toHaveBeenCalledTimes(1);
+  });
+
   it('기록 새로고침 실패가 현재 미리보기를 지우지 않는다', async () => {
     const service = createService();
     service.prepare.mockResolvedValue({

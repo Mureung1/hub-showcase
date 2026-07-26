@@ -1,6 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
 
-import type { ImportSourceAdapter } from './import_adapter';
+import type {
+  ImportFieldMappingRequest,
+  ImportSourceAdapter,
+} from './import_adapter';
 import { analyzeImportCandidates } from './import_analysis';
 import { extractFileCandidates } from './file_adapter_registry';
 import type {
@@ -23,6 +26,11 @@ import { ImportFileError } from './read_import_file';
 export type InsightImportState =
   | { stage: 'source'; errorMessage: string | null }
   | { stage: 'analyzing'; errorMessage: null }
+  | {
+      stage: 'field-mapping';
+      errorMessage: null;
+      mappingRequests: ImportFieldMappingRequest[];
+    }
   | {
       stage: 'preview';
       errorMessage: string | null;
@@ -57,6 +65,7 @@ export type InsightImportController = {
   commit(): Promise<void>;
   deleteRecord(jobId: string): Promise<void>;
   errorMessage: string | null;
+  fieldMappingRequests: ImportFieldMappingRequest[];
   history: ImportHistoryEntry[];
   historyErrorMessage: string | null;
   isHistoryLoading: boolean;
@@ -68,6 +77,7 @@ export type InsightImportController = {
   setCollectionMapping(mapping: ImportCollectionMapping): void;
   stage: InsightImportState['stage'];
   state: InsightImportState;
+  submitFieldMappings(mappings: ImportFieldMapping[]): Promise<void>;
   undo(jobId: string): Promise<void>;
 };
 
@@ -96,6 +106,7 @@ export function useInsightImport({
   const operationRevisionRef = useRef(0);
   const historyRevisionRef = useRef(0);
   const operationPendingRef = useRef(false);
+  const pendingFileRef = useRef<File | undefined>(undefined);
 
   const applyState = useCallback((nextState: InsightImportState) => {
     stateRef.current = nextState;
@@ -186,6 +197,7 @@ export function useInsightImport({
 
       operationPendingRef.current = true;
       const revision = ++operationRevisionRef.current;
+      let preservePendingFile = false;
       applyState({ errorMessage: null, stage: 'analyzing' });
 
       try {
@@ -195,7 +207,14 @@ export function useInsightImport({
         );
 
         if (extraction.candidates === null) {
-          throw new ImportFileError('unsupported-structure');
+          preservePendingFile = true;
+          pendingFileRef.current = file;
+          applyState({
+            errorMessage: null,
+            mappingRequests: extraction.mappingRequests,
+            stage: 'field-mapping',
+          });
+          return;
         }
 
         const analysis = analyzeImportCandidates(extraction.candidates);
@@ -240,12 +259,29 @@ export function useInsightImport({
           });
         }
       } finally {
+        if (!preservePendingFile) {
+          pendingFileRef.current = undefined;
+        }
+
         if (operationRevisionRef.current === revision) {
           operationPendingRef.current = false;
         }
       }
     },
     [applyState, fileAdapters, service]
+  );
+
+  const submitFieldMappings = useCallback(
+    async (mappings: ImportFieldMapping[]) => {
+      const file = pendingFileRef.current;
+
+      if (!file) {
+        return;
+      }
+
+      await analyzeFile(file, mappings);
+    },
+    [analyzeFile]
   );
 
   const setCollectionMapping = useCallback(
@@ -488,12 +524,14 @@ export function useInsightImport({
   const reset = useCallback(() => {
     operationRevisionRef.current += 1;
     operationPendingRef.current = false;
+    pendingFileRef.current = undefined;
     applyState(INITIAL_STATE);
   }, [applyState]);
 
   const cancelCurrentOperation = useCallback(() => {
     operationRevisionRef.current += 1;
     operationPendingRef.current = false;
+    pendingFileRef.current = undefined;
     applyState(INITIAL_STATE);
   }, [applyState]);
 
@@ -515,9 +553,13 @@ export function useInsightImport({
         }
       : null;
   const errorMessage =
-    state.stage === 'committing' || state.stage === 'analyzing'
+    state.stage === 'committing' ||
+    state.stage === 'analyzing' ||
+    state.stage === 'field-mapping'
       ? null
       : state.errorMessage;
+  const fieldMappingRequests =
+    state.stage === 'field-mapping' ? state.mappingRequests : [];
 
   return {
     analyzeFile,
@@ -527,6 +569,7 @@ export function useInsightImport({
     commit,
     deleteRecord,
     errorMessage,
+    fieldMappingRequests,
     history,
     historyErrorMessage,
     isHistoryLoading,
@@ -538,6 +581,7 @@ export function useInsightImport({
     setCollectionMapping,
     stage: state.stage,
     state,
+    submitFieldMappings,
     undo,
   };
 }

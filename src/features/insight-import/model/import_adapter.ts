@@ -5,6 +5,12 @@ import type {
   ImportInput,
 } from './import_types';
 
+export type ImportFieldMappingRequest = {
+  fields: string[];
+  sourceKey: string;
+  suggested: ImportFieldMapping;
+};
+
 export type ImportDetection =
   | {
       adapterKey: ImportAdapterKey;
@@ -14,11 +20,7 @@ export type ImportDetection =
   | {
       adapterKey: ImportAdapterKey;
       confidence: number;
-      mappingRequests: Array<{
-        fields: string[];
-        sourceKey: string;
-        suggested: ImportFieldMapping;
-      }>;
+      mappingRequests: ImportFieldMappingRequest[];
     };
 
 export type ImportSourceAdapter = {

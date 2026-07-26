@@ -1,0 +1,3 @@
+primary_url,backup_link,title,note
+https://example.com/a,https://backup.example.com/a,첫 번째,명시적 메모
+https://example.com/b,https://backup.example.com/b,두 번째,두 번째 메모
