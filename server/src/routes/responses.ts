@@ -11,6 +11,7 @@ import {
 import { requireSupabase } from '../lib/supabase.js'
 import { zodIssuesToFields } from '../lib/zodFields.js'
 import { getAppointmentDetail, normalizeTime } from '../lib/pgTime.js'
+import { replaceResponses } from '../lib/responses.js'
 
 // study: 투표창 관련 요청 처리 라우터.
 export const responsesRouter = Router()
@@ -69,6 +70,8 @@ responsesRouter.get('/:id/participants/:participantId/responses', async (req, re
 })
 
 // study: put 요청 처리. submit 형식 체크 -> db 상태 체크 -> 참여자 존재 체크 -> 입력하려는 시간이 약속 범위 안인지 체크 -> 데이터 형식 관련 정리 -> 기존 내용 delete -> 새로운 데이터 insert. -> 가능 및 선호 선택 개수 response
+// claude: 위 흐름의 마지막 "delete -> insert" 두 단계는 이제 submit_response RPC 한 번으로 처리된다.
+// 별개의 두 요청이면 delete만 성공하고 insert가 실패했을 때 응답이 통째로 사라지는데, DB 함수는 한 트랜잭션이라 그 경우 delete까지 롤백된다.
 responsesRouter.put('/:id/participants/:participantId/responses', async (req, res) => {
   const parsed = submitResponseRequestSchema.safeParse(req.body) // study: 형식 검증. safeParse 는 실패하더라도 예외 안던지고, parsed.success 에 결과 표시 해주므로 사용함.
   if (!parsed.success) {
@@ -112,23 +115,14 @@ responsesRouter.put('/:id/participants/:participantId/responses', async (req, re
     uniqueAvailable.set(slotKey(slot), slot)
   } // study: 중복 처리 + 아래 row에 date,time 넣을 때 key로 value 가져오기 위해 Map 자료형 사용.
 
+  // claude: participant_id는 RPC 파라미터로 따로 넘기므로 각 행에서는 뺀다.
   const rows = [...uniqueAvailable.values()].map((slot) => ({
-    participant_id: participantId,
     date: slot.date,
     time: slot.time,
     is_preferred: preferredKeys.has(slotKey(slot)),
   }))
 
-  const { error: deleteError } = await db.from('responses').delete().eq('participant_id', participantId)
-  if (deleteError) {
-    console.error('responses delete failed', deleteError)
-    res.status(500).json({ error: '서버 오류가 발생했어요' })
-    return
-  }
-
-  const { error: insertError } = await db.from('responses').insert(rows)
-  if (insertError) {
-    console.error('responses insert failed', insertError)
+  if (!(await replaceResponses(db, participantId, rows))) {
     res.status(500).json({ error: '서버 오류가 발생했어요' })
     return
   }

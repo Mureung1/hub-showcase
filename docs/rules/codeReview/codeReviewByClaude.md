@@ -43,7 +43,7 @@
 **학습 메모:** 계산은 데이터가 있는 DB에서 한다(push computation to the data) — DB는 저장소일 뿐 아니라 계산 엔진. 필터·집계·조인은 DB, 업무 판단은 서버. 구현은 🅰 앱 SQL(직접 연결, PostgREST 우회) vs 🅱 DB 함수/RPC(마이그레이션 필요) 중 🅱 선택. RPC 결과에도 1000행 제한이 걸려 `jsonb_agg`로 회피했다.
 
 ### 4. `Modal`의 useEffect가 매 리렌더마다 포커스를 훔침
-
+- [x] 완료
 `client/src/components/Modal.tsx:22-39`의 의존성 배열이 `[open, onClose]`인데,
 **모든 호출부가 `onClose`를 인라인 화살표 함수로 넘긴다**
 (`AppointmentPage.tsx:54`, `ScheduleEditor.tsx:127`, `AdminDashboard.tsx:132`, `DateRangeField.tsx:79`, `ResultHeatmap.tsx:85`).
@@ -56,9 +56,12 @@ react-day-picker의 키보드 탐색이 사실상 동작하지 않고, 향후 �
 
 ### 5. `delete` → `insert` 사이 실패 시 응답 영구 소실
 
-`server/src/routes/responses.ts:122-134`. delete 성공 후 insert가 실패하면 참여자의 기존 응답이 전부 사라진 채 500을 받는다.
+- [x] 완료
+
+**문제 상황:** `server/src/routes/responses.ts:122-134`. delete 성공 후 insert가 실패하면 참여자의 기존 응답이 전부 사라진 채 500을 받는다.
 `1주차-Day4` 체크리스트 46행에 "허용"으로 적혀 있으나, 지금은 마감 후 수정이 막혀 있어 **한 번 날아가면 마감 전까지만 복구 가능**하고 마감 직전이면 영구 손실이다.
-RPC(트랜잭션) 또는 upsert + 차집합 delete 순서로 바꾸는 것이 안전하다.
+
+**해결 방법:** `0006` 마이그레이션에 `submit_response` DB 함수를 만들어 delete·insert를 한 트랜잭션으로 묶었다(`server/src/lib/responses.ts`가 `db.rpc()`로 호출). insert가 실패하면 delete까지 자동 롤백된다. 실제 Supabase에 대고 insert를 일부러 실패시켜 기존 응답이 그대로 남는지 확인하는 통합 테스트를 추가했다(`responses.integration.test.ts`).
 
 ---
 
@@ -66,9 +69,13 @@ RPC(트랜잭션) 또는 upsert + 차집합 delete 순서로 바꾸는 것이 �
 
 ### 6. 다른 브라우저 사용자가 남의 세션을 그대로 물려받음
 
-`client/src/lib/useJoinAppointment.ts:36-40` — localStorage에 해당 약속 세션이 있으면 **입력한 이름/비밀번호를 검증하지 않고 즉시 성공 처리**한다.
+- [x] 완료
+
+**문제 상황:** `client/src/lib/useJoinAppointment.ts:36-40` — localStorage에 해당 약속 세션이 있으면 **입력한 이름/비밀번호를 검증하지 않고 즉시 성공 처리**한다.
 `/join`에서 다른 사람이 같은 브라우저로 같은 링크를 넣고 자기 이름을 치면 앞사람의 participantId로 로그인된다.
-게다가 **로그아웃 / 다른 이름으로 참여 UI가 어디에도 없어서** 벗어날 방법이 없다(`client/src/lib/session.ts`에 `removeSession`도 없음).
+
+**해결 방법:** 세션이 있어도 건너뛰지 않고 매번 `POST .../participants`를 호출하도록 바꿔서, 서버가 이름에 매칭되는 비밀번호를 항상 재검증하게 했다(`server/src/routes/participants.ts:50-51`). 관련 컴포넌트 테스트도 재인증 흐름에 맞게 수정했다(커밋 `a6372718`).
+
 
 ### 7. `deadline` 기능이 완전히 죽어 있음
 

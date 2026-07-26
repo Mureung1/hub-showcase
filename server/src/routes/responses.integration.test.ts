@@ -76,6 +76,53 @@ describe('PUT/GET .../responses (실제 Supabase 연동)', () => {
     expect(res.body.availableSlots).toEqual([{ date: '2026-08-20', time: '09:30' }])
   })
 
+  // claude: "delete 성공 후 insert 실패 시 응답이 통째로 사라지는" 문제(코드리뷰 5번)의 회귀 테스트.
+  // 라우터를 거치면 잘못된 슬롯이 범위 검사에서 400으로 먼저 걸려 저장 단계까지 가지 않으므로,
+  // submit_response RPC를 직접 호출해 insert 단계에서 실패시킨다(date 캐스팅 에러).
+  // 트랜잭션이 없으면 delete만 적용돼 응답이 0개가 되고, 있으면 기존 2개가 그대로 남는다.
+  itIfSupabaseConfigured('저장 도중 실패하면 기존 응답이 롤백되어 그대로 남는다', async () => {
+    const db = supabase
+    if (!db) return
+
+    const { appointmentId } = await createTestAppointment({
+      dateStart: '2026-08-20',
+      dateEnd: '2026-08-20',
+      timeStart: '09:00',
+      timeEnd: '10:00',
+    })
+    createdAppointmentIds.push(appointmentId)
+    const { body: joined } = await addTestParticipant(appointmentId, '참여자A')
+    const participantId = joined.participantId as string
+
+    await submitTestResponse(
+      appointmentId,
+      participantId,
+      [
+        { date: '2026-08-20', time: '09:00' },
+        { date: '2026-08-20', time: '09:30' },
+      ],
+      [],
+    )
+
+    const { error } = await db.rpc('submit_response', {
+      p_participant_id: participantId,
+      p_slots: [
+        { date: '2026-08-20', time: '09:00', is_preferred: false },
+        { date: 'not-a-date', time: '09:30', is_preferred: false },
+      ],
+    })
+    expect(error).not.toBeNull()
+
+    const res = await request(app).get(`/api/appointments/${appointmentId}/participants/${participantId}/responses`)
+    expect(res.body.availableSlots).toHaveLength(2)
+    expect(res.body.availableSlots).toEqual(
+      expect.arrayContaining([
+        { date: '2026-08-20', time: '09:00' },
+        { date: '2026-08-20', time: '09:30' },
+      ]),
+    )
+  })
+
   itIfSupabaseConfigured('약속 범위를 벗어난 슬롯을 제출하면 400을 반환한다', async () => {
     const { appointmentId } = await createTestAppointment({
       dateStart: '2026-08-20',
