@@ -264,10 +264,13 @@ sequenceDiagram
     Orch->>Stat: mention 추출과 차원 발견
     Stat->>DB: mention·후보·승격 결정 저장
     Stat->>DB: 할당 저장
+    Orch->>Know: 지식 그래프 구축
+    Know->>DB: 사전 semantic 노드·엣지 저장
     Orch->>Pipe: 집계
     Pipe->>DB: 통계·깊이 프로파일 저장
-    Orch->>Know: 지식 그래프와 Wiki 구축
-    Know->>DB: 사전 semantic 노드·엣지·Wiki 저장
+    Pipe->>DB: 엣지 weight 채움
+    Orch->>Know: Wiki 구축
+    Know->>DB: Wiki 페이지·근거 저장
     Orch->>Inter: 해석 실행
     Inter->>DB: 주장·근거·범위 확인 저장
     Orch->>Strat: 전략 실행
@@ -384,6 +387,8 @@ sequenceDiagram
 | 프로젝트 로드맵·학습 전략 | 범위에 맞게 변경 | 적용 동작으로 재조합 |
 
 체크 상태는 `(job_role_id, scope_level, scope_id, checklist_concept_id)` 단위로 구분한다. 개념 식별자에 연결하므로 분석 버전이 바뀌어 문구가 달라져도 체크가 유지된다.
+
+비로그인 구간에서 체크 상태는 브라우저에 저장하고 서버는 저장하지 않는다. 로드맵 조합을 요청할 때 클라이언트가 체크 맵을 요청 본문에 실어 보낸다. FastAPI의 `RoadmapRequest.checks`가 이 계약이며 키는 `checklist_concept_id`다. 로그인과 사용자별 영구 저장은 같은 키 구조를 사용자별 저장소에 적용한다.
 
 ## 10. API와 데이터 계약
 

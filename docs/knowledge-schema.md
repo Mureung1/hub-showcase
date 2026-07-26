@@ -15,13 +15,15 @@
 | D0 | 변경하지 않는 source snapshot | `dataset_version` | 데이터 수집 에이전트 |
 | D1 | source chunk와 구조적 위치, 검색 인덱스 | `dataset_version` | 인덱싱 파이프라인 |
 | D2 | 원문에 근거한 mention과 observation | `dataset_version` | 통계 분석 에이전트 |
-| D3a | 분류체계와 정규화 할당 | `taxonomy_version` | 통계 분석 에이전트 |
+| D3a | 분류체계, 정규화 할당, 지식 그래프 | `taxonomy_version`, `knowledge_version` | 통계 분석·지식 구축 에이전트 |
 | D4 | 집계 통계, 패턴, 깊이 프로파일 | `analysis_version` | 집계 파이프라인 |
-| D3b | 지식 그래프와 Wiki | `knowledge_version` | 지식 구축 에이전트 |
+| D3b | Wiki | `knowledge_version` | 지식 구축 에이전트 |
 | D5 | 해석·전략·로드맵 주장 | `analysis_version` | 해석·전략·로드맵 에이전트 |
 | D6 | 활성화된 사용자 제공 결과 | `analysis_version` | 통합 Verifier |
 
-D3a와 D3b는 지식을 정규화하는 같은 성격의 계층이나 생성 순서가 다르다. D3a는 집계의 입력이고, D3b는 집계의 결과를 입력으로 받는다. Wiki의 생성 대상 판정과 그래프 엣지의 `weight`가 집계 통계에서 나오므로 D3b는 D4 뒤에 온다.
+D3a와 D3b는 지식을 정규화하는 같은 성격의 계층이나 생성 순서가 다르다. D3a는 집계의 입력이고, D3b는 집계의 결과를 입력으로 받는다. Wiki의 생성 대상을 통계적 우선순위로 판정하므로 D3b는 D4 뒤에 온다.
+
+지식 그래프는 할당만 있으면 구축할 수 있으므로 D3a에 둔다. 엣지의 `weight`는 통계에서 계산하는 후행 값이며 D4 이후에 채운다. `weight`가 비어 있는 동안 경로 탐색은 가능하고 순위만 정해지지 않는다.
 
 사용자의 체크 상태와 그에 따른 재조합 결과는 데이터 성숙도 계층에 속하지 않는다. 이는 Express가 요청 시점에 계산하는 런타임 결과다.
 
@@ -30,19 +32,20 @@ flowchart TD
     D0[("D0 Source snapshot<br/>변경하지 않는 증거")]
     D1[("D1 Chunk 구조적 위치<br/>lexical vector index")]
     D2[("D2 Grounded mention<br/>분류체계 무관")]
-    D3A[("D3a Taxonomy Assignment")]
+    D3A[("D3a Taxonomy Assignment<br/>Knowledge Graph")]
     D4[("D4 집계 통계 패턴<br/>깊이 프로파일")]
-    D3B[("D3b Knowledge Graph Wiki")]
+    D3B[("D3b Wiki")]
     D5[("D5 해석 전략 로드맵 주장")]
     D6(["D6 활성 사용자 제공 결과"])
 
     D0 -->|"인덱싱 파이프라인"| D1
     D1 -->|"mention 추출"| D2
-    D2 -->|"분류체계 발견 승격 할당"| D3A
+    D2 -->|"분류체계 발견 승격 할당 그래프 구축"| D3A
     D3A -->|"집계 파이프라인"| D4
-    D3A -->|"정규화된 관계"| D3B
-    D4 -->|"생성 대상 판정 깊이 기준 weight"| D3B
-    D3B -->|"그래프 탐색 Wiki 참조"| D5
+    D4 -->|"생성 대상 판정 깊이 기준"| D3B
+    D4 -->|"엣지 weight 채움"| D3A
+    D3A -->|"그래프 탐색"| D5
+    D3B -->|"깊이 기준 참조"| D5
     D4 -->|"해석 전략 로드맵"| D5
     D5 -->|"통합 검증"| D6
 
@@ -137,8 +140,15 @@ postings
 
 posting_versions
   posting_version_id, posting_id, snapshot_id
-  title, cluster_id, career_label, edu_label, entry_label
+  title, career_label, edu_label, entry_label
   posted_at, closed_at, dataset_version
+```
+
+기업군은 공고 버전의 속성이 아니다. 회사와 기업군의 소속은 `company_cluster_memberships`가 유일한 원천이며, 집계는 실행 봉투의 `as_of_date` 기준으로 소속을 해석한다. 같은 `as_of_date`로 재실행하면 같은 소속을 얻으므로 재현성이 유지된다.
+
+```text
+company_cluster_memberships
+  company_id, cluster_id, valid_from, valid_to
 ```
 
 공고의 수정과 마감은 `posting_versions`로 표현한다. 분석의 모집단은 항상 `posting_version` 단위로 센다.
@@ -277,7 +287,7 @@ role_boundary_eligible
 
 차원 후보의 발견, 관계 판정, 승격 절차는 [통계 모델](statistics-model.md)에서 정의한다.
 
-## 7. D3b 지식 그래프
+## 7. D3a 지식 그래프
 
 그래프는 두 개의 논리 층으로 나눈다. 하나는 직무 지식의 연결을 표현하고, 다른 하나는 산출물이 만들어진 경로를 표현한다. 두 층은 같은 노드·엣지 테이블에 `graph_layer` 속성으로 구분해 저장한다.
 
@@ -287,7 +297,7 @@ role_boundary_eligible
 
 #### 7.1.1 사전 semantic
 
-D3b에서 지식 구축 에이전트가 생성한다. 해석·전략·로드맵 에이전트의 탐색 입력이다.
+D3a에서 지식 구축 에이전트가 생성한다. 해석·전략·로드맵 에이전트의 탐색 입력이다.
 
 | 노드 유형 | 참조 |
 | --- | --- |
@@ -308,6 +318,8 @@ D3b에서 지식 구축 에이전트가 생성한다. 해석·전략·로드맵 
 | `REQUIRES_CAPABILITY` | RequirementDimension → Capability |
 | `MAPS_TO_STANDARD` | Capability → Standard |
 | `PREREQUISITE_OF` | Capability → Capability |
+
+`BELONGS_TO_CLUSTER`는 `company_cluster_memberships`에서 파생한 투영이다. 엣지의 `valid_from`과 `valid_to`는 membership의 값을 그대로 옮긴다.
 
 #### 7.1.2 사후 semantic
 
@@ -331,6 +343,8 @@ D5 산출물이 저장될 때 계보 기록 파이프라인이 생성한다.
 ### 7.2 Provenance Lineage Graph
 
 산출물의 생성 경로를 표현한다. 계보 기록 파이프라인이 각 계층의 산출물이 저장될 때 결정적으로 기록한다. 판단이 개입하지 않으므로 에이전트가 쓰지 않는다.
+
+이 층의 엣지는 관계형 테이블에서 빌드한 파생 표현이다. 주장과 근거의 원천은 `analysis_claim_evidence`이며 `SUPPORTED_BY`와 `CONTRADICTED_BY`는 이 테이블에서 만든다. 검증의 근거 위치 검사와 근거 함의 검사는 엣지가 아니라 테이블을 검사한다. 엣지에서 테이블로 향하는 역방향 갱신은 없다. `graph_paths`가 `knowledge_edges`에 대해 갖는 지위와 같다.
 
 | 노드 유형 | 참조 |
 | --- | --- |
@@ -363,7 +377,7 @@ D5 산출물이 저장될 때 계보 기록 파이프라인이 생성한다.
 
 | 묶음 | 생성 | 시점 | 진실의 원천 |
 | --- | --- | --- | --- |
-| 사전 semantic | 지식 구축 에이전트 | D3b | `knowledge_edges` |
+| 사전 semantic | 지식 구축 에이전트 | D3a | `knowledge_edges` |
 | 사후 semantic | 계보 기록 파이프라인 | D5 산출물 저장 직후 | 산출물 정규 테이블 |
 | Provenance | 계보 기록 파이프라인 | 각 계층 산출물 저장 직후 | 산출물 정규 테이블 |
 
@@ -374,7 +388,7 @@ Provenance 엣지와 사후 semantic 엣지는 정규 테이블의 외래키를 
 ```text
 knowledge_nodes
   node_id, graph_layer, node_type, ref_table, ref_id, label
-  ontology_version, dataset_version, analysis_version
+  ontology_version, dataset_version, taxonomy_version, analysis_version
 
 knowledge_edges
   edge_id, graph_layer, edge_type, src_node_id, dst_node_id
@@ -394,7 +408,14 @@ ontology_versions
 
 `knowledge_nodes`와 `knowledge_edges`는 `(ontology_version, graph_layer)` 두 컬럼으로 이 표를 참조한다.
 
-`REQUIRES`와 `REQUIRES_CAPABILITY`는 할당에서 파생되므로 엣지가 `taxonomy_version`을 가진다. 분류체계 버전이 바뀌면 해당 엣지는 재구축 대상이며, `graph_paths`의 캐시 키와 실제 의존 관계가 일치한다.
+`taxonomy_version`은 nullable이다. 분류체계에 의존하는 노드·엣지만 채우고 나머지는 null로 둔다.
+
+| 구분 | 노드 | 엣지 |
+| --- | --- | --- |
+| 의존 | `RequirementDimension`, `Technology` | `REQUIRES`, `REQUIRES_CAPABILITY`, `ASSIGNED_TO` |
+| 독립 | 그 외 전부 | `POSTED_BY`, `BELONGS_TO_CLUSTER`, `MAPS_TO_STANDARD`, `PREREQUISITE_OF`, `PROVEN_BY`, `USED_IN_CHANNEL`, `TEACHES`, `PART_OF`, `EVIDENCED_BY`, `COMPUTED_FROM`, `SUPPORTED_BY`, `CONTRADICTED_BY`, `DERIVED_FROM`, `FILLS`, `PRODUCED_BY` |
+
+분류체계 버전을 발행하면 의존 노드·엣지를 재구축한다. 이 규칙이 있어야 `graph_paths`의 네 버전 캐시 키가 실제 의존 관계와 일치한다.
 
 `weight`는 통계 지표에서 계산한 값을 담아 경로 순위 계산에 사용한다.
 
@@ -666,6 +687,8 @@ unused
 
 검색된 자료는 최종 인용 외에도 반례 검사, 용어 정규화, 다음 검색 계획, 부재 확인에 기여한다. 사용 목적을 구분해 기록해야 검색 전략별 기여도를 계산할 수 있다.
 
+`used_claim_id`는 nullable이다. `usage_type`이 `planning`, `normalization`, `coverage_check`, `verification_only`, `unused`인 경우 대상 주장이 없다.
+
 ## 12. 평가
 
 ```text
@@ -736,12 +759,13 @@ Express가 사용하는 service role은 행 수준 정책을 우회하므로 권
 
 ## 14. 2차·3차 자료의 사용 범위
 
-| 자료 | 통계 집계 | 해석 | 전략·로드맵 | Wiki |
-| --- | --- | --- | --- | --- |
-| 기업 공식 채용공고 | 사용 | 사용 | 사용 | `why_required` |
-| 회사 공식 채용·기술 자료 | 미사용 | 회사 맥락으로 사용 | 사용 | `why_required`, `depth_criteria` |
-| 공공·직무 표준 | 용어 연결에만 | 사용 | 사용 | `definition`, `prerequisites` |
-| 검증된 외부 전문가 자료 | 미사용 | 교차 확인에만 | 사용 | `common_misconceptions`, `interview_verification` |
+| 계층 | 자료 | 통계 집계 | 해석 | 전략·로드맵 | Wiki |
+| --- | --- | --- | --- | --- | --- |
+| A | 기업 공식 채용공고 | 사용 | 사용 | 사용 | `why_required` |
+| B | 회사 공식 채용·기술 자료 | 미사용 | 회사 맥락으로 사용 | 사용 | `why_required`, `depth_criteria` |
+| C | 공공·직무 표준 | 용어 연결에만 | 사용 | 사용 | `definition`, `prerequisites` |
+| D | 검증된 외부 전문가 자료 | 미사용 | 교차 확인에만 | 사용 | `depth_criteria`, `common_misconceptions`, `interview_verification`, `learning_sequence` |
+| E | 출처를 확인하기 어려운 자료 | 미사용 | 미사용 | 후보 탐색에만 | 없음 |
 
 회사 공식 자료에서 반복되는 주제는 그 회사의 맥락 신호이며 해당 공고의 명시 요구사항과 구분한다. 구분의 정의는 [데이터 전략](data-strategy.md)을 따른다.
 
