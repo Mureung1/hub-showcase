@@ -123,4 +123,10 @@
 - T07/S2 문서: `docs/skills.md` S2 출력 타입을 `proposedTool: tool`에서 `proposedTool: tool | null`로 수정해 종결 응답(`final:true`)의 `null` 반환과 문서를 일치시킴.
 - T08: `shrink_step`인데 `revisedTitle`이 없을 때 무조건 `encourage`로 대체하던 걸, `toolChoices`(이미 `rejectedTools` 제외된 후보)에서 `shrink_step`이 아닌 첫 후보로 대체하도록 수정 — `encourage`가 이미 거절된 상태여도 재선택 금지를 어기지 않음. 대체할 후보가 아예 없으면(shrink_step만 남은 경우) T07과 같은 패턴으로 `proposedTool: null, final: true`로 강제 종결.
 - 검증: `npm run verify` 통과. `toolChoices`는 rejectedTools를 필터링한 결과라 fallback 로직이 구조적으로 거절된 값을 다시 반환할 수 없음을 코드 경로로 확인.
+- 확인: [x] 2026-07-26 22:17 GPT — 수정요청. 후보 0개가 TOOLS 전체로 복원되며, S2/C06의 null 종결 예외도 아직 모순됨.
+
+## 2026-07-26 | T07 | GPT 재검토 수정요청 2건 반영 (4차)
+- 근본 버그 수정: `app/api/struggle/route.js`의 `const toolChoices = candidates.length > 0 ? candidates : TOOLS;`가 후보가 완전히 소진되면(전체 8개 거절, isConverging 여부 무관) TOOLS 전체로 되돌아가 거절된 tool을 다시 제안할 수 있게 하던 버그를 제거. `isConverging` 필터링 이후 공통으로 `candidates.length === 0`을 확인해 그 시점에 바로 `{ proposedTool: null, reason, final: true }`로 종결하도록 통합.
+- 문서 동기화: `docs/skills.md` S2 제약 문구와 `docs/checklist.md` C06을 "고정 8개 중 하나 **이거나 후보 소진 시 null**"로 수정해 `final` 종결 예외를 명시.
+- 검증: `npm run verify` 통과. 8개 tool 전부 rejectedTools에 넣고(시간 제약과 무관하게) 호출 → `proposedTool: null, final: true` 확인.
 - 확인: [ ]

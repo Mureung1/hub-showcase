@@ -120,3 +120,12 @@
 - 계약 위반: `app/api/struggle/route.js:168-176` — S2의 `rejectedTools` 재선택 금지 위반 가능. `app/api/struggle/route.js:89-98`, `docs/skills.md:37-41` — 종결 시 `proposedTool:null`인 실제 출력과 S2의 `proposedTool: tool`/고정 8개 제약 불일치.
 - 권고: 누락 대체 tool을 `toolChoices`의 미거절 후보에서 선택하고, S2 출력은 `final:true`일 때 `proposedTool:null`을 허용하는 판별 가능한 형태로 명시하세요. C06의 “8개 중 하나” 보장에도 final 종결 예외를 동기화하세요.
 - 확인: [ ]
+
+## 2026-07-26 22:17 | T07·T08 리뷰 반영 3차 · feat/onefocus-notion-sync · 126d4699 | 수정요청
+- 발견: 높음 — `app/api/struggle/route.js:71-72`에서 모든 tool이 거절되면 `candidates`가 빈 배열이 되지만, `:103`이 이를 `TOOLS` 전체로 되돌립니다. 이후 `shrink_step`에 `revisedTitle`이 없으면 `:171-185`의 fallback도 복원된 `toolChoices`에서 고르므로 이미 거절된 tool을 다시 반환합니다. 따라서 보고한 “후보가 아예 없으면 `null+final` 종결”은 실제 빈 후보 경로에서 성립하지 않으며 S2 재선택 금지를 위반합니다.
+- 발견: 중간 — `docs/skills.md:37-39`는 출력 타입을 `tool | null`로 바꾸고 `final:true`의 null 의미를 문서화해 종결 응답과 일치합니다. 그러나 바로 아래 `docs/skills.md:41`은 여전히 `proposedTool`이 고정 8개 중 하나라고 예외 없이 규정하고, `docs/checklist.md:34`도 반환 tool이 항상 8개 중 하나라고 체크되어 null 종결 계약과 모순됩니다.
+- 발견: 없음 — 일부 후보가 남은 정상 경로에서는 `app/api/struggle/route.js:168-185`가 `toolChoices`에서 `shrink_step`을 제외한 후보를 선택하므로, 이전의 `encourage` 고정 대체 문제는 해소됐습니다. `toolChoices`가 실제로 `[shrink_step]`뿐인 경우의 `null+final` 분기도 구현돼 있습니다.
+- 검증: `npm run verify` 재현 통과. `app/layout.js:18`의 기존 외부 폰트 권고 경고 1건 외에 lint 오류는 없고 Next.js production build도 성공했습니다.
+- 계약 위반: `app/api/struggle/route.js:71-72,103,171-185` — 후보 0개일 때 거절 tool을 복원·재선택할 수 있어 S2 위반. `docs/skills.md:37-41`, `docs/checklist.md:34` — `proposedTool:null` 종결 출력과 고정 8개 중 하나라는 제약·완료조건이 불일치.
+- 권고: 모델 호출 전에 `candidates.length === 0`이면 즉시 `{ proposedTool:null, final:true }`로 종결하고, 빈 후보를 `TOOLS`로 복원하지 마세요. S2 제약과 C06은 `final !== true`일 때만 고정 8개 중 하나라는 예외를 명시하세요.
+- 확인: [ ]

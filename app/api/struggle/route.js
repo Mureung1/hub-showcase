@@ -83,24 +83,23 @@ export async function POST(request) {
 
   const isConverging = isRejudgment && !hasTimeForRejudgment;
   if (isConverging) {
-    const convergeTools = ["postpone_task", "end_session"].filter(
-      (tool) => !rejectedTools.includes(tool)
-    );
-    if (convergeTools.length === 0) {
-      // postpone_task/end_session 둘 다 이미 거절됨: 더 제안할 게 없다. proposedTool을
-      // rejectedTools에 든 값(end_session)으로 다시 채우면 S2 "재선택 금지"를 위반하므로,
-      // TOOLS에 없는 null로 반환해 "새 제안이 아니라 강제 종결"임을 값 자체로도 보장한다.
-      // 화면(page.js)은 final:true를 받으면 proposedTool 값과 무관하게 end_session으로 처리한다.
-      return Response.json({
-        proposedTool: null,
-        reason: "오늘은 여기까지 하고 마무리할게요.",
-        final: true,
-      });
-    }
-    candidates = convergeTools;
+    candidates = candidates.filter((tool) => ["postpone_task", "end_session"].includes(tool));
   }
 
-  const toolChoices = candidates.length > 0 ? candidates : TOOLS;
+  // 후보가 하나도 안 남으면(전부 거절됨 — isConverging 여부와 무관) 더 제안할 게 없다.
+  // 이전엔 여기서 TOOLS 전체로 되돌아가 거절된 tool을 다시 내놓는 버그가 있었다. proposedTool을
+  // rejectedTools에 든 값으로 다시 채우면 S2 "재선택 금지"를 위반하므로, TOOLS에 없는 null로
+  // 반환해 "새 제안이 아니라 강제 종결"임을 값 자체로도 보장한다. 화면(page.js)은 final:true를
+  // 받으면 proposedTool 값과 무관하게 end_session으로 처리한다.
+  if (candidates.length === 0) {
+    return Response.json({
+      proposedTool: null,
+      reason: "오늘은 여기까지 하고 마무리할게요.",
+      final: true,
+    });
+  }
+
+  const toolChoices = candidates;
 
   // proposedTool은 z.enum이 아니라 z.string()으로 받는다. Solar가 enum 제약을 안 지키고
   // 거절된 tool을 다시 골라버리는 경우가 있어서(실제로 재현됨), 스키마 검증에서 바로

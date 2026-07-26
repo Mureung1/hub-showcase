@@ -38,7 +38,7 @@
   - `revisedTitle`: `proposedTool`이 `shrink_step`일 때만, 완료 기준을 줄인 새 스텝 제목.
   - `final`: 더 제안할 수 있는 tool이 없어 강제 종결하는 경우 `true`. 이때 `proposedTool`은 `null`이다 — `rejectedTools`에 든 값을 "새 제안"으로 재사용하지 않기 위해서다. 화면은 `final:true`를 받으면 `proposedTool` 값과 무관하게 `end_session`으로 처리하고, 거절을 더 받지 않는다(C07).
 - **제약**:
-  - `proposedTool`은 고정 8개 중 하나(스키마 강제), `rejectedTools`에 든 것은 다시 고르지 않는다.
+  - `proposedTool`은 고정 8개 중 하나이거나(스키마 강제), 더 제안할 후보가 없으면 `null`(이때 `final: true`). `rejectedTools`에 든 값은 어떤 경우에도 `proposedTool`로 다시 반환하지 않는다 — 후보가 소진되면 그 값을 재사용하는 대신 `null`로 종결한다.
   - `recentLogs`가 비면 cold start — `reasonChip` prior로 판단(막막→shrink/split, 지루→swap, 지쳤→break, 그냥→encourage). prior는 강제가 아닌 기울기.
   - `reason`은 한 줄, 판단 근거를 사용자에게 보이는 문장.
 - **재판단 게이트(T07)**: `remainingTimeMinutes > sum(remainingSteps.estimatedMinutes)`가 거짓이면 재제안 없이 마지막 제안 확정 또는 `postpone_task`/`end_session`으로 수렴.

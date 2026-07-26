@@ -31,7 +31,7 @@
 ## C06 [T06] "힘들어" 루프 판단
 - [x] reason_chip·현재 스텝·남은 스텝·최근 로그를 입력받아 S2 계약대로 `proposed_tool`+`reason`을 반환한다
 - [x] AgentLog가 빈 상태(cold start)에서도 reason_chip prior로 유효한 tool을 고른다
-- [x] 반환 tool이 정의된 8개 중 하나임을 보장한다 (Solar가 스키마 enum을 무시하고 거절된 tool을 다시 반환하는 사례가 실제로 재현되어, `z.enum` 대신 `z.string()` + 코드 검증·대체로 구현)
+- [x] 반환 tool이 정의된 8개 중 하나이거나, 후보가 소진되면 `null`(+`final: true`)임을 보장한다 — 어떤 경우에도 `rejectedTools`에 든 값을 `proposedTool`로 재반환하지 않는다 (Solar가 스키마 enum을 무시하고 거절된 tool을 다시 반환하는 사례가 실제로 재현되어, `z.enum` 대신 `z.string()` + 코드 검증·대체로 구현)
 
 ## C07 [T07] 재판단 시간 게이트
 - [x] `remainingTimeToday > remainingWorkload`일 때만 거절 후 재제안이 나온다
