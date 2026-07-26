@@ -1,14 +1,9 @@
 import { X } from "lucide-react";
-import { lazy, Suspense } from "react";
 
 import { DataPeriodSummary } from "../analysis/DataPeriodSummary";
 import { CLUSTER_LABELS } from "../market/model";
 import type { ScoreDecisionBlocker } from "../../services/marketAnalysis";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
-
-const SceneWorkspace = lazy(() =>
-  import("../../components/SceneWorkspace").then((module) => ({ default: module.SceneWorkspace })),
-);
 
 const SCORE_BLOCKER_LABELS: Record<ScoreDecisionBlocker, string> = {
   fixture_present: "개발용 fixture가 포함됨",
@@ -277,20 +272,6 @@ export function WorkspaceDialogs({ model }: { model: ProductWorkspaceModel }) {
       {model.panels.evidenceOpen && <EvidenceDialog model={model} />}
       {model.panels.reportOpen && <ReportDialog model={model} />}
       {model.panels.compareOpen && <ComparisonDialog model={model} />}
-      {model.panels.sceneOpen && (
-        <Suspense
-          fallback={
-            <div className="scene-loading" role="status">
-              3D 장소 도구를 불러오는 중입니다.
-            </div>
-          }
-        >
-          <SceneWorkspace
-            onClose={() => model.panels.setSceneOpen(false)}
-            restoreFocusExternally={model.panels.restoreSceneFocus}
-          />
-        </Suspense>
-      )}
     </>
   );
 }

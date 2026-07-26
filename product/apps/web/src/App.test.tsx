@@ -66,7 +66,7 @@ describe("App", () => {
     );
     expect(screen.getByRole("region", { name: "상권 분석 작업 공간" })).toBeInTheDocument();
     expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "상권 비교 열기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "전체 상권 보기" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "분석 데이터 분기" })).toHaveValue("");
     expect(screen.getByRole("option", { name: "분기 확인 중" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "H" })).not.toBeInTheDocument();
@@ -75,7 +75,7 @@ describe("App", () => {
       "aria-pressed",
       "true",
     );
-    expect(screen.getByRole("button", { name: /관평동 3D 장소/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /관평동 3D 장소/ })).not.toBeInTheDocument();
     expect(screen.getByText("서울 상권분석 공식 데이터를 불러오는 중입니다.")).toBeInTheDocument();
   });
 
@@ -237,9 +237,9 @@ describe("App", () => {
     expect(screen.getByText("반경 500m")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "시간대 수요" }));
-    expect(screen.getByRole("button", { name: "대표 시간대 수요" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /현재: .*시간대 수요 · 경쟁 밀도 보기/ })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "상권 비교 열기" }));
+    fireEvent.click(screen.getByRole("button", { name: "전체 상권 보기" }));
     expect(screen.getByRole("dialog", { name: "상권 비교" })).toBeInTheDocument();
   });
 
@@ -266,31 +266,13 @@ describe("App", () => {
     expect(prefabs).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("opens the Gwanpyeong upload pipeline as a supporting feature", async () => {
+  it("does not expose the scene upload pipeline in the public market workspace", () => {
     render(<App />);
 
     expect(screen.queryByRole("option", { name: /관평동/ })).not.toBeInTheDocument();
-    const sceneTrigger = screen.getByRole("button", { name: /관평동 3D 장소/ });
-    sceneTrigger.focus();
-    fireEvent.click(sceneTrigger);
-
-    expect(await screen.findByRole("dialog", { name: "관평동 3D 장소 생성" })).toBeInTheDocument();
-    expect(screen.getByText("촬영물 업로드")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "자동 변환 시작" })).toBeInTheDocument();
-    expect(screen.getByText("GPU worker")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "13:00" })).toHaveAttribute("aria-pressed", "true");
-    await waitFor(() => expect(screen.getByRole("button", { name: "3D 장소 닫기" })).toHaveFocus());
-
-    fireEvent.click(screen.getByRole("button", { name: "18:00" }));
-    expect(screen.getByRole("button", { name: "18:00" })).toHaveAttribute("aria-pressed", "true");
-
-    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("button", { name: /관평동 3D 장소/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "관평동 3D 장소 생성" })).not.toBeInTheDocument();
-    await waitFor(
-      () => expect(screen.getByRole("button", { name: /관평동 3D 장소/ })).toHaveFocus(),
-      { timeout: 5000 },
-    );
-  }, 10_000);
+  });
 
   it("connects a real search result to the map and analysis selection", async () => {
     vi.stubGlobal(
@@ -396,7 +378,7 @@ describe("App", () => {
     expect((await screen.findAllByText("부분 지원")).length).toBeGreaterThan(0);
     expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
     expect(screen.queryByText(/카페 기준/)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "상권 비교 열기" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "전체 상권 보기" })).toBeDisabled();
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining(`category=${encodeURIComponent("꽃집")}`),

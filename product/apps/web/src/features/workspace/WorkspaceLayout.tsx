@@ -49,7 +49,7 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
           }
           visibleStores={storefronts.listedStores}
           selectedStoreName={storefronts.storeSelection.selected?.name ?? null}
-          nearbyState={selection.analysisScope === "radius" ? nearby.state : "ready"}
+          nearbyState={nearby.state}
           onNearbyRetry={nearby.retry}
           onClose={() => panels.setFiltersOpen(false)}
           onReset={actions.resetAnalysis}
@@ -132,10 +132,8 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
         inspectorOpen={panels.inspectorOpen}
         filterOpenButtonRef={panels.filterOpenButtonRef}
         inspectorOpenButtonRef={panels.inspectorOpenButtonRef}
-        sceneOpenButtonRef={panels.sceneOpenButtonRef}
         onFiltersOpen={() => panels.setFiltersOpen(true)}
         onInspectorOpen={() => panels.setInspectorOpen(true)}
-        onSceneOpen={() => panels.setSceneOpen(true)}
       />
       {panels.inspectorOpen && (
         <MarketInspector

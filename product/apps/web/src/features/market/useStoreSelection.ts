@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { MarketSearchResult } from "../search/searchApi";
-import type { AnalysisScope, Market, MarketKey, MarketStore } from "./types";
+import type { MarketKey, MarketStore } from "./types";
 
 type StoreSelectionOptions = {
   marketKey: MarketKey;
   marketKeyById: Record<string, MarketKey>;
   score: number;
-  analysisScope: AnalysisScope;
   nearbyStores: MarketStore[];
-  marketStores: Market["stores"];
 };
 
 function searchResultStore(
@@ -36,9 +34,7 @@ export function useStoreSelection({
   marketKey,
   marketKeyById,
   score,
-  analysisScope,
   nearbyStores,
-  marketStores,
 }: StoreSelectionOptions) {
   const [selectedStoreName, setSelectedStoreName] = useState<string | null>(null);
   const [selectedSearchResult, setSelectedSearchResult] = useState<MarketSearchResult | null>(null);
@@ -53,11 +49,10 @@ export function useStoreSelection({
 
   useEffect(() => {
     if (!selectedStoreName || selectedSearchStore) return;
-    const selectableStores = analysisScope === "radius" ? nearbyStores : marketStores;
-    if (!selectableStores.some((store) => store.name === selectedStoreName)) {
+    if (!nearbyStores.some((store) => store.name === selectedStoreName)) {
       setSelectedStoreName(null);
     }
-  }, [analysisScope, marketStores, nearbyStores, selectedSearchStore, selectedStoreName]);
+  }, [nearbyStores, selectedSearchStore, selectedStoreName]);
 
   return {
     selectedStoreName,

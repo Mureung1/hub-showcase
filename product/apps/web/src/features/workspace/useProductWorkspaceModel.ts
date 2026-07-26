@@ -242,9 +242,7 @@ function useWorkspaceStorefronts(
     marketKey: selection.marketKey,
     marketKeyById: catalogState.marketKeyById,
     score: market.score,
-    analysisScope: selection.analysisScope,
     nearbyStores: nearbyMarketStores,
-    marketStores: market.stores,
   });
   const selectedStorefront3d = useMemo<SelectedStorefront | null>(() => {
     const selectedSearchResult = storeSelection.selectedSearchResult;
@@ -319,12 +317,7 @@ function useWorkspaceStorefronts(
       }),
     [compactMap, selectedStorefront3d, storeSelection.selected?.name, visibleStores],
   );
-  const sameCategoryCount =
-    selection.analysisScope === "radius"
-      ? (nearby.data?.same_category_count ?? 0)
-      : ((selection.categorySelection.coverage === "full"
-          ? marketAnalysis.analysis?.raw.category_store_count
-          : null) ?? 0);
+  const sameCategoryCount = nearby.data?.same_category_count ?? 0;
   const categoryCoverageReason =
     nearby.data?.category_coverage.requested_category === selection.categorySelection.name
       ? nearby.data.category_coverage.reason
@@ -470,7 +463,7 @@ export function useProductWorkspaceModel(
   const compactMap = useCompactMap();
   const catalogState = useWorkspaceCatalog(catalog);
   const selection = useAnalysisSelection(catalogState.initialUrlState);
-  const panels = useWorkspacePanels(compactMap, !useDemoData);
+  const panels = useWorkspacePanels(compactMap);
   const viewport = useMapViewport(catalogState.initialUrlState.center, !useDemoData);
   const marketData = useWorkspaceMarketData(
     catalog,

@@ -1,16 +1,13 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-export function useWorkspacePanels(compactMap: boolean, restoreSceneFocus: boolean) {
+export function useWorkspacePanels(compactMap: boolean) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
-  const [sceneOpen, setSceneOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(() => !compactMap);
   const [inspectorOpen, setInspectorOpen] = useState(() => !compactMap);
   const filterOpenButtonRef = useRef<HTMLButtonElement>(null);
   const inspectorOpenButtonRef = useRef<HTMLButtonElement>(null);
-  const sceneOpenButtonRef = useRef<HTMLButtonElement>(null);
-  const sceneWasOpenRef = useRef(false);
   const activeDialog = evidenceOpen
     ? "evidence"
     : reportOpen
@@ -52,12 +49,6 @@ export function useWorkspacePanels(compactMap: boolean, restoreSceneFocus: boole
     if (!inspectorOpen) inspectorOpenButtonRef.current?.focus();
   }, [inspectorOpen]);
 
-  useLayoutEffect(() => {
-    const didCloseScene = sceneWasOpenRef.current && !sceneOpen;
-    sceneWasOpenRef.current = sceneOpen;
-    if (restoreSceneFocus && didCloseScene) sceneOpenButtonRef.current?.focus();
-  }, [restoreSceneFocus, sceneOpen]);
-
   return {
     evidenceOpen,
     setEvidenceOpen,
@@ -65,15 +56,11 @@ export function useWorkspacePanels(compactMap: boolean, restoreSceneFocus: boole
     setReportOpen,
     compareOpen,
     setCompareOpen,
-    sceneOpen,
-    setSceneOpen,
     filtersOpen,
     setFiltersOpen,
     inspectorOpen,
     setInspectorOpen,
     filterOpenButtonRef,
     inspectorOpenButtonRef,
-    sceneOpenButtonRef,
-    restoreSceneFocus,
   };
 }

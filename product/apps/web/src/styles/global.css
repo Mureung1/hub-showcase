@@ -1001,43 +1001,8 @@ select:focus-visible {
   outline: 2px solid #267c45;
   outline-offset: 1px;
 }
-.scene-entry-button {
-  position: absolute;
-  z-index: 8;
-  top: 64px;
-  right: 18px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 36px;
-  padding: 0 9px 0 11px;
-  border: 1px solid rgba(255, 255, 255, 0.82);
-  border-radius: 7px;
-  color: #30473a;
-  background: rgba(255, 255, 255, 0.84);
-  box-shadow: 0 5px 16px rgba(31, 62, 40, 0.13);
-  backdrop-filter: blur(14px);
-  font-size: 11px;
-  font-weight: 750;
-}
-
-html.is-english .scene-entry-button,
 html.is-english .three-d {
   display: none;
-}
-.scene-entry-button small {
-  padding: 3px 6px;
-  border-radius: 4px;
-  color: #59665d;
-  background: #eef1ee;
-  font-size: 9px;
-  font-weight: 700;
-}
-.scene-entry-button:hover,
-.scene-entry-button:focus-visible {
-  border-color: #8fbea0;
-  color: #1c6336;
-  background: rgba(246, 252, 247, 0.96);
 }
 .map-fallback {
   position: absolute;
@@ -2704,15 +2669,6 @@ html.is-english .three-d {
     padding: 0;
   }
   .map-mode-switch button span {
-    display: none;
-  }
-  .scene-entry-button {
-    top: 62px;
-    right: 12px;
-    padding: 0 10px;
-  }
-  .scene-entry-button small,
-  .scene-entry-chevron {
     display: none;
   }
   .glass-button {
