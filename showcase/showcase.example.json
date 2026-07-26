@@ -4,6 +4,7 @@
   "summary": "소상공인이 매장 운영 정보를 한곳에서 확인하고 정리하는 서비스입니다.",
   "githubUser": "crong(윤지수)",
   "demoUrl": "https://example.com/store-helper",
+  "demoVideoUrl": "https://www.youtube.com/watch?v=example-video-id",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/dashboard.webp",

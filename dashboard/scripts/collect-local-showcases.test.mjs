@@ -17,6 +17,7 @@ const showcase = {
   techHighlights: ['정적 자료 생성'],
   githubUser: 'dashboard-test',
   demoUrl: '',
+  demoVideoUrl: 'https://drive.google.com/file/d/example/view',
   thumbnail: 'thumbnail.webp',
   screenshots: ['screenshots/home.webp'],
   agent: {

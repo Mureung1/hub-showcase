@@ -110,4 +110,28 @@ describe('프로젝트 목록', () => {
     expect(screen.queryByRole('heading', { name: '해결하려는 문제' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
+
+  it('시연 영상 링크를 상세 패널에 외부 링크로 표시한다', () => {
+    render(
+      <App
+        projects={[{
+          id: 'video-project',
+          title: '영상 시험 프로젝트',
+          summary: '시연 영상을 확인합니다.',
+          featureTags: [],
+          techStack: [],
+          githubUser: 'student',
+          thumbnailUrl: '/thumbnail.webp',
+          demoVideoUrl: 'https://www.youtube.com/watch?v=example-video-id',
+        }]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '영상 시험 프로젝트 상세 보기' }));
+
+    expect(screen.getByRole('link', { name: '시연 영상 보기 ↗' })).toHaveAttribute(
+      'href',
+      'https://www.youtube.com/watch?v=example-video-id',
+    );
+  });
 });

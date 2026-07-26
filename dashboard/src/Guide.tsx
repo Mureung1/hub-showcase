@@ -13,6 +13,7 @@ const emptyShowcase = {
   summary: '',
   githubUser: '',
   demoUrl: '',
+  demoVideoUrl: '',
   thumbnail: '',
   screenshots: [],
   problem: '',

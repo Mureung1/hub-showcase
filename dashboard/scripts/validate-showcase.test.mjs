@@ -14,6 +14,7 @@ const validShowcase = {
   techHighlights: ['정적 자료 생성'],
   githubUser: 'dashboard-test',
   demoUrl: '',
+  demoVideoUrl: 'https://www.youtube.com/watch?v=example-video-id',
   thumbnail: 'thumbnail.webp',
   screenshots: ['screenshots/home.webp'],
   agent: {

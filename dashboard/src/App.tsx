@@ -72,6 +72,7 @@ export type Project = {
   screenshots?: string[];
   screenshotUrls?: string[];
   demoUrl?: string;
+  demoVideoUrl?: string;
   sourceBranch?: string | null;
   agent?: {
     summary?: string;
@@ -351,8 +352,9 @@ export default function App({ projects }: AppProps) {
                 </section>
               )}
 
-              {(selectedProject.demoUrl || selectedProject.sourceBranch) && <div className="detail-links">
+              {(selectedProject.demoUrl || selectedProject.demoVideoUrl || selectedProject.sourceBranch) && <div className="detail-links">
                 {selectedProject.demoUrl && <a href={selectedProject.demoUrl} target="_blank" rel="noreferrer">서비스 열기 ↗</a>}
+                {selectedProject.demoVideoUrl && <a href={selectedProject.demoVideoUrl} target="_blank" rel="noreferrer">시연 영상 보기 ↗</a>}
                 {selectedProject.sourceBranch && <a href={`https://github.com/connect-AIAgentChallenge-26-1/hub/tree/${selectedProject.sourceBranch}`} target="_blank" rel="noreferrer">소스 보기 ↗</a>}
               </div>}
             </div>
