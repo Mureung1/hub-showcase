@@ -22,8 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
  * "실제 수집된 공고 수"라는 의미라서 가짜 시드와 섞이면 분모 자체가 거짓이 된다.
  *
  * essential/preferred 카운트는 공고 단위 문맥(자격요건 vs 우대사항) 분류다.
- * CertificationRankingService의 EmphasisLevel(언급률 임계치 기반, 전혀 다른 축)은 이번 변경과
- * 무관 — 랭킹 API 통합은 다음 슬라이스로 명시적으로 미룬다.
+ * CertificationRankingService.resolveEmphasis()가 이 값을 그대로 강조도(EmphasisLevel)
+ * 판정 근거로 쓴다 — 자격요건에 한 번이라도 등장하면 필수, 우대사항에만 등장하면 우대.
  */
 @Service
 @RequiredArgsConstructor

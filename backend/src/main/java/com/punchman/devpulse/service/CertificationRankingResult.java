@@ -6,6 +6,10 @@ public record CertificationRankingResult(
         int mentionCount,
         int totalPostingCount,
         double mentionRate,
-        EmphasisLevel emphasis
+        EmphasisLevel emphasis,
+        int essentialMentionCount,
+        int preferredMentionCount,
+        int rank,
+        double topRelativeRatio
 ) {
 }
