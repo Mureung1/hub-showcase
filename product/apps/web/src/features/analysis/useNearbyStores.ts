@@ -10,7 +10,7 @@ export function useNearbyStores(request: NearbyRequest, enabled = true) {
   const [data, setData] = useState<NearbyStoreResponse | null>(null);
   const [retryToken, setRetryToken] = useState(0);
   const [longitude, latitude] = request.center;
-  const { category, radius } = request;
+  const { category, marketId, radius, scope } = request;
 
   useEffect(() => {
     if (!enabled) {
@@ -21,7 +21,10 @@ export function useNearbyStores(request: NearbyRequest, enabled = true) {
     const controller = new AbortController();
     setData(null);
     setState("loading");
-    void loadNearbyStores({ center: [longitude, latitude], radius, category }, controller.signal)
+    void loadNearbyStores(
+      { center: [longitude, latitude], radius, category, scope, marketId },
+      controller.signal,
+    )
       .then((response) => {
         if (controller.signal.aborted) return;
         setData(response);
@@ -33,7 +36,7 @@ export function useNearbyStores(request: NearbyRequest, enabled = true) {
         setState(error instanceof NearbyApiError && error.status === 422 ? "unsupported" : "error");
       });
     return () => controller.abort();
-  }, [category, enabled, radius, latitude, longitude, retryToken]);
+  }, [category, enabled, marketId, radius, scope, latitude, longitude, retryToken]);
 
   return {
     state,

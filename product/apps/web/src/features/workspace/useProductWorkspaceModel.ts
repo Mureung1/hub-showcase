@@ -142,6 +142,8 @@ function useWorkspaceMarketData(
       center: viewport.committedCenter,
       radius: selection.radius,
       category: selection.categorySelection.name,
+      scope: selection.analysisScope === "market" ? "market" : "radius",
+      marketId: catalogState.marketIdByKey[selection.marketKey],
     },
     apiReady,
   );
@@ -264,7 +266,7 @@ function useWorkspaceStorefronts(
     };
   }, [storeSelection.selectedSearchResult, viewport]);
   const visibleStores = useMemo(() => {
-    const sourceStores = selection.analysisScope === "radius" ? nearbyMarketStores : [];
+    const sourceStores = nearbyMarketStores;
     const stores = storeSelection.selectedSearchStore
       ? [
           storeSelection.selectedSearchStore,
@@ -289,7 +291,6 @@ function useWorkspaceStorefronts(
   }, [
     nearbyMarketStores,
     selectedStorefront3d,
-    selection.analysisScope,
     selection.categorySelection,
     storeSelection.selectedSearchStore,
   ]);

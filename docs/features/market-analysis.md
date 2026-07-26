@@ -313,7 +313,16 @@ flowchart LR
 지도 100m/300m/500m: 현재 탐색·표시 범위
 ```
 
-반경 selector가 아직 서울시 상권 집계를 원형 반경으로 다시 계산하지는 않는다. 개별 점포 목록은 OSM POI이며 점포별 성공 점수 대신 `POI`로 구분한다.
+상권 경계와 분석 반경은 서로 다른 질문에 답한다.
+
+```text
+상권 기준: store_market_links로 연결된 해당 상권의 점포 전체
+반경 기준: 확정한 중심에서 100m / 300m / 500m 안의 실제 점포
+```
+
+`GET /api/v1/stores/nearby`는 `scope=market` 또는 `scope=radius`를 응답의
+`aggregation_scope`에도 기록한다. 화면은 이 값을 기준으로 점포 목록의 범위를 설명하며,
+점포를 `POI`라는 모호한 상태값으로 표시하지 않는다.
 
 ### Phase 2 저장소와 검색 경계
 
@@ -324,7 +333,8 @@ flowchart LR
 첫 검색 vertical slice는 서울 전체 검색이 아니다. 연남·홍대·합정 polygon 안에 연결된 실제
 점포에서 이름·주소·업종 query를 받아 결과를 선택하고 기존 핵심 분석 화면을 연다. 현재
 `FE 구조 분리 → DB migration/seed → 검색 API contract → React 연결`까지 완료했고,
-`반경 query → filter·URL 동기화`를 현재 스프린트 마감 뒤 `ANALYSIS-002` Task로 진행한다.
+`반경 query → filter·URL 동기화`는 실제 runtime PostgreSQL query와 React 요청 contract로
+연결한다.
 
 후속 반경 정책:
 
