@@ -11,11 +11,20 @@
 //   정적: name·address·tel·parkingKind·operType·totalSlots·payType·fee·operatingHours
 //   실시간: realtimeInfo (있으면 { availableSlots, totalSlots, status, sourceUpdatedAt }, 없으면 null)
 //   → realtimeInfo 가 null 이면 "실시간 정보 없음"으로 표시한다.
+//   거리: distanceInfo (있으면 { distance, distanceType, walkingSeconds }, 없으면 null)
+//   → 도보거리는 "주차장 ↔ 목적지" 관계라 목적지를 모르면 값 자체가 없다. 그때는 그 줄만 뺀다.
+//     요금·운영시간처럼 목적지와 무관한 사실은 어떤 경우에도 그대로 보여준다.
 // ============================================================================
 
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { EmptyState, ErrorState } from '../components/ResultStates.jsx';
 import { useParkingLotDetail } from '../hooks/useParkingLotDetail.js';
+import {
+  STRAIGHT_DISTANCE_NOTE,
+  isWalkingDistance,
+  toDistanceOriginText,
+  toDistanceText,
+} from '../utils/distanceText.js';
 import { toRealtimeStatus } from '../utils/realtimeStatus.js';
 
 // [enum → 한글 라벨] 백엔드가 주는 코드값(enum name)을 화면용 한글로 바꾼다.
@@ -83,9 +92,17 @@ function ParkingLotDetail() {
   const navigate = useNavigate();
   const { id } = useParams(); // URL의 :id (문자열)
 
+  // [쿼리스트링에서 목적지 읽기] 검색 결과 카드가 실어 보낸 값이다.
+  //   좌표는 도보거리를 계산할 기준점, place는 "○○까지"라고 보여줄 표시용 이름.
+  //   상세 주소로 바로 들어온 경우엔 셋 다 없고(get은 null 반환), 그래도 화면은 정상 동작한다.
+  const [searchParams] = useSearchParams();
+  const latitude = searchParams.get('latitude');
+  const longitude = searchParams.get('longitude');
+  const placeName = searchParams.get('place') ?? '';
+
   // 검색 훅과 같은 방식으로 상태를 구조분해로 받는다.
   const { data, isLoading, isError, error, isFetching, refetch } =
-    useParkingLotDetail(id);
+    useParkingLotDetail(id, { latitude, longitude });
 
   const isNotFound = error?.response?.status === 404; // 없는 주차장(404)인지
 
@@ -119,7 +136,7 @@ function ParkingLotDetail() {
   }
 
   // ── 여기부턴 성공(data 있음) ── 필요한 값들을 구조분해로 꺼낸다.
-  const { name, address, tel, parkingKind, operType, totalSlots, payType, fee, operatingHours, realtimeInfo } = data;
+  const { name, address, tel, parkingKind, operType, totalSlots, payType, fee, operatingHours, realtimeInfo, distanceInfo } = data;
 
   return (
     <>
@@ -128,6 +145,9 @@ function ParkingLotDetail() {
       <h1 className="detail-title">{name}</h1>
       {/* address가 있을 때만(&&) 주소 줄을 그린다 */}
       {address && <p className="detail-addr">{address}</p>}
+
+      {/* 거리: 목적지를 알고 있을 때만 보여준다(상세 주소로 바로 들어오면 없음). */}
+      <DistanceSection distanceInfo={distanceInfo} placeName={placeName} />
 
       {/* 실시간 카드: realtimeInfo 가 있으면 가용 대수·상태를, 없으면 "정보 없음"을 보여준다. */}
       <RealtimeCard realtimeInfo={realtimeInfo} />
@@ -173,6 +193,28 @@ function ParkingLotDetail() {
         <InfoRow label="공휴일" value={formatOperatingTime(operatingHours?.holidayStart, operatingHours?.holidayEnd, tel)} />
       </div>
     </>
+  );
+}
+
+// 목적지까지의 거리 줄.
+// distanceInfo 가 null 이면(목적지를 모르고 들어옴 / 주차장 좌표 없음) 아무것도 그리지 않는다.
+// "정보 없음"이라고 쓰지 않는 이유: 데이터가 빠진 게 아니라 기준점이 없어 질문 자체가
+// 성립하지 않는 상황이라, 빈 값을 보여주는 것보다 줄을 생략하는 편이 정직하다.
+function DistanceSection({ distanceInfo, placeName }) {
+  if (!distanceInfo) {
+    return null;
+  }
+
+  // 목록 카드와 같은 유틸을 써서 두 화면의 문구가 어긋나지 않게 한다.
+  const isWalking = isWalkingDistance(distanceInfo.distanceType);
+
+  return (
+    <div className="detail-dist">
+      <div className="detail-dist-value">{toDistanceText(distanceInfo)}</div>
+      <div className="detail-dist-note">{toDistanceOriginText(placeName)}</div>
+      {/* 직선거리로 대체된 경우에만 그 사실을 알린다. */}
+      {!isWalking && <div className="detail-dist-note">{STRAIGHT_DISTANCE_NOTE}</div>}
+    </div>
   );
 }
 

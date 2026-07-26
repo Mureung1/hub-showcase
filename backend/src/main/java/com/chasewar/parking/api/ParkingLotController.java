@@ -1,5 +1,6 @@
 package com.chasewar.parking.api;
 
+import com.chasewar.parking.dto.ParkingLotDetailRequest;
 import com.chasewar.parking.dto.ParkingLotDetailResponse;
 import com.chasewar.parking.dto.ParkingLotSearchRequest;
 import com.chasewar.parking.dto.ParkingLotSearchResponse;
@@ -28,7 +29,10 @@ public class ParkingLotController {
     }
 
     @GetMapping("/{id}")
-    public ParkingLotDetailResponse getDetail(@PathVariable Long id) {
-        return parkingLotService.getDetail(id);
+    public ParkingLotDetailResponse getDetail(
+            @PathVariable Long id,
+            @Valid @ModelAttribute ParkingLotDetailRequest request
+    ) {
+        return parkingLotService.getDetail(id, request.toCoordinates());
     }
 }

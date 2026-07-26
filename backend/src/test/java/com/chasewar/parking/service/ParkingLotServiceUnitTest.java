@@ -37,7 +37,7 @@ class ParkingLotServiceUnitTest {
                     .willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> parkingLotService.getDetail(12345L))
+            assertThatThrownBy(() -> parkingLotService.getDetail(12345L, null))
                     .isInstanceOf(ChasewarException.class)
                     .hasMessage(NotFoundErrorCode.NOT_FOUND_PARKING_LOT.name());
         }
