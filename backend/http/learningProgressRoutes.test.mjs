@@ -15,6 +15,7 @@ describe('learning progress routes', () => {
           runAttemptCount: 2,
           activeStepOffset: 1,
           activityLog: [{ id: 'a1', time: '09:00', title: '실행 성공', detail: '테스트 통과' }],
+          lastTestResult: { passed: 2, total: 3, ranAt: '2026-07-25T09:00:00.000Z' },
         }),
         progressRepository,
       }),
@@ -25,6 +26,7 @@ describe('learning progress routes', () => {
           missionId: 'generated-first-mission',
           runState: 'passed',
           runAttemptCount: 2,
+          lastTestResult: { passed: 2, total: 3 },
         },
       },
     })

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loadKnowledgeChunks, searchKnowledgeChunks } from './jsonlKnowledgeRepository.mjs'
+import { defaultKnowledgeChunkFileNames, loadKnowledgeChunks, searchKnowledgeChunks } from './jsonlKnowledgeRepository.mjs'
 
 const path = {
   join: (...parts) => parts.join('/'),
@@ -141,6 +141,81 @@ describe('jsonl knowledge repository', () => {
     ]
 
     const results = searchKnowledgeChunks({ chunks, query: 'React state component', limit: 1 })
+
+    expect(results).toEqual([chunks[1]])
+  })
+
+  it('infers the backend topic for backend-docs-chunks.jsonl', () => {
+    const fs = createFs({
+      '/repo/data/backend-docs-chunks.jsonl': JSON.stringify({
+        docTitle: 'FastAPI Path Parameters',
+        chunkText: 'FastAPI path parameters let you capture values from the URL path.',
+        url: 'https://fastapi.tiangolo.com/tutorial/path-params/',
+      }),
+    })
+
+    const chunks = loadKnowledgeChunks({
+      fs,
+      path,
+      repoRoot: '/repo',
+      fileNames: ['backend-docs-chunks.jsonl'],
+    })
+
+    expect(chunks[0]).toMatchObject({ topic: 'backend' })
+  })
+
+  it('infers the software-engineer topic for software-engineer-docs-chunks.jsonl', () => {
+    const fs = createFs({
+      '/repo/data/software-engineer-docs-chunks.jsonl': JSON.stringify({
+        docTitle: 'Data Structures',
+        chunkText: 'Lists, tuples, and dictionaries are core Python data structures.',
+        url: 'https://docs.python.org/3/tutorial/datastructures.html',
+      }),
+    })
+
+    const chunks = loadKnowledgeChunks({
+      fs,
+      path,
+      repoRoot: '/repo',
+      fileNames: ['software-engineer-docs-chunks.jsonl'],
+    })
+
+    expect(chunks[0]).toMatchObject({ topic: 'software-engineer' })
+  })
+
+  it('includes the backend and software-engineer files in the default file list', () => {
+    expect(defaultKnowledgeChunkFileNames).toEqual([
+      'docker-docs-chunks.jsonl',
+      'react_docs.jsonl',
+      'backend-docs-chunks.jsonl',
+      'software-engineer-docs-chunks.jsonl',
+    ])
+  })
+
+  it('boosts chunks whose topic matches preferredTopics even without a literal query overlap', () => {
+    const chunks = [
+      {
+        id: 'docker-docs-chunks.jsonl:1',
+        topic: 'docker',
+        docTitle: 'Docker build guide',
+        sectionHeading: 'Images',
+        chunkText: 'Build and tag container images.',
+      },
+      {
+        id: 'backend-docs-chunks.jsonl:1',
+        topic: 'backend',
+        docTitle: 'FastAPI Path Parameters',
+        sectionHeading: 'Path Parameters',
+        chunkText: 'FastAPI path parameters let you capture values from the URL path.',
+      },
+    ]
+
+    const results = searchKnowledgeChunks({
+      chunks,
+      query: '실무에 필요한 기술 배우기',
+      limit: 1,
+      preferredTopics: ['backend'],
+    })
 
     expect(results).toEqual([chunks[1]])
   })

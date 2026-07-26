@@ -1,5 +1,4 @@
 export type TodayQueueStatus = 'done' | 'current' | 'locked' | 'optional'
-export type LearningTrackStatus = 'in_progress' | 'review_due' | 'completed' | 'not_started'
 
 export type TodayQueueItem = {
   id: string
@@ -7,15 +6,6 @@ export type TodayQueueItem = {
   detail: string
   durationMinutes: number
   status: TodayQueueStatus
-}
-
-export type LearningTrackPreview = {
-  id: string
-  title: string
-  status: LearningTrackStatus
-  progress: number
-  lastStudiedAt: string
-  nextAction: string
 }
 
 export type ReviewSummaryItem = {
@@ -52,41 +42,6 @@ export const todayQueue: TodayQueueItem[] = [
     detail: '통과한 코드의 개선점을 짧게 확인합니다.',
     durationMinutes: 7,
     status: 'optional',
-  },
-]
-
-export const learningTracks: LearningTrackPreview[] = [
-  {
-    id: 'react',
-    title: 'React 입문',
-    status: 'in_progress',
-    progress: 62,
-    lastStudiedAt: '오늘',
-    nextAction: 'Counter.jsx 이어하기',
-  },
-  {
-    id: 'python',
-    title: 'Python 기초',
-    status: 'review_due',
-    progress: 41,
-    lastStudiedAt: '어제',
-    nextAction: '문자열 복습',
-  },
-  {
-    id: 'fastapi',
-    title: 'FastAPI',
-    status: 'not_started',
-    progress: 0,
-    lastStudiedAt: '시작 전',
-    nextAction: '첫 API 만들기',
-  },
-  {
-    id: 'bfs',
-    title: 'BFS',
-    status: 'in_progress',
-    progress: 28,
-    lastStudiedAt: '3일 전',
-    nextAction: '큐 탐색 문제',
   },
 ]
 

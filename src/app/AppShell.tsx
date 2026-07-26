@@ -5,6 +5,7 @@ import styles from './AppShell.module.css'
 const navItems = [
   { label: '홈', to: '/' },
   { label: '오늘 학습', to: '/today' },
+  { label: '학습 목표 만들기', to: '/today/goal' },
   { label: '커리큘럼 보관함', to: '/curriculum/history' },
   { label: '워크스페이스', to: '/workspace' },
   { label: 'Git Lab', to: '/git-lab' },

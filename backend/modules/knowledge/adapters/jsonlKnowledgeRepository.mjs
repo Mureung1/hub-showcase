@@ -1,4 +1,9 @@
-export const defaultKnowledgeChunkFileNames = ['docker-docs-chunks.jsonl', 'react_docs.jsonl']
+export const defaultKnowledgeChunkFileNames = [
+  'docker-docs-chunks.jsonl',
+  'react_docs.jsonl',
+  'backend-docs-chunks.jsonl',
+  'software-engineer-docs-chunks.jsonl',
+]
 
 export function loadKnowledgeChunks({ fs, path, repoRoot, fileNames = defaultKnowledgeChunkFileNames }) {
   const dataDir = path.join(repoRoot, 'data')
@@ -17,12 +22,12 @@ export function loadKnowledgeChunks({ fs, path, repoRoot, fileNames = defaultKno
   })
 }
 
-export function searchKnowledgeChunks({ chunks, query, limit = 5 }) {
+export function searchKnowledgeChunks({ chunks, query, limit = 5, preferredTopics = [] }) {
   const terms = tokenize(query)
   if (terms.length === 0) return []
 
   return chunks
-    .map((chunk) => ({ chunk, score: scoreChunk(chunk, terms) }))
+    .map((chunk) => ({ chunk, score: scoreChunk(chunk, terms, preferredTopics) }))
     .filter((result) => result.score > 0)
     .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
     .slice(0, limit)
@@ -76,7 +81,7 @@ function pickString(...values) {
   return typeof value === 'string' ? value.trim() : null
 }
 
-function scoreChunk(chunk, terms) {
+function scoreChunk(chunk, terms, preferredTopics = []) {
   const haystack = `${chunk.topic} ${chunk.docTitle} ${chunk.sectionHeading} ${chunk.chunkText}`.toLowerCase()
   const baseScore = terms.reduce((score, term) => {
     if (chunk.topic.toLowerCase() === term) return score + 6
@@ -85,8 +90,9 @@ function scoreChunk(chunk, terms) {
     if (haystack.includes(term)) return score + 1
     return score
   }, 0)
+  const topicBoost = preferredTopics.includes(chunk.topic) ? 8 : 0
 
-  return baseScore + scoreSourceQuality(chunk)
+  return baseScore + topicBoost + scoreSourceQuality(chunk)
 }
 
 function scoreSourceQuality(chunk) {
@@ -112,6 +118,8 @@ function inferTopicFromFileName(fileName) {
   const normalized = fileName.toLowerCase()
   if (normalized.includes('docker')) return 'docker'
   if (normalized.includes('react')) return 'react'
+  if (normalized.includes('software-engineer')) return 'software-engineer'
+  if (normalized.includes('backend')) return 'backend'
   return normalized.replace(/\.(jsonl|json)$/u, '')
 }
 

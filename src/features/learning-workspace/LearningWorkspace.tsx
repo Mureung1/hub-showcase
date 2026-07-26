@@ -1,13 +1,8 @@
-import Editor from '@monaco-editor/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { useSearchParams } from 'react-router'
 import { shouldUseServerApi } from '../../app/icuApiMode'
 import { createFallbackCurriculumPlan } from '../curriculum/api/curriculumClient'
-import {
-  type GeneratedCurriculumPlan,
-  type GeneratedCurriculumStep,
-  type WorkspaceMode,
-} from '../curriculum/model/curriculumGenerator'
+import type { GeneratedCurriculumPlan } from '../curriculum/model/curriculumGenerator'
 import {
   resolveGeneratedCurriculumPlan,
   useGeneratedCurriculumStore,
@@ -20,6 +15,10 @@ import {
   PreviewTimeoutError,
 } from './previewRequestCoordinator'
 import { useReactPreviewBridge } from './useReactPreviewBridge'
+import { WorkspaceCurriculumPanel } from './components/WorkspaceCurriculumPanel'
+import { WorkspaceEditorPanel } from './components/WorkspaceEditorPanel'
+import { WorkspaceGuidePanel } from './components/WorkspaceGuidePanel'
+import { WorkspaceHeader } from './components/WorkspaceHeader'
 import { WorkspaceResultsPanel } from './components/WorkspaceResultsPanel'
 import {
   useLearningProgressStore,
@@ -27,485 +26,37 @@ import {
   type LearningRunState,
 } from '../learning-progress/model/useLearningProgressStore'
 import { useLearningProfileStore } from '../profile/model/useLearningProfileStore'
-import { todayQueue, type TodayQueueItem } from '../today-learning/data/todayLearning'
 import styles from './LearningWorkspace.module.css'
 import {
-  clampStepOffset,
-  createStepState,
-  createWorkspaceTestCases,
   generatedMissionId,
   getInitialStepOffset,
   getResultMessage,
   isFinalStep,
   toLearningRunState,
   type RunState,
-  type StepState,
-  type TestCase,
 } from './workspaceInteraction'
-
-type CurriculumStep = {
-  title: string
-  detail: string
-  state: StepState
-}
-
-type WorkspaceMission = {
-  id: string
-  title: string
-  detail: string
-  durationMinutes: number
-  fileName: string
-  mode: WorkspaceMode
-  trackTitle: string
-  stepLabel: string
-  sourceLabel: string
-  guideTitle: string
-  guideDetail: string
-  practiceDetail: string
-  hint: string
-  criteria: string[]
-  sources: string[]
-  codeLines: string[]
-}
+import {
+  createActiveMissionPresentation,
+  createInitialRunPreviewState,
+  createSteps,
+  createTestCases,
+  createWorkspaceEditorFiles,
+  createWorkspaceModeLabel,
+  defaultCareerGoal,
+  getExecutionLanguage,
+  getExecutionPanelModel,
+  getLogTime,
+  initialActivityItems,
+  resolveActiveGeneratedStep,
+  resolveWorkspaceMission,
+  type WorkspaceEditorFile,
+  type WorkspaceMission,
+} from './workspaceMission'
 
 type LearningWorkspaceViewProps = {
   generatedPlan: GeneratedCurriculumPlan
   hasSavedGeneratedPlan: boolean
   mission: WorkspaceMission
-}
-
-type CodeRunPreviewState = {
-  status: RunState
-  logs: string[]
-  error?: string
-  result?: string | null
-  preview?: ReactPreviewBundle
-}
-
-type ExecutionPanelModel = {
-  title: string
-  ariaLabel: string
-  emptyTitle: string
-  emptyDetail: string
-  statusLabel: string
-}
-
-type WorkspaceEditorFile = {
-  path: string
-  name: string
-  language: string
-  value: string
-}
-
-const defaultCareerGoal = 'DevOps 엔지니어가 되고 싶어'
-
-const reactCodeLines = [
-  "import React, { useState } from 'react'",
-  '',
-  'export default function Counter({ initial = 0 }) {',
-  '  const [count, setCount] = useState(initial)',
-  '',
-  '  return (',
-  '    <section className="preview-root" aria-label="counter practice">',
-  '      <p>{count}</p>',
-  '      <button onClick={() => setCount(count + 1)}>+1</button>',
-  '    </section>',
-  '  )',
-  '}',
-]
-
-const shellCodeLines = [
-  '#!/bin/bash',
-  'echo "현재 위치 확인"',
-  'pwd',
-  '',
-  'echo "학습 파일 목록 확인"',
-  'ls -la',
-  '',
-  'echo "실행 중인 프로세스 일부 확인"',
-  'ps aux | head',
-]
-
-const apiCodeLines = [
-  'from fastapi import FastAPI',
-  '',
-  'app = FastAPI()',
-  '',
-  '@app.get("/learning-topics/{topic}")',
-  'def read_topic(topic: str):',
-  '    return {"topic": topic, "status": "ready"}',
-]
-
-const dockerCodeLines = [
-  'FROM node:22-alpine',
-  'WORKDIR /app',
-  'COPY package*.json ./',
-  'RUN npm ci',
-  'COPY . .',
-  'CMD ["npm", "run", "dev"]',
-]
-
-const initialActivityItems: LearningActivityItem[] = [
-  {
-    id: 'submit-ready',
-    time: '10:15',
-    title: '학습 준비',
-    detail: '오늘 미션과 참고 문서를 확인했습니다.',
-  },
-  {
-    id: 'hint-opened',
-    time: '10:12',
-    title: '힌트 확인',
-    detail: '막히는 지점을 먼저 좁혀봅니다.',
-  },
-  {
-    id: 'run-started',
-    time: '10:08',
-    title: '테스트 실행',
-    detail: '현재 코드 상태를 확인했습니다.',
-  },
-]
-
-function stateLabel(state: StepState) {
-  if (state === 'done') {
-    return '완료'
-  }
-
-  if (state === 'current') {
-    return '진행 중'
-  }
-
-  return '예정'
-}
-
-function createSteps(
-  plan: GeneratedCurriculumPlan,
-  selectedMissionId: string,
-  activeStepOffset: number,
-): CurriculumStep[] {
-  if (selectedMissionId !== generatedMissionId) {
-    return ['개념 확인', '현재 미션', '테스트 실행', 'AI 코드 리뷰'].map((title, index) => ({
-      title,
-      detail: '선택한 오늘 학습 항목을 완료하기 위한 기본 단계입니다.',
-      state: createStepState(index, activeStepOffset),
-    }))
-  }
-
-  return plan.steps.map((step, index) => ({
-    title: step.title,
-    detail: step.detail,
-    state: createStepState(index, activeStepOffset),
-  }))
-}
-
-function resolveWorkspaceMission(
-  selectedMissionId: string,
-  generatedPlan: GeneratedCurriculumPlan,
-): WorkspaceMission {
-  if (selectedMissionId === generatedMissionId) {
-    return {
-      id: generatedMissionId,
-      title: generatedPlan.todayMission.title,
-      detail: generatedPlan.todayMission.detail,
-      durationMinutes: generatedPlan.todayMission.durationMinutes,
-      fileName: generatedPlan.todayMission.fileName,
-      mode: resolveWorkspaceMode({
-        explicitMode: generatedPlan.todayMission.mode,
-        fileName: generatedPlan.todayMission.fileName,
-        trackTitle: generatedPlan.focusRole || generatedPlan.title,
-        goal: generatedPlan.goal,
-      }),
-      trackTitle: generatedPlan.focusRole || generatedPlan.title,
-      stepLabel: 'AI 추천 미션',
-      sourceLabel: '생성 커리큘럼 기반',
-      guideTitle: generatedPlan.steps[0]?.title ?? generatedPlan.title,
-      guideDetail: generatedPlan.steps[0]?.detail ?? generatedPlan.summary,
-      practiceDetail: generatedPlan.todayMission.detail,
-      hint:
-        generatedPlan.steps[0]?.outcome ??
-        '오늘 미션을 실행한 뒤 결과와 헷갈린 지점을 짧게 기록해보세요.',
-      criteria: [
-        '오늘 단계의 핵심을 한 문장으로 설명하기',
-        '예제 명령 또는 코드를 직접 실행하기',
-        '막힌 지점과 다음 질문을 기록하기',
-      ],
-      sources: generatedPlan.sources.map((source) => `${source.title} · ${source.urlLabel}`),
-      codeLines: pickCodeLines(generatedPlan.todayMission.fileName),
-    }
-  }
-
-  const queueItem = todayQueue.find((item) => item.id === selectedMissionId) ?? todayQueue[0]
-
-  return createQueueMission(queueItem)
-}
-
-function resolveWorkspaceMode(input: {
-  explicitMode?: WorkspaceMode
-  fileName: string
-  trackTitle?: string
-  goal?: string
-}): WorkspaceMode {
-  if (input.explicitMode) {
-    return input.explicitMode
-  }
-
-  const fileName = input.fileName.toLowerCase()
-  const context = `${input.trackTitle ?? ''} ${input.goal ?? ''}`.toLowerCase()
-
-  if (
-    fileName === 'dockerfile' ||
-    fileName.endsWith('.dockerfile') ||
-    context.includes('docker') ||
-    context.includes('도커')
-  ) {
-    return 'docker'
-  }
-
-  if (
-    fileName.endsWith('.sh') ||
-    context.includes('linux') ||
-    context.includes('리눅스') ||
-    context.includes('devops')
-  ) {
-    return 'linux'
-  }
-
-  if (
-    fileName.endsWith('.py') ||
-    context.includes('python') ||
-    context.includes('파이썬') ||
-    context.includes('fastapi')
-  ) {
-    return 'python'
-  }
-
-  return 'react'
-}
-
-function createWorkspaceModeLabel(mode: WorkspaceMode) {
-  if (mode === 'linux') return 'Linux 터미널'
-  if (mode === 'docker') return 'Docker 빌드'
-  if (mode === 'python') return 'Python 출력'
-  return 'React 미리보기'
-}
-
-function createWorkspaceModeDescription(mode: WorkspaceMode) {
-  if (mode === 'linux') return '터미널에서 셸 명령 실행 결과를 확인합니다.'
-  if (mode === 'docker') return '빌드 로그에서 Dockerfile 실행 단계를 확인합니다.'
-  if (mode === 'python') return '출력 패널에서 Python 실행 결과를 확인합니다.'
-  return '미리보기 화면에서 작성한 React 결과를 확인합니다.'
-}
-
-function createRunStateLabel(state: RunState) {
-  if (state === 'compiling') return '컴파일 중'
-  if (state === 'rendering') return '렌더링 중'
-  if (state === 'running') return '실행 중'
-  if (state === 'passed') return '통과'
-  if (state === 'failed') return '실패'
-  if (state === 'timeout') return '시간 초과'
-  return '실행 전'
-}
-
-function createQueueMission(item: TodayQueueItem): WorkspaceMission {
-  return {
-    id: item.id,
-    title: item.title,
-    detail: item.detail,
-    durationMinutes: item.durationMinutes,
-    fileName: item.id === 'run-tests' ? 'Counter.test.jsx' : 'Counter.jsx',
-    mode: 'react',
-    trackTitle: 'React 입문',
-    stepLabel: '오늘 학습 항목',
-    sourceLabel: item.status === 'optional' ? 'AI 리뷰 기반' : '공식 문서 기반',
-    guideTitle: item.title,
-    guideDetail: item.detail,
-    practiceDetail: '선택한 항목을 완료할 수 있도록 코드와 실행 결과를 함께 확인하세요.',
-    hint: '정답을 바로 보기 전에 현재 코드에서 상태가 바뀌는 지점을 먼저 찾아보세요.',
-    criteria: [
-      '미션 내용을 한 문장으로 요약',
-      '코드 또는 문서에서 근거 확인',
-      '완료 여부를 실행 결과로 확인',
-    ],
-    sources: ['React Docs: State: A Component Memory', 'React Docs: Responding to Events'],
-    codeLines: reactCodeLines,
-  }
-}
-
-function getEditorLanguage(fileName: string) {
-  const ext = fileName.toLowerCase()
-  if (ext.endsWith('.py')) return 'python'
-  if (ext.endsWith('.jsx') || ext.endsWith('.tsx')) return 'javascript'
-  if (ext.endsWith('.css')) return 'css'
-  if (ext.endsWith('.md')) return 'markdown'
-  if (ext.endsWith('.sh')) return 'shell'
-  if (ext.includes('dockerfile')) return 'dockerfile'
-  return 'javascript'
-}
-
-function getExecutionLanguage(fileName: string, mode: WorkspaceMode) {
-  if (mode === 'react')
-    return fileName.toLowerCase().endsWith('.tsx') || fileName.toLowerCase().endsWith('.ts')
-      ? 'tsx'
-      : 'jsx'
-  if (mode === 'linux') return 'shell'
-  if (mode === 'docker') return 'dockerfile'
-  if (mode === 'python') return 'python'
-  return 'javascript'
-}
-
-function pickCodeLines(fileName: string) {
-  const normalizedFileName = fileName.toLowerCase()
-
-  if (normalizedFileName.endsWith('.sh')) {
-    return shellCodeLines
-  }
-
-  if (normalizedFileName.endsWith('.py')) {
-    return apiCodeLines
-  }
-
-  if (normalizedFileName.includes('dockerfile') || normalizedFileName.endsWith('.dockerfile')) {
-    return dockerCodeLines
-  }
-
-  return reactCodeLines
-}
-
-function createWorkspaceEditorFiles(mission: WorkspaceMission): WorkspaceEditorFile[] {
-  const fileName = mission.fileName
-  const appCode = mission.codeLines.join('\n')
-  const files: WorkspaceEditorFile[] = [
-    {
-      path: `file:///${mission.id}/${fileName}`,
-      name: fileName,
-      language: getEditorLanguage(fileName),
-      value: appCode,
-    },
-  ]
-
-  if (mission.mode === 'react') {
-    files.push({
-      path: `file:///${mission.id}/styles.css`,
-      name: 'styles.css',
-      language: 'css',
-      value: [
-        '.preview-root {',
-        '  display: grid;',
-        '  gap: 16px;',
-        '}',
-        '',
-        'button {',
-        '  font: inherit;',
-        '}',
-      ].join('\n'),
-    })
-  }
-
-  if (mission.mode === 'docker') {
-    files.push({
-      path: `file:///${mission.id}/.dockerignore`,
-      name: '.dockerignore',
-      language: 'plaintext',
-      value: ['node_modules', 'dist', '.env'].join('\n'),
-    })
-  }
-
-  files.push({
-    path: `file:///${mission.id}/mission-notes.md`,
-    name: 'mission-notes.md',
-    language: 'markdown',
-    value: `# ${mission.title}\n\n- ${createWorkspaceModeLabel(mission.mode)} 결과를 확인합니다.\n- 막힌 지점과 다음 질문을 기록합니다.`,
-  })
-
-  return files
-}
-
-function createTestCases(mission: WorkspaceMission, runState: RunState): TestCase[] {
-  return createWorkspaceTestCases({
-    isGeneratedMission: mission.id === generatedMissionId,
-    runState,
-  })
-}
-
-function getLogTime() {
-  return new Intl.DateTimeFormat('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date())
-}
-
-function resolveActiveGeneratedStep(
-  generatedPlan: GeneratedCurriculumPlan,
-  activeStepOffset: number,
-): GeneratedCurriculumStep | null {
-  if (generatedPlan.steps.length === 0) {
-    return null
-  }
-
-  return generatedPlan.steps[clampStepOffset(activeStepOffset, generatedPlan.steps.length)] ?? null
-}
-
-function createActiveMissionPresentation(
-  mission: WorkspaceMission,
-  activeGeneratedStep: GeneratedCurriculumStep | null,
-): WorkspaceMission {
-  if (!activeGeneratedStep || mission.id !== generatedMissionId) {
-    return mission
-  }
-
-  return {
-    ...mission,
-    title: activeGeneratedStep.title,
-    detail: activeGeneratedStep.detail,
-    guideTitle: activeGeneratedStep.title,
-    guideDetail: activeGeneratedStep.detail,
-    practiceDetail: `${activeGeneratedStep.title}을 실습하면서 ${mission.fileName} 파일에서 확인할 내용을 정리하세요.`,
-    hint: activeGeneratedStep.outcome || mission.hint,
-  }
-}
-
-function getExecutionPanelModel(mode: WorkspaceMode, fileName: string): ExecutionPanelModel {
-  if (mode === 'linux') {
-    return {
-      title: 'Terminal',
-      ariaLabel: 'Linux 터미널 실행 결과',
-      emptyTitle: '터미널 실행 대기 중',
-      emptyDetail: '실행 버튼을 누르면 명령어 출력이 이 패널에 표시됩니다.',
-      statusLabel: fileName,
-    }
-  }
-
-  if (mode === 'docker') {
-    return {
-      title: 'Build Log',
-      ariaLabel: 'Docker 빌드 로그',
-      emptyTitle: '빌드 대기 중',
-      emptyDetail: '실행 버튼을 누르면 Dockerfile 빌드 단계가 이 패널에 표시됩니다.',
-      statusLabel: fileName,
-    }
-  }
-
-  if (mode === 'python') {
-    return {
-      title: 'Output',
-      ariaLabel: 'Python 실행 출력',
-      emptyTitle: 'Python 실행 대기 중',
-      emptyDetail: '실행 버튼을 누르면 Python 출력과 검증 로그가 이 패널에 표시됩니다.',
-      statusLabel: fileName,
-    }
-  }
-
-  return {
-    title: 'Preview',
-    ariaLabel: 'React 실행 화면',
-    emptyTitle: '실행 대기 중',
-    emptyDetail: '실행 버튼을 누르면 오른쪽 패널에 결과 화면이 표시됩니다.',
-    statusLabel: fileName,
-  }
-}
-function createInitialRunPreviewState(): CodeRunPreviewState {
-  return { status: 'idle', logs: [] }
 }
 
 export default function LearningWorkspace() {
@@ -612,9 +163,7 @@ function LearningWorkspaceView({
   const [activeFilePath, setActiveFilePath] = useState(
     () => createWorkspaceEditorFiles(activeMission)[0]?.path ?? '',
   )
-  const [runPreview, setRunPreview] = useState<CodeRunPreviewState>(() =>
-    createInitialRunPreviewState(),
-  )
+  const [runPreview, setRunPreview] = useState(() => createInitialRunPreviewState())
   const { cancelPreview, iframeRef, previewUrl, renderPreview } = useReactPreviewBridge()
   const runButtonRef = useRef<HTMLButtonElement | null>(null)
   const isRunning = runState === 'running' || runState === 'compiling' || runState === 'rendering'
@@ -722,6 +271,7 @@ function LearningWorkspaceView({
     activeStepOffset: number
     completedAt?: string | null
     activityLog: LearningActivityItem[]
+    lastTestResult?: LearningTestResult | null
   }) {
     if (!shouldUseServerApi()) {
       return
@@ -733,6 +283,7 @@ function LearningWorkspaceView({
       activeStepOffset: input.activeStepOffset,
       completedAt: input.completedAt,
       activityLog: input.activityLog,
+      lastTestResult: input.lastTestResult,
     })
       .then(({ progress }) => upsertMissionProgress(progress))
       .catch(() => recordServerSyncFailure(input.missionId, input.activeStepOffset))
@@ -808,12 +359,20 @@ function LearningWorkspaceView({
       setRunAttemptCount(nextAttemptCount)
       setActivityLog(resultLog)
 
+      const nextTestCases = createTestCases(mission, nextState)
+      const testResult = {
+        passed: nextTestCases.filter((item) => item.state === 'passed').length,
+        total: nextTestCases.length,
+        ranAt: new Date().toISOString(),
+      }
+
       recordRunResult({
         missionId: mission.id,
         runState: nextState,
         runAttemptCount: nextAttemptCount,
         activeStepOffset,
         activityLog: resultLog,
+        lastTestResult: testResult,
       })
       syncMissionProgressToServer({
         missionId: mission.id,
@@ -821,6 +380,7 @@ function LearningWorkspaceView({
         runAttemptCount: nextAttemptCount,
         activeStepOffset,
         activityLog: resultLog,
+        lastTestResult: testResult,
       })
     } catch (error) {
       if (
@@ -859,12 +419,19 @@ function LearningWorkspaceView({
       if (learnerFailure) {
         const nextAttemptCount = runAttemptCount + 1
         setRunAttemptCount(nextAttemptCount)
+        const nextTestCases = createTestCases(mission, 'failed')
+        const testResult = {
+          passed: nextTestCases.filter((item) => item.state === 'passed').length,
+          total: nextTestCases.length,
+          ranAt: new Date().toISOString(),
+        }
         recordRunResult({
           missionId: mission.id,
           runState: 'failed',
           runAttemptCount: nextAttemptCount,
           activeStepOffset,
           activityLog: resultLog,
+          lastTestResult: testResult,
         })
         syncMissionProgressToServer({
           missionId: mission.id,
@@ -872,6 +439,7 @@ function LearningWorkspaceView({
           runAttemptCount: nextAttemptCount,
           activeStepOffset,
           activityLog: resultLog,
+          lastTestResult: testResult,
         })
       }
     } finally {
@@ -998,338 +566,59 @@ function LearningWorkspaceView({
 
   return (
     <section className={styles.page} aria-labelledby="workspace-title">
-      <header className={styles.topbar}>
-        <div className={styles.trackSummary}>
-          <span className={styles.kicker}>Learning Workspace</span>
-          <h1 id="workspace-title">{activeMission.title}</h1>
-          <p>
-            {activeMission.trackTitle} · {activeMission.stepLabel}
-          </p>
-        </div>
-        <nav className={styles.actions} aria-label="학습 화면 이동">
-          <Link to="/today" className={styles.secondaryButton}>
-            오늘 학습
-          </Link>
-          <Link to="/today#tracks-title" className={styles.secondaryButton}>
-            학습 목록
-          </Link>
-        </nav>
-      </header>
-
-      <section className={styles.runtimeStrip} aria-label="실행 환경 요약">
-        <div className={styles.runtimeStripHeader}>
-          <div>
-            <span>{createWorkspaceModeLabel(activeMission.mode)}</span>
-            <strong>{executionPanel.title}</strong>
-            <p>{createWorkspaceModeDescription(activeMission.mode)}</p>
-          </div>
-          <span className={styles.runtimeState} data-state={runPreview.status}>
-            {createRunStateLabel(runPreview.status)}
-          </span>
-        </div>
-        <dl className={styles.runtimeDetails}>
-          {runtimeSummaryItems.map((item) => (
-            <div key={item.label}>
-              <dt>{item.label}</dt>
-              <dd>{item.value}</dd>
-            </div>
-          ))}
-        </dl>
-        <Link className={styles.runtimePreviewLink} to="/workspace?mission=counter-mission">
-          React 미리보기 연습
-        </Link>
-      </section>
-
-      <section className={styles.statusStrip} aria-label="학습 상태 요약">
-        <article>
-          <span>진행률</span>
-          <strong>{progressPercent}%</strong>
-          <div>
-            <i style={{ width: `${progressPercent}%` }} />
-          </div>
-        </article>
-        <article>
-          <span>테스트</span>
-          <strong>
-            {passedCount} / {testCases.length}
-          </strong>
-          <small>{isRunning ? createRunStateLabel(runState) : '현재 통과'}</small>
-        </article>
-        <article>
-          <span>예상 시간</span>
-          <strong>{activeMission.durationMinutes}분</strong>
-          <small>오늘 미션</small>
-        </article>
-        <article>
-          <span>학습 상태</span>
-          <strong>{missionCompleted ? '완료' : failedCount > 0 ? '점검' : '준비'}</strong>
-          <small>
-            {isRunning
-              ? '채점 중'
-              : missionCompleted
-                ? '마침'
-                : failedCount > 0
-                  ? '개선 필요'
-                  : '시작 가능'}
-          </small>
-        </article>
-      </section>
+      <WorkspaceHeader
+        mission={activeMission}
+        executionPanelTitle={executionPanel.title}
+        runtimeStatus={runPreview.status}
+        runtimeSummaryItems={runtimeSummaryItems}
+        progressPercent={progressPercent}
+        passedCount={passedCount}
+        testCaseCount={testCases.length}
+        isRunning={isRunning}
+        runState={runState}
+        missionCompleted={missionCompleted}
+        failedCount={failedCount}
+      />
 
       <div className={styles.workspaceGrid}>
-        <aside className={styles.curriculumPanel} aria-label="오늘 커리큘럼">
-          <section className={styles.railCard}>
-            <div className={styles.railTitleRow}>
-              <h2>현재 단계</h2>
-              <span>
-                {currentStepIndex} / {totalSteps}
-              </span>
-            </div>
-            <div className={styles.currentStepCard}>
-              <strong>{activeMission.title}</strong>
-              <p>{activeMission.fileName}</p>
-              <small>{curriculumSteps[currentStepIndex - 1]?.detail}</small>
-              <div>
-                <i style={{ width: `${progressPercent}%` }} />
-              </div>
-            </div>
-          </section>
+        <WorkspaceCurriculumPanel
+          missionTitle={activeMission.title}
+          missionFileName={activeMission.fileName}
+          curriculumSteps={curriculumSteps}
+          currentStepIndex={currentStepIndex}
+          totalSteps={totalSteps}
+          progressPercent={progressPercent}
+          hasSavedGeneratedPlan={hasSavedGeneratedPlan}
+          planTitle={generatedPlan.title}
+          planSummary={generatedPlan.summary}
+          planSummaryItems={planSummaryItems}
+          missionCompleted={missionCompleted}
+        />
 
-          <section className={styles.railCard}>
-            <div className={styles.railTitleRow}>
-              <h2>생성된 계획</h2>
-              <span className={styles.sourceBadge} data-fallback={!hasSavedGeneratedPlan}>
-                {hasSavedGeneratedPlan ? '저장됨' : 'AI 임시 플랜'}
-              </span>
-            </div>
-            <div className={styles.planOverview}>
-              <strong>{generatedPlan.title}</strong>
-              <p>{generatedPlan.summary}</p>
-              {planSummaryItems.map((item) => (
-                <dl key={item.label}>
-                  <dt>{item.label}</dt>
-                  <dd>{item.value}</dd>
-                </dl>
-              ))}
-            </div>
-          </section>
+        <WorkspaceGuidePanel
+          mission={activeMission}
+          hintVisible={hintVisible}
+          reviewVisible={reviewVisible}
+          runState={runState}
+        />
 
-          <section className={styles.railCard}>
-            <div className={styles.railTitleRow}>
-              <h2>커리큘럼 단계</h2>
-              <span>
-                {missionCompleted
-                  ? '완료'
-                  : stateLabel(curriculumSteps[currentStepIndex - 1]?.state ?? 'current')}
-              </span>
-            </div>
-            <ol className={styles.stepList}>
-              {curriculumSteps.map((step, index) => (
-                <li
-                  className={styles.stepItem}
-                  data-state={missionCompleted ? 'done' : step.state}
-                  key={`${step.title}-${index}`}
-                >
-                  <span className={styles.stepIndex}>{index + 1}</span>
-                  <div>
-                    <strong>{step.title}</strong>
-                    <p>{step.detail}</p>
-                    <small>{missionCompleted ? '완료' : stateLabel(step.state)}</small>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </section>
-        </aside>
-
-        <main className={styles.guidePanel} aria-label="학습 가이드">
-          <section className={styles.missionCard}>
-            <div className={styles.panelHeader}>
-              <div>
-                <span className={styles.sectionLabel}>오늘의 미션</span>
-                <h2>{activeMission.title}</h2>
-              </div>
-              <span className={styles.sourceBadge}>{activeMission.sourceLabel}</span>
-            </div>
-            <p>{activeMission.detail}</p>
-            <ul className={styles.criteriaList}>
-              {activeMission.criteria.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </section>
-
-          <section className={styles.tutorCard} aria-label="AI 튜터 안내">
-            <div className={styles.tutorAvatar}>AI</div>
-            <div>
-              <strong>ICU 튜터</strong>
-              <p>{activeMission.hint}</p>
-            </div>
-          </section>
-
-          <article className={styles.explanationCard}>
-            <span className={styles.sectionLabel}>개념 설명</span>
-            <h3>{activeMission.guideTitle}</h3>
-            <p>{activeMission.guideDetail}</p>
-          </article>
-
-          <article className={styles.practiceCard}>
-            <span className={styles.sectionLabel}>이번 실습</span>
-            <p>{activeMission.practiceDetail}</p>
-          </article>
-
-          {hintVisible ? (
-            <article className={styles.hintCard} aria-live="polite">
-              <span className={styles.sectionLabel}>힌트</span>
-              <h3>먼저 바뀌는 지점을 찾아보세요</h3>
-              <p>{activeMission.hint}</p>
-            </article>
-          ) : null}
-
-          {reviewVisible ? (
-            <article className={styles.reviewNoteCard} aria-live="polite">
-              <span className={styles.sectionLabel}>코드 리뷰</span>
-              <h3>
-                {runState === 'passed' ? '좋은 흐름입니다' : '아직 확인할 실패 항목이 있습니다'}
-              </h3>
-              <p>
-                {runState === 'passed'
-                  ? '필수 요구사항을 만족했습니다. 다음에는 상태가 바뀌는 이유를 짧은 주석이나 설명으로 정리해보세요.'
-                  : '실패한 케이스의 실제 결과를 먼저 보고, 예상과 달라진 값을 표시한 뒤 다시 실행하세요.'}
-              </p>
-            </article>
-          ) : null}
-
-          <article className={styles.sources}>
-            <span className={styles.sectionLabel}>추천 근거와 출처</span>
-            <ul>
-              {activeMission.sources.map((source) => (
-                <li key={source}>{source}</li>
-              ))}
-            </ul>
-          </article>
-
-          <form className={styles.tutorComposer}>
-            <input placeholder="튜터에게 질문하기..." aria-label="튜터에게 질문하기" />
-            <button type="button">전송</button>
-          </form>
-        </main>
-
-        <section className={styles.editorPanel} aria-label="코드 에디터와 실행 결과">
-          <div className={styles.editorToolbar}>
-            <div className={styles.editorTabs} role="tablist" aria-label="열린 파일">
-              {editorFiles.map((file) => (
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={file.path === activeFile?.path}
-                  className={styles.editorTab}
-                  data-active={file.path === activeFile?.path}
-                  key={file.path}
-                  onClick={() => setActiveFilePath(file.path)}
-                >
-                  {file.name}
-                </button>
-              ))}
-            </div>
-            <div className={styles.editorActions}>
-              <span className={styles.languageBadge}>
-                {createWorkspaceModeLabel(activeMission.mode)}
-              </span>
-              <button
-                type="button"
-                className={styles.runButton}
-                disabled={isRunning}
-                ref={runButtonRef}
-                onClick={handleRun}
-              >
-                {isRunning
-                  ? createRunStateLabel(runState)
-                  : runState === 'failed' || runState === 'timeout'
-                    ? '다시 실행'
-                    : '실행'}
-              </button>
-            </div>
-          </div>
-          <div className={styles.editorBody}>
-            <div className={styles.codeBlock} aria-label={`${activeMission.fileName} 코드`}>
-              <Editor
-                height="100%"
-                path={activeFile?.path}
-                defaultPath={activeFile?.path}
-                defaultLanguage={activeFile?.language}
-                defaultValue={activeFile?.value}
-                language={activeFile?.language}
-                value={activeFile?.value ?? ''}
-                saveViewState
-                theme="vs-dark"
-                onChange={(value) => updateActiveFile(value || '')}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 13,
-                  fontFamily: "'SFMono-Regular', Consolas, monospace",
-                  scrollBeyondLastLine: false,
-                  padding: { top: 16, bottom: 16 },
-                }}
-              />
-            </div>
-            <aside
-              className={styles.previewPanel}
-              data-mode={activeMission.mode}
-              aria-label={executionPanel.ariaLabel}
-            >
-              <div className={styles.previewToolbar}>
-                <div>
-                  <span>{executionPanel.title}</span>
-                  <strong>{executionPanel.statusLabel}</strong>
-                </div>
-                <div className={styles.previewActions} aria-label="실행 화면 작업">
-                  <button type="button" onClick={handleRun} disabled={isRunning}>
-                    다시 실행
-                  </button>
-                  <button type="button" onClick={resetActiveFile}>
-                    초기화
-                  </button>
-                </div>
-              </div>
-              <div className={styles.previewViewport} data-state={runPreview.status}>
-                {activeMission.mode === 'react' ? (
-                  <iframe
-                    ref={iframeRef}
-                    className={styles.renderedPreviewFrame}
-                    title={`${runPreview.preview?.componentName ?? activeMission.title} 실행 화면`}
-                    sandbox="allow-scripts allow-same-origin"
-                    src={previewUrl}
-                  />
-                ) : (
-                  <div className={styles.previewEmpty}>
-                    <strong>{executionPanel.emptyTitle}</strong>
-                    <p>{executionPanel.emptyDetail}</p>
-                  </div>
-                )}
-              </div>
-              <div
-                className={styles.previewConsole}
-                data-mode={activeMission.mode}
-                data-state={runPreview.status}
-                aria-live="polite"
-              >
-                <div>
-                  <strong>Console</strong>
-                  <span>{createRunStateLabel(runPreview.status)}</span>
-                </div>
-                {runPreview.error ? (
-                  <p className={styles.previewError}>{runPreview.error}</p>
-                ) : null}
-                {runPreview.result ? <p>return: {runPreview.result}</p> : null}
-                <ol>
-                  {consoleLines.map((line, index) => (
-                    <li key={`${index}-${line}`}>{line}</li>
-                  ))}
-                </ol>
-              </div>
-            </aside>
-          </div>
-        </section>
+        <WorkspaceEditorPanel
+          mission={activeMission}
+          editorFiles={editorFiles}
+          activeFile={activeFile}
+          isRunning={isRunning}
+          runState={runState}
+          executionPanel={executionPanel}
+          runPreview={runPreview}
+          consoleLines={consoleLines}
+          iframeRef={iframeRef}
+          previewUrl={previewUrl}
+          runButtonRef={runButtonRef}
+          onSelectFile={setActiveFilePath}
+          onRun={handleRun}
+          onChangeActiveFile={updateActiveFile}
+          onResetActiveFile={resetActiveFile}
+        />
       </div>
       <WorkspaceResultsPanel
         activityLog={activityLog}
