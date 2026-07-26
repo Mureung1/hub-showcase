@@ -25,6 +25,13 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
+
+      // 네비게이션 요청(/home, /history 등 SPA 라우트 진입)만 오프라인 시 캐시된
+      // "/"로 폴백한다. /api/* 등 그 외 요청까지 "/"(HTML)로 대체하면 프론트가
+      // JSON으로 파싱하려다 에러가 나므로, 이 요청들은 지금처럼 그대로 reject되게 둔다.
+      if (event.request.mode === "navigate") {
+        return fetch(event.request).catch(() => caches.match("/"));
+      }
       return fetch(event.request);
     }),
   );
