@@ -793,6 +793,58 @@ h2 {
   gap: var(--space-lg);
 }
 
+/* ---------- Accuracy Trend (판단 적중률 트렌드, 2026-07-26) ---------- */
+.accuracy-trend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.accuracy-trend-text {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-secondary);
+}
+
+.spark-row {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.spark-block {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-sm);
+}
+
+.spark-block.hit {
+  background: var(--difficulty-easy-bg);
+}
+
+.spark-block.miss {
+  background: var(--difficulty-hard-bg);
+}
+
+.spark-block.none {
+  background: var(--action-hold-bg);
+  opacity: 0.6;
+}
+
+/* 월별 그룹(적중률 트렌드의 월간 헤더). 향후 "인사이트 노트 날짜별 타임라인"
+   과제에서 이 섹션 구조 위에 sticky 포지셔닝/히트맵을 얹을 예정. */
+.month-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.month-header {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 .history-date {
   font-size: 13px;
   line-height: 20px;

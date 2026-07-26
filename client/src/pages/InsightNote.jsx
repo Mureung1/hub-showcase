@@ -3,6 +3,8 @@ import { Link } from "react-router-dom"
 import { getDecisions } from "../api/decisions.js"
 import { useAuth } from "../context/AuthContext.jsx"
 import HistoryCard from "../components/HistoryCard.jsx"
+import AccuracyTrend from "../components/AccuracyTrend.jsx"
+import { groupDecisionsByMonth } from "../constants/decisionStats.js"
 
 export default function InsightNote() {
   const { user } = useAuth()
@@ -36,8 +38,17 @@ export default function InsightNote() {
           {decisions.length === 0 && (
             <p className="page-subtitle">아직 기록된 투자 판단이 없습니다.</p>
           )}
-          {decisions.map((item) => (
-            <HistoryCard item={item} onMemoSaved={handleMemoSaved} key={item.id} />
+          <AccuracyTrend decisions={decisions} />
+          {groupDecisionsByMonth(decisions).map((group) => (
+            <section className="month-group" key={group.monthKey}>
+              <h2 className="month-header">
+                {group.monthLabel} —{" "}
+                {group.ratePercent === null ? "판정 불가" : `적중률 ${group.ratePercent}%`}
+              </h2>
+              {group.items.map((item) => (
+                <HistoryCard item={item} onMemoSaved={handleMemoSaved} key={item.id} />
+              ))}
+            </section>
           ))}
         </main>
       )}
