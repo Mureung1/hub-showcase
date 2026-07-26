@@ -60,7 +60,6 @@ set search_path = ''
 as $$
 declare
   v_user_id uuid := (select auth.uid());
-  v_job public.insight_import_jobs%rowtype;
   v_item jsonb;
   v_existing public.insight_import_items%rowtype;
   v_ordinal integer;
@@ -78,8 +77,7 @@ begin
     raise exception using errcode = '22023', message = 'Notion 분석 slice가 올바르지 않습니다.';
   end if;
 
-  select *
-  into v_job
+  perform 1
   from public.insight_import_jobs
   where id = p_job_id
     and user_id = v_user_id
