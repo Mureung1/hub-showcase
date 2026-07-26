@@ -6,9 +6,9 @@
   "demoUrl": "",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
-    "screenshots/microtask.webp",
-    "screenshots/focus-mode.webp",
-    "screenshots/history.webp"
+    "screenshots/microtask_lv2.webp",
+    "screenshots/focus_mode.webp",
+    "screenshots/history_page.webp"
   ],
   "problem": "대학생은 해야 할 일을 알고 계획도 세우지만, 막막함이나 하기 싫음, 다른 유혹 등의 이유로 시작을 반복해서 미룹니다. 기존 할 일 관리 서비스는 사용자가 미루는 이유와 관계없이 동일한 알림을 제공한다는 한계가 있습니다.",
   "targetUsers": [
