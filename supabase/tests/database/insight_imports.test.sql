@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(87);
+select extensions.plan(92);
 
 select extensions.has_table('public', 'insight_import_jobs', '가져오기 작업 테이블이 존재한다');
 select extensions.has_table('public', 'insight_import_items', '가져오기 항목 테이블이 존재한다');
@@ -1483,6 +1483,93 @@ select extensions.ok(
       and conname = 'insight_import_connections_terminal_token_check'
   ),
   'state 10분 만료와 terminal token 삭제 제약이 존재한다'
+);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" =
+  '{"sub":"00000000-0000-4000-8000-000000000021","role":"authenticated"}';
+
+select extensions.is(
+  public.start_notion_insight_import(
+    '44000000-0000-4000-8000-000000000001',
+    repeat('2', 64)
+  ),
+  '44000000-0000-4000-8000-000000000001'::uuid,
+  '인증 사용자는 지정한 UUID로 Notion 분석 작업을 시작한다'
+);
+select extensions.is(
+  (public.append_notion_import_items(
+    '44000000-0000-4000-8000-000000000001',
+    jsonb_build_array(
+      jsonb_build_object(
+        'candidateId', 'notion:first',
+        'capturedAtCandidate', null,
+        'collectionPath', jsonb_build_array('읽을거리'),
+        'explicitMemoCandidate', null,
+        'originalUrl', 'https://example.com/article',
+        'sourceLocation', 'Notion · 북마크',
+        'titleCandidate', '첫 링크',
+        'warnings', '[]'::jsonb,
+        'domain', 'example.com',
+        'exclusionCode', null,
+        'normalizedUrl', 'https://example.com/article',
+        'classification', 'candidate'
+      ),
+      jsonb_build_object(
+        'candidateId', 'notion:second',
+        'capturedAtCandidate', null,
+        'collectionPath', jsonb_build_array('읽을거리'),
+        'explicitMemoCandidate', null,
+        'originalUrl', 'https://example.com/article',
+        'sourceLocation', 'Notion · 링크',
+        'titleCandidate', '두 번째 링크',
+        'warnings', '[]'::jsonb,
+        'domain', 'example.com',
+        'exclusionCode', null,
+        'normalizedUrl', 'https://example.com/article',
+        'classification', 'input_duplicate'
+      )
+    ),
+    '{"stage":"complete","searchCursor":null,"blockQueue":[],"dataSourceQueue":[],"visitedBlockIds":[],"visitedDataSourceIds":[],"visitedPageIds":[]}'::jsonb
+  ) ->> 'candidateCount')::integer,
+  2,
+  'Notion slice 후보와 cursor를 누적한다'
+);
+select extensions.is(
+  public.finalize_notion_import_analysis(
+    '44000000-0000-4000-8000-000000000001',
+    '{"stage":"complete","searchCursor":null,"blockQueue":[],"dataSourceQueue":[],"visitedBlockIds":[],"visitedDataSourceIds":[],"visitedPageIds":[]}'::jsonb
+  ) ->> 'status',
+  'ready',
+  'Notion 분석 완료 시 중복을 분류하고 준비 상태로 바꾼다'
+);
+select extensions.is(
+  (
+    select input_duplicate_count
+    from public.insight_import_jobs
+    where id = '44000000-0000-4000-8000-000000000001'
+  ),
+  1,
+  'Notion 분석 완료 집계에 입력 내부 중복이 반영된다'
+);
+select extensions.ok(
+  has_function_privilege(
+    'authenticated',
+    'public.start_notion_insight_import(uuid,text)',
+    'execute'
+  )
+  and has_function_privilege(
+    'authenticated',
+    'public.append_notion_import_items(uuid,jsonb,jsonb)',
+    'execute'
+  )
+  and has_function_privilege(
+    'authenticated',
+    'public.finalize_notion_import_analysis(uuid,jsonb)',
+    'execute'
+  ),
+  'Notion 분석 함수는 authenticated 역할에만 공개된다'
 );
 
 reset role;

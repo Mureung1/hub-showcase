@@ -50,6 +50,23 @@ describe('createImportCleanupService', () => {
       'SENSITIVE_DATABASE_DETAIL'
     );
   });
+
+  it('만료 연결 철회를 먼저 시도하고 실패해도 DB 보존 기한 정리를 수행한다', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: 1, error: null });
+    const revokeExpiredConnections = vi
+      .fn()
+      .mockRejectedValue(new Error('provider unavailable'));
+    const service = createImportCleanupService(
+      { rpc } as unknown as SupabaseClient,
+      revokeExpiredConnections
+    );
+
+    await expect(service.cleanup()).resolves.toEqual({ deletedJobCount: 1 });
+    expect(revokeExpiredConnections).toHaveBeenCalledTimes(1);
+    expect(revokeExpiredConnections.mock.invocationCallOrder[0]).toBeLessThan(
+      rpc.mock.invocationCallOrder[0] ?? 0
+    );
+  });
 });
 
 describe('createSupabaseImportCleanupService', () => {

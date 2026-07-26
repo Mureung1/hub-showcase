@@ -10,6 +10,7 @@ export type NotionClientFailureCode =
   | 'reauthorize'
   | 'forbidden'
   | 'not-found'
+  | 'provider-rate-limited'
   | 'provider-failed';
 
 export class NotionClientError extends Error {
@@ -328,6 +329,10 @@ function getFailureCode(error: unknown): NotionClientFailureCode {
 
   if (status === 401) {
     return 'reauthorize';
+  }
+
+  if (status === 429) {
+    return 'provider-rate-limited';
   }
 
   if (status === 403) {

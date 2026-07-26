@@ -5,6 +5,9 @@ const serviceMocks = vi.hoisted(() => ({
   capture: vi.fn(),
   cleanup: vi.fn(),
   cleanupConfig: vi.fn(),
+  notionConfig: vi.fn(),
+  notionStart: vi.fn(),
+  revokeExpiredConnections: vi.fn(),
   updateMemo: vi.fn(),
 }));
 
@@ -21,11 +24,31 @@ vi.mock('./supabase_insight_memo.js', () => ({
 }));
 
 vi.mock('./insight_import/import_cleanup_service.js', () => ({
-  createSupabaseImportCleanupService: (config: unknown) => {
+  createSupabaseImportCleanupService: (
+    config: unknown,
+    revokeExpiredConnections: unknown
+  ) => {
     serviceMocks.cleanupConfig(config);
+    serviceMocks.revokeExpiredConnections(revokeExpiredConnections);
 
     return {
       cleanup: serviceMocks.cleanup,
+    };
+  },
+}));
+
+vi.mock('./insight_import/notion_import_service.js', () => ({
+  createSupabaseExpiredNotionConnectionRevoker: vi.fn(() => vi.fn()),
+  createSupabaseNotionImportService: (config: unknown) => {
+    serviceMocks.notionConfig(config);
+
+    return {
+      analyze: vi.fn(),
+      cancel: vi.fn(),
+      complete: vi.fn(),
+      handleCallback: vi.fn(),
+      start: serviceMocks.notionStart,
+      status: vi.fn(),
     };
   },
 }));
@@ -42,6 +65,9 @@ describe('운영 API 서비스 조립', () => {
     serviceMocks.capture.mockReset();
     serviceMocks.cleanup.mockReset();
     serviceMocks.cleanupConfig.mockReset();
+    serviceMocks.notionConfig.mockReset();
+    serviceMocks.notionStart.mockReset();
+    serviceMocks.revokeExpiredConnections.mockReset();
     serviceMocks.updateMemo.mockReset();
   });
 
@@ -122,5 +148,45 @@ describe('운영 API 서비스 조립', () => {
         SUPABASE_SERVICE_ROLE_KEY: 'service-role-key',
       })
     ).toThrow('IMPORT_APP_ORIGIN');
+  });
+
+  it('완전한 Notion 서버 설정으로 OAuth 서비스를 조립한다', async () => {
+    serviceMocks.notionStart.mockResolvedValue({
+      authorizeUrl: 'https://api.notion.com/v1/oauth/authorize',
+      connectionId: '10000000-0000-4000-8000-000000000001',
+    });
+    const notion = {
+      appOrigin: 'https://app.example',
+      clientId: 'client-id',
+      clientSecret: 'client-secret',
+      redirectUri: 'https://app.example/api/imports/notion/callback',
+      tokenEncryptionKey: Buffer.alloc(32).toString('base64'),
+    };
+    const app = createOperatingApp({
+      ...environment,
+      CRON_SECRET: 'cron-secret',
+      IMPORT_APP_ORIGIN: notion.appOrigin,
+      IMPORT_TOKEN_ENCRYPTION_KEY: notion.tokenEncryptionKey,
+      NOTION_CLIENT_ID: notion.clientId,
+      NOTION_CLIENT_SECRET: notion.clientSecret,
+      NOTION_REDIRECT_URI: notion.redirectUri,
+      SUPABASE_SERVICE_ROLE_KEY: 'service-role-key',
+    });
+
+    const response = await request(app)
+      .post('/api/imports/notion/start')
+      .set('Authorization', 'Bearer access-token')
+      .send({ includePageUrls: false, returnMode: 'web' });
+
+    expect(response.status).toBe(200);
+    expect(serviceMocks.notionConfig).toHaveBeenCalledWith({
+      notion,
+      publishableKey: 'sb_publishable_test',
+      serviceRoleKey: 'service-role-key',
+      url: 'https://project.supabase.co',
+    });
+    expect(serviceMocks.revokeExpiredConnections).toHaveBeenCalledWith(
+      expect.any(Function)
+    );
   });
 });

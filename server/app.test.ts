@@ -5,6 +5,10 @@ import { createApp } from './app';
 import type { ImportCleanupService } from './app';
 import type { ServerInsightCaptureService } from './insight_capture_service';
 import type { ServerInsightMemoService } from './insight_memo_service';
+import {
+  NotionImportServiceError,
+  type NotionImportService,
+} from './insight_import/notion_import_service';
 
 const INSIGHT_ID = '10000000-0000-4000-8000-000000000001';
 
@@ -332,6 +336,87 @@ describe('PATCH /api/insights/:insightId/memo', () => {
   });
 });
 
+describe('Notion 가져오기 API', () => {
+  it('start 요청의 bearer와 선택값을 서비스에 전달한다', async () => {
+    const notionImportService = createNotionImportService();
+    notionImportService.start.mockResolvedValue({
+      authorizeUrl: 'https://api.notion.com/v1/oauth/authorize?state=safe',
+      connectionId: INSIGHT_ID,
+    });
+
+    const response = await request(createApp({ notionImportService }))
+      .post('/api/imports/notion/start')
+      .set('Authorization', 'Bearer access-token')
+      .send({ includePageUrls: true, returnMode: 'android' });
+
+    expect(response.status).toBe(200);
+    expect(notionImportService.start).toHaveBeenCalledWith(
+      'access-token',
+      true,
+      'android'
+    );
+  });
+
+  it('인증 누락과 64KiB 초과 body를 서비스 호출 전에 거부한다', async () => {
+    const notionImportService = createNotionImportService();
+
+    const unauthorized = await request(createApp({ notionImportService }))
+      .post('/api/imports/notion/start')
+      .send({ includePageUrls: false, returnMode: 'web' });
+    const oversized = await request(createApp({ notionImportService }))
+      .post('/api/imports/notion/start')
+      .set('Authorization', 'Bearer access-token')
+      .send({
+        includePageUrls: false,
+        padding: 'x'.repeat(70 * 1024),
+        returnMode: 'web',
+      });
+
+    expect(unauthorized.status).toBe(401);
+    expect(oversized.status).toBe(400);
+    expect(notionImportService.start).not.toHaveBeenCalled();
+  });
+
+  it('callback 결과를 고정 redirect로 전달한다', async () => {
+    const notionImportService = createNotionImportService();
+    notionImportService.handleCallback.mockResolvedValue({
+      redirectUrl: `https://app.example/import?import=notion&connection=${INSIGHT_ID}`,
+    });
+
+    const response = await request(createApp({ notionImportService })).get(
+      '/api/imports/notion/callback?code=oauth-code&state=oauth-state'
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe(
+      `https://app.example/import?import=notion&connection=${INSIGHT_ID}`
+    );
+    expect(notionImportService.handleCallback).toHaveBeenCalledWith({
+      code: 'oauth-code',
+      state: 'oauth-state',
+    });
+  });
+
+  it('UUID를 선검증하고 서비스 오류를 안전한 상태 코드로 매핑한다', async () => {
+    const notionImportService = createNotionImportService();
+    notionImportService.status.mockRejectedValue(
+      new NotionImportServiceError('not-found')
+    );
+
+    const invalid = await request(createApp({ notionImportService }))
+      .get('/api/imports/notion/not-a-uuid/status')
+      .set('Authorization', 'Bearer access-token');
+    const missing = await request(createApp({ notionImportService }))
+      .get(`/api/imports/notion/${INSIGHT_ID}/status`)
+      .set('Authorization', 'Bearer access-token');
+
+    expect(invalid.status).toBe(400);
+    expect(missing.status).toBe(404);
+    expect(invalid.text).not.toContain('sensitive');
+    expect(notionImportService.status).toHaveBeenCalledTimes(1);
+  });
+});
+
 function createCaptureService(
   result: Awaited<ReturnType<ServerInsightCaptureService['capture']>>
 ) {
@@ -359,5 +444,16 @@ function createCleanupService(
 ): ImportCleanupService & { cleanup: ReturnType<typeof vi.fn> } {
   return {
     cleanup: vi.fn(async () => ({ deletedJobCount })),
+  };
+}
+
+function createNotionImportService() {
+  return {
+    analyze: vi.fn<NotionImportService['analyze']>(),
+    cancel: vi.fn<NotionImportService['cancel']>(),
+    complete: vi.fn<NotionImportService['complete']>(),
+    handleCallback: vi.fn<NotionImportService['handleCallback']>(),
+    start: vi.fn<NotionImportService['start']>(),
+    status: vi.fn<NotionImportService['status']>(),
   };
 }

@@ -98,12 +98,7 @@ describe('Vercel 배포 설정', () => {
 
   it('서버 실행 코드가 Node ESM 상대 경로 확장자를 명시한다', () => {
     const sourceFiles = ['api', 'server'].flatMap((directory) =>
-      readdirSync(resolve(process.cwd(), directory))
-        .filter(
-          (fileName) =>
-            fileName.endsWith('.ts') && !fileName.endsWith('.test.ts')
-        )
-        .map((fileName) => resolve(process.cwd(), directory, fileName))
+      readTypeScriptFiles(resolve(process.cwd(), directory))
     );
     const extensionlessImports = sourceFiles.flatMap((sourceFile) => {
       const source = readFileSync(sourceFile, 'utf8');
@@ -116,4 +111,33 @@ describe('Vercel 배포 설정', () => {
 
     expect(extensionlessImports).toEqual([]);
   });
+
+  it('Notion 가져오기 공개 URL마다 Vercel entry가 존재한다', () => {
+    const entries = [
+      'api/imports/notion/start.ts',
+      'api/imports/notion/callback.ts',
+      'api/imports/notion/[connectionId]/status.ts',
+      'api/imports/notion/[connectionId]/analyze.ts',
+      'api/imports/notion/[connectionId]/complete.ts',
+      'api/imports/notion/[connectionId]/cancel.ts',
+    ];
+
+    expect(
+      entries.filter((entry) => !existsSync(resolve(process.cwd(), entry)))
+    ).toEqual([]);
+  });
 });
+
+function readTypeScriptFiles(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = resolve(directory, entry.name);
+
+    if (entry.isDirectory()) {
+      return readTypeScriptFiles(path);
+    }
+
+    return entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')
+      ? [path]
+      : [];
+  });
+}

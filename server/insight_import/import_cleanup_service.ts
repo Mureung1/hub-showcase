@@ -16,21 +16,29 @@ export type SupabaseImportCleanupConfig = {
 };
 
 export function createSupabaseImportCleanupService(
-  config: SupabaseImportCleanupConfig
+  config: SupabaseImportCleanupConfig,
+  revokeExpiredConnections?: () => Promise<void>
 ): ImportCleanupService {
   const client = createClient(config.url, config.serviceRoleKey, {
     auth: SERVER_AUTH_OPTIONS,
   });
 
-  return createImportCleanupService(client);
+  return createImportCleanupService(client, revokeExpiredConnections);
 }
 
 export function createImportCleanupService(
-  client: Pick<SupabaseClient, 'rpc'>
+  client: Pick<SupabaseClient, 'rpc'>,
+  revokeExpiredConnections?: () => Promise<void>
 ): ImportCleanupService {
   return {
     async cleanup() {
       try {
+        try {
+          await revokeExpiredConnections?.();
+        } catch {
+          // Provider 철회 실패와 무관하게 24시간 보존 한도 정리는 계속한다.
+        }
+
         const { data, error } = await client.rpc(
           'cleanup_expired_insight_imports'
         );
