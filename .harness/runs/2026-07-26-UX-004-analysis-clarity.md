@@ -21,6 +21,7 @@ Issue #78의 점포 목록·지도 Layer·보고서·분석 근거·공개 Scene
 - request 변경 시 `AbortController`가 이전 요청을 중단해 stale 응답을 막는다.
 - API의 `lru_cache`는 Settings 생성만 저장한다.
 - storefront GLB/atlas cache는 3D asset 재다운로드를 줄이는 용도이며 분석 수치 cache가 아니다.
+- Render readiness가 실패해도 8초 간격으로 최대 8회 자동 재시도한다. 준비되면 bootstrap 화면을 유지한 채 실제 API 요청을 시작하고, 모두 실패한 경우에만 수동 재시도를 표시한다.
 
 ## Validation
 

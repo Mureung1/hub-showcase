@@ -29,9 +29,27 @@ describe("useApiReadiness", () => {
 
     const { result } = renderHook(() => useApiReadiness());
 
-    await waitFor(() => expect(result.current.state).toBe("unavailable"));
+    await waitFor(() => expect(result.current.state).toBe("waking"));
     result.current.retry();
     await waitFor(() => expect(result.current.state).toBe("ready"));
+    expect(loadApiReadinessMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("automatically retries a waking free-tier API before showing it as unavailable", async () => {
+    vi.useFakeTimers();
+    loadApiReadinessMock.mockRejectedValueOnce(new Error("waking")).mockResolvedValueOnce();
+
+    const { result } = renderHook(() => useApiReadiness());
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current.state).toBe("waking");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(8_000);
+    });
+
+    expect(result.current.state).toBe("ready");
     expect(loadApiReadinessMock).toHaveBeenCalledTimes(2);
   });
 
