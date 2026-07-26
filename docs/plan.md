@@ -8,13 +8,16 @@ CareerSignal은 채용공고의 기준선과 편차를 해석해, 직무·기업
 
 서비스는 채용공고와 근거 자료가 갱신될 때 분석 결과를 미리 생성·검증해 저장하고, 일반 사용자에게 같은 데이터 버전의 결과를 제공합니다. 백엔드 직무로 핵심 흐름을 검증한 뒤 동일한 화면·데이터·에이전트 계약으로 다른 직무를 확장합니다.
 
-- [설계 문서](architecture.md)
+- [아키텍처](architecture.md)
 - [에이전트 설계](agent-design.md)
+- [지식·저장 구조](knowledge-schema.md)
+- [통계 모델](statistics-model.md)
 - [데이터 전략](data-strategy.md)
 - [디자인 컨셉](design-concept.md)
 - [디자인 토큰](design-tokens.md)
 - [개발 백로그](backlog.md)
 - [검증 체크리스트](checklist.md)
+- [결정 기록](adr/)
 
 ## 2. 문제 발견
 
