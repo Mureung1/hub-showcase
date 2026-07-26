@@ -99,3 +99,33 @@ describe.skipIf(!isTestDb)("POST /api/push-subscriptions", () => {
     expect(res.body.error.code).toBe("invalid_body");
   });
 });
+
+describe.skipIf(!isTestDb)("DELETE /api/push-subscriptions/:id", () => {
+  afterEach(async () => {
+    await prisma.pushSubscription.deleteMany({
+      where: { endpoint: { startsWith: TEST_PREFIX } },
+    });
+  });
+
+  it("존재하는 구독을 삭제하고 200을 반환한다 (happy path)", async () => {
+    const endpoint = uniqueEndpoint();
+    const created = await prisma.pushSubscription.create({
+      data: { endpoint, p256dh: "p256dh-value", auth: "auth-value" },
+    });
+
+    const res = await request(app).delete(`/api/push-subscriptions/${created.id}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ id: created.id });
+
+    const rows = await prisma.pushSubscription.findMany({ where: { endpoint } });
+    expect(rows).toHaveLength(0);
+  });
+
+  it("존재하지 않는 id면 404 not_found를 반환한다 (경계)", async () => {
+    const res = await request(app).delete("/api/push-subscriptions/no-such-id");
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("not_found");
+  });
+});
