@@ -674,9 +674,24 @@
 - [x] 가입일·접속일 이벤트가 기록되어 D7 리텐션 산출이 가능하다.
 
 ### 오류 메시지 및 빈 화면 처리
-- [ ] 주요 화면(홈·퀘스트·상점)의 오류/빈 상태가 각각 사용자 친화적으로 표시된다.
-- [ ] 네트워크 단절 상황에서 앱이 크래시하지 않는다.
-- [ ] **알려진 결함(미수정)**: `RewardChip`(`lib/core/widgets/reward_chip.dart`)이 큰 텍스트 배율(2.0)에서 오버플로한다. `Row`가 `mainAxisSize.min`인데 유연 위젯이 없어, 접근성 글꼴을 키운 사용자에게는 폭 320(일반적인 소형 단말)에서도 오버플로 줄무늬가 뜬다. A0-2 이전부터 있던 결함이며, 보상 표시는 노랑 허용 위젯이라 수정 시 색 역할 규칙(`test/theme/color_role_test.dart` allowlist)까지 함께 봐야 한다.
+- [x] 주요 화면(홈·퀘스트·상점)의 오류/빈 상태가 각각 사용자 친화적으로 표시된다.
+  - 홈 — `test/features/home_screen_test.dart:67,79,273` (로딩 스켈레톤 / `ErrorView`+재시도 / 빈 상태).
+  - 퀘스트 — `test/features/quest_list_screen_test.dart:97,155,171` (`EmptyView` "아직 퀘스트가 없어요" + "빈 상태는 오류가 아니다" 단언 포함).
+  - 상점 — `test/features/shop_screen_test.dart` 「오류 · 빈 상태 · 로딩이 서로 구분된다 (E-3)」 신규 5건(7→12건). **그전까지 상점만 화면 상태 테스트가 전무했다.**
+- [x] 네트워크 단절 상황에서 앱이 크래시하지 않는다.
+  - `test/integration/offline_tour_test.dart` 3건 — 실 라우터 위에서 저장소 3종을 `NetworkFailure`로 띄우고 5탭 전부 순회 + 8회 왕복, 각 지점에서 `tester.takeException()` `isNull` 단언.
+- [x] **해소된 결함 기록 — `RewardChip` 큰 글꼴 배율 오버플로 (A0-2 이전부터 있던 결함, E-3에서 수정)**
+  - **무엇이었나**: `lib/core/widgets/reward_chip.dart`가 아이콘·간격·텍스트 등 7개 자식을 유연 위젯 없는 `Row(mainAxisSize.min)`에 늘어놓아, 접근성 글꼴 배율 2.0에서 텍스트만 커지고 줄바꿈할 곳이 없어 오버플로 줄무늬가 떴다(퀘스트 카드 본문 폭 208, `large` 폭 320).
+  - **어떻게 고쳤나**: 최상위를 `Wrap` 2자식으로 바꾸고(`reward_chip.dart:42`), 각 자식을 `_RewardPart`(아이콘+`SizedBox(2)`+텍스트) 묶음으로 묶어 **줄바꿈을 묶음 단위로만** 허용했다. 남아 있는 `mainAxisSize.min` `Row`는 묶음 내부(`:92`)뿐이며 이건 "🪙"와 "+5"가 서로 다른 줄로 갈라지지 않게 하는 **의도된 최소 단위**다.
+  - **부작용 없음**: lib 변경은 이 파일 하나. 색·수치 전부 불변(iconSize 28/14, `titleLarge`/`labelSmall`, 간격은 기존 `gapWMd`/`gapWSm`와 동일 값인 `AppSpacing.md`/`sm`). 새로 추가된 값은 `runSpacing: AppSpacing.xs` 하나뿐이고, 기본 배율(1.0)에서 예전처럼 한 줄임을 별도 테스트로 못 박았다.
+  - **색 역할 규칙 우려는 해소됐다**: 수정을 allowlist 안의 파일에서 끝내 색 상수 접근 경로가 그대로다. `test/theme/color_role_test.dart`는 **무수정으로 통과**한다.
+  - **회귀 방어**: `test/features/reward_chip_test.dart` 5건(실측 조합 — `large:false` 폭 208/배율 2.0, 고유폭 260.5 / `large:true` 폭 320/배율 2.0, 고유폭 436). 자명 통과 방지로 "오버플로 없음"만 보지 않고 `tight.height > oneRun.height`(그 폭이 한 줄로는 정말 모자랐다)를 함께 단언한다 — 나중에 폭을 넉넉히 늘리면 이 단언이 **먼저** 깨진다.
+  - **뮤테이션 실증 3종**: (A) 수정 전 `Row` 코드 복원 → 5건 중 4건 FAIL(`RenderFlex overflowed by 116 pixels`) / (B) `_RewardPart` 묶음 해체 → 2건 FAIL / (C) 상점 로딩 분기 제거 → 1건 FAIL.
+  - **전체 결과**: `flutter test` 759건 전부 통과(착수 기준선 746 + 신규 13), `flutter analyze` 0건.
+
+**커버 공백 (정직 기록)**
+- **상점의 빈 상태 UI 자체**(`lib/features/shop/shop_screen.dart:161-166`)는 어떤 테스트도 실제로 렌더링해 보지 못한다. `kShopItems`가 최상위 `const`라 주입 지점이 없는 **도달 불가능한 방어 분기**이기 때문이다. 테스트는 그 사실을 주석으로 명시하고 "정상 데이터에 오류·빈 상태가 섞이지 않는다"는 반대 방향만 잠근다(`test/features/shop_screen_test.dart:197-211`). **상품 카탈로그가 향후 원격/DB로 바뀌면 그 시점부터 검증 공백이 된다.**
+- `offline_tour_test`는 **읽기 단절만** 본다. 단절 상태의 **쓰기**(완료·구매·분해) 방어는 각 기능 테스트에 흩어져 있고, 이 관통 테스트가 다시 확인하지는 않는다.
 
 ### 최종 QA 및 버그 수정
 - [ ] `flutter analyze` error 0건, 알려진 크래시 0건이다.

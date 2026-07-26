@@ -145,9 +145,13 @@ void main() {
       // 지켜야 할 성질이 "줄바꿈할 수 있어야 한다"이므로 그것을 직접 못 박는다.
       await pumpCardAt(tester, 320);
 
+      // 난이도 pill을 감싸는 Wrap을 집는다. 카드 안에는 이제 Wrap이 둘이다
+      // (E-3에서 RewardChip도 큰 글꼴 배율 오버플로를 막으려고 Wrap이 됐다) —
+      // `QuestCard의 유일한 Wrap`으로 집으면 "Too many elements"로 깨진다.
+      // 단언 내용은 그대로다: 그 Wrap 안에 pill과 출처 칩이 **함께** 있다.
       final wrap = tester.widget<Wrap>(
-        find.descendant(
-          of: find.byType(QuestCard),
+        find.ancestor(
+          of: find.byType(DifficultyPill),
           matching: find.byType(Wrap),
         ),
       );
