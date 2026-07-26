@@ -228,6 +228,50 @@ describe('useNotionImport', () => {
     expect(api.analyze).not.toHaveBeenCalled();
     expect(onConnectionFinished).toHaveBeenCalledTimes(1);
   });
+
+  it('렌더마다 callback 함수가 바뀌어도 진행 중인 분석을 취소하지 않는다', async () => {
+    const api = createApi();
+    let finishAnalysis:
+      | ((value: Awaited<ReturnType<NotionImportApi['analyze']>>) => void)
+      | undefined;
+    api.status.mockResolvedValue({
+      connectionId: CONNECTION_ID,
+      includePageUrls: false,
+      jobId: CONNECTION_ID,
+      jobStatus: 'analyzing',
+      status: 'connected',
+      workspaceName: null,
+    });
+    api.analyze.mockReturnValue(
+      new Promise((resolve) => {
+        finishAnalysis = resolve;
+      })
+    );
+    const onPrepared = vi.fn();
+    const { rerender, result } = renderHook(() =>
+      useNotionImport({
+        api,
+        initialConnectionId: CONNECTION_ID,
+        onConnectionFinished: () => undefined,
+        onPrepared: (prepared) => onPrepared(prepared),
+      })
+    );
+
+    await waitFor(() => expect(api.analyze).toHaveBeenCalledTimes(1));
+    rerender();
+    const analysisSignal = api.analyze.mock.calls[0]?.[2];
+    expect(analysisSignal).toBeInstanceOf(AbortSignal);
+    expect(analysisSignal?.aborted).toBe(false);
+    finishAnalysis?.({
+      candidateCount: 1,
+      prepared: createPreparedImport(),
+      requestCount: 1,
+      status: 'ready',
+    });
+
+    await waitFor(() => expect(result.current.stage).toBe('ready'));
+    expect(onPrepared).toHaveBeenCalledTimes(1);
+  });
 });
 
 function createApi() {

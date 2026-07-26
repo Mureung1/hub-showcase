@@ -44,6 +44,12 @@ begin
   for update;
 
   if found then
+    if v_job.status <> 'ready' then
+      raise exception using
+        errcode = '22023',
+        message = '현재 상태에서는 같은 가져오기를 다시 준비할 수 없습니다.';
+    end if;
+
     return (
       with item_json as (
         select jsonb_build_object(
@@ -74,7 +80,7 @@ begin
       select jsonb_build_object(
         'id', v_job.id,
         'adapterKey', v_job.adapter_key,
-        'status', 'ready',
+        'status', v_job.status,
         'expiresAt', v_job.expires_at,
         'collections', coalesce((
           select jsonb_agg(to_jsonb(collection_path) order by first_ordinal)
@@ -85,7 +91,7 @@ begin
           from item_json
         ), '[]'::jsonb),
         'summary', jsonb_build_object(
-          'createdCount', 0,
+          'createdCount', v_job.created_count,
           'duplicateCount', v_job.duplicate_count,
           'excludedCount', v_job.excluded_count,
           'inputDuplicateCount', v_job.input_duplicate_count,

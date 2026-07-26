@@ -203,6 +203,10 @@ export async function runNotionAnalysisSlice(
   const cursor = structuredClone(initialCursor);
   const blocks: NotionAnalysisSlice['blocks'] = [];
   const dataSources: unknown[] = [];
+  const dataSourceSchemas = new Map<
+    string,
+    { collectionPath: string[]; value: unknown }
+  >();
   const pages: NotionAnalysisSlice['pages'] = [];
   const properties: NotionAnalysisSlice['properties'] = [];
   const startedAt = now();
@@ -295,14 +299,22 @@ export async function runNotionAnalysisSlice(
         continue;
       }
 
-      const schemaResponse = await request(() =>
-        client.retrieveDataSource(current.dataSourceId)
-      );
-      if (schemaResponse.exhausted) {
-        break;
+      let schema = dataSourceSchemas.get(current.dataSourceId);
+      if (!schema) {
+        const schemaResponse = await request(() =>
+          client.retrieveDataSource(current.dataSourceId)
+        );
+        if (schemaResponse.exhausted) {
+          break;
+        }
+        schema = {
+          collectionPath: readObjectTitle(schemaResponse.value),
+          value: schemaResponse.value,
+        };
+        dataSourceSchemas.set(current.dataSourceId, schema);
+        dataSources.push(schema.value);
       }
-      dataSources.push(schemaResponse.value);
-      const collectionPath = readObjectTitle(schemaResponse.value);
+
       const queryResponse = await request(() =>
         client.queryDataSource(current.dataSourceId, current.cursor)
       );
@@ -313,7 +325,7 @@ export async function runNotionAnalysisSlice(
       const page = parseListResponse(queryResponse.value);
       for (const item of page.results) {
         if (isRecord(item) && item.object === 'page') {
-          appendPage(cursor, pages, item, collectionPath);
+          appendPage(cursor, pages, item, schema.collectionPath);
         }
       }
 

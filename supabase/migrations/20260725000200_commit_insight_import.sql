@@ -107,7 +107,11 @@ begin
         raise exception using errcode = '22023', message = '모음 키 형식이 올바르지 않습니다.';
       end;
 
-      if v_seen_keys @> jsonb_build_array(v_path_json) then
+      if exists (
+        select 1
+        from jsonb_array_elements(v_seen_keys) as seen(value)
+        where seen.value = v_path_json
+      ) then
         raise exception using errcode = '22023', message = '모음 키가 중복되었습니다.';
       end if;
       v_seen_keys := v_seen_keys || jsonb_build_array(v_path_json);
@@ -329,7 +333,10 @@ begin
       'duplicateCount', v_job.duplicate_count,
       'excludedCount', v_job.excluded_count
     );
-  exception when others then
+  exception
+  when sqlstate '22023' then
+    raise;
+  when others then
     update public.insight_import_jobs
     set
       status = 'failed',

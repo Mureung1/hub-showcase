@@ -116,7 +116,7 @@ flowchart LR
   H --> I["가져오기 기록과 작업 단위 Undo"]
 ```
 
-`features/insight-import`는 사용자 행동, 표준 후보, 분석 정책과 UI를 소유한다. 입력 어댑터는 이 feature 안의 공개 계약을 구현하되, 외부 서비스와 통신하는 서버 코드는 `server` 경계에 둔다. 보관함 page는 feature의 public API만 조합한다.
+`features/insight-import`는 사용자 행동, 표준 후보, 분석 정책과 UI를 소유한다. 입력 어댑터는 이 feature 안의 공개 계약을 구현하되, 외부 서비스와 통신하는 서버 코드는 `server` 경계에 둔다. 보관함 page는 `onOpenImport` callback만 노출하고 app 조합 경계가 feature의 `InsightImportDialog`를 렌더링한다.
 
 - 브라우저 파일 어댑터는 원본을 브라우저 안에서 파싱한다.
 - Notion 어댑터는 서버에서 OAuth 토큰을 사용해 사용자가 허용한 콘텐츠만 읽는다.
@@ -168,7 +168,7 @@ type ImportSourceAdapter = {
 - 서버는 허용된 페이지, 데이터베이스와 하위 콘텐츠만 조회한다.
 - URL 속성, URL을 값으로 가진 텍스트 필드와 명시적 링크를 후보로 감지한다.
 - 데이터베이스에 URL 후보 필드가 여러 개면 가져오기 전에 한 번 매핑을 요청한다.
-- Notion 페이지 자체를 외부 원문으로 가져오려면 사용자가 해당 페이지 URL을 원문 필드로 명시적으로 선택해야 한다.
+- Notion 페이지 자체 주소는 기본적으로 제외하며, 사용자가 연결 전에 `Notion 페이지 자체 주소도 가져오기`를 명시적으로 선택한 경우에만 후보로 포함한다.
 - OAuth 연결은 일회성 마이그레이션에만 사용한다. 완료·취소·만료 뒤 토큰을 삭제하고 Provider가 지원하는 경우 연결을 철회한다.
 
 ### 브라우저 북마크 HTML

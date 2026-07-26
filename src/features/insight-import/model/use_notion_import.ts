@@ -27,7 +27,7 @@ export type UseNotionImportOptions = {
 
 export function useNotionImport({
   analysisDelayMs = 500,
-  api = createNotionImportApi(),
+  api: providedApi,
   callback,
   initialConnectionId = null,
   initialError = null,
@@ -35,6 +35,16 @@ export function useNotionImport({
   onPrepared,
   openWeb = (authorizeUrl) => window.location.assign(authorizeUrl),
 }: UseNotionImportOptions) {
+  const defaultApiRef = useRef<NotionImportApi | null>(null);
+  if (!providedApi && !defaultApiRef.current) {
+    defaultApiRef.current = createNotionImportApi();
+  }
+  const api = providedApi ?? defaultApiRef.current!;
+  const onConnectionFinishedRef = useRef(onConnectionFinished);
+  const onPreparedRef = useRef(onPrepared);
+  onConnectionFinishedRef.current = onConnectionFinished;
+  onPreparedRef.current = onPrepared;
+
   const [stage, setStage] = useState<NotionImportStage>('idle');
   const [connectionId, setConnectionId] = useState<string | null>(
     initialConnectionId
@@ -82,7 +92,7 @@ export function useNotionImport({
 
           if (result.status === 'ready') {
             setStage('ready');
-            onPrepared(result.prepared);
+            onPreparedRef.current(result.prepared);
             return;
           }
 
@@ -107,7 +117,7 @@ export function useNotionImport({
         }
       }
     },
-    [analysisDelayMs, api, onPrepared]
+    [analysisDelayMs, api]
   );
 
   const resume = useCallback(
@@ -132,7 +142,7 @@ export function useNotionImport({
           setConnectionId(null);
           setStage('error');
           setErrorMessage(getTerminalStatusMessage(status.status));
-          onConnectionFinished();
+          onConnectionFinishedRef.current();
           return;
         }
 
@@ -149,11 +159,11 @@ export function useNotionImport({
         ) {
           activeConnectionRef.current = null;
           setConnectionId(null);
-          onConnectionFinished();
+          onConnectionFinishedRef.current();
         }
       }
     },
-    [abortCurrent, analyze, api, onConnectionFinished]
+    [abortCurrent, analyze, api]
   );
 
   useEffect(() => {
@@ -168,7 +178,7 @@ export function useNotionImport({
       setConnectionId(null);
       setStage('error');
       setErrorMessage('Notion 연결이 승인되지 않았어요. 다시 연결해 주세요.');
-      onConnectionFinished();
+      onConnectionFinishedRef.current();
     } else if (initialConnectionId && !initialCallbackHandledRef.current) {
       initialCallbackHandledRef.current = true;
       queueMicrotask(() => {
@@ -180,15 +190,10 @@ export function useNotionImport({
 
     return () => {
       active = false;
-      abortCurrent();
     };
-  }, [
-    abortCurrent,
-    initialConnectionId,
-    initialError,
-    onConnectionFinished,
-    resume,
-  ]);
+  }, [initialConnectionId, initialError, resume]);
+
+  useEffect(() => () => abortCurrent(), [abortCurrent]);
 
   useEffect(
     () => callback?.subscribe((id) => void resume(id)),
@@ -221,7 +226,7 @@ export function useNotionImport({
       activeConnectionRef.current = null;
       setConnectionId(null);
       setStage('idle');
-      onConnectionFinished();
+      onConnectionFinishedRef.current();
     },
 
     async complete() {
@@ -244,7 +249,7 @@ export function useNotionImport({
       } finally {
         activeConnectionRef.current = null;
         setConnectionId(null);
-        onConnectionFinished();
+        onConnectionFinishedRef.current();
       }
     },
 
@@ -319,15 +324,23 @@ function getErrorMessage(error: unknown) {
 
 function wait(milliseconds: number, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
-    const timeout = window.setTimeout(resolve, milliseconds);
-    signal.addEventListener(
-      'abort',
-      () => {
-        window.clearTimeout(timeout);
-        reject(new DOMException('작업이 취소되었습니다.', 'AbortError'));
-      },
-      { once: true }
-    );
+    const rejectAbort = () =>
+      reject(new DOMException('작업이 취소되었습니다.', 'AbortError'));
+
+    if (signal.aborted) {
+      rejectAbort();
+      return;
+    }
+
+    const abort = () => {
+      window.clearTimeout(timeout);
+      rejectAbort();
+    };
+    const timeout = window.setTimeout(() => {
+      signal.removeEventListener('abort', abort);
+      resolve();
+    }, milliseconds);
+    signal.addEventListener('abort', abort, { once: true });
   });
 }
 

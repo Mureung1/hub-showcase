@@ -156,7 +156,11 @@ async function processZip(input: FileImportInput, collectCandidates: boolean) {
 
     throw new ImportFileError('corrupted-file');
   } finally {
-    await reader.close();
+    try {
+      await reader.close();
+    } catch {
+      // reader 정리 실패가 앞서 판별한 ZIP 오류를 덮어쓰지 않게 한다.
+    }
   }
 }
 

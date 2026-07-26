@@ -14,7 +14,13 @@ export type ImportFieldMappingProps = {
   requests: readonly ImportFieldMappingRequest[];
 };
 
-export function ImportFieldMappingForm({
+export function ImportFieldMappingForm({ ...props }: ImportFieldMappingProps) {
+  return (
+    <ImportFieldMappingFields key={JSON.stringify(props.requests)} {...props} />
+  );
+}
+
+function ImportFieldMappingFields({
   disabled = false,
   onSubmit,
   requests,

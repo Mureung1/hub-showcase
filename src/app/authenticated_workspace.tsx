@@ -235,6 +235,15 @@ export function AuthenticatedWorkspace({
   const [contextSaveFailed, setContextSaveFailed] = useState(false);
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(initialNotionCallback !== null);
+  const handleImportOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      setImportOpen(nextOpen);
+      if (!nextOpen && initialNotionCallback) {
+        clearNotionCallback();
+      }
+    },
+    [clearNotionCallback, initialNotionCallback]
+  );
   const pendingCategorySelectionRef = useRef<
     ((categoryId: string) => void) | undefined
   >(undefined);
@@ -609,7 +618,7 @@ export function AuthenticatedWorkspace({
           onCategoriesChanged={reloadCategories}
           onLibraryChanged={reloadInsights}
           onNotionConnectionFinished={clearNotionCallback}
-          onOpenChange={setImportOpen}
+          onOpenChange={handleImportOpenChange}
           open
           service={importService}
         />

@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(92);
+select extensions.plan(96);
 
 select extensions.has_table('public', 'insight_import_jobs', '가져오기 작업 테이블이 존재한다');
 select extensions.has_table('public', 'insight_import_items', '가져오기 항목 테이블이 존재한다');
@@ -132,6 +132,12 @@ values (
   '다른 사용자 가져오기',
   'blue-2',
   0
+), (
+  '20000000-0000-4000-8000-000000000023',
+  '00000000-0000-4000-8000-000000000021',
+  '삭제할 가져오기 분류',
+  'slate-2',
+  1
 );
 
 insert into public.insight_import_jobs (
@@ -168,7 +174,7 @@ insert into public.insight_import_items (
   'https://owner.example/import',
   '행 1',
   'new',
-  '20000000-0000-4000-8000-000000000021',
+  '20000000-0000-4000-8000-000000000023',
   '30000000-0000-4000-8000-000000000021',
   1
 ), (
@@ -260,6 +266,25 @@ select extensions.results_eq(
     )
   $$,
   '생성 인사이트 삭제 시 연결만 해제하고 항목 소유자는 보존한다'
+);
+
+delete from public.categories
+where id = '20000000-0000-4000-8000-000000000023';
+
+select extensions.results_eq(
+  $$
+    select selected_category_id, user_id
+    from public.insight_import_items
+    where job_id = '40000000-0000-4000-8000-000000000021'
+      and candidate_id = 'owner-1'
+  $$,
+  $$
+    values (
+      null::uuid,
+      '00000000-0000-4000-8000-000000000021'::uuid
+    )
+  $$,
+  '선택한 분류 삭제 시 연결만 해제하고 가져오기 항목은 보존한다'
 );
 
 select extensions.ok(
@@ -799,6 +824,17 @@ select extensions.is(
   '완료 작업 재호출은 인사이트를 추가하지 않는다'
 );
 
+select extensions.throws_ok(
+  $$
+    select public.prepare_insight_import(
+      'file', 'generic-csv', repeat('3', 64), '[]'::jsonb
+    )
+  $$,
+  '22023',
+  null,
+  '완료된 작업의 멱등성 키는 준비 상태로 가장해 재생하지 않는다'
+);
+
 create temporary table racing_commit_prepared on commit drop as
 select public.prepare_insight_import(
   'file', 'generic-csv', repeat('5', 64),
@@ -863,6 +899,46 @@ select extensions.results_eq(
   '경쟁 중복은 기존 제목·메모·분류를 변경하지 않는다'
 );
 
+create temporary table root_collection_prepared on commit drop as
+select public.prepare_insight_import(
+  'file', 'generic-json', repeat('d', 63) || '0',
+  jsonb_build_array(
+    jsonb_build_object(
+      'candidateId', 'root-collection', 'capturedAtCandidate', null,
+      'collectionPath', '[]'::jsonb, 'explicitMemoCandidate', null,
+      'originalUrl', 'https://commit.example/root',
+      'normalizedUrl', 'https://commit.example/root', 'domain', 'commit.example',
+      'sourceLocation', '루트 항목', 'titleCandidate', null,
+      'warnings', '[]'::jsonb, 'exclusionCode', null
+    ),
+    jsonb_build_object(
+      'candidateId', 'nested-collection', 'capturedAtCandidate', null,
+      'collectionPath', jsonb_build_array('하위'), 'explicitMemoCandidate', null,
+      'originalUrl', 'https://commit.example/nested',
+      'normalizedUrl', 'https://commit.example/nested', 'domain', 'commit.example',
+      'sourceLocation', '하위 항목', 'titleCandidate', null,
+      'warnings', '[]'::jsonb, 'exclusionCode', null
+    )
+  )
+) as result;
+select extensions.is(
+  public.commit_insight_import(
+    (select (result ->> 'id')::uuid from root_collection_prepared),
+    jsonb_build_array(
+      jsonb_build_object(
+        'collectionKey', '["하위"]',
+        'target', jsonb_build_object('kind', 'uncategorized')
+      ),
+      jsonb_build_object(
+        'collectionKey', '[]',
+        'target', jsonb_build_object('kind', 'uncategorized')
+      )
+    )
+  ) ->> 'createdCount',
+  '2',
+  '루트 모음과 하위 모음 키를 서로 다른 매핑으로 반영한다'
+);
+
 create temporary table failed_commit_prepared on commit drop as
 select public.prepare_insight_import(
   'file', 'generic-csv', repeat('4', 64),
@@ -875,7 +951,7 @@ select public.prepare_insight_import(
     'warnings', '[]'::jsonb, 'exclusionCode', null
   ))
 ) as result;
-select extensions.results_eq(
+select extensions.throws_ok(
   $$
     select public.commit_insight_import(
       (select (result ->> 'id')::uuid from failed_commit_prepared),
@@ -884,12 +960,13 @@ select extensions.results_eq(
         'target', jsonb_build_object('kind', 'existing', 'categoryId', '20000000-0000-4000-8000-000000000022')
       )))
   $$,
-  $$ values ('{"ok": false, "reason": "commit-failed"}'::jsonb) $$,
-  '다른 사용자 분류 매핑은 원자적으로 실패한다'
+  '22023',
+  null,
+  '다른 사용자 분류 매핑은 입력 오류로 거부한다'
 );
 select extensions.ok(
   (
-    select status = 'failed' and failure_code = 'commit-failed' and expires_at is not null
+    select status = 'ready' and failure_code is null and expires_at is not null
     from public.insight_import_jobs
     where id = (select (result ->> 'id')::uuid from failed_commit_prepared)
   )
@@ -897,8 +974,17 @@ select extensions.ok(
     select 1 from public.insights
     where normalized_url = 'https://commit.example/failed-atomic'
   ),
-  '실패한 반영은 인사이트를 남기지 않고 재시도 상태를 기록한다'
+  '잘못된 입력은 인사이트를 남기지 않고 준비 상태를 보존한다'
 );
+
+reset role;
+update public.insight_import_jobs
+set status = 'failed', failure_code = 'commit-failed'
+where id = (select (result ->> 'id')::uuid from failed_commit_prepared);
+set local role authenticated;
+set local "request.jwt.claims" =
+  '{"sub":"00000000-0000-4000-8000-000000000021","role":"authenticated"}';
+
 select extensions.ok(
   public.retry_insight_import(
     (select (result ->> 'id')::uuid from failed_commit_prepared),
@@ -922,7 +1008,7 @@ select public.prepare_insight_import(
     'warnings', '[]'::jsonb, 'exclusionCode', null
   ))
 ) as result;
-select extensions.results_eq(
+select extensions.throws_ok(
   $$
     select public.commit_insight_import(
       (select (result ->> 'id')::uuid from invalid_color_prepared),
@@ -932,8 +1018,9 @@ select extensions.results_eq(
       ))
     )
   $$,
-  $$ values ('{"ok": false, "reason": "commit-failed"}'::jsonb) $$,
-  '잘못된 분류 색상은 원자적으로 반영을 실패시킨다'
+  '22023',
+  null,
+  '잘못된 분류 색상은 입력 오류로 거부한다'
 );
 
 create temporary table missing_collection_prepared on commit drop as
@@ -948,7 +1035,7 @@ select public.prepare_insight_import(
     'warnings', '[]'::jsonb, 'exclusionCode', null
   ))
 ) as result;
-select extensions.results_eq(
+select extensions.throws_ok(
   $$
     select public.commit_insight_import(
       (select (result ->> 'id')::uuid from missing_collection_prepared),
@@ -958,8 +1045,9 @@ select extensions.results_eq(
       ))
     )
   $$,
-  $$ values ('{"ok": false, "reason": "commit-failed"}'::jsonb) $$,
-  '준비 작업에 없는 모음 키는 원자적으로 반영을 실패시킨다'
+  '22023',
+  null,
+  '준비 작업에 없는 모음 키는 입력 오류로 거부한다'
 );
 select extensions.ok(
   not exists (
@@ -977,6 +1065,18 @@ select extensions.ok(
       and normalized_name in ('잘못된 색상', '없는 모음')
   ),
   '잘못된 매핑은 인사이트와 분류를 남기지 않는다'
+);
+
+select extensions.ok(
+  (
+    select bool_and(status = 'ready' and failure_code is null)
+    from public.insight_import_jobs
+    where id in (
+      (select (result ->> 'id')::uuid from invalid_color_prepared),
+      (select (result ->> 'id')::uuid from missing_collection_prepared)
+    )
+  ),
+  '잘못된 매핑은 가져오기 작업을 실패 상태로 바꾸지 않는다'
 );
 
 create temporary table invalid_state_jobs (
@@ -1513,8 +1613,7 @@ select extensions.is(
         'warnings', '[]'::jsonb,
         'domain', 'example.com',
         'exclusionCode', null,
-        'normalizedUrl', 'https://example.com/article',
-        'classification', 'candidate'
+        'normalizedUrl', 'https://example.com/article'
       ),
       jsonb_build_object(
         'candidateId', 'notion:second',
@@ -1527,8 +1626,7 @@ select extensions.is(
         'warnings', '[]'::jsonb,
         'domain', 'example.com',
         'exclusionCode', null,
-        'normalizedUrl', 'https://example.com/article',
-        'classification', 'input_duplicate'
+        'normalizedUrl', 'https://example.com/article'
       )
     ),
     '{"stage":"complete","searchCursor":null,"blockQueue":[],"dataSourceQueue":[],"visitedBlockIds":[],"visitedDataSourceIds":[],"visitedPageIds":[]}'::jsonb

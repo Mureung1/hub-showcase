@@ -4,9 +4,22 @@ import { Button } from '@/shared/ui';
 
 import type { InsightImportService } from '../model/insight_import_service';
 import type {
+  ImportAdapterKey,
   ImportHistoryEntry,
   ImportIssuePage,
 } from '../model/import_types';
+
+const IMPORT_ADAPTER_LABELS = {
+  'bookmark-html': '브라우저 북마크',
+  'generic-csv': 'CSV 파일',
+  'generic-html': 'HTML 파일',
+  'generic-json': 'JSON 파일',
+  'generic-markdown': 'Markdown 파일',
+  'generic-text': '텍스트 파일',
+  notion: 'Notion',
+  'pasted-text': '붙여넣기',
+  zip: 'ZIP 파일',
+} satisfies Record<ImportAdapterKey, string>;
 
 type IssueState = ImportIssuePage & {
   errorMessage: string | null;
@@ -236,9 +249,7 @@ export function ImportHistory({
 }
 
 function getAdapterLabel(entry: ImportHistoryEntry) {
-  return entry.adapterKey === 'pasted-text'
-    ? '붙여넣기 가져오기'
-    : `${entry.adapterKey} 가져오기`;
+  return `${IMPORT_ADAPTER_LABELS[entry.adapterKey]} 가져오기`;
 }
 
 function formatCompletedAt(value: string) {

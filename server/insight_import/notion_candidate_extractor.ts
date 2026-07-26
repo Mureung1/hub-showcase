@@ -13,6 +13,12 @@ const RICH_TEXT_BLOCK_TYPES = new Set([
   'toggle',
 ]);
 const URL_BLOCK_TYPES = new Set(['bookmark', 'embed', 'link_preview']);
+const TRAILING_URL_PUNCTUATION = new Set(['.', ',', '!', ';', ':']);
+const CLOSING_URL_BRACKETS = new Map([
+  [')', '('],
+  [']', '['],
+  ['}', '{'],
+]);
 
 export type NotionFieldMappingRequest = {
   dataSourceId: string;
@@ -645,9 +651,39 @@ function getBlockLabel(type: string) {
 }
 
 function extractHttpUrls(text: string) {
-  return [...text.matchAll(/https?:\/\/[^\s<>"']+/giu)].map(
-    (match) => match[0]
+  return [...text.matchAll(/https?:\/\/[^\s<>"']+/giu)].map((match) =>
+    removeTrailingUrlDelimiters(match[0])
   );
+}
+
+function removeTrailingUrlDelimiters(rawUrl: string) {
+  let url = rawUrl;
+
+  while (url.length > 0) {
+    const finalCharacter = url.at(-1) ?? '';
+
+    if (TRAILING_URL_PUNCTUATION.has(finalCharacter)) {
+      url = url.slice(0, -1);
+      continue;
+    }
+
+    const openingBracket = CLOSING_URL_BRACKETS.get(finalCharacter);
+    if (
+      openingBracket !== undefined &&
+      countCharacter(url, finalCharacter) > countCharacter(url, openingBracket)
+    ) {
+      url = url.slice(0, -1);
+      continue;
+    }
+
+    break;
+  }
+
+  return url;
+}
+
+function countCharacter(value: string, character: string) {
+  return [...value].filter((current) => current === character).length;
 }
 
 function isHttpUrl(value: string) {

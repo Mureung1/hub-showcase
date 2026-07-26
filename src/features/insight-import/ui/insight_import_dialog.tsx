@@ -476,6 +476,17 @@ export function InsightImportDialog({
 }
 
 function NotionFieldMappingForm({
+  ...props
+}: {
+  onSubmit: (mappings: NotionFieldMapping[]) => void;
+  requests: NotionFieldMappingRequest[];
+}) {
+  return (
+    <NotionFieldMappingFields key={JSON.stringify(props.requests)} {...props} />
+  );
+}
+
+function NotionFieldMappingFields({
   onSubmit,
   requests,
 }: {

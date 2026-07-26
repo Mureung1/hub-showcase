@@ -1333,7 +1333,7 @@ Run:
 npm test -- src/features/insight-import src/app src/pages/library server
 npx --yes supabase@2.109.1 test db
 npm run lint
-npm run format:check
+npx prettier --check <이 PR에서 변경한 Prettier 대상 파일>
 npm run build
 git diff --check
 ```
@@ -2394,11 +2394,16 @@ Expected:
 모든 pgTAP 파일 PASS
 Supabase schema lint 오류 없음
 ESLint exit code 0
-Prettier matched files PASS
+이 PR에서 변경한 Prettier 대상 파일 PASS
 웹과 Chrome extension build PASS
 Android unit test와 debug APK build PASS
 git diff --check exit code 0
 ```
+
+전체 `npm run format:check`는 이 작업과 무관한 기존
+`src/features/category-management/ui/category_manager.test.tsx` 불일치로 실패하며
+[#78](https://github.com/ppre1ude/hub/issues/78)에서 별도로 정리한다. #78 완료 뒤에는
+변경 파일 검증 대신 전체 formatting gate를 다시 적용한다.
 
 - [ ] **Step 5: Preview 환경 수동 검증**
 

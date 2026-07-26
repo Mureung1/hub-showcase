@@ -13,14 +13,23 @@ export type ExtractedTextUrl = {
 
 export function extractHttpUrls(text: string): ExtractedTextUrl[] {
   const urls: ExtractedTextUrl[] = [];
+  let line = 1;
+  let scannedUntil = 0;
 
   for (const match of text.matchAll(/https?:\/\/[^\s<>"']+/giu)) {
     const index = match.index;
     const url = removeTrailingDelimiters(match[0]);
 
+    for (let position = scannedUntil; position < index; position += 1) {
+      if (text.charCodeAt(position) === 10) {
+        line += 1;
+      }
+    }
+    scannedUntil = index;
+
     urls.push({
       index,
-      line: getLineNumber(text, index),
+      line,
       url,
     });
   }
@@ -57,8 +66,4 @@ function removeTrailingDelimiters(rawUrl: string) {
 
 function countCharacter(value: string, character: string) {
   return [...value].filter((current) => current === character).length;
-}
-
-function getLineNumber(text: string, matchIndex: number) {
-  return (text.slice(0, matchIndex).match(/\n/g)?.length ?? 0) + 1;
 }

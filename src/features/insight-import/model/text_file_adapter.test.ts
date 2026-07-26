@@ -94,6 +94,24 @@ describe('text file adapters', () => {
         .__importExecuted
     ).toBeUndefined();
   });
+
+  it('닫는 태그 없이 끝난 HTML 링크도 후보로 보존한다', async () => {
+    const candidates = await genericHtmlAdapter.extract({
+      file: createFile(
+        '<a href="https://example.com/pending">마지막 링크',
+        'truncated.html',
+        'text/html'
+      ),
+      kind: 'file',
+    });
+
+    expect(candidates).toEqual([
+      expect.objectContaining({
+        originalUrl: 'https://example.com/pending',
+        titleCandidate: '마지막 링크',
+      }),
+    ]);
+  });
 });
 
 function createFile(text: string, name: string, type: string) {

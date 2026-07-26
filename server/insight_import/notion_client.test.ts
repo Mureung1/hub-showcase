@@ -195,6 +195,42 @@ describe('NotionImportClient', () => {
     expect(result.requestCount).toBe(2);
   });
 
+  it('같은 data source의 페이지를 이어서 조회할 때 schema를 한 번만 가져온다', async () => {
+    const cursor = createInitialNotionAnalysisCursor();
+    cursor.stage = 'data-sources';
+    cursor.dataSourceQueue = [
+      {
+        cursor: null,
+        dataSourceId: 'data-source-id',
+      },
+    ];
+    const client = {
+      listBlockChildren: vi.fn(),
+      queryDataSource: vi
+        .fn()
+        .mockResolvedValueOnce({
+          ...createList(),
+          has_more: true,
+          next_cursor: 'next-page',
+          results: [],
+        })
+        .mockResolvedValueOnce(createList()),
+      retrieveDataSource: vi.fn().mockResolvedValue({
+        id: 'data-source-id',
+        title: [{ plain_text: '업무 자료' }],
+      }),
+      retrievePageProperty: vi.fn(),
+      search: vi.fn(),
+    };
+
+    const result = await runNotionAnalysisSlice(client, cursor);
+
+    expect(client.retrieveDataSource).toHaveBeenCalledTimes(1);
+    expect(client.queryDataSource).toHaveBeenCalledTimes(2);
+    expect(result.dataSources).toHaveLength(1);
+    expect(result.requestCount).toBe(3);
+  });
+
   it('cursor queue나 visited가 10,000개를 넘으면 중단한다', async () => {
     const cursor = createInitialNotionAnalysisCursor();
     cursor.visitedPageIds = Array.from(

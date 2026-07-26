@@ -44,13 +44,12 @@ describe('extractNotionCandidates', () => {
         'https://example.org/plain',
       ])
     );
-    expect(result.candidates.map(({ originalUrl }) => originalUrl)).not.toEqual(
-      expect.arrayContaining([
-        'https://notion.so/page-id',
-        'https://example.com/image.png',
-        'https://example.com/caption',
-      ])
+    const originalUrls = result.candidates.map(
+      ({ originalUrl }) => originalUrl
     );
+    expect(originalUrls).not.toContain('https://notion.so/page-id');
+    expect(originalUrls).not.toContain('https://example.com/image.png');
+    expect(originalUrls).not.toContain('https://example.com/caption');
   });
 
   it('page 자체 URL과 memo는 명시적으로 선택한 경우에만 포함한다', () => {
@@ -216,6 +215,36 @@ describe('extractNotionCandidates', () => {
         titleCandidate: '개발',
       })
     );
+  });
+
+  it('일반 텍스트 URL 뒤의 문장 부호와 닫는 괄호를 제외한다', () => {
+    const result = extractNotionCandidates({
+      blocks: [
+        {
+          block: {
+            id: 'block-id',
+            paragraph: {
+              rich_text: [
+                {
+                  plain_text:
+                    '참고: https://example.com/a. (https://example.org/b)',
+                },
+              ],
+            },
+            type: 'paragraph',
+          },
+          collectionPath: [],
+        },
+      ],
+      dataSources: [],
+      includePageUrls: false,
+      pages: [],
+    });
+
+    expect(result.candidates.map(({ originalUrl }) => originalUrl)).toEqual([
+      'https://example.com/a',
+      'https://example.org/b',
+    ]);
   });
 });
 

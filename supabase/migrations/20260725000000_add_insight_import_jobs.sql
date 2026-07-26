@@ -109,6 +109,7 @@ create table public.insight_import_items (
   constraint insight_import_items_category_user_id_fkey
     foreign key (selected_category_id, user_id)
     references public.categories (id, user_id)
+    on delete set null (selected_category_id)
 );
 
 create index insight_import_jobs_user_created_at_idx

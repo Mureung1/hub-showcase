@@ -161,6 +161,61 @@ describe('AuthenticatedWorkspace', () => {
     window.history.replaceState(null, '', '/');
   });
 
+  it('Notion callback 분석 중 창을 닫으면 일회성 상태와 query를 정리한다', async () => {
+    const user = userEvent.setup();
+    const connectionId = '10000000-0000-4000-8000-000000000097';
+    window.history.replaceState(
+      null,
+      '',
+      `/?tab=home&import=notion&connection=${connectionId}`
+    );
+    vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
+    const notionApi = {
+      analyze: vi.fn<NotionImportApi['analyze']>(),
+      cancel: vi
+        .fn<NotionImportApi['cancel']>()
+        .mockResolvedValue({ status: 'canceled' }),
+      complete: vi.fn<NotionImportApi['complete']>(),
+      start: vi.fn<NotionImportApi['start']>(),
+      status: vi
+        .fn<NotionImportApi['status']>()
+        .mockImplementation((_connectionId, signal) => {
+          if (!signal) {
+            throw new Error('취소 신호가 필요합니다.');
+          }
+
+          return new Promise((_, reject) => {
+            signal.addEventListener(
+              'abort',
+              () =>
+                reject(
+                  new DOMException('작업이 취소되었습니다.', 'AbortError')
+                ),
+              { once: true }
+            );
+          });
+        }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          importService={createImportService()}
+          notionImportApi={notionApi}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    await screen.findByRole('dialog', { name: '보관함 가져오기' });
+    await user.click(screen.getByRole('button', { name: '닫기' }));
+
+    expect(
+      screen.queryByRole('dialog', { name: '보관함 가져오기' })
+    ).toBeNull();
+    expect(window.location.search).toBe('?tab=home');
+  });
+
   it('거절된 Notion callback을 안내하고 URL에서 일회성 query를 제거한다', async () => {
     const connectionId = '10000000-0000-4000-8000-000000000098';
     window.history.replaceState(

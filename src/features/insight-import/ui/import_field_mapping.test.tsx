@@ -74,4 +74,45 @@ describe('ImportFieldMapping', () => {
       },
     ]);
   });
+
+  it('새 요청 집합으로 바뀌면 추천 매핑을 다시 표시한다', () => {
+    const firstRequest: ImportFieldMappingRequest = {
+      fields: ['first_url'],
+      sourceKey: 'first.csv',
+      suggested: {
+        memoField: null,
+        sourceKey: 'first.csv',
+        titleField: null,
+        urlField: 'first_url',
+      },
+    };
+    const secondRequest: ImportFieldMappingRequest = {
+      fields: ['second_url'],
+      sourceKey: 'second.csv',
+      suggested: {
+        memoField: null,
+        sourceKey: 'second.csv',
+        titleField: null,
+        urlField: 'second_url',
+      },
+    };
+    const { rerender } = render(
+      <DesignSystemProvider>
+        <ImportFieldMappingForm onSubmit={vi.fn()} requests={[firstRequest]} />
+      </DesignSystemProvider>
+    );
+
+    rerender(
+      <DesignSystemProvider>
+        <ImportFieldMappingForm onSubmit={vi.fn()} requests={[secondRequest]} />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      screen.getByRole('combobox', { name: 'second.csv URL 필드' })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole('combobox', { name: 'first.csv URL 필드' })
+    ).toBeNull();
+  });
 });
