@@ -1,0 +1,7 @@
+interface:
+  display_name: "Database Migration Validation"
+  short_description: "Create and verify PostgreSQL schema migrations"
+  default_prompt: "Use $database-migration-validation to add and verify this PostgreSQL schema migration safely."
+
+policy:
+  allow_implicit_invocation: true
