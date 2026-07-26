@@ -19,18 +19,34 @@ const TERM_GLOSSARY = [
   {
     term: "bear market",
     definition: "주가가 장기간에 걸쳐 계속 하락하는 약세장을 뜻합니다.",
+    excerpt:
+      "Shares of major technology companies fell sharply on Friday as investors grew increasingly worried that the market is entering a bear market.",
+    excerptTranslation:
+      "금요일 주요 기술주들이 급락했는데, 투자자들이 시장이 약세장에 진입하고 있다는 우려를 점점 더 키웠기 때문입니다.",
   },
   {
     term: "ticker",
     definition: "특정 종목을 표시하는 알파벳 코드(종목 코드)입니다.",
+    excerpt:
+      "The decline accelerated after GlobalTech Corp, whose ticker symbol is GTC, issued weaker-than-expected guidance for the upcoming quarter, citing softening demand and rising component costs.",
+    excerptTranslation:
+      "GlobalTech Corp(티커: GTC)가 다가오는 분기에 대해 예상보다 약한 가이던스를 발표하면서, 수요 둔화와 부품 비용 상승을 이유로 들자 하락세가 가속화됐습니다.",
   },
   {
     term: "guidance",
     definition: "기업이 향후 실적에 대해 스스로 제시하는 전망치입니다.",
+    excerpt:
+      "The decline accelerated after GlobalTech Corp, whose ticker symbol is GTC, issued weaker-than-expected guidance for the upcoming quarter, citing softening demand and rising component costs.",
+    excerptTranslation:
+      "GlobalTech Corp(티커: GTC)가 다가오는 분기에 대해 예상보다 약한 가이던스를 발표하면서, 수요 둔화와 부품 비용 상승을 이유로 들자 하락세가 가속화됐습니다.",
   },
   {
     term: "sell-off",
     definition: "투자자들이 한꺼번에 주식을 팔아치우는 현상입니다.",
+    excerpt:
+      "The broad sell-off wiped out nearly a trillion dollars in market value across the sector in a single trading session.",
+    excerptTranslation:
+      "광범위한 매도세로 단 하루 거래 세션 만에 해당 섹터 시가총액 약 1조 달러가 증발했습니다.",
   },
 ]
 
@@ -79,8 +95,8 @@ async function saveTermsToVocabulary(terms, articleTitle, articleUrl, userId) {
   if (!userId) return
 
   try {
-    for (const { term, definition } of terms) {
-      await appendVocabulary(userId, term, definition, articleTitle, articleUrl)
+    for (const { term, definition, excerpt, excerptTranslation } of terms) {
+      await appendVocabulary(userId, term, definition, articleTitle, articleUrl, excerpt, excerptTranslation)
     }
   } catch (err) {
     console.warn("[llmService] failed to save terms to vocabulary:", err.message)
@@ -143,7 +159,7 @@ ${xmlParagraphs}
    - 선택한 문장은 반드시 하나의 <paragraph> 태그 안에만 온전히 포함되어야 하며, 두 문단에 걸쳐 있으면 안 됩니다.
    - "translation"은 자연스러운 한국어 번역, "reason"은 이 문장이 왜 구조적으로 어려운지 한국어로 한 줄 설명입니다(40자 이내).
 
-2. terms — 기사 전체에서 초보 투자자가 알아야 할 핵심 금융/투자 용어를 3~5개 선별하세요. "term"은 원문에 등장한 영어 표현 그대로, "definition"은 초보자를 위한 한국어 설명입니다(50자 이내).
+2. terms — 기사 전체에서 초보 투자자가 알아야 할 핵심 금융/투자 용어를 3~5개 선별하세요. "term"은 원문에 등장한 영어 표현 그대로, "definition"은 초보자를 위한 한국어 설명입니다(50자 이내). "excerpt"는 해당 term이 등장한 문장을 원문에서 정확히 그대로 복사한 값입니다(위 sentences의 "text"와 동일한 verbatim 규칙 적용 — 재타이핑·의역·일부 발췌 금지, 스마트따옴표 변환 금지, 공백 정규화 금지, 하나의 <paragraph> 안에 온전히 포함). "excerptTranslation"은 그 excerpt 문장을 자연스러운 한국어로 번역한 값입니다.
 
 3. summaryBullets — 기사 내용을 객관적 사실 위주로 정확히 3개의 한국어 문장으로 요약하세요(의견이나 추측이 아닌 기사에 실제로 나온 사실 기준, 각 문장 60자 이내). 반드시 3개의 문자열을 담은 배열이어야 하며, 객체나 번호를 매긴 하나의 문자열로 합쳐서 반환하지 마세요.
 
@@ -157,7 +173,7 @@ ${xmlParagraphs}
     { "text": "원문 그대로 복사한 문장", "translation": "한국어 번역", "reason": "구조가 어려운 이유" }
   ],
   "terms": [
-    { "term": "영어 용어", "definition": "한국어 설명" }
+    { "term": "영어 용어", "definition": "한국어 설명", "excerpt": "원문 그대로 복사한 문장", "excerptTranslation": "그 문장의 한국어 번역" }
   ],
   "summaryBullets": ["...", "...", "..."],
   "insight": "...",
@@ -218,7 +234,16 @@ export function parseAnalysisResponse(response, paragraphs) {
         typeof t.definition === "string" &&
         t.definition.length > 0,
     )
-    .map(({ term, definition }) => ({ term, definition }))
+    .map(({ term, definition, excerpt, excerptTranslation }) => {
+      const matchedExcerpt = typeof excerpt === "string" ? findVerbatimMatch(paragraphs, excerpt) : null
+      const hasTranslation = typeof excerptTranslation === "string" && excerptTranslation.trim().length > 0
+      return {
+        term,
+        definition,
+        excerpt: matchedExcerpt,
+        excerptTranslation: matchedExcerpt && hasTranslation ? excerptTranslation.trim() : null,
+      }
+    })
 
   const validBullets = summaryBullets.filter((b) => typeof b === "string" && b.length > 0)
   if (validBullets.length !== 3) {

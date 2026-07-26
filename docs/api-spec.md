@@ -104,7 +104,9 @@
     "terms": [
       {
         "term": "bear market",
-        "definition": "주가가 장기간에 걸쳐 계속 하락하는 약세장을 뜻합니다."
+        "definition": "주가가 장기간에 걸쳐 계속 하락하는 약세장을 뜻합니다.",
+        "excerpt": "Shares of major technology companies fell sharply on Friday as investors grew increasingly worried that the market is entering a bear market.",
+        "excerptTranslation": "금요일 주요 기술주들이 급락했는데, 투자자들이 시장이 약세장에 진입하고 있다는 우려를 점점 더 키웠기 때문입니다."
       }
     ],
     "summaryBullets": [
@@ -125,9 +127,15 @@
   아코디언으로 펼쳐 보여준다. **팝업이 아닌 인라인 펼침(아코디언) 방식** —
   긴 번역 텍스트가 원문 문장을 가리지 않도록 하기 위함.
 - `terms`: 기존 `{ term, metaphor, definition }`에서 **`metaphor` 필드를
-  삭제**하고 `{ term, definition }`만 남김. 기사당 핵심 용어 3~5개를
-  AI가 자동 선별하며, 사용자의 탭 여부와 무관하게 `4. GET /api/vocabulary`
-  저장소에 자동 적재된다(리더뷰 화면에는 더 이상 노출되지 않음).
+  삭제**하고 `{ term, definition, excerpt, excerptTranslation }`로 구성.
+  기사당 핵심 용어 3~5개를 AI가 자동 선별하며, 사용자의 탭 여부와 무관하게
+  `4. GET /api/vocabulary` 저장소에 자동 적재된다(리더뷰 화면에는 더 이상
+  노출되지 않음). `excerpt`(2026-07-26 추가)는 해당 term이 등장한 원문
+  문장(verbatim)으로, 단어장 플래시카드 뒷면에 노출된다. LLM이 낸 값이
+  원문에서 검증되지 않으면 `null`로 폴백한다. `excerptTranslation`(2026-07-26
+  추가)은 그 excerpt의 한국어 번역으로, `excerpt` 검증에 실패하면(즉
+  `excerpt`가 `null`이면) 함께 `null`로 폴백한다(원문 없는 번역만 단독으로
+  노출하지 않기 위함).
 - `marketSentiment`: `"bullish" | "bearish" | "neutral"` 중 하나. 기사의
   객관적 톤을 AI가 판별한 값으로, 인사이트 노트에서 사용자의 판단과 비교하는 데 쓰인다.
 - `paragraphs`가 빈 배열이거나 배열이 아니면
@@ -150,6 +158,8 @@
       {
         "term": "bear market",
         "definition": "주가가 장기간에 걸쳐 계속 하락하는 약세장을 뜻합니다.",
+        "excerpt": "Shares of major technology companies fell sharply on Friday as investors grew increasingly worried that the market is entering a bear market.",
+        "excerptTranslation": "금요일 주요 기술주들이 급락했는데, 투자자들이 시장이 약세장에 진입하고 있다는 우려를 점점 더 키웠기 때문입니다.",
         "articleTitle": "Tech Stocks Slide as Investors Brace for Bear Market",
         "articleUrl": "https://finance.yahoo.com/news/...",
         "addedAt": "2026-07-13T10:00:00+09:00"

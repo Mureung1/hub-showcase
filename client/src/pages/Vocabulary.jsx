@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { getVocabulary } from "../api/vocabulary.js"
 import { useAuth } from "../context/AuthContext.jsx"
+import VocabularyCard from "../components/VocabularyCard.jsx"
 
 export default function Vocabulary() {
-  const navigate = useNavigate()
   const { user } = useAuth()
   const [vocabulary, setVocabulary] = useState([])
 
@@ -13,10 +13,6 @@ export default function Vocabulary() {
     getVocabulary().then(setVocabulary)
   }, [user])
 
-  function handleSourceClick(item) {
-    navigate(`/reader?url=${encodeURIComponent(item.articleUrl)}`)
-  }
-
   return (
     <div className="app-container">
       <header className="app-header">
@@ -24,7 +20,7 @@ export default function Vocabulary() {
           ← Back to Today’s Top News
         </Link>
         <h1>Vocabulary</h1>
-        <p className="page-subtitle">오늘 읽은 기사 속 핵심 용어를 최신순으로 모아봤어요</p>
+        <p className="page-subtitle">오늘 읽은 기사 속 핵심 용어를 최신순으로 모아봤어요. 카드를 탭해서 뒤집어 보세요.</p>
       </header>
 
       {!user ? (
@@ -34,17 +30,7 @@ export default function Vocabulary() {
       ) : (
         <main className="vocabulary-list">
           {vocabulary.map((item) => (
-            <div className="vocabulary-card" key={`${item.term}-${item.addedAt}`}>
-              <h2 className="vocabulary-term">{item.term}</h2>
-              <p className="vocabulary-definition">{item.definition}</p>
-              <button
-                type="button"
-                className="vocabulary-source"
-                onClick={() => handleSourceClick(item)}
-              >
-                {item.articleTitle}
-              </button>
-            </div>
+            <VocabularyCard item={item} key={`${item.term}-${item.addedAt}`} />
           ))}
         </main>
       )}

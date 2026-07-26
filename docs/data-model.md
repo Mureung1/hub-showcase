@@ -1,8 +1,9 @@
 # 데이터 모델 설계 (`docs/data-model.md`)
 
 > Supabase(Postgres) 전환을 위한 스키마 설계. 실제 DDL은
-> `supabase/migrations/20260717000000_init_schema.sql`에 있다. 이 문서는 그
-> 설계 배경과 테이블 구조를 정리한 것이며, **서버 코드
+> `supabase/migrations/20260717000000_init_schema.sql`(초기 스키마)과 이후
+> 증분 마이그레이션 파일들(예: `20260726000000_add_vocabulary_excerpt.sql`)에
+> 있다. 이 문서는 그 설계 배경과 테이블 구조를 정리한 것이며, **서버 코드
 > (`decisionStore.js`/`vocabularyStore.js`)를 Supabase 클라이언트 호출로
 > 바꾸는 백엔드 전환은 아직 포함하지 않는다** — 별도 backlog Task로 남겨둔다.
 
@@ -67,6 +68,8 @@
 | article_id | uuid | `references articles(id) on delete cascade, not null` |
 | term | text | `not null` |
 | definition | text | `not null` |
+| excerpt | text | nullable, 플래시카드 뒷면에 노출할 원문 발췌 문장(2026-07-26 추가) |
+| excerpt_translation | text | nullable, 위 excerpt의 한국어 번역(2026-07-26 추가) |
 | added_at | timestamptz | `default now()` |
 
 `unique (user_id, lower(term))` — 기존 전역 중복 방지 로직을 사용자별로

@@ -30,8 +30,11 @@
 3. **투자심리 인터랙션 + 바텀시트** — 기사 최하단 정적 배치(sticky 아님)
    버튼 클릭 → 바텀시트에서 "나의 선택 vs marketSentiment" 비교 + `insight`
    공개. 바텀시트 닫는 시점에 `POST /api/decisions` 저장.
-4. **데일리 단어장** — 기사 분석 시 핵심 용어 3~5개를 탭 여부와 무관하게
-   자동 적재, 최신순 정렬, 출처 클릭 시 원문 기사로 이동.
+4. **데일리 단어장(플래시카드 복습 모드)** — 기사 분석 시 핵심 용어 3~5개를
+   탭 여부와 무관하게 자동 적재, 최신순 정렬. 카드 앞면 = 단어+뜻, 탭하면
+   뒤집혀 뒷면에 원문 발췌 문장(`excerpt`)과 그 한국어 번역
+   (`excerptTranslation`) 노출(2026-07-26: 기사 원문 이동 링크 제거, 기간
+   필터 칩 연동은 범위 제외).
 
 증권사 API 연동 매매는 스코프 밖(모의 투자 훈련 도구로 한정).
 
@@ -47,7 +50,7 @@
 | 리더뷰 | `pages/Reader.jsx` | 문장 아코디언 번역, AI 요약, 판단 버튼. `< 뒤로가기`로 복귀 |
 | 바텀시트 | `components/BottomSheet.jsx` | 판단 vs marketSentiment 비교 + insight 공개, 닫으면 저장 |
 | 인사이트 노트 | `pages/InsightNote.jsx` | 히스토리 카드(기본: 판단 vs marketSentiment) + "AI 관점 해설 보기" 아코디언 |
-| 단어장 | `pages/Vocabulary.jsx` | 자동 적재된 용어 최신순, 출처 클릭 시 리더뷰 이동 |
+| 단어장 | `pages/Vocabulary.jsx` | 자동 적재된 용어 최신순, 플래시카드(탭하면 뒤집혀 원문 발췌 노출) |
 
 React 구현 메모:
 - 문장 번역/AI 요약 → 네이티브 `<details><summary>`

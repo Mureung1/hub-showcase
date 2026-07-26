@@ -119,7 +119,14 @@ describe("parseAnalysisResponse", () => {
       { text: "reported strong quarterly earnings", translation: "번역1", reason: "이유1" },
       { text: "Shares fell sharply", translation: "번역2", reason: "이유2" },
     ],
-    terms: [{ term: "guidance", definition: "설명" }],
+    terms: [
+      {
+        term: "guidance",
+        definition: "설명",
+        excerpt: "reported strong quarterly earnings",
+        excerptTranslation: "발췌 번역",
+      },
+    ],
     summaryBullets: ["요약1", "요약2", "요약3"],
     insight: "인사이트",
     marketSentiment: "bullish",
@@ -138,7 +145,14 @@ describe("parseAnalysisResponse", () => {
           { id: "s1", text: "reported strong quarterly earnings", translation: "번역1", reason: "이유1" },
           { id: "s2", text: "Shares fell sharply", translation: "번역2", reason: "이유2" },
         ],
-        terms: [{ term: "guidance", definition: "설명" }],
+        terms: [
+          {
+            term: "guidance",
+            definition: "설명",
+            excerpt: "reported strong quarterly earnings",
+            excerptTranslation: "발췌 번역",
+          },
+        ],
         summaryBullets: ["요약1", "요약2", "요약3"],
         insight: "인사이트",
         marketSentiment: "bullish",
@@ -233,7 +247,9 @@ describe("parseAnalysisResponse", () => {
       expect(result.sentences).toEqual([
         { id: "s1", text: "Shares fell sharply", translation: "번역1", reason: "이유1" },
       ])
-      expect(result.terms).toEqual([{ term: "guidance", definition: "설명" }])
+      expect(result.terms).toEqual([
+        { term: "guidance", definition: "설명", excerpt: null, excerptTranslation: null },
+      ])
     })
 
     it("summaryBullets가 3개가 아니어도 에러 없이 반환하고 경고를 남긴다", () => {
@@ -254,6 +270,69 @@ describe("parseAnalysisResponse", () => {
 
       expect(result.marketSentiment).toBe("neutral")
       expect(warnSpy).toHaveBeenCalled()
+    })
+
+    it("term의 excerpt가 원문에 실제 존재하면 verbatim 형태로 반환하고 excerptTranslation도 함께 반환한다", () => {
+      const body = {
+        ...validBody,
+        terms: [
+          {
+            term: "guidance",
+            definition: "설명",
+            excerpt: "Shares  fell   sharply",
+            excerptTranslation: "주가가 급락했습니다",
+          },
+        ],
+      }
+      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+      expect(result.terms).toEqual([
+        {
+          term: "guidance",
+          definition: "설명",
+          excerpt: "Shares fell sharply",
+          excerptTranslation: "주가가 급락했습니다",
+        },
+      ])
+    })
+
+    it("term의 excerpt가 원문에 없으면 excerptTranslation이 있어도 둘 다 null로 폴백한다", () => {
+      const body = {
+        ...validBody,
+        terms: [
+          {
+            term: "guidance",
+            definition: "설명",
+            excerpt: "not present anywhere",
+            excerptTranslation: "번역이 있어도 무시된다",
+          },
+        ],
+      }
+      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+      expect(result.terms).toEqual([
+        { term: "guidance", definition: "설명", excerpt: null, excerptTranslation: null },
+      ])
+    })
+
+    it("term에 excerpt 필드 자체가 없으면 excerpt/excerptTranslation 모두 null로 채운다", () => {
+      const body = {
+        ...validBody,
+        terms: [{ term: "guidance", definition: "설명" }],
+      }
+      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+      expect(result.terms).toEqual([
+        { term: "guidance", definition: "설명", excerpt: null, excerptTranslation: null },
+      ])
+    })
+
+    it("excerpt는 매칭됐지만 excerptTranslation 필드가 없으면 excerptTranslation만 null로 채운다", () => {
+      const body = {
+        ...validBody,
+        terms: [{ term: "guidance", definition: "설명", excerpt: "Shares fell sharply" }],
+      }
+      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+      expect(result.terms).toEqual([
+        { term: "guidance", definition: "설명", excerpt: "Shares fell sharply", excerptTranslation: null },
+      ])
     })
   })
 

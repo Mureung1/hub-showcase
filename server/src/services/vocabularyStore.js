@@ -8,7 +8,7 @@ export async function readVocabulary(userId) {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from("vocabulary")
-    .select("term, definition, added_at, articles(title, url)")
+    .select("term, definition, excerpt, excerpt_translation, added_at, articles(title, url)")
     .eq("user_id", userId)
     .order("added_at", { ascending: false })
 
@@ -17,6 +17,8 @@ export async function readVocabulary(userId) {
   return data.map((row) => ({
     term: row.term,
     definition: row.definition,
+    excerpt: row.excerpt ?? null,
+    excerptTranslation: row.excerpt_translation ?? null,
     articleTitle: row.articles.title,
     articleUrl: row.articles.url,
     addedAt: row.added_at,
@@ -25,7 +27,15 @@ export async function readVocabulary(userId) {
 
 // 같은 기사가 재분석되며 이미 저장된 용어가 다시 들어올 수 있어 중복
 // 추가하지 않는다(사용자별로 term을 대소문자 무시 비교).
-export async function appendVocabulary(userId, term, definition, articleTitle, articleUrl) {
+export async function appendVocabulary(
+  userId,
+  term,
+  definition,
+  articleTitle,
+  articleUrl,
+  excerpt,
+  excerptTranslation,
+) {
   const supabase = getSupabase()
   const article = await ensureArticle(articleTitle, articleUrl)
 
@@ -41,8 +51,15 @@ export async function appendVocabulary(userId, term, definition, articleTitle, a
 
   const { data: saved, error: insertError } = await supabase
     .from("vocabulary")
-    .insert({ user_id: userId, article_id: article.id, term, definition })
-    .select("term, definition, added_at")
+    .insert({
+      user_id: userId,
+      article_id: article.id,
+      term,
+      definition,
+      excerpt: excerpt ?? null,
+      excerpt_translation: excerptTranslation ?? null,
+    })
+    .select("term, definition, excerpt, excerpt_translation, added_at")
     .single()
 
   if (insertError) throw new Error(insertError.message)
@@ -50,6 +67,8 @@ export async function appendVocabulary(userId, term, definition, articleTitle, a
   return {
     term: saved.term,
     definition: saved.definition,
+    excerpt: saved.excerpt ?? null,
+    excerptTranslation: saved.excerpt_translation ?? null,
     articleTitle,
     articleUrl,
     addedAt: saved.added_at,
