@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-26 · DB-SHARE-002 · 완료
+
+- 결과: 전달 초대의 링크·코드 해시, 불변 레시피 스냅샷, 생성·만료·사용 시각을 저장하는 `transfer_invitations`와 수락한 `RECEIVED` 레시피의 원 작성자·전달자 표시·관계 정보를 저장하는 `received_recipe_details`를 구축했다. 해시와 초대 수락 관계는 각각 UNIQUE로 제한하고 원본 레시피와 만료 시각 조회 인덱스를 추가했다.
+- 결정: `RESTRICT`와 `CASCADE`를 비교한 뒤, 관계와 기억을 보존하는 제품 의도와 MVP의 soft delete 정책에 맞춰 감사·전달 공유 FK에 `ON DELETE RESTRICT`를 사용하기로 사용자가 결정했다. 원본이나 초대를 영구 삭제할 때 관계 정보가 자동 소실되지 않으며, 향후 영구 삭제가 필요하면 보존·정리 순서를 별도 정책과 트랜잭션으로 구현한다. 링크 토큰과 초대 코드 원문은 저장하지 않고 각각 64자 해시만 저장한다.
+- 시행착오: 격리된 마이그레이션 테스트 DB가 없어 SQL 문자열 단위 테스트 대신 실제 PostgreSQL 적용과 카탈로그 검증을 사용했다. 샌드박스의 외부 DB 연결은 `EACCES`로 차단되어 승인된 네트워크 실행으로 검증했다.
+- 검증: `backend npm run migrate`를 두 번 실행해 `003_transfer_sharing.sql` 최초 적용과 재실행 건너뛰기를 확인했다. PostgreSQL 카탈로그에서 두 테이블의 17개 컬럼, 4개 `ON DELETE RESTRICT` FK, 링크·코드·초대 수락 UNIQUE 제약과 원본·만료 조회 인덱스를 확인했다. 백엔드 37개 테스트와 `npm run type-check`, `npm run build`, `git diff --check`를 통과했다.
+- 후속: `BE-SHARE-002`, `BE-SHARE-003`, `BE-RECIPE-007`
+- 반복 패턴: `database-migration-validation`
+
 ## 2026-07-26 · DB-AUDIT-001 · 완료
 
 - 결과: `recipe_audit_events`에 사용자, 레시피, `DELETED`·`RESTORED` 행위와 발생 시각만 저장하는 마이그레이션을 추가하고 레시피별 최신 감사 기록 조회 인덱스를 구축했다.

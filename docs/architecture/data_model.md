@@ -525,7 +525,7 @@ Recipe 1 ─── 0..1 ReceivedRecipeInfo
 - 서비스 UUID는 애플리케이션의 `crypto.randomUUID()`로 생성하며 auto increment를 사용하지 않는다.
 - 조회 인덱스는 사용자별 활성 레시피 목록, 레시피별 감사 기록, 원본별 전달 초대와 초대 만료 시각에 둔다.
 - `canReshare`와 초대 수락자는 별도 컬럼으로 저장하지 않는다. 전자는 `RECEIVED` 정책에서, 후자는 받은 레시피의 `owner_id`에서 결정한다.
-- ERD는 FK 관계만 확정하며 cascade 정책은 데이터 접근 방식과 정리 정책을 결정할 때 확정한다.
+- 감사와 전달 공유 관계를 보존하기 위해 `recipe_audit_events`, `transfer_invitations`, `received_recipe_details`의 FK는 `ON DELETE RESTRICT`를 사용한다. MVP는 Recipe를 soft delete하며, 향후 영구 삭제가 필요하면 관계 데이터의 보존·정리 순서를 별도 정책과 트랜잭션으로 명시한다.
 
 ---
 
