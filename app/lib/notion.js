@@ -76,3 +76,8 @@ export async function updatePage(pageId, properties) {
   const notion = getNotionClient();
   return notion.pages.update({ page_id: pageId, properties });
 }
+
+export async function getPage(pageId) {
+  const notion = getNotionClient();
+  return notion.pages.retrieve({ page_id: pageId });
+}

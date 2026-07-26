@@ -25,32 +25,32 @@
 - [ ] 타이머 종료 시 정확히 완료 화면으로 전이된다
 
 ## C05 [T05] AgentLog DB + 기록 lib
-- [ ] AgentLog Notion DB가 agent-design.md 스키마(7 property)대로 존재한다
-- [ ] 로그 1건 기록 + 최근 N개 조회 헬퍼가 S3 계약대로 동작한다
+- [x] AgentLog Notion DB가 agent-design.md 스키마(계약 필드 7개 + Notion 필수 title `label` = 8 property)대로 존재한다
+- [x] 로그 1건 기록 + 최근 N개 조회 헬퍼가 S3 계약대로 동작한다
 
 ## C06 [T06] "힘들어" 루프 판단
-- [ ] reason_chip·현재 스텝·남은 스텝·최근 로그를 입력받아 S2 계약대로 `proposed_tool`+`reason`을 반환한다
-- [ ] AgentLog가 빈 상태(cold start)에서도 reason_chip prior로 유효한 tool을 고른다
-- [ ] 반환 tool이 정의된 9개 중 하나임을 스키마가 강제한다
+- [x] reason_chip·현재 스텝·남은 스텝·최근 로그를 입력받아 S2 계약대로 `proposed_tool`+`reason`을 반환한다
+- [x] AgentLog가 빈 상태(cold start)에서도 reason_chip prior로 유효한 tool을 고른다
+- [x] 반환 tool이 정의된 8개 중 하나이거나, 후보가 소진되면 `null`(+`final: true`)임을 보장한다 — 어떤 경우에도 `rejectedTools`에 든 값을 `proposedTool`로 재반환하지 않는다 (Solar가 스키마 enum을 무시하고 거절된 tool을 다시 반환하는 사례가 실제로 재현되어, `z.enum` 대신 `z.string()` + 코드 검증·대체로 구현)
 
 ## C07 [T07] 재판단 시간 게이트
-- [ ] `remainingTimeToday > remainingWorkload`일 때만 거절 후 재제안이 나온다
-- [ ] 시간 부족 시 재제안이 멈추고 마지막 제안 확정 또는 postpone/end로 수렴한다
+- [x] `remainingTimeToday > remainingWorkload`일 때만 거절 후 재제안이 나온다
+- [x] 시간 부족 시 재제안이 멈추고 마지막 제안 확정 또는 postpone/end로 수렴한다
 
 ## C08 [T08] 이유 칩 + 수락/거절 UI
-- [ ] `onStruggle`이 고정 RestSuggestion이 아니라 이유 칩 → 제안 카드 플로우로 간다
-- [ ] 제안 카드에 `reason` 한 줄이 노출된다
-- [ ] 수락/거절이 각각 tool 실행/재판단으로 연결된다
+- [x] `onStruggle`이 고정 RestSuggestion이 아니라 이유 칩 → 제안 카드 플로우로 간다
+- [x] 제안 카드에 `reason` 한 줄이 노출된다
+- [x] 수락/거절이 각각 tool 실행/재판단으로 연결된다
 
 ## C09 [T09] outcome 기록
-- [ ] 스텝 완료 도달 시 해당 pending 로그가 `done`으로 갱신된다
-- [ ] 다음 방문(새 Brain Dump 시작) 시 이전 날짜 pending이 일괄 `not_done`으로 마감된다
+- [x] 스텝 완료 도달 시 해당 pending 로그가 `done`으로 갱신된다 (encourage/shrink_step으로 이어서 완료한 경우, id를 화면 상태로 들고 있다가 갱신)
+- [x] 다음 방문(새 Brain Dump 시작) 시 이전 날짜 pending이 일괄 `not_done`으로 마감된다
 
 ## C10 [T10] 개인화
-- [ ] 판단 호출 시 최근 로그(전체 + 같은 category)가 프롬프트에 포함된다
-- [ ] 같은 tool을 반복 거절한 이력이 있으면 다른 tool을 우선 시도하는 게 관찰된다
-- [ ] Notion Steps DB에 `ActualMinutes`·`StartedAt`·`CompletedAt`·`PostponeCount` 속성이 추가되고, 스텝 진행에 따라 채워진다
-- [ ] 판단 호출 시 위 행동 패턴 속성(예상 대비 실제 소요 시간, 미룬 횟수 등)이 프롬프트에 참고 정보로 포함된다
+- [x] 판단 호출 시 최근 로그(전체 + 같은 category)가 프롬프트에 포함된다
+- [x] 같은 tool을 반복 거절한 이력이 있으면 다른 tool을 우선 시도하는 게 관찰된다
+- [x] Notion Steps DB에 `ActualMinutes`·`StartedAt`·`CompletedAt`·`PostponeCount` 속성이 추가되고, 스텝 진행에 따라 채워진다
+- [x] 판단 호출 시 위 행동 패턴 속성(예상 대비 실제 소요 시간, 미룬 횟수 등)이 프롬프트에 참고 정보로 포함된다
 
 ## C11 [T11] Agent 평가
 - [ ] "개입했어야 하는 상황" 정답 세트가 파일로 존재한다
@@ -89,3 +89,7 @@
 ## C18 [T18] Zero-Input 온보딩 화면
 - [ ] 노션 템플릿이 웹에 공유되고 복제가 허용되어 있다
 - [ ] 앱 안에서 템플릿 복제 → 토큰/DB ID 붙여넣기 순서를 안내하는 화면을 볼 수 있다
+
+## C19 [T19] 오늘 마감까지 남은 시간 표시 + 연장 버튼
+- [ ] 화면에 "오늘 마감까지 남은 시간"과 현재 시각이 함께 보인다
+- [ ] 연장 버튼을 누르면 마감 시각이 뒤로 밀리고, 그 값이 이후 remainingTimeMinutes 계산에 반영된다

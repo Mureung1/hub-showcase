@@ -17,14 +17,14 @@
 
 ## 제품 경계
 
-- 범위는 [docs/backlog.md](docs/backlog.md)의 T01~T18 + [docs/dev-plan.md](docs/dev-plan.md). Phase 2 백로그(2분 스타터·통계·화이트노이즈 등)와 선제적 개입은 **지금 구현하지 않는다**.
+- 범위는 [docs/backlog.md](docs/backlog.md)의 T01~T19 + [docs/dev-plan.md](docs/dev-plan.md). Phase 2 백로그(2분 스타터·통계·화이트노이즈 등)와 선제적 개입은 **지금 구현하지 않는다**.
 - checklist에 없는 기능을 임의 추가하지 않는다. 필요하면 문서(skills/backlog/checklist)를 먼저 갱신하고 구현한다.
 
 ## 현재 구현 상태 (작업 시 갱신)
 
-- **완료**: 화면 뼈대(6개 화면 조건부 렌더링, `docs/etc/component-tree.md`), Notion 연동 기반(`app/lib/notion.js`, T01), Brain Dump category 확장 + Notion 저장(T02), One-Focus View 실데이터 연결(T03) — `/api/steps`로 Notion에서 오늘 할 일을 읽어와 순회하고, 완료 시 `/api/steps/complete`로 Done 갱신.
-- **진행/예정**: Full Screen Timer 지속성(T04)부터. Agent 루프(Feat-4)는 설계 동결, 미구현.
-- **아직 mock/미완**: AgentLog 미구현, "힘들어" 버튼은 여전히 고정 `RestSuggestion`로 직행.
+- **완료**: 화면 뼈대(6개 화면 조건부 렌더링, `docs/etc/component-tree.md`), Notion 연동 기반(`app/lib/notion.js`, T01), Brain Dump category 확장 + Notion 저장(T02), One-Focus View 실데이터 연결(T03) — `/api/steps`로 Notion에서 오늘 할 일을 읽어와 순회하고, 완료 시 `/api/steps/complete`로 Done 갱신. AgentLog DB 생성 + 기록/조회 lib(T05). "힘들어" 루프 판단 API + 재판단 시간 게이트(T06·T07) — `POST /api/struggle`. 이유 칩 + 제안/수락/거절 UI(T08). outcome 기록(T09). 개인화(T10) — `/api/struggle`이 서버에서 직접 `getRecentLogs`(같은 category 우선) + 최근 완료 스텝들의 행동 패턴(예상 대비 실제 시간 배율, 미룬 비율)을 프롬프트에 포함, Steps DB에 `StartedAt`·`CompletedAt`·`ActualMinutes`·`PostponeCount` 추가.
+- **진행/예정**: T11(Agent 평가 — 정답 세트 + Precision/Recall)부터. Full Screen Timer 지속성(T04)은 뒤로 미룸(Agent 루프 우선).
+- **아직 mock/미완**: 없음 — Agent 루프(T05~T10) 전체가 실데이터로 동작. T11(평가)만 남음.
 
 ## 현재 실행 명령
 

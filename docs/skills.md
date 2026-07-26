@@ -6,9 +6,9 @@
 
 ## 고정 상수
 
-**task_category (7)**: `청소/정리` | `연락` | `문서작성` | `외출/이동` | `자기관리` | `학습/업무` | `기타`
-**reason_chip (4)**: `막막해요` | `지루해요` | `지쳤어요` | `그냥 그래요`
-**tool (9)**: `split_node` | `reorder_graph` | `suggest_break` | `mark_avoidance` | `shrink_step` | `swap_task` | `postpone_task` | `encourage` | `end_session`
+**task_category (7)**: `cleaning`(청소/정리) | `contact`(연락) | `paperwork`(문서작성) | `errands`(외출/이동) | `self_care`(자기관리) | `work`(학습/업무) | `other`(기타)
+**reason_chip (4)**: `overwhelmed`(막막해요) | `bored`(지루해요) | `tired`(지쳤어요) | `neutral`(그냥 그래요)
+**tool (8)**: `split_node` | `reorder_graph` | `suggest_break` | `shrink_step` | `swap_task` | `postpone_task` | `encourage` | `end_session` (`mark_avoidance`는 별도 tool이 아니라 AgentLog 기록 자체로 통합됨)
 **outcome (3)**: `done` | `not_done` | `pending`
 
 ## S1 — Brain Dump 분할
@@ -29,14 +29,16 @@
     reasonChip: reason_chip,
     currentStep: MicroStep,
     remainingSteps: MicroStep[],
-    recentLogs: AgentLog[],          // 최근 N개 (T10 전까지는 [])
     rejectedTools: tool[],           // 이번 이벤트에서 이미 거절된 tool
     remainingTimeMinutes: number     // 오늘 자정까지 남은 분
   }
   ```
-- **출력**: `{ proposedTool: tool, reason: string }`
+  `recentLogs`는 클라이언트 입력이 아니라(T10부터) 서버가 `/api/struggle` 내부에서 `getRecentLogs({ limit: 15, category: currentStep.category })`로 직접 채운다 — 클라이언트는 Notion에 직접 접근할 수 없어 이 값을 만들 방법이 없었기 때문.
+- **출력**: `{ proposedTool: tool | null, reason: string, revisedTitle?: string, final?: bool }`
+  - `revisedTitle`: `proposedTool`이 `shrink_step`일 때만, 완료 기준을 줄인 새 스텝 제목.
+  - `final`: 더 제안할 수 있는 tool이 없어 강제 종결하는 경우 `true`. 이때 `proposedTool`은 `null`이다 — `rejectedTools`에 든 값을 "새 제안"으로 재사용하지 않기 위해서다. 화면은 `final:true`를 받으면 `proposedTool` 값과 무관하게 `end_session`으로 처리하고, 거절을 더 받지 않는다(C07).
 - **제약**:
-  - `proposedTool`은 고정 9개 중 하나(스키마 강제), `rejectedTools`에 든 것은 다시 고르지 않는다.
+  - `proposedTool`은 고정 8개 중 하나이거나(스키마 강제), 더 제안할 후보가 없으면 `null`(이때 `final: true`). `rejectedTools`에 든 값은 어떤 경우에도 `proposedTool`로 다시 반환하지 않는다 — 후보가 소진되면 그 값을 재사용하는 대신 `null`로 종결한다.
   - `recentLogs`가 비면 cold start — `reasonChip` prior로 판단(막막→shrink/split, 지루→swap, 지쳤→break, 그냥→encourage). prior는 강제가 아닌 기울기.
   - `reason`은 한 줄, 판단 근거를 사용자에게 보이는 문장.
 - **재판단 게이트(T07)**: `remainingTimeMinutes > sum(remainingSteps.estimatedMinutes)`가 거짓이면 재제안 없이 마지막 제안 확정 또는 `postpone_task`/`end_session`으로 수렴.
@@ -50,11 +52,11 @@
   { timestamp: Date, task_category, reason_chip, proposed_tool, proposed_reason: string,
     accepted: bool, outcome }
   ```
-- **제약**: Notion flat DB. Select/Text/Checkbox만 사용, Relation 없음. property 추가/변경은 Notion UI에서 가능해야 한다.
+- **제약**: Notion flat DB. Select/Text/Checkbox만 사용, Relation 없음. property 추가/변경은 Notion UI에서 가능해야 한다. `proposed_reason`은 실제 Text(rich_text) 속성이며, Notion이 요구하는 필수 title 속성은 `label`(reason_chip·proposed_tool 조합의 표시용 요약)로 별도 분리한다.
 
 ## S4 — outcome 갱신
 
-- **완료 시**: `markOutcomeDone(stepRef)` — 해당 스텝에 걸린 `pending` 로그를 `done`으로.
+- **완료 시**: `markOutcomeDone(stepRef)` — 해당 스텝에 걸린 `pending` 로그를 `done`으로. AgentLog는 Relation이 없어 "그 스텝에 걸린 로그"를 DB로 조회할 수 없으므로, 화면이 encourage/shrink_step으로 같은 스텝을 이어갈 때마다 생긴 로그 id를 배열로 들고 있다가 그 스텝이 완료되는 시점에 배열 전체를 `markOutcomeDone`한다(`stepRef`는 실질적으로 "그 스텝에 대해 쌓인 로그 id 목록").
 - **다음 방문 시**: `sweepStaleLogs()` — 오늘 이전 날짜의 `pending`을 전부 `not_done`으로. 스케줄러 없이 Brain Dump 시작 시 호출.
 - **제약**: 이미 `done`/`not_done`인 로그는 건드리지 않는다(멱등).
 

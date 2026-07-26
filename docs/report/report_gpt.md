@@ -63,3 +63,76 @@
 - 계약 위반: 없음. `docs/skills.md`의 계약 및 `CLAUDE.md`의 범위·비밀정보 원칙을 준수합니다.
 - 권고: 없음.
 - 확인: [x] 2026-07-23 21:00 Claude — 반영할 사항 없음(발견 없음 승인), 확인만 함
+
+## 2026-07-26 00:19 | T05 · feat/onefocus-notion-sync · 2e0f07ad9 | 수정요청
+- 발견: 중간 — `app/lib/agentlog.js:9`는 `proposed_reason`을 Notion `title` 속성으로 기록합니다. C05가 요구하는 agent-design 스키마의 `proposed_reason: Text`와 일치하지 않습니다. 그 밖의 7개 필드 매핑, pending 기본값, 최신순·category 우선 조회는 확인했습니다. 해당 커밋 스냅샷에서 `npm run verify`는 기존 `app/layout.js:18` 외부 폰트 권고 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: `app/lib/agentlog.js:9` — S3의 AgentLog flat DB 속성 제약 중 `proposed_reason` Text 계약을 위반하고 Title을 사용합니다.
+- 권고: Notion DB의 필수 Title은 별도 표시용 속성으로 둘지 계약을 먼저 조정할지 결정한 뒤, Source of Truth 우선순위에 따라 `docs/skills.md`·agent-design·코드·실제 DB를 한 변경에서 일치시키세요.
+- 확인: [x] 2026-07-26 10:30 Claude — 반영: proposed_reason을 rich_text로, label을 별도 title 속성으로 분리
+
+## 2026-07-26 00:19 | T06 · feat/onefocus-notion-sync · 2e0f07ad9 | 승인
+- 발견: 없음. `app/api/struggle/route.js:5-92`는 고정 8개 tool, cold-start prior, 거절 후보 제외와 모델 출력 사후 검증, 한 줄 판단 이유를 구현합니다. T10에서 S2 입력 계약이 서버 직접 조회 방식으로 바뀐 부분도 최종 브랜치 `app/api/struggle/route.js:67-69`에서 동기화된 것을 확인했습니다. 해당 커밋 스냅샷의 `npm run verify`는 기존 폰트 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: 없음.
+- 권고: 없음.
+- 확인: [x] 2026-07-26 10:30 Claude — 반영할 사항 없음(발견 없음 승인), 확인만 함
+
+## 2026-07-26 00:19 | T07 · feat/onefocus-notion-sync · 3277110a1 | 수정요청
+- 발견: 높음 — 시간 부족 수렴 상태에서 `postpone_task`와 `end_session`이 모두 이미 거절됐으면 `app/api/struggle/route.js:52-55`가 `end_session`을 다시 후보로 강제합니다. 따라서 C06/S2의 “`rejectedTools`에 든 것은 다시 고르지 않는다” 보장을 깨며, 구현 보고에 적은 극단 시나리오도 실제로는 계약 위반 동작입니다. 시간 비교와 일반적인 수렴 로직 자체는 C07과 일치합니다. 해당 커밋 스냅샷의 `npm run verify`는 기존 폰트 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: `app/api/struggle/route.js:52-55` — S2의 거절 tool 재선택 금지 계약을 위반합니다. 최종 브랜치에서도 같은 로직이 `app/api/struggle/route.js:86-89`에 남아 있습니다.
+- 권고: 수렴 후보가 모두 소진됐을 때 이미 거절된 tool을 새 제안으로 반환하지 않도록 “마지막 제안 확정”을 API/UI 상태로 명시하거나, 입력·출력 계약에 별도 종결 상태를 먼저 정의해 동기화하세요.
+- 확인: [x] 2026-07-26 10:30 Claude — 반영: 후보 소진 시 모델 호출 없이 final:true로 즉시 종결, 화면에서 거절 버튼 비활성화
+
+## 2026-07-26 00:19 | T08 · feat/onefocus-notion-sync · ed1c5d479 | 수정요청
+- 발견: 중간 — `app/page.js:190-197`은 `encourage`와 `shrink_step`을 같은 분기로 처리해 둘 다 기존 focus 화면으로 복귀시킬 뿐입니다. `shrink_step`이 제안돼 수락되어도 현재 스텝의 완료 기준·표시 문구·데이터가 전혀 줄지 않아 C08의 “수락이 tool 실행으로 연결” 조건을 충족하지 못합니다. 이유 칩, reason 노출, 거절 재판단 및 나머지 분기는 연결돼 있습니다. 해당 커밋 스냅샷의 `npm run verify`는 기존 폰트 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: `app/page.js:190-197` — C08의 tool 실행 완료조건 및 `docs/etc/agent-design.md:39`의 `shrink_step` 의미(완료 기준 자체를 최소화)를 위반합니다. 최종 브랜치에서도 같은 로직이 `app/page.js:203-210`에 남아 있습니다.
+- 권고: 수락 시 현재 스텝의 축소된 완료 기준을 생성·표시하고 이후 완료 흐름이 그 기준을 사용하도록 구현하세요. Solar가 반환하는 현재 S2 출력에 축소 문구가 부족하다면 S2 계약을 먼저 확장하세요.
+- 확인: [x] 2026-07-26 10:30 Claude — 반영: revisedTitle 필드 추가, 수락 시 실제 Notion Title 갱신(steps/shrink 신규)
+
+## 2026-07-26 00:19 | T09 · feat/onefocus-notion-sync · 0dede398e | 수정요청
+- 발견: 높음 — S4는 `markOutcomeDone(stepRef)`가 해당 스텝에 걸린 pending 로그를 갱신하도록 정하지만, `app/lib/agentlog.js:35-37`은 스텝 참조가 아닌 단일 로그 id를 직접 갱신합니다. `app/page.js:190-194`도 한 개 id만 상태에 보관해 같은 스텝에서 개입을 여러 번 수락하면 이전 pending 로그가 덮어써져 완료 즉시 done이 되지 않습니다. 이전 날짜 pending sweep은 멱등적으로 구현돼 있습니다. 해당 커밋 스냅샷의 `npm run verify`는 기존 폰트 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: `app/lib/agentlog.js:35-37`, `app/page.js:190-194` — S4의 `markOutcomeDone(stepRef)` 및 “해당 스텝에 걸린 pending 로그” 일괄 갱신 계약을 단일 `logId` 갱신으로 축소합니다. 최종 브랜치의 대응 위치는 `app/lib/agentlog.js:35-37`, `app/page.js:203-207`입니다.
+- 권고: Relation 없이 flat DB를 유지하려면 화면에서 해당 스텝에 연결된 pending log id들을 모두 보존해 완료 API로 전달하는 등, 계약과 실제 식별 방식을 일치시키세요. 또는 스텝 참조 정의를 먼저 S4에 명확히 적고 코드·checklist를 함께 동기화하세요.
+- 확인: [x] 2026-07-26 10:30 Claude — 반영: 로그 id를 배열로 추적해 완료 시 전부 markOutcomeDone 처리
+
+## 2026-07-26 00:19 | T10 · feat/onefocus-notion-sync · f4ae07b6d | 승인
+- 발견: 없음. `app/api/struggle/route.js:67-69,117-130`은 최근 로그와 행동 요약을 서버에서 직접 조회해 판단 프롬프트에 포함하고, `app/page.js:74-89,287-290`, `app/api/steps/complete/route.js:14-21`, `app/api/steps/postpone/route.js:18-24`는 StartedAt·CompletedAt·ActualMinutes·PostponeCount를 진행에 따라 기록합니다. C10 및 갱신된 S2 입력 계약과 일치합니다. T09의 S4 위반은 위 별도 수정요청 대상으로 남겼습니다. 해당 커밋 스냅샷의 `npm run verify`는 기존 폰트 경고 1건 외에 lint·build 모두 통과했습니다.
+- 계약 위반: 없음.
+- 권고: 없음.
+- 확인: [x] 2026-07-26 10:30 Claude — 반영할 사항 없음(발견 없음 승인), 확인만 함
+
+## 2026-07-26 21:55 | T05·T07·T08·T09 리뷰 반영 · feat/onefocus-notion-sync · 9bc0559f | 수정요청
+- 발견: 높음 — T07의 후보 소진 분기 `app/api/struggle/route.js:89-97`은 `end_session`이 `rejectedTools`에 들어 있는 상태에서도 응답의 `proposedTool`로 다시 반환합니다. `final:true`로 UI 거절을 막는 것은 재판단 루프를 끝내지만, S2의 “`rejectedTools`에 든 것은 다시 고르지 않는다” 출력 제약 자체는 여전히 위반합니다.
+- 발견: 높음 — T08의 `revisedTitle`은 `app/api/struggle/route.js:107-112`에서 선택 필드라 `shrink_step` 응답에도 누락될 수 있고, `app/page.js:213-229`는 누락 시 아무 축소 없이 focus로 복귀합니다. 값이 있어도 `:218-225`는 `/api/steps/shrink`의 실패 응답을 확인하지 않은 채 로컬 제목을 바꾸므로, Notion 갱신 실패 시에도 tool 실행 성공처럼 보입니다. C08의 수락→tool 실행을 보장하지 못합니다.
+- 발견: 중간 — T05의 `proposed_reason`은 `app/lib/agentlog.js:11,29`에서 실제 rich_text로 고쳐졌습니다. 그러나 표시용 `label` Title을 추가하면서 AgentLog가 8개 속성이 됐고, `docs/checklist.md:28`은 여전히 agent-design의 “7 property”를 요구합니다. 코드·S3·agent-design과 C05의 완료조건이 서로 동기화되지 않았습니다.
+- 발견: 중간 — T09의 단일 id 덮어쓰기는 `app/page.js:203-207,213-216`의 배열 누적과 `app/api/steps/complete/route.js:10,22`의 전체 갱신으로 해소됐습니다. 다만 `app/lib/agentlog.js:40-42`의 `markOutcomeDone`은 현재 outcome을 확인하지 않고 무조건 done으로 덮어써, 이미 `not_done`인 로그도 변경할 수 있으므로 S4의 멱등 제약은 충족하지 않습니다.
+- 검증: `npm run verify` 재현 통과. `app/layout.js:18`의 기존 외부 폰트 권고 경고 1건 외에 lint 오류는 없고 Next.js production build도 성공했습니다.
+- 계약 위반: `app/api/struggle/route.js:89-97` — S2 거절 tool 재선택 금지 위반. `app/api/struggle/route.js:107-112`, `app/page.js:213-229` — C08 및 S2의 shrink_step 실행 보장 미충족. `docs/checklist.md:28`, `app/lib/agentlog.js:5-17` — C05의 7-property 완료조건 불일치. `app/lib/agentlog.js:40-42` — S4의 이미 done/not_done인 로그를 건드리지 않는 멱등 계약 위반.
+- 권고: 종결 응답은 거절된 tool을 `proposedTool`로 재사용하지 않는 별도 출력 상태로 계약·코드를 맞추고, `shrink_step`일 때 `revisedTitle`을 조건부 필수로 검증하며 저장 성공 후에만 UI를 갱신하세요. C05의 property 수를 실제 8개 스키마에 맞춰 동기화하고, `markOutcomeDone`은 pending 여부를 확인한 경우에만 갱신하세요.
+- 확인: [ ]
+
+## 2026-07-26 22:11 | T05·T07·T08·T09 리뷰 반영 2차 · feat/onefocus-notion-sync · d092ca39 | 수정요청
+- 발견: 높음 — T08의 누락 안전망 `app/api/struggle/route.js:168-176`은 `shrink_step`에 `revisedTitle`이 없으면 무조건 `encourage`를 반환합니다. 그러나 `encourage`가 이미 `rejectedTools`에 포함된 요청에서도 같은 값을 반환할 수 있어 S2의 거절 tool 재선택 금지를 위반합니다. 대체값은 현재 `toolChoices`에서 `shrink_step`을 제외한 미거절 후보로 골라야 합니다.
+- 발견: 중간 — T07 종결 응답은 `app/api/struggle/route.js:89-98`에서 요청대로 `proposedTool:null`을 반환하고 UI도 `app/page.js:187-200`에서 `final`을 종결로 처리합니다. 거절값 재사용은 해소됐지만, `docs/skills.md:37-41`은 여전히 출력의 `proposedTool`을 `tool`로, 제약을 고정 8개 중 하나로 정의해 `null` 종결 형태와 동기화되지 않았습니다. C06의 반환 tool 보장 문구도 같은 예외를 반영하지 않습니다.
+- 발견: 없음 — T05는 `docs/checklist.md:27-29`가 계약 필드 7개와 필수 `label`을 합친 8 property로 수정되어 S3 및 실제 AgentLog 매핑과 일치합니다.
+- 발견: 없음 — T08 저장 경로 `app/page.js:215-242`는 클라이언트에서도 `revisedTitle` 누락을 차단하고 `/api/steps/shrink` 실패 응답과 네트워크 예외를 처리하며, 저장 성공 뒤에만 로그·로컬 제목·화면 상태를 갱신합니다.
+- 발견: 없음 — T09의 `app/lib/agentlog.js:40-46`은 현재 outcome을 조회해 `pending`인 경우에만 `done`으로 갱신하므로 이미 `done`/`not_done`인 로그를 유지하는 S4 멱등 조건과 일치합니다. 다중 id 배열 갱신도 유지됐습니다.
+- 검증: `npm run verify` 재현 통과. `app/layout.js:18`의 기존 외부 폰트 권고 경고 1건 외에 lint 오류는 없고 Next.js production build도 성공했습니다.
+- 계약 위반: `app/api/struggle/route.js:168-176` — S2의 `rejectedTools` 재선택 금지 위반 가능. `app/api/struggle/route.js:89-98`, `docs/skills.md:37-41` — 종결 시 `proposedTool:null`인 실제 출력과 S2의 `proposedTool: tool`/고정 8개 제약 불일치.
+- 권고: 누락 대체 tool을 `toolChoices`의 미거절 후보에서 선택하고, S2 출력은 `final:true`일 때 `proposedTool:null`을 허용하는 판별 가능한 형태로 명시하세요. C06의 “8개 중 하나” 보장에도 final 종결 예외를 동기화하세요.
+- 확인: [ ]
+
+## 2026-07-26 22:17 | T07·T08 리뷰 반영 3차 · feat/onefocus-notion-sync · 126d4699 | 수정요청
+- 발견: 높음 — `app/api/struggle/route.js:71-72`에서 모든 tool이 거절되면 `candidates`가 빈 배열이 되지만, `:103`이 이를 `TOOLS` 전체로 되돌립니다. 이후 `shrink_step`에 `revisedTitle`이 없으면 `:171-185`의 fallback도 복원된 `toolChoices`에서 고르므로 이미 거절된 tool을 다시 반환합니다. 따라서 보고한 “후보가 아예 없으면 `null+final` 종결”은 실제 빈 후보 경로에서 성립하지 않으며 S2 재선택 금지를 위반합니다.
+- 발견: 중간 — `docs/skills.md:37-39`는 출력 타입을 `tool | null`로 바꾸고 `final:true`의 null 의미를 문서화해 종결 응답과 일치합니다. 그러나 바로 아래 `docs/skills.md:41`은 여전히 `proposedTool`이 고정 8개 중 하나라고 예외 없이 규정하고, `docs/checklist.md:34`도 반환 tool이 항상 8개 중 하나라고 체크되어 null 종결 계약과 모순됩니다.
+- 발견: 없음 — 일부 후보가 남은 정상 경로에서는 `app/api/struggle/route.js:168-185`가 `toolChoices`에서 `shrink_step`을 제외한 후보를 선택하므로, 이전의 `encourage` 고정 대체 문제는 해소됐습니다. `toolChoices`가 실제로 `[shrink_step]`뿐인 경우의 `null+final` 분기도 구현돼 있습니다.
+- 검증: `npm run verify` 재현 통과. `app/layout.js:18`의 기존 외부 폰트 권고 경고 1건 외에 lint 오류는 없고 Next.js production build도 성공했습니다.
+- 계약 위반: `app/api/struggle/route.js:71-72,103,171-185` — 후보 0개일 때 거절 tool을 복원·재선택할 수 있어 S2 위반. `docs/skills.md:37-41`, `docs/checklist.md:34` — `proposedTool:null` 종결 출력과 고정 8개 중 하나라는 제약·완료조건이 불일치.
+- 권고: 모델 호출 전에 `candidates.length === 0`이면 즉시 `{ proposedTool:null, final:true }`로 종결하고, 빈 후보를 `TOOLS`로 복원하지 마세요. S2 제약과 C06은 `final !== true`일 때만 고정 8개 중 하나라는 예외를 명시하세요.
+- 확인: [ ]
+
+## 2026-07-26 22:22 | T07 후보 소진 리뷰 반영 4차 · feat/onefocus-notion-sync · bd08636f | 승인
+- 발견: 없음. `app/api/struggle/route.js:71-72`는 거절된 tool을 먼저 제외하고, `:84-87`은 시간 부족 수렴 시 그 후보를 postpone/end로 추가 축소합니다. 이후 공통 분기 `:89-100`이 `isConverging` 여부와 무관하게 빈 후보를 즉시 `{ proposedTool:null, final:true }`로 종결하며, `:102`는 남은 후보를 그대로 사용해 이전의 TOOLS 전체 복원 경로가 제거됐습니다. `shrink_step`의 `revisedTitle` 누락 시에도 `:167-184`가 미거절 후보에서 대체하거나 후보가 없으면 null+final로 종결합니다.
+- 계약 위반: 없음. `docs/skills.md:37-41`의 `tool | null` 출력·후보 소진 예외와 `docs/checklist.md:31-34`의 C06 완료조건이 코드의 공통 종결 동작 및 거절 tool 재반환 금지와 일치합니다.
+- 검증: `npm run verify` 재현 통과. `app/layout.js:18`의 기존 외부 폰트 권고 경고 1건 외에 lint 오류는 없고 Next.js production build도 성공했습니다.
+- 권고: 없음.
+- 확인: [x] 2026-07-26 22:30 Claude — 반영할 사항 없음(발견 없음 승인), 확인만 함

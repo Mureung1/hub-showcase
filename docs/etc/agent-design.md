@@ -23,10 +23,10 @@ Feat-4(`docs/spec.md`)의 설계 문서. dev-plan.md에서 "Agent가 계속 개�
 
 힘든 상황에서 텍스트 입력을 요구하는 것 자체가 마찰이라, 자유 텍스트가 아니라 선택지로 받는다.
 
-- 막막해요
-- 지루해요
-- 지쳤어요
-- 그냥 그래요
+- overwhelmed (막막해요)
+- bored (지루해요)
+- tired (지쳤어요)
+- neutral (그냥 그래요)
 
 ## (2) Tool 목록
 
@@ -67,7 +67,7 @@ remainingWorkload  = 남은 마이크로스텝들의 estimatedMinutes 합
 AgentLog (Notion DB)
 - timestamp
 - task_category      ← Brain Dump 분할 스키마에 추가 필요 (아래 참고)
-- reason_chip         "막막해요" | "지루해요" | "지쳤어요" | "그냥 그래요"
+- reason_chip         "overwhelmed" | "bored" | "tired" | "neutral"
 - proposed_tool
 - proposed_reason
 - accepted            true/false
@@ -80,13 +80,13 @@ AgentLog (Notion DB)
 
 카테고리는 모델이 자유롭게 만들게 두지 않고 **고정 셋**으로 간다 (자유 생성은 같은 의미의 카테고리가 표현만 다르게 흩어져서 회피 패턴 집계가 무의미해짐). 초안:
 
-- 청소/정리
-- 연락 (전화·메일·메시지)
-- 문서작성
-- 외출/이동
-- 자기관리 (위생·식사·운동)
-- 학습/업무
-- 기타
+- cleaning (청소/정리)
+- contact (연락, 전화·메일·메시지)
+- paperwork (문서작성)
+- errands (외출/이동)
+- self_care (자기관리, 위생·식사·운동)
+- work (학습/업무)
+- other (기타)
 
 zod `z.enum([...])`으로 강제하면 `generateObject`가 이 중 하나로만 분류하게 된다. 실제 써보면서 항목이 안 맞으면 이 목록만 조정하면 되는 구조.
 
@@ -94,12 +94,12 @@ zod `z.enum([...])`으로 강제하면 `generateObject`가 이 중 하나로만 
 
 첫 사용자(AgentLog가 비어있음)나 새 category의 첫 이벤트에는 참고할 기록이 없다. 이때 별도 규칙 분기를 코드로 만들지 않고, 프롬프트에 "기록이 없으면 reason_chip을 1차 근거로 삼아라"는 지침과 함께 기본 성향(prior)만 준다:
 
-- 막막해요 → `shrink_step` 또는 `split_node` 쪽으로
-- 지루해요 → `swap_task` 쪽으로
-- 지쳤어요 → `suggest_break` 쪽으로
-- 그냥 그래요 → `encourage` 쪽으로
+- overwhelmed(막막해요) → `shrink_step` 또는 `split_node` 쪽으로
+- bored(지루해요) → `swap_task` 쪽으로
+- tired(지쳤어요) → `suggest_break` 쪽으로
+- neutral(그냥 그래요) → `encourage` 쪽으로
 
-이건 강제 매핑이 아니라 프롬프트 안의 기울기라서, 판단 주체는 여전히 모델이다 (예: "지쳤어요"라도 남은 스텝이 5분짜리 하나면 encourage가 맞을 수 있음). 코드 분기가 없으니 cold start 경로와 일반 경로가 같은 API 하나로 처리된다.
+이건 강제 매핑이 아니라 프롬프트 안의 기울기라서, 판단 주체는 여전히 모델이다 (예: tired라도 남은 스텝이 5분짜리 하나면 encourage가 맞을 수 있음). 코드 분기가 없으니 cold start 경로와 일반 경로가 같은 API 하나로 처리된다.
 
 ### outcome 기록 시점
 
@@ -131,11 +131,12 @@ zod `z.enum([...])`으로 강제하면 `generateObject`가 이 중 하나로만 
 |---|---|---|
 | timestamp | Date | — |
 | task_category | Select | 위 고정 셋 7개 |
-| reason_chip | Select | 막막해요 / 지루해요 / 지쳤어요 / 그냥 그래요 |
-| proposed_tool | Select | tool 목록 9개 |
+| reason_chip | Select | overwhelmed / bored / tired / neutral |
+| proposed_tool | Select | tool 목록 8개 |
 | proposed_reason | Text | Agent가 생성한 한 줄 |
 | accepted | Checkbox | — |
 | outcome | Select | done / not_done / pending |
+| label | Title | Notion 필수 title 속성. 표시용 요약(`reason_chip → proposed_tool`)만 담고 계약 필드로는 안 씀 |
 
 Relation을 안 쓰는 이유: Select/Text 속성은 Notion 화면에서 옵션을 바로 추가·수정할 수 있어서, 카테고리나 tool 목록이 바뀌어도 코드나 다른 DB 스키마를 안 건드리고 Notion UI에서만 고치면 된다. 처음부터 구조를 딱 맞게 짜기보다, 이후 실제로 써보면서 property를 추가/변경하기 쉬운 쪽을 택했다 — 지금 표의 항목들은 확정이 아니라 초안이다.
 
