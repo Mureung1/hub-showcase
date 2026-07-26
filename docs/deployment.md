@@ -65,7 +65,9 @@ Vercel Firewall에는 `/api/imports/`의 `start`, `analyze`, `cancel`, `complete
 
 `vercel.json`은 `/api/cron/import-cleanup`을 `10 18 * * *`로 매일 호출한다. Vercel은 `CRON_SECRET`을 `Authorization: Bearer ...` 헤더로 자동 전달하며 서버는 timing-safe 비교 뒤에만 정리를 실행한다. Hobby plan에서는 지정 시각부터 같은 한 시간 안에 실행될 수 있으므로 정확한 분 단위 삭제를 약속하지 않는다. 만료 여부는 Cron 실행 시각이 아니라 DB의 `expires_at` timestamp로 판정한다. 자세한 동작은 [Vercel Cron 관리](https://vercel.com/docs/cron-jobs/manage-cron-jobs)와 [요금제별 정밀도](https://vercel.com/docs/cron-jobs/usage-and-pricing)를 따른다.
 
-연결 생성 24시간 뒤 삭제 대상이 되는 것은 암호화한 Notion access·refresh token과 nonce·인증 tag, 연결 row의 workspace·state 정보, 미완료 작업(`analyzing`, `ready`, `failed`)의 Provider cursor·후보·오류·컬렉션이다. 이 값들은 24시간이 되는 즉시 삭제되는 것이 아니라 다음 일일 Cron에서 삭제되므로, 현재 일정과 Hobby plan 정밀도에서는 만료 후 최대 약 25시간이 더 걸릴 수 있다. 가져오기를 완료해 생성된 인사이트와 `completed`·`undone` 작업 기록은 이 자동 정리의 삭제 대상이 아니다.
+연결 생성 24시간 뒤 삭제 대상이 되는 것은 암호화한 Notion access·refresh token과 nonce·인증 tag, 연결 row의 workspace·state 정보, 미완료 작업(`analyzing`, `ready`, `failed`)의 Provider cursor·후보·오류·컬렉션이다. 이 값들은 24시간이 되는 즉시 삭제되는 것이 아니라 다음 일일 Vercel Cron에서 삭제되므로, 현재 일정과 Hobby plan 정밀도에서는 만료 후 최대 약 25시간이 더 걸릴 수 있다.
+
+가져오기를 완료하면 URL·제목·메모 후보와 출처 위치를 포함한 전체 후보 항목은 commit 트랜잭션에서 즉시 삭제한다. 되돌리기에는 작업·사용자·생성 인사이트 ID와 반영 직후 수정 시각만 별도 원장에 남기며, DB 시각 기준 완료 후 24시간까지만 사용할 수 있다. Supabase Cron은 이 최소 원장을 1분마다 정리하므로 물리 삭제는 만료 뒤 다음 실행에서 이루어진다. 예약 작업이 지연되어도 Undo RPC는 만료 시각 이후 요청을 거부한다. 생성된 인사이트와 `completed`·`undone` 요약 기록은 자동 정리 대상이 아니다.
 
 ## 공개 저장 API 요청 제한
 
@@ -149,10 +151,11 @@ gh run view <run-id> --log-failed
 6. Notion에서 선택한 두 page와 한 data source 하위 링크만 후보가 된다.
 7. 권한 거부, 브라우저 닫기, 429, 네트워크 단절 뒤 입력과 보관함을 유지한 복구 안내가 나온다.
 8. 완료·취소 뒤 암호화 token 열이 null이고 revoke endpoint가 호출된다.
-9. 가져온 인사이트 하나를 수정한 뒤 Undo하면 수정 항목은 남고 나머지만 삭제된다.
-10. 기록 삭제 뒤 인사이트는 남고 Undo action과 item detail은 사라진다.
-11. 긴 제목·20단계 경로가 1280px, 768px, 390px에서 가로 overflow 없이 표시되고 키보드만으로 전체 흐름을 완료할 수 있다.
-12. Android 시스템 브라우저 승인 뒤 `com.ppre1ude.amadda://import/notion`으로 돌아와 분석을 이어간다.
+9. 완료 직후 원본 후보 항목은 사라지고 요약과 24시간 최소 Undo 원장만 남는다.
+10. 24시간 안에 가져온 인사이트 하나를 수정한 뒤 Undo하면 수정 항목은 남고 나머지만 삭제된다.
+11. 24시간이 지나면 Undo action 대신 만료 안내가 표시되고, 기록 삭제 뒤에도 인사이트는 남는다.
+12. 긴 제목·20단계 경로가 1280px, 768px, 390px에서 가로 overflow 없이 표시되고 키보드만으로 전체 흐름을 완료할 수 있다.
+13. Android 시스템 브라우저 승인 뒤 `com.ppre1ude.amadda://import/notion`으로 돌아와 분석을 이어간다.
 
 배포 권한이 있는 담당자는 Sensitive 변수의 로그·build output 비노출, Firewall 게시 상태, Notion 관련 migration 적용 순서, Cron Jobs 활성화, 안정 주소의 token 교환·분석·revoke 성공을 함께 확인한다.
 
