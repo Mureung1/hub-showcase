@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../core/constants/growth_rules.dart';
 import '../../../core/constants/shop_items.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
@@ -59,6 +60,12 @@ class CharacterCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 환생 표식 — "손해가 아닌 훈장". 환생한 적이 있을 때만 뜬다.
+                // 🟡 노랑은 코인·보상·스트릭 전용이라 여기 쓰지 않는다(그린 틴트).
+                if (user.rebirth > 0) ...[
+                  _RebirthBadge(rebirth: user.rebirth),
+                  AppSpacing.gapSm,
+                ],
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -83,6 +90,51 @@ class CharacterCard extends StatelessWidget {
                 AppSpacing.gapMd,
                 _CoinBanner(coin: user.coin, streak: user.streak),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 환생 표식 — ★ N · {등급}. 환생 횟수와 등급 타이틀을 함께 보여 준다.
+///
+/// 🟡 노랑 금지 위젯이다. 표식은 코인·보상이 아니라 **성장의 훈장**이라 그린 계열
+/// (`primaryContainer`) 틴트를 쓴다.
+class _RebirthBadge extends StatelessWidget {
+  const _RebirthBadge({required this.rebirth});
+
+  final int rebirth;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer,
+        borderRadius: AppRadius.fullAll,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Symbols.star,
+            fill: 1,
+            size: 16,
+            color: scheme.onPrimaryContainer,
+          ),
+          AppSpacing.gapWXs,
+          Text(
+            '환생 $rebirth · ${rebirthTitle(rebirth)}',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: scheme.onPrimaryContainer,
             ),
           ),
         ],

@@ -133,6 +133,39 @@ class FirestoreUserRepository implements UserRepository {
     });
   }
 
+  /// 환생 = 레벨/XP만 리셋 + rebirth+1. **트랜잭션이 필수다** — Lv.50 확인이
+  /// 읽은 값에 기반하고(read-modify-write), 두 기기에서 동시에 눌러도 rebirth가
+  /// 두 번 오르면 안 된다. 트랜잭션 안에서 읽고 판단하면 한쪽만 커밋된다.
+  ///
+  /// coin·equipped·dailyCoin·streak은 **쓰기 맵에 넣지 않는다** — merge:true라
+  /// 명시하지 않은 필드는 그대로 보존된다("손해가 아닌 훈장"). completeQuest·
+  /// rewardedAt 경로와 무관한 별도 쓰기다.
+  @override
+  Future<void> rebirth(String uid) {
+    return guard(() async {
+      final ref = _doc(uid);
+
+      await _db.runTransaction((transaction) async {
+        final snapshot = await transaction.get(ref);
+        final current = snapshot.exists
+            ? AppUser.fromJson(uid, decodeDoc(snapshot.data()))
+            : AppUser.initial(uid);
+
+        // 가드 — throw가 트랜잭션을 중단시켜 어떤 write도 커밋되지 않는다.
+        if (current.level < kMaxLevel) {
+          throw const UnknownFailure(null, kCannotRebirthMessage);
+        }
+
+        // 레벨/XP만 리셋 + rebirth+1. coin·equipped 등은 건드리지 않는다.
+        transaction.set(ref, {
+          'level': 1,
+          'xp': 0,
+          'rebirth': current.rebirth + 1,
+        }, SetOptions(merge: true));
+      });
+    });
+  }
+
   @override
   Future<void> updateEquipped(String uid, Map<String, String> equipped) {
     return guard(() => _doc(uid).set({'equipped': equipped}, SetOptions(merge: true)));

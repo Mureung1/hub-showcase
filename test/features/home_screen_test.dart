@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:one_step/core/constants/growth_rules.dart';
 import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/core/widgets/quest_card.dart';
 import 'package:one_step/core/widgets/state_views.dart';
@@ -78,15 +80,107 @@ void main() {
     expect(find.text('다시 시도'), findsOneWidget);
   });
 
-  testWidgets('환생 버튼은 Lv.50 미만이면 비활성이다', (tester) async {
+  group('환생 버튼', () {
+    Finder rebirthButton() => find.byType(OutlinedButton);
+
+    testWidgets('Lv.50 미만이면 비활성이다', (tester) async {
+      await pumpScreen(
+        tester,
+        const HomeScreen(),
+        user: const AppUser(uid: 'test-uid', level: 12),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('환생 (Lv.12)'), findsOneWidget);
+      final button = tester.widget<OutlinedButton>(rebirthButton());
+      expect(button.onPressed, isNull, reason: 'Lv.50 미만은 눌리면 안 된다');
+    });
+
+    testWidgets('Lv.50이면 활성이다', (tester) async {
+      await pumpScreen(
+        tester,
+        const HomeScreen(),
+        user: const AppUser(uid: 'test-uid', level: kMaxLevel),
+      );
+      await tester.pumpAndSettle();
+
+      final button = tester.widget<OutlinedButton>(rebirthButton());
+      expect(button.onPressed, isNotNull, reason: 'Lv.50이면 눌려야 한다');
+    });
+
+    testWidgets('탭 → 확인 다이얼로그 → 환생 실행 → 연출, 레벨이 1로 리셋된다', (tester) async {
+      final questRepo = await pumpScreen(
+        tester,
+        const HomeScreen(),
+        user: const AppUser(uid: 'test-uid', level: kMaxLevel, coin: 500),
+      );
+      await tester.pumpAndSettle();
+
+      // 탭 → 확인 다이얼로그.
+      await tester.tap(rebirthButton());
+      await tester.pumpAndSettle();
+      expect(find.text('환생할까요?'), findsOneWidget);
+
+      // 확인 → 환생 실행 → 연출.
+      await tester.tap(find.text('환생하기'));
+      await tester.pumpAndSettle();
+      expect(find.text('환생했어요!'), findsOneWidget);
+
+      // 저장소에 레벨1·rebirth+1·코인 유지가 반영됐다.
+      final after = await questRepo.users!.fetchUser('test-uid');
+      expect(after.level, 1);
+      expect(after.rebirth, 1);
+      expect(after.coin, 500, reason: '코인은 유지된다');
+    });
+
+    testWidgets('확인 다이얼로그에서 취소하면 환생하지 않는다', (tester) async {
+      final questRepo = await pumpScreen(
+        tester,
+        const HomeScreen(),
+        user: const AppUser(uid: 'test-uid', level: kMaxLevel),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(rebirthButton());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('아직요'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('환생했어요!'), findsNothing);
+      final after = await questRepo.users!.fetchUser('test-uid');
+      expect(after.level, kMaxLevel, reason: '취소했으니 리셋되지 않는다');
+      expect(after.rebirth, 0);
+    });
+
+    testWidgets('환생 3회 도달 시 용 계열 해금이 강조된다', (tester) async {
+      await pumpScreen(
+        tester,
+        const HomeScreen(),
+        user: const AppUser(uid: 'test-uid', level: kMaxLevel, rebirth: 2),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(rebirthButton());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('환생하기'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('용 계열이 열렸어요'), findsOneWidget);
+    });
+  });
+
+  testWidgets('환생 표식은 rebirth>0일 때 카드에 등급으로 뜬다', (tester) async {
     await pumpScreen(
       tester,
       const HomeScreen(),
-      user: const AppUser(uid: 'test-uid', level: 12),
+      user: const AppUser(uid: 'test-uid', level: 12, rebirth: 3),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('환생 (Lv.12)'), findsOneWidget);
+    // 등급 타이틀(rebirthTitle(3) = 'Master Scholar')과 계열 이모지가 반영된다.
+    expect(find.textContaining('환생 3'), findsOneWidget);
+    // 용 계열 Lv.12는 '새끼 용'.
+    expect(find.text('Level 12 · 새끼 용'), findsOneWidget);
   });
 
   // 화면 크기는 기본값(800x600) 그대로 쓴다.

@@ -103,4 +103,97 @@ void main() {
       expect(r.xp, 0);
     });
   });
+
+  // ── 환생(프레스티지) + 계열 해금 ──────────────────────────────────────────
+
+  group('characterFamily — 환생 횟수 → 계열 (구간 유지)', () {
+    test('0~2회는 새, 3~5회는 용, 6회+는 피닉스', () {
+      expect(characterFamily(0), CharacterFamily.bird);
+      expect(characterFamily(2), CharacterFamily.bird);
+      // 임계 경계: 3에서 용으로 넘어간다.
+      expect(characterFamily(3), CharacterFamily.dragon);
+      expect(characterFamily(5), CharacterFamily.dragon);
+      // 임계 경계: 6에서 피닉스로 넘어간다.
+      expect(characterFamily(6), CharacterFamily.phoenix);
+      expect(characterFamily(7), CharacterFamily.phoenix);
+    });
+
+    test('임계 상수가 매직넘버가 아니라 계열 판정을 지배한다', () {
+      expect(characterFamily(kDragonRebirth), CharacterFamily.dragon);
+      expect(characterFamily(kDragonRebirth - 1), CharacterFamily.bird);
+      expect(characterFamily(kPhoenixRebirth), CharacterFamily.phoenix);
+      expect(characterFamily(kPhoenixRebirth - 1), CharacterFamily.dragon);
+    });
+  });
+
+  group('unlockedFamily — 새 계열이 열리는 순간만 알린다', () {
+    test('정확히 3·6회에 도달할 때만 해금이다', () {
+      expect(unlockedFamily(kDragonRebirth), CharacterFamily.dragon);
+      expect(unlockedFamily(kPhoenixRebirth), CharacterFamily.phoenix);
+    });
+
+    test('그 외 환생은 계열이 유지되므로 해금이 아니다', () {
+      for (final r in [1, 2, 4, 5, 7, 8]) {
+        expect(unlockedFamily(r), isNull, reason: '환생 $r회는 해금이 아니다');
+      }
+    });
+  });
+
+  group('stageOf(level, rebirth) — 계열별 15종', () {
+    // 각 계열의 5단계 레벨 대표값(경계 그대로).
+    const levels = [1, 10, 20, 30, 45];
+
+    test('새 계열(rebirth 0~2)', () {
+      const names = ['알', '참새', '매', '독수리', '이펙트 독수리'];
+      for (var i = 0; i < levels.length; i++) {
+        expect(stageOf(levels[i]).name, names[i]);
+        expect(stageOf(levels[i], rebirth: 2).name, names[i]);
+      }
+    });
+
+    test('용 계열(rebirth 3~5)', () {
+      const names = ['용의 알', '새끼 용', '어린 용', '성룡', '화려한 용'];
+      for (var i = 0; i < levels.length; i++) {
+        expect(stageOf(levels[i], rebirth: 3).name, names[i]);
+        expect(stageOf(levels[i], rebirth: 5).name, names[i]);
+      }
+    });
+
+    test('피닉스 계열(rebirth 6+)', () {
+      const names = ['피닉스의 알', '잿빛 피닉스', '불꽃 피닉스', '황금 피닉스', '만개한 피닉스'];
+      for (var i = 0; i < levels.length; i++) {
+        expect(stageOf(levels[i], rebirth: 6).name, names[i]);
+        expect(stageOf(levels[i], rebirth: 9).name, names[i]);
+      }
+    });
+
+    test('rebirth 기본값은 0(새 계열)이라 기존 호출부가 안 깨진다', () {
+      // stageOf(level)만 부르던 기존 코드가 새 계열을 그대로 받는다.
+      expect(stageOf(1).name, '알');
+      expect(stageOf(45).name, '이펙트 독수리');
+    });
+  });
+
+  group('xpPerLevel은 rebirth와 무관하다 (applyXpGain 무회귀의 근거)', () {
+    test('같은 레벨이면 계열이 달라도 xpPerLevel이 같다', () {
+      const expected = {1: 5, 10: 10, 20: 20, 30: 40, 45: 80};
+      for (final entry in expected.entries) {
+        for (final rebirth in [0, 3, 6, 12]) {
+          expect(
+            stageOf(entry.key, rebirth: rebirth).xpPerLevel,
+            entry.value,
+            reason: 'Lv${entry.key}·환생$rebirth의 xpPerLevel',
+          );
+        }
+      }
+    });
+
+    test('applyXpGain 결과는 환생 여부와 무관하다', () {
+      // 순수 함수라 rebirth 인자가 없지만, xpPerLevel이 계열 불변이므로 레벨 계산이
+      // 흔들리지 않는다는 걸 대표 케이스로 못 박는다.
+      final r = applyXpGain(level: 9, xp: 0, gained: 15);
+      expect(r.level, 11);
+      expect(r.xp, 0);
+    });
+  });
 }

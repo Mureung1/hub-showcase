@@ -361,7 +361,7 @@
 - [x] 완료한 도전이 보관함(`/storage`)에 표시된다.
       → 보관함은 `archivedGroupsProvider`(`archived == true` 퀘스트) 기반 **폴더 그룹뷰**다. 오늘의 퀘스트와 **같은 `groupQuestsByGoal`·`GoalGroupSection`을 재사용**하되 완료 토글 없는 **보기 전용 카드**다(`storage_screen.dart`가 `archivedGroupsProvider` → `groupQuestsByGoal` → `GoalGroupSection`으로 렌더). 화면 `lib/features/storage/storage_screen.dart`는 폴더뷰로 **재작성**됐다. achievements 타임라인 방식(`watchAchievements` 경로)은 삭제하지 않고 **3단계 상세 시트용으로 남겨뒀다**. 테스트: `test/features/storage_screen_test.dart`.
 - [x] 완료 수·연속 출석 요약이 표시된다.
-      → `storage_screen.dart`의 `_SummaryCard`가 2분할 stat으로 완료 수·연속을 표시한다(폴더뷰 재작성 후에도 유지). 완료 수 = 보관된 퀘스트 총합(`archivedGroupsProvider` 그룹의 자식 합 — 폴더 자식·자동완료 원본 포함), 연속 = `currentUserProvider`의 `user.streak`. 환생 배너는 환생 미구현이라 이 요약으로 대체했다. 테스트: `test/features/storage_screen_test.dart`.
+      → `storage_screen.dart`의 `_SummaryCard`가 2분할 stat으로 완료 수·연속을 표시한다(폴더뷰 재작성 후에도 유지). 완료 수 = 보관된 퀘스트 총합(`archivedGroupsProvider` 그룹의 자식 합 — 폴더 자식·자동완료 원본 포함), 연속 = `currentUserProvider`의 `user.streak`. (환생은 4주차 「환생(프레스티지)」로 구현됐고, 환생 표식·등급은 홈 캐릭터 카드에 두어 보관함 요약은 완료 수·연속 2분할 stat으로 유지한다.) 테스트: `test/features/storage_screen_test.dart`.
 - [x] 빈 상태·로딩·오류가 각각 처리된다.
       → `storage_screen.dart`의 `archivedGroupsProvider.when`이 로딩→`_StorageSkeleton`, 오류→`ErrorView`, 비었을 때→`EmptyView`를 각각 그린다. 스트릭(`currentUserProvider`)은 못 읽으면 0으로 떨어뜨려 폴더뷰는 그대로 보인다. 테스트: `test/features/storage_screen_test.dart`.
 - [x] 인증(메모/사진)한 도전은 뱃지로 구분된다.
@@ -500,7 +500,7 @@
 - [x] 프로필 화면에 완료 통계가 표시된다.
       → `lib/features/profile/profile_screen.dart`(신규 — `/profile` 라우트가 placeholder에서 실제 `ProfileScreen`으로 교체됨, `lib/router.dart:92`). 완료한 도전 수는 `achievementsProvider`의 `.length`(보관함과 같은 소스라 두 화면의 "해낸 도전 수"가 어긋나지 않음), 현재 연속 출석은 `user.streak`(0이면 "아직 없음"), 가입일은 `createdAt`을 KST `yyyy년 M월 d일`로 렌더(null이면 통째 생략). 로딩(`_StatsSkeleton`)·오류(`ErrorView`+재시도)·빈(완료 0을 EmptyView가 아니라 "0"으로) 5상태 처리. 완료 수는 achievements 스트림과 연동돼 기록이 늘면 증가한다. 노랑 규칙 준수(스트릭이 요약 통계라 그린/중립, `color_role_test` 무수정 통과). 테스트: `test/features/profile_screen_test.dart`(11건, 완료 수 상수화·스트릭 상수화 뮤테이션이 실패시킴).
 - [x] 설정에 계정 연동 자리가 준비돼 있다(실제 OAuth는 향후).
-      → `_SettingsSection`이 "Google 계정 연동"을 **준비 중** 배지로 두고 탭 시 "계정 연동은 곧 지원돼요." 스낵바로 안내(홈 환생 버튼이 "4주차에 열려요"로 정직하게 비활성인 것과 같은 방식). **로그아웃 버튼은 두지 않았다** — 익명 로그인이라 로그아웃하면 진행상황이 소실되기 때문(테스트가 버튼 부재를 회귀 방어로 못박음, 로그아웃 버튼 추가 뮤테이션 1건·탭 안내 제거 뮤테이션 1건 실패 확인). 테스트: `test/features/profile_screen_test.dart`.
+      → `_SettingsSection`이 "Google 계정 연동"을 **준비 중** 배지로 두고 탭 시 "계정 연동은 곧 지원돼요." 스낵바로 안내(실제 OAuth가 아직 미구현이라 기능을 흉내내지 않고 정직하게 "준비 중" 비활성으로 둔 방식). **로그아웃 버튼은 두지 않았다** — 익명 로그인이라 로그아웃하면 진행상황이 소실되기 때문(테스트가 버튼 부재를 회귀 방어로 못박음, 로그아웃 버튼 추가 뮤테이션 1건·탭 안내 제거 뮤테이션 1건 실패 확인). 테스트: `test/features/profile_screen_test.dart`.
 
 > **향후 계획(미구현)**: OAuth 계정 연동은 아직 구현하지 않았다. 이번 프로필은 진입점 **자리만** 준비했고, `AuthRepository`에 연동 메서드는 없다. 검증이 끝나면 익명↔Google 계정 연동(및 그때 signOut UI 재판단)을 추가할 계획이다.
 >
@@ -525,6 +525,26 @@
       → 진화 경계(Lv9 알→Lv10 참새 등)를 넘으면 `evolve_dialog.dart`가 이전→새 단계 이모지 전환 강조 + "{단계}로 진화했어요"를 표시한다. 완료→(레벨업)→(진화) 순차. **진화가 없으면 연출이 뜨지 않는다**(뮤테이션 evolved=>true로 5건 실패 확인 — 같은 단계 내 상승·다단계도 오탐 없음). 이모지 목업 전제 유지.
 
 > **제약(정직)**: Firestore `completeQuest` 트랜잭션 경로는 자동 테스트 N/A(`fake_cloud_firestore` 미도입). InMemory와 동일 계약으로 맞췄고 반환 타입 확장(`Reward?`→`CompleteResult?`)이 지급·가드 로직을 건드리지 않았음을 diff 리뷰로 확인 — 기존 `completeQuest`와 같은 한계이며 이번 변경이 새 결함을 도입한 게 아니다. 캐릭터·진화 연출은 이모지 목업 전제(도트아트 자산 나오면 교체).
+
+### 환생(프레스티지) 및 캐릭터 계열 해금
+> checklist에 항목이 없던 기능이라 신규 섹션으로 승격했다(그동안 미구현). 기획서(docx) 정본대로 Lv.50 도달 시 환생 → 레벨만 1로 초기화, 코인·아이템·성취기록·환생표식은 영구 유지("손해가 아닌 훈장"). 환생을 거듭하면 계열이 새→용(3회)→피닉스(6회)로 해금된다. verification-agent **PASS 8/8**.
+
+- [x] Lv.50(MAX) 도달 시 환생할 수 있고, 미만이면 막힌다.
+      → 홈 환생 버튼(`home_screen.dart`의 `_RebirthButton`)이 `user.canRebirth`(`level >= kMaxLevel`, `lib/models/app_user.dart:110`)일 때만 활성, 미만이면 비활성(툴팁 "Lv.50에 도달하면 환생할 수 있어요"). 확인 다이얼로그 → 실행 → 연출 순. 저장소 `rebirth(uid)`(`lib/repositories/user_repository.dart:84`, **UserRepository**)가 마지막 방어선으로 Lv.50 미만이면 write 없이 `AppFailure`(`kCannotRebirthMessage`)를 던진다(Firestore는 트랜잭션 가드 `firestore_user_repository.dart:155`, InMemory는 리셋 없이 실패 `in_memory_user_repository.dart:115`). 테스트: `test/features/home_screen_test.dart` · `test/repositories/rebirth_test.dart`.
+- [x] 환생하면 레벨/XP만 초기화되고 코인·아이템·기록은 영구 유지된다("손해가 아닌 훈장").
+      → `rebirth()`가 `{level:1, xp:0, rebirth: rebirth+1}`만 쓴다(Firestore `runTransaction`+`SetOptions(merge:true)`라 명시 안 한 coin·equipped·dailyCoin·streak은 보존, `firestore_user_repository.dart:159`; InMemory는 `copyWith` 3필드만, `in_memory_user_repository.dart:119`). `completeQuest`·보상(`rewardedAt`) 경로와 완전히 분리된 별도 쓰기라 지급 로직 무변경. 뮤테이션(rebirth가 coin 리셋)으로 실패 확인. 테스트: `test/repositories/rebirth_test.dart`.
+- [x] 환생을 거듭하면 캐릭터 계열이 새→용(3회)→피닉스(6회)로 해금된다.
+      → `stageOf(level, {rebirth})`(`lib/core/constants/growth_rules.dart:126`) 확장 + `characterFamily(rebirth)`(0–2=새/3–5=용/6+=피닉스, 구간 유지, `growth_rules.dart:54`). 3계열×5단계 = 15종 이모지·이름 테이블(기획서 진화 표). **xpPerLevel(레벨당 필요 XP)은 계열과 무관**하게 레벨 구간(인덱스)만으로 결정돼(`growth_rules.dart:133`) `applyXpGain` 레벨업 계산은 회귀 0(`stageOf` 기본 인자 `rebirth=0`). `kDragonRebirth=3`·`kPhoenixRebirth=6` 상수(`growth_rules.dart:45`). 뮤테이션(계열 임계 3→4·계열 이모지 뒤집기)으로 실패 확인. 테스트: `test/core/growth_rules_test.dart`.
+- [x] 환생 시 확인·연출이 표시되고 캐릭터 카드에 등급·표식이 보인다.
+      → 확인 다이얼로그("레벨이 1로 초기화돼요, 코인·아이템·기록은 그대로") → 취소 시 아무 일 없음 → 환생 연출(`lib/features/home/widgets/rebirth_dialog.dart` 신규, 계열 해금 시 "용/피닉스 해금" 강조, evolve/level_up 연출 시각 언어 재사용). 캐릭터 카드(`character_card.dart:101`)는 `rebirth>0`이면 등급 타이틀(`rebirthTitle`, `growth_rules.dart:177`)·별(★) 배지를 표시한다. 노랑은 환생 표식에 안 씀(그린 계열). 뮤테이션(다이얼로그 취소 무시)으로 실패 확인. 테스트: `test/features/home_screen_test.dart`.
+
+**검증 증거**
+- `flutter analyze` No issues found · `flutter test` **728건 전부 통과**(환생 착수 기준선 706건) · `test/theme/color_role_test.dart` 무수정 통과 · verification-agent **PASS 8/8**.
+- 뮤테이션 6종(환생 가드 · rebirth+1 미실행 · coin 리셋 · 계열 임계 3→4 · 계열 이모지 뒤집기 · 다이얼로그 취소 무시)이 각각 해당 테스트를 실제로 실패시킴. `completeQuest` 지급 경로·`applyXpGain` 레벨업 계산은 diff로 무변경 확인.
+
+**남은 제약(정직)**
+- Firestore `rebirth` 트랜잭션 경로는 자동 테스트 **N/A**(`fake_cloud_firestore` 미도입). InMemory와 동일 계약으로 맞췄고 실제 확인은 에뮬레이터 몫(기존 `completeQuest`·`purchaseItem`과 같은 한계).
+- 캐릭터·계열(용·피닉스)은 이모지 목업이다(도트아트 자산 나오면 이모지만 교체).
 
 ### 멈춘 퀘스트 재분해 기능
 > plan.md **기능 A의 마지막 요구사항**이자 성공 지표 「재분해 복귀율」의 근거다.

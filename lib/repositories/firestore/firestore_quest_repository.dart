@@ -380,8 +380,10 @@ class FirestoreQuestRepository implements QuestRepository {
           cutCoin: gross.coin - reward.coin,
           fromLevel: cur.level,
           toLevel: next.level,
-          fromStage: stageOf(cur.level),
-          toStage: stageOf(next.level),
+          // 계열(rebirth)을 실어 레벨업·진화 연출이 현재 계열 이모지를 쓰게 한다.
+          // 환생은 별도 경로라 cur.rebirth는 이 완료 중 바뀌지 않는다.
+          fromStage: stageOf(cur.level, rebirth: cur.rebirth),
+          toStage: stageOf(next.level, rebirth: cur.rebirth),
         );
       });
     });

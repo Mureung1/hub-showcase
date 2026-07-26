@@ -386,6 +386,9 @@ class InMemoryQuestRepository implements QuestRepository {
     // 않으면 성장을 추적할 근거가 없으므로 Lv1로 고정한다(연출 없음).
     var fromLevel = 1;
     var toLevel = 1;
+    // 계열(rebirth)은 users를 주입하지 않으면 알 수 없으므로 기본 0(새)이다.
+    // 환생은 별도 경로라 이 완료 중 바뀌지 않는다.
+    final rebirth = current?.rebirth ?? 0;
     if (userRepo != null && current != null) {
       // Firestore 구현과 같은 의미: coin은 단순 누적, xp·level은 applyXpGain으로
       // 다단계 상승·진화 경계·MAX 상한을 반영한 계산값으로 갱신한다.
@@ -422,8 +425,8 @@ class InMemoryQuestRepository implements QuestRepository {
       cutCoin: gross.coin - reward.coin,
       fromLevel: fromLevel,
       toLevel: toLevel,
-      fromStage: stageOf(fromLevel),
-      toStage: stageOf(toLevel),
+      fromStage: stageOf(fromLevel, rebirth: rebirth),
+      toStage: stageOf(toLevel, rebirth: rebirth),
     );
   }
 

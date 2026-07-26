@@ -1,3 +1,4 @@
+import '../core/constants/growth_rules.dart';
 import '../core/constants/reward_rules.dart';
 import '../models/app_user.dart';
 
@@ -17,6 +18,13 @@ typedef EnsureUserResult = ({AppUser user, bool created});
 /// 화면(상점)도 미리 이 조건을 걸러 버튼을 비활성화하지만, `purchaseItem`이
 /// public API라 저장소가 마지막 방어선으로 한 번 더 막는다.
 const String kInsufficientCoinMessage = '코인이 부족해요.';
+
+/// 환생 조건(Lv.50)을 아직 못 채웠을 때 사용자에게 보여줄 문구.
+///
+/// [UserRepository.rebirth]가 가드에서 [AppFailure]로 알릴 때 쓴다. 화면도 미리
+/// `canRebirth`로 버튼을 비활성화하지만, `rebirth`가 public API라 저장소가 마지막
+/// 방어선으로 한 번 더 막는다(purchaseItem의 잔액 가드와 같은 정신).
+const String kCannotRebirthMessage = 'Lv.$kMaxLevel에 도달해야 환생할 수 있어요.';
 
 /// 사용자 문서 읽기·쓰기.
 ///
@@ -56,6 +64,24 @@ abstract interface class UserRepository {
   /// 보너스 코인은 **하루 코인 상한([kDailyCoinCap])을 무시하고** 전액 지급되며,
   /// 하루 카운터(`dailyCoinEarned`)에도 더하지 않는다.
   Future<AttendanceResult> recordAttendance(String uid);
+
+  /// 환생(프레스티지). **Lv.50 도달 시에만 성립한다.**
+  ///
+  /// **레벨/XP만 Lv.1로 리셋하고 `rebirth`를 1 올린다.** 코인·`equipped`·보관함·
+  /// 출석/스트릭 카운터(`dailyCoin*`·`attendance*`·`streak*`)는 **전혀 건드리지
+  /// 않는다** — 기획서의 "손해가 아닌 훈장" 원칙이다. 환생을 3·6회 넘기면 계열이
+  /// 새 → 용 → 피닉스로 해금되는데, 그 판정은 저장이 아니라 읽는 쪽([characterFamily])
+  /// 이 `rebirth` 값으로 한다.
+  ///
+  /// **원자적 트랜잭션이다.** user 문서를 읽어 `level >= kMaxLevel`을 확인하고,
+  /// 통과하면 같은 트랜잭션에서 `{level:1, xp:0, rebirth: rebirth+1}`만 쓴다
+  /// (read-before-write). Lv.50 미만이면 **write 없이** [AppFailure]를 던진다
+  /// ([kCannotRebirthMessage]).
+  ///
+  /// ⚠️ **[completeQuest]·보상 경로와 완전히 분리된 별도 메서드다.** `rewardedAt`·
+  /// `coin`·`xp` 지급 로직을 절대 건드리지 않는다(보관 쓰기를 지급 트랜잭션 밖에
+  /// 두는 것과 같은 원칙).
+  Future<void> rebirth(String uid);
 
   /// 장착 아이템 변경 (4주차 상점).
   Future<void> updateEquipped(String uid, Map<String, String> equipped);

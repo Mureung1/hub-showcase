@@ -101,6 +101,29 @@ class InMemoryUserRepository implements UserRepository {
     return result;
   }
 
+  /// Firestore 트랜잭션과 **같은 판정**의 환생.
+  ///
+  /// ① Lv.50 미만이면 리셋 없이 실패(가드), ② 통과하면 레벨/XP만 Lv.1로 리셋하고
+  /// rebirth+1. copyWith가 명시하지 않은 coin·equipped·dailyCoin·streak은 그대로
+  /// 보존된다("손해가 아닌 훈장"). completeQuest·보상 경로와 무관한 별도 쓰기다.
+  @override
+  Future<void> rebirth(String uid) async {
+    _check();
+    final current = _users[uid] ?? AppUser.initial(uid);
+
+    // 가드 — 리셋·증가 없이 실패한다(Lv.50 미만 환생 불가).
+    if (current.level < kMaxLevel) {
+      throw const UnknownFailure(null, kCannotRebirthMessage);
+    }
+
+    _users[uid] = current.copyWith(
+      level: 1,
+      xp: 0,
+      rebirth: current.rebirth + 1,
+    );
+    _controller.add(uid);
+  }
+
   @override
   Future<void> updateEquipped(String uid, Map<String, String> equipped) async {
     _check();
