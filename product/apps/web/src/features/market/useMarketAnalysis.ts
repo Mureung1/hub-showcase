@@ -34,17 +34,22 @@ export function useMarketAnalysis(
   const [backgroundState, setBackgroundState] = useState<AnalysisState>("loading");
   const [analysisRetryToken, setAnalysisRetryToken] = useState(0);
   const [availablePeriods, setAvailablePeriods] = useState<string[]>([]);
+  const [periodAvailability, setPeriodAvailability] = useState<
+    Record<string, Array<"stores" | "sales" | "flow">>
+  >({});
   const [defaultPeriod, setDefaultPeriod] = useState<string | null>(null);
 
   useEffect(() => {
     if (!category || isTestEnvironment() || typeof fetch === "undefined") return;
     if (!apiReady) {
       setAvailablePeriods([]);
+      setPeriodAvailability({});
       setDefaultPeriod(null);
       return;
     }
     if (allowDemoSnapshot) {
       setAvailablePeriods([DEMO_ANALYSIS_PERIOD]);
+      setPeriodAvailability({ [DEMO_ANALYSIS_PERIOD]: ["stores", "sales", "flow"] });
       setDefaultPeriod(DEMO_ANALYSIS_PERIOD);
       return;
     }
@@ -52,11 +57,13 @@ export function useMarketAnalysis(
     loadAnalysisPeriods(category, controller.signal)
       .then((result) => {
         setAvailablePeriods(result.periods);
+        setPeriodAvailability(result.period_availability ?? {});
         setDefaultPeriod(result.default_period);
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setAvailablePeriods([]);
+        setPeriodAvailability({});
         setDefaultPeriod(null);
       });
     return () => controller.abort();
@@ -143,6 +150,7 @@ export function useMarketAnalysis(
     background,
     backgroundState,
     availablePeriods,
+    periodAvailability,
     defaultPeriod,
     retryAnalysis: () => setAnalysisRetryToken((current) => current + 1),
   };

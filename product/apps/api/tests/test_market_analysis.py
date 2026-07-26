@@ -227,6 +227,7 @@ def test_market_analysis_endpoint_reads_the_runtime_database(tmp_path: Path) -> 
     assert periods.json() == {
         "periods": ["20251"],
         "default_period": "20251",
+        "period_availability": {"20251": ["stores", "sales", "flow"]},
         "policy": "latest_complete_quarter",
     }
 
@@ -236,6 +237,37 @@ def test_market_analysis_endpoint_reads_the_runtime_database(tmp_path: Path) -> 
     assert response.json() == expected.model_dump(mode="json")
     missing = client.get("/api/v1/markets/unknown", params={"category": "카페", "period": "20251"})
     assert missing.status_code == 404
+    engine.dispose()
+
+
+def test_analysis_periods_keep_store_only_quarters_selectable(tmp_path: Path) -> None:
+    canonical_database = tmp_path / "canonical.db"
+    build_market_database(canonical_database)
+    with sqlite3.connect(canonical_database) as connection:
+        connection.execute(
+            "INSERT INTO store_metrics VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ("m2", "20252", "CS100010", "커피-음료", 21, 19, 2, 4, 3, 3, 1, "stores"),
+        )
+
+    runtime_url = f"sqlite:///{tmp_path / 'runtime.db'}"
+    command.upgrade(alembic_config(runtime_url), "head")
+    engine = create_database_engine(runtime_url, require_postgresql=False)
+    seed_canonical(canonical_database, engine)
+    factory = create_session_factory(engine)
+    client = TestClient(create_app(Settings(_env_file=None), search_session_factory=factory))
+
+    response = client.get("/api/v1/analysis/periods", params={"category": "카페"})
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "periods": ["20252", "20251"],
+        "default_period": "20251",
+        "period_availability": {
+            "20252": ["stores"],
+            "20251": ["stores", "sales", "flow"],
+        },
+        "policy": "latest_complete_quarter",
+    }
     engine.dispose()
 
 
