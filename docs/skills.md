@@ -34,9 +34,9 @@
   }
   ```
   `recentLogs`는 클라이언트 입력이 아니라(T10부터) 서버가 `/api/struggle` 내부에서 `getRecentLogs({ limit: 15, category: currentStep.category })`로 직접 채운다 — 클라이언트는 Notion에 직접 접근할 수 없어 이 값을 만들 방법이 없었기 때문.
-- **출력**: `{ proposedTool: tool, reason: string, revisedTitle?: string, final?: bool }`
+- **출력**: `{ proposedTool: tool | null, reason: string, revisedTitle?: string, final?: bool }`
   - `revisedTitle`: `proposedTool`이 `shrink_step`일 때만, 완료 기준을 줄인 새 스텝 제목.
-  - `final`: 시간 부족으로 `postpone_task`/`end_session`도 이미 둘 다 거절된 경우 `true`. 이때는 새 tool을 제안하는 게 아니라 강제 종결이므로, 화면은 거절을 더 받지 않는다(C07).
+  - `final`: 더 제안할 수 있는 tool이 없어 강제 종결하는 경우 `true`. 이때 `proposedTool`은 `null`이다 — `rejectedTools`에 든 값을 "새 제안"으로 재사용하지 않기 위해서다. 화면은 `final:true`를 받으면 `proposedTool` 값과 무관하게 `end_session`으로 처리하고, 거절을 더 받지 않는다(C07).
 - **제약**:
   - `proposedTool`은 고정 8개 중 하나(스키마 강제), `rejectedTools`에 든 것은 다시 고르지 않는다.
   - `recentLogs`가 비면 cold start — `reasonChip` prior로 판단(막막→shrink/split, 지루→swap, 지쳤→break, 그냥→encourage). prior는 강제가 아닌 기울기.

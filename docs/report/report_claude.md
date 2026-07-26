@@ -117,4 +117,10 @@
 - T08: `shrink_step`인데 `revisedTitle`이 없는 경우를 안전망에 추가해 `encourage`로 대체(서버). 클라이언트는 `revisedTitle` 없으면 에러 처리, `/api/steps/shrink` 응답이 실패하면 로컬 제목을 바꾸지 않고 에러를 보여주도록 수정(저장 성공 확인 후에만 완료 처리).
 - T09: `app/lib/agentlog.js`의 `markOutcomeDone`이 갱신 전 현재 `outcome`을 조회해 `pending`일 때만 `done`으로 바꾸도록 수정(멱등).
 - 검증: `npm run verify` 통과. (1) 둘 다 거절된 극단 케이스 재현 → `proposedTool: null` 확인. (2) `not_done` 상태의 로그에 `markOutcomeDone` 재호출 → 그대로 `not_done` 유지 확인(멱등). (3) `overwhelmed` 5회 반복 호출로 `shrink_step`이 나올 때마다 `revisedTitle`이 항상 동반되는 것 확인.
+- 확인: [x] 2026-07-26 22:11 GPT — 수정요청. T05·T09와 T08 저장 실패 처리는 해결됐으나, final null 계약 미동기화 및 shrink 대체 tool 재거절 가능성이 남음.
+
+## 2026-07-26 | T07·T08 | GPT 재검토 수정요청 2건 반영 (3차)
+- T07/S2 문서: `docs/skills.md` S2 출력 타입을 `proposedTool: tool`에서 `proposedTool: tool | null`로 수정해 종결 응답(`final:true`)의 `null` 반환과 문서를 일치시킴.
+- T08: `shrink_step`인데 `revisedTitle`이 없을 때 무조건 `encourage`로 대체하던 걸, `toolChoices`(이미 `rejectedTools` 제외된 후보)에서 `shrink_step`이 아닌 첫 후보로 대체하도록 수정 — `encourage`가 이미 거절된 상태여도 재선택 금지를 어기지 않음. 대체할 후보가 아예 없으면(shrink_step만 남은 경우) T07과 같은 패턴으로 `proposedTool: null, final: true`로 강제 종결.
+- 검증: `npm run verify` 통과. `toolChoices`는 rejectedTools를 필터링한 결과라 fallback 로직이 구조적으로 거절된 값을 다시 반환할 수 없음을 코드 경로로 확인.
 - 확인: [ ]

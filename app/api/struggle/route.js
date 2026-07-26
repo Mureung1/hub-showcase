@@ -165,14 +165,23 @@ export async function POST(request) {
     });
   }
 
-  // shrink_step인데 revisedTitle이 빠지면 "완료 기준 축소"를 실행할 수 없다(C08). 이 경우도
-  // 후보 밖 tool과 같은 방식으로, shrink_step만 후보에서 제외하고 다시 판단하지 않고
-  // 안전하게 encourage로 대체한다(구조 변경 없는 tool이라 항상 유효한 대체값).
+  // shrink_step인데 revisedTitle이 빠지면 "완료 기준 축소"를 실행할 수 없다(C08). encourage로
+  // 무조건 대체하면 encourage가 이미 거절된 경우 S2 "재선택 금지"를 어기게 되므로, toolChoices
+  // (rejectedTools가 이미 빠진 후보)에서 shrink_step이 아닌 첫 후보로 대체한다.
   if (object.proposedTool === "shrink_step" && !object.revisedTitle) {
-    console.warn("[struggle] shrink_step인데 revisedTitle이 없어 encourage로 대체함");
+    const fallback = toolChoices.find((t) => t !== "shrink_step");
+    if (!fallback) {
+      // shrink_step 말고는 후보가 아예 없다: 더 제안할 게 없으니 T07과 같은 방식으로 강제 종결.
+      return Response.json({
+        proposedTool: null,
+        reason: "지금은 더 제안할 수 있는 게 없어요, 오늘은 여기까지 할게요.",
+        final: true,
+      });
+    }
+    console.warn(`[struggle] shrink_step인데 revisedTitle이 없어 ${fallback}로 대체함`);
     return Response.json({
-      proposedTool: "encourage",
-      reason: "지금 하는 것도 충분히 잘하고 있어요, 이대로 조금만 더 해봐요.",
+      proposedTool: fallback,
+      reason: "이전 제안이 잘 안 맞았던 것 같아서, 이번엔 다른 방식을 제안해요.",
     });
   }
 

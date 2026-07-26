@@ -109,3 +109,14 @@
 - 계약 위반: `app/api/struggle/route.js:89-97` — S2 거절 tool 재선택 금지 위반. `app/api/struggle/route.js:107-112`, `app/page.js:213-229` — C08 및 S2의 shrink_step 실행 보장 미충족. `docs/checklist.md:28`, `app/lib/agentlog.js:5-17` — C05의 7-property 완료조건 불일치. `app/lib/agentlog.js:40-42` — S4의 이미 done/not_done인 로그를 건드리지 않는 멱등 계약 위반.
 - 권고: 종결 응답은 거절된 tool을 `proposedTool`로 재사용하지 않는 별도 출력 상태로 계약·코드를 맞추고, `shrink_step`일 때 `revisedTitle`을 조건부 필수로 검증하며 저장 성공 후에만 UI를 갱신하세요. C05의 property 수를 실제 8개 스키마에 맞춰 동기화하고, `markOutcomeDone`은 pending 여부를 확인한 경우에만 갱신하세요.
 - 확인: [ ]
+
+## 2026-07-26 22:11 | T05·T07·T08·T09 리뷰 반영 2차 · feat/onefocus-notion-sync · d092ca39 | 수정요청
+- 발견: 높음 — T08의 누락 안전망 `app/api/struggle/route.js:168-176`은 `shrink_step`에 `revisedTitle`이 없으면 무조건 `encourage`를 반환합니다. 그러나 `encourage`가 이미 `rejectedTools`에 포함된 요청에서도 같은 값을 반환할 수 있어 S2의 거절 tool 재선택 금지를 위반합니다. 대체값은 현재 `toolChoices`에서 `shrink_step`을 제외한 미거절 후보로 골라야 합니다.
+- 발견: 중간 — T07 종결 응답은 `app/api/struggle/route.js:89-98`에서 요청대로 `proposedTool:null`을 반환하고 UI도 `app/page.js:187-200`에서 `final`을 종결로 처리합니다. 거절값 재사용은 해소됐지만, `docs/skills.md:37-41`은 여전히 출력의 `proposedTool`을 `tool`로, 제약을 고정 8개 중 하나로 정의해 `null` 종결 형태와 동기화되지 않았습니다. C06의 반환 tool 보장 문구도 같은 예외를 반영하지 않습니다.
+- 발견: 없음 — T05는 `docs/checklist.md:27-29`가 계약 필드 7개와 필수 `label`을 합친 8 property로 수정되어 S3 및 실제 AgentLog 매핑과 일치합니다.
+- 발견: 없음 — T08 저장 경로 `app/page.js:215-242`는 클라이언트에서도 `revisedTitle` 누락을 차단하고 `/api/steps/shrink` 실패 응답과 네트워크 예외를 처리하며, 저장 성공 뒤에만 로그·로컬 제목·화면 상태를 갱신합니다.
+- 발견: 없음 — T09의 `app/lib/agentlog.js:40-46`은 현재 outcome을 조회해 `pending`인 경우에만 `done`으로 갱신하므로 이미 `done`/`not_done`인 로그를 유지하는 S4 멱등 조건과 일치합니다. 다중 id 배열 갱신도 유지됐습니다.
+- 검증: `npm run verify` 재현 통과. `app/layout.js:18`의 기존 외부 폰트 권고 경고 1건 외에 lint 오류는 없고 Next.js production build도 성공했습니다.
+- 계약 위반: `app/api/struggle/route.js:168-176` — S2의 `rejectedTools` 재선택 금지 위반 가능. `app/api/struggle/route.js:89-98`, `docs/skills.md:37-41` — 종결 시 `proposedTool:null`인 실제 출력과 S2의 `proposedTool: tool`/고정 8개 제약 불일치.
+- 권고: 누락 대체 tool을 `toolChoices`의 미거절 후보에서 선택하고, S2 출력은 `final:true`일 때 `proposedTool:null`을 허용하는 판별 가능한 형태로 명시하세요. C06의 “8개 중 하나” 보장에도 final 종결 예외를 동기화하세요.
+- 확인: [ ]
