@@ -4,6 +4,7 @@
 """
 
 import json
+import time
 from collections.abc import Generator
 
 from app import config, prompt_loader, tools
@@ -287,9 +288,10 @@ def run_agent(topic: str, limit: int = config.DEFAULT_LIMIT) -> Generator[dict, 
 
     sse-contract.md의 stage를 그대로 yield한다. main.py는 이 yield를 SSE로
     감싸기만 한다 — 로직은 이 함수 안에 전부 있다.
-
-    trend/done 분기는 이후 서브이슈(#50)가 이 함수를 계속 이어서 채운다.
     """
+    start = time.time()
+    start_calls = tools.CALL_COUNT
+
     yield {"stage": "search", "topic": topic}
     try:
         papers = tools.search_arxiv(topic, limit=limit)
@@ -301,10 +303,11 @@ def run_agent(topic: str, limit: int = config.DEFAULT_LIMIT) -> Generator[dict, 
             "at": f"검색 단계 ({type(exc).__name__})",
         }
         return
-    yield {"stage": "found", "count": len(papers)}
+    scanned = len(papers)
+    yield {"stage": "found", "count": scanned}
 
     if not papers:
-        yield {"stage": "empty", "scanned": len(papers), "suggestions": []}
+        yield {"stage": "empty", "scanned": scanned, "suggestions": []}
         return
 
     judged = _judge_papers(topic, papers)
@@ -320,6 +323,8 @@ def run_agent(topic: str, limit: int = config.DEFAULT_LIMIT) -> Generator[dict, 
 
     picked_list = judged["picked"]
     successful: list[dict] = []
+    succeeded = 0
+    failed = 0
 
     for i, paper in _iterate_picked(papers, picked_list):
         try:
@@ -339,6 +344,7 @@ def run_agent(topic: str, limit: int = config.DEFAULT_LIMIT) -> Generator[dict, 
 
             summary = _call_summarize(paper["title"], source_text)
             if summary is None:
+                failed += 1
                 yield {
                     "stage": "paper_failed",
                     "index": i,
@@ -363,8 +369,10 @@ def run_agent(topic: str, limit: int = config.DEFAULT_LIMIT) -> Generator[dict, 
                 "abstract": paper["abstract"],
             }
             successful.append({"index": i, "title": paper["title"], "summary": summary})
+            succeeded += 1
 
         except Exception as exc:
+            failed += 1
             yield {
                 "stage": "paper_failed",
                 "index": i,
@@ -373,6 +381,22 @@ def run_agent(topic: str, limit: int = config.DEFAULT_LIMIT) -> Generator[dict, 
                 "reason": f"처리 중 예기치 않은 오류가 발생했습니다 ({type(exc).__name__}).",
             }
             continue
+
+    yield {"stage": "trend"}
+    trend_result = trend(topic, successful)
+
+    yield {
+        "stage": "done",
+        "elapsed": round(time.time() - start, 1),
+        "stats": {
+            "scanned": scanned,
+            "selected": len(picked_list),
+            "succeeded": succeeded,
+            "failed": failed,
+            "llm_calls": tools.CALL_COUNT - start_calls,
+        },
+        "trend": trend_result,
+    }
 
 
 if __name__ == "__main__":

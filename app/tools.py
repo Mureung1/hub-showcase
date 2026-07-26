@@ -14,6 +14,8 @@ from pypdf import PdfReader
 
 from app import config
 
+CALL_COUNT = 0  # ask_llm() 실제 호출 횟수. run_agent()가 done.stats.llm_calls 집계에 쓴다.
+
 
 def search_arxiv(
     topic: str,
@@ -74,6 +76,8 @@ def ask_llm(prompt: str) -> str:
 
     한도 초과 시 Claude Haiku / Ollama로 교체할 때 이 함수만 바꾸면 된다.
     """
+    global CALL_COUNT
+    CALL_COUNT += 1
     genai.configure(api_key=config.GEMINI_API_KEY)
     model = genai.GenerativeModel(config.GEMINI_MODEL)
     response = model.generate_content(prompt)
