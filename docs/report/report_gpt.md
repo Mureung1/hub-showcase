@@ -129,3 +129,10 @@
 - 계약 위반: `app/api/struggle/route.js:71-72,103,171-185` — 후보 0개일 때 거절 tool을 복원·재선택할 수 있어 S2 위반. `docs/skills.md:37-41`, `docs/checklist.md:34` — `proposedTool:null` 종결 출력과 고정 8개 중 하나라는 제약·완료조건이 불일치.
 - 권고: 모델 호출 전에 `candidates.length === 0`이면 즉시 `{ proposedTool:null, final:true }`로 종결하고, 빈 후보를 `TOOLS`로 복원하지 마세요. S2 제약과 C06은 `final !== true`일 때만 고정 8개 중 하나라는 예외를 명시하세요.
 - 확인: [ ]
+
+## 2026-07-26 22:22 | T07 후보 소진 리뷰 반영 4차 · feat/onefocus-notion-sync · bd08636f | 승인
+- 발견: 없음. `app/api/struggle/route.js:71-72`는 거절된 tool을 먼저 제외하고, `:84-87`은 시간 부족 수렴 시 그 후보를 postpone/end로 추가 축소합니다. 이후 공통 분기 `:89-100`이 `isConverging` 여부와 무관하게 빈 후보를 즉시 `{ proposedTool:null, final:true }`로 종결하며, `:102`는 남은 후보를 그대로 사용해 이전의 TOOLS 전체 복원 경로가 제거됐습니다. `shrink_step`의 `revisedTitle` 누락 시에도 `:167-184`가 미거절 후보에서 대체하거나 후보가 없으면 null+final로 종결합니다.
+- 계약 위반: 없음. `docs/skills.md:37-41`의 `tool | null` 출력·후보 소진 예외와 `docs/checklist.md:31-34`의 C06 완료조건이 코드의 공통 종결 동작 및 거절 tool 재반환 금지와 일치합니다.
+- 검증: `npm run verify` 재현 통과. `app/layout.js:18`의 기존 외부 폰트 권고 경고 1건 외에 lint 오류는 없고 Next.js production build도 성공했습니다.
+- 권고: 없음.
+- 확인: [x] 2026-07-26 22:30 Claude — 반영할 사항 없음(발견 없음 승인), 확인만 함

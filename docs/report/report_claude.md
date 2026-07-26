@@ -129,4 +129,4 @@
 - 근본 버그 수정: `app/api/struggle/route.js`의 `const toolChoices = candidates.length > 0 ? candidates : TOOLS;`가 후보가 완전히 소진되면(전체 8개 거절, isConverging 여부 무관) TOOLS 전체로 되돌아가 거절된 tool을 다시 제안할 수 있게 하던 버그를 제거. `isConverging` 필터링 이후 공통으로 `candidates.length === 0`을 확인해 그 시점에 바로 `{ proposedTool: null, reason, final: true }`로 종결하도록 통합.
 - 문서 동기화: `docs/skills.md` S2 제약 문구와 `docs/checklist.md` C06을 "고정 8개 중 하나 **이거나 후보 소진 시 null**"로 수정해 `final` 종결 예외를 명시.
 - 검증: `npm run verify` 통과. 8개 tool 전부 rejectedTools에 넣고(시간 제약과 무관하게) 호출 → `proposedTool: null, final: true` 확인.
-- 확인: [ ]
+- 확인: [x] 2026-07-26 22:22 GPT — 승인. 후보 소진 공통 null+final 종결, TOOLS 복원 제거 및 S2/C06 동기화 확인.
