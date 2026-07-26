@@ -1,12 +1,12 @@
-import { IMPORT_LIMITS } from './import_limits';
+import { IMPORT_LIMITS } from './import_limits.js';
 import {
   createCollectionKey,
   type AnalyzedImportItem,
   type ImportCandidate,
   type ImportSummary,
   type ImportWarningCode,
-} from './import_types';
-import { analyzeImportUrl } from './import_url';
+} from './import_types.js';
+import { analyzeImportUrl } from './import_url.js';
 
 export type ImportAnalysis = {
   collections: string[][];
