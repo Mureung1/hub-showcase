@@ -28,7 +28,12 @@ def search_arxiv(
     """
     categories = categories or config.ARXIV_CATEGORIES
     cat_query = " OR ".join(f"cat:{c}" for c in categories)
-    query = f"({cat_query}) AND all:{topic}"
+    # topic을 큰따옴표로 감싸 all: 필드가 전체 구를 하나의 구절로 검색하게 한다.
+    # 따옴표가 없으면 arXiv 쿼리 파서가 all:을 첫 단어에만 적용하고 나머지는
+    # 필드 없는 개별 토큰으로 흩어버려, 다단어 topic(대부분의 실제 입력)에서
+    # 검색 결과가 topic과 무관해진다.
+    safe_topic = topic.replace('"', "")
+    query = f'({cat_query}) AND all:"{safe_topic}"'
 
     search = arxiv.Search(
         query=query,

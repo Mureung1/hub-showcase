@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-flash-latest"
 
 # 3단계(요약)↔4단계(자기 검증) 최대 왕복 횟수. 없으면 무한 루프로 API 비용이 탄다.
 MAX_RETRY = 2
