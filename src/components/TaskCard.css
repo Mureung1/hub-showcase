@@ -1,0 +1,196 @@
+.task-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+
+.task-card-clickable {
+  cursor: pointer;
+}
+
+.task-card.done {
+  opacity: 0.7;
+}
+
+.task-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+}
+
+.task-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.task-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.task-title-row .task-title {
+  flex: 1;
+}
+
+.task-face {
+  font-size: 20px;
+}
+
+.task-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.task-delete-btn:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.task-delete-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.task-meta {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.meta-chip {
+  font-size: 13px;
+  color: var(--ink-soft);
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.done-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+}
+
+.done-chip svg {
+  width: 14px;
+  height: 14px;
+}
+
+.task-details {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.task-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.task-summary-divider {
+  color: var(--line);
+}
+
+.task-reason {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.task-reason span {
+  flex-shrink: 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pressure-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.pressure-heading span:first-child {
+  color: var(--ink);
+  font-weight: 750;
+}
+
+.pressure-track {
+  width: 100%;
+  height: 8px;
+  background: var(--bg);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.pressure-fill {
+  height: 100%;
+  /* 압력 게이지는 팝업 Lv 색이나 --accent가 아니라 전용 그라데이션을 쓴다 (디자인 Skill 확정 규칙) */
+  background: linear-gradient(
+    90deg,
+    var(--gauge1),
+    var(--gauge2) 40%,
+    var(--gauge3) 70%,
+    var(--gauge4)
+  );
+  border-radius: 999px;
+}
+
+.next-nudge-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 9px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.next-nudge-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+@media (max-width: 560px) {
+  .task-card {
+    padding: 16px;
+  }
+
+  .pressure-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}

@@ -1,0 +1,97 @@
+/* prototype.html 잠정 반영, 추후 확정판 기준으로 재검토 필요 */
+
+.navbar {
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.navbar-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.brand-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.nav-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  background: var(--badge-bg);
+}
+
+.nav-link.active {
+  background: var(--ink);
+  color: #fff;
+}
+
+.nav-link-disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.nav-link-disabled:hover {
+  background: none;
+}
+
+.nav-perm-btn {
+  font-size: 12.5px;
+  background: var(--badge-bg);
+  color: var(--ink);
+  border: none;
+  border-radius: 6px;
+  padding: 7px 11px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* 이미 결정된(켜짐/차단됨/미지원) 상태는 비활성 — 차단/미지원은 흐리게 */
+.nav-perm-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* 권한 허용됨: 강조 색으로 "켜짐"을 또렷이 표시 (disabled여도 흐려지지 않게 override) */
+.nav-perm-btn-on:disabled {
+  background: var(--accent);
+  color: #fff;
+  opacity: 1;
+}

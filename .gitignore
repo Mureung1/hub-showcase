@@ -1,0 +1,39 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Env files (example 파일은 예외로 커밋)
+.env
+.env.*
+!.env.example
+!.env.test.example
+!server/.env.example
+!server/.env.test.example
+
+# 로컬에서 잠깐 붙여보는 sqlite 파일
+*.db
+*.db-journal
+
+# Playwright 검증용 임시 파일
+.playwright-mcp/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
