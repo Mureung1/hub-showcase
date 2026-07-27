@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFile, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { createServer, type Server } from 'node:http'
 import {
   mkdir,
   mkdtemp,
@@ -29,7 +28,12 @@ import {
   createProductTurnCoordinator,
   type ProductTurnCoordinator,
   type ProductTurnLease,
+  type ProductTurnReleaseAuthority,
 } from '../product-turn-coordinator.js'
+import {
+  bindServerApplicationListener,
+  type BoundServerApplicationListener,
+} from '../server-listener.js'
 
 const execFileAsync = promisify(execFile)
 const repositoryRoot = path.resolve(
@@ -70,13 +74,13 @@ test(
     try {
       await assertBootstrapOutput(fixture)
       const original = await mutationSnapshot(fixture.workspaceRoot)
-      const proposal = reviewRequest(fixture.syllabusDigest)
-      const nominal = await startProductTrace(fixture.workspaceRoot)
+      const proposal = fixture.assignmentSkill.propose(fixture.syllabusDigest)
+      const mainTrace = await startProductTrace(fixture.workspaceRoot)
       try {
-        const reviseCall = nominal.adapter.callTool(proposal)
-        const first = await nominal.nextRequested()
+        const reviseCall = mainTrace.adapter.callTool(proposal)
+        const revisionReview = await mainTrace.nextRequested()
         await assertUnchanged(fixture.workspaceRoot, original)
-        await nominal.broker.settle(first.interactionId, {
+        await mainTrace.broker.settle(revisionReview.interactionId, {
           outcome: 'revise',
           feedback: '제출 방식을 더 분명하게 써 주세요.',
         })
@@ -85,42 +89,47 @@ test(
           feedback: '제출 방식을 더 분명하게 써 주세요.',
         })
 
-        const acceptCall = nominal.adapter.callTool({
-          ...proposal,
-          summary: '피드백을 반영해 과제 정보를 다시 정리합니다.',
-          changes: proposal.changes.map((change) => ({
-            ...change,
-            description: `${change.description} 제출 위치를 명시합니다.`,
-          })),
-        })
-        const second = await nominal.nextRequested()
-        assert.notEqual(second.interactionId, first.interactionId)
+        const acceptCall = mainTrace.adapter.callTool(
+          fixture.assignmentSkill.propose(
+            fixture.syllabusDigest,
+            '제출 방식을 더 분명하게 써 주세요.',
+          ),
+        )
+        const acceptedReview = await mainTrace.nextRequested()
+        assert.notEqual(
+          acceptedReview.interactionId,
+          revisionReview.interactionId,
+        )
         assert.equal(
-          nominal.frames.some(
+          mainTrace.frames.some(
             (frame) =>
               frame.type === 'review.resolved' &&
-              frame.interactionId === first.interactionId &&
+              frame.interactionId === revisionReview.interactionId &&
               frame.result.outcome === 'revise',
           ),
           true,
         )
         await assertUnchanged(fixture.workspaceRoot, original)
-        await nominal.broker.settle(second.interactionId, {
+        await mainTrace.broker.settle(acceptedReview.interactionId, {
           outcome: 'accept',
         })
-        assert.deepEqual(await toolResult(acceptCall), { outcome: 'accept' })
+        const acceptedResult = await toolResult(acceptCall)
+        assert.deepEqual(acceptedResult, { outcome: 'accept' })
         await assertUnchanged(fixture.workspaceRoot, original)
 
-        await applyAcceptedChange(fixture.workspaceRoot)
+        await fixture.assignmentSkill.applyAccepted(
+          fixture.workspaceRoot,
+          acceptedResult,
+        )
         await assertAcceptedCheckpoint(fixture)
         const accepted = await mutationSnapshot(fixture.workspaceRoot)
 
-        const rejectCall = nominal.adapter.callTool({
+        const rejectCall = mainTrace.adapter.callTool({
           ...proposal,
           summary: '추가 변경을 제안합니다.',
         })
-        const third = await nominal.nextRequested()
-        await nominal.broker.settle(third.interactionId, {
+        const rejectedReview = await mainTrace.nextRequested()
+        await mainTrace.broker.settle(rejectedReview.interactionId, {
           outcome: 'reject',
           feedback: '추가 변경은 하지 않습니다.',
         })
@@ -129,9 +138,9 @@ test(
           feedback: '추가 변경은 하지 않습니다.',
         })
         await assertUnchanged(fixture.workspaceRoot, accepted)
-        assertBrowserSafe(nominal, fixture.workspaceRoot)
+        assertBrowserSafe(mainTrace, fixture.workspaceRoot)
       } finally {
-        await nominal.close('native_terminal')
+        await mainTrace.close('native_terminal')
       }
 
       await assertEvidenceAndBusyFailures(fixture)
@@ -148,7 +157,19 @@ type WorkspaceFixture = {
   readonly workspaceRoot: string
   readonly initialScaffoldHead: string
   readonly syllabusDigest: string
+  readonly assignmentSkill: FirstAssignmentSkillDriver
   cleanup(): Promise<void>
+}
+
+type FirstAssignmentSkillDriver = {
+  propose(
+    contentDigest: string,
+    revisionFeedback?: string,
+  ): ProposeStatePatchRequest
+  applyAccepted(
+    workspaceRoot: string,
+    result: ProductReviewResult | undefined,
+  ): Promise<void>
 }
 
 async function prepareWorkspace(): Promise<WorkspaceFixture> {
@@ -204,11 +225,13 @@ async function prepareWorkspace(): Promise<WorkspaceFixture> {
     await gitText(workspaceRoot, ['rev-parse', 'HEAD']),
     initialScaffoldHead,
   )
+  const assignmentSkill = await loadInstalledFirstAssignmentSkill(workspaceRoot)
   return {
     root,
     workspaceRoot,
     initialScaffoldHead,
     syllabusDigest: sha256(Buffer.from(syllabus)),
+    assignmentSkill,
     cleanup: () => rm(root, { recursive: true, force: true }),
   }
 }
@@ -303,6 +326,47 @@ async function assertBootstrapOutput(fixture: WorkspaceFixture): Promise<void> {
   )
 }
 
+async function loadInstalledFirstAssignmentSkill(
+  workspaceRoot: string,
+): Promise<FirstAssignmentSkillDriver> {
+  const source = await readFile(
+    path.join(
+      workspaceRoot,
+      '.agents/skills/ay-ple-first-assignment/SKILL.md',
+    ),
+    'utf8',
+  )
+  for (const requiredInstruction of [
+    'call\n   `propose_state_patch` before changing any actual file',
+    'On `accept`',
+    'On `revise`, keep the actual file unchanged',
+    'On `reject`, keep the actual file unchanged',
+    'commit only the intended paths',
+    'never ask or expect it to edit\na SemesterWorkspace file or run Git for AY',
+  ]) {
+    assert.match(source, new RegExp(escapeRegex(requiredInstruction)))
+  }
+  return Object.freeze({
+    propose(contentDigest, revisionFeedback) {
+      const proposal = reviewRequest(contentDigest)
+      if (!revisionFeedback) return proposal
+      return {
+        ...proposal,
+        summary: '피드백을 반영해 과제 정보를 다시 정리합니다.',
+        changes: proposal.changes.map((change) => ({
+          ...change,
+          description:
+            `${change.description} 수정 요청: ${revisionFeedback}`,
+        })),
+      }
+    },
+    async applyAccepted(workspaceRoot, result) {
+      assert.deepEqual(result, { outcome: 'accept' })
+      await applyAcceptedChange(workspaceRoot)
+    },
+  })
+}
+
 function reviewRequest(contentDigest: string): ProposeStatePatchRequest {
   return {
     summary: '첫 과제 정보를 정리합니다.',
@@ -354,12 +418,15 @@ type ProductTrace = {
   readonly interruptCount: () => number
   readonly teardownCount: () => number
   nextRequested(): Promise<Extract<ProductReviewFrame, { type: 'review.requested' }>>
-  close(authority: 'native_terminal' | 'runtime_closed'): Promise<void>
+  close(
+    authority: Exclude<ProductTurnReleaseAuthority, 'start_failed'>,
+  ): Promise<void>
 }
 
 let operationSequence = 0
 
 async function startProductTrace(workspaceRoot: string): Promise<ProductTrace> {
+  await assertDeterministicRuntimeProjectContext(workspaceRoot)
   operationSequence += 1
   const operationId = `operation_${operationSequence.toString(16).padStart(32, '0')}`
   const coordinator = createProductTurnCoordinator({
@@ -395,12 +462,14 @@ async function startProductTrace(workspaceRoot: string): Promise<ProductTrace> {
       teardowns += 1
     },
   })
-  const server = createServer(
-    express().use('/api/_private/interaction-mcp', broker.router),
-  )
-  await listen(server)
-  const address = server.address()
-  assert.ok(address && typeof address !== 'string')
+  const listener = await bindServerApplicationListener({
+    host: '127.0.0.1',
+    port: 0,
+    requestHandler: express().use(
+      '/api/_private/interaction-mcp',
+      broker.router,
+    ),
+  })
   const credentials = broker.credentials()
   const config = await readFile(
     path.join(workspaceRoot, '.codex/config.toml'),
@@ -410,7 +479,7 @@ async function startProductTrace(workspaceRoot: string): Promise<ProductTrace> {
     command: path.resolve(workspaceRoot, requireAdapterCommand(config)),
     cwd: workspaceRoot,
     brokerUrl:
-      `http://127.0.0.1:${address.port}/api/_private/interaction-mcp`,
+      `http://127.0.0.1:${listener.port}/api/_private/interaction-mcp`,
     credentials,
   })
   try {
@@ -418,7 +487,7 @@ async function startProductTrace(workspaceRoot: string): Promise<ProductTrace> {
     assert.deepEqual(await adapter.listTools(), ['propose_state_patch'])
   } catch (error) {
     await adapter.close()
-    await closeServer(server)
+    await listener.close({ signal: new AbortController().signal })
     coordinator.release(lease, 'runtime_closed')
     throw error
   }
@@ -452,10 +521,29 @@ async function startProductTrace(workspaceRoot: string): Promise<ProductTrace> {
         broker,
         coordinator,
         lease,
-        server,
+        listener,
+        credentials,
         authority,
       }),
   }
+}
+
+async function assertDeterministicRuntimeProjectContext(
+  workspaceRoot: string,
+): Promise<void> {
+  assert.equal(
+    await realpath(
+      await gitText(workspaceRoot, ['rev-parse', '--show-toplevel']),
+    ),
+    await realpath(workspaceRoot),
+  )
+  const config = await readFile(
+    path.join(workspaceRoot, '.codex/config.toml'),
+    'utf8',
+  )
+  assert.match(config, /\[mcp_servers\.ay_ple_interaction\]/)
+  assert.match(config, /enabled_tools = \["propose_state_patch"\]/)
+  assert.match(config, /required = true/)
 }
 
 async function closeProductTrace(input: {
@@ -463,17 +551,61 @@ async function closeProductTrace(input: {
   readonly broker: InteractionBroker
   readonly coordinator: ProductTurnCoordinator
   readonly lease: ProductTurnLease
-  readonly server: Server
-  readonly authority: 'native_terminal' | 'runtime_closed'
+  readonly listener: BoundServerApplicationListener
+  readonly credentials: {
+    readonly token: string
+    readonly binding: string
+  }
+  readonly authority: Exclude<ProductTurnReleaseAuthority, 'start_failed'>
 }): Promise<void> {
   await input.broker.appShutdown()
+  await assertCredentialRevoked(
+    input.listener.port,
+    input.credentials,
+  )
   await input.adapter.close()
-  await closeServer(input.server)
+  assert.equal(input.adapter.closed(), true)
+  assert.equal(input.adapter.pendingResponses(), 0)
+  assert.equal(input.adapter.stderr(), '')
+  const cleanup = await input.listener.close({
+    signal: new AbortController().signal,
+  })
+  assert.deepEqual(cleanup, {
+    status: 'closed',
+    processTreeGone: true,
+  })
   assert.equal(
     input.coordinator.release(input.lease, input.authority),
     true,
   )
   assert.equal(input.coordinator.activeOperation(), null)
+}
+
+async function assertCredentialRevoked(
+  port: number,
+  credentials: {
+    readonly token: string
+    readonly binding: string
+  },
+): Promise<void> {
+  const response = await fetch(
+    `http://127.0.0.1:${port}/api/_private/interaction-mcp/`,
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${credentials.token}`,
+        'x-ay-ple-runtime-binding': credentials.binding,
+      },
+      body: JSON.stringify({
+        protocolVersion: 1,
+        kind: 'handshake',
+        serverName: 'ay_ple_interaction',
+        capabilities: ['propose_state_patch'],
+      }),
+    },
+  )
+  assert.equal(response.status, 403)
 }
 
 async function assertEvidenceAndBusyFailures(
@@ -607,6 +739,7 @@ async function assertContinuityFailures(
       } else {
         await trace.adapter.close()
         await trace.broker.adapterLost()
+        assert.equal(await toolResult(call, true), undefined)
         assert.equal(trace.teardownCount(), 1)
       }
       assert.equal(
@@ -763,6 +896,9 @@ type AdapterClient = {
   initialize(): Promise<void>
   listTools(): Promise<readonly string[]>
   close(): Promise<void>
+  closed(): boolean
+  pendingResponses(): number
+  stderr(): string
 }
 
 function startAdapter(options: {
@@ -785,9 +921,16 @@ function startAdapter(options: {
     stdio: ['pipe', 'pipe', 'pipe'],
   })
   const responses = new Map<number, JsonRpcResponse>()
-  const waiters = new Map<number, (value: JsonRpcResponse) => void>()
+  const waiters = new Map<
+    number,
+    {
+      readonly resolve: (value: JsonRpcResponse) => void
+      readonly reject: (error: Error) => void
+    }
+  >()
   let requestId = 0
   let buffer = ''
+  let errorOutput = ''
   child.stdout.setEncoding('utf8')
   child.stdout.on('data', (chunk: string) => {
     buffer += chunk
@@ -803,11 +946,21 @@ function startAdapter(options: {
       const waiter = waiters.get(id)
       if (waiter) {
         waiters.delete(id)
-        waiter(response)
+        waiter.resolve(response)
       } else {
         responses.set(id, response)
       }
     }
+  })
+  child.stderr.setEncoding('utf8')
+  child.stderr.on('data', (chunk: string) => {
+    errorOutput += chunk
+  })
+  child.once('exit', () => {
+    for (const waiter of waiters.values()) {
+      waiter.reject(new Error('Adapter process exited before responding'))
+    }
+    waiters.clear()
   })
 
   const request = (method: string, params: unknown): Promise<JsonRpcResponse> => {
@@ -819,7 +972,9 @@ function startAdapter(options: {
       responses.delete(id)
       return Promise.resolve(response)
     }
-    return new Promise((resolve) => waiters.set(id, resolve))
+    return new Promise((resolve, reject) => {
+      waiters.set(id, { resolve, reject })
+    })
   }
   return {
     async initialize() {
@@ -848,6 +1003,9 @@ function startAdapter(options: {
       })
     },
     close: () => closeChild(child),
+    closed: () => child.exitCode !== null || child.signalCode !== null,
+    pendingResponses: () => waiters.size,
+    stderr: () => errorOutput,
   }
 }
 
@@ -877,26 +1035,6 @@ async function closeChild(child: ChildProcessWithoutNullStreams): Promise<void> 
       }, 2_000).unref()
     }),
   ])
-}
-
-async function listen(server: Server): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject)
-    server.listen(0, '127.0.0.1', () => {
-      server.off('error', reject)
-      resolve()
-    })
-  })
-}
-
-async function closeServer(server: Server): Promise<void> {
-  server.closeAllConnections()
-  await new Promise<void>((resolve, reject) => {
-    server.close((error) => {
-      if (error) reject(error)
-      else resolve()
-    })
-  })
 }
 
 async function waitFor(predicate: () => boolean): Promise<void> {
