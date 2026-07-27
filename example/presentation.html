@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>AirPort — 5분 발표</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --color-primary: #0A84FF;
+    --color-primary-hover: #3396FF;
+    --color-primary-muted: #5B7B9C;
+
+    --color-bg-page: #EFEFF1;
+    --color-bg-surface: #FFFFFF;
+    --color-bg-elevated: rgba(255, 255, 255, 0.85);
+    --color-bg-subtle: #F4F6F8;
+
+    --color-text-primary: #1C2733;
+    --color-text-secondary: #6B7785;
+    --color-text-tertiary: #9AA5B1;
+    --color-text-on-primary: #FFFFFF;
+
+    --color-border: rgba(28, 39, 51, 0.08);
+    --color-border-strong: rgba(28, 39, 51, 0.14);
+
+    --font-family-base: -apple-system, "SF Pro Display", "SF Pro Text",
+      "Pretendard", "Inter", system-ui, sans-serif;
+
+    --font-size-display: 44px;
+    --font-size-title: 20px;
+    --font-size-body: 15px;
+    --font-size-caption: 12px;
+
+    --font-weight-bold: 700;
+    --font-weight-medium: 500;
+    --font-weight-regular: 400;
+
+    --line-height-tight: 1.12;
+    --line-height-normal: 1.45;
+
+    --radius-card: 28px;
+    --radius-panel: 16px;
+    --radius-control: 10px;
+    --radius-pill: 999px;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+
+    --shadow-card: 0 8px 24px rgba(28, 39, 51, 0.08);
+    --shadow-panel: 0 4px 16px rgba(28, 39, 51, 0.12);
+    --shadow-floating: 0 16px 40px rgba(28, 39, 51, 0.22);
+  }
+
+  :root[data-theme="dark"] {
+    --color-bg-page: #15181D;
+    --color-bg-surface: #1F232A;
+    --color-bg-elevated: rgba(31, 35, 42, 0.85);
+    --color-bg-subtle: #262B33;
+    --color-text-primary: #F1F3F5;
+    --color-text-secondary: #A7B0BA;
+    --color-text-tertiary: #74808C;
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-border-strong: rgba(255, 255, 255, 0.14);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-bg-page: #15181D;
+      --color-bg-surface: #1F232A;
+      --color-bg-elevated: rgba(31, 35, 42, 0.85);
+      --color-bg-subtle: #262B33;
+      --color-text-primary: #F1F3F5;
+      --color-text-secondary: #A7B0BA;
+      --color-text-tertiary: #74808C;
+      --color-border: rgba(255, 255, 255, 0.08);
+      --color-border-strong: rgba(255, 255, 255, 0.14);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--color-bg-page);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-base);
+    overflow: hidden;
+  }
+
+  .deck {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: var(--space-7) 10vw;
+    opacity: 0;
+    transform: translateX(24px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    pointer-events: none;
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .eyebrow {
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+    margin-bottom: var(--space-3);
+  }
+
+  h1 {
+    font-size: var(--font-size-display);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+    letter-spacing: -0.02em;
+    margin: 0 0 var(--space-4);
+    text-align: center;
+  }
+
+  h2 {
+    font-size: 34px;
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+    letter-spacing: -0.02em;
+    margin: 0 0 var(--space-5);
+    text-align: center;
+  }
+
+  .highlight {
+    background: var(--color-primary);
+    color: var(--color-text-on-primary);
+    border-radius: 6px;
+    padding: 2px 12px;
+  }
+
+  .subtitle {
+    font-size: 18px;
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-normal);
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto var(--space-6);
+  }
+
+  .presenter {
+    font-size: var(--font-size-body);
+    color: var(--color-text-tertiary);
+  }
+
+  .card-grid {
+    display: grid;
+    gap: var(--space-4);
+    width: 100%;
+    max-width: 900px;
+  }
+
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: repeat(3, 1fr); }
+
+  .card {
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-5);
+  }
+
+  .card .icon { font-size: 28px; margin-bottom: var(--space-2); display: block; }
+  .card h3 {
+    font-size: var(--font-size-title);
+    font-weight: var(--font-weight-bold);
+    margin: 0 0 var(--space-2);
+    color: var(--color-text-primary);
+  }
+  .card p {
+    font-size: var(--font-size-body);
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-normal);
+    margin: 0;
+  }
+
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 960px;
+  }
+
+  .pipeline .step {
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-4) var(--space-5);
+    text-align: center;
+    min-width: 150px;
+  }
+
+  .pipeline .step .emoji { font-size: 24px; }
+  .pipeline .step .label { font-size: var(--font-size-body); font-weight: var(--font-weight-medium); margin-top: var(--space-1); }
+
+  .pipeline .arrow { color: var(--color-text-tertiary); font-size: 20px; }
+
+  .status-list {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .status-badge {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-pill);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-on-primary);
+  }
+
+  .status-badge.done { background: var(--color-primary); }
+  .status-badge.next { background: var(--color-primary-muted); }
+
+  .status-row .text .title { font-weight: var(--font-weight-medium); }
+  .status-row .text .desc { font-size: var(--font-size-caption); color: var(--color-text-tertiary); margin-top: 2px; }
+
+  .tag {
+    display: inline-block;
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-medium);
+    background: var(--color-bg-subtle);
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-pill);
+    padding: 4px 12px;
+    margin: var(--space-1);
+  }
+
+  .repo-chip {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    background: var(--color-bg-elevated);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-pill);
+    padding: var(--space-3) var(--space-5);
+    box-shadow: var(--shadow-panel);
+    font-size: var(--font-size-title);
+    font-weight: var(--font-weight-medium);
+    margin-top: var(--space-5);
+  }
+
+  .repo-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-primary); }
+
+  /* footer nav */
+  .nav-strip {
+    position: fixed;
+    bottom: var(--space-5);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    background: var(--color-bg-elevated);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-pill);
+    padding: var(--space-2) var(--space-4);
+    box-shadow: var(--shadow-panel);
+    z-index: 10;
+  }
+
+  .nav-btn {
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 18px;
+    cursor: pointer;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-control);
+  }
+  .nav-btn:hover { color: var(--color-primary); }
+
+  .dots { display: flex; gap: 6px; }
+  .dot-item {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-border-strong);
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .dot-item.current { background: var(--color-primary); transform: scale(1.4); }
+
+  .slide-count {
+    font-size: var(--font-size-caption);
+    color: var(--color-text-tertiary);
+    min-width: 44px;
+    text-align: center;
+  }
+
+  .menubar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 34px;
+    background: var(--color-bg-elevated);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--space-4);
+    gap: var(--space-3);
+    z-index: 10;
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+  }
+  .traffic { display: flex; gap: 6px; margin-right: var(--space-3); }
+  .traffic span { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .traffic .red { background: #FF5F57; }
+  .traffic .yellow { background: #FEBC2E; }
+  .traffic .green { background: #28C840; }
+
+  ul.plain { list-style: none; padding: 0; margin: 0; width: 100%; max-width: 640px; }
+  ul.plain li {
+    font-size: var(--font-size-body);
+    color: var(--color-text-secondary);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li b { color: var(--color-text-primary); font-weight: var(--font-weight-medium); }
+
+  @media print {
+    html, body { overflow: visible; height: auto; }
+    .menubar, .nav-strip { display: none; }
+    .deck { position: static; width: auto; height: auto; }
+    .slide {
+      position: static;
+      opacity: 1;
+      transform: none;
+      pointer-events: auto;
+      width: 100vw;
+      height: 100vh;
+      page-break-after: always;
+      break-after: page;
+    }
+    .slide:last-child { page-break-after: auto; break-after: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="menubar">
+  <div class="traffic"><span class="red"></span><span class="yellow"></span><span class="green"></span></div>
+  <span>File</span><span>Edit</span><span>View</span>
+  <span style="margin-left:auto; color:var(--color-text-secondary);">AirPort — Team Demo Day</span>
+</div>
+
+<div class="deck" id="deck">
+
+  <!-- 1. 타이틀 -->
+  <section class="slide active">
+    <div class="eyebrow">Portfolio Zero-to-One</div>
+    <h1>당신의 코드를 읽고,<br /><span class="highlight">AirPort</span>가 대신 물어봅니다</h1>
+    <p class="subtitle">GitHub 레포 URL 하나만 있으면, 코드를 근거로 질문하는 AI가<br />당신의 포트폴리오 초안을 만들어 드립니다.</p>
+    <div class="presenter">발표자 · 김승은</div>
+  </section>
+
+  <!-- 2. 문제 -->
+  <section class="slide">
+    <div class="eyebrow">Problem</div>
+    <h2>포트폴리오, 뭐부터 써야 할지 모르겠다</h2>
+    <div class="card-grid cols-3">
+      <div class="card">
+        <span class="icon">😵</span>
+        <h3>막막함</h3>
+        <p>프로젝트는 완성했는데, 어디서부터 어떻게 정리해야 할지 감이 안 잡힌다.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🤖</span>
+        <h3>뻔한 요약</h3>
+        <p>ChatGPT에 코드를 통째로 붙여넣어도 주석 수준의 뻔한 설명만 돌아온다.</p>
+      </div>
+      <div class="card">
+        <span class="icon">❓</span>
+        <h3>질문 설계의 부재</h3>
+        <p>"무엇을 물어봐야 하는가" 자체를 여전히 내가 직접 고민해야 한다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 솔루션 요약 -->
+  <section class="slide">
+    <div class="eyebrow">Solution</div>
+    <h2>코드가 곧 질문이 된다</h2>
+    <div class="pipeline">
+      <div class="step"><div class="emoji">🔗</div><div class="label">GitHub URL</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="emoji">🔍</div><div class="label">코드 스캔·점수화</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="emoji">💬</div><div class="label">코드 인용 질문</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="emoji">✍️</div><div class="label">답변 누적</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="emoji">📄</div><div class="label">마크다운 포트폴리오</div></div>
+    </div>
+  </section>
+
+  <!-- 4. 기술도전 1 -->
+  <section class="slide">
+    <div class="eyebrow">Tech Challenge 01</div>
+    <h2>AST 없이, 200줄 기준 하이브리드 청킹</h2>
+    <div class="card-grid cols-2">
+      <div class="card">
+        <span class="icon">🧩</span>
+        <h3>정규식으로 함수 시작점 탐지</h3>
+        <p>function/화살표 함수 선언부를 정규식으로 먼저 찾아낸다.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔢</span>
+        <h3>중괄호 카운팅으로 끝점 확정</h3>
+        <p>문자열·템플릿 리터럴·주석 내부의 중괄호는 무시하도록 상태를 추적하며 블록 범위를 닫는다.</p>
+      </div>
+    </div>
+    <div style="margin-top: var(--space-5);">
+      <span class="tag">try-catch</span>
+      <span class="tag">async/await</span>
+      <span class="tag">state-management</span>
+      <span class="tag">performance</span>
+    </div>
+  </section>
+
+  <!-- 5. 기술도전 2 -->
+  <section class="slide">
+    <div class="eyebrow">Tech Challenge 02</div>
+    <h2>README 파싱 & tech_stack 매핑</h2>
+    <div class="card-grid cols-2">
+      <div class="card">
+        <span class="icon">📖</span>
+        <h3>헤딩 키워드 매칭</h3>
+        <p>마크다운 헤딩을 한글/영문 키워드로 매칭해 서비스 소개·기간·팀 구성·핵심 기능을 자동 추출한다.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📦</span>
+        <h3>사전 우선 + LLM 보완</h3>
+        <p>의존성 이름을 하드코딩 사전으로 즉시 분류하고, 사전에 없는 항목만 모아 세션당 1회 LLM에 배치로 질의한다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. 파이프라인 진행상황 -->
+  <section class="slide">
+    <div class="eyebrow">Progress</div>
+    <h2>4단계 파이프라인, 지금 어디까지 왔나</h2>
+    <div class="status-list">
+      <div class="status-row">
+        <div class="status-badge done">✓</div>
+        <div class="text">
+          <div class="title">Code Scanner &amp; Scorer</div>
+          <div class="desc">실제 동작 — 레포 스캔, 가중치 점수화, 하이브리드 청킹, README/tech_stack 컨텍스트 추출</div>
+        </div>
+      </div>
+      <div class="status-row">
+        <div class="status-badge next">→</div>
+        <div class="text">
+          <div class="title">Question Generator</div>
+          <div class="desc">다음 단계 — 코드 인용 질문을 LLM이 직접 생성하도록 확장 예정</div>
+        </div>
+      </div>
+      <div class="status-row">
+        <div class="status-badge next">→</div>
+        <div class="text">
+          <div class="title">Ambiguity Checker</div>
+          <div class="desc">다음 단계 — 답변의 이해도/서사 유형을 실제로 판단해 재질문하도록 설계</div>
+        </div>
+      </div>
+      <div class="status-row">
+        <div class="status-badge next">→</div>
+        <div class="text">
+          <div class="title">Writer / Tone Agent</div>
+          <div class="desc">다음 단계 — 서술 수위 조정과 문체 교정을 반영하도록 설계</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. 회고 -->
+  <section class="slide">
+    <div class="eyebrow">Retrospective</div>
+    <h2>만들면서 배운 것</h2>
+    <div class="card-grid cols-2">
+      <div class="card">
+        <span class="icon">💥</span>
+        <h3>잘못된 키 하나가 서버를 죽였다</h3>
+        <p>Express 4는 비동기 핸들러의 예외를 자동으로 못 잡는다는 걸 실제 크래시로 배웠고, 이후 외부 API 호출부를 전부 try/catch로 방어했다.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🧱</span>
+        <h3>설계 문서부터 확인하는 습관</h3>
+        <p>기능을 붙이기 전에 항상 기획 문서 근거를 먼저 확인하고, 문서에 없는 세부 설계는 직접 선택지를 만들어 결정했다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 부스 체험 예고 -->
+  <section class="slide">
+    <div class="eyebrow">Coming Soon</div>
+    <h2>이 서비스를 통해 얻어갈 수 있는 것</h2>
+    <div class="card-grid cols-3">
+      <div class="card">
+        <span class="icon">🔗</span>
+        <h3>내 레포 넣어보기</h3>
+        <p>본인 GitHub 레포 URL을 직접 입력해본다.</p>
+      </div>
+      <div class="card">
+        <span class="icon">💬</span>
+        <h3>내 코드로 받는 질문</h3>
+        <p>자기 코드를 인용한 질문을 실시간으로 받아본다.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📄</span>
+        <h3>포트폴리오 초안 받아가기</h3>
+        <p>답변을 쌓아 그 자리에서 마크다운 초안을 다운로드한다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. 라이브 데모 + 마무리 -->
+  <section class="slide">
+    <div class="eyebrow">Live Demo</div>
+    <h2>지금부터 실제로 보여드리겠습니다</h2>
+    <p class="subtitle">로컬 서버로 전환해 실제 레포로 시연합니다.</p>
+    <div class="repo-chip"><span class="dot"></span> github.com/seungeun3/Nthing</div>
+    <p class="subtitle" style="margin-top: var(--space-6);">감사합니다 🙌</p>
+  </section>
+
+</div>
+
+<div class="nav-strip">
+  <button class="nav-btn" id="prevBtn" aria-label="이전 슬라이드">‹</button>
+  <div class="dots" id="dots"></div>
+  <div class="slide-count" id="slideCount">1 / 9</div>
+  <button class="nav-btn" id="nextBtn" aria-label="다음 슬라이드">›</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dotsContainer = document.getElementById('dots');
+  const slideCount = document.getElementById('slideCount');
+  let current = 0;
+
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot-item' + (i === 0 ? ' current' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsContainer.appendChild(d);
+  });
+
+  function render() {
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    Array.from(dotsContainer.children).forEach((d, i) => d.classList.toggle('current', i === current));
+    slideCount.textContent = `${current + 1} / ${slides.length}`;
+  }
+
+  function goTo(i) {
+    current = Math.max(0, Math.min(slides.length - 1, i));
+    render();
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => goTo(current - 1));
+  document.getElementById('nextBtn').addEventListener('click', () => goTo(current + 1));
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') goTo(current + 1);
+    if (e.key === 'ArrowLeft') goTo(current - 1);
+  });
+
+  render();
+</script>
+
+</body>
+</html>
