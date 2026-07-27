@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -33,29 +33,38 @@ W-006이 선택한 prepared SemesterWorkspace를 AY-PLE의 유일한 Workspace R
 
 ## Acceptance Criteria
 
-- [ ] Valid prepared root가 exact ordering으로 Workspace Runtime과 required Interaction MCP를 준비한 뒤에만 active lifecycle과 explicit-root registry pointer를 얻는다.
-- [ ] Root validation, listener, Broker bind, Runtime spawn, project config load, Adapter handshake, MCP roster, thread cwd/identity와 registry write 각각의 failure가 no-new-active-commit으로 검증된다.
-- [ ] Required server가 missing/disabled/ignored, wrong roster 또는 stale generation이면 startup은 safe failure이고 normal Chat이 열리지 않는다.
-- [ ] Success 후 Runtime, thread, native context와 registry가 같은 canonical Git root와 `workspaceId`를 가리킨다.
-- [ ] Explicit first open과 registry reopen이 같은 readiness gate를 통과하고 failed explicit switch가 previous active pointer를 byte-for-byte 보존한다.
-- [ ] Runtime·Adapter·Broker credential이 failure·terminal·shutdown마다 bounded하게 정리되고 다른 workspace의 transcript나 generation이 교차하지 않는다.
-- [ ] Browser-safe active/recovery projection에 private Runtime, MCP credential, absolute path와 registry bytes가 없다.
+- [x] Valid prepared root가 exact ordering으로 Workspace Runtime과 required Interaction MCP를 준비한 뒤에만 active lifecycle과 explicit-root registry pointer를 얻는다.
+- [x] Root validation, listener, Broker bind, Runtime spawn, project config load, Adapter handshake, MCP roster, thread cwd/identity와 registry write 각각의 failure가 no-new-active-commit으로 검증된다.
+- [x] Required server가 missing/disabled/ignored, wrong roster 또는 stale generation이면 startup은 safe failure이고 normal Chat이 열리지 않는다.
+- [x] Success 후 Runtime, thread, native context와 registry가 같은 canonical Git root와 `workspaceId`를 가리킨다.
+- [x] Explicit first open과 registry reopen이 같은 readiness gate를 통과하고 failed explicit switch가 previous active pointer를 byte-for-byte 보존한다.
+- [x] Runtime·Adapter·Broker credential이 failure·terminal·shutdown마다 bounded하게 정리되고 다른 workspace의 transcript나 generation이 교차하지 않는다.
+- [x] Browser-safe active/recovery projection에 private Runtime, MCP credential, absolute path와 registry bytes가 없다.
 
 ## Verification
 
 - Targeted test or command:
-  - `npm test -w @ay-ple/server`
-  - `npm test -w @ay-ple/product-contract`
-  - `npm run test:node-actual -w @ay-ple/codex-chat-runtime`
-  - Required prepared-workspace startup ordering과 every pre-commit fault의 focused integration test
+  - `NODE_OPTIONS=--experimental-strip-types npx tsx --test apps/server/src/prepared-workspace-startup.test.ts apps/server/src/workspace-registry.test.ts` — startup ordering, every pre-commit fault, terminal race, bounded teardown와 actual SIGKILL registry recovery 32개 test green
+  - `npm test -w @ay-ple/server` — 192개 test green
+  - `npm test -w @ay-ple/product-contract` — 21개 test green
+  - `npm run test:node-actual -w @ay-ple/codex-chat-runtime` — 106개 test green
 - Repository checks:
-  - `npm test`
-  - `npm run typecheck`
-  - `npm run build`
-  - `npm run lint -w @ay-ple/chat-shell`
-  - `npm run check:docs-links`
+  - `npm test` — green
+  - `npm run typecheck` — green
+  - `npm run build` — green
+  - `npm run lint -w @ay-ple/chat-shell` — green
+  - `npm run check:docs-links` — active 28개와 historical banner 2개 green
+  - `git diff --check` — green
 - Manual or live smoke:
-  - Real built Adapter와 temporary prepared Git workspace를 explicit `--workspace`로 열어 MCP readiness, exact thread cwd, registry bytes와 bounded process teardown을 확인한다.
+  - `npm run test:runtime-local-provider` — exact Codex production bridge, tracked trusted Git project의 real built Interaction Adapter, exact-root trust reload와 explicit untrusted preservation 4개 actual test green
+  - Temporary prepared Git workspace와 real shared listener/Broker를 사용하는 focused integration에서 authenticated generation, required tool roster, exact thread `cwd`, registry bytes와 bounded process teardown을 확인했다.
+  - `/code-review 00df93abf6c1ed9230b804bd24a7873a8ef76340`의 Standards와 Spec 축 모두 final finding 0개였다.
+
+## Result
+
+Internal `PreparedWorkspaceStartupCoordinator`가 fresh prepared-root validation부터 shared listener·Broker generation, exact-root Runtime·native config, authenticated Adapter와 required tool roster, thread `cwd`·identity, registry transaction, coordinator-owned active projection까지 하나의 fail-closed 순서로 묶는다. Runtime terminal 또는 어느 readiness failure도 normal active를 열지 않으며 Broker → Runtime → listener teardown을 하나의 5초 deadline 안에서 모두 시도한다.
+
+Registry active commit은 final replace 직전 root identity를 다시 확인하고 synchronous acceptance 전 terminal이면 이전 authority를 복원한다. Durable `pending | accepted` writer phase와 commit proof가 first-open·switch process death를 구분하며, no-argument authoritative reopen도 read 전에 dead pending writer를 reconcile해 unaccepted target을 active로 관찰하지 않는다. 주요 구현 commit은 `92b4c0fad`, `55db94e97`, `433d7d514`, `8a630314d`, `360d93e69`이다. Current public startup composition 전환은 downstream joint public cutover ticket이 소유한다.
 
 ## Blocked By
 
