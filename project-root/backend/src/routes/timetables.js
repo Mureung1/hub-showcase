@@ -1,24 +1,12 @@
 const express = require('express');
+const createRequireUser = require('../middleware/requireUser');
 
 // supabase 클라이언트를 직접 require하지 않고 인자로 받는다.
 // (테스트에서 mock 클라이언트를 그대로 주입할 수 있도록 하기 위함 — db.js를 통째로
 // require('../db/db') 하면 테스트 환경에서 module mock이 잘 걸리지 않는 문제가 있었음)
 module.exports = function createTimetablesRouter(supabase) {
   const router = express.Router();
-
-  // Authorization: Bearer <access_token> 헤더를 검증해서 req.user에 로그인 사용자 정보를 채운다.
-  async function requireUser(req, res, next) {
-    const token = (req.headers.authorization || '').replace('Bearer ', '');
-    if (!token) {
-      return res.status(401).json({ error: '로그인이 필요합니다.' });
-    }
-    const { data, error } = await supabase.auth.getUser(token);
-    if (error || !data.user) {
-      return res.status(401).json({ error: '유효하지 않은 세션입니다. 다시 로그인해주세요.' });
-    }
-    req.user = data.user;
-    next();
-  }
+  const requireUser = createRequireUser(supabase);
 
   // POST /api/timetables { year, semester, label, lectureIds }
   // 사용자당 (year, semester) 하나의 확정 시간표만 유지한다 (다시 선택하면 덮어씀).
