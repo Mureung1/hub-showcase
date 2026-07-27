@@ -605,6 +605,81 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /ko/2021_1st, /en/2021_1st",
       "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_zimssa_be_senior",
+      "url": "https://zimssa.career.greetinghr.com/ko/o/212644",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "짐싸",
+      "company_id": "co_zimssa",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "백엔드 시니어 개발자(10년 이상)",
+      "job_role_raw": "직군: 백엔드팀 / 직무: 백엔드 개발자",
+      "entry_label_raw": "경력 10년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_estsecurity_be_linux",
+      "url": "https://estfamily.career.greetinghr.com/ko/o/220483",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "이스트시큐리티",
+      "company_id": "co_estsecurity",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[ESTsecurity] 리눅스 백엔드 서버 개발자",
+      "job_role_raw": "직군: 개발 / 제목: 백엔드 서버 개발자",
+      "entry_label_raw": "경력 5년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_estgames_be_rts",
+      "url": "https://estfamily.career.greetinghr.com/ko/o/137564",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "이스트게임즈",
+      "company_id": "co_estgames",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[ESTgames] 모바일 RTS 서버 프로그래머 (C#, Node.js)",
+      "job_role_raw": "직군: 개발 / 제목: 서버 프로그래머",
+      "entry_label_raw": "경력 무관",
+      "entry_label": "unspecified",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
     }
   ],
   "unreachable": [
@@ -679,6 +754,26 @@
     {
       "source": "blog.greetinghr.com 채용 홈페이지 모음집",
       "reason": "개인정보 제공에 동의해야 내려받는다"
+    },
+    {
+      "source": "gccompany.career.greetinghr.com",
+      "reason": "공고 15건에 백엔드가 없다"
+    },
+    {
+      "source": "alphabeta.career.greetinghr.com",
+      "reason": "채용 사이트가 내려갔다"
+    },
+    {
+      "source": "ex-em.career.greetinghr.com",
+      "reason": "검색에 색인된 공고 식별자가 404를 반환한다"
+    },
+    {
+      "source": "kimcaddie.career.greetinghr.com",
+      "reason": "검색에 색인된 공고 식별자가 404를 반환한다"
+    },
+    {
+      "source": "zimssa.career.greetinghr.com/ko/o/196855",
+      "reason": "마감된 공고가 404를 반환한다"
     }
   ],
   "access_notes": [
@@ -707,10 +802,6 @@
       "method": "정적 렌더링. 목록에 주니어·시니어 표기가 있고 연차는 없다"
     },
     {
-      "source": "*.career.greetinghr.com 상세 경로",
-      "method": "오래된 공고 식별자도 본문 전문과 함께 열린다. 마감 공고 수집 경로로 쓴다"
-    },
-    {
       "source": "careers.nexon.com 마감 공고",
       "method": "없는 공고 식별자는 목록으로 리다이렉트한다. 마감 공고 URL이 남지 않는다"
     },
@@ -721,6 +812,14 @@
     {
       "source": "careers.linecorp.com",
       "method": "정적 렌더링. 직군 필터 ca=Engineering 으로 거른다"
+    },
+    {
+      "source": "*.career.greetinghr.com 마감 공고",
+      "method": "마감된 공고는 404를 반환한다. 마감 공고를 수집 대상으로 삼지 않는다"
+    },
+    {
+      "source": "greetinghr 회사 발견",
+      "method": "도메인을 greetinghr.com 으로 한정한 웹 검색으로 회사를 찾고, 공고는 그 회사의 현재 목록에서 가져온다. 검색 색인의 공고 식별자는 마감으로 404가 되는 비율이 높다"
     }
   ]
 }
