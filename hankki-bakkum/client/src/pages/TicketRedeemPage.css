@@ -106,3 +106,25 @@
     font-weight: 700;
     color: var(--hot);
 }
+
+/* 사장님 PIN 입력 — 대면에서 사장님이 직접 누르는 칸 */
+.redeem-pin {
+    width: 100%;
+    min-height: 52px;
+    box-sizing: border-box;
+    margin: 18px 0 4px;
+    background: var(--bg-section);
+    border: none;
+    border-radius: var(--r-inner);
+    padding: 0 16px;
+    font-family: inherit;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    text-align: center;
+    color: var(--ink);
+}
+
+.redeem-pin::placeholder {
+    color: var(--muted);
+}

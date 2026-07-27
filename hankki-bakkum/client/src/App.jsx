@@ -11,6 +11,7 @@ import TicketRedeemPage from './pages/TicketRedeemPage.jsx';
 import RequireAuth from './components/RequireAuth.jsx';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { supabase } from './lib/supabase';
+import PinSettingPage from './pages/PinSettingPage';
 
 // 화면 구성은 docs/prototype.html, 디자인 규칙은 .claude/skills/hankki-design 참고
 export default function App() {
@@ -44,6 +45,7 @@ export default function App() {
             } />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/settings/pin" element={<PinSettingPage />} />
           </Routes>
         </main>
 
