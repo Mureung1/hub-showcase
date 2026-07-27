@@ -191,6 +191,12 @@ export class ControlledRuntime implements CodexWorkspaceRuntime {
     })
   }
 
+  async waitForMcpServerReady(
+    input: Parameters<CodexWorkspaceRuntime['waitForMcpServerReady']>[0],
+  ): Promise<void> {
+    input.signal.throwIfAborted()
+  }
+
   async readModelCatalog(): Promise<CodexModelCatalog> {
     return { models: [] }
   }

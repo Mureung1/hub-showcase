@@ -648,6 +648,12 @@ class ProductE2eRuntime implements CodexWorkspaceRuntime {
     }
   }
 
+  async waitForMcpServerReady(
+    input: Parameters<CodexWorkspaceRuntime['waitForMcpServerReady']>[0],
+  ): Promise<void> {
+    input.signal.throwIfAborted()
+  }
+
   async readEffectiveConfig(input: {
     readonly signal: AbortSignal
   }) {
