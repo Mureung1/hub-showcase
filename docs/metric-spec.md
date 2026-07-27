@@ -117,6 +117,22 @@ upper = min(1, mid + half)
 
 판정은 규칙으로 수행하고 규칙이 결정하지 못한 값만 생성 모델로 분류한다. 판정 결과는 `entry_label`에 담고 원문은 `entry_label_raw`에 보존한다.
 
+### 2.7 대상군
+
+`entry_label`은 공고 하나의 표기이고, 대상군은 지표의 그룹 축이다. 표기 다섯 값을 축 세 값으로 접는다.
+
+| `entry_label` | `entry_segment` |
+| --- | --- |
+| `entry`, `junior`, `entry_junior` | `entry_junior` |
+| `experienced` | `experienced` |
+| `unspecified` | `unspecified` |
+
+같은 직무·기업군·기간이라도 신입·주니어에게 요구하는 수준과 경력에게 요구하는 수준이 다르다. 한 기준선에 섞으면 어느 쪽도 맞지 않는다.
+
+`unspecified`를 `entry_junior`에 합치지 않는다. 표기가 없는 공고를 신입 기준선에 넣으면 기준선이 실제보다 높아진다.
+
+모든 지표 행은 대상군을 갖는다. 서로 다른 대상군의 수치를 하나의 기준선으로 비교하지 않는다.
+
 ## 3. 지표 family
 
 ### 3.1 `posting_prevalence`
@@ -324,13 +340,15 @@ temporal_delta(base_metric, measure, scope, period_a, period_b)
 
 | family | 차원 필요 | 전개 단위 |
 | --- | --- | --- |
-| `posting_prevalence` | 하나 | 차원 × 범위 × 기간 |
-| `requiredness_ratio` | 하나 | 차원 × 범위 × 기간 |
-| `depth_distribution` | 하나 | 차원 × 범위 × 기간 |
-| `cluster_contrast` | 하나 | 차원 × 기업군 × 기간 |
-| `cooccurrence` | 둘 | 차원 쌍 × 범위 × 기간 |
-| `scope_expansion` | 없음 | 범위 × 기간 |
+| `posting_prevalence` | 하나 | 차원 × 범위 × 대상군 × 기간 |
+| `requiredness_ratio` | 하나 | 차원 × 범위 × 대상군 × 기간 |
+| `depth_distribution` | 하나 | 차원 × 범위 × 대상군 × 기간 |
+| `cluster_contrast` | 하나 | 차원 × 기업군 × 대상군 × 기간 |
+| `cooccurrence` | 둘 | 차원 쌍 × 범위 × 대상군 × 기간 |
+| `scope_expansion` | 없음 | 범위 × 대상군 × 기간 |
 | `entry_label_advanced_signal_rate` | 없음 | 범위 × 기간 |
+
+`entry_label_advanced_signal_rate`는 대상군으로 전개하지 않는다. 분모가 이미 신입·주니어 표시 공고이므로 `entry_junior` 외의 대상군에서는 정의되지 않는다. 저장 시 `entry_segment`는 `entry_junior`를 갖는다.
 
 `dimension_metric_applicability`에 분류체계 버전별로 적용 가능 여부를 기록한다. `applicable`이 거짓인 조합은 계산하지 않으며, 계산된 행이 있으면 검증에서 차단한다.
 

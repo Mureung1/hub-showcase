@@ -814,6 +814,7 @@ PRIMARY KEY (taxonomy_version_id, dimension_id, metric_family)
 | `metric_policy_version` | `text` | NOT NULL, FK → `metric_policy_versions` |
 | `scope_level` | `text` | NOT NULL. `CHECK IN ('overall','cluster','posting')` |
 | `scope_id` | `text` | NOT NULL |
+| `entry_segment` | `text` | NOT NULL. `CHECK IN ('entry_junior','experienced','unspecified')` |
 | `period_id` | `text` | NOT NULL, FK → `periods` |
 | `dimension_id` | `text` | FK → `requirement_dimensions` |
 | `secondary_dimension_id` | `text` | FK → `requirement_dimensions` |
@@ -827,14 +828,18 @@ PRIMARY KEY (taxonomy_version_id, dimension_id, metric_family)
 
 ```sql
 UNIQUE (analysis_version, metric_family, measure, scope_level, scope_id,
-        period_id, dimension_id, secondary_dimension_id)
+        entry_segment, period_id, dimension_id, secondary_dimension_id)
 CHECK (denominator IS NULL OR denominator >= 0)
 CHECK (numerator IS NULL OR denominator IS NULL OR numerator <= denominator)
 CHECK (sample_status <> 'not_computable' OR value IS NULL)
+CHECK (metric_family <> 'entry_label_advanced_signal_rate'
+       OR entry_segment = 'entry_junior')
 CREATE INDEX ON statistics_facts
-  (analysis_version, scope_level, scope_id, period_id, metric_family);
+  (analysis_version, scope_level, scope_id, entry_segment, period_id, metric_family);
 CREATE INDEX ON statistics_facts (dimension_id);
 ```
+
+`entry_segment`는 지표의 대상군 축이다. 정의와 `entry_label` 대응은 [지표 명세](metric-spec.md) 2.7에 있다. 마지막 `CHECK`는 분모에 이미 대상군이 반영된 지표가 다른 대상군으로 저장되는 것을 막는다.
 
 `numerator`와 `denominator`는 정수 카운트만 담는다. `cluster_contrast`처럼 비율에서 파생하는 지표는 `measure`를 나눠 저장하고 `numerator`·`denominator`에는 원본 카운트를 담는다. 수식은 [지표 명세](metric-spec.md)에 있다.
 
@@ -849,6 +854,7 @@ CREATE INDEX ON statistics_facts (dimension_id);
 | `taxonomy_version_id` | `text` | NOT NULL, FK → `requirement_taxonomy_versions` |
 | `scope_level` | `text` | NOT NULL. `CHECK IN ('overall','cluster','posting')` |
 | `scope_id` | `text` | NOT NULL |
+| `entry_segment` | `text` | NOT NULL. `CHECK IN ('entry_junior','experienced','unspecified')` |
 | `period_id` | `text` | NOT NULL, FK → `periods` |
 | `depth_distribution` | `jsonb` | NOT NULL. 등급별 비율 |
 | `expected_depth` | `text` | NOT NULL. `CHECK IN ('foundation','application','tradeoff')` |
@@ -858,8 +864,11 @@ CREATE INDEX ON statistics_facts (dimension_id);
 | `analysis_version` | `text` | NOT NULL, FK → `analysis_versions` |
 
 ```sql
-UNIQUE (analysis_version, capability_id, scope_level, scope_id, period_id)
+UNIQUE (analysis_version, capability_id, scope_level, scope_id,
+        entry_segment, period_id)
 ```
+
+기대 깊이는 대상군에 따라 다르다. 신입·주니어에게 기대하는 깊이와 경력에게 기대하는 깊이를 한 행에 담지 않는다.
 
 ### 10.7 `saturation_observations`
 

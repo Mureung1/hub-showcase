@@ -519,7 +519,7 @@ AND (통계적 우선순위 상위 OR research_request 존재)
 ```text
 capability_depth_profiles
   profile_id, capability_id, taxonomy_version_id
-  scope_level, scope_id, period_id
+  scope_level, scope_id, entry_segment, period_id
   depth_distribution, expected_depth
   sample_size, evidence_support, confidence
   analysis_version_id

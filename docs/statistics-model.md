@@ -125,7 +125,7 @@ taxonomy_policy_version
 ```mermaid
 flowchart LR
     A[("활성 분류체계 버전")] --> B["지표 적용 가능성 조회"]
-    B --> C["실행 조합 전개<br/>지표 x 차원 x 범위 x 기간"]
+    B --> C["실행 조합 전개<br/>지표 x 차원 x 범위 x 대상군 x 기간"]
     C --> D["분모 모집단 확정"]
     D --> E["중복 제거 단위 적용"]
     E --> F["SQL 집계"]
@@ -140,19 +140,31 @@ flowchart LR
 
 | family | 입력 | 분자 | 분모 |
 | --- | --- | --- | --- |
-| `posting_prevalence` | 차원, 범위, 기간 | 해당 차원 할당이 있는 `posting_version` 수 | 범위·기간의 `posting_version` 수 |
-| `requiredness_ratio` | 차원, 범위, 기간 | 필수 표현으로 나타난 `posting_version` 수 | 해당 차원이 나타난 `posting_version` 수 |
-| `depth_distribution` | 차원, 범위, 기간 | 깊이 등급별 `posting_version` 수 | 해당 차원이 나타난 `posting_version` 수 |
-| `cluster_contrast` | 차원, 기업군, 기간 | 기업군 `posting_prevalence` | 직무 전체 `posting_prevalence` |
-| `cooccurrence` | 차원 두 개, 범위, 기간 | measure별로 정의 | measure별로 정의 |
-| `scope_expansion` | 범위, 기간 | 역할 경계 범주 할당이 있는 `posting_version` 수 | 범위·기간의 `posting_version` 수 |
+| `posting_prevalence` | 차원, 범위, 대상군, 기간 | 해당 차원 할당이 있는 `posting_version` 수 | 범위·대상군·기간의 `posting_version` 수 |
+| `requiredness_ratio` | 차원, 범위, 대상군, 기간 | 필수 표현으로 나타난 `posting_version` 수 | 해당 차원이 나타난 `posting_version` 수 |
+| `depth_distribution` | 차원, 범위, 대상군, 기간 | 깊이 등급별 `posting_version` 수 | 해당 차원이 나타난 `posting_version` 수 |
+| `cluster_contrast` | 차원, 기업군, 대상군, 기간 | 기업군 `posting_prevalence` | 직무 전체 `posting_prevalence` |
+| `cooccurrence` | 차원 두 개, 범위, 대상군, 기간 | measure별로 정의 | measure별로 정의 |
+| `scope_expansion` | 범위, 대상군, 기간 | 역할 경계 범주 할당이 있는 `posting_version` 수 | 범위·대상군·기간의 `posting_version` 수 |
 | `entry_label_advanced_signal_rate` | 범위, 기간 | 신입·주니어 표시 공고 중 심화 신호를 포함한 `posting_version` 수 | 신입·주니어 표시 `posting_version` 수 |
 
 모든 지표의 중복 제거 단위는 `posting_version_id`다. 한 공고에서 같은 차원이 여러 번 나타나도 한 번으로 센다.
 
 기업군 범위의 모집단은 `company_cluster_memberships`를 실행 봉투의 `as_of_date` 기준으로 해석해 확정한다. 공고 버전은 기업군을 속성으로 갖지 않는다.
 
-### 5.3 `cluster_contrast`
+### 5.3 대상군
+
+대상군은 모집단을 나누는 축이며 모든 지표 행이 갖는다. 정의와 `entry_label` 대응은 [지표 명세](metric-spec.md) 2.7에 있다.
+
+분모가 대상군으로 제한되므로 표본 판정도 대상군마다 따로 한다. 한 대상군이 최소 표본을 채우지 못하면 그 대상군의 수치만 억제하고 다른 대상군은 유지한다.
+
+서로 다른 대상군의 수치를 하나의 기준선으로 비교하지 않는다. 신입·주니어 기준선과 경력 기준선을 나란히 두는 것이 비교의 목적이며, 두 값을 평균하지 않는다.
+
+표본 상태가 노출 가능한 대상군은 함께 표시한다. 사용자가 대상군을 고르지 않으며, 억제는 대상군 단위로 적용해 표시 가능한 대상군만 남긴다. 신입·주니어 기준선은 지금 준비할 것을, 경력 기준선은 이후 기대 수준을 나타내므로 둘을 함께 볼 때 준비의 목표 지점이 드러난다.
+
+`entry_label_advanced_signal_rate`는 대상군으로 전개하지 않는다. 분모가 이미 신입·주니어 표시 공고다.
+
+### 5.4 `cluster_contrast`
 
 차이와 비율을 모두 저장한다.
 
@@ -163,7 +175,7 @@ prevalence_ratio      = cluster_prevalence / baseline_prevalence
 
 `baseline_prevalence`가 0이면 `prevalence_ratio`를 저장하지 않고 `prevalence_difference`만 저장한다. 비율만 저장하면 작은 분모에서 과장된 값이 나오고, 차이만 저장하면 상대적 강조도가 사라진다.
 
-### 5.4 `cooccurrence`
+### 5.5 `cooccurrence`
 
 measure를 구분해 각각 저장한다.
 
@@ -175,19 +187,19 @@ measure를 구분해 각각 저장한다.
 | `conditional_b_given_a` | 교집합 / A가 나타난 공고 수 |
 | `association_lift` | 관측 동시 출현 비율 / 독립 가정 기대 비율 |
 
-### 5.5 `scope_expansion`
+### 5.6 `scope_expansion`
 
 역할 경계를 넘어선 요구에만 적용한다. 백엔드 공고의 프론트엔드 요구, 개발 공고의 데이터 분석 요구, 구현 직무의 운영·인프라 요구가 해당한다.
 
 적용 대상은 `requirement_dimension_versions.role_boundary_eligible`이 참인 차원으로 제한한다.
 
-### 5.6 `entry_label_advanced_signal_rate`
+### 5.7 `entry_label_advanced_signal_rate`
 
 신입·주니어 라벨을 붙인 공고 중 심화 신호를 포함한 공고의 비율이다. 심화 신호의 정의는 대용량, 동시성, 장애 대응 등 `depth_level`이 `tradeoff`인 할당의 존재로 판정한다.
 
 이 지표는 관측값이며 기대값과의 차이가 아니다. 차이를 계산하려면 라벨별 기대 심화 신호 비율을 먼저 정의해야 한다.
 
-### 5.7 시간 연산자
+### 5.8 시간 연산자
 
 `temporal_delta`는 독립 지표가 아니라 다른 지표에 적용하는 연산자다.
 
@@ -202,13 +214,13 @@ temporal_delta(
 
 어떤 지표의 변화인지를 반드시 함께 저장한다. 양 기간의 표본 수를 함께 기록한다.
 
-### 5.8 지표 정책 버전
+### 5.9 지표 정책 버전
 
 최소 표본, 억제 정책, 불확실성 계산 방법, 수식 버전은 상수가 아니라 `metric_policy_versions`로 관리한다. 테이블 정의는 [지식·저장 구조](knowledge-schema.md) 10장에 있다.
 
 정책이 바뀌면 새 버전을 발행하고 이전 결과를 보존한다. 서로 다른 정책 버전의 수치를 비교하지 않는다.
 
-### 5.9 표본 상태
+### 5.10 표본 상태
 
 표본이 적은 결과를 일괄로 숨기지 않고 사용 가능 범위를 구분한다.
 
@@ -233,8 +245,11 @@ temporal_delta(
 활성 지표 템플릿
 × 적용 가능한 차원 또는 차원 쌍
 × 범위
+× 대상군
 × 기간
 ```
+
+`entry_label_advanced_signal_rate`처럼 대상군이 분모에 이미 반영된 지표는 대상군으로 전개하지 않는다.
 
 ## 7. 화면 블록 연결
 
