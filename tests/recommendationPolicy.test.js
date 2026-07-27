@@ -218,7 +218,7 @@ test("보유 수량보다 많이 요구하면 같은 재료도 부족 재료로 
   assert.deepEqual(recipes[0].missingIngredients, ["삼겹살"]);
 });
 
-test("가장 우선순위가 높은 재료를 어떤 추천에도 쓰지 않으면 거부한다", () => {
+test("일반 추천에서는 소비기한 우선 재료를 강제로 사용하지 않는다", () => {
   const context = buildIngredientContext(rows, { today: "2026-07-22" });
   const generated = {
     recipes: [recipe({
@@ -228,16 +228,14 @@ test("가장 우선순위가 높은 재료를 어떤 추천에도 쓰지 않으�
     })],
   };
 
-  assert.throws(
-    () => validateGeneratedRecipes(generated, {
-      mode: "quick",
-      maxMissingIngredients: 1,
-      batchNumber: 1,
-      excludedRecipeFingerprints: [],
-    }, context),
-    (error) => error instanceof RecommendationPolicyError
-      && error.violations.some((violation) => violation.startsWith("PRIORITY_INGREDIENT_UNUSED")),
-  );
+  const recipes = validateGeneratedRecipes(generated, {
+    mode: "quick",
+    maxMissingIngredients: 1,
+    batchNumber: 1,
+    excludedRecipeFingerprints: [],
+  }, context);
+
+  assert.equal(recipes[0].name, "양파볶음");
 });
 
 test("한국 시간 기준 다음 자정을 UTC 시각으로 계산한다", () => {

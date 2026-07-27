@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const RECOMMENDATION_MODES = ["noFire", "quick", "balanced"];
+export const RECOMMENDATION_MODES = ["expiryFirst", "quick", "balanced"];
 export const DISH_TYPES = [
   "stirFry",
   "riceBowl",

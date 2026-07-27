@@ -57,9 +57,26 @@ test("프롬프트에 허용 재료만 포함하고 만료 재료는 포함하�
   const prompt = buildRecommendationPrompt({ request, ingredientContext });
   assert.match(prompt, /삼겹살/);
   assert.doesNotMatch(prompt, /상한 두부/);
-  assert.match(prompt, /20분 안팎/);
+  assert.match(prompt, /무난한 한 끼/);
+  assert.match(prompt, /불 사용 여부와 관계없이/);
   assert.match(prompt, /mealSet/);
   assert.match(prompt, /억지/);
+});
+
+test("소비기한 우선 모드는 임박 재료를 고려하되 자연스러운 조합을 앞세운다", () => {
+  const prompt = buildRecommendationPrompt({
+    request: { ...request, mode: "expiryFirst" },
+    ingredientContext,
+  });
+
+  assert.match(prompt, /소비기한이 가까운 재료/);
+  assert.match(prompt, /맛과 조합의 자연스러움보다 앞세우지/);
+  assert.match(prompt, /불 사용 여부는 제한하지/);
+});
+
+test("제거된 noFire 모드는 요청 스키마에서 거부한다", () => {
+  assert.equal(recommendationRequestSchema.parse({ mode: "expiryFirst" }).mode, "expiryFirst");
+  assert.throws(() => recommendationRequestSchema.parse({ mode: "noFire" }));
 });
 
 test("Interactions API 구조화 응답을 Zod로 검증한다", async () => {

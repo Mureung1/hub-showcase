@@ -44,7 +44,7 @@ Supabase의 실제 보유 재료와 사용자가 선택한 추천 상태를 이�
 
 ```json
 {
-  "mode": "noFire | quick | balanced",
+  "mode": "expiryFirst | quick | balanced",
   "maxMissingIngredients": 0,
   "batchSize": 3,
   "batchNumber": 1,
@@ -58,6 +58,8 @@ Supabase의 실제 보유 재료와 사용자가 선택한 추천 상태를 이�
 - 물, 조리된 밥과 기본 양념(소금, 후추, 식용유, 고춧가루, 간장, 설탕, 식초, 다진 마늘)은 항상 보유한 것으로 가정한다.
 - `maxMissingIngredients`는 0~2 중 하나다.
 - `batchNumber`는 최초 요청 1부터 추가 추천 5까지 사용한다.
+- `expiryFirst`는 소비기한이 가까운 재료를 먼저 고려하되 맛과 조합의 자연스러움을 우선한다.
+- `quick`은 불 사용 여부를 제한하지 않고 익숙하고 조합이 자연스러운 무난한 한 끼를 우선한다. 지나치게 단순한 조합과 낯선 퓨전 메뉴는 피한다.
 - `allergens`, `excludedIngredients`, `dietaryPreferences`는 향후 확장을 위한 선택 필드이며 현재 UI에서는 빈 배열을 전달한다.
 
 ## 출력 규격

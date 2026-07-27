@@ -178,13 +178,6 @@ export function createRecipeFingerprint(recipe) {
   return createHash("sha256").update(JSON.stringify(fingerprintSource)).digest("hex");
 }
 
-function getModeViolation(recipe, mode) {
-  if (mode === "noFire" && recipe.cookingMethod !== "noFire") {
-    return "NO_FIRE_VIOLATION: noFire 모드는 불을 사용하는 레시피를 반환할 수 없습니다.";
-  }
-  return null;
-}
-
 function normalizeUnit(unit) {
   return String(unit ?? "").trim().replaceAll(" ", "").toLowerCase();
 }
@@ -247,8 +240,6 @@ export function validateGeneratedRecipes(generated, request, ingredientContext) 
     if (missingIngredients.length > request.maxMissingIngredients) {
       violations.push(`MISSING_INGREDIENT_LIMIT: recipes.${index}의 부족 재료가 ${request.maxMissingIngredients}개를 초과합니다.`);
     }
-    const modeViolation = getModeViolation(recipe, request.mode);
-    if (modeViolation) violations.push(`recipes.${index}: ${modeViolation}`);
     if (recipe.servingStyle === "mealSet" && recipe.dishType !== "mealSet") {
       violations.push(`SERVING_STYLE_MISMATCH: recipes.${index}의 한 상 구성은 dishType도 mealSet이어야 합니다.`);
     }
@@ -299,18 +290,6 @@ export function validateGeneratedRecipes(generated, request, ingredientContext) 
           `INSUFFICIENT_VARIETY: recipes.${leftIndex}와 recipes.${rightIndex}는 조리 형태·기법·주재료 중 두 가지 이상 달라야 합니다.`,
         );
       }
-    }
-  }
-
-  const highestPriorityIngredient = ingredientContext.availableIngredients[0];
-  if (recipes.length > 0 && highestPriorityIngredient) {
-    const highestPriorityName = normalizeIngredientName(highestPriorityIngredient.name);
-    const usesHighestPriorityIngredient = generated.recipes.some((recipe) => recipe.requiredIngredients
-      .some((ingredient) => normalizeIngredientName(ingredient.name) === highestPriorityName));
-    if (!usesHighestPriorityIngredient) {
-      violations.push(
-        `PRIORITY_INGREDIENT_UNUSED: 가장 우선순위가 높은 ${highestPriorityIngredient.name}을 추천 중 하나에 사용해야 합니다.`,
-      );
     }
   }
 

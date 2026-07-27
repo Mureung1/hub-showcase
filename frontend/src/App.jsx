@@ -88,7 +88,7 @@ function App() {
   const [activeStorage, setActiveStorage] = useState("all");
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [savedRecipes, setSavedRecipes] = useState(() => readSavedRecipes());
-  const [selectedMood, setSelectedMood] = useState("noFire");
+  const [selectedMood, setSelectedMood] = useState("expiryFirst");
   const [missingIngredientLimit, setMissingIngredientLimit] = useState(1);
   const [isRecipeLoading, setIsRecipeLoading] = useState(false);
   const [editingIngredientId, setEditingIngredientId] = useState(null);
@@ -531,8 +531,8 @@ function WorkspaceShell({ eyebrow, title, description, children }) {
 }
 
 const moodOptions = [
-  { id: "noFire", icon: "🛋️", title: "불도 켜기 싫어요", description: "전자레인지·무가열, 10분 안팎" },
-  { id: "quick", icon: "🍳", title: "15분 정도는 괜찮아요", description: "간단한 팬·냄비 요리" },
+  { id: "expiryFirst", icon: "⏰", title: "소비기한부터 챙길래요", description: "임박 재료를 자연스러운 메뉴로 우선 활용" },
+  { id: "quick", icon: "🍳", title: "무난하게 먹고 싶어요", description: "불 사용 여부와 관계없이 익숙한 한 끼" },
   { id: "balanced", icon: "🥗", title: "균형 있게 먹고 싶어요", description: "여러 식품군을 활용한 한 끼" },
 ];
 

@@ -17,11 +17,11 @@ export class GeminiRecommendationError extends Error {
 }
 
 function getModeInstruction(mode) {
-  if (mode === "noFire") {
-    return "불이나 가열 조리를 사용하지 않는 메뉴를 우선하세요. 시간은 목표일 뿐이지만 실제 가열이 필요한 메뉴는 반환하지 마세요.";
+  if (mode === "expiryFirst") {
+    return "소비기한이 가까운 재료를 우선 고려하세요. 다만 조합이 부자연스러우면 억지로 섞지 말고 알려진 요리나 한 상 구성을 선택하세요. 불 사용 여부는 제한하지 않습니다.";
   }
   if (mode === "quick") {
-    return "특별한 기술 없이 약 20분 안팎에 만들 수 있는 간단한 팬·냄비 요리를 우선하세요.";
+    return "불 사용 여부와 관계없이 익숙하고 조합이 자연스러운 무난한 한 끼를 추천하세요. 무가열 메뉴와 일반적인 팬·냄비 요리를 모두 허용하고, 지나치게 단순한 조합이나 낯선 퓨전 메뉴는 피하세요.";
   }
   return "시간보다 보유 재료 활용과 식사 구성을 우선하고, 특별한 기술 없이 만들 수 있는 한 끼를 추천하세요.";
 }
@@ -52,7 +52,9 @@ export function buildRecommendationPrompt({ request, ingredientContext, policyFe
     "description에는 음식의 맛과 특징, 이 메뉴가 어울리는 상황을 2~3문장으로 자연스럽게 설명하세요.",
     "보유 재료와 assumedPantryIngredients에 없는 필수 재료만 부족 재료로 계산하세요.",
     "assumedPantryIngredients의 조리된 밥은 바로 먹을 수 있는 밥이며, 물과 기본 양념도 보유한 것으로 간주하세요.",
-    "가장 높은 priorityScore의 재료는 추천 중 최소 하나에 자연스럽게 사용하되 모든 추천에 강제로 넣지 마세요.",
+    request.mode === "expiryFirst"
+      ? "priorityScore와 daysRemaining을 참고해 소비기한이 가까운 재료를 우선하되, 맛과 조합의 자연스러움보다 앞세우지 마세요."
+      : "priorityScore와 daysRemaining은 참고 정보일 뿐입니다. 소비기한 때문에 어울리지 않는 재료를 강제로 사용하지 마세요.",
     getModeInstruction(request.mode),
     "재료가 자연스럽게 어울리면 servingStyle을 singleDish로 만드세요.",
     "재료를 한 요리에 섞으면 어색하지만 밥·반찬·후식으로 함께 먹기 좋다면 servingStyle과 dishType을 mealSet으로 만들고 components를 두 개 이상 작성하세요.",
