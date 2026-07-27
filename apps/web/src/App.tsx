@@ -522,6 +522,14 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
   const igPosted = igOn && (sendResult.sns?.posted ?? false);
   const permalink = sendResult.sns?.permalink;
   const caption = sendResult.sns?.caption ?? snsCaption;
+
+  // SNS 전용 발송 안내 — 채널명은 바로 윗줄(names)에 이미 나오므로 반복하지 않는다.
+  // 단, 인스타(자동 게시)와 X(수동 복사)를 같이 보낸 경우엔 처리가 달라 구분해 준다.
+  const snsHint = !igPosted
+    ? "아래에서 문구를 복사해 올려주세요."
+    : xOn
+      ? "인스타그램은 자동 게시됐어요. X는 아래 문구를 복사해 주세요."
+      : "자동으로 게시됐어요.";
   const [copied, setCopied] = useState(false);
   async function copyCaption() {
     try {
@@ -580,7 +588,7 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
             ? <>{names.join(" · ")}<br />단골은 <b>내일 오전 8시 예약발송</b>으로 전환됐어요.</>
             : dangolOn
               ? <>{names.join(" · ")}<br />수신동의 단골 {target}명에게 발송했어요.</>
-              : <>{names.join(" · ")}<br />{igPosted ? "인스타그램에 게시됐어요." : "아래에서 문구를 복사해 올려주세요."}</>}
+              : <>{names.join(" · ")}<br />{snsHint}</>}
         </div>
         {sendResult.couponCode && (
           <div style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, background: T.surfaceAlt, fontSize: 12.5, color: T.ink, fontWeight: 600 }}>
