@@ -84,6 +84,10 @@
 
 `is_active`가 거짓인 직무는 화면 선택지에 나타나지 않는다. 분석은 실행할 수 있다.
 
+이 표는 목표 직무 아홉 종을 담는다. `backend`, `frontend`, `ai_engineer`, `data_engineer`, `fullstack`, `devops`, `mobile`, `security`, `game_client`다. 직무 판정이 아홉 중 하나를 고르는 문제이므로 후보 전량을 기준 데이터로 둔다. 판정 규칙은 [지표 명세](metric-spec.md) 2.8에 있다.
+
+`backend` 외의 여덟 종은 `is_active`가 거짓이다.
+
 ### 3.2 `companies`
 
 | 컬럼 | 타입 | 제약 |
