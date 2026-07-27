@@ -170,6 +170,31 @@ export async function updateCampaign(id: string, patch: CampaignPatch): Promise<
 }
 
 /** id로 캠페인 1건 조회. 없으면 null. */
+/**
+ * 오늘 것 말고 **가장 최근** 캠페인을 준다 (실패 대본 5-3 — 전일 캐시 폴백).
+ *
+ * 오늘 제안이 없는 경우는 두 가지다: ① 기동 잡이 아직 도는 중 ② 날씨·DB 장애로 못 만듦.
+ * ②일 때 화면이 "만드는 중"에 영원히 머물면 발표가 끊긴다. 그래서 마지막 성공분을 대신 보여주고,
+ * 라우트가 `stale: true`로 표시해 **오늘 것인 척하지 않는다.**
+ *
+ * @param beforeDate 이 날짜(YYYY-MM-DD) 이전 것만. 보통 오늘 날짜를 넘긴다.
+ */
+export async function getLatestCampaignBefore(
+  storeId: string,
+  beforeDate: string,
+): Promise<CampaignRow | null> {
+  const sb = getSupabase();
+  const { data } = await sb
+    .from("campaigns")
+    .select("*")
+    .eq("store_id", storeId)
+    .lt("date", beforeDate)
+    .order("date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as CampaignRow) ?? null;
+}
+
 export async function getCampaignById(id: string): Promise<CampaignRow | null> {
   const sb = getSupabase();
   const { data } = await sb.from("campaigns").select("*").eq("id", id).maybeSingle();

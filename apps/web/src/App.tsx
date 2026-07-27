@@ -23,7 +23,8 @@ type View = "dashboard" | "edit" | "sent";
 type RemoteState =
   | { status: "mock" } // MOCK_MODE=on — 서버를 부르지 않음
   | { status: "loading" }
-  | { status: "ready"; scenario: Scenario; campaignId: string }
+  // stale=true면 오늘 제안을 못 만들어 지난 캠페인을 대신 띄운 상태 (실패 대본 5-3)
+  | { status: "ready"; scenario: Scenario; campaignId: string; stale: boolean; date: string }
   | { status: "empty"; message: string } // 서버는 붙었으나 오늘 제안이 아직 없음
   | { status: "error"; message: string };
 
@@ -120,7 +121,18 @@ export default function WeatherPilotV3() {
           setRemote({ status: "empty", message: p.message });
           if (attempt < 12) timer = setTimeout(() => load(attempt + 1), 5000);
         } else {
-          setRemote({ status: "ready", scenario: scenarioFromApi(w.weather, p.proposal, p.diagnosis), campaignId: p.campaignId });
+          // stale이면 지난 캠페인이다 — 날씨는 그 캠페인이 만들어진 날 것(p.weather)을 써야
+          // 문구와 앞뒤가 맞는다. 오늘 날씨(w.weather)를 얹으면 "맑음인데 비 문구"가 된다.
+          const weather = p.stale ? p.weather : w.weather;
+          setRemote({
+            status: "ready",
+            scenario: scenarioFromApi(weather, p.proposal, p.diagnosis),
+            campaignId: p.campaignId,
+            stale: p.stale === true,
+            date: p.date,
+          });
+          // stale이면 오늘 것이 만들어지는지 계속 지켜본다 (장애 복구 시 자동 전환).
+          if (p.stale && attempt < 12) timer = setTimeout(() => load(attempt + 1), 5000);
         }
       } catch (e) {
         if (!cancelled) {
@@ -257,6 +269,19 @@ export default function WeatherPilotV3() {
                   </button>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* 전일 캐시 안내(5-3) — 오늘 제안을 못 만들어 지난 것을 띄운 상태.
+            숨기면 사장님이 오늘 날씨 기준인 줄 알고 발송한다. 반드시 보이게 둔다. */}
+        {tab === "home" && remote.status === "ready" && remote.stale && (
+          <div style={{ border: `1px solid ${T.border}`, borderLeft: `3px solid ${T.primary}`, borderRadius: 10, padding: "10px 12px", marginBottom: 14, background: "#FBFDFF" }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: T.ink }}>
+              🕐 {remote.date} 제안을 보여주는 중이에요
+            </div>
+            <div style={{ fontSize: 11.5, color: T.sub, marginTop: 4, lineHeight: 1.5 }}>
+              오늘 제안을 만드는 데 시간이 걸리고 있어요. 준비되면 자동으로 바뀝니다.
             </div>
           </div>
         )}
