@@ -1,3 +1,67 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import AnalysisReportCard, { type AnalysisStats } from "../components/AnalysisReportCard";
+import { API_BASE_URL } from "../lib/api";
+
+type State =
+  | { status: "loading" }
+  | { status: "error" }
+  | { status: "success"; stats: AnalysisStats; report: string };
+
 export default function AnalysisReportPage() {
-  return <div>분석 리포트</div>;
+  const [state, setState] = useState<State>({ status: "loading" });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/analysis/report`)
+      .then((res) => {
+        if (!res.ok) throw new Error("report fetch failed");
+        return res.json();
+      })
+      .then((data: { stats: AnalysisStats; report: string }) =>
+        setState({ status: "success", stats: data.stats, report: data.report })
+      )
+      .catch(() => setState({ status: "error" }));
+  }, []);
+
+  function handleApprove() {
+    // Step[1] is already "active" from the seed data — sidebar/step state
+    // management itself is Day 9's job, not this screen's.
+    navigate("/workspace");
+  }
+
+  return (
+    <section style={{ padding: "32px 24px", maxWidth: 1080, margin: "0 auto" }}>
+      {state.status === "loading" && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 12,
+            padding: 48,
+            color: "var(--text-dim)",
+          }}
+        >
+          <div className="spinner" />
+          <div>분석 중…</div>
+        </div>
+      )}
+
+      {state.status === "error" && (
+        <div className="card" style={{ maxWidth: 480, margin: "0 auto" }}>
+          <div className="card-body" style={{ textAlign: "center" }}>
+            <div style={{ color: "var(--red)", marginBottom: 12 }}>
+              분석에 실패했습니다. 다시 시도해주세요.
+            </div>
+            <button onClick={() => navigate("/repo")}>저장소 연결로 돌아가기</button>
+          </div>
+        </div>
+      )}
+
+      {state.status === "success" && (
+        <AnalysisReportCard stats={state.stats} report={state.report} onApprove={handleApprove} />
+      )}
+    </section>
+  );
 }

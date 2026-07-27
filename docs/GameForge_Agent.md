@@ -90,7 +90,7 @@ GameForge Agent는 다음 순서를 반드시 따른다.
 | Refactoring Agent | 리팩토링 및 코드 리뷰 (SOLID / DRY 기반) |
 | Documentation Agent | 문서 생성 |
 
-모든 Agent는 동일한 Claude 모델을 사용하며, 역할별 프롬프트와 이전 단계의 Markdown 문서를 기반으로 동작한다.
+모든 Agent는 동일한 Gemini 모델을 사용하며, 역할별 프롬프트와 이전 단계의 Markdown 문서를 기반으로 동작한다.
 
 ---
 
@@ -320,3 +320,4 @@ Agent 워크스페이스 (9단계 순차 진행)
 | v1 | 코드 생성/리팩토링 단계의 승인 방식을 "커밋 1개"에서 "파일 단위 원자적 커밋 N개"로 변경, 커밋 리뷰(Diff) 화면 추가 |
 | v1 | GitHub 연동 권한을 read(조회/분석)와 write(커밋)로 구분해 명시 |
 | v2 | Repository 연결 방식을 URL 직접 입력 + PAT에서 **GitHub OAuth 로그인**으로 전환 — 로그인 후 저장소/Branch를 드롭다운으로 선택 (권한 범위가 넓어지는 트레이드오프를 감수하고 사용자 경험 우선) |
+| v3 | 전체 Multi-Agent 시스템(분석 리포트 생성 + 채팅 Q&A 포함)의 AI 모델을 Claude에서 **Gemini**로 전환 |

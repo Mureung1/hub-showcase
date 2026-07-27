@@ -9,7 +9,7 @@
 
 - 실행 환경: 로컬 우선 (개인 개발 PC에서 구동), 추후 배포는 후순위
 - 대상 저장소: 사용자가 소유/쓰기 권한을 가진 GitHub Repository
-- AI: Anthropic Claude API — Agent별로 system prompt만 다르고 동일 모델 사용 (원 기획서 6번 원칙)
+- AI: Google Gemini API — Agent별로 system prompt만 다르고 동일 모델 사용 (원 기획서 6번 원칙)
 - 이번 계획의 목표 범위: **UI Spec 문서에 정의된 3개 화면(Repo 연결 / 분석 리포트 / Agent 워크스페이스)까지 동작하는 MVP**. Feature Expansion Workflow(기존 프로젝트에 기능 추가)는 다음 단계로 미룬다.
 
 ---
@@ -21,11 +21,11 @@
 | Frontend | React + Vite + TypeScript | 프로토타입 컴포넌트를 그대로 이식하기 쉬움, 타입 안전성 |
 | 스타일링 | Plain CSS (CSS 변수 기반, 프로토타입 토큰 그대로 이식) | 이미 `gameforge-ui-style` 스킬로 토큰/컴포넌트 규칙이 정리되어 있어 별도 CSS 프레임워크 불필요 |
 | 상태 관리 | React Context + useReducer (Zustand로 확장 가능) | 프로젝트 규모상 Redux는 과함 |
-| Backend | Node.js + Express (or Fastify) | GitHub API·Claude API 프록시, TypeScript 공유 가능 |
+| Backend | Node.js + Express (or Fastify) | GitHub API·Gemini API 프록시, TypeScript 공유 가능 |
 | 데이터 저장 | 별도 DB 엔진 없이 **Express가 로컬 JSON 파일을 직접 읽고 씀** (`data/*.json`) | 1인 로컬 사용 기준으로 설치/마이그레이션 부담 없음. 규모가 커지면 SQLite로 교체 가능한 구조로 파일당 스키마를 고정해둔다 |
 | 파일 저장 | 실제 대상 저장소의 `docs/*.md` 파일 + JSON에는 메타데이터만 | 원 기획서 7번 "Markdown 기반 Context 관리" 원칙 유지 |
 | GitHub 연동 | **GitHub OAuth App** (Authorization Code Flow) — "GitHub로 로그인" 버튼 → 인증 → access token 발급 → 세션/쿠키로 유지 | 사용자가 URL 복붙 없이 저장소/브랜치를 목록에서 바로 선택하게 하기 위한 결정 (v2 변경, PAT 방식 대신 채택) |
-| AI 연동 | Anthropic SDK (`@anthropic-ai/sdk`) | 공식 SDK, 스트리밍 지원 |
+| AI 연동 | **Google Gen AI SDK (`@google/genai`)** | 공식 SDK, 스트리밍 지원. **v3: Anthropic Claude API에서 Gemini API로 전환** — 분석 리포트 생성 + 전체 Agent 채팅 Q&A 모두 포함 |
 | 코드 분석 엔진 | **.NET 콘솔 앱 (`Microsoft.CodeAnalysis`/Roslyn, Syntax 전용)** — Express가 `child_process.spawn`으로 실행, JSON stdout을 파싱 | C# 코드의 의존성/구조를 정확히 뽑아내려면 Node 생태계 도구로는 부족. 단, Unity 프로젝트를 실제로 컴파일하지 않는 **Syntax 전용 분석**으로 한정 (MSBuildWorkspace 기반 Semantic 분석은 Unity 빌드 환경 재현이 번거로워 이번 스코프 제외) |
 | 중복 코드 탐지 | `jscpd` (오픈소스, C# 지원) | 직접 구현 대신 라이브러리 사용 |
 
@@ -43,21 +43,21 @@
      ├── /api/auth/github/login     → GitHub OAuth 인증 페이지로 리다이렉트
      ├── /api/auth/github/callback  → code→token 교환, 세션에 access token 저장
      ├── /api/repo/*                → GitHub API 연동 (내 저장소 목록, branch 목록, 파일 커밋)
-     ├── /api/analysis/*            → 저장소 분석 요청 접수 → 분석 엔진 spawn → 결과 JSON을 Claude에 넘겨 리포트 텍스트화
+     ├── /api/analysis/*            → 저장소 분석 요청 접수 → 분석 엔진 spawn → 결과 JSON을 Gemini에 넘겨 리포트 텍스트화
      ├── /api/steps/*               → 9단계 상태/진행률 CRUD
-     ├── /api/chat/*                → Agent와의 대화 (Claude API 프록시, SSE 스트림)
+     ├── /api/chat/*                → Agent와의 대화 (Gemini API 프록시, SSE 스트림)
      └── /api/documents/*           → Markdown 문서 조회/저장/버전
      │
      ├──spawn──▶ [.NET 콘솔 앱: Roslyn Syntax 분석기] ──stdout JSON──▶ (의존성 그래프, 메서드 수 등)
      ├──lib────▶ [jscpd] (중복 코드 탐지)
      ▼
-[JSON 파일 저장소]     [Target GitHub Repo]         [Claude API]
+[JSON 파일 저장소]     [Target GitHub Repo]         [Gemini API]
  (data/steps.json,      (docs/*.md 커밋,              (Agent 응답 생성 +
   data/messages/*.json,  소스 코드 읽기)                분석 결과 리포트화)
   data/documents/*.json)
 ```
 
-**분석 파이프라인 흐름**: `분석 요청 → Roslyn 분석기(child process) 실행 → 클래스/의존성 JSON 추출 → jscpd로 중복 블록 탐지 → 두 결과를 합쳐 Claude API에 전달 → 사람이 읽는 Markdown 리포트로 변환`. 탐지는 결정론적 도구가, 설명은 Claude가 담당하는 구조.
+**분석 파이프라인 흐름**: `분석 요청 → Roslyn 분석기(child process) 실행 → 클래스/의존성 JSON 추출 → jscpd로 중복 블록 탐지 → 두 결과를 합쳐 Gemini API에 전달 → 사람이 읽는 Markdown 리포트로 변환`. 탐지는 결정론적 도구가, 설명은 Gemini가 담당하는 구조.
 
 ---
 
@@ -146,8 +146,8 @@ data/
 **중복 코드 탐지**: 별도 구현 없이 `jscpd` npm 패키지 사용 (C# 지원, 토큰 유사도 기반)
 
 **작업 목록**
-1. 분석기 JSON + jscpd 결과를 합쳐 Claude API에 전달 → `00_Analysis_Report.md` 형식의 자연어 리포트로 변환 (탐지는 도구가, 문장화는 Claude가 담당)
-2. 리팩토링 대상 판별은 AI 판단이 아니라 **룰 기반 임계값**으로 계산 (예: 메서드 수 > 30 → God Class 플래그, Claude에는 이미 플래그된 목록만 전달해 이유를 설명하게 함)
+1. 분석기 JSON + jscpd 결과를 합쳐 Gemini API에 전달 → `00_Analysis_Report.md` 형식의 자연어 리포트로 변환 (탐지는 도구가, 문장화는 Gemini가 담당)
+2. 리팩토링 대상 판별은 AI 판단이 아니라 **룰 기반 임계값**으로 계산 (예: 메서드 수 > 30 → God Class 플래그, Gemini에는 이미 플래그된 목록만 전달해 이유를 설명하게 함)
 3. `GET /api/analysis/{id}/report` — 통계 + md 반환
 4. Approve 액션 → `Step[1]`(요구사항 분석)을 `active`로 전환, 워크스페이스로 라우팅
 
@@ -184,7 +184,7 @@ data/
 - `TypingIndicator`
 
 **작업 목록**
-1. `POST /api/chat/{step_id}/message` — 사용자 메시지 저장 → Claude API 호출(해당 Agent의 system prompt + 이전 대화 이력 + 이전 단계 md 컨텍스트) → 응답 스트리밍
+1. `POST /api/chat/{step_id}/message` — 사용자 메시지 저장 → Gemini API 호출(해당 Agent의 system prompt + 이전 대화 이력 + 이전 단계 md 컨텍스트) → 응답 스트리밍
 2. SSE 또는 WebSocket으로 "입력 중…" → 실제 토큰 스트리밍 반영 (프로토타입의 `setTimeout` 딜레이를 실제 스트림으로 대체)
 3. Agent가 질문을 "충분히 모았다"고 판단하면 자동으로 Markdown 문서 초안을 생성하도록 프롬프트 설계 (예: "8개 질문에 답변이 모이면 문서화 단계로 전환한다"는 지침을 system prompt에 명시)
 4. 질문 개수는 Agent별로 유동적일 수 있음 — UI의 `질문 N / 전체`는 총량을 Agent가 추정해 알려주는 방식으로 설계 (고정 8개가 아니라 Agent 응답에서 `total_estimate` 필드를 받아 갱신)
@@ -245,7 +245,7 @@ data/
 |---|---|---|
 | **1주차** | 셋업 + Repo 연결 화면 풀 구현 | Express 스캐폴딩, **.NET SDK 설치 확인 + Roslyn 분석기 프로젝트 스캐폴딩**, JSON 파일 저장 구조, **GitHub OAuth App 등록 + 로그인/콜백/토큰 교환 구현**, 로그인→저장소/Branch 선택→프리셋 unlock 동작(4.1) |
 | **2주차** | 분석 엔진 MVP + 리포트 화면 + 사이드바/Step 상태 | **Roslyn Syntax 분석기 + jscpd 연동**, 리포트 화면 연동(4.2), 9단계 조회/이동/progress 계산(4.3) |
-| **3주차** | 채팅형 Q&A + Claude API 연동 | 실시간 스트리밍 대화, Agent별 프롬프트 1차 버전(4.4) |
+| **3주차** | 채팅형 Q&A + Gemini API 연동 | 실시간 스트리밍 대화, Agent별 프롬프트 1차 버전(4.4) |
 | **4주차** | Markdown 편집/승인 + GitHub 커밋 연동(단일 파일) + 통합 QA | 승인 시 실제 커밋(4.5), 6절 체크리스트 기준 수동 QA, 버그 픽스, README |
 
 **압축을 위해 이번 4주 안에는 하지 않는 것**
@@ -280,6 +280,7 @@ data/
 | 대용량 저장소 분석 성능 | "상세" 프리셋이 큰 프로젝트에서 얼마나 걸릴지 미검증 | 중 — 실측 후 타임아웃/진행바 설계 필요 |
 | Markdown ↔ JSON 저장소 동기화 충돌 | 사용자가 저장소를 외부에서 직접 수정하는 경우 | 낮음 (MVP는 앱 내 편집만 공식 경로로 취급) |
 | 4주 압축 일정 | 8주 계획 대비 절반 — 병렬 작업(백엔드/프론트 동시 진행) 전제, 밀리면 4.5(GitHub 커밋 연동)부터 후순위로 미룰 것 | 높음 — 매주 진행 상황 체크 필요 |
+| AI 벤더 전환 (Claude → Gemini) | v3에서 확정. Day 7(리포트 생성)까지는 프롬프트가 텍스트 요약 위주라 이식 부담이 적지만, Day 9~10(채팅 Q&A, 스트리밍)은 SDK 호출 방식·스트리밍 API·system prompt 처리 방식이 달라 코드 재작성이 필요함. 이미 Claude 기준으로 작성된 프롬프트/SDK 코드가 있다면 이번 전환 시 재검토 필요 | 높음 — 전환 시점에 영향받는 모든 Day(7, 9, 10) 재점검 |
 
 ---
 
