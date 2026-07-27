@@ -45,14 +45,14 @@ export default function DetailOverlay({
           {/* Product image frame */}
           <div className="detail-img-container" style={{
             width: '100%',
-            height: '240px',
+            height: '180px',
             border: '2px solid #ffffff',
             background: '#111111',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
-            marginBottom: '20px',
+            marginBottom: '16px',
             position: 'relative'
           }}>
             <img
