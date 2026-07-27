@@ -227,7 +227,6 @@ GitHub Project를 만들 때 아래 필드를 사용한다.
 
 - 여러 Repository 비교
 - Notion 내보내기
-- GitHub Pages 포트폴리오 자동 생성
 - 기업 JD 기반 포트폴리오 맞춤 생성
 - AI 기반 역할 추론 자동화
 - 대용량 Repository 전체 코드 분석

@@ -92,7 +92,7 @@ PtoP는 사용자가 프로젝트 폴더나 GitHub Repository를 입력하면, A
 - KPT, 4L 등 회고 템플릿 자동 생성
 - 프로젝트 기간, 커밋 수, 기술 스택 비중 시각화
 - 여러 프로젝트 비교 후 포트폴리오 우선순위 추천
-- Notion 또는 GitHub Pages 내보내기
+- Notion 내보내기
 
 ## 12. 기대 효과
 

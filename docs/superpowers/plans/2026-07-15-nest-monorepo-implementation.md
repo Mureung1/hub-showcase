@@ -35,7 +35,7 @@
 
 **Interfaces:**
 - Produces: npm workspace `@ptop/web`
-- Preserves: 기존 Repository URL parser, mock 분석 화면, GitHub Pages base `/hub/`
+- Preserves: 기존 Repository URL parser와 mock 분석 화면
 
 - [x] **Step 1: 기존 웹 테스트가 통과하는 기준을 기록한다**
 
@@ -66,8 +66,7 @@ Expected: 5 tests pass, TypeScript exit 0, Vite build exit 0.
     "test": "node --import tsx --test src/**/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build": "vite build",
-    "preview": "vite preview",
-    "deploy": "gh-pages -d dist --no-history"
+    "preview": "vite preview"
   }
 }
 ```

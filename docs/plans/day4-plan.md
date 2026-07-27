@@ -113,7 +113,7 @@ Project
 - 현재 React/Vite 앱을 `apps/web`으로 이동한다.
 - NestJS 백엔드 앱을 `apps/api`에 생성한다.
 - 공통 타입이나 유틸이 필요해지면 이후 `packages/shared`를 추가한다.
-- GitHub Pages는 `apps/web`만 빌드해 UI 테스트용으로 배포한다.
+- 웹은 Vercel, NestJS API는 Render에 분리 배포한다.
 - NestJS 백엔드는 Render, Railway, Fly.io 등 별도 서버 배포를 고려한다.
 
 ### 조사할 라이브러리
