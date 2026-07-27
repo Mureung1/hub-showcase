@@ -66,15 +66,7 @@ export const generatedIngredientSchema = z.object({
   name: z.string().trim().min(1).max(100),
   amount: z.number().positive().max(100_000),
   unit: z.enum(STANDARD_QUANTITY_UNITS),
-}).strict().superRefine((ingredient, context) => {
-  if (ingredient.unit === "개" && !Number.isInteger(ingredient.amount)) {
-    context.addIssue({
-      code: "custom",
-      path: ["amount"],
-      message: "개 단위 사용량은 정수여야 합니다.",
-    });
-  }
-});
+}).strict();
 
 export const generatedSubstitutionSchema = z.object({
   ingredient: z.string().trim().min(1).max(100),

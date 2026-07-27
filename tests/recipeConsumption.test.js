@@ -58,3 +58,17 @@ test("표준 단위로 환산할 수 없는 단위 또는 보유 수량 부족�
     { status: "unitMismatch", selected: false },
   ]);
 });
+
+test("레시피의 소수 개 사용량을 그대로 차감 요청에 반영한다", () => {
+  const rows = buildRecipeConsumptionRows({
+    missingIngredients: [],
+    requiredIngredients: [{ name: "양파", amount: 0.5, unit: "개" }],
+    optionalIngredients: [],
+  }, [
+    { id: "onion", name: "양파", quantity: 2, unit: "개", quantityMode: "exact" },
+  ]);
+
+  assert.deepEqual(getConsumptionRequestItems(rows), [
+    { id: "onion", amount: 0.5, unit: "개" },
+  ]);
+});

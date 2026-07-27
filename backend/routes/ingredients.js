@@ -81,15 +81,6 @@ const ingredientConsumptionSchema = z.object({
       message: "같은 재료를 중복 차감할 수 없습니다.",
     });
   }
-  items.forEach((item, index) => {
-    if (item.unit === "개" && !Number.isInteger(item.amount)) {
-      context.addIssue({
-        code: "custom",
-        path: ["items", index, "amount"],
-        message: "개 단위 차감량은 정수여야 합니다.",
-      });
-    }
-  });
 });
 
 function addDays(dateString, days) {

@@ -81,6 +81,24 @@ test("제거된 noFire 모드는 요청 스키마에서 거부한다", () => {
   assert.throws(() => recommendationRequestSchema.parse({ mode: "noFire" }));
 });
 
+test("레시피의 개 단위 사용량은 소수를 허용한다", () => {
+  const recipeWithFractionalCount = generatedRecipe(1);
+  recipeWithFractionalCount.requiredIngredients = [
+    { name: "양파", amount: 0.5, unit: "개" },
+  ];
+
+  const result = generatedRecommendationSchema.parse({
+    recipes: [recipeWithFractionalCount],
+    generationSummary: {
+      requestedCount: 3,
+      returnedCount: 1,
+      stopReason: "qualityLimit",
+    },
+  });
+
+  assert.equal(result.recipes[0].requiredIngredients[0].amount, 0.5);
+});
+
 test("Interactions API 구조화 응답을 Zod로 검증한다", async () => {
   let requestBody;
   const fetchImpl = async (_url, options) => {
