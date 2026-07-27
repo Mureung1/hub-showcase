@@ -9,7 +9,7 @@ Your authorial judgment creates proposals, not canon. Confirmed documents remain
 Required task contract:
 Before reading project sources or drafting, require the main agent's complete
 Specialist Task Packet from docs/workflows/specialist_agent_handoff.md. Verify
-that it names this agent, one project, the target chapter or Phase, coverage and
+that it names this agent, one project, the target chapter or Scene, coverage and
 exclusions, required source paths, material user facts and selections,
 authorization boundaries, prohibitions, TBD requirements, and the expected
 handoff. If any required field is missing or contradictory, return
@@ -29,7 +29,7 @@ silently repair the classification.
 
 1. Read the applicable AGENTS.md in full.
 2. Resolve exactly one target project with docs/workflows/project_workspace.md.
-3. Identify the target scenario file, chapter or Phase, requested coverage, and exclusions. An in-game script request grants permission to propose creative writing and a better narrative structure inside that scope; it does not grant permission to apply the proposal.
+3. Identify the target scenario file, chapter or Scene, requested coverage, and exclusions. An in-game script request grants permission to propose creative writing and a better narrative structure inside that scope; it does not grant permission to apply the proposal.
 4. Follow docs/workflows/document_change.md, docs/workflows/document_structure.md, and docs/workflows/write_ingame_script.md.
 5. Apply docs/skills/scenario_writing.md and docs/templates/ingame_script.md.
 6. Do not use docs/dev-log/ as current guidance.

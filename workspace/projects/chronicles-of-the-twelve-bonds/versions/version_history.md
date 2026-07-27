@@ -6,6 +6,88 @@
 
 ## Entries
 
+### Version Entry: 프롤로그 Scene 2A~4 인게임 스크립트 적용
+
+#### Metadata
+
+- ID: VER-20260727-002
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-27 22:17 KST
+- 적용자: Codex
+- 변경 타입: restructure
+- 대상 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/scripts/prologue_ingame_script.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/main_scenario.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, 프로젝트 `README.md`, `design/README.md`
+- 관련 승인 큐: `APPR-20260727-002`
+- 관련 결정 로그: `DEC-20260727-002`
+- 적용된 창작·서사 공개: `CW-PROLOGUE-07`~`15`, `NR-PROLOGUE-02`
+
+#### Before
+
+프롤로그 인게임 스크립트의 확정 범위는 Scene 1이었다. Scene 2A·2B·2C는
+Scene 1의 선택 결과가 이동할 ID만 있었고 플레이어 대본·continue Outcome이
+없었다. Scene 3과 Scene 4의 플레이어 대본도 `TBD`였으며, 메인 시나리오의
+Scene 4는 피리 계약 수락 후 혼돈 보스전으로만 종료됐다.
+
+#### After
+
+Scene 2A·2B·2C에 각각 저지 실패, 관망 중 의식 완성, 이탈 중 충격파와 의식
+상실을 장면화한 `narrative_only` 대본과 continue Outcome을 추가하고 모두
+Scene 3으로 합류시켰다. Scene 3에는 혼돈·오염 묘사와 접근/도주 선택을,
+Scene 4에는 Scene 2A 이력에 따른 우호 대사, 사흉·봉인·피리 설명과
+수락/거절·도주 선택을 추가했다.
+
+Scene 3 도주는 기존 오염 게임오버로, Scene 4 거절·도주는 더 빠른 오염
+게임오버로 연결했다. 수락은 피리 현현·수령·인벤토리 추가 후 혼돈 보스전
+Scene ID `TBD`로 연결한다. 메인 시나리오, 게임 개요, 프로젝트 README와
+design README의 확정 범위를 Scene 1·2A·2B·2C·3·4로 동기화했다.
+
+#### Notes
+
+- 주의 사항: 실제 `scene_type`, speaker·entity·RAG·item·illustration·audio·VFX·animation ID, 게임오버 호출 키와 혼돈 보스전 내부 Scene ID·규칙은 `TBD`다.
+- 두 게임오버는 기존 게임오버 UI를 사용하고 현재 자동 저장을 덮어쓰지 않는다.
+- Scene 2A만 기존 저지 이력을 유지해 Scene 4 첫 신령 반응에 사용한다.
+- 남은 `provisional` 항목과 검증 조건: 없음
+
+---
+
+### Version Entry: 프롤로그 Scene 구조·ID 및 시나리오 작성 규칙 통일
+
+#### Metadata
+
+- ID: VER-20260727-001
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-27 21:29 KST
+- 적용자: Codex
+- 변경 타입: restructure
+- 대상 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/main_scenario.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/scripts/prologue_ingame_script.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/technical/ai_gm_runtime_rules.md`, 프로젝트 README·디자인 색인과 workspace 시나리오 작성 지침
+- 관련 승인 큐: `APPR-20260727-001`
+- 관련 결정 로그: `DEC-20260727-001`
+- 적용된 창작 제안: 없음
+
+#### Before
+
+메인 시나리오는 프롤로그를 Phase 1~4로 구분했고, 인게임 스크립트는
+Phase 1 범위에서 `SCENE_PROLOGUE_PHASE_*`, `P01-S01`, `*_P01_*` ID를
+사용했다. 게임 개요, 색인, 기술 ID 예시와 시나리오 작성 지침에도 서사
+하위 단위로 Phase가 남아 있었다.
+
+#### After
+
+프롤로그를 Scene 1·2A·2B·2C·3·4로 재구성하고
+`SCENE_PROLOGUE_01`, `SCENE_PROLOGUE_02A/B/C`, `SCENE_PROLOGUE_03`,
+`SCENE_PROLOGUE_04`를 확정했다. Scene 1의 line·choice·outcome ID를
+`S01` 기준으로 바꾸고 세 선택이 각 Scene 2 분기로 이동한 뒤 Scene 3에서
+합류하도록 동기화했다. 사건·대사·선택·Outcome·상태는 변경하지 않았다.
+게임 개요, 기술 ID 규칙, 프로젝트 색인, 시나리오 workflow·skill·template와
+writer 지침도 서사 하위 단위를 Scene으로 사용하도록 갱신했다.
+
+#### Notes
+
+- 주의 사항: 운영 workflow와 전투·시스템 단계의 `Phase`는 유지한다. 과거 승인·결정·버전·임시 아이디어 기록의 기존 용어도 감사 이력으로 보존한다.
+- 남은 `provisional` 항목과 검증 조건: 없음
+- 남은 범위: Scene 2A·2B·2C·3·4의 플레이어 노출 대본과 실제 구현 데이터는 `TBD`다.
+
+---
+
 ### Version Entry: 요괴 후보 목록 문서 생성
 
 #### Metadata

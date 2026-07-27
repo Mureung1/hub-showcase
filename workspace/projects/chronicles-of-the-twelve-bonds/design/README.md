@@ -10,7 +10,7 @@
 - [전체 게임 기획서](game/game_design_overview.md)
 - [세계관 설정](world/world_setting.md)
 - [메인 시나리오](narrative/main_scenario.md)
-- [프롤로그 인게임 스크립트](narrative/scripts/prologue_ingame_script.md) — 현재 확정 범위: Phase 1
+- [프롤로그 인게임 스크립트](narrative/scripts/prologue_ingame_script.md) — 현재 확정 범위: Scene 1·2A·2B·2C·3·4
 - [핵심 게임 시스템](systems/core_gameplay_systems.md)
 - [요괴 후보 목록](content/yokai_candidates.md)
 - [플레이 UI](ui/gameplay_ui.md)

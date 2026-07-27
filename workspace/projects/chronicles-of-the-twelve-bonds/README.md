@@ -15,7 +15,7 @@
 | 장르 | 동양 판타지 1인 AI 게임 마스터 TRPG |
 | 플랫폼·엔진 | PC · Unity |
 | 현재 초점 | 혼돈 튜토리얼 이후 남부 권역의 궁기 여정 설계 |
-| 마지막 동기화 | 2026-07-22 |
+| 마지막 동기화 | 2026-07-27 |
 
 ## Current Focus
 
@@ -30,7 +30,7 @@
 | game_overview | [전체 게임 기획서](design/game/game_design_overview.md) | 핵심 경험, 디자인 원칙, 상위 플레이 루프와 전체 문서 지도 |
 | world_setting | [세계관 설정](design/world/world_setting.md) | 세계 구조, 십이지신, 사흉, 인물·세력·장소와 정사 설정 |
 | scenario | [메인 시나리오](design/narrative/main_scenario.md) | 도입부터 사흉 추적, 흑의인 전투와 엔딩 분기까지의 사건 구조 |
-| scenario · ingame_script | [프롤로그 인게임 스크립트](design/narrative/scripts/prologue_ingame_script.md) | 프롤로그 Phase 1의 플레이어 노출 대본과 씬 구현 명세 |
+| scenario · ingame_script | [프롤로그 인게임 스크립트](design/narrative/scripts/prologue_ingame_script.md) | 프롤로그 Scene 1·2A·2B·2C·3·4의 플레이어 노출 대본과 씬 구현 명세 |
 | system | [핵심 게임 시스템](design/systems/core_gameplay_systems.md) | 지도·탐험, 성장, 판정, 전투, 카르마·정보 시스템 |
 | content | [요괴 후보 목록](design/content/yokai_candidates.md) | 탐험 중 조우할 비사흉 요괴 후보와 활용 검토 |
 | ui | [플레이 UI 기획서](design/ui/gameplay_ui.md) | 장면 입력 모드, 지도, 로그, 보조 메뉴와 화면 상태 |

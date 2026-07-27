@@ -18,6 +18,774 @@ AI가 생성한 변경안과 신규 문서 초안을 검토하기 위한 공간�
 
 ## Applied
 
+### APPR-20260727-002: 프롤로그 Scene 2A~4 인게임 스크립트 작성
+
+#### Metadata
+
+- ID: APPR-20260727-002
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 상태: applied
+- 생성일: 2026-07-27
+- 요청자: 사용자
+- 대상 문서 경로: 아래 Target Operations 전체
+- 기준 Git 커밋: `5b8755574219191b63f1a22aac2deb5508ea6f56`
+- 비교 대상: 대상 작업 목록 전체
+- 변경 타입: restructure
+- 관련 workflow: `docs/workflows/document_change.md`, `docs/workflows/write_ingame_script.md`, `docs/skills/scenario_writing.md`, `docs/workflows/approval_queue.md`
+
+##### Target Operations
+
+| 작업 | 대상 경로 | 비교 대상 | 작성 당시 SHA-256 | 적용 후 역할 |
+|---|---|---|---|---|
+| update | `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/scripts/prologue_ingame_script.md` | 전체 문서 | `d6ebf7b22f12458cccde8e1fe74c78886c8685ec1ff78c58a62766880472a9ad` | scenario / ingame_script |
+| update | `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/main_scenario.md` | Prologue 상세 대본 범위, Scene Flow Scene 4, Scene 4 본문 | `6d6a0e33dd23f22aeb0f39029baa8fb690eb431eb1d270255c93f9db73e2e417` | scenario |
+| update | `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md` | Document Map의 프롤로그 스크립트 설명 | `b8cb446b2cb02d021620afc41cdb2ac3cd968bdbe4c0fefe3b2cf4371ef5acdf` | game_overview |
+| update | `workspace/projects/chronicles-of-the-twelve-bonds/README.md` | Confirmed Design Documents의 프롤로그 스크립트 책임 설명 | `8d71ff5c56498447df8033396c956b80df4629d26aa298fb08ff2b673ea44bf2` | project_index |
+| update | `workspace/projects/chronicles-of-the-twelve-bonds/design/README.md` | Document Map의 프롤로그 스크립트 확정 범위 | `037749a1581c839a5f2d819675ddb6c7e73afb1b828d3727501b0d3e27922cb9` | document_index |
+
+#### Proposal
+
+현재 Scene 1까지만 작성된 프롤로그 인게임 스크립트를 Scene 2A·2B·2C,
+Scene 3, Scene 4까지 확장한다. Scene 2 세 분기는 선택에 따른 묘사만 다르게
+작성하고 게임오버 없이 Scene 3으로 합류시킨다. Scene 3의 접근·도주 분기와
+도주 게임오버는 유지한다. Scene 4에서는 신령의 설명과 피리 제안 뒤 수락하면
+혼돈 보스전으로, 거절하고 도주하면 Scene 3보다 빠르게 덮친 오염에 의한
+게임오버로 연결한다.
+
+Scene 4의 새 거절·도주 분기와 실제 대본 범위를 상위 시나리오, 게임 개요와
+두 색인에 함께 반영한다. 다섯 대상은 하나의 원자적 변경이며 일부만 적용하지
+않는다.
+
+#### Review Notes
+
+- 위험도: medium
+- 충돌 가능성: 확정 세계관·시스템·UI·저장 규칙과 직접 충돌 없음. Scene 4의 기존 단일 종료를 사용자 선택에 따라 수락/거절·도주로 확장하므로 상위 시나리오 동기화가 필요함.
+- 누락 정보: 실제 `scene_type`, 인물·RAG·아이템·일러스트·오디오·VFX·animation ID, 게임오버 호출 키, 혼돈 보스전 내부 Scene ID와 내부 전투 대본·규칙은 `TBD`.
+- 작성 당시 원본 요약: 확정 스크립트는 Scene 1 대본과 Scene 2A·2B·2C 참조만 보유한다. 메인 시나리오는 Scene 2 세 분기와 Scene 3 도주 게임오버, Scene 4 피리 계약 후 보스전 진입까지만 확정하며 Scene 4 거절 게임오버는 없다.
+- 원자적 적용: 예. 스크립트, 메인 시나리오, 게임 개요와 두 색인의 범위를 일부만 적용하지 않는다.
+- 기존 데이터 영향: 기존 Scene ID를 사용하는 실제 registry·참조·세이브 데이터가 없다는 사용자 확인을 유지한다. 이번 항목은 기존 Scene ID를 바꾸지 않고 line·choice·outcome ID를 추가한다.
+- 적용 전 재확인: 2026-07-27 기준 Target Operations 다섯 대상의 SHA-256이 작성 당시 값과 모두 일치하고 독립 검수 `pass`, 활성 필수 수정 0건과 선행 의존성 없음을 확인했다.
+- 적용 결과: Scene 2A·2B·2C·3·4 대본과 Scene 4 수락/거절·도주 분기를 반영하고 메인 시나리오, 게임 개요와 두 색인의 범위를 원자적으로 동기화했다.
+
+#### Subagent Review
+
+- 작성·창작 에이전트: `scenario_writer`
+- 작업 Phase·범위: Scene 2A·2B·2C·3·4 플레이어 대본, Scene Data, choice·Outcome, Production·QA, CW·NR과 상위 시나리오 동기화 Draft
+- Specialist Task Packet 검증: complete
+- 전달한 사용자 사실·선택·금지사항: Scene 2 무게임오버와 Scene 3 합류, Scene 3·4 도주 게임오버 모두 유지, Scene 4는 힘 부족→피리 제안→수락/거절·도주, 실제 등록 ID·보스전 규칙 창작 금지
+- 전달한 사실·입력 출처 유형: 최신 선택은 `current_user_input`, 이전 Scene 용어·실데이터 부재 확인은 `prior_user_input`, 확정 문서는 `confirmed_document`, 새 분기는 `proposal_input`, 합성 테스트 데이터 없음
+- 전달한 권한: 지정 Scene 범위의 대사·지문·선택 문구·Outcome 표현·연출과 필요한 line·choice·outcome ID 창작
+- 명시적으로 부여하지 않은 권한: 승인, 적용, 파일 수정, 새 세계관·시스템·수치·판정·보스전 규칙·추가 엔딩 창작
+- 독립 검수 에이전트: `scenario_reviewer`
+- 검수 판정: pass
+- 검수한 원본: Project Brief, 게임 개요, 메인 시나리오, 확정 프롤로그 스크립트, 세계관, 핵심 시스템, UI, AI GM 기술 규칙과 다섯 동기화 대상
+- 최초 필수 결과와 조치: `SRV-prologue-s234-001`은 Scene 4 choice→Outcome ID·result line·state·next를 정확히 명시해 해소. `SRV-prologue-s234-002`는 다섯 문서의 정확한 범위 Before→After와 원자적 동기화를 추가해 해소.
+- 해소 확인: 활성 `blocking` 0건, 활성 `required_revision` 0건
+- 남은 선택적 권고: 없음. `SRV-prologue-s234-003`의 `의식` 중의성은 writer가 `정신이 까마득해지기 직전`으로 명확화했고 재검수에서 해소됨.
+- 메인 Codex 승인 경계 확인: 검수 pass 자체는 승인·정사화·적용 권한이 아니다. 이후 사용자가 본 항목의 승인과 적용을 명시해 다섯 대상을 원자적으로 반영했다.
+
+#### Creative Completion Review
+
+| GAP ID | 대상 문서·필드 | 유형 | 위험도 | 현재 처리 | 필요한 조치 |
+|---|---|---|---|---|---|
+| `GAP-prologue-script-001` | 실제 scene_type·speaker·entity·RAG·item·illustration ID | dependency | medium | `TBD` 유지 | 실제 registry 설계·등록 시 확정 |
+| `GAP-prologue-script-002` | 혼돈 보스전 내부 Scene ID·대본·판정·전투 규칙 | dependency | high | `TBD` 유지, 이번 범위 외 | 별도 혼돈 전투 설계 |
+| `GAP-prologue-script-003` | BGM·효과음·카메라·VFX·animation 실제 리소스 ID | dependency | medium | `TBD` 유지 | 제작 범위와 등록 ID 확인 |
+| `GAP-prologue-script-004` | 게임오버 호출 키와 line 진행 규칙 | dependency | medium | 기존 UI·저장 규칙 참조, 실제 키 `TBD` | 기술 구현 계약 확정 |
+
+새 세계관 정사, 시스템 규칙, 판정, 수치 또는 보스 규칙 의존성은 없다.
+
+#### Scenario Improvement Review
+
+추가 개선 권고 없음.
+
+사용자가 선택한 Scene 4 거절·도주 게임오버는 `NR-PROLOGUE-02`로 Draft에
+공개했다. Scene 3과 Scene 4의 두 도주는 같은 오염 게임오버를 사용하지만,
+각각 정체를 알기 전의 즉시 도주와 계약 조건을 들은 뒤의 최종 거절로 의미를
+구분하고 Scene 4의 오염을 더 빠르게 연출한다.
+
+#### Draft
+
+##### Writer's Brief
+
+- 프로젝트 서사 정체성: 신화가 혼합된 가상 동양 세계에서 이상 현상을 추리하고 십이지신과 인연을 맺는 1인 AI 게임 마스터 TRPG다. 프롤로그는 우연한 목격자가 재앙을 외면할 수 없는 당사자로 바뀌는 순간이다.
+- 플레이어에게 약속한 경험: 개입·관망·이탈의 과거 태도가 기억되고, 재앙 앞에서 접근·도주와 계약·거절을 직접 결정한다.
+- 감정 목표와 극적 질문: 봉인 붕괴를 막지 못한 무력감과 오염의 공포를 지나, 도망칠 기회가 거듭 주어져도 인연의 책임을 받아들일 수 있는지 묻는다.
+- 긴장 곡선: Scene 1 선택 결과 → 봉인 파괴와 합류 → 혼돈·오염 → 첫 접근/도주 → 신령의 조건부 반응과 설명 → 힘의 격차 → 피리 제안 → 수락 또는 더 늦은 도주.
+- 신령 말투: 근엄하지만 다급하다. Scene 2A 이력이 있으면 의지를 인정해 처음부터 우호적으로 말하며, 다른 이력에서는 사태 수습을 우선하되 모욕하거나 강요하지 않는다.
+- 문체 기준: 기존 확정 Scene 1의 신비롭고 장엄한 동양 판타지 어조와 짧은 감각 묘사를 유지한다.
+
+##### 스크립트 상위 섹션 변경
+
+`Metadata`의 작성 범위를 다음으로 교체한다.
+
+```markdown
+- 작성 범위: Scene 1 `신당 진입과 조우`, Scene 2A `저지 시도와 봉인 파괴`, Scene 2B `관망과 봉인 파괴`, Scene 2C `이탈 시도와 봉인 파괴`, Scene 3 `깨어난 재앙과 오염`, Scene 4 `피리 속 신령과의 계약`
+```
+
+`Chapter Summary`는 다음 종료 상태와 범위 외를 사용한다.
+
+```markdown
+- 종료 상태:
+  - Scene 3에서 도주하면 오염에 삼켜져 게임 오버가 된다.
+  - Scene 4에서 피리를 수락하면 인연의 피리가 현현해 인벤토리에 추가되고 혼돈 보스 전투로 전환된다.
+  - Scene 4에서 제안을 거절하고 도주하면 더 빠르게 덮친 오염에 삼켜져 게임 오버가 된다.
+- 핵심 사건: 세 Scene 1 선택의 결과, 사흉 봉인 붕괴, 흑의인과 세 사흉의 이탈, 혼돈과 오염, 신령의 조건부 반응, 사흉·십이지 봉인 설명, 힘의 격차, 인연의 피리 제안
+- 범위 외: 혼돈 보스전 내부 대본·판정·전투 규칙, 후속 사흉 여정, 신규 게임오버 UI, 실제 registry·asset·item ID 확정
+```
+
+`Scene Index`를 다음으로 확장한다.
+
+| 순번 | scene_id | 제목 | input_mode | 진입 조건 | 종료/다음 씬 |
+|---|---|---|---|---|---|
+| S01 | `SCENE_PROLOGUE_01` | 신당 진입과 조우 | `choice_only` | 새 게임 시작 후 주인공 유형 선택 완료 | 선택에 따라 Scene 2A·2B·2C |
+| S02A[^CW-PROLOGUE-07] | `SCENE_PROLOGUE_02A` | 저지 시도와 봉인 파괴 | `narrative_only` | Scene 1 저지 Outcome | Scene 3 |
+| S02B[^CW-PROLOGUE-07] | `SCENE_PROLOGUE_02B` | 관망과 봉인 파괴 | `narrative_only` | Scene 1 관망 Outcome | Scene 3 |
+| S02C[^CW-PROLOGUE-07] | `SCENE_PROLOGUE_02C` | 이탈 시도와 봉인 파괴 | `narrative_only` | Scene 1 이탈 Outcome | Scene 3 |
+| S03[^CW-PROLOGUE-07] | `SCENE_PROLOGUE_03` | 깨어난 재앙과 오염 | `choice_only` | Scene 2A·2B·2C 완료 | 접근 → Scene 4, 도주 → 게임 오버 |
+| S04[^CW-PROLOGUE-07] | `SCENE_PROLOGUE_04` | 피리 속 신령과의 계약 | `choice_only` | Scene 3 접근 Outcome | 수락 → 혼돈 보스전 `TBD`, 거절·도주 → 게임 오버 |
+
+##### Scene S02A: 저지 시도와 봉인 파괴
+
+###### Scene Data
+
+- 표시 순번: `S02A`[^CW-PROLOGUE-07]
+- `scene_id`: `SCENE_PROLOGUE_02A`
+- `scene_type`: `TBD`
+- 장면 목적: 저지 선택의 행동성과 실패를 전달하고 저지 이력을 보존한 채 Scene 3으로 합류시킨다.
+- `location_id`: `LOC_ZODIAC_SHRINE_INNER_ALTAR`[^CW-PROLOGUE-01]
+- 진입 조건: `OUTCOME_PROLOGUE_S01_INTERVENE`
+- 다음 씬: `SCENE_PROLOGUE_03`
+- `input_mode`: `narrative_only`
+- `choice_presentation`: `standard`
+- `narrative_tier`: `cinematic`[^CW-PROLOGUE-13]
+- `continue_outcome_id`: `OUTCOME_PROLOGUE_S02A_CONTINUE`[^CW-PROLOGUE-07]
+- `check_config_id`: 없음
+- `rag_refs`, `illustration_id`: `TBD`
+
+###### Player-Visible Script
+
+| line_id | 화자 | 종류 | 플레이어 표시 문구 | 표시 조건 |
+|---|---|---|---|---|
+| `S02A-L001`[^CW-PROLOGUE-07] | `narrator` | narration | 무기를 치켜든 순간, 제단 위의 마지막 음절이 먼저 닫힌다.[^CW-PROLOGUE-08] | 진입 |
+| `S02A-L002`[^CW-PROLOGUE-07] | `narrator` | narration | 흑의인의 등 뒤에 닿기도 전에 붉은 균열이 한꺼번에 벌어지고, 새어 나오던 기운이 거꾸로 신당 안을 집어삼킨다.[^CW-PROLOGUE-08] | 순차 |
+| `S02A-L003`[^CW-PROLOGUE-07] | `narrator` | narration | 무너지는 돌과 검붉은 빛 사이로 흑의인의 형체가 흐려진다. 저지는 늦었지만, 맞서려 했던 뜻만은 남았다.[^CW-PROLOGUE-08] | 순차 |
+| `S02A-L004`[^CW-PROLOGUE-07] | `narrator` | narration | 봉인이 끊어지는 울림이 땅속 깊은 곳까지 내려간다.[^CW-PROLOGUE-08] | 순차 |
+
+###### Outcomes and State
+
+| outcome_id | 작성본 결과 | 상태 변화 | 다음 씬 | 공개 정보 |
+|---|---|---|---|---|
+| `OUTCOME_PROLOGUE_S02A_CONTINUE`[^CW-PROLOGUE-07] | 붕괴 결과를 확정한다. | `FLAG_PROLOGUE_TRIED_TO_STOP_RITUAL = true` 유지, 보상·패널티 없음 | `SCENE_PROLOGUE_03` | 봉인 파괴, 저지 실패 |
+
+- Production: 무기 궤적보다 먼저 균열이 완성되고 붉은 섬광·충격·석재 파열로 붕괴를 전달한다.[^CW-PROLOGUE-14]
+- QA: Scene 1 저지 Outcome에서만 진입하고, 게임오버·판정·보상·패널티 없이 `계속` 후 Scene 3으로 이동하며 flag가 Scene 4까지 유지되는지 확인한다.
+
+##### Scene S02B: 관망과 봉인 파괴
+
+###### Scene Data
+
+- 표시 순번: `S02B`[^CW-PROLOGUE-07]
+- `scene_id`: `SCENE_PROLOGUE_02B`
+- `scene_type`: `TBD`
+- 장면 목적: 방해받지 않은 의식 완성을 전달하고 Scene 3으로 합류시킨다.
+- `location_id`: `LOC_ZODIAC_SHRINE_INNER_ALTAR`[^CW-PROLOGUE-01]
+- 진입 조건: `OUTCOME_PROLOGUE_S01_OBSERVE`
+- 다음 씬: `SCENE_PROLOGUE_03`
+- `input_mode`: `narrative_only`
+- `continue_outcome_id`: `OUTCOME_PROLOGUE_S02B_CONTINUE`[^CW-PROLOGUE-07]
+- `choice_presentation`: `standard`
+- `narrative_tier`: `cinematic`[^CW-PROLOGUE-13]
+- `check_config_id`: 없음
+- `rag_refs`, `illustration_id`: `TBD`
+
+###### Player-Visible Script
+
+| line_id | 화자 | 종류 | 플레이어 표시 문구 | 표시 조건 |
+|---|---|---|---|---|
+| `S02B-L001`[^CW-PROLOGUE-07] | `narrator` | narration | 숨을 죽인 사이, 흑의인의 주문은 한 번도 끊기지 않는다.[^CW-PROLOGUE-09] | 진입 |
+| `S02B-L002`[^CW-PROLOGUE-07] | `narrator` | narration | 붉은 균열들이 제단 한가운데서 맞물리고, 오래 버텨 온 돌이 안쪽부터 천천히 갈라진다.[^CW-PROLOGUE-09] | 순차 |
+| `S02B-L003`[^CW-PROLOGUE-07] | `narrator` | narration | 지켜보던 순간들이 끝났을 때, 의식 또한 끝나 있다.[^CW-PROLOGUE-09] | 순차 |
+| `S02B-L004`[^CW-PROLOGUE-07] | `narrator` | narration | 봉인을 붙들던 기운이 끊어지며 신당 전체가 깊게 가라앉는다.[^CW-PROLOGUE-09] | 순차 |
+
+###### Outcomes and State
+
+| outcome_id | 작성본 결과 | 상태 변화 | 다음 씬 | 공개 정보 |
+|---|---|---|---|---|
+| `OUTCOME_PROLOGUE_S02B_CONTINUE`[^CW-PROLOGUE-07] | 붕괴 결과를 확정한다. | 보상·패널티 없음 | `SCENE_PROLOGUE_03` | 방해받지 않은 의식 완성, 봉인 파괴 |
+
+- Production: 숨은 관찰 시점에서 흑의인과 제단을 함께 보여주고 균열만 확대한다.[^CW-PROLOGUE-14]
+- QA: 관망 Outcome에서만 진입하고 flag·게임오버·판정·보상·패널티 없이 `계속` 후 Scene 3으로 이동하는지 확인한다.
+
+##### Scene S02C: 이탈 시도와 봉인 파괴
+
+###### Scene Data
+
+- 표시 순번: `S02C`[^CW-PROLOGUE-07]
+- `scene_id`: `SCENE_PROLOGUE_02C`
+- `scene_type`: `TBD`
+- 장면 목적: 이탈 직후 봉인 파괴 충격파에 따라잡혀 정신을 잃는 결과를 전달하고 Scene 3으로 합류시킨다.
+- `location_id`: `LOC_ZODIAC_SHRINE_INNER_ALTAR`[^CW-PROLOGUE-01]
+- 진입 조건: `OUTCOME_PROLOGUE_S01_RETREAT`
+- 다음 씬: `SCENE_PROLOGUE_03`
+- `input_mode`: `narrative_only`
+- `continue_outcome_id`: `OUTCOME_PROLOGUE_S02C_CONTINUE`[^CW-PROLOGUE-07]
+- `choice_presentation`: `standard`
+- `narrative_tier`: `cinematic`[^CW-PROLOGUE-13]
+- `check_config_id`: 없음
+- `rag_refs`, `illustration_id`: `TBD`
+
+###### Player-Visible Script
+
+| line_id | 화자 | 종류 | 플레이어 표시 문구 | 표시 조건 |
+|---|---|---|---|---|
+| `S02C-L001`[^CW-PROLOGUE-07] | `narrator` | narration | 제단에서 몸을 돌리자, 낡은 회랑 끝에 신당의 출구가 보인다.[^CW-PROLOGUE-10] | 진입 |
+| `S02C-L002`[^CW-PROLOGUE-07] | `narrator` | narration | 그러나 두 번째 발을 내딛기도 전에 등 뒤에서 산이 뒤집히는 듯한 굉음이 터진다.[^CW-PROLOGUE-10] | 순차 |
+| `S02C-L003`[^CW-PROLOGUE-07] | `narrator` | narration | 붉고 검은 충격파가 먼지와 돌조각을 앞질러 등을 덮친다.[^CW-PROLOGUE-10] | 순차 |
+| `S02C-L004`[^CW-PROLOGUE-07] | `narrator` | narration | 바닥과 천장의 경계가 뒤집히고, 신당의 모든 소리가 한순간 멀어진다.[^CW-PROLOGUE-10] | 순차 |
+| `S02C-L005`[^CW-PROLOGUE-07] | `narrator` | narration | 정신이 까마득해지기 직전, 봉인이 무너지는 울림만이 뼛속에 남는다.[^CW-PROLOGUE-10] | 순차 |
+
+###### Outcomes and State
+
+| outcome_id | 작성본 결과 | 상태 변화 | 다음 씬 | 공개 정보 |
+|---|---|---|---|---|
+| `OUTCOME_PROLOGUE_S02C_CONTINUE`[^CW-PROLOGUE-07] | 충격파에 휩쓸려 정신을 잃은 결과를 확정한다. | 보상·패널티 없음 | `SCENE_PROLOGUE_03` | 봉인 파괴의 충격파 |
+
+- Production: 출구 방향 이동 뒤 후방 섬광·강한 흔들림·암전으로 충격파를 전달한다.[^CW-PROLOGUE-14]
+- QA: 이탈 Outcome에서만 진입하고 게임오버·피해·판정·패널티 없이 `계속` 후 Scene 3의 기상 문구로 이동하는지 확인한다.
+
+##### Scene S03: 깨어난 재앙과 오염
+
+###### Scene Data
+
+- 표시 순번: `S03`[^CW-PROLOGUE-07]
+- `scene_id`: `SCENE_PROLOGUE_03`
+- `scene_type`: `TBD`
+- 장면 목적: 세 결과를 같은 재앙 상태로 합류시키고 혼돈·오염을 보여준 뒤 접근 또는 즉시 도주를 선택하게 한다.
+- `location_id`: `LOC_ZODIAC_SHRINE_INNER_ALTAR`[^CW-PROLOGUE-01]
+- 진입 조건: Scene 2A·2B·2C 중 하나의 continue Outcome
+- `input_mode`: `choice_only`
+- `choice_presentation`: `emphasis`[^CW-PROLOGUE-13]
+- `narrative_tier`: `cinematic`[^CW-PROLOGUE-13]
+- `check_config_id`: 없음
+- `rag_refs`, `illustration_id`: `TBD`
+
+###### Player-Visible Script
+
+| line_id | 화자 | 종류 | 플레이어 표시 문구 | 표시 조건 |
+|---|---|---|---|---|
+| `S03-L001-A`[^CW-PROLOGUE-07] | `narrator` | narration | 귀를 메운 울림이 잦아들자 무너진 제단이 다시 시야에 들어온다.[^CW-PROLOGUE-11] | Scene 2A·2B 경유 |
+| `S03-L001-C`[^CW-PROLOGUE-07] | `narrator` | narration | 차가운 돌바닥 위에서 눈을 뜨자 무너진 제단이 기울어진 채 시야를 가득 채운다.[^CW-PROLOGUE-11] | Scene 2C 경유 |
+| `S03-L002`[^CW-PROLOGUE-07] | `narrator` | narration | 흑의인은 흔적도 없이 사라졌고, 무너진 신당 너머로 세 개의 흉한 기척이 서로 다른 방향으로 멀어진다.[^CW-PROLOGUE-11] | 공통 |
+| `S03-L003`[^CW-PROLOGUE-07] | `narrator` | narration | 제단 한가운데에는 산처럼 거대한 형체 하나만이 남아 있다.[^CW-PROLOGUE-11] | 공통 |
+| `S03-L004`[^CW-PROLOGUE-07] | `narrator` | narration | 그것이 발을 옮길 때마다 바닥의 이끼가 검게 마르고, 돌 틈에서 번진 어둠이 살아 있는 것처럼 사방으로 뻗는다.[^CW-PROLOGUE-11] | 공통 |
+| `S03-L005`[^CW-PROLOGUE-07] | `narrator` | narration | 출구는 아직 보인다. 하지만 검은 오염도 발끝 가까이 다가오고 있다.[^CW-PROLOGUE-11] | 선택지 직전 |
+| `S03-L006`[^CW-PROLOGUE-07] | `narrator` | narration | 재앙의 정체를 확인하기 위해 다가갈 것인가, 지금 신당을 벗어날 것인가?[^CW-PROLOGUE-11] | 선택지 직전 |
+| `S03-L007`[^CW-PROLOGUE-07] | `narrator` | narration | 신당 밖을 향해 몸을 돌린 순간, 검은 흔적들이 한꺼번에 발밑으로 모여든다.[^CW-PROLOGUE-11] | 도주 Outcome |
+| `S03-L008`[^CW-PROLOGUE-07] | `narrator` | narration | 문턱은 몇 걸음 앞에 있는데도 다리는 물속에 잠긴 듯 무거워진다. 시든 이끼의 검음이 발목을 지나 숨결까지 타고 오른다.[^CW-PROLOGUE-11] | 도주 Outcome |
+| `S03-L009`[^CW-PROLOGUE-07] | `narrator` | narration | 마지막 빛이 닿기 전에, 신당과 몸의 감각이 함께 검은 오염 속으로 가라앉는다.[^CW-PROLOGUE-11] | 도주 Outcome |
+
+###### Choices / Allowed Actions
+
+| choice/action ID | 플레이어 표시 문구 | 조건 | check_config_id | outcome_id |
+|---|---|---|---|---|
+| `CHOICE_PROLOGUE_S03_APPROACH`[^CW-PROLOGUE-07] | 거대한 재앙에게 접근해 정체를 확인한다. | 항상 | 없음 | `OUTCOME_PROLOGUE_S03_APPROACH`[^CW-PROLOGUE-07] |
+| `CHOICE_PROLOGUE_S03_FLEE`[^CW-PROLOGUE-07] | 신당 밖으로 도망친다. | 항상 | 없음 | `OUTCOME_PROLOGUE_S03_FLEE_GAME_OVER`[^CW-PROLOGUE-07] |
+
+###### Outcomes and State
+
+| outcome_id | 작성본 결과 | 상태 변화 | 다음 씬 | 공개 정보 |
+|---|---|---|---|---|
+| `OUTCOME_PROLOGUE_S03_APPROACH`[^CW-PROLOGUE-07] | 재앙 곁으로 접근한다. | 보상·패널티 없음 | `SCENE_PROLOGUE_04` | 오염을 퍼뜨리는 거대한 재앙 |
+| `OUTCOME_PROLOGUE_S03_FLEE_GAME_OVER`[^CW-PROLOGUE-07] | `S03-L007`~`S03-L009` 표시 후 기존 게임오버로 전환한다. | 현재 자동 저장을 덮어쓰지 않음, 실제 상태 키 `TBD`[^CW-PROLOGUE-15] | 기존 게임오버 UI | 오염에 휩쓸린 결과 |
+
+- Production: 붕괴한 제단, 혼돈 실루엣과 바닥 오염을 한 구도에서 보여주고 도주 시 발목부터 화면 가장자리까지 번진 뒤 암전한다.[^CW-PROLOGUE-14]
+- QA: 2A·2B와 2C의 첫 line 조건, 사흉 이름 비공개, 정확히 두 선택지, 접근→Scene 4, 도주 전용 line→기존 게임오버 UI와 autosave 미덮어쓰기를 확인한다.
+
+##### Scene S04: 피리 속 신령과의 계약
+
+###### Scene Data
+
+- 표시 순번: `S04`[^CW-PROLOGUE-07]
+- `scene_id`: `SCENE_PROLOGUE_04`
+- `scene_type`: `TBD`
+- 장면 목적: 선택 이력에 따라 신령의 첫 반응을 달리하고 혼돈·사흉·봉인 붕괴와 힘의 격차를 설명한 뒤 피리 수락 또는 거절·도주를 선택하게 한다.
+- `location_id`: `LOC_ZODIAC_SHRINE_INNER_ALTAR`[^CW-PROLOGUE-01]
+- 진입 조건: `OUTCOME_PROLOGUE_S03_APPROACH`
+- `input_mode`: `choice_only`
+- `choice_presentation`: `emphasis`[^CW-PROLOGUE-13]
+- `narrative_tier`: `cinematic`[^CW-PROLOGUE-13]
+- `check_config_id`: 없음
+- `rag_refs`, `illustration_id`, 신령·혼돈 실제 ID: `TBD`
+
+###### Player-Visible Script
+
+| line_id | 화자 | 종류 | 플레이어 표시 문구 | 표시 조건 |
+|---|---|---|---|---|
+| `S04-L001-A`[^CW-PROLOGUE-07] | 신령 | dialogue | “봉인을 지키려 몸을 던진 자여. 그 뜻은 이미 보았다.”[^CW-PROLOGUE-12] | 저지 flag true |
+| `S04-L001-BC`[^CW-PROLOGUE-07] | 신령 | dialogue | “마침내 재앙을 향해 발을 돌렸구나. 늦었으나, 아직 끝난 것은 아니다.”[^CW-PROLOGUE-12] | 저지 flag 없음 |
+| `S04-L002`[^CW-PROLOGUE-07] | `narrator` | narration | 모습 없는 목소리가 귓가가 아니라 머릿속 깊은 곳에서 울린다.[^CW-PROLOGUE-12] | 공통 |
+| `S04-L003`[^CW-PROLOGUE-07] | 신령 | dialogue | “나는 인연의 피리에 깃든 신령이다. 네 앞의 재앙은 사흉 가운데 하나, 혼돈.”[^CW-PROLOGUE-12] | 공통 |
+| `S04-L004`[^CW-PROLOGUE-07] | 신령 | dialogue | “십이지신이 붙들던 봉인은 무너졌다. 궁기와 도올, 도철은 이미 신당을 벗어났고, 혼돈만이 이곳에 남아 오염을 퍼뜨리고 있다.”[^CW-PROLOGUE-12] | 공통 |
+| `S04-L005`[^CW-PROLOGUE-07] | `narrator` | narration | 혼돈이 발을 들어 올리는 것만으로 숨이 조여 온다. 검은 오염 앞에서 홀로 맞설 수 없는 힘의 격차가 선명해진다.[^CW-PROLOGUE-12] | 공통 |
+| `S04-L006`[^CW-PROLOGUE-07] | 신령 | dialogue | “기백만으로 저것을 막을 수는 없다. 나와 인연을 맺고 피리를 받으라. 십이지의 편린을 다룰 권능을 빌려주겠다.”[^CW-PROLOGUE-12] | 공통 |
+| `S04-L007`[^CW-PROLOGUE-07] | 신령 | dialogue | “피리는 봉인과 함께 상했다. 지금 응답할 수 있는 것은 원숭이와 닭, 개뿐이다. 그러나 혼돈을 상대하기에는 충분하다.”[^CW-PROLOGUE-12] | 공통 |
+| `S04-L008`[^CW-PROLOGUE-07] | `narrator` | narration | 검은 오염이 원을 좁혀 오는 가운데, 보이지 않는 신령이 대답을 기다린다.[^CW-PROLOGUE-12] | 선택지 직전 |
+| `S04-L009-ACCEPT`[^CW-PROLOGUE-07] | `narrator` | narration | 수락의 뜻을 정하는 순간, 허공에 흩어져 있던 빛이 한곳으로 모인다.[^CW-PROLOGUE-12] | 수락 Outcome |
+| `S04-L010-ACCEPT`[^CW-PROLOGUE-07] | `narrator` | narration | 금이 간 인연의 피리가 눈앞에 현현하고, 따뜻한 울림과 함께 손안으로 내려앉는다.[^CW-PROLOGUE-12] | 수락 Outcome |
+| `S04-L011-ACCEPT`[^CW-PROLOGUE-07] | 신령 | dialogue | “피리를 들라. 세 인연이 그대의 부름을 기다리고 있다.”[^CW-PROLOGUE-12] | 수락 Outcome |
+| `S04-L009-REFUSE`[^CW-PROLOGUE-07] | `narrator` | narration | 제안을 거절하고 돌아서는 순간, 발밑의 검음이 기다렸다는 듯 치솟는다.[^CW-PROLOGUE-12] | 거절·도주 Outcome |
+| `S04-L010-REFUSE`[^CW-PROLOGUE-07] | 신령 | dialogue | “멈춰라. 이번에는—”[^CW-PROLOGUE-12] | 거절·도주 Outcome |
+| `S04-L011-REFUSE`[^CW-PROLOGUE-07] | `narrator` | narration | 경고가 끝나기도 전에 오염이 그림자보다 먼저 앞을 막는다. 한 걸음조차 떼기 전에 검은 기운이 온몸을 휘감는다.[^CW-PROLOGUE-12] | 거절·도주 Outcome |
+| `S04-L012-REFUSE`[^CW-PROLOGUE-07] | `narrator` | narration | 숨을 들이쉴 틈도 없이 빛과 소리가 꺼지고, 신당은 완전한 어둠 속으로 가라앉는다.[^CW-PROLOGUE-12] | 거절·도주 Outcome |
+
+###### Choices / Allowed Actions
+
+| choice/action ID | 플레이어 표시 문구 | 조건 | check_config_id | outcome_id |
+|---|---|---|---|---|
+| `CHOICE_PROLOGUE_S04_ACCEPT_FLUTE`[^CW-PROLOGUE-07] | 신령의 제안을 받아들이고 피리를 받는다. | 항상 | 없음 | `OUTCOME_PROLOGUE_S04_ACCEPT_FLUTE`[^CW-PROLOGUE-07] |
+| `CHOICE_PROLOGUE_S04_REFUSE_AND_FLEE`[^CW-PROLOGUE-07] | 제안을 거절하고 돌아서 도망친다. | 항상 | 없음 | `OUTCOME_PROLOGUE_S04_REFUSE_AND_FLEE_GAME_OVER`[^CW-PROLOGUE-07] |
+
+###### Outcomes and State
+
+| outcome_id | result lines·작성본 결과 | 상태 변화 | 다음 씬·화면 | 공개 정보 |
+|---|---|---|---|---|
+| `OUTCOME_PROLOGUE_S04_ACCEPT_FLUTE`[^CW-PROLOGUE-07] | `S04-L009-ACCEPT`~`S04-L011-ACCEPT`를 순서대로 표시한다. | 피리 현현·수령·인벤토리 추가, 실제 `ITEM_` ID·상태 키 `TBD`[^CW-PROLOGUE-15] | 혼돈 보스전 Scene ID `TBD` | 피리 수령, 원숭이·닭·개 사용 가능 |
+| `OUTCOME_PROLOGUE_S04_REFUSE_AND_FLEE_GAME_OVER`[^CW-PROLOGUE-07] | `S04-L009-REFUSE`~`S04-L012-REFUSE`를 순서대로 표시한 뒤 기존 게임오버를 호출한다. | 현재 자동 저장을 덮어쓰지 않음, 실제 호출 계약·상태 키 `TBD`[^CW-PROLOGUE-15] | 기존 게임오버 UI | 더 빠른 오염에 휩쓸린 결과 |
+
+- Production: 혼돈과 오염을 배경에 유지하고 신령은 음성과 빛으로만 표현한다. 수락 시 피리 현현으로 초점을 옮기고, 거절 시 Scene 3보다 빠르게 오염이 화면을 덮는다.[^CW-PROLOGUE-14]
+- QA: 2A flag 조건과 공통 합류, 설명 공개 순서, 선택 전 상태 미적용, choice→Outcome 정확한 연결, 결과 line 상호 배타성, 피리 1회 추가, 보스 Scene ID `TBD`, 두 게임오버의 기존 UI·autosave 규칙을 확인한다.
+
+##### Open Questions / TBD 교체
+
+- TBD: Unity가 사용할 실제 `scene_type`
+- TBD: 주인공·흑의인·신령·혼돈·신당·피리·RAG 연결 ID의 실제 등록값
+- TBD: Scene 2A·2B·2C·3·4의 실제 `illustration_id`
+- TBD: 인연의 피리 실제 `ITEM_` ID와 인벤토리 상태 키
+- TBD: 수락 후 진입할 confirmed 혼돈 보스전 내부 Scene ID
+- TBD: 혼돈 보스전 내부 플레이어 대본·판정·전투 규칙
+- TBD: 실제 게임오버 상태 키와 호출 계약
+- TBD: 한 화면 글자 수와 line 자동·수동 진행 규칙
+- TBD: BGM·효과음·카메라·VFX·animation 리소스 ID와 제작 가능 범위
+
+##### Creative Footnotes 추가
+
+기존 `CW-PROLOGUE-01`~`06`은 유지한다.
+
+[^CW-PROLOGUE-07]: 표시 순번 `S02A`·`S02B`·`S02C`·`S03`·`S04`, 해당 모든 `S02A-L001`~`S04-L012-REFUSE`, `CHOICE_PROLOGUE_S03_APPROACH`, `CHOICE_PROLOGUE_S03_FLEE`, `CHOICE_PROLOGUE_S04_ACCEPT_FLUTE`, `CHOICE_PROLOGUE_S04_REFUSE_AND_FLEE`, `OUTCOME_PROLOGUE_S02A_CONTINUE`, `OUTCOME_PROLOGUE_S02B_CONTINUE`, `OUTCOME_PROLOGUE_S02C_CONTINUE`, `OUTCOME_PROLOGUE_S03_APPROACH`, `OUTCOME_PROLOGUE_S03_FLEE_GAME_OVER`, `OUTCOME_PROLOGUE_S04_ACCEPT_FLUTE`, `OUTCOME_PROLOGUE_S04_REFUSE_AND_FLEE_GAME_OVER`는 상위 시나리오에 없는 구현 연결 ID 제안이다. 기존 실제 registry 데이터는 없으며 향후 등록 시 문서·Unity·QA 참조를 같은 값으로 맞춰야 한다.
+
+[^CW-PROLOGUE-08]: `S02A-L001`~`S02A-L004`는 저지보다 주문이 먼저 완성되는 사건을 행동 직후의 감각과 붕괴로 장면화한다. 정사·결과는 바꾸지 않는다.
+
+[^CW-PROLOGUE-09]: `S02B-L001`~`S02B-L004`는 방해받지 않은 의식 완성과 제단 붕괴의 인과를 관망 선택의 시간 흐름으로 장면화한다. 보상·패널티·추가 정보는 없다.
+
+[^CW-PROLOGUE-10]: `S02C-L001`~`S02C-L005`는 출구가 보인 뒤 충격파가 따라잡아 플레이어가 정신을 잃는 결과를 장면화한다. `S02C-L005`는 봉인 의식 중단으로 오독되지 않도록 `정신이 까마득해지기 직전`으로 명확화했다. 게임오버·피해 상태는 추가하지 않는다.
+
+[^CW-PROLOGUE-11]: `S03-L001-A`, `S03-L001-C`, `S03-L002`~`S03-L009`는 세 분기의 합류와 도주 게임오버 직전 감각을 장면화한다. 게임오버 UI·저장 규칙은 바꾸지 않는다.
+
+[^CW-PROLOGUE-12]: `S04-L001-A`, `S04-L001-BC`, `S04-L002`~`S04-L012-REFUSE`는 조건부 신령 반응, 설명, 피리 제안, 수락과 거절·도주 결과를 구체 대사·연출로 작성한다. 거절 게임오버는 `NR-PROLOGUE-02`에 의존한다.
+
+[^CW-PROLOGUE-13]: Scene 2A·2B·2C·3·4의 `narrative_tier: cinematic`과 Scene 3·4의 `choice_presentation: emphasis`는 허용된 UI·기술 값 중 연출 밀도와 선택 가독성을 위한 제안이다. 자동 확정·자연어 입력은 추가하지 않는다.
+
+[^CW-PROLOGUE-14]: Scene 2A·2B·2C·3·4의 배경·BGM·효과음·카메라·VFX·animation Production Notes는 세 결과와 두 오염 속도를 구분하기 위한 제작 제안이다. 실제 리소스 ID는 모두 `TBD`다.
+
+[^CW-PROLOGUE-15]: 두 게임오버 Outcome의 호출·저장 표현과 피리 수락 Outcome의 인벤토리 표현은 확정된 결과를 구현 필드로 드러낸 것이다. 실제 item/state/call 키는 `TBD`로 유지한다.
+
+##### Narrative Revision Log 추가
+
+기존 `NR-PROLOGUE-01`은 유지한다.
+
+| revision_id | 원본 경로·섹션 | 원본 구조 | 작성본 구조 | 변경 이유 | 기대 플레이 경험 | 연속성·후속 영향 | 승인 후 동기화 대상 |
+|---|---|---|---|---|---|---|---|
+| `NR-PROLOGUE-02` | 메인 시나리오 Scene 4, 스크립트 Metadata·Summary·TBD, 게임 개요와 두 색인의 프롤로그 범위 | Scene 4는 피리 수락 후 보스전으로만 끝나며 스크립트와 네 owner/index 표기는 Scene 1만 확정 범위로 둔다. | 힘의 격차 뒤 피리를 제안하고 수락은 `OUTCOME_PROLOGUE_S04_ACCEPT_FLUTE`, 거절·도주는 `OUTCOME_PROLOGUE_S04_REFUSE_AND_FLEE_GAME_OVER`로 연결한다. 스크립트 범위는 Scene 1·2A·2B·2C·3·4 전체다. | 계약을 실제 선택으로 만들고 두 도주의 시점과 의미를 구분하며 모든 owner/index 범위를 일치시키기 위해서다. | 수락은 책임을 짊어지는 결단이 되고, 거절은 더 빠른 오염으로 끝난다. 보스전 규칙과 새 엔딩은 추가하지 않는다. | 다섯 Target Operations를 하나의 `restructure`로 원자적으로 적용한다. |
+
+##### `main_scenario.md` 교체
+
+```markdown
+> 상세 대본: [프롤로그 인게임 스크립트](scripts/prologue_ingame_script.md) — 현재 확정 범위: Scene 1·2A·2B·2C·3·4
+
+| Scene 4 | `SCENE_PROLOGUE_04` | Scene 3에서 혼돈에게 접근 | 피리 수락 → 혼돈 보스 전투, 거절·도주 → 게임 오버 |
+
+### Scene 4: 피리 속 신령과의 계약
+
+- `scene_id`: `SCENE_PROLOGUE_04`
+- 진입 조건: Scene 3에서 혼돈에게 접근한다.
+- 우호 조건: Scene 2A에서 흑의인 저지를 시도한 경우에만 신령이 처음부터 우호적으로 반응한다.
+- 모습을 드러내지 않은 신령의 목소리가 플레이어의 머릿속에 울린다.
+- 신령은 혼돈의 정체, 궁기·도올·도철의 도주와 십이지신이 지키던 봉인의 붕괴를 설명한다.
+- 혼돈과 오염 앞에서 플레이어 혼자서는 맞설 수 없는 힘의 격차가 드러나고, 신령은 십이지의 편린을 다룰 권능과 인연의 피리를 제안한다.
+- 손상된 피리로는 원숭이, 닭, 개만 사용할 수 있지만 혼돈을 상대하기에는 충분하다.
+- 플레이어 선택과 분기:
+  - 신령의 제안을 받아들이고 피리를 받는다. → 피리가 눈앞에 현현하고 인벤토리에 추가된 뒤 혼돈 보스 전투로 전환된다.
+  - 제안을 거절하고 돌아서 도망친다. → Scene 3보다 빠르게 다가온 오염에 휩쓸려 게임 오버가 된다.
+- 게임오버 처리: 현재 자동 저장을 덮어쓰지 않고 기존 게임 오버 UI 규칙을 따른다.
+- 종료 조건: 수락하면 피리를 수령하고 혼돈 보스 전투로 전환되며, 거절·도주하면 게임 오버 처리를 수행한다.
+```
+
+##### 개요·색인 교체
+
+`game_design_overview.md`:
+
+```markdown
+- [프롤로그 인게임 스크립트](../narrative/scripts/prologue_ingame_script.md): 프롤로그 Scene 1·2A·2B·2C·3·4의 플레이어 노출 대본과 씬 구현 명세
+```
+
+프로젝트 `README.md`:
+
+```markdown
+| scenario · ingame_script | [프롤로그 인게임 스크립트](design/narrative/scripts/prologue_ingame_script.md) | 프롤로그 Scene 1·2A·2B·2C·3·4의 플레이어 노출 대본과 씬 구현 명세 |
+```
+
+`design/README.md`:
+
+```markdown
+- [프롤로그 인게임 스크립트](narrative/scripts/prologue_ingame_script.md) — 현재 확정 범위: Scene 1·2A·2B·2C·3·4
+```
+
+#### Decision History
+
+##### Decision Entry
+
+- 결정: 승인 및 적용
+- 결정자: 사용자
+- 결정일: 2026-07-27
+- 이유: 사용자가 현재 유일한 pending 항목을 `승인하고 적용해줘`라고 명시했다.
+- 결정 당시 Draft 요약: Scene 2A·2B·2C의 무게임오버 합류 대본, Scene 3 접근/도주, Scene 4 피리 수락/거절·도주와 두 번째 게임오버, 다섯 문서 범위 동기화
+
+#### Reconfirmation
+
+- 진입 사유: 승인 후 적용 전 원본·검수·의존성 확인
+- 감지일: 2026-07-27
+- 현재 원본 요약: Target Operations 다섯 대상은 승인안 작성 당시 내용과 SHA-256을 유지했다.
+- 비교 결과: 다섯 원본 해시가 모두 일치하고 reviewer `pass`, 활성 `blocking`·`required_revision` 0건, 선행 의존 승인 없음이 확인됐다.
+- 후속 상태: applied
+- 재확인 결정자: 사용자
+- 재확인 결정일: 2026-07-27
+- 재확인 이유: 현재 유일한 pending 항목의 승인과 적용을 명시했다.
+
+#### Links
+
+- 관련 결정 로그: `DEC-20260727-002`
+- 관련 버전 기록: `VER-20260727-002`
+- 근거 파일: Target Operations 전체, `workspace/projects/chronicles-of-the-twelve-bonds/project_brief.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/world/world_setting.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/systems/core_gameplay_systems.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/ui/gameplay_ui.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/technical/ai_gm_runtime_rules.md`
+- 상위/대체 승인 항목: `APPR-20260727-001`
+- 선행/의존 승인 항목: 없음
+
+---
+
+### APPR-20260727-001: 프롤로그 Scene 구조·ID 및 시나리오 작성 규칙 통일
+
+#### Metadata
+
+- ID: APPR-20260727-001
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 상태: applied
+- 생성일: 2026-07-27
+- 요청자: 사용자
+- 대상 문서 경로: 아래 Target Operations 전체
+- 기준 Git 커밋: `5b8755574219191b63f1a22aac2deb5508ea6f56`
+- 비교 대상: 대상 작업 목록 전체
+- 변경 타입: restructure
+- 관련 workflow: `docs/workflows/document_change.md`, `docs/skills/scenario_review.md`, `docs/workflows/write_ingame_script.md`, `docs/skills/document_completion.md`
+
+##### Target Operations
+
+| 작업 | 대상 경로 | 비교 대상 | 작성 당시 SHA-256 | 적용 후 역할 |
+|---|---|---|---|---|
+| update | `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/main_scenario.md` | 전체 문서 | `199f9635689ba6cf8185264eda1977b64dbe318de5335deb2f0dcbd405764804` | scenario |
+| update | `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/scripts/prologue_ingame_script.md` | 전체 문서 | `cb37e66a051a395e8f158561dd13c7428bf9047247fbaeba3374d33f5efdda38` | scenario / ingame_script |
+| update | `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md` | Document Map | `93ad405f0a4ac2596772d4926da18d0449b179b4616e5359bdec149abbbcb01e` | game_overview |
+| update | `workspace/projects/chronicles-of-the-twelve-bonds/design/technical/ai_gm_runtime_rules.md` | 세션 상태·공통 ID 명명 규칙 | `b60404a5c082626ff6b3f85a477cb4ffe5ba82a78e3e328a87af7a5584e140ba` | technical |
+| update | `workspace/projects/chronicles-of-the-twelve-bonds/README.md` | Confirmed Design Documents | `f0ed12b4922fc268d6349a6306eed24eafea74bff92c4199b5831b0acf5550a7` | project_index |
+| update | `workspace/projects/chronicles-of-the-twelve-bonds/design/README.md` | Document Map | `fb9d6551fef981bb5e03fd2721c67a66597951c00175ea74b22b1c1bb7770cf0` | document_index |
+| update | `docs/workflows/document_structure.md` | scenario 역할·분류 규칙 | `4d0aad680cac0b9bd45744a701b5eec100bdd2a8e96e55a6e7826ee2bf924710` | workspace_workflow |
+| update | `docs/workflows/write_ingame_script.md` | 대상 범위 확인 규칙 | `51f431121edd962cf31b5cf66fcccb18216a7a55c1899d08438e737406f87916` | workspace_workflow |
+| update | `docs/skills/document_completion.md` | Scenario 필수 필드 | `2eb0b880c4bcb10ed568a6f1967a69851c30d7e3bf410532bf674e53cd5bdb10` | workspace_skill |
+| update | `docs/templates/scenario.md` | Narrative Structure 단위 | `6bb8adba8d47be3b71488f9c2f3b7ae107ac54a0679deb1b7927568543a42217` | workspace_template |
+| update | `README.md` | 인게임 스크립트 요청 예시 | `bb84ff2554731893dec754382308c95b566259becaa58874d3dbfa8bbc9f60a3` | workspace_guide |
+| update | `.codex/agents/scenario_writer.toml` | target narrative unit 표현 | `a196d03304fe5ee77f97929b4272f1e4d74e2c32c82c13c20eec7c8c6f1f405b` | agent_instruction |
+
+#### Proposal
+
+프롤로그의 기존 Phase 1~4를 하나의 입력 대기 또는 확정 결과 전달 단위인
+Scene으로 재구성한다. Scene 1의 세 선택 결과는 Scene 2A·2B·2C로 분리하고,
+모두 Scene 3에서 합류한 뒤 Scene 4의 신령 계약으로 이어진다. 기존 사건,
+대사, 선택, Outcome, 보상·패널티와 상태 변화는 바꾸지 않는다.
+
+시나리오의 막·챕터·프롤로그 같은 큰 서사 단위 아래에서는 앞으로 `Scene`을
+사용한다. 작업 workflow의 실행 단계나 전투·시스템 단계의 `Phase`에는 이
+규칙을 적용하지 않는다.
+
+#### Review Notes
+
+- 위험도: high
+- 충돌 가능성: 문서 구조와 ID 매핑 자체에는 충돌이 없다. 다만 실제 Unity·RAG·content registry, 지도 노드, 세션 이벤트, SceneMemory 또는 세이브 데이터에 기존 ID가 등록되어 있다면 적용 전에 동기화·호환 범위를 확정해야 한다.
+- 누락 정보: 실제 registry·참조·저장 데이터의 존재 여부와, 존재할 때 필요한 migration/compatibility 범위
+- 작성 당시 원본 요약: 프롤로그는 Phase 1~4로 구분되고 인게임 스크립트는 Phase 1 대본과 `SCENE_PROLOGUE_PHASE_*`, `P01-S01`, `*_P01_*` 연결 ID를 사용한다.
+- 원자적 적용: 예. 메인 시나리오, 인게임 스크립트, 게임 개요, 기술 문서, 색인과 workspace 작성 규칙을 일부만 적용하지 않는다.
+- 적용 중단 조건: `GAP-ai-gm-runtime-rules-001`이 해소되지 않으면 적용하지 않는다. 기존 registry·참조·저장 데이터가 발견되면 `GAP-ai-gm-runtime-rules-002`의 migration/compatibility 범위와 검증 조건까지 확정한 뒤 원본을 재확인하고 다시 승인받는다.
+- 승인 후 적용 확인: 저장소 내부에는 Unity 프로젝트·실제 registry·세이브 데이터가 없고 Target Operations 원본 해시는 모두 일치한다. 저장소 밖 실제 데이터의 존재 여부는 사용자 사실이므로 확인 전까지 적용을 보류한다.
+- 의존성 해소: 2026-07-27 사용자가 기존 ID를 사용하는 실제 registry·참조·세이브 데이터가 없다고 확인했다. `GAP-ai-gm-runtime-rules-001`은 해소되었고 `GAP-ai-gm-runtime-rules-002`는 비적용으로 종료했다.
+- 적용 결과: Target Operations 12개를 모두 반영하고 활성 문서의 Scene·line·choice·outcome 참조, 게임 개요·색인과 workspace 작성 규칙을 동기화했다.
+
+#### Subagent Review
+
+- 작성·창작 에이전트: `scenario_designer`, `scenario_writer`, `design_creative_planner`
+- 작업 Phase·범위: 일반 시나리오 Scene 재구성, 인게임 스크립트 Scene/ID 동기화, 비시나리오 `classify`
+- Specialist Task Packet 검증: complete
+- 전달한 사용자 사실·선택·금지사항: 서사 하위 단위는 Scene, `SCENE_PROLOGUE_01` 및 `02A` 형식, 모든 연결 ID를 S01 기준으로 통일, 새 서사 창작 금지, 작업·전투 Phase 제외
+- 전달한 사실·입력 출처 유형: 사용자 선택은 `current_user_input`, 현재 확정 문서는 `confirmed_document`, 전문 handoff와 review finding은 `proposal_input`, 합성 테스트 데이터 없음
+- 전달한 권한: 사용자가 지정한 Scene 경계와 ID를 사용한 read-only Draft 및 GAP 분류
+- 명시적으로 부여하지 않은 권한: 새 사건·대사·규칙 창작, 대안 생성, 승인, 적용, 프로젝트 파일 수정
+- 독립 검수 에이전트: `scenario_reviewer`
+- 검수 판정: pass
+- 검수한 원본: Project Brief, 게임 개요, 메인 시나리오, 프롤로그 스크립트, 세계관, 시스템, UI, AI GM 기술 규칙
+- 최초 필수 결과와 조치: `SRV-prologue-scene-restructure-001`은 기술 GAP/TBD와 적용 중단 조건을 대본에 추가해 해소. `SRV-prologue-scene-restructure-002`는 게임 개요의 정확한 두 동기화 문구를 추가해 해소.
+- 해소 확인: 활성 `blocking` 또는 `required_revision` 0건
+- 남은 선택적 권고: 없음
+- 메인 Codex 승인 경계 확인: 검수 pass는 승인·정사화·적용 권한이 아니며 본 항목은 pending으로만 저장
+
+#### Creative Completion Review
+
+아래 메인 시나리오 GAP 5건은 기존 Open Questions를 그대로 유지한 것이며
+이번 Scene 변경으로 새로 생기지 않았다. 창작 허가나 선택으로 취급하지 않는다.
+
+| GAP ID | 대상 문서·필드 | 유형 | 위험도 | 현재 처리 | 필요한 조치 |
+|---|---|---|---|---|---|
+| `GAP-main-scenario-001` | 최초 자연어 입력 Scene | creative_fillable | medium | `TBD` 유지 | 별도 범위에서 Scene 선택 |
+| `GAP-main-scenario-002` | 궁기·도올·도철 단서와 Scene 구성 | creative_fillable | high | `TBD` 유지 | 각 여정 설계 범위 확정 |
+| `GAP-main-scenario-003` | 고양이 정체 복선 배치 | creative_fillable | high | `TBD` 유지 | 정보 공개 구조 설계 |
+| `GAP-main-scenario-004` | 고양이 핵심 서사 내용·개수·획득 Scene | creative_fillable | high | `TBD` 유지 | 핵심 서사 범위 확정 |
+| `GAP-main-scenario-005` | 도철전 십이지신 지정 이유와 결과 차이 | dependency | high | `TBD` 유지 | 시나리오·시스템 의존성 확인 |
+| `GAP-ai-gm-runtime-rules-001` | 실제 Unity/RAG/content registry의 기존 scene_id·참조 존재 여부 | user_fact | high | 해소 — 기존 실제 데이터 없음 | 사용자 확인 완료 |
+| `GAP-ai-gm-runtime-rules-002` | 기존 ID가 있을 때 지도·RAG·SessionEvent·SceneMemory·세이브 동기화와 호환 범위 | dependency | high | 비적용 — 기존 데이터 없음 | migration 불필요 |
+
+`creative_fillable` GAP에 대한 새 창작 대안은 생성하지 않았다.
+
+##### Creative Design Brief
+
+- 대상 역할과 문서 책임: technical ID 계약, game overview·색인 요약, workspace 시나리오 작성 규칙
+- 프로젝트 약속·설계 목표: Unity가 Scene 전환·Outcome·상태의 기준을 유지하고, 서사 문서의 Scene 경계와 런타임 참조를 일치시킨다.
+- 확정 제약과 근거: `SCENE_<CHAPTER>_<NN>[A-Z]`, 프롤로그 `01`, `02A/B/C`, `03`, `04`, 연결 표기 `S01`
+- 사용자 허가 GAP: 없음
+- 위험·검증 관점: 실제 등록 ID나 저장 데이터가 있으면 문서 변경만으로 적용하지 않는다.
+- 영향받는 후속 canonical owner: scenario, ingame_script, technical runtime, 지도·RAG·세이브 데이터
+
+#### Scenario Improvement Review
+
+추가 개선 권고 없음.
+
+사용자가 선택한 Scene 경계와 ID 재구성만 Draft에 반영했으며 사건 순서,
+공개 시점, 동기, 선택과 Outcome을 추가로 바꾸지 않았다.
+
+#### Draft
+
+##### 프롤로그 Scene 흐름
+
+| Scene | scene_id | 진입 | 종료·연결 |
+|---|---|---|---|
+| Scene 1 | `SCENE_PROLOGUE_01` | 오프닝 변형 이후 신당 진입 | 저지 → Scene 2A, 관망 → Scene 2B, 이탈 → Scene 2C |
+| Scene 2A | `SCENE_PROLOGUE_02A` | Scene 1에서 저지 선택 | 봉인 파괴 후 Scene 3 |
+| Scene 2B | `SCENE_PROLOGUE_02B` | Scene 1에서 관망 선택 | 봉인 파괴 후 Scene 3 |
+| Scene 2C | `SCENE_PROLOGUE_02C` | Scene 1에서 이탈 선택 | 봉인 파괴 후 Scene 3 |
+| Scene 3 | `SCENE_PROLOGUE_03` | Scene 2A·2B·2C 합류 | 접근 → Scene 4, 도망 → 게임 오버 또는 Scene 3 재시작 |
+| Scene 4 | `SCENE_PROLOGUE_04` | Scene 3에서 혼돈에게 접근 | 계약 수락 후 혼돈 보스 전투 |
+
+##### `main_scenario.md` Prologue 교체 초안
+
+```markdown
+## Prologue
+
+> 상세 대본: [프롤로그 인게임 스크립트](scripts/prologue_ingame_script.md) — 현재 작성 범위: Scene 1
+
+### Scene Flow
+
+| Scene | scene_id | 진입 | 종료·연결 |
+|---|---|---|---|
+| Scene 1 | `SCENE_PROLOGUE_01` | 오프닝 변형 이후 신당 진입 | 저지 → Scene 2A, 관망 → Scene 2B, 이탈 → Scene 2C |
+| Scene 2A | `SCENE_PROLOGUE_02A` | Scene 1에서 저지 선택 | 봉인 파괴 후 Scene 3 |
+| Scene 2B | `SCENE_PROLOGUE_02B` | Scene 1에서 관망 선택 | 봉인 파괴 후 Scene 3 |
+| Scene 2C | `SCENE_PROLOGUE_02C` | Scene 1에서 이탈 선택 | 봉인 파괴 후 Scene 3 |
+| Scene 3 | `SCENE_PROLOGUE_03` | Scene 2A·2B·2C 합류 | 접근 → Scene 4, 도망 → 게임 오버 또는 Scene 3 재시작 |
+| Scene 4 | `SCENE_PROLOGUE_04` | Scene 3에서 혼돈에게 접근 | 계약 수락 후 혼돈 보스 전투 |
+
+### Scene 1: 신당 진입과 조우
+
+- `scene_id`: `SCENE_PROLOGUE_01`
+- 진입 조건: 오프닝 변형을 거쳐 플레이어가 기이한 기운을 따라 신당의 가장 깊은 제단에 들어간다.
+- 입력 방식: 오프닝부터 신령과의 계약까지 `choice_only`를 기본으로 한다.
+- 주요 사건: 흑의인이 금지된 주술을 외우고 제단에 붉은 균열이 번지는 광경을 목격한다.
+- 플레이어 선택과 분기:
+  - 무기를 들고 흑의인을 저지한다. → Scene 2A `SCENE_PROLOGUE_02A`
+  - 숨을 죽이고 상황을 지켜본다. → Scene 2B `SCENE_PROLOGUE_02B`
+  - 불길한 직감을 따라 신전을 빠져나간다. → Scene 2C `SCENE_PROLOGUE_02C`
+- 종료 조건: 세 선택 중 하나를 확정하고 연결된 Scene으로 이동한다.
+
+### Scene 2A: 저지 시도와 봉인 파괴
+
+- `scene_id`: `SCENE_PROLOGUE_02A`
+- 진입 조건: Scene 1에서 흑의인 저지를 선택한다.
+- 주요 사건: 플레이어가 저지를 시도하지만 마지막 주문이 먼저 완성되어 실패한다.
+- 상태 변화:
+  - 별도 보상·패널티는 없다.
+  - 흑의인 저지를 시도한 선택 이력을 보존한다.
+  - 이 이력은 Scene 4에서 신령이 처음부터 우호적으로 반응하는 조건으로 사용한다.
+- 종료 조건: 봉인이 파괴되고 Scene 3 `SCENE_PROLOGUE_03`으로 이동한다.
+
+### Scene 2B: 관망과 봉인 파괴
+
+- `scene_id`: `SCENE_PROLOGUE_02B`
+- 진입 조건: Scene 1에서 상황을 지켜보는 선택을 한다.
+- 주요 사건: 방해받지 않은 의식이 완성되고 제단이 갈라진다.
+- 상태 변화: 별도 보상·패널티는 없다.
+- 종료 조건: 봉인이 파괴되고 Scene 3 `SCENE_PROLOGUE_03`으로 이동한다.
+
+### Scene 2C: 이탈 시도와 봉인 파괴
+
+- `scene_id`: `SCENE_PROLOGUE_02C`
+- 진입 조건: Scene 1에서 신전을 빠져나가는 선택을 한다.
+- 주요 사건: 플레이어가 봉인 파괴의 충격파에 휩쓸려 정신을 잃는다.
+- 상태 변화: 별도 보상·패널티는 없다.
+- 종료 조건: 봉인이 파괴되고 Scene 3 `SCENE_PROLOGUE_03`으로 이동한다.
+
+### Scene 3: 깨어난 재앙과 오염
+
+- `scene_id`: `SCENE_PROLOGUE_03`
+- 진입 조건: Scene 2A, Scene 2B 또는 Scene 2C에서 봉인이 파괴된다.
+- 주요 사건:
+  - 흑의인은 사라지고 혼돈만 현장에 남으며 궁기, 도올, 도철은 도주한다.
+  - 혼돈의 발치에서 생명력을 빼앗는 검은 오염이 퍼진다.
+- 플레이어 선택과 분기:
+  - 혼돈에게 접근한다. → Scene 4 `SCENE_PROLOGUE_04`
+  - 신당 밖으로 도망친다. → 오염에 삼켜져 게임 오버
+- 게임오버 처리: 세션을 종료하거나 Scene 3 `SCENE_PROLOGUE_03` 시작점으로 돌아간다.
+- 종료 조건: 접근하면 Scene 4로 이동하고, 도망치면 게임오버 처리를 수행한다.
+
+### Scene 4: 피리 속 신령과의 계약
+
+- `scene_id`: `SCENE_PROLOGUE_04`
+- 진입 조건: Scene 3에서 혼돈에게 접근한다.
+- 우호 조건: Scene 2A에서 흑의인 저지를 시도한 경우에만 신령이 처음부터 우호적으로 반응한다.
+- 주요 사건:
+  - 모습을 드러내지 않은 신령의 목소리가 플레이어의 머릿속에 울린다.
+  - 신령은 혼돈의 정체, 다른 사흉의 도주와 십이지신이 지키던 봉인의 붕괴를 설명한다.
+  - 플레이어가 힘이 부족하다고 말하거나 거절하면 신령은 십이지의 편린을 다룰 권능과 인연의 피리를 제안한다.
+  - 손상된 피리로는 원숭이, 닭, 개만 사용할 수 있지만 혼돈을 상대하기에는 충분하다.
+  - 제안을 수락하는 순간 피리가 눈앞에 현현한다.
+- 종료 조건: 피리를 수령하고 혼돈 보스 전투로 전환된다.
+```
+
+`Gameplay / Production Notes`에는 다음을 적용한다.
+
+- 서사 구조 용어: 막·챕터·프롤로그 같은 큰 서사 단위의 하위 구분에는 `Scene`을 사용한다. 전투·작업 프로세스의 단계 용어에는 이 규칙을 적용하지 않는다.
+- 필요한 장면·전투의 `Phase 1~4`를 `Prologue Scene 1·2A·2B·2C·3·4`로 바꾼다.
+- QA는 Scene 1의 세 분기 도달, Scene 2A·2B·2C의 Scene 3 합류, Scene 3 게임오버 재시작, Scene 2A 이력의 Scene 4 우호 반응을 검증하도록 바꾼다.
+
+##### `prologue_ingame_script.md` ID·구조 교체 초안
+
+- 작성 범위: `Scene 1 신당 진입과 조우`
+- 표시 순번: `S01`
+- Scene ID: `SCENE_PROLOGUE_01`
+- 다음 Scene: 저지 `SCENE_PROLOGUE_02A`, 관망 `SCENE_PROLOGUE_02B`, 이탈 `SCENE_PROLOGUE_02C`
+- line ID:
+  - `P01-S01-L001-M` → `S01-L001-M`
+  - `P01-S01-L002-M` → `S01-L002-M`
+  - `P01-S01-L001-F` → `S01-L001-F`
+  - `P01-S01-L002-F` → `S01-L002-F`
+  - `P01-S01-L003` → `S01-L003`
+  - `P01-S01-L004` → `S01-L004`
+  - `P01-S01-L005` → `S01-L005`
+- choice ID:
+  - `CHOICE_PROLOGUE_P01_INTERVENE` → `CHOICE_PROLOGUE_S01_INTERVENE`
+  - `CHOICE_PROLOGUE_P01_OBSERVE` → `CHOICE_PROLOGUE_S01_OBSERVE`
+  - `CHOICE_PROLOGUE_P01_RETREAT` → `CHOICE_PROLOGUE_S01_RETREAT`
+- outcome ID:
+  - `OUTCOME_PROLOGUE_P01_INTERVENE` → `OUTCOME_PROLOGUE_S01_INTERVENE`
+  - `OUTCOME_PROLOGUE_P01_OBSERVE` → `OUTCOME_PROLOGUE_S01_OBSERVE`
+  - `OUTCOME_PROLOGUE_P01_RETREAT` → `OUTCOME_PROLOGUE_S01_RETREAT`
+- 플레이어 지문·대사·선택 문구, 사건, Outcome 결과, `CHAPTER_PROLOGUE`, `FLAG_PROLOGUE_TRIED_TO_STOP_RITUAL`, `CW-PROLOGUE-02`~`06`의 의미는 변경하지 않는다.
+- Writer's Brief와 `NR-PROLOGUE-01`을 추가하고 `CW-PROLOGUE-01`, QA, Open Questions/TBD와 Sources를 새 ID로 동기화한다.
+
+##### 인게임 스크립트 기술 의존성 초안
+
+| 순서 | 의존 GAP | 확인할 TBD | 영향받는 필드 | 적용 중단·해소 조건 |
+|---|---|---|---|---|
+| 1 | `GAP-ai-gm-runtime-rules-001` | 실제 registry·RAG/content 참조 존재 여부 | 새 Scene ID, Outcome 다음 Scene, RAG `related_scene_ids` | 실제 참조 목록 또는 참조 없음 확인 전 적용 중단 |
+| 2 | `GAP-ai-gm-runtime-rules-002` | 기존 데이터가 있으면 migration/compatibility 범위 | 지도 `scene_id`, RAG, `SessionEvent.scene_id`, `SceneMemory.scene_id`, 세이브·복원 | 기존 데이터가 있는데 범위·검증 조건이 없으면 적용 중단 |
+
+`CW-PROLOGUE-01`은 실제 registry·참조·저장 데이터 존재 여부를 단정하지 않고
+위 GAP 순서와 적용 중단 조건을 기록한다. `NR-PROLOGUE-01`은 메인 시나리오,
+인게임 스크립트와 게임 개요 Document Map의 다음 두 문구를 원자적 동기화
+대상으로 기록한다.
+
+##### 색인·게임 개요 동기화 초안
+
+- `game_design_overview.md`
+  - `오프닝 Phase, 혼돈 튜토리얼, 사흉 추적과 엔딩 분기`
+    → `프롤로그 Scene, 혼돈 튜토리얼, 사흉 추적과 엔딩 분기`
+  - `Phase 1 플레이어 노출 대본과 씬 구현 명세`
+    → `Scene 1 플레이어 노출 대본과 씬 구현 명세`
+- 프로젝트 `README.md`: `프롤로그 Phase 1의 플레이어 노출 대본과 씬 구현 명세`
+  → `프롤로그 Scene 1의 플레이어 노출 대본과 씬 구현 명세`
+- `design/README.md`: `현재 확정 범위: Phase 1`
+  → `현재 확정 범위: Scene 1`
+
+##### 기술 문서·향후 작성 규칙 동기화 초안
+
+| 대상 | Before | After |
+|---|---|---|
+| `ai_gm_runtime_rules.md` 세션 상태 | `현재 Phase·장면` | `현재 Scene` |
+| `ai_gm_runtime_rules.md` ID 규칙 | 예시 `SCENE_SHRINE_PHASE_01` | 규칙 `SCENE_<CHAPTER>_<NN>[A-Z]`, 예시 `SCENE_PROLOGUE_02A` |
+| `document_structure.md` scenario 역할 | `막·챕터·Phase` | `막·챕터·Scene` |
+| `document_structure.md` 분류 기준 | `장면·Phase별 사건과 선택 결과` | `Scene별 사건과 선택 결과` |
+| `document_completion.md` Scenario 필드 | `장면·Phase 흐름` | `Scene 흐름` |
+| `write_ingame_script.md` 대상 범위 | `챕터·Phase` | `챕터·Scene` |
+| `scenario.md` 구조 제목 | `막 / 챕터 / Phase` | `막 / 챕터 / Scene` |
+| root `README.md` 요청 예시 | `Chapter 2 Phase 1` | `Chapter 2 Scene 1` |
+| `scenario_writer.toml` narrative target 2곳 | `target chapter or Phase` | `target chapter or Scene` |
+
+운영 workflow의 `classify | generate_options | incorporate_selection` Phase,
+Specialist Task Packet의 작업 Phase, 전투·시스템 단계 Phase와 역사 기록은
+변경하지 않는다.
+
+#### Decision History
+
+##### Decision Entry
+
+- 결정: 승인, 적용 보류
+- 결정자: 사용자
+- 결정일: 2026-07-27
+- 이유: 사용자가 현재 대화의 유일한 pending 항목을 “승인하고 적용”이라고 명시적으로 승인했다. 다만 `GAP-ai-gm-runtime-rules-001`의 저장소 밖 실제 registry·참조·세이브 데이터 존재 여부가 확인되지 않아 적용 중단 조건은 해소되지 않았다.
+- 결정 당시 Draft 요약: 프롤로그를 Scene 1·2A·2B·2C·3·4로 재구성하고 Scene·line·choice·outcome ID와 게임 개요·기술 규칙·색인·향후 시나리오 작성 규칙을 원자적으로 동기화한다.
+
+##### Decision Entry
+
+- 결정: 의존성 해소 및 적용
+- 결정자: 사용자
+- 결정일: 2026-07-27
+- 이유: 사용자가 기존 ID를 사용하는 실제 데이터가 없다고 확인해 `GAP-ai-gm-runtime-rules-001`을 해소했다. 조건부 migration GAP은 비적용이며 모든 원본 해시와 전문 검수 결과가 승인안과 일치했다.
+- 결정 당시 Draft 요약: 승인된 Scene 구조·ID와 관련 문서·작성 규칙 동기화 전체를 원자적으로 적용한다.
+
+#### Reconfirmation
+
+- 진입 사유: 승인 후 적용 전 원본·의존성 확인
+- 감지일: 2026-07-27
+- 현재 원본 요약: Target Operations의 12개 대상은 승인안 작성 당시 내용과 SHA-256을 유지한다. 프로젝트 루트에는 문서 workspace 구조만 있고 Unity runtime·registry·save 경로는 없다.
+- 비교 결과: Target Operations 12개 원본의 SHA-256과 전문 검수 상태가 승인안과 일치했다. 사용자가 기존 실제 registry·참조·세이브 데이터가 없다고 확인해 migration 의존성이 없다.
+- 후속 상태: applied
+- 재확인 결정자: 사용자
+- 재확인 결정일: 2026-07-27
+- 재확인 이유: 기존 ID를 사용하는 실제 데이터가 없어 승인된 ID 변경을 그대로 적용할 수 있다.
+
+#### Links
+
+- 관련 결정 로그: `DEC-20260727-001`
+- 관련 버전 기록: `VER-20260727-001`
+- 근거 파일: Target Operations 전체, `workspace/projects/chronicles-of-the-twelve-bonds/project_brief.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/world/world_setting.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/systems/core_gameplay_systems.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/ui/gameplay_ui.md`
+- 상위/대체 승인 항목:
+- 선행/의존 승인 항목: `GAP-ai-gm-runtime-rules-001` 해소, `GAP-ai-gm-runtime-rules-002` 비적용
+
+---
+
 ### APPR-20260721-001: 요괴 후보 목록 문서 생성
 
 #### Metadata

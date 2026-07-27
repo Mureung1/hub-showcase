@@ -6,6 +6,96 @@
 
 ## Entries
 
+### Decision: 프롤로그 Scene 2A~4 인게임 스크립트 승인
+
+#### Metadata
+
+- ID: DEC-20260727-002
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-27
+- 결정자: 사용자
+- 상태: approved
+- 관련 승인 큐: `APPR-20260727-002`
+- 관련 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/scripts/prologue_ingame_script.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/main_scenario.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, 프로젝트 `README.md`, `design/README.md`
+- 적용된 창작·서사 공개: `CW-PROLOGUE-07`~`15`, `NR-PROLOGUE-02`
+
+#### Context
+
+확정 프롤로그 스크립트는 Scene 1의 플레이어 대본과 Scene 2A·2B·2C 연결만
+소유했다. 사용자는 Scene 2 세 분기를 모두 작성하되 게임오버 없이 Scene 3으로
+합류시키고, Scene 3과 Scene 4의 도주 게임오버를 모두 유지하도록 요청했다.
+Scene 4에서는 신령의 피리 제안을 수락하거나 거절하고 도주하는 최종 선택이
+필요했다.
+
+#### Decision
+
+Scene 2A·2B·2C의 선택별 봉인 파괴 대본, Scene 3의 혼돈·오염과 접근·도주
+분기, Scene 4의 조건부 신령 반응·피리 계약·수락/거절 결과를 확정한다.
+Scene 2 세 분기는 게임오버 없이 Scene 3으로 합류한다. Scene 3 도주는 기존
+오염 게임오버로, Scene 4의 거절·도주는 더 빠르게 덮친 오염 게임오버로
+처리한다. 수락은 피리 수령 후 혼돈 보스전으로 전환한다.
+
+메인 시나리오, 프롤로그 스크립트, 게임 개요와 두 색인의 확정 범위를
+Scene 1·2A·2B·2C·3·4로 원자적으로 동기화한다.
+
+#### Rationale
+
+`scenario_writer`가 기존 Scene 1 문체와 확정 세계관·시스템·UI·저장 규칙에
+근거한 Draft를 작성했다. `scenario_reviewer`의 필수 수정 2건을 해소하고
+재검수 `pass`를 받았으며 활성 `blocking`과 `required_revision`은 0건이다.
+적용 직전 다섯 대상의 SHA-256이 승인안 작성 당시 값과 모두 일치했고
+선행 의존 승인도 없다.
+
+#### Follow-up
+
+- 후속 작업: 혼돈 보스전 내부 Scene ID, 대본·판정·전투 규칙과 실제 item·RAG·리소스·게임오버 호출 ID를 별도 범위에서 확정한다.
+- `provisional` 검증·재조정: 없음
+
+---
+
+### Decision: 프롤로그 Scene 구조·ID 및 시나리오 작성 규칙 통일 승인
+
+#### Metadata
+
+- ID: DEC-20260727-001
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-27
+- 결정자: 사용자
+- 상태: approved
+- 관련 승인 큐: `APPR-20260727-001`
+- 관련 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/main_scenario.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/scripts/prologue_ingame_script.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/technical/ai_gm_runtime_rules.md`
+- 적용된 창작 제안: 없음
+
+#### Context
+
+프롤로그의 상위 시나리오는 사건 구분을 Phase 1~4로, 인게임 스크립트는
+`SCENE_PROLOGUE_PHASE_*`와 `P01-S01` 계열 ID로 관리해 Scene 구현 단위와
+용어가 일치하지 않았다. 사용자는 큰 서사 단위 아래 구분을 Scene으로
+통일하고 분기 결과를 Scene 2A·2B·2C로 나누도록 요청했다.
+
+#### Decision
+
+프롤로그를 Scene 1·2A·2B·2C·3·4로 재구성하고, Scene 1의 line·choice·
+outcome ID를 `S01` 기준으로 통일한다. 메인 시나리오, 인게임 스크립트,
+게임 개요, 기술 ID 규칙, 프로젝트 색인과 향후 시나리오 작성 지침을 같은
+원자적 변경으로 적용한다. 작업 workflow와 전투·시스템 단계의 `Phase`는
+유지한다.
+
+#### Rationale
+
+`scenario_designer`와 `scenario_writer`가 기존 사건·대사·선택·Outcome·상태를
+보존한 Draft를 작성했고 `scenario_reviewer`가 필수 수정 해소 후 `pass`로
+판정했다. 적용 전 12개 대상의 원본 해시가 승인안과 일치했으며, 사용자가
+기존 ID를 사용하는 실제 registry·참조·세이브 데이터가 없다고 확인해
+ID migration 의존성도 해소됐다.
+
+#### Follow-up
+
+- 후속 작업: Scene 2A·2B·2C·3·4의 플레이어 노출 대본과 실제 Scene 데이터는 별도 승인 범위에서 작성한다.
+- `provisional` 검증·재조정: 없음
+
+---
+
 ### Decision: 요괴 후보 목록 문서 생성 승인
 
 #### Metadata

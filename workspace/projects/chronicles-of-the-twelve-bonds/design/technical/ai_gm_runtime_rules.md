@@ -6,7 +6,7 @@
 - 문서 타입: technical
 - 상태: confirmed
 - 관련 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/ui/gameplay_ui.md`
-- 마지막 변경: 2026-07-16
+- 마지막 변경: 2026-07-27
 
 ## Summary
 
@@ -28,7 +28,7 @@
 | 기억 검색가 | Unity 사건 기록에서 근거 ID가 있는 과거 사실 검색 | 자체 기억 누적, 근거 없는 추론, 미공개 상태 노출 |
 | 선택형 서술가 | `cinematic` 장면의 동양 판타지 문체, NPC 말투와 감정선 보강 | 상태·정보·분기·선택지 변경 |
 | RAG | 시스템 규칙, 세계관, 인물, 장소, 아이템, 장면 참고 자료와 공개 조건 제공 | 카르마·보유 아이템 등 동적 진행 상태 저장 |
-| 세션 상태 | 현재 Phase·장면, 선택 이력, 카르마, 성장, 인벤토리, 정보, 사흉·정수 상태, 사건 기록과 장면 요약 보관 | 공개 조건을 거치지 않은 정보를 AI에 전달 |
+| 세션 상태 | 현재 Scene, 선택 이력, 카르마, 성장, 인벤토리, 정보, 사흉·정수 상태, 사건 기록과 장면 요약 보관 | 공개 조건을 거치지 않은 정보를 AI에 전달 |
 
 ### 다중 에이전트 운영 원칙
 
@@ -230,7 +230,8 @@ AI 응답은 Unity가 해석 가능한 JSON 한 건으로 반환한다.
 - 내부 연결 ID는 영문 대문자 접두사와 언더스코어를 사용하고 표시용 한국어 명칭과 분리한다.
 - 지도 노드 `NODE_`, 씬 `SCENE_`, 허용 행동 `ACTION_`, 판정 `CHECK_`, 결과 `OUTCOME_`, RAG `CONTENT_`
 - 인물 `CHAR_`, 장소 `LOC_`, 아이템 `ITEM_`, 십이지신 `ZODIAC_`, 사흉 `PERIL_`, 일러스트 `ILL_`
-- 예시: `SCENE_SHRINE_PHASE_01`, `ILL_HUNDUN_DEFAULT`
+- 시나리오 Scene ID는 `SCENE_<CHAPTER>_<NN>[A-Z]` 형식을 사용한다. 알파벳 접미사는 같은 순번에서 갈라지는 분기 Scene에만 붙인다.
+- 예시: `SCENE_PROLOGUE_02A`, `ILL_HUNDUN_DEFAULT`
 
 ### 성능과 내부 기록
 

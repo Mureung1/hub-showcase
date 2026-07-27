@@ -17,7 +17,7 @@
 
 ## Narrative Structure
 
-### 막 / 챕터 / Phase
+### 막 / 챕터 / Scene
 
 - 진입 조건:
 - 주요 사건:
