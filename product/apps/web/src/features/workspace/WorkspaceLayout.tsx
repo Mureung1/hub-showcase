@@ -78,8 +78,7 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
               mapRef={viewport.mapRef}
               onVisibleCenterChange={viewport.updateVisibleCenter}
               onVisibleBoundsChange={viewport.updateVisibleBounds}
-              mapMode={viewport.mapMode}
-              baseBuildingsVisible={viewport.baseBuildingsVisible}
+              presentationMode={viewport.presentationMode}
               baseBuildingsRendered={viewport.baseBuildingsRendered}
               layer={selection.layer}
               boundaryVisible={selection.boundaryVisible}
@@ -93,7 +92,6 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
               selected={storefronts.storeSelection.selected}
               score={storefronts.score}
               sameCategoryCount={storefronts.sameCategoryCount}
-              prefabMode={viewport.prefabMode}
               onSelectStore={actions.chooseListedStore}
               visibleSupportedRegion={viewport.visibleSupportedRegion !== undefined}
               onEvidenceOpen={() => panels.setEvidenceOpen(true)}
@@ -107,19 +105,14 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
           </>
         }
         market={market}
-        mapMode={viewport.mapMode}
-        onMapModeChange={viewport.setMapMode}
+        presentationMode={viewport.presentationMode}
+        onPresentationModeChange={viewport.setPresentationMode}
         layer={selection.layer}
         onLayerChange={actions.chooseLayer}
         densityLabel={storefronts.densityLabel}
         activeDemandLabel={storefronts.activeDemandLabel}
         activeDemand={storefronts.activeDemand}
-        baseBuildingsVisible={viewport.baseBuildingsVisible}
-        onBaseBuildingsVisibleChange={viewport.setBaseBuildingsVisible}
         mapRef={viewport.mapRef}
-        prefabMode={viewport.prefabMode}
-        onPrefabToggle={actions.togglePrefabMode}
-        onPrefabModeChange={viewport.setPrefabMode}
         onCompareOpen={() => panels.setCompareOpen(true)}
         comparisonEnabled={selection.categorySelection.coverage === "full"}
         filtersOpen={panels.filtersOpen}
