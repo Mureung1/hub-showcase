@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -33,19 +33,35 @@
 
 ## Acceptance Criteria
 
-- [ ] Valid generic child environment가 bridge와 native Codex child에 exact 전달되고 entry/key/value/aggregate bound 및 모든 protected-key override가 pre-spawn rejection으로 고정된다.
-- [ ] Same-generation readiness operation이 expected server와 exact tool roster에서만 성공하며 missing, starting, failed, wrong roster, ignored project config와 abort를 bounded failure로 반환한다.
-- [ ] Raw native status, generated SDK shape와 interaction-specific constant가 Runtime public contract에 노출되지 않는다.
-- [ ] Temporary Git project의 tracked declaration과 exact root cwd가 built `ay_ple_interaction` Adapter를 시작하고 `["propose_state_patch"]` readiness를 통과한다.
-- [ ] Target thread start trace에 private MCP URL·token input, literal capability allowlist와 thread-start config override가 없다.
-- [ ] Runtime public contract, Python bridge와 exact SDK patch stack에 candidate-specific root나 additional `writableRoots` 전달 경로가 없다.
-- [ ] Existing current path와 Runtime package의 exact SDK, bridge, Node actual tests가 expand 단계 동안 green이다.
+- [x] Valid generic child environment가 bridge와 native Codex child에 exact 전달되고 entry/key/value/aggregate bound 및 모든 protected-key override가 pre-spawn rejection으로 고정된다.
+- [x] Same-generation readiness operation이 expected server와 exact tool roster에서만 성공하며 missing, starting, failed, wrong roster, ignored project config와 abort를 bounded failure로 반환한다.
+- [x] Raw native status, generated SDK shape와 interaction-specific constant가 Runtime public contract에 노출되지 않는다.
+- [x] Temporary Git project의 tracked declaration과 exact root cwd가 built `ay_ple_interaction` Adapter를 시작하고 `["propose_state_patch"]` readiness를 통과한다.
+- [x] Target thread start trace에 private MCP URL·token input, literal capability allowlist와 thread-start config override가 없다.
+- [x] Runtime public contract, Python bridge와 exact SDK patch stack에 candidate-specific root나 additional `writableRoots` 전달 경로가 없다.
+- [x] Existing current path와 Runtime package의 exact SDK, bridge, Node actual tests가 expand 단계 동안 green이다.
 
 ## Verification
 
-- Targeted test or command: `npm run test:bridge -w @ay-ple/codex-chat-runtime && npm run test:node-actual -w @ay-ple/codex-chat-runtime && npm run test:local-provider -w @ay-ple/codex-chat-runtime`
-- Repository checks: `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime && npm run validate:production-runtime -w @ay-ple/codex-chat-runtime && npm run typecheck && npm run build && npm test`
-- Manual or live smoke: Temporary trusted Git root의 project config로 real Adapter를 시작해 same-generation readiness 성공과 wrong roster 실패를 확인한다.
+- Targeted: `npm run test:bridge -w @ay-ple/codex-chat-runtime`, `npm run test:node-actual -w @ay-ple/codex-chat-runtime`, `npm run test:runtime-local-provider` — 각각 bridge 23/23, Node actual 106/106, exact native local-provider 4/4 green. Root-owned local-provider gate가 built Adapter를 먼저 만들고 temporary trusted Git root의 tracked project config에서 readiness 성공과 wrong roster failure를 확인했다.
+- Exact SDK: `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime` — deterministic source·wheel reproduction, router actual-child, official suite 160 passed/38 skipped, Ruff와 provenance 17/17 green.
+- Production Runtime: `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime` — bundle manifest 25/25, bridge 23/23, pre/post bundle verification과 Ruff green. Native `0.144.4`, Python `3.10.18`, 7-wheel roster와 bundle digest `19828344cdca52aa3b9e5788b2f3bb3078f49a0963c70ca02d74c510bdb08e24`를 확인했다.
+- Repository: `npm run typecheck && npm run build && npm test && npm run lint -w @ay-ple/chat-shell` — 최종 코드 기준 전체 green.
+- Review: Fixed point `cafc20dcae92062c41b641b38f9115efcdf23ec1` 기준 Standards 4건, Spec 0건이었다. Cross-workspace test orchestration과 patch ledger 위치를 `dd9b0aef1`에서 수정하고, production/testing readiness validation drift를 `1611d9575`의 shared helper와 회귀 테스트로 제거했다. Public interface consumer fixture 누락은 repository typecheck에서 발견해 `6a3d9f901`에서 보완했다. Private protocol의 다중 언어 변경은 exact Node/Python protocol tests로 고정하며 이번 slice에 code generation을 추가하지 않았다.
+
+## Result
+
+`@ay-ple/codex-chat-runtime`이 최대 16-entry의 bounded generic child environment를 bridge와 native Codex child에 같은 generation으로 전달하고 protected authority override를 spawn 전에 거절한다. Public `CodexMcpReadinessPort`는 exact server/tool roster만 관찰하며 raw App Server·generated SDK shape를 숨긴다. Ordered SDK patch 0008은 official thread-scoped MCP status를 high-level seam으로 제공하고, real exact native trace는 tracked project declaration과 exact Git-root `cwd`만으로 built `ay_ple_interaction` Adapter를 시작해 readiness를 증명한다.
+
+Implementation commits:
+
+- `74c2904f8` — `feat: pass bounded runtime child environment`
+- `ba1a85de0` — `feat: verify project MCP readiness`
+- `7b89b4065` — `chore: align MCP SDK patch provenance`
+- `c125187c3` — `test: cover MCP status patch provenance`
+- `1611d9575` — `refactor: share MCP readiness validation`
+- `dd9b0aef1` — `chore: align MCP verification ownership`
+- `6a3d9f901` — `test: preserve runtime fixture compatibility`
 
 ## Blocked By
 
