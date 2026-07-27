@@ -6,6 +6,7 @@ import { errorMiddleware } from './middleware/error.middleware.js';
 import { authRouter } from './routes/auth.routes.js';
 import { challengeRouter } from './routes/challenge.routes.js';
 import { recordRouter } from './routes/record.routes.js';
+import { roomRouter } from './routes/room.routes.js';
 
 export const app = express();
 
@@ -14,7 +15,13 @@ const localhostOriginPattern = /^http:\/\/localhost:\d+$/;
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || origin === env.FRONTEND_ORIGIN || localhostOriginPattern.test(origin)) {
+      const isAllowed =
+        !origin ||
+        origin === env.FRONTEND_ORIGIN ||
+        env.allowedOrigins.includes(origin) ||
+        localhostOriginPattern.test(origin);
+
+      if (isAllowed) {
         callback(null, true);
         return;
       }
@@ -33,5 +40,6 @@ app.get('/health', (_req, res) => {
 app.use('/auth', authRouter);
 app.use('/challenges', challengeRouter);
 app.use('/records', recordRouter);
+app.use('/rooms', roomRouter);
 
 app.use(errorMiddleware);
