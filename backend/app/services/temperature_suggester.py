@@ -47,9 +47,9 @@ def _classify_complaint(complaint: str) -> str:
 답변(단어 하나만):"""
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=10,
+        max_completion_tokens=10,
     )
     category = response.choices[0].message.content.strip().lower()
     if category not in CATEGORY_TEMPS:

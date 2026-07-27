@@ -8,7 +8,7 @@ import { TemperatureSlider } from "./components/TemperatureSlider";
 import { GenerateButton } from "./components/GenerateButton";
 import { ResultPanel } from "./components/ResultPanel";
 import { BusinessProfileModal } from "./components/BusinessProfileModal";
-import { HISTORY } from "./data/mockData";
+import { HISTORY, PLATFORM_CHAR_LIMITS } from "./data/mockData";
 import { loadBusinessProfile, saveBusinessProfile } from "./utils/businessProfile";
 
 // 백엔드 주소. 로컬 개발 기준. 배포 시 실제 서버 주소로 바꿔야 함.
@@ -29,11 +29,47 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [imageGenerated, setImageGenerated] = useState(false);
   const [imageCaption, setImageCaption] = useState("");
+  const [imageBase64, setImageBase64] = useState(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
+  // 온도 자동 제안 관련 상태
+  const [suggestReason, setSuggestReason] = useState("");
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
   // 히스토리 관련 상태
   const [showHistory, setShowHistory] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState(null);
+
+  // 맥락 엔진(날씨/공휴일) 관련 상태 - 앱 켜질 때 한 번 조회해서 화면에도 보여주고,
+  // 콘텐츠 생성 시에도 재사용 (매번 새로 요청 안 함)
+  const [weatherText, setWeatherText] = useState("");
+  const [holidayText, setHolidayText] = useState("");
+  const [isLoadingContext, setIsLoadingContext] = useState(true);
+
+  useEffect(() => {
+    async function loadContext() {
+      setIsLoadingContext(true);
+      const [weatherRes, holidayRes] = await Promise.allSettled([
+        fetch(`${API_BASE}/weather`).then((r) => r.json()),
+        fetch(`${API_BASE}/holiday`).then((r) => r.json()),
+      ]);
+
+      if (weatherRes.status === "fulfilled" && weatherRes.value.temp) {
+        setWeatherText(`${weatherRes.value.label}, ${weatherRes.value.temp}`);
+      } else {
+        setWeatherText("");
+      }
+
+      if (holidayRes.status === "fulfilled" && holidayRes.value.is_special_day) {
+        setHolidayText(holidayRes.value.name);
+      } else {
+        setHolidayText("");
+      }
+
+      setIsLoadingContext(false);
+    }
+    loadContext();
+  }, []);
 
   // 업장 프로필 관련 상태 (localStorage에 저장, 매 생성마다 재사용)
   const [businessProfile, setBusinessProfile] = useState(null);
@@ -42,7 +78,6 @@ export default function App() {
   useEffect(() => {
     const saved = loadBusinessProfile();
     setBusinessProfile(saved);
-    // 처음 방문이라 저장된 프로필이 없으면 등록을 유도
     if (!saved) setShowProfileModal(true);
   }, []);
 
@@ -80,8 +115,38 @@ export default function App() {
     if (result) setResult(null);
   };
 
-  // GPT-4o 연동 완료. 백엔드 /generate 호출.
-  // 지금 백엔드는 아직 더미 응답이지만, 프론트-백엔드 연결 구조는 실제로 동작함.
+  // 플랫폼이 바뀌어서 글자수 제한이 줄어들면, 초과분은 잘라줌
+  useEffect(() => {
+    const limit = PLATFORM_CHAR_LIMITS[platform] || 500;
+    if (complaint.length > limit) {
+      const trimmed = complaint.slice(0, limit);
+      setComplaint(trimmed);
+      setCharCount(trimmed.length);
+    }
+  }, [platform]);
+
+  // 하소연 내용을 분석해서 어울리는 온도를 AI가 1차 제안 (반복 회피 로직 포함)
+  const handleSuggestTemperature = async () => {
+    if (!complaint.trim()) return;
+    setIsSuggesting(true);
+    try {
+      const res = await fetch(`${API_BASE}/suggest-temperature`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ complaint }),
+      });
+      if (!res.ok) throw new Error(`서버 응답 오류 (${res.status})`);
+      const data = await res.json();
+      setTemperature(data.suggested_temperature);
+      setSuggestReason(data.reason || "");
+      if (result) setResult(null);
+    } catch (err) {
+      console.error("온도 제안 실패:", err);
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!complaint.trim() && selectedHistory === null) return;
     setIsGenerating(true);
@@ -90,23 +155,6 @@ export default function App() {
     setResultTemp(temperature);
 
     try {
-      // 날씨/공휴일을 먼저 조회해서 GPT 프롬프트에 같이 넣어줌.
-      // 둘 중 하나가 실패해도 콘텐츠 생성 자체는 계속 진행되도록 개별 처리.
-      const [weatherRes, holidayRes] = await Promise.allSettled([
-        fetch(`${API_BASE}/weather`).then((r) => r.json()),
-        fetch(`${API_BASE}/holiday`).then((r) => r.json()),
-      ]);
-
-      const weatherText =
-        weatherRes.status === "fulfilled" && weatherRes.value.temp
-          ? `${weatherRes.value.label}, ${weatherRes.value.temp}`
-          : null;
-
-      const holidayText =
-        holidayRes.status === "fulfilled" && holidayRes.value.is_special_day
-          ? holidayRes.value.name
-          : null;
-
       const res = await fetch(`${API_BASE}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -114,8 +162,8 @@ export default function App() {
           complaint,
           temperature,
           platform,
-          weather: weatherText,
-          holiday: holidayText,
+          weather: weatherText || null,
+          holiday: holidayText || null,
           business_name: businessProfile?.name || null,
           business_type: businessProfile?.type || null,
           business_description: businessProfile?.description || null,
@@ -134,14 +182,7 @@ export default function App() {
     }
   };
 
-  const handleCopy = () => {
-    if (!result) return;
-    navigator.clipboard.writeText(result).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  // GPT Image 1.5 연동 완료. 백엔드 /generate-image 호출.
+  // GPT Image 1.5 연동. 백엔드가 base64 이미지 데이터를 반환함.
   const handleGenerateImage = async () => {
     setIsGeneratingImage(true);
     try {
@@ -154,15 +195,24 @@ export default function App() {
       if (!res.ok) throw new Error(`서버 응답 오류 (${res.status})`);
 
       const data = await res.json();
+      setImageBase64(data.image_base64 || null);
       setImageCaption(data.caption || "");
       setImageGenerated(true);
     } catch (err) {
       console.error("이미지 생성 실패:", err);
+      setImageBase64(null);
       setImageCaption("이미지를 생성하지 못했어요.");
       setImageGenerated(true);
     } finally {
       setIsGeneratingImage(false);
     }
+  };
+
+  const handleCopy = () => {
+    if (!result) return;
+    navigator.clipboard.writeText(result).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleHistorySelect = (item) => {
@@ -172,7 +222,6 @@ export default function App() {
     setShowHistory(false);
   };
 
-  // 하소연 입력창 자동 높이 조절
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -202,19 +251,31 @@ export default function App() {
           <HistoryPanel items={HISTORY} onSelect={handleHistorySelect} onClose={() => setShowHistory(false)} />
         )}
 
-        {/* 왼쪽: 입력 패널 */}
         <div className="flex-1 min-w-0 flex flex-col overflow-hidden border-r border-border">
           <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
             <ComplaintInput
               value={complaint}
               charCount={charCount}
+              maxLength={PLATFORM_CHAR_LIMITS[platform] || 500}
               textareaRef={textareaRef}
               onChange={handleInput}
               onClear={handleClearComplaint}
             />
             <PlatformSelector selected={platform} onSelect={setPlatform} />
-            <ContextEngine active={activeContext} onToggle={toggleContext} />
-            <TemperatureSlider value={temperature} onChange={handleTemperatureChange} />
+            <ContextEngine
+              active={activeContext}
+              onToggle={toggleContext}
+              weatherInfo={weatherText}
+              holidayInfo={holidayText}
+              isLoadingContext={isLoadingContext}
+            />
+            <TemperatureSlider
+              value={temperature}
+              onChange={handleTemperatureChange}
+              onSuggest={handleSuggestTemperature}
+              isSuggesting={isSuggesting}
+              suggestReason={suggestReason}
+            />
           </div>
 
           <GenerateButton
@@ -224,7 +285,6 @@ export default function App() {
           />
         </div>
 
-        {/* 오른쪽: 결과 패널 */}
         <ResultPanel
           result={result}
           isGenerating={isGenerating}
@@ -233,6 +293,7 @@ export default function App() {
           copied={copied}
           imageGenerated={imageGenerated}
           imageCaption={imageCaption}
+          imageBase64={imageBase64}
           isGeneratingImage={isGeneratingImage}
           onPickExample={handlePickExample}
           onCopy={handleCopy}

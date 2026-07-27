@@ -1,5 +1,4 @@
 import { Flame, History, Bell, Store } from "lucide-react";
-import { WEATHER_NOW } from "../data/mockData";
 
 export function Header({ showHistory, onToggleHistory, businessProfile, onOpenProfile }) {
   return (
@@ -23,13 +22,6 @@ export function Header({ showHistory, onToggleHistory, businessProfile, onOpenPr
       </button>
 
       <div className="ml-auto flex items-center gap-2">
-        {/* 날씨 API 연동 예정 지점 — 지금은 mockData의 고정값 표시 */}
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card text-xs text-muted-foreground">
-          {WEATHER_NOW.icon}
-          <span>{WEATHER_NOW.label}</span>
-          <span className="font-mono">{WEATHER_NOW.temp}</span>
-        </div>
-
         <button
           onClick={onToggleHistory}
           className={`p-2 rounded-lg border transition-colors ${
@@ -42,10 +34,6 @@ export function Header({ showHistory, onToggleHistory, businessProfile, onOpenPr
         <button className="p-2 rounded-lg border border-border hover:bg-muted transition-colors">
           <Bell size={15} />
         </button>
-
-        <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-xs font-bold ml-1">
-          김
-        </div>
       </div>
     </header>
   );

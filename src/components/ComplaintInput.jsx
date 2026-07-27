@@ -1,13 +1,13 @@
 import { X, PenLine } from "lucide-react";
 
-export function ComplaintInput({ value, charCount, textareaRef, onChange, onClear }) {
+export function ComplaintInput({ value, charCount, maxLength, textareaRef, onChange, onClear }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
           오늘의 하소연
         </label>
-        <span className="text-xs font-mono text-muted-foreground">{charCount} / 500</span>
+        <span className="text-xs font-mono text-muted-foreground">{charCount} / {maxLength}</span>
       </div>
 
       <div className="relative bg-card border border-border rounded-xl overflow-hidden focus-within:border-[rgba(255,77,31,0.45)] transition-colors">
@@ -18,7 +18,7 @@ export function ComplaintInput({ value, charCount, textareaRef, onChange, onClea
           placeholder={
             "오늘 있었던 일을 그냥 편하게 적어주세요.\n\n예) 손님이 주문하고 30분 후 환불 요청을 했어요. 이미 다 만들었는데 진짜..."
           }
-          maxLength={500}
+          maxLength={maxLength}
           className="w-full bg-transparent px-4 pt-4 pb-3 text-sm leading-relaxed resize-none outline-none placeholder:text-muted-foreground/50 min-h-[120px]"
           style={{ scrollbarWidth: "none" }}
         />
