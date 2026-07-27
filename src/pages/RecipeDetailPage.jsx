@@ -198,7 +198,7 @@ function RecipeDetailPage() {
             youtubeId가 있으면 재생 버튼을 눌렀을 때만 iframe을 마운트한다 (지연 로딩). */}
         <div className={`mt-4 flex flex-col gap-6 ${videoAspectRatio < 1 ? 'lg:flex-row lg:items-start' : ''}`}>
           <div
-            className={`relative overflow-hidden rounded-banner border-2 border-ink ${
+            className={`relative overflow-hidden rounded-banner border-[3.6px] border-ink ${
               videoAspectRatio < 1
                 ? 'mx-auto w-full max-w-sm shrink-0 aspect-[9/16] lg:sticky lg:top-8 lg:mx-0'
                 : 'w-full aspect-video'
@@ -233,7 +233,7 @@ function RecipeDetailPage() {
             <CookingSteps steps={recipe.steps} twoColumn={videoAspectRatio >= 1} />
 
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="rounded-card border-2 border-ink bg-bg-surface p-4">
+              <div className="rounded-card border-[3.6px] border-ink bg-bg-surface p-4">
                 <h2 className="text-center font-display text-base font-bold text-text-primary">있는 재료</h2>
                 <div className="mt-3">
                   {ownedIngredients.length > 0 ? (
@@ -252,7 +252,7 @@ function RecipeDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-card border-2 border-[#F0B7A8] bg-[#FDEDE9] p-4">
+              <div className="rounded-card border-[3.6px] border-[#F0B7A8] bg-[#FDEDE9] p-4">
                 <h2 className="text-center font-display text-base font-bold text-text-primary">없는 재료</h2>
                 <div className="mt-3">
                   {missingIngredients.length > 0 ? (
@@ -290,7 +290,7 @@ function RecipeDetailPage() {
           <img src={mascotKkini} alt="" className="w-14 select-none" />
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-card border-2 border-ink bg-primary px-5 py-4">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-card border-[3.6px] border-ink bg-primary px-5 py-4">
           <div>
             <p className="font-display text-xs text-text-primary">1인분 총 재료비</p>
             <p className="font-display text-2xl font-bold text-text-primary">{recipe.totalCost.toLocaleString()}원</p>

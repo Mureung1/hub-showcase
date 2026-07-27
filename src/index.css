@@ -38,7 +38,7 @@ body {
   margin: 24px 32px 0;
   padding: 24px 32px 30px;
   border-radius: var(--radius-banner);
-  border: 2px solid var(--color-ink);
+  border: 3.6px solid var(--color-ink);
   background: #F3D9A4;
 }
 .promo-radio {

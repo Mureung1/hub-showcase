@@ -170,8 +170,8 @@ function Home() {
             <button
               type="button"
               onClick={() => setShowLikedOnly((prev) => !prev)}
-              className={`rounded-pill border px-4 py-1.5 font-display text-sm transition ${
-                showLikedOnly ? 'border-primary bg-primary text-text-primary' : 'border-border bg-bg-surface text-text-secondary'
+              className={`rounded-pill border-[3.6px] border-ink px-4 py-1.5 font-display text-sm transition ${
+                showLikedOnly ? 'bg-primary text-text-primary' : 'bg-bg-surface text-text-secondary hover:bg-primary-soft'
               }`}
             >
               즐겨찾기
