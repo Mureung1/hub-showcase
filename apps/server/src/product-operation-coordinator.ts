@@ -53,6 +53,12 @@ import {
   type AssignmentReviewOutcome,
   createAssignmentReviewCoordinator,
 } from './state-patch-review.js'
+import {
+  ProductLifecycleAdmissionError,
+  createProductLifecycleCoordinator,
+  type ProductLifecycleLease,
+  type ProductLifecycleReleaseAuthority,
+} from './product-lifecycle-coordinator.js'
 
 const productTextMaxBytes = 128 * 1024
 const safeRuntimeFailure = 'Codex 작업을 계속할 수 없습니다.'
@@ -111,6 +117,7 @@ export type ProductOperationOptions = {
 type ActiveProductOperationBase = {
   readonly operationId: string
   readonly lease: ProductOperationLease
+  readonly lifecycleLease: ProductLifecycleLease
   readonly reviewBindings: Map<string, AssignmentReviewBinding>
   readonly reviewOutcomes: Map<
     string,
@@ -124,6 +131,7 @@ type ActiveProductOperationBase = {
   mcpSession?: AssignmentMcpProposalSession
   turn?: CodexProductTurn
   guardInterruptRequested?: boolean
+  lifecycleReleaseAuthority: ProductLifecycleReleaseAuthority
 }
 
 type ActiveReviewSubmission = {
@@ -198,6 +206,12 @@ export function createProductOperationCoordinator(options: {
 }): ProductOperationCoordinator {
   let active: ActiveProductOperation | undefined
   let shuttingDown = false
+  const lifecycle = createProductLifecycleCoordinator({
+    readEligibility: () => {
+      options.controller.nativeCwd()
+      return { state: 'active' }
+    },
+  })
 
   const reserveBase = (operationId: string): ActiveProductOperationBase => {
     if (shuttingDown) throw unavailable()
@@ -208,19 +222,31 @@ export function createProductOperationCoordinator(options: {
         '다른 Codex 작업이 진행 중입니다.',
       )
     }
+    let lifecycleLease: ProductLifecycleLease
+    try {
+      lifecycleLease = lifecycle.claimProductTurn({
+        kind: 'chat',
+        operationId: targetOperationId(),
+      })
+    } catch (error) {
+      throw presentLifecycleAdmissionError(error)
+    }
     let lease: ProductOperationLease
     try {
       lease = options.service.reserveProductOperation(operationId)
     } catch (error) {
+      lifecycle.release(lifecycleLease, 'start_failed')
       throw presentServiceError(error)
     }
     return {
       operationId,
       lease,
+      lifecycleLease,
       reviewBindings: new Map(),
       reviewOutcomes: new Map(),
       reviewSubmissions: new Map(),
       redactionValues: [options.mcpHost.token],
+      lifecycleReleaseAuthority: 'start_failed',
     }
   }
 
@@ -267,6 +293,10 @@ export function createProductOperationCoordinator(options: {
         })
         .catch(() => undefined)
     } finally {
+      lifecycle.release(
+        operation.lifecycleLease,
+        operation.lifecycleReleaseAuthority,
+      )
       if (active === operation) active = undefined
       options.controller.noteProductOperationReleased(operation.operationId)
     }
@@ -840,6 +870,8 @@ export function createProductOperationCoordinator(options: {
           return
         }
         operation.turn = turn
+        lifecycle.markProductTurnStarted(operation.lifecycleLease)
+        operation.lifecycleReleaseAuthority = 'runtime_closed'
         operation.redactionValues.push(turn.threadId, turn.turnId)
         try {
           operation.assignment.run =
@@ -915,6 +947,10 @@ export function createProductOperationCoordinator(options: {
           turn,
           streamSink(operation, operationOptions.sink),
         )
+        operation.lifecycleReleaseAuthority =
+          settlement.type === 'terminal'
+            ? 'native_terminal'
+            : 'runtime_closed'
         operation.generalInteraction = undefined
         operation.reviewBindings.clear()
         operation.reviewOutcomes.clear()
@@ -1082,6 +1118,8 @@ export function createProductOperationCoordinator(options: {
           return
         }
         operation.turn = turn
+        lifecycle.markProductTurnStarted(operation.lifecycleLease)
+        operation.lifecycleReleaseAuthority = 'runtime_closed'
         operation.redactionValues.push(turn.threadId, turn.turnId)
         if (operation.chat.guardPrepared) {
           await options.controller.bindProductChatExecution({
@@ -1105,6 +1143,10 @@ export function createProductOperationCoordinator(options: {
           turn,
           streamSink(operation, operationOptions.sink),
         )
+        operation.lifecycleReleaseAuthority =
+          settlement.type === 'terminal'
+            ? 'native_terminal'
+            : 'runtime_closed'
         operation.generalInteraction = undefined
         operation.reviewBindings.clear()
         operation.reviewOutcomes.clear()
@@ -1326,6 +1368,7 @@ export function createProductOperationCoordinator(options: {
 
     beginShutdown() {
       shuttingDown = true
+      lifecycle.beginShutdown()
       if (active?.turn) options.service.disconnectProductTurn(active.turn)
     },
   }
@@ -1737,6 +1780,10 @@ function questionId(
   ).slice(0, 32)}`
 }
 
+function targetOperationId(): string {
+  return `operation_${randomUUID().replaceAll('-', '')}`
+}
+
 function mapInteractionAnswers(
   interaction: ActiveGeneralInteraction,
   answers: Readonly<Record<string, readonly string[]>>,
@@ -1853,6 +1900,22 @@ function presentProductOperationError(error: unknown): ProductOperationError {
 function presentServiceError(error: unknown): ProductOperationError {
   if (error instanceof ProductOperationError) return error
   if (error instanceof CodexChatServiceError && error.code === 'active_turn') {
+    return new ProductOperationError(
+      'action_busy',
+      409,
+      '다른 Codex 작업이 진행 중입니다.',
+    )
+  }
+  return unavailable()
+}
+
+function presentLifecycleAdmissionError(
+  error: unknown,
+): ProductOperationError {
+  if (
+    error instanceof ProductLifecycleAdmissionError &&
+    error.code !== 'product_unavailable'
+  ) {
     return new ProductOperationError(
       'action_busy',
       409,

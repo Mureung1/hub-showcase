@@ -133,12 +133,14 @@ export type ProductSettledHistory = {
   readonly modelingRuns: readonly ProductSettledModelingRun[]
 }
 
-export type ProductBootstrap = {
+export type CurrentProductBootstrap = {
   readonly accountReadiness: ProductAccountReadiness
   readonly operationStatus: 'active' | 'idle'
   readonly workspace: ProductWorkspace | null
   readonly history: ProductSettledHistory
 }
+
+export type ProductBootstrap = CurrentProductBootstrap
 
 export type ProductWorkspaceActivationResponse = {
   readonly status: 'activated' | 'cancelled'
@@ -312,7 +314,7 @@ function isProductWorkspaceRecoveryOrNull(
   )
 }
 
-function decodeProductAccountReadiness(
+export function decodeProductAccountReadiness(
   value: unknown,
 ): ProductAccountReadiness {
   if (!isRecord(value) || typeof value.state !== 'string') {

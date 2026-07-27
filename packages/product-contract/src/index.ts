@@ -30,6 +30,7 @@ export {
   decodeProductWorkspaceResponse,
 } from './workspace.js'
 export type {
+  CurrentProductBootstrap,
   IncompatibleProductWorkspace,
   ProductAccountReadiness,
   ProductAssignment,
@@ -48,6 +49,20 @@ export type {
   ProductWorkspaceRecovery,
   ReadyProductWorkspace,
 } from './workspace.js'
+
+export {
+  decodeProductWorkspaceLifecycle,
+  decodeTargetProductBootstrap,
+} from './workspace-lifecycle.js'
+export type {
+  ProductAvailableWorkspaceReference,
+  ProductBootstrapCandidate,
+  ProductSemesterIdentity,
+  ProductUnavailableWorkspaceReference,
+  ProductWorkspaceLifecycle,
+  ProductWorkspaceSummary,
+  TargetProductBootstrap,
+} from './workspace-lifecycle.js'
 
 export {
   FIRST_ASSIGNMENT_ARGUMENTS,
