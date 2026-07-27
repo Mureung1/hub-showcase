@@ -7,7 +7,13 @@
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/dashboard.webp",
-    "screenshots/inventory.webp"
+    "screenshots/onboarding1.webp",
+    "screenshots/onboarding2.webp",
+    "screenshots/post1.webp",
+    "screenshots/onboarding3.webp",
+    "screenshots/post2.webp",
+    "screenshots/post3.webp",
+    "screenshots/post4.webp"
   ],
   "problem": "많은 소상공인들은 온라인 홍보의 중요성을 알고 있지만 시간 부족과 마케팅 전문성 부족으로 인해 꾸준한 블로그 운영에 어려움을 겪고 있다.",
   "targetUsers": [
