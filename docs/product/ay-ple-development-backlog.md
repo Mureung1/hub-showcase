@@ -91,7 +91,7 @@
   - [x] 첫 action이 실제로 발생시키는 Codex approval과 일반 Plan clarification은 원래 request identity로 처리하고 학업 상태를 바꾸지 않으며, `StatePatch` Review의 built-in `request_user_input` 답변은 같은 native Turn을 이어가되 settled `UserConfirmation`만 apply authority가 되게 한다.
   - [x] 자료 선택·근거·변경 제안·Review와 오른쪽 companion이 같은 desktop product flow에서 이해 가능하게 동작하는지 1440px~1920px에서 검증했다.
 
-- [x] 2026-07-23 public release lane에서 추가된 구현을 감사하고 현재 제품에 필요한 범위를 다시 판정한다.
+- [x] public release lane에서 추가된 구현을 감사하고 현재 제품에 필요한 범위를 다시 판정한다.
   - [x] Landing·public host·managed account lifecycle은 제거하고, v3 `SemesterWorkspace` kernel은 adopted future workspace authority로 유지하며, 관련 ADR·Spec·ticket·Wayfinder는 historical evidence로 보존한다고 분류했다.
   - [x] Runtime resolver와 public application host는 repository-local 실행의 consumer가 없음을 확인하고 tracked graph에서 제거했다.
   - [x] Current dev·dogfood의 isolated Codex auth profile을 제거하고 caller의 전역 `CODEX_HOME`을 항상 재사용한다.

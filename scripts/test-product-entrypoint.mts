@@ -491,32 +491,14 @@ async function assertCanonicalProcessGraph(
     true,
     `unexpected canonical root command: ${root.command}`,
   )
-  assert.equal(rootCommand.includes('--root'), true)
-  assert.equal(rootCommand.includes(roots.profileRoot), true)
-  assert.equal(rootCommand.includes('--workspace'), true)
-  assert.equal(rootCommand.includes(roots.workspaceRoot), true)
+  assertCommandUsesProductRoots(rootCommand, roots)
 
   const productBootstrap = requireDeepestProcess(
     processes,
     ({ command }) => isProductBootstrap(command),
     'local product composition',
   )
-  assert.equal(
-    normalizeCommand(productBootstrap.command).includes('--root'),
-    true,
-  )
-  assert.equal(
-    normalizeCommand(productBootstrap.command).includes(roots.profileRoot),
-    true,
-  )
-  assert.equal(
-    normalizeCommand(productBootstrap.command).includes('--workspace'),
-    true,
-  )
-  assert.equal(
-    normalizeCommand(productBootstrap.command).includes(roots.workspaceRoot),
-    true,
-  )
+  assertCommandUsesProductRoots(productBootstrap.command, roots)
   requireSingleProcess(
     processes,
     ({ command }) => isServerWatcher(command),
@@ -587,6 +569,17 @@ async function assertCanonicalProcessGraph(
 
 function isProductBootstrap(command: string): boolean {
   return command.includes('scripts/product-local.mts')
+}
+
+function assertCommandUsesProductRoots(
+  command: string,
+  roots: ProductRoots,
+): void {
+  const normalized = normalizeCommand(command)
+  assert.equal(normalized.includes('--root'), true)
+  assert.equal(normalized.includes(roots.profileRoot), true)
+  assert.equal(normalized.includes('--workspace'), true)
+  assert.equal(normalized.includes(roots.workspaceRoot), true)
 }
 
 function isServerWatcher(command: string): boolean {
