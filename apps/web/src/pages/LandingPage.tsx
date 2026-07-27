@@ -8,7 +8,7 @@ type LandingPageProps = {
 export function LandingPage({ onEnterWorkspace }: LandingPageProps) {
   return (
     <>
-      <LandingHero onEnterWorkspace={onEnterWorkspace} />
+      <LandingHero />
       <FigmaLandingContent onEnterWorkspace={onEnterWorkspace} />
     </>
   );

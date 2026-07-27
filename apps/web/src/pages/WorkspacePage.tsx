@@ -1,5 +1,5 @@
 import type { RepositoryAnalysisResult } from "@ptop/contracts";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AuthModal } from "../features/auth/AuthModal";
 import { useAuth } from "../features/auth/useAuth";
 import type { ReflectionDraft } from "../features/reflection/reflection";
@@ -8,13 +8,14 @@ import { WorkspaceGame } from "../features/workspace/WorkspaceGame";
 
 type WorkspacePageProps = {
   onBackToLanding: () => void;
+  openAnalysisOnEntry: boolean;
   onAnalysisComplete: (
     result: RepositoryAnalysisResult,
     reflectionDraft: ReflectionDraft,
   ) => void;
 };
 
-export function WorkspacePage({ onBackToLanding, onAnalysisComplete }: WorkspacePageProps) {
+export function WorkspacePage({ onBackToLanding, openAnalysisOnEntry, onAnalysisComplete }: WorkspacePageProps) {
   const { user, isLoading, error, signInWithGitHub } = useAuth();
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
   const isDevelopmentPreview =
@@ -22,6 +23,12 @@ export function WorkspacePage({ onBackToLanding, onAnalysisComplete }: Workspace
     && new URLSearchParams(window.location.search).get("preview") === "workspace";
   const openTerminal = useCallback(() => setIsTerminalOpen(true), []);
   const closeTerminal = useCallback(() => setIsTerminalOpen(false), []);
+
+  useEffect(() => {
+    if (openAnalysisOnEntry && !isLoading && user) {
+      openTerminal();
+    }
+  }, [isLoading, openAnalysisOnEntry, openTerminal, user]);
 
   if (isLoading) {
     return null;
@@ -34,7 +41,7 @@ export function WorkspacePage({ onBackToLanding, onAnalysisComplete }: Workspace
         error={error}
         description="GitHub 로그인 후에 작업실 입장을 부탁드립니다."
         onClose={onBackToLanding}
-        onSignIn={() => void signInWithGitHub()}
+        onSignIn={() => void signInWithGitHub({ redirectView: "workspace", openAnalysis: openAnalysisOnEntry })}
       />
     );
   }

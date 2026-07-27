@@ -43,7 +43,7 @@ export function RepositoryTerminal({
     >
       <section
         ref={dialogRef}
-        className={`relative max-h-[calc(100vh-32px)] w-full overflow-visible border-4 border-[var(--terminal-border)] bg-[var(--terminal-bg)] text-[var(--terminal-ink)] shadow-[0_24px_80px_rgb(0_0_0/45%)] outline-none transition-[max-width] duration-200 sm:max-h-[calc(100vh-48px)] ${mode === "workbench" ? "max-w-[1240px]" : "max-w-[780px]"}`}
+        className={`relative max-h-[calc(100vh-32px)] w-full overflow-visible border-4 border-[var(--terminal-border)] bg-[var(--terminal-bg)] text-[var(--terminal-ink)] shadow-[0_24px_80px_rgb(0_0_0/45%)] outline-none transition-[max-width] duration-200 sm:max-h-[calc(100vh-48px)] ${mode === "workbench" ? "max-w-[1064px]" : "max-w-[780px]"}`}
         role="dialog"
         aria-modal="true"
         aria-label="새 Repository 분석"
@@ -60,7 +60,7 @@ export function RepositoryTerminal({
           ×
         </button>
         <div className="p-1 sm:p-2">
-          <div className={`relative overflow-visible border-2 border-[var(--terminal-border)] p-2 sm:p-3 ${mode === "workbench" ? "min-h-[480px]" : "min-h-[390px]"}`}>
+          <div className={`relative overflow-visible border-2 border-[var(--terminal-border)] p-2 sm:p-3 ${mode === "workbench" ? "min-h-[488px]" : "min-h-[390px]"}`}>
             <div id="workspace-terminal-description" className="relative z-0 min-w-0 overflow-visible">
               <RepositoryAnalyzer
                 onAnalysisComplete={onAnalysisComplete}

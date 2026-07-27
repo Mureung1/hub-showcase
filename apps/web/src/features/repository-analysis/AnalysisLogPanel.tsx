@@ -24,10 +24,10 @@ export function AnalysisLogPanel({ isComplete }: AnalysisLogPanelProps) {
 
   return (
     <section
-      className="min-h-[25rem] border-b border-[var(--terminal-border)] bg-[#050f1c]/60 lg:min-h-0 lg:border-b-0 lg:border-r"
+      className="min-h-[25rem] border-b border-[var(--terminal-border)] bg-[var(--terminal-panel)] lg:min-h-[480px] lg:border-b-0 lg:border-r"
       aria-label="Repository 분석 시스템 로그"
     >
-      <header className="flex items-center gap-3 border-b border-[var(--terminal-border)] px-4 py-3 font-mono text-[0.68rem] tracking-[0.12em] text-[var(--terminal-muted)]">
+      <header className="flex items-center gap-3 border-b border-[var(--terminal-border)] px-6 pb-4 pt-6 font-mono text-[0.68rem] tracking-[0.12em] text-[var(--terminal-muted)]">
         <span className="flex gap-1.5" aria-hidden="true">
           <span className="h-2 w-2 rounded-full bg-[#f36d6d]" />
           <span className="h-2 w-2 rounded-full bg-[#f6d36b]" />
@@ -35,7 +35,7 @@ export function AnalysisLogPanel({ isComplete }: AnalysisLogPanelProps) {
         </span>
         <span>ANALYSIS_LOG.SH</span>
       </header>
-      <div className="max-h-[21rem] overflow-y-auto px-4 py-4 font-mono text-xs leading-[1.65] text-[var(--terminal-accent)] lg:max-h-[28rem]">
+      <div className="max-h-[21rem] overflow-y-auto px-6 py-5 font-mono text-xs leading-[1.65] text-[var(--terminal-accent)] lg:max-h-[25rem]">
         <p className="m-0 text-[var(--terminal-subtle)]">ptop@analysis:~$ run repository_scan</p>
         {ANALYSIS_LOG_STEPS.slice(0, visibleCount).map((step, index) => (
           <p className="m-0" key={step}>

@@ -31,8 +31,8 @@ export function AnalysisWorkbench({
   };
 
   return (
-    <section className="relative grid overflow-hidden border-2 border-[var(--terminal-border)] bg-[var(--terminal-panel)] shadow-[0_20px_70px_rgb(0_0_0/35%)] lg:grid-cols-[minmax(18rem,0.43fr)_minmax(0,1fr)]" aria-label="Repository 분석 작업대">
-      <div className="pointer-events-none absolute -left-2 -top-4 z-10 rotate-[-3deg] border border-[var(--terminal-accent)] bg-[var(--terminal-accent)] px-3 py-1 font-mono text-[0.68rem] font-bold tracking-[0.12em] text-[#00210c] shadow-[4px_4px_0_rgb(0_0_0/25%)]">
+    <section className="relative grid min-h-[480px] overflow-visible border-2 border-[var(--terminal-border)] bg-[var(--terminal-panel)] shadow-[0_20px_70px_rgb(0_0_0/35%)] lg:grid-cols-[358px_minmax(0,1fr)]" aria-label="Repository 분석 작업대">
+      <div className="pointer-events-none absolute left-8 top-[-1.4rem] z-10 rotate-[-3deg] border border-[var(--terminal-accent)] bg-[var(--terminal-accent)] px-3 py-1 font-mono text-[0.68rem] font-bold tracking-[0.12em] text-[#00210c] shadow-[4px_4px_0_rgb(0_0_0/25%)]">
         {isAnalysisComplete ? "ANALYSIS COMPLETE" : "ANALYSIS IN PROGRESS"}
       </div>
       <AnalysisLogPanel isComplete={isAnalysisComplete} />

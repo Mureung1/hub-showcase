@@ -6,12 +6,14 @@ type SiteHeaderProps = {
   variant?: "default" | "overlay";
   onHome: () => void;
   onOpenWorkspace: () => void;
+  onOpenAnalysis: () => void;
 };
 
 export function SiteHeader({
   variant = "default",
   onHome,
   onOpenWorkspace,
+  onOpenAnalysis,
 }: SiteHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -59,7 +61,10 @@ export function SiteHeader({
         >
           <BrandLogo variant="nav" />
         </a>
-        <nav className="flex justify-center gap-6 max-[560px]:hidden" aria-label="주요 메뉴">
+        <nav
+          className="flex justify-center gap-6 max-[560px]:hidden"
+          aria-label="주요 메뉴"
+        >
           <a
             href="#service"
             onClick={(event) => {
@@ -78,6 +83,13 @@ export function SiteHeader({
           >
             작업실
           </a>
+          <button
+            className="font-inherit text-left transition-colors hover:text-ptop-mint-dark focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ptop-mint-dark"
+            type="button"
+            onClick={onOpenAnalysis}
+          >
+            프로젝트 분석
+          </button>
         </nav>
         <AuthButton />
       </div>

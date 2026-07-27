@@ -1,4 +1,5 @@
 import { analysisHighlights, landingSteps } from "../data/figmaLandingContent";
+import { ReflectionQuestionBubble } from "./ReflectionQuestionBubble";
 
 type FigmaLandingContentProps = {
   onEnterWorkspace: () => void;
@@ -31,7 +32,7 @@ export function FigmaLandingContent({ onEnterWorkspace }: FigmaLandingContentPro
             type="button"
             onClick={onEnterWorkspace}
           >
-            작업실 입장하기
+            프로젝트 분석하러 가기
           </button>
         </div>
       </section>
@@ -88,10 +89,7 @@ export function FigmaLandingContent({ onEnterWorkspace }: FigmaLandingContentPro
       <section className="bg-white" aria-labelledby="reflection-title">
         <div className="ptop-container grid grid-cols-[minmax(0,1fr)_minmax(220px,0.8fr)] items-center gap-16 px-5 py-24 max-[760px]:grid-cols-1 max-[560px]:py-16">
           <div className="grid max-w-[540px] gap-5">
-            <div className="border border-ptop-landing-green bg-ptop-landing-lavender p-3 font-mono text-xs leading-[1.6] text-[#41484d]">
-              “이 프로젝트에서 가장 해결하기 어려웠던 문제는 무엇이었나요?”
-              <span className="mt-2 block h-1 w-1 bg-ptop-landing-lime" aria-hidden="true" />
-            </div>
+            <ReflectionQuestionBubble question="이 프로젝트에서 가장 해결하기 어려웠던 문제는 무엇이었나요?" />
             <h2 className="m-0 text-[clamp(2rem,4vw,3rem)] font-semibold leading-[1.15] tracking-[-0.04em] text-ptop-ink" id="reflection-title">부담 없는 회고의 시간</h2>
             <p className="m-0 max-w-[460px] text-base leading-[1.7] text-ptop-muted [word-break:keep-all]">
               글쓰기가 두려워 멈춰있던 포트폴리오.
@@ -132,7 +130,7 @@ export function FigmaLandingContent({ onEnterWorkspace }: FigmaLandingContentPro
             type="button"
             onClick={onEnterWorkspace}
           >
-            내 작업실 시작하기
+            프로젝트 분석하러 가기
           </button>
           <p className="m-0 font-mono text-xs text-[#41484d]">◉ Free for individual　⌘ GitHub Sync</p>
         </div>

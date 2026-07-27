@@ -9,6 +9,11 @@ type AuthState = {
   error: string;
 };
 
+type SignInOptions = {
+  redirectView?: "workspace";
+  openAnalysis?: boolean;
+};
+
 const initialAuthState: AuthState = {
   session: null,
   user: null,
@@ -55,13 +60,26 @@ export function useAuth() {
     };
   }, []);
 
-  const signInWithGitHub = async () => {
+  const signInWithGitHub = async ({ redirectView, openAnalysis }: SignInOptions = {}) => {
     setAuthState((current) => ({ ...current, isLoading: true, error: "" }));
+
+    const redirectUrl = new URL(
+      import.meta.env.BASE_URL,
+      window.location.origin,
+    );
+
+    if (redirectView) {
+      redirectUrl.searchParams.set("view", redirectView);
+    }
+
+    if (openAnalysis) {
+      redirectUrl.searchParams.set("start", "analysis");
+    }
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
+        redirectTo: redirectUrl.toString(),
       },
     });
 
