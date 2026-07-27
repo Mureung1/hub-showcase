@@ -43,6 +43,7 @@ function SubjectInputPage({
   onAddSubject,
   onUpdateSubject,
   onRemoveSubject,
+  onCompleteSubject,
   onShowResult,
 }) {
   const [form, setForm] = useState(INITIAL_FORM);
@@ -168,6 +169,13 @@ function SubjectInputPage({
       resetForm();
     }
     onRemoveSubject(subject.id);
+  }
+
+  function handleComplete(subject) {
+    if (editingId === subject.id) {
+      resetForm();
+    }
+    onCompleteSubject(subject.id);
   }
 
   function handleShowResult() {
@@ -384,6 +392,14 @@ function SubjectInputPage({
                   </span>
                 </div>
                 <div className="entry-actions">
+                  <button
+                    type="button"
+                    className="entry-action"
+                    aria-label={`${subject.name} 완료`}
+                    onClick={() => handleComplete(subject)}
+                  >
+                    완료
+                  </button>
                   <button
                     type="button"
                     className="entry-action"

@@ -3,6 +3,7 @@ import {
   createSubject,
   updateSubject,
   deleteSubject,
+  completeSubject,
 } from "../services/subjectService.js";
 
 // 1~7 척도 필드 목록. optional=true 인 필드는 값이 없으면 기본값(SCORE_FIELD_DEFAULT)으로 채운다.
@@ -90,8 +91,14 @@ function normalize(body) {
   return normalized;
 }
 
+const VALID_STATUSES = new Set(["active", "done", "all"]);
+
 export function getSubjects(req, res) {
-  res.json({ subjects: listSubjects() });
+  const { status } = req.query;
+  if (status !== undefined && !VALID_STATUSES.has(status)) {
+    return res.status(400).json({ error: "status는 active, done, all 중 하나여야 합니다." });
+  }
+  res.json({ subjects: listSubjects(status) });
 }
 
 export function postSubject(req, res) {
@@ -116,6 +123,19 @@ export function putSubject(req, res) {
   }
 
   const subject = updateSubject(id, normalize(req.body));
+  if (!subject) {
+    return res.status(404).json({ error: "해당 과목을 찾을 수 없습니다." });
+  }
+  return res.json({ subject });
+}
+
+export function patchCompleteSubject(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "올바른 과목 id가 필요합니다." });
+  }
+
+  const subject = completeSubject(id);
   if (!subject) {
     return res.status(404).json({ error: "해당 과목을 찾을 수 없습니다." });
   }

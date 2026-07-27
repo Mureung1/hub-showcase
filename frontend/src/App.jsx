@@ -7,8 +7,10 @@ import {
   fetchSubjects,
   createSubject,
   updateSubject as updateSubjectOnServer,
+  completeSubject as completeSubjectOnServer,
   deleteSubject as deleteSubjectOnServer,
 } from "./utils/subjectsApi";
+import { isCompleted } from "./utils/subjectStatus";
 import "./App.css";
 
 const SUBJECTS_STORAGE_KEY = "exam-priority:subjects";
@@ -33,9 +35,11 @@ function App() {
   const [currentScreen, setCurrentScreen] = useState("input");
   const [subjects, setSubjects] = useState(loadSubjects);
   const [weightKey, setWeightKey] = useState(loadWeightKey);
+  // 완료 과목은 활성 목록·우선순위 계산 어디에도 노출하지 않는다.
+  const activeSubjects = subjects.filter((subject) => !isCompleted(subject));
   // 우선순위 점수는 서버에서 계산해 받는다. 초기값과 폴백은 로컬 계산을 쓴다.
   const [scoredSubjects, setScoredSubjects] = useState(() =>
-    scoreSubjectsLocally(subjects, weightKey)
+    scoreSubjectsLocally(activeSubjects, weightKey)
   );
   const nextIdRef = useRef(
     subjects.reduce((max, subject) => Math.max(max, subject.id), 0) + 1
@@ -102,9 +106,9 @@ function App() {
   useEffect(() => {
     let ignore = false;
 
-    setScoredSubjects(scoreSubjectsLocally(subjects, weightKey));
+    setScoredSubjects(scoreSubjectsLocally(activeSubjects, weightKey));
 
-    fetchPriorityScores(subjects, weightKey).then((result) => {
+    fetchPriorityScores(activeSubjects, weightKey).then((result) => {
       if (!ignore) {
         setScoredSubjects(result.subjects);
       }
@@ -113,6 +117,7 @@ function App() {
     return () => {
       ignore = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subjects, weightKey]);
 
   async function handleAddSubject(subjectInput) {
@@ -147,6 +152,26 @@ function App() {
     setSubjects((prev) => prev.filter((subject) => subject.id !== id));
   }
 
+  async function handleCompleteSubject(id) {
+    const result = await completeSubjectOnServer(id);
+
+    if (result.ok) {
+      setSubjects((prev) =>
+        prev.map((subject) => (subject.id === id ? result.subject : subject))
+      );
+      return;
+    }
+
+    // 서버가 없으면 로컬에서 completedAt을 채운다. (정적 배포·서버 다운 폴백)
+    setSubjects((prev) =>
+      prev.map((subject) =>
+        subject.id === id
+          ? { ...subject, completedAt: new Date().toISOString() }
+          : subject
+      )
+    );
+  }
+
   return (
     <main className="app-container">
       <header className="app-header">
@@ -158,10 +183,11 @@ function App() {
 
       {currentScreen === "input" ? (
         <SubjectInputPage
-          subjects={subjects}
+          subjects={activeSubjects}
           onAddSubject={handleAddSubject}
           onUpdateSubject={handleUpdateSubject}
           onRemoveSubject={handleRemoveSubject}
+          onCompleteSubject={handleCompleteSubject}
           onShowResult={() => setCurrentScreen("result")}
         />
       ) : (

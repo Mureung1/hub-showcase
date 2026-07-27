@@ -29,6 +29,7 @@ db.exec(`
     available_time INTEGER NOT NULL DEFAULT 4,
     credits REAL NOT NULL DEFAULT 3,
     previous_score INTEGER,
+    completed_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )
 `);
@@ -50,6 +51,8 @@ for (const [name, ddl] of [
   ["credits", "credits REAL NOT NULL DEFAULT 3"],
   // 이전 시험 점수는 선택 입력이라 기본값 없이 NULL 을 허용한다("해당 없음"과 구분).
   ["previous_score", "previous_score INTEGER"],
+  // 완료 처리 시각. NULL 이면 활성, 값이 있으면 완료(과목 완료 체크·히스토리 기능).
+  ["completed_at", "completed_at TEXT"],
 ]) {
   if (!columns.has(name)) {
     db.exec(`ALTER TABLE subjects ADD COLUMN ${ddl}`);
