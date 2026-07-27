@@ -1,5 +1,6 @@
 import { apiRequest } from "../../shared/api";
 import {
+  ApplySubstituteRequestResponse,
   CreateSubstituteRequestInput,
   CreateSubstituteRequestResponse,
   SubstituteRequestsResponse
@@ -20,5 +21,12 @@ export async function createSubstituteRequest(
     method: "POST",
     accessToken,
     body: input
+  });
+}
+
+export async function applySubstituteRequest(accessToken: string, requestId: string) {
+  return apiRequest<ApplySubstituteRequestResponse>(`/substitute-requests/${requestId}/apply`, {
+    method: "PATCH",
+    accessToken
   });
 }

@@ -1,13 +1,19 @@
 import { HttpError } from "../../common/errors/HttpError";
-import { findScheduleById } from "../schedules/schedules.repository";
+import { findStoreMembership } from "../../common/repositories/storeMembership.repository";
+import { findOverlappingWorkerSchedules, findScheduleById } from "../schedules/schedules.repository";
 import {
   findActiveSubstituteRequestByScheduleId,
+  findSubstituteApplication,
+  findSubstituteRequestById,
   findOpenSubstituteRequestsByStoreId,
   findSubstituteRequestProfiles,
   findSubstituteRequestSchedules,
-  insertSubstituteRequest
+  insertSubstituteApplication,
+  insertSubstituteRequest,
+  updateSubstituteRequestCandidate
 } from "./substituteRequests.repository";
 import {
+  ApplySubstituteRequestInput,
   CreateSubstituteRequestInput,
   ListSubstituteRequestsInput,
   SubstituteRequestRecord,
@@ -140,5 +146,71 @@ export async function createStoreSubstituteRequest(input: CreateSubstituteReques
 
   return {
     substituteRequest: toSubstituteRequestResponse(substituteRequest)
+  };
+}
+
+export async function applyToSubstituteRequest(input: ApplySubstituteRequestInput) {
+  const request = await findSubstituteRequestById(input.requestId);
+
+  if (!request) {
+    throw new HttpError(404, "대타 요청을 찾을 수 없습니다.", "SUBSTITUTE_REQUEST_NOT_FOUND");
+  }
+
+  if (request.status !== "OPEN") {
+    throw new HttpError(409, "이미 다른 알바생이 신청한 요청입니다.", "SUBSTITUTE_REQUEST_NOT_OPEN");
+  }
+
+  if (request.requester_id === input.actorUserId) {
+    throw new HttpError(403, "본인이 등록한 대타 요청에는 신청할 수 없습니다.", "CANNOT_APPLY_OWN_REQUEST");
+  }
+
+  const membership = await findStoreMembership(request.store_id, input.actorUserId);
+
+  if (!membership || membership.role !== "WORKER") {
+    throw new HttpError(403, "같은 매장 알바생만 대타 요청에 신청할 수 있습니다.", "WORKER_ROLE_REQUIRED");
+  }
+
+  const schedule = await findScheduleById(request.schedule_id);
+
+  if (!schedule) {
+    throw new HttpError(404, "근무 일정을 찾을 수 없습니다.", "SCHEDULE_NOT_FOUND");
+  }
+
+  if (schedule.store_id !== request.store_id) {
+    throw new HttpError(400, "대타 요청과 근무 일정의 매장이 일치하지 않습니다.", "SCHEDULE_STORE_MISMATCH");
+  }
+
+  if (schedule.work_date < getTodayDateText()) {
+    throw new HttpError(400, "지난 근무의 대타 요청에는 신청할 수 없습니다.", "PAST_SCHEDULE_NOT_ALLOWED");
+  }
+
+  const existingApplication = await findSubstituteApplication(input.requestId, input.actorUserId);
+
+  if (existingApplication) {
+    throw new HttpError(409, "이미 신청한 대타 요청입니다.", "SUBSTITUTE_APPLICATION_EXISTS");
+  }
+
+  const overlappingSchedules = await findOverlappingWorkerSchedules({
+    storeId: request.store_id,
+    workerId: input.actorUserId,
+    workDate: schedule.work_date,
+    startTime: schedule.start_time,
+    endTime: schedule.end_time
+  });
+
+  if (overlappingSchedules.length > 0) {
+    throw new HttpError(409, "같은 시간에 이미 등록된 근무가 있어 신청할 수 없습니다.", "SCHEDULE_TIME_OVERLAP");
+  }
+
+  const updatedRequest = await updateSubstituteRequestCandidate(input);
+
+  if (!updatedRequest) {
+    throw new HttpError(409, "이미 다른 알바생이 신청한 요청입니다.", "SUBSTITUTE_REQUEST_NOT_OPEN");
+  }
+
+  await insertSubstituteApplication(input);
+
+  return {
+    substituteRequest: toSubstituteRequestResponse(updatedRequest)
   };
 }

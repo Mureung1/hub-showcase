@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthProvider";
-import { createSubstituteRequest, getSubstituteRequests } from "./substituteApi";
+import { applySubstituteRequest, createSubstituteRequest, getSubstituteRequests } from "./substituteApi";
 import { CreateSubstituteRequestInput } from "./substituteTypes";
 
 export function useSubstituteRequests(storeId: string | null) {
@@ -23,6 +23,21 @@ export function useCreateSubstituteRequest(storeId: string | null) {
   return useMutation({
     mutationFn: (input: CreateSubstituteRequestInput) =>
       createSubstituteRequest(accessToken ?? "", storeId ?? "", input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["substituteRequests"]
+      });
+    }
+  });
+}
+
+export function useApplySubstituteRequest() {
+  const { session } = useAuth();
+  const accessToken = session?.access_token;
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (requestId: string) => applySubstituteRequest(accessToken ?? "", requestId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ["substituteRequests"]

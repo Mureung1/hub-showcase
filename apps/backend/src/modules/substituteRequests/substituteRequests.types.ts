@@ -68,6 +68,18 @@ export type ListSubstituteRequestsInput = {
   actorRole: "OWNER" | "WORKER";
 };
 
+export type ApplySubstituteRequestInput = {
+  requestId: string;
+  actorUserId: string;
+};
+
+export type SubstituteApplicationRecord = {
+  id: string;
+  request_id: string;
+  worker_id: string;
+  created_at: string;
+};
+
 export type CreateSubstituteRequestResponse = {
   substituteRequest: SubstituteRequestResponse;
 };

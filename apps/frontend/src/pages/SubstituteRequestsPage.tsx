@@ -1,7 +1,8 @@
 import { format } from "date-fns";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMe } from "../features/auth";
-import { useSubstituteRequests } from "../features/substitute";
+import { useApplySubstituteRequest, useSubstituteRequests } from "../features/substitute";
 import { getScheduleDatePath, ROUTES } from "../shared/routes";
 import { getSelectedStoreId } from "../shared/utils";
 
@@ -20,12 +21,23 @@ export function SubstituteRequestsPage() {
   const isOwner = selectedStore?.role === "OWNER";
   const isWorker = selectedStore?.role === "WORKER";
   const { data, error, isLoading } = useSubstituteRequests(selectedStoreId);
+  const applySubstituteRequestMutation = useApplySubstituteRequest();
+  const [message, setMessage] = useState<string | null>(null);
   const substituteRequests = data?.substituteRequests ?? [];
   const pageTitle = isOwner ? "매장 공개 대타 요청" : "신청 가능한 대타 요청";
   const emptyTitle = isOwner ? "진행 중인 공개 요청이 없습니다." : "신청 가능한 대타 요청이 없습니다.";
   const emptyDescription = isOwner
     ? "알바생이 등록한 공개 요청이 생기면 이곳에 표시됩니다."
     : "오늘 이후 다른 알바생이 공개한 요청이 생기면 이곳에 표시됩니다.";
+
+  function handleApply(requestId: string) {
+    setMessage(null);
+    applySubstituteRequestMutation.mutate(requestId, {
+      onSuccess: () => {
+        setMessage("대타 요청에 신청했습니다. 사장님 승인 대기 상태로 변경되었습니다.");
+      }
+    });
+  }
 
   if (isMeLoading) {
     return (
@@ -90,6 +102,15 @@ export function SubstituteRequestsPage() {
             </div>
           ) : null}
 
+          {applySubstituteRequestMutation.error ? (
+            <p className="form-error schedule-message">
+              {applySubstituteRequestMutation.error instanceof Error
+                ? applySubstituteRequestMutation.error.message
+                : "대타 요청 신청에 실패했습니다."}
+            </p>
+          ) : null}
+          {message ? <p className="form-success schedule-message">{message}</p> : null}
+
           {!isLoading && !error && substituteRequests.length === 0 ? (
             <div className="empty-state">
               <strong>{emptyTitle}</strong>
@@ -118,7 +139,18 @@ export function SubstituteRequestsPage() {
                     <p className="request-reason">{request.reason}</p>
                   </div>
                   <div className="request-card-actions">
-                    <p className="badge">{isOwner ? "공개" : "신청 준비"}</p>
+                    {isWorker ? (
+                      <button
+                        className="primary-button inline-empty-link"
+                        disabled={applySubstituteRequestMutation.isPending}
+                        onClick={() => handleApply(request.id)}
+                        type="button"
+                      >
+                        {applySubstituteRequestMutation.isPending ? "신청 중" : "신청"}
+                      </button>
+                    ) : (
+                      <p className="badge">공개</p>
+                    )}
                     <Link className="text-button" to={getScheduleDatePath(request.workDate)}>
                       근무 보기
                     </Link>

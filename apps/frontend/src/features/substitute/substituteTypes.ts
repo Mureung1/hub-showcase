@@ -35,3 +35,7 @@ export type CreateSubstituteRequestInput = {
 export type CreateSubstituteRequestResponse = {
   substituteRequest: SubstituteRequest;
 };
+
+export type ApplySubstituteRequestResponse = {
+  substituteRequest: SubstituteRequest;
+};

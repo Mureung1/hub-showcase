@@ -1,6 +1,8 @@
 import { supabaseAdminClient } from "../../common/config/supabase";
 import {
+  ApplySubstituteRequestInput,
   CreateSubstituteRequestInput,
+  SubstituteApplicationRecord,
   SubstituteRequestProfileRecord,
   SubstituteRequestRecord,
   SubstituteRequestScheduleRecord,
@@ -9,6 +11,7 @@ import {
 
 const SUBSTITUTE_REQUEST_COLUMNS =
   "id,store_id,schedule_id,requester_id,candidate_worker_id,status,reason,reject_reason,created_at,updated_at";
+const SUBSTITUTE_APPLICATION_COLUMNS = "id,request_id,worker_id,created_at";
 const SUBSTITUTE_REQUEST_SCHEDULE_COLUMNS = "id,worker_id,work_date,start_time,end_time,position,memo";
 const SUBSTITUTE_REQUEST_PROFILE_COLUMNS = "id,name";
 
@@ -60,6 +63,20 @@ export async function findSubstituteRequestProfiles(profileIds: string[]) {
   return data as unknown as SubstituteRequestProfileRecord[];
 }
 
+export async function findSubstituteRequestById(requestId: string) {
+  const { data, error } = await supabaseAdminClient
+    .from("substitute_requests")
+    .select(SUBSTITUTE_REQUEST_COLUMNS)
+    .eq("id", requestId)
+    .maybeSingle<SubstituteRequestRecord>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
 export async function findActiveSubstituteRequestByScheduleId(
   scheduleId: string,
   activeStatuses: SubstituteRequestStatus[]
@@ -71,6 +88,22 @@ export async function findActiveSubstituteRequestByScheduleId(
     .in("status", activeStatuses)
     .limit(1)
     .maybeSingle<SubstituteRequestRecord>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function findSubstituteApplication(requestId: string, workerId: string) {
+  const { data, error } = await supabaseAdminClient
+    .from("substitute_applications")
+    .select(SUBSTITUTE_APPLICATION_COLUMNS)
+    .eq("request_id", requestId)
+    .eq("worker_id", workerId)
+    .limit(1)
+    .maybeSingle<SubstituteApplicationRecord>();
 
   if (error) {
     throw new Error(error.message);
@@ -91,6 +124,42 @@ export async function insertSubstituteRequest(input: CreateSubstituteRequestInpu
     })
     .select(SUBSTITUTE_REQUEST_COLUMNS)
     .single<SubstituteRequestRecord>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function updateSubstituteRequestCandidate(input: ApplySubstituteRequestInput) {
+  const { data, error } = await supabaseAdminClient
+    .from("substitute_requests")
+    .update({
+      candidate_worker_id: input.actorUserId,
+      status: "PENDING_APPROVAL"
+    })
+    .eq("id", input.requestId)
+    .eq("status", "OPEN")
+    .select(SUBSTITUTE_REQUEST_COLUMNS)
+    .maybeSingle<SubstituteRequestRecord>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function insertSubstituteApplication(input: ApplySubstituteRequestInput) {
+  const { data, error } = await supabaseAdminClient
+    .from("substitute_applications")
+    .insert({
+      request_id: input.requestId,
+      worker_id: input.actorUserId
+    })
+    .select(SUBSTITUTE_APPLICATION_COLUMNS)
+    .single<SubstituteApplicationRecord>();
 
   if (error) {
     throw new Error(error.message);
