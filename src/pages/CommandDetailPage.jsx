@@ -3,30 +3,13 @@ import { Link, useParams } from 'react-router-dom';
 import { CATEGORY_LABELS } from '../data/commands';
 import { fetchCommandById } from '../services/commandsService';
 import { fetchScenarios } from '../services/scenariosService';
-
-function ClipboardIcon() {
-    return (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <rect x="9" y="2" width="6" height="4" rx="1" />
-            <path d="M9 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-4" />
-        </svg>
-    );
-}
-
-function CheckIcon() {
-    return (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <polyline points="20 6 9 17 4 12" />
-        </svg>
-    );
-}
+import CopyButton from '../components/CopyButton';
 
 function CommandDetailPage() {
     const { id } = useParams();
     const [command, setCommand] = useState(null); // BE(/api/commands/:id)가 내려준 명령어 하나, 없으면(404) null
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null); // 네트워크/서버 오류 메시지 — "존재하지 않는 id"(404)와는 다른 경우
-    const [copiedCommand, setCopiedCommand] = useState(null);
     const [relatedScenarios, setRelatedScenarios] = useState([]); // 이 명령어가 속한 시나리오들("관련 상황" 섹션용)
 
     useEffect(() => {
@@ -49,16 +32,6 @@ function CommandDetailPage() {
             .then((scenarios) => setRelatedScenarios(scenarios.filter((s) => s.command_ids.includes(id))))
             .catch(() => setRelatedScenarios([]));
     }, [id]);
-
-    const handleCopy = async (text) => {
-        try {
-            await navigator.clipboard.writeText(text);
-            setCopiedCommand(text);
-            setTimeout(() => setCopiedCommand(null), 1500);
-        } catch {
-            // 클립보드 접근 실패 시 조용히 무시 (권한 없는 환경 등)
-        }
-    };
 
     if (isLoading) {
         return (
@@ -130,14 +103,7 @@ function CommandDetailPage() {
                                 <div key={example.command} className="example-block">
                                     <div className="example-command-row">
                                         <code className="example-command">{example.command}</code>
-                                        <button
-                                            type="button"
-                                            className={`copy-button${copiedCommand === example.command ? ' copied' : ''}`}
-                                            onClick={() => handleCopy(example.command)}
-                                            aria-label={`${example.command} 명령어 복사`}
-                                        >
-                                            {copiedCommand === example.command ? <CheckIcon /> : <ClipboardIcon />}
-                                        </button>
+                                        <CopyButton text={example.command} />
                                     </div>
                                     <p className="example-desc">{example.desc}</p>
                                 </div>
