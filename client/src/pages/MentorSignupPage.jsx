@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
 import { navigationTargets } from "../routes/routePaths";
 import { signupMentor } from "../api/auth";
+import { LAB_NAME_HINT, LAB_NAME_PATTERN } from "../constants/labName";
 
 const academicStatusLabels = {
   master: "석사과정",
@@ -294,7 +295,16 @@ function MentorSignupPage() {
 
               <label className="mentor-field-group">
                 <span className="mentor-field-label">연구실 <span aria-hidden="true">*</span></span>
-                <input className="field" type="text" name="lab" placeholder="소속 연구실을 입력해 주세요" required />
+                <small className="mentor-field-hint">{LAB_NAME_HINT}</small>
+                <input
+                  className="field"
+                  type="text"
+                  name="lab"
+                  placeholder="예: 인공지능 연구실(AI Lab)"
+                  pattern={LAB_NAME_PATTERN}
+                  title={LAB_NAME_HINT}
+                  required
+                />
               </label>
 
               <fieldset className="mentor-keyword-fieldset">
