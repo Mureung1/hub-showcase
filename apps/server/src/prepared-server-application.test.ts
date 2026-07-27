@@ -78,14 +78,33 @@ test('prepared public composition uses project discovery and exposes only AY Cha
       )
     }
 
+    assert.equal(
+      (
+        await postJson(`${baseUrl}/api/product/chat/messages`, {
+          text: '과제 파일을 확인해 줘.',
+          materials: [],
+        })
+      ).status,
+      400,
+    )
     const stream = await postJson(`${baseUrl}/api/product/chat/messages`, {
       text: '과제 파일을 확인해 줘.',
-      materials: [],
     })
     assert.equal(stream.status, 200)
     assert.ok(stream.body)
     const trace = new NdjsonTrace(stream.body.getReader())
     await trace.until((frame) => frame.type === 'operation.accepted')
+    const activeBootstrap = await fetch(`${baseUrl}/api/product/bootstrap`)
+    assert.match(
+      String(
+        (
+          (await activeBootstrap.json()) as {
+            activeOperation: { operationId: string }
+          }
+        ).activeOperation.operationId
+      ),
+      /^operation_[0-9a-f]{32}$/u,
+    )
     assert.deepEqual(runtime.threadInputs, [undefined])
     assert.equal(runtime.productInputs[0]?.permissionProfile, 'workspace_write')
     assert.equal(runtime.productInputs[0]?.skill, undefined)
@@ -147,6 +166,15 @@ test('prepared public composition uses project discovery and exposes only AY Cha
     )
     runtime.finish()
     await trace.until((frame) => frame.type === 'operation.terminal')
+    const settledBootstrap = await fetch(`${baseUrl}/api/product/bootstrap`)
+    assert.equal(
+      (
+        (await settledBootstrap.json()) as {
+          activeOperation: unknown
+        }
+      ).activeOperation,
+      null,
+    )
   } finally {
     await target.application.close()
     await listener?.close({ signal: new AbortController().signal })

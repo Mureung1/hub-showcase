@@ -19,6 +19,8 @@ import {
   decodeProductOperationFrame,
   decodeProductReviewRequest,
   decodeProductReviewResponse,
+  decodeTargetProductChatRequest,
+  decodeTargetProductOperationFrame,
 } from '@ay-ple/product-contract'
 
 test('package root exposes the exact runtime contract surface', () => {
@@ -55,6 +57,8 @@ test('package root exposes the exact runtime contract surface', () => {
     'decodeProductWorkspaceLifecycle',
     'decodeProductWorkspaceResponse',
     'decodeTargetProductBootstrap',
+    'decodeTargetProductChatRequest',
+    'decodeTargetProductOperationFrame',
     'isProductDecisionKey',
     'isProductDigest',
     'isProductInteractionId',
@@ -63,6 +67,40 @@ test('package root exposes the exact runtime contract surface', () => {
     'isProductPatchId',
     'isProductQuestionId',
   ])
+})
+
+test('target Chat request excludes the old academic material selection', () => {
+  const request = {
+    text: '학기 작업을 도와 줘.',
+    codexSettings: {
+      model: 'gpt-5.4',
+      reasoningEffort: 'medium',
+      serviceTier: 'fast',
+    },
+  } as const
+  assert.deepEqual(decodeTargetProductChatRequest(request), request)
+  assert.throws(
+    () => decodeTargetProductChatRequest({ text: request.text, materials: [] }),
+    ProductContractError,
+  )
+})
+
+test('target operation decoder rejects every old academic frame family', () => {
+  const operationId = `chat_${'1'.repeat(32)}`
+  const target = {
+    type: 'operation.accepted',
+    operationId,
+  } as const
+  assert.deepEqual(decodeTargetProductOperationFrame(target), target)
+  assert.throws(
+    () =>
+      decodeTargetProductOperationFrame({
+        type: 'skill.requested',
+        operationId: `action_${'2'.repeat(32)}`,
+        skill: { name: 'first-assignment', version: '1' },
+      }),
+    ProductContractError,
+  )
 })
 
 test('bootstrap decoder accepts the exact Browser-safe projection only', () => {

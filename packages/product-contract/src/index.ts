@@ -64,6 +64,13 @@ export type {
 } from './workspace-lifecycle.js'
 
 export {
+  decodeTargetProductChatRequest,
+} from './target-request.js'
+export type {
+  TargetProductChatRequest,
+} from './target-request.js'
+
+export {
   FIRST_ASSIGNMENT_ARGUMENTS,
   FIRST_ASSIGNMENT_RECIPE_VERSION,
   decodeCreateProductCourseRequest,
@@ -120,4 +127,9 @@ export type {
   ProductQuestion,
   ProductStatePatch,
 } from './operation-frame.js'
+export { decodeTargetProductOperationFrame } from './target-operation-frame.js'
+export type {
+  TargetProductOperationFrame,
+  TargetProductQuestion,
+} from './target-operation-frame.js'
 export type { ProductOperationRecovery } from './recovery.js'

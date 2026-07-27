@@ -9,9 +9,9 @@ import {
   PRODUCT_JSON_ENVELOPE_MAX_BYTES,
   ProductContractError,
   decodeEmptyProductRequest,
-  decodeProductChatRequest,
   decodeProductInteractionAnswerRequest,
   decodeProductReviewResult,
+  decodeTargetProductChatRequest,
   isProductInteractionId,
   isProductOperationId,
   type ProductAccountReadiness,
@@ -99,7 +99,7 @@ export function createPreparedProductRouter(options: {
     const body: TargetProductBootstrap = {
       accountReadiness,
       workspaceLifecycle: lifecycle,
-      activeOperation: null,
+      activeOperation: options.operations.activeOperation(),
     }
     response.json(body)
   })
@@ -127,8 +127,8 @@ export function createPreparedProductRouter(options: {
   )
 
   router.post('/chat/messages', async (request, response) => {
-    const input = tryDecode(decodeProductChatRequest, request.body)
-    if (!input || input.materials.length !== 0) {
+    const input = tryDecode(decodeTargetProductChatRequest, request.body)
+    if (!input) {
       sendError(response, 400, 'invalid_request', safeInvalidRequest)
       return
     }

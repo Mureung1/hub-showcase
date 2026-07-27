@@ -15,6 +15,7 @@ import {
 } from './server-listener.js'
 import { createPreparedServerApplication } from './prepared-server-application.js'
 import {
+  PreparedWorkspaceStartupError,
   startPreparedWorkspace,
   type PreparedWorkspaceActiveSession,
   type PreparedWorkspaceStartupPorts,
@@ -123,6 +124,20 @@ async function startPreparedConfiguredServerApplication(input: {
   })
   let session: PreparedWorkspaceActiveSession | undefined
   let listenerPort: number | undefined
+  let ownedListener:
+    | Awaited<ReturnType<typeof bindServerApplicationListener>>
+    | undefined
+  const closeOwnedListener = async (): Promise<void> => {
+    const listener = ownedListener
+    if (!listener) return
+    ownedListener = undefined
+    const result = await listener.close({
+      signal: new AbortController().signal,
+    })
+    if (result.status !== 'closed') {
+      throw new Error('Prepared Server listener cleanup was ambiguous')
+    }
+  }
   try {
     const ports: PreparedWorkspaceStartupPorts = {
       async bindSharedListener(options) {
@@ -132,17 +147,11 @@ async function startPreparedConfiguredServerApplication(input: {
           port: input.port,
           requestHandler: target.application.app,
         })
+        ownedListener = listener
         listenerPort = listener.port
         return {
           port: listener.port,
-          async close() {
-            const result = await listener.close({
-              signal: new AbortController().signal,
-            })
-            if (result.status !== 'closed') {
-              throw new Error('Prepared Server listener cleanup was ambiguous')
-            }
-          },
+          close: async () => undefined,
         }
       },
       async prepareBrokerGeneration(options) {
@@ -213,9 +222,11 @@ async function startPreparedConfiguredServerApplication(input: {
       app: target.application.app,
       semesterWorkspace: undefined,
       close() {
-        closePromise ??= activeSession
-          .close()
-          .finally(() => target.application.close())
+        closePromise ??= closePreparedHost([
+          () => activeSession.close(),
+          closeOwnedListener,
+          () => target.application.close(),
+        ])
         return closePromise
       },
     }
@@ -225,8 +236,47 @@ async function startPreparedConfiguredServerApplication(input: {
     return { application, port: activePort }
   } catch (error) {
     await session?.close().catch(() => undefined)
+    if (
+      error instanceof PreparedWorkspaceStartupError &&
+      error.lifecycle &&
+      ownedListener
+    ) {
+      let closePromise: Promise<void> | undefined
+      const application: ServerApplication = {
+        app: target.application.app,
+        semesterWorkspace: undefined,
+        close() {
+          closePromise ??= closePreparedHost([
+            closeOwnedListener,
+            () => target.application.close(),
+          ])
+          return closePromise
+        },
+      }
+      const recoveryPort = listenerPort ?? input.port
+      input.log(`SemesterWorkspace recovery: ${error.stage}`)
+      input.log(`server listening on http://${input.host}:${recoveryPort}`)
+      return { application, port: recoveryPort }
+    }
+    await closeOwnedListener().catch(() => undefined)
     await target.application.close().catch(() => undefined)
     throw error
+  }
+}
+
+async function closePreparedHost(
+  steps: ReadonlyArray<() => Promise<void>>,
+): Promise<void> {
+  const errors: unknown[] = []
+  for (const step of steps) {
+    try {
+      await step()
+    } catch (error) {
+      errors.push(error)
+    }
+  }
+  if (errors.length > 0) {
+    throw new AggregateError(errors, 'Prepared Server cleanup failed')
   }
 }
 

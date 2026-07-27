@@ -6,22 +6,10 @@ import {
   type TargetProductBootstrap,
 } from '@ay-ple/product-contract'
 
-import { ProductChatDock } from './product-chat-presentation.js'
-import type {
-  ProductBootstrap,
-  ReadyProductWorkspace,
-} from './product-api.js'
-import { useProductChat } from './use-product-chat.js'
+import { PreparedProductChat } from './prepared-product-chat.js'
+import { usePreparedProductChat } from './use-prepared-product-chat.js'
 import { WorkspaceLifecycleView } from './workspace-lifecycle-view.js'
 import './App.css'
-
-const activeWorkspace: ReadyProductWorkspace = {
-  state: 'ready',
-  confirmedRevision: 0,
-  course: null,
-  materials: [],
-  recovery: null,
-}
 
 export function PreparedWorkspaceApp() {
   const [bootstrap, setBootstrap] = useState<TargetProductBootstrap>()
@@ -36,7 +24,7 @@ export function PreparedWorkspaceApp() {
     const next = decodeTargetProductBootstrap(await response.json())
     setBootstrap(next)
     setFailure(undefined)
-    return legacyAdapter(next)
+    return next
   }, [])
 
   useEffect(() => {
@@ -49,15 +37,22 @@ export function PreparedWorkspaceApp() {
     return () => controller.abort()
   }, [refresh])
 
-  const chat = useProductChat({
-    accountReadiness: bootstrap?.accountReadiness,
-    workspace:
-      bootstrap?.workspaceLifecycle.state === 'active'
-        ? activeWorkspace
-        : undefined,
-    selectedMaterials: [],
-    refreshProductSnapshot: refresh,
-    refreshSettledProductState: refresh,
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void refresh().catch(() => undefined)
+    }, 500)
+    return () => window.clearInterval(timer)
+  }, [refresh])
+
+  const chat = usePreparedProductChat({
+    accountReadiness:
+      bootstrap?.accountReadiness ?? {
+        state: 'unavailable',
+        displayMessage: 'AY Runtime 준비가 완료되지 않았습니다.',
+      },
+    lifecycle: bootstrap?.workspaceLifecycle,
+    activeOperation: bootstrap?.activeOperation ?? null,
+    onSettled: () => refresh().then(() => undefined),
   })
 
   if (failure) {
@@ -104,37 +99,9 @@ export function PreparedWorkspaceApp() {
       </header>
       <main className="prepared-chat-main">
         <aside className="chat-dock" aria-label="AY Chat">
-          <ProductChatDock
-            controller={chat}
-            accountReadiness={bootstrap.accountReadiness}
-            history={undefined}
-            confirmedRevision={undefined}
-            materials={[]}
-            bootstrapRefreshing={false}
-            onNavigateEvidence={() => undefined}
-            preparedWorkspace
-          />
+          <PreparedProductChat controller={chat} />
         </aside>
       </main>
     </div>
   )
-}
-
-function legacyAdapter(
-  target: TargetProductBootstrap,
-): ProductBootstrap {
-  return {
-    accountReadiness: target.accountReadiness,
-    operationStatus: target.activeOperation ? 'active' : 'idle',
-    workspace:
-      target.workspaceLifecycle.state === 'active'
-        ? activeWorkspace
-        : null,
-    history: {
-      assignments: [],
-      modelingRuns: [],
-      statePatches: [],
-      userConfirmations: [],
-    },
-  }
 }

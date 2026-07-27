@@ -53,7 +53,6 @@ export function ProductChatDock({
   materials,
   bootstrapRefreshing,
   onNavigateEvidence,
-  preparedWorkspace = false,
 }: {
   readonly controller: ProductChatController
   readonly accountReadiness: ProductAccountReadiness | undefined
@@ -62,7 +61,6 @@ export function ProductChatDock({
   readonly materials: readonly ProductRawMaterial[]
   readonly bootstrapRefreshing: boolean
   readonly onNavigateEvidence: (focus: ProductEvidenceFocus) => void
-  readonly preparedWorkspace?: boolean
 }) {
   const transcriptRef = useRef<HTMLElement | null>(null)
   const previousAssignmentCount = useRef(0)
@@ -115,31 +113,21 @@ export function ProductChatDock({
         aria-label="AY 작업 흐름"
         aria-live="polite"
       >
-        {!preparedWorkspace ? (
-          <>
-            <SettledRecoveries history={history} controller={controller} />
-            <SettledAssignments
-              history={history}
-              confirmedRevision={confirmedRevision}
-              materials={materials}
-              refreshing={bootstrapRefreshing}
-              onNavigateEvidence={onNavigateEvidence}
-            />
-          </>
-        ) : null}
+        <SettledRecoveries history={history} controller={controller} />
+        <SettledAssignments
+          history={history}
+          confirmedRevision={confirmedRevision}
+          materials={materials}
+          refreshing={bootstrapRefreshing}
+          onNavigateEvidence={onNavigateEvidence}
+        />
 
         {controller.state.transcript.length === 0 ? (
           <div className="product-chat-empty">
             <Sparkles size={24} />
-            <strong>
-              {preparedWorkspace
-                ? 'AY에게 학기 작업을 맡겨 보세요'
-                : '자료와 함께 시작해 보세요'}
-            </strong>
+            <strong>자료와 함께 시작해 보세요</strong>
             <span>
-              {preparedWorkspace
-                ? 'AY는 이 Git workspace의 project Skill과 MCP를 사용해 actual file에서 작업합니다.'
-                : '선택한 자료를 정리하거나 궁금한 내용을 메시지로 물어볼 수 있어요.'}
+              선택한 자료를 정리하거나 궁금한 내용을 메시지로 물어볼 수 있어요.
             </span>
           </div>
         ) : (
@@ -236,9 +224,7 @@ export function ProductChatDock({
         <CodexTurnControls controller={controller} />
         <div className="composer-footnote">
           <MessageCircle size={12} />{' '}
-          {preparedWorkspace
-            ? 'Review 결과는 같은 AY Turn으로 돌아가며, 실제 변경은 Git workspace에 남습니다.'
-            : '대화 흐름은 새로고침하면 사라지고, 반영된 학기 정보만 다시 열립니다.'}
+          대화 흐름은 새로고침하면 사라지고, 반영된 학기 정보만 다시 열립니다.
         </div>
       </form>
     </div>

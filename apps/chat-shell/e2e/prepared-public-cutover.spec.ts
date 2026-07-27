@@ -20,6 +20,7 @@ import type {
   StartThreadInput,
   StartTurnInput,
 } from '@ay-ple/codex-chat-runtime'
+import type { ProductWorkspaceLifecycle } from '@ay-ple/product-contract'
 import react from '@vitejs/plugin-react'
 import { expect, test } from 'playwright/test'
 import {
@@ -40,6 +41,17 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
     await mkdtemp(path.join(tmpdir(), 'prepared-public-browser-')),
   )
   const runtime = new PreparedBrowserRuntime()
+  let lifecycle: ProductWorkspaceLifecycle = {
+    state: 'active',
+    workspace: {
+      workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
+      semester: {
+        yearLevel: 2,
+        term: { key: 'fall', displayName: '2학기' },
+      },
+      label: '2학년 2학기',
+    },
+  }
   const target = await createPreparedServerApplication({
     codexChat: {
       ...codexChatIdentity,
@@ -47,17 +59,7 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
       createRuntime: async () => runtime,
     },
     workspaceRoot,
-    readLifecycle: () => ({
-      state: 'active',
-      workspace: {
-        workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
-        semester: {
-          yearLevel: 2,
-          term: { key: 'fall', displayName: '2학기' },
-        },
-        label: '2학년 2학기',
-      },
-    }),
+    readLifecycle: () => lifecycle,
   })
   const listener = await bindServerApplicationListener({
     host: '127.0.0.1',
@@ -153,11 +155,97 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
     await expect(settledCard).toContainText('과제 파일 변경')
     await expect(settledCard.getByRole('button')).toHaveCount(0)
 
+    const reviseHeld = fetch(`${apiUrl}/api/_private/interaction-mcp/`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        protocolVersion: 1,
+        kind: 'capability_call',
+        capability: 'propose_state_patch',
+        request: {
+          summary: '과제 파일 변경 보완',
+          question: '보완한 변경을 반영할까요?',
+          changes: [
+            {
+              label: '제출 방식',
+              description: '제출 방식을 actual file에 반영합니다.',
+              before: '미정',
+              after: 'LMS',
+            },
+          ],
+        },
+      }),
+    })
+    const reviseCard = page.getByRole('region', { name: '검토 대기' })
+    await expect(reviseCard).toContainText('과제 파일 변경 보완')
+    await reviseCard.getByRole('button', { name: '수정 요청' }).click()
+    await reviseCard
+      .getByRole('textbox', { name: '수정 요청' })
+      .fill('제출 위치를 더 구체적으로 적어 줘.')
+    await reviseCard.getByRole('button', { name: '수정 요청' }).click()
+    expect(await (await reviseHeld).json()).toMatchObject({
+      kind: 'capability_result',
+      result: {
+        outcome: 'revise',
+        feedback: '제출 위치를 더 구체적으로 적어 줘.',
+      },
+    })
+    await expect(
+      page.getByRole('region', { name: '수정 요청됨' }),
+    ).toContainText('과제 파일 변경 보완')
+
+    const rejectHeld = fetch(`${apiUrl}/api/_private/interaction-mcp/`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        protocolVersion: 1,
+        kind: 'capability_call',
+        capability: 'propose_state_patch',
+        request: {
+          summary: '불필요한 과제 파일 변경',
+          question: '이 변경을 반영할까요?',
+          changes: [
+            {
+              label: '메모',
+              description: '불필요한 메모를 추가합니다.',
+              after: '임시 메모',
+            },
+          ],
+        },
+      }),
+    })
+    const rejectCard = page.getByRole('region', { name: '검토 대기' })
+    await expect(rejectCard).toContainText('불필요한 과제 파일 변경')
+    await rejectCard.getByRole('button', { name: '거절' }).click()
+    expect(await (await rejectHeld).json()).toMatchObject({
+      kind: 'capability_result',
+      result: { outcome: 'reject' },
+    })
+    await expect(page.getByRole('region', { name: '거절됨' })).toContainText(
+      '불필요한 과제 파일 변경',
+    )
+
     runtime.finish()
     await expect(page.locator('[data-product-operation-phase]')).toHaveAttribute(
       'data-product-operation-phase',
       'completed',
     )
+    lifecycle = {
+      state: 'recovery_required',
+      workspace: {
+        availability: 'available',
+        workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
+        semester: {
+          yearLevel: 2,
+          term: { key: 'fall', displayName: '2학기' },
+        },
+        label: '2학년 2학기',
+      },
+      reason: 'runtime_unavailable',
+      displayMessage: 'AY Runtime을 다시 시작해 주세요.',
+    }
+    await expect(page.getByText('AY Runtime을 다시 시작해 주세요.')).toBeVisible()
+    await expect(page.getByRole('complementary', { name: 'AY Chat' })).toHaveCount(0)
   } finally {
     runtime.finish()
     await vite?.close()

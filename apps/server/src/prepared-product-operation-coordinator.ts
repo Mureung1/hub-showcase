@@ -38,6 +38,10 @@ export type PreparedProductOperationOptions = {
 
 export type PreparedProductOperationCoordinator = {
   operationStatus(): 'active' | 'idle'
+  activeOperation(): {
+    readonly operationId: string
+    readonly kind: 'product_turn'
+  } | null
   activeInteractionProductTurn(): ActiveInteractionProductTurn | undefined
   interruptInteractionProductTurn(
     turn: ActiveInteractionProductTurn,
@@ -326,6 +330,7 @@ export function createPreparedProductOperationCoordinator(options: {
 
   return {
     operationStatus: () => (active ? 'active' : 'idle'),
+    activeOperation: () => turnCoordinator.activeOperation(),
 
     activeInteractionProductTurn() {
       const operation = active

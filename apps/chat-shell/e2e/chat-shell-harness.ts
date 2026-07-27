@@ -404,9 +404,6 @@ export async function startChatShellHarness(
     viteServer = await createViteServer({
       appType: 'spa',
       configFile: false,
-      define: {
-        'import.meta.env.VITE_AY_PLE_LEGACY_E2E': JSON.stringify('1'),
-      },
       root: chatShellRoot,
       plugins: [react()],
       server: {
@@ -455,7 +452,7 @@ export async function startChatShellHarness(
 
     let closed = false
     return {
-      url: frontendUrl,
+      url: `${frontendUrl}/legacy-e2e.html`,
       workspace: {
         runId: semesterWorkspace.runId,
         runRoot: semesterWorkspace.runRoot,
