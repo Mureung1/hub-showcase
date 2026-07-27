@@ -5,6 +5,7 @@ import type {
   WeatherSource,
 } from "shared";
 import { getKmaWeather, getOwmWeather } from "./weather";
+import { resolveDemoWeather } from "./demoWeather";
 
 /**
  * 날씨 앙상블 병합.
@@ -87,6 +88,8 @@ function mergeCondition(sources: NormalizedWeather[]): WeatherCondition {
 export interface EnsembleDeps {
   getKma?: (nx: number, ny: number) => Promise<NormalizedWeather>;
   getOwm?: (lat: number, lng: number) => Promise<NormalizedWeather>;
+  /** 데모 고정 날씨 조회 (테스트 주입용). 기본은 DEMO_WEATHER 환경변수를 읽는다. */
+  demoWeather?: () => EnsembleWeather | null;
 }
 
 export interface StoreLocation {
@@ -105,6 +108,14 @@ export async function getEnsembleWeather(
   loc: StoreLocation,
   deps: EnsembleDeps = {},
 ): Promise<EnsembleWeather> {
+  // 데모 고정 날씨(5-1) — 켜져 있으면 실 API를 아예 부르지 않는다.
+  // 여기가 날씨의 유일한 관문이라(라우트·크론·파이프라인이 전부 경유) 한 곳만 막으면 전체에 걸린다.
+  const demo = (deps.demoWeather ?? resolveDemoWeather)();
+  if (demo) {
+    console.warn(`[weather] 데모 고정 날씨 사용: ${demo.condition} ${demo.tempC}°C (DEMO_WEATHER)`);
+    return demo;
+  }
+
   const getKma = deps.getKma ?? getKmaWeather;
   const getOwm = deps.getOwm ?? getOwmWeather;
 

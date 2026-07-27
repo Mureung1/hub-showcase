@@ -126,6 +126,29 @@ describe("runBootProposalJob (서버 기동 잡)", () => {
     expect(generate).not.toHaveBeenCalled();
   });
 
+  /**
+   * 데모 고정 날씨(5-1)는 실 API를 안 부르므로 sourceCount가 0이다.
+   * 위 'fewer-sources' 가드를 그대로 적용하면 seed를 켜도 제안이 영영 안 바뀐다 —
+   * 소스가 '줄어든' 게 아니라 '안 쓴' 것이라 예외로 둔다.
+   */
+  it("데모 고정 날씨(seeded)는 sourceCount 0이어도 재생성한다", async () => {
+    const generate = vi.fn(async () => proposal);
+    const save = vi.fn(async () => ({ id: "camp1" }) as CampaignRow);
+    const seededCtx = ctxWith("rain", true, -0.22, 0);
+    seededCtx.weather.seeded = true;
+
+    const r = await runBootProposalJob(undefined, {
+      findStore: async () => store,
+      findToday: async () => saved("draft", "clear", false, 2), // 2소스로 만든 맑음 제안
+      collect: async () => seededCtx,
+      generate,
+      save,
+    });
+
+    expect(r).toEqual({ ran: true, campaignId: "camp1", refreshed: true });
+    expect(generate).toHaveBeenCalledOnce();
+  });
+
   it("승인·발송된 캠페인은 날씨가 바뀌어도 덮지 않는다", async () => {
     const collect = vi.fn(async () => ctxWith("rain", true, -0.22));
     const r = await runBootProposalJob(undefined, {

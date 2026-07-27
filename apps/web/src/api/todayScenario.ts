@@ -63,6 +63,9 @@ function condText(w: EnsembleWeather): string {
 
 /** 소스 배지 문구: "기상청·OpenWeather 2개 소스 평균". */
 function sourceLabelFor(w: EnsembleWeather): string {
+  // 데모 고정 날씨(DEMO_WEATHER)는 실 API를 안 부른다 → 소스 평균인 척하면 안 된다.
+  // 진단·문구·발송은 여전히 실제로 도는 만큼, 고정된 게 '날씨 입력'뿐임을 명시한다.
+  if (w.seeded) return "데모 고정 날씨 (실제 예보 API 미사용)";
   const names = w.sources.map((s) => SOURCE_LABEL[s] ?? s);
   if (names.length === 0) return "단일 소스";
   const count = w.sourceCount || names.length;

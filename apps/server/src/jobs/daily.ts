@@ -123,7 +123,10 @@ export async function runBootProposalJob(
     }
     // 날씨가 달라 보여도 소스가 줄었으면(예: KMA 실패로 OWM 단독) 오판일 수 있다 —
     // 2소스로 만든 제안을 1소스 값으로 덮지 않는다. 소스가 복구되면 다음 기동에 갱신된다.
-    if (ctx.weather.sourceCount < (existing.weather?.sourceCount ?? 0)) {
+    //
+    // 단, 데모 고정 날씨(DEMO_WEATHER)는 sourceCount가 0이라 이 가드에 항상 걸린다.
+    // 소스가 '줄어든' 게 아니라 '안 쓴' 것이므로 예외 — 안 그러면 seed를 켜도 제안이 안 바뀐다.
+    if (!ctx.weather.seeded && ctx.weather.sourceCount < (existing.weather?.sourceCount ?? 0)) {
       return { ran: false, reason: "fewer-sources" };
     }
   }
