@@ -25,4 +25,53 @@ model Letter {
   envelope  String // 'basic' | 'lined' | 'wax'
   status    String   @default("waiting")
   createdAt DateTime @default(now())
+
+  // --- AI 매칭용 태깅 결과 (Claude 태깅 1회로 채워짐) ---
+  primaryEmotion    String? // 주감정 1개 (16개 어휘 중 하나)
+  secondaryEmotions String[] @default([]) // 부감정 2개
+  keywordsRaw       String[] @default([]) // Claude가 뽑은 원문 키워드 3개 (표시용)
+  keywordsNorm      String[] @default([]) // 정규화된 키워드 3개 (매칭용)
+  summary           String? // 한 문장 요약 (추천 이유 생성 재료)
+  riskFlag          Boolean  @default(false) // 위기 신호 감지 여부
+
+  // --- 태깅 처리 상태/메타 ---
+  taggingRaw           Json? // Claude 응답 원본 전체 (항상 보존)
+  taggingModel         String?
+  taggingPromptVersion String?
+  taggingStatus        String  @default("pending") // 'pending' | 'done' | 'failed'
+  taggingAttempts      Int     @default(0)
+  taggingError         String?
+
+  // --- 매칭 풀 관련 ---
+  matchExposureCount Int     @default(0) // 이 편지가 남에게 추천된 횟수
+  isMatchable        Boolean @default(true) // 매칭 풀 포함 여부 (위기 편지는 false)
+
+  matchesAsSource Match[] @relation("MatchSource")
+  matchesAsTarget Match[] @relation("MatchTarget")
+
+  // primaryEmotion을 선행 컬럼으로 하는 후보조회용 부분 인덱스(WHERE done+matchable)와
+  // keywordsNorm GIN 인덱스는 Prisma DSL로 표현이 안 되어 마이그레이션 SQL에 직접 추가한다.
+  @@index([taggingStatus, isMatchable, matchExposureCount]) // 재처리/관리자 스캔용 (taggingStatus 선행)
+}
+
+// 추천(매칭) 결과 모델
+model Match {
+  id                 String    @id @default(uuid())
+  sourceLetterId     String
+  matchedLetterId    String
+  reason             String // Claude가 생성한 매칭 이유
+  status             String    @default("recommended") // recommended | opened | replied | expired | dismissed
+  candidateCount     Int? // 1단계 후보 수 (디버깅/튜닝용)
+  candidateSnapshot  Json? // 1단계 후보 id·점수 스냅샷 (튜닝용)
+  matchPromptVersion String?
+  expiresAt          DateTime // 캐시 만료 시각
+  openedAt           DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt // 상태 전이(dismissed 등) 시각 파악용 — refresh 횟수 집계에 사용
+
+  sourceLetter  Letter @relation("MatchSource", fields: [sourceLetterId], references: [id])
+  matchedLetter Letter @relation("MatchTarget", fields: [matchedLetterId], references: [id])
+
+  @@unique([sourceLetterId, matchedLetterId])
+  @@index([sourceLetterId, status, expiresAt])
 }
