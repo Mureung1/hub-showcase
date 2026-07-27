@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getMyMentorProfile, updateMyMentorProfile } from "../api/mentors";
 import { routePaths } from "../routes/routePaths";
+import { LAB_NAME_HINT, LAB_NAME_PATTERN } from "../constants/labName";
 
 const counselingOptions = [
   "대학원 진학 준비",
@@ -446,7 +447,16 @@ function MentorProfileEditPage() {
 
               <label className="mentor-field-group">
                 <span className="mentor-field-label">연구실</span>
-                <input className="field" name="lab" onChange={handleProfileChange} required value={profileFields.lab} />
+                <small className="mentor-field-hint">{LAB_NAME_HINT}</small>
+                <input
+                  className="field"
+                  name="lab"
+                  onChange={handleProfileChange}
+                  pattern={LAB_NAME_PATTERN}
+                  required
+                  title={LAB_NAME_HINT}
+                  value={profileFields.lab}
+                />
               </label>
 
               <KeywordTextFields

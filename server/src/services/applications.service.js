@@ -66,7 +66,7 @@ const toMeeting = (status, meetings) => {
   };
 };
 
-const toMenteeApplicationResponse = (row) => ({
+const toMenteeApplicationResponse = (row, unreadCountsByApplicationId) => ({
   id: row.id,
   status: row.status,
   acceptedMentorId: row.accepted_mentor_id,
@@ -79,11 +79,12 @@ const toMenteeApplicationResponse = (row) => ({
   })),
   questionnaire: toQuestionnaire(row),
   meeting: toMeeting(row.status, row.meetings),
+  unreadMessageCount: unreadCountsByApplicationId.get(row.id) ?? 0,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
 
-const toMentorApplicationResponse = (link) => {
+const toMentorApplicationResponse = (link, unreadCountsByApplicationId) => {
   const application = link.applications;
 
   return {
@@ -101,9 +102,17 @@ const toMentorApplicationResponse = (link) => {
     },
     questionnaire: toQuestionnaire(application),
     meeting: toMeeting(application.status, application.meetings),
+    unreadMessageCount: unreadCountsByApplicationId.get(application.id) ?? 0,
     createdAt: application.created_at,
     updatedAt: application.updated_at,
   };
+};
+
+const fetchUnreadCountsByApplicationId = async (userId) => {
+  const { data, error } = await supabase.rpc('get_unread_message_counts', { p_user_id: userId });
+  if (error) throw error;
+
+  return new Map(data.map((row) => [row.application_id, Number(row.unread_count)]));
 };
 
 const validateStatusFilter = (status) => {
@@ -190,7 +199,10 @@ const listApplicationsForMentee = async (menteeId, status) => {
   const { data, error } = await query;
   if (error) throw error;
 
-  return data.map(toMenteeApplicationResponse);
+  if (data.length === 0) return [];
+
+  const unreadCountsByApplicationId = await fetchUnreadCountsByApplicationId(menteeId);
+  return data.map((row) => toMenteeApplicationResponse(row, unreadCountsByApplicationId));
 };
 
 const listApplicationsForMentor = async (mentorId, status) => {
@@ -209,7 +221,10 @@ const listApplicationsForMentor = async (mentorId, status) => {
   const { data, error } = await query;
   if (error) throw error;
 
-  return data.map(toMentorApplicationResponse);
+  if (data.length === 0) return [];
+
+  const unreadCountsByApplicationId = await fetchUnreadCountsByApplicationId(mentorId);
+  return data.map((link) => toMentorApplicationResponse(link, unreadCountsByApplicationId));
 };
 
 const fetchApplicationRow = async (applicationId) => {
@@ -351,7 +366,7 @@ const rejectApplication = async (mentorId, applicationId) => {
   };
 };
 
-const completeApplication = async (mentorId, applicationId) => {
+const completeApplication = async (menteeId, applicationId) => {
   const application = await fetchApplicationRow(applicationId);
 
   if (application.status !== 'confirmed') {
@@ -364,7 +379,7 @@ const completeApplication = async (mentorId, applicationId) => {
     );
   }
 
-  if (application.accepted_mentor_id !== mentorId) {
+  if (application.mentee_id !== menteeId) {
     throw new ForbiddenError('이 면담 신청을 완료 처리할 권한이 없습니다.');
   }
 
@@ -383,7 +398,7 @@ const completeApplication = async (mentorId, applicationId) => {
     .from('application_mentors')
     .update({ status: 'completed' })
     .eq('application_id', applicationId)
-    .eq('mentor_id', mentorId);
+    .eq('mentor_id', application.accepted_mentor_id);
 
   if (updateLinkError) throw updateLinkError;
 

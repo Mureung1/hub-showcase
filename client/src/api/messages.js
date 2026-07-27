@@ -15,3 +15,9 @@ export const createMessage = async ({ applicationId, body }) => {
 
   return response.data;
 };
+
+export const markMessagesAsRead = async ({ applicationId }) => {
+  const response = await httpClient.post(`/applications/${applicationId}/messages/read`);
+
+  return response.data;
+};

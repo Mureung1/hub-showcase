@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import ChatModal from "./ChatModal";
 import MeetingScheduleEditor from "./MeetingScheduleEditor";
+import UnreadBadge from "./UnreadBadge";
 import { routePaths } from "../routes/routePaths";
 
 const statusLabels = {
@@ -55,8 +55,15 @@ function QuestionnaireDetails({ questionnaire }) {
   );
 }
 
-function ApplicationCard({ application, onMeetingUpdated }) {
-  const [isChatOpen, setIsChatOpen] = useState(false);
+function ApplicationCard({
+  application,
+  isChatOpen,
+  isCompleting,
+  onCloseChat,
+  onComplete,
+  onMeetingUpdated,
+  onOpenChat,
+}) {
   const hasAgreedMeeting = agreedStatuses.has(application.status);
   const applicationMentors = application.mentors ?? [];
   const visibleMentors = hasAgreedMeeting
@@ -84,10 +91,11 @@ function ApplicationCard({ application, onMeetingUpdated }) {
           {isConfirmed && (
             <button
               className="button button-soft chat-open-button"
-              onClick={() => setIsChatOpen(true)}
+              onClick={() => onOpenChat(application.id)}
               type="button"
             >
               채팅 열기
+              <UnreadBadge count={application.unreadMessageCount} />
             </button>
           )}
           <span className={`application-status application-status-${application.status}`}>
@@ -99,7 +107,7 @@ function ApplicationCard({ application, onMeetingUpdated }) {
       {isChatOpen && (
         <ChatModal
           applicationId={application.id}
-          onClose={() => setIsChatOpen(false)}
+          onClose={() => onCloseChat(application.id)}
           otherPartyName={acceptedMentor?.name}
         />
       )}
@@ -119,9 +127,11 @@ function ApplicationCard({ application, onMeetingUpdated }) {
         <strong>{application.questionnaire.preferredTime}</strong>
       </div>
 
+      <QuestionnaireDetails questionnaire={application.questionnaire} />
+
       {hasAgreedMeeting && application.meeting && (
         <section className="application-meeting" aria-labelledby={`meeting-${application.id}`}>
-          <h3 id={`meeting-${application.id}`}>합의된 면담 정보</h3>
+          <h3 id={`meeting-${application.id}`}>면담 약속 정보</h3>
           <MeetingScheduleEditor
             meeting={application.meeting}
             onUpdated={(updatedMeeting) => onMeetingUpdated(application.id, updatedMeeting)}
@@ -129,7 +139,18 @@ function ApplicationCard({ application, onMeetingUpdated }) {
         </section>
       )}
 
-      <QuestionnaireDetails questionnaire={application.questionnaire} />
+      {isConfirmed && (
+        <div className="application-actions application-complete-actions">
+          <button
+            className="button button-primary application-complete-button"
+            disabled={isCompleting}
+            onClick={() => onComplete(application.id)}
+            type="button"
+          >
+            {isCompleting ? "완료 처리 중..." : "면담 완료"}
+          </button>
+        </div>
+      )}
     </article>
   );
 }

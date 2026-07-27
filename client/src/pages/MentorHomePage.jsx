@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   acceptApplication,
-  completeApplication,
   getApplications,
   rejectApplication,
 } from "../api/applications";
+import { markMessagesAsRead } from "../api/messages";
 import MentorApplicationCard from "../components/MentorApplicationCard";
 import { useAuth } from "../context/AuthContext";
+import useUnreadMessageRealtime from "../hooks/useUnreadMessageRealtime";
 import { routePaths } from "../routes/routePaths";
 
 const statusTabs = [
@@ -19,14 +20,14 @@ const statusTabs = [
 
 function MentorHomePage() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { currentUser, logout } = useAuth();
   const [applications, setApplications] = useState([]);
   const [activeStatus, setActiveStatus] = useState("pending");
   const [isLoading, setIsLoading] = useState(true);
   const [acceptingApplicationId, setAcceptingApplicationId] = useState(null);
   const [rejectingApplicationId, setRejectingApplicationId] = useState(null);
-  const [completingApplicationId, setCompletingApplicationId] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [openChatApplicationId, setOpenChatApplicationId] = useState(null);
 
   const loadApplications = useCallback(async () => {
     setIsLoading(true);
@@ -85,21 +86,6 @@ function MentorHomePage() {
     }
   };
 
-  const handleComplete = async (applicationId) => {
-    setCompletingApplicationId(applicationId);
-    setErrorMessage("");
-
-    try {
-      await completeApplication({ applicationId });
-      const hasReloaded = await loadApplications();
-      if (hasReloaded) setActiveStatus("completed");
-    } catch (error) {
-      setErrorMessage(error.message);
-    } finally {
-      setCompletingApplicationId(null);
-    }
-  };
-
   const handleMeetingUpdated = (applicationId, updatedMeeting) => {
     setApplications((currentApplications) =>
       currentApplications.map((application) =>
@@ -107,6 +93,40 @@ function MentorHomePage() {
           ? { ...application, meeting: updatedMeeting }
           : application));
   };
+
+  const clearUnreadCount = (applicationId) => {
+    setApplications((currentApplications) =>
+      currentApplications.map((application) =>
+        application.id === applicationId
+          ? { ...application, unreadMessageCount: 0 }
+          : application));
+  };
+
+  const handleOpenChat = (applicationId) => {
+    setOpenChatApplicationId(applicationId);
+    clearUnreadCount(applicationId);
+    markMessagesAsRead({ applicationId }).catch(() => {});
+  };
+
+  const handleCloseChat = (applicationId) => {
+    setOpenChatApplicationId(null);
+    clearUnreadCount(applicationId);
+    markMessagesAsRead({ applicationId }).catch(() => {});
+  };
+
+  const handleUnreadMessage = useCallback((applicationId) => {
+    setApplications((currentApplications) =>
+      currentApplications.map((application) =>
+        application.id === applicationId
+          ? { ...application, unreadMessageCount: (application.unreadMessageCount ?? 0) + 1 }
+          : application));
+  }, []);
+
+  useUnreadMessageRealtime({
+    currentUserId: currentUser?.id,
+    openApplicationId: openChatApplicationId,
+    onUnreadMessage: handleUnreadMessage,
+  });
 
   const handleLogout = async () => {
     await logout();
@@ -178,12 +198,13 @@ function MentorHomePage() {
                 <MentorApplicationCard
                   application={application}
                   isAccepting={acceptingApplicationId === application.id}
-                  isCompleting={completingApplicationId === application.id}
+                  isChatOpen={openChatApplicationId === application.id}
                   isRejecting={rejectingApplicationId === application.id}
                   key={application.id}
                   onAccept={handleAccept}
-                  onComplete={handleComplete}
+                  onCloseChat={handleCloseChat}
                   onMeetingUpdated={handleMeetingUpdated}
+                  onOpenChat={handleOpenChat}
                   onReject={handleReject}
                 />
               ))}

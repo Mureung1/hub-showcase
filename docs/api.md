@@ -106,6 +106,7 @@ Authorization: Bearer <access-token>
 | `PATCH` | `/api/meetings/:meetingId` | 확정 멘토·신청 멘티 | 면담 시간·장소 수정 |
 | `GET` | `/api/applications/:applicationId/messages` | 신청 참여자 | 채팅 메시지 목록 조회 |
 | `POST` | `/api/applications/:applicationId/messages` | 신청 참여자 | 채팅 메시지 전송 |
+| `POST` | `/api/applications/:applicationId/messages/read` | 신청 참여자 | 채팅 메시지 읽음 처리 |
 
 신청 상세 단건 조회 API는 아직 구현되어 있지 않다 (신청 목록 조회 응답에 이미 필요한 정보가 포함되어 있어서).
 
@@ -497,7 +498,8 @@ Query parameters:
         "id": "meeting-uuid",
         "scheduledAt": "2026-07-22T17:00:00+09:00",
         "place": "Google Meet · 링크는 면담 전 공개"
-      }
+      },
+      "unreadMessageCount": 3
     }
   ],
   "meta": {
@@ -505,6 +507,8 @@ Query parameters:
   }
 }
 ```
+
+`unreadMessageCount`는 로그인 사용자 기준으로, 본인이 보내지 않았고 마지막으로 읽은 시점(`message_read_states.last_read_at`) 이후에 온 메시지 수다(DB 함수 `get_unread_message_counts`, `supabase/migrations/20260725000000_create_message_read_states.sql`). 한 번도 읽지 않은 채팅방은 전체 메시지 수가 그대로 나온다. 신청 목록이 비어 있으면 이 계산을 위한 RPC 호출 자체를 하지 않는다.
 
 멘토 응답은 멘티 응답과 필드 구성이 다르다. 상태를 `applicationStatus`(신청 전체 상태)와 `mentorStatus`(이 멘토 자신의 응답 상태)로 나눠서 주고, `mentors` 배열 대신 신청한 멘티 정보를 `mentee` 객체 하나로 준다.
 
@@ -531,7 +535,8 @@ Query parameters:
         "preferredTime": "화요일 19:00, 목요일 18:30"
       },
       "createdAt": "2026-07-16T12:00:00+09:00",
-      "updatedAt": "2026-07-16T12:00:00+09:00"
+      "updatedAt": "2026-07-16T12:00:00+09:00",
+      "unreadMessageCount": 0
     }
   ],
   "meta": {
@@ -540,7 +545,7 @@ Query parameters:
 }
 ```
 
-`meeting` 필드는 `applicationStatus`가 `confirmed` 또는 `completed`일 때만 포함된다 (멘티 응답과 동일).
+`meeting` 필드는 `applicationStatus`가 `confirmed` 또는 `completed`일 때만 포함된다 (멘티 응답과 동일). `unreadMessageCount`의 계산 기준도 멘티 응답과 같다 (6.2절 상단 참고).
 
 ### 6.3 신청 수락
 
@@ -761,6 +766,35 @@ curl -X POST "http://localhost:4000/api/applications/$APPLICATION_ID/messages" \
 
 `senderName`은 `nickname`이 아니라 `profiles.name`이다.
 
+### 8.3 메시지 읽음 처리
+
+`POST /api/applications/:applicationId/messages/read`
+
+호출한 사용자의 이 신청(채팅방)에 대한 마지막 읽음 시각(`message_read_states.last_read_at`)을 현재 시각으로 갱신한다. `GET /api/applications` 응답의 `unreadMessageCount`는 이 값을 기준으로 계산된다.
+
+검증:
+
+- 신청 참여자(신청 멘티 또는 확정 멘토)가 아니면 `403 FORBIDDEN`.
+- 존재하지 않는 신청 id면 `404 APPLICATION_NOT_FOUND`.
+
+요청 예시:
+
+```bash
+curl -X POST "http://localhost:4000/api/applications/$APPLICATION_ID/messages/read" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+응답 `200`:
+
+```json
+{
+  "data": {
+    "applicationId": "application-uuid",
+    "lastReadAt": "2026-07-25T05:00:00.000Z"
+  }
+}
+```
+
 ## 9. 권한 요약
 
 | 작업 | 멘티 | 멘토 |
@@ -773,7 +807,7 @@ curl -X POST "http://localhost:4000/api/applications/$APPLICATION_ID/messages" \
 | 신청 수락·거절 | 불가 | 대상 멘토만 가능 |
 | 신청 완료 처리 | 불가 | 확정 멘토만 가능 |
 | 면담 정보 수정 | 자신의 신청만 가능 | 확정 멘토만 가능 |
-| 채팅 메시지 조회·전송 | 참여자(신청 멘티)만 가능 | 참여자(확정 멘토)만 가능 |
+| 채팅 메시지 조회·전송·읽음 처리 | 참여자(신청 멘티)만 가능 | 참여자(확정 멘토)만 가능 |
 
 ## 10. MVP 이후 API
 

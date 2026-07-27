@@ -49,9 +49,23 @@ const requirePassword = (value, field = 'password') => {
   return value;
 };
 
+const LAB_NAME_PATTERN = /^[^()]*[가-힣][^()]*\([^()]*[A-Za-z][^()]*\)$/;
+
+const requireLabName = (value, field = 'lab') => {
+  requireString(value, field);
+  if (!LAB_NAME_PATTERN.test(value.trim())) {
+    throw new ValidationError(
+      '연구실은 "한글명(영문명)" 형식으로 입력해 주세요. 예: 인공지능 연구실(AI Lab)',
+      field,
+    );
+  }
+  return value;
+};
+
 module.exports = {
   ValidationError,
   requireEmail,
+  requireLabName,
   requirePassword,
   requireString,
   requireStringArray,

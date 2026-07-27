@@ -5,11 +5,11 @@ export const routePaths = {
   signup: "/signup",
   menteeSignup: "/signup/mentee",
   mentorSignup: "/signup/mentor",
+  mentorSignupProfile: "/signup/mentor/profile",
 
   menteeMentors: "/mentee/mentors",
   menteeMentorDetail: "/mentee/mentors/:mentorId",
   menteeApplicationNew: "/mentee/applications/new",
-  menteeApplicationComplete: "/mentee/applications/:applicationId/complete",
   menteeMyPage: "/mentee/mypage",
   menteeApplications: "/mentee/mypage/applications",
   menteeApplicationDetail: "/mentee/mypage/applications/:applicationId",
@@ -26,5 +26,6 @@ export const navigationTargets = {
   afterMentorSignup: routePaths.landingLogin,
   afterMenteeLogin: routePaths.menteeMentors,
   afterMentorLogin: routePaths.mentorHome,
+  afterApplicationComplete: routePaths.menteeMentors,
   mentorListMyPageButton: routePaths.menteeMyPage,
 };

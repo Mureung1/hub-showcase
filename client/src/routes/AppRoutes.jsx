@@ -1,5 +1,4 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import ApplicationCompletePage from "../pages/ApplicationCompletePage";
 import LandingPage from "../pages/LandingPage";
 import MenteeApplicationListPage from "../pages/MenteeApplicationListPage";
 import MenteeProfileEditPage from "../pages/MenteeProfileEditPage";
@@ -9,6 +8,7 @@ import MentorHomePage from "../pages/MentorHomePage";
 import MentorListPage from "../pages/MentorListPage";
 import MentorProfileEditPage from "../pages/MentorProfileEditPage";
 import MentorSignupPage from "../pages/MentorSignupPage";
+import MentorSignupProfilePage from "../pages/MentorSignupProfilePage";
 import PlannedPage from "../pages/PlannedPage";
 import QuestionnairePage from "../pages/QuestionnairePage";
 import SignupPage from "../pages/SignupPage";
@@ -24,13 +24,13 @@ function AppRoutes() {
       <Route path={routePaths.signup} element={<SignupPage />} />
       <Route path={routePaths.menteeSignup} element={<MenteeSignupPage />} />
       <Route path={routePaths.mentorSignup} element={<MentorSignupPage />} />
+      <Route path={routePaths.mentorSignupProfile} element={<MentorSignupProfilePage />} />
 
       {/* 멘티 전용 화면 */}
       <Route element={<RoleRoute role="mentee" />}>
         <Route path={routePaths.menteeMentors} element={<MentorListPage />} />
         <Route path={routePaths.menteeMentorDetail} element={<MentorDetailPage />} />
         <Route path={routePaths.menteeApplicationNew} element={<QuestionnairePage />} />
-        <Route path={routePaths.menteeApplicationComplete} element={<ApplicationCompletePage />} />
         <Route path={routePaths.menteeMyPage} element={<MenteeProfileEditPage />} />
         <Route path={routePaths.menteeApplications} element={<MenteeApplicationListPage />} />
         <Route

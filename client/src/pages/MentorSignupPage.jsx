@@ -1,204 +1,26 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
-import { navigationTargets } from "../routes/routePaths";
-import { signupMentor } from "../api/auth";
-
-const academicStatusLabels = {
-  master: "석사과정",
-  doctorate: "박사과정",
-  "combined-master-doctorate": "석박통합과정",
-  "combined-bachelor-master-doctorate": "학석박통합과정",
-};
-
-const counselingOptions = [
-  "대학원 진학 준비",
-  "연구 활동 관련",
-  "대학원 생활",
-  "취업",
-  "해외 진학",
-];
-
-function RepeatableProfileFields({
-  addLabel,
-  description,
-  entries,
-  fieldLabel,
-  idPrefix,
-  namePrefix,
-  onAdd,
-  onRemove,
-  placeholder,
-}) {
-  return (
-    <fieldset className="mentor-keyword-fieldset">
-      <legend className="sr-only">{fieldLabel}</legend>
-      <div className="mentor-keyword-heading">
-        <div>
-          <span className="mentor-field-label">{fieldLabel} <span aria-hidden="true">*</span></span>
-          <p className="muted-text">{description}</p>
-        </div>
-        <div className="mentor-keyword-controls">
-          <span className="tag">{entries.length} / 5</span>
-          <button
-            aria-label={addLabel}
-            className="button button-soft keyword-add-button"
-            disabled={entries.length >= 5}
-            onClick={onAdd}
-            type="button"
-          >
-            <span aria-hidden="true">+</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="mentor-keyword-list">
-        {entries.map((entryId, index) => (
-          <div className="mentor-keyword-row" key={entryId}>
-            <label className="sr-only" htmlFor={`${idPrefix}-${entryId}`}>{fieldLabel} {index + 1}</label>
-            <span className="keyword-prefix" aria-hidden="true">{index + 1}</span>
-            <input
-              className="field keyword-field"
-              id={`${idPrefix}-${entryId}`}
-              maxLength="200"
-              name={`${namePrefix}${index + 1}`}
-              placeholder={`${placeholder} ${index + 1}`}
-              required
-              type="text"
-            />
-            {entries.length > 1 && (
-              <button
-                aria-label={`${fieldLabel} ${index + 1} 삭제`}
-                className="keyword-remove-button"
-                onClick={() => onRemove(entryId)}
-                type="button"
-              >
-                ×
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
+import { routePaths } from "../routes/routePaths";
 
 function MentorSignupPage() {
+  const location = useLocation();
   const navigate = useNavigate();
-  const [isSignupComplete, setIsSignupComplete] = useState(false);
-  const [submissionError, setSubmissionError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [researchKeywords, setResearchKeywords] = useState([0, 1, 2]);
-  const [nextResearchKeywordId, setNextResearchKeywordId] = useState(3);
-  const [counselingFields, setCounselingFields] = useState([{ id: 0, value: "" }]);
-  const [nextCounselingFieldId, setNextCounselingFieldId] = useState(1);
-  const [careerHighlights, setCareerHighlights] = useState([0]);
-  const [nextCareerHighlightId, setNextCareerHighlightId] = useState(1);
-  const [internationalActivities, setInternationalActivities] = useState([0]);
-  const [nextInternationalActivityId, setNextInternationalActivityId] = useState(1);
+  const savedAccount = location.state?.account ?? null;
 
-  useEffect(() => {
-    if (!isSignupComplete) return undefined;
-
-    const redirectTimer = window.setTimeout(() => {
-      navigate(navigationTargets.afterMentorSignup, { replace: true });
-    }, 1800);
-
-    return () => window.clearTimeout(redirectTimer);
-  }, [isSignupComplete, navigate]);
-
-  const addResearchKeyword = () => {
-    if (researchKeywords.length >= 8) return;
-    setResearchKeywords((keywords) => [...keywords, nextResearchKeywordId]);
-    setNextResearchKeywordId((id) => id + 1);
-  };
-
-  const removeResearchKeyword = (keywordId) => {
-    if (researchKeywords.length <= 3) return;
-    setResearchKeywords((keywords) => keywords.filter((id) => id !== keywordId));
-  };
-
-  const addCounselingField = () => {
-    if (counselingFields.length >= 5) return;
-    setCounselingFields((fields) => [...fields, { id: nextCounselingFieldId, value: "" }]);
-    setNextCounselingFieldId((id) => id + 1);
-  };
-
-  const updateCounselingField = (fieldId, value) => {
-    setCounselingFields((fields) => (
-      fields.map((field) => (field.id === fieldId ? { ...field, value } : field))
-    ));
-  };
-
-  const removeCounselingField = (fieldId) => {
-    if (counselingFields.length <= 1) return;
-    setCounselingFields((fields) => fields.filter((field) => field.id !== fieldId));
-  };
-
-  const addCareerHighlight = () => {
-    if (careerHighlights.length >= 5) return;
-    setCareerHighlights((entries) => [...entries, nextCareerHighlightId]);
-    setNextCareerHighlightId((id) => id + 1);
-  };
-
-  const removeCareerHighlight = (entryId) => {
-    if (careerHighlights.length <= 1) return;
-    setCareerHighlights((entries) => entries.filter((id) => id !== entryId));
-  };
-
-  const addInternationalActivity = () => {
-    if (internationalActivities.length >= 5) return;
-    setInternationalActivities((entries) => [...entries, nextInternationalActivityId]);
-    setNextInternationalActivityId((id) => id + 1);
-  };
-
-  const removeInternationalActivity = (entryId) => {
-    if (internationalActivities.length <= 1) return;
-    setInternationalActivities((entries) => entries.filter((id) => id !== entryId));
-  };
-
-  const handleSubmit = async (event) => {
+  const handleNext = (event) => {
     event.preventDefault();
-    setSubmissionError("");
-
     const formData = new FormData(event.currentTarget);
-    const email = formData.get("email");
-    const major = formData.get("major");
-    const academicStatus = academicStatusLabels[formData.get("academicProgram")] ?? "";
-    const collectEntries = (namePrefix, count) => (
-      Array.from({ length: count }, (_, index) => formData.get(`${namePrefix}${index + 1}`))
-    );
 
-    setIsSubmitting(true);
-
-    try {
-      await signupMentor({
-        email,
-        password: formData.get("password"),
-        name: formData.get("name"),
-        nickname: formData.get("nickname"),
-        school: formData.get("school"),
-        major,
-        academicStatus,
-        program: `${major} ${academicStatus}`.trim(),
-        lab: formData.get("lab"),
-        introduction: formData.get("introduction"),
-        detailedIntroduction: formData.get("detailedIntroduction"),
-        availableTime: formData.get("availableTime"),
-        researchFields: collectEntries("researchKeyword", researchKeywords.length),
-        counselingFields: collectEntries("counselingField", counselingFields.length),
-        careerHighlights: collectEntries("careerHighlight", careerHighlights.length),
-        internationalActivities: collectEntries(
-          "internationalActivity",
-          internationalActivities.length,
-        ),
-      });
-      setIsSignupComplete(true);
-    } catch (error) {
-      setSubmissionError(error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
+    navigate(routePaths.mentorSignupProfile, {
+      state: {
+        account: {
+          name: formData.get("name"),
+          nickname: formData.get("nickname"),
+          password: formData.get("password"),
+          email: formData.get("email"),
+        },
+      },
+    });
   };
 
   return (
@@ -212,10 +34,10 @@ function MentorSignupPage() {
         <section className="mentor-signup-heading" aria-labelledby="mentor-signup-title">
           <p className="eyebrow">MENTOR SIGN UP</p>
           <h1 className="page-title" id="mentor-signup-title">멘토 회원가입</h1>
-          <p className="body-text">멘티에게 경험을 나누기 위한 기본 정보와 프로필을 입력해 주세요.</p>
+          <p className="body-text">먼저 로그인에 사용할 계정 정보를 입력해 주세요.</p>
         </section>
 
-        <form className="mentor-signup-form" onSubmit={handleSubmit}>
+        <form className="mentor-signup-form" onSubmit={handleNext}>
           <section className="card mentor-signup-section" aria-labelledby="mentor-account-title">
             <div className="mentor-section-heading">
               <div className="mentor-section-title-row">
@@ -231,253 +53,69 @@ function MentorSignupPage() {
             <div className="mentor-field-list">
               <label className="mentor-field-group">
                 <span className="mentor-field-label">이름 <span aria-hidden="true">*</span></span>
-                <input className="field" type="text" name="name" autoComplete="name" placeholder="이름을 입력해 주세요" required />
+                <input
+                  autoComplete="name"
+                  className="field"
+                  defaultValue={savedAccount?.name ?? ""}
+                  name="name"
+                  placeholder="이름을 입력해 주세요"
+                  required
+                  type="text"
+                />
               </label>
 
               <label className="mentor-field-group">
                 <span className="mentor-field-label">닉네임 <span aria-hidden="true">*</span></span>
-                <input className="field" type="text" name="nickname" autoComplete="nickname" placeholder="서비스에서 사용할 닉네임을 입력해 주세요" required />
+                <input
+                  autoComplete="nickname"
+                  className="field"
+                  defaultValue={savedAccount?.nickname ?? ""}
+                  name="nickname"
+                  placeholder="서비스에서 사용할 닉네임을 입력해 주세요"
+                  required
+                  type="text"
+                />
               </label>
 
               <label className="mentor-field-group">
                 <span className="mentor-field-label">비밀번호 <span aria-hidden="true">*</span></span>
-                <input className="field" type="password" name="password" autoComplete="new-password" placeholder="8자 이상 입력해 주세요" minLength="8" required />
+                <input
+                  autoComplete="new-password"
+                  className="field"
+                  defaultValue={savedAccount?.password ?? ""}
+                  minLength="8"
+                  name="password"
+                  placeholder="8자 이상 입력해 주세요"
+                  required
+                  type="password"
+                />
               </label>
 
               <div className="mentor-field-group">
                 <label className="mentor-field-label" htmlFor="mentor-email">이메일 주소 <span aria-hidden="true">*</span></label>
                 <div className="mentor-email-row">
-                  <input className="field" id="mentor-email" type="email" name="email" autoComplete="email" placeholder="example@email.com" required />
+                  <input
+                    autoComplete="email"
+                    className="field"
+                    defaultValue={savedAccount?.email ?? ""}
+                    id="mentor-email"
+                    name="email"
+                    placeholder="example@email.com"
+                    required
+                    type="email"
+                  />
                   <button className="button button-soft mentor-email-button" type="button">인증</button>
                 </div>
               </div>
-
             </div>
           </section>
-
-          <section className="card mentor-signup-section mentor-profile-section" aria-labelledby="mentor-profile-title">
-            <div className="mentor-section-heading">
-              <div className="mentor-section-title-row">
-                <span className="mentor-section-number" aria-hidden="true">02</span>
-                <div>
-                  <p className="eyebrow">PROFILE</p>
-                  <h2 className="card-title" id="mentor-profile-title">프로필 정보 입력</h2>
-                </div>
-              </div>
-              <p className="muted-text">멘티가 멘토를 선택할 때 확인하는 정보입니다.</p>
-            </div>
-
-            <div className="mentor-field-list">
-              <label className="mentor-field-group">
-                <span className="mentor-field-label">소속 학교 <span aria-hidden="true">*</span></span>
-                <input className="field" type="text" name="school" placeholder="학교명을 입력해 주세요" required />
-              </label>
-
-              <div className="mentor-profile-grid">
-                <label className="mentor-field-group">
-                  <span className="mentor-field-label">전공 <span aria-hidden="true">*</span></span>
-                  <input className="field" type="text" name="major" placeholder="전공명을 입력해 주세요" required />
-                </label>
-
-                <label className="mentor-field-group">
-                  <span className="mentor-field-label">학적 <span aria-hidden="true">*</span></span>
-                  <select className="field" name="academicProgram" defaultValue="" required>
-                    <option value="" disabled>학적을 선택해 주세요</option>
-                    <option value="master">석사</option>
-                    <option value="doctorate">박사</option>
-                    <option value="combined-master-doctorate">석박 통합</option>
-                    <option value="combined-bachelor-master-doctorate">학석박 통합</option>
-                  </select>
-                </label>
-
-              </div>
-
-              <label className="mentor-field-group">
-                <span className="mentor-field-label">연구실 <span aria-hidden="true">*</span></span>
-                <input className="field" type="text" name="lab" placeholder="소속 연구실을 입력해 주세요" required />
-              </label>
-
-              <fieldset className="mentor-keyword-fieldset">
-                <legend className="sr-only">연구 주제 관련 해시태그</legend>
-                <div className="mentor-keyword-heading">
-                  <div>
-                    <span className="mentor-field-label">연구 주제 관련 해시태그 <span aria-hidden="true">*</span></span>
-                    <p className="muted-text">핵심 연구 키워드를 자유롭게 입력해 주세요.</p>
-                  </div>
-                  <div className="mentor-keyword-controls">
-                    <span className="tag">{researchKeywords.length} / 8</span>
-                    <button
-                      className="button button-soft keyword-add-button"
-                      type="button"
-                      onClick={addResearchKeyword}
-                      disabled={researchKeywords.length >= 8}
-                      aria-label="연구 주제 키워드 추가"
-                    >
-                      <span aria-hidden="true">+</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mentor-keyword-list">
-                  {researchKeywords.map((keywordId, index) => (
-                    <div className="mentor-keyword-row" key={keywordId}>
-                      <label className="sr-only" htmlFor={`research-keyword-${keywordId}`}>연구 주제 키워드 {index + 1}</label>
-                      <span className="keyword-prefix" aria-hidden="true">#</span>
-                      <input
-                        className="field keyword-field"
-                        id={`research-keyword-${keywordId}`}
-                        type="text"
-                        name={`researchKeyword${index + 1}`}
-                        placeholder={`연구 키워드 ${index + 1}`}
-                        required
-                      />
-                      {researchKeywords.length > 3 && (
-                        <button
-                          className="keyword-remove-button"
-                          type="button"
-                          onClick={() => removeResearchKeyword(keywordId)}
-                          aria-label={`연구 주제 키워드 ${index + 1} 삭제`}
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </fieldset>
-
-              <fieldset className="mentor-keyword-fieldset">
-                <legend className="sr-only">상담 분야 관련 해시태그</legend>
-                <div className="mentor-keyword-heading">
-                  <div>
-                    <span className="mentor-field-label">상담 분야 관련 해시태그 <span aria-hidden="true">*</span></span>
-                    <p className="muted-text">자신 있는 상담 분야를 선택해 주세요.</p>
-                  </div>
-                  <div className="mentor-keyword-controls">
-                    <span className="tag">{counselingFields.length} / 5</span>
-                    <button
-                      className="button button-soft keyword-add-button"
-                      type="button"
-                      onClick={addCounselingField}
-                      disabled={counselingFields.length >= 5}
-                      aria-label="상담 분야 키워드 추가"
-                    >
-                      <span aria-hidden="true">+</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mentor-keyword-list">
-                  {counselingFields.map((field, index) => {
-                    const selectedValues = counselingFields
-                      .filter((item) => item.id !== field.id)
-                      .map((item) => item.value);
-
-                    return (
-                      <div className="mentor-keyword-row counseling-keyword-row" key={field.id}>
-                        <label className="sr-only" htmlFor={`counseling-field-${field.id}`}>상담 분야 {index + 1}</label>
-                        <span className="keyword-prefix" aria-hidden="true">#</span>
-                        <select
-                          className="field"
-                          id={`counseling-field-${field.id}`}
-                          name={`counselingField${index + 1}`}
-                          value={field.value}
-                          onChange={(event) => updateCounselingField(field.id, event.target.value)}
-                          required
-                        >
-                          <option value="" disabled>상담 분야를 선택해 주세요</option>
-                          {counselingOptions.map((option) => (
-                            <option value={option} disabled={selectedValues.includes(option)} key={option}>{option}</option>
-                          ))}
-                        </select>
-                        {counselingFields.length > 1 && (
-                          <button
-                            className="keyword-remove-button"
-                            type="button"
-                            onClick={() => removeCounselingField(field.id)}
-                            aria-label={`상담 분야 ${index + 1} 삭제`}
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </fieldset>
-
-              <label className="mentor-field-group">
-                <span className="mentor-field-label">한 줄 소개 <span aria-hidden="true">*</span></span>
-                <textarea className="field mentor-intro-field" name="introduction" maxLength="120" placeholder="연구 분야와 멘토링 방향을 120자 이내로 소개해 주세요" required />
-              </label>
-
-              <label className="mentor-field-group">
-                <span className="mentor-field-label">상세 소개 <span aria-hidden="true">*</span></span>
-                <textarea className="field mentor-detail-field" name="detailedIntroduction" maxLength="600" placeholder="연구 분야, 관심 주제와 멘토링 방향을 자세히 소개해 주세요" required />
-              </label>
-
-              <RepeatableProfileFields
-                addLabel="주요 이력 추가"
-                description="연구, 프로젝트, 수상 등 주요 이력을 항목별로 입력해 주세요."
-                entries={careerHighlights}
-                fieldLabel="주요 이력"
-                idPrefix="career-highlight"
-                namePrefix="careerHighlight"
-                onAdd={addCareerHighlight}
-                onRemove={removeCareerHighlight}
-                placeholder="주요 이력"
-              />
-
-              <RepeatableProfileFields
-                addLabel="해외 활동 추가"
-                description="교환학생, 해외 연구, 학회 참석 등 해외 활동을 항목별로 입력해 주세요."
-                entries={internationalActivities}
-                fieldLabel="해외 활동"
-                idPrefix="international-activity"
-                namePrefix="internationalActivity"
-                onAdd={addInternationalActivity}
-                onRemove={removeInternationalActivity}
-                placeholder="해외 활동"
-              />
-
-              <label className="mentor-field-group">
-                <span className="mentor-field-label">면담 가능 시간 <span aria-hidden="true">*</span></span>
-                <input className="field" type="text" name="availableTime" placeholder="예: 화요일 19:00, 금요일 15:00" required />
-              </label>
-            </div>
-          </section>
-
-          {submissionError && (
-            <div className="signup-error" role="alert">
-              {submissionError}
-            </div>
-          )}
 
           <div className="mentor-signup-actions">
             <Link className="button button-neutral" to="/signup">이전</Link>
-            <button className="button button-primary" disabled={isSubmitting} type="submit">
-              {isSubmitting ? "가입 처리 중..." : "가입하기"}
-            </button>
+            <button className="button button-primary" type="submit">다음</button>
           </div>
         </form>
       </main>
-
-      {isSignupComplete && (
-        <div className="signup-complete-overlay">
-          <section className="card signup-complete-card" role="status" aria-live="assertive">
-            <div className="signup-complete-visual" aria-hidden="true">
-              <svg viewBox="0 0 64 64">
-                <circle cx="32" cy="32" r="25" />
-                <path d="m20 32 8 8 17-18" />
-              </svg>
-            </div>
-            <p className="eyebrow">WELCOME, MENTOR</p>
-            <h2 className="card-title">멘토 가입이 완료되었습니다</h2>
-            <p className="muted-text">잠시 후 첫 화면으로 이동합니다.</p>
-            <span className="signup-complete-progress" aria-hidden="true" />
-          </section>
-        </div>
-      )}
     </div>
   );
 }

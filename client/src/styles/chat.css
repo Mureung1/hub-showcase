@@ -1,5 +1,24 @@
 .chat-open-button {
+  position: relative;
   flex-shrink: 0;
+}
+
+.unread-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--color-danger, #e5484d);
+  color: #fff;
+  font-size: 11px;
+  font-weight: var(--font-weight-bold, 700);
+  line-height: 1;
 }
 
 .application-card-header-actions,
@@ -63,6 +82,20 @@
   text-align: center;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+}
+
+.chat-date-divider {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-sm) 0;
+}
+
+.chat-date-divider span {
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--color-surface-muted, #f2f2f2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
 }
 
 .chat-message {

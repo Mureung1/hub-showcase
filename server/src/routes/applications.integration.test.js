@@ -505,10 +505,16 @@ describe('GET /api/applications - 멘티/멘토별 조회 범위 (integration)',
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: [], meta: { total: 0 } });
+    // 빈 목록이면 안 읽은 메시지 수를 계산할 필요가 없으므로 RPC를 호출하지 않는다.
+    expect(mockSupabase.rpc).not.toHaveBeenCalled();
   });
 
-  it('멘티로 조회하면 자신의 mentee_id로 필터링된 신청만 요청한다', async () => {
+  it('멘티로 조회하면 자신의 mentee_id로 필터링된 신청만 요청하고, unreadMessageCount를 RPC 결과로 채운다', async () => {
     mockAuthenticatedMentee();
+    mockSupabase.rpc.mockResolvedValue({
+      data: [{ application_id: 'application-1', unread_count: 2 }],
+      error: null,
+    });
     const applicationsQuery = buildThenableQuery({
       data: [
         {
@@ -558,16 +564,24 @@ describe('GET /api/applications - 멘티/멘토별 조회 범위 (integration)',
         ],
         questionnaire: { introduction: '자기소개', concern: '고민', goal: '목표', preferredTime: '평일 저녁' },
         meeting: undefined,
+        unreadMessageCount: 2,
         createdAt: '2026-07-20T00:00:00.000Z',
         updatedAt: '2026-07-20T00:00:00.000Z',
       },
     ]);
     // req.user.id(토큰 소유자 본인)로만 필터링했는지 — 요청 파라미터가 아니라 인증 정보 기준.
     expect(applicationsQuery.eq).toHaveBeenCalledWith('mentee_id', 'mentee-1');
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('get_unread_message_counts', {
+      p_user_id: 'mentee-1',
+    });
   });
 
-  it('멘토로 조회하면 자신의 mentor_id로 필터링된 신청만 요청한다', async () => {
+  it('멘토로 조회하면 자신의 mentor_id로 필터링된 신청만 요청하고, unreadMessageCount를 RPC 결과로 채운다', async () => {
     mockAuthenticatedMentor();
+    mockSupabase.rpc.mockResolvedValue({
+      data: [{ application_id: 'application-1', unread_count: 3 }],
+      error: null,
+    });
     const applicationMentorsQuery = buildThenableQuery({
       data: [
         {
@@ -623,11 +637,15 @@ describe('GET /api/applications - 멘티/멘토별 조회 범위 (integration)',
         },
         questionnaire: { introduction: '자기소개', concern: '고민', goal: '목표', preferredTime: '평일 저녁' },
         meeting: undefined,
+        unreadMessageCount: 3,
         createdAt: '2026-07-20T00:00:00.000Z',
         updatedAt: '2026-07-20T00:00:00.000Z',
       },
     ]);
     expect(applicationMentorsQuery.eq).toHaveBeenCalledWith('mentor_id', 'mentor-1');
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('get_unread_message_counts', {
+      p_user_id: 'mentor-1',
+    });
   });
 
   it('멘토가 자신에게 오지 않은(다른 멘토 대상) 신청을 수락하려 하면 403 FORBIDDEN을 반환한다', async () => {

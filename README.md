@@ -39,6 +39,8 @@ client는 기본적으로 `http://localhost:4000/api`를 API 서버로 사용한
 2. `supabase/migrations/20260721000000_indexes_and_updated_at.sql`
 3. `supabase/migrations/20260722000000_meetings_nullable_schedule.sql`
 4. `supabase/migrations/20260722010000_create_application_with_mentors_rpc.sql`
+5. `supabase/migrations/20260724000000_create_messages_table.sql`
+6. `supabase/migrations/20260725000000_create_message_read_states.sql`
 
 ## 클라이언트·서버 실행 방법
 서버 실행 (`http://localhost:4000`):
