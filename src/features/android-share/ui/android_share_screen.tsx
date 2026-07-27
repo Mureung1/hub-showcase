@@ -128,15 +128,7 @@ export function AndroidShareScreen({ controller }: AndroidShareScreenProps) {
                 {[...state.memo].length}/200자
               </p>
             </div>
-          ) : (
-            <Button
-              hierarchy="secondary"
-              onClick={controller.startMemoEditing}
-              type="button"
-            >
-              {insight.memo ? '메모 수정' : '메모 추가'}
-            </Button>
-          )}
+          ) : null}
 
           {controller.memoError ? (
             <p
@@ -153,17 +145,30 @@ export function AndroidShareScreen({ controller }: AndroidShareScreenProps) {
             </p>
           ) : null}
 
-          <Button
-            disabled={controller.isCompleting}
-            fullWidth
-            hierarchy="primary"
-            loading={controller.isCompleting}
-            onClick={() => void controller.complete()}
-            size="large"
-            type="button"
-          >
-            {controller.isCompleting ? '완료 처리 중' : '완료'}
-          </Button>
+          <div className="android-share-actions">
+            {!isEditingMemo ? (
+              <Button
+                fullWidth
+                hierarchy="secondary"
+                onClick={controller.startMemoEditing}
+                type="button"
+              >
+                {insight.memo ? '메모 수정' : '메모 추가'}
+              </Button>
+            ) : null}
+
+            <Button
+              disabled={controller.isCompleting}
+              fullWidth
+              hierarchy="primary"
+              loading={controller.isCompleting}
+              onClick={() => void controller.complete()}
+              size="large"
+              type="button"
+            >
+              {controller.isCompleting ? '완료 처리 중' : '완료'}
+            </Button>
+          </div>
         </section>
       </main>
     );

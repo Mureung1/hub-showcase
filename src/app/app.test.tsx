@@ -362,7 +362,15 @@ describe('App onboarding flow', () => {
       url: 'https://example.com/article',
     });
 
-    await user.click(screen.getByRole('button', { name: '메모 추가' }));
+    const memoButton = screen.getByRole('button', { name: '메모 추가' });
+    const completeButton = screen.getByRole('button', { name: '완료' });
+
+    expect(
+      memoButton.parentElement?.classList.contains('android-share-actions')
+    ).toBe(true);
+    expect(completeButton.parentElement).toBe(memoButton.parentElement);
+
+    await user.click(memoButton);
     await user.type(screen.getByLabelText('한 줄 메모 (선택)'), '다시 읽기');
     await user.click(screen.getByRole('button', { name: '완료' }));
 
