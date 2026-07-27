@@ -22,7 +22,7 @@ function MenuCard({
     <li className={width}>
       <Link
         to={to}
-        className="relative flex flex-col overflow-hidden rounded-card border-2 border-ink bg-bg-surface transition hover:-translate-y-[2px]"
+        className="relative flex flex-col overflow-hidden rounded-card border-[3.6px] border-ink bg-bg-surface transition hover:-translate-y-[2px]"
       >
         {rank && (
           <span className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-bg-surface/90 text-xs font-semibold text-primary-text shadow">

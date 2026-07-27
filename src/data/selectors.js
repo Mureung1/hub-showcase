@@ -4,6 +4,12 @@ export function sortByCost(recipes) {
   return [...recipes].sort((a, b) => a.totalCost - b.totalCost)
 }
 
+// 부족 개수가 적은 순으로 먼저, 같으면 저렴한 순 — groupRecipesByMissingIngredients의 shopping 정렬과
+// getClosestRecipes에서 공통으로 쓰는 비교 기준.
+function byMissingCountThenCost(a, b) {
+  return a.missingCount - b.missingCount || a.totalCost - b.totalCost
+}
+
 // timeFilterId가 없으면(필터 미선택) 그대로 반환
 export function filterRecipesByTimeFilter(recipes, timeFilterId) {
   if (!timeFilterId) return recipes
@@ -81,13 +87,14 @@ export function groupRecipesByMissingIngredients(recipes, ownedNames, seasoningN
     else if (missingCount <= 2) shopping.push({ ...recipe, missingCount })
     else others.push({ ...recipe, missingCount })
   })
-  return { ready: sortByCost(ready), shopping: sortByCost(shopping), others: sortByCost(others) }
+  // shopping은 부족 1개짜리가 눈에 잘 띄도록 부족 개수를 먼저 보고, 같으면 가격순으로 정렬한다.
+  const shoppingSorted = [...shopping].sort(byMissingCountThenCost)
+  return { ready: sortByCost(ready), shopping: shoppingSorted, others: sortByCost(others) }
 }
 
 // ready/shopping이 둘 다 0건일 때 대신 보여줄 "그나마 가까운" 레시피 상위 N개.
-// 부족 개수가 적은 순으로 먼저 정렬하고, 같으면 저렴한 순.
 export function getClosestRecipes(others, limit = 3) {
-  return [...others].sort((a, b) => a.missingCount - b.missingCount || a.totalCost - b.totalCost).slice(0, limit)
+  return [...others].sort(byMissingCountThenCost).slice(0, limit)
 }
 
 // hasAnyMatch가 false이고 closestRecipes도 0건일 때(보유 재료 자체가 없어 부족 개수를 계산할 기준이 없는 경우)

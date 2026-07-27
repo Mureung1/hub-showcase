@@ -5,6 +5,8 @@ import { fridgeIngredients } from '../data/fridgeIngredients'
 import { loadFridgeSelection } from '../data/fridgeStorage'
 import { loadLikedRecipes, saveLikedRecipes } from '../data/likedRecipesStorage'
 import { buildNaverSearchUrl, buildCoupangSearchUrl, fetchNaverProducts } from '../utils/purchaseLinks'
+import { apiUrl } from '../utils/apiBaseUrl'
+import { PAGE_BACKGROUND_STYLE } from '../utils/pageBackground'
 import CookingSteps from '../components/CookingSteps'
 import IngredientList from '../components/IngredientList'
 import PurchaseLinkPanel from '../components/PurchaseLinkPanel'
@@ -36,7 +38,7 @@ function RecipeDetailPage() {
     setIsPlaying(false)
     setVideoAspectRatio(16 / 9)
 
-    fetch(`/api/recipes/${recipeId}`)
+    fetch(apiUrl(`/api/recipes/${recipeId}`))
       .then((res) => {
         if (!res.ok) throw new Error('not found')
         return res.json()
@@ -54,7 +56,7 @@ function RecipeDetailPage() {
     if (!youtubeId) return
 
     let cancelled = false
-    fetch(`/api/youtube/dimensions?videoId=${youtubeId}`)
+    fetch(apiUrl(`/api/youtube/dimensions?videoId=${youtubeId}`))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!cancelled && data?.width && data?.height) {
@@ -72,7 +74,7 @@ function RecipeDetailPage() {
     return (
       <>
         <TopNav />
-        <main className="min-h-screen bg-bg-page px-4 py-10 text-center text-text-secondary">
+        <main className="min-h-screen bg-bg-page px-4 py-10 text-center text-text-secondary" style={PAGE_BACKGROUND_STYLE}>
           요리를 찾을 수 없어요.{' '}
           <Link to="/home" className="text-primary-text underline">
             홈으로
@@ -86,7 +88,7 @@ function RecipeDetailPage() {
     return (
       <>
         <TopNav />
-        <main className="min-h-screen bg-bg-page px-4 py-10 text-center text-text-secondary">불러오는 중...</main>
+        <main className="min-h-screen bg-bg-page px-4 py-10 text-center text-text-secondary" style={PAGE_BACKGROUND_STYLE}>불러오는 중...</main>
       </>
     )
   }
@@ -166,7 +168,7 @@ function RecipeDetailPage() {
   return (
     <>
       <TopNav />
-      <main className="min-h-screen bg-bg-page px-4 py-8">
+      <main className="min-h-screen bg-bg-page px-4 py-8" style={PAGE_BACKGROUND_STYLE}>
       <div className={videoAspectRatio < 1 ? 'mx-auto max-w-5xl' : 'mx-auto max-w-2xl'}>
         {/* 제목/부제 — 영상보다 위, 페이지 맨 위에 항상 고정 (레이아웃·영상 방향과 무관).
             부족 재료 개수 배지는 없앰 — 바로 아래 "있는 재료"/"없는 재료" 카드가 같은 정보를 더 정확히 보여줌. */}
@@ -197,7 +199,7 @@ function RecipeDetailPage() {
             youtubeId가 있으면 재생 버튼을 눌렀을 때만 iframe을 마운트한다 (지연 로딩). */}
         <div className={`mt-4 flex flex-col gap-6 ${videoAspectRatio < 1 ? 'lg:flex-row lg:items-start' : ''}`}>
           <div
-            className={`relative overflow-hidden rounded-banner border-2 border-ink ${
+            className={`relative overflow-hidden rounded-banner border-[3.6px] border-ink ${
               videoAspectRatio < 1
                 ? 'mx-auto w-full max-w-sm shrink-0 aspect-[9/16] lg:sticky lg:top-8 lg:mx-0'
                 : 'w-full aspect-video'
@@ -232,7 +234,7 @@ function RecipeDetailPage() {
             <CookingSteps steps={recipe.steps} twoColumn={videoAspectRatio >= 1} />
 
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="rounded-card border-2 border-ink bg-bg-surface p-4">
+              <div className="rounded-card border-[3.6px] border-ink bg-bg-surface p-4">
                 <h2 className="text-center font-display text-base font-bold text-text-primary">있는 재료</h2>
                 <div className="mt-3">
                   {ownedIngredients.length > 0 ? (
@@ -251,7 +253,7 @@ function RecipeDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-card border-2 border-[#F0B7A8] bg-[#FDEDE9] p-4">
+              <div className="rounded-card border-[3.6px] border-[#F0B7A8] bg-[#FDEDE9] p-4">
                 <h2 className="text-center font-display text-base font-bold text-text-primary">없는 재료</h2>
                 <div className="mt-3">
                   {missingIngredients.length > 0 ? (
@@ -281,15 +283,15 @@ function RecipeDetailPage() {
           </div>
         </div>
 
-        <div className="mt-6 flex items-end justify-end gap-3">
+        <div className="mt-6 flex items-start justify-end gap-3">
           <div className="relative max-w-xs rounded-2xl border-2 border-ink bg-[#FFF3DF] px-4 py-3 font-display text-sm text-text-primary">
             Tip: 재료를 신선하게 준비해두면 더 맛있어요!
-            <span className="absolute top-1/2 -right-[7px] h-3 w-3 -translate-y-1/2 rotate-45 border-r-2 border-t-2 border-ink bg-[#FFF3DF]" />
+            <span className="absolute top-4 -right-[7px] h-3 w-3 rotate-45 border-r-2 border-t-2 border-ink bg-[#FFF3DF]" />
           </div>
           <img src={mascotKkini} alt="" className="w-14 select-none" />
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-card border-2 border-ink bg-primary px-5 py-4">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-card border-[3.6px] border-ink bg-primary px-5 py-4">
           <div>
             <p className="font-display text-xs text-text-primary">1인분 총 재료비</p>
             <p className="font-display text-2xl font-bold text-text-primary">{recipe.totalCost.toLocaleString()}원</p>

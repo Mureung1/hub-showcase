@@ -1,8 +1,8 @@
 # 식비구조대 디자인 시스템
 
-이 문서는 "식비구조대"의 공식 디자인 토큰과 컴포넌트 패턴을 정의한다. 실제 서비스 코드(`src/`, React + Tailwind v4)와 프로토타입(`prototype/`, 정적 HTML + CSS)에 **똑같이** 적용된다 — 구현 방식만 다르고 토큰 이름과 값은 하나다.
+이 문서는 "식비구조대"의 공식 디자인 토큰과 컴포넌트 패턴을 정의한다. 실제 서비스 코드(`src/`, React + Tailwind v4)에 적용된다.
 
-2026-07-20에 prototype-v2(마스코트 '기니' 방향)에서 검증한 웜톤(크림 배경·갈색 잉크) 팔레트로 전환했다 — 이전 팔레트(남색 잉크 `#17182B`·노랑 `#F9BE3B` 프라이머리, `prototype/style-warm.css`가 최초 구현)는 리브랜딩 전 버전이라 더 이상 기준이 아니다. `prototype-v2/style-fridge-flow.css`가 이 팔레트의 최초 구현이고, `src/index.css`의 `@theme`에도 동일하게 반영돼 있다.
+2026-07-20에 정적 HTML 프로토타입(마스코트 '기니' 방향)에서 검증한 웜톤(크림 배경·갈색 잉크) 팔레트로 전환했다 — 이전 팔레트(남색 잉크 `#17182B`·노랑 `#F9BE3B` 프라이머리)는 리브랜딩 전 버전이라 더 이상 기준이 아니다. 프로토타입은 화면·플로우가 `src/`에 안정적으로 이식된 뒤 역할을 다해 삭제했고(2026-07-27), `src/index.css`의 `@theme`가 이 팔레트의 현재 기준이다.
 
 > 참고: 저장소 루트의 `DESIGN.md`, `miro/DESIGN.md`는 외부 사이트(Figma, Miro)를 분석해둔 참고 자료이며 이 프로젝트의 공식 시스템이 아니다. 이 파일이 끼니픽의 유일한 기준이다.
 
@@ -21,7 +21,7 @@
 | `accent-heart` | `#F0455C` | 찜/하트 아이콘 등 포인트 액센트 |
 | `bg-cream` | `#FBF1DE` | 냉장고 씬(홈 진입 화면) 배경 |
 | `border` | `#EADFC8` | 구분선, 카드 테두리 |
-| `ink` | `#5B4130` | 카드·버튼의 굵은 테두리(3~4px) + 오프셋 하드 섀도로 "3D" 느낌을 내는 잉크색. 기존 `border`(연한 구분선)와는 용도가 다름 |
+| `ink` | `#5B4130` | 카드·버튼의 굵은 테두리 + 오프셋 하드 섀도로 "3D" 느낌을 내는 잉크색. 기존 `border`(연한 구분선)와는 용도가 다름. 굵기는 2단계: 카드·헤더·필터 같은 큰 덩어리는 `border-[3.6px]`, 재료 칩·재생 버튼·말풍선 같은 작은 요소는 `border-2`(2px)~`border-[3px]` |
 
 ## 타이포그래피
 
@@ -50,8 +50,9 @@
 | 패턴 | 구성 | 쓰는 토큰 |
 |---|---|---|
 | `promo-banner` | 그라디언트 배경(`primary` → 밝은 노랑) + eyebrow + 헤드라인 | `primary`, `radius-banner`, `space-4` |
-| `filter-chip` | pill 버튼, 비활성은 `bg-surface`+`border` 테두리, 활성은 `primary` 배경 | `radius-pill`, `primary`, `border` |
+| `filter-chip` | pill 버튼, 굵은 `ink` 테두리(`border-[3.6px]`, 카드·헤더와 같은 굵기)는 선택 여부와 무관하게 항상 유지, 비활성은 `bg-surface` 배경, 활성은 `primary` 배경으로만 구분 | `radius-pill`, `primary`, `ink` |
 | `recipe-card` (실제 앱 `MenuCard`와 대응) | `bg-surface` 카드 + 상단 이미지 + 본문(이름/부제/가격). 하트 배지는 제거함(사용 안 함) | `radius-card`, `bg-surface`, `text-secondary` |
+| `recipe-grid` (실제 앱 `RecipeGrid`) | `recipe-card`를 3열 그리드(`grid-cols-3`, 모바일 1열)로 늘어놓는 `<ol>` 래퍼. 홈 화면에 이 그리드가 5번(지금 바로/조금만 사면/전체 둘러보기/빈 상태 대체 후보 2종) 반복되던 걸 하나로 합침 — `cheapestId`(최저가 배지)·`showMissingCount`·`showTimeLabel` prop으로 섹션마다 다른 배지만 켜고 끔 | `radius-card`, `bg-surface` |
 | `best-tag` | 작은 pill 배지, `primary-soft` 배경 + `primary-text` 글자 | `primary-soft`, `primary-text` |
 | `quick-tab` | 상단 가로 pill 탭 줄. **음식종류(필터 패널의 메인음식/반찬/간식)와는 별개 축**으로, 요리 국가(전체/한식/일식/중식/양식/기타)를 다중 선택(OR)함. 체크박스가 아니라 버튼 `is-active` 상태로 직접 관리되고, 필터 패널과는 동기화되지 않음(서로 다른 데이터: `data-cuisine` vs `data-type`) | `radius-pill`, `primary`, `border` |
 | `quick-tab` | 상단 가로 pill 탭 줄(전체/한식/일식/중식/양식/기타 — 음식종류는 요리 국가 기준 분류). 상세 필터 패널의 음식종류 체크박스와 항상 양방향 동기화됨. 필터 패널은 항상 열려있어서 별도 토글 버튼 없음 | `radius-pill`, `primary`, `border` |
@@ -61,13 +62,12 @@
 | `ingredient-section-heading` | 냉장고 재료를 카테고리(채소/고기·해산물/가공식품/면·곡물/기타)별로 묶어 보여줄 때, 각 그룹의 `IngredientChipPicker` 위에 오는 작은 블록 헤딩. `filter-group-label`과 타이포 톤(11px bold uppercase)은 같지만 칩 옆이 아니라 위에 오는 별도 줄이라 새 패턴으로 분리. 전체 그룹은 `bg-muted` 패널(`rounded-card`) 안에 세로로 쌓임 | `bg-muted`, `radius-card`, `text-secondary` |
 | `filter-chip-group` (실제 앱 `FilterChipGroup`) | `filter-chip` 패턴을 단일 선택(라디오형)으로 쓰는 가로 칩 한 줄. 맨 앞에 항상 "전체" 칩을 넣어 선택 해제를 표현. 홈 화면의 음식종류(메인음식/반찬/간식)·시간(10분 미만/10~20분/20~30분/30분 이상) 필터에서 같은 컴포넌트를 두 번 재사용 — `ingredient-chip-picker`(다중 선택 토글)와는 선택 방식이 달라 별도 패턴으로 분리 | `radius-pill`, `border-primary`, `bg-primary`, `bg-bg-surface`, `border-border`, `text-text-primary`, `text-text-secondary` |
 | `empty-state-card` | 추천 결과가 0건일 때 보여주는 카드 — `bg-surface` 카드(`radius-card`) 안에 마스코트 일러스트 + 기니 말투 카피(제목/본문) + `primary` CTA 버튼(`radius-pill`), 바로 아래 대체 추천 리스트("그래도 빨리 만들 수 있는 요리", `recipe-card` 재사용). 홈 화면의 재료 매칭 0건 상태에 사용. 일러스트(`끼니캐릭터.png`)는 임시 목업이라 교체 예정 | `radius-card`, `bg-surface`, `text-primary`, `text-secondary`, `primary`, `radius-pill` |
+| `fullscreen-loading` (실제 앱 `LoadingIndicator`) | 홈 화면 추천 fetch가 끝날 때까지 배너·필터·리스트 대신 화면 전체를 덮는 로딩 표시 — 냉장고를 들여다보는 끼니 영상(`로딩-애니메이션.mp4`) 위에 `text-secondary` 기니 1인칭 카피("기니가 냉장고 재료로 만들 요리를 찾는 중...")가 하단에 떠 있는 형태. `?loading=1` 개발용 미리보기도 같은 컴포넌트. `empty-state-card`(결과 0건 전용, CTA 있음)와 달리 카드·CTA 없이 로딩 상태만 알림 — "확인 중"과 "결과 없음"이 시각적으로 헷갈리지 않게 분리 | `text-secondary` |
 | `cooking-steps` (실제 앱 `CookingSteps`) | 재료 카드와 같은 `bg-surface`+`border-ink` 카드 안에, 순서 번호를 `radius-pill` 원형 배지(`bg-primary`+`border-ink`)로 강조하고 옆에 단계 설명 텍스트를 놓는 리스트. 레시피 상세 화면에서 재료 섹션 바로 위에 배치. `steps` 데이터가 없는 레시피에서는 아무것도 렌더링하지 않음(선택적 필드) | `radius-card`, `bg-surface`, `border-ink`, `radius-pill`, `primary`, `text-primary` |
 | `like-star-button` (실제 앱 `MenuCard`, `RecipeDetailPage` 제목 옆) | 원형 버튼(카드에서는 우상단, 순위 배지와 대칭 위치 / 상세 페이지에서는 제목 줄 오른쪽). `accent-heart` 색은 찜 버튼 전용으로 예약된 토큰이라 다른 곳에는 안 씀(이름은 "heart"지만 실제 아이콘은 별표) — 찜 안 함은 `text-secondary` 빈 별(☆), 찜 함은 `accent-heart` 채운 별(★). `MenuCard`는 카드 전체가 `Link`라서 버튼 클릭 시 `preventDefault`+`stopPropagation`으로 상세 페이지 이동을 막음. `Home.jsx`의 "찜" 필터(★ 찜한 것만 보기)와 짝을 이룸, 저장은 `likedRecipesStorage.js`(localStorage, `fridgeStorage.js`와 동일 패턴) | `accent-heart`, `text-secondary`, `bg-bg-surface` |
 | `purchase-link-item` (실제 앱 `PurchaseLinkPanel`) | 외부 쇼핑몰 상품 한 줄을 세로 2단으로 표시 — 1단은 원본 상품명을 `truncate`(1줄 말줄임, 잘린 부분은 `title` 속성 툴팁)로, 2단은 몰 이름과 가격 + (있으면) `text-secondary` 캡션으로 개당/100g당/100ml당 단가를 보여줌. 상품명을 그대로 노출해서 "묶음상품인데 단일상품인 줄 알고 클릭" 같은 오해를 방지. 네이버가 여러 판매처를 하나로 검증한 카탈로그(가격비교) 상품이면 몰 이름 옆에 `best-tag` 패턴 재사용한 작은 배지("가격비교 확인")를 붙여 개별 판매처의 자유 텍스트 상품과 구분 | `text-secondary`, `text-primary`, `primary-text`, `primary-soft` |
 
-## 구현 매핑
-
-두 코드베이스가 서로 다른 도구를 쓰므로, 토큰 이름은 같게 유지하고 구현만 아래처럼 나눈다.
+## 구현
 
 ### 실제 앱 (`src/`, Tailwind v4)
 
@@ -98,10 +98,6 @@
 ```
 
 이후 컴포넌트에서는 `bg-primary`, `text-text-secondary`, `rounded-card` 같은 유틸리티 클래스를 그대로 쓰면 된다. 임의의 `bg-orange-500`, `rounded-xl` 같은 팔레트 기본값을 새로 끌어오지 않는다.
-
-### 프로토타입 (`prototype/`, CSS 변수)
-
-`prototype/style-warm.css`의 `:root` 블록이 그대로 기준이다. 새 프로토타입 화면을 만들 때는 이 파일을 그대로 링크하거나 복사해서 시작한다.
 
 ## Do / Don't
 

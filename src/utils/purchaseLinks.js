@@ -1,3 +1,5 @@
+import { apiUrl } from './apiBaseUrl'
+
 // 네이버는 검색 오픈API(/api/naver/search)로 실제 상품·가격을 가져온다.
 // 쿠팡은 쿠팡파트너스 승인 전까지 실제 가격 대신 검색 결과로 연결하는 딥링크만 제공한다.
 export function buildNaverSearchUrl(query) {
@@ -9,7 +11,7 @@ export function buildCoupangSearchUrl(query) {
 }
 
 export async function fetchNaverProducts(query) {
-  const res = await fetch(`/api/naver/search?query=${encodeURIComponent(query)}`)
+  const res = await fetch(apiUrl(`/api/naver/search?query=${encodeURIComponent(query)}`))
   if (!res.ok) {
     throw new Error('네이버 검색에 실패했습니다.')
   }

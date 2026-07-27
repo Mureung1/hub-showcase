@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { mockRecipes } from '../data/mockRecipes'
 import { categories, TYPE_LABELS } from '../data/categories'
 import { TIME_FILTERS } from '../data/timeFilters'
@@ -14,8 +14,11 @@ import {
 import { fridgeIngredients, SEASONING_MATCH_NAMES } from '../data/fridgeIngredients'
 import { loadFridgeSelection } from '../data/fridgeStorage'
 import { loadLikedRecipes, saveLikedRecipes } from '../data/likedRecipesStorage'
+import { apiUrl } from '../utils/apiBaseUrl'
+import { PAGE_BACKGROUND_STYLE } from '../utils/pageBackground'
 import TopNav from '../components/TopNav'
-import MenuCard from '../components/MenuCard'
+import RecipeGrid from '../components/RecipeGrid'
+import LoadingIndicator from '../components/LoadingIndicator'
 import PromoBanner from '../components/PromoBanner'
 import FilterChipGroup from '../components/FilterChipGroup'
 import mascotWave from '../assets/mascot-wave.png'
@@ -35,7 +38,16 @@ const cheapestId = allRecipesByPrice[0]?.id
 const typeOptions = Object.entries(TYPE_LABELS).map(([id, label]) => ({ id, label }))
 const timeOptions = TIME_FILTERS.map(({ id, label }) => ({ id, label }))
 
+// 이번 세션에서 홈 화면 로딩 애니메이션을 한 번이라도 보여줬는지 — 모듈 스코프라 컴포넌트가
+// 언마운트(레시피 상세로 이동 등)돼도 유지된다. 두 번째부터는 레시피 상세↔홈을 오갈 때
+// 영상을 처음부터 다시 보여주지 않고 곧바로 목록을 보여준다.
+let hasPlayedLoadingAnimation = false
+
 function Home() {
+  const [searchParams] = useSearchParams()
+  // 헤더 "로딩" 링크(?loading=1)로 들어오면 fetch 없이 로딩 화면만 계속 보여준다 — 실제 재료를
+  // 고르지 않고도 로딩 UI를 바로 확인/작업할 수 있게 하는 개발용 진입점 (checklist.md 범위 아님).
+  const forceLoading = searchParams.get('loading') === '1'
   const [readyRecipes, setReadyRecipes] = useState([])
   const [shoppingRecipes, setShoppingRecipes] = useState([])
   const [otherRecipes, setOtherRecipes] = useState([])
@@ -44,6 +56,15 @@ function Home() {
   const [selectedSort, setSelectedSort] = useState(null)
   const [likedIds, setLikedIds] = useState(() => loadLikedRecipes())
   const [showLikedOnly, setShowLikedOnly] = useState(false)
+  // 추천 fetch가 아직 안 끝났는지("loading") 구분하는 상태 — 이게 없으면 초기값(빈 배열)과
+  // "불러왔는데 결과 없음"이 똑같아 보여서, fetch가 끝나기도 전에 "못 찾았어요" 카드가 먼저 뜬다.
+  const [status, setStatus] = useState('loading')
+  // fetch 결과와 "로딩 영상이 한 바퀴 다 돌았는지"를 각각 별도로 기다렸다가, 둘 다 끝난 뒤에만
+  // status를 'done'으로 바꾼다 — fetch가 아무리 빨리 끝나도 영상이 중간에 끊기지 않게 하기 위함.
+  // 이미 한 번 재생한 세션이면(skipLoadingAnimation) 영상 완료를 기다리지 않고 fetch만 끝나면 바로 넘어간다.
+  const skipLoadingAnimation = !forceLoading && hasPlayedLoadingAnimation
+  const fetchResultRef = useRef(null)
+  const videoLoopedRef = useRef(skipLoadingAnimation)
 
   function handleToggleLike(recipeId) {
     setLikedIds((prev) => {
@@ -53,7 +74,22 @@ function Home() {
     })
   }
 
+  function finishLoadingIfReady() {
+    if (!videoLoopedRef.current || !fetchResultRef.current) return
+    const { ready, shopping, others } = fetchResultRef.current
+    setReadyRecipes(ready)
+    setShoppingRecipes(shopping)
+    setOtherRecipes(others)
+    setStatus('done')
+    hasPlayedLoadingAnimation = true
+  }
+
   useEffect(() => {
+    if (forceLoading) return // status가 초기값 'loading'에서 안 바뀌게 그대로 둔다
+
+    fetchResultRef.current = null
+    videoLoopedRef.current = skipLoadingAnimation
+
     const selectedIds = loadFridgeSelection()
     // 조미료(category: 'seasoning')는 거의 모든 레시피에 들어가 있어서 추천 매칭에 포함시키면
     // 실제로 가진 재료와 상관없이 추천 목록이 부풀려진다 — fridgeIngredients.js 상단 주석 참고.
@@ -62,30 +98,25 @@ function Home() {
       .flatMap((ingredient) => ingredient.matchNames)
 
     if (ownedMatchNames.length === 0) {
-      setReadyRecipes([])
-      setShoppingRecipes([])
-      setOtherRecipes([])
+      fetchResultRef.current = { ready: [], shopping: [], others: [] }
+      finishLoadingIfReady()
       return
     }
 
-    fetch(`/api/recipes?matchNames=${ownedMatchNames.join(',')}`)
+    fetch(apiUrl(`/api/recipes?matchNames=${ownedMatchNames.join(',')}`))
       .then((res) => res.json())
-      .then((data) => {
-        const { ready, shopping, others } = groupRecipesByMissingIngredients(
-          data.recipes ?? [],
-          ownedMatchNames,
-          SEASONING_MATCH_NAMES,
-        )
-        setReadyRecipes(ready)
-        setShoppingRecipes(shopping)
-        setOtherRecipes(others)
+      .then((data) => groupRecipesByMissingIngredients(data.recipes ?? [], ownedMatchNames, SEASONING_MATCH_NAMES))
+      .catch(() => ({ ready: [], shopping: [], others: [] }))
+      .then((result) => {
+        fetchResultRef.current = result
+        finishLoadingIfReady()
       })
-      .catch(() => {
-        setReadyRecipes([])
-        setShoppingRecipes([])
-        setOtherRecipes([])
-      })
-  }, [])
+  }, [forceLoading, skipLoadingAnimation])
+
+  function handleLoadingVideoLoopEnd() {
+    videoLoopedRef.current = true
+    finishLoadingIfReady()
+  }
 
   function applyFilters(recipes) {
     // 정렬 기준(가격순)만 다르고 나머지(음식종류/시간) 필터 로직은 selectors.js를 그대로 재사용 —
@@ -100,18 +131,26 @@ function Home() {
   const filteredAll = applyFilters(allRecipesByPrice)
   const hasAnyMatch = readyRecipes.length > 0 || shoppingRecipes.length > 0
   const hasFilteredMatch = filteredReady.length > 0 || filteredShopping.length > 0
-  // 가진 재료로는 아무것도 못 찾았을 때만 컷오프(부족 3개 이상)를 풀어서 그나마 가까운 후보를 보여줌
-  const closestRecipes = hasAnyMatch ? [] : getClosestRecipes(applyFilters(otherRecipes), 3)
+  // 가진 재료로는 아무것도 못 찾았을 때만 컷오프(부족 3개 이상)를 풀어서 그나마 가까운 후보를 보여줌.
+  // status가 'done'이 되기 전(fetch 진행 중)엔 otherRecipes가 아직 불완전한 스냅샷이라 계산하지 않는다.
+  const closestRecipes = status === 'done' && !hasAnyMatch ? getClosestRecipes(applyFilters(otherRecipes), 3) : []
   // 기준 재료 자체가 없어(보유 재료 0개, 또는 조미료만 보유) closestRecipes조차 못 만들 때 보여줄 최후의 대체 후보
-  const quickRecipes = !hasAnyMatch && closestRecipes.length === 0 ? getQuickRecipes(filteredAll, 3) : []
+  const quickRecipes = status === 'done' && !hasAnyMatch && closestRecipes.length === 0 ? getQuickRecipes(filteredAll, 3) : []
 
   return (
-    <div className="min-h-screen bg-bg-cream">
+    <div className="min-h-screen bg-bg-cream" style={PAGE_BACKGROUND_STYLE}>
       <div className="sticky top-0 z-10">
         <TopNav />
       </div>
 
-      <main className="mx-auto max-w-[960px] pb-8">
+      <main className={status === 'loading' && !skipLoadingAnimation ? '' : 'mx-auto max-w-[960px] pb-8'}>
+        {status === 'loading' ? (
+          // forceLoading(개발용 ?loading=1)이든 이번 세션 첫 로딩이든, 끝날 때까지 전체화면 로딩만
+          // 보여주고 배너·필터·추천 리스트는 로딩이 끝난 뒤에야 나타난다. 이미 한 번 본 세션이면
+          // (skipLoadingAnimation) 영상 없이 fetch가 끝나는 대로 곧바로 다음 화면으로 넘어간다.
+          skipLoadingAnimation ? null : <LoadingIndicator onFirstLoopEnd={handleLoadingVideoLoopEnd} />
+        ) : (
+          <>
         <PromoBanner />
 
         <div className="mt-6 flex flex-wrap gap-6 px-8">
@@ -132,8 +171,8 @@ function Home() {
             <button
               type="button"
               onClick={() => setShowLikedOnly((prev) => !prev)}
-              className={`rounded-pill border px-4 py-1.5 font-display text-sm transition ${
-                showLikedOnly ? 'border-primary bg-primary text-text-primary' : 'border-border bg-bg-surface text-text-secondary'
+              className={`rounded-pill border-[3.6px] border-ink px-4 py-1.5 font-display text-sm transition ${
+                showLikedOnly ? 'bg-primary text-text-primary' : 'bg-bg-surface text-text-secondary hover:bg-primary-soft'
               }`}
             >
               즐겨찾기
@@ -141,14 +180,14 @@ function Home() {
           </div>
         </div>
 
-        {!hasAnyMatch && closestRecipes.length === 0 && (
+        {status === 'done' && !hasAnyMatch && closestRecipes.length === 0 && (
           <section className="mt-4 px-8">
             <div className="flex flex-col items-center gap-3 rounded-card border border-border bg-bg-surface px-6 py-8 text-center shadow-sm">
               <img src={kkinniCharacter} alt="" className="w-28 select-none" />
               <div>
                 <p className="font-display text-lg font-bold text-text-primary">어라, 딱 맞는 요리를 못 찾았더랑!</p>
                 <p className="mt-1 font-display text-sm text-text-secondary">
-                  조미료 말고 진짜 재료(채소·고기·가공식품 등)를 골라주면 기니가 딱 맞는 요리를 찾아드릴게요.
+                  조미료 말고 진짜 재료(채소·고기·가공식품 등)를 골라주면 끼니가 딱 맞는 요리를 찾아드릴게요.
                 </p>
               </div>
               <Link
@@ -162,22 +201,7 @@ function Home() {
             {quickRecipes.length > 0 && (
               <div className="mt-5">
                 <h3 className="font-display text-base font-bold text-text-primary">그래도 빨리 만들 수 있는 요리는 있어요</h3>
-                <ol className="mt-2 grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
-                  {quickRecipes.map((recipe) => (
-                    <MenuCard
-                      key={recipe.id}
-                      to={`/recipe/${recipe.id}`}
-                      image={recipe.image}
-                      emoji={recipe.emoji}
-                      name={recipe.name}
-                      price={recipe.totalCost}
-                      priceSuffix="원"
-                      timeLabel={`${recipe.cookTimeMinutes}분`}
-                      liked={likedIds.includes(recipe.id)}
-                      onToggleLike={() => handleToggleLike(recipe.id)}
-                    />
-                  ))}
-                </ol>
+                <RecipeGrid recipes={quickRecipes} likedIds={likedIds} onToggleLike={handleToggleLike} showTimeLabel />
               </div>
             )}
           </section>
@@ -186,22 +210,7 @@ function Home() {
         {closestRecipes.length > 0 && (
           <section className="mt-4 px-8">
             <h3 className="font-display text-base font-bold text-text-primary">이 재료도 있으면 만들 수 있어요</h3>
-            <ol className="mt-2 grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
-              {closestRecipes.map((recipe) => (
-                <MenuCard
-                  key={recipe.id}
-                  to={`/recipe/${recipe.id}`}
-                  image={recipe.image}
-                  emoji={recipe.emoji}
-                  name={recipe.name}
-                  price={recipe.totalCost}
-                  priceSuffix="원"
-                  missingCount={recipe.missingCount}
-                  liked={likedIds.includes(recipe.id)}
-                  onToggleLike={() => handleToggleLike(recipe.id)}
-                />
-              ))}
-            </ol>
+            <RecipeGrid recipes={closestRecipes} likedIds={likedIds} onToggleLike={handleToggleLike} showMissingCount />
           </section>
         )}
 
@@ -223,22 +232,7 @@ function Home() {
                 </span>
                 <img src={mascotWave} alt="" className="w-32 select-none" />
               </div>
-              <ol className="grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
-                {filteredReady.map((recipe) => (
-                  <MenuCard
-                    key={recipe.id}
-                    to={`/recipe/${recipe.id}`}
-                    image={recipe.image}
-                    emoji={recipe.emoji}
-                    name={recipe.name}
-                    price={recipe.totalCost}
-                    priceSuffix="원"
-                    bestTag={recipe.id === cheapestId}
-                    liked={likedIds.includes(recipe.id)}
-                    onToggleLike={() => handleToggleLike(recipe.id)}
-                  />
-                ))}
-              </ol>
+              <RecipeGrid recipes={filteredReady} cheapestId={cheapestId} likedIds={likedIds} onToggleLike={handleToggleLike} />
             </div>
           </section>
         )}
@@ -246,23 +240,13 @@ function Home() {
         {filteredShopping.length > 0 && (
           <section className="mt-6 px-8">
             <h3 className="font-display text-lg font-bold text-text-primary">재료 조금만 사면 돼요 🛒</h3>
-            <ol className="mt-2 grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
-              {filteredShopping.map((recipe) => (
-                <MenuCard
-                  key={recipe.id}
-                  to={`/recipe/${recipe.id}`}
-                  image={recipe.image}
-                  emoji={recipe.emoji}
-                  name={recipe.name}
-                  price={recipe.totalCost}
-                  priceSuffix="원"
-                  bestTag={recipe.id === cheapestId}
-                  missingCount={recipe.missingCount}
-                  liked={likedIds.includes(recipe.id)}
-                  onToggleLike={() => handleToggleLike(recipe.id)}
-                />
-              ))}
-            </ol>
+            <RecipeGrid
+              recipes={filteredShopping}
+              cheapestId={cheapestId}
+              likedIds={likedIds}
+              onToggleLike={handleToggleLike}
+              showMissingCount
+            />
           </section>
         )}
 
@@ -270,22 +254,15 @@ function Home() {
         {filteredAll.length === 0 && (
           <p className="mt-2 px-8 font-display text-sm text-text-secondary">필터 조건에 맞는 요리가 없어요.</p>
         )}
-        <ol className="mt-2 grid grid-cols-3 gap-3 px-8 max-[640px]:grid-cols-1">
-          {filteredAll.map((recipe) => (
-            <MenuCard
-              key={recipe.id}
-              to={`/recipe/${recipe.id}`}
-              image={recipe.image}
-              emoji={recipe.emoji}
-              name={recipe.name}
-              price={recipe.totalCost}
-              priceSuffix="원"
-              bestTag={recipe.id === cheapestId}
-              liked={likedIds.includes(recipe.id)}
-              onToggleLike={() => handleToggleLike(recipe.id)}
-            />
-          ))}
-        </ol>
+        <RecipeGrid
+          recipes={filteredAll}
+          cheapestId={cheapestId}
+          likedIds={likedIds}
+          onToggleLike={handleToggleLike}
+          className="px-8"
+        />
+          </>
+        )}
       </main>
     </div>
   )

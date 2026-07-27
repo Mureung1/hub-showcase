@@ -12,10 +12,10 @@ function FilterChipGroup({ options, selectedId, onSelect }) {
               type="button"
               onClick={() => onSelect(option.id)}
               aria-pressed={isSelected}
-              className={`rounded-full border px-3 py-1.5 font-display text-sm font-bold transition ${
+              className={`rounded-full border-[3.6px] border-ink px-3 py-1.5 font-display text-sm font-bold transition ${
                 isSelected
-                  ? 'border-primary bg-primary font-semibold text-text-primary'
-                  : 'border-border bg-bg-surface text-text-secondary hover:border-primary'
+                  ? 'bg-primary font-semibold text-text-primary'
+                  : 'bg-bg-surface text-text-secondary hover:bg-primary-soft'
               }`}
             >
               {option.label}

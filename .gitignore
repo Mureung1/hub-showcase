@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Python build artifacts (pptx-builder skill decks)
+__pycache__/
+render_out/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
