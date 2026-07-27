@@ -8,6 +8,7 @@ import cors from "cors";
 import { createClient } from "@supabase/supabase-js";
 import { analyzeReviewSentiment, validateReviewContent } from "./server/sentimentService.mjs";
 import { normalizeDisplayName } from "./server/profileService.mjs";
+import { normalizeSavedPlaceInput, toPublicSavedPlace } from "./server/savedPlaceService.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 4000);
@@ -195,6 +196,49 @@ async function handleProfileUpdate(request, response) {
   return sendJson(request, response, 200, { user: { ...publicUser(authenticatedUser), name } });
 }
 
+async function handleSavedPlaces(request, response) {
+  const user = await getAuthenticatedUser(request);
+  if (!user) return sendJson(request, response, 401, { message: "로그인이 필요합니다." });
+  const { data, error } = await supabase
+    .from("saved_places")
+    .select("created_at, places!inner(kakao_place_id,name,category,address,road_address,latitude,longitude,phone,kakao_place_url)")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+  if (error) return sendJson(request, response, 502, { message: "관심 장소를 불러오지 못했습니다.", code: error.code });
+  return sendJson(request, response, 200, { items: data.map(toPublicSavedPlace) });
+}
+
+async function handleSavePlace(request, response) {
+  const user = await getAuthenticatedUser(request);
+  if (!user) return sendJson(request, response, 401, { message: "로그인이 필요합니다." });
+  let placeInput;
+  try {
+    placeInput = normalizeSavedPlaceInput((await readRequestJson(request)).place);
+  } catch (error) {
+    return sendJson(request, response, 400, { message: error.message });
+  }
+  const { data: place, error: placeError } = await supabase
+    .from("places")
+    .upsert(placeInput, { onConflict: "kakao_place_id" })
+    .select("id")
+    .single();
+  if (placeError) return sendJson(request, response, 502, { message: "업체 정보를 저장하지 못했습니다.", code: placeError.code });
+  const { error } = await supabase.from("saved_places").upsert({ user_id: user.id, place_id: place.id });
+  if (error) return sendJson(request, response, 502, { message: "관심 장소를 저장하지 못했습니다.", code: error.code });
+  return sendJson(request, response, 201, { saved: true, kakaoPlaceId: placeInput.kakao_place_id });
+}
+
+async function handleDeleteSavedPlace(request, response) {
+  const user = await getAuthenticatedUser(request);
+  if (!user) return sendJson(request, response, 401, { message: "로그인이 필요합니다." });
+  const kakaoPlaceId = String(request.params.kakaoPlaceId || "").trim();
+  const { data: place } = await supabase.from("places").select("id").eq("kakao_place_id", kakaoPlaceId).maybeSingle();
+  if (!place) return sendJson(request, response, 200, { saved: false, kakaoPlaceId });
+  const { error } = await supabase.from("saved_places").delete().eq("user_id", user.id).eq("place_id", place.id);
+  if (error) return sendJson(request, response, 502, { message: "관심 장소 저장을 해제하지 못했습니다.", code: error.code });
+  return sendJson(request, response, 200, { saved: false, kakaoPlaceId });
+}
+
 async function handleReviewAnalysis(request, response) {
   const user = await getAuthenticatedUser(request);
   if (!user) return sendJson(request, response, 401, { message: "로그인이 필요합니다." });
@@ -274,7 +318,7 @@ const app = express();
 app.disable("x-powered-by");
 app.use(cors({
   credentials: true,
-  methods: ["GET", "POST", "PATCH", "OPTIONS"],
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
   origin(origin, callback) {
     callback(null, isAllowedOrigin(origin));
   },
@@ -308,6 +352,9 @@ app.get("/api/health", async (request, response) => {
 
 app.get("/api/auth/me", handleMe);
 app.patch("/api/users/me", handleProfileUpdate);
+app.get("/api/saved-places", handleSavedPlaces);
+app.post("/api/saved-places", handleSavePlace);
+app.delete("/api/saved-places/:kakaoPlaceId", handleDeleteSavedPlace);
 app.post("/api/reviews/analyze", handleReviewAnalysis);
 app.get("/api/kakao/local", (request, response) => {
   const url = new URL(request.originalUrl, `${request.protocol}://${request.get("host")}`);
