@@ -9,8 +9,6 @@ interface DetailOverlayProps {
   userPoints?: number;
 }
 
-
-
 export default function DetailOverlay({
   selectedDropId,
   setSelectedDropId,
@@ -27,10 +25,26 @@ export default function DetailOverlay({
     downOdds: '2.00x',
     upPrice: 0.5,
     downPrice: 0.5,
+    totalUpStaked: 0,
+    totalDownStaked: 0,
+    totalPot: 0,
   };
 
   const expectedUpPayout = Math.round(selectedStake * parseFloat(poly.upOdds));
   const expectedDownPayout = Math.round(selectedStake * parseFloat(poly.downOdds));
+
+  // Compute Live Consensus Price based on UP/DOWN staked ratio
+  const basePriceNum = currentSelectedDrop?.consensus || 100000;
+  const sentimentOffset = (poly.upPrice - 0.5) * 0.3; // -15% ~ +15%
+  const liveConsensusPrice = Math.round(basePriceNum * (1 + sentimentOffset));
+  const sentimentChangePct = (sentimentOffset * 100).toFixed(1);
+
+  // Real DB price histories (No fake mock data)
+  const histories = currentSelectedDrop?.priceHistories || [];
+
+  const maxPrice = histories.length > 0 ? Math.max(...histories.map((h) => h.price), liveConsensusPrice) : liveConsensusPrice;
+  const minPrice = histories.length > 0 ? Math.min(...histories.map((h) => h.price), liveConsensusPrice) : liveConsensusPrice;
+  const priceRange = maxPrice - minPrice || 1;
 
   return (
     <div className={`detail-overlay ${selectedDropId ? 'active' : ''}`} id="detail-panel">
@@ -70,6 +84,77 @@ export default function DetailOverlay({
                   'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500&q=80';
               }}
             />
+          </div>
+
+          {/* 📈 3-Day Price History Trend Section */}
+          <div style={{
+            background: '#111111',
+            border: '1px solid #333333',
+            padding: '14px',
+            marginBottom: '16px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <span style={{ fontSize: '0.75rem', color: '#aaaaaa', fontFamily: 'monospace', textTransform: 'lowercase' }}>
+                📈 3-day price history (일별 시세 추이)
+              </span>
+              <span style={{ fontSize: '0.7rem', color: '#d4ff00', fontFamily: 'monospace' }}>
+                daily interval
+              </span>
+            </div>
+
+            {/* Price Trend Bar / Line Visualization */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', height: '70px', padding: '8px 4px 0 4px', borderBottom: '1px solid #222222' }}>
+              {histories.map((h, idx) => {
+                const heightPct = Math.max(20, Math.min(100, ((h.price - minPrice) / priceRange) * 80 + 20));
+                return (
+                  <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                    <span style={{ fontSize: '0.65rem', color: '#888888', marginBottom: '4px', fontFamily: 'monospace' }}>
+                      {(h.price / 10000).toFixed(1)}만
+                    </span>
+                    <div style={{
+                      width: '100%',
+                      height: `${heightPct}%`,
+                      background: idx === histories.length - 1 ? '#d4ff00' : '#444444',
+                      transition: 'height 0.3s ease'
+                    }} />
+                    <span style={{ fontSize: '0.65rem', color: '#aaaaaa', marginTop: '4px', fontFamily: 'monospace' }}>
+                      {h.dateLabel}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 🔮 Polymarket Live Consensus Price Highlight */}
+          <div style={{
+            background: '#161616',
+            border: '1px solid #d4ff00',
+            padding: '12px 14px',
+            marginBottom: '16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div>
+              <div style={{ fontSize: '0.7rem', color: '#aaaaaa', fontFamily: 'monospace' }}>
+                🔮 LIVE CONSENSUS PRICE (실시간 합의 예상가)
+              </div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#ffffff', fontFamily: 'monospace', marginTop: '2px' }}>
+                {liveConsensusPrice.toLocaleString()} KRW
+              </div>
+            </div>
+            <span style={{
+              background: parseFloat(sentimentChangePct) >= 0 ? 'rgba(212, 255, 0, 0.15)' : 'rgba(255, 51, 51, 0.15)',
+              border: `1px solid ${parseFloat(sentimentChangePct) >= 0 ? '#d4ff00' : '#ff3333'}`,
+              color: parseFloat(sentimentChangePct) >= 0 ? '#d4ff00' : '#ff3333',
+              padding: '4px 8px',
+              fontSize: '0.75rem',
+              fontWeight: 'bold',
+              fontFamily: 'monospace'
+            }}>
+              {parseFloat(sentimentChangePct) >= 0 ? '+' : ''}{sentimentChangePct}% {parseFloat(sentimentChangePct) >= 0 ? '▲' : '▼'}
+            </span>
           </div>
 
           <div className="detail-pricing">
@@ -113,7 +198,7 @@ export default function DetailOverlay({
             background: '#1a1a1a',
             border: '2px solid #d4ff00',
             padding: '16px',
-            marginTop: '20px',
+            marginTop: '10px',
             marginBottom: '20px',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>

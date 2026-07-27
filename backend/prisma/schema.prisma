@@ -35,7 +35,7 @@ model Drop {
   volume          Int?       // Added: Transaction volume ranking indicator
   totalUpStaked   Int        @default(0) // Polymarket: Total points staked on UP
   totalDownStaked Int        @default(0) // Polymarket: Total points staked on DOWN
-  votes           Vote[]
+  votes           Vote[] 
   createdAt       DateTime   @default(now())
 }
 

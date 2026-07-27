@@ -250,6 +250,13 @@ async function scrapeKreamSneakers() {
 
         console.log(`[crawler] [SYNC] Title: ${item.title} | Brand: ${brand} | Cat: ${category} | Price: ₩${marketPrice} | Img: ${item.imageUrl ? 'YES' : 'NO'}`);
 
+        // Record price history for the current crawl timestamp only
+        const now = new Date();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayLabel = `${month}/${day}`;
+        const basePrice = marketPrice || retailPrice;
+
         await prisma.drop.create({
           data: {
             kreamProductId: item.productId,
@@ -261,6 +268,11 @@ async function scrapeKreamSneakers() {
             marketPrice: marketPrice,
             imageUrl: item.imageUrl || null,
             status: 'RELEASED',
+            priceHistories: {
+              create: [
+                { dateLabel: todayLabel, price: basePrice }
+              ]
+            }
           },
         });
       }
