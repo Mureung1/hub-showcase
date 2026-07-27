@@ -11,9 +11,9 @@ function RoutineToday() {
   const { data, loading, error, refetch } = useRoutineToday()
   const [actionError, setActionError] = useState(null)
 
-  const postSessionAction = async (action) => {
+  const postSessionAction = async (action, body = {}) => {
     setActionError(null)
-    const result = await postJson(`/api/sessions/${data.routineDayId}/${action}`)
+    const result = await postJson(`/api/sessions/${data.routineDayId}/${action}`, body)
     if (!result.ok) {
       setActionError(result.error)
       return
@@ -21,7 +21,7 @@ function RoutineToday() {
     refetch()
   }
 
-  const handleComplete = () => postSessionAction('complete')
+  const handleComplete = (logs) => postSessionAction('complete', { logs })
   const handleSkip = () => postSessionAction('skip')
 
   if (loading) {
