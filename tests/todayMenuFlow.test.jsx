@@ -78,8 +78,13 @@ test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으�
   await screen.findByRole("heading", { name: "간장 두부 덮밥" });
   expect(screen.queryByRole("button", { name: "재료 등록하기" })).not.toBeInTheDocument();
   expect(screen.getAllByText(recipe.description)).toHaveLength(1);
+  const recipeToolbar = screen.getByRole("toolbar", { name: "레시피 작업" });
+  expect(within(recipeToolbar).getByRole("button", { name: "← 오늘의 메뉴" })).toBeInTheDocument();
+  expect(within(recipeToolbar).getByRole("button", { name: /레시피 저장/ })).toBeInTheDocument();
+  expect(within(recipeToolbar).getByRole("button", { name: "✓ 이 레시피로 요리했어요" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "레시피 소개" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "대체 재료 안내" })).toBeInTheDocument();
+  expect(screen.getByText("양파").closest(".substitution-tile")).toHaveTextContent("대파");
   expect(screen.getByRole("link", { name: /구매하기/ })).toHaveAttribute("href", expect.stringContaining("query=%EB%8C%80%ED%8C%8C"));
 
   fireEvent.click(screen.getByRole("button", { name: /레시피 저장/ }));

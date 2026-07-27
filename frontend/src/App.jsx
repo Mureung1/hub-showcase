@@ -664,8 +664,12 @@ function RecipeWorkspace({ menu, isLoading, onBack, isSaved, onToggleSaved, onCo
   const description = menu.description ?? menu.nutritionSummary;
 
   return <section className="recipe-detail-screen">
+    <div className="recipe-detail-actions" role="toolbar" aria-label="레시피 작업">
+      <button className="back-to-recipes" type="button" onClick={onBack}>← 오늘의 메뉴</button>
+      <button className="save-detail-recipe" type="button" aria-pressed={isSaved} onClick={onToggleSaved}>{isSaved ? "♥ 저장됨" : "♡ 레시피 저장"}</button>
+      <button className="consume-recipe-button" type="button" onClick={onConsume} disabled={isConsumed}>{isConsumed ? "✓ 재료 차감 완료" : "✓ 이 레시피로 요리했어요"}</button>
+    </div>
     <header className="recipe-detail-hero">
-      <div className="recipe-detail-actions"><button className="back-to-recipes" type="button" onClick={onBack}>← 오늘의 메뉴</button><button className="save-detail-recipe" type="button" aria-pressed={isSaved} onClick={onToggleSaved}>{isSaved ? "♥ 저장됨" : "♡ 레시피 저장"}</button><button className="consume-recipe-button" type="button" onClick={onConsume} disabled={isConsumed}>{isConsumed ? "✓ 재료 차감 완료" : "✓ 이 레시피로 요리했어요"}</button></div>
       <p className="eyebrow">TODAY&apos;S RECIPE</p>
       <h1>{menu.name ?? "메뉴 상세"}</h1>
       <div className="recipe-hero-chips"><span>{cookingMethodLabels[menu.cookingMethod]}</span><span>{menu.cookingTime}분</span><span>{recipeDifficultyLabels[menu.difficulty]}</span><span>{menu.servings}인분</span>{generatedMissingNames.size > 0 && <span className="missing">부족 재료 {generatedMissingNames.size}개</span>}</div>
@@ -678,7 +682,7 @@ function RecipeWorkspace({ menu, isLoading, onBack, isSaved, onToggleSaved, onCo
       </RecipeDetailSection>
 
       <RecipeDetailSection eyebrow="Ingredient alternatives" title="대체 재료 안내" tone="substitution">
-        {substitutions.length ? <div className="substitute-list">{substitutions.map((substitution) => <article key={substitution.ingredient}><div><strong>{substitution.ingredient}</strong><span>{substitution.note}</span></div><div className="chip-list">{substitution.alternatives.map((alternative) => <em key={alternative}>{alternative}</em>)}</div></article>)}</div> : <p className="section-empty-copy">이 레시피는 대체 재료 안내가 필요하지 않아요.</p>}
+        {substitutions.length ? <div className="substitute-list">{substitutions.map((substitution) => <article className="substitution-tile" key={substitution.ingredient}><div className="substitution-tile-heading"><span>대체 대상</span><strong>{substitution.ingredient}</strong></div><p>{substitution.note}</p><div className="substitution-options"><span>대체 가능</span><div className="chip-list">{substitution.alternatives.map((alternative) => <em key={alternative}>{alternative}</em>)}</div></div></article>)}</div> : <p className="section-empty-copy">이 레시피는 대체 재료 안내가 필요하지 않아요.</p>}
       </RecipeDetailSection>
 
       <RecipeDetailSection eyebrow="Ingredients" title="재료">
