@@ -411,7 +411,7 @@ function MentorProfileEditPage() {
             </div>
           </section>
 
-          <section className="card mentor-signup-section mentor-profile-section" aria-labelledby="mentor-profile-title">
+          <section className="card mentor-signup-section mentor-signup-section-accent" aria-labelledby="mentor-profile-title">
             <div className="mentor-section-heading">
               <div className="mentor-section-title-row">
                 <span className="mentor-section-number" aria-hidden="true">02</span>
