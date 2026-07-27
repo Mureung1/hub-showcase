@@ -124,8 +124,8 @@ describe("App", () => {
 
     expect(screen.queryByLabelText("상권 선택")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "분석 결과 닫기" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "분석 조건 열기" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "분석 결과 열기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "분석 설정 패널 열기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "분석 결과 패널 열기" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Docs" })).toBeInTheDocument();
   });
 
@@ -156,14 +156,14 @@ describe("App", () => {
     expect(document.querySelector(".selected-location")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "분석 결과 닫기" }));
-    const inspectorOpen = screen.getByRole("button", { name: "분석 결과 열기" });
+    const inspectorOpen = screen.getByRole("button", { name: "분석 결과 패널 열기" });
     expect(inspectorOpen).toHaveFocus();
 
     fireEvent.click(inspectorOpen);
     expect(screen.getByText("카페 · 상권 분석")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "분석 조건 닫기" }));
-    const filtersOpen = screen.getByRole("button", { name: "분석 조건 열기" });
+    const filtersOpen = screen.getByRole("button", { name: "분석 설정 패널 열기" });
     expect(filtersOpen).toHaveFocus();
     fireEvent.click(filtersOpen);
     expect(screen.getByLabelText("상권 선택")).toBeInTheDocument();

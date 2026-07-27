@@ -86,6 +86,8 @@ type(scope): summary
 why:
 - 왜 이 변경이 필요한지
 
+docs-impact: none 또는 문서/Issue 1개
+
 verify:
 - 어떤 검증을 했는지
 ```
@@ -122,9 +124,42 @@ fix(anonymization): exclude frames with large person bbox
 why:
 - prevent heavily occluded frames from reducing reconstruction quality
 
+docs-impact: docs/features/person-anonymization-preprocessing.md
+
 verify:
 - confirmed large bounding boxes are written to the exclusion list
 ```
+
+### 문서 영향 규칙
+
+모든 커밋은 `why:`를 유지한다. `docs-impact:`에는 `none` 또는 문서, GitHub Issue, 작업 기록 하나만 적는다.
+
+다음 변경은 문서 갱신을 요구한다.
+
+```text
+API 계약
+DB 스키마와 데이터 파이프라인
+사용자 흐름과 주요 기능
+배포와 운영
+보안
+아키텍처 결정
+```
+
+다음 변경은 `docs-impact: none`을 사용할 수 있다.
+
+```text
+CSS와 시각 조정
+내부 리팩터링
+문구 변경
+테스트
+일반 버그 수정
+의존성 변경
+사용자 계약에 영향을 주지 않는 코드 변경
+```
+
+변경의 실제 영향이 type보다 우선한다. 예를 들어 `fix` 커밋이라도 API 계약이나 사용자 흐름을 바꾸면 문서 영향이 있다.
+
+문서가 필요하면 새 Markdown을 훅 통과 목적으로 만들지 않는다. 기존 README, 설계 문서, GitHub Issue 또는 작업 기록 중 하나를 갱신하고, 같은 기능이나 Issue에서는 하나의 문서 대상만 계속 사용한다. `docs-impact:`는 하나의 대상만 허용한다.
 
 ## 6. Hook으로 강제할 수 있는 것
 
@@ -136,6 +171,7 @@ staged 변경 영역 개수 상한
 커밋 메시지 type 형식
 summary 길이
 why 섹션 존재
+docs-impact 섹션 존재
 verify 섹션 존재
 ```
 
@@ -173,7 +209,7 @@ commit-msg hook:
 ```text
 1. pre-commit hook은 staged file이 10개를 넘으면 차단한다.
 2. pre-commit hook은 staged 변경 영역이 3개를 넘으면 차단한다.
-3. commit-msg hook은 why/verify 섹션을 요구한다.
+3. commit-msg hook은 why/docs-impact/verify 섹션을 요구한다.
 4. 커밋 메시지 scope는 작업 대상 기능과 맞춰 적는다.
 5. 체크리스트 항목 1개 또는 밀접한 하위 항목 묶음만 한 커밋에 담는다.
 ```

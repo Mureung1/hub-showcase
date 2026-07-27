@@ -1,3 +1,6 @@
+// liquidglass Repo
+import LiquidGlass from "liquid-glass-react";
+
 import {
   BarChart3,
   Building2,
@@ -13,6 +16,7 @@ import type { ReactNode, RefObject } from "react";
 import type { MapRef } from "react-map-gl/maplibre";
 
 import type { LayerMode, MapMode, Market } from "../market/types";
+
 
 type MarketMapPanelProps = {
   toolbarStart: ReactNode;
@@ -40,6 +44,52 @@ type MarketMapPanelProps = {
   onFiltersOpen: () => void;
   onInspectorOpen: () => void;
 };
+
+type SidePanelTriggerProps = {
+  side: "left" | "right";
+  buttonRef: RefObject<HTMLButtonElement | null>;
+  onOpen: () => void;
+  icon: ReactNode;
+  label: ReactNode;
+  ariaLabel: string;
+  title: string;
+};
+
+function SidePanelTrigger({
+  side,
+  buttonRef,
+  onOpen,
+  icon,
+  label,
+  ariaLabel,
+  title,
+}: SidePanelTriggerProps) {
+  return (
+    <LiquidGlass
+      mode="prominent"
+      displacementScale={30}
+      blurAmount={0.035}
+      saturation={145}
+      aberrationIntensity={1.2}
+      elasticity={0.24}
+      cornerRadius={20}
+      padding="0"
+      onClick={onOpen}
+      style={{
+        position: "absolute",
+        zIndex: 20,
+        top: "50%",
+        left: side === "left" ? "33px" : "calc(100% - 33px)",
+        display: "block",
+      }}
+    >
+      <button ref={buttonRef} type="button" className="side-panel-trigger" aria-label={ariaLabel} title={title}>
+        {icon}
+        <span>{label}</span>
+      </button>
+    </LiquidGlass>
+  );
+}
 
 export function MarketMapPanel({
   toolbarStart,
@@ -72,26 +122,6 @@ export function MarketMapPanel({
       <div className="map-toolbar">
         {toolbarStart}
         <div className="map-toolbar-actions">
-          {!filtersOpen && (
-            <button
-              ref={filterOpenButtonRef}
-              type="button"
-              className="glass-button panel-open-button"
-              onClick={onFiltersOpen}
-            >
-              <PanelLeftOpen size={16} /> 분석 조건 열기
-            </button>
-          )}
-          {!inspectorOpen && (
-            <button
-              ref={inspectorOpenButtonRef}
-              type="button"
-              className="glass-button panel-open-button"
-              onClick={onInspectorOpen}
-            >
-              <PanelRightOpen size={16} /> 분석 결과 열기
-            </button>
-          )}
           <div className="map-mode-switch" role="group" aria-label="지도 표현 방식">
             <button
               type="button"
@@ -127,6 +157,29 @@ export function MarketMapPanel({
         </div>
       </div>
       {mapBody}
+      {!filtersOpen && (
+        <SidePanelTrigger
+          side="left"
+          buttonRef={filterOpenButtonRef}
+          onOpen={onFiltersOpen}
+          icon={<PanelLeftOpen size={19} />}
+          label={<><span>분석</span><br /><span>설정</span></>}
+          ariaLabel="분석 설정 패널 열기"
+          title="분석 설정 열기"
+        />
+      )}
+
+      {!inspectorOpen && (
+        <SidePanelTrigger
+          side="right"
+          buttonRef={inspectorOpenButtonRef}
+          onOpen={onInspectorOpen}
+          icon={<PanelRightOpen size={19} />}
+          label={<><span>분석</span><br /><span>결과</span></>}
+          ariaLabel="분석 결과 패널 열기"
+          title="분석 결과 열기"
+        />
+      )}
       <div className="map-legend">
         <p>
           {layer === "density"
