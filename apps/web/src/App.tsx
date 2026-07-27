@@ -157,6 +157,8 @@ export default function WeatherPilotV3() {
 
   // 편집된 할인율이 반영된 프로모션 문구 (미리보기·쿠폰 라벨·발송에 사용). (QW-4)
   const promoValue = applyDiscountPct(s.promo, discountPct);
+  // SNS 캡션 — 발송(MOCK 응답 채우기)과 발송완료 화면(복사 폴백)이 같은 값을 쓰도록 한 번만 만든다.
+  const snsCaption = buildSnsCaption({ copy, promo: { type: "할인", value: promoValue } });
 
   function pickScenario(k: ScenarioKey) {
     setScenarioKey(k);
@@ -191,7 +193,7 @@ export default function WeatherPilotV3() {
         channels,
         editedPromo: { type: "할인", value: promoValue },
       });
-      const result = await sendCampaign(sendId, { channels, assumeNight: nightMode });
+      const result = await sendCampaign(sendId, { channels, assumeNight: nightMode }, snsCaption);
       setSentCampaignId(sendId);
       setSendResult(result);
       setView("sent");
@@ -276,7 +278,7 @@ export default function WeatherPilotV3() {
         ) : sendResult ? (
           <SentView
             s={s} channels={channels} sendResult={sendResult} campaignId={sentCampaignId}
-            snsCaption={buildSnsCaption({ copy, promo: { type: "할인", value: promoValue } })}
+            snsCaption={snsCaption}
             uat={uat} elapsedSec={elapsedSec}
             onBack={() => setView("dashboard")}
           />
