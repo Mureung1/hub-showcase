@@ -77,7 +77,7 @@ export type Profile = {
   handle: string | null
   bio: string | null
   avatarColor: string | null
-  avatarEyes: 1 | 2 | null
+  avatarEyes: 1 | 2 | 3 | null
   stats: ProfileStats
 }
 
@@ -108,12 +108,18 @@ export type DodoState = {
 
 export type EquippedSlotItem = { itemId: string; iconKey: string; color: string | null }
 
+// 친구 마이홈 방문에서도 그대로 쓰이는 공용 모양 — bodyColor/eyeCount는 방문자도 실제 모습을 봐야 해서 포함한다.
 export type DodoAppearance = {
+  bodyColor: string
+  eyeCount: 1 | 2 | 3
   hat: EquippedSlotItem | null
   glasses: EquippedSlotItem | null
   outfit: EquippedSlotItem | null
   accessory: EquippedSlotItem | null
 }
+
+// 본인 전용 — "온보딩을 끝냈는지"는 남에게 보일 필요 없는 정보라 DodoAppearance엔 없고 여기만 있다.
+export type SelfDodoAppearance = DodoAppearance & { onboarded: boolean }
 
 // 친구 마이홈 방문 화면(읽기 전용)에서 실제로 배치된 아이템 하나 — 소유 인스턴스 id는 방문자에게 필요 없어서 뺐다.
 export type FriendRoomLayoutEntry = {

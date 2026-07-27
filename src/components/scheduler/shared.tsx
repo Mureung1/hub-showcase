@@ -1,11 +1,12 @@
 import type { CSSProperties } from 'react'
 import type { GroupTone } from './types'
 
-export function PixelAvatar({ color, eyes }: { color: string; eyes: 1 | 2 }) {
+export function PixelAvatar({ color, eyes }: { color: string; eyes: 1 | 2 | 3 }) {
   return (
     <span className="scheduler-avatar" style={{ '--avatar': color } as CSSProperties} aria-hidden="true">
       <i className={eyes === 1 ? 'one-eye' : ''} />
-      {eyes === 2 && <i />}
+      {eyes !== 1 && <i />}
+      {eyes === 3 && <i className="third-eye" />}
     </span>
   )
 }

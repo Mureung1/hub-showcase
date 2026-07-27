@@ -7,7 +7,7 @@ import type { DodoManager } from './useDodoManager'
 import type { HomeManager } from './useHomeManager'
 import type { ProfileManager } from './useProfileManager'
 import { FOOD_ICON_KEYS, type RoomShopManager } from './useRoomShopManager'
-import type { FriendPost, HomeVisitActionKind } from './types'
+import type { DodoAppearance, FriendPost, HomeVisitActionKind } from './types'
 
 export const SHOP_ITEM_ICON_CLASS: Record<string, string> = {
   'game-console': 'shop-item-console',
@@ -71,6 +71,47 @@ const WALL_BAND = { min: 5, max: 45 }
 
 export function itemIconStyle(color: string | null): CSSProperties | undefined {
   return color ? ({ '--item-color': color } as CSSProperties) : undefined
+}
+
+// 마이홈(본인)·친구 마이홈 방문·온보딩 미리보기 세 곳에서 그대로 재사용하는 두두 마스코트 렌더링.
+// appearance가 null이면(온보딩 미리보기처럼 아직 장착 아이템이 없는 경우) 장착 슬롯은 그냥 안 보여준다.
+export function renderDodoMascot(bodyColor: string, eyeCount: 1 | 2 | 3, appearance: DodoAppearance | null, label: string) {
+  const equippedSlots = appearance ? [appearance.hat, appearance.glasses, appearance.outfit, appearance.accessory] : []
+
+  return (
+    <div className="home-dodo" style={{ '--dodo-body-color': bodyColor } as CSSProperties} aria-label={label}>
+      <div className="home-dodo-body">
+        {eyeCount === 1 ? (
+          <i className="home-dodo-eye one-eye" />
+        ) : (
+          <>
+            <i className="home-dodo-eye left" />
+            <i className="home-dodo-eye right" />
+            {eyeCount === 3 && <i className="home-dodo-eye third" />}
+          </>
+        )}
+        <span className="home-dodo-cheek left" />
+        <span className="home-dodo-cheek right" />
+        <span className="home-dodo-mouth" />
+      </div>
+      {equippedSlots.map((slot) => {
+        if (!slot || slot.iconKey !== 'headphones') return null
+        // 이어컵(타원)이 밴드보다 훨씬 아래로 늘어지므로, 밴드에 clip-path를 걸면 같은 요소의
+        // ::before/::after인 이어컵까지 그 clip-path 영역에 잘려버린다 — 그래서 셋을 별도 엘리먼트로 나눈다.
+        return (
+          <div key={slot.itemId} className="home-dodo-headphones" style={itemIconStyle(slot.color)} aria-hidden="true">
+            <i className="home-dodo-headphones-band" />
+            <i className="home-dodo-headphones-strut left" />
+            <i className="home-dodo-headphones-strut right" />
+            <i className="home-dodo-headphones-cup left" />
+            <i className="home-dodo-headphones-cup right" />
+          </div>
+        )
+      })}
+      <i className="home-dodo-leg left" />
+      <i className="home-dodo-leg right" />
+    </div>
+  )
 }
 
 const VISIT_ACTION_LABEL: Record<HomeVisitActionKind, string> = {
@@ -174,31 +215,12 @@ export function MyHomeView({ message, onInteract, homeManager, dodoManager, shop
         <div className="myhome-rug" aria-hidden="true" />
         <div className="myhome-message" role="status">{message}</div>
 
-        <div className="home-dodo" aria-label="마이홈에 있는 두두">
-          <div className="home-dodo-body">
-            <i className="home-dodo-eye left" />
-            <i className="home-dodo-eye right" />
-            <span className="home-dodo-cheek left" />
-            <span className="home-dodo-cheek right" />
-            <span className="home-dodo-mouth" />
-          </div>
-          {dodoManager.appearance && Object.values(dodoManager.appearance).map((slot) => {
-            if (!slot || slot.iconKey !== 'headphones') return null
-            // 이어컵(타원)이 밴드보다 훨씬 아래로 늘어지므로, 밴드에 clip-path를 걸면 같은 요소의
-            // ::before/::after인 이어컵까지 그 clip-path 영역에 잘려버린다 — 그래서 셋을 별도 엘리먼트로 나눈다.
-            return (
-              <div key={slot.itemId} className="home-dodo-headphones" style={itemIconStyle(slot.color)} aria-hidden="true">
-                <i className="home-dodo-headphones-band" />
-                <i className="home-dodo-headphones-strut left" />
-                <i className="home-dodo-headphones-strut right" />
-                <i className="home-dodo-headphones-cup left" />
-                <i className="home-dodo-headphones-cup right" />
-              </div>
-            )
-          })}
-          <i className="home-dodo-leg left" />
-          <i className="home-dodo-leg right" />
-        </div>
+        {renderDodoMascot(
+          dodoManager.appearance?.bodyColor ?? '#f2a58d',
+          dodoManager.appearance?.eyeCount ?? 2,
+          dodoManager.appearance,
+          '마이홈에 있는 두두',
+        )}
 
         {shopManager.layout.map((entry) => {
           const item = shopManager.inventory.find((candidate) => candidate.id === entry.inventoryId)
@@ -402,7 +424,7 @@ function InventorySection({
       {visibleInventory.map((item) => {
         const isPlaced = layout.some((entry) => entry.inventoryId === item.id)
         const isEquipped = item.equippable && appearance
-          ? Object.values(appearance).some((slot) => slot?.itemId === item.itemId)
+          ? [appearance.hat, appearance.glasses, appearance.outfit, appearance.accessory].some((slot) => slot?.itemId === item.itemId)
           : false
         return (
           <article key={item.id} className="room-shop-item">
@@ -595,16 +617,17 @@ type ProfileViewProps = {
   manager: ProfileManager
   onOpenGroupManager: () => void
   onOpenDiary: () => void
+  onOpenDodoCustomize: () => void
 }
 
-export function ProfileView({ manager, onOpenGroupManager, onOpenDiary }: ProfileViewProps) {
+export function ProfileView({ manager, onOpenGroupManager, onOpenDiary, onOpenDodoCustomize }: ProfileViewProps) {
   const { profile, loading, notice, updateProfile } = manager
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState('')
   const [draftHandle, setDraftHandle] = useState('')
   const [draftBio, setDraftBio] = useState('')
   const [draftColor, setDraftColor] = useState<string | null>(null)
-  const [draftEyes, setDraftEyes] = useState<1 | 2 | null>(null)
+  const [draftEyes, setDraftEyes] = useState<1 | 2 | 3 | null>(null)
 
   const startEditing = () => {
     if (!profile) return
@@ -639,9 +662,13 @@ export function ProfileView({ manager, onOpenGroupManager, onOpenDiary }: Profil
     )
   }
 
-  const avatarProps = profile.avatarColor && profile.avatarEyes
-    ? { color: profile.avatarColor, eyes: profile.avatarEyes }
-    : getAvatarProps(profile.id)
+  // 색상만 고르고 눈 개수는 아직 안 고른(또는 그 반대) 경우에도 실제로 고른 쪽은 그대로 반영해야 하므로,
+  // 색상/눈 개수를 하나로 묶어서 다같이 있어야만 쓰는 게 아니라 각각 따로 해시 기본값으로 대체한다.
+  const avatarFallback = getAvatarProps(profile.id)
+  const avatarProps = {
+    color: profile.avatarColor ?? avatarFallback.color,
+    eyes: profile.avatarEyes ?? avatarFallback.eyes,
+  }
 
   return (
     <section className="profile-view" aria-labelledby="profile-title">
@@ -680,7 +707,7 @@ export function ProfileView({ manager, onOpenGroupManager, onOpenDiary }: Profil
             ))}
           </div>
           <div className="avatar-eyes-picker" role="radiogroup" aria-label="아바타 눈 모양">
-            {([1, 2] as const).map((eyes) => (
+            {([1, 2, 3] as const).map((eyes) => (
               <button
                 type="button"
                 key={eyes}
@@ -718,6 +745,7 @@ export function ProfileView({ manager, onOpenGroupManager, onOpenDiary }: Profil
 
       <div className="profile-menu">
         <button type="button" onClick={onOpenDiary}><i className="profile-record" /><span><strong>나의 기록</strong><small>완료한 일정과 두두의 일기</small></span><b>›</b></button>
+        <button type="button" onClick={onOpenDodoCustomize}><i className="profile-dodo" /><span><strong>내 두두 커스텀</strong><small>두두 몸 색상·눈 개수 바꾸기</small></span><b>›</b></button>
         <button type="button"><i className="profile-lock" /><span><strong>공개 범위</strong><small>친구별 일정 공개 설정</small></span><b>›</b></button>
         <button type="button"><i className="profile-bell" /><span><strong>알림 설정</strong><small>일정과 친구 반응 알림</small></span><b>›</b></button>
         <button type="button" onClick={onOpenGroupManager}><i className="profile-group" /><span><strong>친구 및 그룹 관리</strong><small>절친·스터디·가족 등 그룹 만들기</small></span><b>›</b></button>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import * as friendsApi from './friendsApi'
-import { ROOM_FIXTURE_ICON_KEYS, SHOP_ITEM_ICON_CLASS, itemIconStyle, renderRoomFixture } from './StaticViews'
+import { ROOM_FIXTURE_ICON_KEYS, SHOP_ITEM_ICON_CLASS, itemIconStyle, renderDodoMascot, renderRoomFixture } from './StaticViews'
 import type { FriendHomeState, HomeVisitActionKind } from './types'
 
 type FriendHomeViewProps = {
@@ -65,29 +65,12 @@ export function FriendHomeView({ friendId, friendName, onBack }: FriendHomeViewP
         <div className="myhome-rug" aria-hidden="true" />
         <div className="myhome-message" role="status">{notice}</div>
 
-        <div className="home-dodo" aria-label={`${friendName}의 두두`}>
-          <div className="home-dodo-body">
-            <i className="home-dodo-eye left" />
-            <i className="home-dodo-eye right" />
-            <span className="home-dodo-cheek left" />
-            <span className="home-dodo-cheek right" />
-            <span className="home-dodo-mouth" />
-          </div>
-          {home?.appearance && Object.values(home.appearance).map((slot) => {
-            if (!slot || slot.iconKey !== 'headphones') return null
-            return (
-              <div key={slot.itemId} className="home-dodo-headphones" style={itemIconStyle(slot.color)} aria-hidden="true">
-                <i className="home-dodo-headphones-band" />
-                <i className="home-dodo-headphones-strut left" />
-                <i className="home-dodo-headphones-strut right" />
-                <i className="home-dodo-headphones-cup left" />
-                <i className="home-dodo-headphones-cup right" />
-              </div>
-            )
-          })}
-          <i className="home-dodo-leg left" />
-          <i className="home-dodo-leg right" />
-        </div>
+        {renderDodoMascot(
+          home?.appearance.bodyColor ?? '#f2a58d',
+          home?.appearance.eyeCount ?? 2,
+          home?.appearance ?? null,
+          `${friendName}의 두두`,
+        )}
 
         {home?.layout.map((entry, index) => (
           <div

@@ -400,6 +400,9 @@ model DodoAppearance {
   accessoryItemId String?
   accessoryItem   RoomItem? @relation("DodoAccessory", fields: [accessoryItemId], references: [id])
   accessoryColor  String?
+  // 몸 색상/눈 개수 온보딩(1차: 색상+눈 개수만) — null이면 아직 온보딩 화면을 완료하지 않은 유저.
+  eyeCount        Int       @default(2)
+  onboardedAt     DateTime?
   updatedAt       DateTime  @updatedAt
 }
 

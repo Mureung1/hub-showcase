@@ -96,6 +96,21 @@ async function main() {
     create: { userId: friendUser.id, friendId: user.id },
   })
 
+  // DodoAppearance는 GET /api/dodo/appearance를 처음 호출할 때(또는 누군가 마이홈을 방문할 때)
+  // 지연 생성되기 때문에, 데모 계정들은 그 시점이 언제일지 보장이 안 된다.
+  // 데모 계정은 항상 온보딩을 이미 끝낸 상태로 보여야 하므로 여기서 명시적으로 만들어둔다.
+  const DEMO_DODO_APPEARANCE = { bodyColor: '#f2a58d', eyeShape: 'round', eyeColor: '#344b46', eyeCount: 2 as const }
+  await prisma.dodoAppearance.upsert({
+    where: { userId: user.id },
+    update: {},
+    create: { userId: user.id, ...DEMO_DODO_APPEARANCE, onboardedAt: new Date() },
+  })
+  await prisma.dodoAppearance.upsert({
+    where: { userId: friendUser.id },
+    update: {},
+    create: { userId: friendUser.id, ...DEMO_DODO_APPEARANCE, onboardedAt: new Date() },
+  })
+
   const demoGroup = await prisma.shareGroup.upsert({
     where: { ownerId_name: { ownerId: user.id, name: '절친 테스트' } },
     update: {},
