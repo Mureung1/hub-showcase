@@ -59,6 +59,8 @@
 
 **완료 (2026-07-23)**. 코드 준비(커밋 `868e06c`: API base URL 환경변수화, CORS 환경변수화, 서버 시작 시 자동 시드)는 별도 세션에서 먼저 끝냈고, 이번엔 사용자가 직접 Render/Vercel 계정 생성부터 실제 배포까지 진행 — Render(백엔드) 배포 → Vercel(프론트) 배포 시 `VITE_API_BASE_URL`에 Render URL 연결 → Render의 `ALLOWED_ORIGIN`에 Vercel URL 추가, 순서로 진행. 첫 시도에서 브라우저 콘솔에 CORS 에러가 떴는데, 이는 `ALLOWED_ORIGIN` 저장 직후 Render가 재배포되기 전 타이밍이었던 것으로 확인 — 잠시 후 재확인하니 실제 preflight 응답에 올바른 `Access-Control-Allow-Origin` 헤더가 붙어 있었고 갭 분석/로그인/북마크 전부 정상 동작.
 
+**추가 수정 (2026-07-27)**: `/bookmarks`에 직접 접근(새로고침/북마크/주소창 입력)하면 Vercel이 `404 NOT_FOUND`를 반환하는 걸 발견 — `vercel.json`이 아예 없어서 SPA(React Router 클라이언트 라우팅) 경로에 대한 rewrite 규칙이 없었음. 지금까지 프로덕션 테스트가 전부 홈에서 클릭으로만 이동(클라이언트 사이드 네비게이션, 서버에 새 요청 안 감)했던 탓에 이 구멍이 안 드러났던 것 — `/filter`/`/spec`/`/result`/`/login` 등 다른 라우트도 직접 접근하면 동일하게 404였을 가능성이 높음(#25 작업 중 북마크 페이지를 새로고침하며 처음 발견). `vercel.json`(신규, 커밋 `939ac72`)에 `{ rewrites: [{ source: "/(.*)", destination: "/index.html" }] }` 추가해서 모든 경로를 `index.html`로 rewrite, React Router가 클라이언트에서 라우팅하도록 함.
+
 ---
 
 ## #18 — 반응형 레이아웃 & 모달 접근성 폴리싱 [P2, 시간 남으면]
