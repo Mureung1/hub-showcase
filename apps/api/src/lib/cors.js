@@ -41,7 +41,7 @@ export function createCorsOptions(allowedOrigins = []) {
     origin(origin, callback) {
       callback(null, !origin || allowed.has(origin))
     },
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Authorization', 'Content-Type'],
     maxAge: 86_400,
   }

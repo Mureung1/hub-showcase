@@ -12,6 +12,7 @@ import {
 } from '@teamflow/shared'
 
 import { createAuthenticationMiddleware } from '../lib/auth.js'
+import { TeamFlowApiError } from './aiErrors.js'
 import {
   TeamFlowConflictError,
   TeamFlowNotFoundError,
@@ -331,6 +332,21 @@ function validateAiRun(body) {
     : { fields: { taskId: '할 일 ID를 확인해 주세요.' } }
 }
 
+function validateAiCredential(body) {
+  const value = {
+    apiKey: cleanString(body?.apiKey),
+    acknowledgedFreeTierPolicy: body?.acknowledgedFreeTierPolicy,
+  }
+  const fields = {}
+  if (!value.apiKey || value.apiKey.length > 512) {
+    fields.apiKey = 'Gemini API 키를 확인해 주세요.'
+  }
+  if (value.acknowledgedFreeTierPolicy !== true) {
+    fields.acknowledgedFreeTierPolicy = '무료 티어 데이터 처리 안내에 동의해 주세요.'
+  }
+  return Object.keys(fields).length ? { fields } : { value }
+}
+
 function validationError(response, fields) {
   response.status(400).json({
     error: { code: 'VALIDATION_ERROR', message: '입력값을 확인해 주세요.', fields },
@@ -344,6 +360,13 @@ function validId(response, key, value) {
 }
 
 function routeError(response, error) {
+  if (error instanceof TeamFlowApiError) {
+    response.status(error.status).json({
+      error: { code: error.code, message: error.message },
+      ...(error.aiRun ? { aiRun: error.aiRun } : {}),
+    })
+    return
+  }
   if (error instanceof TeamFlowValidationError) {
     validationError(response, error.fields)
     return
@@ -383,6 +406,28 @@ export function createTeamFlowRouter({ authVerifier, repositoryFactory, demoRepo
   }))
 
   router.use(createAuthenticationMiddleware({ authVerifier, repositoryFactory }))
+
+  router.get('/ai-credentials/gemini', asyncRoute(async (request, response) => {
+    response.status(200).json({
+      credential: await request.teamFlow.repository.getAiCredentialMetadata(),
+    })
+  }))
+
+  router.put('/ai-credentials/gemini', async (request, response) => {
+    const validation = validateAiCredential(request.body)
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(200).json({
+        credential: await request.teamFlow.repository.saveAiCredential(validation.value.apiKey),
+      })
+    })(request, response)
+  })
+
+  router.delete('/ai-credentials/gemini', asyncRoute(async (request, response) => {
+    response.status(200).json({
+      credential: await request.teamFlow.repository.deleteAiCredential(),
+    })
+  }))
 
   router.get('/bootstrap', asyncRoute(async (request, response) => {
     response.status(200).json(await request.teamFlow.repository.load())

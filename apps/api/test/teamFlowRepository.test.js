@@ -9,6 +9,8 @@ import {
   TeamFlowValidationError,
   createSupabaseTeamFlowRepository,
 } from '../src/teamflow/teamFlowRepository.js'
+import { TeamFlowApiError } from '../src/teamflow/aiErrors.js'
+import { AiCredentialCipherError } from '../src/lib/aiCredentialCipher.js'
 
 const userId = '11111111-1111-4111-8111-111111111111'
 const projectId = '22222222-2222-4222-8222-222222222222'
@@ -24,6 +26,15 @@ const contextConfig = {
   tasks: true,
   team: false,
   resources: true,
+}
+
+const liveRuntime = {
+  mode: 'live',
+  provider: 'gemini',
+  model: 'gemini-test-flash',
+  modelLabel: 'gemini-test-flash',
+  credentialRequired: true,
+  timeoutMs: 45_000,
 }
 
 function resourceRow({
@@ -81,6 +92,67 @@ function filteredQuery(rows = []) {
     }),
   }
   return query
+}
+
+function credentialStore(initialRow = null) {
+  let row = initialRow
+  const operations = []
+
+  return {
+    operations,
+    get row() {
+      return row
+    },
+    query() {
+      const filters = []
+      let mutation = 'select'
+      let payload = null
+      const query = {
+        select() {
+          return query
+        },
+        eq(field, value) {
+          filters.push([field, value])
+          return query
+        },
+        upsert(next) {
+          mutation = 'upsert'
+          payload = next
+          operations.push({ mutation, payload: next })
+          return query
+        },
+        update(next) {
+          mutation = 'update'
+          payload = next
+          operations.push({ mutation, payload: next })
+          return query
+        },
+        delete() {
+          mutation = 'delete'
+          operations.push({ mutation })
+          return query
+        },
+        async maybeSingle() {
+          const matches = row && filters.every(([field, value]) => row[field] === value)
+          if (mutation === 'delete') {
+            const deleted = matches ? row : null
+            if (matches) row = null
+            return { data: deleted, error: null }
+          }
+          if (mutation === 'update') {
+            if (matches) row = { ...row, ...payload }
+            return { data: matches ? row : null, error: null }
+          }
+          return { data: matches ? row : null, error: null }
+        },
+        async single() {
+          if (mutation === 'upsert') row = { ...payload }
+          return { data: row, error: null }
+        },
+      }
+      return query
+    },
+  }
 }
 
 function aiContextRows({ assigneeId = aiMemberId, status = 'not_started' } = {}) {
@@ -201,10 +273,184 @@ test('bootstrap includes project-scoped AI agents and run history', async () => 
   assert.ok(Array.isArray(result.aiRuns))
   assert.equal(result.aiAgents[0].memberId, aiMemberId)
   assert.equal(result.aiRuns[0].id, aiRunId)
+  assert.deepEqual(result.aiRuns[0].usage, {
+    inputTokens: null,
+    outputTokens: null,
+    totalTokens: null,
+  })
+  assert.deepEqual(result.aiExecution, {
+    mode: 'mock',
+    provider: null,
+    modelLabel: 'Mock',
+    credentialRequired: false,
+  })
+  assert.deepEqual(result.aiCredential, {
+    provider: 'gemini',
+    configured: false,
+    keyHint: null,
+    verifiedAt: null,
+  })
   assert.equal(result.capabilities.ai, true)
   assert.equal(Object.hasOwn(result, 'aiSettings'), false)
   assert.equal(Object.hasOwn(result, 'aiHistory'), false)
   assert.equal(Object.hasOwn(result, 'aiMemberId'), false)
+})
+
+test('live bootstrap exposes only safe credential metadata and AI execution configuration', async () => {
+  const rows = aiContextRows()
+  const credentials = credentialStore({
+    user_id: userId,
+    provider: 'gemini',
+    encrypted_key: 'ciphertext',
+    iv: 'initialization-vector',
+    auth_tag: 'authentication-tag',
+    encryption_version: 1,
+    key_hint: '1234',
+    verified_at: '2026-07-27T01:00:00.000Z',
+    created_at: '2026-07-27T01:00:00.000Z',
+    updated_at: '2026-07-27T01:00:00.000Z',
+  })
+  const repository = createSupabaseTeamFlowRepository({
+    from: (table) => (
+      table === 'user_ai_credentials'
+        ? credentials.query()
+        : orderedRows(rows[table])
+    ),
+    rpc: async (name) => {
+      assert.equal(name, 'list_project_invitations')
+      return { data: [], error: null }
+    },
+  }, { id: userId }, {
+    aiRuntime: liveRuntime,
+  })
+
+  const result = await repository.load()
+
+  assert.deepEqual(result.aiExecution, {
+    mode: 'live',
+    provider: 'gemini',
+    modelLabel: 'gemini-test-flash',
+    credentialRequired: true,
+  })
+  assert.deepEqual(result.aiCredential, {
+    provider: 'gemini',
+    configured: true,
+    keyHint: '1234',
+    verifiedAt: '2026-07-27T01:00:00.000Z',
+  })
+  assert.equal(JSON.stringify(result).includes('ciphertext'), false)
+  assert.equal(JSON.stringify(result).includes('authentication-tag'), false)
+})
+
+test('credential save verifies before encrypted upsert and failed replacement preserves the old row', async () => {
+  const oldRow = {
+    user_id: userId,
+    provider: 'gemini',
+    encrypted_key: 'old-ciphertext',
+    iv: 'old-iv',
+    auth_tag: 'old-tag',
+    encryption_version: 1,
+    key_hint: 'old!',
+    verified_at: '2026-07-26T00:00:00.000Z',
+  }
+  const credentials = credentialStore(oldRow)
+  const calls = []
+  const repository = createSupabaseTeamFlowRepository({
+    from: (table) => {
+      assert.equal(table, 'user_ai_credentials')
+      return credentials.query()
+    },
+  }, { id: userId }, {
+    aiRuntime: liveRuntime,
+    credentialCipher: {
+      encrypt: (apiKey, metadata) => {
+        calls.push({ operation: 'encrypt', apiKey, metadata })
+        return {
+          encryptedKey: 'new-ciphertext',
+          iv: 'new-iv',
+          authTag: 'new-tag',
+          encryptionVersion: 1,
+          keyHint: '-key',
+        }
+      },
+    },
+    aiProvider: {
+      verifyApiKey: async (apiKey) => {
+        calls.push({ operation: 'verify', apiKey })
+      },
+    },
+  })
+
+  const saved = await repository.saveAiCredential('new-user-key')
+
+  assert.deepEqual(calls.map((call) => call.operation), ['verify', 'encrypt'])
+  assert.deepEqual(saved, {
+    provider: 'gemini',
+    configured: true,
+    keyHint: '-key',
+    verifiedAt: credentials.row.verified_at,
+  })
+  assert.equal(credentials.row.user_id, userId)
+  assert.equal(credentials.row.encrypted_key, 'new-ciphertext')
+
+  const replacementFailure = new TeamFlowApiError({
+    status: 422,
+    code: 'AI_CREDENTIAL_INVALID',
+    message: 'Gemini API 키를 확인해 주세요.',
+  })
+  const preserved = credentialStore(oldRow)
+  const rejectingRepository = createSupabaseTeamFlowRepository({
+    from: () => preserved.query(),
+  }, { id: userId }, {
+    aiRuntime: liveRuntime,
+    credentialCipher: {
+      encrypt: () => assert.fail('invalid keys must not be encrypted'),
+    },
+    aiProvider: {
+      verifyApiKey: async () => {
+        throw replacementFailure
+      },
+    },
+  })
+
+  await assert.rejects(
+    () => rejectingRepository.saveAiCredential('invalid-key'),
+    replacementFailure,
+  )
+  assert.deepEqual(preserved.row, oldRow)
+  assert.equal(preserved.operations.length, 0)
+})
+
+test('credential deletion is idempotent and returns disconnected metadata', async () => {
+  const credentials = credentialStore({
+    user_id: userId,
+    provider: 'gemini',
+    encrypted_key: 'ciphertext',
+    iv: 'iv',
+    auth_tag: 'tag',
+    encryption_version: 1,
+    key_hint: '1234',
+    verified_at: '2026-07-27T00:00:00.000Z',
+  })
+  const repository = createSupabaseTeamFlowRepository({
+    from: () => credentials.query(),
+  }, { id: userId }, {
+    aiRuntime: liveRuntime,
+  })
+
+  assert.deepEqual(await repository.deleteAiCredential(), {
+    provider: 'gemini',
+    configured: false,
+    keyHint: null,
+    verifiedAt: null,
+  })
+  assert.equal(credentials.row, null)
+  assert.deepEqual(await repository.deleteAiCredential(), {
+    provider: 'gemini',
+    configured: false,
+    keyHint: null,
+    verifiedAt: null,
+  })
 })
 
 test('AI agent profile creation and partial updates use the multi-agent database RPC contracts', async () => {
@@ -470,6 +716,265 @@ test('mock AI run gathers project context on the server and stores pending revie
       p_result_markdown: run.result_markdown,
     },
   }])
+})
+
+test('live AI run uses only the current user credential and stores provider metadata through generic RPC', async () => {
+  const rows = aiContextRows()
+  const credential = credentialStore({
+    user_id: userId,
+    provider: 'gemini',
+    encrypted_key: 'ciphertext',
+    iv: 'iv',
+    auth_tag: 'tag',
+    encryption_version: 1,
+    key_hint: '1234',
+    verified_at: '2026-07-27T00:00:00.000Z',
+  })
+  const calls = []
+  const snapshot = {
+    version: 1,
+    instructions: rows.ai_agents[0].instructions,
+    agent: { id: aiMemberId, name: '자료조사 AI', role: '자료 조사' },
+    task: { id: taskId, title: '시장 자료 조사' },
+    contextConfig,
+    context: {},
+    truncation: {},
+  }
+  const run = {
+    id: aiRunId,
+    project_id: projectId,
+    ai_member_id: aiMemberId,
+    task_id: taskId,
+    status: 'pending_review',
+    context_snapshot: snapshot,
+    result_markdown: '# 실제 AI 결과',
+    error_message: null,
+    applied_note_id: null,
+    created_by: userId,
+    execution_mode: 'live',
+    provider: 'gemini',
+    model: 'gemini-test-flash',
+    usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+    duration_ms: 321,
+    created_at: '2026-07-27T00:00:00.000Z',
+    updated_at: '2026-07-27T00:00:00.000Z',
+  }
+  const repository = createSupabaseTeamFlowRepository({
+    from: (table) => (
+      table === 'user_ai_credentials'
+        ? credential.query()
+        : filteredQuery(rows[table])
+    ),
+    rpc: async (name, args) => {
+      calls.push({ name, args })
+      return { data: run, error: null }
+    },
+  }, { id: userId }, {
+    aiRuntime: liveRuntime,
+    credentialCipher: {
+      decrypt: (stored, metadata) => {
+        assert.equal(stored.encryptedKey, 'ciphertext')
+        assert.deepEqual(metadata, {
+          userId,
+          provider: 'gemini',
+          version: 1,
+        })
+        return 'current-user-secret'
+      },
+    },
+    aiProvider: {
+      generate: async (input) => {
+        assert.equal(input.apiKey, 'current-user-secret')
+        assert.equal(input.systemInstruction, 'system prompt')
+        assert.equal(input.prompt, 'user prompt')
+        return {
+          resultMarkdown: run.result_markdown,
+          provider: 'gemini',
+          model: 'gemini-test-flash',
+          usage: run.usage,
+          durationMs: run.duration_ms,
+        }
+      },
+    },
+    buildLiveAiContext: (input) => {
+      assert.equal(input.agent.id, aiMemberId)
+      assert.equal(input.agent.role, '자료 조사')
+      return snapshot
+    },
+    buildGeminiPrompt: (receivedSnapshot) => {
+      assert.equal(receivedSnapshot, snapshot)
+      return { systemInstruction: 'system prompt', prompt: 'user prompt' }
+    },
+    buildMockAiContext: () => assert.fail('live mode must not build Mock context'),
+    generateMockAiResult: () => assert.fail('live mode must not generate Mock output'),
+  })
+
+  const result = await repository.createAiRun(aiMemberId, taskId)
+
+  assert.equal(result.executionMode, 'live')
+  assert.equal(result.provider, 'gemini')
+  assert.equal(result.model, 'gemini-test-flash')
+  assert.deepEqual(result.usage, run.usage)
+  assert.equal(result.durationMs, 321)
+  assert.deepEqual(calls, [{
+    name: 'create_ai_run',
+    args: {
+      p_member_id: aiMemberId,
+      p_task_id: taskId,
+      p_context_snapshot: snapshot,
+      p_result_markdown: run.result_markdown,
+      p_execution_mode: 'live',
+      p_provider: 'gemini',
+      p_model: 'gemini-test-flash',
+      p_usage: run.usage,
+      p_duration_ms: 321,
+    },
+  }])
+})
+
+test('live AI run blocks missing or unreadable credentials without provider calls or failed history', async () => {
+  for (const [storedRow, cipher] of [
+    [null, {
+      decrypt: () => assert.fail('missing credentials must not be decrypted'),
+    }],
+    [{
+      user_id: userId,
+      provider: 'gemini',
+      encrypted_key: 'ciphertext',
+      iv: 'iv',
+      auth_tag: 'tag',
+      encryption_version: 1,
+      key_hint: '1234',
+      verified_at: '2026-07-27T00:00:00.000Z',
+    }, {
+      decrypt: () => {
+        throw new AiCredentialCipherError()
+      },
+    }],
+  ]) {
+    const rows = aiContextRows()
+    const credential = credentialStore(storedRow)
+    const repository = createSupabaseTeamFlowRepository({
+      from: (table) => (
+        table === 'user_ai_credentials'
+          ? credential.query()
+          : filteredQuery(rows[table])
+      ),
+      rpc: async () => assert.fail('credential failures must not create run history'),
+    }, { id: userId }, {
+      aiRuntime: liveRuntime,
+      credentialCipher: cipher,
+      aiProvider: {
+        generate: async () => assert.fail('credential failures must not call Gemini'),
+      },
+      buildLiveAiContext: () => assert.fail('credential failures must stop before context generation'),
+      generateMockAiResult: () => assert.fail('credential failures must never fall back to Mock'),
+    })
+
+    await assert.rejects(
+      () => repository.createAiRun(aiMemberId, taskId),
+      (error) => (
+        error instanceof TeamFlowApiError
+        && error.status === 409
+        && error.code === 'AI_CREDENTIAL_REQUIRED'
+        && error.aiRun === null
+      ),
+    )
+    if (storedRow) assert.equal(credential.row.verified_at, null)
+  }
+})
+
+test('provider-attempt failure persists a failed run, invalidates the key, and returns a sanitized typed error with history', async () => {
+  const rows = aiContextRows()
+  const credential = credentialStore({
+    user_id: userId,
+    provider: 'gemini',
+    encrypted_key: 'ciphertext',
+    iv: 'iv',
+    auth_tag: 'tag',
+    encryption_version: 1,
+    key_hint: '1234',
+    verified_at: '2026-07-27T00:00:00.000Z',
+  })
+  const snapshot = {
+    version: 1,
+    task: { id: taskId },
+    context: {},
+    truncation: {},
+  }
+  const failedRun = {
+    id: aiRunId,
+    project_id: projectId,
+    ai_member_id: aiMemberId,
+    task_id: taskId,
+    status: 'failed',
+    context_snapshot: snapshot,
+    result_markdown: null,
+    error_message: 'Gemini API 키를 확인해 주세요.',
+    applied_note_id: null,
+    created_by: userId,
+    execution_mode: 'live',
+    provider: 'gemini',
+    model: 'gemini-test-flash',
+    usage: {},
+    duration_ms: 0,
+    created_at: '2026-07-27T00:00:00.000Z',
+    updated_at: '2026-07-27T00:00:00.000Z',
+  }
+  const calls = []
+  const repository = createSupabaseTeamFlowRepository({
+    from: (table) => (
+      table === 'user_ai_credentials'
+        ? credential.query()
+        : filteredQuery(rows[table])
+    ),
+    rpc: async (name, args) => {
+      calls.push({ name, args })
+      return { data: failedRun, error: null }
+    },
+  }, { id: userId }, {
+    aiRuntime: liveRuntime,
+    credentialCipher: {
+      decrypt: () => 'invalid-current-key',
+    },
+    aiProvider: {
+      generate: async () => {
+        throw new TeamFlowApiError({
+          status: 422,
+          code: 'AI_CREDENTIAL_INVALID',
+          message: 'Gemini API 키를 확인해 주세요.',
+          durationMs: 187,
+        })
+      },
+    },
+    buildLiveAiContext: () => snapshot,
+    buildGeminiPrompt: () => ({ systemInstruction: 'system', prompt: 'prompt' }),
+    generateMockAiResult: () => assert.fail('provider failures must never fall back to Mock'),
+  })
+
+  await assert.rejects(
+    () => repository.createAiRun(aiMemberId, taskId),
+    (error) => {
+      assert.equal(error.status, 422)
+      assert.equal(error.code, 'AI_CREDENTIAL_INVALID')
+      assert.equal(error.aiRun.id, aiRunId)
+      assert.equal(error.aiRun.status, 'failed')
+      return true
+    },
+  )
+  assert.equal(credential.row.verified_at, null)
+  assert.equal(calls[0].name, 'create_failed_ai_run')
+  assert.deepEqual(calls[0].args, {
+    p_member_id: aiMemberId,
+    p_task_id: taskId,
+    p_context_snapshot: snapshot,
+    p_error_message: 'Gemini API 키를 확인해 주세요.',
+    p_execution_mode: 'live',
+    p_provider: 'gemini',
+    p_model: 'gemini-test-flash',
+    p_usage: {},
+    p_duration_ms: 187,
+  })
 })
 
 test('mock AI generator failures are persisted as failed runs', async () => {

@@ -21,3 +21,11 @@ services:
         sync: false
       - key: TEAMFLOW_ALLOWED_ORIGINS
         sync: false
+      - key: TEAMFLOW_AI_PROVIDER
+        sync: false
+      - key: TEAMFLOW_GEMINI_MODEL
+        value: gemini-3.5-flash
+      - key: TEAMFLOW_AI_REQUEST_TIMEOUT_MS
+        value: "45000"
+      - key: TEAMFLOW_AI_CREDENTIAL_ENCRYPTION_KEY
+        sync: false

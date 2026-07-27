@@ -45,6 +45,15 @@ export const AI_RUN_STATUS = Object.freeze({
   FAILED: 'failed',
 })
 
+export const AI_EXECUTION_MODE = Object.freeze({
+  MOCK: 'mock',
+  LIVE: 'live',
+})
+
+export const AI_PROVIDER = Object.freeze({
+  GEMINI: 'gemini',
+})
+
 export const AI_CONTEXT_KEYS = Object.freeze([
   'project',
   'notes',
@@ -74,6 +83,8 @@ export const INVITATION_STATUS = Object.freeze({
 /** @typedef {'folder' | 'document' | 'link' | 'image'} ResourceType */
 /** @typedef {'user' | 'ai'} MemberKind */
 /** @typedef {'running' | 'pending_review' | 'applied' | 'rejected' | 'failed'} AIRunStatus */
+/** @typedef {'mock' | 'live'} AIExecutionMode */
+/** @typedef {'gemini'} AIProvider */
 /** @typedef {'pending' | 'accepted' | 'rejected' | 'cancelled'} InvitationStatus */
 
 /**
@@ -230,6 +241,11 @@ export const INVITATION_STATUS = Object.freeze({
  * @property {string | null} errorMessage
  * @property {string | null} appliedNoteId
  * @property {string | null} createdBy
+ * @property {AIExecutionMode} executionMode
+ * @property {AIProvider | null} provider
+ * @property {string | null} model
+ * @property {{inputTokens: number | null, outputTokens: number | null, totalTokens: number | null}} usage
+ * @property {number | null} durationMs
  * @property {string} createdAt ISO 8601 timestamp
  * @property {string} updatedAt ISO 8601 timestamp
  */

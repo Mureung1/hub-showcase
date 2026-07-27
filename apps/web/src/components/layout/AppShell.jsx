@@ -1,6 +1,7 @@
 import Bell from 'lucide-react/dist/esm/icons/bell.mjs'
 import CheckSquare from 'lucide-react/dist/esm/icons/square-check-big.mjs'
 import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up.mjs'
+import KeyRound from 'lucide-react/dist/esm/icons/key-round.mjs'
 import Layers3 from 'lucide-react/dist/esm/icons/layers-3.mjs'
 import LogOut from 'lucide-react/dist/esm/icons/log-out.mjs'
 import Plus from 'lucide-react/dist/esm/icons/plus.mjs'
@@ -11,6 +12,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 
 import { NewProjectModal } from '../../features/projects/components/NewProjectModal.jsx'
+import { AiCredentialSettingsModal } from '../../features/settings/AiCredentialSettingsModal.jsx'
 import { useAuth } from '../../auth/useAuth.js'
 import { selectReceivedInvitations } from '../../state/selectors.js'
 import { useTeamFlow } from '../../state/useTeamFlow.js'
@@ -57,6 +59,7 @@ export function Account({ label, compact = false }) {
   const { state, actions } = useTeamFlow()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showAiSettings, setShowAiSettings] = useState(false)
   const accountRef = useRef(null)
   const triggerRef = useRef(null)
   const menuId = useId()
@@ -97,6 +100,20 @@ export function Account({ label, compact = false }) {
     setMenuOpen(false)
     navigate('/projects#received-invitations')
   }
+
+  function openAiSettings() {
+    setMenuOpen(false)
+    setShowAiSettings(true)
+  }
+
+  function closeAiSettings() {
+    setShowAiSettings(false)
+    queueMicrotask(() => triggerRef.current?.focus())
+  }
+
+  const aiCredentialConnected = Boolean(
+    state.aiCredential?.configured && state.aiCredential?.verifiedAt,
+  )
 
   return (
     <footer ref={accountRef} className={`${styles.accountArea} ${compact ? styles.accountAreaCompact : ''}`}>
@@ -141,11 +158,18 @@ export function Account({ label, compact = false }) {
                 <strong>읽기 전용</strong>
               </div>
             ) : (
-              <button className={styles.accountSettingRow} type="button" onClick={openInvitations}>
-                <Bell aria-hidden="true" size={16} />
-                <span>받은 프로젝트 초대</span>
-                <strong>{receivedInvitations.length}건</strong>
-              </button>
+              <>
+                <button className={styles.accountSettingRow} type="button" onClick={openInvitations}>
+                  <Bell aria-hidden="true" size={16} />
+                  <span>받은 프로젝트 초대</span>
+                  <strong>{receivedInvitations.length}건</strong>
+                </button>
+                <button className={styles.accountSettingRow} type="button" onClick={openAiSettings}>
+                  <KeyRound aria-hidden="true" size={16} />
+                  <span>AI API 설정</span>
+                  <strong>{aiCredentialConnected ? '연결됨' : '미설정'}</strong>
+                </button>
+              </>
             )}
           </section>
 
@@ -155,6 +179,7 @@ export function Account({ label, compact = false }) {
           </button>
         </div>
       ) : null}
+      {showAiSettings && !guest ? <AiCredentialSettingsModal onClose={closeAiSettings} /> : null}
     </footer>
   )
 }

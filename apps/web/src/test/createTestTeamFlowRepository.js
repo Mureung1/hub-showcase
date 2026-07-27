@@ -1,4 +1,15 @@
-import { CURRENT_USER_ID, initialAiAgents, initialAiRuns, initialMembers, initialNotes, initialProjects, initialResources, initialTasks } from './teamFlowFixture.js'
+import {
+  CURRENT_USER_ID,
+  initialAiAgents,
+  initialAiCredential,
+  initialAiExecution,
+  initialAiRuns,
+  initialMembers,
+  initialNotes,
+  initialProjects,
+  initialResources,
+  initialTasks,
+} from './teamFlowFixture.js'
 
 let sequence = 1000
 
@@ -20,6 +31,8 @@ export const testTeamFlowRepository = {
       resources: initialResources,
       aiAgents: initialAiAgents,
       aiRuns: initialAiRuns,
+      aiExecution: initialAiExecution,
+      aiCredential: initialAiCredential,
       currentUserId: CURRENT_USER_ID,
       currentMemberIdsByProject: Object.fromEntries(initialProjects.map((project) => [project.id, CURRENT_USER_ID])),
       invitations: [],
@@ -162,6 +175,8 @@ export const testTeamFlowRepository = {
       status: 'pending_review', contextSnapshot: { task: { id: taskId, title: task?.title ?? 'Mock 작업' } },
       resultMarkdown: '# 모의 실행 결과\n\n## 작업 요청 요약\n- 테스트 Mock 결과입니다.',
       errorMessage: null, appliedNoteId: null, createdBy: 'auth-user-1',
+      executionMode: 'mock', provider: null, model: null,
+      usage: { inputTokens: null, outputTokens: null, totalTokens: null }, durationMs: 2,
       createdAt: '2026-07-24T02:00:00.000Z', updatedAt: '2026-07-24T02:00:00.000Z',
     }
     createdAiRuns.set(aiRun.id, aiRun)
@@ -187,6 +202,23 @@ export const testTeamFlowRepository = {
     const aiRun = { ...source, id: runId, status: 'rejected' }
     createdAiRuns.set(runId, aiRun)
     return Promise.resolve(aiRun)
+  },
+
+  getAiCredential() {
+    return Promise.resolve(clone(initialAiCredential))
+  },
+
+  saveAiCredential() {
+    return Promise.resolve({
+      provider: 'gemini',
+      configured: true,
+      keyHint: '1234',
+      verifiedAt: '2026-07-27T03:00:00.000Z',
+    })
+  },
+
+  deleteAiCredential() {
+    return Promise.resolve(clone(initialAiCredential))
   },
 }
 

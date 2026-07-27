@@ -10,6 +10,8 @@ const bootstrap = {
   projects: [], members: [], tasks: [], notes: [], resources: [], aiAgents: [], aiRuns: [],
   currentUserId: 'member-1', accessMode: 'authenticated',
   capabilities: { projects: true, members: true, tasks: true, notes: false, resources: false, ai: true },
+  aiExecution: { mode: 'mock', provider: null, modelLabel: 'Mock', credentialRequired: false },
+  aiCredential: { provider: 'gemini', configured: false, keyHint: '', verifiedAt: null },
 }
 
 function jsonResponse(body, ok = true) {
@@ -94,6 +96,78 @@ describe('authenticated TeamFlow repository', () => {
     expect(JSON.parse(fetchImpl.mock.calls[2][1].body)).toEqual({ taskId: 'task-1' })
     expect(fetchImpl.mock.calls[3][1].method).toBe('POST')
     expect(fetchImpl.mock.calls[4][1].method).toBe('POST')
+  })
+
+  test('preserves a safe failed AI run returned with a provider error', async () => {
+    const failedRun = {
+      id: 'run-failed',
+      projectId: 'project-1',
+      aiMemberId: 'ai-member-1',
+      taskId: 'task-1',
+      status: 'failed',
+      errorMessage: 'Gemini API 사용 한도를 초과했습니다.',
+      executionMode: 'live',
+      provider: 'gemini',
+      model: 'gemini-test-flash',
+      durationMs: 123,
+    }
+    const fetchImpl = vi.fn(async () => jsonResponse({
+      error: {
+        code: 'AI_QUOTA_EXCEEDED',
+        message: 'Gemini API 사용 한도를 초과했습니다.',
+      },
+      aiRun: failedRun,
+    }, false))
+    const repository = createApiTeamFlowRepository({
+      fetchImpl,
+      getAccessToken: async () => 'access-token',
+    })
+
+    await expect(repository.createAiRun('ai-member-1', 'task-1')).rejects.toMatchObject({
+      code: 'AI_QUOTA_EXCEEDED',
+      aiRun: failedRun,
+    })
+  })
+
+  test('loads, verifies, stores, and deletes only Gemini credential metadata', async () => {
+    const disconnected = {
+      provider: 'gemini', configured: false, keyHint: '', verifiedAt: null,
+    }
+    const connected = {
+      provider: 'gemini', configured: true, keyHint: '1234', verifiedAt: '2026-07-27T03:00:00.000Z',
+    }
+    const fetchImpl = vi.fn(async (url, options) => {
+      if (options?.method === 'PUT') return jsonResponse({ credential: connected })
+      if (options?.method === 'DELETE') return jsonResponse({ credential: disconnected })
+      return jsonResponse({ credential: disconnected })
+    })
+    const repository = createApiTeamFlowRepository({
+      fetchImpl,
+      getAccessToken: async () => 'access-token',
+    })
+
+    await expect(repository.getAiCredential()).resolves.toEqual(disconnected)
+    await expect(repository.saveAiCredential({
+      apiKey: 'private-gemini-key',
+      acknowledgedFreeTierPolicy: true,
+    })).resolves.toEqual(connected)
+    await expect(repository.deleteAiCredential()).resolves.toEqual(disconnected)
+
+    expect(fetchImpl).toHaveBeenNthCalledWith(1, '/api/ai-credentials/gemini', {
+      headers: { authorization: 'Bearer access-token' },
+    })
+    expect(fetchImpl).toHaveBeenNthCalledWith(2, '/api/ai-credentials/gemini', expect.objectContaining({
+      method: 'PUT',
+      headers: { authorization: 'Bearer access-token', 'content-type': 'application/json' },
+    }))
+    expect(JSON.parse(fetchImpl.mock.calls[1][1].body)).toEqual({
+      apiKey: 'private-gemini-key',
+      acknowledgedFreeTierPolicy: true,
+    })
+    expect(fetchImpl).toHaveBeenNthCalledWith(3, '/api/ai-credentials/gemini', expect.objectContaining({
+      method: 'DELETE',
+    }))
+    expect(JSON.stringify(connected)).not.toContain('private-gemini-key')
   })
 
   test('uploads a selected local file through the signed upload flow', async () => {
@@ -213,6 +287,9 @@ describe('guest TeamFlow repository', () => {
     await expect(repository.createAiRun('ai-1', 'task-1')).rejects.toMatchObject({ code: 'READ_ONLY' })
     await expect(repository.applyAiRun('run-1')).rejects.toMatchObject({ code: 'READ_ONLY' })
     await expect(repository.rejectAiRun('run-1')).rejects.toMatchObject({ code: 'READ_ONLY' })
+    await expect(repository.getAiCredential()).rejects.toMatchObject({ code: 'READ_ONLY' })
+    await expect(repository.saveAiCredential({ apiKey: 'forbidden' })).rejects.toMatchObject({ code: 'READ_ONLY' })
+    await expect(repository.deleteAiCredential()).rejects.toMatchObject({ code: 'READ_ONLY' })
   })
 
   test('loads the demo from the configured Render API origin', async () => {

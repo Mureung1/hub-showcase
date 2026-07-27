@@ -45,8 +45,20 @@ Vite가 `/api`를 `http://127.0.0.1:3000`으로 프록시합니다.
 | `TEAMFLOW_SUPABASE_URL` | TeamFlow Supabase Project URL |
 | `TEAMFLOW_SUPABASE_PUBLISHABLE_KEY` | TeamFlow의 `sb_publishable_...` 키 |
 | `TEAMFLOW_ALLOWED_ORIGINS` | 첫 배포에서는 임시로 `http://localhost:5173` |
+| `TEAMFLOW_AI_PROVIDER` | `gemini` |
+| `TEAMFLOW_GEMINI_MODEL` | `gemini-3.5-flash` |
+| `TEAMFLOW_AI_REQUEST_TIMEOUT_MS` | `45000` |
+| `TEAMFLOW_AI_CREDENTIAL_ENCRYPTION_KEY` | 32바이트 난수를 Base64로 인코딩한 비밀값 |
 
 `PORT`는 Render가 자동으로 제공하므로 직접 만들지 않습니다.
+
+암호화 마스터 키는 한 번 생성해 Render에만 보관합니다. 키를 분실하거나
+교체하면 기존 사용자의 Gemini API 키는 복호화할 수 없으므로 각 사용자가
+TeamFlow에서 다시 연결해야 합니다.
+
+```powershell
+node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
+```
 
 배포가 끝나면 다음을 확인하고 Render 주소를 복사합니다.
 

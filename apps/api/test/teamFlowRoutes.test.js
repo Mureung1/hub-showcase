@@ -4,6 +4,7 @@ import { after, before, test } from 'node:test'
 import { RESOURCE_UPLOAD } from '@teamflow/shared'
 
 import { createApp } from '../src/app.js'
+import { TeamFlowApiError } from '../src/teamflow/aiErrors.js'
 import { TeamFlowConflictError } from '../src/teamflow/teamFlowRepository.js'
 
 const userId = '11111111-1111-4111-8111-111111111111'
@@ -95,8 +96,20 @@ const aiRun = {
   errorMessage: null,
   appliedNoteId: null,
   createdBy: userId,
+  executionMode: 'mock',
+  provider: null,
+  model: null,
+  usage: { inputTokens: null, outputTokens: null, totalTokens: null },
+  durationMs: 0,
   createdAt: '2026-07-24T00:00:00.000Z',
   updatedAt: '2026-07-24T00:00:00.000Z',
+}
+
+const aiCredential = {
+  provider: 'gemini',
+  configured: true,
+  keyHint: '1234',
+  verifiedAt: '2026-07-27T00:00:00.000Z',
 }
 
 const task = {
@@ -167,6 +180,13 @@ const bootstrap = {
   currentMemberIdsByProject: { [projectId]: memberId },
   aiAgents: [aiAgent],
   aiRuns: [aiRun],
+  aiExecution: {
+    mode: 'live',
+    provider: 'gemini',
+    modelLabel: 'gemini-test-flash',
+    credentialRequired: true,
+  },
+  aiCredential,
   currentUserId: memberId,
   accessMode: 'authenticated',
   capabilities: { projects: true, members: true, tasks: true, notes: true, resources: true, ai: true },
@@ -250,6 +270,14 @@ const repository = {
     note: { ...note, id: noteId, title: `AI 결과 · ${task.title}`, content: aiRun.resultMarkdown },
   }),
   rejectAiRun: async () => ({ ...aiRun, status: 'rejected' }),
+  getAiCredentialMetadata: async () => aiCredential,
+  saveAiCredential: async () => aiCredential,
+  deleteAiCredential: async () => ({
+    provider: 'gemini',
+    configured: false,
+    keyHint: null,
+    verifiedAt: null,
+  }),
 }
 
 const app = createApp({
@@ -299,6 +327,43 @@ test('demo is public while user bootstrap requires a valid token', async () => {
   const response = await request('/api/bootstrap')
   assert.equal(response.status, 200)
   assert.deepEqual(await response.json(), bootstrap)
+})
+
+test('Gemini credential routes expose metadata only and require explicit policy acknowledgement', async () => {
+  const getResponse = await request('/api/ai-credentials/gemini')
+  assert.equal(getResponse.status, 200)
+  assert.deepEqual(await getResponse.json(), { credential: aiCredential })
+
+  const secret = 'AIza-current-user-secret-1234'
+  const putResponse = await request('/api/ai-credentials/gemini', {
+    method: 'PUT',
+    body: { apiKey: secret, acknowledgedFreeTierPolicy: true },
+  })
+  assert.equal(putResponse.status, 200)
+  const putBody = await putResponse.json()
+  assert.deepEqual(putBody, { credential: aiCredential })
+  assert.equal(JSON.stringify(putBody).includes(secret), false)
+
+  for (const body of [
+    { apiKey: secret },
+    { apiKey: '', acknowledgedFreeTierPolicy: true },
+    { apiKey: 'x'.repeat(513), acknowledgedFreeTierPolicy: true },
+  ]) {
+    const response = await request('/api/ai-credentials/gemini', { method: 'PUT', body })
+    assert.equal(response.status, 400)
+    assert.equal((await response.json()).error.code, 'VALIDATION_ERROR')
+  }
+
+  const deleteResponse = await request('/api/ai-credentials/gemini', { method: 'DELETE' })
+  assert.equal(deleteResponse.status, 200)
+  assert.deepEqual(await deleteResponse.json(), {
+    credential: {
+      provider: 'gemini',
+      configured: false,
+      keyHint: null,
+      verifiedAt: null,
+    },
+  })
 })
 
 test('project invitations can be listed, created, accepted, rejected and cancelled', async () => {
@@ -486,6 +551,40 @@ test('applied AI run re-execution conflicts are exposed as 409 responses', async
     })
     assert.equal(response.status, 409)
     assert.equal((await response.json()).error.code, 'CONFLICT')
+  } finally {
+    repository.createAiRun = originalCreateAiRun
+  }
+})
+
+test('typed AI provider failures preserve safe failed history and status without leaking internals', async () => {
+  const originalCreateAiRun = repository.createAiRun
+  repository.createAiRun = async () => {
+    throw new TeamFlowApiError({
+      status: 429,
+      code: 'AI_QUOTA_EXCEEDED',
+      message: 'Gemini API 사용량 한도를 초과했습니다.',
+      aiRun: {
+        ...aiRun,
+        status: 'failed',
+        resultMarkdown: '',
+        errorMessage: 'Gemini API 사용량 한도를 초과했습니다.',
+        executionMode: 'live',
+        provider: 'gemini',
+        model: 'gemini-test-flash',
+      },
+    })
+  }
+
+  try {
+    const response = await request(`/api/ai-agents/${aiMemberId}/runs`, {
+      method: 'POST',
+      body: { taskId },
+    })
+    assert.equal(response.status, 429)
+    const body = await response.json()
+    assert.equal(body.error.code, 'AI_QUOTA_EXCEEDED')
+    assert.equal(body.aiRun.status, 'failed')
+    assert.equal(JSON.stringify(body).includes('API key'), false)
   } finally {
     repository.createAiRun = originalCreateAiRun
   }

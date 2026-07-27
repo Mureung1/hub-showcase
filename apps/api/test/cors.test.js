@@ -33,6 +33,7 @@ test('allowed web origins receive CORS headers and preflight support', async () 
   assert.equal(response.status, 204)
   assert.equal(response.headers.get('access-control-allow-origin'), allowedOrigin)
   assert.match(response.headers.get('access-control-allow-methods'), /PATCH/)
+  assert.match(response.headers.get('access-control-allow-methods'), /PUT/)
   assert.match(response.headers.get('access-control-allow-headers'), /Authorization/i)
 })
 

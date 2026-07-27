@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  buildLiveAiContext,
   buildMockAiContext,
   generateMockAiResult,
 } from '../src/teamflow/mockAiGenerator.js'
@@ -217,4 +218,39 @@ test('generateMockAiResult does not depend on time and reflects only the normali
   assert.deepEqual(first, second)
   assert.equal(first.resultMarkdown.includes('2026-01-01'), false)
   assert.equal(first.resultMarkdown.includes('2099-12-31'), false)
+})
+
+test('live AI context includes the selected agent and enforces a 40,000-character snapshot limit', () => {
+  const longText = '가'.repeat(2_500)
+  const contextSnapshot = buildLiveAiContext(createInput({
+    agent: {
+      id: 'ai-1',
+      name: '시장조사 Agent',
+      role: '시장 조사',
+      description: '경쟁 시장을 분석합니다.',
+    },
+    notes: Array.from({ length: 50 }, (_, index) => ({
+      id: `note-${index}`,
+      title: `노트 ${index}`,
+      content: longText,
+    })),
+    tasks: Array.from({ length: 50 }, (_, index) => ({
+      id: `task-${index}`,
+      title: `할 일 ${index}`,
+      description: longText,
+      dueDate: '2026-07-31',
+      status: 'not_started',
+      assigneeId: 'ai-1',
+    })),
+  }))
+
+  assert.deepEqual(contextSnapshot.agent, {
+    id: 'ai-1',
+    name: '시장조사 Agent',
+    role: '시장 조사',
+    description: '경쟁 시장을 분석합니다.',
+  })
+  assert.equal(contextSnapshot.truncation.limits.snapshotCharacters, 40_000)
+  assert.ok(JSON.stringify(contextSnapshot).length <= 40_000)
+  assert.equal(contextSnapshot.truncation.snapshot.truncated, true)
 })

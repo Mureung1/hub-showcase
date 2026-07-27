@@ -1,6 +1,7 @@
 const MAX_ITEMS_PER_COLLECTION = 50
 const MAX_CHARACTERS_PER_FIELD = 2_000
 const MAX_SNAPSHOT_CHARACTERS = 100_000
+const MAX_LIVE_SNAPSHOT_CHARACTERS = 40_000
 const CONTEXT_KEYS = Object.freeze(['project', 'notes', 'tasks', 'team', 'resources'])
 const COLLECTION_KEYS = Object.freeze(['notes', 'tasks', 'team', 'resources'])
 
@@ -137,7 +138,7 @@ function serializedLength(value) {
   return JSON.stringify(value).length
 }
 
-function enforceSnapshotLimit(snapshot, collectionData) {
+function enforceSnapshotLimit(snapshot, collectionData, maxSnapshotCharacters) {
   let blocked = false
 
   for (const key of COLLECTION_KEYS) {
@@ -155,7 +156,7 @@ function enforceSnapshotLimit(snapshot, collectionData) {
 
       snapshot.context[key].push(source[index])
 
-      if (serializedLength(snapshot) > MAX_SNAPSHOT_CHARACTERS) {
+      if (serializedLength(snapshot) > maxSnapshotCharacters) {
         snapshot.context[key].pop()
         snapshot.truncation.snapshot.omitted[key] += 1
         snapshot.truncation.snapshot.truncated = true
@@ -168,7 +169,7 @@ function enforceSnapshotLimit(snapshot, collectionData) {
     const key = COLLECTION_KEYS[keyIndex]
 
     while (
-      serializedLength(snapshot) > MAX_SNAPSHOT_CHARACTERS &&
+      serializedLength(snapshot) > maxSnapshotCharacters &&
       Array.isArray(snapshot.context[key]) &&
       snapshot.context[key].length > 0
     ) {
@@ -186,7 +187,7 @@ function enforceSnapshotLimit(snapshot, collectionData) {
  * @param {object} input
  * @returns {Record<string, unknown>}
  */
-export function buildMockAiContext(input = {}) {
+function buildAiContext(input, maxSnapshotCharacters) {
   const truncatedFields = []
   const text = createTextNormalizer(truncatedFields)
   const contextConfig = normalizeContextConfig(input.contextConfig)
@@ -217,7 +218,7 @@ export function buildMockAiContext(input = {}) {
       limits: {
         itemsPerCollection: MAX_ITEMS_PER_COLLECTION,
         charactersPerField: MAX_CHARACTERS_PER_FIELD,
-        snapshotCharacters: MAX_SNAPSHOT_CHARACTERS,
+        snapshotCharacters: maxSnapshotCharacters,
       },
       fields: truncatedFields,
       collections: Object.fromEntries(
@@ -233,9 +234,26 @@ export function buildMockAiContext(input = {}) {
     },
   }
 
+  if (input.agent) {
+    snapshot.agent = {
+      id: text(input.agent.id, 'agent.id'),
+      name: text(input.agent.name, 'agent.name'),
+      role: text(input.agent.role, 'agent.role'),
+      description: text(input.agent.description, 'agent.description'),
+    }
+  }
+
   snapshot.truncation.fields.sort(compareText)
 
-  return enforceSnapshotLimit(snapshot, collectionData)
+  return enforceSnapshotLimit(snapshot, collectionData, maxSnapshotCharacters)
+}
+
+export function buildMockAiContext(input = {}) {
+  return buildAiContext(input, MAX_SNAPSHOT_CHARACTERS)
+}
+
+export function buildLiveAiContext(input = {}) {
+  return buildAiContext(input, MAX_LIVE_SNAPSHOT_CHARACTERS)
 }
 
 function inline(value, fallback) {
