@@ -4,11 +4,19 @@ import { SectionTitle } from '../../components/identity/SectionTitle.jsx'
 import { Input } from '../../components/forms/Input.jsx'
 import { InfoCard } from '../../components/cards/InfoCard.jsx'
 import { Checkbox } from '../../components/forms/Checkbox.jsx'
+import { Chip } from '../../components/forms/Chip.jsx'
 import { Button } from '../../components/forms/Button.jsx'
 import { Toast } from '../../components/feedback/Toast.jsx'
 import { getLetterByToken, createResponse } from '../../lib/api.js'
 import laceTrim from '../../assets/vintage-lace-trim-strip.png'
 import waxSeal from '../../assets/vintage-wax-seal-swan.png'
+
+const MBTI_TYPES = [
+  'INTJ', 'INTP', 'ENTJ', 'ENTP',
+  'INFJ', 'INFP', 'ENFJ', 'ENFP',
+  'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+  'ISTP', 'ISFP', 'ESTP', 'ESFP',
+]
 
 const submissionKey = (token) => `letterco:invite-join:${token}`
 
@@ -37,6 +45,8 @@ export function InviteJoin() {
   const [letter, setLetter] = useState(null)
   const [name, setName] = useState(initialSubmission?.name ?? '')
   const [slots, setSlots] = useState([])
+  const [locations, setLocations] = useState([])
+  const [mbti, setMbti] = useState('')
   const [phase, setPhase] = useState(initialSubmission ? 'done' : 'form') // form | sending | done
   const [submitErrorMsg, setSubmitErrorMsg] = useState('')
 
@@ -61,6 +71,7 @@ export function InviteJoin() {
       }
       setLetter(result.data)
       setSlots((result.data.candidate_slots ?? []).map((s) => ({ ...s, selected: false })))
+      setLocations((result.data.candidate_locations ?? []).map((l) => ({ ...l, selected: false })))
       setStatus('ready')
     })
     return () => {
@@ -72,7 +83,16 @@ export function InviteJoin() {
     setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, selected: !s.selected } : s)))
   }
 
-  const submitDisabled = name.trim().length === 0 || !slots.some((s) => s.selected) || phase === 'sending'
+  function toggleLocation(id) {
+    setLocations((prev) => prev.map((l) => (l.id === id ? { ...l, selected: !l.selected } : l)))
+  }
+
+  const submitDisabled =
+    name.trim().length === 0 ||
+    !slots.some((s) => s.selected) ||
+    !locations.some((l) => l.selected) ||
+    mbti === '' ||
+    phase === 'sending'
 
   async function submit() {
     if (submitDisabled) return
@@ -81,6 +101,8 @@ export function InviteJoin() {
     const result = await createResponse(token, {
       participant_name: name,
       selected_slot_ids: slots.filter((s) => s.selected).map((s) => s.id),
+      selected_location_ids: locations.filter((l) => l.selected).map((l) => l.id),
+      personality_type: mbti,
     })
     if (result.error) {
       setPhase('form')
@@ -145,7 +167,7 @@ export function InviteJoin() {
               <Input variant="underline" label="이름" placeholder="이름을 입력하세요" value={name} onChange={(e) => setName(e.target.value)} />
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '0.15em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>가능한 시간대 (복수 선택)</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-caption-size)', color: 'var(--text-caption)' }}>가능한 시간대 (복수 선택)</div>
                 {slots.map((slot) => (
                   <InfoCard key={slot.id} selected={slot.selected} onClick={() => toggleSlot(slot.id)}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -154,6 +176,29 @@ export function InviteJoin() {
                     </div>
                   </InfoCard>
                 ))}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-caption-size)', color: 'var(--text-caption)' }}>가능한 장소 (복수 선택)</div>
+                {locations.map((location) => (
+                  <InfoCard key={location.id} selected={location.selected} onClick={() => toggleLocation(location.id)}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--ink)' }}>{location.name}</span>
+                      <Checkbox checked={location.selected} onChange={() => toggleLocation(location.id)} />
+                    </div>
+                  </InfoCard>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-caption-size)', color: 'var(--text-caption)' }}>성향 (MBTI)</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {MBTI_TYPES.map((type) => (
+                    <Chip key={type} tone="wedgwood" selected={mbti === type} onClick={() => setMbti(type)}>
+                      {type}
+                    </Chip>
+                  ))}
+                </div>
               </div>
 
               <img src={laceTrim} alt="" style={{ display: 'block', width: 'calc(100% + 40px)', margin: '4px -20px -20px', height: '22px', objectFit: 'cover', objectPosition: 'top', opacity: 0.9 }} />

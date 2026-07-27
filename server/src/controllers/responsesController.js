@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabaseClient.js'
 
 // POST /api/letters/:token/responses — 참여자 응답 저장
 export async function createResponse(req, res) {
-  const { participant_name, selected_slot_ids, selected_location_ids } = req.body
+  const { participant_name, selected_slot_ids, selected_location_ids, personality_type } = req.body
 
   if (!participant_name || !selected_slot_ids?.length) {
     return res.status(400).json({ data: null, error: '필수 항목이 비어있어요' })
@@ -55,6 +55,7 @@ export async function createResponse(req, res) {
       participant_id: participant.id,
       selected_slot_ids,
       selected_location_ids: selected_location_ids || [],
+      personality_type: personality_type || null,
     })
     .select()
     .single()

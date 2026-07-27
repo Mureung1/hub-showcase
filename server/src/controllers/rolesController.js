@@ -12,11 +12,16 @@ export async function getRolesByToken(req, res) {
 
   const { data, error } = await supabase
     .from('roles')
-    .select('*')
+    .select('*, role_tasks(*)')
     .eq('letter_id', letter.id)
     .order('position', { ascending: true })
 
   if (error) return res.status(500).json({ data: null, error: error.message })
+
+  // PostgREST 임베드 정렬 문법에 기대지 않고 컨트롤러에서 안전하게 정렬한다.
+  for (const role of data) {
+    role.role_tasks?.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+  }
 
   res.json({ data, error: null })
 }

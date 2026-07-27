@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import lettersRouter from './routes/letters.js'
 import responsesRouter from './routes/responses.js'
 import rolesRouter from './routes/roles.js'
+import roleTasksRouter from './routes/roleTasks.js'
 import confirmRouter from './routes/confirm.js'
 import suggestRouter from './routes/suggest.js'
 
@@ -15,6 +16,7 @@ app.use(express.json())
 app.use('/api/letters', lettersRouter)
 app.use('/api/letters', responsesRouter)
 app.use('/api/letters', rolesRouter)
+app.use('/api/letters', roleTasksRouter)
 app.use('/api/letters', confirmRouter)
 app.use('/api/letters', suggestRouter)
 

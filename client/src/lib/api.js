@@ -53,6 +53,26 @@ export function updateRole(token, roleId, payload) {
   return request(`/api/letters/${token}/roles/${roleId}`, { method: 'PATCH', body: JSON.stringify(payload) })
 }
 
+// GET /api/letters/:token/roles/:roleId/tasks — 역할의 업무 목록 조회
+export function getRoleTasks(token, roleId) {
+  return request(`/api/letters/${token}/roles/${roleId}/tasks`)
+}
+
+// POST /api/letters/:token/roles/:roleId/tasks — 업무 일괄/단건 생성
+export function createRoleTasks(token, roleId, labels) {
+  return request(`/api/letters/${token}/roles/${roleId}/tasks`, { method: 'POST', body: JSON.stringify({ labels }) })
+}
+
+// PATCH /api/letters/:token/roles/:roleId/tasks/:taskId — 업무 완료 토글·수정
+export function updateRoleTask(token, roleId, taskId, payload) {
+  return request(`/api/letters/${token}/roles/${roleId}/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify(payload) })
+}
+
+// DELETE /api/letters/:token/roles/:roleId/tasks/:taskId — 업무 삭제
+export function deleteRoleTask(token, roleId, taskId) {
+  return request(`/api/letters/${token}/roles/${roleId}/tasks/${taskId}`, { method: 'DELETE' })
+}
+
 // PATCH /api/letters/:token/confirm — 시간·장소 확정 저장
 export function confirmLetter(token, payload) {
   return request(`/api/letters/${token}/confirm`, { method: 'PATCH', body: JSON.stringify(payload) })
