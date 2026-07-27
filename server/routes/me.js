@@ -45,14 +45,23 @@ async function membersWithRoles(projectId) {
     .eq('project_id', projectId)
   throwIf(e2, '배정 조회')
 
-  const roleByMember = new Map(assignments.map((a) => [a.member_id, a.roles]))
-  return members.map((m) => ({
-    id: m.id,
-    nickname: m.nickname,
-    name: m.users?.name ?? '',
-    roleName: roleByMember.get(m.id)?.name ?? null,
-    isLeader: roleByMember.get(m.id)?.is_leader_role ?? false,
-  }))
+  // 한 사람이 여러 역할(조장+실무 등)을 가질 수 있어 member별 배열로 묶는다
+  const rolesByMember = new Map()
+  assignments.forEach((a) => {
+    if (!rolesByMember.has(a.member_id)) rolesByMember.set(a.member_id, [])
+    rolesByMember.get(a.member_id).push(a.roles)
+  })
+  return members.map((m) => {
+    const rs = rolesByMember.get(m.id) ?? []
+    const workNames = rs.filter((r) => !r?.is_leader_role).map((r) => r.name)
+    return {
+      id: m.id,
+      nickname: m.nickname,
+      name: m.users?.name ?? '',
+      roleName: workNames.length > 0 ? workNames.join(', ') : null, // 실무 역할(조장 표식 제외)
+      isLeader: rs.some((r) => r?.is_leader_role),
+    }
+  })
 }
 
 export const me = Router()
@@ -174,20 +183,20 @@ me.get('/api/me/progress', async (req, res) => {
       .order('created_at', { ascending: false })
     throwIf(e4, '업로드 조회')
 
-    const { data: myRole, error: e5 } = await supabase
+    const { data: myRoles, error: e5 } = await supabase
       .from('assignments')
       .select('roles(name, is_leader_role)')
       .eq('member_id', membership.id)
-      .maybeSingle()
     throwIf(e5, '내 역할 조회')
+    const myWorkNames = myRoles.filter((a) => !a.roles?.is_leader_role).map((a) => a.roles?.name)
 
     res.json({
       project: { id: project.id, title: project.title, deadline: project.deadline },
       me: {
         nickname: membership.nickname,
         name: user.name,
-        roleName: myRole?.roles?.name ?? null,
-        isLeader: myRole?.roles?.is_leader_role ?? false,
+        roleName: myWorkNames.length > 0 ? myWorkNames.join(', ') : null,
+        isLeader: myRoles.some((a) => a.roles?.is_leader_role),
       },
       myProgress: progressOf(myTasks),
       taskCounts: {

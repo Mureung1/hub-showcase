@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import logo from '../../assets/logo.png'
 import { useApi, apiPost } from '../../api/client'
 import './flow.css'
@@ -9,6 +9,7 @@ import './flow.css'
    설문 마감→배정은 다음 슬라이스. */
 export default function Survey() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { loading, error, data, reload } = useApi(`/api/projects/${id}/survey`)
 
   const [answer, setAnswer] = useState({
@@ -39,7 +40,21 @@ export default function Survey() {
     )
   }
 
-  const { project, roles, memberCount, submittedCount, mySubmitted } = data
+  const { project, roles, memberCount, submittedCount, mySubmitted, isCreator } = data
+
+  // 이미 배정됐으면(팀원이 배정 후 들어온 경우 등) 설문 대신 결과로 안내
+  if (['assigned', 'active', 'completed'].includes(project.status)) {
+    return (
+      <div className="flow-page">
+        <div className="flow-card flow-center">
+          <span className="invite-icon" aria-hidden="true">✓</span>
+          <h1>역할 배정이 완료되었습니다</h1>
+          <p className="flow-muted">팀의 역할 배정 결과를 확인하세요.</p>
+          <Link to={`/projects/${id}/result`} className="btn btn-dark">배정 결과 보기</Link>
+        </div>
+      </div>
+    )
+  }
 
   function togglePreference(roleId) {
     setSubmitError('')
@@ -86,6 +101,26 @@ export default function Survey() {
     } catch (err) {
       setSubmitError(err.message)
     } finally {
+      setBusy(false)
+    }
+  }
+
+  // 생성자 전용: 설문을 마감하고 역할 배정을 실행한다 (정원 미달이면 확인)
+  async function handleAssign() {
+    if (submittedCount < project.headcount) {
+      const ok = window.confirm(
+        `현재 정원 ${project.headcount}명 중 ${submittedCount}명이 설문에 참여했습니다. ` +
+        `참여한 ${submittedCount}명으로 배정을 진행할까요?`,
+      )
+      if (!ok) return
+    }
+    setSubmitError('')
+    setBusy(true)
+    try {
+      await apiPost(`/api/projects/${id}/assign`)
+      navigate(`/projects/${id}/result`)
+    } catch (err) {
+      setSubmitError(err.message)
       setBusy(false)
     }
   }
@@ -215,12 +250,20 @@ export default function Survey() {
         <div className="flow-actions">
           <span className="flow-muted">
             {mySubmitted
-              ? '제출 완료. 다시 제출하면 이전 응답을 덮어씁니다. 전원이 제출하면 다음 단계에서 역할이 배정됩니다.'
+              ? '제출 완료. 다시 제출하면 이전 응답을 덮어씁니다.'
               : '선호 역할을 1개 이상 골라 제출하세요. 응답하지 않으면 배정에서 중립으로 처리됩니다.'}
+            {isCreator && ' 전원이 제출하면 "마감하고 배정"으로 역할을 배정하세요.'}
           </span>
-          <button type="button" className="btn btn-dark" onClick={handleSubmit} disabled={!canSubmit}>
-            {busy ? '제출 중…' : mySubmitted ? '다시 제출' : '설문 제출'}
-          </button>
+          <div className="regen-row">
+            <button type="button" className="btn btn-dark" onClick={handleSubmit} disabled={!canSubmit}>
+              {busy ? '제출 중…' : mySubmitted ? '다시 제출' : '설문 제출'}
+            </button>
+            {isCreator && (
+              <button type="button" className="btn btn-ghost" onClick={handleAssign} disabled={busy}>
+                설문 마감하고 배정하기
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

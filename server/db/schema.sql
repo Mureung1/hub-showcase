@@ -34,7 +34,8 @@ create table if not exists projects (
   regen_count        int  not null default 0 check (regen_count between 0 and 3),
   revealed_at        timestamptz,              -- 배정 결과 공개 시각 (10분 역할 교환의 기준)
   swap_used          boolean not null default false,  -- 역할 교환 1회 사용 여부
-  assignment_summary text,                     -- 역할 배정 에이전트의 팀 단위 설명
+  assignment_summary text,                     -- 역할 배정 에이전트의 팀 단위 설명(AI, 후속)
+  assignment_stats   jsonb,                     -- 배정 통계(집계) — 결과 화면 규칙 요약용
   created_at         timestamptz not null default now()
 );
 
@@ -110,14 +111,19 @@ create table if not exists surveys (
   unique (project_id, member_id)               -- 1인 1응답 → 제출 현황은 행 개수로 계산
 );
 
--- 9. 역할 배정 결과
+-- 9. 역할 배정 결과 (한 사람이 여러 역할 가능 — 조장+실무, 인원<역할 시 1인 다역)
 create table if not exists assignments (
   id         uuid primary key default gen_random_uuid(),
   project_id uuid not null references projects(id) on delete cascade,
   member_id  uuid not null references project_members(id) on delete cascade,
   role_id    uuid not null references roles(id) on delete cascade,
-  unique (project_id, member_id)               -- 한 사람은 하나의 역할
+  unique (project_id, member_id, role_id)      -- 같은 역할 중복만 방지(다역 허용)
 );
+
+-- 기존 배포(1인 1역 유니크·assignment_stats 이전 스키마)를 위한 멱등 마이그레이션 — 재실행해도 안전
+alter table assignments drop constraint if exists assignments_project_id_member_id_key;
+create unique index if not exists assignments_pmr_key on assignments(project_id, member_id, role_id);
+alter table projects add column if not exists assignment_stats jsonb;
 
 -- 10. 업로드 (파일 또는 링크 + 100자 코멘트)
 create table if not exists uploads (

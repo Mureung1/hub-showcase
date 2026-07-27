@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { supabase } from '../db/supabase.js'
 import { userIdFromReq } from '../lib/auth.js'
 import { generatePlan } from '../services/planner.js'
+import { assignRoles, computeTeamStats } from '../../src/logic/assignRoles.js'
 import { parseDate, toDateInputValue } from '../../src/utils/dates.js'
 
 // 쿠키의 JWT에서 로그인 사용자를 확인한다. 미로그인이면 401을 던진다. (me.js와 동일 패턴)
@@ -407,7 +408,7 @@ projects.get('/api/projects/:id/invite', async (req, res) => {
 // ── 설문 조회: 프로젝트 역할 + 제출 현황 (팀원 전용) ──
 projects.get('/api/projects/:id/survey', async (req, res) => {
   try {
-    const { member, project } = await loadMember(req)
+    const { user, member, project } = await loadMember(req)
 
     const { data: roles, error: e1 } = await supabase
       .from('roles')
@@ -438,6 +439,7 @@ projects.get('/api/projects/:id/survey', async (req, res) => {
 
     res.json({
       project: { title: project.title, headcount: project.headcount, status: project.status },
+      isCreator: project.creator_id === user.id,
       roles: roles.map((r) => ({ id: r.id, name: r.name, emoji: r.emoji, isLeader: r.is_leader_role })),
       memberCount: memberCount ?? 0,
       submittedCount: submittedCount ?? 0,
@@ -489,6 +491,120 @@ projects.post('/api/projects/:id/survey', async (req, res) => {
     throwIf(ec, '제출 수 조회')
 
     res.status(201).json({ ok: true, submittedCount: submittedCount ?? 0 })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 배정 실행: 생성자가 설문을 마감하고 결정적 점수 로직으로 역할을 배정·공개한다 ──
+projects.post('/api/projects/:id/assign', async (req, res) => {
+  try {
+    const { project } = await loadCreatorProject(req, 'id, status, creator_id')
+    if (project.status !== 'recruiting') throw fail(409, '배정할 수 있는 단계가 아닙니다.')
+
+    // 설문 제출자 = 참여자 (미제출자는 배정에서 제외)
+    const { data: surveys, error: es } = await supabase
+      .from('surveys')
+      .select('member_id, answers')
+      .eq('project_id', project.id)
+    throwIf(es, '설문 조회')
+    if (surveys.length < 1) throw fail(400, '설문을 제출한 팀원이 없습니다.')
+
+    const { data: roleRows, error: erl } = await supabase
+      .from('roles')
+      .select('id, name, min_count, max_count, is_leader_role')
+      .eq('project_id', project.id)
+      .order('sort_order')
+    throwIf(erl, '역할 조회')
+
+    // assignRoles 입력 형태로 변환 (역할은 UUID, isLeader로 조장 판정)
+    const participants = surveys.map((s) => ({ id: s.member_id }))
+    const surveyMap = Object.fromEntries(surveys.map((s) => [s.member_id, s.answers]))
+    const roles = roleRows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      min: r.min_count,
+      max: r.max_count,
+      isLeader: r.is_leader_role,
+    }))
+
+    const result = assignRoles(participants, surveyMap, roles)
+    const stats = computeTeamStats(participants, surveyMap, roles, result)
+
+    // 기존 배정 삭제 후 재저장 — 한 사람의 여러 역할을 각각 1행으로
+    const { error: ed } = await supabase.from('assignments').delete().eq('project_id', project.id)
+    throwIf(ed, '기존 배정 삭제')
+    const rows = []
+    for (const [memberId, roleIds] of Object.entries(result.byMember)) {
+      for (const roleId of roleIds) rows.push({ project_id: project.id, member_id: memberId, role_id: roleId })
+    }
+    if (rows.length > 0) {
+      const { error: ei } = await supabase.from('assignments').insert(rows)
+      throwIf(ei, '배정 저장')
+    }
+
+    const { error: eu } = await supabase
+      .from('projects')
+      .update({ status: 'assigned', revealed_at: new Date().toISOString(), assignment_stats: stats })
+      .eq('id', project.id)
+    throwIf(eu, '배정 상태 갱신')
+
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 배정 결과 조회: 팀원별 역할 + 규칙 요약 통계 (팀원 전용) ──
+projects.get('/api/projects/:id/result', async (req, res) => {
+  try {
+    const { project } = await loadMember(req)
+    if (!['assigned', 'active', 'completed'].includes(project.status)) {
+      throw fail(409, '아직 배정 결과가 없습니다.')
+    }
+
+    const { data: proj, error: ep } = await supabase
+      .from('projects')
+      .select('title, status, revealed_at, assignment_stats, assignment_summary, creator_id')
+      .eq('id', project.id)
+      .single()
+    throwIf(ep, '프로젝트 조회')
+
+    const { data: members, error: em } = await supabase
+      .from('project_members')
+      .select('id, nickname, user_id, joined_at')
+      .eq('project_id', project.id)
+      .order('joined_at')
+    throwIf(em, '팀원 조회')
+
+    const { data: assignments, error: ea } = await supabase
+      .from('assignments')
+      .select('member_id, roles(name, emoji, is_leader_role)')
+      .eq('project_id', project.id)
+    throwIf(ea, '배정 조회')
+
+    const byMember = new Map()
+    assignments.forEach((a) => {
+      if (!byMember.has(a.member_id)) byMember.set(a.member_id, [])
+      byMember.get(a.member_id).push(a.roles)
+    })
+    const leaderRole = assignments.map((a) => a.roles).find((r) => r?.is_leader_role) ?? null
+
+    res.json({
+      project: { title: proj.title, status: proj.status, revealedAt: proj.revealed_at },
+      leaderRole: leaderRole ? { name: leaderRole.name, emoji: leaderRole.emoji } : null,
+      members: members.map((m) => {
+        const rs = byMember.get(m.id) ?? []
+        return {
+          nickname: m.nickname,
+          isCreator: m.user_id === proj.creator_id,
+          isLeader: rs.some((r) => r?.is_leader_role),
+          roles: rs.filter((r) => !r?.is_leader_role).map((r) => ({ name: r.name, emoji: r.emoji })),
+        }
+      }),
+      stats: proj.assignment_stats,
+      summary: proj.assignment_summary,
+    })
   } catch (err) {
     res.status(err.status ?? 500).json({ error: err.message })
   }

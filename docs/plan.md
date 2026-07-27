@@ -17,7 +17,7 @@
 | ② | 백엔드 기초 (Express·Supabase·스키마 13테이블) | ✅ |
 | ③ | 목업 시드 + 3탭 콘텐츠 (실 DB 조회) | ✅ |
 | ③.5 | 프로젝트 생성~배정 플로우 화면 5종 (목업) | ✅ |
-| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 인증·생성/플래너·계획확정·합류·설문 완료 |
+| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 인증·생성/플래너·계획확정·합류·설문·배정 완료 |
 | ⑤ | 검증 에이전트 + 결함 수정 | ⬜ |
 
 ### 인증 — ✅ 실데이터 동작
@@ -47,9 +47,10 @@
 - [x] 계획 인라인 수정 저장 / 재생성(3회 제한) / 확정 → 초대 토큰 발급 — `POST /:id/regenerate`·`/confirm`·`GET /:id/invite`, `InviteLink.jsx` 실 링크
 - [x] join API (초대 토큰 + 닉네임, 정원·중복 검사) — `server/routes/join.js`, `Join.jsx` 실연동. 가입+합류+자동 로그인
 - [x] 설문 제출 API + 화면 (프로젝트 실제 역할 기반) — `Survey.jsx` 실연동, surveys upsert
-- [ ] 설문 마감 (전원 제출 자동 / 정원 미달 수동 하향) → 배정 트리거
-- [ ] 배정 실행 (`assignRoles` 서버 이식) + 설명자 에이전트 `server/services/explainer.js`
-- [ ] 배정 결과 공개 + 10분 내 1회 역할 맞교환
+- [x] 설문 마감(생성자 수동) + 배정 실행 (`assignRoles` 서버 이식·조장 isLeader 판정·**다역 저장**) — `POST /api/projects/:id/assign`
+- [x] 배정 결과 공개·조회 (규칙 요약) — `GET /api/projects/:id/result`, `AssignmentResult.jsx` 실연동
+- [ ] 배정 설명자 에이전트 `server/services/explainer.js` (Claude 배정 설명 → 규칙 요약 대체)
+- [ ] 10분 내 1회 역할 맞교환 / 전원 제출 시 자동 마감 / 태스크 담당자 자동배정
 
 ### 공통 · 인프라
 - [x] Express 단일 게이트웨이 + Supabase Secret key 서버 전용 — `server/db/supabase.js`
@@ -252,6 +253,18 @@
 ## 개발 로그 (결정·검증)
 
 > 작업(슬라이스/커밋 단위)마다 **왜 그렇게 구현했는지 + 어떻게 검증했는지**를 짧게 남긴다. 최신이 위로.
+
+### 2026-07-27 · 역할 배정 실행 + 결과 공개 (규칙 요약)
+- **왜**: 이 프로젝트의 **핵심 차별점** — 생성자가 설문을 마감하면 **AI가 아니라 결정적 점수 규칙**이 역할을 배정하고(재현성·공정성), 결과를 공개한다.
+- **방식**: `src/logic/assignRoles.js`를 서버에서 그대로 import(planner가 templates.js 쓰는 방식) — 단, 실 역할은 UUID라 조장 판정을 `r.id==='leader'` → **`r.isLeader`**로 수정. `POST /api/projects/:id/assign`(생성자·모집중): 설문 제출자만 참여자로 `assignRoles` 실행 → 기존 배정 삭제 후 **member×role 다역 저장** → `computeTeamStats`를 `projects.assignment_stats`에 저장 → status `assigned`·`revealed_at`. `GET /:id/result`가 팀원별 역할·조장·규칙 통계 반환. `AssignmentResult.jsx`는 실데이터로(맞교환·공개 단계 제외), `Survey.jsx`에 생성자 "마감하고 배정" + 팀원 "결과 보기". **DB 정합**: 한 사람이 조장+실무/1인 다역이라 `assignments`의 `unique(project_id,member_id)`를 `(…,role_id)`로 교체(마이그레이션). `me.js`는 다역을 배열로 묶어 표시(대시보드·진행 회귀 방지).
+- **검증**: `assignRoles`를 UUID 역할로 **단독 실행** — 조장 정확히 1명(리더 yes인 멤버)·전원 실무 보유·통계 정상 확인(조장 isLeader 판정 수정 검증). `oxlint`·`build` 통과. 서버 curl은 생성→확정→합류→전원 설문→배정 계산까지 정상, **배정 저장은 마이그레이션 대기**로 확인(아래 조치).
+- **필요 조치(사용자)**: Supabase SQL Editor에서 1회 실행 —
+  ```sql
+  alter table assignments drop constraint if exists assignments_project_id_member_id_key;
+  create unique index if not exists assignments_pmr_key on assignments(project_id, member_id, role_id);
+  alter table projects add column if not exists assignment_stats jsonb;
+  ```
+  (schema.sql에도 반영.) 이후 배정→결과→3탭이 end-to-end 동작. 적용 후 브라우저/curl 최종 확인 예정.
 
 ### 2026-07-27 · 설문 제출 (성향 설문 실데이터)
 - **왜**: join으로 착지한 `/survey`가 목업(템플릿 역할)이었다. 배정 점수의 입력값을 **프로젝트의 실제 역할(planner가 만든 UUID)** 기준으로 받아 `surveys`에 저장해야 다음 배정 슬라이스가 동작한다.
