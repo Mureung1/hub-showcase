@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -32,27 +32,35 @@ Persistent Python bridge가 current workspace product Runtime이 실제 호출�
 
 ## Acceptance Criteria
 
-- [ ] Python private protocol의 command union과 strict decoder에서 Browser login start/status/cancel/release와 logout이 사라진다.
-- [ ] Bridge Runtime에서 login attempt reservation·watcher·deadline·settlement·logout handler와 cleanup state가 제거된다.
-- [ ] `read_account`가 fresh official account read를 `signed_out | chatgpt | unsupported`로 계속 projection한다.
-- [ ] Removed command fixture는 unknown-command fail-closed behavior를 증명한다.
-- [ ] Python bridge unit·source actual-child suite에서 obsolete lifecycle cases가 제거되고 account read·product operation·close regression이 green이다.
-- [ ] Fake App Server와 journal expectation에 managed lifecycle method가 남지 않는다.
-- [ ] Ruff check·format과 tracked bridge source tests가 통과한다.
-- [ ] Source와 active tests에서 removed Python command·state identifier의 non-historical reference가 0건이다.
+- [x] Python private protocol의 command union과 strict decoder에서 Browser login start/status/cancel/release와 logout이 사라진다.
+- [x] Bridge Runtime에서 login attempt reservation·watcher·deadline·settlement·logout handler와 cleanup state가 제거된다.
+- [x] `read_account`가 fresh official account read를 `signed_out | chatgpt | unsupported`로 계속 projection한다.
+- [x] Removed command fixture는 unknown-command fail-closed behavior를 증명한다.
+- [x] Python bridge unit·source actual-child suite에서 obsolete lifecycle cases가 제거되고 account read·product operation·close regression이 green이다.
+- [x] Fake App Server와 journal expectation에 managed lifecycle method가 남지 않는다.
+- [x] Ruff check·format과 tracked bridge source tests가 통과한다.
+- [x] Source와 active tests에서 removed Python command·state identifier의 non-historical reference가 0건이다.
 
 ## Verification
 
 - Targeted test or command:
-  - `npm run test:bridge-unit -w @ay-ple/codex-chat-runtime`
-  - Source bridge를 직접 사용하는 focused `scripts/test_python_bridge.py` suite
-  - `npm run check:bridge -w @ay-ple/codex-chat-runtime`
-  - `npm test -w @ay-ple/codex-chat-runtime`
+  - `npm run test:bridge-unit -w @ay-ple/codex-chat-runtime` — 통과, 8 tests
+  - `npm run test:bridge -w @ay-ple/codex-chat-runtime` — 통과, tracked `worker.py`를 직접 사용한 23 actual-child tests
+  - `npm run check:bridge -w @ay-ple/codex-chat-runtime` — Ruff check·format 통과
+  - `npm test -w @ay-ple/codex-chat-runtime` — 통과
+  - Removed Python identifier·Fake App Server method `rg` scan — state·handler reference 0건. Removed command 문자열은 strict negative fixture에만 남는다.
 - Repository checks:
-  - `npm test`
-  - `npm run typecheck`
+  - `npm test` — 통과
+  - `npm run typecheck` — 통과
+  - `npm run build` — 통과
+  - `npm run lint -w @ay-ple/chat-shell` — 통과
+  - `npm run check:docs-links` — 통과
 - Manual or live smoke:
-  - 없음. Materialized production bundle과 exact gates는 Ticket 004에서 갱신·실행한다.
+  - 없음. Patch stack, canonical manifest, ignored materialized production bundle과 exact artifact gates는 Ticket 004에 명시적으로 defer했다.
+
+## Result
+
+Tracked Python bridge의 account command를 fresh `read_account` 하나로 닫고 Browser login start/status/cancel/release와 logout codec·dispatch·lease 분류, attempt reservation·watcher·deadline·settlement·cleanup을 제거했다. Removed command는 `unknown_command` fatal로 닫히며 actual-child journal은 App Server lifecycle method를 호출하지 않음을 증명한다. Fake App Server에서 managed account method와 state mutation을 제거했고, 전체 survivor actual-child suite가 stale bundled worker가 아니라 tracked bridge source를 실행하도록 고정했다. Fresh account는 `signed_out | chatgpt | unsupported`로만 projection하고 product Turn·Plan interaction·model catalog·interrupt·release·close·bounded failure regression을 유지했다. Standards·Spec 병렬 리뷰 후 source actual-child와 journal expectation finding을 수정했고 후속 리뷰 결과 남은 finding은 없다. 구현 commit은 `c6bac8585`, review-fix commit은 `c3358ce66`이다.
 
 ## Blocked By
 
