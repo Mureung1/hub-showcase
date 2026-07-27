@@ -148,3 +148,87 @@ h1 { font-size: 24px; letter-spacing: -0.02em; }
   cursor: pointer;
 }
 .saved-routes li button:hover { opacity: 1; }
+
+/* ─────────── 브리핑 리포트 (프로토타입 화면 ⑤ 이식) ─────────── */
+.report {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  min-height: 470px;
+  background: var(--card);
+  border: 1px solid var(--mist);
+  border-radius: var(--radius);
+  overflow: hidden;                 /* 지도 SVG가 둥근 모서리를 넘지 않게 */
+  box-shadow: 0 6px 20px rgba(74, 52, 35, 0.06);
+}
+.report-map { position: relative; background: #f1f4f7; overflow: hidden; }
+.report-map svg { width: 100%; height: 100%; display: block; position: absolute; inset: 0; }
+
+.map-legend {
+  position: absolute; right: 14px; bottom: 14px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--mist); border-radius: 10px;
+  padding: 9px 13px; font-size: 10.5px; display: grid; gap: 5px;
+}
+.lg { display: flex; align-items: center; gap: 7px; font-weight: 500; }
+.lg i { width: 16px; border-top: 3px solid var(--route); border-radius: 2px; }
+.lg.red i { border-color: var(--signal); }
+.lg.dash i { border-top: 2.5px dashed var(--route); opacity: 0.65; }
+
+/* 지도 위 미어캣 — 막히는 구간 옆에서 "지켜보는 중" */
+.map-meerkat {
+  position: absolute; left: 27%; top: 64%;
+  transform: translate(-50%, -50%);
+  width: 112px; height: 112px; border-radius: 50%;
+  background: rgba(251, 246, 238, 0.55);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; pointer-events: none;
+}
+.map-meerkat .cap { font-size: 11px; font-weight: 600; color: var(--slate); }
+
+.report-side {
+  padding: 20px; border-left: 1px solid var(--mist);
+  display: flex; flex-direction: column; gap: 13px;
+  background: var(--card); overflow-y: auto;
+}
+.rp-block { border: 1px solid var(--mist); border-radius: 12px; padding: 13px 15px; }
+.rp-block.alert  { border-color: #f3c4ac; background: var(--signal-soft); }
+.rp-block.notice { border-color: #ebd79a; background: var(--warn-soft); }
+.rp-block.reco   { border-color: #b8d0e4; background: var(--route-soft); }
+.rp-block.clear  { border-color: #cbdcc9; background: var(--good-soft); }   /* 영향 없음 (프로토타입엔 없던 초록 변형) */
+.rp-kicker {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  color: var(--slate); margin-bottom: 6px;
+  display: flex; align-items: center; gap: 6px;
+}
+.rp-block.alert  .rp-kicker { color: var(--signal); }
+.rp-block.notice .rp-kicker { color: var(--warn); }
+.rp-block.reco   .rp-kicker { color: var(--route); }
+.rp-block.clear  .rp-kicker { color: var(--good); }
+.rp-block h4 { font-size: 13px; font-weight: 600; line-height: 1.5; }
+.rp-block .sub { font-size: 11.5px; color: var(--slate); margin-top: 4px; }
+.rp-alt { display: flex; align-items: flex-start; gap: 10px; }
+.rp-alt .okc {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--good-soft); color: var(--good);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+}
+.trace { display: grid; gap: 2px; }
+.trace-item {
+  display: flex; gap: 9px; font-size: 12px; color: var(--slate);
+  padding: 5px 0; opacity: 0.35; transition: opacity 0.3s;
+}
+.trace-item::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--slate); opacity: 0.45; flex-shrink: 0; margin-top: 6px;
+}
+.trace-item.show { opacity: 1; }
+.trace-item.found { color: var(--ink); font-weight: 500; }
+.trace-item.found::before { background: var(--good); opacity: 1; }
+.rp-link { font-size: 12px; color: var(--route); font-weight: 600; text-decoration: none; margin-top: auto; }
+
+@media (max-width: 840px) {
+  .report { grid-template-columns: 1fr; }
+  .report-map { min-height: 280px; }
+  .report-side { border-left: none; border-top: 1px solid var(--mist); }
+}

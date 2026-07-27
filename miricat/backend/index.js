@@ -56,6 +56,17 @@ app.delete('/api/routes/:id', async (req, res) => {
   res.status(204).end();                            // 204 = 성공, 돌려줄 내용 없음
 });
 
+app.get('/api/notices/:id', async (req, res) => {
+  const { id } = req.params;
+  const { data, error } = await supabase
+  .from('notices')
+  .select("id, source, source_url, title, extraction, collected_at")
+  .eq("id", id)
+  .single();
+  if (error) return res.status(404).json({ error: error.message });
+  res.json({ notice: data });
+})
+
 // 미리캣이 확인한 공지 목록 (최신순) — Python 에이전트가 notices에 저장한 추출 결과를 화면에 보여준다.
 app.get('/api/notices', async (req, res) => {
   const { data, error } = await supabase
