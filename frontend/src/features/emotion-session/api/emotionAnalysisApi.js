@@ -1,9 +1,10 @@
+import {
+  EMOTION_ANALYSIS_LIMITS
+} from "../../../../../shared/contracts/emotionAnalysisContract";
+
 const DEFAULT_API_BASE_URL = "http://127.0.0.1:3000";
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(
-  /\/$/,
-  ""
-);
-const EMOTION_ANALYSIS_ENDPOINT = `${API_BASE_URL}/api/emotion-analyses`;
+const configuredApiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL;
 
 export class EmotionAnalysisApiError extends Error {
   constructor(message, { status, code, details } = {}) {
@@ -15,8 +16,8 @@ export class EmotionAnalysisApiError extends Error {
   }
 }
 
-async function requestJson(url, options = {}) {
-  const response = await fetch(url, options);
+async function requestJson(fetchImpl, url, options = {}) {
+  const response = await fetchImpl(url, options);
   let payload;
 
   try {
@@ -42,39 +43,80 @@ async function requestJson(url, options = {}) {
   return payload;
 }
 
-export async function createEmotionAnalysis(payload, { signal } = {}) {
-  const result = await requestJson(EMOTION_ANALYSIS_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-    signal
-  });
-  const emotionAnalysis = result.data?.emotionAnalysis;
-
-  if (!emotionAnalysis) {
-    throw new EmotionAnalysisApiError("The API response does not include the created record.", {
-      status: 502,
-      code: "INVALID_API_RESPONSE"
-    });
+export function createEmotionAnalysisApi({
+  baseUrl = configuredApiBaseUrl,
+  fetchImpl = (...args) => globalThis.fetch(...args)
+} = {}) {
+  if (typeof fetchImpl !== "function") {
+    throw new TypeError("fetchImpl must be a function.");
   }
 
-  return emotionAnalysis;
-}
+  const normalizedBaseUrl = String(baseUrl || DEFAULT_API_BASE_URL).replace(
+    /\/+$/,
+    ""
+  );
+  const endpoint = `${normalizedBaseUrl}/api/emotion-analyses`;
 
-export async function listEmotionAnalyses(sessionId, { limit = 20, signal } = {}) {
-  const searchParams = new URLSearchParams({
+  async function createEmotionAnalysis(payload, { signal } = {}) {
+    const result = await requestJson(fetchImpl, endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal
+    });
+    const emotionAnalysis = result.data?.emotionAnalysis;
+
+    if (!emotionAnalysis) {
+      throw new EmotionAnalysisApiError(
+        "The API response does not include the created record.",
+        {
+          status: 502,
+          code: "INVALID_API_RESPONSE"
+        }
+      );
+    }
+
+    return emotionAnalysis;
+  }
+
+  async function listEmotionAnalyses(
     sessionId,
-    limit: String(limit)
-  });
-  const result = await requestJson(`${EMOTION_ANALYSIS_ENDPOINT}?${searchParams}`, { signal });
-  const emotionAnalyses = result.data?.emotionAnalyses;
-
-  if (!Array.isArray(emotionAnalyses)) {
-    throw new EmotionAnalysisApiError("The API response does not include a record list.", {
-      status: 502,
-      code: "INVALID_API_RESPONSE"
+    { limit = EMOTION_ANALYSIS_LIMITS.historyLimit, signal } = {}
+  ) {
+    const searchParams = new URLSearchParams({
+      sessionId,
+      limit: String(limit)
     });
+    const result = await requestJson(
+      fetchImpl,
+      `${endpoint}?${searchParams}`,
+      { signal }
+    );
+    const emotionAnalyses = result.data?.emotionAnalyses;
+
+    if (!Array.isArray(emotionAnalyses)) {
+      throw new EmotionAnalysisApiError(
+        "The API response does not include a record list.",
+        {
+          status: 502,
+          code: "INVALID_API_RESPONSE"
+        }
+      );
+    }
+
+    return emotionAnalyses;
   }
 
-  return emotionAnalyses;
+  return {
+    createEmotionAnalysis,
+    listEmotionAnalyses
+  };
 }
+
+const defaultApi = createEmotionAnalysisApi();
+
+export const createEmotionAnalysis = (...args) =>
+  defaultApi.createEmotionAnalysis(...args);
+
+export const listEmotionAnalyses = (...args) =>
+  defaultApi.listEmotionAnalyses(...args);

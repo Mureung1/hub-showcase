@@ -1,4 +1,7 @@
 import { getSupabaseClient } from "../config/supabaseClient.js";
+import {
+  EMOTION_ANALYSIS_LIMITS
+} from "../../shared/contracts/emotionAnalysisContract.js";
 
 const EMOTION_ANALYSIS_COLUMNS = [
   "id",
@@ -45,13 +48,23 @@ export async function createEmotionAnalysis(record) {
   return data;
 }
 
-export async function listEmotionAnalysesBySession(sessionId, limit = 20) {
+export async function listEmotionAnalysesBySession(
+  sessionId,
+  limit = EMOTION_ANALYSIS_LIMITS.historyLimit
+) {
   if (typeof sessionId !== "string" || !sessionId.trim()) {
     throw new TypeError("sessionId must be a non-empty string.");
   }
 
-  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
-    throw new TypeError("limit must be an integer between 1 and 100.");
+  if (
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    limit > EMOTION_ANALYSIS_LIMITS.maximumHistoryLimit
+  ) {
+    throw new TypeError(
+      `limit must be an integer between 1 and ` +
+        `${EMOTION_ANALYSIS_LIMITS.maximumHistoryLimit}.`
+    );
   }
 
   const { data, error } = await getSupabaseClient()

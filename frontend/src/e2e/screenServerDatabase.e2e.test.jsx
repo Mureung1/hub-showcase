@@ -3,7 +3,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createApp } from "../../../server.js";
 import EmotionInputForm from "../features/emotion-input/components/EmotionInputForm.jsx";
-import { createEmotionAnalysis } from "../features/emotion-session/api/emotionAnalysisApi.js";
+import {
+  createEmotionAnalysisApi
+} from "../features/emotion-session/api/emotionAnalysisApi.js";
 import {
   createManualAnalysisPayload
 } from "../../../test/fixtures/emotionAnalysisFixtures.js";
@@ -12,7 +14,7 @@ const sessionId = "44c96b3d-c657-4a41-876b-a26b53178f59";
 const records = [];
 let server;
 let baseUrl;
-let originalFetch;
+let analysisApi;
 
 function createTestRecord(record) {
   const savedRecord = {
@@ -39,15 +41,10 @@ describe("화면 → Express 서버 → DB 저장 경계 E2E", () => {
     });
     const address = server.address();
     baseUrl = `http://127.0.0.1:${address.port}`;
-    originalFetch = globalThis.fetch;
-    globalThis.fetch = (input, init) => {
-      const url = String(input).replace("http://127.0.0.1:3000", baseUrl);
-      return originalFetch(url, init);
-    };
+    analysisApi = createEmotionAnalysisApi({ baseUrl });
   });
 
   afterAll(async () => {
-    globalThis.fetch = originalFetch;
     await new Promise((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
     });
@@ -56,12 +53,14 @@ describe("화면 → Express 서버 → DB 저장 경계 E2E", () => {
   it("화면에서 제출한 제한 정보가 서버 검증을 거쳐 저장되고 응답으로 돌아온다", async () => {
     let responseRecord;
     const onAnalyze = vi.fn(async (input) => {
-      responseRecord = await createEmotionAnalysis(createManualAnalysisPayload({
-        sessionId,
-        ...input,
-        selectedScenario: "normal",
-        aiResponse: "테스트 응답"
-      }));
+      responseRecord = await analysisApi.createEmotionAnalysis(
+        createManualAnalysisPayload({
+          sessionId,
+          ...input,
+          selectedScenario: "normal",
+          aiResponse: "테스트 응답"
+        })
+      );
       return true;
     });
 

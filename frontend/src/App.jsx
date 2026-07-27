@@ -8,8 +8,6 @@ import { ObservationStatus } from "./features/observation-status";
 import { ScenarioSelector } from "./features/scenario-simulation";
 import ServiceHeader from "./shared/components/ServiceHeader";
 
-export { analyzeMockContext } from "./features/emotion-analysis";
-
 export default function App() {
   const {
     messages,

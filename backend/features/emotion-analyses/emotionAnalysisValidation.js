@@ -15,6 +15,9 @@ const ALLOWED_VOICE_SIGNALS = new Set(VOICE_SIGNALS);
 const ALLOWED_SCENARIOS = new Set(SCENARIOS);
 const ALLOWED_FACE_SIGNAL_SOURCES = new Set(FACE_SIGNAL_SOURCES);
 const ALLOWED_FACE_SIGNAL_EVIDENCE = new Set(CAMERA_FEATURE_NAMES);
+const HISTORY_LIMIT_MESSAGE =
+  `limit must be an integer between 1 and ` +
+  `${EMOTION_ANALYSIS_LIMITS.maximumHistoryLimit}.`;
 
 export class RequestValidationError extends Error {
   constructor(details) {
@@ -85,7 +88,9 @@ function readFaceSignalMetadata(body, errors) {
   ) {
     errors.push({
       field: "faceSignalEvidence",
-      message: "faceSignalEvidence must contain at most 3 allowed feature names."
+      message:
+        `faceSignalEvidence must contain at most ` +
+        `${EMOTION_ANALYSIS_LIMITS.cameraEvidenceCount} allowed feature names.`
     });
   }
 
@@ -160,7 +165,9 @@ export function validateCreateEmotionAnalysis(body) {
   if (situationText.length > EMOTION_ANALYSIS_LIMITS.situationTextLength) {
     errors.push({
       field: "situationText",
-      message: "situationText must contain at most 500 characters."
+      message:
+        `situationText must contain at most ` +
+        `${EMOTION_ANALYSIS_LIMITS.situationTextLength} characters.`
     });
   }
 
@@ -222,18 +229,21 @@ export function validateListEmotionAnalyses(query) {
     errors.push({ field: "sessionId", message: "sessionId must be a valid UUID." });
   }
 
-  let limit = 20;
+  let limit = EMOTION_ANALYSIS_LIMITS.historyLimit;
 
   if (query.limit !== undefined) {
     if (typeof query.limit !== "string" || !/^\d+$/.test(query.limit)) {
-      errors.push({ field: "limit", message: "limit must be an integer between 1 and 100." });
+      errors.push({ field: "limit", message: HISTORY_LIMIT_MESSAGE });
     } else {
       limit = Number.parseInt(query.limit, 10);
 
-      if (limit < 1 || limit > 100) {
+      if (
+        limit < 1 ||
+        limit > EMOTION_ANALYSIS_LIMITS.maximumHistoryLimit
+      ) {
         errors.push({
           field: "limit",
-          message: "limit must be an integer between 1 and 100."
+          message: HISTORY_LIMIT_MESSAGE
         });
       }
     }
