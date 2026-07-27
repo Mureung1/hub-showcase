@@ -21,4 +21,8 @@ SUMMARIZE_PARSE_ATTEMPTS = 3
 # 개발 중 기본 논문 수. 무료 티어 한도 보호 (CLAUDE.md 비밀·외부 API 규칙).
 DEFAULT_LIMIT = 3
 
+# 웹 요청(?limit=)으로 받을 수 있는 논문 수의 상한.
+# 상한이 없으면 ?limit=100 한 번에 LLM 400회+가 나가 하루 한도(RPD 500)가 즉시 소진된다.
+MAX_LIMIT = 10
+
 ARXIV_CATEGORIES = ["cs.CL", "cs.AI", "cs.LG"]
