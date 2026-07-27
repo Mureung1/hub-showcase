@@ -143,3 +143,21 @@
 - 검증: `npm run verify` 통과(lint+build). `/api/timer-extend`를 실제 Solar 호출로 직접 확인(정수 `extendMinutes`, 자연스러운 한국어 `reason` 반환). 화면 클릭 흐름(타이머 종료 → 확인 화면 → "다 했어"로 정상 완료 전이, "더 필요해"로 연장된 시간만큼 타이머 재시작 + 말풍선 표시)은 사용자가 직접 브라우저에서 확인. `docs/checklist.md` C15 3개 전부 체크, `docs/backlog.md` T15 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신.
 - 미결: 타이머 연장 도중 새로고침하면 연장된 시간(`timerDurationMinutes`)은 저장되지 않아 원래 예상 시간 기준으로 복원된다(C04/C15 어느 쪽에도 명시된 요구사항은 아니라 지금은 그대로 둠). T04·T15는 사용자 요청에 따라 GPT 리뷰를 한 번에 묶어 받을 예정(아직 리뷰 전).
 - 확인: [ ]
+
+## 2026-07-27 | T14 | Brain Dump 일정 확인 멀티턴
+- 작업: `app/api/brain-dump/route.js`에 `turn`(되물은 횟수)·`clarifications`(답변 목록) 입력을 추가하고, Solar가 마이크로스텝 분할과 동시에 "기한이 명확한지, 불명확하면 뭐라고 되물을지, 명확하면 오늘로부터 며칠 뒤인지"까지 한 번의 호출로 판단하게 확장했다. 기한이 불명확하고 아직 질문을 2번 안 했으면(`turn<2`) 저장하지 않고 `{microsteps: null, followUpQuestion}`을 반환, 이미 2번 물었으면(`turn>=2`) 더 묻지 않고 오늘 날짜로 강제 확정한다. `app/page.js`의 `handleSubmit`이 최초 제출과 되묻기 답변 제출을 모두 처리하도록 통합했고, `app/components/BrainDumpInput.js`는 캐릭터 말풍선 문구를 prop으로 받아 되묻는 질문으로 바꿀 수 있게 했다. 구현 중 발견한 문제도 반영: 확정된 기한이 전부 오늘 이후로 미뤄지면 `/api/steps`가 빈 목록을 반환해 미리보기 화면이 깨질 수 있어서, 이 경우 입력 화면에 안내 문구만 보여주고 진행하지 않도록 함. 추가로 사용자 피드백에 따라 입력 화면 기본 문구를 "잘 쓰려고 하지 말고 편하게 적어도 돼! ..."로 바꿔 부담을 줄였다.
+- 검증: `npm run verify` 통과(lint+build). `/api/brain-dump`를 실제 Solar 호출로 3가지 시나리오 확인 — 기한이 텍스트에 명확히 있으면 안 되묻고 바로 그 날짜로 저장, 기한이 없으면 되묻는 질문 반환(저장 안 함), 애매한 답변이 계속돼도 2번째 질문 이후(3번째 시도)엔 강제로 오늘 날짜 확정. 테스트로 만든 Notion 항목은 이후 archive 정리. 화면에서 실제로 되묻는 질문이 뜨고 답변 후 이어지는 것은 사용자가 직접 브라우저에서 확인. `docs/checklist.md` C14 3개 전부 체크, `docs/backlog.md` T14 완료로 변경.
+- 미결: 없음
+- 확인: [ ]
+
+## 2026-07-27 | 홈 버튼 추가 (등록된 Task 아님)
+- 작업: T14 테스트 중 사용자가 "화면을 벗어날 방법이 없다"고 지적해 반영. `app/components/HomeButton.js` 신규(왼쪽 위 고정 아이콘 버튼, 별도 아이콘 라이브러리 없이 인라인 SVG). input(되묻기 중일 때만)·preview·complete 화면에 추가했고, focus·timer·timer-confirm 화면은 사용자 요청대로 일부러 제외했다("할 일 하는 도중엔 이탈 유도 안 함"). 기존 `RestSuggestion`의 텍스트 버튼도 이 컴포넌트로 통일. `goHome()`이 T14 되묻기 상태(followUpQuestion 등)도 같이 지우도록 보완해, 홈으로 돌아온 뒤에도 되묻는 질문이 남아있지 않게 했다.
+- 검증: `npm run verify` 통과. 화면 배치와 클릭 동작은 사용자가 직접 확인.
+- 미결: 없음
+- 확인: [ ]
+
+## 2026-07-27 | T20 | 타이머 일시정지 + 재개 사유 기록
+- 작업: 사용자가 "타이머 도중 멈출 방법이 없다"고 지적해 이슈 #49로 신규 등록 후 구현. `app/components/FocusTimer.js`에 오른쪽 위 일시정지 버튼(onPause) 추가. `app/components/PauseScreen.js` 신규 — 이유를 선택적으로 적을 수 있는 입력창과 "다시 시작" 버튼. `app/page.js`는 일시정지 시각(`pausedAt`)을 기록해두고, 다시 시작하면 멈춘 시간만큼 `stepStartedAt`을 뒤로 밀어 남은 시간이 그대로 이어지게 했다(T04의 시작 시각 재계산 방식 재사용). `pauseCount`/`pauseReasons`는 스텝별로 쌓아뒀다가 완료 시 `/api/steps/complete`에 같이 보내고, 서버는 빈 이유를 걸러내고 Notion Steps DB의 신규 속성 `PauseCount`(Number)/`PauseReasons`(Text)에 기록한다. 일시정지 이유를 그 순간 Agent 판단에 반영할지 사용자와 논의했는데, 할 일과 무관한 외부 방해(전화 등)라 그 순간 제안할 tool이 없다고 판단해 순수 기록으로만 뒀고, 대신 나중에 T10처럼 개인화 참고 정보로 쓸 수 있다는 메모를 `docs/dev-plan.md` 백로그에 남겼다.
+- 검증: `npm run verify` 통과. `/api/steps/complete`를 실제 Notion 왕복으로 확인 — `pauseCount:2, pauseReasons:["전화 옴",""]` 전송 시 `PauseCount:2`, `PauseReasons:"전화 옴"`(빈 문자열 제외)으로 정확히 기록·조회됨. 테스트 데이터는 이후 archive 정리. 화면에서 일시정지→이유 입력→다시 시작→시간이 멈춘 만큼 빠지고 이어지는 것은 사용자가 직접 확인. `docs/checklist.md` C20 3개 전부 체크, `docs/backlog.md` T20 완료로 변경, 총 개수 표기(T01~T20) 갱신.
+- 미결: 없음
+- 확인: [ ]
