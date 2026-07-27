@@ -386,7 +386,7 @@ test('general Plan clarification cancellation resumes without academic mutation'
   }
 })
 
-test('selected-material Product Chat offers a private MCP proposal and Review without creating a ModelingRun', async () => {
+test('donor characterization: same-Turn Review survives while academic apply and double confirmation remain donor-only', async () => {
   const fixture = await createChatFixture()
   const runtime = new ProductChatRuntime()
 

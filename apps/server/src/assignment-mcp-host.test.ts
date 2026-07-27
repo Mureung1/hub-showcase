@@ -16,7 +16,7 @@ const secondRequestKey = 'proposal_22222222222222222222222222222222'
 const workspaceId = 'workspace_33333333333333333333333333333333'
 const courseId = 'course_44444444444444444444444444444444'
 
-test('private MCP host authenticates a loopback native client and advertises only propose_state_patch', async () => {
+test('donor characterization: current MCP advertises academic correlation fields that the target discards', async () => {
   const host = createAssignmentMcpHost()
   const anotherHost = createAssignmentMcpHost()
 
@@ -135,7 +135,7 @@ test('private MCP host authenticates a loopback native client and advertises onl
   }
 })
 
-test('a pre-binding call waits and exact response-loss replay returns the same committed patch', async () => {
+test('donor characterization: current call waits for its Turn while durable replay remains donor-only', async () => {
   const host = createAssignmentMcpHost({ bindingWaitMs: 500 })
   let invokedPayload: unknown
   let invokeCount = 0
@@ -239,7 +239,7 @@ function deepEqual(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
 }
 
-test('cancel and binding timeout settle a pre-binding call without invoking product authority', async () => {
+test('donor characterization: continuity failure stays failure without invoking academic authority', async () => {
   const host = createAssignmentMcpHost({ bindingWaitMs: 40 })
   let invokeCount = 0
   const cancelledSession = host.register({

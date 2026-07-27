@@ -81,6 +81,20 @@ export type {
 } from './review.js'
 
 export {
+  PRODUCT_REVIEW_EVIDENCE_MAX_BYTES,
+  PRODUCT_REVIEW_REQUESTED_FRAME_MAX_BYTES,
+  decodeBrowserSafeSemanticReview,
+  decodeProductReviewFrame,
+  decodeProductReviewResult,
+} from './semantic-review.js'
+export type {
+  BrowserSafeSemanticReview,
+  BrowserSafeTextQuoteEvidence,
+  ProductReviewFrame,
+  ProductReviewResult,
+} from './semantic-review.js'
+
+export {
   decodeProductOperationFrame,
   decodeProductQuestion,
   decodeProductStatePatch,

@@ -35,7 +35,8 @@ Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`, `/api/codex-chat/
 
 | 위치 | 책임 | 공개 경계 |
 | --- | --- | --- |
-| `packages/product-contract` | Product bootstrap·workspace recovery·settled history·material preview, Assignment·retry·Chat·Review·interaction·interrupt request/response와 closed operation frame의 dependency-free exact type·decoder | Browser-safe `.` 하나. HTTP framing, persistence, Server domain과 native Runtime protocol은 포함하지 않음 |
+| `packages/interaction-mcp` | Domain-neutral `propose_state_patch` codec, strict private Broker wire와 authenticated handshake·one-held-POST를 수행하는 built STDIO Adapter | Server가 소비할 package root와 executable `dist/stdio.js`. Runtime package·Browser contract·active workspace 선택은 포함하지 않음 |
+| `packages/product-contract` | Product bootstrap·workspace recovery·settled history·material preview, Assignment·retry·Chat·old Review 옆의 Browser-safe semantic Review·interaction·interrupt request/response와 closed operation frame의 dependency-free exact type·decoder | Browser-safe `.` 하나. Raw MCP, private credential·binding, HTTP framing, persistence, Server domain과 native Runtime protocol은 포함하지 않음 |
 | `packages/codex-chat-runtime` | Exact bundle verification, official SDK, private Node↔Python bridge, workspace-only `CodexWorkspaceRuntime`, fresh Account Readiness, native conversation·Plan·MCP·interaction projection, one-shot native-context probe·atomic coordinator, deadline·bound·fatal settlement과 process-group reap | Package root, Server·Runtime regression용 `./contract`, test-only `./testing`. Production과 lower-level verified factory는 exact workspace 하나만 받고 Node account command family는 `read_account`로 닫힘 |
 | `packages/semester-workspace` | Current v2 compatibility decoder와 consumer 없는 v3 admission·setup kernel | Current Server는 test-only v2 parity와 decoder만 소비하며 v3 setup을 composition하지 않음 |
 | `apps/server` | Current-v2 product graph, Account Readiness, Course·material·Assignment·Chat·Review HTTP, private MCP, neutral NDJSON writer와 listener·Runtime close ordering | Side-effect-free `@ay-ple/server` root의 `createServerApplication()`, `listenToServerApplication()`, `bindServerApplicationListener()`와 `/api/product/*` |
@@ -43,6 +44,8 @@ Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`, `/api/codex-chat/
 | `references/openai-codex` | Exact official source review와 pin upgrade diff를 위한 dev-only oracle | Production dependency가 아닌 fixed Git submodule |
 
 `apps/inspector`, legacy runtime packages, `/api/runtime/*`, `/api/codex-chat/*`, `dev:chat-only`, `useChatShell`과 Browser compatibility consumer는 tracked product graph에 없다. Runtime의 internal text contract·regression export는 product lifecycle 검증을 위해 유지된다.
+
+Interaction foundation expand 단계에서는 `@ay-ple/interaction-mcp`의 built Adapter와 exact codecs만 current graph 옆에 존재한다. `apps/server` Broker, evidence resolver, Runtime-neutral child environment·readiness와 inline Review public composition은 아직 연결되지 않았고, current `/api/product-mcp`와 academic Review/apply path가 계속 active public behavior다.
 
 ## 실행 흐름
 
