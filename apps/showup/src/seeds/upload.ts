@@ -19,6 +19,7 @@ import {
   reservationIds,
   incidentIds,
   demoCustomersWithRisk,
+  incidentInputs,
 } from './seed';
 
 function getEnv(key: string): string {
@@ -84,11 +85,10 @@ async function uploadSeeds(): Promise<void> {
     });
   }
 
-  // incident 문서
-  const incidentCustomerIds = [0, 0, 4, 5, 5, 6, 6, 7];
+  // incident 문서 — seed.ts의 incidentInputs에서 customerIndex를 직접 사용
   for (let i = 0; i < demoIncidents.length; i++) {
     const incident = demoIncidents[i];
-    const customerId = customerIds[incidentCustomerIds[i]];
+    const customerId = customerIds[incidentInputs[i].customerIndex];
     const incidentRef = storeRef
       .collection('customers')
       .doc(customerId)
