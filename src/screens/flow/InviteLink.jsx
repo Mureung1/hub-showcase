@@ -104,6 +104,13 @@ export default function InviteLink() {
           <button
             type="button"
             className="btn btn-dark"
+            onClick={() => navigate(`/projects/${id}/survey`)}
+          >
+            내 설문 작성하기 →
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
             onClick={() => navigate('/app/dashboard')}
           >
             대시보드로 이동

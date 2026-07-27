@@ -43,6 +43,20 @@ async function loadCreatorProject(req, columns) {
   return { user, project }
 }
 
+// 로그인 사용자가 그 프로젝트의 팀원인지 확인한다 (아니면 403/401). 설문 등 멤버 전용 라우트용.
+async function loadMember(req) {
+  const user = await currentUser(req)
+  const { data: member, error } = await supabase
+    .from('project_members')
+    .select('id, projects(id, title, headcount, status, creator_id)')
+    .eq('project_id', req.params.id)
+    .eq('user_id', user.id)
+    .maybeSingle()
+  throwIf(error, '팀원 확인')
+  if (!member || !member.projects) throw fail(403, '이 프로젝트의 팀원만 참여할 수 있습니다.')
+  return { user, member, project: member.projects }
+}
+
 // 계획(역할·마일스톤·태스크)을 프로젝트에 저장한다. 생성·재생성이 공유.
 async function savePlan(projectId, plan) {
   // 역할 — 벌크 insert 후 반환 순서(=입력 순서)로 slug→uuid 매핑
@@ -385,6 +399,96 @@ projects.get('/api/projects/:id/invite', async (req, res) => {
         isCreator: m.user_id === project.creator_id,
       })),
     })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 설문 조회: 프로젝트 역할 + 제출 현황 (팀원 전용) ──
+projects.get('/api/projects/:id/survey', async (req, res) => {
+  try {
+    const { member, project } = await loadMember(req)
+
+    const { data: roles, error: e1 } = await supabase
+      .from('roles')
+      .select('id, name, emoji, is_leader_role')
+      .eq('project_id', project.id)
+      .order('sort_order')
+    throwIf(e1, '역할 조회')
+
+    const { count: memberCount, error: e2 } = await supabase
+      .from('project_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('project_id', project.id)
+    throwIf(e2, '팀원 수 조회')
+
+    const { count: submittedCount, error: e3 } = await supabase
+      .from('surveys')
+      .select('id', { count: 'exact', head: true })
+      .eq('project_id', project.id)
+    throwIf(e3, '제출 수 조회')
+
+    const { data: mine, error: e4 } = await supabase
+      .from('surveys')
+      .select('id')
+      .eq('project_id', project.id)
+      .eq('member_id', member.id)
+      .maybeSingle()
+    throwIf(e4, '내 설문 조회')
+
+    res.json({
+      project: { title: project.title, headcount: project.headcount, status: project.status },
+      roles: roles.map((r) => ({ id: r.id, name: r.name, emoji: r.emoji, isLeader: r.is_leader_role })),
+      memberCount: memberCount ?? 0,
+      submittedCount: submittedCount ?? 0,
+      mySubmitted: Boolean(mine),
+    })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 설문 제출: 팀원이 성향 설문을 낸다 (모집 중, 재제출 시 덮어씀) ──
+const LEADER_VALUES = new Set(['yes', 'no', 'any'])
+projects.post('/api/projects/:id/survey', async (req, res) => {
+  try {
+    const { member, project } = await loadMember(req)
+    if (project.status !== 'recruiting') throw fail(409, '설문을 제출할 수 있는 단계가 아닙니다.')
+
+    const { data: roles, error: er } = await supabase
+      .from('roles')
+      .select('id')
+      .eq('project_id', project.id)
+    throwIf(er, '역할 조회')
+    const roleIds = new Set(roles.map((r) => r.id))
+
+    const body = req.body ?? {}
+    const avoid = body.avoid ?? null
+    const leader = body.leader
+    const experience = [...new Set(Array.isArray(body.experience) ? body.experience : [])]
+    // 선호는 중복 제거 + 기피로 고른 역할은 선호에서 제외(모순 방지)
+    const preferences = [...new Set(Array.isArray(body.preferences) ? body.preferences : [])].filter((id) => id !== avoid)
+
+    if (!LEADER_VALUES.has(leader)) throw fail(400, '리더 의향 값이 올바르지 않습니다.')
+    if (preferences.length > 3) throw fail(400, '선호 역할은 최대 3개까지입니다.')
+    for (const id of [...preferences, ...experience]) {
+      if (!roleIds.has(id)) throw fail(400, '설문의 역할이 프로젝트 역할과 맞지 않습니다.')
+    }
+    if (avoid !== null && !roleIds.has(avoid)) throw fail(400, '기피 역할이 프로젝트 역할과 맞지 않습니다.')
+
+    const { error: eu } = await supabase.from('surveys').upsert(
+      { project_id: project.id, member_id: member.id, answers: { preferences, avoid, experience, leader } },
+      { onConflict: 'project_id,member_id' },
+    )
+    throwIf(eu, '설문 저장')
+
+    const { count: submittedCount, error: ec } = await supabase
+      .from('surveys')
+      .select('id', { count: 'exact', head: true })
+      .eq('project_id', project.id)
+    throwIf(ec, '제출 수 조회')
+
+    res.status(201).json({ ok: true, submittedCount: submittedCount ?? 0 })
   } catch (err) {
     res.status(err.status ?? 500).json({ error: err.message })
   }
