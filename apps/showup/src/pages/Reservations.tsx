@@ -39,7 +39,7 @@ const Reservations = () => {
             const customer = await getCustomer(user.uid, res.customerId)
             return {
               ...res,
-              id: res.customerId,
+              id: res.id,
               customerName: customer?.name || '알 수 없음',
               customerPhoneMasked: customer?.phoneMasked ?? '****-****',
             } as ReservationWithCustomer
@@ -75,14 +75,14 @@ const Reservations = () => {
       // 목록 새로고침
       const allReservations = await listReservations(user.uid)
       const enriched = await Promise.all(
-        allReservations.map(async (res) => {
-          const customer = await getCustomer(user.uid, res.customerId)
-          return {
-            ...res,
-            id: res.customerId,
-            customerName: customer?.name || '알 수 없음',
-            customerPhoneMasked: customer?.phoneMasked ?? '****-****',
-          } as ReservationWithCustomer
+       allReservations.map(async (res) => {
+         const customer = await getCustomer(user.uid, res.customerId)
+         return {
+           ...res,
+            id: res.id,
+           customerName: customer?.name || '알 수 없음',
+           customerPhoneMasked: customer?.phoneMasked ?? '****-****',
+         } as ReservationWithCustomer
         })
       )
       enriched.sort((a, b) => {

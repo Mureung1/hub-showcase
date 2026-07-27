@@ -5,6 +5,7 @@ import { listTodayReservations, listReservations } from '@/services/reservations
 import { getTopRiskyCustomers } from '@/services/customers'
 import { calculateDashboardStats } from '@/utils/dashboard'
 import type { CustomerSearchResult } from '@/types/schema'
+import type { ReservationWithId } from '@/services/reservations'
 
 const Dashboard = () => {
   const { user } = useAuthState()
@@ -14,6 +15,7 @@ const Dashboard = () => {
   const [todayNoShow, setTodayNoShow] = useState(0)
   const [noShowRate, setNoShowRate] = useState(0)
   const [attentionCustomers, setAttentionCustomers] = useState<CustomerSearchResult[]>([])
+  const [todayReservations, setTodayReservations] = useState<ReservationWithId[]>([])
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -23,7 +25,7 @@ const Dashboard = () => {
       }
 
       try {
-        const [todayReservations, allReservations, riskyCustomers] = await Promise.all([
+        const [todayRes, allReservations, riskyCustomers] = await Promise.all([
           listTodayReservations(user.uid),
           listReservations(user.uid),
           getTopRiskyCustomers(user.uid, 5),
@@ -31,11 +33,12 @@ const Dashboard = () => {
 
         const stats = calculateDashboardStats(allReservations)
 
-        setTodayCount(todayReservations.length)
-        setTodayVisited(todayReservations.filter((r) => r.status === 'visited').length)
-        setTodayNoShow(todayReservations.filter((r) => r.status === 'noShow').length)
+        setTodayCount(todayRes.length)
+        setTodayVisited(todayRes.filter((r) => r.status === 'visited').length)
+        setTodayNoShow(todayRes.filter((r) => r.status === 'noShow').length)
         setNoShowRate(stats.month.noShowRate)
         setAttentionCustomers(riskyCustomers)
+        setTodayReservations(todayRes)
       } catch (error) {
         console.error('Failed to load dashboard:', error)
       } finally {
@@ -135,9 +138,33 @@ const Dashboard = () => {
             전체 보기 →
           </Link>
         </div>
-        <div className="text-center py-8 text-gray-500">
-          <p>오늘 예약이 없습니다</p>
-        </div>
+        {todayReservations.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <p>오늘 예약이 없습니다</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {todayReservations.map((res) => (
+              <Link
+                key={res.id}
+                to={`/app/reservations`}
+                className="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900">{res.time}</p>
+                    <p className="text-sm text-gray-500 mt-1">{res.memo || '메모 없음'}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-700">
+                      {res.status === 'visited' ? '방문' : res.status === 'noShow' ? '노쇼' : res.status === 'cancelled' ? '취소' : '대기'}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   )
