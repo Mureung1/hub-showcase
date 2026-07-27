@@ -31,11 +31,7 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
           marketKey={selection.marketKey}
           markets={catalogState.markets}
           supportedCategories={catalog.categories.map((item) => item.name)}
-          category={
-            selection.categorySelection.coverage === "full"
-              ? selection.categorySelection.analysisCategory
-              : null
-          }
+          category={selection.categorySelection.name}
           categorySelection={selection.categorySelection}
           categoryCoverageReason={storefronts.categoryCoverageReason}
           layer={selection.layer}
