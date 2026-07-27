@@ -224,3 +224,36 @@
 * **관련 파일**:
   * `server/src/app.js` (수정)
   * `client/src/components/FeedList.jsx` (수정)
+
+## 2026-07-27
+
+### ✅ 1. 채팅방 말풍선 정렬 및 역할(Role) 식별 버그 수정 (완료)
+* **목표**: 채팅 목록에서 채팅방 재입장 시 방장이 도우미로 강제 인식되어 말풍선이 한쪽으로 쏠리는 문제 해결.
+* **작업 내역**:
+  * `client/src/components/ChatList.jsx`에서 서버의 `host_id`, `helper_id` 데이터를 매핑 객체에 포함하도록 수정.
+* **관련 파일**: `client/src/components/ChatList.jsx` (수정)
+
+### ✅ 2. 채팅 상대방 이름(partnerName) 익명화 및 동적 렌더링 적용 (완료)
+* **목표**: 채팅방과 커뮤니티 전역에서 사용자의 실제 닉네임을 가리고 '익명'으로 표시하며, DB에 양측 사용자 이름을 모두 보존.
+* **작업 내역**:
+  * `server/src/app.js`에서 채팅방 생성 시 `host_name`과 `helper_name`을 별도로 DB에 삽입하도록 구조 변경.
+  * `ChatList.jsx`, `ChatRoom.jsx`, `PostCard.jsx`, `PostDetail.jsx` UI에서 닉네임 대신 '익명' 문자열이 렌더링되도록 하드코딩 교체.
+* **관련 파일**: 
+  * `server/src/app.js` (수정)
+  * `client/src/components/ChatList.jsx` (수정)
+  * `client/src/components/ChatRoom.jsx` (수정)
+  * `client/src/components/PostCard.jsx` (수정)
+  * `client/src/components/PostDetail.jsx` (수정)
+
+### ✅ 3. 약속 제안 시스템 메시지 호칭 중립화 (완료)
+* **목표**: 채팅방 중앙 시스템 안내 말풍선에서 '[방장]님', '[도와주는 사람]님' 등의 호칭을 제거하여 자연스러운 메시지 렌더링.
+* **작업 내역**:
+  * `ChatRoom.jsx`에서 시스템 메시지 전송 시 제안자 정보를 제외하고 '📢 새로운 약속이 제안되었습니다' 등 상태 기반 중립적 어조로 변경.
+* **관련 파일**: `client/src/components/ChatRoom.jsx` (수정)
+
+### ✅ 4. 내 프로필 탭의 작성글 배너(PostCard) 리스트 렌더링 (완료)
+* **목표**: 프로필 화면에서 내가 쓴 글의 개수만 표기되던 것을 실제 피드와 동일한 카드 배너 형태로 표출.
+* **작업 내역**:
+  * `App.jsx`의 상태를 `myPostCount`(Number)에서 `myPosts`(Array)로 변경하고, `PostCard` 컴포넌트를 이용해 내가 쓴 글 맵핑(map) 렌더링.
+  * 데스크톱 사이즈 사이드바 영역에서 발생한 `myPostCount` 참조 에러(ReferenceError) 수정.
+* **관련 파일**: `client/src/App.jsx` (수정)
