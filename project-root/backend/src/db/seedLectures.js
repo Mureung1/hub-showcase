@@ -88,9 +88,15 @@ function toSemester(estblYear, estblSmstrSctnm) {
 // 분반 중 하나만 대표로 required=true로 남기고 나머지는 required=false(일반 선택)로 둔다.
 const requiredClaimed = new Set();
 
-function isRequired(department, name) {
+// requiredCoursesByDepartment에 수기로 큐레이션된 학과는 그 목록을 그대로 따른다(더 정확함 —
+// 예: "알고리즘1은 필수, 알고리즘2는 선택" 같은 미묘한 구분은 API 카테고리만으론 못 잡음).
+// 큐레이션이 없는 학과는 API의 category(교과구분, 예: "전공필수"/"교양필수")에 "필수"가 포함되면
+// 자동으로 required=true로 본다 — 학과를 새로 추가할 때 이 파일에 수기 목록을 안 채워도 최소한의
+// 전공필수 필터링이 동작하게 하기 위함. 그 외 나머지는 사용자 크라우드소싱 신고(required_course_report)로 보완한다.
+function isRequired(department, name, category) {
   const list = requiredCoursesByDepartment[department];
-  if (!list || !list.includes(name)) return false;
+  const isListed = list ? list.includes(name) : Boolean(category?.includes('필수'));
+  if (!isListed) return false;
 
   const key = `${department}::${name}`;
   if (requiredClaimed.has(key)) return false;
@@ -117,7 +123,7 @@ async function upsertLecture(row) {
     credit: Number(row.crdit),
     category: row.sbjetSctnm,
     department,
-    required: isRequired(department, row.sbjetNm),
+    required: isRequired(department, row.sbjetNm, row.sbjetSctnm),
     grade: row.estblGrade, // "1"~"4" 또는 학년 무관("*")
     tier: getTier(department, row.sbjetNm, row.totalPrfssNm),
   };
