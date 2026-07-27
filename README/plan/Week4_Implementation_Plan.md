@@ -82,8 +82,9 @@ gantt
   - *골든셋 라벨:* 각 md 상단 frontmatter에 기대값을 명시 — `hypothesis_set`, `expected_status`(가설별), `min_tags`/`max_tags`(태깅 수 허용 범위), `trap`(그 파일이 노리는 실패 유형). **정답 라벨은 사람이 직접 판단해 적는다**(AI 출력을 정답으로 삼으면 평가가 자기참조가 된다).
   - *개인정보:* 실제 인터뷰 내용을 쓰지 않는다. 전부 창작 데이터이며, Task 35 데모 영상 촬영도 이 데이터로만 진행한다.
   - *완료 조건:* 5건 이상의 md가 존재하고, 전부 `화자명: 발언` 포맷 계약을 지키며, `hypotheses.json`의 가설 세트와 매칭되고, 각 파일에 사람이 작성한 기대 라벨이 들어 있다.
+  - **⚠️ 라벨 출처 (2026-07-27):** `expected_status` 5건은 사람이 아니라 AI가 초안으로 채웠다(각 fixture frontmatter의 `label_source` 참고). 이 항목이 원래 경계했던 "AI가 채우면 자기참조 평가가 되어 무의미해진다" 위험이 그대로 적용된다. Task 22 baseline은 이 라벨로 이미 측정했지만, **정식 확정 전 사람 검수를 권장**하며 그 전까지 이 체크박스는 완료로 보지 않는다.
 
-- [ ] **Task 22: [Test/AI] 분석 품질 회귀 러너(eval) 구축 및 baseline 기록**
+- [x] **Task 22: [Test/AI] 분석 품질 회귀 러너(eval) 구축 및 baseline 기록**
   - *상세:* `backend/src/eval/runEval.ts` 신규. Task 21의 fixture를 **실제 Gemini로** 1·2단계에 통과시키고 위 지표 4종을 계산해 표로 출력한다.
     - 결과는 `backend/eval/results/YYYY-MM-DD_HHmm.json` 으로 저장 → 프롬프트 변경 전후를 파일 대 파일로 비교한다.
     - **`npm test`에 넣지 않는다.** 실 API 호출이라 느리고 쿼터를 소모하며 결과가 결정적이지 않다. `backend/package.json`에 `"eval": "ts-node src/eval/runEval.ts"` 별도 스크립트로 분리하고, 유닛 테스트는 항상 고정 mock 응답으로 돌린다.
@@ -97,7 +98,7 @@ gantt
 
 ### 🔴 High — ② PM Skill 기반 분석 고도화
 
-- [ ] **Task 23: [AI/Skill] PM Skill 도입 및 가설검증 프레임으로 번역 (방법론 원본 확정)**
+- [x] **Task 23: [AI/Skill] PM Skill 도입 및 가설검증 프레임으로 번역 (방법론 원본 확정)**
   - *출처 — 백지에서 쓰지 않는다:* 기존 자산인 [`naruv0134/pm-skills`](https://github.com/naruv0134/pm-skills)(9개 플러그인 · 68 스킬 · 42 워크플로)를 도입해 방법론의 출발점으로 삼는다.
     - **선별 원칙 — 전부 설치하지 않는다.** 68개를 통째로 넣으면 세션 컨텍스트만 소모하고 실제 쓰는 건 극소수다. 이 도구의 도메인(가설 검증 인터뷰 분석)에 실제로 걸리는 것만 가져온다:
       - `pm-product-discovery/summarize-interview` — 전사문 ➡️ 구조화 요약 (가장 직접적)
@@ -120,7 +121,7 @@ gantt
   - *역할 분담 명시:* 이 문서가 프롬프트의 단일 원본이며, `AI_Pipeline_Design.md`(계약)와 `lib/prompts/`(구현)는 이 문서를 따른다. 세 곳이 어긋나면 SKILL.md가 정답. pm-skills 원본은 **참조 출처로만 남기고** 우리 SKILL.md가 그것을 대체한다(원본을 계속 따라가면 JTBD 축으로 다시 끌려간다).
   - *완료 조건:* pm-skills에서 선별한 4개 스킬의 출처가 문서에 명시되고, SKILL.md가 존재하며 Claude Code 세션에서 스킬로 인식되고, 위 판정 기준이 **"어떤 입력이면 어떤 판정"**의 형태로(모호한 형용사 없이) 서술되어 Task 25/26의 프롬프트로 그대로 번역 가능하다.
 
-- [ ] **Task 24: [BE] 프롬프트 모듈 분리 (`lib/prompts/`)**
+- [x] **Task 24: [BE] 프롬프트 모듈 분리 (`lib/prompts/`)**
   - *상세:* 3주차 리스크 조언에서 예고한 "프롬프트만 교체할 수 있는 구조"를 실제로 만든다. 현재 system instruction과 `responseSchema`가 `hypothesisTagger.ts` / `verificationResult.ts` / `refineHypothesis.ts` 안에 각각 박혀 있어, 프롬프트 실험 시 로직 파일을 건드려야 한다.
     - `backend/src/lib/prompts/stage1Classify.ts` / `stage2Verify.ts` / `stage3Refine.ts` 로 분리. 각 모듈은 `{ systemInstruction, responseSchema, temperature, buildUserPrompt(input) }` 를 export.
     - 로직 파일은 프롬프트 문자열을 **모르는 상태**가 되어야 한다 — 입력을 넘기고 결과를 받을 뿐.
@@ -309,9 +310,11 @@ gantt
 
 | 지표 | Baseline (Task 22) | 1단계 고도화 후 (Task 25) | 2단계 고도화 후 (Task 26) | 판정 |
 |---|---|---|---|---|
-| `quote_match_rate` | — | — | — | — |
-| `hypothesis_id_valid_rate` | — | — | — | — |
-| `citation_integrity_rate` | — | — | — | — |
-| `status_accuracy` | — | — | — | — |
+| `quote_match_rate` | 100.0% (36/36) | — | — | — |
+| `citation_integrity_rate` | 100.0% (23/23) | — | — | — |
+| `hypothesis_id_valid_rate` | 5/5 fixture 전부 O (무효 id 0건) | — | — | — |
+| `status_accuracy` | 4/5 fixture 일치 (`05_noisy`만 불일치) | — | — | — |
 
+> 측정 조건: `backend/eval/results/2026-07-27_2131.json`, 모델 `gemini-flash-latest`(05_noisy만 429로 `gemini-3.1-flash-lite` 폴백), fixture 5건 전체, 측정 1회, `persist:false`(Task 24).
+> `05_noisy` 불일치는 버그가 아니라 예상된 결과다 — 골든 라벨은 Task 23의 근거 강도 위계(직접 경험 vs 의견)를 적용해 판단했는데, baseline 프롬프트는 아직 그 위계를 반영하지 않고 badge_label 개수만 본다. 이 격차가 Task 25/26에서 줄어드는지가 실질적인 개선 여부의 신호다.
 > 측정 조건(모델명·온도·fixture 세트·측정 횟수)을 함께 기록한다. 조건이 다르면 비교가 성립하지 않는다.
