@@ -1,7 +1,11 @@
-import type { ChildProcessWithoutNullStreams } from 'node:child_process'
+import {
+  execFile,
+  type ChildProcessWithoutNullStreams,
+} from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
 
 const PACKAGE_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -17,11 +21,19 @@ const OFFICIAL_SDK_TESTS = path.join(
 )
 const DEFAULT_PROCESS_GROUP_WAIT_MS = 5_000
 const PROCESS_GROUP_ESCALATION_MS = 2_000
+const execFileAsync = promisify(execFile)
+const GIT_EXECUTABLE = '/usr/bin/git'
 
 export interface LocalProviderPythonBundle {
   readonly codexPathDirectory: string
   readonly pythonExecutable: string
   readonly sitePackages: string
+}
+
+export async function initializeGitRootForTest(
+  directory: string,
+): Promise<void> {
+  await execFileAsync(GIT_EXECUTABLE, ['init', '--quiet', directory])
 }
 
 export function controlledPythonEnvironment(

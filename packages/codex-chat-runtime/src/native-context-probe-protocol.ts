@@ -51,16 +51,19 @@ export function decodeNativeContextConfig(
     throw new Error('invalid config/read response')
   }
   const config = value.config
+  const rawProjectRootMarkers = config.project_root_markers
   if (
     !Object.hasOwn(config, 'project_root_markers') ||
     !Object.hasOwn(config, 'model_instructions_file') ||
-    !Array.isArray(config.project_root_markers) ||
-    config.project_root_markers.length > 1024
+    (rawProjectRootMarkers !== null &&
+      (!Array.isArray(rawProjectRootMarkers) ||
+        rawProjectRootMarkers.length > 1024))
   ) {
     throw new Error('invalid config/read response')
   }
-  const projectRootMarkers: string[] = []
-  for (const marker of config.project_root_markers) {
+  const projectRootMarkers: string[] =
+    rawProjectRootMarkers === null ? ['.git'] : []
+  for (const marker of rawProjectRootMarkers ?? []) {
     if (!isBoundedString(marker, 1024, true)) {
       throw new Error('invalid config/read response')
     }

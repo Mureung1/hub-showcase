@@ -38,6 +38,9 @@ _PRODUCT_MCP_NAMESPACE = "mcp__ay_ple"
 _PRODUCT_MCP_NAME = "propose_state_patch"
 _PRODUCT_MARKER_NAME = "exact-runtime-product-command.txt"
 _PRODUCT_MARKER_CONTENT = "exact-runtime-product-command-ok\n"
+_SANDBOX_EXEC_CALL_ID = "call-workspace-sandbox-exec"
+_SANDBOX_MARKER_CONTENT = "workspace-write-ok\n"
+_SANDBOX_SENTINEL_REPLACEMENT = "sandbox-escape\n"
 _PRODUCT_REVISION_FEEDBACK = "제안 설명을 더 명확하게 작성해 주세요."
 _PRODUCT_REVIEW_QUESTION = {
     "id": "assignment_review_decision",
@@ -92,6 +95,13 @@ def _parser() -> argparse.ArgumentParser:
     serve = commands.add_parser("serve")
     serve.add_argument("--ready-file", required=True)
     serve.add_argument("--journal-file", required=True)
+
+    serve_sandbox = commands.add_parser("serve-sandbox")
+    serve_sandbox.add_argument("--ready-file", required=True)
+    serve_sandbox.add_argument("--journal-file", required=True)
+    serve_sandbox.add_argument("--workspace", required=True)
+    serve_sandbox.add_argument("--inside-marker", required=True)
+    serve_sandbox.add_argument("--outside-sentinel", required=True)
 
     serve_product = commands.add_parser("serve-product")
     serve_product.add_argument("--ready-file", required=True)
@@ -151,14 +161,41 @@ def _policy(args: argparse.Namespace) -> int:
 def _request_journal(responses: MockResponsesServer) -> dict[str, Any]:
     requests = []
     for request in responses.requests():
+        body = request.body_json()
         requests.append(
             {
                 "method": request.method,
                 "path": request.path,
+                "instructions": body.get("instructions"),
+                "developerTexts": request.message_input_texts("developer"),
+                "functionOutputs": _journal_function_outputs(body),
                 "userTexts": request.message_input_texts("user"),
             }
         )
     return {"requests": requests}
+
+
+def _journal_function_outputs(body: dict[str, Any]) -> list[str]:
+    inputs = body.get("input")
+    if not isinstance(inputs, list):
+        return []
+    outputs = []
+    for item in inputs:
+        if not isinstance(item, dict) or item.get("type") != "function_call_output":
+            continue
+        output = item.get("output")
+        if isinstance(output, str):
+            outputs.append(output)
+            continue
+        if isinstance(output, list):
+            texts = [
+                part.get("text")
+                for part in output
+                if isinstance(part, dict) and isinstance(part.get("text"), str)
+            ]
+            if texts:
+                outputs.append("\n".join(texts))
+    return outputs
 
 
 def _publish_journal(
@@ -932,6 +969,96 @@ def _serve(args: argparse.Namespace) -> int:
     return 0
 
 
+def _serve_sandbox(args: argparse.Namespace) -> int:
+    ready_path = Path(args.ready_file)
+    journal_path = Path(args.journal_file)
+    workspace = Path(args.workspace).resolve(strict=True)
+    inside_marker = Path(args.inside_marker).resolve(strict=False)
+    outside_sentinel = Path(args.outside_sentinel).resolve(strict=True)
+    if (
+        not workspace.is_dir()
+        or not inside_marker.parent.resolve(strict=True).is_dir()
+        or not _is_within(inside_marker, workspace)
+        or _is_within(outside_sentinel, workspace)
+        or inside_marker.exists()
+        or not outside_sentinel.is_file()
+    ):
+        raise ValueError("invalid sandbox fixture paths")
+
+    outside_source = (
+        "from pathlib import Path;import sys;"
+        f"Path(sys.argv[1]).write_text({_SANDBOX_SENTINEL_REPLACEMENT!r},"
+        "encoding='utf-8')"
+    )
+    python_source = (
+        "from pathlib import Path;import json,subprocess,sys;"
+        "inside=Path(sys.argv[1]);outside=Path(sys.argv[2]);"
+        "before=outside.read_text(encoding='utf-8');"
+        f"inside.write_text({_SANDBOX_MARKER_CONTENT!r},encoding='utf-8');"
+        "attempt=subprocess.run("
+        f"['/usr/bin/python3','-c',{outside_source!r},str(outside)],"
+        "capture_output=True,text=True);"
+        "blocked=attempt.returncode!=0;"
+        "error='nonzero_exit' if blocked else None;"
+        "after=outside.read_text(encoding='utf-8');"
+        "print(json.dumps({'cwd':str(Path.cwd().resolve()),"
+        "'insideWrite':inside.read_text(encoding='utf-8')=="
+        f"{_SANDBOX_MARKER_CONTENT!r},"
+        "'outsidePreserved':before==after,"
+        "'outsideWriteBlocked':blocked,"
+        "'outsideWriteError':error},"
+        "separators=(',',':'),sort_keys=True))"
+    )
+    command = " ".join(
+        [
+            "/usr/bin/python3",
+            "-c",
+            shlex.quote(python_source),
+            shlex.quote(str(inside_marker)),
+            shlex.quote(str(outside_sentinel)),
+        ]
+    )
+
+    stop = threading.Event()
+    with MockResponsesServer() as responses:
+        responses.enqueue_sse(
+            _response_with_call(
+                "workspace-sandbox-exec-response",
+                _SANDBOX_EXEC_CALL_ID,
+                "exec_command",
+                {
+                    "cmd": command,
+                    "login": False,
+                    "yield_time_ms": 10_000,
+                },
+            ).body
+        )
+        responses.enqueue_sse(
+            streaming_response(
+                "workspace-sandbox-terminal-response",
+                "workspace-sandbox-terminal-message",
+                ["workspace ", "sandbox ", "checked"],
+            )
+        )
+        journal = threading.Thread(
+            target=_publish_journal,
+            args=(responses, journal_path, stop),
+            name="sandbox-provider-journal",
+        )
+        journal.start()
+        try:
+            _atomic_json(ready_path, {"url": responses.url})
+            for line in sys.stdin:
+                if line.strip() == "close":
+                    break
+        finally:
+            stop.set()
+            journal.join(timeout=2)
+            if journal.is_alive():
+                raise RuntimeError("sandbox provider journal did not stop")
+    return 0
+
+
 def _serve_product(args: argparse.Namespace) -> int:
     ready_path = Path(args.ready_file)
     journal_path = Path(args.journal_file)
@@ -961,6 +1088,8 @@ def main(argv: list[str] | None = None) -> int:
         return _policy(args)
     if args.command == "serve":
         return _serve(args)
+    if args.command == "serve-sandbox":
+        return _serve_sandbox(args)
     if args.command == "serve-product":
         return _serve_product(args)
     raise AssertionError(f"unexpected command {args.command}")

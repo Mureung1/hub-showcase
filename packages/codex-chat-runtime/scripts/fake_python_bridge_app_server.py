@@ -528,17 +528,6 @@ class FakeAppServer:
             return
         if self._inject_response(message):
             return
-        if method == "skills/extraRoots/set":
-            params = message.get("params")
-            if (
-                not isinstance(params, dict)
-                or set(params) != {"extraRoots"}
-                or not isinstance(params["extraRoots"], list)
-                or not all(isinstance(root, str) for root in params["extraRoots"])
-            ):
-                raise RuntimeError("invalid skill extra roots")
-            _write({"id": message["id"], "result": {}})
-            return
         if method == "thread/start":
             if (self._journal_path.parent / "hold-thread-start").is_file():
                 return
@@ -750,13 +739,9 @@ class FakeAppServer:
 
 def main() -> None:
     launch_args = sys.argv[3:]
-    if len(sys.argv) not in {3, 5} or launch_args not in (
-        [],
-        ["--config", "project_root_markers=[]"],
-    ):
+    if len(sys.argv) != 3 or launch_args:
         raise SystemExit(
-            "usage: fake_python_bridge_app_server.py "
-            "JOURNAL_PATH CHILD_PID_PATH [--config project_root_markers=[]]"
+            "usage: fake_python_bridge_app_server.py JOURNAL_PATH CHILD_PID_PATH"
         )
     journal_path = Path(sys.argv[1])
     Path(sys.argv[2]).write_text(str(os.getpid()), encoding="utf-8")

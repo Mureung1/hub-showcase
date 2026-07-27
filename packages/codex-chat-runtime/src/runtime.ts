@@ -1,4 +1,5 @@
 import {
+  execFile,
   spawn,
   type ChildProcessWithoutNullStreams,
   type SpawnOptionsWithoutStdio,
@@ -6,6 +7,7 @@ import {
 import { constants as fsConstants } from 'node:fs'
 import { access, lstat, realpath } from 'node:fs/promises'
 import path from 'node:path'
+import { promisify } from 'node:util'
 
 import {
   BridgeProtocolError,
@@ -77,6 +79,11 @@ type CommandName =
   | 'cancel_user_input'
   | 'interrupt'
   | 'release_thread'
+
+const execFileAsync = promisify(execFile)
+const GIT_EXECUTABLE = '/usr/bin/git'
+const GIT_ROOT_PROBE_TIMEOUT_MS = 5_000
+const GIT_ROOT_PROBE_MAX_BYTES = 4 * 1024
 
 const BRIDGE_OPERATION_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   account_read_failed: 'The Codex account could not be read.',
@@ -1436,16 +1443,56 @@ async function validateWorkspace(workspace: string): Promise<string> {
   if (!path.isAbsolute(workspace)) {
     throw new TypeError('Codex workspace must be absolute')
   }
+  let canonicalWorkspace: string
   try {
     const stats = await lstat(workspace)
     if (!stats.isDirectory() || stats.isSymbolicLink()) {
       throw new TypeError('Codex workspace must be a directory')
     }
     await access(workspace, fsConstants.R_OK | fsConstants.X_OK)
-    return await realpath(workspace)
+    canonicalWorkspace = await realpath(workspace)
   } catch (error) {
     if (error instanceof TypeError) throw error
     throw new TypeError('Codex workspace could not be validated')
+  }
+  if (workspace !== canonicalWorkspace) {
+    throw new TypeError('Codex workspace must be canonical')
+  }
+  await validateExactGitRoot(canonicalWorkspace)
+  return canonicalWorkspace
+}
+
+async function validateExactGitRoot(workspace: string): Promise<void> {
+  const marker = path.join(workspace, '.git')
+  try {
+    const markerStats = await lstat(marker)
+    if (!markerStats.isDirectory() || markerStats.isSymbolicLink()) {
+      throw new TypeError('Codex workspace must be an exact Git root')
+    }
+    await access(marker, fsConstants.R_OK | fsConstants.X_OK)
+    const { stdout } = await execFileAsync(
+      GIT_EXECUTABLE,
+      ['-C', workspace, 'rev-parse', '--show-toplevel', '--absolute-git-dir'],
+      {
+        encoding: 'utf8',
+        maxBuffer: GIT_ROOT_PROBE_MAX_BYTES,
+        timeout: GIT_ROOT_PROBE_TIMEOUT_MS,
+        windowsHide: true,
+      },
+    )
+    const paths = stdout.trimEnd().split(/\r?\n/u)
+    if (paths.length !== 2) {
+      throw new TypeError('Codex workspace must be an exact Git root')
+    }
+    const [topLevel, gitDirectory] = await Promise.all(
+      paths.map((candidate) => realpath(candidate)),
+    )
+    if (topLevel !== workspace || gitDirectory !== marker) {
+      throw new TypeError('Codex workspace must be an exact Git root')
+    }
+  } catch (error) {
+    if (error instanceof TypeError) throw error
+    throw new TypeError('Codex workspace must be an exact Git root')
   }
 }
 

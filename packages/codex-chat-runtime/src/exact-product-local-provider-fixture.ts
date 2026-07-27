@@ -18,6 +18,7 @@ import { verifyProductionBundle } from './production-bundle.js'
 import {
   controlledPythonEnvironment,
   delay,
+  initializeGitRootForTest,
   terminateDetachedProcessGroup,
   waitForJsonFile,
   waitForProcessGroupExit,
@@ -34,9 +35,13 @@ const PACKAGE_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
 )
-const DEFAULT_RUNTIME_ROOT = path.join(
+const DEFAULT_RUNTIME_ROOT = path.resolve(
   PACKAGE_ROOT,
-  '.artifacts',
+  '..',
+  '..',
+  '..',
+  '.ay-ple',
+  'runtime',
   'production-runtime-darwin-arm64',
 )
 const LOCAL_PROVIDER = path.join(
@@ -137,6 +142,7 @@ export async function startExactProductLocalProviderFixture(options: {
     ] = await Promise.all(
       Object.values(roots).map((directory) => realpath(directory)),
     )
+    await initializeGitRootForTest(runtimeFallbackWorkspace)
     assertDisjointRoots(activeWorkspace, [
       managedAppDataRoot,
       runtimeFallbackWorkspace,

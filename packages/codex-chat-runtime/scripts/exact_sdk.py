@@ -160,18 +160,6 @@ BEHAVIORAL_PATCHES = (
             "sdk/python/tests/test_public_api_runtime_behavior.py",
         ),
     ),
-    (
-        "0008-standalone-skill-extra-roots",
-        PATCH_ROOT / "0008-standalone-skill-extra-roots.patch",
-        (
-            "sdk/python/scripts/update_sdk_artifacts.py",
-            "sdk/python/src/openai_codex/api.py",
-            "sdk/python/src/openai_codex/async_client.py",
-            "sdk/python/src/openai_codex/client.py",
-            "sdk/python/tests/test_public_api_runtime_behavior.py",
-            "sdk/python/tests/test_public_api_signatures.py",
-        ),
-    ),
 )
 _stable_python: str | None = None
 

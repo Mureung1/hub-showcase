@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import os
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -136,12 +135,6 @@ def _error_code(error: Any) -> str:
             if isinstance(key, str) and key:
                 return key
     return "turn_error"
-
-
-def _skill_extra_roots(skill_path: str | None) -> tuple[str, ...]:
-    if skill_path is None:
-        return ()
-    return (os.path.dirname(skill_path),)
 
 
 def project_notification(
@@ -561,8 +554,8 @@ class BridgeWorker:
                     }
                 thread_start_options: dict[str, Any] = {
                     "cwd": cwd,
-                    "approval_mode": ApprovalMode.deny_all,
-                    "sandbox": Sandbox.read_only,
+                    "approval_mode": ApprovalMode.auto_review,
+                    "sandbox": Sandbox.workspace_write,
                 }
                 if config is not None:
                     thread_start_options["config"] = config
@@ -718,7 +711,6 @@ class BridgeWorker:
 
     async def _start_turn(self, command: StartTurnCommand) -> None:
         async def start_chat_turn(record: ThreadRecord) -> AsyncTurnHandle:
-            await self._codex.set_skill_extra_roots(())
             return await record.handle.turn(
                 command.text,
                 cwd=record.cwd,
@@ -744,9 +736,6 @@ class BridgeWorker:
             )
 
         async def start_product_turn(record: ThreadRecord) -> AsyncTurnHandle:
-            await self._codex.set_skill_extra_roots(
-                _skill_extra_roots(command.skill_path)
-            )
             effective_model = command.model or record.handle.initial_model
             if not effective_model:
                 raise EffectiveModelResolutionError

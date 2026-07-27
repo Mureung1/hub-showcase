@@ -16,6 +16,7 @@ import type {
   StartTurnInput,
 } from './contract.js'
 import { verifyProductionBundle } from './production-bundle.js'
+import { initializeGitRootForTest } from './local-provider-test-support.js'
 import {
   startVerifiedCodexChatRuntime,
   type SpawnedCodexChatRuntime,
@@ -74,6 +75,7 @@ export async function startCodexChatProcessTreeTestFixture(options: {
         mkdir(directory, { recursive: true }),
       ),
     )
+    await initializeGitRootForTest(workspace)
     const [canonicalWorkspace, home, codexHome, codexSqliteHome, tempDirectory] =
       await Promise.all([
         realpath(workspace),

@@ -22,15 +22,20 @@ import type { NativeContextProbeRunner } from './native-context-coordinator.js'
 import { NativeContextProbeError } from './native-context-probe.js'
 import { verifyProductionBundle } from './production-bundle.js'
 import {
-  startVerifiedCodexChatRuntime,
+  startVerifiedCodexChatRuntime as startRuntimeAtExactGitRoot,
   type NodeRuntimeDeadlines,
   type SpawnedCodexChatRuntime,
 } from './runtime.js'
+import { initializeGitRootForTest } from './local-provider-test-support.js'
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const ARTIFACT_ROOT = join(
+const ARTIFACT_ROOT = resolve(
   PACKAGE_ROOT,
-  '.artifacts',
+  '..',
+  '..',
+  '..',
+  '.ay-ple',
+  'runtime',
   'production-runtime-darwin-arm64',
 )
 const FAKE_APP_SERVER = join(
@@ -43,6 +48,16 @@ const FAKE_NODE_WORKER = join(
   'scripts',
   'fake_node_runtime_worker.py',
 )
+
+async function startVerifiedCodexChatRuntime(
+  options: Parameters<typeof startRuntimeAtExactGitRoot>[0],
+) {
+  await initializeGitRootForTest(options.workspace)
+  return startRuntimeAtExactGitRoot({
+    ...options,
+    workspace: await realpath(options.workspace),
+  })
+}
 
 let bundle: Awaited<ReturnType<typeof verifyProductionBundle>>
 const roots: string[] = []
@@ -96,10 +111,7 @@ test('streams one nominal native turn to its authoritative terminal', async () =
         readonly params?: Record<string, unknown>
       }[]
     }
-    assert.deepEqual(journal.launchArgs, [
-      '--config',
-      'project_root_markers=[]',
-    ])
+    assert.deepEqual(journal.launchArgs, [])
     const threadStart = journal.messages.find(
       ({ method }) => method === 'thread/start',
     )
@@ -321,7 +333,7 @@ test('runs the pinned workspace Runtime and native-context sidecar provider-free
   try {
     const signal = new AbortController().signal
     assert.deepEqual(await harness.runtime.readEffectiveConfig({ signal }), {
-      projectRootMarkers: [],
+      projectRootMarkers: ['.git'],
       globalInstructionsFile: null,
     })
     assert.deepEqual(await harness.runtime.listEffectiveSkills({ signal }), [
@@ -580,6 +592,85 @@ test('rejects noncanonical application SemVer before spawning workspace Runtime'
   )
 })
 
+test('rejects unprepared, indirect, and noncanonical Git roots before spawn', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'ay-ple-node-git-root-'))
+  roots.push(root)
+  const environment = await createEnvironmentRoots(root)
+  const targetRepository = join(root, 'target-repository')
+  await mkdir(targetRepository)
+  await initializeGitRootForTest(targetRepository)
+
+  const missingMarker = join(root, 'missing-marker')
+  const fakeMarker = join(root, 'fake-marker')
+  const linkedMarker = join(root, 'linked-marker')
+  const canonicalRepository = join(root, 'canonical-repository')
+  await Promise.all([
+    mkdir(missingMarker),
+    mkdir(join(fakeMarker, '.git'), { recursive: true }),
+    mkdir(linkedMarker),
+    mkdir(canonicalRepository),
+  ])
+  await Promise.all([
+    symlink(join(targetRepository, '.git'), join(linkedMarker, '.git')),
+    initializeGitRootForTest(canonicalRepository),
+  ])
+  const [canonicalMissingMarker, canonicalFakeMarker, canonicalLinkedMarker] =
+    await Promise.all([
+      realpath(missingMarker),
+      realpath(fakeMarker),
+      realpath(linkedMarker),
+    ])
+
+  for (const [label, workspace, message] of [
+    [
+      'missing marker',
+      canonicalMissingMarker,
+      'Codex workspace must be an exact Git root',
+    ],
+    [
+      'fake marker',
+      canonicalFakeMarker,
+      'Codex workspace must be an exact Git root',
+    ],
+    [
+      'linked marker',
+      canonicalLinkedMarker,
+      'Codex workspace must be an exact Git root',
+    ],
+    [
+      'noncanonical path',
+      join(canonicalRepository, '..', basename(canonicalRepository)),
+      'Codex workspace must be canonical',
+    ],
+  ] as const) {
+    await t.test(label, async () => {
+      const processJournalPath = join(
+        root,
+        `${label.replaceAll(' ', '-')}-process-journal.json`,
+      )
+      await assert.rejects(
+        startRuntimeAtExactGitRoot({
+          bundle,
+          workspace,
+          environment,
+          bridgeEntrypointOverride: FAKE_NODE_WORKER,
+          bridgeArgsOverride: [
+            '--scenario=response-hang',
+            `--process-journal=${processJournalPath}`,
+          ],
+        }),
+        (error: unknown) =>
+          error instanceof TypeError && error.message === message,
+      )
+      await assert.rejects(
+        readFile(processJournalPath),
+        (error: unknown) =>
+          (error as NodeJS.ErrnoException).code === 'ENOENT',
+      )
+    })
+  }
+})
+
 test('validates isolated product thread inputs before native mutation', async () => {
   const harness = await startHarness('isolated-thread-validation')
   try {
@@ -765,6 +856,8 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
       ({ method }) => method === 'thread/start',
     )
     assert.equal(threadStart?.params?.cwd, workspace)
+    assert.equal(threadStart?.params?.approvalPolicy, 'on-request')
+    assert.equal(threadStart?.params?.sandbox, 'workspace-write')
     assert.deepEqual(threadStart?.params?.config, {
       features: { fast_mode: true },
       mcp_servers: {
@@ -802,11 +895,9 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
         .filter((method) => method === 'model/list' || method === 'turn/start'),
       ['model/list', 'turn/start', 'turn/start'],
     )
-    assert.deepEqual(
-      journal.messages
-        .filter(({ method }) => method === 'skills/extraRoots/set')
-        .map(({ params }) => params),
-      [{ extraRoots: [] }, { extraRoots: [] }],
+    assert.equal(
+      journal.messages.some(({ method }) => method === 'skills/extraRoots/set'),
+      false,
     )
     assert.deepEqual(turnStarts[1]?.params?.collaborationMode, {
       mode: 'plan',
@@ -957,11 +1048,9 @@ test('runs a structured product turn through one pending native interaction', as
         readonly params?: Record<string, unknown>
       }[]
     }
-    assert.deepEqual(
-      journal.messages
-        .filter(({ method }) => method === 'skills/extraRoots/set')
-        .map(({ params }) => params),
-      [{ extraRoots: ['/managed/assignment-modeling'] }],
+    assert.equal(
+      journal.messages.some(({ method }) => method === 'skills/extraRoots/set'),
+      false,
     )
     const nativeTurn = journal.messages.find(
       ({ method }) => method === 'turn/start',

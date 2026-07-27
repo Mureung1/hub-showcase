@@ -16,8 +16,6 @@ from .protocol import (
     decode_command_line,
 )
 
-WORKSPACE_CONFIG_OVERRIDES = ("project_root_markers=[]",)
-
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
@@ -106,16 +104,9 @@ async def _run(args: argparse.Namespace) -> int:
         max_bytes=args.stdout_max_bytes,
     )
     launch_args_override = tuple(args.launch_arg) or None
-    if launch_args_override is not None:
-        launch_args_override = (
-            *launch_args_override,
-            "--config",
-            *WORKSPACE_CONFIG_OVERRIDES,
-        )
     config = CodexConfig(
         codex_bin=args.codex_bin,
         launch_args_override=launch_args_override,
-        config_overrides=WORKSPACE_CONFIG_OVERRIDES,
         cwd=str(workspace),
         env=os.environ.copy(),
         client_name=args.client_name,

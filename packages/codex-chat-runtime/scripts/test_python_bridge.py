@@ -30,7 +30,13 @@ from ay_ple_codex_bridge.protocol import (  # noqa: E402
 from process_oracle import reap_worker_group, wait_for_process_exit  # noqa: E402
 
 
-BUNDLE = PACKAGE_ROOT / ".artifacts" / "production-runtime-darwin-arm64" / "bundle"
+BUNDLE = (
+    PACKAGE_ROOT.parents[2]
+    / ".ay-ple"
+    / "runtime"
+    / "production-runtime-darwin-arm64"
+    / "bundle"
+)
 BUNDLE_PYTHON = BUNDLE / "python" / "bin" / "python3.10"
 BUNDLE_SITE_PACKAGES = BUNDLE / "site-packages"
 TRACKED_WORKER = BRIDGE_SOURCE / "worker.py"
@@ -792,8 +798,8 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     [message["method"] for message in journal[:3]],
                     ["initialize", "initialized", "thread/start"],
                 )
-                self.assertEqual(journal[2]["params"]["approvalPolicy"], "never")
-                self.assertEqual(journal[2]["params"]["sandbox"], "read-only")
+                self.assertEqual(journal[2]["params"]["approvalPolicy"], "on-request")
+                self.assertEqual(journal[2]["params"]["sandbox"], "workspace-write")
                 opt_out = journal[0]["params"]["capabilities"].get(
                     "optOutNotificationMethods"
                 )

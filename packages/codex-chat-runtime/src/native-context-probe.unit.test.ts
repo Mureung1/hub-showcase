@@ -113,8 +113,6 @@ test('resolves the exact manifest-attested native App Server command', () => {
     nativeContextProbeTesting.resolveCommand(BUNDLE, undefined),
     [
       '/runtime/bin/codex',
-      '--config',
-      'project_root_markers=[]',
       'app-server',
       '--listen',
       'stdio://',
@@ -189,13 +187,22 @@ test('projects and freezes only the high-level effective config', () => {
   assert.equal(Object.isFrozen(projected), true)
   assert.equal(Object.isFrozen(projected.projectRootMarkers), true)
   assert.equal(Object.hasOwn(projected, 'model'), false)
+
+  const nativeDefault = nativeContextProbeTesting.decodeConfigResult(
+    configResult({ markers: null }),
+  )
+  assert.deepEqual(nativeDefault, {
+    projectRootMarkers: ['.git'],
+    globalInstructionsFile: null,
+  })
+  assert.equal(Object.isFrozen(nativeDefault.projectRootMarkers), true)
 })
 
 test('rejects missing, malformed, or unbounded native config fields', async (t) => {
   const cases: Array<[string, unknown]> = [
     ['missing markers', configResult({ omitMarkers: true })],
     ['missing instructions', configResult({ omitInstructions: true })],
-    ['non-array markers', configResult({ markers: null })],
+    ['non-array markers', configResult({ markers: 42 })],
     [
       'too many markers',
       configResult({ markers: Array.from({ length: 1025 }, () => '.git') }),

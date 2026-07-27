@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url'
 import {
   controlledPythonEnvironment,
   delay,
+  initializeGitRootForTest,
   terminateDetachedProcessGroup,
   waitForJsonFile,
   waitForProcessGroupExit,
@@ -32,9 +33,13 @@ import {
 } from './runtime.js'
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const ARTIFACT_ROOT = join(
+const ARTIFACT_ROOT = resolve(
   PACKAGE_ROOT,
-  '.artifacts',
+  '..',
+  '..',
+  '..',
+  '.ay-ple',
+  'runtime',
   'production-runtime-darwin-arm64',
 )
 const LOCAL_PROVIDER = join(
@@ -50,6 +55,7 @@ test('runs the production bridge against exact Codex and the official local prov
   try {
     const workspace = join(root, 'runtime-workspace')
     await mkdir(workspace)
+    await initializeGitRootForTest(workspace)
     const environment = await createEnvironmentRoots(root)
     provider = await startLocalProvider(bundle, root)
     await writeLocalProviderConfig(environment.codexHome, provider.url)
@@ -155,6 +161,373 @@ test('runs the production bridge against exact Codex and the official local prov
   }
 })
 
+test('records exact trust despite a trusted ancestor and reloads only exact native context', async () => {
+  const bundle = await verifyProductionBundle(ARTIFACT_ROOT)
+  const artifactRoot = join(PACKAGE_ROOT, '.artifacts')
+  await mkdir(artifactRoot, { recursive: true })
+  const root = await mkdtemp(join(artifactRoot, 'native-project-context-'))
+  let provider: LocalProvider | undefined
+  let runtime: SpawnedCodexChatRuntime | undefined
+  try {
+    const workspace = join(root, 'semester-workspace')
+    const insideMarker = join(workspace, 'workspace-write-marker.txt')
+    const outsideSentinel = join(root, 'sibling-sentinel.txt')
+    const outsideSentinelContent = 'sibling-sentinel-original\n'
+    const projectInstructions = join(workspace, 'project-instructions.md')
+    const workspaceSkillRoot = join(
+      workspace,
+      '.agents',
+      'skills',
+      'semester-workspace-skill',
+    )
+    const hostileSkillRoot = join(
+      root,
+      '.agents',
+      'skills',
+      'hostile-ancestor-skill',
+    )
+    const hostileProjectInstructions = join(
+      root,
+      'hostile-project-instructions.md',
+    )
+    await Promise.all([
+      mkdir(join(root, '.codex')),
+      mkdir(join(workspace, '.codex'), { recursive: true }),
+      mkdir(workspaceSkillRoot, { recursive: true }),
+      mkdir(hostileSkillRoot, { recursive: true }),
+    ])
+    await initializeGitRootForTest(root)
+    await initializeGitRootForTest(workspace)
+    await Promise.all([
+      writeFile(
+        join(root, 'AGENTS.md'),
+        '# HOSTILE_ANCESTOR_INSTRUCTIONS\n',
+        'utf8',
+      ),
+      writeFile(
+        hostileProjectInstructions,
+        '# HOSTILE_ANCESTOR_PROJECT_INSTRUCTIONS\n',
+        'utf8',
+      ),
+      writeFile(
+        join(root, '.codex', 'config.toml'),
+        `model_instructions_file = "${hostileProjectInstructions}"\n`,
+        'utf8',
+      ),
+      writeFile(
+        join(workspace, 'AGENTS.md'),
+        '# EXACT_WORKSPACE_INSTRUCTIONS\n',
+        'utf8',
+      ),
+      writeFile(
+        projectInstructions,
+        '# EXACT_PROJECT_MODEL_INSTRUCTIONS\n',
+        'utf8',
+      ),
+      writeFile(
+        join(workspace, '.codex', 'config.toml'),
+        `model_instructions_file = "${projectInstructions}"\n`,
+        'utf8',
+      ),
+      writeFile(
+        join(workspaceSkillRoot, 'SKILL.md'),
+        [
+          '---',
+          'name: semester-workspace-skill',
+          'description: Exact workspace Skill.',
+          '---',
+          '',
+          '# Semester workspace Skill',
+          '',
+        ].join('\n'),
+        'utf8',
+      ),
+      writeFile(
+        join(hostileSkillRoot, 'SKILL.md'),
+        [
+          '---',
+          'name: hostile-ancestor-skill',
+          'description: Must not cross the Git boundary.',
+          '---',
+          '',
+          '# Hostile ancestor Skill',
+          '',
+        ].join('\n'),
+        'utf8',
+      ),
+      writeFile(outsideSentinel, outsideSentinelContent, 'utf8'),
+    ])
+
+    const environment = await createEnvironmentRoots(root)
+    const canonicalRoot = await realpath(root)
+    const canonicalWorkspace = await realpath(workspace)
+    provider = await startLocalProvider(bundle, root, {
+      insideMarker,
+      outsideSentinel,
+      workspace: canonicalWorkspace,
+    })
+    await writeLocalProviderConfig(environment.codexHome, provider.url)
+    const configPath = join(environment.codexHome, 'config.toml')
+    await writeFile(
+      configPath,
+      [
+        await readFile(configPath, 'utf8'),
+        `[projects."${canonicalRoot}"]`,
+        'trust_level = "trusted"',
+        '',
+      ].join('\n'),
+      'utf8',
+    )
+    runtime = await startVerifiedCodexChatRuntime({
+      bundle,
+      workspace: canonicalWorkspace,
+      environment,
+      disableManagedConfigForTest: true,
+      deadlines: {
+        responseMs: 10_000,
+        streamIdleMs: 10_000,
+        streamTotalMs: 30_000,
+        gracefulCloseMs: 2_000,
+        terminateMs: 2_000,
+        postKillMs: 2_000,
+      },
+    })
+
+    const thread = await within(runtime.runtime.startThread())
+    const signal = new AbortController().signal
+    const [config, skills] = await Promise.all([
+      runtime.runtime.readEffectiveConfig({ signal }),
+      runtime.runtime.listEffectiveSkills({ signal }),
+    ])
+    assert.deepEqual(config, {
+      projectRootMarkers: ['.git'],
+      globalInstructionsFile: projectInstructions,
+    })
+    assert.deepEqual(skills, [
+      {
+        name: 'semester-workspace-skill',
+        enabled: true,
+        sourceRoot: workspaceSkillRoot,
+      },
+    ])
+
+    const turn = await within(
+      runtime.runtime.startProductTurn({
+        threadId: thread.threadId,
+        permissionProfile: 'workspace_write',
+        text: 'Observe the exact native project context.',
+      }),
+    )
+    const events = await within(collect(turn.events))
+    assert.deepEqual(events.at(-1), {
+      type: 'turn.completed',
+      threadId: thread.threadId,
+      turnId: turn.turnId,
+      status: 'completed',
+    })
+    assert.equal(await readFile(insideMarker, 'utf8'), 'workspace-write-ok\n')
+    assert.equal(
+      await readFile(outsideSentinel, 'utf8'),
+      outsideSentinelContent,
+    )
+
+    await within(runtime.runtime.close())
+    await within(runtime.closed)
+    runtime = undefined
+
+    const policy = await probeEffectivePolicy(
+      bundle,
+      environment,
+      canonicalWorkspace,
+      thread.threadId,
+    )
+    assert.equal(policy.approvalPolicy, 'never')
+    assert.deepEqual(policy.sandbox, {
+      networkAccess: false,
+      type: 'readOnly',
+    })
+
+    const persistedConfig = await readFile(
+      configPath,
+      'utf8',
+    )
+    assert.match(
+      persistedConfig,
+      new RegExp(
+        `\\[projects\\."${escapeRegExp(canonicalRoot)}"\\][^[]*trust_level = "trusted"`,
+        's',
+      ),
+    )
+    assert.match(
+      persistedConfig,
+      new RegExp(
+        `\\[projects\\."${escapeRegExp(canonicalWorkspace)}"\\][^[]*trust_level = "trusted"`,
+        's',
+      ),
+    )
+    const journal = await provider.close()
+    provider = undefined
+    const sandboxEvidence = parseJsonObjectLine(
+      journal.requests.flatMap((request) => request.functionOutputs),
+    )
+    const { outsideWriteError, ...sandboxOutcome } = sandboxEvidence
+    assert.equal(
+      typeof outsideWriteError === 'string' && outsideWriteError.length > 0,
+      true,
+    )
+    assert.deepEqual(sandboxOutcome, {
+      cwd: canonicalWorkspace,
+      insideWrite: true,
+      outsidePreserved: true,
+      outsideWriteBlocked: true,
+    })
+    const nativeContext = JSON.stringify(journal.requests[0])
+    assert.match(nativeContext, /EXACT_WORKSPACE_INSTRUCTIONS/u)
+    assert.match(nativeContext, /EXACT_PROJECT_MODEL_INSTRUCTIONS/u)
+    assert.doesNotMatch(nativeContext, /HOSTILE_ANCESTOR_INSTRUCTIONS/u)
+    assert.doesNotMatch(
+      nativeContext,
+      /HOSTILE_ANCESTOR_PROJECT_INSTRUCTIONS/u,
+    )
+  } finally {
+    await runtime?.runtime.close().catch(() => undefined)
+    await provider?.close().catch(() => undefined)
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('preserves explicit untrusted at workspace-write thread start', async () => {
+  const bundle = await verifyProductionBundle(ARTIFACT_ROOT)
+  const artifactRoot = join(PACKAGE_ROOT, '.artifacts')
+  await mkdir(artifactRoot, { recursive: true })
+  const root = await mkdtemp(join(artifactRoot, 'explicit-untrusted-'))
+  let provider: LocalProvider | undefined
+  let runtime: SpawnedCodexChatRuntime | undefined
+  try {
+    const workspace = join(root, 'semester-workspace')
+    const projectInstructions = join(workspace, 'project-instructions.md')
+    const workspaceSkillRoot = join(
+      workspace,
+      '.agents',
+      'skills',
+      'semester-workspace-skill',
+    )
+    await Promise.all([
+      mkdir(join(workspace, '.codex'), { recursive: true }),
+      mkdir(workspaceSkillRoot, { recursive: true }),
+    ])
+    await initializeGitRootForTest(workspace)
+    await Promise.all([
+      writeFile(
+        join(workspace, 'AGENTS.md'),
+        '# EXPLICIT_UNTRUSTED_AGENTS_INSTRUCTIONS\n',
+        'utf8',
+      ),
+      writeFile(
+        projectInstructions,
+        '# EXPLICIT_UNTRUSTED_PROJECT_INSTRUCTIONS\n',
+        'utf8',
+      ),
+      writeFile(
+        join(workspace, '.codex', 'config.toml'),
+        `model_instructions_file = "${projectInstructions}"\n`,
+        'utf8',
+      ),
+      writeFile(
+        join(workspaceSkillRoot, 'SKILL.md'),
+        [
+          '---',
+          'name: semester-workspace-skill',
+          'description: Exact untrusted workspace Skill.',
+          '---',
+          '',
+          '# Semester workspace Skill',
+          '',
+        ].join('\n'),
+        'utf8',
+      ),
+    ])
+
+    const environment = await createEnvironmentRoots(root)
+    provider = await startLocalProvider(bundle, root)
+    await writeLocalProviderConfig(environment.codexHome, provider.url)
+    const canonicalWorkspace = await realpath(workspace)
+    const configPath = join(environment.codexHome, 'config.toml')
+    const explicitUntrustedConfig = [
+      await readFile(configPath, 'utf8'),
+      `[projects."${canonicalWorkspace}"]`,
+      'trust_level = "untrusted"',
+      '',
+    ].join('\n')
+    await writeFile(configPath, explicitUntrustedConfig, 'utf8')
+
+    runtime = await startVerifiedCodexChatRuntime({
+      bundle,
+      workspace: canonicalWorkspace,
+      environment,
+      disableManagedConfigForTest: true,
+      deadlines: {
+        responseMs: 10_000,
+        streamIdleMs: 10_000,
+        streamTotalMs: 30_000,
+        gracefulCloseMs: 2_000,
+        terminateMs: 2_000,
+        postKillMs: 2_000,
+      },
+    })
+    const thread = await within(runtime.runtime.startThread())
+    const signal = new AbortController().signal
+    const [config, skills] = await Promise.all([
+      runtime.runtime.readEffectiveConfig({ signal }),
+      runtime.runtime.listEffectiveSkills({ signal }),
+    ])
+    assert.deepEqual(config, {
+      projectRootMarkers: ['.git'],
+      globalInstructionsFile: null,
+    })
+    assert.deepEqual(skills, [
+      {
+        name: 'semester-workspace-skill',
+        enabled: true,
+        sourceRoot: workspaceSkillRoot,
+      },
+    ])
+
+    const turn = await within(
+      runtime.runtime.startProductTurn({
+        threadId: thread.threadId,
+        permissionProfile: 'workspace_write',
+        text: 'Observe the explicit untrusted project boundary.',
+      }),
+    )
+    const events = await within(collect(turn.events))
+    assert.deepEqual(events.at(-1), {
+      type: 'turn.completed',
+      threadId: thread.threadId,
+      turnId: turn.turnId,
+      status: 'completed',
+    })
+
+    await within(runtime.runtime.close())
+    await within(runtime.closed)
+    runtime = undefined
+    assert.equal(await readFile(configPath, 'utf8'), explicitUntrustedConfig)
+
+    const journal = await provider.close()
+    provider = undefined
+    const nativeContext = JSON.stringify(journal.requests[0])
+    assert.match(nativeContext, /EXPLICIT_UNTRUSTED_AGENTS_INSTRUCTIONS/u)
+    assert.doesNotMatch(
+      nativeContext,
+      /EXPLICIT_UNTRUSTED_PROJECT_INSTRUCTIONS/u,
+    )
+  } finally {
+    await runtime?.runtime.close().catch(() => undefined)
+    await provider?.close().catch(() => undefined)
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 interface VerifiedBundle {
   readonly codexPathDirectory: string
   readonly nativeExecutable: string
@@ -173,6 +546,9 @@ interface PolicyEvidence {
 
 interface ProviderJournal {
   readonly requests: ReadonlyArray<{
+    readonly developerTexts: readonly string[]
+    readonly functionOutputs: readonly string[]
+    readonly instructions: string | null
     readonly method: string
     readonly path: string
     readonly userTexts: readonly string[]
@@ -236,6 +612,11 @@ async function probeEffectivePolicy(
 async function startLocalProvider(
   bundle: VerifiedBundle,
   root: string,
+  sandbox?: {
+    readonly insideMarker: string
+    readonly outsideSentinel: string
+    readonly workspace: string
+  },
 ): Promise<LocalProvider> {
   const providerRoot = join(root, 'provider')
   await mkdir(providerRoot)
@@ -246,11 +627,21 @@ async function startLocalProvider(
     [
       '-B',
       LOCAL_PROVIDER,
-      'serve',
+      sandbox === undefined ? 'serve' : 'serve-sandbox',
       '--ready-file',
       readyPath,
       '--journal-file',
       journalPath,
+      ...(sandbox === undefined
+        ? []
+        : [
+            '--workspace',
+            sandbox.workspace,
+            '--inside-marker',
+            sandbox.insideMarker,
+            '--outside-sentinel',
+            sandbox.outsideSentinel,
+          ]),
     ],
     {
       cwd: providerRoot,
@@ -513,4 +904,31 @@ async function terminateAndReap(
 function requirePid(child: ChildProcessWithoutNullStreams): number {
   if (child.pid === undefined) throw new Error('Runtime child has no pid')
   return child.pid
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+}
+
+function parseJsonObjectLine(outputs: readonly string[]): Record<string, unknown> {
+  for (const output of outputs) {
+    for (const line of output.split('\n')) {
+      const candidate = line.trim()
+      if (!candidate.startsWith('{') || !candidate.endsWith('}')) continue
+      let value: unknown
+      try {
+        value = JSON.parse(candidate) as unknown
+      } catch {
+        continue
+      }
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
+        return value as Record<string, unknown>
+      }
+    }
+  }
+  throw new Error('Sandbox command did not publish JSON evidence')
 }
