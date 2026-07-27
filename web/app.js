@@ -519,15 +519,31 @@
   // ------------------------------------------------------------------ 실행
 
   /**
-   * 이벤트 소스를 만든다.
+   * 개발 중 기본 논문 수. 무료 티어 한도가 금방 차므로 작게 둔다 (CLAUDE.md).
+   * 논문 1편당 LLM을 4회 이상 부르므로 3편이면 이미 14회쯤 된다.
+   */
+  const DEFAULT_LIMIT = 3;
+
+  /**
+   * 이벤트 소스를 만든다. **목과 실제가 갈리는 유일한 지점이다.**
    *
-   * **8-8(#76)에서 바꾸는 곳은 이 함수 하나다.** `?mock=`이 없으면
-   * `new EventSource("/api/brief/stream?topic=...")`를 돌려주게 된다.
-   * 목과 실제가 같은 모양(`onmessage`에 JSON 문자열, `close()`)이라 호출부는 그대로다.
+   * `?mock=`이 붙어 있으면 목 재생기, 없으면 실제 서버에 붙는다.
+   * 목 경로를 지우지 않는 이유는, 백엔드 없이 화면을 고칠 수 있는 능력이
+   * 이후에도 계속 필요하기 때문이다(데모 리허설·프론트 수정·오프라인 작업).
+   *
+   * 둘의 인터페이스가 같아서(`onmessage`에 JSON 문자열, `close()`) 호출부는
+   * 어느 쪽인지 알 필요가 없다.
    */
   function createSource(topic) {
-    const scenario = HubMock.scenarioFromQuery() ?? "normal";
-    return new HubMock.MockEventSource(scenario);
+    const scenario = HubMock.scenarioFromQuery();
+    if (scenario !== null) return new HubMock.MockEventSource(scenario);
+
+    const params = new URLSearchParams(window.location.search);
+    const limit = params.get("limit") ?? String(DEFAULT_LIMIT);
+
+    // **반드시 GET + 쿼리스트링이다.** EventSource는 POST를 지원하지 않는다.
+    const query = new URLSearchParams({ topic, limit });
+    return new EventSource(`/api/brief/stream?${query}`);
   }
 
   function startRun(topic) {
@@ -539,9 +555,29 @@
     body.dataset.state = "running";
 
     source = createSource(topic);
+
     source.onmessage = (message) => {
       // 서버는 `data: {json}` 한 줄을 보내고, 브라우저는 그 JSON을 문자열로 준다.
       render(JSON.parse(message.data));
+    };
+
+    /**
+     * 연결이 끊겼다. **여기서 반드시 끝내야 한다.**
+     *
+     * EventSource는 연결이 끊기면 기본적으로 자동 재연결한다. 이 엔드포인트는
+     * 붙을 때마다 에이전트를 처음부터 다시 돌리므로, 서버가 죽은 상태로 두면
+     * 몇 초 간격으로 전체 실행이 반복되며 LLM 호출 한도가 빠르게 소진된다.
+     *
+     * 종결 이벤트를 이미 받았다면 close() 뒤에 오는 잡음이므로 무시한다.
+     */
+    source.onerror = () => {
+      if (body.dataset.state !== "running") return;
+
+      appendError({
+        message: "서버와의 연결이 끊겼습니다. 서버가 실행 중인지 확인한 뒤 다시 시도해 주세요.",
+        code: "connection_lost",
+        at: `'${topic}' 브리핑 중`,
+      });
     };
   }
 
