@@ -60,6 +60,18 @@ routineRouter.get('/routine/today', async (req, res) => {
         }
       : null
 
+  // 운동별로 가장 최근에 기록한 무게를 하나씩만 가져온다(입력 화면의 무게 기본값용).
+  // orderBy+distinct 조합: loggedAt 내림차순으로 정렬한 뒤 exerciseId마다 첫 행(=최신 기록)만 남긴다.
+  const exerciseIds = routineDay.exercises.map((e) => e.exerciseId)
+  const lastLogs = await prisma.exerciseLog.findMany({
+    where: { userId: user.id, exerciseId: { in: exerciseIds } },
+    orderBy: { loggedAt: 'desc' },
+    distinct: ['exerciseId'],
+  })
+  const lastWeightByExerciseId = Object.fromEntries(
+    lastLogs.map((log) => [log.exerciseId, log.weight]),
+  )
+
   res.json({
     hasRoutine: true,
     routineDayId: routineDay.id,
@@ -72,6 +84,7 @@ routineRouter.get('/routine/today', async (req, res) => {
       name: e.exercise.name,
       targetSets: e.targetSets,
       targetReps: e.targetReps,
+      lastWeight: lastWeightByExerciseId[e.exerciseId] ?? null,
     })),
     routine: { splitType: routine.splitType, daysPerWeek: routine.daysPerWeek },
     availableDayTypes: Object.keys(SPLIT_DAY_TYPES[routine.splitType]),
