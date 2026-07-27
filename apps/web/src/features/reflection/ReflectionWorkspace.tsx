@@ -97,37 +97,37 @@ export function ReflectionWorkspace({ result, initialDraft, onSave }: Reflection
   };
 
   return (
-    <section className="reflection-workspace" aria-label="회고 확장 작업공간">
-      <header className="reflection-workspace-heading">
+    <section className="grid gap-6" aria-label="회고 확장 작업공간">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <span className="section-label">From evidence to reflection</span>
-          <h2>분석 결과에 나의 경험을 더해보세요</h2>
+          <span className="text-[0.78rem] font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">From evidence to reflection</span>
+          <h2 className="mb-0 mt-2 text-2xl tracking-[-0.03em]">분석 결과에 나의 경험을 더해보세요</h2>
         </div>
-        <span className="reflection-save-status">이 Repository에 자동 저장</span>
+        <span className="rounded-full bg-ptop-mint-soft px-3 py-1 text-xs font-bold text-ptop-mint-dark">이 Repository에 자동 저장</span>
       </header>
 
-      <div className="reflection-memory-summary">
+      <div className="grid gap-2 rounded-xl border border-ptop-line bg-ptop-soft-paper p-4">
         <div>
-          <span className="reflection-step">01</span>
+          <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-ptop-mint-dark text-xs font-extrabold text-white">01</span>
           <strong>포피와 나눈 프로젝트 메모</strong>
         </div>
-        <p>{getDraftSummary(draft)}</p>
+        <p className="m-0 text-sm leading-[1.6] text-ptop-muted">{getDraftSummary(draft)}</p>
       </div>
 
-      <div className="reflection-challenge-section">
-        <div className="reflection-section-heading">
+      <div className="grid gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <span className="reflection-step">02</span>
-            <h3>회고할 기술적 도전을 선택하세요</h3>
+            <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-ptop-mint-dark text-xs font-extrabold text-white">02</span>
+            <h3 className="m-0 inline text-lg">회고할 기술적 도전을 선택하세요</h3>
           </div>
-          <span>{draft.selectedChallengeTitles.length}/2 선택</span>
+          <span className="text-sm font-bold text-ptop-muted">{draft.selectedChallengeTitles.length}/2 선택</span>
         </div>
-        <p className="reflection-section-description">
+        <p className="m-0 text-sm leading-[1.6] text-ptop-muted">
           AI의 제안은 후보일 뿐입니다. 실제로 경험한 문제만 선택하고, 부족하면 직접 추가할 수 있습니다.
         </p>
 
         {challenges.length > 0 ? (
-          <div className="reflection-challenge-list">
+          <div className="grid gap-3">
             {challenges.map((challenge) => (
               <ChallengeOption
                 key={challenge.title}
@@ -142,25 +142,27 @@ export function ReflectionWorkspace({ result, initialDraft, onSave }: Reflection
             ))}
           </div>
         ) : (
-          <p className="reflection-empty-state">
+          <p className="m-0 rounded-xl border border-dashed border-ptop-line p-4 text-sm leading-[1.6] text-ptop-muted">
             현재 분석 근거에서 기술적 도전 후보를 만들지 못했습니다. 직접 경험한 내용을 추가해보세요.
           </p>
         )}
 
-        <div className="reflection-custom-challenge">
-          <div className="reflection-custom-heading">
+        <div className="grid gap-3 rounded-xl border border-dashed border-ptop-mint-line bg-ptop-mint-soft p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <span className="reflection-step">＋</span>
-              <strong>내가 생각한 기술적 도전 추가</strong>
+              <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-white text-sm font-extrabold text-ptop-mint-dark">＋</span>
+              <strong className="text-sm">내가 생각한 기술적 도전 추가</strong>
             </div>
-            <span>선택 입력</span>
+            <span className="text-xs font-bold text-ptop-muted">선택 입력</span>
           </div>
           <input
+            className="min-h-10 rounded-lg border border-ptop-line bg-white px-3 text-sm outline-none focus:border-ptop-mint-dark focus:ring-4 focus:ring-ptop-mint/20"
             value={draft.customChallengeTitle}
             onChange={(event) => updateCustomTitle(event.target.value)}
             placeholder="예: 여러 상태를 하나의 흐름으로 정리하기"
           />
           <textarea
+            className="resize-y rounded-lg border border-ptop-line bg-white p-3 text-sm outline-none focus:border-ptop-mint-dark focus:ring-4 focus:ring-ptop-mint/20"
             value={draft.customChallengeNote}
             onChange={(event) =>
               setDraft((current) => ({ ...current, customChallengeNote: event.target.value }))
@@ -169,7 +171,7 @@ export function ReflectionWorkspace({ result, initialDraft, onSave }: Reflection
             rows={2}
           />
           <button
-            className="reflection-secondary-button"
+            className="min-h-10 w-fit rounded-full border border-ptop-line bg-white px-4 text-sm font-bold text-ptop-mint-dark transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
             disabled={
               !draft.customChallengeTitle.trim() ||
@@ -184,14 +186,14 @@ export function ReflectionWorkspace({ result, initialDraft, onSave }: Reflection
       </div>
 
       {draft.selectedChallengeTitles.length > 0 && (
-        <div className="reflection-follow-up-section">
-          <div className="reflection-section-heading">
+        <div className="grid gap-4">
+          <div className="flex items-center gap-3">
             <div>
-              <span className="reflection-step">03</span>
-              <h3>선택한 도전에 맥락을 더해주세요</h3>
+              <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-ptop-mint-dark text-xs font-extrabold text-white">03</span>
+              <h3 className="m-0 inline text-lg">선택한 도전에 맥락을 더해주세요</h3>
             </div>
           </div>
-          <p className="reflection-section-description">
+          <p className="m-0 text-sm leading-[1.6] text-ptop-muted">
             포피가 한 번에 하나씩 확인합니다. 모두 답하지 않아도 결과를 확인할 수 있습니다.
           </p>
           {draft.selectedChallengeTitles.map((title) => (
@@ -225,20 +227,20 @@ function ChallengeOption({
 }) {
   return (
     <button
-      className="reflection-challenge-option"
+      className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition ${selected ? "border-ptop-mint-dark bg-ptop-mint-soft" : "border-ptop-line bg-white hover:border-ptop-mint-dark"} disabled:cursor-not-allowed disabled:opacity-50`}
       data-selected={selected}
       type="button"
       aria-pressed={selected}
       disabled={disabled}
       onClick={onToggle}
     >
-      <span className="reflection-option-marker" aria-hidden="true">
+      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-ptop-line bg-white text-sm font-extrabold text-ptop-mint-dark" aria-hidden="true">
         {selected ? "✓" : ""}
       </span>
-      <span className="reflection-option-content">
-        <strong>{challenge.title}</strong>
-        <span>{challenge.summary}</span>
-        <small>
+      <span className="grid min-w-0 gap-1">
+        <strong className="text-sm">{challenge.title}</strong>
+        <span className="text-sm leading-[1.5] text-ptop-muted">{challenge.summary}</span>
+        <small className="text-xs text-ptop-muted">
           {challenge.evidence.length}개 근거 · 신뢰도 {getConfidenceLabel(challenge.confidence)}
         </small>
       </span>
@@ -292,28 +294,29 @@ function ChallengeFollowUp({
   };
 
   return (
-    <div className="reflection-follow-up-card">
-      <div className="reflection-follow-up-title">
-        <img src={mascotUrl} alt="" />
-        <strong>{title}</strong>
+    <div className="grid gap-4 rounded-xl border border-ptop-line bg-white p-4 shadow-ptop-surface">
+      <div className="flex items-center gap-3">
+        <img className="h-9 w-9 rounded-full bg-ptop-mint-soft object-contain" src={mascotUrl} alt="" />
+        <strong className="text-sm">{title}</strong>
       </div>
-      {customNote && step === 0 && <p className="reflection-custom-note">내가 남긴 메모: {customNote}</p>}
-      <div className="reflection-chat-bubble" aria-live="polite">
-        <span>포피의 확인 질문</span>
-        <strong>{prompt.label}</strong>
+      {customNote && step === 0 && <p className="m-0 rounded-lg bg-ptop-soft-paper p-3 text-sm text-ptop-muted">내가 남긴 메모: {customNote}</p>}
+      <div className="grid gap-1 rounded-xl bg-ptop-mint-soft p-4" aria-live="polite">
+        <span className="text-xs font-extrabold text-ptop-mint-dark">포피의 확인 질문</span>
+        <strong className="leading-[1.5]">{prompt.label}</strong>
       </div>
-      <label className="reflection-question">
-        <span className="sr-only">기술적 도전 회고 답변</span>
+      <label className="grid gap-2">
+        <span className="absolute h-px w-px overflow-hidden whitespace-nowrap">기술적 도전 회고 답변</span>
         <textarea
+          className="min-h-24 w-full resize-y rounded-xl border border-ptop-line bg-ptop-paper p-3 text-sm leading-[1.6] outline-none placeholder:text-ptop-muted focus:border-ptop-mint-dark focus:ring-4 focus:ring-ptop-mint/20"
           value={answers?.[prompt.key] ?? ""}
           onChange={(event) => handleChange(prompt.key, event.target.value)}
           placeholder="한 문장으로 답해도 괜찮아요"
           rows={3}
         />
       </label>
-      <div className="reflection-chat-actions">
+      <div className="flex flex-wrap justify-end gap-2">
         <button
-          className="reflection-secondary-button"
+          className="min-h-10 rounded-full border border-ptop-line bg-white px-4 text-sm font-bold text-ptop-muted transition hover:border-ptop-mint-dark disabled:cursor-not-allowed disabled:opacity-40"
           type="button"
           disabled={step === 0}
           onClick={() => setStep((current) => Math.max(0, current - 1))}
@@ -321,7 +324,7 @@ function ChallengeFollowUp({
           이전
         </button>
         <button
-          className="reflection-next-button"
+          className="min-h-10 rounded-full bg-[var(--button-primary-bg)] px-5 text-sm font-extrabold text-[var(--button-primary-fg)] transition hover:-translate-y-px hover:bg-[var(--button-primary-hover)] disabled:cursor-wait disabled:opacity-60"
           type="button"
           disabled={isLastStep && saveStatus === "saving"}
           onClick={() => {
@@ -337,7 +340,7 @@ function ChallengeFollowUp({
         </button>
       </div>
       {saveMessage && (
-        <p className={`reflection-save-message is-${saveStatus}`} role="status">
+        <p className={`m-0 text-sm ${saveStatus === "error" ? "text-red-700" : "text-ptop-muted"}`} role="status">
           {saveMessage}
         </p>
       )}
@@ -353,29 +356,29 @@ function ReflectionOutputPreview({ draft }: { draft: ReflectionDraft }) {
   ].filter(([, value]) => value.trim());
 
   return (
-    <div className="reflection-output-preview">
-      <div className="reflection-section-heading">
+    <div className="grid gap-4 rounded-xl border border-ptop-line bg-ptop-soft-paper p-5">
+      <div className="flex items-center gap-3">
         <div>
-          <span className="reflection-step">04</span>
-          <h3>결과에 반영될 내 경험</h3>
+          <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-ptop-mint-dark text-xs font-extrabold text-white">04</span>
+          <h3 className="m-0 inline text-lg">결과에 반영될 내 경험</h3>
         </div>
       </div>
       {answers.length > 0 || draft.selectedChallengeTitles.length > 0 ? (
         <>
-          <dl>
+          <dl className="grid gap-3">
             {answers.map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{value}</dd>
+              <div className="grid gap-1 rounded-lg bg-white p-3" key={label}>
+                <dt className="text-xs font-bold text-ptop-muted">{label}</dt>
+                <dd className="m-0 text-sm leading-[1.6]">{value}</dd>
               </div>
             ))}
           </dl>
-          <p>
+          <p className="m-0 text-sm leading-[1.6] text-ptop-muted">
             선택한 기술적 도전과 이 메모는 Repository 근거와 함께 최종 포트폴리오 초안에 반영됩니다.
           </p>
         </>
       ) : (
-        <p>아직 작성한 내용이 없습니다. 필요한 만큼만 포피의 질문에 답해보세요.</p>
+        <p className="m-0 text-sm leading-[1.6] text-ptop-muted">아직 작성한 내용이 없습니다. 필요한 만큼만 포피의 질문에 답해보세요.</p>
       )}
     </div>
   );

@@ -28,7 +28,7 @@ test("saveReflectionDraftToApi posts the complete draft to its analysis result",
   assert.deepEqual(fetchCalls[0].init, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ draft }),
+    body: JSON.stringify({ draft, technicalChallenges: [] }),
   });
 });
 

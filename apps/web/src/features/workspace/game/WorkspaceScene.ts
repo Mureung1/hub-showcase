@@ -24,13 +24,17 @@ const PLAYER_DIRECTION_FRAMES = {
   down: 0,
   left: 4,
   right: 8,
-  up: 13,
+  up: 12,
 } as const;
 const PLAYER_ANIMATION_FRAMES = {
-  down: [0, 1, 2, 1],
-  left: [4, 5, 6, 5],
-  right: [8, 9, 10, 9],
-  up: [13, 14, 15, 14],
+  down: [0, 1, 2, 3],
+  left: [4, 5, 6, 4],
+  right: [8, 9, 10, 8],
+  up: [12, 13, 14, 12],
+} as const;
+const PLAYER_SPRITE_ROW_OFFSETS = {
+  3: -16,
+  2: -20,
 } as const;
 type PlayerDirection = keyof typeof PLAYER_DIRECTION_FRAMES;
 
@@ -40,6 +44,7 @@ export class WorkspaceScene extends Phaser.Scene {
   private player: Phaser.Physics.Arcade.Sprite | null = null;
   private activeInteraction: WorkspaceInteraction | null = null;
   private isInputEnabled = true;
+  private isPlayerMoving = false;
   private lastDirection: PlayerDirection = "down";
 
   constructor(notify: WorkspaceEventListener) {
@@ -51,14 +56,22 @@ export class WorkspaceScene extends Phaser.Scene {
     this.load.image(workspaceAssetKeys.map, workspaceAssets.map);
     this.load.image(workspaceAssetKeys.tileset, workspaceAssets.tileset);
     this.load.image(workspaceAssetKeys.furniture, workspaceAssets.furniture);
-    this.load.spritesheet(workspaceAssetKeys.playerSource, workspaceAssets.player, {
-      frameWidth: workspaceSpriteSheet.frameSize,
-      frameHeight: workspaceSpriteSheet.frameSize,
-    });
-    this.load.spritesheet(workspaceAssetKeys.poppySource, workspaceAssets.poppy, {
-      frameWidth: workspaceSpriteSheet.frameSize,
-      frameHeight: workspaceSpriteSheet.frameSize,
-    });
+    this.load.spritesheet(
+      workspaceAssetKeys.playerSource,
+      workspaceAssets.player,
+      {
+        frameWidth: workspaceSpriteSheet.frameSize,
+        frameHeight: workspaceSpriteSheet.frameSize,
+      },
+    );
+    this.load.spritesheet(
+      workspaceAssetKeys.poppySource,
+      workspaceAssets.poppy,
+      {
+        frameWidth: workspaceSpriteSheet.frameSize,
+        frameHeight: workspaceSpriteSheet.frameSize,
+      },
+    );
   }
 
   create() {
@@ -70,6 +83,9 @@ export class WorkspaceScene extends Phaser.Scene {
         frameSize: workspaceSpriteSheet.frameSize,
         columns: workspaceSpriteSheet.columns,
         rows: workspaceSpriteSheet.playerRows,
+        fitToFrameGrid: true,
+        rowOffsets: PLAYER_SPRITE_ROW_OFFSETS,
+        removeGroundShadow: true,
       },
     );
     createTransparentSpriteSheet(
@@ -106,14 +122,17 @@ export class WorkspaceScene extends Phaser.Scene {
     const movement = this.inputManager.getMovement();
     const velocity = new Phaser.Math.Vector2(movement.x, movement.y);
 
-    if (velocity.lengthSq() > 0) {
+    const isMoving = velocity.lengthSq() > 0;
+
+    if (isMoving) {
       velocity.normalize().scale(PLAYER_SPEED);
       this.updatePlayerDirection(velocity);
-    } else {
+    } else if (this.isPlayerMoving) {
       this.player.anims.stop();
       this.player.setFrame(this.getIdleFrame());
     }
 
+    this.isPlayerMoving = isMoving;
     this.player.setVelocity(velocity.x, velocity.y);
 
     const nextInteraction = findNearestInteraction(
@@ -123,10 +142,16 @@ export class WorkspaceScene extends Phaser.Scene {
 
     if (nextInteraction?.id !== this.activeInteraction?.id) {
       this.activeInteraction = nextInteraction;
-      this.notify({ type: "interaction-changed", interaction: nextInteraction });
+      this.notify({
+        type: "interaction-changed",
+        interaction: nextInteraction,
+      });
     }
 
-    if (nextInteraction?.kind === "new-analysis" && this.inputManager.didPressInteract()) {
+    if (
+      nextInteraction?.kind === "new-analysis" &&
+      this.inputManager.didPressInteract()
+    ) {
       this.notify({ type: "open-new-analysis" });
     }
   }
@@ -157,7 +182,12 @@ export class WorkspaceScene extends Phaser.Scene {
   private createProps() {
     for (const prop of workspaceProps) {
       const sprite = this.add
-        .sprite(prop.position.x, prop.position.y, workspaceAssetKeys.poppy, prop.variant ?? 0)
+        .sprite(
+          prop.position.x,
+          prop.position.y,
+          workspaceAssetKeys.poppy,
+          prop.variant ?? 0,
+        )
         .setScale(workspaceSpriteSheet.displayScale)
         .setDepth(prop.position.y);
 
@@ -168,10 +198,18 @@ export class WorkspaceScene extends Phaser.Scene {
       }
     }
 
-    const newAnalysis = workspaceInteractions.find(({ id }) => id === "new-analysis");
+    const newAnalysis = workspaceInteractions.find(
+      ({ id }) => id === "new-analysis",
+    );
     if (newAnalysis) {
       this.add
-        .circle(newAnalysis.position.x, newAnalysis.position.y, 30, 0x61d7aa, 0.18)
+        .circle(
+          newAnalysis.position.x,
+          newAnalysis.position.y,
+          30,
+          0x61d7aa,
+          0.18,
+        )
         .setDepth(100)
         .setStrokeStyle(2, 0x61d7aa, 0.5);
     }
@@ -223,7 +261,10 @@ export class WorkspaceScene extends Phaser.Scene {
     for (const [direction, frames] of Object.entries(PLAYER_ANIMATION_FRAMES)) {
       this.anims.create({
         key: `player-${direction}`,
-        frames: frames.map((frame) => ({ key: workspaceAssetKeys.player, frame })),
+        frames: frames.map((frame) => ({
+          key: workspaceAssetKeys.player,
+          frame,
+        })),
         frameRate: 7,
         repeat: -1,
       });
@@ -231,14 +272,17 @@ export class WorkspaceScene extends Phaser.Scene {
 
     this.anims.create({
       key: "poppy-idle",
-      frames: [0, 1, 2, 3].map((frame) => ({ key: workspaceAssetKeys.poppy, frame })),
+      frames: [0, 1, 2, 3].map((frame) => ({
+        key: workspaceAssetKeys.poppy,
+        frame,
+      })),
       frameRate: 4,
       repeat: -1,
     });
   }
 
   private updatePlayerDirection(velocity: Phaser.Math.Vector2) {
-    this.lastDirection =
+    const nextDirection =
       Math.abs(velocity.x) > Math.abs(velocity.y)
         ? velocity.x < 0
           ? "left"
@@ -247,13 +291,17 @@ export class WorkspaceScene extends Phaser.Scene {
           ? "up"
           : "down";
 
+    if (this.lastDirection !== nextDirection) {
+      this.lastDirection = nextDirection;
+      this.player?.anims.stop();
+    }
+
     const animationKey = `player-${this.lastDirection}`;
     const playerAnimations = this.player?.anims;
-    if (
-      playerAnimations &&
-      (playerAnimations.currentAnim?.key !== animationKey || !playerAnimations.isPlaying)
-    ) {
-      playerAnimations.play(animationKey);
+    if (playerAnimations?.currentAnim?.key !== animationKey) {
+      playerAnimations?.play(animationKey, true);
+    } else if (playerAnimations && !playerAnimations.isPlaying) {
+      playerAnimations.play(animationKey, true);
     }
   }
 

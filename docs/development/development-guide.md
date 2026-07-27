@@ -66,7 +66,7 @@ apps/web/src/
 - Phaser는 `interaction-changed`, `open-new-analysis`처럼 UI 의도를 나타내는 이벤트만 React에 전달한다.
 - React는 이벤트를 받아 모달을 열고 기존 분석 기능을 호출한다.
 - 모달이 열리면 React가 게임 입력을 멈추고, 닫히면 입력과 focus를 복원한다.
-- 배포 base path가 `/hub/`이므로 게임 에셋 경로는 `import.meta.env.BASE_URL`을 기준으로 만든다.
+- 배포 base path는 `/`이며 게임 에셋 경로는 `import.meta.env.BASE_URL`을 기준으로 만든다.
 
 ## 파일 책임 분리 기준
 
@@ -111,9 +111,9 @@ apps/api/src/repository-analysis/
 
 ## 배포 기준
 
-- `apps/web`: GitHub Pages 또는 Vercel 같은 정적 프론트엔드 배포 대상
+- `apps/web`: Vercel 정적 프론트엔드 배포 대상
 - `apps/api`: Render, Railway, Fly.io, Vercel Serverless 등 별도 백엔드 배포 대상
-- GitHub Pages는 NestJS 서버를 실행할 수 없으므로 UI 테스트용 React 배포에만 사용한다.
+- Vercel은 정적 React 프론트엔드를 배포하고, NestJS 서버는 Render에서 실행한다.
 
 ## NestJS를 선택한 이유
 

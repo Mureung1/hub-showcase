@@ -39,7 +39,7 @@
 
 - [ ] Create a browser Supabase client from `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
 - [ ] Subscribe to `onAuthStateChange`, load the initial session, and clean up the subscription.
-- [ ] Implement `signInWithOAuth({ provider: "github", options: { redirectTo: window.location.origin + "/hub/" } })` and `signOut()`.
+- [ ] Implement `signInWithOAuth({ provider: "github", options: { redirectTo: window.location.origin } })` and `signOut()`.
 - [ ] Add Vite environment typings and a safe `.env.example` containing names only.
 - [ ] Render the authenticated GitHub identity and a logout action in the header.
 

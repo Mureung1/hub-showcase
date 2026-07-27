@@ -56,6 +56,7 @@ describe("ReflectionDraftPersistence", () => {
       data: {
         analysis_result_id: "analysis-id",
         draft,
+        reflection_analysis: null,
         updated_at: "2026-07-22T09:00:00.000Z",
       },
       error: null,
@@ -68,9 +69,10 @@ describe("ReflectionDraftPersistence", () => {
       analysisResultId: "analysis-id",
       draft,
       savedAt: "2026-07-22T09:00:00.000Z",
+      reflectionAnalysis: null,
     });
     expect(query.payloads).toEqual([
-      { analysis_result_id: "analysis-id", draft },
+      { analysis_result_id: "analysis-id", draft, reflection_analysis: null },
     ]);
   });
 
@@ -93,6 +95,7 @@ describe("ReflectionDraftPersistence", () => {
       data: {
         analysis_result_id: "analysis-id",
         draft,
+        reflection_analysis: null,
         updated_at: "2026-07-22T09:00:00.000Z",
       },
       error: null,
@@ -105,6 +108,7 @@ describe("ReflectionDraftPersistence", () => {
       analysisResultId: "analysis-id",
       draft,
       savedAt: "2026-07-22T09:00:00.000Z",
+      reflectionAnalysis: null,
     });
   });
 

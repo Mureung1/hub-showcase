@@ -12,6 +12,19 @@
   --gray-soft: #f4f5f4;
   --overlay: rgb(15 22 19 / 62%);
   --success: #21875f;
+  --terminal-bg: #091421;
+  --terminal-panel: #121c2a;
+  --terminal-border: #2b3544;
+  --terminal-accent: #6bfb9a;
+  --terminal-ink: #f2f5f7;
+  --terminal-muted: #aab7c4;
+  --terminal-subtle: #7d8b9b;
+  --landing-green: #006d36;
+  --landing-lime: #6bfb9a;
+  --landing-lime-hover: #4eea82;
+  --landing-lavender: #f3f3fa;
+  --landing-lavender-line: #e1e2ec;
+  --landing-deep-ink: #00210c;
 
   --content-width: 1080px;
   --page-gutter: 40px;
@@ -29,28 +42,40 @@
   --button-primary-fg: var(--paper);
   --button-primary-hover: #0f704f;
   --shadow-primary: 0 10px 24px rgb(38 168 117 / 18%);
+  --font-brand:
+    "Pretendard Variable",
+    Pretendard,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
 
   color: var(--ink);
   background: var(--paper);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: var(--font-brand);
   font-synthesis: none;
+  letter-spacing: 0;
   text-rendering: optimizeLegibility;
 }
 
 @theme inline {
+  --font-sans: var(--font-brand);
+  --font-display: var(--font-brand);
   --color-ptop-ink: var(--ink);
+  --color-ptop-line: var(--line);
+  --color-ptop-line-strong: var(--line-strong);
+  --color-ptop-gray-soft: var(--gray-soft);
   --color-ptop-mint: var(--mint);
   --color-ptop-mint-dark: var(--mint-dark);
+  --color-ptop-mint-line: var(--mint-line);
+  --color-ptop-mint-soft: var(--mint-soft);
   --color-ptop-paper: var(--paper);
   --color-ptop-soft-paper: var(--soft-paper);
   --color-ptop-muted: var(--muted);
+  --color-ptop-landing-green: var(--landing-green);
+  --color-ptop-landing-lime: var(--landing-lime);
+  --color-ptop-landing-lavender: var(--landing-lavender);
+  --color-ptop-landing-line: var(--landing-lavender-line);
+  --color-ptop-landing-ink: var(--landing-deep-ink);
   --shadow-ptop-surface: var(--shadow-surface);
   --shadow-ptop-modal: var(--shadow-modal);
 }

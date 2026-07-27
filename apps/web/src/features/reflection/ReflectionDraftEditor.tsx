@@ -92,47 +92,48 @@ export function ReflectionDraftEditor({
   };
 
   return (
-    <section className="reflection-draft-editor" aria-label="포피와 함께 작성하는 회고">
-      <div className="reflection-draft-heading">
+    <section className="grid gap-5 rounded-2xl border border-ptop-line bg-white p-5 shadow-ptop-surface sm:p-7" aria-label="포피와 함께 작성하는 회고">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <span className="section-label">With Popy</span>
-          <h3>
+          <span className="text-[0.78rem] font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">With Popy</span>
+          <h3 className="mb-0 mt-2 text-xl tracking-[-0.02em]">
             {isAnalysisComplete
               ? "분석이 끝났어요. 포피와 기억을 조금만 더 정리해볼까요?"
               : "분석하는 동안 포피와 프로젝트를 떠올려보세요"}
           </h3>
         </div>
-        <span className={`reflection-save-status is-${saveStatus}`} aria-live="polite">
+        <span className={`rounded-full px-3 py-1 text-xs font-bold ${saveStatus === "error" ? "bg-red-50 text-red-700" : saveStatus === "saved" ? "bg-ptop-mint-soft text-ptop-mint-dark" : "bg-ptop-soft-paper text-ptop-muted"}`} aria-live="polite">
           {saveStatus === "saving" ? "서버 저장 중" : saveStatus === "saved" ? "저장 완료" : "자동 임시 저장"}
         </span>
       </div>
 
-      <p className="reflection-draft-description">
+      <p className="m-0 text-sm leading-[1.6] text-ptop-muted">
         긴 회고를 한 번에 작성하지 않아도 괜찮아요. 답하지 않고 넘어가도 결과를 확인할 수 있습니다.
       </p>
 
-      <div className="reflection-conversation">
-        <aside className="reflection-mascot-panel" aria-label="포피">
-          <div className="reflection-mascot-image">
-            <img src={mascotUrl} alt="포피" />
+      <div className="grid gap-4 lg:grid-cols-[minmax(150px,0.35fr)_minmax(0,1fr)]">
+        <aside className="grid content-center justify-items-center gap-2 rounded-xl bg-ptop-soft-paper p-5 text-center" aria-label="포피">
+          <div className="grid h-28 w-28 place-items-center overflow-hidden rounded-full bg-ptop-mint-soft">
+            <img className="h-24 w-24 object-contain" src={mascotUrl} alt="포피" />
           </div>
-          <strong>포피</strong>
-          <span>기억 도우미</span>
+          <strong className="text-base">포피</strong>
+          <span className="text-xs text-ptop-muted">기억 도우미</span>
         </aside>
 
-        <div className="reflection-chat-panel">
-          <div className="reflection-chat-meta">
+        <div className="grid gap-4 rounded-xl border border-ptop-line p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3 text-xs font-bold text-ptop-muted">
             <span>프로젝트 메모</span>
             <span>{step + 1} / {REFLECTION_PROMPTS.length}</span>
           </div>
-          <div className="reflection-chat-bubble" aria-live="polite">
-            <span>포피의 질문</span>
-            <strong>{prompt.label}</strong>
+          <div className="grid gap-1 rounded-xl bg-ptop-mint-soft p-4" aria-live="polite">
+            <span className="text-xs font-extrabold text-ptop-mint-dark">포피의 질문</span>
+            <strong className="leading-[1.5]">{prompt.label}</strong>
           </div>
 
-          <label className="reflection-question">
-            <span className="sr-only">회고 답변</span>
+          <label className="grid gap-2">
+            <span className="absolute h-px w-px overflow-hidden whitespace-nowrap">회고 답변</span>
             <textarea
+              className="min-h-28 w-full resize-y rounded-xl border border-ptop-line bg-ptop-paper p-3 text-sm leading-[1.6] text-ptop-ink outline-none transition placeholder:text-ptop-muted focus:border-ptop-mint-dark focus:ring-4 focus:ring-ptop-mint/20"
               value={currentValue}
               onChange={(event) => updateAnswer(event.target.value)}
               placeholder="짧게 적어도 괜찮아요"
@@ -140,9 +141,9 @@ export function ReflectionDraftEditor({
             />
           </label>
 
-          <div className="reflection-chat-actions">
+          <div className="flex flex-wrap justify-end gap-2">
             <button
-              className="reflection-secondary-button"
+              className="min-h-10 rounded-full border border-ptop-line bg-white px-4 text-sm font-bold text-ptop-muted transition hover:border-ptop-mint-dark disabled:cursor-not-allowed disabled:opacity-40"
               type="button"
               disabled={step === 0}
               onClick={() => setStep((current) => Math.max(0, current - 1))}
@@ -150,12 +151,12 @@ export function ReflectionDraftEditor({
               이전
             </button>
             {!isLastStep && (
-              <button className="reflection-secondary-button" type="button" onClick={skipQuestion}>
+              <button className="min-h-10 rounded-full border border-ptop-line bg-white px-4 text-sm font-bold text-ptop-muted transition hover:border-ptop-mint-dark" type="button" onClick={skipQuestion}>
                 건너뛰기
               </button>
             )}
             <button
-              className="reflection-next-button"
+              className="min-h-10 rounded-full bg-[var(--button-primary-bg)] px-5 text-sm font-extrabold text-[var(--button-primary-fg)] transition hover:-translate-y-px hover:bg-[var(--button-primary-hover)] disabled:cursor-wait disabled:opacity-60"
               type="button"
               disabled={isLastStep && saveStatus === "saving"}
               onClick={isLastStep ? saveDraft : moveNext}
@@ -164,16 +165,16 @@ export function ReflectionDraftEditor({
             </button>
           </div>
           {saveMessage && (
-            <p className={`reflection-save-message is-${saveStatus}`} role="status">
+            <p className={`m-0 text-sm ${saveStatus === "error" ? "text-red-700" : "text-ptop-muted"}`} role="status">
               {saveMessage}
             </p>
           )}
         </div>
       </div>
 
-      <div className="reflection-progress" aria-label={`회고 질문 ${step + 1}단계`}>
+      <div className="flex gap-2" aria-label={`회고 질문 ${step + 1}단계`}>
         {REFLECTION_PROMPTS.map((item, index) => (
-          <span className={index <= step ? "is-active" : ""} key={item.key} />
+          <span className={`h-1.5 flex-1 rounded-full ${index <= step ? "bg-ptop-mint-dark" : "bg-ptop-line"}`} key={item.key} />
         ))}
       </div>
     </section>

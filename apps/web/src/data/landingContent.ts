@@ -27,7 +27,7 @@ export const futureFeatures: readonly ContentItem[] = [
   ["회고 템플릿", "KPT, 4L 등 여러 회고 형식으로 정리합니다."],
   ["프로젝트 시각화", "기간, 커밋 수, 기술 스택 비중을 보여줍니다."],
   ["프로젝트 비교", "여러 프로젝트 중 포트폴리오 우선순위를 추천합니다."],
-  ["외부 내보내기", "Notion 또는 GitHub Pages로 결과를 연결합니다."],
+  ["외부 내보내기", "Notion으로 결과를 연결합니다."],
 ];
 
 export const resourceLinks: readonly ResourceLink[] = [

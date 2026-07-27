@@ -1,4 +1,5 @@
 import type {
+  ReflectionAnalysis,
   RepositoryAnalysisEvidence,
   RepositoryAnalysisResult,
 } from "@ptop/contracts";
@@ -6,6 +7,7 @@ import type { ReactNode } from "react";
 
 type AnalysisResultProps = {
   result: RepositoryAnalysisResult;
+  reflectionAnalysis?: ReflectionAnalysis | null;
 };
 
 export type AnalysisResultViewModel = {
@@ -68,55 +70,55 @@ export function getAnalysisResultViewModel(
   };
 }
 
-export function AnalysisResult({ result }: AnalysisResultProps) {
+export function AnalysisResult({ result, reflectionAnalysis }: AnalysisResultProps) {
   const viewModel = getAnalysisResultViewModel(result);
 
   return (
-    <section className="analysis-result-page" aria-label="Repository 분석 결과">
-      <header className="result-heading">
-        <span className="section-label">Repository Analysis</span>
-        <div className="result-title-row">
-          <h2>
+    <section className="grid gap-6" aria-label="Repository 분석 결과">
+      <header className="grid gap-3">
+        <span className="text-[0.78rem] font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">Repository Analysis</span>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="m-0 text-[clamp(1.5rem,3vw,2.35rem)] tracking-[-0.03em]">
             {viewModel.repository.owner}/{viewModel.repository.name}
           </h2>
-          <a href={viewModel.repository.url} target="_blank" rel="noreferrer">
+          <a className="font-extrabold text-ptop-mint-dark underline-offset-4 hover:underline" href={viewModel.repository.url} target="_blank" rel="noreferrer">
             GitHub에서 보기
           </a>
         </div>
-        <p>
+        <p className="m-0 leading-[1.6] text-ptop-muted">
           {viewModel.repository.description ?? "Repository 설명이 등록되어 있지 않습니다."}
-          <span className="result-meta">기본 브랜치: {viewModel.repository.defaultBranch}</span>
+          <span className="ml-2 text-[0.82rem] text-ptop-muted">기본 브랜치: {viewModel.repository.defaultBranch}</span>
         </p>
       </header>
 
-      <div className="result-metrics" aria-label="분석 요약">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="분석 요약">
         <Metric label="파일" value={`${viewModel.fileCount}`} />
         <Metric label="참여자" value={`${viewModel.contributors.length}명`} />
         <Metric label="Pull Request" value={`${viewModel.collaborationSummary.pullRequestCount}`} />
         <Metric label="Issue" value={`${viewModel.collaborationSummary.issueCount}`} />
       </div>
 
-      <div className="result-grid">
+      <div className="grid gap-4 lg:grid-cols-2">
         <ResultCard title="프로젝트 참여자">
-          <ul className="contributor-preview">
+          <ul className="m-0 grid gap-2 p-0">
             {viewModel.contributors.map((contributor) => (
-              <li key={contributor.login}>
-                <strong>{contributor.login}</strong>
-                <span>{contributor.commitCount} commits</span>
-                <em>{contributor.commitActivityPercent}%</em>
+              <li className="flex items-center gap-2 rounded-lg border border-ptop-line px-3 py-2" key={contributor.login}>
+                <strong className="flex-1">{contributor.login}</strong>
+                <span className="text-xs text-ptop-muted">{contributor.commitCount} commits</span>
+                <em className="not-italic text-sm font-bold text-ptop-mint-dark">{contributor.commitActivityPercent}%</em>
               </li>
             ))}
           </ul>
-          <p>{viewModel.contributionNotice}</p>
+          <p className="m-0 text-sm leading-[1.5] text-ptop-muted">{viewModel.contributionNotice}</p>
         </ResultCard>
 
         <ResultCard title="최근 커밋">
           {viewModel.commits.length > 0 ? (
-            <ul className="work-preview">
+            <ul className="m-0 grid gap-2 p-0">
               {viewModel.commits.map((commit) => (
-                <li key={commit.sha}>
-                  <span>{commit.message.split("\n", 1)[0]}</span>
-                  <small>
+                <li className="grid gap-1 rounded-lg border border-ptop-line px-3 py-2" key={commit.sha}>
+                  <span className="font-bold">{commit.message.split("\n", 1)[0]}</span>
+                  <small className="text-xs text-ptop-muted">
                     {commit.authorLogin ?? "작성자 미상"} · +{commit.additions ?? 0} / -
                     {commit.deletions ?? 0}
                   </small>
@@ -124,12 +126,12 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
               ))}
             </ul>
           ) : (
-            <p>최근 커밋을 찾지 못했습니다.</p>
+            <p className="m-0 text-sm text-ptop-muted">최근 커밋을 찾지 못했습니다.</p>
           )}
         </ResultCard>
       </div>
 
-      <div className="result-grid">
+      <div className="grid gap-4 lg:grid-cols-2">
         <ResultCard title="기술 스택">
           <ResultList label="언어" items={formatLanguages(viewModel.languages)} />
           <ResultList label="패키지 매니저" items={viewModel.packageManager ? [viewModel.packageManager] : []} />
@@ -138,7 +140,7 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
         </ResultCard>
 
         <ResultCard title="협업 활동">
-          <dl className="result-definition-list">
+          <dl className="grid gap-3 sm:grid-cols-2">
             <Definition label="전체 PR" value={`${viewModel.collaborationSummary.pullRequestCount}`} />
             <Definition label="머지된 PR" value={`${viewModel.collaborationSummary.mergedPullRequestCount}`} />
             <Definition label="열린 PR" value={`${viewModel.collaborationSummary.openPullRequestCount}`} />
@@ -149,51 +151,51 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
         </ResultCard>
       </div>
 
-      <ResultCard title="프로젝트 구조" className="result-card-wide">
+      <ResultCard title="프로젝트 구조" className="lg:col-span-2">
         <ResultList label="최상위 디렉터리" items={viewModel.topLevelDirectories} />
         <ResultList label="진입점" items={viewModel.entryPoints} />
         <ResultList label="테스트 경로" items={viewModel.testPaths} />
         <ResultList label="CI 경로" items={viewModel.ciPaths} />
         <ResultList label="배포 설정" items={viewModel.deploymentPaths} />
-        {viewModel.treeTruncated && <p className="result-warning">파일 구조가 일부만 반환되었습니다.</p>}
+        {viewModel.treeTruncated && <p className="mt-3 text-sm text-ptop-muted">파일 구조가 일부만 반환되었습니다.</p>}
       </ResultCard>
 
-      <ResultCard title="기술적 도전 후보" className="result-card-wide">
+      <ResultCard title="기술적 도전 후보" className="lg:col-span-2">
         {viewModel.technicalChallenges.length > 0 ? (
-          <ul className="technical-challenge-list">
+          <ul className="grid gap-4">
             {viewModel.technicalChallenges.map((challenge) => (
-              <li key={challenge.title} className="technical-challenge-item">
-                <div className="technical-challenge-heading">
-                  <h4>{challenge.title}</h4>
-                  <div className="technical-challenge-status">
-                    <span className="challenge-confidence">
+              <li key={challenge.title} className="grid gap-3 rounded-xl border border-ptop-line bg-ptop-paper p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <h4 className="m-0 text-base font-extrabold">{challenge.title}</h4>
+                  <div className="flex flex-wrap gap-2 text-xs font-bold">
+                    <span className="rounded-full bg-ptop-mint-soft px-2.5 py-1 text-ptop-mint-dark">
                       신뢰도 {confidenceLabels[challenge.confidence]}
                     </span>
                     {challenge.requiresUserConfirmation && (
-                      <span className="challenge-confirmation">사용자 확인 필요</span>
+                      <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-800">사용자 확인 필요</span>
                     )}
                   </div>
                 </div>
-                <p>{challenge.summary}</p>
-                <dl className="challenge-details">
+                <p className="m-0 leading-[1.6] text-ptop-muted">{challenge.summary}</p>
+                <dl className="grid gap-3 rounded-lg bg-ptop-soft-paper p-3">
                   {challenge.background && <Definition label="Background" value={challenge.background} />}
                   {challenge.problem && <Definition label="Problem" value={challenge.problem} />}
                   {challenge.solution && <Definition label="Solution" value={challenge.solution} />}
                   <Definition label="기술적 도전" value={challenge.technicalChallenge} />
                   <Definition label="의미" value={challenge.whyItMatters} />
                 </dl>
-                <div className="challenge-evidence">
-                  <span>근거</span>
-                  <ul className="evidence-list">
+                <div className="grid gap-2">
+                  <span className="text-xs font-extrabold uppercase tracking-[0.06em] text-ptop-muted">근거</span>
+                  <ul className="grid gap-2">
                     {challenge.evidence.map((item, index) => (
-                      <li key={`${item.evidenceType}-${item.referenceId ?? item.filePath ?? index}`}>
-                        <span className="evidence-type">{evidenceTypeLabels[item.evidenceType]}</span>
-                        <div>
+                      <li className="flex flex-wrap items-center gap-2 rounded-lg border border-ptop-line px-3 py-2 text-sm" key={`${item.evidenceType}-${item.referenceId ?? item.filePath ?? index}`}>
+                        <span className="rounded bg-ptop-mint-soft px-2 py-1 text-xs font-bold text-ptop-mint-dark">{evidenceTypeLabels[item.evidenceType]}</span>
+                        <div className="grid min-w-0 flex-1 gap-0.5">
                           <strong>{item.title}</strong>
-                          {item.filePath && <small>{item.filePath}</small>}
+                          {item.filePath && <small className="truncate text-xs text-ptop-muted">{item.filePath}</small>}
                         </div>
                         {item.url && (
-                          <a href={item.url} target="_blank" rel="noreferrer">
+                          <a className="font-bold text-ptop-mint-dark hover:underline" href={item.url} target="_blank" rel="noreferrer">
                             열기
                           </a>
                         )}
@@ -209,13 +211,48 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
         )}
       </ResultCard>
 
-      <div className="result-grid">
+      {reflectionAnalysis && (
+        <ResultCard title="내 회고와 분석 결과 연결">
+          <div className={`grid gap-2 rounded-lg border p-4 ${reflectionTone[reflectionAnalysis.alignment]}`} role="status">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <strong>{reflectionAlignmentLabels[reflectionAnalysis.alignment]}</strong>
+              {reflectionAnalysis.matchedChallengeTitle && (
+                <span className="text-sm font-bold">{reflectionAnalysis.matchedChallengeTitle}</span>
+              )}
+            </div>
+            <p className="m-0 text-sm leading-[1.6]">{reflectionAnalysis.message}</p>
+            {reflectionAnalysis.portfolioSummary && (
+              <p className="m-0 border-t border-current/20 pt-3 text-sm leading-[1.6]">
+                <strong>포트폴리오 단서: </strong>
+                {reflectionAnalysis.portfolioSummary}
+              </p>
+            )}
+            {reflectionAnalysis.matchedChallengeEvidence.length > 0 && (
+              <div className="border-t border-current/20 pt-3 text-sm">
+                <strong>연결된 Repository 근거</strong>
+                <ul className="mt-2 grid gap-1 pl-5">
+                  {reflectionAnalysis.matchedChallengeEvidence.map((evidence) => (
+                    <li key={`${evidence.evidenceType}-${evidence.referenceId ?? evidence.filePath ?? evidence.title}`}>
+                      {evidence.filePath ?? evidence.title}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {reflectionAnalysis.requiresUserConfirmation && (
+              <strong className="text-sm">이 결과는 사용자 확인이 필요합니다.</strong>
+            )}
+          </div>
+        </ResultCard>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-2">
         <ResultCard title="품질 신호">
-          <ul className="signal-list">
+          <ul className="m-0 grid gap-2 p-0">
             {Object.entries(viewModel.qualitySignals).map(([key, value]) => (
-              <li key={key} data-active={value}>
-                <span>{qualitySignalLabels[key] ?? key}</span>
-                <strong>{value ? "확인됨" : "확인되지 않음"}</strong>
+              <li className="flex items-center justify-between gap-3 rounded-lg border border-ptop-line px-3 py-2" key={key} data-active={value}>
+                <span className="text-sm">{qualitySignalLabels[key] ?? key}</span>
+                <strong className={value ? "text-sm text-ptop-mint-dark" : "text-sm text-ptop-muted"}>{value ? "확인됨" : "확인되지 않음"}</strong>
               </li>
             ))}
           </ul>
@@ -223,25 +260,25 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
 
         <ResultCard title="README 요약">
           {viewModel.readme.readmeAvailable && viewModel.readme.readmeExcerpt ? (
-            <p className="readme-excerpt">{viewModel.readme.readmeExcerpt}</p>
+            <p className="m-0 whitespace-pre-wrap leading-[1.65] text-ptop-muted">{viewModel.readme.readmeExcerpt}</p>
           ) : (
-            <p>README를 찾지 못했습니다.</p>
+          <p className="m-0 text-sm text-ptop-muted">README를 찾지 못했습니다.</p>
           )}
         </ResultCard>
       </div>
 
-      <ResultCard title="분석 근거" className="result-card-wide">
+      <ResultCard title="분석 근거" className="lg:col-span-2">
         {viewModel.evidence.length > 0 ? (
-          <ul className="evidence-list">
+          <ul className="grid gap-2">
             {viewModel.evidence.slice(0, 12).map((item, index) => (
-              <li key={`${item.evidenceType}-${item.referenceId ?? item.title}-${index}`}>
-                <span className="evidence-type">{evidenceTypeLabels[item.evidenceType]}</span>
-                <div>
+              <li className="flex flex-wrap items-center gap-2 rounded-lg border border-ptop-line px-3 py-2 text-sm" key={`${item.evidenceType}-${item.referenceId ?? item.title}-${index}`}>
+                <span className="rounded bg-ptop-mint-soft px-2 py-1 text-xs font-bold text-ptop-mint-dark">{evidenceTypeLabels[item.evidenceType]}</span>
+                <div className="grid min-w-0 flex-1 gap-0.5">
                   <strong>{item.title}</strong>
-                  {item.filePath && <small>{item.filePath}</small>}
+                  {item.filePath && <small className="truncate text-xs text-ptop-muted">{item.filePath}</small>}
                 </div>
                 {item.url && (
-                  <a href={item.url} target="_blank" rel="noreferrer">
+                  <a className="font-bold text-ptop-mint-dark hover:underline" href={item.url} target="_blank" rel="noreferrer">
                     열기
                   </a>
                 )}
@@ -254,9 +291,9 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
       </ResultCard>
 
       {viewModel.warnings.length > 0 && (
-        <div className="result-warning-box" role="note">
-          <strong>일부 데이터 확인 필요</strong>
-          <ul>
+        <div className="grid gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950" role="note">
+          <strong className="font-extrabold">일부 데이터 확인 필요</strong>
+          <ul className="m-0 list-disc pl-5">
             {viewModel.warnings.map((warning) => (
               <li key={warning}>{warning}</li>
             ))}
@@ -269,9 +306,9 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="result-metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
+    <div className="grid gap-1 rounded-xl border border-ptop-line bg-white p-4 shadow-ptop-surface">
+      <span className="text-xs font-bold text-ptop-muted">{label}</span>
+      <strong className="text-2xl tracking-[-0.03em]">{value}</strong>
     </div>
   );
 }
@@ -286,8 +323,8 @@ function ResultCard({
   className?: string;
 }) {
   return (
-    <article className={`result-card ${className}`}>
-      <h3>{title}</h3>
+    <article className={`grid gap-4 rounded-xl border border-ptop-line bg-white p-5 shadow-ptop-surface ${className}`}>
+      <h3 className="m-0 text-lg font-extrabold">{title}</h3>
       {children}
     </article>
   );
@@ -295,16 +332,16 @@ function ResultCard({
 
 function ResultList({ label, items }: { label: string; items: string[] }) {
   return (
-    <div className="result-list">
-      <span>{label}</span>
+    <div className="grid gap-2">
+      <span className="text-xs font-extrabold text-ptop-muted">{label}</span>
       {items.length > 0 ? (
-        <ul className="result-tags">
+        <ul className="m-0 flex flex-wrap gap-2 p-0">
           {items.map((item) => (
-            <li key={item}>{item}</li>
+          <li className="list-none rounded-full bg-ptop-mint-soft px-2.5 py-1 text-sm text-ptop-mint-dark" key={item}>{item}</li>
           ))}
         </ul>
       ) : (
-        <strong className="result-empty">없음</strong>
+        <strong className="text-sm text-ptop-muted">없음</strong>
       )}
     </div>
   );
@@ -347,3 +384,17 @@ const confidenceLabels = {
   medium: "보통",
   low: "낮음",
 } as const;
+
+const reflectionAlignmentLabels: Record<ReflectionAnalysis["alignment"], string> = {
+  matched: "회고와 분석 근거가 연결되었습니다",
+  partial: "회고와 일부 근거만 연결되었습니다",
+  mismatched: "회고와 AI 후보가 일치하지 않습니다",
+  no_evidence: "연결할 근거를 찾지 못했습니다",
+};
+
+const reflectionTone: Record<ReflectionAnalysis["alignment"], string> = {
+  matched: "border-ptop-mint-dark/40 bg-ptop-mint-soft text-ptop-ink",
+  partial: "border-amber-300 bg-amber-50 text-amber-950",
+  mismatched: "border-orange-300 bg-orange-50 text-orange-950",
+  no_evidence: "border-slate-300 bg-slate-50 text-slate-700",
+};

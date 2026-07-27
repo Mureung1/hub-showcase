@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { setKeyboardCaptureEnabled } from "./keyboardInput";
 
 type Movement = {
   x: number;
@@ -6,6 +7,7 @@ type Movement = {
 };
 
 export class InputManager {
+  private readonly keyboard: Phaser.Input.Keyboard.KeyboardPlugin;
   private readonly cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   private readonly keys: Record<"up" | "down" | "left" | "right" | "interact", Phaser.Input.Keyboard.Key>;
   private isEnabled = true;
@@ -17,6 +19,7 @@ export class InputManager {
       throw new Error("Workspace keyboard input is not available.");
     }
 
+    this.keyboard = keyboard;
     this.cursors = keyboard.createCursorKeys();
     this.keys = keyboard.addKeys({
       up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -46,5 +49,6 @@ export class InputManager {
 
   setEnabled(isEnabled: boolean) {
     this.isEnabled = isEnabled;
+    setKeyboardCaptureEnabled(this.keyboard, isEnabled);
   }
 }

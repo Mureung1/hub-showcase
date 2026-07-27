@@ -3,6 +3,7 @@ import type {
   ReflectionDraftSaveResponse,
   RepositoryAnalysisErrorCode,
   RepositoryAnalysisErrorResponse,
+  TechnicalChallengeCandidate,
 } from "@ptop/contracts";
 
 export class ReflectionSaveApiError extends Error {
@@ -21,6 +22,7 @@ export async function saveReflectionDraftToApi(
   draft: ReflectionDraft,
   fetchImpl: typeof fetch = fetch,
   apiBaseUrl = getDefaultApiBaseUrl(),
+  technicalChallenges: TechnicalChallengeCandidate[] = [],
 ): Promise<ReflectionDraftSaveResponse> {
   let response: Response;
 
@@ -30,7 +32,7 @@ export async function saveReflectionDraftToApi(
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ draft }),
+        body: JSON.stringify({ draft, technicalChallenges }),
       },
     );
   } catch {

@@ -76,4 +76,4 @@ npm run build
 - `E` 상호작용과 Repository 모달을 확인한다.
 - 모달 focus, `Escape`, 입력 복원을 확인한다.
 - 데스크톱과 모바일에서 겹침과 잘림을 확인한다.
-- `/hub/` base path에서 정적 파일과 lazy chunk가 로드되는지 확인한다.
+- `/` base path에서 정적 파일과 lazy chunk가 로드되는지 확인한다.
