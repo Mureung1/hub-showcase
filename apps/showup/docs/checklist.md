@@ -309,8 +309,8 @@
 - [ ] 데모 시나리오 화면 점검
 
 ### 백엔드
-- [ ] 데모 데이터 최종 확인
-- [ ] 배포 상태 모니터링
+- [✅] 데모 데이터 최종 확인 — 시드 무결성 검증, 오늘(7/27) 예약 3건/내일(7/28) 1건 추가, upload.ts incidentCustomerIds 불일치 버그 수정
+- [✅] 배포 상태 모니터링 — https://showup-project.web.app 200 OK, live 채널 정상
 
 ### 보안
 - [✅] 프로덕션 최종 스모크 테스트 — 14개 시나리오 전체 PASS (security/smoke-test.mjs)
