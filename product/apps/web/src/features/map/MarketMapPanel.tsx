@@ -16,11 +16,13 @@ import type { ReactNode, RefObject } from "react";
 import type { MapRef } from "react-map-gl/maplibre";
 
 import type { LayerMode, Market } from "../market/types";
+import "./MapBottomDock.css";
 import { getMapPresentationProfile, type MapPresentationMode } from "./mapPresentation";
 
 type MarketMapPanelProps = {
   toolbarStart: ReactNode;
   mapBody: ReactNode;
+  bottomMetrics: ReactNode;
   market: Market;
   presentationMode: MapPresentationMode;
   onPresentationModeChange: (mode: MapPresentationMode) => void;
@@ -89,6 +91,7 @@ function SidePanelTrigger({
 export function MarketMapPanel({
   toolbarStart,
   mapBody,
+  bottomMetrics,
   market,
   presentationMode,
   onPresentationModeChange,
@@ -145,7 +148,9 @@ export function MarketMapPanel({
           </div>
         </div>
       </div>
+
       {mapBody}
+
       {!filtersOpen && (
         <SidePanelTrigger
           side="left"
@@ -169,6 +174,7 @@ export function MarketMapPanel({
           title="분석 결과 열기"
         />
       )}
+
       <div className="map-legend">
         <p>
           {layer === "density"
@@ -179,9 +185,7 @@ export function MarketMapPanel({
         <span><i className="mid" /> 보통</span>
         <span><i className="high" /> 높음</span>
       </div>
-      <div className="map-attribution">
-        {presentationMode === "flat" ? "OpenFreeMap" : "OpenFreeMap · LocalTwin map data overlay"} · © OpenStreetMap contributors
-      </div>
+
       {layer === "demand" && (
         <div className="flow-card">
           <span>시간대 유동 수요</span>
@@ -189,10 +193,12 @@ export function MarketMapPanel({
           <small>아이콘 수는 상대 수요 비율을 표시합니다.</small>
         </div>
       )}
-      <div className="map-controls">
+
+      <div className="map-controls" aria-label="지도 조작">
         <button
           type="button"
           title="현재 상권으로 이동"
+          aria-label="현재 상권으로 이동"
           onClick={() =>
             mapRef.current?.flyTo({
               center: market.center,
@@ -204,22 +210,32 @@ export function MarketMapPanel({
         >
           <LocateFixed size={18} />
         </button>
-        <button type="button" title="확대" onClick={() => mapRef.current?.zoomIn()}>
+        <button type="button" title="확대" aria-label="확대" onClick={() => mapRef.current?.zoomIn()}>
           <Plus size={18} />
         </button>
-        <button type="button" title="축소" onClick={() => mapRef.current?.zoomOut()}>
+        <button type="button" title="축소" aria-label="축소" onClick={() => mapRef.current?.zoomOut()}>
           <Minus size={18} />
         </button>
       </div>
-      <button
-        type="button"
-        className="compare-cta"
-        disabled={!comparisonEnabled}
-        title={comparisonEnabled ? undefined : "전체 지원 업종에서만 상권 비교를 제공합니다."}
-        onClick={onCompareOpen}
-      >
-        <BarChart3 size={17} /> 전체 상권 보기
-      </button>
+
+      <div className="map-bottom-dock">
+        <div className="map-bottom-metrics">{bottomMetrics}</div>
+        <aside className="map-bottom-actions" aria-label="상권 비교와 지도 출처">
+          <button
+            type="button"
+            className="compare-cta"
+            disabled={!comparisonEnabled}
+            title={comparisonEnabled ? undefined : "전체 지원 업종에서만 상권 비교를 제공합니다."}
+            onClick={onCompareOpen}
+          >
+            <BarChart3 size={17} /> 전체 상권 비교
+          </button>
+          <div className="map-attribution">
+            <span>{presentationMode === "flat" ? "OpenFreeMap" : "OpenFreeMap · LocalTwin"}</span>
+            <span>© OpenStreetMap contributors</span>
+          </div>
+        </aside>
+      </div>
     </section>
   );
 }
