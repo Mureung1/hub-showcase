@@ -24,3 +24,7 @@ export const NAME_PATTERN_BONUS = 0.3;
 // 하이브리드 청킹 (05장 7장)
 export const CHUNK_SHORT_FILE_MAX_LINES = 200; // 이 이하면 청킹 없이 전체 사용
 export const CHUNK_MAX_PER_FILE = 2; // 파일당 최대 chunk 개수
+
+// Gemini 모델명 (env로 override 가능 — Google이 모델을 종종 deprecate하므로
+// 하드코딩 시 배포 없이는 복구 불가)
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';

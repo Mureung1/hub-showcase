@@ -77,7 +77,12 @@ router.post('/repositories', async (req, res) => {
     lastScannedAt: new Date().toISOString(),
     candidates,
     // project_overview는 실제 README 파싱(contextBuilder.js), tech_stack은 아직 stubData.js 고정값
-    context: await buildContext(parsedRepo.owner, parsedRepo.repo, classified.contextFilePaths),
+    context: await buildContext(
+      parsedRepo.owner,
+      parsedRepo.repo,
+      classified.contextFilePaths,
+      classified.candidateFilePaths
+    ),
   });
 
   // 실제 스캔은 비동기 Job이지만(07_API_SPEC.md), Trees API 1회 호출로 충분히 빨라 즉시 완료로 처리한다.
