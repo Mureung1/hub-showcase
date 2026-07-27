@@ -65,7 +65,7 @@ Root `workspace-state.json`은 Git-tracked identity와 opaque current snapshot�
 | W-003 Lifecycle contract·coordinator | Non-preemptive operation admission, terminal-only release와 current Turn 사용 | `BootstrapCandidate`, `workspace_init` eligibility와 candidate activation Browser union |
 | I-001 Interaction foundation | Capability codec와 built Adapter foundation | 없음 |
 
-W-004는 claim commit `f82c99b9c`만 있고 구현 commit은 없다. 현재 dirty worktree는 exact Git boundary·native project discovery와 additional `writableRoots`·SDK patch replacement가 섞인 작업 중 상태이므로 구현 완료로 간주하지 않는다.
+W-004는 `0ae7b8158`, `1ade92d11`에서 구현·리뷰 보정을 완료했다. Mixed dirty diff에서 exact Git boundary·native project discovery와 trust 증거만 회수했고 candidate `writableRoots`와 replacement SDK patch는 폐기했다.
 
 ### Current implementation과 target
 
@@ -74,7 +74,7 @@ W-004는 claim commit `f82c99b9c`만 있고 구현 commit은 없다. 현재 dirt
 | Startup selection | No-argument startup이 `hub/`를 Runtime cwd로 쓰고 explicit `--workspace`만 current-v2 directory를 연다. | First open/change는 prepared root `--workspace`; later no-argument start는 registry active root다. Target root가 없으면 process가 fail closed한다. |
 | Workspace store | Hidden current-v2 aggregate가 Course, materials, Run·patch·confirmation과 guard를 함께 저장한다. | Root v4 identity envelope만 App이 이해하고 `snapshot`은 opaque다. |
 | Git | Current default directory는 독립 Git root가 아니고 App-owned action flow가 apply한다. | One semester = one Git repository, native Bootstrap과 AY-owned file mutation·checkpoint다. |
-| Native context | Exact `cwd`는 쓰지만 `project_root_markers=[]`, managed Skill root와 thread MCP override가 discovery를 덮는다. | Exact Git root의 native config·AGENTS·Skill discovery를 사용한다. |
+| Native context | Runtime이 exact canonical Git root를 child spawn 전에 검증하고 native `.git` boundary에서 root config·AGENTS·repo Skill을 발견한다. Fixed marker와 managed Skill override는 제거됐지만 thread private MCP overlay는 InteractionCapability cutover 전 donor로 남아 있다. | Project MCP도 tracked root config에서만 load하고 private thread overlay를 제거한다. |
 | Lifecycle contract | Candidate/bootstrap union과 generic coordinator가 internal expansion으로 구현됐다. | Candidate branch는 contract하고 prepared-root startup만 남긴다. Generic coordinator는 재사용한다. |
 | Runtime/appData | External canonical Runtime은 구현됐지만 legacy residue가 남아 있다. | Verified Runtime과 operating state는 sibling `../.ay-ple/`에만 둔다. |
 

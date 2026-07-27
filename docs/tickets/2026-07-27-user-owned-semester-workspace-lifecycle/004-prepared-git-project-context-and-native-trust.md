@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -32,33 +32,46 @@ Codex Runtime이 App 시작 전에 준비된 user-owned exact SemesterWorkspace 
 
 ## Acceptance Criteria
 
-- [ ] Native-context와 Runtime actual-child tests가 exact Git root의 project config, instruction과 repo Skill을 관측하고 hostile ancestor context를 배제한다.
-- [ ] Managed Skill injection과 `skills/extraRoots/set` call이 production Turn trace에서 사라진다.
-- [ ] App-owned permission contract, Python bridge와 generated SDK에 candidate additional `writableRoots` surface나 replacement `0008` patch가 남지 않는다.
-- [ ] Exact-root workspace-write Turn이 workspace 밖 sibling sentinel을 변경하지 못하고 broad permission fallback을 사용하지 않는다.
-- [ ] Unset exact-root trust는 root-local config discovery를 허용하고 explicit untrusted, parent-only trust와 hostile ancestor config는 보존되거나 배제된다.
-- [ ] Existing mixed dirty diff에서 valid native-context hunk만 보존되고 unrelated 및 obsolete candidate-permission hunk가 ticket result에 섞이지 않는다.
-- [ ] Exact SDK, patch manifest와 production Runtime가 `0001..0007` stack으로 재생성되고 Node·bridge·actual-child validation을 통과한다.
+- [x] Native-context와 Runtime actual-child tests가 exact Git root의 project config, instruction과 repo Skill을 관측하고 hostile ancestor context를 배제한다.
+- [x] Managed Skill injection과 `skills/extraRoots/set` call이 production Turn trace에서 사라진다.
+- [x] App-owned permission contract, Python bridge와 generated SDK에 candidate additional `writableRoots` surface나 replacement `0008` patch가 남지 않는다.
+- [x] Exact-root workspace-write Turn이 workspace 밖 sibling sentinel을 변경하지 못하고 broad permission fallback을 사용하지 않는다.
+- [x] Unset exact-root trust는 root-local config discovery를 허용하고 explicit untrusted, parent-only trust와 hostile ancestor config는 보존되거나 배제된다.
+- [x] Existing mixed dirty diff에서 valid native-context hunk만 보존되고 unrelated 및 obsolete candidate-permission hunk가 ticket result에 섞이지 않는다.
+- [x] Exact SDK, patch manifest와 production Runtime가 `0001..0007` stack으로 재생성되고 Node·bridge·actual-child validation을 통과한다.
 
 ## Verification
 
 - Targeted test or command:
-  - `npm run test:native-context-actual -w @ay-ple/codex-chat-runtime`
-  - `npm run test:node-actual -w @ay-ple/codex-chat-runtime`
-  - `npm run test:bridge -w @ay-ple/codex-chat-runtime`
-  - `npm test -w @ay-ple/server`
-  - Exact SDK patch inventory가 `0001..0007`만 포함하는지 검증
+  - `npm run test:native-context-actual -w @ay-ple/codex-chat-runtime` — 23개 test green
+  - `npm run test:node-actual -w @ay-ple/codex-chat-runtime` — 88개 test green
+  - `npm run test:local-provider -w @ay-ple/codex-chat-runtime` — 3개 test green
+  - `npm run test:bridge -w @ay-ple/codex-chat-runtime` — 23개 test green
+  - `npm test -w @ay-ple/server` — repository-wide run에서 154개 test green
+  - Patch directory, exact derivation과 provenance가 `0001..0007`만 허용한다.
 - Repository checks:
-  - `npm test`
-  - `npm run typecheck`
-  - `npm run build`
-  - `npm run lint -w @ay-ple/chat-shell`
-  - `npm run check:docs-links`
+  - `npm test` — green
+  - `npm run typecheck` — green
+  - `npm run build` — green
+  - `npm run lint -w @ay-ple/chat-shell` — green
+  - `npm run check:docs-links` — active 28개와 historical banner 2개 green
+  - `git diff --check` — green
 - Manual or live smoke:
-  - `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime`
-  - `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime`
-  - `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime`
-  - Hostile ancestor repository 아래 temporary SemesterWorkspace에서 exact-root `AGENTS.md`, `.codex/config.toml`과 repo Skill만 발견되는지 확인
+  - `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime` — deterministic 7-patch derivation, official suite 159 passed·38 skipped, provenance 17개 green
+  - `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime` — production bundle 25개, bridge 23개, Ruff와 complete-tree verification green
+  - `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime` — Node actual 88개, native-context 23개, local-provider 3개와 pre/post bundle verification green
+  - Hostile ancestor Git repository 아래 nested exact root에서 root-local `AGENTS.md`, `.codex/config.toml`과 repo Skill만 발견하고 sibling sentinel이 보존됨을 actual local-provider trace로 확인했다.
+  - `/code-review a939b6d9010ae89f3d3ddb7e9c16ed1b634a20d7`의 Spec 축은 finding 0개, Standards 축은 hard violation 0개였다. External Runtime path와 Git test setup 중복은 `runtime-test-support.ts`로 모았고, 서로 다른 trust disposition을 드러내는 두 local-provider scenario는 독립 regression oracle로 유지했다. Follow-up Standards 확인의 residual finding도 0개다.
+
+## Result
+
+Runtime은 child spawn 전에 caller가 준 workspace가 canonical existing non-symlink directory인지, real non-symlink `.git/`과 bounded system Git `rev-parse` 결과가 같은 exact root를 가리키는지 검증한다. Persistent bridge, native-context probe와 thread는 이 root를 같은 `cwd`로 사용하고 native `.git` project boundary에서 root-local config·instruction·repo Skill만 발견한다.
+
+Fixed `project_root_markers=[]`, process-wide managed Skill root와 `skills/extraRoots/set` injection을 제거했다. Exact-root `workspace-write` actual trace는 내부 write만 허용하고 sibling sentinel을 보존하며, trusted ancestor만 있는 root의 exact trust 기록, explicit `untrusted` 보존과 hostile ancestor 배제를 고정한다.
+
+Obsolete `0008-standalone-skill-extra-roots.patch`는 replacement 없이 제거했다. Canonical manifests와 external production Runtime은 exact `0001..0007` stack, patched tree와 complete bundle roster를 가리킨다.
+
+구현 commit은 `0ae7b8158` (`feat: use native git workspace context`), review follow-up은 `1ade92d11` (`refactor: centralize runtime test setup`)이다.
 
 ## Blocked By
 
