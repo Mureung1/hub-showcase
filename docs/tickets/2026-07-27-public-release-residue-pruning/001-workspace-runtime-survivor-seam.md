@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -30,25 +30,33 @@ Current Server와 product conformance caller가 managed account lifecycle과 무
 
 ## Acceptance Criteria
 
-- [ ] Account lifecycle이나 Runtime role을 포함하지 않는 workspace/product survivor Runtime interface가 명시된다.
-- [ ] Workspace-only production factory call의 반환 계약이 survivor interface로 좁혀진다.
-- [ ] `apps/server`의 canonical composition, live product trace와 cross-package process fixture를 포함한 current product caller가 survivor seam만 사용한다.
-- [ ] `readAccountReadiness()`의 `ready | not_ready(authentication_required)` projection과 failure settlement가 기존 behavior를 유지한다.
-- [ ] Existing product Turn, model catalog, native-context와 bounded close tests가 새 seam에서 통과한다.
-- [ ] Transitional managed surface는 current product consumer가 없다는 것을 import/type test 또는 equivalent static evidence로 확인한다.
+- [x] Account lifecycle이나 Runtime role을 포함하지 않는 workspace/product survivor Runtime interface가 명시된다.
+- [x] Workspace-only production factory call의 반환 계약이 survivor interface로 좁혀진다.
+- [x] `apps/server`의 canonical composition, live product trace와 cross-package process fixture를 포함한 current product caller가 survivor seam만 사용한다.
+- [x] `readAccountReadiness()`의 `ready | not_ready(authentication_required)` projection과 failure settlement가 기존 behavior를 유지한다.
+- [x] Existing product Turn, model catalog, native-context와 bounded close tests가 새 seam에서 통과한다.
+- [x] Transitional managed surface는 current product consumer가 없다는 것을 import/type test 또는 equivalent static evidence로 확인한다.
 
 ## Verification
 
 - Targeted test or command:
-  - `npm run test:node-unit -w @ay-ple/codex-chat-runtime`
-  - `npm run typecheck -w @ay-ple/codex-chat-runtime`
-  - `npm test -w @ay-ple/server`
-  - `npm run typecheck -w @ay-ple/server`
+  - `npm run test:node-unit -w @ay-ple/codex-chat-runtime` — 통과, 138 assertions
+  - `npm run typecheck -w @ay-ple/codex-chat-runtime` — 통과
+  - `npm test -w @ay-ple/server` — 통과, 133 tests
+  - `npm run typecheck -w @ay-ple/server` — 통과
 - Repository checks:
-  - `npm test`
-  - `npm run typecheck`
+  - `npm test` — 통과
+  - `npm run typecheck` — 통과
+  - `npm run build` — 통과
+  - `npm run lint -w @ay-ple/chat-shell` — 통과
+  - `npm run check:docs-links` — 통과
 - Manual or live smoke:
-  - 없음. External credential이나 live provider를 사용하지 않는다.
+  - `npm run test:product-shutdown-actual -w @ay-ple/server` — 통과, supervised Runtime 종료와 workspace activation 이후 readiness 복구 2개 시나리오
+  - External credential이나 live provider는 사용하지 않았다.
+
+## Result
+
+`CodexWorkspaceRuntime` survivor seam을 추가하고 workspace-only factory 반환 계약, Server composition, product trace, process fixture와 Browser E2E harness를 새 seam으로 이관했다. Compile-time type test로 managed account lifecycle과 `role`이 survivor contract에 들어오지 못하도록 고정했으며, Account Readiness projection·failure settlement와 product Turn/model/native-context/close behavior를 기존대로 보존했다. Transitional `CodexManagedRuntime`과 role-aware overload는 후속 contraction ticket을 위해 남겼다. 구현 체크포인트는 `059db5fce`, `8f69d4c12`, `e4030f932`, `124b6bb65`이다.
 
 ## Blocked By
 
