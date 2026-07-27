@@ -63,7 +63,7 @@ class MarketRawSummary(BaseModel):
     monthly_sales_amount: float | None
     monthly_sales_count: float | None
     total_flow: float | None
-    flow_by_time: list[float]
+    flow_by_time: list[float | None]
     flow_time_buckets: list[FlowTimeBucket]
     area_sqm: float | None
 
@@ -106,6 +106,7 @@ class MarketAnalysisResponse(BaseModel):
 class AnalysisPeriodsResponse(BaseModel):
     periods: list[str]
     default_period: str
+    period_availability: dict[str, list[Literal["stores", "sales", "flow"]]]
     policy: Literal["latest_complete_quarter"] = "latest_complete_quarter"
 
 
@@ -452,7 +453,7 @@ def _raw_summary(
         monthly_sales_amount=float(target["monthly_sales_amount"] or 0) or None,
         monthly_sales_count=float(target["monthly_sales_count"] or 0) or None,
         total_flow=values["foot_traffic"] or None,
-        flow_by_time=[bucket.value or 0 for bucket in flow_time_buckets],
+        flow_by_time=[bucket.value for bucket in flow_time_buckets],
         flow_time_buckets=flow_time_buckets,
         area_sqm=values["area_sqm"] or None,
     )
@@ -554,22 +555,6 @@ class MarketAnalysisRepository:
         codes = CATEGORY_CODES[category]
         statement = (
             select(StoreMetric.period)
-            .join(Market, Market.market_code == StoreMetric.market_code)
-            .join(
-                SalesMetric,
-                and_(
-                    SalesMetric.market_code == StoreMetric.market_code,
-                    SalesMetric.period == StoreMetric.period,
-                    SalesMetric.category_code == StoreMetric.category_code,
-                ),
-            )
-            .join(
-                FlowMetric,
-                and_(
-                    FlowMetric.market_code == StoreMetric.market_code,
-                    FlowMetric.period == StoreMetric.period,
-                ),
-            )
             .where(
                 StoreMetric.category_code.in_(codes),
             )
@@ -578,7 +563,24 @@ class MarketAnalysisRepository:
         periods = sorted(self.session.scalars(statement).all(), reverse=True)
         if not periods:
             raise LookupError("No complete analysis period is available.")
-        return AnalysisPeriodsResponse(periods=periods, default_period=periods[0])
+        availability: dict[str, list[Literal["stores", "sales", "flow"]]] = {}
+        complete_periods: list[str] = []
+        for period in periods:
+            rows = self._category_rows(period, codes)
+            available: list[Literal["stores", "sales", "flow"]] = ["stores"]
+            if any(row["sales_source_id"] is not None for row in rows):
+                available.append("sales")
+            if any(row["flow_source_id"] is not None for row in rows):
+                available.append("flow")
+            availability[period] = available
+            if "sales" in available and "flow" in available:
+                complete_periods.append(period)
+        richest_period = max(periods, key=lambda period: (len(availability[period]), period))
+        return AnalysisPeriodsResponse(
+            periods=periods,
+            default_period=complete_periods[0] if complete_periods else richest_period,
+            period_availability=availability,
+        )
 
     def store_trend(self, market_id: str, category: Category) -> MarketStoreTrendResponse:
         statement = (

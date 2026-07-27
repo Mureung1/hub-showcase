@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { Market, MarketStore } from "./types";
+import type { MarketStore } from "./types";
 import { useStoreSelection } from "./useStoreSelection";
 
 const store: MarketStore = {
@@ -19,9 +19,7 @@ function options(nearbyStores: MarketStore[]) {
     marketKey: "연남" as const,
     marketKeyById: { market1: "연남" as const },
     score: 70,
-    analysisScope: "radius" as const,
     nearbyStores,
-    marketStores: [] as Market["stores"],
   };
 }
 

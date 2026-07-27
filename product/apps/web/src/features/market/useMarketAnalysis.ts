@@ -4,8 +4,10 @@ import {
   loadMarketAnalysis,
   loadMarketComparison,
   loadAnalysisPeriods,
+  loadMarketStoreTrend,
   type AnalysisSource,
   type MarketAnalysis,
+  type MarketStoreTrend,
 } from "../../services/marketAnalysis";
 import {
   loadAdminAreaBackground,
@@ -34,17 +36,24 @@ export function useMarketAnalysis(
   const [backgroundState, setBackgroundState] = useState<AnalysisState>("loading");
   const [analysisRetryToken, setAnalysisRetryToken] = useState(0);
   const [availablePeriods, setAvailablePeriods] = useState<string[]>([]);
+  const [periodAvailability, setPeriodAvailability] = useState<
+    Record<string, Array<"stores" | "sales" | "flow">>
+  >({});
   const [defaultPeriod, setDefaultPeriod] = useState<string | null>(null);
+  const [storeTrend, setStoreTrend] = useState<MarketStoreTrend | null>(null);
+  const [storeTrendState, setStoreTrendState] = useState<AnalysisState>("loading");
 
   useEffect(() => {
     if (!category || isTestEnvironment() || typeof fetch === "undefined") return;
     if (!apiReady) {
       setAvailablePeriods([]);
+      setPeriodAvailability({});
       setDefaultPeriod(null);
       return;
     }
     if (allowDemoSnapshot) {
       setAvailablePeriods([DEMO_ANALYSIS_PERIOD]);
+      setPeriodAvailability({ [DEMO_ANALYSIS_PERIOD]: ["stores", "sales", "flow"] });
       setDefaultPeriod(DEMO_ANALYSIS_PERIOD);
       return;
     }
@@ -52,11 +61,13 @@ export function useMarketAnalysis(
     loadAnalysisPeriods(category, controller.signal)
       .then((result) => {
         setAvailablePeriods(result.periods);
+        setPeriodAvailability(result.period_availability ?? {});
         setDefaultPeriod(result.default_period);
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setAvailablePeriods([]);
+        setPeriodAvailability({});
         setDefaultPeriod(null);
       });
     return () => controller.abort();
@@ -116,6 +127,32 @@ export function useMarketAnalysis(
   }, [allowDemoSnapshot, analysisRetryToken, apiReady, category, market, period]);
 
   useEffect(() => {
+    if (!category || !apiReady) {
+      setStoreTrend(null);
+      setStoreTrendState(apiReady ? "unavailable" : "loading");
+      return;
+    }
+    if (allowDemoSnapshot || isTestEnvironment() || typeof fetch === "undefined") {
+      setStoreTrend(null);
+      setStoreTrendState("unavailable");
+      return;
+    }
+    const controller = new AbortController();
+    setStoreTrend(null);
+    setStoreTrendState("loading");
+    loadMarketStoreTrend(market.market_id, category, controller.signal)
+      .then((result) => {
+        setStoreTrend(result);
+        setStoreTrendState("ready");
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setStoreTrendState("unavailable");
+      });
+    return () => controller.abort();
+  }, [allowDemoSnapshot, apiReady, category, market.market_id]);
+
+  useEffect(() => {
     if (!category) {
       setComparison(null);
       return;
@@ -143,7 +180,10 @@ export function useMarketAnalysis(
     background,
     backgroundState,
     availablePeriods,
+    periodAvailability,
     defaultPeriod,
+    storeTrend,
+    storeTrendState,
     retryAnalysis: () => setAnalysisRetryToken((current) => current + 1),
   };
 }

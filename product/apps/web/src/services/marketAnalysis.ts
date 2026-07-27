@@ -19,6 +19,7 @@ export type MarketAnalysisOptions = {
 export type AnalysisPeriods = {
   periods: string[];
   default_period: string;
+  period_availability?: Record<string, Array<"stores" | "sales" | "flow">>;
   policy: "latest_complete_quarter";
 };
 export type ScoreDecisionBlocker =
@@ -44,6 +45,29 @@ export type MarketAnalysis = {
     confidence: number;
     confidence_label: string;
     decision_status: "supported" | "insufficient_evidence";
+    decision_summary?: {
+      verdict: "suitable" | "caution" | "insufficient";
+      headline: string;
+      strengths: Array<{
+        tone: "positive" | "caution" | "info";
+        label: string;
+        message: string;
+        value: number;
+        unit: string;
+        source_name: string;
+        period: string;
+      }>;
+      risks: Array<{
+        tone: "positive" | "caution" | "info";
+        label: string;
+        message: string;
+        value: number;
+        unit: string;
+        source_name: string;
+        period: string;
+      }>;
+      missing_evidence: string[];
+    };
     data_coverage: number;
     decision_blockers: ScoreDecisionBlocker[];
     components: Array<{
@@ -95,7 +119,7 @@ export type MarketAnalysis = {
     monthly_sales_amount: number | null;
     monthly_sales_count: number | null;
     total_flow: number | null;
-    flow_by_time: number[];
+    flow_by_time: Array<number | null>;
     flow_time_buckets: Array<{
       label: string;
       value: number | null;
@@ -127,6 +151,24 @@ export type MarketAnalysis = {
       reason: string | null;
     }>;
   }>;
+};
+
+export type MarketStoreTrend = {
+  market_id: string;
+  category: Category;
+  points: Array<{
+    period: string;
+    opening_count: number;
+    closure_count: number;
+    net_opening_count: number;
+    category_store_count: number;
+    source_name: string;
+    source_url: string;
+    source_type: "official";
+    unit: "stores_per_quarter";
+    method: "sum_official_category_rows";
+  }>;
+  operating_duration_status: "unavailable";
 };
 
 type Snapshot = {
@@ -220,4 +262,17 @@ export async function loadAnalysisPeriods(category: Category, signal: AbortSigna
   const response = await fetch(apiUrl(`/api/v1/analysis/periods?${query}`), { signal });
   if (!response.ok) throw new Error(`API ${response.status}`);
   return (await response.json()) as AnalysisPeriods;
+}
+
+export async function loadMarketStoreTrend(
+  marketId: string,
+  category: Category,
+  signal: AbortSignal,
+) {
+  const query = new URLSearchParams({ category });
+  const response = await fetch(apiUrl(`/api/v1/markets/${marketId}/store-trend?${query}`), {
+    signal,
+  });
+  if (!response.ok) throw new Error(`API ${response.status}`);
+  return (await response.json()) as MarketStoreTrend;
 }

@@ -24,7 +24,7 @@
 - [x] LocalTwin 개발용 Dev Harness P0 구조를 만든다.
 - [x] task packet, run report, 평가 rubric, failure log 템플릿을 만든다.
 - [x] `scripts/check.ps1`를 전체 검증 진입점으로 만든다.
-- [x] source-like 변경 시 문서 또는 `.harness` 기록을 같은 커밋에 포함하도록 hook 규칙을 추가한다.
+- [x] 문서 영향 변경에만 기존 문서, Issue 또는 작업 기록 하나를 지정하도록 hook 규칙을 추가한다.
 - [x] 제품 UI와 개발문서에 적용할 디자인 시스템 기준을 문서화한다.
 - [x] 2.5D 상권 지도와 핵심 3D Store Marker의 역할과 PoC Gate를 문서화한다.
 - [x] web/api 실행 가능한 개발 scaffold를 구성한다.

@@ -8,7 +8,7 @@ Backlog ID: SCENE-002 / SCENE-003 / SCENE-004
 Parent Epic: EPIC-05
 Type: feature
 Owner: N187_정현우
-Status: in_progress
+Status: done (sample pipeline)
 ```
 
 ## 2. Goal
@@ -61,9 +61,11 @@ docs: hardware gate와 운영 절차
 - [x] equirectangular 입력이 Nerfstudio 공식 option으로 분할된다.
 - [x] 학습과 export command가 사용자 입력을 shell로 해석하지 않는다.
 - [x] tool/GPU 부족 시 정확한 blocked reason과 다음 명령을 반환한다.
-- [ ] PLY asset이 준비되면 Spark viewer에서 열 수 있다.
+- [x] PLY asset이 준비되면 Spark viewer에서 열 수 있다.
 - [x] API와 Front test/build가 통과한다.
 - [x] 표준 Gaussian PLY로 Spark canvas nonblank 렌더링을 검증한다.
+- [x] 사람 후보 영역을 blur, mask, exclude 정책으로 별도 익명화 디렉터리에 저장한다.
+- [x] 익명화 report와 metadata를 기록하고, 결과 이미지 디렉터리만 학습 명령에 전달한다.
 
 ## 7. Verification Plan
 
@@ -100,4 +102,5 @@ feat(scene): automate Gaussian Splat scene jobs
 - [x] 이 PC에서 실행하지 못한 학습을 완료라고 표현하지 않았는가?
 - [x] upload path traversal과 임의 command 입력을 막았는가?
 - [x] 원본 촬영물 공개 범위와 익명화 gate를 유지했는가?
+- [x] 원본 input과 anonymized output이 같은 디렉터리를 공유하지 않는가?
 - [ ] 후속: GPU worker에서 실제 capture 1건을 학습한다.

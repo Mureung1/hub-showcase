@@ -333,7 +333,7 @@ AR
 
 ## 13. 현재 프로토타입 상태
 
-2026-07-15 기준 지도 화면에서 `관평동 3D 장소`를 열어 다음 기능을 조작할 수 있다.
+2026-07-26 기준 내부 Scene workspace에서 다음 기능을 조작할 수 있다.
 
 ```text
 촬영 대상: 대전 유성구 관평동 한 장소
@@ -344,6 +344,11 @@ AR
 worker 상태: GPU 이름·VRAM·필수 tool과 blocked reason 표시
 privacy gate: 원본 비공개, 얼굴·차량번호 등 식별 영역 제외
 ```
+
+시간대 관찰은 `SceneObservation` fixture Module로 분리되어 있으며 10시, 13시, 15시,
+18시를 바꾸면 Three.js `InstancedMesh` 사람 layer만 갱신한다. 같은 시간대의 위치는
+고정 seed로 재현되며, 3DGS PLY를 다시 내려받지 않는다. 이 값은 개발용 관찰 fixture로
+표시하며 실제 현장 계측값 또는 개인 이동 경로로 표현하지 않는다.
 
 upload와 job 상태는 실제 API를 사용하며, PLY가 준비되면 Spark viewer를 연다. 로컬 PC의 `NVIDIA GeForce MX450 2048MB`에서는 학습이 차단되지만, 원격 P100 16GB worker에서 Nerfstudio 공식 `storefront` 다중 시점 사진을 step `12999`까지 학습하고 537,977 splat PLY export·SHA-256 일치·desktop/mobile viewer를 검증했다. 이 결과는 공식 sample pipeline의 증거이며 사용자 촬영 360 영상·사진, 얼굴·차량번호 익명화와 서버 privacy gate 완료 증거는 아니다. 관평동은 연남·홍대·합정 상권 비교 목록에도 포함하지 않는다.
 

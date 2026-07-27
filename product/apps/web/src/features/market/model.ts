@@ -42,23 +42,6 @@ export function demandFromFlow(flow: MarketAnalysis["raw"]["flow_time_buckets"])
   );
 }
 
-export function circleFeature([longitude, latitude]: [number, number], radiusMeters: number) {
-  const points = 64;
-  const coordinates = Array.from({ length: points + 1 }, (_, index) => {
-    const angle = (index / points) * Math.PI * 2;
-    const latitudeOffset = (radiusMeters / 111_320) * Math.sin(angle);
-    const longitudeOffset =
-      (radiusMeters / (111_320 * Math.cos((latitude * Math.PI) / 180))) * Math.cos(angle);
-    return [longitude + longitudeOffset, latitude + latitudeOffset];
-  });
-
-  return {
-    type: "Feature" as const,
-    properties: {},
-    geometry: { type: "Polygon" as const, coordinates: [coordinates] },
-  };
-}
-
 export function isTestEnvironment() {
   return typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
 }

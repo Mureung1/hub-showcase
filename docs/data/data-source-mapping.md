@@ -760,6 +760,7 @@ raw snapshot 보존 기간과 rollback 기준은 `DATA-007`에서 나중에 승�
 | 2026-07-11 | DATA-002 | 서울 전체 snapshot과 공공데이터 sample을 provenance SQLite에 2회 동일 적재 | canonical DB 완료 |
 | 2026-07-14 | DB-001 / DATA-007 | 전체 canonical 업종·행은 Supabase에 이관하고 운영 요청 시점·갱신·보존 정책은 후속 결정 | Phase 2 계획 |
 | 2026-07-15 | DATA-009 / SEARCH-001 | 3개 상권 polygon·4,548개 점포 연결을 SQLite와 development Supabase에 적재하고 제한 검색에 사용 | A단계 완료 |
+| 2026-07-27 | DATA-013 | 서울시 공식 추정매출·길단위인구 `20252`~`20254` snapshot을 수집해 canonical SQLite와 development Supabase에 추가 | 2025년 1~4분기 매출·유동인구 조회 가능 |
 
 ## 13. 개별 점포 위치·상권 밀집 데이터 확장 계획
 

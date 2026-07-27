@@ -11,6 +11,7 @@ SourceType = Literal["official", "official_estimate", "observed", "derived", "fi
 SampleBasis = Literal["known", "unknown", "administrative_population"]
 FreshnessPolicy = Literal["fast", "cohort", "structural"]
 DecisionStatus = Literal["supported", "insufficient_evidence"]
+DecisionVerdict = Literal["suitable", "caution", "insufficient"]
 ReasonTone = Literal["positive", "caution", "info"]
 ClusterType = Literal[
     "ordinary",
@@ -107,6 +108,16 @@ class ScoreReason(BaseModel):
     period: str
 
 
+class DecisionSummary(BaseModel):
+    """A small, user-facing reading order for an otherwise detailed score response."""
+
+    verdict: DecisionVerdict
+    headline: str
+    strengths: list[ScoreReason]
+    risks: list[ScoreReason]
+    missing_evidence: list[str]
+
+
 class MarketScoreResponse(BaseModel):
     formula_version: str
     market_id: str
@@ -124,6 +135,7 @@ class MarketScoreResponse(BaseModel):
     metric_evidence: list[MetricEvidenceResult]
     decision_blockers: list[str]
     reasons: list[ScoreReason]
+    decision_summary: DecisionSummary
     limitations: list[str]
 
 
@@ -475,15 +487,56 @@ def _build_reasons(
     return reasons
 
 
-def evaluate_market_score(request: MarketScoreRequest) -> MarketScoreResponse:
-    eligible_metrics = {
-        key: metric
-        for key, metric in request.metrics.items()
-        if key in METRIC_DEFINITIONS and metric.source_type != "fixture"
-    }
-    evidence_by_key = {
-        key: _metric_evidence_result(key, metric) for key, metric in eligible_metrics.items()
-    }
+def _decision_summary(
+    request: MarketScoreRequest,
+    score: float,
+    decision_status: DecisionStatus,
+    reasons: list[ScoreReason],
+    missing_keys: list[str],
+) -> DecisionSummary:
+    """Keep the headline conservative: this is evidence for a decision, never a success claim."""
+
+    strengths = [reason for reason in reasons if reason.tone == "positive"][:2]
+    risks = [reason for reason in reasons if reason.tone == "caution"][:2]
+    missing_evidence = [METRIC_DEFINITIONS[key][0] for key in missing_keys]
+
+    if decision_status == "insufficient_evidence":
+        return DecisionSummary(
+            verdict="insufficient",
+            headline=(
+                f"현재 자료만으로 {request.category} 운영 적합성을 판단하기 어렵습니다. "
+                "점수보다 누락된 근거를 먼저 확인해 주세요."
+            ),
+            strengths=strengths,
+            risks=risks,
+            missing_evidence=missing_evidence,
+        )
+    if score >= 65:
+        return DecisionSummary(
+            verdict="suitable",
+            headline=(
+                f"현재 비교 근거에서는 {request.category} 운영을 검토할 만한 조건이 확인됩니다. "
+                "최종 결정 전 선택 위치 주변 경쟁도도 함께 확인해 주세요."
+            ),
+            strengths=strengths,
+            risks=risks,
+            missing_evidence=missing_evidence,
+        )
+    return DecisionSummary(
+        verdict="caution",
+        headline=(
+            f"현재 비교 근거에서는 {request.category} 운영 전 경쟁과 변화 지표를 "
+            "더 확인할 필요가 있습니다."
+        ),
+        strengths=strengths,
+        risks=risks,
+        missing_evidence=missing_evidence,
+    )
+
+
+def _component_scores(
+    eligible_metrics: dict[str, ScoreMetric],
+) -> tuple[list[ComponentResult], float, float]:
     component_results: list[ComponentResult] = []
     available_metric_weight = 0.0
     total_metric_weight = 0.0
@@ -523,23 +576,18 @@ def evaluate_market_score(request: MarketScoreRequest) -> MarketScoreResponse:
                 evidence_keys=evidence_keys,
             )
         )
-
-    cluster, cluster_evidence_too_weak = _cluster_result(request, eligible_metrics, evidence_by_key)
-    score = min(100.0, max(0.0, base_score + cluster.adjustment))
     coverage = available_metric_weight / total_metric_weight if total_metric_weight else 0
+    return component_results, base_score, coverage
 
-    confidence = 0.0
-    for _, component_weight, metric_weights in COMPONENT_DEFINITIONS.values():
-        for metric_key, metric_weight in metric_weights.items():
-            evidence = evidence_by_key.get(metric_key)
-            if evidence is None:
-                continue
-            weight = component_weight * metric_weight
-            confidence += evidence.evidence_strength * weight
-    confidence *= 100
 
-    expected_keys = set(METRIC_DEFINITIONS)
-    missing_keys = sorted(expected_keys - eligible_metrics.keys())
+def _decision_context(
+    request: MarketScoreRequest,
+    eligible_metrics: dict[str, ScoreMetric],
+    coverage: float,
+    confidence: float,
+    cluster_evidence_too_weak: bool,
+) -> tuple[list[str], list[str], list[str]]:
+    missing_keys = sorted(set(METRIC_DEFINITIONS) - eligible_metrics.keys())
     fixture_present = any(metric.source_type == "fixture" for metric in request.metrics.values())
     required_metric_missing = not REQUIRED_METRIC_KEYS.issubset(eligible_metrics)
     decision_blockers: list[str] = []
@@ -570,7 +618,40 @@ def evaluate_market_score(request: MarketScoreRequest) -> MarketScoreResponse:
         limitations.append(
             "peer group 표본이 30개 미만이거나 확인되지 않아 비교 판단을 지원하지 않습니다."
         )
+    return missing_keys, decision_blockers, limitations
 
+
+def evaluate_market_score(request: MarketScoreRequest) -> MarketScoreResponse:
+    eligible_metrics = {
+        key: metric
+        for key, metric in request.metrics.items()
+        if key in METRIC_DEFINITIONS and metric.source_type != "fixture"
+    }
+    evidence_by_key = {
+        key: _metric_evidence_result(key, metric) for key, metric in eligible_metrics.items()
+    }
+    component_results, base_score, coverage = _component_scores(eligible_metrics)
+    cluster, cluster_evidence_too_weak = _cluster_result(request, eligible_metrics, evidence_by_key)
+    score = min(100.0, max(0.0, base_score + cluster.adjustment))
+
+    confidence = 0.0
+    for _, component_weight, metric_weights in COMPONENT_DEFINITIONS.values():
+        for metric_key, metric_weight in metric_weights.items():
+            evidence = evidence_by_key.get(metric_key)
+            if evidence is None:
+                continue
+            weight = component_weight * metric_weight
+            confidence += evidence.evidence_strength * weight
+    confidence *= 100
+
+    missing_keys, decision_blockers, limitations = _decision_context(
+        request, eligible_metrics, coverage, confidence, cluster_evidence_too_weak
+    )
+
+    decision_status: DecisionStatus = (
+        "supported" if not decision_blockers else "insufficient_evidence"
+    )
+    reasons = _build_reasons(request, eligible_metrics, cluster)
     return MarketScoreResponse(
         formula_version=FORMULA_VERSION,
         market_id=request.market_id,
@@ -579,7 +660,7 @@ def evaluate_market_score(request: MarketScoreRequest) -> MarketScoreResponse:
         peer_group=request.peer_group,
         score=round(score, 1),
         band=_score_band(score),
-        decision_status="supported" if not decision_blockers else "insufficient_evidence",
+        decision_status=decision_status,
         confidence=round(confidence, 1),
         confidence_label=_confidence_label(confidence),
         data_coverage=round(coverage * 100, 1),
@@ -587,6 +668,13 @@ def evaluate_market_score(request: MarketScoreRequest) -> MarketScoreResponse:
         cluster=cluster,
         metric_evidence=list(evidence_by_key.values()),
         decision_blockers=decision_blockers,
-        reasons=_build_reasons(request, eligible_metrics, cluster),
+        reasons=reasons,
+        decision_summary=_decision_summary(
+            request,
+            score,
+            decision_status,
+            reasons,
+            missing_keys,
+        ),
         limitations=limitations,
     )

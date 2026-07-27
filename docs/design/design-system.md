@@ -259,6 +259,8 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 - 익숙한 기능에는 Lucide icon 또는 프로젝트가 채택한 동일 icon set을 사용한다.
 - 저장, 닫기, 확대, 축소, 위치 이동 등 익숙한 action은 icon button을 우선한다.
 - unfamiliar icon에는 tooltip과 accessible name을 제공한다.
+- tooltip은 trigger의 중앙에 고정해 배치하지 않는다. 실제 화면 좌표를 기준으로 좌·우·상·하 여백을
+  계산하고, 좁은 화면에서도 viewport 밖으로 잘리거나 panel의 overflow에 가려지지 않아야 한다.
 - 한 화면의 primary button은 가능한 한 하나로 유지한다.
 - destructive action은 `danger` 색상과 확인 과정을 사용한다.
 

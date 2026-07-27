@@ -5,6 +5,8 @@ export type NearbyRequest = {
   center: [number, number];
   radius: AnalysisRadius;
   category: string;
+  scope: "radius" | "market";
+  marketId: string;
 };
 
 export class NearbyApiError extends Error {
@@ -20,7 +22,7 @@ function isNearbyStoreResponse(value: unknown): value is NearbyStoreResponse {
   if (!value || typeof value !== "object") return false;
   const response = value as Partial<NearbyStoreResponse>;
   return (
-    response.aggregation_scope === "radius" &&
+    (response.aggregation_scope === "radius" || response.aggregation_scope === "market") &&
     typeof response.total_count === "number" &&
     typeof response.same_category_count === "number" &&
     Boolean(response.category_coverage) &&
@@ -36,7 +38,9 @@ export async function loadNearbyStores(request: NearbyRequest, signal: AbortSign
     latitude: String(latitude),
     radius: String(request.radius),
     category: request.category,
+    scope: request.scope,
   });
+  if (request.scope === "market") parameters.set("market_id", request.marketId);
   const response = await fetch(apiUrl(`/api/v1/stores/nearby?${parameters}`), { signal });
   if (!response.ok) throw new NearbyApiError(response.status);
   const payload: unknown = await response.json();

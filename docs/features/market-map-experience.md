@@ -13,7 +13,7 @@
 ## 2. 목표
 
 ```text
-사용자가 상권의 건물, 점포, 분석 반경과 유동인구 분포를
+사용자가 상권 경계 안의 건물, 점포와 유동인구 분포를
 한 화면에서 비교하고 필요한 Layer를 직접 켜고 끌 수 있게 한다.
 ```
 
@@ -26,8 +26,8 @@
 ```text
 시점: 상권 전체를 내려다보는 2.5D 시점
 목적: 점포, 경쟁, 인구와 매출 분포 비교
-현재 범위: 분석 중심 반경 100m / 300m / 500m
-후속 ANALYSIS-002: 100m / 300m / 500m, 기본 300m
+현재 범위: 서울시 공식 상권 polygon
+반경 API contract: 서버에만 보존하며 public UI에서는 노출하지 않음
 ```
 
 ### 현장 상세보기
@@ -44,12 +44,11 @@
 
 ```text
 1. 사용자가 상권과 업종을 선택한다.
-2. 분석 반경 100m / 300m / 500m 중 하나를 선택한다.
-3. 지도에서 점포, 건물과 분석 결과를 확인한다.
-4. 유동인구 Layer를 켜고 시간대를 선택한다.
-5. 지도 위 분포와 우측 분석 panel의 실제 집계값을 함께 확인한다.
-6. 특정 가게 또는 촬영 지점을 선택한다.
-7. 현장 상세보기를 열어 사람 눈높이의 3DGS 장면을 확인한다.
+2. 지도에서 점포, 건물과 분석 결과를 확인한다.
+3. 유동인구 Layer를 켜고 시간대를 선택한다.
+4. 지도 위 분포와 우측 분석 panel의 실제 집계값을 함께 확인한다.
+5. 특정 가게 또는 촬영 지점을 선택한다.
+6. 현장 상세보기를 열어 사람 눈높이의 3DGS 장면을 확인한다.
 ```
 
 ## 5. 지도 Layer
@@ -59,7 +58,7 @@
 | 기본 지도   | 켜짐      | 도로, 보도, 경계                  | 공간 맥락               |
 | 2.5D 건물   | 켜짐      | low-poly extrusion                | 건물 단위 탐색          |
 | 점포        | 켜짐      | 업종별 marker                     | 점포 위치와 선택        |
-| 분석 반경   | 켜짐      | 반투명 원과 경계선                | 100m / 300m / 500m 범위 |
+| 상권 경계   | 켜짐      | core·glow·halo polygon            | 서울시 공식 상권 집계 기준 |
 | 유동인구    | 꺼짐      | 점, 단순 사람 symbol 또는 heatmap | 시간대별 상대 밀도      |
 | 주거인구    | 꺼짐      | choropleth 또는 density           | 거주 수요               |
 | 매출        | 꺼짐      | 색상 구간 또는 집계 marker        | 지역별 매출 수준        |
@@ -215,7 +214,7 @@ flowchart LR
 4. 나머지 점포는 기존 marker 또는 POI label
 ```
 
-동시에 표시하는 상세 store marker 상한은 desktop 12개, mobile 6개로 둔다. 선택 점포는 항상 포함하고 상한을 넘으면 거리, 검색 순위, 선택 업종 일치 순으로 정렬한다. 이 숫자는 첫 구현의 렌더링 상한이며 실제 성능 측정 후 변경할 수 있다.
+동시에 표시하는 상세 store marker 상한은 desktop 12개, mobile 6개로 둔다. 현재 map viewport 안의 점포만 후보로 삼고, 선택 점포는 viewport 밖이어도 유지한다. 후보가 상한을 넘으면 거리, 검색 순위, 선택 업종 일치 순으로 정렬한다. 이 숫자는 첫 구현의 렌더링 상한이며 실제 성능 측정 후 변경할 수 있다.
 
 점포별 표시 단계:
 
@@ -642,18 +641,19 @@ LocalTwin GeoJSON 지도의 이동과 확대/축소
 건물 Layer와 후보 점포 prefab의 독립적인 표시 전환
 서로 가까운 연남·홍대·합정 상권 전환
 카페·음식점·베이커리·편의점 업종 선택
-100m / 300m / 500m 반경 선택
+서울시 공식 상권 경계 기준 점포·경쟁 분석
 경쟁 밀도 / 시간대 수요 Layer 전환
 OSM POI label과 후보 점포 prefab 표시 전환
 상권 비교, 점수 근거와 데이터 기준 dialog
 Docs Home 복귀
 ```
 
-현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 Render FastAPI가 production Supabase PostgreSQL을 조회하며, API가 준비되지 않은 동안에는 분석 수치를 검증 snapshot으로 대체하지 않는다. 선택 상권은 canonical polygon을 따라 노란 core·glow·halo 경계로 표시한다. LocalTwin 기본 경로에서 화면 viewport가 지원 Overlay를 조금이라도 포함하면 기본 building extrusion을 숨겨 전용 건물과 중복 렌더링하지 않는다. 이 규칙은 제출용 `/en` 데모에는 적용하지 않는다. 선택한 지원 업종은 공유 GLB body·category atlas·procedural attachment를 조합한 custom 3D marker 한 개로 표시한다. 주변 HTML marker는 선택 marker 105m 안에서 제거하고 desktop 최대 12개·mobile 최대 6개로 제한한다. 선택 시 지도는 16.8 zoom으로 이동하고 300m 중심 표식은 투명 ring과 바깥 label로 바뀌어 3D를 가리지 않는다. MAP-004의 asset cache까지 연결됐지만 복수 점포 건물 묶음과 회전·reduced-motion 성능 검증이 남아 있으므로 전체 Task는 계속 진행 중이다.
+현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 Render FastAPI가 production Supabase PostgreSQL을 조회하며, API가 준비되지 않은 동안에는 분석 수치를 검증 snapshot으로 대체하지 않는다. 선택 상권은 canonical polygon을 따라 노란 core·glow·halo 경계로 표시한다. LocalTwin 기본 경로에서 화면 viewport가 지원 Overlay를 조금이라도 포함하면 기본 building extrusion을 숨겨 전용 건물과 중복 렌더링하지 않는다. 이 규칙은 제출용 `/en` 데모에는 적용하지 않는다. 선택한 지원 업종은 공유 GLB body·category atlas·procedural attachment를 조합한 custom 3D marker 한 개로 표시한다. 주변 HTML marker는 현재 viewport 안의 후보만 사용하고 선택 marker 105m 안에서 제거한 뒤 desktop 최대 12개·mobile 최대 6개로 제한한다. 선택 시 지도는 16.8 zoom으로 이동하고, 상권 경계선이 현재 분석의 공간 기준을 표시한다. MAP-004의 asset cache까지 연결됐지만 복수 점포 건물 묶음과 회전·reduced-motion 성능 검증이 남아 있으므로 전체 Task는 계속 진행 중이다.
 
-### 14.1 후속 이동형 반경 분석
+### 14.1 서버에 보존한 이동형 반경 분석 contract
 
-현재 스프린트 마감 후 `ANALYSIS-002 / WEB-002 / WEB-003`에서 다음 동작을 구현한다.
+FastAPI의 반경 query와 내부 contract는 보존한다. 하지만 일반 사용자 화면은 현재 상권 경계만
+사용하며, 아래 동작은 데이터 정의와 사용자 기대가 충분히 정리될 때까지 제품 UI에 노출하지 않는다.
 
 ```text
 일반 지도 탐색: 지도를 움직여도 확정된 분석 중심 유지
@@ -676,10 +676,10 @@ OpenFreeMap basemap: 항상 유지
 기본 건물 extrusion: 독립 toggle
 연남·홍대·합정 LocalTwin Overlay: LocalTwin mode에서만 표시
 관평동: 좌표·경계·asset 승인 전 planned
-분석 원·점포 marker: basemap/Overlay mode와 독립
+상권 경계·점포 marker: basemap/Overlay mode와 독립
 ```
 
-코드 원본은 `.harness/tasks/MAP-005-base-map-supported-overlays.md`의 region registry, Layer ID, 파일 책임과 검증 계획을 따른다. 반경 분석은 그 위에 `.harness/tasks/ANALYSIS-002-radius-search.md`를 구현하고, 마지막으로 `.harness/tasks/EVAL-002-front-api-smoke.md`에서 실제 development Supabase 경로와 오류 상태를 검증한다.
+코드 원본은 `.harness/tasks/MAP-005-base-map-supported-overlays.md`의 region registry, Layer ID, 파일 책임과 검증 계획을 따른다. 마지막으로 `.harness/tasks/EVAL-002-front-api-smoke.md`에서 실제 development Supabase 경로와 오류 상태를 검증한다.
 
 ## 15. 관련 문서
 
@@ -687,3 +687,10 @@ OpenFreeMap basemap: 항상 유지
 - [혼잡도 3D 기반 탐색](./3d-congestion-explorer.md)
 - [LocalTwin 디자인 시스템](../design/design-system.md)
 - [데이터 소스 매핑](../data/data-source-mapping.md)
+## 지도 상태 표현 원칙
+
+지도 Layer control은 현재 켜진 값을 숨기지 않는다. 예를 들어 `현재: 카페 점포 밀도 · 시간대 수요 보기`처럼 현재 상태와 다음 행동을 같이 표시한다. 범례는 색 자체보다 `선택 업종 점포가 상대적으로 모인 정도` 또는 `선택 시간대의 상대 유동 수요`를 설명한다.
+
+일반 상권 지도에는 Scene upload·job 생성 control을 노출하지 않는다. 3DGS 결과가 준비된 지원 지역의 viewer 진입은 별도 공개 정책을 만족한 뒤에만 제공한다.
+
+검증은 `App.test.tsx`의 공개 workspace 조건과 `useWorkspacePanels.test.tsx`의 dialog panel contract로 유지한다.

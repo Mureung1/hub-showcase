@@ -1,12 +1,14 @@
 import type { AdminAreaBackground } from "../../services/adminAreaBackground";
-import type { MarketAnalysis } from "../../services/marketAnalysis";
+import type { MarketAnalysis, MarketStoreTrend } from "../../services/marketAnalysis";
 import {
   InspectorFootfall,
   InspectorFlow,
   InspectorHeader,
+  InspectorDecisionSummary,
   InspectorPopulation,
   InspectorRankings,
   InspectorScoreAndCompetition,
+  InspectorStoreTrend,
   InspectorSummary,
   InspectorTurnoverAndSales,
 } from "./MarketInspectorSections";
@@ -19,10 +21,11 @@ type MarketInspectorProps = {
   score: number | null;
   categorySelection: CategorySelection;
   categoryCoverageReason: string;
-  radius: number;
   activeHour: number;
   sameCategoryCount: number;
   analysis: MarketAnalysis | null;
+  storeTrend?: MarketStoreTrend | null;
+  storeTrendState?: "loading" | "ready" | "unavailable" | "error";
   background: AdminAreaBackground | null;
   backgroundState: "loading" | "ready" | "unavailable" | "error";
   analysisState: AnalysisState;
@@ -32,6 +35,7 @@ type MarketInspectorProps = {
   onClosePanel: () => void;
   onClearSelection: () => void;
   onEvidenceOpen: () => void;
+  onReportOpen: () => void;
   onActiveHourChange: (hour: number) => void;
 };
 
@@ -41,10 +45,11 @@ export function MarketInspector({
   score,
   categorySelection,
   categoryCoverageReason,
-  radius,
   activeHour,
   sameCategoryCount,
   analysis,
+  storeTrend = null,
+  storeTrendState = "unavailable",
   background,
   backgroundState,
   analysisState,
@@ -54,6 +59,7 @@ export function MarketInspector({
   onClosePanel,
   onClearSelection,
   onEvidenceOpen,
+  onReportOpen,
   onActiveHourChange,
 }: MarketInspectorProps) {
   return (
@@ -73,16 +79,27 @@ export function MarketInspector({
         market={market}
         categorySelection={categorySelection}
         score={score}
-        radius={radius}
         sameCategoryCount={sameCategoryCount}
         analysis={analysis}
         analysisScope={analysisScope}
         topic={topic}
         onEvidenceOpen={onEvidenceOpen}
       />
+      <InspectorDecisionSummary
+        categorySelection={categorySelection}
+        analysis={analysis}
+        selected={selected}
+        topic={topic}
+      />
       <InspectorTurnoverAndSales
         categorySelection={categorySelection}
         analysis={analysis}
+        topic={topic}
+      />
+      <InspectorStoreTrend
+        categorySelection={categorySelection}
+        trend={storeTrend}
+        trendState={storeTrendState}
         topic={topic}
       />
       <InspectorRankings categorySelection={categorySelection} analysis={analysis} topic={topic} />
@@ -112,6 +129,7 @@ export function MarketInspector({
         categorySelection={categorySelection}
         analysis={analysis}
         topic={topic}
+        onReportOpen={onReportOpen}
       />
     </aside>
   );

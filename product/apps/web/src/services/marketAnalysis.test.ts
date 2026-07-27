@@ -92,6 +92,10 @@ describe("market analysis service", () => {
     const periods = {
       periods: ["20251", "20244"],
       default_period: "20251",
+      period_availability: {
+        "20251": ["stores", "sales", "flow"],
+        "20244": ["stores"],
+      },
       policy: "latest_complete_quarter",
     };
     vi.stubGlobal(

@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     scene_worker_concurrency: int = Field(default=1, ge=1)
     scene_retry_cooldown_seconds: int = Field(default=60, ge=0)
     scene_job_retention_hours: int = Field(default=72, ge=1)
+    scene_anonymization_action: Literal["blur", "mask", "exclude"] = "blur"
+    scene_person_confidence_threshold: float = Field(default=0.5, ge=0, le=1)
+    scene_person_bbox_margin: float = Field(default=0.1, ge=0, le=1)
 
     model_config = SettingsConfigDict(
         env_file=PRODUCT_ENV_FILE,

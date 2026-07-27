@@ -1,18 +1,10 @@
 import { useEffect, useMemo } from "react";
 
-import type { AnalysisRadius } from "../analysis/types";
 import { useAnalysisUrlCleanup } from "../analysis/useAnalysisUrlCleanup";
 import { useNearbyStores } from "../analysis/useNearbyStores";
 import { categoryMatchesSelection, storeCategorySelection } from "../market/categorySelection";
-import { circleFeature, demandFromFlow } from "../market/model";
-import type {
-  AnalysisScope,
-  Category,
-  LayerMode,
-  Market,
-  MarketKey,
-  MarketStore,
-} from "../market/types";
+import { demandFromFlow } from "../market/model";
+import type { Category, LayerMode, Market, MarketKey, MarketStore } from "../market/types";
 import { useAnalysisSelection } from "../analysis/useAnalysisSelection";
 import { useMarketAnalysis } from "../market/useMarketAnalysis";
 import { useStoreSelection } from "../market/useStoreSelection";
@@ -20,6 +12,7 @@ import { findReadyOverlayRegion } from "../map/supportedRegions";
 import type { SelectedStorefront } from "../map/storefronts/SelectedStorefrontLayer";
 import { hasStorefrontVariant } from "../map/storefronts/storefrontRegistry";
 import { selectMapStores } from "../map/storefronts/storefrontSelection";
+import { useStorefrontBuildingPlacements } from "../map/storefronts/useStorefrontBuildingPlacement";
 import { useCompactMap } from "../map/useCompactMap";
 import { useMapViewport } from "../map/useMapViewport";
 import { useWorkspacePanels } from "./useWorkspacePanels";
@@ -72,7 +65,7 @@ function initialAnalysisUrlState(catalog: ProductCatalog) {
       selectedCategoryCode: null,
       radius: catalog.radii.includes(300) ? 300 : catalog.radii[0],
       layer: "density",
-      scope: "radius",
+      scope: "market",
       topic: "overview",
       boundaryVisible: true,
       storesVisible: true,
@@ -119,7 +112,6 @@ function useWorkspaceMarketData(
   catalog: ProductCatalog,
   catalogState: WorkspaceCatalog,
   selection: SelectionState,
-  viewport: ViewportState,
   useDemoData: boolean,
   apiReady: boolean,
 ) {
@@ -139,9 +131,11 @@ function useWorkspaceMarketData(
   );
   const nearby = useNearbyStores(
     {
-      center: viewport.committedCenter,
+      center: selectedMarket.center,
       radius: selection.radius,
       category: selection.categorySelection.name,
+      scope: "market",
+      marketId: catalogState.marketIdByKey[selection.marketKey],
     },
     apiReady,
   );
@@ -160,8 +154,8 @@ function useWorkspaceMarketData(
   useEffect(() => {
     const responseMatchesCenter =
       nearby.data &&
-      Math.abs(nearby.data.center.longitude - viewport.committedCenter[0]) < 0.000001 &&
-      Math.abs(nearby.data.center.latitude - viewport.committedCenter[1]) < 0.000001;
+      Math.abs(nearby.data.center.longitude - selectedMarket.center[0]) < 0.000001 &&
+      Math.abs(nearby.data.center.latitude - selectedMarket.center[1]) < 0.000001;
     const responseMarket =
       responseMatchesCenter && nearby.data
         ? catalogState.marketKeyById[nearby.data.market_id]
@@ -172,7 +166,7 @@ function useWorkspaceMarketData(
     nearby.data,
     selection.marketKey,
     setMarketKey,
-    viewport.committedCenter,
+    selectedMarket.center,
   ]);
 
   const market = useMemo(() => {
@@ -213,6 +207,101 @@ function useWorkspaceMarketData(
   return { marketAnalysis, nearby, market };
 }
 
+function useStorefrontCandidates(
+  compactMap: boolean,
+  selection: SelectionState,
+  viewport: ViewportState,
+  visibleStores: MarketStore[],
+  selectedStore: MarketStore | null,
+) {
+  const selectedStorefrontCandidate = useMemo<SelectedStorefront | null>(() => {
+    const categoryCode = selectedStore?.categoryCode ?? null;
+    if (
+      !viewport.prefabMode ||
+      viewport.storefront3dUnavailable ||
+      viewport.mapMode !== "localtwin" ||
+      !selectedStore ||
+      !selectedStore.id ||
+      !hasStorefrontVariant(categoryCode) ||
+      !findReadyOverlayRegion([selectedStore.longitude, selectedStore.latitude])
+    ) {
+      return null;
+    }
+    return {
+      id: selectedStore.id,
+      longitude: selectedStore.longitude,
+      latitude: selectedStore.latitude,
+      categoryCode,
+    };
+  }, [selectedStore, viewport.mapMode, viewport.prefabMode, viewport.storefront3dUnavailable]);
+  const candidateMapStores = useMemo(
+    () =>
+      selectMapStores(visibleStores, {
+        selectedName: selectedStore?.name ?? null,
+        focus: selectedStorefrontCandidate
+          ? [selectedStorefrontCandidate.longitude, selectedStorefrontCandidate.latitude]
+          : null,
+        limit: compactMap ? 6 : 12,
+        bounds: viewport.visibleMapBounds,
+        minimumDistanceMeters: selectedStorefrontCandidate
+          ? compactMap
+            ? 125
+            : 105
+          : compactMap
+            ? 55
+            : 40,
+      }),
+    [
+      compactMap,
+      selectedStore?.name,
+      selectedStorefrontCandidate,
+      viewport.visibleMapBounds,
+      visibleStores,
+    ],
+  );
+  const storefrontCandidates = useMemo(() => {
+    if (
+      !viewport.prefabMode ||
+      viewport.storefront3dUnavailable ||
+      viewport.mapMode !== "localtwin"
+    ) {
+      return [];
+    }
+    const mapCandidates = candidateMapStores.flatMap((store) => {
+      if (
+        !store.id ||
+        !store.categoryCode ||
+        !categoryMatchesSelection(store.category, selection.categorySelection) ||
+        !hasStorefrontVariant(store.categoryCode)
+      ) {
+        return [];
+      }
+      return [
+        {
+          id: store.id,
+          longitude: store.longitude,
+          latitude: store.latitude,
+          categoryCode: store.categoryCode,
+        },
+      ];
+    });
+    const candidates = [selectedStorefrontCandidate, ...mapCandidates].filter(
+      (store): store is SelectedStorefront => store !== null,
+    );
+    return candidates.filter(
+      (store, index) => candidates.findIndex((candidate) => candidate.id === store.id) === index,
+    );
+  }, [
+    candidateMapStores,
+    selectedStorefrontCandidate,
+    selection.categorySelection,
+    viewport.mapMode,
+    viewport.prefabMode,
+    viewport.storefront3dUnavailable,
+  ]);
+  return { selectedStorefrontCandidate, candidateMapStores, storefrontCandidates };
+}
+
 function useWorkspaceStorefronts(
   compactMap: boolean,
   catalogState: WorkspaceCatalog,
@@ -240,31 +329,10 @@ function useWorkspaceStorefronts(
     marketKey: selection.marketKey,
     marketKeyById: catalogState.marketKeyById,
     score: market.score,
-    analysisScope: selection.analysisScope,
     nearbyStores: nearbyMarketStores,
-    marketStores: market.stores,
   });
-  const selectedStorefront3d = useMemo<SelectedStorefront | null>(() => {
-    const selectedSearchResult = storeSelection.selectedSearchResult;
-    if (
-      !viewport.prefabMode ||
-      viewport.storefront3dUnavailable ||
-      viewport.mapMode !== "localtwin" ||
-      selectedSearchResult?.result_type !== "store" ||
-      !hasStorefrontVariant(selectedSearchResult.category_code) ||
-      !findReadyOverlayRegion([selectedSearchResult.longitude, selectedSearchResult.latitude])
-    ) {
-      return null;
-    }
-    return {
-      id: selectedSearchResult.id,
-      longitude: selectedSearchResult.longitude,
-      latitude: selectedSearchResult.latitude,
-      categoryCode: selectedSearchResult.category_code,
-    };
-  }, [storeSelection.selectedSearchResult, viewport]);
   const visibleStores = useMemo(() => {
-    const sourceStores = selection.analysisScope === "radius" ? nearbyMarketStores : [];
+    const sourceStores = nearbyMarketStores;
     const stores = storeSelection.selectedSearchStore
       ? [
           storeSelection.selectedSearchStore,
@@ -283,54 +351,76 @@ function useWorkspaceStorefronts(
         (store) => !categoryMatchesSelection(store.category, selection.categorySelection),
       ),
     ];
-    return selectedStorefront3d
-      ? orderedStores.filter((store) => (store.id ?? store.name) !== selectedStorefront3d.id)
-      : orderedStores;
+    return orderedStores;
   }, [
     nearbyMarketStores,
-    selectedStorefront3d,
-    selection.analysisScope,
     selection.categorySelection,
     storeSelection.selectedSearchStore,
   ]);
   const listedStores = useMemo(
     () =>
-      visibleStores.filter((store) =>
-        categoryMatchesSelection(store.category, selection.categorySelection),
+      visibleStores.filter(
+        (store) =>
+          (store.id ?? store.name) !== (storeSelection.selected?.id ?? storeSelection.selected?.name) &&
+          categoryMatchesSelection(store.category, selection.categorySelection),
       ),
-    [selection.categorySelection, visibleStores],
+    [selection.categorySelection, storeSelection.selected?.id, storeSelection.selected?.name, visibleStores],
+  );
+  const { selectedStorefrontCandidate, candidateMapStores, storefrontCandidates } = useStorefrontCandidates(
+    compactMap,
+    selection,
+    viewport,
+    visibleStores,
+    storeSelection.selected,
+  );
+  const buildingPlacements = useStorefrontBuildingPlacements(storefrontCandidates, visibleStores);
+  const storefrontBuildings3d = useMemo<SelectedStorefront[]>(() => {
+    const placementByStoreId = new Map(
+      buildingPlacements
+        .filter((placement) => placement.building.storeCountInBuilding <= 1)
+        .map((placement) => [placement.storeId, placement.building]),
+    );
+    return storefrontCandidates.flatMap((store) => {
+      const building = placementByStoreId.get(store.id);
+      return building
+        ? [
+            {
+              ...store,
+              building: {
+                id: building.buildingId,
+                center: building.center,
+                plotSizeMeters: building.plotSizeMeters,
+                heightMeters: building.heightMeters,
+                storeCountInBuilding: building.storeCountInBuilding,
+              },
+            },
+          ]
+        : [];
+    });
+  }, [buildingPlacements, storefrontCandidates]);
+  const replacementStoreIds = useMemo(
+    () => new Set(storefrontBuildings3d.map((store) => store.id)),
+    [storefrontBuildings3d],
   );
   const mapStores = useMemo(
-    () =>
-      selectMapStores(visibleStores, {
-        selectedName: storeSelection.selected?.name ?? null,
-        focus: selectedStorefront3d
-          ? [selectedStorefront3d.longitude, selectedStorefront3d.latitude]
-          : null,
-        limit: compactMap ? 6 : 12,
-        minimumDistanceMeters: selectedStorefront3d
-          ? compactMap
-            ? 125
-            : 105
-          : compactMap
-            ? 55
-            : 40,
-      }),
-    [compactMap, selectedStorefront3d, storeSelection.selected?.name, visibleStores],
+    () => candidateMapStores.filter((store) => !replacementStoreIds.has(store.id ?? store.name)),
+    [candidateMapStores, replacementStoreIds],
   );
-  const sameCategoryCount =
-    selection.analysisScope === "radius"
-      ? (nearby.data?.same_category_count ?? 0)
-      : ((selection.categorySelection.coverage === "full"
-          ? marketAnalysis.analysis?.raw.category_store_count
-          : null) ?? 0);
+  const selectedStorefront3d = useMemo(
+    () =>
+      storefrontBuildings3d.find((store) => store.id === selectedStorefrontCandidate?.id) ??
+      selectedStorefrontCandidate ??
+      null,
+    [selectedStorefrontCandidate, storefrontBuildings3d],
+  );
+  const sameCategoryCount = nearby.data?.same_category_count ?? 0;
   const categoryCoverageReason =
     nearby.data?.category_coverage.requested_category === selection.categorySelection.name
       ? nearby.data.category_coverage.reason
       : selection.categorySelection.coverage === "full"
         ? "선택 업종은 현재 상권 분석 지표를 모두 지원합니다."
         : selection.categorySelection.coverage === "partial"
-          ? "해당 세부 업종은 점포 위치와 반경 경쟁 지표만 제공합니다."
+          ? "해당 세부 업종은 점포 위치와 상권 경쟁 지표만 제공합니다."
           : "선택 범위에서 해당 업종의 분석 근거를 확인할 수 없습니다.";
   const score =
     selection.categorySelection.coverage === "full" && marketAnalysis.analysis
@@ -342,26 +432,23 @@ function useWorkspaceStorefronts(
       : "대표 시간대 수요";
   const activeDemand = (marketAnalysis.analysis ? market.demand[selection.activeHour] : null) ?? 0;
   const activeDemandLabel = market.demandLabels[selection.activeHour] ?? "시간 구간 미확인";
-  const circle = useMemo(
-    () => circleFeature(viewport.analysisCenter, selection.radius),
-    [selection.radius, viewport.analysisCenter],
-  );
   const flowPeople = useMemo(
     () =>
       Array.from(
         { length: Math.max(3, Math.min(11, Math.round(activeDemand / 9))) },
         (_, index) => ({
-          longitude: viewport.analysisCenter[0] + (((index * 19) % 11) - 5) * 0.00018,
-          latitude: viewport.analysisCenter[1] + (((index * 13) % 9) - 4) * 0.00013,
+          longitude: market.center[0] + (((index * 19) % 11) - 5) * 0.00018,
+          latitude: market.center[1] + (((index * 13) % 9) - 4) * 0.00013,
           delay: index * -0.36,
         }),
       ),
-    [activeDemand, viewport.analysisCenter],
+    [activeDemand, market.center],
   );
 
   return {
     storeSelection,
     selectedStorefront3d,
+    storefrontBuildings3d,
     visibleStores,
     listedStores,
     mapStores,
@@ -371,7 +458,6 @@ function useWorkspaceStorefronts(
     densityLabel,
     activeDemand,
     activeDemandLabel,
-    circle,
     flowPeople,
   };
 }
@@ -407,21 +493,15 @@ function useWorkspaceActions(
     storefronts.storeSelection.selectSearchResult(result);
     panels.setInspectorOpen(true);
     viewport.focusCenter([result.longitude, result.latitude], result.result_type === "store");
-    if (result.result_type === "store") {
-      selection.setAnalysisScope("radius");
+    if (result.result_type === "store")
       selection.applyCategorySelection(
         storeCategorySelection(result.category_name, result.category_code),
       );
-    }
   }
   function resetAnalysis() {
     storefronts.storeSelection.clearSelection();
     selection.resetSelection();
     viewport.resetViewport(marketData.market.center);
-  }
-  function confirmAnalysisMove() {
-    if (!viewport.commitDraftCenter()) return;
-    storefronts.storeSelection.clearSelection();
   }
   function togglePrefabMode() {
     viewport.setPrefabMode((current) => {
@@ -435,16 +515,8 @@ function useWorkspaceActions(
       return next;
     });
   }
-  function chooseRadius(nextRadius: AnalysisRadius) {
-    storefronts.storeSelection.clearSelection();
-    selection.setRadius(nextRadius);
-  }
   function chooseLayer(nextLayer: LayerMode) {
     selection.setLayer(nextLayer);
-  }
-  function chooseScope(nextScope: AnalysisScope) {
-    storefronts.storeSelection.clearSelection();
-    selection.setAnalysisScope(nextScope);
   }
 
   return {
@@ -453,11 +525,8 @@ function useWorkspaceActions(
     chooseListedStore,
     chooseSearchResult,
     resetAnalysis,
-    confirmAnalysisMove,
     togglePrefabMode,
-    chooseRadius,
     chooseLayer,
-    chooseScope,
   };
 }
 
@@ -469,13 +538,12 @@ export function useProductWorkspaceModel(
   const compactMap = useCompactMap();
   const catalogState = useWorkspaceCatalog(catalog);
   const selection = useAnalysisSelection(catalogState.initialUrlState);
-  const panels = useWorkspacePanels(compactMap, !useDemoData);
+  const panels = useWorkspacePanels(compactMap);
   const viewport = useMapViewport(catalogState.initialUrlState.center, !useDemoData);
   const marketData = useWorkspaceMarketData(
     catalog,
     catalogState,
     selection,
-    viewport,
     useDemoData,
     useDemoData || apiReadiness.state === "ready",
   );

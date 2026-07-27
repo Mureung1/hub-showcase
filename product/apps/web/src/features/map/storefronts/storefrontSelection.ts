@@ -1,17 +1,25 @@
 import type { MarketStore } from "../../market/types";
-import { distanceMeters } from "../supportedRegions";
+import { distanceMeters, type MapBounds } from "../supportedRegions";
 
 type StorefrontSelectionOptions = {
   selectedName: string | null;
   focus: [number, number] | null;
   limit: number;
   minimumDistanceMeters: number;
+  bounds?: MapBounds | null;
 };
 
-export function selectMapStores(
-  stores: MarketStore[],
-  { selectedName, focus, limit, minimumDistanceMeters }: StorefrontSelectionOptions,
-) {
+function isInsideBounds(store: MarketStore, bounds: MapBounds) {
+  return (
+    store.longitude >= bounds.west &&
+    store.longitude <= bounds.east &&
+    store.latitude >= bounds.south &&
+    store.latitude <= bounds.north
+  );
+}
+
+export function selectMapStores(stores: MarketStore[], options: StorefrontSelectionOptions) {
+  const { selectedName, focus, limit, minimumDistanceMeters, bounds } = options;
   const selectedStore = stores.find((store) => store.name === selectedName);
   const selectedStores = selectedStore ? [selectedStore] : [];
   const occupied: Array<[number, number]> = focus ? [focus] : [];
@@ -20,6 +28,7 @@ export function selectMapStores(
   for (const store of stores) {
     if (selectedStores.length >= limit) break;
     if (store === selectedStore) continue;
+    if (bounds && !isInsideBounds(store, bounds)) continue;
     const coordinate: [number, number] = [store.longitude, store.latitude];
     if (
       occupied.some(

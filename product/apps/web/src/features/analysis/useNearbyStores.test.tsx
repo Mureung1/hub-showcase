@@ -43,7 +43,14 @@ describe("useNearbyStores", () => {
       .mockResolvedValueOnce({ ok: false, status: 422 });
     vi.stubGlobal("fetch", fetchMock);
     const { result, rerender } = renderHook(
-      ({ center }) => useNearbyStores({ center, radius: 300, category: "카페" }),
+      ({ center }) =>
+        useNearbyStores({
+          center,
+          radius: 300,
+          category: "카페",
+          scope: "radius",
+          marketId: "3110562",
+        }),
       { initialProps: { center: [126.9228, 37.5635] as [number, number] } },
     );
 
@@ -59,7 +66,15 @@ describe("useNearbyStores", () => {
       .mockResolvedValueOnce({ ok: false, status: 503 })
       .mockResolvedValueOnce(okResponse(payload(center, 2)));
     vi.stubGlobal("fetch", fetchMock);
-    const { result } = renderHook(() => useNearbyStores({ center, radius: 300, category: "카페" }));
+    const { result } = renderHook(() =>
+      useNearbyStores({
+        center,
+        radius: 300,
+        category: "카페",
+        scope: "radius",
+        marketId: "3110562",
+      }),
+    );
 
     await waitFor(() => expect(result.current.state).toBe("error"));
     act(() => result.current.retry());
@@ -73,7 +88,16 @@ describe("useNearbyStores", () => {
     vi.stubGlobal("fetch", fetchMock);
     const { result, rerender } = renderHook(
       ({ enabled }) =>
-        useNearbyStores({ center: [126.9228, 37.5635], radius: 300, category: "카페" }, enabled),
+        useNearbyStores(
+          {
+            center: [126.9228, 37.5635],
+            radius: 300,
+            category: "카페",
+            scope: "radius",
+            marketId: "3110562",
+          },
+          enabled,
+        ),
       { initialProps: { enabled: false } },
     );
 
@@ -97,7 +121,14 @@ describe("useNearbyStores", () => {
       .mockResolvedValueOnce(okResponse(payload(newCenter, 3)));
     vi.stubGlobal("fetch", fetchMock);
     const { result, rerender } = renderHook(
-      ({ center }) => useNearbyStores({ center, radius: 300, category: "카페" }),
+      ({ center }) =>
+        useNearbyStores({
+          center,
+          radius: 300,
+          category: "카페",
+          scope: "radius",
+          marketId: "3110562",
+        }),
       { initialProps: { center: oldCenter } },
     );
 

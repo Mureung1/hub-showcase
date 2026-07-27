@@ -1,7 +1,9 @@
+// liquidglass Repo
+import LiquidGlass from "liquid-glass-react";
+
 import {
   BarChart3,
   Building2,
-  ChevronRight,
   Layers3,
   LocateFixed,
   MapPinned,
@@ -9,12 +11,12 @@ import {
   PanelLeftOpen,
   PanelRightOpen,
   Plus,
-  ScanLine,
 } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import type { MapRef } from "react-map-gl/maplibre";
 
 import type { LayerMode, MapMode, Market } from "../market/types";
+
 
 type MarketMapPanelProps = {
   toolbarStart: ReactNode;
@@ -32,17 +34,62 @@ type MarketMapPanelProps = {
   mapRef: RefObject<MapRef | null>;
   prefabMode: boolean;
   onPrefabToggle: () => void;
+  onPrefabModeChange: (enabled: boolean) => void;
   onCompareOpen: () => void;
   comparisonEnabled: boolean;
   filtersOpen: boolean;
   inspectorOpen: boolean;
   filterOpenButtonRef: RefObject<HTMLButtonElement | null>;
   inspectorOpenButtonRef: RefObject<HTMLButtonElement | null>;
-  sceneOpenButtonRef: RefObject<HTMLButtonElement | null>;
   onFiltersOpen: () => void;
   onInspectorOpen: () => void;
-  onSceneOpen: () => void;
 };
+
+type SidePanelTriggerProps = {
+  side: "left" | "right";
+  buttonRef: RefObject<HTMLButtonElement | null>;
+  onOpen: () => void;
+  icon: ReactNode;
+  label: ReactNode;
+  ariaLabel: string;
+  title: string;
+};
+
+function SidePanelTrigger({
+  side,
+  buttonRef,
+  onOpen,
+  icon,
+  label,
+  ariaLabel,
+  title,
+}: SidePanelTriggerProps) {
+  return (
+    <LiquidGlass
+      mode="prominent"
+      displacementScale={30}
+      blurAmount={0.035}
+      saturation={145}
+      aberrationIntensity={1.2}
+      elasticity={0.24}
+      cornerRadius={20}
+      padding="0"
+      onClick={onOpen}
+      style={{
+        position: "absolute",
+        zIndex: 20,
+        top: "50%",
+        left: side === "left" ? "33px" : "calc(100% - 33px)",
+        display: "block",
+      }}
+    >
+      <button ref={buttonRef} type="button" className="side-panel-trigger" aria-label={ariaLabel} title={title}>
+        {icon}
+        <span>{label}</span>
+      </button>
+    </LiquidGlass>
+  );
+}
 
 export function MarketMapPanel({
   toolbarStart,
@@ -60,51 +107,22 @@ export function MarketMapPanel({
   mapRef,
   prefabMode,
   onPrefabToggle,
+  onPrefabModeChange,
   onCompareOpen,
   comparisonEnabled,
   filtersOpen,
   inspectorOpen,
   filterOpenButtonRef,
   inspectorOpenButtonRef,
-  sceneOpenButtonRef,
   onFiltersOpen,
   onInspectorOpen,
-  onSceneOpen,
 }: MarketMapPanelProps) {
   return (
     <section className="map-panel" aria-label="지도와 상권 분포">
       <div className="map-toolbar">
         {toolbarStart}
         <div className="map-toolbar-actions">
-          {!filtersOpen && (
-            <button
-              ref={filterOpenButtonRef}
-              type="button"
-              className="glass-button panel-open-button"
-              onClick={onFiltersOpen}
-            >
-              <PanelLeftOpen size={16} /> 분석 조건 열기
-            </button>
-          )}
-          {!inspectorOpen && (
-            <button
-              ref={inspectorOpenButtonRef}
-              type="button"
-              className="glass-button panel-open-button"
-              onClick={onInspectorOpen}
-            >
-              <PanelRightOpen size={16} /> 분석 결과 열기
-            </button>
-          )}
           <div className="map-mode-switch" role="group" aria-label="지도 표현 방식">
-            <button
-              type="button"
-              className={mapMode === "localtwin" ? "is-selected" : ""}
-              aria-pressed={mapMode === "localtwin"}
-              onClick={() => onMapModeChange("localtwin")}
-            >
-              <Layers3 size={15} /> <span>LocalTwin</span>
-            </button>
             <button
               type="button"
               className={mapMode === "original" ? "is-selected" : ""}
@@ -113,30 +131,61 @@ export function MarketMapPanel({
             >
               <MapPinned size={15} /> <span>실제 지도</span>
             </button>
+            <button
+              type="button"
+              className={mapMode === "localtwin" && layer === "density" ? "is-selected" : ""}
+              aria-pressed={mapMode === "localtwin" && layer === "density"}
+              onClick={() => {
+                onMapModeChange("localtwin");
+                onLayerChange("density");
+              }}
+            >
+              <Layers3 size={15} /> <span>{densityLabel}</span>
+            </button>
+            <button
+              type="button"
+              className={prefabMode ? "is-selected" : ""}
+              aria-pressed={prefabMode}
+              onClick={() => {
+                onMapModeChange("localtwin");
+                onPrefabModeChange(true);
+              }}
+            >
+              <Building2 size={15} /> <span>3D 점포</span>
+            </button>
           </div>
-          <button
-            type="button"
-            className="glass-button"
-            onClick={() => onLayerChange(layer === "density" ? "demand" : "density")}
-          >
-            <Layers3 size={16} /> {densityLabel}
-          </button>
         </div>
       </div>
-      <button
-        ref={sceneOpenButtonRef}
-        type="button"
-        className="scene-entry-button"
-        onClick={onSceneOpen}
-      >
-        <ScanLine size={16} />
-        <span>관평동 3D 장소</span>
-        <small>촬영 전</small>
-        <ChevronRight className="scene-entry-chevron" size={15} />
-      </button>
       {mapBody}
+      {!filtersOpen && (
+        <SidePanelTrigger
+          side="left"
+          buttonRef={filterOpenButtonRef}
+          onOpen={onFiltersOpen}
+          icon={<PanelLeftOpen size={19} />}
+          label={<><span>분석</span><br /><span>설정</span></>}
+          ariaLabel="분석 설정 패널 열기"
+          title="분석 설정 열기"
+        />
+      )}
+
+      {!inspectorOpen && (
+        <SidePanelTrigger
+          side="right"
+          buttonRef={inspectorOpenButtonRef}
+          onOpen={onInspectorOpen}
+          icon={<PanelRightOpen size={19} />}
+          label={<><span>분석</span><br /><span>결과</span></>}
+          ariaLabel="분석 결과 패널 열기"
+          title="분석 결과 열기"
+        />
+      )}
       <div className="map-legend">
-        <p>{layer === "density" ? "동일 업종 밀도" : "대표 시간대 수요"}</p>
+        <p>
+          {layer === "density"
+            ? "선택 업종 점포가 상대적으로 모인 정도"
+            : "선택 시간대의 상대 유동 수요"}
+        </p>
         <span>
           <i className="low" /> 낮음
         </span>
@@ -208,7 +257,7 @@ export function MarketMapPanel({
         title={comparisonEnabled ? undefined : "전체 지원 업종에서만 상권 비교를 제공합니다."}
         onClick={onCompareOpen}
       >
-        <BarChart3 size={17} /> 상권 비교 열기
+        <BarChart3 size={17} /> 전체 상권 보기
       </button>
     </section>
   );

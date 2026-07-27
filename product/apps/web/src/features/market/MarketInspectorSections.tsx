@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { CircleHelp, FileText, X } from "lucide-react";
+import { CircleHelp, FileText, Target, TrendingUp, UsersRound, X } from "lucide-react";
 
 import type { AdminAreaBackground } from "../../services/adminAreaBackground";
-import type { MarketAnalysis } from "../../services/marketAnalysis";
+import type { MarketAnalysis, MarketStoreTrend } from "../../services/marketAnalysis";
 import { MetricGuide } from "./MetricGuide";
+import { TermHelp } from "./TermHelp";
 import type { AnalysisScope, AnalysisTopic, CategorySelection, Market, MarketStore } from "./types";
 import type { AnalysisState } from "./useMarketAnalysis";
 
@@ -103,11 +104,113 @@ export function InspectorHeader({
   );
 }
 
+const DECISION_LABELS = {
+  suitable: "검토 가능",
+  caution: "주의",
+  insufficient: "근거 부족",
+} as const;
+type DecisionVerdict = keyof typeof DECISION_LABELS;
+
+function fallbackDecision(analysis: MarketAnalysis) {
+  const insufficient = analysis.score.decision_status === "insufficient_evidence";
+  const verdict: DecisionVerdict = insufficient
+    ? "insufficient"
+    : analysis.score.score >= 65
+      ? "suitable"
+      : "caution";
+  return {
+    verdict,
+    headline: insufficient
+      ? "현재 자료만으로 운영 적합성을 판단하기 어렵습니다. 누락된 근거를 먼저 확인해 주세요."
+      : verdict === "suitable"
+        ? "현재 비교 근거에서 검토할 만한 조건이 확인됩니다."
+        : "현재 비교 근거에서 경쟁과 변화 지표를 더 확인할 필요가 있습니다.",
+    strengths: analysis.score.reasons.filter((reason) => reason.tone === "positive").slice(0, 2),
+    risks: analysis.score.reasons.filter((reason) => reason.tone === "caution").slice(0, 2),
+    missingEvidence: [],
+  };
+}
+
+export function InspectorDecisionSummary({
+  categorySelection,
+  analysis,
+  selected,
+  topic,
+}: {
+  categorySelection: CategorySelection;
+  analysis: MarketAnalysis | null;
+  selected: MarketStore | null;
+  topic: AnalysisTopic;
+}) {
+  if (categorySelection.coverage !== "full" || analysis === null || topic !== "overview") return null;
+
+  const summary = analysis.score.decision_summary;
+  const fallback = fallbackDecision(analysis);
+  const verdict = summary?.verdict ?? fallback.verdict;
+  const headline = summary?.headline ?? fallback.headline;
+  const strengths = summary?.strengths ?? fallback.strengths;
+  const risks = summary?.risks ?? fallback.risks;
+  const missingEvidence = summary?.missing_evidence ?? fallback.missingEvidence;
+  const availableData = [
+    "점포·개폐업",
+    ...(analysis.raw.monthly_sales_amount === null ? [] : ["추정매출"]),
+    ...(analysis.raw.total_flow === null ? [] : ["유동인구"]),
+  ];
+
+  return (
+    <section className={`decision-summary is-${verdict}`} aria-label="업종 운영 판단">
+      <div className="decision-summary-heading">
+        <div>
+          <span>{categorySelection.name} 운영 판단</span>
+          <strong>{DECISION_LABELS[verdict]}</strong>
+        </div>
+        <small>근거 신뢰도 {analysis.score.confidence}%</small>
+      </div>
+      <p>{headline}</p>
+      <div className="decision-reasons">
+        <div>
+          <b>좋은 점</b>
+          {strengths.length > 0 ? (
+            <ul>
+              {strengths.map((reason) => (
+                <li key={`positive-${reason.label}`}>{reason.message}</li>
+              ))}
+            </ul>
+          ) : (
+            <small>현재 기준에서 뚜렷한 긍정 근거를 확인하지 못했습니다.</small>
+          )}
+        </div>
+        <div>
+          <b>주의할 점</b>
+          {risks.length > 0 ? (
+            <ul>
+              {risks.map((reason) => (
+                <li key={`caution-${reason.label}`}>{reason.message}</li>
+              ))}
+            </ul>
+          ) : (
+            <small>현재 기준에서 뚜렷한 위험 근거를 확인하지 못했습니다.</small>
+          )}
+        </div>
+      </div>
+      <div className="decision-data-status">
+        <span>선택 분기 확인 자료</span>
+        <b>{availableData.join(" · ")}</b>
+        {missingEvidence.length > 0 && <small>누락: {missingEvidence.join(", ")}</small>}
+      </div>
+      <small className="decision-scope-note">
+        {selected
+          ? "입지 점수는 상권 전체 기준입니다. 선택 점포 주변 경쟁은 아래 점포 목록과 지도에서 따로 확인합니다."
+          : "입지 점수는 상권 전체 기준입니다. 지도에서 위치를 선택하면 주변 경쟁을 따로 확인할 수 있습니다."}
+      </small>
+    </section>
+  );
+}
+
 export function InspectorScoreAndCompetition({
   market,
   categorySelection,
   score,
-  radius,
   sameCategoryCount,
   analysis,
   analysisScope,
@@ -117,7 +220,6 @@ export function InspectorScoreAndCompetition({
   market: Market;
   categorySelection: CategorySelection;
   score: number | null;
-  radius: number;
   sameCategoryCount: number;
   analysis: MarketAnalysis | null;
   analysisScope: AnalysisScope;
@@ -140,14 +242,46 @@ export function InspectorScoreAndCompetition({
     <>
       {showsScore && (
         <section className="score-section">
-          <div>
-            <span>입지 점수</span>
+          <div className="score-heading">
+            <span>
+              상권 입지 점수
+              <TermHelp
+                term="상권 입지 점수"
+                description="선택 업종 기준으로 수요, 경쟁, 매출 등 여러 지표를 합쳐 이 상권을 비교한 점수입니다. 실제 개별 점포의 매출이나 성공을 보장하지는 않습니다."
+              />
+            </span>
             <strong>{score}</strong>
             <small>/ 100</small>
           </div>
           <b>{market.grade}</b>
+          <p className="score-caption">선택 업종 기준으로 이 상권을 비교한 결과입니다.</p>
+          <div className="score-key-metrics" aria-label="점수 핵심 지표">
+            <div>
+              <UsersRound aria-hidden="true" />
+              <span>유동인구</span>
+              <b>
+                {analysis.raw.total_flow == null
+                  ? "자료 없음"
+                  : `${Math.round(analysis.raw.total_flow).toLocaleString("ko-KR")}명`}
+              </b>
+            </div>
+            <div>
+              <Target aria-hidden="true" />
+              <span>동일 업종 경쟁</span>
+              <b>{sameCategoryCount}개</b>
+            </div>
+            <div>
+              <TrendingUp aria-hidden="true" />
+              <span>추정매출</span>
+              <b>
+                {analysis.raw.monthly_sales_amount == null
+                  ? "자료 없음"
+                  : `${Math.round(analysis.raw.monthly_sales_amount).toLocaleString("ko-KR")}원`}
+              </b>
+            </div>
+          </div>
           <button type="button" className="evidence-button" onClick={onEvidenceOpen}>
-            점수 산정 근거 <CircleHelp size={15} />
+            점수 산정 근거를 확인해 보세요 <CircleHelp size={15} />
           </button>
         </section>
       )}
@@ -155,13 +289,13 @@ export function InspectorScoreAndCompetition({
         <section className="metric-section">
           <div className="section-title">
             <span>경쟁 현황</span>
-            <small>{analysis ? "서울시 상권 경계" : `반경 ${radius}m`}</small>
+            <small>서울시 상권 경계</small>
           </div>
           <div className="competition-chart">
-            <div className="donut">
-              <i />
-              <b>{sameCategoryCount}</b>
-              <small>동일 업종</small>
+            <div className="competition-stat">
+              <span>현재 범위 내</span>
+              <b>{sameCategoryCount}개</b>
+              <small>동일 업종 점포</small>
             </div>
             <div className="legend-list">
               <span>
@@ -276,6 +410,99 @@ export function InspectorTurnoverAndSales({
   );
 }
 
+export function InspectorStoreTrend({
+  categorySelection,
+  trend,
+  trendState,
+  topic,
+}: {
+  categorySelection: CategorySelection;
+  trend: MarketStoreTrend | null;
+  trendState: "loading" | "ready" | "unavailable" | "error";
+  topic: AnalysisTopic;
+}) {
+  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
+  if (
+    categorySelection.coverage !== "full" ||
+    (topic !== "overview" && topic !== "stores") ||
+    trendState === "loading"
+  ) {
+    return null;
+  }
+  if (!trend || trend.points.length === 0) {
+    return (
+      <section className="metric-section">
+        <div className="section-title">
+          <span>분기별 개·폐업 변화</span>
+          <small>공식 분기 자료</small>
+        </div>
+        <p className="population-boundary-note">여러 분기를 비교할 개·폐업 자료가 없습니다.</p>
+      </section>
+    );
+  }
+  const availableTrend = trend;
+
+  const selected = availableTrend.points.filter(
+    (point) => selectedPeriods.length === 0 || selectedPeriods.includes(point.period),
+  );
+  const opening = selected.reduce((total, point) => total + point.opening_count, 0);
+  const closure = selected.reduce((total, point) => total + point.closure_count, 0);
+  const net = opening - closure;
+
+  function togglePeriod(period: string) {
+    setSelectedPeriods((current) => {
+      const currentSelection =
+        current.length === 0 ? availableTrend.points.map((point) => point.period) : current;
+      const next = currentSelection.includes(period)
+        ? currentSelection.filter((value) => value !== period)
+        : [...currentSelection, period].sort();
+      return next.length === 0 ? currentSelection : next;
+    });
+  }
+
+  return (
+    <section className="trend-section">
+      <div className="section-title">
+        <span>분기별 개·폐업 변화</span>
+        <small>선택한 분기만 합산</small>
+      </div>
+      <div className="trend-periods" aria-label="비교할 분기 선택">
+        {availableTrend.points.map((point) => {
+          const isSelected = selectedPeriods.length === 0 || selectedPeriods.includes(point.period);
+          return (
+            <button
+              key={point.period}
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => togglePeriod(point.period)}
+            >
+              {formatQuarterPeriod(point.period)}
+            </button>
+          );
+        })}
+      </div>
+      <div className="trend-summary" role="status">
+        <span>개업 {opening}개</span>
+        <span>폐업 {closure}개</span>
+        <b>순증 {net > 0 ? "+" : ""}{net}개</b>
+      </div>
+      <div className="trend-list">
+        {trend.points.map((point) => (
+          <div key={point.period}>
+            <b>{formatQuarterPeriod(point.period)}</b>
+            <span>개업 {point.opening_count} · 폐업 {point.closure_count}</span>
+            <strong>순증 {point.net_opening_count > 0 ? "+" : ""}{point.net_opening_count}</strong>
+          </div>
+        ))}
+      </div>
+      <p className="metric-note">
+        여러 분기를 고르면 개업·폐업·순증만 합산합니다. 분기별 점포 수와 매출·유동인구는 서로
+        다른 시점의 값이므로 합산하지 않습니다.
+      </p>
+    </section>
+  );
+}
+
 const rankingKeys: Record<AnalysisTopic, string[]> = {
   overview: ["category_store_count", "sales_per_store", "total_flow"],
   stores: ["category_store_count", "opening_count", "closure_count", "net_opening_count"],
@@ -383,6 +610,9 @@ export function InspectorFlow({
     return null;
   }
 
+  const activeBucket = analysis.raw.flow_time_buckets[activeHour];
+  const activeFlow = activeBucket?.value ?? null;
+
   return (
     <>
       <section className="metric-section">
@@ -419,7 +649,17 @@ export function InspectorFlow({
             <span key={label}>{label.replaceAll(":00", "")}</span>
           ))}
         </div>
-        <p className="metric-note">서울 길단위인구가 제공하는 6개 시간 구간입니다.</p>
+        <div className="hour-chart-value" role="status">
+          <span>{activeBucket?.label ?? "시간 구간 미확인"}</span>
+          <strong>
+            {activeFlow === null
+              ? "데이터 없음"
+              : `${Math.round(activeFlow).toLocaleString("ko-KR")}명/분기`}
+          </strong>
+        </div>
+        <p className="metric-note">
+          서울 길단위인구가 제공하는 선택 분기 집계입니다. 막대 높이는 이 상권 안에서 시간대끼리 비교한 상대값입니다.
+        </p>
       </section>
     </>
   );
@@ -473,17 +713,35 @@ export function InspectorPopulation({
   return (
     <section className="population-metric-section">
       <div className="section-title">
-        <span>상권·행정동 인구</span>
-        <small>공간 단위 분리</small>
+        <span>
+          상권·행정동 인구
+          <TermHelp
+            term="상권·행정동 인구"
+            description="상권은 사람들이 가게를 이용하는 범위이고, 행정동은 주민센터가 관리하는 동네 범위입니다. 경계가 달라서 사람·일자리 정보를 따로 보여드립니다."
+          />
+        </span>
+        <small>
+          공간 단위 분리
+          <TermHelp
+            term="공간 단위 분리"
+            description="상권은 사람들이 가게를 이용하는 범위이고, 행정동은 주민센터가 관리하는 동네 범위입니다. 두 경계가 달라서 숫자를 따로 보여드립니다."
+          />
+        </small>
       </div>
       {background ? (
         <>
           <p className="population-space-label">
             서울시 상권 경계 · {background.market_resident_population.period}
           </p>
-          <div className="population-section">
+          <div className="population-section population-section-primary">
             <div>
-              <span>상권 상주인구</span>
+              <span>
+                상권 상주인구
+                <TermHelp
+                  term="상주인구"
+                  description="이 상권 범위 안에 거주하는 사람 수입니다. 가게를 이용할 수 있는 주변 생활 고객을 가늠할 때 봅니다."
+                />
+              </span>
               <b>{market.residentPopulation}</b>
               <small>
                 {background.market_resident_population.rank}/
@@ -492,7 +750,13 @@ export function InspectorPopulation({
               </small>
             </div>
             <div>
-              <span>상권 직장인구</span>
+              <span>
+                상권 직장인구
+                <TermHelp
+                  term="직장인구"
+                  description="이 상권 범위 안에서 일하는 사람 수입니다. 평일 점심이나 퇴근 시간 수요를 가늠할 때 봅니다."
+                />
+              </span>
               <b>{market.workPopulation}</b>
               <small>
                 {background.market_workers.rank}/{background.market_workers.peer_count}위 · 상위{" "}
@@ -513,31 +777,54 @@ export function InspectorPopulation({
               {background.market_worker_density.peer_count}위
             </span>
           </div>
-          <p className="population-space-label">행정동 배후통계 · {background.admin_area_name}</p>
-          <div className="population-section">
-            <div>
-              <span>행정동 주민</span>
-              <b>{background.resident_population.value.toLocaleString("ko-KR")}명</b>
-              <small>
-                {background.resident_population.rank}/{background.resident_population.peer_count}위
-              </small>
+          <details className="population-details">
+            <summary>
+              행정동 배후통계 자세히 보기 · {background.admin_area_name}
+              <TermHelp
+                term="행정동 배후통계"
+                description="행정동은 주민센터가 관리하는 동네 단위입니다. 배후통계는 그 동네에 사는 사람, 일하는 사람, 사업체 수처럼 가게 주변 환경을 이해하는 데 쓰는 정보입니다."
+              />
+            </summary>
+            <div className="population-section">
+              <div>
+                <span>
+                  이 동네에 사는 사람
+                  <TermHelp
+                    term="행정동 주민"
+                    description="현재 선택한 상권이 포함된 행정동 전체에 사는 사람 수입니다. 상권 안의 인구와 같은 숫자는 아닙니다."
+                  />
+                </span>
+                <b>{background.resident_population.value.toLocaleString("ko-KR")}명</b>
+                <small>
+                  {background.resident_population.rank}/{background.resident_population.peer_count}위
+                </small>
+              </div>
+              <div>
+                <span>
+                  이 동네에서 일하는 사람
+                  <TermHelp
+                    term="행정동 종사자"
+                    description="현재 선택한 상권이 포함된 행정동 전체에서 일하는 사람 수입니다. 상권 안의 직장인구와 같은 숫자는 아닙니다."
+                  />
+                </span>
+                <b>{background.workers.value.toLocaleString("ko-KR")}명</b>
+                <small>
+                  {background.workers.rank}/{background.workers.peer_count}위
+                </small>
+              </div>
+              <div>
+                <span>사업체</span>
+                <b>{background.businesses.value.toLocaleString("ko-KR")}개</b>
+                <small>
+                  {background.businesses.peer_count}개 동 중 {background.businesses.rank}위
+                </small>
+              </div>
             </div>
-            <div>
-              <span>행정동 종사자</span>
-              <b>{background.workers.value.toLocaleString("ko-KR")}명</b>
-              <small>
-                {background.workers.rank}/{background.workers.peer_count}위
-              </small>
-            </div>
-            <div>
-              <span>사업체</span>
-              <b>{background.businesses.value.toLocaleString("ko-KR")}개</b>
-              <small>
-                {background.businesses.peer_count}개 동 중 {background.businesses.rank}위
-              </small>
-            </div>
-          </div>
-          <p className="population-boundary-note">{background.boundary_note}</p>
+          </details>
+          <p className="population-boundary-note">
+            상권과 동네의 경계가 서로 달라요. 그래서 {background.admin_area_name} 전체 인구를 이 상권의
+            인구라고 계산하지 않고, 상권 숫자와 동네 숫자를 따로 보여드립니다.
+          </p>
           <div className="population-evidence-list">
             {background.evidence
               .filter(
@@ -549,7 +836,12 @@ export function InspectorPopulation({
                   ) === index,
               )
               .map((item) => (
-                <a key={`${item.source_name}-${item.period}`} href={item.source_url}>
+                <a
+                  key={`${item.source_name}-${item.period}`}
+                  href={item.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   <span>{item.source_name}</span>
                   <small>
                     {item.period} · 과거 기준 · {item.geography === "market" ? "상권" : "행정동"}
@@ -574,11 +866,13 @@ export function InspectorSummary({
   categorySelection,
   analysis,
   topic,
+  onReportOpen,
 }: {
   market: Market;
   categorySelection: CategorySelection;
   analysis: MarketAnalysis | null;
   topic: AnalysisTopic;
+  onReportOpen: () => void;
 }) {
   if (categorySelection.coverage !== "full" || analysis === null || topic !== "overview")
     return null;
@@ -587,7 +881,7 @@ export function InspectorSummary({
     <section className="insight-section">
       <span>분석 요약</span>
       <p>{market.insight}</p>
-      <button type="button" onClick={() => window.print()}>
+      <button type="button" onClick={onReportOpen}>
         <FileText size={15} /> 보고서로 보기
       </button>
     </section>

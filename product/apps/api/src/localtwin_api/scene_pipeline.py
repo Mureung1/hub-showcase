@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -19,6 +20,12 @@ from fastapi import UploadFile
 from pydantic import BaseModel, Field
 
 from localtwin_api.config import get_settings
+from localtwin_api.scene_anonymization import (
+    OpenCvHogPersonDetector,
+    SceneAnonymizationPolicy,
+    SceneAnonymizationReport,
+    prepare_anonymized_dataset,
+)
 from localtwin_api.seoul_open_data import repository_root
 
 CaptureType = Literal[
@@ -92,6 +99,7 @@ class SceneJob(BaseModel):
     privacy_review_status: PrivacyReviewStatus = "pending"
     is_anonymized: bool = False
     privacy_reviewed_at: str | None = None
+    anonymization_report: SceneAnonymizationReport | None = None
     camera_pose: SceneCameraPose | None = None
     commands: list[list[str]] = Field(default_factory=list)
 
@@ -374,6 +382,7 @@ class SceneJobStore:
             stages=[
                 SceneStage(name="validate"),
                 SceneStage(name="preprocess"),
+                SceneStage(name="anonymize"),
                 SceneStage(name="train"),
                 SceneStage(name="export"),
             ],
@@ -563,6 +572,13 @@ def toolchain_status(
     tools = [
         ToolStatus(name=name, available=bool(path := which(name)), path=path) for name in tool_names
     ]
+    tools.append(
+        ToolStatus(
+            name="opencv",
+            available=importlib.util.find_spec("cv2") is not None,
+            path=None,
+        )
+    )
     blockers = [f"missing_tool:{tool.name}" for tool in tools if not tool.available]
     if selected_mode == "docker" and not blockers and selected_image:
         docker = next(tool for tool in tools if tool.name == "docker")
@@ -617,6 +633,7 @@ def build_pipeline_commands(job: SceneJob, directory: Path) -> list[list[str]]:
         raise ValueError("Imported Gaussian PLY assets do not run the capture pipeline.")
     input_dir = directory / "input"
     processed_dir = directory / "processed"
+    anonymized_dir = directory / "anonymized"
     training_dir = directory / "training"
     source_kind = "video" if job.capture_type.endswith("video") else "images"
     data_path = input_dir / job.files[0].name if source_kind == "video" else input_dir
@@ -638,7 +655,7 @@ def build_pipeline_commands(job: SceneJob, directory: Path) -> list[list[str]]:
         "--output-dir",
         str(training_dir),
         "--data",
-        str(processed_dir),
+        str(anonymized_dir),
     ]
     return [preprocess, train]
 
@@ -711,6 +728,32 @@ def run_pipeline_stage(
     store.set_stage(job, stage_name, "passed")
 
 
+def run_anonymization_stage(store: SceneJobStore, job: SceneJob, directory: Path) -> None:
+    settings = get_settings()
+    store.set_stage(job, "anonymize", "running")
+    report = prepare_anonymized_dataset(
+        directory / "processed",
+        directory / "anonymized",
+        OpenCvHogPersonDetector(),
+        SceneAnonymizationPolicy(
+            action=settings.scene_anonymization_action,
+            confidence_threshold=settings.scene_person_confidence_threshold,
+            bbox_margin=settings.scene_person_bbox_margin,
+        ),
+    )
+    job.anonymization_report = report
+    store.set_stage(
+        job,
+        "anonymize",
+        "passed",
+        (
+            f"Sanitized {report.processed_frames} frame(s); "
+            f"excluded {report.excluded_frames}; detections {report.detection_count}."
+        ),
+    )
+    store.save(job)
+
+
 def export_scene_asset(
     store: SceneJobStore,
     job: SceneJob,
@@ -771,11 +814,12 @@ def _run_scene_job(store: SceneJobStore, job_id: str) -> SceneJob:
     store.save(job)
     try:
         run_pipeline_stage(store, job, "preprocess", commands[0], directory, log_path, capability)
+        run_anonymization_stage(store, job, directory)
         run_pipeline_stage(store, job, "train", commands[1], directory, log_path, capability)
         export_scene_asset(store, job, directory, log_path, capability)
         job.status = "ready"
         return store.save(job)
-    except (subprocess.CalledProcessError, OSError, RuntimeError) as error:
+    except (subprocess.CalledProcessError, OSError, RuntimeError, ValueError) as error:
         running_stage = next((stage for stage in job.stages if stage.status == "running"), None)
         if running_stage:
             store.set_stage(job, running_stage.name, "failed", str(error))
