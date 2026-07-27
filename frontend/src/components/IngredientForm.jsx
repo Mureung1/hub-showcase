@@ -7,6 +7,12 @@ import { INGREDIENT_TAG_LABELS, INGREDIENT_TAGS } from "../../../shared/ingredie
 const categoryOptions = Object.entries(INGREDIENT_CATEGORIES);
 const quantityUnits = ["개", "g", "kg", "ml", "L", "팩", "캔", "모", "대"];
 
+function getQuantityInputRules(unit) {
+  return unit === "개"
+    ? { min: 1, step: 1, inputMode: "numeric" }
+    : { min: 0.001, step: "any", inputMode: "decimal" };
+}
+
 export default function IngredientForm({ formValues, errors, isEditing, isSubmitting, initialFocusField = "name", onChange, onBlur, onTagToggle, onApplySuggestedDate, onSubmit, onCancel }) {
   const nameRef = useRef(null);
   const quantityRef = useRef(null);
@@ -16,6 +22,17 @@ export default function IngredientForm({ formValues, errors, isEditing, isSubmit
   const suggestedDate = getSuggestedUseByDate(formValues.category, formValues.storage);
   const isSuggestedValue = formValues.expirySource === "suggested" && formValues.expirationDate === suggestedDate;
   const recommendationLabel = isCheckDateCategory(formValues.category) ? "보유 상태 확인일" : "권장 사용 날짜";
+  const quantityRules = getQuantityInputRules(formValues.unit);
+  const changeQuantityBy = (amount) => {
+    const currentQuantity = Number(formValues.quantity);
+    const nextQuantity = (Number.isFinite(currentQuantity) ? currentQuantity : 0) + amount;
+    onChange({
+      target: {
+        name: "quantity",
+        value: String(Math.max(quantityRules.min, nextQuantity)),
+      },
+    });
+  };
 
   useEffect(() => {
     const focusTargets = { name: nameRef, quantity: quantityRef, expirationDate: expiryRef };
@@ -43,15 +60,15 @@ export default function IngredientForm({ formValues, errors, isEditing, isSubmit
       <div className="field-group">
         <label htmlFor="ingredient-quantity">수량</label>
         <div className="quantity-input-row">
-          <button type="button" aria-label="수량 1 감소" onClick={() => onChange({ target: { name: "quantity", value: String(Math.max(0, Number(formValues.quantity || 0) - 1)) } })}>−</button>
+          <button type="button" aria-label="수량 1 감소" onClick={() => changeQuantityBy(-1)}>−</button>
           <input
             ref={quantityRef}
             id="ingredient-quantity"
             name="quantity"
             type="number"
-            min="0.001"
-            step={formValues.unit === "개" ? "1" : "any"}
-            inputMode="decimal"
+            min={quantityRules.min}
+            step={quantityRules.step}
+            inputMode={quantityRules.inputMode}
             value={formValues.quantity}
             onChange={onChange}
             onBlur={onBlur}
@@ -59,7 +76,7 @@ export default function IngredientForm({ formValues, errors, isEditing, isSubmit
             aria-invalid={Boolean(errors.quantity)}
             aria-describedby={errors.quantity ? "quantity-error" : "quantity-hint"}
           />
-          <button type="button" aria-label="수량 1 증가" onClick={() => onChange({ target: { name: "quantity", value: String(Number(formValues.quantity || 0) + 1) } })}>＋</button>
+          <button type="button" aria-label="수량 1 증가" onClick={() => changeQuantityBy(1)}>＋</button>
           <select name="unit" aria-label="수량 단위" value={formValues.unit} onChange={onChange}>
             {quantityUnits.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
           </select>

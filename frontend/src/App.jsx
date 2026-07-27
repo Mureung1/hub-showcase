@@ -269,6 +269,7 @@ function App() {
     if (isPantryIngredientName(name)) nextErrors.name = "기본 양념은 레시피 상세의 보유 설정에서 관리해 주세요.";
     if (!quantity) nextErrors.quantity = "수량을 입력해 주세요.";
     else if (!Number.isFinite(Number(quantity)) || Number(quantity) <= 0) nextErrors.quantity = "0보다 큰 수량을 입력해 주세요.";
+    else if (formValues.unit === "개" && !Number.isInteger(Number(quantity))) nextErrors.quantity = "개수는 정수로 입력해 주세요.";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(formValues.expirationDate)) nextErrors.expirationDate = "권장 사용 날짜를 선택해 주세요.";
 
     if (Object.keys(nextErrors).length > 0) {
