@@ -1,5 +1,6 @@
 package com.spendmate.controller;
 
+import com.spendmate.config.CurrentUser;
 import com.spendmate.service.BudgetService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -22,13 +23,13 @@ public class BudgetController {
     public record BudgetRequest(Integer amount) {}
 
     @GetMapping("/api/budget")
-    public ResponseEntity<BudgetService.BudgetResponse> get() {
-        return ResponseEntity.ok(budgetService.getTotal());
+    public ResponseEntity<BudgetService.BudgetResponse> get(@CurrentUser Long userId) {
+        return ResponseEntity.ok(budgetService.getTotal(userId));
     }
 
     @PostMapping("/api/budget")
-    public ResponseEntity<BudgetService.BudgetResponse> set(@RequestBody BudgetRequest request) {
-        return ResponseEntity.ok(budgetService.setTotal(request.amount()));
+    public ResponseEntity<BudgetService.BudgetResponse> set(@CurrentUser Long userId, @RequestBody BudgetRequest request) {
+        return ResponseEntity.ok(budgetService.setTotal(userId, request.amount()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
