@@ -54,7 +54,7 @@
 
 > 4주차 공식 미션: "서비스 배포와 Agent 협업 과정 발표" — 배포는 3주차에 이미 완료해서 이번 주는 실제 크롤링, 데모 영상, 4주간 Agent 활용 정리에 집중한다. GitHub 이슈 #23(기존)·#27·#28 등록, Project 보드 "4주차 - 크롤링 및 데모 준비"(#3)에서 관리.
 
-- [ ] 실제 채용 공고 크롤링으로 `postings.json` 대체 (이슈 [#23](https://github.com/dohyeon-k/hub/issues/23), `P1`) — 대상 사이트 선정·robots.txt 확인부터 설계 필요
+- [~] 실제 채용 공고 크롤링으로 `postings.json` 대체 (이슈 [#23](https://github.com/dohyeon-k/hub/issues/23), `P1`) — **월요일: 계획만 완료**, 화요일에 구현. 대상 사이트를 링커리어 단독으로 확정(robots.txt 전면 허용, SSR 확인, 4개 카테고리 전부 커버 + `/cover-letter/search`로 실제 자소서 문항까지 확보 가능). 카테고리별 필터 URL, 필드 매핑, 캐시 스냅샷 아키텍처를 [docs/crawling-plan.md](crawling-plan.md)에 정리해둠. 로그인해서 더 가져오는 방식은 접근 통제 우회로 판단해 하지 않기로 결정
 - [ ] 데모 영상 제작 및 제출 (이슈 [#27](https://github.com/dohyeon-k/hub/issues/27), `P0`, 목표일: 수요일 밤 10시) — 5분 미만, 서비스 소개+시연+기술적 특징+Agent 활용 방식, `showcase.json`에 `demoVideoUrl` 추가
 - [x] 4주간 Agent·Skill 활용 정리 및 시각 자료 (이슈 [#28](https://github.com/dohyeon-k/hub/issues/28), 월요일 완료) — README에 "Agent 협업 워크플로우" mermaid 다이어그램 신규 추가, `docs/workflow.md`를 4주 전체(4주 타임라인, 배포 과정과 확인 기준, 이번 주 크롤링 의사결정)로 확장
 

@@ -73,6 +73,7 @@ Conventional Commits(`type: 영어 요약`, 예: `feat: add job recommendation f
 - `docs/design-skill.md` — 새 화면을 디자인/구현할 때 지켜야 할 원칙과 일관성 체크리스트. 화면을 만들고 나면 이 문서의 체크리스트로 검토한다.
 - `docs/data-model.md` — Supabase `profiles` 테이블 스키마 설계(컬럼/타입/생성 SQL, camelCase↔snake_case 매핑). T2-b 실제 생성과 T6 insert 구현의 기준 문서.
 - `docs/workflow.md` — 3주차 금요일 "워크플로우 정리와 발표" 미션 산출물. AI와 일한 기본 사이클(수직 슬라이스 단위 정의→이슈 먼저→구현 전 전략 검토→planning-agent로 쪼개기→구현→대상별 검증→문서 갱신), 쓴 Skill/Agent, 이번 주 다룬 내용과 개발 개념 연결, 발표용 요약 정리. 3주차 발표 슬라이드(`week3-demo.pptx`)와 대본(`week3-script.docx`)은 저장소에 두지 않고 바탕화면에 파일로 저장돼 있다.
+- `docs/crawling-plan.md` — 이슈 #23(실제 채용 공고 크롤링) 계획 문서. 4주차 월요일에 대상 사이트(링커리어) 선정 과정, 카테고리별 필터 URL, 자소서 문항 출처(`/cover-letter/search`), 필드 매핑, 캐시 스냅샷 아키텍처를 정리했다. 화요일에 이 문서 그대로 `backend/scripts/crawlPostings.mjs`를 구현한다.
 
 ## PR 워크플로우
 
