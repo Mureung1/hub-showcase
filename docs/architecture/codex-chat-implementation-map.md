@@ -133,7 +133,7 @@ ADR 0018 target에서 root v4 identity codec, external `WorkspaceRegistry` v1 co
 | `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime` | Hardened Node actual-child, native-context fake·exact native, exact local-provider와 process-group reap |
 | `npm run test:native-context-actual -w @ay-ple/codex-chat-runtime` | One-shot App Server의 strict protocol·cleanup matrix와 exact native provider-free config·Skill projection |
 | `npm run test:first-assignment-product-actual -w @ay-ple/server` | Exact local provider와 real product seam의 internal-ready current directory `cwd`, managed Skill·source, MCP→Plan→Review→terminal, durable outcome과 cleanup |
-| `npm run test:prepared-workspace-product-actual` | Native Bootstrap output의 exact Git root를 real built Adapter·shared Broker에 직접 공급한 handshake/tool readiness, inline Review, accept 전 no-mutation, accept 뒤 AY-owned file checkpoint와 failure no-mutation |
+| `npm run test:prepared-workspace-product-actual` | Native Bootstrap output의 exact Git root와 installed First Assignment Skill 계약을 real built Adapter·shared listener/Broker에 직접 공급한 handshake/tool readiness, inline Review, accept 전 no-mutation, accept 뒤 AY-owned file checkpoint, failure no-mutation과 credential·process cleanup |
 | `npm run test:product-entrypoint` | Root canonical product command의 explicit root 계산, product API·Browser owner, legacy path 무시와 SIGINT 뒤 OS process graph·port cleanup |
 | `npm run test:product-shutdown-actual -w @ay-ple/server` | Product-capable Runtime을 시작한 Server의 listener refusal·close ordering과 full process-tree reap |
 | `npm run trace:first-assignment-live -w @ay-ple/server -- --codex-home <isolated-auth-seed>` | Explicit isolated auth·fresh roots의 opt-in live complete Assignment outcome |
