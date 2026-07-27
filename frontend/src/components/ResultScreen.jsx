@@ -114,7 +114,12 @@ function ResultScreen({
       <h3 className="subsection-title">등록된 과목</h3>
 
       {rankedSubjects.length > 0 ? (
-        <ul className="subject-list">
+        <>
+          {/* 펼치기 전에 왜 펼치는지 알려준다. 과목마다 반복하면 소음이라 목록 위에 한 번만 둔다. */}
+          <p className="list-lead">
+            과목마다 &ldquo;더 정확하게&rdquo;를 열어 항목을 채울수록 순위가 정확해져요.
+          </p>
+          <ul className="subject-list">
           {rankedSubjects.map((subject, index) => {
             const isExpanded = expandedIds.has(subject.id);
             const isDetailOpen = detailIds.has(subject.id);
@@ -167,7 +172,8 @@ function ResultScreen({
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </>
       ) : (
         <p className="empty-hint">이번 주에 시험이 있는 과목이 없어요.</p>
       )}

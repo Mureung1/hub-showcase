@@ -53,8 +53,11 @@ function SubjectDetailFields({ subject, onChange }) {
 
   return (
     <div className="detail-fields">
+      {/* "답할수록 순위가 정확해진다"는 펼치기 전에 보여준다.
+          펼친 뒤에 말하면, 펼칠 이유를 펼친 다음에 알려주는 셈이 된다.
+          여기에는 실제로 채울 때 필요한 규칙만 남긴다. */}
       <p className="detail-lead">
-        답할수록 순위가 정확해져요. 모르는 건 비워두거나 &ldquo;모르겠다&rdquo;를 고르면 계산에서 빠져요.
+        모르는 건 비워두거나 &ldquo;모르겠다&rdquo;를 고르면 계산에서 빠져요.
       </p>
 
       <ScoreSelector

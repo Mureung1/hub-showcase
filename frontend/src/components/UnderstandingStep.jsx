@@ -27,7 +27,7 @@ function UnderstandingStep({
         <h2 className="section-title">지금 얼마나 알고 있나요?</h2>
         <p className="card-lead">
           모르겠으면 &ldquo;모르겠다&rdquo;를 골라도 돼요. 그 과목은 이 항목을 빼고 계산해요.
-          난이도·학점 같은 항목까지 지금 채우고 싶으면 과목별 &ldquo;더 자세히&rdquo;를 여세요.
+          과목별 &ldquo;더 자세히&rdquo;에서 난이도·학점 같은 항목을 채우면 순위가 더 정확해져요.
         </p>
 
         <ul className="understanding-list">

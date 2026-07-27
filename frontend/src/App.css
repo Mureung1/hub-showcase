@@ -873,3 +873,10 @@
   font-size: var(--font-caption);
   color: var(--color-text-secondary);
 }
+
+/* 목록 위에 한 번만 놓는 안내문. */
+.list-lead {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
