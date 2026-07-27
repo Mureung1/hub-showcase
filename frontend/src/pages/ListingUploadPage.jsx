@@ -1,10 +1,11 @@
-import AnalysisResultPanel from '../components/listing-upload/AnalysisResultPanel'
+import { useState } from 'react'
 import FileUploadPanel from '../components/listing-upload/FileUploadPanel'
 import OcrReviewPanel from '../components/listing-upload/OcrReviewPanel'
-import { useListingAnalysis } from '../hooks/useListingAnalysis'
+import { createListingAnalysisRequest } from '../hooks/useListingAnalysis'
 import { useListingUpload } from '../hooks/useListingUpload'
 
-function ListingUploadPage({ onBack }) {
+function ListingUploadPage({ onAnalyze, onBack }) {
+  const [analysisError, setAnalysisError] = useState('')
   const {
     error,
     fields,
@@ -21,17 +22,22 @@ function ListingUploadPage({ onBack }) {
     selectFile,
     updateField,
   } = useListingUpload()
-  const {
-    analysis,
-    error: analysisError,
-    isAnalyzing,
-    runAnalysis,
-  } = useListingAnalysis({
-    fields,
-    imageName,
-    imageType,
-    ocrText,
-  })
+
+  function handleStartAnalysis() {
+    const result = createListingAnalysisRequest({
+      fields,
+      imageName,
+      imageType,
+      ocrText,
+    })
+
+    setAnalysisError(result.error)
+    if (!result.request) {
+      return
+    }
+
+    onAnalyze(result.request)
+  }
 
   return (
     <main className="user-info-page">
@@ -85,12 +91,10 @@ function ListingUploadPage({ onBack }) {
             {analysisError && <p className="error-text" role="alert">{analysisError}</p>}
 
             <div className="button-row align-end">
-              <button className="primary-button" type="button" onClick={runAnalysis} disabled={isAnalyzing}>
-                {isAnalyzing ? 'AI 분석 중' : 'AI 분석하기'}
+              <button className="primary-button" type="button" onClick={handleStartAnalysis}>
+                AI 분석하기
               </button>
             </div>
-
-            <AnalysisResultPanel analysis={analysis} />
           </section>
 
           <div className="button-row">

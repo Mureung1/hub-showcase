@@ -95,21 +95,12 @@ function createPrompt({ listingInfo, userInfo }) {
   )
 }
 
-function readInteractionText(result) {
-  if (result.output_text) {
-    return result.output_text
-  }
-
-  const text = result.outputs
-    ?.filter((output) => output.type === 'text')
-    .map((output) => output.text)
-    .join('')
-
-  if (!text) {
+function readGeneratedText(result) {
+  if (!result.text) {
     throw new Error('Gemini 응답 본문이 비어 있습니다.')
   }
 
-  return text
+  return result.text
 }
 
 app.get('/api/health', (request, response) => {
@@ -135,15 +126,17 @@ app.post('/api/analyze-listing', async (request, response) => {
 
   try {
     const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-    const result = await client.interactions.create({
+    const result = await client.models.generateContent({
       model,
-      input: createPrompt(request.body),
-      system_instruction: systemInstruction,
-      response_format: analysisSchema,
-      response_mime_type: 'application/json',
+      contents: createPrompt(request.body),
+      config: {
+        systemInstruction,
+        responseMimeType: 'application/json',
+        responseJsonSchema: analysisSchema,
+      },
     })
 
-    response.json({ analysis: JSON.parse(readInteractionText(result)) })
+    response.json({ analysis: JSON.parse(readGeneratedText(result)) })
   } catch (error) {
     const status = error?.status || 500
     const message = status === 401
