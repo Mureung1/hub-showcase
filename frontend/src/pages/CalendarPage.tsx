@@ -39,7 +39,7 @@ const EVENT_COLORS = {
 }
 
 interface CalendarPageProps {
-  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings') => void
+  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings' | 'github') => void
 }
 
 export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
@@ -436,27 +436,31 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {[
-            { label: '⊞ 대시보드', page: 'dashboard' as const },
-            { label: '♡ 내 스크랩', page: 'scraps' as const },
-            { label: '📅 캘린더', page: 'calendar' as const },
-            { label: '⚙ 환경설정', page: 'settings' as const },
-          ].map((item, i) => (
-            <div
-              key={i}
-              onClick={() => setCurrentPage?.(item.page)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '9px 10px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: i === 2 ? 600 : 500,
-                backgroundColor: i === 2 ? '#f5f5f5' : 'transparent',
-              }}>
-              <span>{item.label}</span>
-            </div>
-          ))}
+            { label: '대시보드', page: 'dashboard' as const },
+            { label: '내 스크랩', page: 'scraps' as const },
+            { label: '캘린더', page: 'calendar' as const },
+            { label: 'GitHub 저장소', page: 'github' as const },
+            { label: '환경설정', page: 'settings' as const },
+          ].map((item, i) => {
+            const isActive = item.page === 'calendar'
+            return (
+              <div
+                key={i}
+                onClick={() => setCurrentPage?.(item.page)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '9px 10px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: isActive ? 600 : 500,
+                  backgroundColor: isActive ? '#f5f5f5' : 'transparent',
+                }}>
+                <span>{item.label}</span>
+              </div>
+            )
+          })}
         </nav>
 
         <div style={{ marginTop: 'auto', fontSize: '12px', color: '#374151', padding: '12px', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>
