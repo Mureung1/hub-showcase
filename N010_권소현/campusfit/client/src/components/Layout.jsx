@@ -26,10 +26,10 @@ export default function Layout() {
   const [bookmarks, setBookmarks] = useState(loadBookmarks);
 
   useEffect(() => {
-    Promise.all([api.getCategories(), api.getListings(), api.getBoardPosts()])
-      .then(([cats, ls, posts]) => {
+    Promise.all([api.getCategories(), api.getListings(), api.getBoardPosts(), api.getYouthPolicies()])
+      .then(([cats, ls, posts, youthPolicies]) => {
         setCategories(cats);
-        setListings(ls);
+        setListings([...ls, ...youthPolicies]);
         setBoardPosts(posts);
       })
       .catch((err) => setLoadError(err.message))
