@@ -5,10 +5,12 @@ import '../../core/constants/growth_rules.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/utils/kst_date.dart';
+import '../../models/achievement.dart';
 import '../../models/app_user.dart';
 import '../../models/difficulty.dart';
 import '../../models/quest.dart';
 import '../../models/quest_draft.dart';
+import '../../models/quest_source.dart';
 import '../../models/quest_status.dart';
 import '../quest_repository.dart';
 import 'firestore_codec.dart';
@@ -113,6 +115,7 @@ class FirestoreQuestRepository implements QuestRepository {
     List<QuestDraft> drafts, {
     String? goalId,
     String? parentQuestId,
+    QuestSource source = QuestSource.ai,
   }) {
     return guard(() async {
       if (drafts.isEmpty) return const <Quest>[];
@@ -135,6 +138,8 @@ class FirestoreQuestRepository implements QuestRepository {
           order: offset + i,
           // 재분해 자식이면 원본 퀘스트 ID가 문서에 심긴다(없으면 toJson이 생략).
           parentQuestId: parentQuestId,
+          // 출처를 문서에 심는다(AI/직접). 카드 출처 칩의 근거(회귀 A).
+          source: source,
         );
         batch.set(ref, {
           ...quest.toJson(),
@@ -151,7 +156,14 @@ class FirestoreQuestRepository implements QuestRepository {
   @override
   Future<void> updateQuest(String uid, Quest quest) {
     return guard(
-      () => _db.doc(FirestorePaths.quest(uid, quest.id)).update(quest.toJson()),
+      () => _db.doc(FirestorePaths.quest(uid, quest.id)).update({
+        ...quest.toJson(),
+        // toJson은 memo가 null이면 필드를 **생략**한다. update는 준 필드만 건드리므로,
+        // 생략하면 문서에 남은 기존 memo를 지울 방법이 없다. 보관함 기록 편집(3단계-b)에서
+        // 메모를 비우면(=null) 문서에서도 실제로 사라져야 하므로 명시적으로 실어 준다.
+        // 값이 있을 때는 toJson과 같은 값이라 무해하다.
+        'memo': quest.memo,
+      }),
     );
   }
 
@@ -190,6 +202,24 @@ class FirestoreQuestRepository implements QuestRepository {
     );
   }
 
+  @override
+  Future<void> archiveQuests(String uid, Set<String> questIds) {
+    return guard(() async {
+      if (questIds.isEmpty) return;
+      // 원자성: batch는 전부 보관되거나 전부 실패한다(deleteQuests와 대칭).
+      // 목표 폴더가 "절반만 옮겨진" 중간 상태가 없다.
+      // ⚠️ set(merge:true)가 아니라 update다 — 완료·보상으로 이미 존재하는 문서에
+      // archived 플래그만 켜고, 다른 필드(rewardedAt·memo·status)는 손대지 않는다.
+      // 없는 문서 ID가 섞이면 update가 실패하지만, 보관 대상은 언제나 방금 완료된
+      // (=존재가 보장된) 퀘스트라 그 경로가 발생하지 않는다.
+      final batch = _db.batch();
+      for (final id in questIds) {
+        batch.update(_db.doc(FirestorePaths.quest(uid, id)), {'archived': true});
+      }
+      await batch.commit();
+    });
+  }
+
   /// 완료 + 보상 지급을 한 트랜잭션으로 (3주차 핵심 보상 루프).
   ///
   /// 트랜잭션인 이유: 퀘스트 문서와 사용자 문서를 함께 바꾸기 때문이다.
@@ -205,7 +235,7 @@ class FirestoreQuestRepository implements QuestRepository {
   /// 지급하고(둘 다 줘도 1회), 지급이 일어난 경우에만 `achievements` 기록과 사진
   /// proof 문서를 **같은 트랜잭션**에 넣는다.
   @override
-  Future<Reward?> completeQuest(
+  Future<CompleteResult?> completeQuest(
     String uid,
     String questId, {
     String? memo,
@@ -230,7 +260,7 @@ class FirestoreQuestRepository implements QuestRepository {
       // 공백만 남는 메모는 인증으로 치지 않는다(정의는 normalizeMemo 한 곳).
       final verifiedMemo = normalizeMemo(memo);
 
-      return _db.runTransaction<Reward?>((transaction) async {
+      return _db.runTransaction<CompleteResult?>((transaction) async {
         // ⚠️ Firestore 트랜잭션 규칙: 모든 read가 모든 write보다 앞서야 한다.
         // 그래서 quest·user 두 문서를 여기서 먼저 다 읽는다. 레벨업은 현재 XP·레벨을
         // 알아야 계산되므로 user 문서 read가 추가됐다(3주차엔 coin/xp를 increment로만
@@ -342,8 +372,89 @@ class FirestoreQuestRepository implements QuestRepository {
           'completedAt': FieldValue.serverTimestamp(),
         });
 
-        return reward;
+        // 지급 전·후 레벨/단계를 함께 실어 돌려준다(레벨업·진화 연출용). 전부
+        // 이 트랜잭션에서 이미 읽고 계산한 값이라 추가 왕복이 없다. cutCoin은 절삭
+        // 전 총액(gross)과 실지급액의 차이다 — 화면이 재계산하지 않도록 여기서 준다.
+        return CompleteResult(
+          reward: reward,
+          cutCoin: gross.coin - reward.coin,
+          fromLevel: cur.level,
+          toLevel: next.level,
+          // 계열(rebirth)을 실어 레벨업·진화 연출이 현재 계열 이모지를 쓰게 한다.
+          // 환생은 별도 경로라 cur.rebirth는 이 완료 중 바뀌지 않는다.
+          fromStage: stageOf(cur.level, rebirth: cur.rebirth),
+          toStage: stageOf(next.level, rebirth: cur.rebirth),
+        );
       });
+    });
+  }
+
+  @override
+  Stream<List<Achievement>> watchAchievements(String uid) {
+    // 최신순은 서버 orderBy에 맡긴다 — createdAt 2차 정렬이 필요한 quests와 달리
+    // achievements는 completedAt 단일 키라 복합 인덱스가 필요 없다.
+    // ⚠️ orderBy는 completedAt 필드가 없는 문서를 결과에서 제외한다. 지급 경로가
+    // 항상 서버 시각을 찍으므로 정상 기록은 모두 포함된다.
+    return guardStream(
+      _db
+          .collection(FirestorePaths.achievements(uid))
+          .orderBy('completedAt', descending: true)
+          .snapshots()
+          .map(_parseAchievements),
+    );
+  }
+
+  /// 문서 하나가 깨져 있어도 목록 전체를 죽이지 않는다.
+  /// `Achievement.tryParse`가 null을 주면 그 항목만 버린다(_parse와 같은 계약).
+  /// 정렬은 서버 orderBy가 이미 했으므로 여기서 다시 정렬하지 않는다.
+  List<Achievement> _parseAchievements(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+  ) {
+    return snapshot.docs
+        .map((doc) => Achievement.tryParse(doc.id, decodeDoc(doc.data())))
+        .whereType<Achievement>()
+        .toList();
+  }
+
+  @override
+  Future<String?> fetchProof(String uid, String questId) {
+    return guard(() async {
+      // completeQuest가 지급 경로에서만 `base64` 필드로 담는 문서다(proofDoc).
+      final snap = await _db.doc(FirestorePaths.proofDoc(uid, questId)).get();
+      // 사진 없이 완료한 퀘스트는 문서 자체가 없다 — null(에러 아님, 인터페이스 계약).
+      if (!snap.exists) return null;
+      // 값이 문자열이 아니면(깨진 문서) null로 떨어뜨린다 — 상세 시트가 "사진 없음"을
+      // 그리면 되지, 예외로 시트를 죽이지 않는다(watchQuests 관대 파싱과 같은 원칙).
+      final base64 = snap.data()?['base64'];
+      return base64 is String ? base64 : null;
+    });
+  }
+
+  /// 인증 사진만 독립 갱신한다(보관함 기록 편집, 3단계-b).
+  ///
+  /// ⚠️ **completeQuest 트랜잭션과 무관한 단건 쓰기다.** 완료·보상이 커밋된 뒤,
+  /// 이미 보관된 기록의 사진만 나중에 고친다. rewardedAt·coin·xp·성취 기록을 전혀
+  /// 건드리지 않는다(보관 쓰기를 지급 트랜잭션 밖에 두는 것과 같은 원칙).
+  ///
+  /// 값이면 proofDoc을 `set`으로 교체(재완료 덮어쓰기와 같은 문서), null이면
+  /// `delete`로 제거한다. 문서 ID = questId라 퀘스트당 사진 1장을 유지한다.
+  @override
+  Future<void> updateProof(String uid, String questId, String? photoBase64) {
+    return guard(() async {
+      // 크기 상한 방어 — completeQuest와 같은 단일 정의처(교체 시 문서 리밋 방어).
+      ensureProofWithinLimit(photoBase64);
+      final ref = _db.doc(FirestorePaths.proofDoc(uid, questId));
+      if (photoBase64 == null) {
+        // 제거: 문서를 지운다. 없던 문서여도 delete는 실패하지 않는다(멱등).
+        await ref.delete();
+      } else {
+        // 교체: completeQuest가 지급 경로에서 쓰는 것과 같은 스키마로 덮어쓴다.
+        await ref.set({
+          'questId': questId,
+          'base64': photoBase64,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
     });
   }
 }

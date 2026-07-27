@@ -1,11 +1,14 @@
 import 'package:characters/characters.dart';
 
+import '../core/constants/growth_rules.dart';
 import '../core/constants/proof_rules.dart';
 import '../core/constants/reward_rules.dart';
 import '../core/error/app_failure.dart';
+import '../models/achievement.dart';
 import '../models/difficulty.dart';
 import '../models/quest.dart';
 import '../models/quest_draft.dart';
+import '../models/quest_source.dart';
 import '../models/quest_status.dart';
 
 /// 인증 메모 최대 길이(문자 수). **UI와 저장소가 공유하는 단일 진실원.**
@@ -48,12 +51,19 @@ abstract interface class QuestRepository {
   /// 원본을 자식으로 대체해 버리면 지표의 근거가 통째로 사라진다.
   /// 자식은 원본의 `goalId`를 그대로 [goalId]로 받아 **같은 목표 폴더에 남는다.**
   ///
+  /// **출처 (회귀 A).** [source]는 저장되는 퀘스트가 AI 분해 결과인지 직접 등록인지를
+  /// 문서에 명시한다. 카드의 출처 칩(`✨AI`/`✎직접`)이 이 값을 읽는다. 기본값
+  /// [QuestSource.ai]는 이 경로의 주 사용처가 AI 분해(+재분해)이기 때문이며, 직접
+  /// 등록은 [QuestSource.manual]을 넘긴다. goalId 유무로 출처를 추론하던 옛 방식은
+  /// 직접 등록이 목표(폴더) 단위가 되며 깨졌다([Quest.source] 참고).
+  ///
   /// 저장된 퀘스트(ID 부여됨)를 순서대로 돌려준다.
   Future<List<Quest>> createQuests(
     String uid,
     List<QuestDraft> drafts, {
     String? goalId,
     String? parentQuestId,
+    QuestSource source = QuestSource.ai,
   });
 
   Future<void> updateQuest(String uid, Quest quest);
@@ -83,6 +93,24 @@ abstract interface class QuestRepository {
   /// ⚠️ 상태만 바꾼다. 보상을 주고 싶으면 [completeQuest]를 써라
   /// (중복 완료 시 재지급 금지 요건 때문에 여기서 지급하면 안 된다).
   Future<void> setStatus(String uid, String questId, QuestStatus status);
+
+  /// 여러 퀘스트를 **한 번에 원자적으로** 보관함으로 옮긴다(`archived = true`, 2단계).
+  ///
+  /// "완료 = 보관함으로 이동" 구조의 쓰기 경로다. 대상 집합은 **화면**이
+  /// [resolveArchiveOnComplete]로 계산하고(저장소는 규칙을 모른다 — [deleteQuests]와
+  /// 같은 관심사 분리), 저장소는 "이 ID들을 원자적으로 `archived: true`로 만든다"만
+  /// 책임진다.
+  ///
+  /// ⚠️ **[completeQuest] 지급 경로를 절대 건드리지 않는다.** 완료·보상은 이미 커밋된
+  /// 뒤, 화면이 **별도 쓰기**로 이 메서드를 부른다. 지급 트랜잭션에 보관 로직을 섞으면
+  /// 보관 실패가 지급을 롤백하거나 그 반대가 된다 — 계측 로그를 트랜잭션 밖에 두는
+  /// 것과 같은 원칙이다.
+  ///
+  /// 보장 두 가지:
+  /// - **원자성**: 전부 보관되거나 전부 실패한다(목표 폴더가 "절반만 옮겨진" 중간
+  ///   상태가 없다). Firestore는 batch, InMemory는 스테이징 후 스트림 **1회** 방출.
+  /// - **없는 ID·빈 집합은 조용히 통과한다**(멱등 — [deleteQuests]와 같은 계약).
+  Future<void> archiveQuests(String uid, Set<String> questIds);
 
   /// 완료 처리 + 보상 지급을 **한 트랜잭션으로** 수행한다 (3주차).
   ///
@@ -121,8 +149,15 @@ abstract interface class QuestRepository {
   /// 같은 트랜잭션으로 남긴다(재완료는 남기지 않는다). 같은 트랜잭션이라 "보상은
   /// 줬는데 기록이 없는" 불일치가 생기지 않는다.
   ///
-  /// 반환: 이번 호출에서 **실제로 지급한** [Reward](보너스 포함).
-  /// 이미 지급된 적 있으면 `null`(상태는 done으로 맞추되 보상은 주지 않는다).
+  /// 반환: 이번 호출에서 **실제로 지급한** 보상과 그로 인한 성장을 담은
+  /// [CompleteResult]. 이미 지급된 적 있으면 `null`(상태는 done으로 맞추되
+  /// 보상은 주지 않는다 = 재완료).
+  ///
+  /// 왜 [Reward]가 아니라 [CompleteResult]인가: 화면이 완료 **직후**에 "레벨이
+  /// 올랐나 · 진화했나"를 알아야 레벨업·진화 연출을 이어 띄운다. 지급액만
+  /// 돌려주면 홈으로 돌아가 바뀐 숫자를 봐야만 성장을 눈치챌 수 있어, 가장 극적인
+  /// 순간이 무반응이 된다. 그 판단에 필요한 값(지급 전·후 레벨/단계)은 어차피
+  /// 이 트랜잭션 안에서 이미 계산되므로, 밖으로 실어 주기만 하면 된다.
   ///
   /// 퀘스트 문서가 없으면 `NotFoundFailure`, 그 밖의 실패는 다른 메서드와
   /// 동일하게 `AppFailure`로 정규화해 던진다.
@@ -130,12 +165,125 @@ abstract interface class QuestRepository {
   /// 지급 시 사용자의 현재 레벨/XP를 읽어 `applyXpGain`으로 레벨업까지 반영한다
   /// (4주차 캐릭터 성장). coin은 단순 누적, xp·level은 계산값으로 저장한다 —
   /// 그래서 `AppUser.xp`는 "누적 XP"가 아니라 "현재 레벨 내 잔여 XP"다.
-  Future<Reward?> completeQuest(
+  Future<CompleteResult?> completeQuest(
     String uid,
     String questId, {
     String? memo,
     String? photoBase64,
   });
+
+  /// 성취 기록 스트림 (보관함 화면). **최신순**(completedAt 내림차순)으로 흐른다.
+  ///
+  /// 완료·인증마다 [completeQuest]가 남긴 `users/{uid}/achievements` 문서들을
+  /// 읽는다. 목록 조회는 **관대하게** 파싱한다 — [Achievement.tryParse]로 깨진
+  /// 기록 하나가 보관함 전체를 죽이지 않게 그 항목만 버린다([watchQuests]와 같은 계약).
+  ///
+  /// ⚠️ 이미지 바이트는 여기 실리지 않는다. proof 문서는 questId당 별도라
+  /// 목록에서 N번 읽으면 비싸다(3주차에 문서를 분리한 이유). 보관함은 사진 유무
+  /// 플래그([Achievement.hasPhoto])만 쓰고, 실제 사진 로딩은 이 스트림 밖의 몫이다.
+  Stream<List<Achievement>> watchAchievements(String uid);
+
+  /// 인증 사진 base64를 읽는다. 없으면 `null`.
+  ///
+  /// **사진 base64는 목록에선 읽지 않고 상세에서만 읽는다.** proof 문서는 questId당
+  /// 별도라([completeQuest]가 `users/{uid}/proofs/{questId}`에 담는다) 목록에서
+  /// N번 읽으면 비싸다(3주차에 문서를 분리한 이유). 보관함 카드 상세 시트를 열 때
+  /// 그 퀘스트 **하나만** lazy 조회하는 경로다 — [watchAchievements]가 사진 유무
+  /// 플래그만 흘리고 바이트는 뺀 것과 짝을 이룬다.
+  ///
+  /// 문서가 없으면(사진을 첨부하지 않고 완료한 퀘스트) `null`을 준다 — **에러가
+  /// 아니다.** 그 밖의 실패는 다른 메서드와 동일하게 `AppFailure`로 정규화해 던진다.
+  Future<String?> fetchProof(String uid, String questId);
+
+  /// 인증 사진(proof)을 **독립적으로** 갱신한다 — 보관함 기록 편집(3단계-b).
+  ///
+  /// [photoBase64]가 값이면 **교체**(그 base64로 덮어씀), `null`이면 **제거**(삭제).
+  /// 퀘스트당 사진 1장이라 questId 문서를 그대로 덮거나 지운다.
+  ///
+  /// ⚠️ **[completeQuest]와 완전히 별개인 경로다.** 완료·보상 트랜잭션이 proof를
+  /// 지급 시점에만 쓰는 것과 달리, 이 메서드는 이미 완료·보관된 기록의 사진만
+  /// 나중에 고치기 위한 것이다. `rewardedAt`·`coin`·`xp`·난이도·성취 기록을 **전혀
+  /// 건드리지 않는다** — 보상 경제 밖의 순수 부가 정보 쓰기다.
+  ///
+  /// ※ 정책 구분: 완료 퀘스트의 **제목·난이도** 수정은 B-5b가 막았다(재완료 보상
+  /// 유효화 차단). 그건 **오늘의 퀘스트 목록**의 이야기이고, 여기는 **보관함 기록**의
+  /// 메모·사진이라 보상 등급에 영향이 없어 별개로 허용된다.
+  ///
+  /// **크기 상한.** [photoBase64]는 [completeQuest]와 같은 [ensureProofWithinLimit]로
+  /// 입구에서 검사한다. 넘으면 쓰기 전에 [AppFailure](초과 시 문서 리밋에 걸린다).
+  /// 그 밖의 실패도 다른 메서드와 동일하게 `AppFailure`로 정규화해 던진다.
+  Future<void> updateProof(String uid, String questId, String? photoBase64);
+}
+
+/// 완료+지급이 **실제로 일어났을 때**의 결과. 재완료·미지급은 이 객체가 아니라
+/// `null`로 표현한다([QuestRepository.completeQuest]).
+///
+/// 왜 [Reward]만으로 부족한가: 화면이 완료 직후에 "레벨이 올랐나 · 진화했나"를
+/// 알아야 레벨업·진화 연출을 이어 띄운다. 예전엔 지급액만 돌려줘서, 홈으로 돌아가
+/// 바뀐 숫자를 봐야 성장을 눈치챌 수 있었다 — 가장 극적인 순간이 무반응이었다.
+///
+/// 여기 담긴 값은 전부 **저장소가 트랜잭션 안에서 이미 아는 것**이다(지급 전 레벨·
+/// 단계 vs `applyXpGain` 이후). 화면이 다시 계산하지 않는다 — 실지급액을 난이도로
+/// 재계산하지 않는 것과 같은 원칙이다.
+class CompleteResult {
+  const CompleteResult({
+    required this.reward,
+    required this.cutCoin,
+    required this.fromLevel,
+    required this.toLevel,
+    required this.fromStage,
+    required this.toStage,
+  });
+
+  /// 이번 완료로 **실제 지급된** 보상(인증 보너스 합산·하루 상한 절삭 반영).
+  final Reward reward;
+
+  /// 하루 코인 상한 때문에 깎인 코인. 0이면 절삭 없음.
+  /// 절삭 전 총액과 실지급액의 차이를 **저장소가** 계산해 실어 준다(화면 재계산 금지).
+  final int cutCoin;
+
+  /// 지급 **전** 레벨.
+  final int fromLevel;
+
+  /// 지급 **후** 레벨. 한 번에 여러 칸 오를 수 있다(다단계 상승).
+  final int toLevel;
+
+  /// 지급 전 진화 단계.
+  final CharacterStage fromStage;
+
+  /// 지급 후 진화 단계.
+  final CharacterStage toStage;
+
+  /// 편의 접근자 — 실제 지급된 코인/XP. [reward]를 그대로 위임한다
+  /// (지급액을 다시 계산하는 것이 아니라 같은 값을 가리킨다).
+  int get coin => reward.coin;
+  int get xp => reward.xp;
+
+  /// 레벨이 올랐는가(다단계 상승 포함).
+  bool get leveledUp => toLevel > fromLevel;
+
+  /// 진화 단계가 바뀌었는가. 단계 동일성은 [CharacterStage]의 == 기준이다 —
+  /// 독수리 → 이펙트 독수리처럼 이모지가 같아도 이름·임계가 다르면 진화로 친다.
+  bool get evolved => fromStage != toStage;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CompleteResult &&
+      other.reward == reward &&
+      other.cutCoin == cutCoin &&
+      other.fromLevel == fromLevel &&
+      other.toLevel == toLevel &&
+      other.fromStage == fromStage &&
+      other.toStage == toStage;
+
+  @override
+  int get hashCode =>
+      Object.hash(reward, cutCoin, fromLevel, toLevel, fromStage, toStage);
+
+  @override
+  String toString() =>
+      'CompleteResult($reward, cut $cutCoin, Lv$fromLevel→$toLevel, '
+      '${fromStage.name}→${toStage.name})';
 }
 
 /// 인증 메모를 정규화한다. 공백만 있으면 `null`(= 인증 불성립).

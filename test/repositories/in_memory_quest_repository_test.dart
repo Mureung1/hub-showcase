@@ -5,10 +5,12 @@ import 'package:one_step/core/constants/growth_rules.dart';
 import 'package:one_step/core/constants/proof_rules.dart';
 import 'package:one_step/core/constants/reward_rules.dart';
 import 'package:one_step/core/error/app_failure.dart';
+import 'package:one_step/models/achievement.dart';
 import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/difficulty.dart';
 import 'package:one_step/models/quest.dart';
 import 'package:one_step/models/quest_draft.dart';
+import 'package:one_step/models/quest_source.dart';
 import 'package:one_step/models/quest_status.dart';
 import 'package:one_step/repositories/memory/in_memory_quest_repository.dart';
 import 'package:one_step/repositories/memory/in_memory_user_repository.dart';
@@ -141,6 +143,133 @@ void main() {
     });
   });
 
+  group('archiveQuests — 완료 = 보관함으로 이동 (2단계)', () {
+    test('여러 퀘스트를 한 번에 보관하고 스트림을 1회만 방출한다 (원자성)', () async {
+      final repo = InMemoryQuestRepository(
+        seed: const [
+          Quest(id: 'q1', title: '하나', order: 0),
+          Quest(id: 'q2', title: '둘', order: 1),
+          Quest(id: 'q3', title: '셋', order: 2),
+        ],
+      );
+
+      final emissions = <List<Quest>>[];
+      final sub = repo.watchQuests('u').listen(emissions.add);
+      // 순서 중요: 컨트롤러를 먼저 닫아야 watchQuests의 `await for`가 끝나 cancel이
+      // 완료된다(반대 순서면 tearDown이 영원히 기다린다 — 기존 emission 테스트와 동일).
+      addTearDown(() async {
+        repo.dispose();
+        await sub.cancel();
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions, hasLength(1)); // 최초 목록.
+
+      await repo.archiveQuests('u', {'q1', 'q2'});
+      await Future<void>.delayed(Duration.zero);
+
+      // ★ 한 목표를 보관할 때 "절반만 옮겨진" 중간 프레임이 없다 — 보관은 1회만 방출.
+      expect(emissions, hasLength(2));
+      final list = emissions.last;
+      expect(list.firstWhere((q) => q.id == 'q1').archived, isTrue);
+      expect(list.firstWhere((q) => q.id == 'q2').archived, isTrue);
+      // 지목하지 않은 것은 그대로다.
+      expect(list.firstWhere((q) => q.id == 'q3').archived, isFalse);
+    });
+
+    test('빈 집합은 아무 일도 하지 않는다 (헛방출 없음)', () async {
+      final repo = InMemoryQuestRepository(
+        seed: const [Quest(id: 'q1', title: 'x')],
+      );
+
+      final emissions = <List<Quest>>[];
+      final sub = repo.watchQuests('u').listen(emissions.add);
+      addTearDown(() async {
+        repo.dispose();
+        await sub.cancel();
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions, hasLength(1)); // 최초 목록.
+
+      await repo.archiveQuests('u', const {});
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emissions, hasLength(1), reason: '빈 집합은 방출하지 않는다');
+    });
+
+    test('없는 ID가 섞여도 있는 것만 보관한다 (멱등)', () async {
+      final repo = InMemoryQuestRepository(
+        seed: const [Quest(id: 'q1', title: 'x')],
+      );
+      addTearDown(repo.dispose);
+
+      await repo.archiveQuests('u', {'q1', '없는id'});
+
+      final quests = await repo.fetchQuests('u');
+      expect(quests.single.archived, isTrue);
+    });
+
+    test('보관은 영속된다 — 다시 읽어도 archived가 유지된다', () async {
+      final repo = InMemoryQuestRepository(
+        seed: const [Quest(id: 'q1', title: 'x')],
+      );
+      addTearDown(repo.dispose);
+
+      await repo.archiveQuests('u', {'q1'});
+
+      // 재조회(앱 재실행 동치)에도 archived가 남는다.
+      expect((await repo.fetchQuests('u')).single.archived, isTrue);
+    });
+
+    test('보관은 상태·지급 이력을 건드리지 않는다', () async {
+      final repo = InMemoryQuestRepository(
+        seed: [
+          Quest(
+            id: 'q1',
+            title: 'x',
+            status: QuestStatus.done,
+            rewardedAt: DateTime(2026, 1, 1),
+            memo: '인증 메모',
+          ),
+        ],
+      );
+      addTearDown(repo.dispose);
+
+      await repo.archiveQuests('u', {'q1'});
+
+      final q = (await repo.fetchQuests('u')).single;
+      expect(q.archived, isTrue);
+      expect(q.status, QuestStatus.done);
+      expect(q.rewardedAt, DateTime(2026, 1, 1));
+      expect(q.memo, '인증 메모');
+    });
+
+    test('★ 자동완료(setStatus done)는 코인·XP·성취를 건드리지 않는다 (뮤테이션 방어)', () async {
+      // 재분해 원본 자동완료는 completeQuest(지급)가 아니라 setStatus여야 한다.
+      // 이 경로가 지급을 타면 아래 잔액/기록 단언이 깨진다.
+      final users = InMemoryUserRepository(seed: AppUser.initial('u'));
+      final repo = InMemoryQuestRepository(
+        seed: const [
+          Quest(id: 'p', title: '재분해 원본', status: QuestStatus.stuck),
+        ],
+        users: users,
+      );
+      addTearDown(users.dispose);
+      addTearDown(repo.dispose);
+
+      await repo.setStatus('u', 'p', QuestStatus.done);
+
+      final p = (await repo.fetchQuests('u')).single;
+      expect(p.done, isTrue);
+      // 보상은 지급되지 않는다.
+      expect(p.rewardedAt, isNull);
+      final user = await users.fetchUser('u');
+      expect(user.coin, 0);
+      expect(user.xp, 0);
+      // 성취 기록도 남지 않는다.
+      expect(repo.achievementsOf('u'), isEmpty);
+    });
+  });
+
   group('completeQuest — 완료 + 트랜잭션 보상 지급 (3주차 핵심 보상 루프)', () {
     /// 퀘스트 저장소와 사용자 저장소를 배선해 함께 돌려준다.
     /// 완료는 두 문서를 동시에 바꾸므로 둘을 같이 봐야 검증이 된다.
@@ -164,7 +293,7 @@ void main() {
 
       // reward는 "이번에 준 XP"(5)로 불변. user.xp는 레벨업 후 레벨 내 잔여 XP다.
       // 쉬움 5XP는 알 단계 임계(5)와 같아 정확히 Lv2로 올라가고 잔여 XP는 0.
-      expect(reward, const Reward(coin: 3, xp: 5));
+      expect(reward!.reward, const Reward(coin: 3, xp: 5));
       final user = await users.fetchUser('u');
       expect(user.coin, 3);
       expect(user.level, 2);
@@ -182,7 +311,7 @@ void main() {
       final reward = await repo.completeQuest('u', quest.id);
 
       // 보통 10XP → 알 단계 5/레벨이라 Lv1에서 두 칸 올라 Lv3, 잔여 XP 0.
-      expect(reward, const Reward(coin: 5, xp: 10));
+      expect(reward!.reward, const Reward(coin: 5, xp: 10));
       final user = await users.fetchUser('u');
       expect(user.coin, 5);
       expect(user.level, 3);
@@ -200,7 +329,7 @@ void main() {
       final reward = await repo.completeQuest('u', quest.id);
 
       // 어려움 20XP → 알 단계 5/레벨이라 Lv1에서 네 칸 올라 Lv5, 잔여 XP 0.
-      expect(reward, const Reward(coin: 10, xp: 20));
+      expect(reward!.reward, const Reward(coin: 10, xp: 20));
       final user = await users.fetchUser('u');
       expect(user.coin, 10);
       expect(user.level, 5);
@@ -283,7 +412,7 @@ void main() {
       final first = await repo.completeQuest('u', quest.id);
       final second = await repo.completeQuest('u', quest.id);
 
-      expect(first, const Reward(coin: 10, xp: 20));
+      expect(first!.reward, const Reward(coin: 10, xp: 20));
       // 두 번째는 "이번에 지급한 보상 없음" = null.
       expect(second, isNull);
 
@@ -413,7 +542,10 @@ void main() {
         difficulty: Difficulty.normal,
       );
 
-      expect(await repo.completeQuest('u', quest.id), const Reward(coin: 5, xp: 10));
+      expect(
+        (await repo.completeQuest('u', quest.id))!.reward,
+        const Reward(coin: 5, xp: 10),
+      );
       expect(await repo.completeQuest('u', quest.id), isNull);
     });
   });
@@ -522,6 +654,118 @@ void main() {
     });
   });
 
+  group('completeQuest — CompleteResult가 레벨업·진화 변화를 담는다 (4주차 연출)', () {
+    // 반환 타입을 Reward → CompleteResult로 넓힌 이유는 화면이 완료 직후에
+    // "레벨이 올랐나 · 진화했나"를 알아야 연출을 잇기 때문이다. 그 판정
+    // (leveledUp/evolved)이 지급 전·후 레벨을 실제로 비교하는지 못 박는다 —
+    // always-true/always-false로 바꾸면 이 그룹이 깨져야 한다(뮤테이션 방어).
+    (InMemoryQuestRepository, InMemoryUserRepository) makeRepos({AppUser? seed}) {
+      final users = InMemoryUserRepository(seed: seed ?? AppUser.initial('u'));
+      final quests = InMemoryQuestRepository(users: users);
+      addTearDown(users.dispose);
+      addTearDown(quests.dispose);
+      return (quests, users);
+    }
+
+    Future<Quest> seed(InMemoryQuestRepository repo, Difficulty d) =>
+        repo.createQuest('u', title: 'x', difficulty: d);
+
+    test('★ 레벨업이 없으면 leveledUp=false, from==to (뮤테이션: 항상 true면 실패)', () async {
+      // 참새(Lv10, 10 XP/레벨) xp0에서 쉬움 5XP → 5 < 10이라 레벨이 그대로다.
+      final (repo, _) = makeRepos(seed: const AppUser(uid: 'u', level: 10, xp: 0));
+      final quest = await seed(repo, Difficulty.easy);
+
+      final result = (await repo.completeQuest('u', quest.id))!;
+
+      expect(result.leveledUp, isFalse);
+      expect(result.fromLevel, 10);
+      expect(result.toLevel, 10);
+      // 레벨이 안 올랐으니 진화도 없다.
+      expect(result.evolved, isFalse);
+    });
+
+    test('★ 큰 XP로 여러 레벨이 오르면 from<to로 표현된다 (다단계 상승)', () async {
+      // Lv1 xp0 + 어려움 20XP → 알 단계 5/레벨을 네 칸 소비 → Lv5.
+      final (repo, _) = makeRepos();
+      final quest = await seed(repo, Difficulty.hard);
+
+      final result = (await repo.completeQuest('u', quest.id))!;
+
+      expect(result.leveledUp, isTrue);
+      expect(result.fromLevel, 1);
+      expect(result.toLevel, 5);
+      // 알(Lv1~9) 안에서만 올랐으므로 진화는 아니다.
+      expect(result.evolved, isFalse);
+    });
+
+    test('★ 진화 경계(Lv9→Lv10)를 넘으면 evolved=true, 단계가 알→참새 (뮤테이션: 항상 false면 실패)', () async {
+      // Lv9(알) xp0 + 쉬움 5XP → 정확히 Lv10(참새).
+      final (repo, _) = makeRepos(seed: const AppUser(uid: 'u', level: 9, xp: 0));
+      final quest = await seed(repo, Difficulty.easy);
+
+      final result = (await repo.completeQuest('u', quest.id))!;
+
+      expect(result.evolved, isTrue);
+      expect(result.leveledUp, isTrue);
+      expect(result.fromStage.name, '알');
+      expect(result.toStage.name, '참새');
+    });
+
+    test('★ 같은 단계 안에서 레벨만 오르면 leveledUp=true지만 evolved=false', () async {
+      // Lv1(알) → Lv2(알). 레벨업과 진화 판정이 서로 독립임을 못 박는다
+      // (evolved == leveledUp로 뭉뚱그리면 이 테스트가 깨진다).
+      final (repo, _) = makeRepos();
+      final quest = await seed(repo, Difficulty.easy);
+
+      final result = (await repo.completeQuest('u', quest.id))!;
+
+      expect(result.leveledUp, isTrue);
+      expect(result.fromLevel, 1);
+      expect(result.toLevel, 2);
+      expect(result.evolved, isFalse);
+      expect(result.fromStage.name, '알');
+      expect(result.toStage.name, '알');
+    });
+
+    test('cutCoin이 결과에 실린다 (절삭 전 총액 - 실지급액)', () async {
+      // 오늘 68코인 받은 상태에서 어려움(10) 완료 → 2코인만 지급, 8 절삭.
+      // 날짜 경계에 의존하지 않도록 고정 시계로 배선한다(makeRepos의 기본 시계는
+      // '오늘'이 dailyCoinDate와 어긋날 수 있어 카운터가 만료돼 버린다).
+      final users = InMemoryUserRepository(
+        seed: const AppUser(
+          uid: 'v',
+          dailyCoinDate: '2026-07-21',
+          dailyCoinEarned: 68,
+        ),
+        clock: () => DateTime.utc(2026, 7, 21, 3),
+      );
+      final quests = InMemoryQuestRepository(
+        users: users,
+        clock: () => DateTime.utc(2026, 7, 21, 3),
+      );
+      addTearDown(users.dispose);
+      addTearDown(quests.dispose);
+      final quest = await quests.createQuest(
+        'v',
+        title: 'x',
+        difficulty: Difficulty.hard,
+      );
+
+      final result = (await quests.completeQuest('v', quest.id))!;
+
+      expect(result.reward.coin, 2);
+      expect(result.cutCoin, 8);
+    });
+
+    test('재완료는 여전히 null이다 (연출도 뜨지 않는다)', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seed(repo, Difficulty.easy);
+
+      expect(await repo.completeQuest('u', quest.id), isNotNull);
+      expect(await repo.completeQuest('u', quest.id), isNull);
+    });
+  });
+
   group('메모 인증 보너스 + 성취 기록 (3주차-B)', () {
     (InMemoryQuestRepository, InMemoryUserRepository) makeRepos() {
       final users = InMemoryUserRepository(seed: AppUser.initial('u'));
@@ -541,7 +785,7 @@ void main() {
       final reward = await repo.completeQuest('u', quest.id, memo: '초안 1장 썼다');
 
       // 보통(5/10) + 보너스(3/3) = 8/13.
-      expect(reward, const Reward(coin: 8, xp: 13));
+      expect(reward!.reward, const Reward(coin: 8, xp: 13));
       final user = await users.fetchUser('u');
       expect(user.coin, 8);
       // XP 13을 알 단계 5/레벨로 소비 → Lv3(10 소비), 잔여 XP 3.
@@ -555,7 +799,7 @@ void main() {
 
       final reward = await repo.completeQuest('u', quest.id);
 
-      expect(reward, const Reward(coin: 5, xp: 10));
+      expect(reward!.reward, const Reward(coin: 5, xp: 10));
       expect((await users.fetchUser('u')).coin, 5);
     });
 
@@ -566,7 +810,7 @@ void main() {
 
       final reward = await repo.completeQuest('u', quest.id, memo: '   ');
 
-      expect(reward, const Reward(coin: 5, xp: 10));
+      expect(reward!.reward, const Reward(coin: 5, xp: 10));
       expect((await users.fetchUser('u')).coin, 5);
 
       final saved = (await repo.fetchQuests('u')).single;
@@ -702,7 +946,7 @@ void main() {
       );
 
       // 보통(5/10) + 보너스(3/3) = 8/13. 메모 없이 사진만으로 성립한다.
-      expect(reward, const Reward(coin: 8, xp: 13));
+      expect(reward!.reward, const Reward(coin: 8, xp: 13));
       final user = await users.fetchUser('u');
       expect(user.coin, 8);
       // XP 13 → 알 단계에서 Lv3, 잔여 XP 3.
@@ -729,7 +973,7 @@ void main() {
       );
 
       // 중복이 아니다 — 보통(5/10) + 보너스(3/3) = 8/13.
-      expect(reward, const Reward(coin: 8, xp: 13));
+      expect(reward!.reward, const Reward(coin: 8, xp: 13));
       expect((await users.fetchUser('u')).coin, 8);
 
       final record = repo.achievementsOf('u').single;
@@ -784,7 +1028,7 @@ void main() {
         quest.id,
         photoBase64: exact,
       );
-      expect(reward, const Reward(coin: 8, xp: 13));
+      expect(reward!.reward, const Reward(coin: 8, xp: 13));
       expect(repo.proofOf('u', quest.id), exact);
     });
 
@@ -811,6 +1055,145 @@ void main() {
       expect(repo.achievementsOf('u'), hasLength(1));
       // 재완료 경로는 proof를 다시 쓰지 않는다 — 최초 사진이 그대로 남는다.
       expect(repo.proofOf('u', quest.id), smallPhoto);
+    });
+
+    test('fetchProof는 저장된 사진 base64를 돌려준다', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+      await repo.completeQuest('u', quest.id, photoBase64: smallPhoto);
+
+      expect(await repo.fetchProof('u', quest.id), smallPhoto);
+    });
+
+    test('fetchProof는 사진 없는 퀘스트에 null을 돌려준다(에러 아님)', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+      await repo.completeQuest('u', quest.id); // 사진 없이 완료
+
+      expect(await repo.fetchProof('u', quest.id), isNull);
+    });
+
+    test('fetchProof는 저장소 실패 시 AppFailure를 던진다', () async {
+      final repo = InMemoryQuestRepository(failWith: const NetworkFailure());
+      addTearDown(repo.dispose);
+
+      expect(
+        () => repo.fetchProof('u', 'q1'),
+        throwsA(isA<AppFailure>()),
+      );
+    });
+  });
+
+  // ===== proof 독립 갱신 — 보관함 기록 편집 (3단계-b) =====
+  //
+  // updateProof는 completeQuest와 완전히 별개인 단건 쓰기다. 완료·보상이 끝난 뒤
+  // 이미 보관된 기록의 사진만 나중에 고친다. rewardedAt·coin·xp·성취 기록을 절대
+  // 건드리지 않는 것이 최대 방어선이라 회귀 단언을 함께 둔다.
+  group('updateProof — 사진 독립 교체·제거', () {
+    (InMemoryQuestRepository, InMemoryUserRepository) makeRepos() {
+      final users = InMemoryUserRepository(seed: AppUser.initial('u'));
+      final quests = InMemoryQuestRepository(users: users);
+      addTearDown(users.dispose);
+      addTearDown(quests.dispose);
+      return (quests, users);
+    }
+
+    Future<Quest> seedNormal(InMemoryQuestRepository repo) =>
+        repo.createQuest('u', title: '지원서 초안 쓰기', difficulty: Difficulty.normal);
+
+    const smallPhoto = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAA';
+
+    test('교체: 새 base64가 fetchProof에 반영된다', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      await repo.updateProof('u', quest.id, smallPhoto);
+      expect(await repo.fetchProof('u', quest.id), smallPhoto);
+
+      // 다른 값으로 다시 교체하면 덮어쓴다(퀘스트당 사진 1장).
+      await repo.updateProof('u', quest.id, 'BBBBnewBBBB');
+      expect(await repo.fetchProof('u', quest.id), 'BBBBnewBBBB');
+    });
+
+    test('★ 제거: null을 주면 삭제돼 fetchProof가 null이 된다 (뮤테이션 방어)', () async {
+      // 이 단언이 updateProof의 null→삭제 분기를 지킨다. 삭제 분기를 무력화해
+      // (null도 교체로 처리) 두면 사진이 남아 이 테스트가 실패해야 한다.
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+      await repo.updateProof('u', quest.id, smallPhoto);
+      expect(await repo.fetchProof('u', quest.id), smallPhoto);
+
+      await repo.updateProof('u', quest.id, null);
+
+      expect(await repo.fetchProof('u', quest.id), isNull);
+    });
+
+    test('없던 사진을 제거해도 실패하지 않는다 (멱등)', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      // 애초에 사진이 없는 퀘스트에 제거(null) — 조용히 통과한다.
+      await repo.updateProof('u', quest.id, null);
+      expect(await repo.fetchProof('u', quest.id), isNull);
+    });
+
+    test('★ 크기 상한을 넘긴 사진은 거부된다 (AppFailure)', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+      final tooBig = 'A' * (kMaxProofBase64Bytes + 1);
+
+      await expectLater(
+        repo.updateProof('u', quest.id, tooBig),
+        throwsA(isA<AppFailure>()),
+      );
+      // 거부됐으므로 아무것도 저장되지 않았다.
+      expect(await repo.fetchProof('u', quest.id), isNull);
+    });
+
+    test('저장소 실패 시 AppFailure를 던진다', () async {
+      final repo = InMemoryQuestRepository(failWith: const NetworkFailure());
+      addTearDown(repo.dispose);
+
+      await expectLater(
+        repo.updateProof('u', 'q1', smallPhoto),
+        throwsA(isA<NetworkFailure>()),
+      );
+    });
+
+    test('★ 사진을 갈아끼워도 완료·보상(rewardedAt·coin·xp·성취)이 불변한다 (회귀 방어)', () async {
+      // 최대 방어선: updateProof가 completeQuest 경로를 절대 건드리지 않는다.
+      // 아래 "불변" 단언을 뒤집으면(예: coin이 변한다고 기대) 반드시 실패해야 한다.
+      final (repo, users) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      // 사진 인증으로 완료 → 보상 지급(보통 5/10 + 보너스 3/3 = 8/13).
+      await repo.completeQuest('u', quest.id, photoBase64: smallPhoto);
+      final questAfterComplete = (await repo.fetchQuests('u')).single;
+      final userAfterComplete = await users.fetchUser('u');
+      final achievementsAfterComplete = repo.achievementsOf('u').length;
+      expect(userAfterComplete.coin, 8);
+      expect(achievementsAfterComplete, 1);
+
+      // 이제 사진만 교체 → 다시 제거.
+      await repo.updateProof('u', quest.id, 'ZZZreplacedZZZ');
+      await repo.updateProof('u', quest.id, null);
+
+      // 사진은 바뀌었지만…
+      expect(await repo.fetchProof('u', quest.id), isNull);
+
+      // …완료·보상은 손끝 하나 안 댔다.
+      final questNow = (await repo.fetchQuests('u')).single;
+      expect(questNow.rewardedAt, questAfterComplete.rewardedAt);
+      expect(questNow.status, questAfterComplete.status);
+      expect(questNow.memo, questAfterComplete.memo);
+
+      final userNow = await users.fetchUser('u');
+      expect(userNow.coin, userAfterComplete.coin);
+      expect(userNow.xp, userAfterComplete.xp);
+      expect(userNow.level, userAfterComplete.level);
+
+      // 성취 기록도 늘거나 줄지 않는다.
+      expect(repo.achievementsOf('u').length, achievementsAfterComplete);
     });
   });
 
@@ -876,6 +1259,41 @@ void main() {
 
       expect(created, isEmpty);
       expect(await repo.fetchQuests('u'), isEmpty);
+    });
+
+    test('★ source를 주면 모든 퀘스트에 출처가 심긴다 (회귀 A · manual)', () async {
+      // 직접 등록 경로는 source: manual을 넘긴다. goalId가 있어도 출처는 직접이어야
+      // 카드가 "✎직접"으로 표시된다(goalId 추론이 아니라 명시 신호).
+      final repo = InMemoryQuestRepository();
+      addTearDown(repo.dispose);
+
+      final created = await repo.createQuests(
+        'u',
+        const [
+          QuestDraft(localId: 'd0', title: 'x', difficulty: Difficulty.easy),
+          QuestDraft(localId: 'd1', title: 'y', difficulty: Difficulty.normal),
+        ],
+        goalId: 'goal-1',
+        source: QuestSource.manual,
+      );
+
+      expect(created.map((q) => q.source), [
+        QuestSource.manual,
+        QuestSource.manual,
+      ]);
+      expect(created.every((q) => !q.isAiGenerated), isTrue);
+    });
+
+    test('source를 생략하면 기본값 AI가 심긴다 (분해 경로의 주 사용처)', () async {
+      final repo = InMemoryQuestRepository();
+      addTearDown(repo.dispose);
+
+      final created = await repo.createQuests('u', const [
+        QuestDraft(localId: 'd0', title: 'x', difficulty: Difficulty.easy),
+      ], goalId: 'goal-1');
+
+      expect(created.single.source, QuestSource.ai);
+      expect(created.single.isAiGenerated, isTrue);
     });
 
     test('실패 시 아무것도 저장되지 않는다 (원자성)', () async {
@@ -1143,6 +1561,200 @@ void main() {
 
     test('AppFailure 메시지는 그대로 사용자에게 보여줄 수 있다', () {
       expect(const NetworkFailure().message, '인터넷 연결을 확인해 주세요.');
+    });
+  });
+
+  // ===== 보관함 조회 경로 (watchAchievements) =====
+  //
+  // 완료 트랜잭션이 남긴 성취 기록을 보관함이 읽는 경로. 쓰기(completeQuest)는
+  // 이미 위에서 검증했으니, 여기서는 **읽기 계약**만 못 박는다.
+  group('watchAchievements — 보관함 조회 경로', () {
+    Achievement ach(String id, {required DateTime? at, String title = 'x'}) =>
+        Achievement(
+          id: id,
+          questId: 'q-$id',
+          questTitle: title,
+          coin: 5,
+          xp: 10,
+          completedAt: at,
+        );
+
+    test('★ 최신순(completedAt 내림차순)으로 흐른다 (뮤테이션: 정렬을 뒤집으면 실패)', () async {
+      // 일부러 저장 순서(오래된→최신)와 반대가 되도록 심는다. 정렬이 없거나
+      // 뒤집혀 있으면 이 순서가 어긋난다.
+      final repo = InMemoryQuestRepository(
+        seedAchievements: {
+          'u': [
+            ach('old', at: DateTime.utc(2026, 7, 10), title: '가장 오래됨'),
+            ach('new', at: DateTime.utc(2026, 7, 20), title: '가장 최신'),
+            ach('mid', at: DateTime.utc(2026, 7, 15), title: '중간'),
+          ],
+        },
+      );
+      addTearDown(repo.dispose);
+
+      final list = await repo.watchAchievements('u').first;
+
+      expect(list.map((a) => a.questTitle), ['가장 최신', '중간', '가장 오래됨']);
+    });
+
+    test('completedAt이 없는 기록은 맨 뒤로 간다', () async {
+      final repo = InMemoryQuestRepository(
+        seedAchievements: {
+          'u': [
+            ach('n', at: null, title: '시각 없음'),
+            ach('a', at: DateTime.utc(2026, 7, 20), title: '있음'),
+          ],
+        },
+      );
+      addTearDown(repo.dispose);
+
+      final list = await repo.watchAchievements('u').first;
+      expect(list.map((a) => a.questTitle), ['있음', '시각 없음']);
+    });
+
+    test('★ 제목이 유실된 기록도 목록에 남는다 (관대한 취급)', () async {
+      // 저장된 기록 하나가 손상돼도(제목 유실 등) 보관함 전체가 비지 않아야 한다.
+      // 진짜 깨진 문서(id 없음)의 드롭은 Firestore _parseAchievements가
+      // Achievement.tryParse로 처리하며, 그 계약은 achievement_test가 못 박는다.
+      final repo = InMemoryQuestRepository(
+        seedAchievements: {
+          'u': [
+            ach('good', at: DateTime.utc(2026, 7, 20), title: '정상'),
+            ach('degraded', at: DateTime.utc(2026, 7, 19), title: ''),
+          ],
+        },
+      );
+      addTearDown(repo.dispose);
+
+      final list = await repo.watchAchievements('u').first;
+      expect(list, hasLength(2));
+      expect(list.first.questTitle, '정상');
+      expect(list.last.questTitle, '');
+    });
+
+    test('빈 계정은 빈 목록을 흘린다', () async {
+      final repo = InMemoryQuestRepository();
+      addTearDown(repo.dispose);
+
+      expect(await repo.watchAchievements('u').first, isEmpty);
+    });
+
+    test('★ 퀘스트를 완료하면 스트림에 새 기록이 반영된다', () async {
+      final users = InMemoryUserRepository(seed: AppUser.initial('u'));
+      final repo = InMemoryQuestRepository(users: users);
+      addTearDown(users.dispose);
+      addTearDown(repo.dispose);
+
+      // 퀘스트 생성은 구독 전에 끝내 둔다 — 생성이 흘리는 (성취) 빈 목록 방출을
+      // 검증 대상에서 빼기 위해서다. 관심사는 "완료가 기록을 흘리는가"다.
+      final quest = await repo.createQuest(
+        'u',
+        title: '완료할 도전',
+        difficulty: Difficulty.normal,
+      );
+
+      unawaited(
+        expectLater(
+          repo.watchAchievements('u'),
+          emitsInOrder([
+            isEmpty,
+            predicate<List<Achievement>>(
+              (list) => list.length == 1 && list.single.questTitle == '완료할 도전',
+              '완료 기록 1건',
+            ),
+          ]),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      await repo.completeQuest('u', quest.id);
+      await Future<void>.delayed(Duration.zero);
+    });
+
+    test('★ 재완료해도 기록이 늘지 않는다 (지급 횟수 = 기록 수 회귀 방어)', () async {
+      final users = InMemoryUserRepository(seed: AppUser.initial('u'));
+      final repo = InMemoryQuestRepository(users: users);
+      addTearDown(users.dispose);
+      addTearDown(repo.dispose);
+
+      final quest = await repo.createQuest(
+        'u',
+        title: 'x',
+        difficulty: Difficulty.easy,
+      );
+      await repo.completeQuest('u', quest.id);
+      // 해제 → 재완료(파밍 시나리오).
+      await repo.setStatus('u', quest.id, QuestStatus.todo);
+      await repo.completeQuest('u', quest.id);
+
+      expect(await repo.watchAchievements('u').first, hasLength(1));
+    });
+
+    test('★ 재완료(alreadyPaid)도 스트림을 재방출한다 (뮤테이션: alreadyPaid 방출 제거 시 실패)', () async {
+      // 재완료는 기록을 늘리지 않지만(위 테스트), 퀘스트 상태·메모는 바뀔 수 있어
+      // watchQuests·watchAchievements가 **재방출**해야 화면이 갱신된다. 이 방출이
+      // 없으면 "메모를 고쳐 다시 완료했는데 화면이 안 바뀐다"가 되고, 지금까지
+      // 아무 테스트도 그걸 잡지 못했다(무테스트 방출). 여기서 못 박는다.
+      final users = InMemoryUserRepository(seed: AppUser.initial('u'));
+      final repo = InMemoryQuestRepository(users: users);
+      addTearDown(users.dispose);
+
+      // 먼저 지급까지 끝낸다 → 이후 완료는 alreadyPaid 경로로만 흐른다.
+      final quest = await repo.createQuest(
+        'u',
+        title: '메모 고칠 도전',
+        difficulty: Difficulty.easy,
+      );
+      await repo.completeQuest('u', quest.id);
+
+      // 지급이 끝난 뒤 구독을 시작한다 → 첫 방출은 이미 있는 기록 1건.
+      final achEmissions = <List<Achievement>>[];
+      final questEmissions = <List<Quest>>[];
+      final achSub = repo.watchAchievements('u').listen(achEmissions.add);
+      final questSub = repo.watchQuests('u').listen(questEmissions.add);
+      addTearDown(() async {
+        repo.dispose();
+        await achSub.cancel();
+        await questSub.cancel();
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(achEmissions, hasLength(1), reason: '구독 시 최초 방출');
+      expect(questEmissions, hasLength(1));
+
+      // 재완료(alreadyPaid) — 메모를 붙여 다시 완료한다.
+      final result = await repo.completeQuest('u', quest.id, memo: '이제 인증 메모');
+      await Future<void>.delayed(Duration.zero);
+
+      // 재완료라 지급은 없다(가드는 그대로).
+      expect(result, isNull, reason: 'alreadyPaid 경로여야 이 테스트가 의미 있다');
+      // 그러나 두 스트림 모두 **재방출**해야 한다(alreadyPaid 분기의 방출).
+      expect(achEmissions, hasLength(2), reason: '재완료도 성취 스트림을 재방출한다');
+      expect(questEmissions, hasLength(2), reason: '재완료도 퀘스트 스트림을 재방출한다');
+      // 기록 수는 그대로 1건(재완료는 기록을 늘리지 않는다).
+      expect(achEmissions.last, hasLength(1));
+    });
+
+    test('기록은 사용자별로 분리된다', () async {
+      final repo = InMemoryQuestRepository(
+        seedAchievements: {
+          'u': [ach('a', at: DateTime.utc(2026, 7, 20))],
+        },
+      );
+      addTearDown(repo.dispose);
+
+      expect(await repo.watchAchievements('u').first, hasLength(1));
+      expect(await repo.watchAchievements('다른uid').first, isEmpty);
+    });
+
+    test('failWith가 있으면 조회가 AppFailure를 던진다', () async {
+      final repo = InMemoryQuestRepository(failWith: const NetworkFailure());
+      addTearDown(repo.dispose);
+
+      await expectLater(
+        repo.watchAchievements('u').first,
+        throwsA(isA<NetworkFailure>()),
+      );
     });
   });
 

@@ -471,10 +471,16 @@ class _DecomposingView extends StatelessWidget {
                 ),
               ),
               AppSpacing.gapWSm,
-              Text(
-                'AI가 목표를 나누고 있어요',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              // 안내 문구는 접힐 수 있어야 한다. 인디케이터는 20px 고정이지만
+              // 문구는 글꼴 배율을 그대로 타서, Flexible이 없으면 배율 1.3·폭 360dp
+              // 부터 줄이 넘친다(E-4 D-1). 상한 안내 줄(quest_complete_dialog)과
+              // 같은 처방이다.
+              Flexible(
+                child: Text(
+                  'AI가 목표를 나누고 있어요',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],

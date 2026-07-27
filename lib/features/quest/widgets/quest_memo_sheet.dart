@@ -2,13 +2,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/proof_rules.dart';
 import '../../../core/constants/reward_rules.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/proof_image_picker.dart';
 import '../../../core/widgets/reward_chip.dart';
 import '../../../repositories/quest_repository.dart';
 
@@ -91,27 +91,14 @@ class _QuestMemoSheetState extends State<QuestMemoSheet> {
     super.dispose();
   }
 
-  /// 실제 갤러리 픽업 + 압축. [QuestMemoSheet.pickImage]가 없을 때의 기본값이다.
-  ///
-  /// image_picker는 **이미지 타입만** 돌려주므로 "잘못된 파일 형식 거부"가 자연히
-  /// 충족된다(별도 검증 불필요). 압축은 [kProofMaxWidth]·[kProofImageQuality]로
-  /// 시켜 Firestore 문서 리밋에 걸리지 않을 크기로 받는다.
-  Future<Uint8List?> _defaultPickImage() async {
-    final file = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      maxWidth: kProofMaxWidth.toDouble(),
-      imageQuality: kProofImageQuality,
-    );
-    if (file == null) return null; // 사용자가 픽업을 취소함.
-    return file.readAsBytes();
-  }
-
   Future<void> _attachPhoto() async {
     // 중복 실행 방지 — 픽업 중 다시 누르면 무시한다.
     if (_picking) return;
     setState(() => _picking = true);
     try {
-      final bytes = await (widget.pickImage ?? _defaultPickImage)();
+      // 기본 픽업은 공용 압축 파이프라인([pickCompressedProofImage])을 쓴다 —
+      // 보관함 기록 편집 시트와 같은 압축 규칙을 공유한다(중복 정의 방지).
+      final bytes = await (widget.pickImage ?? pickCompressedProofImage)();
       if (bytes == null) return; // 사용자가 픽업을 취소함 — 조용히 종료.
 
       final encoded = base64Encode(bytes);

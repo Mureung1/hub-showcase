@@ -4,7 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/constants/reward_rules.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/reward_chip.dart';
+import '../../../core/widgets/reward_showcase.dart';
 
 /// 연속 출석 보너스 연출.
 ///
@@ -55,6 +55,7 @@ class StreakBonusDialog extends StatelessWidget {
 
     return Dialog(
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
+      insetPadding: kCelebrationDialogInset,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -94,19 +95,8 @@ class StreakBonusDialog extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             AppSpacing.gapMd,
-            // 보상 표시 카드 — 코인 | XP 2분할 (screens.md "보상 표시 카드").
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.md,
-              ),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerLow,
-                borderRadius: AppRadius.mdAll,
-              ),
-              child: Center(child: RewardChip(reward: bonus, large: true)),
-            ),
+            // 보상 표시 카드 — 완료 연출과 **같은 카드**를 쓴다(screens.md).
+            RewardShowcase(reward: bonus),
             AppSpacing.gapSm,
             // 하루 코인 상한과 무관하다는 사실을 밝힌다(reward_rules.dart).
             // 상한을 이미 채운 날에도 전액이 들어오는데, 그걸 말해 주지 않으면

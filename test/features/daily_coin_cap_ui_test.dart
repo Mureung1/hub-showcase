@@ -151,8 +151,8 @@ void main() {
       WidgetTester tester, {
       required Reward reward,
       int cutCoin = 0,
-    }) {
-      return tester.pumpWidget(
+    }) async {
+      await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light,
           home: QuestCompleteDialog(
@@ -162,6 +162,8 @@ void main() {
           ),
         ),
       );
+      // 코인·XP 카운트업이 끝나야 최종 지급액(+2 등)이 표시된다(4주차 연출).
+      await tester.pumpAndSettle();
     }
 
     testWidgets('cutCoin이 0이면 안내가 없다', (tester) async {

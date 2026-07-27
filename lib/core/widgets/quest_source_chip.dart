@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../models/quest_source.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
 
 /// 퀘스트 출처 칩 — `✨ AI` / `✎ 직접`.
 ///
-/// 출처의 근거는 **`Quest.goalId` 하나다.** AI 분해로 생긴 퀘스트만 원본 목표를
-/// 가리키는 goalId를 갖고, 직접 등록한 퀘스트는 null이다(`quest.dart` 참고).
-/// 모델에 `source` 같은 필드를 새로 두지 않는 이유가 이것이다 — 이미 있는 사실을
-/// 두 곳에 적어 두면 둘이 어긋난다.
+/// 출처의 근거는 **[Quest.effectiveSource]다** (goalId가 아니다). 예전에는
+/// "goalId가 있으면 AI"로 추론했지만, 직접 등록이 목표(폴더) 단위가 되며 직접
+/// 등록 퀘스트도 goalId를 갖게 돼 그 추론이 직접 등록을 AI로 오표기했다(회귀 A).
+/// 출처는 goalId와 별개의 명시 신호([QuestSource])로 판정한다.
 ///
 /// **색은 블루(AI)와 중립 회색(직접)만 쓴다.** 노랑은 코인·보상 전용이라
 /// 출처 표시에 쓸 수 없고(`test/theme/color_role_test.dart`), 그린·에러는 각각
@@ -19,12 +20,13 @@ import '../theme/app_spacing.dart';
 /// [DifficultyPill]과 같은 형태(full 라운드 · labelSmall · 같은 패딩)를 유지해
 /// 두 칩이 나란히 놓였을 때 높이가 어긋나지 않게 한다.
 class QuestSourceChip extends StatelessWidget {
-  const QuestSourceChip({super.key, required this.goalId});
+  const QuestSourceChip({super.key, required this.source});
 
-  /// 원본 목표 ID. null이면 직접 등록.
-  final String? goalId;
+  /// 퀘스트 출처. 카드는 보통 [Quest.effectiveSource]를 넘긴다(구 문서 하위호환
+  /// 폴백까지 반영된 실효 값).
+  final QuestSource source;
 
-  bool get _isAi => goalId != null;
+  bool get _isAi => source == QuestSource.ai;
 
   @override
   Widget build(BuildContext context) {

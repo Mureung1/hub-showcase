@@ -9,6 +9,7 @@ import 'package:one_step/models/analytics_event.dart';
 import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/difficulty.dart';
 import 'package:one_step/models/quest.dart';
+import 'package:one_step/models/quest_source.dart';
 import 'package:one_step/providers/providers.dart';
 import 'package:one_step/repositories/analytics_repository.dart';
 import 'package:one_step/repositories/decompose/fake_quest_decomposer.dart';
@@ -174,6 +175,10 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(ok, isTrue);
+      // 회귀 A: AI 분해 등록은 퀘스트 문서에도 source=ai를 심는다(카드 출처 칩 근거).
+      final saved = await s.questRepo.fetchQuests(uid);
+      expect(saved, isNotEmpty);
+      expect(saved.every((q) => q.source == QuestSource.ai), isTrue);
       final registered = s.analytics
           .eventsOf(uid)
           .where((e) => e.type == AnalyticsEventType.questRegistered)
@@ -335,7 +340,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextFormField), '직접 만든 퀘스트');
+      // 첫 필드 = 목표명, 둘째 필드 = 하위 퀘스트 제목.
+      await tester.enterText(find.byType(TextField).first, '직접 만든 목표');
+      await tester.enterText(find.byType(TextField).at(1), '직접 만든 퀘스트');
       await tester.pumpAndSettle();
       await tester.tap(find.text('등록하기'));
       await tester.pumpAndSettle();

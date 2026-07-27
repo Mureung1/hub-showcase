@@ -1,6 +1,7 @@
 import '../core/constants/reward_rules.dart';
 import 'difficulty.dart';
 import 'quest.dart';
+import 'quest_source.dart';
 import 'quest_status.dart';
 
 /// **확정 전 초안 퀘스트.** AI가 분해해 준 결과이며, 아직 Firestore에 저장되지 않았다.
@@ -104,11 +105,16 @@ class QuestDraft {
   /// 원본과의 연결이 여기서 끊기면 지표를 계산할 근거가 사라진다.
   /// ⚠️ [redecomposeCount](저장 전 초안 세션의 depth)와 혼동하지 말 것 — 그쪽은
   /// 저장되지 않는 값이고, 이쪽은 저장 문서의 실제 계보다.
+  /// [source]는 이 초안이 **AI 분해 결과인지 직접 등록인지**를 저장 문서에 명시한다.
+  /// 기본값 [QuestSource.ai]는 이 경로의 주 사용처가 AI 분해([DecomposeNotifier])이기
+  /// 때문이며, 직접 등록([QuestCreateScreen])은 [QuestSource.manual]을 명시해 넘긴다.
+  /// goalId 유무로 출처를 추론하지 않는 이유는 [Quest.source] 주석 참고.
   Quest toQuest({
     required String id,
     required String? goalId,
     int? order,
     String? parentQuestId,
+    QuestSource source = QuestSource.ai,
   }) {
     return Quest(
       id: id,
@@ -118,6 +124,7 @@ class QuestDraft {
       order: order ?? this.order,
       goalId: goalId,
       parentQuestId: parentQuestId,
+      source: source,
       createdAt: DateTime.now(),
     );
   }

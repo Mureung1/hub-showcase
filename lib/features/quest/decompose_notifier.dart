@@ -7,6 +7,7 @@ import '../../core/error/app_failure.dart';
 import '../../models/analytics_event.dart';
 import '../../models/difficulty.dart';
 import '../../models/quest_draft.dart';
+import '../../models/quest_source.dart';
 import '../../providers/providers.dart';
 import '../../repositories/decompose/quest_templates.dart';
 
@@ -499,6 +500,8 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
               current.drafts,
               goalId: target.goalId,
               parentQuestId: target.questId,
+              // 재분해 자식도 AI 분해 산물이다(출처 칩 = AI).
+              source: QuestSource.ai,
             );
         // 재분해 등록 계측 — batch 성공 뒤(트랜잭션 밖). parentQuestId가 달린
         // 등록이라 questRegistered가 아니라 questRedecomposed다(「재분해 복귀율」 분자).
@@ -520,7 +523,13 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
           .createGoal(uid, current.goalText);
       await ref
           .read(questRepositoryProvider)
-          .createQuests(uid, current.drafts, goalId: goal.id);
+          .createQuests(
+            uid,
+            current.drafts,
+            goalId: goal.id,
+            // AI 도전 분해 산물이므로 출처는 AI(카드 출처 칩 = ✨AI).
+            source: QuestSource.ai,
+          );
       // AI 분해 등록 계측 — batch 성공 뒤(트랜잭션 밖). 재분해가 아닌 신규 등록이다.
       ref.logEvent(
         uid,

@@ -148,6 +148,122 @@ Set<String> descendantIds(List<Quest> quests, String rootId) {
   return result;
 }
 
+/// 완료 한 건이 일어난 뒤 **이번에 무엇이 자동완료·보관 처리되는가**의 결과.
+///
+/// 화면에 규칙을 흩지 않으려고 순수 함수([resolveArchiveOnComplete])가 계산한다 —
+/// `arrangeQuestTree`·`descendantIds`와 같은 이유다. 어떤 퀘스트를 done으로 밀고
+/// 어떤 퀘스트를 보관함으로 옮길지는 UI와 무관한 규칙이므로 여기서 정하고 검증한다.
+typedef ArchiveResolution = ({
+  /// 재분해 원본 자동완료 대상. 자식이 모두 done인 stuck 원본을 **보상 없이**
+  /// `setStatus(done)`으로 밀 ID들. (이미 자식 완료로 보상이 지급됐으므로 여기서
+  /// 다시 지급하면 안 된다 — 화면이 `completeQuest`가 아니라 `setStatus`로 쓴다.)
+  Set<String> autoCompleteIds,
+
+  /// 보관함으로 옮길(`archived = true`) ID들. 목표 폴더면 그 목표 전체,
+  /// 직접 등록이면 방금 완료한 낱개(+ 그로 인해 자동완료된 직접 원본).
+  Set<String> archiveIds,
+
+  /// 목표(폴더)가 이번에 통째로 완료·보관됐는가. **목표 완수 연출의 트리거**다.
+  /// 직접 등록 낱개 이동에는 이 연출이 없으므로 false다.
+  bool goalCompleted,
+});
+
+/// 퀘스트 하나([completedQuestId])가 방금 완료된 직후, 무엇을 자동완료·보관할지
+/// 계산한다. [quests]는 **보관된 것 포함 전체 목록**을 준다 — 직접 등록 재분해에서
+/// 먼저 완료돼 이미 보관된 자식도 원본 자동완료 판정의 근거이기 때문이다.
+///
+/// 규칙(사용자 결정):
+/// - **직접 등록(goalId == null)**: 방금 완료된 낱개를 보관한다. 그 완료로
+///   자동완료된 직접 원본이 있으면 함께 보관한다(done인 채 오늘 목록에 남지 않게).
+/// - **목표 소속(goalId != null)**: 그 목표의 **모든** 퀘스트(부모·자식)가 done이면
+///   목표 전체를 통째로 보관하고 `goalCompleted = true`. 하나라도 남으면 아무것도
+///   보관하지 않는다(완료한 낱개는 done인 채 폴더에 남아 진행률만 오른다).
+/// - **재분해 원본 자동완료**: 어떤 stuck 원본의 자식([descendantIds])이 **모두**
+///   done이면 그 원본도 done 대상이다. `descendantIds`·`_childrenByParent`를 재사용해
+///   고아·순환 방어를 그대로 물려받는다. 깊이 2까지 중첩될 수 있어(자식도 재분해된
+///   경우) 더 이상 바뀌지 않을 때까지 반복해 안쪽부터 차례로 밀어 올린다.
+///
+/// "완료됐다"의 근거는 `Quest.done`이며, 여기에 [completedQuestId](방금 완료)와
+/// 자동완료된 원본을 더한 **effective-done** 집합으로 판정한다. `archived`는 done
+/// 여부와 무관하다(보관된 퀘스트도 done이면 done으로 센다).
+ArchiveResolution resolveArchiveOnComplete(
+  List<Quest> quests,
+  String completedQuestId,
+) {
+  final byId = {for (final q in quests) q.id: q};
+
+  // effective-done: 이미 done + 방금 완료 + (아래에서) 자동완료된 원본.
+  final effectiveDone = <String>{
+    for (final q in quests)
+      if (q.done) q.id,
+    if (byId.containsKey(completedQuestId)) completedQuestId,
+  };
+
+  // 재분해 원본 자동완료 — 고정점 반복. 안쪽(자식의 자식) 원본이 먼저 자동완료돼
+  // effective-done에 들어가야 바깥(부모) 원본이 "자식 전부 done" 조건을 만족한다.
+  final autoComplete = <String>{};
+  var changed = true;
+  while (changed) {
+    changed = false;
+    for (final q in quests) {
+      if (!q.isStuck) continue; // 재분해 원본은 항상 stuck 상태다.
+      if (autoComplete.contains(q.id) || effectiveDone.contains(q.id)) continue;
+      final descendants = descendantIds(quests, q.id);
+      // 자식이 없는 stuck(재분해된 적 없음)은 자동완료 대상이 아니다.
+      if (descendants.isEmpty) continue;
+      if (descendants.every(effectiveDone.contains)) {
+        autoComplete.add(q.id);
+        effectiveDone.add(q.id);
+        changed = true;
+      }
+    }
+  }
+
+  final completed = byId[completedQuestId];
+  if (completed == null) {
+    // 목록에 없는 ID로 불렸다 — 자동완료만 반영하고 보관은 하지 않는다(방어).
+    return (
+      autoCompleteIds: autoComplete,
+      archiveIds: <String>{},
+      goalCompleted: false,
+    );
+  }
+
+  // 직접 등록: 방금 완료한 낱개 + 함께 자동완료된 직접 원본을 보관한다.
+  if (completed.goalId == null) {
+    final archiveIds = <String>{completedQuestId};
+    for (final id in autoComplete) {
+      if (byId[id]?.goalId == null) archiveIds.add(id);
+    }
+    return (
+      autoCompleteIds: autoComplete,
+      archiveIds: archiveIds,
+      goalCompleted: false,
+    );
+  }
+
+  // 목표 소속: 그 목표의 모든 퀘스트가 done일 때만 폴더째 보관한다.
+  final goalId = completed.goalId;
+  final inGoal = [
+    for (final q in quests)
+      if (q.goalId == goalId) q,
+  ];
+  final allDone =
+      inGoal.isNotEmpty && inGoal.every((q) => effectiveDone.contains(q.id));
+  if (!allDone) {
+    return (
+      autoCompleteIds: autoComplete,
+      archiveIds: <String>{},
+      goalCompleted: false,
+    );
+  }
+  return (
+    autoCompleteIds: autoComplete,
+    archiveIds: {for (final q in inGoal) q.id},
+    goalCompleted: true,
+  );
+}
+
 /// 큰 목표(폴더) 하나와 거기서 나온 퀘스트들.
 class QuestGroup {
   const QuestGroup({

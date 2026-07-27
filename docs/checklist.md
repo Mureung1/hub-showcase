@@ -47,11 +47,13 @@
 - [x] **Auth·Firestore·FCM** 3개 서비스 초기화 코드가 존재하고 콘솔에 프로젝트가 연결되어 있다.
       → `FirebaseBootstrap._warmUpServices()`. FCM 토큰 조회는 첫 프레임을 막지 않도록 await하지 않는다.
       > 알림 **권한 요청**은 부트스트랩에서 뺐다. 앱을 켜자마자 맥락 없이 푸시 권한을 물으면 거절률만 올라간다. 필요한 시점에 `requestNotificationPermission()`을 부른다.
-- [ ] **Storage** 서비스가 콘솔에 연결되어 있다.
-      → **보류**: Storage는 Blaze(종량제) 요금제가 필요한데 사용자가 결정을 미뤘다. 버킷이 프로비저닝되지 않았다.
+- [ ] **Storage** 서비스가 콘솔에 연결되어 있다. → **N/A — 미사용 확정**(보류 아님. 2026-07-27 결정)
+      → **원래 사유**: Storage는 Blaze(종량제) 요금제가 필요한데 사용자가 결정을 미뤘고, 버킷이 프로비저닝되지 않았다.
       `FirebaseStorage.instance`는 lazy 게터라 버킷이 없어도 예외를 던지지 않는다 — **즉 초기화 코드가 도는 것은 Storage 연결의 증거가 아니다.**
-      `storage.rules`는 작성해 뒀고 배포만 남았다. 3주차 사진 첨부 시점에 재판단한다.
-      미도입 시 인증 보너스는 메모만으로도 성립한다(plan.md: "사진 **또는** 메모").
+      → **재판단은 이미 끝났다(E-4 문서 감사 C-2)**: "3주차 사진 첨부 시점에 재판단한다"는 미래형으로 남아 있었으나, 그 재판단의 결론은 아래 「사진 첨부 기능」에 이미 기록돼 있다 — **Firestore base64 우회 채택**. 따라서 이 항목은 "보류"가 아니라 **"N/A — 미사용 확정"**이다.
+      → **코드 확인**: `firebase_storage`를 **읽기·쓰기에 쓰는 곳이 `lib` 전체에 0곳**이다. 남은 것은 `lib/core/firebase/firebase_bootstrap.dart:74`의 `FirebaseStorage.instance;` 워밍업 한 줄(+ `:5` import)과 `pubspec.yaml:58`의 `firebase_storage: ^13.0.0` 의존성뿐 — **dead dependency + dead warm-up**이다. `storage.rules`도 작성만 돼 있고 미배포다.
+      → **사용자 결정(2026-07-27): 의존성은 제거하지 않고 그대로 둔다.** 한글 경로 빌드가 예민한 프로젝트라(→ CLAUDE.md의 `overridePathCheck` 주의) 지금 걷어내면 빌드 설정이 흔들릴 위험이 있고 얻는 이득이 없다. **데모 후 정리 대상으로 기록만 남긴다.**
+      → 인증 보너스는 메모만으로도 성립하고(plan.md: "사진 **또는** 메모"), 사진도 base64 우회로 성립하므로 **기능 공백은 없다.**
 - [x] 네트워크가 없는 상태에서 초기화가 앱을 크래시시키지 않고 오류를 처리한다.
       → 3중 방어: ① 초기화 실패 시 오류 화면 ② Firestore 로컬 캐시(`persistenceEnabled`) ③ 캐시된 세션이 있으면 로그인이 네트워크를 건드리지 않음.
 - [x] 익명 또는 테스트 계정으로 로그인/세션 유지가 동작한다.
@@ -243,12 +245,14 @@
       → 구조적 보장: Firestore `watchQuests` 재구독으로 동일 데이터가 복원되고 저장 계층은 `fetchQuests`로 확인된다. ⚠️ 리터럴 앱 재시작 테스트는 없고 `watchQuests` 스트림 구조로 보장. 테스트: `test/features/quest_list_screen_test.dart`.
 
 ### 직접 퀘스트 등록 기능
-- [x] AI 없이 제목·난이도를 직접 입력해 등록할 수 있다.
-      → `QuestCreateScreen`(`lib/features/quest/quest_create_screen.dart`, TextFormField + SegmentedButton 난이도 기본 normal + `createQuest`), 라우트 `/quest/new`. 테스트: `test/features/quest_create_screen_test.dart`.
-- [x] 빈 제목·난이도 미선택 시 등록이 막힌다.
-      → `_canSubmit`가 빈 제목 시 등록 버튼을 비활성화하고, SegmentedButton은 미선택이 구조적으로 불가하며 기본값 normal. 테스트: `test/features/quest_create_screen_test.dart`(제목 비면 비활성 · 공백만 비활성 · 기본값 보통).
+- [x] AI 없이 목표명 + 하위 퀘스트 여러 개를 직접 입력해 등록할 수 있다.
+      → **[3단계-c 목표(폴더) 단위 재구성]** `QuestCreateScreen`(`lib/features/quest/quest_create_screen.dart`)이 제목 1개 단건 등록에서 **목표명(필수) + 퀘스트 행 여러 개**(제목·난이도·예상보상·행 삭제 + "퀘스트 추가")로 바뀌었다. 저장은 `createGoal(uid, 목표명)` → `createQuests(drafts, goalId:, source: QuestSource.manual)`로 **AI 분해와 공용 저장 경로**를 재사용한다(신규 저장 경로 없음). 등록된 퀘스트들은 같은 goalId로 폴더 묶인다. 계측 `AnalyticsEvent.questRegistered(source: manual, count)`. 라우트 `/quest/new`. 테스트: `test/features/quest_create_screen_test.dart` · `test/features/root_shell_test.dart`.
+- [x] 빈 목표명·퀘스트 0개·빈 제목이면 등록이 막힌다.
+      → 신규 등록은 목표를 강제한다. `_canSubmit`가 목표명 비었거나 퀘스트 0개거나 각 제목이 비면 등록 버튼을 비활성화하고, 제출 핸들러가 목표명 빈 값을 이중으로 가드한다(중복 탭 방어 포함). 난이도는 SegmentedButton 기본값 normal이라 미선택이 구조적으로 불가. 뮤테이션으로 가드 실효 확인. 테스트: `test/features/quest_create_screen_test.dart`.
 - [x] 등록 즉시 목록과 저장소에 반영된다.
-      → 등록은 `createQuest`로 저장하고 목록은 `watchQuests` 스트림으로 즉시 반영된다. 테스트: `test/features/quest_create_screen_test.dart`(fetchQuests로 저장 확인).
+      → 등록은 `createGoal` + `createQuests`(batch, 원자적)로 저장하고 목록은 `watchQuests` 스트림으로 즉시 반영된다. 테스트: `test/features/quest_create_screen_test.dart`.
+      → **제약(정직 기록)**: 신규 폴더 등록 경로(`QuestDraft`/`createQuests`)가 마감일을 담지 않아 **deadline(마감일) 입력이 제거됐다**. verification 판정상 마감일은 화면 어디에도 표시되지 않던 write-only 필드라 사용자 가시 회귀는 아니지만, 저장 스키마의 유일한 입력구가 사라진 사실은 기록으로 남긴다(향후 마감일 기능 시 재도입 판단). Firestore `createQuests` batch 경로는 자동 테스트 N/A(`fake_cloud_firestore` 미도입) — InMemory와 같은 계약.
+      → **검증 증거**: `flutter analyze` No issues found · `flutter test` 691건 전부 통과(재구성 착수 기준선 674건) · verification-agent 9/9 PASS.
 
 ### 큰 목표 단위 그룹 조회
 - [x] 퀘스트가 `goalId` 기준으로 큰 목표(폴더) 단위로 묶여 표시된다.
@@ -274,7 +278,7 @@
 - [x] 완료된 퀘스트는 미리보기에서 제외된다(기존 규칙 회귀 없음).
       → 테스트: `test/features/home_screen_test.dart`(완료된 최신 퀘스트 제외 · 전부 완료 시 EmptyView).
 - [x] AI가 분해한 퀘스트와 직접 등록한 퀘스트가 시각적으로 구분된다.
-      → `QuestSourceChip`(`lib/core/widgets/quest_source_chip.dart`)이 `Quest.goalId` 유무만을 근거로 구분한다(모델에 새 필드를 추가하지 않았다). AI = 블루(기존 AI=블루 규칙과 일치), 직접 등록 = 회색 중립. `QuestCard`(`lib/core/widgets/quest_card.dart`)가 난이도 pill과 함께 `Wrap`에 담아 홈·목록 양쪽에 자동 반영된다. 카드 좌측 accent 보더는 **난이도 색 그대로 유지**했다 — 출처를 거기 얹으면 두 의미가 한 자리에서 겹친다. 테스트: `test/features/quest_source_chip_test.dart` · `test/features/quest_list_screen_test.dart` · `test/features/home_screen_test.dart`.
+      → **[3단계-c 재구성으로 판정 근거 교체]** 예전엔 `goalId` 유무로 출처를 추론했으나, 직접 등록이 목표(폴더) 단위가 되며 직접 등록 퀘스트도 goalId를 갖게 돼 이 방식이 직접 등록을 AI로 오표기하는 회귀(회귀 A)가 났다. 이제 출처는 goalId와 별개의 **명시 필드 `Quest.source`(`enum QuestSource {ai, manual}`, `lib/models/quest_source.dart`)**로 판정한다. `QuestSourceChip`(`lib/core/widgets/quest_source_chip.dart`)이 `quest.effectiveSource`(`source ?? (goalId != null ? ai : manual)` 하위호환 폴백, `lib/models/quest.dart`)로 AI = 블루 / 직접 = 회색 중립을 가른다. 직접 등록이 목표를 갖게 돼도 manual로 저장돼 "직접" 칩으로 표시된다. **구 문서(source 필드 없음)는 폴백으로 기존과 동일하게 보인다**(goalId 있으면 AI, 없으면 직접). `QuestCard`(`lib/core/widgets/quest_card.dart`)가 난이도 pill과 함께 `Wrap`에 담아 홈·목록 양쪽에 자동 반영. 카드 좌측 accent 보더는 **난이도 색 그대로 유지**했다. 뮤테이션(폴백 훼손·판정 뒤집기·`createQuests` source 무시·`isAiGenerated` 뒤집기)으로 실효 확인. 테스트: `test/models/quest_test.dart`(source 그룹) · `test/features/quest_source_chip_test.dart`(회귀 A 그룹) · `test/features/quest_list_screen_test.dart` · `test/features/home_screen_test.dart`.
 - [x] 다크 모드에서도 출처 칩의 대비가 유지된다.
       → 라이트는 `secondary` 틴트 + `secondary` 전경이지만, 다크에서 그대로 쓰면 파란 글자가 어두운 카드에 묻혀 `secondaryContainer` + `onSecondaryContainer`로 뒤집었다(색 역할은 블루 유지). 테스트가 전경 휘도 > 배경 휘도 + 0.2를 단언해 강제한다: `test/features/quest_source_chip_test.dart`.
 - [x] 색 역할 규칙(노랑 = 코인·보상 전용)을 지킨다.
@@ -354,6 +358,49 @@
 - [x] 저장 실패 시 오류 처리되고 보상 지급과 정합성이 유지된다.
       → `users/{uid}/achievements`에 **최초 지급 시에만** 1건(questId·questTitle·coin·xp·memo·verified·completedAt). 보상 지급과 같은 트랜잭션이라 "보상은 줬는데 기록이 없다"가 불가능하고, 재완료 시 기록도 중복되지 않는다. 모델 `lib/models/achievement.dart`, 테스트 `test/models/achievement_test.dart`.
 
+### 성취 보관함 화면
+> 상점 화면처럼 checklist에 항목이 없던 화면이라 신규 섹션으로 승격했다. **사용자 피드백을 받아 achievements 타임라인 → quest 기반 폴더뷰로 재작성**했다("오늘의 퀘스트 = 할 일, 보관함 = 끝낸 일" 구조). verification-agent PASS.
+- [x] 완료한 도전이 보관함(`/storage`)에 표시된다.
+      → 보관함은 `archivedGroupsProvider`(`archived == true` 퀘스트) 기반 **폴더 그룹뷰**다. 오늘의 퀘스트와 **같은 `groupQuestsByGoal`·`GoalGroupSection`을 재사용**하되 완료 토글 없는 **보기 전용 카드**다(`storage_screen.dart`가 `archivedGroupsProvider` → `groupQuestsByGoal` → `GoalGroupSection`으로 렌더). 화면 `lib/features/storage/storage_screen.dart`는 폴더뷰로 **재작성**됐다. achievements 타임라인 방식(`watchAchievements` 경로)은 삭제하지 않고 **3단계 상세 시트용으로 남겨뒀다**. 테스트: `test/features/storage_screen_test.dart`.
+- [x] 완료 수·연속 출석 요약이 표시된다.
+      → `storage_screen.dart`의 `_SummaryCard`가 2분할 stat으로 완료 수·연속을 표시한다(폴더뷰 재작성 후에도 유지). 완료 수 = 보관된 퀘스트 총합(`archivedGroupsProvider` 그룹의 자식 합 — 폴더 자식·자동완료 원본 포함), 연속 = `currentUserProvider`의 `user.streak`. (환생은 4주차 「환생(프레스티지)」로 구현됐고, 환생 표식·등급은 홈 캐릭터 카드에 두어 보관함 요약은 완료 수·연속 2분할 stat으로 유지한다.) 테스트: `test/features/storage_screen_test.dart`.
+- [x] 빈 상태·로딩·오류가 각각 처리된다.
+      → `storage_screen.dart`의 `archivedGroupsProvider.when`이 로딩→`_StorageSkeleton`, 오류→`ErrorView`, 비었을 때→`EmptyView`를 각각 그린다. 스트릭(`currentUserProvider`)은 못 읽으면 0으로 떨어뜨려 폴더뷰는 그대로 보인다. 테스트: `test/features/storage_screen_test.dart`.
+- [x] 인증(메모/사진)한 도전은 뱃지로 구분된다.
+      → **폴더뷰 재작성 후 목록 카드(`QuestCard`)는 메모/사진 뱃지를 더 이상 그리지 않는다.** 인증 내용(메모 전문·인증 사진)은 이제 카드를 탭해 상세 시트에서 본다(아래 「완료 기록 상세 조회」로 연결). 사진은 여전히 목록에서 미리 읽지 않고 상세를 열 때만 `fetchProof`로 조회한다(proof 문서가 questId당 별도 — 3주차 문서 분리 이유). ⚠️ **항목 문구('뱃지로 구분된다')는 타임라인 시절 표현이라 현행 폴더뷰와 어긋난다 — 문구 재검토 필요**(체크 상태는 임의로 바꾸지 않음). 테스트: `test/features/storage_screen_test.dart`·`test/features/achievement_detail_sheet_test.dart`.
+      > **E-4 문서 감사 C-3에서 재확인됨.** 이 어긋남은 **이미 위 ⚠️로 자인해 둔 상태**라 은폐가 아니다. **항목 문구는 일부러 그대로 둔다** — 구현에 맞춰 요구사항 문장을 고치면 "못 지킨 요구"와 "의도적으로 바꾼 설계"가 구분되지 않는다. 실제로는 **뱃지(요약 신호)를 상세 시트(전문 열람)로 대체한 설계 변경**이며, 사용자 피드백에 따른 폴더뷰 재작성의 결과다. 표시 방식을 확정할 때 이 항목 문구를 함께 정리한다.
+
+### 완료 기록 상세 조회
+> checklist에 항목이 없던 흐름이라 신규 섹션으로 승격했다(3단계-a). 3단계-a는 **보기 전용**이었고(verification-agent 10/10 PASS), **3단계-b에서 메모·사진 편집이 붙어 더는 보기 전용이 아니다**(같은 시트에 "수정" 버튼 → 편집 모드, verification-agent 7/7 PASS). **태그는 다음 조각(3단계-c)** 대기.
+- [x] 보관함 카드를 탭하면 완료 당시 정보를 상세로 볼 수 있다.
+      → `AchievementDetailSheet`(신규 `lib/features/storage/widgets/achievement_detail_sheet.dart`)가 제목·난이도(`DifficultyPill`)·보상(`RewardChip`)·완료 날짜(KST)·메모 전문·인증 사진을 보여준다. **보기 전용**이라 수정 버튼이 없다. `storage_screen.dart`의 `_openDetail`이 카드 탭에서 `showAchievementDetailSheet`를 연다. 테스트: `test/features/achievement_detail_sheet_test.dart`·`test/features/storage_screen_test.dart`(탭→시트 열림).
+- [x] 인증 사진은 목록에서 미리 읽지 않고 상세를 열 때만 조회한다.
+      → `fetchProof(uid, questId)` 신설(인터페이스 `lib/repositories/quest_repository.dart` + Firestore·InMemory 2구현). 사진 base64가 `proofDoc/{questId}`에 있어 목록에서 N번 읽으면 비싸다(3주차 문서 분리 이유). 상세 시트가 `loadProof` 클로저로 lazy 조회한다(시트는 저장소·provider를 모름). 없으면 null(에러 아님), 저장소 실패 시 AppFailure, 깨진 base64는 "사진 없음"으로 폴백해 시트가 죽지 않는다. 테스트: `test/repositories/in_memory_quest_repository_test.dart`(fetchProof). ⚠️ Firestore `fetchProof`(특히 깨진 문서 분기)는 `fake_cloud_firestore` 미도입으로 자동 테스트 N/A — InMemory와 같은 계약으로 검증.
+- [x] 완료 날짜가 KST 기준으로 표시되고, 사진 로딩·없음·실패가 각각 처리된다.
+      → `_formatKstDate`가 `kKstOffset`(단일 정의처)를 인용해 UTC를 KST 벽시계로 변환한다(자정 근처 완료의 하루 어긋남 방지). 사진은 **로딩(스피너)·있음(썸네일)·없음/실패("사진 없음" 플레이스홀더) 3경로**를 각각 그리고, 조회 실패에도 시트가 생존한다. 테스트: `test/features/achievement_detail_sheet_test.dart`(KST 날짜·사진 3경로·깨진 base64 방어).
+      > **근거 문장 갱신(E-4 문서 감사 C-1)**: 예전 근거는 "`_ProofPhoto`의 `FutureBuilder`가 3경로를 그린다"였으나 **코드 현실과 달랐다** — `lib/features/storage/widgets/achievement_detail_sheet.dart`에 `_ProofPhoto`도 `FutureBuilder`도 **없다**. 3단계-b 편집 모드 작업에서 `initState` + `_photoLoading` 상태(`:84,121,128`) + `_photoView()`(`:311-322`) / `_PhotoFrame`(`:520`) / `_PhotoPlaceholder`(`:535`) / `_LoadingSpinner`(`:572`) 구조로 리팩터링됐다(편집 모드가 사진을 교체·제거하므로 `Future` 한 번 물고 끝나는 `FutureBuilder`로는 갱신을 반영할 수 없다). **동작(3경로 방어)은 그대로라 `[x]` 자체는 유효하므로 체크는 유지하고 근거 문장만 현행 구조로 고쳤다.**
+- [x] 보관함 상세 시트에서 완료 기록의 메모·사진을 수정할 수 있다. (3단계-b)
+      → 보기 전용 시트(3-a)에 "수정" 버튼 → 편집 모드(메모 `TextField` + 사진 교체/제거 + 저장/취소). 같은 시트 안에서 보기↔편집 전환. `lib/features/storage/widgets/achievement_detail_sheet.dart` 확장(`_editing`/`_saving` 상태). 시트는 저장소·uid·image_picker를 직접 모르고 화면(`storage_screen._openDetail`)이 콜백 클로저(`onSaveMemo`/`onSavePhoto`/`pickImage`)로 주입한다(3-a `loadProof`와 같은 경계). 테스트: `test/features/achievement_detail_sheet_test.dart`.
+- [x] 인증 사진은 교체와 제거가 모두 되고, 독립 갱신 경로로 저장된다. (3단계-b)
+      → `updateProof(uid, questId, base64?)` 신설(인터페이스 `lib/repositories/quest_repository.dart` L207 + Firestore·InMemory 2구현). **값이면 교체, null이면 삭제**. 사진은 `completeQuest` 트랜잭션 안에서만 쓰이던 것을 완료와 무관한 독립 쓰기로 뺐다. 크기 상한 `ensureProofWithinLimit`(700KiB) 재사용. image_picker 압축 파이프라인은 `lib/core/utils/proof_image_picker.dart`로 공용 추출해 완료 시 메모 시트(`quest_memo_sheet.dart`)와 공유. 테스트: `test/repositories/in_memory_quest_repository_test.dart`. ⚠️ Firestore `updateProof`는 `fake_cloud_firestore` 미도입으로 자동 테스트 N/A — InMemory와 같은 계약으로 검증.
+- [x] 수정은 보상(코인·XP·난이도)을 건드리지 않는다. (3단계-b)
+      → 메모는 `updateQuest`, 사진은 `updateProof`. 둘 다 완료·보상 트랜잭션 밖의 별도 쓰기다. `completeQuest`·`rewardedAt`·지급 이력·코인·XP 전부 불변(verification이 diff로 확인 — `completeQuest` 지급 블록 무변경). 뮤테이션(보상 코인 불변 단언 뒤집기)으로 실패 확인. **정책 구분(중요)**: B-5b "완료 퀘스트 수정 메뉴 숨김"은 **퀘스트 목록에서 제목·난이도를 못 고치게 한 것**(재완료 보상 유효화 차단)이고, 여기는 **보관함 기록의 메모·사진**으로 **보상 경제를 안 건드려** 별개다(`achievement_detail_sheet.dart` 주석에 명시).
+- [x] 빈 메모로 저장하면 메모가 실제로 지워진다. (3단계-b)
+      → `copyWith(memo: null)`은 null 병합 탓에 메모를 못 지운다. Firestore `updateQuest`가 `'memo'`를 명시적으로 쓰도록(L161) 조정해 비우기를 문서에 반영(값 있을 땐 `toJson`과 같아 무해, B-5b 제목·난이도 수정엔 회귀 없음). 메모(`updateQuest`)와 사진(`updateProof`)은 별도 쓰기라 원자성이 필수가 아니다(부가 정보) — 하나 실패 시 스낵바+편집 유지. 테스트: `test/features/achievement_detail_sheet_test.dart`.
+      → **검증 증거(3단계-b 완료 시점)**: `flutter analyze` No issues found · `flutter test` **674건 전부 통과**(3-b 착수 기준선 661건) · `test/theme/color_role_test.dart` 무수정 통과 · verification-agent **7/7 PASS**. 뮤테이션: `updateProof` null 삭제(2건)·취소 시 커밋(1건)·사진 제거 null 미전달(1건)·보상 코인 불변 뒤집기(1건)가 각각 해당 테스트를 실제로 실패시킴.
+
+### 완료 시 보관함 이동
+> checklist에 항목이 없던 흐름이라 신규 섹션으로 승격했다("오늘의 퀘스트 = 할 일, 보관함 = 끝낸 일"). verification-agent PASS. **보관함 이동은 단방향**이다(완료 실수 복구는 이번 범위 밖 — 3단계 이후 판단).
+- [x] 완료한 퀘스트가 오늘의 퀘스트 목록에서 사라지고 보관함으로 이동한다.
+      → `Quest.archived` 플래그 도입. 완료 즉시 이동(단방향). 오늘의 퀘스트는 `archived == false`, 보관함은 `archived == true`, 홈 미리보기도 `archived` 제외. 저장소 `archiveQuests`(원자적, 스트림 1회 방출)를 2구현에 신설(`lib/repositories/quest_repository.dart`). **완료·보상 트랜잭션(`completeQuest`)은 안 건드리고 완료 성공 뒤 별도 쓰기로 처리**(지급 오염 금지 — verification이 diff상 주석만 변경, 지급 로직 무변경 확인). 테스트: `test/models/quest_archive_test.dart` · `test/providers/quest_group_providers_test.dart` · `test/features/quest_list_screen_test.dart`.
+- [x] 목표(폴더)는 그 안의 퀘스트가 전부 완료돼야 통째로 이동하고, goalId 없는 낱개는 완료 즉시 이동한다.
+      → 순수 함수 `resolveArchiveOnComplete`(`lib/models/quest_group.dart`)가 판정한다. 목표는 자식이 `every` done일 때만, `goalId` 없는 퀘스트는 낱개로 이동. 고아·순환 방어는 `descendantIds`·`_childrenByParent`를 재사용한다. 뮤테이션(전부완료→일부완료로 느슨히)으로 7건 실패 확인.
+      → **[3단계-c 재구성 반영]** 이동 규칙은 **goalId 유무로 갈린다.** 신규 직접 등록은 이제 목표(폴더)를 가지므로 **폴더 규칙**(형제 전부 완료 시 통째 이동)을 탄다. "완료 즉시 낱개 이동"은 이제 **구 goalId-null 데이터(구 낱개 직접 등록)에만** 적용된다 — 신규 직접 등록과 구 낱개의 이동 규칙이 다르다.
+- [x] 재분해한 목표는 자식이 모두 완료되면 원본(stuck)도 자동 완료된 뒤 함께 이동한다.
+      → 자동완료는 `setStatus(done)`로 **상태만 바꾸고 보상은 없다**(자식 완료로 이미 지급됨, B-5 "자동 완료로 안 누른 지급 금지" 준수). 뮤테이션(`setStatus`→`completeQuest`)으로 원본 `rewardedAt`이 찍혀 실패 확인.
+- [x] 목표 전체를 완수하면 축하 연출이 표시된다.
+      → `goal_complete_dialog.dart`(신규, `lib/features/quest/widgets/`)가 "축하합니다, 목표를 이루었어요 / 보관함에서 확인해보세요"를 표시. **목표(폴더) 완수 시에만** 뜨고 직접 등록 낱개엔 없다. 레벨업 연출의 시각 언어(그린)를 재사용. 테스트: `test/features/quest_list_screen_test.dart`.
+
 ### 중복 완료 방지 처리
 - [x] 이미 완료된 퀘스트를 다시 완료해도 **코인·XP가 재지급되지 않는다**.
 - [x] 완료 요청 중복(빠른 연타/재시도)에서 지급이 정확히 1회만 발생한다.
@@ -418,8 +465,8 @@
 ### 캐릭터 기본 렌더링
 - [x] 캐릭터가 정상 렌더된다 — **도트아트 자산 완성 전에는 이모지 목업 렌더도 PASS 조건**이며, 자산 로드 실패 시 대체 표시(이모지)가 나온다.
       → `_CharacterStage(emoji: stage.emoji)`가 진화 단계별 이모지를 목업으로 렌더한다(도트아트 자산 전까지 PASS 조건, `lib/features/home/widgets/character_card.dart`). 테스트 `test/features/home_screen_test.dart`.
-- [ ] 장착(equipped) 아이템이 캐릭터에 반영된다.
-      → 미확인: 상점·인벤토리·장착 기능이 아직 미구현이라 이 항목의 근거 없음.
+- [x] 장착(equipped) 아이템이 캐릭터에 반영된다.
+      → B-6로 해소. `character_card.dart`가 `AppUser.equipped`를 읽어 `background` 슬롯=배경 틴트, `aura` 슬롯=오라 이모지로 반영한다(캐릭터가 이모지 목업이라 이 둘로 표현). 고아 방어: `itemById`가 null이거나 슬롯이 어긋나면 장착 없음으로 렌더(깨진 장착이 카드를 안 죽인다, `lib/core/constants/shop_items.dart`). `equipped`가 user 문서에 영속되고 홈이 `watchUser` 구독이라 재실행 후 유지는 구조로 보장. 테스트 `test/features/character_card_equip_test.dart`(오라 미반영 뮤테이션이 실패시킴).
 
 ### 레벨업 처리
 - [x] XP가 임계값 도달 시 레벨이 오르고 남은 XP가 이월된다.
@@ -438,22 +485,70 @@
       → `_CoinBanner(coin: user.coin)`(`lib/features/home/widgets/character_card.dart`). coin은 `completeQuest`에서 `FieldValue.increment`로 누적되고, 홈은 `watchUser` 스트림 구독이라 지급 커밋 즉시 갱신된다. 코인 배너는 노랑 허용 위젯이며 `test/theme/color_role_test.dart`가 허용 목록 밖 노랑을 FAIL 처리한다.
 
 ### 상점 화면 기본 레이아웃(최소 치장 아이템 1종)
-- [ ] 최소 1종의 치장 아이템과 가격이 표시된다.
-- [ ] 보유 코인 부족 시 구매 버튼이 비활성 또는 안내가 표시된다.
+- [x] 최소 1종의 치장 아이템과 가격이 표시된다.
+      → `lib/features/shop/shop_screen.dart`(신규, `/shop` 라우트가 실제 화면 — `lib/router.dart`). 아이템 카탈로그는 **코드 상수** `lib/core/constants/shop_items.dart`(배경 3 + 오라 2 = 5종, 가격 10/30/50/40/60). MVP라 Firestore items 컬렉션이 아닌 코드 상수 채택(`reward_rules`·`growth_rules`와 같은 관례, 콘솔 수동 입력·테스트 사각지대 회피 / 운영 중 변경은 코드 배포 필요). 테스트 `test/core/shop_items_test.dart`·`test/features/shop_screen_test.dart`.
+- [x] 보유 코인 부족 시 구매 버튼이 비활성 또는 안내가 표시된다.
+      → 5상태 버튼 분기(미보유+충분→구매 / 미보유+부족→비활성 "코인이 부족해요" / 보유+미장착→장착 / 보유+장착중→"장착 중"+해제). `shop_screen.dart` 부족 분기는 `onPressed: null`+안내 텍스트. 테스트 `test/features/shop_screen_test.dart`.
 
 ### 코인으로 치장 아이템 구매 및 적용
-- [ ] 구매 시 코인이 정확히 차감되고 `inventory`에 아이템이 추가된다.
-- [ ] 구매·차감이 트랜잭션으로 처리되어 코인만 빠지고 아이템이 없는 상태가 발생하지 않는다.
-- [ ] 이미 보유한 아이템 중복 구매가 막히거나 정의된 규칙대로 처리된다.
-- [ ] 장착 시 캐릭터에 반영되고 재실행 후에도 유지된다.
+- [x] 구매 시 코인이 정확히 차감되고 `inventory`에 아이템이 추가된다.
+      → `purchaseItem(uid, itemId, price)` 신설(저장소 2구현 — `lib/repositories/firestore/firestore_user_repository.dart`·`lib/repositories/memory/in_memory_user_repository.dart`). `inventoryItem` 경로 추가, `inventoryProvider` 스트림. 테스트 `test/repositories/purchase_item_test.dart`.
+- [x] 구매·차감이 트랜잭션으로 처리되어 코인만 빠지고 아이템이 없는 상태가 발생하지 않는다.
+      → Firestore `runTransaction`(read-before-write): coin 확인 → 차감 + inventory 문서 생성 원자적. **잔액 부족이면 write 없이 AppFailure**(코인 불변 + inventory 미추가), InMemory도 동일 판정. 뮤테이션(잔액 부족 가드 제거)으로 2건 실패 확인. Firestore 트랜잭션 경로 자동 테스트는 N/A(`fake_cloud_firestore` 미도입) — InMemory와 동일 계약으로 맞추고 실제 확인은 에뮬레이터 몫(기존 `completeQuest`와 같은 한계).
+- [x] 이미 보유한 아이템 중복 구매가 막히거나 정의된 규칙대로 처리된다.
+      → 이미 보유면 코인 재차감 없이 조용히 통과(멱등, `rewardedAt` 가드와 같은 정신). 재구매 차단 근거는 읽어 온 inventory 문서(ID=itemId) 존재 여부. 뮤테이션(중복 가드 제거)으로 코인이 2회 차감돼 1건 실패 확인.
+- [x] 장착 시 캐릭터에 반영되고 재실행 후에도 유지된다.
+      → `character_card.dart`가 `AppUser.equipped`를 읽어 `background` 슬롯=배경 틴트, `aura` 슬롯=오라 이모지로 반영(캐릭터가 이모지 목업이라 이 둘로 표현, 도트아트 자산 나오면 교체 예정). `equipped`가 user 문서에 영속되고 홈이 `watchUser` 구독이라 재실행 후 유지는 구조로 보장. 고아 방어: `itemById`가 null이거나 슬롯이 어긋나면 장착 없음으로 렌더. 뮤테이션(오라 미반영)으로 실패 확인. 테스트 `test/features/character_card_equip_test.dart`·`test/repositories/purchase_item_test.dart`.
+
+### 프로필(MY) 화면
+- [x] 프로필 화면에 완료 통계가 표시된다.
+      → `lib/features/profile/profile_screen.dart`(신규 — `/profile` 라우트가 placeholder에서 실제 `ProfileScreen`으로 교체됨, `lib/router.dart:92`). 완료한 도전 수는 `achievementsProvider`의 `.length`(보관함과 같은 소스라 두 화면의 "해낸 도전 수"가 어긋나지 않음), 현재 연속 출석은 `user.streak`(0이면 "아직 없음"), 가입일은 `createdAt`을 KST `yyyy년 M월 d일`로 렌더(null이면 통째 생략). 로딩(`_StatsSkeleton`)·오류(`ErrorView`+재시도)·빈(완료 0을 EmptyView가 아니라 "0"으로) 5상태 처리. 완료 수는 achievements 스트림과 연동돼 기록이 늘면 증가한다. 노랑 규칙 준수(스트릭이 요약 통계라 그린/중립, `color_role_test` 무수정 통과). 테스트: `test/features/profile_screen_test.dart`(11건, 완료 수 상수화·스트릭 상수화 뮤테이션이 실패시킴).
+- [x] 설정에 계정 연동 자리가 준비돼 있다(실제 OAuth는 향후).
+      → `_SettingsSection`이 "Google 계정 연동"을 **준비 중** 배지로 두고 탭 시 "계정 연동은 곧 지원돼요." 스낵바로 안내(실제 OAuth가 아직 미구현이라 기능을 흉내내지 않고 정직하게 "준비 중" 비활성으로 둔 방식). **로그아웃 버튼은 두지 않았다** — 익명 로그인이라 로그아웃하면 진행상황이 소실되기 때문(테스트가 버튼 부재를 회귀 방어로 못박음, 로그아웃 버튼 추가 뮤테이션 1건·탭 안내 제거 뮤테이션 1건 실패 확인). 테스트: `test/features/profile_screen_test.dart`.
+
+> **향후 계획(미구현)**: OAuth 계정 연동은 아직 구현하지 않았다. 이번 프로필은 진입점 **자리만** 준비했고, `AuthRepository`에 연동 메서드는 없다. 검증이 끝나면 익명↔Google 계정 연동(및 그때 signOut UI 재판단)을 추가할 계획이다.
+>
+> **검증 증거**: `flutter analyze` No issues found · `flutter test` **702건 전부 통과**(프로필 착수 기준선 691건) · `test/theme/color_role_test.dart` 무수정 통과 · verification-agent PASS. 변경 범위는 프로필+라우터+테스트로 한정.
 
 ### 퀘스트 완료 연출
-- [ ] 완료 시 애니메이션/피드백이 재생되고 실제 상태 변화와 동기화된다.
-- [ ] 연출 도중 화면 이탈·중복 완료가 안전하게 처리된다.
+- [x] 완료 시 애니메이션/피드백이 재생되고 실제 상태 변화와 동기화된다.
+      → `quest_complete_dialog.dart`가 트로피 scale/fade 등장 + 코인·XP 카운트업(0→실지급액) 애니메이션. 표시값은 저장소가 준 실지급액 그대로다(난이도 재계산 아님, 절삭돼도 정확). 완료 후 `user.level`이 저장소에 반영됨을 UI 테스트가 단언. 뮤테이션(카운트업 최종값 0 고정)으로 5건 실패 확인. 테스트: `test/features/growth_dialogs_test.dart` · `test/features/quest_list_screen_test.dart`
+- [x] 연출 도중 화면 이탈·중복 완료가 안전하게 처리된다.
+      → 완료 트랜잭션이 다이얼로그 **전에** 끝나므로 연출은 순수 표시용(탭하면 즉시 종료해도 보상은 이미 지급). 순차 연출(완료→레벨업→진화) 각 사이 `mounted` 체크로 화면 이탈 크래시 방지. `_pending`·`_completing` 잠금이 중복 완료를 막는다. 재완료(result==null)면 어떤 연출도 뜨지 않고 "이미 완료" 스낵바 경로 유지.
 
 ### 보상 획득 연출
-- [ ] 지급된 코인·XP 값이 연출에 정확히 반영된다.
-- [ ] 연출 생략(빠른 진행) 시에도 보상은 정상 지급된다.
+- [x] 지급된 코인·XP 값이 연출에 정확히 반영된다.
+      → 카운트업 최종값이 저장소가 준 실지급 Reward(`.coin`/`.xp`). `cutCoin`도 저장소가 계산해 실어 주고 화면은 `result.cutCoin`을 그대로 표시(재계산 제거). 하루 상한 절삭이 일어나도 표시=실지급이 어긋나지 않는다. 테스트: `test/features/daily_coin_cap_ui_test.dart`(reward.coin=2, cutCoin=8) · `growth_dialogs_test.dart`
+- [x] 연출 생략(빠른 진행) 시에도 보상은 정상 지급된다.
+      → 지급은 `completeQuest` 트랜잭션에서 끝나고 다이얼로그는 그 뒤에 뜬다. 탭 조기 종료는 애니메이션만 끝으로 점프시킬 뿐 지급에 관여하지 않는다. 구조로 보장.
+
+### 레벨업·진화 연출
+- [x] 레벨업 시 연출이 뜨고 다단계 상승도 정확히 표시된다.
+      → `completeQuest` 반환을 `Reward?` → `CompleteResult?`로 확장해(레벨/진화 변화를 실어) 화면이 완료 시점에 레벨업 여부를 안다. `level_up_dialog.dart`가 `Lv.{from} → Lv.{to}`를 표시하고, 다단계 상승(1→6 등)도 from→to로 자연 표현된다. 그린 계열(성장·완료), `streak_bonus_dialog` 시각 언어 재사용. **레벨업이 없으면 연출이 뜨지 않는다**(뮤테이션 leveledUp=>true로 2건 실패 확인). 테스트: `test/features/growth_dialogs_test.dart` · `test/features/quest_list_screen_test.dart`
+- [x] 진화 단계 도달 시 진화 연출이 뜨고, 진화 없으면 뜨지 않는다.
+      → 진화 경계(Lv9 알→Lv10 참새 등)를 넘으면 `evolve_dialog.dart`가 이전→새 단계 이모지 전환 강조 + "{단계}로 진화했어요"를 표시한다. 완료→(레벨업)→(진화) 순차. **진화가 없으면 연출이 뜨지 않는다**(뮤테이션 evolved=>true로 5건 실패 확인 — 같은 단계 내 상승·다단계도 오탐 없음). 이모지 목업 전제 유지.
+
+> **제약(정직)**: Firestore `completeQuest` 트랜잭션 경로는 자동 테스트 N/A(`fake_cloud_firestore` 미도입). InMemory와 동일 계약으로 맞췄고 반환 타입 확장(`Reward?`→`CompleteResult?`)이 지급·가드 로직을 건드리지 않았음을 diff 리뷰로 확인 — 기존 `completeQuest`와 같은 한계이며 이번 변경이 새 결함을 도입한 게 아니다. 캐릭터·진화 연출은 이모지 목업 전제(도트아트 자산 나오면 교체).
+
+### 환생(프레스티지) 및 캐릭터 계열 해금
+> checklist에 항목이 없던 기능이라 신규 섹션으로 승격했다(그동안 미구현). 기획서(docx) 정본대로 Lv.50 도달 시 환생 → 레벨만 1로 초기화, 코인·아이템·성취기록·환생표식은 영구 유지("손해가 아닌 훈장"). 환생을 거듭하면 계열이 새→용(3회)→피닉스(6회)로 해금된다. verification-agent **PASS 8/8**.
+
+- [x] Lv.50(MAX) 도달 시 환생할 수 있고, 미만이면 막힌다.
+      → 홈 환생 버튼(`home_screen.dart`의 `_RebirthButton`)이 `user.canRebirth`(`level >= kMaxLevel`, `lib/models/app_user.dart:110`)일 때만 활성, 미만이면 비활성(툴팁 "Lv.50에 도달하면 환생할 수 있어요"). 확인 다이얼로그 → 실행 → 연출 순. 저장소 `rebirth(uid)`(`lib/repositories/user_repository.dart:84`, **UserRepository**)가 마지막 방어선으로 Lv.50 미만이면 write 없이 `AppFailure`(`kCannotRebirthMessage`)를 던진다(Firestore는 트랜잭션 가드 `firestore_user_repository.dart:155`, InMemory는 리셋 없이 실패 `in_memory_user_repository.dart:115`). 테스트: `test/features/home_screen_test.dart` · `test/repositories/rebirth_test.dart`.
+- [x] 환생하면 레벨/XP만 초기화되고 코인·아이템·기록은 영구 유지된다("손해가 아닌 훈장").
+      → `rebirth()`가 `{level:1, xp:0, rebirth: rebirth+1}`만 쓴다(Firestore `runTransaction`+`SetOptions(merge:true)`라 명시 안 한 coin·equipped·dailyCoin·streak은 보존, `firestore_user_repository.dart:159`; InMemory는 `copyWith` 3필드만, `in_memory_user_repository.dart:119`). `completeQuest`·보상(`rewardedAt`) 경로와 완전히 분리된 별도 쓰기라 지급 로직 무변경. 뮤테이션(rebirth가 coin 리셋)으로 실패 확인. 테스트: `test/repositories/rebirth_test.dart`.
+- [x] 환생을 거듭하면 캐릭터 계열이 새→용(3회)→피닉스(6회)로 해금된다.
+      → `stageOf(level, {rebirth})`(`lib/core/constants/growth_rules.dart:126`) 확장 + `characterFamily(rebirth)`(0–2=새/3–5=용/6+=피닉스, 구간 유지, `growth_rules.dart:54`). 3계열×5단계 = 15종 이모지·이름 테이블(기획서 진화 표). **xpPerLevel(레벨당 필요 XP)은 계열과 무관**하게 레벨 구간(인덱스)만으로 결정돼(`growth_rules.dart:133`) `applyXpGain` 레벨업 계산은 회귀 0(`stageOf` 기본 인자 `rebirth=0`). `kDragonRebirth=3`·`kPhoenixRebirth=6` 상수(`growth_rules.dart:45`). 뮤테이션(계열 임계 3→4·계열 이모지 뒤집기)으로 실패 확인. 테스트: `test/core/growth_rules_test.dart`.
+- [x] 환생 시 확인·연출이 표시되고 캐릭터 카드에 등급·표식이 보인다.
+      → 확인 다이얼로그("레벨이 1로 초기화돼요, 코인·아이템·기록은 그대로") → 취소 시 아무 일 없음 → 환생 연출(`lib/features/home/widgets/rebirth_dialog.dart` 신규, 계열 해금 시 "용/피닉스 해금" 강조, evolve/level_up 연출 시각 언어 재사용). 캐릭터 카드(`character_card.dart:101`)는 `rebirth>0`이면 등급 타이틀(`rebirthTitle`, `growth_rules.dart:177`)·별(★) 배지를 표시한다. 노랑은 환생 표식에 안 씀(그린 계열). 뮤테이션(다이얼로그 취소 무시)으로 실패 확인. 테스트: `test/features/home_screen_test.dart`.
+
+**검증 증거**
+- `flutter analyze` No issues found · `flutter test` **728건 전부 통과**(환생 착수 기준선 706건) · `test/theme/color_role_test.dart` 무수정 통과 · verification-agent **PASS 8/8**.
+- 뮤테이션 6종(환생 가드 · rebirth+1 미실행 · coin 리셋 · 계열 임계 3→4 · 계열 이모지 뒤집기 · 다이얼로그 취소 무시)이 각각 해당 테스트를 실제로 실패시킴. `completeQuest` 지급 경로·`applyXpGain` 레벨업 계산은 diff로 무변경 확인.
+
+**남은 제약(정직)**
+- Firestore `rebirth` 트랜잭션 경로는 자동 테스트 **N/A**(`fake_cloud_firestore` 미도입). InMemory와 동일 계약으로 맞췄고 실제 확인은 에뮬레이터 몫(기존 `completeQuest`·`purchaseItem`과 같은 한계).
+- 캐릭터·계열(용·피닉스)은 이모지 목업이다(도트아트 자산 나오면 이모지만 교체).
 
 ### 멈춘 퀘스트 재분해 기능
 > plan.md **기능 A의 마지막 요구사항**이자 성공 지표 「재분해 복귀율」의 근거다.
@@ -533,14 +628,43 @@
 - Firestore `updateQuest`·`deleteQuests` 경로는 자동 테스트 **N/A**(`fake_cloud_firestore` 미도입). InMemory와 계약을 맞췄고 batch 멱등성을 코드 리뷰로 확인했지만 실제 확인은 에뮬레이터 몫이다.
 
 ### 전체 사용자 흐름 통합 테스트
-- [ ] 목표 입력 → AI 분해 → 수정 → 등록 → 완료 → 보상 → 캐릭터 성장 전 과정이 한 번에 통과하는 시나리오 테스트가 존재한다.
-- [ ] 중간 실패(AI 실패·네트워크 오류) 시에도 흐름이 폴백으로 이어진다.
-- [ ] 앱 재실행 후 진행 상태가 정확히 복원된다.
+- [x] 목표 입력 → AI 분해 → 수정 → 등록 → 완료 → 보상 → 캐릭터 성장 전 과정이 한 번에 통과하는 시나리오 테스트가 존재한다.
+- [x] 중간 실패(AI 실패·네트워크 오류) 시에도 흐름이 폴백으로 이어진다.
+- [x] 앱 재실행 후 진행 상태가 정확히 복원된다.
+
+**검증 증거 (E-1)**
+- 산출물: `test/integration/user_flow_test.dart`(신규) — 실제 라우터(`createRouter` + `MaterialApp.router`) 위에서 탭 이동·버튼 클릭으로 관통하는 end-to-end 통합 테스트 4건. lib 코드 무변경(통합 테스트만).
+- 테스트 ①: 퀘스트 탭 → "AI로 목표 나누기" → 목표 입력 → 분해(`FakeQuestDecomposer.success`) → 결과 제목 수정 → 등록(폴더로 묶임) → 완료(메모 건너뛰기) → 보상 다이얼로그 → 레벨업 연출(Lv1→2) → 저장소·홈 탭에서 코인·XP·레벨 반영까지 한 테스트로 관통. 각 단계 상태 전이를 저장소·화면 양쪽에서 단언.
+- 테스트 ②: AI 분해 timeout → 템플릿 폴백 배너 + 폴백 퀘스트가 등록까지 이어짐. 테스트 ②-b: 완료 시 네트워크 오류 → 스낵바 + 상태·잔액 롤백(트랜잭션 원자성).
+- 테스트 ③: 같은 InMemory 인스턴스를 유지한 채 새 ProviderScope + 라우터로 재-pump → 등록 퀘스트가 목록에 복원됨을 단언.
+- 뮤테이션 3종(보상 적립 무력화 · 편집 반영 무력화 · 폴백 무력화)이 각각 정확한 테스트를 실패시켜 자명 통과가 아님을 확증.
+- `flutter analyze` No issues found · `flutter test` **706건 전부 통과**(E-1 착수 기준선 702건) · `test/theme/color_role_test.dart` 무수정 통과 · verification-agent **PASS 3/3**.
+
+**한계(정직 기록)**
+- 테스트 ③은 리터럴 프로세스 재시작이 아니라 "저장소 유지 + 위젯트리 재-pump"의 구조적 보장이다. 실제 프로세스 재시작/실백엔드 영속은 이 테스트가 증명하지 못한다(InMemory 특성상 설계 한계). 테스트 주석에도 명시됨.
+
+**관찰(백로그성, 차단 아님)**
+- 등록 성공 스낵바(4초 자동 해제)가 뒤이어 열리는 완료 메모 시트의 "건너뛰기"를 순간적으로 가릴 수 있다. 통합 테스트에서만 드러난 계층 간 상호작용이며 lib 결함은 아니다(스낵바 4초 후 소멸, 완료를 영구 차단하지 않음). 향후 UX 다듬기 후보.
 
 ### AI 분해 결과 품질 테스트
-- [ ] 대표 목표 입력 세트에 대해 실행 가능한 마이크로 퀘스트가 생성되는지 표본 검증한다.
-- [ ] 난이도 분류가 상식적으로 타당한지 검토 기준이 있다.
-- [ ] 유효하지 않은 결과 비율이 허용 임계 이하이다.
+- [x] 대표 목표 입력 세트에 대해 실행 가능한 마이크로 퀘스트가 생성되는지 표본 검증한다.
+- [x] 난이도 분류가 상식적으로 타당한지 검토 기준이 있다.
+- [x] 유효하지 않은 결과 비율이 허용 임계 이하이다.
+
+> **이 3항목은 실제 Gemini 호출이 아니라 「파서 계약 검증」으로 통과시켰다.** 아래 *증명 범위*를 반드시 함께 읽을 것.
+
+**검증 증거 (E-2)**
+- 산출물: `test/quality/decompose_quality_test.dart`(신규) — 테스트 18건. 체크리스트 3항목에 1:1 대응하는 `group` 3개로 구성했고, 각 group 위 주석에 대응 항목 문구와 조작적 정의를 박아 뒀다. lib 코드 무변경.
+- 항목 1: 대표 목표 6종 fixture(교내 아이디어 공모전 · 정보처리기사 필기 · 주 3회 운동 · 아침 7시 기상 습관 · 전공 시험 대비 · 대외활동 서포터즈) → `QuestDraft.parseList` 통과 draft 합계 **24개**를 구체값으로 단언. 개수·제목·`order` 0..n-1 연속성까지 고정. "실행 가능한 마이크로 퀘스트"는 *공백 아닌 제목 + 3종 중 하나의 난이도(=보상 등급 확정)*로 조작적 정의.
+- 항목 2: 이상값 난이도 11종 + 한글 라벨("쉬움" 등)을 `QuestDraft.parseStrict`가 null로 거부함을 단언(조용한 normal 보정 없음). `kBaseRewards` 3종 완전성(easy 3/5 · normal 5/10 · hard 10/20)과 등급 역전 방지도 함께 잠금.
+- 항목 3: 임계는 테스트 로컬 상수로 명시 — **정상 항목 보존율 1.0, 불량 잔존 0**. 오염 응답(정상 4 + 불량 6) → 정확히 4개 생존. 불량 유형 9종 개별 검증. 전부 불량이거나 배열조차 아니면 결과 0개로 상위 폴백 신호가 됨.
+- verification-agent 독립 뮤테이션 3종으로 자명 통과가 아님을 실증: 제목 공백 가드 제거 → 3건 FAIL · `kMaxDecomposeDrafts` 5→4 → 2건 FAIL · 엄격→관대 난이도 파싱 → 5건 FAIL.
+- `flutter analyze` 0건 · `flutter test` **746건 전부 통과**(E-2 착수 기준선 728건 + 신규 18건) · verification-agent **PASS 3/3**.
+
+**증명 범위 (정직 기록)**
+- **증명한 것**: AI가 무엇을 뱉든 파서가 불량 항목을 조용히 `normal`로 보정하지 않고 **항목째 거부**한다는 것. 정상 항목은 100% 보존되고 `order`에 구멍이 생기지 않는다는 것. 전부 불량이면 빈 결과가 되어 상위 폴백이 작동한다는 것.
+- **증명하지 못한 것**: **실제 Gemini가 상식적으로 타당한 난이도를 매기는지, 실행 가능한 문장을 내놓는지는 이 테스트로 알 수 없다.** fixture는 사람이 작성한 *대표 응답 형태*이지 실제 모델 출력이 아니다. 즉 여기서 검증한 것은 "AI 출력의 품질"이 아니라 "AI 출력을 받아내는 코드의 방어 계약"이다.
+- **남은 수동 절차(미완)**: 데모 전 실기기에서 위 대표 목표 6종을 **실제 Gemini로 돌려** 생성 문장과 난이도 배정을 눈으로 검토한다. 이 수동 검토는 계약 검증을 **대체하는 게 아니라 보완**한다(자동 테스트는 회귀 방지, 수동 검토는 실 모델 품질 확인).
 
 ### 도전 시작률 이벤트 로그 정의
 - [x] 퀘스트 등록·첫 완료 이벤트가 로그로 기록된다.
@@ -554,13 +678,63 @@
 - [x] 가입일·접속일 이벤트가 기록되어 D7 리텐션 산출이 가능하다.
 
 ### 오류 메시지 및 빈 화면 처리
-- [ ] 주요 화면(홈·퀘스트·상점)의 오류/빈 상태가 각각 사용자 친화적으로 표시된다.
-- [ ] 네트워크 단절 상황에서 앱이 크래시하지 않는다.
-- [ ] **알려진 결함(미수정)**: `RewardChip`(`lib/core/widgets/reward_chip.dart`)이 큰 텍스트 배율(2.0)에서 오버플로한다. `Row`가 `mainAxisSize.min`인데 유연 위젯이 없어, 접근성 글꼴을 키운 사용자에게는 폭 320(일반적인 소형 단말)에서도 오버플로 줄무늬가 뜬다. A0-2 이전부터 있던 결함이며, 보상 표시는 노랑 허용 위젯이라 수정 시 색 역할 규칙(`test/theme/color_role_test.dart` allowlist)까지 함께 봐야 한다.
+- [x] 주요 화면(홈·퀘스트·상점)의 오류/빈 상태가 각각 사용자 친화적으로 표시된다.
+  - 홈 — `test/features/home_screen_test.dart:67,79,273` (로딩 스켈레톤 / `ErrorView`+재시도 / 빈 상태).
+  - 퀘스트 — `test/features/quest_list_screen_test.dart:97,155,171` (`EmptyView` "아직 퀘스트가 없어요" + "빈 상태는 오류가 아니다" 단언 포함).
+  - 상점 — `test/features/shop_screen_test.dart` 「오류 · 빈 상태 · 로딩이 서로 구분된다 (E-3)」 신규 5건(7→12건). **그전까지 상점만 화면 상태 테스트가 전무했다.**
+- [x] 네트워크 단절 상황에서 앱이 크래시하지 않는다.
+  - `test/integration/offline_tour_test.dart` 3건 — 실 라우터 위에서 저장소 3종을 `NetworkFailure`로 띄우고 5탭 전부 순회 + 8회 왕복, 각 지점에서 `tester.takeException()` `isNull` 단언.
+- [x] **해소된 결함 기록 — `RewardChip` 큰 글꼴 배율 오버플로 (A0-2 이전부터 있던 결함, E-3에서 수정)**
+  - **무엇이었나**: `lib/core/widgets/reward_chip.dart`가 아이콘·간격·텍스트 등 7개 자식을 유연 위젯 없는 `Row(mainAxisSize.min)`에 늘어놓아, 접근성 글꼴 배율 2.0에서 텍스트만 커지고 줄바꿈할 곳이 없어 오버플로 줄무늬가 떴다(퀘스트 카드 본문 폭 208, `large` 폭 320).
+  - **어떻게 고쳤나**: 최상위를 `Wrap` 2자식으로 바꾸고(`reward_chip.dart:42`), 각 자식을 `_RewardPart`(아이콘+`SizedBox(2)`+텍스트) 묶음으로 묶어 **줄바꿈을 묶음 단위로만** 허용했다. 남아 있는 `mainAxisSize.min` `Row`는 묶음 내부(`:92`)뿐이며 이건 "🪙"와 "+5"가 서로 다른 줄로 갈라지지 않게 하는 **의도된 최소 단위**다.
+  - **부작용 없음**: lib 변경은 이 파일 하나. 색·수치 전부 불변(iconSize 28/14, `titleLarge`/`labelSmall`, 간격은 기존 `gapWMd`/`gapWSm`와 동일 값인 `AppSpacing.md`/`sm`). 새로 추가된 값은 `runSpacing: AppSpacing.xs` 하나뿐이고, 기본 배율(1.0)에서 예전처럼 한 줄임을 별도 테스트로 못 박았다.
+  - **색 역할 규칙 우려는 해소됐다**: 수정을 allowlist 안의 파일에서 끝내 색 상수 접근 경로가 그대로다. `test/theme/color_role_test.dart`는 **무수정으로 통과**한다.
+  - **회귀 방어**: `test/features/reward_chip_test.dart` 5건(실측 조합 — `large:false` 폭 208/배율 2.0, 고유폭 260.5 / `large:true` 폭 320/배율 2.0, 고유폭 436). 자명 통과 방지로 "오버플로 없음"만 보지 않고 `tight.height > oneRun.height`(그 폭이 한 줄로는 정말 모자랐다)를 함께 단언한다 — 나중에 폭을 넉넉히 늘리면 이 단언이 **먼저** 깨진다.
+  - **뮤테이션 실증 3종**: (A) 수정 전 `Row` 코드 복원 → 5건 중 4건 FAIL(`RenderFlex overflowed by 116 pixels`) / (B) `_RewardPart` 묶음 해체 → 2건 FAIL / (C) 상점 로딩 분기 제거 → 1건 FAIL.
+  - **전체 결과**: `flutter test` 759건 전부 통과(착수 기준선 746 + 신규 13), `flutter analyze` 0건.
+
+**커버 공백 (정직 기록)**
+- **상점의 빈 상태 UI 자체**(`lib/features/shop/shop_screen.dart:161-166`)는 어떤 테스트도 실제로 렌더링해 보지 못한다. `kShopItems`가 최상위 `const`라 주입 지점이 없는 **도달 불가능한 방어 분기**이기 때문이다. 테스트는 그 사실을 주석으로 명시하고 "정상 데이터에 오류·빈 상태가 섞이지 않는다"는 반대 방향만 잠근다(`test/features/shop_screen_test.dart:197-211`). **상품 카탈로그가 향후 원격/DB로 바뀌면 그 시점부터 검증 공백이 된다.**
+- `offline_tour_test`는 **읽기 단절만** 본다. 단절 상태의 **쓰기**(완료·구매·분해) 방어는 각 기능 테스트에 흩어져 있고, 이 관통 테스트가 다시 확인하지는 않는다.
 
 ### 최종 QA 및 버그 수정
-- [ ] `flutter analyze` error 0건, 알려진 크래시 0건이다.
-- [ ] 회귀 테스트가 통과한다.
+- [x] `flutter analyze` error 0건, 알려진 크래시 0건이다.
+      → `flutter analyze` **No issues found**(0건). verification-agent 독립 재현.
+      > **「알려진 크래시 0건」의 범위**: 여기서 "알려진"은 **테스트·QA로 드러난 범위**를 말한다. 이번 라운드(E-4)에 **실기기 실행은 하지 않았다** — 즉 "실기기에서 크래시가 없음을 확인했다"는 뜻이 아니라, 833건의 자동 테스트와 코드 감사로 드러난 크래시가 0건이라는 뜻이다. 실기기 범위는 「데모 시나리오 작성」·「발표용 테스트 데이터 준비」와 아래 최종 통합 검증 기준 ③④의 에뮬레이터 스모크에서 덮는다.
+- [x] 회귀 테스트가 통과한다.
+      → `flutter test` **833건 전부 통과**(E-4 착수 기준선 759 + 레이아웃 관통 72 + 위계 2). verification-agent 독립 재현.
+- [x] **해소된 결함 기록 — 큰 글꼴 배율 레이아웃 결함 6건 (E-4에서 실증·수정)**
+  - **무엇이었나**: E-3에서 고친 `RewardChip` 오버플로와 **원인이 같은** 결함(고정폭 `Row`에 유연 위젯이 없어 글꼴 배율이 오르면 줄바꿈할 곳이 없다)이 6곳 더 남아 있었다. E-4 QA에서 전부 실측 재현하고 수정했다.
+
+  | # | 위치 | 재현 조건(실측) | 수정 |
+  |---|------|----------------|------|
+  | D-1 | `lib/features/quest/quest_split_screen.dart` `_DecomposingView` 로딩 `Row` | 배율 1.3 / 360dp부터(안드로이드 "글꼴 크게" **한 단계**) | 문구 `Text`를 `Flexible`로 |
+  | D-2 | `lib/features/quest/widgets/quest_complete_dialog.dart:194` 인증 보너스 `Row` | 배율 1.3 / 320dp부터, 2.0에서 전폭 | `Flexible`(`:197`) — **바로 아래 상한 안내 `Row`가 이미 쓰던 패턴**(`:224`)을 복사 |
+  | D-3 | 완료·연속출석 다이얼로그의 **보상 표시 카드** | 배율 2.0 · 폭 320 → **70px** 오버플로 | **신규 `lib/core/widgets/reward_showcase.dart`** — 두 다이얼로그가 각자 들고 있던 카드를 공통화하고, `insetPadding`을 `kCelebrationDialogInset`(`reward_showcase.dart:87`, Material 기본 40px → `AppSpacing.md`)로 좁혀 안쪽 폭 **48px** 확보. **`reward_chip.dart`는 무수정** — 칩 안쪽 묶음이 접히지 않는 것은 설계 의도라(아이콘과 숫자가 갈라지면 안 된다) 칩을 고치는 대신 **부르는 쪽이 폭 예산을 정한다** |
+  | D-4 | `lib/features/quest/quest_create_screen.dart` 「예상 보상」 `Row(spaceBetween)` | 배율 1.6 / 360 → 24px | `Wrap(alignment: spaceBetween)`(`:400-402`). **`Flexible` 2개로는 부족**하다 — 폭을 반씩 나눠 갖는데 배율 2.0에서 칩 한 묶음이 그 절반보다 넓다 |
+  | D-5 | `lib/features/shop/shop_screen.dart` 상품 카드 | 배율 **1.6부터** · **폭 무관** → **구매 버튼 잘림** | **세로** 문제라 `Flexible`이 답이 아니다. 카드 높이 236을 고정분 + 글자분(`_kCardTextExtent = 60`, `:212`)으로 나눠 **글자분에만 배율을 적용**(`:225-226`). 배율 1.0에서 정확히 236 — 평소 모습 불변 |
+  | D-6 | `lib/features/home/widgets/character_card.dart` · `lib/core/widgets/coin_pill.dart` | 배율 2.0 **+ 폭 320dp + 큰 값**(coin 1234 · Lv.12) | 캐릭터 카드: `Expanded` → **양쪽 `Flexible` + spaceBetween**(`character_card.dart:80,86`). 코인 pill: `Row` → `Wrap`(`coin_pill.dart:35`), 단 아이콘+숫자는 내부 `Row(min)`로 묶어 **줄바꿈 최소 단위**를 유지("🪙"와 "1,234"가 남남처럼 읽히지 않게) |
+
+  - **D-3 수정이 낳은 부작용과 그 해소** — 이 항목이 이번 라운드의 핵심이다.
+    - **최초 수정은 틀렸다**: `large: textScale <= 1.3`으로 상한을 넘으면 확대 표시를 껐다. 그랬더니 **배율 1.4~1.66에서 글꼴을 키운 사용자가 기본 사용자보다 보상 숫자를 더 작게 보는 역전**이 생겼다(20px → **16.8px**, 아이콘 28 → 14로 절반). 접근성 설정을 켠 사람에게만 보상이 주인공 자리에서 밀려난다. verification-agent **FAIL 판정**.
+    - **처방 (A) 배율 상한 클램프로 재수정**: `large: true`를 **항상** 유지하고, `RewardShowcase` **안쪽에서만** `MediaQuery`로 배율을 1.3까지 자른다(`reward_showcase.dart:47,69-75`). 결과는 1.0 → 20px, 1.3~2.0 → **26px 고정**, 아이콘은 전 구간 28.0. **역전·급락 구간 0개, 단조 비감소.**
+    - **클램프는 카드 안쪽에만 걸린다**: 다이얼로그의 제목·설명은 사용자 배율을 그대로 따른다(측정 오차 0). **읽어야 할 문장까지 대신 줄이지는 않는다**(`reward_showcase.dart:67-68` 주석에 근거 명시).
+  - **회귀 방어 자산**
+    - `test/features/text_scale_layout_test.dart` — 화면 6종 × 배율{1.3, **1.4**, 1.6, 2.0} × 폭{320, 360, 411} = **72건**. **1.4는 `large` 분기 경계라 표본 사이에 두지 않으려고 일부러 넣었다**(`:50-55` 주석에 이유 명시 — "경계를 막 넘은 첫 프레임을 아무도 그려 보지 않는" 상황을 막는다).
+    - `test/features/reward_showcase_test.dart` — 위계 단조성 **2건**(`:102`, `:166`). **기준값을 하드코딩하지 않고 같은 테스트 안에서 배율 1.0을 측정해 비교**한다(상수를 박아 두면 기준 자체가 낡는다).
+    - **자명 통과 방지**: 관통 테스트는 `takeException()`을 **전부 소진**(`drainExceptions`, `:81-88`)한 뒤 **화면이 실제로 그려졌는지**(`expectVisible`)를 함께 단언한다 — 오류 화면이나 빈 화면으로 떨어지면 오버플로가 날 일이 없어 **조용히 통과**하기 때문이다.
+  - **뮤테이션 실증**: 개발자 8회 + verification-agent 독립 6종. 결정적인 것 둘 — **(a)** `expectVisible` 블록만 삭제하면 **빈 화면인데도 54/54 통과**(그 가드가 유일한 방벽임을 증명). **(b)** 배율 주입을 무력화하면 **실제 결함이 있어도 54건 전부 통과**(배율이 정말 걸리고 있음을 대조로 증명). 상한 값은 **양쪽에서 협공**된다 — 1.0으로 조이면 위계 테스트가, 1.8로 풀면 관통 테스트가 잡는다(1.8 뮤테이션에서 4건 FAIL 실증).
+  - **전체 결과**: `flutter test` **833건** 전부 통과, `flutter analyze` **0건**.
+
+**커버 공백 (정직 기록)**
+- **보상 숫자는 배율 1.3 이상에서 더 커지지 않는다** — 설계된 트레이드오프다. 실효 크기가 1.3~2.0 **전 구간 26px 고정**이라, 배율 2.0 사용자는 텍스트를 200%로 요청했지만 보상 숫자만 130%까지 받는다.
+- 그 결과 **배율 ≒1.63 이상에서 다이얼로그 내부 위계가 상대적으로 역전**된다 — 퀘스트명은 `bodyMedium`(16px)에 사용자 배율이 그대로 걸려 2.0에서 32px인데, 바로 아래 보상 숫자는 26px이다(배율 1.0에서는 20 vs 16으로 보상이 더 컸다). **절대 크기 역전도 오버플로도 아니라 릴리스 차단 사유는 아니지만**, `reward_showcase.dart`의 "보상을 **주인공으로** 보여 준다"(`:10`)는 선언과 고배율에서 어긋난다. **후속 과제 후보.**
+- **`showDialog` 실사용 경로는 상시 테스트에 없다.** verification-agent가 프로브로 CLEAN을 확인했지만 **그 프로브는 삭제했다**. 상시 자산(`text_scale_layout_test`)은 `Scaffold(body:)`로 다이얼로그를 띄우므로, 향후 `insetPadding`이나 라우트 레벨 `MediaQuery`가 바뀌면 **관통 테스트가 못 잡는다**.
+- **`_kCardTextExtent = 60`(`lib/features/shop/shop_screen.dart:212`)은 실측 근거 없는 가정값이다.** 상품 카드 236px 중 "글꼴 배율을 타는 부분"을 60으로 잡았을 뿐이고, 이 가정이 틀리면 배율 보정량이 어긋난다. **지금 통과하는 이유가 값이 우연히 넉넉해서일 수 있다.** 배율 2.0까지만 검증됐으므로 **그 이상 배율이나 상품명이 길어지면 재발 가능**.
+- **위계 회귀 가드는 `RewardShowcase` 단일 위젯만 본다.** `RewardChip(large: false)`를 쓰는 다른 화면(퀘스트 카드, 직접 등록 「예상 보상」)에는 같은 종류의 **크기 역전 가드가 없다.**
+- **관통 테스트는 세로 뷰포트 2400px 고정**(`text_scale_layout_test.dart:63`). 실제 단말의 짧은 세로에서 발생하는 스크롤·세로 오버플로는 **관심 밖이며 미검증**이다.
+
+> **후속 선택 과제 우선순위**(verification-agent 제시 — `docs/plan.md`의 2대 핵심 기능보다 **낮다**): 3번(`showDialog` 실경로를 관통 테스트 시나리오로 승격) → 4번(`_kCardTextExtent`를 실측 또는 `IntrinsicHeight` 기반으로 대체) → 2번(고배율 내부 위계).
 
 ### 데모 시나리오 작성
 - [ ] 발표용 시나리오가 문서화되어 있고 실제 앱에서 재현된다.
@@ -574,10 +748,29 @@
 
 > 전체 사용자 흐름이 끝에서 끝까지 동작하는지 확인하는 최종 판정 기준. 각 항목은 실제 앱 실행 또는 통합 테스트 결과로 PASS/FAIL을 판정한다.
 
-- [ ] 사용자가 큰 목표를 입력하면 AI가 마이크로 퀘스트와 난이도를 생성한다.
-- [ ] 사용자가 분해 결과를 수정·삭제·재생성할 수 있다.
+> **E-4 판정 결과: 5 PASS / 2 FAIL.** FAIL 2건(③④)은 **코드 결함이 아니라 증거 부족**이다 — 코드는 규칙을 지키지만 그 규칙이 지켜짐을 증명하는 수단이 자동 테스트로는 닿지 않는 자리에 있다. 둘 다 **에뮬레이터 스모크 1회로 동시 해소** 가능하다(맨 아래 후속 절차).
+
+- [x] 사용자가 큰 목표를 입력하면 AI가 마이크로 퀘스트와 난이도를 생성한다.
+      → 관통 `test/integration/user_flow_test.dart:174-181` · 출력 품질(개수·난이도 분포·JSON 스키마) `test/quality/decompose_quality_test.dart:38-79,107-205` · 원격 호출 계약 `test/repositories/remote_quest_decomposer_test.dart:46-236`. 실제 배선은 `lib/main.dart:54-58`(키가 있으면 `RemoteQuestDecomposer`, 없으면 `FakeQuestDecomposer` 데모 모드).
+- [x] 사용자가 분해 결과를 수정·삭제·재생성할 수 있다.
+      → 수정 `user_flow_test.dart:185-196,212`(편집한 제목이 저장까지 살아남는다) · 삭제 `test/features/quest_split_screen_test.dart:311,386` · 재생성 `:405,411,424,447`.
 - [ ] 확정한 결과가 퀘스트 목록에 정상 등록되고 재실행 후에도 유지된다.
+      → **FAIL(증거 부족) — 등록은 PASS, "재실행 후 유지"가 미증명.**
+      → **등록 PASS**: `user_flow_test.dart:199-219` — 5개가 **같은 `goalId`로 저장**되고, 원본 목표 텍스트가 goal 저장소에 보존되며, 목록에 목표 폴더로 나타난다.
+      → **"재실행 후 유지"는 자동 테스트로 증명되지 않았다.** `user_flow_test.dart:333-364`가 하는 것은 *저장소 인스턴스를 살린 채 위젯 트리만 재-pump*하는 **구조적 대리 증명**이고, 테스트 자신이 `:335-338` 주석으로 **"위젯 테스트는 프로세스를 실제로 재시작할 수 없다"**고 한계를 명시한다.
+      → 실 영속 실증은 위 **1주차 `am force-stop` 콜드스타트 기록(이 문서 「Firebase 프로젝트 연동」 익명 로그인/세션 유지 항목)뿐**이며, **그 이후 도입된 `goalId` 폴더·`archived`·`proof` 스키마 기준으로는 재실증이 없다.**
 - [ ] 퀘스트 완료 시 난이도에 맞는 코인과 XP가 (트랜잭션으로, 중복 없이) 지급된다.
-- [ ] 완료 결과가 캐릭터 성장(레벨·XP·진화)에 반영된다.
-- [ ] AI 실패 시에도 템플릿으로 퀘스트를 등록할 수 있다.
-- [ ] 사용자가 막힌 퀘스트를 더 작게 재분해해 다시 실행할 수 있다.
+      → **FAIL(증거 부족) — 수치·중복 방지·롤백은 PASS, "트랜잭션으로"의 원자성만 미검증.**
+      → **수치 PASS**: `lib/core/constants/reward_rules.dart:31-33` = 쉬움 3/5 · 보통 5/10 · 어려움 10/20.
+      → **중복 방지·롤백 PASS**: `test/repositories/in_memory_quest_repository_test.dart:403,426,466,483` · `user_flow_test.dart:230-248,291-331`(지급 실패 시 잔액·상태가 되돌아온다).
+      → **"트랜잭션으로"의 원자성은 자동 테스트 N/A.** 코드는 규칙을 지킨다 — `lib/repositories/firestore/firestore_quest_repository.dart:263-388`이 `runTransaction`으로 quest·user를 **먼저 전부 read한 뒤** write하고(read-before-write 준수), `rewardedAt` 미기록일 때만 지급하며(`:294`의 `if (!alreadyPaid)`, `:301`의 조기 return), proof·achievement 쓰기까지 **같은 트랜잭션**에 넣는다(`:352,363`). 그러나 `fake_cloud_firestore` 미도입이라 **실제 원자성·경쟁 상태는 미검증**이다.
+- [x] 완료 결과가 캐릭터 성장(레벨·XP·진화)에 반영된다.
+      → `user_flow_test.dart:236-258` · `test/features/quest_list_screen_test.dart:586-628`(레벨업) `:629-`(Lv9 알 → Lv10 참새 진화) · `test/features/growth_dialogs_test.dart:73-125` · 규칙 `test/core/growth_rules_test.dart`.
+- [x] AI 실패 시에도 템플릿으로 퀘스트를 등록할 수 있다.
+      → `user_flow_test.dart:261-289` — timeout → 폴백 배너 → 등록 → `goalId`까지 **끝에서 끝까지 관통**. 화면 분기 `quest_split_screen_test.dart:254` · 상태 `test/features/decompose_notifier_test.dart` · 템플릿 자체 `quest_templates_test.dart`.
+- [x] 사용자가 막힌 퀘스트를 더 작게 재분해해 다시 실행할 수 있다.
+      → `test/features/quest_redecompose_test.dart` 12건(`:58,84,312,380,408,429,447,133`).
+
+> **③④ 해소용 후속 절차 — 에뮬레이터 스모크 1회**(E-5와 묶는다). 두 FAIL이 같은 1회로 동시에 풀린다.
+> - **③**: AI 분해 → 등록 → `adb shell am force-stop` → 재기동 → **목표 폴더·자식 퀘스트·완료 상태가 그대로인지** 확인(현행 `goalId`/`archived`/`proof` 스키마 기준).
+> - **④**: **어려움** 퀘스트를 메모 인증으로 완료 → **코인 +13 · XP +23**(10/20 + 인증 보너스 3/3) → 체크를 껐다 다시 켜기 → **재지급 없음** → Firestore 콘솔에서 `rewardedAt`이 **1회만** 찍혔는지 확인.

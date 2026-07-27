@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/theme/app_theme.dart';
+import 'package:one_step/core/widgets/quest_card.dart';
 import 'package:one_step/features/quest/quest_create_screen.dart';
 import 'package:one_step/features/quest/quest_list_screen.dart';
+import 'package:one_step/features/shop/shop_screen.dart';
 import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/difficulty.dart';
 import 'package:one_step/models/quest.dart';
 import 'package:one_step/providers/providers.dart';
 import 'package:one_step/repositories/memory/fake_auth_repository.dart';
+import 'package:one_step/repositories/memory/in_memory_goal_repository.dart';
 import 'package:one_step/repositories/memory/in_memory_quest_repository.dart';
 import 'package:one_step/repositories/memory/in_memory_user_repository.dart';
 import 'package:one_step/router.dart';
@@ -30,8 +33,11 @@ void main() {
   }) async {
     final questRepo = InMemoryQuestRepository(seed: quests);
     final userRepo = InMemoryUserRepository(seed: AppUser.initial(uid));
+    // 직접 등록이 목표(폴더) 단위가 되면서 등록 화면이 goalRepository를 쓴다.
+    final goalRepo = InMemoryGoalRepository();
     addTearDown(questRepo.dispose);
     addTearDown(userRepo.dispose);
+    addTearDown(goalRepo.dispose);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -41,6 +47,7 @@ void main() {
           ),
           userRepositoryProvider.overrideWithValue(userRepo),
           questRepositoryProvider.overrideWithValue(questRepo),
+          goalRepositoryProvider.overrideWithValue(goalRepo),
         ],
         child: MaterialApp.router(
           theme: AppTheme.light,
@@ -96,7 +103,7 @@ void main() {
     );
 
     await tapTab(tester, '상점');
-    expect(find.text('모은 코인으로 배경과 이펙트를 살 수 있어요.\n4주차에 열립니다.'), findsOneWidget);
+    expect(find.byType(ShopScreen), findsOneWidget);
     expect(
       tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
       2,
@@ -112,8 +119,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(QuestCreateScreen), findsOneWidget);
 
-    // 제목을 입력해 둔다 (이 상태가 살아남아야 한다)
-    await tester.enterText(find.byType(TextFormField), '작성 중인 퀘스트');
+    // 목표명을 입력해 둔다 (이 상태가 살아남아야 한다). 첫 TextField가 목표명이다.
+    await tester.enterText(find.byType(TextField).first, '작성 중인 목표');
     await tester.pumpAndSettle();
 
     // 홈으로 갔다가 다시 퀘스트 탭으로 돌아온다
@@ -126,7 +133,7 @@ void main() {
     // 등록 화면이 그대로 있고, 입력한 내용까지 살아 있다.
     // (StatefulShellRoute가 탭마다 별도 Navigator를 유지하기 때문)
     expect(find.byType(QuestCreateScreen), findsOneWidget);
-    expect(find.text('작성 중인 퀘스트'), findsOneWidget);
+    expect(find.text('작성 중인 목표'), findsOneWidget);
   });
 
   testWidgets('★ 같은 탭을 다시 누르면 그 탭의 루트로 돌아온다', (tester) async {
@@ -156,7 +163,10 @@ void main() {
     await tester.tap(find.widgetWithText(FloatingActionButton, '퀘스트 등록'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextFormField), '지원서 초안 쓰기');
+    // 목표명(첫 필드) + 하위 퀘스트 1개(둘째 필드)를 입력한다. 신규 등록은
+    // 목표를 강제하므로 목표명이 비면 등록 버튼이 눌리지 않는다.
+    await tester.enterText(find.byType(TextField).first, '공모전 지원 준비');
+    await tester.enterText(find.byType(TextField).at(1), '지원서 초안 쓰기');
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, '등록하기'));
     await tester.pumpAndSettle();
@@ -171,5 +181,38 @@ void main() {
     final quests = await repo.fetchQuests(uid);
     expect(quests.single.title, '지원서 초안 쓰기');
     expect(quests.single.difficulty, Difficulty.normal);
+    // 목표(폴더)로 묶여 저장된다 — goalId가 붙는다(낱개 등록이 아니다).
+    expect(quests.single.goalId, isNotNull);
+  });
+
+  testWidgets('홈의 진행 중 퀘스트 카드를 탭하면 오늘의 퀘스트 탭으로 이동한다', (tester) async {
+    // 홈 미리보기 카드는 완료 토글 없이 보기 전용이라, 탭하면 전체 목록을
+    // 관리할 수 있는 퀘스트 탭으로 넘어가야 한다(개별 상세가 아니라).
+    await pumpApp(
+      tester,
+      quests: const [
+        Quest(id: 'q1', title: '지원서 초안 쓰기', difficulty: Difficulty.normal, order: 0),
+      ],
+    );
+
+    // 홈에서 시작 — 목록 화면은 아직 없다.
+    expect(find.text('오늘도 한 걸음.'), findsOneWidget);
+    expect(find.byType(QuestListScreen), findsNothing);
+
+    // 미리보기 카드는 캐릭터 카드·버튼 아래라 뷰포트 밖일 수 있다. 스크롤로 올린다.
+    final card = find.widgetWithText(QuestCard, '지원서 초안 쓰기');
+    await tester.scrollUntilVisible(card, 200, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+
+    // 홈의 미리보기 카드(퀘스트 탭 진입 버튼이 아니라 카드 자체)를 탭한다.
+    await tester.tap(card);
+    await tester.pumpAndSettle();
+
+    // 오늘의 퀘스트 탭으로 전환됐다.
+    expect(find.byType(QuestListScreen), findsOneWidget);
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      1,
+    );
   });
 }

@@ -38,21 +38,100 @@ class CharacterStage {
 /// 환생 가능 레벨. 여기 도달하면 XP가 더 쌓이지 않는다.
 const int kMaxLevel = 50;
 
-/// 레벨 → 진화 단계.
-CharacterStage stageOf(int level) {
-  if (level <= 9) {
-    return const CharacterStage(name: '알', emoji: '🥚', xpPerLevel: 5);
-  }
-  if (level <= 19) {
-    return const CharacterStage(name: '참새', emoji: '🐤', xpPerLevel: 10);
-  }
-  if (level <= 29) {
-    return const CharacterStage(name: '매', emoji: '🕊️', xpPerLevel: 20);
-  }
-  if (level <= 44) {
-    return const CharacterStage(name: '독수리', emoji: '🦅', xpPerLevel: 40);
-  }
-  return const CharacterStage(name: '이펙트 독수리', emoji: '🦅', xpPerLevel: 80);
+/// 캐릭터 계열. 환생을 거듭하면 새 → 용 → 피닉스로 바뀐다("환생 = 계열 해금").
+enum CharacterFamily { bird, dragon, phoenix }
+
+/// 용 계열이 열리는 환생 횟수.
+const int kDragonRebirth = 3;
+
+/// 피닉스 계열이 열리는 환생 횟수.
+const int kPhoenixRebirth = 6;
+
+/// 환생 횟수 → 계열. **구간을 유지한다**(0–2=새, 3–5=용, 6+=피닉스).
+///
+/// 순수 함수로 둔 이유는 `stageOf`·저장소·화면이 모두 같은 임계로 계열을 판정해야
+/// 하기 때문이다. 임계가 갈리면 캐릭터 이모지와 해금 안내가 어긋난다.
+CharacterFamily characterFamily(int rebirth) {
+  if (rebirth >= kPhoenixRebirth) return CharacterFamily.phoenix;
+  if (rebirth >= kDragonRebirth) return CharacterFamily.dragon;
+  return CharacterFamily.bird;
+}
+
+/// 계열 표시 이름 (해금 안내·연출 문구용).
+String characterFamilyLabel(CharacterFamily family) => switch (family) {
+  CharacterFamily.bird => '새',
+  CharacterFamily.dragon => '용',
+  CharacterFamily.phoenix => '피닉스',
+};
+
+/// 이번 환생([newRebirth])이 **새 계열을 처음 여는** 순간인지.
+///
+/// 정확히 [kDragonRebirth]·[kPhoenixRebirth]에 도달했을 때만 true다. 그 외 환생은
+/// 계열이 유지되므로 해금 강조를 하지 않는다.
+CharacterFamily? unlockedFamily(int newRebirth) {
+  if (newRebirth == kPhoenixRebirth) return CharacterFamily.phoenix;
+  if (newRebirth == kDragonRebirth) return CharacterFamily.dragon;
+  return null;
+}
+
+/// 레벨 구간 인덱스(0~4). **계열과 무관하게 레벨만으로 결정된다.**
+///
+/// 이 인덱스가 [_xpPerLevelByStage]와 계열별 이름·이모지 테이블을 함께 가리킨다.
+/// xpPerLevel을 인덱스로만 뽑으므로 계열이 바뀌어도 레벨업 계산은 불변이다.
+int _stageIndexOf(int level) {
+  if (level <= 9) return 0;
+  if (level <= 19) return 1;
+  if (level <= 29) return 2;
+  if (level <= 44) return 3;
+  return 4;
+}
+
+/// 레벨 구간별 필요 XP. **계열 불변** — 이게 `applyXpGain` 무회귀의 근거다.
+const List<int> _xpPerLevelByStage = [5, 10, 20, 40, 80];
+
+/// 계열 × 단계(3×5)의 이름·이모지 목업 테이블.
+///
+/// 도트아트 자산이 나오기 전까지 계열 느낌이 나는 이모지로 대체한다. 자산이 나오면
+/// 이모지 자리만 교체한다(이름·xpPerLevel·경계는 그대로).
+const Map<CharacterFamily, List<({String name, String emoji})>> _familyStages = {
+  CharacterFamily.bird: [
+    (name: '알', emoji: '🥚'),
+    (name: '참새', emoji: '🐤'),
+    (name: '매', emoji: '🕊️'),
+    (name: '독수리', emoji: '🦅'),
+    (name: '이펙트 독수리', emoji: '🦅'),
+  ],
+  CharacterFamily.dragon: [
+    (name: '용의 알', emoji: '🥚'),
+    (name: '새끼 용', emoji: '🦎'),
+    (name: '어린 용', emoji: '🐲'),
+    (name: '성룡', emoji: '🐉'),
+    (name: '화려한 용', emoji: '🐉'),
+  ],
+  CharacterFamily.phoenix: [
+    (name: '피닉스의 알', emoji: '🥚'),
+    (name: '잿빛 피닉스', emoji: '🐣'),
+    (name: '불꽃 피닉스', emoji: '🔥'),
+    (name: '황금 피닉스', emoji: '🦚'),
+    (name: '만개한 피닉스', emoji: '🔥'),
+  ],
+};
+
+/// 레벨(+ 환생 횟수) → 진화 단계.
+///
+/// **[rebirth] 기본값은 0이다.** 그래서 `applyXpGain` 내부의 `stageOf(lv)` 호출은
+/// 무변경으로 정확하다 — 거기서 필요한 건 xpPerLevel뿐이고, xpPerLevel은 레벨
+/// 구간(=인덱스)만으로 결정돼 계열과 무관하기 때문이다. 계열(rebirth)로 갈리는 건
+/// 이름·이모지뿐이다.
+CharacterStage stageOf(int level, {int rebirth = 0}) {
+  final index = _stageIndexOf(level);
+  final family = characterFamily(rebirth);
+  final entry = _familyStages[family]![index];
+  return CharacterStage(
+    name: entry.name,
+    emoji: entry.emoji,
+    xpPerLevel: _xpPerLevelByStage[index],
+  );
 }
 
 /// XP를 더한 뒤의 (레벨, 레벨 내 XP)를 계산한다.

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'features/home/home_screen.dart';
-import 'features/placeholder_screen.dart';
+import 'features/profile/profile_screen.dart';
 import 'features/quest/decompose_notifier.dart';
 import 'features/quest/quest_create_screen.dart';
 import 'features/quest/quest_list_screen.dart';
 import 'features/quest/quest_split_screen.dart';
 import 'features/shell/root_shell.dart';
+import 'features/shop/shop_screen.dart';
+import 'features/storage/storage_screen.dart';
 
 /// 앱이 쓰는 라우터 인스턴스.
 final router = createRouter();
@@ -72,11 +74,7 @@ GoRouter createRouter({String initialLocation = '/home'}) => GoRouter(
           routes: [
             GoRoute(
               path: '/shop',
-              builder: (context, state) => const PlaceholderScreen(
-                title: '상점',
-                emoji: '🛍️',
-                message: '모은 코인으로 배경과 이펙트를 살 수 있어요.\n4주차에 열립니다.',
-              ),
+              builder: (context, state) => const ShopScreen(),
             ),
           ],
         ),
@@ -84,11 +82,7 @@ GoRouter createRouter({String initialLocation = '/home'}) => GoRouter(
           routes: [
             GoRoute(
               path: '/storage',
-              builder: (context, state) => const PlaceholderScreen(
-                title: '보관함',
-                emoji: '🏆',
-                message: '완료한 도전을 사진과 메모로 기록해요.\n3주차에 열립니다.',
-              ),
+              builder: (context, state) => const StorageScreen(),
             ),
           ],
         ),
@@ -96,11 +90,7 @@ GoRouter createRouter({String initialLocation = '/home'}) => GoRouter(
           routes: [
             GoRoute(
               path: '/profile',
-              builder: (context, state) => const PlaceholderScreen(
-                title: 'MY',
-                emoji: '👤',
-                message: '프로필과 설정이 들어갑니다.',
-              ),
+              builder: (context, state) => const ProfileScreen(),
             ),
           ],
         ),

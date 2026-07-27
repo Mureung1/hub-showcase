@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/constants/reward_rules.dart';
+import '../models/achievement.dart';
 import '../models/analytics_event.dart';
 import '../models/app_user.dart';
 import '../models/goal.dart';
@@ -143,6 +144,24 @@ final questListProvider = StreamProvider<List<Quest>>((ref) async* {
   yield* ref.watch(questRepositoryProvider).watchQuests(uid);
 });
 
+/// 성취 기록 목록 (보관함 화면). 최신순으로 흐른다.
+///
+/// [questListProvider]와 같은 형태 — 세션(uid)이 준비된 뒤 저장소 스트림을 잇는다.
+/// 완료 트랜잭션이 커밋되면 이 스트림이 갱신돼 보관함 타임라인에 새 기록이 뜬다.
+final achievementsProvider = StreamProvider<List<Achievement>>((ref) async* {
+  final uid = await ref.watch(sessionProvider.future);
+  yield* ref.watch(questRepositoryProvider).watchAchievements(uid);
+});
+
+/// 보유 아이템 ID 집합 (4주차 상점의 "보유 중" 표시용).
+///
+/// [currentUserProvider]와 같은 형태 — 세션(uid)이 준비된 뒤 저장소 스트림을 잇는다.
+/// 구매 트랜잭션이 커밋되면 이 스트림이 갱신돼 상점 버튼이 자동으로 "장착"으로 바뀐다.
+final inventoryProvider = StreamProvider<Set<String>>((ref) async* {
+  final uid = await ref.watch(sessionProvider.future);
+  yield* ref.watch(userRepositoryProvider).watchInventory(uid);
+});
+
 /// 큰 목표 목록. 퀘스트 목록의 **폴더 라벨**을 그리는 데 쓴다.
 ///
 /// [questListProvider]와 같은 형태 — 세션(uid)이 준비된 뒤 저장소 스트림을 잇는다.
@@ -165,9 +184,30 @@ final questGroupsProvider = Provider<AsyncValue<List<QuestGroup>>>((ref) {
   final goals = ref.watch(goalListProvider).valueOrNull ?? const <Goal>[];
   final goalTexts = {for (final goal in goals) goal.id: goal.text};
 
-  return ref
-      .watch(questListProvider)
-      .whenData((quests) => groupQuestsByGoal(quests, goalTexts));
+  return ref.watch(questListProvider).whenData((quests) {
+    // 오늘의 퀘스트 = 아직 보관되지 않은 것(= 할 일). 완료돼 보관함으로 옮겨진
+    // 퀘스트는 여기서 사라진다(2단계 "완료 = 보관함으로 이동").
+    final active = quests.where((q) => !q.archived).toList();
+    return groupQuestsByGoal(active, goalTexts);
+  });
+});
+
+/// 보관함 화면 — **보관된**(`archived == true`) 퀘스트를 같은 폴더 그룹뷰로.
+///
+/// [questGroupsProvider]와 필터만 반대다. 같은 [groupQuestsByGoal]·[QuestGroup]을
+/// 재사용하므로 폴더 구조·진행률·재분해 계보가 전부 공짜로 따라온다 — 보관함은
+/// "끝낸 일"을 오늘의 퀘스트와 **같은 시각 언어**로 보여 주기만 하면 된다.
+///
+/// 목표 스트림 실패를 삼키는 것도 [questGroupsProvider]와 같다(라벨은 부가 정보라
+/// 그것 때문에 보관함 전체가 오류 화면이 되면 안 된다).
+final archivedGroupsProvider = Provider<AsyncValue<List<QuestGroup>>>((ref) {
+  final goals = ref.watch(goalListProvider).valueOrNull ?? const <Goal>[];
+  final goalTexts = {for (final goal in goals) goal.id: goal.text};
+
+  return ref.watch(questListProvider).whenData((quests) {
+    final archived = quests.where((q) => q.archived).toList();
+    return groupQuestsByGoal(archived, goalTexts);
+  });
 });
 
 /// 아직 완료하지 않은 퀘스트를 **최신 등록순**으로 (홈 화면 미리보기용).
@@ -188,7 +228,9 @@ final questGroupsProvider = Provider<AsyncValue<List<QuestGroup>>>((ref) {
 /// 이 provider를 재사용할 때 이유 없이 3개만 받는다. 자르는 건 화면의 몫이다.
 final pendingQuestsProvider = Provider<AsyncValue<List<Quest>>>((ref) {
   return ref.watch(questListProvider).whenData((quests) {
-    final pending = quests.where((q) => !q.done).toList();
+    // 미완료 + 아직 보관되지 않은 것만. 완료돼 보관함으로 옮겨진 퀘스트는 홈
+    // 미리보기에서도 사라진다(오늘의 퀘스트 목록과 같은 필터).
+    final pending = quests.where((q) => !q.done && !q.archived).toList();
 
     pending.sort((a, b) {
       final at = a.createdAt;

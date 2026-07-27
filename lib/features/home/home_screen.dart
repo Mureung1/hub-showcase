@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/constants/growth_rules.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_radius.dart';
@@ -14,6 +15,7 @@ import '../../models/quest.dart';
 import '../../providers/providers.dart';
 import '../shell/tab_scroll_registry.dart';
 import 'widgets/character_card.dart';
+import 'widgets/rebirth_dialog.dart';
 import 'widgets/streak_bonus_dialog.dart';
 
 /// 7일 보너스 축하를 **이번 세션에 이미 띄웠는가.**
@@ -150,19 +152,7 @@ class _HomeContent extends ConsumerWidget {
               ),
             ),
             AppSpacing.gapWMd,
-            Expanded(
-              // 환생은 4주차 기능이다. 눌러도 아무 일도 안 하는 버튼을 활성화해 두면
-              // "준비 중"이라고 정직하게 말하는 플레이스홀더 탭보다 나쁘다 —
-              // 사용자에게 거짓말을 하게 된다. 구현 전까지는 항상 비활성으로 둔다.
-              child: Tooltip(
-                message: '환생은 4주차에 열려요',
-                child: OutlinedButton.icon(
-                  onPressed: null,
-                  icon: const Icon(Symbols.refresh),
-                  label: Text('환생 (Lv.${user.level})'),
-                ),
-              ),
-            ),
+            Expanded(child: _RebirthButton(user: user)),
           ],
         ),
         AppSpacing.gapLg,
@@ -171,6 +161,78 @@ class _HomeContent extends ConsumerWidget {
         AppSpacing.gapMd,
         _PendingQuests(quests: pending),
       ],
+    );
+  }
+}
+
+/// 환생 버튼 + 실행 흐름.
+///
+/// 상태(중복 방지 잠금)를 들어야 해서 별도 `ConsumerStatefulWidget`으로 뺐다.
+/// - **비활성**: `canRebirth`가 아니거나(Lv.50 미만) 이미 실행 중일 때. 툴팁으로
+///   "Lv.50에 도달하면 열린다"를 정직하게 알린다(과거의 "4주차에 열려요" 대체).
+/// - **탭**: 확인 다이얼로그 → `rebirth()` → 성공 시 환생 연출. 각 단계 사이에
+///   `mounted`를 확인하고, `_busy`로 중복 실행을 막는다(완료 흐름과 같은 패턴).
+class _RebirthButton extends ConsumerStatefulWidget {
+  const _RebirthButton({required this.user});
+
+  final AppUser user;
+
+  @override
+  ConsumerState<_RebirthButton> createState() => _RebirthButtonState();
+}
+
+class _RebirthButtonState extends ConsumerState<_RebirthButton> {
+  /// 중복 실행 방지 잠금. 확인~연출 사이에 버튼을 다시 눌러도 두 번 돌지 않는다.
+  bool _busy = false;
+
+  Future<void> _onPressed() async {
+    final user = widget.user;
+    // 화면 가드 — 저장소도 마지막 방어선으로 한 번 더 막지만, 눌리지 않게 먼저 막는다.
+    if (_busy || !user.canRebirth) return;
+
+    final confirmed = await showRebirthConfirmDialog(context);
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _busy = true);
+    // 연출에 쓸 환생 후 횟수는 지금 값에서 +1이다(스트림 갱신을 기다리지 않는다).
+    final newRebirth = user.rebirth + 1;
+    try {
+      await ref.read(userRepositoryProvider).rebirth(user.uid);
+    } on AppFailure catch (failure) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(failure.message)));
+      return;
+    } finally {
+      // 성공·실패 모두 잠금을 반드시 해제한다.
+      if (mounted) setState(() => _busy = false);
+    }
+
+    if (!mounted) return;
+    await showRebirthCelebrationDialog(context, newRebirth: newRebirth);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = widget.user;
+    final enabled = user.canRebirth && !_busy;
+
+    return Tooltip(
+      message: user.canRebirth
+          ? '환생해서 새로 시작해요'
+          : 'Lv.$kMaxLevel에 도달하면 환생할 수 있어요',
+      child: OutlinedButton.icon(
+        onPressed: enabled ? _onPressed : null,
+        icon: _busy
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Symbols.refresh),
+        label: Text('환생 (Lv.${user.level})'),
+      ),
     );
   }
 }
@@ -215,7 +277,13 @@ class _PendingQuests extends StatelessWidget {
         return Column(
           children: [
             for (final quest in preview) ...[
-              QuestCard(quest: quest),
+              // 홈 미리보기 카드는 완료 토글 없이 보기 전용이다. 탭하면 개별 상세가
+              // 아니라 **오늘의 퀘스트 탭**으로 전환한다 — 전체 목록에서 완료·관리한다
+              // ("오늘의 퀘스트" 버튼과 같은 목적지).
+              QuestCard(
+                quest: quest,
+                onTap: () => context.go('/quest'),
+              ),
               AppSpacing.gapSm,
             ],
           ],

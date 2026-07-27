@@ -28,6 +28,12 @@ abstract final class FirestorePaths {
 
   static String inventory(String uid) => 'users/$uid/inventory';
 
+  /// 보유 아이템 문서 (4주차 상점 구매). 문서 ID = itemId라 **아이템당 1개**가 되고
+  /// 재구매해도 같은 문서를 덮어쓴다(중복 보유 불가). 구매 트랜잭션이 이 경로에
+  /// 문서를 만드는 것과 코인 차감이 한 트랜잭션으로 묶인다.
+  static String inventoryItem(String uid, String itemId) =>
+      'users/$uid/inventory/$itemId';
+
   /// 공개 아이템 카탈로그 (4주차 상점). 읽기 전용.
   static const items = 'items';
 

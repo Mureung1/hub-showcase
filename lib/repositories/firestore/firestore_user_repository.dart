@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/constants/firestore_paths.dart';
 import '../../core/constants/growth_rules.dart';
 import '../../core/constants/reward_rules.dart';
+import '../../core/error/app_failure.dart';
 import '../../models/app_user.dart';
 import '../user_repository.dart';
 import 'firestore_codec.dart';
@@ -132,8 +133,96 @@ class FirestoreUserRepository implements UserRepository {
     });
   }
 
+  /// 환생 = 레벨/XP만 리셋 + rebirth+1. **트랜잭션이 필수다** — Lv.50 확인이
+  /// 읽은 값에 기반하고(read-modify-write), 두 기기에서 동시에 눌러도 rebirth가
+  /// 두 번 오르면 안 된다. 트랜잭션 안에서 읽고 판단하면 한쪽만 커밋된다.
+  ///
+  /// coin·equipped·dailyCoin·streak은 **쓰기 맵에 넣지 않는다** — merge:true라
+  /// 명시하지 않은 필드는 그대로 보존된다("손해가 아닌 훈장"). completeQuest·
+  /// rewardedAt 경로와 무관한 별도 쓰기다.
+  @override
+  Future<void> rebirth(String uid) {
+    return guard(() async {
+      final ref = _doc(uid);
+
+      await _db.runTransaction((transaction) async {
+        final snapshot = await transaction.get(ref);
+        final current = snapshot.exists
+            ? AppUser.fromJson(uid, decodeDoc(snapshot.data()))
+            : AppUser.initial(uid);
+
+        // 가드 — throw가 트랜잭션을 중단시켜 어떤 write도 커밋되지 않는다.
+        if (current.level < kMaxLevel) {
+          throw const UnknownFailure(null, kCannotRebirthMessage);
+        }
+
+        // 레벨/XP만 리셋 + rebirth+1. coin·equipped 등은 건드리지 않는다.
+        transaction.set(ref, {
+          'level': 1,
+          'xp': 0,
+          'rebirth': current.rebirth + 1,
+        }, SetOptions(merge: true));
+      });
+    });
+  }
+
   @override
   Future<void> updateEquipped(String uid, Map<String, String> equipped) {
     return guard(() => _doc(uid).set({'equipped': equipped}, SetOptions(merge: true)));
+  }
+
+  @override
+  Stream<Set<String>> watchInventory(String uid) {
+    return guardStream(
+      _db
+          .collection(FirestorePaths.inventory(uid))
+          .snapshots()
+          .map((snap) => snap.docs.map((doc) => doc.id).toSet()),
+    );
+  }
+
+  /// 구매 = 코인 차감 + inventory 문서 생성을 **한 트랜잭션으로** (4주차 상점).
+  ///
+  /// 트랜잭션인 이유: 두 문서(user·inventory item)를 함께 바꾸기 때문이다. 따로
+  /// 커밋되면 "코인은 빠졌는데 아이템이 없는" 상태가 남는다.
+  ///
+  /// 재구매 차단의 근거는 **읽어 온 inventory 문서의 존재 여부**다(문서 ID = itemId).
+  /// 트랜잭션 안에서 읽고 판단하므로, 같은 아이템을 두 기기에서 동시에 사도 한쪽만
+  /// 커밋된다(다른 쪽은 문서가 생긴 걸 감지해 재시도 → 이때는 이미 존재하니 결제하지
+  /// 않는다). 잔액 부족이면 write 없이 [AppFailure]를 던져 트랜잭션 전체가 중단된다.
+  @override
+  Future<void> purchaseItem(String uid, String itemId, int price) {
+    return guard(() async {
+      final userRef = _doc(uid);
+      final itemRef = _db.doc(FirestorePaths.inventoryItem(uid, itemId));
+
+      await _db.runTransaction((transaction) async {
+        // ⚠️ Firestore 규칙: 모든 read가 모든 write보다 앞서야 한다.
+        final itemSnap = await transaction.get(itemRef);
+        final userSnap = await transaction.get(userRef);
+
+        // 이미 보유 — 재결제 없이 반환(멱등). completeQuest의 rewardedAt 가드와 대칭.
+        if (itemSnap.exists) return;
+
+        final current = userSnap.exists
+            ? AppUser.fromJson(uid, decodeDoc(userSnap.data()))
+            : AppUser.initial(uid);
+
+        // 잔액 부족 — throw가 트랜잭션을 중단시켜 어떤 write도 커밋되지 않는다.
+        if (current.coin < price) {
+          throw const UnknownFailure(null, kInsufficientCoinMessage);
+        }
+
+        // coin은 현재 잔액을 다시 계산하지 않고 감산만 하면 되므로 increment 유지.
+        // merge:true라 사용자 문서가 아직 없어도 안전하다.
+        transaction.set(userRef, {
+          'coin': FieldValue.increment(-price),
+        }, SetOptions(merge: true));
+        transaction.set(itemRef, {
+          'itemId': itemId,
+          'acquiredAt': FieldValue.serverTimestamp(),
+        });
+      });
+    });
   }
 }

@@ -92,8 +92,8 @@ class AppUser {
   /// 오늘 코인 상한에 도달했는가(퀘스트를 더 완료해도 코인은 안 들어온다).
   bool isDailyCoinCapped(DateTime now) => remainingDailyCoin(now) == 0;
 
-  /// 현재 진화 단계.
-  CharacterStage get stage => stageOf(level);
+  /// 현재 진화 단계. 환생 횟수로 계열(새·용·피닉스)이 갈린다.
+  CharacterStage get stage => stageOf(level, rebirth: rebirth);
 
   /// 다음 레벨까지 필요한 XP.
   int get xpForNextLevel => stage.xpPerLevel;

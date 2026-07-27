@@ -69,6 +69,26 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 
 `AppUser.fromJson`은 **어떤 입력에도 예외를 던지지 않는다.** 사용자 문서가 깨져 있다고 홈 화면이 죽으면 안 되기 때문이다.
 
+#### 환생(프레스티지) — 계열 해금 (4주차)
+
+**Lv.50(`kMaxLevel`) 도달 시 환생한다.** 환생은 **레벨/XP만 Lv.1로 되돌리고 `rebirth`를 1 올린다.** 코인·`equipped`·보관함·출석/스트릭 카운터는 **전혀 건드리지 않는다** — 기획서의 "손해가 아닌 훈장" 원칙이다.
+
+- **쓰기 경로**: `UserRepository.rebirth(uid)`가 **유일한** 환생 쓰기다. `completeQuest`·`rewardedAt`·보상 지급 트랜잭션과 **완전히 분리된 별도 메서드**다(보관 쓰기를 지급 트랜잭션 밖에 두는 것과 같은 원칙).
+- **원자적 트랜잭션**: user 문서를 읽어 `level >= kMaxLevel`을 확인하고, 통과하면 같은 트랜잭션에서 `{level:1, xp:0, rebirth: rebirth+1}`만 쓴다(read-before-write, `merge:true`라 나머지 필드는 보존). Lv.50 미만이면 **write 없이** `AppFailure`(`kCannotRebirthMessage`). 두 기기 동시 실행에도 트랜잭션이 한쪽만 커밋해 `rebirth`가 두 번 오르지 않는다.
+- **계열은 저장하지 않는다.** 새 → 용 → 피닉스 계열은 **읽는 쪽**(`characterFamily(rebirth)`, `lib/core/constants/growth_rules.dart`)이 `rebirth` 값으로 판정한다 — `dailyCoinEarned`를 읽는 쪽에서 만료 판정하는 것과 같은 정신이다.
+
+**진화 표 (3계열 × 5단계, 이모지는 도트아트 완성 전 목업)** — 레벨 구간·`xpPerLevel`은 **계열 불변**이고, 계열로 갈리는 건 이름·이모지뿐이다(이 분리가 `applyXpGain` 무회귀의 근거):
+
+| 단계 | 레벨 | xpPerLevel | 새(환생 0–2) | 용(환생 3–5) | 피닉스(환생 6+) |
+|---|---|---|---|---|---|
+| 1 | 1–9 | 5 | 알 🥚 | 용의 알 🥚 | 피닉스의 알 🥚 |
+| 2 | 10–19 | 10 | 참새 🐤 | 새끼 용 🦎 | 잿빛 피닉스 🐣 |
+| 3 | 20–29 | 20 | 매 🕊️ | 어린 용 🐲 | 불꽃 피닉스 🔥 |
+| 4 | 30–44 | 40 | 독수리 🦅 | 성룡 🐉 | 황금 피닉스 🦚 |
+| 5 | 45–50 | 80 | 이펙트 독수리 🦅 | 화려한 용 🐉 | 만개한 피닉스 🔥 |
+
+계열 임계는 상수(`kDragonRebirth=3`·`kPhoenixRebirth=6`)이고, **구간을 유지한다**(다음 해금까지 계열이 이어진다). 환생 후 캐릭터는 새 계열의 1단계(예: 환생 3회 → '용의 알')로 보인다.
+
 ### `users/{uid}/goals/{goalId}` — 사용자가 입력한 큰 목표 (2주차)
 
 | 필드 | 타입 | 설명 |
@@ -88,14 +108,38 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 | `done` | bool | false | `status`의 파생값. 하위호환 + 콘솔 가독성을 위해 함께 쓴다 |
 | `order` | int | 0 | 목록 정렬 순서 = AI 분해 결과의 **실행 경로 순서** |
 | `deadline` | timestamp? | null | 마감일 (선택) |
-| `goalId` | string? | null | 어느 목표에서 분해됐는지 (`goals/{goalId}`). 직접 등록이면 null |
+| `goalId` | string? | null | 어느 목표(폴더)에 속하는지 (`goals/{goalId}`). **AI 분해·직접 등록 모두** 목표 단위라 값이 있을 수 있다(3단계-c부터 직접 등록도 목표를 갖는다). 구 낱개 직접 등록은 null |
 | `parentQuestId` | string? | null | 재분해로 생긴 자식이면 원본 퀘스트 ID (4주차부터 실제로 쓰인다) |
+| `source` | string? | null | **출처** `ai` \| `manual`. 카드 출처 칩(`✨AI`/`✎직접`)의 근거. `null`(구 문서/미지정)이면 읽을 때 goalId로 폴백(있으면 ai, 없으면 manual). 명시값이 있을 때만 문서에 기록한다 |
 | `createdAt` | timestamp | 서버 시각 | 생성 시각 |
 | `completedAt` | timestamp? | null | **언제 완료했나.** 완료 해제 시 null로 지움 |
 | `rewardedAt` | timestamp? | null | **보상을 지급한 시각.** 한번 찍히면 절대 지우지 않는다 |
 | `memo` | string? | null | 완료 시 남긴 **인증 메모**(3주차-B). 공백만이면 `null`로 정규화. 상태 전이에서 보존한다 |
+| `archived` | bool | false | **보관함으로 옮겨졌는가**(2단계). `true`일 때만 문서에 기록한다(기본값은 필드 생략) |
 
 정렬: `order` → `createdAt`.
+
+#### `archived` — 완료 = 보관함으로 이동 (2단계)
+
+"오늘의 퀘스트 = 할 일, 보관함 = 끝낸 일" 구조를 만드는 **단 하나의 플래그**다. 새 컬렉션·새 문서 구조 없이, 같은 `quests` 컬렉션을 필터 분기만으로 두 화면에 나눠 준다.
+
+- **오늘의 퀘스트** = `archived == false` 그룹뷰(완료 토글 있음). **보관함** = `archived == true` 그룹뷰(완료 토글 없는 보기 전용). 두 화면이 `groupQuestsByGoal`·`GoalGroupSection`을 그대로 공유한다.
+- **이동 단위**: 목표(폴더)는 **그 목표의 모든 퀘스트(부모·자식)가 done일 때 통째로**, 직접 등록(`goalId == null`)은 **완료 즉시 낱개로** `archived`가 된다. 무엇을 옮길지는 순수 함수 `resolveArchiveOnComplete()`(`lib/models/quest_group.dart`)가 정한다 — `arrangeQuestTree`·`descendantIds`와 같은 관심사 분리(저장소는 규칙을 모른다).
+- **재분해 원본 자동완료**: 어떤 `stuck` 원본의 자식(`descendantIds`)이 **모두** done이면 그 원본도 done으로 민다 — 그래야 "목표 전부 완료"가 성립한다. 이 자동완료는 **보상 없이** `setStatus(done)`으로만 처리한다(자식 완료로 이미 지급됨). 3주차의 "부모 자동 완료는 하지 않는다"에서 2단계에 **정책이 바뀐 부분**이며, 보상 지급 없는 상태 전이라 보상 정책은 그대로다.
+- **되돌림 없음** — 단방향 플래그. 보관함에는 완료 토글이 없다.
+
+**쓰기 경로**: `archiveQuests(uid, Set<String> ids)`가 **유일한** 보관 쓰기다. Firestore는 batch로 `{'archived': true}`만 `update`하고, InMemory는 스테이징 후 스트림 **1회** 방출한다(목표 폴더가 "절반만 옮겨진" 중간 상태가 없다). 없는 ID·빈 집합은 멱등하게 통과한다(`deleteQuests`와 같은 계약).
+
+⚠️ **`completeQuest` 지급 트랜잭션은 건드리지 않는다.** 완료·보상이 커밋된 **뒤**, 화면이 자동완료(`setStatus`)와 보관(`archiveQuests`)을 **별도 쓰기**로 부른다. 보관 실패가 지급을 롤백하거나 그 반대가 되면 안 되기 때문이다(계측 로그를 트랜잭션 밖에 두는 것과 같은 원칙). 보관 쓰기가 실패하면 퀘스트는 done인 채 오늘 목록에 남고, 다음 완료·재실행에서 다시 시도된다 — 데이터 손실은 없다.
+
+#### `source` — 출처를 왜 별도 필드로 두나 (goalId 추론의 함정)
+
+예전에는 출처 칩(`✨AI`/`✎직접`)이 **`goalId` 유무 하나로** 판정했다("goalId 있으면 AI"). AI 분해 퀘스트만 목표를 가리키던 시절엔 맞았다. 그런데 **3단계-c에서 직접 등록이 목표(폴더) 단위가 되며** 직접 등록 퀘스트도 `goalId`를 갖게 됐고, 그 추론은 직접 등록을 전부 "AI"로 오표기했다(A0-2 위반). 출처는 goalId와 **별개의 사실**이라 명시 신호로 분리했다.
+
+- **쓰기**: `createQuests(uid, drafts, source:)`가 심는다. AI 분해·재분해는 `ai`, 직접 등록은 `manual`. 기본값은 `ai`(이 경로의 주 사용처가 분해라서)이고, 직접 등록만 `manual`을 명시한다.
+- **읽기(하위호환)**: `Quest.effectiveSource`가 유일한 판정처다. 명시값이 있으면 그 값, 없으면(구 문서) `goalId` 폴백 — **필드 없고 goalId 있으면 `ai`, 없으면 `manual`**. 덕분에 구 AI 분해 데이터는 계속 AI로, 구 낱개 직접 등록은 직접으로 보인다(마이그레이션 불필요).
+- **직렬화**: 명시값이 있을 때만 문서에 기록한다(`archived`와 같은 원칙 — 기본값은 필드 생략).
+- 카드는 `quest.effectiveSource`를, 칩(`QuestSourceChip`)은 `QuestSource`를 받는다. **더는 goalId를 출처 근거로 쓰지 않는다.**
 
 #### `completedAt`과 `rewardedAt`을 왜 나눴나
 
@@ -176,6 +220,8 @@ final drafts = QuestDraft.parseList(aiJson['quests']);
 
 파싱은 `Quest.fromJson`처럼 관대하다(`id`만 필수). 기록 하나가 깨져도 보관함 전체가 죽으면 안 된다.
 
+**조회 경로**(보관함 화면): `watchAchievements(uid)`가 `orderBy('completedAt', descending: true)`로 **최신순** 스트림을 흘린다. `quests`와 달리 `completedAt` 단일 키라 복합 인덱스가 필요 없어 정렬을 서버에 맡긴다. 목록은 `Achievement.tryParse`로 관대하게 파싱해 깨진 문서만 버린다(`watchQuests`와 같은 계약). ⚠️ `orderBy`는 `completedAt` 필드가 없는 문서를 결과에서 제외하지만, 지급 경로가 항상 서버 시각을 찍으므로 정상 기록은 모두 포함된다. **이미지 바이트는 이 스트림에 실리지 않는다** — 목록에서 사진은 `hasPhoto` 플래그만 쓰고, proof 문서(base64)는 필요한 화면에서만 questId로 따로 읽는다.
+
 #### 인증 보너스
 
 `completeQuest(uid, questId, memo:)`의 `memo`가 **공백이 아니면 인증 성립** → 기본 보상 + `kVerificationBonus`(코인 3 · XP 3)를 **합산 지급**한다(예: 보통 5/10 → 8/13). 판정은 `normalizeMemo()` 한 곳에서만 한다(두 저장소 구현이 갈리지 않게).
@@ -197,6 +243,12 @@ final drafts = QuestDraft.parseList(aiJson['quests']);
 **왜 별도 컬렉션인가**: 이미지 바이트를 quest·achievement 문서에 넣으면 목록을 조회할 때마다 수십 KB가 딸려와 읽기 비용이 폭증한다. 사진은 필요한 화면에서만 이 문서를 읽는다. achievement에는 **유무 플래그(`hasPhoto`)만** 둔다.
 
 **원자성**: proof 문서 쓰기는 `completeQuest()`의 **같은 트랜잭션**에 들어가고, 보상이 실제 지급되는 경로에서만 실행된다(재완료는 쓰지 않는다). proof ref의 ID는 트랜잭션 밖에서 `.doc(proofDoc(...))`로 만든다(read가 아니므로 read-before-write 규칙과 무관 — achievementRef와 같은 패턴).
+
+**조회 경로 (보관함 상세 시트, 3단계-a)**: `QuestRepository.fetchProof(uid, questId)`가 이 문서를 `get`해 `base64` 필드를 돌려준다. **목록에선 읽지 않고 상세를 열 때만** 그 퀘스트 하나를 lazy 조회한다 — 위 "별도 컬렉션인가"의 이유(목록 N번 읽기 방지)와 짝을 이룬다. 문서가 없으면(사진 없이 완료) `null`을 돌려준다(에러 아님), `base64`가 문자열이 아닌 깨진 문서도 `null`로 떨어뜨려 상세 시트가 "사진 없음"을 그린다. 그 밖의 실패는 다른 조회와 동일하게 `AppFailure`로 정규화한다.
+
+**독립 갱신 경로 (보관함 기록 편집, 3단계-b)**: `QuestRepository.updateProof(uid, questId, String? photoBase64)`가 이 문서를 **완료·보상과 무관하게** 단건으로 고친다 — 값이면 `set`으로 교체, `null`이면 `delete`로 제거(퀘스트당 사진 1장이라 재완료 덮어쓰기와 같은 문서를 다룬다). ⚠️ **`completeQuest` 트랜잭션을 절대 타지 않는다**: `rewardedAt`·`coin`·`xp`·난이도·성취 기록을 전혀 건드리지 않는 보상 경제 밖의 부가 정보 쓰기다(보관 쓰기를 지급 트랜잭션 밖에 두는 것과 같은 원칙). 입구에서 `ensureProofWithinLimit()`로 교체 크기를 한 번 더 방어하고(`completeQuest`와 같은 단일 정의처), 실패는 `AppFailure`로 정규화한다.
+
+> **정책 구분**: 완료 퀘스트의 **제목·난이도** 수정은 B-5b가 막았다(오늘의 퀘스트 목록 — 재완료 보상 유효화 차단). 여기 `updateProof`와 상세 시트의 메모 편집은 **보관함 기록**의 메모·사진이고 보상 등급에 영향이 없어 별개로 허용된다. 메모는 `updateQuest`가 반영하는데, `Quest.toJson()`이 `memo == null`이면 필드를 생략하므로 **메모 비우기(=null)가 문서에서 실제로 지워지도록** Firestore `updateQuest`가 `'memo'`를 명시적으로 실어 쓴다(값이 있을 때는 `toJson`과 같은 값이라 무해). 메모(`updateQuest`)와 사진(`updateProof`)은 각각 별도 쓰기라 원자성이 필수가 아니다 — 부가 정보라 부분 반영을 허용하고 실패는 스낵바로 알린다.
 
 ### `users/{uid}/events/{eventId}` — 성공 지표 이벤트 로그 (4주차)
 
@@ -225,11 +277,23 @@ final drafts = QuestDraft.parseList(aiJson['quests']);
 
 ### `users/{uid}/inventory/{itemId}` — 4주차
 
-보유 아이템. `itemId`, `acquiredAt`, `equipped`.
+보유 아이템. 문서 **ID = itemId**라 아이템당 문서 1개이고, 재구매해도 같은 문서를 덮어써 중복 보유가 생기지 않는다.
 
-### `items/{itemId}` — 4주차
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `itemId` | string | 아이템 ID (문서 ID와 동일, 조회 편의) |
+| `acquiredAt` | timestamp | 구매 시각 (서버 시각) |
 
-공개 아이템 카탈로그. 인증 사용자는 읽기만 가능하고, 쓰기는 콘솔에서만 한다.
+**구매 트랜잭션 계약** (`UserRepository.purchaseItem`, `firestore_user_repository.dart`):
+사용자 문서를 읽어 `coin >= price`를 확인하고, 통과하면 **한 트랜잭션에서** `coin`을 `FieldValue.increment(-price)`로 차감하면서 이 문서를 만든다. "코인만 빠지고 아이템 없는" 중간 상태는 불가능하다.
+- **잔액 부족** → write 없이 `AppFailure`(트랜잭션 중단). 코인을 한 푼도 깎지 않는다.
+- **이미 보유**(문서 존재) → 재결제 없이 반환(멱등). `completeQuest`의 `rewardedAt` 재지급 금지와 같은 정신 — 두 기기 동시 구매도 트랜잭션 안에서 존재 여부를 읽어 한 번만 결제한다.
+
+아이템 **카탈로그는 Firestore가 아니라 코드 상수**(`lib/core/constants/shop_items.dart`, `kShopItems`)다. 운영 중 변경이 없는 MVP라 콘솔 수동 입력·테스트 사각지대를 피한다(`reward_rules`·`growth_rules`와 같은 관례). 슬롯은 2개(`background` 틴트 · `aura` 이모지)이며 `equipped` 맵의 키가 된다.
+
+### `items/{itemId}` — 4주차 (미사용)
+
+공개 아이템 카탈로그 경로. **현재 쓰지 않는다** — 위처럼 카탈로그를 코드 상수로 두기로 했다. 콘솔 관리형 카탈로그가 필요해지는 날을 위해 경로만 남겨 둔다.
 
 ## 보안 규칙
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/core/theme/app_theme.dart';
+import 'package:one_step/models/achievement.dart';
 import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/goal.dart';
 import 'package:one_step/models/quest.dart';
@@ -23,10 +24,12 @@ Future<InMemoryQuestRepository> pumpScreen(
   Widget screen, {
   List<Quest> quests = const [],
   List<Goal> goals = const [],
+  List<Achievement> achievements = const [],
   AppUser? user,
   AppFailure? failWith,
   DateTime Function()? clock,
   List<Override> extraOverrides = const [],
+  TextScaler? textScaler,
 }) async {
   const uid = 'test-uid';
 
@@ -42,6 +45,9 @@ Future<InMemoryQuestRepository> pumpScreen(
   // 경계에 걸려 있어, 실제 시계로는 "자정을 넘겼다"를 재현할 수 없다.
   final questRepo = InMemoryQuestRepository(
     seed: quests,
+    // 보관함 화면 테스트가 완료 트랜잭션을 거치지 않고 성취 기록을 심을 수 있게
+    // 한다(빈 리스트면 기존 동작 그대로).
+    seedAchievements: achievements.isEmpty ? const {} : {uid: achievements},
     failWith: failWith,
     users: userRepo,
     clock: clock,
@@ -70,7 +76,19 @@ Future<InMemoryQuestRepository> pumpScreen(
         if (clock != null) clockProvider.overrideWithValue(clock),
         ...extraOverrides,
       ],
-      child: MaterialApp(theme: AppTheme.light, home: screen),
+      child: MaterialApp(
+        theme: AppTheme.light,
+        home: screen,
+        // 접근성 글꼴 배율 강제. `home:`을 직접 감싸지 않고 MaterialApp.builder를
+        // 쓰는 이유는 **Navigator 위**를 감싸야 다이얼로그·시트 같은 별도 라우트에도
+        // 같은 배율이 적용되기 때문이다.
+        builder: textScaler == null
+            ? null
+            : (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+                child: child!,
+              ),
+      ),
     ),
   );
 

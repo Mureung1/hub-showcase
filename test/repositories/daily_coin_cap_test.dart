@@ -45,7 +45,7 @@ void main() {
 
     final reward = await repo.quests.completeQuest(uid, 'q1');
 
-    expect(reward, const Reward(coin: 10, xp: 20));
+    expect(reward!.reward, const Reward(coin: 10, xp: 20));
     final user = await repo.users.fetchUser(uid);
     expect(user.coin, 10);
     expect(user.dailyCoinEarned, 10);
