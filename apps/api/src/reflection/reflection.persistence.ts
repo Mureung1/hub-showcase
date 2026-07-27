@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type {
   ReflectionDraft,
+  ReflectionAnalysis,
   ReflectionDraftSaveResponse,
 } from "@ptop/contracts";
 import { SupabaseClientService } from "../supabase/supabase-client.service";
@@ -8,6 +9,7 @@ import { SupabaseClientService } from "../supabase/supabase-client.service";
 type ReflectionDraftRow = {
   analysis_result_id: string;
   draft: ReflectionDraft;
+  reflection_analysis: ReflectionAnalysis | null;
   updated_at: string;
 };
 
@@ -32,15 +34,25 @@ export class ReflectionDraftPersistence {
   async save(
     analysisResultId: string,
     draft: ReflectionDraft,
+    reflectionAnalysis: ReflectionAnalysis | null = null,
   ): Promise<ReflectionDraftSaveResponse> {
-    const { data, error } = await this.supabase.client
+    const query = this.supabase.client
       .from("reflection_drafts")
       .upsert(
-        { analysis_result_id: analysisResultId, draft },
+        {
+          analysis_result_id: analysisResultId,
+          draft,
+          reflection_analysis: reflectionAnalysis,
+        },
         { onConflict: "analysis_result_id" },
-      )
-      .select("analysis_result_id, draft, updated_at")
+      );
+    const { data, error } = await query
+      .select("analysis_result_id, draft, reflection_analysis, updated_at")
       .single();
+
+    if (isMissingReflectionAnalysisColumn(error)) {
+      return this.saveWithoutReflectionAnalysis(analysisResultId, draft, reflectionAnalysis);
+    }
 
     if (error || !isReflectionDraftRow(data)) {
       throw new ReflectionDraftPersistenceError();
@@ -50,15 +62,21 @@ export class ReflectionDraftPersistence {
       analysisResultId: data.analysis_result_id,
       draft: data.draft,
       savedAt: data.updated_at,
+      reflectionAnalysis: data.reflection_analysis ?? null,
     };
   }
 
   async find(analysisResultId: string): Promise<ReflectionDraftSaveResponse | null> {
-    const { data, error } = await this.supabase.client
+    const query = this.supabase.client
       .from("reflection_drafts")
-      .select("analysis_result_id, draft, updated_at")
+      .select("analysis_result_id, draft, reflection_analysis, updated_at")
       .eq("analysis_result_id", analysisResultId)
-      .maybeSingle();
+      ;
+    const { data, error } = await query.maybeSingle();
+
+    if (isMissingReflectionAnalysisColumn(error)) {
+      return this.findWithoutReflectionAnalysis(analysisResultId);
+    }
 
     if (error) {
       throw new ReflectionDraftLoadError();
@@ -76,6 +94,62 @@ export class ReflectionDraftPersistence {
       analysisResultId: data.analysis_result_id,
       draft: data.draft,
       savedAt: data.updated_at,
+      reflectionAnalysis: data.reflection_analysis ?? null,
+    };
+  }
+
+  private async saveWithoutReflectionAnalysis(
+    analysisResultId: string,
+    draft: ReflectionDraft,
+    reflectionAnalysis: ReflectionAnalysis | null,
+  ): Promise<ReflectionDraftSaveResponse> {
+    const { data, error } = await this.supabase.client
+      .from("reflection_drafts")
+      .upsert(
+        { analysis_result_id: analysisResultId, draft },
+        { onConflict: "analysis_result_id" },
+      )
+      .select("analysis_result_id, draft, updated_at")
+      .single();
+
+    if (error || !isLegacyReflectionDraftRow(data)) {
+      throw new ReflectionDraftPersistenceError();
+    }
+
+    return {
+      analysisResultId: data.analysis_result_id,
+      draft: data.draft,
+      savedAt: data.updated_at,
+      reflectionAnalysis,
+    };
+  }
+
+  private async findWithoutReflectionAnalysis(
+    analysisResultId: string,
+  ): Promise<ReflectionDraftSaveResponse | null> {
+    const { data, error } = await this.supabase.client
+      .from("reflection_drafts")
+      .select("analysis_result_id, draft, updated_at")
+      .eq("analysis_result_id", analysisResultId)
+      .maybeSingle();
+
+    if (error) {
+      throw new ReflectionDraftLoadError();
+    }
+
+    if (data === null) {
+      return null;
+    }
+
+    if (!isLegacyReflectionDraftRow(data)) {
+      throw new ReflectionDraftLoadError();
+    }
+
+    return {
+      analysisResultId: data.analysis_result_id,
+      draft: data.draft,
+      savedAt: data.updated_at,
+      reflectionAnalysis: null,
     };
   }
 }
@@ -89,6 +163,32 @@ function isReflectionDraftRow(value: unknown): value is ReflectionDraftRow {
     typeof value.analysis_result_id === "string" &&
     typeof value.updated_at === "string" &&
     isRecord(value.draft)
+  );
+}
+
+function isLegacyReflectionDraftRow(
+  value: unknown,
+): value is Omit<ReflectionDraftRow, "reflection_analysis"> {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.analysis_result_id === "string" &&
+    typeof value.updated_at === "string" &&
+    isRecord(value.draft)
+  );
+}
+
+function isMissingReflectionAnalysisColumn(error: unknown): boolean {
+  if (!isRecord(error)) {
+    return false;
+  }
+
+  return (
+    error.code === "42703" ||
+    (typeof error.message === "string" &&
+      error.message.includes("reflection_analysis"))
   );
 }
 

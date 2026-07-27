@@ -1,6 +1,6 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useState } from "react";
-import type { RepositoryAnalysisResult } from "@ptop/contracts";
+import type { ReflectionAnalysis, RepositoryAnalysisResult } from "@ptop/contracts";
 import type { ReflectionDraft } from "../reflection/reflection";
 import { saveReflectionDraftToApi } from "../reflection/reflectionApi";
 import { useAuth } from "../auth/useAuth";
@@ -17,6 +17,7 @@ type RepositoryAnalyzerProps = {
   onAnalysisComplete: (
     result: RepositoryAnalysisResult,
     reflectionDraft: ReflectionDraft,
+    reflectionAnalysis: ReflectionAnalysis | null,
   ) => void;
   onCancel: () => void;
   onModeChange?: (mode: "start" | "workbench") => void;
@@ -47,6 +48,8 @@ export function RepositoryAnalyzer({
   const [analysisError, setAnalysisError] = useState("");
   const [reflectionDraft, setReflectionDraft] =
     useState<ReflectionDraft | null>(null);
+  const [reflectionAnalysis, setReflectionAnalysis] =
+    useState<ReflectionAnalysis | null>(null);
   const [pendingAnalysisResult, setPendingAnalysisResult] =
     useState<RepositoryAnalysisResult | null>(null);
   const authGithubLogin =
@@ -76,6 +79,7 @@ export function RepositoryAnalyzer({
     setAnalysisStatus(ANALYSIS_STATUS.loading);
     setAnalysisError("");
     setPendingAnalysisResult(null);
+    setReflectionAnalysis(null);
 
     try {
       const result = await requestRepositoryAnalysis({
@@ -100,6 +104,7 @@ export function RepositoryAnalyzer({
     setAnalysisError("");
     setPendingAnalysisResult(null);
     setReflectionDraft(null);
+    setReflectionAnalysis(null);
   };
 
   const statusToneClassName =
@@ -134,10 +139,17 @@ export function RepositoryAnalyzer({
                     saveReflectionDraftToApi(
                       pendingAnalysisResult.id,
                       draft,
-                    ).then(() => undefined)
+                      undefined,
+                      undefined,
+                      pendingAnalysisResult.analysis.technicalChallenges,
+                    ).then((response) => {
+                      setReflectionAnalysis(response.reflectionAnalysis ?? null);
+                    })
                 : undefined
             }
-            onViewResults={onAnalysisComplete}
+            onViewResults={(result, draft) =>
+              onAnalysisComplete(result, draft, reflectionAnalysis)
+            }
             analysisResult={pendingAnalysisResult}
           />
         </div>

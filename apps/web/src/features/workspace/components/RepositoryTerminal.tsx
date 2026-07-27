@@ -1,4 +1,4 @@
-import type { RepositoryAnalysisResult } from "@ptop/contracts";
+import type { ReflectionAnalysis, RepositoryAnalysisResult } from "@ptop/contracts";
 import { useEffect, useRef, useState } from "react";
 import type { ReflectionDraft } from "../../reflection/reflection";
 import { RepositoryAnalyzer } from "../../repository-analysis/RepositoryAnalyzer";
@@ -7,6 +7,7 @@ type RepositoryTerminalProps = {
   onAnalysisComplete: (
     result: RepositoryAnalysisResult,
     reflectionDraft: ReflectionDraft,
+    reflectionAnalysis: ReflectionAnalysis | null,
   ) => void;
   onClose: () => void;
 };
@@ -63,7 +64,7 @@ export function RepositoryTerminal({
           <div className={`relative overflow-visible border-2 border-[var(--terminal-border)] p-2 sm:p-3 ${mode === "workbench" ? "min-h-[488px]" : "min-h-[390px]"}`}>
             <div id="workspace-terminal-description" className="relative z-0 min-w-0 overflow-visible">
               <RepositoryAnalyzer
-                onAnalysisComplete={onAnalysisComplete}
+              onAnalysisComplete={onAnalysisComplete}
                 onCancel={onClose}
                 onModeChange={setMode}
               />

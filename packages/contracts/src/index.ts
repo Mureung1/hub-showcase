@@ -17,6 +17,8 @@ export type {
 export type {
   ReflectionChallengeAnswers,
   ReflectionDraft,
+  ReflectionAlignment,
+  ReflectionAnalysis,
   ReflectionDraftSaveRequest,
   ReflectionDraftSaveResponse,
 } from "./reflection";

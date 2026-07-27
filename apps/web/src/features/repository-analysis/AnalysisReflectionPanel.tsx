@@ -182,7 +182,7 @@ export function AnalysisReflectionPanel({
                 ? "SENT"
                 : "SEND  >"}
         </button>
-        {isAnalysisComplete && onViewResults && (
+        {isAnalysisComplete && onViewResults && saveStatus === "saved" && (
           <button
             className="min-h-11 border-2 border-[var(--terminal-border)] bg-[#16202e] px-5 text-sm font-bold text-[var(--terminal-ink)] transition hover:border-[var(--terminal-accent)] hover:text-[var(--terminal-accent)] focus-visible:outline-2 focus-visible:outline-[var(--terminal-accent)] focus-visible:outline-offset-2"
             type="button"

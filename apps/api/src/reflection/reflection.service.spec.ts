@@ -40,7 +40,53 @@ describe("ReflectionService", () => {
     await expect(service.save("analysis-id", validDraft)).resolves.toEqual(
       expect.objectContaining({ analysisResultId: "analysis-id", draft: validDraft }),
     );
-    expect(persistence.save).toHaveBeenCalledWith("analysis-id", validDraft);
+    expect(persistence.save).toHaveBeenCalledWith("analysis-id", validDraft, null);
+  });
+
+  it("stores the alignment between the reflection and challenge candidates", async () => {
+    const reflectionAnalysis = {
+      alignment: "matched" as const,
+      matchedChallengeTitle: "분석 결과 연결",
+      matchedChallengeEvidence: [],
+      message: "회고와 후보가 연결되었습니다.",
+      portfolioSummary: "분석 흐름을 개선했습니다.",
+      requiresUserConfirmation: false,
+    };
+    const persistence = {
+      save: jest.fn().mockResolvedValue({
+        analysisResultId: "analysis-id",
+        draft: validDraft,
+        savedAt: "2026-07-22T09:00:00.000Z",
+        reflectionAnalysis,
+      }),
+    };
+    const alignmentAnalyzer = {
+      analyze: jest.fn().mockResolvedValue(reflectionAnalysis),
+    };
+    const service = new ReflectionService(
+      persistence as unknown as ReflectionDraftPersistence,
+      alignmentAnalyzer as never,
+    );
+    const candidates = [
+      {
+        title: "분석 결과 연결",
+        summary: "분석 결과를 연결했습니다.",
+        background: null,
+        problem: null,
+        solution: null,
+        technicalChallenge: "분석 흐름",
+        whyItMatters: "회고에 활용",
+        confidence: "medium" as const,
+        requiresUserConfirmation: true,
+        evidence: [],
+      },
+    ];
+
+    await expect(service.save("analysis-id", validDraft, candidates)).resolves.toMatchObject({
+      reflectionAnalysis,
+    });
+    expect(alignmentAnalyzer.analyze).toHaveBeenCalledWith(validDraft, candidates);
+    expect(persistence.save).toHaveBeenCalledWith("analysis-id", validDraft, reflectionAnalysis);
   });
 
   it("rejects malformed drafts before calling persistence", async () => {

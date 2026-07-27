@@ -1,4 +1,4 @@
-import type { RepositoryAnalysisResult } from "@ptop/contracts";
+import type { ReflectionAnalysis, RepositoryAnalysisResult } from "@ptop/contracts";
 import { useState } from "react";
 import { AnalysisPage } from "./pages/AnalysisPage";
 import { LandingPage } from "./pages/LandingPage";
@@ -33,11 +33,13 @@ export function App() {
   const [openAnalysisOnEntry, setOpenAnalysisOnEntry] = useState(initialRoute.openAnalysisOnEntry);
   const [analysisResult, setAnalysisResult] = useState<RepositoryAnalysisResult | null>(null);
   const [reflectionDraft, setReflectionDraft] = useState<ReflectionDraft | null>(null);
+  const [reflectionAnalysis, setReflectionAnalysis] = useState<ReflectionAnalysis | null>(null);
 
   const showLanding = () => {
     setView("landing");
     setAnalysisResult(null);
     setReflectionDraft(null);
+    setReflectionAnalysis(null);
     const url = new URL(window.location.href);
     url.searchParams.delete("view");
     url.searchParams.delete("start");
@@ -45,9 +47,14 @@ export function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const showAnalysis = (result: RepositoryAnalysisResult, draft: ReflectionDraft) => {
+  const showAnalysis = (
+    result: RepositoryAnalysisResult,
+    draft: ReflectionDraft,
+    analysis: ReflectionAnalysis | null,
+  ) => {
     setAnalysisResult(result);
     setReflectionDraft(draft);
+    setReflectionAnalysis(analysis);
     setOpenAnalysisOnEntry(false);
     setView("analysis");
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -58,6 +65,7 @@ export function App() {
     setOpenAnalysisOnEntry(openAnalysis);
     setAnalysisResult(null);
     setReflectionDraft(null);
+    setReflectionAnalysis(null);
     window.scrollTo({ top: 0, behavior: "auto" });
   };
 
@@ -93,6 +101,7 @@ export function App() {
           <AnalysisPage
             result={analysisResult}
             reflectionDraft={reflectionDraft}
+            reflectionAnalysis={reflectionAnalysis}
             onBackToWorkspace={showWorkspace}
           />
         ) : null}

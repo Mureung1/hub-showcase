@@ -1,4 +1,5 @@
 import type {
+  ReflectionAnalysis,
   RepositoryAnalysisEvidence,
   RepositoryAnalysisResult,
 } from "@ptop/contracts";
@@ -6,6 +7,7 @@ import type { ReactNode } from "react";
 
 type AnalysisResultProps = {
   result: RepositoryAnalysisResult;
+  reflectionAnalysis?: ReflectionAnalysis | null;
 };
 
 export type AnalysisResultViewModel = {
@@ -68,7 +70,7 @@ export function getAnalysisResultViewModel(
   };
 }
 
-export function AnalysisResult({ result }: AnalysisResultProps) {
+export function AnalysisResult({ result, reflectionAnalysis }: AnalysisResultProps) {
   const viewModel = getAnalysisResultViewModel(result);
 
   return (
@@ -209,6 +211,41 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
         )}
       </ResultCard>
 
+      {reflectionAnalysis && (
+        <ResultCard title="내 회고와 분석 결과 연결">
+          <div className={`grid gap-2 rounded-lg border p-4 ${reflectionTone[reflectionAnalysis.alignment]}`} role="status">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <strong>{reflectionAlignmentLabels[reflectionAnalysis.alignment]}</strong>
+              {reflectionAnalysis.matchedChallengeTitle && (
+                <span className="text-sm font-bold">{reflectionAnalysis.matchedChallengeTitle}</span>
+              )}
+            </div>
+            <p className="m-0 text-sm leading-[1.6]">{reflectionAnalysis.message}</p>
+            {reflectionAnalysis.portfolioSummary && (
+              <p className="m-0 border-t border-current/20 pt-3 text-sm leading-[1.6]">
+                <strong>포트폴리오 단서: </strong>
+                {reflectionAnalysis.portfolioSummary}
+              </p>
+            )}
+            {reflectionAnalysis.matchedChallengeEvidence.length > 0 && (
+              <div className="border-t border-current/20 pt-3 text-sm">
+                <strong>연결된 Repository 근거</strong>
+                <ul className="mt-2 grid gap-1 pl-5">
+                  {reflectionAnalysis.matchedChallengeEvidence.map((evidence) => (
+                    <li key={`${evidence.evidenceType}-${evidence.referenceId ?? evidence.filePath ?? evidence.title}`}>
+                      {evidence.filePath ?? evidence.title}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {reflectionAnalysis.requiresUserConfirmation && (
+              <strong className="text-sm">이 결과는 사용자 확인이 필요합니다.</strong>
+            )}
+          </div>
+        </ResultCard>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-2">
         <ResultCard title="품질 신호">
           <ul className="m-0 grid gap-2 p-0">
@@ -347,3 +384,17 @@ const confidenceLabels = {
   medium: "보통",
   low: "낮음",
 } as const;
+
+const reflectionAlignmentLabels: Record<ReflectionAnalysis["alignment"], string> = {
+  matched: "회고와 분석 근거가 연결되었습니다",
+  partial: "회고와 일부 근거만 연결되었습니다",
+  mismatched: "회고와 AI 후보가 일치하지 않습니다",
+  no_evidence: "연결할 근거를 찾지 못했습니다",
+};
+
+const reflectionTone: Record<ReflectionAnalysis["alignment"], string> = {
+  matched: "border-ptop-mint-dark/40 bg-ptop-mint-soft text-ptop-ink",
+  partial: "border-amber-300 bg-amber-50 text-amber-950",
+  mismatched: "border-orange-300 bg-orange-50 text-orange-950",
+  no_evidence: "border-slate-300 bg-slate-50 text-slate-700",
+};
