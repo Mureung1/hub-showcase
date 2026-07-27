@@ -7,7 +7,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "eval": "ts-node src/eval/runEval.ts"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +29,7 @@
     "@types/node": "^22.10.2",
     "@types/pg": "^8.20.0",
     "pg": "^8.22.0",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.2",
     "vitest": "^4.1.10"
