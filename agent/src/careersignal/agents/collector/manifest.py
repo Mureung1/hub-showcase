@@ -42,6 +42,9 @@ class ManifestEntry(BaseModel):
     job_role_ids: tuple[str, ...] = ("backend",)
 
     title: str | None = None
+    job_role_raw: str | None = None
+    """직무 판정에 사용한 원문 표기. 판정 규칙은 docs/metric-spec.md 2.8이다."""
+
     entry_label_raw: str | None = None
     entry_label: EntryLabel | None = None
     posted_at: date | None = None
