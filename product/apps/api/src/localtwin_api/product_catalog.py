@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from localtwin_api.db_models import StoreMarketLink, StorePoint
 
 AnalysisCategory = Literal["카페", "음식점", "베이커리", "편의점"]
+Category = AnalysisCategory
 NearbyRadius = Literal[100, 300, 500]
 CategoryCoverage = Literal["full", "partial"]
 
@@ -29,7 +30,6 @@ CATEGORY_CODES: dict[AnalysisCategory, tuple[str, ...]] = {
     "편의점": ("CS300002",),
 }
 
-# Categories with complete Seoul commercial-analysis metrics.
 CATEGORY_NAME_TERMS: dict[AnalysisCategory, tuple[str, ...]] = {
     "카페": ("카페", "커피"),
     "음식점": ("음식점", "한식", "중식", "일식", "분식", "주점"),
