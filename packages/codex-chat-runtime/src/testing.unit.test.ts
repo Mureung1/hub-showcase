@@ -32,10 +32,10 @@ test('deterministic runtime returns caller-supplied native thread identities', a
   ])
 })
 
-test('deterministic runtime binds an isolated thread to its workspace role root', async () => {
+test('deterministic runtime binds an isolated thread to its workspace root', async () => {
   const workspaceRoot = '/workspace/semester-a'
   const runtime = new DeterministicCodexChatRuntime({
-    role: { role: 'workspace', workspaceRoot },
+    workspace: workspaceRoot,
     threadIds: ['thread-product'],
   })
   const input = {
@@ -54,10 +54,10 @@ test('deterministic runtime binds an isolated thread to its workspace role root'
   ])
 })
 
-test('deterministic runtime rejects a different workspace role root before consuming a thread identity', async () => {
+test('deterministic runtime rejects a different workspace root before consuming a thread identity', async () => {
   const workspaceRoot = '/workspace/semester-a'
   const runtime = new DeterministicCodexChatRuntime({
-    role: { role: 'workspace', workspaceRoot },
+    workspace: workspaceRoot,
     threadIds: ['thread-must-remain-unused'],
   })
   const mcp = {
@@ -73,7 +73,7 @@ test('deterministic runtime rejects a different workspace role root before consu
       () => runtime.startThread({ workspace, mcp }),
       (error: unknown) => {
         assert.ok(error instanceof CodexChatRuntimeError)
-        assert.equal(error.code, 'runtime_role_denied')
+        assert.equal(error.code, 'workspace_mismatch')
         assert.equal(
           error.displayMessage,
           'The requested workspace does not match this Codex runtime.',
@@ -252,302 +252,6 @@ test('deterministic native-context calls reject a closed runtime before consumin
     /closed/,
   )
   assert.equal(scriptConsumed, false)
-})
-
-test('deterministic account runtime preserves role, delayed status, duplicate terminal reads, and close result', async () => {
-  let settleStatus!: (value: {
-    readonly status: 'completed'
-    readonly attemptId: string
-  }) => void
-  const delayedStatus = new Promise<{
-    readonly status: 'completed'
-    readonly attemptId: string
-  }>((resolve) => {
-    settleStatus = resolve
-  })
-  const role = {
-    role: 'auth-only',
-    bootstrapCwd: '/deterministic/bootstrap',
-  } as const
-  const runtime = new DeterministicCodexChatRuntime({
-    role,
-    accountReads: [
-      { status: 'ok', account: { state: 'signed_out' } },
-      { status: 'ok', account: { state: 'chatgpt' } },
-    ],
-    browserLoginStarts: [
-      {
-        status: 'pending',
-        attemptId: 'attempt-1',
-        authUrl: 'https://auth.openai.com/login',
-        expiresAt: '2026-07-23T01:00:00.000Z',
-      },
-    ],
-    browserLoginAttempts: [
-      delayedStatus,
-      { status: 'completed', attemptId: 'attempt-1' },
-    ],
-    browserLoginReleases: [
-      { status: 'released', attemptId: 'attempt-1' },
-    ],
-    logouts: [{ status: 'signed_out' }],
-  })
-  const signal = new AbortController().signal
-
-  assert.deepEqual(runtime.role, role)
-  assert.equal(Object.isFrozen(runtime.role), true)
-  assert.deepEqual(
-    await runtime.readAccount({ refreshToken: true, signal }),
-    { status: 'ok', account: { state: 'signed_out' } },
-  )
-  assert.deepEqual(
-    await runtime.startBrowserLogin({
-      attemptId: 'attempt-1',
-      expiresAt: '2026-07-23T01:00:00.000Z',
-      signal,
-    }),
-    {
-      status: 'pending',
-      attemptId: 'attempt-1',
-      authUrl: 'https://auth.openai.com/login',
-      expiresAt: '2026-07-23T01:00:00.000Z',
-    },
-  )
-
-  const pendingStatus = runtime.readBrowserLoginAttempt({
-    attemptId: 'attempt-1',
-    signal,
-  })
-  assert.equal(await settlesBeforeImmediate(pendingStatus), false)
-  settleStatus({ status: 'completed', attemptId: 'attempt-1' })
-  assert.deepEqual(await pendingStatus, {
-    status: 'completed',
-    attemptId: 'attempt-1',
-  })
-  assert.deepEqual(
-    await runtime.readBrowserLoginAttempt({
-      attemptId: 'attempt-1',
-      signal,
-    }),
-    { status: 'completed', attemptId: 'attempt-1' },
-  )
-  assert.deepEqual(
-    await runtime.readAccount({ refreshToken: true, signal }),
-    { status: 'ok', account: { state: 'chatgpt' } },
-  )
-  assert.deepEqual(
-    await runtime.releaseBrowserLoginAttempt({
-      attemptId: 'attempt-1',
-      signal,
-    }),
-    { status: 'released', attemptId: 'attempt-1' },
-  )
-  assert.deepEqual(await runtime.logout({ signal }), {
-    status: 'signed_out',
-  })
-  assert.deepEqual(await runtime.close({ signal }), {
-    status: 'closed',
-    processTreeGone: true,
-  })
-})
-
-test('deterministic account operations abort delayed scripts and close the Runtime', async (t) => {
-  const delayed = new Promise<never>(() => undefined)
-  const scenarios = [
-    {
-      label: 'read',
-      runtime: new DeterministicCodexChatRuntime({
-        accountReads: [delayed],
-      }),
-      invoke: (
-        runtime: DeterministicCodexChatRuntime,
-        signal: AbortSignal,
-      ) => runtime.readAccount({ refreshToken: true, signal }),
-      expected: {
-        status: 'error',
-        error: { code: 'runtime_closing', retryable: true },
-      },
-    },
-    {
-      label: 'start',
-      runtime: new DeterministicCodexChatRuntime({
-        browserLoginStarts: [delayed],
-      }),
-      invoke: (
-        runtime: DeterministicCodexChatRuntime,
-        signal: AbortSignal,
-      ) =>
-        runtime.startBrowserLogin({
-          attemptId: 'attempt-abort',
-          expiresAt: '2026-07-23T01:00:00.000Z',
-          signal,
-        }),
-      expected: {
-        status: 'error',
-        error: { code: 'runtime_closing', retryable: true },
-      },
-    },
-    {
-      label: 'status',
-      runtime: new DeterministicCodexChatRuntime({
-        browserLoginAttempts: [delayed],
-      }),
-      invoke: (
-        runtime: DeterministicCodexChatRuntime,
-        signal: AbortSignal,
-      ) =>
-        runtime.readBrowserLoginAttempt({
-          attemptId: 'attempt-abort',
-          signal,
-        }),
-      expected: {
-        status: 'failed',
-        attemptId: 'attempt-abort',
-        error: { code: 'runtime_closing', retryable: true },
-      },
-    },
-    {
-      label: 'cancel',
-      runtime: new DeterministicCodexChatRuntime({
-        browserLoginCancellations: [delayed],
-      }),
-      invoke: (
-        runtime: DeterministicCodexChatRuntime,
-        signal: AbortSignal,
-      ) =>
-        runtime.cancelBrowserLogin({
-          attemptId: 'attempt-abort',
-          signal,
-        }),
-      expected: {
-        status: 'error',
-        attemptId: 'attempt-abort',
-        error: { code: 'runtime_closing', retryable: true },
-      },
-    },
-    {
-      label: 'release',
-      runtime: new DeterministicCodexChatRuntime({
-        browserLoginReleases: [delayed],
-      }),
-      invoke: (
-        runtime: DeterministicCodexChatRuntime,
-        signal: AbortSignal,
-      ) =>
-        runtime.releaseBrowserLoginAttempt({
-          attemptId: 'attempt-abort',
-          signal,
-        }),
-      expected: {
-        status: 'error',
-        attemptId: 'attempt-abort',
-        error: { code: 'runtime_closing', retryable: true },
-      },
-    },
-    {
-      label: 'logout',
-      runtime: new DeterministicCodexChatRuntime({
-        logouts: [delayed],
-      }),
-      invoke: (
-        runtime: DeterministicCodexChatRuntime,
-        signal: AbortSignal,
-      ) => runtime.logout({ signal }),
-      expected: {
-        status: 'error',
-        error: { code: 'runtime_closing', retryable: true },
-      },
-    },
-  ]
-
-  for (const { label, runtime, invoke, expected } of scenarios) {
-    await t.test(label, async () => {
-      const controller = new AbortController()
-      const pending = invoke(runtime, controller.signal)
-      assert.equal(await settlesBeforeImmediate(pending), false)
-      controller.abort()
-      assert.deepEqual(await pending, expected)
-      assert.deepEqual(
-        await runtime.close({ signal: new AbortController().signal }),
-        { status: 'closed', processTreeGone: true },
-      )
-    })
-  }
-})
-
-test('deterministic auth-only runtime denies every workspace family before consuming scripts', async () => {
-  let nativeScriptsConsumed = 0
-  const untouchedConfig = observeConsumption(
-    { projectRootMarkers: [], globalInstructionsFile: null },
-    () => {
-      nativeScriptsConsumed += 1
-    },
-  )
-  const untouchedSkills = observeConsumption([], () => {
-    nativeScriptsConsumed += 1
-  })
-  const runtime = new DeterministicCodexChatRuntime({
-    role: {
-      role: 'auth-only',
-      bootstrapCwd: '/deterministic/bootstrap',
-    },
-    effectiveConfigs: [untouchedConfig],
-    effectiveSkills: [untouchedSkills],
-    threadIds: ['thread-must-remain-unused'],
-  })
-  const signal = new AbortController().signal
-
-  const workspaceOperations = [
-    () => runtime.readEffectiveConfig({ signal }),
-    () => runtime.listEffectiveSkills({ signal }),
-    () => runtime.startThread(),
-    () =>
-      runtime.startThread({
-        workspace: '/workspace',
-        mcp: { url: 'http://127.0.0.1:43127/mcp', token: 'private' },
-      }),
-    () => runtime.startTurn({ threadId: 'thread', text: 'hello' }),
-    () =>
-      runtime.startProductTurn({
-        threadId: 'thread',
-        skill: { name: 'model', path: '/managed/model/SKILL.md' },
-        permissionProfile: 'workspace_write',
-        text: 'hello',
-      }),
-    () =>
-      runtime.answerUserInput({
-        interactionId: 'interaction',
-        answers: { decision: ['yes'] },
-      }),
-    () => runtime.cancelUserInput({ interactionId: 'interaction' }),
-    () => runtime.interrupt({ threadId: 'thread', turnId: 'turn' }),
-    () => runtime.releaseThread({ threadId: 'thread' }),
-  ]
-
-  for (const operation of workspaceOperations) {
-    await assert.rejects(operation, (error: unknown) => {
-      assert.ok(error instanceof CodexChatRuntimeError)
-      assert.equal(error.code, 'runtime_role_denied')
-      assert.equal(error.unknownOutcome, false)
-      return true
-    })
-  }
-  assert.deepEqual(
-    runtime.calls.map(({ operation }) => operation),
-    [
-      'readEffectiveConfig',
-      'listEffectiveSkills',
-      'startThread',
-      'startThread',
-      'startTurn',
-      'startProductTurn',
-      'answerUserInput',
-      'cancelUserInput',
-      'interrupt',
-      'releaseThread',
-    ],
-  )
-  assert.equal(nativeScriptsConsumed, 0)
 })
 
 test('deterministic runtime preserves native turn identity and event FIFO', async () => {

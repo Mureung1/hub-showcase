@@ -2,10 +2,6 @@ import {
   parseCodexProductActivity,
   type CodexProductActivity,
 } from './contract.js'
-import type {
-  CodexBrowserLoginAttempt,
-  CodexFreshAccount,
-} from './account-contract.js'
 import type { CodexModelCatalog } from './runtime-contract.js'
 
 export const MAX_BRIDGE_FRAME_BYTES = 1024 * 1024
@@ -16,7 +12,10 @@ type ReadAccountResultFrame = {
   readonly type: 'result'
   readonly bridgeRequestId: string
   readonly command: 'read_account'
-  readonly account: CodexFreshAccount
+  readonly account:
+    | { readonly state: 'signed_out' }
+    | { readonly state: 'chatgpt' }
+    | { readonly state: 'unsupported' }
 }
 
 type ReadModelCatalogResultFrame = {
@@ -24,44 +23,6 @@ type ReadModelCatalogResultFrame = {
   readonly bridgeRequestId: string
   readonly command: 'read_model_catalog'
   readonly catalog: CodexModelCatalog
-}
-
-type StartBrowserLoginResultFrame = {
-  readonly type: 'result'
-  readonly bridgeRequestId: string
-  readonly command: 'start_browser_login'
-  readonly status: 'pending'
-  readonly attemptId: string
-  readonly authUrl: string
-}
-
-type ReadBrowserLoginAttemptResultFrame = {
-  readonly type: 'result'
-  readonly bridgeRequestId: string
-  readonly command: 'read_browser_login_attempt'
-} & CodexBrowserLoginAttempt
-
-type CancelBrowserLoginResultFrame = {
-  readonly type: 'result'
-  readonly bridgeRequestId: string
-  readonly command: 'cancel_browser_login'
-  readonly status: 'cancelled' | 'already_settled'
-  readonly attemptId: string
-}
-
-type ReleaseBrowserLoginAttemptResultFrame = {
-  readonly type: 'result'
-  readonly bridgeRequestId: string
-  readonly command: 'release_browser_login_attempt'
-  readonly status: 'released' | 'already_released'
-  readonly attemptId: string
-}
-
-type LogoutResultFrame = {
-  readonly type: 'result'
-  readonly bridgeRequestId: string
-  readonly command: 'logout'
-  readonly status: 'signed_out'
 }
 
 type StartThreadResultFrame = {
@@ -137,11 +98,6 @@ export type BridgeOutputFrame =
   | ReadyFrame
   | ReadAccountResultFrame
   | ReadModelCatalogResultFrame
-  | StartBrowserLoginResultFrame
-  | ReadBrowserLoginAttemptResultFrame
-  | CancelBrowserLoginResultFrame
-  | ReleaseBrowserLoginAttemptResultFrame
-  | LogoutResultFrame
   | StartThreadResultFrame
   | StartTurnResultFrame
   | StartProductTurnResultFrame
@@ -315,91 +271,6 @@ function parseResult(frame: Record<string, unknown>): BridgeOutputFrame {
       catalog: parseModelCatalog(frame.catalog),
     }
   }
-  if (command === 'start_browser_login') {
-    requireExactKeys(frame, [
-      'type',
-      'bridgeRequestId',
-      'command',
-      'status',
-      'attemptId',
-      'authUrl',
-    ])
-    if (frame.status !== 'pending') {
-      throw new BridgeProtocolError('invalid_frame')
-    }
-    return {
-      type: 'result',
-      bridgeRequestId,
-      command,
-      status: frame.status,
-      attemptId: requireBoundedString(frame.attemptId, 256),
-      authUrl: requireSafeBrowserAuthUrl(frame.authUrl),
-    }
-  }
-  if (command === 'read_browser_login_attempt') {
-    return parseBrowserLoginAttemptResult(frame, bridgeRequestId)
-  }
-  if (command === 'cancel_browser_login') {
-    requireExactKeys(frame, [
-      'type',
-      'bridgeRequestId',
-      'command',
-      'status',
-      'attemptId',
-    ])
-    if (
-      frame.status !== 'cancelled' &&
-      frame.status !== 'already_settled'
-    ) {
-      throw new BridgeProtocolError('invalid_frame')
-    }
-    return {
-      type: 'result',
-      bridgeRequestId,
-      command,
-      status: frame.status,
-      attemptId: requireBoundedString(frame.attemptId, 256),
-    }
-  }
-  if (command === 'release_browser_login_attempt') {
-    requireExactKeys(frame, [
-      'type',
-      'bridgeRequestId',
-      'command',
-      'status',
-      'attemptId',
-    ])
-    if (
-      frame.status !== 'released' &&
-      frame.status !== 'already_released'
-    ) {
-      throw new BridgeProtocolError('invalid_frame')
-    }
-    return {
-      type: 'result',
-      bridgeRequestId,
-      command,
-      status: frame.status,
-      attemptId: requireBoundedString(frame.attemptId, 256),
-    }
-  }
-  if (command === 'logout') {
-    requireExactKeys(frame, [
-      'type',
-      'bridgeRequestId',
-      'command',
-      'status',
-    ])
-    if (frame.status !== 'signed_out') {
-      throw new BridgeProtocolError('invalid_frame')
-    }
-    return {
-      type: 'result',
-      bridgeRequestId,
-      command,
-      status: frame.status,
-    }
-  }
   if (command === 'start_thread') {
     requireExactKeys(frame, [
       'type',
@@ -553,7 +424,7 @@ function parseModelReasoningEffort(
   }
 }
 
-function parseFreshAccount(value: unknown): CodexFreshAccount {
+function parseFreshAccount(value: unknown): ReadAccountResultFrame['account'] {
   const account = requireRecord(value)
   requireExactKeys(account, ['state'])
   if (
@@ -564,65 +435,6 @@ function parseFreshAccount(value: unknown): CodexFreshAccount {
     throw new BridgeProtocolError('invalid_frame')
   }
   return { state: account.state }
-}
-
-function parseBrowserLoginAttemptResult(
-  frame: Record<string, unknown>,
-  bridgeRequestId: string,
-): ReadBrowserLoginAttemptResultFrame {
-  const status = requireNonemptyString(frame.status)
-  const attemptId = requireBoundedString(frame.attemptId, 256)
-  if (
-    status === 'pending' ||
-    status === 'completed' ||
-    status === 'cancelled' ||
-    status === 'expired'
-  ) {
-    requireExactKeys(frame, [
-      'type',
-      'bridgeRequestId',
-      'command',
-      'status',
-      'attemptId',
-    ])
-    return {
-      type: 'result',
-      bridgeRequestId,
-      command: 'read_browser_login_attempt',
-      status,
-      attemptId,
-    }
-  }
-  if (status !== 'failed') {
-    throw new BridgeProtocolError('invalid_frame')
-  }
-  requireExactKeys(frame, [
-    'type',
-    'bridgeRequestId',
-    'command',
-    'status',
-    'attemptId',
-    'error',
-  ])
-  const error = requireRecord(frame.error)
-  requireExactKeys(error, ['code', 'retryable'])
-  if (
-    (error.code !== 'login_start_failed' && error.code !== 'login_failed') ||
-    error.retryable !== true
-  ) {
-    throw new BridgeProtocolError('invalid_frame')
-  }
-  return {
-    type: 'result',
-    bridgeRequestId,
-    command: 'read_browser_login_attempt',
-    status,
-    attemptId,
-    error: {
-      code: error.code,
-      retryable: true,
-    },
-  }
 }
 
 function requireRecord(value: unknown): Record<string, unknown> {
@@ -651,41 +463,4 @@ function requireNonemptyString(value: unknown): string {
     throw new BridgeProtocolError('invalid_frame')
   }
   return value
-}
-
-function requireBoundedString(value: unknown, maxBytes: number): string {
-  const text = requireNonemptyString(value)
-  if (Buffer.byteLength(text, 'utf8') > maxBytes) {
-    throw new BridgeProtocolError('invalid_frame')
-  }
-  return text
-}
-
-function requireSafeBrowserAuthUrl(value: unknown): string {
-  const text = requireBoundedString(value, 16 * 1024)
-  if (/[\u0000-\u001f\u007f]/u.test(text)) {
-    throw new BridgeProtocolError('invalid_frame')
-  }
-  let parsed: URL
-  try {
-    parsed = new URL(text)
-  } catch {
-    throw new BridgeProtocolError('invalid_frame')
-  }
-  const authority = /^https:\/\/([^/?#]+)(?:[/?#]|$)/u.exec(text)?.[1]
-  if (
-    text !== text.trim() ||
-    parsed.protocol !== 'https:' ||
-    (parsed.hostname !== 'auth.openai.com' &&
-      parsed.hostname !== 'chatgpt.com') ||
-    authority !== parsed.hostname ||
-    parsed.username !== '' ||
-    parsed.password !== '' ||
-    parsed.port !== '' ||
-    parsed.hash !== '' ||
-    authority === undefined
-  ) {
-    throw new BridgeProtocolError('invalid_frame')
-  }
-  return text
 }

@@ -7,10 +7,7 @@ import type {
   CodexThreadId,
   CodexTurnId,
 } from './contract.js'
-import type {
-  CodexAccountLifecycle,
-  CodexNativeContextPort,
-} from './account-contract.js'
+import type { CodexNativeContextPort } from './account-contract.js'
 
 export type CodexProductSkillInput = {
   readonly name: string
@@ -97,7 +94,3 @@ export interface CodexWorkspaceRuntime
   extends CodexProductCapableRuntime,
     CodexModelCatalogRuntime,
     CodexNativeContextPort {}
-
-export type CodexManagedRuntime =
-  CodexWorkspaceRuntime &
-  CodexAccountLifecycle

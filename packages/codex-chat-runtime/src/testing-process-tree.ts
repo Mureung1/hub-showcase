@@ -15,7 +15,6 @@ import type {
   ReleaseThreadInput,
   StartTurnInput,
 } from './contract.js'
-import type { CodexRuntimeCloseResult } from './account-contract.js'
 import { verifyProductionBundle } from './production-bundle.js'
 import {
   startVerifiedCodexChatRuntime,
@@ -108,20 +107,10 @@ export async function startCodexChatProcessTreeTestFixture(options: {
     const processTree = await readProcessTree(spawned, nativeChildPidPath)
     const closeRequested = createDeferred()
     const closeReleased = createDeferred()
-    function closeRuntime(): Promise<void>
-    function closeRuntime(input: {
-      readonly signal: AbortSignal
-    }): Promise<CodexRuntimeCloseResult>
-    async function closeRuntime(input?: {
-      readonly signal: AbortSignal
-    }): Promise<void | CodexRuntimeCloseResult> {
+    async function closeRuntime(): Promise<void> {
       closeRequested.resolve()
       await closeReleased.promise
-      if (input === undefined) {
-        await spawned!.runtime.close()
-        return
-      }
-      return spawned!.runtime.close(input)
+      await spawned!.runtime.close()
     }
     const runtime: CodexWorkspaceRuntime = {
       terminal: spawned.runtime.terminal,

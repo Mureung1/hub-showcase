@@ -25,24 +25,4 @@ void runtime.then((workspaceRuntime) => {
   })
   void workspaceRuntime.close()
 
-  // @ts-expect-error Workspace callers must not receive Runtime roles.
-  void workspaceRuntime.role
-
-  // @ts-expect-error Workspace callers must not receive managed account reads.
-  void workspaceRuntime.readAccount({
-    refreshToken: true,
-    signal: new AbortController().signal,
-  })
-
-  // @ts-expect-error Workspace callers must not receive managed login.
-  void workspaceRuntime.startBrowserLogin({
-    attemptId: 'attempt',
-    expiresAt: new Date(0).toISOString(),
-    signal: new AbortController().signal,
-  })
-
-  // @ts-expect-error Workspace callers must not receive managed logout.
-  void workspaceRuntime.logout({
-    signal: new AbortController().signal,
-  })
 })
