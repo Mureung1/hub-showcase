@@ -121,13 +121,15 @@ function reducer(state, action) {
     case 'aiRunUpserted':
       return {
         ...state,
-        aiRuns: upsertById(state.aiRuns, action.aiRun),
+        aiRuns: action.aiRun ? upsertById(state.aiRuns, action.aiRun) : state.aiRuns,
+        tasks: action.task ? mergeById(state.tasks, action.task) : state.tasks,
       }
     case 'aiRunApplied':
       return {
         ...state,
         aiRuns: upsertById(state.aiRuns, action.aiRun),
         notes: action.note ? upsertById(state.notes, action.note) : state.notes,
+        tasks: action.task ? mergeById(state.tasks, action.task) : state.tasks,
       }
     case 'aiCredentialUpdated': {
       const aiCredential = normalizeAiCredential(action.credential)
@@ -147,6 +149,12 @@ function upsertByKey(items, value, key) {
 
 function upsertById(items, value) {
   return upsertByKey(items, value, 'id')
+}
+
+function mergeById(items, value) {
+  const existing = items.find((item) => item.id === value.id)
+  if (!existing) return [...items, value]
+  return items.map((item) => item.id === value.id ? { ...item, ...value } : item)
 }
 
 const emptyAiCredential = Object.freeze({
@@ -420,12 +428,16 @@ export function TeamFlowProvider({ children, repository }) {
 
   const createAiRun = useCallback(async (memberId, taskId) => {
     try {
-      const aiRun = await repository.createAiRun(memberId, taskId)
-      dispatch({ type: 'aiRunUpserted', aiRun })
-      return aiRun
+      const result = await repository.createAiRun(memberId, taskId)
+      dispatch({ type: 'aiRunUpserted', ...result })
+      return result.aiRun
     } catch (error) {
-      if (error?.aiRun?.id) {
-        dispatch({ type: 'aiRunUpserted', aiRun: error.aiRun })
+      if (error?.aiRun?.id || error?.task?.id) {
+        dispatch({
+          type: 'aiRunUpserted',
+          aiRun: error.aiRun ?? null,
+          task: error.task ?? null,
+        })
       }
       throw error
     }
@@ -438,9 +450,9 @@ export function TeamFlowProvider({ children, repository }) {
   }, [repository])
 
   const rejectAiRun = useCallback(async (runId) => {
-    const aiRun = await repository.rejectAiRun(runId)
-    dispatch({ type: 'aiRunUpserted', aiRun })
-    return aiRun
+    const result = await repository.rejectAiRun(runId)
+    dispatch({ type: 'aiRunUpserted', ...result })
+    return result.aiRun
   }, [repository])
 
   const refreshAiCredential = useCallback(async () => {

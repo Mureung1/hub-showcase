@@ -1,9 +1,10 @@
 export class TeamFlowApiError extends Error {
-  constructor(message, code = 'TEAMFLOW_API_ERROR', aiRun = null) {
+  constructor(message, code = 'TEAMFLOW_API_ERROR', aiRun = null, task = null) {
     super(message)
     this.name = 'TeamFlowApiError'
     this.code = code
     this.aiRun = aiRun
+    this.task = task
   }
 }
 
@@ -47,6 +48,7 @@ async function readJson(response, fallbackMessage) {
       payload?.error?.message || fallbackMessage,
       payload?.error?.code,
       payload?.aiRun ?? null,
+      payload?.task ?? null,
     )
   }
   return payload
@@ -284,7 +286,7 @@ export function createApiTeamFlowRepository({
       const payload = await authenticatedRequest(`/api/ai-agents/${memberId}/runs`, {
         method: 'POST', body: JSON.stringify({ taskId }),
       }, 'AI 작업을 실행하지 못했습니다.')
-      return payload.aiRun
+      return { aiRun: payload.aiRun, task: payload.task ?? null }
     },
 
     async applyAiRun(runId) {
@@ -297,7 +299,7 @@ export function createApiTeamFlowRepository({
       const payload = await authenticatedRequest(`/api/ai-runs/${runId}/reject`, {
         method: 'POST',
       }, 'AI 결과를 보류하지 못했습니다.')
-      return payload.aiRun
+      return { aiRun: payload.aiRun, task: payload.task ?? null }
     },
 
     async getAiCredential() {

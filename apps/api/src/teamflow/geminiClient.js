@@ -41,11 +41,35 @@ const ERROR_DEFINITIONS = Object.freeze({
   },
 })
 
+const PROVIDER_STATUS_ERRORS = Object.freeze({
+  PERMISSION_DENIED: ERROR_DEFINITIONS.invalidCredential,
+  UNAUTHENTICATED: ERROR_DEFINITIONS.invalidCredential,
+  RESOURCE_EXHAUSTED: ERROR_DEFINITIONS.quotaExceeded,
+  NOT_FOUND: ERROR_DEFINITIONS.modelUnavailable,
+  FAILED_PRECONDITION: ERROR_DEFINITIONS.invalidResponse,
+  INVALID_ARGUMENT: ERROR_DEFINITIONS.invalidResponse,
+  INTERNAL: ERROR_DEFINITIONS.unavailable,
+  UNAVAILABLE: ERROR_DEFINITIONS.unavailable,
+  DEADLINE_EXCEEDED: ERROR_DEFINITIONS.timeout,
+})
+
+const PROVIDER_REASON_ERRORS = Object.freeze({
+  API_KEY_INVALID: ERROR_DEFINITIONS.invalidCredential,
+})
+
 function apiError(definition, cause) {
   return new TeamFlowApiError({ ...definition, cause })
 }
 
-function responseError(status, { verification = false } = {}) {
+function responseError(status, {
+  verification = false,
+  providerStatus = null,
+  providerReason = null,
+} = {}) {
+  const providerReasonDefinition = PROVIDER_REASON_ERRORS[providerReason]
+  if (providerReasonDefinition) return apiError(providerReasonDefinition)
+  const providerDefinition = PROVIDER_STATUS_ERRORS[providerStatus]
+  if (providerDefinition) return apiError(providerDefinition)
   if (status === 401 || status === 403 || (verification && status === 400)) {
     return apiError(ERROR_DEFINITIONS.invalidCredential)
   }
@@ -54,6 +78,26 @@ function responseError(status, { verification = false } = {}) {
   if (status === 404) return apiError(ERROR_DEFINITIONS.modelUnavailable)
   if (status >= 500) return apiError(ERROR_DEFINITIONS.unavailable)
   return apiError(ERROR_DEFINITIONS.invalidResponse)
+}
+
+async function readProviderErrorClassification(response) {
+  try {
+    const payload = await response.json()
+    const status = payload?.error?.status
+    const details = Array.isArray(payload?.error?.details) ? payload.error.details : []
+    const providerReason = details
+      .map((detail) => detail?.reason)
+      .find((reason) => (
+        typeof reason === 'string'
+        && Object.hasOwn(PROVIDER_REASON_ERRORS, reason)
+      )) ?? null
+    const providerStatus = typeof status === 'string' && Object.hasOwn(PROVIDER_STATUS_ERRORS, status)
+      ? status
+      : null
+    return { providerReason, providerStatus }
+  } catch {
+    return { providerReason: null, providerStatus: null }
+  }
 }
 
 function usageValue(value) {
@@ -94,7 +138,13 @@ export function createGeminiClient({
         ...options,
         signal: controller.signal,
       })
-      if (!response.ok) throw responseError(response.status, errorContext)
+      if (!response.ok) {
+        const providerError = await readProviderErrorClassification(response)
+        throw responseError(response.status, {
+          ...errorContext,
+          ...providerError,
+        })
+      }
       try {
         return await response.json()
       } catch (error) {

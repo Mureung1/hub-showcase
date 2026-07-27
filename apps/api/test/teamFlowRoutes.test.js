@@ -264,12 +264,19 @@ const repository = {
       ...(input.enabled === undefined ? {} : { enabled: input.enabled }),
     },
   }),
-  createAiRun: async () => aiRun,
+  createAiRun: async () => ({
+    aiRun,
+    task: { ...task, assigneeId: aiMemberId, status: 'in_review' },
+  }),
   applyAiRun: async () => ({
     aiRun: { ...aiRun, status: 'applied', appliedNoteId: noteId },
     note: { ...note, id: noteId, title: `AI 결과 · ${task.title}`, content: aiRun.resultMarkdown },
+    task: { ...task, assigneeId: aiMemberId, status: 'completed' },
   }),
-  rejectAiRun: async () => ({ ...aiRun, status: 'rejected' }),
+  rejectAiRun: async () => ({
+    aiRun: { ...aiRun, status: 'rejected' },
+    task: { ...task, assigneeId: aiMemberId, status: 'in_progress' },
+  }),
   getAiCredentialMetadata: async () => aiCredential,
   saveAiCredential: async () => aiCredential,
   deleteAiCredential: async () => ({
@@ -527,15 +534,22 @@ test('AI agents accept profiles at creation and support partial profile or setti
     body: { taskId },
   })
   assert.equal(runResponse.status, 201)
-  assert.deepEqual(await runResponse.json(), { aiRun })
+  assert.deepEqual(await runResponse.json(), {
+    aiRun,
+    task: { ...task, assigneeId: aiMemberId, status: 'in_review' },
+  })
 
   const applyResponse = await request(`/api/ai-runs/${aiRunId}/apply`, { method: 'POST' })
   assert.equal(applyResponse.status, 200)
-  assert.equal((await applyResponse.json()).aiRun.status, 'applied')
+  const applied = await applyResponse.json()
+  assert.equal(applied.aiRun.status, 'applied')
+  assert.equal(applied.task.status, 'completed')
 
   const rejectResponse = await request(`/api/ai-runs/${aiRunId}/reject`, { method: 'POST' })
   assert.equal(rejectResponse.status, 200)
-  assert.equal((await rejectResponse.json()).aiRun.status, 'rejected')
+  const rejected = await rejectResponse.json()
+  assert.equal(rejected.aiRun.status, 'rejected')
+  assert.equal(rejected.task.status, 'in_progress')
 })
 
 test('applied AI run re-execution conflicts are exposed as 409 responses', async () => {
@@ -556,10 +570,27 @@ test('applied AI run re-execution conflicts are exposed as 409 responses', async
   }
 })
 
+test('invalid AI review state transitions are exposed as 409 responses', async () => {
+  const originalRejectAiRun = repository.rejectAiRun
+  repository.rejectAiRun = async () => {
+    throw new TeamFlowConflictError('INVALID_AI_RUN_TRANSITION')
+  }
+
+  try {
+    const response = await request(`/api/ai-runs/${aiRunId}/reject`, {
+      method: 'POST',
+    })
+    assert.equal(response.status, 409)
+    assert.equal((await response.json()).error.code, 'CONFLICT')
+  } finally {
+    repository.rejectAiRun = originalRejectAiRun
+  }
+})
+
 test('typed AI provider failures preserve safe failed history and status without leaking internals', async () => {
   const originalCreateAiRun = repository.createAiRun
   repository.createAiRun = async () => {
-    throw new TeamFlowApiError({
+    const error = new TeamFlowApiError({
       status: 429,
       code: 'AI_QUOTA_EXCEEDED',
       message: 'Gemini API 사용량 한도를 초과했습니다.',
@@ -573,6 +604,8 @@ test('typed AI provider failures preserve safe failed history and status without
         model: 'gemini-test-flash',
       },
     })
+    error.task = { ...task, assigneeId: aiMemberId, status: 'in_progress' }
+    throw error
   }
 
   try {
@@ -584,6 +617,7 @@ test('typed AI provider failures preserve safe failed history and status without
     const body = await response.json()
     assert.equal(body.error.code, 'AI_QUOTA_EXCEEDED')
     assert.equal(body.aiRun.status, 'failed')
+    assert.equal(body.task.status, 'in_progress')
     assert.equal(JSON.stringify(body).includes('API key'), false)
   } finally {
     repository.createAiRun = originalCreateAiRun

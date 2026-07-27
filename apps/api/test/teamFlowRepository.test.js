@@ -501,6 +501,15 @@ test('AI agent profile creation and partial updates use the multi-agent database
     created_at: '2026-07-24T00:00:00.000Z',
     updated_at: '2026-07-24T00:00:00.000Z',
   }
+  const taskRow = {
+    id: taskId,
+    project_id: projectId,
+    title: '조사',
+    assignee_id: aiMemberId,
+    due_date: '2026-07-30',
+    status: 'in_review',
+    description: '',
+  }
   const createInput = {
     name: '리서치 파트너',
     role: '시장 조사',
@@ -559,12 +568,19 @@ test('AI agent profile creation and partial updates use the multi-agent database
           data: {
             aiRun: { ...run, status: 'applied', applied_note_id: note.id },
             note,
+            task: { ...taskRow, status: 'completed' },
           },
           error: null,
         }
       }
       if (name === 'reject_ai_run') {
-        return { data: { ...run, status: 'rejected' }, error: null }
+        return {
+          data: {
+            aiRun: { ...run, status: 'rejected' },
+            task: { ...taskRow, status: 'in_progress' },
+          },
+          error: null,
+        }
       }
       assert.fail(`unexpected RPC ${name}`)
     },
@@ -593,7 +609,9 @@ test('AI agent profile creation and partial updates use the multi-agent database
   assert.equal(updated.aiAgent.enabled, false)
   assert.equal(applied.aiRun.status, 'applied')
   assert.equal(applied.note.id, note.id)
-  assert.equal(rejected.status, 'rejected')
+  assert.equal(applied.task.status, 'completed')
+  assert.equal(rejected.aiRun.status, 'rejected')
+  assert.equal(rejected.task.status, 'in_progress')
   assert.deepEqual(calls, [
     {
       name: 'create_project_ai_agent',
@@ -684,7 +702,25 @@ test('mock AI run gathers project context on the server and stores pending revie
     from: (table) => filteredQuery(rows[table]),
     rpc: async (name, args) => {
       calls.push({ name, args })
-      return { data: run, error: null }
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...run, status: 'running', result_markdown: '' },
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'complete_ai_run') {
+        return {
+          data: {
+            aiRun: run,
+            task: { ...rows.tasks[0], status: 'in_review' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
     },
   }
   const generatedInputs = []
@@ -703,19 +739,171 @@ test('mock AI run gathers project context on the server and stores pending revie
   assert.equal(typeof repository.createAiRun, 'function')
   const result = await repository.createAiRun(aiMemberId, taskId)
 
-  assert.equal(result.status, 'pending_review')
+  assert.equal(result.aiRun.status, 'pending_review')
+  assert.equal(result.task.status, 'in_review')
   assert.equal(generatedInputs.length, 1)
   assert.equal(generatedInputs[0].task.id, taskId)
   assert.equal(generatedInputs[0].project.id, projectId)
-  assert.deepEqual(calls, [{
-    name: 'create_mock_ai_run',
-    args: {
-      p_member_id: aiMemberId,
-      p_task_id: taskId,
-      p_context_snapshot: snapshot,
-      p_result_markdown: run.result_markdown,
+  assert.deepEqual(calls, [
+    {
+      name: 'start_ai_run',
+      args: {
+        p_member_id: aiMemberId,
+        p_task_id: taskId,
+        p_context_snapshot: snapshot,
+        p_execution_mode: 'mock',
+        p_provider: null,
+        p_model: null,
+      },
     },
-  }])
+    {
+      name: 'complete_ai_run',
+      args: {
+        p_run_id: aiRunId,
+        p_result_markdown: run.result_markdown,
+        p_usage: {},
+        p_duration_ms: 0,
+      },
+    },
+  ])
+})
+
+test('AI run lifecycle starts before generation, finishes atomically, and returns the updated task', async () => {
+  const rows = aiContextRows()
+  const snapshot = {
+    version: 1,
+    instructions: rows.ai_agents[0].instructions,
+    task: { id: taskId, title: rows.tasks[0].title },
+    contextConfig,
+    context: {},
+    truncation: {},
+  }
+  const baseRun = {
+    id: aiRunId,
+    project_id: projectId,
+    ai_member_id: aiMemberId,
+    task_id: taskId,
+    context_snapshot: snapshot,
+    result_markdown: '',
+    error_message: null,
+    applied_note_id: null,
+    created_by: userId,
+    execution_mode: 'mock',
+    provider: null,
+    model: null,
+    usage: {},
+    duration_ms: 0,
+    created_at: '2026-07-27T00:00:00.000Z',
+    updated_at: '2026-07-27T00:00:00.000Z',
+  }
+  const taskRow = rows.tasks[0]
+  const calls = []
+  const repository = createSupabaseTeamFlowRepository({
+    from: (table) => filteredQuery(rows[table]),
+    rpc: async (name, args) => {
+      calls.push({ name, args })
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...baseRun, status: 'running' },
+            task: { ...taskRow, status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'complete_ai_run') {
+        return {
+          data: {
+            aiRun: {
+              ...baseRun,
+              status: 'pending_review',
+              result_markdown: '# 모의 실행 결과',
+            },
+            task: { ...taskRow, status: 'in_review' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
+    },
+  }, { id: userId }, {
+    buildMockAiContext: () => snapshot,
+    generateMockAiResult: () => ({
+      contextSnapshot: snapshot,
+      resultMarkdown: '# 모의 실행 결과',
+    }),
+  })
+
+  const result = await repository.createAiRun(aiMemberId, taskId)
+
+  assert.equal(result.aiRun.status, 'pending_review')
+  assert.equal(result.task.status, 'in_review')
+  assert.deepEqual(calls.map(({ name }) => name), ['start_ai_run', 'complete_ai_run'])
+})
+
+test('AI run review actions return their atomic task status transitions', async () => {
+  const rows = aiContextRows()
+  const baseRun = {
+    id: aiRunId,
+    project_id: projectId,
+    ai_member_id: aiMemberId,
+    task_id: taskId,
+    status: 'pending_review',
+    context_snapshot: {},
+    result_markdown: '# 결과',
+    error_message: null,
+    applied_note_id: null,
+    created_by: userId,
+    execution_mode: 'mock',
+    provider: null,
+    model: null,
+    usage: {},
+    duration_ms: 0,
+    created_at: '2026-07-27T00:00:00.000Z',
+    updated_at: '2026-07-27T00:00:00.000Z',
+  }
+  const note = {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    project_id: projectId,
+    title: 'AI 결과',
+    content: '# 결과',
+    author_id: memberId,
+    created_at: '2026-07-27T00:00:00.000Z',
+    updated_at: '2026-07-27T00:00:00.000Z',
+  }
+  const repository = createSupabaseTeamFlowRepository({
+    from: (table) => filteredQuery(rows[table]),
+    rpc: async (name) => {
+      if (name === 'apply_ai_run') {
+        return {
+          data: {
+            aiRun: { ...baseRun, status: 'applied', applied_note_id: note.id },
+            note,
+            task: { ...rows.tasks[0], status: 'completed' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'reject_ai_run') {
+        return {
+          data: {
+            aiRun: { ...baseRun, status: 'rejected' },
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
+    },
+  }, { id: userId })
+
+  const applied = await repository.applyAiRun(aiRunId)
+  const rejected = await repository.rejectAiRun(aiRunId)
+
+  assert.equal(applied.aiRun.status, 'applied')
+  assert.equal(applied.task.status, 'completed')
+  assert.equal(rejected.aiRun.status, 'rejected')
+  assert.equal(rejected.task.status, 'in_progress')
 })
 
 test('live AI run uses only the current user credential and stores provider metadata through generic RPC', async () => {
@@ -767,7 +955,25 @@ test('live AI run uses only the current user credential and stores provider meta
     ),
     rpc: async (name, args) => {
       calls.push({ name, args })
-      return { data: run, error: null }
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...run, status: 'running', result_markdown: '' },
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'complete_ai_run') {
+        return {
+          data: {
+            aiRun: run,
+            task: { ...rows.tasks[0], status: 'in_review' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
     },
   }, { id: userId }, {
     aiRuntime: liveRuntime,
@@ -811,25 +1017,34 @@ test('live AI run uses only the current user credential and stores provider meta
 
   const result = await repository.createAiRun(aiMemberId, taskId)
 
-  assert.equal(result.executionMode, 'live')
-  assert.equal(result.provider, 'gemini')
-  assert.equal(result.model, 'gemini-test-flash')
-  assert.deepEqual(result.usage, run.usage)
-  assert.equal(result.durationMs, 321)
-  assert.deepEqual(calls, [{
-    name: 'create_ai_run',
-    args: {
-      p_member_id: aiMemberId,
-      p_task_id: taskId,
-      p_context_snapshot: snapshot,
-      p_result_markdown: run.result_markdown,
-      p_execution_mode: 'live',
-      p_provider: 'gemini',
-      p_model: 'gemini-test-flash',
-      p_usage: run.usage,
-      p_duration_ms: 321,
+  assert.equal(result.aiRun.executionMode, 'live')
+  assert.equal(result.aiRun.provider, 'gemini')
+  assert.equal(result.aiRun.model, 'gemini-test-flash')
+  assert.deepEqual(result.aiRun.usage, run.usage)
+  assert.equal(result.aiRun.durationMs, 321)
+  assert.equal(result.task.status, 'in_review')
+  assert.deepEqual(calls, [
+    {
+      name: 'start_ai_run',
+      args: {
+        p_member_id: aiMemberId,
+        p_task_id: taskId,
+        p_context_snapshot: snapshot,
+        p_execution_mode: 'live',
+        p_provider: 'gemini',
+        p_model: 'gemini-test-flash',
+      },
     },
-  }])
+    {
+      name: 'complete_ai_run',
+      args: {
+        p_run_id: aiRunId,
+        p_result_markdown: run.result_markdown,
+        p_usage: run.usage,
+        p_duration_ms: 321,
+      },
+    },
+  ])
 })
 
 test('live AI run blocks missing or unreadable credentials without provider calls or failed history', async () => {
@@ -930,7 +1145,25 @@ test('provider-attempt failure persists a failed run, invalidates the key, and r
     ),
     rpc: async (name, args) => {
       calls.push({ name, args })
-      return { data: failedRun, error: null }
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...failedRun, status: 'running', error_message: null },
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'fail_ai_run') {
+        return {
+          data: {
+            aiRun: failedRun,
+            task: rows.tasks[0],
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
     },
   }, { id: userId }, {
     aiRuntime: liveRuntime,
@@ -959,21 +1192,31 @@ test('provider-attempt failure persists a failed run, invalidates the key, and r
       assert.equal(error.code, 'AI_CREDENTIAL_INVALID')
       assert.equal(error.aiRun.id, aiRunId)
       assert.equal(error.aiRun.status, 'failed')
+      assert.equal(error.task.status, 'not_started')
       return true
     },
   )
   assert.equal(credential.row.verified_at, null)
-  assert.equal(calls[0].name, 'create_failed_ai_run')
-  assert.deepEqual(calls[0].args, {
-    p_member_id: aiMemberId,
-    p_task_id: taskId,
-    p_context_snapshot: snapshot,
-    p_error_message: 'Gemini API 키를 확인해 주세요.',
-    p_execution_mode: 'live',
-    p_provider: 'gemini',
-    p_model: 'gemini-test-flash',
-    p_usage: {},
-    p_duration_ms: 187,
+  assert.deepEqual(calls[0], {
+    name: 'start_ai_run',
+    args: {
+      p_member_id: aiMemberId,
+      p_task_id: taskId,
+      p_context_snapshot: snapshot,
+      p_execution_mode: 'live',
+      p_provider: 'gemini',
+      p_model: 'gemini-test-flash',
+    },
+  })
+  assert.deepEqual(calls[1], {
+    name: 'fail_ai_run',
+    args: {
+      p_run_id: aiRunId,
+      p_error_message: 'Gemini API 키를 확인해 주세요.',
+      p_usage: {},
+      p_duration_ms: 187,
+      p_restore_task_status: true,
+    },
   })
 })
 
@@ -999,7 +1242,25 @@ test('mock AI generator failures are persisted as failed runs', async () => {
     from: (table) => filteredQuery(rows[table]),
     rpc: async (name, args) => {
       calls.push({ name, args })
-      return { data: failedRun, error: null }
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...failedRun, status: 'running', error_message: null },
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'fail_ai_run') {
+        return {
+          data: {
+            aiRun: failedRun,
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
     },
   }
   const repository = createSupabaseTeamFlowRepository(
@@ -1015,16 +1276,31 @@ test('mock AI generator failures are persisted as failed runs', async () => {
 
   const result = await repository.createAiRun(aiMemberId, taskId)
 
-  assert.equal(result.status, 'failed')
-  assert.deepEqual(calls, [{
-    name: 'create_failed_mock_ai_run',
-    args: {
-      p_member_id: aiMemberId,
-      p_task_id: taskId,
-      p_context_snapshot: snapshot,
-      p_error_message: 'Mock 결과 생성에 실패했습니다.',
+  assert.equal(result.aiRun.status, 'failed')
+  assert.equal(result.task.status, 'in_progress')
+  assert.deepEqual(calls, [
+    {
+      name: 'start_ai_run',
+      args: {
+        p_member_id: aiMemberId,
+        p_task_id: taskId,
+        p_context_snapshot: snapshot,
+        p_execution_mode: 'mock',
+        p_provider: null,
+        p_model: null,
+      },
     },
-  }])
+    {
+      name: 'fail_ai_run',
+      args: {
+        p_run_id: aiRunId,
+        p_error_message: 'Mock 결과 생성에 실패했습니다.',
+        p_usage: {},
+        p_duration_ms: 0,
+        p_restore_task_status: false,
+      },
+    },
+  ])
 })
 
 test('mock AI run rejects completed tasks and tasks assigned to another member before generation', async () => {
@@ -1048,8 +1324,8 @@ test('mock AI run rejects completed tasks and tasks assigned to another member b
   }
 })
 
-test('mock AI run blocks open or applied history before generation but retries after rejected or failed history', async () => {
-  for (const status of ['running', 'pending_review', 'applied']) {
+test('mock AI run blocks open or applied history but retries after rejected or failed history', async () => {
+  for (const status of ['pending_review', 'applied']) {
     const rows = aiContextRows()
     rows.ai_runs = [{
       project_id: projectId,
@@ -1072,6 +1348,34 @@ test('mock AI run blocks open or applied history before generation but retries a
       TeamFlowConflictError,
     )
     assert.equal(generated, false)
+  }
+
+  {
+    const rows = aiContextRows()
+    rows.ai_runs = [{
+      project_id: projectId,
+      ai_member_id: aiMemberId,
+      task_id: taskId,
+      status: 'running',
+    }]
+    const repository = createSupabaseTeamFlowRepository({
+      from: (table) => filteredQuery(rows[table]),
+      rpc: async (name) => {
+        assert.equal(name, 'start_ai_run')
+        return {
+          data: null,
+          error: { code: '23505', message: 'duplicate active AI run' },
+        }
+      },
+    }, { id: userId }, {
+      buildMockAiContext: () => ({ version: 1, context: {}, truncation: {} }),
+      generateMockAiResult: () => assert.fail('an active run must block generation'),
+    })
+
+    await assert.rejects(
+      repository.createAiRun(aiMemberId, taskId),
+      TeamFlowConflictError,
+    )
   }
 
   const rejectedRows = aiContextRows()
@@ -1100,7 +1404,25 @@ test('mock AI run blocks open or applied history before generation but retries a
     from: (table) => filteredQuery(rejectedRows[table]),
     rpc: async (name, args) => {
       rejectedCalls.push({ name, args })
-      return { data: pendingRun, error: null }
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...pendingRun, status: 'running', result_markdown: '' },
+            task: { ...rejectedRows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'complete_ai_run') {
+        return {
+          data: {
+            aiRun: pendingRun,
+            task: { ...rejectedRows.tasks[0], status: 'in_review' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
     },
   }, { id: userId }, {
     buildMockAiContext: () => ({ version: 1, context: {}, truncation: {} }),
@@ -1110,8 +1432,8 @@ test('mock AI run blocks open or applied history before generation but retries a
     }),
   })
 
-  assert.equal((await rejectedRepository.createAiRun(aiMemberId, taskId)).status, 'pending_review')
-  assert.equal(rejectedCalls[0].name, 'create_mock_ai_run')
+  assert.equal((await rejectedRepository.createAiRun(aiMemberId, taskId)).aiRun.status, 'pending_review')
+  assert.deepEqual(rejectedCalls.map(({ name }) => name), ['start_ai_run', 'complete_ai_run'])
 
   const failedRows = aiContextRows()
   failedRows.ai_runs = [{
@@ -1131,15 +1453,33 @@ test('mock AI run blocks open or applied history before generation but retries a
     from: (table) => filteredQuery(failedRows[table]),
     rpc: async (name, args) => {
       failedCalls.push({ name, args })
-      return { data: failedRun, error: null }
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...failedRun, status: 'running', error_message: null },
+            task: { ...failedRows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'fail_ai_run') {
+        return {
+          data: {
+            aiRun: failedRun,
+            task: { ...failedRows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
     },
   }, { id: userId }, {
     buildMockAiContext: () => ({ version: 1, context: {}, truncation: {} }),
     generateMockAiResult: () => { throw new Error('deterministic failure') },
   })
 
-  assert.equal((await failedRepository.createAiRun(aiMemberId, taskId)).status, 'failed')
-  assert.equal(failedCalls[0].name, 'create_failed_mock_ai_run')
+  assert.equal((await failedRepository.createAiRun(aiMemberId, taskId)).aiRun.status, 'failed')
+  assert.deepEqual(failedCalls.map(({ name }) => name), ['start_ai_run', 'fail_ai_run'])
 })
 
 test('disabled project AI cannot receive a new task or a task reassignment before mutation', async () => {

@@ -151,7 +151,6 @@ const AI_VALIDATION_FIELDS = [
 ]
 
 const BLOCKING_AI_RUN_STATUSES = new Set([
-  AI_RUN_STATUS.RUNNING,
   AI_RUN_STATUS.PENDING_REVIEW,
 ])
 
@@ -420,6 +419,17 @@ function mapAiAgentResult(row, operation) {
   return {
     member: mapMember(member),
     aiAgent: mapAiAgent(aiAgent),
+  }
+}
+
+function mapAiRunTaskResult(data, operation, { includeNote = false } = {}) {
+  const result = rpcObject(data)
+  const aiRun = result?.aiRun ?? result?.ai_run
+  if (!aiRun) storeError(operation)
+  return {
+    aiRun: mapAiRun(aiRun),
+    task: result.task ? mapTask(result.task) : null,
+    ...(includeNote ? { note: result.note ? mapNote(result.note) : null } : {}),
   }
 }
 
@@ -876,12 +886,64 @@ export function createSupabaseTeamFlowRepository(
         resources: (resourcesResult.data ?? []).map(mapResource),
       }
 
+      const startRun = async ({
+        contextSnapshot,
+        executionMode,
+        provider = null,
+        model = null,
+      }) => {
+        const { data, error } = await supabase.rpc('start_ai_run', {
+          p_member_id: memberId,
+          p_task_id: taskId,
+          p_context_snapshot: contextSnapshot,
+          p_execution_mode: executionMode,
+          p_provider: provider,
+          p_model: model,
+        })
+        if (error) throwDatabaseError('AI 작업 시작', error)
+        return mapAiRunTaskResult(data, 'AI 작업 시작')
+      }
+
+      const completeRun = async (runId, generated) => {
+        const { data, error } = await supabase.rpc('complete_ai_run', {
+          p_run_id: runId,
+          p_result_markdown: generated.resultMarkdown,
+          p_usage: generated.usage ?? {},
+          p_duration_ms: generated.durationMs ?? 0,
+        })
+        if (error) throwDatabaseError('AI 작업 완료', error)
+        return mapAiRunTaskResult(data, 'AI 작업 완료')
+      }
+
+      const failRun = async (runId, {
+        message,
+        usage = {},
+        durationMs = 0,
+        restoreTaskStatus = false,
+      }) => {
+        const { data, error } = await supabase.rpc('fail_ai_run', {
+          p_run_id: runId,
+          p_error_message: message,
+          p_usage: usage,
+          p_duration_ms: durationMs,
+          p_restore_task_status: restoreTaskStatus,
+        })
+        if (error) throwDatabaseError('AI 실패 이력 저장', error)
+        return mapAiRunTaskResult(data, 'AI 실패 이력 저장')
+      }
+
       if (aiRuntime.mode === AI_EXECUTION_MODE.LIVE) {
         if (!aiProvider) {
           throw new TeamFlowStoreError('Gemini 실행 구성이 완료되지 않았습니다.')
         }
         const contextSnapshot = buildLiveAiContext(generatorInput)
         const prompt = buildGeminiPrompt(contextSnapshot)
+        const started = await startRun({
+          contextSnapshot,
+          executionMode: AI_EXECUTION_MODE.LIVE,
+          provider: credentialProvider,
+          model: aiRuntime.model,
+        })
         let generated
         try {
           generated = await aiProvider.generate({
@@ -890,50 +952,40 @@ export function createSupabaseTeamFlowRepository(
             prompt: prompt.prompt,
           })
         } catch (error) {
-          if (!(error instanceof TeamFlowApiError)) throw error
-          if (error.code === 'AI_CREDENTIAL_INVALID') {
-            await markCredentialUnverified()
-          }
-          const { data, error: failedRunError } = await supabase.rpc('create_failed_ai_run', {
-            p_member_id: memberId,
-            p_task_id: taskId,
-            p_context_snapshot: contextSnapshot,
-            p_error_message: error.message,
-            p_execution_mode: AI_EXECUTION_MODE.LIVE,
-            p_provider: credentialProvider,
-            p_model: aiRuntime.model,
-            p_usage: {},
-            p_duration_ms: error.durationMs ?? 0,
+          const typedError = error instanceof TeamFlowApiError
+            ? error
+            : new TeamFlowApiError({
+                status: 503,
+                code: 'AI_PROVIDER_UNAVAILABLE',
+                message: 'Gemini 실행 중 오류가 발생했습니다.',
+                cause: error,
+              })
+          const invalidCredential = typedError.code === 'AI_CREDENTIAL_INVALID'
+          const failed = await failRun(started.aiRun.id, {
+            message: typedError.message,
+            durationMs: typedError.durationMs ?? 0,
+            restoreTaskStatus: invalidCredential,
           })
-          if (failedRunError) throwDatabaseError('AI 실패 이력 저장', failedRunError)
-          const failedRun = rpcObject(data)
-          if (!failedRun) storeError('AI 실패 이력 저장')
-          throw error.withAiRun(mapAiRun(failedRun))
+          if (invalidCredential) {
+            try {
+              await markCredentialUnverified()
+            } catch {
+              // The run and task are already safe. A later invalid-key attempt
+              // will retry this metadata cleanup without exposing the key.
+            }
+          }
+          throw typedError.withAiRun(failed.aiRun, failed.task)
         }
 
-        const { data, error } = await supabase.rpc('create_ai_run', {
-          p_member_id: memberId,
-          p_task_id: taskId,
-          p_context_snapshot: contextSnapshot,
-          p_result_markdown: generated.resultMarkdown,
-          p_execution_mode: AI_EXECUTION_MODE.LIVE,
-          p_provider: generated.provider,
-          p_model: generated.model,
-          p_usage: generated.usage,
-          p_duration_ms: generated.durationMs,
-        })
-        if (error) throwDatabaseError('AI 작업 실행', error)
-        const row = rpcObject(data)
-        if (!row) storeError('AI 작업 실행')
-        return mapAiRun(row)
+        return completeRun(started.aiRun.id, generated)
       }
 
       let contextSnapshot
-      let generated
+      let contextBuildFailed = false
       try {
         contextSnapshot = buildMockAiContext(generatorInput)
-        generated = generateMockAiResult(generatorInput)
       } catch {
+        contextBuildFailed = true
         contextSnapshot ??= {
           version: 1,
           instructions: agent.instructions ?? '',
@@ -942,29 +994,30 @@ export function createSupabaseTeamFlowRepository(
           context: {},
           truncation: { generationFailed: true },
         }
-        const message = 'Mock 결과 생성에 실패했습니다.'
-        const { data, error: failedRunError } = await supabase.rpc('create_failed_mock_ai_run', {
-          p_member_id: memberId,
-          p_task_id: taskId,
-          p_context_snapshot: contextSnapshot,
-          p_error_message: message,
-        })
-        if (failedRunError) throwDatabaseError('AI 실패 이력 저장', failedRunError)
-        const row = rpcObject(data)
-        if (!row) storeError('AI 실패 이력 저장')
-        return mapAiRun(row)
       }
 
-      const { data, error } = await supabase.rpc('create_mock_ai_run', {
-        p_member_id: memberId,
-        p_task_id: taskId,
-        p_context_snapshot: generated.contextSnapshot,
-        p_result_markdown: generated.resultMarkdown,
+      const started = await startRun({
+        contextSnapshot,
+        executionMode: AI_EXECUTION_MODE.MOCK,
       })
-      if (error) throwDatabaseError('AI 모의 작업 실행', error)
-      const row = rpcObject(data)
-      if (!row) storeError('AI 모의 작업 실행')
-      return mapAiRun(row)
+
+      let generated
+      try {
+        if (contextBuildFailed) throw new Error('Mock context generation failed')
+        generated = generateMockAiResult(generatorInput)
+      } catch {
+        const message = 'Mock 결과 생성에 실패했습니다.'
+        return failRun(started.aiRun.id, {
+          message,
+          restoreTaskStatus: false,
+        })
+      }
+
+      return completeRun(started.aiRun.id, {
+        resultMarkdown: generated.resultMarkdown,
+        usage: {},
+        durationMs: 0,
+      })
     },
 
     async applyAiRun(runId) {
@@ -972,13 +1025,7 @@ export function createSupabaseTeamFlowRepository(
         p_run_id: runId,
       })
       if (error) throwDatabaseError('AI 실행 결과 노트 반영', error)
-      const result = rpcObject(data)
-      const aiRun = result?.aiRun ?? result?.ai_run
-      if (!aiRun) throw new TeamFlowNotFoundError()
-      return {
-        aiRun: mapAiRun(aiRun),
-        note: result.note ? mapNote(result.note) : null,
-      }
+      return mapAiRunTaskResult(data, 'AI 실행 결과 노트 반영', { includeNote: true })
     },
 
     async rejectAiRun(runId) {
@@ -986,9 +1033,7 @@ export function createSupabaseTeamFlowRepository(
         p_run_id: runId,
       })
       if (error) throwDatabaseError('AI 실행 결과 보류', error)
-      const row = rpcObject(data)
-      if (!row) throw new TeamFlowNotFoundError()
-      return mapAiRun(row)
+      return mapAiRunTaskResult(data, 'AI 실행 결과 보류')
     },
 
     async createInvitation(projectId, input) {

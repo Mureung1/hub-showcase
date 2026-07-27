@@ -4,6 +4,7 @@ export class TeamFlowApiError extends Error {
     code,
     message,
     aiRun = null,
+    task = null,
     durationMs = null,
     cause,
   }) {
@@ -12,11 +13,13 @@ export class TeamFlowApiError extends Error {
     this.status = status
     this.code = code
     this.aiRun = aiRun
+    this.task = task
     this.durationMs = durationMs
   }
 
-  withAiRun(aiRun) {
+  withAiRun(aiRun, task = null) {
     this.aiRun = aiRun
+    this.task = task
     return this
   }
 }

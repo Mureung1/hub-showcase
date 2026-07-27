@@ -1,3 +1,5 @@
+import { TASK_STATUS } from '@teamflow/shared'
+
 import {
   CURRENT_USER_ID,
   initialAiAgents,
@@ -180,12 +182,19 @@ export const testTeamFlowRepository = {
       createdAt: '2026-07-24T02:00:00.000Z', updatedAt: '2026-07-24T02:00:00.000Z',
     }
     createdAiRuns.set(aiRun.id, aiRun)
-    return Promise.resolve(aiRun)
+    return Promise.resolve({
+      aiRun,
+      task: {
+        ...(task ?? { id: taskId }),
+        status: TASK_STATUS.IN_REVIEW,
+      },
+    })
   },
 
   applyAiRun(runId) {
     const source = createdAiRuns.get(runId) ?? initialAiRuns.find((run) => run.id === runId)
     const aiRun = { ...source, id: runId, status: 'applied', appliedNoteId: `note-${runId}` }
+    const task = initialTasks.find((candidate) => candidate.id === aiRun.taskId)
     createdAiRuns.set(runId, aiRun)
     return Promise.resolve({
       aiRun,
@@ -194,14 +203,25 @@ export const testTeamFlowRepository = {
         content: aiRun.resultMarkdown, authorId: CURRENT_USER_ID,
         createdAt: '2026-07-24T02:10:00.000Z', updatedAt: '2026-07-24T02:10:00.000Z',
       },
+      task: {
+        ...(task ?? { id: aiRun.taskId }),
+        status: TASK_STATUS.COMPLETED,
+      },
     })
   },
 
   rejectAiRun(runId) {
     const source = createdAiRuns.get(runId) ?? initialAiRuns.find((run) => run.id === runId)
     const aiRun = { ...source, id: runId, status: 'rejected' }
+    const task = initialTasks.find((candidate) => candidate.id === aiRun.taskId)
     createdAiRuns.set(runId, aiRun)
-    return Promise.resolve(aiRun)
+    return Promise.resolve({
+      aiRun,
+      task: {
+        ...(task ?? { id: aiRun.taskId }),
+        status: TASK_STATUS.IN_PROGRESS,
+      },
+    })
   },
 
   getAiCredential() {

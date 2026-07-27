@@ -27,6 +27,7 @@ import workspace from '../../styles/workspace.module.css'
 import { MarkdownPreview } from '../notes/MarkdownPreview.jsx'
 import { AiCredentialSettingsModal } from '../settings/AiCredentialSettingsModal.jsx'
 import { AiExecutionStatus } from './AiExecutionStatus.jsx'
+import { isAiRunBlocking } from './aiRunBlocking.js'
 import { CreateAiAgentModal } from './CreateAiAgentModal.jsx'
 import styles from './AiPage.module.css'
 
@@ -97,11 +98,7 @@ export function AiPage() {
     () => new Map(aiRuns
       .filter((run) => (
         run.taskId
-        && [
-          AI_RUN_STATUS.RUNNING,
-          AI_RUN_STATUS.PENDING_REVIEW,
-          AI_RUN_STATUS.APPLIED,
-        ].includes(run.status)
+        && isAiRunBlocking(run)
       ))
       .map((run) => [run.taskId, run])),
     [aiRuns],

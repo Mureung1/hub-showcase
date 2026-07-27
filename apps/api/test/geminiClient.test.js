@@ -150,6 +150,141 @@ test('Gemini key verification maps rejected verification requests to an invalid 
   }
 })
 
+test('Gemini safe error statuses override HTTP fallbacks without exposing provider details', async () => {
+  for (const [providerErrorStatus, status, code] of [
+    ['PERMISSION_DENIED', 422, 'AI_CREDENTIAL_INVALID'],
+    ['UNAUTHENTICATED', 422, 'AI_CREDENTIAL_INVALID'],
+    ['RESOURCE_EXHAUSTED', 429, 'AI_QUOTA_EXCEEDED'],
+    ['NOT_FOUND', 503, 'AI_MODEL_UNAVAILABLE'],
+    ['FAILED_PRECONDITION', 502, 'AI_PROVIDER_INVALID_RESPONSE'],
+    ['INVALID_ARGUMENT', 502, 'AI_PROVIDER_INVALID_RESPONSE'],
+    ['INTERNAL', 503, 'AI_PROVIDER_UNAVAILABLE'],
+    ['UNAVAILABLE', 503, 'AI_PROVIDER_UNAVAILABLE'],
+    ['DEADLINE_EXCEEDED', 504, 'AI_PROVIDER_TIMEOUT'],
+  ]) {
+    const client = createGeminiClient({
+      model: 'gemini-test-flash',
+      timeoutMs: 1000,
+      fetchImpl: async () => jsonResponse({
+        error: {
+          status: providerErrorStatus,
+          message: 'provider exposed user-secret',
+        },
+      }, 400),
+    })
+
+    await assert.rejects(
+      () => client.generate({
+        apiKey: 'user-secret',
+        systemInstruction: 'system',
+        prompt: 'prompt',
+      }),
+      (error) => {
+        assert.equal(error instanceof TeamFlowApiError, true)
+        assert.equal(error.status, status)
+        assert.equal(error.code, code)
+        assert.equal(error.message.includes('user-secret'), false)
+        assert.equal(error.cause, undefined)
+        return true
+      },
+    )
+  }
+})
+
+test('Gemini verification does not treat precondition or argument errors as invalid credentials', async () => {
+  for (const providerErrorStatus of ['FAILED_PRECONDITION', 'INVALID_ARGUMENT']) {
+    const client = createGeminiClient({
+      model: 'gemini-test-flash',
+      timeoutMs: 1000,
+      fetchImpl: async () => jsonResponse({
+        error: {
+          status: providerErrorStatus,
+          message: 'provider exposed user-secret',
+        },
+      }, 400),
+    })
+
+    await assert.rejects(
+      () => client.verifyApiKey('user-secret'),
+      (error) => {
+        assert.equal(error.status, 502)
+        assert.equal(error.code, 'AI_PROVIDER_INVALID_RESPONSE')
+        assert.equal(error.message.includes('user-secret'), false)
+        assert.equal(error.cause, undefined)
+        return true
+      },
+    )
+  }
+})
+
+test('Gemini API_KEY_INVALID reason overrides INVALID_ARGUMENT without exposing structured details', async () => {
+  const client = createGeminiClient({
+    model: 'gemini-test-flash',
+    timeoutMs: 1000,
+    fetchImpl: async () => jsonResponse({
+      error: {
+        status: 'INVALID_ARGUMENT',
+        message: 'provider exposed user-secret',
+        details: [{
+          reason: 'API_KEY_INVALID',
+          domain: 'provider exposed user-secret',
+          metadata: { apiKey: 'user-secret' },
+        }],
+      },
+    }, 400),
+  })
+
+  await assert.rejects(
+    () => client.generate({
+      apiKey: 'user-secret',
+      systemInstruction: 'system',
+      prompt: 'prompt',
+    }),
+    (error) => {
+      assert.equal(error.status, 422)
+      assert.equal(error.code, 'AI_CREDENTIAL_INVALID')
+      assert.equal(error.message.includes('user-secret'), false)
+      assert.equal(error.cause, undefined)
+      return true
+    },
+  )
+})
+
+test('Gemini ignores unknown structured reasons and keeps INVALID_ARGUMENT as an invalid response', async () => {
+  for (const details of [
+    [],
+    [{ reason: 'UNKNOWN_REASON', message: 'provider exposed user-secret' }],
+    [{ reason: 1234, domain: 'provider exposed user-secret' }],
+  ]) {
+    const client = createGeminiClient({
+      model: 'gemini-test-flash',
+      timeoutMs: 1000,
+      fetchImpl: async () => jsonResponse({
+        error: {
+          status: 'INVALID_ARGUMENT',
+          message: 'provider exposed user-secret',
+          details,
+        },
+      }, 400),
+    })
+
+    await assert.rejects(
+      () => client.generate({
+        apiKey: 'user-secret',
+        systemInstruction: 'system',
+        prompt: 'prompt',
+      }),
+      (error) => {
+        assert.equal(error.status, 502)
+        assert.equal(error.code, 'AI_PROVIDER_INVALID_RESPONSE')
+        assert.equal(error.message.includes('user-secret'), false)
+        assert.equal(error.cause, undefined)
+        return true
+      },
+    )
+  }
+})
+
 test('Gemini rejects malformed or empty responses and maps network failures', async () => {
   for (const response of [
     new Response('not-json', { status: 200 }),

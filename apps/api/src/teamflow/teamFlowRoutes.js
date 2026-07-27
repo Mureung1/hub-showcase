@@ -364,6 +364,7 @@ function routeError(response, error) {
     response.status(error.status).json({
       error: { code: error.code, message: error.message },
       ...(error.aiRun ? { aiRun: error.aiRun } : {}),
+      ...(error.task ? { task: error.task } : {}),
     })
     return
   }
@@ -539,12 +540,10 @@ export function createTeamFlowRouter({ authVerifier, repositoryFactory, demoRepo
     const validation = validateAiRun(request.body)
     if (validation.fields) return validationError(response, validation.fields)
     return asyncRoute(async () => {
-      response.status(201).json({
-        aiRun: await request.teamFlow.repository.createAiRun(
-          request.params.memberId,
-          validation.value.taskId,
-        ),
-      })
+      response.status(201).json(await request.teamFlow.repository.createAiRun(
+        request.params.memberId,
+        validation.value.taskId,
+      ))
     })(request, response)
   })
 
@@ -558,9 +557,7 @@ export function createTeamFlowRouter({ authVerifier, repositoryFactory, demoRepo
   router.post('/ai-runs/:runId/reject', async (request, response) => {
     if (!validId(response, 'runId', request.params.runId)) return
     return asyncRoute(async () => {
-      response.status(200).json({
-        aiRun: await request.teamFlow.repository.rejectAiRun(request.params.runId),
-      })
+      response.status(200).json(await request.teamFlow.repository.rejectAiRun(request.params.runId))
     })(request, response)
   })
 

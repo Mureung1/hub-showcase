@@ -570,10 +570,16 @@ describe('connected prototype flows', () => {
     expect(await screen.findByRole('heading', { name: '모의 실행 결과' })).toBeInTheDocument()
     expect(screen.getAllByText('검토 대기').length).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: '검토 대기' })).toBeDisabled()
+    const taskRow = screen
+      .getAllByText(aiTask.title)
+      .map((element) => element.closest('li'))
+      .find(Boolean)
+    expect(taskRow).toHaveTextContent('검토 중')
 
     await user.click(screen.getByRole('button', { name: '공유 노트로 반영' }))
     await waitFor(() => expect(applyAiRun).toHaveBeenCalledTimes(1))
     expect(screen.getAllByText('반영 완료').length).toBeGreaterThan(0)
+    expect(taskRow).toHaveTextContent('완료')
     await user.click(screen.getByRole('link', { name: '반영된 공유 노트 보기' }))
     expect(await screen.findByRole('heading', { name: 'AI 결과 · Mock 작업' })).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: 'AI 팀원' }))
@@ -696,7 +702,11 @@ describe('connected prototype flows', () => {
     }
     const providerError = Object.assign(
       new Error('Gemini API 사용 한도를 초과했습니다.'),
-      { code: 'AI_QUOTA_EXCEEDED', aiRun: failedRun },
+      {
+        code: 'AI_QUOTA_EXCEEDED',
+        aiRun: failedRun,
+        task: { ...aiTask, status: TASK_STATUS.IN_PROGRESS },
+      },
     )
     const repository = {
       ...testTeamFlowRepository,
@@ -721,6 +731,11 @@ describe('connected prototype flows', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Gemini API 사용 한도를 초과했습니다.')
     expect(screen.getAllByText('실패').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Gemini API 사용 한도를 초과했습니다.').length).toBeGreaterThan(1)
+    const failedTaskRow = screen
+      .getAllByText(aiTask.title)
+      .map((element) => element.closest('li'))
+      .find(Boolean)
+    expect(failedTaskRow).toHaveTextContent('진행 중')
   })
 
   test('allows another Mock run after a reviewed result is put on hold', async () => {
@@ -746,6 +761,11 @@ describe('connected prototype flows', () => {
     await user.click(screen.getByRole('button', { name: '모의 작업 실행' }))
     await user.click(await screen.findByRole('button', { name: '보류' }))
     expect(screen.getAllByText('보류').length).toBeGreaterThan(0)
+    const rejectedTaskRow = screen
+      .getAllByText(aiTask.title)
+      .map((element) => element.closest('li'))
+      .find(Boolean)
+    expect(rejectedTaskRow).toHaveTextContent('진행 중')
 
     const retryButton = screen.getByRole('button', { name: '모의 작업 실행' })
     expect(retryButton).toBeEnabled()
