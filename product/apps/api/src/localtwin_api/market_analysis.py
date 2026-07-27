@@ -568,16 +568,17 @@ class MarketAnalysisRepository:
         for period in periods:
             rows = self._category_rows(period, codes)
             available: list[Literal["stores", "sales", "flow"]] = ["stores"]
-            if rows and all(row["sales_source_id"] is not None for row in rows):
+            if any(row["sales_source_id"] is not None for row in rows):
                 available.append("sales")
-            if rows and all(row["flow_source_id"] is not None for row in rows):
+            if any(row["flow_source_id"] is not None for row in rows):
                 available.append("flow")
             availability[period] = available
             if "sales" in available and "flow" in available:
                 complete_periods.append(period)
+        richest_period = max(periods, key=lambda period: (len(availability[period]), period))
         return AnalysisPeriodsResponse(
             periods=periods,
-            default_period=complete_periods[0] if complete_periods else periods[0],
+            default_period=complete_periods[0] if complete_periods else richest_period,
             period_availability=availability,
         )
 
