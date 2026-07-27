@@ -79,7 +79,7 @@ enabled_tools = ["propose_state_patch"]
 required = true
 ```
 
-Exact timeout seconds가 아직 후속 결정이므로 위 conceptual snippet에서는 `tool_timeout_sec` 숫자만 생략했다. Final Bootstrap output은 이 field를 생략해 current pinned default 300초로 돌아가면 안 된다.
+Bootstrap output은 `tool_timeout_sec`을 의도적으로 생략하고 current pinned Codex의 native MCP tool timeout 300초를 초기 제품 동작으로 사용한다. App은 별도 countdown·연장·keepalive·자동 retry 상태를 만들지 않으며, timeout은 현재 interaction을 terminal failure·cancellation으로 정산한다.
 
 이 예시의 `../../hub/`는 canonical sibling layout에서 Bootstrap이 **exact SemesterWorkspace root를 기준으로** 계산한 값이다. `.codex/` directory 기준의 고정 문자열이 아니며, 다른 위치의 existing repository를 채택하면 실제 두 root 사이의 상대경로를 계산한다. Current pinned local STDIO launcher는 MCP server `cwd`가 없을 때 Runtime fallback `cwd`에서 relative `command`를 resolve하므로 declaration에는 `cwd`를 쓰지 않고 Workspace Runtime의 exact Git root를 그대로 사용한다.
 
@@ -104,7 +104,7 @@ Adapter는 Browser API와 같은 App HTTP listener의 Server-private route로 Br
 | Continuity loss | MCP cancel·STDIO EOF·HTTP abort, Browser disconnect, Runtime terminal·replacement와 App shutdown은 pending call을 cancellation 또는 error로 terminal 정산한다. Duplicate·late answer는 result를 다시 만들지 않는다. |
 | Teardown | Runtime replacement·close와 App shutdown은 새 Broker intake를 닫고 pending interaction을 terminal 정산한 뒤 token·binding을 폐기한다. Stale request는 새 generation으로 재결합하지 않는다. |
 | Replay | Terminal response 전달 여부가 불명확하면 성공으로 추정하거나 replay하지 않는다. Fresh MCP call만 새 interaction을 만들며 App은 lost result를 근거로 workspace를 apply하지 않는다. |
-| Native timeout | Current pin의 MCP tool default는 300초다. Project declaration이 explicit human-decision `tool_timeout_sec`을 소유해야 하며 exact seconds는 후속 결정이다. |
+| Native timeout | Project declaration은 `tool_timeout_sec`을 생략하고 current pin의 native default 300초를 사용한다. Timeout은 pending call을 terminal 정산하며 retry는 fresh capability call이다. Codex pin upgrade 때 default를 재검증하고 실제 5분 초과 요구가 확인될 때만 override를 검토한다. |
 | Private surface | Exact route, header, env 이름과 HTTP codec은 `@ay-ple/interaction-mcp` implementation contract이며 workspace config나 Browser wire contract가 아니다. |
 
 WebSocket, Unix domain socket, inherited extra file descriptor, 별도 private HTTP server, poll·callback과 durable response journal은 현재 contract에 포함하지 않는다.
