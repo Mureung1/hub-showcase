@@ -3,7 +3,11 @@ import { getScoreBreakdown, WEIGHT_PRESETS, DEFAULT_WEIGHT_KEY } from "./priorit
 
 // 요인별 점수(0~100)에 실제 기여도(가중치 × 점수)가 이 값 이상일 때만 이유로 언급한다.
 // 성향(가중치)을 바꾸면 같은 과목이라도 언급되는 이유가 달라진다.
-const CONTRIBUTION_THRESHOLD = 12;
+//
+// 요인이 9개가 되면서 가중치가 전반적으로 낮아졌다. 12로 두면 균형 성향에서
+// 학점(최대 기여도 10)과 이전 점수(11)가 만점을 받아도 이유로 못 나온다.
+// 10은 "평균 가중치 요인이 거의 만점일 때" 정도라 헤드라인 이유로 삼을 만하다.
+const CONTRIBUTION_THRESHOLD = 10;
 
 // 1~7 값을 "3/7" 형태로, "모르겠다"(0)는 그대로 표시한다.
 function scaleLabel(value) {
@@ -29,7 +33,8 @@ const FACTORS = [
   },
   {
     key: "gradeWeight",
-    describe: (subject) => `성적 반영 비율이 높아서(${subject.gradeWeight ?? 40}%)`,
+    // 모르는 요인은 위에서 걸러지므로 여기 오면 gradeWeight 는 항상 숫자다.
+    describe: (subject) => `성적 반영 비율이 높아서(${subject.gradeWeight}%)`,
   },
   {
     key: "grading",
@@ -47,6 +52,10 @@ const FACTORS = [
     key: "previousScore",
     describe: (subject) => `이전 시험 점수가 낮아서(${subject.previousScore}점)`,
   },
+  {
+    key: "credits",
+    describe: (subject) => `학점이 높아서(${subject.credits}학점)`,
+  },
 ];
 
 // 우선순위 점수의 근거를, 실제로 선택된 성향(weightKey)의 가중치를 반영해
@@ -63,12 +72,13 @@ export function buildPriorityReason(subject, weightKey = DEFAULT_WEIGHT_KEY) {
     studyAmount: subject.studyAmount,
     availableTime: subject.availableTime,
     previousScore: subject.previousScore,
+    credits: subject.credits,
   });
   const ctx = { daysUntil };
 
   const ranked = FACTORS
-    // 이전 시험 점수를 입력하지 않았으면(값이 숫자가 아니면) 애초에 후보에서 뺀다.
-    .filter((factor) => factor.key !== "previousScore" || typeof subject.previousScore === "number")
+    // 모르는 요인(null)은 점수 계산에도 안 들어가므로 이유로도 말하지 않는다.
+    .filter((factor) => breakdown[factor.key] !== null)
     .map((factor) => ({
       factor,
       contribution: breakdown[factor.key] * weights[factor.key],
@@ -76,11 +86,8 @@ export function buildPriorityReason(subject, weightKey = DEFAULT_WEIGHT_KEY) {
     .filter((item) => item.contribution >= CONTRIBUTION_THRESHOLD)
     .sort((a, b) => b.contribution - a.contribution);
 
+  // 학점도 이제 다른 요인과 같이 기여도 순으로 다뤄지므로 따로 덧붙이지 않는다.
   const reasons = ranked.slice(0, 3).map((item) => item.factor.describe(subject, ctx));
-
-  if (subject.credits && subject.credits > 3) {
-    reasons.push(`학점이 높아서(${subject.credits}학점)`);
-  }
 
   if (reasons.length === 0) {
     const gentle = [];

@@ -97,7 +97,7 @@
 - Subheading: 18px / SemiBold
 - Body: 16px / Regular
 - Label: 14px / Medium
-- Caption: 12px / Regular
+- Caption: 13px / Regular (한글 보조문에서 12px 은 읽기 힘들어 13px 로 둔다)
 
 ### 여백
 

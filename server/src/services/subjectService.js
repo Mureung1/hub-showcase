@@ -14,14 +14,24 @@ function toSubject(row) {
     availableTime: row.available_time,
     credits: row.credits,
     previousScore: row.previous_score,
+    completedAt: row.completed_at,
     createdAt: row.created_at,
   };
 }
 
-const listStatement = db.prepare(
+const listActiveStatement = db.prepare(
+  "SELECT * FROM subjects WHERE completed_at IS NULL ORDER BY created_at ASC, id ASC"
+);
+const listDoneStatement = db.prepare(
+  "SELECT * FROM subjects WHERE completed_at IS NOT NULL ORDER BY created_at ASC, id ASC"
+);
+const listAllStatement = db.prepare(
   "SELECT * FROM subjects ORDER BY created_at ASC, id ASC"
 );
 const getStatement = db.prepare("SELECT * FROM subjects WHERE id = ?");
+const completeStatement = db.prepare(
+  "UPDATE subjects SET completed_at = ? WHERE id = ?"
+);
 const insertStatement = db.prepare(
   `INSERT INTO subjects (name, exam_date, understanding, difficulty, grade_weight, grading, study_amount, available_time, credits, previous_score)
    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -33,8 +43,23 @@ const updateStatement = db.prepare(
 );
 const deleteStatement = db.prepare("DELETE FROM subjects WHERE id = ?");
 
-export function listSubjects() {
-  return listStatement.all().map(toSubject);
+// status: "active"(기본, 완료 제외) | "done"(완료만) | "all"(전체)
+export function listSubjects(status = "active") {
+  const statement =
+    status === "done"
+      ? listDoneStatement
+      : status === "all"
+      ? listAllStatement
+      : listActiveStatement;
+  return statement.all().map(toSubject);
+}
+
+export function completeSubject(id) {
+  const result = completeStatement.run(new Date().toISOString(), id);
+  if (result.changes === 0) {
+    return null;
+  }
+  return toSubject(getStatement.get(id));
 }
 
 export function createSubject({

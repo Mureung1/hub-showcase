@@ -2,28 +2,32 @@ import { useState } from "react";
 import PriorityBadge from "./PriorityBadge";
 import WeightSelector from "./WeightSelector";
 import ScoreBreakdown from "./ScoreBreakdown";
+import SubjectDetailFields from "./SubjectDetailFields";
+import StudyPlan from "./StudyPlan";
+import Chevron from "./Chevron";
 import { getDaysUntil, formatDday } from "../utils/daysUntil";
 import { buildPriorityReason } from "../utils/priorityReason";
+import { formatScale } from "../utils/scaleLabels";
+import { toggleInSet } from "../utils/toggleSet";
 
 const THIS_WEEK_DAYS = 7;
 
-function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
+function ResultScreen({
+  subjects,
+  weightKey,
+  onChangeWeight,
+  planHours,
+  onChangePlanHours,
+  onUpdateSubject,
+  onCompleteSubject,
+  onBack,
+}) {
   const [sortKey, setSortKey] = useState("score");
   const [onlyThisWeek, setOnlyThisWeek] = useState(false);
   // 점수 분해 막대는 기본적으로 숨겨두고, 눌러서 펼친 과목만 보여준다.
   const [expandedIds, setExpandedIds] = useState(() => new Set());
-
-  function toggleBreakdown(id) {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }
+  // 추가 입력도 마찬가지로, 더 정확하게 하고 싶은 과목만 펼친다.
+  const [detailIds, setDetailIds] = useState(() => new Set());
 
   const filteredSubjects = onlyThisWeek
     ? subjects.filter((subject) => {
@@ -74,8 +78,16 @@ function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
         </div>
       ) : (
         <div className="empty-state">
-          <p>등록된 과목이 없어요. 과목을 추가하고 다시 확인해 주세요.</p>
+          <p>등록된 과목이 없어요. 과목을 담고 다시 확인해 주세요.</p>
         </div>
+      )}
+
+      {subjects.length > 0 && (
+        <StudyPlan
+          subjects={subjects}
+          hours={planHours}
+          onChangeHours={onChangePlanHours}
+        />
       )}
 
       <WeightSelector value={weightKey} onChange={onChangeWeight} />
@@ -85,6 +97,7 @@ function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
           <button
             type="button"
             className={`chip${sortKey === "score" ? " is-selected" : ""}`}
+            aria-pressed={sortKey === "score"}
             onClick={() => setSortKey("score")}
           >
             점수순
@@ -92,6 +105,7 @@ function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
           <button
             type="button"
             className={`chip${sortKey === "dday" ? " is-selected" : ""}`}
+            aria-pressed={sortKey === "dday"}
             onClick={() => setSortKey("dday")}
           >
             D-day순
@@ -111,44 +125,81 @@ function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
       <h3 className="subsection-title">등록된 과목</h3>
 
       {rankedSubjects.length > 0 ? (
-        <ul className="subject-list">
+        <>
+          {/* 펼치기 전에 왜 펼치는지 알려준다. 과목마다 반복하면 소음이라 목록 위에 한 번만 둔다. */}
+          <p className="list-lead">
+            과목마다 &ldquo;더 정확하게&rdquo;를 열어 항목을 채울수록 순위가 정확해져요.
+          </p>
+          <ul className="subject-list">
           {rankedSubjects.map((subject, index) => {
             const isExpanded = expandedIds.has(subject.id);
+            const isDetailOpen = detailIds.has(subject.id);
+            const daysUntil = getDaysUntil(subject.examDate);
+            // 이미 치른 시험은 급함이 0이라 아래로 내려가지만, 왜 내려갔는지도 보여준다.
+            const isPast = daysUntil !== null && daysUntil < 0;
+
             return (
-              <li key={subject.id} className="subject-item">
+              <li key={subject.id} className={`subject-item${isPast ? " is-past" : ""}`}>
                 <div className="subject-row">
                   <span className="subject-rank">{index + 1}</span>
                   <div className="subject-main">
                     <span className="subject-name">{subject.name}</span>
                     <span className="subject-meta">
-                      {formatDday(getDaysUntil(subject.examDate))} · 이해도{" "}
-                      {subject.understanding} · 난이도 {subject.difficulty}
+                      {isPast ? (
+                        <>시험이 지났어요 ({formatDday(daysUntil)})</>
+                      ) : (
+                        <>
+                          {formatDday(daysUntil)} · 이해도{" "}
+                          {formatScale(subject.understanding)}
+                        </>
+                      )}
                     </span>
                   </div>
                   <PriorityBadge priorityScore={subject.priorityScore} />
                   <span className="subject-score">{subject.priorityScore}점</span>
                 </div>
 
-                <button
-                  type="button"
-                  className="breakdown-toggle"
-                  aria-expanded={isExpanded}
-                  onClick={() => toggleBreakdown(subject.id)}
-                >
-                  {isExpanded ? "점수 구성 접기 ▴" : "점수 구성 보기 ▾"}
-                </button>
+                <div className="subject-tools">
+                  <button
+                    type="button"
+                    className="link-button"
+                    aria-expanded={isExpanded}
+                    onClick={() => toggleInSet(setExpandedIds, subject.id)}
+                  >
+                    점수 구성 <Chevron open={isExpanded} />
+                  </button>
+                  <button
+                    type="button"
+                    className="link-button"
+                    aria-expanded={isDetailOpen}
+                    onClick={() => toggleInSet(setDetailIds, subject.id)}
+                  >
+                    더 정확하게 <Chevron open={isDetailOpen} />
+                  </button>
+                  <button
+                    type="button"
+                    className="entry-action subject-done"
+                    onClick={() => onCompleteSubject(subject.id)}
+                  >
+                    공부 끝
+                  </button>
+                </div>
 
                 {isExpanded && <ScoreBreakdown subject={subject} />}
+                {isDetailOpen && (
+                  <SubjectDetailFields subject={subject} onChange={onUpdateSubject} />
+                )}
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </>
       ) : (
         <p className="empty-hint">이번 주에 시험이 있는 과목이 없어요.</p>
       )}
 
       <button type="button" className="button button-secondary" onClick={onBack}>
-        다시 입력하기
+        ← 과목 다시 담기
       </button>
     </section>
   );

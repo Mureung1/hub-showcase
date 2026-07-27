@@ -1,18 +1,56 @@
 import { useEffect, useRef, useState } from "react";
-import SubjectInputPage from "./components/SubjectInputPage";
+import ProgressSteps from "./components/ProgressSteps";
+import CollectStep from "./components/CollectStep";
+import UnderstandingStep from "./components/UnderstandingStep";
 import ResultScreen from "./components/ResultScreen";
+import ResultSummary from "./components/ResultSummary";
 import { WEIGHT_PRESETS, DEFAULT_WEIGHT_KEY } from "./utils/priorityCalculator";
 import { fetchPriorityScores, scoreSubjectsLocally } from "./utils/priorityApi";
+import { UNKNOWN } from "./utils/scaleLabels";
 import {
   fetchSubjects,
   createSubject,
   updateSubject as updateSubjectOnServer,
+  completeSubject as completeSubjectOnServer,
   deleteSubject as deleteSubjectOnServer,
 } from "./utils/subjectsApi";
+import { isCompleted } from "./utils/subjectStatus";
 import "./App.css";
 
 const SUBJECTS_STORAGE_KEY = "exam-priority:subjects";
 const WEIGHT_STORAGE_KEY = "exam-priority:weight";
+const PLAN_HOURS_STORAGE_KEY = "exam-priority:planHours";
+// 저녁에 흔히 쓸 만한 시간. 화면에 그대로 보이고 바로 고칠 수 있어서 숨은 가정이 아니다.
+const DEFAULT_PLAN_HOURS = "3";
+
+// 1단계에서는 이름과 시험 날짜만 받는다. 나머지는 "아직 안 물어봤다"는 뜻의 모름으로 둔다.
+// 여기에 중립값 4를 넣으면, 사용자가 답한 적 없는 값이 점수에 섞인다. (priorityCalculator.js 참고)
+const NEW_SUBJECT_DEFAULTS = {
+  understanding: UNKNOWN,
+  difficulty: UNKNOWN,
+  grading: UNKNOWN,
+  studyAmount: UNKNOWN,
+  availableTime: UNKNOWN,
+  credits: null,
+  gradeWeight: null,
+  previousScore: null,
+};
+
+// 서버로 보낼 때 쓰는 필드 목록. 부분 수정이라도 서버는 전체 값을 받으므로 합쳐서 보낸다.
+function toServerPayload(subject) {
+  return {
+    name: subject.name,
+    examDate: subject.examDate,
+    understanding: subject.understanding,
+    difficulty: subject.difficulty,
+    gradeWeight: subject.gradeWeight,
+    grading: subject.grading,
+    studyAmount: subject.studyAmount,
+    availableTime: subject.availableTime,
+    credits: subject.credits,
+    previousScore: subject.previousScore,
+  };
+}
 
 function loadSubjects() {
   try {
@@ -29,14 +67,28 @@ function loadWeightKey() {
   return saved && WEIGHT_PRESETS[saved] ? saved : DEFAULT_WEIGHT_KEY;
 }
 
+function loadPlanHours() {
+  return localStorage.getItem(PLAN_HOURS_STORAGE_KEY) ?? DEFAULT_PLAN_HOURS;
+}
+
 function App() {
-  const [currentScreen, setCurrentScreen] = useState("input");
+  // collect(과목 담기) -> understanding(이해도) -> result(결과)
+  const [step, setStep] = useState("collect");
   const [subjects, setSubjects] = useState(loadSubjects);
   const [weightKey, setWeightKey] = useState(loadWeightKey);
-  // 우선순위 점수는 서버에서 계산해 받는다. 초기값과 폴백은 로컬 계산을 쓴다.
-  const [scoredSubjects, setScoredSubjects] = useState(() =>
-    scoreSubjectsLocally(subjects, weightKey)
-  );
+  const [planHours, setPlanHours] = useState(loadPlanHours);
+  // 완료 과목은 활성 목록·우선순위 계산 어디에도 노출하지 않는다.
+  const activeSubjects = subjects.filter((subject) => !isCompleted(subject));
+
+  // 우선순위 점수는 서버에서 계산해 받고, 서버가 없으면 로컬 계산으로 대체한다.
+  // 로컬 계산은 렌더 중에 바로 구한다. effect 안에서 setState 로 채우면 렌더가 두 번 돈다.
+  const locallyScored = scoreSubjectsLocally(activeSubjects, weightKey);
+  // 서버 응답은 "어떤 입력에 대한 답인지"를 같이 들고 있어야, 과목을 바꾼 직후
+  // 이전 입력에 대한 점수가 잠깐 보이는 일이 없다.
+  const scoreSignature = `${weightKey}|${JSON.stringify(activeSubjects)}`;
+  const [serverScores, setServerScores] = useState(null);
+  const scoredSubjects =
+    serverScores?.signature === scoreSignature ? serverScores.subjects : locallyScored;
   const nextIdRef = useRef(
     subjects.reduce((max, subject) => Math.max(max, subject.id), 0) + 1
   );
@@ -68,12 +120,8 @@ function App() {
       if (result.subjects.length === 0 && cached.length > 0) {
         const migrated = [];
         for (const subject of cached) {
-          const created = await createSubject({
-            name: subject.name,
-            examDate: subject.examDate,
-            understanding: subject.understanding,
-            difficulty: subject.difficulty,
-          });
+          // 일부 필드만 보내면 나머지가 서버에서 비워진다. 전체를 그대로 옮긴다.
+          const created = await createSubject(toServerPayload(subject));
           migrated.push(created.ok ? created.subject : subject);
         }
         if (!ignore) {
@@ -98,24 +146,28 @@ function App() {
     localStorage.setItem(WEIGHT_STORAGE_KEY, weightKey);
   }, [weightKey]);
 
-  // 과목이나 성향이 바뀌면 즉시 로컬 계산으로 채우고, 서버 응답이 오면 교체한다.
+  useEffect(() => {
+    localStorage.setItem(PLAN_HOURS_STORAGE_KEY, planHours);
+  }, [planHours]);
+
+  // 과목이나 성향이 바뀌면 서버에 다시 물어본다. 답이 오기 전까지는 로컬 계산이 보인다.
   useEffect(() => {
     let ignore = false;
 
-    setScoredSubjects(scoreSubjectsLocally(subjects, weightKey));
-
-    fetchPriorityScores(subjects, weightKey).then((result) => {
+    fetchPriorityScores(activeSubjects, weightKey).then((result) => {
       if (!ignore) {
-        setScoredSubjects(result.subjects);
+        setServerScores({ signature: scoreSignature, subjects: result.subjects });
       }
     });
 
     return () => {
       ignore = true;
     };
-  }, [subjects, weightKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scoreSignature]);
 
-  async function handleAddSubject(subjectInput) {
+  async function handleAddSubject({ name, examDate }) {
+    const subjectInput = { ...NEW_SUBJECT_DEFAULTS, name, examDate };
     const result = await createSubject(subjectInput);
 
     if (result.ok) {
@@ -130,15 +182,24 @@ function App() {
     setSubjects((prev) => [...prev, newSubject]);
   }
 
-  async function handleUpdateSubject(id, subjectInput) {
-    const result = await updateSubjectOnServer(id, subjectInput);
-    const updated = result.ok ? result.subject : null;
+  // patch 는 바뀐 필드만 담는다. 화면에는 곧바로 반영하고 서버에는 합친 전체를 보낸다.
+  async function handleUpdateSubject(id, patch) {
+    const current = subjects.find((subject) => subject.id === id);
+    if (!current) {
+      return;
+    }
 
+    const merged = { ...current, ...patch };
     setSubjects((prev) =>
-      prev.map((subject) =>
-        subject.id === id ? updated ?? { ...subject, ...subjectInput } : subject
-      )
+      prev.map((subject) => (subject.id === id ? merged : subject))
     );
+
+    const result = await updateSubjectOnServer(id, toServerPayload(merged));
+    if (result.ok) {
+      setSubjects((prev) =>
+        prev.map((subject) => (subject.id === id ? result.subject : subject))
+      );
+    }
   }
 
   async function handleRemoveSubject(id) {
@@ -147,8 +208,32 @@ function App() {
     setSubjects((prev) => prev.filter((subject) => subject.id !== id));
   }
 
+  async function handleCompleteSubject(id) {
+    const result = await completeSubjectOnServer(id);
+
+    if (result.ok) {
+      setSubjects((prev) =>
+        prev.map((subject) => (subject.id === id ? result.subject : subject))
+      );
+      return;
+    }
+
+    // 서버가 없으면 로컬에서 completedAt을 채운다. (정적 배포·서버 다운 폴백)
+    setSubjects((prev) =>
+      prev.map((subject) =>
+        subject.id === id
+          ? { ...subject, completedAt: new Date().toISOString() }
+          : subject
+      )
+    );
+  }
+
+  // 결과 단계에서는 왼쪽에 순위가 이미 다 나오므로 옆 순위판을 띄우지 않는다.
+  // 넓은 화면에서만 옆에 붙고, 좁은 화면에서는 단계 흐름 그대로다. (App.css 참고)
+  const showSummary = step !== "result" && scoredSubjects.length > 0;
+
   return (
-    <main className="app-container">
+    <main className={`app-container${showSummary ? " has-side" : ""}`}>
       <header className="app-header">
         <h1 className="app-title">오늘 뭐부터 공부하지?</h1>
         <p className="app-description">
@@ -156,22 +241,49 @@ function App() {
         </p>
       </header>
 
-      {currentScreen === "input" ? (
-        <SubjectInputPage
-          subjects={subjects}
-          onAddSubject={handleAddSubject}
-          onUpdateSubject={handleUpdateSubject}
-          onRemoveSubject={handleRemoveSubject}
-          onShowResult={() => setCurrentScreen("result")}
-        />
-      ) : (
-        <ResultScreen
-          subjects={scoredSubjects}
-          weightKey={weightKey}
-          onChangeWeight={setWeightKey}
-          onBack={() => setCurrentScreen("input")}
-        />
-      )}
+      <ProgressSteps current={step} />
+
+      <div className="app-layout">
+        <div className="app-main">
+          {step === "collect" && (
+            <CollectStep
+              subjects={scoredSubjects}
+              onAddSubject={handleAddSubject}
+              onRemoveSubject={handleRemoveSubject}
+              onNext={() => setStep("understanding")}
+            />
+          )}
+
+          {step === "understanding" && (
+            <UnderstandingStep
+              subjects={scoredSubjects}
+              onChangeUnderstanding={(id, value) =>
+                handleUpdateSubject(id, { understanding: value })
+              }
+              onUpdateSubject={handleUpdateSubject}
+              onBack={() => setStep("collect")}
+              onNext={() => setStep("result")}
+            />
+          )}
+
+          {step === "result" && (
+            <ResultScreen
+              subjects={scoredSubjects}
+              weightKey={weightKey}
+              onChangeWeight={setWeightKey}
+              planHours={planHours}
+              onChangePlanHours={setPlanHours}
+              onUpdateSubject={handleUpdateSubject}
+              onCompleteSubject={handleCompleteSubject}
+              onBack={() => setStep("collect")}
+            />
+          )}
+        </div>
+
+        {showSummary && (
+          <ResultSummary subjects={scoredSubjects} weightKey={weightKey} />
+        )}
+      </div>
     </main>
   );
 }

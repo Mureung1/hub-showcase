@@ -3,6 +3,139 @@
   margin: 48px auto;
 }
 
+/* 넓은 화면에서는 입력 옆에 순위판을 붙인다.
+   1024px 미만에서는 세로로 쌓여 지금과 같은 단계 흐름이 된다.
+   결과 단계에는 순위판을 안 띄우므로(.has-side 없음) 폭도 640px 로 돌아간다. */
+@media (min-width: 1024px) {
+  .app-container.has-side {
+    /* 640(본문) + 32(간격) + 340(순위판) = 1012 */
+    width: min(100% - 48px, 1040px);
+  }
+
+  .app-container.has-side .app-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: var(--space-section);
+    align-items: start;
+  }
+
+  /* 입력을 아래로 내려도 순위는 계속 보여야 한다. */
+  .result-summary {
+    display: block;
+    position: sticky;
+    top: var(--space-md);
+  }
+}
+
+/* 옆 순위판 */
+.result-summary {
+  padding: var(--space-card);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+/* 좁은 화면에서는 옆에 못 붙어 "입력하면서 같이 본다"는 존재 이유가 사라진다.
+   세로로 쌓이면 '다음' 버튼 아래로 밀려 스크롤해야 보이고, 결과 화면에 같은
+   내용이 다 있어 중복이다. 그래서 아예 그리지 않는다.
+   (보이는 구간을 min/max 로 나눠 적는다. 한쪽만 적으면 선언 순서에 따라
+   기본값이 미디어쿼리를 이기는 일이 생긴다.) */
+@media (max-width: 1023px) {
+  .result-summary {
+    display: none;
+  }
+}
+
+.summary-eyebrow {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-caption);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.summary-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.summary-top-name {
+  font-size: var(--font-subheading);
+  font-weight: 700;
+}
+
+.summary-top-score {
+  flex-shrink: 0;
+  font-size: var(--font-subheading);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+}
+
+.summary-reason {
+  margin: var(--space-sm) 0 var(--space-card);
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
+.summary-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-md) 0 0;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-label);
+}
+
+.summary-rank {
+  flex-shrink: 0;
+  width: 20px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+/* 과목명이 길어도 D-day 와 배지는 밀려나지 않게 한다. */
+.summary-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.summary-dday {
+  flex-shrink: 0;
+  font-size: var(--font-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+.summary-score {
+  flex-shrink: 0;
+  width: 28px;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-note {
+  margin: var(--space-md) 0 0;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
 .app-header {
   margin-bottom: var(--space-section);
 }
@@ -105,21 +238,30 @@
   border-color: var(--color-danger);
 }
 
+/* 메시지가 떠도 아래 버튼이 밀리지 않도록 자리를 미리 잡아둔다. */
 .form-error {
   min-height: 18px;
   font-size: var(--font-caption);
   color: var(--color-danger);
 }
 
+/* 다만 form-stack 의 24px 간격이 위아래로 붙으면, 메시지가 없을 때 66px 짜리
+   빈 구멍이 생긴다. 위쪽 간격만 좁혀 붙여 둔다. */
+.form-stack > .form-error {
+  margin-top: calc(var(--space-sm) - var(--space-card));
+}
+
+/* 도움말은 읽는 글이지 누르는 것이 아니다. Primary 색 + 굵게 쓰면 링크로 읽힌다. */
 .form-hint {
   margin: 0;
   font-size: var(--font-caption);
-  font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-text-secondary);
 }
 
+/* 지난 날짜처럼 실제로 눈에 걸려야 하는 것만 강조한다. */
 .form-hint.is-warning {
-  color: var(--color-danger);
+  font-weight: 600;
+  color: var(--color-danger-dark);
 }
 
 .form-actions {
@@ -127,7 +269,12 @@
   gap: var(--space-md);
 }
 
-.form-actions .button {
+/* 가로로 나란히 둘 때는 간격을 gap 이 맡는다.
+   아래쪽 `.button + .button` 의 세로 간격이 여기까지 먹으면 둘째 버튼만 밀려 내려가고,
+   stretch 때문에 첫째 버튼이 그만큼 길어져 높이가 어긋난다.
+   명시도를 같게 두면 나중에 선언된 쪽이 이기므로 선택자를 한 단계 더 좁힌다. */
+.form-actions .button,
+.form-actions .button + .button {
   margin-top: 0;
 }
 
@@ -138,9 +285,12 @@
   gap: var(--space-sm);
 }
 
+/* 1~7 은 한 줄에 나란히 있어야 "척도"로 읽힌다.
+   최소 너비를 두면 좁은 화면에서 7만 다음 줄로 밀려 혼자 폭을 다 차지했다.
+   폭을 0에서 균등하게 늘려 어떤 화면에서도 일곱 칸이 같은 크기로 한 줄에 들어가게 한다. */
 .score-option {
-  flex: 1 1 40px;
-  min-width: 36px;
+  flex: 1 1 0;
+  min-width: 0;
   height: 44px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-input);
@@ -174,8 +324,14 @@
   background-color: transparent;
 }
 
+/* "모르겠다"는 1~7 중 하나를 고른 것이 아니라 "고르지 않았다"는 뜻이다.
+   숫자 선택과 똑같이 꽉 채우면 기본 상태인데도 사용자가 고른 것처럼 보이고,
+   화면에서 가장 강한 요소가 되어 버린다. 연한 강조로만 표시한다. */
 .score-option-unknown.is-selected {
   border-style: solid;
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .score-scale {
@@ -212,11 +368,15 @@
   background-color: var(--color-surface);
 }
 
+/* 과목명과 D-day 를 한 줄에 둔다. 세로로 쌓으면 과목 하나가 90px 을 먹어
+   핸드폰에서 목록이 금방 길어진다. 자리가 모자라면 알아서 줄바꿈한다. */
 .entry-main {
   flex: 1;
+  min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .entry-name {
@@ -229,7 +389,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 2px;
 }
 
 .meta-chip {
@@ -258,8 +417,10 @@
   gap: var(--space-sm);
 }
 
+/* 손가락으로 누르는 것은 44px 이상이어야 한다. 전에는 50x35 라 옆 버튼을 같이 눌렀다. */
 .entry-action {
-  padding: 6px 12px;
+  min-height: 44px;
+  padding: 0 14px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-input);
   background-color: var(--color-surface);
@@ -302,13 +463,21 @@
   background-color: var(--color-primary-hover);
 }
 
-.button-orange {
-  background-color: var(--color-orange);
-  color: var(--color-orange-text);
+/* 누를 수 없는 버튼은 눌러도 되는 것처럼 보이면 안 된다. */
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
-.button-orange:hover {
-  background-color: var(--color-orange-hover);
+.button:disabled:hover {
+  background-color: var(--color-primary);
+}
+
+.button-hint {
+  margin: var(--space-sm) 0 0;
+  text-align: center;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
 }
 
 .button-secondary {
@@ -395,6 +564,13 @@
   gap: var(--space-md);
 }
 
+/* 이미 치른 시험. 점수로는 아래로 내려가지만, 보고 바로 알아볼 수 있게 한 단계 죽인다.
+   글자는 그대로 읽혀야 하므로 배경만 바꾸고 색은 건드리지 않는다. */
+.subject-item.is-past {
+  background-color: var(--color-background);
+  border-style: dashed;
+}
+
 .subject-rank {
   flex-shrink: 0;
   width: 28px;
@@ -442,9 +618,10 @@
   font-weight: 600;
 }
 
+/* "높음"이 가장 급한 신호인데, #ef4444 는 이 배경 위에서 3.08:1 이라 가장 안 읽혔다. */
 .badge-high {
   background-color: #fee2e2;
-  color: var(--color-danger);
+  color: var(--color-danger-dark);
 }
 
 .badge-medium {
@@ -457,10 +634,13 @@
   color: #047857;
 }
 
-/* 점수 구성 펼치기/접기 버튼 */
-.breakdown-toggle {
-  align-self: flex-start;
-  padding: 2px 0;
+/* 카드 안에서 펼치기/접기를 여는 글자 버튼. 눌리는 영역이 44px 이 되도록 높이를 준다. */
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  gap: 4px;
+  padding: 0;
   border: none;
   background: none;
   font-size: var(--font-caption);
@@ -469,8 +649,16 @@
   cursor: pointer;
 }
 
-.breakdown-toggle:hover {
+.link-button:hover {
   text-decoration: underline;
+}
+
+.chevron {
+  transition: transform 0.15s ease;
+}
+
+.chevron.is-open {
+  transform: rotate(180deg);
 }
 
 /* 점수 구성 막대 */
@@ -513,12 +701,14 @@
   background-color: #2a78d6;
 }
 
+/* 트랙(#f8fafc) 대비 3:1 을 넘도록 원래 색보다 어둡게 잡았다. (2.69:1 -> 3.90:1) */
 .breakdown-fill-difficulty {
-  background-color: #1baf7a;
+  background-color: #178f63;
 }
 
+/* 2.07:1 -> 4.64:1 */
 .breakdown-fill-urgency {
-  background-color: #eda100;
+  background-color: #96690a;
 }
 
 .breakdown-fill-gradeWeight {
@@ -533,8 +723,14 @@
   background-color: #e34948;
 }
 
+/* 2.57:1 -> 4.16:1 */
 .breakdown-fill-availableTime {
-  background-color: #e87ba4;
+  background-color: #c4517d;
+}
+
+/* 학점. 기존 8색과 색조가 겹치지 않고 트랙 대비 4.76:1 이다. */
+.breakdown-fill-credits {
+  background-color: #0f7b8a;
 }
 
 .breakdown-fill-previousScore {
@@ -548,6 +744,12 @@
   font-size: var(--font-caption);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);
+}
+
+/* 계산에서 빠졌다는 건 "모름"이라는 글자가 이미 말해준다.
+   색을 더 흐리게 하면(#9ca3af 는 2.54:1) 뜻은 그대로인데 읽히지만 않아서 그대로 둔다. */
+.breakdown-value.is-unknown {
+  font-weight: 400;
 }
 
 /* 우선순위 성향 선택기 */
@@ -571,7 +773,7 @@
 
 .weight-option {
   flex: 1;
-  height: 40px;
+  min-height: 44px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-input);
   background-color: var(--color-surface);
@@ -607,7 +809,8 @@
 }
 
 .chip {
-  padding: 6px 14px;
+  min-height: 44px;
+  padding: 0 16px;
   border: 1px solid var(--color-border);
   border-radius: 999px;
   background-color: var(--color-surface);
@@ -624,12 +827,21 @@
   color: var(--color-primary);
 }
 
+/* 체크박스 자체는 13x13 이라, 라벨 전체가 누르는 영역이 되도록 높이를 준다. */
 .filter-check {
   display: flex;
   align-items: center;
-  gap: 6px;
+  min-height: 44px;
+  gap: var(--space-sm);
   font-size: var(--font-label);
   color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.filter-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
   cursor: pointer;
 }
 
@@ -654,6 +866,18 @@
 
 /* 좁은 화면 대응 */
 @media (max-width: 480px) {
+  /* 카드 여백 24px 은 320px 화면에서 내용 폭을 너무 많이 가져간다. */
+  .card,
+  .recommend-card,
+  .result-summary {
+    padding: var(--space-md);
+  }
+
+  /* 좁을수록 칸 사이보다 칸 자체의 폭이 중요하다. */
+  .score-selector {
+    gap: 4px;
+  }
+
   .result-toolbar {
     flex-direction: column;
     align-items: stretch;
@@ -663,7 +887,231 @@
     flex-direction: column;
   }
 
+  /* 점수는 이 서비스의 결과물이라 좁다고 숨기면 안 된다.
+     숨기면 배지(높음/중간/낮음) 3단계만 남아 69점과 56점이 똑같이 "중간"이 된다.
+     자리가 부족한 것이므로 크기를 줄여서 남긴다. */
   .subject-score {
-    display: none;
+    font-size: var(--font-body);
   }
+
+  .weight-options {
+    flex-wrap: wrap;
+  }
+
+  .weight-option {
+    flex: 1 1 calc(50% - var(--space-sm));
+  }
+}
+
+/* 눈에는 안 보이지만 스크린리더에는 읽히는 글자. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 진행 표시기 */
+.progress-steps {
+  display: flex;
+  gap: var(--space-sm);
+  list-style: none;
+  margin: 0 0 var(--space-section);
+  padding: 0;
+}
+
+.progress-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  border-top: 3px solid var(--color-border);
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
+.progress-step.is-done,
+.progress-step.is-current {
+  border-top-color: var(--color-primary);
+}
+
+.progress-step.is-current {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.progress-step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption);
+  font-weight: 600;
+}
+
+.progress-step.is-done .progress-step-num,
+.progress-step.is-current .progress-step-num {
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
+
+/* 카드 첫머리 안내문 */
+.card-lead {
+  margin: calc(var(--space-card) * -1 + var(--space-sm)) 0 var(--space-card);
+  font-size: var(--font-label);
+  color: var(--color-text-secondary);
+}
+
+/* 1단계: 날짜만으로 본 순서 미리보기 */
+.order-preview {
+  margin: 0 0 var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-input);
+  background-color: var(--color-primary-light);
+  font-size: var(--font-label);
+  color: var(--color-text-primary);
+}
+
+/* 2단계: 과목별 이해도 */
+.understanding-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-card);
+}
+
+.understanding-item + .understanding-item {
+  padding-top: var(--space-card);
+  border-top: 1px solid var(--color-border);
+}
+
+.understanding-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.understanding-name {
+  font-size: var(--font-body);
+  font-weight: 600;
+}
+
+/* 과목별 "더 자세히". 이해도 선택기와 붙어 보이지 않도록 한 칸 띄운다. */
+.understanding-item > .link-button {
+  margin-top: var(--space-sm);
+}
+
+.step-progress-note {
+  margin: var(--space-card) 0 0;
+  text-align: center;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
+/* 결과 카드 안의 도구 줄 */
+.subject-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.subject-done {
+  margin-left: auto;
+}
+
+/* 결과 화면에서 펼치는 추가 입력 */
+.detail-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-card);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-lead {
+  margin: 0;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
+/* 오늘의 공부 배분 */
+.study-plan {
+  margin-top: var(--space-md);
+}
+
+.plan-hours {
+  margin-bottom: var(--space-card);
+}
+
+.plan-hours-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* 시간 칸은 두 자리면 충분하다. 전체 너비를 쓰면 입력할 양이 많아 보인다. */
+.plan-hours-row .form-input {
+  width: 96px;
+}
+
+.plan-hours-unit {
+  font-size: var(--font-body);
+  color: var(--color-text-secondary);
+}
+
+.plan-list {
+  list-style: none;
+  margin: 0 0 var(--space-md);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.plan-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-input);
+  background-color: var(--color-background);
+}
+
+.plan-name {
+  font-size: var(--font-body);
+  font-weight: 500;
+}
+
+.plan-minutes {
+  flex-shrink: 0;
+  font-size: var(--font-subheading);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-skipped {
+  margin-top: var(--space-md);
+}
+
+/* 목록 위에 한 번만 놓는 안내문. */
+.list-lead {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
 }

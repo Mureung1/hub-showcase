@@ -39,20 +39,38 @@ test("buildPriorityReason: 성향에 따라 언급되는 이유가 달라진다"
   assert.doesNotMatch(difficultyReason, /성적 반영 비율/);
 });
 
-// 학점(중요도)이 3보다 크면 이유에 학점 수가 언급된다.
-test("buildPriorityReason: 학점이 3보다 크면 이유에 포함", () => {
+// 학점은 이제 다른 요인과 같이 기여도 순으로 다뤄진다.
+// 학점만 유난히 높고 나머지가 평범하면, 학점이 이유로 올라와야 한다.
+test("buildPriorityReason: 학점이 높으면 이유에 학점 수가 나온다", () => {
   const subject = {
     examDate: "2027-01-01",
-    understanding: 3,
-    difficulty: 3,
-    gradeWeight: 40,
-    grading: 3,
-    studyAmount: 3,
-    availableTime: 3,
+    understanding: 0,
+    difficulty: 0,
+    gradeWeight: null,
+    grading: 0,
+    studyAmount: 0,
+    availableTime: 0,
+    previousScore: null,
     credits: 7.5,
   };
   const reason = buildPriorityReason(subject, "balanced");
   assert.match(reason, /7\.5학점/);
+});
+
+// 학점을 안 넣었으면 이유로 말하지 않는다.
+test("buildPriorityReason: 학점을 모르면 이유에 나오지 않는다", () => {
+  const subject = {
+    examDate: "2027-01-01",
+    understanding: 1,
+    difficulty: 0,
+    gradeWeight: null,
+    grading: 0,
+    studyAmount: 0,
+    availableTime: 0,
+    previousScore: null,
+    credits: null,
+  };
+  assert.doesNotMatch(buildPriorityReason(subject, "balanced"), /학점/);
 });
 
 // 급한 이유가 하나도 없으면 "여유" 문장을 반환한다.
