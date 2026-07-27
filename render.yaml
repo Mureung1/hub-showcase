@@ -1,0 +1,32 @@
+# Render 배포 정의 (Blueprint).
+#
+# 대시보드에서 수동으로 만들어도 되지만, 설정을 레포에 남겨두면
+# 재배포·재생성 시 같은 구성을 재현할 수 있다.
+#
+# 주의: 비밀값(DATABASE_URL, FIREBASE_SERVICE_ACCOUNT_JSON)은 여기 적지 않는다.
+# sync: false 로 두면 Render 대시보드에서 직접 입력하게 된다.
+services:
+  - type: web
+    name: hub-api
+    runtime: node
+    plan: free
+    region: singapore
+    # 모노레포(npm workspaces) — 루트에서 설치하고 server 워크스페이스를 실행한다
+    buildCommand: npm install
+    startCommand: npm start -w server
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      # 관리형 DB(Supabase)는 SSL 필수
+      - key: DATABASE_SSL
+        value: 'true'
+      # 아래는 대시보드에서 직접 입력 (비밀)
+      - key: DATABASE_URL
+        sync: false
+      # 프론트(Vercel) 도메인. 예: https://hub-xxxx.vercel.app
+      - key: CORS_ORIGIN
+        sync: false
+      # FCM 서비스 계정 키 JSON을 한 줄로 (미설정 시 푸시만 비활성)
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
