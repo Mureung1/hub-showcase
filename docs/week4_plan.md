@@ -46,7 +46,7 @@ todos:
     status: completed
   - id: issue-84
     content: 마감일 구분자가 "."인 날짜 범위가 파싱 안 되는 문제 수정
-    status: in_progress
+    status: completed
   - id: issue-87
     content: dday 계산이 UTC 기준이라 KST 자정 전후 마감 지난 공고가 D-0으로 노출되는 문제 수정
     status: completed
@@ -107,7 +107,7 @@ Week 3 마일스톤(#28~#32, #40, #43, #44) 완료 후 발견된 개별 작업(#
 | [#77](https://github.com/syd348/hub/issues/77) | subsidies에 atch_file_id 컬럼 추가 | 완료 (2026-07-27) — #67 리뷰 중 발견한 조인 불가 문제, [`week4/issue-77-atch-file-id-plan.md`](week4/issue-77-atch-file-id-plan.md) |
 | [#80](https://github.com/syd348/hub/issues/80) | K-Startup·소상공인24 크롤링 소스 추가 | 등록 완료 (2026-07-27) — 소상공인 매칭 정확도 조사에서 파생, [`week4/issue-80-data-source-expansion-plan.md`](week4/issue-80-data-source-expansion-plan.md) |
 | [#82](https://github.com/syd348/hub/issues/82) | D-day 배지가 상시/소진시까지 공고에서 D-9999로 표시됨 | 완료 (2026-07-27) — `NO_DEADLINE_DDAY` shared 승격, 중립색 배지 도입, [`week4/issue-82-dday-no-deadline-label-plan.md`](week4/issue-82-dday-no-deadline-label-plan.md) |
-| [#84](https://github.com/syd348/hub/issues/84) | 마감일 "." 구분자 날짜 범위 파싱 안 됨 | 진행 중 (2026-07-27) — 정규식 수정·테스트 완료, 운영 DB 1건 보정 대기, [`week4/issue-84-dot-date-range-parsing-plan.md`](week4/issue-84-dot-date-range-parsing-plan.md) |
+| [#84](https://github.com/syd348/hub/issues/84) | 마감일 "." 구분자 날짜 범위 파싱 안 됨 | 완료 (2026-07-27, PR #85) — 정규식 수정 + 운영 DB 1건(`PBLN_000000000092578`) 수동 보정, [`week4/issue-84-dot-date-range-parsing-plan.md`](week4/issue-84-dot-date-range-parsing-plan.md) |
 | [#87](https://github.com/syd348/hub/issues/87) | dday 계산이 UTC 기준이라 D-0 노출 지속 | 완료 (2026-07-27) — `kstToday()` 도입, 크론 KST 자정 직후로 이동, [`week4/issue-87-kst-dday-timezone-plan.md`](week4/issue-87-kst-dday-timezone-plan.md) |
 
 ## 리스크 / 결정 필요
