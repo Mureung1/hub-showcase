@@ -271,7 +271,7 @@ export default function App() {
 
     const fetchRoomDetails = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/rooms/${roomSimulatingId}`);
+        const response = await fetchWithTimeout(`${API_BASE}/api/rooms/${roomSimulatingId}`, {}, 10000);
         const data = await response.json();
         if (data.success && data.room) {
           setRoomTitle(data.room.title);
@@ -371,7 +371,7 @@ export default function App() {
     setAiRecommendation('');
     setAiRecommendedMenu('');
     try {
-      const response = await fetch(`${API_BASE}/api/restaurants/recommend`, {
+      const response = await fetchWithTimeout(`${API_BASE}/api/restaurants/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -437,6 +437,12 @@ export default function App() {
 
   const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5050';
 
+  const fetchWithTimeout = (url: string, options: RequestInit, timeoutMs = 20000) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+  };
+
   const handleSendCode = async () => {
     const isEmailValid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(userEmail);
     if (!isEmailValid) {
@@ -445,11 +451,11 @@ export default function App() {
     }
     setIsSendingCode(true);
     try {
-      const response = await fetch(`${API_BASE}/api/auth/send-code`, {
+      const response = await fetchWithTimeout(`${API_BASE}/api/auth/send-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: userEmail })
-      });
+      }, 25000);
       const data = await response.json();
       if (data.success) {
         setVerificationSent(true);
@@ -458,7 +464,7 @@ export default function App() {
         showToastMsg(data.error || '이메일 발송에 실패했습니다.');
       }
     } catch {
-      showToastMsg('서버 연결에 실패했습니다.');
+      showToastMsg('서버 응답 시간이 초과되었습니다. 다시 시도해 주세요.');
     } finally {
       setIsSendingCode(false);
     }
@@ -471,7 +477,7 @@ export default function App() {
     }
     setIsVerifyingCode(true);
     try {
-      const response = await fetch(`${API_BASE}/api/auth/verify-code`, {
+      const response = await fetchWithTimeout(`${API_BASE}/api/auth/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: userEmail, code: inputCode })
@@ -530,7 +536,7 @@ export default function App() {
 
   const fetchGoogleCalendarSchedules = async (token: string) => {
     try {
-      const response = await fetch(`${API_BASE}/api/schedule/sync/google`, {
+      const response = await fetchWithTimeout(`${API_BASE}/api/schedule/sync/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessToken: token })
@@ -563,7 +569,7 @@ export default function App() {
     }
     setIsSyncing(true);
     try {
-      const response = await fetch(`${API_BASE}/api/schedule/sync/ical`, {
+      const response = await fetchWithTimeout(`${API_BASE}/api/schedule/sync/ical`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ appleId, appPassword })
@@ -596,7 +602,7 @@ export default function App() {
     }
     setIsSyncing(true);
     try {
-      const response = await fetch(`${API_BASE}/api/schedule/sync/everytime`, {
+      const response = await fetchWithTimeout(`${API_BASE}/api/schedule/sync/everytime`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ everytimeUrl })
@@ -654,7 +660,7 @@ export default function App() {
     try {
       const params = new URLSearchParams({ university: userProfile.university });
       if (userProfile.major) params.append('major', userProfile.major);
-      const response = await fetch(`${API_BASE}/api/rooms/public?${params.toString()}`);
+      const response = await fetchWithTimeout(`${API_BASE}/api/rooms/public?${params.toString()}`, {});
       const data = await response.json();
       if (data.success && data.rooms) {
         setPublicRooms(data.rooms);
@@ -675,7 +681,7 @@ export default function App() {
   // Create real room in DB
   const handleCreateRoomInDb = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/rooms`, {
+      const response = await fetchWithTimeout(`${API_BASE}/api/rooms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -710,13 +716,13 @@ export default function App() {
       return;
     }
     try {
-      const response = await fetch(`${API_BASE}/api/rooms/${roomSimulatingId}/join`, {
+      const response = await fetchWithTimeout(`${API_BASE}/api/rooms/${roomSimulatingId}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: joinName,
           major: joinMajor,
-          schedule: hostSchedule // Uses hostSchedule as the user's selected/synced schedule too
+          schedule: hostSchedule
         })
       });
       const data = await response.json();
@@ -794,7 +800,7 @@ export default function App() {
       return;
     }
     try {
-      const response = await fetch(`${API_BASE}/api/rooms/${roomSimulatingId}/confirm`, {
+      const response = await fetchWithTimeout(`${API_BASE}/api/rooms/${roomSimulatingId}/confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
