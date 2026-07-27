@@ -3,6 +3,9 @@ const ApiError = require('./apiError');
 // 카카오 오픈채팅 링크 패턴만 검증한다 (기획서 11번 — 그 이상 유효성은 확인하지 않음).
 const OPEN_CHAT_URL_PATTERN = /^https?:\/\/open\.kakao\.com\//;
 
+// 카테고리 화이트리스트. '전체'는 목록 필터 전용 값이므로 등록 허용값이 아니다.
+const ALLOWED_CATEGORIES = ['운동', '스터디', '취미', '식사'];
+
 // 마이그레이션의 varchar 한도와 같은 값을 앱에서도 강제한다. 앱이 먼저 막지 않으면
 // Postgres가 거절하면서 500 + DB 에러 원문("character varying(100) 자료형에 너무 긴
 // 자료를...")이 그대로 클라이언트까지 나간다. 컬럼 길이를 바꾸면 여기도 같이 바꿔야 한다.
@@ -43,6 +46,9 @@ function validateCreateMeeting(body = {}) {
 
   const title = requireString(body.title, 'title');
   const category = requireString(body.category, 'category');
+  if (!ALLOWED_CATEGORIES.includes(category)) {
+    throw new ApiError('VALIDATION_ERROR', 'category는 허용된 값이 아닙니다');
+  }
   const regionSido = requireString(body.regionSido, 'regionSido');
   const regionSigungu = requireString(body.regionSigungu, 'regionSigungu');
   const openChatUrl = requireString(body.openChatUrl, 'openChatUrl');

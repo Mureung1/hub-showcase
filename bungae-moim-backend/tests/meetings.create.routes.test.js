@@ -189,4 +189,18 @@ describe('POST /api/meetings', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
+
+  it("category가 '전체'면 400 VALIDATION_ERROR (필터 전용 값)", async () => {
+    const agent = await loginAgent();
+    const res = await agent.post('/api/meetings').send({ ...validFlashBody, category: '전체' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('허용되지 않은 category면 400 VALIDATION_ERROR', async () => {
+    const agent = await loginAgent();
+    const res = await agent.post('/api/meetings').send({ ...validFlashBody, category: '게임' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
 });
