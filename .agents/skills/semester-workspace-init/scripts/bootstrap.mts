@@ -428,25 +428,16 @@ ${managedConfigEnd}`
 }
 
 function updateManagedConfig(current: string, desiredBlock: string): string {
-  try {
-    assertSafeTomlSurface(current)
-  } catch (error) {
-    throw tomlConflict(
-      error instanceof Error ? error.message : String(error),
-      current,
-      desiredBlock,
-    )
-  }
-  let currentConfig: Readonly<Record<string, unknown>>
-  try {
-    currentConfig = parseProjectToml(current)
-  } catch (error) {
-    throw tomlConflict(
-      error instanceof Error ? error.message : String(error),
-      current,
-      desiredBlock,
-    )
-  }
+  withTomlConflictContext(
+    () => assertSafeTomlSurface(current),
+    current,
+    desiredBlock,
+  )
+  const currentConfig = withTomlConflictContext(
+    () => parseProjectToml(current),
+    current,
+    desiredBlock,
+  )
   const desiredConfig = parseProjectToml(desiredBlock)
   const currentServer = interactionServer(currentConfig)
   const desiredServer = interactionServer(desiredConfig)
@@ -491,6 +482,22 @@ function updateManagedConfig(current: string, desiredBlock: string): string {
   throw new Error(
     `Managed MCP declaration differs from the required bytes.\n--- existing\n${currentBlock}\n--- required\n${desiredBlock}`,
   )
+}
+
+function withTomlConflictContext<T>(
+  operation: () => T,
+  current: string,
+  desiredBlock: string,
+): T {
+  try {
+    return operation()
+  } catch (error) {
+    throw tomlConflict(
+      error instanceof Error ? error.message : String(error),
+      current,
+      desiredBlock,
+    )
+  }
 }
 
 function tomlConflict(
@@ -702,21 +709,18 @@ function isCredentialPath(relativePath: string): boolean {
     .split(/[\\/]/)
     .map((segment) => segment.toLowerCase())
   const basename = segments.at(-1) ?? ''
+  const credentialStem = basename.replace(/\.[^.]+$/, '')
   return (
     segments.some((segment) =>
       ['.aws', '.gnupg', '.kube', '.ssh'].includes(segment),
     ) ||
     basename === '.env' ||
     basename.startsWith('.env.') ||
-    [
-      'credentials',
-      'credentials.json',
-      'id_ed25519',
-      'id_rsa',
-      'secrets',
-      'secrets.json',
-      'token.json',
-    ].includes(basename) ||
+    ['.netrc', '.npmrc', '.pypirc'].includes(basename) ||
+    /^(?:auth|credentials?|secrets?|service[-_]?account|tokens?)(?:[-_.].*)?$/.test(
+      credentialStem,
+    ) ||
+    ['id_ed25519', 'id_rsa'].includes(basename) ||
     ['.key', '.p12', '.pem', '.pfx'].some((suffix) =>
       basename.endsWith(suffix),
     )

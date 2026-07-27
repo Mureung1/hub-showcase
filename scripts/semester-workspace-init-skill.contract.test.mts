@@ -497,25 +497,38 @@ test('an explicitly requested credential path is never baselined', async () => {
     const target = path.join(fixtureRoot, 'credential-baseline-workspace')
     await mkdir(target)
     await runBootstrap(defaultArguments(target))
-    await writeFile(
-      path.join(target, 'credentials.json'),
-      '{"token":"secret"}\n',
+    const credentialPaths = [
+      '.netrc',
+      '.npmrc',
+      'auth.json',
+      'credentials.json',
+      'service-account.json',
+    ]
+    await Promise.all(
+      credentialPaths.map((credentialPath) =>
+        writeFile(path.join(target, credentialPath), '{"token":"secret"}\n'),
+      ),
     )
     const head = await git(target, ['rev-parse', 'HEAD'])
 
-    await assert.rejects(
-      runBootstrap([
-        ...defaultArguments(target),
-        '--baseline',
-        'credentials.json',
-      ]),
-      /Refusing to baseline a credential-like path/,
-    )
+    for (const credentialPath of credentialPaths) {
+      await assert.rejects(
+        runBootstrap([
+          ...defaultArguments(target),
+          '--baseline',
+          credentialPath,
+        ]),
+        /Refusing to baseline a credential-like path/,
+      )
+    }
 
     assert.equal(await git(target, ['rev-parse', 'HEAD']), head)
     assert.equal(
-      await git(target, ['status', '--short']),
-      '?? credentials.json',
+      (await git(target, ['status', '--short'])).split('\n').sort().join('\n'),
+      credentialPaths
+        .map((credentialPath) => `?? ${credentialPath}`)
+        .sort()
+        .join('\n'),
     )
   })
 })
