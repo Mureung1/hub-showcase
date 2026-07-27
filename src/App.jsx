@@ -18,7 +18,7 @@ function App() {
         onSelectEpisode={(episode) => setSelectedId(episode.id)}
         onUpdateTide={() => setShowTideCheck(true)}
       />
-      <ChatView selectedId={selectedId} />
+      <ChatView />
 
       {showTideCheck && (
         <div className="modal-overlay">
