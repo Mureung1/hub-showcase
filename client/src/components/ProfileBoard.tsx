@@ -69,19 +69,24 @@ function ProfileBoard({
         query: query 
       })
     })
-      .then(response => {
+      .then(async (response) => {
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          const errorJson = await response.json().catch(() => null);
+          const fallbackMsg = '학술 데이터베이스 API 요청 한도를 초과했습니다. 잠시 후 다시 시도해 주세요.';
+          throw new Error(errorJson?.message || fallbackMsg);
         }
         return response.json() as Promise<CurationResponse>;
       })
       .then(responseJson => {
         console.log("✅ 큐레이션 성공:", responseJson);
         setCurationData(responseJson.data);
-        setIsCurating(false);
       })
       .catch(error => {
         console.error("❌ 큐레이션 에러:", error);
+        const displayMsg = error?.message || '학술 데이터베이스 API 요청 한도를 초과했습니다. 잠시 후 다시 시도해 주세요.';
+        alert(displayMsg);
+      })
+      .finally(() => {
         setIsCurating(false);
       });
   };

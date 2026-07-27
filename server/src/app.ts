@@ -120,24 +120,38 @@ async function fetchS2Papers(searchKeyword: string, limit: number = 50): Promise
 
   let fetchResponse: any = null;
   let attempts = 0;
+  const maxAttempts = 5;
 
-  while (attempts < 8) {
+  while (attempts < maxAttempts) {
     try {
       attempts++;
       fetchResponse = await fetch(url, { headers });
       if (fetchResponse.status === 429) {
-        console.warn(`⚠️ [S2 API 429 Limit] IP Rate Limit 감지됨. 백오프 대기 중... (5.0초 대기, 시도 ${attempts}/8)`);
-        await new Promise(r => setTimeout(r, 5000));
+        if (attempts >= maxAttempts) {
+          const rateLimitError: any = new Error('S2_RATE_LIMIT_EXCEEDED');
+          rateLimitError.statusCode = 429;
+          throw rateLimitError;
+        }
+        // 지수 백오프 (3초 -> 6초 -> 12초 -> 20초 Cap)
+        const delayMs = Math.min(3000 * Math.pow(2, attempts - 1), 20000);
+        console.warn(`⚠️ [S2 API 429 Limit] IP Rate Limit 감지됨. 지수 백오프 대기 중... (${(delayMs / 1000).toFixed(1)}초 대기, 시도 ${attempts}/${maxAttempts})`);
+        await new Promise(r => setTimeout(r, delayMs));
         continue;
       }
       if (fetchResponse.ok) break;
-    } catch (err) {
-      if (attempts >= 8) throw err;
-      await new Promise(r => setTimeout(r, 2000));
+    } catch (err: any) {
+      if (err.message === 'S2_RATE_LIMIT_EXCEEDED' || attempts >= maxAttempts) throw err;
+      const delayMs = Math.min(2000 * Math.pow(2, attempts - 1), 10000);
+      await new Promise(r => setTimeout(r, delayMs));
     }
   }
 
   if (!fetchResponse || !fetchResponse.ok) {
+    if (fetchResponse && fetchResponse.status === 429) {
+      const rateLimitError: any = new Error('S2_RATE_LIMIT_EXCEEDED');
+      rateLimitError.statusCode = 429;
+      throw rateLimitError;
+    }
     throw new Error(`Semantic Scholar API Error: ${fetchResponse ? fetchResponse.status : 'No Response'}`);
   }
 
@@ -351,6 +365,13 @@ app.post('/api/curate', async (req: Request, res: Response) => {
   } catch (error: any) {
     // 정보 유출 차단: 서버 콘솔에는 원본 에러 출력, 프론트엔드에는 정제된 메시지만 반환
     console.error('❌ [POST /api/curate Error]:', error.stack || error.message || error);
+    if (error.message === 'S2_RATE_LIMIT_EXCEEDED' || error.statusCode === 429 || error.status === 429) {
+      return res.status(429).json({
+        status: 'error',
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: '학술 데이터베이스 API 요청 한도를 초과했습니다. 잠시 후 다시 시도해 주세요.'
+      });
+    }
     return res.status(500).json({
       status: 'error',
       message: '논문 큐레이션 및 AI 분석 처리 중 내부 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'
