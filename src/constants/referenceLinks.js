@@ -30,6 +30,21 @@ export function getReferenceCaption(category) {
   return REFERENCE_CAPTIONS[category]
 }
 
+// 인사이트 배너 클릭 시 이동할 링크를 고른다 — 어학은 통계(improvementRanking)에 시험 종류 정보가 없으므로
+// 미충족인 북마크 공고들 중 가장 많이 요구되는 시험 종류를 직접 집계해서 고른다. 전공은 애초에 링크가 없다.
+export function getTopTipLink(jobList, category) {
+  if (category !== 'foreignLanguage') return getReferenceLink(category)
+
+  const counts = {}
+  for (const { job, checks } of jobList) {
+    if (!checks.foreignLanguage && job.foreign_lang_test) {
+      counts[job.foreign_lang_test] = (counts[job.foreign_lang_test] ?? 0) + 1
+    }
+  }
+  const topTest = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0]
+  return topTest ? getReferenceLink('foreignLanguage', topTest) : undefined
+}
+
 // job.checklist(buildJobDisplay가 만든 배열)에서 미충족이면서 참고링크가 있는 항목만 뽑아준다.
 // JobDetailModal의 항목별 인라인 링크와, 북마크 페이지의 "필요 사이트 모아보기" 팝업이 이 로직을 공유한다.
 export function collectJobReferenceLinks(checklist) {

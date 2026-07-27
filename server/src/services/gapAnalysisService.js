@@ -83,19 +83,24 @@ function buildImprovementRanking(counts) {
   return CATEGORIES.map((category) => ({ category, count: counts[category] })).sort((a, b) => b.count - a.count)
 }
 
+// evaluateJob이 이미 돌려진 jobList(공고 전체든, 북마크한 것만이든) 하나를 받아 통계를 계산한다 —
+// runGapAnalysis(#4/#5)와 북마크 재평가(#20/#25 인사이트)가 대상 집합만 다르고 통계 계산 자체는 같아서 공유한다.
+export function buildStats(jobList) {
+  const total = jobList.length
+  const matched = jobList.filter((entry) => entry.overallMatch).length
+  const ratio = total === 0 ? 0 : matched / total
+  const improvementRanking = buildImprovementRanking(countSingleGapImprovements(jobList))
+  return { total, matched, ratio, improvementRanking }
+}
+
 // 필터 적용 → 대상 공고 전체에 evaluateJob 반복 → 통계 + 보완 우선순위 계산.
 // 가중치 없는 단순 개수 기반 점수화(checklist_2.md 확정 사항).
 export function runGapAnalysis(jobs, filters, spec) {
   const targetJobs = applyFilters(jobs, filters)
   const jobList = targetJobs.map((job) => evaluateJob(job, spec))
 
-  const total = jobList.length
-  const matched = jobList.filter((entry) => entry.overallMatch).length
-  const ratio = total === 0 ? 0 : matched / total
-  const improvementRanking = buildImprovementRanking(countSingleGapImprovements(jobList))
-
   return {
-    stats: { total, matched, ratio, improvementRanking },
+    stats: buildStats(jobList),
     jobList,
   }
 }

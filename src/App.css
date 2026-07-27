@@ -1062,6 +1062,38 @@ h1 {
   text-align: center;
   padding: 28px 24px 24px;
 }
+.bookmark-insight-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-card);
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+a.bookmark-insight-banner {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+a.bookmark-insight-banner:hover {
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+.bookmark-insight-emoji {
+  font-size: 24px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.bookmark-insight-text {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--gray-900);
+  line-height: 1.5;
+}
 .insight-modal-emoji {
   font-size: 40px;
   line-height: 1;
