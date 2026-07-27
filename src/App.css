@@ -533,7 +533,7 @@ h1 {
 .hero-visual {
   justify-self: center;
   width: 100%;
-  max-width: 340px;
+  max-width: 440px;
   background: linear-gradient(160deg, var(--accent-light) 0%, var(--card-bg) 55%);
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-md);
@@ -552,12 +552,63 @@ h1 {
   margin: 0 0 14px;
 }
 .hero-visual .legend {
-  margin-top: 14px;
+  margin-top: 10px;
+}
+.hero-visual-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+}
+.hero-visual-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.hero-visual-col-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+  margin: 0 0 12px;
+}
+.hero-visual-divider-v {
+  align-self: stretch;
+  width: 1px;
+  background: var(--gray-200);
+}
+.hero-visual-col .donut-wrap {
+  width: 112px;
+  height: 112px;
+}
+.hero-visual-col .donut-wrap svg {
+  width: 112px;
+  height: 112px;
+}
+.hero-visual-col .donut-center .rate {
+  font-size: 18px;
+}
+.hero-visual-col .donut-center .frac {
+  font-size: 10px;
+}
+.hero-visual-col .bar-chart {
+  width: 100%;
+}
+.hero-visual-col .bar-label {
+  width: 58px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.hero-visual-col .bar-value {
+  width: 20px;
+  font-size: 10.5px;
 }
 
 @media (min-width: 860px) {
   .hero-inner {
-    grid-template-columns: minmax(0, 640px) minmax(0, 380px);
+    grid-template-columns: minmax(0, 600px) minmax(0, 460px);
     justify-content: center;
     column-gap: 48px;
   }
@@ -817,6 +868,14 @@ h1 {
   height: 140px;
   margin: 0 auto;
 }
+.donut-ok-arc.play-intro {
+  animation: donut-draw 1s ease-out;
+}
+@keyframes donut-draw {
+  from {
+    stroke-dasharray: 0 376.99;
+  }
+}
 .donut-center {
   position: absolute;
   inset: 0;
@@ -877,6 +936,14 @@ h1 {
   height: 100%;
   border-radius: var(--radius-bar) 0 0 var(--radius-bar);
   transition: width 0.5s ease;
+}
+.bar-fill.play-intro {
+  animation: bar-grow 0.8s ease-out;
+}
+@keyframes bar-grow {
+  from {
+    width: 0;
+  }
 }
 .bar-value {
   font-size: 11px;

@@ -1,8 +1,20 @@
 import { useNavigate } from 'react-router-dom'
 import { getResumeStep, useAppState } from '../context/AppStateContext'
+import { CATEGORY_LABELS } from '../lib/gapAnalysis'
 import DonutChart from '../components/charts/DonutChart'
+import PriorityBarChart from '../components/charts/PriorityBarChart'
 
 const RESUME_PATH = { filter: '/filter', spec: '/spec', result: '/result' }
+
+// 히어로 미리보기 카드용 데모 데이터 — 도넛(68%, 14/20건)과 마찬가지로 실제 분석 결과가 아니라
+// 항상 같은 고정 예시값. 순위(학력>경력>자격증>전공>외국어)는 실제 862건 데이터 분포와 같은 순서.
+const DEMO_RANKING = [
+  { category: 'education', count: 5 },
+  { category: 'career', count: 3 },
+  { category: 'certificates', count: 2 },
+  { category: 'major', count: 1 },
+  { category: 'foreignLanguage', count: 1 },
+].map((r) => ({ ...r, label: CATEGORY_LABELS[r.category] }))
 
 // prototype/demo_13.html의 renderLandingScreen()을 그대로 포팅 — 2단 히어로(카피+도넛 미리보기 카드)와
 // 아이콘 배지 카드 구성 (#22). 도넛 미리보기 값(68%, 14/20건)은 실제 분석 결과가 아니라
@@ -90,16 +102,25 @@ function LandingPage() {
           </div>
           <div className="hero-visual" aria-hidden="true">
             <p className="hero-visual-eyebrow">PREVIEW · 분석 결과 예시</p>
-            <DonutChart ratio={0.68} matched={14} total={20} />
-            <div className="legend">
-              <span>
-                <span className="dot" style={{ background: 'var(--donut-ok)' }} />
-                지원 가능
-              </span>
-              <span>
-                <span className="dot" style={{ background: 'var(--donut-no)' }} />
-                지원 불가
-              </span>
+            <div className="hero-visual-row">
+              <div className="hero-visual-col">
+                <DonutChart ratio={0.68} matched={14} total={20} />
+                <div className="legend">
+                  <span>
+                    <span className="dot" style={{ background: 'var(--donut-ok)' }} />
+                    지원 가능
+                  </span>
+                  <span>
+                    <span className="dot" style={{ background: 'var(--donut-no)' }} />
+                    지원 불가
+                  </span>
+                </div>
+              </div>
+              <div className="hero-visual-divider-v" />
+              <div className="hero-visual-col">
+                <p className="hero-visual-col-title">보완하면 좋은 항목</p>
+                <PriorityBarChart ranking={DEMO_RANKING} />
+              </div>
             </div>
           </div>
         </div>
