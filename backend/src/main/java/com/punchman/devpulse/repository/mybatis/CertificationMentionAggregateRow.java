@@ -5,6 +5,9 @@ public record CertificationMentionAggregateRow(
         String issuer,
         int mentionCount,
         int totalPostingCount,
-        double mentionRate
+        double mentionRate,
+        int essentialMentionCount,
+        int preferredMentionCount,
+        boolean llmAssisted
 ) {
 }

@@ -364,6 +364,12 @@ body {
   flex-shrink: 0;
 }
 
+.cert-card__relative {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 9px;
+}
+
 .cert-card__meta {
   display: flex;
   align-items: center;
@@ -413,6 +419,10 @@ body {
   background: rgba(229, 112, 122, 0.15);
 }
 
+.cert-card--essential .cert-card__relative {
+  color: var(--accent-danger);
+}
+
 .cert-card--preferred .cert-card__rate {
   color: var(--accent-warn);
 }
@@ -426,12 +436,20 @@ body {
   background: rgba(240, 168, 104, 0.15);
 }
 
+.cert-card--preferred .cert-card__relative {
+  color: var(--accent-warn);
+}
+
 .cert-card--low .cert-card__rate {
   color: var(--text-muted);
 }
 
 .cert-card--low .cert-card__bar-fill {
   background: var(--text-muted);
+}
+
+.cert-card--low .cert-card__relative {
+  color: var(--text-muted);
 }
 
 .cert-card--low .cert-card__tag {

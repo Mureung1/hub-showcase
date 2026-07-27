@@ -42,4 +42,12 @@ public class CertificationMention {
 
     @Column(name = "mention_count", nullable = false)
     private Integer mentionCount;
+
+    @Column(name = "essential_mention_count", nullable = false)
+    @Builder.Default
+    private Integer essentialMentionCount = 0;
+
+    @Column(name = "preferred_mention_count", nullable = false)
+    @Builder.Default
+    private Integer preferredMentionCount = 0;
 }

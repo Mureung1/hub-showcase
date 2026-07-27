@@ -22,3 +22,6 @@ mybatis:
 devpulse:
   alio:
     api-key: ${DEVPULSE_ALIO_API_KEY:}
+  groq:
+    api-key: ${DEVPULSE_GROQ_API_KEY:}
+    model: ${DEVPULSE_GROQ_MODEL:llama-3.3-70b-versatile}
