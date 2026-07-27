@@ -602,6 +602,12 @@ h2 {
   font-weight: 600;
 }
 
+.bottom-sheet-compare-loading {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 .bottom-sheet-insight {
   border-left: 4px solid var(--brand-blue);
   background: var(--surface-bg);

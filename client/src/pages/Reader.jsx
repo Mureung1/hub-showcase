@@ -6,7 +6,7 @@ import DecisionButtons from "../components/DecisionButtons.jsx"
 import ReaderSkeleton from "../components/ReaderSkeleton.jsx"
 import SentenceAccordion from "../components/SentenceAccordion.jsx"
 import Toast from "../components/Toast.jsx"
-import { parseArticle, analyzeArticle } from "../api/article.js"
+import { parseArticle, analyzeArticle, analyzeArticleDetails } from "../api/article.js"
 import { saveDecision } from "../api/decisions.js"
 import { logArticleRead } from "../api/articleReads.js"
 import { useAuth } from "../context/AuthContext.jsx"
@@ -32,7 +32,11 @@ export default function Reader() {
   const [searchParams] = useSearchParams()
   const url = searchParams.get("url")
   const [article, setArticle] = useState(null)
-  const [analysis, setAnalysis] = useState(null)
+  // fast lane(sentences+summaryBullets) — 이게 도착해야 인터랙티브 리더뷰로
+  // 전환한다. slow lane(terms+insight+marketSentiment)은 판단 전까지 블라인드
+  // 처리되는 값이라 백그라운드에서 준비되고, 도착 전엔 null로 남는다.
+  const [fastAnalysis, setFastAnalysis] = useState(null)
+  const [slowAnalysis, setSlowAnalysis] = useState(null)
   const [error, setError] = useState(null)
   const [pendingDecision, setPendingDecision] = useState(null)
   const [toastMessage, setToastMessage] = useState(null)
@@ -47,6 +51,10 @@ export default function Reader() {
   const decisionButtonsWrapRef = useRef(null)
   const articleRef = useRef(null)
   const userRef = useRef(null)
+  // slow lane의 in-flight Promise. handleCloseSheet가 바텀시트를 닫는 시점에
+  // slowAnalysis state가 아직 null이면(독해가 유난히 빠른 경우) 저장 전에
+  // 이 Promise를 기다린다. 실패해도 null로 resolve해 절대 reject하지 않는다.
+  const slowAnalysisPromiseRef = useRef(null)
 
   useEffect(() => {
     articleRef.current = article
@@ -61,7 +69,7 @@ export default function Reader() {
   // DecisionButtons가 기사 최하단에 정적 배치돼 있어 도달 자체가 완독의
   // 자연스러운 증거).
   useEffect(() => {
-    if (!article || !analysis) return
+    if (!article || !fastAnalysis) return
     const target = decisionButtonsWrapRef.current
     if (!target) return
 
@@ -74,7 +82,7 @@ export default function Reader() {
     observer.observe(target)
 
     return () => observer.disconnect()
-  }, [article, analysis])
+  }, [article, fastAnalysis])
 
   // 판단 없이 이탈(SPA 내 라우트 이동/뒤로가기)해도 완독은 별도로 기록한다
   // (docs/plan.md 2026-07-13 정책). 브라우저 탭 닫기/새로고침은 스코프 밖.
@@ -95,9 +103,26 @@ export default function Reader() {
     parseArticle(url)
       .then((parsed) => {
         setArticle(parsed)
-        return analyzeArticle(parsed.paragraphs, parsed.title, url)
+
+        // fast/slow lane을 병렬로 시작한다. slow lane(terms/insight/
+        // marketSentiment)은 판단 전까지 화면에 안 쓰이는 값이라 fast lane
+        // 완료를 기다리지 않고 최대한 일찍 출발시켜야 독해 시간을 벌 수 있다.
+        analyzeArticle(parsed.paragraphs, parsed.title, url)
+          .then(setFastAnalysis)
+          .catch((err) => setError(err.message))
+
+        slowAnalysisPromiseRef.current = analyzeArticleDetails(parsed.paragraphs, parsed.title, url)
+          .then((result) => {
+            setSlowAnalysis(result)
+            return result
+          })
+          .catch((err) => {
+            // slow lane은 블라인드 필드+단어장 부수효과일 뿐이라, 실패해도
+            // 이미 완성된 리더뷰 화면을 에러로 덮지 않는다(CLAUDE.md 패턴).
+            console.warn("[Reader] slow analyze failed:", err.message)
+            return null
+          })
       })
-      .then(setAnalysis)
       .catch((err) => setError(err.message))
   }, [url])
 
@@ -107,7 +132,7 @@ export default function Reader() {
     setPendingDecision(decision)
   }
 
-  function handleCloseSheet(memo) {
+  async function handleCloseSheet(memo) {
     // decisions는 로그인 사용자별 데이터라 비로그인 상태에서는 저장을
     // 건너뛴다(llmService.js의 saveTermsToVocabulary와 동일한 패턴) — 저장
     // 실패를 setError로 올리면 방금 다 읽은 리더뷰가 에러 화면으로 덮인다.
@@ -117,13 +142,18 @@ export default function Reader() {
       // 라우트를 이동해 unmount cleanup이 먼저 실행되면 decisionId: null로
       // 중복 기록되는 race condition 방지.
       readLoggedRef.current = true
+
+      // 독해 시간 덕분에 대부분 이미 끝나 있지만, 아주 빨리 판단한 경우를
+      // 대비해 slow lane이 아직이면 기다린다(never-reject Promise라 안전).
+      const details = slowAnalysis ?? (await slowAnalysisPromiseRef.current)
+
       saveDecision({
         url,
         title: article.title,
-        summaryBullets: analysis?.summaryBullets ?? [],
+        summaryBullets: fastAnalysis?.summaryBullets ?? [],
         decision: pendingDecision,
-        marketSentiment: analysis?.marketSentiment,
-        insight: analysis?.insight,
+        marketSentiment: details?.marketSentiment,
+        insight: details?.insight,
         memo,
       })
         .then((saved) => {
@@ -141,7 +171,7 @@ export default function Reader() {
 
   if (error) return <div className="app-container">{error}</div>
   if (!article) return <ReaderSkeleton />
-  if (!analysis) return <ReaderSkeleton article={article} />
+  if (!fastAnalysis) return <ReaderSkeleton article={article} />
 
   return (
     <div className="app-container">
@@ -157,12 +187,12 @@ export default function Reader() {
         <article className="article-content">
           {article.paragraphs.map((paragraph, i) => (
             <div className="paragraph" key={i}>
-              {renderParagraph(paragraph, analysis.sentences)}
+              {renderParagraph(paragraph, fastAnalysis.sentences)}
             </div>
           ))}
         </article>
 
-        <AiSummary bullets={analysis.summaryBullets} />
+        <AiSummary bullets={fastAnalysis.summaryBullets} />
       </main>
 
       <div ref={decisionButtonsWrapRef}>
@@ -178,8 +208,8 @@ export default function Reader() {
       {pendingDecision && (
         <BottomSheet
           decision={pendingDecision}
-          marketSentiment={analysis.marketSentiment}
-          insight={analysis.insight}
+          marketSentiment={slowAnalysis?.marketSentiment}
+          insight={slowAnalysis?.insight}
           onClose={handleCloseSheet}
         />
       )}

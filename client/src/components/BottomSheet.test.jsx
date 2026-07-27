@@ -33,6 +33,22 @@ describe("BottomSheet", () => {
     })
   })
 
+  describe("slow lane 로딩 중", () => {
+    it("marketSentiment/insight가 아직 undefined면 로딩 문구를 보여준다", () => {
+      render(
+        <BottomSheet decision="buy" marketSentiment={undefined} insight={undefined} onClose={() => {}} />,
+      )
+      expect(screen.getByText("분석 중...")).toBeInTheDocument()
+      expect(screen.getByText("AI가 비교 결과를 분석하고 있습니다...")).toBeInTheDocument()
+    })
+
+    it("marketSentiment/insight가 도착하면 정상 비교 UI를 보여준다", () => {
+      render(<BottomSheet {...baseProps} onClose={() => {}} />)
+      expect(screen.queryByText("분석 중...")).not.toBeInTheDocument()
+      expect(screen.getByText("테스트 인사이트")).toBeInTheDocument()
+    })
+  })
+
   describe("빈 값", () => {
     it("메모를 입력하지 않고 닫으면 onClose가 null로 호출된다", () => {
       const onClose = vi.fn()

@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
-import { buildFuzzyPattern, findVerbatimMatch, parseAnalysisResponse, pickDiversifiedTop3 } from "./llmService.js"
+import {
+  buildFuzzyPattern,
+  findVerbatimMatch,
+  parseFastAnalysisResponse,
+  parseSlowAnalysisResponse,
+  pickDiversifiedTop3,
+} from "./llmService.js"
 
 describe("findVerbatimMatch", () => {
   afterEach(() => {
@@ -105,98 +111,62 @@ describe("buildFuzzyPattern", () => {
   })
 })
 
-describe("parseAnalysisResponse", () => {
+function makeResponse(body) {
+  return { content: [{ text: typeof body === "string" ? body : JSON.stringify(body) }] }
+}
+
+const paragraphs = [
+  "The company reported strong quarterly earnings today.",
+  "Shares fell sharply on the news.",
+]
+
+describe("parseFastAnalysisResponse", () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
-
-  function makeResponse(body) {
-    return { content: [{ text: typeof body === "string" ? body : JSON.stringify(body) }] }
-  }
 
   const validBody = {
     sentences: [
       { text: "reported strong quarterly earnings", translation: "번역1", reason: "이유1" },
       { text: "Shares fell sharply", translation: "번역2", reason: "이유2" },
     ],
-    terms: [
-      {
-        term: "guidance",
-        definition: "설명",
-        excerpt: "reported strong quarterly earnings",
-        excerptTranslation: "발췌 번역",
-      },
-    ],
     summaryBullets: ["요약1", "요약2", "요약3"],
-    insight: "인사이트",
-    marketSentiment: "bullish",
   }
-  const paragraphs = [
-    "The company reported strong quarterly earnings today.",
-    "Shares fell sharply on the news.",
-  ]
 
   describe("정상 케이스", () => {
     it("모든 필드가 올바른 형태면 정제된 결과를 반환하고 sentences에 s1, s2 순서로 id를 부여한다", () => {
-      const result = parseAnalysisResponse(makeResponse(validBody), paragraphs)
+      const result = parseFastAnalysisResponse(makeResponse(validBody), paragraphs)
 
       expect(result).toEqual({
         sentences: [
           { id: "s1", text: "reported strong quarterly earnings", translation: "번역1", reason: "이유1" },
           { id: "s2", text: "Shares fell sharply", translation: "번역2", reason: "이유2" },
         ],
-        terms: [
-          {
-            term: "guidance",
-            definition: "설명",
-            excerpt: "reported strong quarterly earnings",
-            excerptTranslation: "발췌 번역",
-          },
-        ],
         summaryBullets: ["요약1", "요약2", "요약3"],
-        insight: "인사이트",
-        marketSentiment: "bullish",
       })
-    })
-
-    it.each([
-      ["Bullish ", "bullish"],
-      ["BEARISH", "bearish"],
-      [" Neutral", "neutral"],
-    ])("marketSentiment이 %s여도 정규화되어 %s로 반환된다", (raw, expected) => {
-      const body = { ...validBody, marketSentiment: raw }
-      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
-      expect(result.marketSentiment).toBe(expected)
     })
 
     it("응답이 ```json 코드펜스로 감싸져 있어도 정상 파싱한다", () => {
       const fenced = "```json\n" + JSON.stringify(validBody) + "\n```"
-      const result = parseAnalysisResponse(makeResponse(fenced), paragraphs)
-      expect(result.marketSentiment).toBe("bullish")
-    })
-
-    it("insight 앞뒤 공백을 trim해서 반환한다", () => {
-      const body = { ...validBody, insight: "  인사이트  " }
-      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
-      expect(result.insight).toBe("인사이트")
+      const result = parseFastAnalysisResponse(makeResponse(fenced), paragraphs)
+      expect(result.summaryBullets).toEqual(["요약1", "요약2", "요약3"])
     })
   })
 
   describe("빈 값", () => {
-    it("sentences와 terms가 빈 배열이면 그대로 빈 배열을 반환한다", () => {
-      const body = { ...validBody, sentences: [], terms: [] }
-      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+    it("sentences가 빈 배열이면 그대로 빈 배열을 반환한다", () => {
+      const body = { ...validBody, sentences: [] }
+      const result = parseFastAnalysisResponse(makeResponse(body), paragraphs)
       expect(result.sentences).toEqual([])
-      expect(result.terms).toEqual([])
     })
 
     it("paragraphs가 빈 배열이면 모든 sentences가 걸러진다", () => {
-      const result = parseAnalysisResponse(makeResponse(validBody), [])
+      const result = parseFastAnalysisResponse(makeResponse(validBody), [])
       expect(result.sentences).toEqual([])
     })
 
     it("response.content가 없으면 빈 텍스트로 취급되어 JSON 파싱에서 실패한다", () => {
-      expect(() => parseAnalysisResponse({}, paragraphs)).toThrow(SyntaxError)
+      expect(() => parseFastAnalysisResponse({}, paragraphs)).toThrow(SyntaxError)
     })
   })
 
@@ -209,7 +179,7 @@ describe("parseAnalysisResponse", () => {
           { text: "this text is not in the paragraphs", translation: "번역2", reason: "이유2" },
         ],
       }
-      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+      const result = parseFastAnalysisResponse(makeResponse(body), paragraphs)
       expect(result.sentences).toEqual([
         { id: "s1", text: "reported strong quarterly earnings", translation: "번역1", reason: "이유1" },
       ])
@@ -223,13 +193,13 @@ describe("parseAnalysisResponse", () => {
           { text: "Shares  fell   sharply", translation: "번역2(중복)", reason: "이유2" },
         ],
       }
-      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+      const result = parseFastAnalysisResponse(makeResponse(body), paragraphs)
       expect(result.sentences).toEqual([
         { id: "s1", text: "Shares fell sharply", translation: "번역1", reason: "이유1" },
       ])
     })
 
-    it("필드가 누락되거나 빈 문자열인 sentence/term 원소는 걸러지고 나머지는 유지된다", () => {
+    it("필드가 누락되거나 빈 문자열인 sentence 원소는 걸러지고 나머지는 유지된다", () => {
       const body = {
         ...validBody,
         sentences: [
@@ -237,18 +207,10 @@ describe("parseAnalysisResponse", () => {
           { text: "", translation: "번역2", reason: "이유2" },
           { text: "reported strong quarterly earnings", reason: "이유3" },
         ],
-        terms: [
-          { term: "guidance", definition: "설명" },
-          { term: "", definition: "설명2" },
-          { definition: "term 없음" },
-        ],
       }
-      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+      const result = parseFastAnalysisResponse(makeResponse(body), paragraphs)
       expect(result.sentences).toEqual([
         { id: "s1", text: "Shares fell sharply", translation: "번역1", reason: "이유1" },
-      ])
-      expect(result.terms).toEqual([
-        { term: "guidance", definition: "설명", excerpt: null, excerptTranslation: null },
       ])
     })
 
@@ -256,17 +218,121 @@ describe("parseAnalysisResponse", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
       const body = { ...validBody, summaryBullets: ["요약1", "요약2"] }
 
-      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+      const result = parseFastAnalysisResponse(makeResponse(body), paragraphs)
 
       expect(result.summaryBullets).toEqual(["요약1", "요약2"])
       expect(warnSpy).toHaveBeenCalled()
+    })
+  })
+
+  describe("실패하는 경우", () => {
+    it("응답 텍스트가 JSON이 아니면 SyntaxError를 던진다", () => {
+      expect(() => parseFastAnalysisResponse(makeResponse("this is not json"), paragraphs)).toThrow(SyntaxError)
+    })
+
+    it.each([
+      ["sentences가 배열이 아님", { ...validBody, sentences: {} }],
+      ["summaryBullets가 배열이 아님", { ...validBody, summaryBullets: "요약1,요약2,요약3" }],
+    ])("%s이면 unexpected LLM response shape 에러를 던진다", (_label, body) => {
+      expect(() => parseFastAnalysisResponse(makeResponse(body), paragraphs)).toThrow(
+        "computeFastAnalysis: unexpected LLM response shape",
+      )
+    })
+  })
+})
+
+describe("parseSlowAnalysisResponse", () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  const validBody = {
+    terms: [
+      {
+        term: "guidance",
+        definition: "설명",
+        excerpt: "reported strong quarterly earnings",
+        excerptTranslation: "발췌 번역",
+      },
+    ],
+    insight: "인사이트",
+    marketSentiment: "bullish",
+  }
+
+  describe("정상 케이스", () => {
+    it("모든 필드가 올바른 형태면 정제된 결과를 반환한다", () => {
+      const result = parseSlowAnalysisResponse(makeResponse(validBody), paragraphs)
+
+      expect(result).toEqual({
+        terms: [
+          {
+            term: "guidance",
+            definition: "설명",
+            excerpt: "reported strong quarterly earnings",
+            excerptTranslation: "발췌 번역",
+          },
+        ],
+        insight: "인사이트",
+        marketSentiment: "bullish",
+      })
+    })
+
+    it.each([
+      ["Bullish ", "bullish"],
+      ["BEARISH", "bearish"],
+      [" Neutral", "neutral"],
+    ])("marketSentiment이 %s여도 정규화되어 %s로 반환된다", (raw, expected) => {
+      const body = { ...validBody, marketSentiment: raw }
+      const result = parseSlowAnalysisResponse(makeResponse(body), paragraphs)
+      expect(result.marketSentiment).toBe(expected)
+    })
+
+    it("응답이 ```json 코드펜스로 감싸져 있어도 정상 파싱한다", () => {
+      const fenced = "```json\n" + JSON.stringify(validBody) + "\n```"
+      const result = parseSlowAnalysisResponse(makeResponse(fenced), paragraphs)
+      expect(result.marketSentiment).toBe("bullish")
+    })
+
+    it("insight 앞뒤 공백을 trim해서 반환한다", () => {
+      const body = { ...validBody, insight: "  인사이트  " }
+      const result = parseSlowAnalysisResponse(makeResponse(body), paragraphs)
+      expect(result.insight).toBe("인사이트")
+    })
+  })
+
+  describe("빈 값", () => {
+    it("terms가 빈 배열이면 그대로 빈 배열을 반환한다", () => {
+      const body = { ...validBody, terms: [] }
+      const result = parseSlowAnalysisResponse(makeResponse(body), paragraphs)
+      expect(result.terms).toEqual([])
+    })
+
+    it("response.content가 없으면 빈 텍스트로 취급되어 JSON 파싱에서 실패한다", () => {
+      expect(() => parseSlowAnalysisResponse({}, paragraphs)).toThrow(SyntaxError)
+    })
+  })
+
+  describe("경계값", () => {
+    it("필드가 누락되거나 빈 문자열인 term 원소는 걸러지고 나머지는 유지된다", () => {
+      const body = {
+        ...validBody,
+        terms: [
+          { term: "guidance", definition: "설명" },
+          { term: "", definition: "설명2" },
+          { definition: "term 없음" },
+        ],
+      }
+      const result = parseSlowAnalysisResponse(makeResponse(body), paragraphs)
+      expect(result.terms).toEqual([
+        { term: "guidance", definition: "설명", excerpt: null, excerptTranslation: null },
+      ])
     })
 
     it("marketSentiment이 enum에 없으면 neutral로 폴백하고 경고를 남긴다", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
       const body = { ...validBody, marketSentiment: "very bullish" }
 
-      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+      const result = parseSlowAnalysisResponse(makeResponse(body), paragraphs)
 
       expect(result.marketSentiment).toBe("neutral")
       expect(warnSpy).toHaveBeenCalled()
@@ -284,7 +350,7 @@ describe("parseAnalysisResponse", () => {
           },
         ],
       }
-      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+      const result = parseSlowAnalysisResponse(makeResponse(body), paragraphs)
       expect(result.terms).toEqual([
         {
           term: "guidance",
@@ -307,7 +373,7 @@ describe("parseAnalysisResponse", () => {
           },
         ],
       }
-      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+      const result = parseSlowAnalysisResponse(makeResponse(body), paragraphs)
       expect(result.terms).toEqual([
         { term: "guidance", definition: "설명", excerpt: null, excerptTranslation: null },
       ])
@@ -318,7 +384,7 @@ describe("parseAnalysisResponse", () => {
         ...validBody,
         terms: [{ term: "guidance", definition: "설명" }],
       }
-      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+      const result = parseSlowAnalysisResponse(makeResponse(body), paragraphs)
       expect(result.terms).toEqual([
         { term: "guidance", definition: "설명", excerpt: null, excerptTranslation: null },
       ])
@@ -329,7 +395,7 @@ describe("parseAnalysisResponse", () => {
         ...validBody,
         terms: [{ term: "guidance", definition: "설명", excerpt: "Shares fell sharply" }],
       }
-      const result = parseAnalysisResponse(makeResponse(body), paragraphs)
+      const result = parseSlowAnalysisResponse(makeResponse(body), paragraphs)
       expect(result.terms).toEqual([
         { term: "guidance", definition: "설명", excerpt: "Shares fell sharply", excerptTranslation: null },
       ])
@@ -338,19 +404,17 @@ describe("parseAnalysisResponse", () => {
 
   describe("실패하는 경우", () => {
     it("응답 텍스트가 JSON이 아니면 SyntaxError를 던진다", () => {
-      expect(() => parseAnalysisResponse(makeResponse("this is not json"), paragraphs)).toThrow(SyntaxError)
+      expect(() => parseSlowAnalysisResponse(makeResponse("this is not json"), paragraphs)).toThrow(SyntaxError)
     })
 
     it.each([
-      ["sentences가 배열이 아님", { ...validBody, sentences: {} }],
       ["terms가 배열이 아님", { ...validBody, terms: {} }],
-      ["summaryBullets가 배열이 아님", { ...validBody, summaryBullets: "요약1,요약2,요약3" }],
       ["insight가 문자열이 아님", { ...validBody, insight: 123 }],
       ["insight가 공백뿐인 문자열", { ...validBody, insight: "   " }],
       ["marketSentiment이 문자열이 아님", { ...validBody, marketSentiment: null }],
     ])("%s이면 unexpected LLM response shape 에러를 던진다", (_label, body) => {
-      expect(() => parseAnalysisResponse(makeResponse(body), paragraphs)).toThrow(
-        "analyzeArticle: unexpected LLM response shape",
+      expect(() => parseSlowAnalysisResponse(makeResponse(body), paragraphs)).toThrow(
+        "computeSlowAnalysis: unexpected LLM response shape",
       )
     })
   })

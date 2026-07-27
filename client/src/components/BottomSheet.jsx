@@ -3,6 +3,9 @@ import Badge from "./Badge.jsx"
 import { SENTIMENT_META } from "../constants/sentiment.js"
 
 export default function BottomSheet({ decision, marketSentiment, insight, onClose }) {
+  // slow lane(terms/insight/marketSentiment)이 fast lane보다 늦게 끝나면
+  // 바텀시트가 열린 시점엔 아직 undefined일 수 있다 — 로딩 문구로 대체.
+  const detailsLoading = marketSentiment === undefined || insight === undefined
   const sentiment = SENTIMENT_META[marketSentiment]
   const [memoRevealed, setMemoRevealed] = useState(false)
   const [memo, setMemo] = useState("")
@@ -31,13 +34,17 @@ export default function BottomSheet({ decision, marketSentiment, insight, onClos
           <span className="bottom-sheet-compare-vs">vs</span>
           <div className="bottom-sheet-compare-item">
             <p className="bottom-sheet-compare-label">시장의 해석</p>
-            {sentiment && <span className={`badge ${sentiment.tone}`}>{sentiment.label}</span>}
+            {detailsLoading ? (
+              <span className="bottom-sheet-compare-loading">분석 중...</span>
+            ) : (
+              sentiment && <span className={`badge ${sentiment.tone}`}>{sentiment.label}</span>
+            )}
           </div>
         </div>
 
         <div className="bottom-sheet-insight">
           <p className="bottom-sheet-insight-label">AI 관점 해설</p>
-          <p>{insight}</p>
+          <p>{detailsLoading ? "AI가 비교 결과를 분석하고 있습니다..." : insight}</p>
         </div>
 
         <div className="bottom-sheet-memo">

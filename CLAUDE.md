@@ -133,9 +133,15 @@ hub/
 - **API 엔드포인트** (상세는 `docs/api-spec.md`):
   - `GET /api/dashboard` — 오늘의 핵심 외신 3개
   - `POST /api/article/parse` — 원문 스크래핑 (`{ url }`)
-  - `POST /api/article/analyze` — `{ paragraphs, title, url }` →
-    `sentences`/`terms`/`summaryBullets`/`insight`/`marketSentiment`.
-    `title`/`url`은 응답에 없고 단어장 자동 저장 부수효과에만 사용
+  - `POST /api/article/analyze` — fast lane. `{ paragraphs, title, url }` →
+    `sentences`/`summaryBullets`만 반환(리더뷰 즉시 렌더링에 필요한 최소
+    데이터). 인증 불필요
+  - `POST /api/article/analyze/details` — slow lane(신규 2026-07-27). 위와
+    동일한 요청으로 `terms`/`insight`/`marketSentiment` 반환. `title`/`url`은
+    응답에 없고 단어장 자동 저장 부수효과에만 사용. 클라이언트는 parse 성공
+    직후 fast lane과 병렬 호출해 백그라운드로 준비해둔다(리더뷰 로딩 지연
+    개선 — `insight`/`marketSentiment`는 원래도 판단 전까지 블라인드 처리라
+    늦게 도착해도 무방, `terms`는 화면에 직접 안 쓰이는 부수효과)
   - `GET /api/vocabulary` — 단어장 조회(최신순)
   - `POST /api/decisions` — `{ url, title, summaryBullets, decision, marketSentiment, insight }`
   - `GET /api/decisions` — 히스토리 조회
