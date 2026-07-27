@@ -56,7 +56,7 @@ Workspace의 app-owned store는 current canonical `formatVersion: 2` 하나를 �
 
 Current v2 aggregate는 stable workspace ID와 한 Course identity도 소유한다. 새 `WorkspaceManifest`를 곁에 추가해 같은 identity를 두 곳에서 authoritative하게 만들 수 없다. Historical [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)의 당시 target은 같은 physical seam을 explicit v3 single aggregate로 전환해 logical `WorkspaceManifest`만 identity를 소유하게 했다. V3 codec·admission은 workspace package에 구현됐지만 current Server controller·product API는 아직 이를 사용하지 않으며 current v2 bytes를 자동 scaffold·adopt·reset하지 않는다.
 
-ADR 0018 target의 root v4 codec과 external `WorkspaceRegistry`도 current-v2 product store를 자동 변환하거나 함께 쓰지 않는다. Prepared-root launch resolver, candidate-free Browser lifecycle contract와 required-readiness startup coordinator는 current graph 옆의 target seam이다. Internal coordinator에서는 readiness 뒤 registry commit이 연결됐지만 public composition cutover 전에는 current public workspace authority가 계속 아래 v2 aggregate다.
+ADR 0018 target의 root v4 codec과 external `WorkspaceRegistry`도 current-v2 product store를 자동 변환하거나 함께 쓰지 않는다. Prepared-root launch resolver, candidate-free Browser lifecycle contract와 required-readiness startup coordinator는 current graph 옆의 target seam이다. No-argument authoritative reopen은 registry를 읽기 전에 dead `pending` writer를 reconcile하여 acceptance 전 first-open target을 제거하거나 switch 이전 pointer를 복원한다. Internal coordinator에서는 readiness 뒤 registry commit이 연결됐지만 public composition cutover 전에는 current public workspace authority가 계속 아래 v2 aggregate다.
 
 | 영역 | Current behavior |
 | --- | --- |

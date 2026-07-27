@@ -334,18 +334,18 @@ test('process death before startup acceptance restores missing or previous regis
         },
       })
 
-      const trigger = await store.commitActiveWorkspace({
-        expectedAuthority:
-          previous?.status === 'written' ? previous.authority : null,
-        canonicalRoot: fixture.firstRoot,
-        expectedWorkspaceId: firstWorkspaceId,
-        acceptCommit: () => false,
-      })
-      assert.equal(trigger.status, 'conflict')
+      const reopened = await store.resolveActiveWorkspace()
       const restored = await store.read()
       if (mode === 'first-open') {
+        assert.deepEqual(reopened, { status: 'none' })
         assert.equal(restored.status, 'missing')
       } else {
+        assert.equal(reopened.status, 'available')
+        if (reopened.status !== 'available') {
+          assert.fail('previous workspace must reopen')
+        }
+        assert.equal(reopened.workspace.workspaceId, firstWorkspaceId)
+        assert.equal(reopened.canonicalRoot, fixture.firstRoot)
         assert.equal(restored.status, 'current')
         if (restored.status !== 'current' || !before) {
           assert.fail('previous authority must be restored')

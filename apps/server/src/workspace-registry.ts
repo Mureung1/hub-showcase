@@ -198,6 +198,7 @@ export function createWorkspaceRegistryStore(
 
     async resolveActiveWorkspace(): Promise<ResolvedRegistryWorkspace> {
       const root = await assertCanonicalAppDataRoot(appDataRoot)
+      await reconcileRegistryWriterForReopen(root)
       const observed = await readRegistryAt(root)
       if (observed.status === 'missing') return { status: 'none' }
       if (observed.status === 'incompatible') {
@@ -909,6 +910,33 @@ async function acquireWriterLease(
       await unlink(stage).catch(() => undefined)
       await syncDirectory(directory).catch(() => undefined)
     }
+  }
+}
+
+async function reconcileRegistryWriterForReopen(
+  appDataRoot: string,
+): Promise<void> {
+  const directory = path.join(appDataRoot, registryDirectoryName)
+  let stats
+  try {
+    stats = await lstat(directory)
+  } catch (error) {
+    if (hasErrnoCode(error, 'ENOENT')) return
+    throw new WorkspaceRegistryStorageError()
+  }
+  if (!stats.isDirectory() || stats.isSymbolicLink()) {
+    throw new WorkspaceRegistryStorageError()
+  }
+  const existing = await readWriterLease(
+    path.join(directory, writerLeaseName),
+  )
+  if (existing.status === 'absent') return
+  if (
+    existing.status === 'incompatible' ||
+    isProcessAlive(existing.lease.owner.ownerPid) ||
+    !(await cleanupAbandonedWriterLease(directory, existing.lease))
+  ) {
+    throw new WorkspaceRegistryStorageError()
   }
 }
 
