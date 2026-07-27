@@ -634,6 +634,12 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
                 ? "자동 게시가 안 됐어요(토큰·이미지 미설정). 문구를 복사해 직접 올려주세요."
                 : "X(트위터)는 문구를 복사해 직접 올려주세요."}
           </p>
+          {/* 귀속 방법 안내 — SNS는 공개 채널이라 개인별 쿠폰 코드를 못 준다(shared/sns.ts).
+              대신 캡션의 📍 줄이 증표 역할을 하므로, 사장님이 뭘 확인하면 되는지 알려 준다.
+              채널 역할("도달")은 화면 맨 아래 한 곳에서만 말한다 — 여기서 또 하면 같은 말 반복. */}
+          <p style={{ fontSize: 11, color: T.muted, marginTop: 6, lineHeight: 1.5 }}>
+            게시물을 보고 온 손님이 <b>매장에서 화면을 보여주면</b> 혜택을 적용해 주세요.
+          </p>
         </Card>
       )}
 
@@ -656,7 +662,8 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
             <div style={{ fontSize: 12, color: T.upText, fontWeight: 700 }}>이 캠페인 귀속 매출</div>
             <div style={{ fontSize: 26, fontWeight: 700, color: T.up, marginTop: 4 }}>{won(rev)}</div>
             <div style={{ fontSize: 11, color: T.upText, marginTop: 2 }}>
-              쿠폰 코드로 직접 추적된 실매출
+              {/* SNS를 같이 보냈으면 이 숫자가 '전 채널 합계'로 오해되기 쉽다 → 집계 범위를 명시. */}
+              {hasSns ? "단골 문자 쿠폰 코드로 추적된 실매출" : "쿠폰 코드로 직접 추적된 실매출"}
             </div>
           </div>
         </Card>
@@ -665,7 +672,10 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
       <p style={{ textAlign: "center", fontSize: 12, color: T.muted, marginTop: 14, lineHeight: 1.6 }}>
         {scheduled ? "예약 시간이 되면 자동 발송하고 추적을 시작할게요."
           : tracking ? "쿠폰 사용은 쿠폰 코드로 누적 집계돼요. 날씨 회복이 아니라 이 캠페인이 만든 매출입니다."
-          : "SNS 게시물 반응은 성과 탭에서 집계됩니다."}
+          /* SNS 단독 발송 — 쿠폰이 발급되지 않는다(서버가 dangol 없으면 발급 경로를 건너뜀).
+             구 문구는 "SNS 반응은 성과 탭에서 집계"였으나 PerfView는 쿠폰 사용률·귀속 매출만 보여준다.
+             없는 기능을 약속하지 말고, 매출 추적을 켜는 방법을 안내한다. */
+          : "SNS는 도달을 맡는 채널이라 쿠폰 추적 대상이 아니에요. 매출 추적은 단골 문자를 함께 보내면 시작됩니다."}
       </p>
     </div>
   );
