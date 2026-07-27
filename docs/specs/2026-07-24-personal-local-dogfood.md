@@ -6,7 +6,7 @@
 - Surface: local-spec
 - Next actor: user
 - Disposition: superseded
-- Superseded by: [User-owned SemesterWorkspace와 InteractionCapability 전환](./2026-07-27-user-owned-semester-workspace-interaction-capability.md)
+- Superseded by: [InteractionCapability 기반 Semantic Review](./2026-07-27-interaction-capability-semantic-review.md), [User-owned SemesterWorkspace lifecycle과 canonical local roots](./2026-07-27-user-owned-semester-workspace-lifecycle.md)
 
 ## Problem Statement
 
@@ -262,4 +262,4 @@ P0와 P1 contract fixture를 먼저 고정한다. P2의 scan engine과 P1의 Bro
 - 이 Spec은 historical public-release 결정과 구현을 삭제하지 않는다. 다만 현재 active product scope와 다음 작업 순서는 이 문서가 대체한다.
 - Public distribution을 다시 원할 때는 [public npx 첫 출시 Spec](./2026-07-23-public-npx-first-release.md)의 남은 release lane을 현재 personal implementation에 맞춰 다시 audit해야 한다. 지금 미리 호환성을 유지하지 않는다.
 - 첫 vertical 이후 backlog 우선순위는 dogfood 관찰로 정한다. 모델·reasoning effort 설정, workspace switching, Course lifecycle, calendar와 exam management는 실제 반복 friction이 확인될 때 각각 작은 vertical로 승격한다.
-- 이 문서의 P0–P5와 `codex/personal-dogfood` 시작점은 실행하지 않는다. Current ticketing source는 위 `Superseded by`에 연결한 새 spec이다.
+- 이 문서의 P0–P5와 `codex/personal-dogfood` 시작점은 실행하지 않는다. Current ticketing sources는 위 `Superseded by`에 연결한 두 Spec이다.
