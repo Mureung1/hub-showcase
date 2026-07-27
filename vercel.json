@@ -1,0 +1,19 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/client",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/api/context-analysis/import",
+      "destination": "https://modu-brain-demo.onrender.com/api/context-analysis/import"
+    },
+    {
+      "source": "/api/health/live",
+      "destination": "https://modu-brain-demo.onrender.com/api/health/live"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

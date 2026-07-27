@@ -246,6 +246,8 @@ Render는 `npm ci --include=dev && npm run build`, `npm start`, `HOST=0.0.0.0`�
 - [개발 기획·검증 Agent](agents/README.md)
 - [2주차 결정 이유 핵심 시나리오](docs/week-2-core-scenario.md)
 - [프롬프트 설계](docs/prompt-design.md)
+- [한국어 카피 가이드](docs/korean-copy-guide.md)
+- [배포 대상과 역할](docs/deployment-targets.md)
 - [Figma 개발 핸드오프](docs/figma-handoff.md)
 - [KoPubWorld 돋움 웹 임베딩 안내](docs/kopub-font-embedding.md)
 - [PR 벤치마크](docs/benchmark-prs.md)

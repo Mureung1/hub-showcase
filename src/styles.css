@@ -26,29 +26,29 @@
   --color-page: #f6f5f4;
   --color-surface: #ffffff;
   --color-surface-subtle: #fbfaf9;
-  --color-text: #000000;
-  --color-text-body: #31302e;
-  --color-text-muted: #615d59;
-  --color-text-faint: #a39e98;
+  --color-text: #141414;
+  --color-text-body: #2d2d2d;
+  --color-text-muted: #5f5f5f;
+  --color-text-faint: #8c8c8c;
   --color-border: #e6e6e6;
   --color-border-strong: #d8d6d3;
   --color-border-subtle: #efeeec;
-  --color-primary: #0075de;
-  --color-primary-hover: #005bab;
-  --color-link: #005bab;
-  --color-primary-subtle: #edf6ff;
-  --color-primary-soft: #e2f1ff;
-  --color-primary-border: #b8dcfb;
-  --color-primary-ink: #184f7c;
-  --color-primary-muted: #3f647f;
-  --color-hero: #213183;
+  --color-primary: #005bab;
+  --color-primary-hover: #004a8c;
+  --color-link: #004a8c;
+  --color-primary-subtle: #eff6fc;
+  --color-primary-soft: #e4f0fa;
+  --color-primary-border: #a9cbe5;
+  --color-primary-ink: #174d76;
+  --color-primary-muted: #42647d;
+  --color-hero: #141414;
   --color-focus-ring: #005bab;
-  --accent-sky: #62aef0;
-  --accent-purple: #d6b6f6;
-  --accent-pink: #ff64c8;
-  --accent-orange: #dd5b00;
-  --accent-teal: #2a9d99;
-  --accent-green: #1aae39;
+  --accent-sky: var(--color-primary);
+  --accent-purple: #6c7480;
+  --accent-pink: #9aa1a9;
+  --accent-orange: #4b5560;
+  --accent-teal: #68737f;
+  --accent-green: #7b858f;
   --color-success: #1f7a3f;
   --color-success-bg: #e8f7ee;
   --color-success-border: #b7dfc4;
@@ -1726,8 +1726,8 @@ select {
   min-height: 88px;
   border: 0;
   border-radius: 12px;
-  background: var(--color-primary-hover);
-  box-shadow: 0 12px 32px rgba(0, 91, 171, 0.22);
+  background: var(--color-primary);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 
 .brain-node.brain-kind-topic span,
@@ -1735,10 +1735,12 @@ select {
   color: var(--color-surface);
 }
 
-.brain-kind-perspective { --brain-node-accent: #126b68; }
-.brain-kind-decision { --brain-node-accent: #32302d; }
-.brain-kind-question { --brain-node-accent: #a74400; }
-.brain-kind-term { --brain-node-accent: #6a3f95; }
+.brain-kind-perspective,
+.brain-kind-decision,
+.brain-kind-question,
+.brain-kind-term {
+  --brain-node-accent: var(--color-primary-hover);
+}
 
 .brain-node.brain-kind-perspective {
   border-radius: 10px;
@@ -1746,15 +1748,16 @@ select {
 
 .brain-node.brain-kind-decision {
   border-width: 1px;
+  border-style: dashed;
   border-radius: 10px;
 }
 
 .brain-node.brain-kind-question {
-  border-radius: 10px;
+  border-radius: 18px 8px 18px 8px;
 }
 
 .brain-node.brain-kind-term {
-  border-style: solid;
+  border-style: dotted;
   border-radius: 10px;
 }
 
@@ -1886,6 +1889,119 @@ select {
 
 .brain-related button > svg {
   color: var(--color-text-muted);
+}
+
+.brain-footnotes {
+  margin-top: 22px;
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 16px;
+}
+
+.brain-footnotes-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brain-footnotes-heading strong {
+  color: var(--color-text-body);
+  font-size: 12px;
+}
+
+.brain-footnotes-heading span,
+.brain-footnotes-empty {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.brain-footnotes ol {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.brain-footnote {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  width: 100%;
+  min-height: 48px;
+  align-items: start;
+  gap: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+  padding: 8px 10px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--motion-fast) ease, background var(--motion-fast) ease,
+    transform var(--motion-fast) ease;
+}
+
+.brain-footnote:hover {
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-subtle);
+  transform: translateY(-1px);
+}
+
+.brain-footnote:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.brain-footnote sup {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.brain-footnote > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.brain-footnote > span strong,
+.brain-footnote > span > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brain-footnote > span strong {
+  color: var(--color-text);
+  font-size: 12px;
+}
+
+.brain-footnote > span > span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.brain-footnote.is-static {
+  cursor: default;
+}
+
+.brain-footnote.is-static:hover {
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-subtle);
+  transform: none;
+}
+
+.brain-footnotes-empty {
+  margin: 10px 0 0;
+  line-height: 1.5;
 }
 
 .brain-evidence-button {
@@ -4754,7 +4870,7 @@ tr:last-child td {
   width: 54px;
   height: 18px;
   border-radius: 5px;
-  background: var(--accent-purple);
+  background: var(--color-primary);
 }
 
 .hero-stickers .pink {
@@ -4764,7 +4880,7 @@ tr:last-child td {
   width: 15px;
   height: 42px;
   border-radius: var(--radius-pill);
-  background: var(--accent-pink);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .hero-stickers .orange {
@@ -4774,7 +4890,7 @@ tr:last-child td {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--accent-orange);
+  background: rgba(255, 255, 255, 0.38);
 }
 
 .workflow {

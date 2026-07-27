@@ -539,6 +539,44 @@ function BrainInspector({
               </ul>
             ) : <p>아직 직접 연결된 생각이 없습니다.</p>}
           </div>
+          <div className="brain-footnotes" aria-label="선택한 생각의 근거 각주">
+            <div className="brain-footnotes-heading">
+              <strong>근거 각주</strong>
+              <span>{node.evidence.length > 0 ? `${node.evidence.length}개 확인됨` : "근거 미제공"}</span>
+            </div>
+            {node.evidence.length > 0 ? (
+              <ol>
+                {node.evidence.map((evidence, index) => (
+                  <li key={`${evidence.sourceRecordId}-${index}`}>
+                    {onOpenEvidence ? (
+                      <button
+                        className="brain-footnote"
+                        type="button"
+                        aria-label={`각주 ${index + 1}: ${evidence.sourceTitle} 근거 열기`}
+                        onClick={() => onOpenEvidence([evidence])}
+                      >
+                        <sup aria-hidden="true">{index + 1}</sup>
+                        <span>
+                          <strong>{evidence.sourceTitle}</strong>
+                          <span>{clipEvidence(evidence.quote)}</span>
+                        </span>
+                      </button>
+                    ) : (
+                      <div className="brain-footnote is-static">
+                        <sup aria-hidden="true">{index + 1}</sup>
+                        <span>
+                          <strong>{evidence.sourceTitle}</strong>
+                          <span>{clipEvidence(evidence.quote)}</span>
+                        </span>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="brain-footnotes-empty">분석 결과에서 확인할 수 있는 원문 근거가 없습니다.</p>
+            )}
+          </div>
           {onOpenEvidence && node.evidence.length > 0 && (
             <button className="brain-evidence-button" type="button" onClick={() => onOpenEvidence(node.evidence)}>
               <QuotesIcon size={18} weight="bold" aria-hidden="true" />
@@ -562,6 +600,11 @@ function filterThoughts(nodes: ThoughtNode[], filter: ThoughtFilter, query: stri
   const topic = allowed.find((node) => node.kind === "topic");
   if (!topic || matches.some((node) => node.id === topic.id) || matches.length === 0) return matches;
   return [topic, ...matches];
+}
+
+function clipEvidence(quote: string) {
+  const normalized = quote.trim();
+  return normalized.length > 78 ? `${normalized.slice(0, 77)}…` : normalized;
 }
 
 function chooseVisualNodes(nodes: ThoughtNode[], limit: number) {

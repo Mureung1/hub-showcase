@@ -86,9 +86,30 @@ describe("KnowledgeMap", () => {
     expect(within(inspector).getByRole("button", {
       name: "추가 확인 필요: 질문 다음 회의 질문",
     })).toBeInTheDocument();
+    expect(within(inspector).getByRole("button", {
+      name: "각주 1: 첫 회의 근거 열기",
+    })).toBeInTheDocument();
 
     await user.click(within(inspector).getByRole("button", { name: "근거 1개 열기" }));
     expect(onOpenEvidence).toHaveBeenCalledWith(dynamicMap.nodes[2].evidence);
+
+    await user.click(within(inspector).getByRole("button", {
+      name: "각주 1: 첫 회의 근거 열기",
+    }));
+    const decisionEvidence = dynamicMap.nodes[2].evidence ?? [];
+    expect(onOpenEvidence).toHaveBeenLastCalledWith([decisionEvidence[0]]);
+  });
+
+  it("states when a selected thought has no source evidence", async () => {
+    const user = userEvent.setup();
+    render(<KnowledgeMap map={dynamicMap} />);
+
+    await user.click(screen.getByTestId("brain-node-brain-question-question-1"));
+
+    const inspector = screen.getByRole("complementary", { name: "선택한 생각 상세" });
+    expect(within(inspector).getByText("근거 미제공")).toBeInTheDocument();
+    expect(within(inspector).getByText("분석 결과에서 확인할 수 있는 원문 근거가 없습니다.")).toBeInTheDocument();
+    expect(within(inspector).queryByRole("button", { name: /각주/ })).not.toBeInTheDocument();
   });
 
   it("uses roving focus, directional navigation, Enter selection, Escape clearing, and zoom shortcuts", async () => {
