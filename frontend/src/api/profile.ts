@@ -1,6 +1,7 @@
 import type { AuthUser } from './auth';
 import type { Gender } from '../types';
 import { ApiError } from './ApiError';
+import { API_BASE_URL } from './config';
 
 export interface ProfileInput {
   gender: Gender;
@@ -15,7 +16,7 @@ interface ErrorResponse {
 }
 
 export async function updateProfile(token: string, data: ProfileInput): Promise<AuthUser> {
-  const res = await fetch('/profile', {
+  const res = await fetch(`${API_BASE_URL}/profile`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

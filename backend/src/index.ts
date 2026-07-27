@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import { requireAuth } from './middleware/auth';
 import { authRouter } from './routes/auth';
 import { ingredientsRouter } from './routes/ingredients';
@@ -7,8 +8,9 @@ import { diagnosesRouter } from './routes/diagnoses';
 import { profileRouter } from './routes/profile';
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
+app.use(cors());
 app.use(express.json());
 
 app.get('/health', (_req, res) => {

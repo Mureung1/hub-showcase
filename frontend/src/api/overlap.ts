@@ -1,4 +1,5 @@
 import { ApiError } from './ApiError';
+import { API_BASE_URL } from './config';
 
 export interface OverlapResult {
   ingredientId: number;
@@ -10,7 +11,7 @@ export interface OverlapResult {
 }
 
 export async function checkOverlap(productNames: string[], token: string): Promise<OverlapResult[]> {
-  const res = await fetch('/products/check-overlap', {
+  const res = await fetch(`${API_BASE_URL}/products/check-overlap`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -1,11 +1,12 @@
 import { ApiError } from './ApiError';
+import { API_BASE_URL } from './config';
 
 export async function saveDiagnosis(
   symptomIds: number[],
   ingredientIds: number[],
   token: string
 ): Promise<{ id: number }> {
-  const res = await fetch('/diagnoses', {
+  const res = await fetch(`${API_BASE_URL}/diagnoses`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

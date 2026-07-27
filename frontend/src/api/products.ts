@@ -1,4 +1,5 @@
 import { ApiError } from './ApiError';
+import { API_BASE_URL } from './config';
 
 export interface MatchedProduct {
   id: number;
@@ -16,7 +17,7 @@ export interface MatchedProduct {
 }
 
 export async function getMatchedProducts(ingredientIds: number[], token: string): Promise<MatchedProduct[]> {
-  const res = await fetch(`/products/match?ingredientIds=${ingredientIds.join(',')}`, {
+  const res = await fetch(`${API_BASE_URL}/products/match?ingredientIds=${ingredientIds.join(',')}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();

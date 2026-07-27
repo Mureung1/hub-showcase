@@ -1,4 +1,5 @@
 import type { Gender } from '../types';
+import { API_BASE_URL } from './config';
 
 export interface AuthUser {
   id: number;
@@ -21,7 +22,7 @@ interface ErrorResponse {
 }
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
