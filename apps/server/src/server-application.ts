@@ -3,7 +3,6 @@ import express, { type Express } from 'express'
 import {
   createCodexChatComposition,
   type CodexChatBootstrap,
-  type CodexChatComposition,
   type ProductRuntimeBootstrap,
 } from './codex-chat.js'
 import type {
@@ -84,14 +83,12 @@ export async function createServerApplication(
         ? () => productRuntimeWorkspaceRoot
         : undefined,
   })
-  const app = createServerExpressApp()
+  const app = express()
   let applicationClosePromise: Promise<void> | undefined
   const closeApplication: CloseServerApplication = ({ signal }) => {
     codexChat.beginShutdown()
     if (applicationClosePromise) return applicationClosePromise
-    const attempt = closeServerApplication(
-      codexChat,
-    )
+    const attempt = codexChat.close()
     applicationClosePromise = attempt
     void attempt.catch(() => {
       if (applicationClosePromise === attempt) {
@@ -204,14 +201,4 @@ function cleanupServerApplication(
     },
   )
   return attempt
-}
-
-function createServerExpressApp(): Express {
-  return express()
-}
-
-async function closeServerApplication(
-  codexChat: CodexChatComposition,
-): Promise<void> {
-  await codexChat.close()
 }

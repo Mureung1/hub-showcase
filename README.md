@@ -134,11 +134,11 @@ npm run demo
 | 영역 | 위치 | 설명 |
 | --- | --- | --- |
 | Brand assets | `assets/brand/` | AY-PLE 로고, 마크, AY 프로필 이미지의 프로젝트 공용 원본 |
-| Server app | `apps/server/` | Product bootstrap·workspace·operation HTTP/NDJSON, Runtime lifecycle와 durable workspace store를 소유하는 Express local companion |
-| Chat Shell app | `apps/chat-shell/` | Source workbench, cumulative AY Chat, evidence-linked Review와 recovery를 제공하는 Vite React desktop UI |
-| Product contract | `packages/product-contract/` | `/api/product/*` JSON·NDJSON의 dependency-free exact type·decoder |
+| Server app | `apps/server/` | Prepared workspace lifecycle·normal AY Chat·inline Semantic Review HTTP/NDJSON, Runtime·Broker lifecycle을 소유하는 Express local companion |
+| Chat Shell app | `apps/chat-shell/` | Prepared lifecycle, full-width AY Chat, general clarification·interrupt와 inline Semantic Review를 제공하는 Vite React desktop UI |
+| Product contract | `packages/product-contract/` | Target `/api/product/*` Browser-safe JSON·NDJSON의 dependency-free exact type·decoder |
 | Codex Chat runtime | `packages/codex-chat-runtime/` | Official Python SDK, supervised Node bridge, native conversation contract와 deterministic fake |
-| Product API | `/api/product/*` | Workspace·material, Assignment·Chat operation, Review·interaction·interrupt와 settled bootstrap |
+| Product API | `/api/product/*` | Path-free workspace lifecycle, settings, normal Chat, Semantic Review·general interaction·interrupt |
 | Camp artifact | `artifacts/camp-demo/` | Live runtime과 분리된 정적 발표 deck, product prototype와 artifact-local 검증 도구 |
 
 ## 개발 명령어

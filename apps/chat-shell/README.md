@@ -42,7 +42,7 @@ npm run build -w @ay-ple/chat-shell
 npm run lint -w @ay-ple/chat-shell
 ```
 
-Unit suite는 target-only operation decoder, lifecycle projection, exact Semantic Review binding, 일반 clarification 분리와 Browser NDJSON parser를 검증한다. Default Playwright trace는 실제 Vite·target Express composition에서 active prepared lifecycle, normal AY Chat과 semantic proposal의 accept·revise·reject settlement를 검증한다. Workspace lifecycle E2E는 1440px·1920px desktop에서 registry reopen·explicit relaunch recovery와 no-root/Runtime failure를 검증한다. Root `test:product-entrypoint`의 canonical OS process graph·SIGINT gate와 Server product shutdown actual은 startup·listener·process-tree cleanup을 독립적으로 보완한다.
+Unit suite는 target-only operation decoder, lifecycle projection, exact Semantic Review binding과 Browser NDJSON parser를 검증한다. Default Playwright trace는 실제 Vite·target Express composition에서 active prepared lifecycle, normal AY Chat, 일반 clarification·interrupt와 semantic proposal의 accept·revise·reject settlement를 검증한다. Workspace lifecycle E2E는 1440px·1920px desktop에서 registry reopen·explicit relaunch recovery와 no-root/Runtime failure를 검증한다. Root `test:product-entrypoint`의 canonical OS process graph·SIGINT gate와 Server prepared startup/application tests가 startup·listener·process-tree cleanup을 독립적으로 보완한다.
 
 ## 후속 경계
 
