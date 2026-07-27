@@ -4,8 +4,10 @@ import { CATEGORY_LABELS } from '../data/commands';
 // import CommandCard from '../components/CommandCard';
 // import { compareByRelevance } from '../utils/commandSort';
 import { searchCommands } from '../services/searchService';
+import { fetchCommands } from '../services/commandsService';
 import SearchBar from '../components/SearchBar';
 import SearchResultList from '../components/SearchResultList';
+import CommandBrowseList from '../components/CommandBrowseList';
 
 // 전체 흐름: 사용자가 SearchBar에 타이핑 → query state 변경 → normalizedQuery 재계산
 // → useEffect가 (category, normalizedQuery) 변경을 감지 → BE(/api/search)에 실제 요청
@@ -17,6 +19,13 @@ function CommandListPage() {
     const [results, setResults] = useState([]); // 검색 성공 시 BE가 돌려준 명령어 배열
     const [isLoading, setIsLoading] = useState(false); // 요청이 진행 중인 동안만 true
     const [error, setError] = useState(null); // 요청 실패 시 사용자에게 보여줄 메시지, 성공하면 다시 null
+
+    // 검색어가 없을 때(#36 알파벳 인덱스 브라우징용) 카테고리 전체 목록. 검색 state와는
+    // 목적이 달라 따로 둔다 — searchCommands는 검색어가 있을 때만 호출되는 반면, 이건
+    // category가 바뀔 때 한 번만 전체를 받아오면 되는 별개의 데이터 흐름이다.
+    const [allCommands, setAllCommands] = useState([]);
+    const [isLoadingAll, setIsLoadingAll] = useState(true);
+    const [errorAll, setErrorAll] = useState(null);
 
     /*const categoryCommands = useMemo(
         () => commands.filter((command) => command.category === category),
@@ -39,9 +48,9 @@ function CommandListPage() {
         // 비어있지 않은 경우에만 아래 2~5단계(로딩→요청→응답 처리)로 이어진다.
         if (normalizedQuery === '') {
             // results/isLoading/error를 여기서 굳이 초기화하지 않는 이유:
-            // 아래 return문의 SearchResultList에 hasQuery={normalizedQuery !== ''}를 넘기고 있어서,
-            // 검색어가 빈 상태에서는 그쪽 컴포넌트가 애초에 이 세 값을 참조하지 않는다.
-            // 즉 값이 남아있어도 화면에는 영향이 없어서, 굳이 리렌더를 유발할 필요가 없다.
+            // 검색어가 빈 상태에서는 아래 return문이 SearchResultList 대신 CommandBrowseList를
+            // 렌더링해서 이 세 값을 애초에 참조하지 않는다. 즉 값이 남아있어도 화면에는
+            // 영향이 없어서, 굳이 리렌더를 유발할 필요가 없다.
             // setResults([]);
             // setIsLoading(false);
             // setError(null);
@@ -68,6 +77,20 @@ function CommandListPage() {
             // 5단계: 성공하든 실패하든 로딩 상태는 끝났으니 항상 꺼준다
             .finally(() => setIsLoading(false));
     }, [category, normalizedQuery]);
+
+    // 검색어와 무관하게, category가 바뀔 때마다 전체 목록을 한 번 받아온다(#36 알파벳 인덱스용).
+    // 검색 useEffect와 분리해둔 이유: 저건 매 검색어 변경마다 재요청해야 하고, 이건 category
+    // 하나에 한 번만 요청하면 되는 서로 다른 트리거를 가진 별개의 데이터 흐름이기 때문.
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsLoadingAll(true);
+        setErrorAll(null);
+
+        fetchCommands()
+            .then((data) => setAllCommands(data.filter((command) => command.category === category)))
+            .catch((err) => setErrorAll(err.message))
+            .finally(() => setIsLoadingAll(false));
+    }, [category]);
 
     /*const result = useMemo(() => {
         if (!normalizedQuery) return [];
@@ -117,13 +140,16 @@ function CommandListPage() {
 
             <SearchBar category={category} value={query} onChange={setQuery} />
 
-            <SearchResultList
-                hasQuery={normalizedQuery !== ''}
-                query={query}
-                isLoading={isLoading}
-                error={error}
-                results={results}
-            />
+            {normalizedQuery === '' ? (
+                <CommandBrowseList commands={allCommands} isLoading={isLoadingAll} error={errorAll} />
+            ) : (
+                <SearchResultList
+                    query={query}
+                    isLoading={isLoading}
+                    error={error}
+                    results={results}
+                />
+            )}
         </div>
     );
 }

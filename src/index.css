@@ -305,11 +305,13 @@ input {
     padding: 4px 2px;
 }
 
-/* ── 명령어 카드 그리드 ─────────────────────────── */
-
-.command-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+/* ── 명령어 카드 목록 ───────────────────────────── */
+/* 사전류 서비스(네이버사전, Wiktionary, 연락처 앱 등)는 grid보다 세로 리스트를 쓴다 —
+   화면 너비에 따라 열 개수가 바뀌는 grid와 달리 항상 위→아래 고정된 순서로 읽히고,
+   설명 길이가 항목마다 달라도 줄이 들쭉날쭉해지지 않는다. */
+.command-list {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
 }
 
@@ -350,6 +352,54 @@ input {
     color: var(--text-dim);
     line-height: 1.5;
     margin: 0;
+}
+
+/* ── 알파벳 인덱스(#36) ─────────────────────────── */
+
+.alphabet-index {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 20px;
+}
+
+.alphabet-index-letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 4px;
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.alphabet-index-letter:hover {
+    border-color: var(--border-bright);
+    color: var(--text-bright);
+}
+
+.alphabet-index-letter--disabled {
+    color: var(--text-muted);
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.command-index-section {
+    margin-bottom: 24px;
+    scroll-margin-top: 16px;
+}
+
+.command-index-heading {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin: 0 0 10px;
 }
 
 /* ── 상세 페이지 ────────────────────────────────── */
