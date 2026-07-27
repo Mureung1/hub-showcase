@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -33,30 +33,39 @@ Verified production Runtime이 current product에 필요한 ordered patch `0001`
 
 ## Acceptance Criteria
 
-- [ ] Ordered behavioral patch roster가 exact `0001`–`0008`이고 `0009` patch file·ledger entry·generator expectation이 제거된다.
-- [ ] `manifests/patched-source.json`이 reduced stack의 deterministic stage continuity, source roster와 digest를 기록한다.
-- [ ] `manifests/production-runtime-darwin-arm64.json`이 eight-patch wheel과 Ticket 003 bridge source의 exact roster·digest를 가리킨다.
-- [ ] Production verifier와 synthetic fixtures가 eight-patch order를 authority로 사용하고 extra·missing·reordered patch를 거절한다.
-- [ ] Old nine-patch bundle과 stale bridge bundle이 current source contract에 대해 fail closed한다.
-- [ ] Reduced stack에서 official suite, response-last·bounded router, Plan interaction, model setting, standalone Skill과 provenance gates가 green이다.
-- [ ] Materialized production bundle이 bridge·SDK·native version과 complete tree verification을 통과한다.
-- [ ] Node actual-child, native-context와 exact local-provider product survivor behavior 및 process-group reap이 green이다.
-- [ ] Source와 active manifest·tests·README ledger에서 `0009-managed-chatgpt-login`의 current reference가 0건이다.
+- [x] Ordered behavioral patch roster가 exact `0001`–`0008`이고 `0009` patch file·ledger entry·generator expectation이 제거된다.
+- [x] `manifests/patched-source.json`이 reduced stack의 deterministic stage continuity, source roster와 digest를 기록한다.
+- [x] `manifests/production-runtime-darwin-arm64.json`이 eight-patch wheel과 Ticket 003 bridge source의 exact roster·digest를 가리킨다.
+- [x] Production verifier와 synthetic fixtures가 eight-patch order를 authority로 사용하고 extra·missing·reordered patch를 거절한다.
+- [x] Old nine-patch bundle과 stale bridge bundle이 current source contract에 대해 fail closed한다.
+- [x] Reduced stack에서 official suite, response-last·bounded router, Plan interaction, model setting, standalone Skill과 provenance gates가 green이다.
+- [x] Materialized production bundle이 bridge·SDK·native version과 complete tree verification을 통과한다.
+- [x] Node actual-child, native-context와 exact local-provider product survivor behavior 및 process-group reap이 green이다.
+- [x] Source와 active manifest·tests·README ledger에서 `0009-managed-chatgpt-login`의 current reference가 0건이다.
 
 ## Verification
 
 - Targeted test or command:
-  - `npm run generate:exact-sdk -w @ay-ple/codex-chat-runtime`
-  - `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime`
-  - `npm run materialize:production-runtime -w @ay-ple/codex-chat-runtime -- --write-manifest`
-  - `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime`
-  - `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime`
+  - `npm run generate:exact-sdk -w @ay-ple/codex-chat-runtime` — 통과. Eight-patch `patched-source.json`을 generator로 재생성했다.
+  - `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime` — 통과. Deterministic two-run derivation, response-last·bounded router, Plan interaction, official suite 162 passed·38 skipped, Ruff와 provenance가 green이다.
+  - `npm run materialize:production-runtime -w @ay-ple/codex-chat-runtime -- --write-manifest` — 통과. Patched wheel 두 build와 두 clean install이 일치했고 canonical manifest와 ignored bundle을 함께 갱신했다.
+  - `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime` — 통과. Synthetic verifier 23 tests, bundled bridge actual-child 23 tests, post-run complete-tree verification과 Ruff가 green이다.
+  - `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime` — 통과. Node actual-child 82 tests, native-context 23 tests, exact local-provider와 전후 bundle verification이 green이다.
+  - Exact active-reference `rg` scan과 manifest roster `jq` assertion — 통과. `0009-managed-chatgpt-login` current reference 0건이고 두 manifest가 exact `0001`–`0008` 순서를 가진다.
 - Repository checks:
-  - `npm test`
-  - `npm run typecheck`
-  - `npm run build`
+  - `npm test` — 통과
+  - `npm run typecheck` — 통과
+  - `npm run build` — 통과
+  - `npm run lint -w @ay-ple/chat-shell` — 통과
+  - `npm run check:docs-links` — 통과
 - Manual or live smoke:
-  - External credential을 쓰는 live-provider trace는 필수가 아니다. Exact local-provider와 provider-free actual-child gate를 사용한다.
+  - External credential을 쓰는 live-provider trace는 실행하지 않았다. Exact local-provider와 provider-free actual-child gate를 사용했다.
+
+## Result
+
+Exact SDK source authority와 production verifier를 ordered patch `0001`–`0008`로 축소하고 `0009` patch file·ledger·generator expectation을 compatibility artifact 없이 제거했다. Documented generator와 materializer가 patch-stack digest `ffc43da6e5e7a146016404db54968d37d849b778e5e9b04db680cac4124fc1c9`, Ticket 003 bridge 5-file roster와 complete bundle digest `02772072955c17202736221e035eb2129d8939ab84361c02187cf06f5401c68f`를 canonical manifest와 ignored artifact에 함께 고정했다. Production verifier fixture는 missing·reordered·obsolete extra ninth patch를 거절하고 canonical manifest byte equality·bridge source evidence·complete tree roster가 stale bridge artifact를 repair나 fallback 없이 닫는다.
+
+Earlier router의 official login-route accounting은 유지하되 removed patch 전용 hosted-login option을 regression worker에서 제거해 upstream login API 자체의 completion·overflow behavior를 계속 검증한다. Standards·Spec 병렬 리뷰에서 hard violation과 spec finding은 없었다. Standards의 patch identity literal 중복 의견은 production 상수를 test가 import하면 독립 oracle이 사라지는 TDD tradeoff이므로 유지했다. 구현 commit은 `e210b3394`, router regression 정렬 commit은 `c22b04460`, formatting commit은 `be36cbd54`다.
 
 ## Blocked By
 
