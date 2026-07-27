@@ -680,6 +680,183 @@
       "entry_label": "unspecified",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_kurly_be_commerce_core",
+      "url": "https://kurly.career.greetinghr.com/ko/o/170984",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "컬리",
+      "company_id": "co_kurly",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "커머스 백엔드 개발자 (상품/주문/회원/파트너)",
+      "job_role_raw": "직군: 테크 / 직무: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 5~12년",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_kurly_be_commerce_ad",
+      "url": "https://kurly.career.greetinghr.com/ko/o/216757",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "컬리",
+      "company_id": "co_kurly",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "커머스 백엔드 개발자(광고)",
+      "job_role_raw": "직군: 테크 / 직무: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 8~15년",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_kurly_be_commerce_home",
+      "url": "https://kurly.career.greetinghr.com/ko/o/216730",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "컬리",
+      "company_id": "co_kurly",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "커머스 백엔드 개발자(홈/전시)",
+      "job_role_raw": "직군: 테크 / 직무: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 5~15년",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_kurly_be_fulfillment",
+      "url": "https://kurly.career.greetinghr.com/ko/o/168026",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "컬리",
+      "company_id": "co_kurly",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "풀필먼트 백엔드 개발자",
+      "job_role_raw": "직군: 테크 / 직무: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 5년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_kurly_be_payment",
+      "url": "https://kurly.career.greetinghr.com/ko/o/198009",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "컬리",
+      "company_id": "co_kurly",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "핀테크 백엔드 개발자 (결제)",
+      "job_role_raw": "직군: 테크 / 직무: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 5~7년",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "note": "회사가 컬리이므로 기업군은 회사 단위로 빅테크·플랫폼이다. 제목의 핀테크는 담당 도메인이다"
+    },
+    {
+      "source_id": "src_miridih_be_senior",
+      "url": "https://www.miridih.com/ko/o/117762",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "주식회사 미리디",
+      "company_id": "co_miridih",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[미리캔버스] 시니어 백엔드 개발자",
+      "job_role_raw": "직군: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 7~12년",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "note": "greetinghr 호스팅이며 커스텀 도메인 www.miridih.com 으로 서비스한다"
+    },
+    {
+      "source_id": "src_travelwallet_be_lead",
+      "url": "https://travel-wallet.career.greetinghr.com/ko/o/210785",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "트래블월렛",
+      "company_id": "co_travelwallet",
+      "cluster_id": "fintech_finance",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[비즈&서비스 플랫폼 개발챕터] Back-end engineer Lead",
+      "job_role_raw": "직군: Tech / 직무: Backend Developer",
+      "entry_label_raw": "경력 10년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
     }
   ],
   "unreachable": [
@@ -774,6 +951,22 @@
     {
       "source": "zimssa.career.greetinghr.com/ko/o/196855",
       "reason": "마감된 공고가 404를 반환한다"
+    },
+    {
+      "source": "career.catchtable.co.kr",
+      "reason": "공고 38건에 백엔드가 없다"
+    },
+    {
+      "source": "kbfintech.career.greetinghr.com",
+      "reason": "공고 3건에 백엔드가 없다"
+    },
+    {
+      "source": "willog.career.greetinghr.com",
+      "reason": "공고 8건에 백엔드가 없다"
+    },
+    {
+      "source": "inavisys.career.greetinghr.com",
+      "reason": "검색에 색인된 공고 식별자가 404를 반환한다"
     }
   ],
   "access_notes": [
