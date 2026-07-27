@@ -111,15 +111,17 @@
   color: var(--color-danger);
 }
 
+/* 도움말은 읽는 글이지 누르는 것이 아니다. Primary 색 + 굵게 쓰면 링크로 읽힌다. */
 .form-hint {
   margin: 0;
   font-size: var(--font-caption);
-  font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-text-secondary);
 }
 
+/* 지난 날짜처럼 실제로 눈에 걸려야 하는 것만 강조한다. */
 .form-hint.is-warning {
-  color: var(--color-danger);
+  font-weight: 600;
+  color: var(--color-danger-dark);
 }
 
 .form-actions {
@@ -174,8 +176,14 @@
   background-color: transparent;
 }
 
+/* "모르겠다"는 1~7 중 하나를 고른 것이 아니라 "고르지 않았다"는 뜻이다.
+   숫자 선택과 똑같이 꽉 채우면 기본 상태인데도 사용자가 고른 것처럼 보이고,
+   화면에서 가장 강한 요소가 되어 버린다. 연한 강조로만 표시한다. */
 .score-option-unknown.is-selected {
   border-style: solid;
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .score-scale {
@@ -258,8 +266,10 @@
   gap: var(--space-sm);
 }
 
+/* 손가락으로 누르는 것은 44px 이상이어야 한다. 전에는 50x35 라 옆 버튼을 같이 눌렀다. */
 .entry-action {
-  padding: 6px 12px;
+  min-height: 44px;
+  padding: 0 14px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-input);
   background-color: var(--color-surface);
@@ -302,13 +312,21 @@
   background-color: var(--color-primary-hover);
 }
 
-.button-orange {
-  background-color: var(--color-orange);
-  color: var(--color-orange-text);
+/* 누를 수 없는 버튼은 눌러도 되는 것처럼 보이면 안 된다. */
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
-.button-orange:hover {
-  background-color: var(--color-orange-hover);
+.button:disabled:hover {
+  background-color: var(--color-primary);
+}
+
+.button-hint {
+  margin: var(--space-sm) 0 0;
+  text-align: center;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
 }
 
 .button-secondary {
@@ -442,9 +460,10 @@
   font-weight: 600;
 }
 
+/* "높음"이 가장 급한 신호인데, #ef4444 는 이 배경 위에서 3.08:1 이라 가장 안 읽혔다. */
 .badge-high {
   background-color: #fee2e2;
-  color: var(--color-danger);
+  color: var(--color-danger-dark);
 }
 
 .badge-medium {
@@ -457,10 +476,13 @@
   color: #047857;
 }
 
-/* 점수 구성 펼치기/접기 버튼 */
-.breakdown-toggle {
-  align-self: flex-start;
-  padding: 2px 0;
+/* 카드 안에서 펼치기/접기를 여는 글자 버튼. 눌리는 영역이 44px 이 되도록 높이를 준다. */
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  gap: 4px;
+  padding: 0;
   border: none;
   background: none;
   font-size: var(--font-caption);
@@ -469,8 +491,16 @@
   cursor: pointer;
 }
 
-.breakdown-toggle:hover {
+.link-button:hover {
   text-decoration: underline;
+}
+
+.chevron {
+  transition: transform 0.15s ease;
+}
+
+.chevron.is-open {
+  transform: rotate(180deg);
 }
 
 /* 점수 구성 막대 */
@@ -513,12 +543,14 @@
   background-color: #2a78d6;
 }
 
+/* 트랙(#f8fafc) 대비 3:1 을 넘도록 원래 색보다 어둡게 잡았다. (2.69:1 -> 3.90:1) */
 .breakdown-fill-difficulty {
-  background-color: #1baf7a;
+  background-color: #178f63;
 }
 
+/* 2.07:1 -> 4.64:1 */
 .breakdown-fill-urgency {
-  background-color: #eda100;
+  background-color: #96690a;
 }
 
 .breakdown-fill-gradeWeight {
@@ -533,8 +565,9 @@
   background-color: #e34948;
 }
 
+/* 2.57:1 -> 4.16:1 */
 .breakdown-fill-availableTime {
-  background-color: #e87ba4;
+  background-color: #c4517d;
 }
 
 .breakdown-fill-previousScore {
@@ -550,9 +583,10 @@
   color: var(--color-text-secondary);
 }
 
-/* 모르는 요인은 점수 계산에서 빠졌다는 뜻이라 흐리게 표시한다. */
+/* 계산에서 빠졌다는 건 "모름"이라는 글자가 이미 말해준다.
+   더 흐리게 만들면(#9ca3af 는 2.54:1) 뜻은 그대로인데 읽히지만 않는다. */
 .breakdown-value.is-unknown {
-  color: var(--color-text-tertiary, #9ca3af);
+  font-size: 12px;
 }
 
 /* 우선순위 성향 선택기 */
@@ -576,7 +610,7 @@
 
 .weight-option {
   flex: 1;
-  height: 40px;
+  min-height: 44px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-input);
   background-color: var(--color-surface);
@@ -612,7 +646,8 @@
 }
 
 .chip {
-  padding: 6px 14px;
+  min-height: 44px;
+  padding: 0 16px;
   border: 1px solid var(--color-border);
   border-radius: 999px;
   background-color: var(--color-surface);
@@ -629,12 +664,21 @@
   color: var(--color-primary);
 }
 
+/* 체크박스 자체는 13x13 이라, 라벨 전체가 누르는 영역이 되도록 높이를 준다. */
 .filter-check {
   display: flex;
   align-items: center;
-  gap: 6px;
+  min-height: 44px;
+  gap: var(--space-sm);
   font-size: var(--font-label);
   color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.filter-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
   cursor: pointer;
 }
 
@@ -668,7 +712,159 @@
     flex-direction: column;
   }
 
+  /* 점수는 이 서비스의 결과물이라 좁다고 숨기면 안 된다.
+     숨기면 배지(높음/중간/낮음) 3단계만 남아 69점과 56점이 똑같이 "중간"이 된다.
+     자리가 부족한 것이므로 크기를 줄여서 남긴다. */
   .subject-score {
-    display: none;
+    font-size: var(--font-body);
   }
+
+  .weight-options {
+    flex-wrap: wrap;
+  }
+
+  .weight-option {
+    flex: 1 1 calc(50% - var(--space-sm));
+  }
+}
+
+/* 눈에는 안 보이지만 스크린리더에는 읽히는 글자. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 진행 표시기 */
+.progress-steps {
+  display: flex;
+  gap: var(--space-sm);
+  list-style: none;
+  margin: 0 0 var(--space-section);
+  padding: 0;
+}
+
+.progress-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  border-top: 3px solid var(--color-border);
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
+.progress-step.is-done,
+.progress-step.is-current {
+  border-top-color: var(--color-primary);
+}
+
+.progress-step.is-current {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.progress-step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.progress-step.is-done .progress-step-num,
+.progress-step.is-current .progress-step-num {
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
+
+/* 카드 첫머리 안내문 */
+.card-lead {
+  margin: calc(var(--space-card) * -1 + var(--space-sm)) 0 var(--space-card);
+  font-size: var(--font-label);
+  color: var(--color-text-secondary);
+}
+
+/* 1단계: 날짜만으로 본 순서 미리보기 */
+.order-preview {
+  margin: 0 0 var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-input);
+  background-color: var(--color-primary-light);
+  font-size: var(--font-label);
+  color: var(--color-text-primary);
+}
+
+/* 2단계: 과목별 이해도 */
+.understanding-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-card);
+}
+
+.understanding-item + .understanding-item {
+  padding-top: var(--space-card);
+  border-top: 1px solid var(--color-border);
+}
+
+.understanding-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.understanding-name {
+  font-size: var(--font-body);
+  font-weight: 600;
+}
+
+.step-progress-note {
+  margin: var(--space-card) 0 0;
+  text-align: center;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
+/* 결과 카드 안의 도구 줄 */
+.subject-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.subject-done {
+  margin-left: auto;
+}
+
+/* 결과 화면에서 펼치는 추가 입력 */
+.detail-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-card);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-lead {
+  margin: 0;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
 }

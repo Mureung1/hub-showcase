@@ -1,16 +1,15 @@
 :root {
-  /* 색상 */
+  /* 색상 — design-skill.md 5장 팔레트를 그대로 쓴다. 팔레트 밖 색은 추가하지 않는다. */
   --color-primary: #4f46e5;
   --color-primary-hover: #4338ca;
   --color-primary-light: #eef2ff;
-  --color-orange: #fdba74;
-  --color-orange-hover: #fb923c;
-  --color-orange-text: #7c2d12;
   --color-background: #f8fafc;
   --color-surface: #ffffff;
   --color-text-primary: #111827;
   --color-text-secondary: #6b7280;
   --color-danger: #ef4444;
+  /* 연한 배경 위에 올릴 때 쓰는 진한 danger. #ef4444 는 #fee2e2 위에서 3.08:1 로 못 읽는다. */
+  --color-danger-dark: #b91c1c;
   --color-success: #10b981;
   --color-border: #e5e7eb;
 
@@ -20,6 +19,8 @@
   --font-subheading: 18px;
   --font-body: 16px;
   --font-label: 14px;
+  /* design-skill.md 는 12px 이라고 적어두었지만 한글 보조문(도움말·칩)에서 12px 은 읽기 힘들다.
+     읽히는 쪽이 기준보다 중요해서 13px 을 쓰고, design-skill.md 도 13px 으로 맞춰두었다. */
   --font-caption: 13px;
   --font-score: 22px;
 
@@ -34,7 +35,9 @@
   --radius-button: 12px;
   --radius-card: 20px;
 
-  font-family: "Pretendard", "Apple SD Gothic Neo", Arial, sans-serif;
+  /* index.html 에서 받아오는 가변 폰트를 먼저 쓴다. 못 받아오면 설치본 -> 시스템 한글 순. */
+  font-family: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo",
+    "Malgun Gothic", sans-serif;
   color: var(--color-text-primary);
   background-color: var(--color-background);
   line-height: 1.5;
@@ -47,10 +50,31 @@
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  /* 모바일 브라우저는 주소창 높이가 변해 100vh 가 화면보다 커진다. dvh 는 실제 보이는 높이다. */
+  min-height: 100dvh;
 }
 
 button,
 input {
   font: inherit;
+}
+
+/* 키보드로 이동할 때 지금 어디에 있는지 보이게 한다.
+   원래는 .form-input 에만 포커스 스타일이 있어서, 버튼·칩·척도 선택기는
+   배경이 인디고일 때 브라우저 기본 외곽선이 거의 안 보였다. */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* 움직임을 줄이도록 설정한 사용자에게는 전환 효과를 끈다. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

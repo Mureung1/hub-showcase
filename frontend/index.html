@@ -1,9 +1,17 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 본문이 한글이라 Pretendard 를 직접 받아온다. 지정만 하고 안 받아오면
+         Pretendard 가 설치된 기기에서만 의도대로 보이고, 나머지는 기본 고딕으로 떨어진다.
+         dynamic-subset 은 페이지에 실제로 쓰인 글자만 내려받는다. -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css"
+    />
     <title>오늘 뭐부터 공부하지?</title>
   </head>
   <body>
