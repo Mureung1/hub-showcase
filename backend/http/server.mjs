@@ -12,16 +12,25 @@ import { handleCodeRunApiRequest } from './codeRunRoutes.mjs'
 import { loadCurriculumTracks } from '../modules/curriculum/adapters/jsonCurriculumCatalogRepository.mjs'
 import { createInMemoryGeneratedCurriculumRepository } from '../modules/curriculum/adapters/inMemoryGeneratedCurriculumRepository.mjs'
 import { createSqliteGeneratedCurriculumRepository } from '../modules/curriculum/adapters/sqliteGeneratedCurriculumRepository.mjs'
+import { createSupabaseGeneratedCurriculumRepository } from '../modules/curriculum/adapters/supabaseGeneratedCurriculumRepository.mjs'
 import { createInMemoryGitLabAttemptRepository } from '../modules/git-lab/adapters/inMemoryGitLabAttemptRepository.mjs'
+import { createInMemoryGitLabAttemptRecorder } from '../modules/git-lab/adapters/inMemoryGitLabAttemptRecorder.mjs'
 import { createSqliteGitLabAttemptRepository } from '../modules/git-lab/adapters/sqliteGitLabAttemptRepository.mjs'
+import { createSqliteGitLabAttemptRecorder } from '../modules/git-lab/adapters/sqliteGitLabAttemptRecorder.mjs'
+import { createSupabaseGitLabAttemptRepository } from '../modules/git-lab/adapters/supabaseGitLabAttemptRepository.mjs'
+import { createSupabaseGitLabAttemptRecorder } from '../modules/git-lab/adapters/supabaseGitLabAttemptRecorder.mjs'
 import { createInMemoryLearningProgressRepository } from '../modules/learning-progress/adapters/inMemoryLearningProgressRepository.mjs'
 import { createSqliteLearningProgressRepository } from '../modules/learning-progress/adapters/sqliteLearningProgressRepository.mjs'
+import { createSupabaseLearningProgressRepository } from '../modules/learning-progress/adapters/supabaseLearningProgressRepository.mjs'
 import { createInMemoryMistakeNoteRepository } from '../modules/mistake-notes/adapters/inMemoryMistakeNoteRepository.mjs'
 import { createSqliteMistakeNoteRepository } from '../modules/mistake-notes/adapters/sqliteMistakeNoteRepository.mjs'
+import { createSupabaseMistakeNoteRepository } from '../modules/mistake-notes/adapters/supabaseMistakeNoteRepository.mjs'
 import { loadKnowledgeChunks } from '../modules/knowledge/adapters/jsonlKnowledgeRepository.mjs'
 import { createAgentConfig, loadEnvFiles } from '../shared/env.mjs'
 import { createCorsHeaders, createRouteNotFoundResponse } from '../shared/http.mjs'
+import { isRepositoryUnavailableError } from '../shared/repositoryError.mjs'
 import { createSqliteDatabase } from '../shared/sqliteDatabase.mjs'
+import { createSupabaseServerClient } from '../shared/supabaseClient.mjs'
 
 export const defaultCurriculumAgentHost = '127.0.0.1'
 export const defaultCurriculumAgentPort = 8787
@@ -39,6 +48,7 @@ export function createCurriculumAgentApp({
   progressRepository = createInMemoryLearningProgressRepository(),
   mistakeNoteRepository = createInMemoryMistakeNoteRepository(),
   gitLabAttemptRepository = createInMemoryGitLabAttemptRepository(),
+  gitLabAttemptRecorder,
   generatedCurriculumRepository = createInMemoryGeneratedCurriculumRepository(),
   knowledgeChunks = [],
   logger = console,
@@ -65,6 +75,7 @@ export function createCurriculumAgentApp({
         progressRepository,
         mistakeNoteRepository,
         gitLabAttemptRepository,
+        gitLabAttemptRecorder,
         generatedCurriculumRepository,
         knowledgeChunks,
         logger,
@@ -89,10 +100,30 @@ export function createCurriculumAgentApp({
       return
     }
 
+    if (isRepositoryUnavailableError(error)) {
+      logger.error({
+        code: error.code,
+        resource: error.resource,
+        operation: error.operation,
+        repositoryCode: error.repositoryCode,
+      })
+      sendJson(response, {
+        status: 503,
+        body: { error: 'repository_unavailable', message: '학습 데이터를 저장하거나 불러오지 못했습니다.' },
+        headers: createCorsHeaders(),
+      })
+      return
+    }
+
+    const requestTooLarge = error?.status === 413 || error?.type === 'entity.too.large'
     logger.error(error instanceof Error ? error.message : error)
-    sendJson(response, {
+    sendJson(response, requestTooLarge ? {
       status: 413,
       body: { error: 'request_too_large', message: '요청 본문이 너무 큽니다.' },
+      headers: createCorsHeaders(),
+    } : {
+      status: 500,
+      body: { error: 'internal_server_error', message: '서버 요청 처리에 실패했습니다.' },
       headers: createCorsHeaders(),
     })
   })
@@ -113,25 +144,67 @@ export function createRuntimeContext() {
   }
 }
 
-export function createRuntimeRepositories(env = process.env) {
-  if (env.ICU_REPOSITORY_MODE !== 'sqlite') {
+export function createRuntimeRepositories(
+  env = process.env,
+  { supabaseClientFactory = createSupabaseServerClient } = {},
+) {
+  const repositoryMode = env.ICU_REPOSITORY_MODE || 'in-memory'
+
+  if (repositoryMode === 'in-memory') {
+    const mistakeNoteRepository = createInMemoryMistakeNoteRepository()
+    const gitLabAttemptRepository = createInMemoryGitLabAttemptRepository()
+
     return {
+      repositoryMode,
       progressRepository: createInMemoryLearningProgressRepository(),
-      mistakeNoteRepository: createInMemoryMistakeNoteRepository(),
-      gitLabAttemptRepository: createInMemoryGitLabAttemptRepository(),
+      mistakeNoteRepository,
+      gitLabAttemptRepository,
+      gitLabAttemptRecorder: createInMemoryGitLabAttemptRecorder({
+        attemptRepository: gitLabAttemptRepository,
+        mistakeNoteRepository,
+      }),
       generatedCurriculumRepository: createInMemoryGeneratedCurriculumRepository(),
     }
   }
 
-  const database = createSqliteDatabase({ dbPath: env.ICU_SQLITE_PATH, repoRoot })
+  if (repositoryMode === 'sqlite') {
+    const database = createSqliteDatabase({ dbPath: env.ICU_SQLITE_PATH, repoRoot })
+    const mistakeNoteRepository = createSqliteMistakeNoteRepository(database)
+    const gitLabAttemptRepository = createSqliteGitLabAttemptRepository(database)
 
-  return {
-    sqliteDatabase: database,
-    progressRepository: createSqliteLearningProgressRepository(database),
-    mistakeNoteRepository: createSqliteMistakeNoteRepository(database),
-    gitLabAttemptRepository: createSqliteGitLabAttemptRepository(database),
-    generatedCurriculumRepository: createSqliteGeneratedCurriculumRepository(database),
+    return {
+      repositoryMode,
+      sqliteDatabase: database,
+      progressRepository: createSqliteLearningProgressRepository(database),
+      mistakeNoteRepository,
+      gitLabAttemptRepository,
+      gitLabAttemptRecorder: createSqliteGitLabAttemptRecorder({
+        database,
+        attemptRepository: gitLabAttemptRepository,
+        mistakeNoteRepository,
+      }),
+      generatedCurriculumRepository: createSqliteGeneratedCurriculumRepository(database),
+    }
   }
+
+  if (repositoryMode === 'supabase') {
+    const supabaseClient = supabaseClientFactory({
+      url: env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || env.VITE_SUPABASE_URL,
+      secretKey: env.SUPABASE_SECRET_KEY,
+    })
+
+    return {
+      repositoryMode,
+      supabaseClient,
+      progressRepository: createSupabaseLearningProgressRepository(supabaseClient),
+      mistakeNoteRepository: createSupabaseMistakeNoteRepository(supabaseClient),
+      gitLabAttemptRepository: createSupabaseGitLabAttemptRepository(supabaseClient),
+      gitLabAttemptRecorder: createSupabaseGitLabAttemptRecorder(supabaseClient),
+      generatedCurriculumRepository: createSupabaseGeneratedCurriculumRepository(supabaseClient),
+    }
+  }
+
+  throw new Error(`Unsupported ICU_REPOSITORY_MODE: ${repositoryMode}`)
 }
 
 export function startCurriculumAgentServer({
@@ -143,6 +216,8 @@ export function startCurriculumAgentServer({
   progressRepository,
   mistakeNoteRepository,
   gitLabAttemptRepository,
+  gitLabAttemptRecorder,
+  generatedCurriculumRepository,
   knowledgeChunks,
   logger = console,
 } = {}) {
@@ -152,6 +227,8 @@ export function startCurriculumAgentServer({
     progressRepository,
     mistakeNoteRepository,
     gitLabAttemptRepository,
+    gitLabAttemptRecorder,
+    generatedCurriculumRepository,
     knowledgeChunks,
   } : createRuntimeContext()
   const server = createCurriculumAgentServer({ ...runtimeContext, recommendationProvider, logger })

@@ -1,6 +1,7 @@
 /* global fetch */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createCurriculumAgentServer } from './server.mjs'
+import { RepositoryUnavailableError } from '../shared/repositoryError.mjs'
 
 const servers = []
 const fetchBlockedPorts = new Set([6000, 6665, 6666, 6667, 6668, 6669, 6697, 10080])
@@ -85,5 +86,26 @@ describe('curriculum agent Express server', () => {
 
     expect(response.status).toBe(404)
     expect(body).toMatchObject({ error: 'not_found' })
+  })
+
+  it('returns 503 when a repository operation is unavailable', async () => {
+    const progressRepository = {
+      async listMissions() {
+        throw new RepositoryUnavailableError({
+          resource: 'learning_progress',
+          operation: 'list',
+          cause: { code: 'PGRST000' },
+        })
+      },
+    }
+    const baseUrl = await listen(createTestServer({ progressRepository }))
+
+    const response = await fetch(`${baseUrl}/api/progress/today`)
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({
+      error: 'repository_unavailable',
+      message: '학습 데이터를 저장하거나 불러오지 못했습니다.',
+    })
   })
 })

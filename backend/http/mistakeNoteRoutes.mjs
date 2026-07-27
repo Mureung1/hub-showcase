@@ -7,6 +7,7 @@ import {
   resetMistakeNotes,
 } from '../modules/mistake-notes/application/mistakeNoteService.mjs'
 import { createCorsHeaders, parseJsonBody } from '../shared/http.mjs'
+import { isRepositoryUnavailableError } from '../shared/repositoryError.mjs'
 
 export async function handleMistakeNoteApiRequest({ method, url, bodyText, mistakeNoteRepository }) {
   const pathname = new URL(url ?? '/', 'http://localhost').pathname
@@ -17,7 +18,7 @@ export async function handleMistakeNoteApiRequest({ method, url, bodyText, mista
 
   if (pathname === '/api/mistake-notes') {
     if (method === 'GET') {
-      return { status: 200, body: listMistakeNotes({ repository: mistakeNoteRepository }), headers: createCorsHeaders() }
+      return { status: 200, body: await listMistakeNotes({ repository: mistakeNoteRepository }), headers: createCorsHeaders() }
     }
 
     if (method === 'POST') {
@@ -25,16 +26,18 @@ export async function handleMistakeNoteApiRequest({ method, url, bodyText, mista
       if (!parsedBody.ok) return invalidJson()
 
       try {
-        const note = addMistakeNote({ input: parsedBody.value, repository: mistakeNoteRepository })
+        const note = await addMistakeNote({ input: parsedBody.value, repository: mistakeNoteRepository })
 
         return { status: 201, body: { note }, headers: createCorsHeaders() }
-      } catch {
+      } catch (error) {
+        if (isRepositoryUnavailableError(error)) throw error
+
         return invalidMistakeNote()
       }
     }
 
     if (method === 'DELETE') {
-      resetMistakeNotes({ repository: mistakeNoteRepository })
+      await resetMistakeNotes({ repository: mistakeNoteRepository })
 
       return { status: 200, body: { notes: [] }, headers: createCorsHeaders() }
     }
@@ -52,20 +55,24 @@ export async function handleMistakeNoteApiRequest({ method, url, bodyText, mista
     if (!parsedBody.ok) return invalidJson()
 
     try {
-      const note = changeMistakeNoteStatus({ id, status: parsedBody.value.status, repository: mistakeNoteRepository })
+      const note = await changeMistakeNoteStatus({ id, status: parsedBody.value.status, repository: mistakeNoteRepository })
 
       return { status: 200, body: { note }, headers: createCorsHeaders() }
-    } catch {
+    } catch (error) {
+      if (isRepositoryUnavailableError(error)) throw error
+
       return invalidMistakeNote()
     }
   }
 
   if (method === 'DELETE') {
     try {
-      removeMistakeNote({ id, repository: mistakeNoteRepository })
+      await removeMistakeNote({ id, repository: mistakeNoteRepository })
 
       return { status: 200, body: { id }, headers: createCorsHeaders() }
-    } catch {
+    } catch (error) {
+      if (isRepositoryUnavailableError(error)) throw error
+
       return { status: 404, body: { error: 'mistake_note_not_found', message: '오답 기록을 찾지 못했습니다.' }, headers: createCorsHeaders() }
     }
   }

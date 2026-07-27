@@ -1,24 +1,24 @@
-import { addMistakeNote } from '../../mistake-notes/application/mistakeNoteService.mjs'
+import { createMistakeNote } from '../../mistake-notes/domain/mistakeNote.mjs'
 import { createGitLabAttempt } from '../domain/gitLabAttempt.mjs'
 
-export function listGitLabAttempts({ repository }) {
-  return { attempts: repository.list() }
+export async function listGitLabAttempts({ repository }) {
+  return { attempts: await repository.list() }
 }
 
-export function recordGitLabAttempt({ input, repository, mistakeNoteRepository }) {
-  const attempt = repository.save(createGitLabAttempt(input))
-  let mistakeNote = null
+export async function recordGitLabAttempt({ input, recorder }) {
+  const attempt = createGitLabAttempt(input)
+  const mistakeNote = attempt.result === 'failed' && input.mistakeNote
+    ? createMistakeNote({
+        ...input.mistakeNote,
+        source: 'git-lab',
+        lessonId: attempt.lessonId,
+        command: attempt.command,
+      })
+    : null
 
-  if (attempt.result === 'failed' && input.mistakeNote && mistakeNoteRepository) {
-    mistakeNote = addMistakeNote({
-      input: { ...input.mistakeNote, source: 'git-lab', lessonId: attempt.lessonId, command: attempt.command },
-      repository: mistakeNoteRepository,
-    })
-  }
-
-  return { attempt, mistakeNote }
+  return await recorder.record({ attempt, mistakeNote })
 }
 
-export function resetGitLabAttempts({ repository }) {
-  repository.reset()
+export async function resetGitLabAttempts({ repository }) {
+  await repository.reset()
 }

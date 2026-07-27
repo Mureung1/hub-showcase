@@ -21,7 +21,8 @@
     "lint": "eslint .",
     "format": "prettier AGENTS.md README.md package.json tsconfig.json eslint.config.js index.html prototype.html prototype.css \"scripts/**/*.mjs\" \"src/**/*.{ts,tsx,css}\" --write",
     "format:check": "prettier AGENTS.md README.md package.json tsconfig.json eslint.config.js index.html prototype.html prototype.css \"scripts/**/*.mjs\" \"src/**/*.{ts,tsx,css}\" --check",
-    "test": "vitest run"
+    "test": "vitest run",
+    "smoke:supabase": "node scripts/supabase-smoke.mjs"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

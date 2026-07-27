@@ -84,6 +84,11 @@ When designing, redesigning, auditing, or implementing any user-facing screen, a
 - `test: ...` for test additions or changes.
 - `chore: ...` for tooling, package, config, or maintenance.
 
+## Issue Tracking Documents
+
+- `docs/issues/**` files are working tracking notes and must not be staged or committed.
+- Update issue files locally when tracking progress, but exclude them from `git add`, commits, and pull requests unless the user explicitly asks for a documentation commit.
+
 ## Source Of Truth
 
 - Repository-wide enforcement: `AGENTS.md`.

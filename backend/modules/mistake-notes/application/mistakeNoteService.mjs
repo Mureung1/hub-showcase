@@ -1,29 +1,29 @@
 import { createMistakeNote, normalizeMistakeNoteInput, updateMistakeNoteStatus } from '../domain/mistakeNote.mjs'
 
-export function listMistakeNotes({ repository }) {
-  return { notes: repository.list() }
+export async function listMistakeNotes({ repository }) {
+  return { notes: await repository.list() }
 }
 
-export function addMistakeNote({ input, repository }) {
+export async function addMistakeNote({ input, repository }) {
   const normalizedInput = normalizeMistakeNoteInput(input)
-  const duplicate = repository.findOpenDuplicate(normalizedInput)
+  const duplicate = await repository.findOpenDuplicate(normalizedInput)
 
   if (duplicate) return duplicate
 
-  return repository.save(createMistakeNote(normalizedInput))
+  return await repository.save(createMistakeNote(normalizedInput))
 }
 
-export function changeMistakeNoteStatus({ id, status, repository }) {
-  const note = repository.findById(id)
+export async function changeMistakeNoteStatus({ id, status, repository }) {
+  const note = await repository.findById(id)
   if (!note) throw new Error('Mistake note not found')
 
-  return repository.save(updateMistakeNoteStatus(note, status))
+  return await repository.save(updateMistakeNoteStatus(note, status))
 }
 
-export function removeMistakeNote({ id, repository }) {
-  if (!repository.delete(id)) throw new Error('Mistake note not found')
+export async function removeMistakeNote({ id, repository }) {
+  if (!await repository.delete(id)) throw new Error('Mistake note not found')
 }
 
-export function resetMistakeNotes({ repository }) {
-  repository.reset()
+export async function resetMistakeNotes({ repository }) {
+  await repository.reset()
 }

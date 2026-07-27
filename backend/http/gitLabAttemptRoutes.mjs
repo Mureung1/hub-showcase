@@ -4,7 +4,9 @@ import {
   recordGitLabAttempt,
   resetGitLabAttempts,
 } from '../modules/git-lab/application/gitLabAttemptService.mjs'
+import { createInMemoryGitLabAttemptRecorder } from '../modules/git-lab/adapters/inMemoryGitLabAttemptRecorder.mjs'
 import { createCorsHeaders, parseJsonBody } from '../shared/http.mjs'
+import { isRepositoryUnavailableError } from '../shared/repositoryError.mjs'
 
 export async function handleGitLabAttemptApiRequest({
   method,
@@ -12,6 +14,7 @@ export async function handleGitLabAttemptApiRequest({
   bodyText,
   gitLabAttemptRepository,
   mistakeNoteRepository,
+  gitLabAttemptRecorder,
 }) {
   const pathname = new URL(url ?? '/', 'http://localhost').pathname
 
@@ -22,7 +25,7 @@ export async function handleGitLabAttemptApiRequest({
   if (pathname !== '/api/git-lab/attempts') return null
 
   if (method === 'GET') {
-    return { status: 200, body: listGitLabAttempts({ repository: gitLabAttemptRepository }), headers: createCorsHeaders() }
+    return { status: 200, body: await listGitLabAttempts({ repository: gitLabAttemptRepository }), headers: createCorsHeaders() }
   }
 
   if (method === 'POST') {
@@ -32,20 +35,25 @@ export async function handleGitLabAttemptApiRequest({
     }
 
     try {
-      const result = recordGitLabAttempt({
-        input: parsedBody.value,
-        repository: gitLabAttemptRepository,
+      const recorder = gitLabAttemptRecorder ?? createInMemoryGitLabAttemptRecorder({
+        attemptRepository: gitLabAttemptRepository,
         mistakeNoteRepository,
+      })
+      const result = await recordGitLabAttempt({
+        input: parsedBody.value,
+        recorder,
       })
 
       return { status: 201, body: result, headers: createCorsHeaders() }
-    } catch {
+    } catch (error) {
+      if (isRepositoryUnavailableError(error)) throw error
+
       return { status: 400, body: { error: 'invalid_git_lab_attempt', message: 'Git Lab 시도 정보를 확인해주세요.' }, headers: createCorsHeaders() }
     }
   }
 
   if (method === 'DELETE') {
-    resetGitLabAttempts({ repository: gitLabAttemptRepository })
+    await resetGitLabAttempts({ repository: gitLabAttemptRepository })
 
     return { status: 200, body: { attempts: [] }, headers: createCorsHeaders() }
   }
