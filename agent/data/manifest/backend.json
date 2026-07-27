@@ -1182,6 +1182,52 @@
       "collected_on": "2026-07-27",
       "content_file": "enki_be_offen_open.txt",
       "note": "같은 팀의 같은 제품을 대상군을 나눠 두 공고로 모집한다. 담당업무와 사용 기술은 src_enki_be_offen 과 같고 필요역량과 우대사항이 다르다. robots 처리는 src_enki_be_offen 과 같다"
+    },
+    {
+      "source_id": "src_ncs_appsw_engineering",
+      "url": "https://www.ncs.go.kr/unity/th03/ncsSearchMain.do",
+      "source_type": "public_standard",
+      "tier": "C",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_definition",
+        "wiki_prerequisites"
+      ],
+      "publisher": "한국산업인력공단",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "NCS 세분류 20010202 응용SW엔지니어링",
+      "robots_policy": "robots.txt 없음. Disallow 와 Content-Signal 모두 선언되지 않았다",
+      "license_note": "공공누리 제1유형: 출처표시. 학습모듈은 제2유형이라 담지 않는다",
+      "collected_on": "2026-07-27",
+      "content_file": "ncs_appsw_engineering.txt",
+      "note": "상세 화면이 같은 주소로의 POST 로 열려 주소가 바뀌지 않는다. 딥링크가 없으므로 URL 만으로는 재현되지 않는다. 도달 경로는 access_notes 에 있다. 능력단위 27건의 분류번호와 수준을 담았고 능력단위 정의는 화면에 없다"
+    },
+    {
+      "source_id": "src_onet_software_developers",
+      "url": "https://www.onetonline.org/link/summary/15-1252.00",
+      "source_type": "public_standard",
+      "tier": "C",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_definition",
+        "wiki_prerequisites"
+      ],
+      "publisher": "U.S. Department of Labor, Employment and Training Administration",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "O*NET-SOC 15-1252.00 Software Developers",
+      "robots_policy": "allow /link/summary/*; disallow /link/jobinfo, /link/localjobs/, /share/, /follow/, /exit; User-agent Jobrapido disallow /",
+      "license_note": "CC BY 4.0. 출처를 표시하면 사용과 변형이 허용된다",
+      "collected_on": "2026-07-27",
+      "content_file": "onet_software_developers.txt",
+      "note": "Tasks, Work Activities, Technology Skills, Knowledge, Skills, Abilities 를 담았다. Technology Skills 각 행 끝의 more 링크는 행마다 별도 요청이라 펼치지 않았고 몇 건이 더 있는지는 원문 표기로 남아 있다. 임금과 고용전망은 직무 내용이 아니라 담지 않았다"
     }
   ],
   "unreachable": [
@@ -1364,6 +1410,18 @@
     {
       "source": "careers.lg.com/apply/detail?id=1001946",
       "reason": "MS Active Directory 이행·운영이라 인프라다"
+    },
+    {
+      "source": "www.work24.go.kr 직업정보",
+      "reason": "공공누리 제4유형이라 비상업적 이용만 가능하고 2차적 저작물 작성이 금지된다. 요구 차원에 연결하는 가공이 이용 조건과 부딪혀 담지 않는다"
+    },
+    {
+      "source": "sfia-online.org",
+      "reason": "개인용 라이선스가 등록을 요구하고 다른 사람과 조직의 이용과 상업적 이용을 금지한다"
+    },
+    {
+      "source": "esco.ec.europa.eu",
+      "reason": "이용 조건 문서 경로가 404 를 반환해 라이선스를 확인하지 못했다"
     }
   ],
   "access_notes": [
@@ -1434,6 +1492,18 @@
     {
       "source": "모집분야를 여럿 담은 출처의 본문",
       "method": "positions 가 있는 항목은 해당 모집분야의 요구사항 구간만 담는다. careers.lg.com 은 api.careers.lg.com/rmk/job/retrieveJobNoticesDetail 의 recList 에서 jobGroupName 이 일치하는 원소의 requiredItem 과 detailContext 를 쓴다"
+    },
+    {
+      "source": "www.ncs.go.kr",
+      "method": "분류 트리를 눌러 들어간다. 대분류 20 정보통신 → 중분류 01 정보기술 → 소분류 02 정보기술개발 → 세분류 02 응용SW엔지니어링. 상세가 POST 로 열려 주소가 바뀌지 않고 GET 파라미터를 무시한다. 능력단위 상세는 PDF 로만 제공된다"
+    },
+    {
+      "source": "www.onetonline.org",
+      "method": "정적 렌더링. 직업 코드로 /link/summary/<코드> 를 바로 연다. 접힌 목록은 화면에서 펼쳐 읽는다"
+    },
+    {
+      "source": "공공데이터포털 NCS 오픈API",
+      "method": "c.q-net.or.kr/openapi/Ncs1info/ncsinfo.do 가 능력단위 코드·이름·수준·정의를 JSON 으로 준다. 이용허락범위 제한 없음. data.go.kr 인증키가 필요하다"
     }
   ]
 }
