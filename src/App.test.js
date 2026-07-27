@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import App from "./App";
 
 let mockAuthUser = null;
@@ -123,6 +123,26 @@ test("마이페이지에서 닉네임을 변경하고 홈과 지도 탐색을 �
   expect(screen.getAllByText("홈").length).toBeGreaterThan(0);
   expect(screen.queryByText("지도 탐색")).not.toBeInTheDocument();
   expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/users/me"), expect.objectContaining({ method: "PATCH" }));
+
+  global.fetch = originalFetch;
+  mockAuthUser = null;
+});
+
+test("로그인 사용자가 저장한 관심 장소를 조회하고 해제한다", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ items: [{ id: "place-1", title: "저장한 카페", category: "카페", address: "서울 종로구", x: 126.98, y: 37.57 }] }),
+  });
+  mockAuthUser = { id: "user-1", email: "test@example.com", user_metadata: { display_name: "테스터" } };
+  window.history.pushState({}, "", "/saved");
+  render(<App />);
+
+  expect(await screen.findByRole("heading", { name: "관심 장소" })).toBeInTheDocument();
+  expect(await screen.findByRole("button", { name: "저장한 카페 상세 보기" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "저장한 카페 관심 장소 해제" }));
+  await waitFor(() => expect(screen.queryByRole("button", { name: "저장한 카페 상세 보기" })).not.toBeInTheDocument());
+  expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/saved-places/place-1"), expect.objectContaining({ method: "DELETE" }));
 
   global.fetch = originalFetch;
   mockAuthUser = null;

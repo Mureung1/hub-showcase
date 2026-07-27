@@ -106,6 +106,7 @@ function distanceInMeters(first, second) {
 function getRoute() {
   if (window.location.pathname === "/login") return { name: "login" };
   if (window.location.pathname === "/mypage") return { name: "mypage" };
+  if (window.location.pathname === "/saved") return { name: "saved" };
   const reviewMatch = window.location.pathname.match(/^\/places\/([^/]+)\/reviews\/new$/);
   if (reviewMatch) return { name: "review", placeId: decodeURIComponent(reviewMatch[1]) };
   const match = window.location.pathname.match(/^\/places\/([^/]+)$/);
@@ -163,6 +164,12 @@ function App() {
     navigate("/login");
   }
 
+  function openSavedPlaces() {
+    if (user) return navigate("/saved");
+    sessionStorage.setItem(AUTH_RETURN_STORAGE_KEY, "/saved");
+    navigate("/login");
+  }
+
   function handleAuthenticated(nextUser) {
     setUser(nextUser);
     const fallbackPath = route.name === "review" ? window.location.pathname : "/";
@@ -177,12 +184,17 @@ function App() {
     navigate("/");
   }
 
-  const shared = { user, authStatus, onLogin: () => navigate("/login"), onLogout: logout, onProfile: openMyPage };
+  const shared = { user, authStatus, onLogin: () => { sessionStorage.setItem(AUTH_RETURN_STORAGE_KEY, window.location.pathname); navigate("/login"); }, onLogout: logout, onProfile: openMyPage, onSavedPlaces: openSavedPlaces };
   if (route.name === "login") return <AuthPage user={user} onAuthenticated={handleAuthenticated} onBack={() => navigate("/")} />;
   if (route.name === "mypage") {
     if (authStatus === "loading") return <main className="route-empty"><strong>로그인 상태를 확인하고 있습니다.</strong></main>;
     if (!user) return <AuthPage user={user} onAuthenticated={handleAuthenticated} onBack={() => navigate("/")} />;
-    return <MyPage user={user} selectedPlace={selectedPlace} onBack={() => navigate("/")} onLogout={logout} onUserUpdated={setUser} />;
+    return <MyPage user={user} selectedPlace={selectedPlace} onBack={() => navigate("/")} onLogout={logout} onSavedPlaces={openSavedPlaces} onUserUpdated={setUser} />;
+  }
+  if (route.name === "saved") {
+    if (authStatus === "loading") return <main className="route-empty"><strong>로그인 상태를 확인하고 있습니다.</strong></main>;
+    if (!user) return <AuthPage user={user} onAuthenticated={handleAuthenticated} onBack={() => navigate("/")} />;
+    return <SavedPlacesPage onBack={() => navigate("/")} onOpenPlace={openPlace} onProfile={openMyPage} />;
   }
   if (route.name === "review") {
     const reviewPlace = selectedPlace?.id === route.placeId ? selectedPlace : null;
@@ -205,7 +217,7 @@ function AccountControl({ user, authStatus, onLogin, onLogout, onProfile }) {
   );
 }
 
-function MyPage({ user, selectedPlace, onBack, onLogout, onUserUpdated }) {
+function MyPage({ user, selectedPlace, onBack, onLogout, onSavedPlaces, onUserUpdated }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(user.name);
   const [nameStatus, setNameStatus] = useState("idle");
@@ -254,12 +266,49 @@ function MyPage({ user, selectedPlace, onBack, onLogout, onUserUpdated }) {
   return (
     <main className="mypage">
       <header className="mypage-topbar"><a className="brand-home-link" href="/" onClick={resetAndGoHome}>지금리뷰</a><button onClick={onLogout} type="button">로그아웃</button></header>
-      <aside className="mypage-sidebar"><a href="/" onClick={resetAndGoHome}>⌂ 홈</a><span>♡ 저장</span><strong>♙ 마이페이지</strong></aside>
+      <aside className="mypage-sidebar"><a href="/" onClick={resetAndGoHome}>⌂ 홈</a><button onClick={onSavedPlaces} type="button">♡ 관심 장소</button><strong>♙ 마이페이지</strong></aside>
       <div className="mypage-content">
         <section className="mypage-profile"><span className="mypage-avatar">{user.name.slice(0, 1)}</span><div className="mypage-profile-info">{isEditingName ? <form className="nickname-form" onSubmit={updateNickname}><label htmlFor="nickname">닉네임</label><div><input autoFocus id="nickname" maxLength="30" onChange={(event) => setNameInput(event.target.value)} value={nameInput} /><Button disabled={nameStatus === "saving"} type="submit">{nameStatus === "saving" ? "저장 중" : "저장"}</Button><button className="nickname-cancel" onClick={() => { setNameInput(user.name); setIsEditingName(false); setNameMessage(""); setNameStatus("idle"); }} type="button">취소</button></div></form> : <div className="mypage-name-row"><h1>{user.name}</h1><button onClick={() => setIsEditingName(true)} type="button">닉네임 변경</button></div>}<p>{user.email}</p><small>영수증 인증 리뷰로 믿을 수 있는 장소 선택을 돕고 있어요.</small>{nameMessage && <span className={`nickname-message is-${nameStatus}`} role="status">{nameMessage}</span>}</div><div className="mypage-count"><span>작성 리뷰</span><strong>{reviews.length}</strong></div></section>
         <section className="mypage-reviews"><div className="mypage-section-title"><div><span>MY REVIEWS</span><h2>작성한 리뷰</h2></div><small>최신순</small></div>{sortedReviews.length > 0 ? <div className="mypage-review-list">{sortedReviews.map((review) => <article className="mypage-review-card" key={review.id}><header><div><h3>{placeName(review)}</h3><span>{new Date(review.createdAt).toLocaleDateString("ko-KR")} 작성</span></div><Badge>테스트</Badge></header><p>{review.content}</p><footer><strong>{SENTIMENT_LABELS[review.bucket]}</strong><span>AI 신뢰도 {Math.round(review.confidence * 100)}%</span></footer>{review.keywords?.length > 0 && <small>{review.keywords.map((keyword) => `#${keyword}`).join(" ")}</small>}</article>)}</div> : <div className="mypage-empty"><strong>아직 작성한 리뷰가 없습니다</strong><p>지도에서 업체를 선택하고 첫 리뷰를 작성해 보세요.</p><Button onClick={onBack}>지도로 이동</Button></div>}</section>
       </div>
-      <nav className="mypage-bottom-nav"><button onClick={onBack} type="button"><span>⌂</span><small>홈</small></button><button disabled type="button"><span>♡</span><small>저장</small></button><button onClick={onBack} type="button"><span>✎</span><small>리뷰작성</small></button><button className="is-active" type="button"><span>♙</span><small>내정보</small></button></nav>
+      <nav className="mypage-bottom-nav"><button onClick={onBack} type="button"><span>⌂</span><small>홈</small></button><button onClick={onSavedPlaces} type="button"><span>♡</span><small>저장</small></button><button onClick={onBack} type="button"><span>✎</span><small>리뷰작성</small></button><button className="is-active" type="button"><span>♙</span><small>내정보</small></button></nav>
+    </main>
+  );
+}
+
+function SavedPlacesPage({ onBack, onOpenPlace, onProfile }) {
+  const [items, setItems] = useState([]);
+  const [status, setStatus] = useState("loading");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    apiRequest("/api/saved-places")
+      .then((payload) => { if (mounted) { setItems(payload.items || []); setStatus("ready"); } })
+      .catch((error) => { if (mounted) { setMessage(error.message); setStatus("error"); } });
+    return () => { mounted = false; };
+  }, []);
+
+  async function removeSavedPlace(place) {
+    setMessage("");
+    try {
+      await apiRequest(`/api/saved-places/${encodeURIComponent(place.id)}`, { method: "DELETE" });
+      setItems((current) => current.filter((item) => item.id !== place.id));
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  return (
+    <main className="saved-page">
+      <header className="saved-topbar"><button onClick={onBack} type="button">← 홈</button><a className="brand-home-link" href="/" onClick={resetAndGoHome}>지금리뷰</a><button onClick={onProfile} type="button">내정보</button></header>
+      <section className="saved-content"><div className="saved-heading"><span>SAVED PLACES</span><h1>관심 장소</h1><p>다시 방문하고 싶은 식당과 카페를 모아 볼 수 있어요.</p></div>
+        {message && <p className="saved-message" role="alert">{message}</p>}
+        {status === "loading" && <div className="saved-empty"><strong>관심 장소를 불러오고 있어요</strong></div>}
+        {status === "ready" && items.length === 0 && <div className="saved-empty"><span>♡</span><strong>저장한 관심 장소가 없습니다</strong><p>지도에서 업체를 선택하고 관심 장소에 추가해 보세요.</p><Button onClick={onBack}>지도로 이동</Button></div>}
+        {items.length > 0 && <div className="saved-list">{items.map((place) => <article className="saved-place-item" key={place.id}><button aria-label={`${place.title} 상세 보기`} onClick={() => onOpenPlace(place)} type="button"><span className="saved-place-pin">⌖</span><span><strong>{place.title}</strong><small>{place.category}</small><p>{place.address || "주소 정보 없음"}</p></span><span aria-hidden="true">›</span></button><button aria-label={`${place.title} 관심 장소 해제`} className="saved-remove" onClick={() => removeSavedPlace(place)} type="button">♥</button></article>)}</div>}
+      </section>
+      <nav className="saved-bottom-nav"><button onClick={onBack} type="button"><span>⌂</span><small>홈</small></button><button className="is-active" type="button"><span>♥</span><small>저장</small></button><button onClick={onBack} type="button"><span>✎</span><small>리뷰작성</small></button><button onClick={onProfile} type="button"><span>♙</span><small>내정보</small></button></nav>
     </main>
   );
 }
@@ -435,7 +484,7 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
     <main className="map-screen">
       <header className="top-nav"><button aria-label="검색창으로 이동" className="mobile-top-action" onClick={() => document.querySelector(".ui-search input")?.focus()} type="button">⌕</button><a className="top-nav__brand brand-home-link" href="/" onClick={resetAndGoHome}>지금리뷰</a><span>영수증 인증 리뷰 지도</span><AccountControl {...accountProps} /></header>
       <aside className="place-sidebar">
-        <div className="sidebar-search"><h1>어디를 찾으세요?</h1><p>현재 보고 있는 지도 주변을 먼저 검색하고, 결과가 없으면 전체 지역에서 찾습니다.</p><div className="search-autocomplete"><SearchField value={searchInput} onChange={(event) => setSearchInput(event.target.value)} onClear={() => { setSearchInput(""); setSuggestions([]); }} onSubmit={handleSearchSubmit} />{suggestions.length > 0 && <div aria-label="장소 자동완성" className="search-suggestions">{suggestions.map((place) => <button key={place.id} onClick={() => searchPlaces(place.title)} type="button"><strong>{place.title}</strong><span>{place.category} · {place.address || "주소 정보 없음"}</span></button>)}</div>}</div><div className="mobile-filter-chips" aria-label="빠른 검색"><button onClick={() => searchPlaces("음식점")} type="button">음식점</button><button onClick={() => searchPlaces("카페")} type="button">카페</button><button className="is-active" onClick={moveToCurrentLocation} type="button">현재 위치</button></div><div className="search-scope"><span>{searchScope === "all" ? "주변 결과가 없어 전체 지역에서 찾았어요" : `지도 중심에서 약 ${(searchRadius / 1000).toFixed(searchRadius < 1000 ? 1 : 0)}km 이내`}</span><button onClick={moveToCurrentLocation} type="button">{locationStatus === "loading" ? "위치 확인 중..." : "◎ 내 위치"}</button></div></div>
+        <div className="sidebar-search"><div className="sidebar-title-row"><div><h1>어디를 찾으세요?</h1><p>현재 보고 있는 지도 주변을 먼저 검색하고, 결과가 없으면 전체 지역에서 찾습니다.</p></div><button className="saved-places-link" onClick={accountProps.onSavedPlaces} type="button">♡ 관심 장소</button></div><div className="search-autocomplete"><SearchField value={searchInput} onChange={(event) => setSearchInput(event.target.value)} onClear={() => { setSearchInput(""); setSuggestions([]); }} onSubmit={handleSearchSubmit} />{suggestions.length > 0 && <div aria-label="장소 자동완성" className="search-suggestions">{suggestions.map((place) => <button key={place.id} onClick={() => searchPlaces(place.title)} type="button"><strong>{place.title}</strong><span>{place.category} · {place.address || "주소 정보 없음"}</span></button>)}</div>}</div><div className="mobile-filter-chips" aria-label="빠른 검색"><button onClick={() => searchPlaces("음식점")} type="button">음식점</button><button onClick={() => searchPlaces("카페")} type="button">카페</button><button className="is-active" onClick={moveToCurrentLocation} type="button">현재 위치</button></div><div className="search-scope"><span>{searchScope === "all" ? "주변 결과가 없어 전체 지역에서 찾았어요" : `지도 중심에서 약 ${(searchRadius / 1000).toFixed(searchRadius < 1000 ? 1 : 0)}km 이내`}</span><button onClick={moveToCurrentLocation} type="button">{locationStatus === "loading" ? "위치 확인 중..." : "◎ 내 위치"}</button></div></div>
         <div className={`place-results place-results--${placeStatus} ${places.length ? "has-results" : ""}`} aria-live="polite" ref={resultsRef}>
           {placeStatus === "ready" && places.length > 0 && <div className="place-results__header"><strong>검색 결과</strong><span>{places.length}곳</span></div>}
           {placeStatus === "idle" && <div className="empty-search"><strong>검색 결과가 여기에 표시됩니다</strong><span>식당이나 카페 이름을 입력해 주세요.</span></div>}
@@ -446,7 +495,7 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
         </div>
       </aside>
       <section className="map-canvas" aria-label="카카오맵 영역"><div className="kakao-map" ref={mapElementRef} aria-label="카카오맵" />{mapStatus !== "ready" && <section className="map-state-panel"><h2>{mapStatus === "missing-key" ? "지도 키가 필요합니다" : "지도를 불러오는 중입니다"}</h2><p>{mapError || "카카오맵 연결을 확인하고 있습니다."}</p></section>}</section>
-      <nav className="mobile-bottom-nav" aria-label="모바일 메뉴"><button className="is-active" onClick={resetAndGoHome} type="button"><span>⌂</span><small>홈</small></button><button disabled type="button"><span>♡</span><small>저장</small></button><button onClick={() => selectedPlaceId ? openPlaceAndPreserveMap(places.find((place) => place.id === selectedPlaceId)) : setPlaceError("리뷰를 작성할 업체를 먼저 선택해 주세요.")} type="button"><span>✎</span><small>리뷰작성</small></button><button onClick={accountProps.onProfile} type="button"><span>♙</span><small>내정보</small></button></nav>
+      <nav className="mobile-bottom-nav" aria-label="모바일 메뉴"><button className="is-active" onClick={resetAndGoHome} type="button"><span>⌂</span><small>홈</small></button><button onClick={accountProps.onSavedPlaces} type="button"><span>♡</span><small>저장</small></button><button onClick={() => selectedPlaceId ? openPlaceAndPreserveMap(places.find((place) => place.id === selectedPlaceId)) : setPlaceError("리뷰를 작성할 업체를 먼저 선택해 주세요.")} type="button"><span>✎</span><small>리뷰작성</small></button><button onClick={accountProps.onProfile} type="button"><span>♙</span><small>내정보</small></button></nav>
     </main>
   );
 }
@@ -501,7 +550,43 @@ function AuthPage({ user, onAuthenticated, onBack }) {
   );
 }
 
-function PlaceDetailPage({ place, user, authStatus, onLogin, onLogout, onProfile, onBack, onWriteReview }) {
+function SavePlaceButton({ place, user, authStatus, onLogin }) {
+  const [saved, setSaved] = useState(false);
+  const [status, setStatus] = useState("idle");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!user || !place?.id) { setSaved(false); return undefined; }
+    let mounted = true;
+    setStatus("loading");
+    apiRequest("/api/saved-places")
+      .then((payload) => { if (mounted) { setSaved((payload.items || []).some((item) => item.id === place.id)); setStatus("idle"); } })
+      .catch(() => { if (mounted) setStatus("idle"); });
+    return () => { mounted = false; };
+  }, [user, place?.id]);
+
+  async function toggleSaved() {
+    if (!user) { onLogin(); return; }
+    setStatus("saving"); setMessage("");
+    try {
+      if (saved) {
+        await apiRequest(`/api/saved-places/${encodeURIComponent(place.id)}`, { method: "DELETE" });
+        setSaved(false); setMessage("관심 장소에서 삭제했습니다.");
+      } else {
+        await apiRequest("/api/saved-places", { method: "POST", body: JSON.stringify({ place }) });
+        setSaved(true); setMessage("관심 장소에 저장했습니다.");
+      }
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setStatus("idle");
+    }
+  }
+
+  return <div className="save-place-control"><button aria-pressed={saved} className={saved ? "is-saved" : ""} disabled={authStatus === "loading" || status !== "idle"} onClick={toggleSaved} type="button"><span>{saved ? "♥" : "♡"}</span>{status === "saving" ? "처리 중" : saved ? "관심 장소 저장됨" : "관심 장소 추가"}</button>{message && <small role="status">{message}</small>}</div>;
+}
+
+function PlaceDetailPage({ place, user, authStatus, onLogin, onLogout, onProfile, onSavedPlaces, onBack, onWriteReview }) {
   if (!place) return <main className="route-empty"><strong>업체 정보를 찾을 수 없습니다.</strong><p>지도에서 업체를 다시 검색해 주세요.</p><Button onClick={onBack}>지도로 돌아가기</Button></main>;
   const reviewAction = () => onWriteReview(place);
   const testAnalyses = loadTestAnalyses(place.id);
@@ -512,13 +597,13 @@ function PlaceDetailPage({ place, user, authStatus, onLogin, onLogout, onProfile
     <main className="detail-page">
       <aside className="detail-nav"><div><a className="detail-nav__brand brand-home-link" href="/" onClick={resetAndGoHome}>지금리뷰</a><span>Verified places</span></div><nav><button onClick={onBack} type="button">⌂ 홈</button><button className="is-active" type="button">▤ 업체 리뷰</button></nav><Button onClick={reviewAction}>{user ? "영수증 리뷰 등록하기" : "로그인하고 리뷰 쓰기"}</Button></aside>
       <div className="detail-content"><header className="detail-header"><button onClick={onBack} type="button">← 지도</button><a className="detail-header__brand brand-home-link" href="/" onClick={resetAndGoHome}>지금리뷰</a><AccountControl user={user} authStatus={authStatus} onLogin={onLogin} onLogout={onLogout} onProfile={onProfile} /></header>
-        <section className="place-summary"><div><Badge>{place.category || "음식점"}</Badge><h1>{place.title}</h1><p>{place.address || place.oldAddress || "주소 정보 없음"}</p></div>{place.link && <a href={place.link} rel="noreferrer" target="_blank">카카오맵에서 보기 ↗</a>}</section>
+        <section className="place-summary"><div><Badge>{place.category || "음식점"}</Badge><h1>{place.title}</h1><p>{place.address || place.oldAddress || "주소 정보 없음"}</p></div><div className="place-summary-actions"><SavePlaceButton authStatus={authStatus} onLogin={onLogin} place={place} user={user} />{place.link && <a href={place.link} rel="noreferrer" target="_blank">카카오맵에서 보기 ↗</a>}</div></section>
         <section className="place-facts"><div><span>전화</span><strong>{place.telephone || "등록된 전화번호 없음"}</strong></div><div><span>분류</span><strong>{place.fullCategory || place.category}</strong></div><div><span>방문 인증 리뷰</span><strong>0개</strong></div></section>
         <h2 className="mobile-review-heading">리뷰</h2>
         <section className="review-insight"><div><span>✦ AI 분석 요약 {testTotal > 0 && "· 테스트 데이터"}</span><h2>{testTotal > 0 ? `리뷰 ${testTotal}건의 경험 분포` : "아직 분석할 인증 리뷰가 없습니다"}</h2></div><p>{testTotal > 0 ? "작성된 리뷰를 분석해 방문 경험을 다섯 단계로 정리했습니다. 영수증 인증 전 테스트 결과는 실제 통계와 구분됩니다." : "영수증 OCR 인증을 통과한 리뷰가 등록되면 경험 분포와 주요 의견이 표시됩니다."}</p>{testTotal > 0 ? <div className="sentiment-chart">{sentimentBuckets.map((bucket) => { const percentage = Math.round((sentimentCounts[bucket] / testTotal) * 100); return <div className="sentiment-chart__item" key={bucket}><div className="sentiment-chart__track"><span style={{ height: `${Math.max(percentage, sentimentCounts[bucket] ? 8 : 0)}%` }} /></div><strong>{percentage}%</strong><small>{SENTIMENT_LABELS[bucket]}</small></div>; })}</div> : <div className="empty-bars" aria-hidden="true">{[1,2,3,4,5].map((item) => <span key={item} />)}</div>}</section>
         <section className="review-section"><div className="review-section__header"><div><span>{testTotal > 0 ? "테스트 리뷰" : "인증 리뷰"}</span><h2>방문자의 솔직한 경험</h2></div><Button onClick={reviewAction}>{user ? "리뷰 작성" : "로그인"}</Button></div>{testTotal > 0 ? <div className="test-review-list">{[...testAnalyses].reverse().map((review) => <article className="test-review-item" key={review.id}><div><span className="test-review-avatar">리</span><span className="test-review-author"><strong>지금리뷰 방문자</strong><small>{new Date(review.createdAt).toLocaleDateString("ko-KR")} 작성</small></span><Badge>테스트</Badge><strong>{SENTIMENT_LABELS[review.bucket]}</strong><span>신뢰도 {Math.round(review.confidence * 100)}%</span></div><p>{review.content}</p>{review.keywords?.length > 0 && <small>{review.keywords.map((keyword) => `#${keyword}`).join(" ")}</small>}</article>)}</div> : <div className="review-empty"><strong>첫 번째 인증 리뷰를 기다리고 있어요</strong><p>영수증 이미지로 방문을 인증한 리뷰만 집계됩니다.</p></div>}</section>
       </div>
-      <nav className="detail-mobile-bottom-nav" aria-label="리뷰 화면 메뉴"><button onClick={onBack} type="button"><span>⌂</span><small>홈</small></button><button disabled type="button"><span>♡</span><small>저장</small></button><button className="is-active" onClick={reviewAction} type="button"><span>✎</span><small>리뷰작성</small></button><button onClick={onProfile} type="button"><span>♙</span><small>내정보</small></button></nav>
+      <nav className="detail-mobile-bottom-nav" aria-label="리뷰 화면 메뉴"><button onClick={onBack} type="button"><span>⌂</span><small>홈</small></button><button onClick={onSavedPlaces} type="button"><span>♡</span><small>저장</small></button><button className="is-active" onClick={reviewAction} type="button"><span>✎</span><small>리뷰작성</small></button><button onClick={onProfile} type="button"><span>♙</span><small>내정보</small></button></nav>
     </main>
   );
 }
