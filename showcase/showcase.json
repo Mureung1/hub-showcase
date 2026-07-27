@@ -13,18 +13,29 @@
   "features": [
     "Unix/Git 명령어 검색",
     "명령어 상세 설명 및 예시 확인",
-    "예시 명령어 클립보드 복사"
+    "예시 명령어 클립보드 복사",
+    "상황별 명령어 묶음 추천",
+    "알파벳 인덱스로 명령어 브라우징"
   ],
   "featureTags": [
     "명령어 검색",
-    "실습 사전"
+    "실습 사전",
+    "상황별 추천"
   ],
   "techStack": ["React", "Vite", "Express", "Supabase", "Meilisearch"],
-  "techHighlights": [],
+  "techHighlights": [
+    "Meilisearch 기반 오타 허용 검색",
+    "Supabase(PostgreSQL) 연동 데이터 저장/조회",
+    "환경변수 기반 배포 설정(Vercel/Render)"
+  ],
   "developmentWithAI": "저는 기능 방향과 우선순위를 정하고 최종 판단을 내렸습니다. AI는 요구사항을 구현 단위로 나누고 코드 초안을 작성했습니다. 저는 실행 결과를 직접 확인하고 필요한 부분을 수정했습니다.",
   "agent": {
     "summary": "",
-    "agentTools": [],
+    "agentTools": [
+      "feature-slice (계획 수립)",
+      "feature-verify (기능 검증)",
+      "design-check (디자인 일관성 검증)"
+    ],
     "workflows": []
   }
 }
