@@ -109,8 +109,7 @@ function CalendarCell({ day, hasSession, isSelected, onClick }) {
   )
 }
 
-function Calendar({ sessionsByDate, selectedKey, onSelect }) {
-  const [monthOffset, setMonthOffset] = useState(0)
+function Calendar({ sessionsByDate, selectedKey, onSelect, monthOffset, onMonthChange }) {
   const base = new Date()
   base.setDate(1)
   base.setMonth(base.getMonth() + monthOffset)
@@ -123,7 +122,7 @@ function Calendar({ sessionsByDate, selectedKey, onSelect }) {
       <div className="mb-4 flex items-center justify-between">
         <button
           type="button"
-          onClick={() => setMonthOffset((v) => v - 1)}
+          onClick={() => onMonthChange(monthOffset - 1)}
           className="rounded-pill border border-border px-3 py-1.5 text-[13px] text-text hover:border-outline-hover"
         >
           ← 이전 달
@@ -133,7 +132,7 @@ function Calendar({ sessionsByDate, selectedKey, onSelect }) {
         </span>
         <button
           type="button"
-          onClick={() => setMonthOffset((v) => v + 1)}
+          onClick={() => onMonthChange(monthOffset + 1)}
           className="rounded-pill border border-border px-3 py-1.5 text-[13px] text-text hover:border-outline-hover"
         >
           다음 달 →
@@ -177,6 +176,14 @@ function Records() {
     error: recordsError,
   } = useExerciseRecords()
   const [selectedKey, setSelectedKey] = useState(null)
+  const [monthOffset, setMonthOffset] = useState(0)
+
+  // 달을 옮기면 이전 달에서 선택했던 날짜가 새 달과 안 맞게 아래에 그대로 남는 걸 막는다 —
+  // 달 이동과 선택 해제를 한 곳에서 같이 처리해서 둘이 어긋날 수 없게 한다.
+  const handleMonthChange = (nextOffset) => {
+    setMonthOffset(nextOffset)
+    setSelectedKey(null)
+  }
 
   if (routineLoading || recordsLoading) {
     return <p className="p-8 text-text-secondary">로딩 중...</p>
@@ -222,6 +229,8 @@ function Records() {
               sessionsByDate={sessionsByDate}
               selectedKey={selectedKey}
               onSelect={setSelectedKey}
+              monthOffset={monthOffset}
+              onMonthChange={handleMonthChange}
             />
             {selectedSession ? (
               <RecordSessionCard session={selectedSession} />
