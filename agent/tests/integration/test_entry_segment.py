@@ -36,7 +36,7 @@ def _fact(fact_id: str, segment: str, family: str = "posting_prevalence") -> str
         " metric_policy_version, scope_level, scope_id, entry_segment, period_id,"
         " measure, numerator, denominator, sample_size, sample_status)"
         f" VALUES ('{fact_id}', 'an_segment_test', '{family}', 'mp_v1_prevalence',"
-        f" 'overall', 'backend', '{segment}', 'recent_12m', 'ratio', 6, 10, 10,"
+        f" 'overall', 'backend', '{segment}', 'y2026', 'ratio', 6, 10, 10,"
         " 'analysis_ready')"
     )
 
@@ -76,7 +76,7 @@ def test_segment_is_required(seeded: psycopg.Connection) -> None:
                 " metric_policy_version, scope_level, scope_id, period_id, measure,"
                 " sample_size, sample_status) VALUES"
                 " ('fact_x','an_segment_test','posting_prevalence','mp_v1_prevalence',"
-                " 'overall','backend','recent_12m','ratio',10,'analysis_ready')"
+                " 'overall','backend','y2026','ratio',10,'analysis_ready')"
             )
     seeded.rollback()
 
