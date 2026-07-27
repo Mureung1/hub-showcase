@@ -88,10 +88,10 @@
 | T-705 | P1 | Backlog | 창 테마 구현 | 제목 표시줄, 창 프레임, taskbar skin이 theme token으로 바뀐다 | future-expansion-plan.md |
 | T-706 | P1 | Backlog | 기억 조각 구현 | 완료/복구 Quest Event가 기록 노트 또는 월드에 memory fragment로 표시된다 | db-schema.md |
 | T-707 | P1 | Backlog | 사운드 feedback 구현 | 완료/복구/레벨업 사운드가 muted 기본값과 함께 동작한다 | future-expansion-plan.md |
-| T-708 | P1 | Backlog | 하루의 흐름 web theme 구현 | 시간대와 퀘스트 상태가 배경/루미 idle/theme state에 반영된다 | future-expansion-plan.md |
-| T-709 | P1 | In Progress | 개인화 AI 매니저 adapter 구현 | ManagerBehaviorIntent 정규화와 behavior adapter가 TDD로 추가됐고, ManagerContext/LLM API 연결과 React animation state 연결이 남았다 | agent-design.md |
+| T-708 | P1 | Backlog | 하루의 흐름 web theme 구현 | 현실 시간에 따라 해/달 asset이 배경에 뜨고, 시간대별 빛의 강도와 색상이 XP desktop 배경/루미 idle/theme state에 반영된다 | future-expansion-plan.md |
+| T-709 | P1 | Review | 개인화 AI 매니저 adapter 구현 | ManagerBehaviorIntent 정규화와 behavior adapter가 React manager runtime에 rule fallback으로 연결됐고, 실제 LLM API 연결은 `T-603` 고도화 범위로 분리됐다 | agent-design.md |
 | T-710 | P1 | Review | blink focus scene 구현 | 서비스 진입과 서비스 나가기 직전에 눈 깜빡임/blur/fade overlay가 동작하고, 새로고침 시에는 재생되지 않으며 reduced-motion fallback이 있다. 브라우저 시각 확인이 남았다 | dynamic-asset-requirements.md |
-| T-711 | P1 | In Progress | 전자 매니저 Persona와 제한 선택지 설계 | `balanced/adventurous/shy` behaviorStyle이 Pet Behavior State Machine weight에 반영되고, 직접/간접 선택 UI 연결이 남았다 | future-expansion-plan.md |
+| T-711 | P1 | Review | 전자 매니저 Persona와 제한 선택지 설계 | 매니저 선택과 말투 선택이 `balanced/adventurous/shy` behaviorStyle로 제한 매핑되고, 성공/실패 streak가 behavior bias로 반영된다. 브라우저 체감 검수가 남았다 | future-expansion-plan.md |
 | T-712 | P1 | In Progress | 퀘스트 능력치 growth 설계 | 퀘스트 타입/결과별 stat delta 도메인 규칙이 TDD로 추가됐고, Quest Event metadata 저장/표시 연결이 남았다 | db-schema.md |
 | T-713 | P1 | Backlog | cyber-purr 사운드 탐색 및 적용 후보 정리 | 전자/사이버틱한 기본 고롱고롱 사운드 후보와 mute/fallback 기준이 정리된다 | dynamic-asset-requirements.md |
 | T-718 | P1 | Backlog | Supabase 확장 테이블 정규화 계획 | `quest_logs.metadata`에서 반복 조회가 필요한 profile, persona, stats, reward, appearance, memory, theme, device preference 데이터를 별도 테이블 후보로 승격하는 계획이 있다 | db-schema.md |
@@ -108,6 +108,7 @@
 | T-722 | P2 | Backlog | 공개 퀘스트 탐색 read-only prototype | `anonymous_public` Quest Event를 공개 탐색 오브젝트로 표시하고 기본 비공개를 유지한다 | future-expansion-plan.md |
 | T-723 | P2 | Backlog | 웹캠 손 제스처 탐색 prototype | 손 제스처가 공개 탐색 화면의 보조 입력으로 동작하고 마우스/터치 fallback이 유지된다 | future-expansion-plan.md |
 | T-724 | P2 | Review | Single-plane Pepper projection mode 설계 | Pixel TV 우클릭 속성 창에서 projection 연결 변환/원복이 가능하고, 변환된 TV 아이콘 실행 시 hidden route `?projection=pepper`로 연결된다 | dynamic-asset-requirements.md |
+| T-725 | P2 | Backlog | Pixel TV photo capture 설계 | TV에 나온 사용자 화면과 전자 매니저 projection 장면을 함께 캡처하는 screenshot flow, 권한 안내, 저장/공유 범위가 정의된다 | future-expansion-plan.md |
 
 ## 3~4주차 P2: 문서·발표·운영
 
@@ -150,11 +151,14 @@
 
 ## 추천 진행 순서
 
-1. `T-702`, `T-709`, `T-711`, `T-713` 캐릭터 생동감/Persona 연결: Lumi Canvas animation, behavior adapter, Persona style, cyber-purr 사운드 후보를 묶어 "살아 있는 매니저" 느낌을 만든다.
-2. `T-703`, `T-717`, `T-712`, `T-718` 성장/보상 구조와 DB 정규화: Stage 1~4 해금, 원하는 외형으로 회귀, Quest Event metadata 기반 능력치 증가를 UI와 기록에 연결하고 반복 조회 데이터의 Supabase 테이블 승격 기준을 확정한다.
-3. `T-714`, `T-715`, `T-716` 상호작용 오브젝트 수동 검수: XP 창으로 전환된 사다리/평지의 드래그/resize, 들판 영역, Lumi walk/run/jump/climbing 연결을 브라우저에서 보고 polish 범위를 정한다.
-4. `T-708`, `T-721`, `T-722`, `T-723` 월드/실험 기능: 하루 흐름 Web theme, 현실 픽셀화 TV, 공개 퀘스트 탐색, 웹캠 손 제스처 탐색을 별도 prototype으로 검증한다.
-5. `T-724` Projection Mode 후속 검수: 기본 변환/원복 flow는 연결됐으므로 projection 화면 품질과 front/back 자동 회전 v1.5 필요 여부를 판단한다.
+이제 기간 내 모든 확장을 시도하지 않고, 아래 4개 묶음을 최종 목표로 확정한다. 이 4개 외 작업은 시연 안정화와 플로우 정돈에 필요한 경우에만 보조로 진행한다.
+
+1. `T-709`, `T-711` 개인화 AI 매니저 adapter와 Persona/제한 선택지 연결: ManagerContext, rule fallback, 제한된 ManagerBehaviorIntent, Persona style을 React manager runtime에 연결한다.
+2. `T-712`, `T-703`, `T-713` 성장/보상/사운드 기반: 퀘스트 능력치 growth, 외적 성장 보상, cyber-purr 사운드 후보를 묶어 매니저 성장감을 만든다.
+3. `T-721`, `T-724`, `T-725` Pixel TV 묶음: 현실 픽셀화 TV prototype, Single-plane Pepper projection mode, Pixel TV photo capture 설계를 하나의 TV 확장 흐름으로 정리한다.
+4. `T-708` 하루의 흐름 web theme: 현실 시간 기반 해/달 asset, 빛의 강도/색상, 배경 상태를 XP desktop에 반영한다.
+
+공통 보조 작업: 첫 진입, 매니저 선택, 퀘스트 실행, 기록 노트, Pixel TV, 시작 메뉴 재시작 흐름이 자연스럽게 이어지도록 flow polish를 병행한다.
 
 ## Roadmap 연결
 

@@ -30,8 +30,10 @@ import { createQuestEventViaApi, fetchManagerContextViaApi, fetchQuestEventsViaA
 import type { CreateQuestEventRequest, ManagerContext } from "./layers/storage/questLogApi";
 import { createQuestLogRepository } from "./layers/storage/questLogRepository";
 import { getClimbPosition, type InteractionObject, type ResizeAxis } from "./domain/interactionObjects";
-import { chooseWeightedBehavior, getBehaviorCandidates, mapBehaviorToAnimation } from "./domain/petBehaviorStateMachine";
-import type { PetBehaviorMood, PetBehaviorRecentEvent } from "./domain/petBehaviorStateMachine";
+import { resolveManagerBehavior } from "./domain/managerBehaviorAdapter";
+import type { ManagerBehaviorIntent } from "./domain/managerBehaviorIntent";
+import { getPersonaLine, resolveManagerPersona, type ManagerPersona } from "./domain/managerPersonaPolicy";
+import type { BehaviorContext, PetBehaviorMood, PetBehaviorRecentEvent, PetBehaviorStyle } from "./domain/petBehaviorStateMachine";
 import { createRecoveryQuest, type Difficulty, type Quest, type QuestType } from "./domain/questLogic";
 import "./styles.css";
 
@@ -67,6 +69,7 @@ interface ManagerState {
   exp: number;
   mood: "waiting" | "focused" | "happy" | "recovering";
   line: string;
+  behaviorStyle: PetBehaviorStyle;
   unlockedStages: PetStageId[];
   selectedStage: PetStageId | null;
 }
@@ -116,6 +119,7 @@ interface OutsidePetState {
   direction: 1 | -1;
   animation: PetAnimationState;
   roamTicks: number;
+  attachedObjectId?: string;
 }
 
 interface ManagerRuntimeState {
@@ -431,6 +435,7 @@ const defaultManager: ManagerState = {
   exp: 0,
   mood: "waiting",
   line: toneLines.calm,
+  behaviorStyle: "balanced",
   unlockedStages: ["stage-1"],
   selectedStage: null,
 };
@@ -477,7 +482,61 @@ function writeStorage<T>(key: string, value: T) {
 function normalizeManager(manager: ManagerState): ManagerState {
   const unlockedStages = manager.unlockedStages?.length ? manager.unlockedStages : getUnlockedPetStages(manager.level);
   const selectedStage = manager.selectedStage && unlockedStages.includes(manager.selectedStage) ? manager.selectedStage : null;
-  return { ...manager, petId: manager.petId ?? defaultLumiPetId, unlockedStages, selectedStage };
+  return { ...manager, petId: manager.petId ?? defaultLumiPetId, behaviorStyle: normalizeBehaviorStyle(manager.behaviorStyle), unlockedStages, selectedStage };
+}
+
+function normalizeBehaviorStyle(value: unknown): PetBehaviorStyle {
+  if (value === "adventurous" || value === "shy" || value === "balanced") return value;
+  return "balanced";
+}
+
+function getManagerPersona(manager: ManagerState, profile: UserProfile): ManagerPersona {
+  return resolveManagerPersona({
+    petId: manager.petId,
+    tone: profile.managerTone,
+    questStyle: profile.questSize,
+  });
+}
+
+function createRuleFallbackManagerIntent(
+  manager: ManagerState,
+  tone: ManagerTone,
+  streak: QuestOutcomeStreak,
+): ManagerBehaviorIntent {
+  const behaviorStyle = normalizeBehaviorStyle(manager.behaviorStyle);
+  const persona = resolveManagerPersona({ petId: manager.petId, tone, questStyle: "balanced" });
+  const line = manager.line || getPersonaLine("context_idle", persona);
+
+  if (streak.result === "success" && streak.count >= 2) {
+    return {
+      behaviorStyle,
+      tone,
+      line,
+      suggestedBehaviorBias: [
+        { state: "jump_to_platform", weightDelta: 2, reason: "success_streak" },
+        { state: "approach_ladder", weightDelta: 1, reason: "success_streak" },
+      ],
+    };
+  }
+
+  if (streak.result === "failed") {
+    return {
+      behaviorStyle: behaviorStyle === "adventurous" ? "balanced" : behaviorStyle,
+      tone,
+      line,
+      suggestedBehaviorBias: [
+        { state: "hide_behind_window", weightDelta: 2, reason: "recent_failure" },
+        { state: "rest", weightDelta: 1, reason: "recent_failure" },
+      ],
+    };
+  }
+
+  return {
+    behaviorStyle,
+    tone,
+    line,
+    suggestedBehaviorBias: [],
+  };
 }
 
 function isGoalAbstract(goal: string) {
@@ -533,7 +592,7 @@ function formatRemaining(now: Date) {
   return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
 }
 
-function addExp(manager: ManagerState, exp: number): ManagerState {
+function addExp(manager: ManagerState, exp: number, line: string): ManagerState {
   const total = manager.exp + exp;
   const levelUps = Math.floor(total / 100);
   const nextLevel = manager.level + levelUps;
@@ -542,7 +601,7 @@ function addExp(manager: ManagerState, exp: number): ManagerState {
     level: nextLevel,
     exp: total % 100,
     mood: "happy",
-    line: "오늘 기록이 쌓였어. 다음에도 작은 걸로 이어가자.",
+    line,
     unlockedStages: getUnlockedPetStages(nextLevel),
   };
 }
@@ -605,11 +664,11 @@ function getRewardCandidates(result: NonNullable<CreateQuestEventRequest["result
   return ["character_animation", "desktop_theme", "sound"];
 }
 
-function createManagerContextLine(context: ManagerContext) {
-  if (context.lastQuestResult === "failed") return "실패 이유를 기억해뒀어. 다음 퀘스트는 더 작게 맞춰볼게.";
-  if (context.lastQuestResult === "recovery") return "복구 흐름까지 기억했어. 다시 이어간 기록이 남았어.";
-  if (context.lastQuestResult === "success") return "완료 기록을 기억으로 정리했어. 다음 추천에 반영할게.";
-  return "오늘 흐름을 조용히 정리하고 있어.";
+function createManagerContextLine(context: ManagerContext, persona: ManagerPersona) {
+  if (context.lastQuestResult === "failed") return getPersonaLine("context_failed", persona);
+  if (context.lastQuestResult === "recovery") return getPersonaLine("context_recovery", persona);
+  if (context.lastQuestResult === "success") return getPersonaLine("context_success", persona);
+  return getPersonaLine("context_idle", persona);
 }
 
 function useWindowManager(
@@ -825,6 +884,7 @@ export default function App() {
             phase: "free_roam",
             animation: "idle",
             roamTicks: 0,
+            attachedObjectId: undefined,
             position: { ...current.position, x: targetX },
           };
         }
@@ -844,18 +904,30 @@ export default function App() {
         if (current.phase !== "free_roam") return current;
 
         const nextRoamTicks = current.roamTicks + 1;
-        const nextAnimation = getNextOutsidePetRoamAnimation(current, interactionObjects, manager.mood, questOutcomeStreak, reducedMotion);
+        const petRect = { x: current.position.x, y: current.position.y, width: outsidePetSpriteSize, height: outsidePetSpriteSize };
+        const attachedObject = current.attachedObjectId
+          ? interactionObjects.find((object) => object.id === current.attachedObjectId)
+          : undefined;
+        const nextAnimation = getNextOutsidePetRoamAnimation(current, interactionObjects, manager, profile.managerTone, questOutcomeStreak, reducedMotion);
         const nextDirection = resolveOutsidePetDirection(current, interactionObjects);
         const speed = nextAnimation === "run" ? 42 : nextAnimation === "jump" ? 28 : nextAnimation === "climbing" ? 0 : 22;
         const rawX = current.position.x + speed * nextDirection;
         const minX = outsidePetFieldRect.x;
         const maxX = outsidePetFieldRect.x + outsidePetFieldRect.width - outsidePetSpriteSize;
         const clampedX = Math.min(Math.max(rawX, minX), maxX);
-        const nextPosition = resolveOutsidePetRoamPosition(current, nextAnimation, { x: clampedX, y: nextAnimation === "jump" ? outsidePetFieldRect.y - 26 : outsidePetFieldRect.y }, interactionObjects);
+        const nextAttachedObject = nextAnimation === "climbing"
+          ? attachedObject?.type === "ladder"
+            ? attachedObject
+            : getNearbyLadder(petRect, interactionObjects)
+          : undefined;
+        const nextPosition = nextAttachedObject
+          ? resolveOutsidePetAttachmentPosition(nextAttachedObject, nextAnimation)
+          : resolveOutsidePetRoamPosition(current, nextAnimation, { x: clampedX, y: nextAnimation === "jump" ? outsidePetFieldRect.y - 26 : outsidePetFieldRect.y }, interactionObjects);
 
         return {
           ...current,
           animation: nextAnimation,
+          attachedObjectId: nextAttachedObject?.id,
           direction: clampedX === minX ? 1 : clampedX === maxX ? -1 : nextDirection,
           roamTicks: nextRoamTicks,
           position: nextPosition,
@@ -864,7 +936,21 @@ export default function App() {
     }, 1100);
 
     return () => window.clearInterval(timer);
-  }, [outsidePet.phase, interactionObjects, manager.mood, questOutcomeStreak, reducedMotion]);
+  }, [outsidePet.phase, interactionObjects, manager, profile.managerTone, questOutcomeStreak, reducedMotion]);
+
+  useEffect(() => {
+    if (outsidePet.phase !== "free_roam" || outsidePet.animation !== "climbing" || !outsidePet.attachedObjectId) return;
+
+    const attachedObject = interactionObjects.find((object) => object.id === outsidePet.attachedObjectId);
+    if (!attachedObject || attachedObject.type !== "ladder") return;
+
+    const nextPosition = resolveOutsidePetAttachmentPosition(attachedObject, "climbing");
+    setOutsidePet((current) => {
+      if (current.phase !== "free_roam" || current.animation !== "climbing" || current.attachedObjectId !== attachedObject.id) return current;
+      if (current.position.x === nextPosition.x && current.position.y === nextPosition.y) return current;
+      return { ...current, position: nextPosition };
+    });
+  }, [interactionObjects, outsidePet.phase, outsidePet.animation, outsidePet.attachedObjectId]);
 
   useEffect(() => {
     if (outsidePet.phase !== "free_roam" || openWindows.includes("journal")) return;
@@ -878,6 +964,7 @@ export default function App() {
         phase: "returning",
         side,
         animation: "walk",
+        attachedObjectId: undefined,
         direction: side === "left" ? -1 : 1,
         position: { ...current.position, y: outsidePetFieldRect.y },
       };
@@ -924,7 +1011,8 @@ export default function App() {
     triggerBlinkFocus("end_day");
   }
   function continueWithSelectedManager() {
-    const nextManager = normalizeManager({ ...defaultManager, petId: selectedPetId, line: "좋아. 어떤 목표를 함께 키울지 알려줘." });
+    const persona = resolveManagerPersona({ petId: selectedPetId, tone: defaultProfile.managerTone, questStyle: defaultProfile.questSize });
+    const nextManager = normalizeManager({ ...defaultManager, petId: selectedPetId, behaviorStyle: persona.behaviorStyle, line: getPersonaLine("setup", persona) });
     setManager(nextManager);
     setWizardDraft(defaultProfile);
     setNeedsClarify(false);
@@ -1023,7 +1111,7 @@ export default function App() {
     }));
   }
   function applyManagerContext(context: ManagerContext) {
-    setManager((current) => ({ ...current, mood: context.currentMood, line: createManagerContextLine(context) }));
+    setManager((current) => ({ ...current, mood: context.currentMood, line: createManagerContextLine(context, getManagerPersona(current, profile)) }));
   }
 
   async function saveQuestEvent(request: CreateQuestEventRequest) {
@@ -1036,7 +1124,7 @@ export default function App() {
       setLogSync({ status: "success", message: "퀘스트 이벤트를 서버에 저장했어." });
     } catch {
       setLogSync({ status: "error", message: "기록 저장에 실패했어. 화면 흐름은 유지되고, 기록 노트에서 다시 확인할 수 있어." });
-      setManager((current) => ({ ...current, line: "기록 저장이 잠시 실패했어. 그래도 오늘의 흐름은 이어갈 수 있어." }));
+      setManager((current) => ({ ...current, line: getPersonaLine("api_error", getManagerPersona(current, profile)) }));
     }
   }
 
@@ -1045,7 +1133,7 @@ export default function App() {
       setQuest(createQuest(profile));
       setQuestStatus("draft");
       setPreviousQuestTitle("");
-      setManager((current) => ({ ...current, mood: "waiting", line: "새 오늘의 퀘스트 초안을 준비했어. 이번에도 작은 분량부터 가보자." }));
+      setManager((current) => ({ ...current, mood: "waiting", line: getPersonaLine("quest_recommended", getManagerPersona(current, profile)) }));
       setWorkflowWindows(["quest", "manager"]);
       return;
     }
@@ -1073,10 +1161,11 @@ export default function App() {
     if (isGoalAbstract(wizardDraft.goal) && !wizardDraft.focusAnswer) { setNeedsClarify(true); return; }
     const savedProfile: UserProfile = { ...wizardDraft, name: wizardDraft.name.trim() || "사용자", nickname: wizardDraft.nickname.trim() || "루카스", goal: wizardDraft.goal.trim() || defaultProfile.goal };
     const selectedPet = selectableManagerPets.find((pet) => pet.petId === selectedPetId);
+    const selectedPersona = resolveManagerPersona({ petId: selectedPetId, tone: savedProfile.managerTone, questStyle: savedProfile.questSize });
     setProfile(savedProfile);
     setQuest(createQuest(savedProfile));
     setQuestStatus("draft");
-    setManager(normalizeManager({ ...defaultManager, petId: selectedPetId, name: selectedPet?.name ?? defaultManager.name, line: toneLines[savedProfile.managerTone] }));
+    setManager(normalizeManager({ ...defaultManager, petId: selectedPetId, name: selectedPet?.name ?? defaultManager.name, behaviorStyle: selectedPersona.behaviorStyle, line: getPersonaLine("quest_recommended", selectedPersona) }));
     setLogs([]);
     resetOpenWindows(["quest", "manager", "ladderObject", "platformObject"]);
     resetWindowPositions();
@@ -1097,32 +1186,33 @@ export default function App() {
   function acceptQuest() {
     setQuestStatus("active");
     setWorkflowWindows(["runner", "manager"]);
-    setManager((current) => ({ ...current, mood: "focused", line: "끝까지 기다릴게. 네 속도로 진행하면 돼." }));
+    setManager((current) => ({ ...current, mood: "focused", line: getPersonaLine("quest_started", getManagerPersona(current, profile)) }));
   }
 
   function completeQuest() {
     const result = questStatus === "recovery" ? "recovery" : "success";
     recordOutcomeStreak("success");
-    setManager((current) => addExp(current, quest.rewardExp));
-    void saveQuestEvent(createQuestEventRequest(quest, result, quest.rewardExp, "happy", { managerLine: "완료 기록을 기억으로 정리했어." }));
+    const eventLine = getPersonaLine("quest_completed", getManagerPersona(manager, profile));
+    setManager((current) => addExp(current, quest.rewardExp, getPersonaLine("quest_completed", getManagerPersona(current, profile))));
+    void saveQuestEvent(createQuestEventRequest(quest, result, quest.rewardExp, "happy", { managerLine: eventLine }));
     setQuestStatus("success");
     setWorkflowWindows(["manager"]);
   }
 
   function startFailureFlow() {
     setQuestStatus("failed");
-    setManager((current) => ({ ...current, mood: "recovering", line: "이번 기록을 보고 다음 분량을 다시 맞춰볼게." }));
+    setManager((current) => ({ ...current, mood: "recovering", line: getPersonaLine("quest_failed", getManagerPersona(current, profile)) }));
     setWorkflowWindows(["failure", "manager"]);
   }
 
   function createRecovery() {
     recordOutcomeStreak("failed");
     setPreviousQuestTitle(quest.title);
-    void saveQuestEvent(createQuestEventRequest(quest, "failed", 0, "recovering", { failureReason: selectedFailureReason, managerLine: "실패 이유를 기억하고 복구 분량을 다시 맞췄어." }));
+    void saveQuestEvent(createQuestEventRequest(quest, "failed", 0, "recovering", { failureReason: selectedFailureReason, managerLine: getPersonaLine("quest_failed", getManagerPersona(manager, profile)) }));
     setQuest(createRecoveryQuest(quest));
     setQuestStatus("recovery");
     setWorkflowWindows(["recovery", "manager"]);
-    setManager((current) => ({ ...current, mood: "recovering", line: "다시 시작할 수 있는 작은 분량으로 준비했어." }));
+    setManager((current) => ({ ...current, mood: "recovering", line: getPersonaLine("recovery_created", getManagerPersona(current, profile)) }));
   }
 
   function editRecovery() {
@@ -1883,24 +1973,25 @@ function createInteractionObjectsFromWindows(
 function getNextOutsidePetRoamAnimation(
   pet: OutsidePetState,
   objects: InteractionObject[],
-  mood: ManagerState["mood"],
+  manager: ManagerState,
+  tone: ManagerTone,
   streak: QuestOutcomeStreak,
   reducedMotion: boolean,
 ): PetAnimationState {
   const petRect = { x: pet.position.x, y: pet.position.y, width: outsidePetSpriteSize, height: outsidePetSpriteSize };
-  const clockSlice = Math.floor(Date.now() / 1100);
-  if (!reducedMotion && clockSlice % 6 === 2 && getNearbyLadder(petRect, objects)) return "climbing";
-  if (!reducedMotion && clockSlice % 5 === 1 && getNearbyPlatform(petRect, objects)) return "jump";
-
-  const candidates = getBehaviorCandidates({
+  const context: BehaviorContext = {
     pet: petRect,
     objects,
-    mood: getBehaviorMoodFromManagerMood(mood),
+    mood: getBehaviorMoodFromManagerMood(manager.mood),
     recentEvent: getRecentBehaviorEvent(streak),
     reducedMotion,
+  };
+  const resolvedBehavior = resolveManagerBehavior({
+    rawIntent: createRuleFallbackManagerIntent(manager, tone, streak),
+    context,
+    randomValue: (Date.now() / 1000) % 1,
   });
-  const selectedBehavior = chooseWeightedBehavior(candidates, (Date.now() / 1000) % 1);
-  const mappedAnimation = mapBehaviorToAnimation(selectedBehavior, reducedMotion);
+  const mappedAnimation = resolvedBehavior.animation;
 
   if (mappedAnimation === "hanging" || mappedAnimation === "hiding") return "idle";
   return mappedAnimation;
@@ -1931,10 +2022,7 @@ function resolveOutsidePetRoamPosition(
 
   if (animation === "climbing") {
     const ladder = getNearbyLadder(petRect, objects);
-    if (ladder) {
-      const climbPosition = getClimbPosition(ladder.rect, 0.48);
-      return { x: climbPosition.x - outsidePetSpriteSize / 2, y: climbPosition.y - outsidePetSpriteSize / 2 };
-    }
+    if (ladder) return resolveOutsidePetAttachmentPosition(ladder, animation);
   }
 
   if (animation === "jump") {
@@ -1946,6 +2034,15 @@ function resolveOutsidePetRoamPosition(
   if (standingPlatform) return { x: fallbackPosition.x, y: standingPlatform.rect.y - outsidePetSpriteSize + 12 };
 
   return { x: fallbackPosition.x, y: outsidePetFieldRect.y };
+}
+
+function resolveOutsidePetAttachmentPosition(object: InteractionObject, animation: PetAnimationState): InteractionSpritePosition {
+  if (animation === "climbing" && object.type === "ladder") {
+    const climbPosition = getClimbPosition(object.rect, 0.48);
+    return { x: climbPosition.x - outsidePetSpriteSize / 2, y: climbPosition.y - outsidePetSpriteSize / 2 };
+  }
+
+  return { x: object.rect.x + object.rect.width / 2 - outsidePetSpriteSize / 2, y: outsidePetFieldRect.y };
 }
 
 function resolveOutsidePetDirection(pet: OutsidePetState, objects: InteractionObject[]): 1 | -1 {

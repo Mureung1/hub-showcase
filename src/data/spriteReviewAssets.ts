@@ -31,6 +31,7 @@ const pinkManagerCanonicalPath = "/assets/lumi/pink-manager-stage-2";
 const pinkManagerCandidatePath = "/assets/lumi/pink-manager-stage-2-production-candidates";
 const glassFrogCanonicalPath = "/assets/lumi/glass-frog-stage-2";
 const glassFrogCandidatePath = "/assets/lumi/glass-frog-stage-2-production-candidates";
+const costasiellaKuroshimaeCandidatePath = "/assets/lumi/costasiella-kuroshimae-stage-2-production-candidates";
 const seaBunnySlugCandidatePath = "/assets/lumi/sea-bunny-slug-stage-2-production-candidates";
 const friedEggJellyfishCandidatePath = "/assets/lumi/fried-egg-jellyfish-stage-2-production-candidates";
 
@@ -176,6 +177,19 @@ export const spriteReviewSets = [
     stage: "stage-2",
     path: glassFrogCandidatePath,
     fileForState: (state: PetMotionState) => `glass-frog-stage-2-${state}-sheet-v1.png`,
+  },
+  {
+    id: "costasiella-kuroshimae-stage-2-production-candidates",
+    label: "Costasiella Kuroshimae Stage 2 - Production Candidates",
+    description:
+      "Costasiella kuroshimae sheets generated from the Stage 2 base reference with leaf-cerata motion.",
+    petId: "costasiella-kuroshimae",
+    stage: "stage-2",
+    path: costasiellaKuroshimaeCandidatePath,
+    fileForState: (state: PetMotionState) => {
+      if (state === "hanging" || state === "climbing") return `costasiella-kuroshimae-stage-2-${state}-sheet-v2.png`;
+      return `costasiella-kuroshimae-stage-2-${state}-sheet-v1.png`;
+    },
   },
   {
     id: "sea-bunny-slug-stage-2-production-candidates",
