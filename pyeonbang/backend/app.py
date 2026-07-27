@@ -5,58 +5,16 @@ import uuid
 import random
 import datetime
 from flask import Flask, request, jsonify
-
 import sqlite3
-import easyocr
 from PIL import Image
-from nutrition_parser import parse_nutrition_info
+from nutrition_parser import parse_nutrition_info_with_gemini
 
 app = Flask(__name__)
-
-# OCR 리더기 초기화 (앱 시작 시 1회 로드)
-ocr_reader = easyocr.Reader(['ko', 'en'], gpu=False)
-
-def resize_image_if_needed(image_path, max_dim=1024):
-    """OCR 속도 최적화를 위해 이미지가 1024px 초과시 비율 유지 리사이징"""
-    try:
-        with Image.open(image_path) as img:
-            width, height = img.size
-            if max(width, height) > max_dim:
-                scale = max_dim / float(max(width, height))
-                new_w = int(width * scale)
-                new_h = int(height * scale)
-                resample = getattr(Image.Resampling, 'LANCZOS', getattr(Image, 'BICUBIC', None))
-                resized = img.resize((new_w, new_h), resample)
-                resized.save(image_path)
-    except Exception as e:
-        print(f"Resize Warning: {e}")
-
-def infer_product_name(ocr_texts):
-    """OCR 상단 텍스트 기반 상품명 추론 함수"""
-    if not ocr_texts:
-        return "촬영한 편의점 제품"
-    
-    keywords = ['라면', '닭가슴살', '도시락', '제육', '김밥', '삼각김밥', '샌드위치', '우유', '빵', '핫바', '샐러드', '마라탕', '찌개', '볶음밥', '떡볶이', '참치', '치킨', '버거']
-    
-    for text in ocr_texts[:8]:
-        text_str = str(text).strip()
-        for kw in keywords:
-            if kw in text_str and len(text_str) >= 2:
-                return text_str
-                
-    ignore_words = ['GS25', 'CU', '세븐일레븐', '이마트24', '영양정보', '원재료명', '보관방법', '유통기한', '내용량']
-    for text in ocr_texts[:5]:
-        cleaned = re.sub(r'[^가-힣a-zA-Z0-9\s]', '', str(text)).strip()
-        if len(cleaned) >= 2 and cleaned not in ignore_words:
-            return cleaned
-
-    return "촬영한 편의점 제품"
 
 # 이미지가 저장될 폴더 경로 설정 (backend 폴더 기준으로 상위의 images 폴더)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '../images')
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
-
 
 DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'pyeonbang.db')
 
@@ -137,7 +95,7 @@ def upload_image():
     if file.filename == '':
         return jsonify({'status': 'fail', 'message': '선택된 파일이 없습니다.'}), 400
 
-    # 1. 파일 저장 (미리보기 및 OCR 수행)
+    # 1. 파일 저장 및 바이트 읽기
     try:
         original_filename = file.filename
         ext = os.path.splitext(original_filename)[1]
@@ -145,7 +103,10 @@ def upload_image():
             ext = '.jpg'
         unique_filename = f"{int(time.time())}_{uuid.uuid4().hex[:8]}{ext}"
         file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-        file.save(file_path)
+        
+        file_bytes = file.read()
+        with open(file_path, 'wb') as f:
+            f.write(file_bytes)
     except Exception as e:
         return jsonify({'status': 'fail', 'message': f'이미지 저장 실패: {str(e)}'}), 500
 
@@ -161,44 +122,31 @@ def upload_image():
         except ValueError:
             return jsonify({'status': 'fail', 'message': '유효한 숫자 가격을 입력해 주세요.'}), 400
 
-    # 3. 이미지 리사이징 (OCR 속도 최적화) 및 EasyOCR 영양성분 파싱
+    # 3. Gemini 1.5 Flash Vision API 영양성분 파싱
     try:
-        resize_image_if_needed(file_path, max_dim=1024)
-        results = ocr_reader.readtext(file_path)
-        ocr_texts = [res[1] for res in results] if results else []
-        parsed_data = parse_nutrition_info(ocr_texts)
+        parsed_data = parse_nutrition_info_with_gemini(file_bytes)
     except Exception as e:
-        print(f"OCR Exception: {e}")
-        parsed_data = parse_nutrition_info([])
-        ocr_texts = []
+        print(f"Gemini Exception: {e}")
+        parsed_data = {
+            "calories": 0, "carbs": 0, "protein": 0, "fat": 0, "sodium": 0, "sugar": 0,
+            "is_complete": False, "missing_fields": ["error"], "warning_messages": [str(e)]
+        }
 
     intent_tab = request.form.get('intent_tab', 'meal')
-    extracted_full_text = " ".join(ocr_texts)
-    product_name = infer_product_name(ocr_texts)
-
-    # 브랜드 자동 매핑 로직 (GS25, CU, 세븐일레븐, 이마트24 감지)
-    detected_brand = "편의점"
-    lower_text = extracted_full_text.lower()
-    if 'gs25' in lower_text or 'gs 25' in lower_text:
-        detected_brand = "GS25"
-    elif 'cu' in lower_text:
-        detected_brand = "CU"
-    elif '세븐일레븐' in lower_text or '7-eleven' in lower_text or '7eleven' in lower_text:
-        detected_brand = "세븐일레븐"
-    elif '이마트24' in lower_text or 'emart24' in lower_text or 'emart 24' in lower_text:
-        detected_brand = "이마트24"
+    product_name = parsed_data.get("product_name") or "촬영한 편의점 제품"
+    detected_brand = parsed_data.get("brand") or "편의점"
 
     # 4. 파싱된 데이터로 제품 정보 구축
     data = {
         "name": product_name,
         "brand": detected_brand,
         "price": price_val,
-        "kcal": parsed_data["calories"],
-        "carbs": parsed_data["carbs"],
-        "protein": parsed_data["protein"],
-        "fat": parsed_data["fat"],
-        "sodium": parsed_data["sodium"],
-        "sugar": parsed_data["sugar"],
+        "kcal": parsed_data.get("calories", 0),
+        "carbs": parsed_data.get("carbs", 0),
+        "protein": parsed_data.get("protein", 0),
+        "fat": parsed_data.get("fat", 0),
+        "sodium": parsed_data.get("sodium", 0),
+        "sugar": parsed_data.get("sugar", 0),
         "type": intent_tab,
         "saved_filename": unique_filename
     }
@@ -264,16 +212,15 @@ def upload_image():
         comment = f"오늘 가벼운 식사, 식당에서 **{selected['name']}**({selected['price']:,}원) 먹는 대신 편의점을 선택하셨네요! 덕분에 식당 대비 식비 **{saved_price:,}원**을 아끼고, **{saved_calories:,}kcal**를 세이브했습니다. 가볍고 현명한 한 끼 식사네요! 🍜"
     else: # combo
         if is_night:
-            comment = f"이 시간에 배달 앱 켜서 **{selected['name']}**({selected['price']:,}원) 때릴까 했던 무서운 유혹, 편의점 조합으로 완벽 차단! 배달 지출 대비 무려 **{saved_price:,}원**을 통장에 세이브했고, 밤늦은 시간 **{saved_calories:,}kcal**의 폭탄을 비껴갔습니다. 오늘 밤 인내심이 몸과 지갑을 구원했네요! 🏆❌"
+            comment = f"이 시간에 배달 앱 켜서 **{selected['name']}**({selected['price']:,}원) 때릴까했던 무서운 유혹, 편의점 조합으로 완벽 차단! 배달 지출 대비 무려 **{saved_price:,}원**을 통장에 세이브했고, 밤늦은 시간 **{saved_calories:,}kcal**의 폭탄을 비껴갔습니다. 오늘 밤 인내심이 몸과 지갑을 구원했네요! 🏆❌"
         else:
             comment = f"오늘 식사, 뜨끈한 **{selected['name']}**({selected['price']:,}원)의 유혹 대신 편의점 조합을 선택하셨네요! 덕분에 일반 외식 대비 식비 **{saved_price:,}원**을 아끼고, **{saved_calories:,}kcal**를 철벽 방어했습니다. 가성비와 건강을 모두 잡은 멋진 선택이에요! 🎉"
         
     # 국물류 나트륨 한 줄 치트키 (식사/조합 탭일 때만 작동)
     sodium_tip = None
     if intent_tab in ['single', 'combo']:
-        soup_keywords = ['라면', '컵라면', '국물', '탕', '찌개', '짬뽕', '우동', '똠양꿍']
-        if any(k in extracted_full_text for k in soup_keywords):
-            sodium_tip = "국물을 반만 남겨도 나트륨 섭취를 최대 50% 줄일 수 있어요! 면 위주로 가볍게 드시는 것을 추천합니다. 😉"
+        if data["sodium"] > 1000:
+            sodium_tip = "국물을 반만 남겨도 나트륨 섭취를 최대 50% 줄일 수 있어요! 면/건더기 위주로 가볍게 드시는 것을 추천합니다. 😉"
         
     # 3단계 가성비 검증 로직으로 동적 등급 및 설명 산출
     score, grade, grade_type, desc = calculate_grade(data["price"], data["protein"])
@@ -396,7 +343,6 @@ def add_history():
 @app.route('/api/history/<int:history_id>', methods=['DELETE'])
 def clear_history(history_id=None):
     try:
-        # URL 파라미터가 없으면 쿼리 파라미터나 JSON 바디에서 id 확인
         if history_id is None:
             history_id = request.args.get('id', type=int)
         if history_id is None and request.is_json and request.get_json(silent=True):
@@ -429,4 +375,5 @@ def analyze_recipe():
     return jsonify({'status': 'success', 'message': 'Bypassed by automatic mode'})
 
 if __name__ == '__main__':
+    init_db()
     app.run(debug=True, port=5000)
