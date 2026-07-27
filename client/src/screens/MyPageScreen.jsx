@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '../store/useAppStore.js';
 import { fetchTopRoutes } from '../api/routes.js';
+import { STAMP_IMAGES } from '../data/stampImages.js';
 import Mascot from '../components/Mascot.jsx';
 
 const STAMP_TOTAL = 10;
@@ -107,11 +109,21 @@ export default function MyPageScreen() {
         <h3>가본 곳</h3>
         <div className="tag-row">
           {visitedNames.length ? (
-            visitedNames.map((t) => (
-              <span className="chip" key={t}>
-                {t}
-              </span>
-            ))
+            <AnimatePresence initial={false}>
+              {visitedNames.map((t) => (
+                <motion.span
+                  className="chip"
+                  key={t}
+                  layout
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {t}
+                </motion.span>
+              ))}
+            </AnimatePresence>
           ) : (
             <span className="chip">없음</span>
           )}
@@ -122,11 +134,21 @@ export default function MyPageScreen() {
         <h3>가고 싶은 곳</h3>
         <div className="tag-row">
           {wishlistNames.length ? (
-            wishlistNames.map((t) => (
-              <span className="chip" key={t}>
-                {t}
-              </span>
-            ))
+            <AnimatePresence initial={false}>
+              {wishlistNames.map((t) => (
+                <motion.span
+                  className="chip"
+                  key={t}
+                  layout
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {t}
+                </motion.span>
+              ))}
+            </AnimatePresence>
           ) : (
             <span className="chip">없음</span>
           )}
@@ -138,7 +160,7 @@ export default function MyPageScreen() {
         <div className="stamp-grid">
           {Array.from({ length: STAMP_TOTAL }, (_, i) => i < visited.size).map((on, i) => (
             <span className={`stamp${on ? ' on' : ''}`} key={i}>
-              <Mascot alt="" />
+              <img src={STAMP_IMAGES[i % STAMP_IMAGES.length]} alt="" />
             </span>
           ))}
         </div>

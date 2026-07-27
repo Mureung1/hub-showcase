@@ -89,6 +89,11 @@ export const useAppStore = create((set, get) => ({
   authModal: null, // null | 'login' | 'signup'
   openAuthModal: (mode) => set({ authModal: mode }),
   closeAuthModal: () => set({ authModal: null }),
+
+  // ----- 자동 추천받기 모달 -----
+  recommendModalOpen: false,
+  openRecommendModal: () => set({ recommendModalOpen: true }),
+  closeRecommendModal: () => set({ recommendModalOpen: false }),
   // 로그인/회원가입 성공 직후, 그리고 앱 시작 시 토큰이 남아있을 때 둘 다 이걸로 프로필을 채운다.
   restoreSession: async () => {
     const token = localStorage.getItem('token');
@@ -124,13 +129,22 @@ export const useAppStore = create((set, get) => ({
   saveCourse: (course) => set((state) => ({ savedCourses: [...state.savedCourses, course] })),
 
   // ----- 리스트 화면 검색/필터 -----
-  // 카테고리/가격대 필터는 뺐다 — 실제 빵집 데이터엔 그 필드가 없어서(수집 항목에 없음) 필터를 걸어도
-  // 아무것도 안 걸러지는 눈속임 UI가 되기 때문. 데이터에 해당 필드가 생기면 그때 다시 추가.
+  // 카테고리/가격대는 아직 실데이터가 없어서 mockBakeryExtras.js의 임시값으로 필터링한다.
   searchQuery: '',
   setSearchQuery: (q) => set({ searchQuery: q }),
-  listFilters: { openOnly: false, sort: 'name' },
+  listFilters: { openOnly: false, sort: 'name', categories: [], priceTier: null },
   setOpenOnly: (openOnly) => set((state) => ({ listFilters: { ...state.listFilters, openOnly } })),
   setSort: (sort) => set((state) => ({ listFilters: { ...state.listFilters, sort } })),
+  toggleCategoryFilter: (category) =>
+    set((state) => {
+      const cur = state.listFilters.categories;
+      const next = cur.includes(category) ? cur.filter((c) => c !== category) : [...cur, category];
+      return { listFilters: { ...state.listFilters, categories: next } };
+    }),
+  setPriceTier: (priceTier) =>
+    set((state) => ({
+      listFilters: { ...state.listFilters, priceTier: state.listFilters.priceTier === priceTier ? null : priceTier },
+    })),
 
   // ----- 테마 -----
   theme: typeof window !== 'undefined' && localStorage.getItem('theme') === 'dark' ? 'dark' : 'light',

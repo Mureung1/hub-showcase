@@ -1,14 +1,21 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore.js';
 import { fetchRecommendation } from '../api/recommend.js';
 import { haversineDistanceKm } from '../utils/geo.js';
 import { MODES } from '../utils/routeCalc.js';
 import { BREAD_CATEGORIES } from '../data/breadCategories.js';
-import Mascot from '../components/Mascot.jsx';
-import { SparkleIcon, SearchIcon, CloseIcon } from '../components/icons.jsx';
+import Modal from './Modal.jsx';
+import { SparkleIcon, SearchIcon, CloseIcon } from './icons.jsx';
 
 const COUNTS = [2, 3, 4];
+const QUESTIONS_META = {
+  count: '01',
+  mode: '02',
+  mustInclude: '03',
+  style: '04',
+  coffee: '05',
+};
 // "바로 추천받기"는 질문에 답하지 않고 눌러도 되는 지름길 버튼 — 항상 이 순서 그대로 추천한다.
 const QUICK_PICK_NAMES = ['성심당', '하레하레', '콜마르브레드'];
 
@@ -65,12 +72,14 @@ function BakeryPicker({ bakeries, value, onChange }) {
   );
 }
 
-export default function RecommendScreen() {
+export default function RecommendModal() {
   const navigate = useNavigate();
   const bakeries = useAppStore((s) => s.bakeries);
   const userLocation = useAppStore((s) => s.userLocation);
   const applyRecommendation = useAppStore((s) => s.applyRecommendation);
   const showToast = useAppStore((s) => s.showToast);
+  const recommendModalOpen = useAppStore((s) => s.recommendModalOpen);
+  const closeRecommendModal = useAppStore((s) => s.closeRecommendModal);
 
   const [count, setCount] = useState(3);
   const [mode, setMode] = useState('walk');
@@ -81,6 +90,11 @@ export default function RecommendScreen() {
 
   const toggleStyle = (c) => {
     setStyles((prev) => (prev.includes(c) ? prev.filter((s) => s !== c) : [...prev, c]));
+  };
+
+  const goToRoute = () => {
+    closeRecommendModal();
+    navigate('/route');
   };
 
   const handleSubmit = async () => {
@@ -94,7 +108,7 @@ export default function RecommendScreen() {
         wantsCoffee,
       });
       applyRecommendation({ bakeries: picked, routes, mode });
-      navigate('/route');
+      goToRoute();
     } catch {
       showToast('추천을 받아오지 못했어요. 잠시 후 다시 시도해주세요.');
     } finally {
@@ -116,24 +130,29 @@ export default function RecommendScreen() {
       routes: [{ order: picked.map((b) => b.id), distanceKm }],
       mode,
     });
-    navigate('/route');
+    goToRoute();
   };
 
   return (
-    <section className="screen-recommend">
-      <div className="recommend-topbar">
-        <Link to="/" className="recommend-close" aria-label="닫기">
-          <CloseIcon />
-        </Link>
+    <Modal open={recommendModalOpen} onClose={closeRecommendModal} width="880px" className="recommend-modal">
+      <button type="button" className="recommend-modal-close" aria-label="닫기" onClick={closeRecommendModal}>
+        <CloseIcon />
+      </button>
+
+      <div className="recommend-header">
+        <h1>자동 추천받기</h1>
+        <p>답하고 싶은 것만 골라도 괜찮아요. 아무것도 안 골라도 바로 추천해드려요.</p>
       </div>
 
-      <div className="recommend-body">
-        <Mascot variant="pointing" className="mascot-icon recommend-mascot" />
-        <h1>자동 추천받기</h1>
-        <p className="recommend-lead">답하고 싶은 것만 골라도 괜찮아요. 아무것도 안 골라도 바로 추천해드려요.</p>
+      <button type="button" className="btn-solid recommend-quick-btn" onClick={handleQuickRecommend}>
+        <SparkleIcon />
+        질문 상관없이 바로 추천받기
+      </button>
 
-        <div className="recommend-list">
-          <div className="recommend-question">
+      <div className="recommend-list">
+        <div className="recommend-question">
+          <span className="recommend-question-num">{QUESTIONS_META.count}</span>
+          <div className="recommend-question-body">
             <h2>몇 곳 가고 싶어요?</h2>
             <div className="mode-tabs">
               {COUNTS.map((n) => (
@@ -148,8 +167,11 @@ export default function RecommendScreen() {
               ))}
             </div>
           </div>
+        </div>
 
-          <div className="recommend-question">
+        <div className="recommend-question">
+          <span className="recommend-question-num">{QUESTIONS_META.mode}</span>
+          <div className="recommend-question-body">
             <h2>이동수단은 뭐예요?</h2>
             <div className="mode-tabs">
               {MODES.map(([value, label]) => (
@@ -164,15 +186,21 @@ export default function RecommendScreen() {
               ))}
             </div>
           </div>
+        </div>
 
-          <div className="recommend-question">
+        <div className="recommend-question">
+          <span className="recommend-question-num">{QUESTIONS_META.mustInclude}</span>
+          <div className="recommend-question-body">
             <h2>
-              꼭 넣고 싶은 곳이 있어요? <span className="optional-badge">선택</span>
+              꼭 넣고 싶은 베이커리가 있어요? <span className="optional-badge">선택</span>
             </h2>
             <BakeryPicker bakeries={bakeries} value={mustIncludeId} onChange={setMustIncludeId} />
           </div>
+        </div>
 
-          <div className="recommend-question">
+        <div className="recommend-question">
+          <span className="recommend-question-num">{QUESTIONS_META.style}</span>
+          <div className="recommend-question-body">
             <h2>
               좋아하는 빵이 있어요? <span className="optional-badge">선택, 여러 개 가능</span>
             </h2>
@@ -189,8 +217,11 @@ export default function RecommendScreen() {
               ))}
             </div>
           </div>
+        </div>
 
-          <div className="recommend-question">
+        <div className="recommend-question">
+          <span className="recommend-question-num">{QUESTIONS_META.coffee}</span>
+          <div className="recommend-question-body">
             <h2>커피와 같이 먹고 싶어요?</h2>
             <div className="mode-tabs">
               <button
@@ -210,17 +241,15 @@ export default function RecommendScreen() {
             </div>
           </div>
         </div>
-
-        <div className="recommend-actions">
-          <button type="button" className="btn-solid" disabled={loading} onClick={handleSubmit}>
-            <SparkleIcon />
-            {loading ? '추천 받는 중…' : '추천받기'}
-          </button>
-          <button type="button" className="recommend-quick-link" onClick={handleQuickRecommend}>
-            질문 상관없이 바로 추천받기
-          </button>
-        </div>
       </div>
-    </section>
+
+      <div className="recommend-actions">
+        <img src="/jump.png" alt="" className="recommend-jump-img" />
+        <button type="button" className="btn-solid" disabled={loading} onClick={handleSubmit}>
+          <SparkleIcon />
+          {loading ? '추천 받는 중…' : '추천받기'}
+        </button>
+      </div>
+    </Modal>
   );
 }

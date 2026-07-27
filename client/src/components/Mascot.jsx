@@ -7,5 +7,9 @@ const SOURCES = {
 };
 
 export default function Mascot({ variant = 'default', className = 'mascot-icon', style, alt = '빵지도 캐릭터' }) {
-  return <img src={SOURCES[variant]} alt={alt} className={className} style={style} draggable={false} />;
+  return (
+    <span className="mascot-wrap">
+      <img src={SOURCES[variant]} alt={alt} className={className} style={style} draggable={false} />
+    </span>
+  );
 }

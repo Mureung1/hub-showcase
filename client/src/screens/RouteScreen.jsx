@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '../store/useAppStore.js';
 import { fetchTopRoutes } from '../api/routes.js';
 import { estimateMinutes, RANK_COLORS, MODES } from '../utils/routeCalc.js';
@@ -219,19 +220,29 @@ export default function RouteScreen() {
             </button>
           </div>
           <div className="route-selection-list">
-            {chosen.map((b) => (
-              <div className="route-picked-item" key={b.id}>
-                <span>{b.name}</span>
-                <button
-                  type="button"
-                  className="remove-btn"
-                  aria-label={`${b.name} 선택 해제`}
-                  onClick={() => removeFromSelection(b.id)}
+            <AnimatePresence initial={false}>
+              {chosen.map((b) => (
+                <motion.div
+                  className="route-picked-item"
+                  key={b.id}
+                  layout
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <CloseIcon style={{ width: 11, height: 11 }} />
-                </button>
-              </div>
-            ))}
+                  <span>{b.name}</span>
+                  <button
+                    type="button"
+                    className="remove-btn"
+                    aria-label={`${b.name} 선택 해제`}
+                    onClick={() => removeFromSelection(b.id)}
+                  >
+                    <CloseIcon style={{ width: 11, height: 11 }} />
+                  </button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         </div>
       </div>
