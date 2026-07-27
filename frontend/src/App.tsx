@@ -27,6 +27,7 @@ export interface Drop {
   releaseDateText?: string;
   priceChangeRate?: number;
   volume?: number;
+  priceHistories?: { id?: string; dateLabel: string; price: number }[];
   polymarket: {
     upPrice: number;
     downPrice: number;
@@ -121,6 +122,7 @@ export default function App() {
             releaseDateText: d.releaseDateText,
             priceChangeRate: d.priceChangeRate,
             volume: d.volume,
+            priceHistories: d.priceHistories || [],
             polymarket: {
               upPrice,
               downPrice,

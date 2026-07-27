@@ -11,6 +11,7 @@ model User {
   id           String   @id @default(uuid())
   email        String   @unique
   username     String   @unique
+  password     String
   points       Int      @default(1000)
   accuracyRate Float    @default(0.0)
   votes        Vote[]
@@ -34,7 +35,7 @@ model Drop {
   volume          Int?       // Added: Transaction volume ranking indicator
   totalUpStaked   Int        @default(0) // Polymarket: Total points staked on UP
   totalDownStaked Int        @default(0) // Polymarket: Total points staked on DOWN
-  votes           Vote[]
+  votes           Vote[] 
   createdAt       DateTime   @default(now())
 }
 
