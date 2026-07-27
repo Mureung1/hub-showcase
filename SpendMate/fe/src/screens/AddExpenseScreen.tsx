@@ -136,7 +136,7 @@ function ImageUploadStep({
 }
 
 /* ── 직접 입력 (F12, 영수증 없는 지출) ── */
-function FormStep({ onDone, errorMessage }: { onDone: () => void; errorMessage?: string | null }) {
+function FormStep({ onDone, onAgentMessage, errorMessage }: { onDone: () => void; onAgentMessage: (text: string) => void; errorMessage?: string | null }) {
   const [amount, setAmount] = useState('')
   const [memo, setMemo] = useState('')
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
@@ -160,7 +160,8 @@ function FormStep({ onDone, errorMessage }: { onDone: () => void; errorMessage?:
     setSaving(true)
     setSaveError(null)
     try {
-      await createManualExpense(Number(amount), categories[selectedCat].backendCategory, memo, `${date}T00:00:00`)
+      const result = await createManualExpense(Number(amount), categories[selectedCat].backendCategory, memo, `${date}T00:00:00`)
+      if (result.agentMessage) onAgentMessage(result.agentMessage)
       onDone()
     } catch {
       setSaveError('저장에 실패했어요. 다시 시도해주세요.')
@@ -400,7 +401,7 @@ function OcrStep({
 }
 
 /* ── 분석 결과 (실제 파싱값, 저장하기 눌러야 진짜 저장됨) ── */
-function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => void }) {
+function ResultStep({ result, onClose, onAgentMessage }: { result: UploadResult; onClose: () => void; onAgentMessage: (text: string) => void }) {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [items, setItems] = useState<ExpenseDraft[]>(result.items)
@@ -435,7 +436,8 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
     setSaving(true)
     setSaveError(null)
     try {
-      await confirmReceipt(result.receiptId, items, `${date}T00:00:00`)
+      const confirmResult = await confirmReceipt(result.receiptId, items, `${date}T00:00:00`)
+      if (confirmResult.agentMessage) onAgentMessage(confirmResult.agentMessage)
       onClose()
     } catch {
       setSaveError('저장에 실패했어요. 다시 시도해주세요.')
@@ -541,7 +543,7 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
 }
 
 /* ── Main Modal ── */
-export default function AddExpenseScreen({ onClose }: { onClose: () => void }) {
+export default function AddExpenseScreen({ onClose, onAgentMessage }: { onClose: () => void; onAgentMessage: (text: string) => void }) {
   const [step, setStep] = useState<Step>('method')
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [sourceType, setSourceType] = useState<SourceType>('PAPER_RECEIPT')
@@ -584,7 +586,7 @@ export default function AddExpenseScreen({ onClose }: { onClose: () => void }) {
           {step === 'upload-capture' && (
             <ImageUploadStep type="capture" onNext={(f) => handleUploadNext(f, 'capture')} onBack={() => setStep('method')} />
           )}
-          {step === 'form' && <FormStep onDone={onClose} errorMessage={ocrErrorMessage} />}
+          {step === 'form' && <FormStep onDone={onClose} onAgentMessage={onAgentMessage} errorMessage={ocrErrorMessage} />}
           {step === 'ocr' && pendingFile && (
             <OcrStep
               file={pendingFile}
@@ -593,7 +595,7 @@ export default function AddExpenseScreen({ onClose }: { onClose: () => void }) {
               onError={handleOcrError}
             />
           )}
-          {step === 'result' && uploadResult && <ResultStep result={uploadResult} onClose={onClose} />}
+          {step === 'result' && uploadResult && <ResultStep result={uploadResult} onClose={onClose} onAgentMessage={onAgentMessage} />}
         </div>
       </div>
     </div>

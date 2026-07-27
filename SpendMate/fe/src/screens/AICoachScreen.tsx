@@ -1,18 +1,18 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from 'react'
 import { Send, Sparkles, TrendingDown, ChefHat, BarChart3, X, Clock, Users, ChevronRight } from 'lucide-react'
+import { sendAgentMessage } from '../lib/api'
 
-type Message = {
+export type Message = {
   id: number
   role: 'ai' | 'user'
   text: string
   card?: 'recipe' | 'compare' | 'tip'
 }
 
-const QUICK_REPLIES = ['이번 달 지출 분석', '절약 레시피 추천', '구독 줄이는 법', '가격 비교해줘']
+const QUICK_REPLIES = ['이번 달 얼마 썼어?', '예산 얼마 남았어?', '구독 뭐 있지?']
 
-const INITIAL_MESSAGES: Message[] = [
-  { id: 1, role: 'ai', text: '안녕하세요, 사용자님! 저는 SpendMate AI 코치예요. 이번 달 소비 패턴을 분석했어요. 뭐든 물어보세요! 💬' },
-  { id: 2, role: 'ai', text: '지난주 배달비 지출이 42% 늘었어요. 외식 대신 집밥으로 대체하면 어떨까요? 아래 레시피를 참고해 보세요!', card: 'recipe' },
+export const INITIAL_COACH_MESSAGES: Message[] = [
+  { id: 1, role: 'ai', text: '안녕하세요! 저는 SpendMate AI 코치예요. 지출, 예산, 구독에 대해 뭐든 물어보세요! 💬' },
 ]
 
 const RECIPES = [
@@ -242,8 +242,22 @@ function TipCard() {
   )
 }
 
-export default function AICoachScreen() {
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES)
+/* Claude 응답의 "**굵게**" 표시를 실제 굵은 글씨로 렌더링 (마크다운 라이브러리 없이 최소 처리) */
+function renderWithBold(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((chunk, i) => {
+    if (chunk.startsWith('**') && chunk.endsWith('**')) {
+      return <strong key={i}>{chunk.slice(2, -2)}</strong>
+    }
+    return <span key={i}>{chunk}</span>
+  })
+}
+
+type AICoachScreenProps = {
+  messages: Message[]
+  setMessages: Dispatch<SetStateAction<Message[]>>
+}
+
+export default function AICoachScreen({ messages, setMessages }: AICoachScreenProps) {
   const [input, setInput] = useState('')
   const [showTyping, setShowTyping] = useState(false)
   const [showRecipeDetail, setShowRecipeDetail] = useState(false)
@@ -253,23 +267,21 @@ export default function AICoachScreen() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, showTyping])
 
-  const sendMessage = (text: string) => {
+  const sendMessage = async (text: string) => {
     if (!text.trim()) return
     const userMsg: Message = { id: Date.now(), role: 'user', text }
     setMessages(prev => [...prev, userMsg])
     setInput('')
     setShowTyping(true)
 
-    setTimeout(() => {
+    try {
+      const response = await sendAgentMessage(text)
+      setMessages(prev => [...prev, { id: Date.now() + 1, role: 'ai', text: response.message }])
+    } catch {
+      setMessages(prev => [...prev, { id: Date.now() + 1, role: 'ai', text: 'AI 코치와 연결하지 못했어요. 잠시 후 다시 시도해주세요.' }])
+    } finally {
       setShowTyping(false)
-      const aiMsg: Message = {
-        id: Date.now() + 1,
-        role: 'ai',
-        text: text.includes('레시피') ? '요즘 배달비가 많이 나오셨군요. 아래 집밥 레시피로 절약해 보세요!' : text.includes('비교') ? 'GS25보다 CU가 평균 700원 저렴해요. 근처 편의점 가격을 비교해봤어요!' : '분석해봤어요! 이번 달 지출에서 외식 카테고리가 40%를 차지하고 있어요. 절약 팁을 확인해보세요.',
-        card: text.includes('레시피') ? 'recipe' : text.includes('비교') ? 'compare' : 'tip',
-      }
-      setMessages(prev => [...prev, aiMsg])
-    }, 1500)
+    }
   }
 
   return (
@@ -299,7 +311,7 @@ export default function AICoachScreen() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ background: 'white', borderRadius: '4px 16px 16px 16px', padding: '12px 14px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid var(--border)' }}>
-                      <p style={{ margin: 0, fontSize: 14, color: 'var(--foreground)', lineHeight: 1.6 }}>{msg.text}</p>
+                      <p style={{ margin: 0, fontSize: 14, color: 'var(--foreground)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{renderWithBold(msg.text)}</p>
                     </div>
                     {msg.card === 'recipe' && <RecipeCard onViewAll={() => setShowRecipeDetail(true)} />}
                     {msg.card === 'compare' && <CompareCard />}
