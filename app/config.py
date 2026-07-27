@@ -7,7 +7,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-flash-latest"
+GEMINI_MODEL = "gemini-3.5-flash-lite"
+# 무료 티어 RPM 15 · RPD 500 (Flash Lite 계열이 논-Lite 대비 25배 여유).
+# "-latest" 별칭 대신 고정 버전을 쓴다 — 별칭 대상이 바뀌면 quota가 다시 흔들릴 수 있다.
 
 # 3단계(요약)↔4단계(자기 검증) 최대 왕복 횟수. 없으면 무한 루프로 API 비용이 탄다.
 MAX_RETRY = 2
