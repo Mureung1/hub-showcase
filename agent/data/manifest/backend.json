@@ -986,6 +986,108 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_lgcns_be_app_architect",
+      "url": "https://careers.lg.com/apply/detail?id=1001432",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "엘지씨엔에스",
+      "company_id": "co_lgcns",
+      "cluster_id": "si_enterprise",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[LG CNS] 어플리케이션 아키텍트/AI 아키텍트 모집(경력)",
+      "robots_policy": "allow /; Content-Signal search=yes, ai-train=no; use 미선언; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "note": "모집분야가 Application Architect 와 AI Architect 둘이며 요구사항 본문이 분리된다. AI Architect 는 ai_engineer 라 이 매니페스트에 담지 않는다. robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 목록과 메타데이터만 기록했고 본문 수집 가부는 정하지 않았다",
+      "positions": [
+        {
+          "position_name": "Application Architect",
+          "job_role_ids": [
+            "backend"
+          ],
+          "job_role_raw": "모집분야: Application Architect / 필수: 프레임워크·미들웨어·인터페이스(MCI/FEP/EAI) 설계 및 구축, MSA 기반 클라우드 아키텍처",
+          "entry_label_raw": "경력",
+          "entry_label": "experienced"
+        }
+      ]
+    },
+    {
+      "source_id": "src_lgcns_be_mes_ops",
+      "url": "https://careers.lg.com/apply/detail?id=1001833",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "엘지씨엔에스",
+      "company_id": "co_lgcns",
+      "cluster_id": "si_enterprise",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[LG CNS] MES 영역 전문가 모집 (경력)",
+      "robots_policy": "allow /; Content-Signal search=yes, ai-train=no; use 미선언; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "note": "robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 목록과 메타데이터만 기록했고 본문 수집 가부는 정하지 않았다",
+      "positions": [
+        {
+          "position_name": "Software Engineer",
+          "job_role_ids": [
+            "backend"
+          ],
+          "job_role_raw": "모집분야: Software Engineer / 필수: Java, Spring Framework 기반 애플리케이션 개발 및 유지보수, Oracle·MS-SQL RDBMS 환경 SQL 작성",
+          "entry_label_raw": "경력",
+          "entry_label": "experienced"
+        }
+      ]
+    },
+    {
+      "source_id": "src_lgcns_be_mes_dev",
+      "url": "https://careers.lg.com/apply/detail?id=1001644",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "엘지씨엔에스",
+      "company_id": "co_lgcns",
+      "cluster_id": "si_enterprise",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[LG CNS] MES개발자 분야 모집(경력)",
+      "robots_policy": "allow /; Content-Signal search=yes, ai-train=no; use 미선언; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "note": "robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 목록과 메타데이터만 기록했고 본문 수집 가부는 정하지 않았다",
+      "positions": [
+        {
+          "position_name": "Software Engineer",
+          "job_role_ids": [
+            "backend"
+          ],
+          "job_role_raw": "모집분야: Software Engineer / 필수: 스마트팩토리·MES 구축 및 운영, 제조 도메인 기반 시스템 설계 및 개발",
+          "entry_label_raw": "경력",
+          "entry_label": "experienced"
+        }
+      ]
     }
   ],
   "unreachable": [
@@ -1144,6 +1246,30 @@
     {
       "source": "dwhale.career.greetinghr.com",
       "reason": "사이트맵에 공고 상세가 없다"
+    },
+    {
+      "source": "careers.lg.com/apply/detail?id=1001371",
+      "reason": "모집분야가 Infrastructure·Data·Cloud & DevOps Architect 로 devops 와 data_engineer 에 속한다"
+    },
+    {
+      "source": "careers.lg.com/apply/detail?id=1001632",
+      "reason": "모집분야가 Cloud & DevOps Architect 다"
+    },
+    {
+      "source": "careers.lg.com/apply/detail?id=1001459",
+      "reason": "모집분야가 전부 PM·PL 이다"
+    },
+    {
+      "source": "careers.lg.com/apply/detail?id=1001427",
+      "reason": "모집분야가 PM·PMO·Business Analyst·분석 설계이며 구현이 주 업무가 아니다"
+    },
+    {
+      "source": "careers.lg.com/apply/detail?id=1001361",
+      "reason": "웹·모바일 서비스 개발 전반이라 fullstack 에 가깝다"
+    },
+    {
+      "source": "careers.lg.com/apply/detail?id=1001946",
+      "reason": "MS Active Directory 이행·운영이라 인프라다"
     }
   ],
   "access_notes": [
@@ -1202,6 +1328,10 @@
     {
       "source": "careers.lg.com",
       "method": "React 라우터라 목록에 링크가 없다. 카드를 클릭하면 /apply/detail?id= 로 이동한다. 상세에 모집분야가 여럿 나열된다"
+    },
+    {
+      "source": "api.careers.lg.com/rmk/job/retrieveJobNoticesDetail",
+      "method": "채용 페이지가 호출하는 공개 엔드포인트. jobNoticeId 를 POST 하면 data.jobNoticesDetail.recList 에 모집분야별 jobGroupName, requiredItem, detailContext 가 들어 있다. 목록의 식별자는 목록 화면의 jobNoticeList 에 있다"
     }
   ]
 }

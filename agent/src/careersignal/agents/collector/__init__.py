@@ -17,7 +17,11 @@ from careersignal.agents.collector.contract import (
 )
 from careersignal.agents.collector.fetcher import PreparedFetcher, UnavailableFetcher
 from careersignal.agents.collector.files import FileFetcher
-from careersignal.agents.collector.manifest import ManifestEntry, SourceManifest
+from careersignal.agents.collector.manifest import (
+    ManifestEntry,
+    ManifestPosition,
+    SourceManifest,
+)
 
 __all__ = [
     "CollectionOutcome",
@@ -25,6 +29,7 @@ __all__ = [
     "CollectorAgent",
     "FileFetcher",
     "ManifestEntry",
+    "ManifestPosition",
     "PreparedFetcher",
     "SourceCollector",
     "SourceFetcher",
