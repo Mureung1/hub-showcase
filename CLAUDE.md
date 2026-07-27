@@ -10,7 +10,7 @@
 4. 코드 작성 후 왜 그렇게 작성했는지 이유를 설명한다.
 ## 아키텍처 (안정적 사실)
 
-- **스택**: React 19 + Vite + react-router(프론트) / Express(백엔드, 포트 3001) / Supabase Postgres + Storage(DB·파일) / Claude API `@anthropic-ai/sdk`(플래너·설명자, `server/services/`)
+- **스택**: React 19 + Vite + react-router(프론트) / Express(백엔드, 포트 3001) / Supabase Postgres + Storage(DB·파일) / Claude API `@anthropic-ai/sdk`(플래닝 에이전트: 계획 생성·배정 설명, `server/services/`)
 - **게이트웨이**: 브라우저는 오직 `/api`만 호출한다. 개발 중 Vite(5173)가 `/api`를 3001로 프록시. **Supabase Secret key·Anthropic 키는 서버 `.env`에만** 존재하며 브라우저로 절대 내려보내지 않는다 (`server/db/supabase.js`).
 - **인증**: 비밀번호 bcrypt 해시 + JWT httpOnly 쿠키 (`server/lib/auth.js`). 요청의 사용자 판별은 `userIdFromReq(req)`.
 - **역할 배정**: **결정적 점수 로직**(`src/logic/assignRoles.js`)이 배정을 계산하고, **AI는 역할 "정의"와 결과 "설명"만** 맡는다 — 배정 자체는 AI가 하지 않음(공정성·재현성·비공개). 조장은 실무 역할 위에 얹는 표식.
