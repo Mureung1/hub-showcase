@@ -113,6 +113,7 @@ export interface WorkspaceRegistryStore {
   commitActiveWorkspace(input: {
     readonly expectedAuthority: WorkspaceRegistryAuthority | null
     readonly canonicalRoot: string
+    readonly expectedWorkspaceId: string
   }): Promise<
     | WorkspaceRegistryWriteResult
     | {
@@ -250,6 +251,9 @@ export function createWorkspaceRegistryStore(
           status: 'workspace_incompatible',
           reason: identity.reason,
         }
+      }
+      if (identity.state.workspaceId !== input.expectedWorkspaceId) {
+        return { status: 'conflict' }
       }
 
       let current: WorkspaceRegistryV1
@@ -491,7 +495,9 @@ async function writeRegistry(
       if (
         !finalGuard.bytes.equals(expectedBytes) ||
         !finalCompared.bytes.equals(expectedBytes) ||
-        !sameIdentity(finalGuard.identity, finalCompared.identity)
+        !sameIdentity(finalGuard.identity, finalCompared.identity) ||
+        (expectedWorkspace &&
+          !(await workspaceIdentityStillMatches(expectedWorkspace)))
       ) {
         return { status: 'conflict' }
       }

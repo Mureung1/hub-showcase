@@ -41,6 +41,15 @@ const previousWorkspaceId =
   'workspace_0123456789abcdef0123456789abcdef'
 const targetWorkspaceId =
   'workspace_fedcba9876543210fedcba9876543210'
+const previousWorkspace = {
+  workspaceId: previousWorkspaceId,
+  term: { key: 'fall', displayName: '2학기' },
+} as const
+const targetWorkspace = {
+  workspaceId: targetWorkspaceId,
+  term: { key: 'spring', displayName: '1학기' },
+} as const
+let harnessGeneration = 0
 const registryRelativePath = path.join(
   'state',
   'workspace-registry.json',
@@ -49,10 +58,11 @@ const registryRelativePath = path.join(
 test('real shared listener and Broker authenticate one generation before active publication', async () => {
   const fixture = await createFixture()
   const terminal = deferred<void>()
-  let activeLifecycle: unknown
+  let readActiveLifecycle: () => unknown = () => undefined
   try {
     const app = express()
     app.get('/api/product/workspace-lifecycle', (_request, response) => {
+      const activeLifecycle = readActiveLifecycle()
       if (!activeLifecycle) {
         response.status(503).end()
         return
@@ -65,12 +75,10 @@ test('real shared listener and Broker authenticate one generation before active 
       requestHandler: app,
     })
     const ports: PreparedWorkspaceStartupPorts = {
-      async bindSharedListener() {
+      async bindSharedListener(input) {
+        readActiveLifecycle = input.readActiveLifecycle
         return {
           port: listener.port,
-          openActiveSurface(lifecycle) {
-            activeLifecycle = lifecycle
-          },
           async close() {
             const result = await listener.close({
               signal: new AbortController().signal,
@@ -193,6 +201,9 @@ test('opens the active surface only after the exact required startup order and r
     const registry = recordingRegistry(
       fixture.store,
       harness.events,
+      () => {
+        assert.equal(harness.readActiveLifecycle?.(), undefined)
+      },
     )
     const session = await startPreparedWorkspace({
       appDataRoot: fixture.appDataRoot,
@@ -200,6 +211,7 @@ test('opens the active surface only after the exact required startup order and r
       ports: harness.ports,
       registryStore: registry,
     })
+    assert.deepEqual(harness.readActiveLifecycle?.(), session.lifecycle)
 
     assert.deepEqual(harness.events, [
       'listener.bind',
@@ -238,6 +250,47 @@ test('opens the active surface only after the exact required startup order and r
       'runtime.close',
       'listener.close',
     ])
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('Runtime terminal at the registry commit point publishes the committed lifecycle before teardown', async () => {
+  const fixture = await createFixture()
+  try {
+    const harness = createHarness()
+    const commitEntered = deferred<void>()
+    const commitRelease = deferred<void>()
+    const registry = registryWithCommit(
+      fixture.store,
+      async (input) => {
+        harness.events.push('registry.commit')
+        commitEntered.resolve()
+        await commitRelease.promise
+        return fixture.store.commitActiveWorkspace(input)
+      },
+    )
+    const startup = startPreparedWorkspace({
+      appDataRoot: fixture.appDataRoot,
+      explicitWorkspaceRoot: fixture.targetRoot,
+      ports: harness.ports,
+      registryStore: registry,
+    })
+
+    await commitEntered.promise
+    harness.terminal.resolve()
+    await new Promise<void>((resolve) => setImmediate(resolve))
+    assert.equal(harness.readActiveLifecycle?.(), undefined)
+    assert.equal(harness.events.includes('listener.close'), false)
+
+    commitRelease.resolve()
+    const session = await startup
+    assert.deepEqual(harness.readActiveLifecycle?.(), session.lifecycle)
+    await waitFor(() => harness.events.includes('listener.close'))
+    assert.ok(
+      harness.events.indexOf('surface.active') <
+        harness.events.indexOf('broker.runtime-terminal'),
+    )
   } finally {
     await fixture.cleanup()
   }
@@ -296,7 +349,7 @@ for (const [name, stage, fault] of [
     const fixture = await createFixture()
     try {
       const before = await registryBytes(fixture.appDataRoot)
-      const harness = createHarness(fault)
+      const harness = createHarness({ fault })
       const registry =
         fault === 'registry'
           ? failingRegistry(fixture.store, harness.events)
@@ -349,7 +402,10 @@ for (const reason of [
     const fixture = await createFixture()
     try {
       const before = await registryBytes(fixture.appDataRoot)
-      const harness = createHarness('roster', reason)
+      const harness = createHarness({
+        fault: 'roster',
+        rosterReason: reason,
+      })
       await assert.rejects(
         startPreparedWorkspace({
           appDataRoot: fixture.appDataRoot,
@@ -375,13 +431,13 @@ test('fresh identity drift after readiness blocks the registry transaction', asy
   const fixture = await createFixture()
   try {
     const before = await registryBytes(fixture.appDataRoot)
-    const harness = createHarness(undefined, undefined, async () => {
-      await writeWorkspaceIdentity(
-        fixture.targetRoot,
-        previousWorkspaceId,
-        'drifted',
-        '바뀐 학기',
-      )
+    const harness = createHarness({
+      afterRoster: async () => {
+        await writeWorkspaceIdentity(fixture.targetRoot, {
+          workspaceId: previousWorkspaceId,
+          term: { key: 'drifted', displayName: '바뀐 학기' },
+        })
+      },
     })
     await assert.rejects(
       startPreparedWorkspace({
@@ -395,6 +451,40 @@ test('fresh identity drift after readiness blocks the registry transaction', asy
     )
     assert.deepEqual(await registryBytes(fixture.appDataRoot), before)
     assert.equal(harness.events.includes('context.confirm'), false)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('identity replacement at the registry compare boundary preserves the previous pointer', async () => {
+  const fixture = await createFixture()
+  try {
+    const before = await registryBytes(fixture.appDataRoot)
+    const harness = createHarness()
+    const swappingStore = createWorkspaceRegistryStore({
+      appDataRoot: fixture.appDataRoot,
+      async fault(point) {
+        if (point !== 'before_final_compare') return
+        await writeWorkspaceIdentity(fixture.targetRoot, {
+          workspaceId: previousWorkspaceId,
+          term: { key: 'drifted', displayName: '바뀐 학기' },
+        })
+      },
+    })
+
+    await assert.rejects(
+      startPreparedWorkspace({
+        appDataRoot: fixture.appDataRoot,
+        explicitWorkspaceRoot: fixture.targetRoot,
+        ports: harness.ports,
+        registryStore: swappingStore,
+      }),
+      (error: unknown) =>
+        error instanceof PreparedWorkspaceStartupError &&
+        error.stage === 'registry_transaction',
+    )
+    assert.deepEqual(await registryBytes(fixture.appDataRoot), before)
+    assert.equal(harness.readActiveLifecycle?.(), undefined)
   } finally {
     await fixture.cleanup()
   }
@@ -476,6 +566,28 @@ test('Runtime terminal, Adapter loss, and shutdown revoke one generation and bou
   }
 })
 
+test('cleanup deadline still attempts Runtime and listener teardown after a stalled Broker', async () => {
+  const fixture = await createFixture()
+  try {
+    const harness = createHarness({ hangBrokerCleanup: true })
+    const session = await startPreparedWorkspace({
+      appDataRoot: fixture.appDataRoot,
+      explicitWorkspaceRoot: fixture.targetRoot,
+      ports: harness.ports,
+      cleanupDeadlineMs: 20,
+    })
+
+    await assert.rejects(session.close(), AggregateError)
+    await waitFor(
+      () =>
+        harness.events.includes('runtime.close') &&
+        harness.events.includes('listener.close'),
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 type HarnessFault =
   | 'listener'
   | 'broker'
@@ -487,21 +599,27 @@ type HarnessFault =
   | 'registry'
 
 function createHarness(
-  fault?: Exclude<HarnessFault, 'registry'>,
-  rosterReason?: string,
-  afterRoster?: () => void | Promise<void>,
+  options: {
+    readonly fault?: Exclude<HarnessFault, 'registry'>
+    readonly rosterReason?: string
+    readonly afterRoster?: () => void | Promise<void>
+    readonly hangBrokerCleanup?: boolean
+  } = {},
 ): {
   readonly events: string[]
   readonly ports: PreparedWorkspaceStartupPorts
   readonly terminal: Deferred<void>
   readonly childEnvironment: Record<string, string>
+  readActiveLifecycle?: () => unknown
   runtimeInput?: {
     readonly canonicalRoot: string
   }
 } {
   const events: string[] = []
   const terminal = deferred<void>()
-  const generation = Math.random().toString(16).slice(2)
+  const generation = (++harnessGeneration)
+    .toString(16)
+    .padStart(32, '0')
   const childEnvironment = {
     AY_PLE_INTERACTION_BROKER_URL:
       'http://127.0.0.1:38123/api/_private/interaction-mcp',
@@ -514,14 +632,16 @@ function createHarness(
     terminal,
     childEnvironment,
     ports: {
-      async bindSharedListener() {
+      async bindSharedListener(input) {
         events.push('listener.bind')
-        if (fault === 'listener') throw new Error('listener fault')
+        if (options.fault === 'listener') throw new Error('listener fault')
+        result.readActiveLifecycle = () => {
+          const lifecycle = input.readActiveLifecycle()
+          if (lifecycle) events.push('surface.active')
+          return lifecycle
+        }
         return {
           port: 38123,
-          openActiveSurface() {
-            events.push('surface.active')
-          },
           async close() {
             events.push('listener.close')
           },
@@ -529,23 +649,27 @@ function createHarness(
       },
       async prepareBrokerGeneration() {
         events.push('broker.prepare')
-        if (fault === 'broker') throw new Error('broker fault')
+        if (options.fault === 'broker') throw new Error('broker fault')
         return {
           childEnvironment,
           async runtimeTerminal() {
+            result.readActiveLifecycle?.()
             events.push('broker.runtime-terminal')
+            if (options.hangBrokerCleanup) await never()
           },
           async adapterLost() {
             events.push('broker.adapter-lost')
+            if (options.hangBrokerCleanup) await never()
           },
           async appShutdown() {
             events.push('broker.shutdown')
+            if (options.hangBrokerCleanup) await never()
           },
         }
       },
       async spawnWorkspaceRuntime(input) {
         events.push('runtime.spawn')
-        if (fault === 'runtime') throw new Error('runtime fault')
+        if (options.fault === 'runtime') throw new Error('runtime fault')
         result.runtimeInput = {
           canonicalRoot: input.canonicalRoot,
         }
@@ -554,11 +678,13 @@ function createHarness(
           terminal: terminal.promise,
           async loadNativeProjectConfig() {
             events.push('config.load')
-            if (fault === 'config') throw new Error('config fault')
+            if (options.fault === 'config') throw new Error('config fault')
           },
           async startWorkspaceThread() {
             events.push('adapter.handshake')
-            if (fault === 'handshake') throw new Error('handshake fault')
+            if (options.fault === 'handshake') {
+              throw new Error('handshake fault')
+            }
             return { threadId: 'thread/native' }
           },
           async waitForRequiredMcp(input) {
@@ -567,17 +693,21 @@ function createHarness(
             assert.deepEqual(input.expectedTools, [
               'propose_state_patch',
             ])
-            if (fault === 'roster') {
-              throw new Error(`roster fault: ${rosterReason ?? 'unknown'}`)
+            if (options.fault === 'roster') {
+              throw new Error(
+                `roster fault: ${options.rosterReason ?? 'unknown'}`,
+              )
             }
-            await afterRoster?.()
+            await options.afterRoster?.()
           },
           async confirmThreadContext(input) {
             events.push('context.confirm')
             assert.equal(input.threadId, 'thread/native')
             assert.equal(input.canonicalRoot, result.runtimeInput?.canonicalRoot)
             assert.equal(input.workspaceId, targetWorkspaceId)
-            if (fault === 'context') throw new Error('context fault')
+            if (options.fault === 'context') {
+              throw new Error('context fault')
+            }
           },
           async close() {
             events.push('runtime.close')
@@ -592,30 +722,34 @@ function createHarness(
 function recordingRegistry(
   store: WorkspaceRegistryStore,
   events: string[],
+  beforeCommit?: () => void | Promise<void>,
 ): WorkspaceRegistryStore {
-  return {
-    read: () => store.read(),
-    compareAndReplace: (input) => store.compareAndReplace(input),
-    resolveActiveWorkspace: () => store.resolveActiveWorkspace(),
-    async commitActiveWorkspace(input) {
-      events.push('registry.commit')
-      return store.commitActiveWorkspace(input)
-    },
-  }
+  return registryWithCommit(store, async (input) => {
+    await beforeCommit?.()
+    events.push('registry.commit')
+    return store.commitActiveWorkspace(input)
+  })
 }
 
 function failingRegistry(
   store: WorkspaceRegistryStore,
   events: string[],
 ): WorkspaceRegistryStore {
+  return registryWithCommit(store, async () => {
+    events.push('registry.commit')
+    throw new Error('registry fault')
+  })
+}
+
+function registryWithCommit(
+  store: WorkspaceRegistryStore,
+  commitActiveWorkspace: WorkspaceRegistryStore['commitActiveWorkspace'],
+): WorkspaceRegistryStore {
   return {
     read: () => store.read(),
     compareAndReplace: (input) => store.compareAndReplace(input),
     resolveActiveWorkspace: () => store.resolveActiveWorkspace(),
-    async commitActiveWorkspace() {
-      events.push('registry.commit')
-      throw new Error('registry fault')
-    },
+    commitActiveWorkspace,
   }
 }
 
@@ -652,21 +786,18 @@ async function createFixture(): Promise<{
     mkdir(appDataRoot),
     prepareWorkspace(
       previousRoot,
-      previousWorkspaceId,
-      'fall',
-      '2학기',
+      previousWorkspace,
     ),
     prepareWorkspace(
       targetRoot,
-      targetWorkspaceId,
-      'spring',
-      '1학기',
+      targetWorkspace,
     ),
   ])
   const store = createWorkspaceRegistryStore({ appDataRoot })
   const committed = await store.commitActiveWorkspace({
     expectedAuthority: null,
     canonicalRoot: previousRoot,
+    expectedWorkspaceId: previousWorkspaceId,
   })
   assert.equal(committed.status, 'written')
   return {
@@ -681,34 +812,25 @@ async function createFixture(): Promise<{
 
 async function prepareWorkspace(
   root: string,
-  workspaceId: string,
-  termKey: string,
-  termDisplayName: string,
+  identity: WorkspaceFixtureIdentity,
 ): Promise<void> {
   await mkdir(root)
   await execFileAsync('git', ['init', '--quiet', root])
-  await writeWorkspaceIdentity(
-    root,
-    workspaceId,
-    termKey,
-    termDisplayName,
-  )
+  await writeWorkspaceIdentity(root, identity)
 }
 
 async function writeWorkspaceIdentity(
   root: string,
-  workspaceId: string,
-  termKey: string,
-  termDisplayName: string,
+  identity: WorkspaceFixtureIdentity,
 ): Promise<void> {
   await writeFile(
     path.join(root, 'workspace-state.json'),
     encodeSemesterWorkspaceStateV4(
       createInitialSemesterWorkspaceStateV4({
-        workspaceId,
+        workspaceId: identity.workspaceId,
         semester: {
           yearLevel: 2,
-          term: { key: termKey, displayName: termDisplayName },
+          term: identity.term,
         },
       }),
     ),
@@ -735,7 +857,19 @@ function deferred<T>(): Deferred<T> {
   return { promise, resolve }
 }
 
+function never(): Promise<never> {
+  return new Promise(() => undefined)
+}
+
 type Deferred<T> = {
   readonly promise: Promise<T>
   readonly resolve: (value: T | PromiseLike<T>) => void
+}
+
+type WorkspaceFixtureIdentity = {
+  readonly workspaceId: string
+  readonly term: {
+    readonly key: string
+    readonly displayName: string
+  }
 }

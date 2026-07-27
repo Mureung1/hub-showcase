@@ -42,6 +42,7 @@ test('an explicit prepared root wins over the active registry and may be dirty',
     const committed = await store.commitActiveWorkspace({
       expectedAuthority: null,
       canonicalRoot: fixture.registeredRoot,
+      expectedWorkspaceId: firstWorkspaceId,
     })
     assert.equal(committed.status, 'written')
     await writeFile(
@@ -78,6 +79,7 @@ test('startup without an explicit root freshly reopens the active registry root'
     const committed = await store.commitActiveWorkspace({
       expectedAuthority: null,
       canonicalRoot: fixture.registeredRoot,
+      expectedWorkspaceId: firstWorkspaceId,
     })
     assert.equal(committed.status, 'written')
 

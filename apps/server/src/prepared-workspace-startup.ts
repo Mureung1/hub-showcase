@@ -1,12 +1,6 @@
-import type {
-  CodexChildEnvironment,
-} from '@ay-ple/codex-chat-runtime'
-import type {
-  ProductWorkspaceLifecycle,
-} from '@ay-ple/product-contract'
-import type {
-  SemesterWorkspaceStateV4,
-} from '@ay-ple/semester-workspace'
+import type { CodexChildEnvironment } from '@ay-ple/codex-chat-runtime'
+import type { ProductWorkspaceLifecycle } from '@ay-ple/product-contract'
+import type { SemesterWorkspaceStateV4 } from '@ay-ple/semester-workspace'
 
 import {
   resolvePreparedWorkspaceLaunch,
@@ -20,6 +14,7 @@ import {
 
 const requiredInteractionServer = 'ay_ple_interaction'
 const requiredInteractionTools = ['propose_state_patch'] as const
+const defaultCleanupDeadlineMs = 5_000
 
 export type PreparedWorkspaceStartupStage =
   | 'prepared_root_validation'
@@ -32,12 +27,13 @@ export type PreparedWorkspaceStartupStage =
   | 'thread_context'
   | 'registry_transaction'
 
+type PreparedWorkspaceActiveLifecycle = Extract<
+  ProductWorkspaceLifecycle,
+  { readonly state: 'active' }
+>
+
 export type PreparedWorkspaceSharedListener = {
   readonly port: number
-  openActiveSurface(lifecycle: Extract<
-    ProductWorkspaceLifecycle,
-    { readonly state: 'active' }
-  >): void
   close(): Promise<void>
 }
 
@@ -66,7 +62,11 @@ export type PreparedWorkspaceRuntimeGeneration = {
 }
 
 export type PreparedWorkspaceStartupPorts = {
-  bindSharedListener(): Promise<PreparedWorkspaceSharedListener>
+  bindSharedListener(input: {
+    readonly readActiveLifecycle: () =>
+      | PreparedWorkspaceActiveLifecycle
+      | undefined
+  }): Promise<PreparedWorkspaceSharedListener>
   prepareBrokerGeneration(input: {
     readonly canonicalRoot: string
     readonly listenerPort: number
@@ -78,10 +78,7 @@ export type PreparedWorkspaceStartupPorts = {
 }
 
 export type PreparedWorkspaceActiveSession = {
-  readonly lifecycle: Extract<
-    ProductWorkspaceLifecycle,
-    { readonly state: 'active' }
-  >
+  readonly lifecycle: PreparedWorkspaceActiveLifecycle
   adapterLost(): Promise<void>
   close(): Promise<void>
 }
@@ -126,13 +123,21 @@ export async function startPreparedWorkspace(options: {
   readonly explicitWorkspaceRoot?: string
   readonly ports: PreparedWorkspaceStartupPorts
   readonly registryStore?: WorkspaceRegistryStore
+  /** Test-only operational override. Production uses the five-second bound. */
+  readonly cleanupDeadlineMs?: number
 }): Promise<PreparedWorkspaceActiveSession> {
+  const cleanupDeadlineMs = requireCleanupDeadline(
+    options.cleanupDeadlineMs ?? defaultCleanupDeadlineMs,
+  )
   const selection = await requirePreparedSelection(options)
   let stage: PreparedWorkspaceStartupStage = 'shared_listener'
   let listener: PreparedWorkspaceSharedListener | undefined
   let broker: PreparedWorkspaceBrokerGeneration | undefined
   let runtime: PreparedWorkspaceRuntimeGeneration | undefined
+  let activeLifecycle: PreparedWorkspaceActiveLifecycle | undefined
   let runtimeTerminated = false
+  let registryCommitStarted = false
+  let activePublished = false
   let cleanupPromise: Promise<void> | undefined
 
   const cleanup = (
@@ -140,6 +145,7 @@ export async function startPreparedWorkspace(options: {
   ): Promise<void> => {
     cleanupPromise ??= (async () => {
       const failures: unknown[] = []
+      const deadline = Date.now() + cleanupDeadlineMs
       for (const close of [
         () =>
           (reason === 'runtime_terminal'
@@ -151,7 +157,7 @@ export async function startPreparedWorkspace(options: {
         () => listener?.close() ?? Promise.resolve(),
       ]) {
         try {
-          await close()
+          await settleCleanupStep(close, deadline)
         } catch (error) {
           failures.push(error)
         }
@@ -166,8 +172,17 @@ export async function startPreparedWorkspace(options: {
     return cleanupPromise
   }
 
+  const onRuntimeTerminal = (): void => {
+    runtimeTerminated = true
+    if (!registryCommitStarted || activePublished) {
+      void cleanup('runtime_terminal').catch(() => undefined)
+    }
+  }
+
   try {
-    listener = await options.ports.bindSharedListener()
+    listener = await options.ports.bindSharedListener({
+      readActiveLifecycle: () => activeLifecycle,
+    })
 
     stage = 'broker_generation'
     broker = await options.ports.prepareBrokerGeneration({
@@ -180,16 +195,7 @@ export async function startPreparedWorkspace(options: {
       canonicalRoot: selection.canonicalRoot,
       childEnvironment: broker.childEnvironment,
     })
-    void runtime.terminal.then(
-      () => {
-        runtimeTerminated = true
-        void cleanup('runtime_terminal').catch(() => undefined)
-      },
-      () => {
-        runtimeTerminated = true
-        void cleanup('runtime_terminal').catch(() => undefined)
-      },
-    )
+    void runtime.terminal.then(onRuntimeTerminal, onRuntimeTerminal)
 
     stage = 'native_project_config'
     await raceRuntimeTerminal(runtime.loadNativeProjectConfig(), runtime)
@@ -226,6 +232,7 @@ export async function startPreparedWorkspace(options: {
     if (runtimeTerminated) throw new RuntimeTerminatedDuringStartup()
 
     stage = 'registry_transaction'
+    registryCommitStarted = true
     await commitRegistryAuthority(
       options.registryStore ??
         createWorkspaceRegistryStore({
@@ -233,7 +240,6 @@ export async function startPreparedWorkspace(options: {
         }),
       selection,
     )
-    if (runtimeTerminated) throw new RuntimeTerminatedDuringStartup()
 
     const lifecycle = {
       state: 'active',
@@ -242,7 +248,11 @@ export async function startPreparedWorkspace(options: {
       ProductWorkspaceLifecycle,
       { readonly state: 'active' }
     >
-    listener.openActiveSurface(lifecycle)
+    activeLifecycle = lifecycle
+    activePublished = true
+    if (runtimeTerminated) {
+      void cleanup('runtime_terminal').catch(() => undefined)
+    }
 
     return Object.freeze({
       lifecycle,
@@ -325,6 +335,7 @@ async function commitRegistryAuthority(
   const committed = await store.commitActiveWorkspace({
     expectedAuthority: observed.authority,
     canonicalRoot: selection.canonicalRoot,
+    expectedWorkspaceId: selection.workspace.workspaceId,
   })
   if (committed.status !== 'written') {
     throw new TypeError('Workspace registry transaction failed')
@@ -335,16 +346,12 @@ async function raceRuntimeTerminal<T>(
   operation: Promise<T>,
   runtime: PreparedWorkspaceRuntimeGeneration,
 ): Promise<T> {
+  const rejectTerminal = (): never => {
+    throw new RuntimeTerminatedDuringStartup()
+  }
   return Promise.race([
     operation,
-    runtime.terminal.then<never>(
-      () => {
-        throw new RuntimeTerminatedDuringStartup()
-      },
-      () => {
-        throw new RuntimeTerminatedDuringStartup()
-      },
-    ),
+    runtime.terminal.then<never>(rejectTerminal, rejectTerminal),
   ])
 }
 
@@ -403,3 +410,43 @@ function launchFailureLifecycle(
 }
 
 class RuntimeTerminatedDuringStartup extends Error {}
+
+class PreparedWorkspaceCleanupDeadlineError extends Error {
+  constructor() {
+    super('Prepared workspace cleanup exceeded its deadline')
+    this.name = 'PreparedWorkspaceCleanupDeadlineError'
+  }
+}
+
+function requireCleanupDeadline(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw new TypeError('The prepared workspace cleanup deadline is invalid')
+  }
+  return value
+}
+
+async function settleCleanupStep(
+  close: () => Promise<void>,
+  deadline: number,
+): Promise<void> {
+  const attempt = Promise.resolve().then(close)
+  const remaining = deadline - Date.now()
+  if (remaining <= 0) {
+    void attempt.catch(() => undefined)
+    throw new PreparedWorkspaceCleanupDeadlineError()
+  }
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    await Promise.race([
+      attempt,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(
+          () => reject(new PreparedWorkspaceCleanupDeadlineError()),
+          remaining,
+        )
+      }),
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}

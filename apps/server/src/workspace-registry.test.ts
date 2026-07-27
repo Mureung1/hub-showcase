@@ -354,6 +354,7 @@ test('registry loss followed by explicit reselect preserves workspace identity a
     const selected = await store.commitActiveWorkspace({
       expectedAuthority: null,
       canonicalRoot: fixture.firstRoot,
+      expectedWorkspaceId: firstWorkspaceId,
     })
     assert.equal(selected.status, 'written')
     if (selected.status !== 'written') assert.fail('reselect must write')
@@ -363,6 +364,28 @@ test('registry loss followed by explicit reselect preserves workspace identity a
     )
     assert.deepEqual(await readFile(statePath), beforeState)
     assert.deepEqual(await readFile(gitBytesPath), beforeGit)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('active commit rejects a root identity that differs from the verified workspace', async () => {
+  const fixture = await createFixture('expected-workspace')
+  try {
+    await writeIdentity(fixture.firstRoot, firstWorkspaceId)
+    const store = createWorkspaceRegistryStore({
+      appDataRoot: fixture.appDataRoot,
+    })
+
+    assert.deepEqual(
+      await store.commitActiveWorkspace({
+        expectedAuthority: null,
+        canonicalRoot: fixture.firstRoot,
+        expectedWorkspaceId: secondWorkspaceId,
+      }),
+      { status: 'conflict' },
+    )
+    assert.equal((await store.read()).status, 'missing')
   } finally {
     await fixture.cleanup()
   }
