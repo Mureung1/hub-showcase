@@ -191,21 +191,49 @@ CLAUDE.md의 "로그인 없는 익명 세션" 결정을 뒤집고, 실제 회원
 
 ## 4주차 — 서비스 완성, Agent 개발 흐름 완성
 
-### 3주차에서 넘어온 인계 사항
+이 프로젝트는 **금요일(7/31) 데모데이로 종료**된다. 대시보드: [rldbs5353/hub#53](https://github.com/rldbs5353/hub/issues/53).
 
-- [ ] **P0** — `keywords` 응답이 `REVIEW_ANALYSIS_TOOL` 스키마 enum(6개 카테고리)을 서버 측에서 강제하지 않아, 스키마 밖 값("불편" 등)이 그대로 저장되고 점수 계산에도 영향을 줌 (7/24 `#37` 재검증 중 발견, `claude.client.js`가 `toolUse.input`을 검증 없이 반환하는 게 원인 — 응답 파싱 시 enum 화이트리스트로 필터링하거나 매칭 안 되면 "일반"으로 대체하는 가드 추가 필요)
-- [ ] **P2** — `analyzeReviews`의 `Promise.all` fan-out — 리뷰 15개 중 1개만 실패해도 전체가 실패 처리되어 나머지 이미 성공한 분량(=이미 지불한 API 비용)이 버려짐. `Promise.allSettled` + 부분 실패 허용으로 전환 검토 (7/23 코드 리뷰에서 발견, API 계약이 바뀌는 일이라 보류)
-- [ ] **P2** — `supabaseClient.js`가 모듈 로드 시점에 즉시 `createClient()`를 호출하는 eager 초기화라, 순수 함수 하나만 테스트해도 이 체인을 거치면 실제 env 없이는 import가 실패함 (지연 초기화로 전환하면 테스트 작성 시 더미 env 우회가 필요 없어짐)
-- [ ] **P2** — `/stats/summary`·`/stats/monthly`·`/stats/insight`가 대시보드 방문 1회에 동일한 `reviews` 쿼리를 최소 3번 반복 조회 — 엔드포인트 통합 또는 캐시 공유 검토
+- 월(7/27): 핵심 기능 완료와 배포 준비
+- 화(7/28): Vercel·Render 첫 배포
+- 수(7/29)·목(7/30): 부족한 기능 보완, 재배포, 워크플로우 정리, 영상제출(수)
+- 금(7/31): 데모데이 — 개발 작업 없음
 
-### 서비스 완성
+### 월요일(7/27) — 핵심 기능 완료와 배포 준비 (완료)
 
-- [ ] **P0** — 전체 플로우(정상/에러/반복 문제 감지) 통합 테스트 및 버그 픽스
-- [ ] **P0** — 배포 준비 — 프론트엔드 빌드 및 배포 대상, 백엔드 배포 대상 결정 (미정 — 3주차 중 결정)
-- [ ] **P1** — 최종 데모 시나리오 정리, README 최신화
-- [ ] **P1** — 향후 확장 후보(CSV 업로드 / 톤 커스터마이징 / 통계 대시보드) 중 시간이 남으면 1개 프로토타입 착수
-- [ ] **P1** — Agent 개발 흐름 완성 — 4주간 에이전트를 어떻게 활용해 기획부터 개발까지 진행했는지 흐름을 정리 (발표/회고용)
-- [ ] **P2** — 나머지 "향후 개선 아이디어"는 미착수 백로그로 남기고 회고에 기록
+- [x] **P0** — [#39](https://github.com/rldbs5353/hub/issues/39) `keywords` 응답 enum 화이트리스트 가드 추가 (완료. `sanitizeKeywords()`로 스키마 밖 값을 "일반"으로 대체·중복 제거)
+- [x] **P0** — [#41](https://github.com/rldbs5353/hub/issues/41) 전체 플로우(정상/에러/반복 문제 감지) 통합 테스트 및 버그 픽스 (완료. `feature-verifier`로 전 항목 재검증 중 레거시 데이터의 스키마 밖 키워드가 통계·반복문제 감지·내 리뷰 목록에서 그대로 노출되던 버그 추가 발견·수정 — `countKeywords`/`getReviewsByUser`에도 `sanitizeKeywords` 적용)
+- [x] **P0** — [#40](https://github.com/rldbs5353/hub/issues/40) 배포 준비 — Vercel(프론트)/Render(백엔드) 결정 (완료. `api.js`의 하드코딩된 `localhost:4000`을 `VITE_API_BASE_URL` 환경변수로 전환, `vercel.json`으로 SPA rewrite 추가, 루트 `render.yaml`로 백엔드 배포 설정 선언, `CLAUDE.md`에 배포 결정 기록)
+
+### 화요일(7/28) — Vercel·Render 첫 배포
+
+- [ ] **P0** — [#42](https://github.com/rldbs5353/hub/issues/42) Render 백엔드 배포
+- [ ] **P0** — [#43](https://github.com/rldbs5353/hub/issues/43) Vercel 프론트엔드 배포 및 백엔드 연동
+- [ ] **P0** — [#44](https://github.com/rldbs5353/hub/issues/44) 배포 환경 전체 회귀 검증
+
+### 수요일(7/29) — 보완·재배포·워크플로우 정리 + 영상 제출
+
+- [ ] **P0** — [#54](https://github.com/rldbs5353/hub/issues/54) 배포 후 버그 보완 및 재배포 (착수)
+- [ ] **P1** — [#47](https://github.com/rldbs5353/hub/issues/47) Agent 개발 흐름 정리(4주차 회고) — 착수
+- [ ] **P0** — [#55](https://github.com/rldbs5353/hub/issues/55) 데모 영상 제출 (마감)
+
+### 목요일(7/30) — 보완·재배포·워크플로우 정리 (계속)
+
+- [ ] **P0** — [#54](https://github.com/rldbs5353/hub/issues/54) 배포 후 버그 보완 및 재배포 (계속)
+- [ ] **P1** — [#45](https://github.com/rldbs5353/hub/issues/45) 최종 데모 시나리오 정리 (리허설)
+- [ ] **P1** — [#46](https://github.com/rldbs5353/hub/issues/46) README 최신화
+- [ ] **P1** — [#47](https://github.com/rldbs5353/hub/issues/47) Agent 개발 흐름 정리 — 마무리
+- [ ] **P2** — [#52](https://github.com/rldbs5353/hub/issues/52) 잔여 백로그 정리 및 회고 기록
+
+### 금요일(7/31) — 데모데이
+
+개발 작업 없음. 발표 진행.
+
+### 백로그로 이월 (이번 주 일정에는 없음)
+
+- [ ] **P1** — [#48](https://github.com/rldbs5353/hub/issues/48) 향후 확장 후보(CSV 업로드 / 톤 커스터마이징) 중 1개 프로토타입 착수
+- [ ] **P2** — [#49](https://github.com/rldbs5353/hub/issues/49) `Promise.allSettled` 부분 실패 허용 전환 검토
+- [ ] **P2** — [#50](https://github.com/rldbs5353/hub/issues/50) `supabaseClient` 지연 초기화 전환 검토
+- [ ] **P2** — [#51](https://github.com/rldbs5353/hub/issues/51) `stats` 엔드포인트 중복 조회 통합/캐시 검토
 
 ---
 
