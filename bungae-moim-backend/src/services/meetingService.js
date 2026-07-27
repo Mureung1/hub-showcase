@@ -508,7 +508,7 @@ async function cancelMeeting(meetingId, hostId) {
 // 전체 교체(validateCreateMeeting 재사용)까지만 한다.
 async function updateMeeting(meetingId, hostId, body) {
   const meetingRes = await pool.query(
-    `SELECT id, host_id, status, type, adult_only, capacity,
+    `SELECT id, host_id, status, type, adult_only, capacity, apply_question,
             COALESCE(end_at, start_at) < now() AS is_past
        FROM meetings WHERE id = $1`,
     [meetingId]
@@ -568,17 +568,35 @@ async function updateMeeting(meetingId, hostId, body) {
   const nextStatus =
     row.type === 'flash' ? (confirmedCount >= fields.capacity ? 'closed' : 'recruiting') : row.status;
 
+  // 가입 질문은 full-replace의 예외다. 키가 없으면(undefined) 기존 값을 유지한다 — 폼이 값을
+  // 실어 보내지 않는 순간 조용히 지워지는 사고를 서버에서 막는다(읍/면/동에서 실제로 겪었다).
+  const nextApplyQuestion =
+    fields.applyQuestion === undefined ? row.apply_question : fields.applyQuestion;
+
+  // 활성 신청자가 있으면 질문을 바꿀 수 없다. 이미 받은 답변이 엉뚱한 질문에 붙는 것을 막는다.
+  // 같은 값을 다시 보내는 건 변경이 아니므로 통과시킨다(폼이 프리필 값을 그대로 보낸다).
+  if (nextApplyQuestion !== row.apply_question) {
+    const activeRes = await pool.query(
+      `SELECT COUNT(*)::int AS n FROM meeting_participants
+        WHERE meeting_id = $1 AND status IN ('pending','confirmed','approved')`,
+      [meetingId]
+    );
+    if (activeRes.rows[0].n > 0) {
+      throw new ApiError('VALIDATION_ERROR', '신청자가 있어 가입 질문을 변경할 수 없습니다');
+    }
+  }
+
   const { rows } = await pool.query(
     `UPDATE meetings SET
        title=$2, category=$3, description=$4,
        region_sido=$5, region_sigungu=$6, region_eupmyeondong=$7,
        start_at=$8, end_at=$9, capacity=$10, adult_only=$11, open_chat_url=$12,
-       status=$13
+       status=$13, apply_question=$14
      WHERE id=$1 RETURNING *`,
     [meetingId, fields.title, fields.category, fields.description,
      fields.regionSido, fields.regionSigungu, fields.regionEupmyeondong,
      fields.startAt, fields.endAt, fields.capacity, fields.adultOnly, fields.openChatUrl,
-     nextStatus]
+     nextStatus, nextApplyQuestion]
   );
   return normalizeMeeting(rows[0]);
 }
