@@ -50,6 +50,7 @@ export default function RouteRegister({ onSaved }) {
         lines: chosen.lines.join(", "),          // 매칭 1층 재료 (대중교통)
         stops: chosen.stops.join(", "),          // 매칭 2층 재료 (대중교통)
         roads: (chosen.roads ?? []).join(", "),  // 매칭 3층 재료 (자가용)
+        path: chosen.points ?? null,             // 좌표열 — 리포트 실지도용
       }),
     });
     const data = await res.json();

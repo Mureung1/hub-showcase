@@ -27,7 +27,8 @@
 ### 2. Vercel — 프론트
 - Add New Project → 같은 레포, Root Directory: `miricat/frontend`
 - Framework: Vite (자동 감지) · `vercel.json`의 SPA rewrite로 `/report/:id` 직진입·새로고침 대응
-- 환경변수: `VITE_API_BASE=https://<render-url>` (**빌드 시점에 박히는 값** — 바꾸면 재배포 필요)
+- 환경변수: `VITE_API_BASE=https://<render-url>` + `VITE_NAVER_MAP_CLIENT_ID=<네이버지도 클라이언트ID>` (**빌드 시점에 박히는 값** — 바꾸면 재배포 필요)
+- **NCP 콘솔**: Maps Application의 Web 서비스 URL에 `https://<vercel-url>` 추가 (없으면 리포트 실지도가 인증 오류로 안 뜸)
 - 확인: 홈에서 경로 목록 로드 + `/report/<uuid>` 직접 접속
 
 ### 3. 로컬 워커 — 링크 갱신

@@ -24,14 +24,14 @@ app.get('/api/health', async (req, res) => {
 
 // 경로 등록 저장: 화면 입력을 routes 테이블에 insert.
 app.post('/api/routes', async (req, res) => {
-  const { origin_name, dest_name, depart_time, lines, stops, roads } = req.body ?? {};
+  const { origin_name, dest_name, depart_time, lines, stops, roads, path } = req.body ?? {};
   if (!origin_name || !dest_name) {
     return res.status(400).json({ error: 'origin_name과 dest_name은 필수입니다.' });
   }
   const name = `${origin_name} → ${dest_name}`;
   const { data, error } = await supabase
     .from('routes')
-    .insert({ name, origin_name, dest_name, depart_time: depart_time ?? null, lines: lines ?? null, stops: stops ?? null, roads: roads ?? null })
+    .insert({ name, origin_name, dest_name, depart_time: depart_time ?? null, lines: lines ?? null, stops: stops ?? null, roads: roads ?? null, path: path ?? null })
     .select()
     .single();
   if (error) return res.status(500).json({ error: error.message });
@@ -149,12 +149,18 @@ app.get('/api/route-candidates', async (req, res) => {
         const sig = roads.join('|');
         if (seen.has(sig)) continue;         // 두 옵션이 같은 길이면 하나만
         seen.add(sig);
+        // 좌표열: 실지도 폴리라인용. 원본은 수백 점이라 ~60점으로 솎아낸다(표시용으론 충분)
+        const raw = opt.path ?? [];
+        const step = Math.max(1, Math.ceil(raw.length / 60));
+        const points = raw.filter((_, i) => i % step === 0 || i === raw.length - 1)
+          .map(([x, y]) => ({ x, y }));
         candidates.push({
           mode: 'driving',
           totalTime: Math.round((opt.summary?.duration ?? 0) / 60000),  // ms → 분
           distanceKm: Math.round((opt.summary?.distance ?? 0) / 100) / 10,
           roads,                             // 경유 도로명 (매칭 3층 재료)
           lines: [], stops: [],
+          points,
         });
       }
     }
@@ -171,6 +177,7 @@ app.get('/api/route-candidates', async (req, res) => {
   const candidates = (data.result?.path ?? []).slice(0, 5).map((p) => {
     const lines = [];   // 매칭 1층 재료 (버스 번호 + 지하철 호선)
     const stops = [];   // 매칭 2층 재료 (승하차 정류장 — 전체 경유 정류장은 아님, 한계 인지)
+    const points = [];  // 경유 정류장 좌표열 (실지도 폴리라인·마커용)
     for (const sp of p.subPath ?? []) {
       if (sp.trafficType === 2) {                       // 2 = 버스 구간
         for (const l of sp.lane ?? []) lines.push(l.busNo);
@@ -181,6 +188,9 @@ app.get('/api/route-candidates', async (req, res) => {
         if (sp.startName) stops.push(sp.startName);
         if (sp.endName) stops.push(sp.endName);
       }                                                 // 3 = 도보 → 매칭에 안 쓰니 버림
+      for (const st of sp.passStopList?.stations ?? []) {
+        points.push({ name: st.stationName, x: Number(st.x), y: Number(st.y) });
+      }
     }
     return {
       mode: 'transit',
@@ -189,6 +199,7 @@ app.get('/api/route-candidates', async (req, res) => {
       stationCount: p.info?.busStationCount ?? null,
       lines: [...new Set(lines)],                       // 같은 노선 중복 제거
       stops: [...new Set(stops)],
+      points,
     };
   });
   res.json({ candidates });

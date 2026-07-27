@@ -1,8 +1,9 @@
 import { api } from "../lib/api";
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
-import { SOURCE_LABEL, matchNotice, isCurrent } from "../lib/matching";
+import { SOURCE_LABEL, matchNotice, routeTokens, isCurrent } from "../lib/matching";
 import ReportMap from "../components/report/ReportMap";
+import RealMap from "../components/report/RealMap";
 import AltVerdict from "../components/report/AltVerdict";
 import TraceList from "../components/report/TraceList";
 
@@ -69,7 +70,10 @@ export default function ReportPage() {
   const ended = !!event && !isCurrent(event.period);   // 끝난 사건 → "영향 없음"의 이유가 다르다
 
   // 간이 대안 재매칭: 다른 등록 경로 중 이 공지에 안 걸리는 첫 경로 (MIRI-25의 맛보기)
-  const others = currentRoute ? routes.filter((r) => r.id !== currentRoute.id) : [];
+  // 매칭 재료(노선·정류장·도로)가 없는 경로는 "안 걸림"이 아니라 "판정 불가" — 대안 후보에서 뺀다
+  const others = currentRoute
+    ? routes.filter((r) => r.id !== currentRoute.id && routeTokens(r).length > 0)
+    : [];
   const altRoute = affected
     ? others.find((r) => matchNotice(notice, r).size === 0) ?? null
     : null;
@@ -83,13 +87,18 @@ export default function ReportPage() {
       </p>
 
       <div className="report">
-        <ReportMap
-          affected={affected}
-          originName={currentRoute?.origin_name}
-          destName={currentRoute?.dest_name}
-          eventLabel={event?.location || event?.event_name}
-          showAlt={!!altRoute}
-        />
+        {/* 좌표열이 저장된 경로는 실지도, 없는 옛 경로는 연출용 그림 지도로 폴백 */}
+        {currentRoute?.path?.length > 1 ? (
+          <RealMap points={currentRoute.path} hits={hits} affected={affected} />
+        ) : (
+          <ReportMap
+            affected={affected}
+            originName={currentRoute?.origin_name}
+            destName={currentRoute?.dest_name}
+            eventLabel={event?.location || event?.event_name}
+            showAlt={!!altRoute}
+          />
+        )}
 
         <div className="report-side">
           {/* 무슨 일이 있나요 — 경보(빨강) / 영향 없음(초록) */}

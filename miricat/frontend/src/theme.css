@@ -240,7 +240,8 @@ h1 { font-size: 24px; letter-spacing: -0.02em; }
   box-shadow: 0 6px 20px rgba(74, 52, 35, 0.06);
 }
 .report-map { position: relative; background: #f1f4f7; overflow: hidden; }
-.report-map svg { width: 100%; height: 100%; display: block; position: absolute; inset: 0; }
+/* 직계 자식만 — 배지 등 오버레이 안의 SVG(미어캣)까지 늘어나지 않게 */
+.report-map > svg { width: 100%; height: 100%; display: block; position: absolute; inset: 0; }
 
 .map-legend {
   position: absolute; right: 14px; bottom: 14px;
@@ -263,6 +264,18 @@ h1 { font-size: 24px; letter-spacing: -0.02em; }
   gap: 2px; pointer-events: none;
 }
 .map-meerkat .cap { font-size: 11px; font-weight: 600; color: var(--slate); }
+/* 실지도용 좌하단 미어캣 배지 (map-meerkat과 독립 — 상속 겹침 방지) */
+.map-badge {
+  position: absolute; left: 14px; bottom: 26px;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 13px 4px 7px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--mist);
+  border-radius: 999px;
+  z-index: 10; pointer-events: none;
+}
+.map-badge svg { display: block; flex-shrink: 0; }
+.map-badge .cap { font-size: 11px; font-weight: 600; color: var(--slate); white-space: nowrap; }
 
 .report-side {
   padding: 20px; border-left: 1px solid var(--mist);
