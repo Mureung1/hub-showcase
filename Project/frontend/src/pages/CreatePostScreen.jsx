@@ -58,8 +58,8 @@ export default function CreatePostScreen({ onNavigate }) {
       event.target.value = '';
       return;
     }
-    if (files.some((file) => file.size > 2 * 1024 * 1024)) {
-      alert('각 사진은 2MB 이하로 첨부해 주세요.');
+    if (files.some((file) => file.size > 1024 * 1024)) {
+      alert('각 사진은 1MB 이하로 첨부해 주세요.');
       event.target.value = '';
       return;
     }
@@ -83,6 +83,10 @@ export default function CreatePostScreen({ onNavigate }) {
     }
     if (imageUrls.length === 0) {
       alert('상품 사진을 한 장 이상 첨부해 주세요.');
+      return;
+    }
+    if (!url.trim()) {
+      alert('상품 URL을 입력해 주세요.');
       return;
     }
     if (!category) {
@@ -123,7 +127,7 @@ export default function CreatePostScreen({ onNavigate }) {
     const postData = {
       title: title.trim(),
       description: description.trim(),
-      productUrl: url.trim() || 'http://example.com/product',
+      productUrl: url.trim(),
       imageUrls,
       totalPrice: Number(totalPrice),
       targetParticipants: Number(targetCount),
@@ -134,7 +138,9 @@ export default function CreatePostScreen({ onNavigate }) {
       pickupTimeSlot: pickupTime,
       paymentAccount: paymentAccount.trim(),
       category: categoryEnum,
-      deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3), // default 3 days
+      // Until a separate recruitment-close picker is introduced, the chosen
+      // pickup date is also the visible and actual close date for this post.
+      deadlineAt: new Date(pickupTime).toISOString(),
     };
 
     try {
@@ -250,6 +256,7 @@ export default function CreatePostScreen({ onNavigate }) {
                   />
                   <button type="button" className="td-createpost-page__counter-btn" onClick={handleIncrement}>+</button>
                 </div>
+                <p className="td-body-sm">방장을 포함한 전체 인원입니다.</p>
               </div>
             </div>
 

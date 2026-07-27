@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getGroupPurchases, getMyGroupPurchaseActivities, joinGroupPurchase } from '../api/groupPurchase';
+import { addFavoriteGroupPurchase, getFavoriteGroupPurchases, getGroupPurchases, getMyGroupPurchaseActivities, joinGroupPurchase, removeFavoriteGroupPurchase } from '../api/groupPurchase';
 import './HomeScreen.css';
 
 const categories = [
@@ -43,8 +43,14 @@ export default function HomeScreen({ onNavigate }) {
     queryFn: getMyGroupPurchaseActivities,
     enabled: hasToken,
   });
+  const { data: favoriteResponse } = useQuery({
+    queryKey: ['favoriteGroupPurchases'],
+    queryFn: getFavoriteGroupPurchases,
+    enabled: hasToken,
+  });
   const joinedPurchaseIds = new Set((myActivityResponse?.data?.joined || []).map((purchase) => purchase.id));
   const hostedPurchaseIds = new Set((myActivityResponse?.data?.hosted || []).map((purchase) => purchase.id));
+  const favoriteIds = new Set((favoriteResponse?.data || []).map((purchase) => purchase.id));
 
   const purchases = (apiResponse?.data || []).map(item => {
     let categoryLabel = '기타';
@@ -80,6 +86,7 @@ export default function HomeScreen({ onNavigate }) {
       status: item.status,
       deadlineAt: item.deadlineAt,
       createdAt: item.createdAt,
+      distanceKm: item.distanceKm,
     };
   });
 
@@ -117,6 +124,17 @@ export default function HomeScreen({ onNavigate }) {
     } finally {
       setJoiningId(null);
     }
+  };
+
+  const handleFavorite = async (id, event) => {
+    event.stopPropagation();
+    if (!hasToken) {
+      alert('찜하려면 먼저 로그인해 주세요.');
+      return;
+    }
+    if (favoriteIds.has(id)) await removeFavoriteGroupPurchase(id);
+    else await addFavoriteGroupPurchase(id);
+    queryClient.invalidateQueries({ queryKey: ['favoriteGroupPurchases'] });
   };
 
   return (
@@ -202,6 +220,7 @@ export default function HomeScreen({ onNavigate }) {
                 const isHosted = hostedPurchaseIds.has(item.id);
                 const isFull = item.currentParticipants >= item.targetParticipants;
                 const isJoining = joiningId === item.id;
+                const isFavorite = favoriteIds.has(item.id);
                 return (
                   <div 
                     className="td-home-page__card" 
@@ -215,6 +234,7 @@ export default function HomeScreen({ onNavigate }) {
                   >
                     <div className="td-home-page__card-image-wrapper">
                       <img className="td-home-page__card-image" src={item.imageUrl} alt={item.title} />
+                      <button className={`td-home-page__favorite-btn ${isFavorite ? 'td-home-page__favorite-btn--active' : ''}`} aria-label="찜하기" onClick={(event) => handleFavorite(item.id, event)}>♥</button>
                       <div className={`td-home-page__card-badge td-home-page__card-badge--${item.categoryType}`}>
                         <span className="material-symbols-outlined text-sm">{item.categoryIcon}</span>
                         {item.category}
@@ -230,7 +250,7 @@ export default function HomeScreen({ onNavigate }) {
                         </span>
                         <span className="td-label-sm td-home-page__card-meta-item">
                           <span className="material-symbols-outlined text-sm">directions_walk</span>
-                          {item.distanceText}
+                          {item.distanceKm != null ? `${item.distanceKm}km` : '내 위치를 설정해 주세요'}
                         </span>
                       </div>
                       <div className="td-home-page__card-progress-bar">
