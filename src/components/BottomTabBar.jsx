@@ -79,6 +79,9 @@ export default function BottomTabBar() {
 
   return (
     <nav
+      // tds-tabbar: 탭 전환 애니메이션에서 이 바를 제외한다(index.css). 이게 없으면 화면 전체
+      // 스냅샷에 딸려가 탭을 옮길 때마다 탭바가 밀려났다 들어오며 깜빡이는 것처럼 보인다.
+      className="tds-tabbar"
       style={{
         position: 'fixed',
         left: 0,

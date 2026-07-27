@@ -4,5 +4,5 @@
 //
 // 값은 빌드 시점 환경변수 VITE_API_BASE_URL로 주입한다. 웹 배포(Render/Vercel)에서는 설정하지 않아
 // 빈 문자열('') → 상대경로 유지. 앱 빌드 시에만 `VITE_API_BASE_URL=https://<배포주소>`로 빌드한다.
-// (docs/apk-build-guide.md 참고.) 끝의 슬래시는 제거해 `${API_BASE}/api/...`가 이중 슬래시가 되지 않게 한다.
+// (docs/03-개발스펙/apk-build-guide.md 참고.) 끝의 슬래시는 제거해 `${API_BASE}/api/...`가 이중 슬래시가 되지 않게 한다.
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')

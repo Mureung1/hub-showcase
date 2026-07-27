@@ -2,8 +2,13 @@
 import 'dotenv/config'
 import express from 'express'
 import path from 'node:path'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { rateLimit } from 'express-rate-limit'
+import { mapNeisAllergy } from '../src/lib/allergyRules.js'
+import { resolveCnuWeekResult } from '../src/lib/cnuWeekFallback.js'
+import { isSupportedUniversity } from '../src/lib/universities.js'
+import * as cnuUnivMealAdapter from './univMealAdapters/cnu.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -17,11 +22,41 @@ const KAKAO_KEYWORD_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/keyword
 const KAKAO_ADDRESS_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/address.json'
 const KAKAO_COORD2ADDRESS_URL = 'https://dapi.kakao.com/v2/local/geo/coord2address.json'
 const NAVER_LOCAL_SEARCH_URL = 'https://naverapihub.apigw.ntruss.com/search/v1/local'
+// 지역 검색 정렬: 'comment'(리뷰 많은 순 — 추천 품질용 기본값) | 'random'(무작위 — 예전 동작)
+const NAVER_LOCAL_SORT = 'comment'
 
 // 식약처 식품영양성분DB: "음식"(조리식) API가 기본, "가공식품" API는 편의점/포장/프랜차이즈 제품 보완용 폴백. 파라미터·응답 구조는 동일하다.
 const FOODSAFETY_SOURCES = {
   food: { url: 'https://api.data.go.kr/openapi/tn_pubr_public_nutri_food_info_api', envKey: 'FOODSAFETY_API_KEY' },
   process: { url: 'https://api.data.go.kr/openapi/tn_pubr_public_nutri_process_info_api', envKey: 'FOODSAFETY_PROC_API_KEY' },
+}
+
+// NEIS(나이스) 교육정보 개방포털: 학교기본정보(학교 검색) + 급식식단정보(초중고 급식 조회).
+const NEIS_SCHOOL_INFO_URL = 'https://open.neis.go.kr/hub/schoolInfo'
+const NEIS_MEAL_INFO_URL = 'https://open.neis.go.kr/hub/mealServiceDietInfo'
+
+// 대학 학식 "C안 하이브리드"(PRD 1.2): 대학별 크롤러 어댑터 + 크롤링 실패 시 대신 쓸 수동 폴백 JSON.
+// path.join(__dirname, ...)로 읽어야 Vercel의 정적 파일 추적(@vercel/nft)이 이 파일을 배포 번들에
+// 포함시킨다 — 동적으로 조립한 경로는 추적되지 않아 배포본에서 파일이 빠질 수 있다.
+const UNIV_MEAL_ADAPTERS = { cnu: cnuUnivMealAdapter }
+const UNIV_MEAL_FALLBACK_PATH = path.join(__dirname, 'data', 'univ-meals.json')
+const univMealFallbackData = JSON.parse(readFileSync(UNIV_MEAL_FALLBACK_PATH, 'utf8'))
+
+// 크롤링 성공 결과를 폴백 파일에도 반영해둔다(Step 7-1) — 다음 크롤링 실패 때 이것이 최신 폴백이
+// 된다. 파일 쓰기가 막힌 배포 환경(일부 서버리스의 읽기 전용 파일시스템)에서도 실패를 무시한다 —
+// 이미 이번 응답은 라이브 데이터로 성공했고, 메모리 갱신(univMealFallbackData)만으로도 이번
+// 프로세스가 떠 있는 동안은 폴백 최신성이 유지된다.
+function persistUnivFallback(univ, liveResult) {
+  univMealFallbackData[univ] = {
+    week: liveResult.week,
+    updatedAt: new Date().toISOString().slice(0, 10),
+    days: liveResult.days,
+  }
+  try {
+    writeFileSync(UNIV_MEAL_FALLBACK_PATH, JSON.stringify(univMealFallbackData, null, 2) + '\n')
+  } catch (err) {
+    console.error('univ-meals.json 폴백 파일 갱신 실패(무시하고 계속):', err.message)
+  }
 }
 
 const RETRY_DELAYS_MS = [1000, 2000, 4000]
@@ -37,6 +72,10 @@ const EXTERNAL_TIMEOUT_MS = 25000
 // 사진 분석 전체가 수십 초씩 걸린다. 짧게 잡아 "연결 안 됨"을 빨리 판정하고, 판정 즉시 나머지 시도를
 // 건너뛰도록 한다(아래 /api/fooddb 핸들러의 FOODDB_CONNECTION_FAILED 참고).
 const FOODSAFETY_TIMEOUT_MS = 5000
+
+// NEIS도 공공데이터포털 계열이라 식약처와 같은 이유로 짧게 잡는다 — 학교/학식 조회는 화면에서
+// 즉시 체감되는 화면(지도 탭 서브 영역)이라 오래 붙잡는 대신 빨리 실패해 폴백/에러 안내로 넘어간다.
+const NEIS_TIMEOUT_MS = 8000
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -74,6 +113,113 @@ function respondToProxyError(res, err, label) {
   }
   console.error(`${label} failed:`, err)
   return res.status(500).json({ error: 'Internal proxy error' })
+}
+
+// 급식(NEIS)·학식(크롤링) 데이터는 하루 단위로만 바뀌므로, 자정까지 남은 시간만큼만 캐시해
+// 호출을 아낀다(당일 TTL — PRD 1.5). 서버 프로세스 메모리에만 있어 재배포/재시작 시 자연히 비워진다.
+const dayCache = new Map()
+
+function msUntilNextMidnight() {
+  const now = new Date()
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0)
+  return next.getTime() - now.getTime()
+}
+
+function getCached(key) {
+  const entry = dayCache.get(key)
+  if (!entry) return undefined
+  if (Date.now() >= entry.expiresAt) {
+    dayCache.delete(key)
+    return undefined
+  }
+  return entry.value
+}
+
+function setCached(key, value) {
+  dayCache.set(key, { value, expiresAt: Date.now() + msUntilNextMidnight() })
+}
+
+// 대학 학식 주간 크롤링(4주차 보강 Step 7-1)은 자정 기준이 아니라 명시적 24시간 TTL을 쓴다 —
+// 메뉴 정정 가능성을 감안해 "하루 1회 재확인" 의미로, 같은 dayCache Map을 키 네임스페이스로만 구분해 재사용한다.
+function setCachedWithTtl(key, value, ttlMs) {
+  dayCache.set(key, { value, expiresAt: Date.now() + ttlMs })
+}
+
+// YYYYMMDD 형식 + 실존하는 날짜인지(예: 20260231 같은 값 거부)까지 확인한다.
+function isValidYmd(str) {
+  if (!/^\d{8}$/.test(str)) return false
+  const y = Number(str.slice(0, 4))
+  const m = Number(str.slice(4, 6))
+  const d = Number(str.slice(6, 8))
+  const date = new Date(y, m - 1, d)
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d
+}
+
+function daysBetweenYmd(from, to) {
+  const toUtcMs = (str) => Date.UTC(Number(str.slice(0, 4)), Number(str.slice(4, 6)) - 1, Number(str.slice(6, 8)))
+  return Math.round((toUtcMs(to) - toUtcMs(from)) / (24 * 60 * 60 * 1000))
+}
+
+const NEIS_MEAL_TYPE_BY_CODE = { 1: 'breakfast', 2: 'lunch', 3: 'dinner' }
+
+const NEIS_NUTRIENT_LABEL_PATTERNS = [
+  [/^탄수화물/, 'carbs'],
+  [/^단백질/, 'protein'],
+  [/^지방/, 'fat'],
+  [/^비타민a/i, 'vitaminA'],
+  [/^티아민/, 'thiamine'],
+  [/^리보플라빈/, 'riboflavin'],
+  [/^비타민c/i, 'vitaminC'],
+  [/^칼슘/, 'calcium'],
+  [/^철분/, 'iron'],
+]
+
+// "메뉴명 (1.2.5.6)" 형태에서 메뉴명과 NEIS 알레르기 번호를 분리하고, 번호는 곧바로 밀라이즈
+// 코드로 변환해둔다(allergyRules.mapNeisAllergy) — 화면은 NEIS 번호 체계를 몰라도 된다.
+function parseNeisMenus(ddishNm) {
+  return (ddishNm || '')
+    .split(/<br\s*\/?>/i)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const m = line.match(/^(.*?)\s*\(([\d.]+)\)\s*$/)
+      if (!m) return { name: line, allergyCodes: [] }
+      const numbers = m[2]
+        .split('.')
+        .map(Number)
+        .filter((n) => Number.isInteger(n) && n >= 1 && n <= 19)
+      return { name: m[1].trim(), allergyCodes: mapNeisAllergy(numbers) }
+    })
+}
+
+function parseNeisNutrients(ntrInfo) {
+  const nutrients = {}
+  for (const line of (ntrInfo || '').split(/<br\s*\/?>/i)) {
+    const m = line.match(/^([^:]+):\s*([\d.]+)/)
+    if (!m) continue
+    const label = m[1].trim()
+    const value = Number.parseFloat(m[2])
+    const found = NEIS_NUTRIENT_LABEL_PATTERNS.find(([pattern]) => pattern.test(label))
+    if (found) nutrients[found[1]] = value
+  }
+  return nutrients
+}
+
+function normalizeNeisMealRows(rows) {
+  const byDate = new Map()
+  for (const row of rows) {
+    const date = row.MLSV_YMD
+    if (!byDate.has(date)) byDate.set(date, [])
+    byDate.get(date).push({
+      mealType: NEIS_MEAL_TYPE_BY_CODE[Number(row.MMEAL_SC_CODE)] || row.MMEAL_SC_NM,
+      menus: parseNeisMenus(row.DDISH_NM),
+      calories: row.CAL_INFO ? Number.parseFloat(row.CAL_INFO) : null,
+      nutrients: parseNeisNutrients(row.NTR_INFO),
+    })
+  }
+  return Array.from(byDate.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, meals]) => ({ date, meals }))
 }
 
 const app = express()
@@ -146,7 +292,7 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
     return res.status(500).json({ error: 'OPENROUTER_API_KEY is not configured on the server' })
   }
 
-  const { prompt, system, imageBase64, mimeType } = req.body || {}
+  const { prompt, system, imageBase64, mimeType, schema, schemaName, temperature } = req.body || {}
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'prompt is required' })
   }
@@ -164,8 +310,20 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
   }
   messages.push({ role: 'user', content })
 
-  try {
-    const openRouterRes = await fetchWithRetry(OPENROUTER_URL, {
+  // 구조화 출력(json_schema)·temperature — 클라이언트(geminiSchemas.js)가 호출별로 실어 보낸다.
+  const requestBody = { model: MODEL, messages }
+  if (typeof temperature === 'number' && temperature >= 0 && temperature <= 2) {
+    requestBody.temperature = temperature
+  }
+  if (schema && typeof schema === 'object') {
+    requestBody.response_format = {
+      type: 'json_schema',
+      json_schema: { name: typeof schemaName === 'string' ? schemaName : 'result', strict: true, schema },
+    }
+  }
+
+  const callOpenRouter = (body) =>
+    fetchWithRetry(OPENROUTER_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -173,21 +331,38 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
         'HTTP-Referer': APP_REFERER,
         'X-Title': APP_TITLE,
       },
-      body: JSON.stringify({ model: MODEL, messages }),
+      body: JSON.stringify(body),
     })
 
-    const data = await openRouterRes.json()
+  try {
+    const startedAt = Date.now()
+    let openRouterRes = await callOpenRouter(requestBody)
+    let data = await openRouterRes.json()
+
+    // 스키마 강제가 원인일 수 있는 실패(4xx)면 스키마 없이 1회 재시도한다 — 모델/프로바이더가
+    // 구조화 출력을 거부해도 기능 전체가 죽지 않게. 클라이언트의 parseJsonLoose가 그 폴백을 받는다.
+    if (!openRouterRes.ok && requestBody.response_format && openRouterRes.status < 500) {
+      console.warn(
+        `OpenRouter response_format 요청 실패(${openRouterRes.status}) — 스키마 없이 재시도:`,
+        data?.error?.message || '',
+      )
+      const withoutSchema = { ...requestBody }
+      delete withoutSchema.response_format
+      openRouterRes = await callOpenRouter(withoutSchema)
+      data = await openRouterRes.json()
+    }
 
     if (!openRouterRes.ok) {
       console.error('OpenRouter API error:', data)
       return res.status(openRouterRes.status).json({ error: data?.error?.message || 'OpenRouter API error' })
     }
 
-    // 토큰 사용량 로그 — docs/cost-analysis.md의 추정치를 실측값으로 교체할 때 이 로그를 근거로 쓴다.
+    // 토큰 사용량·응답 시간 로그 — docs/04-프로젝트설명/cost-analysis.md의 추정치를 실측값으로 교체할 때 근거로 쓴다.
     if (data?.usage) {
       console.log(
         `Gemini usage: prompt=${data.usage.prompt_tokens ?? '?'} completion=${data.usage.completion_tokens ?? '?'} ` +
-          `total=${data.usage.total_tokens ?? '?'} image=${imageBase64 ? 'Y' : 'N'}`,
+          `total=${data.usage.total_tokens ?? '?'} image=${imageBase64 ? 'Y' : 'N'} ` +
+          `schema=${requestBody.response_format ? 'Y' : 'N'} ${Date.now() - startedAt}ms`,
       )
     }
 
@@ -375,9 +550,13 @@ app.post('/api/naver-places', async (req, res) => {
 
   const url = new URL(NAVER_LOCAL_SEARCH_URL)
   url.searchParams.set('query', query.trim())
+  // display 실측(2026-07): 10/15/30을 요청해도 항상 최대 5건만 반환된다(API Hub 지역 검색의 실질
+  // 상한). 후보 풀을 늘리려면 이 값이 아니라 "서로 다른 키워드로 병렬 검색"을 늘려야 한다(MapPage).
   url.searchParams.set('display', '5')
   url.searchParams.set('start', '1')
-  url.searchParams.set('sort', 'random')
+  // random → comment(리뷰 많은 순): 추천 품질을 위해 검증된 인기 식당을 우선한다. 결과가 결정적이라
+  // 같은 위치·키워드면 같은 후보가 나온다(예전 random은 매번 달랐음). 되돌리려면 이 값만 'random'으로.
+  url.searchParams.set('sort', NAVER_LOCAL_SORT)
   url.searchParams.set('format', 'json')
 
   try {
@@ -571,6 +750,159 @@ app.post('/api/fooddb', async (req, res) => {
     console.error(`FoodSafety proxy(${source}) upstream connection failed:`, err.message)
     res.status(503).json({ error: '식약처 API 서버에 연결할 수 없습니다', code: 'FOODDB_CONNECTION_FAILED' })
   }
+})
+
+// GET /api/school-search?name=학교명 - NEIS 학교기본정보 검색 프록시 (NEIS_API_KEY는 서버에서만 사용)
+app.get('/api/school-search', async (req, res) => {
+  const apiKey = process.env.NEIS_API_KEY
+  if (!apiKey) {
+    return res.status(500).json({ error: 'NEIS_API_KEY is not configured on the server' })
+  }
+
+  const name = (req.query.name || '').toString().trim()
+  if (name.length < 2) {
+    return res.status(400).json({ error: 'name은 2자 이상이어야 합니다' })
+  }
+
+  try {
+    const url = new URL(NEIS_SCHOOL_INFO_URL)
+    url.searchParams.set('KEY', apiKey)
+    url.searchParams.set('Type', 'json')
+    url.searchParams.set('pIndex', '1')
+    url.searchParams.set('pSize', '20')
+    url.searchParams.set('SCHUL_NM', name)
+
+    const upstream = await fetchWithTimeout(url.toString(), undefined, NEIS_TIMEOUT_MS)
+    if (!upstream.ok) {
+      return res.status(502).json({ error: 'NEIS 서버 응답 오류' })
+    }
+    const data = await upstream.json()
+    // NEIS는 결과가 없으면 "schoolInfo" 자체가 없는 성공(200) 응답을 준다 — 에러가 아니라 빈 배열이다.
+    const rows = data?.schoolInfo?.[1]?.row ?? []
+    const schools = rows.map((r) => ({
+      name: r.SCHUL_NM,
+      officeCode: r.ATPT_OFCDC_SC_CODE,
+      officeName: r.ATPT_OFCDC_SC_NM,
+      schoolCode: r.SD_SCHUL_CODE,
+      kind: r.SCHUL_KND_SC_NM,
+    }))
+    res.json({ schools })
+  } catch (err) {
+    respondToProxyError(res, err, '/api/school-search')
+  }
+})
+
+// GET /api/school-meal?officeCode=&schoolCode=&from=YYYYMMDD&to=YYYYMMDD
+// NEIS 급식식단정보 프록시. 학교코드 형식·날짜 범위(최대 31일)를 검증해 프록시를 임의 크롤러로
+// 악용하는 것을 막고, 하루 단위 데이터라 자정까지 캐시해 쿼터를 아낀다(당일 TTL).
+app.get('/api/school-meal', async (req, res) => {
+  const apiKey = process.env.NEIS_API_KEY
+  if (!apiKey) {
+    return res.status(500).json({ error: 'NEIS_API_KEY is not configured on the server' })
+  }
+
+  const officeCode = (req.query.officeCode || '').toString().trim()
+  const schoolCode = (req.query.schoolCode || '').toString().trim()
+  const from = (req.query.from || '').toString().trim()
+  const to = (req.query.to || '').toString().trim()
+
+  if (!/^[A-Z][0-9A-Z]{2}$/.test(officeCode)) {
+    return res.status(400).json({ error: 'officeCode 형식이 올바르지 않습니다' })
+  }
+  if (!/^\d{5,10}$/.test(schoolCode)) {
+    return res.status(400).json({ error: 'schoolCode 형식이 올바르지 않습니다' })
+  }
+  if (!isValidYmd(from) || !isValidYmd(to)) {
+    return res.status(400).json({ error: 'from/to는 YYYYMMDD 형식이어야 합니다' })
+  }
+  if (from > to) {
+    return res.status(400).json({ error: 'from은 to보다 이전이어야 합니다' })
+  }
+  if (daysBetweenYmd(from, to) > 31) {
+    return res.status(400).json({ error: '조회 범위는 최대 31일입니다' })
+  }
+
+  const cacheKey = `school-meal:${officeCode}:${schoolCode}:${from}:${to}`
+  const cached = getCached(cacheKey)
+  if (cached) {
+    return res.json(cached)
+  }
+
+  try {
+    const url = new URL(NEIS_MEAL_INFO_URL)
+    url.searchParams.set('KEY', apiKey)
+    url.searchParams.set('Type', 'json')
+    url.searchParams.set('pIndex', '1')
+    url.searchParams.set('pSize', '100')
+    url.searchParams.set('ATPT_OFCDC_SC_CODE', officeCode)
+    url.searchParams.set('SD_SCHUL_CODE', schoolCode)
+    url.searchParams.set('MLSV_FROM_YMD', from)
+    url.searchParams.set('MLSV_TO_YMD', to)
+
+    const upstream = await fetchWithTimeout(url.toString(), undefined, NEIS_TIMEOUT_MS)
+    if (!upstream.ok) {
+      return res.status(502).json({ error: 'NEIS 서버 응답 오류' })
+    }
+    const data = await upstream.json()
+    // NEIS는 결과가 없을 때도 "row" 없는 성공(200) 응답을 준다 — 방학·주말은 에러가 아니라 빈 배열이다.
+    const rows = data?.mealServiceDietInfo?.[1]?.row ?? []
+    const payload = { days: normalizeNeisMealRows(rows) }
+    setCached(cacheKey, payload)
+    res.json(payload)
+  } catch (err) {
+    respondToProxyError(res, err, '/api/school-meal')
+  }
+})
+
+// GET /api/univ-meal?univ=cnu[&week=YYYYMMDD] - 대학 학식 C안 하이브리드, 5개 식당 × 주간 단위
+// (4주차 보강 Step 7-1). 1차 크롤링(건물 4곳 병렬) → 2차 수동 폴백 JSON → 3차 빈 상태. 판정 자체는
+// 순수 함수 resolveCnuWeekResult가 맡고(src/lib/cnuWeekFallback.js, 테스트도 그쪽에 있다), 여기는
+// 그 입력(크롤링 결과/폴백 항목)만 만든다. 이 사이트는 요청 파라미터와 무관하게 항상 "이번 주"만
+// 주므로 week는 실질적으로 응답에 영향을 주지 않지만(과거 date= 호출과의 하위호환 겸 형식 검증용),
+// 값이 오면 형식만 검증한다. 개발 모드에서만 ?forceFailure=1로 크롤링을 강제 실패시켜 폴백 경로를
+// 재현할 수 있다 — 이 요청은 캐시를 읽지도 쓰지도 않아 이후 정상 요청의 결과를 오염시키지 않는다.
+const UNIV_WEEK_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+
+app.get('/api/univ-meal', async (req, res) => {
+  const univ = (req.query.univ || '').toString().trim()
+  // week가 새 파라미터, date는 예전 호출과의 하위호환(둘 다 형식만 검증하고 실제로는 안 쓴다).
+  const weekParam = (req.query.week || req.query.date || '').toString().trim()
+
+  if (!isSupportedUniversity(univ)) {
+    return res.status(400).json({ error: `지원하지 않는 대학입니다: ${univ}` })
+  }
+  if (weekParam && !isValidYmd(weekParam)) {
+    return res.status(400).json({ error: 'week는 YYYYMMDD 형식이어야 합니다' })
+  }
+
+  const forceFailure = process.env.NODE_ENV !== 'production' && req.query.forceFailure === '1'
+  const cacheKey = `univ-week:${univ}`
+
+  if (!forceFailure) {
+    const cached = getCached(cacheKey)
+    if (cached) {
+      return res.json(cached)
+    }
+  }
+
+  let liveResult = null
+  if (!forceFailure) {
+    try {
+      liveResult = await UNIV_MEAL_ADAPTERS[univ].fetchWeeklyMenu()
+      persistUnivFallback(univ, liveResult)
+    } catch (err) {
+      // 구조 변경 감지용 — 크롤링이 계속 실패하면 이 로그로 원인(HTTP 에러/타임아웃/파싱 예외)을 알 수 있다.
+      console.error(`univ-meal(${univ}) crawl failed:`, err.message)
+      liveResult = null
+    }
+  }
+
+  const fallbackWeek = univMealFallbackData[univ] ?? null
+  const result = resolveCnuWeekResult({ liveResult, fallbackWeek })
+  if (!forceFailure) {
+    setCachedWithTtl(cacheKey, result, UNIV_WEEK_CACHE_TTL_MS)
+  }
+  res.json(result)
 })
 
 // Render처럼 이 서버 프로세스 하나가 빌드된 프론트(dist)까지 함께 서빙하는 배포에서만 켠다.

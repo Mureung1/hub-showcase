@@ -67,7 +67,7 @@ description: 새로 만들거나 고친 기능이 요구사항대로 동작하�
 | `ESTIMATED_GRAMS_MIN/MAX` | `20` / `1500` | `nutrition.js` — 범용 섭취량 범위 |
 | `MAX_AD_PRODUCTS` | `3` | `adRecommendation.js` |
 
-리스트/배열은 **0개, 1개, 아주 많이(1000개)** 를 본다. `docs/csv-crossplatform-test.md`와
+리스트/배열은 **0개, 1개, 아주 많이(1000개)** 를 본다. `docs/03-개발스펙/csv-crossplatform-test.md`와
 `scripts/generate-sample-csv.mjs`(1,000행 생성기)가 이미 있다.
 
 날짜는 **월말/월초, 연말, 윤년**을 본다 (달력 탭·`dateKey` 관련).

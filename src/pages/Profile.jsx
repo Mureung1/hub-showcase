@@ -12,7 +12,10 @@ import TagMultiSelect from '../components/TagMultiSelect.jsx'
 import TextField from '../components/TextField.jsx'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS } from '../lib/healthProfile.js'
 import { calcRecommendedNutrients, NUTRIENT_LABELS } from '../lib/nutrition.js'
+import { OCCUPATION_OPTIONS } from '../lib/occupationKeywords.js'
+import { searchSchools } from '../lib/schoolMeal.js'
 import { getStandardIntake } from '../lib/standardIntake.js'
+import { SUPPORTED_UNIVERSITIES } from '../lib/universities.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 const SEX_OPTIONS = [
@@ -85,10 +88,51 @@ export default function Profile() {
     activity: profile?.activity ?? 'moderate',
     conditions: profile?.conditions ?? [],
     allergies: profile?.allergies ?? [],
+    occupation: profile?.occupation ?? 'other',
   }))
 
   function updateField(key, value) {
     setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  // 내 학교(FR-1.1) — 급식·학식 화면이 참조하는 profile.school = null | { type, officeCode, code, name }.
+  // 신체정보와 같은 저장 버튼(handleSave)을 공유한다 — 별도 저장 경로를 두면 신체정보 없이 학교만 있는
+  // 반쪽짜리 프로필 행이 생겨 온보딩 판정(!profile)이 꼬일 수 있어서다.
+  const [selectedSchool, setSelectedSchool] = useState(profile?.school ?? null)
+  const [schoolPickerKind, setSchoolPickerKind] = useState('k12')
+  const [schoolQuery, setSchoolQuery] = useState('')
+  const [schoolResults, setSchoolResults] = useState([])
+  const [schoolSearching, setSchoolSearching] = useState(false)
+  const [schoolSearchError, setSchoolSearchError] = useState('')
+
+  async function handleSchoolSearch() {
+    const q = schoolQuery.trim()
+    if (q.length < 2) {
+      setSchoolSearchError('학교명을 2자 이상 입력해주세요.')
+      return
+    }
+    setSchoolSearching(true)
+    setSchoolSearchError('')
+    try {
+      const schools = await searchSchools(q)
+      setSchoolResults(schools)
+      if (schools.length === 0) setSchoolSearchError('검색 결과가 없어요. 학교명을 다시 확인해주세요.')
+    } catch (err) {
+      setSchoolSearchError(err.message || '학교 검색에 실패했어요.')
+    } finally {
+      setSchoolSearching(false)
+    }
+  }
+
+  function handleSelectK12School(school) {
+    setSelectedSchool({ type: 'k12', officeCode: school.officeCode, code: school.schoolCode, name: school.name })
+    setSchoolResults([])
+    setSchoolQuery('')
+    setSchoolSearchError('')
+  }
+
+  function handleSelectUniversity(univ) {
+    setSelectedSchool({ type: 'university', officeCode: null, code: univ.code, name: univ.name })
   }
 
   // form은 마운트 시 한 번만 profile에서 초기화되는데, 마운트된 채로 profile 자체가 바뀌는 경우가
@@ -104,7 +148,9 @@ export default function Profile() {
       activity: profile?.activity ?? 'moderate',
       conditions: profile?.conditions ?? [],
       allergies: profile?.allergies ?? [],
+      occupation: profile?.occupation ?? 'other',
     })
+    setSelectedSchool(profile?.school ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile])
 
@@ -144,6 +190,8 @@ export default function Profile() {
       activity: form.activity,
       conditions: form.conditions,
       allergies: form.allergies,
+      school: selectedSchool,
+      occupation: form.occupation,
     }
 
     setSaving(true)
@@ -217,15 +265,180 @@ export default function Profile() {
         onChange={(next) => updateField('conditions', next)}
         placeholder="기타 질환 직접 입력"
       />
+
+      <div style={styles.field}>
+        <span style={styles.label}>직업 (선택 — 식당 추천에 반영돼요)</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing.sm }}>
+          {OCCUPATION_OPTIONS.map((opt) => {
+            const active = form.occupation === opt.key
+            return (
+              <button
+                key={opt.key}
+                type="button"
+                className="tds-press"
+                onClick={() => updateField('occupation', opt.key)}
+                style={{
+                  padding: `${spacing.sm}px ${spacing.md}px`,
+                  borderRadius: radius.sm,
+                  border: 'none',
+                  background: active ? colors.primary : colors.bg,
+                  color: active ? '#fff' : colors.textStrong,
+                  fontWeight: 700,
+                  fontSize: font.size.sm,
+                  cursor: 'pointer',
+                }}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div style={styles.field}>
+        <span style={styles.label}>내 학교 (선택 — 급식·학식 조회용)</span>
+        {selectedSchool ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: spacing.md,
+              background: colors.bg,
+              borderRadius: radius.sm,
+            }}
+          >
+            <span style={{ color: colors.textStrong, fontSize: font.size.sm }}>
+              {selectedSchool.name} ({selectedSchool.type === 'k12' ? '급식' : '학식'})
+            </span>
+            <button
+              type="button"
+              className="tds-press"
+              onClick={() => setSelectedSchool(null)}
+              style={{ ...styles.buttonSecondary, padding: '6px 12px', fontSize: font.size.xs }}
+            >
+              변경
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', gap: spacing.sm, marginBottom: spacing.sm }}>
+              {[
+                { key: 'k12', label: '초·중·고' },
+                { key: 'university', label: '대학' },
+              ].map((opt) => {
+                const active = schoolPickerKind === opt.key
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    className="tds-press"
+                    onClick={() => setSchoolPickerKind(opt.key)}
+                    style={{
+                      flex: 1,
+                      padding: `${spacing.sm}px 0`,
+                      borderRadius: radius.sm,
+                      border: 'none',
+                      background: active ? colors.primary : colors.bg,
+                      color: active ? '#fff' : colors.textStrong,
+                      fontWeight: 700,
+                      fontSize: font.size.sm,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            {schoolPickerKind === 'k12' ? (
+              <>
+                <div style={{ display: 'flex', gap: spacing.sm }}>
+                  <input
+                    type="text"
+                    value={schoolQuery}
+                    onChange={(e) => setSchoolQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleSchoolSearch()
+                      }
+                    }}
+                    placeholder="학교명 검색 (예: 양서고등학교)"
+                    style={{ ...styles.input, flex: 1 }}
+                  />
+                  <AppButton
+                    variant="secondary"
+                    onClick={handleSchoolSearch}
+                    disabled={schoolSearching}
+                    style={{ width: 'auto', padding: `0 ${spacing.lg}px` }}
+                  >
+                    {schoolSearching ? '검색 중...' : '검색'}
+                  </AppButton>
+                </div>
+                {schoolSearchError && <p style={styles.errorText}>{schoolSearchError}</p>}
+                {schoolResults.map((s) => (
+                  <button
+                    key={`${s.officeCode}-${s.schoolCode}`}
+                    type="button"
+                    className="tds-press"
+                    onClick={() => handleSelectK12School(s)}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: spacing.md,
+                      marginTop: spacing.sm,
+                      borderRadius: radius.sm,
+                      border: `1px solid ${colors.border}`,
+                      background: '#fff',
+                      cursor: 'pointer',
+                      fontSize: font.size.sm,
+                      color: colors.textStrong,
+                    }}
+                  >
+                    {s.name} <span style={{ color: colors.textSub }}>· {s.officeName} · {s.kind}</span>
+                  </button>
+                ))}
+              </>
+            ) : (
+              <div style={{ display: 'flex', gap: spacing.sm }}>
+                {SUPPORTED_UNIVERSITIES.map((u) => (
+                  <button
+                    key={u.code}
+                    type="button"
+                    className="tds-press"
+                    onClick={() => handleSelectUniversity(u)}
+                    style={{
+                      flex: 1,
+                      padding: spacing.md,
+                      borderRadius: radius.sm,
+                      border: `1px solid ${colors.border}`,
+                      background: '#fff',
+                      cursor: 'pointer',
+                      fontSize: font.size.sm,
+                      fontWeight: 600,
+                      color: colors.textStrong,
+                    }}
+                  >
+                    {u.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </>
   )
 
   return (
     <div style={styles.page}>
-      <ScreenHeader
-        title={isOnboarding ? '내 정보 입력' : 'MY'}
-        subtitle={isOnboarding ? '정확한 영양 분석을 위해 알려주세요' : '건강 정보와 하루 권장 섭취량을 확인해보세요'}
-      />
+      {/* 화면 제목은 온보딩(첫 입력)일 때만 둔다. MY 탭 상태에서는 하단 탭바가 이미 현재 화면을
+          알려주므로 "MY" 제목/설명 줄이 중복이지만, 온보딩은 탭 이동이 아니라 "지금 이걸 입력해달라"는
+          할 일 화면이라 제목이 역할을 한다. */}
+      {isOnboarding && <ScreenHeader title="내 정보 입력" subtitle="정확한 영양 분석을 위해 알려주세요" />}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: spacing.md }}>
         {authMode === 'user' ? (

@@ -197,6 +197,39 @@ a {
   }
 }
 
+/* 상단 헤더와 하단 탭바는 화면 전환에서 빼둔다.
+   위 규칙이 애니메이션하는 root 스냅샷은 "화면 전체"라, position:fixed인 하단 탭바와 상단 헤더까지
+   같이 translateX 된다 — 탭을 옮길 때마다 탭바가 화면 밖으로 밀려났다가 반대편에서 들어오는 것이
+   "탭바가 깜빡인다"의 정체다. 두 요소에 각자 view-transition-name을 주면 root에서 분리돼 별도
+   그룹이 되고, 아래처럼 그 그룹의 크로스페이드를 끄면 전환 내내 제자리에 그대로 남는다
+   (콘텐츠 영역만 좌우로 슬라이드한다).
+   - old를 display:none으로 지우고 new만 남기는 이유: new는 정지 이미지가 아니라 실제 화면의 라이브
+     표현이라, 탭 아이콘 바운스(.tds-tab-bounce) 같은 자체 애니메이션이 전환 중에도 그대로 보인다.
+   - group의 기본 애니메이션(위치·크기 보간)은 일부러 남겨둔다. 탭바는 fixed라 어느 화면에서나 같은
+     자리지만, 헤더는 스크롤과 함께 흐르는 요소라 두 화면의 스크롤 위치가 다르면 좌표가 달라질 수
+     있다 — 그때 튀지 않고 부드럽게 맞춰지도록.
+   - 미디어쿼리 밖에 두는 이유: reduce-motion에서도 똑같이 고정돼야 한다. */
+.tds-appbar {
+  view-transition-name: tds-appbar;
+}
+.tds-tabbar {
+  view-transition-name: tds-tabbar;
+}
+::view-transition-image-pair(tds-appbar),
+::view-transition-image-pair(tds-tabbar) {
+  isolation: none;
+}
+::view-transition-old(tds-appbar),
+::view-transition-old(tds-tabbar) {
+  animation: none;
+  display: none;
+}
+::view-transition-new(tds-appbar),
+::view-transition-new(tds-tabbar) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
 /* OS "동작 줄이기"(prefers-reduced-motion): 슬라이드를 전부 짧은 페이드로 대체한다.
    모션을 0으로 없애지는 않는다 — "화면이 바뀌었다"는 피드백 자체는 남겨야 하기 때문. */
 @media (prefers-reduced-motion: reduce) {

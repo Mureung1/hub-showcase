@@ -36,8 +36,33 @@ npm run lint      # oxlint
 npm run preview   # vite preview (static preview of dist/, no API — use npm run start for that)
 ```
 
-There is no test suite/runner configured in this repo (no test script, no test files). Verify
-changes by running the app (see above) and exercising the flow in-browser.
+### Tests
+
+**Vitest + jsdom + @testing-library/react** (`vitest.config.js` merges `vite.config.js` so plugins/
+aliases stay shared; `vitest.setup.js` registers jest-dom matchers and auto-`cleanup()`s). `globals:
+true`, so `describe`/`it`/`expect` need no import. Only `src/**/*.{test,spec}.{js,jsx}` is collected —
+`android/` and `dist/` are excluded.
+
+```bash
+npm run test                                   # vitest run (one-shot)
+npm run test:watch                             # vitest (watch)
+npx vitest run src/lib/foodCategory.test.js    # a single file
+npx vitest run -t "부족 영양소"                 # a single test/describe by name
+```
+
+Test files sit **next to the code** (`src/lib/foodCategory.test.js`, `src/utils/formatNutrient.test.js`);
+`src/__tests__/` is for cross-cutting ones (`appShell.tabbar.test.jsx`) plus two `example.*` templates
+kept as starting points. Coverage is deliberately thin and concentrated on pure logic — most of the app
+is still verified by running it in-browser. Two **pre-Vitest** node-assertion scripts remain and are
+still the guards for their areas (don't rewrite them casually — they load the real serializers):
+
+```bash
+npm run check:ads   # scripts/check-ad-recommendation.mjs — ad recommendation rules
+npm run check:csv   # scripts/check-csv-roundtrip.mjs — CSV export→import roundtrip
+```
+
+The `.claude/skills/테스트-작성` skill holds this project's TDD conventions, and
+`.claude/skills/기능-검증` a post-implementation verification checklist.
 
 To exercise the Vercel serverless path (`api/index.js`) locally, use `vercel dev` — see the "Vercel
 CLI로 로컬에서 서버리스 함수 테스트하기" section of README.md. Since `server/proxy.js` loads `.env`
@@ -64,10 +89,19 @@ tab on web; used by ad/map links since WebView blocks `target="_blank"`). `src/l
 `navigator.geolocation` need **no native code**: Capacitor's default `BridgeWebChromeClient` handles
 `onShowFileChooser`/`onGeolocationPermissionsShowPrompt`/`onPermissionRequest`, so `MainActivity` stays a plain
 `BridgeActivity`. Header/tab-bar use `env(safe-area-inset-*)`. Full build steps, the server-URL-vs-local-bundle
-tradeoff, and the known CSV-download WebView limitation are in `docs/apk-build-guide.md`. **Capacitor is additive
+tradeoff, and the known CSV-download WebView limitation are in `docs/03-개발스펙/apk-build-guide.md`. **Capacitor is additive
 — none of it affects the web build** (`@capacitor/*` is inert on web; `Capacitor.isNativePlatform()` is false there).
 
 ## Architecture
+
+`docs/03-개발스펙/architecture.md` renders all of the below as Mermaid diagrams (system layout, photo→nutrition
+flow, auth, deployment, CSV, ads); a condensed version is embedded in README.md. Update the diagram
+in the same change that moves the code.
+
+All project docs live under `docs/`, grouped into four categories: `01-알고리즘/` (nutrition-matching
+and ad/leaderboard scoring logic), `02-디자인/` (Toss-style design system — the `/toss` skill's
+source of truth), `03-개발스펙/` (architecture, build/test/interaction guides, PRD), `04-프로젝트설명/`
+(project narrative, cost analysis, release checklists). `docs/README.md` indexes all of it.
 
 ### One Express app, two deployment entry points
 
@@ -86,6 +120,10 @@ All API logic (`/api/gemini`, `/api/naver-places`, `/api/reverse-geocode`, `/api
   `server/proxy.js` restores onto `req.url` when `process.env.VERCEL` is set.
 
 Both deployments coexist in the same repo/branch; nothing needs to be picked at build time.
+
+Every `/api` route is rate-limited by IP (`express-rate-limit`): 60 req/min overall, and `/api/gemini`
+additionally 30 per 10 min because it burns paid OpenRouter tokens. Hammering the analyze flow in a
+test loop will start returning `요청이 너무 많습니다` — that's the limiter, not a bug.
 
 ### Why a proxy exists at all
 
@@ -114,6 +152,16 @@ rollback path — `src/pages/MapPage.jsx` now sources restaurant candidates from
 `category_name`/`place_url`/`x`=lng/`y`=lat), so neither of those needs to know which search backend
 is active.
 
+`src/lib/foodCategory.js` is the single source for the 지도 탭's "음식 종류" filter (전체/한식/중식/일식/
+양식/분식/아시안/카페·디저트): the list itself, the per-category search-keyword pool, the tokens that
+decide whether a Naver `category` string belongs to a category, and the selected value (stored per
+*device* in localStorage, following `cardSettings.js`'s reasoning — it's a screen preference, not
+account data). `MapPage` feeds the chosen category into the keyword-generation prompt, then filters
+the search results by category and, if that leaves nothing, relaxes in steps (search by the category
+name alone → fall back to uncategorized results **with an on-screen notice**) rather than silently
+showing another cuisine. `전체` keeps the exact pre-existing behavior, prompt text included.
+`src/lib/foodCategory.test.js` covers the matching/filtering rules.
+
 ### Ads: Coupang Partners supplements (real data path, placeholder links)
 
 식단(`/meals`) 탭의 "부족한 영양소는?" 가로 캐러셀(`src/components/DeficientNutrientAds.jsx`)이 유일한
@@ -126,7 +174,7 @@ is active.
 (`vitaminD`/`calcium`/…)가 섞여 있고, `AD_NUTRIENTS`의 `tracked` 플래그가 둘을 구분한다. `sodium`은
 한도형이라 의도적으로 없다. `COUPANG_DISCLOSURE` 문구와 AD 배지는 어떤 상태에서도 렌더링을 생략하면
 안 된다(법정 고지). 추천 로직 검증은 `npm run check:ads`
-(`scripts/check-ad-recommendation.mjs` — 이 저장소엔 테스트 러너가 없어 노드 단언 스크립트로 대신한다).
+(`scripts/check-ad-recommendation.mjs` — Vitest 도입 이전에 만든 노드 단언 스크립트라 그대로 남아 있다).
 식당 광고는 PRD v2.0 §6에서 스코프 아웃돼 관련 목업(`SPONSORED_RESTAURANTS`, `PlaceList`의 `isAd` 분기)이
 제거됐다.
 
@@ -245,7 +293,7 @@ nothing) then `applyBackup` — so the duplicate-date "overwrite / skip" dialog 
 row-level parse failures are skipped and counted rather than aborting the file, while a wrong *file*
 (missing section markers / mismatched header) aborts before writing anything. Every outcome surfaces
 as a toast (`src/context/ToastContext.jsx`), because PRD §2 forbids silent failure. Test procedure and
-the 1,000-row sample generator: `docs/csv-crossplatform-test.md`, `scripts/generate-sample-csv.mjs`.
+the 1,000-row sample generator: `docs/03-개발스펙/csv-crossplatform-test.md`, `scripts/generate-sample-csv.mjs`.
 
 - `src/lib/mealStore.js`: guest mode's live meal storage (via `dataStore.js`, keyed by
   `dataStore.GUEST_ID`) *and* the CSV export/import subsystem's self-contained legacy storage for
@@ -259,11 +307,16 @@ the 1,000-row sample generator: `docs/csv-crossplatform-test.md`, `scripts/gener
 
 ### Routing and design system
 
-- `src/router.jsx`: `react-router-dom` routes. `RootRedirect` handles `/` (always -> `/analyze`, unless
-  loading or a profile-fetch error is in progress); `LoadGate` wraps every other content route and only
-  blocks on session/profile loading, never on login state. Every route wraps content in `AppShell` (adds the bottom tab bar)
-  except `/login`, which passes `hideTabBar` — `/profile` shows the tab bar in both its onboarding and
-  MY-tab uses, since both need to stay navigable via the tab bar.
+- `src/router.jsx`: `react-router-dom` routes. `AppShell` (bottom tab bar) and `LoadGate` are **layout
+  routes**, not per-route wrappers: `<Route element={<AppShell/>}>` holds every tab screen and
+  `<Route element={<LoadGate/>}>` nests inside it, so a path change swaps only what renders at
+  `AppShell`'s `<Outlet/>` — the tab bar component stays mounted across navigations, and it also stays
+  put while `LoadGate` shows its loading/error card. `/login` and `/signup` sit under a second
+  `<AppShell hideTabBar/>` layout route; `/profile` is under the tab-bar one in both its onboarding and
+  MY-tab uses, since both need to stay navigable via the tab bar. `RootRedirect` handles `/` (always ->
+  `/analyze`, unless loading or a profile-fetch error is in progress); `LoadGate` only blocks on
+  session/profile loading, never on login state. `src/__tests__/appShell.tabbar.test.jsx` pins the
+  layout-route property by asserting the tab bar's DOM node survives a navigation.
 - `src/styles/theme.js` is the single source of design tokens (colors, spacing, radius, shadow,
   font, layout, and shared inline `styles.*` objects like `styles.page`/`styles.card`) — components
   should reference these tokens, not hardcode hex/px values. Interactive elements get
@@ -278,9 +331,13 @@ the 1,000-row sample generator: `docs/csv-crossplatform-test.md`, `scripts/gener
   fallback. **Only `transform`/`opacity` may be animated** — progress bars use
   `ProgressBarFill`'s `scaleX`, never `width`; the two remaining `stroke-dashoffset` transitions are
   deliberate (SVG paint-only, no reflow). `AppShell` also resets `data-nav-direction` on every route
-  change and restores per-tab scroll position. Details: `docs/interaction-guide.md`.
+  change and restores per-tab scroll position. The header (`.tds-appbar`) and the bottom tab bar
+  (`.tds-tabbar`) each carry their own `view-transition-name` so they are pulled out of the animated
+  `root` snapshot — without that, the `translateX` on `::view-transition-old/new(root)` drags both bars
+  (the tab bar is `position: fixed`) off-screen and back on every tab change, which is what "the tab bar
+  flickers" was. Details: `docs/03-개발스펙/interaction-guide.md`.
 - **`.claude/commands/toss.md`** (invoked via `/toss`) is a project-specific skill applying Toss
-  design-system conventions, with detailed docs under `디자인/docs/`. Note one intentional
+  design-system conventions, with detailed docs under `docs/02-디자인/`. Note one intentional
   deviation documented in `theme.js`'s header comment: this app uses a single green accent
   (`#059669`) as its one primary/accent color everywhere the Toss docs describe blue — follow
   `theme.js` as the actual token source, and `/toss` for everything else (one primary button per
