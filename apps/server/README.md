@@ -40,7 +40,7 @@ npm run start -w @ay-ple/server
 
 ## Legacy bytes 보존 경계
 
-Server production source에는 app-owned v2 academic store, Course·material registry, Assignment receipt, durable patch·confirmation·revision apply와 recovery I/O가 없다. 이 contraction은 기존 workspace의 v2/v3 파일을 읽거나 rewrite·delete하지 않았다. `@ay-ple/semester-workspace`에 남은 legacy decoder·v3 kernel의 물리 제거와 기존 bytes 처리 정책은 sibling Workspace ticket이 소유한다. Canonical authority는 root v4 identity, external `WorkspaceRegistry`와 user-owned Git workspace다.
+Server production source에는 app-owned v2 academic store, Course·material registry, Assignment receipt, durable patch·confirmation·revision apply와 recovery I/O가 없다. `@ay-ple/semester-workspace`도 v4 identity codec·classification과 shared validators만 남기고 current-v2 decoder·v3 kernel을 제거했다. 기존 workspace의 v2/v3 파일은 읽거나 rewrite·delete하지 않으며 unsupported prepared root로 보존한다. Canonical authority는 root v4 identity, external `WorkspaceRegistry`와 user-owned Git workspace다.
 
 ## Product operation·Review authority
 
@@ -68,7 +68,7 @@ Canonical `createPreparedServerApplication()`은 Broker Router를 같은 loopbac
 
 Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Origin과 exact match할 때만 허용한다. Interaction Broker는 loopback과 Runtime-generation high-entropy token을 모두 검증한다. Token, native identity, absolute path, complete MCP payload와 traceback은 Browser contract에 없다. Old `/api/product/workspaces/activate`, Course/material/First Assignment/retry, academic Review compatibility route, `/api/product-mcp`, `/api/runtime/*`와 `/api/codex-chat/*`는 canonical composition에서 Express `404`로 닫힌다.
 
-Public cutover 뒤에는 prepared-workspace Browser·target Router·Broker·generic Runtime child environment·project Skill/MCP graph 전체가 한 unit이다. Old Browser workbench, public academic Router/action adapter·shared contract, Server academic persistence·managed Recipe와 Runtime private override는 제거됐다. 기존 v2/v3 on-disk bytes와 `@ay-ple/semester-workspace` legacy kernel만 sibling contraction 경계로 남는다.
+Public cutover 뒤에는 prepared-workspace Browser·target Router·Broker·generic Runtime child environment·project Skill/MCP graph 전체가 한 unit이다. Old Browser workbench, public academic Router/action adapter·shared contract, Server academic persistence·managed Recipe, Runtime private override와 legacy SemesterWorkspace kernel은 제거됐다. 기존 v2/v3 on-disk bytes 자체는 자동 migration·deletion 없이 보존한다.
 
 ## NDJSON과 shutdown
 
