@@ -6,21 +6,19 @@ import {
   completeSubject,
 } from "../services/subjectService.js";
 
-// 1~7 척도 필드 목록. optional=true 인 필드는 값이 없으면 기본값(SCORE_FIELD_DEFAULT)으로 채운다.
-// (구버전/오프라인 클라이언트 호환)
+// 1~7 척도 필드 목록. 값이 없으면 "모르겠다"(0)로 둔다.
+// 중립값 4 로 채우면 사용자가 답한 적 없는 값이 점수에 섞인다. (priorityService.js 참고)
 const SCORE_FIELDS = [
-  { key: "understanding", label: "이해도", optional: false },
-  { key: "difficulty", label: "난이도", optional: false },
-  { key: "grading", label: "교수님 학점 성향", optional: true },
-  { key: "studyAmount", label: "공부 분량", optional: true },
-  { key: "availableTime", label: "확보 가능한 공부 시간", optional: true },
+  { key: "understanding", label: "이해도" },
+  { key: "difficulty", label: "난이도" },
+  { key: "grading", label: "교수님 학점 성향" },
+  { key: "studyAmount", label: "공부 분량" },
+  { key: "availableTime", label: "확보 가능한 공부 시간" },
 ];
 
-const SCORE_FIELD_DEFAULT = 4;
+// 0 은 "모르겠다"다. 값을 안 보낸 것도 아직 answered 되지 않았다는 뜻이라 같게 본다.
+const SCORE_FIELD_DEFAULT = 0;
 const SCORE_MAX = 7;
-
-// 학점 반영 비율은 0~100(%) 범위이고, 값이 없으면 기본값 40 으로 채운다.
-const GRADE_WEIGHT_DEFAULT = 40;
 
 // 중요도(과목 학점 수)는 양의 실수(예: 3, 5, 7.5)이고, 값이 없으면 기본값 3 으로 채운다.
 const CREDITS_DEFAULT = 3;
@@ -42,16 +40,17 @@ function validateSubjectInput(body) {
 
   for (const field of SCORE_FIELDS) {
     const value = body[field.key];
-    if (value === undefined && field.optional) {
+    if (value === undefined || value === null) {
       continue;
     }
-    // 0 은 "모르겠다"(중립)를 뜻하므로 0~7 을 허용한다.
+    // 0 은 "모르겠다"를 뜻하므로 0~7 을 허용한다.
     if (!Number.isInteger(value) || value < 0 || value > SCORE_MAX) {
       return `${field.label}(${field.key})는 0(모르겠다)~${SCORE_MAX} 사이 정수여야 합니다.`;
     }
   }
 
-  if (gradeWeight !== undefined) {
+  // 성적 반영 비율도 선택 입력이다. null 은 "모름"이라 허용하고, 값이 있으면 0~100.
+  if (gradeWeight !== undefined && gradeWeight !== null) {
     if (!Number.isInteger(gradeWeight) || gradeWeight < 0 || gradeWeight > 100) {
       return "학점 반영 비율(gradeWeight)은 0~100 사이 정수여야 합니다.";
     }
@@ -77,15 +76,16 @@ function normalize(body) {
   const normalized = {
     name: body.name.trim(),
     examDate: body.examDate,
-    gradeWeight: body.gradeWeight === undefined ? GRADE_WEIGHT_DEFAULT : body.gradeWeight,
-    credits: body.credits === undefined ? CREDITS_DEFAULT : body.credits,
-    // 선택 입력. 값이 없으면 "해당 없음"을 뜻하는 null 그대로 저장한다(중립 기본값으로 채우지 않음).
-    previousScore: body.previousScore === undefined ? null : body.previousScore,
+    // 안 보냈으면 "모름"(null)이다. 40 으로 채우면 답한 적 없는 값이 점수에 섞인다.
+    gradeWeight: body.gradeWeight ?? null,
+    // 학점 수만은 점수를 곱하는 배수라 3학점(1배)이 진짜 중립이다.
+    credits: body.credits ?? CREDITS_DEFAULT,
+    // 선택 입력. 값이 없으면 "해당 없음"을 뜻하는 null 그대로 저장한다.
+    previousScore: body.previousScore ?? null,
   };
 
   for (const field of SCORE_FIELDS) {
-    const value = body[field.key];
-    normalized[field.key] = value === undefined && field.optional ? SCORE_FIELD_DEFAULT : value;
+    normalized[field.key] = body[field.key] ?? SCORE_FIELD_DEFAULT;
   }
 
   return normalized;
