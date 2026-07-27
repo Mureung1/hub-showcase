@@ -5,8 +5,10 @@ import DonutChart from '../components/charts/DonutChart'
 const RESUME_PATH = { filter: '/filter', spec: '/spec', result: '/result' }
 
 // prototype/demo_13.html의 renderLandingScreen()을 그대로 포팅 — 2단 히어로(카피+도넛 미리보기 카드)와
-// 아이콘 배지 3단계 카드 구성 (#22). 도넛 미리보기 값(68%, 14/20건)은 실제 분석 결과가 아니라
+// 아이콘 배지 카드 구성 (#22). 도넛 미리보기 값(68%, 14/20건)은 실제 분석 결과가 아니라
 // 데모용 고정 예시값 — 프로토타입도 동일하게 하드코딩돼 있다.
+// 4번째 카드(북마크/참고링크)는 프로토타입 이후 추가된 기능이라 원본엔 없음 — 핵심 3단계 흐름은
+// 그대로 두고, 로그인/북마크(#19/#20)+참고링크(#25)로 넓어진 기능 범위를 반영해 추가.
 const HOW_IT_WORKS = [
   {
     icon: (
@@ -38,6 +40,16 @@ const HOW_IT_WORKS = [
     iconClass: 'how-icon-3',
     title: '03. 시각화 결과',
     desc: '지원 가능 비율(도넛)과 부족 역량 순위(막대)를 보여줘요.',
+  },
+  {
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4.2L5 20V5a1 1 0 0 1 1-1z" />
+      </svg>
+    ),
+    iconClass: 'how-icon-4',
+    title: '04. 북마크 & 참고링크',
+    desc: '로그인하면 관심 공고를 저장해두고, 부족한 항목을 채울 수 있는 사이트로 바로 이동할 수 있어요.',
   },
 ]
 
@@ -92,7 +104,7 @@ function LandingPage() {
 
       <section className="how-it-works">
         <p className="section-label">이렇게 동작해요</p>
-        <p className="section-sub">3단계만 거치면 내가 지원 가능한 공고를 정확히 알 수 있어요.</p>
+        <p className="section-sub">몇 단계만 거치면 내가 지원 가능한 공고를 정확히 알고, 관리까지 할 수 있어요.</p>
         <div className="how-grid">
           {HOW_IT_WORKS.map((step) => (
             <div className="how-card" key={step.title}>

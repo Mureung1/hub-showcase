@@ -614,6 +614,10 @@ h1 {
   background: var(--orange-bg);
   color: var(--orange-text);
 }
+.how-icon-4 {
+  background: var(--blue-bg);
+  color: var(--blue-text);
+}
 .how-title {
   font-size: 15px;
   font-weight: 700;
@@ -627,9 +631,15 @@ h1 {
   margin: 0;
 }
 
-@media (min-width: 860px) {
+@media (min-width: 640px) {
   .how-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .how-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
