@@ -1,5 +1,6 @@
 import pg from "pg";
 import { env } from "../config/env.js";
+import { sanitizeLogValue } from "../utils/sanitizeLogValue.js";
 
 const { Pool, types } = pg;
 
@@ -28,7 +29,9 @@ interface DatabaseErrorSummary {
 function summarizeDatabaseError(error: unknown): DatabaseErrorSummary {
   if (error instanceof Error) {
     const code = "code" in error && typeof error.code === "string" ? error.code : undefined;
-    return code ? { code, message: error.message } : { message: error.message };
+    const message = sanitizeLogValue(error.message);
+    const safeMessage = typeof message === "string" ? message : "데이터베이스 오류";
+    return code ? { code, message: safeMessage } : { message: safeMessage };
   }
 
   return { message: "알 수 없는 데이터베이스 오류" };

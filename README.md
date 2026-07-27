@@ -126,6 +126,7 @@ React는 Supabase를 인증에만 직접 사용하고, 병원과 대기열 데�
 - [시스템 기능 명세](./docs/feature-spec.md)
 - [ERD](./docs/erd.md)
 - [데이터 흐름과 아키텍처](./docs/architecture.md)
+- [첫 배포 준비](./docs/deployment-prep.md)
 - [화면 흐름·IA·와이어프레임](./docs/ux-structure.md)
 - [디자인 시스템](./docs/design-system.md)
 - [개발 Task 및 백로그](./docs/tasks.md)
@@ -236,7 +237,8 @@ npm run db:reset
 `supabase start`와 `db:reset`으로 로컬 전체 스택을 실행하려면 Docker 호환 컨테이너 환경이 필요합니다. `db:reset`은 migration 적용 후 `supabase/seed.sql`을 실행하며 로컬 전용 개발 계정과 오늘의 통합 대기열을 만듭니다. 이 로컬 계정을 외부 Supabase 프로젝트에 사용하면 안 됩니다.
 
 연결된 Seoul 개발용 Supabase 프로젝트에는 `.env`의
-`DEVELOPMENT_STAFF_PASSWORD`와 `DEVELOPMENT_PLATFORM_PASSWORD`를 12자 이상으로
+`DEVELOPMENT_PATIENT_PASSWORD`, `DEVELOPMENT_STAFF_PASSWORD`,
+`DEVELOPMENT_PLATFORM_PASSWORD`를 8자 이상으로
 설정한 뒤 다음 명령으로 병원·플랫폼 관리자 계정, 승인 병원과 오늘 대기열을
 준비합니다. 비밀번호는 저장소나 문서에 기록하지 않습니다.
 

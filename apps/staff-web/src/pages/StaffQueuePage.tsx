@@ -245,7 +245,7 @@ export function StaffQueuePage({
                 ? "변경 중"
                 : queueStatus === "paused"
                   ? "원격 접수 시작"
-                  : "원격 접수 중지"}
+                  : "원격 웨이팅 종료"}
             </button>
           </div>
         </div>

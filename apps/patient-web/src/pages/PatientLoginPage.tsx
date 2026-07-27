@@ -18,7 +18,7 @@ export function PatientLoginPage() {
   } = usePatientAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState("patient@example.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -174,6 +174,7 @@ export function PatientLoginPage() {
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                placeholder="patient@example.com"
                 autoComplete="email"
               />
             </span>

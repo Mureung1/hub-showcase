@@ -4,15 +4,17 @@ import { PgTransactionManager } from "../db/transactionManager.js";
 import { getClinicDate } from "../utils/clinicDate.js";
 
 const CATEGORY_SET_ID = "20000000-0000-4000-8000-000000000001";
+const PATIENT_ACCOUNT_ID = "20000000-0000-4000-8000-000000000001";
 const STAFF_ACCOUNT_ID = "20000000-0000-4000-8000-000000000002";
 const PLATFORM_ACCOUNT_ID = "20000000-0000-4000-8000-000000000003";
+const PATIENT_IDENTITY_ID = "21000000-0000-4000-8000-000000000001";
 const STAFF_IDENTITY_ID = "21000000-0000-4000-8000-000000000002";
 const PLATFORM_IDENTITY_ID = "21000000-0000-4000-8000-000000000003";
 
 function requireDevelopmentPassword(name: string): string {
   const password = process.env[name];
-  if (!password || password.length < 12) {
-    throw new Error(`${name}은 12자 이상의 개발용 비밀번호로 설정해야 합니다.`);
+  if (!password || password.length < 8) {
+    throw new Error(`${name}은 8자 이상의 개발용 비밀번호로 설정해야 합니다.`);
   }
   return password;
 }
@@ -22,6 +24,7 @@ async function seedDevelopment(): Promise<void> {
     throw new Error("production 환경에서는 개발 seed를 실행할 수 없습니다.");
   }
 
+  const patientPassword = requireDevelopmentPassword("DEVELOPMENT_PATIENT_PASSWORD");
   const staffPassword = requireDevelopmentPassword("DEVELOPMENT_STAFF_PASSWORD");
   const platformPassword = requireDevelopmentPassword("DEVELOPMENT_PLATFORM_PASSWORD");
   const transactionManager = new PgTransactionManager(databasePool);
@@ -36,17 +39,26 @@ async function seedDevelopment(): Promise<void> {
         VALUES
           (
             '00000000-0000-0000-0000-000000000000', $1, 'authenticated',
-            'authenticated', 'staff@baro-jinryo.local',
-            crypt($3, gen_salt('bf')), now(),
+            'authenticated', 'patient@admin',
+            crypt($4, gen_salt('bf')), now(),
+            '', '', '', '',
+            '{"provider":"email","providers":["email"]}'::jsonb,
+            '{"account_type":"patient","phone_number":"+821011112222"}'::jsonb,
+            now(), now()
+          ),
+          (
+            '00000000-0000-0000-0000-000000000000', $2, 'authenticated',
+            'authenticated', 'staff@admin',
+            crypt($5, gen_salt('bf')), now(),
             '', '', '', '',
             '{"provider":"email","providers":["email"]}'::jsonb,
             '{"account_type":"hospital_admin","phone_number":"+821033334444"}'::jsonb,
             now(), now()
           ),
           (
-            '00000000-0000-0000-0000-000000000000', $2, 'authenticated',
-            'authenticated', 'platform@baro-jinryo.local',
-            crypt($4, gen_salt('bf')), now(),
+            '00000000-0000-0000-0000-000000000000', $3, 'authenticated',
+            'authenticated', 'platform@admin',
+            crypt($6, gen_salt('bf')), now(),
             '', '', '', '',
             '{"provider":"email","providers":["email"]}'::jsonb,
             '{"account_type":"platform_admin","phone_number":"+821055556666"}'::jsonb,
@@ -64,7 +76,14 @@ async function seedDevelopment(): Promise<void> {
             raw_user_meta_data = EXCLUDED.raw_user_meta_data,
             updated_at = now()
       `,
-      [STAFF_ACCOUNT_ID, PLATFORM_ACCOUNT_ID, staffPassword, platformPassword],
+      [
+        PATIENT_ACCOUNT_ID,
+        STAFF_ACCOUNT_ID,
+        PLATFORM_ACCOUNT_ID,
+        patientPassword,
+        staffPassword,
+        platformPassword,
+      ],
     );
     await executor.query(
       `
@@ -75,32 +94,45 @@ async function seedDevelopment(): Promise<void> {
         VALUES
           (
             $1::uuid, $2::uuid, $2::text,
-            jsonb_build_object('sub', $2::text, 'email', 'staff@baro-jinryo.local'),
+            jsonb_build_object('sub', $2::text, 'email', 'patient@admin'),
             'email', now(), now(), now()
           ),
           (
             $3::uuid, $4::uuid, $4::text,
-            jsonb_build_object('sub', $4::text, 'email', 'platform@baro-jinryo.local'),
+            jsonb_build_object('sub', $4::text, 'email', 'staff@admin'),
+            'email', now(), now(), now()
+          ),
+          (
+            $5::uuid, $6::uuid, $6::text,
+            jsonb_build_object('sub', $6::text, 'email', 'platform@admin'),
             'email', now(), now(), now()
           )
         ON CONFLICT (provider_id, provider) DO UPDATE
         SET identity_data = EXCLUDED.identity_data,
             updated_at = now()
       `,
-      [STAFF_IDENTITY_ID, STAFF_ACCOUNT_ID, PLATFORM_IDENTITY_ID, PLATFORM_ACCOUNT_ID],
+      [
+        PATIENT_IDENTITY_ID,
+        PATIENT_ACCOUNT_ID,
+        STAFF_IDENTITY_ID,
+        STAFF_ACCOUNT_ID,
+        PLATFORM_IDENTITY_ID,
+        PLATFORM_ACCOUNT_ID,
+      ],
     );
     await executor.query(
       `
         INSERT INTO public.profiles (id, phone_number, account_type, status)
         VALUES
-          ($1, '+821033334444', 'hospital_admin', 'active'),
-          ($2, '+821055556666', 'platform_admin', 'active')
+          ($1, '+821011112222', 'patient', 'active'),
+          ($2, '+821033334444', 'hospital_admin', 'active'),
+          ($3, '+821055556666', 'platform_admin', 'active')
         ON CONFLICT (id) DO UPDATE
         SET phone_number = EXCLUDED.phone_number,
             account_type = EXCLUDED.account_type,
             status = EXCLUDED.status
       `,
-      [STAFF_ACCOUNT_ID, PLATFORM_ACCOUNT_ID],
+      [PATIENT_ACCOUNT_ID, STAFF_ACCOUNT_ID, PLATFORM_ACCOUNT_ID],
     );
     await executor.query(
       `

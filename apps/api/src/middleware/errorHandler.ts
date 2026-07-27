@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { ApiError } from "../errors/apiError.js";
+import { sanitizeLogValue } from "../utils/sanitizeLogValue.js";
 
 export function errorHandler(
   error: unknown,
@@ -30,7 +31,7 @@ export function errorHandler(
     return;
   }
 
-  console.error(error);
+  console.error(sanitizeLogValue(error));
   response.status(500).json({
     error: {
       code: "INTERNAL_SERVER_ERROR",
