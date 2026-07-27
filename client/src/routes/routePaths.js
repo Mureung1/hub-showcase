@@ -5,6 +5,7 @@ export const routePaths = {
   signup: "/signup",
   menteeSignup: "/signup/mentee",
   mentorSignup: "/signup/mentor",
+  mentorSignupProfile: "/signup/mentor/profile",
 
   menteeMentors: "/mentee/mentors",
   menteeMentorDetail: "/mentee/mentors/:mentorId",

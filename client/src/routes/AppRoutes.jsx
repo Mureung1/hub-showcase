@@ -23,6 +23,10 @@ function AppRoutes() {
       <Route path={routePaths.signup} element={<SignupPage />} />
       <Route path={routePaths.menteeSignup} element={<MenteeSignupPage />} />
       <Route path={routePaths.mentorSignup} element={<MentorSignupPage />} />
+      <Route
+        path={routePaths.mentorSignupProfile}
+        element={<PlannedPage title="멘토 프로필 정보 입력" description="계정 정보 다음 단계로, 프로필 정보를 입력해 가입을 완료합니다." />}
+      />
 
       {/* 멘티 전용 화면 */}
       <Route element={<RoleRoute role="mentee" />}>
