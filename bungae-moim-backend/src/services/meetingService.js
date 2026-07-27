@@ -2,7 +2,7 @@ const pool = require('../config/db');
 const ApiError = require('../utils/apiError');
 const withTransaction = require('../utils/withTransaction');
 const { evaluateApplicability } = require('../utils/participation');
-const { validateUpdateMeeting } = require('../utils/validators');
+const { validateUpdateMeeting, validateApplyAnswer } = require('../utils/validators');
 const { isAdult } = require('../utils/age');
 
 // status 필터로 허용하는 값. 임의 문자열이 그대로 SQL 조건에 들어가지 않도록 화이트리스트로 검증한다.
@@ -264,7 +264,7 @@ function blockReasonToError(blockReason) {
 // 모임 행을 FOR UPDATE로 잠가 같은 모임 동시 신청을 직렬화한다. flash는 즉시 confirmed,
 // 마지막 자리를 채우면 모임을 closed로. small은 pending. 내가 취소했던(cancelled) row는
 // 되살리는 UPDATE로 재신청(낡은 타임스탬프는 리셋).
-async function applyToMeeting(meetingId, userId) {
+async function applyToMeeting(meetingId, userId, rawAnswer) {
   return withTransaction(async (client) => {
     const meetingRes = await client.query(
       `SELECT *, COALESCE(end_at, start_at) < now() AS is_past
@@ -302,19 +302,25 @@ async function applyToMeeting(meetingId, userId) {
     });
     if (!canApply) throw blockReasonToError(blockReason);
 
+    // 신청 자격을 먼저 판정한 뒤에 답변을 본다 — 애초에 신청할 수 없는 사람에게
+    // "답변이 필요합니다"를 돌려주면 진짜 이유를 가린다.
+    const applyAnswer = validateApplyAnswer(row.apply_question, rawAnswer);
+
     const newStatus = meeting.type === 'flash' ? 'confirmed' : 'pending';
 
     if (existingStatus === 'cancelled') {
+      // 재신청은 기존 행을 되살린다. apply_answer도 반드시 새 값으로 덮어써야 한다 —
+      // 안 그러면 지난번 답변이 그대로 남아 모임장이 낡은 답을 보게 된다.
       await client.query(
         `UPDATE meeting_participants
-            SET status = $3, applied_at = now(), responded_at = NULL
+            SET status = $3, applied_at = now(), responded_at = NULL, apply_answer = $4
           WHERE meeting_id = $1 AND user_id = $2`,
-        [meetingId, userId, newStatus]
+        [meetingId, userId, newStatus, applyAnswer]
       );
     } else {
       await client.query(
-        'INSERT INTO meeting_participants (meeting_id, user_id, status) VALUES ($1, $2, $3)',
-        [meetingId, userId, newStatus]
+        'INSERT INTO meeting_participants (meeting_id, user_id, status, apply_answer) VALUES ($1, $2, $3, $4)',
+        [meetingId, userId, newStatus, applyAnswer]
       );
     }
 
@@ -405,7 +411,7 @@ async function listParticipants(meetingId, viewerId) {
   // applied_at 동률에서 Postgres는 순서를 보장하지 않는다. user_id tiebreak가 없으면
   // 같은 요청이 매번 다른 순서를 줄 수 있고, 나중에 페이징을 붙이면 경계에서 행이 새거나 겹친다.
   const { rows } = await pool.query(
-    `SELECT p.user_id, u.nickname, u.trust_score, p.status, p.applied_at, p.responded_at
+    `SELECT p.user_id, u.nickname, u.trust_score, p.status, p.applied_at, p.responded_at, p.apply_answer
        FROM meeting_participants p
        JOIN users u ON u.id = p.user_id
       WHERE p.meeting_id = $1
@@ -422,6 +428,7 @@ async function listParticipants(meetingId, viewerId) {
       status: row.status,
       appliedAt: row.applied_at,
       respondedAt: row.responded_at,
+      applyAnswer: row.apply_answer,
     })),
   };
 }

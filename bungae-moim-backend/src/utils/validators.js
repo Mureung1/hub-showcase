@@ -146,6 +146,21 @@ function validateUpdateMeeting(body = {}, existingType) {
   return validateCreateMeeting(body);
 }
 
+// 신청 시 한마디 답변(F1). 모임에 질문이 설정돼 있을 때만 필수다.
+// 질문이 없으면 클라이언트가 뭘 보내든 무시하고 null을 돌려준다 — 질문 없는 모임에
+// 답변만 남는 상태를 만들지 않는다.
+function validateApplyAnswer(applyQuestion, rawAnswer) {
+  if (applyQuestion === null || applyQuestion === undefined) return null;
+  if (typeof rawAnswer !== 'string' || rawAnswer.trim() === '') {
+    throw new ApiError('VALIDATION_ERROR', '가입 질문에 답변해야 신청할 수 있습니다');
+  }
+  const trimmed = rawAnswer.trim();
+  if ([...trimmed].length > MAX_APPLY_ANSWER) {
+    throw new ApiError('VALIDATION_ERROR', `답변은 ${MAX_APPLY_ANSWER}자를 넘을 수 없습니다`);
+  }
+  return trimmed;
+}
+
 // PATCH /api/users/me 의 birthDate 검증. 형식 + 실제 달력 날짜 + 미래 아님.
 // 형식만 맞고 존재하지 않는 날짜(2001-02-30 등)를 걸러내려고 UTC로 되짚어 확인한다.
 function validateBirthDate(body = {}) {
@@ -188,5 +203,6 @@ module.exports = {
   validateUpdateMeeting,
   validateBirthDate,
   validateRespondStatus,
+  validateApplyAnswer,
   OPEN_CHAT_URL_PATTERN,
 };

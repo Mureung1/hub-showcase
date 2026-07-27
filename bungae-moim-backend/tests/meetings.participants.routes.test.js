@@ -149,6 +149,21 @@ describe('GET /api/meetings/:id/participants', () => {
     expect(res.body.data.items).toHaveLength(1);
     expect(res.body.data.items[0].status).toBe('confirmed');
   });
+
+  it('신청자 목록에 applyAnswer가 포함된다', async () => {
+    const { agent, userId: hostId } = await loginAgent('pa-ans-h');
+    const applicant = await createUser('pa-ans-a');
+    const meetingId = await insertMeeting(hostId, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    await insertParticipant(meetingId, applicant, 'pending');
+    await pool.query(
+      'UPDATE meeting_participants SET apply_answer = $1 WHERE meeting_id = $2 AND user_id = $3',
+      ['책을 좋아해서요', meetingId, applicant]
+    );
+
+    const res = await agent.get(`/api/meetings/${meetingId}/participants`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.items[0].applyAnswer).toBe('책을 좋아해서요');
+  });
 });
 
 describe('PATCH /api/meetings/:id/participants/:userId', () => {

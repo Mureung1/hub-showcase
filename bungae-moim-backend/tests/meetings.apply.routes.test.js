@@ -195,4 +195,62 @@ describe('POST /api/meetings/:id/apply', () => {
     );
     expect(rows[0].c).toBe(1);
   });
+
+  it('질문이 있는 소모임은 답변 없이 신청하면 400 VALIDATION_ERROR', async () => {
+    const host = await createUser('ans-h1');
+    const meetingId = await insertMeeting(host, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['왜 참여하나요', meetingId]);
+    const { agent } = await loginAgent('ans-u1');
+
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`).send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('답변을 보내면 저장된다', async () => {
+    const host = await createUser('ans-h2');
+    const meetingId = await insertMeeting(host, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['왜 참여하나요', meetingId]);
+    const { agent, userId } = await loginAgent('ans-u2');
+
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`).send({ answer: '책을 좋아해서요' });
+    expect(res.status).toBe(201);
+    const { rows } = await pool.query(
+      'SELECT apply_answer FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, userId]
+    );
+    expect(rows[0].apply_answer).toBe('책을 좋아해서요');
+  });
+
+  it('질문이 없는 모임에 답변을 보내면 무시하고 null로 저장한다', async () => {
+    const host = await createUser('ans-h3');
+    const meetingId = await insertMeeting(host, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    const { agent, userId } = await loginAgent('ans-u3');
+
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`).send({ answer: '무시돼야 한다' });
+    expect(res.status).toBe(201);
+    const { rows } = await pool.query(
+      'SELECT apply_answer FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, userId]
+    );
+    expect(rows[0].apply_answer).toBeNull();
+  });
+
+  it('취소 후 재신청하면 답변이 새 값으로 갱신된다', async () => {
+    const host = await createUser('ans-h4');
+    const meetingId = await insertMeeting(host, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['왜 참여하나요', meetingId]);
+    const { agent, userId } = await loginAgent('ans-u4');
+
+    await agent.post(`/api/meetings/${meetingId}/apply`).send({ answer: '첫 번째 답변' });
+    await agent.delete(`/api/meetings/${meetingId}/apply`);
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`).send({ answer: '두 번째 답변' });
+
+    expect(res.status).toBe(201);
+    const { rows } = await pool.query(
+      'SELECT apply_answer FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, userId]
+    );
+    expect(rows[0].apply_answer).toBe('두 번째 답변');
+  });
 });
