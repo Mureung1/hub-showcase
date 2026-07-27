@@ -45,6 +45,10 @@ PtoP는 프로젝트 정리를 부담스러운 문서 작업이 아니라, 작�
   --gray-soft: #f4f5f4;
   --overlay: rgb(15 22 19 / 62%);
   --success: #21875f;
+  --landing-green: #006d36;
+  --landing-lime: #6bfb9a;
+  --landing-lavender: #f3f3fa;
+  --landing-lavender-line: #e1e2ec;
 }
 ```
 
@@ -108,6 +112,10 @@ font-family:
 - 로그인된 사용자는 `내 작업실로 돌아가기`를 제공한다.
 - 영상이 준비되지 않았거나 자동 재생이 실패하면 정적 poster를 표시한다.
 - 서비스 기능을 설명하는 긴 카드 목록을 첫 viewport에 배치하지 않는다.
+- 영상 아래는 Figma 랜딩 흐름에 맞춰 `서비스 소개 → 3단계 사용 흐름 → 핵심 분석 신호 → 회고 → 작업실 미리보기 → 시작 CTA` 순서로 구성한다.
+- 랜딩 하단의 CTA는 영상 영역의 CTA와 같은 `onEnterWorkspace` 동작을 사용해 작업실 진입 경로를 하나로 유지한다.
+- Figma 임시 이미지 URL은 배포 코드에 사용하지 않고 `public/assets`의 로컬 에셋으로 대체한다.
+- 랜딩 전용 색상은 `--landing-green`, `--landing-lime`, `--landing-lavender` 토큰을 사용해 게임 작업실의 민트 톤과 연결한다.
 
 ### 2D 작업실
 
@@ -123,6 +131,26 @@ font-family:
 - 게임 입력을 일시 중지하고 모달에 focus를 이동한다.
 - 닫기 후 상호작용했던 컴퓨터로 focus와 게임 입력을 복원한다.
 - URL 오류와 API 오류를 구분해 다음 행동을 안내한다.
+
+#### 게임 터미널 변형
+
+작업실 PC에서 여는 Repository 입력 모달은 Figma 기반의 게임 터미널 변형을 사용할 수 있다. 이 변형은 작업실의 몰입감을 유지하기 위해 네이비 배경과 민트 강조색을 사용하지만, 정보 구조는 일반 모달과 동일하게 유지한다.
+
+```css
+:root {
+  --terminal-bg: #091421;
+  --terminal-panel: #121c2a;
+  --terminal-border: #2b3544;
+  --terminal-accent: #6bfb9a;
+  --terminal-ink: #f2f5f7;
+  --terminal-muted: #aab7c4;
+  --terminal-subtle: #7d8b9b;
+}
+```
+
+- Poppy는 질문을 전달하는 보조 영역에 배치하고, 입력·오류·분석 결과를 대신하지 않는다.
+- 주요 행동은 `--terminal-accent`, 보조 텍스트는 `--terminal-muted`와 `--terminal-subtle`을 사용한다.
+- 이 변형에서도 전체 viewport overlay, Escape, focus, 오류 텍스트, 회고 작성 중 자동 전환 금지 규칙을 유지한다.
 
 ### 분석 진행과 Poppy 대화
 
