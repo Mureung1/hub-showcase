@@ -523,6 +523,31 @@
       "robots_policy": "allow /kr/careers/*; disallow /app, /touch, /@*, /ko/blog/p/",
       "collected_on": "2026-07-27",
       "note": "백엔드·프론트엔드·모바일을 함께 모집하는지 본문에서 확인한다. 지표 명세 2.8은 여러 직무를 함께 모집하는 공고를 모집단에서 뺀다"
+    },
+    {
+      "source_id": "src_cashwalk_be",
+      "url": "https://cashwalk12.career.greetinghr.com/ko/o/30823",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "넛지헬스케어",
+      "company_id": "co_nudgehealthcare",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[캐시워크] 백엔드/서버 개발자",
+      "job_role_raw": "직군: 개발 / 직무: Backend",
+      "entry_label_raw": "경력 3년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
     }
   ],
   "unreachable": [
@@ -569,6 +594,18 @@
     {
       "source": "marketboro.career.greetinghr.com",
       "reason": "채용 사이트가 내려갔다"
+    },
+    {
+      "source": "skax.skcareers.com",
+      "reason": "공고 2건뿐이며 백엔드가 없다"
+    },
+    {
+      "source": "bhsn.career.greetinghr.com",
+      "reason": "채용 사이트가 내려갔다"
+    },
+    {
+      "source": "hancom.career.greetinghr.com",
+      "reason": "채용 사이트가 내려갔다"
     }
   ],
   "access_notes": [
@@ -595,6 +632,10 @@
     {
       "source": "channel.io/kr/careers",
       "method": "정적 렌더링. 목록에 주니어·시니어 표기가 있고 연차는 없다"
+    },
+    {
+      "source": "*.career.greetinghr.com 상세 경로",
+      "method": "오래된 공고 식별자도 본문 전문과 함께 열린다. 마감 공고 수집 경로로 쓴다"
     }
   ]
 }
