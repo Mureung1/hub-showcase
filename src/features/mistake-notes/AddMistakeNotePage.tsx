@@ -8,6 +8,7 @@ import {
   type MistakeNoteInput,
   type MistakeNoteSource,
 } from './model/useMistakeNoteStore'
+import { persistMistakeNote } from './model/persistMistakeNote'
 import styles from './AddMistakeNotePage.module.css'
 
 const sourceLabels: Record<MistakeNoteSource, string> = {
@@ -117,15 +118,12 @@ export default function AddMistakeNotePage() {
     }
 
     try {
-      addMistakeNote(input)
-
-      if (shouldUseServerApi()) {
-        await createMistakeNoteApi(input)
-          .then(({ note: serverNote }) => upsertMistakeNote(serverNote))
-          .catch(() => {
-            // 로컬 저장은 완료됨. 백엔드 복구 후 서버에 반영됩니다.
-          })
-      }
+      await persistMistakeNote(input, {
+        serverMode: shouldUseServerApi(),
+        createServer: createMistakeNoteApi,
+        addLocal: addMistakeNote,
+        upsert: upsertMistakeNote,
+      })
 
       void navigate('/mistake-notes')
     } catch {
