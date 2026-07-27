@@ -5,20 +5,23 @@ import ProfileBoard from './components/ProfileBoard'
 import CurationWorkspace from './components/CurationWorkspace'
 import MyLibrary from './components/MyLibrary'
 import { CurationData, LibraryItem } from './types'
+import { useProfileSession } from './hooks/useProfileSession'
 
 function App() {
   const [lang, setLang] = useState<'KO' | 'EN'>('KO')
   const [curationData, setCurationData] = useState<CurationData | null>(null)
   
-  // Lazy Initialization을 통한 MVP 유저 세션 구축
-  const [userId] = useState<string>(() => {
-    let id = localStorage.getItem('scholar_user_id');
-    if (!id) {
-      id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
-      localStorage.setItem('scholar_user_id', id);
-    }
-    return id;
-  });
+  // Custom Hook: Container A 연구 프로필 로컬스토리지 영속화 및 UUID 세션 관리
+  const {
+    userId,
+    major,
+    setMajor,
+    channels,
+    toggleChannel,
+    keywords,
+    addKeyword,
+    removeKeyword
+  } = useProfileSession();
 
   const [savedPapers, setSavedPapers] = useState<LibraryItem[]>([])
   const [currentView, setCurrentView] = useState<'dashboard' | 'library'>('dashboard')
@@ -68,7 +71,17 @@ function App() {
       {currentView === 'dashboard' ? (
         <main className="bento-grid">
           {/* Top Row: Profile (75%) & Curation Board (25%) */}
-          <ProfileBoard lang={lang} setCurationData={setCurationData} />
+          <ProfileBoard 
+            lang={lang} 
+            setCurationData={setCurationData} 
+            major={major}
+            setMajor={setMajor}
+            channels={channels}
+            toggleChannel={toggleChannel}
+            keywords={keywords}
+            addKeyword={addKeyword}
+            removeKeyword={removeKeyword}
+          />
           
           {/* Bottom Row: Results & Workspace (100%) */}
           <CurationWorkspace 

@@ -4,39 +4,53 @@ import { CurationData, CurationResponse } from '../types';
 interface ProfileBoardProps {
   lang: 'KO' | 'EN';
   setCurationData: React.Dispatch<React.SetStateAction<CurationData | null>>;
+  major: string;
+  setMajor: (major: string) => void;
+  channels: string[];
+  toggleChannel: (channel: string) => void;
+  keywords: string[];
+  addKeyword: (keyword: string) => void;
+  removeKeyword: (index: number) => void;
 }
 
-function ProfileBoard({ lang, setCurationData }: ProfileBoardProps) {
-  // A. States
-  const [keywords, setKeywords] = useState<string[]>([
-    'Natural Language Processing',
-    'Retrieval-Augmented Generation',
-    'AI Agents'
-  ]);
+const AVAILABLE_CHANNELS = ['arXiv', 'IEEE', 'NeurIPS', 'CVPR', 'ACM', 'Springer'];
+
+function ProfileBoard({
+  lang,
+  setCurationData,
+  major,
+  setMajor,
+  channels,
+  toggleChannel,
+  keywords,
+  addKeyword,
+  removeKeyword
+}: ProfileBoardProps) {
   const [newKeyword, setNewKeyword] = useState<string>('');
   const [query, setQuery] = useState<string>('');
   const [isCurating, setIsCurating] = useState<boolean>(false);
+  const [isEditingMajor, setIsEditingMajor] = useState<boolean>(false);
+  const [tempMajor, setTempMajor] = useState<string>(major);
 
-  // B. Handlers
-  const handleAddKeyword = (): void => {
+  const handleAddKeywordSubmit = (): void => {
     const trimmed = newKeyword.trim();
     if (!trimmed) return;
-    
-    // Prevent duplicate keywords
-    if (!keywords.includes(trimmed)) {
-      setKeywords([...keywords, trimmed]);
-    }
+    addKeyword(trimmed);
     setNewKeyword('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter') {
-      handleAddKeyword();
+      handleAddKeywordSubmit();
     }
   };
 
-  const handleRemoveKeyword = (indexToRemove: number): void => {
-    setKeywords(keywords.filter((_, idx) => idx !== indexToRemove));
+  const handleSaveMajor = (): void => {
+    const trimmed = tempMajor.trim();
+    if (trimmed) {
+      setMajor(trimmed);
+    }
+    setIsEditingMajor(false);
   };
 
   const handleStartCuration = (): void => {
@@ -50,8 +64,8 @@ function ProfileBoard({ lang, setCurationData }: ProfileBoardProps) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        major: 'computer science AI', // 명시적 전달
-        keywords: keywords,           // UI의 뱃지 상태 배열을 Payload에 탑재
+        major: major,          // 훅에서 보관 중인 동적 소속 전공
+        keywords: keywords,    // UI 뱃지 풀 상태 반영
         query: query 
       })
     })
@@ -83,39 +97,73 @@ function ProfileBoard({ lang, setCurationData }: ProfileBoardProps) {
           <p className="placeholder-text">연구 프로필 및 학술 채널/관심 키워드 관리</p>
           
           <div className="profile-widget">
-            <div className="widget-info-row">
-              <span className="info-label">소속 전공:</span>
-              <span className="info-value">컴퓨터공학 / AI 융합 연구실</span>
+            <div className="widget-info-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="info-label" style={{ fontWeight: 600 }}>소속 전공:</span>
+              {isEditingMajor ? (
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                  <input 
+                    type="text" 
+                    className="keyword-input" 
+                    style={{ padding: '2px 8px', fontSize: '12px' }}
+                    value={tempMajor}
+                    onChange={(e) => setTempMajor(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveMajor(); }}
+                  />
+                  <button className="add-btn" style={{ padding: '2px 8px', fontSize: '11px' }} onClick={handleSaveMajor}>저장</button>
+                </div>
+              ) : (
+                <span className="info-value" style={{ cursor: 'pointer' }} onClick={() => { setTempMajor(major); setIsEditingMajor(true); }} title="클릭하여 수정">
+                  {major} <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>✏️</span>
+                </span>
+              )}
             </div>
             
-            <div className="channel-toggles">
-              <span className="section-label">학술 채널 토글:</span>
-              <div className="button-group">
-                <button className="toggle-btn active">arXiv</button>
-                <button className="toggle-btn active">IEEE</button>
-                <button className="toggle-btn">NeurIPS</button>
-                <button className="toggle-btn">CVPR</button>
+            <div className="channel-toggles" style={{ marginTop: '12px' }}>
+              <span className="section-label" style={{ fontWeight: 600, display: 'block', marginBottom: '6px' }}>학술 채널 토글:</span>
+              <div className="button-group" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {AVAILABLE_CHANNELS.map((ch) => {
+                  const isActive = channels.includes(ch);
+                  return (
+                    <button 
+                      key={ch} 
+                      className={`toggle-btn ${isActive ? 'active' : ''}`}
+                      onClick={() => toggleChannel(ch)}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '11px',
+                        borderRadius: '4px',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: isActive ? 'var(--accent-cyan, #00f2fe)' : 'transparent',
+                        color: isActive ? '#000' : 'var(--text-color)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {ch}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             
-            <div className="keyword-section">
-              <span className="section-label">관심 키워드 뱃지 풀:</span>
-              <div className="keyword-badges">
+            <div className="keyword-section" style={{ marginTop: '14px' }}>
+              <span className="section-label" style={{ fontWeight: 600, display: 'block', marginBottom: '6px' }}>관심 키워드 뱃지 풀:</span>
+              <div className="keyword-badges" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
                 {keywords.map((kw, idx) => (
-                  <span key={kw} className="badge">
+                  <span key={kw} className="badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', fontSize: '11px', backgroundColor: 'rgba(0, 242, 254, 0.1)', border: '1px solid var(--accent-cyan, #00f2fe)', borderRadius: '12px' }}>
                     {kw} 
                     <span 
                       className="delete-x" 
-                      onClick={() => handleRemoveKeyword(idx)}
+                      onClick={() => removeKeyword(idx)}
                       role="button"
                       tabIndex={0}
+                      style={{ cursor: 'pointer', marginLeft: '4px', color: '#ff4d4f', fontWeight: 'bold' }}
                     >
                       ×
                     </span>
                   </span>
                 ))}
               </div>
-              <div className="keyword-input-form">
+              <div className="keyword-input-form" style={{ display: 'flex', gap: '6px' }}>
                 <input 
                   type="text" 
                   id="keyword-input-field"
@@ -124,11 +172,13 @@ function ProfileBoard({ lang, setCurationData }: ProfileBoardProps) {
                   value={newKeyword}
                   onChange={(e) => setNewKeyword(e.target.value)}
                   onKeyDown={handleKeyDown}
+                  style={{ flex: 1, padding: '4px 8px', fontSize: '12px' }}
                 />
                 <button 
                   id="add-keyword-btn" 
                   className="add-btn"
-                  onClick={handleAddKeyword}
+                  onClick={handleAddKeywordSubmit}
+                  style={{ padding: '4px 12px', fontSize: '12px' }}
                 >
                   +
                 </button>
