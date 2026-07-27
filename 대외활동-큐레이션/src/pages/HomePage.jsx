@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import { splitByMatch } from "../match";
+import { matchesQuery } from "../search";
 import { daysLeft, isPast } from "../deadline";
 import { CATEGORIES } from "../constants";
 import ConditionPanel from "../components/ConditionPanel";
@@ -18,7 +19,7 @@ export default function HomePage() {
   const q = c.applied.query.trim();
   const live = c.postings
     .filter((a) => !isPast(a.deadline))
-    .filter((a) => q === "" || a.title.includes(q))
+    .filter((a) => matchesQuery(a, q))
     .filter((a) => c.cats.has(a.category))
     .filter((a) => !c.favOnly || c.favorites.has(a.id));
 

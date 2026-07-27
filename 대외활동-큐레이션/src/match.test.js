@@ -45,6 +45,12 @@ test("전공 하나만 어긋나면 거의 가능(학년 아닌 조건도 1개 �
   expect(r.status).toBe("near");
 });
 
+test("지역 하나만 어긋나면 불가(이사 못 가는 하드 조건, near 아님)", () => {
+  const r = matchActivity(activity({ regions: ["광주"] }), { region: "부산" });
+  expect(r.status).toBe("ineligible");
+  expect(r.failed[0].label).toBe("지역");
+});
+
 test("두 조건 이상 어긋나면 지원 불가", () => {
   const r = matchActivity(activity({ majors: ["IT"], regions: ["서울"] }), { major: "경영", region: "부산" });
   expect(r.status).toBe("ineligible");
