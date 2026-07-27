@@ -281,7 +281,7 @@ test('managed-resource conflicts preserve original bytes and Git history', async
             '[mcp_servers.ay_ple_interaction]\ncommand = "custom"\n',
           )
         },
-        error: /Unmanaged ay_ple_interaction TOML table/,
+        error: /Unmanaged ay_ple_interaction TOML table[\s\S]*--- existing[\s\S]*--- required/,
       },
       {
         name: 'quoted unmanaged Interaction table',
@@ -292,7 +292,7 @@ test('managed-resource conflicts preserve original bytes and Git history', async
             '[mcp_servers."ay_ple_interaction"]\ncommand = "custom"\n',
           )
         },
-        error: /Unmanaged ay_ple_interaction TOML table/,
+        error: /Unmanaged ay_ple_interaction TOML table[\s\S]*--- existing[\s\S]*--- required/,
       },
       {
         name: 'malformed project TOML',
@@ -303,7 +303,7 @@ test('managed-resource conflicts preserve original bytes and Git history', async
             '[features\nbroken = true\n',
           )
         },
-        error: /unsafe or malformed/,
+        error: /unsafe or malformed[\s\S]*--- existing[\s\S]*--- required/,
       },
       {
         name: 'symlinked instructions',
@@ -488,6 +488,34 @@ test('a later material baseline reports its checkpoint when scaffold is no-op', 
         'HEAD',
       ]),
       'late-notes.md',
+    )
+  })
+})
+
+test('an explicitly requested credential path is never baselined', async () => {
+  await withFixture(async (fixtureRoot) => {
+    const target = path.join(fixtureRoot, 'credential-baseline-workspace')
+    await mkdir(target)
+    await runBootstrap(defaultArguments(target))
+    await writeFile(
+      path.join(target, 'credentials.json'),
+      '{"token":"secret"}\n',
+    )
+    const head = await git(target, ['rev-parse', 'HEAD'])
+
+    await assert.rejects(
+      runBootstrap([
+        ...defaultArguments(target),
+        '--baseline',
+        'credentials.json',
+      ]),
+      /Refusing to baseline a credential-like path/,
+    )
+
+    assert.equal(await git(target, ['rev-parse', 'HEAD']), head)
+    assert.equal(
+      await git(target, ['status', '--short']),
+      '?? credentials.json',
     )
   })
 })

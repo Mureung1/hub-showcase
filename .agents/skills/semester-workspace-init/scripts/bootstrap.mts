@@ -256,7 +256,7 @@ async function planManagedFiles(
       classification.state.semester.term.displayName !== input.termDisplayName
     ) {
       throw new Error(
-        describeStateConflict(classification, input),
+        describeStateConflict(bytes, classification, input),
       )
     }
   } else {
@@ -333,6 +333,7 @@ async function planManagedFiles(
 }
 
 function describeStateConflict(
+  bytes: Uint8Array,
   classification: ReturnType<
     typeof classifySemesterWorkspaceRootStateBytes
   >,
@@ -348,7 +349,7 @@ function describeStateConflict(
           null,
           2,
         )
-      : classification.status
+      : `${classification.status}\n${renderBytes(bytes)}`
   const requested = JSON.stringify(
     {
       semester: {
@@ -365,12 +366,26 @@ function describeStateConflict(
   return `workspace-state.json conflicts with the requested v4 semester; original bytes were preserved.\n--- existing\n${existing}\n--- requested\n${requested}`
 }
 
+function renderBytes(bytes: Uint8Array): string {
+  const maximumPreviewBytes = 4096
+  const preview = bytes.subarray(0, maximumPreviewBytes)
+  let rendered: string
+  try {
+    rendered = new TextDecoder('utf-8', { fatal: true }).decode(preview)
+  } catch {
+    rendered = `hex:${Buffer.from(preview).toString('hex')}`
+  }
+  return bytes.byteLength > maximumPreviewBytes
+    ? `${rendered}\n... ${bytes.byteLength - maximumPreviewBytes} more bytes`
+    : rendered
+}
+
 function parseProjectToml(source: string): Readonly<Record<string, unknown>> {
   try {
     return parseToml(source)
-  } catch {
+  } catch (error) {
     throw new Error(
-      '.codex/config.toml is unsafe or malformed; original bytes were preserved.',
+      `.codex/config.toml is unsafe or malformed; original bytes were preserved. ${error instanceof Error ? error.message : String(error)}`,
     )
   }
 }
@@ -413,8 +428,25 @@ ${managedConfigEnd}`
 }
 
 function updateManagedConfig(current: string, desiredBlock: string): string {
-  assertSafeTomlSurface(current)
-  const currentConfig = parseProjectToml(current)
+  try {
+    assertSafeTomlSurface(current)
+  } catch (error) {
+    throw tomlConflict(
+      error instanceof Error ? error.message : String(error),
+      current,
+      desiredBlock,
+    )
+  }
+  let currentConfig: Readonly<Record<string, unknown>>
+  try {
+    currentConfig = parseProjectToml(current)
+  } catch (error) {
+    throw tomlConflict(
+      error instanceof Error ? error.message : String(error),
+      current,
+      desiredBlock,
+    )
+  }
   const desiredConfig = parseProjectToml(desiredBlock)
   const currentServer = interactionServer(currentConfig)
   const desiredServer = interactionServer(desiredConfig)
@@ -422,8 +454,10 @@ function updateManagedConfig(current: string, desiredBlock: string): string {
   const end = current.indexOf(managedConfigEnd)
   if (start === -1 && end === -1) {
     if (currentServer !== undefined) {
-      throw new Error(
+      throw tomlConflict(
         'Unmanaged ay_ple_interaction TOML table conflicts with the required declaration.',
+        JSON.stringify(currentServer, null, 2),
+        desiredBlock,
       )
     }
     const updated = `${current}${current.length === 0 || current.endsWith('\n') ? '' : '\n'}${current.length === 0 ? '' : '\n'}${desiredBlock}\n`
@@ -431,7 +465,11 @@ function updateManagedConfig(current: string, desiredBlock: string): string {
     return updated
   }
   if (start === -1 || end === -1 || end < start) {
-    throw new Error('Unsafe or incomplete AY-PLE managed TOML markers.')
+    throw tomlConflict(
+      'Unsafe or incomplete AY-PLE managed TOML markers.',
+      current,
+      desiredBlock,
+    )
   }
   const endAfterMarker = end + managedConfigEnd.length
   const currentBlock = current.slice(start, endAfterMarker)
@@ -453,6 +491,23 @@ function updateManagedConfig(current: string, desiredBlock: string): string {
   throw new Error(
     `Managed MCP declaration differs from the required bytes.\n--- existing\n${currentBlock}\n--- required\n${desiredBlock}`,
   )
+}
+
+function tomlConflict(
+  reason: string,
+  existing: string,
+  required: string,
+): Error {
+  return new Error(
+    `${reason}\n--- existing\n${boundedConflictText(existing)}\n--- required\n${required}`,
+  )
+}
+
+function boundedConflictText(value: string): string {
+  const maximumCharacters = 16 * 1024
+  return value.length > maximumCharacters
+    ? `${value.slice(0, maximumCharacters)}\n... ${value.length - maximumCharacters} more characters`
+    : value
 }
 
 function interactionServer(
@@ -620,6 +675,11 @@ async function commitBaseline(
     ) {
       throw new Error(`Baseline path must stay workspace-relative: ${relativePath}`)
     }
+    if (isCredentialPath(relativePath)) {
+      throw new Error(
+        `Refusing to baseline a credential-like path: ${relativePath}`,
+      )
+    }
     const absolute = path.join(root, relativePath)
     await assertRegularFile(absolute, `baseline ${relativePath}`)
     const ignored = await git(root, ['check-ignore', '--quiet', '--', relativePath], {
@@ -635,6 +695,32 @@ async function commitBaseline(
     return true
   }
   return false
+}
+
+function isCredentialPath(relativePath: string): boolean {
+  const segments = relativePath
+    .split(/[\\/]/)
+    .map((segment) => segment.toLowerCase())
+  const basename = segments.at(-1) ?? ''
+  return (
+    segments.some((segment) =>
+      ['.aws', '.gnupg', '.kube', '.ssh'].includes(segment),
+    ) ||
+    basename === '.env' ||
+    basename.startsWith('.env.') ||
+    [
+      'credentials',
+      'credentials.json',
+      'id_ed25519',
+      'id_rsa',
+      'secrets',
+      'secrets.json',
+      'token.json',
+    ].includes(basename) ||
+    ['.key', '.p12', '.pem', '.pfx'].some((suffix) =>
+      basename.endsWith(suffix),
+    )
+  )
 }
 
 async function changedPaths(
