@@ -3,12 +3,14 @@ import { lazy, Suspense, useEffect, useState, type RefObject } from "react";
 import Map, { Layer, Marker, Popup, type MapRef } from "react-map-gl/maplibre";
 
 import { categoryClass, isTestEnvironment } from "../market/model";
-import type { LayerMode, MapMode, Market, MarketStore } from "../market/types";
+import type { LayerMode, Market, MarketStore } from "../market/types";
 import {
   addMissingStyleImageFallback,
   BASE_BUILDING_LAYER_ID,
   BASE_MAP_STYLE_URL,
+  hideExternalBuildingLayers,
 } from "./baseMap";
+import { getMapPresentationProfile, type MapPresentationMode } from "./mapPresentation";
 import { SelectedMarketBoundary } from "./SelectedMarketBoundary";
 import { SupportedRegionOverlays } from "./SupportedRegionOverlays";
 import type { MapBounds } from "./supportedRegions";
@@ -43,8 +45,7 @@ type MarketMapCanvasProps = {
   mapRef: RefObject<MapRef | null>;
   onVisibleCenterChange: (center: [number, number]) => void;
   onVisibleBoundsChange: (bounds: MapBounds) => void;
-  mapMode: MapMode;
-  baseBuildingsVisible: boolean;
+  presentationMode: MapPresentationMode;
   baseBuildingsRendered: boolean;
   layer: LayerMode;
   boundaryVisible: boolean;
@@ -58,7 +59,6 @@ type MarketMapCanvasProps = {
   selected: MarketStore | null;
   score: number | null;
   sameCategoryCount: number;
-  prefabMode: boolean;
   onSelectStore: (name: string) => void;
   visibleSupportedRegion: boolean;
   onEvidenceOpen: () => void;
@@ -101,9 +101,7 @@ function StoreMarker({
           <>
             <span className="prefab-shadow" />
             <span className="prefab-side" />
-            <span className="prefab-face">
-              <i>{icon}</i>
-            </span>
+            <span className="prefab-face"><i>{icon}</i></span>
             <span className="prefab-awning" />
             <span className="prefab-door" />
             <span className="prefab-sign" />
@@ -125,8 +123,7 @@ export function MarketMapCanvas({
   mapRef,
   onVisibleCenterChange,
   onVisibleBoundsChange,
-  mapMode,
-  baseBuildingsVisible,
+  presentationMode,
   baseBuildingsRendered,
   layer,
   boundaryVisible,
@@ -140,19 +137,20 @@ export function MarketMapCanvas({
   selected,
   score,
   sameCategoryCount,
-  prefabMode,
   onSelectStore,
   visibleSupportedRegion,
   onEvidenceOpen,
 }: MarketMapCanvasProps) {
+  const profile = getMapPresentationProfile(presentationMode);
+  const visibleStorefronts = profile.storefrontsVisible ? storefrontBuildings3d : [];
   const [readyStorefrontIds, setReadyStorefrontIds] = useState<Set<string>>(() => new Set());
-  const storefrontKey = storefrontBuildings3d.map((store) => store.id).join(",");
+  const storefrontKey = `${presentationMode}:${visibleStorefronts.map((store) => store.id).join(",")}`;
 
   useEffect(() => {
     setReadyStorefrontIds(new Set());
   }, [storefrontKey]);
 
-  const hiddenOverlayBuildingIds = storefrontBuildings3d.flatMap((store) =>
+  const hiddenOverlayBuildingIds = visibleStorefronts.flatMap((store) =>
     store.building && readyStorefrontIds.has(store.id) ? [store.building.id] : [],
   );
   if (isTestEnvironment())
@@ -165,8 +163,7 @@ export function MarketMapCanvas({
           longitude: market.center[0],
           latitude: market.center[1],
           zoom: 15.4,
-          pitch: 38,
-          bearing: -18,
+          ...profile.camera,
         }}
         mapStyle={BASE_MAP_STYLE_URL}
         attributionControl={false}
@@ -175,8 +172,10 @@ export function MarketMapCanvas({
         touchZoomRotate
         onLoad={(event) => {
           event.target.on("styleimagemissing", addMissingStyleImageFallback);
+          hideExternalBuildingLayers(event.target);
           onVisibleBoundsChange(readMapBounds(event.target));
         }}
+        onStyleData={(event) => hideExternalBuildingLayers(event.target)}
         onMove={(event) =>
           onVisibleCenterChange([event.viewState.longitude, event.viewState.latitude])
         }
@@ -198,17 +197,17 @@ export function MarketMapCanvas({
             "fill-extrusion-vertical-gradient": true,
           }}
         />
-        {mapMode === "localtwin" && (
+        {profile.localTwinOverlayVisible && (
           <SupportedRegionOverlays
-            buildingsVisible={baseBuildingsVisible}
+            buildingsVisible={profile.coloredBuildingsVisible}
             hiddenBuildingIds={hiddenOverlayBuildingIds}
           />
         )}
         {boundaryVisible && <SelectedMarketBoundary marketId={marketId} />}
-        {storesVisible && storefrontBuildings3d.length > 0 && (
+        {storesVisible && visibleStorefronts.length > 0 && (
           <Suspense fallback={null}>
             <StorefrontBuildingLayers
-              stores={storefrontBuildings3d}
+              stores={visibleStorefronts}
               onUnavailable={onStorefrontUnavailable}
               onReady={(storeId) =>
                 setReadyStorefrontIds((current) =>
@@ -219,12 +218,7 @@ export function MarketMapCanvas({
           </Suspense>
         )}
         {market.landmarks.map((place) => (
-          <Marker
-            key={place.name}
-            longitude={place.longitude}
-            latitude={place.latitude}
-            anchor="bottom"
-          >
+          <Marker key={place.name} longitude={place.longitude} latitude={place.latitude} anchor="bottom">
             <span className="landmark-label">{place.name}</span>
           </Marker>
         ))}
@@ -249,7 +243,7 @@ export function MarketMapCanvas({
               key={store.id ?? `${store.name}:${store.longitude}:${store.latitude}`}
               store={store}
               selectedName={selected?.name ?? null}
-              prefabMode={prefabMode}
+              prefabMode={profile.storefrontsVisible}
               onSelect={onSelectStore}
             />
           ))}
