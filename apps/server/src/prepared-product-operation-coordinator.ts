@@ -379,7 +379,7 @@ export function createPreparedProductOperationCoordinator(options: {
           '메시지를 확인해 주세요.',
         )
       }
-      const operationId = `chat_${randomUUID().replaceAll('-', '')}`
+      const operationId = targetOperationId()
       const operation = reserve(operationId, operationOptions.sink)
       let streamOpened = false
       try {
