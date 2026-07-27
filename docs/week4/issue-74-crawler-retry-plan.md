@@ -36,39 +36,41 @@
 
 ## 실행 순서
 
-### 묶음 1 — 코드 레벨 재시도 (승인 필요)
-- [ ] `crawler/src/bizinfo-client.ts`(또는 공용 유틸)에 `withRetry` 헬퍼 추가 — 기본값: 최대 3회
-      시도, 백오프 1s/2s/4s
-- [ ] 재시도 대상 판별: 네트워크 에러(`fetch` 자체가 throw, 예: `ConnectTimeoutError`) 또는
-      5xx 응답은 재시도, 4xx는 즉시 실패(재시도해도 의미 없음 — API 키 오류 등)
-- [ ] 실제 bizinfo API가 에러 시 4xx/5xx 중 무엇을 반환하는지 로컬에서 확인(예: 잘못된
-      `crtfcKey`로 호출) — 판별 기준이 맞는지 검증
-- [ ] `fetchAnnouncements`에 적용 (index.ts/backfill.ts 둘 다 자동 적용됨)
-- [ ] 단위 테스트: `fetch`를 mock해 2회 실패 후 3회째 성공하는 케이스, 4xx는 재시도 없이 즉시
-      실패하는 케이스
+### 묶음 1 — 코드 레벨 재시도 (완료, 2026-07-27)
+- [x] `crawler/src/retry.ts`에 `withRetry` 헬퍼 추가 — 기본값: 최대 3회 시도, 백오프 1s/2s(지수)
+- [x] 재시도 대상 판별: 네트워크 에러(`fetch` 자체가 throw) 또는 5xx 응답은 재시도, 4xx +
+      bizinfo의 `reqErr` 바디는 `NonRetryableError`로 즉시 실패(아래 발견 사항 참고)
+- [x] 실제 bizinfo API 호출로 확인 — **중요 발견**: 잘못된 `crtfcKey`로 호출해도 **HTTP 200**을
+      반환하고, 에러를 바디 안 `{"reqErr": "존재하지 않는 인증키 입니다."}`로 내려줌. 계획
+      당시 가정("4xx면 재시도 안 함")은 이 API엔 안 맞음 — HTTP status만으로는 이 에러를 못
+      잡아서, 응답 바디를 파싱해 `reqErr` 필드 유무로 따로 걸러내도록 설계 변경
+- [x] `fetchAnnouncements`에 적용 (index.ts/backfill.ts 둘 다 자동 적용됨 — 같은 함수 재사용)
+- [x] 단위 테스트: `retry.test.ts`(withRetry 자체 동작) + `bizinfo-client.test.ts`(네트워크 에러/
+      5xx 재시도, 4xx·reqErr 즉시 실패, 재시도 소진) — 총 11개 신규, 전체 143개 테스트 통과
 
-### 묶음 2 — 워크플로우 레벨 재시도 (승인 필요)
-- [ ] `.github/workflows/crawler.yml`의 `npm run run -w @hub/crawler` step을 재시도 가능한
-      형태로 감싸기(예: `nick-fields/retry` 액션, 버전 pin 필요) — 최대 2회 추가 재시도, 시도
-      간격 수 분(코드 레벨과 겹치지 않게 충분히 크게)
-- [ ] 재시도 간격이 다음 날 크론 실행(00:00 UTC)과 안 겹치는지 확인
-- [ ] 워크플로우 문법 검증(`actionlint` 있으면 사용, 없으면 실제 `workflow_dispatch`로 수동 실행
-      확인)
+### 묶음 2 — 워크플로우 레벨 재시도 (완료, 2026-07-27)
+- [x] `.github/workflows/crawler.yml`의 `npm run run -w @hub/crawler` step을 `nick-fields/retry`
+      (커밋 해시 `ce71cc2ab81d554ebbe88c79ab5975992d79ba08` = v3.0.2로 pin)로 감쌈 — 최대 3회
+      시도(코드 레벨 재시도까지 소진된 뒤에도 실패하는 경우 대비), 시도 간격 5분
+- [x] 최악의 경우(3회 × 10분 타임아웃 + 2 × 5분 대기 ≈ 40분)도 다음날 00:00 UTC 실행과 안 겹침
+- [x] `actionlint`(brew로 설치) 통과 확인 — `.github/workflows/*.yml` 전체 문법 오류 없음
 
 ## 완료 기준
 
-- [ ] `fetchAnnouncements` 등 bizinfo API 호출에 지수 백오프 재시도(코드 레벨)가 적용된다
-- [ ] 코드 레벨 재시도가 모두 실패해도 GitHub Actions 워크플로우 레벨에서 한 번 더 재시도된다
-- [ ] 재시도 중에도 4xx처럼 재시도해도 의미 없는 실패는 즉시 실패 처리된다
-- [ ] 관련 단위 테스트 추가, `npm test`/`npm run lint` 통과
+- [x] `fetchAnnouncements` 등 bizinfo API 호출에 지수 백오프 재시도(코드 레벨)가 적용된다
+- [x] 코드 레벨 재시도가 모두 실패해도 GitHub Actions 워크플로우 레벨에서 한 번 더 재시도된다
+- [x] 재시도 중에도 4xx·bizinfo `reqErr`처럼 재시도해도 의미 없는 실패는 즉시 실패 처리된다
+      (당초 "4xx만" 가정에서 `reqErr` 케이스까지 넓힘 — 위 묶음 1 발견 사항 참고)
+- [x] 관련 단위 테스트 추가(`retry.test.ts` 6건, `bizinfo-client.test.ts` 6건), `npm test`(143
+      passed)/`npm run lint`/타입체크(client·server·crawler) 통과
 
 ## 리스크 / 결정 필요
 
 | 항목 | 내용 | 기본 방침 |
 |------|------|-----------|
 | 재시도 횟수/백오프 간격 구체값 | 너무 짧으면 blip을 못 넘기고, 너무 길면 크론 다음 실행과 겹칠 수 있음 | 코드 레벨 3회(1s/2s/4s), 워크플로우 레벨 2회(수 분 간격) 기본값으로 시작, 실제 재발 시 조정 |
-| bizinfo API 에러 응답 포맷 | 4xx/5xx 판별 기준이 실제 API 동작과 맞는지 미확인 | 묶음 1에서 잘못된 `crtfcKey`로 실제 호출해 확인 후 판별 로직 확정 |
-| 워크플로우 재시도 액션 선택 | 서드파티 마켓플레이스 액션(`nick-fields/retry` 등) 신뢰·버전 pin 필요 | 묶음 2에서 커밋 해시로 pin, 대안(자체 bash 재시도 스크립트)도 비교 |
+| bizinfo API 에러 응답 포맷 | 4xx/5xx 판별 기준이 실제 API 동작과 맞는지 미확인 | **결정 완료**: 실제로는 인증키 오류도 HTTP 200 + `reqErr` 바디로 옴 — HTTP status 판별(4xx/5xx)에 더해 바디의 `reqErr` 필드 존재 여부도 즉시-실패 조건에 추가 |
+| 워크플로우 재시도 액션 선택 | 서드파티 마켓플레이스 액션(`nick-fields/retry` 등) 신뢰·버전 pin 필요 | **결정 완료**: `nick-fields/retry`를 커밋 해시(`ce71cc2...` = v3.0.2)로 pin해서 채택 — 자체 bash 스크립트보다 유지보수 부담이 적다고 판단 |
 | 실패 알림 여부 | 재시도까지 다 실패하면 아무도 모름(현재도 그럼) | 이번 범위 제외, 필요성 확인되면 별도 이슈로 분리 |
 
 ## 오늘 끝나면 다음 (참고)
