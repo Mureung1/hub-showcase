@@ -194,8 +194,11 @@ async function ensureManagedRuntimeDirectories(
   await validateDirectory(productRuntime.environment.codexHome, true)
   for (const directory of [
     productRuntime.environment.home,
-    productRuntime.environment.codexSqliteHome,
     productRuntime.environment.tempDirectory,
+    ...(productRuntime.environment.codexSqliteHome ===
+    productRuntime.environment.codexHome
+      ? []
+      : [productRuntime.environment.codexSqliteHome]),
   ]) {
     const relative = path.relative(productRuntime.appDataRoot, directory)
     if (
@@ -244,7 +247,7 @@ async function validateRuntimePaths(
     return rootsAreDisjoint([
       canonicalPackage,
       canonicalWorkspace,
-      ...controlled,
+      ...new Set(controlled),
     ])
   } catch {
     return false

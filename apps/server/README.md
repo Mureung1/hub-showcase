@@ -14,16 +14,16 @@ Repository root에서 다음 명령을 사용한다.
 npm run dev
 ```
 
-Canonical product composition은 다음 세 root를 명시적으로 분리한다.
+Canonical product composition은 다음 root authority를 명시적으로 분리한다.
 
 | Root | Current owner와 계산 |
 | --- | --- |
-| `packageRoot` | Repository-owned product code와 `packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64` verified artifact를 찾는 source root다. 사용자 상태를 쓰지 않는다. |
-| `appDataRoot` | 기본값은 repository 기준 `../.ay-ple-dogfood/app-data`다. `--root`로 profile을 바꿀 수 있으며 composition이 `runtime/home`, `runtime/codex-sqlite-home`, `runtime/temp`를 isolated `HOME`, `CODEX_SQLITE_HOME`, temporary state로 계산·준비한다. |
+| `packageRoot` | Current `hub/` source root다. Tracked source와 rebuildable output을 찾으며 사용자 상태를 쓰지 않는다. |
+| `appDataRoot` | 기본값은 canonical sibling `../.ay-ple/`다. Verified Runtime은 `runtime/production-runtime-darwin-arm64`, controlled `HOME`은 `state/runtime/home`, temporary state는 `temp/`에 둔다. |
 | `CODEX_HOME` | Caller의 전역 `CODEX_HOME`을 그대로 사용하며, 미설정이면 OS user의 `~/.codex`를 사용한다. Canonical dev는 별도 auth profile이나 credential copy를 만들지 않는다. |
-| `workspaceRoot` | 기본값은 repository 기준 `../workspace/year-2-semester-2`이며 `--workspace`로 바꿀 수 있다. Product native thread의 exact `cwd`이며 current v2 confirmed product state와 user-owned 자료를 보존한다. |
+| `workspaceRoot` | Default는 선택하지 않는다. Transitional current-v2 개발 확인이 필요할 때만 `--workspace <absolute-path>`를 명시하며 `CODEX_CHAT_WORKSPACE`와 ambient `cwd`를 fallback으로 사용하지 않는다. |
 
-Package, app data, workspace와 Runtime state root는 서로 다르고 unsafe ancestor·descendant 관계가 없어야 한다. 전역 `CODEX_HOME`은 인증·Codex 전역 설정의 의도적인 예외이며 workspace와 겹치면 fail closed한다. Repository `.ay-ple`, legacy 여섯 `CODEX_CHAT_*` path, common parent와 `process.cwd()`를 fallback으로 사용하지 않는다. Fresh clone은 Runtime bundle이 tracked되지 않으므로 먼저 [runtime package README](../../packages/codex-chat-runtime/README.md#standalone-production-bundle)에 따라 materialize한다.
+Package, app data, global Codex home와 workspace는 canonical realpath 기준 same-path·ancestor 관계가 없어야 하고 symlink·non-directory는 mutation 전에 fail closed한다. Controlled child state만 app data 아래에 중첩된다. Fresh clone은 Runtime bundle이 tracked되지 않으므로 먼저 [runtime package README](../../packages/codex-chat-runtime/README.md#standalone-production-bundle)에 따라 external app data에 materialize한다.
 
 Canonical root command는 ambient `PORT`를 무시하고 Server `PORT`를 `3000`으로 고정해 Chat Shell Vite proxy target과 일치시킨다. Direct Server entrypoint는 caller environment를 local `.env`보다 우선하고 `PORT`가 없으면 `3000`, listener address는 `127.0.0.1`을 사용한다. Root command가 exact Chat Shell Origin을 설정한다. `dev:chat-only`와 `/api/codex-chat/*`는 supported entrypoint·route·alias가 아니다.
 
@@ -34,9 +34,9 @@ npm run build -w @ay-ple/server
 npm run start -w @ay-ple/server
 ```
 
-## Current development workspace input
+## Legacy development workspace input
 
-대표 First Assignment 자료는 Git이 추적하는 seed로만 유지하고 실제 native `cwd`로 사용하지 않는다. Root product command는 seed를 repository 밖의 `<dirname(packageRoot)>/.ay-ple-dev-workspaces/first-assignment-semester-workspace`로 materialize하고 정규 path와 development ownership을 보고한다. 이 fixture materialization은 public app-owned scaffold나 `WorkspaceManifest` admission이 아니다.
+아래 materializer와 dogfood profile helper는 final scoped cleanup 전 rollback evidence로만 남아 있으며 canonical `npm run dev`가 호출하지 않는다. 대표 First Assignment seed와 managed development workspace는 default selection authority가 아니다.
 
 ```bash
 npm run materialize:dev-workspace

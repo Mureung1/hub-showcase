@@ -1464,8 +1464,14 @@ async function validateEnvironment(
       'runtime temporary directory',
     ),
   ])
-  if (new Set([home, codexHome, codexSqliteHome, tempDirectory]).size !== 4) {
-    throw new TypeError('Codex runtime directories must be distinct')
+  if (
+    new Set([home, codexHome, tempDirectory]).size !== 3 ||
+    (codexSqliteHome !== codexHome &&
+      new Set([home, codexHome, codexSqliteHome, tempDirectory]).size !== 4)
+  ) {
+    throw new TypeError(
+      'Codex runtime directories must be distinct except for the global Codex home',
+    )
   }
   return { home, codexHome, codexSqliteHome, tempDirectory }
 }

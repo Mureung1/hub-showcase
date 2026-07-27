@@ -1,5 +1,4 @@
 import path from 'node:path'
-import { homedir } from 'node:os'
 
 import {
   createMacOsSemesterWorkspaceChooser,
@@ -7,9 +6,8 @@ import {
 } from './semester-workspace.js'
 import type { ProductRuntimeBootstrap } from './codex-chat-config.js'
 import type { SemesterWorkspaceBootstrap } from './server-application.js'
+import { resolveCanonicalProductRoots } from './product-roots.js'
 
-const productionRuntimeRelativePath =
-  'packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64'
 const productOrigin = 'http://127.0.0.1:4173'
 
 export type ProductDevelopmentBootstrapErrorCode =
@@ -31,16 +29,17 @@ export class ProductDevelopmentBootstrapError extends Error {
 
 export type ProductDevelopmentBootstrap = {
   readonly runtime: ProductRuntimeBootstrap
-  readonly selectedWorkspaceRoot: string
-  readonly semesterWorkspace: SemesterWorkspaceBootstrap
+  readonly runtimeWorkspaceRoot: string
+  readonly selectedWorkspaceRoot?: string
+  readonly semesterWorkspace?: SemesterWorkspaceBootstrap
 }
 
-export function resolveProductDevelopmentBootstrap(
+export async function resolveProductDevelopmentBootstrap(
   environment: NodeJS.ProcessEnv,
   options: {
     readonly chooseDirectory?: SemesterWorkspaceDirectoryChooser
   } = {},
-): ProductDevelopmentBootstrap | undefined {
+): Promise<ProductDevelopmentBootstrap | undefined> {
   if (environment.AY_PLE_PRODUCT_MODE === undefined) return undefined
   if (environment.AY_PLE_PRODUCT_MODE !== '1') {
     throw new ProductDevelopmentBootstrapError(
@@ -53,53 +52,69 @@ export function resolveProductDevelopmentBootstrap(
     'product_package_root_required',
     'AY_PLE_PACKAGE_ROOT',
   )
-  const appDataRoot = requireAbsoluteRoot(
+  const appDataRoot = optionalAbsoluteRoot(
     environment.AY_PLE_APP_DATA_ROOT,
     'product_app_data_root_required',
     'AY_PLE_APP_DATA_ROOT',
   )
-  const selectedWorkspaceRoot = requireAbsoluteRoot(
+  const selectedWorkspaceRoot = optionalAbsoluteRoot(
     environment.AY_PLE_WORKSPACE_ROOT,
     'product_workspace_root_required',
     'AY_PLE_WORKSPACE_ROOT',
   )
-  const codexHome = requireAbsoluteRoot(
-    environment.CODEX_HOME ??
-      path.join(environment.HOME ?? homedir(), '.codex'),
-    'product_codex_home_invalid',
-    'CODEX_HOME',
-  )
+  const roots = await resolveCanonicalProductRoots({
+    packageRoot,
+    environment,
+    ...(appDataRoot === undefined ? {} : { appDataRoot }),
+    ...(selectedWorkspaceRoot === undefined
+      ? {}
+      : { workspaceRoot: selectedWorkspaceRoot }),
+  })
   const chooseDirectory =
     options.chooseDirectory ?? createMacOsSemesterWorkspaceChooser()
-  let initialSelection = selectedWorkspaceRoot
+  let initialSelection = roots.workspaceRoot
 
   return {
+    runtimeWorkspaceRoot: roots.workspaceRoot ?? roots.packageRoot,
     runtime: {
-      appDataRoot,
-      packageRoot,
-      runtimeRoot: path.join(packageRoot, productionRuntimeRelativePath),
+      appDataRoot: roots.appDataRoot,
+      packageRoot: roots.packageRoot,
+      runtimeRoot: roots.runtimeRoot,
       environment: {
-        home: path.join(appDataRoot, 'runtime/home'),
-        codexHome,
-        codexSqliteHome: path.join(appDataRoot, 'runtime/codex-sqlite-home'),
-        tempDirectory: path.join(appDataRoot, 'runtime/temp'),
+        home: roots.runtimeHome,
+        codexHome: roots.globalCodexHome,
+        codexSqliteHome: roots.globalCodexHome,
+        tempDirectory: roots.tempDirectory,
       },
       origin: productOrigin,
     },
-    selectedWorkspaceRoot,
-    semesterWorkspace: {
-      packageRoot,
-      appDataRoot,
-      chooseDirectory: async () => {
-        if (initialSelection.length > 0) {
-          const selected = initialSelection
-          initialSelection = ''
-          return selected
-        }
-        return chooseDirectory()
-      },
-    },
+    ...(roots.workspaceRoot === undefined
+      ? {}
+      : {
+          selectedWorkspaceRoot: roots.workspaceRoot,
+          semesterWorkspace: {
+            packageRoot: roots.packageRoot,
+            appDataRoot: roots.appDataRoot,
+            chooseDirectory: async () => {
+              if (initialSelection !== undefined) {
+                const selected = initialSelection
+                initialSelection = undefined
+                return selected
+              }
+              return chooseDirectory()
+            },
+          },
+        }),
   }
+}
+
+function optionalAbsoluteRoot(
+  value: string | undefined,
+  code: Exclude<ProductDevelopmentBootstrapErrorCode, 'product_mode_invalid'>,
+  label: string,
+): string | undefined {
+  if (value === undefined) return undefined
+  return requireAbsoluteRoot(value, code, label)
 }
 
 function requireAbsoluteRoot(

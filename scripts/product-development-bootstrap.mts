@@ -1,30 +1,37 @@
-import { lstat, mkdir, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import concurrently from 'concurrently'
 
-import {
-  assertProductRootsDoNotOverlap,
-  materializeDevelopmentSemesterWorkspace,
-} from './semester-workspace-materializer.mjs'
+import { resolveCanonicalProductRoots } from '../apps/server/src/product-roots.js'
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url))
 
-export function resolveExplicitAppDataRoot(options: {
+export function resolveProductDevelopmentArguments(options: {
   readonly arguments: readonly string[]
   readonly environment: NodeJS.ProcessEnv
-}): string {
+}): {
+  readonly appDataRoot: string
+  readonly workspaceRoot: string | undefined
+} {
   let argumentRoot: string | undefined
+  let workspaceRoot: string | undefined
   for (let index = 0; index < options.arguments.length; index += 1) {
     const argument = options.arguments[index]
-    if (argument !== '--app-data-root' || argumentRoot !== undefined) {
-      throw new Error(
-        'Usage: tsx scripts/product-development-bootstrap.mts --app-data-root /absolute/path/to/app-data',
-      )
+    const value = options.arguments[index + 1]
+    if (argument === '--app-data-root' && argumentRoot === undefined && value) {
+      argumentRoot = value
+      index += 1
+      continue
     }
-    argumentRoot = options.arguments[index + 1]
-    index += 1
+    if (argument === '--workspace' && workspaceRoot === undefined && value) {
+      workspaceRoot = value
+      index += 1
+      continue
+    }
+    throw new Error(
+      'Usage: tsx scripts/product-development-bootstrap.mts --app-data-root /absolute/path/to/app-data [--workspace /absolute/path/to/workspace]',
+    )
   }
   const selected = argumentRoot ?? options.environment.AY_PLE_APP_DATA_ROOT
   if (!selected || !path.isAbsolute(selected)) {
@@ -32,37 +39,42 @@ export function resolveExplicitAppDataRoot(options: {
       'Product development requires an explicit absolute --app-data-root.',
     )
   }
-  return selected
+  if (workspaceRoot !== undefined && !path.isAbsolute(workspaceRoot)) {
+    throw new Error('Product workspace must be an explicit absolute directory.')
+  }
+  return { appDataRoot: selected, workspaceRoot }
 }
 
-async function canonicalAppDataRoot(selected: string): Promise<string> {
-  assertProductRootsDoNotOverlap(repositoryRoot, path.resolve(selected))
-  await mkdir(selected, { recursive: true })
-  const stats = await lstat(selected)
-  if (!stats.isDirectory() || stats.isSymbolicLink()) {
-    throw new Error('Product appDataRoot must be a non-symlink directory.')
-  }
-  return realpath(selected)
+export function resolveExplicitAppDataRoot(options: {
+  readonly arguments: readonly string[]
+  readonly environment: NodeJS.ProcessEnv
+}): string {
+  return resolveProductDevelopmentArguments(options).appDataRoot
 }
 
 export async function runProductDevelopment(options: {
   readonly arguments: readonly string[]
   readonly environment: NodeJS.ProcessEnv
 }): Promise<void> {
-  const appDataRoot = await canonicalAppDataRoot(
-    resolveExplicitAppDataRoot({
-      arguments: options.arguments,
-      environment: options.environment,
-    }),
-  )
-  const selected = await materializeDevelopmentSemesterWorkspace({
-    appDataRoot,
+  const selectedArguments = resolveProductDevelopmentArguments({
+    arguments: options.arguments,
+    environment: options.environment,
+  })
+  const roots = await resolveCanonicalProductRoots({
+    appDataRoot: selectedArguments.appDataRoot,
     environment: options.environment,
     packageRoot: repositoryRoot,
+    ...(selectedArguments.workspaceRoot === undefined
+      ? {}
+      : { workspaceRoot: selectedArguments.workspaceRoot }),
   })
-  const ownership =
-    selected.ownership === 'caller' ? 'caller-owned' : 'managed'
-  console.log(`SemesterWorkspace: ${selected.workspaceRoot} (${ownership})`)
+  const appDataRoot = roots.appDataRoot
+  const workspaceRoot = roots.workspaceRoot
+  if (workspaceRoot !== undefined) {
+    console.log(`SemesterWorkspace: ${workspaceRoot} (caller-owned)`)
+  } else {
+    console.log('SemesterWorkspace: not selected')
+  }
   console.log(`Product app data: ${appDataRoot}`)
 
   const productEnvironment = {
@@ -70,7 +82,9 @@ export async function runProductDevelopment(options: {
     AY_PLE_PRODUCT_MODE: '1',
     AY_PLE_PACKAGE_ROOT: repositoryRoot,
     AY_PLE_APP_DATA_ROOT: appDataRoot,
-    AY_PLE_WORKSPACE_ROOT: selected.workspaceRoot,
+    ...(workspaceRoot === undefined
+      ? {}
+      : { AY_PLE_WORKSPACE_ROOT: workspaceRoot }),
   }
   const { result } = concurrently(
     [

@@ -737,10 +737,15 @@ async function validateOptions(
       'controlled TMPDIR',
     ),
   })
-  const roots = [workspace, ...Object.values(environment)]
-  if (new Set(roots).size !== roots.length) {
-    throw new TypeError('Native context roots must be distinct')
-  }
+  const roots = [
+    workspace,
+    environment.home,
+    environment.codexHome,
+    environment.tempDirectory,
+    ...(environment.codexSqliteHome === environment.codexHome
+      ? []
+      : [environment.codexSqliteHome]),
+  ]
   for (let left = 0; left < roots.length; left += 1) {
     for (let right = left + 1; right < roots.length; right += 1) {
       if (pathsOverlap(roots[left]!, roots[right]!)) {

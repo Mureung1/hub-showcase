@@ -36,17 +36,18 @@ Local-first는 offline을 뜻하지 않으며 Codex 실행의 provider 전송 �
 
 ```bash
 npm install
+npm run materialize:production-runtime -w @ay-ple/codex-chat-runtime
 npm run dev
 ```
 
-Canonical development command는 persistent app data와 existing workspace를 검증하고, `packageRoot`의 verified Runtime artifact와 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. 이 entrypoint는 별도 실행 topology를 만들지 않고 [ADR 0013](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 canonical composition에 위임합니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 materialize해야 합니다.
+Canonical development command는 `packageRoot`와 sibling external app data를 검증하고, external verified Runtime과 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 production bundle을 materialize해야 합니다.
 
-기본 profile root는 repository 기준 `../.ay-ple-dogfood`이고 실제 app data는 그 아래 `app-data/`를 사용합니다. Workspace는 `../workspace/year-2-semester-2`이며 sample fixture를 복사하지 않아 비어 있어도 정상입니다. Codex account는 caller의 전역 `CODEX_HOME`, 또는 미설정 시 `~/.codex`를 그대로 사용합니다. 이후 Server·Chat Shell 시작에서도 workspace의 사용자 자료와 `.ay-ple` 상태를 보존하고 기존 내용을 reset하지 않습니다.
+기본 `appDataRoot`는 repository sibling `../.ay-ple/`이고 Runtime은 그 아래 `runtime/production-runtime-darwin-arm64`, controlled `HOME`은 `state/runtime/home`, temporary state는 `temp/`를 사용합니다. Codex account·config·session은 caller의 전역 `CODEX_HOME`, 또는 미설정 시 `~/.codex`를 그대로 사용하며 별도 SQLite home을 만들지 않습니다. Default startup은 SemesterWorkspace를 자동 선택하지 않고 `CODEX_CHAT_WORKSPACE`도 selection authority로 사용하지 않습니다.
 
-다른 위치가 필요하면 repository 기준 상대 경로나 absolute path로 override할 수 있습니다. 이미 수동으로 만든 app-data profile은 최초 한 번만 명시적으로 채택합니다.
+Current-v2 compatibility workspace를 개발 중 명시적으로 열어야 할 때만 absolute path를 전달합니다.
 
 ```bash
-npm run dev -- --root ../existing-profile --workspace ../workspace/another-semester --adopt-existing
+npm run dev -- --workspace /absolute/path/to/semester
 ```
 
 ## 캠프 데모

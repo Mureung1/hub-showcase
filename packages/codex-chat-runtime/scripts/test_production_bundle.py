@@ -67,6 +67,29 @@ class ExactFileRosterTests(unittest.TestCase):
             production_bundle.file_roster(self.root)
 
 
+class ExternalRuntimePathTests(unittest.TestCase):
+    def test_app_data_root_owns_runtime_and_cache_outside_package(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="production-runtime-paths-") as temp:
+            root = Path(temp)
+            app_data_root = root / "app-data"
+            artifact_root, cache_root = production_bundle._runtime_paths(app_data_root)
+            self.assertEqual(
+                app_data_root / "runtime" / "production-runtime-darwin-arm64",
+                artifact_root,
+            )
+            self.assertEqual(
+                app_data_root / "cache" / "production-runtime",
+                cache_root,
+            )
+            self.assertFalse(
+                artifact_root.is_relative_to(production_bundle.PACKAGE_ROOT)
+            )
+
+    def test_cli_requires_an_explicit_app_data_root(self) -> None:
+        with self.assertRaises(SystemExit):
+            production_bundle._parser().parse_args(["verify"])
+
+
 class TreeEvidenceTests(unittest.TestCase):
     def test_roster_is_location_independent_and_fail_closed(self) -> None:
         with tempfile.TemporaryDirectory(prefix="production-bundle-tree-") as temp:
@@ -395,10 +418,13 @@ class MaterializationControlTests(unittest.TestCase):
             ) as assemble,
             mock.patch("production_bundle._publish_artifact") as publish,
         ):
-            with self.assertRaisesRegex(
-                production_bundle.BundleError, "different manifests"
-            ):
-                production_bundle.materialize()
+            with tempfile.TemporaryDirectory(
+                prefix="production-materialize-app-data-"
+            ) as temp:
+                with self.assertRaisesRegex(
+                    production_bundle.BundleError, "different manifests"
+                ):
+                    production_bundle.materialize(app_data_root=Path(temp))
         self.assertEqual(2, assemble.call_count)
         publish.assert_not_called()
 
@@ -408,7 +434,8 @@ class ManagedPublishTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="production-publish-")
         self.root = Path(self.temp.name)
         self.package_root = self.root / "package"
-        self.managed_root = self.package_root / ".artifacts"
+        self.package_root.mkdir()
+        self.managed_root = self.root / "app-data"
         self.target = self.managed_root / "runtime"
         self.candidate = self.root / "candidate"
         self.candidate.mkdir()
@@ -458,7 +485,7 @@ class ManagedPublishTests(unittest.TestCase):
         old_manifest = b'{"generation":"old"}\n'
         new_manifest = b'{"generation":"new"}\n'
         manifest_path = self.package_root / "manifest.json"
-        manifest_path.parent.mkdir(parents=True)
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_bytes(old_manifest)
         self.target.mkdir(parents=True)
         (self.target / "manifest.json").write_bytes(old_manifest)
@@ -505,7 +532,7 @@ class ManagedPublishTests(unittest.TestCase):
         old_manifest = b'{"generation":"old"}\n'
         new_manifest = b'{"generation":"new"}\n'
         manifest_path = self.package_root / "manifest.json"
-        manifest_path.parent.mkdir(parents=True)
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_bytes(old_manifest)
         self.target.mkdir(parents=True)
         (self.target / "manifest.json").write_bytes(old_manifest)
@@ -548,7 +575,6 @@ class ManagedPublishTests(unittest.TestCase):
         external.mkdir()
         sentinel = external / "sentinel"
         sentinel.write_text("preserve", encoding="utf-8")
-        self.package_root.mkdir()
         self.managed_root.symlink_to(external, target_is_directory=True)
 
         with self.assertRaisesRegex(production_bundle.BundleError, "symlink"):
@@ -566,6 +592,9 @@ class VerifyCommandTests(unittest.TestCase):
     def test_verify_never_uses_download_transport(self) -> None:
         with tempfile.TemporaryDirectory(prefix="production-bundle-verify-") as temp:
             missing_root = Path(temp) / "missing"
+            package_root = Path(temp) / "package"
+            managed_root = Path(temp) / "app-data"
+            package_root.mkdir()
             with mock.patch(
                 "production_bundle.urllib.request.urlopen",
                 side_effect=AssertionError("verify attempted a download"),
@@ -573,8 +602,8 @@ class VerifyCommandTests(unittest.TestCase):
                 with self.assertRaises(production_bundle.BundleError):
                     production_bundle.verify_bundle(
                         artifact_root=missing_root,
-                        package_root=Path(temp),
-                        managed_root=Path(temp),
+                        package_root=package_root,
+                        managed_root=managed_root,
                     )
             urlopen.assert_not_called()
 
