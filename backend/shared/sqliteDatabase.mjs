@@ -19,6 +19,16 @@ export function createSqliteDatabase({ dbPath = defaultSqlitePath, repoRoot = pr
 
 export function initializeSqliteSchema(database) {
   database.exec(`
+    CREATE TABLE IF NOT EXISTS learner_profiles (
+      id TEXT PRIMARY KEY CHECK (id = 'primary'),
+      display_name TEXT NOT NULL,
+      learning_goal TEXT NOT NULL,
+      preferred_tracks_json TEXT NOT NULL,
+      daily_study_minutes INTEGER NOT NULL,
+      level TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS learning_progress (
       mission_id TEXT PRIMARY KEY,
       run_state TEXT NOT NULL,

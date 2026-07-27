@@ -9,6 +9,7 @@ import { handleGitLabAttemptApiRequest } from './gitLabAttemptRoutes.mjs'
 import { handleHealthApiRequest } from './healthRoutes.mjs'
 import { handleLearningProgressApiRequest } from './learningProgressRoutes.mjs'
 import { handleMistakeNoteApiRequest } from './mistakeNoteRoutes.mjs'
+import { handleProfileApiRequest } from './profileRoutes.mjs'
 import { handleCodeRunApiRequest } from './codeRunRoutes.mjs'
 import { handleTutorApiRequest } from './tutorRoutes.mjs'
 import { loadCurriculumTracks } from '../modules/curriculum/adapters/jsonCurriculumCatalogRepository.mjs'
@@ -27,6 +28,9 @@ import { createSupabaseLearningProgressRepository } from '../modules/learning-pr
 import { createInMemoryMistakeNoteRepository } from '../modules/mistake-notes/adapters/inMemoryMistakeNoteRepository.mjs'
 import { createSqliteMistakeNoteRepository } from '../modules/mistake-notes/adapters/sqliteMistakeNoteRepository.mjs'
 import { createSupabaseMistakeNoteRepository } from '../modules/mistake-notes/adapters/supabaseMistakeNoteRepository.mjs'
+import { createInMemoryProfileRepository } from '../modules/profile/adapters/inMemoryProfileRepository.mjs'
+import { createSqliteProfileRepository } from '../modules/profile/adapters/sqliteProfileRepository.mjs'
+import { createSupabaseProfileRepository } from '../modules/profile/adapters/supabaseProfileRepository.mjs'
 import { loadKnowledgeChunks } from '../modules/knowledge/adapters/jsonlKnowledgeRepository.mjs'
 import { createAgentConfig, loadEnvFiles } from '../shared/env.mjs'
 import { createCorsHeaders, createRouteNotFoundResponse } from '../shared/http.mjs'
@@ -48,6 +52,7 @@ export function createCurriculumAgentApp({
   tracks,
   config,
   recommendationProvider,
+  profileRepository = createInMemoryProfileRepository(),
   progressRepository = createInMemoryLearningProgressRepository(),
   mistakeNoteRepository = createInMemoryMistakeNoteRepository(),
   gitLabAttemptRepository = createInMemoryGitLabAttemptRepository(),
@@ -85,6 +90,7 @@ export function createCurriculumAgentApp({
         tracks,
         config,
         recommendationProvider,
+        profileRepository,
         progressRepository,
         mistakeNoteRepository,
         gitLabAttemptRepository,
@@ -96,6 +102,7 @@ export function createCurriculumAgentApp({
       }
       const result =
         (await handleHealthApiRequest(routeContext)) ??
+        (await handleProfileApiRequest(routeContext)) ??
         (await handleCurriculumApiRequest(routeContext)) ??
         (await handleLearningProgressApiRequest(routeContext)) ??
         (await handleMistakeNoteApiRequest(routeContext)) ??
@@ -192,6 +199,7 @@ export function createRuntimeRepositories(
 
     return {
       repositoryMode,
+      profileRepository: createInMemoryProfileRepository(),
       progressRepository: createInMemoryLearningProgressRepository(),
       mistakeNoteRepository,
       gitLabAttemptRepository,
@@ -211,6 +219,7 @@ export function createRuntimeRepositories(
     return {
       repositoryMode,
       sqliteDatabase: database,
+      profileRepository: createSqliteProfileRepository(database),
       progressRepository: createSqliteLearningProgressRepository(database),
       mistakeNoteRepository,
       gitLabAttemptRepository,
@@ -232,6 +241,7 @@ export function createRuntimeRepositories(
     return {
       repositoryMode,
       supabaseClient,
+      profileRepository: createSupabaseProfileRepository(supabaseClient),
       progressRepository: createSupabaseLearningProgressRepository(supabaseClient),
       mistakeNoteRepository: createSupabaseMistakeNoteRepository(supabaseClient),
       gitLabAttemptRepository: createSupabaseGitLabAttemptRepository(supabaseClient),
@@ -249,6 +259,7 @@ export function startCurriculumAgentServer({
   tracks,
   config,
   recommendationProvider,
+  profileRepository,
   progressRepository,
   mistakeNoteRepository,
   gitLabAttemptRepository,
@@ -260,6 +271,7 @@ export function startCurriculumAgentServer({
   const runtimeContext = tracks && config ? {
     tracks,
     config,
+    profileRepository,
     progressRepository,
     mistakeNoteRepository,
     gitLabAttemptRepository,

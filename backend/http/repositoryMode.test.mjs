@@ -2,7 +2,7 @@
 import { createRuntimeRepositories } from './server.mjs'
 
 describe('server repository runtime mode', () => {
-  it('uses in-memory repositories by default', () => {
+  it('uses in-memory repositories by default', async () => {
     const repositories = createRuntimeRepositories({})
 
     repositories.progressRepository.saveMission({
@@ -15,10 +15,12 @@ describe('server repository runtime mode', () => {
     })
 
     expect(repositories).not.toHaveProperty('sqliteDatabase')
+    expect(repositories.profileRepository).toBeDefined()
+    await expect(repositories.profileRepository.get()).resolves.toBeNull()
     expect(repositories.progressRepository.listMissions()).toHaveProperty('mission-1')
   })
 
-  it('uses SQLite repositories when configured', () => {
+  it('uses SQLite repositories when configured', async () => {
     const repositories = createRuntimeRepositories({
       ICU_REPOSITORY_MODE: 'sqlite',
       ICU_SQLITE_PATH: ':memory:',
@@ -34,6 +36,8 @@ describe('server repository runtime mode', () => {
     })
 
     expect(repositories).toHaveProperty('sqliteDatabase')
+    expect(repositories.profileRepository).toBeDefined()
+    await expect(repositories.profileRepository.get()).resolves.toBeNull()
     expect(repositories.progressRepository.listMissions()).toHaveProperty('mission-1')
     repositories.sqliteDatabase.close()
   })
@@ -57,6 +61,7 @@ describe('server repository runtime mode', () => {
 
     expect(repositories.repositoryMode).toBe('supabase')
     expect(repositories.supabaseClient).toBe(client)
+    expect(repositories.profileRepository).toBeDefined()
     expect(receivedConfig).toEqual({
       url: 'https://icu.supabase.co',
       secretKey: 'sb_secret_test',

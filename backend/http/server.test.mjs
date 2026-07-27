@@ -57,6 +57,26 @@ afterEach(async () => {
 })
 
 describe('curriculum agent Express server', () => {
+  it('serves profile API responses through Express', async () => {
+    const baseUrl = await listen(createTestServer())
+
+    const saveResponse = await fetch(`${baseUrl}/api/profile`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        displayName: '예린',
+        learningGoal: 'React 앱 완성하기',
+        preferredTracks: ['frontend'],
+        dailyStudyMinutes: 60,
+        level: 'beginner',
+      }),
+    })
+    const loadResponse = await fetch(`${baseUrl}/api/profile`)
+
+    expect(saveResponse.status).toBe(200)
+    await expect(loadResponse.json()).resolves.toMatchObject({ profile: { displayName: '예린' } })
+  })
+
   it('serves progress API responses through Express', async () => {
     const baseUrl = await listen(createTestServer())
 
