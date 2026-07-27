@@ -1,8 +1,9 @@
-import { Link, Navigate, useOutletContext } from 'react-router-dom'
+import { Navigate, useOutletContext } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
-import { createRecommendation } from '../api/index.js'
+import { createRecommendation, addFavorite, removeFavorite } from '../api/index.js'
 import { RefreshIcon } from './icons.jsx'
-import { DIFFICULTY_META, LANGUAGE_CLASSES, TAG_CLASSES, formatStars } from '../utils/format.js'
+import IssueCard from './IssueCard.jsx'
+import { DIFFICULTY_META } from '../utils/format.js'
 import { TOPIC_OPTIONS } from '../utils/preferences.js'
 
 const LIMIT_EXCEEDED_MESSAGE = '오늘 재추천 횟수를 다 사용했어요. 내일 다시 시도해주세요.'
@@ -16,6 +17,24 @@ function Result() {
     mutationFn: () => createRecommendation(recommendation?.githubId, recommendation?.preferences),
     onSuccess: (next) => setRecommendation(next),
   })
+
+  // 즐겨찾기 토글 — API 성공 후에만 화면 상태(recommendation.items)를 갱신한다(낙관적 업데이트 없음)
+  async function handleToggleFavorite(item) {
+    const { githubId } = recommendation
+    if (item.isFavorited) {
+      await removeFavorite(githubId, item.repoFullName, item.issueNumber)
+    } else {
+      await addFavorite(githubId, item.repoFullName, item.issueNumber)
+    }
+    setRecommendation({
+      ...recommendation,
+      items: recommendation.items.map((existing) =>
+        existing.repoFullName === item.repoFullName && existing.issueNumber === item.issueNumber
+          ? { ...existing, isFavorited: !existing.isFavorited }
+          : existing,
+      ),
+    })
+  }
 
   if (!recommendation) {
     return <Navigate to="/input" replace />
@@ -87,44 +106,14 @@ function Result() {
         </div>
       )}
 
-      {!isRefetching && items.map((item) => {
-        const badge = DIFFICULTY_META[item.difficulty]
-        const langClass = LANGUAGE_CLASSES[item.primaryLanguage] ?? ''
-        return (
-          <Link
-            className="card"
-            to="/detail"
-            key={item.issueUrl}
-            onClick={() => setSelectedItem(item)}
-          >
-            <div className="card-top">
-              <span className={`badge badge-${badge.tone}`}>{badge.label}</span>
-              <span className="repo">
-                <span className={`lang ${langClass}`}>
-                  <span className="sw" />
-                  {item.primaryLanguage}
-                </span>{' '}
-                · <b>{item.repoFullName}</b> <span className="inum">#{item.issueNumber}</span> ·{' '}
-                <span className="star">★</span> {formatStars(item.repoStars)}
-              </span>
-            </div>
-            <h2 className="i-title">{item.issueTitle}</h2>
-            <div className="tags">
-              {item.labels.map((label) => (
-                <span key={label} className={TAG_CLASSES[label] ? `tag ${TAG_CLASSES[label]}` : 'tag'}>
-                  {label}
-                </span>
-              ))}
-            </div>
-            <div className="why">
-              <span className="ic">↣</span>
-              <div>
-                <b>매칭 점수 {item.matchScore}점</b> · {item.reason}
-              </div>
-            </div>
-          </Link>
-        )
-      })}
+      {!isRefetching && items.map((item) => (
+        <IssueCard
+          key={item.issueUrl}
+          item={item}
+          onSelect={() => setSelectedItem(item)}
+          onToggleFavorite={handleToggleFavorite}
+        />
+      ))}
 
       <p className="foot-note">조건에 맞는 결과가 부족하면 난이도·분야를 완화해 다시 찾아드려요</p>
     </>

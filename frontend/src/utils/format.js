@@ -32,3 +32,9 @@ export function formatStars(count) {
   if (count < 1000) return String(count)
   return `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k`
 }
+
+// 검색 이력 세션 헤더용 — '7/27 14:20'
+export function formatSessionTime(isoString) {
+  const date = new Date(isoString)
+  return date.toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+}

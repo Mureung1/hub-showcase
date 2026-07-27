@@ -119,6 +119,26 @@ export function RefreshIcon({ className }) {
   )
 }
 
+// 즐겨찾기 토글 버튼용 별 아이콘. filled면 채운 별(currentColor fill), 아니면 테두리만
+export function StarIcon({ filled, className }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width="16"
+      height="16"
+      fill={filled ? 'currentColor' : 'none'}
+      className={className}
+    >
+      <path
+        d="M8 1.5l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.3l-3.8 2 .7-4.3-3.1-3 4.3-.6L8 1.5z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 // 돌아가기 화살표 (텍스트 화살표 문자 대체 — 폰트에 따라 모양이 달라지지 않도록 SVG로 고정)
 export function ChevronLeftIcon() {
   return (

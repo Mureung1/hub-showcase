@@ -52,6 +52,26 @@
   width: 16px;
   height: 16px;
 }
+.flow-history {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  transition: 0.15s;
+}
+.flow-history:hover {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+.flow-history svg {
+  width: 15px;
+  height: 15px;
+}
 
 /* ── 진행 스텝퍼 ────────────────────────── */
 .flow-stepper {
@@ -563,6 +583,7 @@ h1.hero {
   margin: -10px 0 20px;
 }
 .card {
+  position: relative;
   background: var(--color-surface);
   border-radius: var(--radius-xl);
   padding: 22px 24px;
@@ -575,6 +596,26 @@ h1.hero {
 .card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-modal);
+}
+.fav-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-tertiary);
+  transition: 0.15s;
+}
+.fav-btn:hover {
+  background: var(--color-surface-sunken-hover);
+}
+.fav-btn-on {
+  color: var(--color-primary);
 }
 .card-top {
   display: flex;
@@ -708,6 +749,23 @@ h1.hero {
 .why b {
   color: var(--color-primary-hover);
   font-weight: var(--weight-bold);
+}
+
+/* ── 전체 검색 이력(History) — 세션(검색 시점) 그룹 헤더 ── */
+.h-session {
+  margin-bottom: 28px;
+}
+.h-session-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.h-session-time {
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-tertiary);
 }
 
 /* ── 상세 ───────────────────────────────── */

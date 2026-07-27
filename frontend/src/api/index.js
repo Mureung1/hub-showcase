@@ -49,3 +49,33 @@ export async function getRecommendation(id, { repoFullName, issueNumber } = {}) 
     throw toUserError(error, '추천 결과를 불러오지 못했어요. 잠시 후 다시 시도해주세요.')
   }
 }
+
+// GET /api/recommendations?githubId= — 전체 검색 이력(세션별 배열, 최신순)
+export async function getRecommendationHistory(githubId) {
+  try {
+    const { data } = await client.get('/api/recommendations', { params: { githubId } })
+    return data
+  } catch (error) {
+    throw toUserError(error, '검색 이력을 불러오지 못했어요. 잠시 후 다시 시도해주세요.')
+  }
+}
+
+// POST /api/favorites — 즐겨찾기 추가 (idempotent)
+export async function addFavorite(githubId, repoFullName, issueNumber) {
+  try {
+    const { data } = await client.post('/api/favorites', { githubId, repoFullName, issueNumber })
+    return data
+  } catch (error) {
+    throw toUserError(error, '즐겨찾기에 추가하지 못했어요. 잠시 후 다시 시도해주세요.')
+  }
+}
+
+// DELETE /api/favorites — 즐겨찾기 삭제 (idempotent)
+export async function removeFavorite(githubId, repoFullName, issueNumber) {
+  try {
+    const { data } = await client.delete('/api/favorites', { data: { githubId, repoFullName, issueNumber } })
+    return data
+  } catch (error) {
+    throw toUserError(error, '즐겨찾기를 해제하지 못했어요. 잠시 후 다시 시도해주세요.')
+  }
+}
