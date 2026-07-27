@@ -26,18 +26,12 @@ import {
   type NodeRuntimeDeadlines,
   type SpawnedCodexChatRuntime,
 } from './runtime.js'
-import { initializeGitRootForTest } from './local-provider-test-support.js'
+import {
+  EXTERNAL_PRODUCTION_RUNTIME_ROOT_FOR_TEST as ARTIFACT_ROOT,
+  initializeGitRootForTest,
+} from './runtime-test-support.js'
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const ARTIFACT_ROOT = resolve(
-  PACKAGE_ROOT,
-  '..',
-  '..',
-  '..',
-  '.ay-ple',
-  'runtime',
-  'production-runtime-darwin-arm64',
-)
 const FAKE_APP_SERVER = join(
   PACKAGE_ROOT,
   'scripts',

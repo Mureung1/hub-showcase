@@ -16,11 +16,11 @@ import type {
   StartTurnInput,
 } from './contract.js'
 import { verifyProductionBundle } from './production-bundle.js'
-import { initializeGitRootForTest } from './local-provider-test-support.js'
 import {
   startVerifiedCodexChatRuntime,
   type SpawnedCodexChatRuntime,
 } from './runtime.js'
+import { initializeGitRootForTest } from './runtime-test-support.js'
 import type {
   AnswerUserInput,
   CancelUserInput,

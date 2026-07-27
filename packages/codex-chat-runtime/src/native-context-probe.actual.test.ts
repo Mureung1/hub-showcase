@@ -27,6 +27,9 @@ import {
   verifyProductionBundle,
   type VerifiedProductionBundle,
 } from './production-bundle.js'
+import {
+  EXTERNAL_PRODUCTION_RUNTIME_ROOT_FOR_TEST as ARTIFACT_ROOT,
+} from './runtime-test-support.js'
 
 const PACKAGE_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -37,16 +40,6 @@ const FAKE_APP_SERVER = path.join(
   'scripts',
   'fake_native_context_app_server.mts',
 )
-const ARTIFACT_ROOT = path.resolve(
-  PACKAGE_ROOT,
-  '..',
-  '..',
-  '..',
-  '.ay-ple',
-  'runtime',
-  'production-runtime-darwin-arm64',
-)
-
 interface Fixture {
   readonly root: string
   readonly workspace: string

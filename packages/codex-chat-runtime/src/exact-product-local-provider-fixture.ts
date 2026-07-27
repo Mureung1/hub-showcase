@@ -18,7 +18,6 @@ import { verifyProductionBundle } from './production-bundle.js'
 import {
   controlledPythonEnvironment,
   delay,
-  initializeGitRootForTest,
   terminateDetachedProcessGroup,
   waitForJsonFile,
   waitForProcessGroupExit,
@@ -29,20 +28,15 @@ import {
   type CodexChatRuntimeEnvironment,
   type SpawnedCodexChatRuntime,
 } from './runtime.js'
+import {
+  EXTERNAL_PRODUCTION_RUNTIME_ROOT_FOR_TEST as DEFAULT_RUNTIME_ROOT,
+  initializeGitRootForTest,
+} from './runtime-test-support.js'
 import type { CodexWorkspaceRuntime } from './runtime-contract.js'
 
 const PACKAGE_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
-)
-const DEFAULT_RUNTIME_ROOT = path.resolve(
-  PACKAGE_ROOT,
-  '..',
-  '..',
-  '..',
-  '.ay-ple',
-  'runtime',
-  'production-runtime-darwin-arm64',
 )
 const LOCAL_PROVIDER = path.join(
   PACKAGE_ROOT,

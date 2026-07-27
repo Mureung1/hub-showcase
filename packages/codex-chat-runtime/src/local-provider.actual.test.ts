@@ -19,7 +19,6 @@ import { fileURLToPath } from 'node:url'
 import {
   controlledPythonEnvironment,
   delay,
-  initializeGitRootForTest,
   terminateDetachedProcessGroup,
   waitForJsonFile,
   waitForProcessGroupExit,
@@ -31,17 +30,12 @@ import {
   type CodexChatRuntimeEnvironment,
   type SpawnedCodexChatRuntime,
 } from './runtime.js'
+import {
+  EXTERNAL_PRODUCTION_RUNTIME_ROOT_FOR_TEST as ARTIFACT_ROOT,
+  initializeGitRootForTest,
+} from './runtime-test-support.js'
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const ARTIFACT_ROOT = resolve(
-  PACKAGE_ROOT,
-  '..',
-  '..',
-  '..',
-  '.ay-ple',
-  'runtime',
-  'production-runtime-darwin-arm64',
-)
 const LOCAL_PROVIDER = join(
   PACKAGE_ROOT,
   'scripts',
