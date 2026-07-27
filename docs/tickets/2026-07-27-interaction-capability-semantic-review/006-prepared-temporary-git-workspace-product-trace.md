@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -32,20 +32,23 @@ App 실행 전 native Bootstrap Skill로 준비한 temporary Git SemesterWorkspa
 
 ## Acceptance Criteria
 
-- [ ] Native Bootstrap Skill이 fresh temporary Git SemesterWorkspace를 준비하고, target product test harness가 그 exact root를 직접 공급했을 때 built Adapter handshake와 exact `ay_ple_interaction` tool readiness가 성공한다. Production startup resolver와 registry는 이 proof에 필요하지 않다.
-- [ ] Prepared fixture의 Git root, `workspace-state.json`, `AGENTS.md`, project MCP declaration과 installed First Assignment Skill이 실제 Bootstrap output이며 App이 이를 생성·수정하거나 candidate state로 복제하지 않는다.
-- [ ] Valid evidence proposal이 inline card 하나를 만들고 pending 동안 actual file과 Git index가 변하지 않는다.
-- [ ] Accept가 같은 MCP call의 result로 AY에 돌아간 뒤 actual file만 변경되고 meaningful checkpoint가 생성되며 unrelated dirty·untracked sentinel은 commit되지 않는다.
-- [ ] Revise가 old card를 read-only로 남기고 fresh card를 append하며 accept 전 mutation을 만들지 않는다.
-- [ ] Reject, invalid evidence, busy, interrupt, disconnect, Adapter/Runtime loss가 normal result·file mutation·Git checkpoint·App academic apply를 만들지 않는다.
-- [ ] Trace가 private token·binding, absolute path, native identity와 old Course·Run·patch·confirmation identity를 Browser 또는 logs에 노출하지 않는다.
-- [ ] Repeat run이 deterministic하게 terminal 정산되고 process, pending response와 temporary credential을 남기지 않는다.
+- [x] Native Bootstrap Skill이 fresh temporary Git SemesterWorkspace를 준비하고, target product test harness가 그 exact root를 직접 공급했을 때 built Adapter handshake와 exact `ay_ple_interaction` tool readiness가 성공한다. Production startup resolver와 registry는 이 proof에 필요하지 않다.
+- [x] Prepared fixture의 Git root, `workspace-state.json`, `AGENTS.md`, project MCP declaration과 installed First Assignment Skill이 실제 Bootstrap output이며 App이 이를 생성·수정하거나 candidate state로 복제하지 않는다.
+- [x] Valid evidence proposal이 inline card 하나를 만들고 pending 동안 actual file과 Git index가 변하지 않는다.
+- [x] Accept가 같은 MCP call의 result로 AY에 돌아간 뒤 actual file만 변경되고 meaningful checkpoint가 생성되며 unrelated dirty·untracked sentinel은 commit되지 않는다.
+- [x] Revise가 old card를 read-only로 남기고 fresh card를 append하며 accept 전 mutation을 만들지 않는다.
+- [x] Reject, invalid evidence, busy, interrupt, disconnect, Adapter/Runtime loss가 normal result·file mutation·Git checkpoint·App academic apply를 만들지 않는다.
+- [x] Trace가 private token·binding, absolute path, native identity와 old Course·Run·patch·confirmation identity를 Browser 또는 logs에 노출하지 않는다.
+- [x] Repeat run이 deterministic하게 terminal 정산되고 process, pending response와 temporary credential을 남기지 않는다.
 
 ## Verification
 
-- Targeted test or command: `npm run test:first-assignment-product-actual -w @ay-ple/server`에 대응하는 target trace command와 관련 Browser E2E를 실행한다.
-- Repository checks: `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime && npm run lint -w @ay-ple/chat-shell && npm run typecheck && npm run build && npm test && npm run test:e2e`
-- Manual or live smoke: Native Bootstrap 직후와 App trace 뒤 temporary repository의 `git status`, `git log --stat`과 Review transcript를 함께 확인해 prepared output, accept checkpoint와 revise/reject no-mutation을 검증한다.
+- Target trace: `npm run test:prepared-workspace-product-actual` — 1/1 green. Native Bootstrap 두 번의 updated→no-op 결과, prepared tracked output, exact-root built Adapter handshake·tool roster, installed Skill 계약, Review transcript, accept checkpoint와 failure no-mutation을 실제 temporary Git repository에서 확인했다.
+- Related contracts: `npm run test:semester-workspace-init-skill && npm run test:first-assignment-skill` — 각각 10/10, 5/5 green.
+- Related Browser: `npm run test:e2e -w @ay-ple/chat-shell -- --grep "internal inline Semantic Review target|uses the prepared startup seam"` — Chromium desktop 2/2 green.
+- Runtime: `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime` — production bundle pre/post verified, Node actual 106/106, native context 23/23, exact local provider 4/4 green.
+- Repository gates: `npm run lint -w @ay-ple/chat-shell && npm run typecheck && npm run build && npm test && npm run test:e2e` — 모두 green. 전체 E2E는 Chat Shell 35/35와 camp demo 8/8을 통과했다.
+- Documentation/review: `npm run check:docs-links`, `git diff --check` green. Fixed point `68d592bdf8af701c62a61e903c1fefbae2741d88` 이후 Standards와 Spec 병렬 재검토에서 actionable finding 0건이었다.
 
 ## Blocked By
 
@@ -66,5 +69,11 @@ App 실행 전 native Bootstrap Skill로 준비한 temporary Git SemesterWorkspa
 - `apps/chat-shell/e2e/chat-shell-harness.ts`
 - `apps/chat-shell/e2e/chat-shell.spec.ts`
 - `apps/chat-shell/e2e/fixtures/first-assignment-semester-workspace/`
-- `hub/.agents/skills/semester-workspace-init/SKILL.md`
-- `hub/skills/ay-ple-first-assignment/`
+- `.agents/skills/semester-workspace-init/SKILL.md`
+- `skills/ay-ple-first-assignment/`
+
+## Result
+
+Root command `test:prepared-workspace-product-actual`과 Server-owned actual trace를 추가했다. Trace는 native Bootstrap CLI가 만든 동일 temporary Git root의 v4 identity, `AGENTS.md`, root-relative project MCP declaration과 installed First Assignment Skill 계약을 소비하고, repository-owned shared listener·Interaction Broker·real built STDIO Adapter·deterministic exact-root Runtime/UI seam을 연결한다. Revise→fresh Review, accept 뒤 AY-owned actual-file write와 explicit-path meaningful commit, reject·invalid evidence·busy·interrupt·disconnect·Runtime/Adapter loss no-mutation을 한 fixture에서 검증한다. Teardown은 credential 재사용 403, Adapter stderr와 pending response 0, child exit, listener process-tree close를 반복 확인한다. Production startup resolver·registry, public composition과 old academic surface는 변경하지 않았다.
+
+구현 checkpoint는 `67d70881c`(product trace), `1032edd41`과 `f46a858e6`(review cleanup·boundary 보강), 문서 checkpoint는 `ece717c78`과 `1857ed412`다.
