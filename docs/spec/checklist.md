@@ -73,17 +73,28 @@
 **목표: [plan.md §10](../plan.md) 2·3번.** 화면은 아직 안 만든다.
 
 ### 서버 (개발 순서 [3])
-- [ ] `app/main.py` — `GET /api/brief/stream?topic=`. **POST 아님**
-- [ ] `run_agent()`의 yield를 `f"data: {json}\n\n"`로 감싸기 (`ensure_ascii=False`)
-- [ ] 헤더: `Cache-Control: no-cache`, **`X-Accel-Buffering: no`**
-- [ ] `request.is_disconnected()` 감지 → 즉시 중단
-- [ ] 예외 → `error` 이벤트로 종결 (브라우저가 영원히 기다리지 않게)
+- [x] `app/main.py` — `GET /api/brief/stream?topic=`. **POST 아님** (#59)
+- [x] `run_agent()`의 yield를 `f"data: {json}\n\n"`로 감싸기 (`ensure_ascii=False`) (#60)
+- [x] 헤더: `Cache-Control: no-cache`, **`X-Accel-Buffering: no`** (#59)
+- [x] `request.is_disconnected()` 감지 → 즉시 중단 (#61)
+- [x] 예외 → `error` 이벤트로 종결 (브라우저가 영원히 기다리지 않게) (#62)
   - **완료 기준:** `curl -N "http://localhost:8000/api/brief/stream?topic=LLM+agent"`
     → `data: {...}` 가 **하나씩 시차를 두고** 흘러나온다 (마지막에 몰려 나오면 실패)
+  - **검증(2026-07-27):** `12:02:54 search → 12:04:51 found → 12:04:53 judge → … → 12:05:05 done`.
+    마지막에 몰려 나오지 않음. 한글 미이스케이프, 각 `data:` 뒤 빈 줄 1개 확인
 
 ### 계약 검증
-- [ ] 실제 yield되는 이벤트가 `sse-contract.md`와 일치하는지 대조
+- [x] 실제 yield되는 이벤트가 `sse-contract.md`와 일치하는지 대조 (#63)
   - **완료 기준:** 계약에 없는 필드가 없고, 있는 필드가 빠지지 않았다
+  - **검증(2026-07-27):** 실제 실행 캡처 9개 이벤트
+    (`search→found→judge→read→paper_done→read→paper_done→trend→done`) 전부 일치.
+    `error` 경로도 실제 캡처로 대조. `tests/test_sse_contract.py`가 계약을 코드로 옮겨
+    `retry`·`paper_failed`·`empty`·`error` 분기까지 상시 검사한다
+
+> **Week 2에서 발견해 이월한 것** (Task 7 범위 밖이라 이슈만 등록):
+> #65 `agent.py` trend/done 조립부에 예외 보호가 없어 계약 위반 `error`가 나갈 수 있다 ·
+> #66 `search_arxiv()`가 호출마다 새 `Client`를 만들어 arXiv 3초 제한(429)에 걸린다 ·
+> #64 `tools.CALL_COUNT`가 프로세스 전역이라 동시 요청에서 섞인다
 
 > **`curl -N`이 안 되는 상태에서 브라우저를 붙이지 않는다.** 원인 범위가 두 배가 된다.
 
