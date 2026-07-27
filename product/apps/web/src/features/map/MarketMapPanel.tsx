@@ -181,9 +181,15 @@ export function MarketMapPanel({
             ? "선택 업종 점포가 상대적으로 모인 정도"
             : "선택 시간대의 상대 유동 수요"}
         </p>
-        <span><i className="low" /> 낮음</span>
-        <span><i className="mid" /> 보통</span>
-        <span><i className="high" /> 높음</span>
+        {layer === "density" ? (
+          <>
+            <span><i className="density-low" /> 낮음</span>
+            <span><i className="density-medium" /> 보통</span>
+            <span><i className="density-high" /> 높음</span>
+          </>
+        ) : (
+          <span className="demand-legend-note">사람 아이콘이 많을수록 수요가 높습니다.</span>
+        )}
       </div>
 
       {layer === "demand" && (
