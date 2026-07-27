@@ -124,19 +124,21 @@ function Home() {
         <TopNav />
       </div>
 
-      <main className="mx-auto max-w-[960px] pb-8">
+      <main className={forceLoading ? '' : 'mx-auto max-w-[960px] pb-8'}>
         {forceLoading ? (
           // 개발용 로딩 화면(?loading=1) — 배너·필터·전체 둘러보기 없이 로딩 표시만 확인
-          <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-8">
+          <div className="relative left-1/2 h-[calc(100vh-92px)] w-screen -translate-x-1/2 overflow-hidden">
             <video
               src={loadingAnimation}
               autoPlay
               loop
               muted
               playsInline
-              className="w-full select-none rounded-card"
+              className="h-full w-full select-none object-cover"
             />
-            <p className="font-display text-sm text-text-secondary">끼니가 냉장고 재료로 만들 요리를 찾는 중...</p>
+            <p className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-pill bg-bg-surface/90 px-4 py-2 font-display text-sm text-text-secondary shadow">
+              끼니가 냉장고 재료로 만들 요리를 찾는 중...
+            </p>
           </div>
         ) : (
           <>
