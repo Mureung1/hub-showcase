@@ -134,8 +134,63 @@ describe("generateGeminiMicrotask", () => {
     for (const verb of ALLOWED_RESULT_VERBS) {
       expect(body.input).toContain(verb);
     }
-    expect(body.input).toContain("피하기: 문서를 열고 핵심 주장 한 문장 쓰기");
-    expect(body.input).toContain("권장: 문서에 핵심 주장 한 문장 쓰기");
+    expect(body.input).toContain("피하기: 표를 채우기");
+    expect(body.input).toContain("권장: 표의 첫 행에 값 하나 입력하기");
+    // INPUT은 리포트/글쓰기 × overwhelm이므로 그 조합의 동적 예시가 들어간다.
+    expect(body.input).toContain(
+      "이번 요청과 같은 유형·회피 이유에 어울리는 좋은 예: 빈 문서를 연 채로 제목 한 줄 입력하기",
+    );
+  });
+
+  it.each([
+    ["리포트/글쓰기", "overwhelm", "빈 문서를 연 채로 제목 한 줄 입력하기"],
+    ["리포트/글쓰기", "dislike", "문서를 연 채로 첫 문장 한 줄 쓰기"],
+    ["발표/PT 준비", "temptation", "폰을 멀리 둔 채로 PPT 첫 장 제목 한 줄 입력하기"],
+    ["코딩 실습", "overwhelm", "요구사항에서 할 일 한 줄 적기"],
+    ["기타", "dislike", "해야 할 일 첫 단계 한 줄 적기"],
+  ] as const)(
+    "유형=%s 이유=%s일 때 해당 조합의 동적 예시가 프롬프트에 들어간다",
+    async (type, reason, expectedExample) => {
+      const fetchMock = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValue(geminiResponse("제목 한 줄 입력하기"));
+
+      await generateGeminiMicrotask({ ...INPUT, type, reason });
+
+      const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+      expect(body.input).toContain(
+        `이번 요청과 같은 유형·회피 이유에 어울리는 좋은 예: ${expectedExample}`,
+      );
+    },
+  );
+
+  it("reason=custom이면 유형과 무관하게 범용 custom 예시가 들어간다", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(geminiResponse("제목 한 줄 입력하기"));
+
+    await generateGeminiMicrotask({
+      ...INPUT,
+      type: "리포트/글쓰기",
+      reason: "custom",
+      customReason: "완벽하게 하고 싶어서",
+    });
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.input).toContain(
+      "이번 요청과 같은 유형·회피 이유에 어울리는 좋은 예: 해야 할 일을 한 문장으로 적기",
+    );
+  });
+
+  it("동적 예시가 없는 유형(문제풀이/암기)에는 해당 안내 줄 자체가 빠진다", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(geminiResponse("제목 한 줄 입력하기"));
+
+    await generateGeminiMicrotask({ ...INPUT, type: "문제풀이/암기" });
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.input).not.toContain("이번 요청과 같은 유형·회피 이유에 어울리는 좋은 예:");
   });
 
   it.each([

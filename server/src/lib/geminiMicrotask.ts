@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-export const PROMPT_VERSION = "lv2-v2";
+export const PROMPT_VERSION = "lv2-v3";
 export const LV3_PROMPT_VERSION = "lv3-memory-v3";
 export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 export const GEMINI_TIMEOUT_MS = 3_000;
@@ -49,6 +49,74 @@ const LV2_REASON_STRATEGIES: Record<GeminiMicrotaskInput["reason"], string> = {
   custom:
     "회피 이유가 사용자가 직접 입력한 경우이므로, 완성도 부담을 낮춰 임시 초안이나 대충 만든 첫 버전 수준의 행동을 제안하세요.",
 };
+
+// Lv2 프롬프트의 "권장" 예시가 발표/문서 유형에만 쏠려 있어(2026-07-27 실측 샘플링에서
+// 발견) 리포트/글쓰기인데 "슬라이드" 표현이 섞여 나오는 유형 오염, 발표/PT 준비에서
+// 회피 이유 4개가 사실상 같은 문장으로 수렴하는 문제가 있었다. 여기서 유형×이유별로
+// 실제 맥락에 맞는 예시를 골라 프롬프트에 동적으로 삽입해 완화한다.
+// 문구는 새로 짓지 않고 이미 품질 검증(85개 전수 통과)이 끝난
+// src/lib/microtaskTemplates.js의 값을 그대로 옮겨왔다 — 그 파일을 import하면 서버
+// tsconfig 경계 밖이라 typecheck가 깨지므로(과거 _tmplAudit.ts에서 겪음) 값만 복제한다.
+// 범위는 9개 유형 전부가 아니라, 오늘 실측에서 실제로 문제가 확인된 유형(리포트/글쓰기,
+// 발표/PT 준비)과 예시가 아예 없어 위험이 높았던 유형(코딩 실습·시험공부·프로젝트·
+// 조별과제·개인공부·기타) 8종으로 한정했다. 문제풀이/암기는 기존 정적 예시로 이미
+// 대표되고 있었고 오염 사례도 없어 이번 범위에서 제외했다.
+const LV2_TYPE_REASON_EXAMPLES: Partial<
+  Record<string, Record<"overwhelm" | "dislike" | "temptation", string>>
+> = {
+  "리포트/글쓰기": {
+    overwhelm: "빈 문서를 연 채로 제목 한 줄 입력하기",
+    dislike: "문서를 연 채로 첫 문장 한 줄 쓰기",
+    temptation: "폰을 멀리 둔 채로 문서 제목 한 줄 입력하기",
+  },
+  "발표/PT 준비": {
+    overwhelm: "슬라이드 첫 장에 발표 제목 입력하기",
+    dislike: "PPT 첫 장 제목 한 줄 입력하기",
+    temptation: "폰을 멀리 둔 채로 PPT 첫 장 제목 한 줄 입력하기",
+  },
+  "코딩 실습": {
+    overwhelm: "요구사항에서 할 일 한 줄 적기",
+    dislike: "터미널에 실행 명령어 한 줄 입력하기",
+    temptation: "알림을 끈 채로 작업 파일에 TODO 한 줄 작성하기",
+  },
+  시험공부: {
+    overwhelm: "오늘 볼 범위 페이지 번호 한 줄 적기",
+    dislike: "교재 첫 문단 핵심 한 문장 요약하기",
+    temptation: "폰을 멀리 둔 채로 교재 첫 문단 핵심 한 문장 적기",
+  },
+  프로젝트: {
+    overwhelm: "지금 해야 할 일 하나만 체크리스트에 적기",
+    dislike: "마지막 수정 파일에 메모 한 줄 적기",
+    temptation: "알림을 끈 채로 지금 할 일 하나 체크리스트에 적기",
+  },
+  조별과제: {
+    overwhelm: "내가 맡은 부분 제목 한 줄 적기",
+    dislike: "공유 문서에 내 파트 첫 문장 쓰기",
+    temptation: "폰 알림을 끈 채로 공유 문서에 내 파트 제목 한 줄 적기",
+  },
+  개인공부: {
+    overwhelm: "오늘 공부할 소제목 하나 적기",
+    dislike: "교재 첫 문단 내용 한 줄 요약하기",
+    temptation: "폰을 멀리 둔 채로 교재 첫 문단 핵심 한 줄 쓰기",
+  },
+  기타: {
+    overwhelm: "해야 할 일을 한 문장으로 적기",
+    dislike: "해야 할 일 첫 단계 한 줄 적기",
+    temptation: "방해되는 화면을 닫은 채로 지금 할 일 한 문장 적기",
+  },
+};
+
+// reason이 custom이면 유형별 매칭 예시가 없으므로(microtaskTemplates.js의
+// CUSTOM_FALLBACK_MICROTASKS도 유형 무관 범용 문구), 유형과 무관하게 이 값 하나를 쓴다.
+const LV2_CUSTOM_REASON_EXAMPLE = "해야 할 일을 한 문장으로 적기";
+
+function pickLv2DynamicExample(
+  type: string,
+  reason: GeminiMicrotaskInput["reason"],
+): string | null {
+  if (reason === "custom") return LV2_CUSTOM_REASON_EXAMPLE;
+  return LV2_TYPE_REASON_EXAMPLES[type]?.[reason] ?? null;
+}
 
 export interface GeminiMicrotaskInput {
   title: string;
@@ -272,6 +340,7 @@ function buildPrompt(input: GeminiMicrotaskInput): string {
     reasonText,
     interventionLevel: 2,
   });
+  const dynamicExample = pickLv2DynamicExample(input.type, input.reason);
 
   return [
     "당신은 미루는 대학생이 지금 바로 시작하도록 돕는 잔소리봇입니다.",
@@ -284,12 +353,14 @@ function buildPrompt(input: GeminiMicrotaskInput): string {
     "행동을 두 개 이상 이어 붙이지 마세요.",
     `행동 문장은 반드시 다음 동사 중 하나로 끝나야 합니다: ${ALLOWED_RESULT_VERBS.join(", ")}. 이 목록에 없는 동사로 끝내면 안 됩니다.`,
     "행동 문장에는 한 줄, 한 문장, 하나, 첫, 제목, 3개처럼 분량이나 범위를 한정하는 표현을 반드시 넣으세요.",
-    "피하기: 교재를 펼치고 첫 문제의 조건 읽기",
-    "권장: 첫 문제의 조건 한 줄 적기",
-    "피하기: 문서를 열고 핵심 주장 한 문장 쓰기",
-    "권장: 문서에 핵심 주장 한 문장 쓰기",
-    "피하기: 발표 자료를 준비하기",
-    "권장: 첫 슬라이드에 발표 제목 한 줄 입력하기",
+    // 아래 피하기/권장은 "준비 동작+결과 동작을 섞지 말라"는 형식 규칙만 보여주는
+    // 용도라, 특정 유형(문서/슬라이드 등)과 겹치지 않는 중립 소재(표)를 쓴다.
+    // 유형에 맞는 소재는 바로 다음 줄의 동적 예시가 담당한다(taskData.type 오염 방지).
+    "피하기: 표를 채우기",
+    "권장: 표의 첫 행에 값 하나 입력하기",
+    ...(dynamicExample
+      ? [`이번 요청과 같은 유형·회피 이유에 어울리는 좋은 예: ${dynamicExample}`]
+      : []),
     "설명, 이유, 인사말, 번호, 목록 없이 행동 문장만 만드세요.",
     `행동 문장은 ${MAX_MICROTASK_CHARS}자 이하여야 합니다.`,
     `promptVersion=${PROMPT_VERSION}`,
