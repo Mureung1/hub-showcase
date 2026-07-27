@@ -1,14 +1,5 @@
 /// <reference types="node" />
 
-import {
-  decodeCurrentSemesterWorkspaceV2,
-  SemesterWorkspaceV2CodecError,
-} from './legacy-v2-codec.js'
-import {
-  decodeSemesterWorkspaceV3,
-  SemesterWorkspaceCodecError,
-} from './v3-codec.js'
-
 const workspaceStateMaxBytes = 1024 * 1024
 const termKeyMaxBytes = 64
 const termDisplayNameMaxBytes = 128
@@ -154,6 +145,10 @@ export function decodeSemesterWorkspaceStateV4(
 export function classifySemesterWorkspaceRootStateBytes(
   bytes: Uint8Array,
 ): SemesterWorkspaceRootStateClassification {
+  if (bytes.byteLength === 0 || bytes.byteLength > workspaceStateMaxBytes) {
+    return { status: 'incompatible' }
+  }
+
   let value: unknown
   try {
     value = JSON.parse(
@@ -163,29 +158,29 @@ export function classifySemesterWorkspaceRootStateBytes(
     return { status: 'incompatible' }
   }
 
-  if (bytes.byteLength <= workspaceStateMaxBytes) {
-    try {
-      return {
-        status: 'current_v4',
-        state: decodeSemesterWorkspaceStateV4(value),
-      }
-    } catch (error) {
-      if (!(error instanceof SemesterWorkspaceV4CodecError)) throw error
+  try {
+    return {
+      status: 'current_v4',
+      state: decodeSemesterWorkspaceStateV4(value),
     }
+  } catch (error) {
+    if (!(error instanceof SemesterWorkspaceV4CodecError)) throw error
   }
 
-  try {
-    decodeCurrentSemesterWorkspaceV2(value)
+  if (
+    isPlainObject(value) &&
+    value.formatVersion === 2 &&
+    !Object.hasOwn(value, 'kind')
+  ) {
     return { status: 'current_v2' }
-  } catch (error) {
-    if (!(error instanceof SemesterWorkspaceV2CodecError)) throw error
   }
 
-  try {
-    decodeSemesterWorkspaceV3(value)
+  if (
+    isPlainObject(value) &&
+    value.kind === 'ay-ple.semester-workspace' &&
+    value.formatVersion === 3
+  ) {
     return { status: 'historical_v3' }
-  } catch (error) {
-    if (!(error instanceof SemesterWorkspaceCodecError)) throw error
   }
 
   return { status: 'incompatible' }

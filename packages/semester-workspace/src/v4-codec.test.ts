@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import test from 'node:test'
 
 import {
@@ -10,10 +12,6 @@ import {
   decodeSemesterWorkspaceStateV4Bytes,
   encodeSemesterWorkspaceStateV4,
 } from './v4-codec.js'
-import {
-  createInitialSemesterWorkspaceV3,
-  encodeSemesterWorkspaceV3,
-} from './v3-codec.js'
 
 const workspaceId = 'workspace_0123456789abcdef0123456789abcdef'
 
@@ -151,7 +149,7 @@ test('the v4 codec rejects envelope, identity, JSON, and byte-bound drift', () =
   )
 })
 
-test('the root classifier distinguishes v4, current v2, historical v3, and incompatible bytes without mutation', async () => {
+test('the root classifier identifies legacy envelopes without decoding their academic payload', () => {
   const v4Bytes = encodeSemesterWorkspaceStateV4(
     createInitialSemesterWorkspaceStateV4({
       workspaceId,
@@ -161,19 +159,20 @@ test('the root classifier distinguishes v4, current v2, historical v3, and incom
       },
     }),
   )
-  const v2Fixture = new URL(
-    './testing/fixtures/current-v2-workspace.json',
-    import.meta.url,
-  )
-  const v2Bytes = await readFile(v2Fixture)
-  const v3Bytes = encodeSemesterWorkspaceV3(
-    createInitialSemesterWorkspaceV3({
-      workspaceId,
-      semester: {
-        yearLevel: 2,
-        term: { key: 'fall', displayName: '2학기' },
-      },
+  const v2Bytes = Buffer.from(
+    JSON.stringify({
+      formatVersion: 2,
+      preserve: { arbitrary: ['legacy', 'payload'] },
     }),
+    'utf8',
+  )
+  const v3Bytes = Buffer.from(
+    JSON.stringify({
+      kind: 'ay-ple.semester-workspace',
+      formatVersion: 3,
+      preserve: { arbitrary: ['historical', 'payload'] },
+    }),
+    'utf8',
   )
 
   assert.equal(
@@ -186,6 +185,50 @@ test('the root classifier distinguishes v4, current v2, historical v3, and incom
   assert.deepEqual(classifySemesterWorkspaceRootStateBytes(v3Bytes), {
     status: 'historical_v3',
   })
+  assert.deepEqual(Buffer.from(v2Bytes), v2Bytes)
+  assert.deepEqual(Buffer.from(v3Bytes), v3Bytes)
+})
+
+test('classification preserves valid v4, legacy, malformed, and future files byte-for-byte', async () => {
+  const root = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-v4-classification-'),
+  )
+  const fixtures = [
+    encodeSemesterWorkspaceStateV4(
+      createInitialSemesterWorkspaceStateV4({
+        workspaceId,
+        semester: {
+          yearLevel: 2,
+          term: { key: 'fall', displayName: '2학기' },
+        },
+      }),
+    ),
+    Buffer.from('{"formatVersion":2,"legacy":true}\n', 'utf8'),
+    Buffer.from(
+      '{"kind":"ay-ple.semester-workspace","formatVersion":3,"legacy":true}\n',
+      'utf8',
+    ),
+    Buffer.from('{"formatVersion":4,', 'utf8'),
+    Buffer.from(
+      '{"kind":"ay-ple.semester-workspace","formatVersion":5,"future":true}\n',
+      'utf8',
+    ),
+  ]
+
+  try {
+    for (const [index, bytes] of fixtures.entries()) {
+      const file = path.join(root, `workspace-state-${index}.json`)
+      await writeFile(file, bytes)
+      const opened = await readFile(file)
+      classifySemesterWorkspaceRootStateBytes(opened)
+      assert.deepEqual(await readFile(file), bytes)
+    }
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
+test('malformed, future, and oversized root bytes are incompatible', () => {
   for (const bytes of [
     Buffer.from('{"formatVersion":4,', 'utf8'),
     Buffer.from(
@@ -197,6 +240,7 @@ test('the root classifier distinguishes v4, current v2, historical v3, and incom
       'utf8',
     ),
     Uint8Array.of(0xc3, 0x28),
+    Buffer.alloc(1024 * 1024 + 1, 0x20),
   ]) {
     const before = Buffer.from(bytes)
     assert.deepEqual(classifySemesterWorkspaceRootStateBytes(bytes), {
@@ -204,5 +248,4 @@ test('the root classifier distinguishes v4, current v2, historical v3, and incom
     })
     assert.deepEqual(Buffer.from(bytes), before)
   }
-  assert.deepEqual(await readFile(v2Fixture), v2Bytes)
 })
