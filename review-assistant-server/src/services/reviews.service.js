@@ -79,7 +79,7 @@ function buildReviewAnalysisPrompt(text) {
 // tool-use 스키마의 enum은 Claude API가 서버 측에서 강제해주지 않는다 — 실제로
 // "불편"처럼 6개 카테고리 밖의 값을 그대로 반환하는 경우가 확인돼(#37 재검증),
 // 여기서 한 번 더 걸러서 스키마 밖 값은 "일반"으로 대체하고 중복은 제거한다.
-function sanitizeKeywords(rawKeywords) {
+export function sanitizeKeywords(rawKeywords) {
   const cleaned = rawKeywords.map((keyword) => (KEYWORD_CATEGORIES.includes(keyword) ? keyword : '일반'))
   return [...new Set(cleaned)]
 }
