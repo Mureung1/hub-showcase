@@ -75,10 +75,8 @@ async def _run(
                 str(trace_path),
             ),
             opt_out_notification_methods=(
-                "account/login/completed",
                 "thread/status/changed",
             ),
-            reserve_chatgpt_login_completion=True,
         )
     )
     child = None
@@ -134,7 +132,7 @@ async def _run(
             "first_stalled_method": first_stalled_event.method,
             "future_global_failure": future_global_failure,
             "global_failure": global_failure,
-            "managed_login_completion": {
+            "login_completion": {
                 "error": completed_login_result.error,
                 "login_id": completed_login_result.login_id,
                 "success": completed_login_result.success,
