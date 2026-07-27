@@ -6,11 +6,12 @@ import { RepositoryUnavailableError } from '../shared/repositoryError.mjs'
 const servers = []
 const fetchBlockedPorts = new Set([6000, 6665, 6666, 6667, 6668, 6669, 6697, 10080])
 
-function createTestServer() {
+function createTestServer(options = {}) {
   const server = createCurriculumAgentServer({
     tracks: [],
     config: {},
     logger: { error: vi.fn(), log: vi.fn() },
+    ...options,
   })
   servers.push(server)
   return server
