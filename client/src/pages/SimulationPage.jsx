@@ -8,6 +8,8 @@ const ACTIVE_INDEX_STORAGE_KEY = 'scenarioActiveIndex';
 
 const isMajorCourse = (course) => course.category === '전공필수' || course.category === '전공';
 const isGeneralCourse = (course) => course.category === '교양' || course.category === '일반선택';
+const isCapstoneCourse = (course) => course.category === '종합설계교과목';
+const isStartupCourse = (course) => course.category === '창업교과목';
 
 function loadScenarios() {
   const saved = localStorage.getItem(SCENARIOS_STORAGE_KEY);
@@ -136,6 +138,8 @@ function SimulationPage({
       total: courses.reduce((sum, c) => sum + c.credits, 0),
       major: courses.filter(isMajorCourse).reduce((sum, c) => sum + c.credits, 0),
       general: courses.filter(isGeneralCourse).reduce((sum, c) => sum + c.credits, 0),
+      capstone: courses.filter(isCapstoneCourse).reduce((sum, c) => sum + c.credits, 0),
+      startup: courses.filter(isStartupCourse).reduce((sum, c) => sum + c.credits, 0),
     };
   };
 

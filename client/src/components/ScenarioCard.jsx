@@ -84,6 +84,8 @@ function ScenarioCard({
         <ComparisonBadge label="총학점" current={subtotal.total} needed={needed?.total} />
         <ComparisonBadge label="전공" current={subtotal.major} needed={needed?.major} />
         <ComparisonBadge label="교양" current={subtotal.general} needed={needed?.general} />
+        <ComparisonBadge label="종합설계" current={subtotal.capstone} />
+        <ComparisonBadge label="창업교과목" current={subtotal.startup} />
       </div>
     </div>
   );
