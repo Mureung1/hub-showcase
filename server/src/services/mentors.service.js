@@ -40,10 +40,21 @@ const matchesExact = (value, filterValue) => {
   return value?.toLowerCase() === filterValue.trim().toLowerCase();
 };
 
-const matchesSubstring = (value, filterValue) => {
-  if (!filterValue) return true;
+const parseKeywords = (filterValue) => {
+  if (!filterValue) return [];
 
-  return value?.toLowerCase().includes(filterValue.trim().toLowerCase());
+  return filterValue
+    .split(',')
+    .map((keyword) => keyword.trim().toLowerCase())
+    .filter((keyword) => keyword.length > 0);
+};
+
+const matchesSubstring = (value, filterValue) => {
+  const keywords = parseKeywords(filterValue);
+
+  if (keywords.length === 0) return true;
+
+  return keywords.some((keyword) => value?.toLowerCase().includes(keyword));
 };
 
 const matchesListFieldExact = (values, filterValue) => {
@@ -55,11 +66,13 @@ const matchesListFieldExact = (values, filterValue) => {
 };
 
 const matchesListFieldSubstring = (values, filterValue) => {
-  if (!filterValue) return true;
+  const keywords = parseKeywords(filterValue);
 
-  const normalizedFilterValue = filterValue.trim().toLowerCase();
+  if (keywords.length === 0) return true;
 
-  return values.some((value) => value.toLowerCase().includes(normalizedFilterValue));
+  return values.some((value) =>
+    keywords.some((keyword) => value.toLowerCase().includes(keyword)),
+  );
 };
 
 const listMentors = async ({
