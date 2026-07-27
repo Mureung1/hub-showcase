@@ -27,6 +27,7 @@ const registryDirectoryName = 'state'
 const registryFileName = 'workspace-registry.json'
 const writerLeaseName = '.workspace-registry-writer'
 const writerLeaseStagePrefix = '.workspace-registry-writer-stage-'
+const commitProofSuffix = '.commit-proof'
 const directoryMode = 0o700
 const fileMode = 0o600
 
@@ -142,6 +143,7 @@ type WriterLease = {
   readonly owner: {
     readonly ownerPid: number
     readonly token: string
+    readonly phase: 'pending' | 'accepted'
   }
 }
 
@@ -409,7 +411,7 @@ async function writeRegistry(
   const root = await assertCanonicalAppDataRoot(configuredRoot)
   const directory = await ensureRegistryDirectory(root)
   const token = randomUUID()
-  const lease = await acquireWriterLease(directory, token)
+  let lease = await acquireWriterLease(directory, token)
   if (!lease) return { status: 'conflict' }
 
   const target = path.join(directory, registryFileName)
@@ -421,8 +423,13 @@ async function writeRegistry(
     directory,
     `.${registryFileName}.${token}.compare-guard`,
   )
+  const commitProof = path.join(
+    directory,
+    `.${registryFileName}.${token}${commitProofSuffix}`,
+  )
   let temporaryExists = false
   let guardExists = false
+  let commitProofExists = false
   let commitAccepted = false
   try {
     const observed = await readRegistryAt(root)
@@ -446,6 +453,12 @@ async function writeRegistry(
     temporaryExists = true
     await syncDirectory(directory)
     await inject(options, 'after_temporary_sync')
+    await link(temporary, commitProof)
+    commitProofExists = true
+    await syncDirectory(directory)
+    if (!acceptCommit) {
+      lease = await markWriterLeaseAccepted(directory, lease)
+    }
 
     if (expectedBytes === null) {
       await inject(options, 'before_final_compare')
@@ -532,6 +545,19 @@ async function writeRegistry(
       return { status: 'conflict' }
     }
     commitAccepted = acceptCommit !== undefined
+    if (commitAccepted) {
+      try {
+        lease = await markWriterLeaseAccepted(directory, lease)
+      } catch {
+        return {
+          status: 'written',
+          registry: written.registry,
+          authority: written.authority,
+        }
+      }
+    }
+    await unlink(commitProof)
+    commitProofExists = false
     if (guardExists) {
       if (commitAccepted) {
         try {
@@ -558,6 +584,13 @@ async function writeRegistry(
     if (temporaryExists) {
       try {
         await unlink(temporary)
+      } catch {
+        cleanupFailed = true
+      }
+    }
+    if (commitProofExists) {
+      try {
+        await unlink(commitProof)
       } catch {
         cleanupFailed = true
       }
@@ -826,9 +859,10 @@ async function acquireWriterLease(
   }
 
   const owner = {
-    formatVersion: 1 as const,
+    formatVersion: 2 as const,
     ownerPid: process.pid,
     token,
+    phase: 'pending' as const,
   }
   const bytes = Buffer.from(`${JSON.stringify(owner)}\n`, 'utf8')
   const stage = path.join(
@@ -864,7 +898,11 @@ async function acquireWriterLease(
       path: target,
       bytes,
       identity: published.identity,
-      owner: { ownerPid: owner.ownerPid, token: owner.token },
+      owner: {
+        ownerPid: owner.ownerPid,
+        token: owner.token,
+        phase: owner.phase,
+      },
     }
   } finally {
     if (stageExists) {
@@ -889,6 +927,49 @@ async function releaseWriterLease(
   await syncDirectory(directory)
 }
 
+async function markWriterLeaseAccepted(
+  directory: string,
+  lease: WriterLease,
+): Promise<WriterLease> {
+  if (lease.owner.phase === 'accepted') return lease
+  const owner = {
+    formatVersion: 2 as const,
+    ownerPid: lease.owner.ownerPid,
+    token: lease.owner.token,
+    phase: 'accepted' as const,
+  }
+  const bytes = Buffer.from(`${JSON.stringify(owner)}\n`, 'utf8')
+  const stage = path.join(
+    directory,
+    `${writerLeaseStagePrefix}${owner.ownerPid}-${owner.token}-accepted`,
+  )
+  await writeSyncedExclusiveFile(stage, bytes)
+  try {
+    await syncDirectory(directory)
+    const current = await readOwnedBytes(lease.path, 4096)
+    if (
+      !current.bytes.equals(lease.bytes) ||
+      !sameIdentity(current.identity, lease.identity)
+    ) {
+      throw new WorkspaceRegistryStorageError()
+    }
+    await rename(stage, lease.path)
+    await syncDirectory(directory)
+    const accepted = await readWriterLease(lease.path)
+    if (
+      accepted.status !== 'current' ||
+      accepted.lease.owner.ownerPid !== owner.ownerPid ||
+      accepted.lease.owner.token !== owner.token ||
+      accepted.lease.owner.phase !== 'accepted'
+    ) {
+      throw new WorkspaceRegistryStorageError()
+    }
+    return accepted.lease
+  } finally {
+    await unlink(stage).catch(() => undefined)
+  }
+}
+
 async function readWriterLease(
   target: string,
 ): Promise<
@@ -911,22 +992,44 @@ async function readWriterLease(
   } catch {
     return { status: 'incompatible' }
   }
+  if (!isRecord(value)) {
+    return { status: 'incompatible' }
+  }
+  const legacy = value.formatVersion === 1
+  const current = value.formatVersion === 2
   if (
-    !isExactRecord(value, ['formatVersion', 'ownerPid', 'token']) ||
-    value.formatVersion !== 1 ||
+    !(legacy
+      ? isExactRecord(value, ['formatVersion', 'ownerPid', 'token'])
+      : current
+        ? isExactRecord(value, [
+            'formatVersion',
+            'ownerPid',
+            'phase',
+            'token',
+          ])
+        : false) ||
     !Number.isSafeInteger(value.ownerPid) ||
     Number(value.ownerPid) < 1 ||
     typeof value.token !== 'string' ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
       value.token,
-    )
+    ) ||
+    (current &&
+      value.phase !== 'pending' &&
+      value.phase !== 'accepted')
   ) {
     return { status: 'incompatible' }
   }
+  const phase =
+    current &&
+    (value.phase === 'pending' || value.phase === 'accepted')
+      ? value.phase
+      : 'accepted'
   const owner = {
-    formatVersion: 1 as const,
+    formatVersion: value.formatVersion as 1 | 2,
     ownerPid: Number(value.ownerPid),
     token: value.token,
+    ...(current ? { phase } : {}),
   }
   const canonical = Buffer.from(`${JSON.stringify(owner)}\n`, 'utf8')
   if (!canonical.equals(opened.bytes)) {
@@ -941,6 +1044,7 @@ async function readWriterLease(
       owner: {
         ownerPid: owner.ownerPid,
         token: owner.token,
+        phase,
       },
     },
   }
@@ -951,23 +1055,56 @@ async function cleanupAbandonedWriterLease(
   lease: WriterLease,
 ): Promise<boolean> {
   const token = lease.owner.token
-  const ownedNames = [
+  const target = path.join(directory, registryFileName)
+  const temporary = path.join(
+    directory,
     `.${registryFileName}.${token}.tmp`,
+  )
+  const guard = path.join(
+    directory,
     `.${registryFileName}.${token}.compare-guard`,
-    `${writerLeaseStagePrefix}${lease.owner.ownerPid}-${token}`,
-  ]
+  )
+  const commitProof = path.join(
+    directory,
+    `.${registryFileName}.${token}${commitProofSuffix}`,
+  )
   try {
-    for (const name of ownedNames) {
-      const target = path.join(directory, name)
-      let stats
-      try {
-        stats = await lstat(target)
-      } catch (error) {
-        if (hasErrnoCode(error, 'ENOENT')) continue
+    const [targetFile, guardFile, proofFile] = await Promise.all([
+      readOptionalOwnedBytes(target, registryMaxBytes),
+      readOptionalOwnedBytes(guard, registryMaxBytes),
+      readOptionalOwnedBytes(commitProof, registryMaxBytes),
+    ])
+    if (lease.owner.phase === 'pending' && proofFile) {
+      if (targetFile && sameIdentity(targetFile.identity, proofFile.identity)) {
+        if (guardFile) {
+          await rename(guard, target)
+        } else {
+          await unlink(target)
+        }
+      } else if (!targetFile && guardFile) {
+        await rename(guard, target)
+      } else if (
+        guardFile &&
+        targetFile &&
+        !sameIdentity(targetFile.identity, guardFile.identity)
+      ) {
         return false
       }
-      if (!stats.isFile() || stats.isSymbolicLink()) return false
-      await unlink(target)
+    }
+    for (const ownedPath of [
+      temporary,
+      guard,
+      commitProof,
+      path.join(
+        directory,
+        `${writerLeaseStagePrefix}${lease.owner.ownerPid}-${token}`,
+      ),
+      path.join(
+        directory,
+        `${writerLeaseStagePrefix}${lease.owner.ownerPid}-${token}-accepted`,
+      ),
+    ]) {
+      if (!(await removeOwnedRegularFile(ownedPath))) return false
     }
     const current = await readOwnedBytes(lease.path, 4096)
     if (
@@ -980,6 +1117,33 @@ async function cleanupAbandonedWriterLease(
     await syncDirectory(directory)
     return true
   } catch {
+    return false
+  }
+}
+
+async function readOptionalOwnedBytes(
+  target: string,
+  maxBytes: number,
+): Promise<
+  | { readonly bytes: Buffer; readonly identity: FileIdentity }
+  | undefined
+> {
+  try {
+    return await readOwnedBytes(target, maxBytes)
+  } catch (error) {
+    if (hasErrnoCode(error, 'ENOENT')) return undefined
+    throw error
+  }
+}
+
+async function removeOwnedRegularFile(target: string): Promise<boolean> {
+  try {
+    const stats = await lstat(target)
+    if (!stats.isFile() || stats.isSymbolicLink()) return false
+    await unlink(target)
+    return true
+  } catch (error) {
+    if (hasErrnoCode(error, 'ENOENT')) return true
     return false
   }
 }

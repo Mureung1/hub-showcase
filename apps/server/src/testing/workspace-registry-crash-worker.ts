@@ -11,6 +11,9 @@ const [
   encodedExpectedAuthority,
   encodedRegistry,
   faultPoint,
+  operation = 'compare',
+  canonicalRoot,
+  expectedWorkspaceId,
 ] = process.argv.slice(2)
 
 if (
@@ -32,17 +35,29 @@ const store = createWorkspaceRegistryStore({
   },
 })
 
-await store.compareAndReplace({
-  expectedAuthority:
-    encodedExpectedAuthority === 'null'
-      ? null
-      : {
-          openedBytes: Buffer.from(
-            encodedExpectedAuthority,
-            'base64url',
-          ),
-        },
-  registry,
-})
+const expectedAuthority =
+  encodedExpectedAuthority === 'null'
+    ? null
+    : {
+        openedBytes: Buffer.from(
+          encodedExpectedAuthority,
+          'base64url',
+        ),
+      }
+
+if (operation === 'active') {
+  if (!canonicalRoot || !expectedWorkspaceId) process.exit(2)
+  await store.commitActiveWorkspace({
+    expectedAuthority,
+    canonicalRoot,
+    expectedWorkspaceId,
+    acceptCommit: () => true,
+  })
+} else {
+  await store.compareAndReplace({
+    expectedAuthority,
+    registry,
+  })
+}
 
 process.exit(3)

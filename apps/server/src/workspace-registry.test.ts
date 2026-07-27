@@ -296,6 +296,71 @@ test('actual process death leaves one complete registry and the next writer reco
   }
 })
 
+test('process death before startup acceptance restores missing or previous registry authority', async () => {
+  for (const mode of ['first-open', 'switch'] as const) {
+    const fixture = await createFixture(`pending-${mode}`)
+    try {
+      await Promise.all([
+        writeIdentity(fixture.firstRoot, firstWorkspaceId),
+        writeIdentity(fixture.secondRoot, secondWorkspaceId),
+      ])
+      const store = createWorkspaceRegistryStore({
+        appDataRoot: fixture.appDataRoot,
+      })
+      const previous =
+        mode === 'switch'
+          ? await store.commitActiveWorkspace({
+              expectedAuthority: null,
+              canonicalRoot: fixture.firstRoot,
+              expectedWorkspaceId: firstWorkspaceId,
+            })
+          : undefined
+      if (previous && previous.status !== 'written') {
+        assert.fail('previous authority must be written')
+      }
+      const before =
+        previous?.status === 'written'
+          ? Buffer.from(previous.authority.openedBytes)
+          : undefined
+      await runCrashWriter({
+        appDataRoot: fixture.appDataRoot,
+        expectedAuthority:
+          previous?.status === 'written' ? previous.authority : null,
+        registry: registry(secondWorkspaceId, fixture.secondRoot),
+        faultPoint: 'after_directory_sync',
+        activeCommit: {
+          canonicalRoot: fixture.secondRoot,
+          expectedWorkspaceId: secondWorkspaceId,
+        },
+      })
+
+      const trigger = await store.commitActiveWorkspace({
+        expectedAuthority:
+          previous?.status === 'written' ? previous.authority : null,
+        canonicalRoot: fixture.firstRoot,
+        expectedWorkspaceId: firstWorkspaceId,
+        acceptCommit: () => false,
+      })
+      assert.equal(trigger.status, 'conflict')
+      const restored = await store.read()
+      if (mode === 'first-open') {
+        assert.equal(restored.status, 'missing')
+      } else {
+        assert.equal(restored.status, 'current')
+        if (restored.status !== 'current' || !before) {
+          assert.fail('previous authority must be restored')
+        }
+        assert.deepEqual(
+          Buffer.from(restored.authority.openedBytes),
+          before,
+        )
+      }
+    } finally {
+      await fixture.cleanup()
+    }
+  }
+})
+
 test('fresh reopen only returns a registry entry whose canonical root still has the matching v4 identity', async () => {
   const fixture = await createFixture('reopen')
   try {
@@ -524,7 +589,14 @@ async function runCrashWriter(input: {
     | { readonly openedBytes: Uint8Array }
     | null
   readonly registry: ReturnType<typeof registry>
-  readonly faultPoint: 'after_temporary_sync' | 'after_replace'
+  readonly faultPoint:
+    | 'after_temporary_sync'
+    | 'after_replace'
+    | 'after_directory_sync'
+  readonly activeCommit?: {
+    readonly canonicalRoot: string
+    readonly expectedWorkspaceId: string
+  }
 }): Promise<void> {
   const worker = fileURLToPath(
     new URL(
@@ -548,6 +620,9 @@ async function runCrashWriter(input: {
         'base64url',
       ),
       input.faultPoint,
+      input.activeCommit ? 'active' : 'compare',
+      input.activeCommit?.canonicalRoot ?? '',
+      input.activeCommit?.expectedWorkspaceId ?? '',
     ],
     {
       cwd: fileURLToPath(new URL('../../..', import.meta.url)),
