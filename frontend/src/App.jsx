@@ -3,8 +3,9 @@ import { getDefaultIngredientTags, getIngredientTags, INGREDIENT_TAG_LABELS } fr
 import "./App.css";
 import IngredientForm from "./components/IngredientForm";
 import NaggingMessage from "./components/NaggingMessage";
+import RecipeConsumptionModal from "./components/RecipeConsumptionModal";
 import { getAllowedStorageOptions, getDefaultStorage, getSuggestedUseByDate } from "./data/shelfLifeRules";
-import { deleteIngredient, getIngredients, registerIngredient, updateIngredient } from "./services/ingredients";
+import { consumeIngredients, deleteIngredient, getIngredients, registerIngredient, updateIngredient } from "./services/ingredients";
 import { fetchRecommendations } from "./services/recommendations";
 import {
   getDaysRemaining,
@@ -46,7 +47,7 @@ function withObjectParticle(name) {
 function createInitialFormValues(category = "egg", requestedStorage = null) {
   const allowedStorage = getAllowedStorageOptions(category);
   const storage = allowedStorage.some(({ id }) => id === requestedStorage) ? requestedStorage : getDefaultStorage(category);
-  return { name: "", quantity: "", storage, category, expirationDate: getSuggestedUseByDate(category, storage), expirySource: "suggested", tags: getDefaultIngredientTags(category) };
+  return { name: "", quantity: "", unit: "개", storage, category, expirationDate: getSuggestedUseByDate(category, storage), expirySource: "suggested", tags: getDefaultIngredientTags(category) };
 }
 function App() {
   const [ingredients, setIngredients] = useState([]);
@@ -111,6 +112,10 @@ function App() {
   const [recommendationError, setRecommendationError] = useState("");
   const [recommendationErrorScope, setRecommendationErrorScope] = useState("initial");
   const [recommendationRetryKey, setRecommendationRetryKey] = useState(0);
+  const [consumptionRecipe, setConsumptionRecipe] = useState(null);
+  const [isConsumptionSubmitting, setIsConsumptionSubmitting] = useState(false);
+  const [consumptionError, setConsumptionError] = useState("");
+  const [consumedRecipeId, setConsumedRecipeId] = useState(null);
   const managedIngredients = useMemo(() => ingredients.filter((ingredient) => !isPantryIngredientName(ingredient.name)), [ingredients]);
 
   useEffect(() => {
@@ -263,6 +268,7 @@ function App() {
     if (!name) nextErrors.name = "재료명을 입력해 주세요.";
     if (isPantryIngredientName(name)) nextErrors.name = "기본 양념은 레시피 상세의 보유 설정에서 관리해 주세요.";
     if (!quantity) nextErrors.quantity = "수량을 입력해 주세요.";
+    else if (!Number.isFinite(Number(quantity)) || Number(quantity) <= 0) nextErrors.quantity = "0보다 큰 수량을 입력해 주세요.";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(formValues.expirationDate)) nextErrors.expirationDate = "권장 사용 날짜를 선택해 주세요.";
 
     if (Object.keys(nextErrors).length > 0) {
@@ -307,7 +313,7 @@ function App() {
   const editIngredient = (ingredient, focusField = "name") => {
     setActiveMainTab("fridge");
     setEditingIngredientId(ingredient.id);
-    setFormValues({ name: ingredient.name, quantity: formatIngredientQuantity(ingredient) === "보유 중" ? "1개" : formatIngredientQuantity(ingredient), storage: ingredient.storage, category: ingredient.category, expirationDate: getIngredientDueDate(ingredient) ?? getSuggestedUseByDate(ingredient.category, ingredient.storage), expirySource: "manual", tags: getIngredientTags(ingredient) });
+    setFormValues({ name: ingredient.name, quantity: String(ingredient.quantity ?? 1), unit: ingredient.unit ?? "개", storage: ingredient.storage, category: ingredient.category, expirationDate: getIngredientDueDate(ingredient) ?? getSuggestedUseByDate(ingredient.category, ingredient.storage), expirySource: "manual", tags: getIngredientTags(ingredient) });
     setErrors({});
     setInitialFocusField(focusField);
     setOpenMenuId(null);
@@ -413,6 +419,34 @@ function App() {
     setActiveMainTab("recommend");
   };
 
+  const openConsumptionModal = () => {
+    setConsumptionError("");
+    setConsumptionRecipe(selectedRecipe);
+  };
+
+  const closeConsumptionModal = () => {
+    if (isConsumptionSubmitting) return;
+    setConsumptionRecipe(null);
+    setConsumptionError("");
+  };
+
+  const confirmRecipeConsumption = async (items) => {
+    setIsConsumptionSubmitting(true);
+    setConsumptionError("");
+    try {
+      const result = await consumeIngredients(items);
+      await refreshIngredients(true);
+      setConsumedRecipeId(consumptionRecipe.id);
+      setConsumptionRecipe(null);
+      const summary = result.consumed.map((item) => `${item.name} ${item.amount}${item.unit}`).join(", ");
+      flash(`${summary}을(를) 냉장고에서 차감했어요.`);
+    } catch (error) {
+      setConsumptionError(error.message ?? "재료 차감에 실패했습니다.");
+    } finally {
+      setIsConsumptionSubmitting(false);
+    }
+  };
+
   const toggleRecipeSaved = (recipe) => {
     const result = toggleSavedRecipe(recipe);
     setSavedRecipes(result.recipes);
@@ -449,7 +483,7 @@ function App() {
         )}
         {activeMainTab === "fridge" && !isLoading && !ingredientError && <FridgeWorkspace ingredients={managedIngredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} sortOrder={sortOrder} setSortOrder={setSortOrder} recommendedCount={recommendedCount} openIngredientForm={openIngredientForm} editIngredient={editIngredient} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} requestIngredientAction={requestIngredientAction} onIngredientSelect={handleIngredientSelect} showRecommendations={showRecommendations} />}
         {activeMainTab === "recommend" && (selectedRecipe
-          ? <RecipeWorkspace menu={selectedRecipe} isLoading={isRecipeLoading} onBack={showRecommendations} isSaved={isRecipeSaved(selectedRecipe, savedRecipes)} onToggleSaved={() => toggleRecipeSaved(selectedRecipe)} />
+          ? <RecipeWorkspace menu={selectedRecipe} isLoading={isRecipeLoading} onBack={showRecommendations} isSaved={isRecipeSaved(selectedRecipe, savedRecipes)} onToggleSaved={() => toggleRecipeSaved(selectedRecipe)} onConsume={openConsumptionModal} isConsumed={consumedRecipeId === selectedRecipe.id} />
           : <RecommendWorkspace recipes={recommendationRecipes} savedRecipes={savedRecipes} meta={recommendationMeta} isLoading={isRecommendationsLoading} isLoadingMore={isMoreRecommendationsLoading} error={recommendationError} onRetry={recommendationErrorScope === "more" ? loadMoreRecommendations : () => setRecommendationRetryKey((current) => current + 1)} onLoadMore={loadMoreRecommendations} selectedMood={selectedMood} setSelectedMood={setSelectedMood} missingIngredientLimit={missingIngredientLimit} setMissingIngredientLimit={setMissingIngredientLimit} onSelectRecipe={handleRecipeSelect} onToggleSaved={toggleRecipeSaved} />)}
       </main>
       {message.text && <div className={`toast-message ${message.type}`} role={message.type === "error" ? "alert" : "status"} aria-live="polite">{message.text}</div>}
@@ -458,6 +492,7 @@ function App() {
       </IngredientFormModal>}
       {confirmAction && <ConfirmDialog action={confirmAction} isSubmitting={isSubmitting} onCancel={() => setConfirmAction(null)} onConfirm={completeIngredientAction} />}
       {naggingMessage && (selectedIngredient || pendingRecipe) && <NaggingMessage message={naggingMessage} onAcceptSuggestion={() => continueFromNagging("balanced")} onContinueOriginal={continueOriginalFromNagging} onClose={closeNaggingMessage} />}
+      {consumptionRecipe && <RecipeConsumptionModal recipe={consumptionRecipe} ingredients={managedIngredients} isSubmitting={isConsumptionSubmitting} error={consumptionError} onClose={closeConsumptionModal} onConfirm={confirmRecipeConsumption} />}
     </div>
   );
 }
@@ -609,7 +644,7 @@ function EmptyRecipeState({ onShowOneMissing }) {
   return <div className="empty-recipe-state"><span aria-hidden="true">🍽️</span><h3>지금 조건에 맞는 메뉴가 없어요.</h3><p>다른 상태를 선택하거나 재료 1개만 추가하면 만들 수 있는 메뉴를 확인해 보세요.</p><button type="button" onClick={onShowOneMissing}>재료 1개 부족한 메뉴 보기</button></div>;
 }
 
-function RecipeWorkspace({ menu, isLoading, onBack, isSaved, onToggleSaved }) {
+function RecipeWorkspace({ menu, isLoading, onBack, isSaved, onToggleSaved, onConsume, isConsumed }) {
   if (isLoading) return <WorkspaceShell eyebrow="Today&apos;s Menu" title="레시피 상세" description="선택한 메뉴 정보를 불러오고 있습니다."><div className="recipe-empty"><h2>레시피를 불러오는 중입니다...</h2><p>잠시만 기다려주세요.</p></div></WorkspaceShell>;
   if (!menu) return <WorkspaceShell eyebrow="Today&apos;s Menu" title="레시피 상세" description="오늘의 메뉴에서 선택하면 조리 과정을 볼 수 있습니다."><div className="recipe-empty"><h2>선택한 메뉴를 찾을 수 없습니다</h2><p>오늘의 메뉴 화면에서 레시피를 선택해주세요.</p><button type="button" onClick={onBack}>오늘의 메뉴 보기</button></div></WorkspaceShell>;
 
@@ -630,7 +665,7 @@ function RecipeWorkspace({ menu, isLoading, onBack, isSaved, onToggleSaved }) {
 
   return <section className="recipe-detail-screen">
     <header className="recipe-detail-hero">
-      <div className="recipe-detail-actions"><button className="back-to-recipes" type="button" onClick={onBack}>← 오늘의 메뉴</button><button className="save-detail-recipe" type="button" aria-pressed={isSaved} onClick={onToggleSaved}>{isSaved ? "♥ 저장됨" : "♡ 레시피 저장"}</button></div>
+      <div className="recipe-detail-actions"><button className="back-to-recipes" type="button" onClick={onBack}>← 오늘의 메뉴</button><button className="save-detail-recipe" type="button" aria-pressed={isSaved} onClick={onToggleSaved}>{isSaved ? "♥ 저장됨" : "♡ 레시피 저장"}</button><button className="consume-recipe-button" type="button" onClick={onConsume} disabled={isConsumed}>{isConsumed ? "✓ 재료 차감 완료" : "✓ 이 레시피로 요리했어요"}</button></div>
       <p className="eyebrow">TODAY&apos;S RECIPE</p>
       <h1>{menu.name ?? "메뉴 상세"}</h1>
       <div className="recipe-hero-chips"><span>{cookingMethodLabels[menu.cookingMethod]}</span><span>{menu.cookingTime}분</span><span>{recipeDifficultyLabels[menu.difficulty]}</span><span>{menu.servings}인분</span>{generatedMissingNames.size > 0 && <span className="missing">부족 재료 {generatedMissingNames.size}개</span>}</div>

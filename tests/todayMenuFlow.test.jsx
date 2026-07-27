@@ -124,3 +124,68 @@ test("인스턴트와 가공식품 조합을 선택하면 코칭 후 상세로 �
   fireEvent.click(screen.getByRole("button", { name: "원래 선택 계속하기" }));
   expect(await screen.findByRole("heading", { name: "스팸 김치라면" })).toBeInTheDocument();
 });
+
+test("요리 완료를 확인하면 레시피 사용량만큼 보유 재료를 차감한다", async () => {
+  let consumedRequest = null;
+  let tofuQuantity = 2;
+  const tofuRow = () => ({
+    id: "ingredient-tofu",
+    name: "두부",
+    category: "tofu",
+    subcategory: null,
+    tags: ["nutrition:protein"],
+    quantity: tofuQuantity,
+    unit: "모",
+    quantity_mode: "exact",
+    storage: "fridge",
+    expiration_type: "absolute",
+    expiration_date: "2026-07-30",
+    shelf_life_days: null,
+    stored_at: "2026-07-27",
+    is_staple: false,
+    is_instant: false,
+    is_prepared: false,
+    icon: "◻️",
+    memo: "",
+  });
+  globalThis.fetch = async (url, options = {}) => {
+    if (url === "/api/ingredients" && !options.method) {
+      return new Response(JSON.stringify({ ingredients: [tofuRow()] }));
+    }
+    if (url === "/api/recommendations") return new Response(JSON.stringify({
+      recipes: [recipe],
+      meta: { source: "gemini", maxRecipes: 15, batchNumber: 1, maxBatches: 5 },
+    }));
+    if (url === "/api/ingredients/consume" && options.method === "POST") {
+      consumedRequest = JSON.parse(options.body);
+      tofuQuantity = 1;
+      return new Response(JSON.stringify({
+        consumed: [{
+          id: "ingredient-tofu",
+          name: "두부",
+          amount: 1,
+          unit: "모",
+          remainingQuantity: 1,
+          removed: false,
+        }],
+      }));
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  };
+
+  render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "레시피 추천" }));
+  fireEvent.click(await screen.findByRole("button", { name: "레시피 보기" }));
+  await screen.findByRole("heading", { name: "간장 두부 덮밥" });
+  fireEvent.click(screen.getByRole("button", { name: "✓ 이 레시피로 요리했어요" }));
+
+  expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  expect(screen.getByRole("checkbox", { name: /두부/ })).toBeChecked();
+  expect(screen.getByText("남음 1모")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "1개 재료 차감하기" }));
+
+  await screen.findByRole("button", { name: "✓ 재료 차감 완료" });
+  expect(consumedRequest).toEqual({
+    items: [{ id: "ingredient-tofu", amount: 1, unit: "모" }],
+  });
+});

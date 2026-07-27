@@ -93,3 +93,13 @@ export async function deleteIngredient(id) {
     await parseResponse(response, "재료 삭제에 실패했습니다. 다시 시도해 주세요.");
   }
 }
+
+export async function consumeIngredients(items) {
+  const response = await fetch(`${INGREDIENTS_API_URL}/consume`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+
+  return parseResponse(response, "재료 차감에 실패했습니다. 냉장고 수량을 다시 확인해 주세요.");
+}

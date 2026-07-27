@@ -46,7 +46,10 @@ export function parseQuantityInput(input) {
 
 export function buildIngredientFromForm(formValues, existingIngredient = null) {
   const today = getTodayDateString();
-  const quantity = parseQuantityInput(formValues.quantity);
+  const quantityInput = formValues.unit
+    ? `${formValues.quantity}${formValues.unit}`
+    : formValues.quantity;
+  const quantity = parseQuantityInput(quantityInput);
   const storage = formValues.storage;
 
   return {

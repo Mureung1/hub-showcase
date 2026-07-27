@@ -5,6 +5,7 @@ import { getTodayDateString } from "../utils/expiration";
 import { INGREDIENT_TAG_LABELS, INGREDIENT_TAGS } from "../../../shared/ingredientTags";
 
 const categoryOptions = Object.entries(INGREDIENT_CATEGORIES);
+const quantityUnits = ["개", "g", "kg", "ml", "L", "팩", "캔", "모", "대"];
 
 export default function IngredientForm({ formValues, errors, isEditing, isSubmitting, initialFocusField = "name", onChange, onBlur, onTagToggle, onApplySuggestedDate, onSubmit, onCancel }) {
   const nameRef = useRef(null);
@@ -41,17 +42,29 @@ export default function IngredientForm({ formValues, errors, isEditing, isSubmit
 
       <div className="field-group">
         <label htmlFor="ingredient-quantity">수량</label>
-        <input
-          ref={quantityRef}
-          id="ingredient-quantity"
-          name="quantity"
-          value={formValues.quantity}
-          onChange={onChange}
-          onBlur={onBlur}
-          placeholder="예: 1모"
-          aria-invalid={Boolean(errors.quantity)}
-          aria-describedby={errors.quantity ? "quantity-error" : undefined}
-        />
+        <div className="quantity-input-row">
+          <button type="button" aria-label="수량 1 감소" onClick={() => onChange({ target: { name: "quantity", value: String(Math.max(0, Number(formValues.quantity || 0) - 1)) } })}>−</button>
+          <input
+            ref={quantityRef}
+            id="ingredient-quantity"
+            name="quantity"
+            type="number"
+            min="0.001"
+            step={formValues.unit === "개" ? "1" : "any"}
+            inputMode="decimal"
+            value={formValues.quantity}
+            onChange={onChange}
+            onBlur={onBlur}
+            placeholder="예: 2"
+            aria-invalid={Boolean(errors.quantity)}
+            aria-describedby={errors.quantity ? "quantity-error" : "quantity-hint"}
+          />
+          <button type="button" aria-label="수량 1 증가" onClick={() => onChange({ target: { name: "quantity", value: String(Number(formValues.quantity || 0) + 1) } })}>＋</button>
+          <select name="unit" aria-label="수량 단위" value={formValues.unit} onChange={onChange}>
+            {quantityUnits.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+          </select>
+        </div>
+        <p className="field-hint" id="quantity-hint">개수는 기본 단위인 ‘개’를 사용하고, 무게나 부피가 필요하면 단위를 바꿔주세요.</p>
         {errors.quantity && <p className="field-error" id="quantity-error">{errors.quantity}</p>}
       </div>
 
