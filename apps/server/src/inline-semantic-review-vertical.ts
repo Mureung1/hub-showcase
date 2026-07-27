@@ -5,7 +5,15 @@ import {
   createInteractionBroker,
   type InteractionBrokerCredentials,
 } from './interaction-broker.js'
-import type { ProductOperationCoordinator } from './product-operation-coordinator.js'
+import type { ActiveInteractionProductTurn } from './interaction-broker.js'
+
+export type InlineSemanticReviewProductOperations = {
+  activeInteractionProductTurn(): ActiveInteractionProductTurn | undefined
+  interruptInteractionProductTurn(
+    turn: ActiveInteractionProductTurn,
+  ): Promise<void>
+  publishInteractionReview(frame: import('@ay-ple/product-contract').ProductReviewFrame): Promise<void>
+}
 
 export type InlineSemanticReviewVertical = {
   readonly router: Router
@@ -20,7 +28,7 @@ export type InlineSemanticReviewVertical = {
 
 export async function createInlineSemanticReviewVertical(options: {
   readonly workspaceRoot: string
-  readonly productOperations: ProductOperationCoordinator
+  readonly productOperations: InlineSemanticReviewProductOperations
 }): Promise<InlineSemanticReviewVertical> {
   const broker = await createInteractionBroker({
     workspaceRoot: options.workspaceRoot,

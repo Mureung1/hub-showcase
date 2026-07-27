@@ -1,0 +1,298 @@
+import assert from 'node:assert/strict'
+import { mkdtemp, realpath, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import test from 'node:test'
+
+import type {
+  AnswerUserInput,
+  CancelUserInput,
+  CodexChatRuntimeError,
+  CodexProductActivity,
+  CodexProductTurn,
+  CodexWorkspaceRuntime,
+  InterruptTurnInput,
+  ReleaseThreadInput,
+  StartProductTurnInput,
+  StartThreadInput,
+  StartTurnInput,
+} from '@ay-ple/codex-chat-runtime'
+
+import { bindServerApplicationListener } from './server-listener.js'
+import { createPreparedServerApplication } from './prepared-server-application.js'
+import { codexChatIdentity, postJson } from './testing/codex-chat-test-support.js'
+
+test('prepared public composition uses project discovery and exposes only AY Chat plus inline Review', async () => {
+  const workspaceRoot = await realpath(
+    await mkdtemp(path.join(tmpdir(), 'prepared-public-server-')),
+  )
+  const runtime = new PreparedRuntime()
+  const lifecycle = {
+    state: 'active',
+    workspace: {
+      workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
+      semester: {
+        yearLevel: 2,
+        term: { key: 'fall', displayName: '2학기' },
+      },
+      label: '2학년 2학기',
+    },
+  } as const
+  let listener:
+    | Awaited<ReturnType<typeof bindServerApplicationListener>>
+    | undefined
+  const target = await createPreparedServerApplication({
+    codexChat: {
+      ...codexChatIdentity,
+      createRuntime: async () => runtime,
+    },
+    workspaceRoot,
+    readLifecycle: () => lifecycle,
+  })
+  try {
+    listener = await bindServerApplicationListener({
+      host: '127.0.0.1',
+      port: 0,
+      requestHandler: target.application.app,
+    })
+    const baseUrl = `http://127.0.0.1:${listener.port}`
+    const bootstrap = await fetch(`${baseUrl}/api/product/bootstrap`)
+    assert.equal(bootstrap.status, 200)
+    assert.deepEqual(await bootstrap.json(), {
+      accountReadiness: { state: 'ready' },
+      activeOperation: null,
+      workspaceLifecycle: lifecycle,
+    })
+    for (const path of [
+      '/api/product/workspaces/activate',
+      '/api/product/courses',
+      '/api/product/materials/refresh',
+      '/api/product/actions/first-assignment',
+      '/api/product/actions/first-assignment/retry',
+      '/api/product-mcp',
+    ]) {
+      assert.equal(
+        (await postJson(`${baseUrl}${path}`, {})).status,
+        404,
+        path,
+      )
+    }
+
+    const stream = await postJson(`${baseUrl}/api/product/chat/messages`, {
+      text: '과제 파일을 확인해 줘.',
+      materials: [],
+    })
+    assert.equal(stream.status, 200)
+    assert.ok(stream.body)
+    const trace = new NdjsonTrace(stream.body.getReader())
+    await trace.until((frame) => frame.type === 'operation.accepted')
+    assert.deepEqual(runtime.threadInputs, [undefined])
+    assert.equal(runtime.productInputs[0]?.permissionProfile, 'workspace_write')
+    assert.equal(runtime.productInputs[0]?.skill, undefined)
+
+    const headers = {
+      authorization: `Bearer ${target.credentials.token}`,
+      'x-ay-ple-runtime-binding': target.credentials.binding,
+    }
+    assert.equal(
+      (
+        await postJson(
+          `${baseUrl}/api/_private/interaction-mcp/`,
+          {
+            protocolVersion: 1,
+            kind: 'handshake',
+            serverName: 'ay_ple_interaction',
+            capabilities: ['propose_state_patch'],
+          },
+          headers,
+        )
+      ).status,
+      200,
+    )
+    const held = postJson(
+      `${baseUrl}/api/_private/interaction-mcp/`,
+      {
+        protocolVersion: 1,
+        kind: 'capability_call',
+        capability: 'propose_state_patch',
+        request: {
+          summary: '과제 파일 변경',
+          question: '이 변경을 반영할까요?',
+          changes: [
+            {
+              label: '마감',
+              description: '마감 정보를 actual file에 반영합니다.',
+              before: '미정',
+              after: '8월 3일',
+            },
+          ],
+        },
+      },
+      headers,
+    )
+    const requested = await trace.until(
+      (frame) => frame.type === 'review.requested',
+    )
+    const interactionId = String(requested.interactionId)
+    const answer = postJson(
+      `${baseUrl}/api/product/reviews/${interactionId}`,
+      { outcome: 'accept' },
+    )
+    assert.equal((await held).status, 200)
+    assert.equal((await answer).status, 204)
+    await trace.until(
+      (frame) =>
+        frame.type === 'review.resolved' &&
+        frame.interactionId === interactionId,
+    )
+    runtime.finish()
+    await trace.until((frame) => frame.type === 'operation.terminal')
+  } finally {
+    await target.application.close()
+    await listener?.close({ signal: new AbortController().signal })
+    await rm(workspaceRoot, { force: true, recursive: true })
+  }
+})
+
+class PreparedRuntime implements CodexWorkspaceRuntime {
+  readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
+  readonly threadInputs: Array<StartThreadInput | undefined> = []
+  readonly productInputs: StartProductTurnInput[] = []
+  private readonly turnGate = deferred<void>()
+
+  readAccountReadiness() {
+    return Promise.resolve({ state: 'ready' as const })
+  }
+
+  readModelCatalog() {
+    return Promise.resolve({
+      models: [
+        {
+          model: 'gpt-current',
+          displayName: 'GPT Current',
+          description: 'Current model',
+          isDefault: true,
+          defaultReasoningEffort: 'medium',
+          supportedReasoningEfforts: [
+            { reasoningEffort: 'medium', description: 'Balanced' },
+          ],
+          serviceTiers: ['default'],
+        },
+      ],
+    })
+  }
+
+  async startThread(input?: StartThreadInput) {
+    this.threadInputs.push(input)
+    return { threadId: 'thread-prepared' }
+  }
+
+  async startProductTurn(
+    input: StartProductTurnInput,
+  ): Promise<CodexProductTurn> {
+    this.productInputs.push(structuredClone(input))
+    const gate = this.turnGate.promise
+    return {
+      threadId: input.threadId,
+      turnId: 'turn-prepared',
+      events: (async function* (): AsyncIterable<CodexProductActivity> {
+        yield {
+          type: 'agent_message.completed',
+          threadId: input.threadId,
+          turnId: 'turn-prepared',
+          itemId: 'item-prepared',
+          text: '작업을 확인했습니다.',
+        }
+        await gate
+        yield {
+          type: 'turn.completed',
+          threadId: input.threadId,
+          turnId: 'turn-prepared',
+          status: 'completed',
+        }
+      })(),
+    }
+  }
+
+  finish() {
+    this.turnGate.resolve()
+  }
+
+  startTurn(_input: StartTurnInput): Promise<never> {
+    return Promise.reject(new Error('legacy turn is not expected'))
+  }
+
+  answerUserInput(_input: AnswerUserInput) {
+    return Promise.resolve()
+  }
+
+  cancelUserInput(_input: CancelUserInput) {
+    return Promise.resolve()
+  }
+
+  interrupt(_input: InterruptTurnInput) {
+    this.finish()
+    return Promise.resolve()
+  }
+
+  releaseThread(_input: ReleaseThreadInput) {
+    return Promise.resolve()
+  }
+
+  waitForMcpServerReady() {
+    return Promise.resolve()
+  }
+
+  readEffectiveConfig() {
+    return Promise.resolve({
+      projectRootMarkers: [],
+      globalInstructionsFile: null,
+    })
+  }
+
+  listEffectiveSkills() {
+    return Promise.resolve([])
+  }
+
+  close() {
+    this.finish()
+    return Promise.resolve()
+  }
+}
+
+class NdjsonTrace {
+  private readonly frames: Array<Record<string, unknown>> = []
+  private buffer = ''
+
+  constructor(
+    private readonly reader: ReadableStreamDefaultReader<Uint8Array>,
+  ) {}
+
+  async until(
+    predicate: (frame: Record<string, unknown>) => boolean,
+  ): Promise<Record<string, unknown>> {
+    for (;;) {
+      const found = this.frames.find(predicate)
+      if (found) return found
+      const next = await this.reader.read()
+      if (next.done) throw new Error('NDJSON stream ended before target frame')
+      this.buffer += new TextDecoder().decode(next.value, { stream: true })
+      const lines = this.buffer.split('\n')
+      this.buffer = lines.pop() ?? ''
+      for (const line of lines) {
+        if (line) this.frames.push(JSON.parse(line))
+      }
+    }
+  }
+}
+
+function deferred<T>(): {
+  readonly promise: Promise<T>
+  readonly resolve: (value?: T) => void
+} {
+  let resolve!: (value?: T) => void
+  const promise = new Promise<T>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
+}

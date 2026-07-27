@@ -34,7 +34,7 @@ export type ProductThreadProfile = {
 }
 
 export type ProductTurnInput = Omit<StartProductTurnInput, 'threadId'> & {
-  readonly profile: ProductThreadProfile
+  readonly profile?: ProductThreadProfile
 }
 
 export type ProductOperationLease = {
@@ -503,9 +503,9 @@ export class CodexChatService {
 
   private async ensureProductThread(
     runtime: CodexWorkspaceRuntime,
-    profile: ProductThreadProfile,
+    profile?: ProductThreadProfile,
   ): Promise<string> {
-    const profileKey = productThreadProfileKey(profile)
+    const profileKey = profile ? productThreadProfileKey(profile) : 'project'
     if (this.currentThreadId && this.currentThreadProfile === profileKey) {
       return this.currentThreadId
     }
@@ -516,10 +516,12 @@ export class CodexChatService {
     }
     let thread
     try {
-      thread = await runtime.startThread({
-        workspace: profile.workspace,
-        mcp: profile.mcp,
-      })
+      thread = profile
+        ? await runtime.startThread({
+            workspace: profile.workspace,
+            mcp: profile.mcp,
+          })
+        : await runtime.startThread()
     } catch (error) {
       await this.handleUnknownOutcome(error)
       throw error

@@ -90,6 +90,8 @@ export async function startProductDevelopment(options: {
     AY_PLE_PACKAGE_ROOT: repositoryRoot,
     AY_PLE_APP_DATA_ROOT: appDataRoot,
     AY_PLE_WORKSPACE_ROOT: workspaceRoot,
+    AY_PLE_WORKSPACE_SELECTION:
+      options.workspaceRoot === undefined ? 'registry' : 'explicit',
   }
   const { result } = concurrently(
     [

@@ -1629,3 +1629,21 @@
     animation-iteration-count: 1 !important;
   }
 }
+.prepared-product-shell {
+  min-height: 100vh;
+}
+
+.prepared-chat-main {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(760px, 1080px);
+  justify-content: center;
+  padding: 28px;
+}
+
+.prepared-chat-main > .chat-dock {
+  min-height: calc(100vh - 128px);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  overflow: hidden;
+}
