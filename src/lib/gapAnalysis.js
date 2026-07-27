@@ -79,6 +79,9 @@ export function buildJobDisplay({ job, checks, overallMatch }, spec) {
       label: CATEGORY_LABELS[category],
       ok: checks[category],
       detail: describeRequirement(category, job, spec),
+      // 참고링크(#25)가 어학 시험 종류별로 다른 링크를 골라야 해서 원본 요구값을 함께 실어 보낸다 —
+      // detail은 표시용 한글 문장이라 이걸 재파싱해서 시험명을 뽑는 방식은 채택하지 않았다.
+      requirementValue: category === 'foreignLanguage' ? job.foreign_lang_test : undefined,
     })),
   }
 }

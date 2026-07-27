@@ -4,8 +4,10 @@ import { evaluateBookmarks, removeBookmark } from '../api/bookmarks'
 import { useAuth } from '../context/AuthContext'
 import { apiSpecFromForm, useAppState } from '../context/AppStateContext'
 import { buildJobDisplay } from '../lib/gapAnalysis'
+import { collectJobReferenceLinks } from '../constants/referenceLinks'
 import JobCard from '../components/result/JobCard'
 import JobDetailModal from '../components/result/JobDetailModal'
+import ReferenceLinksModal from '../components/result/ReferenceLinksModal'
 import EmptyState from '../components/result/EmptyState'
 
 // 북마크한 공고는 "북마크했을 때의 스펙"이 아니라 Context에 지금 저장된 최신 스펙 기준으로 매번 재평가한다.
@@ -19,6 +21,7 @@ function BookmarksPage() {
   const [jobList, setJobList] = useState([])
   const [status, setStatus] = useState('loading')
   const [selectedJobId, setSelectedJobId] = useState(null)
+  const [referenceLinksJobId, setReferenceLinksJobId] = useState(null)
 
   useEffect(() => {
     if (!user) return
@@ -79,13 +82,24 @@ function BookmarksPage() {
 
       {status === 'done' &&
         displayJobs.map((job) => (
-          <JobCard
-            key={job.job_id}
-            job={job}
-            onClick={() => setSelectedJobId(job.job_id)}
-            bookmarked
-            onToggleBookmark={() => handleRemove(job.job_id)}
-          />
+          <div className="bookmark-job-row" key={job.job_id}>
+            <JobCard
+              job={job}
+              onClick={() => setSelectedJobId(job.job_id)}
+              bookmarked
+              onToggleBookmark={() => handleRemove(job.job_id)}
+            />
+            {collectJobReferenceLinks(job.checklist).length > 0 && (
+              <button
+                type="button"
+                className="reflinks-btn-large"
+                onClick={() => setReferenceLinksJobId(job.job_id)}
+              >
+                <span>🔗</span>
+                필요 사이트
+              </button>
+            )}
+          </div>
         ))}
 
       {selectedJobId && (
@@ -97,6 +111,13 @@ function BookmarksPage() {
             handleRemove(selectedJobId)
             setSelectedJobId(null)
           }}
+        />
+      )}
+
+      {referenceLinksJobId && (
+        <ReferenceLinksModal
+          job={displayJobs.find((job) => job.job_id === referenceLinksJobId)}
+          onClose={() => setReferenceLinksJobId(null)}
         />
       )}
     </div>
