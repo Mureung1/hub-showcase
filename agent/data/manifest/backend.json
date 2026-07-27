@@ -857,6 +857,32 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_autoever_be_smarttag",
+      "url": "https://career.hyundai-autoever.com/ko/o/221287",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "현대오토에버",
+      "company_id": "co_autoever",
+      "cluster_id": "si_enterprise",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[SDx] Service Engineer - 스마트팩토리 시스템(스마트태그) 개발 및 운영",
+      "job_role_raw": "직군: Service Engineer / 본문: 응용프로그램 개발(Java Spring) 경험, RDBMS(Tibero/MySQL/Maria/Postgre SQL 중 2개 이상) 경험",
+      "entry_label_raw": "경력 5년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "note": "직군 필드가 직무를 가리키지 않아 지표 명세 2.8의 세 번째 입력으로 판정했다"
     }
   ],
   "unreachable": [
@@ -987,6 +1013,14 @@
     {
       "source": "nice.career.greetinghr.com",
       "reason": "검색에 색인된 공고 식별자가 404를 반환한다"
+    },
+    {
+      "source": "career.hyundai-autoever.com/ko/o/214818",
+      "reason": "OT 설비와 PLC 통신이 주 업무다"
+    },
+    {
+      "source": "gsitm.career.greetinghr.com 공고 본문",
+      "reason": "제목과 직군만 있고 업무 내용 본문이 없어 요구 표현을 추출할 수 없다"
     }
   ],
   "access_notes": [
