@@ -61,6 +61,18 @@ test('decodes exact command-specific results and rejects extra wire fields', () 
       threadId: 'native-thread',
     },
   )
+  assert.deepEqual(
+    decodeBridgeOutputFrame(
+      Buffer.from(
+        '{"type":"result","bridgeRequestId":"mcp","command":"wait_for_mcp_server_ready"}\n',
+      ),
+    ),
+    {
+      type: 'result',
+      bridgeRequestId: 'mcp',
+      command: 'wait_for_mcp_server_ready',
+    },
+  )
 
   assert.throws(
     () =>

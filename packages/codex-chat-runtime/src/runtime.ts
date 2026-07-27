@@ -32,6 +32,7 @@ import type {
   AnswerUserInput,
   CancelUserInput,
   CodexChildEnvironment,
+  CodexMcpReadinessPort,
   CodexModelCatalog,
   CodexProductTurn,
   CodexWorkspaceRuntime,
@@ -47,6 +48,9 @@ import {
   RUNTIME_CLOSED_MESSAGE,
   RUNTIME_CLOSE_TIMEOUT_MESSAGE,
   RUNTIME_LOST_MESSAGE,
+  MCP_SERVER_NOT_READY_MESSAGE,
+  MCP_SERVER_TOOLS_MISMATCH_MESSAGE,
+  RUNTIME_OPERATION_ABORTED_MESSAGE,
   RUNTIME_RESPONSE_TIMEOUT_MESSAGE,
   RUNTIME_START_FAILED_MESSAGE,
   RUNTIME_START_TIMEOUT_MESSAGE,
@@ -73,6 +77,7 @@ type RuntimeState = 'starting' | 'ready' | 'closing' | 'closed' | 'failed'
 type CommandName =
   | 'read_account'
   | 'read_model_catalog'
+  | 'wait_for_mcp_server_ready'
   | 'start_thread'
   | 'start_turn'
   | 'start_product_turn'
@@ -110,6 +115,8 @@ const BRIDGE_OPERATION_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   interaction_not_pending: 'The user-input interaction is not pending.',
   invalid_user_input_answer: 'The user-input answer is invalid.',
   live_thread_limit: 'The bridge live-thread limit was reached.',
+  mcp_server_not_ready: MCP_SERVER_NOT_READY_MESSAGE,
+  mcp_server_tools_mismatch: MCP_SERVER_TOOLS_MISMATCH_MESSAGE,
   operation_limit: 'The bridge pending-operation limit was reached.',
   sdk_request_failed: 'Codex rejected the requested operation.',
   unknown_thread: 'The native thread is not live in this bridge.',
@@ -563,6 +570,31 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
         return frame.catalog
       },
     )
+  }
+
+  waitForMcpServerReady(
+    input: Parameters<CodexMcpReadinessPort['waitForMcpServerReady']>[0],
+  ): Promise<void> {
+    requireMcpReadinessInput(input)
+    if (input.signal.aborted) {
+      return Promise.reject(runtimeOperationAbortedError())
+    }
+    const operation = this.sendOperation(
+      'wait_for_mcp_server_ready',
+      false,
+      (bridgeRequestId) => ({
+        bridgeRequestId,
+        command: 'wait_for_mcp_server_ready',
+        serverName: input.serverName,
+        expectedTools: [...input.expectedTools],
+      }),
+      (frame) => {
+        if (frame.command !== 'wait_for_mcp_server_ready') {
+          throw new BridgeProtocolError('mismatch')
+        }
+      },
+    )
+    return abortableRuntimeOperation(operation, input.signal)
   }
 
   readEffectiveConfig(input: {
@@ -1852,6 +1884,57 @@ function workspaceRootMismatchError(): CodexChatRuntimeError {
   return new CodexChatRuntimeError({
     code: 'workspace_mismatch',
     displayMessage: WORKSPACE_ROOT_MISMATCH_MESSAGE,
+    unknownOutcome: false,
+  })
+}
+
+function requireMcpReadinessInput(
+  input: Parameters<CodexMcpReadinessPort['waitForMcpServerReady']>[0],
+): void {
+  requireExactInputKeys(
+    input,
+    ['expectedTools', 'serverName', 'signal'],
+    'MCP readiness input',
+  )
+  requireBoundedString(input.serverName, 'MCP server name', 256)
+  if (
+    !Array.isArray(input.expectedTools) ||
+    input.expectedTools.length === 0 ||
+    input.expectedTools.length > 128
+  ) {
+    throw new TypeError('MCP expected tool roster is invalid')
+  }
+  for (const tool of input.expectedTools) {
+    requireBoundedString(tool, 'MCP tool name', 256)
+  }
+  if (new Set(input.expectedTools).size !== input.expectedTools.length) {
+    throw new TypeError('MCP expected tool roster is invalid')
+  }
+  requireAbortSignal(input.signal)
+}
+
+async function abortableRuntimeOperation<T>(
+  operation: Promise<T>,
+  signal: AbortSignal,
+): Promise<T> {
+  let rejectAbort!: (error: CodexChatRuntimeError) => void
+  const aborted = new Promise<never>((_resolve, reject) => {
+    rejectAbort = reject
+  })
+  const onAbort = () => rejectAbort(runtimeOperationAbortedError())
+  signal.addEventListener('abort', onAbort, { once: true })
+  if (signal.aborted) onAbort()
+  try {
+    return await Promise.race([operation, aborted])
+  } finally {
+    signal.removeEventListener('abort', onAbort)
+  }
+}
+
+function runtimeOperationAbortedError(): CodexChatRuntimeError {
+  return new CodexChatRuntimeError({
+    code: 'runtime_operation_aborted',
+    displayMessage: RUNTIME_OPERATION_ABORTED_MESSAGE,
     unknownOutcome: false,
   })
 }

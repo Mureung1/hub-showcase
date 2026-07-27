@@ -254,6 +254,101 @@ test('deterministic native-context calls reject a closed runtime before consumin
   assert.equal(scriptConsumed, false)
 })
 
+test('deterministic MCP readiness requires one ready server with the exact tool roster', async () => {
+  const runtime = new DeterministicCodexChatRuntime({
+    mcpServerStatuses: [
+      [
+        {
+          state: 'ready',
+          serverName: 'ay_ple_interaction',
+          tools: ['propose_state_patch'],
+        },
+      ],
+      [],
+      [
+        {
+          state: 'starting',
+          serverName: 'ay_ple_interaction',
+          tools: [],
+        },
+      ],
+      [
+        {
+          state: 'failed',
+          serverName: 'ay_ple_interaction',
+          tools: [],
+        },
+      ],
+      [
+        {
+          state: 'ready',
+          serverName: 'ay_ple_interaction',
+          tools: ['propose_state_patch', 'unexpected_tool'],
+        },
+      ],
+    ],
+  })
+  const input = {
+    serverName: 'ay_ple_interaction',
+    expectedTools: ['propose_state_patch'],
+    signal: new AbortController().signal,
+  } as const
+
+  await runtime.waitForMcpServerReady(input)
+  for (const code of [
+    'mcp_server_not_ready',
+    'mcp_server_not_ready',
+    'mcp_server_not_ready',
+    'mcp_server_tools_mismatch',
+  ]) {
+    await assert.rejects(
+      () => runtime.waitForMcpServerReady(input),
+      (error: unknown) => {
+        assert.ok(error instanceof CodexChatRuntimeError)
+        assert.equal(error.code, code)
+        assert.equal(error.unknownOutcome, false)
+        return true
+      },
+    )
+  }
+})
+
+test('deterministic MCP readiness aborts without consuming the next status snapshot', async () => {
+  const runtime = new DeterministicCodexChatRuntime({
+    mcpServerStatuses: [
+      [
+        {
+          state: 'ready',
+          serverName: 'ay_ple_interaction',
+          tools: ['propose_state_patch'],
+        },
+      ],
+    ],
+  })
+  const aborted = new AbortController()
+  aborted.abort()
+
+  await assert.rejects(
+    () =>
+      runtime.waitForMcpServerReady({
+        serverName: 'ay_ple_interaction',
+        expectedTools: ['propose_state_patch'],
+        signal: aborted.signal,
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof CodexChatRuntimeError)
+      assert.equal(error.code, 'runtime_operation_aborted')
+      assert.equal(error.unknownOutcome, false)
+      return true
+    },
+  )
+  await runtime.waitForMcpServerReady({
+    serverName: 'ay_ple_interaction',
+    expectedTools: ['propose_state_patch'],
+    signal: new AbortController().signal,
+  })
+})
+
 test('deterministic runtime preserves native turn identity and event FIFO', async () => {
   const events = [
     {

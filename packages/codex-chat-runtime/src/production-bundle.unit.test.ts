@@ -315,14 +315,14 @@ test('rejects exact source, runtime, and ordered patch provenance drift', async 
       expected: /patch order drift/,
     },
     {
-      name: 'obsolete extra eighth patch',
+      name: 'obsolete extra ninth patch',
       mutate: (manifest) => {
         const source = manifest.source as JsonObject
         source.patches = [
           ...(source.patches as JsonObject[]),
           {
-            id: ['0008', 'standalone-skill-extra-roots'].join('-'),
-            order: 8,
+            id: ['0009', 'standalone-skill-extra-roots'].join('-'),
+            order: 9,
           },
         ]
       },

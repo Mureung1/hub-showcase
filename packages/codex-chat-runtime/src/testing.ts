@@ -15,6 +15,7 @@ import type {
   AnswerUserInput,
   CancelUserInput,
   CodexModelCatalog,
+  CodexMcpReadinessPort,
   CodexProductTurn,
   CodexWorkspaceRuntime,
   StartThreadInput,
@@ -27,6 +28,9 @@ import type {
 import {
   CodexChatRuntimeError,
   INTERACTION_NOT_PENDING_MESSAGE,
+  MCP_SERVER_NOT_READY_MESSAGE,
+  MCP_SERVER_TOOLS_MISMATCH_MESSAGE,
+  RUNTIME_OPERATION_ABORTED_MESSAGE,
 } from './errors.js'
 
 export {
@@ -46,6 +50,13 @@ export type DeterministicCodexChatRuntimeCall =
   | { readonly operation: 'readModelCatalog' }
   | { readonly operation: 'readEffectiveConfig' }
   | { readonly operation: 'listEffectiveSkills' }
+  | {
+      readonly operation: 'waitForMcpServerReady'
+      readonly input: Omit<
+        Parameters<CodexMcpReadinessPort['waitForMcpServerReady']>[0],
+        'signal'
+      >
+    }
   | { readonly operation: 'startThread'; readonly input?: StartThreadInput }
   | {
       readonly operation: 'startTurn'
@@ -101,12 +112,21 @@ export type DeterministicCodexChatRuntimeOptions = {
   readonly effectiveSkills?: readonly DeterministicValue<
     readonly CodexEffectiveSkill[]
   >[]
+  readonly mcpServerStatuses?: readonly DeterministicValue<
+    readonly DeterministicCodexMcpServerStatus[]
+  >[]
   readonly threadIds?: readonly CodexThreadId[]
   readonly productTurns?: readonly DeterministicCodexProductTurn[]
   readonly turns?: readonly DeterministicCodexChatTurn[]
 }
 
 type DeterministicValue<T> = T | PromiseLike<T>
+
+export type DeterministicCodexMcpServerStatus = {
+  readonly state: 'starting' | 'ready' | 'failed'
+  readonly serverName: string
+  readonly tools: readonly string[]
+}
 
 export type DeterministicCodexProductRuntimeCall =
   DeterministicCodexChatRuntimeCall
@@ -137,6 +157,9 @@ export class DeterministicCodexChatRuntime implements CodexWorkspaceRuntime {
   private readonly effectiveSkills: DeterministicValue<
     readonly CodexEffectiveSkill[]
   >[]
+  private readonly mcpServerStatuses: DeterministicValue<
+    readonly DeterministicCodexMcpServerStatus[]
+  >[]
   private readonly threadIds: CodexThreadId[]
   private readonly productTurns: DeterministicCodexProductTurn[]
   private readonly turns: DeterministicCodexChatTurn[]
@@ -156,6 +179,7 @@ export class DeterministicCodexChatRuntime implements CodexWorkspaceRuntime {
     this.modelCatalogs = [...structuredClone(options.modelCatalogs ?? [])]
     this.effectiveConfigs = [...(options.effectiveConfigs ?? [])]
     this.effectiveSkills = [...(options.effectiveSkills ?? [])]
+    this.mcpServerStatuses = [...(options.mcpServerStatuses ?? [])]
     this.threadIds = [...(options.threadIds ?? [])]
     this.productTurns = (options.productTurns ?? []).map((turn) => ({
       input: cloneProductTurnInput(turn.input),
@@ -213,6 +237,38 @@ export class DeterministicCodexChatRuntime implements CodexWorkspaceRuntime {
       'effective Skill list',
       input.signal,
     )
+  }
+
+  async waitForMcpServerReady(
+    input: Parameters<CodexMcpReadinessPort['waitForMcpServerReady']>[0],
+  ): Promise<void> {
+    this.callLog.push({
+      operation: 'waitForMcpServerReady',
+      input: {
+        serverName: input.serverName,
+        expectedTools: [...input.expectedTools],
+      },
+    })
+    this.requireOpen()
+    requireMcpReadinessInput(input)
+    if (input.signal.aborted) throw runtimeOperationAbortedError()
+    const scripted = this.mcpServerStatuses.shift()
+    if (scripted === undefined) {
+      throw new Error('No deterministic MCP server status snapshot remains')
+    }
+    const statuses = await abortableDeterministicValue(
+      scripted,
+      input.signal,
+    )
+    const matches = statuses.filter(
+      ({ serverName }) => serverName === input.serverName,
+    )
+    if (matches.length !== 1 || matches[0]?.state !== 'ready') {
+      throw mcpServerNotReadyError()
+    }
+    if (!sameStringRoster(matches[0].tools, input.expectedTools)) {
+      throw mcpServerToolsMismatchError()
+    }
   }
 
   async startThread(input?: StartThreadInput): Promise<CodexChatThread> {
@@ -615,6 +671,79 @@ function nativeContextAbortedError(): CodexChatRuntimeError {
   return new CodexChatRuntimeError({
     code: 'native_context_aborted',
     displayMessage: 'The Codex native context query was cancelled.',
+    unknownOutcome: false,
+  })
+}
+
+function requireMcpReadinessInput(
+  input: Parameters<CodexMcpReadinessPort['waitForMcpServerReady']>[0],
+): void {
+  if (
+    typeof input.serverName !== 'string' ||
+    input.serverName.length === 0 ||
+    input.serverName.length > 256 ||
+    !Array.isArray(input.expectedTools) ||
+    input.expectedTools.length === 0 ||
+    input.expectedTools.length > 128 ||
+    input.expectedTools.some(
+      (tool) => typeof tool !== 'string' || tool.length === 0 || tool.length > 256,
+    ) ||
+    new Set(input.expectedTools).size !== input.expectedTools.length
+  ) {
+    throw new TypeError('MCP readiness input is invalid')
+  }
+}
+
+async function abortableDeterministicValue<T>(
+  value: DeterministicValue<T>,
+  signal: AbortSignal,
+): Promise<T> {
+  let rejectAbort!: (error: CodexChatRuntimeError) => void
+  const aborted = new Promise<never>((_resolve, reject) => {
+    rejectAbort = reject
+  })
+  const onAbort = () => rejectAbort(runtimeOperationAbortedError())
+  signal.addEventListener('abort', onAbort, { once: true })
+  if (signal.aborted) onAbort()
+  try {
+    return await Promise.race([Promise.resolve(value), aborted])
+  } finally {
+    signal.removeEventListener('abort', onAbort)
+  }
+}
+
+function sameStringRoster(
+  actual: readonly string[],
+  expected: readonly string[],
+): boolean {
+  const sortedActual = [...actual].sort()
+  const sortedExpected = [...expected].sort()
+  return (
+    sortedActual.length === sortedExpected.length &&
+    sortedActual.every((value, index) => value === sortedExpected[index])
+  )
+}
+
+function mcpServerNotReadyError(): CodexChatRuntimeError {
+  return new CodexChatRuntimeError({
+    code: 'mcp_server_not_ready',
+    displayMessage: MCP_SERVER_NOT_READY_MESSAGE,
+    unknownOutcome: false,
+  })
+}
+
+function mcpServerToolsMismatchError(): CodexChatRuntimeError {
+  return new CodexChatRuntimeError({
+    code: 'mcp_server_tools_mismatch',
+    displayMessage: MCP_SERVER_TOOLS_MISMATCH_MESSAGE,
+    unknownOutcome: false,
+  })
+}
+
+function runtimeOperationAbortedError(): CodexChatRuntimeError {
+  return new CodexChatRuntimeError({
+    code: 'runtime_operation_aborted',
+    displayMessage: RUNTIME_OPERATION_ABORTED_MESSAGE,
     unknownOutcome: false,
   })
 }

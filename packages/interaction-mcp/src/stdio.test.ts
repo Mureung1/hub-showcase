@@ -67,6 +67,20 @@ test('built STDIO Adapter handshakes before initialize and maps one held POST to
 
     client.send({
       jsonrpc: '2.0',
+      id: 22,
+      method: 'tools/list',
+      params: { _meta: { progressToken: 0 }, cursor: null },
+    })
+    const nativeListed = await client.read()
+    assert.deepEqual(
+      (nativeListed.result as { tools: { name: string }[] }).tools.map(
+        (tool) => tool.name,
+      ),
+      ['propose_state_patch'],
+    )
+
+    client.send({
+      jsonrpc: '2.0',
       id: 3,
       method: 'tools/call',
       params: { name: 'propose_state_patch', arguments: validRequest },

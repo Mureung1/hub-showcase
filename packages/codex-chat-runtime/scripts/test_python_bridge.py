@@ -341,6 +341,14 @@ class ProtocolUnitTests(unittest.TestCase):
         )
         self.assertEqual(catalog.command, "read_model_catalog")
 
+        readiness = decode_command_line(
+            b'{"bridgeRequestId":"mcp","command":"wait_for_mcp_server_ready",'
+            b'"serverName":"ay_ple_interaction",'
+            b'"expectedTools":["propose_state_patch"]}\n'
+        )
+        self.assertEqual(readiness.server_name, "ay_ple_interaction")
+        self.assertEqual(readiness.expected_tools, ("propose_state_patch",))
+
         answer = decode_command_line(
             b'{"bridgeRequestId":"answer","command":"answer_user_input",'
             b'"interactionId":"interaction-1","answers":{"decision":["Accept"]}}\n'
@@ -360,6 +368,18 @@ class ProtocolUnitTests(unittest.TestCase):
             },
             {**text_only, "permissionProfile": "danger_full_access"},
             {**configured, "serviceTier": "priority"},
+            {
+                "bridgeRequestId": "mcp",
+                "command": "wait_for_mcp_server_ready",
+                "serverName": "ay_ple_interaction",
+                "expectedTools": [],
+            },
+            {
+                "bridgeRequestId": "mcp",
+                "command": "wait_for_mcp_server_ready",
+                "serverName": "ay_ple_interaction",
+                "expectedTools": ["same", "same"],
+            },
             {
                 **product,
                 "planModel": "legacy-model",

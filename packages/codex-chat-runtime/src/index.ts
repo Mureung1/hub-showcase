@@ -41,6 +41,7 @@ export type {
   CodexModelCatalog,
   CodexModelCatalogEntry,
   CodexModelCatalogRuntime,
+  CodexMcpReadinessPort,
   CodexModelReasoningEffort,
   CodexProductTurnSettings,
   CodexProductSkillInput,

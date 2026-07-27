@@ -1,0 +1,113 @@
+diff --git a/sdk/python/src/openai_codex/api.py b/sdk/python/src/openai_codex/api.py
+index 94b1eeb..ac1214a 100644
+--- a/sdk/python/src/openai_codex/api.py
++++ b/sdk/python/src/openai_codex/api.py
+@@ -45,6 +45,9 @@ from .generated.v2_all import (
+     GetAccountParams,
+     GetAccountResponse,
+     LoginAccountParams,
++    ListMcpServerStatusParams,
++    ListMcpServerStatusResponse,
++    McpServerStatusDetail,
+     ModelListResponse,
+     Personality,
+     ReasoningEffort,
+@@ -285,6 +288,18 @@ class Codex:
+         """List available models reported by Codex."""
+         return self._client.model_list(include_hidden=include_hidden)
+ 
++    def mcp_server_statuses(self, thread_id: str) -> ListMcpServerStatusResponse:
++        """List MCP server and tool inventory for one live thread."""
++        params = ListMcpServerStatusParams(
++            detail=McpServerStatusDetail.tools_and_auth_only,
++            thread_id=thread_id,
++        )
++        return self._client.request(
++            "mcpServerStatus/list",
++            params.model_dump(by_alias=True, exclude_none=True, mode="json"),
++            response_model=ListMcpServerStatusResponse,
++        )
++
+ 
+ class AsyncCodex:
+     """Async mirror of :class:`Codex`.
+@@ -533,6 +548,22 @@ class AsyncCodex:
+         await self._ensure_initialized()
+         return await self._client.model_list(include_hidden=include_hidden)
+ 
++    async def mcp_server_statuses(
++        self,
++        thread_id: str,
++    ) -> ListMcpServerStatusResponse:
++        """List MCP server and tool inventory for one live thread."""
++        await self._ensure_initialized()
++        params = ListMcpServerStatusParams(
++            detail=McpServerStatusDetail.tools_and_auth_only,
++            thread_id=thread_id,
++        )
++        return await self._client.request(
++            "mcpServerStatus/list",
++            params.model_dump(by_alias=True, exclude_none=True, mode="json"),
++            response_model=ListMcpServerStatusResponse,
++        )
++
+ 
+ @dataclass(slots=True)
+ class Thread:
+diff --git a/sdk/python/tests/test_public_api_runtime_behavior.py b/sdk/python/tests/test_public_api_runtime_behavior.py
+index d798844..e909b20 100644
+--- a/sdk/python/tests/test_public_api_runtime_behavior.py
++++ b/sdk/python/tests/test_public_api_runtime_behavior.py
+@@ -13,7 +13,10 @@ from openai_codex.api import (
+     Codex,
+     Sandbox,
+ )
+-from openai_codex.generated.v2_all import TurnStartParams
++from openai_codex.generated.v2_all import (
++    ListMcpServerStatusResponse,
++    TurnStartParams,
++)
+ from openai_codex.models import InitializeResponse
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+@@ -156,6 +159,40 @@ def test_thread_start_preserves_native_effective_model_settings() -> None:
+     asyncio.run(scenario())
+ 
+ 
++def test_async_codex_mcp_server_statuses_uses_thread_project_context() -> None:
++    async def scenario() -> None:
++        codex = AsyncCodex()
++        requests: list[tuple[str, object, object]] = []
++
++        async def fake_ensure_initialized() -> None:
++            return None
++
++        async def fake_request(
++            method: str,
++            params: object,
++            *,
++            response_model: object,
++        ) -> ListMcpServerStatusResponse:
++            requests.append((method, params, response_model))
++            return ListMcpServerStatusResponse(data=[])
++
++        codex._ensure_initialized = fake_ensure_initialized  # type: ignore[method-assign]
++        codex._client.request = fake_request  # type: ignore[method-assign]
++
++        response = await codex.mcp_server_statuses("thread-1")
++
++        assert response.data == []
++        assert requests == [
++            (
++                "mcpServerStatus/list",
++                {"detail": "toolsAndAuthOnly", "threadId": "thread-1"},
++                ListMcpServerStatusResponse,
++            )
++        ]
++
++    asyncio.run(scenario())
++
++
+ def _approval_mode_turn_params(approval_mode: ApprovalMode) -> TurnStartParams:
+     """Build real generated turn params from one public approval mode."""
+     approval_policy, approvals_reviewer = public_api_module._approval_mode_settings(approval_mode)

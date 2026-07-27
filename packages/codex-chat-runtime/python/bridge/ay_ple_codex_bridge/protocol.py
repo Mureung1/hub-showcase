@@ -39,6 +39,14 @@ class ReadModelCatalogCommand:
 
 
 @dataclass(frozen=True, slots=True)
+class WaitForMcpServerReadyCommand:
+    bridge_request_id: str
+    server_name: str
+    expected_tools: tuple[str, ...]
+    command: Literal["wait_for_mcp_server_ready"] = "wait_for_mcp_server_ready"
+
+
+@dataclass(frozen=True, slots=True)
 class PrivateMcpServer:
     url: str
     token: str = field(repr=False)
@@ -113,6 +121,7 @@ class CloseCommand:
 BridgeCommand: TypeAlias = (
     ReadAccountCommand
     | ReadModelCatalogCommand
+    | WaitForMcpServerReadyCommand
     | StartThreadCommand
     | StartTurnCommand
     | StartProductTurnCommand
@@ -225,6 +234,15 @@ def _require_answers(value: object) -> dict[str, tuple[str, ...]]:
     return answers
 
 
+def _require_tool_roster(value: object) -> tuple[str, ...]:
+    if not isinstance(value, list) or not value or len(value) > 128:
+        raise ProtocolViolation("invalid_command")
+    tools = tuple(_require_bounded_string(tool, max_bytes=256) for tool in value)
+    if len(set(tools)) != len(tools):
+        raise ProtocolViolation("invalid_command")
+    return tools
+
+
 def _require_absolute_path(value: object) -> str:
     path = _require_bounded_string(value, max_bytes=16 * 1024)
     if not os.path.isabs(path):
@@ -286,6 +304,21 @@ def decode_command_line(line: bytes) -> BridgeCommand:
     if command == "read_model_catalog":
         _require_exact_fields(value, {"bridgeRequestId", "command"})
         return ReadModelCatalogCommand(request_id)
+    if command == "wait_for_mcp_server_ready":
+        _require_exact_fields(
+            value,
+            {
+                "bridgeRequestId",
+                "command",
+                "serverName",
+                "expectedTools",
+            },
+        )
+        return WaitForMcpServerReadyCommand(
+            request_id,
+            _require_bounded_string(value.get("serverName"), max_bytes=256),
+            _require_tool_roster(value.get("expectedTools")),
+        )
     if command == "start_thread":
         legacy_fields = {"bridgeRequestId", "command"}
         isolated_fields = legacy_fields | {"workspace", "mcp"}

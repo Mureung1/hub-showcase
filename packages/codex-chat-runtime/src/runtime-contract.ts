@@ -92,7 +92,16 @@ export interface CodexModelCatalogRuntime {
   readModelCatalog(): Promise<CodexModelCatalog>
 }
 
+export interface CodexMcpReadinessPort {
+  waitForMcpServerReady(input: {
+    readonly serverName: string
+    readonly expectedTools: readonly string[]
+    readonly signal: AbortSignal
+  }): Promise<void>
+}
+
 export interface CodexWorkspaceRuntime
   extends CodexProductCapableRuntime,
     CodexModelCatalogRuntime,
+    CodexMcpReadinessPort,
     CodexNativeContextPort {}

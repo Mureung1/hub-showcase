@@ -160,6 +160,14 @@ BEHAVIORAL_PATCHES = (
             "sdk/python/tests/test_public_api_runtime_behavior.py",
         ),
     ),
+    (
+        "0008-thread-mcp-status",
+        PATCH_ROOT / "0008-thread-mcp-status.patch",
+        (
+            "sdk/python/src/openai_codex/api.py",
+            "sdk/python/tests/test_public_api_runtime_behavior.py",
+        ),
+    ),
 )
 _stable_python: str | None = None
 

@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import {
+  execFile,
   spawn,
   type ChildProcessWithoutNullStreams,
 } from 'node:child_process'
+import { createServer } from 'node:http'
 import {
   mkdir,
   mkdtemp,
@@ -12,9 +14,10 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join, relative, resolve } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
 
 import {
   controlledPythonEnvironment,
@@ -36,6 +39,7 @@ import {
 } from './runtime-test-support.js'
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const execFileAsync = promisify(execFile)
 const LOCAL_PROVIDER = join(
   PACKAGE_ROOT,
   'scripts',
@@ -151,6 +155,171 @@ test('runs the production bridge against exact Codex and the official local prov
   } finally {
     await runtime?.runtime.close().catch(() => undefined)
     await provider?.close().catch(() => undefined)
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('discovers the built Interaction Adapter from a tracked trusted Git project', async () => {
+  const bundle = await verifyProductionBundle(ARTIFACT_ROOT)
+  const artifactRoot = join(PACKAGE_ROOT, '.artifacts')
+  await mkdir(artifactRoot, { recursive: true })
+  const root = await mkdtemp(join(artifactRoot, 'project-mcp-readiness-'))
+  const brokerRequests: unknown[] = []
+  const broker = createServer((request, response) => {
+    let body = ''
+    request.setEncoding('utf8')
+    request.on('data', (chunk: string) => {
+      body += chunk
+    })
+    request.on('end', () => {
+      brokerRequests.push({
+        authorization: request.headers.authorization,
+        body: JSON.parse(body),
+        runtimeBinding: request.headers['x-ay-ple-runtime-binding'],
+      })
+      response.writeHead(200, { 'content-type': 'application/json' })
+      response.end(
+        JSON.stringify({
+          protocolVersion: 1,
+          kind: 'handshake_accepted',
+        }),
+      )
+    })
+  })
+  let provider: LocalProvider | undefined
+  let runtime: SpawnedCodexChatRuntime | undefined
+  try {
+    await new Promise<void>((resolveListen, rejectListen) => {
+      broker.once('error', rejectListen)
+      broker.listen(0, '127.0.0.1', () => {
+        broker.off('error', rejectListen)
+        resolveListen()
+      })
+    })
+    const address = broker.address()
+    if (typeof address !== 'object' || address === null) {
+      throw new Error('Interaction Broker did not bind a TCP address')
+    }
+
+    const workspace = join(root, 'semester-workspace')
+    await mkdir(join(workspace, '.codex'), { recursive: true })
+    await initializeGitRootForTest(workspace)
+    const adapter = resolve(PACKAGE_ROOT, '..', 'interaction-mcp', 'dist', 'stdio.js')
+    const adapterCommand = relative(workspace, adapter)
+    assert.equal(adapterCommand.startsWith('/'), false)
+    const declaration = [
+      '[mcp_servers.ay_ple_interaction]',
+      `command = ${JSON.stringify(adapterCommand)}`,
+      'env_vars = [',
+      '  "AY_PLE_INTERACTION_BROKER_URL",',
+      '  "AY_PLE_INTERACTION_BROKER_TOKEN",',
+      '  "AY_PLE_INTERACTION_RUNTIME_BINDING",',
+      ']',
+      'enabled_tools = ["propose_state_patch"]',
+      'required = true',
+      '',
+    ].join('\n')
+    await writeFile(
+      join(workspace, '.codex', 'config.toml'),
+      declaration,
+      'utf8',
+    )
+    await execFileAsync('/usr/bin/git', [
+      '-C',
+      workspace,
+      'add',
+      '--',
+      '.codex/config.toml',
+    ])
+    assert.equal(
+      (
+        await execFileAsync('/usr/bin/git', [
+          '-C',
+          workspace,
+          'ls-files',
+          '--error-unmatch',
+          '--',
+          '.codex/config.toml',
+        ])
+      ).stdout.trim(),
+      '.codex/config.toml',
+    )
+
+    const environment = await createEnvironmentRoots(root)
+    provider = await startLocalProvider(bundle, root)
+    await writeLocalProviderConfig(environment.codexHome, provider.url)
+    const canonicalWorkspace = await realpath(workspace)
+    await writeFile(
+      join(environment.codexHome, 'config.toml'),
+      [
+        await readFile(join(environment.codexHome, 'config.toml'), 'utf8'),
+        `[projects.${JSON.stringify(canonicalWorkspace)}]`,
+        'trust_level = "trusted"',
+        '',
+      ].join('\n'),
+      'utf8',
+    )
+
+    const token = 'A'.repeat(43)
+    const runtimeBinding = `runtime_${'1'.repeat(32)}`
+    runtime = await startVerifiedCodexChatRuntime({
+      bundle,
+      workspace: canonicalWorkspace,
+      environment,
+      childEnvironment: {
+        AY_PLE_INTERACTION_BROKER_TOKEN: token,
+        AY_PLE_INTERACTION_BROKER_URL:
+          `http://127.0.0.1:${address.port}/api/_private/interaction-mcp`,
+        AY_PLE_INTERACTION_RUNTIME_BINDING: runtimeBinding,
+      },
+      disableManagedConfigForTest: true,
+      deadlines: {
+        responseMs: 20_000,
+        streamIdleMs: 10_000,
+        streamTotalMs: 30_000,
+        gracefulCloseMs: 2_000,
+        terminateMs: 2_000,
+        postKillMs: 2_000,
+      },
+    })
+    await within(runtime.runtime.startThread())
+    await within(
+      runtime.runtime.waitForMcpServerReady({
+        serverName: 'ay_ple_interaction',
+        expectedTools: ['propose_state_patch'],
+        signal: new AbortController().signal,
+      }),
+    )
+    await assert.rejects(
+      within(
+        runtime.runtime.waitForMcpServerReady({
+          serverName: 'ay_ple_interaction',
+          expectedTools: ['wrong_tool'],
+          signal: new AbortController().signal,
+        }),
+      ),
+      (error: unknown) =>
+        error instanceof Error &&
+        'code' in error &&
+        error.code === 'mcp_server_tools_mismatch',
+    )
+    assert.equal(brokerRequests.length, 3)
+    for (const request of brokerRequests) {
+      assert.deepEqual(request, {
+        authorization: `Bearer ${token}`,
+        body: {
+          protocolVersion: 1,
+          kind: 'handshake',
+          serverName: 'ay_ple_interaction',
+          capabilities: ['propose_state_patch'],
+        },
+        runtimeBinding,
+      })
+    }
+  } finally {
+    await runtime?.runtime.close().catch(() => undefined)
+    await provider?.close().catch(() => undefined)
+    await new Promise<void>((resolveClose) => broker.close(() => resolveClose()))
     await rm(root, { recursive: true, force: true })
   }
 })

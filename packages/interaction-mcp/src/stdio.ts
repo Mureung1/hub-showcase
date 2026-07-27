@@ -449,9 +449,15 @@ function readProtocolVersion(params: unknown): string | undefined {
 function isToolsListParams(params: unknown): boolean {
   return (
     params === undefined ||
+    params === null ||
     (isRecord(params) &&
-      Object.keys(params).every((key) => key === 'cursor') &&
-      (params.cursor === undefined || typeof params.cursor === 'string'))
+      Object.keys(params).every(
+        (key) => key === 'cursor' || key === '_meta',
+      ) &&
+      (params.cursor === undefined ||
+        params.cursor === null ||
+        typeof params.cursor === 'string') &&
+      (params._meta === undefined || isRecord(params._meta)))
   )
 }
 

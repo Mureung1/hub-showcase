@@ -21,6 +21,12 @@ export const BUFFER_OVERFLOW_MESSAGE =
   'The Codex runtime buffer limit was exceeded.'
 export const INTERACTION_NOT_PENDING_MESSAGE =
   'The user-input interaction is not pending.'
+export const MCP_SERVER_NOT_READY_MESSAGE =
+  'The required Codex MCP server is not ready.'
+export const MCP_SERVER_TOOLS_MISMATCH_MESSAGE =
+  'The required Codex MCP server tool roster did not match.'
+export const RUNTIME_OPERATION_ABORTED_MESSAGE =
+  'The Codex runtime operation was aborted.'
 
 export class CodexChatRuntimeError extends Error {
   readonly code: string

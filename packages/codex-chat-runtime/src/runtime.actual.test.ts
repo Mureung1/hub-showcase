@@ -118,6 +118,150 @@ test('streams one nominal native turn to its authoritative terminal', async () =
   }
 })
 
+test('verifies same-generation project MCP inventory without thread overrides', async () => {
+  const harness = await startHarness('mcp-ready')
+  try {
+    await harness.runtime.startThread()
+    await harness.runtime.waitForMcpServerReady({
+      serverName: 'ay_ple_interaction',
+      expectedTools: ['propose_state_patch'],
+      signal: new AbortController().signal,
+    })
+
+    const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
+      messages: readonly {
+        readonly method?: string
+        readonly params?: Record<string, unknown>
+      }[]
+    }
+    const threadStart = journal.messages.find(
+      ({ method }) => method === 'thread/start',
+    )
+    assert.equal(Object.hasOwn(threadStart?.params ?? {}, 'config'), false)
+    assert.equal(Object.hasOwn(threadStart?.params ?? {}, 'mcp'), false)
+    assert.deepEqual(
+      journal.messages.find(
+        ({ method }) => method === 'mcpServerStatus/list',
+      )?.params,
+      {
+        detail: 'toolsAndAuthOnly',
+        threadId: 'thread-1',
+      },
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('fails closed for absent, unready, and wrong project MCP inventory', async (t) => {
+  for (const [label, response, code] of [
+    [
+      'absent server',
+      { result: { data: [], nextCursor: null } },
+      'mcp_server_not_ready',
+    ],
+    [
+      'starting or failed server',
+      {
+        result: {
+          data: [
+            {
+              authStatus: 'unsupported',
+              name: 'ay_ple_interaction',
+              resourceTemplates: [],
+              resources: [],
+              serverInfo: null,
+              tools: {},
+            },
+          ],
+          nextCursor: null,
+        },
+      },
+      'mcp_server_not_ready',
+    ],
+    [
+      'wrong tool roster',
+      {
+        result: {
+          data: [
+            {
+              authStatus: 'unsupported',
+              name: 'ay_ple_interaction',
+              resourceTemplates: [],
+              resources: [],
+              serverInfo: null,
+              tools: {
+                unexpected_tool: {
+                  inputSchema: { type: 'object' },
+                  name: 'unexpected_tool',
+                },
+              },
+            },
+          ],
+          nextCursor: null,
+        },
+      },
+      'mcp_server_tools_mismatch',
+    ],
+  ] as const) {
+    await t.test(label, async () => {
+      const harness = await startHarness(`mcp-${label.replaceAll(' ', '-')}`)
+      try {
+        await harness.runtime.startThread()
+        await writeFile(
+          join(dirname(harness.journalPath), 'injected-response.json'),
+          JSON.stringify({
+            method: 'mcpServerStatus/list',
+            response,
+          }),
+        )
+        await assert.rejects(
+          harness.runtime.waitForMcpServerReady({
+            serverName: 'ay_ple_interaction',
+            expectedTools: ['propose_state_patch'],
+            signal: new AbortController().signal,
+          }),
+          (error: unknown) =>
+            error instanceof CodexChatRuntimeError &&
+            error.code === code &&
+            !error.unknownOutcome,
+        )
+      } finally {
+        await harness.runtime.close()
+      }
+    })
+  }
+})
+
+test('aborts a pending project MCP readiness observation locally', async () => {
+  const harness = await startHarness('mcp-abort')
+  try {
+    await harness.runtime.startThread()
+    await writeFile(
+      join(dirname(harness.journalPath), 'delay-mcp-status-ms'),
+      '100',
+    )
+    const controller = new AbortController()
+    const pending = harness.runtime.waitForMcpServerReady({
+      serverName: 'ay_ple_interaction',
+      expectedTools: ['propose_state_patch'],
+      signal: controller.signal,
+    })
+    await waitForJournalMethod(harness.journalPath, 'mcpServerStatus/list')
+    controller.abort()
+
+    await assert.rejects(
+      pending,
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'runtime_operation_aborted' &&
+        !error.unknownOutcome,
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
 test('projects native account readiness without starting a thread or turn', async () => {
   const harness = await startHarness('account-not-ready')
   try {

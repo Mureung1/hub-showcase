@@ -31,7 +31,7 @@
     "test:bridge": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python -m unittest scripts/test_python_bridge.py",
     "test:bridge-unit": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python -m unittest scripts.test_python_bridge.ProtocolUnitTests",
     "test:exact-sdk": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python scripts/exact_sdk.py test",
-    "test:local-provider": "tsx --test src/local-provider.actual.test.ts",
+    "test:local-provider": "npm run build --workspace=@ay-ple/interaction-mcp && tsx --test src/local-provider.actual.test.ts",
     "test:native-context-actual": "tsx --test src/native-context-probe.actual.test.ts",
     "test:node-actual": "tsx --test src/runtime.actual.test.ts",
     "test:node-unit": "tsx --test src/*.unit.test.ts",
