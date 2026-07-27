@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -31,18 +31,30 @@ Current First Assignment round trip에서 보존할 interaction semantics를 cha
 
 ## Acceptance Criteria
 
-- [ ] Characterization tests가 current round trip에서 보존할 same-Turn interaction·failure semantics와 폐기할 academic durability·double-confirmation semantics를 명시적으로 구분한다.
-- [ ] Public MCP, private wire와 Browser-safe Review codec이 valid exact value를 decode하고 모든 additional field, malformed union, byte·cardinality 초과와 forbidden identity field를 거절한다.
-- [ ] Built STDIO executable이 valid environment와 authenticated handshake에서 `propose_state_patch` 하나만 광고하고, invalid environment·handshake·Broker error를 bounded safe MCP failure로 반환한다.
-- [ ] 한 valid tool call이 정확히 한 held POST와 한 structured result를 만들며 timeout·abort·transport loss에서 normal result나 automatic retry를 만들지 않는다.
-- [ ] Package root export, build output, shebang·mode와 workspace scripts가 clean checkout에서 반복 검증된다.
-- [ ] Current public product composition과 기존 characterization suite는 이 slice 뒤에도 green이다.
+- [x] Characterization tests가 current round trip에서 보존할 same-Turn interaction·failure semantics와 폐기할 academic durability·double-confirmation semantics를 명시적으로 구분한다.
+- [x] Public MCP, private wire와 Browser-safe Review codec이 valid exact value를 decode하고 모든 additional field, malformed union, byte·cardinality 초과와 forbidden identity field를 거절한다.
+- [x] Built STDIO executable이 valid environment와 authenticated handshake에서 `propose_state_patch` 하나만 광고하고, invalid environment·handshake·Broker error를 bounded safe MCP failure로 반환한다.
+- [x] 한 valid tool call이 정확히 한 held POST와 한 structured result를 만들며 timeout·abort·transport loss에서 normal result나 automatic retry를 만들지 않는다.
+- [x] Package root export, build output, shebang·mode와 workspace scripts가 clean checkout에서 반복 검증된다.
+- [x] Current public product composition과 기존 characterization suite는 이 slice 뒤에도 green이다.
 
 ## Verification
 
-- Targeted test or command: `npm test -w @ay-ple/interaction-mcp && npm test -w @ay-ple/product-contract`
-- Repository checks: `npm run typecheck && npm run build && npm test`
-- Manual or live smoke: Built STDIO Adapter를 mock loopback Broker와 실행해 initialize → tools/list → held call → result 및 handshake 거절을 관찰한다.
+- Targeted: `npm test -w @ay-ple/interaction-mcp && npm test -w @ay-ple/product-contract` — green. Built process 9개 test와 Browser contract 17개 test가 exact codec, handshake, held result, `202` 거절, cancellation·transport failure를 검증했다.
+- Current donor: `npm test -w @ay-ple/server` — 140 tests green. Same-Turn·failure survivor와 academic apply·replacement·built-in Plan question의 donor-only 경계를 명시적으로 유지했다.
+- Repository: `npm run typecheck && npm run build && npm test` — green.
+- Additional: `npm run lint -w @ay-ple/chat-shell`, `npx oxlint packages/interaction-mcp/src packages/product-contract/src/semantic-review.ts packages/product-contract/src/semantic-review.test.ts`, `npm run check:docs-links` — green.
+- Built smoke: Mock loopback Broker와 real `packages/interaction-mcp/dist/stdio.js`를 실행해 initialize → tools/list → held call → structured result, invalid environment·handshake 거절, Broker error·transport loss·MCP cancellation과 no-retry를 관찰했다. Package-root verifier가 반복 build 뒤 default export, Node shebang과 executable mode를 확인했다.
+- Review: Fixed point `3fcf7c2fab1ed6622d705c1b0c0576059b61e4aa` 기준 Standards finding 0건. Spec finding 2건(`202` admission, donor-only 분류)을 `836631bb0`에서 수정했고 재검토에서 남은 finding 0건을 확인했다.
+
+## Result
+
+`@ay-ple/interaction-mcp` package에 domain-neutral `propose_state_patch` request/result codec, strict private Broker wire와 built STDIO Adapter를 추가했다. Adapter는 exact loopback environment와 authenticated handshake 뒤에만 initialize하고, capability call 하나를 held POST 하나의 terminal structured result 또는 bounded MCP failure로 정산한다. `@ay-ple/product-contract`에는 old contract를 유지한 채 Browser-safe semantic Review/result/frame codec을 확장했고, current academic composition은 donor characterization으로 그대로 green이다.
+
+Implementation commits:
+
+- `1f0993c78` — `feat: add interaction MCP adapter foundation`
+- `836631bb0` — `fix: reject nonterminal broker acknowledgements`
 
 ## Blocked By
 
