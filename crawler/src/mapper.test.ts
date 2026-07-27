@@ -47,6 +47,12 @@ describe('parseDeadline', () => {
     const result = parseDeadline('2026-07-01 ~ 2026-07-10', NOW)
     expect(result.dday).toBeLessThan(0)
   })
+
+  it('구분자가 "."인 날짜 범위도 종료일 기준으로 파싱한다 (실제 DB 확인 케이스)', () => {
+    const result = parseDeadline('2020.01.01 ~ 2026.12.31', NOW)
+    expect(result.deadline).toBe('2026. 12. 31')
+    expect(result.dday).toBe(162) // 2026-07-22 -> 2026-12-31
+  })
 })
 
 describe('inferMethod', () => {
