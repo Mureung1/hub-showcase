@@ -102,7 +102,8 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 | 변경 history와 rollback | Git commit history |
 | Known·active SemesterWorkspace | Sibling `../.ay-ple/`의 `WorkspaceRegistry` |
 | Runtime payload·cache·transient operation state | Sibling `../.ay-ple/` |
-| Personal target의 개발·AY-PLE Skill source catalog | `hub/.agents/skills/` |
+| Initial Bootstrap Skill과 repository 개발 harness | `hub/.agents/skills/` |
+| AY-PLE built-in Skill source catalog | `hub/skills/` |
 | 해당 학기에서 실행하는 Skill byte | SemesterWorkspace의 Git-tracked `.agents/skills/` |
 | Codex account·config·session | 사용자의 기존 `~/.codex/` |
 | Pending InteractionCapability | 현재 Turn에 결합된 Interaction MCP Module memory |
