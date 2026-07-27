@@ -31,6 +31,7 @@ function SetInputRow({ setNumber, value, onChange }) {
       <input
         type="number"
         inputMode="decimal"
+        min="0"
         value={value.weight}
         onChange={(e) => onChange({ ...value, weight: e.target.value })}
         placeholder="kg"
