@@ -161,9 +161,9 @@ test('runs the production bridge against exact Codex and the official local prov
 
 test('discovers the built Interaction Adapter from a tracked trusted Git project', async () => {
   const bundle = await verifyProductionBundle(ARTIFACT_ROOT)
-  const artifactRoot = join(PACKAGE_ROOT, '.artifacts')
-  await mkdir(artifactRoot, { recursive: true })
-  const root = await mkdtemp(join(artifactRoot, 'project-mcp-readiness-'))
+  const root = await realpath(
+    await mkdtemp(join(tmpdir(), 'ay-ple-project-mcp-readiness-')),
+  )
   const brokerRequests: unknown[] = []
   const broker = createServer((request, response) => {
     let body = ''
@@ -326,9 +326,9 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
 
 test('records exact trust despite a trusted ancestor and reloads only exact native context', async () => {
   const bundle = await verifyProductionBundle(ARTIFACT_ROOT)
-  const artifactRoot = join(PACKAGE_ROOT, '.artifacts')
-  await mkdir(artifactRoot, { recursive: true })
-  const root = await mkdtemp(join(artifactRoot, 'native-project-context-'))
+  const root = await realpath(
+    await mkdtemp(join(tmpdir(), 'ay-ple-native-project-context-')),
+  )
   let provider: LocalProvider | undefined
   let runtime: SpawnedCodexChatRuntime | undefined
   try {
@@ -561,9 +561,9 @@ test('records exact trust despite a trusted ancestor and reloads only exact nati
 
 test('preserves explicit untrusted at workspace-write thread start', async () => {
   const bundle = await verifyProductionBundle(ARTIFACT_ROOT)
-  const artifactRoot = join(PACKAGE_ROOT, '.artifacts')
-  await mkdir(artifactRoot, { recursive: true })
-  const root = await mkdtemp(join(artifactRoot, 'explicit-untrusted-'))
+  const root = await realpath(
+    await mkdtemp(join(tmpdir(), 'ay-ple-explicit-untrusted-')),
+  )
   let provider: LocalProvider | undefined
   let runtime: SpawnedCodexChatRuntime | undefined
   try {

@@ -15,6 +15,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import exact_sdk
 
 
+class ArtifactRootTests(unittest.TestCase):
+    def test_exact_sdk_cache_is_external_to_the_package(self) -> None:
+        self.assertEqual(
+            exact_sdk.ARTIFACT_ROOT,
+            exact_sdk.REPOSITORY_ROOT.parent / ".ay-ple" / "cache" / "exact-sdk",
+        )
+        self.assertFalse(exact_sdk.ARTIFACT_ROOT.is_relative_to(exact_sdk.PACKAGE_ROOT))
+
+
 class SourceOracleTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory(prefix="exact-sdk-source-test-")
