@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link, Navigate, useNavigate, useOutletContext } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { createAnalysis } from '../api/index.js'
@@ -40,21 +40,27 @@ function Analyze() {
       ]).then(([analysis]) => analysis),
   })
 
+  // 같은 githubId로 이미 요청을 보냈는지 추적 — StrictMode 이중 실행 등으로 effect가 다시 돌아도
+  // mutate() 자체(실제 GitHub API 호출)가 중복 발사되지 않게 막는다 (IssueSearch.jsx와 동일한 문제, 2026-07-27).
+  // "취소" 판정도 로컬 클로저 변수 대신 이 ref로 한다 — StrictMode는 최초 mount 직후 항상 cleanup을
+  // 한 번 실행하는데, 로컬 변수(cancelled)를 쓰면 그 cleanup이 "진짜(유일하게 발사된) 요청"의 클로저까지
+  // cancelled=true로 만들어버려 응답이 와도 onSuccess가 영영 무시되는 버그가 있었다(로딩 화면에 멈춰있는 증상으로 발견)
+  const requestedGithubIdRef = useRef(null)
+
   useEffect(() => {
     if (!githubId) return
-    let cancelled = false
-    // githubId가 바뀌어 이 effect가 다시 실행되기 전에 응답이 오면 무시 — 늦게 도착한 이전 요청이
-    // 최신 상태를 덮어쓰고 엉뚱한 화면으로 넘기는 걸 막는다
+    if (requestedGithubIdRef.current === githubId) return
+    requestedGithubIdRef.current = githubId
+
     mutate(undefined, {
       onSuccess: (analysis) => {
-        if (cancelled) return
+        // 이 응답이 여전히 "가장 최근에 요청한 githubId"에 대한 것일 때만 반영 — ref는 StrictMode의
+        // synthetic cleanup에 영향받지 않고 진짜 최신 상태를 유지한다
+        if (requestedGithubIdRef.current !== githubId) return
         setAnalysis(analysis)
         navigate('/profile')
       },
     })
-    return () => {
-      cancelled = true
-    }
   }, [githubId, mutate, setAnalysis, navigate])
 
   if (!githubId) {

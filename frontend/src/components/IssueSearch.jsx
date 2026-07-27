@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Link, Navigate, useNavigate, useOutletContext } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { createRecommendation } from '../api/index.js'
@@ -45,21 +45,28 @@ function IssueSearch() {
     mutationFn: () => createRecommendation(analysis.githubId, effectivePreferences),
   })
 
+  // 같은 조건으로 이미 요청을 보냈는지 추적 — StrictMode(개발 모드)가 effect를 두 번 실행하거나
+  // 리렌더로 effect가 다시 돌아도 mutate() 호출 자체(실제 POST 전송)가 중복 발사되지 않게 막는다
+  // (하루 재추천 상한을 검색 한 번에 다 써버리는 버그로 발견, 2026-07-27).
+  // "취소" 판정도 로컬 클로저 변수 대신 이 ref로 한다 — StrictMode는 최초 mount 직후 항상 cleanup을
+  // 한 번 실행하는데, 로컬 변수(cancelled)를 쓰면 그 cleanup이 "진짜(유일하게 발사된) 요청"의 클로저까지
+  // cancelled=true로 만들어버려 응답이 와도 onSuccess가 영영 무시되는 버그가 있었다(로딩 화면에 멈춰있는 증상으로 발견)
+  const requestedKeyRef = useRef(null)
+
   useEffect(() => {
     if (!analysis || !effectivePreferences) return
-    let cancelled = false
-    // analysis/preferences가 바뀌어 이 effect가 다시 실행되기 전에 응답이 오면 무시 — 늦게 도착한
-    // 이전 요청이 최신 상태를 덮어쓰고 엉뚱한 화면으로 넘기는 걸 막는다
+    const requestKey = JSON.stringify([analysis.githubId, effectivePreferences])
+    if (requestedKeyRef.current === requestKey) return
+    requestedKeyRef.current = requestKey
+
     mutate(undefined, {
       onSuccess: (recommendation) => {
-        if (cancelled) return
+        // 이 응답이 여전히 "가장 최근에 요청한 조건"에 대한 것일 때만 반영
+        if (requestedKeyRef.current !== requestKey) return
         setRecommendation(recommendation)
         navigate('/result')
       },
     })
-    return () => {
-      cancelled = true
-    }
   }, [analysis, effectivePreferences, mutate, setRecommendation, navigate])
 
   if (!analysis) {
