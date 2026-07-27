@@ -64,9 +64,6 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
           <span>LocalTwin</span>
         </a>
         <nav className="primary-nav" aria-label="주요 메뉴">
-          <button className="nav-item is-active" type="button">
-            상권 분석
-          </button>
           <button className="nav-item" type="button" onClick={() => setCompareOpen(true)}>
             상권 비교
           </button>

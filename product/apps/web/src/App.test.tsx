@@ -123,6 +123,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.queryByLabelText("상권 선택")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "상권 분석" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "분석 결과 닫기" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "분석 설정 패널 열기" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "분석 결과 패널 열기" })).toBeInTheDocument();
