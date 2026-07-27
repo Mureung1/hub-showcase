@@ -170,6 +170,48 @@ test('invalid explicit roots fail before reading or changing the registry', asyn
   }
 })
 
+test('legacy, malformed, and future workspace bytes fail without mutation', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'prepared-launch-test-'))
+  const appDataRoot = path.join(root, 'app-data')
+  try {
+    await mkdir(appDataRoot)
+    for (const [index, bytes] of [
+      Buffer.from('{"formatVersion":2,"preserve":"current-v2"}\n', 'utf8'),
+      Buffer.from(
+        '{"kind":"ay-ple.semester-workspace","formatVersion":3,"preserve":"historical-v3"}\n',
+        'utf8',
+      ),
+      Buffer.from('{"formatVersion":4,', 'utf8'),
+      Buffer.from(
+        '{"kind":"ay-ple.semester-workspace","formatVersion":5,"preserve":"future"}\n',
+        'utf8',
+      ),
+    ].entries()) {
+      const workspaceRoot = path.join(root, `unsupported-${index}`)
+      const statePath = path.join(workspaceRoot, 'workspace-state.json')
+      await mkdir(workspaceRoot)
+      await execFileAsync('git', ['init', '--quiet', workspaceRoot])
+      await writeFile(statePath, bytes)
+      const canonicalWorkspaceRoot = await realpath(workspaceRoot)
+
+      assert.deepEqual(
+        await resolvePreparedWorkspaceLaunch({
+          appDataRoot,
+          explicitWorkspaceRoot: canonicalWorkspaceRoot,
+        }),
+        {
+          status: 'failure',
+          code: 'prepared_workspace_invalid',
+          reason: 'identity_incompatible',
+        },
+      )
+      assert.deepEqual(await readFile(statePath), bytes)
+    }
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
 test('malformed and future registry bytes are preserved as exact startup failures', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'prepared-launch-test-'))
   const configuredAppDataRoot = path.join(root, 'app-data')
