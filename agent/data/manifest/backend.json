@@ -555,6 +555,334 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_bucketplace_be_commerce",
+      "url": "https://bucketplace.career.greetinghr.com/ko/o/167227",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "주식회사 버킷플레이스",
+      "company_id": "co_bucketplace",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Senior Backend Engineer, Tech Lead & Manager, Commerce",
+      "job_role_raw": "직군: 개발 / 제목: Backend Engineer",
+      "entry_label_raw": "경력 13년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_linepay_be_server",
+      "url": "https://careers.linecorp.com/ko/jobs/3007/",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "라인페이플러스",
+      "company_id": "co_linepayplus",
+      "cluster_id": "fintech_finance",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "LINE Pay Server Engineer",
+      "job_role_raw": "직군: Engineering / 제목: Server Engineer",
+      "entry_label_raw": "3년 이상의 서버 개발 경험 또는 이에 준하는 역량을 갖추신 분",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /ko/2021_1st, /en/2021_1st",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_zimssa_be_senior",
+      "url": "https://zimssa.career.greetinghr.com/ko/o/212644",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "짐싸",
+      "company_id": "co_zimssa",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "백엔드 시니어 개발자(10년 이상)",
+      "job_role_raw": "직군: 백엔드팀 / 직무: 백엔드 개발자",
+      "entry_label_raw": "경력 10년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_estsecurity_be_linux",
+      "url": "https://estfamily.career.greetinghr.com/ko/o/220483",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "이스트시큐리티",
+      "company_id": "co_estsecurity",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[ESTsecurity] 리눅스 백엔드 서버 개발자",
+      "job_role_raw": "직군: 개발 / 제목: 백엔드 서버 개발자",
+      "entry_label_raw": "경력 5년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_estgames_be_rts",
+      "url": "https://estfamily.career.greetinghr.com/ko/o/137564",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "이스트게임즈",
+      "company_id": "co_estgames",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[ESTgames] 모바일 RTS 서버 프로그래머 (C#, Node.js)",
+      "job_role_raw": "직군: 개발 / 제목: 서버 프로그래머",
+      "entry_label_raw": "경력 무관",
+      "entry_label": "unspecified",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_kurly_be_commerce_core",
+      "url": "https://kurly.career.greetinghr.com/ko/o/170984",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "컬리",
+      "company_id": "co_kurly",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "커머스 백엔드 개발자 (상품/주문/회원/파트너)",
+      "job_role_raw": "직군: 테크 / 직무: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 5~12년",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_kurly_be_commerce_ad",
+      "url": "https://kurly.career.greetinghr.com/ko/o/216757",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "컬리",
+      "company_id": "co_kurly",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "커머스 백엔드 개발자(광고)",
+      "job_role_raw": "직군: 테크 / 직무: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 8~15년",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_kurly_be_commerce_home",
+      "url": "https://kurly.career.greetinghr.com/ko/o/216730",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "컬리",
+      "company_id": "co_kurly",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "커머스 백엔드 개발자(홈/전시)",
+      "job_role_raw": "직군: 테크 / 직무: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 5~15년",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_kurly_be_fulfillment",
+      "url": "https://kurly.career.greetinghr.com/ko/o/168026",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "컬리",
+      "company_id": "co_kurly",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "풀필먼트 백엔드 개발자",
+      "job_role_raw": "직군: 테크 / 직무: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 5년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_kurly_be_payment",
+      "url": "https://kurly.career.greetinghr.com/ko/o/198009",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "컬리",
+      "company_id": "co_kurly",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "핀테크 백엔드 개발자 (결제)",
+      "job_role_raw": "직군: 테크 / 직무: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 5~7년",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "note": "회사가 컬리이므로 기업군은 회사 단위로 빅테크·플랫폼이다. 제목의 핀테크는 담당 도메인이다"
+    },
+    {
+      "source_id": "src_miridih_be_senior",
+      "url": "https://www.miridih.com/ko/o/117762",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "주식회사 미리디",
+      "company_id": "co_miridih",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[미리캔버스] 시니어 백엔드 개발자",
+      "job_role_raw": "직군: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 7~12년",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "note": "greetinghr 호스팅이며 커스텀 도메인 www.miridih.com 으로 서비스한다"
+    },
+    {
+      "source_id": "src_travelwallet_be_lead",
+      "url": "https://travel-wallet.career.greetinghr.com/ko/o/210785",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "트래블월렛",
+      "company_id": "co_travelwallet",
+      "cluster_id": "fintech_finance",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[비즈&서비스 플랫폼 개발챕터] Back-end engineer Lead",
+      "job_role_raw": "직군: Tech / 직무: Backend Developer",
+      "entry_label_raw": "경력 10년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_autoever_be_smarttag",
+      "url": "https://career.hyundai-autoever.com/ko/o/221287",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "현대오토에버",
+      "company_id": "co_autoever",
+      "cluster_id": "si_enterprise",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[SDx] Service Engineer - 스마트팩토리 시스템(스마트태그) 개발 및 운영",
+      "job_role_raw": "직군: Service Engineer / 본문: 응용프로그램 개발(Java Spring) 경험, RDBMS(Tibero/MySQL/Maria/Postgre SQL 중 2개 이상) 경험",
+      "entry_label_raw": "경력 5년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "note": "직군 필드가 직무를 가리키지 않아 지표 명세 2.8의 세 번째 입력으로 판정했다"
     }
   ],
   "unreachable": [
@@ -613,6 +941,86 @@
     {
       "source": "hancom.career.greetinghr.com",
       "reason": "채용 사이트가 내려갔다"
+    },
+    {
+      "source": "career.woowahan.com Tech 신입",
+      "reason": "연차 필터 신입 결과가 0건이다"
+    },
+    {
+      "source": "careers.nexon.com Game Programming 신입",
+      "reason": "지원 구분 신입 결과가 0건이다"
+    },
+    {
+      "source": "echomarketing.career.greetinghr.com",
+      "reason": "검색에 색인된 공고 식별자가 404를 반환한다"
+    },
+    {
+      "source": "blog.greetinghr.com 채용 홈페이지 모음집",
+      "reason": "개인정보 제공에 동의해야 내려받는다"
+    },
+    {
+      "source": "gccompany.career.greetinghr.com",
+      "reason": "공고 15건에 백엔드가 없다"
+    },
+    {
+      "source": "alphabeta.career.greetinghr.com",
+      "reason": "채용 사이트가 내려갔다"
+    },
+    {
+      "source": "ex-em.career.greetinghr.com",
+      "reason": "검색에 색인된 공고 식별자가 404를 반환한다"
+    },
+    {
+      "source": "kimcaddie.career.greetinghr.com",
+      "reason": "검색에 색인된 공고 식별자가 404를 반환한다"
+    },
+    {
+      "source": "zimssa.career.greetinghr.com/ko/o/196855",
+      "reason": "마감된 공고가 404를 반환한다"
+    },
+    {
+      "source": "career.catchtable.co.kr",
+      "reason": "공고 38건에 백엔드가 없다"
+    },
+    {
+      "source": "kbfintech.career.greetinghr.com",
+      "reason": "공고 3건에 백엔드가 없다"
+    },
+    {
+      "source": "willog.career.greetinghr.com",
+      "reason": "공고 8건에 백엔드가 없다"
+    },
+    {
+      "source": "inavisys.career.greetinghr.com",
+      "reason": "검색에 색인된 공고 식별자가 404를 반환한다"
+    },
+    {
+      "source": "gsitm.career.greetinghr.com",
+      "reason": "공고 13건이 SAP 컨설팅·영업·DBA이며 백엔드가 없다"
+    },
+    {
+      "source": "sianalytics.career.greetinghr.com",
+      "reason": "공고 8건이 AI 연구와 영업이며 백엔드가 없다"
+    },
+    {
+      "source": "thebackend.career.greetinghr.com",
+      "reason": "공고 2건에 백엔드가 없다"
+    },
+    {
+      "source": "douzone.career.greetinghr.com",
+      "reason": "채용 사이트가 내려갔다"
+    },
+    {
+      "source": "nice.career.greetinghr.com",
+      "reason": "검색에 색인된 공고 식별자가 404를 반환한다"
+    },
+    {
+      "source": "career.hyundai-autoever.com/ko/o/214818",
+      "reason": "OT 설비와 PLC 통신이 주 업무다"
+    },
+    {
+      "source": "gsitm.career.greetinghr.com 공고 본문",
+      "reason": "제목과 직군만 있고 업무 내용 본문이 없어 요구 표현을 추출할 수 없다"
     }
   ],
   "access_notes": [
@@ -641,8 +1049,32 @@
       "method": "정적 렌더링. 목록에 주니어·시니어 표기가 있고 연차는 없다"
     },
     {
-      "source": "*.career.greetinghr.com 상세 경로",
-      "method": "오래된 공고 식별자도 본문 전문과 함께 열린다. 마감 공고 수집 경로로 쓴다"
+      "source": "careers.nexon.com 마감 공고",
+      "method": "없는 공고 식별자는 목록으로 리다이렉트한다. 마감 공고 URL이 남지 않는다"
+    },
+    {
+      "source": "bucketplace.career.greetinghr.com",
+      "method": "목록 경로가 404를 반환하고 상세만 열린다. 공고 식별자를 검색으로 찾는다"
+    },
+    {
+      "source": "careers.linecorp.com",
+      "method": "정적 렌더링. 직군 필터 ca=Engineering 으로 거른다"
+    },
+    {
+      "source": "*.career.greetinghr.com 마감 공고",
+      "method": "마감된 공고는 404를 반환한다. 마감 공고를 수집 대상으로 삼지 않는다"
+    },
+    {
+      "source": "greetinghr 회사 발견",
+      "method": "도메인을 greetinghr.com 으로 한정한 웹 검색으로 회사를 찾고, 공고는 그 회사의 현재 목록에서 가져온다. 검색 색인의 공고 식별자는 마감으로 404가 되는 비율이 높다"
+    },
+    {
+      "source": "*.career.greetinghr.com/sitemap.xml",
+      "method": "현재 열린 공고의 상세 URL 전량을 담는다. 회사마다 다른 목록 경로를 찾지 않고 여기서 식별자를 얻는다"
+    },
+    {
+      "source": "*.career.greetinghr.com 상세 HTML",
+      "method": "서버 렌더링이다. 같은 출처 fetch 로 제목, 직군, 경력사항을 한 번에 뽑는다"
     }
   ]
 }
