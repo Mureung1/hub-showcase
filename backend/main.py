@@ -16,13 +16,14 @@ load_dotenv()  # .env 파일 읽기
 from collections import Counter
 from datetime import datetime
 from typing import List, Literal, Optional
+import requests
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from langchain_google_genai import ChatGoogleGenerativeAI
 from database import init_db, get_db, Competitor, Review, MyStore
-from collector import fetch_reviews
+from collector import fetch_reviews, search_local_kakao
 
 # ── 목(Mock) 모드 설정 ────────────────────────────────────────
 # .env에 USE_MOCK=true 를 넣으면 LLM 호출 없이 고정 데이터 반환 (Gemini 할당량과 무관하게 화면 작업 가능)
@@ -243,7 +244,135 @@ def list_my_stores(db: Session = Depends(get_db)):
     stores = db.query(MyStore).order_by(MyStore.id.desc()).all()
     return {"stores": [my_store_to_dict(s) for s in stores]}
 
+
+# ── 검색 → 후보 선택 → 주변 경쟁업체 (카카오 로컬 API 연동) ──────
+# 카카오의 meta.total_count는 "느슨하게 관련된 모든 곳"까지 포함하는 카운트라
+# (예: "카페그라운드" 검색 시 "휴먼그라운드 카페" 같은 무관한 곳까지 섞여 72건으로 잡힘)
+# 지역 좁히기 판단은 total_count가 아니라, 실제 place_name이 검색어와 정확히
+# 일치하는 후보 수(exact_match_count)로 한다. 이 값이 아래 임계값을 넘으면 지역을 물어본다.
+SEARCH_NARROW_THRESHOLD = 5
+
+
+def _normalize_name(s: str) -> str:
+    """공백 제거 + 소문자 변환 후 비교 — 표기 차이(띄어쓰기 등)로 인한 오탐 방지"""
+    return "".join(s.split()).lower()
+
+
+class SearchStoreRequest(BaseModel):
+    store_name: str
+    region: str = ""
+
+
+class NearbyCompetitorsRequest(BaseModel):
+    name: str
+    address: str = ""
+    latitude: float
+    longitude: float
+    category: str = ""
+
+
+def _category_keyword(category: str) -> str:
+    """카카오 category_name('음식점 > 카페 > 커피전문점 > 스타벅스')에서 검색용 키워드 추출.
+    마지막 segment는 브랜드명(예: '스타벅스')인 경우가 많아 그대로 쓰면 같은 브랜드 지점만
+    검색되므로, 중분류(두 번째 segment, 예: '카페')를 우선 사용한다."""
+    if not category:
+        return "가게"
+    parts = [p.strip() for p in category.split(">") if p.strip()]
+    if len(parts) >= 2:
+        return parts[1]
+    return parts[-1] if parts else "가게"
+
+
+def competitor_to_dict(c: Competitor):
+    return {
+        "id": c.id,
+        "name": c.name,
+        "address": c.address,
+        "category": c.category,
+        "distance": c.distance_km,
+    }
+
+
+@app.post("/api/search-store")
+def search_store(req: SearchStoreRequest):
+    name = req.store_name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="가게 이름을 입력하세요.")
+    region = req.region.strip()
+    query = f"{name} {region}" if region else name
+    try:
+        raw_candidates, total_count = search_local_kakao(query, size=15, return_meta=True)
+    except (RuntimeError, requests.RequestException) as e:
+        raise HTTPException(status_code=502, detail=f"카카오 API 호출에 실패했습니다: {e}")
+    if not raw_candidates:
+        raise HTTPException(status_code=404, detail="검색 결과가 없습니다.")
+
+    target = _normalize_name(name)
+    # 완전 일치(==)로 하면 프랜차이즈 지점명("스타벅스 OO점")이 전부 걸러져 0건이 되어버려
+    # 오히려 지역을 안 물어보는 반대 버그가 생김 — place_name이 검색어로 "시작하는지"로 판단
+    exact_matches = [c for c in raw_candidates if _normalize_name(c["name"]).startswith(target)]
+    exact_match_count = len(exact_matches)
+    # 정확히 일치하는 곳이 하나도 없으면(표기 차이 등) 느슨한 검색 결과라도 후보로 보여준다
+    candidates = exact_matches if exact_matches else raw_candidates
+
+    return {
+        "candidates": candidates,
+        "total_count": total_count,  # 참고용(카카오의 느슨한 전체 매칭 수) — 판단 기준으로는 안 씀
+        "exact_match_count": exact_match_count,
+        "needs_region": exact_match_count > SEARCH_NARROW_THRESHOLD,
+    }
+
+
+@app.post("/api/nearby-competitors")
+def nearby_competitors(req: NearbyCompetitorsRequest, db: Session = Depends(get_db)):
+    keyword = _category_keyword(req.category)
+    try:
+        raw = search_local_kakao(keyword, x=req.longitude, y=req.latitude, radius=2000, size=15)
+    except (RuntimeError, requests.RequestException) as e:
+        raise HTTPException(status_code=502, detail=f"카카오 API 호출에 실패했습니다: {e}")
+
+    # 검색 대상 가게 자신은 경쟁업체 목록에서 제외
+    raw = [r for r in raw if r["name"] != req.name and (not req.address or r["address"] != req.address)]
+
+    saved = []
+    for r in raw:
+        comp = (
+            db.query(Competitor)
+            .filter(Competitor.name == r["name"], Competitor.source_store_name == req.name)
+            .first()
+        )
+        if not comp:
+            comp = Competitor(name=r["name"], source_store_name=req.name)
+            db.add(comp)
+        comp.category = r["category"]
+        comp.address = r["address"]
+        comp.latitude = r["latitude"]
+        comp.longitude = r["longitude"]
+        comp.distance_km = r["distance_km"]
+        db.commit()
+        db.refresh(comp)
+        saved.append(comp)
+
+    return {"competitors": [competitor_to_dict(c) for c in saved]}
+
+
+@app.get("/api/nearby-competitors/{store_name}")
+def get_nearby_competitors(store_name: str, db: Session = Depends(get_db)):
+    rows = (
+        db.query(Competitor)
+        .filter(Competitor.source_store_name == store_name)
+        .order_by(Competitor.distance_km)
+        .all()
+    )
+    return {"competitors": [competitor_to_dict(c) for c in rows]}
+
+
 # ── GET /health (배포 대비 헬스체크) ──────────────────────────
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

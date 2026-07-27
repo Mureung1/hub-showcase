@@ -144,6 +144,8 @@ cd C:\AI_Agent\hub\backend
 uvicorn main:app --reload --port 8000
 ```
 
+`python main.py`로도 동일하게 실행할 수 있습니다(포트 8000, reload 고정).
+
 **터미널 2 - 프론트엔드:**
 
 ```
