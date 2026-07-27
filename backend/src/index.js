@@ -3,6 +3,8 @@ import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
 import { lettersRouter } from './routes/letters.js'
+import { matchesRouter } from './routes/matches.js'
+import { adminRouter } from './routes/admin.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
@@ -20,6 +22,8 @@ app.get('/api/health', (req, res) => {
 })
 
 app.use('/api/letters', lettersRouter)
+app.use('/api/matches', matchesRouter)
+app.use('/api/admin', adminRouter)
 
 // 에러 핸들러는 항상 라우터들보다 뒤에 등록한다.
 app.use(errorHandler)
