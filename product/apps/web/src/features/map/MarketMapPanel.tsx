@@ -30,6 +30,7 @@ type MarketMapPanelProps = {
   mapRef: RefObject<MapRef | null>;
   prefabMode: boolean;
   onPrefabToggle: () => void;
+  onPrefabModeChange: (enabled: boolean) => void;
   onCompareOpen: () => void;
   comparisonEnabled: boolean;
   filtersOpen: boolean;
@@ -56,6 +57,7 @@ export function MarketMapPanel({
   mapRef,
   prefabMode,
   onPrefabToggle,
+  onPrefabModeChange,
   onCompareOpen,
   comparisonEnabled,
   filtersOpen,
@@ -65,10 +67,6 @@ export function MarketMapPanel({
   onFiltersOpen,
   onInspectorOpen,
 }: MarketMapPanelProps) {
-  const nextLayerLabel = layer === "density" ? "시간대 수요 보기" : "경쟁 밀도 보기";
-  const currentLayerLabel =
-    layer === "density" ? `현재: ${densityLabel}` : `현재: ${activeDemandLabel} 시간대 수요`;
-
   return (
     <section className="map-panel" aria-label="지도와 상권 분포">
       <div className="map-toolbar">
@@ -97,29 +95,35 @@ export function MarketMapPanel({
           <div className="map-mode-switch" role="group" aria-label="지도 표현 방식">
             <button
               type="button"
-              className={mapMode === "localtwin" ? "is-selected" : ""}
-              aria-pressed={mapMode === "localtwin"}
-              onClick={() => onMapModeChange("localtwin")}
-            >
-              <Layers3 size={15} /> <span>LocalTwin</span>
-            </button>
-            <button
-              type="button"
               className={mapMode === "original" ? "is-selected" : ""}
               aria-pressed={mapMode === "original"}
               onClick={() => onMapModeChange("original")}
             >
               <MapPinned size={15} /> <span>실제 지도</span>
             </button>
+            <button
+              type="button"
+              className={mapMode === "localtwin" && layer === "density" ? "is-selected" : ""}
+              aria-pressed={mapMode === "localtwin" && layer === "density"}
+              onClick={() => {
+                onMapModeChange("localtwin");
+                onLayerChange("density");
+              }}
+            >
+              <Layers3 size={15} /> <span>{densityLabel}</span>
+            </button>
+            <button
+              type="button"
+              className={prefabMode ? "is-selected" : ""}
+              aria-pressed={prefabMode}
+              onClick={() => {
+                onMapModeChange("localtwin");
+                onPrefabModeChange(true);
+              }}
+            >
+              <Building2 size={15} /> <span>3D 점포</span>
+            </button>
           </div>
-          <button
-            type="button"
-            className="glass-button"
-            onClick={() => onLayerChange(layer === "density" ? "demand" : "density")}
-            title={`현재 ${currentLayerLabel}. 누르면 ${nextLayerLabel}를 표시합니다.`}
-          >
-            <Layers3 size={16} /> {currentLayerLabel} · {nextLayerLabel}
-          </button>
         </div>
       </div>
       {mapBody}

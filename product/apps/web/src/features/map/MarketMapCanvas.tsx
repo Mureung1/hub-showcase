@@ -1,6 +1,6 @@
-import { ChevronDown } from "lucide-react";
-import { lazy, Suspense, type RefObject } from "react";
-import Map, { Layer, Marker, type MapRef } from "react-map-gl/maplibre";
+import { ChevronRight, Coffee, Target, UsersRound } from "lucide-react";
+import { lazy, Suspense, useEffect, useState, type RefObject } from "react";
+import Map, { Layer, Marker, Popup, type MapRef } from "react-map-gl/maplibre";
 
 import { categoryClass, isTestEnvironment } from "../market/model";
 import type { LayerMode, MapMode, Market, MarketStore } from "../market/types";
@@ -14,9 +14,9 @@ import { SupportedRegionOverlays } from "./SupportedRegionOverlays";
 import type { MapBounds } from "./supportedRegions";
 import type { SelectedStorefront } from "./storefronts/SelectedStorefrontLayer";
 
-const SelectedStorefrontLayer = lazy(() =>
-  import("./storefronts/SelectedStorefrontLayer").then((module) => ({
-    default: module.SelectedStorefrontLayer,
+const StorefrontBuildingLayers = lazy(() =>
+  import("./storefronts/StorefrontBuildingLayers").then((module) => ({
+    default: module.StorefrontBuildingLayers,
   })),
 );
 
@@ -49,7 +49,7 @@ type MarketMapCanvasProps = {
   layer: LayerMode;
   boundaryVisible: boolean;
   storesVisible: boolean;
-  selectedStorefront3d: SelectedStorefront | null;
+  storefrontBuildings3d: SelectedStorefront[];
   onStorefrontUnavailable: () => void;
   flowPeople: Array<{ longitude: number; latitude: number; delay: number }>;
   activeHour: number;
@@ -57,6 +57,7 @@ type MarketMapCanvasProps = {
   mapStores: MarketStore[];
   selected: MarketStore | null;
   score: number | null;
+  sameCategoryCount: number;
   prefabMode: boolean;
   onSelectStore: (name: string) => void;
   visibleSupportedRegion: boolean;
@@ -130,7 +131,7 @@ export function MarketMapCanvas({
   layer,
   boundaryVisible,
   storesVisible,
-  selectedStorefront3d,
+  storefrontBuildings3d,
   onStorefrontUnavailable,
   flowPeople,
   activeHour,
@@ -138,11 +139,22 @@ export function MarketMapCanvas({
   mapStores,
   selected,
   score,
+  sameCategoryCount,
   prefabMode,
   onSelectStore,
   visibleSupportedRegion,
   onEvidenceOpen,
 }: MarketMapCanvasProps) {
+  const [readyStorefrontIds, setReadyStorefrontIds] = useState<Set<string>>(() => new Set());
+  const storefrontKey = storefrontBuildings3d.map((store) => store.id).join(",");
+
+  useEffect(() => {
+    setReadyStorefrontIds(new Set());
+  }, [storefrontKey]);
+
+  const hiddenOverlayBuildingIds = storefrontBuildings3d.flatMap((store) =>
+    store.building && readyStorefrontIds.has(store.id) ? [store.building.id] : [],
+  );
   if (isTestEnvironment())
     return <div className="map-fallback">실제 지도는 브라우저 환경에서 표시됩니다.</div>;
   return (
@@ -187,14 +199,22 @@ export function MarketMapCanvas({
           }}
         />
         {mapMode === "localtwin" && (
-          <SupportedRegionOverlays buildingsVisible={baseBuildingsVisible} />
+          <SupportedRegionOverlays
+            buildingsVisible={baseBuildingsVisible}
+            hiddenBuildingIds={hiddenOverlayBuildingIds}
+          />
         )}
         {boundaryVisible && <SelectedMarketBoundary marketId={marketId} />}
-        {storesVisible && selectedStorefront3d && (
+        {storesVisible && storefrontBuildings3d.length > 0 && (
           <Suspense fallback={null}>
-            <SelectedStorefrontLayer
-              store={selectedStorefront3d}
+            <StorefrontBuildingLayers
+              stores={storefrontBuildings3d}
               onUnavailable={onStorefrontUnavailable}
+              onReady={(storeId) =>
+                setReadyStorefrontIds((current) =>
+                  current.has(storeId) ? current : new Set(current).add(storeId),
+                )
+              }
             />
           </Suspense>
         )}
@@ -234,27 +254,35 @@ export function MarketMapCanvas({
             />
           ))}
         {selected && (
-          <Marker
+          <Popup
             longitude={selected.longitude}
             latitude={selected.latitude}
             anchor="bottom-left"
-            offset={[46, -56]}
+            offset={[26, -35]}
+            closeButton={false}
+            closeOnClick={false}
+            className="selected-store-popup"
           >
             <div className="selected-location">
-              <span className="pin-head" title="선택 점포가 속한 상권의 입지 점수">
-                {score}
-              </span>
-              <div>
-                <b>{selected.name}</b>
-                <small>
-                  {selected.category} · {selected.distance}
-                </small>
-                <button type="button" onClick={onEvidenceOpen}>
-                  근거 보기 <ChevronDown size={14} />
-                </button>
+              <span className="selected-store-icon"><Coffee size={18} aria-hidden="true" /></span>
+              <div className="selected-store-heading">
+                <div>
+                  <b>{selected.name}</b>
+                  <small>{selected.category} · {selected.distance}</small>
+                </div>
+                <strong title="선택 점포가 속한 상권의 입지 점수">
+                  {score === null ? "분석 중" : `${score}점`}
+                </strong>
               </div>
+              <div className="selected-store-factors">
+                <span><UsersRound size={13} aria-hidden="true" /> {market.footfall}</span>
+                <span><Target size={13} aria-hidden="true" /> 경쟁 {sameCategoryCount}개</span>
+              </div>
+              <button type="button" onClick={onEvidenceOpen}>
+                점수 근거 보기 <ChevronRight size={14} />
+              </button>
             </div>
-          </Marker>
+          </Popup>
         )}
       </Map>
       {!visibleSupportedRegion && (

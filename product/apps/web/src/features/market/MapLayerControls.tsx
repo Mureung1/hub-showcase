@@ -24,7 +24,7 @@ export function MapLayerControls({
       <div className="filter-section-heading">
         <span>3</span>
         <div>
-          <p className="filter-label">지도 표시</p>
+            <p className="filter-label">지도 표시</p>
           <small>지도 위에 보일 정보 선택</small>
         </div>
       </div>
