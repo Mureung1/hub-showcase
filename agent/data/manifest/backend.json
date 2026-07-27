@@ -255,11 +255,12 @@
       ],
       "title": "서버 개발자 - 결제 서비스",
       "job_role_raw": "제목: 서버 개발자",
-      "entry_label_raw": "지원자격에 연차 하한 표기 없음. Java 또는 Kotlin 언어와 Spring Framework 활용 능력",
-      "entry_label": "unspecified",
+      "entry_label_raw": "경력사항: 경력 3년 이상",
+      "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
-      "content_file": "kakaopay_be_payment.txt"
+      "content_file": "kakaopay_be_payment.txt",
+      "note": "구조화 필드 경력사항이 대상군 표기다. 지원자격 본문에는 연차 하한이 없다. 판정은 표기가 요구하는 대상을 따른다. docs/metric-spec.md 2.6"
     },
     {
       "source_id": "src_supercent_be_adtech_mid",
@@ -467,7 +468,8 @@
       "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
       "collected_on": "2026-07-27",
-      "content_file": "mintrocket_be_godzilla.txt"
+      "content_file": "mintrocket_be_godzilla.txt",
+      "note": "본문이 텍스트가 아니라 이미지 한 장으로 게시되어 있다. https://careers.nexon.com/files/job-post/6753504c-3157-49e2-adc8-386c21b3b8a2.png 를 읽어 옮긴 글을 원문 자리에 담았다. 옮긴 구간은 스튜디오 소개, 채용 포지션, 담당 업무, 자격조건, 우대사항, 전형 절차다. 다시 수집할 때도 페이지 텍스트에서는 요구를 얻을 수 없다"
     },
     {
       "source_id": "src_autoever_be_smartfactory",
