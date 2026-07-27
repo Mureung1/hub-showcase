@@ -179,6 +179,9 @@ test("요리 완료를 확인하면 레시피 사용량만큼 보유 재료를 �
   };
 
   render(<App />);
+  expect(await screen.findByRole("button", { name: "재료 수정" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "모두 사용" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /메뉴 열기/ })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "레시피 추천" }));
   fireEvent.click(await screen.findByRole("button", { name: "레시피 보기" }));
   await screen.findByRole("heading", { name: "간장 두부 덮밥" });

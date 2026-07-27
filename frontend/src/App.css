@@ -1755,7 +1755,7 @@ select:focus-visible {
 .ingredient-tile {
   position: relative;
   display: flex;
-  min-height: 238px;
+  min-height: 178px;
   height: 100%;
   flex-direction: column;
   padding: 16px;
@@ -1791,63 +1791,6 @@ select:focus-visible {
   border-radius: 16px;
   background: #fff1e8;
   font-size: 28px;
-}
-
-.ingredient-menu {
-  position: relative;
-}
-
-.more-button {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  border: 0;
-  border-radius: 10px;
-  color: var(--muted);
-  background: transparent;
-  font-size: 18px;
-  font-weight: 900;
-}
-
-.more-button:hover,
-.more-button[aria-expanded="true"] {
-  color: var(--text);
-  background: #fff3ec;
-}
-
-.menu-popover {
-  position: absolute;
-  z-index: 5;
-  top: 42px;
-  right: 0;
-  width: 164px;
-  padding: 7px;
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  background: #fff;
-  box-shadow: 0 12px 32px rgba(72, 45, 29, 0.16);
-}
-
-.menu-popover button {
-  width: 100%;
-  min-height: 36px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 8px;
-  color: var(--text);
-  background: transparent;
-  text-align: left;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.menu-popover button:hover {
-  background: #fff5ef;
-}
-
-.menu-popover button.danger {
-  color: var(--warning);
 }
 
 .tile-title-row {
@@ -1949,11 +1892,17 @@ select:focus-visible {
   background: #eef8f2;
 }
 
-.find-recipe-button {
-  width: 100%;
-  min-height: 40px;
+.ingredient-tile-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
   margin-top: 14px;
-  border: 1px solid rgba(0, 109, 54, 0.15);
+}
+
+.ingredient-tile-actions button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgba(0, 109, 54, 0.16);
   border-radius: 12px;
   color: var(--primary);
   background: var(--primary-soft);
@@ -1961,8 +1910,10 @@ select:focus-visible {
   font-weight: 900;
 }
 
-.find-recipe-button span {
-  margin-left: 6px;
+.ingredient-tile-actions .used-action {
+  border-color: rgba(239, 124, 69, 0.22);
+  color: #b45309;
+  background: #fff3e8;
 }
 
 .empty-board,

@@ -20,7 +20,7 @@ import {
   formatIngredientQuantity,
   getIngredientExpirationPresentation,
 } from "./utils/ingredientUtils";
-import { getNaggingMessage, getRecipeNaggingMessage } from "./utils/naggingUtils";
+import { getRecipeNaggingMessage } from "./utils/naggingUtils";
 import { getCoachingTone, readMealChoiceHistory } from "./utils/mealChoiceHistory";
 import { isPantryIngredientName } from "./utils/pantry";
 import {
@@ -97,9 +97,7 @@ function App() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [initialFocusField, setInitialFocusField] = useState("name");
   const [sortOrder, setSortOrder] = useState("expiry");
-  const [openMenuId, setOpenMenuId] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
-  const [selectedIngredient, setSelectedIngredient] = useState(null);
   const [pendingRecipe, setPendingRecipe] = useState(null);
   const [naggingMessage, setNaggingMessage] = useState(null);
   const [message, setMessage] = useState({ text: "", type: "success" });
@@ -318,12 +316,10 @@ function App() {
     setFormValues({ name: ingredient.name, quantity: String(ingredient.quantity ?? 1), unit: ingredient.unit ?? "개", storage: ingredient.storage, category: ingredient.category, expirationDate: getIngredientDueDate(ingredient) ?? getSuggestedUseByDate(ingredient.category, ingredient.storage), expirySource: "manual", tags: getIngredientTags(ingredient) });
     setErrors({});
     setInitialFocusField(focusField);
-    setOpenMenuId(null);
     setIsFormOpen(true);
   };
 
   const requestIngredientAction = (type, ingredient) => {
-    setOpenMenuId(null);
     setConfirmAction({ type, ingredient });
   };
 
@@ -355,35 +351,13 @@ function App() {
     window.setTimeout(() => setIsRecipeLoading(false), 350);
   };
 
-  const handleIngredientSelect = (ingredient) => {
-    setSelectedIngredient(ingredient);
-    setSelectedRecipe(null);
-    setOpenMenuId(null);
-
-    const nextNaggingMessage = getNaggingMessage({
-      trigger: "ingredientSelected",
-      selectedIngredient: ingredient,
-      ingredients,
-      tone: getCoachingTone(readMealChoiceHistory(), { includeCurrentChoice: true }),
-    });
-
-    if (nextNaggingMessage) {
-      setNaggingMessage(nextNaggingMessage);
-      return;
-    }
-
-    setActiveMainTab("recommend");
-  };
-
   const closeNaggingMessage = () => {
     setNaggingMessage(null);
-    setSelectedIngredient(null);
     setPendingRecipe(null);
   };
 
   const continueFromNagging = (mode) => {
     setNaggingMessage(null);
-    setSelectedIngredient(null);
     setPendingRecipe(null);
     setSelectedMood(mode);
     setMissingIngredientLimit(1);
@@ -483,7 +457,7 @@ function App() {
             <button type="button" onClick={() => refreshIngredients(true).catch(() => {})}>다시 시도</button>
           </div>
         )}
-        {activeMainTab === "fridge" && !isLoading && !ingredientError && <FridgeWorkspace ingredients={managedIngredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} sortOrder={sortOrder} setSortOrder={setSortOrder} recommendedCount={recommendedCount} openIngredientForm={openIngredientForm} editIngredient={editIngredient} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} requestIngredientAction={requestIngredientAction} onIngredientSelect={handleIngredientSelect} showRecommendations={showRecommendations} />}
+        {activeMainTab === "fridge" && !isLoading && !ingredientError && <FridgeWorkspace ingredients={managedIngredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} sortOrder={sortOrder} setSortOrder={setSortOrder} recommendedCount={recommendedCount} openIngredientForm={openIngredientForm} editIngredient={editIngredient} requestIngredientAction={requestIngredientAction} showRecommendations={showRecommendations} />}
         {activeMainTab === "recommend" && (selectedRecipe
           ? <RecipeWorkspace menu={selectedRecipe} isLoading={isRecipeLoading} onBack={showRecommendations} isSaved={isRecipeSaved(selectedRecipe, savedRecipes)} onToggleSaved={() => toggleRecipeSaved(selectedRecipe)} onConsume={openConsumptionModal} isConsumed={consumedRecipeId === selectedRecipe.id} />
           : <RecommendWorkspace recipes={recommendationRecipes} savedRecipes={savedRecipes} meta={recommendationMeta} isLoading={isRecommendationsLoading} isLoadingMore={isMoreRecommendationsLoading} error={recommendationError} onRetry={recommendationErrorScope === "more" ? loadMoreRecommendations : () => setRecommendationRetryKey((current) => current + 1)} onLoadMore={loadMoreRecommendations} selectedMood={selectedMood} setSelectedMood={setSelectedMood} missingIngredientLimit={missingIngredientLimit} setMissingIngredientLimit={setMissingIngredientLimit} onSelectRecipe={handleRecipeSelect} onToggleSaved={toggleRecipeSaved} />)}
@@ -493,13 +467,13 @@ function App() {
         <IngredientForm formValues={formValues} errors={errors} isEditing={Boolean(editingIngredientId)} isSubmitting={isSubmitting} initialFocusField={initialFocusField} onChange={handleFormChange} onBlur={handleFormBlur} onTagToggle={handleTagToggle} onApplySuggestedDate={applySuggestedDate} onSubmit={handleSubmitIngredient} onCancel={closeIngredientForm} />
       </IngredientFormModal>}
       {confirmAction && <ConfirmDialog action={confirmAction} isSubmitting={isSubmitting} onCancel={() => setConfirmAction(null)} onConfirm={completeIngredientAction} />}
-      {naggingMessage && (selectedIngredient || pendingRecipe) && <NaggingMessage message={naggingMessage} onAcceptSuggestion={() => continueFromNagging("balanced")} onContinueOriginal={continueOriginalFromNagging} onClose={closeNaggingMessage} />}
+      {naggingMessage && pendingRecipe && <NaggingMessage message={naggingMessage} onAcceptSuggestion={() => continueFromNagging("balanced")} onContinueOriginal={continueOriginalFromNagging} onClose={closeNaggingMessage} />}
       {consumptionRecipe && <RecipeConsumptionModal recipe={consumptionRecipe} ingredients={managedIngredients} isSubmitting={isConsumptionSubmitting} error={consumptionError} onClose={closeConsumptionModal} onConfirm={confirmRecipeConsumption} />}
     </div>
   );
 }
 
-function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setActiveStorage, sortOrder, setSortOrder, recommendedCount, openIngredientForm, editIngredient, openMenuId, setOpenMenuId, requestIngredientAction, onIngredientSelect, showRecommendations }) {
+function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setActiveStorage, sortOrder, setSortOrder, recommendedCount, openIngredientForm, editIngredient, requestIngredientAction, showRecommendations }) {
   const urgentIngredients = ingredients
     .filter((item) => isUrgentIngredient(getDaysRemaining(getIngredientDueDate(item))))
     .sort((a, b) => getDaysRemaining(getIngredientDueDate(a)) - getDaysRemaining(getIngredientDueDate(b)));
@@ -520,7 +494,7 @@ function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setAc
         <label className="sort-control"><span>정렬</span><select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}><option value="expiry">소비기한 임박순</option><option value="recent">최근 등록순</option><option value="name">이름순</option></select></label>
       </div>
 
-      {ingredients.length === 0 ? <EmptyIngredientState onAdd={openIngredientForm} /> : visibleIngredients.length === 0 ? <div className="empty-board"><strong>조건에 맞는 재료가 없어요.</strong><span>다른 필터를 선택해 보세요.</span></div> : <div className="ingredient-grid">{visibleIngredients.map((ingredient) => <IngredientTile key={ingredient.id} ingredient={ingredient} isMenuOpen={openMenuId === ingredient.id} onToggleMenu={() => setOpenMenuId((current) => current === ingredient.id ? null : ingredient.id)} onCloseMenu={() => setOpenMenuId(null)} onEdit={editIngredient} onAction={requestIngredientAction} onFindRecipes={() => onIngredientSelect(ingredient)} />)}</div>}
+      {ingredients.length === 0 ? <EmptyIngredientState onAdd={openIngredientForm} /> : visibleIngredients.length === 0 ? <div className="empty-board"><strong>조건에 맞는 재료가 없어요.</strong><span>다른 필터를 선택해 보세요.</span></div> : <div className="ingredient-grid">{visibleIngredients.map((ingredient) => <IngredientTile key={ingredient.id} ingredient={ingredient} onEdit={editIngredient} onAction={requestIngredientAction} />)}</div>}
     </section>
   </section>;
 }
@@ -544,22 +518,18 @@ function QuickActionSection({ onRecommend, onUrgent }) {
   return <section className="quick-actions" aria-label="빠른 실행">{actions.map(([icon, title, description, action]) => <button key={title} type="button" onClick={action}><span className="quick-icon" aria-hidden="true">{icon}</span><span><strong>{title}</strong><small>{description}</small></span><b aria-hidden="true">→</b></button>)}</section>;
 }
 
-function IngredientTile({ ingredient, isMenuOpen, onToggleMenu, onCloseMenu, onEdit, onAction, onFindRecipes }) {
+function IngredientTile({ ingredient, onEdit, onAction }) {
   const expiration = getIngredientExpirationPresentation(ingredient);
   const ingredientTags = getIngredientTags(ingredient);
 
   return <article className={`ingredient-tile ${expiration.status}`}>
-    <div className="tile-top"><span className="ingredient-emoji" aria-hidden="true">{ingredient.icon}</span><div className="tile-primary"><div className="tile-title-row"><h3>{ingredient.name}</h3><strong className="quantity-text">{formatIngredientQuantity(ingredient)}</strong></div><div className={`expiration-line ${expiration.status}`}><span className="dday-badge">{expiration.badge}</span><strong>{expiration.label}</strong></div><span className="storage-info">{storageLabels[ingredient.storage]} 보관</span></div><IngredientMenu ingredient={ingredient} isOpen={isMenuOpen} onToggle={onToggleMenu} onClose={onCloseMenu} onEdit={onEdit} onAction={onAction} /></div>
+    <div className="tile-top"><span className="ingredient-emoji" aria-hidden="true">{ingredient.icon}</span><div className="tile-primary"><div className="tile-title-row"><h3>{ingredient.name}</h3><strong className="quantity-text">{formatIngredientQuantity(ingredient)}</strong></div><div className={`expiration-line ${expiration.status}`}><span className="dday-badge">{expiration.badge}</span><strong>{expiration.label}</strong></div><span className="storage-info">{storageLabels[ingredient.storage]} 보관</span></div></div>
     {ingredientTags.length > 0 && <div className="ingredient-labels" aria-label="재료 태그">{ingredientTags.map((tag) => <span className="tag-label" key={tag}>{INGREDIENT_TAG_LABELS[tag]}</span>)}</div>}
-    <button className="find-recipe-button" type="button" onClick={onFindRecipes}>이 재료로 요리 찾기 <span aria-hidden="true">→</span></button>
+    <div className="ingredient-tile-actions">
+      <button type="button" onClick={() => onEdit(ingredient)}>재료 수정</button>
+      <button className="used-action" type="button" onClick={() => onAction("used", ingredient)}>모두 사용</button>
+    </div>
   </article>;
-}
-
-function IngredientMenu({ ingredient, isOpen, onToggle, onClose, onEdit, onAction }) {
-  return <div className="ingredient-menu" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) onClose(); }}>
-    <button className="more-button" type="button" aria-label={`${ingredient.name} 메뉴 열기`} aria-haspopup="menu" aria-expanded={isOpen} onClick={onToggle}>···</button>
-    {isOpen && <div className="menu-popover" role="menu"><button type="button" role="menuitem" onClick={() => onEdit(ingredient, "quantity")}>수량 변경</button><button type="button" role="menuitem" onClick={() => onEdit(ingredient, "expirationDate")}>권장 날짜 수정</button><button type="button" role="menuitem" onClick={() => onAction("used", ingredient)}>모두 사용함</button><button className="danger" type="button" role="menuitem" onClick={() => onAction("delete", ingredient)}>삭제</button></div>}
-  </div>;
 }
 
 function EmptyIngredientState({ onAdd }) {
