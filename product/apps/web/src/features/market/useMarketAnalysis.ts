@@ -4,8 +4,10 @@ import {
   loadMarketAnalysis,
   loadMarketComparison,
   loadAnalysisPeriods,
+  loadMarketStoreTrend,
   type AnalysisSource,
   type MarketAnalysis,
+  type MarketStoreTrend,
 } from "../../services/marketAnalysis";
 import {
   loadAdminAreaBackground,
@@ -38,6 +40,8 @@ export function useMarketAnalysis(
     Record<string, Array<"stores" | "sales" | "flow">>
   >({});
   const [defaultPeriod, setDefaultPeriod] = useState<string | null>(null);
+  const [storeTrend, setStoreTrend] = useState<MarketStoreTrend | null>(null);
+  const [storeTrendState, setStoreTrendState] = useState<AnalysisState>("loading");
 
   useEffect(() => {
     if (!category || isTestEnvironment() || typeof fetch === "undefined") return;
@@ -123,6 +127,32 @@ export function useMarketAnalysis(
   }, [allowDemoSnapshot, analysisRetryToken, apiReady, category, market, period]);
 
   useEffect(() => {
+    if (!category || !apiReady) {
+      setStoreTrend(null);
+      setStoreTrendState(apiReady ? "unavailable" : "loading");
+      return;
+    }
+    if (allowDemoSnapshot || isTestEnvironment() || typeof fetch === "undefined") {
+      setStoreTrend(null);
+      setStoreTrendState("unavailable");
+      return;
+    }
+    const controller = new AbortController();
+    setStoreTrend(null);
+    setStoreTrendState("loading");
+    loadMarketStoreTrend(market.market_id, category, controller.signal)
+      .then((result) => {
+        setStoreTrend(result);
+        setStoreTrendState("ready");
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setStoreTrendState("unavailable");
+      });
+    return () => controller.abort();
+  }, [allowDemoSnapshot, apiReady, category, market.market_id]);
+
+  useEffect(() => {
     if (!category) {
       setComparison(null);
       return;
@@ -152,6 +182,8 @@ export function useMarketAnalysis(
     availablePeriods,
     periodAvailability,
     defaultPeriod,
+    storeTrend,
+    storeTrendState,
     retryAnalysis: () => setAnalysisRetryToken((current) => current + 1),
   };
 }
