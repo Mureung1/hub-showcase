@@ -10,6 +10,7 @@
     "dev:backend": "npm --prefix backend run dev",
     "test:backend": "npm --prefix backend run test",
     "test:frontend": "npm --prefix frontend run test",
+    "test:e2e": "npm --prefix frontend run test:e2e",
     "lint": "oxlint"
   },
   "devDependencies": {

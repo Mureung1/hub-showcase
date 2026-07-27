@@ -1,6 +1,6 @@
 # 백엔드 테스트 컨벤션
 
-백엔드(`backend/`)의 유닛테스트·통합테스트 작성 규칙입니다. 프론트엔드는 아직 테스트 프레임워크를 도입하지 않았습니다.
+백엔드(`backend/`)의 유닛테스트·통합테스트 작성 규칙입니다. 프론트엔드는 순수 함수 유닛테스트(Vitest, `frontend/src/utils/*.test.js`)만 있고 컴포넌트 테스트는 아직 없습니다 — 전체 흐름 검증은 5번 E2E 테스트가 담당합니다.
 
 - 프레임워크: **Vitest** (`backend/vitest.config.js`) + **Supertest** (라우트 통합테스트)
 - 실행: `npm run test:backend` (루트에서), 또는 `backend/`에서 `npm test`
@@ -74,3 +74,17 @@ const { default: prisma } = await import('../../src/config/prisma.js');
 - 통합테스트에서 GitHub API를 실제로 호출하기 (rate limit 소모, 플레이키니스).
 - 통합테스트가 만든 데이터를 정리하지 않고 끝내기 (다음 실행·다른 개발자 조회에 영향).
 - 상태 코드만 확인하고 에러 `code`/응답 바디 형태를 확인하지 않기.
+
+---
+
+## 5. E2E 테스트 (`frontend/e2e/`)
+
+**대상**: 실제 브라우저로 프론트 전체 화면 흐름(랜딩→ID입력→분석→프로필→검색→결과→상세)을 처음부터 끝까지 통과하는지 검증한다.
+
+- 프레임워크: **Playwright** (`frontend/playwright.config.js`)
+- 실행: `npm run test:e2e` (루트에서), 또는 `frontend/`에서 `npm run test:e2e`
+- 위치: `frontend/e2e/`, 파일명은 `대상.spec.js`
+- **GitHub API·LLM을 mock하지 않고 실제로 호출한다** — 통합테스트와 정반대 원칙이다. E2E의 목적 자체가 "실제 환경에서 끝까지 되는지" 확인하는 거라, 여기서 mock하면 검증 의미가 없어진다. 그래서 `backend/.env`에 유효한 `GITHUB_TOKEN`/`GEMINI_API_KEY`가 있어야 통과한다.
+- `webServer` 설정으로 프론트(5173)·백엔드(3000) 개발 서버를 테스트가 알아서 띄운다(`reuseExistingServer: true`라 이미 떠 있으면 그걸 그대로 씀).
+- 재추천 다양화의 "하루 상한 도달 시 에러 대신 캐시 반환" 정책 덕분에, 같은 GitHub ID로 반복 실행해도 실패하지 않는다.
+- 에러 케이스(400/404 등)는 이미 백엔드 통합테스트가 충분히 커버하므로 E2E에서 중복 검증하지 않는다 — happy path 하나로 충분하다.

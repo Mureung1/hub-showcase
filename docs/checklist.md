@@ -81,18 +81,18 @@
 - [x] **[FE] mock → 실제 API 교체** — `axios` + `@tanstack/react-query`, 로딩/에러 상태 연결
       - DoD: 전 화면이 실제 백엔드 응답으로 동작 ✅ 2026-07-22 (추천 API mock 제거, Analyze/IssueSearch를 useMutation으로 전환, #9)
       - 참고: [decisions](decisions.md) TanStack Query
-- [ ] **[FE/BE] E2E 통합 테스트** — 랜딩→상세 7화면 흐름 전체 검증
-      - DoD: 실제 GitHub ID로 끝까지 흐름 성공
+- [x] **[FE/BE] E2E 통합 테스트** — 랜딩→상세 7화면 흐름 전체 검증
+      - DoD: 실제 GitHub ID로 끝까지 흐름 성공 ✅ 2026-07-27 (Playwright 도입, `frontend/e2e/full-flow.spec.js`, mock 없이 실제 GitHub/LLM API로 kimsunho2000 계정 통과 확인. 참고: [testing.md](testing.md) §5)
 - [ ] **[BE] rate limit / 엣지케이스 대응** — 비인증 60회 제한, 캐시 만료, 빈 결과 처리
       - DoD: rate limit 초과·빈 추천 상황에서 정상 폴백/안내
       - 참고: plan §6 GitHub API 제약, ApiUsage
 - [ ] **[FE/BE] 버그 디버깅 + 필터/재조회 마감** — 조건 변경 재추천
       - DoD: 조건 바꿔 재추천 동작, 알려진 버그 정리
       - 참고: plan §7 재조회/필터링
-- [ ] **[FE] 프론트 배포** (github.io 등) — 프로토타입 데모 포함
-      - DoD: 공개 URL 접속 가능
+- [x] **[FE] 프론트 배포** (github.io 등) — 프로토타입 데모 포함
+      - DoD: 공개 URL 접속 가능 ✅ `kimsunho2000.github.io/hub/` (`npm run deploy`)
 - [ ] **[BE] 백엔드 배포** — API 서버 + 환경변수(GitHub 토큰) 설정
-      - DoD: 배포된 API로 프론트 연동 성공
+      - DoD: 배포된 API로 프론트 연동 성공 — Render `render.yaml` 블루프린트 준비 완료(2026-07-27), 실제 서비스 생성·시크릿 입력은 대시보드에서 진행 필요
 - [x] **[공통] architecture.md 최종 확정** — 폴더구조/API/DB/배포/데이터흐름 기록
       - DoD: [architecture.md](architecture.md) 6개 섹션 채움 ✅ 2026-07-24 (프론트엔드/백엔드 섹션 채움, 인프라/배포는 다음 주로 미뤄 스텁만 남김)
 
