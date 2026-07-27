@@ -29,7 +29,8 @@ const FACTORS = [
   },
   {
     key: "gradeWeight",
-    describe: (subject) => `성적 반영 비율이 높아서(${subject.gradeWeight ?? 40}%)`,
+    // 모르는 요인은 위에서 걸러지므로 여기 오면 gradeWeight 는 항상 숫자다.
+    describe: (subject) => `성적 반영 비율이 높아서(${subject.gradeWeight}%)`,
   },
   {
     key: "grading",

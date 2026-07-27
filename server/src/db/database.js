@@ -16,6 +16,7 @@ const db = new DatabaseSync(DB_PATH);
 // docs/data-model.md 의 subjects 테이블을 SQLite로 옮긴 것.
 // id 는 서버가 자동 발급(AUTOINCREMENT), created_at 은 저장 시각을 기본값으로 채운다.
 // grade_weight 는 성적 반영 비율(0~100%), grading/study_amount/available_time/understanding/difficulty 는 1~7 척도다.
+// grade_weight 는 NULL 을 허용한다. NULL 은 "모름"이고 0 은 "성적에 안 들어감"이라 뜻이 다르다.
 db.exec(`
   CREATE TABLE IF NOT EXISTS subjects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,7 +24,7 @@ db.exec(`
     exam_date TEXT NOT NULL,
     understanding INTEGER NOT NULL,
     difficulty INTEGER NOT NULL,
-    grade_weight INTEGER NOT NULL DEFAULT 40,
+    grade_weight INTEGER,
     grading INTEGER NOT NULL DEFAULT 4,
     study_amount INTEGER NOT NULL DEFAULT 4,
     available_time INTEGER NOT NULL DEFAULT 4,
@@ -63,7 +64,7 @@ for (const [name, ddl] of [
 // grade_weight 가 없으면 만들고, 옛 importance 값이 있으면 점수 기여도를 보존하도록
 // (importance-1)*25 로 환산해 채운 뒤(1→0, 3→50, 5→100), 옛 컬럼은 제거한다.
 if (!columns.has("grade_weight")) {
-  db.exec("ALTER TABLE subjects ADD COLUMN grade_weight INTEGER NOT NULL DEFAULT 40");
+  db.exec("ALTER TABLE subjects ADD COLUMN grade_weight INTEGER");
   if (columns.has("importance")) {
     db.exec("UPDATE subjects SET grade_weight = MAX(0, MIN(100, (importance - 1) * 25))");
   }
@@ -79,9 +80,12 @@ if (columns.has("importance")) {
 // 선형 비례식 1 + (old-1) * 6/4 로 환산해 상대적 위치를 보존한다. (1→1, 3→4, 5→7)
 // PRAGMA user_version 으로 이 마이그레이션을 한 번만 실행한다.
 const SCALE_MIGRATION_VERSION = 1;
-const { user_version: userVersion } = db.prepare("PRAGMA user_version").get();
 
-if (userVersion < SCALE_MIGRATION_VERSION) {
+function currentVersion() {
+  return db.prepare("PRAGMA user_version").get().user_version;
+}
+
+if (currentVersion() < SCALE_MIGRATION_VERSION) {
   for (const column of ["understanding", "difficulty", "grading", "study_amount", "available_time"]) {
     db.exec(`
       UPDATE subjects
@@ -90,6 +94,44 @@ if (userVersion < SCALE_MIGRATION_VERSION) {
     `);
   }
   db.exec(`PRAGMA user_version = ${SCALE_MIGRATION_VERSION}`);
+}
+
+// grade_weight 를 NOT NULL DEFAULT 40 에서 NULL 허용으로 바꾼다.
+// 사용자가 성적 반영 비율을 답하지 않았는데 40% 라고 답한 것으로 집계하면,
+// 계산기가 막으려던 "모르겠다가 몰래 한 표를 행사하는" 상황이 그대로 생긴다.
+// SQLite 는 컬럼 제약을 ALTER 로 못 바꾸므로 테이블을 다시 만들어 옮긴다.
+const GRADE_WEIGHT_NULLABLE_VERSION = 2;
+
+if (currentVersion() < GRADE_WEIGHT_NULLABLE_VERSION) {
+  db.exec(`
+    BEGIN;
+    CREATE TABLE subjects_migrated (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      exam_date TEXT NOT NULL,
+      understanding INTEGER NOT NULL,
+      difficulty INTEGER NOT NULL,
+      grade_weight INTEGER,
+      grading INTEGER NOT NULL DEFAULT 4,
+      study_amount INTEGER NOT NULL DEFAULT 4,
+      available_time INTEGER NOT NULL DEFAULT 4,
+      credits REAL NOT NULL DEFAULT 3,
+      previous_score INTEGER,
+      completed_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    INSERT INTO subjects_migrated
+      (id, name, exam_date, understanding, difficulty, grade_weight, grading,
+       study_amount, available_time, credits, previous_score, completed_at, created_at)
+    SELECT
+      id, name, exam_date, understanding, difficulty, grade_weight, grading,
+      study_amount, available_time, credits, previous_score, completed_at, created_at
+    FROM subjects;
+    DROP TABLE subjects;
+    ALTER TABLE subjects_migrated RENAME TO subjects;
+    PRAGMA user_version = ${GRADE_WEIGHT_NULLABLE_VERSION};
+    COMMIT;
+  `);
 }
 
 export default db;

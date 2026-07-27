@@ -96,7 +96,7 @@ export function calculatePriorityScore(
     understanding,
     difficulty,
     daysUntil,
-    gradeWeight = 40,
+    gradeWeight,
     grading,
     studyAmount,
     availableTime,
@@ -109,7 +109,11 @@ export function calculatePriorityScore(
     difficulty: ascending(difficulty),
     urgency: calculateUrgencyScore(daysUntil),
     // 학점 반영 비율은 이미 0~100 이므로 그 값을 그대로 점수로 쓴다.
-    gradeWeight: Math.max(0, Math.min(100, gradeWeight)),
+    // 입력하지 않았으면 모름(null)이다. (클라이언트 priorityCalculator.js 와 규칙을 맞춘다.)
+    gradeWeight:
+      typeof gradeWeight === "number"
+        ? Math.max(0, Math.min(100, gradeWeight))
+        : null,
     grading: ascending(grading),
     studyAmount: ascending(studyAmount),
     availableTime: descending(availableTime),

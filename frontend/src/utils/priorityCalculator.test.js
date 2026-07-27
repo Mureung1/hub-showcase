@@ -178,6 +178,55 @@ test("calculatePriorityScore: 모름이 있어도 성향에 따라 점수가 달
   assert.notEqual(urgent, grade);
 });
 
+// ── 성적 반영 비율(gradeWeight)도 "모름"을 가진다 ──
+// 예전에는 안 넣으면 40%로 채웠다. 사용자가 답한 적 없는 값이 점수에 섞이므로
+// 다른 요인들과 똑같이 모름(null)으로 두고 계산에서 뺀다.
+
+test("getScoreBreakdown: 성적 반영 비율을 안 넣으면 모름(null)", () => {
+  const b = getScoreBreakdown({ understanding: 4, daysUntil: 40 });
+  assert.equal(b.gradeWeight, null);
+});
+
+// 0%("성적에 안 들어감")는 모름이 아니라 분명한 대답이다. 0점으로 계산돼야 한다.
+test("getScoreBreakdown: 성적 반영 비율 0%는 모름이 아니라 0점", () => {
+  const b = getScoreBreakdown({ gradeWeight: 0, daysUntil: 40 });
+  assert.equal(b.gradeWeight, 0);
+});
+
+// 아는 항목이 전부 100점짜리면, 성적 반영 비율을 몰라도 100점이어야 한다.
+test("calculatePriorityScore: 성적 반영 비율 모름은 점수를 끌어내리지 않는다", () => {
+  const allMax = {
+    understanding: 1,
+    difficulty: 7,
+    daysUntil: 0,
+    grading: 7,
+    studyAmount: 7,
+    availableTime: 1,
+    previousScore: 0,
+  };
+
+  assert.equal(
+    calculatePriorityScore({ ...allMax, gradeWeight: 100 }, WEIGHT_PRESETS.balanced),
+    100
+  );
+  assert.equal(calculatePriorityScore(allMax, WEIGHT_PRESETS.balanced), 100);
+});
+
+// 이름과 시험 날짜만 아는 과목도 임박도만으로 점수가 나와야 한다.
+// (1단계에서 이름·날짜만 받고 바로 순서를 보여주기 위한 성질)
+test("calculatePriorityScore: 시험 날짜만 알아도 임박도로 점수가 나온다", () => {
+  const soon = calculatePriorityScore({ daysUntil: 1 }, WEIGHT_PRESETS.balanced);
+  const later = calculatePriorityScore({ daysUntil: 25 }, WEIGHT_PRESETS.balanced);
+
+  assert.ok(soon > later, `${soon} > ${later}`);
+  assert.ok(soon >= 0 && soon <= 100, `0 <= ${soon} <= 100`);
+});
+
+// 아는 요인이 하나도 없으면 판단할 근거가 없다.
+test("calculatePriorityScore: 전부 모르면 0점", () => {
+  assert.equal(calculatePriorityScore({}, WEIGHT_PRESETS.balanced), 0);
+});
+
 // 같은 조건이면 이전 시험 점수가 높은 과목이 최종 우선순위 점수가 더 낮다.
 test("calculatePriorityScore: 이전 시험 점수가 높으면 우선순위가 더 낮다", () => {
   const base = {

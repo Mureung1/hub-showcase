@@ -108,7 +108,7 @@ export function getScoreBreakdown({
   understanding,
   difficulty,
   daysUntil,
-  gradeWeight = 40,
+  gradeWeight,
   grading,
   studyAmount,
   availableTime,
@@ -122,7 +122,12 @@ export function getScoreBreakdown({
     // 시험이 가까울수록 높인다. 시험 날짜를 모르면 급함도 모른다.
     urgency: calculateUrgencyScore(daysUntil),
     // 학점 반영 비율은 이미 0~100 이므로 그 값을 그대로 점수로 쓴다.
-    gradeWeight: Math.max(0, Math.min(100, gradeWeight)),
+    // 입력하지 않았으면 모름(null)이다. 40%로 대신 채우면 사용자가 하지 않은 대답이
+    // 점수에 섞인다. 0%("성적에 안 들어감")와 모름은 다른 뜻이라 구분해야 한다.
+    gradeWeight:
+      typeof gradeWeight === "number"
+        ? Math.max(0, Math.min(100, gradeWeight))
+        : null,
     // 교수님이 학점을 짜게 줄수록(받기 어려울수록) 더 신경 쓰도록 높인다.
     grading: ascending(grading),
     // 공부 분량(시험 범위)이 많을수록 미리 시작하도록 높인다.
