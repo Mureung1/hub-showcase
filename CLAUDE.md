@@ -32,8 +32,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Node 버전**: `package.json`의 `engines.node`가 `>=24`로 고정돼 있다 (`--env-file` 의존).
 
 ## 디자인 시스템
-- 색상·폰트·radius·spacing 토큰과 컴포넌트 패턴은 `DESIGN_SYSTEM.md`에 정의되어 있다. UI를 새로 만들거나 스타일을 고칠 때는 이 문서의 토큰을 따르고 임의의 hex/px 값을 하드코딩하지 않는다.
-- `src/`(Tailwind v4 `@theme` 토큰)와 `prototype/`(CSS 커스텀 프로퍼티)는 구현 방식이 다르므로, 작업 대상에 맞는 방식을 `DESIGN_SYSTEM.md`의 "구현 매핑" 섹션에서 확인한다.
+- 색상·폰트·radius·spacing 토큰과 컴포넌트 패턴은 `DESIGN_SYSTEM.md`에 정의되어 있다. UI를 새로 만들거나 스타일을 고칠 때는 이 문서의 토큰(Tailwind v4 `@theme`)을 따르고 임의의 hex/px 값을 하드코딩하지 않는다.
 - 새 컴포넌트 패턴을 만들면 `DESIGN_SYSTEM.md`의 "컴포넌트 패턴 카탈로그"에 한 줄 추가해서 최신 상태로 유지한다.
 - 이 원칙은 `.claude/skills/design-system/SKILL.md` 스킬이 UI 작업 시 자동으로 적용한다.
 
@@ -43,7 +42,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 하나의 커밋에 관련 없는 변경을 섞지 않는다.
 
 ## 개발 원칙
-- **UI·플로우를 새로 만들거나 크게 바꿀 땐 `prototype/`(정적 HTML)에 먼저 반영하고, 검증된 뒤에 실제 앱(`src/`)으로 옮긴다.** 프로토타입은 빌드·라우팅 없이 브라우저로 바로 열어볼 수 있어서 디자인·흐름을 빠르게 확인하고 고치기 좋다. 순서를 반대로(실제 앱 먼저) 하면 프로토타입이 계속 뒤처져서 실제 앱과 따로 노는 문서가 되어버린다.
 - API 키(KAMIS 등)는 절대 프론트엔드 코드나 커밋에 노출하지 않고 서버(`server/`, Express) 환경변수로만 관리한다.
 - 가계부 저장 로직은 나중에 로그인+DB로 교체할 수 있도록 별도 모듈로 분리해서 작성한다.
 - 코드 작성 전 `checklist.md`에서 해당 작업 항목을 확인하고, 완료되면 체크 표시한다.

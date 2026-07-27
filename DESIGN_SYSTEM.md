@@ -1,8 +1,8 @@
 # 식비구조대 디자인 시스템
 
-이 문서는 "식비구조대"의 공식 디자인 토큰과 컴포넌트 패턴을 정의한다. 실제 서비스 코드(`src/`, React + Tailwind v4)와 프로토타입(`prototype/`, 정적 HTML + CSS)에 **똑같이** 적용된다 — 구현 방식만 다르고 토큰 이름과 값은 하나다.
+이 문서는 "식비구조대"의 공식 디자인 토큰과 컴포넌트 패턴을 정의한다. 실제 서비스 코드(`src/`, React + Tailwind v4)에 적용된다.
 
-2026-07-20에 prototype-v2(마스코트 '기니' 방향)에서 검증한 웜톤(크림 배경·갈색 잉크) 팔레트로 전환했다 — 이전 팔레트(남색 잉크 `#17182B`·노랑 `#F9BE3B` 프라이머리, `prototype/style-warm.css`가 최초 구현)는 리브랜딩 전 버전이라 더 이상 기준이 아니다. `prototype-v2/style-fridge-flow.css`가 이 팔레트의 최초 구현이고, `src/index.css`의 `@theme`에도 동일하게 반영돼 있다.
+2026-07-20에 정적 HTML 프로토타입(마스코트 '기니' 방향)에서 검증한 웜톤(크림 배경·갈색 잉크) 팔레트로 전환했다 — 이전 팔레트(남색 잉크 `#17182B`·노랑 `#F9BE3B` 프라이머리)는 리브랜딩 전 버전이라 더 이상 기준이 아니다. 프로토타입은 화면·플로우가 `src/`에 안정적으로 이식된 뒤 역할을 다해 삭제했고(2026-07-27), `src/index.css`의 `@theme`가 이 팔레트의 현재 기준이다.
 
 > 참고: 저장소 루트의 `DESIGN.md`, `miro/DESIGN.md`는 외부 사이트(Figma, Miro)를 분석해둔 참고 자료이며 이 프로젝트의 공식 시스템이 아니다. 이 파일이 끼니픽의 유일한 기준이다.
 
@@ -66,9 +66,7 @@
 | `like-star-button` (실제 앱 `MenuCard`, `RecipeDetailPage` 제목 옆) | 원형 버튼(카드에서는 우상단, 순위 배지와 대칭 위치 / 상세 페이지에서는 제목 줄 오른쪽). `accent-heart` 색은 찜 버튼 전용으로 예약된 토큰이라 다른 곳에는 안 씀(이름은 "heart"지만 실제 아이콘은 별표) — 찜 안 함은 `text-secondary` 빈 별(☆), 찜 함은 `accent-heart` 채운 별(★). `MenuCard`는 카드 전체가 `Link`라서 버튼 클릭 시 `preventDefault`+`stopPropagation`으로 상세 페이지 이동을 막음. `Home.jsx`의 "찜" 필터(★ 찜한 것만 보기)와 짝을 이룸, 저장은 `likedRecipesStorage.js`(localStorage, `fridgeStorage.js`와 동일 패턴) | `accent-heart`, `text-secondary`, `bg-bg-surface` |
 | `purchase-link-item` (실제 앱 `PurchaseLinkPanel`) | 외부 쇼핑몰 상품 한 줄을 세로 2단으로 표시 — 1단은 원본 상품명을 `truncate`(1줄 말줄임, 잘린 부분은 `title` 속성 툴팁)로, 2단은 몰 이름과 가격 + (있으면) `text-secondary` 캡션으로 개당/100g당/100ml당 단가를 보여줌. 상품명을 그대로 노출해서 "묶음상품인데 단일상품인 줄 알고 클릭" 같은 오해를 방지. 네이버가 여러 판매처를 하나로 검증한 카탈로그(가격비교) 상품이면 몰 이름 옆에 `best-tag` 패턴 재사용한 작은 배지("가격비교 확인")를 붙여 개별 판매처의 자유 텍스트 상품과 구분 | `text-secondary`, `text-primary`, `primary-text`, `primary-soft` |
 
-## 구현 매핑
-
-두 코드베이스가 서로 다른 도구를 쓰므로, 토큰 이름은 같게 유지하고 구현만 아래처럼 나눈다.
+## 구현
 
 ### 실제 앱 (`src/`, Tailwind v4)
 
@@ -99,10 +97,6 @@
 ```
 
 이후 컴포넌트에서는 `bg-primary`, `text-text-secondary`, `rounded-card` 같은 유틸리티 클래스를 그대로 쓰면 된다. 임의의 `bg-orange-500`, `rounded-xl` 같은 팔레트 기본값을 새로 끌어오지 않는다.
-
-### 프로토타입 (`prototype/`, CSS 변수)
-
-`prototype/style-warm.css`의 `:root` 블록이 그대로 기준이다. 새 프로토타입 화면을 만들 때는 이 파일을 그대로 링크하거나 복사해서 시작한다.
 
 ## Do / Don't
 
