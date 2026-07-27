@@ -228,7 +228,7 @@ class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
   }
 
   finish() {
-    this.gate.resolve()
+    this.gate.resolve(undefined)
   }
 
   startTurn(_input: StartTurnInput): Promise<never> {
@@ -275,9 +275,9 @@ class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
 
 function deferred<T>(): {
   readonly promise: Promise<T>
-  readonly resolve: (value?: T) => void
+  readonly resolve: (value: T) => void
 } {
-  let resolve!: (value?: T) => void
+  let resolve!: (value: T) => void
   const promise = new Promise<T>((settle) => {
     resolve = settle
   })

@@ -122,6 +122,7 @@ async function startPreparedConfiguredServerApplication(input: {
     readLifecycle: () => readLifecycle(),
   })
   let session: PreparedWorkspaceActiveSession | undefined
+  let listenerPort: number | undefined
   try {
     const ports: PreparedWorkspaceStartupPorts = {
       async bindSharedListener(options) {
@@ -131,6 +132,7 @@ async function startPreparedConfiguredServerApplication(input: {
           port: input.port,
           requestHandler: target.application.app,
         })
+        listenerPort = listener.port
         return {
           port: listener.port,
           async close() {
@@ -217,9 +219,10 @@ async function startPreparedConfiguredServerApplication(input: {
         return closePromise
       },
     }
+    const activePort = listenerPort ?? input.port
     input.log(`SemesterWorkspace active: ${workspaceRoot}`)
-    input.log(`server listening on http://${input.host}:${input.port}`)
-    return { application, port: input.port }
+    input.log(`server listening on http://${input.host}:${activePort}`)
+    return { application, port: activePort }
   } catch (error) {
     await session?.close().catch(() => undefined)
     await target.application.close().catch(() => undefined)
