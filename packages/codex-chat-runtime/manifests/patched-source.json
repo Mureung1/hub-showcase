@@ -298,7 +298,7 @@
     "sdk/python/src/openai_codex/api.py": {
       "bytes": 34820,
       "git_mode": "100644",
-      "sha256": "1241d79989e2515a091d56effea58fc41a4e7bd4adfd4a1f8476e4ae3e59ee4d"
+      "sha256": "535fbb4ca723e55bc8aa71fff68fe702dc8c3006cc503266d9db32ca4741d72f"
     },
     "sdk/python/src/openai_codex/async_client.py": {
       "bytes": 16358,
@@ -447,7 +447,7 @@
     }
   },
   "kind": "patched_source",
-  "patch_stack_sha256": "e826484de7b9b14de8a925016434f2be43021126582eb46ddc8f5d9faa2646a4",
+  "patch_stack_sha256": "570c4325dd19b6d1ad0997ddb7530f638ae54b348f2d3b52a17d25fdd8f4bec1",
   "patches": [
     {
       "bytes": 6020,
@@ -790,7 +790,7 @@
           "after": {
             "bytes": 34820,
             "git_mode": "100644",
-            "sha256": "1241d79989e2515a091d56effea58fc41a4e7bd4adfd4a1f8476e4ae3e59ee4d"
+            "sha256": "535fbb4ca723e55bc8aa71fff68fe702dc8c3006cc503266d9db32ca4741d72f"
           },
           "before": {
             "bytes": 33615,
@@ -815,10 +815,10 @@
       "id": "0008-thread-mcp-status",
       "order": 8,
       "path": "upstream/patches/0008-thread-mcp-status.patch",
-      "sha256": "48b2a71ac5c13a2ea3a1f7a54c999814fb05a1f0f9bd6d15f4cffc492e877a63"
+      "sha256": "0e232457785e07d66d25baed25eabb1b2c53b6b95d9b6016b6cd9e834834ba79"
     }
   ],
   "schema_version": 1,
   "source_file_count": 88,
-  "source_tree_sha256": "eb50d4a344389d5a4c0cfbbda1ec4cf02adf3d5fc1a5b397c2bcc675d7d3aa0e"
+  "source_tree_sha256": "1d96b5b7b62664a4cb7108b89cc954c9871884d8abd34a855caf817dd3f00496"
 }

@@ -5,9 +5,9 @@ index 94b1eeb..ac1214a 100644
 @@ -45,6 +45,9 @@ from .generated.v2_all import (
      GetAccountParams,
      GetAccountResponse,
-     LoginAccountParams,
 +    ListMcpServerStatusParams,
 +    ListMcpServerStatusResponse,
+     LoginAccountParams,
 +    McpServerStatusDetail,
      ModelListResponse,
      Personality,

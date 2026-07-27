@@ -57,7 +57,7 @@
     "file_count": 2539,
     "path": "bundle",
     "regular_file_bytes": 366700772,
-    "roster_sha256": "e6f7936e460281c935a70ebdbb0089a416e72d20c282615edf8f1c6c9e984462",
+    "roster_sha256": "19828344cdca52aa3b9e5788b2f3bb3078f49a0963c70ca02d74c510bdb08e24",
     "symlink_count": 9
   },
   "installed": {
@@ -81,7 +81,7 @@
       "file_count": 196,
       "path": "bundle/site-packages",
       "regular_file_bytes": 318704158,
-      "roster_sha256": "28c76e8fc5c45baa6252b4bbb334e109d91182186b570d9739a90d51c370e0cc",
+      "roster_sha256": "376757880063b19734d82e810b454c4ed9c5f2ea35ca886f1676eb2d3919671a",
       "symlink_count": 0
     }
   },
@@ -136,12 +136,12 @@
         "sha256": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915"
       }
     },
-    "patch_stack_sha256": "e826484de7b9b14de8a925016434f2be43021126582eb46ddc8f5d9faa2646a4",
+    "patch_stack_sha256": "570c4325dd19b6d1ad0997ddb7530f638ae54b348f2d3b52a17d25fdd8f4bec1",
     "patched_source_manifest": {
       "bytes": 30209,
       "git_mode": "100644",
       "path": "manifests/patched-source.json",
-      "sha256": "8080ce25bc500a868cc68b176cd0b94bc15bee1f99cd90350d33b1a1ca182076"
+      "sha256": "bc520eacf4bed980dbbb2b5d66f0de9b6b2afaff6ea62326e4eae7e7e6f50fc8"
     },
     "patches": [
       {
@@ -206,7 +206,7 @@
         "id": "0008-thread-mcp-status",
         "order": 8,
         "path": "upstream/patches/0008-thread-mcp-status.patch",
-        "sha256": "48b2a71ac5c13a2ea3a1f7a54c999814fb05a1f0f9bd6d15f4cffc492e877a63"
+        "sha256": "0e232457785e07d66d25baed25eabb1b2c53b6b95d9b6016b6cd9e834834ba79"
       }
     ],
     "repository": "https://github.com/openai/codex",
@@ -235,11 +235,11 @@
       "version": "0.7.0"
     },
     {
-      "bytes": 83980,
+      "bytes": 83981,
       "distribution": "openai-codex",
       "git_mode": "100644",
       "path": "wheels/openai_codex-0.0.0.dev0-py3-none-any.whl",
-      "sha256": "c01302fc319f9a1bd55a39cbf8667e84aacbf5d6716c8a5c7074e7103aa5689f",
+      "sha256": "bfa2739b288c880019f21a89faa7fc5011a73e2b8043277245db99d81a76a570",
       "source": "ordered_patches",
       "version": "0.0.0.dev0"
     },

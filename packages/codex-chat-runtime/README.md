@@ -58,7 +58,7 @@ Tracked unpatched snapshot, 세 manifest와 patch series는 review 대상이다.
 
 Canonical manifest는 다음을 서로 연결한다.
 
-- exact source commit, immutable unpatched manifest와 여덟 단계 complete ordered patch stack `e826484de7b9b14de8a925016434f2be43021126582eb46ddc8f5d9faa2646a4`
+- exact source commit, immutable unpatched manifest와 여덟 단계 complete ordered patch stack `570c4325dd19b6d1ad0997ddb7530f638ae54b348f2d3b52a17d25fdd8f4bec1`
 - source-only `manifests/patched-source.json` SHA-256 `c8b31958e041efc26cfd60cfaf648cd0b1a0db93ae37904d1d6d58871e993bce`와 production `manifests/production-runtime-darwin-arm64.json` SHA-256 `5786d8ab0e02a4d1d228a7a482bf5db31f5bb4822ba9ac4874b54d48dbb93d97`
 - reviewed macOS arm64 `uv_build==0.11.19` build-backend wheel과 offline wheel build
 - patched SDK wheel `0cca6e81ed5086b9b11b79c66d9eaf6ddfec5c7cf768643b9b6c07f07fb34cb9`
