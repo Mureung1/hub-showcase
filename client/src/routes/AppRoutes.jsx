@@ -8,6 +8,7 @@ import MentorHomePage from "../pages/MentorHomePage";
 import MentorListPage from "../pages/MentorListPage";
 import MentorProfileEditPage from "../pages/MentorProfileEditPage";
 import MentorSignupPage from "../pages/MentorSignupPage";
+import MentorSignupProfilePage from "../pages/MentorSignupProfilePage";
 import PlannedPage from "../pages/PlannedPage";
 import QuestionnairePage from "../pages/QuestionnairePage";
 import SignupPage from "../pages/SignupPage";
@@ -23,10 +24,7 @@ function AppRoutes() {
       <Route path={routePaths.signup} element={<SignupPage />} />
       <Route path={routePaths.menteeSignup} element={<MenteeSignupPage />} />
       <Route path={routePaths.mentorSignup} element={<MentorSignupPage />} />
-      <Route
-        path={routePaths.mentorSignupProfile}
-        element={<PlannedPage title="멘토 프로필 정보 입력" description="계정 정보 다음 단계로, 프로필 정보를 입력해 가입을 완료합니다." />}
-      />
+      <Route path={routePaths.mentorSignupProfile} element={<MentorSignupProfilePage />} />
 
       {/* 멘티 전용 화면 */}
       <Route element={<RoleRoute role="mentee" />}>
