@@ -67,8 +67,8 @@ export function buildPriorityReason(subject, weightKey = DEFAULT_WEIGHT_KEY) {
   const ctx = { daysUntil };
 
   const ranked = FACTORS
-    // 이전 시험 점수를 입력하지 않았으면(값이 숫자가 아니면) 애초에 후보에서 뺀다.
-    .filter((factor) => factor.key !== "previousScore" || typeof subject.previousScore === "number")
+    // 모르는 요인(null)은 점수 계산에도 안 들어가므로 이유로도 말하지 않는다.
+    .filter((factor) => breakdown[factor.key] !== null)
     .map((factor) => ({
       factor,
       contribution: breakdown[factor.key] * weights[factor.key],

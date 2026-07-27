@@ -27,17 +27,24 @@ function ScoreBreakdown({ subject }) {
   return (
     <div className="score-breakdown">
       {FACTORS.map((factor) => {
-        const value = Math.round(breakdown[factor.key]);
+        const raw = breakdown[factor.key];
+        // 모르는 요인(null)은 점수 계산에서 빠진다. 막대 없이 "모름"으로 표시한다.
+        const isUnknown = raw === null;
+        const value = isUnknown ? 0 : Math.round(raw);
         return (
           <div key={factor.key} className="breakdown-row">
             <span className="breakdown-label">{factor.label}</span>
             <span className="breakdown-track">
-              <span
-                className={`breakdown-fill breakdown-fill-${factor.modifier}`}
-                style={{ width: `${value}%` }}
-              />
+              {!isUnknown && (
+                <span
+                  className={`breakdown-fill breakdown-fill-${factor.modifier}`}
+                  style={{ width: `${value}%` }}
+                />
+              )}
             </span>
-            <span className="breakdown-value">{value}</span>
+            <span className={`breakdown-value${isUnknown ? " is-unknown" : ""}`}>
+              {isUnknown ? "모름" : value}
+            </span>
           </div>
         );
       })}

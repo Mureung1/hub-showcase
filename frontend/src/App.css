@@ -550,6 +550,11 @@
   color: var(--color-text-secondary);
 }
 
+/* 모르는 요인은 점수 계산에서 빠졌다는 뜻이라 흐리게 표시한다. */
+.breakdown-value.is-unknown {
+  color: var(--color-text-tertiary, #9ca3af);
+}
+
 /* 우선순위 성향 선택기 */
 .weight-selector {
   display: flex;
