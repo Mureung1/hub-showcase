@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-ticketing
+- State: completed
 - Surface: local-spec
-- Next actor: /to-tickets
+- Next actor: none
 
 ## Problem Statement
 
@@ -331,6 +331,21 @@ Implementation 완료 시 targeted package tests 뒤 `npm test`, `npm run typech
 ## Open Questions
 
 None.
+
+## Completion
+
+열 implementation ticket이 모두 완료됐다.
+
+- [001 — Canonical roots와 external Runtime appData](../tickets/2026-07-27-user-owned-semester-workspace-lifecycle/001-canonical-roots-and-external-runtime-appdata.md)
+- [002 — V4 identity와 WorkspaceRegistry](../tickets/2026-07-27-user-owned-semester-workspace-lifecycle/002-v4-identity-and-workspace-registry.md)
+- [003 — Product operation coordinator와 lifecycle contract](../tickets/2026-07-27-user-owned-semester-workspace-lifecycle/003-product-operation-coordinator-and-lifecycle-contract.md)
+- [004 — Prepared Git project context와 native trust](../tickets/2026-07-27-user-owned-semester-workspace-lifecycle/004-prepared-git-project-context-and-native-trust.md)
+- [005 — SemesterWorkspace init Skill](../tickets/2026-07-27-user-owned-semester-workspace-lifecycle/005-semester-workspace-init-skill.md)
+- [006 — Prepared-workspace launch contract](../tickets/2026-07-27-user-owned-semester-workspace-lifecycle/006-prepared-workspace-launch-contract.md)
+- [007 — Required prepared-workspace startup](../tickets/2026-07-27-user-owned-semester-workspace-lifecycle/007-required-prepared-workspace-startup.md)
+- [008 — Registry reopen·prepared-root relaunch·recovery](../tickets/2026-07-27-user-owned-semester-workspace-lifecycle/008-registry-reopen-prepared-root-relaunch-recovery.md)
+- [009 — V3 workspace kernel contraction](../tickets/2026-07-27-user-owned-semester-workspace-lifecycle/009-v3-workspace-kernel-contraction.md)
+- [010 — Scoped legacy cleanup](../tickets/2026-07-27-user-owned-semester-workspace-lifecycle/010-scoped-legacy-cleanup.md)
 
 ## Further Notes
 
