@@ -79,6 +79,7 @@ body { background: #f1f0eb; }
 .scheduler-avatar i { position: absolute; width: 6px; height: 6px; top: 21px; left: 13px; background: var(--scheduler-ink); }
 .scheduler-avatar i + i { left: 29px; }
 .scheduler-avatar i.one-eye { left: 21px; }
+.scheduler-avatar i.third-eye { top: 10px; left: 21px; }
 
 .category-filter-icon { width: 48px; height: 48px; flex: 0 0 auto; position: relative; display: block; background: #dcece6; clip-path: polygon(8px 0, 40px 0, 40px 8px, 48px 8px, 48px 40px, 40px 40px, 40px 48px, 8px 48px, 8px 40px, 0 40px, 0 8px, 8px 8px); filter: drop-shadow(4px 0 0 var(--scheduler-ink)) drop-shadow(-4px 0 0 var(--scheduler-ink)) drop-shadow(0 4px 0 var(--scheduler-ink)) drop-shadow(0 -4px 0 var(--scheduler-ink)); }
 .category-filter-icon.blue { background: #dce9f8; }.category-filter-icon.coral { background: #f9dfd6; }.category-filter-icon.violet { background: #e7e0f4; }.category-filter-icon.green { background: #dcece6; }
@@ -235,13 +236,15 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 .myhome-message { max-width: 196px; position: absolute; z-index: 5; top: 28px; right: 25px; padding: 12px 14px; border: 3px solid var(--scheduler-ink); background: #fffaf4; box-shadow: 7px 7px 0 rgba(52,75,70,.17); font-size: 10px; line-height: 1.5; }
 
 .home-dodo { width: 228px; height: 236px; position: absolute; z-index: 3; left: 50%; bottom: 61px; transform: translateX(-50%); }
-.home-dodo-body { width: 176px; height: 160px; position: absolute; left: 26px; top: 26px; background: #f2a58d; clip-path: polygon(32px 0, 144px 0, 144px 16px, 160px 16px, 160px 32px, 176px 32px, 176px 128px, 160px 128px, 160px 144px, 144px 144px, 144px 160px, 32px 160px, 32px 144px, 16px 144px, 16px 128px, 0 128px, 0 32px, 16px 32px, 16px 16px, 32px 16px); box-shadow: inset -16px -16px 0 #df8f7a, inset 16px 16px 0 #f8baa6; }
+.home-dodo-body { width: 176px; height: 160px; position: absolute; left: 26px; top: 26px; background: var(--dodo-body-color, #f2a58d); clip-path: polygon(32px 0, 144px 0, 144px 16px, 160px 16px, 160px 32px, 176px 32px, 176px 128px, 160px 128px, 160px 144px, 144px 144px, 144px 160px, 32px 160px, 32px 144px, 16px 144px, 16px 128px, 0 128px, 0 32px, 16px 32px, 16px 16px, 32px 16px); box-shadow: inset -16px -16px 0 rgba(0,0,0,.12), inset 16px 16px 0 rgba(255,255,255,.35); }
 .home-dodo-eye { width: 16px; height: 16px; position: absolute; top: 63px; background: var(--scheduler-ink); }
 .home-dodo-eye.left { left: 48px; }.home-dodo-eye.right { right: 48px; }
+.home-dodo-eye.one-eye { left: 80px; }
+.home-dodo-eye.third { top: 40px; left: 80px; }
 .home-dodo-cheek { width: 16px; height: 8px; position: absolute; top: 99px; background: #d77f7d; }
 .home-dodo-cheek.left { left: 24px; }.home-dodo-cheek.right { right: 24px; }
 .home-dodo-mouth { width: 24px; height: 8px; position: absolute; left: 76px; top: 113px; background: var(--scheduler-ink); box-shadow: 8px 8px 0 var(--scheduler-ink), 16px 8px 0 var(--scheduler-ink), 24px 0 0 var(--scheduler-ink); }
-.home-dodo-leg { width: 43px; height: 38px; position: absolute; top: 179px; border-left: 13px solid #f2a58d; border-bottom: 13px solid #f2a58d; }
+.home-dodo-leg { width: 43px; height: 38px; position: absolute; top: 179px; border-left: 13px solid var(--dodo-body-color, #f2a58d); border-bottom: 13px solid var(--dodo-body-color, #f2a58d); }
 .home-dodo-leg.left { left: 48px; }.home-dodo-leg.right { right: 48px; transform: scaleX(-1); }
 .dodo-status-card { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 10px; padding: 14px 19px; border-radius: 18px; background: var(--scheduler-cream); }
 .dodo-status-card > div:first-child { display: grid; }.dodo-status-card span { color: var(--scheduler-muted); font-size: 9px; }.dodo-status-card strong { margin-top: 3px; font-size: 14px; }
@@ -561,6 +564,11 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 .profile-edit-actions { display: flex; justify-content: flex-end; gap: 7px; }
 .profile-edit-actions button { min-width: 54px; height: 32px; padding: 0 12px; border: 1px solid var(--scheduler-line); border-radius: 9px; background: #fff; color: var(--scheduler-ink); cursor: pointer; font-size: 9px; font-weight: 800; }
 .profile-edit-actions button.save { border-color: var(--scheduler-ink); background: var(--scheduler-ink); color: #fff; }
+
+/* 두두 온보딩 — 미리보기는 기존 마이홈 방(.myhome-room)을 그대로 재사용해 낮게 잘라서 보여준다. */
+.dodo-onboarding-preview { height: 260px; margin-bottom: 20px; }
+.dodo-onboarding-view .profile-edit-form .save { width: 100%; }
+.dodo-onboarding-logout { display: block; margin: 4px auto 0; padding: 8px; border: 0; background: none; color: var(--scheduler-muted); cursor: pointer; font-size: 10px; text-decoration: underline; }
 
 .group-manager-view { min-height: 720px; }
 .group-manager-back { width: 34px; height: 34px; margin-bottom: 10px; border: 1px solid var(--scheduler-line); border-radius: 50%; background: #fff; cursor: pointer; font-size: 16px; }

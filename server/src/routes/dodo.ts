@@ -6,7 +6,14 @@ import { requireAuth } from '../auth/requireAuth.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { buildPublicUrl } from '../lib/storage.js'
 import { computeMood, computeTodayBehavior, upsertDailyDiary } from '../lib/dodo.js'
-import { equipRoomItem, getDodoAppearance, toAppearanceResponse, unequipRoomItem } from '../lib/dodoAppearance.js'
+import { AVATAR_PALETTE } from '../constants.js'
+import {
+  equipRoomItem,
+  getDodoAppearance,
+  toAppearanceResponse,
+  unequipRoomItem,
+  updateDodoBaseAppearance,
+} from '../lib/dodoAppearance.js'
 import type { EquipRoomItemResult } from '../lib/dodoAppearance.js'
 
 export const dodoRouter = Router()
@@ -30,6 +37,11 @@ function readInventoryId(body: unknown): string | undefined {
   return typeof inventoryId === 'string' ? inventoryId : undefined
 }
 
+// 본인 전용 라우트에서만 쓰는 응답 — 공용 toAppearanceResponse에 "온보딩을 끝냈는지"를 얹어서 반환한다.
+function toSelfAppearanceResponse(appearance: { onboardedAt: Date | null } & Parameters<typeof toAppearanceResponse>[0]) {
+  return { ...toAppearanceResponse(appearance), onboarded: appearance.onboardedAt !== null }
+}
+
 function respondEquipResult(res: Response, result: EquipRoomItemResult) {
   switch (result.status) {
     case 'not_owned':
@@ -39,7 +51,7 @@ function respondEquipResult(res: Response, result: EquipRoomItemResult) {
       res.status(400).json({ error: '장착할 수 없는 아이템이에요.' })
       return
     case 'ok':
-      res.json(toAppearanceResponse(result.appearance))
+      res.json(toSelfAppearanceResponse(result.appearance))
       return
   }
 }
@@ -105,7 +117,28 @@ dodoRouter.get('/diary/:date', asyncHandler(async (req, res) => {
 
 dodoRouter.get('/appearance', asyncHandler(async (req, res) => {
   const appearance = await getDodoAppearance(req.userId!)
-  res.json(toAppearanceResponse(appearance))
+  res.json(toSelfAppearanceResponse(appearance))
+}))
+
+dodoRouter.patch('/appearance', asyncHandler(async (req, res) => {
+  const body: unknown = req.body
+  if (typeof body !== 'object' || body === null) {
+    res.status(400).json({ error: '요청 본문이 필요합니다.' })
+    return
+  }
+
+  const { bodyColor, eyeCount } = body as Record<string, unknown>
+  if (typeof bodyColor !== 'string' || !(AVATAR_PALETTE as readonly string[]).includes(bodyColor)) {
+    res.status(400).json({ error: `bodyColor는 ${AVATAR_PALETTE.join('/')} 중 하나여야 합니다.` })
+    return
+  }
+  if (eyeCount !== 1 && eyeCount !== 2 && eyeCount !== 3) {
+    res.status(400).json({ error: 'eyeCount는 1, 2 또는 3이어야 합니다.' })
+    return
+  }
+
+  const appearance = await updateDodoBaseAppearance(req.userId!, { bodyColor, eyeCount })
+  res.json(toSelfAppearanceResponse(appearance))
 }))
 
 dodoRouter.post('/equip', asyncHandler(async (req, res) => {

@@ -3,6 +3,8 @@ import { logout as logoutRequest, type AuthUser } from '../auth/authClient'
 import { BottomNavigation } from './scheduler/BottomNavigation'
 import { CalendarView } from './scheduler/CalendarView'
 import { DiaryView } from './scheduler/DiaryView'
+import { DodoCustomizeView } from './scheduler/DodoCustomizeView'
+import { DodoOnboardingView } from './scheduler/DodoOnboardingView'
 import { FriendHomeView } from './scheduler/FriendHomeView'
 import { GroupManagerView } from './scheduler/GroupManagerView'
 import { FriendsView, MyHomeView, ProfileView } from './scheduler/StaticViews'
@@ -31,6 +33,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const [myPosts, setMyPosts] = useState<FriendPost[]>([])
   const [showGroupManager, setShowGroupManager] = useState(false)
   const [showDiary, setShowDiary] = useState(false)
+  const [showDodoCustomize, setShowDodoCustomize] = useState(false)
   const [visitingFriendId, setVisitingFriendId] = useState<string | null>(null)
   const [returnTab, setReturnTab] = useState<AppTab>('friends')
   const scheduleManager = useScheduleManager()
@@ -79,6 +82,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
     setMenuOpen(false)
     setShowGroupManager(false)
     setShowDiary(false)
+    setShowDodoCustomize(false)
     setVisitingFriendId(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -104,6 +108,17 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const exitFriendHome = () => {
     setVisitingFriendId(null)
     setActiveTab(returnTab)
+  }
+
+  if (!dodoManager.appearance) return null
+  if (!dodoManager.appearance.onboarded) {
+    return (
+      <DodoOnboardingView
+        appearance={dodoManager.appearance}
+        onComplete={dodoManager.updateAppearance}
+        onLogout={() => { logoutRequest(); onLogout() }}
+      />
+    )
   }
 
   return (
@@ -191,8 +206,19 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
             <DiaryView onBack={() => setShowDiary(false)} />
           ) : showGroupManager ? (
             <GroupManagerView manager={friendsManager} onBack={() => setShowGroupManager(false)} />
+          ) : showDodoCustomize ? (
+            <DodoCustomizeView
+              appearance={dodoManager.appearance}
+              onSave={dodoManager.updateAppearance}
+              onBack={() => setShowDodoCustomize(false)}
+            />
           ) : (
-            <ProfileView manager={profileManager} onOpenGroupManager={() => setShowGroupManager(true)} onOpenDiary={() => setShowDiary(true)} />
+            <ProfileView
+              manager={profileManager}
+              onOpenGroupManager={() => setShowGroupManager(true)}
+              onOpenDiary={() => setShowDiary(true)}
+              onOpenDodoCustomize={() => setShowDodoCustomize(true)}
+            />
           )
         )}
       </div>

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import * as dodoApi from './dodoApi'
-import type { DodoAppearance, DodoState } from './types'
+import type { DodoState, SelfDodoAppearance } from './types'
 
 export function useDodoManager() {
   const [state, setState] = useState<DodoState | null>(null)
-  const [appearance, setAppearance] = useState<DodoAppearance | null>(null)
+  const [appearance, setAppearance] = useState<SelfDodoAppearance | null>(null)
 
   const refreshDodoState = () => {
     dodoApi.fetchDodoState().then(setState).catch(() => {})
@@ -27,7 +27,11 @@ export function useDodoManager() {
     setAppearance(await dodoApi.unequipRoomItem(inventoryId))
   }
 
-  return { state, refreshDodoState, appearance, refreshAppearance, equip, unequip }
+  const updateAppearance = async (patch: { bodyColor: string; eyeCount: 1 | 2 | 3 }) => {
+    setAppearance(await dodoApi.updateDodoAppearance(patch))
+  }
+
+  return { state, refreshDodoState, appearance, refreshAppearance, equip, unequip, updateAppearance }
 }
 
 export type DodoManager = ReturnType<typeof useDodoManager>
