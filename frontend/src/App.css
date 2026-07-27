@@ -129,7 +129,12 @@
   gap: var(--space-md);
 }
 
-.form-actions .button {
+/* 가로로 나란히 둘 때는 간격을 gap 이 맡는다.
+   아래쪽 `.button + .button` 의 세로 간격이 여기까지 먹으면 둘째 버튼만 밀려 내려가고,
+   stretch 때문에 첫째 버튼이 그만큼 길어져 높이가 어긋난다.
+   명시도를 같게 두면 나중에 선언된 쪽이 이기므로 선택자를 한 단계 더 좁힌다. */
+.form-actions .button,
+.form-actions .button + .button {
   margin-top: 0;
 }
 
