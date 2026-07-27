@@ -71,6 +71,13 @@ hub_/
 - **에러 응답 형식**: `{ "error": { "code": "...", "message": "..." } }` — 기획서 5-4절과 동일. 코드: `EMPTY_INPUT` / `NO_VALID_REVIEW` / `TOO_MANY_REVIEWS` / `INVALID_JSON`(400), `ANALYSIS_FAILED` (500). `review-assistant-server/src/middleware/errorHandler.js`에서 일괄 처리.
 - **환경변수**: `.env`는 git에 올리지 않고 `.env.example`만 커밋. 향후 Claude API 연동 시 `ANTHROPIC_API_KEY`는 **백엔드 전용** — 프론트엔드에 절대 노출하지 않는다.
 
+## 배포 (4주차, 2026-07-27 결정)
+
+- **플랫폼**: 프론트엔드는 **Vercel**, 백엔드는 **Render**로 결정.
+- **프론트엔드**: `review-assistant-react/vercel.json`에 React Router SPA용 rewrite(`/(.*)` → `/index.html`) 설정 — 이게 없으면 `/dashboard` 같은 경로를 새로고침하거나 직접 접속할 때 404가 난다. `src/lib/api.js`의 `API_BASE`는 하드코딩된 `http://localhost:4000` 대신 `import.meta.env.VITE_API_BASE_URL`을 우선 쓰도록 변경(없으면 로컬 기본값 유지) — Vercel 프로젝트 환경변수에 배포된 Render 백엔드 URL을 등록해야 한다(`review-assistant-react/.env.example` 참고).
+- **백엔드**: 루트의 `render.yaml`(Render Blueprint)로 서비스 정의 — `rootDir: review-assistant-server`, 빌드 `npm install`, 시작 `npm start`. `PORT`는 Render가 자동 주입하므로 별도 설정 안 함. `CORS_ORIGIN`/`ANTHROPIC_API_KEY`/`SUPABASE_URL`/`SUPABASE_ANON_KEY`/`SUPABASE_SERVICE_ROLE_KEY`는 값 없이 키만 선언해두고, 실제 값은 Render 대시보드에서 직접 등록(git에 노출 안 됨).
+- **CORS_ORIGIN 프로덕션 값**: 백엔드 배포(화요일) 시점엔 아직 프론트 URL을 모르므로, 프론트를 먼저 배포하거나 임시 값으로 등록한 뒤 실제 Vercel URL이 나오면 업데이트해야 한다.
+
 ## 향후 Claude API 연동 (2주차 이후, 지금은 미구현)
 
 기획서 4번(향후 확장)에 명시된 대로, 현재 브라우저 내 규칙 기반 분석을 실제 Claude API 호출로 교체할 예정이다.

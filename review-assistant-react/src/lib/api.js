@@ -1,7 +1,7 @@
 import { getSessionId, setSessionId } from './sessionId.js'
 import { getToken, setToken, clearToken } from './auth.js'
 
-const API_BASE = 'http://localhost:4000'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
 
 async function request(path, options = {}) {
   const sessionId = getSessionId()
