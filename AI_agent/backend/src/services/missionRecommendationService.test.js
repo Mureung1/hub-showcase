@@ -29,4 +29,25 @@ describe("mission recommendations", () => {
     assert.ok(result.missions.length > 0);
     assert.equal(result.missions[0].id, "it-service-mvp");
   });
+  it("opens the next mission set after submitted missions are completed", () => {
+    const firstSet = getRecommendedMissions({
+      major: "computer science",
+      targetRole: "frontend developer",
+      skills: "React, API, DB",
+    });
+    const completedMissionIds = firstSet.missions.map((mission) => mission.id);
+    const nextSet = getRecommendedMissions({
+      major: "computer science",
+      targetRole: "frontend developer",
+      skills: "React, API, DB",
+      completedMissionIds,
+    });
+
+    assert.equal(nextSet.completedMissionCount, completedMissionIds.length);
+    assert.equal(nextSet.unlockedSetNumber, 2);
+    assert.ok(nextSet.missions.length > 0);
+    assert.ok(
+      nextSet.missions.every((mission) => !completedMissionIds.includes(mission.id))
+    );
+  });
 });

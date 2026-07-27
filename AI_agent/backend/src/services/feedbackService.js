@@ -34,14 +34,140 @@ const summarizeArtifactEvidence = (artifactEvidence = []) => {
   return "제출 설명과 미션 정보를 기준으로 평가했습니다.";
 };
 
+const missionFitLabels = {
+  high: "높음",
+  medium: "보통",
+  low: "낮음",
+};
+
+const tokenize = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2);
+
+const getSubmissionText = (submission, artifactEvidence = []) =>
+  [
+    submission?.submittedDescription,
+    submission?.submittedUrl,
+    submission?.submittedFileName,
+    ...artifactEvidence.map((evidence) => evidence.text || ""),
+  ].join(" ");
+
+export const assessMissionFit = (submission, artifactEvidence = []) => {
+  const missionText = [
+    submission?.missionTitle,
+    submission?.mission?.title,
+    submission?.mission?.description,
+  ].join(" ");
+  const submissionText = getSubmissionText(submission, artifactEvidence);
+  const missionTokens = [...new Set(tokenize(missionText))];
+  const submissionTokens = new Set(tokenize(submissionText));
+  const matchedTokens = missionTokens.filter((token) => submissionTokens.has(token));
+  const matchRate = missionTokens.length
+    ? matchedTokens.length / missionTokens.length
+    : 0;
+  const normalizedSubmissionText = submissionText.toLowerCase();
+  const requiredProcessTerms = ["흐름", "프로세스", "문제", "개선", "우선순위"];
+  const processMission =
+    missionText.includes("업무") ||
+    missionText.includes("프로세스") ||
+    missionText.toLowerCase().includes("process");
+  const matchedProcessTerms = requiredProcessTerms.filter((term) =>
+    normalizedSubmissionText.includes(term)
+  );
+  const unrelatedMarketingTerms = [
+    "카페",
+    "신메뉴",
+    "라떼",
+    "sns",
+    "홍보",
+    "이벤트",
+    "mango",
+    "latte",
+    "campaign",
+    "marketing",
+  ];
+
+  const hasUnrelatedMarketingTerms = unrelatedMarketingTerms.some((term) =>
+    normalizedSubmissionText.includes(term)
+  );
+
+  if ((processMission || hasUnrelatedMarketingTerms) && matchedProcessTerms.length < 2 && hasUnrelatedMarketingTerms) {
+    return {
+      level: "low",
+      label: missionFitLabels.low,
+      canCreatePortfolio: false,
+      reasons: [
+        "제출물이 업무 프로세스 개선보다 홍보 콘텐츠 기획에 가깝습니다.",
+        "현재 흐름, 병목, 개선안, 우선순위 근거가 충분히 확인되지 않습니다.",
+      ],
+    };
+  }
+
+  if (matchRate < 0.12 && matchedProcessTerms.length === 0) {
+    return {
+      level: "low",
+      label: missionFitLabels.low,
+      canCreatePortfolio: false,
+      reasons: [
+        "미션 제목과 제출 설명 사이의 핵심 키워드 연결이 약합니다.",
+        "미션 요구사항을 충족했다는 근거가 부족합니다.",
+      ],
+    };
+  }
+
+  if (matchRate < 0.28 || (processMission && matchedProcessTerms.length < 3)) {
+    return {
+      level: "medium",
+      label: missionFitLabels.medium,
+      canCreatePortfolio: true,
+      reasons: [
+        "미션과 일부 연결되지만 요구사항을 더 구체적으로 보완하는 편이 좋습니다.",
+      ],
+    };
+  }
+
+  return {
+    level: "high",
+    label: missionFitLabels.high,
+    canCreatePortfolio: true,
+    reasons: ["제출 설명이 미션 요구사항과 충분히 연결됩니다."],
+  };
+};
+
+export const normalizeMissionFit = (missionFit) => {
+  const level = ["high", "medium", "low"].includes(missionFit?.level)
+    ? missionFit.level
+    : "medium";
+
+  return {
+    level,
+    label: missionFit?.label || missionFitLabels[level],
+    canCreatePortfolio:
+      typeof missionFit?.canCreatePortfolio === "boolean"
+        ? missionFit.canCreatePortfolio
+        : level !== "low",
+    reasons: Array.isArray(missionFit?.reasons)
+      ? missionFit.reasons.map(String).filter(Boolean)
+      : [],
+  };
+};
+
+export const isLowMissionFit = (feedback) =>
+  normalizeMissionFit(feedback?.missionFit).level === "low";
+
 export const createSubmissionFeedback = (submission, artifactEvidence = []) => {
   const hasUrl = Boolean(submission?.submittedUrl);
   const hasFile = Boolean(submission?.submittedFileName);
   const hasDescription =
     String(submission?.submittedDescription || "").trim().length >= 80;
   const evidenceSummary = summarizeArtifactEvidence(artifactEvidence);
+  const missionFit = assessMissionFit(submission, artifactEvidence);
 
   return {
+    missionFit,
     overall:
       `${evidenceSummary} 미션 결과물이 제출 형식에 맞게 정리되었습니다. 다음 단계에서는 문제 정의, 수행 과정, 결과를 더 명확히 연결하면 포트폴리오 완성도가 올라갑니다.`,
     strengths: [
@@ -83,9 +209,16 @@ export const createAiSubmissionFeedback = async (submission) => {
       submission,
       artifactEvidence,
     });
+    const heuristicMissionFit = assessMissionFit(submission, artifactEvidence);
+    const aiMissionFit = normalizeMissionFit(result.missionFit);
+    const missionFit =
+      heuristicMissionFit.level === "low" && aiMissionFit.level !== "low"
+        ? heuristicMissionFit
+        : aiMissionFit;
 
     return {
       ...result,
+      missionFit,
       evidenceSummary: summarizeArtifactEvidence(artifactEvidence),
     };
   } catch (error) {
@@ -101,7 +234,12 @@ export const parseStoredFeedback = (value) => {
 
   try {
     const feedback = JSON.parse(value);
-    return feedback && typeof feedback === "object" ? feedback : null;
+    return feedback && typeof feedback === "object"
+      ? {
+          ...feedback,
+          missionFit: normalizeMissionFit(feedback.missionFit),
+        }
+      : null;
   } catch {
     return null;
   }

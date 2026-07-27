@@ -1,6 +1,7 @@
 import { prisma } from "../db/prisma.js";
 import {
   createSubmissionFeedback,
+  isLowMissionFit,
   parseStoredFeedback,
 } from "./feedbackService.js";
 
@@ -132,6 +133,17 @@ export const saveLatestPortfolioDraft = async (userId) => {
 
   const feedback =
     parseStoredFeedback(submission.feedback) || createSubmissionFeedback(submission);
+
+  if (isLowMissionFit(feedback)) {
+    const error = new Error("미션 적합도가 낮아 포트폴리오에 반영할 수 없습니다. 결과물을 다시 제출해 주세요.");
+    error.statusCode = 422;
+    error.details = {
+      missionFit: feedback.missionFit,
+      action: "resubmit",
+    };
+    throw error;
+  }
+
   const portfolioDraft = createPortfolioDraft({ submission, feedback });
   const updatedSubmission = await prisma.userMission.update({
     where: {

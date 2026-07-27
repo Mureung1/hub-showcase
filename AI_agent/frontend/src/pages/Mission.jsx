@@ -30,6 +30,11 @@ function Mission() {
   const [targetRole, setTargetRole] = useState("");
   const [inferredTrack, setInferredTrack] = useState("business");
   const [missions, setMissions] = useState([]);
+  const [missionSet, setMissionSet] = useState({
+    completedMissionCount: 0,
+    totalMissionCount: 0,
+    unlockedSetNumber: 1,
+  });
   const [isLoading, setIsLoading] = useState(Boolean(session));
   const [message, setMessage] = useState("");
   const [submittedMissionIds, setSubmittedMissionIds] = useState([]);
@@ -64,12 +69,22 @@ function Mission() {
           setTargetRole(nextTargetRole);
           setInferredTrack(recommendations.inferredTrack);
           setMissions(recommendations.missions);
+          setMissionSet({
+            completedMissionCount: recommendations.completedMissionCount,
+            totalMissionCount: recommendations.totalMissionCount,
+            unlockedSetNumber: recommendations.unlockedSetNumber,
+          });
           setSubmittedMissionIds(submissions.map((submission) => submission.missionId));
         }
       } catch (error) {
         if (isMounted) {
           setMessage(error.message);
           setMissions([]);
+          setMissionSet({
+            completedMissionCount: 0,
+            totalMissionCount: 0,
+            unlockedSetNumber: 1,
+          });
           setSubmittedMissionIds([]);
         }
       } finally {
@@ -124,6 +139,12 @@ function Mission() {
             <span>추천 기준</span>
             <strong>{targetRole || user?.major || "미등록"}</strong>
             <small>{trackLabels[inferredTrack] || "일반 직무"} 기반 추천</small>
+            <small>
+              {missionSet.unlockedSetNumber}번째 미션 세트
+              {missionSet.totalMissionCount > 0
+                ? ` · ${missionSet.completedMissionCount}/${missionSet.totalMissionCount} 제출 완료`
+                : ""}
+            </small>
             <button type="button" className="cm-button cm-button-secondary cm-button-compact" onClick={() => navigate(routes.specs)}>
               스펙 수정
             </button>
@@ -137,6 +158,15 @@ function Mission() {
           </div>
         )}
 
+        {missionSet.completedMissionCount >= 4 && missions.length > 0 && (
+          <div className="mission-unlock">
+            <strong>다음 미션 세트가 열렸습니다.</strong>
+            <span>
+              제출 완료한 미션은 추천 목록에서 빠지고, 남은 후보 중 다음 우선순위 미션을 보여줍니다.
+            </span>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="cm-empty-state mission-empty">
             <strong>추천 미션을 불러오는 중입니다.</strong>
@@ -146,6 +176,14 @@ function Mission() {
           <div className="cm-empty-state mission-empty">
             <strong>추천 미션을 불러오지 못했습니다.</strong>
             <p>{message}</p>
+          </div>
+        ) : missions.length === 0 ? (
+          <div className="cm-empty-state mission-empty">
+            <strong>모든 미션을 제출 완료했습니다.</strong>
+            <p>현재 준비된 추천 미션을 모두 끝냈습니다. 포트폴리오에서 누적 결과를 정리해보세요.</p>
+            <button type="button" className="cm-button cm-button-primary cm-button-start" onClick={() => navigate(routes.portfolio)}>
+              포트폴리오 보기
+            </button>
           </div>
         ) : (
           <div className="mission-grid">
@@ -253,6 +291,7 @@ const styles = `
 
 .mission-summary,
 .mission-notice,
+.mission-unlock,
 .mission-card {
   border: 1px solid rgba(226, 232, 240, 0.9);
   background: rgba(255, 255, 255, 0.78);
@@ -292,6 +331,25 @@ const styles = `
 }
 
 .mission-notice span {
+  color: #475569;
+  line-height: 1.6;
+}
+
+.mission-unlock {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border-color: rgba(34, 197, 94, 0.34);
+  background: linear-gradient(180deg, rgba(240, 253, 244, 0.92), rgba(255, 255, 255, 0.82));
+}
+
+.mission-unlock strong {
+  color: #15803d;
+}
+
+.mission-unlock span {
   color: #475569;
   line-height: 1.6;
 }

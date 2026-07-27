@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { requireAuth } from "../middleware/authMiddleware.js";
+import { getMySubmissions } from "../services/submissionService.js";
 import { getRecommendedMissions } from "../services/missionRecommendationService.js";
 import {
   getMissionProgress,
@@ -13,10 +14,12 @@ missionRouter.use(requireAuth);
 
 missionRouter.get("/recommendations", async (request, response, next) => {
   try {
+    const submissions = await getMySubmissions(request.user.id);
     const recommendations = getRecommendedMissions({
       major: String(request.query.major || request.user.major || ""),
       targetRole: String(request.query.targetRole || ""),
       skills: String(request.query.skills || ""),
+      completedMissionIds: submissions.map((submission) => submission.missionId),
     });
 
     response.json({ ok: true, ...recommendations });

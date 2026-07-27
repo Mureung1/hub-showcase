@@ -46,6 +46,10 @@ function Portfolio() {
           return;
         }
 
+        if (isMounted) {
+          setSubmission(latestResult.submission);
+        }
+
         const result = latestResult.portfolioDraft
           ? latestResult
           : await saveLatestPortfolioDraft();
@@ -102,6 +106,13 @@ function Portfolio() {
             text={message || "미션을 수행하고 결과물을 제출하면 프로젝트 케이스 스터디가 자동으로 구성됩니다."}
             actionLabel="결과물 제출하기"
             onAction={() => navigate(routes.upload)}
+          />
+        ) : message ? (
+          <EmptyState
+            title="포트폴리오 반영 전 다시 제출이 필요합니다."
+            text={message}
+            actionLabel="결과물 다시 제출하기"
+            onAction={() => navigate(`${routes.upload}?missionId=${submission.missionId}`)}
           />
         ) : (
           <div className="portfolio-case">

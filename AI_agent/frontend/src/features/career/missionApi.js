@@ -10,6 +10,9 @@ export const getRecommendedMissions = async ({ major, targetRole, skills } = {})
 
   return {
     inferredTrack: data.inferredTrack || "business",
+    completedMissionCount: Number(data.completedMissionCount || 0),
+    totalMissionCount: Number(data.totalMissionCount || 0),
+    unlockedSetNumber: Number(data.unlockedSetNumber || 1),
     missions: data.missions || [],
   };
 };
