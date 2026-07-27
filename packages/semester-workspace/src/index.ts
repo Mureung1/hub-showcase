@@ -14,6 +14,7 @@ export type {
   CurrentSemesterWorkspaceV2,
 } from './legacy-v2-codec.js'
 export * from './v3-codec.js'
+export * from './v4-codec.js'
 export {
   WorkspaceBundleSourceError,
   captureCanonicalWorkspaceBundleSource,
