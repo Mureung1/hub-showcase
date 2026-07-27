@@ -14,6 +14,8 @@ from pypdf import PdfReader
 
 from app import config
 
+CALL_COUNT = 0  # ask_llm() 실제 호출 횟수. run_agent()가 done.stats.llm_calls 집계에 쓴다.
+
 
 def search_arxiv(
     topic: str,
@@ -26,7 +28,12 @@ def search_arxiv(
     """
     categories = categories or config.ARXIV_CATEGORIES
     cat_query = " OR ".join(f"cat:{c}" for c in categories)
-    query = f"({cat_query}) AND all:{topic}"
+    # topic을 큰따옴표로 감싸 all: 필드가 전체 구를 하나의 구절로 검색하게 한다.
+    # 따옴표가 없으면 arXiv 쿼리 파서가 all:을 첫 단어에만 적용하고 나머지는
+    # 필드 없는 개별 토큰으로 흩어버려, 다단어 topic(대부분의 실제 입력)에서
+    # 검색 결과가 topic과 무관해진다.
+    safe_topic = topic.replace('"', "")
+    query = f'({cat_query}) AND all:"{safe_topic}"'
 
     search = arxiv.Search(
         query=query,
@@ -74,6 +81,8 @@ def ask_llm(prompt: str) -> str:
 
     한도 초과 시 Claude Haiku / Ollama로 교체할 때 이 함수만 바꾸면 된다.
     """
+    global CALL_COUNT
+    CALL_COUNT += 1
     genai.configure(api_key=config.GEMINI_API_KEY)
     model = genai.GenerativeModel(config.GEMINI_MODEL)
     response = model.generate_content(prompt)
