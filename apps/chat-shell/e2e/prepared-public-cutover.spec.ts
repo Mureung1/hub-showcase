@@ -102,6 +102,20 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
     expect(runtime.productInputs[0]?.permissionProfile).toBe('workspace_write')
     expect(runtime.productInputs[0]?.skill).toBeUndefined()
 
+    const clarification = page.getByRole('region', { name: 'AY 질문' })
+    await expect(clarification).toContainText('학기 확인')
+    await clarification.getByRole('textbox').fill('2학기')
+    await clarification.getByRole('button', { name: '답변' }).click()
+    await expect(
+      page.getByRole('region', { name: '질문 응답 완료' }),
+    ).toContainText('학기 확인')
+    expect(runtime.answers).toEqual([
+      {
+        interactionId: 'native-interaction',
+        answers: { 'native-question': ['2학기'] },
+      },
+    ])
+
     const headers = {
       authorization: `Bearer ${target.credentials.token}`,
       'content-type': 'application/json',
@@ -225,11 +239,12 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
       '불필요한 과제 파일 변경',
     )
 
-    runtime.finish()
+    await page.getByRole('button', { name: '작업 중단' }).click()
     await expect(page.locator('[data-product-operation-phase]')).toHaveAttribute(
       'data-product-operation-phase',
-      'completed',
+      'interrupted',
     )
+    expect(runtime.interrupts).toHaveLength(1)
     lifecycle = {
       state: 'recovery_required',
       workspace: {
@@ -259,7 +274,11 @@ class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
   readonly threadInputs: Array<StartThreadInput | undefined> = []
   readonly productInputs: StartProductTurnInput[] = []
+  readonly answers: AnswerUserInput[] = []
+  readonly interrupts: InterruptTurnInput[] = []
+  private readonly clarificationGate = deferred<void>()
   private readonly gate = deferred<void>()
+  private interrupted = false
 
   readAccountReadiness() {
     return Promise.resolve({ state: 'ready' as const })
@@ -292,7 +311,9 @@ class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
     input: StartProductTurnInput,
   ): Promise<CodexProductTurn> {
     this.productInputs.push(structuredClone(input))
-    const gate = this.gate.promise
+    const clarificationGate = this.clarificationGate.promise
+    const turnGate = this.gate.promise
+    const wasInterrupted = () => this.interrupted
     return {
       threadId: input.threadId,
       turnId: 'turn-prepared-browser',
@@ -304,12 +325,37 @@ class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
           itemId: 'item-prepared-browser',
           text: 'workspace를 확인했습니다.',
         }
-        await gate
+        yield {
+          type: 'user_input.requested',
+          threadId: input.threadId,
+          turnId: 'turn-prepared-browser',
+          itemId: 'item-clarification',
+          interactionId: 'native-interaction',
+          questions: [
+            {
+              id: 'native-question',
+              header: '학기 확인',
+              question: '어느 학기를 기준으로 할까요?',
+              options: null,
+              acceptsFreeform: true,
+            },
+          ],
+        }
+        await clarificationGate
+        yield {
+          type: 'user_input.resolved',
+          threadId: input.threadId,
+          turnId: 'turn-prepared-browser',
+          itemId: 'item-clarification',
+          interactionId: 'native-interaction',
+          resolution: 'answered',
+        }
+        await turnGate
         yield {
           type: 'turn.completed',
           threadId: input.threadId,
           turnId: 'turn-prepared-browser',
-          status: 'completed',
+          status: wasInterrupted() ? 'interrupted' : 'completed',
         }
       })(),
     }
@@ -323,15 +369,20 @@ class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
     return Promise.reject(new Error('legacy turn is not expected'))
   }
 
-  answerUserInput(_input: AnswerUserInput) {
+  answerUserInput(input: AnswerUserInput) {
+    this.answers.push(structuredClone(input))
+    this.clarificationGate.resolve(undefined)
     return Promise.resolve()
   }
 
   cancelUserInput(_input: CancelUserInput) {
+    this.clarificationGate.resolve(undefined)
     return Promise.resolve()
   }
 
-  interrupt(_input: InterruptTurnInput) {
+  interrupt(input: InterruptTurnInput) {
+    this.interrupted = true
+    this.interrupts.push(structuredClone(input))
     this.finish()
     return Promise.resolve()
   }
