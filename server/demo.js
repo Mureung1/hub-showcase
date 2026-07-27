@@ -2,6 +2,8 @@ import cors from "cors";
 import express from "express";
 import process from "node:process";
 import { z } from "zod";
+import { canChangeTargetPeople } from "./group-buy-policy.js";
+import { presentGroupBuy } from "./group-buy-presenter.js";
 import { createGroupBuyRepository } from "./group-buy-repository.js";
 import { createSupabaseAdmin } from "./supabase.js";
 
@@ -30,10 +32,7 @@ const joinSchema = z.object({ quantity: z.coerce.number().int().min(1).max(10), 
 const authSchema = z.object({ email: z.string().email(), password: z.string().min(6) });
 const registerSchema = authSchema.extend({ nickname: z.string().trim().min(2).max(12) });
 const userId = (request) => request.user?.id || "";
-const present = (item, request) => {
-  const { voterChoices, ...publicItem } = item;
-  return { ...publicItem, isOwner: item.ownerId === userId(request), userJoined: item.participants.some((person) => person.userId === userId(request)), userVote: voterChoices[userId(request)] || null };
-};
+const present = (item, request) => presentGroupBuy(item, userId(request));
 const withRuntimeFields = (item) => ({ ...item, participants: item.participants ?? [], votes: item.votes ?? {}, voterChoices: item.voterChoices ?? {}, pickupCandidates: candidatesFor(item.participants ?? []) });
 const databaseFailure = (response, error) => { console.error("Supabase request failed:", error.message); return response.status(500).json({ error: "데이터베이스 요청을 처리하지 못했습니다." }); };
 
@@ -70,13 +69,14 @@ app.post("/api/auth/login", async (request, response) => {
   const { data, error } = await authClient.auth.signInWithPassword(parsed.data);
   if (error) return response.status(401).json({ error: "이메일 또는 비밀번호가 맞지 않습니다." });
   const { data: profile } = await supabase.from("profiles").select("nickname").eq("id", data.user.id).single();
+  if (!profile) return response.status(500).json({ error: "사용자 정보를 불러오지 못했습니다." });
   return response.json({ accessToken: data.session.access_token, user: { id: data.user.id, email: data.user.email, nickname: profile.nickname } });
 });
 app.get("/api/auth/me", requireUser, (request, response) => response.json({ user: request.user }));
 app.get("/api/group-buys", async (request, response) => { try { const items = await groupBuyRepository.list(); return response.json({ groupBuys: items.map((item) => present(withRuntimeFields(item), request)) }); } catch (error) { return databaseFailure(response, error); } });
 app.get("/api/group-buys/:id", async (request, response) => { try { const item = await groupBuyRepository.findById(request.params.id); return item ? response.json({ groupBuy: present(withRuntimeFields(item), request) }) : response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); } catch (error) { return databaseFailure(response, error); } });
 app.post("/api/group-buys", requireUser, async (request, response) => { const parsed = createSchema.safeParse(request.body); if (!parsed.success) return response.status(400).json({ error: "입력값을 확인해 주세요." }); try { const item = await groupBuyRepository.create(parsed.data, userId(request), request.user.nickname); return response.status(201).json({ groupBuy: present(withRuntimeFields(item), request) }); } catch (error) { return databaseFailure(response, error); } });
-app.patch("/api/group-buys/:id", requireUser, async (request, response) => { const parsed = updateSchema.safeParse(request.body); if (!parsed.success) return response.status(400).json({ error: "수정할 값을 확인해 주세요." }); try { const existing = await groupBuyRepository.findById(request.params.id); if (!existing) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); if (existing.ownerId !== userId(request)) return response.status(403).json({ error: "개설자만 수정할 수 있습니다." }); if (parsed.data.targetPeople && parsed.data.targetPeople < existing.currentPeople) return response.status(400).json({ error: "현재 참여 인원보다 목표 인원을 낮출 수 없습니다." }); const updated = await groupBuyRepository.update(existing.id, parsed.data); return response.json({ groupBuy: present(withRuntimeFields(updated), request) }); } catch (error) { return databaseFailure(response, error); } });
+app.patch("/api/group-buys/:id", requireUser, async (request, response) => { const parsed = updateSchema.safeParse(request.body); if (!parsed.success) return response.status(400).json({ error: "수정할 값을 확인해 주세요." }); try { const existing = await groupBuyRepository.findById(request.params.id); if (!existing) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); if (existing.ownerId !== userId(request)) return response.status(403).json({ error: "개설자만 수정할 수 있습니다." }); if (!canChangeTargetPeople(existing, parsed.data.targetPeople)) return response.status(409).json({ error: "참여자가 생긴 뒤에는 목표 인원을 변경할 수 없습니다." }); const updated = await groupBuyRepository.update(existing.id, parsed.data); return response.json({ groupBuy: present(withRuntimeFields(updated), request) }); } catch (error) { return databaseFailure(response, error); } });
 app.post("/api/group-buys/:id/join", requireUser, async (request, response) => { const parsed = joinSchema.safeParse(request.body); if (!parsed.success) return response.status(400).json({ error: "수량과 출발 위치를 확인해 주세요." }); try { const item = await groupBuyRepository.findById(request.params.id); if (!item) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); const uid = userId(request); if (item.ownerId === uid) return response.status(409).json({ error: "내가 개설한 공동구매입니다." }); if (item.participants.some((person) => person.userId === uid)) return response.status(409).json({ error: "이미 참여한 공동구매입니다." }); if (item.status === "closed") return response.status(409).json({ error: "모집이 이미 마감되었습니다." }); const updated = await groupBuyRepository.join(item.id, uid, request.user.nickname, parsed.data); return response.json({ groupBuy: present(withRuntimeFields(updated), request) }); } catch (error) { if (error.code === "23505" || error.message === "DUPLICATE_PARTICIPANT") return response.status(409).json({ error: "이미 참여한 공동구매입니다." }); return databaseFailure(response, error); } });
 app.delete("/api/group-buys/:id/join", requireUser, async (request, response) => {
   try {
