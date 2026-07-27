@@ -4,6 +4,50 @@ import { AVATAR_PALETTE } from './shared'
 import { renderDodoMascot } from './StaticViews'
 import type { SelfDodoAppearance } from './types'
 
+type DodoAppearancePickerProps = {
+  color: string
+  eyeCount: 1 | 2
+  onColorChange: (color: string) => void
+  onEyeCountChange: (eyeCount: 1 | 2) => void
+}
+
+// 온보딩·마이페이지 커스텀 화면 둘 다에서 쓰는 두두 미리보기 + 색상/눈개수 선택 UI.
+export function DodoAppearancePicker({ color, eyeCount, onColorChange, onEyeCountChange }: DodoAppearancePickerProps) {
+  return (
+    <>
+      <div className="myhome-room dodo-onboarding-preview">
+        {renderDodoMascot(color, eyeCount, null, '내 두두 미리보기')}
+      </div>
+      <div className="avatar-color-picker" role="radiogroup" aria-label="두두 몸 색상">
+        {AVATAR_PALETTE.map((swatch) => (
+          <button
+            type="button"
+            key={swatch}
+            className={`avatar-color-swatch ${color === swatch ? 'active' : ''}`}
+            style={{ '--avatar': swatch } as CSSProperties}
+            aria-pressed={color === swatch}
+            aria-label={swatch}
+            onClick={() => onColorChange(swatch)}
+          />
+        ))}
+      </div>
+      <div className="avatar-eyes-picker" role="radiogroup" aria-label="두두 눈 개수">
+        {([1, 2] as const).map((count) => (
+          <button
+            type="button"
+            key={count}
+            className={eyeCount === count ? 'active' : ''}
+            aria-pressed={eyeCount === count}
+            onClick={() => onEyeCountChange(count)}
+          >
+            눈 {count}개
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
+
 type DodoOnboardingViewProps = {
   appearance: SelfDodoAppearance
   onComplete: (patch: { bodyColor: string; eyeCount: 1 | 2 }) => Promise<void>
@@ -38,37 +82,8 @@ export function DodoOnboardingView({ appearance, onComplete, onLogout }: DodoOnb
 
         {notice && <p className="scheduler-notice" role="status">{notice}</p>}
 
-        <div className="myhome-room dodo-onboarding-preview">
-          {renderDodoMascot(draftColor, draftEyeCount, null, '내 두두 미리보기')}
-        </div>
-
         <form className="profile-edit-form" onSubmit={submit}>
-          <div className="avatar-color-picker" role="radiogroup" aria-label="두두 몸 색상">
-            {AVATAR_PALETTE.map((color) => (
-              <button
-                type="button"
-                key={color}
-                className={`avatar-color-swatch ${draftColor === color ? 'active' : ''}`}
-                style={{ '--avatar': color } as CSSProperties}
-                aria-pressed={draftColor === color}
-                aria-label={color}
-                onClick={() => setDraftColor(color)}
-              />
-            ))}
-          </div>
-          <div className="avatar-eyes-picker" role="radiogroup" aria-label="두두 눈 개수">
-            {([1, 2] as const).map((eyeCount) => (
-              <button
-                type="button"
-                key={eyeCount}
-                className={draftEyeCount === eyeCount ? 'active' : ''}
-                aria-pressed={draftEyeCount === eyeCount}
-                onClick={() => setDraftEyeCount(eyeCount)}
-              >
-                눈 {eyeCount}개
-              </button>
-            ))}
-          </div>
+          <DodoAppearancePicker color={draftColor} eyeCount={draftEyeCount} onColorChange={setDraftColor} onEyeCountChange={setDraftEyeCount} />
           <div className="profile-edit-actions">
             <button type="submit" className="save" disabled={submitting}>시작하기</button>
           </div>

@@ -616,9 +616,10 @@ type ProfileViewProps = {
   manager: ProfileManager
   onOpenGroupManager: () => void
   onOpenDiary: () => void
+  onOpenDodoCustomize: () => void
 }
 
-export function ProfileView({ manager, onOpenGroupManager, onOpenDiary }: ProfileViewProps) {
+export function ProfileView({ manager, onOpenGroupManager, onOpenDiary, onOpenDodoCustomize }: ProfileViewProps) {
   const { profile, loading, notice, updateProfile } = manager
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState('')
@@ -739,6 +740,7 @@ export function ProfileView({ manager, onOpenGroupManager, onOpenDiary }: Profil
 
       <div className="profile-menu">
         <button type="button" onClick={onOpenDiary}><i className="profile-record" /><span><strong>나의 기록</strong><small>완료한 일정과 두두의 일기</small></span><b>›</b></button>
+        <button type="button" onClick={onOpenDodoCustomize}><i className="profile-dodo" /><span><strong>내 두두 커스텀</strong><small>두두 몸 색상·눈 개수 바꾸기</small></span><b>›</b></button>
         <button type="button"><i className="profile-lock" /><span><strong>공개 범위</strong><small>친구별 일정 공개 설정</small></span><b>›</b></button>
         <button type="button"><i className="profile-bell" /><span><strong>알림 설정</strong><small>일정과 친구 반응 알림</small></span><b>›</b></button>
         <button type="button" onClick={onOpenGroupManager}><i className="profile-group" /><span><strong>친구 및 그룹 관리</strong><small>절친·스터디·가족 등 그룹 만들기</small></span><b>›</b></button>
