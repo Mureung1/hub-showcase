@@ -456,8 +456,8 @@ function TradeDetailPage() {
                     <div className="td-cell__desc">{review.plan_adherence || '—'}</div>
                   </div>
                   <div className="cell td-cell">
-                    <div className="td-cell__label">타이밍</div>
-                    <div className="td-cell__desc">{review.timing || '—'}</div>
+                    <div className="td-cell__label">실행 품질</div>
+                    <div className="td-cell__desc">{review.execution || '—'}</div>
                   </div>
                   <div className="cell td-cell">
                     <div className="td-cell__label">감정</div>
@@ -468,6 +468,16 @@ function TradeDetailPage() {
                     <div className="td-cell__desc">{review.behavior_pattern || '—'}</div>
                   </div>
                 </div>
+
+                {review.reflection_prompt && (
+                  <div className="td-reflect">
+                    <span className="td-reflect__icon" aria-hidden="true">💭</span>
+                    <div>
+                      <div className="td-reflect__label">스스로에게</div>
+                      <p className="td-reflect__q">{review.reflection_prompt}</p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="td-section-label">
                   이 복기가 참고한 기록
