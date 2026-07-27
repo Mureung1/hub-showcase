@@ -24,6 +24,7 @@ agent/
 ├─ pyproject.toml
 ├─ alembic.ini
 ├─ migrations/                     데이터베이스 스키마의 기준
+├─ data/manifest/                  수집 대상 목록. 원문은 두지 않는다
 ├─ scripts/smoke.py                외부 API 연결 점검
 ├─ src/careersignal/
 │  ├─ api/                         FastAPI 라우트
