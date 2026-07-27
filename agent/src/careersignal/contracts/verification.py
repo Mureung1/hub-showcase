@@ -1,6 +1,6 @@
 """검증 판정.
 
-정의는 docs/agent-design.md 9.3을 따른다.
+정의는 docs/agent-design.md 9.4를 따른다.
 공개 여부는 docs/architecture.md 8.1의 공개 정책을 따른다.
 """
 

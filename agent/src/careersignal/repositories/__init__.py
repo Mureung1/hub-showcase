@@ -15,6 +15,11 @@ from careersignal.repositories.telemetry import (
     OrchestratorRepository,
     TelemetryRepository,
 )
+from careersignal.repositories.verification import (
+    VerificationRepository,
+    new_order_id,
+    new_result_id,
+)
 
 __all__ = [
     "IngestRepository",
@@ -23,6 +28,9 @@ __all__ = [
     "SourceRepository",
     "TelemetryRepository",
     "Unit",
+    "VerificationRepository",
     "content_hash",
+    "new_order_id",
+    "new_result_id",
     "unit_of_work",
 ]
