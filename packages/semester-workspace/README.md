@@ -24,7 +24,7 @@ Admission marker에는 raw `setupPlanId`나 `setupId`를 기록하지 않는다.
 
 `./testing/legacy-v2-parity-vectors`는 package-owned fixed current-v2 compatibility roster를 제공하는 test-only subpath다. Package decoder와 Server open regression이 같은 426개 expected outcome을 소비하므로 Server source를 package test oracle로 역수입하지 않는다.
 
-Canonical resource root에는 위 두 managed file만 있다. Bundle 설치나 App-side prepared 검증만으로 `Semester Ready`, Course·자료 또는 academic action availability를 뜻하지 않는다. Package의 lease-bound journey와 Server의 Ready transition adapter는 구현됐지만 production host/router가 이를 account coordinator, native boundary와 Browser UI에 연결하는 composition은 C1 후속 integration이다.
+Canonical resource root에는 위 두 managed file만 있다. Bundle 설치나 App-side prepared 검증만으로 `Semester Ready`, Course·자료 또는 academic action availability를 뜻하지 않는다. Public-preview Server·Browser composition과 C1 integration 경로는 제거했다. Current Server는 current-v2 decoder·parity만 소비하며, v3 admission·setup은 executable consumer가 없는 package kernel이므로 현재 제품 capability가 아니다.
 
 ## 검증
 

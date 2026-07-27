@@ -46,6 +46,10 @@ test('the TCP listener composes around the host application and refuses intake a
         modelingRuns: [],
       },
     })
+    assert.equal(
+      (await fetch(`${baseUrl}/api/product/public-preview`)).status,
+      404,
+    )
 
     const firstClose = started.application.close()
     const secondClose = started.application.close()

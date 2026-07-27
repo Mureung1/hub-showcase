@@ -23,7 +23,7 @@ flowchart LR
     E --> F["조회·일정·정리 문서"]
 ```
 
-> 이 문서는 완성하려는 제품 경험을 설명한다. 현재는 official SDK 기반 Runtime과 자료 선택부터 변경 제안·사용자 확인·재실행 뒤 확인된 학기 상태 조회까지의 First Assignment vertical을 구현했다. 다음 채택 목표는 이 kernel 앞에 public `npx`, Browser OAuth와 app-owned 학기 공간 setup을 연결하는 것이다. 구현된 kernel과 새 사용자가 현재 끝까지 도달할 수 있는 public capability는 구분한다.
+> 이 문서는 완성하려는 제품 경험을 설명한다. 현재는 official SDK 기반 Runtime과 자료 선택부터 변경 제안·사용자 확인·재실행 뒤 확인된 학기 상태 조회까지의 First Assignment vertical을 기존 workspace에서 개인 dogfood한다. Landing·public `npx`·Browser OAuth·app-owned setup graph는 제거했다.
 
 ## 학생이 지금 겪는 문제
 
@@ -33,15 +33,15 @@ flowchart LR
 
 AY-PLE는 이 과정을 앱이 생성하고 검증하는 한 학기 공간 안에서 이어준다. 학생이 이미 가진 자료 폴더는 그 자체가 학기 공간이 아니라, 필요한 자료를 검토해 가져오기 위한 `ImportSource`다.
 
-## 처음 시작할 때
+## 현재 개인 dogfood를 시작할 때
 
-학생은 AY-PLE의 공식 Landing에서 제품이 하려는 일을 확인하고 public `npx` 명령을 실행한다. Local AY-PLE Browser UI가 열리면 Codex에 연결하고, 학년·학기와 생성 위치를 고른다. AY-PLE은 그 위치에 app-owned `SemesterWorkspace`를 scaffold하고 `WorkspaceManifest`와 기본 설정을 검증한다.
+사용자는 개발 checkout에서 `npm run dev`를 실행한다. Local AY-PLE Browser UI는 caller의 전역 `CODEX_HOME`, 또는 미설정 시 `~/.codex`의 기존 account와 current-v2 workspace를 연다.
 
-이 과정이 끝난 `Semester Ready`는 화면에서 **학기 공간 준비 완료**로 표현한다. 아직 Course나 자료가 있고 AY가 학기 내용을 이해했다는 뜻은 아니다. 다음 행동은 `첫 자료 가져오기`이며, 같은 public 명령으로 다시 실행하면 중복 생성 없이 준비된 workspace를 다시 열 수 있어야 한다.
+Current wire state의 `ready`는 existing workspace를 mutation할 수 있다는 뜻이며 adopted `Semester Ready`가 아니다. 같은 dogfood profile로 다시 실행하면 기존 workspace와 학업 상태를 보존해 다시 열어야 한다.
 
-첫 public preview의 release claim은 이 setup과 `ready-relaunch`까지다. 자료 archive/import와 실제 학업 action은 그 이후의 별도 제품 여정이다. 이 제품 범위는 [Product Brief](ay-ple-product-brief.md), macOS-first 제품·OS 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md), exact public 명령과 application↔Runtime distribution 경계는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)을 따른다. 출시별 Node/npm·browser version matrix는 release-owned compatibility surface가 고정한다.
+Public release·clean-machine setup claim은 현재 범위가 아니다. 당시 application↔Runtime distribution 결정은 historical [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)이 보존한다.
 
-## Semester Ready 이후에는 이렇게 작동한다
+## Existing workspace에서는 이렇게 작동한다
 
 `문제해결글쓰기` 과목에 새로운 과제 공지가 올라왔다고 가정해보자. 학생은 LMS 공지와 이미 가지고 있던 강의계획서가 있는 폴더를 `ImportSource`로 제시한다. AY가 자료 분석과 Course mapping을 돕고 App이 반입 제안을 검증한다. 학생이 검토한 자료만 app-owned workspace 안의 `RawMaterial`이 되며, 외부 원본 폴더를 workspace로 직접 열거나 임의로 바꾸지 않는다.
 
@@ -145,6 +145,6 @@ Codex approval은 과제 정보가 사실인지 보증하지 않는다. 반대�
 
 Official SDK와 exact native Runtime을 supervised bridge로 실행하는 product-only 경로가 구현됐다. 현재 First Assignment vertical은 explicit pre-public workspace root와 두 TXT 자료에서 `ModelingInvocation`을 실행하고, 근거가 연결된 `StatePatch`를 같은 native Turn에서 검토해 학생이 수락한 결과만 durable `SemesterModel`로 반영한다. 새로고침과 local process restart 뒤에도 settled confirmation과 확인된 상태를 다시 열 수 있으며 exact local·live-provider trace를 통과했다.
 
-이 구현은 AY-PLE의 학업 kernel을 증명하지만 새 public setup 계약은 아직 구현하지 않는다. 현재 explicit local path activation은 app-owned scaffold나 `ImportSource` admission을 대신하지 않으며, public `npx`, in-app Browser OAuth, `Semester Ready`와 `ready-relaunch`는 채택한 다음 제품 목표다. 새 scaffold에서 post-Ready import와 First Assignment action이 연결되기 전에는 Landing에서 이를 현재 public capability로 제시하지 않는다.
+이 구현은 AY-PLE의 학업 kernel을 증명한다. Public `npx`, Landing, In-app Browser OAuth, `Semester Ready`, `ready-relaunch`와 app-owned scaffold를 잇던 Server·Browser graph는 제거했다. Consumer가 없는 low-level Runtime·workspace package primitive의 존치는 별도 pruning에서 판정한다.
 
-[통합 제품 prototype](../../artifacts/camp-demo/product-flow/index.html?step=1&present=1)은 Review Workspace의 초기 화면 결정을 보존하는 역사적 시각 근거다. 제품 범위는 [Product Brief](ay-ple-product-brief.md), 정확한 용어는 [CONTEXT.md](../../CONTEXT.md), workspace authority는 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), public distribution authority는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), 제품 실행 mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), 현재 구현은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)에서 확인할 수 있다.
+[통합 제품 prototype](../../artifacts/camp-demo/product-flow/index.html?step=1&present=1)은 Review Workspace의 초기 화면 결정을 보존하는 역사적 시각 근거다. 제품 범위는 [Product Brief](ay-ple-product-brief.md), 정확한 용어는 [CONTEXT.md](../../CONTEXT.md), workspace authority는 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), 중단한 public distribution 결정은 historical [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), 제품 실행 mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), 현재 구현은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)에서 확인할 수 있다.

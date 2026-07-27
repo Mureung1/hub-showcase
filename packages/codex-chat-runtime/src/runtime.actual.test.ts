@@ -460,6 +460,7 @@ test('starts an immutable auth-only Runtime with exact application identity and 
         harness.runtime.startProductTurn({
           threadId: 'thread',
           skill: { name: 'model', path: '/managed/model/SKILL.md' },
+          permissionProfile: 'workspace_write',
           text: 'hello',
         }),
       () =>
@@ -1090,6 +1091,38 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
       url: 'http://127.0.0.1:43127/mcp',
       token: 'private-mcp-token',
     } as const
+    assert.deepEqual(await harness.runtime.readModelCatalog(), {
+      models: [
+        {
+          model: 'current-default-model',
+          displayName: 'current-default-model',
+          description: 'Fake current-default-model',
+          isDefault: true,
+          defaultReasoningEffort: 'high',
+          supportedReasoningEfforts: [
+            {
+              reasoningEffort: 'high',
+              description: 'Fake high effort',
+            },
+          ],
+          serviceTiers: ['fast'],
+        },
+        {
+          model: 'fake-model',
+          displayName: 'fake-model',
+          description: 'Fake fake-model',
+          isDefault: false,
+          defaultReasoningEffort: 'medium',
+          supportedReasoningEfforts: [
+            {
+              reasoningEffort: 'medium',
+              description: 'Fake medium effort',
+            },
+          ],
+          serviceTiers: ['fast'],
+        },
+      ],
+    })
     const { threadId } = await harness.runtime.startThread({
       workspace,
       mcp,
@@ -1103,6 +1136,12 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
 
     const product = await harness.runtime.startProductTurn({
       threadId,
+      permissionProfile: 'read_only',
+      settings: {
+        model: 'fake-model',
+        reasoningEffort: 'medium',
+        serviceTier: 'fast',
+      },
       text: 'Continue the product conversation.',
     })
     const iterator = product.events[Symbol.asyncIterator]()
@@ -1127,6 +1166,7 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
     )
     assert.equal(threadStart?.params?.cwd, workspace)
     assert.deepEqual(threadStart?.params?.config, {
+      features: { fast_mode: true },
       mcp_servers: {
         ay_ple: {
           default_tools_approval_mode: 'approve',
@@ -1151,11 +1191,16 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
       turnStarts[1]?.params?.input,
       [{ type: 'text', text: 'Continue the product conversation.' }],
     )
+    assert.equal(turnStarts[1]?.params?.approvalPolicy, 'never')
+    assert.deepEqual(turnStarts[1]?.params?.sandboxPolicy, {
+      networkAccess: false,
+      type: 'readOnly',
+    })
     assert.deepEqual(
       journal.messages
         .map(({ method }) => method)
         .filter((method) => method === 'model/list' || method === 'turn/start'),
-      ['turn/start', 'turn/start'],
+      ['model/list', 'turn/start', 'turn/start'],
     )
     assert.deepEqual(
       journal.messages
@@ -1171,6 +1216,9 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
         reasoning_effort: 'medium',
       },
     })
+    assert.equal(turnStarts[1]?.params?.model, 'fake-model')
+    assert.equal(turnStarts[1]?.params?.effort, 'medium')
+    assert.equal(turnStarts[1]?.params?.serviceTier, 'fast')
   } finally {
     await harness.runtime.close()
   }
@@ -1184,10 +1232,19 @@ test('rejects a non-SKILL.md product skill path before native turn mutation', as
       () =>
         harness.runtime.startProductTurn({
           threadId,
+          text: 'Missing permission profile.',
+        } as StartProductTurnInput),
+      /permission profile/i,
+    )
+    assert.throws(
+      () =>
+        harness.runtime.startProductTurn({
+          threadId,
           skill: {
             name: 'assignment-modeling',
             path: '/managed/assignment-modeling/OTHER.md',
           },
+          permissionProfile: 'workspace_write',
           text: 'Review staged Markdown at /staged/assignment.md',
         }),
       TypeError,
@@ -1306,6 +1363,18 @@ test('runs a structured product turn through one pending native interaction', as
         .map(({ params }) => params),
       [{ extraRoots: ['/managed/assignment-modeling'] }],
     )
+    const nativeTurn = journal.messages.find(
+      ({ method }) => method === 'turn/start',
+    )
+    assert.equal(nativeTurn?.params?.approvalPolicy, 'on-request')
+    assert.equal(nativeTurn?.params?.approvalsReviewer, 'auto_review')
+    assert.deepEqual(nativeTurn?.params?.sandboxPolicy, {
+      excludeSlashTmp: false,
+      excludeTmpdirEnvVar: false,
+      networkAccess: false,
+      type: 'workspaceWrite',
+      writableRoots: [],
+    })
   } finally {
     await harness.runtime.close()
   }
@@ -3354,6 +3423,7 @@ function productTurnInput(threadId: string) {
       name: 'assignment-modeling',
       path: '/managed/assignment-modeling/SKILL.md',
     },
+    permissionProfile: 'workspace_write' as const,
     text: 'Review staged Markdown at /staged/assignment.md',
   }
 }

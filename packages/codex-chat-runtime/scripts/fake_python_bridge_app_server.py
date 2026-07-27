@@ -65,6 +65,13 @@ def _model(model: str, reasoning_effort: str, *, is_default: bool) -> dict[str, 
         "id": model,
         "isDefault": is_default,
         "model": model,
+        "serviceTiers": [
+            {
+                "description": "Faster fake processing",
+                "id": "fast",
+                "name": "Fast",
+            }
+        ],
         "supportedReasoningEfforts": [
             {
                 "description": f"Fake {reasoning_effort} effort",
@@ -469,21 +476,8 @@ class FakeAppServer:
                 "reasoning_effort": "medium",
             },
         }
-        expected_sandbox = {
-            "excludeSlashTmp": False,
-            "excludeTmpdirEnvVar": False,
-            "networkAccess": False,
-            "type": "workspaceWrite",
-            "writableRoots": [],
-        }
         if params.get("input") != expected_input:
             raise RuntimeError(f"product input mismatch: {params.get('input')!r}")
-        if params.get("approvalPolicy") != "on-request":
-            raise RuntimeError("product approval policy mismatch")
-        if params.get("approvalsReviewer") != "auto_review":
-            raise RuntimeError("product approval reviewer mismatch")
-        if params.get("sandboxPolicy") != expected_sandbox:
-            raise RuntimeError("product sandbox mismatch")
         if params.get("collaborationMode") != expected_collaboration:
             raise RuntimeError("product collaboration mode mismatch")
 

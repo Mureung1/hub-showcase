@@ -15,6 +15,7 @@ import {
   Sparkles,
   Square,
   X,
+  Zap,
 } from 'lucide-react'
 
 import {
@@ -205,6 +206,7 @@ export function ProductChatDock({
             <Send size={17} />
           </button>
         </div>
+        <CodexTurnControls controller={controller} />
         <div className="composer-footnote">
           <MessageCircle size={12} /> 대화 흐름은 새로고침하면 사라지고,
           반영된 학기 정보만 다시 열립니다.
@@ -212,6 +214,114 @@ export function ProductChatDock({
       </form>
     </div>
   )
+}
+
+function CodexTurnControls({
+  controller,
+}: {
+  readonly controller: ProductChatController
+}) {
+  if (
+    controller.codexSettingsState === 'idle' ||
+    controller.codexSettingsState === 'loading'
+  ) {
+    return (
+      <div className="codex-settings-status" role="status">
+        Codex 모델 설정을 불러오는 중입니다.
+      </div>
+    )
+  }
+  if (
+    controller.codexSettingsState === 'failed' ||
+    !controller.selectedModel
+  ) {
+    return (
+      <div className="codex-settings-status" role="status">
+        Codex 기본 모델 설정을 사용합니다.
+      </div>
+    )
+  }
+  return (
+    <fieldset
+      className="codex-turn-controls"
+      aria-label="Codex 실행 설정"
+      disabled={!controller.canConfigureCodex}
+    >
+      <label>
+        <span>모델</span>
+        <select
+          aria-label="Codex 모델"
+          value={controller.selectedModel.model}
+          onChange={(event) =>
+            controller.selectCodexModel(event.target.value)
+          }
+        >
+          {controller.codexModels.map((model) => (
+            <option key={model.model} value={model.model}>
+              {model.displayName}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>추론</span>
+        <select
+          aria-label="추론 강도"
+          value={controller.selectedReasoningEffort}
+          onChange={(event) =>
+            controller.selectReasoningEffort(event.target.value)
+          }
+        >
+          {controller.selectedModel.supportedReasoningEfforts.map(
+            (effort) => (
+              <option
+                key={effort.reasoningEffort}
+                value={effort.reasoningEffort}
+              >
+                {reasoningEffortLabel(effort.reasoningEffort)}
+              </option>
+            ),
+          )}
+        </select>
+      </label>
+      <label
+        className={`fast-mode-control ${
+          controller.fastMode ? 'is-enabled' : ''
+        }`}
+        title={
+          controller.selectedModel.fastModeAvailable
+            ? '더 많은 크레딧을 사용해 지원 모델을 더 빠르게 실행합니다.'
+            : '이 모델은 Fast mode를 지원하지 않습니다.'
+        }
+      >
+        <Zap size={11} fill={controller.fastMode ? 'currentColor' : 'none'} />
+        <span>Fast</span>
+        <input
+          type="checkbox"
+          aria-label="Fast mode"
+          checked={controller.fastMode}
+          disabled={
+            !controller.canConfigureCodex ||
+            !controller.selectedModel.fastModeAvailable
+          }
+          onChange={(event) =>
+            controller.toggleFastMode(event.target.checked)
+          }
+        />
+      </label>
+    </fieldset>
+  )
+}
+
+function reasoningEffortLabel(value: string): string {
+  const labels: Readonly<Record<string, string>> = {
+    minimal: 'Minimal',
+    low: 'Low',
+    medium: 'Medium',
+    high: 'High',
+    xhigh: 'Extra High',
+  }
+  return labels[value] ?? value
 }
 
 function canRespondToCurrentClarification(state: ProductChatState): boolean {

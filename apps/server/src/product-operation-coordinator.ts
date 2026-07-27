@@ -17,6 +17,7 @@ import {
   type ProductOperationFrame,
   type ProductQuestion,
   type ProductStatePatch,
+  type ProductCodexTurnSettings,
 } from '@ay-ple/product-contract'
 
 import {
@@ -34,10 +35,6 @@ import {
   type CodexProductStreamSink,
   type ProductOperationLease,
 } from './codex-chat-service.js'
-import type {
-  AccountRuntimeLeaseFailure,
-  AccountRuntimeOperationResult,
-} from './account-runtime/contract.js'
 import {
   SemesterWorkspaceError,
   StatePatchReviewError,
@@ -109,13 +106,6 @@ export type ProductOperationOptions = {
   readonly disconnected: () => boolean
   readonly mcpUrl: string
   readonly sink: ProductOperationSink
-}
-
-export interface AccountRuntimeProductOperationLease {
-  runAccountOperation<TResult>(input: {
-    readonly signal: AbortSignal
-    readonly operation: () => Promise<TResult>
-  }): Promise<AccountRuntimeOperationResult<TResult>>
 }
 
 type ActiveProductOperationBase = {
@@ -205,7 +195,6 @@ export function createProductOperationCoordinator(options: {
   readonly controller: SemesterWorkspaceController
   readonly mcpHost: AssignmentMcpHost
   readonly service: CodexChatService
-  readonly accountRuntimeLease?: AccountRuntimeProductOperationLease
 }): ProductOperationCoordinator {
   let active: ActiveProductOperation | undefined
   let shuttingDown = false
@@ -708,6 +697,11 @@ export function createProductOperationCoordinator(options: {
       let streamOpened = false
       try {
         await requireAccount(operation)
+        await validateCodexTurnSettings(
+          input.codexSettings,
+          options.service,
+          operation.lease,
+        )
         const argumentsCanonical = JSON.stringify(input.arguments)
         const prepared = await options.controller.prepareAssignmentAction({
           actionId,
@@ -787,6 +781,10 @@ export function createProductOperationCoordinator(options: {
                 name: recipe.requestedSkillName,
                 path: recipe.path,
               },
+              permissionProfile: 'workspace_write',
+              ...(input.codexSettings === undefined
+                ? {}
+                : { settings: input.codexSettings }),
               text: renderAssignmentInput(prepared, input.arguments),
             },
             operationOptions.disconnected,
@@ -1013,25 +1011,34 @@ export function createProductOperationCoordinator(options: {
       let streamOpened = false
       try {
         await requireAccount(operation)
-        const courseId = requireCourseId(options.controller)
-        const preparedExecution =
-          await options.controller.prepareProductChatExecution({
-            operationId,
-            courseId,
-            selectedMaterials: input.materials.map((material) => ({
-              rawMaterialId: material.id,
-              digest: material.digest,
-            })),
-          })
-        operation.chat.guardPrepared = true
-        operation.chat.scratchPath = preparedExecution.scratchPath
-        operation.redactionValues.push(
-          preparedExecution.scratchPath,
-          options.controller.nativeCwd(),
+        await validateCodexTurnSettings(
+          input.codexSettings,
+          options.service,
+          operation.lease,
         )
-        if (input.materials.length > 0) {
+        const courseId = currentCourseId(options.controller)
+        const selectedCourseId =
+          input.materials.length > 0
+            ? requireCourseId(courseId)
+            : undefined
+        if (courseId) {
+          const preparedExecution =
+            await options.controller.prepareProductChatExecution({
+              operationId,
+              courseId,
+              selectedMaterials: input.materials.map((material) => ({
+                rawMaterialId: material.id,
+                digest: material.digest,
+              })),
+            })
+          operation.chat.guardPrepared = true
+          operation.chat.scratchPath = preparedExecution.scratchPath
+          operation.redactionValues.push(preparedExecution.scratchPath)
+        }
+        operation.redactionValues.push(options.controller.nativeCwd())
+        if (selectedCourseId) {
           const proposal = await options.controller.prepareAssignmentProposalSession({
-            courseId,
+            courseId: selectedCourseId,
             selectedMaterials: input.materials.map((material) => ({
               rawMaterialId: material.id,
               digest: material.digest,
@@ -1055,6 +1062,10 @@ export function createProductOperationCoordinator(options: {
               workspace: options.controller.nativeCwd(),
               mcp: options.mcpHost.nativeThreadConfig(operationOptions.mcpUrl),
             },
+            permissionProfile: courseId ? 'workspace_write' : 'read_only',
+            ...(input.codexSettings === undefined
+              ? {}
+              : { settings: input.codexSettings }),
             text,
           },
           operationOptions.disconnected,
@@ -1072,11 +1083,13 @@ export function createProductOperationCoordinator(options: {
         }
         operation.turn = turn
         operation.redactionValues.push(turn.threadId, turn.turnId)
-        await options.controller.bindProductChatExecution({
-          operationId,
-          threadId: turn.threadId,
-          turnId: turn.turnId,
-        })
+        if (operation.chat.guardPrepared) {
+          await options.controller.bindProductChatExecution({
+            operationId,
+            threadId: turn.threadId,
+            turnId: turn.turnId,
+          })
+        }
         if (operation.proposal) {
           await options.controller.bindAssignmentProposalSession({
             requestKey: operation.proposal.context.requestKey,
@@ -1316,64 +1329,7 @@ export function createProductOperationCoordinator(options: {
       if (active?.turn) options.service.disconnectProductTurn(active.turn)
     },
   }
-  return options.accountRuntimeLease
-    ? guardProductOperationCoordinatorWithAccountRuntimeLease(
-        coordinator,
-        options.accountRuntimeLease,
-      )
-    : coordinator
-}
-
-export function guardProductOperationCoordinatorWithAccountRuntimeLease(
-  coordinator: ProductOperationCoordinator,
-  lease: AccountRuntimeProductOperationLease,
-): ProductOperationCoordinator {
-  const waitingAdmissions = new Set<AbortController>()
-  let shuttingDown = false
-
-  const run = async (operation: () => Promise<void>): Promise<void> => {
-    if (shuttingDown) throw unavailable()
-    const admission = new AbortController()
-    waitingAdmissions.add(admission)
-    let result: AccountRuntimeOperationResult<
-      | { readonly status: 'completed' }
-      | { readonly status: 'operation_failed'; readonly error: unknown }
-    >
-    try {
-      result = await lease.runAccountOperation({
-        signal: admission.signal,
-        operation: async () => {
-          try {
-            await operation()
-            return { status: 'completed' as const }
-          } catch (error) {
-            return { status: 'operation_failed' as const, error }
-          }
-        },
-      })
-    } finally {
-      waitingAdmissions.delete(admission)
-    }
-    if (result.status === 'failed') {
-      throw presentAccountRuntimeLeaseFailure(result.error)
-    }
-    if (result.result.status === 'operation_failed') {
-      throw result.result.error
-    }
-  }
-
-  return {
-    ...coordinator,
-    startAssignment: (input, options) =>
-      run(() => coordinator.startAssignment(input, options)),
-    sendChat: (input, options) =>
-      run(() => coordinator.sendChat(input, options)),
-    beginShutdown() {
-      shuttingDown = true
-      for (const admission of waitingAdmissions) admission.abort()
-      coordinator.beginShutdown()
-    },
-  }
+  return coordinator
 }
 
 async function settlePreAcceptanceFailure(
@@ -1657,15 +1613,21 @@ function findPatch(
   return patch
 }
 
-function requireCourseId(controller: SemesterWorkspaceController): string {
-  const snapshot = controller.snapshot()
-  if (snapshot?.state !== 'ready' || !snapshot.course) {
+function requireCourseId(courseId: string | undefined): string {
+  if (!courseId) {
     throw new SemesterWorkspaceError(
       'course_unknown',
       'An active Course is required.',
     )
   }
-  return snapshot.course.id
+  return courseId
+}
+
+function currentCourseId(
+  controller: SemesterWorkspaceController,
+): string | undefined {
+  const snapshot = controller.snapshot()
+  return snapshot?.state === 'ready' ? snapshot.course?.id : undefined
 }
 
 function assertAssignmentRequest(
@@ -1788,6 +1750,32 @@ function mapInteractionAnswers(
   return nativeAnswers
 }
 
+async function validateCodexTurnSettings(
+  settings: ProductCodexTurnSettings | undefined,
+  service: CodexChatService,
+  lease: ProductOperationLease,
+): Promise<void> {
+  if (!settings) return
+  const catalog = await service.readProductModelCatalog(lease)
+  const model = catalog.models.find(
+    (candidate) => candidate.model === settings.model,
+  )
+  const reasoningSupported = model?.supportedReasoningEfforts.some(
+    (candidate) =>
+      candidate.reasoningEffort === settings.reasoningEffort,
+  )
+  const fastSupported =
+    settings.serviceTier === 'default' ||
+    model?.serviceTiers.includes('fast') === true
+  if (!model || !reasoningSupported || !fastSupported) {
+    throw new ProductOperationError(
+      'action_invalid',
+      400,
+      '현재 Codex 모델 설정을 다시 선택해 주세요.',
+    )
+  }
+}
+
 function invalidInteraction(): ProductOperationError {
   return new ProductOperationError(
     'interaction_invalid',
@@ -1865,22 +1853,6 @@ function presentProductOperationError(error: unknown): ProductOperationError {
 function presentServiceError(error: unknown): ProductOperationError {
   if (error instanceof ProductOperationError) return error
   if (error instanceof CodexChatServiceError && error.code === 'active_turn') {
-    return new ProductOperationError(
-      'action_busy',
-      409,
-      '다른 Codex 작업이 진행 중입니다.',
-    )
-  }
-  return unavailable()
-}
-
-function presentAccountRuntimeLeaseFailure(
-  failure: AccountRuntimeLeaseFailure,
-): ProductOperationError {
-  if (
-    failure.code === 'account_operation_active' ||
-    failure.code === 'transition_cancelled'
-  ) {
     return new ProductOperationError(
       'action_busy',
       409,

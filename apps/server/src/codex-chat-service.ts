@@ -4,6 +4,8 @@ import {
   type CancelUserInput,
   type CodexAccountReadiness,
   type CodexChatRuntime,
+  type CodexModelCatalog,
+  type CodexModelCatalogRuntime,
   type CodexProductActivity,
   type CodexProductCapableRuntime,
   type CodexProductTurn,
@@ -85,7 +87,8 @@ export class CodexChatService {
   private runtimeFailureCode?: string
   private currentThreadId?: string
   private currentThreadProfile?: string
-  private accountReadInProgress = false
+  private accountReadPromise?: Promise<CodexAccountReadiness>
+  private modelCatalogReadPromise?: Promise<CodexModelCatalog>
   private activeTurn?: ActiveTurn
   private productOperationLease?: ProductOperationLease
   private shuttingDown = false
@@ -111,7 +114,8 @@ export class CodexChatService {
   reserveProductOperation(operationId: string): ProductOperationLease {
     this.requireAvailable()
     if (
-      this.accountReadInProgress ||
+      this.accountReadPromise ||
+      this.modelCatalogReadPromise ||
       this.activeTurn ||
       this.productOperationLease
     ) {
@@ -154,25 +158,42 @@ export class CodexChatService {
     this.requireAvailable()
     if (lease) {
       this.requireProductLease(lease)
-    } else {
-      if (
-        this.accountReadInProgress ||
-        this.activeTurn ||
-        this.productOperationLease
-      ) {
-        throw stateError('active_turn')
-      }
-      this.accountReadInProgress = true
+      return this.readProductAccountReadinessOnce()
     }
-    try {
-      const runtime = requireProductRuntime(await this.getRuntime())
-      return await runtime.readAccountReadiness()
-    } catch (error) {
-      await this.handleUnknownOutcome(error)
-      throw error
-    } finally {
-      if (!lease) this.accountReadInProgress = false
+
+    if (this.activeTurn || this.productOperationLease) {
+      throw stateError('active_turn')
     }
+    if (this.accountReadPromise) return this.accountReadPromise
+
+    const read = this.readProductAccountReadinessOnce()
+    this.accountReadPromise = read
+    void read.then(
+      () => this.clearAccountRead(read),
+      () => this.clearAccountRead(read),
+    )
+    return read
+  }
+
+  async readProductModelCatalog(
+    lease?: ProductOperationLease,
+  ): Promise<CodexModelCatalog> {
+    this.requireAvailable()
+    if (lease) {
+      this.requireProductLease(lease)
+      return this.readProductModelCatalogOnce()
+    }
+    if (this.activeTurn || this.productOperationLease) {
+      throw stateError('active_turn')
+    }
+    if (this.modelCatalogReadPromise) return this.modelCatalogReadPromise
+    const read = this.readProductModelCatalogOnce()
+    this.modelCatalogReadPromise = read
+    void read.then(
+      () => this.clearModelCatalogRead(read),
+      () => this.clearModelCatalogRead(read),
+    )
+    return read
   }
 
   async startProductTurn(
@@ -188,7 +209,8 @@ export class CodexChatService {
       reservation.disconnected = disconnected()
     } else {
       if (
-        this.accountReadInProgress ||
+        this.accountReadPromise ||
+        this.modelCatalogReadPromise ||
         this.activeTurn ||
         this.productOperationLease
       ) {
@@ -217,6 +239,8 @@ export class CodexChatService {
       const turn = await runtime.startProductTurn({
         threadId,
         ...(input.skill === undefined ? {} : { skill: input.skill }),
+        permissionProfile: input.permissionProfile,
+        ...(input.settings === undefined ? {} : { settings: input.settings }),
         text: input.text,
       })
       reservation.phase = 'streaming'
@@ -354,7 +378,7 @@ export class CodexChatService {
 
   async recycleProductRuntime(): Promise<void> {
     if (this.runtimeRecyclePromise) return this.runtimeRecyclePromise
-    if (this.accountReadInProgress || this.activeTurn) {
+    if (this.accountReadPromise || this.modelCatalogReadPromise || this.activeTurn) {
       throw stateError('active_turn')
     }
     const recycling = this.recycleProductRuntimeOnce()
@@ -372,6 +396,38 @@ export class CodexChatService {
     if (this.activeTurn !== active) return
     active.disconnected = true
     if (active.phase === 'streaming') this.beginDisconnectCleanup(active)
+  }
+
+  private async readProductAccountReadinessOnce(): Promise<CodexAccountReadiness> {
+    try {
+      const runtime = requireProductRuntime(await this.getRuntime())
+      return await runtime.readAccountReadiness()
+    } catch (error) {
+      await this.handleUnknownOutcome(error)
+      throw error
+    }
+  }
+
+  private clearAccountRead(read: Promise<CodexAccountReadiness>): void {
+    if (this.accountReadPromise === read) {
+      this.accountReadPromise = undefined
+    }
+  }
+
+  private async readProductModelCatalogOnce(): Promise<CodexModelCatalog> {
+    try {
+      const runtime = requireModelCatalogRuntime(await this.getRuntime())
+      return await runtime.readModelCatalog()
+    } catch (error) {
+      await this.handleUnknownOutcome(error)
+      throw error
+    }
+  }
+
+  private clearModelCatalogRead(read: Promise<CodexModelCatalog>): void {
+    if (this.modelCatalogReadPromise === read) {
+      this.modelCatalogReadPromise = undefined
+    }
   }
 
   private async interruptActiveTurn(
@@ -630,6 +686,16 @@ function requireProductRuntime(
     throw stateError('codex_chat_unavailable')
   }
   return candidate as CodexProductCapableRuntime
+}
+
+function requireModelCatalogRuntime(
+  runtime: CodexChatRuntime,
+): CodexModelCatalogRuntime {
+  const candidate = runtime as Partial<CodexModelCatalogRuntime>
+  if (typeof candidate.readModelCatalog !== 'function') {
+    throw stateError('codex_chat_unavailable')
+  }
+  return candidate as CodexModelCatalogRuntime
 }
 
 function productThreadProfileKey(profile: ProductThreadProfile): string {

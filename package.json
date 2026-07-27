@@ -7,8 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "tsx scripts/product-development-bootstrap.mts",
-    "dogfood": "tsx scripts/product-dogfood.mts",
+    "dev": "tsx scripts/product-local.mts",
     "demo": "npm run serve:camp-demo",
     "serve:camp-demo": "vite . --host 127.0.0.1 --port 4174 --strictPort --open /artifacts/camp-demo/",
     "export:camp-demo": "tsx artifacts/camp-demo/export-pdf.mts",
@@ -17,13 +16,13 @@
     "typecheck:camp-demo": "tsc -p artifacts/camp-demo/tsconfig.json",
     "materialize:dev-workspace": "tsx scripts/semester-workspace-materializer.mts",
     "test:workspace-materializer": "tsx --test scripts/semester-workspace-materializer.test.mts",
-    "test:dogfood": "tsx --test scripts/product-dogfood.test.mts",
+    "test:local": "tsx --test scripts/product-local.test.mts",
     "test:product-entrypoint": "tsx scripts/test-product-entrypoint.mts",
     "check:docs-links": "tsx scripts/check-docs-links.mts",
-    "test": "npm run test:workspace-materializer && npm run test:dogfood && npm run test -w @ay-ple/product-contract && npm run test -w @ay-ple/codex-chat-runtime && npm run test -w @ay-ple/runtime-release && npm run test -w @ay-ple/semester-workspace && npm run test -w @ay-ple/server && npm run test -w ay-ple && npm run test -w @ay-ple/chat-shell && npm run test -w @ay-ple/landing && npm run test:camp-demo",
+    "test": "npm run test:workspace-materializer && npm run test:local && npm run test -w @ay-ple/product-contract && npm run test -w @ay-ple/codex-chat-runtime && npm run test -w @ay-ple/semester-workspace && npm run test -w @ay-ple/server && npm run test -w @ay-ple/chat-shell && npm run test:camp-demo",
     "test:e2e": "npm run test:e2e -w @ay-ple/chat-shell && npm run test:camp-demo:e2e",
-    "build": "/bin/rm -Rfx -- ./packages/product-contract/dist ./packages/codex-chat-runtime/dist ./packages/runtime-release/dist ./packages/semester-workspace/dist ./apps/server/dist ./apps/ay-ple/dist ./apps/chat-shell/dist ./apps/landing/dist && npm run build -w @ay-ple/product-contract && npm run build -w @ay-ple/codex-chat-runtime && npm run build -w @ay-ple/runtime-release && npm run build -w @ay-ple/semester-workspace && npm run build -w @ay-ple/server && npm run build -w ay-ple && npm run build -w @ay-ple/chat-shell && npm run build -w @ay-ple/landing",
-    "typecheck": "npm run typecheck -w @ay-ple/product-contract && npm run typecheck -w @ay-ple/codex-chat-runtime && npm run typecheck -w @ay-ple/runtime-release && npm run typecheck -w @ay-ple/semester-workspace && npm run typecheck -w @ay-ple/server && npm run typecheck -w ay-ple && npm run typecheck -w @ay-ple/chat-shell && npm run typecheck -w @ay-ple/landing && tsc -p scripts/tsconfig.json && npm run typecheck:camp-demo"
+    "build": "/bin/rm -Rfx -- ./packages/product-contract/dist ./packages/codex-chat-runtime/dist ./packages/semester-workspace/dist ./apps/server/dist ./apps/chat-shell/dist && npm run build -w @ay-ple/product-contract && npm run build -w @ay-ple/codex-chat-runtime && npm run build -w @ay-ple/semester-workspace && npm run build -w @ay-ple/server && npm run build -w @ay-ple/chat-shell",
+    "typecheck": "npm run typecheck -w @ay-ple/product-contract && npm run typecheck -w @ay-ple/codex-chat-runtime && npm run typecheck -w @ay-ple/semester-workspace && npm run typecheck -w @ay-ple/server && npm run typecheck -w @ay-ple/chat-shell && tsc -p scripts/tsconfig.json && npm run typecheck:camp-demo"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",

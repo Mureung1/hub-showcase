@@ -49,11 +49,13 @@ void browserRuntime.startThread(privateThreadInput)
 
 void productRuntime.startProductTurn({
   threadId: 'native-thread',
+  permissionProfile: 'workspace_write',
   text: 'Continue the product conversation.',
 })
 
 void productRuntime.startProductTurn({
   threadId: 'native-thread',
+  permissionProfile: 'workspace_write',
   text: 'Continue the product conversation.',
   // @ts-expect-error Product callers do not own model or reasoning selection.
   plan: { model: 'legacy-model', reasoningEffort: 'medium' },

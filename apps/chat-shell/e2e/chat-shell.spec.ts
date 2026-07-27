@@ -966,6 +966,7 @@ test('settles a lost Assignment stream before Review answer and retries only fro
   const retryPayload = retryRequest.postDataJSON() as Record<string, unknown>
   expect(Object.keys(retryPayload).sort()).toEqual([
     'arguments',
+    'codexSettings',
     'courseId',
     'materials',
     'recipeVersion',
@@ -980,6 +981,11 @@ test('settles a lost Assignment stream before Review answer and retries only fro
       digest: source.digest,
     })),
     retryOfRunId: interruptedRun!.id,
+    codexSettings: {
+      model: 'gpt-e2e',
+      reasoningEffort: 'medium',
+      serviceTier: 'default',
+    },
   })
 
   const retryReview = chat.getByRole('region', { name: '검토 대기' })

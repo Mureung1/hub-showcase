@@ -2,16 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
-  PUBLIC_PREVIEW_INVALID_RESPONSE_FIXTURES,
-  PUBLIC_PREVIEW_SCENARIO_FIXTURES,
-} from '@ay-ple/product-contract/testing'
-
-import {
   activateProductWorkspace,
-  executePublicPreviewCommand,
   fetchProductBootstrap,
+  fetchProductCodexSettings,
   fetchProductMaterialPreview,
-  fetchPublicPreviewResponse,
   fetchSettledProductBootstrap,
   ProductApiError,
   ProductStreamError,
@@ -20,78 +14,6 @@ import {
   streamProductChat,
   submitProductReview,
 } from './product-api.js'
-
-test('observes the strict public preview projection from one additive product route', async (t) => {
-  const expected = PUBLIC_PREVIEW_SCENARIO_FIXTURES.find(
-    ({ name }) => name === 'ready',
-  )!.response
-  t.mock.method(globalThis, 'fetch', async (
-    input: string | URL | Request,
-    init?: RequestInit,
-  ) => {
-    assert.equal(input, '/api/product/public-preview')
-    assert.deepEqual(init, {
-      headers: { accept: 'application/json' },
-      signal: undefined,
-    })
-    return new Response(JSON.stringify(expected), { status: 200 })
-  })
-
-  assert.deepEqual(await fetchPublicPreviewResponse(), expected)
-})
-
-test('posts one exact decoded public preview command without private transport fields', async (t) => {
-  const expected = PUBLIC_PREVIEW_SCENARIO_FIXTURES.find(
-    ({ name }) => name === 'confirmation_required',
-  )!.response
-  const command = {
-    command: 'setup.prepare',
-    input: {
-      yearLevel: 2,
-      term: '2',
-      parentSelectionId: 'parent_selection_primary',
-      leafName: '2026-2학기',
-    },
-  } as const
-  t.mock.method(globalThis, 'fetch', async (
-    input: string | URL | Request,
-    init?: RequestInit,
-  ) => {
-    assert.equal(input, '/api/product/public-preview')
-    assert.equal(init?.method, 'POST')
-    assert.deepEqual(init?.headers, {
-      accept: 'application/json',
-      'content-type': 'application/json',
-    })
-    assert.deepEqual(JSON.parse(String(init?.body)), command)
-    return new Response(JSON.stringify(expected), { status: 200 })
-  })
-
-  assert.deepEqual(await executePublicPreviewCommand(command), expected)
-})
-
-test('public preview observe fails closed on absent, malformed, or private response fields', async (t) => {
-  const invalidValues = [
-    undefined,
-    '{',
-    JSON.stringify(PUBLIC_PREVIEW_INVALID_RESPONSE_FIXTURES[0].value),
-    JSON.stringify(
-      PUBLIC_PREVIEW_INVALID_RESPONSE_FIXTURES.find(
-        ({ name }) => name === 'absolute path',
-      )!.value,
-    ),
-  ]
-  let index = 0
-  t.mock.method(globalThis, 'fetch', async () => {
-    const value = invalidValues[index]
-    index += 1
-    return new Response(value, { status: 200 })
-  })
-
-  for (const _value of invalidValues) {
-    await assertInvalidResponse(fetchPublicPreviewResponse())
-  }
-})
 
 test('decodes a ready product snapshot without persistence metadata', async (t) => {
   const workspace = {
@@ -122,6 +44,31 @@ test('decodes a ready product snapshot without persistence metadata', async (t) 
     workspace,
     history: emptyHistory(),
   })
+})
+
+test('decodes the advertised Codex model controls', async (t) => {
+  const settings = {
+    models: [
+      {
+        model: 'gpt-current',
+        displayName: 'GPT Current',
+        description: 'Current model',
+        isDefault: true,
+        defaultReasoningEffort: 'medium',
+        supportedReasoningEfforts: [
+          { reasoningEffort: 'medium', description: 'Balanced' },
+        ],
+        fastModeAvailable: true,
+        fastModeDefault: false,
+      },
+    ],
+  } as const
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () => new Response(JSON.stringify(settings), { status: 200 }),
+  )
+  assert.deepEqual(await fetchProductCodexSettings(), settings)
 })
 
 test('returns one active product snapshot without waiting for settlement', async (t) => {

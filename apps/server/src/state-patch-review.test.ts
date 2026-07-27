@@ -165,6 +165,7 @@ test('the deterministic MCP and Plan sequence commits an accepted Assignment bef
         name: 'first-assignment',
         path: '/managed/first-assignment/SKILL.md',
       },
+      permissionProfile: 'workspace_write',
       text: `proposal request key: ${session.context.requestKey}`,
     } as const
     const requested = {

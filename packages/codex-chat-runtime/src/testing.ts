@@ -15,6 +15,7 @@ import type {
   AnswerUserInput,
   CancelUserInput,
   CodexManagedRuntime,
+  CodexModelCatalog,
   CodexProductTurn,
   StartThreadInput,
   StartProductTurnInput,
@@ -51,6 +52,7 @@ export {
 
 export type DeterministicCodexChatRuntimeCall =
   | { readonly operation: 'readAccountReadiness' }
+  | { readonly operation: 'readModelCatalog' }
   | { readonly operation: 'readAccount' }
   | {
       readonly operation: 'startBrowserLogin'
@@ -125,6 +127,7 @@ export type DeterministicCodexProductTurn = {
 export type DeterministicCodexChatRuntimeOptions = {
   readonly role?: CodexRuntimeRole
   readonly accountReadiness?: readonly CodexAccountReadiness[]
+  readonly modelCatalogs?: readonly CodexModelCatalog[]
   readonly accountReads?: readonly DeterministicValue<CodexAccountReadResult>[]
   readonly browserLoginStarts?: readonly DeterministicValue<CodexBrowserLoginStartResult>[]
   readonly browserLoginAttempts?: readonly DeterministicValue<CodexBrowserLoginAttempt>[]
@@ -166,6 +169,7 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
   readonly terminal = this.terminalDeferred.promise
   readonly role: CodexRuntimeRole
   private readonly accountReadiness: CodexAccountReadiness[]
+  private readonly modelCatalogs: CodexModelCatalog[]
   private readonly accountReads: DeterministicValue<CodexAccountReadResult>[]
   private readonly browserLoginStarts: DeterministicValue<CodexBrowserLoginStartResult>[]
   private readonly browserLoginAttempts: DeterministicValue<CodexBrowserLoginAttempt>[]
@@ -199,6 +203,7 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
         : { ...options.role },
     )
     this.accountReadiness = [...(options.accountReadiness ?? [])]
+    this.modelCatalogs = [...structuredClone(options.modelCatalogs ?? [])]
     this.accountReads = [...(options.accountReads ?? [])]
     this.browserLoginStarts = [...(options.browserLoginStarts ?? [])]
     this.browserLoginAttempts = [...(options.browserLoginAttempts ?? [])]
@@ -243,6 +248,15 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     return result.account.state === 'chatgpt'
       ? { state: 'ready' }
       : { state: 'not_ready', reason: 'authentication_required' }
+  }
+
+  async readModelCatalog(): Promise<CodexModelCatalog> {
+    this.callLog.push({ operation: 'readModelCatalog' })
+    this.requireOpen()
+    this.requireWorkspaceRole()
+    const catalog = this.modelCatalogs.shift()
+    if (!catalog) throw new Error('No deterministic model catalog remains')
+    return structuredClone(catalog)
   }
 
   async readAccount(input: {
@@ -806,6 +820,10 @@ function cloneProductTurnInput(
   return {
     threadId: input.threadId,
     ...(input.skill === undefined ? {} : { skill: { ...input.skill } }),
+    permissionProfile: input.permissionProfile,
+    ...(input.settings === undefined
+      ? {}
+      : { settings: { ...input.settings } }),
     text: input.text,
   }
 }
@@ -818,6 +836,10 @@ function sameProductTurnInput(
     left.threadId === right.threadId &&
     left.skill?.name === right.skill?.name &&
     left.skill?.path === right.skill?.path &&
+    left.permissionProfile === right.permissionProfile &&
+    left.settings?.model === right.settings?.model &&
+    left.settings?.reasoningEffort === right.settings?.reasoningEffort &&
+    left.settings?.serviceTier === right.settings?.serviceTier &&
     left.text === right.text
   )
 }

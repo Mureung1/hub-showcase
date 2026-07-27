@@ -12,11 +12,11 @@
 
 ## 목적
 
-이 문서는 `Semester Ready` 이후 첫 학업 action의 사용자 시나리오와 검토 화면 구조를 정리한다. 핵심 방향은 **원본 자료와 변경 제안을 함께 보고, 학생이 확인한 내용만 학기 정보에 반영하는 작업공간**이다.
+이 문서는 existing current-v2 workspace에서 실행하는 첫 학업 action의 사용자 시나리오와 검토 화면 구조를 정리한다. 핵심 방향은 **원본 자료와 변경 제안을 함께 보고, 학생이 확인한 내용만 학기 정보에 반영하는 작업공간**이다.
 
 이 시나리오는 학생용 화면을 검증한다. Runtime과 native Codex mapping을 다시 정의하지 않으며, 화면의 action과 자료 선택은 ModelingInvocation의 제품 입력으로 사용되고 결과는 `StatePatch`로 검토된다.
 
-첫 public preview의 release-blocking journey는 새 `SemesterWorkspace`를 scaffold해 `Semester Ready`에 도달하고 같은 public 명령으로 다시 여는 데서 끝난다. 이 문서의 자료 반입·Course·Assignment Review는 그 이후 제품 경험이며 첫 preview에서 현재 제공한다고 주장하지 않는다.
+Landing·public command·Browser OAuth·새 workspace setup 여정은 제거됐다. 이 문서는 현재 개인 dogfood에서 유지하는 자료 선택·Course·Assignment Review 경험만 다룬다.
 
 학생이 이해해야 할 한 문장은 다음과 같다.
 
@@ -26,17 +26,17 @@
 
 | 조건 | 의미 |
 | --- | --- |
-| `Semester Ready` | AY-PLE이 생성한 `SemesterWorkspace`의 `WorkspaceManifest`·기본 설정·validation이 완료됐다. Course나 자료가 이미 있다는 뜻은 아니다. |
+| current workspace ready | chooser가 넘긴 existing current-v2 workspace를 읽고 mutation 가능한 상태다. Adopted `Semester Ready`와 같은 뜻이 아니다. |
 | 검토된 자료 반입 | 외부 폴더나 자료 묶음을 `ImportSource`로 검토한 뒤 이 action에서 사용할 자료가 workspace 안의 `RawMaterial`로 반입됐다. |
-| Course 맥락 | `WorkspaceManifest`가 이 scenario의 Course identity와 자료 관계를 소유한다. 폴더명은 identity의 기준이 아니다. |
+| Course 맥락 | current-v2 aggregate가 이 scenario의 Course identity와 자료 관계를 소유한다. |
 
-ImportSource 분석·mapping·migration 자체는 이 Review scenario가 아니라 별도의 post-Ready import journey가 소유한다.
+ImportSource 분석·mapping·migration 자체는 이 Review scenario가 아니라 별도 import journey가 소유한다.
 
 ## 대표 시나리오
 
 | 항목 | 내용 |
 | --- | --- |
-| 학기 작업공간 | AY-PLE이 생성·검증한 활성 `SemesterWorkspace` |
+| 학기 작업공간 | chooser로 연 existing current-v2 workspace |
 | 과목 | 문제해결글쓰기 |
 | 자료 | TXT로 저장한 LMS 공지와 강의계획서 발췌문 |
 | action | 선택한 자료에서 과제 정보 정리 |

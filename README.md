@@ -34,23 +34,17 @@ AY-PLE(에이플)는 학생이 한 학기 작업공간에서 공지, 강의계�
 
 ```bash
 npm install
-npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
+npm run dev
 ```
 
-Canonical development command는 explicit `appDataRoot`와 current materialized/override directory를 검증하고, `packageRoot`의 verified Runtime artifact와 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. 이 current path는 app-owned scaffold나 `WorkspaceManifest` admission을 아직 구현하지 않습니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 materialize해야 합니다. 현재 시작·workspace·Runtime 제약은 [Server README](apps/server/README.md), 채택한 workspace target은 [ADR 0014](docs/adr/0014-create-app-owned-normalized-semester-workspaces.md), 화면 동작과 후속 경계는 [Chat Shell README](apps/chat-shell/README.md)를 따릅니다.
+Canonical development command는 persistent app data와 existing workspace를 검증하고, `packageRoot`의 verified Runtime artifact와 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. 이 entrypoint는 별도 실행 topology를 만들지 않고 [ADR 0013](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 canonical composition에 위임합니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 materialize해야 합니다.
 
-반복해서 실제 제품을 만질 때는 repository 밖의 고정 profile root를 지정하는 dogfood 명령을 사용합니다. 이 helper는 별도 실행 topology를 만들지 않고 [ADR 0013](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 canonical development composition에 위임합니다.
+기본 profile root는 repository 기준 `../.ay-ple-dogfood`이고 실제 app data는 그 아래 `app-data/`를 사용합니다. Workspace는 `../workspace/year-2-semester-2`이며 sample fixture를 복사하지 않아 비어 있어도 정상입니다. Codex account는 caller의 전역 `CODEX_HOME`, 또는 미설정 시 `~/.codex`를 그대로 사용합니다. 이후 Server·Chat Shell 시작에서도 workspace의 사용자 자료와 `.ay-ple` 상태를 보존하고 기존 내용을 reset하지 않습니다.
 
-```bash
-npm run dogfood -- --root /absolute/path/to/ay-ple-dogfood
-```
-
-첫 실행은 profile 아래에 isolated `app-data`와 sample 기반 current development workspace를 한 번만 만들고, Codex 인증이 없으면 해당 profile 전용 `login --device-auth` 명령을 안내한 뒤 종료합니다. 로그인 후 같은 명령을 다시 실행하면 이후 Server·Chat Shell 시작에서도 fixture의 사용자 자료와 `.ay-ple` 상태를 그대로 보존합니다. 이 helper는 public first-run scaffold나 채택한 in-app Browser OAuth UX가 아니며 기존 내용을 reset하거나 sample로 다시 덮어쓰지 않습니다.
-
-이미 수동으로 만든 동일 layout의 profile은 최초 한 번만 명시적으로 채택합니다. 소유권 marker가 생긴 뒤에는 이 flag를 빼고 평소 명령을 사용합니다.
+다른 위치가 필요하면 repository 기준 상대 경로나 absolute path로 override할 수 있습니다. 이미 수동으로 만든 app-data profile은 최초 한 번만 명시적으로 채택합니다.
 
 ```bash
-npm run dogfood -- --root /absolute/path/to/existing-profile --adopt-existing
+npm run dev -- --root ../existing-profile --workspace ../workspace/another-semester --adopt-existing
 ```
 
 ## 캠프 데모
@@ -92,7 +86,7 @@ npm run demo
 | ADR | [0013. Product-only public surface와 durable v2 baseline](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md) | Canonical product cutover와 workspace-local current v2의 장기 compatibility 정책 |
 | ADR | [0014. App-owned normalized SemesterWorkspace](docs/adr/0014-create-app-owned-normalized-semester-workspaces.md) | `WorkspaceManifest` authority, scaffold·admission과 `ImportSource` 경계 결정 |
 | ADR | [0015. Reviewed clean snapshot public repository](docs/adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | Public source lineage·canonical cutover, Apache-2.0 first-party license와 trust·export authority |
-| ADR | [0016. Exact npx application과 verified Runtime release](docs/adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md) | 첫 public preview의 application↔Runtime binding·delivery·cache와 rollback 경계 |
+| ADR | [0016. Exact npx application과 verified Runtime release](docs/adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md) | 중단한 public release lane의 application↔Runtime binding·delivery·cache와 rollback 역사 기록 |
 | ADR | [0017. Codex-managed Browser OAuth product account lifecycle](docs/adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md) | Managed ChatGPT login, app-scoped credential authority와 pre-workspace Runtime 전환 |
 
 ### 기술 참고 문서
@@ -144,8 +138,7 @@ npm run demo
 ## 개발 명령어
 
 ```bash
-npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
-npm run dogfood -- --root /absolute/path/to/ay-ple-dogfood
+npm run dev
 npm run demo
 npm test
 npm run test:e2e
@@ -164,4 +157,4 @@ npm run test:local-provider -w @ay-ple/codex-chat-runtime
 npm run test:first-assignment-product-actual -w @ay-ple/server
 ```
 
-아직 DB, AY-PLE 자체 cloud account와 범용 상태관리 선택지는 고정하지 않습니다. 첫 public preview의 Codex 연결은 [ADR 0017](docs/adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md)의 managed ChatGPT Browser OAuth를 채택했지만 아직 구현되지 않았습니다. 제품 경로는 Codex Chat의 native conversation contract를 사용하고 [`ModelingRecipe → ModelingInvocation → ModelingRun`](docs/architecture/codex-native-product-composition.md)으로 재사용 정의, 일회성 요청과 실행 receipt를 구분합니다. AY-PLE는 `RawMaterial`, `EvidenceRef`, `StatePatch`, `UserConfirmation`, `SemesterModel` 같은 학업 상태와 Review 경험을 소유합니다. 현재 구현 gap은 [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md)를 따릅니다.
+아직 DB, AY-PLE 자체 cloud account와 범용 상태관리 선택지는 고정하지 않습니다. Managed ChatGPT Browser OAuth와 pre-workspace Runtime의 Server·Browser graph는 제거됐고 current dev·dogfood는 전역 `CODEX_HOME`을 사용합니다. 제품 경로는 Codex Chat의 native conversation contract를 사용하고 [`ModelingRecipe → ModelingInvocation → ModelingRun`](docs/architecture/codex-native-product-composition.md)으로 재사용 정의, 일회성 요청과 실행 receipt를 구분합니다. AY-PLE는 `RawMaterial`, `EvidenceRef`, `StatePatch`, `UserConfirmation`, `SemesterModel` 같은 학업 상태와 Review 경험을 소유합니다. 현재 구현 gap은 [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md)를 따릅니다.

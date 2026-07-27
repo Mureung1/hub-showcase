@@ -41,6 +41,7 @@ import type {
   AnswerUserInput,
   CancelUserInput,
   CodexManagedRuntime,
+  CodexModelCatalog,
   CodexProductTurn,
   StartThreadInput,
   StartProductTurnInput,
@@ -79,6 +80,7 @@ type ResultFrame = Extract<BridgeOutputFrame, { type: 'result' }>
 type RuntimeState = 'starting' | 'ready' | 'closing' | 'closed' | 'failed'
 type CommandName =
   | 'read_account'
+  | 'read_model_catalog'
   | 'start_browser_login'
   | 'read_browser_login_attempt'
   | 'cancel_browser_login'
@@ -569,6 +571,25 @@ class NodeCodexChatRuntime implements CodexManagedRuntime {
       : { state: 'not_ready', reason: 'authentication_required' }
   }
 
+  readModelCatalog(): Promise<CodexModelCatalog> {
+    const denied = this.workspaceOperationDenied()
+    if (denied) return Promise.reject(denied)
+    return this.sendOperation(
+      'read_model_catalog',
+      false,
+      (bridgeRequestId) => ({
+        bridgeRequestId,
+        command: 'read_model_catalog',
+      }),
+      (frame) => {
+        if (frame.command !== 'read_model_catalog') {
+          throw new BridgeProtocolError('mismatch')
+        }
+        return frame.catalog
+      },
+    )
+  }
+
   readEffectiveConfig(input: {
     readonly signal: AbortSignal
   }): Promise<CodexEffectiveConfig> {
@@ -911,6 +932,14 @@ class NodeCodexChatRuntime implements CodexManagedRuntime {
         ...(skill === undefined
           ? {}
           : { skillName: skill.name, skillPath: skill.path }),
+        permissionProfile: input.permissionProfile,
+        ...(input.settings === undefined
+          ? {}
+          : {
+              model: input.settings.model,
+              reasoningEffort: input.settings.reasoningEffort,
+              serviceTier: input.settings.serviceTier,
+            }),
         text,
       }),
       (frame) => {
@@ -2112,6 +2141,12 @@ function accountFailure(code: CodexAccountFailureCode): CodexAccountFailure {
 
 function requireProductTurnInput(input: StartProductTurnInput): void {
   requireNativeId(input.threadId)
+  if (
+    input.permissionProfile !== 'read_only' &&
+    input.permissionProfile !== 'workspace_write'
+  ) {
+    throw new TypeError('Product permission profile is invalid')
+  }
   if (input.skill !== undefined) {
     if (typeof input.skill !== 'object' || input.skill === null) {
       throw new TypeError('Skill input must be an object')
@@ -2123,6 +2158,25 @@ function requireProductTurnInput(input: StartProductTurnInput): void {
     }
     if (path.basename(input.skill.path) !== 'SKILL.md') {
       throw new TypeError('Skill path must target SKILL.md')
+    }
+  }
+  if (input.settings !== undefined) {
+    requireExactInputKeys(
+      input.settings,
+      ['model', 'reasoningEffort', 'serviceTier'],
+      'Product Turn settings',
+    )
+    requireBoundedString(input.settings.model, 'Product model', 256)
+    requireBoundedString(
+      input.settings.reasoningEffort,
+      'Product reasoning effort',
+      64,
+    )
+    if (
+      input.settings.serviceTier !== 'default' &&
+      input.settings.serviceTier !== 'fast'
+    ) {
+      throw new TypeError('Product service tier is invalid')
     }
   }
   requireBoundedString(input.text, 'Product turn text', 512 * 1024)

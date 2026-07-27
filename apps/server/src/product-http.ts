@@ -22,6 +22,7 @@ import {
   type ProductAccountReadiness,
   type ProductAssignment,
   type ProductBootstrap,
+  type ProductCodexSettings,
   type ProductError,
   type ProductEvidenceRef,
   type ProductMaterialPreview,
@@ -75,6 +76,7 @@ type ProductAccountReadinessSource = () => Promise<
   | { readonly state: 'ready' }
   | { readonly state: 'not_ready' }
 >
+type ProductCodexSettingsSource = () => Promise<ProductCodexSettings>
 const workspaceErrorPresentation: Record<
   SemesterWorkspaceError['code'],
   { readonly status: number; readonly displayMessage: string }
@@ -153,7 +155,7 @@ export function createProductRouter(
   productOperations?: ProductOperationCoordinator,
   writeDrainMs = defaultProductWriteDrainMs,
   readAccountReadiness?: ProductAccountReadinessSource,
-  allowWorkspaceActivation = true,
+  readCodexSettings?: ProductCodexSettingsSource,
 ): Router {
   const router = express.Router()
 
@@ -201,6 +203,24 @@ export function createProductRouter(
     response.json(body)
   })
 
+  router.get('/codex-settings', async (_request, response) => {
+    response.setHeader('cache-control', 'no-store')
+    if (!readCodexSettings) {
+      sendError(response, 503, 'product_unavailable', safeUnavailable)
+      return
+    }
+    try {
+      const settings = await readCodexSettings()
+      if (settings.models.length === 0) {
+        sendError(response, 503, 'codex_settings_unavailable', safeAccountUnavailable)
+        return
+      }
+      response.json(settings)
+    } catch {
+      sendError(response, 503, 'codex_settings_unavailable', safeAccountUnavailable)
+    }
+  })
+
   router.get('/materials/:materialId/preview', async (request, response) => {
     response.setHeader('cache-control', 'no-store')
     if (
@@ -233,28 +253,26 @@ export function createProductRouter(
     }),
   )
 
-  if (allowWorkspaceActivation) {
-    router.post('/workspaces/activate', async (request, response) => {
-      if (!controller) {
-        sendError(response, 503, 'product_unavailable', safeUnavailable)
-        return
+  router.post('/workspaces/activate', async (request, response) => {
+    if (!controller) {
+      sendError(response, 503, 'product_unavailable', safeUnavailable)
+      return
+    }
+    if (!tryDecode(decodeEmptyProductRequest, request.body)) {
+      sendError(response, 400, 'invalid_request', safeInvalidRequest)
+      return
+    }
+    try {
+      const activation = await controller.activate()
+      const body: ProductWorkspaceActivationResponse = {
+        status: activation.status,
+        workspace: projectProductWorkspace(activation.workspace),
       }
-      if (!tryDecode(decodeEmptyProductRequest, request.body)) {
-        sendError(response, 400, 'invalid_request', safeInvalidRequest)
-        return
-      }
-      try {
-        const activation = await controller.activate()
-        const body: ProductWorkspaceActivationResponse = {
-          status: activation.status,
-          workspace: projectProductWorkspace(activation.workspace),
-        }
-        response.json(body)
-      } catch (error) {
-        sendWorkspaceError(response, error)
-      }
-    })
-  }
+      response.json(body)
+    } catch (error) {
+      sendWorkspaceError(response, error)
+    }
+  })
 
   router.post('/courses', async (request, response) => {
     if (!controller) {

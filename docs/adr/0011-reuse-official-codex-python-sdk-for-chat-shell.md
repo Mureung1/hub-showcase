@@ -6,7 +6,7 @@
 
 대체한 결정: 기존 `HeadlessCodexClientHost` 제품 seam과 community TypeScript fork 기반 자체 runtime 계획
 
-관련 제품 인증 결정: [ADR 0017 — 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md). 이 ADR은 official SDK·process mechanics를 계속 소유하고, managed account authority와 product lifecycle은 ADR 0017이 소유한다.
+역사적 제품 인증 결정: [ADR 0017 — 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md). 이 ADR은 official SDK·process mechanics를 계속 소유한다. ADR 0017의 public-preview managed account lifecycle은 제거됐고 현재 dev·dogfood의 account authority는 전역 `CODEX_HOME`이다.
 
 ## 맥락
 
@@ -42,7 +42,9 @@ Codex approval은 command·file·network 같은 실행 권한에 대한 native C
 
 Exact SDK의 high-level `thread_start` 기본값은 `ApprovalMode.auto_review`, `sandbox=None`이고, current bridge가 이를 `deny_all + read_only`로 override한다. Low-level default handler는 command/file approval request에 `accept`를 반환하며 synthetic harness가 이를 관찰했다. 이는 실행 권한 disposition의 입력이지 AY-PLE 제품 확인 실패나 즉시 patch할 blocker가 아니다. Ordered patch `0001`–`0005`는 routing·settlement·notification 동작만 바꾸며 approval handler나 policy를 수정하지 않는다. Native 설정과 public seam을 검토한 뒤에도 실제 제품 action에 필요한 gap이 확인될 때만 upstream extension 또는 좁은 port를 검토하고, monkey patch나 private override는 production 대안으로 취급하지 않는다.
 
-First Assignment modeling의 product-capable runtime operation은 이 원칙에 따라 별도 profile을 채택한다. Caller가 `startProductTurn`을 명시적으로 선택할 때 runtime package가 exact native Turn에 `ApprovalMode.auto_review + Sandbox.workspace_write`를 전달하며, 기존 text `startTurn`의 `deny_all + read_only` tracer profile은 final cutover 전까지 그대로 유지한다. Native command·file permission 처리는 Codex와 official SDK가 소유하고 Browser-safe product projection은 Plan `request_user_input`만 answer/cancel 가능한 interaction으로 노출한다. 이 interaction은 AY-PLE `UserConfirmation`을 승인하지 않으며, Server·Browser가 product operation을 호출하는 admission과 Review 반영 경계는 후속 integration이 소유한다. 이 profile은 First Assignment modeling action에 한정되고 다른 action의 권한이나 request UX를 자동으로 결정하지 않는다.
+Product-capable runtime operation은 action별 permission profile을 반드시 명시한다. First Assignment와 Course-bound guarded Chat은 `permissionProfile: workspace_write`로 `ApprovalMode.auto_review + Sandbox.workspace_write`를 사용한다. Course·ModelingRun 전의 source-free 일반 Chat은 `permissionProfile: read_only`로 exact native Turn을 `ApprovalMode.deny_all + Sandbox.read_only`로 시작한다. 이 read-only profile도 Plan `collaborationMode`와 Browser-safe product activity projection을 유지한다. Native command·file permission 처리는 Codex와 official SDK가 소유하고 Browser-safe product projection은 Plan `request_user_input`만 answer/cancel 가능한 interaction으로 노출한다. 이 interaction은 AY-PLE `UserConfirmation`을 승인하지 않으며, Server·Browser가 product operation을 호출하는 admission과 Review 반영 경계는 별도로 소유한다.
+
+개인 product UI는 official `model/list`의 visible catalog를 Browser-safe하게 projection하고, 사용자가 고른 model·advertised reasoning effort와 `default | fast` service tier를 다음 Product Turn의 public SDK override로 전달한다. 선택이 없으면 native thread의 effective model·reasoning을 유지한다. Catalog order와 지원 조합은 App Server가 소유하며 app은 모델명을 하드코딩하거나 전역 `config.toml`을 쓰지 않는다.
 
 ## Runtime baseline과 배포 packaging 책임
 

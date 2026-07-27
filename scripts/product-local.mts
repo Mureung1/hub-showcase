@@ -1,7 +1,6 @@
 import { constants } from 'node:fs'
 import {
   access,
-  cp,
   lstat,
   mkdir,
   readFile,
@@ -20,37 +19,31 @@ import { assertProductRootsDoNotOverlap } from './semester-workspace-materialize
 
 const profileMarkerName = '.ay-ple-dogfood-profile.json'
 const profileMarkerKind = 'ay-ple-persistent-dogfood-profile'
-const codexConfig = [
-  'cli_auth_credentials_store = "file"',
-  'approval_policy = "never"',
-  'sandbox_mode = "read-only"',
-  '',
-].join('\n')
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url))
 const usage =
-  'Usage: npm run dogfood -- --root /absolute/path/to/profile [--adopt-existing]'
+  'Usage: npm run dev -- [--root <profile>] [--workspace <workspace>] [--adopt-existing]'
+const defaultProfileRoot = '../.ay-ple-dogfood'
+const defaultWorkspaceRoot = '../workspace/year-2-semester-2'
 
 type ProductDevelopmentStarter = (options: {
   readonly arguments: readonly string[]
   readonly environment: NodeJS.ProcessEnv
 }) => Promise<void>
 
-export type DogfoodProfile = {
+export type LocalProductRoots = {
   readonly appDataRoot: string
-  readonly authState: 'missing' | 'ready'
-  readonly codexHome: string
   readonly profileRoot: string
   readonly workspaceRoot: string
 }
 
-type DogfoodProfileLayout = Omit<DogfoodProfile, 'authState'>
-
-export function resolveDogfoodArguments(arguments_: readonly string[]): {
+export function resolveLocalProductArguments(arguments_: readonly string[]): {
   readonly adoptExisting: boolean
   readonly profileRoot: string
+  readonly workspaceRoot: string
 } {
   let adoptExisting = false
   let profileRoot: string | undefined
+  let workspaceRoot: string | undefined
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index]
     if (argument === '--adopt-existing' && !adoptExisting) {
@@ -58,39 +51,54 @@ export function resolveDogfoodArguments(arguments_: readonly string[]): {
       continue
     }
     if (argument === '--root' && profileRoot === undefined) {
-      profileRoot = arguments_[index + 1]
+      const value = arguments_[index + 1]
+      if (!value) throw new Error(usage)
+      profileRoot = value
+      index += 1
+      continue
+    }
+    if (argument === '--workspace' && workspaceRoot === undefined) {
+      const value = arguments_[index + 1]
+      if (!value) throw new Error(usage)
+      workspaceRoot = value
       index += 1
       continue
     }
     throw new Error(usage)
   }
-  if (!profileRoot) throw new Error(usage)
-  if (!path.isAbsolute(profileRoot)) {
-    throw new Error('Dogfood requires an absolute profile root')
+  return {
+    adoptExisting,
+    profileRoot: profileRoot ?? defaultProfileRoot,
+    workspaceRoot: workspaceRoot ?? defaultWorkspaceRoot,
   }
-  return { adoptExisting, profileRoot }
 }
 
-export async function runDogfood(options: {
+export async function runLocalProduct(options: {
   readonly arguments: readonly string[]
   readonly environment: NodeJS.ProcessEnv
   readonly log?: (message: string) => void
   readonly packageRoot: string
   readonly startProductDevelopment?: ProductDevelopmentStarter
 }): Promise<void> {
-  const selected = resolveDogfoodArguments(options.arguments)
-  const profile = await prepareDogfoodProfile({
+  const selected = resolveLocalProductArguments(options.arguments)
+  const profileRoot = resolveFromPackageRoot(
+    options.packageRoot,
+    selected.profileRoot,
+  )
+  const workspaceRoot = resolveFromPackageRoot(
+    options.packageRoot,
+    selected.workspaceRoot,
+  )
+  const profile = await prepareLocalProductProfile({
     adoptExisting: selected.adoptExisting,
     packageRoot: options.packageRoot,
-    profileRoot: selected.profileRoot,
+    profileRoot,
+    workspaceRoot,
   })
   const log = options.log ?? console.log
-  log(`Dogfood profile: ${profile.profileRoot}`)
+  log(`Local profile: ${profile.profileRoot}`)
   log(`SemesterWorkspace: ${profile.workspaceRoot} (persistent)`)
   log(`Product app data: ${profile.appDataRoot} (persistent)`)
-  if (profile.authState === 'missing') {
-    throw new Error(authenticationGuidance(profile, options.packageRoot))
-  }
   await (options.startProductDevelopment ?? runProductDevelopment)({
     arguments: ['--app-data-root', profile.appDataRoot],
     environment: {
@@ -100,109 +108,94 @@ export async function runDogfood(options: {
   })
 }
 
-export async function prepareDogfoodProfile(options: {
+export async function prepareLocalProductProfile(options: {
   readonly adoptExisting?: boolean
   readonly packageRoot: string
   readonly profileRoot: string
-}): Promise<DogfoodProfile> {
+  readonly workspaceRoot: string
+}): Promise<LocalProductRoots> {
   if (
     !path.isAbsolute(options.packageRoot) ||
-    !path.isAbsolute(options.profileRoot)
+    !path.isAbsolute(options.profileRoot) ||
+    !path.isAbsolute(options.workspaceRoot)
   ) {
-    throw new TypeError('Dogfood roots must be absolute directories')
+    throw new TypeError('Local product roots must be absolute directories')
   }
   const packageRoot = await canonicalDirectory(
     options.packageRoot,
     'package root',
   )
   const profileRoot = await canonicalCandidatePath(options.profileRoot)
+  const workspaceRoot = await canonicalDirectory(
+    options.workspaceRoot,
+    'local SemesterWorkspace',
+  )
   assertProductRootsDoNotOverlap(packageRoot, profileRoot)
+  assertProductRootsDoNotOverlap(packageRoot, workspaceRoot)
+  assertProductRootsDoNotOverlap(profileRoot, workspaceRoot)
 
   const existing = await pathExists(profileRoot)
   if (existing) {
     const markerPath = path.join(profileRoot, profileMarkerName)
     if (!(await pathExists(markerPath))) {
       if (!options.adoptExisting) {
-        throw new Error('Dogfood profile ownership marker is missing')
+        throw new Error('Local profile ownership marker is missing')
       }
       await adoptExistingProfile(profileRoot)
     } else {
       await verifyOwnedProfile(profileRoot)
     }
   } else {
-    await initializeProfile(profileRoot, packageRoot)
+    await initializeProfile(profileRoot)
   }
 
   const canonicalProfileRoot = await canonicalDirectory(
     profileRoot,
-    'dogfood profile root',
+    'local profile root',
   )
-  const layout = resolveProfileLayout(canonicalProfileRoot)
-  await validateProfileLayout(layout)
+  const roots = resolveLocalProductRoots(canonicalProfileRoot, workspaceRoot)
+  await validateLocalProductRoots(roots)
 
-  return {
-    ...layout,
-    authState: await resolveAuthState(layout.codexHome),
-  }
+  return roots
 }
 
-async function initializeProfile(
-  profileRoot: string,
-  packageRoot: string,
-): Promise<void> {
+async function initializeProfile(profileRoot: string): Promise<void> {
   await mkdir(profileRoot, { mode: 0o700 })
   const canonicalProfileRoot = await realpath(profileRoot)
-  const layout = resolveProfileLayout(canonicalProfileRoot)
-  const sampleWorkspaceRoot = path.join(
-    packageRoot,
-    'apps/chat-shell/e2e/fixtures/first-assignment-semester-workspace',
-  )
-  await mkdir(layout.codexHome, { mode: 0o700, recursive: true })
-  await cp(sampleWorkspaceRoot, layout.workspaceRoot, {
-    errorOnExist: true,
-    force: false,
-    recursive: true,
-  })
-  await writeFile(path.join(layout.codexHome, 'config.toml'), codexConfig, {
-    encoding: 'utf8',
-    flag: 'wx',
-    mode: 0o600,
-  })
+  await mkdir(path.join(canonicalProfileRoot, 'app-data'), { mode: 0o700 })
   await writeOwnershipMarker(canonicalProfileRoot)
 }
 
 async function adoptExistingProfile(profileRoot: string): Promise<void> {
   const canonicalProfileRoot = await canonicalDirectory(
     profileRoot,
-    'dogfood profile root',
+    'local profile root',
   )
-  const layout = resolveProfileLayout(canonicalProfileRoot)
-  await validateProfileLayout(layout)
-  await resolveAuthState(layout.codexHome)
+  await canonicalDirectory(
+    path.join(canonicalProfileRoot, 'app-data'),
+    'local app data root',
+  )
   await writeOwnershipMarker(canonicalProfileRoot)
 }
 
-function resolveProfileLayout(profileRoot: string): DogfoodProfileLayout {
+function resolveLocalProductRoots(
+  profileRoot: string,
+  workspaceRoot: string,
+): LocalProductRoots {
   const appDataRoot = path.join(profileRoot, 'app-data')
   return {
     appDataRoot,
-    codexHome: path.join(appDataRoot, 'runtime/codex-home'),
     profileRoot,
-    workspaceRoot: path.join(profileRoot, 'semester-workspace'),
+    workspaceRoot,
   }
 }
 
-async function validateProfileLayout(
-  layout: DogfoodProfileLayout,
+async function validateLocalProductRoots(
+  roots: LocalProductRoots,
 ): Promise<void> {
   await Promise.all([
-    canonicalDirectory(layout.appDataRoot, 'dogfood app data root'),
-    secureDirectory(layout.codexHome, 'dogfood Codex home'),
-    canonicalDirectory(layout.workspaceRoot, 'dogfood SemesterWorkspace'),
-    secureRegularFile(
-      path.join(layout.codexHome, 'config.toml'),
-      'config.toml',
-    ),
+    canonicalDirectory(roots.appDataRoot, 'local app data root'),
+    canonicalDirectory(roots.workspaceRoot, 'local SemesterWorkspace'),
   ])
 }
 
@@ -225,19 +218,19 @@ async function writeOwnershipMarker(profileRoot: string): Promise<void> {
 async function verifyOwnedProfile(profileRoot: string): Promise<void> {
   const canonicalProfileRoot = await canonicalDirectory(
     profileRoot,
-    'dogfood profile root',
+    'local profile root',
   )
   let marker: unknown
   try {
     await secureRegularFile(
       path.join(canonicalProfileRoot, profileMarkerName),
-      'Dogfood profile ownership marker',
+      'Local profile ownership marker',
     )
     marker = JSON.parse(
       await readFile(path.join(canonicalProfileRoot, profileMarkerName), 'utf8'),
     )
   } catch {
-    throw new Error('Dogfood profile ownership marker is missing')
+    throw new Error('Local profile ownership marker is missing')
   }
   if (
     typeof marker !== 'object' ||
@@ -250,29 +243,8 @@ async function verifyOwnedProfile(profileRoot: string): Promise<void> {
     !('profileRoot' in marker) ||
     marker.profileRoot !== canonicalProfileRoot
   ) {
-    throw new Error('Dogfood profile ownership marker is invalid')
+    throw new Error('Local profile ownership marker is invalid')
   }
-}
-
-async function resolveAuthState(
-  codexHome: string,
-): Promise<DogfoodProfile['authState']> {
-  const authPath = path.join(codexHome, 'auth.json')
-  if (!(await pathExists(authPath))) return 'missing'
-  await secureRegularFile(authPath, 'auth.json')
-  return 'ready'
-}
-
-async function secureDirectory(
-  directory: string,
-  label: string,
-): Promise<string> {
-  const canonical = await canonicalDirectory(directory, label)
-  const stats = await lstat(directory)
-  if ((stats.mode & 0o077) !== 0) {
-    throw new TypeError(`${label} must be owner-only`)
-  }
-  return canonical
 }
 
 async function secureRegularFile(file: string, label: string): Promise<void> {
@@ -287,38 +259,25 @@ async function secureRegularFile(file: string, label: string): Promise<void> {
   await access(file, constants.R_OK)
 }
 
-function authenticationGuidance(
-  profile: DogfoodProfile,
-  packageRoot: string,
-): string {
-  const codexExecutable = path.join(
-    packageRoot,
-    'packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64/bundle/site-packages/codex_cli_bin/bin/codex',
-  )
-  return [
-    'Dogfood Codex authentication is missing.',
-    'Log in to this isolated profile, then rerun dogfood:',
-    `CODEX_HOME=${shellQuote(profile.codexHome)} ${shellQuote(codexExecutable)} login --device-auth`,
-    `npm run dogfood -- --root ${shellQuote(profile.profileRoot)}`,
-  ].join('\n')
-}
-
-function shellQuote(value: string): string {
-  return `'${value.replaceAll("'", `'"'"'`)}'`
-}
-
 async function canonicalCandidatePath(candidate: string): Promise<string> {
   const parent = await realpath(path.dirname(path.resolve(candidate)))
   const stats = await lstat(parent)
   if (!stats.isDirectory()) {
-    throw new TypeError('Dogfood profile parent must be a directory')
+    throw new TypeError('Local profile parent must be a directory')
   }
   await access(parent, constants.R_OK | constants.W_OK | constants.X_OK)
   return path.join(parent, path.basename(path.resolve(candidate)))
 }
 
+function resolveFromPackageRoot(
+  packageRoot: string,
+  candidate: string,
+): string {
+  return path.resolve(packageRoot, candidate)
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  void runDogfood({
+  void runLocalProduct({
     arguments: process.argv.slice(2),
     environment: process.env,
     packageRoot: repositoryRoot,

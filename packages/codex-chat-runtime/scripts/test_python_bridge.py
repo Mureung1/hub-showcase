@@ -344,6 +344,7 @@ class ProtocolUnitTests(unittest.TestCase):
             "threadId": "thread-1",
             "skillName": "assignment-modeling",
             "skillPath": "/managed/assignment-modeling/SKILL.md",
+            "permissionProfile": "workspace_write",
             "text": "Review staged Markdown",
         }
         command = decode_command_line(
@@ -360,6 +361,34 @@ class ProtocolUnitTests(unittest.TestCase):
         )
         self.assertIsNone(command.skill_name)
         self.assertIsNone(command.skill_path)
+        self.assertEqual(command.permission_profile, "workspace_write")
+
+        read_only = {
+            **text_only,
+            "permissionProfile": "read_only",
+        }
+        command = decode_command_line(
+            json.dumps(read_only, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertEqual(command.permission_profile, "read_only")
+
+        configured = {
+            **read_only,
+            "model": "gpt-current",
+            "reasoningEffort": "high",
+            "serviceTier": "fast",
+        }
+        command = decode_command_line(
+            json.dumps(configured, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertEqual(command.model, "gpt-current")
+        self.assertEqual(command.reasoning_effort, "high")
+        self.assertEqual(command.service_tier, "fast")
+
+        catalog = decode_command_line(
+            b'{"bridgeRequestId":"models","command":"read_model_catalog"}\n'
+        )
+        self.assertEqual(catalog.command, "read_model_catalog")
 
         answer = decode_command_line(
             b'{"bridgeRequestId":"answer","command":"answer_user_input",'
@@ -373,6 +402,13 @@ class ProtocolUnitTests(unittest.TestCase):
             {key: value for key, value in product.items() if key != "skillName"},
             {**product, "planModel": "legacy-model"},
             {**product, "reasoningEffort": "medium"},
+            {
+                key: value
+                for key, value in text_only.items()
+                if key != "permissionProfile"
+            },
+            {**text_only, "permissionProfile": "danger_full_access"},
+            {**configured, "serviceTier": "priority"},
             {
                 **product,
                 "planModel": "legacy-model",

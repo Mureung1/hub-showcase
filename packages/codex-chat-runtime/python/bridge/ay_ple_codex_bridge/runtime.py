@@ -34,6 +34,7 @@ from openai_codex.generated.v2_all import (
     McpToolCallThreadItem,
     PlanDeltaNotification,
     PlanThreadItem,
+    ReasoningEffort,
     TurnCompletedNotification,
     TurnStatus,
 )
@@ -58,6 +59,7 @@ from .protocol import (
     RequestLeaseTable,
     ReadBrowserLoginAttemptCommand,
     ReadAccountCommand,
+    ReadModelCatalogCommand,
     ReleaseBrowserLoginAttemptCommand,
     ReleaseThreadCommand,
     StartBrowserLoginCommand,
@@ -88,6 +90,13 @@ SAFE_MESSAGES = {
 
 AUTH_URL_MAX_BYTES = 16 * 1024
 AUTH_URL_HOSTS = frozenset({"auth.openai.com", "chatgpt.com"})
+
+
+def _model_service_tiers(model: Any) -> list[str]:
+    advertised = [
+        tier.id for tier in (model.service_tiers or [])
+    ] + list(model.additional_speed_tiers or [])
+    return list(dict.fromkeys(advertised))
 
 
 @dataclass(slots=True)
@@ -437,6 +446,7 @@ class BridgeWorker:
             command,
             (
                 ReadAccountCommand,
+                ReadModelCatalogCommand,
                 StartBrowserLoginCommand,
                 LogoutCommand,
                 StartThreadCommand,
@@ -464,6 +474,8 @@ class BridgeWorker:
     def dispatch(self, command: BridgeCommand) -> None:
         if isinstance(command, ReadAccountCommand):
             coroutine = self._read_account(command)
+        elif isinstance(command, ReadModelCatalogCommand):
+            coroutine = self._read_model_catalog(command)
         elif isinstance(command, StartBrowserLoginCommand):
             attempt, owns_start = self._reserve_browser_login_start(command.attempt_id)
             coroutine = self._start_browser_login(
@@ -639,6 +651,7 @@ class BridgeWorker:
                 config = None
                 if command.private_mcp is not None:
                     config = {
+                        "features": {"fast_mode": True},
                         "mcp_servers": {
                             "ay_ple": {
                                 "url": command.private_mcp.url,
@@ -689,6 +702,47 @@ class BridgeWorker:
             command.bridge_request_id,
             command.command,
             account={"state": state},
+        )
+
+    async def _read_model_catalog(
+        self, command: ReadModelCatalogCommand
+    ) -> None:
+        try:
+            catalog = await self._codex.models(include_hidden=True)
+        except Exception as exc:
+            self._sdk_failure(command.bridge_request_id, exc)
+            return
+        self._result(
+            command.bridge_request_id,
+            command.command,
+            catalog={
+                "models": [
+                    {
+                        "model": model.model,
+                        "displayName": model.display_name,
+                        "description": model.description,
+                        "isDefault": model.is_default,
+                        "defaultReasoningEffort": model.default_reasoning_effort.root,
+                        "supportedReasoningEfforts": [
+                            {
+                                "reasoningEffort": effort.reasoning_effort.root,
+                                "description": effort.description,
+                            }
+                            for effort in model.supported_reasoning_efforts
+                        ],
+                        "serviceTiers": _model_service_tiers(model),
+                        **(
+                            {
+                                "defaultServiceTier": model.default_service_tier,
+                            }
+                            if model.default_service_tier is not None
+                            else {}
+                        ),
+                    }
+                    for model in catalog.data
+                    if not model.hidden
+                ]
+            },
         )
 
     async def _fresh_account_state(self) -> str:
@@ -1354,20 +1408,35 @@ class BridgeWorker:
             await self._codex.set_skill_extra_roots(
                 _skill_extra_roots(command.skill_path)
             )
-            initial_model = record.handle.initial_model
-            if not initial_model:
+            effective_model = command.model or record.handle.initial_model
+            if not effective_model:
                 raise EffectiveModelResolutionError
+            effective_effort = (
+                ReasoningEffort(root=command.reasoning_effort)
+                if command.reasoning_effort is not None
+                else record.handle.initial_reasoning_effort
+            )
+            read_only = command.permission_profile == "read_only"
             return await record.handle.turn(
                 turn_input,
                 cwd=record.cwd,
-                approval_mode=ApprovalMode.auto_review,
-                sandbox=Sandbox.workspace_write,
+                approval_mode=(
+                    ApprovalMode.deny_all if read_only else ApprovalMode.auto_review
+                ),
+                sandbox=Sandbox.read_only if read_only else Sandbox.workspace_write,
+                model=command.model,
+                effort=(
+                    ReasoningEffort(root=command.reasoning_effort)
+                    if command.reasoning_effort is not None
+                    else None
+                ),
+                service_tier=command.service_tier,
                 collaboration_mode=CollaborationMode(
                     mode=ModeKind.plan,
                     settings=CollaborationModeSettings(
                         developer_instructions=None,
-                        model=initial_model,
-                        reasoning_effort=record.handle.initial_reasoning_effort,
+                        model=effective_model,
+                        reasoning_effort=effective_effort,
                     ),
                 ),
             )

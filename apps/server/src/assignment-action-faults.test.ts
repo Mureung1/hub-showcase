@@ -128,6 +128,52 @@ test('a bootstrap Account read excludes a concurrent product operation', async (
   }
 })
 
+test('concurrent bootstrap requests share one Account read', async () => {
+  const fixture = await createFaultFixture()
+  const accountReadEntered = deferred<void>()
+  const releaseAccountRead = deferred<void>()
+  const runtime = new FaultRuntime({
+    readAccountReadiness: async () => {
+      accountReadEntered.resolve()
+      await releaseAccountRead.promise
+      return { state: 'ready' }
+    },
+  })
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        await activateCourse(application)
+        const first = fetch(`${baseUrl}/api/product/bootstrap`)
+        await accountReadEntered.promise
+        const second = fetch(`${baseUrl}/api/product/bootstrap`)
+
+        await new Promise((resolve) => setTimeout(resolve, 20))
+        releaseAccountRead.resolve()
+
+        const responses = await Promise.all([first, second])
+        assert.deepEqual(responses.map(({ status }) => status), [200, 200])
+        assert.equal(runtime.accountReadinessCalls, 1)
+        for (const response of responses) {
+          assert.deepEqual(
+            (await response.json() as {
+              accountReadiness: { state: string }
+            }).accountReadiness,
+            { state: 'ready' },
+          )
+        }
+      },
+    )
+  } finally {
+    releaseAccountRead.resolve()
+    await fixture.cleanup()
+  }
+})
+
 test('a known pre-accept failure settles the one durable Run as not accepted without an accepted frame', async () => {
   const fixture = await createFaultFixture()
   const runtime = new FaultRuntime({

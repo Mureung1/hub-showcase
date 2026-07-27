@@ -145,6 +145,7 @@ export async function startCodexChatProcessTreeTestFixture(options: {
           ? spawned!.runtime.startThread()
           : spawned!.runtime.startThread(input),
       readAccountReadiness: () => spawned!.runtime.readAccountReadiness(),
+      readModelCatalog: () => spawned!.runtime.readModelCatalog(),
       startTurn: (input: StartTurnInput) => spawned!.runtime.startTurn(input),
       startProductTurn: (input: StartProductTurnInput) =>
         spawned!.runtime.startProductTurn(input),
