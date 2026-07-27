@@ -137,7 +137,9 @@ Conventional Commits 형식을 따른다:
 ## 환경변수
 
 - `.env`는 커밋 금지 (`.gitignore`에 등록됨), `.env.example`에 키 이름만 유지
-- 필수 키: `GROQ_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `PORT`
+- 필수 키(BE): `GROQ_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `PORT`
+- 선택 키(BE, 배포 시): `CORS_ORIGIN` — FE 배포 도메인만 CORS 허용. 비워두면 전체 허용(로컬 개발 기본값)
+- 선택 키(FE, 배포 시): `VITE_API_BASE_URL` — FE/BE를 다른 도메인에 배포할 때만 BE 주소로 설정. 비워두면 상대 경로(`/api/...`)로 호출(로컬 개발 기본값). `src/api/http.ts`의 `apiFetch`가 유일한 참조 지점 — API 요청은 항상 이 헬퍼를 거친다
 
 ## 개발 서버 설정
 
@@ -150,15 +152,18 @@ Conventional Commits 형식을 따른다:
 
 - `any` 타입 금지 — `shared/schemas.ts`에서 추론된 타입을 사용
 - 외부 UI 라이브러리 금지 (별도 합의 전까지 Tailwind만). 상태관리 라이브러리도 별도 합의 전까지 금지 (useState/useReducer 사용)
-- API 키(Groq, Supabase)를 프론트 코드·`VITE_*` 환경변수에 노출 금지 — 서버 전용
+- API 키(Groq, Supabase)를 프론트 코드·`VITE_*` 환경변수에 노출 금지 — 서버 전용 (`VITE_API_BASE_URL`은 비밀값이 아닌 BE 주소 설정이라 예외)
 - Supabase 테이블을 대시보드에서 수동 생성 금지 — 반드시 `supabase/migrations/` SQL 파일로
 - MVP 범위 밖 기능 선제 구현 금지: 음성 입력(STT)/음성 대화(TTS), 푸시 알림, 주간·월간 뷰, 통계, 외부 캘린더 동기화, 로그인/계정
 - 일정 관리 외 응답(잡담, 검색) 기능 추가 금지
 - P0(A-1 저장+되묻기, 브리핑 홈) 완성 전에 P1(A-2 조회, A-3 수정·삭제) 착수 금지
 
-## 미결 사항
+## 배포
 
-- 배포 방식: FE(Vercel) + BE 호스팅(Render 등) vs 로컬 시연 — 과제 요건 확인 후 결정
+- **FE**: Vercel (Vite 프리셋 자동 감지, Build Command `npm run build`, Output Directory `dist`). 환경변수 `VITE_API_BASE_URL`을 Render BE 주소로 설정
+- **BE**: Render (Build Command `npm install`, Start Command `npm start` — `tsx server/index.ts`를 컴파일 없이 직접 실행). 환경변수는 위 "환경변수" 절 전부(BE 필수 4개 + `CORS_ORIGIN`)
+- 상세 절차는 [README.md의 "배포" 절](README.md#배포) 참고
+- Supabase 마이그레이션은 배포 파이프라인에 없음 — 새 마이그레이션 추가 시 Supabase SQL Editor에서 수동 실행 (기존 규칙과 동일)
 
 ## 참고
 
