@@ -1008,7 +1008,7 @@
       "title": "[LG CNS] 어플리케이션 아키텍트/AI 아키텍트 모집(경력)",
       "robots_policy": "allow /; Content-Signal search=yes, ai-train=no; use 미선언; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
-      "note": "모집분야가 Application Architect 와 AI Architect 둘이며 요구사항 본문이 분리된다. AI Architect 는 ai_engineer 라 이 매니페스트에 담지 않는다. robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 목록과 메타데이터만 기록했고 본문 수집 가부는 정하지 않았다",
+      "note": "모집분야가 Application Architect 와 AI Architect 둘이며 요구사항 본문이 분리된다. AI Architect 는 ai_engineer 라 이 매니페스트에 담지 않는다. robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 데이터 전략 8.1에 따라 use=reference 와 같이 다룬다",
       "positions": [
         {
           "position_name": "Application Architect",
@@ -1042,7 +1042,7 @@
       "title": "[LG CNS] MES 영역 전문가 모집 (경력)",
       "robots_policy": "allow /; Content-Signal search=yes, ai-train=no; use 미선언; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
-      "note": "robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 목록과 메타데이터만 기록했고 본문 수집 가부는 정하지 않았다",
+      "note": "robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 데이터 전략 8.1에 따라 use=reference 와 같이 다룬다",
       "positions": [
         {
           "position_name": "Software Engineer",
@@ -1076,7 +1076,7 @@
       "title": "[LG CNS] MES개발자 분야 모집(경력)",
       "robots_policy": "allow /; Content-Signal search=yes, ai-train=no; use 미선언; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
-      "note": "robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 목록과 메타데이터만 기록했고 본문 수집 가부는 정하지 않았다",
+      "note": "robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 데이터 전략 8.1에 따라 use=reference 와 같이 다룬다",
       "positions": [
         {
           "position_name": "Software Engineer",

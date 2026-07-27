@@ -161,8 +161,11 @@ Wiki의 필드별 허용 근거는 [지식·저장 구조](knowledge-schema.md) 
 | 대상 경로가 `Disallow`에 있다 | 그 경로를 수집하지 않는다 |
 | `Content-Signal`에 `ai-train=no`가 있다 | 원문을 모델 학습과 미세조정에 사용하지 않는다 |
 | `Content-Signal`에 `use=reference`가 있다 | 원문을 근거로 인용하고 집계한다 |
+| `Content-Signal`에 `use`가 없다 | `use=reference`와 같이 다룬다 |
 
-`ClaudeBot`이나 `GPTBot` 같은 AI 크롤러 이름을 `Disallow`한 출처는 자동 반복 수집의 대상이 아니다. 같은 출처가 `use=reference`를 함께 선언한 경우 세 조건을 모두 지켜 수집한다.
+`use`를 선언하지 않은 출처를 `use=reference`로 다루는 근거는 `Content-Signal` 규약 자체다. 규약은 선언하지 않은 용도에 대해 운영자가 허가도 제한도 하지 않는다고 밝힌다. 명시적 금지가 없으므로 금지로 읽지 않는다.
+
+`ClaudeBot`이나 `GPTBot` 같은 AI 크롤러 이름을 `Disallow`한 출처는 자동 반복 수집의 대상이 아니다. 같은 출처가 `use=reference`를 선언했거나 `use`를 선언하지 않은 경우 세 조건을 모두 지켜 수집한다.
 
 - 사람이 여는 브라우저 세션에서 지정한 URL을 하나씩 읽는다.
 - 원문을 모델 학습과 미세조정에 사용하지 않는다.
