@@ -136,8 +136,6 @@ export async function startPreparedWorkspace(options: {
   let runtime: PreparedWorkspaceRuntimeGeneration | undefined
   let activeLifecycle: PreparedWorkspaceActiveLifecycle | undefined
   let runtimeTerminated = false
-  let registryCommitStarted = false
-  let activePublished = false
   let cleanupPromise: Promise<void> | undefined
 
   const cleanup = (
@@ -174,9 +172,7 @@ export async function startPreparedWorkspace(options: {
 
   const onRuntimeTerminal = (): void => {
     runtimeTerminated = true
-    if (!registryCommitStarted || activePublished) {
-      void cleanup('runtime_terminal').catch(() => undefined)
-    }
+    void cleanup('runtime_terminal').catch(() => undefined)
   }
 
   try {
@@ -231,28 +227,25 @@ export async function startPreparedWorkspace(options: {
     )
     if (runtimeTerminated) throw new RuntimeTerminatedDuringStartup()
 
+    const lifecycle = {
+      state: 'active',
+      workspace: workspaceSummary(fresh.workspace),
+    } satisfies PreparedWorkspaceActiveLifecycle
+    const acceptCommit = (): boolean => {
+      if (runtimeTerminated) return false
+      activeLifecycle = lifecycle
+      return true
+    }
+
     stage = 'registry_transaction'
-    registryCommitStarted = true
     await commitRegistryAuthority(
       options.registryStore ??
         createWorkspaceRegistryStore({
           appDataRoot: options.appDataRoot,
         }),
       selection,
+      acceptCommit,
     )
-
-    const lifecycle = {
-      state: 'active',
-      workspace: workspaceSummary(fresh.workspace),
-    } satisfies Extract<
-      ProductWorkspaceLifecycle,
-      { readonly state: 'active' }
-    >
-    activeLifecycle = lifecycle
-    activePublished = true
-    if (runtimeTerminated) {
-      void cleanup('runtime_terminal').catch(() => undefined)
-    }
 
     return Object.freeze({
       lifecycle,
@@ -315,6 +308,7 @@ async function requireFreshSelection(
 async function commitRegistryAuthority(
   store: WorkspaceRegistryStore,
   selection: PreparedWorkspaceLaunchSelection,
+  acceptCommit: () => boolean,
 ): Promise<void> {
   if (selection.source === 'registry') {
     const reopened = await store.resolveActiveWorkspace()
@@ -324,6 +318,9 @@ async function commitRegistryAuthority(
       reopened.workspace.workspaceId !== selection.workspace.workspaceId
     ) {
       throw new TypeError('Registered workspace authority changed during startup')
+    }
+    if (!acceptCommit()) {
+      throw new RuntimeTerminatedDuringStartup()
     }
     return
   }
@@ -336,6 +333,7 @@ async function commitRegistryAuthority(
     expectedAuthority: observed.authority,
     canonicalRoot: selection.canonicalRoot,
     expectedWorkspaceId: selection.workspace.workspaceId,
+    acceptCommit,
   })
   if (committed.status !== 'written') {
     throw new TypeError('Workspace registry transaction failed')

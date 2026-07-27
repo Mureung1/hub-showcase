@@ -255,42 +255,34 @@ test('opens the active surface only after the exact required startup order and r
   }
 })
 
-test('Runtime terminal at the registry commit point publishes the committed lifecycle before teardown', async () => {
+test('Runtime terminal during the registry transaction restores the previous pointer without active publication', async () => {
   const fixture = await createFixture()
   try {
+    const before = await registryBytes(fixture.appDataRoot)
     const harness = createHarness()
-    const commitEntered = deferred<void>()
-    const commitRelease = deferred<void>()
-    const registry = registryWithCommit(
-      fixture.store,
-      async (input) => {
-        harness.events.push('registry.commit')
-        commitEntered.resolve()
-        await commitRelease.promise
-        return fixture.store.commitActiveWorkspace(input)
-      },
-    )
-    const startup = startPreparedWorkspace({
+    const registry = createWorkspaceRegistryStore({
       appDataRoot: fixture.appDataRoot,
-      explicitWorkspaceRoot: fixture.targetRoot,
-      ports: harness.ports,
-      registryStore: registry,
+      async fault(point) {
+        if (point === 'before_final_compare') {
+          harness.terminal.resolve()
+        }
+      },
     })
 
-    await commitEntered.promise
-    harness.terminal.resolve()
-    await new Promise<void>((resolve) => setImmediate(resolve))
-    assert.equal(harness.readActiveLifecycle?.(), undefined)
-    assert.equal(harness.events.includes('listener.close'), false)
-
-    commitRelease.resolve()
-    const session = await startup
-    assert.deepEqual(harness.readActiveLifecycle?.(), session.lifecycle)
-    await waitFor(() => harness.events.includes('listener.close'))
-    assert.ok(
-      harness.events.indexOf('surface.active') <
-        harness.events.indexOf('broker.runtime-terminal'),
+    await assert.rejects(
+      startPreparedWorkspace({
+        appDataRoot: fixture.appDataRoot,
+        explicitWorkspaceRoot: fixture.targetRoot,
+        ports: harness.ports,
+        registryStore: registry,
+      }),
+      (error: unknown) =>
+        error instanceof PreparedWorkspaceStartupError &&
+        error.stage === 'registry_transaction',
     )
+    await waitFor(() => harness.events.includes('listener.close'))
+    assert.equal(harness.readActiveLifecycle?.(), undefined)
+    assert.deepEqual(await registryBytes(fixture.appDataRoot), before)
   } finally {
     await fixture.cleanup()
   }

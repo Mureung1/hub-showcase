@@ -391,6 +391,46 @@ test('active commit rejects a root identity that differs from the verified works
   }
 })
 
+test('declined commit acceptance restores the exact previous active bytes', async () => {
+  const fixture = await createFixture('declined-acceptance')
+  try {
+    await Promise.all([
+      writeIdentity(fixture.firstRoot, firstWorkspaceId),
+      writeIdentity(fixture.secondRoot, secondWorkspaceId),
+    ])
+    const store = createWorkspaceRegistryStore({
+      appDataRoot: fixture.appDataRoot,
+    })
+    const first = await store.commitActiveWorkspace({
+      expectedAuthority: null,
+      canonicalRoot: fixture.firstRoot,
+      expectedWorkspaceId: firstWorkspaceId,
+    })
+    assert.equal(first.status, 'written')
+    if (first.status !== 'written') assert.fail('first commit must win')
+    const before = Buffer.from(first.authority.openedBytes)
+
+    assert.deepEqual(
+      await store.commitActiveWorkspace({
+        expectedAuthority: first.authority,
+        canonicalRoot: fixture.secondRoot,
+        expectedWorkspaceId: secondWorkspaceId,
+        acceptCommit: () => false,
+      }),
+      { status: 'conflict' },
+    )
+    const restored = await store.read()
+    assert.equal(restored.status, 'current')
+    if (restored.status !== 'current') {
+      assert.fail('previous registry must be restored')
+    }
+    assert.deepEqual(Buffer.from(restored.authority.openedBytes), before)
+    assert.equal(restored.registry.activeWorkspaceId, firstWorkspaceId)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('malformed and future registry bytes remain byte-for-byte incompatible and are never reset to empty', async () => {
   const fixture = await createFixture('incompatible')
   try {

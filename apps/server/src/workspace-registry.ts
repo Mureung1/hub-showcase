@@ -114,6 +114,7 @@ export interface WorkspaceRegistryStore {
     readonly expectedAuthority: WorkspaceRegistryAuthority | null
     readonly canonicalRoot: string
     readonly expectedWorkspaceId: string
+    readonly acceptCommit?: () => boolean
   }): Promise<
     | WorkspaceRegistryWriteResult
     | {
@@ -296,6 +297,7 @@ export function createWorkspaceRegistryStore(
           canonicalRoot,
           workspaceId: identity.state.workspaceId,
         },
+        input.acceptCommit,
       )
     },
   }
@@ -398,6 +400,7 @@ async function writeRegistry(
   candidate: WorkspaceRegistryV1,
   options: WorkspaceRegistryStoreOptions,
   expectedWorkspace?: WorkspaceRegistryEntry,
+  acceptCommit?: () => boolean,
 ): Promise<WorkspaceRegistryWriteResult> {
   const registry = decodeWorkspaceRegistryBytes(
     encodeWorkspaceRegistry(candidate),
@@ -420,6 +423,7 @@ async function writeRegistry(
   )
   let temporaryExists = false
   let guardExists = false
+  let commitAccepted = false
   try {
     const observed = await readRegistryAt(root)
     const expectedBytes =
@@ -508,11 +512,6 @@ async function writeRegistry(
     await inject(options, 'after_replace')
     await syncDirectory(directory)
     await inject(options, 'after_directory_sync')
-    if (guardExists) {
-      await unlink(guard)
-      guardExists = false
-      await syncDirectory(directory)
-    }
     const written = await readRegistryAt(root)
     if (
       written.status !== 'current' ||
@@ -521,6 +520,33 @@ async function writeRegistry(
       )
     ) {
       throw new WorkspaceRegistryStorageError()
+    }
+    if (acceptCommit && !acceptCommit()) {
+      if (expectedBytes === null) {
+        await unlink(target)
+      } else {
+        await rename(guard, target)
+        guardExists = false
+      }
+      await syncDirectory(directory)
+      return { status: 'conflict' }
+    }
+    commitAccepted = acceptCommit !== undefined
+    if (guardExists) {
+      if (commitAccepted) {
+        try {
+          await unlink(guard)
+          guardExists = false
+          await syncDirectory(directory)
+        } catch {
+          // The committed authority is already public. Owned residue is
+          // reconciled by the next registry writer.
+        }
+      } else {
+        await unlink(guard)
+        guardExists = false
+        await syncDirectory(directory)
+      }
     }
     return {
       status: 'written',
@@ -549,7 +575,9 @@ async function writeRegistry(
     } catch {
       cleanupFailed = true
     }
-    if (cleanupFailed) throw new WorkspaceRegistryStorageError()
+    if (cleanupFailed && !commitAccepted) {
+      throw new WorkspaceRegistryStorageError()
+    }
   }
 }
 
