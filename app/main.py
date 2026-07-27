@@ -8,12 +8,17 @@
 import json
 import logging
 from collections.abc import AsyncIterator, Iterator
+from pathlib import Path
 
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import iterate_in_threadpool
 
 from app import agent, config
+
+# 정적 프론트가 있는 곳. 이 파일 기준으로 찾으므로 작업 디렉토리와 무관하다.
+WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
 logger = logging.getLogger(__name__)
 
@@ -144,3 +149,14 @@ async def stream_brief(
         media_type=SSE_MEDIA_TYPE,
         headers=SSE_HEADERS,
     )
+
+
+# 정적 프론트를 같은 오리진에서 서빙한다. 이러면 EventSource가 상대 경로
+# `/api/brief/stream`을 그대로 쓸 수 있어 CORS 설정이 필요 없다.
+#
+# **반드시 API 라우트를 정의한 뒤에 마운트한다.** 라우트는 등록 순서대로 검사되므로,
+# 이 줄이 위에 있으면 `/`에 걸린 마운트가 `/api/...`까지 먼저 잡아 404를 낸다.
+#
+# 여기서 하는 일은 파일을 내보내는 것뿐이다. 에이전트 로직은 절대 이 파일로
+# 새지 않는다 (CLAUDE.md 의존 방향: main.py → agent.py → tools.py).
+app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
