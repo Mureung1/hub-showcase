@@ -4,6 +4,7 @@ import MainPage from './pages/MainPage'
 import Login from './pages/Login'
 import StoreDetailPage from './pages/StoreDetailPage'
 import Signup from './pages/Signup'
+import SettingsPage from './pages/SettingsPage'
 
 function App() {
   const location = useLocation()
@@ -12,7 +13,8 @@ function App() {
     location.pathname.startsWith('/stores/') ||
     location.pathname === '/' ||
     location.pathname === '/login' ||
-    location.pathname === '/signup'
+    location.pathname === '/signup' ||
+    location.pathname === '/settings'
 
   return (
     <>
@@ -34,6 +36,12 @@ function App() {
           path="/stores/:storeId"
           element={
             isAuthenticated ? <StoreDetailPage /> : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            isAuthenticated ? <SettingsPage /> : <Navigate to="/login" replace />
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,7 +1,11 @@
 import cors from "cors";
 import express, { type Request, type Response } from "express";
 import reviewsRouter from "./routes/reviews";
-import { supabase } from "./config/supabase";
+import {
+  supabase,
+  supabasePublishableKey,
+  supabaseUrl,
+} from "./config/supabase";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -96,6 +100,69 @@ type SignupPreferences = {
   quietness: number;
 };
 
+const DEFAULT_PREFERENCES: SignupPreferences = {
+  spicy: 5,
+  valueForMoney: 5,
+  atmosphere: 5,
+  waiting: 5,
+  quietness: 5,
+};
+
+app.get("/api/auth/preferences", async (req: Request, res: Response) => {
+  const accessToken = getBearerToken(req);
+  if (!accessToken) {
+    res.status(401).json({ message: "로그인이 필요합니다." });
+    return;
+  }
+
+  const { data, error } = await supabase.auth.getUser(accessToken);
+  if (error || !data.user) {
+    res.status(401).json({ message: "로그인 정보가 만료되었습니다." });
+    return;
+  }
+
+  res.json(preferencesFromMetadata(data.user.user_metadata));
+});
+
+app.put("/api/auth/preferences", async (req: Request, res: Response) => {
+  const accessToken = getBearerToken(req);
+  if (!accessToken) {
+    res.status(401).json({ message: "로그인이 필요합니다." });
+    return;
+  }
+
+  const preferences = (req.body as { preferences?: unknown }).preferences;
+  if (!isValidSignupPreferences(preferences)) {
+    res.status(400).json({ message: "취향 설정값은 1~10점이어야 합니다." });
+    return;
+  }
+
+  const updateResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    method: "PUT",
+    headers: {
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ data: preferences }),
+  });
+  const updatedUser = (await updateResponse.json()) as {
+    user_metadata?: Record<string, unknown>;
+    message?: string;
+  };
+
+  if (!updateResponse.ok || !updatedUser.user_metadata) {
+    console.error("Preference update failed:", updatedUser.message);
+    res.status(500).json({ message: "취향 설정을 저장하지 못했습니다." });
+    return;
+  }
+
+  res.json({
+    message: "취향 설정이 저장되었습니다.",
+    preferences: preferencesFromMetadata(updatedUser.user_metadata),
+  });
+});
+
 app.post("/api/auth/signup", async (req: Request, res: Response) => {
   const { name, email, password, preferences } = req.body as {
     name?: unknown;
@@ -188,6 +255,43 @@ function isValidSignupPreferences(
       score >= 1 &&
       score <= 10,
   );
+}
+
+function preferencesFromMetadata(
+  metadata: Record<string, unknown>,
+): SignupPreferences {
+  return {
+    spicy: preferenceValue(metadata.spicy, DEFAULT_PREFERENCES.spicy),
+    valueForMoney: preferenceValue(
+      metadata.valueForMoney,
+      DEFAULT_PREFERENCES.valueForMoney,
+    ),
+    atmosphere: preferenceValue(
+      metadata.atmosphere,
+      DEFAULT_PREFERENCES.atmosphere,
+    ),
+    waiting: preferenceValue(metadata.waiting, DEFAULT_PREFERENCES.waiting),
+    quietness: preferenceValue(
+      metadata.quietness,
+      DEFAULT_PREFERENCES.quietness,
+    ),
+  };
+}
+
+function preferenceValue(value: unknown, fallback: number) {
+  return typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 10
+    ? value
+    : fallback;
+}
+
+function getBearerToken(req: Request) {
+  const authorization = req.header("authorization");
+  return authorization?.startsWith("Bearer ")
+    ? authorization.slice("Bearer ".length)
+    : null;
 }
 
 app.use("/api/reviews", reviewsRouter);
