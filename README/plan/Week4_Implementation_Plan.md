@@ -90,6 +90,10 @@ gantt
     - 지표 계산 함수(`scoreQuoteMatch` 등)는 **순수 함수로 분리**해 `runEval.ts`가 아니라 `src/eval/metrics.ts`에 두고, 이건 유닛 테스트 대상으로 삼는다(Task 28).
     - 무료 티어 쿼터를 고려해 `--only 03_sparse` 같은 단일 fixture 실행 옵션을 둔다.
   - *완료 조건:* `npm run eval --prefix backend` 1회 실행으로 fixture별 4개 지표가 출력되고, `eval/results/`에 **baseline 파일이 남으며**, 그 수치가 이후 Task 25~27의 판정 기준으로 계획서에 인용된다.
+  - **⚠️ 발견된 선결 이슈 — `runEval.ts`가 그대로 프로덕션 DB에 쓴다 (2026-07-27, metrics.ts 구현 중 발견):** `tagHypothesesFromTranscript()`(`hypothesisTagger.ts`)와 `generateVerificationResult()`(`verificationResult.ts`)는 각각 `evidence_tags` INSERT / `verification_results` UPSERT를 무조건 수행한다. `runAnalysisPipeline()`도 `hypotheses.verification_status`를 UPDATE한다. eval을 fixture로 그대로 돌리면 **실제 Supabase 프로젝트에 가짜 fixture 데이터가 쌓인다.** 두 가지 선택지가 있고 아직 결정하지 않았다:
+    1. 두 함수에 `persist?: boolean = true` 옵션을 추가해 `false`면 DB 호출을 건너뛰고 합성 id로 레코드를 반환한다(작은 변경, 단 TDD로 먼저 테스트 작성 필요 — `tdd-feature-loop` 대상).
+    2. eval 전용 Supabase 프로젝트/스키마를 분리한다(설정 비용 있음, 대신 코드 변경 없음).
+    Task 24(프롬프트 모듈 분리)와 겹치는 영역이므로, **Task 24 착수 시 이 옵션 중 하나를 함께 확정**한다. 그 전까지 `runEval.ts`는 골격(fixture 파싱 + `hypotheses.json` 로드 + `--only` 옵션)까지만 구현하고 실제 파이프라인 호출은 보류한다.
 
 ### 🔴 High — ② PM Skill 기반 분석 고도화
 
