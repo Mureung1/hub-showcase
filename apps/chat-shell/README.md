@@ -4,7 +4,7 @@ App 시작 전에 준비한 user-owned Git SemesterWorkspace에서 Official Open
 
 Default Browser route는 `/api/product/bootstrap`의 `starting | active | recovery_required` lifecycle만 표시하고 `active`에서 normal AY Chat을 연다. First open과 학기 변경은 App 밖의 explicit prepared-root launch가 소유하며 Browser chooser·init·candidate·activate/change control은 없다. OAuth/setup wizard, app-owned scaffold와 `WorkspaceManifest`도 public path가 아니다.
 
-`WorkspaceLifecycleView`는 Workspace/Runtime/registry recovery, no-root 안내와 failed explicit relaunch 뒤 previous-workspace reopen을 1440px·1920px desktop Chromium에서 검증한다. Old source-centered workbench는 rollback·contraction source로 남지만 `VITE_AY_PLE_LEGACY_E2E=1`인 donor regression harness 외에는 default Browser composition이 아니다.
+`WorkspaceLifecycleView`는 Workspace/Runtime/registry recovery, no-root 안내와 failed explicit relaunch 뒤 previous-workspace reopen을 1440px·1920px desktop Chromium에서 검증한다. Old source-centered workbench는 rollback·contraction source로 남지만 production `index.html`과 분리된 `legacy-e2e.html` donor harness에서만 시작된다.
 
 ## 현재 구현
 
@@ -42,11 +42,11 @@ npm run build -w @ay-ple/chat-shell
 npm run lint -w @ay-ple/chat-shell
 ```
 
-Unit suite는 shared product contract decoder, lifecycle projection, cross-frame operation reducer, exact Semantic Review binding, 일반 clarification 분리, evidence guard와 Browser NDJSON parser를 검증한다. Default Playwright trace는 실제 Vite·target Express composition에서 active prepared lifecycle, normal AY Chat, semantic proposal→Review→settlement와 old Course/material/action/retry UI·request 부재를 검증한다. Workspace lifecycle E2E는 1440px·1920px desktop에서 registry reopen·explicit relaunch recovery와 no-root/Runtime failure를 검증한다. Old source-centered harness는 contraction 전 donor regression으로만 별도 compile flag를 사용한다.
+Unit suite는 target-only operation decoder, lifecycle projection, exact Semantic Review binding, 일반 clarification 분리와 Browser NDJSON parser를 검증한다. Default Playwright trace는 실제 Vite·target Express composition에서 active prepared lifecycle, normal AY Chat, semantic proposal의 accept·revise·reject settlement와 old Course/material/action/retry UI·request 부재를 검증한다. Workspace lifecycle E2E는 1440px·1920px desktop에서 registry reopen·explicit relaunch recovery와 no-root/Runtime failure를 검증한다. Old source-centered harness는 contraction 전 donor regression용 별도 HTML entry에서만 실행한다.
 
 Existing Playwright harness의 same-root durability trace는 실제 Express `ServerApplication`과 deterministic Runtime generation을 닫고 같은 `appDataRoot`·current fixture directory·API port로 다시 만든 뒤 Browser를 reload한다. Confirmed Assignment·revision·settled history는 다시 열고 transient transcript·unanswered Review는 복원하지 않는 durable boundary를 별도 workflow 없이 검증한다. Root `test:product-entrypoint`의 canonical OS process graph·SIGINT gate와 Server product shutdown actual은 startup·listener·process-tree cleanup을 독립적으로 보완한다.
 
-Runtime package의 `npm run test:local-provider -w @ay-ple/codex-chat-runtime`은 별도로 production Node→bundled Python bridge→official SDK→exact native `0.144.4`를 official local Responses harness에 연결해 internal conversation contract를 확인한다. Current product live evidence는 [Server README](../server/README.md)가 소유하며, isolated auth·fresh roots로 complete Assignment→Review→confirmed outcome과 clean shutdown을 통과했다. 이 point-in-time 증거는 현재 setup 지침이나 전용 disposable auth 자동화 gate를 대체하지 않는다.
+Runtime package의 `npm run test:local-provider -w @ay-ple/codex-chat-runtime`은 별도로 production Node→bundled Python bridge→official SDK→exact native `0.144.4`를 official local Responses harness에 연결해 internal conversation contract를 확인한다. Old academic donor graph의 live evidence는 [Server README](../server/README.md)가 소유하며, isolated auth·fresh roots의 complete Assignment→Review→confirmed outcome과 clean shutdown 기록은 rollback source 검증으로만 남는다. 이 point-in-time 증거는 canonical prepared product의 현재 setup 지침이나 전용 disposable auth 자동화 gate를 대체하지 않는다.
 
 ## 후속 경계
 
