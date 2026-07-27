@@ -8,11 +8,19 @@
       "url": "https://careers.daangn.com/jobs/role/5046759003/",
       "source_type": "job_posting",
       "tier": "A",
-      "allowed_uses": ["statistics", "interpretation_context", "strategy", "roadmap", "wiki_why_required"],
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
       "publisher": "주식회사 당근마켓",
       "company_id": "co_daangn",
       "cluster_id": "startup",
-      "job_role_ids": ["backend"],
+      "job_role_ids": [
+        "backend"
+      ],
       "title": "Software Engineer, Backend - 서비스 코어 (Identity Service)",
       "entry_label_raw": "필수 요건에 연차 표기 없음. 우대사항에 3년 이상",
       "entry_label": "unspecified",
@@ -26,11 +34,19 @@
       "url": "https://careers.daangn.com/jobs/role/6640363003/",
       "source_type": "job_posting",
       "tier": "A",
-      "allowed_uses": ["statistics", "interpretation_context", "strategy", "roadmap", "wiki_why_required"],
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
       "publisher": "주식회사 당근마켓",
       "company_id": "co_daangn",
       "cluster_id": "startup",
-      "job_role_ids": ["backend"],
+      "job_role_ids": [
+        "backend"
+      ],
       "title": "Software Engineer, Backend - 광고",
       "entry_label_raw": "5년 이상의 서버 개발 경험, 혹은 이에 준하는 역량을 보유하신 분",
       "entry_label": "experienced",
@@ -43,11 +59,19 @@
       "url": "https://careers.daangn.com/jobs/role/7659289003/",
       "source_type": "job_posting",
       "tier": "A",
-      "allowed_uses": ["statistics", "interpretation_context", "strategy", "roadmap", "wiki_why_required"],
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
       "publisher": "주식회사 당근마켓",
       "company_id": "co_daangn",
       "cluster_id": "startup",
-      "job_role_ids": ["backend"],
+      "job_role_ids": [
+        "backend"
+      ],
       "title": "Software Engineer, Backend - 나의당근",
       "entry_label_raw": "3년 이상의 백엔드 개발 경험 또는 이에 준하는 엔지니어링 역량을 갖추신 분",
       "entry_label": "experienced",
@@ -60,11 +84,19 @@
       "url": "https://careers.daangn.com/jobs/role/4511184003/",
       "source_type": "job_posting",
       "tier": "A",
-      "allowed_uses": ["statistics", "interpretation_context", "strategy", "roadmap", "wiki_why_required"],
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
       "publisher": "당근페이 주식회사",
       "company_id": "co_daangnpay",
       "cluster_id": "fintech_finance",
-      "job_role_ids": ["backend"],
+      "job_role_ids": [
+        "backend"
+      ],
       "title": "Software Engineer, Backend - 당근페이",
       "entry_label_raw": "3년 이상의 서버 개발 경험, 혹은 이에 준하는 역량을 보유하신 분",
       "entry_label": "experienced",
@@ -72,6 +104,450 @@
       "collected_on": "2026-07-27",
       "content_file": "daangnpay_backend_core.txt",
       "note": "당근마켓 자회사이며 소속이 당근페이다. 기업군은 핀테크·금융으로 둔다"
+    },
+    {
+      "source_id": "src_kakaomobility_be_autonomous",
+      "url": "https://kakaomobility.career.greetinghr.com/ko/o/220166",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "카카오모빌리티",
+      "company_id": "co_kakaomobility",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "자율주행 관제 플랫폼 백엔드 엔지니어",
+      "job_role_raw": "제목: 백엔드 엔지니어",
+      "entry_label_raw": "백엔드 시스템 개발 및 운영 경력이 7년 이상이신 분",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_kakaomobility_be_parking",
+      "url": "https://kakaomobility.career.greetinghr.com/ko/o/203492",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "카카오모빌리티",
+      "company_id": "co_kakaomobility",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "백엔드 개발자(주차 플랫폼 개발)",
+      "job_role_raw": "제목: 백엔드 개발자",
+      "entry_label_raw": "3년 이상의 백엔드 개발 혹은 그에 준하는 경험 및 역량을 갖추신 분",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_kakaomobility_be_logistics",
+      "url": "https://kakaomobility.career.greetinghr.com/ko/o/160926",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "카카오모빌리티",
+      "company_id": "co_kakaomobility",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "물류 & 에이전트 개발실 백엔드 개발자",
+      "job_role_raw": "제목: 백엔드 개발자",
+      "entry_label_raw": "백엔드 서버 개발 경력 3년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_woowahan_be_dispatch",
+      "url": "https://career.woowahan.com/recruitment/R2606023/detail",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "주식회사 우아한형제들",
+      "company_id": "co_woowahan",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Server(배차시스템)",
+      "job_role_raw": "직무 필터: Server",
+      "entry_label_raw": "경력",
+      "robots_policy": "allow /; disallow sign-in/**, mypage/**, /w1/**",
+      "collected_on": "2026-07-27",
+      "note": "목록의 경력 표기가 연차 하한 없는 '경력'이다. entry_label 판정은 본문 확인 뒤에 채운다"
+    },
+    {
+      "source_id": "src_kakaopay_be_stablecoin",
+      "url": "https://kakaopay.career.greetinghr.com/ko/o/216356",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "카카오페이",
+      "company_id": "co_kakaopay",
+      "cluster_id": "fintech_finance",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "서버 개발자 - 스테이블코인 발행 & 유통",
+      "job_role_raw": "제목: 서버 개발자",
+      "entry_label_raw": "실제 상용 서비스의 백엔드 시스템 설계, 개발 및 운영 경험 (최소 10년 이상)",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_kakaopay_be_payment",
+      "url": "https://kakaopay.career.greetinghr.com/ko/o/192129",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "카카오페이",
+      "company_id": "co_kakaopay",
+      "cluster_id": "fintech_finance",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "서버 개발자 - 결제 서비스",
+      "job_role_raw": "제목: 서버 개발자",
+      "entry_label_raw": "지원자격에 연차 하한 표기 없음. Java 또는 Kotlin 언어와 Spring Framework 활용 능력",
+      "entry_label": "unspecified",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_supercent_be_adtech_mid",
+      "url": "https://supercent.career.greetinghr.com/ko/o/213168",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "슈퍼센트",
+      "company_id": "co_supercent",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[AD-Tech] 백엔드 개발자(4~7년)",
+      "job_role_raw": "직군: 백엔드",
+      "entry_label_raw": "경력 4년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_supercent_be_adtech_senior",
+      "url": "https://supercent.career.greetinghr.com/ko/o/213800",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "슈퍼센트",
+      "company_id": "co_supercent",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[AD-Tech] 백엔드 개발자(8년 이상)",
+      "job_role_raw": "직군: 백엔드",
+      "entry_label_raw": "경력 8년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_nexon_be_lastparadise",
+      "url": "https://careers.nexon.com/recruit/10001",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "넥슨코리아",
+      "company_id": "co_nexonkorea",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[낙원: LAST PARADISE] 서버 프로그래머",
+      "job_role_raw": "직무: Game Programming / 제목: 서버 프로그래머",
+      "entry_label_raw": "지원 구분: 경력",
+      "robots_policy": "allow /recruit/*; disallow /recruit?",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_nexon_be_ua",
+      "url": "https://careers.nexon.com/recruit/9984",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "넥슨코리아",
+      "company_id": "co_nexonkorea",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[플랫폼본부] UA실 서버 프로그래머",
+      "job_role_raw": "직무: Game Programming / 제목: 서버 프로그래머",
+      "entry_label_raw": "지원 구분: 경력",
+      "robots_policy": "allow /recruit/*; disallow /recruit?",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_neople_be_projectdl",
+      "url": "https://careers.nexon.com/recruit/9988",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "네오플",
+      "company_id": "co_neople",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[프로젝트DL] 서버 프로그래머",
+      "job_role_raw": "직무: Game Programming / 제목: 서버 프로그래머",
+      "entry_label_raw": "지원 구분: 경력",
+      "robots_policy": "allow /recruit/*; disallow /recruit?",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_neople_be_overkill",
+      "url": "https://careers.nexon.com/recruit/9958",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "네오플",
+      "company_id": "co_neople",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[Overkill] 시니어 서버 프로그래머",
+      "job_role_raw": "직무: Game Programming / 제목: 서버 프로그래머",
+      "entry_label_raw": "지원 구분: 경력",
+      "robots_policy": "allow /recruit/*; disallow /recruit?",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_neople_be_dnf",
+      "url": "https://careers.nexon.com/recruit/9823",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "네오플",
+      "company_id": "co_neople",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[던전앤파이터] 서버 프로그래머",
+      "job_role_raw": "직무: Game Programming / 제목: 서버 프로그래머",
+      "entry_label_raw": "지원 구분: 경력무관",
+      "robots_policy": "allow /recruit/*; disallow /recruit?",
+      "collected_on": "2026-07-27",
+      "note": "경력무관은 지표 명세 2.6의 다섯 패턴 어디에도 대응하지 않는다"
+    },
+    {
+      "source_id": "src_mintrocket_be_godzilla",
+      "url": "https://careers.nexon.com/recruit/10031",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "민트로켓",
+      "company_id": "co_mintrocket",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[민트로켓] '고질라 디펜스 포스: X' 서버 프로그래머",
+      "job_role_raw": "직무: Game Programming / 제목: 서버 프로그래머",
+      "entry_label_raw": "지원 구분: 경력",
+      "robots_policy": "allow /recruit/*; disallow /recruit?",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_autoever_be_smartfactory",
+      "url": "https://career.hyundai-autoever.com/ko/o/220755",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "현대오토에버",
+      "company_id": "co_autoever",
+      "cluster_id": "si_enterprise",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[SDx] Backend Developer - Robot/Smart Factory",
+      "job_role_raw": "직군: Backend 개발",
+      "entry_label_raw": "경력 3년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_channeltalk_se_senior",
+      "url": "https://channel.io/kr/careers/4b92c292-e832-40a4-8d1a-7658e7d744cc",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "주식회사 채널코퍼레이션",
+      "company_id": "co_channelcorp",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Software Engineer, Senior",
+      "job_role_raw": "목록 설명: 800만 명이 사용하는 AI 메신저의 백엔드 시스템을 설계",
+      "entry_label_raw": "시니어/정규직",
+      "robots_policy": "allow /kr/careers/*; disallow /app, /touch, /@*, /ko/blog/p/",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_channeltalk_se",
+      "url": "https://channel.io/kr/careers/fbe11a2f-63e3-4cae-b2e5-68f94886cb06",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "주식회사 채널코퍼레이션",
+      "company_id": "co_channelcorp",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Software Engineer",
+      "job_role_raw": "목록 설명: 800만 명이 사용하는 AI 메신저의 백엔드, 프론트엔드, 모바일",
+      "entry_label_raw": "주니어/시니어/정규직",
+      "robots_policy": "allow /kr/careers/*; disallow /app, /touch, /@*, /ko/blog/p/",
+      "collected_on": "2026-07-27",
+      "note": "백엔드·프론트엔드·모바일을 함께 모집하는지 본문에서 확인한다. 지표 명세 2.8은 여러 직무를 함께 모집하는 공고를 모집단에서 뺀다"
+    },
+    {
+      "source_id": "src_cashwalk_be",
+      "url": "https://cashwalk12.career.greetinghr.com/ko/o/30823",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "넛지헬스케어",
+      "company_id": "co_nudgehealthcare",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[캐시워크] 백엔드/서버 개발자",
+      "job_role_raw": "직군: 개발 / 직무: Backend",
+      "entry_label_raw": "경력 3년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
     }
   ],
   "unreachable": [
@@ -80,16 +556,56 @@
       "reason": "브라우저 도구의 차단 도메인. 우회하지 않는다"
     },
     {
-      "source": "career.nexon.com",
-      "reason": "브라우저에서 오류 페이지를 반환한다"
-    },
-    {
       "source": "careers.krafton.com",
       "reason": "브라우저에서 오류 페이지를 반환한다"
     },
     {
       "source": "www.samsungsds.com/kr/recruit",
       "reason": "채용 경로를 다시 찾아야 한다"
+    },
+    {
+      "source": "recruit.navercorp.com",
+      "reason": "Backend 직무 필터 subJobCdArr=1010004 결과가 0건이다"
+    },
+    {
+      "source": "careers.kakao.com 본사 공고",
+      "reason": "테크 공고 31건이 전부 AI·데이터다. 백엔드 공고가 없다"
+    },
+    {
+      "source": "recruit.kakaogames.com",
+      "reason": "개별 공고 없이 인재풀만 접수한다"
+    },
+    {
+      "source": "careers.lg.com/apply?c=CNS",
+      "reason": "공고 27건이 사업 영역 단위다. 백엔드 직무를 지정한 공고가 없다"
+    },
+    {
+      "source": "www.cjolivenetworks.co.kr/recruit/job_notice",
+      "reason": "백엔드 직무를 지정한 공고가 없다"
+    },
+    {
+      "source": "portone.career.greetinghr.com",
+      "reason": "채용 사이트가 내려갔다"
+    },
+    {
+      "source": "buzzvil.career.greetinghr.com",
+      "reason": "채용 사이트가 내려갔다"
+    },
+    {
+      "source": "marketboro.career.greetinghr.com",
+      "reason": "채용 사이트가 내려갔다"
+    },
+    {
+      "source": "skax.skcareers.com",
+      "reason": "공고 2건뿐이며 백엔드가 없다"
+    },
+    {
+      "source": "bhsn.career.greetinghr.com",
+      "reason": "채용 사이트가 내려갔다"
+    },
+    {
+      "source": "hancom.career.greetinghr.com",
+      "reason": "채용 사이트가 내려갔다"
     }
   ],
   "access_notes": [
@@ -98,20 +614,28 @@
       "method": "정적 렌더링. 목록과 상세를 그대로 읽는다"
     },
     {
-      "source": "recruit.navercorp.com",
-      "method": "정적 렌더링. 목록에 신입·경력 구분이 있다"
-    },
-    {
       "source": "careers.kakao.com/public/api/job-list",
-      "method": "채용 페이지가 호출하는 공개 JSON 엔드포인트. 지원자격 전문을 포함한다"
+      "method": "채용 페이지가 호출하는 공개 JSON 엔드포인트. 지원자격 전문과 공동체 공고의 greetinghr 상세 주소를 포함한다"
     },
     {
       "source": "*.career.greetinghr.com",
-      "method": "정적 렌더링. 경력사항이 구조화된 필드로 제공되어 entry_label 판정이 정확하다"
+      "method": "브라우저 확장으로 읽는다. 직군과 경력사항이 구조화된 필드다. 목록 경로가 회사마다 /ko/position, /ko/apply, /ko/joinjuskr 로 갈린다"
     },
     {
       "source": "career.woowahan.com",
-      "method": "브라우저 확장으로 렌더링. 목록 필터에 신입·연차가 있다"
+      "method": "브라우저 확장으로 렌더링. 목록 필터에 직무와 연차가 있다"
+    },
+    {
+      "source": "careers.nexon.com",
+      "method": "브라우저 확장으로 렌더링. 직무 필터 jobCategories=6 이 Game Programming, 지원 구분 필터가 신입·경력·경력무관이다"
+    },
+    {
+      "source": "channel.io/kr/careers",
+      "method": "정적 렌더링. 목록에 주니어·시니어 표기가 있고 연차는 없다"
+    },
+    {
+      "source": "*.career.greetinghr.com 상세 경로",
+      "method": "오래된 공고 식별자도 본문 전문과 함께 열린다. 마감 공고 수집 경로로 쓴다"
     }
   ]
 }
