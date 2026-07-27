@@ -83,6 +83,8 @@ Assignment은 native call 전 durable `ModelingRun(starting)`을 기록하고 ex
 
 Private `propose_state_patch` MCP는 selected source·base revision·exact quote를 검증한 pending `StatePatch`만 만든다. Exact Plan question이 active patch와 bind될 때만 product Review가 된다. Accept/reject는 product transaction을 native answer보다 먼저 commit하고, revise는 `UserConfirmation` 없이 bounded feedback·fresh private request key로 replacement를 기다린다. General Plan clarification은 별도 ephemeral binding으로 answer/cancel하며 academic state를 바꾸지 않는다.
 
+Target expand의 internal `interaction-broker` Module은 `@ay-ple/interaction-mcp`의 strict private wire를 소비한다. Runtime generation마다 fresh token·binding과 pending slot 하나를 만들고, loopback·constant-time credential·`ProductOperationCoordinator`의 started `product_turn`을 모두 확인한 뒤 exact workspace root의 evidence를 한 byte snapshot으로 atomic preflight한다. In-memory UI Adapter가 `review.requested`를 받은 뒤 한 `accept | revise | reject`만 held response로 돌려주며 duplicate·late answer, HTTP abort, UI disconnect, Turn interrupt, Runtime terminal·replacement, Adapter loss와 shutdown은 normal result 없이 닫힌다. 이 Router는 아직 canonical Server application·Runtime child environment·Browser inline card에 composition되지 않았으므로 current public academic Review/apply behavior를 바꾸지 않는다.
+
 `CodexChatService`는 account lifecycle이나 Runtime role이 없는 `CodexWorkspaceRuntime`을 받아 Account Readiness, model catalog, product thread·active Turn, interaction·interrupt, native context, terminal observation, Runtime recycle와 bounded close를 캡슐화하는 deep product lifecycle Module다. Public tracer route가 사라져도 이 lifecycle owner와 Runtime의 internal text regression은 이름만으로 분해·제거하지 않는다.
 
 ## Public product API

@@ -60,6 +60,7 @@ import {
   type ProductTurnLease,
   type ProductTurnReleaseAuthority,
 } from './product-turn-coordinator.js'
+import type { ActiveInteractionProductTurn } from './interaction-broker.js'
 
 const productTextMaxBytes = 128 * 1024
 const safeRuntimeFailure = 'Codex 작업을 계속할 수 없습니다.'
@@ -92,6 +93,10 @@ export interface ProductOperationSink {
 
 export type ProductOperationCoordinator = {
   operationStatus(): 'active' | 'idle'
+  activeInteractionProductTurn(): ActiveInteractionProductTurn | undefined
+  interruptInteractionProductTurn(
+    turn: ActiveInteractionProductTurn,
+  ): Promise<void>
   startAssignment(
     input: AssignmentActionRequest,
     options: ProductOperationOptions,
@@ -743,6 +748,35 @@ export function createProductOperationCoordinator(options: {
   const coordinator: ProductOperationCoordinator = {
     operationStatus() {
       return active ? 'active' : 'idle'
+    },
+
+    activeInteractionProductTurn() {
+      const operation = active
+      const turn = operation?.turn
+      const lease = turnCoordinator.activeOperation()
+      if (!operation || !turn || !lease) return undefined
+      return {
+        operationId: lease.operationId,
+        nativeThreadId: turn.threadId,
+        nativeTurnId: turn.turnId,
+      }
+    },
+
+    async interruptInteractionProductTurn(turn) {
+      const operation = active
+      const activeTurn = operation?.turn
+      const lease = turnCoordinator.activeOperation()
+      if (
+        !operation ||
+        !activeTurn ||
+        !lease ||
+        lease.operationId !== turn.operationId ||
+        activeTurn.threadId !== turn.nativeThreadId ||
+        activeTurn.turnId !== turn.nativeTurnId
+      ) {
+        return
+      }
+      await options.service.interruptProductTurn(activeTurn)
     },
 
     async startAssignment(input, operationOptions) {
