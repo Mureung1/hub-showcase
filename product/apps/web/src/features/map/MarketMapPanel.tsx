@@ -228,7 +228,7 @@ export function MarketMapPanel({
             title={comparisonEnabled ? undefined : "전체 지원 업종에서만 상권 비교를 제공합니다."}
             onClick={onCompareOpen}
           >
-            <BarChart3 size={17} /> 전체 상권 비교
+            <BarChart3 size={17} /> 전체 상권 보기
           </button>
           <div className="map-attribution">
             <span>{presentationMode === "flat" ? "OpenFreeMap" : "OpenFreeMap · LocalTwin"}</span>
