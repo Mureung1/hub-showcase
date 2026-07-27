@@ -30,6 +30,21 @@ type UpdateNoticeCategoryInput = {
 }
 
 export class NoticeConfigRepository {
+  findAllNoticeSites() {
+    return prisma.noticeSite.findMany({
+      include: {
+        categories: {
+          orderBy: {
+            id: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        id: 'asc',
+      },
+    })
+  }
+
   findByGuildId(guildId: string) {
     return prisma.noticeSite.findUnique({
       where: { guildId },

@@ -42,10 +42,15 @@ Scheduler
 
 - MVP에서는 Discord 서버 1개당 공지 사이트 1개만 등록한다.
 - Admin 페이지는 MVP에서 별도 로그인이나 토큰 검증을 하지 않는다.
-- `/setup`은 Discord interaction에서 관리자 권한만 확인하고 Admin 링크를 제공한다.
+- `/setup`은 Discord interaction에서 관리자 권한만 확인하고 Admin 바로가기 버튼을 제공한다.
 - Discord 채널은 IRIS가 자동 생성하지 않고 기존 채널을 선택한다.
+- MVP 알림은 카테고리별 채널이 아니라 하나의 공통 알림 채널로 보낸다.
+- 현재 DB/API는 기존 `categories.channelId`를 유지하며, Admin Web이 모든 카테고리에 같은 알림 채널 id를 저장한다.
 - 활성화된 카테고리에만 Discord Role을 생성한다.
+- IRIS는 기존 Discord Role을 재사용하지 않는다. 같은 이름의 Role이 이미 있으면 저장을 실패 처리하고 관리자에게 다른 역할 이름을 입력하게 한다.
+- 새로 생성하는 Discord Role은 별도 색상을 지정하지 않고 Discord 기본 색상을 사용한다.
 - 비활성화된 카테고리는 `roleId = null`로 저장하고 구독 목록, 공지 저장, 알림 대상에서 제외한다.
+- `전체` 카테고리는 공지 저장용 카테고리가 아니라 전체 공지 구독 역할로 사용한다. 실제 공지는 감지된 원래 카테고리에 저장한다.
 - AI 요약은 기본 알림 시점에 자동 생성하지 않고, 요약 버튼 클릭 시에만 실행하는 확장 기능으로 둔다.
 
 ---
@@ -57,7 +62,7 @@ Scheduler
 - 공지 사이트 URL과 selector 입력
 - 테스트 크롤링 실행
 - 최근 공지 미리보기와 전체 카테고리 목록 표시
-- 카테고리별 Discord 채널, Role 이름, 활성화 여부 설정
+- 공통 알림 채널, 카테고리별 역할 이름, 활성화 여부 설정
 - 전체 설정 생성, 조회, 교체, 카테고리 부분 수정, 삭제 요청
 
 ## Backend API
@@ -73,7 +78,7 @@ Scheduler
 
 - `/help`, `/setup`, `/subscribe`, `/keyword` 처리
 - `/setup` 실행자의 서버 관리자 권한 확인
-- `/subscribe` multi-select interaction 처리
+- `/subscribe` category button interaction 처리
 - 구독 변경에 따른 Discord Role 부여/제거
 - Bot 제거 시 `guildDelete` 이벤트를 받아 해당 서버 DB 데이터 정리
 
@@ -88,24 +93,25 @@ Scheduler
 ## Notification Service
 
 - 활성화된 카테고리의 공지만 저장 및 알림 처리
-- 카테고리별 Discord 채널에 Embed 전송
-- 카테고리 Role mention 포함
+- 공통 알림 채널에 Embed 전송
+- 실제 공지 카테고리 Role과 활성화된 `전체` Role을 mention 대상에 포함
 - 공지 제목 기준 키워드 매칭
 - 키워드 일치 사용자에게 DM 전송
 
 ## Summary Service
 
 - 1차 MVP 필수 구현 대상은 아니다.
-- 공지 알림의 요약 버튼 클릭 시 실행한다.
-- 기존 summary가 있으면 재사용한다.
-- summary가 없으면 공지 상세 본문을 가져와 AI 요약을 생성하고 저장한다.
+- MVP 현재 요약 버튼은 준비 중 Ephemeral 안내만 반환한다.
+- 향후 공지 알림의 요약 버튼 클릭 시 실행한다.
+- 향후 기존 summary가 있으면 재사용한다.
+- 향후 summary가 없으면 공지 상세 본문을 가져와 AI 요약을 생성하고 저장한다.
 
 ---
 
 # 4. Data Ownership
 
 - `notice_sites.guild_id`: Discord 서버별 공지 사이트 설정 기준
-- `categories`: 감지 카테고리와 Discord 채널/Role 연결 정보
+- `categories`: 감지 카테고리와 Discord 알림 채널/Role 연결 정보
 - `notices`: 크롤링된 공지, 중복 검사, 요청 기반 요약 저장
 - `subscriptions`: 사용자별 카테고리 구독 상태
 - `keywords`: 서버별 사용자 키워드 설정
@@ -126,7 +132,7 @@ Scheduler
 ```text
 User runs /setup in Discord server
   -> Bot checks administrator permission
-  -> If allowed, respond with Admin page link ephemerally
+  -> If allowed, respond with Admin page link button ephemerally
   -> If denied, respond with permission error ephemerally
 ```
 
@@ -152,6 +158,7 @@ Admin submits site and category settings
   -> POST /api/admin/{guildId}/notice-config
   -> Validate that test-crawl-compatible settings are provided
   -> Create Discord Roles for active categories
+  -> Fail if a Role with the requested name already exists
   -> Save notice site
   -> Save categories with roleId or null
   -> Commit all DB changes
@@ -166,6 +173,7 @@ Admin changes site URL or selectors
   -> Test crawl with new selectors
   -> PUT /api/admin/{guildId}/notice-config
   -> Create new Roles for active categories
+  -> Fail if a Role with the requested name already exists
   -> Replace site and category settings
   -> Delete old categories, subscriptions, and notices
   -> Delete old IRIS-created Roles after successful save
@@ -174,12 +182,13 @@ Admin changes site URL or selectors
 ## Category Patch Flow
 
 ```text
-Admin changes category channel, roleName, or isActive
+Admin changes notification channel, roleName, or isActive
   -> PATCH /api/admin/{guildId}/notice-config/categories
-  -> Update channelId if changed
+  -> Update category channelId values if notification channel changed
   -> Rename Discord Role if roleName changed and category remains active
   -> Delete Role and set roleId null if disabled
   -> Create Role from saved roleName if re-enabled
+  -> Fail if re-enabled or renamed Role conflicts with an existing Discord Role name
 ```
 
 ## Scheduled Crawl Flow
@@ -193,12 +202,14 @@ Every 30 minutes
   -> Skip existing notices
   -> Match notice category to active category
   -> Save new notice
-  -> Send category channel notification
+  -> Build mention roles from actual category and active 전체 category
+  -> Send one notification message to the configured notification channel
   -> Match title against guild-scoped keywords
   -> Send keyword DM notifications
 ```
 
 비활성화된 카테고리의 공지는 저장 및 알림 대상에서 제외한다.
+`전체` 카테고리는 별도 저장 카테고리로 사용하지 않고, 전체 공지를 받고 싶은 사용자를 위한 mention 역할로만 사용한다.
 
 ## /subscribe Flow
 
@@ -206,24 +217,23 @@ Every 30 minutes
 User runs /subscribe
   -> Load active categories
   -> Load user's current subscriptions
-  -> Show Discord multi-select
-  -> User submits selected category set
-  -> Add new subscriptions and roles
-  -> Remove unselected subscriptions and roles
+  -> Show Discord category buttons
+  -> User clicks a category button
+  -> Toggle that category subscription
+  -> Add or remove the category Role
 ```
 
 ## /keyword Flow
 
 ```text
-/keyword add
-  -> Validate keyword
-  -> Save by guildId + userId + keyword
-
-/keyword remove
-  -> Delete user's keyword in current guild
-
-/keyword list
-  -> Return user's keywords in current guild
+User runs /keyword
+  -> Load user's keywords in current guild
+  -> Show paginated keyword list with add/delete buttons
+  -> Add button opens keyword modal
+  -> Delete button shows keyword select menu
+  -> User selects keywords
+  -> Delete selected keywords when delete confirm button is clicked
+  -> Return without deleting when exit button is clicked
 ```
 
 ## Delete Config And Bot Removal Flow
@@ -245,13 +255,22 @@ Bot is removed first
 
 ```text
 User clicks summary button on notice embed
-  -> Load notice
-  -> Return saved summary if available
-  -> Fetch original notice detail if needed
-  -> Generate AI summary
-  -> Save summary
-  -> Respond ephemerally
+  -> Respond ephemerally with "요약 기능은 준비 중입니다."
 ```
+
+MVP 현재는 공지 채널 알림, 키워드 DM 알림, DM 저장 알림에 `요약 보기` 버튼을 노출하지만 실제 AI 요약은 생성하지 않는다.
+향후 고도화 단계에서 notice 조회, summary cache 재사용, 원문 상세 fetch, AI 요약 생성, summary 저장 흐름을 연결한다.
+
+## Notice DM Save Flow
+
+```text
+User clicks DM으로 저장 on notice channel notification
+  -> Copy the notice embed to the user's DM
+  -> Attach 요약 보기 and 알림 삭제 buttons
+  -> Respond ephemerally in the channel
+```
+
+DM 알림의 `알림 삭제` 버튼은 해당 DM 메시지만 삭제하며, 저장된 notice 데이터나 사용자 키워드 설정은 변경하지 않는다.
 
 ---
 
@@ -288,8 +307,8 @@ User clicks summary button on notice embed
 
 ## Summary Failure
 
-- AI 요약 생성 실패 시 원본 공지 정보만 유지한다.
-- 실패 결과는 클릭한 사용자에게 ephemeral로 안내한다.
+- MVP 현재 `요약 보기`는 실제 AI 요약을 생성하지 않으므로 실패 가능한 외부 요약 호출이 없다.
+- 향후 AI 요약 생성 실패 시 원본 공지 정보만 유지하고, 실패 결과는 클릭한 사용자에게 ephemeral로 안내한다.
 
 ---
 
@@ -298,7 +317,7 @@ User clicks summary button on notice embed
 - `/setup`은 Discord 서버 안에서만 실행할 수 있다.
 - `/setup`은 실행자의 관리자 권한을 확인한다.
 - Admin 페이지는 MVP에서 별도 인증이나 토큰 검증을 하지 않는다.
-- Admin 링크는 ephemeral 응답으로 제공한다.
+- Admin 바로가기 버튼은 ephemeral 응답의 link button으로 제공한다.
 - Bot은 채널 목록 조회, 메시지 전송, Embed 전송, Role 생성, Role 이름 변경, Role 삭제, 멤버 Role 부여/제거 권한이 필요하다.
 - Bot의 Role 위치는 IRIS가 생성하고 관리할 Role보다 높아야 한다.
 - 이후 확장 시 Admin 접근은 Discord OAuth 또는 guild-scoped token으로 보호한다.

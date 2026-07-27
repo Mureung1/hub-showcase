@@ -77,13 +77,13 @@ POST /api/admin/{guildId}/notice-config/test
 ```json
 {
   "name": "경북대학교 컴퓨터학부",
-  "url": "https://cse.knu.ac.kr/board/notice",
-  "listSelector": "ul.notice-list > li",
-  "titleSelector": ".title",
-  "linkSelector": "a.link",
-  "dateSelector": ".date",
-  "categorySelector": ".category",
-  "categoryListSelector": ".category-tabs a"
+  "url": "https://cse.knu.ac.kr/bbs/board.php?bo_table=sub5_1&lang=kor",
+  "listSelector": ".basic_tbl_head tbody > tr",
+  "titleSelector": ".bo_tit a",
+  "linkSelector": ".bo_tit a",
+  "dateSelector": ".td_datetime",
+  "categorySelector": ".bo_cate_link",
+  "categoryListSelector": "#bo_cate_ul a"
 }
 ```
 
@@ -131,7 +131,8 @@ POST /api/admin/{guildId}/notice-config/test
 Selector 설정이 어려운 관리자가 개발자에게 설정 도움을 요청할 때 사용합니다.
 현재 Day 4 frontend mock flow에서는 실제 전송 없이 요청 접수 상태만 표시합니다.
 
-실제 API 연동 후에는 요청 내용이 운영자 메일로 전달되고, 운영자는 사용자가 입력한 이메일 주소로 답변합니다.
+MVP 현재 UI에서는 실제 이메일을 발송하지 않고 접수 안내 문구만 표시합니다.
+실제 서비스 연동 후에는 요청 내용이 운영자 메일 또는 저장소로 전달되고, 운영자는 사용자가 입력한 이메일 주소로 답변합니다.
 
 ```http
 POST /api/admin/{guildId}/selector-help-requests
@@ -143,7 +144,7 @@ POST /api/admin/{guildId}/selector-help-requests
 {
   "email": "admin@example.com",
   "siteName": "경북대학교 컴퓨터학부",
-  "url": "https://cse.knu.ac.kr/board/notice"
+  "url": "https://cse.knu.ac.kr/bbs/board.php?bo_table=sub5_1&lang=kor"
 }
 ```
 
@@ -213,12 +214,14 @@ POST /api/admin/{guildId}/notice-config
 - 관리자는 테스트 크롤링으로 확인한 설정을 저장합니다.
 - Discord 서버당 하나의 공지 사이트만 설정 할 수 있습니다.
 - 활성화된 카테고리만 Discord Role 생성 대상입니다.
-- `roleName`을 입력하지 않으면 기본 Role 이름은 `IRIS-{카테고리명}`입니다.
-- `roleName`을 입력하면 입력한 이름을 그대로 Role 이름으로 사용합니다.
-- 같은 이름의 Role이 이미 있으면 새로 만들지 않고 기존 Role을 재사용합니다.
-- 같은 이름의 Role이 없으면 새로 생성합니다.
+- `roleName`을 입력하지 않으면 기본 역할 이름은 `IRIS-{카테고리명}`입니다.
+- `roleName`을 입력하면 입력한 이름을 그대로 역할 이름으로 사용합니다.
+- 같은 이름의 Role이 이미 있으면 기존 Role을 재사용하지 않고 `400 Bad Request`를 반환합니다.
+- 같은 이름의 Role이 없으면 IRIS가 새로 생성합니다.
+- 새로 생성하는 Role은 별도 색상을 지정하지 않고 Discord 기본 색상을 사용합니다.
 - 비활성화된 카테고리는 Role을 생성하지 않고 `roleId = null`로 저장합니다.
 - 모든 카테고리는 채널과 활성화 여부를 포함해야 합니다.
+- MVP 관리자 UI는 하나의 알림 채널만 선택하고, API 요청에서는 모든 카테고리의 `channelId`에 같은 값을 넣습니다.
 - `roleName`은 선택 값입니다.
 - Role 생성 또는 DB 저장 중 하나라도 실패하면 전체 생성을 실패 처리합니다.
 - 생성이 완료되면 공지 사이트와 카테고리 설정이 함께 저장됩니다.
@@ -230,6 +233,7 @@ POST /api/admin/{guildId}/notice-config
   - 카테고리 설정이 1개도 포함되지 않음
   - Discord 채널이 존재하지 않거나 Bot이 메시지를 보낼 수 없음
   - Bot이 Discord Role을 관리할 권한이 없음
+  - 같은 이름의 Discord Role이 이미 존재함
 - `409 Conflict`
   - 해당 Discord 서버에 이미 공지 사이트 설정이 존재함
 - `500 Internal Server Error`
@@ -253,13 +257,13 @@ GET /api/admin/{guildId}/notice-config
     "data": {
         "site": {
             "name": "경북대학교 컴퓨터학부",
-            "url": "https://example.com/notices",
-            "listSelector": ".notice-list > li",
-            "titleSelector": ".title a",
-            "linkSelector": ".title a",
-            "dateSelector": ".date",
-            "categorySelector": ".category",
-            "categoryListSelector": ".category-tabs a"
+            "url": "https://cse.knu.ac.kr/bbs/board.php?bo_table=sub5_1&lang=kor",
+            "listSelector": ".basic_tbl_head tbody > tr",
+            "titleSelector": ".bo_tit a",
+            "linkSelector": ".bo_tit a",
+            "dateSelector": ".td_datetime",
+            "categorySelector": ".bo_cate_link",
+            "categoryListSelector": "#bo_cate_ul a"
         },
         "categories": [
             {
@@ -317,14 +321,14 @@ PUT /api/admin/{guildId}/notice-config
 ```json
 {
   "site": {
-    "name": "경북대학교 전자공학부",
-    "url": "https://example.com/notices",
-    "listSelector": ".notice-list > li",
-    "titleSelector": ".title a",
-    "linkSelector": ".title a",
-    "dateSelector": ".date",
-    "categorySelector": ".category",
-    "categoryListSelector": ".category-tabs a"
+    "name": "경북대학교 컴퓨터학부",
+    "url": "https://cse.knu.ac.kr/bbs/board.php?bo_table=sub5_1&lang=kor",
+    "listSelector": ".basic_tbl_head tbody > tr",
+    "titleSelector": ".bo_tit a",
+    "linkSelector": ".bo_tit a",
+    "dateSelector": ".td_datetime",
+    "categorySelector": ".bo_cate_link",
+    "categoryListSelector": "#bo_cate_ul a"
   },
   "categories": [
     {
@@ -358,7 +362,9 @@ PUT /api/admin/{guildId}/notice-config
 - 사이트 정보와 카테고리 설정을 한 번에 교체합니다.
 - 카테고리 설정은 1개 이상 포함되어야 합니다.
 - `channelId`는 기존 Discord 채널이어야 한다.
-- 활성화된 카테고리에 대해서만 Role 이름 정책에 따라 Discord Role을 생성하거나 재사용합니다.
+- MVP 관리자 UI는 하나의 알림 채널만 선택하고, API 요청에서는 모든 카테고리의 `channelId`에 같은 값을 넣습니다.
+- 활성화된 카테고리에 대해서만 Role 이름 정책에 따라 Discord Role을 새로 생성합니다.
+- 같은 이름의 Role이 이미 있으면 기존 Role을 재사용하지 않고 `400 Bad Request`를 반환합니다.
 - 비활성화된 카테고리는 Role을 생성하지 않으며 roleId는 null로 저장합니다.
 - roleName이 비어 있으면 `IRIS-{카테고리명}`을 기본 역할 이름으로 사용합니다.
 - 기존 카테고리, 카테고리 구독 정보, 저장된 공지 데이터는 삭제한 후 새 설정으로 다시 생성합니다.
@@ -373,6 +379,7 @@ PUT /api/admin/{guildId}/notice-config
   - 카테고리 설정이 1개도 포함되지 않음
   - Discord 채널이 존재하지 않거나 Bot이 메시지를 보낼 수 없음
   - Bot이 Discord Role을 관리할 권한이 없음
+  - 같은 이름의 Discord Role이 이미 존재함
 - `404 Not Found`
   - 교체할 공지 사이트 설정이 없음
 - `500 Internal Server Error`
@@ -382,10 +389,10 @@ PUT /api/admin/{guildId}/notice-config
 
 공지 사이트 URL과 Selector는 유지하고 카테고리 설정만 변경합니다.
 변경 가능한 값:
-- Discord 채널
+- 알림 채널
 - 역할 이름
 - 활성화 여부
-Frontend 관리자 flow에서는 기존 설정 조회로 `categoryId`가 있는 카테고리의 채널, Role 이름, 활성화 여부만 수정할 때 이 API를 호출합니다.
+Frontend 관리자 flow에서는 기존 설정 조회로 `categoryId`가 있는 카테고리의 알림 채널, 역할 이름, 활성화 여부만 수정할 때 이 API를 호출합니다.
 
 ```http
 PATCH /api/admin/{guildId}/notice-config/categories
@@ -436,13 +443,15 @@ PATCH /api/admin/{guildId}/notice-config/categories
 
 - 변경된 카테고리만 요청에 포함합니다.
 - 활성 상태를 유지하는 카테고리는 기존 roleId는 유지합니다.
-- 채널이 변경되면 DB의 channelId를 수정합니다.
+- 알림 채널이 변경되면 요청에 포함된 카테고리들의 `channelId`를 같은 값으로 수정합니다.
 - 역할 이름이 변경되면 기존 Discord Role의 이름을 변경합니다.
 - 활성화 여부가 변경되면 isActive를 수정합니다.
 - 카테고리를 비활성화하면 IRIS가 생성한 Discord Role을 삭제합니다.
 - Role 삭제 후 `roleId`는 `null`로 저장하며, `roleName`은 유지합니다.
-- 비활성화된 카테고리를 다시 활성화하면 Role 이름 정책에 따라 Discord Role을 생성하거나 재사용합니다.
+- 비활성화된 카테고리를 다시 활성화하면 Role 이름 정책에 따라 Discord Role을 새로 생성합니다.
+- Role 생성 또는 이름 변경 시 같은 이름의 Discord Role이 이미 있으면 기존 Role을 재사용하지 않고 `400 Bad Request`를 반환합니다.
 - 비활성화된 카테고리는 구독 목록에 표시하지 않고 공지 저장 및 알림 대상에서도 제외합니다.
+- `전체` 카테고리는 공지 저장 카테고리가 아니라 전체 공지 구독 역할로 사용합니다. 실제 공지는 감지된 원래 카테고리에 저장합니다.
 
 **Error Responses**
 
@@ -451,6 +460,7 @@ PATCH /api/admin/{guildId}/notice-config/categories
   - 중복된 `categoryId`가 포함됨
   - Discord 채널이 존재하지 않거나 Bot이 메시지를 보낼 수 없음
   - Bot이 Discord Role을 관리할 권한이 없음
+  - 같은 이름의 Discord Role이 이미 존재함
 - `404 Not Found`
   - 공지 사이트 설정이 없거나 요청한 카테고리가 현재 서버 설정에 속하지 않음
 - `500 Internal Server Error`
@@ -561,6 +571,7 @@ GET /api/admin/{guildId}/discord/channels
 
 - `/help` 실행
 - ephemeral 응답으로 제공
+- 보라색 Embed로 제공
 - 각 슬래시 명령어 설명 제공
 
 **Rules**
@@ -570,18 +581,18 @@ GET /api/admin/{guildId}/discord/channels
 
 ## 5.2 /setup
 
-관리자가 IRIS 설정 페이지에 접근할 수 있도록 관리자 페이지 링크를 제공합니다.
+관리자가 IRIS 설정 페이지에 접근할 수 있도록 관리자 페이지 바로가기 버튼을 제공합니다.
 
 **Flow**
 
 - `/setup` 실행
 - interaction 실행자의 Discord 서버 관리자 권한 확인
-- 관리자이면 Admin 페이지 링크를 ephemeral 응답으로 제공
+- 관리자이면 보라색 Embed와 Admin 페이지 바로가기 버튼을 ephemeral 응답으로 제공
 
 **Rules**
 - Discord 서버 안에서만 실행할 수 있습니다.
 - 관리자 권한이 없는 사용자는 실행할 수 없습니다.
-- 관리자 페이지 링크는 `{ADMIN_WEB_URL}/admin/{guildId}` 형식으로 제공합니다.
+- 관리자 페이지 URL은 `{ADMIN_WEB_URL}/admin/{guildId}` 형식으로 생성하고 Discord link button에 연결합니다.
 - MVP에서는 링크에 별도 인증 토큰을 포함하지 않는다.
 - 개발 중에는 테스트 서버에만 slash command를 등록합니다.
 - 운영에서는 전역 slash command로 등록합니다.
@@ -596,41 +607,50 @@ GET /api/admin/{guildId}/discord/channels
 **Flow**
 - `/subscribe` 실행
 - 활성화된 카테고리 목록 조회
-- multi-select로 구독/비구독 후 저장
-- 선택된 카테고리 Role 부여, 선택 해제된 카테고리 Role 제거
+- 카테고리 버튼 클릭으로 구독/비구독 즉시 토글
+- 구독된 카테고리 Role 부여, 구독 해제된 카테고리 Role 제거
 
 **Rule**
-- Discord multi-select component로 표시
-- 선택된 카테고리 집합을 최종 구독 상태로 저장
-- 현재 구독 중인 카테고리는 선택된 상태로 표시
+- Discord button component로 표시
+- 보라색 Embed와 버튼 목록으로 표시
+- Embed 내용은 짧은 안내만 포함
+- 버튼을 누를 때마다 해당 카테고리 구독 상태를 즉시 변경
+- 현재 구독 중인 카테고리는 다른 버튼 스타일로 표시
 
 ---
 
 ## 5.4 /keyword
 
-### /keyword add
-서버별 사용자 키워드를 등록한다.
+사용자에게 현재 키워드 목록을 제공하고, 추가/삭제 기능을 제공합니다.
 
-- 입력값: `keyword`
-- 공백 제거 및 길이 검증
-- 중복 확인
-- `guildId + userId + keyword` 기준 저장
+**Flow**
+- `/keyword` 실행
+- 현재 Discord 서버에서 본인이 등록한 키워드 목록 조회
+- `키워드 추가` 버튼 클릭 시 modal로 키워드 입력
+- `키워드 삭제` 버튼 클릭 시 select menu로 삭제할 키워드 선택
+- select menu에서 여러 키워드를 선택한 뒤 `삭제하기` 버튼으로 삭제 확정
+- `나가기` 버튼으로 삭제하지 않고 키워드 목록으로 복귀
+- 키워드가 많으면 이전/다음 버튼으로 페이지 이동
+- 변경 후 키워드 목록을 다시 표시
+
+**Rule**
+- Discord button component, modal, select menu로 표시
+- 키워드 목록과 삭제 화면은 보라색 Embed로 표시
+- 키워드는 공백 제거 및 길이 검증 후 저장
+- `guildId + userId + keyword` 기준으로 중복 방지
+- 본인 키워드만 조회/삭제
+- 공지 사이트 설정이 없어도 키워드는 등록할 수 있으며, 설정 완료 후 새 공지부터 DM 알림 대상이 됩니다.
+- 키워드 매칭은 제목 기준이며 대소문자를 구분하지 않습니다.
 - Ephemeral 응답
 
-### /keyword remove
-서버별 사용자 키워드를 삭제한다.
-
-- 입력값: `keyword`
-- Select Menu 또는 키워드 입력으로 삭제
-- 본인 키워드만 삭제
-- Ephemeral 응답
-
-### /keyword list
-현재 Discord 서버에서 사용자가 등록한 키워드 목록을 보여준다.
-
-- 입력값: 없음
-- 현재 서버에서 본인이 등록한 키워드 목록 반환
-- Ephemeral 응답
+**Keyword DM Rule**
+- 키워드가 매칭된 공지는 사용자 DM으로 Embed 알림을 보냅니다.
+- DM 알림에는 `알림 삭제` 버튼을 붙입니다.
+- DM 알림에는 `요약 보기` 버튼도 함께 붙입니다.
+- `알림 삭제`를 누르면 버튼 영역을 `정말 삭제` / `취소`로 바꿉니다.
+- `정말 삭제`를 누르면 해당 DM 메시지만 삭제합니다.
+- `취소`를 누르면 다시 `요약 보기`와 `알림 삭제` 버튼으로 돌아갑니다.
+- DM 메시지 삭제는 저장된 공지와 사용자 키워드 설정을 삭제하지 않습니다.
 
 
 ## Summary Button
@@ -640,9 +660,17 @@ AI 요약 확장 기능을 위한 interaction이다.
 **Flow**
 
 - 공지 알림 Embed에 요약 보기 버튼을 둘 수 있다.
+- MVP 현재 공지 알림 Embed에는 `DM으로 저장`, `요약 보기` 버튼을 표시한다.
+- `DM으로 저장` 클릭 시 해당 공지 Embed를 클릭한 사용자 DM으로 보낸다.
+- DM으로 복사된 공지 알림에는 `요약 보기` 버튼과 `알림 삭제` 2단계 확인 버튼을 붙인다.
+- `요약 보기` 클릭 시 현재는 `요약 기능은 준비 중입니다.`를 ephemeral로 응답한다.
+
+**Future Flow**
+
 - 버튼 클릭 시 해당 notice의 summary가 있으면 재사용한다.
 - summary가 없으면 공지 상세 본문을 가져와 AI 요약을 생성한다.
 - 결과는 클릭한 사용자에게 ephemeral로 응답한다.
 
 **Rules**
-- 위의 다른 기능들을 모두 개발 후 개발 예정
+- 실제 요약 생성과 저장은 고도화 단계에서 개발한다.
+- 현재 MVP에서는 요약 버튼을 먼저 노출하되 준비 중 안내만 제공한다.

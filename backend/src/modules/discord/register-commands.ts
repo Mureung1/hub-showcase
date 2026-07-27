@@ -1,6 +1,6 @@
 import { REST, Routes } from 'discord.js'
 import { env } from '../../config/env.js'
-import { setupCommand } from './commands/setup.command.js'
+import { discordCommands } from './commands/index.js'
 
 if (!env.discordBotToken) {
   throw new Error('DISCORD_BOT_TOKEN is required')
@@ -11,7 +11,7 @@ if (!env.discordClientId) {
 }
 
 const rest = new REST({ version: '10' }).setToken(env.discordBotToken)
-const commands = [setupCommand.toJSON()]
+const commands = discordCommands.map((command) => command.data.toJSON())
 const mode = process.argv[2]
 
 if (mode === 'dev') {

@@ -14,6 +14,7 @@
 - 카테고리 구독은 `subscriptions.userId + categoryId` 기준으로 저장한다.
 - 키워드는 `guildId + userId + keyword` 기준으로 서버별 분리 저장한다.
 - DB 컬럼은 dbdiagram 기준을 따르고, TypeScript/Prisma 코드에서는 camelCase 필드로 매핑할 수 있다.
+- MVP의 알림 채널은 하나만 사용하지만, DB migration을 피하기 위해 같은 `channelId`를 각 category row에 저장한다.
 
 ---
 
@@ -54,7 +55,7 @@
 | id | int | pk, increment | 내부 category id |
 | name | varchar | not null | 감지된 카테고리명 |
 | noticeSiteId | int | not null, fk | `notice_sites.id` |
-| channelId | varchar | not null | 기존 Discord 채널 id |
+| channelId | varchar | not null | 알림을 보낼 기존 Discord 채널 id |
 | roleId | varchar | nullable | IRIS가 생성한 Discord role id |
 | roleName | varchar | not null | 사용자가 입력한 role 이름 |
 | isActive | boolean | not null | 알림 활성화 여부 |
@@ -68,9 +69,14 @@
 **Rules**
 
 - Discord 채널은 자동 생성하지 않고 기존 채널을 선택한다.
+- MVP에서는 하나의 알림 채널을 선택하고 모든 카테고리의 `channelId`에 같은 값을 저장한다.
+- 향후 DB를 정리하면 `notice_sites.notificationChannelId` 같은 사이트 단위 컬럼으로 이동할 수 있다.
 - 활성화된 카테고리는 카테고리 설정 저장 시 `roleName`으로 IRIS가 Role을 생성한다.
+- IRIS는 같은 이름의 기존 Discord Role을 재사용하지 않는다.
+- 새로 생성하는 Discord Role은 별도 색상을 지정하지 않고 Discord 기본 색상을 사용한다.
 - 비활성화된 카테고리는 Role을 생성하지 않고 `roleId = null`로 저장한다.
 - 비활성화된 카테고리는 구독 목록, 공지 저장, 알림 대상에서 제외한다.
+- `전체` 카테고리는 전체 공지 구독 역할로 사용하며, 공지 저장은 실제 감지된 카테고리의 `categoryId`에만 연결한다.
 - 테스트 크롤링으로 감지된 카테고리 미리보기는 저장 전 임시 데이터로 처리할 수 있다.
 
 ---
@@ -126,7 +132,7 @@ hashKey = sha256(noticeSiteId + ":" + normalizedLink)
 **Rules**
 
 - guild 범위는 `categoryId -> categories.noticeSiteId -> notice_sites.guild_id`로 확인한다.
-- `/subscribe` multi-select 결과를 최종 구독 상태로 보고 추가/삭제를 동기화한다.
+- `/subscribe` 카테고리 버튼 클릭 결과를 기준으로 해당 카테고리 구독을 토글한다.
 - 구독 시 활성화된 category의 `roleId`를 사용자에게 부여하고, 구독 해제 시 제거한다.
 
 ---
@@ -152,6 +158,7 @@ hashKey = sha256(noticeSiteId + ":" + normalizedLink)
 - 같은 사용자가 여러 Discord 서버에서 같은 키워드를 등록해도 별도 데이터로 저장한다.
 - 키워드 매칭 범위는 해당 `guildId`의 공지로 제한한다.
 - MVP 키워드 매칭 대상은 공지 제목이다.
+- 키워드는 공지 사이트 설정 전에도 등록할 수 있으며, 설정 완료 후 새 공지부터 DM 알림 대상이 된다.
 
 ---
 

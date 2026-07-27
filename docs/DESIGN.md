@@ -42,7 +42,7 @@
 
 IRIS는 대학 공지를 자동으로 확인하고 Discord에서 필요한 공지만 빠르게 받아볼 수 있도록 돕는 서비스입니다.
 
-관리자는 공지 사이트와 CSS Selector를 등록하고, 감지된 카테고리를 Discord 채널 및 Role과 연결합니다.
+관리자는 공지 사이트와 CSS Selector를 등록하고, 공통 알림 채널과 카테고리별 구독 역할을 설정합니다.
 
 사용자는 Discord 슬래시 명령어로 카테고리 구독과 키워드 알림을 직접 관리합니다.
 
@@ -120,7 +120,7 @@ Category 설정
 
 ⑤ 사용자는 Discord 명령어로 조작한다.
 
-/help, /subscribe, /keyword 화면은 실제 Discord 사용 흐름을 미리 볼 수 있도록 Dark UI 안에 Bot Card 형태로 표현한다.
+/help, /setup, /subscribe, /keyword 화면은 실제 Discord 사용 흐름을 미리 볼 수 있도록 Dark UI 안에 Bot Card 형태로 표현한다.
 
 ---
 
@@ -485,7 +485,7 @@ Main
 입력란은 실제 값이 채워진 상태가 아니라 placeholder 예시로 표시한다.
 
 - 예: 경북대학교 컴퓨터학부
-- 예: https://cse.knu.ac.kr/board/notice
+- 예: https://cse.knu.ac.kr/bbs/board.php?bo_table=sub5_1&lang=kor
 
 Selector 설정
 
@@ -498,12 +498,12 @@ Selector 설정
 
 Selector 입력란은 실제 값이 채워진 상태가 아니라 placeholder 예시로 표시한다.
 
-- 예: ul.notice-list > li
-- 예: .title
-- 예: a.link
-- 예: .date
-- 예: .category
-- 예: .category-tabs a
+- 예: .basic_tbl_head tbody > tr
+- 예: .bo_tit a
+- 예: .bo_tit a
+- 예: .td_datetime
+- 예: .bo_cate_link
+- 예: #bo_cate_ul a
 
 Action
 
@@ -558,23 +558,23 @@ Main 영역만 세로 스크롤되며 Sidebar와 Guide는 화면에 유지된다
 
 목적
 
-감지된 카테고리별 Discord 채널, Role 이름, 활성화 여부를 설정한다.
+모든 공지를 보낼 알림 채널과 카테고리별 역할 이름, 활성화 여부를 설정한다.
 
 Table
 
+알림 채널
+
 카테고리
 
-채널
-
-Role 이름
+역할 이름
 
 활성화
 
-기본 Role 규칙
+기본 역할 규칙
 
 Iris-{카테고리명}
 
-Role 이름 입력란은 실제 값이 채워진 상태가 아니라 placeholder 예시로 표시한다.
+역할 이름 입력란은 실제 값이 채워진 상태가 아니라 placeholder 예시로 표시한다.
 
 예시
 
@@ -592,7 +592,7 @@ Role 이름 입력란은 실제 값이 채워진 상태가 아니라 placeholder
 
 활성화 ON인 카테고리만 알림 전송 대상이 된다.
 
-활성화 OFF인 카테고리는 Role을 생성하지 않고 구독 목록, 공지 저장, 알림 대상에서 제외한다.
+활성화 OFF인 카테고리는 역할을 생성하지 않고 구독 목록, 공지 저장, 알림 대상에서 제외한다.
 
 Button
 
@@ -639,10 +639,10 @@ Guide는 숫자 배지가 있는 Step Item 형태로 표시한다.
 
 1. 카테고리 확인
    - 테스트 크롤링에서 감지된 카테고리 목록을 확인한다.
-2. 채널 연결
-   - 카테고리별로 알림을 보낼 Discord 채널을 선택한다.
-3. Role 설정
-   - 활성화된 카테고리는 구독 Role 생성 대상이 된다.
+2. 알림 채널
+   - 모든 공지 알림을 보낼 Discord 채널을 선택한다.
+3. 구독 역할
+   - 사용자가 카테고리를 구독하면 설정한 이름의 역할이 부여된다.
 
 스크롤
 
@@ -660,7 +660,7 @@ Success
 
 설정이 완료되었습니다!
 
-IRIS가 설정한 Discord 채널로 공지 알림을 전송한다.
+IRIS가 설정한 알림 채널로 공지 알림을 전송한다.
 
 Command List
 
@@ -684,7 +684,7 @@ Next Guide Card
 Summary
 
 - 공지 사이트, 활성 카테고리 수, 비활성 카테고리 수를 표시한다.
-- 카테고리 연결 요약에는 카테고리명, 활성 상태, Discord Channel, Role 이름을 표시한다.
+- 카테고리 연결 요약에는 카테고리명, 활성 상태, 역할 이름을 표시한다.
 - 카테고리 연결 목록은 5개까지 기본 표시하고, 6개 이상이면 전체 보기/접기 버튼을 제공한다.
 
 설정 완료 화면에서는 별도 Guide Panel을 사용하지 않고, 위 안내를 Main 콘텐츠 안에 표시한다.
@@ -703,7 +703,7 @@ UI
 
 Discord Dark Window
 
-Bot Card
+보라색 Embed Bot Card
 
 명령어 목록
 
@@ -727,15 +727,53 @@ Bot Card
 
 UI
 
-Checkbox List
+보라색 Embed Bot Card
 
-구독 저장 Button
+카테고리 Button List
 
 표시 규칙
 
-활성화된 카테고리를 우선 표시한다.
+Embed 제목은 `구독 카테고리`로 표시한다.
 
-저장 후 선택된 카테고리 Role을 사용자에게 부여한다.
+Embed 내용은 짧은 안내 문구만 표시한다.
+
+활성화된 카테고리를 버튼으로 표시한다.
+
+버튼을 누르면 구독 상태가 바로 변경된다.
+
+구독 중인 카테고리는 Primary 버튼, 구독하지 않은 카테고리는 Secondary 버튼으로 표시한다.
+
+토글 후 같은 메시지를 업데이트한다.
+
+구독 시 해당 카테고리 Role을 사용자에게 부여하고, 구독 해제 시 제거한다.
+
+---
+
+## S6-1 Discord
+
+공지 채널 알림
+
+목적
+
+공통 알림 채널에서 새 공지를 확인하고, 필요한 경우 개인 DM으로 보관하거나 요약 기능으로 진입한다.
+
+UI
+
+보라색 Embed Bot Card
+
+DM으로 저장 Button
+
+요약 보기 Button
+
+표시 규칙
+
+- Embed에는 공지 제목, 카테고리, 공지일, 원본 링크를 표시한다.
+- 역할 mention은 Embed 밖 content 영역에 표시한다.
+- `DM으로 저장`은 Primary Button으로 표시한다.
+- `요약 보기`는 Primary Button으로 표시한다.
+- `DM으로 저장` 클릭 시 같은 공지 Embed를 사용자 DM으로 보낸다.
+- DM으로 보낸 공지 알림에는 `요약 보기` Primary Button과 `알림 삭제` Danger Button을 표시한다.
+- `요약 보기` 클릭 시 MVP에서는 준비 중 안내를 Ephemeral로 표시한다.
 
 ---
 
@@ -749,13 +787,13 @@ Checkbox List
 
 UI
 
-Keyword Input
+보라색 Embed Bot Card
 
-취소
+키워드 목록
 
-등록
+키워드 추가 Button
 
-Success Bot Card
+키워드 삭제 Button
 
 동작
 
@@ -766,6 +804,15 @@ Success Bot Card
 키워드 목록 확인
 
 DM 알림
+
+키워드 DM 알림
+
+- 보라색 Embed Bot Card로 표시한다.
+- 공지 제목, 매칭 키워드, 사이트, 카테고리, 공지일을 표시한다.
+- 하단에 `요약 보기` Primary Button과 `알림 삭제` Danger Button을 표시한다.
+- `알림 삭제` 클릭 시 버튼 영역을 `정말 삭제` Danger Button과 `취소` Secondary Button으로 변경한다.
+- `정말 삭제` 클릭 시 해당 DM 메시지만 삭제한다.
+- `취소` 클릭 시 원래 `요약 보기`와 `알림 삭제` 버튼으로 돌아간다.
 
 ---
 
@@ -780,6 +827,16 @@ Discord 봇 초대하기
 ↓
 
 /setup
+
+목적
+
+관리자가 관리자 페이지로 이동할 수 있는 바로가기 버튼을 제공한다.
+
+UI
+
+보라색 Embed Bot Card
+
+바로가기 Button
 
 ↓
 

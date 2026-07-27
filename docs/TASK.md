@@ -298,7 +298,7 @@
 - [x] 관리자 화면 Discord 채널 목록 API 연결
 - [x] Discord Bot 초대 링크 환경 변수 연결
 - [x] `/setup` 관리자 권한 확인 골격 작성
-- [x] `/setup` Admin 링크 ephemeral 응답 골격 작성
+- [x] `/setup` Admin 바로가기 버튼 ephemeral 응답 골격 작성
 - [x] 활성 카테고리 Role 생성 구현
 - [x] Bot Role hierarchy 에러 처리
 - [x] `PUT /api/admin/{guildId}/notice-config` 구현
@@ -307,8 +307,6 @@
 - [x] Role 삭제 구현
 - [x] 기존 Role 정리 흐름 구현
 - [x] `guildDelete` 이벤트 DB 정리 구현
-- [ ] Backend Dockerfile 초안 작성
-- [ ] Backend 배포용 Docker Compose 작성
 
 ## 이슈
 
@@ -320,11 +318,12 @@
 - `backend npm run lint` 통과
 - Discord Bot login smoke test 성공
 - Discord 채널 목록 조회 API 수동 테스트 성공
-- `/setup` 관리자 링크가 `/admin/{guildId}` 형식으로 응답됨
+- `/setup` 관리자 바로가기 버튼이 `/admin/{guildId}` URL로 연결됨
 - `/admin/{guildId}` 관리자 화면에서 Discord 채널 목록 API 호출 연결 확인
 - 랜딩의 Discord Bot 초대 버튼이 `VITE_DISCORD_INVITE_URL` 값으로 이동하도록 확인
 - `guildDelete` 이벤트 DB 정리 수동 테스트 성공
-- 공지 설정 저장 시 Discord Role 생성/재사용 수동 테스트 성공
+- 공지 설정 저장 시 Discord Role 생성 수동 테스트 성공
+- 같은 이름의 기존 Discord Role이 있으면 저장 실패 확인
 - 잘못된 `channelId` 저장 실패 수동 테스트 성공
 - 카테고리 설정 PATCH 수동 테스트 성공
 - 전체 설정 PUT 교체 수동 테스트 성공
@@ -372,11 +371,11 @@
 
 ---
 
-# Day 10. Admin Polish And Frontend Preview
+# Day 10. Admin Polish
 
 ## 목표
 
-- 관리자 화면의 UX, 반응형, 배포 preview를 점검한다.
+- 관리자 화면의 UX와 반응형을 점검한다.
 - Day 9 API 연동 후 화면 상태와 관리자 흐름을 안정화한다.
 
 ## 할 일
@@ -387,40 +386,45 @@
 - [x] 설정 완료 화면 요약 보완
 - [x] 모바일/데스크톱 반응형 1차 점검
 - [x] 주요 실패 케이스 UI 점검
-- [ ] Fork `personal-deploy` Frontend CI 및 Vercel 배포 workflow 작성
-- [ ] Vercel preview 배포 확인
-- [ ] Frontend preview smoke test
+- [x] 관리자 설정 UI 문구 정리
+- [x] 경북대학교 컴퓨터학부 기준 URL/selector 예시 반영
 
 ## 이슈
 
-- Frontend preview 배포와 CI/Vercel workflow는 별도 배포 단계에서 진행한다.
+- 실제 배포와 preview 확인은 모든 핵심 기능 개발 이후 최종 단계에서 진행한다.
 
 ## 이월
 
-- Fork `personal-deploy` Frontend CI 및 Vercel 배포 workflow 작성
+- Frontend CI 및 Vercel 배포 workflow 작성
 - Vercel preview 배포 확인
 - Frontend preview smoke test
 
 ---
 
-# Day 11. Discord Slash Commands
+# Day 11. Discord Commands And Scheduler Base
 
 ## 목표
 
 - Discord 사용자가 설정 링크, 카테고리 구독, 키워드 명령어를 사용할 수 있게 한다.
+- Scheduler와 신규 공지 중복 검사 기반을 미리 구현한다.
 
 ## 할 일
 
-- [ ] `/help` 구현
-- [ ] `/setup` 관리자 권한 확인 구현 보완
-- [ ] `/setup` Admin 링크 ephemeral 응답 구현 보완
-- [ ] `/subscribe` active category 조회 구현
-- [ ] `/subscribe` multi-select 구현
-- [ ] 구독 Role 부여/제거 구현
-- [ ] `/keyword add` 구현
-- [ ] `/keyword remove` 구현
-- [ ] `/keyword list` 구현
-- [ ] `/help`, `/setup`, `/subscribe`, `/keyword` 수동 테스트
+- [x] `/help` 구현
+- [x] `/setup` 관리자 권한 확인 구현 보완
+- [x] `/setup` Admin 바로가기 버튼 ephemeral 응답 구현 보완
+- [x] `/subscribe` active category 조회 구현
+- [x] `/subscribe` category button interaction 구현
+- [x] 구독 Role 부여/제거 구현
+- [x] `/keyword` 키워드 관리 UI 구현
+- [x] `/keyword` 추가 modal 구현
+- [x] `/keyword` 다중 선택 삭제 select menu 구현
+- [x] `/help`, `/setup`, `/subscribe`, `/keyword` 정상 응답 보라색 Embed 디자인 통일
+- [x] node-cron Scheduler 구현
+- [x] 등록된 notice site 순회 구현
+- [x] normalizedLink 생성 구현
+- [x] `hashKey` 생성 및 중복 검사 구현
+- [x] `/help`, `/setup`, `/subscribe`, `/keyword` 수동 테스트
 
 ## 이슈
 
@@ -436,32 +440,39 @@
 
 ## 목표
 
-- 30분 주기 크롤링과 Discord 알림을 연결한다.
-- 신규 공지 저장과 카테고리별 채널 알림을 완성한다.
+- Day 11에서 만든 Scheduler 기반 위에 Discord 알림을 연결한다.
+- 신규 공지 저장과 공통 알림 채널의 역할 mention 알림을 완성한다.
 - 키워드 DM 알림을 연결한다.
 
 ## 할 일
 
-- [ ] node-cron Scheduler 구현
-- [ ] 등록된 notice site 순회 구현
-- [ ] normalizedLink 생성 구현
-- [ ] `hashKey` 생성 및 중복 검사 구현
-- [ ] 활성 카테고리 매칭 구현
-- [ ] 신규 공지 저장 구현
-- [ ] Discord Embed 알림 구현
-- [ ] Role mention 구현
-- [ ] 공지 제목 기준 키워드 매칭 구현
-- [ ] guildId + userId + keyword 범위 확인
-- [ ] 키워드 일치 사용자 조회 구현
-- [ ] DM 전송 구현
-- [ ] DM 실패 처리 구현
-- [ ] Scheduler 수동 실행 테스트
-- [ ] 카테고리 알림 end-to-end 점검
-- [ ] 키워드 DM 알림 수동 테스트
+- [x] 활성 카테고리 매칭 구현
+- [x] 신규 공지 저장 구현
+- [x] Discord Embed 알림 구현
+- [x] Role mention 구현
+- [x] 공지 제목 기준 키워드 매칭 구현
+- [x] guildId + userId + keyword 범위 확인
+- [x] 키워드 일치 사용자 조회 구현
+- [x] DM 전송 구현
+- [x] DM 실패 처리 구현
+- [x] Scheduler 수동 실행 테스트
+- [x] 공통 알림 채널 end-to-end 점검
+- [x] 키워드 DM 알림 수동 테스트
+- [x] 카테고리별 채널 UI를 공통 알림 채널 UI로 단순화
+- [x] 실제 카테고리 역할과 `전체` 역할을 한 메시지에서 함께 mention하도록 수정
+- [x] 새 Discord 역할 색상을 기본 색상으로 변경
+- [x] 키워드 DM 알림 2단계 삭제 버튼 구현
+- [x] 공지 채널 알림에 `DM으로 저장`, `요약 보기` 버튼 추가
+- [x] 공지 DM 복사본에 2단계 삭제 버튼 연결
+- [x] `요약 보기` 버튼 준비 중 안내 처리
+- [x] 개인 DM 공지 알림에도 `요약 보기` 버튼 추가
 
 ## 이슈
 
-- 없음
+- `npm run scheduler:notice:run-once` 실행 시 DB에 남아 있는 `IRIS Dev Notice` 테스트 사이트와 `경북대학교 컴퓨터학부` 사이트 fetch가 실패함.
+- Scheduler run-once 스크립트는 정상 종료되며, site 단위 실패는 전체 job 실패로 전파하지 않도록 처리함.
+- `전체` 카테고리는 공지 저장 카테고리가 아니라 전체 공지 구독 역할로 사용한다.
+- 기존 DB 설정은 관리자 페이지에서 저장을 한 번 눌러 모든 카테고리의 알림 채널을 같은 값으로 맞출 수 있다.
 
 ## 이월
 
@@ -469,11 +480,11 @@
 
 ---
 
-# Day 13. QA And Final Smoke Test
+# Day 13. QA, Deploy And Final Smoke Test
 
 ## 목표
 
-- MVP 안정화와 최종 배포 smoke test를 수행한다.
+- MVP 안정화 후 최종 배포와 smoke test를 수행한다.
 - Day 13에는 새 기능 구현보다 실패 케이스 점검과 전체 흐름 안정화를 우선한다.
 
 ## 할 일
@@ -486,6 +497,11 @@
 - [ ] Bot 제거 후 `guildDelete` 정리 점검
 - [ ] 모바일/데스크톱 UI 점검
 - [ ] 환경 변수 점검
+- [ ] Backend Dockerfile 작성
+- [ ] Backend 배포용 Docker Compose 작성
+- [ ] Fork `personal-deploy` Frontend CI 및 Vercel 배포 workflow 작성
+- [ ] Vercel preview 배포 확인
+- [ ] Frontend preview smoke test
 - [ ] Production Backend smoke test
 - [ ] Production Frontend smoke test
 - [ ] Discord Bot production login 확인
@@ -494,7 +510,7 @@
 
 ## 이월 후보
 
-- 시간이 부족하면 키워드 DM 알림은 제목 매칭 저장까지 확인하고 실제 DM 전송 고도화는 이후 개선으로 미룬다.
+- 실제 AI 요약 생성과 summary cache 저장은 이후 고도화 단계에서 구현한다.
 
 ## 이슈
 

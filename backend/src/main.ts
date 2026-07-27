@@ -1,12 +1,14 @@
 import { createApp } from './app.js'
 import { env } from './config/env.js'
 import { loginDiscordBot } from './modules/discord/discord.client.js'
+import { startNoticeScheduler } from './modules/scheduler/notice-scheduler.js'
 import { logger } from './shared/logger/logger.js'
 
 const app = createApp()
 
 app.listen(env.port, () => {
   logger.info(`Server is running at http://localhost:${env.port}`)
+  startNoticeScheduler()
 })
 
 if (env.discordBotToken) {

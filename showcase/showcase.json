@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "title": "IRIS (디스코드 기반 대학 공지 알리미)",
+  "title": "대학 공지 알림 서비스 IRIS",
   "summary": "대학 공지를 Discord에서 카테고리, 키워드 별로 받아볼 수 있는 공지 알림 서비스입니다.",
   "githubUser": "codeHyeon(강현서)",
   "demoUrl": "",
@@ -19,9 +19,9 @@
     "등록한 키워드가 포함된 새 공지를 개인 DM으로 알림"
   ],
   "featureTags": [
-    "공지 사이트 설정",
-    "카테고리, 키워드 구독/알림",
-    "Discord 명령어"
+    "공지 자동 수집",
+    "카테고리 · 키워드 구독",
+    "Discord 알림"
   ],
   "techStack": [
     "React",

@@ -58,13 +58,13 @@ export function GuidePanel({ step }: { step: AdminStep }) {
         />
         <GuideStep
           number="02"
-          title="채널 연결"
-          description="카테고리별로 알림을 보낼 Discord 채널을 선택합니다."
+          title="알림 채널"
+          description="모든 공지 알림을 보낼 Discord 채널을 선택합니다."
         />
         <GuideStep
           number="03"
-          title="Role 설정"
-          description="활성화된 카테고리는 구독 Role 생성 대상이 됩니다."
+          title="구독 역할"
+          description="사용자가 카테고리를 구독하면 설정한 이름의 역할이 부여됩니다."
         />
       </div>
     </aside>

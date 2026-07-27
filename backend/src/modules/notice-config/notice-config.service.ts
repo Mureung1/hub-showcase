@@ -1,6 +1,7 @@
 import { AppError } from '../../shared/errors/app-error.js'
 import { logger } from '../../shared/logger/logger.js'
 import { crawlNotices } from '../crawling/index.js'
+import { toNoticePreview } from '../crawling/notice-normalizer.js'
 import { discordService, getDefaultIrisRoleName } from '../discord/discord.service.js'
 import { noticeConfigRepository } from './notice-config.repository.js'
 import type {
@@ -17,9 +18,22 @@ type PreparedNoticeCategory = {
   roleId: string | null
 }
 
+function assertActiveCategoriesHaveRoles(categories: PreparedNoticeCategory[]) {
+  const invalidCategory = categories.find((category) => category.isActive && !category.roleId)
+
+  if (invalidCategory) {
+    throw new AppError(500, `Active category must have a Discord role: ${invalidCategory.name}`)
+  }
+}
+
 export class NoticeConfigService {
   async testCrawlNoticeConfig(_guildId: string, body: TestCrawlBody) {
-    return crawlNotices(body)
+    const result = await crawlNotices(body)
+
+    return {
+      ...result,
+      notices: toNoticePreview(result.notices),
+    }
   }
 
   private async prepareCategoriesWithRoles(guildId: string, categories: SaveNoticeConfigBody['categories']) {
@@ -44,11 +58,9 @@ export class NoticeConfigService {
           continue
         }
 
-        const role = await discordService.createOrReuseRole(guildId, roleName)
+        const role = await discordService.createRole(guildId, roleName)
 
-        if (role.created) {
-          createdRoleIds.push(role.roleId)
-        }
+        createdRoleIds.push(role.roleId)
 
         preparedCategories.push({
           name: category.name,
@@ -91,6 +103,7 @@ export class NoticeConfigService {
     }
 
     const { categories, createdRoleIds } = await this.prepareCategoriesWithRoles(guildId, body.categories)
+    assertActiveCategoriesHaveRoles(categories)
 
     try {
       await noticeConfigRepository.createNoticeConfig({
@@ -186,7 +199,7 @@ export class NoticeConfigService {
 
         roleId = null
       } else if (!roleId) {
-        const role = await discordService.createOrReuseRole(guildId, roleName)
+        const role = await discordService.createRole(guildId, roleName)
 
         roleId = role.roleId
         finalRoleName = role.roleName
@@ -199,12 +212,23 @@ export class NoticeConfigService {
 
       updatedCategories.push({
         categoryId: category.categoryId,
+        name: existingCategory.name,
         channelId: category.channelId,
         roleName: finalRoleName,
         isActive: category.isActive,
         roleId,
       })
     }
+
+    assertActiveCategoriesHaveRoles(
+      updatedCategories.map((category) => ({
+        name: category.name,
+        channelId: category.channelId,
+        roleName: category.roleName,
+        isActive: category.isActive,
+        roleId: category.roleId,
+      })),
+    )
 
     const categories = await noticeConfigRepository.updateNoticeCategories(updatedCategories)
 
@@ -230,6 +254,7 @@ export class NoticeConfigService {
 
     const oldRoleIds = noticeSite.categories.flatMap((category) => (category.roleId ? [category.roleId] : []))
     const { categories, createdRoleIds } = await this.prepareCategoriesWithRoles(guildId, body.categories)
+    assertActiveCategoriesHaveRoles(categories)
 
     try {
       await noticeConfigRepository.replaceNoticeConfig({

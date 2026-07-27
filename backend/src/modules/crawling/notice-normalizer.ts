@@ -61,7 +61,11 @@ export function normalizeNotices(notices: ExtractedNotice[], categories: string[
   }
 
   return {
-    notices: normalizedNotices.slice(0, maxPreviewNoticeCount),
+    notices: normalizedNotices,
     categories: normalizedCategories,
   }
+}
+
+export function toNoticePreview<TNotice>(notices: TNotice[]) {
+  return notices.slice(0, maxPreviewNoticeCount)
 }

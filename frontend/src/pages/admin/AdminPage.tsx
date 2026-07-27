@@ -65,6 +65,7 @@ function AdminPage({ guildId }: AdminPageProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const updateForm = (field: keyof NoticeConfigForm, value: string) => {
     setForm((current) => ({
@@ -82,6 +83,7 @@ function AdminPage({ guildId }: AdminPageProps) {
     setHasRetestedSite(false)
     setCategoryStepHint(null)
     setSaveStatus('idle')
+    setSaveError(null)
   }
 
   useEffect(() => {
@@ -177,7 +179,7 @@ function AdminPage({ guildId }: AdminPageProps) {
 
   const updateCategory = (
     categoryName: string,
-    field: keyof Pick<DetectedCategory, 'channelId' | 'roleName' | 'isActive'>,
+    field: keyof Pick<DetectedCategory, 'roleName' | 'isActive'>,
     value: string | boolean,
   ) => {
     setCategories((current) =>
@@ -191,23 +193,37 @@ function AdminPage({ guildId }: AdminPageProps) {
       ),
     )
     setSaveStatus('dirty')
+    setSaveError(null)
+  }
+
+  const updateNotificationChannel = (channelId: string) => {
+    setCategories((current) =>
+      current.map((category) => ({
+        ...category,
+        channelId,
+      })),
+    )
+    setSaveStatus('dirty')
+    setSaveError(null)
   }
 
   const handleSave = async () => {
     setSaveStatus('saving')
+    setSaveError(null)
+    const normalizedCategories = syncCategoryChannelIds(categories, getNotificationChannelId(categories))
 
     try {
       if (hasExistingConfig) {
         if (hasRetestedSite) {
-          await replaceNoticeConfig(guildId, { form, categories })
+          await replaceNoticeConfig(guildId, { form, categories: normalizedCategories })
           await syncSavedNoticeConfig()
         } else {
-          const result = await updateNoticeCategories(guildId, categories)
+          const result = await updateNoticeCategories(guildId, normalizedCategories)
 
           setCategories(result.categories)
         }
       } else {
-        await saveNoticeConfig(guildId, { form, categories })
+        await saveNoticeConfig(guildId, { form, categories: normalizedCategories })
         setHasExistingConfig(true)
         await syncSavedNoticeConfig()
       }
@@ -223,6 +239,7 @@ function AdminPage({ guildId }: AdminPageProps) {
       }
 
       setSaveStatus('error')
+      setSaveError(getErrorMessage(error, '저장에 실패했습니다. 입력값을 확인해주세요.'))
     }
   }
 
@@ -308,10 +325,13 @@ function AdminPage({ guildId }: AdminPageProps) {
         <CategorySettingsStep
           categories={categories}
           discordChannels={discordChannels}
+          notificationChannelId={getNotificationChannelId(categories)}
           isLoadingChannels={isLoadingChannels}
           channelLoadError={channelLoadError}
           canGoNext={categories.length > 0 && hasSavedConfig}
           saveStatus={saveStatus}
+          saveError={saveError}
+          onNotificationChannelChange={updateNotificationChannel}
           onCategoryChange={updateCategory}
           onPrevious={() => setStep('site')}
           onSave={handleSave}
@@ -384,10 +404,22 @@ export default AdminPage
 function fillMissingChannelIds(categories: DetectedCategory[], channels: DiscordChannel[]) {
   const fallbackChannelId = channels[0]?.id || ''
   const channelIds = new Set(channels.map((channel) => channel.id))
+  const notificationChannelId = categories.find((category) => channelIds.has(category.channelId))?.channelId || fallbackChannelId
 
   return categories.map((category) => ({
     ...category,
-    channelId: channelIds.has(category.channelId) ? category.channelId : fallbackChannelId,
+    channelId: notificationChannelId,
+  }))
+}
+
+function getNotificationChannelId(categories: DetectedCategory[]) {
+  return categories.find((category) => category.channelId)?.channelId || ''
+}
+
+function syncCategoryChannelIds(categories: DetectedCategory[], channelId: string) {
+  return categories.map((category) => ({
+    ...category,
+    channelId,
   }))
 }
 

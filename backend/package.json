@@ -19,6 +19,7 @@
     "discord:login:smoke": "tsx src/modules/discord/discord-login-smoke.ts",
     "discord:commands:register:dev": "tsx src/modules/discord/register-commands.ts dev",
     "discord:commands:register:global": "tsx src/modules/discord/register-commands.ts global",
+    "scheduler:notice:run-once": "tsx src/modules/scheduler/run-notice-scheduler-once.ts",
     "db:studio": "prisma studio",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -34,6 +35,7 @@
     "discord.js": "^14.27.0",
     "express": "^5.2.1",
     "mariadb": "^3.5.3",
+    "node-cron": "^4.6.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

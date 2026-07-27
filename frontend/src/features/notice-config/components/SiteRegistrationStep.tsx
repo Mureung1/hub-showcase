@@ -61,7 +61,7 @@ export function SiteRegistrationStep({
         <input
           id="url"
           value={form.url}
-          placeholder="예: https://cse.knu.ac.kr/board/notice"
+          placeholder="예: https://cse.knu.ac.kr/bbs/board.php?bo_table=sub5_1&lang=kor"
           onChange={(event) => onFormChange('url', event.target.value)}
         />
       </section>
@@ -88,42 +88,42 @@ export function SiteRegistrationStep({
           id="listSelector"
           label="목록 Selector (list)"
           value={form.listSelector}
-          placeholder="예: ul.notice-list > li"
+          placeholder="예: .basic_tbl_head tbody > tr"
           onChange={(value) => onFormChange('listSelector', value)}
         />
         <SelectorInput
           id="titleSelector"
           label="제목 Selector (title)"
           value={form.titleSelector}
-          placeholder="예: .title"
+          placeholder="예: .bo_tit a"
           onChange={(value) => onFormChange('titleSelector', value)}
         />
         <SelectorInput
           id="linkSelector"
           label="링크 Selector (link)"
           value={form.linkSelector}
-          placeholder="예: a.link"
+          placeholder="예: .bo_tit a"
           onChange={(value) => onFormChange('linkSelector', value)}
         />
         <SelectorInput
           id="dateSelector"
           label="날짜 Selector (date)"
           value={form.dateSelector}
-          placeholder="예: .date"
+          placeholder="예: .td_datetime"
           onChange={(value) => onFormChange('dateSelector', value)}
         />
         <SelectorInput
           id="categorySelector"
           label="카테고리 Selector (category)"
           value={form.categorySelector}
-          placeholder="예: .category"
+          placeholder="예: .bo_cate_link"
           onChange={(value) => onFormChange('categorySelector', value)}
         />
         <SelectorInput
           id="categoryListSelector"
           label="전체 카테고리 Selector (category list)"
           value={form.categoryListSelector}
-          placeholder="예: .category-tabs a"
+          placeholder="예: #bo_cate_ul a"
           onChange={(value) => onFormChange('categoryListSelector', value)}
         />
       </section>

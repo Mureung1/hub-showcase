@@ -81,7 +81,7 @@ export function SelectorHelpRequestModal({
         </header>
 
         <p>
-          Selector 설정이 어려운 경우 응답받을 이메일과 공지 사이트 정보를 남겨주세요.
+          Selector 설정이 어려운 경우 공지 사이트 정보를 남겨주세요.
         </p>
 
         <label htmlFor="requestEmail">응답받을 이메일</label>
@@ -111,7 +111,7 @@ export function SelectorHelpRequestModal({
 
         {status === 'submitted' && (
           <p className="request-success">
-            요청이 접수되었습니다. 실제 연동 후에는 입력한 이메일로 답변을 받을 수 있습니다.
+            요청이 접수되었습니다. 이메일 안내 기능은 실제 서비스 연동 시 제공됩니다.
           </p>
         )}
 

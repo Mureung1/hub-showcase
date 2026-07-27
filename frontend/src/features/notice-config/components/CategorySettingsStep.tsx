@@ -5,15 +5,18 @@ import type { DetectedCategory } from '../types/noticeConfigTypes'
 interface CategorySettingsStepProps {
   categories: DetectedCategory[]
   discordChannels: DiscordChannel[]
+  notificationChannelId: string
   isLoadingChannels: boolean
   channelLoadError: string | null
   canGoNext: boolean
   saveStatus: SaveStatus
+  saveError: string | null
   onCategoryChange: (
     categoryName: string,
-    field: keyof Pick<DetectedCategory, 'channelId' | 'roleName' | 'isActive'>,
+    field: keyof Pick<DetectedCategory, 'roleName' | 'isActive'>,
     value: string | boolean,
   ) => void
+  onNotificationChannelChange: (channelId: string) => void
   onPrevious: () => void
   onSave: () => void
   onNext: () => void
@@ -22,10 +25,13 @@ interface CategorySettingsStepProps {
 export function CategorySettingsStep({
   categories,
   discordChannels,
+  notificationChannelId,
   isLoadingChannels,
   channelLoadError,
   canGoNext,
   saveStatus,
+  saveError,
+  onNotificationChannelChange,
   onCategoryChange,
   onPrevious,
   onSave,
@@ -35,40 +41,47 @@ export function CategorySettingsStep({
     <div className="admin-main">
       <header className="admin-heading">
         <h1>카테고리 설정</h1>
-        <p>감지된 카테고리별로 알림을 보낼 채널과 역할 이름을 설정하세요.</p>
+        <p>알림을 보낼 채널과 카테고리별 구독 역할 이름을 설정하세요.</p>
       </header>
 
       <section className="table-card">
         <h2>감지된 카테고리 목록</h2>
         {isLoadingChannels && <p className="table-message">Discord 채널 목록을 불러오는 중입니다.</p>}
         {channelLoadError && <p className="table-message error">{channelLoadError}</p>}
+        <div className="notification-channel-field">
+          <label htmlFor="notificationChannel">알림 채널</label>
+          <select
+            id="notificationChannel"
+            value={notificationChannelId}
+            disabled={isLoadingChannels || discordChannels.length === 0}
+            onChange={(event) => onNotificationChannelChange(event.target.value)}
+          >
+            {discordChannels.length === 0 && <option value="">채널 없음</option>}
+            {discordChannels.map((channel) => (
+              <option key={channel.id} value={channel.id}>
+                {channel.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="category-table">
           <div className="table-row table-head">
             <span>카테고리</span>
-            <span>채널</span>
-            <span>Role 이름</span>
+            <span>역할 이름</span>
             <span>활성화</span>
           </div>
           {categories.map((category) => (
-            <div className="table-row" key={category.name}>
+            <div className={category.isActive ? 'table-row' : 'table-row inactive-category-row'} key={category.name}>
               <span className="category-name">{category.name}</span>
-              <select
-                value={category.channelId}
-                disabled={isLoadingChannels || discordChannels.length === 0}
-                onChange={(event) => onCategoryChange(category.name, 'channelId', event.target.value)}
-              >
-                {discordChannels.length === 0 && <option value="">채널 없음</option>}
-                {discordChannels.map((channel) => (
-                  <option key={channel.id} value={channel.id}>
-                    {channel.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                value={category.roleName}
-                placeholder={`예: Iris-${category.name}`}
-                onChange={(event) => onCategoryChange(category.name, 'roleName', event.target.value)}
-              />
+              {category.isActive ? (
+                <input
+                  value={category.roleName}
+                  placeholder={`예: Iris-${category.name}`}
+                  onChange={(event) => onCategoryChange(category.name, 'roleName', event.target.value)}
+                />
+              ) : (
+                <p className="inactive-category-note">비활성화됨</p>
+              )}
               <button
                 className={category.isActive ? 'toggle active' : 'toggle'}
                 type="button"
@@ -88,7 +101,10 @@ export function CategorySettingsStep({
         </div>
       </section>
 
-      <p className="notice-box">활성화 OFF인 카테고리는 구독 및 알림 대상에서 제외됩니다.</p>
+      <p className="notice-box">
+        비활성화한 카테고리는 구독 및 알림 대상에서 제외됩니다. 역할 이름은 Discord 서버에 없는
+        새 이름을 사용해주세요.
+      </p>
 
       <div className="admin-actions">
         <div className="left-actions">
@@ -97,7 +113,7 @@ export function CategorySettingsStep({
           </button>
         </div>
         <div className="right-actions">
-          <SaveStatusText status={saveStatus} />
+          <SaveStatusText status={saveStatus} error={saveError} />
           <button
             className="primary-action"
             type="button"
@@ -115,7 +131,7 @@ export function CategorySettingsStep({
   )
 }
 
-function SaveStatusText({ status }: { status: SaveStatus }) {
+function SaveStatusText({ status, error }: { status: SaveStatus; error: string | null }) {
   if (status === 'dirty') {
     return (
       <span className="save-status warning">
@@ -133,7 +149,7 @@ function SaveStatusText({ status }: { status: SaveStatus }) {
   }
 
   if (status === 'error') {
-    return <span className="save-status error">저장에 실패했습니다. 입력값을 확인해주세요.</span>
+    return <span className="save-status error">{error || '저장에 실패했습니다. 입력값을 확인해주세요.'}</span>
   }
 
   return null
