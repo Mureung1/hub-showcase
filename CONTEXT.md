@@ -1,51 +1,47 @@
 # AY-PLE Context
 
-AY-PLE가 한 학기 자료를 AY와 함께 정리하고 검토 가능한 학기 상태로 바꾸는 과정에서 사용하는 공용어를 정의한다. 구현 타입, Codex 프로토콜 용어, UI 배치와 일회성 Spike 용어는 이 사전에 포함하지 않는다.
+AY가 사용자 소유 학기 workspace에서 일하고 AY-PLE의 typed UI로 사용자 판단을 받아 계속 행동하는 과정에서 사용하는 공용어를 정의한다. 구현 타입, Codex 프로토콜 용어, UI 배치와 일회성 Spike 용어는 이 사전에 포함하지 않는다.
 
 ## 제품과 역할
 
 **AY-PLE**:
-대학생이 한 학기 자료를 AY와 함께 정리하고, 근거를 검토한 뒤 확인한 내용만 학기 상태로 남기는 local-first 학업 앱이다.
+AY가 학생의 한 학기 Git workspace에서 직접 일하고, 사용자 판단이 필요한 순간을 capability-specific UI로 연결하는 local-first 학업 Agent 앱이다.
 _Avoid_: Codex wrapper, Runtime Harness, 범용 Agent 플랫폼
 
 **AY**:
-학생이 AY-PLE 안에서 작업을 맡기고 대화하는 Agent 역할이다. AY는 앱의 신뢰 상태나 실행 엔진 자체를 소유하지 않는다.
-_Avoid_: Codex의 별칭, 앱 관리자, 상태 소유자, 챗봇
+학생이 AY-PLE 안에서 작업을 맡기고 대화하는 Agent 역할이다. AY는 작업 흐름, InteractionCapability 결과의 해석과 실제 학기 자료 작업을 소유하지만 App의 사용자 상호작용은 소유하지 않는다.
+_Avoid_: Codex의 별칭, 앱 관리자, 단순 챗봇
 
 ## 학기 작업공간과 학업 객체
 
 **SemesterWorkspace**:
-AY-PLE이 학생이 선택한 학년 단계와 학기에 맞춰 자료와 학기 상태를 정규화해 관리하도록 생성하는 사용자 로컬 작업공간이다. 임의의 기존 자료 폴더나 Codex 작업 디렉터리를 SemesterWorkspace로 간주하지 않는다.
-_Avoid_: Codex thread, 임의의 기존 폴더, Agent가 구조를 정하는 저장소
+학생이 명시적으로 선택해 AY와 함께 사용하는 한 학기 전용 Git working tree다. 하나의 SemesterWorkspace는 하나의 Git repository이자 하나의 학기이며, 실제 학기 자료와 학기 상태를 같은 사용자 소유 작업공간에서 다룬다.
+_Avoid_: Codex thread, 여러 학기를 담은 monorepo, Git repository의 하위 폴더, app-owned 복사본, 암묵적인 process working directory
+
+**WorkspaceRegistry**:
+AY-PLE이 여러 SemesterWorkspace 사이에서 알고 있는 작업공간과 현재 선택을 보존하는 운영 정보다. 학기 identity나 자료의 정본은 아니다.
+_Avoid_: workspace manifest authority, Git repository, 자료 index, app-owned workspace copy
 
 **WorkspaceManifest**:
-SemesterWorkspace의 학기 정체성, Course 정체성과 관계, 작업공간 형식을 기록하는 app-owned 정보다. 폴더명과 디렉터리 배치는 사람이 읽기 위한 표현이며 정체성의 기준이 아니다.
-_Avoid_: Course 폴더 트리, Skill 설정, Runtime state
-
-**ImportSource**:
-SemesterWorkspace 밖에 있으며 자료 반입 후보로 검토하는 기존 폴더나 자료 묶음이다. 그 자체는 SemesterWorkspace나 RawMaterial이 아니다.
-_Avoid_: 기존 SemesterWorkspace, 자동 스캔 범위, 이미 반입된 RawMaterial
+SemesterWorkspace의 identity, 학년 단계·학기와 안정적인 작업공간 설정을 나타내는 학기-local 정보다. Cross-workspace 운영 정보와 구분한다.
+_Avoid_: 별도 manifest sidecar, Course 폴더 트리, appData registry, Skill 설정, Runtime state
 
 **Semester Ready**:
-Codex account 연결과 app-owned SemesterWorkspace의 생성·기본 설정·validation이 끝나 후속 자료 반입을 시작할 수 있는 setup 완료 상태다. Course나 RawMaterial이 존재하거나 AY가 학기 내용을 이해했다는 뜻은 아니다.
+Account 연결, 명시적인 SemesterWorkspace 선택과 기본 준비가 끝나 AY가 그 학기 공간에서 작업할 수 있는 상태다. 앱이 별도 workspace를 생성했다는 뜻은 아니다.
 _UI alias_: 학기 공간 준비 완료
 _Avoid_: 학기 이해 완료, 학업 action 준비 완료, 자료 분석 완료
 
 **Course**:
-SemesterWorkspace 안에서 한 과목을 나타내는 학업 객체다. 정체성과 관계는 WorkspaceManifest가 기준이며 관련 폴더와 RawMaterial을 연결할 수 있지만 폴더 자체와 같지는 않다.
+SemesterWorkspace 안에서 한 과목을 나타내는 학업 객체다. 정체성과 관계는 workspace-local 학기 정보가 기준이며 관련 폴더와 파일을 연결할 수 있지만 폴더 자체와 같지는 않다.
 _Avoid_: 디렉터리, thread, 태그
 
-**RawMaterial**:
-SemesterWorkspace에 반입되어 AY-PLE가 해석할 수 있는 원문 공지, 강의계획서, 수업 문서, 이미지, 녹음 또는 메모다. 내용은 사용자의 명시적 결정 없이 바꾸지 않고, 외부 ImportSource와는 구분한다.
-_Avoid_: 정제된 데이터, 요약, 검토 전 ImportSource
-
 **EvidenceRef**:
-StatePatch나 SemesterModel의 특정 값이 어느 RawMaterial의 어떤 부분에 근거하는지 가리키는 field-level 참조다.
-_Avoid_: 파일 전체 링크, 일반 인용, Agent 활동 로그
+AY가 제안한 값이 어느 학기 자료의 어떤 content version과 위치에 근거하는지 Review에 전달할 수 있는 선택적 field-level 참조다. App이 모든 file operation을 추적한다는 뜻은 아니다.
+_Avoid_: 필수 global file registry, 최신 파일만 가리키는 링크, Agent 활동 로그
 
 **SemesterModel**:
-AY-PLE가 과목과 학업 사실을 구조화해 다루는 학기 상태다. Codex 대화 기록이나 Memory가 아니라 앱이 소유하는 정보다.
-_Avoid_: 폴더 구조, 채팅 기록, Codex Memory
+SemesterWorkspace가 과목과 학업 사실을 구조화해 보존할 때 사용하는 현재 학기 snapshot이다. Agent 대화 기록이나 App-owned aggregate가 아니다.
+_Avoid_: App database, 폴더 구조 전체, 채팅 기록, Agent Memory
 
 **Assignment**:
 학생에게 제출·완료할 학업 활동을 요구하는 first-class 학업 객체다. 마감, 제출 방식, 요구사항과 근거 같은 과제 사실을 소유한다.
@@ -62,53 +58,39 @@ _Avoid_: 과제 마감 복제, 시험 일시 복제, 파생 timeline 행
 ## 제안과 신뢰
 
 **StatePatch**:
-AY 또는 사용자가 SemesterModel에 제안한 구조화 변경 묶음이다. 변경 내용과 EvidenceRef를 함께 가지며 UserConfirmation 전에는 신뢰 상태를 바꾸지 않는다.
+AY가 Review를 위해 학생에게 보여주는 일시적인 구조화 변경 제안이다. 변경 요약과 선택적인 EvidenceRef를 담지만 App의 durable entity나 학기 자료를 바꿀 권한은 아니다.
 _UI alias_: 변경 제안
-_Avoid_: Agent 최종 답변, 자동 반영, raw protocol event
+_Avoid_: App-owned pending record, Agent 최종 답변, 자동 반영, raw protocol event
 
 **Review**:
-학생이 StatePatch와 연결된 RawMaterial 근거를 확인하고 수락·수정·거절하는 제품 상호작용이다.
+학생이 StatePatch와 연결된 학기 자료의 근거를 확인하고 수락·수정 요청·거절한 결과를 같은 AY 작업에 돌려주는 InteractionCapability다.
 _Avoid_: 코드 리뷰, 실행 권한 승인, Agent self-review
 
 **UserConfirmation**:
-학생이 StatePatch를 수락하거나 거절해 확정한 product decision 기록이다. 수정 요청은 replacement proposal을 위한 feedback이며 UserConfirmation이 아니고, 실행 권한 승인이나 일반 대화 응답과도 구분한다.
-_Avoid_: command approval, YES/NO 입력, 암묵적 동의
+학생이 Review에서 반환한 `accept | revise | reject`와 선택적인 feedback 결과다. 별도 durable App entity가 아니며 AY가 다음 행동을 정하는 입력이다.
+_Avoid_: App-owned decision record, command approval, 암묵적 동의
 
 **TrustedState**:
-UserConfirmation을 거쳐 학생이 사용하기로 결정한 SemesterModel의 상태다. 별도 데이터 계층이나 저장소 이름이 아니라 정보의 권한 수준을 뜻한다.
+Review 결과를 해석한 AY가 실제 학기 자료에 반영하고 history로 남긴 상태다. 별도 App 데이터 계층이나 저장소 이름이 아니라 정보의 권한 수준을 뜻한다.
 _UI alias_: 반영됨
 _Avoid_: Agent가 생성한 초안, DraftState 저장소, 검토 대기 목록
 
-## AY 작업 구성
+## AY와 App의 상호작용
 
-**SourceSelection**:
-학생이 현재 작업의 입력으로 명시한 RawMaterial 참조 집합이다. AY가 볼 수 있는 전체 SemesterWorkspace나 파일 권한 경계를 뜻하지 않는다.
-_UI alias_: 선택한 자료
-_Avoid_: 자동 수집 범위, sandbox 경계, 영구 source 묶음
-
-**ModelingRecipe**:
-반복 가능한 학업 작업의 Skill, prompt template, argument contract와 구조화 출력 계약을 묶은 versioned 작업 정의다.
-_Avoid_: 구체적인 실행 입력, UI action, Codex thread, runtime plugin
-
-**ModelingInvocation**:
-한 ModelingRecipe를 구체적인 인자, SourceSelection과 현재 SemesterWorkspace 맥락에 적용한 일회성 실행 요청이다. 실행 뒤 장기 기록으로 남는 객체가 아니다.
-_Avoid_: ModelingRecipe 정의, ModelingRun receipt, 대화 세션, 학업 객체
-
-**ModelingRun**:
-한 ModelingInvocation의 실행 시도와 결과를 연결하는 얇은 기록이다. 대화 세션, 학업 workflow 또는 여러 실행을 조정하는 오케스트레이터가 아니다.
-_UI alias_: 독립적으로 노출하지 않음
-_Avoid_: AgentModeling 단계, persistent session, background pipeline
+**InteractionCapability**:
+AY가 목적이 분명한 사용자 상호작용을 요청하면 AY-PLE이 그에 맞는 UI를 보여주고 구조화된 결과를 같은 작업에 돌려주는 제품 기능이다. App은 사용자 round trip을, AY는 workflow와 결과 적용을 소유한다.
+_Avoid_: App-owned workflow, 범용 event bus, arbitrary schema renderer, durable 학업 객체
 
 **CoControl**:
-학생의 GUI·대화 행동과 AY의 작업이 같은 앱 소유 상태를 다루되, 실제 전달 방식과 반영 권한은 각 기능의 의미에 따라 앱이 중재하는 제품 원칙이다.
-_Avoid_: 범용 event router, 모든 변경의 즉시 주입, 고정 interaction 목록
+학생의 GUI 선택과 AY의 작업이 InteractionCapability를 통해 하나의 feedback loop를 이루는 제품 원칙이다. App은 모든 학업 상태를 소유하지 않고 자신이 제공하는 UI interaction만 중재한다.
+_Avoid_: 범용 event router, 모든 변경의 즉시 주입, App-owned academic workflow
 
 ## 파생 결과와 후속 기능
 
 **MarkdownProjection**:
 SemesterModel에서 생성하는 사람이 읽기 좋은 Markdown 표현이다. 원본 학기 상태의 source of truth가 아니다.
-_Avoid_: 자유 편집 canonical state, RawMaterial, Agent 답변
+_Avoid_: 자유 편집 canonical state, 원본 workspace file, Agent 답변
 
 **WorkspaceHistory**:
-학생에게 의미 있는 자료 반입, UserConfirmation과 상태 변경을 비교하거나 되돌릴 수 있게 하는 앱 소유 기록이다. 구현 방식은 Git으로 고정하지 않는다.
-_Avoid_: Runtime Diagnostic History, Codex session log, 모든 autosave 기록
+SemesterWorkspace의 실제 자료와 SemesterModel snapshot 변경을 비교하고 되돌릴 수 있게 하는 사용자 소유 history다. 별도 interaction event ledger가 아니다.
+_Avoid_: Runtime Diagnostic History, Agent session log, app-owned audit ledger

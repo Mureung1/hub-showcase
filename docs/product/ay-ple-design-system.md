@@ -4,17 +4,17 @@
 
 작성일: 2026-07-08
 
-최종 업데이트: 2026-07-22
+최종 업데이트: 2026-07-27
 
 분류: 활성
 
 성숙도: 초안
 
-관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY-PLE Review Workspace Scenario](ay-ple-review-workspace-scenario.md)
+관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), [historical Review Workspace Scenario](ay-ple-review-workspace-scenario.md)
 
 ## 방향
 
-AY-PLE의 local app workbench는 기존 다크 IDE 테마가 아니라 **밝은 학업 워크스페이스**를 따른다. 학생이 매일 자료를 읽고, AY의 제안을 확인하고, 과제 상태를 믿고 반영하는 앱이므로 화면은 개발자 도구보다 노트, 자료함, 조용한 생산성 앱에 가까워야 한다.
+AY-PLE의 local app workbench는 기존 다크 IDE 테마가 아니라 **밝은 학업 워크스페이스**를 따른다. 학생이 실제 학기 자료를 읽고 AY의 interaction 요청을 판단하는 앱이므로 화면은 개발자 도구보다 노트, 자료함, 조용한 생산성 앱에 가까워야 한다.
 
 | 원칙 | 설명 |
 | --- | --- |
@@ -28,7 +28,7 @@ AY-PLE의 local app workbench는 기존 다크 IDE 테마가 아니라 **밝은 
 
 | 표면 | 역할 | 표현 방향 |
 | --- | --- | --- |
-| Local app workbench | setup, 자료 반입, 학업 action과 Review가 일어나는 실제 제품 공간 | calm productivity와 source-grounded 정보 구조를 유지하며 marketing layout보다 현재 작업·상태·다음 행동을 우선한다. |
+| Local app workbench | Workspace 선택, AY 작업과 capability-specific Review가 일어나는 실제 제품 공간 | calm productivity와 source-grounded 정보 구조를 유지하며 marketing layout보다 현재 작업·사용자 판단·다음 행동을 우선한다. |
 
 ## 색상
 
@@ -57,7 +57,7 @@ AY-PLE의 local app workbench는 기존 다크 IDE 테마가 아니라 **밝은 
 | Source explorer | 자료함처럼 보이게 하고, 선택 상태는 green/teal 계열로 표시한다. |
 | Source preview | 가장 넓고 밝은 종이 surface로 둔다. 원본을 읽는 화면이라는 감각이 우선이다. |
 | AY chat dock | side panel이지만 콘솔처럼 보이지 않게 warm surface와 말풍선으로 구성한다. |
-| Change proposal | `검토 대기`는 honey, `반영됨`은 green으로 구분한다. 내부 상태명은 노출하지 않는다. |
+| Change proposal | AY가 응답을 기다리는 `검토 대기`는 honey, result 뒤 AY가 실제 file 작업을 마친 `반영됨`은 green으로 구분한다. 내부 correlation은 노출하지 않는다. |
 | Buttons | command button은 실용적으로 작게 두되, 수락/수정 요청/거절 색상은 명확히 구분한다. |
 
 ## 피해야 할 것

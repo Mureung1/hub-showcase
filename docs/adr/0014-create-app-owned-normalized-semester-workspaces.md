@@ -1,8 +1,10 @@
 # SemesterWorkspace를 app-owned normalized scaffold로 생성한다
 
-분류: 활성
+분류: 완료·역사 기록
 
 성숙도: 채택
+
+대체한 결정: [ADR 0018 — 사용자가 선택한 Git working tree를 SemesterWorkspace로 채택한다](0018-adopt-user-owned-git-semester-workspaces.md). 이 문서는 public preview를 위해 app-owned scaffold와 `ImportSource` 반입 경계를 채택했던 당시 판단과 구현 근거만 보존한다.
 
 부분 대체한 결정: [ADR 0006 — 제품 실행에서 패키지, 앱 데이터, 학기 작업공간의 루트를 분리한다](0006-separate-package-app-data-and-semester-workspace-roots.md)의 사용자가 고른 기존 폴더를 `workspaceRoot`로 직접 채택하는 admission·identity 의미
 

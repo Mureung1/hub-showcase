@@ -8,11 +8,11 @@
 
 성숙도: 구현됨
 
-관련 문서: [Product-only cutover·durable v2 ADR](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), [app-owned SemesterWorkspace ADR](../adr/0014-create-app-owned-normalized-semester-workspaces.md), [public npx distribution ADR](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), [Codex-managed product account ADR](../adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md), [Codex Chat-only graph ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [Official Codex Python SDK 재사용 ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [Codex Runtime 격리](codex-runtime-isolation.md), [Codex-native 제품 작업 조합](codex-native-product-composition.md), [runtime package README](../../packages/codex-chat-runtime/README.md), [product contract README](../../packages/product-contract/README.md), [server README](../../apps/server/README.md), [Chat Shell README](../../apps/chat-shell/README.md)
+관련 문서: [Product-only cutover·durable v2 ADR](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), [User-owned Git SemesterWorkspace ADR](../adr/0018-adopt-user-owned-git-semester-workspaces.md), [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [Codex Chat-only graph ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [Official Codex Python SDK 재사용 ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [Codex Runtime 격리](codex-runtime-isolation.md), [AY–App Interaction Capability 아키텍처](ay-app-interaction-capabilities.md), [historical app-owned SemesterWorkspace ADR](../adr/0014-create-app-owned-normalized-semester-workspaces.md), [runtime package README](../../packages/codex-chat-runtime/README.md), [product contract README](../../packages/product-contract/README.md), [server README](../../apps/server/README.md), [Chat Shell README](../../apps/chat-shell/README.md)
 
 ## 목적
 
-Tracked repository의 canonical product caller, official SDK 기반 Runtime, Server·Browser 경계, workspace-local state와 검증 표면을 한눈에 설명한다. 채택 이유와 compatibility 정책은 ADR 0011·0012·0013, 중단한 public account 결정은 historical ADR 0017, package별 사용법과 exact 명령은 각 README, 제품 작업 순서는 Development Backlog가 소유한다.
+Tracked repository의 canonical product caller, official SDK 기반 Runtime, Server·Browser 경계, workspace-local state와 검증 표면을 한눈에 설명한다. 이 문서는 **현재 구현**을 소유하며 ADR 0018·0019의 채택 목표를 이미 구현된 것처럼 쓰지 않는다. 채택 이유는 각 ADR, package별 사용법과 exact 명령은 각 README, 제품 작업 순서는 Development Backlog가 소유한다.
 
 Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`, `/api/codex-chat/*`와 legacy Browser Chat owner는 current topology가 아니다. Historical ADR·spec·ticket은 당시 증거를 보존하지만 executable fallback이나 compatibility surface로 해석하지 않는다.
 
@@ -29,6 +29,7 @@ Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`, `/api/codex-chat/
 | Runtime와 workspace는 어떻게 선택하는가? | Startup은 package-local verified artifact와 explicit roots, chooser·materializer의 current-v2 directory를 사용한다. 제거한 public launch binding·native picker·v3 scaffold route는 fallback이 아니다. |
 | Durable product state는 어디에 있는가? | Workspace-local current canonical v2 store가 stable workspace ID·한 `Course`, confirmed revision, `RawMaterial`·Assignment, settled `ModelingRun`·`StatePatch`·`UserConfirmation`, apply outcome와 recovery guard를 보존한다. ADR 0013의 첫 durable compatibility baseline이며 Server restart 후 같은 directory에서 다시 연다. `WorkspaceManifest` authority로 자동 승격하지 않는다. |
 | First Assignment vertical은 닫혔는가? | Deterministic Chromium→Vite→Express→product store·Runtime, exact actual-child/local-provider와 isolated live-provider가 선택→proposal→Review→confirmed outcome, revision·reject·loss·guard·isolation과 bounded shutdown을 검증했다. |
+| 이 current workflow가 채택한 target인가? | 아니다. ADR 0018·0019는 actual Git workspace, transient MCP request/result와 AY-owned file apply를 채택했다. Current app-owned source·Run·patch·confirmation·apply는 interaction round trip의 구현 증거이자 contraction 대상이다. |
 
 ## Tracked 구성
 
@@ -111,7 +112,7 @@ Server shutdown은 다음 순서를 유지한다.
 
 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)이 workspace-local current store를 첫 durable baseline으로 채택한다. 구현 topology에서의 결과는 cutover·restart가 confirmed state를 삭제하지 않고, 이해할 수 없는 store가 product mutation을 열지 않는다는 것이다. Exact codec·invariant·physical I/O 동작은 [Server README](../../apps/server/README.md)가 소유한다.
 
-[ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md)는 public target을 existing `.ay-ple/workspace-state.json` seam의 single v3 aggregate로 정해 logical `WorkspaceManifest`만 workspace·Course identity를 소유하게 했다. `@ay-ple/semester-workspace`의 v3 admission·recovery, durable setup envelope·journey와 lease-bound Ready relaunch는 구현됐지만 current Server controller와 product API는 계속 current v2를 authority로 사용한다. First preview는 current v2를 자동 migration·adopt하지 않고 original bytes를 `legacy_migration_required/readOnly`로 보존한다.
+[ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md)의 v3 admission·recovery, durable setup envelope·journey와 lease-bound Ready relaunch는 구현됐지만 current Server controller와 product API는 계속 current v2를 authority로 사용한다. ADR 0018이 app-owned scaffold target을 대체했으므로 이 consumer 없는 v3 kernel은 current target이 아니라 contraction 대상이다. Current v2 codec은 전환 전까지 compatibility baseline으로 original bytes를 보존한다.
 
 ## 검증 표면
 
@@ -137,8 +138,10 @@ Deterministic Browser green은 exact native identity·bundle·process cleanup을
 
 | Gap | 현재 사실 | 정본 |
 | --- | --- | --- |
+| InteractionCapability seam | `propose_state_patch`가 private proposal key, workspace·Course·revision과 durable patch/confirmation apply에 결합되고 같은 결정에 built-in `request_user_input`을 함께 사용한다. | [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md) |
+| User-owned Git workspace | Current chooser directory, app-owned source registry와 `.ay-ple/workspace-state.json`을 사용하며 durable `WorkspaceRegistry`, init Skill, root `workspace-state.json`과 AY-owned commit flow가 아직 연결되지 않았다. | [User-owned Git SemesterWorkspace ADR](../adr/0018-adopt-user-owned-git-semester-workspaces.md) |
 | Conversation persistence | Browser transcript는 transient이고 `thread/read`·`thread/resume`, multi-thread catalog와 client별 isolation은 없다. Confirmed product state와 settled history만 durable하다. | [Chat Shell README](../../apps/chat-shell/README.md) |
 | Interactive Codex approval | First Assignment permission과 Plan interaction은 검증됐지만 generic command·file·network approval center는 채택하지 않았다. | [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) |
 | Packaged Desktop | `.app`·`.dmg`, Developer ID signing·notarization, automatic updater와 다른 platform은 지원하지 않는다. | [macOS-first ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md) |
 
-중단한 public npx release lane의 `@ay-ple/runtime-release`, `apps/ay-ple` production host와 public-preview Server·Browser graph는 tracked graph에서 제거했다. 이는 현재 gap이나 후속 목표가 아니며 당시 결정과 구현 증거만 historical ADR 0016·0017과 완료 ticket에 남는다. Runtime의 managed account·`auth-only` surface와 AY-PLE-owned Python login/logout bridge command, managed-login 전용 patch는 제거됐다. Current Runtime은 workspace-only contract, fresh Account Readiness와 exact `0001`–`0008` patch stack만 유지한다. `semester-workspace` v3 kernel은 current executable consumer가 없지만 ADR 0014의 adopted target 기반으로 유지한다.
+중단한 public npx release lane의 `@ay-ple/runtime-release`, `apps/ay-ple` production host와 public-preview Server·Browser graph는 tracked graph에서 제거했다. 이는 현재 gap이나 후속 목표가 아니며 당시 결정과 구현 증거만 historical ADR 0016·0017과 완료 ticket에 남는다. Runtime의 managed account·`auth-only` surface와 AY-PLE-owned Python login/logout bridge command, managed-login 전용 patch는 제거됐다. Current Runtime은 workspace-only contract, fresh Account Readiness와 exact `0001`–`0008` patch stack만 유지한다. Consumer 없는 `semester-workspace` v3 kernel과 current app-owned academic workflow는 ADR 0018·0019에 맞춘 후속 contraction 대상이다.
