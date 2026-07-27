@@ -7,10 +7,27 @@
 from __future__ import annotations
 
 from datetime import date
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from careersignal.domain.scope import ScopeLevel
+
+
+class StopReason(StrEnum):
+    """실행이 끝난 이유. docs/agent-design.md 11.3의 일곱 값이다.
+
+    `agent_runs.stop_reason` 의 CHECK 와 같은 집합을 갖는다.
+    각 실행은 종료 사유를 반드시 기록한다.
+    """
+
+    SLOTS_FILLED = "slots_filled"
+    NO_NEW_EVIDENCE = "no_new_evidence"
+    FRONTIER_EXHAUSTED = "frontier_exhausted"
+    BUDGET_EXHAUSTED = "budget_exhausted"
+    REPAIR_LIMIT = "repair_limit"
+    NO_PROGRESS = "no_progress"
+    EXPLICIT_FAILURE = "explicit_failure"
 
 
 class Budget(BaseModel):
