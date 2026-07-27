@@ -1005,8 +1005,8 @@ h1 {
   align-items: center;
   justify-content: center;
   width: 56px;
-  color: var(--accent);
-  background: var(--accent-bg);
+  color: var(--gray-900);
+  background: var(--card-bg);
   border: none;
   border-left: 1px solid var(--gray-200);
   cursor: pointer;
@@ -1014,11 +1014,6 @@ h1 {
 }
 .reflinks-btn-large span {
   font-size: 22px;
-}
-/* 라이트 모드에서만 공고 카드와 동일한 배경/글자색으로 맞춘다 — 다크모드는 기존 accent 색상 유지 */
-:root[data-theme='light'] .reflinks-btn-large {
-  color: var(--gray-900);
-  background: var(--card-bg);
 }
 
 .empty-state {
