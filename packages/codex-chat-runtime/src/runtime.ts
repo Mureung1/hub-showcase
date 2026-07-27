@@ -1503,7 +1503,15 @@ function requireDisjointRuntimeRoots(
   runtimeCwd: string,
   environment: CodexChatRuntimeEnvironment,
 ): void {
-  const roots = [runtimeCwd, ...Object.values(environment)]
+  const roots = [
+    runtimeCwd,
+    environment.home,
+    environment.codexHome,
+    environment.tempDirectory,
+    ...(environment.codexSqliteHome === environment.codexHome
+      ? []
+      : [environment.codexSqliteHome]),
+  ]
   for (let leftIndex = 0; leftIndex < roots.length; leftIndex += 1) {
     for (
       let rightIndex = leftIndex + 1;

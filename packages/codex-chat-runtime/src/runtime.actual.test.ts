@@ -478,6 +478,33 @@ test('native cleanup failure waits for delayed main process cleanup before closi
   await waitForProcessExit(processJournal.descendantPid)
 })
 
+test('uses the global Codex home as SQLite authority without a separate directory', async () => {
+  const root = await mkdtemp(
+    join(tmpdir(), 'ay-ple-node-global-codex-home-'),
+  )
+  roots.push(root)
+  const workspace = join(root, 'workspace')
+  await mkdir(workspace)
+  const environment = await createOwnerOnlyEnvironmentRoots(root)
+  const processJournalPath = join(root, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    workspace,
+    environment: {
+      ...environment,
+      codexSqliteHome: environment.codexHome,
+    },
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=stream-complete',
+      `--process-journal=${processJournalPath}`,
+    ],
+  })
+
+  await harness.runtime.close()
+  await harness.closed
+})
+
 test('rejects overlapping workspace and controlled roots before spawn', async () => {
   const root = await mkdtemp(
     join(tmpdir(), 'ay-ple-node-workspace-overlap-'),
