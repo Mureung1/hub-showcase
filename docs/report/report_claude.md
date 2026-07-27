@@ -130,3 +130,10 @@
 - 문서 동기화: `docs/skills.md` S2 제약 문구와 `docs/checklist.md` C06을 "고정 8개 중 하나 **이거나 후보 소진 시 null**"로 수정해 `final` 종결 예외를 명시.
 - 검증: `npm run verify` 통과. 8개 tool 전부 rejectedTools에 넣고(시간 제약과 무관하게) 호출 → `proposedTool: null, final: true` 확인.
 - 확인: [x] 2026-07-26 22:22 GPT — 승인. 후보 소진 공통 null+final 종결, TOOLS 복원 제거 및 S2/C06 동기화 확인.
+
+## 2026-07-27 | T04 | Timer 새로고침 내구성
+- 작업: `app/page.js`에 새로고침 내구성 추가. 진행 상태(`step`/`currentIndex`/`microsteps`/`stepStartedAt`)를 바뀔 때마다 localStorage(`kok-session`)에 저장하고, 마운트 시 `useState` 초기값에서 바로 복원한다. "reason"/"proposal"(힘들어 루프 중) 상태는 재구성에 필요한 정보(reasonChip, 제안 내용)를 저장하지 않으므로 "focus"로 안전하게 되돌린다. `goHome()` 호출 시 저장된 값을 지운다. `app/components/FocusTimer.js`는 자체적으로 갖고 있던 `startedAt` state를 없애고 `page.js`의 `stepStartedAt`을 prop으로 받아 남은 시간을 재계산하도록 바꿔, 시작 시각을 두 군데서 따로 관리하던 걸 하나로 합쳤다.
+- 실제 구현 중 두 차례 하이드레이션 오류를 만나 수정함: (1) 마운트 이펙트 안에서 여러 `setState`를 연쇄 호출하는 방식은 이 프로젝트의 eslint 규칙(`react-hooks/set-state-in-effect`)에 위반돼 `npm run verify`가 실패 → localStorage 복원을 이펙트가 아니라 각 `useState`의 lazy initializer에서 바로 읽어오는 방식으로 변경. (2) 그렇게 하니 서버는 항상 "input"을 렌더링하는데 클라이언트는 마운트 즉시 복원된 화면(`timer` 등 완전히 다른 컴포넌트 트리)을 렌더링해 하이드레이션 불일치 오류가 실제 브라우저에서 재현됨 → `useSyncExternalStore`로 마운트 완료 여부를 판단해, 하이드레이션이 끝나기 전까진 무조건 "input"을 그리고 마운트 직후에만 복원된 화면(`effectiveStep`)으로 전환하도록 수정.
+- 검증: `npm run verify` 통과(lint+build). 이번 세션엔 브라우저 자동화 도구가 없어 새로고침 동작 자체는 사용자가 직접 dev 서버에서 확인함 — 타이머 도중 새로고침해도 화면이 유지되고 남은 시간이 실제 경과 시간만큼 정확히 줄어있음, 하이드레이션 오류 없음, 타이머 종료 후 다음 스텝/완료 화면 전이도 정상 확인. `docs/checklist.md` C04 2개 전부 체크, `docs/backlog.md` T04 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신.
+- 미결: 없음
+- 확인: [ ]
