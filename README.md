@@ -9,10 +9,11 @@
 - 프로젝트 생성·기간 수정, 협업자 초대, 할 일 생성·상태 변경·삭제
 - Express의 JWT 검증과 Supabase RLS 기반 사용자별 데이터 격리
 - 게스트가 조회할 수 있는 Supabase 기반 데모 프로젝트
-- 공유 노트, 자료실, AI 팀원 화면의 데모 UI
+- 공유 노트·자료실 CRUD와 프로젝트별 다중 AI Agent
+- 사용자 자신의 Gemini API 키를 암호화해 사용하는 실제 AI 작업 실행
 - 요구사항 기반 기능 검증용 Codex Agent
 
-초기 Mock 데이터는 제품 코드에서 제거했습니다. Google 사용자는 빈 프로젝트 목록에서 시작하고, 게스트만 읽기 전용 데모를 봅니다. 로그인 사용자의 노트·자료·AI 영속화는 다음 단계 범위입니다.
+초기 Mock 데이터는 제품 코드에서 제거했습니다. Google 사용자는 빈 프로젝트 목록에서 시작하고, 게스트만 읽기 전용 데모를 봅니다. 로컬 개발과 테스트는 결정론적 Mock AI를 사용하며, 배포 환경은 사용자가 계정 설정에 등록한 Gemini API 키로 실행합니다.
 
 ## 시스템 아키텍처
 
@@ -105,6 +106,19 @@ Copy-Item apps/web/.env.example apps/web/.env.local
 - `service_role`이나 `sb_secret_...` 키를 사용하지 않습니다.
 - TimeBox 프로젝트의 URL은 웹과 API 시작 단계에서 거부됩니다.
 - 실제 `.env` 파일은 Git에서 제외되므로 커밋하지 않습니다.
+
+로컬 기본값은 `TEAMFLOW_AI_PROVIDER=mock`입니다. Gemini 연결을 로컬에서 시험하려면
+다음 값을 추가하고 API 서버를 다시 시작합니다.
+
+```dotenv
+TEAMFLOW_AI_PROVIDER=gemini
+TEAMFLOW_GEMINI_MODEL=gemini-3.5-flash
+TEAMFLOW_AI_REQUEST_TIMEOUT_MS=45000
+TEAMFLOW_AI_CREDENTIAL_ENCRYPTION_KEY=<32바이트 난수의 Base64 값>
+```
+
+암호화 마스터 키와 사용자 Gemini API 키는 저장소나 웹 환경변수에 넣지 않습니다.
+Gemini API 키는 로그인 후 TeamFlow의 `계정 > AI API 설정`에서 사용자별로 등록합니다.
 
 ## Google OAuth 설정
 

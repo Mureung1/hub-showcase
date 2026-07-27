@@ -25,6 +25,9 @@ import {
 import { useTeamFlow } from '../../state/useTeamFlow.js'
 import workspace from '../../styles/workspace.module.css'
 import { MarkdownPreview } from '../notes/MarkdownPreview.jsx'
+import { AiCredentialSettingsModal } from '../settings/AiCredentialSettingsModal.jsx'
+import { AiExecutionStatus } from './AiExecutionStatus.jsx'
+import { isAiRunBlocking } from './aiRunBlocking.js'
 import { CreateAiAgentModal } from './CreateAiAgentModal.jsx'
 import styles from './AiPage.module.css'
 
@@ -95,16 +98,18 @@ export function AiPage() {
     () => new Map(aiRuns
       .filter((run) => (
         run.taskId
-        && [
-          AI_RUN_STATUS.RUNNING,
-          AI_RUN_STATUS.PENDING_REVIEW,
-          AI_RUN_STATUS.APPLIED,
-        ].includes(run.status)
+        && isAiRunBlocking(run)
       ))
       .map((run) => [run.taskId, run])),
     [aiRuns],
   )
   const canWrite = !readOnly && capabilities.ai
+  const liveExecution = state.aiExecution.mode === 'live'
+  const credentialConnected = Boolean(
+    state.aiCredential.configured
+    && state.aiCredential.verifiedAt
+  )
+  const executionReady = !liveExecution || credentialConnected
   const [profile, setProfile] = useState(() => profileValues(selectedAiMember))
   const [instructions, setInstructions] = useState(() => selectedAiAgent?.instructions ?? '')
   const [contextConfig, setContextConfig] = useState(() => ({
@@ -113,6 +118,7 @@ export function AiPage() {
   }))
   const [selectedRunId, setSelectedRunId] = useState('')
   const [showCreate, setShowCreate] = useState(false)
+  const [showCredentialSettings, setShowCredentialSettings] = useState(false)
   const [saving, setSaving] = useState(false)
   const [changingEnabled, setChangingEnabled] = useState(false)
   const [runningTaskId, setRunningTaskId] = useState('')
@@ -215,17 +221,28 @@ export function AiPage() {
   }
 
   async function runTask(taskId) {
-    if (!selectedAiMember || !agentEnabled) return
+    if (!selectedAiMember || !agentEnabled || !executionReady) return
     setRunningTaskId(taskId)
     setError('')
     try {
       const aiRun = await actions.createAiRun(selectedAiMember.id, taskId)
       setSelectedRunId(aiRun.id)
       showFeedback(aiRun.status === AI_RUN_STATUS.FAILED
-        ? '모의 작업 실행에 실패했습니다. 실행 이력을 확인해 주세요.'
-        : '모의 작업 결과가 준비되었습니다. 검토 후 반영해 주세요.')
+        ? `${liveExecution ? 'AI' : '모의'} 작업 실행에 실패했습니다. 실행 이력을 확인해 주세요.`
+        : `${liveExecution ? 'AI' : '모의'} 작업 결과가 준비되었습니다. 검토 후 반영해 주세요.`)
     } catch (requestError) {
-      setError(errorMessage(requestError, '모의 작업을 실행하지 못했습니다.'))
+      if (requestError?.aiRun?.id) {
+        setSelectedRunId(requestError.aiRun.id)
+      }
+      if (['AI_CREDENTIAL_REQUIRED', 'AI_CREDENTIAL_INVALID'].includes(requestError?.code)) {
+        try {
+          await actions.refreshAiCredential()
+        } catch {
+          // The original execution error is more useful than a metadata refresh failure.
+        }
+        setShowCredentialSettings(true)
+      }
+      setError(errorMessage(requestError, `${liveExecution ? 'AI' : '모의'} 작업을 실행하지 못했습니다.`))
     } finally {
       setRunningTaskId('')
     }
@@ -278,10 +295,12 @@ export function AiPage() {
           {canWrite ? <button type="button" className={workspace.primaryButton} onClick={() => setShowCreate(true)}><Plus size={15} aria-hidden="true" />AI Agent 추가</button> : null}
         </header>
 
-        <div className={styles.mockNotice}>
-          <Sparkles size={16} aria-hidden="true" />
-          <p><strong>Mock 모드</strong><span>외부 AI API를 호출하지 않고 TeamFlow 서버가 고정된 규칙으로 결과를 만듭니다.</span></p>
-        </div>
+        <AiExecutionStatus
+          execution={state.aiExecution}
+          credential={state.aiCredential}
+          readOnly={readOnly}
+          onOpenSettings={() => setShowCredentialSettings(true)}
+        />
 
         {error ? <p className={styles.pageError} role="alert">{error}</p> : null}
 
@@ -290,7 +309,7 @@ export function AiPage() {
             <span className={styles.emptyIcon}><Bot size={24} aria-hidden="true" /></span>
             <div>
               <h2>이 프로젝트에는 아직 AI Agent가 없습니다.</h2>
-              <p>프로젝트 역할에 맞는 AI Agent를 추가하고, 기존 할 일을 배정해 모의 결과를 만들어 보세요.</p>
+              <p>프로젝트 역할에 맞는 AI Agent를 추가하고, 기존 할 일을 배정해 결과를 만들어 보세요.</p>
             </div>
           </article>
         ) : (
@@ -322,7 +341,7 @@ export function AiPage() {
                 {canWrite ? <button type="button" className={styles.enableButton} onClick={changeEnabled} disabled={changingEnabled}>{changingEnabled ? '변경 중...' : agentEnabled ? <><PauseCircle size={14} aria-hidden="true" />비활성화</> : <><Play size={14} aria-hidden="true" />활성화</>}</button> : null}
               </div>
 
-              {!agentEnabled ? <p className={styles.disabledNotice}><PauseCircle size={15} aria-hidden="true" />비활성 AI Agent는 새 할 일을 배정하거나 모의 작업을 실행할 수 없습니다. 설정과 실행 이력은 유지됩니다.</p> : null}
+              {!agentEnabled ? <p className={styles.disabledNotice}><PauseCircle size={15} aria-hidden="true" />비활성 AI Agent는 새 할 일을 배정하거나 AI 작업을 실행할 수 없습니다. 설정과 실행 이력은 유지됩니다.</p> : null}
 
               <div className={styles.layout}>
                 <div className={styles.leftColumn}>
@@ -363,9 +382,11 @@ export function AiPage() {
                         const isRunning = runningTaskId === task.id
                         const completed = task.status === TASK_STATUS.COMPLETED
                         const applied = blockingRun?.status === AI_RUN_STATUS.APPLIED
-                        const runBlocked = !agentEnabled || completed || isRunning || Boolean(blockingRun)
+                        const runBlocked = !agentEnabled || !executionReady || completed || isRunning || Boolean(blockingRun)
                         const buttonTitle = !agentEnabled
                           ? '비활성 AI Agent는 실행할 수 없습니다.'
+                          : !executionReady
+                            ? 'Gemini API 키를 먼저 설정해 주세요.'
                           : applied
                             ? '공유 노트에 반영한 결과는 다시 실행할 수 없습니다.'
                             : completed
@@ -379,9 +400,11 @@ export function AiPage() {
                               ? '검토 대기'
                               : !agentEnabled
                                 ? '비활성'
+                                : !executionReady
+                                  ? 'API 키 필요'
                                 : completed
                                   ? '실행 완료'
-                                  : '모의 작업 실행'
+                                  : liveExecution ? 'AI 작업 실행' : '모의 작업 실행'
                         return <li key={task.id}><div><strong>{task.title}</strong><span>{TASK_STATUS_LABEL[task.status]} · 마감 <b className={workspace.mono}>{formatShortDate(task.dueDate)}</b></span></div>{canWrite ? <button type="button" onClick={() => runTask(task.id)} disabled={runBlocked} title={buttonTitle}><Play size={13} aria-hidden="true" />{buttonLabel}</button> : null}</li>
                       })}</ul>
                     )}
@@ -411,6 +434,7 @@ export function AiPage() {
         )}
 
         {showCreate && canWrite ? <CreateAiAgentModal projectId={project.id} onClose={() => setShowCreate(false)} onCreated={({ member }) => { selectAgent(member.id); showFeedback(`${member.name} AI Agent를 프로젝트에 추가했습니다.`) }} /> : null}
+        {showCredentialSettings && !readOnly ? <AiCredentialSettingsModal onClose={() => setShowCredentialSettings(false)} /> : null}
         <div className={styles.liveFeedback} aria-live="polite">{feedback}</div>
       </div>
     </section>

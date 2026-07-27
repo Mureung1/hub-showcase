@@ -9,6 +9,8 @@ import {
   TeamFlowValidationError,
   createSupabaseTeamFlowRepository,
 } from '../src/teamflow/teamFlowRepository.js'
+import { TeamFlowApiError } from '../src/teamflow/aiErrors.js'
+import { AiCredentialCipherError } from '../src/lib/aiCredentialCipher.js'
 
 const userId = '11111111-1111-4111-8111-111111111111'
 const projectId = '22222222-2222-4222-8222-222222222222'
@@ -24,6 +26,15 @@ const contextConfig = {
   tasks: true,
   team: false,
   resources: true,
+}
+
+const liveRuntime = {
+  mode: 'live',
+  provider: 'gemini',
+  model: 'gemini-test-flash',
+  modelLabel: 'gemini-test-flash',
+  credentialRequired: true,
+  timeoutMs: 45_000,
 }
 
 function resourceRow({
@@ -81,6 +92,67 @@ function filteredQuery(rows = []) {
     }),
   }
   return query
+}
+
+function credentialStore(initialRow = null) {
+  let row = initialRow
+  const operations = []
+
+  return {
+    operations,
+    get row() {
+      return row
+    },
+    query() {
+      const filters = []
+      let mutation = 'select'
+      let payload = null
+      const query = {
+        select() {
+          return query
+        },
+        eq(field, value) {
+          filters.push([field, value])
+          return query
+        },
+        upsert(next) {
+          mutation = 'upsert'
+          payload = next
+          operations.push({ mutation, payload: next })
+          return query
+        },
+        update(next) {
+          mutation = 'update'
+          payload = next
+          operations.push({ mutation, payload: next })
+          return query
+        },
+        delete() {
+          mutation = 'delete'
+          operations.push({ mutation })
+          return query
+        },
+        async maybeSingle() {
+          const matches = row && filters.every(([field, value]) => row[field] === value)
+          if (mutation === 'delete') {
+            const deleted = matches ? row : null
+            if (matches) row = null
+            return { data: deleted, error: null }
+          }
+          if (mutation === 'update') {
+            if (matches) row = { ...row, ...payload }
+            return { data: matches ? row : null, error: null }
+          }
+          return { data: matches ? row : null, error: null }
+        },
+        async single() {
+          if (mutation === 'upsert') row = { ...payload }
+          return { data: row, error: null }
+        },
+      }
+      return query
+    },
+  }
 }
 
 function aiContextRows({ assigneeId = aiMemberId, status = 'not_started' } = {}) {
@@ -201,10 +273,184 @@ test('bootstrap includes project-scoped AI agents and run history', async () => 
   assert.ok(Array.isArray(result.aiRuns))
   assert.equal(result.aiAgents[0].memberId, aiMemberId)
   assert.equal(result.aiRuns[0].id, aiRunId)
+  assert.deepEqual(result.aiRuns[0].usage, {
+    inputTokens: null,
+    outputTokens: null,
+    totalTokens: null,
+  })
+  assert.deepEqual(result.aiExecution, {
+    mode: 'mock',
+    provider: null,
+    modelLabel: 'Mock',
+    credentialRequired: false,
+  })
+  assert.deepEqual(result.aiCredential, {
+    provider: 'gemini',
+    configured: false,
+    keyHint: null,
+    verifiedAt: null,
+  })
   assert.equal(result.capabilities.ai, true)
   assert.equal(Object.hasOwn(result, 'aiSettings'), false)
   assert.equal(Object.hasOwn(result, 'aiHistory'), false)
   assert.equal(Object.hasOwn(result, 'aiMemberId'), false)
+})
+
+test('live bootstrap exposes only safe credential metadata and AI execution configuration', async () => {
+  const rows = aiContextRows()
+  const credentials = credentialStore({
+    user_id: userId,
+    provider: 'gemini',
+    encrypted_key: 'ciphertext',
+    iv: 'initialization-vector',
+    auth_tag: 'authentication-tag',
+    encryption_version: 1,
+    key_hint: '1234',
+    verified_at: '2026-07-27T01:00:00.000Z',
+    created_at: '2026-07-27T01:00:00.000Z',
+    updated_at: '2026-07-27T01:00:00.000Z',
+  })
+  const repository = createSupabaseTeamFlowRepository({
+    from: (table) => (
+      table === 'user_ai_credentials'
+        ? credentials.query()
+        : orderedRows(rows[table])
+    ),
+    rpc: async (name) => {
+      assert.equal(name, 'list_project_invitations')
+      return { data: [], error: null }
+    },
+  }, { id: userId }, {
+    aiRuntime: liveRuntime,
+  })
+
+  const result = await repository.load()
+
+  assert.deepEqual(result.aiExecution, {
+    mode: 'live',
+    provider: 'gemini',
+    modelLabel: 'gemini-test-flash',
+    credentialRequired: true,
+  })
+  assert.deepEqual(result.aiCredential, {
+    provider: 'gemini',
+    configured: true,
+    keyHint: '1234',
+    verifiedAt: '2026-07-27T01:00:00.000Z',
+  })
+  assert.equal(JSON.stringify(result).includes('ciphertext'), false)
+  assert.equal(JSON.stringify(result).includes('authentication-tag'), false)
+})
+
+test('credential save verifies before encrypted upsert and failed replacement preserves the old row', async () => {
+  const oldRow = {
+    user_id: userId,
+    provider: 'gemini',
+    encrypted_key: 'old-ciphertext',
+    iv: 'old-iv',
+    auth_tag: 'old-tag',
+    encryption_version: 1,
+    key_hint: 'old!',
+    verified_at: '2026-07-26T00:00:00.000Z',
+  }
+  const credentials = credentialStore(oldRow)
+  const calls = []
+  const repository = createSupabaseTeamFlowRepository({
+    from: (table) => {
+      assert.equal(table, 'user_ai_credentials')
+      return credentials.query()
+    },
+  }, { id: userId }, {
+    aiRuntime: liveRuntime,
+    credentialCipher: {
+      encrypt: (apiKey, metadata) => {
+        calls.push({ operation: 'encrypt', apiKey, metadata })
+        return {
+          encryptedKey: 'new-ciphertext',
+          iv: 'new-iv',
+          authTag: 'new-tag',
+          encryptionVersion: 1,
+          keyHint: '-key',
+        }
+      },
+    },
+    aiProvider: {
+      verifyApiKey: async (apiKey) => {
+        calls.push({ operation: 'verify', apiKey })
+      },
+    },
+  })
+
+  const saved = await repository.saveAiCredential('new-user-key')
+
+  assert.deepEqual(calls.map((call) => call.operation), ['verify', 'encrypt'])
+  assert.deepEqual(saved, {
+    provider: 'gemini',
+    configured: true,
+    keyHint: '-key',
+    verifiedAt: credentials.row.verified_at,
+  })
+  assert.equal(credentials.row.user_id, userId)
+  assert.equal(credentials.row.encrypted_key, 'new-ciphertext')
+
+  const replacementFailure = new TeamFlowApiError({
+    status: 422,
+    code: 'AI_CREDENTIAL_INVALID',
+    message: 'Gemini API 키를 확인해 주세요.',
+  })
+  const preserved = credentialStore(oldRow)
+  const rejectingRepository = createSupabaseTeamFlowRepository({
+    from: () => preserved.query(),
+  }, { id: userId }, {
+    aiRuntime: liveRuntime,
+    credentialCipher: {
+      encrypt: () => assert.fail('invalid keys must not be encrypted'),
+    },
+    aiProvider: {
+      verifyApiKey: async () => {
+        throw replacementFailure
+      },
+    },
+  })
+
+  await assert.rejects(
+    () => rejectingRepository.saveAiCredential('invalid-key'),
+    replacementFailure,
+  )
+  assert.deepEqual(preserved.row, oldRow)
+  assert.equal(preserved.operations.length, 0)
+})
+
+test('credential deletion is idempotent and returns disconnected metadata', async () => {
+  const credentials = credentialStore({
+    user_id: userId,
+    provider: 'gemini',
+    encrypted_key: 'ciphertext',
+    iv: 'iv',
+    auth_tag: 'tag',
+    encryption_version: 1,
+    key_hint: '1234',
+    verified_at: '2026-07-27T00:00:00.000Z',
+  })
+  const repository = createSupabaseTeamFlowRepository({
+    from: () => credentials.query(),
+  }, { id: userId }, {
+    aiRuntime: liveRuntime,
+  })
+
+  assert.deepEqual(await repository.deleteAiCredential(), {
+    provider: 'gemini',
+    configured: false,
+    keyHint: null,
+    verifiedAt: null,
+  })
+  assert.equal(credentials.row, null)
+  assert.deepEqual(await repository.deleteAiCredential(), {
+    provider: 'gemini',
+    configured: false,
+    keyHint: null,
+    verifiedAt: null,
+  })
 })
 
 test('AI agent profile creation and partial updates use the multi-agent database RPC contracts', async () => {
@@ -254,6 +500,15 @@ test('AI agent profile creation and partial updates use the multi-agent database
     author_id: memberId,
     created_at: '2026-07-24T00:00:00.000Z',
     updated_at: '2026-07-24T00:00:00.000Z',
+  }
+  const taskRow = {
+    id: taskId,
+    project_id: projectId,
+    title: '조사',
+    assignee_id: aiMemberId,
+    due_date: '2026-07-30',
+    status: 'in_review',
+    description: '',
   }
   const createInput = {
     name: '리서치 파트너',
@@ -313,12 +568,19 @@ test('AI agent profile creation and partial updates use the multi-agent database
           data: {
             aiRun: { ...run, status: 'applied', applied_note_id: note.id },
             note,
+            task: { ...taskRow, status: 'completed' },
           },
           error: null,
         }
       }
       if (name === 'reject_ai_run') {
-        return { data: { ...run, status: 'rejected' }, error: null }
+        return {
+          data: {
+            aiRun: { ...run, status: 'rejected' },
+            task: { ...taskRow, status: 'in_progress' },
+          },
+          error: null,
+        }
       }
       assert.fail(`unexpected RPC ${name}`)
     },
@@ -347,7 +609,9 @@ test('AI agent profile creation and partial updates use the multi-agent database
   assert.equal(updated.aiAgent.enabled, false)
   assert.equal(applied.aiRun.status, 'applied')
   assert.equal(applied.note.id, note.id)
-  assert.equal(rejected.status, 'rejected')
+  assert.equal(applied.task.status, 'completed')
+  assert.equal(rejected.aiRun.status, 'rejected')
+  assert.equal(rejected.task.status, 'in_progress')
   assert.deepEqual(calls, [
     {
       name: 'create_project_ai_agent',
@@ -438,7 +702,25 @@ test('mock AI run gathers project context on the server and stores pending revie
     from: (table) => filteredQuery(rows[table]),
     rpc: async (name, args) => {
       calls.push({ name, args })
-      return { data: run, error: null }
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...run, status: 'running', result_markdown: '' },
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'complete_ai_run') {
+        return {
+          data: {
+            aiRun: run,
+            task: { ...rows.tasks[0], status: 'in_review' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
     },
   }
   const generatedInputs = []
@@ -457,19 +739,485 @@ test('mock AI run gathers project context on the server and stores pending revie
   assert.equal(typeof repository.createAiRun, 'function')
   const result = await repository.createAiRun(aiMemberId, taskId)
 
-  assert.equal(result.status, 'pending_review')
+  assert.equal(result.aiRun.status, 'pending_review')
+  assert.equal(result.task.status, 'in_review')
   assert.equal(generatedInputs.length, 1)
   assert.equal(generatedInputs[0].task.id, taskId)
   assert.equal(generatedInputs[0].project.id, projectId)
-  assert.deepEqual(calls, [{
-    name: 'create_mock_ai_run',
+  assert.deepEqual(calls, [
+    {
+      name: 'start_ai_run',
+      args: {
+        p_member_id: aiMemberId,
+        p_task_id: taskId,
+        p_context_snapshot: snapshot,
+        p_execution_mode: 'mock',
+        p_provider: null,
+        p_model: null,
+      },
+    },
+    {
+      name: 'complete_ai_run',
+      args: {
+        p_run_id: aiRunId,
+        p_result_markdown: run.result_markdown,
+        p_usage: {},
+        p_duration_ms: 0,
+      },
+    },
+  ])
+})
+
+test('AI run lifecycle starts before generation, finishes atomically, and returns the updated task', async () => {
+  const rows = aiContextRows()
+  const snapshot = {
+    version: 1,
+    instructions: rows.ai_agents[0].instructions,
+    task: { id: taskId, title: rows.tasks[0].title },
+    contextConfig,
+    context: {},
+    truncation: {},
+  }
+  const baseRun = {
+    id: aiRunId,
+    project_id: projectId,
+    ai_member_id: aiMemberId,
+    task_id: taskId,
+    context_snapshot: snapshot,
+    result_markdown: '',
+    error_message: null,
+    applied_note_id: null,
+    created_by: userId,
+    execution_mode: 'mock',
+    provider: null,
+    model: null,
+    usage: {},
+    duration_ms: 0,
+    created_at: '2026-07-27T00:00:00.000Z',
+    updated_at: '2026-07-27T00:00:00.000Z',
+  }
+  const taskRow = rows.tasks[0]
+  const calls = []
+  const repository = createSupabaseTeamFlowRepository({
+    from: (table) => filteredQuery(rows[table]),
+    rpc: async (name, args) => {
+      calls.push({ name, args })
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...baseRun, status: 'running' },
+            task: { ...taskRow, status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'complete_ai_run') {
+        return {
+          data: {
+            aiRun: {
+              ...baseRun,
+              status: 'pending_review',
+              result_markdown: '# 모의 실행 결과',
+            },
+            task: { ...taskRow, status: 'in_review' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
+    },
+  }, { id: userId }, {
+    buildMockAiContext: () => snapshot,
+    generateMockAiResult: () => ({
+      contextSnapshot: snapshot,
+      resultMarkdown: '# 모의 실행 결과',
+    }),
+  })
+
+  const result = await repository.createAiRun(aiMemberId, taskId)
+
+  assert.equal(result.aiRun.status, 'pending_review')
+  assert.equal(result.task.status, 'in_review')
+  assert.deepEqual(calls.map(({ name }) => name), ['start_ai_run', 'complete_ai_run'])
+})
+
+test('AI run review actions return their atomic task status transitions', async () => {
+  const rows = aiContextRows()
+  const baseRun = {
+    id: aiRunId,
+    project_id: projectId,
+    ai_member_id: aiMemberId,
+    task_id: taskId,
+    status: 'pending_review',
+    context_snapshot: {},
+    result_markdown: '# 결과',
+    error_message: null,
+    applied_note_id: null,
+    created_by: userId,
+    execution_mode: 'mock',
+    provider: null,
+    model: null,
+    usage: {},
+    duration_ms: 0,
+    created_at: '2026-07-27T00:00:00.000Z',
+    updated_at: '2026-07-27T00:00:00.000Z',
+  }
+  const note = {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    project_id: projectId,
+    title: 'AI 결과',
+    content: '# 결과',
+    author_id: memberId,
+    created_at: '2026-07-27T00:00:00.000Z',
+    updated_at: '2026-07-27T00:00:00.000Z',
+  }
+  const repository = createSupabaseTeamFlowRepository({
+    from: (table) => filteredQuery(rows[table]),
+    rpc: async (name) => {
+      if (name === 'apply_ai_run') {
+        return {
+          data: {
+            aiRun: { ...baseRun, status: 'applied', applied_note_id: note.id },
+            note,
+            task: { ...rows.tasks[0], status: 'completed' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'reject_ai_run') {
+        return {
+          data: {
+            aiRun: { ...baseRun, status: 'rejected' },
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
+    },
+  }, { id: userId })
+
+  const applied = await repository.applyAiRun(aiRunId)
+  const rejected = await repository.rejectAiRun(aiRunId)
+
+  assert.equal(applied.aiRun.status, 'applied')
+  assert.equal(applied.task.status, 'completed')
+  assert.equal(rejected.aiRun.status, 'rejected')
+  assert.equal(rejected.task.status, 'in_progress')
+})
+
+test('live AI run uses only the current user credential and stores provider metadata through generic RPC', async () => {
+  const rows = aiContextRows()
+  const credential = credentialStore({
+    user_id: userId,
+    provider: 'gemini',
+    encrypted_key: 'ciphertext',
+    iv: 'iv',
+    auth_tag: 'tag',
+    encryption_version: 1,
+    key_hint: '1234',
+    verified_at: '2026-07-27T00:00:00.000Z',
+  })
+  const calls = []
+  const snapshot = {
+    version: 1,
+    instructions: rows.ai_agents[0].instructions,
+    agent: { id: aiMemberId, name: '자료조사 AI', role: '자료 조사' },
+    task: { id: taskId, title: '시장 자료 조사' },
+    contextConfig,
+    context: {},
+    truncation: {},
+  }
+  const run = {
+    id: aiRunId,
+    project_id: projectId,
+    ai_member_id: aiMemberId,
+    task_id: taskId,
+    status: 'pending_review',
+    context_snapshot: snapshot,
+    result_markdown: '# 실제 AI 결과',
+    error_message: null,
+    applied_note_id: null,
+    created_by: userId,
+    execution_mode: 'live',
+    provider: 'gemini',
+    model: 'gemini-test-flash',
+    usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+    duration_ms: 321,
+    created_at: '2026-07-27T00:00:00.000Z',
+    updated_at: '2026-07-27T00:00:00.000Z',
+  }
+  const repository = createSupabaseTeamFlowRepository({
+    from: (table) => (
+      table === 'user_ai_credentials'
+        ? credential.query()
+        : filteredQuery(rows[table])
+    ),
+    rpc: async (name, args) => {
+      calls.push({ name, args })
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...run, status: 'running', result_markdown: '' },
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'complete_ai_run') {
+        return {
+          data: {
+            aiRun: run,
+            task: { ...rows.tasks[0], status: 'in_review' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
+    },
+  }, { id: userId }, {
+    aiRuntime: liveRuntime,
+    credentialCipher: {
+      decrypt: (stored, metadata) => {
+        assert.equal(stored.encryptedKey, 'ciphertext')
+        assert.deepEqual(metadata, {
+          userId,
+          provider: 'gemini',
+          version: 1,
+        })
+        return 'current-user-secret'
+      },
+    },
+    aiProvider: {
+      generate: async (input) => {
+        assert.equal(input.apiKey, 'current-user-secret')
+        assert.equal(input.systemInstruction, 'system prompt')
+        assert.equal(input.prompt, 'user prompt')
+        return {
+          resultMarkdown: run.result_markdown,
+          provider: 'gemini',
+          model: 'gemini-test-flash',
+          usage: run.usage,
+          durationMs: run.duration_ms,
+        }
+      },
+    },
+    buildLiveAiContext: (input) => {
+      assert.equal(input.agent.id, aiMemberId)
+      assert.equal(input.agent.role, '자료 조사')
+      return snapshot
+    },
+    buildGeminiPrompt: (receivedSnapshot) => {
+      assert.equal(receivedSnapshot, snapshot)
+      return { systemInstruction: 'system prompt', prompt: 'user prompt' }
+    },
+    buildMockAiContext: () => assert.fail('live mode must not build Mock context'),
+    generateMockAiResult: () => assert.fail('live mode must not generate Mock output'),
+  })
+
+  const result = await repository.createAiRun(aiMemberId, taskId)
+
+  assert.equal(result.aiRun.executionMode, 'live')
+  assert.equal(result.aiRun.provider, 'gemini')
+  assert.equal(result.aiRun.model, 'gemini-test-flash')
+  assert.deepEqual(result.aiRun.usage, run.usage)
+  assert.equal(result.aiRun.durationMs, 321)
+  assert.equal(result.task.status, 'in_review')
+  assert.deepEqual(calls, [
+    {
+      name: 'start_ai_run',
+      args: {
+        p_member_id: aiMemberId,
+        p_task_id: taskId,
+        p_context_snapshot: snapshot,
+        p_execution_mode: 'live',
+        p_provider: 'gemini',
+        p_model: 'gemini-test-flash',
+      },
+    },
+    {
+      name: 'complete_ai_run',
+      args: {
+        p_run_id: aiRunId,
+        p_result_markdown: run.result_markdown,
+        p_usage: run.usage,
+        p_duration_ms: 321,
+      },
+    },
+  ])
+})
+
+test('live AI run blocks missing or unreadable credentials without provider calls or failed history', async () => {
+  for (const [storedRow, cipher] of [
+    [null, {
+      decrypt: () => assert.fail('missing credentials must not be decrypted'),
+    }],
+    [{
+      user_id: userId,
+      provider: 'gemini',
+      encrypted_key: 'ciphertext',
+      iv: 'iv',
+      auth_tag: 'tag',
+      encryption_version: 1,
+      key_hint: '1234',
+      verified_at: '2026-07-27T00:00:00.000Z',
+    }, {
+      decrypt: () => {
+        throw new AiCredentialCipherError()
+      },
+    }],
+  ]) {
+    const rows = aiContextRows()
+    const credential = credentialStore(storedRow)
+    const repository = createSupabaseTeamFlowRepository({
+      from: (table) => (
+        table === 'user_ai_credentials'
+          ? credential.query()
+          : filteredQuery(rows[table])
+      ),
+      rpc: async () => assert.fail('credential failures must not create run history'),
+    }, { id: userId }, {
+      aiRuntime: liveRuntime,
+      credentialCipher: cipher,
+      aiProvider: {
+        generate: async () => assert.fail('credential failures must not call Gemini'),
+      },
+      buildLiveAiContext: () => assert.fail('credential failures must stop before context generation'),
+      generateMockAiResult: () => assert.fail('credential failures must never fall back to Mock'),
+    })
+
+    await assert.rejects(
+      () => repository.createAiRun(aiMemberId, taskId),
+      (error) => (
+        error instanceof TeamFlowApiError
+        && error.status === 409
+        && error.code === 'AI_CREDENTIAL_REQUIRED'
+        && error.aiRun === null
+      ),
+    )
+    if (storedRow) assert.equal(credential.row.verified_at, null)
+  }
+})
+
+test('provider-attempt failure persists a failed run, invalidates the key, and returns a sanitized typed error with history', async () => {
+  const rows = aiContextRows()
+  const credential = credentialStore({
+    user_id: userId,
+    provider: 'gemini',
+    encrypted_key: 'ciphertext',
+    iv: 'iv',
+    auth_tag: 'tag',
+    encryption_version: 1,
+    key_hint: '1234',
+    verified_at: '2026-07-27T00:00:00.000Z',
+  })
+  const snapshot = {
+    version: 1,
+    task: { id: taskId },
+    context: {},
+    truncation: {},
+  }
+  const failedRun = {
+    id: aiRunId,
+    project_id: projectId,
+    ai_member_id: aiMemberId,
+    task_id: taskId,
+    status: 'failed',
+    context_snapshot: snapshot,
+    result_markdown: null,
+    error_message: 'Gemini API 키를 확인해 주세요.',
+    applied_note_id: null,
+    created_by: userId,
+    execution_mode: 'live',
+    provider: 'gemini',
+    model: 'gemini-test-flash',
+    usage: {},
+    duration_ms: 0,
+    created_at: '2026-07-27T00:00:00.000Z',
+    updated_at: '2026-07-27T00:00:00.000Z',
+  }
+  const calls = []
+  const repository = createSupabaseTeamFlowRepository({
+    from: (table) => (
+      table === 'user_ai_credentials'
+        ? credential.query()
+        : filteredQuery(rows[table])
+    ),
+    rpc: async (name, args) => {
+      calls.push({ name, args })
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...failedRun, status: 'running', error_message: null },
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'fail_ai_run') {
+        return {
+          data: {
+            aiRun: failedRun,
+            task: rows.tasks[0],
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
+    },
+  }, { id: userId }, {
+    aiRuntime: liveRuntime,
+    credentialCipher: {
+      decrypt: () => 'invalid-current-key',
+    },
+    aiProvider: {
+      generate: async () => {
+        throw new TeamFlowApiError({
+          status: 422,
+          code: 'AI_CREDENTIAL_INVALID',
+          message: 'Gemini API 키를 확인해 주세요.',
+          durationMs: 187,
+        })
+      },
+    },
+    buildLiveAiContext: () => snapshot,
+    buildGeminiPrompt: () => ({ systemInstruction: 'system', prompt: 'prompt' }),
+    generateMockAiResult: () => assert.fail('provider failures must never fall back to Mock'),
+  })
+
+  await assert.rejects(
+    () => repository.createAiRun(aiMemberId, taskId),
+    (error) => {
+      assert.equal(error.status, 422)
+      assert.equal(error.code, 'AI_CREDENTIAL_INVALID')
+      assert.equal(error.aiRun.id, aiRunId)
+      assert.equal(error.aiRun.status, 'failed')
+      assert.equal(error.task.status, 'not_started')
+      return true
+    },
+  )
+  assert.equal(credential.row.verified_at, null)
+  assert.deepEqual(calls[0], {
+    name: 'start_ai_run',
     args: {
       p_member_id: aiMemberId,
       p_task_id: taskId,
       p_context_snapshot: snapshot,
-      p_result_markdown: run.result_markdown,
+      p_execution_mode: 'live',
+      p_provider: 'gemini',
+      p_model: 'gemini-test-flash',
     },
-  }])
+  })
+  assert.deepEqual(calls[1], {
+    name: 'fail_ai_run',
+    args: {
+      p_run_id: aiRunId,
+      p_error_message: 'Gemini API 키를 확인해 주세요.',
+      p_usage: {},
+      p_duration_ms: 187,
+      p_restore_task_status: true,
+    },
+  })
 })
 
 test('mock AI generator failures are persisted as failed runs', async () => {
@@ -494,7 +1242,25 @@ test('mock AI generator failures are persisted as failed runs', async () => {
     from: (table) => filteredQuery(rows[table]),
     rpc: async (name, args) => {
       calls.push({ name, args })
-      return { data: failedRun, error: null }
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...failedRun, status: 'running', error_message: null },
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'fail_ai_run') {
+        return {
+          data: {
+            aiRun: failedRun,
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
     },
   }
   const repository = createSupabaseTeamFlowRepository(
@@ -510,16 +1276,31 @@ test('mock AI generator failures are persisted as failed runs', async () => {
 
   const result = await repository.createAiRun(aiMemberId, taskId)
 
-  assert.equal(result.status, 'failed')
-  assert.deepEqual(calls, [{
-    name: 'create_failed_mock_ai_run',
-    args: {
-      p_member_id: aiMemberId,
-      p_task_id: taskId,
-      p_context_snapshot: snapshot,
-      p_error_message: 'Mock 결과 생성에 실패했습니다.',
+  assert.equal(result.aiRun.status, 'failed')
+  assert.equal(result.task.status, 'in_progress')
+  assert.deepEqual(calls, [
+    {
+      name: 'start_ai_run',
+      args: {
+        p_member_id: aiMemberId,
+        p_task_id: taskId,
+        p_context_snapshot: snapshot,
+        p_execution_mode: 'mock',
+        p_provider: null,
+        p_model: null,
+      },
     },
-  }])
+    {
+      name: 'fail_ai_run',
+      args: {
+        p_run_id: aiRunId,
+        p_error_message: 'Mock 결과 생성에 실패했습니다.',
+        p_usage: {},
+        p_duration_ms: 0,
+        p_restore_task_status: false,
+      },
+    },
+  ])
 })
 
 test('mock AI run rejects completed tasks and tasks assigned to another member before generation', async () => {
@@ -543,8 +1324,8 @@ test('mock AI run rejects completed tasks and tasks assigned to another member b
   }
 })
 
-test('mock AI run blocks open or applied history before generation but retries after rejected or failed history', async () => {
-  for (const status of ['running', 'pending_review', 'applied']) {
+test('mock AI run blocks open or applied history but retries after rejected or failed history', async () => {
+  for (const status of ['pending_review', 'applied']) {
     const rows = aiContextRows()
     rows.ai_runs = [{
       project_id: projectId,
@@ -567,6 +1348,34 @@ test('mock AI run blocks open or applied history before generation but retries a
       TeamFlowConflictError,
     )
     assert.equal(generated, false)
+  }
+
+  {
+    const rows = aiContextRows()
+    rows.ai_runs = [{
+      project_id: projectId,
+      ai_member_id: aiMemberId,
+      task_id: taskId,
+      status: 'running',
+    }]
+    const repository = createSupabaseTeamFlowRepository({
+      from: (table) => filteredQuery(rows[table]),
+      rpc: async (name) => {
+        assert.equal(name, 'start_ai_run')
+        return {
+          data: null,
+          error: { code: '23505', message: 'duplicate active AI run' },
+        }
+      },
+    }, { id: userId }, {
+      buildMockAiContext: () => ({ version: 1, context: {}, truncation: {} }),
+      generateMockAiResult: () => assert.fail('an active run must block generation'),
+    })
+
+    await assert.rejects(
+      repository.createAiRun(aiMemberId, taskId),
+      TeamFlowConflictError,
+    )
   }
 
   const rejectedRows = aiContextRows()
@@ -595,7 +1404,25 @@ test('mock AI run blocks open or applied history before generation but retries a
     from: (table) => filteredQuery(rejectedRows[table]),
     rpc: async (name, args) => {
       rejectedCalls.push({ name, args })
-      return { data: pendingRun, error: null }
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...pendingRun, status: 'running', result_markdown: '' },
+            task: { ...rejectedRows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'complete_ai_run') {
+        return {
+          data: {
+            aiRun: pendingRun,
+            task: { ...rejectedRows.tasks[0], status: 'in_review' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
     },
   }, { id: userId }, {
     buildMockAiContext: () => ({ version: 1, context: {}, truncation: {} }),
@@ -605,8 +1432,8 @@ test('mock AI run blocks open or applied history before generation but retries a
     }),
   })
 
-  assert.equal((await rejectedRepository.createAiRun(aiMemberId, taskId)).status, 'pending_review')
-  assert.equal(rejectedCalls[0].name, 'create_mock_ai_run')
+  assert.equal((await rejectedRepository.createAiRun(aiMemberId, taskId)).aiRun.status, 'pending_review')
+  assert.deepEqual(rejectedCalls.map(({ name }) => name), ['start_ai_run', 'complete_ai_run'])
 
   const failedRows = aiContextRows()
   failedRows.ai_runs = [{
@@ -626,15 +1453,33 @@ test('mock AI run blocks open or applied history before generation but retries a
     from: (table) => filteredQuery(failedRows[table]),
     rpc: async (name, args) => {
       failedCalls.push({ name, args })
-      return { data: failedRun, error: null }
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...failedRun, status: 'running', error_message: null },
+            task: { ...failedRows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'fail_ai_run') {
+        return {
+          data: {
+            aiRun: failedRun,
+            task: { ...failedRows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
     },
   }, { id: userId }, {
     buildMockAiContext: () => ({ version: 1, context: {}, truncation: {} }),
     generateMockAiResult: () => { throw new Error('deterministic failure') },
   })
 
-  assert.equal((await failedRepository.createAiRun(aiMemberId, taskId)).status, 'failed')
-  assert.equal(failedCalls[0].name, 'create_failed_mock_ai_run')
+  assert.equal((await failedRepository.createAiRun(aiMemberId, taskId)).aiRun.status, 'failed')
+  assert.deepEqual(failedCalls.map(({ name }) => name), ['start_ai_run', 'fail_ai_run'])
 })
 
 test('disabled project AI cannot receive a new task or a task reassignment before mutation', async () => {

@@ -66,6 +66,7 @@ describe('TeamFlow authentication flows', () => {
     expect(within(accountDialog).getByText('계정 없이 데모를 둘러보는 중입니다.')).toBeInTheDocument()
     expect(within(accountDialog).getByText('읽기 전용')).toBeInTheDocument()
     expect(within(accountDialog).queryByText('받은 프로젝트 초대')).not.toBeInTheDocument()
+    expect(within(accountDialog).queryByText('AI API 설정')).not.toBeInTheDocument()
     await user.keyboard('{Escape}')
 
     await user.click(screen.getByRole('button', { name: '게스트 모드 종료' }))

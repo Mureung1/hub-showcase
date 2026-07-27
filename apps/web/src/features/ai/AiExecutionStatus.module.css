@@ -1,0 +1,64 @@
+.status {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+}
+
+.status p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.status strong {
+  font-size: 12px;
+}
+
+.status span {
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.connected {
+  border-color: var(--color-status-completed-background);
+  background: var(--color-status-completed-background);
+  color: var(--color-status-completed-text);
+}
+
+.required {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  border-color: var(--color-status-review-background);
+  background: var(--color-status-review-background);
+  color: var(--color-status-review-text);
+}
+
+.required button {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-surface);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .required {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .required button {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+}

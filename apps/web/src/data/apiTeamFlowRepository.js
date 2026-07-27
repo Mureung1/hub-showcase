@@ -1,8 +1,10 @@
 export class TeamFlowApiError extends Error {
-  constructor(message, code = 'TEAMFLOW_API_ERROR') {
+  constructor(message, code = 'TEAMFLOW_API_ERROR', aiRun = null, task = null) {
     super(message)
     this.name = 'TeamFlowApiError'
     this.code = code
+    this.aiRun = aiRun
+    this.task = task
   }
 }
 
@@ -42,7 +44,12 @@ async function readJson(response, fallbackMessage) {
   }
 
   if (!response.ok) {
-    throw new TeamFlowApiError(payload?.error?.message || fallbackMessage, payload?.error?.code)
+    throw new TeamFlowApiError(
+      payload?.error?.message || fallbackMessage,
+      payload?.error?.code,
+      payload?.aiRun ?? null,
+      payload?.task ?? null,
+    )
   }
   return payload
 }
@@ -278,8 +285,8 @@ export function createApiTeamFlowRepository({
     async createAiRun(memberId, taskId) {
       const payload = await authenticatedRequest(`/api/ai-agents/${memberId}/runs`, {
         method: 'POST', body: JSON.stringify({ taskId }),
-      }, '모의 작업을 실행하지 못했습니다.')
-      return payload.aiRun
+      }, 'AI 작업을 실행하지 못했습니다.')
+      return { aiRun: payload.aiRun, task: payload.task ?? null }
     },
 
     async applyAiRun(runId) {
@@ -292,7 +299,26 @@ export function createApiTeamFlowRepository({
       const payload = await authenticatedRequest(`/api/ai-runs/${runId}/reject`, {
         method: 'POST',
       }, 'AI 결과를 보류하지 못했습니다.')
-      return payload.aiRun
+      return { aiRun: payload.aiRun, task: payload.task ?? null }
+    },
+
+    async getAiCredential() {
+      const payload = await authenticatedRequest('/api/ai-credentials/gemini', undefined, 'Gemini API 키 상태를 확인하지 못했습니다.')
+      return payload.credential
+    },
+
+    async saveAiCredential(input) {
+      const payload = await authenticatedRequest('/api/ai-credentials/gemini', {
+        method: 'PUT', body: JSON.stringify(input),
+      }, 'Gemini API 키를 연결하지 못했습니다.')
+      return payload.credential
+    },
+
+    async deleteAiCredential() {
+      const payload = await authenticatedRequest('/api/ai-credentials/gemini', {
+        method: 'DELETE',
+      }, 'Gemini API 키를 삭제하지 못했습니다.')
+      return payload.credential
     },
   }
 }
@@ -333,5 +359,8 @@ export function createDemoTeamFlowRepository({
     createAiRun: readOnly,
     applyAiRun: readOnly,
     rejectAiRun: readOnly,
+    getAiCredential: readOnly,
+    saveAiCredential: readOnly,
+    deleteAiCredential: readOnly,
   }
 }

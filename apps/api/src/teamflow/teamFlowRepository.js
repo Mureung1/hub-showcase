@@ -1,11 +1,22 @@
 import { randomUUID } from 'node:crypto'
 
-import { AI_RUN_STATUS, PROJECT_ICON, RESOURCE_UPLOAD, TASK_STATUS } from '@teamflow/shared'
+import {
+  AI_EXECUTION_MODE,
+  AI_PROVIDER,
+  AI_RUN_STATUS,
+  PROJECT_ICON,
+  RESOURCE_UPLOAD,
+  TASK_STATUS,
+} from '@teamflow/shared'
 
 import {
+  buildLiveAiContext as defaultBuildLiveAiContext,
   buildMockAiContext as defaultBuildMockAiContext,
   generateMockAiResult as defaultGenerateMockAiResult,
 } from './mockAiGenerator.js'
+import { buildGeminiPrompt as defaultBuildGeminiPrompt } from './geminiPrompt.js'
+import { TeamFlowApiError } from './aiErrors.js'
+import { AiCredentialCipherError } from '../lib/aiCredentialCipher.js'
 
 const MEMBER_COLUMNS = [
   'id',
@@ -92,9 +103,42 @@ const AI_RUN_COLUMNS = [
   'error_message',
   'applied_note_id',
   'created_by',
+  'execution_mode',
+  'provider',
+  'model',
+  'usage',
+  'duration_ms',
   'created_at',
   'updated_at',
 ].join(',')
+
+const AI_CREDENTIAL_COLUMNS = [
+  'user_id',
+  'provider',
+  'encrypted_key',
+  'iv',
+  'auth_tag',
+  'encryption_version',
+  'key_hint',
+  'verified_at',
+  'created_at',
+  'updated_at',
+].join(',')
+
+const DEFAULT_AI_RUNTIME = Object.freeze({
+  mode: AI_EXECUTION_MODE.MOCK,
+  provider: null,
+  model: 'gemini-3.5-flash',
+  modelLabel: 'Mock',
+  credentialRequired: false,
+  timeoutMs: 45_000,
+})
+
+const EMPTY_AI_USAGE = Object.freeze({
+  inputTokens: null,
+  outputTokens: null,
+  totalTokens: null,
+})
 
 const AI_VALIDATION_FIELDS = [
   ['INVALID_AI_NAME', 'name'],
@@ -107,7 +151,6 @@ const AI_VALIDATION_FIELDS = [
 ]
 
 const BLOCKING_AI_RUN_STATUSES = new Set([
-  AI_RUN_STATUS.RUNNING,
   AI_RUN_STATUS.PENDING_REVIEW,
 ])
 
@@ -294,6 +337,14 @@ function mapAiAgent(row) {
 }
 
 function mapAiRun(row) {
+  const usage = row.usage && typeof row.usage === 'object'
+    ? {
+        inputTokens: row.usage.inputTokens ?? null,
+        outputTokens: row.usage.outputTokens ?? null,
+        totalTokens: row.usage.totalTokens ?? null,
+      }
+    : { ...EMPTY_AI_USAGE }
+
   return {
     id: row.id,
     projectId: row.project_id,
@@ -305,9 +356,60 @@ function mapAiRun(row) {
     errorMessage: row.error_message ?? null,
     appliedNoteId: row.applied_note_id ?? null,
     createdBy: row.created_by ?? null,
+    executionMode: row.execution_mode ?? AI_EXECUTION_MODE.MOCK,
+    provider: row.provider ?? null,
+    model: row.model ?? null,
+    usage,
+    durationMs: row.duration_ms ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
+}
+
+function mapAiExecution(aiRuntime) {
+  return {
+    mode: aiRuntime.mode,
+    provider: aiRuntime.provider,
+    modelLabel: aiRuntime.modelLabel,
+    credentialRequired: aiRuntime.credentialRequired,
+  }
+}
+
+function emptyAiCredential() {
+  return {
+    provider: AI_PROVIDER.GEMINI,
+    configured: false,
+    keyHint: null,
+    verifiedAt: null,
+  }
+}
+
+function mapAiCredentialMetadata(row) {
+  if (!row) return emptyAiCredential()
+  return {
+    provider: AI_PROVIDER.GEMINI,
+    configured: true,
+    keyHint: row.key_hint ?? null,
+    verifiedAt: row.verified_at ?? null,
+  }
+}
+
+function mapStoredCredential(row) {
+  return {
+    encryptedKey: row.encrypted_key,
+    iv: row.iv,
+    authTag: row.auth_tag,
+    encryptionVersion: row.encryption_version,
+    keyHint: row.key_hint,
+  }
+}
+
+function credentialRequiredError() {
+  return new TeamFlowApiError({
+    status: 409,
+    code: 'AI_CREDENTIAL_REQUIRED',
+    message: 'Gemini API 키를 연결해 주세요.',
+  })
 }
 
 function mapAiAgentResult(row, operation) {
@@ -317,6 +419,17 @@ function mapAiAgentResult(row, operation) {
   return {
     member: mapMember(member),
     aiAgent: mapAiAgent(aiAgent),
+  }
+}
+
+function mapAiRunTaskResult(data, operation, { includeNote = false } = {}) {
+  const result = rpcObject(data)
+  const aiRun = result?.aiRun ?? result?.ai_run
+  if (!aiRun) storeError(operation)
+  return {
+    aiRun: mapAiRun(aiRun),
+    task: result.task ? mapTask(result.task) : null,
+    ...(includeNote ? { note: result.note ? mapNote(result.note) : null } : {}),
   }
 }
 
@@ -351,6 +464,8 @@ export function createSupabaseDemoRepository(supabase) {
 
       return {
         ...data.payload,
+        aiExecution: mapAiExecution(DEFAULT_AI_RUNTIME),
+        aiCredential: emptyAiCredential(),
         accessMode: 'guest',
         capabilities: {
           projects: false,
@@ -369,10 +484,40 @@ export function createSupabaseTeamFlowRepository(
   supabase,
   user,
   {
+    aiRuntime = DEFAULT_AI_RUNTIME,
+    credentialCipher = null,
+    aiProvider = null,
+    buildLiveAiContext = defaultBuildLiveAiContext,
     buildMockAiContext = defaultBuildMockAiContext,
+    buildGeminiPrompt = defaultBuildGeminiPrompt,
     generateMockAiResult = defaultGenerateMockAiResult,
   } = {},
 ) {
+  const credentialProvider = aiRuntime.provider ?? AI_PROVIDER.GEMINI
+
+  async function loadCredentialRow() {
+    const { data, error } = await supabase
+      .from('user_ai_credentials')
+      .select(AI_CREDENTIAL_COLUMNS)
+      .eq('user_id', user.id)
+      .eq('provider', credentialProvider)
+      .maybeSingle()
+
+    if (error) throwDatabaseError('AI API 키 조회', error)
+    return data ?? null
+  }
+
+  async function markCredentialUnverified() {
+    const { error } = await supabase
+      .from('user_ai_credentials')
+      .update({ verified_at: null, updated_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .eq('provider', credentialProvider)
+      .maybeSingle()
+
+    if (error) throwDatabaseError('AI API 키 상태 변경', error)
+  }
+
   async function currentProjectMemberId(projectId) {
     const { data, error } = await supabase
       .from('project_access')
@@ -463,6 +608,7 @@ export function createSupabaseTeamFlowRepository(
         aiAgentsResult,
         aiRunsResult,
         invitations,
+        credentialRow,
       ] = await Promise.all([
         supabase.from('projects').select(PROJECT_COLUMNS).order('created_at', { ascending: false }),
         supabase.from('members').select(MEMBER_COLUMNS).order('created_at', { ascending: true }),
@@ -472,6 +618,7 @@ export function createSupabaseTeamFlowRepository(
         supabase.from('ai_agents').select(AI_AGENT_COLUMNS).order('created_at', { ascending: true }),
         supabase.from('ai_runs').select(AI_RUN_COLUMNS).order('created_at', { ascending: false }),
         listInvitations(),
+        aiRuntime.mode === AI_EXECUTION_MODE.LIVE ? loadCredentialRow() : Promise.resolve(null),
       ])
 
       const failed = [
@@ -515,6 +662,8 @@ export function createSupabaseTeamFlowRepository(
         resources: resourcesResult.data.map(mapResource),
         aiAgents: aiAgentsResult.data.map(mapAiAgent),
         aiRuns: aiRunsResult.data.map(mapAiRun),
+        aiExecution: mapAiExecution(aiRuntime),
+        aiCredential: mapAiCredentialMetadata(credentialRow),
         invitations,
         currentMemberIdsByProject,
         currentUserId: Object.values(currentMemberIdsByProject)[0] ?? '',
@@ -531,6 +680,62 @@ export function createSupabaseTeamFlowRepository(
     },
 
     listInvitations,
+
+    async getAiCredentialMetadata() {
+      if (aiRuntime.mode !== AI_EXECUTION_MODE.LIVE) return emptyAiCredential()
+      return mapAiCredentialMetadata(await loadCredentialRow())
+    },
+
+    async saveAiCredential(apiKey) {
+      if (
+        aiRuntime.mode !== AI_EXECUTION_MODE.LIVE
+        || !aiProvider
+        || !credentialCipher
+      ) {
+        throw new TeamFlowStoreError('현재 서버에서는 Gemini API 키를 저장할 수 없습니다.')
+      }
+
+      await aiProvider.verifyApiKey(apiKey)
+      const encrypted = credentialCipher.encrypt(apiKey, {
+        userId: user.id,
+        provider: credentialProvider,
+        version: 1,
+      })
+      const now = new Date().toISOString()
+      const { data, error } = await supabase
+        .from('user_ai_credentials')
+        .upsert({
+          user_id: user.id,
+          provider: credentialProvider,
+          encrypted_key: encrypted.encryptedKey,
+          iv: encrypted.iv,
+          auth_tag: encrypted.authTag,
+          encryption_version: encrypted.encryptionVersion,
+          key_hint: encrypted.keyHint,
+          verified_at: now,
+          updated_at: now,
+        }, { onConflict: 'user_id,provider' })
+        .select(AI_CREDENTIAL_COLUMNS)
+        .single()
+
+      if (error) throwDatabaseError('AI API 키 저장', error)
+      if (!data) storeError('AI API 키 저장')
+      return mapAiCredentialMetadata(data)
+    },
+
+    async deleteAiCredential() {
+      if (aiRuntime.mode === AI_EXECUTION_MODE.LIVE) {
+        const { error } = await supabase
+          .from('user_ai_credentials')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('provider', credentialProvider)
+          .select('user_id')
+          .maybeSingle()
+        if (error) throwDatabaseError('AI API 키 삭제', error)
+      }
+      return emptyAiCredential()
+    },
 
     async createAiAgent(projectId, input) {
       const { data, error } = await supabase.rpc('create_project_ai_agent', {
@@ -600,6 +805,27 @@ export function createSupabaseTeamFlowRepository(
       if (runHistoryError) throwDatabaseError('AI 실행 이력 조회', runHistoryError)
       assertAiRunCanStart(runHistory ?? [])
 
+      let liveApiKey = null
+      if (aiRuntime.mode === AI_EXECUTION_MODE.LIVE) {
+        const credential = await loadCredentialRow()
+        if (!credential?.verified_at || !credentialCipher) {
+          throw credentialRequiredError()
+        }
+        try {
+          liveApiKey = credentialCipher.decrypt(mapStoredCredential(credential), {
+            userId: user.id,
+            provider: credentialProvider,
+            version: credential.encryption_version,
+          })
+        } catch (error) {
+          if (error instanceof AiCredentialCipherError) {
+            await markCredentialUnverified()
+            throw credentialRequiredError()
+          }
+          throw error
+        }
+      }
+
       const [
         projectResult,
         notesResult,
@@ -645,23 +871,121 @@ export function createSupabaseTeamFlowRepository(
       if (failed) throwDatabaseError('AI 실행 컨텍스트 조회', failed.error)
       if (!projectResult.data) throw new TeamFlowNotFoundError()
 
+      const projectMembers = (membersResult.data ?? []).map(mapMember)
+      const agentMember = projectMembers.find((member) => member.id === memberId)
+      if (!agentMember) throw new TeamFlowNotFoundError()
       const generatorInput = {
         instructions: agent.instructions ?? '',
         contextConfig: agent.context_config,
+        agent: agentMember,
         task: mapTask(task),
         project: mapProject(projectResult.data),
         notes: (notesResult.data ?? []).map(mapNote),
         tasks: (tasksResult.data ?? []).map(mapTask),
-        members: (membersResult.data ?? []).map(mapMember),
+        members: projectMembers,
         resources: (resourcesResult.data ?? []).map(mapResource),
       }
 
+      const startRun = async ({
+        contextSnapshot,
+        executionMode,
+        provider = null,
+        model = null,
+      }) => {
+        const { data, error } = await supabase.rpc('start_ai_run', {
+          p_member_id: memberId,
+          p_task_id: taskId,
+          p_context_snapshot: contextSnapshot,
+          p_execution_mode: executionMode,
+          p_provider: provider,
+          p_model: model,
+        })
+        if (error) throwDatabaseError('AI 작업 시작', error)
+        return mapAiRunTaskResult(data, 'AI 작업 시작')
+      }
+
+      const completeRun = async (runId, generated) => {
+        const { data, error } = await supabase.rpc('complete_ai_run', {
+          p_run_id: runId,
+          p_result_markdown: generated.resultMarkdown,
+          p_usage: generated.usage ?? {},
+          p_duration_ms: generated.durationMs ?? 0,
+        })
+        if (error) throwDatabaseError('AI 작업 완료', error)
+        return mapAiRunTaskResult(data, 'AI 작업 완료')
+      }
+
+      const failRun = async (runId, {
+        message,
+        usage = {},
+        durationMs = 0,
+        restoreTaskStatus = false,
+      }) => {
+        const { data, error } = await supabase.rpc('fail_ai_run', {
+          p_run_id: runId,
+          p_error_message: message,
+          p_usage: usage,
+          p_duration_ms: durationMs,
+          p_restore_task_status: restoreTaskStatus,
+        })
+        if (error) throwDatabaseError('AI 실패 이력 저장', error)
+        return mapAiRunTaskResult(data, 'AI 실패 이력 저장')
+      }
+
+      if (aiRuntime.mode === AI_EXECUTION_MODE.LIVE) {
+        if (!aiProvider) {
+          throw new TeamFlowStoreError('Gemini 실행 구성이 완료되지 않았습니다.')
+        }
+        const contextSnapshot = buildLiveAiContext(generatorInput)
+        const prompt = buildGeminiPrompt(contextSnapshot)
+        const started = await startRun({
+          contextSnapshot,
+          executionMode: AI_EXECUTION_MODE.LIVE,
+          provider: credentialProvider,
+          model: aiRuntime.model,
+        })
+        let generated
+        try {
+          generated = await aiProvider.generate({
+            apiKey: liveApiKey,
+            systemInstruction: prompt.systemInstruction,
+            prompt: prompt.prompt,
+          })
+        } catch (error) {
+          const typedError = error instanceof TeamFlowApiError
+            ? error
+            : new TeamFlowApiError({
+                status: 503,
+                code: 'AI_PROVIDER_UNAVAILABLE',
+                message: 'Gemini 실행 중 오류가 발생했습니다.',
+                cause: error,
+              })
+          const invalidCredential = typedError.code === 'AI_CREDENTIAL_INVALID'
+          const failed = await failRun(started.aiRun.id, {
+            message: typedError.message,
+            durationMs: typedError.durationMs ?? 0,
+            restoreTaskStatus: invalidCredential,
+          })
+          if (invalidCredential) {
+            try {
+              await markCredentialUnverified()
+            } catch {
+              // The run and task are already safe. A later invalid-key attempt
+              // will retry this metadata cleanup without exposing the key.
+            }
+          }
+          throw typedError.withAiRun(failed.aiRun, failed.task)
+        }
+
+        return completeRun(started.aiRun.id, generated)
+      }
+
       let contextSnapshot
-      let generated
+      let contextBuildFailed = false
       try {
         contextSnapshot = buildMockAiContext(generatorInput)
-        generated = generateMockAiResult(generatorInput)
       } catch {
+        contextBuildFailed = true
         contextSnapshot ??= {
           version: 1,
           instructions: agent.instructions ?? '',
@@ -670,29 +994,30 @@ export function createSupabaseTeamFlowRepository(
           context: {},
           truncation: { generationFailed: true },
         }
-        const message = 'Mock 결과 생성에 실패했습니다.'
-        const { data, error: failedRunError } = await supabase.rpc('create_failed_mock_ai_run', {
-          p_member_id: memberId,
-          p_task_id: taskId,
-          p_context_snapshot: contextSnapshot,
-          p_error_message: message,
-        })
-        if (failedRunError) throwDatabaseError('AI 실패 이력 저장', failedRunError)
-        const row = rpcObject(data)
-        if (!row) storeError('AI 실패 이력 저장')
-        return mapAiRun(row)
       }
 
-      const { data, error } = await supabase.rpc('create_mock_ai_run', {
-        p_member_id: memberId,
-        p_task_id: taskId,
-        p_context_snapshot: generated.contextSnapshot,
-        p_result_markdown: generated.resultMarkdown,
+      const started = await startRun({
+        contextSnapshot,
+        executionMode: AI_EXECUTION_MODE.MOCK,
       })
-      if (error) throwDatabaseError('AI 모의 작업 실행', error)
-      const row = rpcObject(data)
-      if (!row) storeError('AI 모의 작업 실행')
-      return mapAiRun(row)
+
+      let generated
+      try {
+        if (contextBuildFailed) throw new Error('Mock context generation failed')
+        generated = generateMockAiResult(generatorInput)
+      } catch {
+        const message = 'Mock 결과 생성에 실패했습니다.'
+        return failRun(started.aiRun.id, {
+          message,
+          restoreTaskStatus: false,
+        })
+      }
+
+      return completeRun(started.aiRun.id, {
+        resultMarkdown: generated.resultMarkdown,
+        usage: {},
+        durationMs: 0,
+      })
     },
 
     async applyAiRun(runId) {
@@ -700,13 +1025,7 @@ export function createSupabaseTeamFlowRepository(
         p_run_id: runId,
       })
       if (error) throwDatabaseError('AI 실행 결과 노트 반영', error)
-      const result = rpcObject(data)
-      const aiRun = result?.aiRun ?? result?.ai_run
-      if (!aiRun) throw new TeamFlowNotFoundError()
-      return {
-        aiRun: mapAiRun(aiRun),
-        note: result.note ? mapNote(result.note) : null,
-      }
+      return mapAiRunTaskResult(data, 'AI 실행 결과 노트 반영', { includeNote: true })
     },
 
     async rejectAiRun(runId) {
@@ -714,9 +1033,7 @@ export function createSupabaseTeamFlowRepository(
         p_run_id: runId,
       })
       if (error) throwDatabaseError('AI 실행 결과 보류', error)
-      const row = rpcObject(data)
-      if (!row) throw new TeamFlowNotFoundError()
-      return mapAiRun(row)
+      return mapAiRunTaskResult(data, 'AI 실행 결과 보류')
     },
 
     async createInvitation(projectId, input) {

@@ -84,6 +84,20 @@ export const initialAiAgents = [{
   updatedAt: '2026-07-10T00:00:00.000Z',
 }]
 
+export const initialAiExecution = {
+  mode: 'mock',
+  provider: null,
+  modelLabel: 'Mock',
+  credentialRequired: false,
+}
+
+export const initialAiCredential = {
+  provider: 'gemini',
+  configured: false,
+  keyHint: '',
+  verifiedAt: null,
+}
+
 const mockResult = '# 모의 실행 결과\n\n## 작업 요청 요약\n- 할 일: 유사 서비스 레퍼런스 분석\n\n## 참고한 컨텍스트\n- 프로젝트 설명\n\n## Mock 작업 결과\n- 저장된 정보를 기준으로 요청을 구조화했습니다.\n\n## 제안하는 다음 행동\n1. 결과를 검토합니다.'
 
 export const initialAiRuns = [
@@ -98,6 +112,11 @@ export const initialAiRuns = [
     errorMessage: null,
     appliedNoteId: 'note-2',
     createdBy: 'auth-user-1',
+    executionMode: 'mock',
+    provider: null,
+    model: null,
+    usage: { inputTokens: null, outputTokens: null, totalTokens: null },
+    durationMs: 4,
     createdAt: '2026-07-11T10:00:00.000Z',
     updatedAt: '2026-07-11T10:10:00.000Z',
   },
@@ -112,6 +131,11 @@ export const initialAiRuns = [
     errorMessage: null,
     appliedNoteId: null,
     createdBy: 'auth-user-1',
+    executionMode: 'mock',
+    provider: null,
+    model: null,
+    usage: { inputTokens: null, outputTokens: null, totalTokens: null },
+    durationMs: 3,
     createdAt: '2026-07-08T10:00:00.000Z',
     updatedAt: '2026-07-08T10:10:00.000Z',
   },

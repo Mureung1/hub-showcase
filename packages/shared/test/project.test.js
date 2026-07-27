@@ -3,6 +3,8 @@ import test from 'node:test'
 
 import {
   AI_CONTEXT_KEYS,
+  AI_EXECUTION_MODE,
+  AI_PROVIDER,
   DEFAULT_AI_CONTEXT_CONFIG,
   AI_RUN_STATUS,
   calculateProgress,
@@ -87,6 +89,16 @@ test('isAiRunStatus accepts only shared AI execution states', () => {
   assert.equal(isAiRunStatus(AI_RUN_STATUS.FAILED), true)
   assert.equal(isAiRunStatus('completed'), false)
   assert.equal(isAiRunStatus(null), false)
+})
+
+test('shared AI provider and execution mode values match the API contract', () => {
+  assert.deepEqual(AI_EXECUTION_MODE, {
+    MOCK: 'mock',
+    LIVE: 'live',
+  })
+  assert.deepEqual(AI_PROVIDER, {
+    GEMINI: 'gemini',
+  })
 })
 
 test('shared AI context defaults are complete and safe to reuse for new agents', () => {

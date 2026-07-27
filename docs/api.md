@@ -22,7 +22,10 @@ Authorization: Bearer <access_token>
 | `PATCH` | `/api/projects/:projectId` | 필요 | 프로젝트 기간 변경 |
 | `POST` | `/api/projects/:projectId/ai-agents` | 필요 | AI Agent 팀원 추가 |
 | `PATCH` | `/api/ai-agents/:memberId` | 필요 | AI Agent 프로필·설정 수정 |
-| `POST` | `/api/ai-agents/:memberId/runs` | 필요 | 결정론적 Mock 작업 실행 |
+| `GET` | `/api/ai-credentials/gemini` | 필요 | 현재 사용자의 Gemini 연결 상태 조회 |
+| `PUT` | `/api/ai-credentials/gemini` | 필요 | Gemini API 키 검증·암호화 저장 |
+| `DELETE` | `/api/ai-credentials/gemini` | 필요 | 저장된 Gemini API 키 제거 |
+| `POST` | `/api/ai-agents/:memberId/runs` | 필요 | 설정된 실행 모드로 AI 작업 실행 |
 | `POST` | `/api/ai-runs/:runId/apply` | 필요 | 실행 결과를 공유 노트로 반영 |
 | `POST` | `/api/ai-runs/:runId/reject` | 필요 | 실행 결과 보류 |
 | `POST` | `/api/tasks` | 필요 | 할 일 생성 |
@@ -71,6 +74,18 @@ API 서버가 실행 중인지 확인합니다.
   "resources": [],
   "aiAgents": [],
   "aiRuns": [],
+  "aiExecution": {
+    "mode": "live",
+    "provider": "gemini",
+    "modelLabel": "gemini-3.5-flash",
+    "credentialRequired": true
+  },
+  "aiCredential": {
+    "provider": "gemini",
+    "configured": false,
+    "keyHint": "",
+    "verifiedAt": null
+  },
   "currentUserId": "member-uuid",
   "accessMode": "authenticated",
   "capabilities": {
@@ -207,9 +222,28 @@ API 서버가 실행 중인지 확인합니다.
 { "taskId": "33333333-3333-4333-8333-333333333333" }
 ```
 
-## Mock AI 팀원 API
+## AI 팀원 API
 
-Mock AI는 외부 AI API나 네트워크를 호출하지 않습니다. Express가 저장된 프로젝트 정보만 정규화해 같은 입력에 항상 같은 Markdown을 만들고, 결과를 먼저 `pending_review`로 저장합니다.
+로컬·테스트의 Mock 모드에서는 Express가 저장된 프로젝트 정보만 정규화해 같은 입력에 항상 같은 Markdown을 만듭니다. 운영의 Gemini 모드는 실행한 협업자 본인의 암호화된 API 키를 사용합니다. 어느 모드든 결과는 먼저 `pending_review`로 저장되며 프로젝트 데이터를 자동으로 수정하지 않습니다.
+
+### `GET /api/ai-credentials/gemini`
+
+현재 로그인 사용자의 연결 메타데이터만 반환합니다. API 키 원문과 암호문은 반환하지 않습니다.
+
+### `PUT /api/ai-credentials/gemini`
+
+```json
+{
+  "apiKey": "사용자가 발급한 Gemini API 키",
+  "acknowledgedFreeTierPolicy": true
+}
+```
+
+고정된 서버 모델로 연결을 검증한 후에만 암호화 저장합니다. 검증이 실패하면 기존 키는 보존됩니다.
+
+### `DELETE /api/ai-credentials/gemini`
+
+현재 로그인 사용자의 저장된 키만 제거합니다.
 
 ### `POST /api/projects/:projectId/ai-agents`
 
@@ -277,7 +311,7 @@ Mock AI는 외부 AI API나 네트워크를 호출하지 않습니다. Express�
 
 ### `POST /api/ai-agents/:memberId/runs`
 
-AI 팀원에게 배정된 미완료 할 일을 Mock 방식으로 실행합니다.
+AI 팀원에게 배정된 미완료 할 일을 현재 서버 실행 모드로 실행합니다. 운영 Gemini 모드에서는 실행한 협업자의 키만 사용하며, 키가 없을 때 Mock으로 자동 전환하지 않습니다.
 
 ```json
 { "taskId": "33333333-3333-4333-8333-333333333333" }
@@ -310,6 +344,12 @@ AI 팀원에게 배정된 미완료 할 일을 Mock 방식으로 실행합니다
 | `401` | `INVALID_AUTH_TOKEN` | JWT가 만료됐거나 유효하지 않음 |
 | `404` | `NOT_FOUND` | 접근 가능한 데이터가 존재하지 않음 |
 | `409` | `CONFLICT` | AI 중복, 담당자·완료 상태·실행 전환 충돌 |
+| `409` | `AI_CREDENTIAL_REQUIRED` | Gemini API 키 설정 또는 재연결 필요 |
+| `422` | `AI_CREDENTIAL_INVALID` | Gemini가 API 키를 거부 |
+| `429` | `AI_QUOTA_EXCEEDED` | 사용자 Gemini 할당량 초과 |
+| `502` | `AI_PROVIDER_INVALID_RESPONSE` | Gemini 응답 형식 오류 |
+| `503` | `AI_PROVIDER_UNAVAILABLE` | Gemini 또는 저장소 처리 실패 |
+| `504` | `AI_PROVIDER_TIMEOUT` | Gemini 요청 시간 초과 |
 | `503` | `TEAMFLOW_STORE_UNAVAILABLE` | Supabase 저장소 처리 실패 |
 
 ```json

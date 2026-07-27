@@ -36,6 +36,59 @@ describe('connected prototype flows', () => {
     expect(screen.queryByRole('dialog', { name: '계정 및 설정' })).not.toBeInTheDocument()
   })
 
+  test('verifies and removes a personal Gemini API key from account settings', async () => {
+    const user = userEvent.setup()
+    const payload = await testTeamFlowRepository.load()
+    const disconnected = {
+      provider: 'gemini', configured: false, keyHint: '', verifiedAt: null,
+    }
+    const connected = {
+      provider: 'gemini', configured: true, keyHint: '1234', verifiedAt: '2026-07-27T03:00:00.000Z',
+    }
+    const getAiCredential = vi.fn(async () => disconnected)
+    const saveAiCredential = vi.fn(async () => connected)
+    const deleteAiCredential = vi.fn(async () => disconnected)
+    const repository = {
+      ...testTeamFlowRepository,
+      load: async () => ({ ...payload, aiCredential: disconnected }),
+      getAiCredential,
+      saveAiCredential,
+      deleteAiCredential,
+    }
+
+    renderApp('/projects/1', repository)
+    expect(await screen.findByRole('heading', { name: '팀플 관리 웹서비스 (TeamFlow)' })).toBeInTheDocument()
+    const accountTrigger = screen.getByRole('button', { name: '테스트 사용자 계정 메뉴' })
+    await user.click(accountTrigger)
+    await user.click(within(screen.getByRole('dialog', { name: '계정 및 설정' })).getByRole('button', { name: /AI API 설정/ }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Gemini API 설정' })
+    const apiKeyInput = within(dialog).getByLabelText('Gemini API 키')
+    const saveButton = within(dialog).getByRole('button', { name: '저장 및 연결 확인' })
+    expect(apiKeyInput).toHaveAttribute('type', 'password')
+    expect(saveButton).toBeDisabled()
+    await waitFor(() => expect(getAiCredential).toHaveBeenCalledTimes(1))
+
+    await user.type(apiKeyInput, 'private-gemini-key')
+    await user.click(within(dialog).getByRole('checkbox', { name: /무료 티어 데이터 처리 안내에 동의/ }))
+    await user.click(saveButton)
+
+    await waitFor(() => expect(saveAiCredential).toHaveBeenCalledWith({
+      apiKey: 'private-gemini-key',
+      acknowledgedFreeTierPolicy: true,
+    }))
+    expect(apiKeyInput).toHaveValue('')
+    expect(within(dialog).getByText('1234')).toBeInTheDocument()
+    expect(within(dialog).queryByDisplayValue('private-gemini-key')).not.toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('button', { name: '저장된 키 삭제' }))
+    await waitFor(() => expect(deleteAiCredential).toHaveBeenCalledTimes(1))
+    expect(within(dialog).getByText('연결된 API 키가 없습니다.')).toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('button', { name: '닫기' }))
+    expect(accountTrigger).toHaveFocus()
+  })
+
   test('opens received invitations from the account panel', async () => {
     const user = userEvent.setup()
     const payload = await testTeamFlowRepository.load()
@@ -517,10 +570,16 @@ describe('connected prototype flows', () => {
     expect(await screen.findByRole('heading', { name: '모의 실행 결과' })).toBeInTheDocument()
     expect(screen.getAllByText('검토 대기').length).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: '검토 대기' })).toBeDisabled()
+    const taskRow = screen
+      .getAllByText(aiTask.title)
+      .map((element) => element.closest('li'))
+      .find(Boolean)
+    expect(taskRow).toHaveTextContent('검토 중')
 
     await user.click(screen.getByRole('button', { name: '공유 노트로 반영' }))
     await waitFor(() => expect(applyAiRun).toHaveBeenCalledTimes(1))
     expect(screen.getAllByText('반영 완료').length).toBeGreaterThan(0)
+    expect(taskRow).toHaveTextContent('완료')
     await user.click(screen.getByRole('link', { name: '반영된 공유 노트 보기' }))
     expect(await screen.findByRole('heading', { name: 'AI 결과 · Mock 작업' })).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: 'AI 팀원' }))
@@ -535,6 +594,148 @@ describe('connected prototype flows', () => {
       '공유 노트에 반영한 결과는 다시 실행할 수 없습니다.',
     )
     expect(createAiRun).toHaveBeenCalledTimes(1)
+  })
+
+  test('blocks live AI execution until the signed-in user connects a Gemini key', async () => {
+    const user = userEvent.setup()
+    const payload = await testTeamFlowRepository.load()
+    const aiTask = {
+      id: 'live-key-required-task',
+      projectId: '1',
+      title: '키 연결 후 실행할 조사',
+      description: '',
+      assigneeId: 'member-ai',
+      dueDate: '2026-07-30',
+      status: TASK_STATUS.NOT_STARTED,
+    }
+    const repository = {
+      ...testTeamFlowRepository,
+      load: async () => ({
+        ...payload,
+        tasks: [...payload.tasks, aiTask],
+        aiExecution: {
+          mode: 'live', provider: 'gemini', modelLabel: 'Gemini 3.5 Flash', credentialRequired: true,
+        },
+        aiCredential: {
+          provider: 'gemini', configured: false, keyHint: '', verifiedAt: null,
+        },
+      }),
+    }
+
+    renderApp('/projects/1/ai', repository)
+
+    expect(await screen.findByText('Gemini API 키 설정 필요')).toBeInTheDocument()
+    expect(screen.queryByText('Mock 모드')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'AI 작업 실행' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'API 키 설정' }))
+    expect(screen.getByRole('dialog', { name: 'Gemini API 설정' })).toBeInTheDocument()
+  })
+
+  test('runs a live AI task with the connected user credential without changing review behavior', async () => {
+    const user = userEvent.setup()
+    const payload = await testTeamFlowRepository.load()
+    const aiTask = {
+      id: 'live-ai-task',
+      projectId: '1',
+      title: '실제 Gemini 조사',
+      description: '',
+      assigneeId: 'member-ai',
+      dueDate: '2026-07-30',
+      status: TASK_STATUS.NOT_STARTED,
+    }
+    const createAiRun = vi.fn(testTeamFlowRepository.createAiRun)
+    const repository = {
+      ...testTeamFlowRepository,
+      createAiRun,
+      load: async () => ({
+        ...payload,
+        tasks: [...payload.tasks, aiTask],
+        aiExecution: {
+          mode: 'live', provider: 'gemini', modelLabel: 'Gemini 3.5 Flash', credentialRequired: true,
+        },
+        aiCredential: {
+          provider: 'gemini', configured: true, keyHint: '1234', verifiedAt: '2026-07-27T03:00:00.000Z',
+        },
+      }),
+    }
+
+    renderApp('/projects/1/ai', repository)
+
+    expect(await screen.findByText('Gemini 연결됨')).toBeInTheDocument()
+    expect(screen.getByText(/Gemini 3.5 Flash/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'AI 작업 실행' }))
+    await waitFor(() => expect(createAiRun).toHaveBeenCalledWith('member-ai', aiTask.id))
+    expect(await screen.findByRole('heading', { name: '모의 실행 결과' })).toBeInTheDocument()
+    expect(screen.getAllByText('검토 대기').length).toBeGreaterThan(0)
+  })
+
+  test('shows a persisted failed live run immediately without waiting for a reload', async () => {
+    const user = userEvent.setup()
+    const payload = await testTeamFlowRepository.load()
+    const aiTask = {
+      id: 'failed-live-ai-task',
+      projectId: '1',
+      title: '할당량 실패 조사',
+      description: '',
+      assigneeId: 'member-ai',
+      dueDate: '2026-07-30',
+      status: TASK_STATUS.NOT_STARTED,
+    }
+    const failedRun = {
+      id: 'failed-live-run',
+      projectId: '1',
+      aiMemberId: 'member-ai',
+      taskId: aiTask.id,
+      status: 'failed',
+      contextSnapshot: { task: aiTask },
+      resultMarkdown: '',
+      errorMessage: 'Gemini API 사용 한도를 초과했습니다.',
+      appliedNoteId: null,
+      createdBy: 'member-current',
+      executionMode: 'live',
+      provider: 'gemini',
+      model: 'gemini-3.5-flash',
+      usage: { inputTokens: null, outputTokens: null, totalTokens: null },
+      durationMs: 245,
+      createdAt: '2026-07-27T03:00:00.000Z',
+      updatedAt: '2026-07-27T03:00:00.000Z',
+    }
+    const providerError = Object.assign(
+      new Error('Gemini API 사용 한도를 초과했습니다.'),
+      {
+        code: 'AI_QUOTA_EXCEEDED',
+        aiRun: failedRun,
+        task: { ...aiTask, status: TASK_STATUS.IN_PROGRESS },
+      },
+    )
+    const repository = {
+      ...testTeamFlowRepository,
+      createAiRun: vi.fn(async () => {
+        throw providerError
+      }),
+      load: async () => ({
+        ...payload,
+        tasks: [...payload.tasks, aiTask],
+        aiExecution: {
+          mode: 'live', provider: 'gemini', modelLabel: 'Gemini 3.5 Flash', credentialRequired: true,
+        },
+        aiCredential: {
+          provider: 'gemini', configured: true, keyHint: '1234', verifiedAt: '2026-07-27T03:00:00.000Z',
+        },
+      }),
+    }
+
+    renderApp('/projects/1/ai', repository)
+
+    await user.click(await screen.findByRole('button', { name: 'AI 작업 실행' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Gemini API 사용 한도를 초과했습니다.')
+    expect(screen.getAllByText('실패').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Gemini API 사용 한도를 초과했습니다.').length).toBeGreaterThan(1)
+    const failedTaskRow = screen
+      .getAllByText(aiTask.title)
+      .map((element) => element.closest('li'))
+      .find(Boolean)
+    expect(failedTaskRow).toHaveTextContent('진행 중')
   })
 
   test('allows another Mock run after a reviewed result is put on hold', async () => {
@@ -560,6 +761,11 @@ describe('connected prototype flows', () => {
     await user.click(screen.getByRole('button', { name: '모의 작업 실행' }))
     await user.click(await screen.findByRole('button', { name: '보류' }))
     expect(screen.getAllByText('보류').length).toBeGreaterThan(0)
+    const rejectedTaskRow = screen
+      .getAllByText(aiTask.title)
+      .map((element) => element.closest('li'))
+      .find(Boolean)
+    expect(rejectedTaskRow).toHaveTextContent('진행 중')
 
     const retryButton = screen.getByRole('button', { name: '모의 작업 실행' })
     expect(retryButton).toBeEnabled()

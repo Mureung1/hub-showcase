@@ -180,7 +180,11 @@
 .layout { display: grid; grid-template-columns: minmax(0, 1.06fr) minmax(380px, .94fr); align-items: stretch; gap: 16px; }
 .leftColumn,
 .rightColumn { display: grid; min-height: 0; align-content: start; gap: 16px; }
-.rightColumn { grid-template-rows: auto minmax(0, 1fr); }
+.rightColumn {
+  contain: size;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
 
 .settingsCard,
 .contextCard,
@@ -188,7 +192,12 @@
 .resultCard,
 .historyCard { border-radius: 16px; }
 
-.resultCard { display: grid; min-height: 0; grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.resultCard {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
 
 .settingsCard > header,
 .contextCard > header {
@@ -249,7 +258,15 @@
 .resultMeta strong { overflow: hidden; color: var(--color-text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .resultMeta span { flex: 0 0 auto; color: var(--color-text-secondary); font-size: 10px; }
 
-.markdownResult { min-height: 280px; overflow: auto; padding: 18px; color: var(--color-text-secondary); font-size: 12px; line-height: 1.7; }
+.markdownResult {
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.7;
+  scrollbar-gutter: stable;
+}
 .markdownResult h1,
 .markdownResult h2,
 .markdownResult h3 { margin: 18px 0 8px; color: var(--color-text); }
@@ -284,7 +301,12 @@
 
 @media (max-width: 1100px) {
   .layout { grid-template-columns: minmax(0, 1fr); }
-  .rightColumn { grid-template-rows: auto auto; }
+  .rightColumn {
+    contain: none;
+    grid-template-rows: auto auto;
+    overflow: visible;
+  }
+  .markdownResult { min-height: 280px; max-height: 560px; }
   .agentList { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 }
 

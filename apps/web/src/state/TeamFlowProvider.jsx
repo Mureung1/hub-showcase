@@ -4,15 +4,19 @@ import { TeamFlowContext } from './TeamFlowContext.js'
 
 function reducer(state, action) {
   switch (action.type) {
-    case 'hydrate':
+    case 'hydrate': {
+      const aiCredential = normalizeAiCredential(action.payload.aiCredential)
       return {
         ...emptyState,
         ...action.payload,
         aiAgents: action.payload.aiAgents ?? [],
         aiRuns: action.payload.aiRuns ?? [],
+        aiCredential,
+        aiExecution: normalizeAiExecution(action.payload.aiExecution),
         ready: true,
         loadError: '',
       }
+    }
     case 'loadFailed':
       return { ...state, ready: false, loadError: action.message }
     case 'projectCreated':
@@ -117,14 +121,23 @@ function reducer(state, action) {
     case 'aiRunUpserted':
       return {
         ...state,
-        aiRuns: upsertById(state.aiRuns, action.aiRun),
+        aiRuns: action.aiRun ? upsertById(state.aiRuns, action.aiRun) : state.aiRuns,
+        tasks: action.task ? mergeById(state.tasks, action.task) : state.tasks,
       }
     case 'aiRunApplied':
       return {
         ...state,
         aiRuns: upsertById(state.aiRuns, action.aiRun),
         notes: action.note ? upsertById(state.notes, action.note) : state.notes,
+        tasks: action.task ? mergeById(state.tasks, action.task) : state.tasks,
       }
+    case 'aiCredentialUpdated': {
+      const aiCredential = normalizeAiCredential(action.credential)
+      return {
+        ...state,
+        aiCredential,
+      }
+    }
     default:
       return state
   }
@@ -136,6 +149,47 @@ function upsertByKey(items, value, key) {
 
 function upsertById(items, value) {
   return upsertByKey(items, value, 'id')
+}
+
+function mergeById(items, value) {
+  const existing = items.find((item) => item.id === value.id)
+  if (!existing) return [...items, value]
+  return items.map((item) => item.id === value.id ? { ...item, ...value } : item)
+}
+
+const emptyAiCredential = Object.freeze({
+  provider: 'gemini',
+  configured: false,
+  keyHint: '',
+  verifiedAt: null,
+})
+
+const emptyAiExecution = Object.freeze({
+  mode: 'mock',
+  provider: null,
+  modelLabel: 'Mock',
+  credentialRequired: false,
+})
+
+function normalizeAiCredential(value) {
+  return {
+    provider: value?.provider === 'gemini' ? 'gemini' : emptyAiCredential.provider,
+    configured: Boolean(value?.configured),
+    keyHint: typeof value?.keyHint === 'string' ? value.keyHint : '',
+    verifiedAt: typeof value?.verifiedAt === 'string' ? value.verifiedAt : null,
+  }
+}
+
+function normalizeAiExecution(value) {
+  const mode = value?.mode === 'live' ? 'live' : 'mock'
+  return {
+    mode,
+    provider: mode === 'live' && value?.provider === 'gemini' ? 'gemini' : null,
+    modelLabel: typeof value?.modelLabel === 'string' && value.modelLabel.trim()
+      ? value.modelLabel
+      : mode === 'live' ? 'Gemini' : emptyAiExecution.modelLabel,
+    credentialRequired: mode === 'live' ? Boolean(value?.credentialRequired) : false,
+  }
 }
 
 const emptyState = {
@@ -150,6 +204,8 @@ const emptyState = {
   currentMemberIdsByProject: {},
   aiAgents: [],
   aiRuns: [],
+  aiExecution: emptyAiExecution,
+  aiCredential: emptyAiCredential,
   currentUserId: '',
   accessMode: 'authenticated',
   capabilities: { projects: false, members: false, tasks: false, notes: false, resources: false, ai: false },
@@ -371,9 +427,20 @@ export function TeamFlowProvider({ children, repository }) {
   }, [repository])
 
   const createAiRun = useCallback(async (memberId, taskId) => {
-    const aiRun = await repository.createAiRun(memberId, taskId)
-    dispatch({ type: 'aiRunUpserted', aiRun })
-    return aiRun
+    try {
+      const result = await repository.createAiRun(memberId, taskId)
+      dispatch({ type: 'aiRunUpserted', ...result })
+      return result.aiRun
+    } catch (error) {
+      if (error?.aiRun?.id || error?.task?.id) {
+        dispatch({
+          type: 'aiRunUpserted',
+          aiRun: error.aiRun ?? null,
+          task: error.task ?? null,
+        })
+      }
+      throw error
+    }
   }, [repository])
 
   const applyAiRun = useCallback(async (runId) => {
@@ -383,9 +450,27 @@ export function TeamFlowProvider({ children, repository }) {
   }, [repository])
 
   const rejectAiRun = useCallback(async (runId) => {
-    const aiRun = await repository.rejectAiRun(runId)
-    dispatch({ type: 'aiRunUpserted', aiRun })
-    return aiRun
+    const result = await repository.rejectAiRun(runId)
+    dispatch({ type: 'aiRunUpserted', ...result })
+    return result.aiRun
+  }, [repository])
+
+  const refreshAiCredential = useCallback(async () => {
+    const credential = await repository.getAiCredential()
+    dispatch({ type: 'aiCredentialUpdated', credential })
+    return credential
+  }, [repository])
+
+  const saveAiCredential = useCallback(async (input) => {
+    const credential = await repository.saveAiCredential(input)
+    dispatch({ type: 'aiCredentialUpdated', credential })
+    return credential
+  }, [repository])
+
+  const deleteAiCredential = useCallback(async () => {
+    const credential = await repository.deleteAiCredential()
+    dispatch({ type: 'aiCredentialUpdated', credential })
+    return credential
   }, [repository])
 
   const value = useMemo(() => ({
@@ -420,10 +505,13 @@ export function TeamFlowProvider({ children, repository }) {
       createAiRun,
       applyAiRun,
       rejectAiRun,
+      refreshAiCredential,
+      saveAiCredential,
+      deleteAiCredential,
       registerBeforeLeave,
       flushPending,
     },
-  }), [state, reload, reloadOnEntry, createProject, updateProject, deleteProject, createTask, updateTask, deleteTask, updateMember, deleteMember, createInvitation, acceptInvitation, rejectInvitation, cancelInvitation, createNote, updateNote, deleteNote, createResource, uploadResource, updateResource, deleteResource, getResourceDownloadUrl, createAiAgent, updateAiAgent, createAiRun, applyAiRun, rejectAiRun, registerBeforeLeave, flushPending])
+  }), [state, reload, reloadOnEntry, createProject, updateProject, deleteProject, createTask, updateTask, deleteTask, updateMember, deleteMember, createInvitation, acceptInvitation, rejectInvitation, cancelInvitation, createNote, updateNote, deleteNote, createResource, uploadResource, updateResource, deleteResource, getResourceDownloadUrl, createAiAgent, updateAiAgent, createAiRun, applyAiRun, rejectAiRun, refreshAiCredential, saveAiCredential, deleteAiCredential, registerBeforeLeave, flushPending])
 
   if (state.loadError) {
     return (
