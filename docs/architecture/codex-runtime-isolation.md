@@ -58,7 +58,7 @@ Root `npm run dev`는 repository-relative personal app data·existing workspace�
 | `packageRoot` | Product state를 쓰지 않으며 exact application code, dedicated workspace instruction/Skill resource subtree·digest descriptor와 embedded Runtime descriptor·canonical manifest를 찾는다. Ambient repository-root `AGENTS.md`·`.agents/`를 product resource로 복사하지 않는다. Host는 declared application resource를 workspace mutation 전에 complete-tree 검증한다. Runtime payload cache나 moving remote catalog를 authority로 두지 않는다. |
 | `appDataRoot` | Explicit absolute non-symlink directory다. Workspace 밖에 있고 verified immutable Runtime generation·retained archive, app-managed `HOME`·`CODEX_HOME`·`CODEX_SQLITE_HOME`·temp/runtime state와 workspace registry를 분리해 계산한다. Pending approved setup transaction과 active Ready pointer를 구분하며 registry는 pointer이지 workspace identity authority가 아니다. |
 | Resolver result | Single `RuntimeResolver`가 exact binding과 complete tree를 확인한 immutable `runtimeRoot`·Runtime identity만 production host에 반환한다. Missing·corrupt state는 scoped repair하거나 fail closed하며 다른 version으로 fallback하지 않는다. |
-| Auth-only bootstrap | Runtime role과 empty·disjoint root validation은 package primitive로 남지만 current Server·Browser consumer는 없다. |
+| Auth-only bootstrap | 당시에는 Runtime role과 empty·disjoint root validation을 package primitive로 구현했다. Current Runtime에서는 이 role과 primitive를 제거했고 historical evidence로만 남는다. |
 | `workspaceRoot` | 사용자가 고른 위치에 app code가 생성하고 `WorkspaceManifest` validation을 통과한 root다. Active 상태에서 native thread `cwd`와 일치한다. Current development override는 이 target의 admission을 대신하지 않는다. |
 | Workspace instruction/Skill bundle | Exact application package가 선언한 `AGENTS.md`와 `.agents/skills/` built-in Skill root를 fresh scaffold에 no-clobber로 설치한다. Verifier는 `AGENTS.md`와 각 declared Skill root의 exact complete tree·digest를 검사하므로 그 root 안의 undeclared file도 drift다. `.agents/skills/` container의 descriptor 밖 sibling root는 소유·변경하지 않는다. Missing은 explicit no-clobber recovery, modified byte나 undeclared in-root entry는 App이 byte를 바꾸지 않는 manual recovery로 수렴한다. Bundle은 workspace identity authority가 아니다. |
 | Native project boundary | Workspace Runtime은 exact workspace root를 `cwd`로 쓰고 persistent bridge와 one-shot probe 모두 fixed command-line config override `project_root_markers=[]`를 적용한다. App-managed `HOME`에는 ambient user Skill을 import하지 않고 controlled `CODEX_HOME`에는 global `AGENTS.override.md`·`AGENTS.md`를 두지 않는다. Runtime actual smoke가 선택한 parent의 상위 context를 읽지 않는 discovery 결과와 full sidecar reap을 검증하며, public setup composition은 이 primitive를 admission 뒤 호출해야 한다. |
@@ -102,9 +102,10 @@ chooser-selected-directory/
 ```text
 user-app-data/
   <runtime-cache>/           # versioned verified Runtime generation·retained archive
-  <runtime-home-pair>/       # Codex-managed account·native state, workspace 밖
-  <auth-bootstrap-cwd>/      # pre-workspace account operation 전용 inert cwd
-  <workspace-registry>/       # active·recent pointer, identity authority가 아님
+  <runtime-home>/            # app-managed HOME·CODEX_SQLITE_HOME·temp, workspace 밖
+  <workspace-registry>/      # active·recent pointer, identity authority가 아님
+
+global-codex-home/           # caller의 기존 Codex account·config authority
 
 semester-workspace/
   AGENTS.md                   # package-owned exact native instruction
@@ -127,8 +128,8 @@ Workspace-local store는 app data나 native session과 다른 durable authority�
 
 | 리스크 | 설명 | 대응 |
 | --- | --- | --- |
-| Artifact drift | Current bundle 또는 public descriptor가 선택한 release byte가 바뀌면 검토한 Runtime과 달라진다. | Current canonical manifest와 public exact binding·complete tree를 resolve·spawn 경계에서 fail closed로 검증한다. |
-| Silent Runtime fallback | 손상·unavailable release에서 다른 cached Runtime을 고르면 application contract가 바뀐다. | Resolver는 exact release만 repair·검증하고 실패 시 닫는다. Rollback은 still-supported 이전 exact application pair를 명시적으로 실행한다. |
+| Artifact drift | Current package-local bundle의 release byte가 바뀌면 검토한 Runtime과 달라진다. | Current canonical manifest와 complete tree를 composition preflight와 spawn 경계에서 fail closed로 검증한다. |
+| Silent Runtime fallback | 손상된 package-local Runtime에서 system Python·ambient executable로 넘어가면 application contract가 바뀐다. | Factory는 exact verified bundle만 시작하고 실패 시 닫는다. Rollback은 source와 matching verified bundle을 한 단위로 수행한다. |
 | Runtime state root 분리 | 전역 auth/config와 app-managed SQLite의 수명·복구 책임이 다르다. | 개인용 composition은 이 차이를 의도적으로 허용하고 product state는 workspace에, transient SQLite·temp는 app data에 둔다. |
 | Credential authority 분열 | AY-PLE token store와 global Codex home를 함께 쓰면 refresh·logout owner가 갈라진다. | Current startup은 AY-PLE credential store를 만들지 않고 전역 `CODEX_HOME` 하나만 사용한다. |
 | Workspace 오선택 | Registry나 development override가 사용자 의도와 다른 root를 가리킬 수 있다. | `WorkspaceManifest` identity·schema를 재검증하고 thread 재사용 전 sticky `cwd`를 확인한다. Registry는 pointer로만 사용한다. |

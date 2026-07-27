@@ -87,7 +87,7 @@ npm run demo
 | ADR | [0014. App-owned normalized SemesterWorkspace](docs/adr/0014-create-app-owned-normalized-semester-workspaces.md) | `WorkspaceManifest` authority, scaffold·admission과 `ImportSource` 경계 결정 |
 | ADR | [0015. Reviewed clean snapshot public repository](docs/adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | Public source lineage·canonical cutover, Apache-2.0 first-party license와 trust·export authority |
 | ADR | [0016. Exact npx application과 verified Runtime release](docs/adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md) | 중단한 public release lane의 application↔Runtime binding·delivery·cache와 rollback 역사 기록 |
-| ADR | [0017. Codex-managed Browser OAuth product account lifecycle](docs/adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md) | Managed ChatGPT login, app-scoped credential authority와 pre-workspace Runtime 전환 |
+| ADR | [0017. Codex-managed Browser OAuth product account lifecycle](docs/adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md) | 제거한 managed ChatGPT login, app-scoped credential authority와 pre-workspace Runtime 전환의 역사 기록 |
 
 ### 기술 참고 문서
 

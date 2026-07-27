@@ -2,7 +2,7 @@
 
 작성일: 2026-07-07
 
-최종 업데이트: 2026-07-24
+최종 업데이트: 2026-07-27
 
 분류: 활성
 
@@ -18,7 +18,7 @@
 
 공식 Landing은 현재 제품 surface가 아니며 구현 workspace도 제거했다. Public release lane도 현재 구현 목표가 아니다. 이 문서에 남아 있는 첫 public preview·release 서술은 2026-07-23까지 검토한 historical design context이고 현재 backlog나 구현 순서를 정하지 않는다.
 
-다음 제품 목표는 아직 확정하지 않았다. 2026-07-24 구현 감사에서 Landing·public release lane에 이어 public-preview Server·Browser graph, Browser OAuth composition과 app-owned `SemesterWorkspace` setup·Ready surface를 제거했다. Current executable consumer가 없는 auth-only Runtime과 v3 workspace package primitive의 존치는 별도 pruning에서 판정한다.
+Public release lane 감사는 완료됐다. Landing·public host·public-preview Server·Browser graph, Browser OAuth composition과 Runtime managed account·`auth-only` primitive는 제거했다. App-owned v3 `SemesterWorkspace` kernel은 ADR 0014의 adopted future workspace authority로 유지하지만 current executable capability로 주장하지 않는다. 다음 제품 frontier는 기존 자료를 검토 가능한 방식으로 반입하는 `ImportSource` 여정이다.
 
 AY-PLE는 새로운 범용 Agent framework를 만드는 제품이 아니다. 일반적인 Codex 사용 방식 위에 학기 작업공간, 반복 가능한 학업 작업, 자료 선택, 구조화된 변경 제안, 사용자 검토를 얇게 더한다. 실행 엔진은 Codex이고, AY는 그 실행 능력을 학생이 이해할 수 있는 언어와 화면으로 제공하는 제품 속 상호작용 주체다.
 

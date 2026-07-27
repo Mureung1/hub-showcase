@@ -179,7 +179,7 @@ async function runCanonicalProductCase(
       assert.equal(
         initial.accountReadiness.state,
         'not_ready',
-        'verified product Runtime must report fresh app-managed account state',
+        'verified product Runtime must report fresh global account state',
       )
       assert.equal(initial.operationStatus, 'idle')
       assertDurableProductBootstrap(initial, confirmed)

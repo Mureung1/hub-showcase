@@ -8,7 +8,7 @@
 
 보존하는 결정: ADR 0006의 `packageRoot`·`appDataRoot`·`workspaceRoot` 분리, [ADR 0013 — Product-only public surface와 durable v2 store baseline을 채택한다](0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 current v2 bytes 보존·explicit migration 원칙
 
-관련 account 결정: [ADR 0017 — 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md). 이 ADR은 `Semester Ready`의 workspace scaffold·identity 조건을, ADR 0017은 account 연결과 pre-workspace Runtime 조건을 소유한다.
+역사적 account 결정: [ADR 0017 — 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md). 이 ADR은 `Semester Ready`의 workspace scaffold·identity 조건을 계속 소유하지만 ADR 0017의 account 연결·pre-workspace Runtime 조건은 current product target이 아니다. 현재 account authority는 Codex Runtime 격리 문서가 소유한다.
 
 ## 맥락
 
@@ -40,4 +40,6 @@
 
 ## 결과
 
-First-run setup과 ready-relaunch는 `WorkspaceManifest` 생성·validation, workspace instruction/Skill bundle·effective native context 검증, active registry pointer와 incomplete scaffold recovery를 제품 상태로 다뤄야 한다. `Semester Ready`는 이 setup과 workspace Runtime의 fresh account 확인이 끝났다는 뜻이며 Course·`RawMaterial`·학업 action 완료를 뜻하지 않는다. 구체적인 first-preview 설정 범위는 Product Brief가 소유한다. 현재 chooser/current-v2 vertical은 구현 증거로 유지되지만 이 결정의 public admission contract를 구현한 것으로 보지 않는다.
+First-run setup과 ready-relaunch는 `WorkspaceManifest` 생성·validation, workspace instruction/Skill bundle·effective native context 검증, active registry pointer와 incomplete scaffold recovery를 제품 상태로 다뤄야 한다. `Semester Ready`는 workspace-side setup이 끝났다는 뜻이며 Course·`RawMaterial`·학업 action 완료를 뜻하지 않는다. 구체적인 제품 연결 범위는 Product Brief가 소유한다.
+
+`@ay-ple/semester-workspace` v3 codec·admission·bundle·context·durable setup kernel은 이 adopted target의 기반으로 유지한다. Current Server는 current-v2 compatibility decoder·parity만 소비하고 v3 kernel을 composition하지 않으므로, 현재 chooser/current-v2 vertical이나 package primitive 자체를 app-owned workspace capability로 주장하지 않는다.

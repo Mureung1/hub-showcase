@@ -2,7 +2,7 @@
 
 작성일: 2026-07-10
 
-최종 업데이트: 2026-07-22
+최종 업데이트: 2026-07-27
 
 분류: 활성
 
@@ -145,6 +145,6 @@ Codex approval은 과제 정보가 사실인지 보증하지 않는다. 반대�
 
 Official SDK와 exact native Runtime을 supervised bridge로 실행하는 product-only 경로가 구현됐다. 현재 First Assignment vertical은 explicit pre-public workspace root와 두 TXT 자료에서 `ModelingInvocation`을 실행하고, 근거가 연결된 `StatePatch`를 같은 native Turn에서 검토해 학생이 수락한 결과만 durable `SemesterModel`로 반영한다. 새로고침과 local process restart 뒤에도 settled confirmation과 확인된 상태를 다시 열 수 있으며 exact local·live-provider trace를 통과했다.
 
-이 구현은 AY-PLE의 학업 kernel을 증명한다. Public `npx`, Landing, In-app Browser OAuth, `Semester Ready`, `ready-relaunch`와 app-owned scaffold를 잇던 Server·Browser graph는 제거했다. Consumer가 없는 low-level Runtime·workspace package primitive의 존치는 별도 pruning에서 판정한다.
+이 구현은 AY-PLE의 학업 kernel을 증명한다. Public `npx`, Landing, In-app Browser OAuth, `Semester Ready`, `ready-relaunch`와 app-owned scaffold를 잇던 Server·Browser graph, Runtime managed account·`auth-only` primitive는 제거했다. V3 workspace package kernel은 ADR 0014의 adopted target 기반으로 유지하되 current capability로 주장하지 않는다. 다음 frontier는 외부 자료를 검토 뒤 app-owned workspace로 반입하는 `ImportSource` 여정이다.
 
 [통합 제품 prototype](../../artifacts/camp-demo/product-flow/index.html?step=1&present=1)은 Review Workspace의 초기 화면 결정을 보존하는 역사적 시각 근거다. 제품 범위는 [Product Brief](ay-ple-product-brief.md), 정확한 용어는 [CONTEXT.md](../../CONTEXT.md), workspace authority는 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), 중단한 public distribution 결정은 historical [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), 제품 실행 mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), 현재 구현은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)에서 확인할 수 있다.
