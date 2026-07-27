@@ -125,6 +125,20 @@ class SourceRepository(Repository):
             },
         )
 
+    def find_assessment(
+        self, snapshot_id: str, assessment_version: str
+    ) -> str | None:
+        """이 스냅샷이 이 버전으로 이미 평가되었는가.
+
+        `UNIQUE (snapshot_id, assessment_version)` 이 같은 버전의 재평가를 막는다.
+        수집을 나눠서 여러 번 실행해도 평가가 충돌하지 않도록 먼저 조회한다.
+        """
+        return self.unit.fetch_value(
+            "SELECT assessment_id FROM source_assessments"
+            " WHERE snapshot_id = %s AND assessment_version = %s",
+            (snapshot_id, assessment_version),
+        )
+
     def add_assessment(
         self,
         assessment_id: str,
