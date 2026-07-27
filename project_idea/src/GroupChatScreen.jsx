@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import TaxiLoader from "./TaxiLoader";
+import { API_BASE } from "./apiBase";
+import { describeCost, estimateCost } from "./describeCost";
 
 const AVATAR_COLORS = ["#C8102E", "#2F8F5B", "#C98A1F", "#5B6472"];
 
@@ -13,6 +15,9 @@ function GroupChatScreen({ candidate, onComplete }) {
   const [loading, setLoading] = useState(!!groupId);
   const [confirmed, setConfirmed] = useState(false);
   const [respondError, setRespondError] = useState(null);
+  const [boarding, setBoarding] = useState(false);
+  const [boardingResult, setBoardingResult] = useState(null);
+  const [boardingError, setBoardingError] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
   const [sending, setSending] = useState(false);
@@ -23,7 +28,7 @@ function GroupChatScreen({ candidate, onComplete }) {
     if (!groupId) return;
 
     function loadMembers() {
-      fetch(`http://localhost:4000/api/requests/group/${groupId}`)
+      fetch(`${API_BASE}/api/requests/group/${groupId}`)
         .then((res) => res.json())
         .then(setMembers)
         .catch(() => {})
@@ -39,7 +44,7 @@ function GroupChatScreen({ candidate, onComplete }) {
     if (!myRequestId) return;
 
     function sendHeartbeat() {
-      fetch(`http://localhost:4000/api/requests/${myRequestId}/heartbeat`, { method: "POST" }).catch(() => {});
+      fetch(`${API_BASE}/api/requests/${myRequestId}/heartbeat`, { method: "POST" }).catch(() => {});
     }
 
     sendHeartbeat();
@@ -51,7 +56,7 @@ function GroupChatScreen({ candidate, onComplete }) {
     if (!groupId) return;
 
     function loadMessages() {
-      fetch(`http://localhost:4000/api/requests/group/${groupId}/messages`)
+      fetch(`${API_BASE}/api/requests/group/${groupId}/messages`)
         .then((res) => res.json())
         .then(setMessages)
         .catch(() => {});
@@ -68,7 +73,7 @@ function GroupChatScreen({ candidate, onComplete }) {
 
     setSending(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/requests/group/${groupId}/messages`, {
+      const res = await fetch(`${API_BASE}/api/requests/group/${groupId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ requestId: myRequestId, text }),
@@ -91,12 +96,13 @@ function GroupChatScreen({ candidate, onComplete }) {
   const count = matchedMembers.length || candidate?.groupCount || 1;
   const isFull = count >= 4;
   const canBoard = isFull || confirmed;
-  const cost = Math.round(12000 / count / 100) * 100;
+  const cost = estimateCost(count, candidate?.cityHub);
+  const costInfo = describeCost(cost);
 
   async function respond(requestId, accept) {
     setRespondError(null);
     try {
-      const res = await fetch(`http://localhost:4000/api/requests/${requestId}/respond`, {
+      const res = await fetch(`${API_BASE}/api/requests/${requestId}/respond`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accept }),
@@ -113,6 +119,27 @@ function GroupChatScreen({ candidate, onComplete }) {
       });
     } catch {
       setRespondError("처리하지 못했어요. 서버가 켜져 있는지 확인해주세요.");
+    }
+  }
+
+  async function handleBoard() {
+    if (boarding) return;
+    setBoarding(true);
+    setBoardingError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/requests/${myRequestId}/board`, {
+        method: "POST",
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setBoardingError(body.error ?? "탑승 확인에 실패했어요.");
+        return;
+      }
+      setBoardingResult(body);
+    } catch {
+      setBoardingError("탑승 확인에 실패했어요. 서버가 켜져 있는지 확인해주세요.");
+    } finally {
+      setBoarding(false);
     }
   }
 
@@ -292,32 +319,77 @@ function GroupChatScreen({ candidate, onComplete }) {
         </div>
       )}
 
-      {canBoard && (
-        <div style={{ border: "1px solid #C8102E", borderRadius: 14, padding: 14, marginBottom: 16 }}>
-          <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 4px" }}>예상 요금 (1인당)</p>
+      <div style={{ border: "1px solid #C8102E", borderRadius: 14, padding: 14, marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ fontSize: 28 }}>{costInfo.icon}</span>
+        <div>
+          <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 4px" }}>
+            예상 요금 (1인당) · {canBoard ? "확정 인원 기준" : "지금 인원 기준"}
+          </p>
           <p style={{ fontSize: 20, fontWeight: 800, color: "#C8102E", margin: 0 }}>{cost.toLocaleString()}원</p>
+          <p style={{ fontSize: 11, color: "#8A7A76", margin: "2px 0 0" }}>{costInfo.label} 정도예요</p>
         </div>
+      </div>
+
+      {boardingError && (
+        <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 10px", textAlign: "center" }}>{boardingError}</p>
       )}
 
-      <button
-        onClick={onComplete}
-        disabled={!canBoard}
-        className="btn-primary"
-        style={{
-          width: "100%",
-          padding: 15,
-          borderRadius: 999,
-          fontSize: 15,
-          fontWeight: 700,
-          border: "none",
-          cursor: canBoard ? "pointer" : "default",
-          background: canBoard ? "#C8102E" : "#EFE7E3",
-          color: canBoard ? "#fff" : "#8A7A76",
-          marginTop: "auto",
-        }}
-      >
-        탑승 확인
-      </button>
+      {boardingResult && (
+        <p
+          style={{
+            fontSize: 13,
+            fontWeight: 700,
+            textAlign: "center",
+            margin: "0 0 10px",
+            color: boardingResult.status === "late" ? "#8C0E22" : "#2F8F5B",
+          }}
+        >
+          {boardingResult.status === "late"
+            ? `탑승 확인이 ${boardingResult.minutesLate}분 늦게 됐어요`
+            : "정상 탑승 확인됐어요"}
+        </p>
+      )}
+
+      {boardingResult ? (
+        <button
+          onClick={onComplete}
+          className="btn-primary"
+          style={{
+            width: "100%",
+            padding: 15,
+            borderRadius: 999,
+            fontSize: 15,
+            fontWeight: 700,
+            border: "none",
+            cursor: "pointer",
+            background: "#C8102E",
+            color: "#fff",
+            marginTop: "auto",
+          }}
+        >
+          다음으로
+        </button>
+      ) : (
+        <button
+          onClick={handleBoard}
+          disabled={!canBoard || boarding}
+          className="btn-primary"
+          style={{
+            width: "100%",
+            padding: 15,
+            borderRadius: 999,
+            fontSize: 15,
+            fontWeight: 700,
+            border: "none",
+            cursor: canBoard && !boarding ? "pointer" : "default",
+            background: canBoard ? "#C8102E" : "#EFE7E3",
+            color: canBoard ? "#fff" : "#8A7A76",
+            marginTop: "auto",
+          }}
+        >
+          {boarding ? "확인 중..." : "탑승 확인"}
+        </button>
+      )}
     </div>
   );
 }

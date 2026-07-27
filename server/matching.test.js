@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest'
-import { passesGenderFilter, sortByArrivalPriority, describeActivity } from './matching.js'
+import { passesGenderFilter, sortByArrivalPriority, describeActivity, classifyBoarding } from './matching.js'
 
 test('둘 다 genderOnly가 false면 성별이 달라도 보여준다', () => {
   const me = { gender: 'female', genderOnly: false }
@@ -106,4 +106,31 @@ test('61분 전이면 61분 전 활동이라고 보여준다', () => {
 
 test('활동 기록이 없으면 활동 정보 없음이다', () => {
   expect(describeActivity(null, NOW)).toEqual({ isActive: false, label: '활동 정보 없음' })
+})
+
+const REFERENCE_DATE = new Date('2026-07-27T00:00:00Z')
+
+test('정확히 약속 시간에 탑승확인하면 정상이다', () => {
+  const boardedAt = new Date('2026-07-27T20:30:00Z')
+  expect(classifyBoarding('20:30:00', REFERENCE_DATE, boardedAt)).toEqual({ status: 'on_time', minutesLate: 0 })
+})
+
+test('약속보다 일찍 탑승확인해도 정상이다 (지각 없음)', () => {
+  const boardedAt = new Date('2026-07-27T20:27:00Z')
+  expect(classifyBoarding('20:30:00', REFERENCE_DATE, boardedAt)).toEqual({ status: 'on_time', minutesLate: 0 })
+})
+
+test('경계값 5분 늦으면 아직 정상이다', () => {
+  const boardedAt = new Date('2026-07-27T20:35:00Z')
+  expect(classifyBoarding('20:30:00', REFERENCE_DATE, boardedAt)).toEqual({ status: 'on_time', minutesLate: 5 })
+})
+
+test('6분 늦으면 지각이다', () => {
+  const boardedAt = new Date('2026-07-27T20:36:00Z')
+  expect(classifyBoarding('20:30:00', REFERENCE_DATE, boardedAt)).toEqual({ status: 'late', minutesLate: 6 })
+})
+
+test('30분 늦으면 지각이고 늦은 분을 그대로 보여준다', () => {
+  const boardedAt = new Date('2026-07-27T21:00:00Z')
+  expect(classifyBoarding('20:30:00', REFERENCE_DATE, boardedAt)).toEqual({ status: 'late', minutesLate: 30 })
 })
