@@ -1,15 +1,17 @@
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-import { runProductDevelopment } from './product-development-bootstrap.mjs'
+import {
+  resolveProductDevelopmentArguments,
+  startProductDevelopment,
+} from './product-development-bootstrap.mjs'
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url))
-const usage =
-  'Usage: npm run dev -- [--app-data-root <absolute-directory>] [--workspace <absolute-directory>]'
 
 type ProductDevelopmentStarter = (options: {
-  readonly arguments: readonly string[]
+  readonly appDataRoot: string
   readonly environment: NodeJS.ProcessEnv
+  readonly workspaceRoot: string | undefined
 }) => Promise<void>
 
 export function resolveCanonicalProductArguments(
@@ -19,37 +21,12 @@ export function resolveCanonicalProductArguments(
   readonly appDataRoot: string
   readonly workspaceRoot: string | undefined
 } {
-  let appDataRoot: string | undefined
-  let workspaceRoot: string | undefined
-  for (let index = 0; index < arguments_.length; index += 1) {
-    const argument = arguments_[index]
-    const value = arguments_[index + 1]
-    if (
-      argument === '--app-data-root' &&
-      appDataRoot === undefined &&
-      value !== undefined &&
-      path.isAbsolute(value)
-    ) {
-      appDataRoot = value
-      index += 1
-      continue
-    }
-    if (
-      argument === '--workspace' &&
-      workspaceRoot === undefined &&
-      value !== undefined &&
-      path.isAbsolute(value)
-    ) {
-      workspaceRoot = value
-      index += 1
-      continue
-    }
-    throw new Error(usage)
-  }
-  return {
-    appDataRoot: appDataRoot ?? path.join(path.dirname(packageRoot), '.ay-ple'),
-    workspaceRoot,
-  }
+  return resolveProductDevelopmentArguments({
+    arguments: arguments_,
+    environment: {
+      AY_PLE_APP_DATA_ROOT: path.join(path.dirname(packageRoot), '.ay-ple'),
+    },
+  })
 }
 
 export async function runCanonicalProduct(options: {
@@ -62,14 +39,8 @@ export async function runCanonicalProduct(options: {
     options.arguments,
     options.packageRoot,
   )
-  await (options.startProductDevelopment ?? runProductDevelopment)({
-    arguments: [
-      '--app-data-root',
-      selected.appDataRoot,
-      ...(selected.workspaceRoot === undefined
-        ? []
-        : ['--workspace', selected.workspaceRoot]),
-    ],
+  await (options.startProductDevelopment ?? startProductDevelopment)({
+    ...selected,
     environment: options.environment,
   })
 }

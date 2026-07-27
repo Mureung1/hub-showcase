@@ -124,6 +124,81 @@ test('rejects overlap and symlink roots before creating app data or changing cal
   }
 })
 
+test('rejects unsafe controlled-state ancestors before writing through them', async () => {
+  const parent = await mkdtemp(path.join(tmpdir(), 'ay-ple-product-roots-'))
+  const packageRoot = path.join(parent, 'hub')
+  const appDataRoot = path.join(parent, 'app-data')
+  const externalStateRoot = path.join(parent, 'external-state')
+  const globalCodexHome = path.join(parent, 'global-codex')
+
+  try {
+    await Promise.all([
+      mkdir(packageRoot),
+      mkdir(appDataRoot),
+      mkdir(externalStateRoot),
+      mkdir(globalCodexHome),
+    ])
+    await symlink(externalStateRoot, path.join(appDataRoot, 'state'))
+
+    await assert.rejects(
+      resolveCanonicalProductRoots({
+        appDataRoot,
+        environment: { CODEX_HOME: globalCodexHome },
+        packageRoot,
+      }),
+      /controlled runtime home.*non-symlink directory/,
+    )
+    await assert.rejects(
+      lstat(path.join(externalStateRoot, 'runtime/home')),
+      { code: 'ENOENT' },
+    )
+    await assert.rejects(lstat(path.join(appDataRoot, 'temp')), {
+      code: 'ENOENT',
+    })
+  } finally {
+    await rm(parent, { force: true, recursive: true })
+  }
+})
+
+test('rejects symlinked Runtime and cache ancestors in the root contract', async (t) => {
+  for (const managedName of ['runtime', 'cache'] as const) {
+    await t.test(managedName, async () => {
+      const parent = await mkdtemp(
+        path.join(tmpdir(), 'ay-ple-product-roots-'),
+      )
+      const packageRoot = path.join(parent, 'hub')
+      const appDataRoot = path.join(parent, 'app-data')
+      const externalRoot = path.join(parent, `external-${managedName}`)
+      const globalCodexHome = path.join(parent, 'global-codex')
+
+      try {
+        await Promise.all([
+          mkdir(packageRoot),
+          mkdir(appDataRoot),
+          mkdir(externalRoot),
+          mkdir(globalCodexHome),
+        ])
+        await symlink(externalRoot, path.join(appDataRoot, managedName))
+
+        await assert.rejects(
+          resolveCanonicalProductRoots({
+            appDataRoot,
+            environment: { CODEX_HOME: globalCodexHome },
+            packageRoot,
+          }),
+          new RegExp(`${managedName}.*non-symlink directory`),
+        )
+        assert.deepEqual(
+          (await lstat(externalRoot)).isDirectory(),
+          true,
+        )
+      } finally {
+        await rm(parent, { force: true, recursive: true })
+      }
+    })
+  }
+})
+
 test('does not treat ambient cwd or CODEX_CHAT_WORKSPACE as workspace selection', async () => {
   const parent = await mkdtemp(path.join(tmpdir(), 'ay-ple-product-roots-'))
   const packageRoot = path.join(parent, 'hub')

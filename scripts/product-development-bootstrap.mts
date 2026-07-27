@@ -52,21 +52,18 @@ export function resolveExplicitAppDataRoot(options: {
   return resolveProductDevelopmentArguments(options).appDataRoot
 }
 
-export async function runProductDevelopment(options: {
-  readonly arguments: readonly string[]
+export async function startProductDevelopment(options: {
+  readonly appDataRoot: string
   readonly environment: NodeJS.ProcessEnv
+  readonly workspaceRoot: string | undefined
 }): Promise<void> {
-  const selectedArguments = resolveProductDevelopmentArguments({
-    arguments: options.arguments,
-    environment: options.environment,
-  })
   const roots = await resolveCanonicalProductRoots({
-    appDataRoot: selectedArguments.appDataRoot,
+    appDataRoot: options.appDataRoot,
     environment: options.environment,
     packageRoot: repositoryRoot,
-    ...(selectedArguments.workspaceRoot === undefined
+    ...(options.workspaceRoot === undefined
       ? {}
-      : { workspaceRoot: selectedArguments.workspaceRoot }),
+      : { workspaceRoot: options.workspaceRoot }),
   })
   const appDataRoot = roots.appDataRoot
   const workspaceRoot = roots.workspaceRoot
@@ -106,6 +103,16 @@ export async function runProductDevelopment(options: {
     },
   )
   await result
+}
+
+export async function runProductDevelopment(options: {
+  readonly arguments: readonly string[]
+  readonly environment: NodeJS.ProcessEnv
+}): Promise<void> {
+  await startProductDevelopment({
+    ...resolveProductDevelopmentArguments(options),
+    environment: options.environment,
+  })
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

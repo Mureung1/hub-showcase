@@ -26,8 +26,9 @@ test('canonical local startup defaults only app data and does not adopt ambient 
 
     let delegated:
       | {
-          readonly arguments: readonly string[]
+          readonly appDataRoot: string
           readonly environment: NodeJS.ProcessEnv
+          readonly workspaceRoot: string | undefined
         }
       | undefined
     await runCanonicalProduct({
@@ -42,10 +43,11 @@ test('canonical local startup defaults only app data and does not adopt ambient 
       },
     })
 
-    assert.deepEqual(delegated?.arguments, [
-      '--app-data-root',
+    assert.equal(
+      delegated?.appDataRoot,
       path.join(canonicalParent, '.ay-ple'),
-    ])
+    )
+    assert.equal(delegated?.workspaceRoot, undefined)
     assert.equal(delegated?.environment.KEEP_ME, 'yes')
     assert.equal(
       delegated?.environment.CODEX_CHAT_WORKSPACE,
@@ -73,6 +75,6 @@ test('canonical local startup accepts an explicit workspace argument without a h
         ['--workspace', 'relative/semester'],
         '/product/hub',
       ),
-    /Usage:/,
+    /workspace must be an explicit absolute directory/,
   )
 })

@@ -54,6 +54,16 @@ export async function resolveCanonicalProductRoots(options: {
           options.workspaceRoot,
           'workspace root',
         )
+  const runtimeRoot = path.join(
+    appDataRoot,
+    'runtime/production-runtime-darwin-arm64',
+  )
+  const runtimeCacheRoot = path.join(
+    appDataRoot,
+    'cache/production-runtime',
+  )
+  const runtimeHome = path.join(appDataRoot, 'state/runtime/home')
+  const tempDirectory = path.join(appDataRoot, 'temp')
 
   const independentRoots = [
     packageRoot,
@@ -65,23 +75,32 @@ export async function resolveCanonicalProductRoots(options: {
     throw new TypeError('Product roots must not overlap')
   }
 
+  for (const [directory, label] of [
+    [runtimeRoot, 'runtime root'],
+    [runtimeCacheRoot, 'runtime cache root'],
+    [runtimeHome, 'controlled runtime home'],
+    [tempDirectory, 'controlled temp directory'],
+  ] as const) {
+    await preflightManagedDescendant(appDataRoot, directory, label)
+  }
+
   await createManagedDirectory(appDataRoot, 'app data root')
-  const runtimeHome = path.join(appDataRoot, 'state/runtime/home')
-  const tempDirectory = path.join(appDataRoot, 'temp')
-  await createManagedDirectory(runtimeHome, 'controlled runtime home')
-  await createManagedDirectory(tempDirectory, 'controlled temp directory')
+  await createManagedDescendant(
+    appDataRoot,
+    runtimeHome,
+    'controlled runtime home',
+  )
+  await createManagedDescendant(
+    appDataRoot,
+    tempDirectory,
+    'controlled temp directory',
+  )
 
   return {
     packageRoot,
     appDataRoot,
-    runtimeRoot: path.join(
-      appDataRoot,
-      'runtime/production-runtime-darwin-arm64',
-    ),
-    runtimeCacheRoot: path.join(
-      appDataRoot,
-      'cache/production-runtime',
-    ),
+    runtimeRoot,
+    runtimeCacheRoot,
     globalCodexHome,
     runtimeHome,
     tempDirectory,
@@ -152,6 +171,75 @@ async function createManagedDirectory(
   } catch {
     throw new TypeError(`${label} must be a writable directory`)
   }
+}
+
+async function preflightManagedDescendant(
+  managedRoot: string,
+  directory: string,
+  label: string,
+): Promise<void> {
+  const relative = managedRelativePath(managedRoot, directory, label)
+  let current = managedRoot
+  for (const segment of relative.split(path.sep)) {
+    current = path.join(current, segment)
+    try {
+      const canonical = await canonicalExistingDirectory(
+        current,
+        `${label} ancestor`,
+      )
+      if (canonical !== current) {
+        throw new TypeError(
+          `${label} ancestor resolved outside app data`,
+        )
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return
+      throw error
+    }
+  }
+}
+
+async function createManagedDescendant(
+  managedRoot: string,
+  directory: string,
+  label: string,
+): Promise<void> {
+  const relative = managedRelativePath(managedRoot, directory, label)
+  let current = managedRoot
+  for (const segment of relative.split(path.sep)) {
+    current = path.join(current, segment)
+    try {
+      await mkdir(current, { mode: 0o700 })
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+    }
+    const canonical = await canonicalExistingDirectory(current, label)
+    if (canonical !== current) {
+      throw new TypeError(`${label} resolved outside app data`)
+    }
+  }
+  try {
+    await access(directory, fsConstants.W_OK)
+  } catch {
+    throw new TypeError(`${label} must be a writable directory`)
+  }
+}
+
+function managedRelativePath(
+  managedRoot: string,
+  directory: string,
+  label: string,
+): string {
+  const relative = path.relative(managedRoot, directory)
+  if (
+    relative.length === 0 ||
+    path.isAbsolute(relative) ||
+    relative === '..' ||
+    relative.startsWith(`..${path.sep}`)
+  ) {
+    throw new TypeError(`${label} must be below app data`)
+  }
+  return relative
 }
 
 function requireAbsolutePath(directory: string, label: string): void {

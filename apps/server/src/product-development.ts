@@ -12,7 +12,6 @@ const productOrigin = 'http://127.0.0.1:4173'
 
 export type ProductDevelopmentBootstrapErrorCode =
   | 'product_app_data_root_required'
-  | 'product_codex_home_invalid'
   | 'product_mode_invalid'
   | 'product_package_root_required'
   | 'product_workspace_root_required'

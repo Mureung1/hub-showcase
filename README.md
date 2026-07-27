@@ -36,13 +36,12 @@ Local-first는 offline을 뜻하지 않으며 Codex 실행의 provider 전송 �
 
 ```bash
 npm install
-npm run materialize:production-runtime -w @ay-ple/codex-chat-runtime
 npm run dev
 ```
 
-Canonical development command는 `packageRoot`와 sibling external app data를 검증하고, external verified Runtime과 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 production bundle을 materialize해야 합니다.
+Fresh clone에서는 `npm run dev` 전에 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 production bundle을 materialize해야 합니다. Canonical development command는 검증한 external Runtime과 operating state로 Express Server와 Vite Chat Shell을 함께 시작합니다.
 
-기본 `appDataRoot`는 repository sibling `../.ay-ple/`이고 Runtime은 그 아래 `runtime/production-runtime-darwin-arm64`, controlled `HOME`은 `state/runtime/home`, temporary state는 `temp/`를 사용합니다. Codex account·config·session은 caller의 전역 `CODEX_HOME`, 또는 미설정 시 `~/.codex`를 그대로 사용하며 별도 SQLite home을 만들지 않습니다. Default startup은 SemesterWorkspace를 자동 선택하지 않고 `CODEX_CHAT_WORKSPACE`도 selection authority로 사용하지 않습니다.
+Canonical root ownership과 Runtime state layout은 [Server README](apps/server/README.md)와 [Codex Runtime 격리 문서](docs/architecture/codex-runtime-isolation.md)가 소유합니다. Default startup은 SemesterWorkspace를 자동 선택하지 않으며 필요할 때만 absolute path를 명시합니다.
 
 Current-v2 compatibility workspace를 개발 중 명시적으로 열어야 할 때만 absolute path를 전달합니다.
 

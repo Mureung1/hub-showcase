@@ -79,7 +79,7 @@ Sibling `../.ay-ple/`은 Git 밖의 cross-workspace 운영 metadata·config·Run
 | Account transition | Public-preview auth-only→workspace transition과 `Semester Ready` gate는 제거됐다. Current product는 시작부터 workspace Runtime과 전역 `CODEX_HOME`을 사용한다. |
 | Ready registry commit | Admitted workspace와 valid bundle은 pending setup result일 뿐이다. Auth-only Runtime close, workspace Runtime start와 fresh account read가 끝난 뒤에만 active Ready pointer를 commit한다. 실패하면 workspace·bundle을 보존하고 pending transaction에서 transition retry·reauth로 수렴한다. |
 | Root relation | Package, app data, workspace와 controlled child root의 의미를 섞지 않고 unsafe overlap과 symlink를 거절한다. |
-| Manual override | Legacy development materializer가 `CODEX_CHAT_WORKSPACE`를 읽더라도 canonical startup과 root resolver는 이를 workspace admission, Runtime root, app data 또는 `cwd` authority로 사용하지 않는다. |
+| Manual override | `CODEX_CHAT_WORKSPACE`는 당시 development materializer의 caller-owned selection input일 뿐 public workspace admission, Runtime root, app data 또는 별도 `cwd` authority가 아니었다. |
 | Data loss | `appDataRoot`가 사라져도 `RawMaterial`과 confirmed·settled product state를 workspace에서 다시 열 수 있다. |
 
 Current product factory는 Runtime spawn 전과 factory 내부에서 external appData artifact·path를 다시 검증해 TOCTOU drift를 fail closed한다. Child environment는 controlled root와 필수 OS directory만으로 재구성하며 ambient credential·provider·`PYTHONPATH`·dynamic loader variable를 계승하지 않는다.
