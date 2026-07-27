@@ -1,0 +1,370 @@
+<title>respec — 발표 슬라이드</title>
+<style>
+  :root {
+    --sky: #3a5be3;
+    --violet: #8b3ff2;
+    --cyan: #1fe0cf;
+    --ink: #ffffff;
+    --muted: rgba(255, 255, 255, 0.78);
+    --dim: rgba(255, 255, 255, 0.55);
+    --gold: #ffcf7a;
+    --gold-ink: #4a2e00;
+    --glass: rgba(255, 255, 255, 0.10);
+    --glass-strong: rgba(255, 255, 255, 0.16);
+    --edge: rgba(255, 255, 255, 0.20);
+    --shadow: 0 20px 60px rgba(20, 12, 60, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", "Malgun Gothic", sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "Consolas", monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  .deck {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    background: linear-gradient(160deg, var(--sky) 0%, var(--violet) 52%, var(--cyan) 100%);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* 배경 오브 — 느리게 어긋나게 표류 */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.45;
+    pointer-events: none;
+  }
+  .orb-a { width: 46vw; height: 46vw; left: -12vw; top: -14vw; background: #6f8bff; animation: drift-a 34s ease-in-out infinite; }
+  .orb-b { width: 40vw; height: 40vw; right: -10vw; bottom: -12vw; background: #16d6c6; animation: drift-b 42s ease-in-out infinite; }
+  .orb-c { width: 30vw; height: 30vw; right: 20vw; top: -10vw; background: #b98bff; animation: drift-a 38s ease-in-out infinite reverse; }
+  @keyframes drift-a { 0%,100% { transform: translate(0,0); } 50% { transform: translate(6vw, 5vh); } }
+  @keyframes drift-b { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-5vw, -4vh); } }
+  @media (prefers-reduced-motion: reduce) { .orb { animation: none; } }
+
+  /* 상단 바 */
+  .topbar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 34px;
+    z-index: 5;
+  }
+  .brand { display: flex; align-items: center; gap: 9px; }
+  .brand-mark { width: 30px; height: 30px; border-radius: 8px; box-shadow: var(--shadow); display: block; }
+  .brand-word { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em; }
+  .topbar-spacer { flex: 1; }
+  .counter { font-family: var(--mono); font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  /* 진행 바 */
+  .progress { position: absolute; top: 0; left: 0; height: 3px; background: var(--gold); z-index: 6; transition: width 0.35s cubic-bezier(.4,0,.2,1); }
+
+  /* 슬라이드 */
+  .stage { position: absolute; inset: 0; display: grid; place-items: center; padding: 84px 6vw 68px; }
+  .slide {
+    display: none;
+    width: min(1040px, 100%);
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+  }
+  .slide.active { display: block; animation: rise 0.45s cubic-bezier(.2,.7,.2,1); }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .slide.active { animation: none; } }
+
+  .eyebrow {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+  }
+  h1 { font-size: clamp(2.2rem, 5.2vw, 3.6rem); line-height: 1.08; letter-spacing: -0.025em; margin: 0 0 18px; text-wrap: balance; font-weight: 800; }
+  h2 { font-size: clamp(1.7rem, 3.6vw, 2.5rem); line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 22px; text-wrap: balance; font-weight: 800; }
+  .lead { font-size: clamp(1.05rem, 1.7vw, 1.35rem); color: var(--muted); line-height: 1.6; max-width: 60ch; }
+
+  .panel {
+    background: var(--glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--edge);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    padding: 26px 30px;
+  }
+
+  ul.pts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  ul.pts > li { display: flex; gap: 14px; align-items: flex-start; font-size: clamp(1rem, 1.5vw, 1.18rem); line-height: 1.5; }
+  ul.pts > li::before { content: ""; flex: none; width: 9px; height: 9px; margin-top: 0.5em; border-radius: 3px; background: var(--gold); box-shadow: 0 0 0 4px rgba(255,207,122,0.18); }
+  ul.pts b { color: var(--ink); font-weight: 700; }
+  ul.pts .sub { color: var(--muted); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 760px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--glass); border: 1px solid var(--edge); border-radius: 16px; padding: 20px 22px; }
+  .card h3 { margin: 0 0 8px; font-size: 1.12rem; font-weight: 700; }
+  .card p { margin: 0; color: var(--muted); font-size: 0.98rem; line-height: 1.55; }
+  .card .tag { font-family: var(--mono); font-size: 0.72rem; color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* 통계 타일 */
+  .stat { text-align: center; }
+  .stat .num { font-size: clamp(2.2rem, 4.4vw, 3.2rem); font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; line-height: 1; }
+  .stat .lbl { margin-top: 8px; color: var(--muted); font-size: 0.95rem; }
+
+  /* 아키텍처 다이어그램 */
+  .arch { display: flex; align-items: stretch; gap: 14px; flex-wrap: wrap; }
+  .arch-col { flex: 1; min-width: 180px; background: var(--glass); border: 1px solid var(--edge); border-radius: 16px; padding: 18px; }
+  .arch-col h4 { margin: 0 0 10px; font-size: 0.95rem; letter-spacing: 0.02em; }
+  .arch-col .mono { font-family: var(--mono); font-size: 0.82rem; color: var(--muted); line-height: 1.7; }
+  .arch-arrow { align-self: center; font-size: 1.6rem; color: var(--gold); }
+  @media (max-width: 760px) { .arch-arrow { transform: rotate(90deg); align-self: center; } }
+  .arch-side { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  .chip { font-family: var(--mono); font-size: 0.78rem; padding: 7px 13px; border-radius: 999px; background: var(--glass-strong); border: 1px solid var(--edge); color: var(--muted); }
+  .chip.gold { color: var(--gold); border-color: rgba(255,207,122,0.4); }
+
+  code { font-family: var(--mono); background: rgba(0,0,0,0.22); padding: 2px 7px; border-radius: 6px; font-size: 0.9em; color: #ffe9c4; }
+
+  .title-slide { text-align: center; }
+  .title-slide .biglogo { width: 84px; height: 84px; border-radius: 22px; box-shadow: var(--shadow); margin: 0 auto 26px; display: block; }
+  .title-slide .by { margin-top: 26px; font-family: var(--mono); color: var(--dim); font-size: 0.9rem; letter-spacing: 0.05em; }
+
+  .demo-list { display: flex; flex-direction: column; gap: 10px; }
+  .demo-row { display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start; background: var(--glass); border: 1px solid var(--edge); border-radius: 12px; padding: 12px 16px; }
+  .demo-row .n { font-family: var(--mono); font-weight: 800; color: var(--gold); font-size: 1.05rem; }
+  .demo-row .act { font-weight: 700; }
+  .demo-row .ev { color: var(--muted); font-size: 0.92rem; margin-top: 2px; }
+
+  /* 하단 네비 */
+  .nav { position: absolute; bottom: 22px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 16px; z-index: 5; }
+  .navbtn { background: var(--glass-strong); border: 1px solid var(--edge); color: var(--ink); width: 42px; height: 42px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; display: grid; place-items: center; transition: transform 0.15s, background 0.15s; }
+  .navbtn:hover { background: rgba(255,255,255,0.26); transform: translateY(-2px); }
+  .navbtn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .dots { display: flex; gap: 8px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.3); border: none; padding: 0; cursor: pointer; transition: background 0.2s, transform 0.2s; }
+  .dot.on { background: var(--gold); transform: scale(1.25); }
+  .dot:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .hint { position: absolute; bottom: 26px; right: 30px; font-family: var(--mono); font-size: 0.72rem; color: var(--dim); z-index: 5; }
+  @media (max-width: 640px) { .hint { display: none; } .stage { padding: 76px 5vw 92px; } }
+</style>
+
+<div class="deck">
+  <div class="orb orb-a"></div>
+  <div class="orb orb-b"></div>
+  <div class="orb orb-c"></div>
+  <div class="progress" id="progress"></div>
+
+  <div class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="tm" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#3a5be3"/><stop offset=".52" stop-color="#8b3ff2"/><stop offset="1" stop-color="#1fe0cf"/></linearGradient></defs><rect x="2" y="2" width="60" height="60" rx="16" fill="url(#tm)"/><g fill="none" stroke="#fff" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"><path d="M26 21 V46"/><path d="M26 31 Q 29.5 22.5 41 24"/></g></svg>
+      <span class="brand-word">respec</span>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="counter"><span id="cur">1</span> / <span id="total">12</span></div>
+  </div>
+
+  <div class="stage">
+    <!-- 1 -->
+    <section class="slide active title-slide">
+      <svg class="biglogo" viewBox="0 0 64 64" aria-hidden="true"><rect x="2" y="2" width="60" height="60" rx="16" fill="url(#tm)"/><g fill="none" stroke="#fff" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"><path d="M26 21 V46"/><path d="M26 31 Q 29.5 22.5 41 24"/></g></svg>
+      <h1>respec</h1>
+      <p class="lead" style="margin-inline:auto;">게임 기획을 <b>쓰고</b>, 사람과 AI에게 <b>평가받고</b>, 챌린지로 <b>겨루는</b> 웹 플랫폼</p>
+      <p class="by">발표자 · N011 권혁준</p>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide">
+      <span class="eyebrow">문제</span>
+      <h2>기획 지망생이 부딪히는 세 개의 벽</h2>
+      <div class="grid3">
+        <div class="card"><span class="tag">Wall 01</span><h3>백지의 벽</h3><p>무엇을, 어떻게 써야 할지 막막하다.</p></div>
+        <div class="card"><span class="tag">Wall 02</span><h3>피드백의 벽</h3><p>써도 제대로 봐줄 사람이 없다.</p></div>
+        <div class="card"><span class="tag">Wall 03</span><h3>완성의 벽</h3><p>마감이 없으니 끝을 못 낸다.</p></div>
+      </div>
+      <p class="lead" style="margin-top:22px;">respec은 이 셋을 <b>가이드 템플릿 · 사람+AI 피드백 · 마감 있는 챌린지</b>로 푼다.</p>
+    </section>
+
+    <!-- 3 -->
+    <section class="slide">
+      <span class="eyebrow">개념</span>
+      <h2>두 가지 글쓰기, 하나의 흐름</h2>
+      <div class="grid2">
+        <div class="card"><span class="tag">역기획 · Reverse</span><h3>기존 게임을 분해</h3><p>젤다·하데스처럼 이미 나온 게임의 시스템을 기획자의 눈으로 뜯어본다.</p></div>
+        <div class="card"><span class="tag">순기획 · Forward</span><h3>내 게임을 제안</h3><p>아직 없는 오리지널 게임을 직접 설계해 발표한다.</p></div>
+      </div>
+      <p class="lead" style="margin-top:22px;">둘 다 <b>가이드 템플릿</b>에서 시작 → 발행하면 <b>AI가 즉시 피드백</b> + 사람 코멘트 → <b>챌린지</b>에서 점수까지.</p>
+    </section>
+
+    <!-- 4 -->
+    <section class="slide">
+      <span class="eyebrow">라이브 데모 · 약 3분</span>
+      <h2>직접 보여드립니다</h2>
+      <div class="demo-list">
+        <div class="demo-row"><span class="n">1</span><div><div class="act">둘러보기 — 장르·분류 두 축 필터</div><div class="ev">130여 개 예시, 금색 “AI 예시” 배지</div></div></div>
+        <div class="demo-row"><span class="n">2</span><div><div class="act">작성하기 — 순기획 원페이지 피치</div><div class="ev">긴 문단 대신 짧은 필드 여러 개</div></div></div>
+        <div class="demo-row"><span class="n">3</span><div><div class="act">역기획 — 게임 입력 시 장르 렌즈 등장</div><div class="ev">FPS면 반동·TTK, 로그라이크면 런 길이·빌드</div></div></div>
+        <div class="demo-row"><span class="n">4</span><div><div class="act">챌린지 — 4개 동시 · 배점·소재·예시 공개</div><div class="ev">제출 → AI 채점 총점+항목별 → 리더보드</div></div></div>
+        <div class="demo-row"><span class="n">5</span><div><div class="act">백엔드 증거 — Network 탭 · curl · Supabase</div><div class="ev">화면이 아니라 DB에서 실제로 온다</div></div></div>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="slide">
+      <span class="eyebrow">내가 더한 디테일</span>
+      <h2>이번에 직접 파고든 네 가지</h2>
+      <ul class="pts">
+        <li><span></span><div><b>순기획 템플릿 + 구조화 짧은 필드</b> <span class="sub">— 긴 문단 요구를 없애 진입 문턱을 낮추고 AI 입력을 정제</span></div></li>
+        <li><span></span><div><b>게임 15종 · 시스템 131개 카탈로그 + AI 예시 37편</b> <span class="sub">— 고르면 바로 참고할 완성본</span></div></li>
+        <li><span></span><div><b>장르 렌즈 (11개 장르)</b> <span class="sub">— 장르마다 볼 것이 다르다는 걸 작성 가이드·챌린지·AI 세 곳에 심음</span></div></li>
+        <li><span></span><div><b>브랜딩</b> <span class="sub">— 로고·파비콘을 디자인 시스템에 맞춰 통일 (respec = 스킬 재분배)</span></div></li>
+      </ul>
+    </section>
+
+    <!-- 6 -->
+    <section class="slide">
+      <span class="eyebrow">아키텍처</span>
+      <h2>React → Express → Supabase</h2>
+      <div class="arch">
+        <div class="arch-col"><h4>화면 · React 19 + Vite</h4><div class="mono">페이지 · AuthContext<br/>lib/storage.js ← 데이터 창구 하나<br/>lib/api.js · Bearer 토큰</div></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-col"><h4>서버 · Express</h4><div class="mono">requireAuth 미들웨어<br/>routes/documents.js<br/>documents-mapper.js<br/>aiFeedback.js</div></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-col"><h4>DB · Supabase Postgres</h4><div class="mono">documents (jsonb)<br/>profiles · reactions<br/>ai_feedback_logs<br/>전 테이블 RLS ON</div></div>
+      </div>
+      <div class="arch-side">
+        <span class="chip gold">Supabase Auth · 이메일/Google/GitHub</span>
+        <span class="chip gold">Gemini · gemini-2.5-flash</span>
+        <span class="chip">데이터 창구는 storage.js 하나 · LLM 키는 서버 전용</span>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section class="slide">
+      <span class="eyebrow">데이터베이스</span>
+      <h2>4개 테이블 · JSONB 중심</h2>
+      <div class="grid2">
+        <div class="card"><span class="tag">핵심</span><h3>documents</h3><p>sections · comments를 <b>JSONB</b>로. 유연하고 한 번에 통째로 조회. 최근 컬럼: <code>category</code> · <code>ai_score</code> · <code>is_example</code> · <code>edit_password_hash</code></p></div>
+        <div class="card"><span class="tag">보조</span><h3>profiles · reactions · ai_feedback_logs</h3><p>닉네임/초심자 · 좋아요·북마크(유저당 1회) · AI 일일 호출 기록</p></div>
+      </div>
+      <ul class="pts" style="margin-top:20px;">
+        <li><span></span><div><b>발행 = status flip</b> <span class="sub">— 새 행을 만들지 않고 초안 행의 status만 뒤집어 코멘트·시각 보존</span></div></li>
+        <li><span></span><div><b>DB 레벨 가드</b> <span class="sub">— <code>publish_requires_tags</code>: 태그 없으면 DB가 발행을 막는다</span></div></li>
+      </ul>
+    </section>
+
+    <!-- 8 -->
+    <section class="slide">
+      <span class="eyebrow">AI 파이프라인</span>
+      <h2>구조를 강제하는 피드백</h2>
+      <ul class="pts">
+        <li><span></span><div><b>구조적 출력(responseSchema)</b> <span class="sub">— 섹션별 코멘트 + 총평 + 채점을 JSON 스키마로 강제</span></div></li>
+        <li><span></span><div><b>프롬프트 분기</b> <span class="sub">— 역기획/순기획(kind) · 장르 렌즈에 따라 달라져 뻔한 피드백을 막음</span></div></li>
+        <li><span></span><div><b>thinking off</b> <span class="sub">— 2.5-flash는 사고 토큰도 출력 한도에서 차감 → 껐더니 잘림 해결 + 속도↑</span></div></li>
+        <li><span></span><div><b>일일 호출 한도</b> <span class="sub">— 미리보기 호출도 같은 한도에 합산해 비용 방어</span></div></li>
+      </ul>
+    </section>
+
+    <!-- 9 -->
+    <section class="slide">
+      <span class="eyebrow">보안 · 신뢰 경계</span>
+      <h2>클라이언트가 보낸 값을 믿지 않는다</h2>
+      <div class="grid2">
+        <div class="card"><span class="tag">서버가 결정</span><h3>위조 차단</h3><p><code>author_id</code> · <code>is_ai</code> · <code>ai_score</code>는 서버가 정한다. 사람 글의 AI 위장·점수 위조를 막는다.</p></div>
+        <div class="card"><span class="tag">RLS ON · 정책 없음</span><h3>옆문 잠금</h3><p>anon 키는 번들에 공개된다. 정책 없이 RLS만 켜 직접 접근을 전부 막고, 접근은 백엔드 한 문으로만.</p></div>
+      </div>
+      <p class="lead" style="margin-top:20px;">이 구멍들은 <b>아키텍처 다이어그램을 그리다 발견</b> — 7가지를 고치고 <b>회귀 테스트로 잠갔다.</b></p>
+    </section>
+
+    <!-- 10 -->
+    <section class="slide">
+      <span class="eyebrow">차별점</span>
+      <h2>AI 자동 채점 챌린지</h2>
+      <ul class="pts">
+        <li><span></span><div><b>배점을 미리 공개</b> <span class="sub">— 예: 사당 챌린지 = 구조 30 · 학습곡선 30 · 유도 20 · 근거 20</span></div></li>
+        <li><span></span><div><b>공개된 배점대로 AI가 채점</b> <span class="sub">— 총점 + 항목별 점수 + 한 줄 근거</span></div></li>
+        <li><span></span><div><b>추가 API 비용 0</b> <span class="sub">— 채점은 기존 피드백 호출에 통합</span></div></li>
+        <li><span></span><div><b>점수순 리더보드</b> <span class="sub">— 마감 후 제출작을 순위로 공개</span></div></li>
+      </ul>
+    </section>
+
+    <!-- 11 -->
+    <section class="slide">
+      <span class="eyebrow">품질</span>
+      <h2>화면만 그럴싸한 게 아니다</h2>
+      <div class="grid3">
+        <div class="card stat"><div class="num">28</div><div class="lbl">백엔드 테스트 통과</div></div>
+        <div class="card stat"><div class="num">31</div><div class="lbl">프론트 테스트 통과</div></div>
+        <div class="card stat"><div class="num">7</div><div class="lbl">보안 결함 → 회귀 테스트로 잠금</div></div>
+      </div>
+      <div class="grid3" style="margin-top:16px;">
+        <div class="card stat"><div class="num">43</div><div class="lbl">발행 문서</div></div>
+        <div class="card stat"><div class="num">37</div><div class="lbl">AI 예시 기획서</div></div>
+        <div class="card stat"><div class="num">131</div><div class="lbl">게임 시스템 카탈로그</div></div>
+      </div>
+    </section>
+
+    <!-- 12 -->
+    <section class="slide title-slide">
+      <span class="eyebrow">마무리</span>
+      <h2>쓰고 · 평가받고 · 겨루는 한 바퀴</h2>
+      <p class="lead" style="margin-inline:auto;">가이드 템플릿 · AI 피드백 · 자동 채점 챌린지로 기획 학습의 한 사이클을 완성했다.<br/>다음: AI 예시 확충 · 코멘트 테이블 정규화(동시 편집 안정성).</p>
+      <p class="by">감사합니다 · 질문 받겠습니다</p>
+    </section>
+  </div>
+
+  <div class="nav">
+    <button class="navbtn" id="prev" aria-label="이전 슬라이드">‹</button>
+    <div class="dots" id="dots"></div>
+    <button class="navbtn" id="next" aria-label="다음 슬라이드">›</button>
+  </div>
+  <div class="hint">← → 또는 Space 로 이동</div>
+</div>
+
+<script>
+  (function () {
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const total = slides.length;
+    let i = 0;
+    const cur = document.getElementById('cur');
+    const totalEl = document.getElementById('total');
+    const progress = document.getElementById('progress');
+    const dotsWrap = document.getElementById('dots');
+    totalEl.textContent = total;
+
+    slides.forEach((_, idx) => {
+      const d = document.createElement('button');
+      d.className = 'dot' + (idx === 0 ? ' on' : '');
+      d.setAttribute('aria-label', (idx + 1) + '번 슬라이드로');
+      d.addEventListener('click', () => go(idx));
+      dotsWrap.appendChild(d);
+    });
+    const dots = Array.from(dotsWrap.children);
+
+    function go(n) {
+      i = Math.max(0, Math.min(total - 1, n));
+      slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+      dots.forEach((d, idx) => d.classList.toggle('on', idx === i));
+      cur.textContent = i + 1;
+      progress.style.width = ((i + 1) / total * 100) + '%';
+      slides[i].scrollTop = 0;
+    }
+    function next() { go(i + 1); }
+    function prev() { go(i - 1); }
+
+    document.getElementById('next').addEventListener('click', next);
+    document.getElementById('prev').addEventListener('click', prev);
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); next(); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+      else if (e.key === 'Home') { go(0); }
+      else if (e.key === 'End') { go(total - 1); }
+    });
+    go(0);
+  })();
+</script>
