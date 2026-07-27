@@ -16,8 +16,8 @@ import {
   type CodexAccountReadiness,
   type CodexChatRuntimeError,
   type CodexProductActivity,
-  type CodexProductCapableRuntime,
   type CodexProductTurn,
+  type CodexWorkspaceRuntime,
   type InterruptTurnInput,
   type ReleaseThreadInput,
   type StartProductTurnInput,
@@ -580,7 +580,7 @@ type PendingInteractionSettlement =
     }
   | { readonly resolution: 'cancelled' }
 
-class ProductE2eRuntime implements CodexProductCapableRuntime {
+class ProductE2eRuntime implements CodexWorkspaceRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
   private readonly callLog: ProductRuntimeCall[] = []
   private readonly failClosedProposalCaseLog: FailClosedProposalCase[] = []
@@ -646,6 +646,23 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
         },
       ],
     }
+  }
+
+  async readEffectiveConfig(input: {
+    readonly signal: AbortSignal
+  }) {
+    input.signal.throwIfAborted()
+    return {
+      projectRootMarkers: [],
+      globalInstructionsFile: null,
+    }
+  }
+
+  async listEffectiveSkills(input: {
+    readonly signal: AbortSignal
+  }) {
+    input.signal.throwIfAborted()
+    return []
   }
 
   async startThread(input?: StartThreadInput) {
