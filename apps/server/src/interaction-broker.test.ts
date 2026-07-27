@@ -41,6 +41,7 @@ test('Interaction Broker returns one held result after atomic evidence projectio
   const server = await listen(broker.router)
 
   try {
+    await acceptHandshake(server, broker)
     const call = postBroker(server, broker, {
       protocolVersion: 1,
       kind: 'capability_call',
@@ -129,6 +130,7 @@ test('evidence failures are all-or-nothing and do not publish a card', async () 
   const server = await listen(broker.router)
 
   try {
+    await acceptHandshake(server, broker)
     for (const request of [
       requestWithEvidence({
         relativePath: 'notes.txt',
@@ -219,6 +221,11 @@ test('authentication, active lease, malformed input and busy admission fail clos
     )
     assert.equal(
       (await postBroker(server, broker, capabilityCall(request))).code,
+      'broker_unavailable',
+    )
+    await acceptHandshake(server, broker)
+    assert.equal(
+      (await postBroker(server, broker, capabilityCall(request))).code,
       'runtime_inactive',
     )
     turn = activeTurn()
@@ -293,6 +300,7 @@ test('HTTP abort and terminal lifecycle never synthesize a user result', async (
   const server = await listen(broker.router)
 
   try {
+    await acceptHandshake(server, broker)
     const controller = new AbortController()
     const call = postBroker(
       server,
@@ -353,6 +361,7 @@ test('every continuity source closes the held call without a normal result', asy
     })
     const server = await listen(broker.router)
     try {
+      await acceptHandshake(server, broker)
       const call = postBroker(
         server,
         broker,
@@ -394,6 +403,124 @@ test('every continuity source closes the held call without a normal result', asy
       await broker.appShutdown()
       await close(server)
     }
+  }
+})
+
+test('stalled UI cleanup cannot delay interrupt, credential revoke, or teardown', async () => {
+  const fixture = await createFixture()
+  const frames: unknown[] = []
+  let interrupts = 0
+  let teardowns = 0
+  const broker = await createInteractionBroker({
+    workspaceRoot: fixture.workspaceRoot,
+    activeProductTurn: () => activeTurn(),
+    uiAdapter: {
+      publish(frame) {
+        frames.push(frame)
+        if (frame.type === 'review.failed') {
+          return new Promise<void>(() => undefined)
+        }
+      },
+    },
+    interruptProductTurn: async () => {
+      interrupts += 1
+    },
+    teardownRuntime: async () => {
+      teardowns += 1
+    },
+    lifecycleDeadlineMs: 10,
+  })
+  const server = await listen(broker.router)
+
+  try {
+    await acceptHandshake(server, broker)
+    const firstCall = postBroker(
+      server,
+      broker,
+      capabilityCall(requestWithoutEvidence()),
+    )
+    await waitFor(() => frames.length === 1)
+    await broker.browserDisconnected()
+    assert.equal((await firstCall).kind, 'error')
+    assert.equal(interrupts, 1)
+
+    const secondCall = postBroker(
+      server,
+      broker,
+      capabilityCall(requestWithoutEvidence()),
+    )
+    await waitFor(() => frames.length === 3)
+    const closing = broker.runtimeReplaced()
+    assert.equal(
+      (
+        await postBroker(
+          server,
+          broker,
+          capabilityCall(requestWithoutEvidence()),
+        )
+      ).code,
+      'forbidden',
+    )
+    await closing
+    assert.equal((await secondCall).kind, 'error')
+    assert.equal(teardowns, 1)
+  } finally {
+    await broker.appShutdown()
+    await close(server)
+  }
+})
+
+test('settlement racing generation close converges without replay or a pending slot', async () => {
+  const fixture = await createFixture()
+  const frames: unknown[] = []
+  const broker = await createInteractionBroker({
+    workspaceRoot: fixture.workspaceRoot,
+    activeProductTurn: () => activeTurn(),
+    uiAdapter: { publish: (frame) => frames.push(frame) },
+  })
+  const server = await listen(broker.router)
+
+  try {
+    await acceptHandshake(server, broker)
+    const call = postBroker(
+      server,
+      broker,
+      capabilityCall(requestWithoutEvidence()),
+    )
+    await waitFor(() => frames.length === 1)
+    const interactionId = (frames[0] as { interactionId: string })
+      .interactionId
+    const outcomes = await Promise.allSettled([
+      broker.settle(interactionId, { outcome: 'accept' }),
+      broker.runtimeReplaced(),
+      call,
+    ])
+    assert.equal(outcomes[1].status, 'fulfilled')
+    assert.equal(outcomes[2].status, 'fulfilled')
+    assert.equal(frames.length, 2)
+    assert.ok(
+      (frames[1] as { type: string }).type === 'review.resolved' ||
+        (frames[1] as { type: string }).type === 'review.failed',
+    )
+    await assert.rejects(
+      broker.settle(interactionId, { outcome: 'accept' }),
+      (error) =>
+        error instanceof InteractionSettlementError &&
+        error.code === 'conflict',
+    )
+    assert.equal(
+      (
+        await postBroker(
+          server,
+          broker,
+          capabilityCall(requestWithoutEvidence()),
+        )
+      ).code,
+      'forbidden',
+    )
+  } finally {
+    await broker.appShutdown()
+    await close(server)
   }
 })
 
@@ -494,6 +621,24 @@ async function postBroker(
     broker,
     Buffer.from(JSON.stringify(body)),
     overrides,
+  )
+}
+
+async function acceptHandshake(
+  server: Server & { readonly testPort: number },
+  broker: Awaited<ReturnType<typeof createInteractionBroker>>,
+): Promise<void> {
+  assert.deepEqual(
+    await postBroker(server, broker, {
+      protocolVersion: 1,
+      kind: 'handshake',
+      serverName: 'ay_ple_interaction',
+      capabilities: ['propose_state_patch'],
+    }),
+    {
+      protocolVersion: 1,
+      kind: 'handshake_accepted',
+    },
   )
 }
 
