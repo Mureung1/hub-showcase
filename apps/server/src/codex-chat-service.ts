@@ -72,9 +72,7 @@ export class CodexChatServiceError extends Error {
 }
 
 export class CodexChatService {
-  private readonly source: CodexChatRuntimeSource
   private readonly disconnectDrainMs: number
-  private preparation?: Promise<void>
   private prepared?: CodexChatPreparedRuntime
   private unavailableReason?: CodexChatUnavailableReason
   private runtime?: CodexWorkspaceRuntime
@@ -93,7 +91,6 @@ export class CodexChatService {
   private closePromise?: Promise<void>
 
   constructor(source: CodexChatRuntimeSource, disconnectDrainMs: number) {
-    this.source = source
     this.disconnectDrainMs = disconnectDrainMs
     if (source.kind === 'prepared') this.prepared = source.prepared
     if (source.kind === 'unavailable') this.unavailableReason = source.reason
@@ -453,28 +450,7 @@ export class CodexChatService {
     }
   }
 
-  private async ensurePrepared(): Promise<void> {
-    if (this.prepared || this.unavailableReason || this.source.kind !== 'candidate') {
-      return
-    }
-    this.preparation ??= this.prepareCandidate(this.source)
-    await this.preparation
-  }
-
-  private async prepareCandidate(
-    source: Extract<CodexChatRuntimeSource, { kind: 'candidate' }>,
-  ): Promise<void> {
-    const result = await source.prepare()
-    if (result.kind === 'prepared') {
-      this.prepared = result.prepared
-      return
-    }
-    this.unavailableReason = result.reason
-  }
-
   private async getRuntime(): Promise<CodexWorkspaceRuntime> {
-    this.requireAvailable()
-    await this.ensurePrepared()
     this.requireAvailable()
     if (this.runtime) return this.runtime
     if (this.runtimeFailureCode) throw stateError('codex_chat_unavailable')

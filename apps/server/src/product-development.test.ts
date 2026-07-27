@@ -12,12 +12,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 
-import {
-  resolveCodexChatRuntimeSource,
-} from './codex-chat-config.js'
 import { resolveProductDevelopmentBootstrap } from './product-development.js'
 import {
-  createServerApplication,
   startConfiguredServerApplication,
 } from './server.js'
 
@@ -37,12 +33,7 @@ test('product development defaults to sibling app data without selecting an ambi
 
     assert.ok(product)
     const canonicalTestRoot = await realpath(testRoot)
-    assert.equal(
-      product.runtimeWorkspaceRoot,
-      path.join(canonicalTestRoot, 'hub'),
-    )
     assert.equal(product.selectedWorkspaceRoot, undefined)
-    assert.equal(product.semesterWorkspace, undefined)
     assert.equal(
       product.runtime.appDataRoot,
       path.join(canonicalTestRoot, '.ay-ple'),
@@ -86,13 +77,6 @@ test('product development bootstrap activates and reports its explicit selected 
       CODEX_HOME: codexHome,
     })
     assert.ok(product)
-    assert.equal(
-      resolveCodexChatRuntimeSource({
-        productRuntime: product.runtime,
-        workspace: () => product.selectedWorkspaceRoot,
-      }).kind,
-      'candidate',
-    )
     assert.equal(product.selectedWorkspaceRoot, await realpath(workspaceRoot))
     assert.deepEqual(product.runtime, {
       appDataRoot: await realpath(appDataRoot),
@@ -112,26 +96,6 @@ test('product development bootstrap activates and reports its explicit selected 
       },
       origin: 'http://127.0.0.1:4173',
     })
-
-    const application = await createServerApplication({
-      productRuntime: product.runtime,
-      semesterWorkspace: product.semesterWorkspace,
-    })
-    try {
-      const activation = await application.semesterWorkspace?.activate()
-      assert.equal(activation?.status, 'activated')
-      assert.equal(
-        application.semesterWorkspace?.nativeCwd(),
-        await realpath(workspaceRoot),
-      )
-      assert.deepEqual(
-        (await application.semesterWorkspace?.refreshMaterials())?.workspace
-          .materials,
-        [],
-      )
-    } finally {
-      await application.close()
-    }
   } finally {
     await rm(testRoot, { force: true, recursive: true })
   }
@@ -228,7 +192,7 @@ test('product development bootstrap falls back to the user-global Codex home', a
   }
 })
 
-test('legacy startup preserves caller-owned bytes without exposing an academic router', async () => {
+test('unprepared startup ignores caller-owned workspace bytes and exposes no academic router', async () => {
   const testRoot = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-product-incompatible-startup-test-'),
   )
@@ -266,12 +230,6 @@ test('legacy startup preserves caller-owned bytes without exposing an academic r
         `http://127.0.0.1:${started.port}/api/product/bootstrap`,
       )
       assert.equal(response.status, 404)
-      const internalSnapshot = started.application.semesterWorkspace?.snapshot()
-      assert.equal(internalSnapshot?.state, 'incompatible')
-      if (internalSnapshot?.state === 'incompatible') {
-        assert.equal(internalSnapshot.supportedStoreFormatVersion, 2)
-        assert.equal(internalSnapshot.foundStoreFormatVersion, 3)
-      }
       const removedTracerRoutes = await Promise.all([
         fetch(`http://127.0.0.1:${started.port}/api/codex-chat/status`),
         fetch(`http://127.0.0.1:${started.port}/api/codex-chat/threads`, {

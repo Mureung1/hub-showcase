@@ -1,38 +1,15 @@
 import express, { type Express } from 'express'
 
-import {
-  createCodexChatComposition,
-  type CodexChatBootstrap,
-  type ProductRuntimeBootstrap,
-} from './codex-chat.js'
 import type {
   ServerStartupCleanup,
   ServerStartupCleanupInput,
   ServerStartupCleanupResult,
 } from './server-startup-cleanup.js'
 
-import {
-  createSemesterWorkspaceController,
-  type SemesterWorkspaceController,
-  type SemesterWorkspaceDirectoryChooser,
-} from './semester-workspace.js'
-
-export type CreateServerAppOptions = {
-  codexChat?: CodexChatBootstrap
-  productRuntime?: ProductRuntimeBootstrap
-  productRuntimeWorkspaceRoot?: string
-  semesterWorkspace?: SemesterWorkspaceBootstrap
-}
-
-export type SemesterWorkspaceBootstrap = {
-  readonly appDataRoot: string
-  readonly chooseDirectory: SemesterWorkspaceDirectoryChooser
-  readonly packageRoot: string
-}
+export type CreateServerAppOptions = Record<string, never>
 
 export interface ServerApplication {
   readonly app: Express
-  readonly semesterWorkspace: SemesterWorkspaceController | undefined
   close(): Promise<void>
 }
 
@@ -68,35 +45,10 @@ const serverApplicationLifecycles = new WeakMap<
 >()
 
 export async function createServerApplication(
-  options: CreateServerAppOptions = {},
+  _options: CreateServerAppOptions = {},
 ): Promise<ServerApplication> {
-  const semesterWorkspace = options.semesterWorkspace
-    ? createSemesterWorkspaceController(options.semesterWorkspace)
-    : undefined
-  const productRuntimeWorkspaceRoot = options.productRuntimeWorkspaceRoot
-  const codexChat = createCodexChatComposition({
-    bootstrap: options.codexChat,
-    productRuntime: options.productRuntime,
-    workspace: semesterWorkspace
-      ? () => semesterWorkspace.nativeCwd()
-      : productRuntimeWorkspaceRoot
-        ? () => productRuntimeWorkspaceRoot
-        : undefined,
-  })
   const app = express()
-  let applicationClosePromise: Promise<void> | undefined
-  const closeApplication: CloseServerApplication = ({ signal }) => {
-    codexChat.beginShutdown()
-    if (applicationClosePromise) return applicationClosePromise
-    const attempt = codexChat.close()
-    applicationClosePromise = attempt
-    void attempt.catch(() => {
-      if (applicationClosePromise === attempt) {
-        applicationClosePromise = undefined
-      }
-    })
-    return attempt
-  }
+  const closeApplication: CloseServerApplication = async () => undefined
   const lifecycle: ServerApplicationLifecycle = {
     closing: false,
     listenerClaimed: false,
@@ -104,7 +56,6 @@ export async function createServerApplication(
   }
   const application: ServerApplication = {
     app,
-    semesterWorkspace,
     close() {
       if (lifecycle.closePromise) return lifecycle.closePromise
       const cleanup = cleanupServerApplication(lifecycle, {

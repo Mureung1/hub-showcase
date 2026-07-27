@@ -56,30 +56,9 @@ export async function startConfiguredServerApplication(
       productDevelopment,
     })
   }
-  const application = await createServerApplication({
-    productRuntime: productDevelopment?.runtime,
-    productRuntimeWorkspaceRoot: productDevelopment?.runtimeWorkspaceRoot,
-    semesterWorkspace: productDevelopment?.semesterWorkspace,
-  })
+  const application = await createServerApplication()
   let ownedApplication = application
   try {
-    if (productDevelopment?.semesterWorkspace) {
-      const activation = await application.semesterWorkspace?.activate()
-      if (activation?.status !== 'activated') {
-        throw new Error('Product SemesterWorkspace activation was cancelled.')
-      }
-      if (activation.workspace.state === 'ready') {
-        log(
-          `SemesterWorkspace active: ${application.semesterWorkspace?.nativeCwd()}`,
-        )
-      } else {
-        const foundStoreFormatVersion =
-          activation.workspace.foundStoreFormatVersion ?? 'unknown'
-        log(
-          `SemesterWorkspace read-only: store format ${foundStoreFormatVersion}`,
-        )
-      }
-    }
     const host = options.host ?? serverHost
     const started = await listenToServerApplication(application, {
       host,
@@ -220,7 +199,6 @@ async function startPreparedConfiguredServerApplication(input: {
     let closePromise: Promise<void> | undefined
     const application: ServerApplication = {
       app: target.application.app,
-      semesterWorkspace: undefined,
       close() {
         closePromise ??= closePreparedHost([
           () => activeSession.close(),
@@ -244,7 +222,6 @@ async function startPreparedConfiguredServerApplication(input: {
       let closePromise: Promise<void> | undefined
       const application: ServerApplication = {
         app: target.application.app,
-        semesterWorkspace: undefined,
         close() {
           closePromise ??= closePreparedHost([
             closeOwnedListener,

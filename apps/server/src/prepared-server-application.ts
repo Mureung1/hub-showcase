@@ -90,7 +90,6 @@ export async function createPreparedServerApplication(options: {
   let closePromise: Promise<void> | undefined
   const application: ServerApplication = {
     app,
-    semesterWorkspace: undefined,
     close() {
       closePromise ??= (async () => {
         operations.beginShutdown()
