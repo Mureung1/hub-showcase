@@ -4,7 +4,7 @@
     "summary": "정부 지원금 정보가 여러 기관 사이트에 흩어져 있어, 소상공인이 자신에게 맞는 지원금을 한눈에 파악하기 어려운 문제를 해결하는 서비스입니다.",
     "githubUser": "syd348(신서연)",
     "demoUrl": "https://hub.syd348.com",
-    "thumbnail": "thumbnail.webp",
+    "thumbnail": "thumbnail.png",
     "screenshots": [],
     "problem": "정부24, 소상공인시장진흥공단, 지자체 등 여러 기관 사이트에 정보가 흩어져 있어, 내 조건에 맞는 지원금을 검색·비교하기가 어렵습니다.",
     "targetUsers": ["소상공인"],

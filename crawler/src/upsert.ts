@@ -18,6 +18,14 @@ interface SubsidyRow {
   where_url: string | null
   contact: string
   region: string[]
+  industry: string[]
+  employees: string | null
+  employees_max_count: number | null
+  revenue: string | null
+  revenue_max_krw: number | null
+  business_years: string | null
+  business_years_max: number | null
+  atch_file_id: string | null
 }
 
 function subsidyToRow(subsidy: Subsidy): SubsidyRow {
@@ -37,6 +45,14 @@ function subsidyToRow(subsidy: Subsidy): SubsidyRow {
     where_url: subsidy.whereUrl ?? null,
     contact: subsidy.contact,
     region: subsidy.region,
+    industry: subsidy.industry,
+    employees: subsidy.employees ?? null,
+    employees_max_count: subsidy.employeesMaxCount ?? null,
+    revenue: subsidy.revenue ?? null,
+    revenue_max_krw: subsidy.revenueMaxKrw ?? null,
+    business_years: subsidy.businessYears ?? null,
+    business_years_max: subsidy.businessYearsMax ?? null,
+    atch_file_id: subsidy.atchFileId ?? null,
   }
 }
 

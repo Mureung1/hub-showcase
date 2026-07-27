@@ -16,7 +16,7 @@ export default function CompleteScreen() {
     )
   }
 
-  if (!isStep4Complete(profile.employees, profile.revenue)) {
+  if (!isStep4Complete(profile.employees, profile.revenue, profile.businessYears ?? '')) {
     navigate('/onboarding/1', { replace: true })
     return null
   }
@@ -52,6 +52,10 @@ export default function CompleteScreen() {
         <div className="summary-row">
           <span className="label">연매출</span>
           <span className="value">{profile.revenue}</span>
+        </div>
+        <div className="summary-row">
+          <span className="label">업력</span>
+          <span className="value">{profile.businessYears}</span>
         </div>
       </div>
 

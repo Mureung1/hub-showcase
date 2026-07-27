@@ -20,6 +20,10 @@
 | `--danger-bg` | `#FEE2E2` | 긴급 D-day 배경 |
 | `--success` | `#16A34A` | 완료 체크, 여유 D-day |
 | `--success-bg` | `#DCFCE7` | 완료 아이콘 배경 |
+| `--warning` | `#D97706` | 임박(soon) D-day |
+| `--warning-bg` | `#FEF3C7` | 임박(soon) D-day 배경 |
+| `--neutral` | `#6B7280` | D-day 없음(상시/소진시까지) 뱃지 (#82) |
+| `--neutral-bg` | `#F3F4F6` | D-day 없음 뱃지 배경 |
 
 PC 바깥 배경: `#E8ECF1`
 

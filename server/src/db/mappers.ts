@@ -17,6 +17,14 @@ export interface SubsidyRow {
   where_url: string | null
   contact: string
   region: string[]
+  industry: string[]
+  employees: string | null
+  employees_max_count: number | null
+  revenue: string | null
+  revenue_max_krw: number | null
+  business_years: string | null
+  business_years_max: number | null
+  atch_file_id: string | null
   created_at?: string
 }
 
@@ -38,6 +46,14 @@ export function rowToSubsidy(row: SubsidyRow): Subsidy {
     whereUrl: row.where_url ?? undefined,
     contact: row.contact,
     region: row.region,
+    industry: row.industry,
+    employees: row.employees ?? undefined,
+    employeesMaxCount: row.employees_max_count ?? undefined,
+    revenue: row.revenue ?? undefined,
+    revenueMaxKrw: row.revenue_max_krw ?? undefined,
+    businessYears: row.business_years ?? undefined,
+    businessYearsMax: row.business_years_max ?? undefined,
+    atchFileId: row.atch_file_id ?? undefined,
   }
 }
 
@@ -59,6 +75,14 @@ export function subsidyToRow(subsidy: Subsidy): Omit<SubsidyRow, 'created_at'> {
     where_url: subsidy.whereUrl ?? null,
     contact: subsidy.contact,
     region: subsidy.region,
+    industry: subsidy.industry,
+    employees: subsidy.employees ?? null,
+    employees_max_count: subsidy.employeesMaxCount ?? null,
+    revenue: subsidy.revenue ?? null,
+    revenue_max_krw: subsidy.revenueMaxKrw ?? null,
+    business_years: subsidy.businessYears ?? null,
+    business_years_max: subsidy.businessYearsMax ?? null,
+    atch_file_id: subsidy.atchFileId ?? null,
   }
 }
 

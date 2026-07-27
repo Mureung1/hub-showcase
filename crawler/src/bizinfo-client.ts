@@ -1,4 +1,5 @@
 import { BIZINFO_API_KEY } from './env.js'
+import { NonRetryableError, withRetry } from './retry.js'
 
 const BIZINFO_API_URL = 'https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do'
 
@@ -34,13 +35,31 @@ interface BizinfoApiResponse {
   jsonArray: BizinfoAnnouncement[]
 }
 
+/**
+ * bizinfo API는 인증키 오류 등도 HTTP 200으로 응답하고, 에러를 바디 안 `reqErr` 필드에 담는다
+ * (실제 호출로 확인, 2026-07-27 — 예: 잘못된 crtfcKey → `{"reqErr":"존재하지 않는 인증키 입니다."}`).
+ * 그래서 HTTP status만으로는 이 에러를 못 잡고, 응답 바디를 파싱해서 따로 걸러야 한다.
+ */
+interface BizinfoErrorResponse {
+  reqErr: string
+}
+
 export interface FetchAnnouncementsParams {
   pageIndex: number
   pageUnit: number
 }
 
-/** GET bizinfoApi.do — 페이지 단위로 지원사업 공고를 조회한다 */
-export async function fetchAnnouncements({
+/**
+ * GET bizinfoApi.do — 페이지 단위로 지원사업 공고를 조회한다.
+ * 네트워크 에러(fetch 자체가 throw)나 5xx 응답은 지수 백오프로 재시도(이슈 #74) — 2026-07-26
+ * 크론 실행이 커넥트 타임아웃으로 실패한 사례 대응. 4xx 응답이나 bizinfo의 `reqErr` 바디는
+ * 재시도해도 절대 성공할 수 없어(잘못된 인증키 등) 즉시 실패 처리한다.
+ */
+export async function fetchAnnouncements(params: FetchAnnouncementsParams): Promise<BizinfoAnnouncement[]> {
+  return withRetry(() => fetchAnnouncementsOnce(params))
+}
+
+async function fetchAnnouncementsOnce({
   pageIndex,
   pageUnit,
 }: FetchAnnouncementsParams): Promise<BizinfoAnnouncement[]> {
@@ -52,9 +71,17 @@ export async function fetchAnnouncements({
 
   const res = await fetch(url)
   if (!res.ok) {
-    throw new Error(`bizinfo API 호출 실패: ${res.status} ${res.statusText}`)
+    const message = `bizinfo API 호출 실패: ${res.status} ${res.statusText}`
+    if (res.status >= 400 && res.status < 500) {
+      throw new NonRetryableError(message)
+    }
+    throw new Error(message)
   }
 
-  const data = (await res.json()) as BizinfoApiResponse
+  const data = (await res.json()) as BizinfoApiResponse | BizinfoErrorResponse
+  if ('reqErr' in data) {
+    throw new NonRetryableError(`bizinfo API 에러: ${data.reqErr}`)
+  }
+
   return data.jsonArray
 }

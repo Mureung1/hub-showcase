@@ -31,6 +31,7 @@ const sample: Subsidy = {
   where: '서울시 자영업지원센터',
   contact: '02-1234-5678',
   region: ['서울'],
+  industry: [],
 }
 
 beforeEach(() => {
@@ -108,6 +109,21 @@ describe('GET /api/subsidies/:id', () => {
     const res = await request(app).get('/api/subsidies/1')
     expect(res.status).toBe(200)
     expect(res.body.id).toBe('1')
+    expect(mockFindById).toHaveBeenCalledWith('1', undefined)
+  })
+
+  it('region/industry query가 있으면 profile로 변환해 repo에 전달한다 (이슈 #61)', async () => {
+    mockFindById.mockResolvedValue(sample)
+    const res = await request(app).get('/api/subsidies/1?region=서울&industry=음식점')
+    expect(res.status).toBe(200)
+    expect(mockFindById).toHaveBeenCalledWith('1', { region: '서울', industry: '음식점' })
+  })
+
+  it('region query만 있어도 profile로 전달한다', async () => {
+    mockFindById.mockResolvedValue(sample)
+    const res = await request(app).get('/api/subsidies/1?region=서울')
+    expect(res.status).toBe(200)
+    expect(mockFindById).toHaveBeenCalledWith('1', { region: '서울', industry: '' })
   })
 
   it('존재하지 않는 id는 404와 error 메시지를 반환한다', async () => {

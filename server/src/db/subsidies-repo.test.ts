@@ -2,7 +2,7 @@ import type { OnboardingProfile } from '@hub/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SubsidyRow } from './mappers.js'
 
-const state = vi.hoisted(() => ({ rows: [] as SubsidyRow[] }))
+const state = vi.hoisted(() => ({ rows: [] as SubsidyRow[], single: null as SubsidyRow | null }))
 
 vi.mock('./supabase.js', () => ({
   SUBSIDIES_TABLE: 'subsidies',
@@ -12,12 +12,15 @@ vi.mock('./supabase.js', () => ({
         order: () => ({
           range: () => Promise.resolve({ data: state.rows, error: null }),
         }),
+        eq: () => ({
+          maybeSingle: () => Promise.resolve({ data: state.single, error: null }),
+        }),
       }),
     }),
   },
 }))
 
-import { match } from './subsidies-repo.js'
+import { findById, match } from './subsidies-repo.js'
 
 function makeRow(overrides: Partial<SubsidyRow>): SubsidyRow {
   return {
@@ -36,6 +39,14 @@ function makeRow(overrides: Partial<SubsidyRow>): SubsidyRow {
     where_url: null,
     contact: '000-0000',
     region: [],
+    industry: [],
+    employees: null,
+    employees_max_count: null,
+    revenue: null,
+    revenue_max_krw: null,
+    business_years: null,
+    business_years_max: null,
+    atch_file_id: null,
     ...overrides,
   }
 }
@@ -61,12 +72,11 @@ describe('match', () => {
     expect(result.match).toBe(70) // 50 + 20
   })
 
-  it('subsidy.region이 있지만 profile.region이 없으면 감점된다', async () => {
+  it('subsidy.region이 있지만 profile.region과 다르면 결과에서 제외된다 (이슈 #62)', async () => {
     state.rows = [makeRow({ id: '1', region: ['부산'] })]
-    const {
-      items: [result],
-    } = await match(profile)
-    expect(result.match).toBe(30) // 50 - 20
+    const { items, total } = await match(profile)
+    expect(items).toHaveLength(0)
+    expect(total).toBe(0)
   })
 
   it('subsidy.region이 비어있으면(지역 정보 없음) 점수를 그대로 유지한다', async () => {
@@ -85,23 +95,129 @@ describe('match', () => {
     expect(result.match).toBe(100)
   })
 
-  it('감점은 0 밑으로 내려가지 않는다', async () => {
-    state.rows = [makeRow({ id: '1', region: ['부산'], match_score: 10 })]
-    const {
-      items: [result],
-    } = await match(profile)
-    expect(result.match).toBe(0)
-  })
-
-  it('region이 다른 여러 건을 넣으면 조건에 맞는 지원금이 match 정렬에서 위로 온다', async () => {
+  it('region이 다른 여러 건을 넣으면 불일치 항목은 제외되고 나머지만 정렬된다 (이슈 #62)', async () => {
     state.rows = [
       makeRow({ id: 'busan', region: ['부산'], match_score: 50 }),
       makeRow({ id: 'seoul', region: ['서울'], match_score: 50 }),
       makeRow({ id: 'nationwide', region: ['서울', '부산', '경기'], match_score: 50 }),
     ]
     const result = await match(profile, 'match')
-    // busan(30)은 감점, seoul/nationwide는 둘 다 70으로 동점 — id 오름차순 2차 정렬(#48)로 결정됨
-    expect(result.items.map((r) => r.id)).toEqual(['nationwide', 'seoul', 'busan'])
+    // busan은 region 불일치로 제외, seoul/nationwide는 둘 다 70으로 동점 — id 오름차순 2차 정렬(#48)
+    expect(result.items.map((r) => r.id)).toEqual(['nationwide', 'seoul'])
+    expect(result.total).toBe(2)
+  })
+})
+
+describe('match — industry 가점 (이슈 #52)', () => {
+  beforeEach(() => {
+    state.rows = []
+  })
+
+  it('subsidy.industry에 profile.industry가 포함되면 가점을 받는다', async () => {
+    state.rows = [makeRow({ id: '1', industry: ['음식점', '카페·베이커리'] })]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(60) // 50 + 10 (region은 비어있어 변화 없음)
+  })
+
+  it('subsidy.industry가 있지만 profile.industry와 다르면 페널티 없이 그대로 유지한다', async () => {
+    state.rows = [makeRow({ id: '1', industry: ['제조업'] })]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(50)
+  })
+
+  it('subsidy.industry가 비어있으면(업종 정보 없음) 점수를 그대로 유지한다', async () => {
+    state.rows = [makeRow({ id: '1', industry: [] })]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(50)
+  })
+
+  it('region 가점과 industry 가점이 함께 적용된다', async () => {
+    state.rows = [makeRow({ id: '1', region: ['서울'], industry: ['음식점'] })]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(80) // 50 + 20(region) + 10(industry)
+  })
+
+  it('industry 가점도 100을 넘지 않는다', async () => {
+    state.rows = [makeRow({ id: '1', industry: ['음식점'], match_score: 95 })]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(100)
+  })
+})
+
+describe('match — employees/revenue/businessYears 가점 (이슈 #67)', () => {
+  beforeEach(() => {
+    state.rows = []
+  })
+
+  // profile: employees '1~4명'(최솟값 1), revenue '5천만원 미만'(최솟값 0)
+
+  it('subsidy.employeesMaxCount가 profile 버킷의 최솟값 이상이면 가점을 받는다', async () => {
+    state.rows = [makeRow({ id: '1', employees_max_count: 5 })] // "50인 미만" 같은 조건이라 가정
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(60) // 50 + 10
+  })
+
+  it('subsidy.employeesMaxCount가 profile 버킷의 최솟값보다 작으면 가점을 받지 않는다', async () => {
+    const strictProfile = { ...profile, employees: '10명 이상' } // 최솟값 10
+    state.rows = [makeRow({ id: '1', employees_max_count: 5 })] // 5인 미만 조건 — 10명 이상 사업자는 대상 아님
+    const {
+      items: [result],
+    } = await match(strictProfile)
+    expect(result.match).toBe(50)
+  })
+
+  it('subsidy.revenueMaxKrw가 profile 버킷의 최솟값 이상이면 가점을 받는다', async () => {
+    state.rows = [makeRow({ id: '1', revenue_max_krw: 300_000_000 })]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(60) // 50 + 10
+  })
+
+  it('subsidy.businessYearsMax가 profile 버킷의 최솟값 이상이면 가점을 받는다', async () => {
+    const profileWithYears = { ...profile, businessYears: '3~5년' } // 최솟값 3
+    state.rows = [makeRow({ id: '1', business_years_max: 7 })] // "7년 미만" 조건
+    const {
+      items: [result],
+    } = await match(profileWithYears)
+    expect(result.match).toBe(60) // 50 + 10
+  })
+
+  it('AI 추출 정보가 없으면(null) 가점 없이 중립 유지한다', async () => {
+    state.rows = [makeRow({ id: '1' })] // employees_max_count/revenue_max_krw/business_years_max 전부 기본값 null
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(50)
+  })
+
+  it('여러 조건 가점이 동시에 적용되고 100을 넘지 않는다', async () => {
+    state.rows = [
+      makeRow({
+        id: '1',
+        region: ['서울'],
+        industry: ['음식점'],
+        employees_max_count: 5,
+        revenue_max_krw: 300_000_000,
+        match_score: 95,
+      }),
+    ]
+    const {
+      items: [result],
+    } = await match(profile)
+    expect(result.match).toBe(100)
   })
 })
 
@@ -131,5 +247,29 @@ describe('match 페이지네이션 (이슈 #48)', () => {
     const result = await match(profile, 'match', 1, 10)
     expect(result.items).toHaveLength(10)
     expect(result.hasMore).toBe(true)
+  })
+})
+
+describe('findById — 프로필 기반 재계산 (이슈 #61)', () => {
+  beforeEach(() => {
+    state.single = null
+  })
+
+  it('profile 없이 호출하면 저장된 match_score를 그대로 반환한다', async () => {
+    state.single = makeRow({ id: '1', region: ['서울'], match_score: 50 })
+    const result = await findById('1')
+    expect(result?.match).toBe(50)
+  })
+
+  it('profile을 넘기면 리스트(match())와 동일한 공식으로 매칭도를 재계산한다', async () => {
+    state.single = makeRow({ id: '1', region: ['서울'], industry: ['음식점'], match_score: 50 })
+    const result = await findById('1', { region: '서울', industry: '음식점' })
+    expect(result?.match).toBe(80) // 50 + 20(region) + 10(industry) — match() 테스트와 동일 공식
+  })
+
+  it('존재하지 않는 id는 null을 반환한다', async () => {
+    state.single = null
+    const result = await findById('no-such-id', { region: '서울', industry: '음식점' })
+    expect(result).toBeNull()
   })
 })

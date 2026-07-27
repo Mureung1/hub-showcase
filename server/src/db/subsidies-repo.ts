@@ -115,8 +115,16 @@ export async function findAll(
   return paginate(sorted, page, limit)
 }
 
-/** 단건 조회 — 없으면 null */
-export async function findById(id: string): Promise<Subsidy | null> {
+/**
+ * 단건 조회 — 없으면 null.
+ * `profile`이 주어지면 `match()`와 동일한 `scoreForProfile()`로 매칭도를 재계산한다(이슈 #61) —
+ * 리스트에서 이미 계산된 값을 캐시로 재사용하지 못하는 경우(직접 URL 접속·새로고침)에만
+ * 호출되는 fallback 경로라, 리스트와 상세의 매칭도가 항상 같은 공식으로 나오게 보장한다.
+ */
+export async function findById(
+  id: string,
+  profile?: Pick<OnboardingProfile, 'region' | 'industry'>,
+): Promise<Subsidy | null> {
   const { data, error } = await supabase
     .from(SUBSIDIES_TABLE)
     .select('*')
@@ -125,39 +133,125 @@ export async function findById(id: string): Promise<Subsidy | null> {
 
   if (error) {
     console.error('[subsidies-repo] 단건 조회 실패, 샘플 데이터로 대체:', error.message)
-    return FALLBACK.find((item) => item.id === id) ?? null
+    const fallback = FALLBACK.find((item) => item.id === id)
+    if (!fallback) return null
+    return profile ? { ...fallback, match: scoreForProfile(fallback, profile) } : fallback
   }
-  return data ? rowToSubsidy(data as SubsidyRow) : null
+  if (!data) return null
+
+  const item = rowToSubsidy(data as SubsidyRow)
+  return profile ? { ...item, match: scoreForProfile(item, profile) } : item
 }
 
 /**
- * region 조건 부합도에 따른 가점/감점 (이슈 #43).
+ * region 조건 가점 (이슈 #43, #62).
  * - subsidy.region이 비어있으면(hashtags에 지역 태그가 하나도 없던 경우) 지역 정보가 없다는
  *   뜻이라 그대로 둔다(필터링하지 않음 — "안 보이는 것보다 보이는 게 낫다"는 NEUTRAL_MATCH
  *   설계와 동일한 원칙).
  * - 전국 대상 공고는 크롤러가 hashtags 전체(15~16개)를 region에 담으므로 profile.region이
  *   항상 포함돼 있어 자연스럽게 가점을 받는다 — 별도 "전국" 처리 불필요.
- * - 완전 필터링이 아니라 점수 조정만 하는 이유는 리스크 표 참고: 조건이 안 맞는다고 아예
- *   숨기면 사용자가 "왜 안 보이지" 혼란스러울 수 있어 정렬 우선순위 조정으로 시작한다.
+ * - region 정보가 있는데 profile.region과 안 맞는 지원금은 감점이 아니라 `match()`에서
+ *   완전히 필터링해서 제외한다(#62) — region 데이터 신뢰도가 ~98%로 높아 안전하다고 판단
+ *   (#43 당시엔 "혼란 가능성"으로 감점만 택했으나 재평가, `docs/week4/issue-62-region-filter-plan.md` 참고).
  */
 const REGION_MATCH_BONUS = 20
-const REGION_MISMATCH_PENALTY = 20
 
-function scoreForProfile(subsidy: Subsidy, profile: OnboardingProfile): number {
-  if (subsidy.region.length === 0) return subsidy.match
-  if (subsidy.region.includes(profile.region)) {
-    return Math.min(100, subsidy.match + REGION_MATCH_BONUS)
+/**
+ * industry 조건 가점 (이슈 #52). region과 달리 **가점만 주고 불일치 페널티는 없다** —
+ * [#43](https://github.com/syd348/hub/issues/43)의 trgetNm 전용 키워드 매칭은 0.2%(3/1500)만
+ * 매칭돼 반영을 보류했었는데, bsnsSumryCn까지 포함하고 동의어를 넓혀 실 API 500건으로
+ * 오탐(경제과학진흥원 등 substring 충돌, "~업 제외" 부정 문맥)까지 걸러낸 뒤 검증하니
+ * 6.6%(33/500)로 개선됐다. 그래도 region(hashtags 기반, ~98% 커버리지)보다는 신뢰도가
+ * 낮아 페널티는 넣지 않았다 — subsidy.industry가 비어있으면(대다수, ~93%) "업종 정보 없음"으로
+ * 간주해 중립 유지. 상세: docs/week4/issue-52-industry-match-plan.md
+ */
+const INDUSTRY_MATCH_BONUS = 10
+
+/**
+ * 이슈 #67: employees/revenue/businessYears 조건 가점.
+ * industry와 같은 패턴 — AI 추출 신뢰도가 region(hashtags 기반, ~98%)만큼 높지 않아 페널티 없이
+ * 가점만 준다. 정보가 없으면(대다수, 신규 공고 중 AI 처리된 것만 값이 있음) 중립 유지.
+ *
+ * OnboardingProfile은 온보딩 UI에서 버킷(구간) 문자열로 저장된다(`src/data/onboardingSteps.ts`의
+ * EMPLOYEE_OPTIONS/REVENUE_OPTIONS/BUSINESS_YEARS_OPTIONS와 반드시 동기화). AI가 추출한 조건은
+ * "OO 이하/미만" 형태의 상한값이라, 버킷의 하한값이 그 상한 이하면 사용자가 조건을 충족할
+ * 가능성이 있다고 보고 가점을 준다(정밀 비교가 아니라 "그럴듯함" 판단이라 필터링은 하지 않는다).
+ */
+const EMPLOYEES_MATCH_BONUS = 10
+const REVENUE_MATCH_BONUS = 10
+const BUSINESS_YEARS_MATCH_BONUS = 10
+
+const EMPLOYEES_MIN: Record<string, number> = {
+  '없음 (1인)': 1,
+  '1~4명': 1,
+  '5~9명': 5,
+  '10명 이상': 10,
+}
+
+const REVENUE_MIN_KRW: Record<string, number> = {
+  '5천만원 미만': 0,
+  '5천만원 ~ 1억원': 50_000_000,
+  '1억원 ~ 3억원': 100_000_000,
+  '3억원 ~ 5억원': 300_000_000,
+  '5억원 이상': 500_000_000,
+}
+
+const BUSINESS_YEARS_MIN: Record<string, number> = {
+  '예비창업자': 0,
+  '1년 미만': 0,
+  '1~3년': 1,
+  '3~5년': 3,
+  '5~7년': 5,
+  '7~10년': 7,
+  '10년 이상': 10,
+}
+
+type ScoringProfile = Pick<OnboardingProfile, 'region' | 'industry'> &
+  Partial<Pick<OnboardingProfile, 'employees' | 'revenue' | 'businessYears'>>
+
+function scoreForProfile(subsidy: Subsidy, profile: ScoringProfile): number {
+  let score = subsidy.match
+
+  if (subsidy.region.length > 0 && subsidy.region.includes(profile.region)) {
+    score = Math.min(100, score + REGION_MATCH_BONUS)
   }
-  return Math.max(0, subsidy.match - REGION_MISMATCH_PENALTY)
+
+  if (subsidy.industry.includes(profile.industry)) {
+    score = Math.min(100, score + INDUSTRY_MATCH_BONUS)
+  }
+
+  if (subsidy.employeesMaxCount != null && profile.employees) {
+    const min = EMPLOYEES_MIN[profile.employees]
+    if (min !== undefined && min <= subsidy.employeesMaxCount) {
+      score = Math.min(100, score + EMPLOYEES_MATCH_BONUS)
+    }
+  }
+
+  if (subsidy.revenueMaxKrw != null && profile.revenue) {
+    const min = REVENUE_MIN_KRW[profile.revenue]
+    if (min !== undefined && min <= subsidy.revenueMaxKrw) {
+      score = Math.min(100, score + REVENUE_MATCH_BONUS)
+    }
+  }
+
+  if (subsidy.businessYearsMax != null && profile.businessYears) {
+    const min = BUSINESS_YEARS_MIN[profile.businessYears]
+    if (min !== undefined && min <= subsidy.businessYearsMax) {
+      score = Math.min(100, score + BUSINESS_YEARS_MATCH_BONUS)
+    }
+  }
+
+  return score
+}
+
+/** region 정보가 있는데 profile.region과 안 맞으면 제외 (이슈 #62) — 정보 없음은 필터링 대상 아님 */
+function matchesRegion(subsidy: Subsidy, profile: OnboardingProfile): boolean {
+  return subsidy.region.length === 0 || subsidy.region.includes(profile.region)
 }
 
 /**
  * 프로필 조건 매칭 + 정렬.
- * region은 위 scoreForProfile로 실제 반영된다. industry는 실험해봤으나(trgetNm 텍스트에서
- * 온보딩 업종 키워드 검색) 실크롤링 1500건 중 0.2%에서만 매칭돼 신뢰할 수 없다고 판단해
- * 이번 이슈에서는 반영하지 않았다 — bizinfo API가 신청자 업종을 나타내는 구조화 필드를
- * 안 주고, trgetNm도 업종보다는 지역/기업규모 위주 자유 텍스트라서다. 상세는
- * docs/week3/issue-43-match-plan.md 참고.
+ * region 불일치는 필터링(#62), industry는 가점만 scoreForProfile로 반영된다.
  */
 export async function match(
   profile: OnboardingProfile,
@@ -166,7 +260,8 @@ export async function match(
   limit: number = DEFAULT_LIMIT,
 ): Promise<PagedResult> {
   const items = await loadAll()
-  const scored = items.map((item) => ({ ...item, match: scoreForProfile(item, profile) }))
+  const filtered = items.filter((item) => matchesRegion(item, profile))
+  const scored = filtered.map((item) => ({ ...item, match: scoreForProfile(item, profile) }))
   const sorted = applySort(scored, sort)
   return paginate(sorted, page, limit)
 }
