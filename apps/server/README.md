@@ -87,7 +87,7 @@ Old private patch/revision Review와 Server-owned academic apply는 donor regres
 
 Canonical `createPreparedServerApplication()`은 Broker Router를 같은 loopback listener의 `/api/_private/interaction-mcp`에 mount하고 normal Product Turn NDJSON에 semantic `review.requested | review.resolved | review.failed`를 기록한다. Browser의 exact semantic result는 bodyless `204`로 held call을 해제하고, resolved frame만 transcript settlement authority가 된다. Runtime thread는 project config에서 Adapter를 발견하므로 thread-start private MCP override나 managed `SkillInput`을 받지 않는다. AY 역할의 file apply는 workspace Skill·Interaction 결과 뒤 Runtime graph에서 수행하며 Server가 academic patch·revision을 적용하지 않는다. `createServerApplication()`과 old coordinator/store는 rollback·후속 contraction source로 남지만 canonical entrypoint와 public Router에는 mount되지 않는다.
 
-`CodexChatService`는 account lifecycle이나 Runtime role이 없는 `CodexWorkspaceRuntime`을 받아 Account Readiness, model catalog, product thread·active Turn, interaction·interrupt, native context, terminal observation, Runtime recycle와 bounded close를 캡슐화하는 deep product lifecycle Module다. Public tracer route가 사라져도 이 lifecycle owner와 Runtime의 internal text regression은 이름만으로 분해·제거하지 않는다.
+`CodexChatService`는 account lifecycle이나 Runtime role이 없는 `CodexWorkspaceRuntime`을 받아 Account Readiness, model catalog, product thread·active Turn, interaction·interrupt, native context, terminal observation, Runtime recycle와 bounded close를 캡슐화하는 deep product lifecycle Module다. Public tracer route가 사라져도 이 lifecycle owner와 Runtime의 internal text regression은 이름만으로 분해·제거하지 않는다. Legacy `createServerApplication()`은 physical store cleanup 전 bytes-preserving controller seam만 유지하며 academic HTTP·private MCP router를 mount하지 않는다.
 
 ## Public product API
 
@@ -109,25 +109,17 @@ Public cutover 전 rollback unit은 current-v2 Browser·Server router·store·pr
 
 Neutral Server-private NDJSON writer는 product stream의 backpressure·disconnect와 bounded drain을 소유한다. `CodexChatService`는 Runtime terminal을 한 번 관찰하고 accepted operation의 interrupt·terminal·unknown settlement를 관리한다. Canonical prepared host는 Runtime·Adapter continuity loss 때 Broker intake와 Runtime을 정산하되 listener를 recovery bootstrap용으로 유지한다. App shutdown은 새 work를 막고 Broker → Runtime → listener를 bounded하게 닫으며 Python·native process group과 pipe가 사라진 뒤에만 완료한다. Old `createServerApplication()` shutdown은 donor regression에서 같은 full-reap invariant를 유지한다.
 
-`npm run test:product-entrypoint`는 root canonical command가 explicit `appDataRoot`와 workspace selection만으로 product API·Browser를 열고 legacy path를 무시하며 SIGINT 뒤 OS process graph와 port를 bounded하게 정리하는지 검증한다. `npm run test:product-shutdown-actual -w @ay-ple/server`는 product-capable Runtime process tree에서 listener refusal, close ordering과 child-of-child reap을 별도로 증명한다.
-
-Existing Playwright harness의 same-root durability trace는 실제 Express `ServerApplication`과 Runtime generation을 닫고 같은 `appDataRoot`·workspace·API port로 다시 만든 뒤 Browser를 reload한다. 이 trace가 confirmed Assignment·revision·settled history를 다시 열고 transient transcript·unanswered Review를 복원하지 않음을 검증하며 별도 store·Runtime workflow를 만들지 않는다.
+`npm run test:product-entrypoint`는 root canonical command가 explicit `appDataRoot`와 workspace selection만으로 product API·Browser를 열고 legacy path를 무시하며 SIGINT 뒤 OS process graph와 port를 bounded하게 정리하는지 검증한다. Prepared startup·application tests는 listener refusal, close ordering과 recovery listener 유지를 검증한다.
 
 ## Exact·live conformance
 
-아래에서 `test:prepared-workspace-product-actual`만 canonical prepared public graph를 검증한다. `test:first-assignment-product-actual`과 `trace:first-assignment-live`는 old academic rollback source의 donor conformance이며 current product evidence가 아니다.
+Canonical prepared public graph의 actual conformance는 다음 명령으로 검증한다.
 
 ```bash
-npm run test:first-assignment-product-actual -w @ay-ple/server
 npm run test:prepared-workspace-product-actual
-npm run trace:first-assignment-live -w @ay-ple/server -- --codex-home /absolute/path/to/isolated-auth-seed
 ```
 
-Old academic donor product actual은 verified production Runtime·exact local Responses provider·managed Recipe·real Server HTTP·private MCP host를 통과한다. Active internal-ready fixture directory의 exact `cwd`, selected source, representative Python/command, `auto_review + workspace_write`, proposal→Plan→Review revision→replacement→accept→same-Turn terminal, durable outcome과 process-group disappearance를 rollback source에 대해서만 검증한다.
-
 Prepared-workspace product actual은 native Bootstrap Skill의 exact CLI를 fresh temporary Git root에서 실행한 뒤, 그 root의 tracked v4 identity·`AGENTS.md`·project MCP declaration과 installed First Assignment Skill을 사용한다. 설치된 Skill에서 proposal-before-mutation, accept-only apply, revise·reject no-mutation과 intended-path checkpoint 계약을 읽고, 같은 exact root를 repository-owned shared listener·Interaction Broker와 built STDIO Adapter에 직접 공급해 handshake·exact tool roster, evidence-bound inline Review, revise→fresh card, accept 전 bytes·index 불변, accept 뒤 AY 역할의 explicit-path checkpoint와 unrelated dirty·untracked 보존을 한 trace로 검증한다. Reject, digest·quote·path·symlink evidence failure, busy, Turn interrupt, Browser disconnect와 Runtime·Adapter loss는 normal result·file mutation·Git checkpoint 없이 정산한다. 반복 teardown은 credential 재사용 거절, Adapter stderr·pending response 0, child exit와 listener process-tree close를 확인하며 production startup resolver·registry와 public composition은 이 command가 바꾸지 않는다.
-
-Old academic donor live gate는 caller가 명시한 owner-only auth seed만 fresh `CODEX_HOME`으로 복사하고 disjoint `HOME`·SQLite·temp·appDataRoot·workspace를 사용한다. Credential content·token·digest를 출력하지 않는다. Prerequisite 부재는 `blocked`, donor mismatch는 `failed`로 구분한다. Isolated evidence는 complete Assignment action·Review·confirmed outcome과 clean shutdown을 통과했지만 canonical prepared product의 cutover gate가 아니다.
 
 일반 package 검증은 다음 명령으로 실행한다.
 

@@ -160,7 +160,6 @@ Materialized exact runtime이 필요한 provider-free native·process gate는 �
 ```bash
 npm run verify:production-runtime -w @ay-ple/codex-chat-runtime
 npm run test:local-provider -w @ay-ple/codex-chat-runtime
-npm run test:first-assignment-product-actual -w @ay-ple/server
 npm run test:prepared-workspace-product-actual
 ```
 

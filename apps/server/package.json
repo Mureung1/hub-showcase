@@ -17,10 +17,7 @@
     "build": "tsc",
     "verify:package-root": "npm run build && tsx src/testing/verify-built-package-root.ts",
     "test": "NODE_OPTIONS=--conditions=development tsx --test \"src/**/*.test.ts\"",
-    "test:product-shutdown-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/product-shutdown.actual.ts",
-    "test:first-assignment-product-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/first-assignment-product.actual.ts",
     "test:prepared-workspace-product-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/prepared-workspace-product.actual.ts",
-    "trace:first-assignment-live": "NODE_OPTIONS=--conditions=development tsx src/testing/first-assignment-product.live.ts",
     "typecheck": "tsc --noEmit",
     "start": "node dist/server.js"
   },

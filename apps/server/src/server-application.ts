@@ -1,22 +1,11 @@
 import express, { type Express } from 'express'
 
 import {
-  createAssignmentMcpHost,
-  type AssignmentMcpHost,
-} from './assignment-mcp-host.js'
-import {
   createCodexChatComposition,
   type CodexChatBootstrap,
   type CodexChatComposition,
   type ProductRuntimeBootstrap,
 } from './codex-chat.js'
-import { createProductRouter } from './product-http.js'
-import { createProductOperationCoordinator } from './product-operation-coordinator.js'
-import {
-  createInlineSemanticReviewVertical,
-  type InlineSemanticReviewVertical,
-} from './inline-semantic-review-vertical.js'
-import type { InteractionBrokerCredentials } from './interaction-broker.js'
 import type {
   ServerStartupCleanup,
   ServerStartupCleanupInput,
@@ -34,12 +23,6 @@ export type CreateServerAppOptions = {
   productRuntime?: ProductRuntimeBootstrap
   productRuntimeWorkspaceRoot?: string
   semesterWorkspace?: SemesterWorkspaceBootstrap
-  internalInteractionTarget?: {
-    readonly workspaceRoot: string
-    readonly onReady?: (
-      credentials: InteractionBrokerCredentials,
-    ) => void
-  }
 }
 
 export type SemesterWorkspaceBootstrap = {
@@ -101,57 +84,13 @@ export async function createServerApplication(
         ? () => productRuntimeWorkspaceRoot
         : undefined,
   })
-  const assignmentMcpHost = semesterWorkspace
-    ? createAssignmentMcpHost()
-    : undefined
-  let inlineSemanticReview: InlineSemanticReviewVertical | undefined
-  const productOperations =
-    semesterWorkspace && options.semesterWorkspace && assignmentMcpHost
-      ? createProductOperationCoordinator({
-          controller: semesterWorkspace,
-          mcpHost: assignmentMcpHost,
-          service: codexChat.service,
-          interactionTurnTerminal: () =>
-            inlineSemanticReview?.turnTerminal() ?? Promise.resolve(),
-          interactionRuntimeTerminal: () =>
-            inlineSemanticReview?.runtimeTerminal() ?? Promise.resolve(),
-        })
-      : undefined
-  if (options.internalInteractionTarget && !productOperations) {
-    throw new TypeError(
-      'The internal interaction target requires product operations',
-    )
-  }
-  inlineSemanticReview =
-    options.internalInteractionTarget && productOperations
-      ? await createInlineSemanticReviewVertical({
-          workspaceRoot: options.internalInteractionTarget.workspaceRoot,
-          productOperations,
-        })
-      : undefined
-  if (inlineSemanticReview && options.internalInteractionTarget?.onReady) {
-    options.internalInteractionTarget.onReady(
-      inlineSemanticReview.credentials(),
-    )
-  }
-  const app = createServerExpressApp(
-    codexChat,
-    semesterWorkspace,
-    productOperations,
-    assignmentMcpHost,
-    options.codexChat?.httpWriteDrainMs,
-    inlineSemanticReview,
-  )
+  const app = createServerExpressApp()
   let applicationClosePromise: Promise<void> | undefined
   const closeApplication: CloseServerApplication = ({ signal }) => {
-    const interactionClose = inlineSemanticReview?.appShutdown()
-    productOperations?.beginShutdown()
     codexChat.beginShutdown()
     if (applicationClosePromise) return applicationClosePromise
     const attempt = closeServerApplication(
       codexChat,
-      assignmentMcpHost,
-      interactionClose,
     )
     applicationClosePromise = attempt
     void attempt.catch(() => {
@@ -267,61 +206,12 @@ function cleanupServerApplication(
   return attempt
 }
 
-function createServerExpressApp(
-  codexChat: CodexChatComposition,
-  semesterWorkspace: SemesterWorkspaceController | undefined,
-  productOperations:
-    | ReturnType<typeof createProductOperationCoordinator>
-    | undefined,
-  assignmentMcpHost: AssignmentMcpHost | undefined,
-  productWriteDrainMs: number | undefined,
-  inlineSemanticReview: InlineSemanticReviewVertical | undefined,
-): Express {
-  const app = express()
-  if (assignmentMcpHost) {
-    app.use('/api/product-mcp', assignmentMcpHost.router)
-  }
-  if (inlineSemanticReview) {
-    app.use('/api/_private/interaction-mcp', inlineSemanticReview.router)
-  }
-  app.use(
-    '/api/product',
-    createProductRouter(
-      semesterWorkspace,
-      codexChat.origin,
-      productOperations,
-      productWriteDrainMs,
-      productOperations
-        ? () => codexChat.service.readProductAccountReadiness()
-        : undefined,
-      productOperations
-        ? async () => {
-            const catalog = await codexChat.service.readProductModelCatalog()
-            return {
-              models: catalog.models.map((model) => ({
-                model: model.model,
-                displayName: model.displayName,
-                description: model.description,
-                isDefault: model.isDefault,
-                defaultReasoningEffort: model.defaultReasoningEffort,
-                supportedReasoningEfforts: model.supportedReasoningEfforts,
-                fastModeAvailable: model.serviceTiers.includes('fast'),
-                fastModeDefault: model.defaultServiceTier === 'fast',
-              })),
-            }
-          }
-        : undefined,
-      inlineSemanticReview,
-    ),
-  )
-  return app
+function createServerExpressApp(): Express {
+  return express()
 }
 
 async function closeServerApplication(
   codexChat: CodexChatComposition,
-  assignmentMcpHost: AssignmentMcpHost | undefined,
-  interactionClose: Promise<void> | undefined,
 ): Promise<void> {
-  await interactionClose
-  await codexChat.close().finally(() => assignmentMcpHost?.close())
+  await codexChat.close()
 }
