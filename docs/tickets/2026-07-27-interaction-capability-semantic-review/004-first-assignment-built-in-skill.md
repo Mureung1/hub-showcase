@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement (current session)
+- Next actor: none
 
 ## Parent Spec
 
@@ -31,18 +31,26 @@ Tracked `hub/skills/ay-ple-first-assignment/` source가 AY에게 actual workspac
 
 ## Acceptance Criteria
 
-- [ ] Tracked built-in Skill이 actual file read → proposal-before-mutation → result 해석 → actual file mutation/checkpoint 순서를 명시한다.
-- [ ] `accept`, `revise`, `reject` 각각에서 file mutation authority와 fresh-call behavior가 Parent Spec과 일치한다.
-- [ ] Skill bytes에 `requestKey`, workspace·Course ID, revision-bound apply, `RawMaterial`, durable `StatePatch`·`UserConfirmation`, managed scratch-only mutation과 duplicate `request_user_input` 지침이 없다.
-- [ ] Contract test가 proposal 전 actual file unchanged, accept 뒤 mutation, revise/reject no mutation과 revise의 fresh call을 검증한다.
-- [ ] App apply·Git 실행 0과 native permission·Interaction result의 독립성이 test fixture에서 관찰된다.
-- [ ] Workspace 설치가 아직 없는 상태에서도 tracked source와 contract tests가 독립적으로 green이다.
+- [x] Tracked built-in Skill이 actual file read → proposal-before-mutation → result 해석 → actual file mutation/checkpoint 순서를 명시한다.
+- [x] `accept`, `revise`, `reject` 각각에서 file mutation authority와 fresh-call behavior가 Parent Spec과 일치한다.
+- [x] Skill bytes에 `requestKey`, workspace·Course ID, revision-bound apply, `RawMaterial`, durable `StatePatch`·`UserConfirmation`, managed scratch-only mutation과 duplicate `request_user_input` 지침이 없다.
+- [x] Contract test가 proposal 전 actual file unchanged, accept 뒤 mutation, revise/reject no mutation과 revise의 fresh call을 검증한다.
+- [x] App apply·Git 실행 0과 native permission·Interaction result의 독립성이 test fixture에서 관찰된다.
+- [x] Workspace 설치가 아직 없는 상태에서도 tracked source와 contract tests가 독립적으로 green이다.
 
 ## Verification
 
-- Targeted test or command: Built-in Skill contract test와 관련 workspace/package test를 실행한다.
-- Repository checks: `npm run typecheck && npm run build && npm test && npm run check:docs-links`
-- Manual or live smoke: Temporary files와 scripted result 세 가지로 Skill instruction을 실행해 pre-proposal bytes와 result별 mutation을 비교한다.
+- Targeted: `npm run test:first-assignment-skill` — 5/5 통과. `npm test -w @ay-ple/interaction-mcp` — 9/9 통과. `npm test -w @ay-ple/semester-workspace` — 170 tests 통과.
+- Repository checks: review fix 뒤 `npm run typecheck`, `npm run build`, `npm test`, `npm run check:docs-links`, `npm run lint -w @ay-ple/chat-shell` 모두 통과.
+- Scripted actual-file smoke: temporary file에서 `accept`, `revise → accept`, `reject`를 실행해 각 proposal 직전 byte, fresh Review ID, result별 native file write와 conditional Git checkpoint, App file/Git 0을 비교했다. Native permission을 거절한 `accept`도 no-mutation으로 통과했다.
+- Skill validation: `python3 /Users/swh/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/ay-ple-first-assignment` — `Skill is valid!`.
+- Review: `/code-review 1416d8b49732155a1cf4c1ab3311afdbe505bb6c`의 Standards와 Spec 재검토 모두 finding 0.
+
+## Result
+
+- `skills/ay-ple-first-assignment/SKILL.md`를 tracked authoring source로 추가해 actual-file read, proposal-before-mutation, closed Review result 해석과 AY-owned native apply/checkpoint 순서를 고정했다.
+- `scripts/first-assignment-skill.contract.test.mts`와 root `test:first-assignment-skill` gate를 추가해 workspace 설치 없이 source contract와 temporary-file result behavior를 독립 검증한다.
+- 구현 commit: `6777d7f1842e474ecd113dc1df19f8b59e567575` (`feat: add first assignment review skill`), `17cd68c2b90b45a2c575b244c599e0b49de34672` (`test: harden assignment skill contract`).
 
 ## Blocked By
 
