@@ -21,8 +21,8 @@
 - [x] Notion Steps DB에 `Done`(체크박스) 속성이 추가되고, 완료 시 그 스텝이 `Done=true`로 갱신되어 다시 조회해도 유지된다
 
 ## C04 [T04] Timer 지속성
-- [ ] 타이머 도중 새로고침해도 남은 시간이 유지된다 (시작 시각 기준 재계산)
-- [ ] 타이머 종료 시 정확히 완료 화면으로 전이된다
+- [x] 타이머 도중 새로고침해도 남은 시간이 유지된다 (시작 시각 기준 재계산)
+- [x] 타이머 종료 시 정확히 완료 화면으로 전이된다
 
 ## C05 [T05] AgentLog DB + 기록 lib
 - [x] AgentLog Notion DB가 agent-design.md 스키마(계약 필드 7개 + Notion 필수 title `label` = 8 property)대로 존재한다
