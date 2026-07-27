@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test-first feature"
+  short_description: "Run a recorded Red-Green-Refactor feature workflow"
+  default_prompt: "Use $test-first-feature to implement one small feature with a recorded Red-Green-Refactor cycle."

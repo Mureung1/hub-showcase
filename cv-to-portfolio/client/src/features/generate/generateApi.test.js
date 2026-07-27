@@ -5,6 +5,7 @@ import { generateWithFallback } from "./generateWithFallback.js";
 const input = {
   cvMarkdown: "# 김지우",
   designMarkdown: "# Minimal Clean",
+  targetMarkdown: "# 지원 목표\n- 기업: QANDA",
 };
 
 describe("AI generate API", () => {
@@ -92,12 +93,18 @@ describe("AI generation fallback", () => {
       headerStyle: "centered",
     },
   };
+  const jobTarget = {
+    company: "QANDA",
+    role: "Frontend Engineer",
+    talentKeywords: ["테스트", "문제 정의"],
+  };
 
   it("AI 실패 시 로컬 렌더러 결과와 안내를 반환한다", async () => {
     const result = await generateWithFallback({
       cv,
       cvMarkdown: "# 김지우",
       theme,
+      jobTarget,
       request: vi.fn(async () => {
         throw new Error("503");
       }),
@@ -105,6 +112,7 @@ describe("AI generation fallback", () => {
 
     expect(result.source).toBe("fallback");
     expect(result.html).toContain("<!doctype html>");
+    expect(result.html).toContain("QANDA");
     expect(result.notice).toContain("로컬 렌더러");
   });
 });

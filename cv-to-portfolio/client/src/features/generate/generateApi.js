@@ -1,13 +1,14 @@
 export async function requestAiPortfolio({
   cvMarkdown,
   designMarkdown,
+  targetMarkdown,
   signal,
   fetchImpl = fetch,
 }) {
   const response = await fetchImpl("/api/generate", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ cvMarkdown, designMarkdown }),
+    body: JSON.stringify({ cvMarkdown, designMarkdown, targetMarkdown }),
     signal,
   });
 

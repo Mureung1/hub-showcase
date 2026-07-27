@@ -66,6 +66,16 @@ function eduList(cv) {
   return `<ul class="edu">${cv.education.map((e) => `<li>${esc(e)}</li>`).join("")}</ul>`;
 }
 
+function targetContext(target) {
+  if (!target) return "";
+
+  return `<section class="target-context">
+<span class="target-label">TARGET ROLE</span>
+<strong>${esc(target.company)} · ${esc(target.role)}</strong>
+<span>${esc(target.talentKeywords.join(" · "))}</span>
+</section>`;
+}
+
 // ── 헤더 (single-column / timeline 레이아웃용) ──
 function renderHeader(cv, t) {
   const name = esc(cv.name || "이력서");
@@ -85,11 +95,12 @@ function renderHeader(cv, t) {
 }
 
 // ── 세로 스택 본문 (single-column, timeline) ──
-function stackBody(cv, t) {
+function stackBody(cv, t, target) {
   const bannerHasSummary = t.headerStyle === "banner" && cv.summary;
   return `<div class="wrap">
 ${renderHeader(cv, t)}
 <main class="main">
+${targetContext(target)}
 ${section("소개", `<p class="summary">${esc(cv.summary)}</p>`, cv.summary && !bannerHasSummary)}
 ${section("기술", skillTags(cv), cv.skills.length > 0)}
 ${section("경력", cv.experience.map(renderEntry).join(""), cv.experience.length > 0, "exp")}
@@ -100,7 +111,7 @@ ${section("학력", eduList(cv), cv.education.length > 0)}
 }
 
 // ── 사이드바 그리드 본문 (sidebar, two-column) ──
-function gridBody(cv, t) {
+function gridBody(cv, t, target) {
   const avatar =
     t.headerStyle === "sidebar-profile"
       ? `<div class="avatar">${esc(monogram(cv.name))}</div>`
@@ -123,6 +134,7 @@ ${contacts}
 ${skills}
 </aside>
 <main class="main">
+${targetContext(target)}
 ${section("소개", `<p class="summary">${esc(cv.summary)}</p>`, !!cv.summary)}
 ${section("경력", cv.experience.map(renderEntry).join(""), cv.experience.length > 0, "exp")}
 ${section("프로젝트", cv.projects.map(renderEntry).join(""), cv.projects.length > 0, "proj")}
@@ -163,6 +175,10 @@ ul{margin:0;padding:0;list-style:none;}
 .contacts{display:flex;flex-wrap:wrap;gap:8px;}
 .contact{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:4px 11px;border-radius:999px;background:var(--surface);border:1px solid var(--border);}
 .contact .k{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;}
+.target-context{display:flex;flex-wrap:wrap;align-items:center;gap:7px 12px;margin-bottom:26px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);font-size:12.5px;}
+.target-context .target-label{color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.12em;}
+.target-context strong{font-size:13.5px;}
+.target-context span:last-child{width:100%;color:var(--muted);}
 
 /* 헤더: centered */
 .hd-centered{text-align:center;padding-bottom:22px;border-bottom:1px solid var(--border);}
@@ -212,10 +228,10 @@ ul{margin:0;padding:0;list-style:none;}
 }`;
 }
 
-export function generatePortfolio(cv, theme) {
+export function generatePortfolio(cv, theme, target = null) {
   const t = theme.tokens;
   const isGrid = t.layout === "sidebar" || t.layout === "two-column";
-  const body = isGrid ? gridBody(cv, t) : stackBody(cv, t);
+  const body = isGrid ? gridBody(cv, t, target) : stackBody(cv, t, target);
   const fontLink = t.googleFontHref
     ? `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="${esc(
         t.googleFontHref

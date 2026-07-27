@@ -27,14 +27,12 @@ export default function PortfolioLibrary({
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [action, setAction] = useState("idle");
+  const [favoriteActions, setFavoriteActions] = useState({});
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
   const [themeSlug, setThemeSlug] = useState(ALL_THEMES);
 
-  const themes = useMemo(
-    () => getPortfolioThemeOptions(portfolios),
-    [portfolios],
-  );
+  const themes = useMemo(() => getPortfolioThemeOptions(portfolios), [portfolios]);
   const visiblePortfolios = useMemo(
     () => filterPortfolios(portfolios, { query, themeSlug }),
     [portfolios, query, themeSlug],
@@ -92,6 +90,30 @@ export default function PortfolioLibrary({
     }
   }
 
+  async function toggleFavorite(portfolio) {
+    setFavoriteActions((current) => ({ ...current, [portfolio.id]: true }));
+    setMessage("");
+    try {
+      const updated = await api.updateFavorite(portfolio.id, !portfolio.isFavorite);
+      setPortfolios((current) =>
+        current.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)),
+      );
+      setMessage(
+        updated.isFavorite
+          ? `${updated.name} 포트폴리오를 즐겨찾기에 추가했습니다.`
+          : `${updated.name} 포트폴리오의 즐겨찾기를 해제했습니다.`,
+      );
+    } catch (error) {
+      setMessage(errorMessage(error));
+    } finally {
+      setFavoriteActions((current) => {
+        const next = { ...current };
+        delete next[portfolio.id];
+        return next;
+      });
+    }
+  }
+
   return (
     <section className="portfolio-library" aria-labelledby="portfolio-library-title">
       <div className="library-heading">
@@ -144,6 +166,19 @@ export default function PortfolioLibrary({
                 <time dateTime={portfolio.createdAt}>
                   {formatDate.format(new Date(portfolio.createdAt))}
                 </time>
+                <button
+                  className={`btn favorite-button ${portfolio.isFavorite ? "on" : ""}`}
+                  type="button"
+                  aria-pressed={portfolio.isFavorite}
+                  onClick={() => toggleFavorite(portfolio)}
+                  disabled={Boolean(favoriteActions[portfolio.id])}
+                >
+                  {favoriteActions[portfolio.id]
+                    ? "변경 중…"
+                    : portfolio.isFavorite
+                      ? "★ 즐겨찾기 해제"
+                      : "☆ 즐겨찾기"}
+                </button>
                 <button
                   className="btn"
                   onClick={() => open(portfolio.id)}

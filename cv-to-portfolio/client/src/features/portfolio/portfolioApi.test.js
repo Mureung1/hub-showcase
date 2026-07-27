@@ -8,6 +8,7 @@ const PORTFOLIO = {
   themeSlug: "minimal-clean",
   themeName: "Minimal Clean",
   html: "<!doctype html><html></html>",
+  isFavorite: false,
   createdAt: "2026-07-14T00:00:00.000Z",
 };
 
@@ -40,6 +41,25 @@ describe("portfolio API", () => {
     expect((await api.get(PORTFOLIO.id)).html).toContain("<!doctype html>");
   });
 
+  it("즐겨찾기 상태를 PATCH한다", async () => {
+    const favorite = { ...PORTFOLIO, isFavorite: true };
+    const fetchImpl = vi.fn(
+      async () => new Response(JSON.stringify({ portfolio: favorite })),
+    );
+    const api = createPortfolioApi({ fetchImpl });
+
+    const result = await api.updateFavorite(PORTFOLIO.id, true);
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `/api/portfolios/${PORTFOLIO.id}/favorite`,
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ isFavorite: true }),
+      }),
+    );
+    expect(result.isFavorite).toBe(true);
+  });
+
   it("서버 오류 메시지를 사용자에게 전달한다", async () => {
     const api = createPortfolioApi({
       fetchImpl: async () =>
@@ -56,11 +76,14 @@ describe("mock portfolio API", () => {
   it("서버 없이 저장 → 목록 → 상세 조회 사이클을 수행한다", async () => {
     const api = createMockPortfolioApi();
     const saved = await api.save(PORTFOLIO);
+    const favorite = await api.updateFavorite(saved.id, true);
     const list = await api.list();
     const detail = await api.get(saved.id);
 
     expect(list).toHaveLength(1);
     expect(list[0].html).toBeUndefined();
+    expect(favorite.isFavorite).toBe(true);
+    expect(list[0].isFavorite).toBe(true);
     expect(detail.html).toBe(PORTFOLIO.html);
   });
 });

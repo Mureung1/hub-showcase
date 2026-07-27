@@ -3,6 +3,7 @@ import {
   createPortfolio,
   getPortfolio,
   listPortfolios,
+  updatePortfolioFavorite,
 } from "../services/portfolios.service.js";
 
 const UUID_PATTERN =
@@ -53,6 +54,22 @@ export async function getPortfolioById(req, res, next) {
       throw new ServiceError("id는 올바른 UUID여야 합니다.", 400);
     }
     res.json({ portfolio: await getPortfolio(req.params.id) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function patchPortfolioFavorite(req, res, next) {
+  try {
+    if (!UUID_PATTERN.test(req.params.id)) {
+      throw new ServiceError("id는 올바른 UUID여야 합니다.", 400);
+    }
+    if (typeof req.body?.isFavorite !== "boolean") {
+      throw new ServiceError("isFavorite은 boolean이어야 합니다.", 400);
+    }
+
+    const portfolio = await updatePortfolioFavorite(req.params.id, req.body.isFavorite);
+    res.json({ portfolio });
   } catch (error) {
     next(error);
   }

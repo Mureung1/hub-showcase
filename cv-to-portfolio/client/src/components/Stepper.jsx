@@ -1,6 +1,7 @@
-// 4단계 진행 표시기 (CV 업로드 → 디자인 선택 → 생성 → 완성)
+// 5단계 진행 표시기 (지원 목표 → CV 업로드 → 디자인 선택 → 생성 → 완성)
 // 완료된 이전 단계는 클릭해 되돌아갈 수 있다(onStep). 현재 단계는 aria-current로 표시.
 export const STEPS = [
+  { key: "target", label: "기업 · 공고" },
   { key: "upload", label: "CV 업로드" },
   { key: "design", label: "디자인 선택" },
   { key: "generate", label: "AI 생성" },

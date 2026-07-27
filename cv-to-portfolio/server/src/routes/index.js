@@ -4,6 +4,7 @@ import { postGenerate } from "../controllers/generate.controller.js";
 import {
   getPortfolioById,
   getPortfolios,
+  patchPortfolioFavorite,
   postPortfolio,
 } from "../controllers/portfolios.controller.js";
 
@@ -25,5 +26,6 @@ router.post("/generate", postGenerate);
 router.post("/portfolios", postPortfolio);
 router.get("/portfolios", getPortfolios);
 router.get("/portfolios/:id", getPortfolioById);
+router.patch("/portfolios/:id/favorite", patchPortfolioFavorite);
 
 export default router;
