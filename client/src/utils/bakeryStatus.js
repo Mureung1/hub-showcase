@@ -9,15 +9,20 @@ export function isOpenNow(b, now = currentHour()) {
   return now >= b.openHour && now < b.closeHour;
 }
 
-// '곧 마감' | null — 추가기능 스펙 1번(마감임박 말풍선). "한산해요"는 실데이터에 몰리는 시간대
-// 구간(시작~끝) 필드가 없어서(수집 항목이 아님) 뺐다 — 데이터가 생기면 다시 추가.
+// '곧 마감' | '한산해요' | null — 추가기능 스펙 1번. 몰리는 시간대(busyHours)는 아직 실데이터가
+// 없어서 mockBakeryExtras.js의 임시값을 쓴다(bakery.busyHours = [시작, 끝]). 두 조건이 겹치면
+// 마감임박을 우선한다(스펙 문서 명시 사항).
 export function bakeryStatus(b, now = currentHour()) {
-  if (b.closeHour == null) return null;
-  if (b.closeHour - now <= 1 && b.closeHour - now > 0) return 'closing';
+  if (b.closeHour != null && b.closeHour - now <= 1 && b.closeHour - now > 0) return 'closing';
+  if (b.busyHours && isOpenNow(b, now)) {
+    const [busyStart, busyEnd] = b.busyHours;
+    if (now < busyStart || now >= busyEnd) return 'quiet';
+  }
   return null;
 }
 
 export function statusMeta(status) {
   if (status === 'closing') return { label: '곧 마감', cls: 'closing' };
+  if (status === 'quiet') return { label: '한산해요', cls: 'quiet' };
   return null;
 }

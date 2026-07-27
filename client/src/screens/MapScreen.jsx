@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '../store/useAppStore.js';
 import { requestCurrentLocation } from '../utils/geolocation.js';
 import { haversineDistanceKm } from '../utils/geo.js';
@@ -23,6 +24,7 @@ export default function MapScreen() {
   const userLocationLabel = useAppStore((s) => s.userLocationLabel);
   const setUserLocation = useAppStore((s) => s.setUserLocation);
   const showToast = useAppStore((s) => s.showToast);
+  const openRecommendModal = useAppStore((s) => s.openRecommendModal);
 
   const [locating, setLocating] = useState(false);
 
@@ -77,12 +79,10 @@ export default function MapScreen() {
           </button>
         </div>
 
-        <Link to="/recommend" className="recommend-cta">
-          <span className="recommend-cta-circle">
-            <img src="/recomm.png" alt="" />
-          </span>
+        <button type="button" className="recommend-cta" onClick={openRecommendModal}>
+          <img src="/recomm.png" alt="" className="recommend-cta-img" />
           <span className="recommend-cta-label">자동 추천 받기</span>
-        </Link>
+        </button>
       </div>
 
       <div className="detail-panel">
@@ -102,18 +102,27 @@ export default function MapScreen() {
               {selected.length < 2 && <span className="select-hint">2곳 이상 선택해주세요</span>}
             </div>
             <div className="detail-panel-body">
-              {selected.map((b) => (
-                <SelectionCard
-                  key={b.id}
-                  bakery={b}
-                  liked={wishlist.has(b.id)}
-                  visited={visited.has(b.id)}
-                  distanceKm={haversineDistanceKm(userLocation, b)}
-                  onRemove={() => removeFromSelection(b.id)}
-                  onToggleWishlist={() => toggleWishlist(b.id)}
-                  onToggleVisited={() => toggleVisited(b.id)}
-                />
-              ))}
+              <AnimatePresence initial={false}>
+                {selected.map((b) => (
+                  <motion.div
+                    key={b.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <SelectionCard
+                      bakery={b}
+                      liked={wishlist.has(b.id)}
+                      visited={visited.has(b.id)}
+                      distanceKm={haversineDistanceKm(userLocation, b)}
+                      onRemove={() => removeFromSelection(b.id)}
+                      onToggleWishlist={() => toggleWishlist(b.id)}
+                      onToggleVisited={() => toggleVisited(b.id)}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           </>
         )}
