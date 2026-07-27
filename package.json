@@ -17,6 +17,7 @@
     "materialize:dev-workspace": "tsx scripts/semester-workspace-materializer.mts",
     "test:workspace-materializer": "tsx --test scripts/semester-workspace-materializer.test.mts",
     "test:local": "tsx --test scripts/product-canonical.test.mts scripts/product-local.test.mts",
+    "test:runtime-local-provider": "npm run build -w @ay-ple/interaction-mcp && npm run test:local-provider -w @ay-ple/codex-chat-runtime",
     "test:product-entrypoint": "tsx scripts/test-product-entrypoint.mts",
     "check:docs-links": "tsx scripts/check-docs-links.mts",
     "test": "npm run test:workspace-materializer && npm run test:local && npm run test -w @ay-ple/interaction-mcp && npm run test -w @ay-ple/product-contract && npm run test -w @ay-ple/codex-chat-runtime && npm run test -w @ay-ple/semester-workspace && npm run test -w @ay-ple/server && npm run test -w @ay-ple/chat-shell && npm run test:camp-demo",
