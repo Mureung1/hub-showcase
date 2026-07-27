@@ -111,7 +111,8 @@
   - [ ] Capability contract test, deterministic Browser E2E와 exact local-provider trace로 accept·revise·reject·cancel·disconnect·Runtime terminal에서 허위 apply나 duplicate result가 없음을 검증한다.
 
 - [ ] User-owned SemesterWorkspace lifecycle과 canonical local roots를 완성한다.
-  - [ ] Sibling `../.ay-ple/`에 known·active repository path만 소유하는 durable `WorkspaceRegistry`를 두고, 사용자가 선택한 한 학기 Git root를 Codex project root와 thread의 고정 `cwd`로 전환한다. Descendant cwd를 별도 identity로 만들지 않고 workspace 전환 때 recorded thread cwd를 일치시킨다.
+  - [ ] Active workspace가 없을 때 canonical `hub/` cwd의 Bootstrap Runtime·thread를 열고, 명시적 activation 뒤 이를 종료한 다음 exact SemesterWorkspace Git root에서 새 Workspace Runtime·thread를 시작한다. Bootstrap thread를 resume하거나 cwd만 바꾸지 않는다.
+  - [ ] Sibling `../.ay-ple/`에 activation이 끝난 known·active repository path만 소유하는 durable `WorkspaceRegistry`를 두고, 사용자가 선택한 한 학기 Git root를 Codex project root와 thread의 고정 `cwd`로 전환한다. Descendant cwd를 별도 identity로 만들지 않고 workspace 전환 때 recorded thread cwd를 일치시킨다.
   - [ ] Runtime의 fixed `project_root_markers=[]`와 process-wide managed Skill override를 제거하고, exact Git root의 native project config·`AGENTS.md`·Skill discovery를 사용한다. Persistent Runtime과 context probe가 같은 effective project boundary를 관측하는지 검증한다.
   - [ ] 초기 Bootstrap Skill은 repository 개발 harness와 함께 `hub/.agents/skills/`에 두어 hub-rooted Codex가 native discovery하게 하고, AY-PLE built-in Skill source catalog는 `hub/skills/`에 둔다. Bootstrap·Update가 선택한 source directory를 SemesterWorkspace의 Git-tracked `.agents/skills/`로 복사하고, symlink나 Runtime `extraRoots` 없이 native discovery되는지 검증한다.
   - [ ] Instruction-based init Skill로 Git 초기화, 최소 `AGENTS.md`, root `workspace-state.json`, 선택한 Skill copy와 첫 checkpoint를 준비한다. Existing bytes와 dirty working tree를 존중하고 별도 scaffold script는 deterministic 필요가 확인될 때만 추가한다.

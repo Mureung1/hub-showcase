@@ -117,12 +117,14 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 채택한 목표 lifecycle은 다음과 같다.
 
 1. 사용자의 기존 `~/.codex/` account readiness를 확인한다.
-2. 사용자가 기존 또는 새 학기 directory를 명시적으로 선택한다.
-3. App이 canonical path를 `WorkspaceRegistry`의 known·active workspace로 기록한다.
-4. 새 directory라면 사용자가 init Skill을 실행해 그 자리에서 Git·최소 workspace file과 선택한 `.agents/skills/` copy를 준비한다.
-5. 준비된 Git root를 Codex project root와 정상 thread의 고정 `cwd`로 연결한다. 하위 directory는 작업 대상일 뿐 별도 cwd가 아니다.
+2. Active workspace가 없으면 App이 `hub/` cwd의 일시적인 Bootstrap Runtime·thread를 연다.
+3. 사용자가 기존 또는 새 학기 directory를 명시적으로 선택한다.
+4. 새 directory라면 hub에서 native discovery한 Bootstrap Skill이 그 자리에서 Git·최소 workspace file과 선택한 `.agents/skills/` copy를 준비한다.
+5. 사용자가 명시적으로 activation을 요청하면 App이 Bootstrap Runtime·thread를 종료한다.
+6. App이 준비된 Git root를 project root와 고정 `cwd`로 쓰는 새 Workspace Runtime·thread를 연다.
+7. 새 Runtime이 준비되면 canonical root를 `WorkspaceRegistry`의 known·active workspace로 기록한다. 하위 directory는 작업 대상일 뿐 별도 cwd가 아니며, Bootstrap thread나 다른 학기 thread를 이 root로 이동시키지 않는다.
 
-App은 Git repository 생성·cleanliness·commit 정책을 별도 subsystem으로 구현하지 않는다. AY는 `AGENTS.md`의 간단한 지침에 따라 작업의 자연스러운 checkpoint를 자율적으로 판단한다.
+App은 두 Runtime phase와 active pointer 전환만 소유한다. Git repository 생성·cleanliness·commit 정책을 별도 subsystem으로 구현하지 않으며, Bootstrap과 AY가 일반 file·Git 도구 및 `AGENTS.md`의 간단한 지침에 따라 작업한다.
 
 ## 현재 구현과 채택한 목표
 
