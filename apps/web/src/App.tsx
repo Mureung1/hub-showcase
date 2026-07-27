@@ -23,7 +23,8 @@ type View = "dashboard" | "edit" | "sent";
 type RemoteState =
   | { status: "mock" } // MOCK_MODE=on — 서버를 부르지 않음
   | { status: "loading" }
-  | { status: "ready"; scenario: Scenario; campaignId: string }
+  // stale=true면 오늘 제안을 못 만들어 지난 캠페인을 대신 띄운 상태 (실패 대본 5-3)
+  | { status: "ready"; scenario: Scenario; campaignId: string; stale: boolean; date: string }
   | { status: "empty"; message: string } // 서버는 붙었으나 오늘 제안이 아직 없음
   | { status: "error"; message: string };
 
@@ -120,7 +121,18 @@ export default function WeatherPilotV3() {
           setRemote({ status: "empty", message: p.message });
           if (attempt < 12) timer = setTimeout(() => load(attempt + 1), 5000);
         } else {
-          setRemote({ status: "ready", scenario: scenarioFromApi(w.weather, p.proposal, p.diagnosis), campaignId: p.campaignId });
+          // stale이면 지난 캠페인이다 — 날씨는 그 캠페인이 만들어진 날 것(p.weather)을 써야
+          // 문구와 앞뒤가 맞는다. 오늘 날씨(w.weather)를 얹으면 "맑음인데 비 문구"가 된다.
+          const weather = p.stale ? p.weather : w.weather;
+          setRemote({
+            status: "ready",
+            scenario: scenarioFromApi(weather, p.proposal, p.diagnosis),
+            campaignId: p.campaignId,
+            stale: p.stale === true,
+            date: p.date,
+          });
+          // stale이면 오늘 것이 만들어지는지 계속 지켜본다 (장애 복구 시 자동 전환).
+          if (p.stale && attempt < 12) timer = setTimeout(() => load(attempt + 1), 5000);
         }
       } catch (e) {
         if (!cancelled) {
@@ -157,6 +169,8 @@ export default function WeatherPilotV3() {
 
   // 편집된 할인율이 반영된 프로모션 문구 (미리보기·쿠폰 라벨·발송에 사용). (QW-4)
   const promoValue = applyDiscountPct(s.promo, discountPct);
+  // SNS 캡션 — 발송(MOCK 응답 채우기)과 발송완료 화면(복사 폴백)이 같은 값을 쓰도록 한 번만 만든다.
+  const snsCaption = buildSnsCaption({ copy, promo: { type: "할인", value: promoValue } });
 
   function pickScenario(k: ScenarioKey) {
     setScenarioKey(k);
@@ -191,7 +205,7 @@ export default function WeatherPilotV3() {
         channels,
         editedPromo: { type: "할인", value: promoValue },
       });
-      const result = await sendCampaign(sendId, { channels, assumeNight: nightMode });
+      const result = await sendCampaign(sendId, { channels, assumeNight: nightMode }, snsCaption);
       setSentCampaignId(sendId);
       setSendResult(result);
       setView("sent");
@@ -259,6 +273,19 @@ export default function WeatherPilotV3() {
           </div>
         )}
 
+        {/* 전일 캐시 안내(5-3) — 오늘 제안을 못 만들어 지난 것을 띄운 상태.
+            숨기면 사장님이 오늘 날씨 기준인 줄 알고 발송한다. 반드시 보이게 둔다. */}
+        {tab === "home" && remote.status === "ready" && remote.stale && (
+          <div style={{ border: `1px solid ${T.border}`, borderLeft: `3px solid ${T.primary}`, borderRadius: 10, padding: "10px 12px", marginBottom: 14, background: "#FBFDFF" }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: T.ink }}>
+              🕐 {remote.date} 제안을 보여주는 중이에요
+            </div>
+            <div style={{ fontSize: 11.5, color: T.sub, marginTop: 4, lineHeight: 1.5 }}>
+              오늘 제안을 만드는 데 시간이 걸리고 있어요. 준비되면 자동으로 바뀝니다.
+            </div>
+          </div>
+        )}
+
         {tab === "perf" ? (
           <PerfView />
         ) : !MOCK_MODE && remote.status !== "ready" ? (
@@ -276,7 +303,7 @@ export default function WeatherPilotV3() {
         ) : sendResult ? (
           <SentView
             s={s} channels={channels} sendResult={sendResult} campaignId={sentCampaignId}
-            snsCaption={buildSnsCaption({ copy, promo: { type: "할인", value: promoValue } })}
+            snsCaption={snsCaption}
             uat={uat} elapsedSec={elapsedSec}
             onBack={() => setView("dashboard")}
           />
@@ -520,6 +547,14 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
   const igPosted = igOn && (sendResult.sns?.posted ?? false);
   const permalink = sendResult.sns?.permalink;
   const caption = sendResult.sns?.caption ?? snsCaption;
+
+  // SNS 전용 발송 안내 — 채널명은 바로 윗줄(names)에 이미 나오므로 반복하지 않는다.
+  // 단, 인스타(자동 게시)와 X(수동 복사)를 같이 보낸 경우엔 처리가 달라 구분해 준다.
+  const snsHint = !igPosted
+    ? "아래에서 문구를 복사해 올려주세요."
+    : xOn
+      ? "인스타그램은 자동 게시됐어요. X는 아래 문구를 복사해 주세요."
+      : "자동으로 게시됐어요.";
   const [copied, setCopied] = useState(false);
   async function copyCaption() {
     try {
@@ -578,7 +613,7 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
             ? <>{names.join(" · ")}<br />단골은 <b>내일 오전 8시 예약발송</b>으로 전환됐어요.</>
             : dangolOn
               ? <>{names.join(" · ")}<br />수신동의 단골 {target}명에게 발송했어요.</>
-              : <>{names.join(" · ")}<br />{igPosted ? "인스타그램에 게시됐어요." : "아래에서 문구를 복사해 올려주세요."}</>}
+              : <>{names.join(" · ")}<br />{snsHint}</>}
         </div>
         {sendResult.couponCode && (
           <div style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, background: T.surfaceAlt, fontSize: 12.5, color: T.ink, fontWeight: 600 }}>
@@ -624,6 +659,12 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
                 ? "자동 게시가 안 됐어요(토큰·이미지 미설정). 문구를 복사해 직접 올려주세요."
                 : "X(트위터)는 문구를 복사해 직접 올려주세요."}
           </p>
+          {/* 귀속 방법 안내 — SNS는 공개 채널이라 개인별 쿠폰 코드를 못 준다(shared/sns.ts).
+              대신 캡션의 📍 줄이 증표 역할을 하므로, 사장님이 뭘 확인하면 되는지 알려 준다.
+              채널 역할("도달")은 화면 맨 아래 한 곳에서만 말한다 — 여기서 또 하면 같은 말 반복. */}
+          <p style={{ fontSize: 11, color: T.muted, marginTop: 6, lineHeight: 1.5 }}>
+            게시물을 보고 온 손님이 <b>매장에서 화면을 보여주면</b> 혜택을 적용해 주세요.
+          </p>
         </Card>
       )}
 
@@ -646,7 +687,8 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
             <div style={{ fontSize: 12, color: T.upText, fontWeight: 700 }}>이 캠페인 귀속 매출</div>
             <div style={{ fontSize: 26, fontWeight: 700, color: T.up, marginTop: 4 }}>{won(rev)}</div>
             <div style={{ fontSize: 11, color: T.upText, marginTop: 2 }}>
-              쿠폰 코드로 직접 추적된 실매출
+              {/* SNS를 같이 보냈으면 이 숫자가 '전 채널 합계'로 오해되기 쉽다 → 집계 범위를 명시. */}
+              {hasSns ? "단골 문자 쿠폰 코드로 추적된 실매출" : "쿠폰 코드로 직접 추적된 실매출"}
             </div>
           </div>
         </Card>
@@ -655,7 +697,10 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
       <p style={{ textAlign: "center", fontSize: 12, color: T.muted, marginTop: 14, lineHeight: 1.6 }}>
         {scheduled ? "예약 시간이 되면 자동 발송하고 추적을 시작할게요."
           : tracking ? "쿠폰 사용은 쿠폰 코드로 누적 집계돼요. 날씨 회복이 아니라 이 캠페인이 만든 매출입니다."
-          : "SNS 게시물 반응은 성과 탭에서 집계됩니다."}
+          /* SNS 단독 발송 — 쿠폰이 발급되지 않는다(서버가 dangol 없으면 발급 경로를 건너뜀).
+             구 문구는 "SNS 반응은 성과 탭에서 집계"였으나 PerfView는 쿠폰 사용률·귀속 매출만 보여준다.
+             없는 기능을 약속하지 말고, 매출 추적을 켜는 방법을 안내한다. */
+          : "SNS는 도달을 맡는 채널이라 쿠폰 추적 대상이 아니에요. 매출 추적은 단골 문자를 함께 보내면 시작됩니다."}
       </p>
     </div>
   );

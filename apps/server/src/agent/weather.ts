@@ -234,7 +234,10 @@ export async function getKmaWeather(
 
   const res = await fetchWithRetry(`${KMA_ENDPOINT}?${params.toString()}`, {
     fetchFn,
-    timeoutMs: deps.timeoutMs ?? 3000,
+    // 3000ms는 여유가 없었다 — 실측 응답이 924~2816ms라 종종 천장에 부딪혀
+    // 재시도가 발동했고(/weather/today 4292ms = 3000 타임아웃 + 1292 재시도), 두 번 다
+    // 느리면 OWM 단독으로 떨어졌다. 앙상블 결과가 캐시되므로 올려도 체감 비용이 없다.
+    timeoutMs: deps.timeoutMs ?? 5000,
     retries: deps.retries ?? 1,
   });
 

@@ -32,6 +32,13 @@ export interface ProposalTodayFound {
   /** 매출×날씨 진단 (조회 시 재계산). 대시보드 진단·매출 타일의 실데이터 소스. */
   diagnosis: Diagnosis;
   proposal: Proposal;
+  /**
+   * 오늘 제안을 못 만들어 **지난 캠페인을 대신 보여주는 중**이면 true (실패 대본 5-3).
+   *
+   * 날씨·DB 장애로 오늘 생성이 실패해도 화면이 비지 않게 하는 폴백이다.
+   * `date`가 오늘이 아니므로 화면은 반드시 "지난 제안"임을 표시해야 한다 — 오늘 것인 척 금지.
+   */
+  stale?: boolean;
 }
 
 /** GET /proposal/today — 아직 생성 전일 때. */

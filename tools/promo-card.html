@@ -1,0 +1,78 @@
+<!doctype html>
+<!--
+  Instagram 기본 프로모 카드 원본 (→ apps/web/public/promo-card.jpg).
+
+  IG_DEMO_IMAGE_URL이 가리키는 고정 이미지다. 사장님이 사진을 올리는 기능이 생기기 전까지
+  모든 인스타 게시가 이 카드를 쓴다.
+
+  왜 HTML인가 — 카드를 PowerShell System.Drawing(GDI+)으로 그렸더니 자간·행간 제어가 안 돼
+  촌스러웠다. HTML/CSS로 그리면 letter-spacing·line-height·그라디언트를 그대로 쓰고,
+  앱과 같은 Pretendard를 쓸 수 있다.
+
+  재생성 (Chrome 헤드리스 → PNG → JPEG):
+    chrome --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
+      --window-size=1080,1080 --screenshot=card.png file:///.../tools/promo-card.html
+    그다음 PNG를 품질 92 JPEG로 변환해 apps/web/public/promo-card.jpg 로 덮는다.
+
+  Instagram 제약 — JPEG만(PNG·WEBP 거부) · 비율 4:5~1.91:1(1:1이 가장 안전) · 최대 8MB.
+-->
+<html lang="ko">
+<head><meta charset="utf-8"><title>WeatherPilot 프로모 카드</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:1080px; height:1080px; overflow:hidden; }
+  /* 바깥은 티켓 상단 그라디언트보다 한 톤 어둡게 — 같은 파랑이면 티켓 윤곽이 사라진다. */
+  body { font-family:'Pretendard',sans-serif; background:#3B7DD8; position:relative; }
+
+  /* 티켓 (1080 - 56*2 = 968) */
+  .ticket {
+    position:absolute; left:56px; top:56px; width:968px; height:968px;
+    border-radius:44px; overflow:hidden; background:#fff;
+    box-shadow:0 24px 60px rgba(20,60,110,.20);
+    display:flex; flex-direction:column;
+  }
+  .top {
+    flex:0 0 360px;
+    background:linear-gradient(150deg,#6BAEF7 0%,#4A90E2 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff;
+  }
+  .mark {
+    font-family:'Pretendard SemiBold','Pretendard',sans-serif;
+    font-size:24px; letter-spacing:.46em; text-indent:.46em; color:rgba(255,255,255,.78);
+  }
+  .sub {
+    font-family:'Pretendard Medium','Pretendard',sans-serif;
+    font-size:32px; margin-top:24px; letter-spacing:-.02em;
+  }
+  .bottom { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  h1 {
+    font-family:'Pretendard ExtraBold','Pretendard',sans-serif;
+    font-size:146px; line-height:1.05; letter-spacing:-.04em; color:#1B2942; text-align:center;
+  }
+  .dot { width:88px; height:6px; border-radius:99px; background:#4A90E2; margin-top:52px; }
+
+  /* 절취선 — 색 경계(y=416)에 걸치면 파랑 위에서 안 보여 반쪽만 남는다. 흰 영역 안으로 내린다. */
+  .dash {
+    position:absolute; left:100px; right:100px; top:438px; height:6px; z-index:2;
+    background:repeating-linear-gradient(90deg,#BDD3EC 0 18px,transparent 18px 36px);
+  }
+  /* 노치 — 티켓 좌우 모서리 위에 얹어 구멍처럼 보이게. 바깥 배경과 같은 단색이어야 구멍이 된다. */
+  .notch { position:absolute; width:72px; height:72px; border-radius:50%; background:#3B7DD8; z-index:3; top:405px; }
+  .nl { left:20px; }
+  .nr { left:988px; }
+</style></head>
+<body>
+  <div class="ticket">
+    <div class="top">
+      <div class="mark">WEATHERPILOT</div>
+      <div class="sub">날씨로 준비한 오늘의 혜택</div>
+    </div>
+    <div class="bottom">
+      <h1>오늘의<br>날씨 쿠폰</h1>
+      <div class="dot"></div>
+    </div>
+  </div>
+  <div class="dash"></div>
+  <div class="notch nl"></div>
+  <div class="notch nr"></div>
+</body></html>

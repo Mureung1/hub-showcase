@@ -49,4 +49,11 @@ export interface EnsembleWeather {
   sources: WeatherSource[];
   /** 사용된 소스 수 (한쪽 장애 시 폴백 표기용). */
   sourceCount: number;
+  /**
+   * 데모용 고정 날씨(DEMO_WEATHER)로 만들어졌으면 true. 실제 API를 부르지 않았다는 뜻.
+   *
+   * 화면이 "N개 소스 평균" 배지를 그대로 띄우면 안 되므로 반드시 표기에 반영한다 —
+   * 고정값을 실측인 척하지 않는다(README 스코프 원칙과 동일). 평상시엔 undefined.
+   */
+  seeded?: boolean;
 }

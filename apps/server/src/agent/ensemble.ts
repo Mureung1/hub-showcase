@@ -5,6 +5,7 @@ import type {
   WeatherSource,
 } from "shared";
 import { getKmaWeather, getOwmWeather } from "./weather";
+import { resolveDemoWeather } from "./demoWeather";
 
 /**
  * 날씨 앙상블 병합.
@@ -20,11 +21,15 @@ import { getKmaWeather, getOwmWeather } from "./weather";
 
 /**
  * 소스별 기본 가중치. 기상청은 한반도 국지 예보 정확도가 높아 우선한다.
- * 실측 오차 데이터가 쌓이면 이 값만 튜닝하면 된다.
+ *
+ * 2026-07-27 실측으로 0.6/0.4 → 0.7/0.3 조정. 같은 시각(18:57) 성남 정자동에서
+ * 기상청 초단기실황(관측) 29.4℃ · 기상청 단기예보 29.0℃ · OWM current 27.58℃로,
+ * OWM이 관측 대비 1.8℃ 낮게 읽었다. OWM은 전지구 모델 보간이라 한국 국지값과 벌어진다.
+ * (앙상블 결과 28.4 → 28.6으로 관측에 근접)
  */
 export const SOURCE_WEIGHTS: Record<WeatherSource, number> = {
-  kma: 0.6,
-  owm: 0.4,
+  kma: 0.7,
+  owm: 0.3,
 };
 
 /** 비강수 하늘상태의 궂은 정도 (클수록 궂음). */
@@ -87,6 +92,39 @@ function mergeCondition(sources: NormalizedWeather[]): WeatherCondition {
 export interface EnsembleDeps {
   getKma?: (nx: number, ny: number) => Promise<NormalizedWeather>;
   getOwm?: (lat: number, lng: number) => Promise<NormalizedWeather>;
+  /** 데모 고정 날씨 조회 (테스트 주입용). 기본은 DEMO_WEATHER 환경변수를 읽는다. */
+  demoWeather?: () => EnsembleWeather | null;
+  /** 현재 시각(ms). 캐시 만료 판정용 — 테스트에서 시간을 밀어보려고 주입한다. */
+  now?: () => number;
+}
+
+/**
+ * 앙상블 결과 캐시 TTL.
+ *
+ * 기상청 단기예보는 **3시간 단위 슬롯**을 하루 8회 발표하고, OWM current는 약 10분 주기로
+ * 갱신된다. 5분 동안은 어차피 같은 값이 오므로 정확도 손실 없이 왕복만 줄인다.
+ *
+ * 캐시가 없을 때 실측: /weather/today가 매 요청 1979~4292ms(4292는 기상청 3s 타임아웃 후
+ * 재시도가 성공한 케이스). 대시보드가 이 응답을 기다리느라 그대로 로딩 시간이 됐다.
+ */
+const WEATHER_CACHE_TTL_MS = 5 * 60 * 1000;
+
+interface WeatherCacheEntry {
+  weather: EnsembleWeather;
+  expiresAt: number;
+}
+
+// 프로세스 메모리 캐시. 매장 수가 적어 무한 증가 걱정이 없고, 재시작하면 자연히 비워진다.
+const weatherCache = new Map<string, WeatherCacheEntry>();
+
+/** 캐시 키 — 기상청 격자(nx·ny)와 OWM 좌표(lat·lng)가 모두 같아야 같은 날씨다. */
+function cacheKeyFor(loc: StoreLocation): string {
+  return `${loc.nx},${loc.ny},${loc.lat},${loc.lng}`;
+}
+
+/** 캐시를 비운다 (테스트·수동 갱신용). */
+export function clearWeatherCache(): void {
+  weatherCache.clear();
 }
 
 export interface StoreLocation {
@@ -105,6 +143,21 @@ export async function getEnsembleWeather(
   loc: StoreLocation,
   deps: EnsembleDeps = {},
 ): Promise<EnsembleWeather> {
+  // 데모 고정 날씨(5-1) — 켜져 있으면 실 API를 아예 부르지 않는다.
+  // 여기가 날씨의 유일한 관문이라(라우트·크론·파이프라인이 전부 경유) 한 곳만 막으면 전체에 걸린다.
+  const demo = (deps.demoWeather ?? resolveDemoWeather)();
+  if (demo) {
+    console.warn(`[weather] 데모 고정 날씨 사용: ${demo.condition} ${demo.tempC}°C (DEMO_WEATHER)`);
+    return demo;
+  }
+
+  // 캐시 히트면 즉시 반환. 데모 seed보다 뒤에 둬야 seed를 켠 직후에도 바로 반영된다.
+  const now = (deps.now ?? Date.now)();
+  const key = cacheKeyFor(loc);
+  const hit = weatherCache.get(key);
+  // 호출부가 결과를 고쳐도 캐시가 오염되지 않게 복사본을 준다.
+  if (hit && hit.expiresAt > now) return { ...hit.weather };
+
   const getKma = deps.getKma ?? getKmaWeather;
   const getOwm = deps.getOwm ?? getOwmWeather;
 
@@ -133,8 +186,12 @@ export async function getEnsembleWeather(
       .filter((r): r is PromiseRejectedResult => r.status === "rejected")
       .map((r) => (r.reason instanceof Error ? r.reason.message : String(r.reason)))
       .join("; ");
+    // 실패는 캐시하지 않는다 — 다음 요청이 곧바로 재시도할 수 있어야 한다.
     throw new Error(`모든 날씨 소스 실패: ${reasons}`);
   }
 
-  return mergeWeather(ok);
+  const merged = mergeWeather(ok);
+  // 캐시엔 복사본을 넣는다. 반환한 객체를 호출부가 고쳐도 캐시가 오염되지 않아야 한다.
+  weatherCache.set(key, { weather: { ...merged }, expiresAt: now + WEATHER_CACHE_TTL_MS });
+  return merged;
 }

@@ -109,18 +109,40 @@ export function patchCampaign(
   return apiSend<CampaignPatchResponse>("PATCH", `/campaigns/${id}`, req);
 }
 
+/**
+ * MOCK에서 "게시 완료" UI를 보여줄 때 링크할 실제 게시물 permalink.
+ *
+ * 빈 문자열이면 MOCK은 `posted:false`(복사 폴백)로 정직하게 강등된다.
+ * 채울 값은 **실제로 게시된 게시물의 permalink만** — 없는 게시물을 가리키면
+ * 데모에서 링크가 깨지고, 존재하지 않는 게시를 성공으로 꾸미는 셈이 된다.
+ * (실연동 경로는 이 상수를 쓰지 않는다 — 서버가 게시 후 받은 permalink를 그대로 준다.)
+ */
+const DEMO_IG_PERMALINK = "https://www.instagram.com/p/DbSE6HDkmpB/";
+
 /** POST /campaigns/:id/send — 발송(야간이면 예약). */
 export function sendCampaign(
   id: string,
   req: SendCampaignRequest,
+  /** MOCK 전용 캡션. 실서버는 DB의 proposal로 캡션을 직접 만들므로 이 값을 쓰지 않는다. */
+  mockCaption?: string,
 ): Promise<SendCampaignResponse> {
   if (MOCK_MODE) {
     const hasDangol = req.channels.includes("dangol");
     const scheduled = hasDangol && req.assumeNight === true;
+    const igOn = req.channels.includes("instagram");
     return Promise.resolve({
       status: scheduled ? "scheduled" : "sent",
       recipients: hasDangol ? DANGOL_CONSENT : 0,
       couponCode: hasDangol ? mockCouponCode() : null,
+      // instagram 채널일 때만 sns를 채운다(서버 응답 형태와 동일).
+      sns: igOn
+        ? {
+            posted: Boolean(DEMO_IG_PERMALINK),
+            permalink: DEMO_IG_PERMALINK || undefined,
+            caption: mockCaption ?? "",
+            error: DEMO_IG_PERMALINK ? undefined : "MOCK_MODE — 실게시 안 함",
+          }
+        : undefined,
     });
   }
   return apiSend<SendCampaignResponse>("POST", `/campaigns/${id}/send`, req);
