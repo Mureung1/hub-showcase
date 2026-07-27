@@ -15,7 +15,7 @@ Week 1 초반(Day 1~2)은 학습 가이드라인의 취지를 반영해, 가장 
 ### Day 1 (7/13 월) — P0: vertical slice 착수 (mock FE + Supabase/DB 세팅)
 - [ ] **FE** `SearchPage`를 mock 데이터(하드코딩 배열)로 먼저 구현 — 검색창 state + 결과 리스트 렌더링까지 화면 흐름만 우선 확인 (아직 API 연결 없음)
 - [ ] **FE** `react-router-dom` 라우팅 스켈레톤: `/`, `/search`, `/result`, `/rules`, `/bulky`, `/confirm`, `/points` — `/search` 외 나머지는 여전히 빈 스텁
-- [ ] **FE** 공통 레이아웃/네비게이션 컴포넌트 (`skill.md` 디자인 시스템 토큰 사용)
+- [ ] **FE** 공통 레이아웃/네비게이션 컴포넌트 (`.claude/skills/ecobot-design-system/SKILL.md` 디자인 시스템 토큰 사용)
 - [ ] **BE** Supabase 프로젝트 생성 (무료 티어) → Postgres 연결 문자열 발급
 - [ ] **BE** Prisma 초기화 (`prisma init`), `backend/.env`의 `DATABASE_URL`을 Supabase Postgres 연결 문자열로 설정 후 연결 확인 (ORM은 Prisma 유지, DB 호스팅만 Supabase — `@prisma/client`를 dependencies에 추가 필요)
 - [ ] **BE** `schema.prisma`에 `Item`(표준 품목) 모델 하나만 우선 정의 — vertical slice 범위를 한 테이블로 제한, `DisposalRule`/`RegionRule`은 각 기능이 필요해질 때 추가
@@ -78,7 +78,7 @@ Week 1 초반(Day 1~2)은 학습 가이드라인의 취지를 반영해, 가장 
 - [ ] **BE** `GET /api/collection-points?category=` 라우트/컨트롤러/서비스
 - [ ] **FE** 수거 장소 리스트 화면 — 지도 없이 카테고리별 목록/주소 텍스트로 표시 (지도 시각화는 3주차로 이관)
 - [ ] **FE** PointsPage 범위 확정 필요 여부 재확인 (README MVP 범위 밖 — 팀과 스코프 확인 후 최소 스텁 유지 또는 보류 결정)
-- [ ] 전체 화면 디자인 시스템(`skill.md`) 일관성 점검 — 색상/타이포/라운드 토큰 이탈 여부 검사
+- [ ] 전체 화면 디자인 시스템(`.claude/skills/ecobot-design-system/SKILL.md`) 일관성 점검 — 색상/타이포/라운드 토큰 이탈 여부 검사
 
 ### Day 11 (7/23 목) — 통합 + 버그 픽스
 - [ ] 전체 기능 end-to-end 리허설: 검색 → 사진 인식 → 결과 → 지역 규정 → 오늘/일주일 일정 → 대형폐기물 신고
@@ -115,7 +115,7 @@ Day 10에서 만든 수거 장소 리스트 데이터에 지도를 얹는 후속
 - **주변 수거 장소 안내**는 README MVP 범위에 명시된 기능이라 리스트/데이터 부분은 Day 10에 2주 일정 안으로 끌어왔다. 지도 시각화만 Week 3 스트레치로 분리 (`backlog.md` P3 참고).
 - **PWA 오프라인 강화**, **인증/계정**은 README에 없는 항목으로 이번 2주 및 Week 3 범위에서도 제외. 필요 시 별도 논의.
 - **PointsPage**는 README MVP 범위에 없어 스코프 확인 전까지 최소 스텁 유지 (`backlog.md` P2 항목 참고).
-- **다국어 UI는 상시 병기 → Translate 토글 방식으로 변경됨** (README 갱신 반영, Day 8). `docs/plan-agent.md`의 [제약 조건 4]가 아직 옛 "한국어 항상 병기" 기준으로 남아있어 이 부분과 어긋남 — plan-agent.md는 별도 논의 후 갱신 필요.
+- **다국어 UI는 상시 병기 → Translate 토글 방식으로 변경됨** (README 갱신 반영, Day 8). `.claude/agents/plan-agent.md`의 [제약 조건 4]는 이미 토글 기준으로 작성돼 있어 어긋나지 않음(이 메모가 오래 남아있었던 것) — [제약 조건 2]의 "OpenAI" 언급만 실제로 낡아 있어 Gemini로 정정함 (7/25).
 - **자주 헷갈리는 품목**은 README에서 기능 설명이 빠져 2주 일정에서 제외(P3로 이동).
 - **일주일 배출 일정**은 README MVP 범위에 새로 추가된 항목이라 Day 6에 "오늘의 배출 일정"과 함께 묶어 넣었다.
 - 백엔드 P0(Supabase/Prisma/검색 vertical slice/공공데이터/Normalizer)가 지연되면 이후 모든 P1 항목이 연쇄적으로 밀리므로, Week 1 전반부(Day 1~3)를 최우선으로 사수할 것.
