@@ -20,6 +20,10 @@
   const input = document.getElementById("topic-input");
   const starter = document.getElementById("starter");
   const timeline = document.getElementById("timeline");
+  const fatal = document.getElementById("fatal");
+  const fatalMessage = document.getElementById("fatal-message");
+  const fatalMeta = document.getElementById("fatal-meta");
+  const fatalRestart = document.getElementById("fatal-restart");
 
   // ---------------------------------------------------------------- state
   /** 현재 열려 있는 이벤트 소스. 한 번에 하나만 돈다. */
@@ -271,6 +275,158 @@
     item.append(heading, title, reason, link);
   }
 
+  // ---------------------------------------------------------- 종결 처리
+
+  /**
+   * 스트림을 끝낸다. **반드시 close()를 부른다.**
+   *
+   * 안 부르면 EventSource가 자동 재연결하고 → 에이전트가 통째로 재실행되고 →
+   * API 비용이 탄다. SSE 스트림이 끝나는 것과 TCP 연결이 닫히는 것은 다른 일이라
+   * "서버가 끝냈으니 알아서 닫히겠지"는 성립하지 않는다.
+   */
+  function finish(state) {
+    body.dataset.state = state;
+
+    if (source !== null) {
+      source.close();
+      source = null;
+    }
+  }
+
+  /**
+   * 결과 없음 — **에러가 아니다.** 중립 톤으로 그리고 다음 행동을 준다.
+   *
+   * 두 경로가 여기로 온다:
+   *   1. `empty`      — 검색 자체가 0편
+   *   2. `done`인데 `stats.selected === 0` — 검색은 됐지만 판단에서 전부 걸러진 경우 (#79)
+   * 둘 다 "에이전트는 정상 작동했고, 맞는 논문이 없었다"는 같은 사실을 말한다.
+   */
+  function appendNoResult(scanned, suggestions) {
+    const item = appendEntry("entry--neutral");
+
+    const heading = document.createElement("p");
+    heading.className = "neutral__heading";
+    heading.textContent = "주제와 맞는 논문을 찾지 못했습니다";
+
+    const detail = document.createElement("p");
+    detail.className = "neutral__detail";
+    detail.textContent =
+      scanned > 0
+        ? `${scanned}편을 훑었지만 주제와 맞는 논문은 없었습니다. 에이전트는 정상 작동했습니다.`
+        : "검색 결과가 0편이었습니다. 에이전트는 정상 작동했습니다.";
+
+    item.append(heading, detail);
+
+    // 막다른 길로 끝내지 않는다. 검색어를 좁게 잡는 건 사용자 잘못이 아니라 흔한 일이다.
+    //
+    // 서버의 `suggestions`는 현재 항상 빈 배열이라(#77) 그대로 두면 제안이 사라진다.
+    // 비어 있으면 진입 화면의 예시 주제를 대신 쓴다 — 제안의 품질은 낮아도
+    // "다음에 할 수 있는 행동이 화면에 있어야 한다"는 규칙은 지켜진다.
+    const topics =
+      Array.isArray(suggestions) && suggestions.length > 0
+        ? suggestions
+        : [...starter.querySelectorAll(".chip")].map((chip) => chip.dataset.topic);
+
+    if (topics.length > 0) {
+      const label = document.createElement("p");
+      label.className = "neutral__suggest-label";
+      label.textContent = "이렇게 해보세요";
+
+      const chips = document.createElement("div");
+      chips.className = "neutral__chips";
+      for (const topic of topics) {
+        const chip = document.createElement("button");
+        chip.className = "chip";
+        chip.type = "button";
+        chip.dataset.topic = topic;
+        chip.textContent = topic;
+        chips.appendChild(chip);
+      }
+      item.append(label, chips);
+    }
+  }
+
+  /**
+   * `done` — 정상 종결.
+   *
+   * **진행 로그를 지우거나 초기화하지 않는다.** 로그는 감사 기록이라 완료 후에도 남는다.
+   * 트렌드 블록과 상단 완료 헤더는 Week 4 범위이므로 여기서는 종결 표시까지만 한다.
+   *
+   * @returns {string} 화면에 실제로 그린 것에 맞는 상태 이름
+   */
+  function appendDone(event) {
+    const { scanned, selected, succeeded, failed } = event.stats;
+
+    // 선별 0편이면 성공도 실패도 아닌 "결과 없음"이다 (#79).
+    // '0/0편 완료'는 아무 의미도 아니고, 사용자는 고장난 줄 안다.
+    //
+    // 이때 상태도 done이 아니라 empty로 둔다. 화면에 결과가 없는데 상태만
+    // done이면, 이 상태를 보고 그리는 Week 4의 완료 헤더가 "0/0편"을 띄우게 된다.
+    if (selected === 0) {
+      appendNoResult(scanned, []);
+      return "empty";
+    }
+
+    const parts = [`브리핑 완료 · ${succeeded}/${selected}편`];
+    if (failed > 0) parts.push(`${failed}편은 요약하지 못했습니다`);
+    appendLog(parts[0], parts[1]);
+    return "done";
+  }
+
+  /**
+   * `error` — 전체 실패.
+   *
+   * 계약상 **아무것도 못 건진 경우에만** 온다. 그럴 때만 화면을 대체한다.
+   *
+   * 다만 카드가 이미 그려진 뒤에 `error`가 도착할 수 있다 — agent.py의 trend/done
+   * 조립부에 예외 보호가 없기 때문이다(#65). 그때 화면을 갈아엎으면 이미 얻은
+   * 결과를 통째로 버리게 되므로, 여기서는 타임라인 항목으로만 남긴다.
+   * **이건 #65를 고친 게 아니라 피해를 막는 것이다** — 원인은 백엔드에 남아 있다.
+   */
+  function appendError(event) {
+    const salvaged = timeline.querySelector(".entry--card") !== null;
+
+    if (salvaged) {
+      console.warn(
+        "[app] paper_done이 나간 뒤 error가 도착했다 — 계약 위반(#65). " +
+          "이미 그린 카드를 지키기 위해 화면을 대체하지 않는다.",
+        event
+      );
+
+      const item = appendEntry("entry--failed");
+      const heading = document.createElement("p");
+      heading.className = "failed__heading";
+      heading.textContent = "도중에 중단되었습니다";
+
+      const message = document.createElement("p");
+      message.className = "failed__reason";
+      message.textContent = `${event.message} (${event.code})`;
+
+      item.append(heading, message);
+      finish("done");
+      return;
+    }
+
+    fatalMessage.textContent = event.message;
+    // code는 작게 남긴다. 타겟이 개발자라 이게 오히려 친절하고 디버깅에도 필요하다.
+    fatalMeta.textContent = [event.at, event.code].filter(Boolean).join(" · ");
+    fatal.hidden = false;
+    finish("error");
+  }
+
+  /** 어느 상태에서든 ① 진입 화면으로 되돌아갈 수 있어야 한다. */
+  function resetToIdle() {
+    if (source !== null) {
+      source.close();
+      source = null;
+    }
+    timeline.replaceChildren();
+    readInfo.clear();
+    fatal.hidden = true;
+    body.dataset.state = "idle";
+    input.focus();
+  }
+
   /** 사용자의 스크롤이 사실상 맨 아래에 있는가. */
   function isPinnedToBottom() {
     const gap =
@@ -338,12 +494,20 @@
         appendPaperFailed(event);
         break;
 
+      // ── 종결 이벤트 3종. 셋을 서로 다르게 처리한다 ──────────────────
       case "done":
+        // 화면에 무엇을 그렸는지에 따라 상태가 갈린다 (선별 0편이면 "결과 없음").
+        finish(appendDone(event));
+        break;
+
       case "empty":
+        // 검색이 0편. 에이전트는 정상 작동해서 '없다'는 사실을 알아냈다.
+        appendNoResult(event.scanned, event.suggestions);
+        finish("empty");
+        break;
+
       case "error":
-        // TODO(8-7 · #75): 종결 처리. **여기서 반드시 source.close()를 부른다.**
-        // 지금은 목이라 재연결이 없지만, 실연결(8-8)에서 이게 빠지면
-        // EventSource가 자동 재연결해 에이전트가 통째로 재실행된다.
+        appendError(event);
         break;
 
       default:
@@ -371,6 +535,7 @@
 
     timeline.replaceChildren();
     readInfo.clear();
+    fatal.hidden = true;
     body.dataset.state = "running";
 
     source = createSource(topic);
@@ -383,19 +548,26 @@
   // ------------------------------------------------------------- 진입 화면
 
   /**
-   * 예시 주제 칩 → 입력창을 채운다.
+   * 주제 칩 → 입력창을 채운다. 진입 화면의 예시 칩과 결과 없음 화면의 제안 칩이
+   * 같은 리스너를 쓴다 — 제안 칩은 나중에 동적으로 만들어지므로 문서 단위로 위임한다.
    *
-   * 칩마다 리스너를 다는 대신 상위에서 한 번 받는다(이벤트 위임).
-   * `empty` 화면(8-7)도 같은 모양의 제안 칩을 동적으로 만들어 붙일 예정이라
-   * 그때 리스너를 다시 달지 않아도 된다.
+   * 이미 한 번 돌린 뒤라면 칩 클릭이 곧 재시작이다. 결과 없음 화면에서는
+   * 입력창이 접혀 있어, 채우기만 하면 사용자가 다음 행동을 할 수 없다.
    */
-  starter.addEventListener("click", (event) => {
+  document.addEventListener("click", (event) => {
     const chip = event.target.closest(".chip");
     if (chip === null) return;
 
     input.value = chip.dataset.topic;
-    input.focus();
+
+    if (body.dataset.state === "idle") {
+      input.focus();
+    } else {
+      startRun(chip.dataset.topic);
+    }
   });
+
+  fatalRestart.addEventListener("click", resetToIdle);
 
   form.addEventListener("submit", (event) => {
     // 기본 동작(페이지 이동)을 막는다. 이 서비스는 한 페이지에서 상태만 바뀐다.

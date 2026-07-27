@@ -73,6 +73,18 @@
         과정 로그와 결과 카드가 여기 시간순으로 쌓이고, 완료 후에도 지워지지 않는다.
       -->
       <ol class="timeline" id="timeline"></ol>
+
+      <!--
+        ⑥ 전체 실패 — 아무것도 못 건진 경우에만 쓰는 화면.
+        타임라인을 대체하는 유일한 상태다. 카드가 한 장이라도 그려진 뒤라면
+        여기로 오지 않고 타임라인 안의 항목으로 남는다 (app.js 참고).
+      -->
+      <section class="fatal" id="fatal" hidden>
+        <h2 class="fatal__title">브리핑을 만들지 못했습니다</h2>
+        <p class="fatal__message" id="fatal-message"></p>
+        <p class="fatal__meta" id="fatal-meta"></p>
+        <button class="button" id="fatal-restart" type="button">다른 주제로 시작</button>
+      </section>
     </main>
 
     <script src="mock.js"></script>

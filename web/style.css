@@ -315,6 +315,97 @@ body[data-state="error"] .starter {
   background: var(--fail);
 }
 
+/* ── 결과 없음 — 에러가 아니다. 빨강도, 경고 아이콘도 쓰지 않는다 ── */
+.entry--neutral {
+  margin: 1.1rem 0 1.4rem;
+  padding: 1.05rem 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.entry--neutral::before {
+  top: 1.3rem;
+  background: var(--muted-2);
+}
+
+.neutral__heading {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.neutral__detail {
+  margin: 0.25rem 0 0;
+  color: var(--ink-3);
+  font-size: 0.87rem;
+  line-height: 1.6;
+}
+
+.neutral__suggest-label {
+  margin: 0.9rem 0 0.4rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.neutral__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* ── ⑥ 전체 실패 — 타임라인을 대체하는 유일한 화면 ────────────── */
+body[data-state="error"] .timeline {
+  display: none;
+}
+
+.fatal {
+  padding: 1.6rem 1.5rem;
+  border: 1px solid #e8d3c9;
+  border-top: 3px solid var(--fail);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.fatal__title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.fatal__message {
+  margin: 0.4rem 0 0;
+  color: var(--ink-2);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* 기술 용어는 작게 남긴다. 타겟이 개발자라 이게 오히려 친절하다. */
+.fatal__meta {
+  margin: 0.6rem 0 1.1rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+}
+
+.button {
+  padding: 0.55rem 1.1rem;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--judge);
+  color: var(--judge);
+}
+
 /* ── paper_failed 내부 ────────────────────────────────────────── */
 .failed__heading {
   margin: 0;
