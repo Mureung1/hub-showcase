@@ -12,10 +12,11 @@
 
 1. **전공·학점·자격증·경험 기반 맞춤 공고 추천** — 추천 이유와 주요 조건을 함께 제공
 2. **선택한 공고의 자소서 문항 분석 → 경험을 반영한 문항별 초안 생성**
+3. **생성된 초안을 화면에서 바로 수정·저장** — 재방문 시 저장된 초안이 그대로 불러와짐(Supabase `drafts` 테이블)
 
 기획은 [docs/plan.md](docs/plan.md), 4주 개발 Task는 [docs/checklist.md](docs/checklist.md) 참고.
 
-이번 주 작업 현황은 [GitHub Issues](https://github.com/dohyeon-k/hub/issues)에서 확인할 수 있다(우선순위는 `P0`/`P1`/`P2` 라벨로 표시). 진행 상황은 Project 보드에서도 칸반 형태로 볼 수 있다: [2주차 - 공고 추천 슬라이스](https://github.com/users/dohyeon-k/projects/1), [3주차 - 자소서 초안 생성 슬라이스](https://github.com/users/dohyeon-k/projects/2).
+이번 주 작업 현황은 [GitHub Issues](https://github.com/dohyeon-k/hub/issues)에서 확인할 수 있다(우선순위는 `P0`/`P1`/`P2` 라벨로 표시). 진행 상황은 Project 보드에서도 칸반 형태로 볼 수 있다: [2주차 - 공고 추천 슬라이스](https://github.com/users/dohyeon-k/projects/1), [3주차 - 자소서 초안 생성 슬라이스](https://github.com/users/dohyeon-k/projects/2), [4주차 - 크롤링 및 데모 준비](https://github.com/users/dohyeon-k/projects/3).
 
 ## 기술 스택
 
@@ -118,9 +119,10 @@ flowchart LR
     ProfilesRoute -->|"201 profileId + recommendations"| Api
     Api --> RecommendList --> JobDetail
 
-    JobDetail -->|"자소서 초안 생성 클릭\n(profileId+profile을 body로 재전송)"| Api --> RequireAuth --> DraftsRoute
+    JobDetail -->|"자소서 초안 생성 클릭\n(profileId만 전송)"| Api --> RequireAuth --> DraftsRoute
     DraftsRoute -->|"공고 조회"| Postings
-    DraftsRoute -->|"저장된 초안 있는지 조회"| Drafts
+    DraftsRoute -->|"profileId로 프로필 재조회"| Profiles
+    DraftsRoute -->|"저장된 초안 있는지 조회 (병렬)"| Drafts
     DraftsRoute --> EssayAnalysis
     EssayAnalysis -->|"문항별 분석"| DraftGen
     DraftGen -->|"저장된 게 없을 때만: 문항별 초안 생성\n(LLM 또는 템플릿 폴백)"| DraftsRoute
@@ -129,7 +131,7 @@ flowchart LR
     DraftsRoute -->|"upsert(profile_id, posting_id)"| Drafts
 ```
 
-로그인 성공 여부와 이후 모든 화면/데이터 상태(`step`/`profile`/`profileId`/`jobs`/`selectedJob`/`isDraftSaved`/`authHeader`)는 `sessionStorage`에 저장돼, 새로고침해도 로그인부터 다시 할 필요가 없다.
+로그인 성공 여부와 이후 모든 화면/데이터 상태(`step`/`profileId`/`jobs`/`selectedJob`/`isDraftSaved`/`authHeader`)는 `sessionStorage`에 저장돼, 새로고침해도 로그인부터 다시 할 필요가 없다.
 
 요청 하나가 실제로 어떻게 도는지(수직 슬라이스)는 시퀀스로 보면 더 명확하다. 가장 먼저 로그인:
 
@@ -181,21 +183,26 @@ sequenceDiagram
     participant U as 사용자
     participant F as React (JobDetail → App.jsx)
     participant E as Express (/api/postings/:id/draft)
-    participant S as Supabase (drafts)
+    participant SP as Supabase (profiles)
+    participant SD as Supabase (drafts)
     participant A as essayAnalysis.js
     participant D as draftGeneration.js
 
     U->>F: "자소서 초안 생성" 클릭
-    F->>E: POST /api/postings/:id/draft { profileId, profile }
+    F->>E: POST /api/postings/:id/draft { profileId }
     E->>E: postings.json에서 공고 조회
+    par 병렬 조회 (Promise.all)
+        E->>SP: select (id = profileId)
+        SP-->>E: 프로필 (major/certificates/experience 등)
+    and
+        E->>SD: select (profile_id, posting_id)
+        SD-->>E: 저장된 answers 또는 null
+    end
     E->>A: analyzeEssayQuestion(question, profile) (문항별)
     A-->>E: 문항 유형별 분석 텍스트
-    E->>S: select (profile_id, posting_id)
     alt 저장된 초안 있음
-        S-->>E: 저장된 answers
         E-->>F: 200 { essayQuestions, isSaved: true }
     else 저장된 초안 없음
-        S-->>E: null
         E->>D: generateDrafts(profile, posting, essayQuestions)
         D-->>E: 문항별 초안 (LLM 또는 템플릿 폴백)
         E-->>F: 200 { essayQuestions, isSaved: false }
@@ -229,3 +236,25 @@ sequenceDiagram
 - 라우터 라이브러리는 쓰지 않기로 한 결정(`CLAUDE.md`)에 따라 URL 딥링크·브라우저 뒤로가기는 지원하지 않는다. 대신 새로고침하면 화면 상태가 다 날아가던 문제는 `step`/`profileId`/`jobs`/`selectedJob`/`isDraftSaved`/`authHeader`를 `sessionStorage`에 저장해뒀다가 마운트 시 복원하는 것으로 해결했다. (참고로 자소서 초안 생성 시 프론트가 `profile` 전체를 재전송하던 구조는 이슈 [#26](https://github.com/dohyeon-k/hub/issues/26)으로 개선해, 이제 서버가 `profileId`로 Supabase에서 직접 재조회한다.)
 - 공고 데이터는 아직 목업(`postings.json`)이다 — 실제 크롤링 연동은 진행 중(이슈 [#23](https://github.com/dohyeon-k/hub/issues/23)).
 - 배포됐다 — 프론트엔드는 [Vercel](https://hub-two-rosy.vercel.app), 백엔드는 [Render](https://hub-071a.onrender.com)(이슈 [#25](https://github.com/dohyeon-k/hub/issues/25)). Render 무료 티어 특성상 일정 시간 요청이 없으면 서버가 잠들었다가 첫 요청에 재기동 지연이 있을 수 있다.
+
+## Agent 협업 워크플로우
+
+4주 동안 AI(Claude Code)와 일한 기본 사이클이다. 이슈·Project 보드·`CLAUDE.md`·Skill·Agent가 각 단계에서 어떻게 맞물리는지는 아래 그림 참고, 자세한 서술은 [docs/workflow.md](docs/workflow.md)에 정리했다.
+
+```mermaid
+flowchart TD
+    Mission["데일리 미션 확인"] --> Rule["CLAUDE.md 규칙 확인"]
+    Rule --> IssueCheck{"새 기능 / 확장인가?"}
+    IssueCheck -- "예" --> IssueReg["GitHub 이슈 등록\n(무엇을/왜, DoD, 목표일)"]
+    IssueCheck -- "아니오\n(기존 태스크 이어가기)" --> PlanAgent
+    IssueReg --> PlanAgent["planning-agent\n요일별 작업 단위로 분해"]
+    PlanAgent --> Strategy["구현 전 전략·트레이드오프\n확인 (설계 결정은 사용자에게 확인)"]
+    Strategy --> Impl["구현"]
+    Impl -->|"화면/스타일 작업"| DesignSkill["design-review 스킬\n(디자인 시스템 토큰 강제)"]
+    Impl -->|"테스트 작성"| TestSkill["test-writer 스킬\n(vitest·컴포넌트·E2E 컨벤션)"]
+    DesignSkill --> Verify
+    TestSkill --> Verify["대상별 검증\n(vitest 단위 / curl 통합 / Playwright E2E)"]
+    Verify --> VerifyAgent["verification-agent\n실제 앱 구동으로 DoD 재검증"]
+    VerifyAgent --> Docs["문서 갱신\n(checklist.md · README.md · workflow.md)"]
+    Docs --> Commit["커밋 · 푸시\n(사용자가 명시적으로 요청했을 때만)"]
+```
