@@ -33,7 +33,6 @@ from process_oracle import reap_worker_group, wait_for_process_exit  # noqa: E40
 BUNDLE = PACKAGE_ROOT / ".artifacts" / "production-runtime-darwin-arm64" / "bundle"
 BUNDLE_PYTHON = BUNDLE / "python" / "bin" / "python3.10"
 BUNDLE_SITE_PACKAGES = BUNDLE / "site-packages"
-WORKER = BUNDLE / "bridge" / "worker.py"
 TRACKED_WORKER = BRIDGE_SOURCE / "worker.py"
 FAKE_SERVER = Path(__file__).with_name("fake_python_bridge_app_server.py")
 
@@ -44,7 +43,6 @@ class BridgeProcess:
         root: Path,
         *extra_args: str,
         read_stdout: bool = True,
-        worker_path: Path = WORKER,
     ) -> None:
         if not BUNDLE_PYTHON.is_file() or not BUNDLE_SITE_PACKAGES.is_dir():
             raise AssertionError(
@@ -56,7 +54,7 @@ class BridgeProcess:
             [
                 str(BUNDLE_PYTHON),
                 "-B",
-                str(worker_path),
+                str(TRACKED_WORKER),
                 "--workspace",
                 str(root),
                 "--site-packages",
@@ -413,13 +411,6 @@ class ProtocolUnitTests(unittest.TestCase):
 
 
 class PythonBridgeActualChildTests(unittest.TestCase):
-    def _account_bridge(self, root: Path, *extra_args: str) -> BridgeProcess:
-        return BridgeProcess(
-            root,
-            *extra_args,
-            worker_path=TRACKED_WORKER,
-        )
-
     def _read_journal_messages(self, bridge: BridgeProcess) -> list[dict[str, Any]]:
         deadline = time.monotonic() + 3
         while time.monotonic() < deadline:
@@ -674,7 +665,7 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                 ) as temp:
                     root = Path(temp)
                     (root / "account-state").write_text(native_state, encoding="utf-8")
-                    bridge = self._account_bridge(root)
+                    bridge = BridgeProcess(root)
                     try:
                         bridge.send(
                             {
@@ -704,7 +695,7 @@ class PythonBridgeActualChildTests(unittest.TestCase):
             prefix="ay-ple-python-bridge-removed-account-command-"
         ) as temp:
             root = Path(temp)
-            bridge = self._account_bridge(root)
+            bridge = BridgeProcess(root)
             try:
                 bridge.wait_ready()
                 bridge.send(
@@ -730,9 +721,7 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     message.get("method")
                     for message in self._read_journal_messages(bridge)
                 ]
-                self.assertNotIn("account/login/start", methods)
-                self.assertNotIn("account/login/cancel", methods)
-                self.assertNotIn("account/logout", methods)
+                self.assertEqual(methods, ["initialize", "initialized"])
             finally:
                 bridge.cleanup()
 
@@ -809,11 +798,10 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     "optOutNotificationMethods"
                 )
                 self.assertIsInstance(opt_out, list)
-                self.assertEqual(len(opt_out), 60)
+                self.assertEqual(len(opt_out), 61)
                 self.assertEqual(opt_out, sorted(opt_out))
                 self.assertIn("thread/started", opt_out)
                 self.assertIn("thread/status/changed", opt_out)
-                self.assertNotIn("account/login/completed", opt_out)
                 self.assertNotIn("item/agentMessage/delta", opt_out)
                 self.assertNotIn("item/completed", opt_out)
                 self.assertNotIn("item/plan/delta", opt_out)
