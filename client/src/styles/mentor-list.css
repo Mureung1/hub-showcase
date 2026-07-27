@@ -165,6 +165,12 @@
   font-weight: var(--font-weight-bold);
 }
 
+.mentor-filter-field small {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+}
+
 .mentor-filter-field-wide {
   grid-column: 1 / -1;
 }

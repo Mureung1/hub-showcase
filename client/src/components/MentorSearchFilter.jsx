@@ -8,6 +8,8 @@ const counselingOptions = [
 
 const academicStatusOptions = ["석사과정", "박사과정", "석박통합과정"];
 
+const MULTI_KEYWORD_HINT = "여러 개의 단어는 쉼표(,)로 구분해서 입력하세요.";
+
 function SearchIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -88,11 +90,12 @@ function MentorSearchFilter({
           <div className="mentor-filter-grid">
             <label className="mentor-filter-field">
               <span>세부 연구 분야</span>
+              <small>{MULTI_KEYWORD_HINT}</small>
               <input
                 className="field"
                 name="researchField"
                 onChange={updateFilter}
-                placeholder="예: 딥러닝"
+                placeholder="예: 딥러닝, 로봇공학"
                 value={filters.researchField}
               />
             </label>
@@ -109,11 +112,12 @@ function MentorSearchFilter({
 
             <label className="mentor-filter-field">
               <span>전공</span>
+              <small>{MULTI_KEYWORD_HINT}</small>
               <input
                 className="field"
                 name="major"
                 onChange={updateFilter}
-                placeholder="예: 재료공학"
+                placeholder="예: 재료공학, 화학공학"
                 value={filters.major}
               />
             </label>
@@ -130,11 +134,12 @@ function MentorSearchFilter({
 
             <label className="mentor-filter-field mentor-filter-field-wide">
               <span>연구실</span>
+              <small>{MULTI_KEYWORD_HINT}</small>
               <input
                 className="field"
                 name="lab"
                 onChange={updateFilter}
-                placeholder="예: 나노소자 연구실"
+                placeholder="예: 나노소자 연구실, 로봇공학 연구실"
                 value={filters.lab}
               />
             </label>
