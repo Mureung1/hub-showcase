@@ -1,8 +1,9 @@
 const { evaluateTrackRequirements } = require('./gradRequirements');
 
-// completedCourses 항목 형태: { name, credit, category }
-// category는 majorData.js 요건의 label과 문자열이 일치해야 해당 요건 학점으로 집계된다.
-const course = (name, credit, category) => ({ name, credit, category });
+// completedCourses 항목 형태: { name, credits, specialTags }
+// specialTags 배열에 majorData.js 요건의 label과 일치하는 문자열이 있어야 해당 요건
+// 학점으로 집계된다 (category와는 무관 — 이중 태깅 테스트는 아래 별도로 확인).
+const course = (name, credits, label) => ({ name, credits, specialTags: [label] });
 
 describe('evaluateTrackRequirements - multi-major (다중전공 트랙)', () => {
   const TRACK = 'multi-major';
@@ -223,6 +224,30 @@ describe('evaluateTrackRequirements - multi-major (다중전공 트랙)', () => 
     const completed = [course('교양선택 글쓰기', 3, '교양')];
     const result = evaluateTrackRequirements(completed, TRACK);
     Object.values(result).forEach((r) => expect(r.current).toBe(0));
+  });
+});
+
+describe('evaluateTrackRequirements - 이중 태깅 (전공이면서 창업교과목인 과목)', () => {
+  const TRACK = 'multi-major';
+
+  // IT기술경영개론처럼 원본 학사 데이터상 "전공"으로 분류되어 있으면서 동시에
+  // 창업교과목 트랙 특수요건에도 해당하는 과목. category는 전공/교양 집계용,
+  // specialTags는 트랙 특수요건 판정용으로 서로 다른 필드라 한 과목이 둘 다 가질 수 있어야 한다.
+  test('category가 "전공"이어도 specialTags에 창업교과목이 있으면 창업교과목 요건에 집계된다', () => {
+    const itTechManagement = {
+      name: 'IT기술경영개론',
+      credits: 3,
+      category: '전공',
+      specialTags: ['창업교과목'],
+    };
+
+    const result = evaluateTrackRequirements([itTechManagement], TRACK);
+
+    expect(result['창업교과목']).toEqual({
+      satisfied: false, // 다중전공 트랙은 15학점 요건이라 3학점만으론 미충족
+      current: 3,
+      required: 15,
+    });
   });
 });
 

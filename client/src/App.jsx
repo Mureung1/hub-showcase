@@ -148,11 +148,16 @@ function App() {
 
 
 
-  // evaluateTrackRequirements가 요구하는 형태({ name, credit, category })로 변환
+  // evaluateTrackRequirements가 요구하는 형태({ name, credits, category, specialTags })로 변환.
+  // specialTags(창업교과목/종합설계교과목 등)는 category와 별개 필드라 함께 실어 보내야
+  // 트랙 특수요건 뱃지가 정상 판정된다. credits는 프로젝트 전체 관례(basketCourses의
+  // 필드명)에 맞춘 것이다 — 예전엔 credit 단수였는데 gradRequirements.js를 credits로
+  // 통일하면서 여기도 같이 맞췄다.
   const completedCourses = selectedCourses.map((c) => ({
     name: c.name,
-    credit: c.credits,
+    credits: c.credits,
     category: c.category,
+    specialTags: c.specialTags,
   }));
 
   // 트랙이 없는 전공이거나 아직 트랙을 선택하지 않았으면 판정 결과 없이 전부 미충족으로 처리
