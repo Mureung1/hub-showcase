@@ -55,7 +55,7 @@ App은 STDIO Adapter에서 Broker·UI·사용자를 거쳐 같은 MCP call로 �
 | Skill·AY workflow | `<SemesterWorkspace>/.agents/skills/` | MCP capability request와 result | 작업 순서, 재질문 여부, file mutation 전략 |
 | Workspace MCP declaration | `<SemesterWorkspace>/.codex/config.toml` | Workspace-root-relative STDIO entrypoint, forwarded env 이름과 capability allowlist | App endpoint·token value와 host identity |
 | Capability contract·STDIO Adapter | `packages/interaction-mcp` | Built executable, capability별 typed MCP request/result와 authenticated Broker transport | Project config loading, MCP wire와 process environment |
-| App-side Interaction Broker | `apps/server` | Package의 server-side port와 Browser-safe projection | Endpoint·token value, Runtime binding, correlation, pending lifecycle과 cancellation |
+| App-side Interaction Broker | `apps/server` | Package의 server-side Interface와 Browser-safe projection | Endpoint·token value, Runtime binding, correlation, pending lifecycle과 cancellation |
 | Browser wire | `packages/product-contract` | Capability별 Browser-safe request·result projection | Raw MCP와 private Broker transport |
 | UI Adapter | `apps/chat-shell` | UI projection과 user result | 화면 state, 입력 validation, focus와 view composition |
 | Codex Runtime Adapter | `packages/codex-chat-runtime` | Generic child environment 전달과 native MCP readiness | Capability schema, Broker protocol, `threadId`·`turnId`·`requestId` |
@@ -86,6 +86,21 @@ required = true
 따라서 native config precedence와 user/project MCP가 그대로 작동한다. App은 `--config`, thread-start override 또는 process-wide Skill root로 전체 context를 대체하지 않는다. Project `.codex/config.toml`은 trusted project에서만 load된다. Bootstrap은 global trust를 수정하지 않고, exact Git root와 `workspace-write`를 요청하는 정상 thread start가 current pinned App Server의 native trust write와 same-start config reload를 사용한다. 명시적 `untrusted`는 보존한다.
 
 `required = true`는 단순히 STDIO process가 spawn됐다는 뜻이 아니다. Adapter는 current Broker endpoint·token·Runtime binding을 검증하고 authenticated handshake를 완료한 뒤 MCP initialize에 성공한다. App activation은 effective MCP status에서 expected server와 handshake도 확인하므로 explicit `untrusted` 때문에 project declaration 전체가 무시된 경우까지 실패한다. App은 MCP 없는 degraded mode로 계속하지 않는다.
+
+## Adapter↔Broker HTTP transport
+
+Adapter는 Browser API와 같은 App HTTP listener의 Server-private route로 Broker를 호출한다. 이 route는 `@ay-ple/product-contract`나 Browser route catalog에 포함되지 않으며 token·Runtime binding도 Browser에 투영하지 않는다.
+
+| 항목 | 계약 |
+| --- | --- |
+| Listener | App이 `127.0.0.1`에 pre-bind한 shared HTTP listener 하나다. Broker만을 위한 listener·port·daemon을 만들지 않는다. |
+| Runtime credential | Workspace Runtime generation마다 fresh high-entropy token과 opaque binding을 만들고 Server memory와 child environment에만 둔다. |
+| Admission | Raw peer가 loopback인지, token이 constant-time exact match인지, binding이 현재 active generation인지 모두 확인한다. Origin이나 route secrecy는 authentication이 아니다. |
+| Startup | Listener bind → Broker route·binding 준비 → Workspace Runtime spawn → Adapter handshake → native required status 확인 → active workspace commit 순서다. |
+| Teardown | Runtime replacement·close와 App shutdown은 새 Broker intake를 닫고 pending interaction을 terminal 정산한 뒤 token·binding을 폐기한다. Stale request는 새 generation으로 재결합하지 않는다. |
+| Private surface | Exact route, header, env 이름과 HTTP codec은 `@ay-ple/interaction-mcp` implementation contract이며 workspace config나 Browser wire contract가 아니다. |
+
+WebSocket, Unix domain socket, inherited extra file descriptor와 별도 private HTTP server는 현재 contract에 포함하지 않는다. Interaction call 하나를 Broker HTTP에서 어떤 request lifetime으로 운반할지는 이 listener·authentication 결정과 별도로 고정한다.
 
 ## Capability 설계 규칙
 

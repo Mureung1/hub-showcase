@@ -18,7 +18,10 @@ First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능�
 
 - AY-PLE App은 **InteractionCapability**를 제공하는 MCP Module을 소유한다. 이 Module의 Interface는 “AY가 표시할 내용과 허용할 응답을 요청하면, 사용자가 App UI에서 결정하고, 구조화된 결과가 같은 Codex Turn으로 반환된다”는 한 번의 round trip이다.
 - MCP Module은 `hub/`가 소유하는 Codex-facing STDIO Adapter와 App-side Interaction Broker로 나눈다. Private npm workspace package `@ay-ple/interaction-mcp`는 built STDIO executable, capability별 MCP request/result schema·codec와 authenticated Adapter↔Broker transport contract를 소유한다.
-- `apps/server`는 package가 정의한 server-side port를 사용해 Broker listener·process-local endpoint와 token, 현재 Runtime binding, pending lifecycle, Browser projection과 사용자 result 반환을 소유한다. `@ay-ple/product-contract`는 Browser-safe projection만, `apps/chat-shell`은 capability별 UI만 소유하며 raw MCP·private Broker transport를 알지 않는다.
+- `apps/server`는 package가 정의한 server-side Interface를 사용해 Broker listener·process-local endpoint와 token, 현재 Runtime binding, pending lifecycle, Browser projection과 사용자 result 반환을 소유한다. `@ay-ple/product-contract`는 Browser-safe projection만, `apps/chat-shell`은 capability별 UI만 소유하며 raw MCP·private Broker transport를 알지 않는다.
+- Adapter↔Broker transport는 Browser API와 **같은 pre-bound loopback HTTP listener**의 Server-private route를 사용한다. 별도 listener·port·daemon, WebSocket 또는 Unix domain socket을 추가하지 않으며 exact route·header 이름은 implementation spec이 고정한다.
+- 각 Workspace Runtime generation은 fresh high-entropy token과 opaque Runtime binding을 가진다. 모든 Broker request는 loopback peer, constant-time token match와 현재 active binding을 함께 통과해야 한다. 이 값은 Server memory와 해당 Codex child environment에만 존재하고 Browser contract·workspace·global config·log에 노출하지 않으며, Runtime replacement·close 또는 App shutdown 때 폐기한다.
+- Startup은 shared listener bind와 private Broker route·binding 준비가 성공한 뒤 Workspace Runtime을 시작한다. Adapter의 authenticated handshake와 required MCP readiness가 확인된 뒤에만 activation을 commit한다. Listener bind·Broker preparation이 실패하면 Runtime을 spawn하지 않고, stale token·binding이나 closed Broker의 request는 fail closed한다.
 - `@ay-ple/codex-chat-runtime`은 capability-neutral하게 Codex child environment를 전달하고 native MCP readiness를 관측한다. `@ay-ple/interaction-mcp`를 import하거나 `propose_state_patch` schema, Broker endpoint와 UI lifecycle을 소유하지 않는다.
 - Bootstrap Skill은 Git-tracked `<SemesterWorkspace>/.codex/config.toml`에 AY-PLE Interaction MCP의 정적 project declaration을 설치한다. 이 declaration은 exact SemesterWorkspace root에서 `hub/packages/interaction-mcp`의 built STDIO entrypoint까지 계산한 상대 `command`, 전달할 environment variable 이름, capability allowlist와 `required = true`를 표현하고 MCP server `cwd`는 생략한다. Current pinned launcher는 생략된 server `cwd`를 Workspace Runtime의 exact root `cwd`로 fallback한다. Exact executable filename과 env 이름은 implementation spec이 고정한다.
 - Project config에는 endpoint, token, native identity나 다른 secret·process-local 값을 기록하지 않는다. AY-PLE Runtime은 Codex child environment에 현재 App instance의 endpoint·token·Runtime binding을 넣고, MCP declaration의 `env_vars`가 이를 STDIO Adapter에 전달한다.
@@ -62,6 +65,9 @@ First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능�
 | MCP entrypoint를 absolute user path, `npx`·global install 또는 appData copy로 실행 | 거절 | Personal source checkout인 `hub/`가 구현 authority다. Workspace-relative declaration은 machine-specific absolute path와 별도 설치·복사 lifecycle을 피하고, root가 이동하면 명시적인 Bootstrap Update와 Git diff로 다시 결합한다. |
 | STDIO executable과 capability contract를 `apps/server` 내부에 둠 | 거절 | Codex가 독립 process로 실행하는 stable entrypoint와 MCP transport가 Express application build·Browser lifecycle의 내부 경로에 결합된다. |
 | Interaction MCP를 `@ay-ple/codex-chat-runtime`에 구현 | 거절 | Native Codex lifecycle adapter가 AY-PLE 제품 capability schema와 App UI transport를 알아야 하므로 Runtime 경계가 얕아진다. |
+| Broker용 listener·port 또는 daemon을 별도로 실행 | 거절 | 이미 필요한 loopback App listener와 별개로 startup·port discovery·shutdown·failure authority를 하나 더 만든다. |
+| Adapter↔Broker에 WebSocket 또는 Unix domain socket을 사용 | 거절 | Current local request/result에 필요하지 않은 reconnect·socket-path·platform lifecycle을 추가하며 shared HTTP listener가 이미 authenticated process transport를 제공한다. |
+| Loopback 또는 Browser Origin만 private route의 신뢰 근거로 사용 | 거절 | 같은 host의 다른 process와 Browser request를 active Runtime Adapter로 오인할 수 있다. Runtime-scoped secret과 binding 검증이 별도로 필요하다. |
 
 ## 결과
 
