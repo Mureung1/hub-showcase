@@ -147,8 +147,17 @@ class SourceManifest(BaseModel):
         return tuple(e for e in self.entries if e.cluster_id == cluster_id)
 
     def posting_count(self) -> int:
-        """매니페스트가 만드는 공고 수. 출처 수와 다르다."""
-        return sum(e.posting_count() for e in self.entries)
+        """매니페스트가 만드는 공고 수.
+
+        출처 수와 다르다. 한 출처가 모집분야를 여럿 담으면 공고가 여럿 나오고,
+        채용공고가 아닌 출처는 공고를 만들지 않는다. 공공 표준과 회사 공식 자료는
+        모집단에 들어가지 않는다. 근거는 docs/metric-spec.md 2.1이다.
+        """
+        return sum(
+            e.posting_count()
+            for e in self.entries
+            if e.source_type is SourceType.JOB_POSTING
+        )
 
     def segment_counts(self) -> dict[str, int]:
         """대상군 분포. 기준선을 낼 수 있는지 판단하는 값이며 공고 단위로 센다."""
