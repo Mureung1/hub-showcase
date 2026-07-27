@@ -135,6 +135,7 @@ async function prepareFixture(): Promise<Fixture> {
       '--python',
       '3.10',
       'python',
+      '-B',
       productionBundleScript,
       'materialize',
       '--app-data-root',
