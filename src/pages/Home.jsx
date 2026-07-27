@@ -16,13 +16,13 @@ import { loadFridgeSelection } from '../data/fridgeStorage'
 import { loadLikedRecipes, saveLikedRecipes } from '../data/likedRecipesStorage'
 import { apiUrl } from '../utils/apiBaseUrl'
 import TopNav from '../components/TopNav'
-import MenuCard from '../components/MenuCard'
+import RecipeGrid from '../components/RecipeGrid'
+import LoadingIndicator from '../components/LoadingIndicator'
 import PromoBanner from '../components/PromoBanner'
 import FilterChipGroup from '../components/FilterChipGroup'
 import mascotWave from '../assets/mascot-wave.png'
 // 임시 목업 일러스트 — 최종본 아님, 나중에 교체 예정 (checklist.md 참고)
 import kkinniCharacter from '../assets/끼니캐릭터.png'
-import loadingAnimation from '../assets/로딩-애니메이션.mp4'
 
 const SORT_OPTIONS = [
   { id: 'price-asc', label: '가격 낮은순' },
@@ -128,19 +128,7 @@ function Home() {
       <main className={forceLoading ? '' : 'mx-auto max-w-[960px] pb-8'}>
         {forceLoading ? (
           // 개발용 로딩 화면(?loading=1) — 배너·필터·전체 둘러보기 없이 로딩 표시만 확인
-          <div className="relative left-1/2 h-[calc(100vh-92px)] w-screen -translate-x-1/2 overflow-hidden">
-            <video
-              src={loadingAnimation}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="h-full w-full select-none object-cover"
-            />
-            <p className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-pill bg-bg-surface/90 px-4 py-2 font-display text-sm text-text-secondary shadow">
-              끼니가 냉장고 재료로 만들 요리를 찾는 중...
-            </p>
-          </div>
+          <LoadingIndicator fullScreen />
         ) : (
           <>
         <PromoBanner />
@@ -172,12 +160,7 @@ function Home() {
           </div>
         </div>
 
-        {status === 'loading' && (
-          <div className="mt-4 flex items-center justify-center gap-2 px-8">
-            <video src={loadingAnimation} autoPlay loop muted playsInline className="w-10 select-none" />
-            <p className="font-display text-sm text-text-secondary">끼니가 냉장고 재료로 만들 요리를 찾는 중...</p>
-          </div>
-        )}
+        {status === 'loading' && <LoadingIndicator />}
 
         {status === 'done' && !hasAnyMatch && closestRecipes.length === 0 && (
           <section className="mt-4 px-8">
@@ -200,22 +183,7 @@ function Home() {
             {quickRecipes.length > 0 && (
               <div className="mt-5">
                 <h3 className="font-display text-base font-bold text-text-primary">그래도 빨리 만들 수 있는 요리는 있어요</h3>
-                <ol className="mt-2 grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
-                  {quickRecipes.map((recipe) => (
-                    <MenuCard
-                      key={recipe.id}
-                      to={`/recipe/${recipe.id}`}
-                      image={recipe.image}
-                      emoji={recipe.emoji}
-                      name={recipe.name}
-                      price={recipe.totalCost}
-                      priceSuffix="원"
-                      timeLabel={`${recipe.cookTimeMinutes}분`}
-                      liked={likedIds.includes(recipe.id)}
-                      onToggleLike={() => handleToggleLike(recipe.id)}
-                    />
-                  ))}
-                </ol>
+                <RecipeGrid recipes={quickRecipes} likedIds={likedIds} onToggleLike={handleToggleLike} showTimeLabel />
               </div>
             )}
           </section>
@@ -224,22 +192,7 @@ function Home() {
         {closestRecipes.length > 0 && (
           <section className="mt-4 px-8">
             <h3 className="font-display text-base font-bold text-text-primary">이 재료도 있으면 만들 수 있어요</h3>
-            <ol className="mt-2 grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
-              {closestRecipes.map((recipe) => (
-                <MenuCard
-                  key={recipe.id}
-                  to={`/recipe/${recipe.id}`}
-                  image={recipe.image}
-                  emoji={recipe.emoji}
-                  name={recipe.name}
-                  price={recipe.totalCost}
-                  priceSuffix="원"
-                  missingCount={recipe.missingCount}
-                  liked={likedIds.includes(recipe.id)}
-                  onToggleLike={() => handleToggleLike(recipe.id)}
-                />
-              ))}
-            </ol>
+            <RecipeGrid recipes={closestRecipes} likedIds={likedIds} onToggleLike={handleToggleLike} showMissingCount />
           </section>
         )}
 
@@ -261,22 +214,7 @@ function Home() {
                 </span>
                 <img src={mascotWave} alt="" className="w-32 select-none" />
               </div>
-              <ol className="grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
-                {filteredReady.map((recipe) => (
-                  <MenuCard
-                    key={recipe.id}
-                    to={`/recipe/${recipe.id}`}
-                    image={recipe.image}
-                    emoji={recipe.emoji}
-                    name={recipe.name}
-                    price={recipe.totalCost}
-                    priceSuffix="원"
-                    bestTag={recipe.id === cheapestId}
-                    liked={likedIds.includes(recipe.id)}
-                    onToggleLike={() => handleToggleLike(recipe.id)}
-                  />
-                ))}
-              </ol>
+              <RecipeGrid recipes={filteredReady} cheapestId={cheapestId} likedIds={likedIds} onToggleLike={handleToggleLike} />
             </div>
           </section>
         )}
@@ -284,23 +222,13 @@ function Home() {
         {filteredShopping.length > 0 && (
           <section className="mt-6 px-8">
             <h3 className="font-display text-lg font-bold text-text-primary">재료 조금만 사면 돼요 🛒</h3>
-            <ol className="mt-2 grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
-              {filteredShopping.map((recipe) => (
-                <MenuCard
-                  key={recipe.id}
-                  to={`/recipe/${recipe.id}`}
-                  image={recipe.image}
-                  emoji={recipe.emoji}
-                  name={recipe.name}
-                  price={recipe.totalCost}
-                  priceSuffix="원"
-                  bestTag={recipe.id === cheapestId}
-                  missingCount={recipe.missingCount}
-                  liked={likedIds.includes(recipe.id)}
-                  onToggleLike={() => handleToggleLike(recipe.id)}
-                />
-              ))}
-            </ol>
+            <RecipeGrid
+              recipes={filteredShopping}
+              cheapestId={cheapestId}
+              likedIds={likedIds}
+              onToggleLike={handleToggleLike}
+              showMissingCount
+            />
           </section>
         )}
 
@@ -308,22 +236,13 @@ function Home() {
         {filteredAll.length === 0 && (
           <p className="mt-2 px-8 font-display text-sm text-text-secondary">필터 조건에 맞는 요리가 없어요.</p>
         )}
-        <ol className="mt-2 grid grid-cols-3 gap-3 px-8 max-[640px]:grid-cols-1">
-          {filteredAll.map((recipe) => (
-            <MenuCard
-              key={recipe.id}
-              to={`/recipe/${recipe.id}`}
-              image={recipe.image}
-              emoji={recipe.emoji}
-              name={recipe.name}
-              price={recipe.totalCost}
-              priceSuffix="원"
-              bestTag={recipe.id === cheapestId}
-              liked={likedIds.includes(recipe.id)}
-              onToggleLike={() => handleToggleLike(recipe.id)}
-            />
-          ))}
-        </ol>
+        <RecipeGrid
+          recipes={filteredAll}
+          cheapestId={cheapestId}
+          likedIds={likedIds}
+          onToggleLike={handleToggleLike}
+          className="px-8"
+        />
           </>
         )}
       </main>
