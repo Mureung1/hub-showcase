@@ -6,13 +6,12 @@ import {
   ingHave, ingName, recipeHasImminentBadge, imminentIds, parseAmt, formatAmtText, extractUnit,
   getMissingInfo, generateImminentRescueSet, generateIngredientShareSet, estimateBuyCost, mergeMissingMaps,
   selectImminentGreedy, shortlistCandidates, searchMinPurchaseCombo3, lowStockIdsOf, selectPantryCleanupRecipe,
-  isPantryOrVague, normalizeIngredientKey, calculateRecipeDifficulty, isMeal, isSideDish
+  isPantryOrVague, normalizeIngredientKey, calculateRecipeDifficulty, isMeal, isSideDish, CONTINUOUS_UNITS
 } from './logic/fridgeLogic.js';
 import { supabase } from './supabaseClient.js';
 import { recognizeReceiptText } from './ocr/clovaOcr.js';
 import { matchReceiptLines } from './ocr/matchReceiptLines.js';
-
-const clone = (obj) => JSON.parse(JSON.stringify(obj));
+import { getPriceSnapshot } from './prices/priceCache.js';
 
 // DEMO_TODAY가 아니면 호출 시점마다 새로 읽어야 서버를 재시작 없이 오래 켜둬도 D-day가 드리프트하지 않는다.
 function today() {
@@ -43,7 +42,7 @@ let nextReceiptId = 1;
 const customIngredientMeta = {};
 
 async function fetchFridge() {
-  if (!supabase) return clone(initialFridge);
+  if (!supabase) return structuredClone(initialFridge);
   const { data, error } = await supabase.from('fridge_items').select('*');
   if (error) {
     console.error("Supabase fetch error:", error);
@@ -140,7 +139,7 @@ async function buildFridgeView() {
 }
 
 export async function getFridge() {
-  return clone(await buildFridgeView());
+  return structuredClone(await buildFridgeView());
 }
 
 export async function addFridgeItem({ ingredientId, name, quantityLabel, purchasedAt, expiryDate }) {
@@ -189,7 +188,7 @@ export async function addFridgeItem({ ingredientId, name, quantityLabel, purchas
   _dynamicSetsCache = null; // 냉장고 변경 시 세트 캐시 무효화
 
   const view = await buildFridgeView();
-  return clone(view[id]);
+  return structuredClone(view[id]);
 }
 
 export async function updateFridgeItem(id, patch) {
@@ -225,10 +224,12 @@ export async function updateFridgeItem(id, patch) {
 
   const view = await buildFridgeView();
   _dynamicSetsCache = null; // 냉장고 변경 시 세트 캐시 무효화
-  return clone(view[id] || null);
+  return structuredClone(view[id] || null);
 }
 
 export async function deleteFridgeItem(id) {
+  const view = await buildFridgeView();
+  if (!view[id]) return false;
   if (supabase) {
     await supabase.from('fridge_items').delete().eq('ingredient_id', id);
   }
@@ -289,7 +290,7 @@ export async function createReceipt(file) {
     items,
   };
   receipts[id] = record;
-  return clone(record);
+  return structuredClone(record);
 }
 
 export async function confirmReceipt(receiptId, { expiryOverrides = {} } = {}) {
@@ -339,7 +340,7 @@ export async function confirmReceipt(receiptId, { expiryOverrides = {} } = {}) {
 
   record.status = 'confirmed';
   _dynamicSetsCache = null; // 영수증 확정 시 재고 노온 변경 안해 세트 캐시 무효화
-  return clone(await buildFridgeView());
+  return structuredClone(await buildFridgeView());
 }
 
 let _recipesCache = null;
@@ -412,7 +413,7 @@ export async function getRecipesFromDB() {
       emoji: '🍳',
       text: s.desc,
       sum: s.desc.substring(0, 20),
-      tip: '',
+      tip: s.tip || '',
       tips: []
     })) : [];
 
@@ -515,7 +516,7 @@ export async function getRecipeDetail(id, multiplier = 1.0) {
 
   return {
     id,
-    ...clone(r),
+    ...structuredClone(r),
     ingredients: r.ingredients.map((ing) => {
       const parsed = parseAmt(ing.amt);
       const requiredQty = parsed.val * multiplier;
@@ -528,7 +529,7 @@ export async function getRecipeDetail(id, multiplier = 1.0) {
     }),
     addons: r.addons.map((a) => ({
       ...a,
-      fridgeInfo: view[a.id] ? clone(view[a.id]) : null,
+      fridgeInfo: view[a.id] ? structuredClone(view[a.id]) : null,
     })),
   };
 }
@@ -536,7 +537,7 @@ export async function getRecipeDetail(id, multiplier = 1.0) {
 // Supabase 클라이언트는 여러 문 트랜잭션을 지원하지 않아 진짜 원자성을 보장할 수 없다(docs/api.md §8).
 // 대신 1패스에서 모든 deductions에 대해 어떤 fridge_items 행을 얼마나 update/delete할지 읽기 전용으로
 // 전부 계산해두고(계산 오류가 이미 다른 항목을 쓴 *이후*에 터지는 상황 방지), 2패스에서만 실제로 쓴다.
-function planDeduction(currentFridge, id, use) {
+export function planDeduction(currentFridge, id, use) {
   const ops = [];
   if (!(use > 0) || !currentFridge[id]?.items) return ops;
 
@@ -546,7 +547,10 @@ function planDeduction(currentFridge, id, use) {
     return da - db;
   });
 
-  let remainingToDeduct = use;
+  // 프론트(buildDeductionState)가 이미 개수 단위를 올림해서 보내지만, 여기가 재고를 실제로
+  // 깎는 유일한 지점이라 그 계산을 거치지 않고 호출돼도 "2.5개" 같은 재고가 남지 않게 한 번 더 막는다.
+  const unit = items[0]?.qtyUnit || '';
+  let remainingToDeduct = CONTINUOUS_UNITS.includes(unit) ? use : Math.ceil(use);
   for (let i = 0; i < items.length && remainingToDeduct > 0; i++) {
     const item = items[i];
     if (!item.dbId) continue;
@@ -620,30 +624,17 @@ export async function cookDone(recipeId, deductions) {
     after: afterView[plan.id]?.qtyLabel || '소진',
   }));
 
-  return { results, fridge: clone(afterView) };
+  return { results, fridge: structuredClone(afterView) };
 }
 
 export async function getExpiryAlerts() {
   const view = await buildFridgeView();
   const ids  = imminentIds(view);
-  const { recipeOrder, recipes } = await getRecipesFromDB();
-
-  const relatedRecipeIds = recipeOrder.filter((rid) =>
-    recipes[rid].ingredients.some((ing) => ing.id && ids.includes(ing.id)),
-  );
-
   const lowStockIds = lowStockIdsOf(view);
 
   return {
-    items: ids.map((id) => ({ id, ...clone(view[id]) })),
-    lowStockItems: lowStockIds.map((id) => ({ id, ...clone(view[id]) })),
-    relatedRecipes: relatedRecipeIds.map((rid) => ({
-      id: rid,
-      ...clone(recipes[rid]),
-      usedNames: recipes[rid].ingredients
-        .filter((ing) => ing.id && ids.includes(ing.id))
-        .map((ing) => view[ing.id].name),
-    })),
+    items: ids.map((id) => ({ id, ...structuredClone(view[id]) })),
+    lowStockItems: lowStockIds.map((id) => ({ id, ...structuredClone(view[id]) })),
   };
 }
 
@@ -715,19 +706,23 @@ async function calculateCumulativeNeeds(recipeIds, multiplier = 1.0, view, recip
   // 계산해 합산(단위를 안 섞으니 정확함), 수량은 단위별로 나눠 적는다("800g + 7컵"처럼).
   const byKey = new Map();
   Object.values(buyList).forEach((n) => {
-    const buyMultiplier = n.isGram
-      ? Math.ceil(n.qty / 600)
-      : Math.ceil(n.qty / resolvePackSize(n.key, extractUnit(n.originalAmt)));
-    if (!byKey.has(n.key)) byKey.set(n.key, { label: n.label, uses: new Set(), price: 0, parts: [] });
+    const packSize = n.isGram ? 600 : resolvePackSize(n.key, extractUnit(n.originalAmt));
+    const buyMultiplier = Math.ceil(n.qty / packSize);
+    // 마트 1팩 단위 올림 가격(price) 외에, 실제 쓰는 양만큼만 계산한 "실소진 예상가"도 같이 낸다
+    // (algorithms.md Part 3 Step 4 — 소량 재료가 팩 단가 올림으로 부풀려 보이는 걸 화면에서 구분해서 보여주기 위함).
+    const actualUseCost = n.price * (n.qty / packSize);
+    if (!byKey.has(n.key)) byKey.set(n.key, { label: n.label, uses: new Set(), price: 0, actualCost: 0, parts: [] });
     const agg = byKey.get(n.key);
     n.uses.forEach((u) => agg.uses.add(u));
     agg.price += n.price * buyMultiplier;
+    agg.actualCost += actualUseCost;
     agg.parts.push({ qty: n.qty, isGram: n.isGram, originalAmt: n.originalAmt });
   });
 
   const needs = [...byKey.values()].map((agg) => ({
     label: agg.label,
     price: agg.price,
+    actualCost: Math.round(agg.actualCost),
     uses: [...agg.uses],
     qty: agg.parts[0].qty,
     isGram: agg.parts[0].isGram,
@@ -774,10 +769,8 @@ async function generateDynamicSets(pickedIds = [], view, recipesData) {
   view = view ?? await buildFridgeView();
   recipesData = recipesData ?? await getRecipesFromDB();
   const { recipeOrder, recipes } = recipesData;
-  const immIds = imminentIds(view);
-
   const missingMap = new Map(recipeOrder.map((id) => [id, getMissingInfo(view, recipes[id])]));
-  const rescue = generateImminentRescueSet(view, recipes, recipeOrder, immIds, missingMap);
+  const rescue = generateImminentRescueSet(view, recipes);
   const rescueDesc = rescue.recipeIds.length
     ? `임박 재료 ${rescue.coveredIds.length}가지를 요리 ${rescue.recipeIds.length}개로 해결해요`
       + (rescue.uncoveredIds.length
@@ -886,29 +879,36 @@ export async function getShoppingList(setId, pickedIds = [], multiplier = 1.0, s
     name: `${n.label} (부족: ${formatAmtText(n.qty, n.isGram, n.originalAmt)})`,
     uses: n.uses.join(' · '),
     price: n.price,
+    actualCost: n.actualCost,
     checked: true,
   }));
 
   return { setName: def.name, buy, have, total: totalCost };
 }
 
-export function getPrices() {
+// q(검색어)가 있으면 재료명에 부분일치하는 것만 반환한다 — 화면의 검색창용.
+export async function getPrices(q) {
+  const snapshot = await getPriceSnapshot();
+  const keyword = q?.trim();
+  const list = keyword
+    ? Object.values(ingredientMap).filter((ing) => ing.name.includes(keyword))
+    : Object.values(ingredientMap);
   return {
-    updatedAt: '2026.07.08 (화)',
-    items: [
-      { emoji: '🧅', name: '양파 1망 (1.5kg)',  avg: 3480, diff:  -120 },
-      { emoji: '🥬', name: '대파 한단',          avg: 2850, diff:   300 },
-      { emoji: '🥚', name: '계란 10구',          avg: 4190, diff:   -60 },
-      { emoji: '🧊', name: '두부 1모',           avg: 1780, diff:    40 },
-      { emoji: '🥩', name: '돼지 앞다리 100g',   avg: 1590, diff:   -90 },
-      { emoji: '🥒', name: '애호박 1개',          avg: 1520, diff:   210 },
-    ],
+    updatedAt: snapshot.updatedAt.toLocaleString('ko-KR'),
+    items: list.map((ing) => ({
+      id: ing.id,
+      emoji: ing.emoji,
+      name: ing.name,
+      avg: snapshot.prices[ing.id].avg,
+      diff: snapshot.prices[ing.id].diff,
+      source: snapshot.prices[ing.id].source, // 'kamis'(실시간) | 'static'(폴백) — 화면에서 실시간 여부 구분용
+    })),
   };
 }
 
 export async function getMealPlanCandidates() {
   const { recipeOrder, recipes } = await getRecipesFromDB();
-  return { items: recipeOrder.map((id) => ({ id, ...clone(recipes[id]) })) };
+  return { items: recipeOrder.map((id) => ({ id, ...structuredClone(recipes[id]) })) };
 }
 
 // 매 슬롯마다 "이미 정해진 부족 품목(alreadySelected의 합집합)과의 합집합이 가장 작아지는"
@@ -1071,7 +1071,7 @@ export async function buildWeeklyPlan(pickedIds = [], view, recipesData, difficu
   return {
     days: week.filter(Boolean).map((id, i) => ({
       day:    dayLabels[i],
-      recipe: { id, ...clone(recipes[id]) },
+      recipe: { id, ...structuredClone(recipes[id]) },
       picked: actualPicks.includes(id),
       reason: reasonOf(id),
     })),
@@ -1090,7 +1090,8 @@ export async function getMealShoppingList(weekPlanIds, multiplier = 1.0) {
     return {
       label: `${n.label} (부족: ${amountText})`,
       uses: n.uses,
-      price: n.price
+      price: n.price,
+      actualCost: n.actualCost,
     };
   });
   return { items, total: totalCost };

@@ -1,7 +1,7 @@
 # 백로그
 
 > 기준 문서: [product.md](./product.md)(제품 요구사항), [api.md](./api.md)(API 계약), [algorithms.md](./algorithms.md)(알고리즘 설계)
-> 마지막 업데이트: 2026-07-21 (12일차)
+> 마지막 업데이트: 2026-07-24 (15일차)
 
 ## 우선순위 기준
 
@@ -32,6 +32,8 @@
 | `buildWeeklyPlan`에 프론트가 "전체 난이도"를 `'all'`로 보내는데 백엔드는 `'any'`만 필터 없음으로 인식 — 기본 경로로 식단을 만들면 항상 `{days:[]}` 반환, 장보기 리스트도 조용히 아무 반응 없음 | ✅ 수정 완료 — `difficulty==='all'`이면 `'any'`로 정규화 | `backend/src/store.js:944`, `frontend/src/api/mockServer.js` |
 | `calculateCumulativeNeeds`가 재료 수량을 합칠 때 원문 계량 단위(뿌리/컵/공기/g 등)를 무시하고 숫자만 그대로 더함 — "즉석밥 1047컵" 같은 결과 발생. 대파는 팩 사이즈 오버라이드(`pa:1`)가 "1뿌리=1팩"으로 잘못 고정돼 있어 7뿌리 필요 시 22,800원(8팩) 청구 | ✅ 수정 완료 — 재료+단위 조합별로 나눠 누적하고 가격도 단위별로 계산 후 합산(화면엔 "800g + 4공기 + 5컵"처럼 표기). `pa` 오버라이드 제거. 이후 533개 레시피 전수 감사로 같은 유형의 팩 사이즈 오류 27건 추가 발견·수정(새우·멸치·쪽파 등) | `backend/src/store.js`(`calculateCumulativeNeeds`), `backend/src/data/mealPrices.js`, `frontend/src/api/mockServer.js`, `frontend/src/data/mealPrices.js` |
 | `AddItem.jsx`가 `calcExpiryDate(master, purchasedAt)`을 호출 — 함수는 `ingredientId`(문자열)를 받게 돼 있는데 재료 객체 전체를 넘김. 9일차에 백엔드(`store.js`)에서 발견·수정됐던 것과 똑같은 버그 패턴이 프론트 호출부엔 안 고쳐진 채 남아있었음. 화면엔 "신선식품은 구매일 기준 평균 유통기한이 자동 입력돼요" 안내가 뜨지만 실제로는 항상 빈 값 | ✅ 수정 완료(12일차) — `calcExpiryDate(master.id, purchasedAt)`으로 교체. 브라우저에서 당근 선택 시 구매일(7/22)+여름철 평균 유통기한(10일)=8/1로 정상 자동 계산되는 것 확인 | `frontend/src/pages/AddItem.jsx:107,114` |
+| 유통기한 임박 알림 화면내 불필요한 레시피 추천 중복 노출 및 연산 비효율 | ✅ 수정 완료(15일차) — 알림 전용 화면(`ExpiryAlerts.jsx`) 및 `/api/fridge/alerts` API에서 불필요한 `relatedRecipes` 추천 렌더링 및 연산 완전 제거. 순수 임박(`items`) 및 수량부족(`lowStockItems`) 알림 데이터로 응답 경량화 | `backend/src/store.js`, `frontend/src/pages/ExpiryAlerts.jsx`, `backend/src/routes/fridge.integration.test.js` |
+| 일주일 식단 고비용(10만원) 산정 문제 | ✅ 16일차 완료 — [algorithms.md](./algorithms.md) Part 3 4단계 중 Step 1~3(부족 품목 수 감점·전역 재료 공유 가중치·`PANTRY_STAPLES`/이름 정규화 정밀화)은 이미 코드에 반영돼 있었음(구매 재료 21개→12개 압축 확인됨). 남아있던 Step 4(팩 올림가 vs 실사용가 병행 안내)를 이번에 구현 — `calculateCumulativeNeeds`가 품목별 `actualCost`(실사용량 기준)를 `price`(1팩 올림가, 총액 기준 유지)와 함께 반환, `ShoppingList.jsx`/`MealShoppingList.jsx`에 안내 문구 표시 | `backend/src/store.js`, `frontend/src/pages/ShoppingList.jsx`, `frontend/src/pages/MealShoppingList.jsx` |
 
 ---
 
@@ -46,7 +48,7 @@
 | 3 | **레시피 썸네일 이미지 노출** | ✅ 완료(12일차) — 실제로는 목록 API(`listRecipes`)가 `image_url`을 아예 안 내려주고 있었음(상세 조회용 캐시엔 있었지만 목록 응답 매핑에서 빠짐, `mockServer.js`도 동일). 목록 응답에 `image_url` 추가 + `RecipeCard.jsx`에 `<img loading="lazy">` 렌더링(없으면 이모지 폴백) 추가. **검증 한계**: 이 세션 Browser pane은 `loading="lazy"`가 있으면 이미지 요청 자체가 안 나가는 걸 확인(`loading="eager"`로 바꾸면 즉시 정상 로드, naturalWidth=600) — 무한스크롤 때와 같은 이 환경의 IntersectionObserver 미작동 이슈로 추정, 실제 사용자 브라우저에서 재확인 필요 | `backend/src/store.js`(`listRecipes`), `frontend/src/api/mockServer.js`, `frontend/src/components/RecipeCard.jsx`, `frontend/src/styles.css` |
 | 4 | **`RecipeList`/`Home` 로딩·에러 상태 통일** | ✅ 완료(12일차) — `Home.jsx`는 두 fetch에 에러 처리가 전혀 없었던 걸(`.then()`만 있고 `.catch()` 없음, 실패해도 조용히 빈 상태로 남음) `useAsyncData`로 통합해 에러 시 "다시 시도" 노출. `RecipeList.jsx`는 무한스크롤 누적 로직이 있어 `useAsyncData`(매 요청마다 데이터 전체 교체)를 그대로 못 씀 — 같은 `status`(loading/ready/error) 패턴을 직접 구현해 "로딩 중인데 결과 없음 카드가 잠깐 뜨는" 문제와 에러 무처리를 해결(1페이지 에러는 카드로, 추가 페이지 에러는 "더보기" 자리에 인라인 재시도로 구분). 브라우저에서 "전체 둘러보기" 탭 전환·필터 변경 정상 동작 확인 | `frontend/src/pages/Home.jsx`, `frontend/src/pages/RecipeList.jsx` |
 | 5 | **북마크(찜) 기능** | ✅ 완료(12일차) — DB 스키마 변경 없이 `localStorage`에 저장(이 앱은 로그인 없는 단일 사용자 기준이라 서버 동기화가 애초에 필요 없음, `servingMultiplier`와 같은 기존 패턴 재사용). `RecipeDetail.jsx`에 하트 토글 버튼 추가, "기타" 탭에 "찜한 레시피" 진입점 + 전용 화면(`BookmarkedRecipes.jsx`) 신규. 브라우저에서 찜하기→목록 반영→상세 재진입→해제까지 전체 흐름 확인 | `frontend/src/context/AppContext.jsx`, `frontend/src/pages/RecipeDetail.jsx`, `frontend/src/pages/BookmarkedRecipes.jsx`(신규), `frontend/src/pages/EtcMenu.jsx`, `frontend/src/App.jsx` |
-| 6 | **일주일 식단 일요일 "냉장고 털이" 특수 슬롯** | `algorithms.md` 설계 범위 밖이라 알고리즘을 새로 설계해야 함 — 가장 큰 작업이라 마지막 | `backend/src/store.js`(`buildWeeklyPlan`), 설계는 `algorithms.md` §6 확장 필요 |
+| 6 | **일주일 식단 일요일 "냉장고 털이" 특수 슬롯** | ✅ 완료(12일차) — `getExpiryAlerts`의 "수량 부족" 판정 로직(`g`/`ml`는 150 이하, 개수류는 1 이하)을 `lowStockIdsOf()`로 추출해 재사용, 같은 기준으로 `selectPantryCleanupRecipe()`가 남은 후보 풀에서 자투리 재료를 가장 많이 실제로 쓰는(보유 중인) 레시피를 채점해 고른다. `buildWeeklyPlan`(type==='meal')이 이 레시피를 슬롯 배정 전에 미리 예약해 풀에서 빼고, 나머지 슬롯은 기존 임박 탐욕/조합 탐색 로직을 그대로 돌린 뒤 `remaining` 배열 맨 뒤에 붙여 항상 일요일에 고정한다. 자투리를 하나도 못 쓰면 `null`을 반환해 이 슬롯도 기존 로직에 그대로 맡김(폴백). 브라우저에서 냉이된장찌개·나물비빔밥을 픽하고 식단을 생성 — 일요일에 "버섯잡채밥 🧹 냉장고 털이"가 배정되고, 실제로 이 레시피가 쓰는 `glassNoodle`(당면)이 `/api/fridge/alerts`의 `lowStockItems`에 포함된 재료인 것까지 확인 | `backend/src/logic/fridgeLogic.js`(`lowStockIdsOf`, `selectPantryCleanupRecipe`), `backend/src/store.js`(`getExpiryAlerts`, `buildWeeklyPlan`), `frontend/src/logic/fridgeLogic.js`, `frontend/src/api/mockServer.js`. 부수적으로 `mockServer.js`의 최상단 import 경로가 실제 디렉터리 구조(`frontend/src/api/`)와 어긋나 있던 기존 버그(`./data/...`, `./logic/...` → `../data/...`, `../logic/...`)도 함께 수정 — `index.js`가 현재 `httpClient.js`만 가리켜 그동안 안 드러났을 뿐, mockServer.js로 전환 시 즉시 모듈 해석 실패했을 상태였음 |
 
 ---
 
@@ -68,10 +70,16 @@
 
 `try...catch` 및 에러 발생 시 사용자 경고(`alert`) 로직이 모두 추가되었습니다.
 
-### 2. 네비게이션 레이스 컨디션 — 부분 해결
+### 2. 네비게이션 레이스 컨디션 — ✅ 해결 완료 (16일차)
 
-`go()`/`tab()` 호출 전 화면 이탈 여부를 확인하는 가드가 없는 상태는 동일하나, `useAsyncData` 훅의 stale 응답 무시 패턴으로 **장보기 화면**에서의 레이스 컨디션은 해결됨.
-AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShoppingList` 4개 함수는 아직 미해결.
+`useAsyncData` 훅의 stale 응답 무시 패턴(요청마다 증가하는 시퀀스 번호, 최신 요청만 결과 반영)을 `AppContext.jsx`의 나머지 4개 비동기 함수에도 동일하게 적용:
+
+- `shootReceipt` — OCR 응답(최대 15초) 대기 중 재촬영하면 먼저 보낸 느린 요청이 나중에 도착해 화면을 덮어쓰던 문제
+- `openRecipeDetail` — 레시피 카드 연타 시 먼저 누른 카드의 느린 응답이 나중에 누른 카드 상세를 덮어쓰던 문제
+- `buildMealPlan` — 픽 조합을 바꾸며 "식단 짜기"를 연타하면 이전 조합의 느린 응답이 최신 결과를 덮어쓰던 문제
+- `openMealShoppingList` — 위와 동일한 패턴
+
+각 함수에 `useRef` 시퀀스 카운터를 추가해, await 완료 시점에 자신이 가장 최근 호출인지 확인 후에만 `setState`+`go()`를 실행하도록 수정. `frontend/src/hooks/useAsyncData.js`의 `requestIdRef` 패턴을 그대로 재사용. (`frontend/src/context/AppContext.jsx`)
 
 ### 3. 9일차 코드 리뷰 발견 사항 — 전부 수정 완료
 
@@ -113,14 +121,14 @@ AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShop
 - ~~레시피 검색바(디바운스) + `GET /api/recipes?search=`~~ ✅ 완료(11일차)
 - ~~정렬 드롭다운 UI(추천순/조리시간순/난이도순)~~ ✅ 완료(11일차) — `sort=default|ratio|time|level`. 겸사겸사 "🔴 상급자" 필터가 `level=high`로 보내서 실제 계산값(`expert`)과 안 맞아 항상 0건이던 버그도 발견해 수정(`RecipeList.jsx`, `data/recipes.js` 양쪽)
 - ~~무한 스크롤(`IntersectionObserver`)~~ ✅ 완료(11일차) — sentinel div를 관찰해 자동 로드 + "더보기" 버튼을 안전망으로 병행. **검증 한계**: 이 세션의 Browser pane에서 `IntersectionObserver`가 아예 콜백을 발생시키지 않는 현상을 발견(화면에 확실히 보이는 `<h1>`에 직접 옵저버를 붙여도 재현) — 스크린샷 도구가 이 세션 내내 타임아웃 나던 것과 같은 원인(렌더러 컴포지터 문제)으로 추정, 코드 자체의 버그는 아닌 것으로 판단. 자동 트리거는 실제 브라우저에서 사용자가 직접 확인 필요. 안전망 버튼으로 30→60개 증가는 확인 완료
-- 레시피 썸네일 이미지 표시(`image_url` 필드는 API가 내려주는데 프론트 어디서도 안 씀) + 레이지 로딩
-- 북마크(찜) 기능
-- 일주일 식단의 일요일 "냉장고 털이 요리 🧹" 특수 슬롯 — 문서에만 있고 코드엔 대응 로직 자체가 없음
+- ~~레시피 썸네일 이미지 표시~~ ✅ 완료(12일차)
+- ~~북마크(찜) 기능~~ ✅ 완료(12일차)
+- ~~일주일 식단의 일요일 "냉장고 털이 요리 🧹" 특수 슬롯~~ ✅ 완료(12일차)
 
 ### 문서 자체 오류(실제와 반대로 적혀 있었음) → 발견 즉시 수정 완료
 
 - ~~"수량 부족 알림은 미구현"~~ → 실제로는 이미 구현·렌더링됨. `product.md` 78행 수정.
-- ~~"임박 알림 푸시는 문구뿐"~~ → 실제로는 브라우저 `Notification` API 권한 요청 + 1회성 확인 알림까지는 동작(단, D-2 자동 트리거는 없음 — 이 부분은 여전히 한계로 남겨둠). `product.md` §9.14 수정.
+- ~~"임박 알림 푸시는 문구뿐"~~ → 16일차에 D-2 자동 트리거(서버 푸시)까지 완료. `product.md` §9.14 수정.
 
 ### 기획서에 없는데 코드엔 있음 → `product.md` 각 화면 절에 반영 완료
 
@@ -138,13 +146,15 @@ AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShop
 | 항목 | 현재 상태 | 비고 |
 |---|---|---|
 | 일주일 식단 루틴 알고리즘 v2 | ✅ 11일차 완료 — `selectImminentGreedy`·`shortlistCandidates`·`searchMinPurchaseCombo3`을 `buildWeeklyPlan(type='meal')`에 연결(임박 재료가 적어 3슬롯이 안 나오면 기존 탐욕으로 폴백). v2 알고리즘 설계는 [algorithms.md](./algorithms.md) 참고 | `type='side'`는 설계 문서 범위 밖이라 기존 탐욕 유지 |
-| 식자재 가격 실시간 연동 | `GET /api/prices`가 정적 하드코딩, 매일 갱신되는 외부 소스 없음 | — |
-| 테스트 코드 | ✅ 12일차 일부 완료 — `node:test`로 순수 함수(`store.js`의 `formatDday`/`ddayValue`, `data/ingredients.js`의 `calcExpiryDate`, `logic/fridgeLogic.js`의 `parseAmt`/`formatAmtText`/`extractUnit`/`ingHave`/`getMissingInfo`) 20건 커버. `backend/package.json`의 `test` 스크립트를 `node --test`로 교체 | `listRecipes`/`cookDone`/`confirmReceipt`는 Supabase 의존이라 아직 미커버(다음 순서) |
+| 식자재 가격 실시간 연동 | ✅ 15일차 완료, 같은 날 확장 — `GET /api/prices`가 KAMIS(농산물유통정보) Open API로 **재료 마스터 100개 전체**의 소매가를 조회하도록 확장(기존 6개 고정 → 100개), 24시간 캐시. 이 중 신선식품 29종은 실시간(`source:'kamis'`), KAMIS가 원천적으로 취급하지 않는 양념·가공식품 대부분과 신선식품 6종(표고버섯·콩나물·가지·부추·새우·황태채)은 정적 폴백(`source:'static'`). `?q=` 검색 파라미터 및 프론트 검색창 추가. 인증키는 공공데이터포털(data.go.kr) 방식(`serviceKey` 단일 파라미터)이 아니라 kamis.or.kr 직접 가입 방식(`p_cert_key`+`p_cert_id`)으로 전환 완료 — 두 발급 경로의 인증 스킴이 달라 데이터포털 키로는 연동 불가능했음. 연동 계획·체크리스트는 [가격API연동계획.md](./가격API연동계획.md) 참고 | `mealPriceTable`(장보기 리스트·주간 식단 예상금액용 100종 가격표)은 **사용자 결정으로 실시간화 안 함(보류 확정)** — 실제 마트 가격도 매장마다 편차 있어 평균값으로 충분하다는 판단, `resolvePrice()` 동기 호출 구조 그대로 유지. 다만 이번에 `GET /api/prices`의 정적 폴백에 재사용하면서 양념류 20종(간장·소금 등)이 애초에 `mealPriceTable`에 값이 없어 전부 기본값 2,200원으로 뜨는 기존 데이터 공백을 발견 — 새 P2 행 참고 |
+| 양념류 20종 정적 가격 데이터 공백 | 🆕 15일차 발견 — 간장·소금·설탕·참기름·고춧가루 등 `ingredients.js`의 `processed` 카테고리 20개 id가 `mealPrices.js`의 `mealPriceTable`에 아예 없어(원래 장보기 리스트 로직은 한글 재료명 기반이라 이 id들을 직접 조회한 적이 없었음), `resolvePrice()`가 전부 `DEFAULT_FALLBACK_PRICE`(2,200원)로 반환. `GET /api/prices` 화면에서 20개 항목이 전부 똑같은 가격으로 보임 | 서비스는 정상 동작(에러 아님), 원하면 `mealPriceTable`에 20개 항목 실가격만 추가하면 해결 |
+| 테스트 코드 | ✅ 16일차 기준 백엔드 119건(vitest, `mockSupabaseClient` 인메모리 페이크로 Supabase 의존 컨트롤러까지 전부 커버) — 이 항목 자체가 이미 진행된 상태였음(12일차 이후 `node:test`→`vitest` 전환 + `routes/*.integration.test.js` 8개 파일이 추가돼 있었는데 백로그 갱신이 안 돼 있었음). 16일차엔 진짜 빠져 있던 두 가지만 추가: ① `cook-done` 쓰기 도중 실패 시 `partiallyApplied`/`failed`/`notAttempted` 응답(설계만 있고 테스트 없던 부분) — `mockSupabase.js`에 `failNextWriteFor(dbId)` 훅 추가해 재현, ② `confirmReceipt`의 `expiryOverrides`가 자동계산값 대신 실제로 저장되는지 값 검증(기존 테스트는 재료가 존재하는지만 확인하고 값은 안 봤음). **15일차 추가**: 프론트엔드는 테스트가 아예 0건이었는데 `vitest`+`@testing-library/react`를 새로 붙여 56건(백엔드 `fridgeLogic.test.js` 53건을 프론트 사본에도 반영 + 컴포넌트 렌더링 테스트 3건) | `backend/src/test/mockSupabase.js`, `backend/src/routes/recipes.integration.test.js`, `backend/src/routes/receipts.integration.test.js`, `frontend/src/logic/fridgeLogic.test.js`(신규), `frontend/src/components/Badge.test.jsx`(신규) |
+| 보안·인프라 라이브러리 도입 | ✅ 15일차 완료 — `zod`(`backend/src/env.js` 신설: `.env` 형식 검증 + 어떤 외부 연동이 켜져 있는지 시작 로그 한곳에 통합, `supabaseClient.js`/`kamisClient.js`/`clovaOcr.js`의 흩어진 개별 체크를 여기로 흡수), `helmet`(보안 헤더, CSP는 아직 정책 미검증이라 비활성), `express-rate-limit`(외부 유료 API를 감싸는 `/api/receipts`·`/api/prices`에 15분당 30회 제한) | `backend/src/env.js`, `backend/src/app.js` |
 | 백엔드 린터 | ✅ 12일차 완료 — `backend/.oxlintrc.json` 신설(`oxc` 플러그인), `npm run lint` 추가. 기존 코드에서 걸린 미사용 파라미터(`app.js` 에러 핸들러의 `next`→`_next`) 1건 수정 | — |
 | cook-done 원자성 한계 | ✅ 12일차 코드 레벨 완화 — 계산(1패스)/쓰기(2패스) 분리로 계산 오류가 이미 쓴 항목 *이후*에 터지는 상황 방지, 쓰기 실패 시 `partiallyApplied`/`failed`/`notAttempted`를 에러 응답에 포함해 반영 범위를 추적 가능하게 함(api.md §8) | 완전한 트랜잭션은 아님 — Postgres RPC 도입은 여전히 미착수 |
 | 컨트롤러 입력 검증 강화 | ✅ 12일차 완료 — `purchasedAt`/`expiryDate`/`expiryOverrides` 날짜 형식, `deductions` 원소 형태, `multiplier` 범위(0 초과) 검증 추가(fridge/recipes/mealPlan/receipts 컨트롤러) | — |
 | `fridge-recipe-app` ↔ `hub` 저장소 동기화 | `baejh3333-del/hub`는 2026-07-09 17:53 커밋 이후 미반영 | 공유·배포 전에 동기화 필요 |
-| 레시피 커버리지 대폭 축소(20,963 → 533개) | 12일차에 조리순서 없는 레시피를 전량 삭제하기로 결정하면서, "지금 가능한 요리" 매칭 풀이 CSV 66,447건 없이 MAFRA 533건으로만 좁아짐 | 매칭률 체감 저하 가능성 — 필요시 CSV를 조리순서 있는 것만 선별 재도입하거나 별도 소스로 조리순서를 보강하는 방안 검토 |
+| 레시피 커버리지 대폭 축소(20,963 → 533개) | ✅ 부분 완화(15일차) — "쉬운 레시피가 너무 적다"는 사용자 피드백으로 자취생용 초간단 레시피 100개를 직접 작성해 추가(533→633개). 재료 3개·조리단계 3개 이하로 맞춰 전부 🟢 쉬움으로 계산되도록 설계(`backend/src/scripts/addStudentRecipes.mjs`, id 900001~900100) | CSV 66,447건 재도입 여부는 여전히 미결정 — 필요시 조리순서 있는 것만 선별 재도입 검토 |
 | 레시피 목록 정렬 + 더보기 | ✅ 완료(9일차) — `GET /api/recipes`에 `page`/`pageSize`/`sort=ratio` 추가, `RecipeList.jsx` "더보기" 버튼, `Home.jsx` 총계/추천 분리 조회로 22MB→1KB 미만 응답 | — |
 | 런처 실행 흐름 검증 | `FridgeRecipeApp.exe` — Node.js 미설치·포트 3001 사용 중·빌드 실패·서버 시작 실패 안내 | — |
 | 배포 패키지 구성 | `backend`, `frontend/dist`, `node_modules` 포함 여부 정책, 실행 파일, 사용 안내 | — |
@@ -375,3 +385,76 @@ AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShop
 ### 검증 방식
 
 이번 세션 전체에 걸쳐 라이브 DB(Supabase)를 직접 수정하는 작업이 많아, 매 단계 진단 스크립트(임시 `.cjs`, 작업 후 삭제)로 실제 수치를 먼저 확인한 뒤에만 실행하는 방식으로 진행 — 특히 대량 삭제/재시딩처럼 되돌리기 어려운 단계는 사용자에게 영향 범위를 먼저 보고하고 명시적 승인을 받은 뒤 진행함.
+
+---
+
+## 15일차 (2026-07-24) 작업 기록 — 레시피 팁 복구, KAMIS 실연동 확장, 보안/테스트 인프라
+
+### 1. 레시피 조리 팁 기능 복구 + 533개 전량 백필
+
+사용자 보고: "레시피에 팁 기능이 있었는데 CSV로 바꾸면서 사라졌다". 처음엔 "CSV 레시피엔 조리순서가 없다"는 12일차 기록 때문에 팁도 없는 데이터인 줄 알았으나, 실제로는 **533개 MAFRA 레시피(조리순서 있는 유일한 출처)엔 진짜 팁 텍스트가 DB(`steps_json.tip`)에 있는데, `store.js`가 이를 무시하고 `tip: ''`로 하드코딩**하고 있던 게 원인. 한 줄 수정(`tip: s.tip || ''`)으로 기능은 살아났지만, DB에 저장된 팁 자체가 비어있는 레시피가 많아 사용자가 "533개 전부 실제 조리 단계에 맞는 팁을 직접 작성해달라"고 요청 — 40개씩 배치로 나눠 각 레시피의 실제 조리 단계(썰기/볶기/끓이기 등)와 구체적 수치에 근거한 팁을 작성해 Supabase에 반영, 재실행해도 이미 있는 팁은 건드리지 않는 멱등 스크립트(`addRecipeTips.mjs`)로 진행. 최종 533/533 완료.
+
+### 2. 식자재 가격 실시간 연동 — API 키 확보부터 100개 재료 확장까지
+
+15일차에 완료 처리됐던 KAMIS 6개 고정 품목 연동을 실제 서비스에 쓸 수 있게 마무리하고, 이어서 재료 마스터 전체로 확장.
+
+- **API 키 발급 지원**: 사용자가 공공데이터포털(data.go.kr)에서 발급받은 키를 넣었다고 했으나, 확인해보니 이 키는 `serviceKey` 단일 파라미터 + `apis.data.go.kr` 엔드포인트를 쓰는 완전히 다른 인증 스킴(사용자가 스크린샷으로 보내준 실제 요청 URL로 확인) — 기존 코드(`kamisClient.js`)가 구현한 kamis.or.kr 직접 방식(`p_cert_key`+`p_cert_id`)과 호환되지 않음. 사용자와 상의해 kamis.or.kr 직접 가입으로 전환 결정, 새 키 발급 안내.
+- **보안**: 대화 중 사용자가 실제 서비스키 값을 스크린샷/링크에 그대로 포함해 보낸 것을 두 차례 감지해 재발급을 권장. `.env` 값 확인은 항상 `awk` 등으로 존재 여부만 redacted 출력, 값 자체는 한 번도 조회하지 않음.
+- **품목코드 검증**: KAMIS `productInfo`(전체 품목/등급코드표) API로 217개 코드 항목을 받아 재료명 매칭 후, 실제 요청을 브루트포스로 검증(카테고리별로 등급코드 유효값이 다름 — 채소류 `04`, 축산물 `1`/`2`/`3`). 이 과정에서 기존 하드코딩된 애호박 코드가 실제로는 "깻잎" 데이터를 반환하고 있던 버그, 계란/돼지고기 등급코드가 잘못돼 항상 001(no data)만 반환하던 버그를 발견해 수정.
+- **100개 재료로 확장**: 사용자가 "냉장고 재료 전부에 실시간 가격을 연동해달라"고 요청. KAMIS는 원래 6개만이 아니라 신선 농축수산물만 취급하는 데이터셋이라, 재료 마스터 100개 중 검증 가능한 29개(채소 20종·축산물 5종·수산물 2종·과일 없음 등)만 실시간 매칭 가능하다는 걸 명확히 하고 진행. `GET /api/prices`가 `ingredients.js` 전체를 순회하도록 재작성, 매칭 안 되는 71개(양념·가공식품 대부분 + KAMIS 미제공 신선식품 6종)는 `mealPrices.js`의 `resolvePrice()` 정적값으로 자동 폴백. `?q=` 검색 파라미터 추가, 프론트 `Prices.jsx`에 검색창 + "· 참고가" 라벨 추가.
+- **테스트 영향**: 100개 재료를 매 통합테스트마다 실제 KAMIS에 조회하면 느리고 외부 API 상태에 좌우되므로, `prices.integration.test.js`/`app.integration.test.js`에 `kamisClient.js`를 mock 처리해 순수 정적 폴백 경로만 검증하도록 수정.
+
+### 3. 보안 라이브러리 설치 (`zod` / `helmet` / `express-rate-limit`)
+
+사용자가 API 키 보안 강화를 요청한 김에, 이번 KAMIS/Clova 작업에서 반복적으로 드러난 "키가 없거나 형식이 틀려도 조용히 폴백만 되고 원인 추적이 안 되는" 문제를 `zod` 기반 `env.js`로 한 번에 정리. `helmet`으로 기본 보안 헤더 적용(CSP는 아직 프로덕션 정적 서빙 정책을 안 맞춰봐서 비활성화), `express-rate-limit`으로 외부 유료/제한 API(Clova OCR, KAMIS)를 감싸는 라우트에 요청 제한 추가. 실제 서버 부팅 후 시작 로그·보안 헤더·rate-limit 헤더까지 curl로 확인.
+
+### 4. 프론트엔드 테스트 인프라 신설
+
+라이브러리 추천 요청에 따라 `vitest`+`@testing-library/react`+`jsdom`을 프론트에 새로 설치(기존엔 프론트 테스트가 0건). `vite.config.js`에 `test.environment: 'jsdom'` 추가. 백엔드의 `fridgeLogic.test.js`(53건)를 프론트 사본에 그대로 복사해 통과 확인 — 두 사본이 실제로 같은 함수 시그니처/동작을 유지하는지 이제 자동으로 잡아낼 수 있음. `Badge.jsx` 컴포넌트 렌더링 테스트 3건을 추가해 `@testing-library/react` 배선도 확인. 최종 56/56 통과.
+
+### 5. `/simplify` 셀프 리뷰
+
+이번 세션에 새로 만든 KAMIS/보안 코드에 대해 `/simplify` 스킬(reuse·simplification·efficiency·altitude 4개 관점 병렬 리뷰)을 직접 실행. `kamisClient.js`의 중복된 `try/catch` 두 개를 하나로 통합, 실제로는 한 번도 안전하게 쓰이지 않던 `kindCode`/`productRankCode` 기본값(카테고리마다 유효값이 달라 항상 재정의됨)을 제거해 필수 파라미터로 전환. `Prices.jsx` 클라이언트 검색과 백엔드 `?q=` 파라미터가 같은 필터 규칙을 두 곳에 구현하는 건(의도적으로) 유지 — 합치면 API 완전성 또는 UX 응답성 중 하나가 후퇴하기 때문.
+
+### 검증
+
+- 백엔드 119/119, 프론트 56/56 테스트, 양쪽 `oxlint` 클린
+- 실제 서버 기동해 `GET /api/prices` 응답(100개, 29개 `source:'kamis'`)·검색(`?q=`)·보안 헤더·rate-limit 헤더 curl로 확인
+- API 키는 대화에서 값 자체를 요구하거나 조회하지 않고 항상 존재 여부만 redacted 확인하는 방식 유지
+
+## 16일차 (2026-07-27) 작업 기록 — 냉장고/레시피 데이터 정합성 버그 3건 + 코드 정리 + PR #1
+
+`docs/4주차 계획수립.md`(Day16~20) 계획 중 Day16(전반적 개선)·Day17(코드 전체 검토)·Day19(양념류 가격)를 브라우저로 화면을 직접 훑으며 한 세션에서 진행. Day18(OCR 크레덴셜 발급)·Day20(hub 동기화·배포)은 외부 가입/확인이 필요해 보류.
+
+### 1. 레시피 썸네일 이미지 — 도입했다가 되돌림
+
+`product.md`가 "완료(12일차)"로 기록했지만 실제 `RecipeCard.jsx`엔 `<img>` 태그가 없어 이모지만 표시되던 걸 발견. `<img src={recipe.image_url}>` + 이모지 폴백으로 구현해 브라우저에서 로드까지 확인했으나(`naturalWidth: 600`), 실제 레시피와 무관한 Unsplash 카테고리 스톡 사진이라 오히려 신뢰도를 떨어뜨린다고 판단해 최종적으로 되돌리고 이모지 표시로 확정. `product.md` §11도 이 결정에 맞춰 재정정.
+
+### 2. 브라우저 실동작 점검 중 새로 발견한 버그 3건
+
+- **냉장고 "라면 사리" 수량이 항상 "0"으로 표시** — `ramen`은 `fresh` 카테고리 재료라 `qtyAmount`/`qtyUnit`으로 저장돼야 하는데, 시드 데이터(`initialFridge.js`)와 실제 Supabase `fridge_items` 행 둘 다 `processed` 방식(`qtyLabel`만)으로 잘못 들어가 있어 `enrichFridgeItem`이 합산할 수량을 못 찾음. 라이브 DB 행은 `PATCH /api/fridge/ramen`(정식 API 경로)으로 정정, `initialFridge.js`(backend/frontend 양쪽) 시드도 동일하게 수정.
+- **재료 마스터에 `kimchi`(김치)가 아예 없음** — `initialFridge.js`/`mealPrices.js`/여러 레시피가 계속 참조하는데 `ingredients.js`(89개 항목)엔 등록이 안 돼 있어서, "부족 재료" 목록에 "김치" 대신 영어 원문 "kimchi"가 그대로 노출되고 있었음. `ingredients.js`(backend/frontend)에 정식 엔트리 추가 후 API 응답에서 "김치"로 정상 표기되는 것 확인.
+- **자취생 초간단 레시피 100개(`addStudentRecipes.mjs`, id 900001~900100) 전 재료가 "1단위"로 표시** — 스크립트가 전 재료를 `amt: ''`로 비워둬서 `extractUnit('')`이 '단위'로, `parseAmt('')`가 1로 폴백해 "1단위"가 됨. 58개 재료 id별 실제 계량 단위(1공기·1큰술·1/2모 등) 매핑을 추가하고, upsert라 안전한 스크립트를 재실행해 라이브 데이터까지 정정(예: "즉석밥 1공기", "참치캔 1캔", "마요네즈 1큰술").
+
+### 3. `ponytail-audit` 코드 정리 (3라운드)
+
+- `store.js`의 `const clone = (obj) => structuredClone(obj)` 래퍼 제거, 13개 호출부 전부 `structuredClone` 직접 호출로 교체
+- `backend/package.json`의 `csv-parser`/`iconv-lite`(한 번 실행하고 끝난 시딩 스크립트에서만 쓰임)를 `devDependencies`로 재분류
+- 서버 시작 로그에 매번 찍히던 `dotenv`(17.x) 패키지의 홍보성 랜덤 tip 로그(`vestauth.com` 등 — 악성 아님, 최신 dotenv가 기본으로 넣는 광고) `env.js`에 `quiet: true` 추가로 제거
+- `mockServer.js`가 코드베이스에서 이미 사라졌는데 `CLAUDE.md`가 여전히 mock/http 이중 백엔드 구조로 설명하고 있던 것 확인 — 의도된 삭제가 아니었음을 사용자에게 확인 후 `CLAUDE.md` 설명만 현재 상태(항상 실서버 필요)에 맞게 정정, 코드는 그대로 둠
+- `ShoppingList.jsx`/`MealShoppingList.jsx`의 장보기 행 마크업 중복은 검토했으나, 두 화면이 인터랙션 모델(체크 가능 vs 정적)이 실제로 달라 공유 컴포넌트로 뽑으면 조건분기만 늘어날 수 있다고 판단해 그대로 둠
+
+### 4. 신규 기능: 유통기한 임박 서버 푸시 알림
+
+문서에 "알려진 한계"로 계속 남아있던 진짜 미구현 기능(D-2 자동 트리거)을 구현. `web-push`(VAPID) 라이브러리 도입 — VAPID 키 쌍을 생성해 `.env`에 저장(생성 방법은 `.env.example`에 기록). 백엔드 `push.js`가 구독(브라우저 `PushSubscription`)을 인메모리로 저장하고, `checkAndSendExpiryPushes()`가 `getExpiryAlerts()`로 D-2 이하 재료를 조회해 구독자 전원에게 발송한다. 같은 재료를 하루에 중복 발송하지 않도록 `재료id-날짜` 키로 발송 이력을 기록. `server.js`가 부팅 시 1회 + 1시간 간격(`setInterval`)으로 이 함수를 호출 — 실서비스라면 새벽 1회 cron이 맞지만, 이 서버는 재시작이 잦은 데모 환경이라 짧은 간격 반복 + 중복 방지로 대체.
+
+프론트는 `public/sw.js`(서비스워커, `push`/`notificationclick` 이벤트 처리)를 신설하고, `ExpiryAlerts.jsx`의 "알림 켜기" 버튼이 권한 요청 → 서비스워커 등록 → `pushManager.subscribe()` → 구독 정보를 `POST /api/push/subscribe`로 전송하도록 교체(기존엔 로컬 `Notification` 1회 확인만 했음). `.env`에 VAPID 키가 없으면(로컬 개발 등) 기능이 조용히 꺼지고 기존 클라이언트 확인 알림으로 폴백.
+
+**검증 한계**: 가짜 구독 데이터로 `checkAndSendExpiryPushes()`가 에러 없이 발송 경로를 도는 것까지 확인했지만, 이 세션의 Browser pane이 알림 권한을 기본적으로 거부하고 있어(자동화 환경 정책으로 추정) 실제 권한 승인 → 구독 → 푸시 수신까지 이어지는 전체 흐름은 UI로 끝까지 확인하지 못함 — 실사용자 브라우저에서 재확인 필요.
+
+### 검증 및 반영
+
+- 백엔드 테스트 123/123, 프론트 테스트 58/58 통과, 양쪽 `oxlint` 클린
+- 브라우저로 냉장고 화면("라면 사리 2개")·레시피 상세("즉석밥 1공기" 등)·부족재료 목록("김치") 직접 확인
+- `GET /api/push/public-key`·`POST /api/push/subscribe` curl로 확인, 서비스워커 등록 성공(`scope: http://localhost:5174/`) 확인
+- `fix/fridge-recipe-polish` 브랜치로 커밋해 [PR #1](https://github.com/baejh3333-del/fridge-recipe-app/pull/1) 생성(`baejh3333-del/fridge-recipe-app` 저장소, `main` 대상)

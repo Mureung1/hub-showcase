@@ -61,17 +61,20 @@ export const initialFridge = {
     ]
   },
 
+  // ramen(라면 사리)은 fresh 카테고리라 qtyAmount/qtyUnit이어야 하는데, 예전엔 processed 형식
+  // (qtyLabel)으로 잘못 시딩돼 있었음 — enrichFridgeItem이 fresh 항목은 qtyAmount만 합산하므로
+  // 화면엔 "0개"로 표시되고, planDeduction도 qtyAmount가 없으면 무조건 배치 전체를 삭제해버렸음.
+  ramen: {
+    items: [
+      { qtyAmount: 2, qtyUnit: '개', purchased: '7/1', expiry: 'D-90', imminent: false }
+    ]
+  },
+
   // ── 가공식품 ────────────────────────────────
 
   soy: {
     items: [
       { qtyLabel: '1병', purchased: '7/1', expiry: null, imminent: false }
-    ]
-  },
-
-  ramen: {
-    items: [
-      { qtyLabel: '2개', purchased: '7/1', expiry: 'D-90', imminent: false }
     ]
   },
 

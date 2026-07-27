@@ -43,7 +43,12 @@ export default function ShoppingList() {
               {list.buy.map((it, i) => (
                 <div className="shop-row" key={i} onClick={() => toggleCheck(i)} style={{ cursor: 'pointer' }}>
                   <input type="checkbox" checked={checked[i] ?? true} onChange={() => toggleCheck(i)} />
-                  <div className="nm" style={{ opacity: checked[i] ? 1 : 0.4 }}>{it.name}<small>{it.uses}</small></div>
+                  <div className="nm" style={{ opacity: checked[i] ? 1 : 0.4 }}>
+                    {it.name}<small>{it.uses}</small>
+                    {it.actualCost < it.price && (
+                      <small style={{ color: 'var(--sub)' }}>실제 쓰는 양은 약 {it.actualCost.toLocaleString()}원어치, 나머지는 마트 최소 판매 단위(1팩) 때문에 같이 사는 거예요</small>
+                    )}
+                  </div>
                   <span className="pr" style={{ opacity: checked[i] ? 1 : 0.4 }}>{it.price.toLocaleString()}원</span>
                 </div>
               ))}

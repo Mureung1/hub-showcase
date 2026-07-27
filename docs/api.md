@@ -14,12 +14,13 @@
 | BE | 재고 CRUD, 영수증 OCR 결과 파싱·매칭, 레시피-재고 매칭 알고리즘, 조리완료 시 재고 일괄 차감 로직 | Node.js + Express |
 | DB | 재고(`fridge_items`)·레시피(`recipes`) 2개 테이블만 실제로 Supabase에 있음. 재료 마스터·영수증 이력은 DB가 아님(§5 참고) | PostgreSQL (Supabase) |
 | 외부 API | 영수증 OCR(품목명·수량 추출) | Naver Clova OCR(General) — BE가 프록시(`backend/src/ocr/clovaOcr.js`). 크레덴셜 미설정 시 Mock 폴백 |
+| 외부 API | 식자재 소매가 시세(`GET /api/prices`) | KAMIS(농산물유통정보) Open API — BE가 프록시(`backend/src/prices/`). 크레덴셜 미설정 또는 조회 실패 시 정적값 폴백 |
 
 **설계 전제**
 - MVP 4개 기능(나만의 냉장고 / 영수증 촬영 인식 / 레시피 리스트&필터 / 요리완료 재고차감)은 요청→응답 흐름표까지 상세 설계.
 - 2차 확장 기능(추천 재료 세트, 유통기한 알림, 식단 루틴, 가격 정보)은 전부 실제로 구현·연동됨(§7) — "API 개요(안)"이 아니라 현재 동작하는 실제 계약.
 - **인증/로그인은 범위 밖** — 단일 사용자 기준. `user_id` 같은 확장 대비 컬럼은 실제로 쓰이지 않음.
-- **외부 연동 1곳**: 영수증 OCR(Naver Clova). 식자재 시세(`GET /api/prices`)는 외부 API 연동 없이 정적 하드코딩(백로그 P2, 미착수).
+- **외부 연동 2곳**: 영수증 OCR(Naver Clova), 식자재 소매가 시세(`GET /api/prices`, KAMIS). 둘 다 크레덴셜 미설정 시 폴백(Mock/정적값)으로 서비스가 죽지 않게 설계.
 
 ---
 
@@ -214,11 +215,11 @@ recipes (레시피 — MAFRA 공공 API 출처 533종만 유지, 단일 테이�
 |---|---|---|
 | 7.1 추천 재료 세트 목록 | `GET /api/shopping/sets?match=all\|imminentRescue\|minCost\|ingredientShare\|sideShare\|fullWeek&level=all\|beginner\|mid&pickedIds=&multiplier=&shareMealCount=` | 5종의 세트(임박 재료 구출/최소 지출/식자재 쉐어링/밑반찬 쉐어링/일주일 전체 식단)를 동시에 계산해 반환. 알고리즘 상세는 [algorithms.md](./algorithms.md) 참고 |
 | 7.1b 추천 세트 → 장보기 리스트 | `GET /api/shopping/list?setId=&pickedIds=&multiplier=&shareMealCount=` | 세트 하나를 골랐을 때 실제 구매 목록·예상 금액 계산 |
-| 7.2 유통기한 임박 + 수량 부족 알림 | `GET /api/fridge/alerts` (서버 푸시는 미구현 — 브라우저 `Notification` API로 클라이언트에서만 처리) | `imminent` 항목 + 수량 부족 항목 계산. 크론/FCM 같은 서버 푸시는 없음 |
+| 7.2 유통기한 임박 + 수량 부족 알림 | `GET /api/fridge/alerts` (서버 푸시는 미구현 — 브라우저 `Notification` API로 클라이언트에서만 처리) | `imminent` 항목 + 수량 부족 항목 계산(`items`, `lowStockItems`). 불필요한 레시피 추천(`relatedRecipes`)을 제거하여 알림 전용 데이터로 응답 경량화 |
 | 7.3 일주일 식단 루틴 추천 | `POST /api/meal-plan/weekly` body `{ pickedIds, difficulty: 'any'\|'beginner'\|'mid'\|'high', type: 'meal'\|'side' }` (문서 초안은 `GET`이었지만 실제는 `POST`) | §6(algorithms.md) 설계대로 임박 재료 한계이득 탐욕(월·수) + 최소구매 3-조합 탐색(목·토·일)으로 7일 식단 구성. `type='side'`는 반찬 쉐어링용(픽 1개) |
 | 7.3b 식단 후보 목록 | `GET /api/meal-plan/candidates` | `meal-plan-picker` 화면의 레시피 검색 후보 전체 조회 |
 | 7.3c 식단 → 장보기 리스트 | `POST /api/meal-plan/shopping-list` body `{ weekPlanIds, multiplier }` | 확정된 7일 식단 기준 누적 장보기 리스트 계산 |
-| 7.4 식자재 가격 정보 | `GET /api/prices` | 외부 시세 API 연동 없이 정적 하드코딩 값 반환(`backend/src/store.js`의 `getPrices`) — 백로그 P2, 미착수 |
+| 7.4 식자재 가격 정보 | `GET /api/prices` | KAMIS(농산물유통정보) Open API 연동(`backend/src/prices/`). `KAMIS_API_KEY`/`KAMIS_CERT_ID` 미설정 시 또는 품목별 조회 실패 시 정적값으로 개별 폴백(`source:'kamis'\|'static'`로 응답에 표시). 24시간 인메모리 캐시. 상세 배경은 [가격API연동계획.md](./가격API연동계획.md) 참고 |
 
 ---
 

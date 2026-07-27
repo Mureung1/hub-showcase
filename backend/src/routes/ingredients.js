@@ -1,8 +1,10 @@
 import { Router } from 'express';
-import * as ingredientsController from '../controllers/ingredientsController.js';
+import { ingredients } from '../data/ingredients.js';
 
 const router = Router();
 
-router.get('/', ingredientsController.getIngredients);
+router.get('/', (req, res) => {
+  res.json({ ingredients });
+});
 
 export default router;

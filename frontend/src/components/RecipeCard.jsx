@@ -5,9 +5,7 @@ export default function RecipeCard({ recipe, matchPct, extra, pickCheck, onClick
   return (
     <div className="card tap recipe-item" onClick={onClick}>
       <div className="recipe-card">
-        <div className="thumb">
-          {recipe.image_url ? <img src={recipe.image_url} alt="" loading="lazy" /> : recipe.emoji}
-        </div>
+        <div className="thumb">{recipe.emoji}</div>
         <div className="info">
           <div className="name">
             {recipe.name}

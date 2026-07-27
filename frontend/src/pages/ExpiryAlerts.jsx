@@ -2,7 +2,14 @@ import { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../api';
 import Row from '../components/Row';
-import RecipeCard from '../components/RecipeCard';
+
+// VAPID 공개키는 base64url 문자열로 오지만 pushManager.subscribe는 Uint8Array를 요구한다.
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+}
 
 function getExpiryMessage(expiry) {
   if (!expiry) return '';
@@ -10,23 +17,39 @@ function getExpiryMessage(expiry) {
   if (expiry.startsWith('D+')) return `❌ 유통기한 지남 (${expiry})`;
   if (expiry === 'D-1') return '내일까지 드셔야 해요';
   if (expiry === 'D-2') return '모레까지 드셔야 해요';
-  if (expiry === 'D-3') return '3일 안에 실쿵이 좋아요';
+  if (expiry === 'D-3') return '3일 안에 드시는 게 좋아요';
   return `${expiry} 안에 드세요`;
 }
 
 export default function ExpiryAlerts() {
-  const { back, fridge, openRecipeDetail } = useApp();
-  const [data, setData] = useState({ items: [], lowStockItems: [], relatedRecipes: [] });
+  const { back, fridge } = useApp();
+  const [data, setData] = useState({ items: [], lowStockItems: [] });
 
-  const requestNotification = () => {
-    if (!('Notification' in window)) return alert('이 브라우저는 알림을 지원하지 않아요.');
-    Notification.requestPermission().then((permission) => {
-      if (permission === 'granted') {
-        new Notification('알림 설정 완료!', { body: '이제 재료가 상하기 전에 푸시 알림으로 알려드릴게요.' });
-      } else {
-        alert('알림 권한이 거부되었어요.');
+  const requestNotification = async () => {
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      return alert('이 브라우저는 푸시 알림을 지원하지 않아요.');
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return alert('알림 권한이 거부되었어요.');
+
+    try {
+      const { publicKey } = await api.getPushPublicKey();
+      if (!publicKey) {
+        // 서버에 VAPID 키가 없으면(로컬 개발 등) 서버 푸시는 못 켜지만, 즉석 알림으로라도 확인시켜준다.
+        new Notification('알림 설정 완료!', { body: '서버 푸시 키가 아직 설정되지 않아 이 알림만 확인용으로 띄워요.' });
+        return;
       }
-    });
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      const existing = await registration.pushManager.getSubscription();
+      const subscription = existing ?? await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+      await api.subscribePush(subscription.toJSON());
+      new Notification('알림 설정 완료!', { body: '유통기한이 D-2 이내가 되면 앱을 안 열어도 알려드릴게요.' });
+    } catch (err) {
+      alert(err.message || '알림을 설정하는 중 오류가 발생했어요.');
+    }
   };
 
   useEffect(() => { api.getExpiryAlerts().then(setData); }, [fridge]);
@@ -52,15 +75,6 @@ export default function ExpiryAlerts() {
             <Row key={`low_${f.id}`} emoji={f.emoji} name={`${f.name} ${f.qtyLabel}`} nameColor="#f5a623"
               meta="거의 다 썼어요" right={<span className="badge gray">부족</span>} />
           )) : <p style={{ fontSize: 13, color: 'var(--sub)' }}>부족한 재료가 없어요 👍</p>}
-        </div>
-
-        <div className="section-title" style={{ marginTop: 24 }}>임박 재료 소진 레시피 🍳</div>
-        <div>
-          {data.relatedRecipes.length ? data.relatedRecipes.map((r) => (
-            <RecipeCard key={r.id} recipe={r}
-              extra={<div className="meta">{r.usedNames.join('·')} 소진 · {r.levelLabel} · {r.time}분</div>}
-              onClick={() => openRecipeDetail(r.id)} />
-          )) : <p style={{ fontSize: 13, color: 'var(--sub)' }}>지금은 추천할 레시피가 없어요</p>}
         </div>
       </div>
     </section>
