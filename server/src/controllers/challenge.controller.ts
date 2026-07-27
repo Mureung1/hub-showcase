@@ -3,14 +3,17 @@ import { pickChallengeTopic } from '../lib/challenge-seed.js';
 import { getKstChallengeDateString } from '../lib/kst-date.js';
 import { prisma } from '../lib/prisma.js';
 
-export async function getTodayChallenge(_req: Request, res: Response, next: NextFunction) {
+export async function getTodayChallenge(req: Request, res: Response, next: NextFunction) {
   try {
+    const userId = req.user!.id;
     const date = getKstChallengeDateString();
-    const topic = pickChallengeTopic(date);
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const topic = pickChallengeTopic(`${userId}-${date}`, user?.preferredCategory);
 
     const challenge = await prisma.challenge.upsert({
-      where: { date },
-      create: { date, topic },
+      where: { userId_date: { userId, date } },
+      create: { userId, date, topic },
       update: {},
     });
 
