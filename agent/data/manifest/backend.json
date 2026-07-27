@@ -910,6 +910,82 @@
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
       "note": "패키지 플랫폼 위의 서버 로직 개발이다. 지표 명세 2.8에 따라 모집단에 넣고 platform_bound 로 표시한다"
+    },
+    {
+      "source_id": "src_gowid_be",
+      "url": "https://gowid.career.greetinghr.com/ko/o/214030",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "고위드",
+      "company_id": "co_gowid",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Backend Engineer (백엔드 엔지니어)",
+      "job_role_raw": "직군: Engineering / 제목: 백엔드 엔지니어",
+      "entry_label_raw": "경력 3년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "note": "법인 지출관리 구독형 소프트웨어를 제공하므로 기업군을 B2B SaaS 로 둔다"
+    },
+    {
+      "source_id": "src_qmit_be_mid",
+      "url": "https://qmit.career.greetinghr.com/ko/o/214520",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "큐엠아이티",
+      "company_id": "co_qmit",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[PLCO] 백엔드 개발자 / 3년 이상",
+      "job_role_raw": "직군: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 3년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_qmit_be_senior",
+      "url": "https://qmit.career.greetinghr.com/ko/o/100819",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "큐엠아이티",
+      "company_id": "co_qmit",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[PLCO] 백엔드 개발자 / 7년 이상",
+      "job_role_raw": "직군: 개발 / 제목: 백엔드 개발자",
+      "entry_label_raw": "경력 5년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
     }
   ],
   "unreachable": [
@@ -1056,6 +1132,18 @@
     {
       "source": "career.hyundai-autoever.com SAP 운영 공고",
       "reason": "개발 Spec 작성과 검수, 배포 주관이 주 업무이고 구현은 별도 개발조직이 수행한다"
+    },
+    {
+      "source": "doodlin.career.greetinghr.com",
+      "reason": "공고 3건에 백엔드가 없다"
+    },
+    {
+      "source": "whatap.career.greetinghr.com",
+      "reason": "검색에 색인된 공고 식별자가 404를 반환한다"
+    },
+    {
+      "source": "dwhale.career.greetinghr.com",
+      "reason": "사이트맵에 공고 상세가 없다"
     }
   ],
   "access_notes": [
