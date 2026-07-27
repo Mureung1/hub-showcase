@@ -176,8 +176,10 @@
 **설명**: `checklist_2.md` 0/1단계에 있던 "합성 데이터 고지 문구"가 README 어디에도 없다 (실제 862건 공고 + 규칙 기반 합성 스펙 필드라는 사실을 명시해야 함 — `checklist_2.md`의 확정 사항). API 문서화도 아직 없어 `POST/GET /api/gap-analysis`, `/api/bookmarks`(`#20`) 등 엔드포인트를 파악하려면 라우트 코드를 직접 읽어야 하는 상태. (`#19`는 Supabase Auth로 결정되면서 — 2026-07-21 — Express `/api/auth/*` 라우트 자체가 없어졌으니 여기서 문서화할 대상이 아니다. 대신 프론트가 Supabase를 직접 호출한다는 사실 자체는 README나 `docs/api.md`에 한 줄 언급 필요.)
 
 **완료 기준**
-- [ ] README에 합성 데이터 고지 문구 추가 ("JOB-ALIO 실제 862건 공고 + 규칙 기반 합성 스펙 필드" 명시)
-- [ ] README 또는 별도 `docs/api.md`에 엔드포인트별 요청/응답 스키마 정리 (`/api/gap-analysis`, `/api/bookmarks` — 각 이슈 완료 시점에 맞춰 추가. `#20`은 확장 트랙이라 미착수 시 해당 부분은 생략) + 인증은 Supabase Auth를 쓴다는 사실과 필요한 프론트 환경변수 한 줄 언급
+- [x] README에 합성 데이터 고지 문구 추가 ("JOB-ALIO 실제 862건 공고 + 규칙 기반 합성 스펙 필드" 명시)
+- [x] README 또는 별도 `docs/api.md`에 엔드포인트별 요청/응답 스키마 정리 (`/api/gap-analysis`, `/api/bookmarks` — 각 이슈 완료 시점에 맞춰 추가. `#20`은 확장 트랙이라 미착수 시 해당 부분은 생략) + 인증은 Supabase Auth를 쓴다는 사실과 필요한 프론트 환경변수 한 줄 언급
+
+**완료 (2026-07-27)**. 합성 데이터 고지 문구는 README 상단(프로젝트 소개 직후)에 인용 블록으로 추가. `docs/api.md`(신규) — `/api/health`, `/api/gap-analysis`(POST/GET), `/api/bookmarks`(POST/DELETE/GET/evaluate) 6개 엔드포인트 전부를 실제 라우트 코드(`gapAnalysis.routes.js`/`bookmarks.routes.js`/`gapAnalysisValidation.js`) 기준으로 문서화 — 요청/응답 예시, 검증 규칙, 인증 방식(`requireSupabaseAuth`가 매 요청마다 Supabase에 토큰 검증을 위임한다는 점) 포함. README의 Tech Stack 섹션도 실제와 맞게 갱신(Recharts→커스텀 SVG, "Backend (예정)"→Express, DB에 Supabase Postgres/Auth 추가, Vercel/Render 실제 배포 URL 추가).
 
 ---
 
