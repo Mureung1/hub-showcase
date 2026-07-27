@@ -16,10 +16,13 @@ from careersignal.domain.source_policy import SourceTier
 
 
 class ResearchStatus(StrEnum):
+    """`research_requests.status` 의 값 집합. 정의는 docs/erd.md 12장을 따른다."""
+
     OPEN = "open"
     SCHEDULED = "scheduled"
     FULFILLED = "fulfilled"
     REJECTED = "rejected"
+    EXPIRED = "expired"
 
 
 class ResearchRequest(BaseModel):

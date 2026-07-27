@@ -1111,9 +1111,9 @@ research_requests
 verification_results
   result_id PK, analysis_version FK NOT NULL
   target_type NOT NULL, target_id NOT NULL, check_name NOT NULL
-  autonomy_level CHECK IN ('A0','A1')
-  verdict CHECK IN ('pass','fail','warn')
-  severity CHECK IN ('blocking','warning','info')
+  autonomy_level NOT NULL CHECK IN ('A0','A1')
+  verdict NOT NULL CHECK IN ('pass','fail','skip')
+  severity NOT NULL CHECK IN ('blocking','warning','info')
   reason_code, repair_action, judge_model, detail jsonb
   INDEX (analysis_version, verdict, severity)
 
@@ -1121,7 +1121,8 @@ repair_orders
   order_id PK, agent_run_id FK NOT NULL, target_claim_id FK
   failed_check NOT NULL, reason NOT NULL
   action CHECK IN ('requery','add_counterevidence','swap_evidence','drop_claim',
-    'narrow_scope','lower_confidence','recompute_stat','fix_identifier')
+    'narrow_scope','lower_confidence','recompute_stat','fix_identifier',
+    'request_research')
   missing_evidence jsonb, requery_hint, round integer NOT NULL
 ```
 
