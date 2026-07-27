@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -34,20 +34,44 @@ Public consumer가 사라진 old academic workflow와 persistence를 Server에�
 
 ## Acceptance Criteria
 
-- [ ] Active Server composition과 production source에 old Assignment MCP host, managed Recipe, double-confirmation coordinator와 App academic apply caller가 없다.
-- [ ] Active Server store와 Browser projection이 Course, RawMaterial registry, durable Run·patch·confirmation·revision apply를 생성·읽기·복구하지 않는다.
-- [ ] Runtime public 및 testing contract에 private MCP input과 managed Skill injection이 없고 Python bridge가 thread-start MCP override 또는 `skills/extraRoots/set`을 수행하지 않는다.
-- [ ] Runtime public/testing contract, Python bridge와 exact SDK patch stack에 candidate root나 additional `writableRoots` 전달 경로가 없으며 exact prepared Git-root `cwd`의 native policy가 유지된다.
-- [ ] General clarification, native approval, generic Turn lifecycle, project-discovered Skill·MCP와 exact readiness tests는 contraction 뒤에도 green이다.
-- [ ] Existing legacy workspace bytes는 untouched이고 sibling v3 kernel contraction이 수행할 범위가 코드와 docs에서 명확히 남는다.
-- [ ] Production apps/packages의 active code와 tests에 removed academic workflow identity가 없으며 prepared temporary Git workspace trace와 public E2E가 계속 통과한다.
-- [ ] Exact SDK, bridge, Node Runtime, Server, Chat Shell과 repository-wide PR-ready gates가 최종 integrated state에서 모두 통과한다.
+- [x] Active Server composition과 production source에 old Assignment MCP host, managed Recipe, double-confirmation coordinator와 App academic apply caller가 없다.
+- [x] Active Server store와 Browser projection이 Course, RawMaterial registry, durable Run·patch·confirmation·revision apply를 생성·읽기·복구하지 않는다.
+- [x] Runtime public 및 testing contract에 private MCP input과 managed Skill injection이 없고 Python bridge가 thread-start MCP override 또는 `skills/extraRoots/set`을 수행하지 않는다.
+- [x] Runtime public/testing contract, Python bridge와 exact SDK patch stack에 candidate root나 additional `writableRoots` 전달 경로가 없으며 exact prepared Git-root `cwd`의 native policy가 유지된다.
+- [x] General clarification, native approval, generic Turn lifecycle, project-discovered Skill·MCP와 exact readiness tests는 contraction 뒤에도 green이다.
+- [x] Existing legacy workspace bytes는 untouched이고 sibling v3 kernel contraction이 수행할 범위가 코드와 docs에서 명확히 남는다.
+- [x] Production apps/packages의 active code와 tests에 removed academic workflow identity가 없으며 prepared temporary Git workspace trace와 public E2E가 계속 통과한다.
+- [x] Exact SDK, bridge, Node Runtime, Server, Chat Shell과 repository-wide PR-ready gates가 최종 integrated state에서 모두 통과한다.
 
 ## Verification
 
 - Targeted test or command: `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime && npm run validate:production-runtime -w @ay-ple/codex-chat-runtime && npm run validate:node-runtime -w @ay-ple/codex-chat-runtime && npm test -w @ay-ple/server`
 - Repository checks: `npm run lint -w @ay-ple/chat-shell && npm run typecheck && npm run build && npm test && npm run test:e2e && npm run check:docs-links`
 - Manual or live smoke: Target App에서 workspace reopen → normal Chat → Semantic Review → actual file checkpoint를 실행하고 logs·network·workspace state에 removed academic receipt와 private override가 없는지 확인한다.
+
+## Verification result
+
+| 구분 | 결과 |
+| --- | --- |
+| Server checkpoints | Academic orchestration 제거와 persistence 제거 단계마다 Server test 85개·typecheck를 통과했고 removed production consumer inventory가 0건이었다. |
+| Runtime targeted gate | `validate:exact-sdk`, `validate:production-runtime`, `validate:node-runtime`, Runtime·Server typecheck와 Server test를 통과했다. Production manifest를 변경된 Bridge source와 두 clean materialization으로 재귀속하고 post-run bundle non-mutation을 확인했다. |
+| Runtime survivor | Exact Git-root `cwd`, project-discovered Skill·MCP와 `propose_state_patch` readiness, text-only Product Turn, general `request_user_input`, native permission profile·Turn lifecycle와 process-group reap actual tests가 통과했다. Private MCP·managed Skill 입력은 native mutation 전에 거절되고 `skills/extraRoots/set` 호출이 없었다. |
+| Repository gate | `npm run lint -w @ay-ple/chat-shell && npm run typecheck && npm run build && npm test && npm run test:e2e && npm run check:docs-links`를 최종 integrated state에서 통과했다. Chat Shell E2E 3개와 camp demo E2E 8개가 통과했다. |
+| Actual smoke | `npm run test:prepared-workspace-product-actual`이 bootstrapped Git SemesterWorkspace의 normal Chat→inline Review→accept 전 no-mutation→AY-owned file checkpoint를 통과했고, `npm run test:product-entrypoint`가 reopen/recovery와 clean process teardown을 통과했다. |
+| Legacy bytes | 이 작업은 existing v2/v3 workspace 파일을 열거나 rewrite·delete하지 않았다. `@ay-ple/semester-workspace` decoder·v3 kernel 물리 제거는 sibling Workspace ticket 범위로 문서화했다. |
+| Code review | Fixed point `ed1009ad985c3363a7833d6c3a72b85a258a6380` 기준 초기 Standards 4건과 Spec 1건, 재검토 Standards 1건을 발견해 current README/provenance/identity/backlog 분류와 ticket·parent closeout을 모두 수정했다. 최종 재검토 지적과 baseline smell은 0건이었다. |
+
+## Result
+
+Server에서 old Assignment MCP host·managed Recipe·double-confirmation orchestration과 app-owned Course/material/Run/patch/confirmation persistence를 제거했다. Runtime public/testing contract와 Python bridge는 exact project root에서 native project discovery와 text-only Product Turn만 사용하며 private MCP input, thread-start config override, managed Skill injection과 capability-specific lifecycle projection을 제거했다. General Plan interaction, native permission·Turn lifecycle와 exact project MCP readiness는 보존했다. Existing v2/v3 bytes와 tracked First Assignment Skill은 건드리지 않았고 remaining legacy kernel 경계를 sibling Workspace ticket에 남겼다.
+
+구현 commit:
+
+- `8bd2b4e7b` — `refactor: remove academic server orchestration`
+- `9ec9914a0` — `refactor: remove academic server persistence`
+- `707590893` — `refactor: contract runtime project overrides`
+- `a891c791d` — `test: remove academic frame identity`
+- `bb1f33f57` — `docs: record academic runtime contraction`
 
 ## Blocked By
 

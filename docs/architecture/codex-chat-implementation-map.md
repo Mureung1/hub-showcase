@@ -25,7 +25,7 @@ Canonical lifecycle의 `active`는 exact prepared Git root에서 listener·Broke
 | Maintained Runtime은 무엇인가? | Official Python SDK를 재사용하는 `@ay-ple/codex-chat-runtime` 하나다. Generic engine Interface와 두 번째 adapter는 없다. |
 | Browser가 App Server와 직접 통신하는가? | 아니다. `@ay-ple/chat-shell`은 `@ay-ple/product-contract`를 통해 local Express Server의 `/api/product/*`만 사용한다. Native protocol·bridge·credential은 Browser bundle에 없다. |
 | In-app Browser OAuth가 구현됐는가? | 아니다. Public-preview Server route·account coordinator·Browser UI와 shared contract를 제거했다. Current dev·dogfood는 workspace-only Runtime에서 전역 `CODEX_HOME`의 기존 account readiness만 읽으며 Node package surface에는 login·logout capability가 없다. |
-| Native identity를 제품 ID로 다시 만드는가? | 아니다. Server가 발급한 opaque public operation·interaction·patch·decision binding만 Browser에 투영하고 native `threadId`·`turnId`·request identity는 통합 내부에 남는다. |
+| Native identity를 제품 ID로 다시 만드는가? | 아니다. Server가 발급한 opaque public operation·interaction binding만 Browser에 투영하고 native `threadId`·`turnId`·request identity는 통합 내부에 남는다. |
 | Runtime와 workspace는 어떻게 선택하는가? | Startup은 sibling `../.ay-ple/`의 verified Runtime과 canonical root contract를 사용한다. 첫 open·학기 변경은 explicit `--workspace` prepared Git root, 이후 인자 없는 실행은 registry active pointer를 fresh reopen한다. |
 | Durable product state는 어디에 있는가? | External `WorkspaceRegistry`는 canonical root와 active pointer만 보존하고 workspace의 tracked v4 identity가 일치할 때만 사용한다. 학업 결과는 user-owned Git workspace 파일과 AY-owned checkpoint에 남는다. Old current-v2 aggregate는 자동 변환하지 않는 contraction source다. |
 | First Assignment vertical은 닫혔는가? | Prepared Git workspace의 normal AY Chat→Interaction MCP proposal→inline Semantic Review→AY-owned actual-file apply/checkpoint가 deterministic Browser·actual Runtime trace로 검증됐다. |

@@ -66,7 +66,7 @@
   - [x] Completed rehearsal을 confidence evidence로 유지하고, claim commit 뒤 clean tracked state, exact root shape·tracked-zero, effective Chat path 비중첩과 관련 process 부재를 다시 확인한 뒤 승인된 exact roots만 literal serial command로 삭제한다.
   - [x] 삭제 뒤 bundle protection, repository PR-ready checks, canonical `npm run dev`와 root absence를 검증하고 no-migration·no-data-rollback·필요 시 fresh isolated Chat roots 재로그인 경계를 handoff에 기록한다.
 
-- [x] 첫 Assignment vertical에 필요한 Codex runtime sufficiency를 증명한다.
+- [x] 역사적 구현 근거: 첫 Assignment vertical에 필요한 Codex runtime sufficiency를 증명한다.
   - [x] [Runtime sufficiency envelope](../wayfinding/codex-chat-application-foundation/tickets/004-first-assignment-runtime-envelope.md)에 따라 explicit first-vertical workspace root와 두 TXT `SourceSelection`으로 Skill 기반 `ModelingInvocation`을 실행해 `ModelingRun` receipt를 남기는 경로와, 같은 native Turn에서 `ModelingRun`과 독립적인 EvidenceRef 연결 Assignment `StatePatch`를 `propose_state_patch`로 제안해 exact Plan mode Review·`UserConfirmation`을 거쳐 다시 열 수 있는 `SemesterModel`로 반영하는 흐름의 observable runtime contract를 역산한다.
   - [x] Exact App Server·official SDK·first-party surface와 current `CodexChatRuntime`·Server·Browser tracer가 required outcome을 어디까지 소유하는지 확인하고, 일반 Chat capability를 requirement로 자동 승격하지 않는다.
   - [x] Additive `CodexProductCapableRuntime`이 native work 없는 Account Readiness, exact `SkillInput` 하나와 bounded `TextInput` 하나, Plan mode의 `auto_review + workspace_write`, curated Skill·Plan·`propose_state_patch` MCP·user-input activity와 opaque answer/cancel을 제공한다. Existing text tracer의 `deny_all + read_only`는 final cutover 전까지 유지한다.
@@ -76,7 +76,7 @@
   - [x] Official Python SDK·ordered patches·Node supervision·Python bridge·네 Chat route와 fixed `deny_all + read_only` tracer를 `keep | adapt | replace | frozen limitation`으로 판정하고, official SDK와 supervised thin local-web integration을 product path로 유지한다.
   - [x] 제품 caller는 raw JSON-RPC, generated protocol type, secret과 bridge 내부 process 계약을 직접 사용하지 않으며, native execution state·Codex permission과 `ModelingRun`·Review·`UserConfirmation`의 학업 상태 소유권을 분리한다.
 
-- [x] 검증된 runtime seam 위에 AY-PLE 학업 제품 layer의 첫 수직 흐름을 완성한다.
+- [x] 역사적 구현 근거: 검증된 runtime seam 위에 AY-PLE 학업 제품 layer의 첫 수직 흐름을 완성한다.
   - [x] First Assignment vertical의 pre-public seam에서 명시적인 local path를 작업 root로 열고 `Course`를 식별한 뒤 같은 학기 상태를 다시 열 수 있으며 기존 사용자 파일을 임의로 바꾸지 않는다. 이 구현 증거는 임의 폴더를 canonical `SemesterWorkspace`로 채택하는 public admission 계약을 뜻하지 않는다.
   - [x] `RawMaterial`의 원본 또는 참조를 보존해 목록과 preview에 표시하고, 사용자가 다음 작업에 사용할 `SourceSelection`을 명시적으로 고를 수 있다.
   - [x] Versioned `ModelingRecipe`와 검증된 arguments, `SourceSelection`, 활성 workspace 맥락으로 일회성 `ModelingInvocation`을 만들고 native Codex input으로 번역하며, 각 실행 시도를 얇은 `ModelingRun` receipt로 남긴다. raw: `turn/start`.
@@ -86,7 +86,7 @@
   - [x] Recipe rendering, Codex 실행, `StatePatch` proposal·evidence validation과 제품 상태 반영 실패를 구분해 원본과 확인된 상태를 손상하지 않는 재시도 행동을 제공한다.
   - [x] 대표 TXT 자료의 선택부터 `propose_state_patch` Assignment 제안, exact Plan mode의 built-in `request_user_input` same-Turn Review, settled confirmation과 새로고침 뒤 확인된 상태 조회까지 deterministic Browser E2E를 닫았다. Revision·recovery semantics 고정 뒤 exact actual-child·local-provider와 명시적 isolated auth·fresh roots를 쓴 live-provider product trace가 complete action을 수동 복구 없이 통과했고, 답변 전 Browser·Server/runtime continuity loss는 `interrupted`·no-apply·명시적 retry로 정산했다. Canonical product-only cutover와 current v2 first durable compatibility baseline도 확정했다.
 
-- [x] 첫 vertical이 요구한 product-bound companion interaction만 완성한다.
+- [x] 역사적 구현 근거: 첫 vertical이 요구한 product-bound companion interaction만 완성한다.
   - [x] 선택한 surface에서 필요한 Account Readiness와 first-vertical explicit root activation만 제공하고 자체 account center나 generic conversation workspace를 만들지 않는다.
   - [x] 사용자가 대표 action의 준비·실행·중단·완료·실패·결과 불명을 이해할 수 있게 하되, 모든 native activity를 transcript에 1:1로 노출하지 않는다.
   - [x] Browser reload나 local process restart 뒤 transcript나 unanswered `request_user_input` prompt를 복원하지 않고, settled `UserConfirmation`·apply outcome·확인된 `SemesterModel`의 사실 상태를 다시 연다. 답변 전 continuity loss는 `interrupted`·no-apply로 표시하고 명시적 retry를 제시한다.

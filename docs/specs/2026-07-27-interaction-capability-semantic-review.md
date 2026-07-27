@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-ticketing
+- State: completed
 - Surface: local-spec
-- Next actor: /to-tickets
+- Next actor: none
 
 ## Problem Statement
 
@@ -396,6 +396,20 @@ Implementation 완료 시 `npm test`, `npm run typecheck`, `npm run build`, Chat
 ## Open Questions
 
 None.
+
+## Completion
+
+구현 ticket:
+
+- [001 — Interaction contract와 Built Adapter foundation](../tickets/2026-07-27-interaction-capability-semantic-review/001-interaction-contract-and-built-adapter-foundation.md)
+- [002 — Broker·Evidence held round trip](../tickets/2026-07-27-interaction-capability-semantic-review/002-broker-evidence-held-round-trip.md)
+- [003 — Runtime-neutral project MCP seam](../tickets/2026-07-27-interaction-capability-semantic-review/003-runtime-neutral-project-mcp-seam.md)
+- [004 — First Assignment built-in Skill](../tickets/2026-07-27-interaction-capability-semantic-review/004-first-assignment-built-in-skill.md)
+- [005 — Inline Semantic Review vertical](../tickets/2026-07-27-interaction-capability-semantic-review/005-inline-semantic-review-vertical.md)
+- [006 — Prepared temporary Git workspace product trace](../tickets/2026-07-27-interaction-capability-semantic-review/006-prepared-temporary-git-workspace-product-trace.md)
+- [007 — Joint public cutover](../tickets/2026-07-27-interaction-capability-semantic-review/007-joint-public-cutover.md)
+- [008 — Academic public surface contraction](../tickets/2026-07-27-interaction-capability-semantic-review/008-academic-public-surface-contraction.md)
+- [009 — Academic persistence·Runtime contraction](../tickets/2026-07-27-interaction-capability-semantic-review/009-academic-persistence-runtime-contraction.md)
 
 ## Further Notes
 
