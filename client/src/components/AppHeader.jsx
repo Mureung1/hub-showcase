@@ -2,8 +2,17 @@ import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 // 상단 헤더 네비게이션 컴포넌트
-const AppHeader = ({ currentTab = 'community', onTabChange }) => {
-  const { currentUser, toggleRole } = useAuth();
+const AppHeader = ({ currentTab = 'community', onTabChange, onLoginClick }) => {
+  const { currentUser, isLoggedIn, logout } = useAuth();
+
+  // 로그인 필요 탭 클릭 처리
+  const handleProtectedTab = (tab) => {
+    if (!isLoggedIn) {
+      if (onLoginClick) onLoginClick();
+      return;
+    }
+    if (onTabChange) onTabChange(tab);
+  };
 
   return (
     <header className="app-header">
@@ -12,48 +21,43 @@ const AppHeader = ({ currentTab = 'community', onTabChange }) => {
       </div>
       <nav className="web-nav" style={{ flexShrink: 0 }}>
         <button type="button" className={`web-nav__item ${currentTab === 'community' ? 'active' : ''}`} onClick={() => { if(onTabChange) onTabChange('community'); }}>커뮤니티</button>
-        <button type="button" className={`web-nav__item ${currentTab === 'chat' ? 'active' : ''}`} onClick={() => { if(onTabChange) onTabChange('chat'); }}>1:1 대화</button>
-        <button type="button" className="web-nav__item">내 프로필</button>
+        <button type="button" className={`web-nav__item ${currentTab === 'chat' ? 'active' : ''}`} onClick={() => handleProtectedTab('chat')}>1:1 대화</button>
+        <button type="button" className={`web-nav__item ${currentTab === 'profile' ? 'active' : ''}`} onClick={() => handleProtectedTab('profile')}>내 프로필</button>
       </nav>
-      <div className="app-header__actions" style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px' }}>
-        {currentUser && (
-          <button 
-            onClick={toggleRole}
+      <div className="app-header__actions" style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px' }}>
+        {isLoggedIn ? (
+          <>
+
+            {/* 유저 아이디 표시 */}
+            <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontWeight: '500' }}>
+              {currentUser?.username || currentUser?.email || '유저'}
+            </span>
+            {/* 로그아웃 버튼 */}
+            <button
+              onClick={logout}
+              style={{
+                padding: '6px 12px', fontSize: '12px', fontWeight: '600',
+                color: 'var(--color-text-secondary)', backgroundColor: '#F3F4F6',
+                border: '1px solid var(--color-divider)', borderRadius: '16px', cursor: 'pointer'
+              }}
+            >
+              로그아웃
+            </button>
+          </>
+        ) : (
+          /* 비로그인 시 로그인/회원가입 버튼 */
+          <button
+            onClick={onLoginClick}
             style={{
-              padding: '4px 10px',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              color: 'var(--color-primary-orange)',
-              backgroundColor: 'var(--color-tag-bg)',
-              border: '1px solid var(--color-primary-orange)',
-              borderRadius: '16px',
-              cursor: 'pointer'
+              padding: '8px 16px', fontSize: '13px', fontWeight: 'bold',
+              color: '#fff', backgroundColor: 'var(--color-primary-cta)',
+              border: 'none', borderRadius: '20px', cursor: 'pointer',
+              transition: 'background-color 0.2s'
             }}
-            title="클릭하여 역할 전환 (임시 테스트용)"
           >
-            {currentUser.role === 'host' ? '👑 방장' : '🤝 도와주는 사람'} 🔄
+            로그인 / 회원가입
           </button>
         )}
-        <button 
-          className="icon-btn" 
-          title="검색"
-          onClick={() => {
-            if (onTabChange && currentTab !== 'community') {
-              onTabChange('community');
-            }
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-        </button>
-        <button className="icon-btn" title="마이페이지">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-        </button>
       </div>
     </header>
   );

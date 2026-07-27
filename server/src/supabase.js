@@ -26,6 +26,7 @@ if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your_supabase_') || su
 
 // Simple in-memory mock database state
 const mockDb = {
+  chat_requests: [],
   posts: [
     {
       id: '1',
@@ -49,7 +50,8 @@ const mockDb = {
     }
   ],
   chats: [],
-  messages: []
+  messages: [],
+  profiles: []
 };
 
 export { supabase, isMock, mockDb };

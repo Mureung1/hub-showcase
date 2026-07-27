@@ -69,7 +69,7 @@ const PostCard = ({ post, onClick }) => {
       {/* 카드 하단: 작성자 정보 + 메타 */}
       <div className="feed-card-footer">
         <span className="author-info">
-          {post.authorName || '익명'} ({post.grade_tag || post.authorGrade || '학년'})
+          익명 ({post.grade_tag || post.authorGrade || '학년'})
         </span>
         <div className="card-meta-right">
           <span className="meta-item">
