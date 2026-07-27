@@ -51,7 +51,7 @@ App은 interaction round trip을 소유하고, Skill과 AY는 workflow와 결과
 | 순서 | 사용자 경험 | 소유자 |
 | --- | --- | --- |
 | 1 | 사용자가 한 학기 Git repository를 SemesterWorkspace로 선택한다. | App은 active path를 기록하고 Codex의 exact `cwd`로 연결한다. |
-| 2 | Init Skill이 필요한 최소 `AGENTS.md`, `workspace-state.json`과 Git 준비를 돕는다. | AY·Skill이 일반 file·Git 도구를 사용한다. |
+| 2 | Init Skill이 필요한 최소 `AGENTS.md`, `workspace-state.json`, workspace Skill copy와 Git 준비를 돕는다. | AY·Skill이 일반 file·Git 도구를 사용하고 설치 결과를 workspace history에 남긴다. |
 | 3 | 사용자가 AY에게 새 과제를 찾아 정리해 달라고 요청한다. | AY가 실제 공지와 계획서를 읽고 작업을 계획한다. |
 | 4 | AY가 `propose_state_patch`를 호출한다. | Interaction MCP Module이 도메인 중립적인 semantic before/after change와 선택적인 `EvidenceRef`를 Review UI로 투영한다. |
 | 5 | 사용자가 수락·수정 요청·거절한다. | App이 `accept | revise | reject`와 feedback을 같은 MCP call에 반환한다. |
@@ -102,6 +102,8 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 | 변경 history와 rollback | Git commit history |
 | Known·active SemesterWorkspace | Sibling `../.ay-ple/`의 `WorkspaceRegistry` |
 | Runtime payload·cache·transient operation state | Sibling `../.ay-ple/` |
+| AY-PLE 제품 Skill source catalog | `hub/skills/` |
+| 해당 학기에서 실행하는 Skill byte | SemesterWorkspace의 Git-tracked `.agents/skills/` |
 | Codex account·config·session | 사용자의 기존 `~/.codex/` |
 | Pending InteractionCapability | 현재 Turn에 결합된 Interaction MCP Module memory |
 
@@ -116,7 +118,7 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 1. 사용자의 기존 `~/.codex/` account readiness를 확인한다.
 2. 사용자가 기존 또는 새 학기 directory를 명시적으로 선택한다.
 3. App이 canonical path를 `WorkspaceRegistry`의 known·active workspace로 기록한다.
-4. 새 directory라면 사용자가 init Skill을 실행해 그 자리에서 Git과 최소 workspace file을 준비한다.
+4. 새 directory라면 사용자가 init Skill을 실행해 그 자리에서 Git·최소 workspace file과 선택한 `.agents/skills/` copy를 준비한다.
 5. 준비된 Git root를 Codex project root와 정상 thread의 고정 `cwd`로 연결한다. 하위 directory는 작업 대상일 뿐 별도 cwd가 아니다.
 
 App은 Git repository 생성·cleanliness·commit 정책을 별도 subsystem으로 구현하지 않는다. AY는 `AGENTS.md`의 간단한 지침에 따라 작업의 자연스러운 checkpoint를 자율적으로 판단한다.
