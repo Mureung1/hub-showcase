@@ -30,7 +30,6 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--pending-operation-limit", type=int, default=64)
     parser.add_argument("--control-operation-reserve", type=int, default=8)
     parser.add_argument("--account-operation-timeout-ms", type=int, default=30_000)
-    parser.add_argument("--login-attempt-timeout-ms", type=int, default=10 * 60 * 1000)
     parser.add_argument("--client-name", default="ay-ple")
     parser.add_argument("--client-title", default="AY-PLE")
     parser.add_argument("--client-version", default="0.0.0")
@@ -122,7 +121,6 @@ async def _run(args: argparse.Namespace) -> int:
         client_name=args.client_name,
         client_title=args.client_title,
         client_version=args.client_version,
-        reserve_chatgpt_login_completion=True,
         opt_out_notification_methods=tuple(
             sorted(
                 set(NOTIFICATION_MODELS)
@@ -147,7 +145,6 @@ async def _run(args: argparse.Namespace) -> int:
         pending_operation_limit=args.pending_operation_limit,
         control_operation_reserve=args.control_operation_reserve,
         account_operation_timeout_ms=args.account_operation_timeout_ms,
-        login_attempt_timeout_ms=args.login_attempt_timeout_ms,
     )
     writer_task = asyncio.create_task(
         _write_stdout(output, start_delay_ms=args.stdout_start_delay_ms)
