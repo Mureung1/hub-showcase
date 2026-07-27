@@ -1,14 +1,13 @@
 import { analysisCategoryFor } from "./categoryMapping";
 import type { Category, CategorySelection } from "./types";
 
-const supportedCategories: readonly Category[] = ["카페", "음식점", "베이커리", "편의점"];
-
 export function quickCategorySelection(category: Category): CategorySelection {
+  const analysisCategory = analysisCategoryFor(category);
   return {
     name: category,
     code: null,
-    analysisCategory: category,
-    coverage: "full",
+    analysisCategory,
+    coverage: analysisCategory ? "full" : "partial",
   };
 }
 
@@ -18,7 +17,7 @@ export function storeCategorySelection(
 ): CategorySelection {
   const name = categoryName?.trim() || "업종 미분류";
   const analysisCategory = analysisCategoryFor(categoryName, categoryCode);
-  const isExactSupportedCategory = supportedCategories.includes(name as Category);
+  const isExactSupportedCategory = analysisCategory === name;
 
   return {
     name,
@@ -29,7 +28,7 @@ export function storeCategorySelection(
 }
 
 export function categoryMatchesSelection(categoryName: string, selection: CategorySelection) {
-  if (categoryName === selection.name) return true;
+  if (categoryName === selection.name || categoryName.includes(selection.name)) return true;
   return (
     selection.coverage === "full" &&
     analysisCategoryFor(categoryName) === selection.analysisCategory
