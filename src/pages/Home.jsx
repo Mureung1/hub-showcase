@@ -37,6 +37,11 @@ const cheapestId = allRecipesByPrice[0]?.id
 const typeOptions = Object.entries(TYPE_LABELS).map(([id, label]) => ({ id, label }))
 const timeOptions = TIME_FILTERS.map(({ id, label }) => ({ id, label }))
 
+// 이번 세션에서 홈 화면 로딩 애니메이션을 한 번이라도 보여줬는지 — 모듈 스코프라 컴포넌트가
+// 언마운트(레시피 상세로 이동 등)돼도 유지된다. 두 번째부터는 레시피 상세↔홈을 오갈 때
+// 영상을 처음부터 다시 보여주지 않고 곧바로 목록을 보여준다.
+let hasPlayedLoadingAnimation = false
+
 function Home() {
   const [searchParams] = useSearchParams()
   // 헤더 "로딩" 링크(?loading=1)로 들어오면 fetch 없이 로딩 화면만 계속 보여준다 — 실제 재료를
@@ -55,8 +60,10 @@ function Home() {
   const [status, setStatus] = useState('loading')
   // fetch 결과와 "로딩 영상이 한 바퀴 다 돌았는지"를 각각 별도로 기다렸다가, 둘 다 끝난 뒤에만
   // status를 'done'으로 바꾼다 — fetch가 아무리 빨리 끝나도 영상이 중간에 끊기지 않게 하기 위함.
+  // 이미 한 번 재생한 세션이면(skipLoadingAnimation) 영상 완료를 기다리지 않고 fetch만 끝나면 바로 넘어간다.
+  const skipLoadingAnimation = !forceLoading && hasPlayedLoadingAnimation
   const fetchResultRef = useRef(null)
-  const videoLoopedRef = useRef(false)
+  const videoLoopedRef = useRef(skipLoadingAnimation)
 
   function handleToggleLike(recipeId) {
     setLikedIds((prev) => {
@@ -73,13 +80,14 @@ function Home() {
     setShoppingRecipes(shopping)
     setOtherRecipes(others)
     setStatus('done')
+    hasPlayedLoadingAnimation = true
   }
 
   useEffect(() => {
     if (forceLoading) return // status가 초기값 'loading'에서 안 바뀌게 그대로 둔다
 
     fetchResultRef.current = null
-    videoLoopedRef.current = false
+    videoLoopedRef.current = skipLoadingAnimation
 
     const selectedIds = loadFridgeSelection()
     // 조미료(category: 'seasoning')는 거의 모든 레시피에 들어가 있어서 추천 매칭에 포함시키면
@@ -102,7 +110,7 @@ function Home() {
         fetchResultRef.current = result
         finishLoadingIfReady()
       })
-  }, [forceLoading])
+  }, [forceLoading, skipLoadingAnimation])
 
   function handleLoadingVideoLoopEnd() {
     videoLoopedRef.current = true
@@ -134,11 +142,12 @@ function Home() {
         <TopNav />
       </div>
 
-      <main className={status === 'loading' ? '' : 'mx-auto max-w-[960px] pb-8'}>
+      <main className={status === 'loading' && !skipLoadingAnimation ? '' : 'mx-auto max-w-[960px] pb-8'}>
         {status === 'loading' ? (
-          // forceLoading(개발용 ?loading=1)이든 실제 fetch 중이든, 끝날 때까지 전체화면 로딩만 보여주고
-          // 배너·필터·추천 리스트는 로딩이 끝난 뒤에야 나타난다.
-          <LoadingIndicator onFirstLoopEnd={handleLoadingVideoLoopEnd} />
+          // forceLoading(개발용 ?loading=1)이든 이번 세션 첫 로딩이든, 끝날 때까지 전체화면 로딩만
+          // 보여주고 배너·필터·추천 리스트는 로딩이 끝난 뒤에야 나타난다. 이미 한 번 본 세션이면
+          // (skipLoadingAnimation) 영상 없이 fetch가 끝나는 대로 곧바로 다음 화면으로 넘어간다.
+          skipLoadingAnimation ? null : <LoadingIndicator onFirstLoopEnd={handleLoadingVideoLoopEnd} />
         ) : (
           <>
         <PromoBanner />
