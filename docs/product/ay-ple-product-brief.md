@@ -123,8 +123,8 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 3. 사용자가 기존 또는 새 학기 directory를 명시적으로 선택한다.
 4. 새 directory라면 hub에서 native discovery한 Bootstrap Skill이 그 자리에서 Git·최소 workspace file, 선택한 `.agents/skills/` copy와 정적인 `.codex/config.toml`을 준비한다.
 5. 사용자가 명시적으로 activation을 요청하면 App이 Bootstrap Runtime·thread를 종료한다.
-6. App이 준비된 Git root를 project root와 고정 `cwd`로 쓰는 새 Workspace Runtime·thread를 연다.
-7. 새 Runtime이 준비되면 canonical root를 `WorkspaceRegistry`의 known·active workspace로 기록한다. 하위 directory는 작업 대상일 뿐 별도 cwd가 아니며, Bootstrap thread나 다른 학기 thread를 이 root로 이동시키지 않는다.
+6. App이 준비된 Git root를 project root와 고정 `cwd`로 쓰는 새 Workspace Runtime·thread를 `workspace-write`로 연다. Native App Server가 trust 미지정 exact Git root를 기록하고 project config를 reload한다.
+7. 새 Runtime이 준비되면 canonical root를 `WorkspaceRegistry`의 known·active workspace로 기록한다. 명시적 `untrusted`는 덮어쓰지 않고, 하위 directory는 작업 대상일 뿐 별도 cwd가 아니며, Bootstrap thread나 다른 학기 thread를 이 root로 이동시키지 않는다.
 
 App은 두 Runtime phase와 active pointer 전환만 소유한다. Git repository 생성·cleanliness·commit 정책을 별도 subsystem으로 구현하지 않으며, Bootstrap과 AY가 일반 file·Git 도구 및 `AGENTS.md`의 간단한 지침에 따라 작업한다.
 

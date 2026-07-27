@@ -77,7 +77,7 @@ enabled_tools = ["propose_state_patch"]
 
 이 예시는 ownership을 보여주며 exact path·env 이름·startup policy는 implementation spec이 소유한다. Config에는 secret이나 process-local 값을 넣지 않는다. AY-PLE이 Codex child를 시작할 때 current App endpoint·token·Runtime binding을 environment로 주입하고, Codex가 `env_vars` allowlist에 따라 STDIO Adapter로 전달한다.
 
-따라서 native config precedence와 user/project MCP가 그대로 작동한다. App은 `--config`, thread-start override 또는 process-wide Skill root로 전체 context를 대체하지 않는다. Project `.codex/config.toml`은 trusted project에서만 load되므로 activation lifecycle은 native trust를 명시적으로 다뤄야 한다.
+따라서 native config precedence와 user/project MCP가 그대로 작동한다. App은 `--config`, thread-start override 또는 process-wide Skill root로 전체 context를 대체하지 않는다. Project `.codex/config.toml`은 trusted project에서만 load된다. Bootstrap은 global trust를 수정하지 않고, exact Git root와 `workspace-write`를 요청하는 정상 thread start가 current pinned App Server의 native trust write와 same-start config reload를 사용한다. 명시적 `untrusted`는 보존한다.
 
 ## Capability 설계 규칙
 

@@ -21,6 +21,7 @@ First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능�
 - Bootstrap Skill은 Git-tracked `<SemesterWorkspace>/.codex/config.toml`에 AY-PLE Interaction MCP의 정적 project declaration을 설치한다. 이 declaration은 hub-owned STDIO entrypoint, 전달할 environment variable 이름, capability allowlist와 startup policy만 표현한다. Exact command path, env 이름과 required policy는 implementation spec이 고정한다.
 - Project config에는 endpoint, token, native identity나 다른 secret·process-local 값을 기록하지 않는다. AY-PLE Runtime은 Codex child environment에 현재 App instance의 endpoint·token·Runtime binding을 넣고, MCP declaration의 `env_vars`가 이를 STDIO Adapter에 전달한다.
 - App은 Interaction MCP를 연결하기 위해 thread-start config, `--config`나 equivalent high-precedence overlay로 project MCP configuration을 다시 만들지 않는다. Global·project config layering과 trusted-project loading은 Codex native behavior를 따르며, App-owned dynamic binding만 process environment로 공급한다.
+- Bootstrap Skill은 전역 `~/.codex/config.toml`의 project trust를 직접 수정하지 않는다. 정상 Workspace thread를 exact Git root `cwd`와 `workspace-write` permission으로 시작하면 현재 pinned App Server가 trust가 미지정된 exact Git root를 native user config에 기록하고 project config를 같은 start 안에서 reload한다. 명시적인 `untrusted`는 덮어쓰지 않는다.
 - Skill과 AY는 workflow의 순서, interaction을 요청할 시점, 응답의 해석과 다음 행동을 소유한다. App은 학업 workflow engine, prompt sequence 또는 결과 적용기를 소유하지 않는다.
 - AY는 interaction 결과에 따라 SemesterWorkspace의 실제 파일을 일반 file tool로 변경하고, [ADR 0018](0018-adopt-user-owned-git-semester-workspaces.md)의 Git 지침에 따라 의미 있는 checkpoint를 commit한다. App은 수락 결과를 대신 `workspace-state.json`에 적용하거나 Git commit을 만들지 않는다.
 - 각 MCP tool은 하나의 구체적인 사용자 capability를 typed input과 closed result union으로 표현한다. 하나의 범용 event bus, 임의 schema renderer 또는 모든 App event를 운반하는 `ProductInteraction` envelope은 만들지 않는다.
@@ -52,6 +53,7 @@ First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능�
 | 모든 상호작용을 하나의 generic event/schema protocol로 통합 | 거절 | 작은 Interface 뒤에 복잡성을 숨기지 못하고 UI·workflow·transport variation을 caller에게 떠넘긴다. |
 | 모든 사용자 질문을 built-in `request_user_input`으로 처리 | 거절 | 일반 clarification에는 적합하지만 원본 preview, diff, evidence와 capability-specific action을 표현하는 AY-PLE UI를 제공하지 못한다. |
 | App이 매 thread마다 전체 MCP config를 override | 거절 | Project-native declaration과 사용자 config precedence를 우회하고 App이 Skill·MCP discovery까지 소유하게 한다. Dynamic endpoint·secret은 config가 아니라 Runtime environment로 결합할 수 있다. |
+| Bootstrap Skill이 `../workspace/` parent를 전역 trust로 기록 | 거절 | Current Codex trust lookup은 하위 Git repository로 parent trust를 상속하지 않는다. Exact workspace thread start의 native trust가 실제 Git root를 기록하고 config를 즉시 reload한다. |
 
 ## 결과
 
