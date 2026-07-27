@@ -8,7 +8,7 @@ Unity 게임 개발을 지원하는 Multi-Agent 기반 AI 개발 지원 도구. 
 - **Server**: Node.js + Express + TypeScript (`server/`)
 - **데이터 저장**: 별도 DB 없이 `server/data/*.json` 파일 직접 읽기/쓰기
 - **인증**: GitHub OAuth App (Authorization Code Flow) — PAT 방식 아님
-- **AI**: Anthropic SDK (`@anthropic-ai/sdk`)
+- **AI**: Google Gen AI SDK (`@google/genai`, Gemini) — 2주차 Day7에 Claude에서 전환됨
 - **코드 분석**: `tools/analyzer/` 의 .NET 콘솔 앱 (Roslyn, `Microsoft.CodeAnalysis.CSharp`, Syntax 전용 파싱). server가 `child_process.spawn`으로 실행
 - **중복 코드 탐지**: `jscpd`
 
