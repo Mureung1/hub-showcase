@@ -333,6 +333,7 @@ class ManifestTests(unittest.TestCase):
                     "0005-strict-response-classification",
                     "0006-plan-user-input-seam",
                     "0007-thread-start-settings",
+                    "0008-thread-mcp-status",
                 ],
             )
             self.assertEqual(
@@ -349,7 +350,6 @@ class ManifestTests(unittest.TestCase):
             self.assertEqual(
                 set(patched_manifest["patches"][-1]["changed_files"]),
                 {
-                    "sdk/python/scripts/update_sdk_artifacts.py",
                     "sdk/python/src/openai_codex/api.py",
                     "sdk/python/tests/test_public_api_runtime_behavior.py",
                 },
