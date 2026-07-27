@@ -3,8 +3,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const campuses = JSON.parse(await readFile(resolve(root, 'src/data/live-campuses.json'), 'utf8'));
-const manifest = JSON.parse(await readFile(resolve(root, 'src/data/generated-road-routes.json'), 'utf8'));
+const campuses = JSON.parse(await readFile(resolve(root, 'src/shared/data/live-campuses.json'), 'utf8'));
+const manifest = JSON.parse(await readFile(resolve(root, 'src/shared/data/generated-road-routes.json'), 'utf8'));
 const targetCampusIds = ['knu-daegu', 'pnu-jangjeon', 'snu-gwanak', 'jejunu-ara', 'cbnu-gaesin', 'jnu-yongbong', 'jbnu-jeonju'];
 const errors = [];
 

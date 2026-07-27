@@ -3,8 +3,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const manifestPath = resolve(root, 'src/data/live-campuses.json');
-const outputPath = resolve(root, 'src/data/generated-road-routes.json');
+const manifestPath = resolve(root, 'src/shared/data/live-campuses.json');
+const outputPath = resolve(root, 'src/shared/data/generated-road-routes.json');
 const targetCampusIds = new Set(['knu-daegu', 'pnu-jangjeon', 'snu-gwanak', 'jejunu-ara', 'cbnu-gaesin', 'jnu-yongbong', 'jbnu-jeonju']);
 const osrmBaseUrl = (process.env.OSRM_BASE_URL ?? 'https://router.project-osrm.org').replace(/\/$/, '');
 const profile = 'driving';

@@ -17,7 +17,7 @@ assertMonth(month);
 if (!ctpvCd || !sggCd || ids.length === 0) throw new Error('--ctpv, --sgg, --ids=id1,id2 형식으로 입력하세요.');
 
 const serviceKey = await getServiceKey(projectRoot);
-const mappingPath = path.join(projectRoot, 'src/data/public-stop-mappings.json');
+const mappingPath = path.join(projectRoot, 'src/shared/data/public-stop-mappings.json');
 const mapping = await readFile(mappingPath, 'utf8').then(JSON.parse);
 const knownNames = Object.values(mapping.mappings ?? {}).flatMap((entry) => [
   { sttnId: entry.sttnId, sourceName: entry.sourceName },

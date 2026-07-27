@@ -6,8 +6,8 @@ import { fetchAllPages, getServiceKey } from './lib/public-data-client.mjs';
 import { aggregateMonthlyItems, scoreCampusUsage, scoreDirectionalUsage } from './lib/stop-usage.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const mappingPath = path.join(projectRoot, 'src/data/public-stop-mappings.json');
-const outputPath = path.join(projectRoot, 'src/data/generated-stop-usage.json');
+const mappingPath = path.join(projectRoot, 'src/shared/data/public-stop-mappings.json');
+const outputPath = path.join(projectRoot, 'src/shared/data/generated-stop-usage.json');
 
 installCliErrorHandler('usage');
 const serviceKey = await getServiceKey(projectRoot);

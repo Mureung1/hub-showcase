@@ -14,8 +14,8 @@ import { fetchAllPages, getServiceKey } from './lib/public-data-client.mjs';
 import { aggregateMonthlyItems, normalizeStopName } from './lib/stop-usage.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const campusPath = path.join(projectRoot, 'src/data/live-campuses.json');
-const mappingPath = path.join(projectRoot, 'src/data/public-stop-mappings.json');
+const campusPath = path.join(projectRoot, 'src/shared/data/live-campuses.json');
+const mappingPath = path.join(projectRoot, 'src/shared/data/public-stop-mappings.json');
 const reportPath = path.join(projectRoot, 'reports/directional-stop-candidates.json');
 
 installCliErrorHandler('directions');
