@@ -3,16 +3,14 @@ import { Link, useOutletContext } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getRecommendationHistory, addFavorite, removeFavorite } from '../api/index.js'
 import IssueCard from './IssueCard.jsx'
-import { DIFFICULTY_META } from '../utils/format.js'
-import { TOPIC_OPTIONS } from '../utils/preferences.js'
 
 const ALL = 'all'
-const SESSIONS_PER_PAGE = 5
+const ITEMS_PER_PAGE = 5
 
-// 8 · 전체 검색 이력 — 스텝퍼 흐름 밖 부가 화면. 지금까지 검색한 모든 세션을 최신순으로 보여주고
-// (Recommendation은 삭제 없이 계속 쌓이는 설계라 즐겨찾기 안 한 이슈도 항상 여기서 볼 수 있다),
-// 언어/즐겨찾기 필터와 페이지네이션은 전부 이미 받아온 응답을 프론트에서 처리한다(별도 API 없음).
-// 필터는 언어 하나만 둔다 — 주제까지 더하니 화면이 복잡해진다는 피드백으로 단순화했다(2026-07-27)
+// 8 · 전체 검색 이력 — 스텝퍼 흐름 밖 부가 화면. 지금까지 검색한 모든 이슈를 최신순 평탄화 목록으로
+// 보여주고(Recommendation은 삭제 없이 계속 쌓이는 설계라 즐겨찾기 안 한 이슈도 항상 여기서 볼 수 있다),
+// 언어/즐겨찾기 필터와 페이지네이션(카드 5장 = 1페이지)은 전부 이미 받아온 응답을 프론트에서 처리한다
+// (별도 API 없음). 필터는 언어 하나만 둔다 — 주제까지 더하니 복잡해진다는 피드백으로 단순화했다(2026-07-27)
 function History() {
   const { githubId, setRecommendation, setSelectedItem } = useOutletContext()
   const [favoritesOnly, setFavoritesOnly] = useState(false)
@@ -51,20 +49,20 @@ function History() {
       .filter((session) => session.items.length > 0)
   }, [sessions])
 
-  const filteredSessions = useMemo(() => {
+  // 세션 그룹 대신 이슈 카드 단위로 평탄화한다 — "5개를 한 페이지로"는 세션이 아니라 카드 5장 기준이라,
+  // 세션 경계와 페이지 경계가 어긋날 수 있다(한 세션의 카드 일부만 이번 페이지에 걸치는 것도 정상).
+  // 카드마다 어느 세션(조건) 소속인지는 select 시 recommendation으로 세팅해야 해서 함께 들고 있는다
+  const filteredItems = useMemo(() => {
     return dedupedSessions
-      .map((session) => ({
-        ...session,
-        items: session.items.filter(
-          (item) =>
-            (!favoritesOnly || item.isFavorited) && (languageFilter === ALL || item.primaryLanguage === languageFilter),
-        ),
-      }))
-      .filter((session) => session.items.length > 0)
+      .flatMap((session) => session.items.map((item) => ({ item, session })))
+      .filter(
+        ({ item }) =>
+          (!favoritesOnly || item.isFavorited) && (languageFilter === ALL || item.primaryLanguage === languageFilter),
+      )
   }, [dedupedSessions, favoritesOnly, languageFilter])
 
-  const totalPages = Math.max(1, Math.ceil(filteredSessions.length / SESSIONS_PER_PAGE))
-  const pageSessions = filteredSessions.slice((page - 1) * SESSIONS_PER_PAGE, page * SESSIONS_PER_PAGE)
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE))
+  const pageItems = filteredItems.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
 
   function updateFilter(setter, value) {
     setter(value)
@@ -133,7 +131,7 @@ function History() {
             즐겨찾기만 보기
           </button>
         </div>
-        <p>지금까지 검색한 이슈를 검색 시점별로 모아봤어요.</p>
+        <p>지금까지 검색한 이슈를 모아봤어요.</p>
 
         {availableLanguages.length > 0 && (
           <div className="filterbar">
@@ -158,7 +156,7 @@ function History() {
         )}
       </div>
 
-      {filteredSessions.length === 0 && (
+      {filteredItems.length === 0 && (
         <div className="panel">
           <p className="lead">
             {sessions.length === 0 ? '아직 검색한 이슈가 없어요.' : '조건에 맞는 이슈가 없어요.'}
@@ -166,29 +164,16 @@ function History() {
         </div>
       )}
 
-      {pageSessions.map((session) => (
-        <div className="h-session" key={session.id}>
-          <div className="h-session-head">
-            <span className="h-session-tag">
-              {session.preferences.languages.join(', ')} · {DIFFICULTY_META[session.preferences.difficulty].label}
-              {session.preferences.topics.length > 0 &&
-                ` · ${session.preferences.topics
-                  .map((value) => TOPIC_OPTIONS.find((topic) => topic.value === value)?.label ?? value)
-                  .join(', ')}`}
-            </span>
-          </div>
-          {session.items.map((item) => (
-            <IssueCard
-              key={item.issueUrl}
-              item={item}
-              onSelect={() => handleSelect(session, item)}
-              onToggleFavorite={handleToggleFavorite}
-            />
-          ))}
-        </div>
+      {pageItems.map(({ item, session }) => (
+        <IssueCard
+          key={item.issueUrl}
+          item={item}
+          onSelect={() => handleSelect(session, item)}
+          onToggleFavorite={handleToggleFavorite}
+        />
       ))}
 
-      {filteredSessions.length > SESSIONS_PER_PAGE && (
+      {filteredItems.length > ITEMS_PER_PAGE && (
         <div className="h-pagination">
           <button
             type="button"

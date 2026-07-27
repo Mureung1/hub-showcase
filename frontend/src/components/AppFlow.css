@@ -756,21 +756,7 @@ button.filter {
   font-weight: var(--weight-bold);
 }
 
-/* ── 전체 검색 이력(History) — 세션(검색 시점) 그룹 헤더 ── */
-.h-session {
-  margin-bottom: 28px;
-}
-.h-session-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-.h-session-tag {
-  font-size: var(--text-caption);
-  color: var(--color-text-tertiary);
-}
+/* ── 전체 검색 이력(History) — 페이지네이션 ── */
 .h-pagination {
   display: flex;
   align-items: center;
