@@ -1,7 +1,7 @@
 export function GitHubMark() {
   return (
     <svg
-      className="github-mark"
+      className="block h-[18px] w-[18px] shrink-0 text-ptop-paper"
       viewBox="0 0 24 24"
       role="img"
       aria-label="GitHub"
