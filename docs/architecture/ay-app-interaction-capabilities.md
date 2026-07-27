@@ -35,12 +35,12 @@ sequenceDiagram
     participant W as SemesterWorkspace
 
     AY->>M: capability request
-    M->>B: typed request
+    M->>B: authenticated HTTP POST (response pending)
     B->>UI: typed UI projection
     UI->>U: 자료·비교·선택지 표시
     U->>UI: 선택 또는 feedback
     UI->>B: validated user result
-    B-->>M: structured result
+    B-->>M: one terminal HTTP response
     M-->>AY: structured MCP result
     AY->>W: 실제 파일 변경
     AY->>W: 의미 있는 Git checkpoint
@@ -79,6 +79,8 @@ enabled_tools = ["propose_state_patch"]
 required = true
 ```
 
+Exact timeout seconds가 아직 후속 결정이므로 위 conceptual snippet에서는 `tool_timeout_sec` 숫자만 생략했다. Final Bootstrap output은 이 field를 생략해 current pinned default 300초로 돌아가면 안 된다.
+
 이 예시의 `../../hub/`는 canonical sibling layout에서 Bootstrap이 **exact SemesterWorkspace root를 기준으로** 계산한 값이다. `.codex/` directory 기준의 고정 문자열이 아니며, 다른 위치의 existing repository를 채택하면 실제 두 root 사이의 상대경로를 계산한다. Current pinned local STDIO launcher는 MCP server `cwd`가 없을 때 Runtime fallback `cwd`에서 relative `command`를 resolve하므로 declaration에는 `cwd`를 쓰지 않고 Workspace Runtime의 exact Git root를 그대로 사용한다.
 
 `packages/interaction-mcp`까지의 package location은 채택됐고 exact executable filename과 env 이름은 implementation spec이 소유한다. Config에는 absolute machine path, `npx`·global install, appData에 복제한 Adapter, secret이나 process-local 값을 넣지 않는다. `apps/server`가 current Broker endpoint·token·Runtime binding을 만들고, `@ay-ple/codex-chat-runtime`은 그 이름이나 의미를 해석하지 않는 generic child environment로 Codex에 전달한다. Codex는 `env_vars` allowlist에 따라 STDIO Adapter로 전달한다. `hub/` 또는 SemesterWorkspace root가 독립적으로 이동해 상대경로가 바뀌면 Bootstrap Update가 declaration을 다시 계산하고 review 가능한 workspace Git checkpoint를 남긴다.
@@ -96,11 +98,16 @@ Adapter는 Browser API와 같은 App HTTP listener의 Server-private route로 Br
 | Listener | App이 `127.0.0.1`에 pre-bind한 shared HTTP listener 하나다. Broker만을 위한 listener·port·daemon을 만들지 않는다. |
 | Runtime credential | Workspace Runtime generation마다 fresh high-entropy token과 opaque binding을 만들고 Server memory와 child environment에만 둔다. |
 | Admission | Raw peer가 loopback인지, token이 constant-time exact match인지, binding이 현재 active generation인지 모두 확인한다. Origin이나 route secrecy는 authentication이 아니다. |
-| Startup | Listener bind → Broker route·binding 준비 → Workspace Runtime spawn → Adapter handshake → native required status 확인 → active workspace commit 순서다. |
+| Startup handshake | Listener bind → Broker route·binding 준비 → Workspace Runtime spawn → 짧은 authenticated handshake → native required status 확인 → active workspace commit 순서다. Handshake는 reusable Browser session이나 durable record를 만들지 않는다. |
+| Capability call | MCP call 하나마다 private HTTP POST 하나를 보내고 Broker가 Browser projection을 만든 뒤 terminal result까지 response를 유지한다. 중간 `202`, poll cursor, callback과 separate result fetch를 두지 않는다. |
+| Browser correlation | Browser에는 opaque App interaction identity만 보낸다. Answer는 현재 pending response 하나를 once-only settle하며 MCP caller가 이 identity를 조립하거나 되돌려 보내지 않는다. |
+| Continuity loss | MCP cancel·STDIO EOF·HTTP abort, Browser disconnect, Runtime terminal·replacement와 App shutdown은 pending call을 cancellation 또는 error로 terminal 정산한다. Duplicate·late answer는 result를 다시 만들지 않는다. |
 | Teardown | Runtime replacement·close와 App shutdown은 새 Broker intake를 닫고 pending interaction을 terminal 정산한 뒤 token·binding을 폐기한다. Stale request는 새 generation으로 재결합하지 않는다. |
+| Replay | Terminal response 전달 여부가 불명확하면 성공으로 추정하거나 replay하지 않는다. Fresh MCP call만 새 interaction을 만들며 App은 lost result를 근거로 workspace를 apply하지 않는다. |
+| Native timeout | Current pin의 MCP tool default는 300초다. Project declaration이 explicit human-decision `tool_timeout_sec`을 소유해야 하며 exact seconds는 후속 결정이다. |
 | Private surface | Exact route, header, env 이름과 HTTP codec은 `@ay-ple/interaction-mcp` implementation contract이며 workspace config나 Browser wire contract가 아니다. |
 
-WebSocket, Unix domain socket, inherited extra file descriptor와 별도 private HTTP server는 현재 contract에 포함하지 않는다. Interaction call 하나를 Broker HTTP에서 어떤 request lifetime으로 운반할지는 이 listener·authentication 결정과 별도로 고정한다.
+WebSocket, Unix domain socket, inherited extra file descriptor, 별도 private HTTP server, poll·callback과 durable response journal은 현재 contract에 포함하지 않는다.
 
 ## Capability 설계 규칙
 
@@ -113,6 +120,7 @@ WebSocket, Unix domain socket, inherited extra file descriptor와 별도 private
 | Closed result | `accept | revise | reject`처럼 Skill이 exhaustively 해석할 수 있는 result union을 반환한다. |
 | Host-owned binding | Workspace·Turn·Browser correlation은 caller field가 아니라 host가 process environment와 Broker session에서 주입한다. |
 | Required connection | Adapter와 current App Broker의 authenticated handshake가 완료되지 않으면 Workspace Runtime을 정상 상태로 열지 않는다. |
+| One call, one response | Capability request 하나는 held Broker POST와 terminal MCP result 하나다. Intermediate acknowledgement나 external result lookup으로 나누지 않는다. |
 | Transient lifecycle | Pending request와 user result는 interaction 수명 동안만 존재한다. Durable 학기 이력을 만들지 않는다. |
 | Explicit cancellation | User cancel, Browser disconnect, Runtime terminal을 서로 구분된 result 또는 error로 정산한다. |
 | Capability-specific UI | 자료 preview, diff, evidence처럼 해당 결정에 필요한 UI를 제공한다. Arbitrary schema renderer를 만들지 않는다. |
