@@ -161,3 +161,9 @@
 - 검증: `npm run verify` 통과. `/api/steps/complete`를 실제 Notion 왕복으로 확인 — `pauseCount:2, pauseReasons:["전화 옴",""]` 전송 시 `PauseCount:2`, `PauseReasons:"전화 옴"`(빈 문자열 제외)으로 정확히 기록·조회됨. 테스트 데이터는 이후 archive 정리. 화면에서 일시정지→이유 입력→다시 시작→시간이 멈춘 만큼 빠지고 이어지는 것은 사용자가 직접 확인. `docs/checklist.md` C20 3개 전부 체크, `docs/backlog.md` T20 완료로 변경, 총 개수 표기(T01~T20) 갱신.
 - 미결: 없음
 - 확인: [ ]
+
+## 2026-07-27 | T19 | 오늘 마감까지 남은 시간 표시 + 연장 버튼
+- 작업: `app/page.js`의 `minutesUntilMidnight()`을 `minutesUntilDeadline(extraMinutes)`로 바꾸고, 연장 버튼으로 늘어난 분(`deadlineExtraMinutes`, 기본 0)을 더하도록 확장. `/api/struggle` 호출 시 `remainingTimeMinutes` 계산에도 그대로 반영해, T07의 재판단 게이트가 연장된 시간을 인식하게 했다. `app/components/OneFocusView.js`에 "지금 HH:MM · 오늘 마감까지 N시간 M분" 문구와 "+1시간" 버튼을 추가하고, 1초마다 갱신되는 자체 시계(`useEffect`+`setInterval`)를 붙였다. `goHome()`에서 `deadlineExtraMinutes`를 0으로 리셋.
+- 검증: `npm run verify` 통과(lint+build). 화면에서 시계가 실시간으로 도는 것과 "+1시간" 버튼을 누르면 남은 시간이 늘어나는 것은 사용자가 직접 확인. `docs/checklist.md` C19 2개 전부 체크, `docs/backlog.md` T19 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신(T14/T20/T19 반영).
+- 미결: `deadlineExtraMinutes`는 새로고침 시 리셋된다(T04 localStorage 세션에 포함 안 함) — C19에 명시된 요구사항은 아니라 지금은 그대로 둠.
+- 확인: [ ]
