@@ -37,7 +37,7 @@ todos:
     status: pending
   - id: issue-74
     content: 크롤러 fetch 재시도 이중 안전망(코드 레벨 + 워크플로우 레벨)
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -72,7 +72,7 @@ Week 3 마일스톤(#28~#32, #40, #43, #44) 완료 후 발견된 개별 작업(#
 | [#62](https://github.com/syd348/hub/issues/62) | 매칭 조건 필터링이 전혀 적용되지 않음 | 완료 (2026-07-25) — region 필터링 적용, [`week4/issue-62-region-filter-plan.md`](week4/issue-62-region-filter-plan.md) |
 | [#63](https://github.com/syd348/hub/issues/63) | 마감 지난 지원금이 계속 노출됨 | 완료 (2026-07-25) — 실제 86건 확인, [`week4/issue-63-expired-sweep-plan.md`](week4/issue-63-expired-sweep-plan.md) |
 | [#67](https://github.com/syd348/hub/issues/67) | 첨부파일 AI 구조화 추출 | 완료 (2026-07-26, PR #76) — Claude→Gemini 전환, HWP 지원 보류 결정, [`week4/issue-67-ai-document-extraction-plan.md`](week4/issue-67-ai-document-extraction-plan.md) |
-| [#74](https://github.com/syd348/hub/issues/74) | 크롤러 fetch 재시도 이중 안전망 | 등록 완료 (2026-07-26) — [`week4/issue-74-crawler-retry-plan.md`](week4/issue-74-crawler-retry-plan.md) |
+| [#74](https://github.com/syd348/hub/issues/74) | 크롤러 fetch 재시도 이중 안전망 | 완료 (2026-07-27) — 코드 레벨(withRetry) + 워크플로우 레벨(nick-fields/retry), [`week4/issue-74-crawler-retry-plan.md`](week4/issue-74-crawler-retry-plan.md) |
 | [#77](https://github.com/syd348/hub/issues/77) | subsidies에 atch_file_id 컬럼 추가 | 등록 완료 (2026-07-27) — #67 리뷰 중 발견한 조인 불가 문제 |
 
 ## 리스크 / 결정 필요
