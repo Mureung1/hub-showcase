@@ -14,18 +14,21 @@ import type {
   MarketStore,
 } from "./types";
 
-const categoryPresentation: Record<
-  Category,
-  {
-    icon: typeof Coffee;
-    tone: string;
-  }
+const categoryPresentation: Partial<
+  Record<
+    Category,
+    {
+      icon: typeof Coffee;
+      tone: string;
+    }
+  >
 > = {
   카페: { icon: Coffee, tone: "green" },
   음식점: { icon: Store, tone: "orange" },
   베이커리: { icon: Building2, tone: "blue" },
   편의점: { icon: MapPinned, tone: "gray" },
 };
+const fallbackCategoryPresentation = { icon: Store, tone: "gray" };
 
 const analysisTopics: Array<{
   value: AnalysisTopic;
@@ -33,14 +36,14 @@ const analysisTopics: Array<{
   available: boolean;
   reason?: string;
 }> = [
-    { value: "overview", label: "종합", available: true },
-    { value: "stores", label: "점포·개폐업", available: true },
-    { value: "sales", label: "매출·소비", available: true },
-    { value: "competition", label: "경쟁 현황", available: true },
-    { value: "flow", label: "유동인구", available: true },
-    { value: "population", label: "주거·직장인구", available: true },
-    { value: "amenities", label: "주변 시설·접근성", available: false, reason: "데이터 연결 예정" },
-  ];
+  { value: "overview", label: "종합", available: true },
+  { value: "stores", label: "점포·개폐업", available: true },
+  { value: "sales", label: "매출·소비", available: true },
+  { value: "competition", label: "경쟁 현황", available: true },
+  { value: "flow", label: "유동인구", available: true },
+  { value: "population", label: "주거·직장인구", available: true },
+  { value: "amenities", label: "주변 시설·접근성", available: false, reason: "데이터 연결 예정" },
+];
 
 function CategoryOptions({
   categories,
@@ -52,7 +55,7 @@ function CategoryOptions({
   onChange: (category: Category) => void;
 }) {
   return categories.map((label) => {
-    const { icon: Icon, tone } = categoryPresentation[label];
+    const { icon: Icon, tone } = categoryPresentation[label] ?? fallbackCategoryPresentation;
     return (
       <button
         key={label}
