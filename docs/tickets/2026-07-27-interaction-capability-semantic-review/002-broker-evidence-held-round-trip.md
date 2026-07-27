@@ -22,8 +22,8 @@ Authenticated active product Turn에서 들어온 한 `propose_state_patch` call
 ## Slice-Specific Constraints
 
 - Browser API와 같은 pre-bound loopback listener의 exact `POST /api/_private/interaction-mcp` route를 사용한다. 별도 port, daemon, WebSocket, Unix socket과 durable outbox를 만들지 않는다.
-- Runtime generation마다 random token·binding과 pending slot 하나만 둔다. Raw peer loopback, constant-time Bearer token match, exact active binding과 coordinator-issued active `product_turn` lease를 모두 통과해야 한다.
-- Workspace transition과 product Turn admission은 blocker ticket의 `ProductOperationCoordinator` authority를 소비한다. Broker가 별도 outer Turn lock이나 caller-supplied operation identity를 만들면 안 된다.
+- Runtime generation마다 random token·binding과 pending slot 하나만 둔다. Raw peer loopback, constant-time Bearer token match, exact active binding과 coordinator가 이미 발급한 active `product_turn` lease를 모두 통과해야 한다.
+- Broker는 완료된 blocker ticket의 `ProductOperationCoordinator`가 관리하는 active product Turn admission만 소비한다. Candidate, Bootstrap, prepared-workspace startup을 위한 lease나 별도 outer Turn lock, caller-supplied operation identity를 만들면 안 된다.
 - Evidence authority는 authenticated Runtime binding의 exact workspace root다. 모든 relative path·realpath·regular-file·size·digest·fatal UTF-8·BOM·quote occurrence와 aggregate projection bound가 통과한 뒤에만 UI Adapter에 card 하나를 publish한다.
 - 같은 file의 locator는 한 byte snapshot에서 검증하고, invalid ref 하나라도 있으면 partial projection이나 evidence-free fallback 없이 whole call을 실패시킨다.
 - Held response settlement는 once-only다. 두 번째 call은 immediate `busy`, duplicate·late answer는 conflict이며 기존 pending call이나 card를 바꾸지 않는다.
@@ -33,7 +33,7 @@ Authenticated active product Turn에서 들어온 한 `propose_state_patch` call
 ## Acceptance Criteria
 
 - [ ] Valid handshake와 active Turn lease에서 한 capability call이 in-memory UI projection 하나를 만들고 한 user result를 held response에 정확히 한 번 반환한다.
-- [ ] No active lease, invalid/stale token·binding, second call과 malformed private envelope가 Browser projection 없이 각각 closed safe failure로 끝난다.
+- [ ] No active product Turn lease, invalid/stale token·binding, second call과 malformed private envelope가 Browser projection 없이 각각 closed safe failure로 끝나며 Broker가 startup·candidate lease를 대신 만들지 않는다.
 - [ ] Contained regular text evidence는 exact digest·occurrence·bounded context로 투영되고 traversal, symlink escape, missing/non-regular/oversized file, invalid UTF-8, digest·quote drift가 card 생성 전에 whole-call failure가 된다.
 - [ ] Duplicate·late settlement, response delivery ambiguity와 concurrent close race가 두 번째 result, replay나 leaked pending slot을 만들지 않는다.
 - [ ] Adapter HTTP abort, UI disconnect, Turn interrupt, Runtime terminal·replacement, STDIO EOF와 App shutdown의 intake·credential·outer lease ordering이 deterministic tests로 고정된다.

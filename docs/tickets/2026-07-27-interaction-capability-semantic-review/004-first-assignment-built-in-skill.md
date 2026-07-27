@@ -21,7 +21,7 @@ Tracked `hub/skills/ay-ple-first-assignment/` source가 AY에게 actual workspac
 
 ## Slice-Specific Constraints
 
-- Skill source authority는 `hub/skills/ay-ple-first-assignment/`다. Workspace copy·merge, config 설치와 checkpoint lifecycle은 sibling Workspace Spec이 소유한다.
+- Skill source authority는 `hub/skills/ay-ple-first-assignment/`다. App 실행 전 native client가 수행하는 Bootstrap의 workspace copy·merge, config 설치와 checkpoint lifecycle은 sibling Workspace Spec이 소유한다.
 - AY는 active SemesterWorkspace의 actual file을 읽고 Review가 필요한 mutation을 MCP call 전에 적용하지 않는다. App snapshot, `RawMaterial` ID, Course·revision과 scratch-only workflow를 요구하지 않는다.
 - `accept` 뒤 actual file을 변경하고, `revise`는 feedback을 반영한 fresh `propose_state_patch` call과 새 card로 이어지며, `reject`는 proposed mutation을 적용하지 않는다.
 - 같은 결정을 built-in `request_user_input`으로 다시 묻지 않는다. General clarification과 native execution approval은 별도 Codex interaction으로 남긴다.
@@ -55,5 +55,5 @@ Tracked `hub/skills/ay-ple-first-assignment/` source가 AY에게 actual workspac
 - `packages/semester-workspace/resources/workspace/AGENTS.md`
 - `packages/semester-workspace/src/workspace-bundle.ts`
 - `packages/semester-workspace/src/workspace-bundle.test.ts`
-- `docs/adr/0018-adopt-user-owned-git-semester-workspaces.md`
+- `docs/adr/0020-bootstrap-semester-workspaces-before-app-startup.md`
 - `docs/adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md`

@@ -21,7 +21,7 @@ Target workspace lifecycle과 Interaction cutover 뒤 `@ay-ple/semester-workspac
 
 ## Slice-Specific Constraints
 
-- 이 ticket은 expand–migrate–contract sequence의 final contract 단계다. Ticket 008과 sibling Interaction persistence contraction이 green이기 전 시작하지 않는다.
+- 이 ticket은 expand–migrate–contract sequence의 final contract 단계다. Registry reopen·prepared-root relaunch·recovery와 sibling Interaction persistence contraction이 green이기 전 시작하지 않는다.
 - Survivor package는 root v4 identity envelope의 strict codec·classification과 필요한 shared identity validation만 제공한다.
 - V3 admission, setup envelope/journey, workspace bundle materializer/verifier, static/effective context guard와 package-managed `resources/workspace/**`를 제거한다.
 - Current-v2 compatibility decoder와 old academic store consumer는 sibling Interaction contraction 이후 consumer가 없다면 함께 제거한다. Removed surface를 alias, deprecated export 또는 hidden fallback으로 남기지 않는다.
@@ -58,7 +58,7 @@ Target workspace lifecycle과 Interaction cutover 뒤 `@ay-ple/semester-workspac
 
 ## Blocked By
 
-- `008-reopen-change-recovery-vertical.md` — Reopen·change·recovery vertical
+- `008-registry-reopen-prepared-root-relaunch-recovery.md` — Registry reopen·prepared-root relaunch·recovery
 - `../2026-07-27-interaction-capability-semantic-review/009-academic-persistence-runtime-contraction.md` — Academic persistence·Runtime contraction
 
 ## Starting Points

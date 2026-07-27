@@ -21,13 +21,13 @@ Canonical Runtime, registry reopen, active Git workspace와 required Interaction
 
 ## Slice-Specific Constraints
 
-- Cleanup 전 external Runtime, global Account Readiness, registry reopen, active workspace, candidate change와 Interaction Review의 full canonical smoke가 green이어야 한다.
+- Cleanup 전 external Runtime, global Account Readiness, registry reopen, explicit prepared-root relaunch와 Interaction Review의 full canonical smoke가 green이어야 한다.
 - Tracked product graph에서 `../.ay-ple-dogfood`, `../.ay-ple-dev-workspaces`, hardcoded `../workspace/year-2-semester-2`, package-local Runtime `.artifacts/`와 obsolete materializer/profile command를 selection/runtime authority로 참조하지 않는다.
 - Local deletion target은 exact legacy dogfood appData, managed development workspace와 package-local Runtime artifact/cache로 한정하고 ownership marker·canonical path·expected layout을 read-only로 재검증한다.
 - `<SemesterWorkspace>/.git`, root `workspace-state.json`, `AGENTS.md`, `.agents/`, `.codex/`, actual semester files와 Git history는 user-owned data다. Hidden legacy `<SemesterWorkspace>/.ay-ple/`, current-v2/v3/malformed bytes도 삭제, 이동, stage 또는 rewrite하지 않는다.
 - `../workspace/` 전체, arbitrary user-selected root, global `~/.codex`, canonical `../.ay-ple/`과 unresolved symlink/glob을 cleanup target으로 사용하지 않는다.
 - Unrelated file 또는 unexpected target layout을 만나면 보존하고 cleanup을 fail closed한다. Partial deletion을 success로 기록하지 않는다.
-- Install, start, activation과 App Runtime은 cleanup을 자동 실행하지 않는다. 이 ticket의 reviewed one-shot cleanup만 local residue를 제거한다.
+- Install, start, prepared-workspace startup과 App Runtime은 cleanup을 자동 실행하지 않는다. 이 ticket의 reviewed one-shot cleanup만 local residue를 제거한다.
 - Cleanup 뒤 old graph나 package-local artifact로 fallback하지 않는다. Rollback은 user-owned v4 files와 Git commits를 삭제하지 않는다.
 
 ## Acceptance Criteria
@@ -37,7 +37,7 @@ Canonical Runtime, registry reopen, active Git workspace와 required Interaction
 - [ ] Reviewed cleanup이 validated legacy targets만 제거하고 canonical appData, global Codex home, workspace tree와 unrelated sibling sentinel을 보존한다.
 - [ ] User-owned workspace의 root v4, Git history, actual files와 hidden legacy `.ay-ple/` bytes가 cleanup 전후 byte-for-byte 또는 Git identity 기준으로 동일하다.
 - [ ] Missing target rerun은 no-op이고 unexpected layout·symlink·ownership mismatch는 destructive action 없이 fail closed한다.
-- [ ] Package-local `.artifacts` 없이 external verified Runtime에서 root tests, active reopen와 required Interaction smoke가 다시 통과한다.
+- [ ] Package-local `.artifacts` 없이 external verified Runtime에서 root tests, registry reopen, explicit prepared-root relaunch와 required Interaction smoke가 다시 통과한다.
 
 ## Verification
 

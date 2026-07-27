@@ -66,6 +66,10 @@ Server의 process-local `ProductLifecycleCoordinator`는 workspace transition과
 
 구현 commit은 `396b2505c` (`feat: add product lifecycle admission contract`), `5566dd1c1` (`fix: enforce product lifecycle release authority`), `74af9e919` (`fix: retain lifecycle lease through runtime close`)다.
 
+## Subsequent Correction
+
+후속 아키텍처 결정에 따라 App-owned candidate/bootstrap lifecycle union과 `workspace_init` operation은 obsolete다. Ticket 006이 이 surface와 candidate-specific eligibility를 prepared-workspace launch contract로 contract한다. Generic coordinator는 normal product Turn의 eligibility와 lease claim을 같은 critical section에서 수행하는 non-preemptive admission, once-only release authority와 active lease를 native terminal 또는 completed Runtime close까지 보존하는 경계만 재사용한다. Prepared-workspace startup은 operation lease를 claim하지 않으며 workspace transition eligibility도 재사용하지 않는다.
+
 ## Blocked By
 
 - `002-v4-identity-and-workspace-registry.md` — V4 identity와 WorkspaceRegistry

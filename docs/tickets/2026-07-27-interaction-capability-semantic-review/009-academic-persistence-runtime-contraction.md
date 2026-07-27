@@ -22,10 +22,11 @@ Public consumer가 사라진 old academic workflow와 persistence를 Server에�
 ## Slice-Specific Constraints
 
 - 이 contract는 ticket 008에서 public consumers가 0인 뒤 시작한다. Old workflow를 target store adapter, compatibility alias나 hidden fallback으로 옮기지 않는다.
-- Package-bounded migration은 Server academic orchestration → Server academic persistence → Runtime old override → final integrated verification 순으로 진행하고 current `codex/...` working branch에서 green checkpoint를 남긴다.
+- Package-bounded migration은 Server academic orchestration → Server academic persistence → Runtime old override → final integrated verification 순으로 진행한다. 각 단계는 owning package의 test·typecheck와 removed-consumer inventory가 green인 독립 focused commit으로 닫고, 실패한 단계를 건너뛰어 다음 contraction을 시작하지 않는다.
 - Old `AssignmentMcpHost`, managed Assignment Recipe, built-in `request_user_input` double confirmation, replacement coordinator와 First Assignment action orchestration을 제거한다. Ticket 004의 tracked built-in Skill source는 제거 대상이 아니다.
 - App-owned Course, `RawMaterial`, `ModelingRecipe`·`ModelingInvocation`·durable `ModelingRun`, `StatePatch`·`UserConfirmation`, revision-bound SemesterModel apply와 관련 recovery/replay store를 active Server graph에서 제거한다.
 - Runtime public/testing contract와 bridge에서 `StartThreadInput.mcp`, `CodexPrivateMcpServerInput`, literal capability allowlist, thread-start MCP config override와 process-wide managed Skill injection을 제거한다.
+- Runtime contraction을 candidate-specific root나 additional `writableRoots` 전달, structured permission policy 또는 이를 위한 exact SDK patch로 대체하지 않는다. Target Runtime은 prepared Git-root `cwd`와 native project config·permission discovery만 사용한다.
 - General built-in `request_user_input`, native command·file·network approval, generic Turn lifecycle와 target Interaction MCP readiness는 보존한다.
 - Existing v2/v3 on-disk bytes를 자동 rewrite·delete하지 않고 `@ay-ple/semester-workspace`의 legacy kernel contraction은 sibling Workspace ticket이 소유하도록 남긴다.
 - Exact SDK·bridge 변경은 ordered patch, generation, provenance와 production-runtime validation discipline을 지킨다. Raw native status와 generated shapes를 새 public escape hatch로 만들지 않는다.
@@ -36,9 +37,10 @@ Public consumer가 사라진 old academic workflow와 persistence를 Server에�
 - [ ] Active Server composition과 production source에 old Assignment MCP host, managed Recipe, double-confirmation coordinator와 App academic apply caller가 없다.
 - [ ] Active Server store와 Browser projection이 Course, RawMaterial registry, durable Run·patch·confirmation·revision apply를 생성·읽기·복구하지 않는다.
 - [ ] Runtime public 및 testing contract에 private MCP input과 managed Skill injection이 없고 Python bridge가 thread-start MCP override 또는 `skills/extraRoots/set`을 수행하지 않는다.
+- [ ] Runtime public/testing contract, Python bridge와 exact SDK patch stack에 candidate root나 additional `writableRoots` 전달 경로가 없으며 exact prepared Git-root `cwd`의 native policy가 유지된다.
 - [ ] General clarification, native approval, generic Turn lifecycle, project-discovered Skill·MCP와 exact readiness tests는 contraction 뒤에도 green이다.
 - [ ] Existing legacy workspace bytes는 untouched이고 sibling v3 kernel contraction이 수행할 범위가 코드와 docs에서 명확히 남는다.
-- [ ] Production apps/packages의 active code와 tests에 removed academic workflow identity가 없으며 target temporary Git trace와 public E2E가 계속 통과한다.
+- [ ] Production apps/packages의 active code와 tests에 removed academic workflow identity가 없으며 prepared temporary Git workspace trace와 public E2E가 계속 통과한다.
 - [ ] Exact SDK, bridge, Node Runtime, Server, Chat Shell과 repository-wide PR-ready gates가 최종 integrated state에서 모두 통과한다.
 
 ## Verification
